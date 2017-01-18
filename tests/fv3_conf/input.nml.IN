@@ -107,7 +107,7 @@
        current_date =  2016,10,03,00,0,0
        calendar = 'julian'
        memuse_verbose = .false.
-       atmos_nthreads = 1
+       atmos_nthreads = @[THRD]
        use_hyper_thread = .false.
        ncores_per_node = 24
 /
