@@ -4,7 +4,7 @@
 #
 ###############################################################################
 
-export TEST_DESCR="Compare FV3 2 threads results with previous trunk version"
+export TEST_DESCR="Compare FV3 restart results with previous trunk version"
 
 export CNTL_DIR=fv3_restart
 
@@ -62,7 +62,7 @@ export EXTERNAL_IC=.F.
 export MAKE_NH=.F.
 export MOUNTAIN=.T.
 export NA_INIT=0
-export DAYS=2
+export DAYS=1
 export FDIAG=6
 
 
