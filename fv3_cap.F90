@@ -420,6 +420,8 @@ module fv3gfs_cap_mod
                             date(4), date(5), date(6))
       call ESMF_TimeSet(time=CurrTime,yy=date(1),mm=date(2),dd=date(3),h=date(4), &
                        m=date(5),s=date(6),rc=rc)
+!reset CurrTime in clock
+      call ESMF_ClockSet(clock, currTIME=CurrTime, rc=rc)
 !jw test
       date1=0
       call ESMF_TimeGet (CurrTime,                    &
