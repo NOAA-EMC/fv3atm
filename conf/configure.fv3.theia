@@ -2,10 +2,10 @@
 ############
 # commands #
 ############
-FC = ftn
-CC = cc
-CXX = CC
-LD = ftn
+FC = mpiifort
+CC = mpiicc
+CXX = mpiicpc
+LD = mpiifort -mkl=sequential
 
 #########
 # flags #
@@ -32,7 +32,7 @@ ifneq ($(need),$(ok))
 $(error Need at least make version $(need).  Load module gmake/3.81)
 endif
 
-NETCDF_ROOT = $(NETCDF_DIR)
+NETCDF_ROOT = $(NETCDF)
 INCLUDE = -I$(NETCDF_ROOT)/include
 
 FPPFLAGS := -fpp -Wp,-w $(INCLUDE)
@@ -112,8 +112,6 @@ ifneq ($(OPENMP),)
 CFLAGS += $(CFLAGS_OPENMP)
 FFLAGS += $(FFLAGS_OPENMP)
 LDFLAGS += $(LDFLAGS_OPENMP)
-# to correct a loader bug on gaea: envars below set by module load intel
-LIBS += -L$(INTEL_PATH)/$(INTEL_MAJOR_VERSION)/$(INTEL_MINOR_VERSION)/lib/intel64 -lifcoremt
 endif
 
 ifneq ($(VERBOSE),)
@@ -123,9 +121,9 @@ LDFLAGS += $(LDFLAGS_VERBOSE)
 endif
 
 ifneq ($(findstring netcdf/4,$(LOADEDMODULES)),)
-  LIBS += -lnetcdff -lnetcdf -lhdf5_hl -lhdf5 -lz
+  LIBS += -L$(NETCDF)/lib -lnetcdff -lnetcdf
 else
-  LIBS += -lnetcdf
+  LIBS += -L$(NETCDF)/lib -lnetcdff -lnetcdf
 endif
 
 LDFLAGS += $(LIBS)

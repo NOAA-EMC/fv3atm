@@ -51,7 +51,7 @@ esmf_make_fragment:
 
 # fv3 library installation defaults (for NEMS):
 DESTDIR  := $(PWD)
-INSTDATE := $(shell date '+%Y-%m-%d-%H-%M-%S')
+#INSTDATE := $(shell date '+%Y-%m-%d-%H-%M-%S')
 #INSTDIR  := FV3_$(INSTDATE)
 INSTDIR  := FV3_INSTALL
 
@@ -69,10 +69,10 @@ clean:
 	(cd fms            && make clean)
 	(cd gfsphys        && make clean)
 	(cd fv3core        && make clean)
-	$(RM) -f $(FV3_EXE) $(FV3CAP_LIB) *.o *.mod *.lst depend 
+	$(RM) -f $(FV3_EXE) $(FV3CAP_LIB) *.o *.mod *.lst depend
 
 cleanall: clean
-	$(RM) -rf nems_dir fv3.mk FV3_INSTALL
+	$(RM) -rf nems_dir fv3.mk $(INSTDIR)
 	$(RM) -f conf/modules.fv3
 	$(RM) -f conf/configure.fv3
 
