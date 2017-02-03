@@ -19,6 +19,8 @@ elif [ $MACHINE_ID = wcoss_cray ]; then
 elif [ $MACHINE_ID = theia ]; then
 
   TASKS_dflt=144 ; TPN_dflt=24 ; INPES_dflt=3 ; JNPES_dflt=8
+  TASKS_thrd=72  ; TPN_thrd=12 ; INPES_thrd=3 ; JNPES_thrd=4
+
 
 fi
 
