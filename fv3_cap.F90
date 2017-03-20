@@ -28,7 +28,6 @@ module fv3gfs_cap_mod
   use       fms_mod,     only: open_namelist_file, file_exist, check_nml_error,  &
                                error_mesg, fms_init, fms_end, close_file,        &
                                write_version_number, uppercase
-  use    fms_io_mod,     only: fms_io_exit
 
   use mpp_mod,           only: mpp_init, mpp_pe, mpp_root_pe, mpp_npes, mpp_get_current_pelist, &
                                mpp_set_current_pelist, stdlog, mpp_error, NOTE, FATAL, WARNING
@@ -39,6 +38,7 @@ module fv3gfs_cap_mod
 
   use mpp_domains_mod,   only: mpp_get_global_domain, mpp_global_field, CORNER
   use memutils_mod,      only: print_memuse_stats
+  use sat_vapor_pres_mod,only: sat_vapor_pres_init
 
   use  diag_manager_mod, only: diag_manager_init, diag_manager_end, &
                                get_base_date, diag_manager_set_time_end
@@ -361,12 +361,9 @@ module fv3gfs_cap_mod
      initClock = mpp_clock_id( 'Initialization' )
      call mpp_clock_begin (initClock) !nesting problem
 
-#ifdef AVEC_TIMERS
-     call mpp_sync()
-     call avec_timer_init(mpp_pe(),ret)
-#endif
-
+     call fms_init
      call constants_init
+     call sat_vapor_pres_init
 !
      if (file_exist('INPUT/coupler.res')) then
        call mpp_open( unit, 'INPUT/coupler.res', action=MPP_RDONLY )
@@ -625,30 +622,15 @@ module fv3gfs_cap_mod
                                  date(4), date(5), date(6))
 !
     do na = 1, atm_int_state%num_atmos_calls
-#ifdef AVEC_TIMERS
-      call mpp_sync()
-      call avec_timer_start(1)
-#endif
 
       atm_int_state%Time_atmos = atm_int_state%Time_atmos + atm_int_state%Time_step_atmos
 
       call update_atmos_model_dynamics (atm_int_state%Atm)
 
-#ifdef AVEC_TIMERS
-      call avec_timer_start(2)
-#endif
       call update_atmos_radiation_physics (atm_int_state%Atm)
-#ifdef AVEC_TIMERS
-      call avec_timer_stop(2)
-#endif
 
       call update_atmos_model_state (atm_int_state%Atm)
 
-#ifdef AVEC_TIMERS
-      call avec_timer_stop(1)
-#endif
-
-#ifndef AVEC_TIMERS
 !--- intermediate restart
       if (atm_int_state%intrm_rst) then
         if ((na /= atm_int_state%num_atmos_calls) .and.   &
@@ -662,7 +644,6 @@ module fv3gfs_cap_mod
       endif
 
       call print_memuse_stats('after full step')
-#endif
 !    if(mype==0) print *,'n fv3_cap,in model run,end one time step,na=',na
 
     enddo
@@ -684,7 +665,6 @@ module fv3gfs_cap_mod
     rc = ESMF_SUCCESS
 
     call atmos_model_end (atm_int_state%atm)
-    call fms_io_exit
 !
 !----- check time versus expected ending time ----
 

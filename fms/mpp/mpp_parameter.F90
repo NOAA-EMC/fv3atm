@@ -1,32 +1,12 @@
-!***********************************************************************
-!*                   GNU General Public License                        *
-!* This file is a part of fvGFS.                                       *
-!*                                                                     *
-!* fvGFS is free software; you can redistribute it and/or modify it    *
-!* and are expected to follow the terms of the GNU General Public      *
-!* License as published by the Free Software Foundation; either        *
-!* version 2 of the License, or (at your option) any later version.    *
-!*                                                                     *
-!* fvGFS is distributed in the hope that it will be useful, but        *
-!* WITHOUT ANY WARRANTY; without even the implied warranty of          *
-!* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU   *
-!* General Public License for more details.                            *
-!*                                                                     *
-!* For the full text of the GNU General Public License,                *
-!* write to: Free Software Foundation, Inc.,                           *
-!*           675 Mass Ave, Cambridge, MA 02139, USA.                   *
-!* or see:   http://www.gnu.org/licenses/gpl.html                      *
-!***********************************************************************
 module mpp_parameter_mod
 #include <fms_platform.h>
 
   implicit none
   private
 
-  character(len=128), public :: version= &
-       '$Id mpp_parameter.F90 $'
-  character(len=128), public :: tagname= &
-       '$Name$'
+! Include variable "version" to be written to log file.
+#include<file_version.h>
+  public version
 
   !--- public paramters which is used by mpp_mod and its components. 
   !--- All othere modules should import these parameters from mpp_mod. 
@@ -122,7 +102,7 @@ module mpp_parameter_mod
   integer, parameter :: BITWISE_EXACT_SUM=1
   integer, parameter :: BITWISE_EFP_SUM=2
   integer, parameter :: MPP_DOMAIN_TIME=MPP_DEBUG+1
-  integer, parameter :: MAX_DOMAIN_FIELDS=20
+  integer, parameter :: MAX_DOMAIN_FIELDS=100
   integer, parameter :: MAX_TILES=10
 
   !--- The following paramters are used by mpp_io_mod and its components.

@@ -1,24 +1,4 @@
-!***********************************************************************
-!*                   GNU General Public License                        *
-!* This file is a part of fvGFS.                                       *
-!*                                                                     *
-!* fvGFS is free software; you can redistribute it and/or modify it    *
-!* and are expected to follow the terms of the GNU General Public      *
-!* License as published by the Free Software Foundation; either        *
-!* version 2 of the License, or (at your option) any later version.    *
-!*                                                                     *
-!* fvGFS is distributed in the hope that it will be useful, but        *
-!* WITHOUT ANY WARRANTY; without even the implied warranty of          *
-!* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU   *
-!* General Public License for more details.                            *
-!*                                                                     *
-!* For the full text of the GNU General Public License,                *
-!* write to: Free Software Foundation, Inc.,                           *
-!*           675 Mass Ave, Cambridge, MA 02139, USA.                   *
-!* or see:   http://www.gnu.org/licenses/gpl.html                      *
-!***********************************************************************
 ! -*-f90-*-
-! $Id$
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !                                                                      !
@@ -249,7 +229,7 @@
           start = 1
           do i = 1,size(field%axes(:))
              axsiz(i) = field%size(i)
-             if( field%axes(i)%did.EQ.field%time_axis_index .AND. field%time_axis_index >0 )start(i) = tlevel
+             if( i .EQ. field%time_axis_index )start(i) = tlevel
 
           end do
           if( PRESENT(domain) )then
@@ -358,7 +338,7 @@
       if(size(start(:)) .NE. 4 .OR. size(nread(:)) .NE. 4) call mpp_error(FATAL, &
           "mpp_io_read.inc(mpp_read_region_r2D): size of start and nread must be 4")
 
-      if(size(data,1).NE.nread(1) .OR. size(data,2).NE.nread(2)) then
+      if(size(data,1) .NE. nread(1) .OR. size(data,2) .NE. nread(2)) then
          call mpp_error( FATAL, 'mpp_io_read.inc(mpp_read_block_r2D): size mismatch between data and nread')
       endif
       if(nread(3) .NE. 1 .OR. nread(4) .NE. 1) call mpp_error(FATAL, &
@@ -366,6 +346,8 @@
       call read_record_core(unit, field, nread(1)*nread(2), data, start, nread)
 
       return
+
+
     end subroutine mpp_read_region_r2D
 
     subroutine mpp_read_region_r3D(unit, field, data, start, nread)
@@ -377,7 +359,7 @@
       if(size(start(:)) .NE. 4 .OR. size(nread(:)) .NE. 4) call mpp_error(FATAL, &
           "mpp_io_read.inc(mpp_read_region_r3D): size of start and nread must be 4")
 
-      if(size(data,1).NE.nread(1) .OR. size(data,2).NE.nread(2) .OR. size(data,3).NE.nread(3) ) then
+      if(size(data,1) .NE. nread(1) .OR. size(data,2) .NE. nread(2) .OR. size(data,3) .NE. nread(3) ) then
          call mpp_error( FATAL, 'mpp_io_read.inc(mpp_read_block_r3D): size mismatch between data and nread')
       endif
       if(nread(4) .NE. 1) call mpp_error(FATAL, &
@@ -619,7 +601,7 @@
 !     <TT>mpp_read_meta</TT> must be called prior to <TT>mpp_read</TT>.
 !   </NOTE>
 ! </SUBROUTINE>
-    subroutine mpp_read_meta(unit)
+    subroutine mpp_read_meta(unit, read_time)
 !
 ! read file attributes including dimension and variable attributes
 ! and store in filetype structure.  All of the file information
@@ -629,13 +611,14 @@
 ! every PE is eligible to call mpp_read_meta
 !
       integer, intent(in) :: unit
-
+      logical, intent(in), optional :: read_time ! read_time is set to false when file action is appending or writing.
+                                                 ! This is temporary fix for MOM6 reopen_file issue.
       integer         :: ncid,ndim,nvar_total,natt,recdim,nv,nvar,len
       integer :: error, i, j, istat, check_exist
       integer         :: type, nvdims, nvatts, dimid
       integer, allocatable, dimension(:) :: dimids
       character(len=128) :: name, attname, unlimname, attval, bounds_name
-      logical :: isdim, found_bounds
+      logical :: isdim, found_bounds, get_time_info
       integer(LONG_KIND) :: checksumf
       character(len=64)  :: checksum_char
       integer :: num_checksumf, last, is, k
@@ -644,6 +627,9 @@
       integer(INT_KIND), allocatable :: ivals(:)
       real(FLOAT_KIND), allocatable  :: rvals(:)
       real(DOUBLE_KIND), allocatable :: r8vals(:)
+
+      get_time_info = .TRUE.
+      if(present(read_time)) get_time_info = read_time
 
 #ifdef use_netCDF
 
@@ -888,7 +874,7 @@
                  case default
                     call mpp_error( FATAL, 'Invalid data type for dimension' )
                  end select
-             else
+             else if(get_time_info) then
                  len = mpp_file(unit)%time_level
                  if( len > 0 ) then
                     allocate(mpp_file(unit)%time_values(len), STAT=istat)
@@ -1231,7 +1217,8 @@
 
               do j=1,nvdims
                  if(dimids(j).eq.mpp_file(unit)%recdimid  .and. mpp_file(unit)%time_level/=-1)then
-                    mpp_file(unit)%Var(nv)%time_axis_index = dimids(j)
+                    mpp_file(unit)%Var(nv)%time_axis_index = j   !dimids(j). z1l: Should be j. 
+                                                                 !This will cause problem when appending to existed file.
                     mpp_file(unit)%Var(nv)%size(j)=1    ! dimid length set to 1 here for consistency w/ mpp_write
                  else
                     mpp_file(unit)%Var(nv)%size(j)=mpp_file(unit)%Axis(dimids(j))%len

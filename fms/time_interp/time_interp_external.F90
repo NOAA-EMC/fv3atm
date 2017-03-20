@@ -1,25 +1,10 @@
-!***********************************************************************
-!*                   GNU General Public License                        *
-!* This file is a part of fvGFS.                                       *
-!*                                                                     *
-!* fvGFS is free software; you can redistribute it and/or modify it    *
-!* and are expected to follow the terms of the GNU General Public      *
-!* License as published by the Free Software Foundation; either        *
-!* version 2 of the License, or (at your option) any later version.    *
-!*                                                                     *
-!* fvGFS is distributed in the hope that it will be useful, but        *
-!* WITHOUT ANY WARRANTY; without even the implied warranty of          *
-!* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU   *
-!* General Public License for more details.                            *
-!*                                                                     *
-!* For the full text of the GNU General Public License,                *
-!* write to: Free Software Foundation, Inc.,                           *
-!*           675 Mass Ave, Cambridge, MA 02139, USA.                   *
-!* or see:   http://www.gnu.org/licenses/gpl.html                      *
-!***********************************************************************
 #include  <fms_platform.h>
 
 module time_interp_external_mod
+!
+!<CONTACT EMAIL="Matthew.Harrison@noaa.gov">M.J. Harrison</CONTACT>
+!
+!<REVIEWER EMAIL="hsimmons@iarc.uaf.edu">Harper Simmons</REVIEWER>
 !
 !<OVERVIEW>
 ! Perform I/O and time interpolation of external fields (contained in a file).
@@ -43,6 +28,7 @@ module time_interp_external_mod
 ! </DATA>
 !</NAMELIST>
 
+  use fms_mod, only : write_version_number
   use mpp_mod, only : mpp_error,FATAL,WARNING,mpp_pe, stdout, stdlog, NOTE
   use mpp_mod, only : input_nml_file
   use mpp_io_mod, only : mpp_open, mpp_get_atts, mpp_get_info, MPP_NETCDF, MPP_MULTI, MPP_SINGLE,&
@@ -64,9 +50,8 @@ module time_interp_external_mod
   implicit none
   private
 
-  character(len=128), private :: version= &
-   'CVS $Id$'
-  character(len=128), private :: tagname='Tag $Name$'
+! Include variable "version" to be written to log file.
+#include<file_version.h>
 
   integer, parameter, public  :: NO_REGION=0, INSIDE_REGION=1, OUTSIDE_REGION=2
   integer, parameter, private :: modulo_year= 0001
@@ -127,6 +112,8 @@ module time_interp_external_mod
      module procedure time_interp_external_3d
   end interface
 
+  integer :: outunit
+
   type(ext_fieldtype), save, private, pointer :: field(:) => NULL()
   type(filetype),      save, private, pointer :: opened_files(:) => NULL()
 !Balaji: really should use field%missing
@@ -151,8 +138,8 @@ module time_interp_external_mod
       if(module_initialized) return
       
       logunit = stdlog()
-      write(logunit,'(/a/)') version
-      write(logunit,'(/a/)') tagname
+      outunit = stdout()
+      call write_version_number("TIME_INTERP_EXTERNAL_MOD", version)
 
 #ifdef INTERNAL_FILE_NML
       read (input_nml_file, time_interp_external_nml, iostat=io_status)
@@ -224,7 +211,7 @@ module time_interp_external_mod
 
     function init_external_field(file,fieldname,format,threading,domain,desired_units,&
          verbose,axis_centers,axis_sizes,override,correct_leap_year_inconsistency,&
-         permit_calendar_conversion,use_comp_domain,ierr, nwindows )
+         permit_calendar_conversion,use_comp_domain,ierr, nwindows, ignore_axis_atts )
       
       character(len=*), intent(in)            :: file,fieldname
       integer, intent(in), optional           :: format, threading
@@ -237,6 +224,8 @@ module time_interp_external_mod
                                                  permit_calendar_conversion,use_comp_domain
       integer,          intent(out), optional :: ierr
       integer,          intent(in),  optional :: nwindows
+      logical, optional                       :: ignore_axis_atts
+      
 
       integer :: init_external_field
       
@@ -246,12 +235,13 @@ module time_interp_external_mod
       type(atttype), allocatable, dimension(:) :: global_atts
 
       real(DOUBLE_KIND) :: slope, intercept
-      integer :: form, thread, fset, unit,ndim,nvar,natt,ntime,i,j, outunit
+      integer :: form, thread, fset, unit,ndim,nvar,natt,ntime,i,j
       integer :: iscomp,iecomp,jscomp,jecomp,isglobal,ieglobal,jsglobal,jeglobal
       integer :: isdata,iedata,jsdata,jedata, dxsize, dysize,dxsize_max,dysize_max
       logical :: verb, transpose_xy,use_comp_domain1
       real, dimension(:), allocatable :: tstamp, tstart, tend, tavg
       character(len=1) :: cart
+      character(len=1), dimension(4) :: cart_dir      
       character(len=128) :: units, fld_units
       character(len=128) :: name, msg, calendar_type, timebeg, timeend
       integer :: siz(4), siz_in(4), gxsize, gysize,gxsize_max, gysize_max
@@ -259,9 +249,14 @@ module time_interp_external_mod
       integer :: yr, mon, day, hr, minu, sec
       integer :: len, nfile, nfields_orig, nbuf, nx,ny
       integer :: numwindows
+      logical :: ignore_axatts
+      
 
       if (.not. module_initialized) call mpp_error(FATAL,'Must call time_interp_external_init first')
       if(present(ierr)) ierr = SUCCESS
+      ignore_axatts=.false.
+      cart_dir(1)='X';cart_dir(2)='Y';cart_dir(3)='Z';cart_dir(4)='T'
+      if(present(ignore_axis_atts)) ignore_axatts = ignore_axis_atts
       use_comp_domain1 = .false.
       if(PRESENT(use_comp_domain)) use_comp_domain1 = use_comp_domain
       form=MPP_NETCDF
@@ -345,7 +340,6 @@ module time_interp_external_mod
       init_external_field = -1
       nfields_orig = num_fields
 
-      outunit = stdout()
       do i=1,nvar
          call mpp_get_atts(flds(i),name=name,units=fld_units,ndim=ndim,siz=siz_in)
          call mpp_get_tavg_info(unit,flds(i),flds,tstamp,tstart,tend,tavg)
@@ -400,10 +394,12 @@ module time_interp_external_mod
             cart = 'N'
             call get_axis_cart(fld_axes(j), cart)
             call mpp_get_atts(fld_axes(j),len=len)
-            if (cart == 'N') then
+            if (cart == 'N' .and. .not. ignore_axatts) then
                write(msg,'(a,"/",a)')  trim(file),trim(fieldname)
                call mpp_error(FATAL,'file/field '//trim(msg)// &
                     ' couldnt recognize axis atts in time_interp_external')
+            else if (cart == 'N' .and. ignore_axatts) then
+               cart = cart_dir(j)
             endif
             select case (cart)
             case ('X')
@@ -698,7 +694,7 @@ module time_interp_external_mod
       integer,                    intent(in), optional :: window_id
 
       integer :: nx, ny, nz, interp_method, t1, t2
-      integer :: i1, i2, isc, iec, jsc, jec, mod_time, outunit
+      integer :: i1, i2, isc, iec, jsc, jec, mod_time
       integer :: yy, mm, dd, hh, min, ss
       character(len=256) :: err_msg, filename
 
@@ -715,7 +711,6 @@ module time_interp_external_mod
       nx = size(data,1)
       ny = size(data,2)
       nz = size(data,3)
-      outunit = stdout()
 
       interp_method = LINEAR_TIME_INTERP
       if (PRESENT(interp)) interp_method = interp
@@ -851,7 +846,7 @@ module time_interp_external_mod
       real, intent(inout) :: data
       logical, intent(in), optional :: verbose
       
-      integer :: t1, t2, outunit
+      integer :: t1, t2
       integer :: i1, i2, mod_time
       integer :: yy, mm, dd, hh, min, ss
       character(len=256) :: err_msg, filename
@@ -859,7 +854,6 @@ module time_interp_external_mod
       real :: w1,w2
       logical :: verb
 
-      outunit = stdout()
       verb=.false.
       if (PRESENT(verbose)) verb=verbose
       if (debug_this_module) verb = .true.
@@ -947,7 +941,6 @@ subroutine load_record(field, rec, interp, is_in, ie_in, js_in, je_in, window_id
   ! ---- local vars 
   integer :: ib ! index in the array of input buffers
   integer :: isw,iew,jsw,jew ! boundaries of the domain on each window
-  integer :: outunit
   integer :: is_region, ie_region, js_region, je_region, i, j, n
   integer :: start(4), nread(4)
   logical :: need_compute
@@ -957,7 +950,6 @@ subroutine load_record(field, rec, interp, is_in, ie_in, js_in, je_in, window_id
 
   window_id = 1
   if( PRESENT(window_id_in) ) window_id = window_id_in
-  outunit = stdout()
   need_compute = .true.  
 
 !$OMP CRITICAL
@@ -1056,10 +1048,8 @@ subroutine load_record_0d(field, rec)
   integer            ,     intent(in)           :: rec    ! record number
   ! ---- local vars 
   integer :: ib ! index in the array of input buffers
-  integer :: outunit
   integer :: start(4), nread(4)
 
-  outunit = stdout()
   ib = find_buf_index(rec,field%ibuf)
 
   if(ib>0) then

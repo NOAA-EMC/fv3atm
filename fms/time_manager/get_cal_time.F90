@@ -1,24 +1,8 @@
-!***********************************************************************
-!*                   GNU General Public License                        *
-!* This file is a part of fvGFS.                                       *
-!*                                                                     *
-!* fvGFS is free software; you can redistribute it and/or modify it    *
-!* and are expected to follow the terms of the GNU General Public      *
-!* License as published by the Free Software Foundation; either        *
-!* version 2 of the License, or (at your option) any later version.    *
-!*                                                                     *
-!* fvGFS is distributed in the hope that it will be useful, but        *
-!* WITHOUT ANY WARRANTY; without even the implied warranty of          *
-!* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU   *
-!* General Public License for more details.                            *
-!*                                                                     *
-!* For the full text of the GNU General Public License,                *
-!* write to: Free Software Foundation, Inc.,                           *
-!*           675 Mass Ave, Cambridge, MA 02139, USA.                   *
-!* or see:   http://www.gnu.org/licenses/gpl.html                      *
-!***********************************************************************
 module get_cal_time_mod
 
+!   <CONTACT EMAIL="fms@gfdl.noaa.gov">
+!     fms
+!   </CONTACT>
 !   <OVERVIEW>
 !      Given a time increment as a real number, and base time and calendar
 !      as a character strings, returns time as a time_type variable.
@@ -55,8 +39,8 @@ logical :: allow_calendar_conversion=.true.
 namelist / get_cal_time_nml / allow_calendar_conversion
 ! </NAMELIST>
 
-character(len=128) :: version='$Id$'
-character(len=128) :: tagname='$Name$'
+! Include variable "version" to be written to log file.
+#include<file_version.h>
 
 contains
 !------------------------------------------------------------------------
@@ -194,7 +178,7 @@ if(.not.module_is_initialized) then
   20 call close_file (namelist_unit)
 #endif
 
-  call write_version_number (version, tagname)
+  call write_version_number("GET_CAL_TIME_MOD", version)
   logunit = stdlog()
   if(mpp_pe() == mpp_root_pe()) write (logunit, nml=get_cal_time_nml)
   module_is_initialized = .true.

@@ -1,25 +1,4 @@
-!***********************************************************************
-!*                   GNU General Public License                        *
-!* This file is a part of fvGFS.                                       *
-!*                                                                     *
-!* fvGFS is free software; you can redistribute it and/or modify it    *
-!* and are expected to follow the terms of the GNU General Public      *
-!* License as published by the Free Software Foundation; either        *
-!* version 2 of the License, or (at your option) any later version.    *
-!*                                                                     *
-!* fvGFS is distributed in the hope that it will be useful, but        *
-!* WITHOUT ANY WARRANTY; without even the implied warranty of          *
-!* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU   *
-!* General Public License for more details.                            *
-!*                                                                     *
-!* For the full text of the GNU General Public License,                *
-!* write to: Free Software Foundation, Inc.,                           *
-!*           675 Mass Ave, Cambridge, MA 02139, USA.                   *
-!* or see:   http://www.gnu.org/licenses/gpl.html                      *
-!***********************************************************************
-
 ! -*-f90-*-
-! $Id$
 
 #ifdef use_libSMA
 #include <mpp_comm_sma.inc>
@@ -330,6 +309,18 @@
 #endif
 
 !#################################################
+#undef MPP_GATHER_1D_
+#undef MPP_GATHER_1DV_
+#undef MPP_TYPE_
+#define MPP_TYPE_ logical
+#define MPP_GATHER_1D_ mpp_gather_logical_1d
+#define MPP_GATHER_1DV_ mpp_gather_logical_1dv
+#undef  MPP_GATHER_PELIST_2D_
+#undef  MPP_GATHER_PELIST_3D_
+#define MPP_GATHER_PELIST_2D_ mpp_gather_pelist_logical_2d
+#define MPP_GATHER_PELIST_3D_ mpp_gather_pelist_logical_3d
+#include <mpp_gather.h>
+
 #undef MPP_GATHER_1D_
 #undef MPP_GATHER_1DV_
 #undef MPP_TYPE_

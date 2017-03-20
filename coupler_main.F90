@@ -45,7 +45,6 @@ use constants_mod,     only: constants_init
 use       fms_mod,     only: open_namelist_file, file_exist, check_nml_error,  &
                              error_mesg, fms_init, fms_end, close_file,        &
                              write_version_number, uppercase
-use    fms_io_mod,     only: fms_io_exit
 
 use mpp_mod,           only: mpp_init, mpp_pe, mpp_root_pe, mpp_npes, mpp_get_current_pelist, &
                              mpp_set_current_pelist, stdlog, mpp_error, NOTE, FATAL, WARNING
@@ -56,6 +55,7 @@ use mpp_io_mod,        only: mpp_open, mpp_close, &
 
 use mpp_domains_mod,   only: mpp_get_global_domain, mpp_global_field, CORNER
 use memutils_mod,      only: print_memuse_stats
+use sat_vapor_pres_mod,only: sat_vapor_pres_init
 
 use  diag_manager_mod, only: diag_manager_init, diag_manager_end, &
                              get_base_date, diag_manager_set_time_end
@@ -124,14 +124,10 @@ character(len=128) :: tag = '$Name: ulm_201505 $'
  call mpp_init()
  initClock = mpp_clock_id( 'Initialization' )
  call mpp_clock_begin (initClock) !nesting problem
-#ifdef AVEC_TIMERS
- call mpp_sync()
- call avec_timer_init(mpp_pe(),ret)
-#endif
- 
   
  call fms_init
  call constants_init
+ call sat_vapor_pres_init
 
  call coupler_init
  call print_memuse_stats('after coupler init')
@@ -143,29 +139,15 @@ character(len=128) :: tag = '$Name: ulm_201505 $'
  call mpp_clock_begin(mainClock) !begin main loop
 
  do nc = 1, num_cpld_calls
-#ifdef AVEC_TIMERS
-    call mpp_sync()
-    call avec_timer_start(1)
-#endif
 
     Time_atmos = Time_atmos + Time_step_atmos
 
     call update_atmos_model_dynamics (Atm)
 
-#ifdef AVEC_TIMERS
-    call avec_timer_start(2)
-#endif
     call update_atmos_radiation_physics (Atm)
-#ifdef AVEC_TIMERS
-    call avec_timer_stop(2)
-#endif
 
     call update_atmos_model_state (Atm)
-#ifdef AVEC_TIMERS
-    call avec_timer_stop(1)
-#endif
 
-#ifndef AVEC_TIMERS
 !--- intermediate restart
     if (intrm_rst) then
       if ((nc /= num_cpld_calls) .and. (Time_atmos == Time_restart)) then
@@ -177,7 +159,6 @@ character(len=128) :: tag = '$Name: ulm_201505 $'
     endif
 
     call print_memuse_stats('after full step')
-#endif
 
  enddo
 
@@ -478,8 +459,6 @@ if (restart_days > 0 .or. restart_secs > 0) intrm_rst = .true.
 
       call atmos_model_end (Atm)
 
-      call  fms_io_exit
-
 !----- compute current date ------
 
       call get_date (Time_atmos, date(1), date(2), date(3),  &
@@ -503,7 +482,6 @@ if (restart_days > 0 .or. restart_secs > 0) intrm_rst = .true.
              'Current model time: year, month, day, hour, minute, second'
     endif
     call mpp_close(unit)
-
 
 !----- final output of diagnostic fields ----
 

@@ -1,24 +1,4 @@
-!***********************************************************************
-!*                   GNU General Public License                        *
-!* This file is a part of fvGFS.                                       *
-!*                                                                     *
-!* fvGFS is free software; you can redistribute it and/or modify it    *
-!* and are expected to follow the terms of the GNU General Public      *
-!* License as published by the Free Software Foundation; either        *
-!* version 2 of the License, or (at your option) any later version.    *
-!*                                                                     *
-!* fvGFS is distributed in the hope that it will be useful, but        *
-!* WITHOUT ANY WARRANTY; without even the implied warranty of          *
-!* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU   *
-!* General Public License for more details.                            *
-!*                                                                     *
-!* For the full text of the GNU General Public License,                *
-!* write to: Free Software Foundation, Inc.,                           *
-!*           675 Mass Ave, Cambridge, MA 02139, USA.                   *
-!* or see:   http://www.gnu.org/licenses/gpl.html                      *
-!***********************************************************************
 ! -*-f90-*-
-! $Id$
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !                                                                            !
@@ -488,14 +468,27 @@
       end if
 !write axis attributes
       call mpp_write_meta( unit, axis%id, 'long_name', cval=axis%longname) ; axis%natt = axis%natt + 1
-      call mpp_write_meta( unit, axis%id, 'units',     cval=axis%units) ; axis%natt = axis%natt + 1
+      if (lowercase(trim(axis%units)).ne.'none' .OR. .NOT.cf_compliance) then
+        call mpp_write_meta( unit, axis%id, 'units',     cval=axis%units) ; axis%natt = axis%natt + 1
+      endif
       if( PRESENT(calendar) ) then
-        call mpp_write_meta( unit, axis%id, 'calendar', cval=axis%calendar)
+        if (.NOT.cf_compliance) then
+          call mpp_write_meta( unit, axis%id, 'calendar', cval=axis%calendar)
+        else
+          call mpp_write_meta( unit, axis%id, 'calendar', cval=lowercase(axis%calendar))
+        endif
         axis%natt = axis%natt + 1
       endif
       if( PRESENT(cartesian) ) then
-        call mpp_write_meta( unit, axis%id, 'cartesian_axis', cval=axis%cartesian)
-        axis%natt = axis%natt + 1
+        if (.NOT.cf_compliance) then
+          call mpp_write_meta( unit, axis%id, 'cartesian_axis', cval=axis%cartesian)
+          axis%natt = axis%natt + 1
+        else
+          if (trim(axis%cartesian).ne.'N') then
+            call mpp_write_meta( unit, axis%id, 'axis', cval=axis%cartesian)
+            axis%natt = axis%natt + 1
+          endif
+        endif
       endif
       if( PRESENT(sense) )then
           if( sense.EQ.-1 )then
@@ -574,7 +567,9 @@
       end if
 !write axis attributes
       call mpp_write_meta( unit, axis%id, 'long_name', cval=axis%longname) ; axis%natt = axis%natt + 1
-      call mpp_write_meta( unit, axis%id, 'units',     cval=axis%units) ; axis%natt = axis%natt + 1
+      if (lowercase(trim(axis%units)).ne.'none' .OR. .NOT.cf_compliance) then
+        call mpp_write_meta( unit, axis%id, 'units',     cval=axis%units) ; axis%natt = axis%natt + 1
+      endif
       if( PRESENT(compressed) ) then
         call mpp_write_meta( unit, axis%id, 'compress', cval=axis%compressed)
         axis%natt = axis%natt + 1
@@ -640,7 +635,9 @@
          call mpp_write_meta(unit,axis%id,'long_name',cval=axis%longname); axis%natt=axis%natt+1
       endif
       if(present(units)) then
-         call mpp_write_meta(unit,axis%id,'units',     cval=axis%units); axis%natt=axis%natt+1
+         if (lowercase(trim(axis%units)).ne.'none' .OR. .NOT.cf_compliance) then
+           call mpp_write_meta(unit,axis%id,'units',     cval=axis%units); axis%natt=axis%natt+1
+         endif
       endif
       if( verbose )print '(a,2i6,x,a,2i3)', &
           'MPP_WRITE_META_UNLIMITED: Wrote axis metadata, pe, unit, axis%name, axis%id, axis%did=', &
@@ -798,7 +795,9 @@
       end if
 !write field attributes: these names follow netCDF conventions
       call mpp_write_meta( unit, field%id, 'long_name', cval=field%longname)
-      call mpp_write_meta( unit, field%id, 'units',     cval=field%units)
+      if (lowercase(trim(field%units)).ne.'none' .OR. .NOT.cf_compliance) then
+        call mpp_write_meta( unit, field%id, 'units',     cval=field%units)
+      endif
 !all real attributes must be written as packed
       if( PRESENT(min) .AND. PRESENT(max) )then
           if( field%pack.EQ.1 .OR. field%pack.EQ.2 )then
@@ -839,18 +838,9 @@
          else if (field%pack==0) then ! some safety checks for integer fills
             if ( present(scale).OR.present(add) ) then
                call mpp_error(FATAL,"add,scale not currently implimented for pack=0 int handling, try reals instead.")
-            else
-               if (KIND(field%fill)==DOUBLE_KIND) then
-                  !! check if type safe cast
-                  if ( field%fill /= TRANSFER( IBITS( TRANSFER(field%fill,INT(0,DOUBLE_KIND)) ,0 , BIT_SIZE(INT(0,INT_KIND))) , field%fill ) ) then
-                     call mpp_error(FATAL,"mpp_io(mpp_io_write.inc): For pack=0, fill and data should both be safely castable"// &
-                          "to NF_INT type, _FillValue was actually using more precision than INT_KIND, cannot safely cast.")
-                  end if
-               else if (KIND(field%fill)/=INT_KIND) then
-                  call mpp_error(FATAL,"mpp_io(mpp_io_write.inc): Unexpected KIND of fill, use either 4, or 8 byte KIND.")
-               end if
-               !! then safe to write ival _FillValue and pack
-               call mpp_write_meta( unit, field%id, '_FillValue', ival=TRANSFER( field%fill, INT(0,INT_KIND)), pack=pack )
+            else 
+               ! Trust No One
+               call mpp_write_meta( unit, field%id, '_FillValue', ival=MPP_FILL_INT, pack=pack )
             end if
          else
             a = nint((fill-add)/scale)
@@ -1010,7 +1000,11 @@
           call netcdf_err( error, mpp_file(unit), string=' Attribute='//name )
           end if
       else if( present(cval) )then
-          error = NF_PUT_ATT_TEXT( mpp_file(unit)%ncid, id, name, len_trim(cval), cval )
+          if (.NOT.cf_compliance .or. trim(name).NE.'calendar') then
+            error = NF_PUT_ATT_TEXT( mpp_file(unit)%ncid, id, name, len_trim(cval), cval )
+          else
+            error = NF_PUT_ATT_TEXT( mpp_file(unit)%ncid, id, name, len_trim(cval), lowercase(cval) )
+          endif
           call netcdf_err( error, mpp_file(unit), string=' Attribute='//name )
       else
           call mpp_error( FATAL, 'WRITE_ATTRIBUTE_NETCDF: one of rval, ival, cval must be present.' )
@@ -1070,7 +1064,7 @@
 !                                                                      !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #undef WRITE_RECORD_
-#define WRITE_RECORD_ write_record_r4
+#define WRITE_RECORD_ write_record_default
 #undef MPP_WRITE_2DDECOMP_2D_
 #define MPP_WRITE_2DDECOMP_2D_ mpp_write_2ddecomp_r2d
 #undef MPP_WRITE_2DDECOMP_3D_
@@ -1118,7 +1112,7 @@
 #undef MPP_RANK_
 #define MPP_RANK_ !
 #undef MPP_WRITE_RECORD_
-#define MPP_WRITE_RECORD_ call write_record_r4( unit, field, 1, (/data/), tstamp)
+#define MPP_WRITE_RECORD_ call write_record_default( unit, field, 1, (/data/), tstamp)
 #include <mpp_write.h>
 
 #undef MPP_WRITE_
@@ -1126,7 +1120,7 @@
 #undef MPP_TYPE_
 #define MPP_TYPE_ real
 #undef MPP_WRITE_RECORD_
-#define MPP_WRITE_RECORD_ call write_record_r4( unit, field, size(data(:)), data, tstamp)
+#define MPP_WRITE_RECORD_ call write_record_default( unit, field, size(data(:)), data, tstamp)
 #undef MPP_RANK_
 #define MPP_RANK_ (:)
 #include <mpp_write.h>
@@ -1136,7 +1130,7 @@
 #undef MPP_TYPE_
 #define MPP_TYPE_ real
 #undef MPP_WRITE_RECORD_
-#define MPP_WRITE_RECORD_ call write_record_r4( unit, field, size(data(:,:)), data, tstamp )
+#define MPP_WRITE_RECORD_ call write_record_default( unit, field, size(data(:,:)), data, tstamp )
 #undef MPP_RANK_
 #define MPP_RANK_ (:,:)
 #include <mpp_write.h>
@@ -1146,7 +1140,7 @@
 #undef MPP_TYPE_
 #define MPP_TYPE_ real
 #undef MPP_WRITE_RECORD_
-#define MPP_WRITE_RECORD_ call write_record_r4( unit, field, size(data(:,:,:)), data, tstamp)
+#define MPP_WRITE_RECORD_ call write_record_default( unit, field, size(data(:,:,:)), data, tstamp)
 #undef MPP_RANK_
 #define MPP_RANK_ (:,:,:)
 #include <mpp_write.h>
@@ -1156,7 +1150,7 @@
 #undef MPP_TYPE_
 #define MPP_TYPE_ real
 #undef MPP_WRITE_RECORD_
-#define MPP_WRITE_RECORD_ call write_record_r4( unit, field, size(data(:,:,:,:)), data, tstamp)
+#define MPP_WRITE_RECORD_ call write_record_default( unit, field, size(data(:,:,:,:)), data, tstamp)
 #undef MPP_RANK_
 #define MPP_RANK_ (:,:,:,:)
 #include <mpp_write.h>
@@ -1446,7 +1440,9 @@
       end if
 !write field attributes: these names follow netCDF conventions
       call mpp_write_meta( unit, field%id, 'long_name', cval=field%longname )
-      call mpp_write_meta( unit, field%id, 'units',     cval=field%units    )
+      if (lowercase(trim(field%units)).ne.'none' .OR. .NOT.cf_compliance) then
+        call mpp_write_meta( unit, field%id, 'units',     cval=field%units    )
+      endif
 !all real attributes must be written as packed
       if( (field%min.NE.default_field%min) .AND. (field%max.NE.default_field%max) )then
           if( field%pack.EQ.1 .OR. field%pack.EQ.2 )then

@@ -1,24 +1,11 @@
-!***********************************************************************
-!*                   GNU General Public License                        *
-!* This file is a part of fvGFS.                                       *
-!*                                                                     *
-!* fvGFS is free software; you can redistribute it and/or modify it    *
-!* and are expected to follow the terms of the GNU General Public      *
-!* License as published by the Free Software Foundation; either        *
-!* version 2 of the License, or (at your option) any later version.    *
-!*                                                                     *
-!* fvGFS is distributed in the hope that it will be useful, but        *
-!* WITHOUT ANY WARRANTY; without even the implied warranty of          *
-!* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU   *
-!* General Public License for more details.                            *
-!*                                                                     *
-!* For the full text of the GNU General Public License,                *
-!* write to: Free Software Foundation, Inc.,                           *
-!*           675 Mass Ave, Cambridge, MA 02139, USA.                   *
-!* or see:   http://www.gnu.org/licenses/gpl.html                      *
-!***********************************************************************
 
 module gaussian_topog_mod
+
+! <CONTACT EMAIL="Bruce.Wyman@noaa.gov">
+!   Bruce Wyman
+! </CONTACT>
+
+! <HISTORY SRC="http://www.gfdl.noaa.gov/fms-cgi-bin/cvsweb.cgi/FMS/"/>
 
 ! <OVERVIEW>
 !   Routines for creating Gaussian-shaped land surface topography
@@ -86,8 +73,8 @@ public :: gaussian_topog_init, get_gaussian_topog
 
 !-----------------------------------------------------------------------
 
-character(len=128) :: version = '$Id$'
-character(len=128) :: tagname = '$Name$'
+! Include variable "version" to be written to log file.
+#include<file_version.h>
 
 logical :: do_nml = .true.
 logical :: module_is_initialized = .FALSE.
@@ -133,7 +120,7 @@ real, intent(out) :: zsurf(:,:)
 integer :: n
 
   if (.not.module_is_initialized) then
-     call write_version_number( version, tagname )
+     call write_version_number("GAUSSIAN_TOPOG_MOD", version)
   endif
 
   if(any(shape(zsurf) /= (/size(lon(:)),size(lat(:))/))) then

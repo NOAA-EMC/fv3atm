@@ -1,22 +1,3 @@
-!***********************************************************************
-!*                   GNU General Public License                        *
-!* This file is a part of fvGFS.                                       *
-!*                                                                     *
-!* fvGFS is free software; you can redistribute it and/or modify it    *
-!* and are expected to follow the terms of the GNU General Public      *
-!* License as published by the Free Software Foundation; either        *
-!* version 2 of the License, or (at your option) any later version.    *
-!*                                                                     *
-!* fvGFS is distributed in the hope that it will be useful, but        *
-!* WITHOUT ANY WARRANTY; without even the implied warranty of          *
-!* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU   *
-!* General Public License for more details.                            *
-!*                                                                     *
-!* For the full text of the GNU General Public License,                *
-!* write to: Free Software Foundation, Inc.,                           *
-!*           675 Mass Ave, Cambridge, MA 02139, USA.                   *
-!* or see:   http://www.gnu.org/licenses/gpl.html                      *
-!***********************************************************************
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !                                                                             !
 !                                  MPP_TRANSMIT                               !
@@ -49,7 +30,7 @@
       integer, intent(in),  optional :: tag
       integer, intent(out), optional :: recv_request, send_request
       logical                       :: block_comm
-      integer                       :: i, out_unit
+      integer                       :: i 
       MPP_TYPE_, allocatable, save  :: local_data(:) !local copy used by non-parallel code (no SHMEM or MPI)
       integer                       :: comm_tag
       integer                       :: rsize
@@ -60,10 +41,9 @@
       block_comm = .true.
       if(PRESENT(block)) block_comm = block
 
-      out_unit = stdout()
       if( debug )then
           call SYSTEM_CLOCK(tick)
-          write( out_unit,'(a,i18,a,i6,a,2i6,2i8)' )&
+          write( stdout_unit,'(a,i18,a,i6,a,2i6,2i8)' )&
                'T=',tick, ' PE=',pe, ' MPP_TRANSMIT begin: to_pe, from_pe, put_len, get_len=', to_pe, from_pe, put_len, get_len
       end if
 
@@ -150,7 +130,7 @@
 
       if( debug )then
           call SYSTEM_CLOCK(tick)
-          write( out_unit,'(a,i18,a,i6,a,2i6,2i8)' )&
+          write( stdout_unit,'(a,i18,a,i6,a,2i6,2i8)' )&
                'T=',tick, ' PE=',pe, ' MPP_TRANSMIT end: to_pe, from_pe, put_len, get_len=', to_pe, from_pe, put_len, get_len
       end if
       return
@@ -169,15 +149,14 @@
       MPP_TYPE_, intent(inout) :: data(*)
       integer, intent(in) :: length, from_pe
       integer, intent(in), optional :: pelist(:)
-      integer :: n, i, from_rank, out_unit
+      integer :: n, i, from_rank, stdout_unit
 
       if( .NOT.module_is_initialized )call mpp_error( FATAL, 'MPP_BROADCAST: You must first call mpp_init.' )
       n = get_peset(pelist); if( peset(n)%count.EQ.1 )return
 
-      out_unit = stdout()
       if( debug )then
           call SYSTEM_CLOCK(tick)
-          write( out_unit,'(a,i18,a,i6,a,2i6,2i8)' )&
+          write( stdout_unit,'(a,i18,a,i6,a,2i6,2i8)' )&
                'T=',tick, ' PE=',pe, ' MPP_BROADCAST begin: from_pe, length=', from_pe, length
       end if
 

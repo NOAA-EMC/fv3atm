@@ -32,7 +32,6 @@ SRCS_F90 = \
 		   ./axis_utils/axis_utils.F90                                       \
 		   ./block_control/block_control.F90                                 \
 		   ./column_diagnostics/column_diagnostics.F90                       \
-		   ./constants/constants.F90                                         \
 		   ./coupler/atmos_ocean_fluxes.F90                                  \
 		   ./coupler/coupler_types.F90                                       \
 		   ./coupler/ensemble_manager.F90                                    \
@@ -40,6 +39,7 @@ SRCS_F90 = \
 		   ./diag_manager/diag_axis.F90                                      \
 		   ./diag_manager/diag_data.F90                                      \
 		   ./diag_manager/diag_grid.F90                                      \
+		   ./diag_manager/diag_manifest.F90                                  \
 		   ./diag_manager/diag_manager.F90                                   \
 		   ./diag_manager/diag_output.F90                                    \
 		   ./diag_manager/diag_table.F90                                     \
@@ -61,6 +61,7 @@ SRCS_F90 = \
 		   ./fms/fms.F90                                                     \
 		   ./fms/fms_io.F90                                                  \
 		   ./fms/test_fms_io.F90                                             \
+		   ./fvGFS/constants.F90                                             \
 		   ./horiz_interp/horiz_interp.F90                                   \
 		   ./horiz_interp/horiz_interp_bicubic.F90                           \
 		   ./horiz_interp/horiz_interp_bilinear.F90                          \

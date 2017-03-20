@@ -1,25 +1,4 @@
-!***********************************************************************
-!*                   GNU General Public License                        *
-!* This file is a part of fvGFS.                                       *
-!*                                                                     *
-!* fvGFS is free software; you can redistribute it and/or modify it    *
-!* and are expected to follow the terms of the GNU General Public      *
-!* License as published by the Free Software Foundation; either        *
-!* version 2 of the License, or (at your option) any later version.    *
-!*                                                                     *
-!* fvGFS is distributed in the hope that it will be useful, but        *
-!* WITHOUT ANY WARRANTY; without even the implied warranty of          *
-!* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU   *
-!* General Public License for more details.                            *
-!*                                                                     *
-!* For the full text of the GNU General Public License,                *
-!* write to: Free Software Foundation, Inc.,                           *
-!*           675 Mass Ave, Cambridge, MA 02139, USA.                   *
-!* or see:   http://www.gnu.org/licenses/gpl.html                      *
-!***********************************************************************
-
 ! -*-f90-*-
-! $Id$
 
 
   ! <SUBROUTINE NAME="mpp_define_layout2D" INTERFACE="mpp_define_layout">
@@ -734,7 +713,14 @@
     !--- the position of current pe is changed due to mosaic, because  pes 
     !--- is only part of the pelist in mosaic (pesall). We assume the pe 
     !--- distribution are contious in mosaic.
-    pos = mpp_pe() - mpp_root_pe()
+    pos = -1
+    do n = 0, size(pesall(:))-1
+       if(pesall(n) == mpp_pe() ) then
+          pos = n
+          exit
+       endif
+    enddo
+    if(pos<0) call  mpp_error(FATAL, 'MPP_DEFINE_DOMAINS2D: mpp_pe() is not in the pesall list')
 
     domain%symmetry = .FALSE.
     if(present(symmetry)) domain%symmetry = symmetry
@@ -1011,6 +997,10 @@
        domain%whalo = whalosz; domain%ehalo = ehalosz
        domain%shalo = shalosz; domain%nhalo = nhalosz
        allocate(domain%update_T, domain%update_E, domain%update_C, domain%update_N)
+       domain%update_T%next => NULL()
+       domain%update_E%next => NULL()
+       domain%update_C%next => NULL()
+       domain%update_N%next => NULL()
        allocate(domain%check_E,  domain%check_C,  domain%check_N )
        domain%update_T%nsend = 0
        domain%update_T%nrecv = 0
@@ -1311,6 +1301,12 @@ end subroutine check_message_size
        endif
     endif
     allocate(tile_id_local(num_tile))
+
+!These directives are a work-around for a bug in the CCE compiler, which
+!causes a segmentation fault when the compiler attempts to vectorize a
+!loop containing an optional argument (when -g is included).
+
+!DIR$ NOVECTOR
     do n = 1, num_tile
        if(PRESENT(tile_id)) then
           tile_id_local(n) = tile_id(n)
@@ -1318,6 +1314,8 @@ end subroutine check_message_size
           tile_id_local(n) = n
        endif
     enddo
+!DIR$ VECTOR
+
     do n = 1, num_tile
        if( pe .GE. pe_start(n) .AND. pe .LE. pe_end(n)) then
           pos = pos + 1
@@ -8002,34 +8000,49 @@ subroutine check_overlap_pe_order(domain, overlap, name)
   type(domain2d),    intent(in) :: domain
   type(overlapSpec), intent(in) :: overlap
   character(len=*),  intent(in) :: name
-  integer                       :: nlist, m
-  integer                       :: pos1, pos2
-
-  nlist = size(domain%list(:))
+  integer                       :: m
+  integer                       :: pe1, pe2
 
   do m = 2, overlap%nsend
-     pos1 = overlap%send(m-1)%pe - domain%pe
-     if(pos1 .LT.0) pos1 = pos1 + nlist
-     pos2 = overlap%send(m)%pe - domain%pe
-     if(pos2 .LT.0) pos2 = pos2 + nlist
-     if(pos2 .LE. pos1) then
-        print*, trim(name)//" at pe = ", domain%pe, &
-                ": send pe is ", overlap%send(m-1)%pe, overlap%send(m)%pe
+     pe1 = overlap%send(m-1)%pe
+     pe2 = overlap%send(m)%pe
+     !-- when p1 == domain%pe, pe2 could be any value except domain%pe
+     if( pe2 == domain%pe ) then
+        print*, trim(name)//" at pe = ", domain%pe, ": send pe is ", pe1, pe2
         call mpp_error(FATAL, &
-             "mpp_domains_define.inc(check_overlap_pe_order): pe is not in right order for send")
+             "mpp_domains_define.inc(check_overlap_pe_order): send pe2 can not equal to domain%pe")
+     else if( (pe1 > domain%pe .AND. pe2 > domain%pe) .OR. (pe1 < domain%pe .AND. pe2 < domain%pe)) then
+        if( pe2 < pe1 ) then
+           print*, trim(name)//" at pe = ", domain%pe, ": send pe is ", pe1, pe2
+           call mpp_error(FATAL, &
+             "mpp_domains_define.inc(check_overlap_pe_order): pe is not in right order for send 1")
+        endif
+     else if ( pe2 > domain%pe .AND. pe1 < domain%pe ) then
+        print*, trim(name)//" at pe = ", domain%pe, ": send pe is ", pe1, pe2
+        call mpp_error(FATAL, &
+             "mpp_domains_define.inc(check_overlap_pe_order): pe is not in right order for send 2")
      endif
   enddo
 
 
   do m = 2, overlap%nrecv
-     pos1 = overlap%recv(m-1)%pe - domain%pe
-     if(pos1 .LE.0) pos1 = pos1 + nlist
-     pos2 = overlap%recv(m)%pe - domain%pe
-     if(pos2 .LE.0) pos2 = pos2 + nlist
-     if(pos2 .GE. pos1) then
-        print*, trim(name)//" at pe = ", domain%pe, ": recv pe is ", overlap%recv(m-1)%pe, overlap%recv(m)%pe
+     pe1 = overlap%recv(m-1)%pe
+     pe2 = overlap%recv(m)%pe
+     !-- when p1 == domain%pe, pe2 could be any value except domain%pe
+     if( pe2 == domain%pe ) then
+        print*, trim(name)//" at pe = ", domain%pe, ": recv pe is ", pe1, pe2
         call mpp_error(FATAL, &
-             "mpp_domains_define.inc(check_overlap_pe_order): pe is not in right order for recv")
+             "mpp_domains_define.inc(check_overlap_pe_order): recv pe2 can not equal to domain%pe")
+     else if( (pe1 > domain%pe .AND. pe2 > domain%pe) .OR. (pe1 < domain%pe .AND. pe2 < domain%pe)) then
+        if( pe2 > pe1 ) then
+           print*, trim(name)//" at pe = ", domain%pe, ": recv pe is ", pe1, pe2
+           call mpp_error(FATAL, &
+             "mpp_domains_define.inc(check_overlap_pe_order): pe is not in right order for recv 1")
+        endif
+     else if ( pe2 < domain%pe .AND. pe1 > domain%pe ) then
+        print*, trim(name)//" at pe = ", domain%pe, ": recv pe is ", pe1, pe2
+        call mpp_error(FATAL, &
+             "mpp_domains_define.inc(check_overlap_pe_order): pe is not in right order for recv 2")
      endif
   enddo
 

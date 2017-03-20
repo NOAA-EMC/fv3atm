@@ -1,25 +1,8 @@
-!***********************************************************************
-!*                   GNU General Public License                        *
-!* This file is a part of fvGFS.                                       *
-!*                                                                     *
-!* fvGFS is free software; you can redistribute it and/or modify it    *
-!* and are expected to follow the terms of the GNU General Public      *
-!* License as published by the Free Software Foundation; either        *
-!* version 2 of the License, or (at your option) any later version.    *
-!*                                                                     *
-!* fvGFS is distributed in the hope that it will be useful, but        *
-!* WITHOUT ANY WARRANTY; without even the implied warranty of          *
-!* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU   *
-!* General Public License for more details.                            *
-!*                                                                     *
-!* For the full text of the GNU General Public License,                *
-!* write to: Free Software Foundation, Inc.,                           *
-!*           675 Mass Ave, Cambridge, MA 02139, USA.                   *
-!* or see:   http://www.gnu.org/licenses/gpl.html                      *
-!***********************************************************************
 module interpolator_mod
 !
 ! Purpose: Module to interpolate climatology data to model grid.
+!
+! author: William Cooke William.Cooke@noaa.gov
 !
 #include <fms_platform.h>
 
@@ -30,7 +13,8 @@ use mpp_mod,           only : mpp_error, &
                               mpp_exit,  &
                               mpp_npes,  &
                               WARNING,   &
-                              NOTE
+                              NOTE,      &
+                              input_nml_file
 use mpp_io_mod,        only : mpp_open,          &
                               mpp_close,         &
                               mpp_get_times,     &
@@ -60,7 +44,9 @@ use diag_manager_mod,  only : diag_manager_init, get_base_time, &
                               diag_axis_init
 use fms_mod,           only : lowercase, write_version_number, &
                               fms_init, &
-                              file_exist, mpp_root_pe, stdlog
+                              file_exist, mpp_root_pe, stdlog, &
+                              open_namelist_file, close_file,  &
+                              check_nml_error
 use horiz_interp_mod,  only : horiz_interp_type, &
                               horiz_interp_new,  &
                               horiz_interp_init, &
@@ -116,9 +102,8 @@ interface interp_weighted_scalar
    module procedure interp_weighted_scalar_1D
    module procedure interp_weighted_scalar_2D
 end interface interp_weighted_scalar
-character(len=128) :: version = &
-'$Id: interpolator.F90,v 21.0 2014/12/15 21:47:05 fms Exp $'
-character(len=128) :: tagname = '$Name: ulm $'
+! Include variable "version" to be written to log file.
+#include<file_version.h>
 logical            :: module_is_initialized = .false.
 logical            :: clim_diag_initialized = .false.
 
@@ -345,6 +330,25 @@ if (.not. module_is_initialized) then
   call fms_init
   call diag_manager_init
   call horiz_interp_init
+
+!--------------------------------------------------------------------
+! namelist input
+!--------------------------------------------------------------------
+
+  if(file_exist('input.nml')) then
+#ifdef INTERNAL_FILE_NML
+      read (input_nml_file, nml=interpolator_nml, iostat=io)
+      ierr = check_nml_error(io,'interpolator_nml')
+#else
+      unit = open_namelist_file('input.nml')
+      ierr=1; do while (ierr /= 0)
+      read(unit, nml = interpolator_nml, iostat=io, end=10)
+      ierr = check_nml_error (io, 'interpolator_nml')
+      end do
+10    call close_file(unit)
+#endif
+  end if
+
 endif
 
 clim_type%separate_time_vary_calc = .false.
@@ -1061,7 +1065,13 @@ endif
 
 module_is_initialized = .true.
 
-call write_version_number (version, tagname)
+!---------------------------------------------------------------------
+!    write version number and namelist to logfile.
+!---------------------------------------------------------------------
+call write_version_number("INTERPOLATOR_MOD", version)
+
+      if (mpp_pe() == mpp_root_pe() ) &
+                          write (stdlog(), nml=interpolator_nml)
 
 end subroutine interpolator_init
 
@@ -1891,7 +1901,7 @@ enddo
 
 if (found) then
   if (hinterp_id(j) > 0 ) then
-       result = send_data(hinterp_id(j),col_data(:,:,i),Time)
+       result = send_data(hinterp_id(j),col_data(:,:,i),Time,is_in=istart,js_in=jstart)
   endif
 endif
 
@@ -2298,7 +2308,7 @@ enddo
 
 if (found) then
   if (hinterp_id(j) > 0 ) then
-       result = send_data(hinterp_id(j),col_data,Time)
+       result = send_data(hinterp_id(j),col_data,Time,is_in=istart,js_in=jstart)
   endif
 endif
 
@@ -2696,7 +2706,7 @@ enddo
 
 if (found) then
   if (hinterp_id(j) > 0 ) then
-       result = send_data(hinterp_id(j),hinterp_data,Time)
+       result = send_data(hinterp_id(j),hinterp_data,Time,is_in=istart,js_in=jstart)
   endif
 endif
 

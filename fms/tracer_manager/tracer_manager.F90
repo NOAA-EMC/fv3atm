@@ -1,23 +1,21 @@
-!***********************************************************************
-!*                   GNU General Public License                        *
-!* This file is a part of fvGFS.                                       *
-!*                                                                     *
-!* fvGFS is free software; you can redistribute it and/or modify it    *
-!* and are expected to follow the terms of the GNU General Public      *
-!* License as published by the Free Software Foundation; either        *
-!* version 2 of the License, or (at your option) any later version.    *
-!*                                                                     *
-!* fvGFS is distributed in the hope that it will be useful, but        *
-!* WITHOUT ANY WARRANTY; without even the implied warranty of          *
-!* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU   *
-!* General Public License for more details.                            *
-!*                                                                     *
-!* For the full text of the GNU General Public License,                *
-!* write to: Free Software Foundation, Inc.,                           *
-!*           675 Mass Ave, Cambridge, MA 02139, USA.                   *
-!* or see:   http://www.gnu.org/licenses/gpl.html                      *
-!***********************************************************************
 module tracer_manager_mod
+! <CONTACT EMAIL="William.Cooke@noaa.gov">
+!   William Cooke
+! </CONTACT>
+
+! <REVIEWER EMAIL="Matthew.Harrison@noaa.gov">
+!   Matt Harrison
+! </REVIEWER>
+
+! <REVIEWER EMAIL="Bruce.Wyman@noaa.gov">
+!   Bruce Wyman
+! </REVIEWER>
+
+! <REVIEWER EMAIL="Peter.Phillipps@noaa.gov">
+!   Peter Phillipps
+! </REVIEWER>
+
+! <HISTORY SRC="http://www.gfdl.noaa.gov/fms-cgi-bin/cvsweb.cgi/FMS/"/>
 
 ! <OVERVIEW>
 !   Code to manage the simple addition of tracers to the FMS code.
@@ -144,8 +142,9 @@ end type inst_type
 type(tracer_type), save  :: tracers(MAX_TRACER_FIELDS)
 type(inst_type)  , save  :: instantiations(MAX_TRACER_FIELDS)
 
-character(len=128) :: version = '$Id$'
-character(len=128) :: tagname = '$Name$'
+! Include variable "version" to be written to log file.
+#include<file_version.h>
+
 logical            :: module_is_initialized = .false.
 
 logical            :: verbose_local
@@ -162,7 +161,7 @@ contains
 !      It is included only for backward compatability.
 !   </OVERVIEW>
 !   <DESCRIPTION>
-!     This routine writes the version and tagname to the logfile and 
+!     This routine writes the version to the logfile and 
 !     sets the module initialization flag.
 !   </DESCRIPTION>
 !   <TEMPLATE>
@@ -174,7 +173,7 @@ integer :: model, num_tracers, num_prog, num_diag
   if(module_is_initialized) return
   module_is_initialized = .TRUE.
 
-  call write_version_number (version, tagname)
+  call write_version_number ("TRACER_MANAGER_MOD", version)
   call field_manager_init()
   TRACER_ARRAY = NOTRACER
   do model=1,NUM_MODELS 

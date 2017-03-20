@@ -1,23 +1,7 @@
-!***********************************************************************
-!*                   GNU General Public License                        *
-!* This file is a part of fvGFS.                                       *
-!*                                                                     *
-!* fvGFS is free software; you can redistribute it and/or modify it    *
-!* and are expected to follow the terms of the GNU General Public      *
-!* License as published by the Free Software Foundation; either        *
-!* version 2 of the License, or (at your option) any later version.    *
-!*                                                                     *
-!* fvGFS is distributed in the hope that it will be useful, but        *
-!* WITHOUT ANY WARRANTY; without even the implied warranty of          *
-!* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU   *
-!* General Public License for more details.                            *
-!*                                                                     *
-!* For the full text of the GNU General Public License,                *
-!* write to: Free Software Foundation, Inc.,                           *
-!*           675 Mass Ave, Cambridge, MA 02139, USA.                   *
-!* or see:   http://www.gnu.org/licenses/gpl.html                      *
-!***********************************************************************
 module station_data_mod 
+! <CONTACT EMAIL="Giang.Nong@gfdl.noaa.gov">
+!   Giang Nong
+! </CONTACT>
 ! <OVERVIEW>
 ! This module is used for outputing model results in a list
 ! of stations (not gridded arrrays). The user needs to supply
@@ -92,8 +76,8 @@ character (len=10)  :: time_unit_list(6) = (/'seconds   ', 'minutes   ', &
      'hours     ', 'days      ', 'months    ', 'years     '/)
 integer, parameter  :: EVERY_TIME =  0
 integer, parameter  :: END_OF_RUN = -1
-character(len=128)  :: version = ''
-character(len=128)  :: tagname = ''  
+! Include variable "version" to be written to log file.
+#include<file_version.h>
 character(len=256)  :: global_descriptor
 character (len = 7) :: avg_name = 'average'
 integer             :: total_pe
@@ -304,7 +288,7 @@ namelist /station_data_nml/ max_output_fields, max_stations,init_verbose
 94  continue
     call close_file(iunit)
     call check_duplicate_output_fields
-    call write_version_number (version, tagname)
+    call write_version_number ("STATION_DATA_MOD", version)
     module_is_initialized = .true.
     return
 99  continue
@@ -718,7 +702,7 @@ subroutine opening_file(file)
           time_units,"Length of average period", pack=1)  
     files(file)%f_avg_nitems = diag_field%Field
 
-    diag_field=write_field_meta_data(files(file)%file_unit, 'Time_bounds', (/time_bounds_id,time_axis_id/), &
+    diag_field=write_field_meta_data(files(file)%file_unit, 'Time_bnds', (/time_bounds_id,time_axis_id/), &
            trim(time_unit_list(files(file)%time_units)), &
            'Time axis boundaries', pack=1) 
      files(file)%f_bounds =  diag_field%Field

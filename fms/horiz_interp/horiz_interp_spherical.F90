@@ -1,23 +1,9 @@
-!***********************************************************************
-!*                   GNU General Public License                        *
-!* This file is a part of fvGFS.                                       *
-!*                                                                     *
-!* fvGFS is free software; you can redistribute it and/or modify it    *
-!* and are expected to follow the terms of the GNU General Public      *
-!* License as published by the Free Software Foundation; either        *
-!* version 2 of the License, or (at your option) any later version.    *
-!*                                                                     *
-!* fvGFS is distributed in the hope that it will be useful, but        *
-!* WITHOUT ANY WARRANTY; without even the implied warranty of          *
-!* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU   *
-!* General Public License for more details.                            *
-!*                                                                     *
-!* For the full text of the GNU General Public License,                *
-!* write to: Free Software Foundation, Inc.,                           *
-!*           675 Mass Ave, Cambridge, MA 02139, USA.                   *
-!* or see:   http://www.gnu.org/licenses/gpl.html                      *
-!***********************************************************************
 module horiz_interp_spherical_mod
+
+  ! <CONTACT EMAIL="Matthew.Harrison@noaa.gov"> Matthew Harrison </CONTACT>
+  ! <CONTACT EMAIL="Zhi.Liang@noaa.gov"> Zhi Liang </CONTACT>
+
+  ! <HISTORY SRC="http://www.gfdl.noaa.gov/fms-cgi-bin/cvsweb.cgi/FMS/"/>
 
   ! <OVERVIEW>
   !   Performs spatial interpolation between grids using inverse-distance-weighted scheme.
@@ -74,8 +60,8 @@ module horiz_interp_spherical_mod
   namelist /horiz_interp_spherical_nml/ search_method
 
   !-----------------------------------------------------------------------
-  character(len=128) :: version = '$Id$'
-  character(len=128) :: tagname = '$Name$'
+  ! Include variable "version" to be written to log file.
+#include<file_version.h>
   logical            :: module_is_initialized = .FALSE.
 
 contains
@@ -83,10 +69,10 @@ contains
   !#######################################################################
   !  <SUBROUTINE NAME="horiz_interp_spherical_init">
   !  <OVERVIEW>
-  !     writes version number and tag name to logfile.out
+  !     writes version number to logfile.out
   !  </OVERVIEW>
   !  <DESCRIPTION>       
-  !     writes version number and tag name to logfile.out
+  !     writes version number to logfile.out
   !  </DESCRIPTION>
 
   subroutine horiz_interp_spherical_init
@@ -94,7 +80,7 @@ contains
 
 
     if(module_is_initialized) return
-    call write_version_number (version, tagname)
+    call write_version_number("horiz_interp_spherical_mod", version)
 #ifdef INTERNAL_FILE_NML
       read (input_nml_file, horiz_interp_spherical_nml, iostat=io)
       ierr = check_nml_error(io,'horiz_interp_spherical_nml') 
@@ -504,7 +490,7 @@ end subroutine horiz_interp_spherical_init
     real, intent(out), dimension(:,:,:)         :: wt
     integer, intent(in),               optional :: verbose
     real, intent(in), dimension(:,:),  optional :: mask_in
-    real, intent(out), dimension(:,:), optional :: mask_out
+    real, intent(inout), dimension(:,:), optional :: mask_out
     real, intent(in),                  optional :: missing_value
 
     !--- some local variables ----------------------------------------

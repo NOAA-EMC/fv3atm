@@ -1,25 +1,12 @@
-!***********************************************************************
-!*                   GNU General Public License                        *
-!* This file is a part of fvGFS.                                       *
-!*                                                                     *
-!* fvGFS is free software; you can redistribute it and/or modify it    *
-!* and are expected to follow the terms of the GNU General Public      *
-!* License as published by the Free Software Foundation; either        *
-!* version 2 of the License, or (at your option) any later version.    *
-!*                                                                     *
-!* fvGFS is distributed in the hope that it will be useful, but        *
-!* WITHOUT ANY WARRANTY; without even the implied warranty of          *
-!* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU   *
-!* General Public License for more details.                            *
-!*                                                                     *
-!* For the full text of the GNU General Public License,                *
-!* write to: Free Software Foundation, Inc.,                           *
-!*           675 Mass Ave, Cambridge, MA 02139, USA.                   *
-!* or see:   http://www.gnu.org/licenses/gpl.html                      *
-!***********************************************************************
 
 module amip_interp_mod
 
+
+! <CONTACT EMAIL="Bruce.Wyman@noaa.gov">
+!   Bruce Wyman
+! </CONTACT>
+
+! <HISTORY SRC="http://www.gfdl.noaa.gov/fms-cgi-bin/cvsweb.cgi/FMS/"/>
 
 ! <OVERVIEW>
 !   Provides observed SST and ice mask data sets that have been
@@ -120,8 +107,8 @@ public i_sst, j_sst, sst_ncep, sst_anom, forecast_mode, use_ncep_sst
 
 !  ---- version number -----
 
-character(len=128) :: version = '$Id$'
-character(len=128) :: tagname = '$Name$'
+! Include variable "version" to be written to log file.
+#include<file_version.h>
 
    real, allocatable:: temp1(:,:), temp2(:,:)
 ! add by JHC
@@ -414,7 +401,7 @@ subroutine get_amip_sst (Time, Interp, sst, err_msg, lon_model, lat_model)
     type (date_type) :: Date1, Date2, Udate1, Udate2
 
     type(time_type) :: Amip_Time
-    integer :: tod(3),dum
+    integer :: tod(3),dum(3)
 
 ! add by JHC
     real,    intent(in), dimension(:,:), optional :: lon_model, lat_model
@@ -443,7 +430,7 @@ subroutine get_amip_sst (Time, Interp, sst, err_msg, lon_model, lat_model)
     if ( use_ncep_sst .and. forecast_mode ) no_anom_sst = .false.
 
     if (all(amip_date>0)) then
-       call get_date(Time,dum,dum,dum,tod(1),tod(2),tod(3))
+       call get_date(Time,dum(1),dum(2),dum(3),tod(1),tod(2),tod(3))
        Amip_Time = set_date(amip_date(1),amip_date(2),amip_date(3),tod(1),tod(2),tod(3))
     else
        Amip_Time = Time
@@ -707,7 +694,7 @@ subroutine get_amip_ice (Time, Interp, ice, err_msg)
     type (date_type) :: Date1, Date2, Udate1, Udate2
 
     type(time_type) :: Amip_Time
-    integer :: tod(3),dum
+    integer :: tod(3),dum(3)
 
     if(present(err_msg)) err_msg = ''
     if(.not.Interp%I_am_initialized) then
@@ -720,7 +707,7 @@ subroutine get_amip_ice (Time, Interp, ice, err_msg)
 
     if (any(amip_date>0)) then
 
-       call get_date(Time,dum,dum,dum,tod(1),tod(2),tod(3))
+       call get_date(Time,dum(1),dum(2),dum(3),tod(1),tod(2),tod(3))
 
        Amip_Time = set_date(amip_date(1),amip_date(2),amip_date(3),tod(1),tod(2),tod(3))
 
@@ -958,7 +945,7 @@ endif
 #endif
 
 !  ----- write namelist/version info -----
-    call write_version_number (version, tagname)
+    call write_version_number("AMIP_INTERP_MOD", version)
 
     unit = stdlog ( )
     if (mpp_pe() == 0) then

@@ -1,23 +1,8 @@
-!***********************************************************************
-!*                   GNU General Public License                        *
-!* This file is a part of fvGFS.                                       *
-!*                                                                     *
-!* fvGFS is free software; you can redistribute it and/or modify it    *
-!* and are expected to follow the terms of the GNU General Public      *
-!* License as published by the Free Software Foundation; either        *
-!* version 2 of the License, or (at your option) any later version.    *
-!*                                                                     *
-!* fvGFS is distributed in the hope that it will be useful, but        *
-!* WITHOUT ANY WARRANTY; without even the implied warranty of          *
-!* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU   *
-!* General Public License for more details.                            *
-!*                                                                     *
-!* For the full text of the GNU General Public License,                *
-!* write to: Free Software Foundation, Inc.,                           *
-!*           675 Mass Ave, Cambridge, MA 02139, USA.                   *
-!* or see:   http://www.gnu.org/licenses/gpl.html                      *
-!***********************************************************************
 MODULE diag_table_mod
+  ! <CONTACT EMAIL="seth.underwood@noaa.gov">
+  !   Seth Underwood
+  ! </CONTACT>
+  ! <HISTORY SRC="http://www.gfdl.noaa.gov/fms-cgi-bin/cvsweb.cgi/FMS/" />
   ! <OVERVIEW>
   !   <TT>diag_table_mod</TT> is a set of subroutines use to parse out the data from a <TT>diag_table</TT>.  This module
   !   will also setup the arrays required to store the information by counting the number of input fields, output files, and
@@ -167,7 +152,7 @@ MODULE diag_table_mod
   !           The data reduction method to perform prior to writing data to disk.  Valid options are (redundant names are
   !           separated with commas):
   !           <DL>
-  !             <DT><TT>.TRUE.</TT>, average</DT>
+  !             <DT><TT>.TRUE.</TT>, average, avg, mean</DT>
   !             <DD>Average from the last time written to the current time.</DD>
   !             <DT><TT>.FALSE.</TT>, none</DT>
   !             <DD>No reduction performed.  Write current time step value only.</DD>

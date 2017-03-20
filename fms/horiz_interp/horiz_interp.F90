@@ -1,23 +1,33 @@
-!***********************************************************************
-!*                   GNU General Public License                        *
-!* This file is a part of fvGFS.                                       *
-!*                                                                     *
-!* fvGFS is free software; you can redistribute it and/or modify it    *
-!* and are expected to follow the terms of the GNU General Public      *
-!* License as published by the Free Software Foundation; either        *
-!* version 2 of the License, or (at your option) any later version.    *
-!*                                                                     *
-!* fvGFS is distributed in the hope that it will be useful, but        *
-!* WITHOUT ANY WARRANTY; without even the implied warranty of          *
-!* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU   *
-!* General Public License for more details.                            *
-!*                                                                     *
-!* For the full text of the GNU General Public License,                *
-!* write to: Free Software Foundation, Inc.,                           *
-!*           675 Mass Ave, Cambridge, MA 02139, USA.                   *
-!* or see:   http://www.gnu.org/licenses/gpl.html                      *
-!***********************************************************************
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!                                                                   !!
+!!                   GNU General Public License                      !!
+!!                                                                   !!
+!! This file is part of the Flexible Modeling System (FMS).          !!
+!!                                                                   !!
+!! FMS is free software; you can redistribute it and/or modify       !!
+!! it and are expected to follow the terms of the GNU General Public !!
+!! License as published by the Free Software Foundation.             !!
+!!                                                                   !!
+!! FMS is distributed in the hope that it will be useful,            !!
+!! but WITHOUT ANY WARRANTY; without even the implied warranty of    !!
+!! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the     !!
+!! GNU General Public License for more details.                      !!
+!!                                                                   !!
+!! You should have received a copy of the GNU General Public License !!
+!! along with FMS; if not, write to:                                 !!
+!!          Free Software Foundation, Inc.                           !!
+!!          59 Temple Place, Suite 330                               !!
+!!          Boston, MA  02111-1307  USA                              !!
+!! or see:                                                           !!
+!!          http://www.gnu.org/licenses/gpl.txt                      !!
+!!                                                                   !!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 module horiz_interp_mod
+
+! <CONTACT EMAIL="Zhi.Liang@noaa.gov"> Zhi Liang </CONTACT>
+! <CONTACT EMAIL="Bruce.Wyman@noaa.gov"> Bruce Wyman </CONTACT>
+
+! <HISTORY SRC="http://www.gfdl.noaa.gov/fms-cgi-bin/cvsweb.cgi/FMS/"/>
 
 ! <OVERVIEW>
 !   Performs spatial interpolation between grids.
@@ -226,8 +236,8 @@ use horiz_interp_spherical_mod, only: horiz_interp_spherical_new, horiz_interp_s
  namelist /horiz_interp_nml/ reproduce_siena
 
 !-----------------------------------------------------------------------
- character(len=128) :: version = '$Id$'
- character(len=128) :: tagname = '$Name$'
+! Include variable "version" to be written to log file.
+#include<file_version.h>
  logical            :: module_is_initialized = .FALSE.
 !-----------------------------------------------------------------------
 
@@ -236,17 +246,17 @@ contains
 !#######################################################################
 !  <SUBROUTINE NAME="horiz_interp_init">
 !  <OVERVIEW>
-!     writes version number and tag name to logfile.out
+!     writes version number to logfile.out
 !  </OVERVIEW>
 !  <DESCRIPTION>       
-!     writes version number and tag name to logfile.out
+!     writes version number to logfile.out
 !  </DESCRIPTION>
 
   subroutine horiz_interp_init
   integer :: unit, ierr, io
 
   if(module_is_initialized) return
-  call write_version_number (version, tagname)
+  call write_version_number("HORIZ_INTERP_MOD", version)
 
 #ifdef INTERNAL_FILE_NML
   read (input_nml_file, horiz_interp_nml, iostat=io)
@@ -312,7 +322,7 @@ contains
     logical, intent(in),                 optional :: src_modulo
     logical, intent(in),                 optional :: grid_at_center
     real, intent(in), dimension(:,:),    optional :: mask_in  ! dummy
-    real, intent(out),dimension(:,:),    optional :: mask_out ! dummy
+    real, intent(inout),dimension(:,:),  optional :: mask_out ! dummy
     !-----------------------------------------------------------------------
     real, dimension(:,:), allocatable :: lon_src, lat_src, lon_dst, lat_dst
     real, dimension(:),   allocatable :: lon_src_1d, lat_src_1d, lon_dst_1d, lat_dst_1d
