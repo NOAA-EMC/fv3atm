@@ -1,22 +1,3 @@
-!***********************************************************************
-!*                   GNU General Public License                        *
-!* This file is a part of fvGFS.                                       *
-!*                                                                     *
-!* fvGFS is free software; you can redistribute it and/or modify it    *
-!* and are expected to follow the terms of the GNU General Public      *
-!* License as published by the Free Software Foundation; either        *
-!* version 2 of the License, or (at your option) any later version.    *
-!*                                                                     *
-!* fvGFS is distributed in the hope that it will be useful, but        *
-!* WITHOUT ANY WARRANTY; without even the implied warranty of          *
-!* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU   *
-!* General Public License for more details.                            *
-!*                                                                     *
-!* For the full text of the GNU General Public License,                *
-!* write to: Free Software Foundation, Inc.,                           *
-!*           675 Mass Ave, Cambridge, MA 02139, USA.                   *
-!* or see:   http://www.gnu.org/licenses/gpl.html                      *
-!***********************************************************************
 
  module sat_vapor_pres_k_mod
 
@@ -47,8 +28,8 @@
  implicit none
  private
 
- character(len=128), parameter :: version = '$Id$'
- character(len=128), parameter :: tagname = '$Name$'
+! Include variable "version" to be written to log file.
+#include<file_version.h>
 
  public :: sat_vapor_pres_init_k
  public :: lookup_es_k
@@ -1143,7 +1124,6 @@
      tmp = temp(i,j,k)-tminl
      ind = int(dtinvl*(tmp+tepsl))
      if (ind < 0 .or. ind >= table_siz) then
-       print*, i,j,k,temp(i,j,k)
        nbad = nbad+1
      else
        del = tmp-dtres*real(ind)
@@ -1252,7 +1232,6 @@
      ind = int(dtinvl*(tmp+tepsl))
      if (ind < 0 .or. ind >= table_siz)  then
        nbad = nbad+1
-       print*, i,j,k,temp(i,j,k)
      else
        del = tmp-dtres*real(ind)
        esat(i,j,k) = TABLE(ind+1) + &
@@ -1280,7 +1259,6 @@
      tmp = temp(i,j,k)-tminl
      ind = int(dtinvl*(tmp+tepsl))
      if (ind < 0 .or. ind >= table_siz)  then
-       print*, i,j,k,temp(i,j,k)
        nbad = nbad+1
      else
        del = tmp-dtres*real(ind)
@@ -1436,7 +1414,6 @@
      tmp = temp(i,j,k)-tminl
      ind = int(dtinvl*(tmp+tepsl))
      if (ind < 0 .or. ind >= table_siz) then
-       print*, i,j,k,temp(i,j,k)
        nbad = nbad+1
      else
        del = tmp-dtres*real(ind)
@@ -1544,7 +1521,6 @@
      tmp = temp(i,j,k)-tminl
      ind = int(dtinvl*(tmp+tepsl))
      if (ind < 0 .or. ind >= table_siz)  then
-       print*, i,j,k,temp(i,j,k)
        nbad = nbad+1
      else
        del = tmp-dtres*real(ind)
@@ -1573,7 +1549,6 @@
      tmp = temp(i,j,k)-tminl
      ind = int(dtinvl*(tmp+tepsl))
      if (ind < 0 .or. ind >= table_siz)  then
-       print*, i,j,k,temp(i,j,k)
        nbad = nbad+1
      else
        del = tmp-dtres*real(ind)
@@ -1731,7 +1706,6 @@
      tmp = temp(i,j,k)-tminl
      ind = int(dtinvl*(tmp+tepsl))
      if (ind < 0 .or. ind >= table_siz) then
-       print*, i,j,k,temp(i,j,k)
        nbad = nbad+1
      else
        del = tmp-dtres*real(ind)
@@ -1840,7 +1814,6 @@
      ind = int(dtinvl*(tmp+tepsl))
      if (ind < 0 .or. ind >= table_siz)  then
        nbad = nbad+1
-       print*, i,j,k,temp(i,j,k)
      else
        del = tmp-dtres*real(ind)
        esat(i,j,k) = TABLE3(ind+1) + &
@@ -1868,7 +1841,6 @@
      tmp = temp(i,j,k)-tminl
      ind = int(dtinvl*(tmp+tepsl))
      if (ind < 0 .or. ind >= table_siz)  then
-       print*, i,j,k,temp(i,j,k)
        nbad = nbad+1
      else
        del = tmp-dtres*real(ind)

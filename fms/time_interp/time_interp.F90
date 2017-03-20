@@ -1,24 +1,11 @@
-!***********************************************************************
-!*                   GNU General Public License                        *
-!* This file is a part of fvGFS.                                       *
-!*                                                                     *
-!* fvGFS is free software; you can redistribute it and/or modify it    *
-!* and are expected to follow the terms of the GNU General Public      *
-!* License as published by the Free Software Foundation; either        *
-!* version 2 of the License, or (at your option) any later version.    *
-!*                                                                     *
-!* fvGFS is distributed in the hope that it will be useful, but        *
-!* WITHOUT ANY WARRANTY; without even the implied warranty of          *
-!* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU   *
-!* General Public License for more details.                            *
-!*                                                                     *
-!* For the full text of the GNU General Public License,                *
-!* write to: Free Software Foundation, Inc.,                           *
-!*           675 Mass Ave, Cambridge, MA 02139, USA.                   *
-!* or see:   http://www.gnu.org/licenses/gpl.html                      *
-!***********************************************************************
 
 module time_interp_mod
+
+! <CONTACT EMAIL="Bruce.Wyman@noaa.gov">
+!   Bruce Wyman
+! </CONTACT>
+
+! <HISTORY SRC="http://www.gfdl.noaa.gov/fms-cgi-bin/cvsweb.cgi/FMS/"/>
 
 ! <OVERVIEW>
 !   Computes a weight and dates/indices for linearly interpolating between two dates.
@@ -209,8 +196,8 @@ integer, public, parameter :: NONE=0, YEAR=1, MONTH=2, DAY=3
    integer :: yrmod, momod, dymod
    logical :: mod_leapyear
 
-   character(len=128) :: version='$Id$'
-   character(len=128) :: tagname='$Name$'
+! Include variable "version" to be written to log file.
+#include<file_version.h>
 
    logical :: module_is_initialized=.FALSE.
    logical :: perthlike_behavior=.FALSE.
@@ -238,7 +225,7 @@ contains
    20 call close_file (namelist_unit)
 #endif
 
-   call write_version_number( version, tagname )
+   call write_version_number("TIME_INTERP_MOD", version)
    logunit = stdlog()
    write(logunit,time_interp_nml)
 

@@ -1,22 +1,3 @@
-!***********************************************************************
-!*                   GNU General Public License                        *
-!* This file is a part of fvGFS.                                       *
-!*                                                                     *
-!* fvGFS is free software; you can redistribute it and/or modify it    *
-!* and are expected to follow the terms of the GNU General Public      *
-!* License as published by the Free Software Foundation; either        *
-!* version 2 of the License, or (at your option) any later version.    *
-!*                                                                     *
-!* fvGFS is distributed in the hope that it will be useful, but        *
-!* WITHOUT ANY WARRANTY; without even the implied warranty of          *
-!* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU   *
-!* General Public License for more details.                            *
-!*                                                                     *
-!* For the full text of the GNU General Public License,                *
-!* write to: Free Software Foundation, Inc.,                           *
-!*           675 Mass Ave, Cambridge, MA 02139, USA.                   *
-!* or see:   http://www.gnu.org/licenses/gpl.html                      *
-!***********************************************************************
 module horiz_interp_bicubic_mod
 
   use mpp_mod,               only: mpp_error, FATAL, stdout, mpp_pe, mpp_root_pe
@@ -60,8 +41,8 @@ module horiz_interp_bicubic_mod
     module procedure horiz_interp_bicubic_new_1d_s
   end interface
 
-   character(len=128) :: version="$Id$"
-   character(len=128) :: tagname = '$Name$'
+! Include variable "version" to be written to log file.
+#include<file_version.h>
    logical            :: module_is_initialized = .FALSE.
    integer            :: verbose_bicubic = 0
    
@@ -94,16 +75,16 @@ module horiz_interp_bicubic_mod
   !#######################################################################
   !  <SUBROUTINE NAME="horiz_interp_bicubic_init">
   !  <OVERVIEW>
-  !     writes version number and tag name to logfile.out
+  !     writes version number to logfile.out
   !  </OVERVIEW>
   !  <DESCRIPTION>       
-  !     writes version number and tag name to logfile.out
+  !     writes version number to logfile.out
   !  </DESCRIPTION>
 
   subroutine horiz_interp_bicubic_init
 
      if(module_is_initialized) return
-     call write_version_number (version, tagname)
+     call write_version_number("HORIZ_INTERP_BICUBIC_MOD", version)
      module_is_initialized = .true.
      tpi = 2.0*PI
 

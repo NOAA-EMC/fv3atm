@@ -1,25 +1,9 @@
-!***********************************************************************
-!*                   GNU General Public License                        *
-!* This file is a part of fvGFS.                                       *
-!*                                                                     *
-!* fvGFS is free software; you can redistribute it and/or modify it    *
-!* and are expected to follow the terms of the GNU General Public      *
-!* License as published by the Free Software Foundation; either        *
-!* version 2 of the License, or (at your option) any later version.    *
-!*                                                                     *
-!* fvGFS is distributed in the hope that it will be useful, but        *
-!* WITHOUT ANY WARRANTY; without even the implied warranty of          *
-!* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU   *
-!* General Public License for more details.                            *
-!*                                                                     *
-!* For the full text of the GNU General Public License,                *
-!* write to: Free Software Foundation, Inc.,                           *
-!*           675 Mass Ave, Cambridge, MA 02139, USA.                   *
-!* or see:   http://www.gnu.org/licenses/gpl.html                      *
-!***********************************************************************
 #include <fms_platform.h>
 
 MODULE diag_data_mod
+  ! <CONTACT EMAIL="seth.underwood@noaa.gov">
+  !   Seth Underwood
+  ! </CONTACT>
 
   ! <OVERVIEW>
   !   Type descriptions and global variables for the diag_manager modules.
@@ -50,9 +34,9 @@ MODULE diag_data_mod
   ! </DESCRIPTION>
 
   USE time_manager_mod, ONLY: time_type
-  USE mpp_domains_mod,  ONLY: domain1d, domain2d
-  USE mpp_io_mod,       ONLY: fieldtype
-  USE fms_mod, ONLY: WARNING
+  USE mpp_domains_mod, ONLY: domain1d, domain2d
+  USE mpp_io_mod, ONLY: fieldtype
+  USE fms_mod, ONLY: WARNING, write_version_number
 #ifdef use_netCDF
   ! NF90_FILL_REAL has value of 9.9692099683868690e+36.
   USE netcdf, ONLY: NF_FILL_REAL => NF90_FILL_REAL
@@ -503,6 +487,7 @@ MODULE diag_data_mod
      LOGICAL :: static
      LOGICAL :: time_max ! true if the output field is maximum over time interval
      LOGICAL :: time_min ! true if the output field is minimum over time interval
+     LOGICAL :: time_sum ! true if the output field is summed over time interval
      LOGICAL :: time_ops ! true if any of time_min, time_max, time_rms or time_average is true
      INTEGER  :: pack
      INTEGER :: pow_value !< Power value to use for mean_pow(n) calculations
@@ -574,6 +559,12 @@ MODULE diag_data_mod
   !   </DATA>
   !   <DATA NAME="tile_count" TYPE="INTEGER">
   !   </DATA>
+  !   <DATA NAME="attributes" TYPE="TYPE(diag_atttype), DIMENSION(:)">
+  !     Array to hold user definable attributes
+  !   </DATA>
+  !   <DATA NAME="num_attributes" TYPE="INTEGER" >
+  !     Number of defined attibutes
+  !   </DATA>
   TYPE diag_axis_type
      CHARACTER(len=128) :: name
      CHARACTER(len=256) :: units, long_name
@@ -588,6 +579,8 @@ MODULE diag_data_mod
      TYPE(domain2d), dimension(MAX_SUBAXES) :: subaxis_domain2
      CHARACTER(len=128) :: aux
      INTEGER :: tile_count
+     TYPE(diag_atttype), _ALLOCATABLE, dimension(:) :: attributes _NULL
+     INTEGER :: num_attributes
   END TYPE diag_axis_type
   ! </TYPE>
 
@@ -604,11 +597,8 @@ MODULE diag_data_mod
   END TYPE diag_global_att_type
   ! </TYPE>
 
-  ! Private CHARACTER Arrays for the CVS version and tagname.
-  CHARACTER(len=128),PRIVATE  :: version =&
-       & '$Id$'
-  CHARACTER(len=128),PRIVATE  :: tagname =&
-       & '$Name$'
+! Include variable "version" to be written to log file.
+#include<file_version.h>
 
   ! <!-- Other public variables -->
   ! <DATA NAME="num_files" TYPE="INTEGER" DEFAULT="0">
@@ -665,14 +655,13 @@ MODULE diag_data_mod
   ! <DATA NAME="max_file_attributes" TYPE="INTEGER" DEFAULT="2">
   !   Maximum number of user definable global attributes per file.
   ! </DATA>
+  ! <DATA NAME="max_axis_attributes" TYPE="INTEGER" DEFAULT="2">
+  !   Maximum number of user definable attributes per axis.
+  ! </DATA>
   ! <DATA NAME="prepend_date" TYPE="LOGICAL" DEFAULT=".TRUE.">
   !   Indicates if the file start date will be prepended to the file name.  <TT>.TRUE.</TT> is
   !   only supported if the diag_manager_init routine is called with the optional time_init parameter.
   !   This was usually done by FRE after the model run.
-  ! </DATA>
-  ! <DATA NAME="long_date" TYPE="LOGICAL" DEFAULT=".FALSE.">
-  !   If <TT>.TRUE.</TT> then prepend the file start date in long format to the output file.  <TT>.TRUE.</TT> is only supported if the
-  !   diag_manager_init routine is called with the optional time_init parameter.  Note: This is a specal case used for NWP outputs.
   ! </DATA>
   ! <DATA NAME="region_out_use_alt_value" TYPE="LOGICAL" DEFAULT=".TRUE.">
   !   Will determine which value to use when checking a regional output if the region is the full axis or a sub-axis.
@@ -695,10 +684,13 @@ MODULE diag_data_mod
   LOGICAL :: oor_warnings_fatal = .FALSE.
   LOGICAL :: region_out_use_alt_value = .TRUE.
 
-  INTEGER :: max_field_attributes = 2
-  INTEGER :: max_file_attributes = 2
-  LOGICAL :: prepend_date = .TRUE.
-  LOGICAL :: long_date = .FALSE.
+  INTEGER :: max_field_attributes = 2 !< Maximum number of user definable attributes per field.
+  INTEGER :: max_file_attributes = 2 !< Maximum number of user definable global attributes per file.
+  INTEGER :: max_axis_attributes = 4 !< Maximum number of user definable attributes per axis.
+  LOGICAL :: prepend_date = .TRUE. !< Should the history file have the start date prepended to the file name
+  LOGICAL :: write_manifest_file = .FALSE. !< Indicates if the manifest file should be written.  If writing many
+                                           !! regional files, then the termination time may increase causing job to time out.
+
   ! <!-- netCDF variable -->
   ! <DATA NAME="FILL_VALUE" TYPE="REAL" DEFAULT="NF90_FILL_REAL">
   !   Fill value used.  Value will be <TT>NF90_FILL_REAL</TT> if using the
@@ -748,7 +740,9 @@ MODULE diag_data_mod
   ! <!-- Even More Variables -->
   ! <DATA NAME="time_zero" TYPE="TYPE(time_type)" />
   ! <DATA NAME="first_send_data_call" TYPE="LOGICAL" DEFAULT=".TRUE." />
-  ! <DATA NAME="module_is_initialized" TYPE="LOGICAL" DEFAULT=".FALSE." />
+  ! <DATA NAME="module_is_initialized" TYPE="LOGICAL" DEFAULT=".FALSE.">
+  !   Indicate if diag_manager has been initialized
+  ! </DATA>
   ! <DATA NAME="diag_log_unit" TYPE="INTEGER" />
   ! <DATA NAME="time_unit_list" TYPE="CHARACTER(len=10), DIMENSION(6)"
   !       DEFAULT="(/'seconds   ', 'minutes   ', 'hours     ', 'days      ', 'months    ', 'years     '/)" />
@@ -762,4 +756,25 @@ MODULE diag_data_mod
   CHARACTER(len=32) :: pelist_name
   INTEGER :: oor_warning = WARNING
 
+CONTAINS
+
+  ! <SUBROUTINE NAME="diag_data_init">
+  !   <OVERVIEW>
+  !     Write the version number of this file
+  !   </OVERVIEW>
+  !   <TEMPLATE>
+  !     SUBROUTINE diag_util_init
+  !   </TEMPLATE>
+  !   <DESCRIPTION>
+  !     Write the version number of this file to the log file.
+  !   </DESCRIPTION>
+  SUBROUTINE diag_data_init()
+    IF (module_is_initialized) THEN
+       RETURN
+    END IF
+
+    ! Write version number out to log file
+    call write_version_number("DIAG_DATA_MOD", version)
+  END SUBROUTINE diag_data_init
+  ! </SUBROUTINE>
 END MODULE diag_data_mod

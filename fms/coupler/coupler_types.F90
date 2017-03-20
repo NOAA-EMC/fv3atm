@@ -1,23 +1,36 @@
-!***********************************************************************
-!*                   GNU General Public License                        *
-!* This file is a part of fvGFS.                                       *
-!*                                                                     *
-!* fvGFS is free software; you can redistribute it and/or modify it    *
-!* and are expected to follow the terms of the GNU General Public      *
-!* License as published by the Free Software Foundation; either        *
-!* version 2 of the License, or (at your option) any later version.    *
-!*                                                                     *
-!* fvGFS is distributed in the hope that it will be useful, but        *
-!* WITHOUT ANY WARRANTY; without even the implied warranty of          *
-!* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU   *
-!* General Public License for more details.                            *
-!*                                                                     *
-!* For the full text of the GNU General Public License,                *
-!* write to: Free Software Foundation, Inc.,                           *
-!*           675 Mass Ave, Cambridge, MA 02139, USA.                   *
-!* or see:   http://www.gnu.org/licenses/gpl.html                      *
-!***********************************************************************
 module coupler_types_mod  !{
+!-----------------------------------------------------------------------
+!                   GNU General Public License                        
+! This file is a part of MOM.                                                                 
+!                                                                      
+! MOM is free software; you can redistribute it and/or modify it and  
+! are expected to follow the terms of the GNU General Public License  
+! as published by the Free Software Foundation; either version 2 of   
+! the License, or (at your option) any later version.                 
+!                                                                      
+! MOM is distributed in the hope that it will be useful, but WITHOUT    
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY  
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public    
+! License for more details.                                           
+!                                                                      
+! For the full text of the GNU General Public License,                
+! write to: Free Software Foundation, Inc.,                           
+!           675 Mass Ave, Cambridge, MA 02139, USA.                   
+! or see:   http://www.gnu.org/licenses/gpl.html                      
+!-----------------------------------------------------------------------
+!
+!<CONTACT EMAIL="Richard.Slater@noaa.gov">
+! Richard D. Slater 
+!</CONTACT>
+!
+! <REVIEWER EMAIL="John.Dunne@noaa.gov">
+! John Dunne
+! </REVIEWER>
+!
+!<OVERVIEW>
+! This module contains type declarations for the coupler.
+!</OVERVIEW>
+!
 !<DESCRIPTION>
 ! This module contains type declarations for the coupler.
 !</DESCRIPTION>
@@ -153,13 +166,14 @@ module coupler_types_mod  !{
 !                                    'mol/m^3'
 !
 
+use fms_mod,           only: write_version_number
 use field_manager_mod, only: fm_field_name_len, fm_string_len, fm_dump_list
 
 implicit none
 !
 !-----------------------------------------------------------------------
-  character(len=128) :: version = '$Id$'
-  character(len=128) :: tag = '$Name$'
+! Include variable "version" to be written to log file.
+#include<file_version.h>
 !-----------------------------------------------------------------------
 real, parameter :: bound_tol = 1e-7
 
@@ -450,6 +464,10 @@ if (module_is_initialized) then  !{
   return
 endif  !}
 
+!
+!       Write out the version of the file to the log file
+!
+call write_version_number(trim(mod_name), version)
 !
 !       Set other defaults for the fm_util_set_value routines
 !

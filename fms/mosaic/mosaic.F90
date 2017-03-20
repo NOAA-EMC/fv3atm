@@ -1,23 +1,10 @@
-!***********************************************************************
-!*                   GNU General Public License                        *
-!* This file is a part of fvGFS.                                       *
-!*                                                                     *
-!* fvGFS is free software; you can redistribute it and/or modify it    *
-!* and are expected to follow the terms of the GNU General Public      *
-!* License as published by the Free Software Foundation; either        *
-!* version 2 of the License, or (at your option) any later version.    *
-!*                                                                     *
-!* fvGFS is distributed in the hope that it will be useful, but        *
-!* WITHOUT ANY WARRANTY; without even the implied warranty of          *
-!* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU   *
-!* General Public License for more details.                            *
-!*                                                                     *
-!* For the full text of the GNU General Public License,                *
-!* write to: Free Software Foundation, Inc.,                           *
-!*           675 Mass Ave, Cambridge, MA 02139, USA.                   *
-!* or see:   http://www.gnu.org/licenses/gpl.html                      *
-!***********************************************************************
 module mosaic_mod
+
+! <CONTACT EMAIL="Zhi.Liang@noaa.gov">
+!   Zhi Liang
+! </CONTACT>
+
+! <HISTORY SRC="http://www.gfdl.noaa.gov/fms-cgi-bin/cvsweb.cgi/FMS/"/>
 
 ! <OVERVIEW>
 !    <TT>mosaic_mod</TT> implements some utility routines to read mosaic information.
@@ -30,6 +17,7 @@ module mosaic_mod
 !    grid information. Each routine will call a C-version routine to get these information.
 ! </DESCRIPTION>
 
+use fms_mod,    only : write_version_number
 use mpp_mod,    only : mpp_error, FATAL, mpp_pe, mpp_root_pe
 use mpp_io_mod, only : MPP_MULTI
 use fms_io_mod, only : dimension_size, field_exist, read_data, read_compressed
@@ -61,9 +49,8 @@ public :: calc_mosaic_grid_great_circle_area
 public :: is_inside_polygon
 
 logical :: module_is_initialized = .true.
-! version information varaible
- character(len=128) :: version = '$Id$'
- character(len=128) :: tagname = '$Name$'
+! Include variable "version" to be written to log file.
+#include<file_version.h>
 
 contains
 
@@ -86,7 +73,7 @@ subroutine mosaic_init()
   module_is_initialized = .TRUE.
 
 !--------- write version number and namelist ------------------
-!  call write_version_number (version, tagname)
+  call write_version_number("MOSAIC_MOD", version)
 
 end subroutine mosaic_init
 ! </SUBROUTINE>

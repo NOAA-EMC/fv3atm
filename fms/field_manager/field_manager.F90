@@ -1,22 +1,3 @@
-!***********************************************************************
-!*                   GNU General Public License                        *
-!* This file is a part of fvGFS.                                       *
-!*                                                                     *
-!* fvGFS is free software; you can redistribute it and/or modify it    *
-!* and are expected to follow the terms of the GNU General Public      *
-!* License as published by the Free Software Foundation; either        *
-!* version 2 of the License, or (at your option) any later version.    *
-!*                                                                     *
-!* fvGFS is distributed in the hope that it will be useful, but        *
-!* WITHOUT ANY WARRANTY; without even the implied warranty of          *
-!* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU   *
-!* General Public License for more details.                            *
-!*                                                                     *
-!* For the full text of the GNU General Public License,                *
-!* write to: Free Software Foundation, Inc.,                           *
-!*           675 Mass Ave, Cambridge, MA 02139, USA.                   *
-!* or see:   http://www.gnu.org/licenses/gpl.html                      *
-!***********************************************************************
 module field_manager_mod
 #ifndef MAXFIELDS_ 
 #define MAXFIELDS_ 150
@@ -25,6 +6,22 @@ module field_manager_mod
 #ifndef MAXFIELDMETHODS_
 #define MAXFIELDMETHODS_ 150
 #endif
+
+!
+! <CONTACT EMAIL="William.Cooke@noaa.gov"> William Cooke
+! </CONTACT>
+! 
+! <REVIEWER EMAIL="Richard.Slater@noaa.gov"> Richard D. Slater
+! </REVIEWER>
+!
+! <REVIEWER EMAIL="Matthew.Harrison@noaa.gov"> Matthew Harrison
+! </REVIEWER>
+!
+! <REVIEWER EMAIL="John.Dunne@noaa.gov"> John P. Dunne
+! </REVIEWER>
+!
+! <HISTORY
+!  SRC="http://www.gfdl.noaa.gov/fms-cgi-bin/cvsweb.cgi/FMS/shared/field_manager/field_manager.F90"/>
 
 ! <OVERVIEW>
 
@@ -184,9 +181,8 @@ use    fms_mod, only : lowercase,   &
 implicit none
 private
 
-
-character(len=128) :: version = '$Id$'
-character(len=128) :: tagname = '$Name$'
+! Include variable "version" to be written to log file.
+#include<file_version.h>
 logical            :: module_is_initialized  = .false.
 
 !+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -655,7 +651,7 @@ endif
 
 call mpp_open(iunit,file=trim(tbl_name), form=MPP_ASCII, action=MPP_RDONLY)
 !write_version_number should precede all writes to stdlog from field_manager
-call write_version_number (version, tagname)
+call write_version_number("FIELD_MANAGER_MOD", version)
 log_unit = stdlog()
 do while (.TRUE.)
    read(iunit,'(a)',end=89,err=99) record
@@ -1305,7 +1301,7 @@ character(len=64), parameter :: note_header  = '==>Note from ' // trim(module_na
 
 integer :: unit 
 
-call write_version_number (version, tagname)
+call write_version_number("FIELD_MANAGER_MOD", version)
 if ( mpp_pe() == mpp_root_pe() ) then
    unit = stdlog()
    write (unit,'(/,(a))') trim(note_header), 'Exiting field_manager, have a nice day ...'

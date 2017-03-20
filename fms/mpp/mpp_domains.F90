@@ -1,25 +1,32 @@
-!***********************************************************************
-!*                   GNU General Public License                        *
-!* This file is a part of fvGFS.                                       *
-!*                                                                     *
-!* fvGFS is free software; you can redistribute it and/or modify it    *
-!* and are expected to follow the terms of the GNU General Public      *
-!* License as published by the Free Software Foundation; either        *
-!* version 2 of the License, or (at your option) any later version.    *
-!*                                                                     *
-!* fvGFS is distributed in the hope that it will be useful, but        *
-!* WITHOUT ANY WARRANTY; without even the implied warranty of          *
-!* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU   *
-!* General Public License for more details.                            *
-!*                                                                     *
-!* For the full text of the GNU General Public License,                *
-!* write to: Free Software Foundation, Inc.,                           *
-!*           675 Mass Ave, Cambridge, MA 02139, USA.                   *
-!* or see:   http://www.gnu.org/licenses/gpl.html                      *
-!***********************************************************************
 !-----------------------------------------------------------------------
 !   Domain decomposition and domain update for message-passing codes
+!
+! AUTHOR: V. Balaji (vb@gfdl.gov)
+!         SGI/GFDL Princeton University
+!
+! This program is free software; you can redistribute it and/or modify
+! it under the terms of the GNU General Public License as published by
+! the Free Software Foundation; either version 2 of the License, or
+! (at your option) any later version.
+!
+! This program is distributed in the hope that it will be useful,
+! but WITHOUT ANY WARRANTY; without even the implied warranty of
+! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+! GNU General Public License for more details.
+!
+! For the full text of the GNU General Public License,
+! write to: Free Software Foundation, Inc.,
+!           675 Mass Ave, Cambridge, MA 02139, USA.  
 !-----------------------------------------------------------------------
+
+! <CONTACT EMAIL="V.Balaji@noaa.gov">
+!   V. Balaji
+! </CONTACT>
+! <CONTACT EMAIL="Zhi.Liang@noaa.gov">
+!   Zhi Liang
+! </CONTACT>
+! <HISTORY SRC="http://www.gfdl.noaa.gov/fms-cgi-bin/cvsweb.cgi/FMS/"/>
+! <RCSLOG SRC="http://www.gfdl.noaa.gov/~vb/changes_mpp_domains.html"/>
 
 ! <OVERVIEW>
 !   <TT>mpp_domains_mod</TT> is a set of simple calls for domain
@@ -102,7 +109,7 @@
 
 module mpp_domains_mod
 !a generalized domain decomposition package for use with mpp_mod
-!15 March 1999
+!Balaji (vb@gfdl.gov) 15 March 1999
 #include <fms_platform.h>
 
 #if defined(use_libMPI) && defined(sgi_mipspro)
@@ -2414,11 +2421,9 @@ end interface
      module procedure nullify_domain2d_list
   end interface  
 
-  !--- version information variables
-  character(len=128), public :: version= &
-       '$Id$'
-  character(len=128), public :: tagname= &
-       '$Name$'
+  ! Include variable "version" to be written to log file.
+#include<file_version.h>
+  public version
 
 
 contains
@@ -2454,7 +2459,7 @@ end module mpp_domains_mod
 !     non-SGI/Cray systems and compilers. The <LINK
 !     SRC="mpp.html#PORTABILITY">portability of mpp_mod</LINK>
 !     obviously is a constraint, since this module is built on top of
-!     it.
+!     it. Contact me, Balaji, SGI/GFDL, with questions.
 !   </PRECOMP> 
 !   <LOADER FLAG="">       
 !     The <TT>mpp_domains</TT> source consists of the main source file

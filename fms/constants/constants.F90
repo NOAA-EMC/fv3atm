@@ -1,24 +1,13 @@
-!***********************************************************************
-!*                   GNU General Public License                        *
-!* This file is a part of fvGFS.                                       *
-!*                                                                     *
-!* fvGFS is free software; you can redistribute it and/or modify it    *
-!* and are expected to follow the terms of the GNU General Public      *
-!* License as published by the Free Software Foundation; either        *
-!* version 2 of the License, or (at your option) any later version.    *
-!*                                                                     *
-!* fvGFS is distributed in the hope that it will be useful, but        *
-!* WITHOUT ANY WARRANTY; without even the implied warranty of          *
-!* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU   *
-!* General Public License for more details.                            *
-!*                                                                     *
-!* For the full text of the GNU General Public License,                *
-!* write to: Free Software Foundation, Inc.,                           *
-!*           675 Mass Ave, Cambridge, MA 02139, USA.                   *
-!* or see:   http://www.gnu.org/licenses/gpl.html                      *
-!***********************************************************************
 
 module constants_mod
+
+use platform_mod, only: r8_kind
+
+! <CONTACT EMAIL="Bruce.Wyman@noaa.gov">
+!   Bruce Wyman
+! </CONTACT>
+
+! <HISTORY SRC="http://www.gfdl.noaa.gov/fms-cgi-bin/cvsweb.cgi/FMS/"/>
 
 ! <OVERVIEW>
 !    Defines useful constants for Earth.
@@ -32,8 +21,13 @@ module constants_mod
 implicit none
 private
 
-character(len=128) :: version='$Id$'
-character(len=128) :: tagname='$Name$'
+! Include variable "version" to be written to log file.
+#include<file_version.h>
+!-----------------------------------------------------------------------
+! version is public so that write_version_number can be called for constants_mod
+! by fms_init
+public :: version
+
 !dummy variable to use in HUGE initializations
 real :: realnumber
 
@@ -69,69 +63,16 @@ real :: realnumber
 !   (kg/m^3)*(cal/kg/deg C)(joules/cal) = (joules/m^3/deg C)
 ! </DATA>
 
-!---variable for strong typing grid parameters
-  integer, public, parameter :: R_GRID=8
-
-#ifdef GFS_PHYS
-! real(kind=R_GRID), public, parameter :: RADIUS = 6376000.0_R_GRID
-! SJL: the following are from fv3_gfsphysics/gfs_physics/physics/physcons.f90
-real, public, parameter :: RADIUS = 6.3712e+6_R_GRID
-real(kind=8), public, parameter :: PI_8   = 3.1415926535897931_R_GRID
-real, public, parameter ::         PI     = 3.1415926535897931_R_GRID
-real, public, parameter :: OMEGA  = 7.2921e-5 
-real, public, parameter :: GRAV   = 9.80665_R_GRID
-real, public, parameter :: RDGAS  = 287.05_R_GRID
-real, public, parameter :: RVGAS  = 461.50_R_GRID
-! Extra:
-real, public, parameter :: HLV = 2.5e6_R_GRID   
-real, public, parameter :: HLF = 3.3358e5_R_GRID   
-real, public, parameter :: con_cliq   =4.1855e+3_R_GRID      ! spec heat H2O liq   (J/kg/K)
-real, public, parameter :: con_csol   =2.1060e+3_R_GRID      ! spec heat H2O ice   (J/kg/K)
-#else
-
-#ifdef SMALL_EARTH
-#ifdef DCMIP
-       real, private, paramter :: small_fac =  1._R_GRID / 120._R_GRID #only needed for supercell test
-#else
-#ifdef HIWPP
-#ifdef SUPER_K
-       real, private, parameter :: small_fac = 1._R_GRID / 120._R_GRID
-#else
- real, private, parameter :: small_fac = 1._R_GRID / 166.7_R_GRID
-#endif
-#else
- real, private, parameter :: small_fac = 1._R_GRID / 10._R_GRID
-#endif
-#endif
-#else
- real, private, parameter :: small_fac = 1._R_GRID
-#endif
-
-real, public, parameter :: RADIUS = 6371e+3_R_GRID * small_fac
-real(kind=8), public, parameter :: PI_8 = 3.141592653589793_R_GRID
-real, public, parameter ::         PI   = 3.141592653589793_R_GRID
-real, public, parameter :: OMEGA = 7.292e-5_R_GRID / small_fac
-real, public, parameter :: GRAV  = 9.8060226_R_GRID
-real, public, parameter :: RDGAS = 287.04_R_GRID 
-real, public, parameter :: RVGAS = 461.60_R_GRID 
-! Extra:
-real, public, parameter :: HLV = 2.501e6_R_GRID   
-real, public, parameter :: HLF = 3.50e5_R_GRID   
-#endif
-real, public, parameter :: CP_AIR = 1004.6_R_GRID
-real, public, parameter :: CP_VAPOR = 4.0_R_GRID*RVGAS
-real, public, parameter :: KAPPA  = RDGAS/CP_AIR
-!!! real, public, parameter :: STEFAN  = 5.670400e-8_R_GRID
-real, public, parameter :: STEFAN  = 5.67051e-8_R_GRID 
-
-real, public, parameter :: CP_OCEAN = 3989.24495292815_R_GRID
-real, public, parameter :: RHO0    = 1.035e3_R_GRID
-real, public, parameter :: RHO0R   = 1.0_R_GRID/RHO0
+real, public, parameter :: RADIUS = 6371.0e3   
+real, public, parameter :: OMEGA  = 7.292e-5 
+real, public, parameter :: GRAV   = 9.80    
+real, public, parameter :: RDGAS  = 287.04 
+real, public, parameter :: KAPPA  = 2./7.  
+real, public, parameter :: CP_AIR = RDGAS/KAPPA 
+real, public, parameter :: CP_OCEAN = 3989.24495292815
+real, public, parameter :: RHO0    = 1.035e3
+real, public, parameter :: RHO0R   = 1.0/RHO0
 real, public, parameter :: RHO_CP  = RHO0*CP_OCEAN
-
-!rabreal, public, parameter :: KAPPA  = 2._R_GRID/7._R_GRID
-!rabreal, public, parameter :: GRAV   = 9.80_R_GRID    
-!rabreal, public, parameter :: CP_AIR = RDGAS/KAPPA 
 
 !------------ water vapor constants ---------------
 ! <DATA NAME="ES0" TYPE="real" DEFAULT="1.0">
@@ -160,16 +101,14 @@ real, public, parameter :: RHO_CP  = RHO0*CP_OCEAN
 !   temp where fresh water freezes
 ! </DATA>
 
-real, public, parameter :: ES0 = 1.0_R_GRID 
-real, public, parameter :: DENS_H2O = 1000._R_GRID 
+real, public, parameter :: ES0 = 1.0 
+real, public, parameter :: RVGAS = 461.50 
+real, public, parameter :: CP_VAPOR = 4.0*RVGAS
+real, public, parameter :: DENS_H2O = 1000. 
+real, public, parameter :: HLV = 2.500e6   
+real, public, parameter :: HLF = 3.34e5   
 real, public, parameter :: HLS = HLV + HLF
-real, public, parameter :: TFREEZE = 273.15_R_GRID    
-
-!rabreal, public, parameter :: RVGAS = 461.50_R_GRID 
-!rabreal, public, parameter :: HLV = 2.500e6_R_GRID   
-!rabreal, public, parameter :: HLF = 3.34e5_R_GRID   
-!rabreal, public, parameter :: HLS = HLV + HLF
-!rabreal, public, parameter :: TFREEZE = 273.16_R_GRID    
+real, public, parameter :: TFREEZE = 273.16    
 
 !-------------- radiation constants -----------------
 
@@ -209,20 +148,21 @@ real, public, parameter :: TFREEZE = 273.15_R_GRID
 !  mean sea level pressure
 ! </DATA>
 
-real, public, parameter :: WTMAIR = 2.896440E+01_R_GRID
+real, public, parameter :: WTMAIR = 2.896440E+01
 real, public, parameter :: WTMH2O = WTMAIR*(RDGAS/RVGAS) !pjp OK to change value because not used yet.
-!real, public, parameter :: WTMO3  = 47.99820E+01_R_GRID
-real, public, parameter :: WTMOZONE =  47.99820_R_GRID
-real, public, parameter :: WTMC     =  12.00000_R_GRID
-real, public, parameter :: WTMCO2   =  44.00995_R_GRID
-real, public, parameter :: WTMO2    =  31.9988_R_GRID
-real, public, parameter :: WTMCFC11 = 137.3681_R_GRID
-real, public, parameter :: WTMCFC12 = 120.9135_R_GRID
-real, public, parameter :: DIFFAC = 1.660000E+00_R_GRID
-real, public, parameter :: SECONDS_PER_DAY  = 8.640000E+04_R_GRID, SECONDS_PER_HOUR = 3600._R_GRID, SECONDS_PER_MINUTE=60._R_GRID
-real, public, parameter :: AVOGNO = 6.023000E+23_R_GRID
-real, public, parameter :: PSTD   = 1.013250E+06_R_GRID
-real, public, parameter :: PSTD_MKS    = 101325.0_R_GRID
+!real, public, parameter :: WTMO3  = 47.99820E+01
+real, public, parameter :: WTMOZONE =  47.99820
+real, public, parameter :: WTMC     =  12.00000
+real, public, parameter :: WTMCO2   =  44.00995
+real, public, parameter :: WTMO2    =  31.9988
+real, public, parameter :: WTMCFC11 = 137.3681
+real, public, parameter :: WTMCFC12 = 120.9135
+real, public, parameter :: DIFFAC = 1.660000E+00
+real, public, parameter :: SECONDS_PER_DAY  = 8.640000E+04, SECONDS_PER_HOUR = 3600., SECONDS_PER_MINUTE=60.
+real, public, parameter :: AVOGNO = 6.023000E+23
+real, public, parameter :: PSTD   = 1.013250E+06
+real, public, parameter :: PSTD_MKS    = 101325.0
+!real, public, parameter :: REARTH  = 6.356766E+08 !pjp Not used anywhere. 
 
 ! <DATA NAME="RADCON" UNITS="deg sec/(cm day)" TYPE="real" DEFAULT="((1.0E+02*GRAV)/(1.0E+04*CP_AIR))*SECONDS_PER_DAY">
 !  factor used to convert flux divergence to heating rate in degrees per day
@@ -242,9 +182,9 @@ real, public, parameter :: PSTD_MKS    = 101325.0_R_GRID
 
 real, public, parameter :: RADCON = ((1.0E+02*GRAV)/(1.0E+04*CP_AIR))*SECONDS_PER_DAY
 real, public, parameter :: RADCON_MKS  = (GRAV/CP_AIR)*SECONDS_PER_DAY
-real, public, parameter :: O2MIXRAT    = 2.0953E-01_R_GRID
-real, public, parameter :: RHOAIR      = 1.292269_R_GRID
-real, public, parameter :: ALOGMIN     = -50.0_R_GRID
+real, public, parameter :: O2MIXRAT    = 2.0953E-01
+real, public, parameter :: RHOAIR      = 1.292269
+real, public, parameter :: ALOGMIN     = -50.0
 
 !------------ miscellaneous constants ---------------
 ! <DATA NAME="STEFAN" UNITS="W/m^2/deg^4" TYPE="real" DEFAULT="5.6734e-8">
@@ -275,22 +215,16 @@ real, public, parameter :: ALOGMIN     = -50.0_R_GRID
 !   a small number to prevent divide by zero exceptions
 ! </DATA>
 
-real, public, parameter :: VONKARM = 0.40_R_GRID     
-real, public, parameter :: RAD_TO_DEG=180._R_GRID/PI
-real, public, parameter :: DEG_TO_RAD=PI/180._R_GRID
+real, public, parameter :: STEFAN  = 5.6734e-8 
+real, public, parameter :: VONKARM = 0.40     
+real, public, parameter :: PI      = 3.14159265358979323846
+real(r8_kind), public, parameter :: PI_8  = 3.14159265358979323846_r8_kind
+real, public, parameter :: RAD_TO_DEG=180./PI
+real, public, parameter :: DEG_TO_RAD=PI/180.
 real, public, parameter :: RADIAN  = RAD_TO_DEG
-real, public, parameter :: C2DBARS = 1.e-4_R_GRID
-real, public, parameter :: KELVIN  = 273.15_R_GRID
-real, public, parameter :: EPSLN   = 1.0e-15_R_GRID
-
-!rabreal, public, parameter :: STEFAN  = 5.6734e-8_R_GRID 
-!rabreal, public, parameter :: EPSLN   = 1.0e-40_R_GRID
-!rabreal, public, parameter :: PI      = 3.14159265358979323846_R_GRID
-
-!-----------------------------------------------------------------------
-! version and tagname published
-! so that write_version_number can be called for constants_mod by fms_init
-public :: version, tagname
+real, public, parameter :: C2DBARS = 1.e-4
+real, public, parameter :: KELVIN  = 273.15
+real, public, parameter :: EPSLN   = 1.0e-40
 !-----------------------------------------------------------------------
 public :: constants_init
 

@@ -1,29 +1,10 @@
-!***********************************************************************
-!*                   GNU General Public License                        *
-!* This file is a part of fvGFS.                                       *
-!*                                                                     *
-!* fvGFS is free software; you can redistribute it and/or modify it    *
-!* and are expected to follow the terms of the GNU General Public      *
-!* License as published by the Free Software Foundation; either        *
-!* version 2 of the License, or (at your option) any later version.    *
-!*                                                                     *
-!* fvGFS is distributed in the hope that it will be useful, but        *
-!* WITHOUT ANY WARRANTY; without even the implied warranty of          *
-!* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU   *
-!* General Public License for more details.                            *
-!*                                                                     *
-!* For the full text of the GNU General Public License,                *
-!* write to: Free Software Foundation, Inc.,                           *
-!*           675 Mass Ave, Cambridge, MA 02139, USA.                   *
-!* or see:   http://www.gnu.org/licenses/gpl.html                      *
-!***********************************************************************
 #ifdef TEST_HORIZ_INTERP
 !z1l: currently only test bilinear interpolation.
 
 program test
 
   use mpp_mod,          only : mpp_error, mpp_pe,  mpp_npes, mpp_root_pe
-  use mpp_mod,          only : FATAL, stdout, stdlog
+  use mpp_mod,          only : FATAL, stdout, stdlog, mpp_chksum
   use mpp_io_mod,       only : mpp_open, mpp_close, mpp_read
   use mpp_io_mod,       only : axistype, fieldtype
   use mpp_io_mod,       only : mpp_get_info, mpp_get_fields, mpp_get_times
@@ -52,8 +33,12 @@ implicit none
   character(len=256) :: dst_file = "output.nc"
   logical            :: new_missing_handle = .false.
   character(len=256) :: interp_method = "bilinear"
+  logical            :: use_2d_version = .false.
+  logical            :: write_remap_index = .false.
+  integer            :: layout(2) = (/1,1/)
 
   real, allocatable, dimension(:)            :: x_src, y_src
+  real, allocatable, dimension(:,:)          :: x_src_2d, y_src_2d
   real, allocatable, dimension(:,:)          :: x_dst, y_dst
   type(axistype), allocatable, dimension(:)  :: axes
   type(fieldtype), allocatable, dimension(:) :: fields
@@ -64,7 +49,7 @@ implicit none
   integer :: n, ntimes
 
   namelist /test_horiz_interp_nml/ src_file, field_name, dst_file, dst_grid, new_missing_handle, &
-           interp_method
+           interp_method, use_2d_version, layout, write_remap_index
 
   call fms_init
   call horiz_interp_init
@@ -119,18 +104,26 @@ contains
      type(horiz_interp_type)             :: Interp
      type(axistype)     :: xaxis, yaxis, zaxis, taxis
      type(domain1D)     :: xdom, ydom
-     type(fieldtype)    :: field
+     type(fieldtype)    :: field, field_istart,field_iend,field_jstart,field_jend
      real    :: D2R
      integer :: k, i
 
      call mpp_get_domain_components( domain, xdom, ydom )
      !--- set up meta data
+!     call mpp_open(unit,dst_file,action=MPP_OVERWR,form=MPP_NETCDF,threading=MPP_MULTI, fileset=MPP_MULTI)
      call mpp_open(unit,dst_file,action=MPP_OVERWR,form=MPP_NETCDF,threading=MPP_MULTI, fileset=MPP_MULTI)
      call mpp_write_meta( unit, xaxis, 'lon', 'none', 'X index', 'X', domain=xdom, data=(/(i-1.,i=1,nx_dst)/) )
      call mpp_write_meta( unit, yaxis, 'lat', 'none', 'Y index', 'Y', domain=ydom, data=(/(i-1.,i=1,ny_dst)/) )
      call mpp_write_meta( unit, zaxis, 'level', 'none', 'Z index', 'Z', data=(/(i-1.,i=1,nk)/) )
      call mpp_write_meta( unit, taxis, 'time', 'none', 'T index', 'T' )
-     call mpp_write_meta( unit, field, (/xaxis, yaxis, zaxis, taxis/), field_name, 'none', 'none')
+     call mpp_write_meta( unit, field, (/xaxis, yaxis, zaxis, taxis/), field_name, 'none', 'none', missing=missing_value)
+     if(write_remap_index) then
+        call mpp_write_meta( unit, field_istart, (/xaxis, yaxis/), "istart", 'none', 'none')
+        call mpp_write_meta( unit, field_iend, (/xaxis, yaxis/), "iend", 'none', 'none')     
+        call mpp_write_meta( unit, field_jstart, (/xaxis, yaxis/), "jstart", 'none', 'none')
+        call mpp_write_meta( unit, field_jend, (/xaxis, yaxis/), "jend", 'none', 'none')    
+     endif
+
      call mpp_write( unit, xaxis )
      call mpp_write( unit, yaxis )
      call mpp_write( unit, zaxis )
@@ -141,9 +134,28 @@ contains
      allocate(src_data(nx_src,ny_src,nk))
      allocate(dst_data(is:ie,js:je,nk))
 
-     call horiz_interp_new(Interp, x_src*D2R, y_src*D2R, x_dst*D2R, y_dst*D2R, &
+     if(trim(interp_method) == "bilinear" .and. use_2d_version) then
+        write(stdout(),*) "use 2-D version of bilinear interpolation"
+        call horiz_interp_new(Interp, x_src_2d*D2R, y_src_2d*D2R, x_dst*D2R, y_dst*D2R, &
+          interp_method = trim(interp_method) )    
+     else
+        write(stdout(),*) "use 1-D version of interpolation"
+        call horiz_interp_new(Interp, x_src*D2R, y_src*D2R, x_dst*D2R, y_dst*D2R, &
           interp_method = trim(interp_method), grid_at_center = .true. )    
+     endif
 
+     if(write_remap_index) then
+        dst_data(:,:,1) = interp%i_lon(:,:,1)
+        call mpp_write(unit, field_istart, domain, dst_data(:,:,1))
+        dst_data(:,:,1) = interp%i_lon(:,:,2)
+        call mpp_write(unit, field_iend, domain, dst_data(:,:,1))
+        dst_data(:,:,1) = interp%j_lat(:,:,1)
+        call mpp_write(unit, field_jstart, domain, dst_data(:,:,1))
+        dst_data(:,:,1) = interp%j_lat(:,:,2)
+        call mpp_write(unit, field_jend, domain, dst_data(:,:,1))
+     endif
+
+     dst_data = 0
      do n = 1, ntimes
         call mpp_read(src_unit,fields(src_field_index),src_data, tindex=n)
 
@@ -152,6 +164,7 @@ contains
                 missing_value=missing_value, new_missing_handle=new_missing_handle)
         enddo
         call mpp_write(unit, field, domain, dst_data, n*1.0)
+        write(stdout(),*) "chksum at time = ", n, " = ", mpp_chksum(dst_data)
      enddo
 
      call mpp_close(unit)
@@ -161,7 +174,7 @@ contains
 
 
   subroutine read_dst_grid
-    integer :: layout(2), start(4), nread(4)
+    integer :: start(4), nread(4)
     character(len=256) :: tile_file
     integer :: i, j, siz(4)
     real, allocatable :: tmp(:,:)
@@ -250,10 +263,20 @@ contains
           nk = len1
        end select
     enddo
+
     if(nx_src==0) call mpp_error(FATAL,'test_horiz_interp: file ' &
          //trim(src_file)//' does not contain axis with cartesian attributes = "X" ')
     if(ny_src==0) call mpp_error(FATAL,'test_horiz_interp: file '&
          //trim(src_file)//' does not contain axis with cartesian attributes = "Y" ')
+
+    allocate(x_src_2d(nx_src,ny_src), y_src_2d(nx_src,ny_src))
+    do i = 1, nx_src
+       x_src_2d(i,:) = x_src(i)
+    enddo
+    do i = 1, ny_src
+       y_src_2d(:,i) = y_src(i)
+    enddo
+
 
     !--- get the missing value
     call mpp_get_atts(fields(src_field_index),missing=missing_value)

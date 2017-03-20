@@ -1,25 +1,30 @@
-!***********************************************************************
-!*                   GNU General Public License                        *
-!* This file is a part of fvGFS.                                       *
-!*                                                                     *
-!* fvGFS is free software; you can redistribute it and/or modify it    *
-!* and are expected to follow the terms of the GNU General Public      *
-!* License as published by the Free Software Foundation; either        *
-!* version 2 of the License, or (at your option) any later version.    *
-!*                                                                     *
-!* fvGFS is distributed in the hope that it will be useful, but        *
-!* WITHOUT ANY WARRANTY; without even the implied warranty of          *
-!* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU   *
-!* General Public License for more details.                            *
-!*                                                                     *
-!* For the full text of the GNU General Public License,                *
-!* write to: Free Software Foundation, Inc.,                           *
-!*           675 Mass Ave, Cambridge, MA 02139, USA.                   *
-!* or see:   http://www.gnu.org/licenses/gpl.html                      *
-!***********************************************************************
 !-----------------------------------------------------------------------
 !                 Parallel I/O for message-passing codes
+!
+! AUTHOR: V. Balaji (vb@gfdl.gov)
+!         SGI/GFDL Princeton University
+!
+! This program is free software; you can redistribute it and/or modify
+! it under the terms of the GNU General Public License as published by
+! the Free Software Foundation; either version 2 of the License, or
+! (at your option) any later version.
+!
+! This program is distributed in the hope that it will be useful,
+! but WITHOUT ANY WARRANTY; without even the implied warranty of
+! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+! GNU General Public License for more details.
+!
+! For the full text of the GNU General Public License,
+! write to: Free Software Foundation, Inc.,
+!           675 Mass Ave, Cambridge, MA 02139, USA.
 !-----------------------------------------------------------------------
+
+! <CONTACT EMAIL="vb@gfdl.noaa.gov">
+!   V. Balaji
+! </CONTACT>
+
+! <HISTORY SRC="http://www.gfdl.noaa.gov/fms-cgi-bin/cvsweb.cgi/FMS/"/>
+! <RCSLOG SRC="http://www.gfdl.noaa.gov/~vb/changes_mpp_io.html"/>
 
 ! <OVERVIEW>
 !   <TT>mpp_io_mod</TT>, is a set of simple calls for parallel I/O on
@@ -302,7 +307,9 @@
 ! </DESCRIPTION>
 
 module mpp_io_mod
+
 #include <fms_platform.h>
+#define _MAX_FILE_UNITS 1024
 
 use mpp_parameter_mod,  only : MPP_WRONLY, MPP_RDONLY, MPP_APPEND, MPP_OVERWR, MPP_ASCII
 use mpp_parameter_mod,  only : MPP_IEEE32, MPP_NATIVE, MPP_NETCDF, MPP_SEQUENTIAL
@@ -359,7 +366,7 @@ private
   public :: mpp_get_dimension_length, mpp_get_axis_bounds
 
   !--- public interface from mpp_io_misc.h ----------------------
-  public :: mpp_io_init, mpp_io_exit, netcdf_err, mpp_flush
+  public :: mpp_io_init, mpp_io_exit, netcdf_err, mpp_flush, mpp_get_maxunits, do_cf_compliance
 
   !--- public interface from mpp_io_write.h ---------------------
   public :: mpp_write, mpp_write_meta, mpp_copy_meta, mpp_modify_meta, mpp_write_axis_data, mpp_def_dim
@@ -867,7 +874,7 @@ type :: atttype
 
 
   interface write_record
-     module procedure write_record_r4
+     module procedure write_record_default
 #ifdef OVERLOAD_R4
      module procedure write_record_r8
 #endif
@@ -889,6 +896,7 @@ type :: atttype
      module procedure mpp_write_r4D
      module procedure mpp_write_axis
   end interface
+
 
 !***********************************************************************
 ! <INTERFACE NAME="mpp_write_compressed">
@@ -1019,9 +1027,10 @@ type :: atttype
   integer            :: shuffle = 0
   integer            :: deflate = 0
   integer            :: deflate_level = -1
+  logical            :: cf_compliance = .false.
 
   namelist /mpp_io_nml/header_buffer_val, global_field_on_root_pe, io_clocks_on, &
-                       shuffle, deflate_level
+                       shuffle, deflate_level, cf_compliance
 
   real(DOUBLE_KIND), allocatable :: mpp_io_stack(:)
   type(axistype),save            :: default_axis      !provided to users with default components
@@ -1031,10 +1040,8 @@ type :: atttype
 
   integer :: pack_size ! = 1 when compiling with -r8 and = 2 when compiling with -r4.
 
-  character(len=128) :: version= &
-       '$Id$'
-  character(len=128) :: tagname= &
-       '$Name$'
+! Include variable "version" to be written to log file.
+#include<file_version.h>
 
 contains
 

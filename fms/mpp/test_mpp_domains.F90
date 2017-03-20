@@ -1,22 +1,3 @@
-!***********************************************************************
-!*                   GNU General Public License                        *
-!* This file is a part of fvGFS.                                       *
-!*                                                                     *
-!* fvGFS is free software; you can redistribute it and/or modify it    *
-!* and are expected to follow the terms of the GNU General Public      *
-!* License as published by the Free Software Foundation; either        *
-!* version 2 of the License, or (at your option) any later version.    *
-!*                                                                     *
-!* fvGFS is distributed in the hope that it will be useful, but        *
-!* WITHOUT ANY WARRANTY; without even the implied warranty of          *
-!* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU   *
-!* General Public License for more details.                            *
-!*                                                                     *
-!* For the full text of the GNU General Public License,                *
-!* write to: Free Software Foundation, Inc.,                           *
-!*           675 Mass Ave, Cambridge, MA 02139, USA.                   *
-!* or see:   http://www.gnu.org/licenses/gpl.html                      *
-!***********************************************************************
 #ifdef test_mpp_domains
 program test
   use mpp_mod,         only : FATAL, WARNING, MPP_DEBUG, NOTE, MPP_CLOCK_SYNC,MPP_CLOCK_DETAILED
@@ -92,6 +73,7 @@ program test
   integer :: npes_fine   = 0
   integer :: extra_halo = 0
   logical :: mix_2D_3D = .false.
+  logical :: test_subset = .false.
   integer :: nthreads = 1
 
   namelist / test_mpp_domains_nml / nx, ny, nz, stackmax, debug, mpes, check_parallel, &
@@ -103,7 +85,7 @@ program test
                                jend_coarse, extra_halo, npes_fine, npes_coarse, mix_2D_3D, test_get_nbr, &
                                test_edge_update, test_cubic_grid_redistribute, ensemble_size, &
                                layout_cubic, layout_ensemble, nthreads, test_boundary, &
-                               layout_tripolar, test_group, test_global_sum
+                               layout_tripolar, test_group, test_global_sum, test_subset
   integer :: i, j, k
   integer :: layout(2)
   integer :: id
@@ -182,6 +164,10 @@ program test
         "test_mpp_domain: check the setting of namelist variable istart_coarse, iend_coarse, jstart_coarse, jend_coarse")
      
      call test_update_nest_domain('Cubic-Grid')
+  endif
+
+  if(test_subset) then
+      call test_subset_update()
   endif
 
   if( test_edge_update ) then
@@ -4656,6 +4642,70 @@ end subroutine test_group_update
 
   end subroutine fill_cubicgrid_refined_halo
     
+  !##################################################################################
+  subroutine test_subset_update( )
+    real, allocatable, dimension(:,:,:) :: x
+    type(domain2D) :: domain
+    real,    allocatable :: global(:,:,:)
+    integer              :: i, xhalo, yhalo
+    integer              :: is, ie, js, je, isd, ied, jsd, jed
+!   integer :: pes9(9)=(/1,2,3,4,5,6,7,8,9/)
+    integer :: pes9(9)=(/0,2,4,10,12,14,20,22,24/)
+    integer :: ni, nj
+
+    if(mpp_npes() < 25) then
+       call mpp_error(NOTE,"test_mpp_domains: test_subset_update will&
+            & not be done when npes < 25")
+       return 
+    endif
+
+    call mpp_declare_pelist(pes9)
+    if(any(mpp_pe()==pes9)) then
+       call mpp_set_current_pelist(pes9)
+       layout = (/3,3/)
+       ni = 3; nj =3
+       call mpp_define_domains((/1,ni,1,nj/), layout, domain, xhalo=1&
+            &, yhalo=1, xflags=CYCLIC_GLOBAL_DOMAIN, yflags&
+            &=CYCLIC_GLOBAL_DOMAIN, name='subset domain')  
+       call mpp_get_compute_domain(domain, is, ie, js, je)
+       print*, "pe=", mpp_pe(), is, ie, js, je
+
+       allocate(global(0:ni+1,0:nj+1,nz) )
+
+       global = 0
+       do k = 1,nz
+          do j = 1,nj
+             do i = 1,ni
+                global(i,j,k) = k + i*1e-3 + j*1e-6
+             end do
+          end do
+       end do
+
+    global(0,      1:nj,:) = global(ni,     1:nj,:)
+    global(ni+1,   1:nj,:) = global(1,      1:nj,:)
+    global(0:ni+1, 0,   :) = global(0:ni+1, nj,  :)
+    global(0:ni+1, nj+1,:) = global(0:ni+1, 1,   :)
+
+    !set up x array
+    call mpp_get_compute_domain( domain, is,  ie,  js,  je  )
+    call mpp_get_data_domain   ( domain, isd, ied, jsd, jed )
+    allocate( x (isd:ied,jsd:jed,nz) )
+
+    x = 0.
+    x (is:ie,js:je,:) = global(is:ie,js:je,:)
+
+!full update
+    call mpp_update_domains( x, domain )
+    call compare_checksums( x, global(isd:ied,jsd:jed,:), '9pe subset' )
+
+    deallocate(x, global)
+    call mpp_deallocate_domain(domain)
+  endif
+
+   call mpp_set_current_pelist()
+
+  end subroutine test_subset_update
+
 
   !##################################################################################
   subroutine test_halo_update( type )

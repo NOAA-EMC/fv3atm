@@ -1,23 +1,5 @@
-!***********************************************************************
-!*                   GNU General Public License                        *
-!* This file is a part of fvGFS.                                       *
-!*                                                                     *
-!* fvGFS is free software; you can redistribute it and/or modify it    *
-!* and are expected to follow the terms of the GNU General Public      *
-!* License as published by the Free Software Foundation; either        *
-!* version 2 of the License, or (at your option) any later version.    *
-!*                                                                     *
-!* fvGFS is distributed in the hope that it will be useful, but        *
-!* WITHOUT ANY WARRANTY; without even the implied warranty of          *
-!* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU   *
-!* General Public License for more details.                            *
-!*                                                                     *
-!* For the full text of the GNU General Public License,                *
-!* write to: Free Software Foundation, Inc.,                           *
-!*           675 Mass Ave, Cambridge, MA 02139, USA.                   *
-!* or see:   http://www.gnu.org/licenses/gpl.html                      *
-!***********************************************************************
 module memutils_mod
+!Author: Balaji (V.Balaji@noaa.gov)
 !Various operations for memory management
 !these currently include efficient methods for memory-to-memory copy
 !including strided data and arbitrary gather-scatter vectors
@@ -299,7 +281,7 @@ module memutils_mod
         if( .NOT.print_memory_usage )return
     end if
     mu = stderr(); if( PRESENT(unit) )mu = unit
-#if defined(__sgi) || defined(__aix) || defined(__SX)
+#if defined(__sgi) || defined(__aix) || defined(__SX) || defined(__APPLE__)
     m = memuse()*1e-3
 #else
     call mem_dump(m)
@@ -310,7 +292,7 @@ module memutils_mod
     mstd = (m-mavg)**2; call mpp_sum(mstd); mstd = sqrt( mstd/mpp_npes() )
     if( mpp_pe().EQ.mpp_root_pe() ) then
       call DATE_AND_TIME(walldate, walltime, wallzone, wallvalues)
-      write( mu,'(a84,4es14.6)' ) trim(walldate)//' '//trim(walltime)//&
+      write( mu,'(a84,4es11.3)' ) trim(walldate)//' '//trim(walltime)//&
          ': Memuse(MB) at '//trim(text)//'=', mmin, mmax, mstd, mavg
     endif
     return
@@ -331,16 +313,20 @@ real, intent(out) :: memuse
 
 character(len=32) :: file_name = '/proc/self/status'
 character(len=32) :: string
-integer :: mem_unit
+integer, save :: mem_unit = -1
 real    :: multiplier
 
   memuse = 0.0
   multiplier = 1.0
 
+  if(mem_unit == -1) then
   call mpp_open ( mem_unit, file_name,                                 &
                       form=MPP_ASCII,        action=MPP_RDONLY,        &
                       access=MPP_SEQUENTIAL, threading=MPP_SINGLE )
-  
+  else
+    rewind(mem_unit)
+  endif  
+
   do; read (mem_unit,'(a)', end=10) string
     if ( INDEX ( string, 'VmHWM:' ) == 1 ) then
       read (string(7:LEN_TRIM(string)-2),*) memuse
@@ -351,8 +337,8 @@ real    :: multiplier
   if (TRIM(string(LEN_TRIM(string)-1:)) == "kB" ) &
     multiplier = 1.0/1024. ! Convert from kB to MB
 
-10 call mpp_close ( mem_unit )
-   memuse = memuse * multiplier
+!10 call mpp_close ( mem_unit )
+10    memuse = memuse * multiplier
 
   return
 end subroutine mem_dump

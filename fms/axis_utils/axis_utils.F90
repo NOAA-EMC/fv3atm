@@ -1,23 +1,9 @@
-!***********************************************************************
-!*                   GNU General Public License                        *
-!* This file is a part of fvGFS.                                       *
-!*                                                                     *
-!* fvGFS is free software; you can redistribute it and/or modify it    *
-!* and are expected to follow the terms of the GNU General Public      *
-!* License as published by the Free Software Foundation; either        *
-!* version 2 of the License, or (at your option) any later version.    *
-!*                                                                     *
-!* fvGFS is distributed in the hope that it will be useful, but        *
-!* WITHOUT ANY WARRANTY; without even the implied warranty of          *
-!* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU   *
-!* General Public License for more details.                            *
-!*                                                                     *
-!* For the full text of the GNU General Public License,                *
-!* write to: Free Software Foundation, Inc.,                           *
-!*           675 Mass Ave, Cambridge, MA 02139, USA.                   *
-!* or see:   http://www.gnu.org/licenses/gpl.html                      *
-!***********************************************************************
 module axis_utils_mod
+  !
+  !<CONTACT EMAIL="Matthew.Harrison@noaa.gov">M.J. Harrison</CONTACT>
+  !
+  !<REVIEWER EMAIL="Bruce.Wyman@noaa.gov">Bruce Wyman</REVIEWER>
+  !
 
   !<OVERVIEW>
   ! A set of utilities for manipulating axes and extracting axis
@@ -57,8 +43,9 @@ module axis_utils_mod
   integer, parameter :: maxatts = 100
   real, parameter    :: epsln= 1.e-10
   real, parameter    :: fp5 = 0.5, f360 = 360.0
-  character(len=256) :: version = '$Id$'
-  character(len=256) :: tagname = '$Name$'   
+  
+! Include variable "version" to be written to log file.
+#include<file_version.h>
 
   interface interp_1d
      module procedure interp_1d_1d
@@ -144,7 +131,8 @@ contains
     type(axistype), intent(in) :: axis
     type(axistype), intent(inout) :: axis_bound
     type(axistype), intent(in), dimension(:) :: axes
-    character(len=*), intent(out), optional :: bnd_name, err_msg
+    character(len=*), intent(inout), optional :: bnd_name
+    character(len=*), intent(out), optional :: err_msg
 
     real, dimension(:), allocatable :: data, tmp
 
@@ -169,7 +157,7 @@ contains
     if(.not.bounds_found .and. len>1 ) then
        ! The following calculation can not be done for len=1
        call mpp_get_atts(axis,name=name)
-       name = trim(name)//'_bounds'
+       name = trim(name)//'_bnds'
        allocate(tmp(len))
        call mpp_get_axis_data(axis,tmp)
        do i=2,len

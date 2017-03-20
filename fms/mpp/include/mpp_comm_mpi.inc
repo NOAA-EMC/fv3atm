@@ -1,25 +1,4 @@
-!***********************************************************************
-!*                   GNU General Public License                        *
-!* This file is a part of fvGFS.                                       *
-!*                                                                     *
-!* fvGFS is free software; you can redistribute it and/or modify it    *
-!* and are expected to follow the terms of the GNU General Public      *
-!* License as published by the Free Software Foundation; either        *
-!* version 2 of the License, or (at your option) any later version.    *
-!*                                                                     *
-!* fvGFS is distributed in the hope that it will be useful, but        *
-!* WITHOUT ANY WARRANTY; without even the implied warranty of          *
-!* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU   *
-!* General Public License for more details.                            *
-!*                                                                     *
-!* For the full text of the GNU General Public License,                *
-!* write to: Free Software Foundation, Inc.,                           *
-!*           675 Mass Ave, Cambridge, MA 02139, USA.                   *
-!* or see:   http://www.gnu.org/licenses/gpl.html                      *
-!***********************************************************************
-
 ! -*-f90-*-
-! $Id$
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -181,16 +160,18 @@
   iunit = stdlog()  ! workaround for lf95.
   if( verbose )call mpp_error( NOTE, 'MPP_INIT: initializing MPP module...' )
   if( pe.EQ.root_pe )then
-     write( iunit,'(/a)' )'MPP module '//trim(version)//trim(tagname)
+     write( iunit,'(/a)' )'MPP module '//trim(version)
      write( iunit,'(a,i6)' )'MPP started with NPES=', npes
      write( iunit,'(a)' )'Using MPI library for message passing...'
      write( iunit, '(a,es12.4,a,i10,a)' ) &
           'Realtime clock resolution=', tick_rate, ' sec (', ticks_per_sec, ' ticks/sec)'
      write( iunit, '(a,es12.4,a,i20,a)' ) &
           'Clock rolls over after ', max_ticks*tick_rate, ' sec (', max_ticks, ' ticks)'
-     write( iunit,'(/a)' )'MPP module '//trim(mpp_parameter_version)//trim(mpp_parameter_tagname)
-     write( iunit,'(/a)' )'MPP module '//trim(mpp_data_version)//trim(mpp_data_tagname)
+     write( iunit,'(/a)' )'MPP Parameter module '//trim(mpp_parameter_version)
+     write( iunit,'(/a)' )'MPP Data module '//trim(mpp_data_version)
   end if
+
+  stdout_unit = stdout()
 
   call mpp_clock_begin(clock0)
 
@@ -402,8 +383,7 @@ end subroutine mpp_gsm_free
       if( debug )then
           call SYSTEM_CLOCK(tick)
           if(mpp_pe() == mpp_root_pe()) then
-            out_unit = stdout()
-            write( out_unit,'(a,i18,a,i5,a,2i5,2i8)' )&
+            write( stdout_unit,'(a,i18,a,i5,a,2i5,2i8)' )&
                'T=',tick, ' PE=',pe, 'mpp_broadcast_text begin: from_pe, length=', from_pe, length
           endif
       end if

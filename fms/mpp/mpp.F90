@@ -1,27 +1,34 @@
-!***********************************************************************
-!*                   GNU General Public License                        *
-!* This file is a part of fvGFS.                                       *
-!*                                                                     *
-!* fvGFS is free software; you can redistribute it and/or modify it    *
-!* and are expected to follow the terms of the GNU General Public      *
-!* License as published by the Free Software Foundation; either        *
-!* version 2 of the License, or (at your option) any later version.    *
-!*                                                                     *
-!* fvGFS is distributed in the hope that it will be useful, but        *
-!* WITHOUT ANY WARRANTY; without even the implied warranty of          *
-!* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU   *
-!* General Public License for more details.                            *
-!*                                                                     *
-!* For the full text of the GNU General Public License,                *
-!* write to: Free Software Foundation, Inc.,                           *
-!*           675 Mass Ave, Cambridge, MA 02139, USA.                   *
-!* or see:   http://www.gnu.org/licenses/gpl.html                      *
-!***********************************************************************
 !-----------------------------------------------------------------------
 !                 Communication for message-passing codes
+!
+! AUTHOR: V. Balaji (V.Balaji@noaa.gov)
+!         SGI/GFDL Princeton University
+!
+! This program is free software; you can redistribute it and/or modify
+! it under the terms of the GNU General Public License as published by
+! the Free Software Foundation; either version 2 of the License, or
+! (at your option) any later version.
+!
+! This program is distributed in the hope that it will be useful,
+! but WITHOUT ANY WARRANTY; without even the implied warranty of
+! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+! GNU General Public License for more details.
+!
+! For the full text of the GNU General Public License,
+! write to: Free Software Foundation, Inc.,
+!           675 Mass Ave, Cambridge, MA 02139, USA.  
+!-----------------------------------------------------------------------
 module mpp_mod
 !a generalized communication package for use with shmem and MPI
 !will add: co_array_fortran, MPI2
+!Balaji (V.Balaji@noaa.gov) 11 May 1998
+
+! <CONTACT EMAIL="V.Balaji@noaa.gov">
+!   V. Balaji
+! </CONTACT>
+
+! <HISTORY SRC="http://www.gfdl.noaa.gov/fms-cgi-bin/cvsweb.cgi/FMS/"/>
+! <RCSLOG SRC="http://www.gfdl.noaa.gov/~vb/changes_mpp.html"/>
 
 ! <OVERVIEW>
 !   <TT>mpp_mod</TT>, is a set of simple calls to provide a uniform interface
@@ -160,7 +167,7 @@ module mpp_mod
   use mpp_parameter_mod, only : MAXPES, EVENT_WAIT, EVENT_ALLREDUCE, EVENT_BROADCAST
   use mpp_parameter_mod, only : EVENT_ALLTOALL
   use mpp_parameter_mod, only : EVENT_RECV, EVENT_SEND, MPP_READY, MPP_WAIT
-  use mpp_parameter_mod, only : mpp_parameter_version=>version, mpp_parameter_tagname=>tagname
+  use mpp_parameter_mod, only : mpp_parameter_version=>version
   use mpp_parameter_mod, only : DEFAULT_TAG
   use mpp_parameter_mod, only : COMM_TAG_1,  COMM_TAG_2,  COMM_TAG_3,  COMM_TAG_4
   use mpp_parameter_mod, only : COMM_TAG_5,  COMM_TAG_6,  COMM_TAG_7,  COMM_TAG_8
@@ -170,7 +177,7 @@ module mpp_mod
   use mpp_parameter_mod, only : MPP_FILL_INT,MPP_FILL_DOUBLE
   use mpp_data_mod,      only : stat, mpp_stack, ptr_stack, status, ptr_status, sync, ptr_sync  
   use mpp_data_mod,      only : mpp_from_pe, ptr_from, remote_data_loc, ptr_remote
-  use mpp_data_mod,      only : mpp_data_version=>version, mpp_data_tagname=>tagname
+  use mpp_data_mod,      only : mpp_data_version=>version
 
 implicit none
 private
@@ -652,12 +659,16 @@ private
   !  </OVERVIEW>
   ! </INTERFACE>
   interface mpp_gather
+     module procedure mpp_gather_logical_1d
      module procedure mpp_gather_int4_1d
      module procedure mpp_gather_real4_1d
      module procedure mpp_gather_real8_1d
+     module procedure mpp_gather_logical_1dv
      module procedure mpp_gather_int4_1dv
      module procedure mpp_gather_real4_1dv
      module procedure mpp_gather_real8_1dv
+     module procedure mpp_gather_pelist_logical_2d
+     module procedure mpp_gather_pelist_logical_3d
      module procedure mpp_gather_pelist_int4_2d
      module procedure mpp_gather_pelist_int4_3d
      module procedure mpp_gather_pelist_real4_2d
@@ -1191,6 +1202,8 @@ private
   integer :: in_unit=5, out_unit=6, err_unit=0
 #endif
 
+  integer :: stdout_unit
+
   !--- variables used in mpp_util.h
   type(Summary_Struct) :: clock_summary(MAX_CLOCKS)
   logical              :: warnings_are_fatal = .FALSE.
@@ -1234,10 +1247,9 @@ private
   logical :: read_ascii_file_on = .FALSE.
 !***********************************************************************
 
-  character(len=128), public :: version= &
-       '$Id mpp.F90 $'
-  character(len=128), public :: tagname= &
-       '$Name$'
+! Include variable "version" to be written to log file.
+#include<file_version.h>
+  public version
 
   integer, parameter :: MAX_REQUEST_MIN  = 10000
   integer            :: request_multiply = 20

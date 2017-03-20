@@ -1,25 +1,10 @@
-!***********************************************************************
-!*                   GNU General Public License                        *
-!* This file is a part of fvGFS.                                       *
-!*                                                                     *
-!* fvGFS is free software; you can redistribute it and/or modify it    *
-!* and are expected to follow the terms of the GNU General Public      *
-!* License as published by the Free Software Foundation; either        *
-!* version 2 of the License, or (at your option) any later version.    *
-!*                                                                     *
-!* fvGFS is distributed in the hope that it will be useful, but        *
-!* WITHOUT ANY WARRANTY; without even the implied warranty of          *
-!* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU   *
-!* General Public License for more details.                            *
-!*                                                                     *
-!* For the full text of the GNU General Public License,                *
-!* write to: Free Software Foundation, Inc.,                           *
-!*           675 Mass Ave, Cambridge, MA 02139, USA.                   *
-!* or see:   http://www.gnu.org/licenses/gpl.html                      *
-!***********************************************************************
 #include <fms_platform.h>
 
 MODULE diag_util_mod
+  ! <CONTACT EMAIL="seth.underwood@noaa.gov">
+  !   Seth Underwood
+  ! </CONTACT>
+  ! <HISTORY SRC="http://cobweb.gfdl.noaa.gov/fms-cgi-bin/viewcvs/FMS/shared/diag_manager/"/>
 
   ! <OVERVIEW>
   !   Functions and subroutines necessary for the <TT>diag_manager_mod</TT>.
@@ -41,7 +26,7 @@ MODULE diag_util_mod
   !     </PRE>
   !   </FUTURE>
   ! </INFO>
-  USE diag_data_mod, ONLY  : output_fields, input_fields, files, do_diag_field_log, diag_log_unit,&
+  USE diag_data_mod, ONLY: output_fields, input_fields, files, do_diag_field_log, diag_log_unit,&
        & VERY_LARGE_AXIS_LENGTH, time_zero, VERY_LARGE_FILE_FREQ, END_OF_RUN, EVERY_TIME,&
        & DIAG_SECONDS, DIAG_MINUTES, DIAG_HOURS, DIAG_DAYS, DIAG_MONTHS, DIAG_YEARS, base_time,&
        & time_unit_list, max_files, base_year, base_month, base_day, base_hour, base_minute,&
@@ -49,26 +34,27 @@ MODULE diag_util_mod
        & max_input_fields,num_input_fields, max_output_fields, num_output_fields, coord_type,&
        & mix_snapshot_average_fields, global_descriptor, CMOR_MISSING_VALUE, use_cmor, pack_size,&
        & debug_diag_manager, conserve_water, output_field_type, max_field_attributes, max_file_attributes,&
-       & file_type, prepend_date, long_date, region_out_use_alt_value, GLO_REG_VAL, GLO_REG_VAL_ALT,&
+       & file_type, prepend_date, region_out_use_alt_value, GLO_REG_VAL, GLO_REG_VAL_ALT,&
        & DIAG_FIELD_NOT_FOUND, diag_init_time
-  USE diag_axis_mod, ONLY  : get_diag_axis_data, get_axis_global_length, get_diag_axis_cart,&
+  USE diag_axis_mod, ONLY: get_diag_axis_data, get_axis_global_length, get_diag_axis_cart,&
        & get_domain1d, get_domain2d, diag_subaxes_init, diag_axis_init, get_diag_axis, get_axis_aux,&
        & get_axes_shift, get_diag_axis_name, get_diag_axis_domain_name
   USE diag_output_mod, ONLY: diag_flush, diag_field_out, diag_output_init, write_axis_meta_data,&
        & write_field_meta_data, done_meta_data
   USE diag_grid_mod, ONLY: get_local_indexes
-  USE fms_mod, ONLY        : error_mesg, FATAL, WARNING, NOTE, mpp_pe, mpp_root_pe, lowercase, fms_error_handler
-  USE fms_io_mod, ONLY     : get_tile_string, return_domain, string
-  USE mpp_domains_mod,ONLY : domain1d, domain2d, mpp_get_compute_domain, null_domain1d, null_domain2d,&
+  USE fms_mod, ONLY: error_mesg, FATAL, WARNING, mpp_pe, mpp_root_pe, lowercase, fms_error_handler,&
+       & write_version_number, do_cf_compliance
+  USE fms_io_mod, ONLY: get_tile_string, return_domain, string, get_instance_filename
+  USE mpp_domains_mod,ONLY: domain1d, domain2d, mpp_get_compute_domain, null_domain1d, null_domain2d,&
        & OPERATOR(.NE.), OPERATOR(.EQ.), mpp_modify_domain, mpp_get_domain_components,&
        & mpp_get_ntile_count, mpp_get_current_ntile, mpp_get_tile_id, mpp_mosaic_defined, mpp_get_tile_npes
   USE time_manager_mod,ONLY: time_type, OPERATOR(==), OPERATOR(>), NO_CALENDAR, increment_date,&
        & increment_time, get_calendar_type, get_date, get_time, leap_year, OPERATOR(-),&
        & OPERATOR(<), OPERATOR(>=), OPERATOR(<=)
-  USE mpp_io_mod, ONLY : mpp_close
-  USE mpp_mod, ONLY : mpp_npes
-  USE fms_io_mod, ONLY : get_instance_filename
-  USE constants_mod, ONLY : SECONDS_PER_DAY, SECONDS_PER_HOUR, SECONDS_PER_MINUTE
+  USE mpp_io_mod, ONLY: mpp_close
+  USE mpp_mod, ONLY: mpp_npes
+  USE fms_io_mod, ONLY: get_instance_filename
+  USE constants_mod, ONLY: SECONDS_PER_DAY, SECONDS_PER_HOUR, SECONDS_PER_MINUTE
 
 #ifdef use_netCDF
   USE netcdf, ONLY: NF90_CHAR
@@ -80,7 +66,7 @@ MODULE diag_util_mod
        & check_bounds_are_exact_dynamic, check_bounds_are_exact_static, init_file, diag_time_inc,&
        & find_input_field, init_input_field, init_output_field, diag_data_out, write_static,&
        & check_duplicate_output_fields, get_date_dif, get_subfield_vert_size, sync_file_times,&
-       & prepend_attribute, attribute_init
+       & prepend_attribute, attribute_init, diag_util_init
 
   ! <INTERFACE NAME="prepend_attribute">
   !   <OVERVIEW>
@@ -124,12 +110,33 @@ MODULE diag_util_mod
   END INTERFACE attribute_init
   ! </INTERFACE>
 
-  CHARACTER(len=128),PRIVATE  :: version =&
-       & '$Id$'
-  CHARACTER(len=128),PRIVATE  :: tagname =&
-       & '$Name$'
+  ! Include variable "version" to be written to log file.
+#include<file_version.h>
+
+  LOGICAL :: module_initialized = .FALSE.
+
 
 CONTAINS
+
+  ! <SUBROUTINE NAME="diag_util_init">
+  !   <OVERVIEW>
+  !     Write the version number of this file
+  !   </OVERVIEW>
+  !   <TEMPLATE>
+  !     SUBROUTINE diag_util_init
+  !   </TEMPLATE>
+  !   <DESCRIPTION>
+  !     Write the version number of this file to the log file.
+  !   </DESCRIPTION>
+  SUBROUTINE diag_util_init()
+    IF (module_initialized) THEN
+       RETURN
+    END IF
+
+    ! Write version number out to log file
+    call write_version_number("DIAG_UTIL_MOD", version)
+  END SUBROUTINE diag_util_init
+  ! </SUBROUTINE>
 
   ! <SUBROUTINE NAME="get_subfield_size">
   !   <OVERVIEW>
@@ -1086,7 +1093,7 @@ CONTAINS
          & TRIM(long_name) , set_name=TRIM(name) )
     !---- register axis for storing time boundaries
     files(num_files)%time_bounds_id = diag_axis_init( 'nv',(/1.,2./),'none','N','vertex number',&
-         & set_name=TRIM(name))
+         & set_name='nv')
   END SUBROUTINE init_file
   ! </SUBROUTINE>
 
@@ -1484,6 +1491,7 @@ CONTAINS
     output_fields(out_num)%time_rms = .FALSE.
     output_fields(out_num)%time_min = .FALSE.
     output_fields(out_num)%time_max = .FALSE.
+    output_fields(out_num)%time_sum = .FALSE.
     output_fields(out_num)%time_ops = .FALSE.
     output_fields(out_num)%written_once = .FALSE.
 
@@ -1545,23 +1553,30 @@ CONTAINS
        CASE ( 'maximum', 'max' )
           output_fields(out_num)%time_max = .TRUE.
           l1 = LEN_TRIM(output_fields(out_num)%output_name)
-          IF ( output_fields(out_num)%output_name(l1-2:l1) /= 'max' ) &
+          IF ( lowercase(trim(adjustl(output_fields(out_num)%output_name(l1-2:l1)))) /= 'max' ) &
                output_fields(out_num)%output_name = TRIM(output_name)//'_max'
           method_selected = method_selected+1
           t_method = 'max'
        CASE ( 'minimum', 'min' )
           output_fields(out_num)%time_min = .TRUE.
           l1 = LEN_TRIM(output_fields(out_num)%output_name)
-          IF ( output_fields(out_num)%output_name(l1-2:l1) /= 'min' )&
+          IF ( lowercase(trim(adjustl(output_fields(out_num)%output_name(l1-2:l1)))) /= 'min' )&
                & output_fields(out_num)%output_name = TRIM(output_name)//'_min'
           method_selected = method_selected+1
           t_method = 'min'
+       CASE ( 'sum', 'cumsum' )
+          output_fields(out_num)%time_sum = .TRUE.
+          l1 = LEN_TRIM(output_fields(out_num)%output_name)
+          IF ( output_fields(out_num)%output_name(l1-2:l1) /= 'sum' )&
+               & output_fields(out_num)%output_name = TRIM(output_name)//'_sum'
+          method_selected = method_selected+1
+          t_method = 'sum'
        END SELECT
     END IF
 
     ! reconcile logical flags
     output_fields(out_num)%time_ops = output_fields(out_num)%time_min.OR.output_fields(out_num)%time_max&
-         & .OR.output_fields(out_num)%time_average
+         & .OR.output_fields(out_num)%time_average .OR. output_fields(out_num)%time_sum
 
     output_fields(out_num)%phys_window = .FALSE.
     ! need to initialize grid_type = -1(start, end, l_start_indx,l_end_indx etc...)
@@ -1654,23 +1669,12 @@ CONTAINS
     CHARACTER(len=128) :: suffix, base_name
     CHARACTER(len=32) :: time_name, timeb_name,time_longname, timeb_longname, cart_name
     CHARACTER(len=256) :: fname
-    CHARACTER(len=30) :: start_date
+    CHARACTER(len=24) :: start_date
     TYPE(domain1d) :: domain
     TYPE(domain2d) :: domain2
 
     aux_present = .FALSE.
     match_aux_name = .FALSE.
-    ! it's unlikely that a file starts with word "rregion", need to check anyway.
-    IF ( LEN(files(file)%name) >=7 .AND. .NOT.files(file)%local ) THEN
-       prefix = files(file)%name(1:7)
-       IF ( lowercase(prefix) == 'rregion' ) THEN
-          ! <ERROR STATUS="WARNING">
-          !   file name should not start with word "rregion"
-          ! </ERROR>
-          IF ( mpp_pe() == mpp_root_pe() ) CALL error_mesg('diag_util_mod::opening_file',&
-               & 'file name should not start with word "rregion"', WARNING)
-       END IF
-    END IF
 
     ! Here is where time_units string must be set up; time since base date
     WRITE (time_units, 11) TRIM(time_unit_list(files(file)%time_units)), base_year,&
@@ -1697,29 +1701,14 @@ CONTAINS
     fname=base_name
     call get_instance_filename(fname, base_name)
 
-    ! Add CVS tag as prefix of filename  (currently not implemented)
-    !  i1 = INDEX(tagname,':') + 2
-    !  i2 = len_trim(tagname) - 2
-    !  if(i2 <=i1)  call error_mesg('diag_util opening_file','error in CVS tagname index',FATAL)
-    !  prefix2 = tagname(i1:i2)//'_'
-    IF ( files(file)%local ) THEN
-       ! prepend "rregion" to all local files for post processing, the prefix will be removed in postprocessing
-       filename = 'rregion'//TRIM(base_name)//TRIM(suffix)
-    ELSE
-       ! filename = trim(prefix2)//trim(base_name)//trim(suffix)
-       filename = TRIM(base_name)//TRIM(suffix)
-    END IF
+    ! Set the filename
+    filename = TRIM(base_name)//TRIM(suffix)
 
     ! prepend the file start date if prepend_date == .TRUE.
     IF ( prepend_date ) THEN
        call get_date(diag_init_time, year, month, day, hour, minute, second)
-       IF (long_date) THEN
-          write (start_date, '(1I20.4, 5I2.2)') year, month, day, hour, minute, second
-          CALL  error_mesg ('diag_util_mod::long_date is active:  ',&
-            &TRIM(start_date), NOTE)
-       ELSE
-          write (start_date, '(1I20.4, 2I2.2)') year, month, day
-       END IF
+       write (start_date, '(1I20.4, 2I2.2)') year, month, day
+
        filename = TRIM(adjustl(start_date))//'.'//TRIM(filename)
     END IF
 
@@ -1955,10 +1944,17 @@ CONTAINS
             & cart_name, dir, edges, Domain, DATA)
        CALL get_diag_axis( time_bounds_id(1), timeb_name, timeb_units, timeb_longname,&
             & cart_name, dir, edges, Domain, DATA)
-       files(file)%f_bounds =  write_field_meta_data(files(file)%file_unit,&
-            & TRIM(time_name)//'_bounds', (/time_bounds_id,time_axis_id/),&
-            & TRIM(time_unit_list(files(file)%time_units)),&
-            & TRIM(time_name)//' axis boundaries', pack=pack_size)
+       IF ( do_cf_compliance() ) THEN
+          ! CF Compliance requires the unit on the _bnds axis is the same as 'time'
+          files(file)%f_bounds =  write_field_meta_data(files(file)%file_unit,&
+               & TRIM(time_name)//'_bnds', (/time_bounds_id,time_axis_id/),&
+               & TRIM(time_unit_list(files(file)%time_units)),&
+               & TRIM(time_name)//' axis boundaries', pack=pack_size)
+       ELSE
+          files(file)%f_bounds =  write_field_meta_data(files(file)%file_unit,&
+               & TRIM(time_name)//'_bnds', (/time_bounds_id,time_axis_id/),&
+               & time_units, TRIM(time_name)//' axis boundaries', pack=pack_size)
+       END IF
     END IF
     ! Let lower levels know that all meta data has been sent
     CALL done_meta_data(files(file)%file_unit)

@@ -1,22 +1,3 @@
-!***********************************************************************
-!*                   GNU General Public License                        *
-!* This file is a part of fvGFS.                                       *
-!*                                                                     *
-!* fvGFS is free software; you can redistribute it and/or modify it    *
-!* and are expected to follow the terms of the GNU General Public      *
-!* License as published by the Free Software Foundation; either        *
-!* version 2 of the License, or (at your option) any later version.    *
-!*                                                                     *
-!* fvGFS is distributed in the hope that it will be useful, but        *
-!* WITHOUT ANY WARRANTY; without even the implied warranty of          *
-!* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU   *
-!* General Public License for more details.                            *
-!*                                                                     *
-!* For the full text of the GNU General Public License,                *
-!* write to: Free Software Foundation, Inc.,                           *
-!*           675 Mass Ave, Cambridge, MA 02139, USA.                   *
-!* or see:   http://www.gnu.org/licenses/gpl.html                      *
-!***********************************************************************
 #ifdef test_fms_io
 
  program fms_io_test
@@ -32,7 +13,7 @@
  use mpp_io_mod,      only: mpp_open, mpp_close, MPP_ASCII, MPP_RDONLY
  use fms_io_mod,      only: read_data, write_data, fms_io_init, fms_io_exit
  use fms_io_mod,      only: file_exist, register_restart_field, save_restart, restore_state
- use fms_io_mod,      only: restart_file_type, free_restart_type
+ use fms_io_mod,      only: restart_file_type
  use mpp_io_mod,      only: MAX_FILE_SIZE
 
  implicit none
@@ -70,10 +51,6 @@
     integer, allocatable, dimension(:,:,:)     :: data1_i2d, data2_i2d, data1_i2d_read, data2_i2d_read
     integer, allocatable, dimension(:,:)       :: data1_i1d, data2_i1d, data1_i1d_read, data2_i1d_read
     integer, allocatable, dimension(:)         :: data1_i0d, data2_i0d, data1_i0d_read, data2_i0d_read
-#ifdef OVERLOAD_R4
-    real(DOUBLE_KIND), allocatable, dimension(:,:,:,:)   :: data1_r3d8, data1_r3d8_read
-    real(DOUBLE_KIND), allocatable, dimension(:,:,:)     :: data1_r2d8, data1_r2d8_read
-#endif
  end type data_storage_type
  
  type(data_storage_type), save :: latlon_data
@@ -82,14 +59,11 @@
  type(domain2d),          save :: domain_cubic
  type(restart_file_type), save :: restart_latlon
  type(restart_file_type), save :: restart_cubic
- type(restart_file_type), save :: restart_latlon_r8
- type(restart_file_type), save :: restart_cubic_r8
  integer                       :: ntile_latlon = 1
  integer                       :: ntile_cubic = 6
  integer                       :: npes
 
  character(len=128) :: file_latlon, file_cubic
- character(len=128) :: file_latlon_r8, file_cubic_r8
  integer :: outunit
 
  call mpp_init
@@ -123,13 +97,9 @@
 
  file_latlon   = "test.res.latlon_grid.save_restore.nc"
  file_cubic    = "test.res.cubic_grid.save_restore.nc"
- file_latlon_r8 = "test_r8.res.latlon_grid.save_restore.nc"
- file_cubic_r8  = "test_r8.res.cubic_grid.save_restore.nc"
 
- call setup_test_restart(restart_latlon, "latlon_grid", ntile_latlon, latlon_data, file_latlon, &
-                         layout_latlon, domain_latlon, restart_latlon_r8, file_latlon_r8)
- call setup_test_restart(restart_cubic,  "cubic_grid", ntile_cubic, cubic_data, file_cubic, &
-                         layout_cubic, domain_cubic, restart_cubic_r8, file_cubic_r8 )
+ call setup_test_restart(restart_latlon, "latlon_grid", ntile_latlon, latlon_data, file_latlon, layout_latlon, domain_latlon)
+ call setup_test_restart(restart_cubic,  "cubic_grid", ntile_cubic, cubic_data, file_cubic, layout_cubic, domain_cubic )
 
  if(file_exist('INPUT/'//trim(file_latlon), domain_latlon)) then
     call restore_state(restart_latlon)
@@ -139,20 +109,6 @@
     call restore_state(restart_cubic)
     call compare_restart("cubic_grid save_restore", cubic_data, .true. )
  end if
-
-#ifdef OVERLOAD_R4
- if(file_exist('INPUT/'//trim(file_latlon_r8), domain_latlon)) then
-    call restore_state(restart_latlon_r8)
-    call compare_data_r4d8(latlon_data%data1_r3d8, latlon_data%data1_r3d8_read, "latlon data1_r3d8")
-    call compare_data_r3d8(latlon_data%data1_r2d8, latlon_data%data1_r2d8_read, "latlon data1_r2d8")    
- end if
- if(file_exist('INPUT/'//trim(file_cubic_r8), domain_cubic) ) then
-    call restore_state(restart_cubic_r8)
-    call compare_data_r4d8(cubic_data%data1_r3d8, cubic_data%data1_r3d8_read, "cubic data1_r3d8")
-    call compare_data_r3d8(cubic_data%data1_r2d8, cubic_data%data1_r2d8_read, "cubic data1_r2d8")    
- end if
-
-#endif
  
  !---copy data
  if(mod(npes,ntile_latlon) == 0) call copy_restart_data(latlon_data)
@@ -165,14 +121,6 @@
  end do
  if(mod(npes,ntile_latlon) == 0) call save_restart(restart_latlon)
  if(mod(npes,ntile_cubic)  == 0) call save_restart(restart_cubic)
-
-#ifdef OVERLOAD_R4
- if(mod(npes,ntile_latlon) == 0) call save_restart(restart_latlon_r8)
- if(mod(npes,ntile_cubic)  == 0) call save_restart(restart_cubic_r8)
-#endif
-
- if(mod(npes,ntile_latlon) == 0) call free_restart_type(restart_latlon)
- if(mod(npes,ntile_cubic)  == 0) call free_restart_type(restart_cubic)
 
  if(mod(npes,ntile_latlon) == 0) call release_storage_memory(latlon_data)
  if(mod(npes,ntile_cubic) == 0 ) call release_storage_memory(cubic_data)
@@ -187,13 +135,12 @@
 contains
 
   !******************************************************************************
-  subroutine setup_test_restart(restart_data, type, ntiles, storage, file, layout_in, domain, &
-                                restart_data_r8, file_r8)
-    type(restart_file_type),   intent(inout) :: restart_data, restart_data_r8
+  subroutine setup_test_restart(restart_data, type, ntiles, storage, file, layout_in, domain)
+    type(restart_file_type),   intent(inout) :: restart_data
     character(len=*), intent(in)             :: type
     integer,          intent(in)             :: ntiles
     type(data_storage_type), intent(inout)   :: storage
-    character(len=*), intent(in)             :: file, file_r8
+    character(len=*), intent(in)             :: file  
     integer,          intent(in)             :: layout_in(:)
     type(domain2d),   intent(inout)          :: domain
     character(len=128)                       :: file_r
@@ -448,47 +395,6 @@ contains
                                 storage%data2_i0d_read(    2), &
                                 domain, longname="second data_i0d", units="none")
 
-
-#ifdef OVERLOAD_R4
-    allocate(storage%data1_r3d8(isd:ied, jsd:jed, nz, nt), storage%data1_r3d8_read(isd:ied, jsd:jed, nz, nt) )
-    allocate(storage%data1_r2d8(isd:ied, jsd:jed,     nt), storage%data1_r2d8_read(isd:ied, jsd:jed,     nt) )
-    storage%data1_r3d8_read = 0; storage%data1_r3d8_read = 0
-    storage%data1_r2d8 = 0; storage%data1_r2d8_read = 0
-
-    do n = 1, nt
-       do k = 1, nz
-          do j = jsc, jec
-             do i = isc, iec
-                storage%data1_r3d8(i,j,k,n) =  tile*1e6 + n*1e3 + k + i*1e-3 + j*1e-6; 
-             end do
-          end do
-       end do
-
-       do j = jsc, jec
-          do i = isc, iec
-             storage%data1_r2d8(i,j,n) =  tile*1e1 + n + i*1e-3 + j*1e-6; 
-          end do
-       end do
-    end do
-!    if(file_exist(file_r, domain)) then
-!       do n = 1, nt
-!          call read_data(file_r, "data1_r3d", storage%data1_r3d8_read(:,:,:,n), domain, timelevel = n )
-!          call read_data(file_r, "data1_r2d", storage%data1_r2d8_read(:,:,  n), domain, timelevel = n )
-!       end do
-!       call compare_data_r4d(storage%data1_r3d8, storage%data1_r3d8_read, type//" data1_r3d8")
-!       call compare_data_r3d(storage%data1_r2d8, storage%data1_r2d8_read, type//" data1_r2d8")
-!    end if
-
-    id_restart = register_restart_field(restart_data_r8, file_r8, "data1_r3d", storage%data1_r3d8_read(:,:,:,1), &
-                                domain, longname="first data_r3d",units="none", read_only=read_only)
-    id_restart = register_restart_field(restart_data_r8, file_r8, "data1_r3d", storage%data1_r3d8_read(:,:,:,2), &
-                                domain, longname="first data_r3d",units="none", read_only=read_only)
-    id_restart = register_restart_field(restart_data_r8, file_r8, "data1_r2d", storage%data1_r2d8_read(:,:,  1), &
-                                domain, longname="first data_r2d",units="none", read_only=read_only)
-    id_restart = register_restart_field(restart_data_r8, file_r8, "data1_r2d", storage%data1_r2d8_read(:,:,  2), &
-                                domain, longname="first data_r2d",units="none", read_only=read_only)
-#endif
-
   end subroutine setup_test_restart
 
   subroutine compare_restart(type, storage, compare_r4d)
@@ -547,10 +453,6 @@ contains
     storage%data1_r0d_read = storage%data1_r0d; storage%data2_r0d_read = storage%data2_r0d
     storage%data1_i0d_read = storage%data1_i0d; storage%data2_i0d_read = storage%data2_i0d
     storage%data1_r4d_read = storage%data1_r4d; storage%data2_r4d_read = storage%data2_r4d
-#ifdef OVERLOAD_R4
-    storage%data1_r3d8_read = storage%data1_r3d8
-    storage%data1_r2d8_read = storage%data1_r2d8
-#endif
 
     return
 
@@ -632,43 +534,6 @@ contains
     end if
   end subroutine compare_data_r4d
 
-  subroutine compare_data_r4d8( a, b, string )
-    real(DOUBLE_KIND), intent(in), dimension(:,:,:,:) :: a, b
-    character(len=*), intent(in)         :: string
-    integer(LONG_KIND)                   :: sum1, sum2
-    integer                              :: i, j, k, l
-    integer, parameter                   :: stdunit = 6
-
-    if(size(a,1) .ne. size(b,1) .or. size(a,2) .ne. size(b,2) .or. size(a,3) .ne. size(b,3) .or. size(a,4) .ne. size(b,4) ) &
-         call mpp_error(FATAL,'compare_data_r4d: size of a and b does not match')
-
-    do l = 1, size(a,4)
-       do k = 1, size(a,3)
-          do j = 1, size(a,2)
-             do i = 1, size(a,1)
-                if(a(i,j,k,l) .ne. b(i,j,k,l)) then
-                   write(stdunit,'(a,i3,a,i3,a,i3,a,i3,a,i3,a,f18.6,a,f18.6)')" at pe ", mpp_pe(), &
-                        ", at point (",i,", ", j, ", ", k, ", ", l, "), a = ", a(i,j,k,l), ", b = ", b(i,j,k,l)
-                   call mpp_error(FATAL, trim(string)//': point by point comparison are not OK.')
-                endif
-             enddo
-          enddo
-       enddo
-    enddo
-    sum1 = mpp_chksum( a, (/mpp_pe()/) )
-    sum2 = mpp_chksum( b, (/mpp_pe()/) )
-
-    if( sum1.EQ.sum2 )then
-       if( mpp_pe() .EQ. mpp_root_pe() )call mpp_error( NOTE, trim(string)//': OK.' )
-       !--- in some case, even though checksum agree, the two arrays 
-       !    actually are different, like comparing (1.1,-1.2) with (-1.1,1.2)
-       !--- hence we need to check the value point by point.
-    else
-       call mpp_error( FATAL, trim(string)//': chksums are not OK.' )
-    end if
-  end subroutine compare_data_r4d8
-
-
   subroutine compare_data_i4d( a, b, string )
     integer, intent(in), dimension(:,:,:,:) :: a, b
     character(len=*), intent(in)            :: string
@@ -715,40 +580,6 @@ contains
        call mpp_error( FATAL, trim(string)//': chksums are not OK.' )
     end if
   end subroutine compare_data_r3d
-
-  subroutine compare_data_r3d8( a, b, string )
-    real(DOUBLE_KIND), intent(in), dimension(:,:,:) :: a, b
-    character(len=*), intent(in)       :: string
-    integer(LONG_KIND)                 :: sum1, sum2
-    integer                            :: i, j, l
-    integer, parameter                 :: stdunit = 6
-
-    if(size(a,1) .ne. size(b,1) .or. size(a,2) .ne. size(b,2) .or. size(a,3) .ne. size(b,3) ) &
-         call mpp_error(FATAL,'compare_data_r3d: size of a and b does not match')
-
-    do l = 1, size(a,3)
-       do j = 1, size(a,2)
-          do i = 1, size(a,1)
-             if(a(i,j,l) .ne. b(i,j,l)) then
-                write(stdunit,'(a,i3,a,i3,a,i3,a,i3,a,f16.9,a,f16.9)')" at pe ", mpp_pe(), &
-                     ", at point (",i,", ", j, ", ", l, "), a = ", a(i,j,l), ", b = ", b(i,j,l)
-                call mpp_error(FATAL, trim(string)//': point by point comparison are not OK.')
-             endif
-          enddo
-       enddo
-    enddo
-    sum1 = mpp_chksum( a, (/mpp_pe()/) )
-    sum2 = mpp_chksum( b, (/mpp_pe()/) )
-
-    if( sum1.EQ.sum2 )then
-       if( mpp_pe() .EQ. mpp_root_pe() )call mpp_error( NOTE, trim(string)//': OK.' )
-       !--- in some case, even though checksum agree, the two arrays 
-       !    actually are different, like comparing (1.1,-1.2) with (-1.1,1.2)
-       !--- hence we need to check the value point by point.
-    else
-       call mpp_error( FATAL, trim(string)//': chksums are not OK.' )
-    end if
-  end subroutine compare_data_r3d8
 
   subroutine compare_data_i3d( a, b, string )
     integer, intent(in), dimension(:,:,:) :: a, b
