@@ -995,7 +995,7 @@ module GFS_typedefs
     Sfcprop%t2m = clear_val
     Sfcprop%q2m = clear_val
 
-    if ((Model%nstf_name(1) > 0) .or. (Model%nst_anl)) then
+    if (Model%nstf_name(1) > 0) then
       allocate (Sfcprop%tref   (IM))
       allocate (Sfcprop%z_c    (IM))
       allocate (Sfcprop%c_0    (IM))
@@ -1015,24 +1015,24 @@ module GFS_typedefs
       allocate (Sfcprop%dt_cool(IM))
       allocate (Sfcprop%qrain  (IM))
 
-      Sfcprop%tref    = clear_val
-      Sfcprop%z_c     = clear_val
-      Sfcprop%c_0     = clear_val
-      Sfcprop%c_d     = clear_val
-      Sfcprop%w_0     = clear_val
-      Sfcprop%w_d     = clear_val
-      Sfcprop%xt      = clear_val
-      Sfcprop%xs      = clear_val
-      Sfcprop%xu      = clear_val
-      Sfcprop%xv      = clear_val
-      Sfcprop%xz      = clear_val
-      Sfcprop%zm      = clear_val
-      Sfcprop%xtts    = clear_val
-      Sfcprop%xzts    = clear_val
-      Sfcprop%d_conv  = clear_val
-      Sfcprop%ifd     = clear_val
-      Sfcprop%dt_cool = clear_val
-      Sfcprop%qrain   = clear_val
+      Sfcprop%tref    = zero
+      Sfcprop%z_c     = zero
+      Sfcprop%c_0     = zero
+      Sfcprop%c_d     = zero
+      Sfcprop%w_0     = zero
+      Sfcprop%w_d     = zero
+      Sfcprop%xt      = zero
+      Sfcprop%xs      = zero
+      Sfcprop%xu      = zero
+      Sfcprop%xv      = zero
+      Sfcprop%xz      = zero
+      Sfcprop%zm      = zero
+      Sfcprop%xtts    = zero
+      Sfcprop%xzts    = zero
+      Sfcprop%d_conv  = zero
+      Sfcprop%ifd     = zero
+      Sfcprop%dt_cool = zero
+      Sfcprop%qrain   = zero
     endif
 
   end subroutine sfcprop_create
@@ -1248,7 +1248,7 @@ module GFS_typedefs
 
     !--- modules
     use physcons,         only: max_lon, max_lat, min_lon, min_lat, &
-                                dxmax, dxmin, dxinv
+                                dxmax, dxmin, dxinv, con_rerth, con_pi
     use mersenne_twister, only: random_setseed, random_number
     use module_ras,       only: nrcmax
     use parse_tracers,    only: get_tracer_index
@@ -1282,6 +1282,7 @@ module GFS_typedefs
     integer :: ios
     integer :: seed0
     logical :: exists
+    real(kind=kind_phys) :: tem
     real(kind=kind_phys) :: rinc(5)
     real(kind=kind_evod) :: wrk(1)
     real(kind=kind_phys), parameter :: con_hr = 3600.
@@ -1471,7 +1472,7 @@ module GFS_typedefs
                                cs_parm, flgmin, cgwf, ccwf, cdmbgwd, sup, ctei_rm, crtrh,   &
                                dlqf,                                                        &
                           !--- Rayleigh friction
-                               prslrd0, ral_ts, dlqf, nst_anl, lsea, xkzm_m,                &
+                               prslrd0, ral_ts,                                             &
                           !--- near surface temperature model
                                nst_anl, lsea, xkzm_m, xkzm_h, xkzm_s, nstf_name,            &
                           !--- stochastic physics
@@ -1719,8 +1720,9 @@ module GFS_typedefs
 
     !--- BEGIN CODE FROM GFS_PHYSICS_INITIALIZE
     !--- define physcons module variables
-    dxmax = log(1.0d0/(max_lon*max_lat))
-    dxmin = log(1.0d0/(min_lon*min_lat))
+    tem   = con_rerth*con_rerth*(con_pi+con_pi)*con_pi
+    dxmax = log(tem/(max_lon*max_lat))
+    dxmin = log(tem/(min_lon*min_lat))
     dxinv = 1.0d0 / (dxmax-dxmin)
     if (Model%me == Model%master) write(0,*)' dxmax=',dxmax,' dxmin=',dxmin,' dxinv=',dxinv
 

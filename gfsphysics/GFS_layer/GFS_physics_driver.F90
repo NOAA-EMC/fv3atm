@@ -628,7 +628,8 @@ module module_physics_driver
         tice(i) = Sfcprop%tisfc(i)
 !
 !GFDL        work1(i)   = (log(coslat(i) / (nlons(i)*latr)) - dxmin) * dxinv
-        work1(i)   = (log(Grid%dx(i)) - dxmin) * dxinv
+!       work1(i)   = (log(Grid%dx(i)) - dxmin) * dxinv
+        work1(i)   = (log(Grid%area(i)) - dxmin) * dxinv
         work1(i)   = max(0.0, min(1.0,work1(i)))
         work2(i)   = 1.0 - work1(i)
         Diag%psurf(i)   = Statein%pgr(i)

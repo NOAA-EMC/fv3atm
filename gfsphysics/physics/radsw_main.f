@@ -442,6 +442,7 @@
       real (kind=kind_phys), parameter :: bpade   = 1.0/0.278
       real (kind=kind_phys), parameter :: stpfac  = 296.0/1013.0
       real (kind=kind_phys), parameter :: ftiny   = 1.0e-12
+      real (kind=kind_phys), parameter :: flimit  = 1.0e-20
 !> internal solar constant
       real (kind=kind_phys), parameter :: s0      = 1368.22
 
@@ -2432,7 +2433,7 @@
      &       zrpp, zrkg1, zrkg3, zrkg4, zexp1, zexm1, zexp2, zexm2,     &
      &       zexp3, zexp4, zden1, ze1r45, ftind, zsolar, zrefb1,        &
      &       zrefd1, ztrab1, ztrad1, ztdbt0, zr1, zr2, zr3, zr4, zr5,   &
-     &       zt1, zt2, zt3, zf1, zf2
+     &       zt1, zt2, zt3, zf1, zf2, zrpp1
 
       integer :: ib, ibd, jb, jg, k, kp, itind
 !
@@ -2583,7 +2584,8 @@
             zrp  = zrk * cosz
             zrp1 = f_one + zrp
             zrm1 = f_one - zrp
-            zrpp = f_one - zrp*zrp
+            zrpp1= f_one - zrp*zrp
+            zrpp = sign( max(flimit, abs(zrpp1)), zrpp1 )    ! avoid numerical singularity
             zrkg1= zrk + zgam1
             zrkg3= zrk * zgam3
             zrkg4= zrk * zgam4
@@ -2800,7 +2802,8 @@
                 zrp  = zrk * cosz
                 zrp1 = f_one + zrp
                 zrm1 = f_one - zrp
-                zrpp = f_one - zrp*zrp
+                zrpp1= f_one - zrp*zrp
+                zrpp = sign( max(flimit, abs(zrpp1)), zrpp1 )    ! avoid numerical singularity
                 zrkg1= zrk + zgam1
                 zrkg3= zrk * zgam3
                 zrkg4= zrk * zgam4
@@ -3192,7 +3195,7 @@
      &       za1, za2, zb1, zb2, zrk, zrk2, zrp, zrp1, zrm1, zrpp,      &
      &       zrkg1, zrkg3, zrkg4, zexp1, zexm1, zexp2, zexm2, zden1,    &
      &       zexp3, zexp4, ze1r45, ftind, zsolar, ztdbt0, zr1, zr2,     &
-     &       zr3, zr4, zr5, zt1, zt2, zt3, zf1, zf2
+     &       zr3, zr4, zr5, zt1, zt2, zt3, zf1, zf2, zrpp1
 
       integer :: ib, ibd, jb, jg, k, kp, itind
 !
@@ -3343,7 +3346,8 @@
             zrp  = zrk * cosz
             zrp1 = f_one + zrp
             zrm1 = f_one - zrp
-            zrpp = f_one - zrp*zrp
+            zrpp1= f_one - zrp*zrp
+            zrpp = sign( max(flimit, abs(zrpp1)), zrpp1 )    ! avoid numerical singularity
             zrkg1= zrk + zgam1
             zrkg3= zrk * zgam3
             zrkg4= zrk * zgam4
@@ -3553,7 +3557,8 @@
                 zrp  = zrk * cosz
                 zrp1 = f_one + zrp
                 zrm1 = f_one - zrp
-                zrpp = f_one - zrp*zrp
+                zrpp1= f_one - zrp*zrp
+                zrpp = sign( max(flimit, abs(zrpp1)), zrpp1 )    ! avoid numerical singularity
                 zrkg1= zrk + zgam1
                 zrkg3= zrk * zgam3
                 zrkg4= zrk * zgam4
