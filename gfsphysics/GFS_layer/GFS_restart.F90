@@ -42,13 +42,13 @@ module physics_restart_layer
     type(init_type),            intent(in)    :: Init_parm
 
     !--- local variables
-    integer :: nblks, num, nb, max_rstrt
+    integer :: nblks, num, nb, max_rstrt, offset
     character(len=2) :: c2 = ''
     
     nblks = size(Init_parm%blksz)
     max_rstrt = size(IPD_Restart%name2d)
 
-    IPD_Restart%num2d = Model%ntot2d + Model%nctp
+    IPD_Restart%num2d = 3 + Model%ntot2d + Model%nctp
     IPD_Restart%num3d = Model%ntot3d
 
     allocate (IPD_Restart%name2d(IPD_Restart%num2d))
@@ -58,23 +58,35 @@ module physics_restart_layer
     IPD_Restart%name2d(:) = ' '
     IPD_Restart%name3d(:) = ' '
 
+    !--- Cldprop variables
+    IPD_Restart%name2d(1) = 'cv'
+    IPD_Restart%name2d(2) = 'cvt'
+    IPD_Restart%name2d(3) = 'cvb'
+    do nb = 1,nblks
+      IPD_Restart%data(nb,1)%var2p => Cldprop(nb)%cv(:)
+      IPD_Restart%data(nb,2)%var2p => Cldprop(nb)%cvt(:)
+      IPD_Restart%data(nb,3)%var2p => Cldprop(nb)%cvb(:)
+    enddo
+
     !--- phy_f2d variables
+    offset = 3
     do num = 1,Model%ntot2d
        !--- set the variable name
       write(c2,'(i2.2)') num
-      IPD_Restart%name2d(num) = 'phy_f2d_'//c2
+      IPD_Restart%name2d(num+offset) = 'phy_f2d_'//c2
       do nb = 1,nblks
-        IPD_Restart%data(nb,num)%var2p => Tbd(nb)%phy_f2d(:,num)
+        IPD_Restart%data(nb,num+offset)%var2p => Tbd(nb)%phy_f2d(:,num)
       enddo
     enddo
 
     !--- phy_fctd variables
+    offset = offset + Model%ntot2d
     do num = 1, Model%nctp
        !--- set the variable name
       write(c2,'(i2.2)') num
-      IPD_Restart%name2d(num+Model%ntot2d) = 'phy_fctd_'//c2
+      IPD_Restart%name2d(num+offset) = 'phy_fctd_'//c2
       do nb = 1,nblks
-        IPD_Restart%data(nb,num+Model%ntot2d)%var2p => Tbd(nb)%phy_fctd(:,num)
+        IPD_Restart%data(nb,num+offset)%var2p => Tbd(nb)%phy_fctd(:,num)
       enddo
     enddo
 
