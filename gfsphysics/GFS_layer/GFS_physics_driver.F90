@@ -1856,9 +1856,7 @@ module module_physics_driver
 !       write(0,*)' aftcnvgq1=',(gq0(ipr,k,ntcw),k=1,levs)
 !     endif
 !
-      do i = 1, im
-        Diag%rainc(:) = frain * rain1(:)
-      enddo
+      Diag%rainc(:) = frain * rain1(:)
 !
       if (Model%lssav) then
         Diag%cldwrk (:) = Diag%cldwrk (:) + cld1d(:) * dtf
