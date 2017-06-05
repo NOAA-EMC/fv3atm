@@ -9,11 +9,13 @@
 
 &atmos_model_nml
        blocksize = 32
+!     surface_debug = .false.
        chksum_debug = .false.
        dycore_only = .false.
 /
 
 &diag_manager_nml
+!conserve_water = .false.
        prepend_date = .F.
 /
 
@@ -30,7 +32,7 @@
 /
 
 &fv_grid_nml
-       grid_file = 'INPUT/grid_spec.nc'
+!       grid_file = 'INPUT/grid_spec.nc'
 /
 
 &fv_core_nml
@@ -40,29 +42,28 @@
        npy      = 97
        ntiles   = 6,
        npz    = 63
-       grid_type = -1
+       !grid_type = -1
        make_nh = @[MAKE_NH]
        fv_debug = .F.
        range_warn = .F.
        reset_eta = .F.
-       n_sponge = 24
-       nudge_qv = .T.
+       n_sponge = 20
        tau = 5.
-       rf_cutoff = 7.5e2
-       d2_bg_k1 = 0.15
+       rf_cutoff = 10.e2
+       d2_bg_k1 = 0.16
        d2_bg_k2 = 0.02
-       kord_tm = -9
-       kord_mt =  9
-       kord_wz =  9
-       kord_tr =  9
+       kord_tm = -10
+       kord_mt =  10
+       kord_wz =  10
+       kord_tr =  10
        hydrostatic = .F.
        phys_hydrostatic = .F.
        use_hydro_pressure = .F.
        beta = 0.
        a_imp = 1.
        p_fac = 0.1
-       k_split  = 2
-       n_split  = 6
+       k_split  = 1
+       n_split  = 5
        nwat = 2
        na_init = @[NA_INIT]
        d_ext = 0.0
@@ -70,10 +71,9 @@
        fv_sg_adj = 450
        d2_bg = 0.
        nord =  2
-       dddmp = 0.1
-       d4_bg = 0.12
-       vtdm4 = 0.02
-       delt_max = 0.002
+       dddmp = 0.2
+       d4_bg = 0.15 
+       vtdm4 = 0.06
        ke_bg = 0.
        do_vort_damp = .true.
        external_ic = @[EXTERNAL_IC]
@@ -83,40 +83,45 @@
        ncep_ic = .F.
        d_con = 1.
        hord_mt =  6
-       hord_vt =  6
-       hord_tm =  6
-       hord_dp =  6
-       hord_tr = 8
+       hord_vt =  -5
+       hord_tm =  -5
+       hord_dp =  -5
+       hord_tr = -8
        adjust_dry_mass = .F.
        consv_te = 1.
+       do_sat_adj = .F.
        consv_am = .F.
        fill = .T.
        dwind_2d = .F.
        print_freq = 6
        warm_start = @[WARM_START]
-       read_increment = @[READ_INCREMENT]
-       res_latlon_dynamics = "fv3_increment.nc"
        no_dycore = .false.
        z_tracer = .T.
+
+       do_schmidt = .true.
+       target_lat = 35.5
+       target_lon = -97.5
+       stretch_fac = 1.5
+
 /
 
 &coupler_nml
        months = 0
-       days  = 1
+       days  = 2
        hours = 0
-       dt_atmos = 1800
-       dt_ocean = 1800
-       current_date =  2016,10,03,00,0,0
+       dt_atmos = 450
+       dt_ocean = 450
+       current_date =  2017,03,28,00,0,0
        calendar = 'julian'
        memuse_verbose = .false.
-       atmos_nthreads = 1
+       atmos_nthreads = 2
        use_hyper_thread = .false.
        ncores_per_node = 24
 /
 
 &external_ic_nml
        filtered_terrain = .true.
-       ncep_plevels = .true.
+       ncep_plevels = .false.
        levp = 64
        gfs_dwinds = .true.
        checker_tr = .F.
@@ -155,12 +160,15 @@
        cnvcld         = .true.
        imfshalcnv     = 2
        imfdeepcnv     = 2
-       cdmbgwd        = 3.5,0.25
+       cdmbgwd        = 2.0, 0.25       ! NCEP default
        prslrd0        = 0.
        ivegsrc        = 1
        isot           = 1
        debug          = .false.
-       nstf_name      = @[NSTF_NAME]
+	   cdmbgwd = 3.5,0.25
+	   dspheat = .T.
+	   hybedmf = .F.
+	   shal_cnv = .T. !Shallow convection
 /
 
 &nggps_diag_nml
