@@ -2652,6 +2652,42 @@ module physics_diag_layer
       IPD_Diag(idx)%data(nb)%var2p => Sfcprop(nb)%ffmm
     enddo
 
+    !---uustar
+    idx = idx + 1
+    IPD_Diag(idx)%name           = 'uustar'
+    IPD_Diag(idx)%output_name    = 'UUSTAR'
+    IPD_Diag(idx)%mod_name       = 'surface'
+    IPD_Diag(idx)%file_name      = 'sfc'
+    IPD_Diag(idx)%desc           = 'frictiobal wind [numeric] at surface layer'
+    IPD_Diag(idx)%unit           = 'numeric'
+    IPD_Diag(idx)%type_stat_proc = 'inst'
+    IPD_Diag(idx)%level_type     = 'sfc'
+    IPD_Diag(idx)%level          = 1
+    IPD_Diag(idx)%cnvfac         = cn_one
+    IPD_Diag(idx)%zhour          = Model%zhour
+    IPD_Diag(idx)%fcst_hour      = Model%fhour
+    do nb = 1,nblks
+      IPD_Diag(idx)%data(nb)%var2p => Sfcprop(nb)%uustar
+    enddo
+
+    !---slope
+    idx = idx + 1
+    IPD_Diag(idx)%name           = 'slope'
+    IPD_Diag(idx)%output_name    = 'SLOPE'
+    IPD_Diag(idx)%mod_name       = 'surface'
+    IPD_Diag(idx)%file_name      = 'sfc'
+    IPD_Diag(idx)%desc           = 'surface slope type [numeric]'
+    IPD_Diag(idx)%unit           = 'numeric'
+    IPD_Diag(idx)%type_stat_proc = ''
+    IPD_Diag(idx)%level_type     = 'sfc'
+    IPD_Diag(idx)%level          = 1
+    IPD_Diag(idx)%cnvfac         = cn_one
+    IPD_Diag(idx)%zhour          = Model%zhour
+    IPD_Diag(idx)%fcst_hour      = Model%fhour
+    do nb = 1,nblks
+      IPD_Diag(idx)%data(nb)%var2p => Sfcprop(nb)%slope
+    enddo
+
     !---fice
     idx = idx + 1
     IPD_Diag(idx)%name           = 'fice'
