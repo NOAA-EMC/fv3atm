@@ -2312,6 +2312,28 @@ module FV3GFS_io_mod
 
     idx = idx + 1
     Diag(idx)%axes = 2
+    Diag(idx)%name = 'uustar'
+    Diag(idx)%desc = 'uustar surface frictional wind'
+    Diag(idx)%unit = 'XXX'
+    Diag(idx)%mod_name = 'gfs_sfc'
+    allocate (Diag(idx)%data(nblks))
+    do nb = 1,nblks
+      Diag(idx)%data(nb)%var2 => Sfcprop(nb)%uustar(:)
+    enddo
+
+    idx = idx + 1
+    Diag(idx)%axes = 2
+    Diag(idx)%name = 'slope'
+    Diag(idx)%desc = 'surface slope type'
+    Diag(idx)%unit = 'XXX'
+    Diag(idx)%mod_name = 'gfs_sfc'
+    allocate (Diag(idx)%data(nblks))
+    do nb = 1,nblks
+      Diag(idx)%data(nb)%var2 => Sfcprop(nb)%slope(:)
+    enddo
+ 
+    idx = idx + 1
+    Diag(idx)%axes = 2
     Diag(idx)%name = 'fice'
     Diag(idx)%desc = 'surface ice concentration (ice=1; no ice=0) [fraction]'
     Diag(idx)%unit = 'fraction'
