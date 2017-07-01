@@ -740,8 +740,8 @@ c  below lfc check if there is excess moisture to release latent heat
 c
               if(k >= kbcon(i) .and. dq > 0.) then
                 etah = .5 * (eta(i,k) + eta(i,k-1))
+                dp = 1000. * del(i,k)
                 if(ncloud > 0) then
-                  dp = 1000. * del(i,k)
                   ptem = c0t(i,k) + c1
                   qlk = dq / (eta(i,k) + etah * ptem * dz)
                   dellal(i,k) = etah * c1 * dz * qlk * g / dp
@@ -896,8 +896,8 @@ c  check if there is excess moisture to release latent heat
 c
               if(dq > 0.) then
                 etah = .5 * (eta(i,k) + eta(i,k-1))
+                dp = 1000. * del(i,k)
                 if(ncloud > 0) then
-                  dp = 1000. * del(i,k)
                   ptem = c0t(i,k) + c1
                   qlk = dq / (eta(i,k) + etah * ptem * dz)
                   dellal(i,k) = etah * c1 * dz * qlk * g / dp

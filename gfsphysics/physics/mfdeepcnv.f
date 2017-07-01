@@ -10,23 +10,23 @@
      &,             eps => con_eps, epsm1 => con_epsm1
       implicit none
 !
-      integer            im, ix,  km, ncloud,
-     &                   kbot(im), ktop(im), kcnv(im) 
-!    &,                  me
-      real(kind=kind_phys) delt
-      real(kind=kind_phys) psp(im),    delp(ix,km), prslp(ix,km)
-      real(kind=kind_phys) ps(im),     del(ix,km),  prsl(ix,km),
-     &                     ql(ix,km,2),q1(ix,km),   t1(ix,km),
-     &                     u1(ix,km),  v1(ix,km),
-!    &                     u1(ix,km),  v1(ix,km),   rcs(im),
-     &                     cldwrk(im), rn(im),      garea(im),
-     &                     dot(ix,km), phil(ix,km),
-     &                     cnvw(ix,km),cnvc(ix,km),
-! hchuang code change mass flux output
-     &                     ud_mf(im,km),dd_mf(im,km),dt_mf(im,km)
+      integer, intent(in)  :: im, ix,  km, ncloud
+      integer, intent(in)  :: islimsk(im)
+      real(kind=kind_phys), intent(in) ::  delt
+      real(kind=kind_phys), intent(in) :: psp(im), delp(ix,km), 
+     &   prslp(ix,km),  garea(im), dot(ix,km), phil(ix,km) 
+
+      integer, intent(inout)  :: kcnv(im)        
+      real(kind=kind_phys), intent(inout) ::   ql(ix,km,2),    
+     &   q1(ix,km), t1(ix,km),   u1(ix,km), v1(ix,km)
+
+      integer, intent(out) :: kbot(im), ktop(im) 
+      real(kind=kind_phys), intent(out) :: cldwrk(im), 
+     &   rn(im),      cnvw(ix,km),  cnvc(ix,km),
+     &   ud_mf(im,km),dd_mf(im,km), dt_mf(im,km)
 !
+!------local variables
       integer              i, indx, jmn, k, kk, km1, n
-      integer, dimension(im), intent(in) :: islimsk
 !     integer              latd,lond
 !
       real(kind=kind_phys) clam,    cxlamu,  cxlamd,
@@ -71,7 +71,8 @@
      &                     kbm(im), kmax(im)
 !
 !     real(kind=kind_phys) aa1(im),     acrt(im),   acrtfct(im),
-      real(kind=kind_phys) aa1(im),
+      real(kind=kind_phys) aa1(im), 
+     &                     ps(im), del(ix,km),  prsl(ix,km),
      &                     umean(im),   tauadv(im), gdx(im),
      &                     delhbar(im), delq(im),   delq2(im),
      &                     delqbar(im), delqev(im), deltbar(im),
@@ -625,6 +626,7 @@ c
               tem      = 0.5*(xlamud(i,k)+xlamud(i,k-1))
               ptem     = 0.5*(xlamue(i,k)+xlamue(i,k-1))-tem
               eta(i,k) = eta(i,k-1) * (1 + ptem * dz)
+
               if(eta(i,k) <= 0.) then
                 kmax(i) = k
                 ktconn(i) = k
@@ -895,8 +897,9 @@ c  check if there is excess moisture to release latent heat
 c
               if(k >= kbcon(i) .and. dq > 0.) then
                 etah = .5 * (eta(i,k) + eta(i,k-1))
+                dp = 1000. * del(i,k)
                 if(ncloud > 0 .and. k > jmin(i)) then
-                  dp = 1000. * del(i,k)
+!fyang            dp = 1000. * del(i,k)   !causing reproducibility problem
                   ptem = c0t(i,k) + c1
                   qlk = dq / (eta(i,k) + etah * ptem * dz)
                   dellal(i,k) = etah * c1 * dz * qlk * g / dp
@@ -1060,8 +1063,8 @@ c  check if there is excess moisture to release latent heat
 c
               if(dq > 0.) then
                 etah = .5 * (eta(i,k) + eta(i,k-1))
+                dp = 1000. * del(i,k)
                 if(ncloud > 0) then
-                  dp = 1000. * del(i,k)
                   ptem = c0t(i,k) + c1
                   qlk = dq / (eta(i,k) + etah * ptem * dz)
                   dellal(i,k) = etah * c1 * dz * qlk * g / dp

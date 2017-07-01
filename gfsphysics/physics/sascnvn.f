@@ -822,8 +822,9 @@ c  check if there is excess moisture to release latent heat
 c
               if(k.ge.kbcon(i).and.dq.gt.0.) then
                 etah = .5 * (eta(i,k) + eta(i,k-1))
+                dp = 1000. * del(i,k)
                 if(ncloud.gt.0..and.k.gt.jmin(i)) then
-                  dp = 1000. * del(i,k)
+!fyang            dp = 1000. * del(i,k) !not defined if k is smaller than jmin
                   qlk = dq / (eta(i,k) + etah * (c0 + c1) * dz)
                   dellal(i,k) = etah * c1 * dz * qlk * g / dp
                 else
@@ -949,8 +950,8 @@ c  check if there is excess moisture to release latent heat
 c
               if(dq.gt.0.) then
                 etah = .5 * (eta(i,k) + eta(i,k-1))
+                dp = 1000. * del(i,k)
                 if(ncloud.gt.0.) then
-                  dp = 1000. * del(i,k)
                   qlk = dq / (eta(i,k) + etah * (c0 + c1) * dz)
                   dellal(i,k) = etah * c1 * dz * qlk * g / dp
                 else
