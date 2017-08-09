@@ -1681,7 +1681,8 @@ module module_physics_driver
                         dt_mf, cnvw, cnvc)
         elseif (Model%imfdeepcnv == 2) then
           call mfdeepcnv (im, ix, levs, dtp, del, Statein%prsl,         &
-                          Statein%pgr, Statein%phil, clw(:,:,1:2), Stateout%gq0, &
+                          Statein%pgr, Statein%phil, clw(:,:,1:2),      &
+                          Stateout%gq0(:,:,1),                          &
                           Stateout%gt0, Stateout%gu0, Stateout%gv0,     &
                           cld1d, rain1, kbot, ktop, kcnv, islmsk,       &
                           garea, Statein%vvl, Model%ncld, ud_mf, dd_mf, &
@@ -1856,9 +1857,7 @@ module module_physics_driver
 !       write(0,*)' aftcnvgq1=',(gq0(ipr,k,ntcw),k=1,levs)
 !     endif
 !
-      do i = 1, im
-        Diag%rainc(:) = frain * rain1(:)
-      enddo
+      Diag%rainc(:) = frain * rain1(:)
 !
       if (Model%lssav) then
         Diag%cldwrk (:) = Diag%cldwrk (:) + cld1d(:) * dtf
@@ -2114,7 +2113,8 @@ module module_physics_driver
 
           elseif (Model%imfshalcnv == 2) then
             call mfshalcnv (im, ix, levs, dtp, del, Statein%prsl,         &
-                            Statein%pgr, Statein%phil, clw, Stateout%gq0, &
+                            Statein%pgr, Statein%phil, clw(:,:,1:2),      &
+                            Stateout%gq0(:,:,1),                          &
                             Stateout%gt0, Stateout%gu0, Stateout%gv0,     &
                             rain1, kbot, ktop, kcnv, islmsk, garea,       &
                             Statein%vvl, Model%ncld, DIag%hpbl, ud_mf,    &
@@ -2126,11 +2126,11 @@ module module_physics_driver
               Diag%cnvprcp(:) = Diag%cnvprcp(:) + raincs(:)
             endif
             if ((Model%shcnvcw) .and. (Model%num_p3d == 4) .and. (Model%npdf3d == 3)) then
-              Tbd%phy_f3d(:,:,num2) = cnvw(:,:)
-              Tbd%phy_f3d(:,:,num3) = cnvc(:,:)
+              Tbd%phy_f3d(:,:,num2) = Tbd%phy_f3d(:,:,num2) + cnvw(:,:)
+              Tbd%phy_f3d(:,:,num3) = Tbd%phy_f3d(:,:,num3) + cnvc(:,:)
             elseif ((Model%npdf3d == 0) .and. (Model%ncnvcld3d == 1)) then
               num2 = Model%num_p3d + 1
-              Tbd%phy_f3d(:,:,num2) = cnvw(:,:)
+              Tbd%phy_f3d(:,:,num2) = Tbd%phy_f3d(:,:,num2) + cnvw(:,:)
             endif
 
           elseif (Model%imfshalcnv == 0) then    ! modified Tiedtke Shallow convecton

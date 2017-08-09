@@ -84,7 +84,7 @@ elif [[ $MACHINE_ID = wcoss_cray ]]; then
   export PATH=/gpfs/hps/nco/ops/ecf/ecfdir/ecflow.v4.1.0.intel/bin:$PATH
   export PYTHONPATH=/gpfs/hps/nco/ops/ecf/ecfdir/ecflow.v4.1.0.intel/lib/python2.6/site-packages
   ECFLOW_START=/gpfs/hps/nco/ops/ecf/ecfdir/ecflow.v4.1.0.intel/bin/ecflow_start.sh
-  DISKNM=/gpfs/hps/emc/global
+  DISKNM=/gpfs/hps/emc/nems/noscrub/emc.nemspara/RT
   QUEUE=debug
   ACCNR=dev
   STMP=/gpfs/hps/stmp
@@ -105,7 +105,7 @@ elif [[ $MACHINE_ID = theia ]]; then
   ECFLOW_START=/scratch4/NCEPDEV/meso/save/Dusan.Jovic/ecflow/bin/ecflow_start.sh
   QUEUE=debug
   dprefix=/scratch4/NCEPDEV
-  DISKNM=$dprefix/nems
+  DISKNM=$dprefix/nems/noscrub/emc.nemspara/RT
   STMP=$dprefix/stmp4
   PTMP=$dprefix/stmp3
   SCHEDULER=pbs
@@ -173,7 +173,7 @@ while getopts ":cfsl:mreh" opt; do
   esac
 done
 
-RTPWD=${RTPWD:-${DISKNM}/noscrub/Jun.Wang/FV3_RT/REGRESSION_TEST}
+RTPWD=${RTPWD:-$DISKNM/NEMSfv3gfs/trunk-20170612}
 
 shift $((OPTIND-1))
 [[ $# -gt 0 ]] && usage
