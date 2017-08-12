@@ -46,6 +46,7 @@ use mpp_mod,            only: mpp_pe, mpp_root_pe, mpp_clock_id, mpp_clock_begin
 use mpp_mod,            only: mpp_clock_end, CLOCK_COMPONENT, MPP_CLOCK_SYNC
 use mpp_mod,            only: mpp_min, mpp_max, mpp_error, mpp_chksum
 use mpp_domains_mod,    only: domain2d
+use mpp_mod,            only: mpp_get_current_pelist_name
 #ifdef INTERNAL_FILE_NML
 use mpp_mod,            only: input_nml_file
 #else
@@ -62,15 +63,17 @@ use field_manager_mod,  only: MODEL_ATMOS
 use tracer_manager_mod, only: get_number_tracers, get_tracer_names
 use xgrid_mod,          only: grid_box_type
 use atmosphere_mod,     only: atmosphere_init
-use atmosphere_mod,     only: atmosphere_end
-use atmosphere_mod,     only: atmosphere_resolution, atmosphere_domain
-use atmosphere_mod,     only: atmosphere_boundary, atmosphere_grid_center
-use atmosphere_mod,     only: atmosphere_dynamics, get_atmosphere_axes
-use atmosphere_mod,     only: get_atmosphere_grid
 use atmosphere_mod,     only: atmosphere_restart
+use atmosphere_mod,     only: atmosphere_end
 use atmosphere_mod,     only: atmosphere_state_update
 use atmosphere_mod,     only: atmos_phys_driver_statein
-use atmosphere_mod,     only: atmosphere_control_data, atmosphere_pref
+use atmosphere_mod,     only: atmosphere_control_data
+use atmosphere_mod,     only: atmosphere_resolution, atmosphere_domain
+use atmosphere_mod,     only: atmosphere_grid_bdry, atmosphere_grid_ctr
+use atmosphere_mod,     only: atmosphere_dynamics, atmosphere_diag_axes
+use atmosphere_mod,     only: atmosphere_etalvls, atmosphere_hgt
+use atmosphere_mod,     only: atmosphere_tracer_postinit
+use atmosphere_mod,     only: atmosphere_scalar_field_halo
 use atmosphere_mod,     only: set_atmosphere_pelist
 use atmosphere_mod,     only: Atm, mytile
 use block_control_mod,  only: block_control_type, define_blocks_packed
@@ -115,6 +118,8 @@ public atmos_model_restart
                                                          ! to calculate gradient on cubic sphere grid.
      real(kind=8), pointer, dimension(:) :: ak
      real(kind=8), pointer, dimension(:) :: bk
+     real(kind=8), pointer, dimension(:,:,:) :: layer_hgt
+     real(kind=8), pointer, dimension(:,:,:) :: level_hgt
      real(kind=kind_phys), pointer, dimension(:,:) :: dx
      real(kind=kind_phys), pointer, dimension(:,:) :: dy
      real(kind=8), pointer, dimension(:,:) :: area
@@ -291,9 +296,9 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
   real(kind=kind_phys) :: dt_phys
   real, allocatable :: q(:,:,:,:), p_half(:,:,:)
   character(len=80) :: control
-  character(len=64) :: filename, filename2
+  character(len=64) :: filename, filename2, pelist_name
   character(len=132) :: text
-  logical :: p_hydro, hydro
+  logical :: p_hydro, hydro, fexist
   logical, save :: block_message = .true.
   type(IPD_init_type) :: Init_parm
   integer :: bdat(8), cdat(8)
@@ -316,7 +321,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
 
 !---------- initialize atmospheric dynamics -------
    call atmosphere_init (Atmos%Time_init, Atmos%Time, Atmos%Time_step,&
-                         Atmos%grid, Atmos%ak, Atmos%bk, Atmos%dx, Atmos%dy, Atmos%area)
+                         Atmos%grid, Atmos%dx, Atmos%dy, Atmos%area)
 
    IF ( file_exist('input.nml')) THEN
 #ifdef INTERNAL_FILE_NML
@@ -337,9 +342,12 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    call atmosphere_resolution (mlon, mlat, global=.true.)
    call alloc_atmos_data_type (nlon, nlat, Atmos)
    call atmosphere_domain (Atmos%domain)
-   call get_atmosphere_axes (Atmos%axes)
-   call atmosphere_boundary (Atmos%lon_bnd, Atmos%lat_bnd, global=.false.)
-   call atmosphere_grid_center (Atmos%lon, Atmos%lat)
+   call atmosphere_diag_axes (Atmos%axes)
+   call atmosphere_etalvls (Atmos%ak, Atmos%bk, flip=.true.)
+   call atmosphere_grid_bdry (Atmos%lon_bnd, Atmos%lat_bnd, global=.false.)
+   call atmosphere_grid_ctr (Atmos%lon, Atmos%lat)
+   call atmosphere_hgt (Atmos%layer_hgt, 'layer', relative=.false., flip=.true.)
+   call atmosphere_hgt (Atmos%level_hgt, 'level', relative=.false., flip=.true.)
 
 !-----------------------------------------------------------------------
 !--- before going any further check definitions for 'blocks'
@@ -387,7 +395,13 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    Init_parm%xlat            => Atmos%lat
    Init_parm%area            => Atmos%area
    Init_parm%tracer_names    => tracer_names
-   Init_parm%fn_nml          =  'input.nml'
+
+   pelist_name=mpp_get_current_pelist_name()
+   Init_parm%fn_nml='input_'//trim(pelist_name)//'.nml'
+   inquire(FILE=Init_parm%fn_nml, EXIST=fexist)
+   if (.not. fexist ) then
+      Init_parm%fn_nml='input.nml'
+   endif
 
    call IPD_initialize (IPD_Control, IPD_Data, IPD_Diag, IPD_Restart, Init_parm)
 
@@ -399,6 +413,9 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    Init_parm%area            => null()
    Init_parm%tracer_names    => null()
    deallocate (tracer_names)
+
+   !--- update tracers in FV3 with any initialized during the physics/radiation init phase
+!!!RAB   call atmosphere_tracer_postinit (IPD_Data, Atm_block)
 
    call gfdl_diag_register (Time, IPD_Data(:)%Sfcprop, IPD_Data(:)%IntDiag, Atm_block, Atmos%axes, IPD_Control%nfxr)
    call FV3GFS_restart_read (IPD_Data, IPD_Restart, Atm_block, IPD_Control, Atmos%domain)
