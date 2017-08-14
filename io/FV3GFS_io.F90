@@ -21,9 +21,12 @@ module FV3GFS_io_mod
   use fms_io_mod,         only: restart_file_type, free_restart_type, &
                                 register_restart_field,               &
                                 restore_state, save_restart
-  use mpp_domains_mod,    only: domain2d
+  use mpp_domains_mod,    only: domain1d, domain2d
   use time_manager_mod,   only: time_type
   use diag_manager_mod,   only: register_diag_field, send_data
+  use diag_axis_mod,      only: get_axis_global_length, get_diag_axis
+  use diag_data_mod,      only: output_fields, max_output_fields
+  use diag_util_mod,      only: find_input_field
 
 !
 !--- GFS physics modules
@@ -38,6 +41,7 @@ module FV3GFS_io_mod
   use IPD_typedefs,       only: IPD_control_type, IPD_data_type, &
                                 IPD_restart_type
 !
+!
 !-----------------------------------------------------------------------
   implicit none
   private
@@ -46,6 +50,9 @@ module FV3GFS_io_mod
   public  FV3GFS_restart_read, FV3GFS_restart_write
   public  FV3GFS_IPD_checksum
   public  gfdl_diag_register, gfdl_diag_output
+#ifdef use_WRTCOMP
+  public  fv_phys_bundle_setup
+#endif
 
   !--- GFDL filenames
   character(len=32)  :: fn_oro = 'oro_data.nc'
@@ -85,6 +92,10 @@ module FV3GFS_io_mod
    real(kind=kind_phys) :: zhour
 !
    integer :: tot_diag_idx = 0
+   integer :: total_outputlevel = 0
+   integer :: isco,ieco,jsco,jeco
+   integer,dimension(:), allocatable :: nstt
+   real(4), dimension(:,:,:), allocatable, target :: buffer_phys
    integer, parameter :: DIAG_SIZE = 250
    real(kind=kind_phys), parameter :: missing_value = 1.d30
    type(gfdl_diag_type), dimension(DIAG_SIZE) :: Diag
@@ -92,7 +103,8 @@ module FV3GFS_io_mod
 
  
 !--- miscellaneous other variables
-  logical :: module_is_initialized = .FALSE.
+  logical :: use_wrtgridcomp_output = .FALSE.
+  logical :: module_is_initialized  = .FALSE.
 
   CONTAINS
 
@@ -1166,7 +1178,7 @@ module FV3GFS_io_mod
     integer, dimension(4),     intent(in) :: axes
     integer,                   intent(in) :: NFXR
 !--- local variables
-    integer :: idx, num, nb, nblks, nx, ny, k
+    integer :: idx, num, nb, nblks, nx, ny, k, nrgst
     integer, allocatable :: blksz(:)
     character(len=2) :: xtra
     real(kind=kind_phys), parameter :: cn_one = 1._kind_phys
@@ -1177,6 +1189,11 @@ module FV3GFS_io_mod
     nblks = Atm_block%nblks
     allocate (blksz(nblks))
     blksz(:) = Atm_block%blksz(:)
+
+    isco = Atm_block%isc
+    ieco = Atm_block%iec
+    jsco = Atm_block%jsc
+    jeco = Atm_block%jec
 
     Diag(:)%id = -99
     Diag(:)%axes = -99
@@ -2696,16 +2713,34 @@ module FV3GFS_io_mod
       call mpp_error(FATAL, 'gfs_driver::gfs_diag_register - need to increase DIAG_SIZE') 
     endif
 
+    allocate(nstt(tot_diag_idx))
+    nstt = 0
+    nrgst = 0
     do idx = 1,tot_diag_idx
       if (diag(idx)%axes == -99) then
-        call mpp_error(FATAL, 'gfs_driver::gfs_diag_register - attempt to register an undefined variable') 
+        call mpp_error(FATAL, 'gfs_driver::gfs_diag_register - attempt to register an undefined variable')
       endif
       Diag(idx)%id = register_diag_field (trim(Diag(idx)%mod_name), trim(Diag(idx)%name),  &
-                                           axes(1:Diag(idx)%axes), Time, trim(Diag(idx)%desc), &
-                                           trim(Diag(idx)%unit), missing_value=real(missing_value))
-    enddo
-!!!#endif
+                                          axes(1:Diag(idx)%axes), Time, trim(Diag(idx)%desc), &
+                                          trim(Diag(idx)%unit), missing_value=real(missing_value))
+      if(Diag(idx)%id > 0) then
+        if (Diag(idx)%axes == 2) then
+           nrgst = nrgst+1
+           nstt(idx) = nrgst
+!        elif (Diag(idx)%axes == 3) then
+!           nrgst = nrgst+levs
+        endif
+      endif
 
+    enddo
+
+    total_outputlevel = nrgst
+    allocate(buffer_phys(isco:ieco,jsco:jeco,total_outputlevel))
+    buffer_phys = 0.
+    if(mpp_pe()==mpp_root_pe())print *,'in gfdl_diag_register,tot_diag_idx=',tot_diag_idx, &
+      'total_outputlevel=',total_outputlevel,'isco=',isco,ieco,'jsco=',jsco,jeco
+
+!
   end subroutine gfdl_diag_register
 !-------------------------------------------------------------------------      
 
@@ -2805,7 +2840,8 @@ module FV3GFS_io_mod
              enddo
            endif
 !rab           used=send_data(Diag(idx)%id, var2, Time, is_in=is_in, js_in=js_in)
-           used=send_data(Diag(idx)%id, var2, Time)
+!           used=send_data(Diag(idx)%id, var2, Time)
+           call store_data(Diag(idx)%id, var2, Time, nstt(idx))
          elseif (Diag(idx)%axes == 3) then
          !---
          !--- skipping the 3D variables with the following else statement
@@ -2893,7 +2929,244 @@ module FV3GFS_io_mod
 
 
   end subroutine gfdl_diag_output
-!-------------------------------------------------------------------------      
+!
+!-------------------------------------------------------------------------
+  subroutine store_data(id, work, Time, nst)
+    integer, intent(in)                 :: id
+    integer, intent(in)                 :: nst
+    real(kind=kind_phys), intent(in)    :: work(ieco-isco+1,jeco-jsco+1)
+    type(time_type), intent(in)         :: Time
+!
+    integer k,j,i,kb
+    logical used
+!
+    if( id > 0 ) then
+      if( use_wrtgridcomp_output ) then
+          do j= jsco,jeco
+            do i= isco,ieco
+              buffer_phys(i,j,nst) = work(i-isco+1,j-jsco+1)
+            enddo
+          enddo
+      else
+        used = send_data(id, work, Time)
+      endif
+    endif
+!
+ end subroutine store_data
+!-------------------------------------------------------------------------
+!
+#ifdef use_WRTCOMP
 
+ subroutine fv_phys_bundle_setup(axes, phys_bundle, fcst_grid, quilting )
+!
+!-------------------------------------------------------------
+!*** set esmf bundle for dyn output fields
+!------------------------------------------------------------
+!
+   use esmf
+   use diag_data_mod, ONLY:  diag_atttype
+!
+   integer, intent(in)         :: axes(:)
+   type(ESMF_FieldBundle),intent(inout)        :: phys_bundle
+   type(ESMF_Grid),intent(inout)               :: fcst_grid
+   logical,intent(in)                          :: quilting
+!
+!*** local variables
+   integer i, j, k, n, rc, idx
+   integer num_axes, id, axis_length, direction, edges, axis_typ
+   integer num_attributes, num_field_dyn
+   character(255) :: axis_name, units, long_name, cart_name, axesname
+   character(128) :: output_name
+   integer currdate(6)
+   type(domain1d) :: Domain
+   real,dimension(:),allocatable :: axis_data
+   type(diag_atttype),dimension(:),allocatable :: attributes
+   character(2) axis_id
+   type(ESMF_Field)                            :: field
+   real(4),dimension(:,:),pointer :: dataPtr2d
+!
+!------------------------------------------------------------
+!--- use wrte grid component for output
+   use_wrtgridcomp_output = quilting
+   if(mpp_pe()==mpp_root_pe())print *,'in fv_phys bundle,use_wrtgridcomp_output=',use_wrtgridcomp_output, &
+       'isco=',isco,ieco,'jsco=',jsco,jeco,'tot_diag_idx=',tot_diag_idx
+!
+!------------------------------------------------------------
+!*** add attributes to the bundle such as subdomain limtis,
+!*** axes, output time, etc
+!------------------------------------------------------------
+!
+!*** add attributes (for phys, set axes to 2)
+   num_axes = 2
+   do id = 1,num_axes
+     axis_length =  get_axis_global_length(axes(id))
+     allocate(axis_data(axis_length))
+     call get_diag_axis( axes(id), axis_name, units, long_name, cart_name, &
+                         direction, edges, Domain, axis_data,        &
+                         num_attributes=num_attributes,              &
+                         attributes=attributes)
+!
+     deallocate(axis_data)
+   enddo
+!
+! set zhour for global attributes
+!   call ESMF_AttributeAdd(phys_bundle,convention="NetCDF",purpose="FV3",  &
+!                          attrList=(/'zhour'/), rc=rc)
+!   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+!     line=__LINE__, &
+!     file=__FILE__)) &
+!     call ESMF_Finalize(endflag=ESMF_END_ABORT)
+!   call ESMF_AttributeSet(phys_bundle,convention="NetCDF",purpose="FV3",name='zhour', &
+!                          value=zhour, rc=rc)
+!   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+!     line=__LINE__, &
+!     file=__FILE__)) &
+!     call ESMF_Finalize(endflag=ESMF_END_ABORT)
+!
+!-----------------------------------------------------------------------------------------
+!*** add esmf fields
+!
+   do idx= 1,tot_diag_idx
+
+     if( Diag(idx)%id > 0 ) then
+       call find_output_name(trim(Diag(idx)%mod_name),trim(Diag(idx)%name),output_name)
+       call add_field_to_phybundle(trim(output_name),trim(Diag(idx)%desc),trim(Diag(idx)%unit), "time: point", &
+          axes(1:Diag(idx)%axes), fcst_grid, nstt(idx),phys_bundle, rcd=rc)
+     endif
+   enddo
+
+ end subroutine fv_phys_bundle_setup
+!
+!-----------------------------------------------------------------------------------------
+ subroutine add_field_to_phybundle(var_name,long_name,units,cell_methods, axes,phys_grid, &
+                                kstt,phys_bundle,range, rcd)
+!
+   use esmf
+!
+   implicit none
+
+   character(*), intent(in)             :: var_name, long_name, units, cell_methods
+   integer, intent(in)                  :: axes(:)
+   type(esmf_grid), intent(in)          :: phys_grid
+   integer, intent(in)                  :: kstt
+   type(esmf_fieldbundle),intent(inout) :: phys_bundle
+   real, intent(in), optional           :: range(2)
+   integer, intent(out), optional       :: rcd
+!
+!*** local variable
+   type(ESMF_Field)         :: field
+   type(ESMF_DataCopy_Flag) :: copyflag=ESMF_DATACOPY_REFERENCE
+   integer rc
+   real(4),dimension(:,:),pointer :: temp_r2d
+!
+!*** create esmf field
+   temp_r2d => buffer_phys(isco:ieco,jsco:jeco,kstt)
+   field = ESMF_FieldCreate(phys_grid, temp_r2d, datacopyflag=copyflag, &
+                            name=var_name, indexFlag=ESMF_INDEX_DELOCAL, rc=rc)
+   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+     line=__LINE__, &
+     file=__FILE__)) &
+     call ESMF_Finalize(endflag=ESMF_END_ABORT)
+!
+!*** add field attributes
+   call ESMF_AttributeAdd(field, convention="NetCDF", purpose="FV3", &
+        attrList=(/"long_name"/), rc=rc)
+   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+     line=__LINE__, &
+     file=__FILE__)) &
+     call ESMF_Finalize(endflag=ESMF_END_ABORT)
+   call ESMF_AttributeSet(field, convention="NetCDF", purpose="FV3", &
+        name='long_name',value=trim(long_name),rc=rc)
+   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+     line=__LINE__, &
+     file=__FILE__)) &
+     call ESMF_Finalize(endflag=ESMF_END_ABORT)
+
+   call ESMF_AttributeAdd(field, convention="NetCDF", purpose="FV3", &
+        attrList=(/"units"/), rc=rc)
+   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+     line=__LINE__, &
+     file=__FILE__)) &
+     call ESMF_Finalize(endflag=ESMF_END_ABORT)
+   call ESMF_AttributeSet(field, convention="NetCDF", purpose="FV3", &
+        name='units',value=trim(units),rc=rc)
+   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+     line=__LINE__, &
+     file=__FILE__)) &
+     call ESMF_Finalize(endflag=ESMF_END_ABORT)
+
+   call ESMF_AttributeAdd(field, convention="NetCDF", purpose="FV3", &
+        attrList=(/"missing_value"/), rc=rc)
+   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+     line=__LINE__, &
+     file=__FILE__)) &
+     call ESMF_Finalize(endflag=ESMF_END_ABORT)
+   call ESMF_AttributeSet(field, convention="NetCDF", purpose="FV3", &
+        name='missing_value',value=missing_value,rc=rc)
+   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+     line=__LINE__, &
+     file=__FILE__)) &
+     call ESMF_Finalize(endflag=ESMF_END_ABORT)
+
+   call ESMF_AttributeAdd(field, convention="NetCDF", purpose="FV3", &
+        attrList=(/"_FillValue"/), rc=rc)
+   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+     line=__LINE__, &
+     file=__FILE__)) &
+     call ESMF_Finalize(endflag=ESMF_END_ABORT)
+   call ESMF_AttributeSet(field, convention="NetCDF", purpose="FV3", &
+        name='_FillValue',value=missing_value,rc=rc)
+   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+     line=__LINE__, &
+     file=__FILE__)) &
+     call ESMF_Finalize(endflag=ESMF_END_ABORT)
+
+   call ESMF_AttributeAdd(field, convention="NetCDF", purpose="FV3", &
+        attrList=(/"cell_methods"/), rc=rc)
+   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+     line=__LINE__, &
+     file=__FILE__)) &
+     call ESMF_Finalize(endflag=ESMF_END_ABORT)
+   call ESMF_AttributeSet(field, convention="NetCDF", purpose="FV3", &
+        name='cell_methods',value=trim(cell_methods),rc=rc)
+   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+     line=__LINE__, &
+     file=__FILE__)) &
+     call ESMF_Finalize(endflag=ESMF_END_ABORT)
+
+!*** add field into bundle
+   call ESMF_FieldBundleAdd(phys_bundle,(/field/), rc=rc)
+   if( present(rcd)) rcd=rc
+!
+
+ end subroutine add_field_to_phybundle
+!
+!
+ subroutine find_output_name(module_name,field_name,output_name)
+   character(*), intent(in)     :: module_name
+   character(*), intent(in)     :: field_name
+   character(*), intent(out)    :: output_name
+!
+   integer i,in_num, out_num
+   integer tile_count
+!
+   tile_count=1
+   in_num = find_input_field(module_name, field_name, tile_count)
+!
+   output_name=''
+   do i=1, max_output_fields
+     if(output_fields(i)%input_field == in_num) then
+       output_name=output_fields(i)%output_name
+       exit
+     endif
+   enddo
+   if(output_name=='') then
+     print *,'Error, cant find out put name'
+   endif
+
+ end subroutine find_output_name
+#endif
+!-------------------------------------------------------------------------      
+!-------------------------------------------------------------------------      
 
 end module FV3GFS_io_mod

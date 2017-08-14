@@ -113,6 +113,7 @@ public atmos_model_restart
      logical                       :: pe                 ! current pe.
      type(grid_box_type)           :: grid               ! hold grid information needed for 2nd order conservative flux exchange 
                                                          ! to calculate gradient on cubic sphere grid.
+     integer                       :: layout(2)          ! computer task laytout
      real(kind=8), pointer, dimension(:) :: ak
      real(kind=8), pointer, dimension(:) :: bk
      real(kind=kind_phys), pointer, dimension(:,:) :: dx
@@ -316,7 +317,8 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
 
 !---------- initialize atmospheric dynamics -------
    call atmosphere_init (Atmos%Time_init, Atmos%Time, Atmos%Time_step,&
-                         Atmos%grid, Atmos%ak, Atmos%bk, Atmos%dx, Atmos%dy, Atmos%area)
+                         Atmos%grid, Atmos%ak, Atmos%bk, Atmos%dx,    &
+                         Atmos%dy, Atmos%area, Atmos%layout)
 
    IF ( file_exist('input.nml')) THEN
 #ifdef INTERNAL_FILE_NML

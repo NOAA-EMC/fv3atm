@@ -23,15 +23,19 @@ libs:
 $(FV3_EXE): atmos_model.o coupler_main.o atmos_cubed_sphere/libfv3core.a io/libfv3io.a gfsphysics/libgfsphys.a fms/libfms.a
 	$(LD) -o $@ $^ $(NCEPLIBS) $(LDFLAGS)
 
-$(FV3CAP_LIB): atmos_model.o time_utils.o fv3_cap.o
+$(FV3CAP_LIB): atmos_model.o module_fv3_config.o module_fcst_grid_comp.o time_utils.o fv3_cap.o
 	ar rv $(FV3CAP_LIB) $?
 
+module_fv3_config.o: module_fv3_config.F90
+	$(FC) $(CPPDEFS) $(CPPFLAGS) $(FPPFLAGS) $(FFLAGS) $(OTHERFLAGS) $(OTHER_FFLAGS) $(ESMF_INC) -c module_fv3_config.F90
+module_fcst_grid_comp.o: module_fcst_grid_comp.F90
+	$(FC) $(CPPDEFS) $(CPPFLAGS) $(FPPFLAGS) $(FFLAGS) $(OTHERFLAGS) $(OTHER_FFLAGS) $(ESMF_INC) -c module_fcst_grid_comp.F90
 time_utils.o: time_utils.F90
 	$(FC) $(CPPDEFS) $(CPPFLAGS) $(FPPFLAGS) $(FFLAGS) $(OTHERFLAGS) $(OTHER_FFLAGS) $(ESMF_INC) -c time_utils.F90
 fv3_cap.o: fv3_cap.F90
 	$(FC) $(CPPDEFS) $(CPPFLAGS) $(FPPFLAGS) $(FFLAGS) $(OTHERFLAGS) $(OTHER_FFLAGS) $(ESMF_INC) -c fv3_cap.F90
 
-DEPEND_FILES = time_utils.F90 atmos_model.F90 fv3_cap.F90 coupler_main.F90
+DEPEND_FILES = time_utils.F90 atmos_model.F90 module_fcst_grid_comp.F90 fv3_cap.F90 coupler_main.F90
 
 esmf_make_fragment:
 	@rm -rf nems_dir; mkdir nems_dir
