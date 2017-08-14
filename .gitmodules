@@ -1,0 +1,3 @@
+[submodule "nems-ext"]
+	path = nems-ext
+	url = http://vlab.ncep.noaa.gov/git/nems-ext
