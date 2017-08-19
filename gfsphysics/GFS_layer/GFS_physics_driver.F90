@@ -4,7 +4,7 @@ module module_physics_driver
   use physcons,              only: con_cp, con_fvirt, con_g, con_rd, &
                                    con_rv, con_hvap, con_hfus,       &
                                    con_rerth, con_pi, rhc_max, dxmin,&
-                                   dxinv, pa2mb, rlapse 
+                                   dxinv, pa2mb, rlapse, con_eps, con_epsm1
   use cs_conv,               only: cs_convr
   use ozne_def,              only: levozp,  oz_coeff, oz_pres
   use h2o_def,               only: levh2o, h2o_coeff, h2o_pres
@@ -15,6 +15,9 @@ module module_physics_driver
                                    GFS_control_type, GFS_grid_type,     &
                                    GFS_tbd_type,     GFS_cldprop_type,  &
                                    GFS_radtend_type, GFS_diag_type
+  use gfdl_cloud_microphys_mod, only: gfdl_cloud_microphys_driver
+  use funcphys,              only: ftdp
+  use module_som,            only: update_som 
 
   implicit none
 
@@ -28,6 +31,8 @@ module module_physics_driver
   real(kind=kind_phys), parameter :: czmin   = 0.0001      ! cos(89.994)
   real(kind=kind_phys), parameter :: onebg   = 1.0/con_g
   real(kind=kind_phys), parameter :: albdf   = 0.06 
+  real(kind=kind_phys), parameter :: con_p001= 0.001d0
+  real(kind=kind_phys), parameter :: con_day = 86400.d0
   real(kind=kind_phys) tf, tcr, tcrf
   parameter (tf=258.16, tcr=273.16, tcrf=1.0/(tcr-tf))
 
@@ -406,6 +411,7 @@ module module_physics_driver
       integer :: me, lprint, ipr, ix, im, levs, ntrac, nvdiff, kdt
       integer :: i, kk, ic, k, n, k1, iter, levshcm, tracers,           &
                  trc_shft, tottracer, num2, num3, nshocm, nshoc, ntk
+      integer :: seconds
 
       integer, dimension(size(Grid%xlon,1)) ::                          &
            kbot, ktop, kcnv, soiltyp, vegtype, kpbl, slopetyp, kinver,  &
@@ -429,7 +435,12 @@ module module_physics_driver
            dtf, dtp, rhbbot, rhbtop, rhpbl, frain, tem, tem1, tem2,     &
            xcosz_loc, zsea1, zsea2, eng0, eng1, dpshc,                  &
            !--- experimental for shoc sub-stepping 
-           dtshoc                                                      
+           dtshoc,                                                      &
+           !--- GFDL Cloud microphysics
+           crain, csnow
+
+      real(kind=kind_phys), dimension(Model%ntrac-Model%ncld+2) ::      &
+           fscav, fswtr
 
       real(kind=kind_phys), dimension(size(Grid%xlon,1))  ::            &
            ccwfac, garea, dlength, cumabs, cice, zice, tice, gflx,      &
@@ -443,12 +454,15 @@ module module_physics_driver
            adjnirdfd, adjvisbmd, adjvisdfd, gabsbdlw, xcosz, tseal,     &
            snohf, dlqfac, work3, ctei_rml, cldf, domr, domzr, domip,    &
            doms, psautco_l, prautco_l, ocalnirbm_cpl, ocalnirdf_cpl,    &
-           ocalvisbm_cpl, ocalvisdf_cpl, dtzm, temrain1, fscav, fswtr,  &
+           ocalvisbm_cpl, ocalvisdf_cpl, dtzm, temrain1,                &
            !--- coupling inputs for physics
            dtsfc_cice, dqsfc_cice, dusfc_cice, dvsfc_cice, ulwsfc_cice, &
            tisfc_cice, tsea_cice, hice_cice, fice_cice,                 &
            !--- for CS-convection
            wcbmax
+
+      real(kind=kind_phys), dimension(size(Grid%xlon,1),1) ::           &
+          area, land, rain0, snow0, ice0, graupel0
 
       real(kind=kind_phys), dimension(size(Grid%xlon,1),4) ::           &
            oa4, clx
@@ -463,6 +477,11 @@ module module_physics_driver
       !--- GFDL modification for FV3 
       real(kind=kind_phys), dimension(size(Grid%xlon,1),Model%levs+1) ::&
            del_gz
+
+      real(kind=kind_phys), dimension(size(Grid%xlon,1),1,Model%levs) ::&
+           delp, dz, uin, vin, pt, qv1, ql1, qr1, qg1, qa1, qn1, qi1,   &
+           qs1, pt_dt, qa_dt, udt, vdt, w, qv_dt, ql_dt, qr_dt, qi_dt,  &
+           qs_dt, qg_dt
 
       real(kind=kind_phys), dimension(size(Grid%xlon,1),Model%levs,Model%ntrac) ::  &
            dqdt
@@ -628,6 +647,7 @@ module module_physics_driver
         tice(i) = Sfcprop%tisfc(i)
 !
 !GFDL        work1(i)   = (log(coslat(i) / (nlons(i)*latr)) - dxmin) * dxinv
+!GFS         Moorthi thinks this should be area and not dx
 !       work1(i)   = (log(Grid%dx(i)) - dxmin) * dxinv
         work1(i)   = (log(Grid%area(i)) - dxmin) * dxinv
         work1(i)   = max(0.0, min(1.0,work1(i)))
@@ -970,7 +990,7 @@ module module_physics_driver
            (im, Model%lsoil, Statein%pgr, Statein%ugrs, Statein%vgrs,  &
             Statein%tgrs, Statein%qgrs, soiltyp, vegtype, sigmaf,      &
             Radtend%semis, gabsbdlw, adjsfcdsw, adjsfcnsw, dtf,        &
-            Sfcprop%tg3, cd, cdq, Statein%prsl(1,1), work3, DIag%zlvl, &
+            Sfcprop%tg3, cd, cdq, Statein%prsl(1,1), work3, Diag%zlvl, &
             islmsk, Tbd%phy_f2d(1,Model%num_p2d), slopetyp,            &
             Sfcprop%shdmin, Sfcprop%shdmax, Sfcprop%snoalb,            &
             Radtend%sfalb, flag_iter, flag_guess, Model%isot,          &
@@ -1149,6 +1169,23 @@ module module_physics_driver
 
         Diag%spfhmax(:) = max(Diag%spfhmax(:),Sfcprop%q2m(:))
         Diag%spfhmin(:) = min(Diag%spfhmin(:),Sfcprop%q2m(:))
+
+        do i=1, im
+           !find max wind speed then decompose
+           tem = sqrt(Diag%u10m(i)**2 + Diag%v10m(i)**2 )
+           if (tem > Diag%wind10mmax(i)) then
+              Diag%wind10mmax(i) = tem
+              Diag%u10mmax(i)    = Diag%u10m(i)
+              Diag%v10mmax(i)    = Diag%v10m(i)
+           endif
+
+           !Compute dew point, first using vapor pressure
+           tem = max(Statein%pgr(i) * Sfcprop%q2m(i) / ( con_eps - con_epsm1 * Sfcprop%q2m(i)), 1.e-8)
+           Diag%dpt2m(i) = 243.5 / ( ( 17.67 / log(tem/611.2) ) - 1.) + 273.14
+        enddo
+
+
+
       endif
 
 !!!!!!!!!!!!!!!!!Commented by Moorthi on July 18, 2012 !!!!!!!!!!!!!!!!!!!
@@ -1198,7 +1235,8 @@ module module_physics_driver
                          Statein%prslk, Statein%phii, Statein%phil, dtp,          &
                          Model%dspheat, dusfc1, dvsfc1, dtsfc1, dqsfc1, Diag%hpbl,&
                          gamt, gamq, dkt, kinver, Model%xkzm_m, Model%xkzm_h,     &
-                         Model%xkzm_s, lprnt, ipr)
+                         Model%xkzm_s, lprnt, ipr,                                &
+                         Model%xkzminv, Model%moninq_fac)
 !     if (lprnt)  write(0,*)' dtdtm=',(dtdt(ipr,k),k=1,15)
 !     if (lprnt)  write(0,*)' dqdtm=',(dqdt(ipr,k,1),k=1,15)
         elseif (.not. Model%old_monin) then
@@ -1210,7 +1248,8 @@ module module_physics_driver
                       Statein%prslk, Statein%phii, Statein%phil, dtp,           &
                       Model%dspheat, dusfc1, dvsfc1, dtsfc1, dqsfc1, Diag%hpbl, &
                       gamt, gamq, dkt, kinver, Model%xkzm_m, Model%xkzm_h,      &
-                      Model%xkzm_s, lprnt, ipr)
+                      Model%xkzm_s, lprnt, ipr,                                 &
+                      Model%xkzminv, Model%moninq_fac, Model%rbcr)
         else
           if (Model%mstrat) then
             call moninp1(ix, im, levs, nvdiff, dvdt, dudt, dtdt, dqdt,          &
@@ -1672,31 +1711,52 @@ module module_physics_driver
 !
       if (.not. Model%ras .and. .not. Model%cscnv) then
 
-        if (Model%imfdeepcnv == 1) then             ! no random cloud top
-          call sascnvn (im, ix, levs, Model%jcap, dtp, del,             &
-                        Statein%prsl, Statein%pgr, Statein%phil, clw(:,:,1:2),   &
-                        Stateout%gq0, Stateout%gt0, Stateout%gu0,       &
-                        Stateout%gv0, cld1d, rain1, kbot, ktop, kcnv,   &
-                        islmsk, Statein%vvl, Model%ncld, ud_mf, dd_mf,  &
-                        dt_mf, cnvw, cnvc)
-        elseif (Model%imfdeepcnv == 2) then
-          call mfdeepcnv (im, ix, levs, dtp, del, Statein%prsl,         &
-                          Statein%pgr, Statein%phil, clw(:,:,1:2),      &
-                          Stateout%gq0(:,:,1),                          &
-                          Stateout%gt0, Stateout%gu0, Stateout%gv0,     &
-                          cld1d, rain1, kbot, ktop, kcnv, islmsk,       &
-                          garea, Statein%vvl, Model%ncld, ud_mf, dd_mf, &
-                          dt_mf, cnvw, cnvc)
-!         if (lprnt) print *,' rain1=',rain1(ipr)
-        elseif (Model%imfdeepcnv == 0) then         ! random cloud top
-          call sascnv (im, ix, levs, Model%jcap, dtp, del,              &
-                       Statein%prsl, Statein%pgr, Statein%phil, clw(:,:,1:2),    &
-                       Stateout%gq0, Stateout%gt0, Stateout%gu0,        &
-                       Stateout%gv0, cld1d, rain1, kbot, ktop, kcnv,    &
-                       islmsk, Statein%vvl, Tbd%rann, Model%ncld,       &
-                       ud_mf, dd_mf, dt_mf, cnvw, cnvc)
-!         if (lprnt) print *,' rain1=',rain1(ipr),' rann=',rann(ipr,1)
+        if (Model%do_deep) then
+
+          if (Model%imfdeepcnv == 1) then             ! no random cloud top
+            call sascnvn (im, ix, levs, Model%jcap, dtp, del,             &
+                          Statein%prsl, Statein%pgr, Statein%phil, clw(:,:,1:2),   &
+                          Stateout%gq0(:,:,1), Stateout%gt0, Stateout%gu0,       &
+                          Stateout%gv0, cld1d, rain1, kbot, ktop, kcnv,   &
+                          islmsk, Statein%vvl, Model%ncld, ud_mf, dd_mf,  &
+                          dt_mf, cnvw, cnvc,                              &
+                          Model%clam_deep, Model%c0s_deep,                       &
+                          Model%c1_deep, Model%betal_deep, Model%betas_deep,     &
+                          Model%evfact_deep, Model%evfactl_deep,                 &
+                          Model%pgcon_deep)
+          elseif (Model%imfdeepcnv == 2) then
+            call mfdeepcnv (im, ix, levs, dtp, del, Statein%prsl,         &
+                            Statein%pgr, Statein%phil, clw(:,:,1:2),      &
+                            Stateout%gq0(:,:,1),                        &
+                            Stateout%gt0, Stateout%gu0, Stateout%gv0,     &
+                            cld1d, rain1, kbot, ktop, kcnv, islmsk,       &
+                            garea, Statein%vvl, Model%ncld, ud_mf, dd_mf, &
+                            dt_mf, cnvw, cnvc,                            &
+                            Model%clam_deep, Model%c0s_deep,                       &
+                            Model%c1_deep, Model%betal_deep, Model%betas_deep,     &
+                            Model%evfact_deep, Model%evfactl_deep,                 &
+                            Model%pgcon_deep, Model%asolfac_deep)
+!           if (lprnt) print *,' rain1=',rain1(ipr)
+          elseif (Model%imfdeepcnv == 0) then         ! random cloud top
+            call sascnv (im, ix, levs, Model%jcap, dtp, del,              &
+                         Statein%prsl, Statein%pgr, Statein%phil, clw(:,:,1:2),    &
+                         Stateout%gq0(:,:,1), Stateout%gt0, Stateout%gu0,        &
+                         Stateout%gv0, cld1d, rain1, kbot, ktop, kcnv,    &
+                         islmsk, Statein%vvl, Tbd%rann, Model%ncld,       &
+                         ud_mf, dd_mf, dt_mf, cnvw, cnvc)
+!           if (lprnt) print *,' rain1=',rain1(ipr),' rann=',rann(ipr,1)
+          endif
+
+        else ! no deep convection
+          cld1d = 0.
+          rain1 = 0.
+          ud_mf = 0.
+          dd_mf = 0.
+          dt_mf = 0.
+          cnvw  = 0.
+          cnvc  = 0.
         endif
+
       else        ! ras or cscnv
         if (Model%cscnv) then    ! Chikira-Sugiyama  convection scheme (via CSU)
           otspt(:,:)   = .true.
@@ -1726,7 +1786,7 @@ module module_physics_driver
 !GFDL  again lat replaced with "1"
 !GFDL     &                  otspt, lat, kdt     ,                     &
           call cs_convr (ix, im, levs, tottracer+3, Model%nctp, otspt, 1, &
-                         kdt, Stateout%gt0, Stateout%gq0(1,1,1:1), rain1, &
+                         kdt, Stateout%gt0, Stateout%gq0(:,:,1:1), rain1, &
                          clw, Statein%phil, Statein%phii, Statein%prsl,   &
                          Statein%prsi, dtp, dtf, ud_mf, dd_mf, dt_mf,     &
                          Stateout%gu0, Stateout%gv0, fscav, fswtr,        &
@@ -2096,7 +2156,9 @@ module module_physics_driver
                          Statein%pgr, Statein%phil, clw, Stateout%gq0,     &
                          Stateout%gt0, Stateout%gu0, Stateout%gv0, rain1,  &
                          kbot, ktop, kcnv, islmsk, Statein%vvl, Model%ncld,&
-                         Diag%hpbl, hflx, evap, ud_mf, dt_mf, cnvw, cnvc)
+                         Diag%hpbl, hflx, evap, ud_mf, dt_mf, cnvw, cnvc,  &
+                         Model%clam_shal, Model%c0s_shal, Model%c1_shal,   &
+                         Model%pgcon_shal)
 
             raincs(:)     = frain * rain1(:)
             Diag%rainc(:) = Diag%rainc(:) + raincs(:)
@@ -2105,6 +2167,8 @@ module module_physics_driver
             endif
 ! in shalcnv,  'cnvw' and 'cnvc' are not set to zero:
             if ((Model%shcnvcw) .and. (Model%num_p3d == 4) .and. (Model%npdf3d == 3)) then
+              num2 = Model%num_p3d + 2
+              num3 = num2 + 1
               Tbd%phy_f3d(:,:,num2) = cnvw(:,:)
               Tbd%phy_f3d(:,:,num3) = cnvc(:,:)
             elseif ((Model%npdf3d == 0) .and. (Model%ncnvcld3d == 1)) then
@@ -2115,19 +2179,23 @@ module module_physics_driver
           elseif (Model%imfshalcnv == 2) then
             call mfshalcnv (im, ix, levs, dtp, del, Statein%prsl,         &
                             Statein%pgr, Statein%phil, clw(:,:,1:2),      &
-                            Stateout%gq0(:,:,1),                          &
+                            Stateout%gq0(:,:,1:1),                        &
                             Stateout%gt0, Stateout%gu0, Stateout%gv0,     &
                             rain1, kbot, ktop, kcnv, islmsk, garea,       &
                             Statein%vvl, Model%ncld, DIag%hpbl, ud_mf,    &
-                            dt_mf, cnvw, cnvc)
+                            dt_mf, cnvw, cnvc,                            &
+                            Model%clam_shal, Model%c0s_shal, Model%c1_shal, &
+                            Model%pgcon_shal, Model%asolfac_shal)
 
             raincs(:)     = frain * rain1(:)
-            Diag%rainc(:) = DIag%rainc(:) + raincs(:)
+            Diag%rainc(:) = Diag%rainc(:) + raincs(:)
             if (Model%lssav) then
               Diag%cnvprcp(:) = Diag%cnvprcp(:) + raincs(:)
             endif
 ! in  mfshalcnv,  'cnvw' and 'cnvc' are set to zero before computation starts:
             if ((Model%shcnvcw) .and. (Model%num_p3d == 4) .and. (Model%npdf3d == 3)) then
+              num2 = Model%num_p3d + 2
+              num3 = num2 + 1
               Tbd%phy_f3d(:,:,num2) = Tbd%phy_f3d(:,:,num2) + cnvw(:,:)
               Tbd%phy_f3d(:,:,num3) = Tbd%phy_f3d(:,:,num3) + cnvc(:,:)
             elseif ((Model%npdf3d == 0) .and. (Model%ncnvcld3d == 1)) then
@@ -2524,6 +2592,80 @@ module module_physics_driver
           Stateout%gq0(:,:,Model%ntrnc) = ncpr(:,:)
           Stateout%gq0(:,:,Model%ntsnc) = ncps(:,:)
         endif
+
+      elseif (Model%ncld == 5) then       ! GFDL Cloud microphysics
+
+        land     (:,1)   = frland(:)
+        area     (:,1)   = Grid%area(:)
+        rain0    (:,1)   = 0.0
+        snow0    (:,1)   = 0.0
+        ice0     (:,1)   = 0.0
+        graupel0 (:,1)   = 0.0
+        qn1      (:,1,:) = 0.0
+        qv_dt    (:,1,:) = 0.0
+        ql_dt    (:,1,:) = 0.0
+        qr_dt    (:,1,:) = 0.0
+        qi_dt    (:,1,:) = 0.0
+        qs_dt    (:,1,:) = 0.0
+        qg_dt    (:,1,:) = 0.0
+        qa_dt    (:,1,:) = 0.0
+        pt_dt    (:,1,:) = 0.0
+        udt      (:,1,:) = 0.0
+        vdt      (:,1,:) = 0.0
+        do k = 1, levs
+          qv1  (:,1,k) = Stateout%gq0(:,levs-k+1,1         )
+          ql1  (:,1,k) = Stateout%gq0(:,levs-k+1,Model%ntcw)
+          qr1  (:,1,k) = Stateout%gq0(:,levs-k+1,Model%ntrw)
+          qi1  (:,1,k) = Stateout%gq0(:,levs-k+1,Model%ntiw)
+          qs1  (:,1,k) = Stateout%gq0(:,levs-k+1,Model%ntsw)
+          qg1  (:,1,k) = Stateout%gq0(:,levs-k+1,Model%ntgl)
+          qa1  (:,1,k) = Stateout%gq0(:,levs-k+1,Model%ntclamt)
+          pt   (:,1,k) = Stateout%gt0(:,levs-k+1)
+          w    (:,1,k) = -Statein%vvl(:,levs-k+1)*con_rd*Stateout%gt0(:,levs-k+1)     &
+     &                   /Statein%prsl(:,levs-k+1)/con_g
+          uin  (:,1,k) = Stateout%gu0(:,levs-k+1)
+          vin  (:,1,k) = Stateout%gv0(:,levs-k+1)
+          delp (:,1,k) = del(:,levs-k+1)
+          dz   (:,1,k) = (Statein%phii(:,levs-k+1)-Statein%phii(:,levs-k+2))/con_g
+        enddo
+
+        seconds          = mod(nint(Model%fhour*3600),86400)
+
+        call gfdl_cloud_microphys_driver(qv1, ql1, qr1, qi1, qs1, qg1, qa1, &
+                                         qn1, qv_dt, ql_dt, qr_dt, qi_dt,   &
+                                         qs_dt, qg_dt, qa_dt, pt_dt, pt, w, &
+                                         uin, vin, udt, vdt, dz, delp,      &
+                                         area, dtp, land, rain0, snow0,     &
+                                         ice0, graupel0, .false., .true.,   &
+                                         1, im, 1, 1, 1, levs, 1, levs,     &
+                                         seconds)
+
+        rain1(:)   = (rain0(:,1)+snow0(:,1)+ice0(:,1)+graupel0(:,1))  &
+                     * dtp * con_p001 / con_day
+        Diag%ice(:)     = ice0    (:,1) * dtp * con_p001 / con_day
+        Diag%snow(:)    = snow0   (:,1) * dtp * con_p001 / con_day
+        Diag%graupel(:) = graupel0(:,1) * dtp * con_p001 / con_day
+        do i = 1, im
+          if (rain1(i) .gt. 0.0) then
+            Diag%sr(i)  =              (snow0(i,1) + ice0(i,1) + graupel0(i,1)) &
+                         /(rain0(i,1) + snow0(i,1) + ice0(i,1) + graupel0(i,1))
+          else
+            Diag%sr(i) = 0.0
+          endif
+        enddo
+        do k = 1, levs
+          Stateout%gq0(:,k,1         ) = qv1(:,1,levs-k+1) + qv_dt(:,1,levs-k+1) * dtp
+          Stateout%gq0(:,k,Model%ntcw) = ql1(:,1,levs-k+1) + ql_dt(:,1,levs-k+1) * dtp
+          Stateout%gq0(:,k,Model%ntrw) = qr1(:,1,levs-k+1) + qr_dt(:,1,levs-k+1) * dtp
+          Stateout%gq0(:,k,Model%ntiw) = qi1(:,1,levs-k+1) + qi_dt(:,1,levs-k+1) * dtp
+          Stateout%gq0(:,k,Model%ntsw) = qs1(:,1,levs-k+1) + qs_dt(:,1,levs-k+1) * dtp
+          Stateout%gq0(:,k,Model%ntgl) = qg1(:,1,levs-k+1) + qg_dt(:,1,levs-k+1) * dtp
+          Stateout%gq0(:,k,Model%ntclamt) = qa1(:,1,levs-k+1) + qa_dt(:,1,levs-k+1) * dtp
+          Stateout%gt0(:,k)   = Stateout%gt0(:,k) + pt_dt(:,1,levs-k+1) * dtp
+          Stateout%gu0(:,k)   = Stateout%gu0(:,k) + udt  (:,1,levs-k+1) * dtp
+          Stateout%gv0(:,k)   = Stateout%gv0(:,k) + vdt  (:,1,levs-k+1) * dtp
+        enddo
+
       endif       ! end if_ncld
 !     if (lprnt) write(0,*)' rain1 after ls=',rain1(ipr)
 !
@@ -2624,8 +2766,23 @@ module module_physics_driver
         do i = 1, im
           Sfcprop%tprcp(i)  = max(0.0, Diag%rain(i) )! clu: rain -> tprcp
           Sfcprop%srflag(i) = 0.                     ! clu: default srflag as 'rain' (i.e. 0)
-          if (t850(i) <= 273.16) then
-            Sfcprop%srflag(i) = 1.                   ! clu: set srflag to 'snow' (i.e. 1)
+          if (Model%ncld == 5) then
+! determine convective rain/snow by surface temperature
+! determine large-scale rain/snow by rain/snow coming out directly from MP
+            if (Sfcprop%tsfc(i) .ge. 273.15) then
+              crain = Diag%rainc(i)
+              csnow = 0.0
+            else
+              crain = 0.0
+              csnow = Diag%rainc(i)
+            endif
+            if ((snow0(i,1)+ice0(i,1)+graupel0(i,1)+csnow) .gt. (rain0(i,1)+crain)) then
+              Sfcprop%srflag(i) = 1.              ! clu: set srflag to 'snow' (i.e. 1)
+            endif
+          else
+            if (t850(i) <= 273.16) then
+              Sfcprop%srflag(i) = 1.       ! clu: set srflag to 'snow' (i.e. 1)
+            endif
           endif
         enddo
       endif
@@ -2659,6 +2816,18 @@ module module_physics_driver
           Diag%tmpmin (:) = min(Diag%tmpmin (:),Sfcprop%t2m(:))
           Diag%spfhmax(:) = max(Diag%spfhmax(:),Sfcprop%q2m(:))
           Diag%spfhmin(:) = min(Diag%spfhmin(:),Sfcprop%q2m(:))
+          !find max wind speed then decompose
+          do i=1, im
+             tem = sqrt(Diag%u10m(i)**2 + Diag%v10m(i)**2 ) 
+             if (tem > Diag%wind10mmax(i)) then
+                Diag%wind10mmax(i) = tem
+                Diag%u10mmax(i)    = Diag%u10m(i)
+                Diag%v10mmax(i)    = Diag%v10m(i)
+             endif
+           !Compute dew point, first using vapor pressure
+           tem = max(Statein%pgr(i) * Sfcprop%q2m(i) / ( con_eps - con_epsm1 * Sfcprop%q2m(i)), 1.e-8)
+           Diag%dpt2m(i) = 243.5 / ( ( 17.67 / log(tem/611.2) ) - 1.) + 273.14
+          enddo
         endif
       endif
 

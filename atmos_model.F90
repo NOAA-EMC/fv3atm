@@ -72,7 +72,7 @@ use atmosphere_mod,     only: atmosphere_resolution, atmosphere_domain
 use atmosphere_mod,     only: atmosphere_grid_bdry, atmosphere_grid_ctr
 use atmosphere_mod,     only: atmosphere_dynamics, atmosphere_diag_axes
 use atmosphere_mod,     only: atmosphere_etalvls, atmosphere_hgt
-use atmosphere_mod,     only: atmosphere_tracer_postinit
+!rab use atmosphere_mod,     only: atmosphere_tracer_postinit
 use atmosphere_mod,     only: atmosphere_scalar_field_halo
 use atmosphere_mod,     only: set_atmosphere_pelist
 use atmosphere_mod,     only: Atm, mytile
@@ -87,7 +87,6 @@ use IPD_driver,         only: IPD_initialize, IPD_setup_step, &
 use FV3GFS_io_mod,      only: FV3GFS_restart_read, FV3GFS_restart_write, &
                               FV3GFS_IPD_checksum,                       &
                               gfdl_diag_register, gfdl_diag_output
-
 !-----------------------------------------------------------------------
 
 implicit none
@@ -322,7 +321,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
 
 !---------- initialize atmospheric dynamics -------
    call atmosphere_init (Atmos%Time_init, Atmos%Time, Atmos%Time_step,&
-                         Atmos%grid, Atmos%dx, Atmos%dy, Atmos%area)
+                         Atmos%grid, Atmos%area)
 
    IF ( file_exist('input.nml')) THEN
 #ifdef INTERNAL_FILE_NML
@@ -342,7 +341,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    call atmosphere_resolution (nlon, nlat, global=.false.)
    call atmosphere_resolution (mlon, mlat, global=.true.)
    call alloc_atmos_data_type (nlon, nlat, Atmos)
-   call atmosphere_domain (Atmos%domain)
+   call atmosphere_domain (Atmos%domain, Atmos%layout)
    call atmosphere_diag_axes (Atmos%axes)
    call atmosphere_etalvls (Atmos%ak, Atmos%bk, flip=.true.)
    call atmosphere_grid_bdry (Atmos%lon_bnd, Atmos%lat_bnd, global=.false.)
@@ -416,7 +415,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    deallocate (tracer_names)
 
    !--- update tracers in FV3 with any initialized during the physics/radiation init phase
-!!!RAB   call atmosphere_tracer_postinit (IPD_Data, Atm_block)
+!rab   call atmosphere_tracer_postinit (IPD_Data, Atm_block)
 
    call gfdl_diag_register (Time, IPD_Data(:)%Sfcprop, IPD_Data(:)%IntDiag, Atm_block, Atmos%axes, IPD_Control%nfxr)
    call FV3GFS_restart_read (IPD_Data, IPD_Restart, Atm_block, IPD_Control, Atmos%domain)
