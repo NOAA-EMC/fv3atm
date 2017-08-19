@@ -6,87 +6,55 @@
 !
 ! revision history
 ! 11 Oct 2016: J. Wang          Initial code
+! 18 Apr 2017: J. Wang          set up fcst grid component and write grid components
 !
 
 module fv3gfs_cap_mod
 
-  use time_manager_mod,  only: time_type, set_calendar_type, set_time,    &
-                               set_date, days_in_month, month_name,       &
-                               operator(+), operator (<), operator (>),   &
-                               operator (/=), operator (/), operator (==),&
-                               operator (*), THIRTY_DAY_MONTHS, JULIAN,   &
-                               NOLEAP, NO_CALENDAR, date_to_string,       &
-                               get_date
-
-  use  atmos_model_mod,  only: atmos_model_init, atmos_model_end,  &
-                               update_atmos_model_dynamics,        &
-                               update_atmos_radiation_physics,     &
-                               update_atmos_model_state,           &
-                               atmos_data_type, atmos_model_restart
-
-  use constants_mod,     only: constants_init
-  use       fms_mod,     only: open_namelist_file, file_exist, check_nml_error,  &
-                               error_mesg, fms_init, fms_end, close_file,        &
-                               write_version_number, uppercase
-
-  use mpp_mod,           only: mpp_init, mpp_pe, mpp_root_pe, mpp_npes, mpp_get_current_pelist, &
-                               mpp_set_current_pelist, stdlog, mpp_error, NOTE, FATAL, WARNING
-  use mpp_mod,           only: mpp_clock_id, mpp_clock_begin, mpp_clock_end, mpp_sync
-
-  use mpp_io_mod,        only: mpp_open, mpp_close, &
-                               MPP_NATIVE, MPP_RDONLY, MPP_DELETE
-
-  use mpp_domains_mod,   only: mpp_get_global_domain, mpp_global_field, CORNER
-  use memutils_mod,      only: print_memuse_stats
-  use sat_vapor_pres_mod,only: sat_vapor_pres_init
-
-  use  diag_manager_mod, only: diag_manager_init, diag_manager_end, &
-                               get_base_date, diag_manager_set_time_end
-
-  use data_override_mod, only: data_override_init
-
-
   use ESMF
   use NUOPC
-  use NUOPC_Model,       only: &
-    model_routine_SS      => SetServices, &
-    model_label_Advance   => label_Advance, &
-    model_label_Finalize  => label_Finalize
-
-  use time_utils_mod
-
+  use NUOPC_Model,        only: model_routine_SS      => SetServices,  &
+                                model_label_Advance   => label_Advance,&
+                                model_label_Finalize  => label_Finalize
+!
+  use module_fv3_config,  only: quilting, restart_interval,             &
+                                nfhout, nfhout_hf, nsout, dt_atmos,     &
+                                nfhmax, nfhmax_hf,output_hfmax,         &
+                                output_interval,output_interval_hf,     &
+                                alarm_output_hf, alarm_output,          &
+                                calendar, calendar_type,                &
+                                force_date_from_configure
+  use module_fv3_io_def,  only: num_pes_fcst,write_groups,              &
+                                num_files, filename_base,               &
+                                wrttasks_per_group, n_group,            &
+                                lead_wrttask, last_wrttask,             &
+                                write_netcdfflag, output_grid, imo,jmo
+!
+  use module_fcst_grid_comp,  only: fcstSS => SetServices
+  use module_wrt_grid_comp,   only: wrtSS => SetServices
+!
   implicit none
   private
   public SetServices
-
+!
 !-----------------------------------------------------------------------
-
-  character(len=128) :: version = '$Id: coupler_main.F90,v 19.0.4.1.2.3 2014/09/09 23:51:59 Rusty.Benson Exp $'
-  character(len=128) :: tag = '$Name: ulm_201505 $'
-
-!---- model defined-types ----
-
-  type atmos_internalstate_type
-    type(atmos_data_type)  :: Atm
-    type (time_type)       :: Time_atmos, Time_init, Time_end,  &
-                              Time_step_atmos, Time_step_ocean, &
-                              Time_restart, Time_step_restart
-    integer :: num_atmos_calls, ret, intrm_rst
-  end type
-
-  type atmos_internalstate_wrapper
-    type(atmos_internalstate_type), pointer :: ptr
-  end type
-
-  type(atmos_internalstate_type),pointer,save :: atm_int_state
-  type(atmos_internalstate_wrapper),save      :: wrap
+!
   type(ESMF_Clock),save                       :: clock_fv3
 
-!----- coupled model date -----
+  type(ESMF_GridComp)                         :: fcstComp
+  type(ESMF_State)                            :: fcstState
+  character(len=80),         allocatable      :: fcstItemNameList(:)
+  type(ESMF_StateItem_Flag), allocatable      :: fcstItemTypeList(:)
+  type(ESMF_FieldBundle),    allocatable      :: fcstFB(:)
+  integer, save                               :: FBCount
 
-  integer :: date_init(6)
-  integer :: calendar_type = -99
-  integer :: restart_interval
+  type(ESMF_GridComp),    allocatable         :: wrtComp(:)
+  type(ESMF_State),       allocatable         :: wrtState(:)
+  type(ESMF_FieldBundle), allocatable         :: wrtFB(:,:)
+
+  type(ESMF_RouteHandle), allocatable         :: routehandle(:,:)
+  integer, allocatable                        :: fcstPetList(:)
+  
   logical :: profile_memory = .true.
 
 !-----------------------------------------------------------------------
@@ -180,30 +148,6 @@ module fv3gfs_cap_mod
       return  ! bail out
     profile_memory=(trim(value)/="false")
 
-
-!    ! A restart_interval value of 0 means no restart will be written.
-!    call ESMF_AttributeGet(gcomp, name="restart_interval", value=value, defaultValue="0", &
-!      convention="NUOPC", purpose="Instance", rc=rc)
-!    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-!      line=__LINE__, &
-!      file=__FILE__)) &
-!      return  ! bail out
-!
-!    restart_interval = ESMF_UtilString2Int(value, rc=rc)
-!    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-!      line=__LINE__, &
-!      file=__FILE__)) &
-!      return  ! bail out
-
-!    if(restart_interval < 0) then
-!      call ESMF_LogSetError(ESMF_RC_NOT_VALID, &
-!        msg="FV3_CAP: ATM attribute: restart_interval cannot be negative.", &
-!        line=__LINE__, &
-!        file=__FILE__, rcToReturn=rc)
-!      return
-!    endif
-!    call ESMF_LogWrite('FV3_CAP:restart_interval = '//trim(value), ESMF_LOGMSG_INFO, rc=dbrc)  
-    
   end subroutine
   
   !-----------------------------------------------------------------------------
@@ -214,45 +158,36 @@ module fv3gfs_cap_mod
     type(ESMF_State)                       :: importState, exportState
     type(ESMF_Clock)                       :: clock
     integer, intent(out)                   :: rc
-
+!
+! local variables
     type(ESMF_VM)                          :: vm
-    type(ESMF_Time)                        :: CurrTime, TINI, StopTime
-    type(ESMF_TimeInterval)                :: TINT, RunDuration
+    type(ESMF_Time)                        :: CurrTime, starttime, StopTime
+    type(ESMF_Time)                        :: alarm_output_hf_ring, alarm_output_ring 
+    type(ESMF_Time)                        :: alarm_output_hf_stop, alarm_output_stop 
+    type(ESMF_TimeInterval)                :: RunDuration, timeStep
     type(ESMF_Config)                      :: cf
+    type(ESMF_RegridMethod_Flag)           :: regridmethod
 
-
-    type(time_type)                        :: Run_len      ! length of experiment
-    type(time_type)                        :: Time
-    type(time_type)                        :: Time_restart
-    type(time_type)                        :: DT
-    integer                                :: isc,iec,jsc,jec
-    integer                                :: dt_atmos,Run_length
-    integer,dimension(6)                   :: date, date_end
+    integer,dimension(6)                   :: date, date_init
     integer                                :: mpi_comm_atm
-    integer                                :: res_intvl
+    integer                                :: i, j, k, io_unit, urc
+    integer                                :: petcount, mype
+    logical                                :: OPENED
+    character(ESMF_MAXSTR)                 :: name
+    logical                                :: fcstpe
+    logical,dimension(:), allocatable      :: wrtpe
+    integer, allocatable                   :: petList(:)
+    character(20)                          :: cwrtcomp
 
-    type(ESMF_Grid)                        :: gridIn
-    type(ESMF_Grid)                        :: gridOut
-
-    integer                                :: npet, npet_x, npet_y
-    logical                                ::  force_date_from_configure 
     character(len=*),parameter  :: subname='(mom_cap:InitializeAdvertise)'
-    character(len=9) :: month
-    character(len=17) :: calendar = '                 '
-    integer :: initClock, mainClock, termClock, unit, gnlon, gnlat
-    real,    allocatable, dimension(:,:) :: glon_bnd, glat_bnd
-
-!jw debug
-    character(ESMF_MAXSTR)          :: name
-    integer ::petcount,tasks,mype,tstep,date1(6)
-    type (time_type)       :: Time_init1
-
-
+    integer nfmout, nfsout , nfmout_hf, nfsout_hf
+    real(kind=8) :: MPI_Wtime, timefs
+!
+!------------------------------------------------------------------------
+!
     rc = ESMF_SUCCESS
 
     call ESMF_GridCompGet(gcomp,name=name,vm=vm,rc=rc)
-!    print *,'infv3_cap,initAdvertize,name=',trim(name),'rc=',rc
-!    call ESMF_VMGetCurrent(vm, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
@@ -264,57 +199,13 @@ module fv3gfs_cap_mod
       line=__LINE__, &
       file=__FILE__)) &
       return  ! bail out
+!    print *,'in fv3_cap,initAdvertize,name=',trim(name),'petlist=',petlist,'rc=',rc
 
     clock_fv3=clock
 !
-    call ESMF_ClockGet(clock_fv3, currTIME=CurrTime, TimeStep=TINT,      &
-                       StartTime=TINI, RunDuration=RunDuration, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
-
-    CALL ESMF_TimeIntervalGet(TINT,s=tstep,rc=RC)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
-
-    date=0
-    call ESMF_TimeGet (CurrTime,                    &
-                       YY=date(1), MM=date(2), DD=date(3), &
-                       H=date(4),  M =date(5), S =date(6), RC=rc )
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
-    if(mype==0) print *,'CurrTime=',date
-
-    date_init=0
-    call ESMF_TimeGet (TINI,                      &
-                       YY=date_init(1), MM=date_init(2), DD=date_init(3), &
-                       H=date_init(4),  M =date_init(5), S =date_init(6), RC=rc )
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
-    if ( date_init(1) == 0 ) date_init = date
-    if(mype==0) print *,'InitTime=',date_init
-
-    StopTime = CurrTime + RunDuration
-    date_end=0
-    call ESMF_TimeGet (StopTime,                      &
-                       YY=date_end(1), MM=date_end(2), DD=date_end(3), &
-                       H=date_end(4),  M =date_end(5), S =date_end(6), RC=rc )
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
-    if ( date_end(1) == 0 ) date_end = date
-    if(mype==0) print *,'StopTime=',date_end,'date=',date
-
+!------------------------------------------------------------------------
+! get config variables
 !
-!    CALL ESMF_GridCompGet(gcomp, config=CF, rc=RC)
     CF=ESMF_ConfigCreate(rc=RC)
     CALL ESMF_ConfigLoadFile(config=CF ,filename='model_configure' ,rc=RC)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
@@ -336,157 +227,439 @@ module fv3gfs_cap_mod
       file=__FILE__)) &
       return  ! bail out
 !
-    CALL ESMF_ConfigGetAttribute(config=CF,value=dt_atmos, &
-                                 label ='dt_atmos:',rc=rc)
+    CALL ESMF_ConfigGetAttribute(config=CF,value=quilting, &
+                                 label ='quilting:',rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
       return  ! bail out
-
-! set internal state
-    allocate(atm_int_state, stat = rc)
-    wrap%ptr => atm_int_state
+    if(mype==0) print *,'af nems config,quilting=',quilting,'calendar=', &
+     trim(calendar)
 !
-    call ESMF_GridCompSetInternalState(gcomp, wrap, rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
-
-!#######################################################################
-! set fvs variables
-!
-     call fms_init(mpi_comm_atm)
-     call mpp_init()
-     initClock = mpp_clock_id( 'Initialization' )
-     call mpp_clock_begin (initClock) !nesting problem
-
-     call fms_init
-     call constants_init
-     call sat_vapor_pres_init
-!
-     if (file_exist('INPUT/coupler.res')) then
-       call mpp_open( unit, 'INPUT/coupler.res', action=MPP_RDONLY )
-       read (unit,*,err=999) calendar_type
-       read (unit,*) date_init
-       read (unit,*) date
-       goto 998 !back to fortran-4
-     ! read old-style coupler.res
-   999 call mpp_close (unit)
-       call mpp_open (unit, 'INPUT/coupler.res', action=MPP_RDONLY, form=MPP_NATIVE)
-       read (unit) calendar_type
-       read (unit) date
-   998 call mpp_close(unit)
-       force_date_from_configure = .false.
-       if(mype==0) print *,'restart, date=',date
-      else
-!-- set restart date from configure file
-!-- need to add current date in model_configure
-!-- otherwise, assume it is not a restart run
-       force_date_from_configure = .true.
-      endif
-
-      if ( force_date_from_configure ) then
-
-       select case( uppercase(trim(calendar)) )
-       case( 'JULIAN' )
-           calendar_type = JULIAN
-       case( 'NOLEAP' )
-           calendar_type = NOLEAP
-       case( 'THIRTY_DAY' )
-           calendar_type = THIRTY_DAY_MONTHS
-       case( 'NO_CALENDAR' )
-           calendar_type = NO_CALENDAR
-       case default
-           call mpp_error ( FATAL, 'COUPLER_MAIN: coupler_nml entry calendar must '// &
-                                   'be one of JULIAN|NOLEAP|THIRTY_DAY|NO_CALENDAR.' )
-       end select
-
-      endif
-
-      call set_calendar_type (calendar_type         )
-
-      call diag_manager_init (TIME_INIT=date)
-!
-      Time_init1  = set_date (date_init(1), date_init(2), date_init(3), &
-                            date_init(4), date_init(5), date_init(6))
-      atm_int_state%Time_init  = set_date (date_init(1), date_init(2), date_init(3), &
-                            date_init(4), date_init(5), date_init(6))
-
-      atm_int_state%Time_atmos = set_date (date(1), date(2), date(3),  &
-                            date(4), date(5), date(6))
-      call ESMF_TimeSet(time=CurrTime,yy=date(1),mm=date(2),dd=date(3),h=date(4), &
-                       m=date(5),s=date(6),rc=rc)
-!reset CurrTime in clock
-      call ESMF_ClockSet(clock, currTIME=CurrTime, rc=rc)
-!jw test
-      date1=0
-      call ESMF_TimeGet (CurrTime,                    &
-                        YY=date1(1), MM=date1(2), DD=date1(3), &
-                        H=date1(4),  M =date1(5), S =date1(6), RC=rc )
-      if(mype==0) print *,'aft rsstm date1=',date1
-      RunDuration = StopTime - CurrTime
-!
-      CALL ESMF_TimeIntervalGet(RunDuration, S=Run_length, RC=rc)
+    if ( quilting ) then
+      CALL ESMF_ConfigGetAttribute(config=CF,value=write_groups, &
+                                 label ='write_groups:',rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
         line=__LINE__, &
         file=__FILE__)) &
         return  ! bail out
 !
-      atm_int_state%Time_end   = set_date (date_end(1), date_end(2), date_end(3),  &
-                            date_end(4), date_end(5), date_end(6))
+      CALL ESMF_ConfigGetAttribute(config=CF,value=wrttasks_per_group, &
+                                   label ='write_tasks_per_group:',rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, &
+        file=__FILE__)) &
+        return  ! bail out
+      if(mype==0) print *,'af nems config,restart_interval=',restart_interval, &
+      'quilting=',quilting,'write_groups=',write_groups,wrttasks_per_group, &
+      'calendar=',trim(calendar),'calendar_type=',calendar_type
 !
-      call diag_manager_set_time_end(atm_int_state%Time_end)
-!-----------------------------------------------------------------------
-!----- write time stamps (for start time and end time) ------
-
-      call mpp_open( unit, 'time_stamp.out', nohdrs=.TRUE. )
-      month = month_name(date(2))
-      if ( mpp_pe() == mpp_root_pe() ) write (unit,20) date, month(1:3)
-      month = month_name(date_end(2))
-      if ( mpp_pe() == mpp_root_pe() ) write (unit,20) date_end, month(1:3)
-      call mpp_close (unit)
-  20  format (6i4,2x,a3)
-
+      CALL ESMF_ConfigGetAttribute(config=CF,value=num_files, &
+                                 label ='num_files:',rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, &
+        file=__FILE__)) &
+        return  ! bail out
 !
-     atm_int_state%Time_step_atmos = set_time (dt_atmos,0)
-     atm_int_state%num_atmos_calls = Run_length / dt_atmos
-     if(mype==0) print *,'num_atmos_calls=',atm_int_state%num_atmos_calls,'time_init=', &
-       date_init,'time_atmos=',date,'time_end=',date_end,'dt_atmos=',dt_atmos, &
-       'Run_length=',Run_length
-     res_intvl=restart_interval*3600
-     atm_int_state%Time_step_restart = set_time (res_intvl, 0)
-     atm_int_state%Time_restart = atm_int_state%Time_atmos + atm_int_state%Time_step_restart
-     atm_int_state%intrm_rst = .false.
-     if (res_intvl>0) atm_int_state%intrm_rst = .true.
+      allocate(filename_base(num_files))
+      CALL ESMF_ConfigFindLabel(CF,'filename_base:',rc=RC)
+      do i=1,num_files
+        CALL ESMF_ConfigGetAttribute(config=CF,value=filename_base(i), rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, &
+          file=__FILE__)) &
+          return  ! bail out
+      enddo
+      if(mype==0) print *,'af nems config,num_files=',num_files, &
+      'filename_base=',filename_base
 !
-!------ initialize component models ------
-
-     call  atmos_model_init (atm_int_state%Atm,  atm_int_state%Time_init, &
-                             atm_int_state%Time_atmos, atm_int_state%Time_step_atmos)
-!
-     call mpp_get_global_domain(atm_int_state%Atm%Domain, xsize=gnlon, ysize=gnlat)
-     allocate ( glon_bnd(gnlon+1,gnlat+1), glat_bnd(gnlon+1,gnlat+1) )
-     call mpp_global_field(atm_int_state%Atm%Domain, atm_int_state%Atm%lon_bnd, glon_bnd, position=CORNER)
-     call mpp_global_field(atm_int_state%Atm%Domain, atm_int_state%Atm%lat_bnd, glat_bnd, position=CORNER)
-
-     call data_override_init ( ) ! Atm_domain_in  = Atm%domain, &
-                                 ! Ice_domain_in  = Ice%domain, &
-                                 ! Land_domain_in = Land%domain )
-
-!-----------------------------------------------------------------------
-!---- open and close dummy file in restart dir to check if dir exists --
-
-      if (mpp_pe() == 0 ) then
-         call mpp_open( unit, 'RESTART/file' )
-         call mpp_close(unit, MPP_DELETE)
+! variables for alarms
+      call ESMF_ConfigGetAttribute(config=CF,value=nfhout,   label ='nfhout:',rc=rc)
+      call ESMF_ConfigGetAttribute(config=CF,value=nfhmax_hf,label ='nfhmax_hf:',rc=rc)
+      call ESMF_ConfigGetAttribute(config=CF,value=nfhout_hf,label ='nfhout_hf:',rc=rc)
+      call ESMF_ConfigGetAttribute(config=CF,value=nsout,    label ='nsout:',rc=rc)
+      call ESMF_ConfigGetAttribute(config=CF,value=output_grid, label ='output_grid:',rc=rc)
+      if(trim(output_grid) == 'gaussian grid') then
+        call ESMF_ConfigGetAttribute(config=CF,value=imo, label ='imo:',rc=rc)
+        call ESMF_ConfigGetAttribute(config=CF,value=jmo, label ='jmo:',rc=rc)
       endif
+      if(mype==0) print *,'af nems config,dt_atmos=',dt_atmos,'nfhmax=',nfhmax, &
+        'nfhout=',nfhout,nfhmax_hf,nfhout_hf, nsout
+!end quilting
+    endif
+!
+    call ESMF_ConfigGetAttribute(config=CF,value=dt_atmos, label ='dt_atmos:',rc=rc)
+    call ESMF_ConfigGetAttribute(config=CF,value=nfhmax,   label ='nhours_fcst:',rc=rc)
+    if(mype==0) print *,'af nems config,dt_atmos=',dt_atmos,'nfhmax=',nfhmax, &
+      'quilting=',quilting,'restart_interval=',restart_interval
+    call ESMF_TimeIntervalSet(timeStep,s=dt_atmos,rc=rc)
+    call ESMF_ClockSet(clock_fv3,timeStep=timeStep, rc=rc)
+!
+!------------------------------------------------------------------------
+! may need to set currTime for restart
+!
+    call ESMF_ClockGet(clock_fv3, currTIME=CurrTime,  StartTime=startTime,    &
+                       RunDuration=RunDuration, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+    StopTime = startTime + RunDuration
+
+! *** read restart time from restart file
+    do i=751,899
+       inquire(i,opened=OPENED)
+       if(.not.OPENED)then
+         io_unit=i
+         exit
+       endif
+    enddo
+!
+    date = 0; date_init = 0
+    force_date_from_configure = .true.
+!
+    open(unit=io_unit, file=trim('INPUT/coupler.res'),status="old",err=998 )
+    read(io_unit,*,err=999) calendar_type
+    read (io_unit,*) date_init
+    read (io_unit,*) date
+    close(io_unit)
+    force_date_from_configure = .false.
+!
+    if(date(1)==0 .and. date_init(1) /=0) date = date_init
+    if(mype==0) print *,'bf clock_fv3,date=',date,'date_init=',date_init
+
+    call ESMF_VMbroadcast(vm, date, 6, 0)
+    call ESMF_TimeSet(time=CurrTime,yy=date(1),mm=date(2),dd=date(3),h=date(4), &
+                      m=date(5),s=date(6),rc=rc)
+999 continue
+998 continue
+!    if(mype==0) print *,'final date =',date,'date_init=',date_init
+
+!reset CurrTime in clock
+    call ESMF_ClockSet(clock_fv3, currTIME=CurrTime, startTime=startTime,  &
+                       stopTime=stopTime, timeStep=timeStep, rc=rc)
+
+!
+!#######################################################################
+! set up fcst grid component
+!
+!----------------------------------------------------------------------
+!*** create fv3 atm tasks and quilt servers
+!-----------------------------------------------------------------------
+!
+! create fcst grid component
+
+    fcstpe = .false.
+    num_pes_fcst = petcount - write_groups * wrttasks_per_group
+    allocate(fcstPetList(num_pes_fcst))
+    do j=1, num_pes_fcst
+      fcstPetList(j) = j - 1
+      if(mype == fcstPetlist(j)) fcstpe = .true.
+    enddo
+    fcstComp = ESMF_GridCompCreate(petList=fcstPetList, name='fv3_fcst', rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      call ESMF_Finalize(endflag=ESMF_END_ABORT)
+!
+    call ESMF_GridCompSetServices(fcstComp, fcstSS, userRc=urc, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      call ESMF_Finalize(endflag=ESMF_END_ABORT)
+    if (ESMF_LogFoundError(rcToCheck=urc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      call ESMF_Finalize(endflag=ESMF_END_ABORT)
+
+! create fcst state
+    fcstState = ESMF_StateCreate(rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      call ESMF_Finalize(endflag=ESMF_END_ABORT)
+
+! call fcst Initialize (including creating fcstgrid and fcst fieldbundle)
+    call ESMF_GridCompInitialize(fcstComp, exportState=fcstState,    &
+         clock=clock_fv3, userRc=urc, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      call ESMF_Finalize(endflag=ESMF_END_ABORT)
+    if (ESMF_LogFoundError(rcToCheck=urc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      call ESMF_Finalize(endflag=ESMF_END_ABORT)
+!
+! reconcile the fcstComp's import state
+    call ESMF_StateReconcile(fcstState, attreconflag= ESMF_ATTRECONCILE_ON, &
+      rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      call ESMF_Finalize(endflag=ESMF_END_ABORT)
+!
+! determine number elements in fcstState
+    call ESMF_StateGet(fcstState, itemCount=FBCount, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      call ESMF_Finalize(endflag=ESMF_END_ABORT)
+    if(mype==0) print *,'af fcstCom FBCount= ',FBcount
+!
+! allocate arrays
+    allocate(fcstFB(FBCount), fcstItemNameList(FBCount), fcstItemTypeList(FBCount))
+!
+! pull out the item names and item types from fcstState
+    call ESMF_StateGet(fcstState, itemNameList=fcstItemNameList, &
+      itemTypeList=fcstItemTypeList, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      call ESMF_Finalize(endflag=ESMF_END_ABORT)
+!
+! loop over all items in the fcstState and collect all FieldBundles
+    do i=1, FBcount
+      if (fcstItemTypeList(i)==ESMF_STATEITEM_FIELDBUNDLE) then
+        ! access the FieldBundle
+        call ESMF_StateGet(fcstState, itemName=fcstItemNameList(i), &
+          fieldbundle=fcstFB(i), rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, &
+          file=__FILE__)) &
+          call ESMF_Finalize(endflag=ESMF_END_ABORT)
+!    if(mype==0.or.mype==144) print *,'af fcstFB,i=',i,'name=',trim(fcstItemNameList(i))
+      else
+
+      !***### anything but a FieldBundle in the state is unexpected here
+          call ESMF_LogSetError(ESMF_RC_ARG_BAD, &
+            msg="Only FieldBundles supported in fcstState.", &
+            line=__LINE__, &
+            file=__FILE__)
+          call ESMF_Finalize(endflag=ESMF_END_ABORT)
+      endif
+    enddo
 !
 !-----------------------------------------------------------------------
-! atmos clock may need to update for coupled system as the clock might be
-! changed from restart. For the time bring, it is OK for standalone fv3
+!***  create and initialize Write component(s).
+!-----------------------------------------------------------------------
 !
+    if( quilting ) then
 
+!
+      allocate(wrtComp(write_groups), wrtState(write_groups) )
+      allocate(wrtFB(5,write_groups), routehandle(5,write_groups))
+      allocate(lead_wrttask(write_groups), last_wrttask(write_groups))
+!
+      allocate(petList(wrttasks_per_group))
+      if(mype==0) print *,'af allco wrtComp,write_groups=',write_groups
+!
+      k = num_pes_fcst
+      do i=1, write_groups
+
+! prepare petList for wrtComp(i)
+        lead_wrttask(i) = k
+        do j=1, wrttasks_per_group
+          petList(j) = k + j-1
+        enddo
+        k = k + wrttasks_per_group
+        last_wrttask(i) = k - 1
+        if(mype==0)print *,'af wrtComp(i)=',i,'k=',k
+
+! prepare name of the wrtComp(i)
+        write(cwrtcomp,"(A,I2.2)") "wrtComp_", i
+! create wrtComp(i)
+        wrtComp(i) = ESMF_GridCompCreate(petList=petList, name=trim(cwrtcomp), rc=rc)
+!      print *,'af wrtComp(i)=',i,'name=',trim(cwrtcomp),'rc=',rc
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, &
+          file=__FILE__)) &
+          call ESMF_Finalize(endflag=ESMF_END_ABORT)
+
+! call into wrtComp(i) SetServices
+        call ESMF_GridCompSetServices(wrtComp(i), wrtSS, userRc=urc, rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, &
+          file=__FILE__)) &
+          call ESMF_Finalize(endflag=ESMF_END_ABORT)
+        if (ESMF_LogFoundError(rcToCheck=urc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, &
+          file=__FILE__)) &
+          call ESMF_Finalize(endflag=ESMF_END_ABORT)
+
+! create wrtstate(i)
+        wrtstate(i) = ESMF_StateCreate(rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, &
+          file=__FILE__)) &
+          call ESMF_Finalize(endflag=ESMF_END_ABORT)
+
+! add the fcst FieldBundles to the wrtState(i) so write component can
+        call ESMF_AttributeCopy(fcstState, wrtState(i), &
+           attcopy=ESMF_ATTCOPY_REFERENCE, rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, &
+          file=__FILE__)) &
+          call ESMF_Finalize(endflag=ESMF_END_ABORT)
+
+! use this info to create mirror objects
+        call ESMF_StateAdd(wrtState(i), fcstFB, rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, &
+          file=__FILE__)) &
+          call ESMF_Finalize(endflag=ESMF_END_ABORT)
+
+! call into wrtComp(i) Initialize
+        call ESMF_GridCompInitialize(wrtComp(i), importState=wrtstate(i), &
+           clock=clock_fv3, phase=1, userRc=urc, rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, &
+          file=__FILE__)) &
+          call ESMF_Finalize(endflag=ESMF_END_ABORT)
+        if (ESMF_LogFoundError(rcToCheck=urc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, &
+          file=__FILE__)) &
+          call ESMF_Finalize(endflag=ESMF_END_ABORT)
+
+! remove fcst FieldBundles from the wrtState(i) because done with it
+        call ESMF_StateRemove(wrtState(i), fcstItemNameList, rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, &
+          file=__FILE__)) &
+          call ESMF_Finalize(endflag=ESMF_END_ABORT)
+
+! reconcile the wrtComp(i)'s export state
+        call ESMF_StateReconcile(wrtState(i), rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, &
+          file=__FILE__)) &
+          call ESMF_Finalize(endflag=ESMF_END_ABORT)
+        if(mype==0) print *,'af wrtState reconcile, FBcount=',FBcount
+
+        call ESMF_AttributeCopy(fcstState, wrtState(i), &
+           attcopy=ESMF_ATTCOPY_REFERENCE, rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, &
+          file=__FILE__)) &
+          call ESMF_Finalize(endflag=ESMF_END_ABORT)
+
+! loop over all FieldBundle in the states and precompute Regrid operation
+        do j=1, FBcount
+
+          ! access the mirrored FieldBundle in the wrtState(i)
+          call ESMF_StateGet(wrtState(i), &
+             itemName="mirror_"//trim(fcstItemNameList(j)), &
+             fieldbundle=wrtFB(j,i), rc=rc)
+      if(mype==0) print *,'af get wrtfb=',"mirror_"//trim(fcstItemNameList(j)),'rc=',rc
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+            line=__LINE__, &
+            file=__FILE__)) &
+            call ESMF_Finalize(endflag=ESMF_END_ABORT)
+
+! determine regridmethod
+          if (index(fcstItemNameList(j),"_bilinear") >0 )  then
+            regridmethod = ESMF_REGRIDMETHOD_BILINEAR
+          else if (index(fcstItemNameList(j),"_patch") >0)  then
+            regridmethod = ESMF_REGRIDMETHOD_PATCH
+          else if (index(fcstItemNameList(j),"_nearest_stod") >0) then
+            regridmethod = ESMF_REGRIDMETHOD_NEAREST_STOD
+          else if (index(fcstItemNameList(j),"_nearest_dtos") >0) then
+            regridmethod = ESMF_REGRIDMETHOD_NEAREST_DTOS
+          else if (index(fcstItemNameList(j),"_conserve") >0) then
+            regridmethod = ESMF_REGRIDMETHOD_CONSERVE
+          else
+            call ESMF_LogSetError(ESMF_RC_ARG_BAD, &
+            msg="Unable to determine regrid method.", &
+            line=__LINE__, &
+            file=__FILE__)
+            call ESMF_Finalize(endflag=ESMF_END_ABORT)
+          endif
+
+          call ESMF_LogWrite('bf FieldBundleRegridStore', ESMF_LOGMSG_INFO, rc=rc)
+
+          call ESMF_FieldBundleRegridStore(fcstFB(j), wrtFB(j,i), &
+             regridMethod=regridmethod, routehandle=routehandle(j,i), rc=rc)
+
+          call ESMF_LogWrite('af FieldBundleRegridStore', ESMF_LOGMSG_INFO, rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+            line=__LINE__, &
+            file=__FILE__)) &
+            call ESMF_Finalize(endflag=ESMF_END_ABORT)
+
+        enddo
+
+! end write_groups
+      enddo
+      deallocate(petList)
+!
+!---------------------------------------------------------------------------------
+!---  SET UP ALARM
+!
+!--- for every time step output, overwrite nfhout
+
+      if(nsout>0) then
+        nfhout = int(nsout*dt_atmos/3600.)
+        nfmout = int((nsout*dt_atmos-nfhout*3600.)/60.)
+        nfsout = int(nsout*dt_atmos-nfhout*3600.-nfmout*60)
+      else
+        nfmout = 0
+        nfsout = 0
+      endif
+      call ESMF_TimeIntervalSet(output_interval, h=nfhout, m=nfmout,  s=nfsout, rc=rc)
+      if(mype==0) print *,'af set up output_interval,rc=',rc,'nfhout=',nfhout,nfmout,nfsout
+
+      if (nfhmax_hf > 0) then
+
+        nfmout_hf = 0; nfsout_hf = 0
+        call ESMF_TimeIntervalSet(output_interval_hf, h=nfhout_hf, m=nfmout_hf, &
+                                 s=nfsout_hf, rc=rc)
+        call ESMF_TimeIntervalSet(output_hfmax, h=nfhmax_hf, m=0, s=0, rc=rc)
+        alarm_output_hf_stop = starttime + output_hfmax + output_interval_hf 
+        if (currtime <= starttime+output_hfmax) then
+          alarm_output_hf_ring = currtime  + output_interval_hf
+          alarm_output_hf = ESMF_AlarmCreate(clock_fv3,name='ALARM_OUTPUT_HF',  &
+                                               ringTime =alarm_output_hf_ring,&
+                                               ringInterval =output_interval_hf,  &  !<-- Time interval between
+                                               stoptime =alarm_output_hf_stop,&  !<-- Time interval between
+                                               ringTimeStepCount=1, &  !<-- The Alarm rings for this many timesteps
+                                               sticky           =.false., &  !<-- Alarm does not ring until turned off
+                                               rc               =RC)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+            line=__LINE__, &
+            file=__FILE__)) &
+            call ESMF_Finalize(endflag=ESMF_END_ABORT)
+          alarm_output_ring = currtime + output_hfmax + output_interval
+        else
+          alarm_output_ring = currtime + output_interval
+        endif
+      else
+         alarm_output_ring = currtime + output_interval
+      endif
+
+      call ESMF_TimeIntervalSet(output_interval, h=nfhout, m=nfmout, &
+                              s=nfsout, rc=rc)
+      alarm_output = ESMF_AlarmCreate(clock_fv3, name      ='ALARM_OUTPUT',    &
+                                    ringTime         =alarm_output_ring, & !<-- Forecast/Restart start time (ESMF)
+                                    ringInterval     =output_interval,   & !<-- Time interval between
+                                    ringTimeStepCount=1,                 & !<-- The Alarm rings for this many timesteps
+                                    sticky           =.false.,           & !<-- Alarm does not ring until turned off
+                                    rc               =RC)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, &
+        file=__FILE__)) &
+        call ESMF_Finalize(endflag=ESMF_END_ABORT)
+!
+!-----------------------------------------------------------------------
+!***  SET THE FIRST WRITE GROUP AS THE FIRST ONE TO ACT.
+!-----------------------------------------------------------------------
+!
+      n_group = 1
+!
+!end quilting
+    endif
+!
+!-----------------------------------------------------------------------
+!
   end subroutine InitializeAdvertise
 !
   !-----------------------------------------------------------------------------
@@ -513,33 +686,36 @@ module fv3gfs_cap_mod
     integer, intent(out)                   :: rc
     
     ! local variables
-    type(ESMF_Clock)                       :: clock
+    type(ESMF_Field)                       :: field_work
     type(ESMF_State)                       :: importState, exportState
+    type(ESMF_Clock)                       :: clock
     type(ESMF_Time)                        :: currTime
     type(ESMF_TimeInterval)                :: timeStep
-    type(ESMF_Time)                        :: startTime
+    type(ESMF_Time)                        :: startTime, stopTime
     type(ESMF_TimeInterval)                :: time_elapsed
     integer(ESMF_KIND_I8)                  :: n_interval, time_elapsed_sec
     character(len=64)                      :: timestamp
-
-    ! define some time types 
-    type(time_type)                        :: Time        
-
-    integer :: na,i,j,i1,j1,dth,dtm,dts
+!
+    integer :: na,i,j,i1,j1, urc
+    logical :: lalarm, reconcileFlag
     character(len=*),parameter  :: subname='(fv3_cap:ModelAdvance)'
     character(240)              :: msgString
 !jw debug
     character(ESMF_MAXSTR)          :: name
     type(ESMF_VM)                :: vm
-    integer :: mype,date(6)
+    integer :: mype,date(6), fieldcount, fcst_nfld
+    real(kind=ESMF_KIND_R4), pointer  :: dataPtr(:,:,:), dataPtr2d(:,:)
+    character(64)  :: fcstbdl_name
+    real(kind=8) :: MPI_Wtime
+    real(kind=8) :: timewri, timewr, timerhi, timerh
 
+!-----------------------------------------------------------------------------
 
+    timewri = mpi_wtime()
     rc = ESMF_SUCCESS
     if(profile_memory) call ESMF_VMLogMemInfo("Entering FV3 Model_ADVANCE: ")
-    
+!    
     call ESMF_GridCompGet(gcomp,name=name,vm=vm,rc=rc)
-!    print *,'infv3_cap,initAdvertize,name=',trim(name),'rc=',rc
-!    call ESMF_VMGetCurrent(vm, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
@@ -550,23 +726,6 @@ module fv3gfs_cap_mod
       line=__LINE__, &
       file=__FILE__)) &
       return  ! bail out
-
-    ! query the Component for its clock, importState and exportState
-    call ESMF_GridCompGet(gcomp, clock=clock, importState=importState, &
-      exportState=exportState, rc=rc)
-!    if(mype==0) print *,'n fv3_cap,in model run,compget,rc=',rc
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
-
-!    call ESMF_GridCompGetInternalState(gcomp, wrap, rc)
-!    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-!      line=__LINE__, &
-!      file=__FILE__)) &
-!      return  ! bail out
-!
-!    Atm_int_state => wrap%ptr
 
     ! Because of the way that the internal Clock was set in SetClock(),
     ! its timeStep is likely smaller than the parent timeStep. As a consequence
@@ -588,11 +747,21 @@ module fv3gfs_cap_mod
       return  ! bail out
     
     call ESMF_ClockGet(clock_fv3, startTime=startTime, currTime=currTime, &
-      timeStep=timeStep, rc=rc)
+      timeStep=timeStep, stopTime=stopTime, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
       return  ! bail out
+!   if(mype==0)  print *,'total steps=', nint((stopTime-startTime)/timeStep)
+!   if(mype==lead_wrttask(1))  print *,'on wrt lead,total steps=', nint((stopTime-startTime)/timeStep)
+    call ESMF_TimeGet(time=stopTime,yy=date(1),mm=date(2),dd=date(3),h=date(4), &
+                      m=date(5),s=date(6),rc=rc)
+!    if(mype==0) print *,'af clock,stop date=',date
+!    if(mype==lead_wrttask(1)) print *,'on wrt lead,af clock,stop date=',date
+    call ESMF_TimeIntervalGet(timeStep,yy=date(1),mm=date(2),d=date(3),h=date(4), &
+                      m=date(5),s=date(6),rc=rc)
+!    if(mype==0) print *,'af clock,timestep date=',date
+!    if(mype==lead_wrttask(1)) print *,'on wrt lead,af clock,timestep date=',date
     
     call ESMF_TimePrint(currTime + timeStep, &
       preString="--------------------------------> to: ", &
@@ -601,57 +770,141 @@ module fv3gfs_cap_mod
       line=__LINE__, &
       file=__FILE__)) &
       return  ! bail out
-    call ESMF_LogWrite(msgString, ESMF_LOGMSG_INFO, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
-    call ESMF_TimeIntervalGet(timeStep, h=dth, m=dtm, s=dts, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
-!    if(mype==0) print *,'n fv3_cap,in model run,timestep,rc=',rc,'dth=',dth, &
-!      'dtm=',dtm, 'dts=',dts,'num_atmos_calls=',atm_int_state%num_atmos_calls
-
-!---
-    atm_int_state%Time_atmos = esmf2fms_time(currTime)
-    call get_date (atm_int_state%Time_atmos, date(1), date(2), date(3),  &
-                                 date(4), date(5), date(6))
-    call get_date (atm_int_state%Time_step_atmos, date(1), date(2), date(3),  &
-                                 date(4), date(5), date(6))
 !
-    do na = 1, atm_int_state%num_atmos_calls
+!-----------------------------------------------------------------------------
+!*** integration loop
 
-      atm_int_state%Time_atmos = atm_int_state%Time_atmos + atm_int_state%Time_step_atmos
+    reconcileFlag = .true.
+    call esmf_clockget(clock_fv3, timestep=timestep, starttime=starttime, &
+                       currtime=currtime, rc=rc)
 
-      call update_atmos_model_dynamics (atm_int_state%Atm)
+    integrate: do while(.NOT.ESMF_ClockIsStopTime(clock_fv3, rc = RC))
+!
+!*** for forecast tasks
+     
+      call ESMF_LogWrite('Model Advance: before fcstcomp run ', ESMF_LOGMSG_INFO, rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, &
+          file=__FILE__)) &
+          call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
-      call update_atmos_radiation_physics (atm_int_state%Atm)
+      call ESMF_GridCompRun(fcstComp, exportState=fcstState, clock=clock_fv3,userRc=urc, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, &
+        file=__FILE__)) &
+        call ESMF_Finalize(endflag=ESMF_END_ABORT)
+      if (ESMF_LogFoundError(rcToCheck=urc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, &
+        file=__FILE__)) &
+        call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
-      call update_atmos_model_state (atm_int_state%Atm)
+      call ESMF_LogWrite('Model Advance: after fcstcomp run ', ESMF_LOGMSG_INFO, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, &
+          file=__FILE__)) &
+          call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
-!--- intermediate restart
-      if (atm_int_state%intrm_rst) then
-        if ((na /= atm_int_state%num_atmos_calls) .and.   &
-           (atm_int_state%Time_atmos == atm_int_state%Time_restart)) then
-          timestamp = date_to_string (atm_int_state%Time_restart)
-          call atmos_model_restart(atm_int_state%Atm, timestamp)
+      call ESMF_ClockAdvance(clock = clock_fv3, rc = RC)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, &
+          file=__FILE__)) &
+          call ESMF_Finalize(endflag=ESMF_END_ABORT)
+      call esmf_clockget(clock_fv3, currtime=currtime, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, &
+          file=__FILE__)) &
+          call ESMF_Finalize(endflag=ESMF_END_ABORT)
+      time_elapsed  = currtime - starttime
+      na = nint(time_elapsed/timeStep)
+!
+     if(mype==0) print *,'n fv3_cap,in model run, advance,na=',na
 
-          call wrt_atmres_timestamp(atm_int_state,timestamp)
-          atm_int_state%Time_restart = atm_int_state%Time_restart + atm_int_state%Time_step_restart
-        endif
+!-------------------------------------------------------------------------------
+!*** if alarms ring, call data transfer and write grid comp run
+     if( quilting ) then
+
+       lalarm = .false.
+       if (nfhmax_hf > 0) then
+
+         if(currtime <= starttime+output_hfmax) then
+           if(ESMF_AlarmIsEnabled(alarm = ALARM_OUTPUT_HF, rc = RC)) then
+             if( ESMF_AlarmIsRinging(alarm = ALARM_OUTPUT_HF,rc = Rc)) LALARM = .true.
+           endif
+         else
+           if(ESMF_AlarmIsEnabled(alarm = ALARM_OUTPUT, rc = RC)) then
+             if(ESMF_AlarmIsRinging(alarm = ALARM_OUTPUT,rc = Rc)) LALARM = .true.
+           endif
+         endif
+
+       endif
+!
+       if(ESMF_AlarmIsEnabled(alarm = ALARM_OUTPUT, rc = RC)) then
+         if(ESMF_AlarmIsRinging(alarm = ALARM_OUTPUT,rc = Rc)) LALARM = .true.
+       endif
+       if (mype == 0 .or. mype == lead_wrttask(1)) print *,' aft fcst run lalarm=',lalarm, &
+       'FBcount=',FBcount,'na=',na
+
+       output: IF(lalarm .or. na==1 ) then
+
+         do i=1, FBCount
+!
+! get fcst fieldbundle
+!
+           call ESMF_FieldBundleRegrid(fcstFB(i), wrtFB(i,n_group),    &
+              routehandle=routehandle(i, n_group), rc=rc)
+           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+             line=__LINE__, &
+             file=__FILE__)) &
+             call ESMF_Finalize(endflag=ESMF_END_ABORT)
+!        if (mype == 0 .or. mype == lead_wrttask(n_group)) print *,'aft fieldbundleregrid, rc=',rc, &
+!        'na=',na
+!
+!end FBcount
+          enddo
+
+!      if(mype==0 .or. mype==lead_wrttask(1))  print *,'on wrt bf wrt run, na=',na
+          call ESMF_LogWrite('Model Advance: before wrtcomp run ', ESMF_LOGMSG_INFO, rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+            line=__LINE__, &
+            file=__FILE__)) &
+            call ESMF_Finalize(endflag=ESMF_END_ABORT)
+
+          call ESMF_GridCompRun(wrtComp(n_group), importState=wrtState(n_group), clock=clock_fv3,userRc=urc,rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+            line=__LINE__, &
+            file=__FILE__)) &
+            call ESMF_Finalize(endflag=ESMF_END_ABORT)
+          if (ESMF_LogFoundError(rcToCheck=urc, msg=ESMF_LOGERR_PASSTHRU, &
+            line=__LINE__, &
+            file=__FILE__)) &
+            call ESMF_Finalize(endflag=ESMF_END_ABORT)
+
+          call ESMF_LogWrite('Model Advance: after wrtcomp run ', ESMF_LOGMSG_INFO, rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+            line=__LINE__, &
+            file=__FILE__)) &
+            call ESMF_Finalize(endflag=ESMF_END_ABORT)
+
+          if(n_group == write_groups) then
+            n_group = 1
+          else
+            n_group = n_group + 1
+          endif
+
+        endif output
+
+! end quilting
       endif
 
-      call print_memuse_stats('after full step')
-!    if(mype==0) print *,'n fv3_cap,in model run,end one time step,na=',na
-
-    enddo
+!*** end integreate loop
+    enddo integrate
 
     if(profile_memory) call ESMF_VMLogMemInfo("Leaving FV3 Model_ADVANCE: ")
+
   end subroutine ModelAdvance
 
-  !-----------------------------------------------------------------------------
+!-----------------------------------------------------------------------------
+!-----------------------------------------------------------------------------
 
   subroutine atmos_model_finalize(gcomp, rc)
 
@@ -659,75 +912,78 @@ module fv3gfs_cap_mod
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 !
-    integer :: unit, date(6)
-    
-!    print *,'FV3: --- finalize called ---'
+    integer :: i, unit, date(6), mype, urc
+    type(ESMF_VM)  :: vm
+    real(kind=8) :: MPI_Wtime, timeffs
+!
+!-----------------------------------------------------------------------------
+!*** finialize forecast
+
+    timeffs = mpi_wtime()
     rc = ESMF_SUCCESS
-
-    call atmos_model_end (atm_int_state%atm)
 !
-!----- check time versus expected ending time ----
-
-    if (atm_int_state%Time_atmos /= atm_int_state%Time_end)  &
-      call error_mesg ('program coupler',  &
-           'final time does not match expected ending time', WARNING)
-
-!----- write restart file ------
-
-    call get_date (atm_int_state%Time_atmos, date(1), date(2), date(3),  &
-                               date(4), date(5), date(6))
-    call mpp_open( unit, 'RESTART/coupler.res', nohdrs=.TRUE. )
-    if (mpp_pe() == mpp_root_pe())then
-        write( unit, '(i6,8x,a)' )calendar_type, &
-             '(Calendar: no_calendar=0, thirty_day_months=1, julian=2, gregorian=3, noleap=4)'
-
-        write( unit, '(6i6,8x,a)' )date_init, &
-             'Model start time:   year, month, day, hour, minute, second'
-        write( unit, '(6i6,8x,a)' )date, &
-             'Current model time: year, month, day, hour, minute, second'
+    call ESMF_GridCompGet(gcomp,vm=vm,rc=rc)
+    call ESMF_VMGet(vm, localpet = mype,rc=rc)
+!
+!*** finalize grid comps
+    if( quilting ) then
+      do i = 1, write_groups
+        call ESMF_GridCompFinalize(wrtComp(i), importState=wrtstate(i),userRc=urc, rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, &
+          file=__FILE__)) &
+          call ESMF_Finalize(endflag=ESMF_END_ABORT)
+        if (ESMF_LogFoundError(rcToCheck=urc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, &
+          file=__FILE__)) &
+          call ESMF_Finalize(endflag=ESMF_END_ABORT)
+      enddo
     endif
-    call mpp_close(unit)
+
+    call ESMF_GridCompFinalize(fcstComp, exportState=fcststate,userRc=urc, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      call ESMF_Finalize(endflag=ESMF_END_ABORT)
+    if (ESMF_LogFoundError(rcToCheck=urc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      call ESMF_Finalize(endflag=ESMF_END_ABORT)
 !
-    call diag_manager_end(atm_int_state%Time_atmos )
+!*** destroy grid comps
+    if( quilting ) then
+      do i = 1, write_groups
+        call ESMF_StateDestroy(wrtState(i), rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, &
+          file=__FILE__)) &
+          call ESMF_Finalize(endflag=ESMF_END_ABORT)
+        call ESMF_GridCompDestroy(wrtComp(i), rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, &
+          file=__FILE__)) &
+          call ESMF_Finalize(endflag=ESMF_END_ABORT)
+      enddo
+    endif
 
-    call fms_end
+    call ESMF_StateDestroy(fcstState, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      call ESMF_Finalize(endflag=ESMF_END_ABORT)
+    call ESMF_GridCompDestroy(fcstComp, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      call ESMF_Finalize(endflag=ESMF_END_ABORT)
+!
+!    if(mype==0)print *,' wrt grid comp destroy time=',mpi_wtime()-timeffs
 
-!    print *,'FV3: --- finalize completed ---'
 
   end subroutine atmos_model_finalize
 
 !#######################################################################
-!-- change name from coupler_res to wrt_res_stamp to avoid confusion,
-!-- here we only write out atmos restart time stamp
 !
-  subroutine wrt_atmres_timestamp(atm_int_state,timestamp)
-    type(atmos_internalstate_type), intent(in) :: atm_int_state
-    character(len=32), intent(in) :: timestamp
-
-    integer :: unit, date(6)
-
-!----- compute current date ------
-
-    call get_date (atm_int_state%Time_atmos, date(1), date(2), date(3),  &
-                                 date(4), date(5), date(6))
-
-!----- write restart file ------
-
-    if (mpp_pe() == mpp_root_pe())then
-        call mpp_open( unit, 'RESTART/'//trim(timestamp)//'.coupler.res', nohdrs=.TRUE. )
-        write( unit, '(i6,8x,a)' )calendar_type, &
-             '(Calendar: no_calendar=0, thirty_day_months=1, julian=2, gregorian=3, noleap=4)'
-
-        write( unit, '(6i6,8x,a)' )date_init, &
-             'Model start time:   year, month, day, hour, minute, second'
-        write( unit, '(6i6,8x,a)' )date, &
-             'Current model time: year, month, day, hour, minute, second'
-        call mpp_close(unit)
-    endif
-  end subroutine wrt_atmres_timestamp
-!
-!#######################################################################
-
-  !-----------------------------------------------------------------------------
+!-----------------------------------------------------------------------------
 
 end module fv3gfs_cap_mod

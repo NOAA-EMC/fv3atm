@@ -116,6 +116,7 @@ public atmos_model_restart
      logical                       :: pe                 ! current pe.
      type(grid_box_type)           :: grid               ! hold grid information needed for 2nd order conservative flux exchange 
                                                          ! to calculate gradient on cubic sphere grid.
+     integer                       :: layout(2)          ! computer task laytout
      real(kind=8), pointer, dimension(:) :: ak
      real(kind=8), pointer, dimension(:) :: bk
      real(kind=8), pointer, dimension(:,:,:) :: layer_hgt
