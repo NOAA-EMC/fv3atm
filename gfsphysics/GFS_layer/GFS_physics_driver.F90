@@ -17,7 +17,6 @@ module module_physics_driver
                                    GFS_radtend_type, GFS_diag_type
   use gfdl_cloud_microphys_mod, only: gfdl_cloud_microphys_driver
   use funcphys,              only: ftdp
-  use module_som,            only: update_som 
 
   implicit none
 
