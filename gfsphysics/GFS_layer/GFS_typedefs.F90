@@ -599,6 +599,10 @@ module GFS_typedefs
     integer              :: kdt             !< current forecast iteration
     integer              :: jdat(1:8)       !< current forecast date and time
                                             !< (yr, mon, day, t-zone, hr, min, sec, mil-sec)
+    !--- IAU
+    real(kind=kind_phys) :: iau_delthrs                     ! iau time interval (to scale increments)
+    character(len=240)   :: iau_inc_files(7)                ! list of increment files
+    real(kind=kind_phys) :: iaufhrs(7)                      ! forecast hours associated with increment files
 
     contains
       procedure :: init  => control_initialize
@@ -1520,7 +1524,12 @@ module GFS_typedefs
     real(kind=kind_phys) :: shum(5)        = -999.           !< stochastic boundary layer spf hum amp
     real(kind=kind_phys) :: skeb(5)        = -999.           !< stochastic KE backscatter amplitude
     real(kind=kind_phys) :: vcamp(5)       = -999.           !< stochastic vorticity confinment amp
-    real(kind=kind_phys) :: vc             = 0.              !< deterministic vorticity confinement parameter.
+    real(kind=kind_phys) :: vc             = 0.              !< deterministic vorticity confinement parameter
+
+    !--- IAU options
+    real(kind=kind_phys)  :: iau_delthrs = 6                 ! iau time interval (to scale increments)
+    character(len=240)    :: iau_inc_files(7)=''             ! list of increment files
+    real(kind=kind_phys)  :: iaufhrs(7)=-1                   ! forecast hours associated with increment files
 
     !--- debug flag
     logical              :: debug          = .false.
@@ -1562,6 +1571,8 @@ module GFS_typedefs
                                xkzminv, moninq_fac,                                         &
                           !--- stochastic physics
                                sppt, shum, skeb, vcamp, vc,                                 &
+                          !--- IAU
+                               iau_delthrs,iaufhrs,iau_inc_files,                           &
                           !--- debug options
                                debug, pre_rad
 
@@ -1773,6 +1784,12 @@ module GFS_typedefs
     Model%do_shum          = do_shum
     Model%do_skeb          = do_skeb
     Model%do_vc            = do_vc
+
+    ! IAU flags
+    !--- iau parameters
+    Model%iaufhrs         = iaufhrs
+    Model%iau_inc_files   = iau_inc_files
+    Model%iau_delthrs     = iau_delthrs  
 
     !--- tracer handling
     Model%ntrac            = size(tracer_names)

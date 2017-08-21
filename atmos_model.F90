@@ -73,6 +73,7 @@ use atmosphere_mod,     only: atmosphere_grid_bdry, atmosphere_grid_ctr
 use atmosphere_mod,     only: atmosphere_dynamics, atmosphere_diag_axes
 use atmosphere_mod,     only: atmosphere_etalvls, atmosphere_hgt
 !rab use atmosphere_mod,     only: atmosphere_tracer_postinit
+use atmosphere_mod,     only: atmosphere_diss_est
 use atmosphere_mod,     only: atmosphere_scalar_field_halo
 use atmosphere_mod,     only: set_atmosphere_pelist
 use atmosphere_mod,     only: Atm, mytile
@@ -87,6 +88,8 @@ use IPD_driver,         only: IPD_initialize, IPD_setup_step, &
 use FV3GFS_io_mod,      only: FV3GFS_restart_read, FV3GFS_restart_write, &
                               FV3GFS_IPD_checksum,                       &
                               gfdl_diag_register, gfdl_diag_output
+use fv_iau_mod, only: iau_external_data_type,getiauforcing,iau_initialize
+
 !-----------------------------------------------------------------------
 
 implicit none
@@ -146,6 +149,9 @@ type(IPD_control_type)              :: IPD_Control
 type(IPD_data_type),    allocatable :: IPD_Data(:)  ! number of blocks
 type(IPD_diag_type)                 :: IPD_Diag(250)
 type(IPD_restart_type)              :: IPD_Restart
+
+! IAU container
+type(iau_external_data_type)        :: IAU_Data ! number of blocks
 
 !-----------------
 !  Block container
@@ -265,7 +271,7 @@ subroutine update_atmos_radiation_physics (Atmos)
         if (mpp_pe() == mpp_root_pe()) print *,'PHYSICS STEP2   ', IPD_Control%kdt, IPD_Control%fhour
         call FV3GFS_IPD_checksum(IPD_Control, IPD_Data, Atm_block)
       endif
-
+      call getiauforcing(IPD_Control,IAU_data)
       if (mpp_pe() == mpp_root_pe() .and. debug) write(6,*) "end of radiation and physics step"
     endif
 
@@ -404,6 +410,8 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    endif
 
    call IPD_initialize (IPD_Control, IPD_Data, IPD_Diag, IPD_Restart, Init_parm)
+!  initialize the IAU module
+   call iau_initialize (IPD_Control,IAU_data,Init_parm)
 
    Init_parm%blksz           => null()
    Init_parm%ak              => null()
@@ -486,7 +494,7 @@ subroutine update_atmos_model_state (Atmos)
     call set_atmosphere_pelist()
     call mpp_clock_begin(fv3Clock)
     call mpp_clock_begin(updClock)
-    call atmosphere_state_update (Atmos%Time, IPD_Data, Atm_block)
+    call atmosphere_state_update (Atmos%Time, IPD_Data, IAU_Data, Atm_block)
     call mpp_clock_end(updClock)
     call mpp_clock_end(fv3Clock)
 
