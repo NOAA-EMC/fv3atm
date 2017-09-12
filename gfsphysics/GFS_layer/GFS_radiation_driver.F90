@@ -321,7 +321,8 @@
       use module_radiation_surface,  only: NF_ALBD, sfc_init, setalb,   &
      &                                     setemis
       use module_radiation_clouds,   only: NF_CLDS, cld_init,           &
-     &                                     progcld1, progcld2, progcld3,&
+     &                                     progcld1, progcld2,          &
+     &                                     progcld3, progcld4,          &
      &                                     progclduni, diagcld1
 
       use module_radsw_parameters,   only: topfsw_type, sfcfsw_type,    &
@@ -487,8 +488,8 @@
 !              =1: use prognostic cloud scheme (default)                !
 !   icmphys  : cloud microphysics scheme control flag                   !
 !              =1 zhao/carr/sundqvist microphysics scheme               !
-!              =2 brad ferrier microphysics scheme                      !
 !              =3 zhao/carr/sundqvist microphysics+pdf cloud & cnvc,cnvw!
+!              =4 GFDL cloud microphysics                               !
 !   iovrsw   : control flag for cloud overlap in sw radiation           !
 !   iovrlw   : control flag for cloud overlap in lw radiation           !
 !              =0: random overlapping clouds                            !
@@ -1162,8 +1163,8 @@
 !                        =1 index from surface to toa                   !
 !     icmphys          : cloud microphysics scheme control flag         !
 !                        =1 zhao/carr/sundqvist microphysics scheme     !
-!                        =2 brad ferrier microphysics scheme            !
 !                        =3 zhao/carr/sundqvist microphysics +pdf cloud !
+!                        =4 GFDL cloud microphysics                     !
 !                                                                       !
 !    module variables:                                                  !
 !     itsfc            : =0 use same sfc skin-air/ground temp           !
@@ -1550,6 +1551,14 @@
                          clw, cnvw, cnvc, Grid%xlat, Grid%xlon,   &
                          Sfcprop%slmsk,im, lmk, lmp, deltaq,      &
                          Model%sup, Model%kdt, me,                &
+                         clouds, cldsa, mtopa, mbota)                  !  ---  outputs
+
+        elseif (icmphys == 4) then           ! zhao/moorthi's prognostic cloud scheme
+
+          call progcld4 (plyr, plvl, tlyr, tvly, qlyr, qstl, rhly,&    !  ---  inputs
+                         clw, Grid%xlat, Grid%xlon, Sfcprop%slmsk,&
+                         tracer1(:,1:lmk,Model%ntclamt), im, lmk, &
+                         lmp,                                     &
                          clouds, cldsa, mtopa, mbota)                  !  ---  outputs
 
         endif                            ! end if_icmphys

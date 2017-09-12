@@ -1426,6 +1426,60 @@ module physics_diag_layer
       IPD_Diag(idx)%data(nb)%var2p => Diag(nb)%spfhmax
     enddo
 
+    !---u10mmax
+    idx = idx + 1
+    IPD_Diag(idx)%name           = 'u10mmaxn'
+    IPD_Diag(idx)%output_name    = 'u10mmax'
+    IPD_Diag(idx)%mod_name       = 'physics'
+    IPD_Diag(idx)%file_name      = 'flx'
+    IPD_Diag(idx)%desc           = 'maximum u-wind speed (m/s) at 10 m above ground'
+    IPD_Diag(idx)%unit           = 'm/s'
+    IPD_Diag(idx)%type_stat_proc = 'max'
+    IPD_Diag(idx)%level_type     = '10 m above grnd'
+    IPD_Diag(idx)%level          = 1
+    IPD_Diag(idx)%cnvfac         = cn_one
+    IPD_Diag(idx)%zhour          = Model%zhour
+    IPD_Diag(idx)%fcst_hour      = Model%fhour
+    do nb = 1,nblks
+      IPD_Diag(idx)%data(nb)%var2p => Diag(nb)%u10mmax
+    enddo
+
+    !---v10mmax
+    idx = idx + 1
+    IPD_Diag(idx)%name           = 'v10mmaxn'
+    IPD_Diag(idx)%output_name    = 'v10mmax'
+    IPD_Diag(idx)%mod_name       = 'physics'
+    IPD_Diag(idx)%file_name      = 'flx'
+    IPD_Diag(idx)%desc           = 'maximum v-wind speed (m/s) at 10 m above ground'
+    IPD_Diag(idx)%unit           = 'm/s'
+    IPD_Diag(idx)%type_stat_proc = 'max'
+    IPD_Diag(idx)%level_type     = '10 m above grnd'
+    IPD_Diag(idx)%level          = 1
+    IPD_Diag(idx)%cnvfac         = cn_one
+    IPD_Diag(idx)%zhour          = Model%zhour
+    IPD_Diag(idx)%fcst_hour      = Model%fhour
+    do nb = 1,nblks
+      IPD_Diag(idx)%data(nb)%var2p => Diag(nb)%v10mmax
+    enddo
+
+    !---wind10mmax
+    idx = idx + 1
+    IPD_Diag(idx)%name           = 'wind10mmaxn'
+    IPD_Diag(idx)%output_name    = 'wind10mmax'
+    IPD_Diag(idx)%mod_name       = 'physics'
+    IPD_Diag(idx)%file_name      = 'flx'
+    IPD_Diag(idx)%desc           = 'maximum wind speed (m/s) at 10 m above ground'
+    IPD_Diag(idx)%unit           = 'm/s'
+    IPD_Diag(idx)%type_stat_proc = 'max'
+    IPD_Diag(idx)%level_type     = '10 m above grnd'
+    IPD_Diag(idx)%level          = 1
+    IPD_Diag(idx)%cnvfac         = cn_one
+    IPD_Diag(idx)%zhour          = Model%zhour
+    IPD_Diag(idx)%fcst_hour      = Model%fhour
+    do nb = 1,nblks
+      IPD_Diag(idx)%data(nb)%var2p => Diag(nb)%wind10mmax
+    enddo
+
     !---rain
     idx = idx + 1
     IPD_Diag(idx)%name           = 'rain'
@@ -1604,6 +1658,24 @@ module physics_diag_layer
     IPD_Diag(idx)%fcst_hour      = Model%fhour
     do nb = 1,nblks
       IPD_Diag(idx)%data(nb)%var2p => Diag(nb)%v10m
+    enddo
+
+    !---dpt2m
+    idx = idx + 1
+    IPD_Diag(idx)%name           = 'dpt2m'
+    IPD_Diag(idx)%output_name    = 'dpt'
+    IPD_Diag(idx)%mod_name       = 'physics'
+    IPD_Diag(idx)%file_name      = ' '
+    IPD_Diag(idx)%desc           = 'Dew point temperature [K] at 2 m above ground'
+    IPD_Diag(idx)%unit           = 'K'
+    IPD_Diag(idx)%type_stat_proc = 'inst'
+    IPD_Diag(idx)%level_type     = '2 m above ground'
+    IPD_Diag(idx)%level          = 1
+    IPD_Diag(idx)%cnvfac         = cn_one
+    IPD_Diag(idx)%zhour          = Model%zhour
+    IPD_Diag(idx)%fcst_hour      = Model%fhour
+    do nb = 1,nblks
+      IPD_Diag(idx)%data(nb)%var2p => Diag(nb)%dpt2m
     enddo
 
     !---zlvl

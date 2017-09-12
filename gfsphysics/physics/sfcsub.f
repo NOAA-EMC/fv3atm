@@ -6864,9 +6864,10 @@ cjfe
       data mon1s/0/, mon2s/0/, sea1s/0/, sea2s/0/
 !
       save first, tsf, sno, zor, wet,  ais, acn, scv, smc, tg3,
-     &     alb,   alf, vet, sot, tsf2, veg, stc
-     &,    vmn,   vmx, slp, abs,
-     &     mon1s, mon2s, sea1s, sea2s, dayhf, k1, k2, m1, m2
+     &     alb,   alf, vet, sot, tsf2, veg, stc,
+     &     vmn,   vmx, slp, abs,
+     &     mon1s, mon2s, sea1s, sea2s, dayhf, k1, k2, m1, m2,
+     &     landice_cat
 !
       logical lprnt
 !

@@ -38,9 +38,12 @@ module fv_nggps_diags_mod
 
  real, parameter:: missing_value = -1.e10
  logical master
- integer :: id_ua, id_va, id_pt, id_delp, id_pfhy, id_pfnh, id_w, id_delz 
- integer :: kstt_ua, kstt_va, kstt_pt, kstt_delp, kstt_pfhy, kstt_pfnh, kstt_w, kstt_delz 
- integer :: kend_ua, kend_va, kend_pt, kend_delp, kend_pfhy, kend_pfnh, kend_w, kend_delz 
+ integer :: id_ua, id_va, id_pt, id_delp, id_pfhy, id_pfnh 
+ integer :: id_w, id_delz, id_diss
+ integer :: kstt_ua, kstt_va, kstt_pt, kstt_delp, kstt_pfhy
+ integer :: kstt_pfnh, kstt_w, kstt_delz, kstt_diss
+ integer :: kend_ua, kend_va, kend_pt, kend_delp, kend_pfhy
+ integer :: kend_pfnh, kend_w, kend_delz, kend_diss
  integer :: isco, ieco, jsco, jeco, npzo, ncnsto
  integer :: nlevs
  logical :: hydrostatico
@@ -55,6 +58,7 @@ module fv_nggps_diags_mod
  real :: vrange(2) = (/ -330.,  330. /)  ! winds
  real :: wrange(2) = (/ -100.,  100. /)  ! vertical wind
  real :: trange(2) = (/  100.,  350. /)  ! temperature
+ real :: skrange(2) = (/ -10000000.0,  10000000.0 /)  ! dissipation estimate for SKEB
 
 ! file name
  character(len=64) :: file_name = 'gfs_dyn'
@@ -73,7 +77,7 @@ module fv_nggps_diags_mod
 
 contains
 
- subroutine fv_nggps_diag_init(Atm, axes, Time)      
+ subroutine fv_nggps_diag_init(Atm, axes, Time)
     type(fv_atmos_type), intent(inout), target :: Atm(:)
     integer, intent(in)         :: axes(4)
     type(time_type), intent(in) :: Time
@@ -166,6 +170,14 @@ contains
           nlevs = nlevs + npzo
        endif
 
+       !--- diagnostic output for skeb: dissipation estimate
+       id_diss = register_diag_field ( trim(file_name), 'diss_est', axes(1:3), Time,    &
+            'dissipation estimate', 'none', missing_value=missing_value, range=skrange )
+       if (id_delp>0) then
+          kstt_diss = nlevs+1; kend_diss = nlevs+npzo
+          nlevs = nlevs + npzo
+       endif
+
 !--------------------
 ! Tracer diagnostics:
 !--------------------
@@ -209,16 +221,16 @@ contains
          call range_check('DELP', Atm(n)%delp, isco, ieco, jsco, jeco, ngc, npzo, Atm(n)%gridstruct%agrid,    &
                            0.01*ptop, 200.E2, bad_range)
          call range_check('UA', Atm(n)%ua, isco, ieco, jsco, jeco, ngc, npzo, Atm(n)%gridstruct%agrid,   &
-                           -220., 250., bad_range)
+                           -250., 250., bad_range)
          call range_check('VA', Atm(n)%va, isco, ieco, jsco, jeco, ngc, npzo, Atm(n)%gridstruct%agrid,   &
-                           -220., 220., bad_range)
+                           -250., 250., bad_range)
          call range_check('TA', Atm(n)%pt, isco, ieco, jsco, jeco, ngc, npzo, Atm(n)%gridstruct%agrid,   &
-                           130., 350., bad_range) !DCMIP ICs have very low temperatures
+                           150., 350., bad_range) !DCMIP ICs have very low temperatures
     endif
 
     !--- A-GRID WINDS
     if ( .not. allocated(buffer_dyn)) allocate(buffer_dyn(isco:ieco,jsco:jeco,nlevs))
-    if(id_ua > 0) call store_data(id_va, Atm(n)%ua(isco:ieco,jsco:jeco,:), Time, kstt_ua)
+    if(id_ua > 0) call store_data(id_ua, Atm(n)%ua(isco:ieco,jsco:jeco,:), Time, kstt_ua)
     
     if(id_va > 0) call store_data(id_va, Atm(n)%va(isco:ieco,jsco:jeco,:), Time, kstt_va)
 
@@ -244,14 +256,14 @@ contains
 
     !--- DELZ (non-hydrostatic)
     if((.not. Atm(n)%flagstruct%hydrostatic) .and. id_delz > 0) then
-      do k=1,npzo
-        do j=jsco,jeco
-          do i=isco,ieco
-            wk(i,j,k) = -Atm(n)%delz(i,j,k)
-          enddo
-        enddo
-      enddo
-      call store_data(id_delz, wk, Time, kstt_delz)
+       do k=1,npzo
+         do j=jsco,jeco
+           do i=isco,ieco
+             wk(i,j,k) = -Atm(n)%delz(i,j,k)
+           enddo
+         enddo
+       enddo
+       call store_data(id_delz, wk, Time, kstt_delz)
     endif
 
     !--- PRESSURE (hydrostatic)
@@ -263,7 +275,7 @@ contains
            enddo
          enddo
        enddo
-       call store_data(id_delp, wk, Time, kstt_delp)
+       call store_data(id_pfhy, wk, Time, kstt_pfhy)
     endif
 
 #ifdef GFS_PHYS
@@ -272,11 +284,10 @@ contains
        do k=1,npzo
          do j=jsco,jeco
            do i=isco,ieco         
-             wk(i,j,k) = Atm(n)%delp(i,j,k)*(1.-Atm(n)%q(i,j,k,liq_wat))
+             wk(i,j,k) = Atm(n)%delp(i,j,k)*(1.-sum(Atm(n)%q(i,j,k,2:Atm(n)%flagstruct%nwat)))
            enddo
          enddo
        enddo
-!       if (id_delp > 0) used=send_data(id_delp, wk, Time)
        call store_data(id_delp, wk, Time, kstt_delp)
     endif
 
@@ -294,7 +305,7 @@ contains
     endif
 #else
     !--- DELP
-    call store_data(id_delp, Atm(n)%delp(isco:ieco,jsco:jeco,:), Time, kstt_delp)
+    if(id_delp > 0) call store_data(id_delp, Atm(n)%delp(isco:ieco,jsco:jeco,:), Time, kstt_delp)
 
     !--- PRESSURE (non-hydrostatic)
     if( (.not. Atm(n)%flagstruct%hydrostatic) .and. id_pfnh > 0) then
@@ -309,6 +320,9 @@ contains
        call store_data(id_pfnh, wk, Time, kstt_pfnh)
     endif
 #endif
+
+    !--- DISS_EST (skeb: dissipation estimate)
+    if(id_diss > 0) call store_data(id_diss, Atm(n)%diss_est(isco:ieco,jsco:jeco,:), Time, kstt_diss)
 
     deallocate ( wk )
 

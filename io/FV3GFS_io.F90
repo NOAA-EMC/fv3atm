@@ -27,7 +27,6 @@ module FV3GFS_io_mod
   use diag_axis_mod,      only: get_axis_global_length, get_diag_axis
   use diag_data_mod,      only: output_fields, max_output_fields
   use diag_util_mod,      only: find_input_field
-
 !
 !--- GFS physics modules
   use machine,            only: kind_phys
@@ -40,7 +39,6 @@ module FV3GFS_io_mod
 !--- IPD typdefs
   use IPD_typedefs,       only: IPD_control_type, IPD_data_type, &
                                 IPD_restart_type
-!
 !
 !-----------------------------------------------------------------------
   implicit none
@@ -1768,7 +1766,7 @@ module FV3GFS_io_mod
     Diag(idx)%axes = 2
     Diag(idx)%name = 'spfhmin'
     Diag(idx)%desc = 'minimum specific humidity'
-    Diag(idx)%unit = 'XXX'
+    Diag(idx)%unit = 'kg/kg'
     Diag(idx)%mod_name = 'gfs_phys'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
@@ -1779,11 +1777,44 @@ module FV3GFS_io_mod
     Diag(idx)%axes = 2
     Diag(idx)%name = 'spfhmax'
     Diag(idx)%desc = 'maximum specific humidity'
-    Diag(idx)%unit = 'XXX'
+    Diag(idx)%unit = 'kg/kg'
     Diag(idx)%mod_name = 'gfs_phys'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%spfhmax(:)
+    enddo
+
+    idx = idx + 1
+    Diag(idx)%axes = 2
+    Diag(idx)%name = 'u10mmax'
+    Diag(idx)%desc = 'maximum (magnitude) u-wind'
+    Diag(idx)%unit = 'm/s'
+    Diag(idx)%mod_name = 'gfs_phys'
+    allocate (Diag(idx)%data(nblks))
+    do nb = 1,nblks
+      Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%u10mmax(:)
+    enddo
+
+    idx = idx + 1
+    Diag(idx)%axes = 2
+    Diag(idx)%name = 'v10mmax'
+    Diag(idx)%desc = 'maximum (magnitude) v-wind'
+    Diag(idx)%unit = 'm/s'
+    Diag(idx)%mod_name = 'gfs_phys'
+    allocate (Diag(idx)%data(nblks))
+    do nb = 1,nblks
+      Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%v10mmax(:)
+    enddo
+
+    idx = idx + 1
+    Diag(idx)%axes = 2
+    Diag(idx)%name = 'wind10mmax'
+    Diag(idx)%desc = 'maximum wind speed'
+    Diag(idx)%unit = 'm/s'
+    Diag(idx)%mod_name = 'gfs_phys'
+    allocate (Diag(idx)%data(nblks))
+    do nb = 1,nblks
+      Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%wind10mmax(:)
     enddo
 
     idx = idx + 1
@@ -1901,6 +1932,17 @@ module FV3GFS_io_mod
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%v10m(:)
+    enddo
+
+    idx = idx + 1
+    Diag(idx)%axes = 2
+    Diag(idx)%name = 'dpt2m'
+    Diag(idx)%desc = '2 meter dew point temperature [K]'
+    Diag(idx)%unit = 'K'
+    Diag(idx)%mod_name = 'gfs_phys'
+    allocate (Diag(idx)%data(nblks))
+    do nb = 1,nblks
+      Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%dpt2m(:)
     enddo
 
     idx = idx + 1
@@ -2348,7 +2390,7 @@ module FV3GFS_io_mod
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Sfcprop(nb)%slope(:)
     enddo
- 
+
     idx = idx + 1
     Diag(idx)%axes = 2
     Diag(idx)%name = 'fice'
@@ -2740,7 +2782,6 @@ module FV3GFS_io_mod
     if(mpp_pe()==mpp_root_pe())print *,'in gfdl_diag_register,tot_diag_idx=',tot_diag_idx, &
       'total_outputlevel=',total_outputlevel,'isco=',isco,ieco,'jsco=',jsco,jeco
 
-!
   end subroutine gfdl_diag_register
 !-------------------------------------------------------------------------      
 
@@ -3166,7 +3207,6 @@ module FV3GFS_io_mod
 
  end subroutine find_output_name
 #endif
-!-------------------------------------------------------------------------      
 !-------------------------------------------------------------------------      
 
 end module FV3GFS_io_mod

@@ -55,9 +55,10 @@
 !!  @{
       subroutine sascnvn(im,ix,km,jcap,delt,delp,prslp,psp,phil,ql,     &
      &     q1,t1,u1,v1,cldwrk,rn,kbot,ktop,kcnv,islimsk,                &
-     &     dot,ncloud,ud_mf,dd_mf,dt_mf,cnvw,cnvc)
+     &     dot,ncloud,ud_mf,dd_mf,dt_mf,cnvw,cnvc,                      &
 !    &     q1,t1,u1,v1,rcs,cldwrk,rn,kbot,ktop,kcnv,islimsk,
 !    &     dot,ncloud,ud_mf,dd_mf,dt_mf,me)
+     &     clam,c0,c1,betal,betas,evfact,evfactl,pgcon)
 !
       use machine , only : kind_phys
       use funcphys , only : fpvs
@@ -139,7 +140,8 @@ c  physical parameters
       parameter(g=grav)
       parameter(elocp=hvap/cp,
      &          el2orc=hvap*hvap/(rv*cp))
-      parameter(c0=.002,c1=.002,delta=fv)
+!     parameter(c0=.002,c1=.002,delta=fv)
+      parameter(delta=fv)
       parameter(fact1=(cvap-cliq)/rv,fact2=hvap/rv-fact1*t0c)
       parameter(cthk=150.,cincrmax=180.,cincrmin=120.,dthk=25.)
 c  local variables and arrays
@@ -248,22 +250,22 @@ c  model tunable parameters are all here
       mbdt    = 10.
       edtmaxl = .3
       edtmaxs = .3
-      clam    = .1
+!     clam    = .1
       aafac   = .1
 !     betal   = .15
 !     betas   = .15
-      betal   = .05
-      betas   = .05
+!     betal   = .05
+!     betas   = .05
 c     evef    = 0.07
-      evfact  = 0.3
-      evfactl = 0.3
+!     evfact  = 0.3
+!     evfactl = 0.3
 !
       cxlamu  = 1.0e-4
       xlamde  = 1.0e-4
       xlamdd  = 1.0e-4
 !
 !     pgcon   = 0.7     ! gregory et al. (1997, qjrms)
-      pgcon   = 0.55    ! zhang & wu (2003,jas)
+!     pgcon   = 0.55    ! zhang & wu (2003,jas)
       fjcap   = (float(jcap) / 126.) ** 2
       val     =           1.
       fjcap   = max(fjcap,val)
@@ -824,7 +826,6 @@ c
                 etah = .5 * (eta(i,k) + eta(i,k-1))
                 dp = 1000. * del(i,k)
                 if(ncloud.gt.0..and.k.gt.jmin(i)) then
-!fyang            dp = 1000. * del(i,k) !not defined if k is smaller than jmin
                   qlk = dq / (eta(i,k) + etah * (c0 + c1) * dz)
                   dellal(i,k) = etah * c1 * dz * qlk * g / dp
                 else
