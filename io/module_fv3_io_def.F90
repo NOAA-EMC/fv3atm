@@ -12,7 +12,7 @@
   integer           :: num_pes_fcst
   integer           :: wrttasks_per_group, write_groups
   integer           :: n_group
-  logical           :: write_netcdfflag
+  logical           :: write_nemsiofile
   integer           :: num_files
   character(255)    :: output_grid
   integer           :: imo,jmo

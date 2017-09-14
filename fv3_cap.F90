@@ -28,7 +28,8 @@ module fv3gfs_cap_mod
                                 num_files, filename_base,               &
                                 wrttasks_per_group, n_group,            &
                                 lead_wrttask, last_wrttask,             &
-                                write_netcdfflag, output_grid, imo,jmo
+                                write_nemsiofile, output_grid,          &
+                                imo, jmo
 !
   use module_fcst_grid_comp,  only: fcstSS => SetServices
   use module_wrt_grid_comp,   only: wrtSS => SetServices
@@ -181,11 +182,12 @@ module fv3gfs_cap_mod
 
     character(len=*),parameter  :: subname='(mom_cap:InitializeAdvertise)'
     integer nfmout, nfsout , nfmout_hf, nfsout_hf
-    real(kind=8) :: MPI_Wtime, timefs
+    real(kind=8) :: MPI_Wtime, timewri, timeis,timeie,timerhs, timerhe
 !
 !------------------------------------------------------------------------
 !
     rc = ESMF_SUCCESS
+    timeis = mpi_wtime()
 
     call ESMF_GridCompGet(gcomp,name=name,vm=vm,rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
@@ -199,7 +201,8 @@ module fv3gfs_cap_mod
       line=__LINE__, &
       file=__FILE__)) &
       return  ! bail out
-!    print *,'in fv3_cap,initAdvertize,name=',trim(name),'petlist=',petlist,'rc=',rc
+!    print *,'in fv3_cap,initAdvertize,name=',trim(name),'mpi_comm=',mpi_comm_atm, &
+!       'petcount=',petcount,'mype=',mype
 
     clock_fv3=clock
 !
@@ -279,9 +282,13 @@ module fv3gfs_cap_mod
       call ESMF_ConfigGetAttribute(config=CF,value=nfhout_hf,label ='nfhout_hf:',rc=rc)
       call ESMF_ConfigGetAttribute(config=CF,value=nsout,    label ='nsout:',rc=rc)
       call ESMF_ConfigGetAttribute(config=CF,value=output_grid, label ='output_grid:',rc=rc)
-      if(trim(output_grid) == 'gaussian grid') then
+      if(mype==0) print *,'af nems config,output_grid=',trim(output_grid)
+      write_nemsiofile=.false.
+      if(trim(output_grid) == 'gaussian_grid') then
         call ESMF_ConfigGetAttribute(config=CF,value=imo, label ='imo:',rc=rc)
         call ESMF_ConfigGetAttribute(config=CF,value=jmo, label ='jmo:',rc=rc)
+        call ESMF_ConfigGetAttribute(config=CF,value=write_nemsiofile, label ='write_nemsiofile:',rc=rc)
+      if(mype==0) print *,'af nems config,imo=',imo,'jmo=',jmo,'write_nemsiofile=', write_nemsiofile
       endif
       if(mype==0) print *,'af nems config,dt_atmos=',dt_atmos,'nfhmax=',nfhmax, &
         'nfhout=',nfhout,nfhmax_hf,nfhout_hf, nsout
@@ -455,6 +462,7 @@ module fv3gfs_cap_mod
       if(mype==0) print *,'af allco wrtComp,write_groups=',write_groups
 !
       k = num_pes_fcst
+      timerhs = mpi_wtime()
       do i=1, write_groups
 
 ! prepare petList for wrtComp(i)
@@ -577,8 +585,11 @@ module fv3gfs_cap_mod
 
           call ESMF_LogWrite('bf FieldBundleRegridStore', ESMF_LOGMSG_INFO, rc=rc)
 
+          timewri = mpi_wtime()
           call ESMF_FieldBundleRegridStore(fcstFB(j), wrtFB(j,i), &
              regridMethod=regridmethod, routehandle=routehandle(j,i), rc=rc)
+
+!          print *,'after regrid store, group i=',i,' fb=',j,' time=',mpi_wtime()-timewri
 
           call ESMF_LogWrite('af FieldBundleRegridStore', ESMF_LOGMSG_INFO, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
@@ -590,6 +601,7 @@ module fv3gfs_cap_mod
 
 ! end write_groups
       enddo
+!      print *,'in fv3cap init, time wrtcrt/regrdst',mpi_wtime()-timerhs
       deallocate(petList)
 !
 !---------------------------------------------------------------------------------
@@ -658,6 +670,7 @@ module fv3gfs_cap_mod
 !end quilting
     endif
 !
+!    print *,'in fv3_cap, init time=',mpi_wtime()-timeis
 !-----------------------------------------------------------------------
 !
   end subroutine InitializeAdvertise
@@ -711,7 +724,6 @@ module fv3gfs_cap_mod
 
 !-----------------------------------------------------------------------------
 
-    timewri = mpi_wtime()
     rc = ESMF_SUCCESS
     if(profile_memory) call ESMF_VMLogMemInfo("Entering FV3 Model_ADVANCE: ")
 !    
@@ -782,6 +794,7 @@ module fv3gfs_cap_mod
 !
 !*** for forecast tasks
      
+      timewri = mpi_wtime()
       call ESMF_LogWrite('Model Advance: before fcstcomp run ', ESMF_LOGMSG_INFO, rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
           line=__LINE__, &
@@ -846,21 +859,23 @@ module fv3gfs_cap_mod
 
        output: IF(lalarm .or. na==1 ) then
 
+         timerhi = mpi_wtime()
          do i=1, FBCount
 !
 ! get fcst fieldbundle
 !
            call ESMF_FieldBundleRegrid(fcstFB(i), wrtFB(i,n_group),    &
               routehandle=routehandle(i, n_group), rc=rc)
+           timerh = mpi_wtime()
            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
              line=__LINE__, &
              file=__FILE__)) &
              call ESMF_Finalize(endflag=ESMF_END_ABORT)
-!        if (mype == 0 .or. mype == lead_wrttask(n_group)) print *,'aft fieldbundleregrid, rc=',rc, &
-!        'na=',na
 !
 !end FBcount
           enddo
+        if (mype == 0 .or. mype == lead_wrttask(n_group)) print *,'aft fieldbundleregrid,na=',na,  &
+        ' time=', timerh- timerhi
 
 !      if(mype==0 .or. mype==lead_wrttask(1))  print *,'on wrt bf wrt run, na=',na
           call ESMF_LogWrite('Model Advance: before wrtcomp run ', ESMF_LOGMSG_INFO, rc=rc)
@@ -869,7 +884,9 @@ module fv3gfs_cap_mod
             file=__FILE__)) &
             call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
+          timerhi = mpi_wtime()
           call ESMF_GridCompRun(wrtComp(n_group), importState=wrtState(n_group), clock=clock_fv3,userRc=urc,rc=rc)
+          timerh = mpi_wtime()
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
             line=__LINE__, &
             file=__FILE__)) &
@@ -878,12 +895,18 @@ module fv3gfs_cap_mod
             line=__LINE__, &
             file=__FILE__)) &
             call ESMF_Finalize(endflag=ESMF_END_ABORT)
+        if (mype == 0 .or. mype == lead_wrttask(n_group)) print *,'aft wrtgridcomp run,na=',na,  &
+         ' time=', timerh- timerhi
 
           call ESMF_LogWrite('Model Advance: after wrtcomp run ', ESMF_LOGMSG_INFO, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
             line=__LINE__, &
             file=__FILE__)) &
             call ESMF_Finalize(endflag=ESMF_END_ABORT)
+
+        if (mype == 0 .or. mype == lead_wrttask(n_group)) print *,'fv3_cap,aft model advance,na=', &
+        na,' time=', mpi_wtime()- timewri
+
 
           if(n_group == write_groups) then
             n_group = 1
@@ -895,6 +918,10 @@ module fv3gfs_cap_mod
 
 ! end quilting
       endif
+
+!      if (mype == 0 .or. mype == 1536 .or. mype==2160) then
+!        print *,'fv3_cap,end integrate,na=',na,' time=',mpi_wtime()- timewri
+!      endif
 
 !*** end integreate loop
     enddo integrate
