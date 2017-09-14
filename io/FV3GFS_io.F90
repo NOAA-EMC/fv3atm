@@ -92,6 +92,7 @@ module FV3GFS_io_mod
    integer :: tot_diag_idx = 0
    integer :: total_outputlevel = 0
    integer :: isco,ieco,jsco,jeco
+   integer :: fhzero
    integer,dimension(:), allocatable :: nstt
    real(4), dimension(:,:,:), allocatable, target :: buffer_phys
    integer, parameter :: DIAG_SIZE = 250
@@ -1166,13 +1167,14 @@ module FV3GFS_io_mod
 !    13+NFXR - radiation
 !    76+pl_coeff - physics
 !-------------------------------------------------------------------------      
-  subroutine gfdl_diag_register(Time, Sfcprop, Gfs_diag, Atm_block, axes, NFXR)
+  subroutine gfdl_diag_register(Time, Sfcprop, Gfs_diag, Atm_block, Model, axes, NFXR)
     use physcons,  only: con_g
 !--- subroutine interface variable definitions
     type(time_type),           intent(in) :: Time
     type(Gfs_sfcprop_type),    intent(in) :: Sfcprop(:)
     type(GFS_diag_type),       intent(in) :: Gfs_diag(:)
     type (block_control_type), intent(in) :: Atm_block
+    type(IPD_control_type),    intent(in) :: Model
     integer, dimension(4),     intent(in) :: axes
     integer,                   intent(in) :: NFXR
 !--- local variables
@@ -1192,6 +1194,7 @@ module FV3GFS_io_mod
     ieco = Atm_block%iec
     jsco = Atm_block%jsc
     jeco = Atm_block%jec
+    fhzero = nint(Model%fhzero)
 
     Diag(:)%id = -99
     Diag(:)%axes = -99
@@ -3036,6 +3039,19 @@ module FV3GFS_io_mod
 !*** add attributes to the bundle such as subdomain limtis,
 !*** axes, output time, etc
 !------------------------------------------------------------
+!
+   call ESMF_AttributeAdd(phys_bundle, convention="NetCDF", purpose="FV3", &
+     attrList=(/"fhzero"/), rc=rc)
+   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+     line=__LINE__, &
+     file=__FILE__)) &
+     return  ! bail out
+   call ESMF_AttributeSet(phys_bundle, convention="NetCDF", purpose="FV3", &
+     name="fhzero", value=fhzero, rc=rc)
+   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+     line=__LINE__, &
+     file=__FILE__)) &
+     return  ! bail out
 !
 !*** add attributes (for phys, set axes to 2)
    num_axes = 2

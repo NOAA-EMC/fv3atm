@@ -349,6 +349,7 @@
         enddo
         fcstGrid = ESMF_GridCreateMosaic(filename='INPUT/grid_spec.nc',      &
                               regDecompPTile=decomptile,tileFilePath='INPUT/',          &
+                              staggerlocList=(/ESMF_STAGGERLOC_CENTER, ESMF_STAGGERLOC_CORNER/), &
                               name='fcst_grid', rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
           line=__LINE__, &
@@ -428,7 +429,11 @@
         do i=1,num_files
 !
          name_FB = filename_base(i)
-         name_FB = trim(name_FB)//'_bilinear'
+         if( i==1 ) then
+           name_FB = trim(name_FB)//'_bilinear'
+         else if( i==2 ) then
+           name_FB = trim(name_FB)//'_nearest_stod'
+         endif
          fieldbundle = ESMF_FieldBundleCreate(name=trim(name_FB),rc=rc)
          if(mype==0) print *,'af create fcst fieldbundle, name=',trim(name_FB),'rc=',rc
          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &

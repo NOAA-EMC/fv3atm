@@ -28,6 +28,7 @@ SRCS_F   =
 
 SRCS_F90 = \
 		   ./FV3GFS_io.F90                     \
+		   ./module_write_nemsio.F90           \
 		   ./module_fv3_io_def.F90             \
 		   ./module_write_internal_state.F90   \
 		   ./module_wrt_grid_comp.F90
@@ -51,6 +52,8 @@ $(LIBRARY): $(OBJS)
 
 FV3GFS_io.o: FV3GFS_io.F90
 	$(FC) $(CPPDEFS) $(CPPFLAGS) $(FPPFLAGS) $(FFLAGS) $(OTHERFLAGS) $(OTHER_FFLAGS) $(ESMF_INC) -c FV3GFS_io.F90
+module_write_nemsio.o: module_write_nemsio.F90
+	$(FC) $(CPPDEFS) $(CPPFLAGS) $(FPPFLAGS) $(FFLAGS) $(OTHERFLAGS) $(OTHER_FFLAGS) $(ESMF_INC) $(NEMSIOINC) -c module_write_nemsio.F90
 module_write_internal_state.o: module_write_internal_state.F90
 	$(FC) $(CPPDEFS) $(CPPFLAGS) $(FPPFLAGS) $(FFLAGS) $(OTHERFLAGS) $(OTHER_FFLAGS) $(ESMF_INC) -c module_write_internal_state.F90
 module_wrt_grid_comp.o: module_wrt_grid_comp.F90
