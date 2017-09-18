@@ -88,6 +88,7 @@ module fv_control_mod
    real    , pointer :: scale_z 
    real    , pointer :: w_max 
    real    , pointer :: z_min 
+   real    , pointer :: lim_fac
 
    integer , pointer :: nord
    integer , pointer :: nord_tr
@@ -106,6 +107,7 @@ module fv_control_mod
    integer , pointer :: nord_zs_filter
    logical , pointer :: full_zs_filter
 
+   logical , pointer :: RF_fast
    logical , pointer :: consv_am
    logical , pointer :: do_sat_adj
    logical , pointer :: do_f3d
@@ -137,6 +139,7 @@ module fv_control_mod
 
    integer , pointer :: q_split 
    integer , pointer :: print_freq 
+   logical , pointer :: write_3d_diags
 
    integer , pointer :: npx           
    integer , pointer :: npy           
@@ -151,6 +154,7 @@ module fv_control_mod
    integer , pointer :: fv_sg_adj 
                                       
    integer , pointer :: na_init 
+   logical , pointer :: nudge_dz
    real    , pointer :: p_ref 
    real    , pointer :: dry_mass 
    integer , pointer :: nt_prog 
@@ -198,7 +202,9 @@ module fv_control_mod
    logical , pointer :: use_ncep_phy 
    logical , pointer :: fv_diag_ic 
    logical , pointer :: external_ic 
+   logical , pointer :: external_eta
    logical , pointer :: read_increment
+   logical , pointer :: do_skeb
    character(len=128) , pointer :: res_latlon_dynamics
    character(len=128) , pointer :: res_latlon_tracers 
    logical , pointer :: hydrostatic 
@@ -243,16 +249,16 @@ module fv_control_mod
    integer :: commID, max_refinement_of_global = 1.
    integer :: gid
 
-!---- version number -----
-   character(len=128) :: version = '$Id$'
-   character(len=128) :: tagname = '$Name$'
-
    real :: umax = 350.           ! max wave speed for grid_type>3
    integer :: parent_grid_num = -1
 
    integer :: halo_update_type = 1 ! 1 for two-interfaces non-block
                                    ! 2 for block
                                    ! 3 for four-interfaces non-block
+
+! version number of this module
+! Include variable "version" to be written to log file.
+#include<file_version.h>
 
  contains
 
@@ -541,18 +547,18 @@ module fv_control_mod
 
       namelist /fv_grid_nml/ grid_name, grid_file
       namelist /fv_core_nml/npx, npy, ntiles, npz, npz_rst, layout, io_layout, ncnst, nwat,  &
-                            use_logp, p_fac, a_imp, k_split, n_split, m_split, q_split, print_freq, do_schmidt,      &
+                            use_logp, p_fac, a_imp, k_split, n_split, m_split, q_split, print_freq, write_3d_diags, do_schmidt,  &
                             hord_mt, hord_vt, hord_tm, hord_dp, hord_tr, shift_fac, stretch_fac, target_lat, target_lon, &
                             kord_mt, kord_wz, kord_tm, kord_tr, fv_debug, fv_land, nudge, do_sat_adj, do_f3d, &
                             external_ic, read_increment, ncep_ic, nggps_ic, ecmwf_ic, use_new_ncep, use_ncep_phy, fv_diag_ic, &
-                            res_latlon_dynamics, res_latlon_tracers, scale_z, w_max, z_min, &
+                            external_eta, res_latlon_dynamics, res_latlon_tracers, scale_z, w_max, z_min, lim_fac, &
                             dddmp, d2_bg, d4_bg, vtdm4, trdm2, d_ext, delt_max, beta, non_ortho, n_sponge, &
                             warm_start, adjust_dry_mass, mountain, d_con, ke_bg, nord, nord_tr, convert_ke, use_old_omega, &
                             dry_mass, grid_type, do_Held_Suarez, do_reed_physics, reed_cond_only, &
-                            consv_te, fill, filter_phys, fill_dp, fill_wz, consv_am, &
+                            consv_te, fill, filter_phys, fill_dp, fill_wz, consv_am, RF_fast, &
                             range_warn, dwind_2d, inline_q, z_tracer, reproduce_sum, adiabatic, do_vort_damp, no_dycore,   &
                             tau, tau_h2o, rf_cutoff, nf_omega, hydrostatic, fv_sg_adj, breed_vortex_inline,  &
-                            na_init, hybrid_z, Make_NH, n_zs_filter, nord_zs_filter, full_zs_filter, reset_eta,         &
+                            na_init, nudge_dz, hybrid_z, Make_NH, n_zs_filter, nord_zs_filter, full_zs_filter, reset_eta,         &
                             pnats, dnats, a2b_ord, remap_t, p_ref, d2_bg_k1, d2_bg_k2,  &
                             c2l_ord, dx_const, dy_const, umax, deglat,      &
                             deglon_start, deglon_stop, deglat_start, deglat_stop, &
@@ -560,7 +566,7 @@ module fv_control_mod
                             nested, twowaynest, parent_grid_num, parent_tile, nudge_qv, &
                             refinement, nestbctype, nestupdate, nsponge, s_weight, &
                             ioffset, joffset, check_negative, nudge_ic, halo_update_type, gfs_phil, agrid_vel_rst,     &
-                            do_uni_zfull, adj_mass_vmr
+                            do_uni_zfull, adj_mass_vmr, do_skeb
 
       namelist /test_case_nml/test_case, bubble_do, alpha, nsolitons, soliton_Umax, soliton_size
 
@@ -601,6 +607,7 @@ module fv_control_mod
       rewind (f_unit)
 #endif
 
+      call write_version_number ( 'FV_CONTROL_MOD', version )
       unit = stdlog()
       write(unit, nml=fv_grid_nml)
 
@@ -1093,6 +1100,7 @@ module fv_control_mod
      scale_z                       => Atm%flagstruct%scale_z
      w_max                         => Atm%flagstruct%w_max
      z_min                         => Atm%flagstruct%z_min
+     lim_fac                       => Atm%flagstruct%lim_fac
      nord                          => Atm%flagstruct%nord
      nord_tr                       => Atm%flagstruct%nord_tr
      dddmp                         => Atm%flagstruct%dddmp
@@ -1109,6 +1117,7 @@ module fv_control_mod
      n_zs_filter                   => Atm%flagstruct%n_zs_filter
      nord_zs_filter                => Atm%flagstruct%nord_zs_filter
      full_zs_filter                => Atm%flagstruct%full_zs_filter
+     RF_fast                       => Atm%flagstruct%RF_fast
      consv_am                      => Atm%flagstruct%consv_am
      do_sat_adj                    => Atm%flagstruct%do_sat_adj
      do_f3d                        => Atm%flagstruct%do_f3d
@@ -1137,6 +1146,7 @@ module fv_control_mod
      use_logp                      => Atm%flagstruct%use_logp
      q_split                       => Atm%flagstruct%q_split
      print_freq                    => Atm%flagstruct%print_freq
+     write_3d_diags                => Atm%flagstruct%write_3d_diags
      npx                           => Atm%flagstruct%npx
      npy                           => Atm%flagstruct%npy
      npz                           => Atm%flagstruct%npz
@@ -1148,6 +1158,7 @@ module fv_control_mod
      nf_omega                      => Atm%flagstruct%nf_omega
      fv_sg_adj                     => Atm%flagstruct%fv_sg_adj
      na_init                       => Atm%flagstruct%na_init
+     nudge_dz                      => Atm%flagstruct%nudge_dz
      p_ref                         => Atm%flagstruct%p_ref
      dry_mass                      => Atm%flagstruct%dry_mass
      nt_prog                       => Atm%flagstruct%nt_prog
@@ -1193,7 +1204,9 @@ module fv_control_mod
      use_ncep_phy                  => Atm%flagstruct%use_ncep_phy
      fv_diag_ic                    => Atm%flagstruct%fv_diag_ic
      external_ic                   => Atm%flagstruct%external_ic
+     external_eta                  => Atm%flagstruct%external_eta
      read_increment                => Atm%flagstruct%read_increment
+     do_skeb                       => Atm%flagstruct%do_skeb
 
      hydrostatic                   => Atm%flagstruct%hydrostatic
      phys_hydrostatic              => Atm%flagstruct%phys_hydrostatic

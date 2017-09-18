@@ -35,7 +35,7 @@ time_utils.o: time_utils.F90
 fv3_cap.o: fv3_cap.F90
 	$(FC) $(CPPDEFS) $(CPPFLAGS) $(FPPFLAGS) $(FFLAGS) $(OTHERFLAGS) $(OTHER_FFLAGS) $(ESMF_INC) -c fv3_cap.F90
 
-DEPEND_FILES = time_utils.F90 atmos_model.F90 module_fcst_grid_comp.F90 fv3_cap.F90 coupler_main.F90
+DEPEND_FILES = time_utils.F90 module_fv3_config.F90 atmos_model.F90 module_fcst_grid_comp.F90 fv3_cap.F90 coupler_main.F90
 
 esmf_make_fragment:
 	@rm -rf nems_dir; mkdir nems_dir

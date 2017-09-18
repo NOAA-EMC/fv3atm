@@ -12,6 +12,7 @@ module GFS_driver
   use module_radsw_parameters,  only: topfsw_type, sfcfsw_type
   use module_radlw_parameters,  only: topflw_type, sfcflw_type
   use funcphys,                 only: gfuncphys
+  use gfdl_cloud_microphys_mod, only: gfdl_cloud_microphys_init
 
   implicit none
 
@@ -190,7 +191,8 @@ module GFS_driver
              / (p_ref - Init_parm%ak(Model%levr+1))
     call rad_initialize (si, Model%levr, Model%ictm, Model%isol, &
            Model%ico2, Model%iaer, Model%ialb, Model%iems,       &
-           Model%ntcw, Model%num_p3d, Model%npdf3d, Model%ntoz,  &
+           Model%ntcw, Model%num_p2d,  Model%num_p3d,            &
+           Model%npdf3d, Model%ntoz,                             &
            Model%iovr_sw, Model%iovr_lw, Model%isubc_sw,         &
            Model%isubc_lw, Model%crick_proof, Model%ccnorm,      &
            Model%norad_precip, Model%idate,Model%iflip, Model%me)
@@ -200,6 +202,11 @@ module GFS_driver
     if (Model%ncld == 2) then
       call ini_micro (Model%mg_dcs, Model%mg_qcvar, Model%mg_ts_auto_ice)
       call aer_cloud_init ()
+    endif
+
+    !--- initialize GFDL Cloud microphysics
+    if (Model%ncld == 5) then
+      call gfdl_cloud_microphys_init (Model%me, Model%master, Model%nlunit, Init_parm%logunit, Model%fn_nml)
     endif
 
     !--- initialize ras
@@ -217,7 +224,7 @@ module GFS_driver
 
     !--- sncovr may not exist in ICs from chgres.
     !--- FV3GFS handles this as part of the IC ingest
-    !--- this not is placed here to alert users to the need to study
+    !--- this note is placed here alertng users to study
     !--- the FV3GFS_io.F90 module
 
   end subroutine GFS_initialize
@@ -439,7 +446,7 @@ module GFS_driver
       enddo
     endif  ! isubc_lw and isubc_sw
 
-    if (Model%num_p3d == 4) then
+    if (Model%zhao_mic) then
       if (Model%kdt == 1) then
         do nb = 1,nblks
           Tbd(nb)%phy_f3d(:,:,1) = Statein(nb)%tgrs
