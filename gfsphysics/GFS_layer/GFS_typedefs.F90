@@ -104,6 +104,8 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: vvl  (:,:)   => null()  !< layer mean vertical velocity in pa/sec
     real (kind=kind_phys), pointer :: tgrs (:,:)   => null()  !< model layer mean temperature in k
     real (kind=kind_phys), pointer :: qgrs (:,:,:) => null()  !< layer mean tracer concentration
+   ! dissipation estimate
+    real (kind=kind_phys), pointer :: diss_est(:,:)   => null()  !< model layer mean temperature in k
 
     contains
       procedure :: create  => statein_create  !<   allocate array data
@@ -295,8 +297,6 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: sppt_wts  (:,:)   => null()  !
     real (kind=kind_phys), pointer :: skebu_wts (:,:)   => null()  !
     real (kind=kind_phys), pointer :: skebv_wts (:,:)   => null()  !
-    real (kind=kind_phys), pointer :: vcu_wts   (:,:)   => null()  !
-    real (kind=kind_phys), pointer :: vcv_wts   (:,:)   => null()  !
 
     !--- instantaneous quantities for GoCart and will be accumulated for 3D diagnostics
     real (kind=kind_phys), pointer :: dqdti   (:,:)   => null()  !< instantaneous total moisture tendency (kg/kg/s)
@@ -541,13 +541,8 @@ module GFS_typedefs
     logical              :: do_sppt
     logical              :: do_shum
     logical              :: do_skeb
-    logical              :: do_vc  
-    real(kind=kind_phys) :: sppt(5)         !< stochastic physics tendency amplitude
-    real(kind=kind_phys) :: shum(5)         !< stochastic boundary layer spf hum amp
-    real(kind=kind_phys) :: skeb(5)         !< stochastic KE backscatter amplitude
-    real(kind=kind_phys) :: vcamp(5)        !< stochastic vorticity confinment amp
-    real(kind=kind_phys) :: vc              !< deterministic vorticity confinement parameter.
-
+    integer              :: skeb_npass 
+    
     !--- tracer handling
     character(len=32), pointer :: tracer_names(:) !< array of initialized tracers from dynamic core
     integer              :: ntrac           !< number of tracers
@@ -600,9 +595,9 @@ module GFS_typedefs
     integer              :: jdat(1:8)       !< current forecast date and time
                                             !< (yr, mon, day, t-zone, hr, min, sec, mil-sec)
     !--- IAU
-    real(kind=kind_phys) :: iau_delthrs                     ! iau time interval (to scale increments)
-    character(len=240)   :: iau_inc_files(7)                ! list of increment files
-    real(kind=kind_phys) :: iaufhrs(7)                      ! forecast hours associated with increment files
+    real(kind=kind_phys) :: iau_delthrs     ! iau time interval (to scale increments) in hours
+    character(len=240)   :: iau_inc_files(7)! list of increment files
+    real(kind=kind_phys) :: iaufhrs(7)      ! forecast hours associated with increment files
 
     contains
       procedure :: init  => control_initialize
@@ -829,6 +824,10 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: wet1   (:)    => null()   !< normalized soil wetness
     real (kind=kind_phys), pointer :: sr     (:)    => null()   !< snow ratio : ratio of snow to total precipitation
 
+    real (kind=kind_phys), pointer :: skebu_wts(:,:)    => null()   !< 10 meater u/v wind speed
+    real (kind=kind_phys), pointer :: skebv_wts(:,:)    => null()   !< 10 meater u/v wind speed
+    real (kind=kind_phys), pointer :: sppt_wts(:,:)    => null()   !< 10 meater u/v wind speed
+    real (kind=kind_phys), pointer :: shum_wts(:,:)    => null()   !< 10 meater u/v wind speed
     !--- accumulated quantities for 3D diagnostics
     real (kind=kind_phys), pointer :: du3dt (:,:,:) => null()   !< u momentum change due to physics
     real (kind=kind_phys), pointer :: dv3dt (:,:,:) => null()   !< v momentum change due to physics
@@ -893,7 +892,9 @@ module GFS_typedefs
 
     Statein%vvl  = clear_val
     Statein%tgrs = clear_val
-
+! stochastic physics SKEB variable
+    allocate (Statein%diss_est(IM,Model%levs))
+    Statein%diss_est= clear_val
     !--- physics only variables
     allocate (Statein%pgr    (IM))
     allocate (Statein%ugrs   (IM,Model%levs))
@@ -1255,14 +1256,6 @@ module GFS_typedefs
       Coupling%skebv_wts = clear_val
     endif
 
-    !--- stochastic vc option
-    if (Model%do_vc) then
-      allocate (Coupling%vcu_wts (IM,Model%levs))
-      allocate (Coupling%vcv_wts (IM,Model%levs))
-
-      Coupling%vcu_wts = clear_val
-      Coupling%vcv_wts = clear_val
-    endif
 
     !--- needed for either GoCart or 3D diagnostics
     if (Model%lgocart .or. Model%ldiag3d) then
@@ -1519,13 +1512,6 @@ module GFS_typedefs
     real(kind=kind_phys) :: xkzminv        = 0.3             !< diffusivity in inversion layers
     real(kind=kind_phys) :: moninq_fac     = 1.0             !< turbulence diffusion coefficient factor
      
-    !--- stochastic physics options
-    real(kind=kind_phys) :: sppt(5)        = -999.           !< stochastic physics tendency amplitude
-    real(kind=kind_phys) :: shum(5)        = -999.           !< stochastic boundary layer spf hum amp
-    real(kind=kind_phys) :: skeb(5)        = -999.           !< stochastic KE backscatter amplitude
-    real(kind=kind_phys) :: vcamp(5)       = -999.           !< stochastic vorticity confinment amp
-    real(kind=kind_phys) :: vc             = 0.              !< deterministic vorticity confinement parameter
-
     !--- IAU options
     real(kind=kind_phys)  :: iau_delthrs = 6                 ! iau time interval (to scale increments)
     character(len=240)    :: iau_inc_files(7)=''             ! list of increment files
@@ -1534,6 +1520,11 @@ module GFS_typedefs
     !--- debug flag
     logical              :: debug          = .false.
     logical              :: pre_rad        = .false.         !< flag for testing purpose
+    !--- stochastic physics control parameters
+    logical :: do_sppt   = .false.
+    logical :: do_shum   = .false.
+    logical :: do_skeb   = .false.
+    integer :: skeb_npass = 11
     !--- END NAMELIST VARIABLES
 
     NAMELIST /gfs_physics_nml/                                                              &
@@ -1569,8 +1560,6 @@ module GFS_typedefs
                           !--- near surface temperature model
                                nst_anl, lsea, xkzm_m, xkzm_h, xkzm_s, nstf_name,            &
                                xkzminv, moninq_fac,                                         &
-                          !--- stochastic physics
-                               sppt, shum, skeb, vcamp, vc,                                 &
                           !--- IAU
                                iau_delthrs,iaufhrs,iau_inc_files,                           &
                           !--- debug options
@@ -1587,11 +1576,6 @@ module GFS_typedefs
     !--- convective clouds
     integer :: ncnvcld3d = 0       !< number of convective 3d clouds fields
 
-    !--- stochastic physics control parameters
-    logical :: do_sppt   = .false.
-    logical :: do_shum   = .false.
-    logical :: do_skeb   = .false.
-    logical :: do_vc     = .false.
 
     !--- read in the namelist
     inquire (file=trim(fn_nml), exist=exists)
@@ -1775,15 +1759,9 @@ module GFS_typedefs
     Model%moninq_fac       = moninq_fac
 
     !--- stochastic physics options
-    Model%sppt             = sppt
-    Model%shum             = shum
-    Model%skeb             = skeb
-    Model%vcamp            = vcamp
-    Model%vc               = vc
     Model%do_sppt          = do_sppt
     Model%do_shum          = do_shum
     Model%do_skeb          = do_skeb
-    Model%do_vc            = do_vc
 
     ! IAU flags
     !--- iau parameters
@@ -2034,14 +2012,6 @@ module GFS_typedefs
                                     ' ntot3d=',Model%ntot3d,' ntot2d=',Model%ntot2d,        &
                                     ' shocaftcnv=',Model%shocaftcnv
 
-    !--- stochastic physics
-    if (Model%sppt(1) > 0 ) Model%do_sppt = .true.
-    if (Model%shum(1) > 0 ) Model%do_shum = .true.
-    if (Model%skeb(1) > 0 ) Model%do_skeb = .true.
-    if (Model%vc > tiny(Model%vc) .or. Model%vcamp(1) > 0 ) Model%do_vc = .true.
-    if (Model%me == Model%master) write(0,*)' in compns_physics do_sppt=',Model%do_sppt,         &
-                                            ' do_shum=',Model%do_shum,' do_skeb=',Model%do_skeb, &
-                                            ' do_vc=',Model%do_vc,' nctp=',Model%nctp
     !--- END CODE FROM COMPNS_PHYSICS
 
 
@@ -2248,12 +2218,6 @@ module GFS_typedefs
       print *, ' do_sppt           : ', Model%do_sppt
       print *, ' do_shum           : ', Model%do_shum
       print *, ' do_skeb           : ', Model%do_skeb
-      print *, ' do_vc             : ', Model%do_vc
-      print *, ' sppt              : ', Model%sppt
-      print *, ' shum              : ', Model%shum
-      print *, ' skeb              : ', Model%skeb
-      print *, ' vcamp             : ', Model%vcamp
-      print *, ' vc                : ', Model%vc
       print *, ' '
       print *, 'tracers'
       print *, ' tracer_names      : ', Model%tracer_names
@@ -2570,6 +2534,10 @@ module GFS_typedefs
     allocate (Diag%smcref2 (IM))
     allocate (Diag%wet1    (IM))
     allocate (Diag%sr      (IM))
+    allocate (Diag%skebu_wts(IM,Model%levs))
+    allocate (Diag%skebv_wts(IM,Model%levs))
+    allocate (Diag%sppt_wts(IM,Model%levs))
+    allocate (Diag%shum_wts(IM,Model%levs))
     !--- 3D diagnostics
     if (Model%ldiag3d) then
       allocate (Diag%du3dt  (IM,Model%levs,4))
@@ -2684,6 +2652,10 @@ module GFS_typedefs
     Diag%smcref2 = zero
     Diag%wet1    = zero
     Diag%sr      = zero
+    Diag%skebu_wts    = zero
+    Diag%skebv_wts    = zero
+    Diag%sppt_wts    = zero
+    Diag%shum_wts    = zero
 
     if (Model%ldiag3d) then
       Diag%du3dt   = zero

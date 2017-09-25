@@ -570,8 +570,6 @@ module module_physics_driver
 !  ---  set initial quantities for stochastic physics deltas
       if (Model%do_sppt) then
         Tbd%dtdtr     = 0.0
-        Tbd%dtotprcp  (:) = Diag%rain    (:)
-        Tbd%dcnvprcp  (:) = Diag%rainc   (:)
         Tbd%drain_cpl (:) = Coupling%rain_cpl (:)
         Tbd%dsnow_cpl (:) = Coupling%snow_cpl (:)
       endif
@@ -2788,7 +2786,7 @@ module module_physics_driver
 
 !  --- ...  coupling insertion
 
-      if (Model%cplflx .or. Model%do_sppt) then
+      if (Model%cplflx) then
         do i = 1, im
           if (t850(i) > 273.16) then
              Coupling%rain_cpl(i) = Coupling%rain_cpl(i) + Diag%rain(i)
@@ -2893,10 +2891,6 @@ module module_physics_driver
       if (Model%do_sppt) then
         !--- radiation heating rate
         Tbd%dtdtr(:,:) = Tbd%dtdtr(:,:) + dtdtc(:,:)*dtf
-        !--- change in total precip
-        Tbd%dtotprcp  (:) = Diag%rain  (:) - Tbd%dtotprcp(:)
-        !--- change in convective precip
-        Tbd%dcnvprcp  (:) = Diag%rainc (:) - Tbd%dcnvprcp(:)
         do i = 1, im
           if (t850(i) > 273.16) then
              !--- change in change in rain precip

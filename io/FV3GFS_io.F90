@@ -71,6 +71,7 @@ module FV3GFS_io_mod
   type data_subtype
     real(kind=kind_phys), dimension(:),   pointer :: var2 => NULL()
     real(kind=kind_phys), dimension(:),   pointer :: var21 => NULL()
+    real(kind=kind_phys), dimension(:,:),   pointer :: var3 => NULL()
   end type data_subtype
   !--- data type definition for use with GFDL FMS diagnostic manager until write component is working
   type gfdl_diag_type
@@ -2212,6 +2213,51 @@ module FV3GFS_io_mod
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%sr(:)
     enddo
 
+    idx = idx + 1
+    Diag(idx)%axes = 3
+    Diag(idx)%name = 'skebu_wts'
+    Diag(idx)%desc = 'perturbation velocity'
+    Diag(idx)%unit = 'm/s'
+    Diag(idx)%mod_name = 'gfs_phys'
+    allocate (Diag(idx)%data(nblks))
+    do nb = 1,nblks
+      Diag(idx)%data(nb)%var3 => Gfs_diag(nb)%skebu_wts(:,:)
+    enddo
+
+    idx = idx + 1
+    Diag(idx)%axes = 3
+    Diag(idx)%name = 'skebv_wts'
+    Diag(idx)%desc = 'perturbation velocity'
+    Diag(idx)%unit = 'm/s'
+    Diag(idx)%mod_name = 'gfs_phys'
+    allocate (Diag(idx)%data(nblks))
+    do nb = 1,nblks
+      Diag(idx)%data(nb)%var3 => Gfs_diag(nb)%skebv_wts(:,:)
+    enddo
+
+    idx = idx + 1
+    Diag(idx)%axes = 3
+    Diag(idx)%name = 'sppt_wts'
+    Diag(idx)%desc = 'perturbation velocity'
+    Diag(idx)%unit = 'm/s'
+    Diag(idx)%mod_name = 'gfs_phys'
+    allocate (Diag(idx)%data(nblks))
+    do nb = 1,nblks
+      Diag(idx)%data(nb)%var3 => Gfs_diag(nb)%sppt_wts(:,:)
+    enddo
+
+    idx = idx + 1
+    Diag(idx)%axes = 3
+    Diag(idx)%name = 'shum_wts'
+    Diag(idx)%desc = 'perturbation velocity'
+    Diag(idx)%unit = 'm/s'
+    Diag(idx)%mod_name = 'gfs_phys'
+    allocate (Diag(idx)%data(nblks))
+    do nb = 1,nblks
+      Diag(idx)%data(nb)%var3 => Gfs_diag(nb)%shum_wts(:,:)
+    enddo
+
+
 !--- three-dimensional variables that need to be handled special when writing 
 !rab    do num = 1,6
 !rab      write (xtra,'(I1)') num 
@@ -2890,6 +2936,16 @@ module FV3GFS_io_mod
          !---
          !--- skipping the 3D variables with the following else statement
          !---
+             do j = 1, ny
+               jj = j + jsc -1
+               do i = 1, nx
+                 ii = i + isc -1
+                 nb = Atm_block%blkno(ii,jj)
+                 ix = Atm_block%ixp(ii,jj)
+                 var3(i,j,1:levs) = Diag(idx)%data(nb)%var3(ix,1:levs)*lcnvfac
+               enddo
+             enddo
+           used=send_data(Diag(idx)%id, var3, Time)
 #ifdef JUNK
          else
            !--- dt3dt variables

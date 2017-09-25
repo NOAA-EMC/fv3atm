@@ -3318,6 +3318,78 @@ module physics_diag_layer
       IPD_Diag(idx)%data(nb)%var2p => Sfcprop(nb)%stc(:,4)
     enddo
 
+    !---skebu  
+    idx = idx + 1
+    IPD_Diag(idx)%name           = 'skebu_wts'
+    IPD_Diag(idx)%output_name    = 'skebu_wts'
+    IPD_Diag(idx)%mod_name       = 'physics'
+    IPD_Diag(idx)%file_name      = 'flx'
+    IPD_Diag(idx)%desc           = 'perturbation velocity'
+    IPD_Diag(idx)%unit           = 'm/s'
+    IPD_Diag(idx)%type_stat_proc = 'inst'
+    IPD_Diag(idx)%level_type     = ''
+    IPD_Diag(idx)%level          = Model%levs
+    IPD_Diag(idx)%cnvfac         = cn_one
+    IPD_Diag(idx)%zhour          = Model%zhour
+    IPD_Diag(idx)%fcst_hour      = Model%fhour
+    do nb = 1,nblks
+      IPD_Diag(idx)%data(nb)%var3p => Diag(nb)%skebu_wts(:,:)
+    enddo
+
+    !---skebv  
+    idx = idx + 1
+    IPD_Diag(idx)%name           = 'skebv_wts'
+    IPD_Diag(idx)%output_name    = 'skebv_wts'
+    IPD_Diag(idx)%mod_name       = 'physics'
+    IPD_Diag(idx)%file_name      = 'surface'
+    IPD_Diag(idx)%desc           = 'perturbation velocity'
+    IPD_Diag(idx)%unit           = 'm/s'
+    IPD_Diag(idx)%type_stat_proc = 'inst'
+    IPD_Diag(idx)%level_type     = ''
+    IPD_Diag(idx)%level          = Model%levs
+    IPD_Diag(idx)%cnvfac         = cn_one
+    IPD_Diag(idx)%zhour          = Model%zhour
+    IPD_Diag(idx)%fcst_hour      = Model%fhour
+    do nb = 1,nblks
+      IPD_Diag(idx)%data(nb)%var3p => Diag(nb)%skebv_wts(:,:)
+    enddo
+
+    !---sppt  
+    idx = idx + 1
+    IPD_Diag(idx)%name           = 'sppt_wts'
+    IPD_Diag(idx)%output_name    = 'sppt_wts'
+    IPD_Diag(idx)%mod_name       = 'physics'
+    IPD_Diag(idx)%file_name      = 'surface'
+    IPD_Diag(idx)%desc           = 'perturbation velocity'
+    IPD_Diag(idx)%unit           = 'm/s'
+    IPD_Diag(idx)%type_stat_proc = 'inst'
+    IPD_Diag(idx)%level_type     = ''
+    IPD_Diag(idx)%level          = Model%levs
+    IPD_Diag(idx)%cnvfac         = cn_one
+    IPD_Diag(idx)%zhour          = Model%zhour
+    IPD_Diag(idx)%fcst_hour      = Model%fhour
+    do nb = 1,nblks
+      IPD_Diag(idx)%data(nb)%var3p => Diag(nb)%sppt_wts(:,:)
+    enddo
+
+    !---shum  
+    idx = idx + 1
+    IPD_Diag(idx)%name           = 'shum_wts'
+    IPD_Diag(idx)%output_name    = 'shum_wts'
+    IPD_Diag(idx)%mod_name       = 'physics'
+    IPD_Diag(idx)%file_name      = 'surface'
+    IPD_Diag(idx)%desc           = 'perturbation velocity'
+    IPD_Diag(idx)%unit           = 'm/s'
+    IPD_Diag(idx)%type_stat_proc = 'inst'
+    IPD_Diag(idx)%level_type     = ''
+    IPD_Diag(idx)%level          = Model%levs
+    IPD_Diag(idx)%cnvfac         = cn_one
+    IPD_Diag(idx)%zhour          = Model%zhour
+    IPD_Diag(idx)%fcst_hour      = Model%fhour
+    do nb = 1,nblks
+      IPD_Diag(idx)%data(nb)%var3p => Diag(nb)%shum_wts(:,:)
+    enddo
+
     if (idx > size(IPD_Diag)) then
       print *,'GFS_populate_IPD_Diag: increase size declaration of IPD_Diag'
       stop
