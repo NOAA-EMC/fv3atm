@@ -197,6 +197,7 @@ subroutine update_atmos_radiation_physics (Atmos)
 !--- get atmospheric state from the dynamic core
     call set_atmosphere_pelist()
     call mpp_clock_begin(getClock)
+    if (IPD_control%do_skeb) call atmosphere_diss_est (IPD_control%skeb_npass) !  do smoothing for SKEB
     call atmos_phys_driver_statein (IPD_data, Atm_block)
     call mpp_clock_end(getClock)
 
@@ -410,6 +411,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    endif
 
    call IPD_initialize (IPD_Control, IPD_Data, IPD_Diag, IPD_Restart, Init_parm)
+   Atm(mytile)%flagstruct%do_skeb=IPD_Control%do_skeb
 !  initialize the IAU module
    call iau_initialize (IPD_Control,IAU_data,Init_parm)
 
