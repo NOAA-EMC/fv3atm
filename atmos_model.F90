@@ -427,7 +427,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    !--- update tracers in FV3 with any initialized during the physics/radiation init phase
 !rab   call atmosphere_tracer_postinit (IPD_Data, Atm_block)
 
-   call gfdl_diag_register (Time, IPD_Data(:)%Sfcprop, IPD_Data(:)%IntDiag, Atm_block, IPD_Control, Atmos%axes, IPD_Control%nfxr)
+   call gfdl_diag_register (Time, IPD_Data(:)%Sfcprop, IPD_Data(:)%IntDiag, Atm_block, IPD_Control, Atmos%axes)
    call FV3GFS_restart_read (IPD_Data, IPD_Restart, Atm_block, IPD_Control, Atmos%domain)
 
    !--- set the initial diagnostic timestamp

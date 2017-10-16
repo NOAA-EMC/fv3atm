@@ -1166,8 +1166,8 @@
 !          if ( ABS(DBIM * U1(J,K)) .gt. .01 ) 
 !    & print *,' in gwdps_lmi.f KDT=',KDT,I,K,DB(I,K),
 !    &                      dbim,idxzb(I),U1(J,K),V1(J,K),me
-            DUSFC(J)   = DUSFC(J) - DBIM * V1(J,K) * DEL(J,K)
-            DVSFC(J)   = DVSFC(J) - DBIM * U1(J,K) * DEL(J,K)
+            DUSFC(J)   = DUSFC(J) - DBIM * U1(J,K) * DEL(J,K)
+            DVSFC(J)   = DVSFC(J) - DBIM * V1(J,K) * DEL(J,K)
           else
 !
             A(J,K)     = DTAUY     + A(J,K)

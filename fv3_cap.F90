@@ -29,7 +29,7 @@ module fv3gfs_cap_mod
                                 wrttasks_per_group, n_group,            &
                                 lead_wrttask, last_wrttask,             &
                                 write_nemsiofile, output_grid,          &
-                                imo, jmo
+                                imo, jmo, write_nemsioflip
 !
   use module_fcst_grid_comp,  only: fcstSS => SetServices
   use module_wrt_grid_comp,   only: wrtSS => SetServices
@@ -284,10 +284,12 @@ module fv3gfs_cap_mod
       call ESMF_ConfigGetAttribute(config=CF,value=output_grid, label ='output_grid:',rc=rc)
       if(mype==0) print *,'af nems config,output_grid=',trim(output_grid)
       write_nemsiofile=.false.
+      write_nemsioflip=.false.
       if(trim(output_grid) == 'gaussian_grid') then
         call ESMF_ConfigGetAttribute(config=CF,value=imo, label ='imo:',rc=rc)
         call ESMF_ConfigGetAttribute(config=CF,value=jmo, label ='jmo:',rc=rc)
         call ESMF_ConfigGetAttribute(config=CF,value=write_nemsiofile, label ='write_nemsiofile:',rc=rc)
+        call ESMF_ConfigGetAttribute(config=CF,value=write_nemsioflip, label ='write_nemsioflip:',rc=rc)
       if(mype==0) print *,'af nems config,imo=',imo,'jmo=',jmo,'write_nemsiofile=', write_nemsiofile
       endif
       if(mype==0) print *,'af nems config,dt_atmos=',dt_atmos,'nfhmax=',nfhmax, &

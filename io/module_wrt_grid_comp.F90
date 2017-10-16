@@ -29,7 +29,8 @@
       use write_internal_state
       use module_fv3_io_def, only : num_pes_fcst,lead_wrttask, last_wrttask,  &
                                     n_group, num_files, write_nemsiofile,     &
-                                    filename_base, output_grid, imo, jmo
+                                    filename_base, output_grid, imo, jmo,     &
+                                    write_nemsioflip
       use module_write_nemsio, only : nemsio_first_call, write_nemsio
 !
 !-----------------------------------------------------------------------
@@ -153,7 +154,7 @@
       real(ESMF_KIND_R8)                      :: valueR8
 
       integer :: attCount, axeslen, jidx, idate(7)
-      real, dimension(:), allocatable         :: slat, lat, axesdata
+      real, dimension(:), allocatable         :: slat, lat, lon, axesdata
       real(ESMF_KIND_R8), dimension(:,:), pointer   :: lonPtr, latPtr
       type(ESMF_DataCopy_Flag) :: copyflag=ESMF_DATACOPY_REFERENCE
       real(8),parameter :: PI=3.14159265358979d0
@@ -254,10 +255,19 @@
             file=__FILE__)) &
             return  ! bail out
 !
-        allocate(slat(jmo),lat(jmo))
+        allocate(slat(jmo),lat(jmo), lon(imo))
         call splat(4,jmo, slat)
-        do j=1,jmo
-          lat(jmo-j+1) = asin(slat(j)) * 180./pi
+        if(write_nemsioflip) then
+          do j=1,jmo
+            lat(j) = asin(slat(j)) * 180./pi
+          enddo
+        else
+          do j=1,jmo
+            lat(jmo-j+1) = asin(slat(j)) * 180./pi
+          enddo
+        endif
+        do j=1,imo
+          lon(j) = 360./real(imo) *real(j-1)
         enddo
         do j=lbound(lonPtr,2),ubound(lonPtr,2)
           do i=lbound(lonPtr,1),ubound(lonPtr,1)
@@ -270,7 +280,7 @@
 !        print *,'aft wrtgrd, lon=',lonPtr(lbound(lonPtr,1),lbound(lonPtr,2)), &
 !        lonPtr(lbound(lonPtr,1),ubound(lonPtr,2)),'lat=',latPtr(lbound(lonPtr,1),lbound(lonPtr,2)), &
 !        latPtr(lbound(lonPtr,1),ubound(lonPtr,2))
-        deallocate(slat,lat)
+        deallocate(slat)
       else if ( trim(output_grid) == 'latlon_grid') then
         wrtgrid = ESMF_GridCreate1PeriDimUfrm(maxIndex=(/imo, jmo/), &
                minCornerCoord=(/0._ESMF_KIND_R8, -80._ESMF_KIND_R8/), &
@@ -766,7 +776,8 @@
       if(trim(output_grid) == 'gaussian_grid' .and. write_nemsiofile) then
         do i= 1, FBcount
           call nemsio_first_call(wrt_int_state%wrtFB(i), imo, jmo, &
-             wrt_int_state%mype, ntasks, wrt_mpi_comm, FBcount, i, idate, rc) 
+             wrt_int_state%mype, ntasks, wrt_mpi_comm, FBcount, i, idate, &
+             lat, lon,rc) 
         enddo
       endif
 !
@@ -937,10 +948,17 @@
          line=__LINE__, &
          file=__FILE__)) &
          return  ! bail out
+!    if(mype == lead_write_task) print *,'in wrt run, nf_hours=',nf_hours,nf_minutes,nseconds, &
+!       'nseconds_num=',nseconds_num,nseconds_den
 !
        nf_seconds = nf_hours*3600+nf_minuteS*60+nseconds+real(nseconds_num)/real(nseconds_den)
        wrt_int_state%nfhour = nf_seconds/3600.
+       nf_hours   = int(nf_seconds/3600.)
+       nf_minutes = int((nf_seconds-nf_hours*3600.)/60.)
+       nseconds   = int(nf_seconds-nf_hours*3600.-nf_minutes*60.)
        write(cfhour,'(I3.3)')int(wrt_int_state%nfhour)
+    if(mype == lead_write_task) print *,'in wrt run, 2, nf_hours=',nf_hours,nf_minutes,nseconds, &
+       'nseconds_num=',nseconds_num,nseconds_den
 
 !    if(mype == lead_write_task) print *,'in wrt run, cfhour=',cfhour, &
 !     print *,'in wrt run, cfhour=',cfhour, &
@@ -969,9 +987,9 @@
 
          idx= index(wrt_int_state%wrtFB_names(nbdl)(8:),"_")
          if (write_nemsiofile ) then
-            filename = wrt_int_state%wrtFB_names(nbdl)(8:7+idx-1)//'.f'//cfhour//'.nemsio'
+            filename = wrt_int_state%wrtFB_names(nbdl)(8:7+idx-1)//'f'//cfhour//'.nemsio'
          else
-            filename = wrt_int_state%wrtFB_names(nbdl)(8:7+idx-1)//'.f'//cfhour//'.nc'
+            filename = wrt_int_state%wrtFB_names(nbdl)(8:7+idx-1)//'f'//cfhour//'.nc'
          endif
          if(mype == lead_write_task) print *,'in wrt run,filename=',trim(filename)
 
@@ -1005,12 +1023,13 @@
            line=__LINE__, file=__FILE__)) &
            return  ! bail out
 
+      if(mype == lead_write_task) print *,'in wrt run before write nemsio grid bundle, rc=',rc
 !       tbeg0 = MPI_Wtime()
          if(trim(output_grid) == 'gaussian_grid' .and. write_nemsiofile) then
            call write_nemsio(file_bundle,trim(filename),nf_hours, nf_minutes, &
-           nf_seconds, nbdl, rc)
+           nseconds, nseconds_num, nseconds_den,nbdl, rc)
 
-!      if(mype == lead_write_task) print *,'in wrt run aft write nemsio grid bundle, rc=',rc
+      if(mype == lead_write_task) print *,'in wrt run aft write nemsio grid bundle, rc=',rc
 !
 
         else

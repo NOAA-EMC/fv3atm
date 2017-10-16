@@ -2734,6 +2734,9 @@ module module_physics_driver
 
       if (Model%lssav) then
         Diag%totprcp(:) = Diag%totprcp(:) + Diag%rain(:)
+        Diag%totice (:) = Diag%totice (:) + Diag%ice(:)
+        Diag%totsnw (:) = Diag%totsnw (:) + Diag%snow(:)
+        Diag%totgrp (:) = Diag%totgrp (:) + Diag%graupel(:)
 
         if (Model%ldiag3d) then
           Diag%dt3dt(:,:,6) = Diag%dt3dt(:,:,6) + (Stateout%gt0(:,:)-dtdt(:,:)) * frain
