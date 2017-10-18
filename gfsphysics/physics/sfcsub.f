@@ -3015,7 +3015,7 @@
          if (.not. allocated(imxnx)) allocate (imxnx(num_threads))
       endif
 !
-      if (me == 0) print *,' num_threads =',num_threads,' me=',me
+!      if (me == 0) print *,' num_threads =',num_threads,' me=',me
 !
 !     if(me .eq. 0) then
 !     print *,'rlon=',rlon,' me=',me
@@ -3534,9 +3534,9 @@
           endif
         enddo
 !
-      write(6,100) k,fmax,iimax,fmin,iimin
-  100 format(2x,'level=',i2,' max=',e11.4,' at i=',i7,
-     &                      ' min=',e11.4,' at i=',i7)
+!      write(6,100) k,fmax,iimax,fmin,iimin
+!  100 format(2x,'level=',i2,' max=',e11.4,' at i=',i7,
+!     &                      ' min=',e11.4,' at i=',i7)
 !
       enddo
 !
@@ -6864,9 +6864,10 @@ cjfe
       data mon1s/0/, mon2s/0/, sea1s/0/, sea2s/0/
 !
       save first, tsf, sno, zor, wet,  ais, acn, scv, smc, tg3,
-     &     alb,   alf, vet, sot, tsf2, veg, stc
-     &,    vmn,   vmx, slp, abs,
-     &     mon1s, mon2s, sea1s, sea2s, dayhf, k1, k2, m1, m2
+     &     alb,   alf, vet, sot, tsf2, veg, stc,
+     &     vmn,   vmx, slp, abs,
+     &     mon1s, mon2s, sea1s, sea2s, dayhf, k1, k2, m1, m2,
+     &     landice_cat
 !
       logical lprnt
 !

@@ -92,7 +92,8 @@
      &   tsea,qss,heat,evap,stress,spd1,kpbl,                           &
      &   prsi,del,prsl,prslk,phii,phil,delt,dspheat,                    &
      &   dusfc,dvsfc,dtsfc,dqsfc,hpbl,hgamt,hgamq,dkt,                  &
-     &   kinver,xkzm_m,xkzm_h,xkzm_s,lprnt,ipr)
+     &   kinver,xkzm_m,xkzm_h,xkzm_s,lprnt,ipr,                         &
+     &   xkzminv,moninq_fac)
 !
       use machine  , only : kind_phys
       use funcphys , only : fpvs
@@ -196,6 +197,8 @@
      &                     xkzm,    xkzmu,  xkzminv,
      &                     ptem,    ptem1,  ptem2, tx1(im), tx2(im)
 !
+      real(kind=kind_phys) moninq_fac
+!
       real(kind=kind_phys) zstblmax,h1,     h2,     qlcr,  actei,
      &                     cldtime
 cc
@@ -213,7 +216,8 @@ cc
       parameter(qmin=1.e-8,         zfmin=1.e-8,aphi5=5.,aphi16=16.)
       parameter(tdzmin=1.e-3,qlmin=1.e-12,f0=1.e-4)
       parameter(h1=0.33333333,h2=0.66666667)
-      parameter(cldtime=500.,xkzminv=0.3)
+!     parameter(cldtime=500.,xkzminv=0.3)
+      parameter(cldtime=500.)
 !     parameter(cldtime=500.,xkzmu=3.0,xkzminv=0.3)
 !     parameter(gamcrt=3.,gamcrq=2.e-3,rlamun=150.0)
       parameter(gamcrt=3.,gamcrq=0.,rlamun=150.0)
@@ -741,7 +745,7 @@ c
 !           zfac = max((1.-(zi(i,k+1)-zl(i,1))/
 !    1             (hpbl(i)-zl(i,1))), zfmin)
             zfac = max((1.-zi(i,k+1)/hpbl(i)), zfmin)
-            tem = zi(i,k+1) * (zfac**pfac)
+            tem = zi(i,k+1) * (zfac**pfac) * moninq_fac ! lmh suggested by kg
             if(pblflg(i)) then
               tem1 = vk * wscaleu(i) * tem
 !             dku(i,k) = xkzmo(i,k) + tem1

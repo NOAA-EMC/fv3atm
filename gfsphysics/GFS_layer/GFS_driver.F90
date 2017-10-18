@@ -12,6 +12,7 @@ module GFS_driver
   use module_radsw_parameters,  only: topfsw_type, sfcfsw_type
   use module_radlw_parameters,  only: topflw_type, sfcflw_type
   use funcphys,                 only: gfuncphys
+  use gfdl_cloud_microphys_mod, only: gfdl_cloud_microphys_init
 
   implicit none
 
@@ -130,6 +131,7 @@ module GFS_driver
     ntrac = size(Init_parm%tracer_names)
     allocate (blksz(nblks))
     blksz(:) = Init_parm%blksz(:)
+    !--- initializing stochastic physics
 
     !--- set control properties (including namelist read)
     call Model%init (Init_parm%nlunit, Init_parm%fn_nml,           &
@@ -141,6 +143,9 @@ module GFS_driver
                      Init_parm%dt_dycore, Init_parm%dt_phys,       &
                      Init_parm%bdat, Init_parm%cdat,               &
                      Init_parm%tracer_names)
+
+    call init_stochastic_physics(Model,Init_parm)
+    print*,'do_skeb=',Model%do_skeb
 
     call read_o3data  (Model%ntoz, Model%me, Model%master)
     call read_h2odata (Model%h2o_phys, Model%me, Model%master)
@@ -190,7 +195,8 @@ module GFS_driver
              / (p_ref - Init_parm%ak(Model%levr+1))
     call rad_initialize (si, Model%levr, Model%ictm, Model%isol, &
            Model%ico2, Model%iaer, Model%ialb, Model%iems,       &
-           Model%ntcw, Model%num_p3d, Model%npdf3d, Model%ntoz,  &
+           Model%ntcw, Model%num_p2d,  Model%num_p3d,            &
+           Model%npdf3d, Model%ntoz,                             &
            Model%iovr_sw, Model%iovr_lw, Model%isubc_sw,         &
            Model%isubc_lw, Model%crick_proof, Model%ccnorm,      &
            Model%norad_precip, Model%idate,Model%iflip, Model%me)
@@ -200,6 +206,11 @@ module GFS_driver
     if (Model%ncld == 2) then
       call ini_micro (Model%mg_dcs, Model%mg_qcvar, Model%mg_ts_auto_ice)
       call aer_cloud_init ()
+    endif
+
+    !--- initialize GFDL Cloud microphysics
+    if (Model%ncld == 5) then
+      call gfdl_cloud_microphys_init (Model%me, Model%master, Model%nlunit, Init_parm%logunit, Model%fn_nml)
     endif
 
     !--- initialize ras
@@ -215,9 +226,10 @@ module GFS_driver
       !--- NEED TO get the logic from the old phys/gloopb.f initialization area
     endif
 
+
     !--- sncovr may not exist in ICs from chgres.
     !--- FV3GFS handles this as part of the IC ingest
-    !--- this not is placed here to alert users to the need to study
+    !--- this note is placed here alertng users to study
     !--- the FV3GFS_io.F90 module
 
   end subroutine GFS_initialize
@@ -250,7 +262,7 @@ module GFS_driver
     type(GFS_radtend_type),   intent(inout) :: Radtend(:)
     type(GFS_diag_type),      intent(inout) :: Diag(:)
     !--- local variables
-    integer :: nb, nblks
+    integer :: nb, nblks,k
     real(kind=kind_phys) :: rinc(5)
     real(kind=kind_phys) :: sec
 
@@ -313,6 +325,30 @@ module GFS_driver
     !!!!  THIS IS THE POINT AT WHICH DIAG%ZHOUR NEEDS TO BE UPDATED
       enddo
     endif
+    call run_stochastic_physics(nblks,Model,Grid(:),Coupling(:))
+! kludge for output
+    if (Model%do_skeb) then
+       do nb = 1,nblks
+          do k=1,Model%levs
+             Diag(nb)%skebu_wts(:,k)=Coupling(nb)%skebu_wts(:,Model%levs-k+1)
+             Diag(nb)%skebv_wts(:,k)=Coupling(nb)%skebv_wts(:,Model%levs-k+1)
+          enddo
+       enddo
+    endif
+    if (Model%do_sppt) then
+       do nb = 1,nblks
+          do k=1,Model%levs
+             Diag(nb)%sppt_wts(:,k)=Coupling(nb)%sppt_wts(:,Model%levs-k+1)
+          enddo
+       enddo
+    endif
+    if (Model%do_shum) then
+       do nb = 1,nblks
+          do k=1,Model%levs
+             Diag(nb)%shum_wts(:,k)=Coupling(nb)%shum_wts(:,Model%levs-k+1)
+          enddo
+       enddo
+    endif
 
   end subroutine GFS_time_vary_step
 
@@ -346,14 +382,14 @@ module GFS_driver
     !--- local variables
     integer :: k, i
     real(kind=kind_phys) :: upert, vpert, tpert, qpert, qnew
-
      if (Model%do_sppt) then
        do k = 1,size(Statein%tgrs,2)
          do i = 1,size(Statein%tgrs,1)
       
            upert = (Stateout%gu0(i,k)   - Statein%ugrs(i,k))   * Coupling%sppt_wts(i,k)
            vpert = (Stateout%gv0(i,k)   - Statein%vgrs(i,k))   * Coupling%sppt_wts(i,k)
-           tpert = (Stateout%gt0(i,k)   - Statein%tgrs(i,k))   * Coupling%sppt_wts(i,k) - Tbd%dtdtr(i,k)
+           !tpert = (Stateout%gt0(i,k)   - Statein%tgrs(i,k))   * Coupling%sppt_wts(i,k) - Tbd%dtdtr(i,k)
+           tpert = (Stateout%gt0(i,k)   - Statein%tgrs(i,k) - Tbd%dtdtr(i,k))   * Coupling%sppt_wts(i,k)
            qpert = (Stateout%gq0(i,k,1) - Statein%qgrs(i,k,1)) * Coupling%sppt_wts(i,k)
  
            Stateout%gu0(i,k)  = Statein%ugrs(i,k)+upert
@@ -367,15 +403,28 @@ module GFS_driver
            endif
          enddo
        enddo
+       ! instantaneous precip rate going into land model at the next time step
+       Sfcprop%tprcp(:) = Coupling%sppt_wts(:,15)*Sfcprop%tprcp(:)
+       Diag%totprcp(:)      = Diag%totprcp(:)      + (Coupling%sppt_wts(:,15) - 1 )*Diag%rain(:)
+       ! acccumulated total and convective preciptiation
+       Diag%cnvprcp(:)      = Diag%cnvprcp(:)      + (Coupling%sppt_wts(:,15) - 1 )*Diag%rainc(:)
+        if (Model%cplflx) then
+           Coupling%rain_cpl(:) = Coupling%rain_cpl(:) + (Coupling%sppt_wts(:,15) - 1.0)*Tbd%drain_cpl(:)
+           Coupling%snow_cpl(:) = Coupling%snow_cpl(:) + (Coupling%sppt_wts(:,15) - 1.0)*Tbd%dsnow_cpl(:)
+        endif
  
-       Diag%totprcp(:)      = Diag%totprcp(:)      + (Coupling%sppt_wts(:,15) - 1.0)*Tbd%dtotprcp(:)
-       Diag%cnvprcp(:)      = Diag%cnvprcp(:)      + (Coupling%sppt_wts(:,15) - 1.0)*Tbd%dcnvprcp(:)
-       Coupling%rain_cpl(:) = Coupling%rain_cpl(:) + (Coupling%sppt_wts(:,15) - 1.0)*Tbd%drain_cpl(:)
-       Coupling%snow_cpl(:) = Coupling%snow_cpl(:) + (Coupling%sppt_wts(:,15) - 1.0)*Tbd%dsnow_cpl(:)
      endif
 
      if (Model%do_shum) then
        Stateout%gq0(:,:,1) = Stateout%gq0(:,:,1)*(1.0 + Coupling%shum_wts(:,:))
+     endif
+
+     if (Model%do_skeb) then
+       do k = 1,size(Statein%tgrs,2)
+           Stateout%gu0(:,k) = Stateout%gu0(:,k)+Coupling%skebu_wts(:,k)*(Statein%diss_est(:,k))
+           Stateout%gv0(:,k) = Stateout%gv0(:,k)+Coupling%skebv_wts(:,k)*(Statein%diss_est(:,k))
+       !    print*,'in do skeb',Coupling%skebu_wts(1,k),Statein%diss_est(1,k)
+       enddo
      endif
 
   end subroutine GFS_stochastic_driver
@@ -439,7 +488,7 @@ module GFS_driver
       enddo
     endif  ! isubc_lw and isubc_sw
 
-    if (Model%num_p3d == 4) then
+    if (Model%zhao_mic) then
       if (Model%kdt == 1) then
         do nb = 1,nblks
           Tbd(nb)%phy_f3d(:,:,1) = Statein(nb)%tgrs

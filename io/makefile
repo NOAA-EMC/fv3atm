@@ -14,6 +14,7 @@ else
     $(info Build standalone FV3 io ...)
     $(info )
 endif
+$(info $$ESMF_INC is [${ESMF_INC}])
 
 LIBRARY  = libfv3io.a
 
@@ -26,7 +27,11 @@ SRCS_f90 =
 SRCS_F   =
 
 SRCS_F90 = \
-		   ./FV3GFS_io.F90
+		   ./FV3GFS_io.F90                     \
+		   ./module_write_nemsio.F90           \
+		   ./module_fv3_io_def.F90             \
+		   ./module_write_internal_state.F90   \
+		   ./module_wrt_grid_comp.F90
 
 SRCS_c   = 
 
@@ -44,6 +49,16 @@ all default: depend $(LIBRARY)
 
 $(LIBRARY): $(OBJS)
 	$(AR) $(ARFLAGS) $@ $?
+
+FV3GFS_io.o: FV3GFS_io.F90
+	$(FC) $(CPPDEFS) $(CPPFLAGS) $(FPPFLAGS) $(FFLAGS) $(OTHERFLAGS) $(OTHER_FFLAGS) $(ESMF_INC) -c FV3GFS_io.F90
+module_write_nemsio.o: module_write_nemsio.F90
+	$(FC) $(CPPDEFS) $(CPPFLAGS) $(FPPFLAGS) $(FFLAGS) $(OTHERFLAGS) $(OTHER_FFLAGS) $(ESMF_INC) $(NEMSIOINC) -c module_write_nemsio.F90
+module_write_internal_state.o: module_write_internal_state.F90
+	$(FC) $(CPPDEFS) $(CPPFLAGS) $(FPPFLAGS) $(FFLAGS) $(OTHERFLAGS) $(OTHER_FFLAGS) $(ESMF_INC) -c module_write_internal_state.F90
+module_wrt_grid_comp.o: module_wrt_grid_comp.F90
+	$(FC) $(CPPDEFS) $(CPPFLAGS) $(FPPFLAGS) $(FFLAGS) $(OTHERFLAGS) $(OTHER_FFLAGS) $(ESMF_INC) -c module_wrt_grid_comp.F90
+
 
 .PHONY: clean
 clean:

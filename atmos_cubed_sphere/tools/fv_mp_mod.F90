@@ -35,7 +35,7 @@
       use mpp_domains_mod, only : GLOBAL_DATA_DOMAIN, BITWISE_EXACT_SUM, BGRID_NE, FOLD_NORTH_EDGE, CGRID_NE
       use mpp_domains_mod, only : MPP_DOMAIN_TIME, CYCLIC_GLOBAL_DOMAIN, NUPDATE,EUPDATE, XUPDATE, YUPDATE, SCALAR_PAIR
       use mpp_domains_mod, only : domain1D, domain2D, DomainCommunicator2D, mpp_get_ntile_count
-      use mpp_domains_mod, only : mpp_get_compute_domain, mpp_get_data_domain, mpp_domains_set_stack_size
+      use mpp_domains_mod, only : mpp_get_compute_domain, mpp_get_data_domain
       use mpp_domains_mod, only : mpp_global_field, mpp_global_sum, mpp_global_max, mpp_global_min
       use mpp_domains_mod, only : mpp_domains_init, mpp_domains_exit, mpp_broadcast_domain
       use mpp_domains_mod, only : mpp_check_field, mpp_define_layout 
@@ -164,8 +164,12 @@
       INTERFACE mp_reduce_sum
         MODULE PROCEDURE mp_reduce_sum_r4
         MODULE PROCEDURE mp_reduce_sum_r4_1d
+        MODULE PROCEDURE mp_reduce_sum_r4_1darr
+        MODULE PROCEDURE mp_reduce_sum_r4_2darr
         MODULE PROCEDURE mp_reduce_sum_r8
         MODULE PROCEDURE mp_reduce_sum_r8_1d
+        MODULE PROCEDURE mp_reduce_sum_r8_1darr
+        MODULE PROCEDURE mp_reduce_sum_r8_2darr
       END INTERFACE
 
       INTERFACE mp_gather !WARNING only works with one level (ldim == 1)
@@ -175,9 +179,6 @@
       END INTERFACE
 
       integer :: halo_update_type = 1
-!---- version number -----
-      character(len=128) :: version = '$Id$'
-      character(len=128) :: tagname = '$Name$'
 
 contains
 
@@ -324,15 +325,6 @@ contains
 
 
          call mpp_domains_init(MPP_DOMAIN_TIME)
-
-       ! call mpp_domains_set_stack_size(10000)
-       ! call mpp_domains_set_stack_size(900000)
-       !  call mpp_domains_set_stack_size(1500000)
-#ifdef SMALL_PE
-         call mpp_domains_set_stack_size(6000000)
-#else
-         call mpp_domains_set_stack_size(3000000)
-#endif
 
          select case(nregions)
          case ( 1 )  ! Lat-Lon "cyclic"
@@ -2399,6 +2391,53 @@ end subroutine switch_current_Atm
 ! ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ !
 !-------------------------------------------------------------------------------
 
+
+!-------------------------------------------------------------------------------
+! vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+! !
+!
+!     mp_reduce_sum_r4_1darr :: Call SPMD REDUCE_SUM
+!
+      subroutine mp_reduce_sum_r4_1darr(mysum, npts)
+         integer, intent(in)  :: npts
+         real(kind=4), intent(inout)  :: mysum(npts)
+         real(kind=4)                 :: gsum(npts)
+
+         gsum = 0.0
+         call MPI_ALLREDUCE( mysum, gsum, npts, MPI_REAL, MPI_SUM, &
+                             commglobal, ierror )
+
+         mysum = gsum
+
+      end subroutine mp_reduce_sum_r4_1darr
+!
+! ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+! !
+!-------------------------------------------------------------------------------
+
+!-------------------------------------------------------------------------------
+! vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+! !
+!
+!     mp_reduce_sum_r4_2darr :: Call SPMD REDUCE_SUM
+!
+      subroutine mp_reduce_sum_r4_2darr(mysum, npts1,npts2)
+         integer, intent(in)  :: npts1,npts2
+         real(kind=4), intent(inout)  :: mysum(npts1,npts2)
+         real(kind=4)                 :: gsum(npts1,npts2)
+
+         gsum = 0.0
+         call MPI_ALLREDUCE( mysum, gsum, npts1*npts2, MPI_REAL, MPI_SUM, &
+                             commglobal, ierror )
+
+         mysum = gsum
+
+      end subroutine mp_reduce_sum_r4_2darr
+!
+! ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+! !
+!-------------------------------------------------------------------------------
+
 !-------------------------------------------------------------------------------
 ! vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv !
 !
@@ -2454,6 +2493,53 @@ end subroutine switch_current_Atm
 !
 ! ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ !
 !-------------------------------------------------------------------------------
+! vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+! !
+!
+!     mp_reduce_sum_r8_1darr :: Call SPMD REDUCE_SUM
+!
+      subroutine mp_reduce_sum_r8_1darr(mysum, npts)
+         integer, intent(in)  :: npts
+         real(kind=8), intent(inout)  :: mysum(npts)
+         real(kind=8)                 :: gsum(npts)
+
+         gsum = 0.0
+
+         call MPI_ALLREDUCE( mysum, gsum, npts, MPI_DOUBLE_PRECISION, &
+                             MPI_SUM,                                 &
+                             commglobal, ierror )
+
+         mysum = gsum
+
+      end subroutine mp_reduce_sum_r8_1darr
+!
+! ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+! !
+
+!-------------------------------------------------------------------------------
+! vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+! !
+!
+!     mp_reduce_sum_r8_2darr :: Call SPMD REDUCE_SUM
+!
+      subroutine mp_reduce_sum_r8_2darr(mysum, npts1,npts2)
+         integer, intent(in)  :: npts1,npts2
+         real(kind=8), intent(inout)  :: mysum(npts1,npts2)
+         real(kind=8)                 :: gsum(npts1,npts2)
+
+         gsum = 0.0
+
+         call MPI_ALLREDUCE( mysum, gsum, npts1*npts2,      &
+                             MPI_DOUBLE_PRECISION, MPI_SUM, &
+                             commglobal, ierror )
+
+         mysum = gsum
+
+      end subroutine mp_reduce_sum_r8_2darr
+!
+! ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+! !
+
 #else
       implicit none
       private
