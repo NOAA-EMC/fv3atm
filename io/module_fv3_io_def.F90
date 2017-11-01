@@ -12,9 +12,10 @@
   integer           :: num_pes_fcst
   integer           :: wrttasks_per_group, write_groups
   integer           :: n_group
-  logical           :: write_nemsiofile, write_nemsioflip
+  logical           :: write_nemsioflip
   integer           :: num_files
   character(255)    :: output_grid
+  character(255)    :: output_file
   integer           :: imo,jmo
   character(255),dimension(:),allocatable :: filename_base
 !

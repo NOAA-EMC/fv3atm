@@ -1827,7 +1827,7 @@ module GFS_typedefs
     dxmax = log(tem/(max_lon*max_lat))
     dxmin = log(tem/(min_lon*min_lat))
     dxinv = 1.0d0 / (dxmax-dxmin)
-    if (Model%me == Model%master) write(0,*)' dxmax=',dxmax,' dxmin=',dxmin,' dxinv=',dxinv
+    if (Model%me == Model%master) write(*,*)' dxmax=',dxmax,' dxmin=',dxmin,' dxinv=',dxinv
 
     !--- set nrcm 
     if (Model%ras) then

@@ -28,10 +28,11 @@
       use esmf
       use write_internal_state
       use module_fv3_io_def, only : num_pes_fcst,lead_wrttask, last_wrttask,  &
-                                    n_group, num_files, write_nemsiofile,     &
-                                    filename_base, output_grid, imo, jmo,     &
-                                    write_nemsioflip
+                                    n_group, num_files, &
+                                    filename_base, output_grid, output_file,  &
+                                    imo, jmo, write_nemsioflip
       use module_write_nemsio, only : nemsio_first_call, write_nemsio
+      use module_write_netcdf, only : write_netcdf
 !
 !-----------------------------------------------------------------------
 !
@@ -773,7 +774,7 @@
 !***  Initialize for nemsio file
 !-----------------------------------------------------------------------
 !
-      if(trim(output_grid) == 'gaussian_grid' .and. write_nemsiofile) then
+      if(trim(output_grid) == 'gaussian_grid' .and. trim(output_file) == 'nemsio') then
         do i= 1, FBcount
           call nemsio_first_call(wrt_int_state%wrtFB(i), imo, jmo, &
              wrt_int_state%mype, ntasks, wrt_mpi_comm, FBcount, i, idate, &
@@ -824,7 +825,6 @@
       type(ESMF_State),save                 :: stateGridFB
       type(optimizeT), save                 :: optimize(4)
       type(ESMF_GridComp), save, allocatable   :: compsGridFB(:)
-      type(ESMF_FileStatus_Flag)            :: filestatus
 !
       type(write_wrap)                      :: wrap
       type(wrt_internal_state),pointer      :: wrt_int_state
@@ -862,7 +862,8 @@
       real(kind=8) :: wait_time, MPI_Wtime
       real(kind=8)         :: times,times2,etim
       character(10)        :: timeb
-      real(kind=8) :: tbeg,tend,tbeg1,tbeg0
+      real(kind=8) :: tbeg,tend
+      real(kind=8) :: wbeg,wend
 
       integer fieldcount, dimCount
       character(80),allocatable :: field_names(:)
@@ -986,7 +987,7 @@
          endif
 
          idx= index(wrt_int_state%wrtFB_names(nbdl)(8:),"_")
-         if (write_nemsiofile ) then
+         if ( trim(output_file) == 'nemsio' ) then
             filename = wrt_int_state%wrtFB_names(nbdl)(8:7+idx-1)//'f'//cfhour//'.nemsio'
          else
             filename = wrt_int_state%wrtFB_names(nbdl)(8:7+idx-1)//'f'//cfhour//'.nc'
@@ -1023,40 +1024,87 @@
            line=__LINE__, file=__FILE__)) &
            return  ! bail out
 
-      if(mype == lead_write_task) print *,'in wrt run before write nemsio grid bundle, rc=',rc
-!       tbeg0 = MPI_Wtime()
-         if(trim(output_grid) == 'gaussian_grid' .and. write_nemsiofile) then
-           call write_nemsio(file_bundle,trim(filename),nf_hours, nf_minutes, &
-           nseconds, nseconds_num, nseconds_den,nbdl, rc)
+         if (trim(output_grid) == 'cubed_sphere_grid') then
 
-      if(mype == lead_write_task) print *,'in wrt run aft write nemsio grid bundle, rc=',rc
-!
-
-        else
-
+          wbeg = MPI_Wtime()
           call ESMFproto_FieldBundleWrite(gridFB, filename=trim(filename), &
-            convention="NetCDF", purpose="FV3", &
-            status=ESMF_FILESTATUS_REPLACE, state=stateGridFB, comps=compsGridFB,rc=rc)
+               convention="NetCDF", purpose="FV3", &
+               status=ESMF_FILESTATUS_REPLACE, state=stateGridFB, comps=compsGridFB,rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
             line=__LINE__, file=__FILE__)) &
             return  ! bail out
-          call ESMF_LogWrite("after Write component before gridFB ", ESMF_LOGMSG_INFO, rc=rc)
-          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-            line=__LINE__, file=__FILE__)) &
-            return  ! bail out
-  
-          filestatus = ESMF_FILESTATUS_OLD
-  
-          call ESMF_LogWrite("before ESMFproto_FieldBundleWrite dyn",ESMF_LOGMSG_INFO,rc=RC)
+
           call ESMFproto_FieldBundleWrite(wrt_int_state%wrtFB(nbdl), &
                filename=trim(filename), convention="NetCDF", purpose="FV3",   &
-               status=filestatus, timeslice=step, state=optimize(nbdl)%state, &
+               status=ESMF_FILESTATUS_OLD, timeslice=step, state=optimize(nbdl)%state, &
                comps=optimize(nbdl)%comps, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
               line=__LINE__, &
               file=__FILE__)) &
               return  ! bail out
-          call ESMF_LogWrite("aft ESMFproto_FieldBundleWrite dyn",ESMF_LOGMSG_INFO,rc=RC)
+          wend = MPI_Wtime()
+          if (mype == lead_write_task) then
+            write(*,'(A,F10.5,A,I2.2,A,I2.2)')' actual    netcdf Write Time is ',wend-wbeg &
+                     ,' at Fcst ',NF_HOURS,':',NF_MINUTES
+          endif
+
+        else if (trim(output_grid) == 'gaussian_grid') then
+
+           if (trim(output_file) == 'nemsio') then
+
+             wbeg = MPI_Wtime()
+             call write_nemsio(file_bundle,trim(filename),nf_hours, nf_minutes, &
+                               nseconds, nseconds_num, nseconds_den,nbdl, rc)
+             wend = MPI_Wtime()
+             if (mype == lead_write_task) then
+               write(*,'(A,F10.5,A,I2.2,A,I2.2)')' nemsio      Write Time is ',wend-wbeg  &
+                        ,' at Fcst ',NF_HOURS,':',NF_MINUTES
+             endif
+
+           else if (trim(output_file) == 'netcdf') then
+
+             wbeg = MPI_Wtime()
+             call write_netcdf(file_bundle,wrt_int_state%wrtFB(nbdl),trim(filename), &
+                               wrt_mpi_comm,wrt_int_state%mype,imo,jmo,rc)
+             wend = MPI_Wtime()
+             if (mype == lead_write_task) then
+               write(*,'(A,F10.5,A,I2.2,A,I2.2)')' netcdf      Write Time is ',wend-wbeg  &
+                        ,' at Fcst ',NF_HOURS,':',NF_MINUTES
+             endif
+
+           else if (trim(output_file) == 'netcdf_esmf') then
+
+             wbeg = MPI_Wtime()
+             call ESMFproto_FieldBundleWrite(gridFB, filename=trim(filename), &
+                  convention="NetCDF", purpose="FV3", &
+                  status=ESMF_FILESTATUS_REPLACE, state=stateGridFB, comps=compsGridFB,rc=rc)
+             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+               line=__LINE__, file=__FILE__)) &
+               return  ! bail out
+
+             call ESMFproto_FieldBundleWrite(wrt_int_state%wrtFB(nbdl), &
+                  filename=trim(filename), convention="NetCDF", purpose="FV3",   &
+                  status=ESMF_FILESTATUS_OLD, timeslice=step, state=optimize(nbdl)%state, &
+                  comps=optimize(nbdl)%comps, rc=rc)
+             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+                 line=__LINE__, &
+                 file=__FILE__)) &
+                 return  ! bail out
+             wend = MPI_Wtime()
+             if (mype == lead_write_task) then
+               write(*,'(A,F10.5,A,I2.2,A,I2.2)')' netcdf_esmf Write Time is ',wend-wbeg &
+                        ,' at Fcst ',NF_HOURS,':',NF_MINUTES
+             endif
+
+           else ! unknown output_file
+
+             call ESMF_LogWrite("wrt_run: Unknown output_file",ESMF_LOGMSG_ERROR,rc=RC)
+
+           endif
+
+        else ! unknown output_grid
+
+          call ESMF_LogWrite("wrt_run: Unknown output_grid",ESMF_LOGMSG_ERROR,rc=RC)
 
         endif
 
@@ -1066,18 +1114,18 @@
 !
       call ESMF_VMBarrier(VM, rc=rc)
 !
+      write_run_tim=MPI_Wtime()-tbeg
+!
+      IF(mype == lead_write_task)THEN
+        WRITE(*,'(A,F10.5,A,I2.2,A,I2.2)')' total            Write Time is ',write_run_tim  &
+                 ,' at Fcst ',NF_HOURS,':',NF_MINUTES
+      ENDIF
+!
       IF(RC /= ESMF_SUCCESS) THEN
         WRITE(0,*)"FAIL: WRITE_RUN"
 !     ELSE
 !       WRITE(0,*)"PASS: WRITE_RUN"
       ENDIF
-!
-      write_run_tim=MPI_Wtime()-tbeg
-!
-!      IF(mype == lead_write_task)THEN
-!        WRITE(0,*)' Write Time is ',write_run_tim, &
-!                 ,' at Fcst ',NF_HOURS,':',NF_MINUTES,':',NF_SECONDS
-!      ENDIF
 !
 !-----------------------------------------------------------------------
 !

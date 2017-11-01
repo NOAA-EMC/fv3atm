@@ -28,7 +28,7 @@ module fv3gfs_cap_mod
                                 num_files, filename_base,               &
                                 wrttasks_per_group, n_group,            &
                                 lead_wrttask, last_wrttask,             &
-                                write_nemsiofile, output_grid,          &
+                                output_grid, output_file,               &
                                 imo, jmo, write_nemsioflip
 !
   use module_fcst_grid_comp,  only: fcstSS => SetServices
@@ -281,26 +281,26 @@ module fv3gfs_cap_mod
       call ESMF_ConfigGetAttribute(config=CF,value=nfhmax_hf,label ='nfhmax_hf:',rc=rc)
       call ESMF_ConfigGetAttribute(config=CF,value=nfhout_hf,label ='nfhout_hf:',rc=rc)
       call ESMF_ConfigGetAttribute(config=CF,value=nsout,    label ='nsout:',rc=rc)
+      if(mype==0) print *,'af nems config,nfhout=',nfhout,nfhmax_hf,nfhout_hf, nsout
+! variables for I/O options
       call ESMF_ConfigGetAttribute(config=CF,value=output_grid, label ='output_grid:',rc=rc)
       if(mype==0) print *,'af nems config,output_grid=',trim(output_grid)
-      write_nemsiofile=.false.
+      call ESMF_ConfigGetAttribute(config=CF,value=output_file, label ='output_file:',rc=rc)
+      if(mype==0) print *,'af nems config,output_file=',trim(output_file)
       write_nemsioflip=.false.
       if(trim(output_grid) == 'gaussian_grid') then
         call ESMF_ConfigGetAttribute(config=CF,value=imo, label ='imo:',rc=rc)
         call ESMF_ConfigGetAttribute(config=CF,value=jmo, label ='jmo:',rc=rc)
-        call ESMF_ConfigGetAttribute(config=CF,value=write_nemsiofile, label ='write_nemsiofile:',rc=rc)
         call ESMF_ConfigGetAttribute(config=CF,value=write_nemsioflip, label ='write_nemsioflip:',rc=rc)
-      if(mype==0) print *,'af nems config,imo=',imo,'jmo=',jmo,'write_nemsiofile=', write_nemsiofile
+        if(mype==0) print *,'af nems config,imo=',imo,'jmo=',jmo
+        if(mype==0) print *,'af nems config,write_nemsioflip=',write_nemsioflip
       endif
-      if(mype==0) print *,'af nems config,dt_atmos=',dt_atmos,'nfhmax=',nfhmax, &
-        'nfhout=',nfhout,nfhmax_hf,nfhout_hf, nsout
 !end quilting
     endif
 !
     call ESMF_ConfigGetAttribute(config=CF,value=dt_atmos, label ='dt_atmos:',rc=rc)
     call ESMF_ConfigGetAttribute(config=CF,value=nfhmax,   label ='nhours_fcst:',rc=rc)
-    if(mype==0) print *,'af nems config,dt_atmos=',dt_atmos,'nfhmax=',nfhmax, &
-      'quilting=',quilting,'restart_interval=',restart_interval
+    if(mype==0) print *,'af nems config,dt_atmos=',dt_atmos,'nfhmax=',nfhmax
     call ESMF_TimeIntervalSet(timeStep,s=dt_atmos,rc=rc)
     call ESMF_ClockSet(clock_fv3,timeStep=timeStep, rc=rc)
 !
