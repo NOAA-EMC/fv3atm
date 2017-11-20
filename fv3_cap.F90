@@ -7,6 +7,7 @@
 ! revision history
 ! 11 Oct 2016: J. Wang          Initial code
 ! 18 Apr 2017: J. Wang          set up fcst grid component and write grid components
+! 02 Nov 2017: J. Wang          Use Gerhard's transferable RouteHandle
 !
 
 module fv3gfs_cap_mod
@@ -177,8 +178,9 @@ module fv3gfs_cap_mod
     character(ESMF_MAXSTR)                 :: name
     logical                                :: fcstpe
     logical,dimension(:), allocatable      :: wrtpe
-    integer, allocatable                   :: petList(:)
+    integer,dimension(:), allocatable      :: petList, originPetList, targetPetList
     character(20)                          :: cwrtcomp
+    character(160)                         :: msg
 
     character(len=*),parameter  :: subname='(mom_cap:InitializeAdvertise)'
     integer nfmout, nfsout , nfmout_hf, nfsout_hf
@@ -463,6 +465,9 @@ module fv3gfs_cap_mod
       allocate(petList(wrttasks_per_group))
       if(mype==0) print *,'af allco wrtComp,write_groups=',write_groups
 !
+      allocate(originPetList(num_pes_fcst+wrttasks_per_group))
+      allocate(targetPetList(num_pes_fcst+wrttasks_per_group))
+!
       k = num_pes_fcst
       timerhs = mpi_wtime()
       do i=1, write_groups
@@ -586,25 +591,47 @@ module fv3gfs_cap_mod
           endif
 
           call ESMF_LogWrite('bf FieldBundleRegridStore', ESMF_LOGMSG_INFO, rc=rc)
+          write(msg,"(A,I2.2,',',I2.2,A)") "calling into wrtFB(",j,i, ") FieldBundleRegridStore()...."
+          call ESMF_LogWrite(msg, ESMF_LOGMSG_INFO, rc=rc)
 
-          timewri = mpi_wtime()
-          call ESMF_FieldBundleRegridStore(fcstFB(j), wrtFB(j,i), &
-             regridMethod=regridmethod, routehandle=routehandle(j,i), rc=rc)
+          if (i==1) then
+          ! this is a Store() for the first wrtComp -> must do the Store()
+            timewri = mpi_wtime()
 
-!          print *,'after regrid store, group i=',i,' fb=',j,' time=',mpi_wtime()-timewri
+            call ESMF_FieldBundleRegridStore(fcstFB(j), wrtFB(j,i), &
+              regridMethod=regridmethod, routehandle=routehandle(j,i), rc=rc)
 
-          call ESMF_LogWrite('af FieldBundleRegridStore', ESMF_LOGMSG_INFO, rc=rc)
-          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-            line=__LINE__, &
-            file=__FILE__)) &
-            call ESMF_Finalize(endflag=ESMF_END_ABORT)
+            print *,'after regrid store, group i=',i,' fb=',j,' time=',mpi_wtime()-timewri
+            call ESMF_LogWrite('af FieldBundleRegridStore', ESMF_LOGMSG_INFO, rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+              line=__LINE__, &
+              file=__FILE__)) &
+              call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
+            originPetList(1:num_pes_fcst)  = fcstPetList(:)
+            originPetList(num_pes_fcst+1:) = petList(:)
+
+          else
+            targetPetList(1:num_pes_fcst)  = fcstPetList(:)
+            targetPetList(num_pes_fcst+1:) = petList(:)
+            routehandle(j,i) = ESMF_RouteHandleCreate(routehandle(j,1), &
+              originPetList=originPetList, targetPetList=targetPetList, rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+              line=__LINE__, &
+              file=__FILE__)) &
+              call ESMF_Finalize(endflag=ESMF_END_ABORT)
+
+          endif
+          write(msg,"(A,I2.2,',',I2.2,A)") "... returned from wrtFB(",j,i, ") FieldBundleRegridStore()."
+          call ESMF_LogWrite(msg, ESMF_LOGMSG_INFO, rc=rc)
         enddo
 
 ! end write_groups
       enddo
-!      print *,'in fv3cap init, time wrtcrt/regrdst',mpi_wtime()-timerhs
+      print *,'in fv3cap init, time wrtcrt/regrdst',mpi_wtime()-timerhs
       deallocate(petList)
+      deallocate(originPetList)
+      deallocate(targetPetList)
 !
 !---------------------------------------------------------------------------------
 !---  SET UP ALARM
@@ -672,7 +699,7 @@ module fv3gfs_cap_mod
 !end quilting
     endif
 !
-!    print *,'in fv3_cap, init time=',mpi_wtime()-timeis
+    print *,'in fv3_cap, init time=',mpi_wtime()-timeis
 !-----------------------------------------------------------------------
 !
   end subroutine InitializeAdvertise
@@ -722,12 +749,14 @@ module fv3gfs_cap_mod
     real(kind=ESMF_KIND_R4), pointer  :: dataPtr(:,:,:), dataPtr2d(:,:)
     character(64)  :: fcstbdl_name
     real(kind=8) :: MPI_Wtime
-    real(kind=8) :: timewri, timewr, timerhi, timerh
+    real(kind=8) :: timeri,timewri, timewr, timerhi, timerh
 
 !-----------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
     if(profile_memory) call ESMF_VMLogMemInfo("Entering FV3 Model_ADVANCE: ")
+
+    timeri = mpi_wtime()
 !    
     call ESMF_GridCompGet(gcomp,name=name,vm=vm,rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
@@ -927,6 +956,7 @@ module fv3gfs_cap_mod
 
 !*** end integreate loop
     enddo integrate
+    print *,'fv3_cap,end integrate,na=',na,' time=',mpi_wtime()- timeri
 
     if(profile_memory) call ESMF_VMLogMemInfo("Leaving FV3 Model_ADVANCE: ")
 
@@ -1006,7 +1036,7 @@ module fv3gfs_cap_mod
       file=__FILE__)) &
       call ESMF_Finalize(endflag=ESMF_END_ABORT)
 !
-!    if(mype==0)print *,' wrt grid comp destroy time=',mpi_wtime()-timeffs
+    if(mype==0)print *,' wrt grid comp destroy time=',mpi_wtime()-timeffs
 
 
   end subroutine atmos_model_finalize

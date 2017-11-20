@@ -149,7 +149,12 @@
 !
 !  All checks are successful.
 !
-      if (me == 0) print*,'finished reading stochastic physics namlist',do_sppt,do_shum,do_skeb
+      if (me == 0) then
+         print *, 'stochastic physics'
+         print *, ' do_sppt : ', do_sppt
+         print *, ' do_shum : ', do_shum
+         print *, ' do_skeb : ', do_skeb
+      endif
       iret = 0
 !
       return

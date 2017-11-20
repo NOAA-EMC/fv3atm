@@ -2214,11 +2214,11 @@ module GFS_typedefs
       print *, ' xkzminv           : ', Model%xkzminv
       print *, ' moninq_fac        : ', Model%moninq_fac
       print *, ' '
-      print *, 'stochastic physics'
-      print *, ' do_sppt           : ', Model%do_sppt
-      print *, ' do_shum           : ', Model%do_shum
-      print *, ' do_skeb           : ', Model%do_skeb
-      print *, ' '
+      !print *, 'stochastic physics'
+      !print *, ' do_sppt           : ', Model%do_sppt
+      !print *, ' do_shum           : ', Model%do_shum
+      !print *, ' do_skeb           : ', Model%do_skeb
+      !print *, ' '
       print *, 'tracers'
       print *, ' tracer_names      : ', Model%tracer_names
       print *, ' ntrac             : ', Model%ntrac
