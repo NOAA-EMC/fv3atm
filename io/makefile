@@ -26,7 +26,7 @@ SRCS_f90 =
 
 SRCS_F   =
 
-SRCS_F90 = \
+SRCS_F90 =         ffsync.F90                          \
 		   ./FV3GFS_io.F90                     \
 		   ./module_write_nemsio.F90           \
 		   ./module_write_netcdf.F90           \

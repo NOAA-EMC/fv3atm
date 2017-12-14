@@ -13,6 +13,7 @@
   integer           :: wrttasks_per_group, write_groups
   integer           :: n_group
   logical           :: write_nemsioflip
+  logical           :: write_fsyncflag
   integer           :: num_files
   character(255)    :: output_grid
   character(255)    :: output_file

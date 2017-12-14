@@ -2,7 +2,7 @@ module module_write_nemsio
 
   use esmf
   use nemsio_module
-  use module_fv3_io_def, only : write_nemsioflip
+  use module_fv3_io_def, only : write_nemsioflip, write_fsyncflag
  
   implicit none
  
@@ -11,7 +11,6 @@ module module_write_nemsio
   private
   logical :: first_nemsio_call
   integer :: im,jm,lm, idate(7),nmeta, nsoil,ncld, idrt, ntrac
-  integer :: mp_physi, CU_PHYSICS
   integer :: mype, ntasks, mpi_comm, nbdl
   logical :: hydrostatic
   integer,dimension(200,100)      :: nfldlev
@@ -71,9 +70,6 @@ module module_write_nemsio
     jm    = jmo
     nmeta = 8
     idrt  = 4
-    nsoil = 4
-    ntrac = 3
-    ncld  = 1
     idate(1:7) = inidate(1:7)
     mype  = wrt_mype
     ntasks= wrt_ntasks
@@ -85,6 +81,9 @@ module module_write_nemsio
     if(.not.allocated(idsl)) then
       allocate(idsl(nbdl),idvc(nbdl),idvm(nbdl))
       idsl=-9999; idvc=-9999; idvm=-9999; first_set=.true.
+      nsoil = 4
+      ntrac = 3
+      ncld  = 1
     endif
 !
 !** get attibute info from fieldbundle
@@ -175,10 +174,6 @@ module module_write_nemsio
             if( fieldName(nlen-1:nlen) == '2m') then
               recname(nfld,mybdl) = fieldName(1:nlen-2)
             endif
-          else if(fieldName(1:3) == "slc" )then
-            recname(nfld,mybdl) = 'slc'
-            reclevtyp(nfld,mybdl) = 'soil layer'
-            reclev(nfld,mybdl) = ichar(fieldName(nlen:nlen))-48
           else if( index(trim(fieldName),'soil')>0 ) then
             if( index(trim(fieldName),'soilt')>0) then
                recname(nfld,mybdl) = 'tmp'
@@ -213,15 +208,40 @@ module module_write_nemsio
           else if( fieldName(nlen-2:nlen) =='hcl' ) then
             recname(nfld,mybdl)   = fieldName(1:nlen-3)
             reclevtyp(nfld,mybdl) = 'high cld lay'
+          else if( fieldName(nlen-2:nlen) =='lct' ) then
+            recname(nfld,mybdl)   = fieldName(1:nlen-3)
+            reclevtyp(nfld,mybdl) = 'low cld top'
+          else if( fieldName(nlen-2:nlen) =='mct' ) then
+            recname(nfld,mybdl)   = fieldName(1:nlen-3)
+            reclevtyp(nfld,mybdl) = 'mid cld top'
+          else if( fieldName(nlen-2:nlen) =='hct' ) then
+            recname(nfld,mybdl)   = fieldName(1:nlen-3)
+            reclevtyp(nfld,mybdl) = 'high cld top'
+          else if( fieldName(nlen-2:nlen) =='lcb' ) then
+            recname(nfld,mybdl)   = fieldName(1:nlen-3)
+            reclevtyp(nfld,mybdl) = 'low cld bot'
+          else if( fieldName(nlen-2:nlen) =='mcb' ) then
+            recname(nfld,mybdl)   = fieldName(1:nlen-3)
+            reclevtyp(nfld,mybdl) = 'mid cld bot'
+          else if( fieldName(nlen-2:nlen) =='hcb' ) then
+            recname(nfld,mybdl)   = fieldName(1:nlen-3)
+            reclevtyp(nfld,mybdl) = 'high cld bot'
           endif
         endif
         if( nlen > 5) then
           if( fieldName(nlen-4:nlen) =='cnvcl' ) then
             recname(nfld,mybdl)   = fieldName(1:nlen-5)
-            reclevtyp(nfld,mybdl) = 'convect-cld lay'
+            reclevtyp(nfld,mybdl) = 'convect-cld laye'
+          else if( fieldName(nlen-5:nlen) =='cnvclt' ) then
+            recname(nfld,mybdl)   = fieldName(1:nlen-6)
+            reclevtyp(nfld,mybdl) = 'convect-cld top'
+          else if( fieldName(nlen-5:nlen) =='cnvclb' ) then
+            recname(nfld,mybdl)   = fieldName(1:nlen-6)
+            reclevtyp(nfld,mybdl) = 'convect-cld bot'
           else if( fieldName(nlen-4:nlen) =='bndcl' ) then
             recname(nfld,mybdl)   = fieldName(1:nlen-5)
             reclevtyp(nfld,mybdl) = 'bndary-layer cld'
+
           endif
         endif
         nfld = nfld + 1
@@ -259,8 +279,10 @@ module module_write_nemsio
     integer, optional,intent(out)          :: rc
 !
 !** local vars
-    integer i,ii,j,m,n,k, k1,k2,k3,jrec, nfseconds
+    integer i,ii,j,m,n,k, k1,k2,k3,jrec, nfseconds, nofsync, FFSYNC
     integer istart, iend, jstart, jend, kstart, kend, nlen
+    real    fhour
+    logical OPENED
     real(4),dimension(:),allocatable    :: tmp
     real(4),dimension(:,:),allocatable  :: arrayr4
     real(4),dimension(:,:),pointer      :: arrayr42d
@@ -295,7 +317,7 @@ module module_write_nemsio
     if(mype==0) then
       nfseconds = nf_seconds*nfsecond_den + nfsecond_num
       call nemsio_open(nemsiofile,trim(FILENAME),'write',rc,    &
-        modelname="GFS", gdatatype="bin4",                      &
+        modelname="FV3GFS", gdatatype="bin4",                      &
         idate=idate,nfhour=nf_hours, nfminute=nf_minutes,       &
         nfsecondn=nfseconds, nfsecondd=nfsecond_den,            &
         dimx=im,dimy=jm,dimz=lm, nmeta=nmeta,idrt=idrt,         &
@@ -466,7 +488,26 @@ module module_write_nemsio
     call nemsio_close(nemsiofile, iret=rc)
 !
     call nemsio_finalize()
-
+!
+!** ffsync
+    if( write_fsyncflag ) then
+      do n=751,900
+        inquire(n,opened=opened)
+        if(.not.opened)then
+          nofsync=n
+          exit
+        endif
+      enddo
+!
+      open(unit=nofsync, file=trim(FILENAME) )
+        rc=FFSYNC(nofsync)
+        if (rc.ne.0) then
+          print *,"Error returned from ffsync, file=", trim(FILENAME),"rc=",RC
+        ENDIF
+      close(nofsync)
+!
+    endif
+!
   end subroutine write_nemsio
 
 !----------------------------------------------------------------------------------------
@@ -610,6 +651,8 @@ module module_write_nemsio
          call ESMF_AttributeGet(fldbundle, convention="NetCDF", purpose="FV3", &
            name=trim(variname(ni,mybdl)), value=varival(ni,mybdl), rc=rc)
          if (trim(variname(ni,mybdl)) == 'ncnsto') ntrac=varival(ni,mybdl)
+         if (trim(variname(ni,mybdl)) == 'ncld')   ncld=varival(ni,mybdl)
+         if (trim(variname(ni,mybdl)) == 'nsoil')  nsoil=varival(ni,mybdl)
         else
          naryi = naryi + 1
          aryiname(naryi,mybdl) = trim(attName)

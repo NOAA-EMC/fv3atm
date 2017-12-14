@@ -5,6 +5,7 @@
     USE PHYSCONS,     only: PI => con_PI
     USE GFS_typedefs, only: GFS_control_type, GFS_grid_type, &
                             GFS_sfcprop_type, GFS_cldprop_type
+    use module_nst_water_prop, only: get_dtzm_point
     implicit none
 
     integer :: nblks
@@ -50,7 +51,7 @@
         STCFC1 (Model%nx*Model%ny*Model%lsoil), &
         SLCFC1 (Model%nx*Model%ny*Model%lsoil)
 
-    real(kind=kind_phys)    :: sig1t, pifac
+    real(kind=kind_phys)    :: sig1t, pifac, zsea1, zsea2, dtzm
     integer :: npts, len, nb, ix, ls, ios
     logical :: exists
 !
@@ -149,12 +150,20 @@
                      Model%ialb, Model%isot, Model%ivegsrc)
       close (Model%nlunit)
 
+      zsea1 = 0.001*real(Model%nstf_name(4))
+      zsea2 = 0.001*real(Model%nstf_name(5))
       len = 0 
       do nb = 1,nblks
         do ix = 1,size(Grid(nb)%xlat,1)
           len = len + 1
           Sfcprop(nb)%slmsk  (ix) = SLIFCS  (len)
           Sfcprop(nb)%tsfc   (ix) = TSFFCS  (len)
+          if ( Sfcprop(nb)%slmsk(ix) == 0.0 .and. Model%nstf_name(1) > 0 ) then
+             call get_dtzm_point(Sfcprop(nb)%xt(ix),      Sfcprop(nb)%xz(ix),  & 
+                                 Sfcprop(nb)%dt_cool(ix), Sfcprop(nb)%z_c(ix), &
+                                 zsea1, zsea2, dtzm)
+             Sfcprop(nb)%tref(ix) = Sfcprop(nb)%tsfc(ix)-dtzm
+          endif
           Sfcprop(nb)%weasd  (ix) = SNOFCS  (len)
           Sfcprop(nb)%zorl   (ix) = ZORFCS  (len)
           Sfcprop(nb)%tg3    (ix) = TG3FCS  (len)

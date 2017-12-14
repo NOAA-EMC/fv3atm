@@ -159,6 +159,10 @@
   real(kind=kind_phys), parameter:: rlapse  = 0.65e-2, rhc_max = 0.9999999   ! new
 ! real(kind=kind_phys), parameter:: rlapse  = 0.65e-2, rhc_max = 0.9900
   real(kind=kind_phys), parameter:: cb2mb   = 10.0, pa2mb   = 0.01
+! for wsm6
+  real(kind=kind_phys),parameter:: rhowater   = 1000.         ! density of water (kg/m^3)
+  real(kind=kind_phys),parameter:: rhosnow    = 100.          ! density of snow (kg/m^3)
+  real(kind=kind_phys),parameter:: rhoair     = 1.28          ! density of air near surface (kg/m^3)
 
   real(kind=kind_phys) :: dxmax, dxmin, dxinv
 

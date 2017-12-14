@@ -104,7 +104,8 @@ module GFS_driver
     use cldwat2m_micro,      only: ini_micro
     use aer_cloud,           only: aer_cloud_init
     use module_ras,          only: ras_init
-
+    use module_mp_thompson,  only: thompson_init
+    use module_mp_wsm6,      only: wsm6init
 
     !--- interface variables
     type(GFS_control_type),   intent(inout) :: Model
@@ -199,19 +200,40 @@ module GFS_driver
            Model%npdf3d, Model%ntoz,                             &
            Model%iovr_sw, Model%iovr_lw, Model%isubc_sw,         &
            Model%isubc_lw, Model%crick_proof, Model%ccnorm,      &
+           Model%imp_physics,                                    &
            Model%norad_precip, Model%idate,Model%iflip, Model%me)
     deallocate (si)
 
     !--- initialize Morrison-Gettleman microphysics
-    if (Model%ncld == 2) then
-      call ini_micro (Model%mg_dcs, Model%mg_qcvar, Model%mg_ts_auto_ice)
-      call aer_cloud_init ()
-    endif
-
-    !--- initialize GFDL Cloud microphysics
-    if (Model%ncld == 5) then
-      call gfdl_cloud_microphys_init (Model%me, Model%master, Model%nlunit, Init_parm%logunit, Model%fn_nml)
-    endif
+!   if (Model%ncld == 2) then
+    if(Model%imp_physics == 8) then             !--- initialize Thompson Cloud microphysics
+       call thompson_init()                     !--- add aerosol version later 
+       if(Model%do_shoc) then 
+          print *,'SHOC is not currently compatible with Thompson MP -- shutting down'
+          stop 
+       endif 
+       if(Model%ltaerosol) then 
+          print *,'Aerosol awareness is not included in this version of Thompson MP -- shutting down'
+          stop 
+       endif 
+    else if(Model%imp_physics == 6) then        !--- initialize WSM6 Cloud microphysics
+       call  wsm6init()
+       if(Model%do_shoc) then 
+          print *,'SHOC is not currently compatible with WSM6 -- shutting down'
+          stop 
+       endif 
+       
+    else if(Model%imp_physics == 11) then       !--- initialize GFDL Cloud microphysics
+       call gfdl_cloud_microphys_init (Model%me, Model%master, Model%nlunit, Init_parm%logunit, Model%fn_nml)
+       if(Model%do_shoc) then 
+          print *,'SHOC is not currently compatible with GFDL MP -- shutting down'
+          stop 
+       endif 
+    else if(Model%imp_physics == 10) then       !--- initialize MG Cloud microphysics
+        call ini_micro (Model%mg_dcs, Model%mg_qcvar, Model%mg_ts_auto_ice)
+        call aer_cloud_init ()
+    endif 
+!   endif
 
     !--- initialize ras
     if (Model%ras) call ras_init (Model%levs, Model%me)
@@ -388,8 +410,8 @@ module GFS_driver
       
            upert = (Stateout%gu0(i,k)   - Statein%ugrs(i,k))   * Coupling%sppt_wts(i,k)
            vpert = (Stateout%gv0(i,k)   - Statein%vgrs(i,k))   * Coupling%sppt_wts(i,k)
-           !tpert = (Stateout%gt0(i,k)   - Statein%tgrs(i,k))   * Coupling%sppt_wts(i,k) - Tbd%dtdtr(i,k)
-           tpert = (Stateout%gt0(i,k)   - Statein%tgrs(i,k) - Tbd%dtdtr(i,k))   * Coupling%sppt_wts(i,k)
+!          tpert = (Stateout%gt0(i,k)   - Statein%tgrs(i,k))   * Coupling%sppt_wts(i,k) - Tbd%dtdtr(i,k)
+           tpert = (Stateout%gt0(i,k)   - Statein%tgrs(i,k) - Tbd%dtdtr(i,k)) * Coupling%sppt_wts(i,k)
            qpert = (Stateout%gq0(i,k,1) - Statein%qgrs(i,k,1)) * Coupling%sppt_wts(i,k)
  
            Stateout%gu0(i,k)  = Statein%ugrs(i,k)+upert
@@ -488,7 +510,7 @@ module GFS_driver
       enddo
     endif  ! isubc_lw and isubc_sw
 
-    if (Model%zhao_mic) then
+    if (Model%imp_physics == 99) then
       if (Model%kdt == 1) then
         do nb = 1,nblks
           Tbd(nb)%phy_f3d(:,:,1) = Statein(nb)%tgrs

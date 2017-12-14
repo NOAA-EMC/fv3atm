@@ -30,7 +30,8 @@ module fv3gfs_cap_mod
                                 wrttasks_per_group, n_group,            &
                                 lead_wrttask, last_wrttask,             &
                                 output_grid, output_file,               &
-                                imo, jmo, write_nemsioflip
+                                imo, jmo, write_nemsioflip,             &
+                                write_fsyncflag
 !
   use module_fcst_grid_comp,  only: fcstSS => SetServices
   use module_wrt_grid_comp,   only: wrtSS => SetServices
@@ -290,12 +291,14 @@ module fv3gfs_cap_mod
       call ESMF_ConfigGetAttribute(config=CF,value=output_file, label ='output_file:',rc=rc)
       if(mype==0) print *,'af nems config,output_file=',trim(output_file)
       write_nemsioflip=.false.
+      write_fsyncflag =.false.
       if(trim(output_grid) == 'gaussian_grid') then
         call ESMF_ConfigGetAttribute(config=CF,value=imo, label ='imo:',rc=rc)
         call ESMF_ConfigGetAttribute(config=CF,value=jmo, label ='jmo:',rc=rc)
         call ESMF_ConfigGetAttribute(config=CF,value=write_nemsioflip, label ='write_nemsioflip:',rc=rc)
+        call ESMF_ConfigGetAttribute(config=CF,value=write_fsyncflag, label ='write_fsyncflag:',rc=rc)
         if(mype==0) print *,'af nems config,imo=',imo,'jmo=',jmo
-        if(mype==0) print *,'af nems config,write_nemsioflip=',write_nemsioflip
+        if(mype==0) print *,'af nems config,write_nemsioflip=',write_nemsioflip,'write_fsyncflag=',write_fsyncflag
       endif
 !end quilting
     endif

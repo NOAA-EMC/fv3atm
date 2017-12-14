@@ -305,6 +305,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: dwn_mfi (:,:)   => null()  !< instantaneous convective downdraft mass flux
     real (kind=kind_phys), pointer :: det_mfi (:,:)   => null()  !< instantaneous convective detrainment mass flux
     real (kind=kind_phys), pointer :: cldcovi (:,:)   => null()  !< instantaneous 3D cloud fraction
+    real (kind=kind_phys), pointer :: nwfa2d  (:)    => null()  !< instantaneous sfc aerosol source 
 
     contains
       procedure :: create  => coupling_create  !<   allocate array data
@@ -404,8 +405,9 @@ module GFS_typedefs
 
     !--- microphysical switch
     integer              :: ncld            !< cnoice of cloud scheme
+    !--- new microphysical switch
+    integer              :: imp_physics     !< cnoice of cloud scheme
     !--- Z-C microphysical parameters
-    logical              :: zhao_mic        !< flag for Zhao-Carr microphysics
     real(kind=kind_phys) :: psautco(2)      !< [in] auto conversion coeff from ice to snow
     real(kind=kind_phys) :: prautco(2)      !< [in] auto conversion coeff from cloud to rain
     real(kind=kind_phys) :: evpco           !< [in] coeff for evaporation of largescale rain
@@ -416,6 +418,13 @@ module GFS_typedefs
     real(kind=kind_phys) :: mg_dcs          !< Morrison-Gettleman microphysics parameters
     real(kind=kind_phys) :: mg_qcvar      
     real(kind=kind_phys) :: mg_ts_auto_ice  !< ice auto conversion time scale
+
+    !--- Thompson's microphysical paramters 
+    logical              :: ltaerosol       !< flag for aerosol version, currently not working yet 
+    logical              :: lradar          !< flag for radar reflectivity 
+
+    !--- GFDL microphysical paramters
+    logical              :: lgfdlmprad      !< flag for GFDL mp scheme and radiation consistency 
 
     !--- land/surface model parameters
     integer              :: lsm             !< flag for land surface model lsm=1 for noah lsm
@@ -560,6 +569,8 @@ module GFS_typedefs
     integer              :: ntke            !< tracer index for kinetic energy
     integer              :: nto             !< tracer index for oxygen ion
     integer              :: nto2            !< tracer index for oxygen
+    integer              :: ntwa            !< tracer index for water friendly aerosol 
+    integer              :: ntia            !< tracer index for ice friendly aerosol
  
     !--- derived totals for phy_f*d
     integer              :: ntot2d          !< total number of variables for phyf2d
@@ -839,6 +850,9 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: dwn_mf (:,:)   => null()  !< instantaneous convective downdraft mass flux
     real (kind=kind_phys), pointer :: det_mf (:,:)   => null()  !< instantaneous convective detrainment mass flux
     real (kind=kind_phys), pointer :: cldcov (:,:)   => null()  !< instantaneous 3D cloud fraction
+
+    !--- MP quantities for 3D diagnositics 
+    real (kind=kind_phys), pointer :: refl_10cm (:,:) => null() !< instantaneous refl_10cm 
 
     contains
       procedure create    => diag_create
@@ -1274,6 +1288,12 @@ module GFS_typedefs
       Coupling%cldcovi  = clear_val
     endif
 
+    !--- needed for Thompson's aerosol option 
+    if(Model%imp_physics == 8.and.Model%ltaerosol) then 
+      allocate (Coupling%nwfa2d (IM))
+      Coupling%nwfa2d   = clear_val
+    endif
+
   end subroutine coupling_create
 
 
@@ -1383,7 +1403,7 @@ module GFS_typedefs
 
     !--- Z-C microphysical parameters
     integer              :: ncld           =  1                 !< cnoice of cloud scheme
-    logical              :: zhao_mic       = .false.            !< flag for Zhao-Carr microphysics
+    integer              :: imp_physics    =  99                !< cnoice of cloud scheme
     real(kind=kind_phys) :: psautco(2)     = (/6.0d-4,3.0d-4/)  !< [in] auto conversion coeff from ice to snow
     real(kind=kind_phys) :: prautco(2)     = (/1.0d-4,1.0d-4/)  !< [in] auto conversion coeff from cloud to rain
     real(kind=kind_phys) :: evpco          = 2.0d-5             !< [in] coeff for evaporation of largescale rain
@@ -1394,6 +1414,13 @@ module GFS_typedefs
     real(kind=kind_phys) :: mg_dcs         = 350.0              !< Morrison-Gettleman microphysics parameters
     real(kind=kind_phys) :: mg_qcvar       = 2.0
     real(kind=kind_phys) :: mg_ts_auto_ice = 3600.0             !< ice auto conversion time scale
+
+    !--- Thompson microphysical parameters
+    logical              :: ltaerosol      = .false.            !< flag for aerosol version
+    logical              :: lradar         = .false.            !< flag for radar reflectivity 
+
+    !--- GFDL microphysical parameters
+    logical              :: lgfdlmprad     = .false.            !< flag for GFDLMP radiation interaction 
 
     !--- land/surface model parameters
     integer              :: lsm            =  1              !< flag for land surface model to use =0  for osu lsm; =1  for noah lsm
@@ -1538,8 +1565,9 @@ module GFS_typedefs
                                isot, iems,  iaer, iovr_sw, iovr_lw, ictm, isubc_sw,         &
                                isubc_lw, crick_proof, ccnorm, lwhtr, swhtr,                 &
                           !--- microphysical parameterizations
-                               ncld, zhao_mic, psautco, prautco, evpco, wminco,             &
+                               ncld, imp_physics, psautco, prautco, evpco, wminco,          &
                                fprcp, mg_dcs, mg_qcvar, mg_ts_auto_ice,                     &
+                               ltaerosol, lradar, lgfdlmprad,                               & 
                           !--- land/surface model control
                                lsm, lsoil, nmtvr, ivegsrc, mom4ice, use_ufo,                &
                           !--- physical parameterizations
@@ -1666,8 +1694,8 @@ module GFS_typedefs
 
     !--- microphysical switch
     Model%ncld             = ncld
+    Model%imp_physics      = imp_physics
     !--- Zhao-Carr MP parameters
-    Model%zhao_mic         = zhao_mic
     Model%psautco          = psautco
     Model%prautco          = prautco
     Model%evpco            = evpco
@@ -1677,6 +1705,11 @@ module GFS_typedefs
     Model%mg_dcs           = mg_dcs
     Model%mg_qcvar         = mg_qcvar
     Model%mg_ts_auto_ice   = mg_ts_auto_ice
+    !--- Thompson MP parameters
+    Model%ltaerosol        = ltaerosol
+    Model%lradar           = lradar
+    !--- gfdl  MP parameters
+    Model%lgfdlmprad       = lgfdlmprad
 
     !--- land/surface model parameters
     Model%lsm              = lsm
@@ -1785,6 +1818,8 @@ module GFS_typedefs
     Model%ntrnc            = get_tracer_index(Model%tracer_names, 'rain_nc',  Model%me, Model%master, Model%debug)
     Model%ntsnc            = get_tracer_index(Model%tracer_names, 'snow_nc',  Model%me, Model%master, Model%debug)
     Model%ntke             = get_tracer_index(Model%tracer_names, 'sgs_tke',  Model%me, Model%master, Model%debug)
+    Model%ntwa             = get_tracer_index(Model%tracer_names, 'liq_aero',  Model%me, Model%master, Model%debug)
+    Model%ntia             = get_tracer_index(Model%tracer_names, 'ice_aero',  Model%me, Model%master, Model%debug)
 
     !--- quantities to be used to derive phy_f*d totals
     Model%nshoc_2d         = nshoc_2d
@@ -1827,7 +1862,7 @@ module GFS_typedefs
     dxmax = log(tem/(max_lon*max_lat))
     dxmin = log(tem/(min_lon*min_lat))
     dxinv = 1.0d0 / (dxmax-dxmin)
-    if (Model%me == Model%master) write(*,*)' dxmax=',dxmax,' dxmin=',dxmin,' dxinv=',dxinv
+    if (Model%me == Model%master) write(0,*)' dxmax=',dxmax,' dxmin=',dxmin,' dxinv=',dxinv
 
     !--- set nrcm 
     if (Model%ras) then
@@ -1956,43 +1991,73 @@ module GFS_typedefs
     endif
 
     !--- set up cloud schemes and tracer elements
-    if (Model%ncld <= 1) then
-      if (Model%zhao_mic) then        ! default setup for Zhao Microphysics
-        Model%npdf3d = 0
-        Model%num_p3d = 4
-        Model%num_p2d = 3
-        if (Model%pdfcld) then
-          Model%npdf3d = 3
-        else
-          Model%shcnvcw = .false.
-        endif
-        if (Model%me == Model%master) print *,' Using Zhao/Carr/Sundqvist Microphysics'
-      else
-        print *,' Ferrier Microphysics scheme has been deprecated - job aborted'
-        stop
-      endif
-    elseif (Model%ncld == 2) then
-      Model%npdf3d = 0
-      Model%num_p3d = 1
-      Model%num_p2d = 1
-      Model%pdfcld  = .false.
-      Model%shcnvcw = .false.
-      if (Model%me == Model%master) print *,' Using Morrison-Gettelman double moment', &
-                                            ' microphysics',' aero_in=',Model%aero_in, &
-                                            ' mg_dcs=',Model%mg_dcs,' mg_qcvar=',Model%mg_qcvar, &
-                                            ' mg_ts_auto_ice=',Model%mg_ts_auto_ice
-    elseif (Model%ncld == 5) then
+    if (Model%imp_physics == 99) then
       Model%npdf3d = 0
       Model%num_p3d = 4
+      Model%num_p2d = 3
+      Model%shcnvcw = .false.
+      if (Model%me == Model%master) print *,' Using Zhao/Carr/Sundqvist Microphysics'
+    else if (Model%imp_physics == 98) then !Zhao Microphysics with PDF cloud
+      Model%npdf3d = 3
+      Model%num_p3d = 4
+      Model%num_p2d = 3
+      if (Model%me == Model%master) print *,'Using Zhao/Carr/Sundqvist Microphysics with PDF Cloud'
+    else if (Model%imp_physics == 5) then        ! F-A goes here
+      print *,' Ferrier Microphysics scheme has been deprecated - job aborted'
+      stop
+    elseif (Model%imp_physics == 11) then !GFDL microphysics 
+      Model%npdf3d = 0
+      Model%num_p3d = 1 ! rsun 4 before 
       Model%num_p2d = 1
       Model%pdfcld  = .false.
       Model%shcnvcw = .false.
       Model%cnvcld  = .false.
       if (Model%me == Model%master) print *,' Using GFDL Cloud Microphysics'
+
+    elseif (Model%imp_physics == 6) then !WSM6 microphysics 
+      Model%npdf3d = 0
+      Model%num_p3d = 3
+      Model%num_p2d = 1
+      Model%pdfcld  = .false.
+      Model%shcnvcw = .false.
+      if (Model%me == Model%master) print *,' Using wsm6 ', &
+                                        ' microphysics'
+    
+    elseif (Model%imp_physics == 8) then !Thompson microphysics 
+      Model%npdf3d = 0
+      Model%num_p3d = 3
+      Model%num_p2d = 1
+      Model%pdfcld  = .false.
+      Model%shcnvcw = .false.
+!      if(Model%ltaerosol) then
+!         Model%ltaerosol=.false.
+!         if (Model%me == Model%master) print *, &
+!           'ltaerosol does not currently work with Thompson MP. ltaerosol is set to false'
+!      endif
+
+      if (Model%me == Model%master) print *,' Using Thompson double moment', &
+                                          ' microphysics',' ltaerosol = ',Model%ltaerosol, &
+                                          ' lradar =',Model%lradar,Model%num_p3d,Model%num_p2d
+
+    else if (Model%imp_physics == 10) then        ! Morrison-Gettelman Microphysics 
+        Model%npdf3d = 0
+        Model%num_p3d = 1
+        Model%num_p2d = 1
+        Model%pdfcld  = .false.
+        Model%shcnvcw = .false.
+        if (Model%me == Model%master) print *,' Using Morrison-Gettelman double moment', &
+                                            ' microphysics',' aero_in=',Model%aero_in, &
+                                            ' mg_dcs=',Model%mg_dcs,' mg_qcvar=',Model%mg_qcvar, &
+                                            ' mg_ts_auto_ice=',Model%mg_ts_auto_ice
+
+    else
+       if (Model%me == Model%master) print *,'Wrong imp_physics value. Job abort.'
+       stop
     endif
 
     Model%uni_cld = .false.
-    if ((Model%shoc_cld) .or. (Model%ncld == 2)) then
+!   if ((Model%shoc_cld) .or. (Model%ncld == 2)) then
+    if ((Model%shoc_cld) .or. (Model%imp_physics == 10)) then
       Model%uni_cld = .true.
     endif
 
@@ -2121,12 +2186,17 @@ module GFS_typedefs
       print *, ' '
       print *, 'microphysical switch'
       print *, ' ncld              : ', Model%ncld
+      print *, ' imp_physics       : ', Model%imp_physics
       print *, ' Z-C microphysical parameters'
-      print *, ' zhao_mic          : ', Model%zhao_mic
       print *, ' psautco           : ', Model%psautco
       print *, ' prautco           : ', Model%prautco
       print *, ' evpco             : ', Model%evpco
       print *, ' wminco            : ', Model%wminco
+      print *, ' Thompson microphysical parameters'
+      print *, ' ltaerosol         : ', Model%ltaerosol
+      print *, ' lradar            : ', Model%lradar
+      print *, ' GFDL microphysical parameters'
+      print *, ' GFDL MP radiation inter: ', Model%lgfdlmprad 
       print *, ' M-G microphysical parameters'
       print *, ' fprcp             : ', Model%fprcp
       print *, ' mg_dcs            : ', Model%mg_dcs
@@ -2214,11 +2284,11 @@ module GFS_typedefs
       print *, ' xkzminv           : ', Model%xkzminv
       print *, ' moninq_fac        : ', Model%moninq_fac
       print *, ' '
-      !print *, 'stochastic physics'
-      !print *, ' do_sppt           : ', Model%do_sppt
-      !print *, ' do_shum           : ', Model%do_shum
-      !print *, ' do_skeb           : ', Model%do_skeb
-      !print *, ' '
+      print *, 'stochastic physics'
+      print *, ' do_sppt           : ', Model%do_sppt
+      print *, ' do_shum           : ', Model%do_shum
+      print *, ' do_skeb           : ', Model%do_skeb
+      print *, ' '
       print *, 'tracers'
       print *, ' tracer_names      : ', Model%tracer_names
       print *, ' ntrac             : ', Model%ntrac
@@ -2236,6 +2306,8 @@ module GFS_typedefs
       print *, ' ntke              : ', Model%ntke
       print *, ' nto               : ', Model%nto
       print *, ' nto2              : ', Model%nto2
+      print *, ' ntwa              : ', Model%ntwa
+      print *, ' ntia              : ', Model%ntia
       print *, ' '
       print *, 'derived totals for phy_f*d'
       print *, ' ntot2d            : ', Model%ntot2d
@@ -2550,6 +2622,10 @@ module GFS_typedefs
       allocate (Diag%det_mf (IM,Model%levs))
       allocate (Diag%cldcov (IM,Model%levs))
     endif
+    !--- 3D diagnostics for Thompson MP  
+    if(Model%lradar) then
+      allocate (Diag%refl_10cm(IM,Model%levs))
+    endif
 
     call Diag%rad_zero  (Model)
     call Diag%phys_zero (Model)
@@ -2665,6 +2741,10 @@ module GFS_typedefs
       Diag%upd_mf  = zero
       Diag%dwn_mf  = zero
       Diag%det_mf  = zero
+    endif
+
+    if (Model%lradar) then
+      Diag%refl_10cm = zero
     endif
 
   end subroutine diag_phys_zero

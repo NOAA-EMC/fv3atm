@@ -54,6 +54,7 @@
 
       integer,save      :: mytile                                         !<-- the tile number in write task
       integer,save      :: wrt_mpi_comm                                   !<-- the mpi communicator in the write comp
+      integer,save      :: idate(7)
       logical,save      :: first_init=.false.
       logical,save      :: first_run=.false.
 !
@@ -154,7 +155,7 @@
       real(ESMF_KIND_R4)                      :: valueR4
       real(ESMF_KIND_R8)                      :: valueR8
 
-      integer :: attCount, axeslen, jidx, idate(7)
+      integer :: attCount, axeslen, jidx
       real, dimension(:), allocatable         :: slat, lat, lon, axesdata
       real(ESMF_KIND_R8), dimension(:,:), pointer   :: lonPtr, latPtr
       type(ESMF_DataCopy_Flag) :: copyflag=ESMF_DATACOPY_REFERENCE
@@ -834,7 +835,7 @@
 !
       INTEGER,SAVE                          :: NPOSN_1,NPOSN_2
 !
-      integer                               :: i,j,n,mype
+      integer                               :: i,j,n,mype,nolog
 !
       integer                               :: nf_hours,nf_seconds, nf_minutes,     &
                                                nseconds,nseconds_num,nseconds_den
@@ -845,6 +846,7 @@
 !
       REAL                                  :: DEGRAD
 !
+      logical                               :: opened
       logical,save                          :: first=.true.
       logical,save                          :: file_first=.true.
 !
@@ -1109,6 +1111,24 @@
         endif
 
       enddo file_loop_all
+!
+!** write out log file
+!
+    if(mype == lead_write_task) then
+      do n=701,900
+        inquire(n,opened=OPENED)
+        if(.not.opened)then
+          nolog=n
+          exit
+        endif
+      enddo
+!
+      open(nolog,file='logf'//cfhour,form='FORMATTED')
+        write(nolog,100)wrt_int_state%nfhour,idate(1:6)
+100     format(' completed fv3gfs fhour=',f10.3,2x,6(i4,2x))
+      close(nolog)
+    endif
+!
 !
 !-----------------------------------------------------------------------
 !
