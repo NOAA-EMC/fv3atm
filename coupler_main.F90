@@ -42,8 +42,13 @@ use  atmos_model_mod,  only: atmos_model_init, atmos_model_end,  &
                              atmos_data_type, atmos_model_restart
 
 use constants_mod,     only: constants_init
-use       fms_mod,     only: open_namelist_file, file_exist, check_nml_error,  &
-                             error_mesg, fms_init, fms_end, close_file,        &
+#ifdef INTERNAL_FILE_NML
+use mpp_mod,            only: input_nml_file
+#else
+use fms_mod,            only: open_namelist_file
+#endif
+use       fms_mod,     only: file_exist, check_nml_error,               &
+                             error_mesg, fms_init, fms_end, close_file, &
                              write_version_number, uppercase
 
 use mpp_mod,           only: mpp_init, mpp_pe, mpp_root_pe, mpp_npes, mpp_get_current_pelist, &
@@ -206,6 +211,10 @@ contains
 !----- read namelist -------
 !----- for backwards compatibilty read from file coupler.nml -----
 
+#ifdef INTERNAL_FILE_NML
+      read(input_nml_file, nml=coupler_nml, iostat=io)
+      ierr = check_nml_error(io, 'coupler_nml')
+#else
    if (file_exist('input.nml')) then
       unit = open_namelist_file ()
    else
@@ -219,9 +228,9 @@ contains
        ierr = check_nml_error (io, 'coupler_nml')
    enddo
 10 call close_file (unit)
+#endif
 
 !----- write namelist to logfile -----
-
    call write_version_number (version, tag)
    if (mpp_pe() == mpp_root_pe()) write(stdlog(),nml=coupler_nml)
 

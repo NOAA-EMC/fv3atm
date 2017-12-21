@@ -3388,7 +3388,7 @@ end subroutine setupm
 ! =======================================================================
 
 !subroutine gfdl_cloud_microphys_init (id, jd, kd, axes, time)
-subroutine gfdl_cloud_microphys_init (me, master, nlunit, logunit, fn_nml)
+subroutine gfdl_cloud_microphys_init (me, master, nlunit, input_nml_file, logunit, fn_nml)
     
     implicit none
     
@@ -3398,6 +3398,7 @@ subroutine gfdl_cloud_microphys_init (me, master, nlunit, logunit, fn_nml)
     integer, intent (in) :: logunit
     
     character (len = 64), intent (in) :: fn_nml
+    character (len = *),  intent (in) :: input_nml_file(:)
     
     integer :: ios
     logical :: exists
@@ -3412,23 +3413,9 @@ subroutine gfdl_cloud_microphys_init (me, master, nlunit, logunit, fn_nml)
     
     ! master = (mpp_pe () .eq.mpp_root_pe ())
     
-    !#ifdef internal_file_nml
-    ! read (input_nml_file, nml = gfdl_cloud_microphys_nml, iostat = io)
-    ! ierr = check_nml_error (io, 'gfdl_cloud_microphys_nml')
-    !#else
-    ! if (file_exist ('input.nml')) then
-    ! unit = open_namelist_file ()
-    ! io = 1
-    ! do while (io .ne. 0)
-    ! read (unit, nml = gfdl_cloud_microphys_nml, iostat = io, end = 10)
-    ! ierr = check_nml_error (io, 'gfdl_cloud_microphys_nml')
-    ! enddo
-    !10 call close_file (unit)
-    ! endif
-    !#endif
-    ! call write_version_number ('gfdl_cloud_microphys_mod', version)
-    ! logunit = stdlog ()
-    
+#ifdef INTERNAL_FILE_NML
+    read (input_nml_file, nml = gfdl_cloud_microphysics_nml)
+#else
     inquire (file = trim (fn_nml), exist = exists)
     if (.not. exists) then
         write (6, *) 'gfdl - mp :: namelist file: ', trim (fn_nml), ' does not exist'
@@ -3439,9 +3426,9 @@ subroutine gfdl_cloud_microphys_init (me, master, nlunit, logunit, fn_nml)
     rewind (nlunit)
     read (nlunit, nml = gfdl_cloud_microphysics_nml)
     close (nlunit)
+#endif
     
     ! write version number and namelist to log file
-    
     if (me == master) then
         write (logunit, *) " ================================================================== "
         write (logunit, *) "gfdl_cloud_microphys_mod"

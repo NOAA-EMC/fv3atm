@@ -8,6 +8,9 @@ module GFS_typedefs
 
        implicit none
 
+       !--- version of physics
+       character(len=64) :: version = 'v2017 OPERATIONAL GFS PHYSICS'
+
        !--- parameter constants used for default initializations
        real(kind=kind_phys), parameter :: zero      = 0.0_kind_phys
        real(kind=kind_phys), parameter :: huge      = 9.9999D15
@@ -18,7 +21,6 @@ module GFS_typedefs
        real(kind=kind_phys), parameter :: cn_100    = 100._kind_phys
        real(kind=kind_phys), parameter :: cn_th     = 1000._kind_phys
        real(kind=kind_phys), parameter :: cn_hr     = 3600._kind_phys
-
 
 !----------------
 ! Data Containers
@@ -68,8 +70,8 @@ module GFS_typedefs
     integer, pointer :: blksz(:)                 !< for explicit data blocking
                                                  !< default blksz(1)=[nx*ny]
     !--- ak/bk for pressure level calculations
-    real(kind=kind_phys), pointer :: ak(:)                    !< from surface (k=1) to TOA (k=levs)
-    real(kind=kind_phys), pointer :: bk(:)                    !< from surface (k=1) to TOA (k=levs)
+    real(kind=kind_phys), pointer :: ak(:)       !< from surface (k=1) to TOA (k=levs)
+    real(kind=kind_phys), pointer :: bk(:)       !< from surface (k=1) to TOA (k=levs)
     !--- grid metrics
     real(kind=kind_phys), pointer :: xlon(:,:)   !< column longitude for MPI rank
     real(kind=kind_phys), pointer :: xlat(:,:)   !< column latitude  for MPI rank
@@ -78,6 +80,8 @@ module GFS_typedefs
     character(len=32), pointer :: tracer_names(:) !< tracers names to dereference tracer id
                                                   !< based on name location in array
     character(len=65) :: fn_nml                   !< namelist filename
+    character(len=256), pointer :: input_nml_file(:) !< character string containing full namelist
+                                                   !< for use with internal file reads
   end type GFS_init_type
 
 
@@ -323,6 +327,8 @@ module GFS_typedefs
     integer              :: master          !< MPI rank of master atmosphere processor
     integer              :: nlunit          !< unit for namelist
     character(len=64)    :: fn_nml          !< namelist filename for surface data cycling
+    character(len=256), pointer :: input_nml_file(:) !< character string containing full namelist
+                                                   !< for use with internal file reads
     real(kind=kind_phys) :: fhzero          !< seconds between clearing of diagnostic buckets
     logical              :: ldiag3d         !< flag for 3d diagnostic fields
     logical              :: lssav           !< logical flag for storing diagnostics
@@ -1303,7 +1309,8 @@ module GFS_typedefs
   subroutine control_initialize (Model, nlunit, fn_nml, me, master, &
                                  logunit, isc, jsc, nx, ny, levs,   &
                                  cnx, cny, gnx, gny, dt_dycore,     &
-                                 dt_phys, idat, jdat, tracer_names)
+                                 dt_phys, idat, jdat, tracer_names, &
+                                 input_nml_file)
 
     !--- modules
     use physcons,         only: max_lon, max_lat, min_lon, min_lat, &
@@ -1336,6 +1343,7 @@ module GFS_typedefs
     integer,                intent(in) :: idat(8)
     integer,                intent(in) :: jdat(8)
     character(len=32),      intent(in) :: tracer_names(:)
+    character(len=*),       intent(in), pointer :: input_nml_file(:)
     !--- local variables
     integer :: n
     integer :: ios
@@ -1606,6 +1614,10 @@ module GFS_typedefs
 
 
     !--- read in the namelist
+#ifdef INTERNAL_FILE_NML
+    Model%input_nml_file => input_nml_file
+    read(Model%input_nml_file, nml=gfs_physics_nml)
+#else
     inquire (file=trim(fn_nml), exist=exists)
     if (.not. exists) then
       write(6,*) 'GFS_namelist_read:: namelist file: ',trim(fn_nml),' does not exist'
@@ -1616,8 +1628,13 @@ module GFS_typedefs
     rewind(nlunit)
     read (nlunit, nml=gfs_physics_nml)
     close (nlunit)
+#endif
     !--- write version number and namelist to log file ---
-    if (me == master) write(logunit, nml=gfs_physics_nml)
+    if (me == master) then
+      write(logunit, '(a80)') '================================================================================'
+      write(logunit, '(a64)') version
+      write(logunit, nml=gfs_physics_nml)
+    endif
 
     !--- MPI parameters
     Model%me               = me

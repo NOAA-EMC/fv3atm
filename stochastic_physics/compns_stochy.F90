@@ -1,5 +1,5 @@
 !-----------------------------------------------------------------------
-      subroutine compns_stochy (me,fn_nml,nlunit,deltim,iret)
+      subroutine compns_stochy (me,sz_nml,input_nml_file,fn_nml,nlunit,deltim,iret)
 !$$$  Subprogram Documentation Block
 !
 ! Subprogram:  compns     Check and compute namelist frequencies
@@ -33,10 +33,11 @@
       implicit none
 
  
-      integer,intent(out)           :: iret
-      integer,intent(in)           :: nlunit,me
-      character(len=64),      intent(in) :: fn_nml
-      real,intent(inout)     :: deltim
+      integer,              intent(out)   :: iret
+      integer,              intent(in)    :: nlunit,me,sz_nml
+      character(len=*),     intent(in)    :: input_nml_file(sz_nml)
+      character(len=64),    intent(in)    :: fn_nml
+      real,                 intent(inout) :: deltim
       real tol
       integer k,ios
 
@@ -94,9 +95,13 @@
       fhstoch           = -999.0  ! forecast hour to dump random patterns
       stochini          = .false. ! true= read in pattern, false=initialize from seed
 
+#ifdef INTERNAL_FILE_NML
+      read(input_nml_file, nml=nam_stochy)
+#else
       rewind (nlunit)
       open (unit=nlunit, file=fn_nml, READONLY, status='OLD', iostat=ios)
       read(nlunit,nam_stochy)
+#endif
 
       if (me == 0) then
       print *,' in compns_stochy'

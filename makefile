@@ -21,8 +21,7 @@ libs:
 	$(MAKE) -C atmos_cubed_sphere  $(MAKEFLAGS)
 	$(MAKE) -C stochastic_physics  $(MAKEFLAGS) 32BIT=N  # force gfs physics to 64bit
 
-$(FV3_EXE): atmos_model.o coupler_main.o atmos_cubed_sphere/libfv3core.a io/libfv3io.a stochastic_physics/libstochastic_physics.a gfsphysics/libgfsphys.a fms/libfms.a 
-#$(FV3_EXE): atmos_model.o coupler_main.o atmos_cubed_sphere/libfv3core.a io/libfv3io.a gfsphysics/libgfsphys.a fms/libfms.a 
+$(FV3_EXE): atmos_model.o coupler_main.o atmos_cubed_sphere/libfv3core.a io/libfv3io.a gfsphysics/libgfsphys.a stochastic_physics/libstochastic_physics.a fms/libfms.a 
 	$(LD) -o $@ $^ $(NCEPLIBS) $(LDFLAGS)
 
 $(FV3CAP_LIB): atmos_model.o module_fv3_config.o module_fcst_grid_comp.o time_utils.o fv3_cap.o

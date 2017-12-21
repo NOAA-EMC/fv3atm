@@ -19,7 +19,7 @@ LIBRARY  = libgfsphys.a
 
 FFLAGS   += -I../fms -I../fms/include
 
-CPPDEFS = -DNEW_TAUCTMAX -DSMALL_PE -DNEMS_GSM
+CPPDEFS = -DNEW_TAUCTMAX -DSMALL_PE -DNEMS_GSM -DINTERNAL_FILE_NML
 
 SRCS_f   =  \
 	   ./physics/cnvc90.f                                                        \
@@ -103,7 +103,6 @@ SRCS_f   =  \
 	   ./physics/sfc_nst.f                                                       \
 	   ./physics/sfc_ocean.f                                                     \
 	   ./physics/sfc_sice.f                                                      \
-	   ./physics/sfcsub.f                                                        \
 	   ./physics/sflx.f                                                          \
 	   ./physics/shalcnv.f                                                       \
 	   ./physics/shalcv.f                                                        \
@@ -118,7 +117,6 @@ SRCS_f90 = \
 	   ./physics/cs_conv.f90                                                     \
 	   ./physics/funcphys.f90                                                    \
 	   ./physics/gcm_shoc.f90                                                    \
-	   ./physics/gcycle.f90                                                      \
 	   ./physics/get_prs_fv3.f90                                                 \
 	   ./physics/h2ointerp.f90                                                   \
 	   ./physics/m_micro_driver.f90                                              \
@@ -134,12 +132,14 @@ SRCS_F   = ./physics/aer_cloud.F						     \
 	   ./physics/cldwat2m_micro.F                                                \
 	   ./physics/machine.F                                                       \
 	   ./physics/num_parthds.F						     \
+	   ./physics/sfcsub.F                                                        \
 	   ./physics/wv_saturation.F
 
 SRCS_F90 = \
 	   ./physics/GFDL_parse_tracers.F90					     \
+	   ./physics/gcycle.F90                                                      \
 	   ./physics/gfdl_cloud_microphys.F90					     \
-	   ./physics/module_mp_radar.F90						     \
+	   ./physics/module_mp_radar.F90					     \
 	   ./physics/module_mp_thompson_gfs.F90                                      \
 	   ./physics/module_mp_wsm6_fv3.F90                                          \
 	   ./GFS_layer/GFS_abstraction_layer.F90 				     \

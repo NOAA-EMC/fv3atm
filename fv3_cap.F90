@@ -182,6 +182,7 @@ module fv3gfs_cap_mod
     integer,dimension(:), allocatable      :: petList, originPetList, targetPetList
     character(20)                          :: cwrtcomp
     character(160)                         :: msg
+    integer                                :: isrctermprocessing
 
     character(len=*),parameter  :: subname='(mom_cap:InitializeAdvertise)'
     integer nfmout, nfsout , nfmout_hf, nfsout_hf
@@ -601,8 +602,10 @@ module fv3gfs_cap_mod
           ! this is a Store() for the first wrtComp -> must do the Store()
             timewri = mpi_wtime()
 
+            isrctermprocessing = 1
             call ESMF_FieldBundleRegridStore(fcstFB(j), wrtFB(j,i), &
-              regridMethod=regridmethod, routehandle=routehandle(j,i), rc=rc)
+              regridMethod=regridmethod, routehandle=routehandle(j,i),  &
+              srcTermProcessing=isrctermprocessing, rc=rc)
 
             print *,'after regrid store, group i=',i,' fb=',j,' time=',mpi_wtime()-timewri
             call ESMF_LogWrite('af FieldBundleRegridStore', ESMF_LOGMSG_INFO, rc=rc)
@@ -899,7 +902,8 @@ module fv3gfs_cap_mod
 ! get fcst fieldbundle
 !
            call ESMF_FieldBundleRegrid(fcstFB(i), wrtFB(i,n_group),    &
-              routehandle=routehandle(i, n_group), rc=rc)
+              routehandle=routehandle(i, n_group),                     &
+              termorderflag=(/ESMF_TERMORDER_SRCSEQ/), rc=rc)
            timerh = mpi_wtime()
            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
              line=__LINE__, &

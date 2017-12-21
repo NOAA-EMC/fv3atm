@@ -37,8 +37,9 @@
      &,                   tsffcs,snofcs,zorfcs,albfcs,tg3fcs
      &,                   cnpfcs,smcfcs,stcfcs,slifcs,aisfcs,f10m
      &,                   vegfcs,vetfcs,sotfcs,alffcs
-     &,                   cvfcs,cvbfcs,cvtfcs,me,nlunit,ialb
-     &,                   isot,ivegsrc)
+     &,                   cvfcs,cvbfcs,cvtfcs,me,nlunit
+     &,                   sz_nml,input_nml_file
+     &,                   ialb,isot,ivegsrc)
 !
       use machine , only : kind_io8,kind_io4
       use sfccyc_module
@@ -119,10 +120,11 @@
      &        irtwet,k,iprnt,kk,irttsf,iret,i,igrdbg,iy,im,id,
      &        icalbl,icalbs,icalfl,ictsfs,lugb,len,lsoil,ih,
      &        ictsfl,iczors,icplrl,icplrs,iczorl,icalfs,icsnol,
-     &        icsnos,irttg3,me,kqcm, nlunit,ialb
+     &        icsnos,irttg3,me,kqcm,nlunit,sz_nml,ialb
      &,       irtvmn, irtvmx, irtslp, irtabs, isot, ivegsrc
       logical gausm, deads, qcmsk, znlst, monclm, monanl,
      &        monfcs, monmer, mondif, landice
+      character(len=*), intent(in) :: input_nml_file(sz_nml)
 
       integer num_parthds
 !
@@ -779,9 +781,13 @@
           fstcl(k) = 99999.
           fstcs(k) = 0.
         enddo
+#ifdef INTERNAL_FILE_NML
+        read(input_nml_file, nml=namsfc)
+#else
 !       print *,' in sfcsub nlunit=',nlunit,' me=',me,' ialb=',ialb
         rewind(nlunit)
         read (nlunit,namsfc)
+#endif
 !       write(6,namsfc)
 !
         if (me .eq. 0) then

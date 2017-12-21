@@ -34,12 +34,13 @@ module stochy_data_mod
  type(stochy_internal_state),public :: gis_stochy
  
  contains
- subroutine init_stochdata(nlevs,delt,fn_nml,nlunit)
+ subroutine init_stochdata(nlevs,delt,input_nml_file,fn_nml,nlunit)
 
 ! initialize random patterns.  A spinup period of spinup_efolds times the
 ! temporal time scale is run for each pattern.
    integer, intent(in) :: nlunit,nlevs
-   character(len=64),      intent(in) :: fn_nml
+   character(len=*),  intent(in) :: input_nml_file(:)
+   character(len=64), intent(in) :: fn_nml
    real, intent(in) :: delt
 
    real :: rnn1
@@ -54,7 +55,7 @@ module stochy_data_mod
 
    iret=0
    if(is_master()) print*,'in init stochdata'
-   call compns_stochy (me,fn_nml,nlunit,delt,iret)
+   call compns_stochy (me,size(input_nml_file,1),input_nml_file(:),fn_nml,nlunit,delt,iret)
    if (do_sppt.EQ. .false. .AND. do_shum.EQ. .false..AND.do_skeb.EQ..false.) return
    nodes=mpp_npes()
    if (nodes.GE.lat_s/2) then

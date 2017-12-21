@@ -29,7 +29,7 @@ me=mpp_pe()
 nodes=mpp_npes()
 gis_stochy%me=me
 gis_stochy%nodes=nodes
-call init_stochdata(Model%levs,Model%dtp,Model%fn_nml,Init_parm%nlunit)
+call init_stochdata(Model%levs,Model%dtp,Model%input_nml_file,Model%fn_nml,Init_parm%nlunit)
 ! check to see decomposition
 Model%do_sppt=do_sppt
 Model%do_shum=do_shum

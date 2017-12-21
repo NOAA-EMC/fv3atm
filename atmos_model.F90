@@ -73,7 +73,7 @@ use atmosphere_mod,     only: atmosphere_grid_bdry, atmosphere_grid_ctr
 use atmosphere_mod,     only: atmosphere_dynamics, atmosphere_diag_axes
 use atmosphere_mod,     only: atmosphere_etalvls, atmosphere_hgt
 !rab use atmosphere_mod,     only: atmosphere_tracer_postinit
-use atmosphere_mod,     only: atmosphere_diss_est
+use atmosphere_mod,     only: atmosphere_diss_est, atmosphere_nggps_diag
 use atmosphere_mod,     only: atmosphere_scalar_field_halo
 use atmosphere_mod,     only: set_atmosphere_pelist
 use atmosphere_mod,     only: Atm, mytile
@@ -137,9 +137,9 @@ logical :: chksum_debug = .false.
 logical :: dycore_only  = .false.
 logical :: debug        = .false.
 logical :: sync         = .false.
-namelist /atmos_model_nml/ blocksize, chksum_debug, dycore_only, debug, sync
-type (time_type) :: diag_time
 real, dimension(2048) :: fdiag = 0.
+namelist /atmos_model_nml/ blocksize, chksum_debug, dycore_only, debug, sync, fdiag
+type (time_type) :: diag_time
 
 !--- concurrent and decoupled radiation and physics variables
 !----------------
@@ -403,12 +403,17 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    Init_parm%area            => Atmos%area
    Init_parm%tracer_names    => tracer_names
 
+#ifdef INTERNAL_FILE_NML
+   Init_parm%input_nml_file  => input_nml_file
+   Init_parm%fn_nml='using internal file'
+#else
    pelist_name=mpp_get_current_pelist_name()
    Init_parm%fn_nml='input_'//trim(pelist_name)//'.nml'
    inquire(FILE=Init_parm%fn_nml, EXIST=fexist)
    if (.not. fexist ) then
       Init_parm%fn_nml='input.nml'
    endif
+#endif
 
    call IPD_initialize (IPD_Control, IPD_Data, IPD_Diag, IPD_Restart, Init_parm)
    Atm(mytile)%flagstruct%do_skeb=IPD_Control%do_skeb
@@ -427,6 +432,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    !--- update tracers in FV3 with any initialized during the physics/radiation init phase
 !rab   call atmosphere_tracer_postinit (IPD_Data, Atm_block)
 
+   call atmosphere_nggps_diag (Time, init=.true.)
    call gfdl_diag_register (Time, IPD_Data(:)%Sfcprop, IPD_Data(:)%Cldprop, IPD_Data(:)%IntDiag, Atm_block, IPD_Control, Atmos%axes)
    call FV3GFS_restart_read (IPD_Data, IPD_Restart, Atm_block, IPD_Control, Atmos%domain)
 
@@ -445,7 +451,12 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
 
    !--- get fdiag
 #ifdef GFS_PHYS
-   fdiag(1:2048) = Atm(mytile)%fdiag(1:2048)
+!--- check fdiag to see if it is an interval or a list
+   if (nint(fdiag(2)) == 0) then
+     do i = 2, size(fdiag,1)
+       fdiag(i) = fdiag(i-1) + fdiag(1)
+     enddo
+   endif
    if (mpp_pe() == mpp_root_pe()) write(6,*) "---fdiag",fdiag(1:40)
 #endif
 
@@ -514,6 +525,7 @@ subroutine update_atmos_model_state (Atmos)
     if (ANY(nint(fdiag(:)*3600.0) == seconds) .or. (IPD_Control%kdt == 1) ) then
       time_int = real(isec)
       if (mpp_pe() == mpp_root_pe()) write(6,*) ' gfs diags time since last bucket empty: ',time_int/3600.,'hrs'
+      call atmosphere_nggps_diag(Atmos%Time)
       call gfdl_diag_output(Atmos%Time, Atm_block, IPD_Control%nx, IPD_Control%ny, &
                             IPD_Control%levs, 1, 1, 1.d0, time_int)
       if (mod(isec,3600*nint(IPD_Control%fhzero)) == 0) diag_time = Atmos%Time

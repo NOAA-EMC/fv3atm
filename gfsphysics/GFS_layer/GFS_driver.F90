@@ -61,6 +61,8 @@ module GFS_driver
 !   character(len=32), pointer :: tracer_names(:) !< tracers names to dereference tracer id
 !                                                 !< based on name location in array
 !   character(len=65) :: fn_nml                  !< namelist filename
+!   character(len=*), pointer :: input_nml_file(:) !< character string containing full namelist
+!                                                  !< for use with internal file reads
 ! end type GFS_init_type
 !--------------------------------------------------------------------------------
     
@@ -143,7 +145,8 @@ module GFS_driver
                      Init_parm%gnx, Init_parm%gny,                 &
                      Init_parm%dt_dycore, Init_parm%dt_phys,       &
                      Init_parm%bdat, Init_parm%cdat,               &
-                     Init_parm%tracer_names)
+                     Init_parm%tracer_names,                       &
+                     Init_parm%input_nml_file)
 
     call init_stochastic_physics(Model,Init_parm)
     print*,'do_skeb=',Model%do_skeb
@@ -224,7 +227,8 @@ module GFS_driver
        endif 
        
     else if(Model%imp_physics == 11) then       !--- initialize GFDL Cloud microphysics
-       call gfdl_cloud_microphys_init (Model%me, Model%master, Model%nlunit, Init_parm%logunit, Model%fn_nml)
+       call gfdl_cloud_microphys_init (Model%me, Model%master, Model%nlunit, Model%input_nml_file, &
+                                       Init_parm%logunit, Model%fn_nml)
        if(Model%do_shoc) then 
           print *,'SHOC is not currently compatible with GFDL MP -- shutting down'
           stop 
