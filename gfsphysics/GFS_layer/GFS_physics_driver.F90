@@ -314,8 +314,8 @@ module module_physics_driver
 !!  ## Calculate and apply the state variable tendencies (within the subroutine) due to shallow convection.
 !!   - If diagnostics are active, set 'dtdt' and 'dqdt' to updated values of T and q before shallow convection
 !!   - If SHOC is not active, do the following:
-!!    - for the mass-flux shallow convection scheme (imfdeepcnv == 1), call 'shalcnv'
-!!    - for the scale- and aerosol-aware scheme (imfshalcnv == 2), call 'mfshalcnv'
+!!    - for the mass-flux shallow convection scheme (imfshalcnv == 1), call 'shalcnv'
+!!    - for the scale- and aerosol-aware scheme (imfshalcnv == 2), call 'samfshalcnv'
 !!    - for either of the first two schemes, perform the following after the call:
 !!     - if Zhao-Carr microphysics with PDF-based clouds, save convective cloud water an cover in 'phy_f3d'
 !!     - if non-PDF-based clouds and convective cloudiness enhancement is active, save convective cloud water in 'phy_f3d'
@@ -1843,7 +1843,7 @@ module module_physics_driver
                           Model%evfact_deep, Model%evfactl_deep,                 &
                           Model%pgcon_deep)
           elseif (Model%imfdeepcnv == 2) then
-            call mfdeepcnv (im, ix, levs, dtp, del, Statein%prsl,         &
+            call samfdeepcnv (im, ix, levs, dtp, del, Statein%prsl,         &
                             Statein%pgr, Statein%phil, clw(:,:,1:2),      &
                             Stateout%gq0(:,:,1),                        &
                             Stateout%gt0, Stateout%gu0, Stateout%gv0,     &
@@ -2295,7 +2295,7 @@ module module_physics_driver
             endif
 
           elseif (Model%imfshalcnv == 2) then
-            call mfshalcnv (im, ix, levs, dtp, del, Statein%prsl,         &
+            call samfshalcnv (im, ix, levs, dtp, del, Statein%prsl,         &
                             Statein%pgr, Statein%phil, clw(:,:,1:2),      &
                             Stateout%gq0(:,:,1:1),                        &
                             Stateout%gt0, Stateout%gu0, Stateout%gv0,     &

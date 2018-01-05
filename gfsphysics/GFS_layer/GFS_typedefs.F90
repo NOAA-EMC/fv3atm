@@ -506,35 +506,35 @@ module GFS_typedefs
 
     !--- mass flux deep convection
     real(kind=kind_phys) :: clam_deep       !< c_e for deep convection (Han and Pan, 2011, eq(6))
-    real(kind=kind_phys) :: c0s_deep        !< conversion parameter of detrainment from liquid water into convetive precipitaiton
+    real(kind=kind_phys) :: c0s_deep        !< convective rain conversion parameter
     real(kind=kind_phys) :: c1_deep         !< conversion parameter of detrainment from liquid water into grid-scale cloud water
-    real(kind=kind_phys) :: betal_deep      !< downdraft heat flux contribution over land
-    real(kind=kind_phys) :: betas_deep      !< downdraft heat flux contribution over ocean
-    real(kind=kind_phys) :: evfact_deep     !< evaporation factor
-    real(kind=kind_phys) :: evfactl_deep    !< evaporation factor over land
-    real(kind=kind_phys) :: pgcon_deep      !< control the reduction in momentum transport
+    real(kind=kind_phys) :: betal_deep      !< fraction factor of downdraft air mass reaching ground surface over land
+    real(kind=kind_phys) :: betas_deep      !< fraction factor of downdraft air mass reaching ground surface over sea
+    real(kind=kind_phys) :: evfact_deep     !< evaporation factor from convective rain
+    real(kind=kind_phys) :: evfactl_deep    !< evaporation factor from convective rain over land
+    real(kind=kind_phys) :: pgcon_deep      !< reduction factor in momentum transport due to convection induced pressure gradient force
                                             !< 0.7 : Gregory et al. (1997, QJRMS)
                                             !< 0.55: Zhang & Wu (2003, JAS)
-    real(kind=kind_phys) :: asolfac_deep    !< aerosol-aware parameter based on Lim & Hong (2012)
+    real(kind=kind_phys) :: asolfac_deep    !< aerosol-aware parameter based on Lim (2011)
                                             !< asolfac= cx / c0s(=.002)
                                             !< cx = min([-0.7 ln(Nccn) + 24]*1.e-4, c0s)
                                             !< Nccn: CCN number concentration in cm^(-3)
-                                            !< Until a realistic Nccn is provided, typical Nccns are assumed
-                                            !< as Nccn=100 for sea and Nccn=7000 for land 
+                                            !< Until a realistic Nccn is provided, Nccns are assumed
+                                            !< as Nccn=100 for sea and Nccn=1000 for land 
 
     !--- mass flux shallow convection
     real(kind=kind_phys) :: clam_shal       !< c_e for shallow convection (Han and Pan, 2011, eq(6))
-    real(kind=kind_phys) :: c0s_shal        !< conversion parameter of detrainment from liquid water into convetive precipitaiton
+    real(kind=kind_phys) :: c0s_shal        !< convective rain conversion parameter
     real(kind=kind_phys) :: c1_shal         !< conversion parameter of detrainment from liquid water into grid-scale cloud water
-    real(kind=kind_phys) :: pgcon_shal      !< control the reduction in momentum transport
+    real(kind=kind_phys) :: pgcon_shal      !< reduction factor in momentum transport due to convection induced pressure gradient force
                                             !< 0.7 : Gregory et al. (1997, QJRMS)
                                             !< 0.55: Zhang & Wu (2003, JAS)
-    real(kind=kind_phys) :: asolfac_shal    !< aerosol-aware parameter based on Lim & Hong (2012)
+    real(kind=kind_phys) :: asolfac_shal    !< aerosol-aware parameter based on Lim (2011)
                                             !< asolfac= cx / c0s(=.002)
                                             !< cx = min([-0.7 ln(Nccn) + 24]*1.e-4, c0s)
                                             !< Nccn: CCN number concentration in cm^(-3)
-                                            !< Until a realistic Nccn is provided, typical Nccns are assumed
-                                            !< as Nccn=100 for sea and Nccn=7000 for land 
+                                            !< Until a realistic Nccn is provided, Nccns are assumed
+                                            !< as Nccn=100 for sea and Nccn=1000 for land 
 
     !--- near surface temperature model
     logical              :: nst_anl         !< flag for NSSTM analysis in gcycle/sfcsub
@@ -1500,35 +1500,35 @@ module GFS_typedefs
 
     !--- mass flux deep convection
     real(kind=kind_phys) :: clam_deep      = 0.1             !< c_e for deep convection (Han and Pan, 2011, eq(6))
-    real(kind=kind_phys) :: c0s_deep       = 0.002           !< conversion parameter of detrainment from liquid water into convetive precipitaiton
+    real(kind=kind_phys) :: c0s_deep       = 0.002           !< convective rain conversion parameter
     real(kind=kind_phys) :: c1_deep        = 0.002           !< conversion parameter of detrainment from liquid water into grid-scale cloud water
-    real(kind=kind_phys) :: betal_deep     = 0.05            !< downdraft heat flux contribution over land
-    real(kind=kind_phys) :: betas_deep     = 0.05            !< downdraft heat flux contribution over ocean
-    real(kind=kind_phys) :: evfact_deep    = 0.3             !< evaporation factor
-    real(kind=kind_phys) :: evfactl_deep   = 0.3             !< evaporation factor over land
-    real(kind=kind_phys) :: pgcon_deep     = 0.55            !< control the reduction in momentum transport
+    real(kind=kind_phys) :: betal_deep     = 0.05            !< fraction factor of downdraft air mass reaching ground surface over land
+    real(kind=kind_phys) :: betas_deep     = 0.05            !< fraction factor of downdraft air mass reaching ground surface over sea
+    real(kind=kind_phys) :: evfact_deep    = 0.3             !< evaporation factor from convective rain
+    real(kind=kind_phys) :: evfactl_deep   = 0.3             !< evaporation factor from convective rain over land
+    real(kind=kind_phys) :: pgcon_deep     = 0.55            !< reduction factor in momentum transport due to convection induced pressure gradient force
                                                              !< 0.7 : Gregory et al. (1997, QJRMS)
                                                              !< 0.55: Zhang & Wu (2003, JAS)
-    real(kind=kind_phys) :: asolfac_deep   = 0.89            !< aerosol-aware parameter based on Lim & Hong (2012)
+    real(kind=kind_phys) :: asolfac_deep   = 0.958           !< aerosol-aware parameter based on Lim (2011)
                                                              !< asolfac= cx / c0s(=.002)
                                                              !< cx = min([-0.7 ln(Nccn) + 24]*1.e-4, c0s)
                                                              !< Nccn: CCN number concentration in cm^(-3)
-                                                             !< Until a realistic Nccn is provided, typical Nccns are assumed
-                                                             !< as Nccn=100 for sea and Nccn=7000 for land 
+                                                             !< Until a realistic Nccn is provided, Nccns are assumed
+                                                             !< as Nccn=100 for sea and Nccn=1000 for land 
 
     !--- mass flux shallow convection
     real(kind=kind_phys) :: clam_shal      = 0.3             !< c_e for shallow convection (Han and Pan, 2011, eq(6))
     real(kind=kind_phys) :: c0s_shal       = 0.002           !< conversion parameter of detrainment from liquid water into convetive precipitaiton
     real(kind=kind_phys) :: c1_shal        = 5.e-4           !< conversion parameter of detrainment from liquid water into grid-scale cloud water
-    real(kind=kind_phys) :: pgcon_shal     = 0.55            !< control the reduction in momentum transport
+    real(kind=kind_phys) :: pgcon_shal     = 0.55            !< reduction factor in momentum transport due to convection induced pressure gradient force
                                                              !< 0.7 : Gregory et al. (1997, QJRMS)
                                                              !< 0.55: Zhang & Wu (2003, JAS)
-    real(kind=kind_phys) :: asolfac_shal   = 0.89            !< aerosol-aware parameter based on Lim & Hong (2012)
+    real(kind=kind_phys) :: asolfac_shal   = 0.958           !< aerosol-aware parameter based on Lim (2011)
                                                              !< asolfac= cx / c0s(=.002)
                                                              !< cx = min([-0.7 ln(Nccn) + 24]*1.e-4, c0s)
                                                              !< Nccn: CCN number concentration in cm^(-3)
-                                                             !< Until a realistic Nccn is provided, typical Nccns are assumed
-                                                             !< as Nccn=100 for sea and Nccn=7000 for land 
+                                                             !< Until a realistic Nccn is provided, Nccns are assumed
+                                                             !< as Nccn=100 for sea and Nccn=1000 for land 
 
     !--- near surface temperature model
     logical              :: nst_anl        = .false.         !< flag for NSSTM analysis in gcycle/sfcsub

@@ -1,4 +1,64 @@
-      subroutine mfshalcnv(im,ix,km,delt,delp,prslp,psp,phil,ql,
+!> \defgroup SAMF_shal Scale-Aware Mass-Flux Shallow Convection
+!! @{
+!!  \brief The scale-aware mass-flux shallow (SAMF_shal) convection scheme is an updated version of the previous mass-flux shallow convection scheme with scale and aerosol awareness and parameterizes the effect of shallow convection on the environment.  The SAMF_shal scheme is similar to the SAMF deep convection scheme but with a few key differences. First, no quasi-equilibrium assumption is used for any grid size and the shallow cloud base mass flux is parameterized using a mean updraft velocity. Further, there are no convective downdrafts, the entrainment rate is greater than for deep convection, and the shallow convection is limited to not extend over the level where \f$p=0.7p_{sfc}\f$. The paramerization of scale and aerosol awareness follows that of the SAMF deep convection scheme.
+!!
+!!  The previous version of the shallow convection scheme (shalcnv.f) is described in Han and Pan (2011) \cite han_and_pan_2011 and differences between the shallow and deep convection schemes are presented in Han and Pan (2011) \cite han_and_pan_2011 and Han et al. (2017) \cite han_et_al_2017 . Details of scale- and aerosol-aware parameterizations are described in Han et al. (2017) \cite han_et_al_2017 .
+!!
+!!  \section diagram Calling Hierarchy Diagram
+!!  \image html SAMF_shal_Flowchart.png "Diagram depicting how the SAMF shallow convection scheme is called from the FV3GFS physics time loop" height=2cm
+!!  \section intraphysics Intraphysics Communication
+!!  This space is reserved for a description of how this scheme uses information from other scheme types and/or how information calculated in this scheme is used in other scheme types.
+
+!> \file samfshalcnv.f
+!!  Contains the entire SAMF shallow convection scheme.
+
+!>  \brief This subroutine contains the entirety of the SAMF shallow convection scheme.
+!!
+!!  This routine follows the \ref SAMF deep scheme quite closely, although it can be interpreted as only having the "static" and "feedback" control portions, since the "dynamic" control is not necessary to find the cloud base mass flux. The algorithm is simplified from SAMF deep convection by excluding convective downdrafts and being confined to operate below \f$p=0.7p_{sfc}\f$. Also, entrainment is both simpler and stronger in magnitude compared to the deep scheme.
+!!
+!!  \param[in] im number of used points
+!!  \param[in] ix horizontal dimension
+!!  \param[in] km vertical layer dimension
+!!  \param[in] jcap number of spectral wave trancation
+!!  \param[in] delt physics time step in seconds
+!!  \param[in] delp pressure difference between level k and k+1 (Pa)
+!!  \param[in] prslp mean layer presure (Pa)
+!!  \param[in] psp surface pressure (Pa)
+!!  \param[in] phil layer geopotential (\f$m^s/s^2\f$)
+!!  \param[inout] ql cloud water or ice (kg/kg)
+!!  \param[inout] q1 updated tracers (kg/kg)
+!!  \param[inout] t1 updated temperature (K)
+!!  \param[inout] u1 updated zonal wind (\f$m s^{-1}\f$)
+!!  \param[inout] v1 updated meridional wind (\f$m s^{-1}\f$)
+!!  \param[out] rn convective rain (m)
+!!  \param[out] kbot index for cloud base
+!!  \param[out] ktop index for cloud top
+!!  \param[out] kcnv flag to denote deep convection (0=no, 1=yes)
+!!  \param[in] islimsk sea/land/ice mask (=0/1/2)
+!!  \param[in] dot layer mean vertical velocity (Pa/s)
+!!  \param[in] ncloud number of cloud species
+!!  \param[in] hpbl PBL height (m)
+!!  \param[in] heat surface sensible heat flux (K m/s)
+!!  \param[in] evap surface latent heat flux (kg/kg m/s)
+!!  \param[out] ud_mf updraft mass flux multiplied by time step (\f$kg/m^2\f$)
+!!  \param[out] dt_mf ud_mf at cloud top (\f$kg/m^2\f$)
+!!  \param[out] cnvw convective cloud water (kg/kg)
+!!  \param[out] cnvc convective cloud cover (unitless)
+!!  \param[in] clam coefficient for entrainment rate
+!!  \param[in] c0s convective rain conversion parameter (1/m)
+!!  \param[in] c1 conversion parameter of detrainment from liquid water into grid-scale cloud water (1/m)
+!!  \param[in] pgcon reduction factor in momentum transport due to convection induced pressure gradient force
+!!  \param[in] asolfac aerosol-aware parameter inversely proportional to CCN number concentraion
+!!
+!!  \section general General Algorithm
+!!  -# Compute preliminary quantities needed for the static and feedback control portions of the algorithm.
+!!  -# Perform calculations related to the updraft of the entraining/detraining cloud model ("static control").
+!!  -# The cloud base mass flux is obtained using the cumulus updraft velocity averaged ove the whole cloud depth.
+!!  -# Calculate the tendencies of the state variables (per unit cloud base mass flux) and the cloud base mass flux.
+!!  -# For the "feedback control", calculate updated values of the state variables by multiplying the cloud base mass flux and the tendencies calculated per unit cloud base mass flux from the static control.
+!!  \section detailed Detailed Algorithm
+!!  @{
+      subroutine samfshalcnv(im,ix,km,delt,delp,prslp,psp,phil,ql,
      &     q1,t1,u1,v1,rn,kbot,ktop,kcnv,islimsk,garea,
      &     dot,ncloud,hpbl,ud_mf,dt_mf,cnvw,cnvc,
 !    &     dot,ncloud,hpbl,ud_mf,dt_mf,cnvw,cnvc,me)
@@ -79,7 +139,8 @@ c
 !
 !  parameters for updraft velocity calculation
       real(kind=kind_phys) bet1,    cd1,     f1,      gam1,
-     &                     bb1,     bb2,     wucb
+     &                     bb1,     bb2
+!    &                     bb1,     bb2,     wucb
 cc
 c  physical parameters
 !     parameter(g=grav,asolfac=0.89)
@@ -94,7 +155,7 @@ c  physical parameters
 !      asolfac= cx / c0s(=.002)
 !      cx = min([-0.7 ln(Nccn) + 24]*1.e-4, c0s)
 !      Nccn: CCN number concentration in cm^(-3)
-!      Until a realistic Nccn is provided, typical Nccns are assumed
+!      Until a realistic Nccn is provided, Nccns are assumed
 !      as Nccn=100 for sea and Nccn=7000 for land
 !
       parameter(cm=1.0,delta=fv)
@@ -136,6 +197,8 @@ c-----------------------------------------------------------------------
 !
 !************************************************************************
 !     convert input Pa terms to Cb terms  -- Moorthi
+!>  ## Compute preliminary quantities needed for the static and feedback control portions of the algorithm.
+!>  - Convert input pressure terms to centibar units.
       ps   = psp   * 0.001
       prsl = prslp * 0.001
       del  = delp  * 0.001
@@ -145,6 +208,7 @@ c-----------------------------------------------------------------------
 c
 c  initialize arrays
 c
+!>  - Initialize column-integrated and other single-value-per-column variable arrays.
       do i=1,im
         cnvflg(i) = .true.
         if(kcnv(i) == 1) cnvflg(i) = .false.
@@ -166,12 +230,14 @@ c
         gdx(i) = sqrt(garea(i))
       enddo
 !!
+!>  - Return to the calling routine if deep convection is present or the surface buoyancy flux is negative.
       totflg = .true.
       do i=1,im
         totflg = totflg .and. (.not. cnvflg(i))
       enddo
       if(totflg) return
 !!
+!>  - determine aerosol-aware rain conversion parameter over land
       do i=1,im
         if(islimsk(i) == 1) then
            c0(i) = c0s*asolfac
@@ -180,6 +246,7 @@ c
         endif
       enddo
 !
+!>  - determine rain conversion parameter above the freezing level which exponentially decreases with decreasing temperature from Han et al.'s (2017) \cite han_et_al_2017 equation 8.
       do k = 1, km
         do i = 1, im
           if(t1(i,k) > 273.16) then
@@ -192,6 +259,7 @@ c
         enddo
       enddo
 !
+!>  - Initialize convective cloud water and cloud cover to zero.
       do k = 1, km
         do i = 1, im
           cnvw(i,k) = 0.
@@ -199,6 +267,7 @@ c
         enddo
       enddo
 ! hchuang code change
+!>  - Initialize updraft mass fluxes to zero.
       do k = 1, km
         do i = 1, im
           ud_mf(i,k) = 0.
@@ -229,6 +298,7 @@ c
 c  define top layer for search of the downdraft originating layer
 c  and the maximum thetae for updraft
 c
+!>  - Determine maximum indices for the parcel starting point (kbm) and cloud top (kmax).
       do i=1,im
         kbm(i)   = km
         kmax(i)  = km
@@ -248,11 +318,13 @@ c
 c  hydrostatic height assume zero terr and compute
 c  updraft entrainment rate as an inverse function of height
 c
+!>  - Calculate hydrostatic height at layer centers assuming a flat surface (no terrain) from the geopotential.
       do k = 1, km
         do i=1,im
           zo(i,k) = phil(i,k) / g
         enddo
       enddo
+!>  - Calculate interface height and the entrainment rate as an inverse function of height.
       do k = 1, km1
         do i=1,im
           zi(i,k) = 0.5*(zo(i,k)+zo(i,k+1))
@@ -265,6 +337,7 @@ c
 c
 c  pbl height
 c
+!>  - Find the index for the PBL top using the PBL height; enforce that it is lower than the maximum parcel starting level.
       do i=1,im
         flg(i) = cnvflg(i)
         kpbl(i)= 1
@@ -285,6 +358,7 @@ c
 c!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 c   convert surface pressure to mb from cb
 c
+!>  - Convert prsl from centibar to millibar, set normalized mass flux to 1, cloud properties to 0, and save model state variables (after advection/turbulence).
       do k = 1, km
         do i = 1, im
           if (cnvflg(i) .and. k <= kmax(i)) then
@@ -311,14 +385,7 @@ c
           endif
         enddo
       enddo
-c
-c  column variables
-c  p is pressure of the layer (mb)
-c  t is temperature at t-dt (k)..tn
-c  q is mixing ratio at t-dt (kg/kg)..qn
-c  to is temperature at t+dt (k)... this is after advection and turbulan
-c  qo is mixing ratio at t+dt (kg/kg)..q1
-c
+!>  - Calculate saturation specific humidity and enforce minimum moisture values.
       do k = 1, km
         do i=1,im
           if (cnvflg(i) .and. k <= kmax(i)) then
@@ -336,6 +403,7 @@ c
 c
 c  compute moist static energy
 c
+!>  - Calculate moist static energy (heo) and saturation moist static energy (heso).
       do k = 1, km
         do i=1,im
           if (cnvflg(i) .and. k <= kmax(i)) then
@@ -351,6 +419,8 @@ c
 c  determine level with largest moist static energy within pbl
 c  this is the level where updraft starts
 c
+!> ## Perform calculations related to the updraft of the entraining/detraining cloud model ("static control").
+!> - Search in the PBL for the level of maximum moist static energy to start the ascending parcel.
       do i=1,im
          if (cnvflg(i)) then
             hmax(i) = heo(i,1)
@@ -368,6 +438,7 @@ c
         enddo
       enddo
 c
+!> - Calculate the temperature, water vapor mixing ratio, and pressure at interface levels.
       do k = 1, km1
         do i=1,im
           if (cnvflg(i) .and. k <= kmax(i)-1) then
@@ -389,6 +460,7 @@ c
         enddo
       enddo
 !
+!> - Recalculate saturation specific humidity, moist static energy, saturation moist static energy, and horizontal momentum on interface levels. Enforce minimum specific humidity.
       do k = 1, km1
         do i=1,im
           if (cnvflg(i) .and. k <= kmax(i)-1) then
@@ -411,6 +483,7 @@ c
 c
 c  look for the level of free convection as cloud base
 c
+!> - Search below the index "kbm" for the level of free convection (LFC) where the condition \f$h_b > h^*\f$ is first met, where \f$h_b, h^*\f$ are the state moist static energy at the parcel's starting level and saturation moist static energy, respectively. Set "kbcon" to the index of the LFC.
       do i=1,im
         flg(i)   = cnvflg(i)
         if(flg(i)) kbcon(i) = kmax(i)
@@ -432,12 +505,14 @@ c
         endif
       enddo
 !!
+!> - If no LFC, return to the calling routine without modifying state variables.
       totflg = .true.
       do i=1,im
         totflg = totflg .and. (.not. cnvflg(i))
       enddo
       if(totflg) return
 !!
+!> - Determine the vertical pressure velocity at the LFC. After Han and Pan (2011) \cite han_and_pan_2011 , determine the maximum pressure thickness between a parcel's starting level and the LFC. If a parcel doesn't reach the LFC within the critical thickness, then the convective inhibition is deemed too great for convection to be triggered, and the subroutine returns to the calling routine without modifying the state variables.
       do i=1,im
         if(cnvflg(i)) then
 !         pdot(i)  = 10.* dot(i,kbcon(i))
@@ -491,6 +566,7 @@ c
 c
 c  specify the detrainment rate for the updrafts
 c
+!> - The updraft detrainment rate is set constant and equal to the entrainment rate at cloud base.
       do i = 1, im
         if(cnvflg(i)) then
           xlamud(i) = xlamue(i,kbcon(i))
@@ -500,6 +576,11 @@ c
 c
 c  determine updraft mass flux for the subcloud layers
 c
+!> - Calculate the normalized mass flux for subcloud and in-cloud layers according to Pan and Wu (1995) \cite pan_and_wu_1995 equation 1:
+!!  \f[
+!!  \frac{1}{\eta}\frac{\partial \eta}{\partial z} = \lambda_e - \lambda_d
+!!  \f]
+!!  where \f$\eta\f$ is the normalized mass flux, \f$\lambda_e\f$ is the entrainment rate and \f$\lambda_d\f$ is the detrainment rate. The normalized mass flux increases upward below the cloud base and decreases upward above.
       do k = km1, 1, -1
         do i = 1, im
           if (cnvflg(i)) then
@@ -537,6 +618,7 @@ c
 c
 c  compute updraft cloud property
 c
+!> - Set cloud properties equal to the state variables at updraft starting level (kb).
       do i = 1, im
         if(cnvflg(i)) then
           indx         = kb(i)
@@ -548,6 +630,7 @@ c
 c
 !  cm is an enhancement factor in entrainment rates for momentum
 !
+!> - Calculate the cloud properties as a parcel ascends, modified by entrainment and detrainment. Discretization follows Appendix B of Grell (1993) \cite grell_1993 . Following Han and Pan (2006) \cite han_and_pan_2006, the convective momentum transport is reduced by the convection-induced pressure gradient force by the constant "pgcon", currently set to 0.55 after Zhang and Wu (2003) \cite zhang_and_wu_2003 .
       do k = 2, km1
         do i = 1, im
           if (cnvflg(i)) then
@@ -576,6 +659,7 @@ c
 c   taking account into convection inhibition due to existence of
 c    dry layers below cloud base
 c
+!> - With entrainment, recalculate the LFC as the first level where buoyancy is positive. The difference in pressure levels between LFCs calculated with/without entrainment must be less than a threshold (currently 25 hPa). Otherwise, convection is inhibited and the scheme returns to the calling routine without modifying the state variables. This is the subcloud dryness trigger modification discussed in Han and Pan (2011) \cite han_and_pan_2011.
       do i=1,im
         flg(i) = cnvflg(i)
         kbcon1(i) = kmax(i)
@@ -613,6 +697,7 @@ c
 c
 c  calculate convective inhibition
 c
+!> - Calculate additional trigger condition of the convective inhibition (CIN) according to Han et al.'s (2017) \cite han_et_al_2017 equation 13.
       do k = 2, km1
         do i = 1, im
           if (cnvflg(i)) then
@@ -635,6 +720,7 @@ c
           endif
         enddo
       enddo
+!> - Turn off convection if the CIN is less than a critical value (cinacr) which is inversely proportional to the large-scale vertical velocity.
       do i = 1, im
         if(cnvflg(i)) then
 !
@@ -680,6 +766,7 @@ c
 c  determine first guess cloud top as the level of zero buoyancy
 c    limited to the level of P/Ps=0.7
 c
+!> - Calculate the cloud top as the first level where parcel buoyancy becomes negative; the maximum possible value is at \f$p=0.7p_{sfc}\f$.
       do i = 1, im
         flg(i) = cnvflg(i)
         if(flg(i)) ktcon(i) = kbm(i)
@@ -697,6 +784,7 @@ c
 c
 c  specify upper limit of mass flux at cloud base
 c
+!> - Calculate the maximum value of the cloud base mass flux using the CFL-criterion-based formula of Han and Pan (2011) \cite han_and_pan_2011, equation 7.
       do i = 1, im
         if(cnvflg(i)) then
 !         xmbmax(i) = .1
@@ -712,6 +800,7 @@ c
 c
 c  compute cloud moisture property and precipitation
 c
+!> - Set cloud moisture property equal to the enviromental moisture at updraft starting level (kb).
       do i = 1, im
         if (cnvflg(i)) then
           aa1(i) = 0.
@@ -719,6 +808,7 @@ c
           qrcko(i,kb(i)) = qo(i,kb(i))
         endif
       enddo
+!> - Calculate the moisture content of the entraining/detraining parcel (qcko) and the value it would have if just saturated (qrch), according to equation A.14 in Grell (1993) \cite grell_1993 . Their difference is the amount of convective cloud water (qlk = rain + condensate). Determine the portion of convective cloud water that remains suspended and the portion that is converted into convective precipitation (pwo). Calculate and save the negative cloud work function (aa1) due to water loading. Above the level of minimum moist static energy, some of the cloud water is detrained into the grid-scale cloud water from every cloud layer with a rate of 0.0005 \f$m^{-1}\f$ (dellal).
       do k = 2, km1
         do i = 1, im
           if (cnvflg(i)) then
@@ -806,6 +896,11 @@ c
 !
 !  calculate cloud work function
 !
+!> - Calculate the cloud work function according to Pan and Wu (1995) \cite pan_and_wu_1995 equation 4:
+!!  \f[
+!!  A_u=\int_{z_0}^{z_t}\frac{g}{c_pT(z)}\frac{\eta}{1 + \gamma}[h(z)-h^*(z)]dz
+!!  \f]
+!! (discretized according to Grell (1993) \cite grell_1993 equation B.10 using B.2 and B.3 of Arakawa and Schubert (1974) \cite arakawa_and_schubert_1974 and assuming \f$\eta=1\f$) where \f$A_u\f$ is the updraft cloud work function, \f$z_0\f$ and \f$z_t\f$ are cloud base and cloud top, respectively, \f$\gamma = \frac{L}{c_p}\left(\frac{\partial \overline{q_s}}{\partial T}\right)_p\f$ and other quantities are previously defined.
       do i = 1, im
         if (cnvflg(i)) then
           aa1(i) = 0.
@@ -825,6 +920,7 @@ c
         if(cnvflg(i) .and. aa1(i) <= 0.) cnvflg(i) = .false.
       enddo
 !!
+!> - If the updraft cloud work function is negative, convection does not occur, and the scheme returns to the calling routine.
       totflg = .true.
       do i=1,im
         totflg = totflg .and. (.not. cnvflg(i))
@@ -837,6 +933,7 @@ c    where the [aafac * cloud work function] becomes zero,
 c    which is the final cloud top
 c    limited to the level of P/Ps=0.7
 c
+!> - Continue calculating the cloud work function past the point of neutral buoyancy to represent overshooting according to Han and Pan (2011) \cite han_and_pan_2011 . Convective overshooting stops when \f$ cA_u < 0\f$ where \f$c\f$ is currently 10%, or when 10% of the updraft cloud work function has been consumed by the stable buoyancy force. Overshooting is also limited to the level where \f$p=0.7p_{sfc}\f$.
       do i = 1, im
         if (cnvflg(i)) then
           aa1(i) = aafac * aa1(i)
@@ -877,6 +974,7 @@ c
 c  compute cloud moisture property, detraining cloud water
 c    and precipitation in overshooting layers
 c
+!> - For the overshooting convection, calculate the moisture content of the entraining/detraining parcel as before. Partition convective cloud water and precipitation and detrain convective cloud water in the overshooting layers.
       do k = 2, km1
         do i = 1, im
           if (cnvflg(i)) then
@@ -917,6 +1015,7 @@ c
       enddo
 !
 !  compute updraft velocity square(wu2)
+!> - Calculate updraft velocity square(wu2) according to Han et al.'s (2017) \cite han_et_al_2017 equation 7.
 !
 !     bb1 = 2. * (1.+bet1*cd1)
 !     bb2 = 2. / (f1*(1.+gam1))
@@ -930,18 +1029,18 @@ c
       bb1 = 4.0
       bb2 = 0.8
 !
-      do i = 1, im
-        if (cnvflg(i)) then
-          k = kbcon1(i)
-          tem = po(i,k) / (rd * to(i,k))
-          wucb = -0.01 * dot(i,k) / (tem * g)
-          if(wucb > 0.) then
-            wu2(i,k) = wucb * wucb
-          else
-            wu2(i,k) = 0.
-          endif
-        endif
-      enddo
+!     do i = 1, im
+!       if (cnvflg(i)) then
+!         k = kbcon1(i)
+!         tem = po(i,k) / (rd * to(i,k))
+!         wucb = -0.01 * dot(i,k) / (tem * g)
+!         if(wucb > 0.) then
+!           wu2(i,k) = wucb * wucb
+!         else
+!           wu2(i,k) = 0.
+!         endif
+!       endif
+!     enddo
       do k = 2, km1
         do i = 1, im
           if (cnvflg(i)) then
@@ -960,6 +1059,7 @@ c
 !
 !  compute updraft velocity averaged over the whole cumulus
 !
+!> - Calculate the mean updraft velocity within the cloud (wc).
       do i = 1, im
         wc(i) = 0.
         sumx(i) = 0.
@@ -1004,6 +1104,7 @@ c
 c
 c  compute liquid and vapor separation at cloud top
 c
+!> - => Separate the total updraft cloud water at cloud top into vapor and condensate.
       do i = 1, im
         if(cnvflg(i)) then
           k = ktcon(i) - 1
@@ -1024,6 +1125,11 @@ c
 c
 c--- compute precipitation efficiency in terms of windshear
 c
+!! - Calculate the wind shear and precipitation efficiency according to equation 58 in Fritsch and Chappell (1980) \cite fritsch_and_chappell_1980 :
+!! \f[
+!! E = 1.591 - 0.639\frac{\Delta V}{\Delta z} + 0.0953\left(\frac{\Delta V}{\Delta z}\right)^2 - 0.00496\left(\frac{\Delta V}{\Delta z}\right)^3
+!! \f]
+!! where \f$\Delta V\f$ is the integrated horizontal shear over the cloud depth, \f$\Delta z\f$, (the ratio is converted to units of \f$10^{-3} s^{-1}\f$). The variable "edt" is \f$1-E\f$ and is constrained to the range \f$[0,0.9]\f$.
       do i = 1, im
         if(cnvflg(i)) then
           vshear(i) = 0.
@@ -1056,6 +1162,8 @@ c
 c--- what would the change be, that a cloud with unit mass
 c--- will do to the environment?
 c
+!> ## Calculate the tendencies of the state variables (per unit cloud base mass flux) and the cloud base mass flux.
+!> - Calculate the change in moist static energy, moisture mixing ratio, and horizontal winds per unit cloud base mass flux for all layers below cloud top from equations B.14 and B.15 from Grell (1993) \cite grell_1993, and for the cloud top from B.16 and B.17.
       do k = 1, km
         do i = 1, im
           if(cnvflg(i) .and. k <= kmax(i)) then
@@ -1138,6 +1246,7 @@ c
 !
 !  compute convective turn-over time
 !
+!> - Following Bechtold et al. (2008) \cite bechtold_et_al_2008, calculate the convective turnover time using the mean updraft velocity (wc) and the cloud depth. It is also proportional to the grid size (gdx).
       do i= 1, im
         if(cnvflg(i)) then
           tem = zi(i,ktcon1(i)) - zi(i,kbcon1(i))
@@ -1150,8 +1259,7 @@ c
         endif
       enddo
 !
-!  compute advective time scale using a mean cloud layer wind speed
-!
+!> - Calculate advective time scale (tauadv) using a mean cloud layer wind speed.
       do i= 1, im
         if(cnvflg(i)) then
           sumx(i) = 0.
@@ -1181,6 +1289,8 @@ c
 c  compute cloud base mass flux as a function of the mean
 c     updraft velcoity
 c
+!> - From Han et al.'s (2017) \cite han_et_al_2017 equation 6, calculate cloud base mass flux as a function of the mean updraft velcoity.
+!!  As discussed in Han et al. (2017) \cite han_et_al_2017 , when dtconv is larger than tauadv, the convective mixing is not fully conducted before the cumulus cloud is advected out of the grid cell. In this case, therefore, the cloud base mass flux is further reduced in proportion to the ratio of tauadv to dtconv.
       do i= 1, im
         if(cnvflg(i)) then
           k = kbcon(i)
@@ -1191,9 +1301,7 @@ c
         endif
       enddo
 !
-!--- modified Grell & Freitas' (2014) updraft fraction which uses
-!     actual entrainment rate at cloud base
-!
+!> - For scale-aware parameterization, the updraft fraction (sigmagfm) is first computed as a function of the lateral entrainment rate at cloud base (see Han et al.'s (2017) \cite han_et_al_2017 equation 4 and 5), following the study by Grell and Freitas (2014) \cite grell_and_freitus_2014.
       do i = 1, im
         if(cnvflg(i)) then
           tem = min(max(xlamue(i,kbcon(i)), 2.e-4), 6.e-4)
@@ -1205,9 +1313,7 @@ c
         endif
       enddo
 !
-!--- compute scale-aware function based on Arakawa & Wu (2013)
-!
-!
+!> - Then, calculate the reduction factor (scaldfunc) of the vertical convective eddy transport of mass flux as a function of updraft fraction from the studies by Arakawa and Wu (2013) \cite arakawa_and_wu_2013 (also see Han et al.'s (2017) \cite han_et_al_2017 equation 1 and 2). The final cloud base mass flux with scale-aware parameterization is obtained from the mass flux when sigmagfm << 1, multiplied by the reduction factor (Han et al.'s (2017) \cite han_et_al_2017 equation 2).
       do i = 1, im
         if(cnvflg(i)) then
           if (gdx(i) < dxcrt) then
@@ -1220,6 +1326,8 @@ c
           xmb(i) = min(xmb(i),xmbmax(i))
         endif
       enddo
+!> ## For the "feedback control", calculate updated values of the state variables by multiplying the cloud base mass flux and the tendencies calculated per unit cloud base mass flux from the static control.
+!! - Recalculate saturation specific humidity.
 c
 c!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 c
@@ -1235,6 +1343,9 @@ c
       enddo
 c!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 c
+!> - Calculate the temperature tendency from the moist static energy and specific humidity tendencies.
+!> - Update the temperature, specific humidity, and horiztonal wind state variables by multiplying the cloud base mass flux-normalized tendencies by the cloud base mass flux.
+!> - Accumulate column-integrated tendencies.
       do i = 1, im
         delhbar(i) = 0.
         delqbar(i) = 0.
@@ -1266,6 +1377,7 @@ c
         enddo
       enddo
 !
+!> - Recalculate saturation specific humidity using the updated temperature.
       do k = 1, km
         do i = 1, im
           if (cnvflg(i)) then
@@ -1279,6 +1391,7 @@ c
         enddo
       enddo
 c
+!> - Add up column-integrated convective precipitation by multiplying the normalized value by the cloud base mass flux.
       do i = 1, im
         rntot(i) = 0.
         delqev(i) = 0.
@@ -1297,6 +1410,9 @@ c
 c
 c evaporating rain
 c
+!> - Determine the evaporation of the convective precipitation and update the integrated convective precipitation.
+!> - Update state temperature and moisture to account for evaporation of convective precipitation.
+!> - Update column-integrated tendencies to account for evaporation of convective precipitation.
       do k = km, 1, -1
         do i = 1, im
           if (k <= kmax(i)) then
@@ -1370,6 +1486,7 @@ cj
 c
 c  convective cloud water
 c
+!> - Calculate shallow convective cloud water.
       do k = 1, km
         do i = 1, im
           if (cnvflg(i)) then
@@ -1383,6 +1500,7 @@ c
 c
 c  convective cloud cover
 c
+!> - Calculate convective cloud cover, which is used when pdf-based cloud fraction is used (i.e., pdfcld=.true.).
       do k = 1, km
         do i = 1, im
           if (cnvflg(i)) then
@@ -1394,10 +1512,10 @@ c
           endif
         enddo
       enddo
-
 c
 c  cloud water
 c
+!> - Separate detrained cloud water into liquid and ice species as a function of temperature only.
       if (ncloud > 0) then
 !
       do k = 1, km1
@@ -1422,6 +1540,9 @@ c
 !
 ! hchuang code change
 !
+!> - Calculate and retain the updraft mass flux for dust transport by cumulus convection.
+!
+!> - Calculate the updraft convective mass flux.
       do k = 1, km
         do i = 1, im
           if(cnvflg(i)) then
@@ -1431,6 +1552,7 @@ c
           endif
         enddo
       enddo
+!> - save the updraft convective mass flux at cloud top.
       do i = 1, im
         if(cnvflg(i)) then
            k = ktop(i)-1

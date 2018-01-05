@@ -52,9 +52,9 @@ SRCS_f   =  \
 	   ./physics/iounitdef.f                                                     \
 	   ./physics/lrgsclr.f                                                       \
 	   ./physics/mersenne_twister.f                                              \
-	   ./physics/mfdeepcnv.f                                                     \
+	   ./physics/samfdeepcnv.f                                                   \
 	   ./physics/mfpbl.f                                                         \
-	   ./physics/mfshalcnv.f                                                     \
+	   ./physics/samfshalcnv.f                                                   \
 	   ./physics/module_bfmicrophysics.f                                         \
 	   ./physics/moninedmf.f                                                     \
 	   ./physics/moninp.f                                                        \
