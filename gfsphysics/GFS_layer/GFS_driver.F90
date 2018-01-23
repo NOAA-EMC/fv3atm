@@ -149,7 +149,7 @@ module GFS_driver
                      Init_parm%input_nml_file)
 
     call init_stochastic_physics(Model,Init_parm)
-    print*,'do_skeb=',Model%do_skeb
+    if(Model%me == Model%master) print*,'do_skeb=',Model%do_skeb
 
     call read_o3data  (Model%ntoz, Model%me, Model%master)
     call read_h2odata (Model%h2o_phys, Model%me, Model%master)

@@ -35,7 +35,7 @@ module FV3GFS_io_mod
 !
 !--- GFS_typedefs
   use GFS_typedefs,       only: GFS_sfcprop_type, GFS_diag_type, &
-                                GFS_cldprop_type
+                                GFS_cldprop_type, GFS_grid_type
 !
 !--- IPD typdefs
   use IPD_typedefs,       only: IPD_control_type, IPD_data_type, &
@@ -80,14 +80,15 @@ module FV3GFS_io_mod
     integer :: id
     integer :: axes
     logical :: time_avg
+    logical :: full_time_avg                       !no bucket
     character(len=64)    :: mod_name
     character(len=64)    :: name
     character(len=128)   :: desc
     character(len=64)    :: unit
     character(len=64)    :: mask
     character(len=64)    :: intpl_method
+    character(len=128)   :: output_file
     real(kind=kind_phys) :: cnvfac
-    real, dimension(:), allocatable :: slmsk
     type(data_subtype), dimension(:), allocatable :: data
 !rab    real(kind=kind_phys), dimension(:),   pointer :: var2 => NULL()
 !rab    real(kind=kind_phys), dimension(:),   pointer :: var21 => NULL()
@@ -98,10 +99,18 @@ module FV3GFS_io_mod
    integer :: total_outputlevel = 0
    integer :: isco,ieco,jsco,jeco
    integer :: fhzero, ncld, nsoil, imp_physics
-   integer,dimension(:), allocatable :: nstt
-   real(4), dimension(:,:,:), allocatable, target :: buffer_phys_bl
-   real(4), dimension(:,:,:), allocatable, target :: buffer_phys_nb
-   integer, parameter :: DIAG_SIZE = 250
+   logical :: lprecip_accu
+   character(len=64)  :: Sprecip_accu
+   integer,dimension(:), allocatable :: nstt, nstt_vctbl
+   real(4), dimension(:,:,:), allocatable, target   :: buffer_phys_bl
+   real(4), dimension(:,:,:), allocatable, target   :: buffer_phys_nb
+   real(4), dimension(:,:,:,:), allocatable, target :: buffer_phys_windvect
+   real(kind=kind_phys),dimension(:,:),allocatable  :: lon
+   real(kind=kind_phys),dimension(:,:),allocatable  :: lat
+   real(kind=kind_phys),dimension(:,:),allocatable  :: uwork
+   logical :: uwork_set
+   character(128) :: uwindname
+   integer, parameter :: DIAG_SIZE = 500
 !   real(kind=kind_phys), parameter :: missing_value = 1.d30
    real(kind=kind_phys), parameter :: missing_value = 9.99e20
    type(gfdl_diag_type), dimension(DIAG_SIZE) :: Diag
@@ -1174,18 +1183,20 @@ module FV3GFS_io_mod
 !    13+NFXR - radiation, 16 nsst
 !    76+pl_coeff - physics
 !-------------------------------------------------------------------------      
-  subroutine gfdl_diag_register(Time, Sfcprop, Cldprop, Gfs_diag, Atm_block, Model, axes)
+  subroutine gfdl_diag_register(Time, Sfcprop, Cldprop, Gfs_diag, Gfs_grid, Atm_block, Model, axes)
     use physcons,  only: con_g
 !--- subroutine interface variable definitions
     type(time_type),           intent(in) :: Time
     type(GFS_sfcprop_type),    intent(in) :: Sfcprop(:)
     type(GFS_cldprop_type),    intent(in) :: Cldprop(:)
     type(GFS_diag_type),       intent(in) :: Gfs_diag(:)
+    type(GFS_grid_type),       intent(in) :: Gfs_grid(:)
     type (block_control_type), intent(in) :: Atm_block
     type(IPD_control_type),    intent(in) :: Model
     integer, dimension(4),     intent(in) :: axes
 !--- local variables
-    integer :: idx, num, nb, nblks, nx, ny, k, nrgst,NFXR
+    integer :: i, j, ix
+    integer :: idx, num, nb, nblks, nx, ny, k, nrgst_bl, nrgst_nb, nrgst_vctbl, NFXR
     integer, allocatable :: blksz(:)
     character(len=2) :: xtra
     real(kind=kind_phys), parameter :: cn_one = 1._kind_phys
@@ -1206,21 +1217,42 @@ module FV3GFS_io_mod
     ncld   = Model%ncld
     nsoil  = Model%lsoil
     imp_physics  = Model%imp_physics
-    if(mpp_pe()==mpp_root_pe())print *,'in gfdl_diag_register,ncld=',Model%ncld,Model%lsoil,Model%imp_physics
+    lprecip_accu = Model%lprecip_accu
+    if( lprecip_accu ) then
+      Sprecip_accu = "yes" 
+    else
+      Sprecip_accu = "no" 
+    endif
+    print *,'in gfdl_diag_register,ncld=',Model%ncld,Model%lsoil,Model%imp_physics, &
+      'lprecip_accu=', lprecip_accu
+!
+!save lon/lat for vector interpolation
+    allocate(lon(isco:ieco,jsco:jeco))
+    allocate(lat(isco:ieco,jsco:jeco))
+    do j=jsco,jeco
+      do i=isco,ieco
+        nb = Atm_block%blkno(i,j)
+        ix = Atm_block%ixp(i,j)
+        lon(i,j) = Gfs_grid(nb)%xlon(ix)
+        lat(i,j) = Gfs_grid(nb)%xlat(ix)
+      enddo
+    enddo
 
     Diag(:)%id = -99
     Diag(:)%axes = -99
     Diag(:)%cnvfac = 1.0_kind_phys
     Diag(:)%time_avg = .FALSE.
+    Diag(:)%full_time_avg = .FALSE.
     Diag(:)%mask = ''
     Diag(:)%intpl_method = 'nearest_stod'
+    Diag(:)%output_file = ''
 
     idx = 0 
 
     idx = idx + 1
     Diag(idx)%axes = 2
     Diag(idx)%name = 'ALBDO_ave'
-    Diag(idx)%desc = 'surface albedo (%)'
+    Diag(idx)%desc = 'surface albedo'
     Diag(idx)%unit = '%'
     Diag(idx)%mod_name = 'gfs_phys'
     Diag(idx)%cnvfac = cn_100
@@ -1234,11 +1266,12 @@ module FV3GFS_io_mod
     idx = idx + 1
     Diag(idx)%axes = 2
     Diag(idx)%name = 'DLWRF'
-    Diag(idx)%desc = 'surface downward longwave flux [W/m**2]'
+    Diag(idx)%desc = 'surface downward longwave flux'
     Diag(idx)%unit = 'W/m**2'
     Diag(idx)%mod_name = 'gfs_phys'
     Diag(idx)%cnvfac = cn_one
     Diag(idx)%time_avg = .TRUE.
+    Diag(idx)%intpl_method = 'bilinear'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%dlwsfc(:)
@@ -1247,9 +1280,10 @@ module FV3GFS_io_mod
     idx = idx + 1
     Diag(idx)%axes = 2
     Diag(idx)%name = 'DLWRFI'
-    Diag(idx)%desc = 'instantaneous surface downward longwave flux [W/m**2]'
+    Diag(idx)%desc = 'instantaneous surface downward longwave flux'
     Diag(idx)%unit = 'W/m**2'
     Diag(idx)%mod_name = 'gfs_phys'
+    Diag(idx)%intpl_method = 'bilinear'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%dlwsfci(:)
@@ -1259,11 +1293,12 @@ module FV3GFS_io_mod
     idx = idx + 1
     Diag(idx)%axes = 2
     Diag(idx)%name = 'ULWRF'
-    Diag(idx)%desc = 'surface upward longwave flux [W/m**2]'
+    Diag(idx)%desc = 'surface upward longwave flux'
     Diag(idx)%unit = 'W/m**2'
     Diag(idx)%mod_name = 'gfs_phys'
     Diag(idx)%cnvfac = cn_one
     Diag(idx)%time_avg = .TRUE.
+    Diag(idx)%intpl_method = 'bilinear'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%ulwsfc(:)
@@ -1272,9 +1307,10 @@ module FV3GFS_io_mod
     idx = idx + 1
     Diag(idx)%axes = 2
     Diag(idx)%name = 'ULWRFI'
-    Diag(idx)%desc = 'instantaneous surface upward longwave flux [W/m**2]'
+    Diag(idx)%desc = 'instantaneous surface upward longwave flux'
     Diag(idx)%unit = 'W/m**2'
     Diag(idx)%mod_name = 'gfs_phys'
+    Diag(idx)%intpl_method = 'bilinear'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%ulwsfci(:)
@@ -1283,11 +1319,12 @@ module FV3GFS_io_mod
     idx = idx + 1
     Diag(idx)%axes = 2
     Diag(idx)%name = 'DSWRF'
-    Diag(idx)%desc = 'averaged surface downward shortwave flux [W/m**2]'
+    Diag(idx)%desc = 'averaged surface downward shortwave flux'
     Diag(idx)%unit = 'W/m**2'
     Diag(idx)%mod_name = 'gfs_phys'
     Diag(idx)%cnvfac = cn_one
     Diag(idx)%time_avg = .TRUE.
+    Diag(idx)%intpl_method = 'bilinear'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%fluxr(:,4)
@@ -1296,9 +1333,10 @@ module FV3GFS_io_mod
     idx = idx + 1
     Diag(idx)%axes = 2
     Diag(idx)%name = 'DSWRFI'
-    Diag(idx)%desc = 'instantaneous surface downward shortwave flux [W/m**2]'
+    Diag(idx)%desc = 'instantaneous surface downward shortwave flux'
     Diag(idx)%unit = 'W/m**2'
     Diag(idx)%mod_name = 'gfs_phys'
+    Diag(idx)%intpl_method = 'bilinear'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%dswsfci(:)
@@ -1307,11 +1345,12 @@ module FV3GFS_io_mod
     idx = idx + 1
     Diag(idx)%axes = 2
     Diag(idx)%name = 'USWRF'
-    Diag(idx)%desc = 'averaged surface upward shortwave flux [W/m**2]'
+    Diag(idx)%desc = 'averaged surface upward shortwave flux'
     Diag(idx)%unit = 'W/m**2'
     Diag(idx)%mod_name = 'gfs_phys'
     Diag(idx)%cnvfac = cn_one
     Diag(idx)%time_avg = .TRUE.
+    Diag(idx)%intpl_method = 'bilinear'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%fluxr(:,3)
@@ -1320,9 +1359,10 @@ module FV3GFS_io_mod
     idx = idx + 1
     Diag(idx)%axes = 2
     Diag(idx)%name = 'USWRFI'
-    Diag(idx)%desc = 'instantaneous surface upward shortwave flux [W/m**2]'
+    Diag(idx)%desc = 'instantaneous surface upward shortwave flux'
     Diag(idx)%unit = 'W/m**2'
     Diag(idx)%mod_name = 'gfs_phys'
+    Diag(idx)%intpl_method = 'bilinear'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%uswsfci(:)
@@ -1331,10 +1371,11 @@ module FV3GFS_io_mod
     idx = idx + 1
     Diag(idx)%axes = 2
     Diag(idx)%name = 'duvb_ave'
-    Diag(idx)%desc = 'UV-B Downward Solar Flux [W/m**2]'
+    Diag(idx)%desc = 'UV-B Downward Solar Flux'
     Diag(idx)%unit = 'W/m**2'
     Diag(idx)%mod_name = 'gfs_phys'
     Diag(idx)%time_avg = .TRUE.
+    Diag(idx)%intpl_method = 'bilinear'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%fluxr(:,21)
@@ -1343,10 +1384,11 @@ module FV3GFS_io_mod
     idx = idx + 1
     Diag(idx)%axes = 2
     Diag(idx)%name = 'cduvb_ave'
-    Diag(idx)%desc = 'Clear sky UV-B Downward Solar Flux [W/m**2]'
+    Diag(idx)%desc = 'Clear sky UV-B Downward Solar Flux'
     Diag(idx)%unit = 'W/m**2'
     Diag(idx)%mod_name = 'gfs_phys'
     Diag(idx)%time_avg = .TRUE.
+    Diag(idx)%intpl_method = 'bilinear'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%fluxr(:,22)
@@ -1355,10 +1397,11 @@ module FV3GFS_io_mod
     idx = idx + 1
     Diag(idx)%axes = 2
     Diag(idx)%name = 'vbdsf_ave'
-    Diag(idx)%desc = 'Visible Beam Downward Solar Flux [W/m**2]'
+    Diag(idx)%desc = 'Visible Beam Downward Solar Flux'
     Diag(idx)%unit = 'W/m**2'
     Diag(idx)%mod_name = 'gfs_phys'
     Diag(idx)%time_avg = .TRUE.
+    Diag(idx)%intpl_method = 'bilinear'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%fluxr(:,24)
@@ -1367,10 +1410,11 @@ module FV3GFS_io_mod
     idx = idx + 1
     Diag(idx)%axes = 2
     Diag(idx)%name = 'vddsf_ave'
-    Diag(idx)%desc = 'Visible Diffuse Downward Solar Flux [W/m**2]'
+    Diag(idx)%desc = 'Visible Diffuse Downward Solar Flux'
     Diag(idx)%unit = 'W/m**2'
     Diag(idx)%mod_name = 'gfs_phys'
     Diag(idx)%time_avg = .TRUE.
+    Diag(idx)%intpl_method = 'bilinear'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%fluxr(:,25)
@@ -1379,10 +1423,11 @@ module FV3GFS_io_mod
     idx = idx + 1
     Diag(idx)%axes = 2
     Diag(idx)%name = 'nbdsf_ave'
-    Diag(idx)%desc = 'Near IR Beam Downward Solar Flux [W/m**2]'
+    Diag(idx)%desc = 'Near IR Beam Downward Solar Flux'
     Diag(idx)%unit = 'W/m**2'
     Diag(idx)%mod_name = 'gfs_phys'
     Diag(idx)%time_avg = .TRUE.
+    Diag(idx)%intpl_method = 'bilinear'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%fluxr(:,26)
@@ -1391,10 +1436,11 @@ module FV3GFS_io_mod
     idx = idx + 1
     Diag(idx)%axes = 2
     Diag(idx)%name = 'nddsf_ave'
-    Diag(idx)%desc = 'Near IR Diffuse Downward Solar Flux [W/m**2]'
+    Diag(idx)%desc = 'Near IR Diffuse Downward Solar Flux'
     Diag(idx)%unit = 'W/m**2'
     Diag(idx)%mod_name = 'gfs_phys'
     Diag(idx)%time_avg = .TRUE.
+    Diag(idx)%intpl_method = 'bilinear'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%fluxr(:,27)
@@ -1403,10 +1449,11 @@ module FV3GFS_io_mod
     idx = idx + 1
     Diag(idx)%axes = 2
     Diag(idx)%name = 'csulf_avetoa'
-    Diag(idx)%desc = 'Clear Sky Upward Long Wave Flux at toa[W/m**2]'
+    Diag(idx)%desc = 'Clear Sky Upward Long Wave Flux at toa'
     Diag(idx)%unit = 'W/m**2'
     Diag(idx)%mod_name = 'gfs_phys'
     Diag(idx)%time_avg = .TRUE.
+    Diag(idx)%intpl_method = 'bilinear'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%fluxr(:,28)
@@ -1415,10 +1462,11 @@ module FV3GFS_io_mod
     idx = idx + 1
     Diag(idx)%axes = 2
     Diag(idx)%name = 'csusf_avetoa'
-    Diag(idx)%desc = 'Clear Sky Upward Short Wave Flux at toa[W/m**2]'
+    Diag(idx)%desc = 'Clear Sky Upward Short Wave Flux at toa'
     Diag(idx)%unit = 'W/m**2'
     Diag(idx)%mod_name = 'gfs_phys'
     Diag(idx)%time_avg = .TRUE.
+    Diag(idx)%intpl_method = 'bilinear'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%fluxr(:,29)
@@ -1427,10 +1475,11 @@ module FV3GFS_io_mod
     idx = idx + 1
     Diag(idx)%axes = 2
     Diag(idx)%name = 'csdlf_ave'
-    Diag(idx)%desc = 'Clear Sky Downward Long Wave Flux [W/m**2]'
+    Diag(idx)%desc = 'Clear Sky Downward Long Wave Flux'
     Diag(idx)%unit = 'W/m**2'
     Diag(idx)%mod_name = 'gfs_phys'
     Diag(idx)%time_avg = .TRUE.
+    Diag(idx)%intpl_method = 'bilinear'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%fluxr(:,30)
@@ -1439,10 +1488,11 @@ module FV3GFS_io_mod
     idx = idx + 1
     Diag(idx)%axes = 2
     Diag(idx)%name = 'csusf_ave'
-    Diag(idx)%desc = 'Clear Sky Upward Short Wave Flux [W/m**2]'
+    Diag(idx)%desc = 'Clear Sky Upward Short Wave Flux'
     Diag(idx)%unit = 'W/m**2'
     Diag(idx)%mod_name = 'gfs_phys'
     Diag(idx)%time_avg = .TRUE.
+    Diag(idx)%intpl_method = 'bilinear'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%fluxr(:,31)
@@ -1451,10 +1501,11 @@ module FV3GFS_io_mod
     idx = idx + 1
     Diag(idx)%axes = 2
     Diag(idx)%name = 'csdsf_ave'
-    Diag(idx)%desc = 'Clear Sky Downward Short Wave Flux [W/m**2]'
+    Diag(idx)%desc = 'Clear Sky Downward Short Wave Flux'
     Diag(idx)%unit = 'W/m**2'
     Diag(idx)%mod_name = 'gfs_phys'
     Diag(idx)%time_avg = .TRUE.
+    Diag(idx)%intpl_method = 'bilinear'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%fluxr(:,32)
@@ -1463,10 +1514,11 @@ module FV3GFS_io_mod
     idx = idx + 1
     Diag(idx)%axes = 2
     Diag(idx)%name = 'csulf_ave'
-    Diag(idx)%desc = 'Clear Sky Upward Long Wave Flux [W/m**2]'
+    Diag(idx)%desc = 'Clear Sky Upward Long Wave Flux'
     Diag(idx)%unit = 'W/m**2'
     Diag(idx)%mod_name = 'gfs_phys'
     Diag(idx)%time_avg = .TRUE.
+    Diag(idx)%intpl_method = 'bilinear'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%fluxr(:,33)
@@ -1476,11 +1528,12 @@ module FV3GFS_io_mod
     idx = idx + 1
     Diag(idx)%axes = 2
     Diag(idx)%name = 'DSWRFtoa'
-    Diag(idx)%desc = 'top of atmos downward shortwave flux [W/m**2]'
+    Diag(idx)%desc = 'top of atmos downward shortwave flux'
     Diag(idx)%unit = 'W/m**2'
     Diag(idx)%mod_name = 'gfs_phys'
     Diag(idx)%cnvfac = cn_one
     Diag(idx)%time_avg = .TRUE.
+    Diag(idx)%intpl_method = 'bilinear'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%fluxr(:,23)
@@ -1490,11 +1543,12 @@ module FV3GFS_io_mod
     idx = idx + 1
     Diag(idx)%axes = 2
     Diag(idx)%name = 'USWRFtoa'
-    Diag(idx)%desc = 'top of atmos upward shortwave flux [W/m**2]'
+    Diag(idx)%desc = 'top of atmos upward shortwave flux'
     Diag(idx)%unit = 'W/m**2'
     Diag(idx)%mod_name = 'gfs_phys'
     Diag(idx)%cnvfac = cn_one
     Diag(idx)%time_avg = .TRUE.
+    Diag(idx)%intpl_method = 'bilinear'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%fluxr(:,2)
@@ -1503,21 +1557,22 @@ module FV3GFS_io_mod
     idx = idx + 1
     Diag(idx)%axes = 2
     Diag(idx)%name = 'ULWRFtoa'
-    Diag(idx)%desc = 'top of atmos upward longwave flux [W/m**2]'
+    Diag(idx)%desc = 'top of atmos upward longwave flux'
     Diag(idx)%unit = 'W/m**2'
     Diag(idx)%mod_name = 'gfs_phys'
     Diag(idx)%cnvfac = cn_one
     Diag(idx)%time_avg = .TRUE.
+    Diag(idx)%intpl_method = 'bilinear'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%fluxr(:,1)
     enddo
-    if(mpp_pe()==mpp_root_pe())print *,'in gfdl_diag_register,bf ULWRFtoa,idx=',idx
+!    if(mpp_pe()==mpp_root_pe())print *,'in gfdl_diag_register,bf ULWRFtoa,idx=',idx
 
     idx = idx + 1
     Diag(idx)%axes = 2
     Diag(idx)%name = 'TCDC_aveclm'
-    Diag(idx)%desc = 'atmos column total cloud cover [%]'
+    Diag(idx)%desc = 'atmos column total cloud cover'
     Diag(idx)%unit = '%'
     Diag(idx)%mod_name = 'gfs_phys'
     Diag(idx)%cnvfac = cn_100
@@ -1530,7 +1585,7 @@ module FV3GFS_io_mod
     idx = idx + 1
     Diag(idx)%axes = 2
     Diag(idx)%name = 'TCDC_avebndcl'
-    Diag(idx)%desc = 'boundary layer cloud layer total cloud cover [%]'
+    Diag(idx)%desc = 'boundary layer cloud layer total cloud cover'
     Diag(idx)%unit = '%'
     Diag(idx)%mod_name = 'gfs_phys'
     Diag(idx)%cnvfac = cn_100
@@ -1543,7 +1598,7 @@ module FV3GFS_io_mod
     idx = idx + 1
     Diag(idx)%axes = 2
     Diag(idx)%name = 'TCDCcnvcl'
-    Diag(idx)%desc = 'convective cloud layer total cloud cover [%]'
+    Diag(idx)%desc = 'convective cloud layer total cloud cover'
     Diag(idx)%unit = '%'
     Diag(idx)%mod_name = 'gfs_phys'
     Diag(idx)%cnvfac = cn_100
@@ -1577,13 +1632,13 @@ module FV3GFS_io_mod
       Diag(idx)%data(nb)%var2 => Cldprop(nb)%cvb(:)
       Diag(idx)%data(nb)%var21 => Cldprop(nb)%cv(:)
     enddo
-    if(mpp_pe()==mpp_root_pe())print *,'in gfdl_diag_register,af PREScnvclb,idx=',idx
+!    if(mpp_pe()==mpp_root_pe())print *,'in gfdl_diag_register,af PREScnvclb,idx=',idx
 
 
     idx = idx + 1
     Diag(idx)%axes = 2
     Diag(idx)%name = 'TCDC_avehcl'
-    Diag(idx)%desc = 'high cloud level total cloud cover [%]'
+    Diag(idx)%desc = 'high cloud level total cloud cover'
     Diag(idx)%unit = '%'
     Diag(idx)%mod_name = 'gfs_phys'
     Diag(idx)%cnvfac = cn_100
@@ -1638,7 +1693,7 @@ module FV3GFS_io_mod
     idx = idx + 1
     Diag(idx)%axes = 2
     Diag(idx)%name = 'TCDC_avemcl'
-    Diag(idx)%desc = 'mid cloud level total cloud cover [%]'
+    Diag(idx)%desc = 'mid cloud level total cloud cover'
     Diag(idx)%unit = '%'
     Diag(idx)%mod_name = 'gfs_phys'
     Diag(idx)%cnvfac = cn_100
@@ -1693,7 +1748,7 @@ module FV3GFS_io_mod
     idx = idx + 1
     Diag(idx)%axes = 2
     Diag(idx)%name = 'TCDC_avelcl'
-    Diag(idx)%desc = 'low cloud level total cloud cover [%]'
+    Diag(idx)%desc = 'low cloud level total cloud cover'
     Diag(idx)%unit = '%'
     Diag(idx)%mod_name = 'gfs_phys'
     Diag(idx)%cnvfac = cn_100
@@ -1744,7 +1799,7 @@ module FV3GFS_io_mod
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%fluxr(:,16)
       Diag(idx)%data(nb)%var21 => Gfs_diag(nb)%fluxr(:,7)
     enddo
-    if(mpp_pe()==mpp_root_pe())print *,'in gfdl_diag_register,af TEMP_avelct,idx=',idx
+!    if(mpp_pe()==mpp_root_pe())print *,'in gfdl_diag_register,af TEMP_avelct,idx=',idx
 
 !
 !--- accumulated diagnostics ---
@@ -1796,6 +1851,7 @@ module FV3GFS_io_mod
     Diag(idx)%desc = 'total sky upward sw flux at toa - GFS radiation'
     Diag(idx)%unit = 'w/m**2'
     Diag(idx)%mod_name = 'gfs_phys'
+    Diag(idx)%intpl_method = 'bilinear'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%topfsw(:)%upfxc
@@ -1807,6 +1863,7 @@ module FV3GFS_io_mod
     Diag(idx)%desc = 'total sky downward sw flux at toa - GFS radiation'
     Diag(idx)%unit = 'w/m**2'
     Diag(idx)%mod_name = 'gfs_phys'
+    Diag(idx)%intpl_method = 'bilinear'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%topfsw(:)%dnfxc
@@ -1818,6 +1875,7 @@ module FV3GFS_io_mod
     Diag(idx)%desc = 'clear sky upward sw flux at toa - GFS radiation'
     Diag(idx)%unit = 'w/m**2'
     Diag(idx)%mod_name = 'gfs_phys'
+    Diag(idx)%intpl_method = 'bilinear'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%topfsw(:)%upfx0
@@ -1829,6 +1887,7 @@ module FV3GFS_io_mod
     Diag(idx)%desc = 'total sky upward lw flux at toa - GFS radiation'
     Diag(idx)%unit = 'w/m**2'
     Diag(idx)%mod_name = 'gfs_phys'
+    Diag(idx)%intpl_method = 'bilinear'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%topflw(:)%upfxc
@@ -1840,6 +1899,7 @@ module FV3GFS_io_mod
     Diag(idx)%desc = 'clear sky upward lw flux at toa - GFS radiation'
     Diag(idx)%unit = 'w/m**2'
     Diag(idx)%mod_name = 'gfs_phys'
+    Diag(idx)%intpl_method = 'bilinear'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%topflw(:)%upfx0
@@ -1933,7 +1993,7 @@ module FV3GFS_io_mod
     idx = idx + 1
     Diag(idx)%axes = 2
     Diag(idx)%name = 'soilm'
-    Diag(idx)%desc = 'total column soil moisture content [kg/m**2]'
+    Diag(idx)%desc = 'total column soil moisture content'
     Diag(idx)%unit = 'kg/m**2'
     Diag(idx)%mod_name = 'gfs_phys'
     Diag(idx)%cnvfac = cn_th
@@ -1948,8 +2008,9 @@ module FV3GFS_io_mod
     Diag(idx)%axes = 2
     Diag(idx)%name = 'tmpmin2m'
     Diag(idx)%desc = 'min temperature at 2m height'
-    Diag(idx)%unit = 'k'
+    Diag(idx)%unit = 'K'
     Diag(idx)%mod_name = 'gfs_phys'
+    Diag(idx)%intpl_method = 'bilinear'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%tmpmin(:)
@@ -1959,8 +2020,9 @@ module FV3GFS_io_mod
     Diag(idx)%axes = 2
     Diag(idx)%name = 'tmpmax2m'
     Diag(idx)%desc = 'max temperature at 2m height'
-    Diag(idx)%unit = 'k'
+    Diag(idx)%unit = 'K'
     Diag(idx)%mod_name = 'gfs_phys'
+    Diag(idx)%intpl_method = 'bilinear'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%tmpmax(:)
@@ -1969,11 +2031,12 @@ module FV3GFS_io_mod
     idx = idx + 1
     Diag(idx)%axes = 2
     Diag(idx)%name = 'dusfc'
-    Diag(idx)%desc = 'surface zonal momentum flux [N/m**2]'
+    Diag(idx)%desc = 'surface zonal momentum flux'
     Diag(idx)%unit = 'N/m**2'
     Diag(idx)%mod_name = 'gfs_phys'
     Diag(idx)%cnvfac = cn_one
     Diag(idx)%time_avg = .TRUE.
+    Diag(idx)%intpl_method = 'bilinear'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%dusfc(:)
@@ -1982,11 +2045,12 @@ module FV3GFS_io_mod
     idx = idx + 1
     Diag(idx)%axes = 2
     Diag(idx)%name = 'dvsfc'
-    Diag(idx)%desc = 'surface meridional momentum flux [N/m**2]'
+    Diag(idx)%desc = 'surface meridional momentum flux'
     Diag(idx)%unit = 'N/m**2'
     Diag(idx)%mod_name = 'gfs_phys'
     Diag(idx)%cnvfac = cn_one
     Diag(idx)%time_avg = .TRUE.
+    Diag(idx)%intpl_method = 'bilinear'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%dvsfc(:)
@@ -1995,11 +2059,12 @@ module FV3GFS_io_mod
     idx = idx + 1
     Diag(idx)%axes = 2
     Diag(idx)%name = 'shtfl_ave'
-    Diag(idx)%desc = 'surface sensible heat flux [W/m**2]'
+    Diag(idx)%desc = 'surface sensible heat flux'
     Diag(idx)%unit = 'w/m**2'
     Diag(idx)%mod_name = 'gfs_phys'
     Diag(idx)%cnvfac = cn_one
     Diag(idx)%time_avg = .TRUE.
+    Diag(idx)%intpl_method = 'bilinear'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%dtsfc(:)
@@ -2008,11 +2073,12 @@ module FV3GFS_io_mod
     idx = idx + 1
     Diag(idx)%axes = 2
     Diag(idx)%name = 'lhtfl_ave'
-    Diag(idx)%desc = 'surface latent heat flux [W/m**2]'
+    Diag(idx)%desc = 'surface latent heat flux'
     Diag(idx)%unit = 'w/m**2'
     Diag(idx)%mod_name = 'gfs_phys'
     Diag(idx)%cnvfac = cn_one
     Diag(idx)%time_avg = .TRUE.
+    Diag(idx)%intpl_method = 'bilinear'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%dqsfc(:)
@@ -2021,11 +2087,13 @@ module FV3GFS_io_mod
     idx = idx + 1
     Diag(idx)%axes = 2
     Diag(idx)%name = 'totprcp_ave'
-    Diag(idx)%desc = 'surface precipitation rate [kg/m**2/s]'
+    Diag(idx)%desc = 'surface precipitation rate'
     Diag(idx)%unit = 'kg/m**2/s'
     Diag(idx)%mod_name = 'gfs_phys'
     Diag(idx)%cnvfac = cn_th
     Diag(idx)%time_avg = .TRUE.
+    Diag(idx)%full_time_avg = .TRUE.
+    Diag(idx)%intpl_method = 'bilinear'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%totprcp(:)
@@ -2034,7 +2102,7 @@ module FV3GFS_io_mod
     idx = idx + 1
     Diag(idx)%axes = 2
     Diag(idx)%name = 'gflux_ave'
-    Diag(idx)%desc = 'surface ground heat flux [W/m**2]'
+    Diag(idx)%desc = 'surface ground heat flux'
     Diag(idx)%unit = 'W/m**2'
     Diag(idx)%mod_name = 'gfs_phys'
     Diag(idx)%cnvfac = cn_one
@@ -2052,6 +2120,7 @@ module FV3GFS_io_mod
     Diag(idx)%desc = 'time accumulated downward lw flux at surface- GFS physics'
     Diag(idx)%unit = 'w/m**2'
     Diag(idx)%mod_name = 'gfs_phys'
+    Diag(idx)%intpl_method = 'bilinear'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%dlwsfc(:)
@@ -2063,6 +2132,7 @@ module FV3GFS_io_mod
     Diag(idx)%desc = 'time accumulated upward lw flux at surface- GFS physics'
     Diag(idx)%unit = 'w/m**2'
     Diag(idx)%mod_name = 'gfs_phys'
+    Diag(idx)%intpl_method = 'bilinear'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%ulwsfc(:)
@@ -2074,6 +2144,7 @@ module FV3GFS_io_mod
     Diag(idx)%desc = 'Sunshine Duration'
     Diag(idx)%unit = 's'
     Diag(idx)%mod_name = 'gfs_phys'
+    Diag(idx)%intpl_method = 'bilinear'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%suntim(:)
@@ -2108,6 +2179,7 @@ module FV3GFS_io_mod
     Diag(idx)%unit = 'J/kg'
     Diag(idx)%mod_name = 'gfs_phys'
     Diag(idx)%time_avg = .TRUE.
+    Diag(idx)%intpl_method = 'bilinear'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%cldwrk(:)
@@ -2117,7 +2189,7 @@ module FV3GFS_io_mod
     idx = idx + 1
     Diag(idx)%axes = 2
     Diag(idx)%name = 'u-gwd_ave'
-    Diag(idx)%desc = 'surface zonal gravity wave stress [N/m**2]'
+    Diag(idx)%desc = 'surface zonal gravity wave stress'
     Diag(idx)%unit = 'N/m**2'
     Diag(idx)%mod_name = 'gfs_phys'
     Diag(idx)%cnvfac = cn_one
@@ -2130,7 +2202,7 @@ module FV3GFS_io_mod
     idx = idx + 1
     Diag(idx)%axes = 2
     Diag(idx)%name = 'v-gwd_ave'
-    Diag(idx)%desc = 'surface meridional gravity wave stress [N/m**2]'
+    Diag(idx)%desc = 'surface meridional gravity wave stress'
     Diag(idx)%unit = 'N/m**2'
     Diag(idx)%mod_name = 'gfs_phys'
     Diag(idx)%cnvfac = cn_one
@@ -2146,6 +2218,7 @@ module FV3GFS_io_mod
     Diag(idx)%desc = 'surface pressure'
     Diag(idx)%unit = 'kPa'
     Diag(idx)%mod_name = 'gfs_phys'
+    Diag(idx)%intpl_method = 'bilinear'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%psmean(:)
@@ -2154,11 +2227,13 @@ module FV3GFS_io_mod
     idx = idx + 1
     Diag(idx)%axes = 2
     Diag(idx)%name = 'cnvprcp_ave'
-    Diag(idx)%desc = 'averaged surface convective precipitation rate [kg/m**2/s]'
+    Diag(idx)%desc = 'averaged surface convective precipitation rate'
     Diag(idx)%unit = 'kg/m**2/s'
     Diag(idx)%mod_name = 'gfs_phys'
     Diag(idx)%cnvfac = cn_th
     Diag(idx)%time_avg = .TRUE.
+    Diag(idx)%full_time_avg = .TRUE.
+    Diag(idx)%intpl_method = 'bilinear'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%cnvprcp(:)
@@ -2167,7 +2242,7 @@ module FV3GFS_io_mod
     idx = idx + 1
     Diag(idx)%axes = 2
     Diag(idx)%name = 'cnvprcp'
-    Diag(idx)%desc = 'surface convective precipitation rate [kg/m**2/s]'
+    Diag(idx)%desc = 'surface convective precipitation rate'
     Diag(idx)%unit = 'kg/m**2/s'
     Diag(idx)%mod_name = 'gfs_phys'
     allocate (Diag(idx)%data(nblks))
@@ -2181,6 +2256,7 @@ module FV3GFS_io_mod
     Diag(idx)%desc = 'minimum specific humidity'
     Diag(idx)%unit = 'kg/kg'
     Diag(idx)%mod_name = 'gfs_phys'
+    Diag(idx)%intpl_method = 'bilinear'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%spfhmin(:)
@@ -2192,6 +2268,7 @@ module FV3GFS_io_mod
     Diag(idx)%desc = 'maximum specific humidity'
     Diag(idx)%unit = 'kg/kg'
     Diag(idx)%mod_name = 'gfs_phys'
+    Diag(idx)%intpl_method = 'bilinear'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%spfhmax(:)
@@ -2203,6 +2280,7 @@ module FV3GFS_io_mod
     Diag(idx)%desc = 'maximum (magnitude) u-wind'
     Diag(idx)%unit = 'm/s'
     Diag(idx)%mod_name = 'gfs_phys'
+    Diag(idx)%intpl_method = 'vector_bilinear'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%u10mmax(:)
@@ -2214,6 +2292,7 @@ module FV3GFS_io_mod
     Diag(idx)%desc = 'maximum (magnitude) v-wind'
     Diag(idx)%unit = 'm/s'
     Diag(idx)%mod_name = 'gfs_phys'
+    Diag(idx)%intpl_method = 'vector_bilinear'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%v10mmax(:)
@@ -2225,6 +2304,7 @@ module FV3GFS_io_mod
     Diag(idx)%desc = 'maximum wind speed'
     Diag(idx)%unit = 'm/s'
     Diag(idx)%mod_name = 'gfs_phys'
+    Diag(idx)%intpl_method = 'bilinear'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%wind10mmax(:)
@@ -2288,11 +2368,12 @@ module FV3GFS_io_mod
     idx = idx + 1
     Diag(idx)%axes = 2
     Diag(idx)%name = 'totice'
-    Diag(idx)%desc = 'surface ice precipitation rate [kg/m**2/s]'
+    Diag(idx)%desc = 'surface ice precipitation rate'
     Diag(idx)%unit = 'kg/m**2/s'
     Diag(idx)%mod_name = 'gfs_phys'
     Diag(idx)%cnvfac = cn_th
     Diag(idx)%time_avg = .TRUE.
+    Diag(idx)%full_time_avg = .TRUE.
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%totice(:)
@@ -2301,11 +2382,12 @@ module FV3GFS_io_mod
     idx = idx + 1
     Diag(idx)%axes = 2
     Diag(idx)%name = 'totsnw'
-    Diag(idx)%desc = 'surface snow precipitation rate [kg/m**2/s]'
+    Diag(idx)%desc = 'surface snow precipitation rate'
     Diag(idx)%unit = 'kg/m**2/s'
     Diag(idx)%mod_name = 'gfs_phys'
     Diag(idx)%cnvfac = cn_th
     Diag(idx)%time_avg = .TRUE.
+    Diag(idx)%full_time_avg = .TRUE.
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%totsnw(:)
@@ -2314,24 +2396,26 @@ module FV3GFS_io_mod
     idx = idx + 1
     Diag(idx)%axes = 2
     Diag(idx)%name = 'totgrp'
-    Diag(idx)%desc = 'surface graupel precipitation rate [kg/m**2/s]'
+    Diag(idx)%desc = 'surface graupel precipitation rate'
     Diag(idx)%unit = 'kg/m**2/s'
     Diag(idx)%mod_name = 'gfs_phys'
     Diag(idx)%cnvfac = cn_th
     Diag(idx)%time_avg = .TRUE.
+    Diag(idx)%full_time_avg = .TRUE.
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%totgrp(:)
     enddo
-    if(mpp_pe()==mpp_root_pe())print *,'in gfdl_diag_register,af totgrp,idx=',idx
+!    if(mpp_pe()==mpp_root_pe())print *,'in gfdl_diag_register,af totgrp,idx=',idx
 
 !--- physics instantaneous diagnostics ---
     idx = idx + 1
     Diag(idx)%axes = 2
     Diag(idx)%name = 'u10m'
-    Diag(idx)%desc = '10 meter u wind [m/s]'
+    Diag(idx)%desc = '10 meter u wind'
     Diag(idx)%unit = 'm/s'
     Diag(idx)%mod_name = 'gfs_phys'
+    Diag(idx)%intpl_method = 'vector_bilinear'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%u10m(:)
@@ -2340,9 +2424,10 @@ module FV3GFS_io_mod
     idx = idx + 1
     Diag(idx)%axes = 2
     Diag(idx)%name = 'v10m'
-    Diag(idx)%desc = '10 meter v wind [m/s]'
+    Diag(idx)%desc = '10 meter v wind'
     Diag(idx)%unit = 'm/s'
     Diag(idx)%mod_name = 'gfs_phys'
+    Diag(idx)%intpl_method = 'vector_bilinear'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%v10m(:)
@@ -2351,9 +2436,10 @@ module FV3GFS_io_mod
     idx = idx + 1
     Diag(idx)%axes = 2
     Diag(idx)%name = 'dpt2m'
-    Diag(idx)%desc = '2 meter dew point temperature [K]'
+    Diag(idx)%desc = '2 meter dew point temperature'
     Diag(idx)%unit = 'K'
     Diag(idx)%mod_name = 'gfs_phys'
+    Diag(idx)%intpl_method = 'bilinear'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%dpt2m(:)
@@ -2373,9 +2459,10 @@ module FV3GFS_io_mod
     idx = idx + 1
     Diag(idx)%axes = 2
     Diag(idx)%name = 'psurf'
-    Diag(idx)%desc = 'surface pressure [Pa]'
+    Diag(idx)%desc = 'surface pressure'
     Diag(idx)%unit = 'Pa'
     Diag(idx)%mod_name = 'gfs_phys'
+    Diag(idx)%intpl_method = 'bilinear'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%psurf(:)
@@ -2384,9 +2471,10 @@ module FV3GFS_io_mod
     idx = idx + 1
     Diag(idx)%axes = 2
     Diag(idx)%name = 'hpbl'
-    Diag(idx)%desc = 'surface planetary boundary layer height [m]'
+    Diag(idx)%desc = 'surface planetary boundary layer height'
     Diag(idx)%unit = 'm'
     Diag(idx)%mod_name = 'gfs_phys'
+    Diag(idx)%intpl_method = 'bilinear'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%hpbl(:)
@@ -2395,9 +2483,10 @@ module FV3GFS_io_mod
     idx = idx + 1
     Diag(idx)%axes = 2
     Diag(idx)%name = 'pwat'
-    Diag(idx)%desc = 'atmos column precipitable water [kg/m**2]'
+    Diag(idx)%desc = 'atmos column precipitable water'
     Diag(idx)%unit = 'kg/m**2'
     Diag(idx)%mod_name = 'gfs_phys'
+    Diag(idx)%intpl_method = 'bilinear'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%pwat(:)
@@ -2409,6 +2498,7 @@ module FV3GFS_io_mod
     Diag(idx)%desc = 'layer 1 temperature'
     Diag(idx)%unit = 'K'
     Diag(idx)%mod_name = 'gfs_phys'
+    Diag(idx)%intpl_method = 'bilinear'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%t1(:)
@@ -2420,6 +2510,7 @@ module FV3GFS_io_mod
     Diag(idx)%desc = 'layer 1 specific humidity'
     Diag(idx)%unit = 'kg/kg'
     Diag(idx)%mod_name = 'gfs_phys'
+    Diag(idx)%intpl_method = 'bilinear'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%q1(:)
@@ -2431,6 +2522,7 @@ module FV3GFS_io_mod
     Diag(idx)%desc = 'layer 1 zonal wind'
     Diag(idx)%unit = 'm/s'
     Diag(idx)%mod_name = 'gfs_phys'
+    Diag(idx)%intpl_method = 'vector_bilinear'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%u1(:)
@@ -2442,6 +2534,7 @@ module FV3GFS_io_mod
     Diag(idx)%desc = 'layer 1 meridional wind'
     Diag(idx)%unit = 'm/s'
     Diag(idx)%mod_name = 'gfs_phys'
+    Diag(idx)%intpl_method = 'vector_bilinear'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%v1(:)
@@ -2453,6 +2546,7 @@ module FV3GFS_io_mod
     Diag(idx)%desc = 'Exchange Coefficient'
     Diag(idx)%unit = 'kg/m2/s'
     Diag(idx)%mod_name = 'gfs_phys'
+    Diag(idx)%intpl_method = 'bilinear'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%chh(:)
@@ -2464,6 +2558,7 @@ module FV3GFS_io_mod
     Diag(idx)%desc = 'Aerodynamic conductance'
     Diag(idx)%unit = 'm/s'
     Diag(idx)%mod_name = 'gfs_phys'
+    Diag(idx)%intpl_method = 'bilinear'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%cmm(:)
@@ -2475,6 +2570,7 @@ module FV3GFS_io_mod
     Diag(idx)%desc = 'instantaneous sfc downward lw flux'
     Diag(idx)%unit = 'w/m**2'
     Diag(idx)%mod_name = 'gfs_phys'
+    Diag(idx)%intpl_method = 'bilinear'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%dlwsfci(:)
@@ -2486,6 +2582,7 @@ module FV3GFS_io_mod
     Diag(idx)%desc = 'instantaneous sfc upward lw flux'
     Diag(idx)%unit = 'w/m**2'
     Diag(idx)%mod_name = 'gfs_phys'
+    Diag(idx)%intpl_method = 'bilinear'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%ulwsfci(:)
@@ -2497,6 +2594,7 @@ module FV3GFS_io_mod
     Diag(idx)%desc = 'instantaneous sfc downward sw flux'
     Diag(idx)%unit = 'w/m**2'
     Diag(idx)%mod_name = 'gfs_phys'
+    Diag(idx)%intpl_method = 'bilinear'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%dswsfci(:)
@@ -2508,6 +2606,7 @@ module FV3GFS_io_mod
     Diag(idx)%desc = 'instantaneous sfc upward sw flux'
     Diag(idx)%unit = 'w/m**2'
     Diag(idx)%mod_name = 'gfs_phys'
+    Diag(idx)%intpl_method = 'bilinear'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%uswsfci(:)
@@ -2541,6 +2640,7 @@ module FV3GFS_io_mod
     Diag(idx)%desc = 'instantaneous surface sensible heat net flux'
     Diag(idx)%unit = 'W/m**2'
     Diag(idx)%mod_name = 'gfs_phys'
+    Diag(idx)%intpl_method = 'bilinear'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%dtsfci(:)
@@ -2552,6 +2652,7 @@ module FV3GFS_io_mod
     Diag(idx)%desc = 'instantaneous surface latent heat net flux'
     Diag(idx)%unit = 'W/m**2'
     Diag(idx)%mod_name = 'gfs_phys'
+    Diag(idx)%intpl_method = 'bilinear'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%dqsfci(:)
@@ -2618,6 +2719,7 @@ module FV3GFS_io_mod
     Diag(idx)%desc = 'Percent frozen precipitation'
     Diag(idx)%unit = '%'
     Diag(idx)%mod_name = 'gfs_phys'
+    Diag(idx)%intpl_method = 'bilinear'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%sr(:)
@@ -2666,7 +2768,7 @@ module FV3GFS_io_mod
     do nb = 1,nblks
       Diag(idx)%data(nb)%var3 => Gfs_diag(nb)%shum_wts(:,:)
     enddo
-    if(mpp_pe()==mpp_root_pe())print *,'in gfdl_diag_register,af shum_wts,idx=',idx
+!    if(mpp_pe()==mpp_root_pe())print *,'in gfdl_diag_register,af shum_wts,idx=',idx
 
 
 !--- three-dimensional variables that need to be handled special when writing 
@@ -2854,7 +2956,7 @@ module FV3GFS_io_mod
     idx = idx + 1
     Diag(idx)%axes = 2
     Diag(idx)%name = 'fice'
-    Diag(idx)%desc = 'surface ice concentration (ice=1; no ice=0) [fraction]'
+    Diag(idx)%desc = 'surface ice concentration (ice=1; no ice=0)'
     Diag(idx)%unit = 'fraction'
     Diag(idx)%mod_name = 'gfs_sfc'
     allocate (Diag(idx)%data(nblks))
@@ -2909,7 +3011,7 @@ module FV3GFS_io_mod
     idx = idx + 1
     Diag(idx)%axes = 2
     Diag(idx)%name = 'snowd'
-    Diag(idx)%desc = 'surface snow depth [m]'
+    Diag(idx)%desc = 'surface snow depth'
     Diag(idx)%unit = 'm'
     Diag(idx)%mod_name = 'gfs_sfc'
     Diag(idx)%cnvfac = cn_one/cn_th
@@ -2921,7 +3023,7 @@ module FV3GFS_io_mod
     idx = idx + 1
     Diag(idx)%axes = 2
     Diag(idx)%name = 'crain'
-    Diag(idx)%desc = 'categorical rain[number]'
+    Diag(idx)%desc = 'categorical rain'
     Diag(idx)%unit = 'number'
     Diag(idx)%mod_name = 'gfs_sfc'
     Diag(idx)%cnvfac = cn_one
@@ -2934,7 +3036,7 @@ module FV3GFS_io_mod
     Diag(idx)%axes = 2
     Diag(idx)%name = 'stype'
     Diag(idx)%desc = 'soil type in integer 1-9'
-    Diag(idx)%unit = 'N/A'
+    Diag(idx)%unit = 'number'
     Diag(idx)%mod_name = 'gfs_sfc'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
@@ -2944,9 +3046,10 @@ module FV3GFS_io_mod
     idx = idx + 1
     Diag(idx)%axes = 2
     Diag(idx)%name = 'q2m'
-    Diag(idx)%desc = '2m specific humidity [kg/kg]'
+    Diag(idx)%desc = '2m specific humidity'
     Diag(idx)%unit = 'kg/kg'
     Diag(idx)%mod_name = 'gfs_sfc'
+    Diag(idx)%intpl_method = 'bilinear'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Sfcprop(nb)%q2m(:)
@@ -2955,9 +3058,10 @@ module FV3GFS_io_mod
     idx = idx + 1
     Diag(idx)%axes = 2
     Diag(idx)%name = 't2m'
-    Diag(idx)%desc = '2m temperature [K]'
+    Diag(idx)%desc = '2m temperature'
     Diag(idx)%unit = 'K'
     Diag(idx)%mod_name = 'gfs_sfc'
+    Diag(idx)%intpl_method = 'bilinear'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Sfcprop(nb)%t2m(:)
@@ -2966,7 +3070,7 @@ module FV3GFS_io_mod
     idx = idx + 1
     Diag(idx)%axes = 2
     Diag(idx)%name = 'tsfc'
-    Diag(idx)%desc = 'surface temperature [K]'
+    Diag(idx)%desc = 'surface temperature'
     Diag(idx)%unit = 'K'
     Diag(idx)%mod_name = 'gfs_sfc'
     allocate (Diag(idx)%data(nblks))
@@ -2978,7 +3082,7 @@ module FV3GFS_io_mod
     Diag(idx)%axes = 2
     Diag(idx)%name = 'tg3'
     Diag(idx)%desc = 'deep soil temperature'
-    Diag(idx)%unit = 'XXX'
+    Diag(idx)%unit = 'K'
     Diag(idx)%mod_name = 'gfs_sfc'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
@@ -3011,459 +3115,475 @@ module FV3GFS_io_mod
     Diag(idx)%axes = 2
     Diag(idx)%name = 'vtype'
     Diag(idx)%desc = 'vegetation type in integer 1-13'
-    Diag(idx)%unit = 'N/A'
-    Diag(idx)%mod_name = 'gfs_sfc'
-    allocate (Diag(idx)%data(nblks))
+    Diag(idx)%unit = 'number'
+    diag(idx)%mod_name = 'gfs_sfc'
+    allocate (diag(idx)%data(nblks))
     do nb = 1,nblks
-      Diag(idx)%data(nb)%var2 => Sfcprop(nb)%vtype(:)
+      diag(idx)%data(nb)%var2 => sfcprop(nb)%vtype(:)
     enddo
 
     idx = idx + 1
-    Diag(idx)%axes = 2
-    Diag(idx)%name = 'weasd'
-    Diag(idx)%desc = 'surface snow water equivalent [kg/m**2]'
-    Diag(idx)%unit = 'kg/m**2'
-    Diag(idx)%mod_name = 'gfs_sfc'
-    allocate (Diag(idx)%data(nblks))
+    diag(idx)%axes = 2
+    diag(idx)%name = 'weasd'
+    diag(idx)%desc = 'surface snow water equivalent'
+    diag(idx)%unit = 'kg/m**2'
+    diag(idx)%mod_name = 'gfs_sfc'
+    allocate (diag(idx)%data(nblks))
     do nb = 1,nblks
-      Diag(idx)%data(nb)%var2 => Sfcprop(nb)%weasd(:)
+      diag(idx)%data(nb)%var2 => sfcprop(nb)%weasd(:)
     enddo
 
     idx = idx + 1
-    Diag(idx)%axes = 2
-    Diag(idx)%name = 'HGTsfc'
-    Diag(idx)%desc = 'surface geopotential height [gpm]'
-    Diag(idx)%unit = 'gpm'
-    Diag(idx)%mod_name = 'gfs_sfc'
-    Diag(idx)%cnvfac = cn_one
-    allocate (Diag(idx)%data(nblks))
+    diag(idx)%axes = 2
+    diag(idx)%name = 'hgtsfc'
+    diag(idx)%desc = 'surface geopotential height'
+    diag(idx)%unit = 'gpm'
+    diag(idx)%mod_name = 'gfs_sfc'
+    diag(idx)%cnvfac = cn_one
+    allocate (diag(idx)%data(nblks))
     do nb = 1,nblks
-      Diag(idx)%data(nb)%var2 => Sfcprop(nb)%oro(:)
+      diag(idx)%data(nb)%var2 => sfcprop(nb)%oro(:)
     enddo
 
     idx = idx + 1
-    Diag(idx)%axes = 2
-    Diag(idx)%name = 'SLMSKsfc'
-    Diag(idx)%desc = 'sea-land-ice mask (0-sea, 1-land, 2-ice)'
-    Diag(idx)%unit = 'N/A'
-    Diag(idx)%mod_name = 'gfs_sfc'
-    allocate (Diag(idx)%data(nblks))
+    diag(idx)%axes = 2
+    diag(idx)%name = 'slmsksfc'
+    diag(idx)%desc = 'sea-land-ice mask (0-sea, 1-land, 2-ice)'
+    diag(idx)%unit = 'numerical'
+    diag(idx)%mod_name = 'gfs_sfc'
+    allocate (diag(idx)%data(nblks))
     do nb = 1,nblks
-      Diag(idx)%data(nb)%var2 => Sfcprop(nb)%slmsk(:)
+      diag(idx)%data(nb)%var2 => sfcprop(nb)%slmsk(:)
     enddo
 
     idx = idx + 1
-    Diag(idx)%axes = 2
-    Diag(idx)%name = 'ZORLsfc'
-    Diag(idx)%desc = 'surface roughness [m]'
-    Diag(idx)%unit = 'm'
-    Diag(idx)%mod_name = 'gfs_sfc'
-    Diag(idx)%cnvfac = cn_one/cn_100
-    allocate (Diag(idx)%data(nblks))
+    diag(idx)%axes = 2
+    diag(idx)%name = 'zorlsfc'
+    diag(idx)%desc = 'surface roughness'
+    diag(idx)%unit = 'm'
+    diag(idx)%mod_name = 'gfs_sfc'
+    diag(idx)%cnvfac = cn_one/cn_100
+    allocate (diag(idx)%data(nblks))
     do nb = 1,nblks
-      Diag(idx)%data(nb)%var2 => Sfcprop(nb)%zorl(:)
+      diag(idx)%data(nb)%var2 => sfcprop(nb)%zorl(:)
     enddo
 
     idx = idx + 1
-    Diag(idx)%axes = 2
-    Diag(idx)%name = 'VFRACsfc'
-    Diag(idx)%desc = 'vegetation fraction'
-    Diag(idx)%unit = 'N/A'
-    Diag(idx)%mod_name = 'gfs_sfc'
-    Diag(idx)%cnvfac = cn_100
-    allocate (Diag(idx)%data(nblks))
+    diag(idx)%axes = 2
+    diag(idx)%name = 'vfracsfc'
+    diag(idx)%desc = 'vegetation fraction'
+    diag(idx)%unit = 'fraction'
+    diag(idx)%mod_name = 'gfs_sfc'
+    diag(idx)%cnvfac = cn_100
+    allocate (diag(idx)%data(nblks))
     do nb = 1,nblks
-      Diag(idx)%data(nb)%var2 => Sfcprop(nb)%vfrac(:)
+      diag(idx)%data(nb)%var2 => sfcprop(nb)%vfrac(:)
     enddo
 
     do num = 1,4
-      write (xtra,'(I1)') num 
+      write (xtra,'(i1)') num 
       idx = idx + 1
-      Diag(idx)%axes = 2
-      Diag(idx)%name = 'slc_'//trim(xtra)
-      Diag(idx)%desc = 'liquid soil mositure at layer-'//trim(xtra)
-      Diag(idx)%unit = 'XXX'
-      Diag(idx)%mod_name = 'gfs_sfc'
-      allocate (Diag(idx)%data(nblks))
+      diag(idx)%axes = 2
+      diag(idx)%name = 'slc_'//trim(xtra)
+      diag(idx)%desc = 'liquid soil mositure at layer-'//trim(xtra)
+      diag(idx)%unit = 'xxx'
+      diag(idx)%mod_name = 'gfs_sfc'
+      allocate (diag(idx)%data(nblks))
       do nb = 1,nblks
-        Diag(idx)%data(nb)%var2 => Sfcprop(nb)%slc(:,num)
+        diag(idx)%data(nb)%var2 => sfcprop(nb)%slc(:,num)
       enddo
     enddo
 
     idx = idx + 1
-    Diag(idx)%axes = 2
-    Diag(idx)%name = 'SOILW1'
-    Diag(idx)%desc = 'volumetric soil moisture 0-10cm [fraction]'
-    Diag(idx)%unit = 'fraction'
-    Diag(idx)%mod_name = 'gfs_sfc'
-    allocate (Diag(idx)%data(nblks))
+    diag(idx)%axes = 2
+    diag(idx)%name = 'soilw1'
+    diag(idx)%desc = 'volumetric soil moisture 0-10cm'
+    diag(idx)%unit = 'fraction'
+    diag(idx)%mod_name = 'gfs_sfc'
+    allocate (diag(idx)%data(nblks))
     do nb = 1,nblks
-      Diag(idx)%data(nb)%var2 => Sfcprop(nb)%smc(:,1)
+      diag(idx)%data(nb)%var2 => sfcprop(nb)%smc(:,1)
     enddo
 
     idx = idx + 1
-    Diag(idx)%axes = 2
-    Diag(idx)%name = 'SOILW2'
-    Diag(idx)%desc = 'volumetric soil moisture 10-40cm [fraction]'
-    Diag(idx)%unit = 'fraction'
-    Diag(idx)%mod_name = 'gfs_sfc'
-    allocate (Diag(idx)%data(nblks))
+    diag(idx)%axes = 2
+    diag(idx)%name = 'soilw2'
+    diag(idx)%desc = 'volumetric soil moisture 10-40cm'
+    diag(idx)%unit = 'fraction'
+    diag(idx)%mod_name = 'gfs_sfc'
+    allocate (diag(idx)%data(nblks))
     do nb = 1,nblks
-      Diag(idx)%data(nb)%var2 => Sfcprop(nb)%smc(:,2)
+      diag(idx)%data(nb)%var2 => sfcprop(nb)%smc(:,2)
     enddo
 
     idx = idx + 1
-    Diag(idx)%axes = 2
-    Diag(idx)%name = 'SOILW3'
-    Diag(idx)%desc = 'volumetric soil moisture 40-100cm [fraction]'
-    Diag(idx)%unit = 'fraction'
-    Diag(idx)%mod_name = 'gfs_sfc'
-    allocate (Diag(idx)%data(nblks))
+    diag(idx)%axes = 2
+    diag(idx)%name = 'soilw3'
+    diag(idx)%desc = 'volumetric soil moisture 40-100cm'
+    diag(idx)%unit = 'fraction'
+    diag(idx)%mod_name = 'gfs_sfc'
+    allocate (diag(idx)%data(nblks))
     do nb = 1,nblks
-      Diag(idx)%data(nb)%var2 => Sfcprop(nb)%smc(:,3)
+      diag(idx)%data(nb)%var2 => sfcprop(nb)%smc(:,3)
     enddo
 
     idx = idx + 1
-    Diag(idx)%axes = 2
-    Diag(idx)%name = 'SOILW4'
-    Diag(idx)%desc = 'volumetric soil moisture 100-200cm [fraction]'
-    Diag(idx)%unit = 'fraction'
-    Diag(idx)%mod_name = 'gfs_sfc'
-    allocate (Diag(idx)%data(nblks))
+    diag(idx)%axes = 2
+    diag(idx)%name = 'soilw4'
+    diag(idx)%desc = 'volumetric soil moisture 100-200cm'
+    diag(idx)%unit = 'fraction'
+    diag(idx)%mod_name = 'gfs_sfc'
+    allocate (diag(idx)%data(nblks))
     do nb = 1,nblks
-      Diag(idx)%data(nb)%var2 => Sfcprop(nb)%smc(:,4)
+      diag(idx)%data(nb)%var2 => sfcprop(nb)%smc(:,4)
     enddo
 
     idx = idx + 1
-    Diag(idx)%axes = 2
-    Diag(idx)%name = 'SOILT1'
-    Diag(idx)%desc = 'soil temperature 0-10cm [K]' 
-    Diag(idx)%unit = 'K'
-    Diag(idx)%mod_name = 'gfs_sfc'
-    allocate (Diag(idx)%data(nblks))
+    diag(idx)%axes = 2
+    diag(idx)%name = 'soilt1'
+    diag(idx)%desc = 'soil temperature 0-10cm' 
+    diag(idx)%unit = 'K'
+    diag(idx)%mod_name = 'gfs_sfc'
+    allocate (diag(idx)%data(nblks))
     do nb = 1,nblks
-      Diag(idx)%data(nb)%var2 => Sfcprop(nb)%stc(:,1)
+      diag(idx)%data(nb)%var2 => sfcprop(nb)%stc(:,1)
     enddo
 
     idx = idx + 1
-    Diag(idx)%axes = 2
-    Diag(idx)%name = 'SOILT2'
-    Diag(idx)%desc = 'soil temperature 10-40cm [K]' 
-    Diag(idx)%unit = 'K'
-    Diag(idx)%mod_name = 'gfs_sfc'
-    allocate (Diag(idx)%data(nblks))
+    diag(idx)%axes = 2
+    diag(idx)%name = 'soilt2'
+    diag(idx)%desc = 'soil temperature 10-40cm' 
+    diag(idx)%unit = 'K'
+    diag(idx)%mod_name = 'gfs_sfc'
+    allocate (diag(idx)%data(nblks))
     do nb = 1,nblks
-      Diag(idx)%data(nb)%var2 => Sfcprop(nb)%stc(:,2)
+      diag(idx)%data(nb)%var2 => sfcprop(nb)%stc(:,2)
     enddo
 
     idx = idx + 1
-    Diag(idx)%axes = 2
-    Diag(idx)%name = 'SOILT3'
-    Diag(idx)%desc = 'soil temperature 40-100cm [K]' 
-    Diag(idx)%unit = 'K'
-    Diag(idx)%mod_name = 'gfs_sfc'
-    allocate (Diag(idx)%data(nblks))
+    diag(idx)%axes = 2
+    diag(idx)%name = 'soilt3'
+    diag(idx)%desc = 'soil temperature 40-100cm' 
+    diag(idx)%unit = 'K'
+    diag(idx)%mod_name = 'gfs_sfc'
+    allocate (diag(idx)%data(nblks))
     do nb = 1,nblks
-      Diag(idx)%data(nb)%var2 => Sfcprop(nb)%stc(:,3)
+      diag(idx)%data(nb)%var2 => sfcprop(nb)%stc(:,3)
     enddo
 
     idx = idx + 1
-    Diag(idx)%axes = 2
-    Diag(idx)%name = 'SOILT4'
-    Diag(idx)%desc = 'soil temperature 100-200cm [K]' 
-    Diag(idx)%unit = 'K'
-    Diag(idx)%mod_name = 'gfs_sfc'
-    allocate (Diag(idx)%data(nblks))
+    diag(idx)%axes = 2
+    diag(idx)%name = 'soilt4'
+    diag(idx)%desc = 'soil temperature 100-200cm' 
+    diag(idx)%unit = 'K'
+    diag(idx)%mod_name = 'gfs_sfc'
+    allocate (diag(idx)%data(nblks))
     do nb = 1,nblks
-      Diag(idx)%data(nb)%var2 => Sfcprop(nb)%stc(:,4)
+      diag(idx)%data(nb)%var2 => sfcprop(nb)%stc(:,4)
     enddo
-    if(mpp_pe()==mpp_root_pe())print *,'in gfdl_diag_register,af soilt4,idx=',idx,Model%nstf_name(1)
+!    print *,'in gfdl_diag_register,af soilt4,idx=',idx,model%nstf_name(1)
 
 !--------------------------nsst variables
-  if (Model%nstf_name(1) > 0) then
+  if (model%nstf_name(1) > 0) then
 !--------------------------nsst variables
 
     idx = idx + 1
-    Diag(idx)%axes = 2
-    Diag(idx)%name = 'tref'
-    Diag(idx)%desc = 'nsst reference or foundation temperature'
-    Diag(idx)%unit = 'K'
-    Diag(idx)%mod_name = 'gfs_sfc'
-    allocate (Diag(idx)%data(nblks))
+    diag(idx)%axes = 2
+    diag(idx)%name = 'tref'
+    diag(idx)%desc = 'nsst reference or foundation temperature'
+    diag(idx)%unit = 'K'
+    diag(idx)%mod_name = 'gfs_sfc'
+    allocate (diag(idx)%data(nblks))
     do nb = 1,nblks
-      Diag(idx)%data(nb)%var2 => Sfcprop(nb)%tref(:)
+      diag(idx)%data(nb)%var2 => sfcprop(nb)%tref(:)
     enddo
 
     idx = idx + 1
-    Diag(idx)%axes = 2
-    Diag(idx)%name = 'z_c'
-    Diag(idx)%desc = 'nsst sub-layer cooling thickness'
-    Diag(idx)%unit = 'm'
-    Diag(idx)%mod_name = 'gfs_sfc'
-    allocate (Diag(idx)%data(nblks))
+    diag(idx)%axes = 2
+    diag(idx)%name = 'z_c'
+    diag(idx)%desc = 'nsst sub-layer cooling thickness'
+    diag(idx)%unit = 'm'
+    diag(idx)%mod_name = 'gfs_sfc'
+    allocate (diag(idx)%data(nblks))
     do nb = 1,nblks
-      Diag(idx)%data(nb)%var2 => Sfcprop(nb)%z_c(:)
+      diag(idx)%data(nb)%var2 => sfcprop(nb)%z_c(:)
     enddo
 
     idx = idx + 1
-    Diag(idx)%axes = 2
-    Diag(idx)%name = 'c_0'
-    Diag(idx)%desc = 'nsst coefficient1 to calculate d(tz)/d(ts)'
-    Diag(idx)%unit = 'N/A'
-    Diag(idx)%mod_name = 'gfs_sfc'
-    allocate (Diag(idx)%data(nblks))
+    diag(idx)%axes = 2
+    diag(idx)%name = 'c_0'
+    diag(idx)%desc = 'nsst coefficient1 to calculate d(tz)/d(ts)'
+    diag(idx)%unit = 'numerical'
+    diag(idx)%mod_name = 'gfs_sfc'
+    allocate (diag(idx)%data(nblks))
     do nb = 1,nblks
-      Diag(idx)%data(nb)%var2 => Sfcprop(nb)%c_0(:)
+      diag(idx)%data(nb)%var2 => sfcprop(nb)%c_0(:)
     enddo
 
     idx = idx + 1
-    Diag(idx)%axes = 2
-    Diag(idx)%name = 'c_d'
-    Diag(idx)%desc = 'nsst coefficient2 to calculate d(tz)/d(ts)'
-    Diag(idx)%unit = 'N/A'
-    Diag(idx)%mod_name = 'gfs_sfc'
-    allocate (Diag(idx)%data(nblks))
+    diag(idx)%axes = 2
+    diag(idx)%name = 'c_d'
+    diag(idx)%desc = 'nsst coefficient2 to calculate d(tz)/d(ts)'
+    diag(idx)%unit = 'n/a'
+    diag(idx)%mod_name = 'gfs_sfc'
+    allocate (diag(idx)%data(nblks))
     do nb = 1,nblks
-      Diag(idx)%data(nb)%var2 => Sfcprop(nb)%c_d(:)
+      diag(idx)%data(nb)%var2 => sfcprop(nb)%c_d(:)
     enddo
 
     idx = idx + 1
-    Diag(idx)%axes = 2
-    Diag(idx)%name = 'w_0'
-    Diag(idx)%desc = 'nsst coefficient3 to calculate d(tz)/d(ts)'
-    Diag(idx)%unit = 'N/A'
-    Diag(idx)%mod_name = 'gfs_sfc'
-    allocate (Diag(idx)%data(nblks))
+    diag(idx)%axes = 2
+    diag(idx)%name = 'w_0'
+    diag(idx)%desc = 'nsst coefficient3 to calculate d(tz)/d(ts)'
+    diag(idx)%unit = 'n/a'
+    diag(idx)%mod_name = 'gfs_sfc'
+    allocate (diag(idx)%data(nblks))
     do nb = 1,nblks
-      Diag(idx)%data(nb)%var2 => Sfcprop(nb)%w_0(:)
+      diag(idx)%data(nb)%var2 => sfcprop(nb)%w_0(:)
     enddo
 
     idx = idx + 1
-    Diag(idx)%axes = 2
-    Diag(idx)%name = 'w_d'
-    Diag(idx)%desc = 'nsst coefficient4 to calculate d(tz)/d(ts)'
-    Diag(idx)%unit = 'N/A'
-    Diag(idx)%mod_name = 'gfs_sfc'
-    allocate (Diag(idx)%data(nblks))
+    diag(idx)%axes = 2
+    diag(idx)%name = 'w_d'
+    diag(idx)%desc = 'nsst coefficient4 to calculate d(tz)/d(ts)'
+    diag(idx)%unit = 'n/a'
+    diag(idx)%mod_name = 'gfs_sfc'
+    allocate (diag(idx)%data(nblks))
     do nb = 1,nblks
-      Diag(idx)%data(nb)%var2 => Sfcprop(nb)%w_d(:)
+      diag(idx)%data(nb)%var2 => sfcprop(nb)%w_d(:)
     enddo
 
     idx = idx + 1
-    Diag(idx)%axes = 2
-    Diag(idx)%name = 'xt'
-    Diag(idx)%desc = 'nsst heat content in diurnal thermocline layer'
-    Diag(idx)%unit = 'K*m'
-    Diag(idx)%mod_name = 'gfs_sfc'
-    allocate (Diag(idx)%data(nblks))
+    diag(idx)%axes = 2
+    diag(idx)%name = 'xt'
+    diag(idx)%desc = 'nsst heat content in diurnal thermocline layer'
+    diag(idx)%unit = 'k*m'
+    diag(idx)%mod_name = 'gfs_sfc'
+    allocate (diag(idx)%data(nblks))
     do nb = 1,nblks
-      Diag(idx)%data(nb)%var2 => Sfcprop(nb)%xt(:)
+      diag(idx)%data(nb)%var2 => sfcprop(nb)%xt(:)
     enddo
 
     idx = idx + 1
-    Diag(idx)%axes = 2
-    Diag(idx)%name = 'xs'
-    Diag(idx)%desc = 'nsst salinity content in diurnal thermocline layer'
-    Diag(idx)%unit = 'N/A'
-    Diag(idx)%mod_name = 'gfs_sfc'
-    allocate (Diag(idx)%data(nblks))
+    diag(idx)%axes = 2
+    diag(idx)%name = 'xs'
+    diag(idx)%desc = 'nsst salinity content in diurnal thermocline layer'
+    diag(idx)%unit = 'n/a'
+    diag(idx)%mod_name = 'gfs_sfc'
+    allocate (diag(idx)%data(nblks))
     do nb = 1,nblks
-      Diag(idx)%data(nb)%var2 => Sfcprop(nb)%xs(:)
+      diag(idx)%data(nb)%var2 => sfcprop(nb)%xs(:)
     enddo
 
     idx = idx + 1
-    Diag(idx)%axes = 2
-    Diag(idx)%name = 'xu'
-    Diag(idx)%desc = 'nsst u-current content in diurnal thermocline layer'
-    Diag(idx)%unit = 'm2/s'
-    Diag(idx)%mod_name = 'gfs_sfc'
-    allocate (Diag(idx)%data(nblks))
+    diag(idx)%axes = 2
+    diag(idx)%name = 'xu'
+    diag(idx)%desc = 'nsst u-current content in diurnal thermocline layer'
+    diag(idx)%unit = 'm2/s'
+    diag(idx)%mod_name = 'gfs_sfc'
+    allocate (diag(idx)%data(nblks))
     do nb = 1,nblks
-      Diag(idx)%data(nb)%var2 => Sfcprop(nb)%xu(:)
+      diag(idx)%data(nb)%var2 => sfcprop(nb)%xu(:)
     enddo
 
     idx = idx + 1
-    Diag(idx)%axes = 2
-    Diag(idx)%name = 'xv'
-    Diag(idx)%desc = 'nsst v-current content in diurnal thermocline layer'
-    Diag(idx)%unit = 'm2/s'
-    Diag(idx)%mod_name = 'gfs_sfc'
-    allocate (Diag(idx)%data(nblks))
+    diag(idx)%axes = 2
+    diag(idx)%name = 'xv'
+    diag(idx)%desc = 'nsst v-current content in diurnal thermocline layer'
+    diag(idx)%unit = 'm2/s'
+    diag(idx)%mod_name = 'gfs_sfc'
+    allocate (diag(idx)%data(nblks))
     do nb = 1,nblks
-      Diag(idx)%data(nb)%var2 => Sfcprop(nb)%xv(:)
+      diag(idx)%data(nb)%var2 => sfcprop(nb)%xv(:)
     enddo
 
     idx = idx + 1
-    Diag(idx)%axes = 2
-    Diag(idx)%name = 'xz'
-    Diag(idx)%desc = 'nsst diurnal thermocline layer thickness'
-    Diag(idx)%unit = 'm'
-    Diag(idx)%mod_name = 'gfs_sfc'
-    allocate (Diag(idx)%data(nblks))
+    diag(idx)%axes = 2
+    diag(idx)%name = 'xz'
+    diag(idx)%desc = 'nsst diurnal thermocline layer thickness'
+    diag(idx)%unit = 'm'
+    diag(idx)%mod_name = 'gfs_sfc'
+    allocate (diag(idx)%data(nblks))
     do nb = 1,nblks
-      Diag(idx)%data(nb)%var2 => Sfcprop(nb)%xz(:)
+      diag(idx)%data(nb)%var2 => sfcprop(nb)%xz(:)
     enddo
 
     idx = idx + 1
-    Diag(idx)%axes = 2
-    Diag(idx)%name = 'zm'
-    Diag(idx)%desc = 'nsst mixed layer thickness'
-    Diag(idx)%unit = 'm'
-    Diag(idx)%mod_name = 'gfs_sfc'
-    allocate (Diag(idx)%data(nblks))
+    diag(idx)%axes = 2
+    diag(idx)%name = 'zm'
+    diag(idx)%desc = 'nsst mixed layer thickness'
+    diag(idx)%unit = 'm'
+    diag(idx)%mod_name = 'gfs_sfc'
+    allocate (diag(idx)%data(nblks))
     do nb = 1,nblks
-      Diag(idx)%data(nb)%var2 => Sfcprop(nb)%zm(:)
+      diag(idx)%data(nb)%var2 => sfcprop(nb)%zm(:)
     enddo
 
     idx = idx + 1
-    Diag(idx)%axes = 2
-    Diag(idx)%name = 'xtts'
-    Diag(idx)%desc = 'nsst d(xt)/d(ts)'
-    Diag(idx)%unit = 'm'
-    Diag(idx)%mod_name = 'gfs_sfc'
-    allocate (Diag(idx)%data(nblks))
+    diag(idx)%axes = 2
+    diag(idx)%name = 'xtts'
+    diag(idx)%desc = 'nsst d(xt)/d(ts)'
+    diag(idx)%unit = 'm'
+    diag(idx)%mod_name = 'gfs_sfc'
+    allocate (diag(idx)%data(nblks))
     do nb = 1,nblks
-      Diag(idx)%data(nb)%var2 => Sfcprop(nb)%xtts(:)
+      diag(idx)%data(nb)%var2 => sfcprop(nb)%xtts(:)
     enddo
 
     idx = idx + 1
-    Diag(idx)%axes = 2
-    Diag(idx)%name = 'xzts'
-    Diag(idx)%desc = 'nsst d(xt)/d(ts)'
-    Diag(idx)%unit = 'm/K'
-    Diag(idx)%mod_name = 'gfs_sfc'
-    allocate (Diag(idx)%data(nblks))
+    diag(idx)%axes = 2
+    diag(idx)%name = 'xzts'
+    diag(idx)%desc = 'nsst d(xt)/d(ts)'
+    diag(idx)%unit = 'm/k'
+    diag(idx)%mod_name = 'gfs_sfc'
+    allocate (diag(idx)%data(nblks))
     do nb = 1,nblks
-      Diag(idx)%data(nb)%var2 => Sfcprop(nb)%xzts(:)
+      diag(idx)%data(nb)%var2 => sfcprop(nb)%xzts(:)
     enddo
 
     idx = idx + 1
-    Diag(idx)%axes = 2
-    Diag(idx)%name = 'd_conv'
-    Diag(idx)%desc = 'nsst thickness of free convection layer'
-    Diag(idx)%unit = 'm'
-    Diag(idx)%mod_name = 'gfs_sfc'
-    allocate (Diag(idx)%data(nblks))
+    diag(idx)%axes = 2
+    diag(idx)%name = 'd_conv'
+    diag(idx)%desc = 'nsst thickness of free convection layer'
+    diag(idx)%unit = 'm'
+    diag(idx)%mod_name = 'gfs_sfc'
+    allocate (diag(idx)%data(nblks))
     do nb = 1,nblks
-      Diag(idx)%data(nb)%var2 => Sfcprop(nb)%d_conv(:)
+      diag(idx)%data(nb)%var2 => sfcprop(nb)%d_conv(:)
     enddo
 
     idx = idx + 1
-    Diag(idx)%axes = 2
-    Diag(idx)%name = 'ifd'
-    Diag(idx)%desc = 'nsst index to start dtlm run or not'
-    Diag(idx)%unit = 'N/A'
-    Diag(idx)%mod_name = 'gfs_sfc'
-    allocate (Diag(idx)%data(nblks))
+    diag(idx)%axes = 2
+    diag(idx)%name = 'ifd'
+    diag(idx)%desc = 'nsst index to start dtlm run or not'
+    diag(idx)%unit = 'n/a'
+    diag(idx)%mod_name = 'gfs_sfc'
+    allocate (diag(idx)%data(nblks))
     do nb = 1,nblks
-      Diag(idx)%data(nb)%var2 => Sfcprop(nb)%ifd(:)
+      diag(idx)%data(nb)%var2 => sfcprop(nb)%ifd(:)
     enddo
 
     idx = idx + 1
-    Diag(idx)%axes = 2
-    Diag(idx)%name = 'dt_cool'
-    Diag(idx)%desc = 'nsst sub-layer cooling amount'
-    Diag(idx)%unit = 'K'
-    Diag(idx)%mod_name = 'gfs_sfc'
-    allocate (Diag(idx)%data(nblks))
+    diag(idx)%axes = 2
+    diag(idx)%name = 'dt_cool'
+    diag(idx)%desc = 'nsst sub-layer cooling amount'
+    diag(idx)%unit = 'k'
+    diag(idx)%mod_name = 'gfs_sfc'
+    allocate (diag(idx)%data(nblks))
     do nb = 1,nblks
-      Diag(idx)%data(nb)%var2 => Sfcprop(nb)%dt_cool(:)
+      diag(idx)%data(nb)%var2 => sfcprop(nb)%dt_cool(:)
     enddo
 
     idx = idx + 1
-    Diag(idx)%axes = 2
-    Diag(idx)%name = 'qrain'
-    Diag(idx)%desc = 'nsst sensible heat flux due to rainfall'
-    Diag(idx)%unit = 'w/m2'
-    Diag(idx)%mod_name = 'gfs_sfc'
-    allocate (Diag(idx)%data(nblks))
+    diag(idx)%axes = 2
+    diag(idx)%name = 'qrain'
+    diag(idx)%desc = 'nsst sensible heat flux due to rainfall'
+    diag(idx)%unit = 'w/m2'
+    diag(idx)%mod_name = 'gfs_sfc'
+    allocate (diag(idx)%data(nblks))
     do nb = 1,nblks
-      Diag(idx)%data(nb)%var2 => Sfcprop(nb)%qrain(:)
+      diag(idx)%data(nb)%var2 => sfcprop(nb)%qrain(:)
     enddo
 !--------------------------nsst variables
   endif
 !--------------------------nsst variables
-    if(mpp_pe()==mpp_root_pe())print *,'in gfdl_diag_register,af qrain,idx=',idx
+!    if(mpp_pe()==mpp_root_pe())print *,'in gfdl_diag_register,af qrain,idx=',idx
 
 
-!--- prognostic variable tendencies (T, u, v, sph, clwmr, o3)
+!--- prognostic variable tendencies (t, u, v, sph, clwmr, o3)
 !rab    idx = idx + 1
-!rab    Diag(idx)%axes = 3
-!rab    Diag(idx)%name = 'dtemp_dt'
-!rab    Diag(idx)%desc = 'GFS radiation/physics temperature tendency'
-!rab    Diag(idx)%unit = 'K/s'
-!rab    Diag(idx)%mod_name = 'gfs_phys'
+!rab    diag(idx)%axes = 3
+!rab    diag(idx)%name = 'dtemp_dt'
+!rab    diag(idx)%desc = 'gfs radiation/physics temperature tendency'
+!rab    diag(idx)%unit = 'k/s'
+!rab    diag(idx)%mod_name = 'gfs_phys'
 !rab
 !rab    idx = idx + 1
-!rab    Diag(idx)%axes = 3
-!rab    Diag(idx)%name = 'du_dt'
-!rab    Diag(idx)%desc = 'GFS radiation/physics horizontal wind component tendency'
-!rab    Diag(idx)%unit = 'm/s/s'
-!rab    Diag(idx)%mod_name = 'gfs_phys'
+!rab    diag(idx)%axes = 3
+!rab    diag(idx)%name = 'du_dt'
+!rab    diag(idx)%desc = 'gfs radiation/physics horizontal wind component tendency'
+!rab    diag(idx)%unit = 'm/s/s'
+!rab    diag(idx)%mod_name = 'gfs_phys'
 !rab
 !rab    idx = idx + 1
-!rab    Diag(idx)%axes = 3
-!rab    Diag(idx)%name = 'dv_dt'
-!rab    Diag(idx)%desc = 'GFS radiation/physics meridional wind component tendency'
-!rab    Diag(idx)%unit = 'm/s/s'
-!rab    Diag(idx)%mod_name = 'gfs_phys'
+!rab    diag(idx)%axes = 3
+!rab    diag(idx)%name = 'dv_dt'
+!rab    diag(idx)%desc = 'gfs radiation/physics meridional wind component tendency'
+!rab    diag(idx)%unit = 'm/s/s'
+!rab    diag(idx)%mod_name = 'gfs_phys'
 !rab
 !rab    idx = idx + 1
-!rab    Diag(idx)%axes = 3
-!rab    Diag(idx)%name = 'dsphum_dt'
-!rab    Diag(idx)%desc = 'GFS radiation/physics specific humidity tendency'
-!rab    Diag(idx)%unit = 'kg/kg/s'
-!rab    Diag(idx)%mod_name = 'gfs_phys'
+!rab    diag(idx)%axes = 3
+!rab    diag(idx)%name = 'dsphum_dt'
+!rab    diag(idx)%desc = 'gfs radiation/physics specific humidity tendency'
+!rab    diag(idx)%unit = 'kg/kg/s'
+!rab    diag(idx)%mod_name = 'gfs_phys'
 !rab
 !rab    idx = idx + 1
-!rab    Diag(idx)%axes = 3
-!rab    Diag(idx)%name = 'dclwmr_dt'
-!rab    Diag(idx)%desc = 'GFS radiation/radiation cloud water mixing ratio tendency'
-!rab    Diag(idx)%unit = 'kg/kg/s'
-!rab    Diag(idx)%mod_name = 'gfs_phys'
+!rab    diag(idx)%axes = 3
+!rab    diag(idx)%name = 'dclwmr_dt'
+!rab    diag(idx)%desc = 'gfs radiation/radiation cloud water mixing ratio tendency'
+!rab    diag(idx)%unit = 'kg/kg/s'
+!rab    diag(idx)%mod_name = 'gfs_phys'
 !rab
 !rab    idx = idx + 1
-!rab    Diag(idx)%axes = 3
-!rab    Diag(idx)%name = 'do3mr_dt'
-!rab    Diag(idx)%desc = 'GFS radiation/radiation ozone mixing ratio tendency'
-!rab    Diag(idx)%unit = 'kg/kg/s'
-!rab    Diag(idx)%mod_name = 'gfs_phys'
+!rab    diag(idx)%axes = 3
+!rab    diag(idx)%name = 'do3mr_dt'
+!rab    diag(idx)%desc = 'gfs radiation/radiation ozone mixing ratio tendency'
+!rab    diag(idx)%unit = 'kg/kg/s'
+!rab    diag(idx)%mod_name = 'gfs_phys'
 
     tot_diag_idx = idx
 
-    if (idx > DIAG_SIZE) then
-      call mpp_error(FATAL, 'gfs_driver::gfs_diag_register - need to increase DIAG_SIZE') 
+    if (idx > diag_size) then
+      call mpp_error(fatal, 'gfs_driver::gfs_diag_register - need to increase diag_size') 
     endif
-    if(mpp_pe()==mpp_root_pe())print *,'in gfdl_diag_register,tot_diag_idx=',tot_diag_idx
 
-    allocate(nstt(tot_diag_idx))
+    allocate(nstt(tot_diag_idx), nstt_vctbl(tot_diag_idx))
     nstt = 0
-    nrgst = 0
+    nstt_vctbl = 0
+    nrgst_bl = 0
+    nrgst_nb = 0
+    nrgst_vctbl = 0
     do idx = 1,tot_diag_idx
       if (diag(idx)%axes == -99) then
-        call mpp_error(FATAL, 'gfs_driver::gfs_diag_register - attempt to register an undefined variable')
+        call mpp_error(fatal, 'gfs_driver::gfs_diag_register - attempt to register an undefined variable')
       endif
-      Diag(idx)%id = register_diag_field (trim(Diag(idx)%mod_name), trim(Diag(idx)%name),  &
-                                          axes(1:Diag(idx)%axes), Time, trim(Diag(idx)%desc), &
-                                          trim(Diag(idx)%unit), missing_value=real(missing_value))
-      if(Diag(idx)%id > 0) then
-        if (Diag(idx)%axes == 2) then
-           nrgst = nrgst+1
-           nstt(idx) = nrgst
-!        elif (Diag(idx)%axes == 3) then
+      diag(idx)%id = register_diag_field (trim(diag(idx)%mod_name), trim(diag(idx)%name),  &
+                                          axes(1:diag(idx)%axes), time, trim(diag(idx)%desc), &
+                                          trim(diag(idx)%unit), missing_value=real(missing_value))
+      if(diag(idx)%id > 0) then
+        if (diag(idx)%axes == 2) then
+           if( index(trim(diag(idx)%intpl_method),'bilinear') > 0 ) then
+             nrgst_bl = nrgst_bl + 1
+             nstt(idx) = nrgst_bl
+           else if (trim(diag(idx)%intpl_method) == 'nearest_stod' ) then
+             nrgst_nb = nrgst_nb + 1
+             nstt(idx) = nrgst_nb
+           endif
+           if(trim(diag(idx)%intpl_method) == 'vector_bilinear') then
+             if(diag(idx)%name(1:1) == 'v' .or. diag(idx)%name(1:1) == 'v') then
+               nrgst_vctbl = nrgst_vctbl + 1
+               nstt_vctbl(idx) = nrgst_vctbl
+!             print *,'in phy_setup, vector_bilinear, name=', trim(diag(idx)%name),' nstt_vctbl=', nstt_vctbl(idx), 'idx=',idx
+             endif
+           endif
+!        elif (diag(idx)%axes == 3) then
 !           nrgst = nrgst+levs
         endif
       endif
 
     enddo
 
-    total_outputlevel = nrgst
-    allocate(buffer_phys_bl(isco:ieco,jsco:jeco,1))
-    allocate(buffer_phys_nb(isco:ieco,jsco:jeco,total_outputlevel))
+    total_outputlevel = nrgst_bl + nrgst_nb
+    allocate(buffer_phys_bl(isco:ieco,jsco:jeco,nrgst_bl))
+    allocate(buffer_phys_nb(isco:ieco,jsco:jeco,nrgst_nb))
+    allocate(buffer_phys_windvect(3,isco:ieco,jsco:jeco,nrgst_vctbl))
     buffer_phys_bl = 0.
     buffer_phys_nb = 0.
-    if(mpp_pe()==mpp_root_pe())print *,'in gfdl_diag_register,total_outputlevel=',total_outputlevel, &
-      'isco=',isco,ieco,'jsco=',jsco,jeco
+    buffer_phys_windvect = 0.
+    if(mpp_pe() == mpp_root_pe()) print *,'in gfdl_diag_register, nrgst_bl=',nrgst_bl,' nrgst_nb=',nrgst_nb, &
+       ' nrgst_vctbl=',nrgst_vctbl, 'isco=',isco,ieco,'jsco=',jsco,jeco
 
   end subroutine gfdl_diag_register
 !-------------------------------------------------------------------------      
@@ -3472,24 +3592,25 @@ module FV3GFS_io_mod
 !-------------------------------------------------------------------------      
 !--- gfs_diag_output ---
 !-------------------------------------------------------------------------      
-!    routine to transfer the diagnostic data to the GFDL FMS diagnostic 
+!    routine to transfer the diagnostic data to the gfdl fms diagnostic 
 !    manager for eventual output to the history files.
 !
 !    calls:  send_data
 !-------------------------------------------------------------------------      
-!rab  subroutine gfdl_diag_output(Time, Gfs_diag, Statein, Stateout, Atm_block, &
+!rab  subroutine gfdl_diag_output(time, gfs_diag, statein, stateout, atm_block, &
 !rab                             nx, ny, levs, ntcw, ntoz, dt, time_int)
-  subroutine gfdl_diag_output(Time, Atm_block, &
-                             nx, ny, levs, ntcw, ntoz, dt, time_int)
+  subroutine gfdl_diag_output(time, atm_block, nx, ny, levs, ntcw, ntoz, &
+                              dt, time_int, time_intfull)
 !--- subroutine interface variable definitions
-    type(time_type),           intent(in) :: Time
-!rab    type(diagnostics),         intent(in) :: Gfs_diag
-!rab    type(state_fields_in),     intent(in) :: Statein
-!rab    type(state_fields_out),    intent(in) :: Stateout
-    type (block_control_type), intent(in) :: Atm_block
+    type(time_type),           intent(in) :: time
+!rab    type(diagnostics),         intent(in) :: gfs_diag
+!rab    type(state_fields_in),     intent(in) :: statein
+!rab    type(state_fields_out),    intent(in) :: stateout
+    type (block_control_type), intent(in) :: atm_block
     integer,                   intent(in) :: nx, ny, levs, ntcw, ntoz
     real(kind=kind_phys),      intent(in) :: dt
     real(kind=kind_phys),      intent(in) :: time_int
+    real(kind=kind_phys),      intent(in) :: time_intfull
 !--- local variables
     integer :: i, j, idx, nblks, nb, ix, ii, jj
     integer :: is_in, js_in, isc, jsc
@@ -3498,24 +3619,31 @@ module FV3GFS_io_mod
     real(kind=kind_phys), dimension(nx*ny,levs) :: var3p
     real(kind=kind_phys), dimension(nx,ny) :: var2
     real(kind=kind_phys), dimension(nx,ny,levs) :: var3
-    real(kind=kind_phys) :: rdt, rtime_int, lcnvfac
+    real(kind=kind_phys) :: rdt, rtime_int, rtime_intfull, lcnvfac
     logical :: used
 
-     nblks = Atm_block%nblks
+     nblks = atm_block%nblks
      rdt = 1.0d0/dt
      rtime_int = 1.0d0/time_int
+     rtime_intfull = 1.0d0/time_intfull
 
-     isc = Atm_block%isc
-     jsc = Atm_block%jsc
-     is_in = Atm_block%isc
-     js_in = Atm_block%jsc
+     isc = atm_block%isc
+     jsc = atm_block%jsc
+     is_in = atm_block%isc
+     js_in = atm_block%jsc
 
      do idx = 1,tot_diag_idx
-       if (Diag(idx)%id > 0) then
-         lcnvfac = Diag(idx)%cnvfac
-         if (Diag(idx)%time_avg) lcnvfac = lcnvfac*rtime_int
-         if (Diag(idx)%axes == 2) then
-           if (trim(Diag(idx)%mask) == 'positive_flux') then
+       if (diag(idx)%id > 0) then
+         lcnvfac = diag(idx)%cnvfac
+         if (diag(idx)%time_avg) then
+           if ( diag(idx)%full_time_avg .and. lprecip_accu ) then
+             lcnvfac = lcnvfac*rtime_intfull
+           else
+             lcnvfac = lcnvfac*rtime_int
+           endif
+         endif
+         if (diag(idx)%axes == 2) then
+           if (trim(diag(idx)%mask) == 'positive_flux') then
              !--- albedos are actually a ratio of two radiation surface properties
              var2(1:nx,1:ny) = 0._kind_phys
              do j = 1, ny
@@ -3590,7 +3718,10 @@ module FV3GFS_io_mod
            endif
 !rab           used=send_data(Diag(idx)%id, var2, Time, is_in=is_in, js_in=js_in)
 !           used=send_data(Diag(idx)%id, var2, Time)
-           call store_data(Diag(idx)%id, var2, Time, nstt(idx), Diag(idx)%intpl_method)
+!           print *,'in phys, after store_data, idx=',idx,' var=', trim(Diag(idx)%name)
+           call store_data(Diag(idx)%id, var2, Time, idx, Diag(idx)%intpl_method, Diag(idx)%name)
+!           if(trim(Diag(idx)%name) == 'totprcp_ave' ) print *,'in gfs_io, totprcp=',Diag(idx)%data(1)%var2(1:3), &
+!             ' lcnvfac=', lcnvfac
          elseif (Diag(idx)%axes == 3) then
          !---
          !--- skipping the 3D variables with the following else statement
@@ -3690,12 +3821,13 @@ module FV3GFS_io_mod
   end subroutine gfdl_diag_output
 !
 !-------------------------------------------------------------------------
-  subroutine store_data(id, work, Time, nst, intpl_method)
+  subroutine store_data(id, work, Time, idx, intpl_method, fldname)
     integer, intent(in)                 :: id
-    integer, intent(in)                 :: nst
+    integer, intent(in)                 :: idx
     real(kind=kind_phys), intent(in)    :: work(ieco-isco+1,jeco-jsco+1)
     type(time_type), intent(in)         :: Time
     character(*), intent(in)            :: intpl_method
+    character(*), intent(in)            :: fldname
 !
     integer k,j,i,kb
     logical used
@@ -3705,15 +3837,48 @@ module FV3GFS_io_mod
         if( trim(intpl_method) == 'bilinear') then
           do j= jsco,jeco
             do i= isco,ieco
-              buffer_phys_bl(i,j,nst) = work(i-isco+1,j-jsco+1)
+              buffer_phys_bl(i,j,nstt(idx)) = work(i-isco+1,j-jsco+1)
             enddo
           enddo
         else if(trim(intpl_method) == 'nearest_stod') then
           do j= jsco,jeco
             do i= isco,ieco
-              buffer_phys_nb(i,j,nst) = work(i-isco+1,j-jsco+1)
+              buffer_phys_nb(i,j,nstt(idx)) = work(i-isco+1,j-jsco+1)
             enddo
           enddo
+        else if(trim(intpl_method) == 'vector_bilinear') then
+!first save the data
+          do j= jsco,jeco
+            do i= isco,ieco
+              buffer_phys_bl(i,j,nstt(idx)) = work(i-isco+1,j-jsco+1)
+            enddo
+          enddo
+          if( fldname(1:1) == 'u' .or. fldname(1:1) == 'U') then
+            if(.not.allocated(uwork)) allocate(uwork(isco:ieco,jsco:jeco))
+            do j= jsco,jeco
+              do i= isco,ieco
+                uwork(i,j) = work(i-isco+1,j-jsco+1)
+              enddo
+            enddo
+            uwindname = fldname
+            uwork_set = .true.
+          endif
+          if( fldname(1:1) == 'v' .or. fldname(1:1) == 'V') then
+!set up wind vector
+            if( uwork_set .and. trim(uwindname(2:)) == trim(fldname(2:))) then
+              do j= jsco,jeco
+                do i= isco,ieco
+                   buffer_phys_windvect(1,i,j,nstt_vctbl(idx)) = uwork(i,j)*cos(lon(i,j)) - work(i-isco+1,j-jsco+1)*sin(lat(i,j))*sin(lon(i,j))
+                   buffer_phys_windvect(2,i,j,nstt_vctbl(idx)) = uwork(i,j)*sin(lon(i,j)) + work(i-isco+1,j-jsco+1)*sin(lat(i,j))*cos(lon(i,j))
+                   buffer_phys_windvect(3,i,j,nstt_vctbl(idx)) = work(i-isco+1,j-jsco+1)*cos(lat(i,j))
+                enddo
+              enddo
+            endif
+            uwork = 0.
+            uwindname = ''
+            uwork_set = .false.
+          endif
+
         endif
       else
         used = send_data(id, work, Time)
@@ -3725,7 +3890,7 @@ module FV3GFS_io_mod
 !
 #ifdef use_WRTCOMP
 
- subroutine fv_phys_bundle_setup(axes, phys_bundle, fcst_grid, quilting )
+ subroutine fv_phys_bundle_setup(axes, phys_bundle, fcst_grid, quilting, nbdlphys)
 !
 !-------------------------------------------------------------
 !*** set esmf bundle for dyn output fields
@@ -3734,67 +3899,110 @@ module FV3GFS_io_mod
    use esmf
    use diag_data_mod, ONLY:  diag_atttype
 !
-   integer, intent(in)         :: axes(:)
-   type(ESMF_FieldBundle),intent(inout)        :: phys_bundle
+   implicit none
+!
+   integer, intent(in)                         :: axes(:)
+   type(ESMF_FieldBundle),intent(inout)        :: phys_bundle(:)
    type(ESMF_Grid),intent(inout)               :: fcst_grid
    logical,intent(in)                          :: quilting
+   integer, intent(in)                         :: nbdlphys
 !
 !*** local variables
-   integer i, j, k, n, rc, idx
+   integer i, j, k, n, rc, idx, ibdl, nbdl
    integer num_axes, id, axis_length, direction, edges, axis_typ
    integer num_attributes, num_field_dyn
-   character(255) :: axis_name, units, long_name, cart_name, axesname
-   character(128) :: output_name
    integer currdate(6)
-   type(domain1d) :: Domain
-   real,dimension(:),allocatable :: axis_data
-   type(diag_atttype),dimension(:),allocatable :: attributes
    character(2) axis_id
-   type(ESMF_Field)                            :: field
-   real(4),dimension(:,:),pointer :: dataPtr2d
+   character(255)    :: axis_name, units, long_name, cart_name, axesname
+   character(128)    :: output_name, physbdl_name, outputfile1
+   logical           :: lput2physbdl, loutputfile, l2dvector
+   type(domain1d)    :: Domain
+   type(ESMF_Field)  :: field
+   real,dimension(:),allocatable               :: axis_data
+   character(128),dimension(:), allocatable    :: bdl_intplmethod, outputfile
+   type(diag_atttype),dimension(:),allocatable :: attributes
+   real(4),dimension(:,:),pointer              :: dataPtr2d
 !
 !------------------------------------------------------------
 !--- use wrte grid component for output
    use_wrtgridcomp_output = quilting
-   if(mpp_pe()==mpp_root_pe())print *,'in fv_phys bundle,use_wrtgridcomp_output=',use_wrtgridcomp_output, &
-       'isco=',isco,ieco,'jsco=',jsco,jeco,'tot_diag_idx=',tot_diag_idx
+!   if(mpp_pe()==mpp_root_pe())print *,'in fv_phys bundle,use_wrtgridcomp_output=',use_wrtgridcomp_output, &
+!   print *,'in fv_phys bundle,use_wrtgridcomp_output=',use_wrtgridcomp_output, &
+!       'isco=',isco,ieco,'jsco=',jsco,jeco,'tot_diag_idx=',tot_diag_idx
 !
 !------------------------------------------------------------
 !*** add attributes to the bundle such as subdomain limtis,
 !*** axes, output time, etc
 !------------------------------------------------------------
 !
-   call ESMF_AttributeAdd(phys_bundle, convention="NetCDF", purpose="FV3", &
-     attrList=(/"fhzero", "ncld", "nsoil", "imp_physics"/), rc=rc)
-   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-     line=__LINE__, &
-     file=__FILE__)) &
-     return  ! bail out
-   call ESMF_AttributeSet(phys_bundle, convention="NetCDF", purpose="FV3", &
-     name="fhzero", value=fhzero, rc=rc)
-   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-     line=__LINE__, &
-     file=__FILE__)) &
-     return  ! bail out
-   call ESMF_AttributeSet(phys_bundle, convention="NetCDF", purpose="FV3", &
-     name="ncld", value=ncld, rc=rc)
-   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-     line=__LINE__, &
-     file=__FILE__)) &
-     return  ! bail out
-   call ESMF_AttributeSet(phys_bundle, convention="NetCDF", purpose="FV3", &
-     name="nsoil", value=nsoil, rc=rc)
-   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-     line=__LINE__, &
-     file=__FILE__)) &
-     return  ! bail out
-   call ESMF_AttributeSet(phys_bundle, convention="NetCDF", purpose="FV3", &
-     name="imp_physics", value=imp_physics, rc=rc)
-   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-     line=__LINE__, &
-     file=__FILE__)) &
-     return  ! bail out
+   allocate(bdl_intplmethod(nbdlphys), outputfile(nbdlphys))
+   if(mpp_pe()==mpp_root_pe())print *,'in fv_phys bundle,nbdl=',nbdlphys
+   do ibdl = 1, nbdlphys
+     loutputfile = .false.
+     call ESMF_FieldBundleGet(phys_bundle(ibdl), name=physbdl_name,rc=rc)
+     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+       line=__LINE__, &
+       file=__FILE__)) &
+       return  ! bail out
+   if(mpp_pe()==mpp_root_pe())print *,'in fv_phys bundle,i=',i,'physbdl_name=',physbdl_name
+     idx = index(physbdl_name,'_bilinear')
+     if(idx > 0) then
+       outputfile(ibdl) = physbdl_name(1:idx-1)
+       bdl_intplmethod(ibdl) = 'bilinear'
+       loutputfile = .true.
+     endif
+     idx = index(physbdl_name,'_nearest_stod')
+     if(idx > 0) then
+       outputfile(ibdl) = physbdl_name(1:idx-1)
+       bdl_intplmethod(ibdl) = 'nearest_stod'
+       loutputfile = .true.
+     endif
+     if( .not. loutputfile) then
+       outputfile(ibdl) = 'phy'
+       bdl_intplmethod(ibdl) = 'nearest_stod'
+     endif
+!    print *,'in fv_phys bundle,i=',ibdl,'outputfile=',trim(outputfile(ibdl)), &
+!      'bdl_intplmethod=',trim(bdl_intplmethod(ibdl))
 
+     call ESMF_AttributeAdd(phys_bundle(ibdl), convention="NetCDF", purpose="FV3", &
+       attrList=(/"fhzero", "ncld", "nsoil", "imp_physics", "lprecip_accu"/), rc=rc)
+     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+       line=__LINE__, &
+       file=__FILE__)) &
+       return  ! bail out
+     call ESMF_AttributeSet(phys_bundle(ibdl), convention="NetCDF", purpose="FV3", &
+       name="fhzero", value=fhzero, rc=rc)
+     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+       line=__LINE__, &
+       file=__FILE__)) &
+       return  ! bail out
+     call ESMF_AttributeSet(phys_bundle(ibdl), convention="NetCDF", purpose="FV3", &
+       name="ncld", value=ncld, rc=rc)
+     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+       line=__LINE__, &
+       file=__FILE__)) &
+       return  ! bail out
+     call ESMF_AttributeSet(phys_bundle(ibdl), convention="NetCDF", purpose="FV3", &
+       name="nsoil", value=nsoil, rc=rc)
+     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+       line=__LINE__, &
+       file=__FILE__)) &
+       return  ! bail out
+     call ESMF_AttributeSet(phys_bundle(ibdl), convention="NetCDF", purpose="FV3", &
+       name="imp_physics", value=imp_physics, rc=rc)
+     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+       line=__LINE__, &
+       file=__FILE__)) &
+       return  ! bail out
+     call ESMF_AttributeSet(phys_bundle(ibdl), convention="NetCDF", purpose="FV3", &
+       name="lprecip_accu", value=trim(Sprecip_accu), rc=rc)
+     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+       line=__LINE__, &
+       file=__FILE__)) &
+       return  ! bail out
+
+!end ibdl
+   enddo
 !
 !*** add attributes (for phys, set axes to 2)
    num_axes = 2
@@ -3809,64 +4017,135 @@ module FV3GFS_io_mod
      deallocate(axis_data)
    enddo
 !
-! set zhour for global attributes
-!   call ESMF_AttributeAdd(phys_bundle,convention="NetCDF",purpose="FV3",  &
-!                          attrList=(/'zhour'/), rc=rc)
-!   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-!     line=__LINE__, &
-!     file=__FILE__)) &
-!     call ESMF_Finalize(endflag=ESMF_END_ABORT)
-!   call ESMF_AttributeSet(phys_bundle,convention="NetCDF",purpose="FV3",name='zhour', &
-!                          value=zhour, rc=rc)
-!   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-!     line=__LINE__, &
-!     file=__FILE__)) &
-!     call ESMF_Finalize(endflag=ESMF_END_ABORT)
-!
 !-----------------------------------------------------------------------------------------
 !*** add esmf fields
 !
    do idx= 1,tot_diag_idx
 
-     if( Diag(idx)%id > 0 ) then
-       call find_output_name(trim(Diag(idx)%mod_name),trim(Diag(idx)%name),output_name)
-       call add_field_to_phybundle(trim(output_name),trim(Diag(idx)%desc),trim(Diag(idx)%unit), "time: point", &
-          axes(1:Diag(idx)%axes), fcst_grid, nstt(idx),phys_bundle, rcd=rc)
+     lput2physbdl = .false.
+     do ibdl = 1, nbdlphys
+
+       if( index(trim(Diag(idx)%intpl_method),trim(bdl_intplmethod(ibdl))) > 0) then
+         lput2physbdl = .true.
+         if( Diag(idx)%id > 0 ) then
+           call find_output_name(trim(Diag(idx)%mod_name),trim(Diag(idx)%name),output_name)
+
+!add origin field
+           call add_field_to_phybundle(trim(output_name),trim(Diag(idx)%desc),trim(Diag(idx)%unit), "time: point", &
+             axes(1:Diag(idx)%axes), fcst_grid, nstt(idx),phys_bundle(ibdl), outputfile(ibdl),   &
+             bdl_intplmethod(ibdl), rcd=rc)
+!           if( mpp_root_pe()==0) print *,'phys, add field,',trim(Diag(idx)%name),'idx=',idx,'ibdl=',ibdl
+!
+           if( index(trim(Diag(idx)%intpl_method), "vector") > 0) then
+             l2dvector = .true.
+             if (nstt_vctbl(idx) > 0) then
+               output_name = 'wind'//trim(output_name)//'vector'
+               outputfile1 = 'none'
+               call add_field_to_phybundle(trim(output_name),trim(Diag(idx)%desc),trim(Diag(idx)%unit), "time: point", &
+                 axes(1:Diag(idx)%axes), fcst_grid, nstt_vctbl(idx),phys_bundle(ibdl), outputfile1, &
+                 bdl_intplmethod(ibdl),l2dvector=l2dvector,  rcd=rc)
+!               if( mpp_root_pe()==0) print *,'in phys, add vector field,',trim(Diag(idx)%name),' idx=',idx,' ibdl=',ibdl
+             endif
+           endif
+
+         endif
+       endif
+     enddo
+     if( .not. lput2physbdl ) then
+         if( mpp_root_pe()==0) print *,'WARNING: not matching interpolation method, field ',trim(Diag(idx)%name), &
+           ' is not added to phys bundle '
      endif
+
    enddo
 
  end subroutine fv_phys_bundle_setup
 !
 !-----------------------------------------------------------------------------------------
  subroutine add_field_to_phybundle(var_name,long_name,units,cell_methods, axes,phys_grid, &
-                                kstt,phys_bundle,range, rcd)
+                                   kstt,phys_bundle,output_file,intpl_method,range,l2dvector,rcd)
 !
    use esmf
 !
    implicit none
 
    character(*), intent(in)             :: var_name, long_name, units, cell_methods
+   character(*), intent(in)             :: output_file, intpl_method
    integer, intent(in)                  :: axes(:)
    type(esmf_grid), intent(in)          :: phys_grid
    integer, intent(in)                  :: kstt
    type(esmf_fieldbundle),intent(inout) :: phys_bundle
    real, intent(in), optional           :: range(2)
+   logical, intent(in), optional        :: l2dvector
    integer, intent(out), optional       :: rcd
 !
 !*** local variable
    type(ESMF_Field)         :: field
    type(ESMF_DataCopy_Flag) :: copyflag=ESMF_DATACOPY_REFERENCE
    integer rc
-   real(4),dimension(:,:),pointer :: temp_r2d
+   real(4),dimension(:,:),pointer   :: temp_r2d
+   real(4),dimension(:,:,:),pointer :: temp_r3d
 !
 !*** create esmf field
-   temp_r2d => buffer_phys_nb(isco:ieco,jsco:jeco,kstt)
-   field = ESMF_FieldCreate(phys_grid, temp_r2d, datacopyflag=copyflag, &
+   if( present(l2dvector) .and. l2dvector ) then
+     temp_r3d => buffer_phys_windvect(1:3,isco:ieco,jsco:jeco,kstt)
+!     if( mpp_root_pe() == 0) print *,'phys, create wind vector esmf field'
+     call ESMF_LogWrite('bf create winde vector esmf field '//trim(var_name), ESMF_LOGMSG_INFO, rc=rc)
+     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+!datacopyflag=ESMF_DATACOPY_VALUE, &
+     field = ESMF_FieldCreate(phys_grid, temp_r3d, datacopyflag=ESMF_DATACOPY_REFERENCE, &
+                            gridToFieldMap=(/2,3/), ungriddedLBound=(/1/), ungriddedUBound=(/3/), &
                             name=var_name, indexFlag=ESMF_INDEX_DELOCAL, rc=rc)
-   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-     line=__LINE__, &
-     file=__FILE__)) &
-     call ESMF_Finalize(endflag=ESMF_END_ABORT)
+     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+     call ESMF_LogWrite('af winde vector esmf field create '//trim(var_name), ESMF_LOGMSG_INFO, rc=rc)
+
+     call ESMF_AttributeAdd(field, convention="NetCDF", purpose="FV3", &
+        attrList=(/"output_file"/), rc=rc)
+     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+       line=__LINE__, &
+       file=__FILE__)) &
+       call ESMF_Finalize(endflag=ESMF_END_ABORT)
+     call ESMF_AttributeSet(field, convention="NetCDF", purpose="FV3", &
+        name='output_file',value=trim(output_file),rc=rc)
+     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+       line=__LINE__, &
+       file=__FILE__)) &
+       call ESMF_Finalize(endflag=ESMF_END_ABORT)
+     call ESMF_LogWrite('before winde vector esmf field add output_file', ESMF_LOGMSG_INFO, rc=rc)
+
+!     if( mpp_root_pe() == 0)print *,'phys, aftercreate wind vector esmf field'
+     call ESMF_FieldBundleAdd(phys_bundle,(/field/), rc=rc)
+     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+       line=__LINE__, &
+       file=__FILE__)) &
+       call ESMF_Finalize(endflag=ESMF_END_ABORT)
+     if( present(rcd)) rcd=rc
+     call ESMF_LogWrite('aft winde vector esmf field add to fieldbundle'//trim(var_name), ESMF_LOGMSG_INFO, rc=rc)
+     return
+   else if( trim(intpl_method) == 'nearest_stod' ) then
+     temp_r2d => buffer_phys_nb(isco:ieco,jsco:jeco,kstt)
+     field = ESMF_FieldCreate(phys_grid, temp_r2d, datacopyflag=copyflag, &
+                            name=var_name, indexFlag=ESMF_INDEX_DELOCAL, rc=rc)
+     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+       line=__LINE__, &
+       file=__FILE__)) &
+       call ESMF_Finalize(endflag=ESMF_END_ABORT)
+!     if( mpp_root_pe() == 0) print *,'add field to after nearest_stod, fld=', trim(var_name)
+   else if( trim(intpl_method) == 'bilinear' ) then
+     temp_r2d => buffer_phys_bl(isco:ieco,jsco:jeco,kstt)
+     field = ESMF_FieldCreate(phys_grid, temp_r2d, datacopyflag=copyflag, &
+                            name=var_name, indexFlag=ESMF_INDEX_DELOCAL, rc=rc)
+     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+       line=__LINE__, &
+       file=__FILE__)) &
+       call ESMF_Finalize(endflag=ESMF_END_ABORT)
+!     if( mpp_root_pe() == 0) print *,'add field to after bilinear, fld=', trim(var_name)
+   endif
 !
 !*** add field attributes
    call ESMF_AttributeAdd(field, convention="NetCDF", purpose="FV3", &
@@ -3933,11 +4212,25 @@ module FV3GFS_io_mod
      line=__LINE__, &
      file=__FILE__)) &
      call ESMF_Finalize(endflag=ESMF_END_ABORT)
+!
+   call ESMF_AttributeAdd(field, convention="NetCDF", purpose="FV3", &
+        attrList=(/"output_file"/), rc=rc)
+   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+     line=__LINE__, &
+     file=__FILE__)) &
+     call ESMF_Finalize(endflag=ESMF_END_ABORT)
+   call ESMF_AttributeSet(field, convention="NetCDF", purpose="FV3", &
+        name='output_file',value=trim(output_file),rc=rc)
+   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+     line=__LINE__, &
+     file=__FILE__)) &
+     call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
 !*** add field into bundle
    call ESMF_FieldBundleAdd(phys_bundle,(/field/), rc=rc)
    if( present(rcd)) rcd=rc
 !
+   call ESMF_LogWrite('phys field add to fieldbundle'//trim(var_name), ESMF_LOGMSG_INFO, rc=rc)
 
  end subroutine add_field_to_phybundle
 !

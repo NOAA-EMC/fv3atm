@@ -47,6 +47,10 @@
 !-----------------------------------------------------------------------
 !
       integer,parameter :: filename_maxstr=255
+      real(8),parameter :: pi=3.14159265358979d0
+      real, parameter   :: rdgas=287.04, grav=9.80
+      real, parameter   :: stndrd_atmos_ps = 101325.
+      real, parameter   :: stndrd_atmos_lapse = 0.0065
 !
       integer,save      :: lead_write_task                                !<-- Rank of the first write task in the write group
       integer,save      :: last_write_task                                !<-- Rank of the last write task in the write group
@@ -57,11 +61,14 @@
       integer,save      :: idate(7)
       logical,save      :: first_init=.false.
       logical,save      :: first_run=.false.
+      logical,save      :: first_getlatlon=.true.
 !
 !-----------------------------------------------------------------------
 !
       type(wrt_internal_state),pointer :: wrt_int_state                 ! The internal state pointer.
       type(ESMF_FieldBundle)           :: gridFB
+      integer                          :: FBcount
+      character(len=80),allocatable    :: fcstItemNameList(:)
 !
 !-----------------------------------------------------------------------
       REAL(KIND=8)             :: btim,btim0
@@ -127,9 +134,9 @@
       type(write_wrap)                        :: WRAP
       type(wrt_internal_state),pointer        :: wrt_int_state
 
-      integer                                 :: ISTAT, tl, i, j, k,date(6)
+      integer                                 :: ISTAT, tl, i, j, n, k,date(6)
       integer,dimension(2,6)                  :: decomptile
-      integer                                 :: FBcount, fieldCount
+      integer                                 :: fieldCount
       integer                                 :: vm_mpi_comm
       character(40)                           :: fieldName, axesname,longname
       type(ESMF_Grid)                         :: wrtGrid, fcstGrid
@@ -138,11 +145,11 @@
       type(ESMF_Field)                        :: field_work, field
 
       character(len=80)                       :: attrValueSList(2)
-      character(len=80),         allocatable  :: fcstItemNameList(:)
       type(ESMF_StateItem_Flag), allocatable  :: fcstItemTypeList(:)
       type(ESMF_FieldBundle)                  :: fcstFB, wrtFB, fieldbundle
       type(ESMF_Field),          allocatable  :: fcstField(:)
       type(ESMF_TypeKind_Flag)                :: typekind
+      character(len=80),         allocatable  :: fieldnamelist(:)
       integer                                 :: fieldDimCount, gridDimCount
       integer,                   allocatable  :: gridToFieldMap(:)
       integer,                   allocatable  :: ungriddedLBound(:)
@@ -155,11 +162,12 @@
       real(ESMF_KIND_R4)                      :: valueR4
       real(ESMF_KIND_R8)                      :: valueR8
 
-      integer :: attCount, axeslen, jidx
-      real, dimension(:), allocatable         :: slat, lat, lon, axesdata
+      integer :: attCount, axeslen, jidx, noutfile
+      character(128) :: FBlist_outfilename(100), outfile_name
+      character(128),dimension(:,:), allocatable    :: outfilename
+      real, dimension(:), allocatable               :: slat, lat, lon, axesdata
       real(ESMF_KIND_R8), dimension(:,:), pointer   :: lonPtr, latPtr
       type(ESMF_DataCopy_Flag) :: copyflag=ESMF_DATACOPY_REFERENCE
-      real(8),parameter :: PI=3.14159265358979d0
 !
       logical,save                            :: first=.true.
 !test
@@ -292,8 +300,8 @@
             line=__LINE__, &
             file=__FILE__)) &
             return  ! bail out
-        if(wrt_int_state%mype == lead_write_task) print *,'af wrtgrd, latlon,rc=',rc, &
-         'imo=',imo,' jmo=',jmo
+!        if(wrt_int_state%mype == lead_write_task) print *,'af wrtgrd, latlon,rc=',rc, &
+!         'imo=',imo,' jmo=',jmo
       endif
 
 
@@ -315,12 +323,14 @@
         file=__FILE__)) &
         return  ! bail out
       wrt_int_state%FBCount = FBCount
-!      if(wrt_int_state%mype == lead_write_task) print *,'in wrt,FBCount=',FBCount
+!      if(wrt_int_state%mype == lead_write_task) print *,'in wrt,fcst FBCount=',FBCount
 
       allocate(fcstItemNameList(FBCount), fcstItemTypeList(FBCount))
       allocate(wrt_int_state%wrtFB_names(FBCount))
       allocate(wrt_int_state%ncount_fields(FBCount),wrt_int_state%ncount_attribs(FBCount))
       allocate(wrt_int_state%field_names(2000,FBCount))
+      allocate(outfilename(2000,FBcount))
+      outfilename=''
 
       call ESMF_StateGet(imp_state_write, itemNameList=fcstItemNameList, &
            itemTypeList=fcstItemTypeList, rc=rc)
@@ -336,25 +346,13 @@
 
              call ESMF_StateGet(imp_state_write, itemName=fcstItemNameList(i), &
                   fieldbundle=fcstFB, rc=rc)
-!      if(wrt_int_state%mype == lead_write_task) print *,'in wrt,i=',i,' fcstitem,name=',&
-!            trim(fcstItemNameList(i)),' rc=',rc
              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
                line=__LINE__, &
                file=__FILE__)) &
                return  ! bail out
 
-             wrt_int_state%wrtFB_names(i) = "mirror_"//trim(fcstItemNameList(i))
-             wrt_int_state%wrtFB(i) = ESMF_FieldBundleCreate(name=trim(wrt_int_state%wrtFB_names(i)), rc=rc)
-!      if(wrt_int_state%mype == lead_write_task) print *,'in wrt,wrtfb create,rc=',rc, &
-!         'wrtFB_name=',trim( wrt_int_state%wrtFB_names(i))
-            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-              line=__LINE__, &
-              file=__FILE__)) &
-              return  ! bail out
-
 ! create a mirror FieldBundle and add it to importState
              fieldbundle = ESMF_FieldBundleCreate(name="mirror_"//trim(fcstItemNameList(i)), rc=rc)
-
              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
                line=__LINE__, &
                file=__FILE__)) &
@@ -366,28 +364,19 @@
                return  ! bail out
 
 ! copy the fcstFB Attributes to the mirror FieldBundle
-             call ESMF_AttributeCopy(fcstFB, wrt_int_state%wrtFB(i),     &
+             call ESMF_AttributeCopy(fcstFB, fieldbundle,                   &
                    attcopy=ESMF_ATTCOPY_REFERENCE, rc=rc)
              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
                line=__LINE__, &
                file=__FILE__)) &
                return  ! bail out
 !
-! test:
-!   call ESMF_Attributeget(fcstFB, convention="NetCDF", purpose="FV3", &
-!     attnestflag=ESMF_ATTNEST_OFF,count=myattCount, rc=rc)
-!   print *,'test get attcount from fcstFB,myattCount=',myattCount,'rc=',rc
-!   call ESMF_Attributeget(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-!     attnestflag=ESMF_ATTNEST_OFF,count=myattCount, rc=rc)
-!   print *,'test get attcount from wrt_int_state%wrtFB, i=',i,'myattCount=',myattCount,'rc=',rc
-
              call ESMF_FieldBundleGet(fcstFB, fieldCount=fieldCount, rc=rc)
              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
                line=__LINE__, &
                file=__FILE__)) &
                return  ! bail out
              wrt_int_state%ncount_fields(i) = fieldCount
-!      if(wrt_int_state%mype == lead_write_task) print *,'in wrt,fieldCount=',fieldCount
 
              allocate(fcstField(fieldCount))
              call ESMF_FieldBundleGet(fcstFB, fieldList=fcstField,     &
@@ -441,18 +430,24 @@
                  line=__LINE__, &
                  file=__FILE__)) &
                  return  ! bail out
+!
+! get output file name
+               call ESMF_AttributeGet(fcstField(i), convention="NetCDF", purpose="FV3", &
+                    name="output_file", value=outfile_name, rc=rc)
+               if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+                 line=__LINE__, &
+                 file=__FILE__)) &
+                 return  ! bail out
+               CALL ESMF_LogWrite("bf fcstfield, get output_file"//trim(outfile_name)//trim(fieldName),ESMF_LOGMSG_INFO,rc=RC)
+               if( trim(outfile_name) /= '') then
+                 outfilename(j,i) = trim(outfile_name)
+               endif
+               CALL ESMF_LogWrite("af fcstfield, get output_file",ESMF_LOGMSG_INFO,rc=RC)
 
 
 ! add the mirror field to the mirror FieldBundle
-                 call ESMF_FieldBundleAdd(fieldbundle, (/field_work/), rc=rc)
-                 if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-                   line=__LINE__, &
-                   file=__FILE__)) &
-                   return  ! bail out
-
-! also add the mirror field to the internal wrtFB
-              call ESMF_FieldBundleAdd(wrt_int_state%wrtFB(i), (/field_work/), rc=rc)
-              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+               call ESMF_FieldBundleAdd(fieldbundle, (/field_work/), rc=rc)
+               if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
                  line=__LINE__, &
                  file=__FILE__)) &
                  return  ! bail out
@@ -483,6 +478,83 @@
 !end FBCount
       enddo
 !
+!loop over all items in the imp_state_write and count output FieldBundles
+    call get_outfile(FBcount, outfilename,FBlist_outfilename,noutfile)
+    wrt_int_state%FBCount = noutfile
+!
+!create output field bundles
+    do i=1, wrt_int_state%FBcount
+
+       wrt_int_state%wrtFB_names(i) = trim(FBlist_outfilename(i))
+       wrt_int_state%wrtFB(i) = ESMF_FieldBundleCreate(name=trim(wrt_int_state%wrtFB_names(i)), rc=rc)
+       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, &
+          file=__FILE__)) &
+          return  ! bail out
+
+       do n=1, FBcount
+
+         call ESMF_StateGet(imp_state_write, itemName="mirror_"//trim(fcstItemNameList(n)), &
+             fieldbundle=fcstFB, rc=rc)
+
+!       if(wrt_int_state%mype == lead_write_task) print *,'in wrt,fcstItemNameList(n)=', &
+!         trim(fcstItemNameList(n)),' FBlist_outfilename=',trim(FBlist_outfilename(i))
+
+         if( index(trim(fcstItemNameList(n)),trim(FBlist_outfilename(i))) > 0 ) then
+!
+! copy the mirror fcstfield bundle Attributes to the output field bundle
+           call ESMF_AttributeCopy(fcstFB,  wrt_int_state%wrtFB(i), &
+                attcopy=ESMF_ATTCOPY_REFERENCE, rc=rc)
+           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+             line=__LINE__, &
+             file=__FILE__)) &
+             return  ! bail out
+!
+           call ESMF_FieldBundleGet(fcstFB, fieldCount=fieldCount, rc=rc)
+           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+             line=__LINE__, &
+             file=__FILE__)) &
+             return  ! bail out
+
+          allocate(fcstField(fieldCount),fieldnamelist(fieldCount))
+          call ESMF_FieldBundleGet(fcstFB, fieldList=fcstField, fieldNameList=fieldnamelist,   &
+            itemorderflag=ESMF_ITEMORDER_ADDORDER, rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+            line=__LINE__, &
+            file=__FILE__)) &
+            return  ! bail out
+
+          do j=1, fieldCount
+
+            call ESMF_AttributeGet(fcstField(j),convention="NetCDF", purpose="FV3", &
+              name='output_file',value=outfile_name, rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+              line=__LINE__, &
+              file=__FILE__)) &
+              return  ! bail out
+
+!       if(wrt_int_state%mype == lead_write_task) print *,'in wrt,add field,i=',i,'n=',n,' j=',j, &
+!            'fieldname=',trim(fieldnamelist(j)), ' outfile_name=',trim(outfile_name), &
+!            ' field bundle name, FBlist_outfilename(i)=',trim(FBlist_outfilename(i))
+
+            if( trim(outfile_name) == trim(FBlist_outfilename(i))) then
+              call ESMF_FieldBundleAdd(wrt_int_state%wrtFB(i), (/fcstField(j)/), rc=rc)
+              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+                   line=__LINE__, &
+                   file=__FILE__)) &
+                   return  ! bail out
+            endif
+
+          enddo
+          deallocate(fcstField, fieldnamelist)
+
+        endif
+!end FBcount
+      enddo
+
+!end wrt FBcount
+    enddo
+!
 ! add time Attribute
 ! look at the importState attributes and copy those starting with "time"
 
@@ -492,6 +564,7 @@
       line=__LINE__, &
       file=__FILE__)) &
       return  ! bail out
+    call ESMF_LogWrite("Write component AttributeGet, attCount ", ESMF_LOGMSG_INFO, rc=rc)
 
 ! prepare the lists needed to transfer attributes
     allocate(attNameList(attCount), attNameList2(attCount))
@@ -775,13 +848,15 @@
 !***  Initialize for nemsio file
 !-----------------------------------------------------------------------
 !
+      call ESMF_LogWrite("before initialize for nemsio file", ESMF_LOGMSG_INFO, rc=rc)
       if(trim(output_grid) == 'gaussian_grid' .and. trim(output_file) == 'nemsio') then
-        do i= 1, FBcount
+        do i= 1, wrt_int_state%FBcount
           call nemsio_first_call(wrt_int_state%wrtFB(i), imo, jmo, &
-             wrt_int_state%mype, ntasks, wrt_mpi_comm, FBcount, i, idate, &
+             wrt_int_state%mype, ntasks, wrt_mpi_comm, wrt_int_state%FBcount, i, idate, &
              lat, lon,rc) 
         enddo
       endif
+      call ESMF_LogWrite("after initialize for nemsio file", ESMF_LOGMSG_INFO, rc=rc)
 !
 !-----------------------------------------------------------------------
 !
@@ -868,7 +943,6 @@
       real(kind=8) :: wbeg,wend
 
       integer fieldcount, dimCount
-      character(80),allocatable :: field_names(:)
       real(kind=ESMF_KIND_R8), dimension(:,:,:), pointer   :: datar8
       real(kind=ESMF_KIND_R8), dimension(:,:), pointer     :: datar82d
 !
@@ -961,49 +1035,52 @@
        nseconds   = int(nf_seconds-nf_hours*3600.-nf_minutes*60.)
        write(cfhour,'(I3.3)')int(wrt_int_state%nfhour)
     if(mype == lead_write_task) print *,'in wrt run, 2, nf_hours=',nf_hours,nf_minutes,nseconds, &
-       'nseconds_num=',nseconds_num,nseconds_den
+       'nseconds_num=',nseconds_num,nseconds_den,' FBCount=',FBCount
 
 !    if(mype == lead_write_task) print *,'in wrt run, cfhour=',cfhour, &
 !     print *,'in wrt run, cfhour=',cfhour, &
 !        ' nf_seconds=',nf_seconds,wrt_int_state%nfhour
 
 ! access the time Attribute which is updated by the driver each time
+       call ESMF_LogWrite("before Write component get time", ESMF_LOGMSG_INFO, rc=rc)
        call ESMF_AttributeGet(imp_state_write, convention="NetCDF", purpose="FV3", &
          name="time", value=time, rc=rc)
        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
          line=__LINE__, &
          file=__FILE__)) &
          return  ! bail out
+       call ESMF_LogWrite("before Write component af get time", ESMF_LOGMSG_INFO, rc=rc)
 !
 !-----------------------------------------------------------------------
 !*** loop on the files that need to write out
 !-----------------------------------------------------------------------
+
+       do i=1, FBCount
+         call ESMF_LogWrite("before Write component get mirror file bundle", ESMF_LOGMSG_INFO, rc=rc)
+         call ESMF_StateGet(imp_state_write, itemName="mirror_"//trim(fcstItemNameList(i)), &
+              fieldbundle=file_bundle, rc=rc)
+         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+           line=__LINE__, file=__FILE__)) &
+           return  ! bail out
+         call ESMF_LogWrite("before Write component af get mirror file bundle", ESMF_LOGMSG_INFO, rc=rc)
+!recover fields from cartesian vector and sfc pressure
+         call recover_fields(file_bundle,rc)
+       enddo
+!
+! ** now loop through output field bundle
+
        file_loop_all: do nbdl=1, wrt_int_state%FBCount
 !
          if(step == 1) then
-            call ESMF_StateGet(state=imp_state_write,                     &
-                           itemName=wrt_int_state%wrtFB_names(NBDL),& 
-                           fieldbundle=file_bundle, rc=rc)
-!         if(mype == lead_write_task) print *,'in wrt run,nbdl=',nbdl,'fbname=', &
-!           trim(wrt_int_state%wrtFB_names(NBDL)),'rc=',rc
+           file_bundle = wrt_int_state%wrtFB(nbdl)
          endif
 
-         idx= index(wrt_int_state%wrtFB_names(nbdl)(8:),"_")
          if ( trim(output_file) == 'nemsio' ) then
-            filename = wrt_int_state%wrtFB_names(nbdl)(8:7+idx-1)//'f'//cfhour//'.nemsio'
+            filename = trim(wrt_int_state%wrtFB_names(nbdl))//'f'//cfhour//'.nemsio'
          else
-            filename = wrt_int_state%wrtFB_names(nbdl)(8:7+idx-1)//'f'//cfhour//'.nc'
+            filename = trim(wrt_int_state%wrtFB_names(nbdl))//'f'//cfhour//'.nc'
          endif
-         if(mype == lead_write_task) print *,'in wrt run,filename=',trim(filename)
-
-!
-!   call ESMF_Attributeget(wrt_int_state%wrtFB(NBDL), convention="NetCDF", purpose="FV3", &
-!     attnestflag=ESMF_ATTNEST_OFF,count=myattCount, rc=rc)
-!   print *,'test get attcount from wrt_int_state%wrtFB, nbdl=',nbdl,'myattCount=',myattCount,'rc=',rc
-!   call ESMF_Attributeget(file_bundle, convention="NetCDF", purpose="FV3", &
-!     attnestflag=ESMF_ATTNEST_OFF,count=myattCount, rc=rc)
-!   print *,'test get attcount from wrt_grid_comp file_bundle, nbdl=',nbdl,'myattCount=',myattCount,'rc=',rc, &
-!    'step=',step
+!         if(mype == lead_write_task) print *,'in wrt run,filename=',trim(filename)
 
 !
 ! set the time Attribute on the grid to carry it into the lower levels
@@ -1207,7 +1284,179 @@
 !
 !-----------------------------------------------------------------------
 !
-      end subroutine wrt_finalize
+    end subroutine wrt_finalize
+!
+!-----------------------------------------------------------------------
+!
+   subroutine recover_fields(file_bundle,rc)
+
+     type(ESMF_FieldBundle), intent(in)              :: file_bundle
+     integer,                intent(out),   optional :: rc
+!
+     integer i,j,k,ifld,fieldCount,nstt,nend,fieldDimCount,gridDimCount
+     integer istart,iend,jstart,jend,kstart,kend,km
+     logical uPresent, vPresent
+     type(ESMF_Grid)  fieldGrid
+     type(ESMF_Field)  ufield, vfield
+     type(ESMF_TypeKind_Flag) typekind
+     character(100) fieldName,uwindname,vwindname
+     type(ESMF_Field),   allocatable  :: fcstField(:)
+     real(ESMF_KIND_R8), dimension(:,:),     pointer  :: lon, lat
+     real(ESMF_KIND_R4), dimension(:,:),     pointer  :: pressfc
+     real(ESMF_KIND_R4), dimension(:,:),     pointer  :: uwind2dr4,vwind2dr4
+     real(ESMF_KIND_R4), dimension(:,:,:),   pointer  :: uwind3dr4,vwind3dr4
+     real(ESMF_KIND_R4), dimension(:,:,:),   pointer  :: cart3dPtr2dr4
+     real(ESMF_KIND_R4), dimension(:,:,:,:), pointer  :: cart3dPtr3dr4
+     real(ESMF_KIND_R8), dimension(:,:,:,:), pointer  :: cart3dPtr3dr8
+     save lon, lat
+!
+! get filed count
+     call ESMF_FieldBundleGet(file_bundle, fieldCount=fieldCount, &
+         grid=fieldGrid, rc=rc)
+!
+     CALL ESMF_LogWrite("call recover field on wrt comp",ESMF_LOGMSG_INFO,rc=RC)
+     call ESMF_GridGet(fieldgrid, dimCount=gridDimCount, rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+            line=__LINE__, &
+            file=__FILE__)) &
+            return  ! bail out
+
+     if( first_getlatlon ) then
+     CALL ESMF_LogWrite("call recover field get coord 1",ESMF_LOGMSG_INFO,rc=RC)
+     call ESMF_GridGetCoord(fieldgrid, coordDim=1, farrayPtr=lon, rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+            line=__LINE__, &
+            file=__FILE__)) &
+            return  ! bail out
+     lon = lon * pi/180.
+!     print *,'in 3DCartesian2wind, lon dim=',lbound(lon,1),ubound(lon,1),lbound(lon,2),ubound(lon,2), &
+!       'lon=',lon(lbound(lon,1),lbound(lon,2)), lon(ubound(lon,1),ubound(lon,2))
+     CALL ESMF_LogWrite("call recover field get coord 2",ESMF_LOGMSG_INFO,rc=RC)
+     call ESMF_GridGetCoord(fieldgrid, coordDim=2, farrayPtr=lat, rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+            line=__LINE__, &
+            file=__FILE__)) &
+            return  ! bail out
+     lat = lat * pi/180.
+!     print *,'in 3DCartesian2wind, lat dim=',lbound(lat,1),ubound(lat,1),lbound(lat,2),ubound(lat,2), &
+!       'lat=',lat(lbound(lon,1),lbound(lon,2)), lat(ubound(lon,1),ubound(lon,2))
+     first_getlatlon = .false.
+     endif
+!
+     allocate(fcstField(fieldCount))
+     CALL ESMF_LogWrite("call recover field get fcstField",ESMF_LOGMSG_INFO,rc=RC)
+     call ESMF_FieldBundleGet(file_bundle, fieldList=fcstField, itemorderflag=ESMF_ITEMORDER_ADDORDER, rc=rc)
+!
+     do ifld=1,fieldCount
+
+       CALL ESMF_LogWrite("call recover field get fieldname, type dimcount",ESMF_LOGMSG_INFO,rc=RC)
+       call ESMF_FieldGet(fcstField(ifld),name=fieldName,typekind=typekind,dimCount=fieldDimCount, rc=rc)
+
+! convert back wind
+       if(index(trim(fieldName),"vector")>0) then
+         nstt = index(trim(fieldName),"wind")+4
+         nend = index(trim(fieldName),"vector")-1
+         if( nend>nstt ) then
+           uwindname = 'u'//fieldName(nstt+1:nend)
+           vwindname = 'v'//fieldName(nstt+1:nend)
+         else
+           uwindname = 'ugrd'
+           vwindname = 'vgrd'
+         endif
+!         print *,'in get 3D vector wind, uwindname=',trim(uwindname),' v=', trim(vwindname),' fieldname=',trim(fieldname)
+! get u , v wind
+         CALL ESMF_LogWrite("call recover field get u, v field",ESMF_LOGMSG_INFO,rc=RC)
+         call ESMF_FieldBundleGet(file_bundle,trim(uwindname),field=ufield,isPresent=uPresent,rc=rc)
+         call ESMF_FieldBundleGet(file_bundle,trim(vwindname),field=vfield,isPresent=vPresent,rc=rc)
+         if(.not. uPresent .or. .not.vPresent) then
+           rc=990
+           print *,' ERROR ,the local wind is not present! rc=', rc
+           exit
+         endif
+
+! get field data
+         if ( typekind == ESMF_TYPEKIND_R4 ) then
+           if( fieldDimCount > gridDimCount+1 ) then
+             CALL ESMF_LogWrite("call recover field get 3d card wind farray",ESMF_LOGMSG_INFO,rc=RC)
+             call ESMF_FieldGet(fcstField(ifld), localDe=0, farrayPtr=cart3dPtr3dr4, rc=rc)
+               if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+                 line=__LINE__, file=__FILE__)) return  ! bail out
+             if( ubound(cart3dPtr3dr4,1)-lbound(cart3dPtr3dr4,1)+1/=3) then
+               rc=991
+               print *,'ERROR, 3D the vector dimension /= 3, rc=',rc
+               exit
+             endif
+             iend   = ubound(cart3dPtr3dr4,2)
+             istart = lbound(cart3dPtr3dr4,2)
+             iend   = ubound(cart3dPtr3dr4,2)
+             jstart = lbound(cart3dPtr3dr4,3)
+             jend   = ubound(cart3dPtr3dr4,3)
+             kstart = lbound(cart3dPtr3dr4,4)
+             kend   = ubound(cart3dPtr3dr4,4)
+             call ESMF_FieldGet(ufield, localDe=0, farrayPtr=uwind3dr4,rc=rc)
+             call ESMF_FieldGet(vfield, localDe=0, farrayPtr=vwind3dr4,rc=rc)
+! update u , v wind
+             do k=kstart,kend
+               do j=jstart, jend
+                 do i=istart, iend
+                  uwind3dr4(i,j,k) = cart3dPtr3dr4(1,i,j,k) * cos(lon(i,j))+ &
+                                     cart3dPtr3dr4(2,i,j,k) * sin(lon(i,j))
+                  vwind3dr4(i,j,k) =-cart3dPtr3dr4(1,i,j,k) * sin(lat(i,j))*sin(lon(i,j))+ &
+                                     cart3dPtr3dr4(2,i,j,k) * sin(lat(i,j))*cos(lon(i,j))+ &
+                                     cart3dPtr3dr4(3,i,j,k) * cos(lat(i,j))
+                 enddo
+               enddo
+             enddo
+           else
+             call ESMF_FieldGet(fcstField(ifld), localDe=0, farrayPtr=cart3dPtr2dr4, rc=rc)
+               if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+                 line=__LINE__, file=__FILE__)) return  ! bail out
+             if( ubound(cart3dPtr2dr4,1)-lbound(cart3dPtr2dr4,1)+1 /= 3) then
+               rc=991
+               print *,'ERROR, 2D the vector dimension /= 3, rc=',rc
+               exit
+             endif
+             istart = lbound(cart3dPtr2dr4,2)
+             iend   = ubound(cart3dPtr2dr4,2)
+             jstart = lbound(cart3dPtr2dr4,3)
+             jend   = ubound(cart3dPtr2dr4,3)
+
+             call ESMF_FieldGet(ufield, localDe=0, farrayPtr=uwind2dr4,rc=rc)
+             call ESMF_FieldGet(vfield, localDe=0, farrayPtr=vwind2dr4,rc=rc)
+              ! update u , v wind
+             do j=jstart, jend
+               do i=istart, iend
+                  uwind2dr4(i,j) = cart3dPtr2dr4(1,i,j) * cos(lon(i,j))+ &
+                                   cart3dPtr2dr4(2,i,j) * sin(lon(i,j))
+                  vwind2dr4(i,j) =-cart3dPtr2dr4(1,i,j) * sin(lat(i,j))*sin(lon(i,j))+ &
+                                   cart3dPtr2dr4(2,i,j) * sin(lat(i,j))*cos(lon(i,j))+ &
+                                   cart3dPtr2dr4(3,i,j) * cos(lat(i,j))
+               enddo
+             enddo
+           endif
+         endif
+!     print *,'in 3DCartesian2wind, uwindname=', trim(uwindname),'uPresent =',uPresent, 'vPresent=',vPresent,'fieldDimCount=', &
+!       fieldDimCount,'gridDimCount=',gridDimCount
+
+! convert back surface pressure
+       else if(index(trim(fieldName),"pressfc")>0) then
+         call ESMF_FieldGet(fcstField(ifld),localDe=0, farrayPtr=pressfc, rc=rc)
+         istart = lbound(pressfc,1)
+         iend   = ubound(pressfc,1)
+         jstart = lbound(pressfc,2)
+         jend   = ubound(pressfc,2)
+         do j=jstart, jend
+           do i=istart, iend
+             pressfc(i,j) = pressfc(i,j)**(grav/(rdgas*stndrd_atmos_lapse))*stndrd_atmos_ps
+           enddo
+         enddo
+       endif
+     enddo
+!
+     deallocate(fcstField)
+     rc = 0
+
+   end subroutine recover_fields
 !
 !-----------------------------------------------------------------------
 !
@@ -2621,6 +2870,42 @@ call ESMF_LogWrite(msg, ESMF_LOGMSG_INFO, rc=rc)
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
      end subroutine splat8
 !-----------------------------------------------------------------------
+!
+     subroutine get_outfile(nfl, filename, outfile_name,noutfile)
+       integer, intent(in)          :: nfl
+       character(*), intent(in)     :: filename(:,:)
+       character(*), intent(inout)  :: outfile_name(:)
+       integer, intent(inout)       :: noutfile
+
+       integer        :: i,j,n,idx
+       logical        :: found
+!
+       noutfile = 0
+       do i=1,nfl
+
+         loopj: do j=1, 2000
+
+           if( trim(filename(j,i)) == '') exit loopj
+           if( trim(filename(j,i)) == 'none') cycle
+
+           found = .false.
+           loopn: do n=1, noutfile
+             if(trim(filename(j,i)) == trim(outfile_name(n))) then
+               found = .true.
+               exit loopn
+             endif
+           enddo loopn
+
+           if (.not.found) then
+             noutfile = noutfile + 1
+             outfile_name(noutfile) = trim(filename(j,i))
+!             print *,'in get outfile,noutfile=', noutfile,' outfile=',trim(filename(j,i))
+           endif
+         enddo loopj
+!
+       enddo
+
+     end subroutine get_outfile
 !
 !-----------------------------------------------------------------------
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&

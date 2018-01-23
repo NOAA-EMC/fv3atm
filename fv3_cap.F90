@@ -483,7 +483,7 @@ module fv3gfs_cap_mod
         enddo
         k = k + wrttasks_per_group
         last_wrttask(i) = k - 1
-        if(mype==0)print *,'af wrtComp(i)=',i,'k=',k
+!        if(mype==0)print *,'af wrtComp(i)=',i,'k=',k
 
 ! prepare name of the wrtComp(i)
         write(cwrtcomp,"(A,I2.2)") "wrtComp_", i
@@ -607,7 +607,7 @@ module fv3gfs_cap_mod
               regridMethod=regridmethod, routehandle=routehandle(j,i),  &
               srcTermProcessing=isrctermprocessing, rc=rc)
 
-            print *,'after regrid store, group i=',i,' fb=',j,' time=',mpi_wtime()-timewri
+           if(mype==0) print *,'after regrid store, group i=',i,' fb=',j,' time=',mpi_wtime()-timewri
             call ESMF_LogWrite('af FieldBundleRegridStore', ESMF_LOGMSG_INFO, rc=rc)
             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
               line=__LINE__, &
@@ -634,7 +634,7 @@ module fv3gfs_cap_mod
 
 ! end write_groups
       enddo
-      print *,'in fv3cap init, time wrtcrt/regrdst',mpi_wtime()-timerhs
+      if(mype==0) print *,'in fv3cap init, time wrtcrt/regrdst',mpi_wtime()-timerhs
       deallocate(petList)
       deallocate(originPetList)
       deallocate(targetPetList)
@@ -705,7 +705,7 @@ module fv3gfs_cap_mod
 !end quilting
     endif
 !
-    print *,'in fv3_cap, init time=',mpi_wtime()-timeis
+    if(mype==0) print *,'in fv3_cap, init time=',mpi_wtime()-timeis
 !-----------------------------------------------------------------------
 !
   end subroutine InitializeAdvertise

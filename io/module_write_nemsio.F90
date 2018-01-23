@@ -125,7 +125,8 @@ module module_write_nemsio
     do i=1,fieldcount(mybdl)
 
        call ESMF_FieldGet(fcstField(i), typekind=typekind, &
-            dimCount=fieldDimCount, grid=wrtGrid, rc=rc)
+            dimCount=fieldDimCount, grid=wrtGrid, name=fieldname, rc=rc)
+       if( index(trim(fieldname),"vector") >0) cycle
        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
          line=__LINE__, &
          file=__FILE__)) &
@@ -300,7 +301,7 @@ module module_write_nemsio
 !
 !**  OPEN NEMSIO FILE
 !
-    print *,'in write_nemsio,bf nemsio_open, filename=',trim(filename), &
+    if(mype==0) print *,'in write_nemsio,bf nemsio_open, filename=',trim(filename), &
       'idate=',idate,'nfour=',NF_HOURS,NF_MINUTES,NF_SECONDS, 'mybdl=',mybdl,&
       'dim=',im,jm,lm,'nmeta=',nmeta,'idrt=',idrt,'nsoil=',nsoil, &
       'ntrac=',ntrac,'nrec=',nrec(mybdl),'extrameta=',extrameta(mybdl), &

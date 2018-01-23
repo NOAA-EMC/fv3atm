@@ -330,6 +330,7 @@ module GFS_typedefs
     character(len=256), pointer :: input_nml_file(:) !< character string containing full namelist
                                                    !< for use with internal file reads
     real(kind=kind_phys) :: fhzero          !< seconds between clearing of diagnostic buckets
+    logical              :: lprecip_accu    !< flag for precip accumulation without bucket (fhzero)
     logical              :: ldiag3d         !< flag for 3d diagnostic fields
     logical              :: lssav           !< logical flag for storing diagnostics
     real(kind=kind_phys) :: fhcyc           !< frequency for surface data cycling (secs)
@@ -1356,6 +1357,7 @@ module GFS_typedefs
 
     !--- BEGIN NAMELIST VARIABLES
     real(kind=kind_phys) :: fhzero         = 0.0             !< seconds between clearing of diagnostic buckets
+    logical              :: lprecip_accu   = .true.          !< flag for precip accumulation without bucket (fhzero)
     logical              :: ldiag3d        = .false.         !< flag for 3d diagnostic fields
     logical              :: lssav          = .false.         !< logical flag for storing diagnostics
     real(kind=kind_phys) :: fhcyc          = 0.              !< frequency for surface data cycling (secs)
@@ -1564,7 +1566,7 @@ module GFS_typedefs
 
     NAMELIST /gfs_physics_nml/                                                              &
                           !--- general parameters
-                               fhzero, ldiag3d, lssav, fhcyc, lgocart, fhgoc3d,             &
+                               fhzero,lprecip_accu, ldiag3d, lssav, fhcyc, lgocart, fhgoc3d,&
                                thermodyn_id, sfcpress_id,                                   &
                           !--- coupling parameters
                                cplflx, cplwav, lsidea,                                      &
@@ -1642,6 +1644,7 @@ module GFS_typedefs
     Model%nlunit           = nlunit
     Model%fn_nml           = fn_nml
     Model%fhzero           = fhzero
+    Model%lprecip_accu     = lprecip_accu
     Model%ldiag3d          = ldiag3d
     Model%lssav            = lssav
     Model%fhcyc            = fhcyc
@@ -2551,6 +2554,9 @@ module GFS_typedefs
     integer,                intent(in) :: IM
     type(GFS_control_type), intent(in) :: Model
 
+!
+    logical, save :: linit
+
     !--- Radiation
     allocate (Diag%fluxr   (IM,Model%nfxr))
     allocate (Diag%topfsw  (IM))
@@ -2645,7 +2651,10 @@ module GFS_typedefs
     endif
 
     call Diag%rad_zero  (Model)
-    call Diag%phys_zero (Model)
+!    print *,'in diag_create, call phys_zero'
+    linit = .true.
+    call Diag%phys_zero (Model, linit=linit)
+    linit = .false.
 
   end subroutine diag_create
 
@@ -2672,9 +2681,10 @@ module GFS_typedefs
 !------------------------
 ! GFS_diag%phys_zero
 !------------------------
-  subroutine diag_phys_zero (Diag, Model)
+  subroutine diag_phys_zero (Diag, Model, linit)
     class(GFS_diag_type)               :: Diag
     type(GFS_control_type), intent(in) :: Model
+    logical,optional, intent(in)       :: linit
 
     !--- In/Out
     Diag%srunoff = zero
@@ -2691,7 +2701,7 @@ module GFS_typedefs
     Diag%dvsfc   = zero
     Diag%dtsfc   = zero
     Diag%dqsfc   = zero
-    Diag%totprcp = zero
+!    Diag%totprcp = zero
     Diag%gflux   = zero
     Diag%dlwsfc  = zero
     Diag%ulwsfc  = zero
@@ -2702,7 +2712,7 @@ module GFS_typedefs
     Diag%dugwd   = zero
     Diag%dvgwd   = zero
     Diag%psmean  = zero
-    Diag%cnvprcp = zero
+!    Diag%cnvprcp = zero
     Diag%spfhmin = huge
     Diag%spfhmax = zero
     Diag%u10mmax  = zero
@@ -2713,9 +2723,9 @@ module GFS_typedefs
     Diag%ice     = zero
     Diag%snow    = zero
     Diag%graupel = zero
-    Diag%totice  = zero
-    Diag%totsnw  = zero
-    Diag%totgrp  = zero
+!    Diag%totice  = zero
+!    Diag%totsnw  = zero
+!    Diag%totgrp  = zero
 
     !--- Out
     Diag%u10m    = zero
@@ -2764,6 +2774,15 @@ module GFS_typedefs
       Diag%refl_10cm = zero
     endif
 
+    if ((present (linit).and.linit) .or. .not. Model%lprecip_accu) then
+      Diag%totprcp = zero
+      Diag%cnvprcp = zero
+      Diag%totice  = zero
+      Diag%totsnw  = zero
+      Diag%totgrp  = zero
+      if(Model%me == Model%master) print *,'in diag_phys_zero, set diag variable to zero',&
+        'size(Diag%totprcp)=',size(Diag%totprcp)
+    endif
   end subroutine diag_phys_zero
 
 end module GFS_typedefs

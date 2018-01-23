@@ -18,6 +18,7 @@
   character(255)    :: output_grid
   character(255)    :: output_file
   integer           :: imo,jmo
+  integer           :: nbdlphys
   character(255),dimension(:),allocatable :: filename_base
 !
   integer,dimension(:),allocatable     :: lead_wrttask, last_wrttask

@@ -50,7 +50,7 @@
 
   use esmf
 !
-  use module_fv3_io_def, only:  num_pes_fcst, num_files, filename_base
+  use module_fv3_io_def, only:  num_pes_fcst, num_files, filename_base, nbdlphys
   use module_fv3_config, only:  dt_atmos, calendar, restart_interval, &
                                 quilting, calendar_type,              &
                                 force_date_from_configure
@@ -144,7 +144,7 @@
 !
 !***  LOCAL VARIABLES
 !
-    integer                                :: tl, i
+    integer                                :: tl, i, j
     integer,dimension(2,6)                 :: decomptile                  !define delayout for the 6 cubed-sphere tiles
     type(ESMF_FieldBundle)                 :: fieldbundle
     type(ESMF_Grid)                        :: fcstGrid
@@ -165,8 +165,9 @@
     character(3) cfhour
     character(4) dateSY
     character(2) dateSM,dateSD,dateSH,dateSN,dateSS
-    character(128) name_FB,dateS
+    character(128) name_FB, name_FB1, dateS
     real,    allocatable, dimension(:,:) :: glon_bnd, glat_bnd
+    type(ESMF_FieldBundle),dimension(:), allocatable  :: fieldbundlephys
 
     real(8) mpi_wtime, timeis
 !
@@ -320,7 +321,6 @@
 
      call  atmos_model_init (atm_int_state%Atm,  atm_int_state%Time_init, &
                              atm_int_state%Time_atmos, atm_int_state%Time_step_atmos)
-     if(mype==0) print *,'af atmos_model_init'
 !
      call data_override_init ( ) ! Atm_domain_in  = Atm%domain, &
                                  ! Ice_domain_in  = Ice%domain, &
@@ -394,7 +394,8 @@
             dateSN//":"//dateSS
         if(mype==0) print *,'dateS=',trim(dateS),'date_init=',date_init
         call ESMF_AttributeSet(exportState, convention="NetCDF", purpose="FV3", &
-          name="time:units", value="hours since 2016-10-03 00:00:00", rc=rc)
+          name="time:units", value=trim(dateS), rc=rc)
+!          name="time:units", value="hours since 2016-10-03 00:00:00", rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
          line=__LINE__, &
          file=__FILE__)) &
@@ -429,54 +430,57 @@
         do i=1,num_files
 !
          name_FB = filename_base(i)
-         if( i==1 ) then
-           name_FB = trim(name_FB)//'_bilinear'
-         else if( i==2 ) then
-           name_FB = trim(name_FB)//'_nearest_stod'
-         endif
-         fieldbundle = ESMF_FieldBundleCreate(name=trim(name_FB),rc=rc)
-         if(mype==0) print *,'af create fcst fieldbundle, name=',trim(name_FB),'rc=',rc
-         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-           line=__LINE__, &
-           file=__FILE__)) &
-           return  ! bail out
 !
-!add logic to set up esmf fields in either dyn or phys
          if( i==1 ) then
+! for dyn
+           name_FB1 = trim(name_FB)//'_bilinear'
+           fieldbundle = ESMF_FieldBundleCreate(name=trim(name_FB1),rc=rc)
+           if(mype==0) print *,'af create fcst fieldbundle, name=',trim(name_FB),'rc=',rc
+           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+             line=__LINE__, &
+             file=__FILE__)) &
+             return  ! bail out
            call fv_dyn_bundle_setup(atm_int_state%Atm%axes,          &
                 fieldbundle, fcstgrid, quilting)
+
+           ! Add the field to the importState so parent can connect to it
+           call ESMF_StateAdd(exportState, (/fieldbundle/), rc=rc)
+           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+             line=__LINE__, &
+             file=__FILE__)) &
+             return  ! bail out
+
          else if( i==2 ) then
-           call fv_phys_bundle_setup(atm_int_state%Atm%axes,          &
-                fieldbundle, fcstgrid, quilting)
-         endif
-
-! Add global Attributes to FieldBundle
-!         TimeElapsed = CurrTime - TINI
-!         call ESMF_TimeIntervalGet(timeinterval=TimeElapsed, h=nfhour, rc=rc)
-!         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-!           line=__LINE__, &
-!           file=__FILE__)) &
-!           return  ! bail out
-
-!         call ESMF_AttributeAdd(fieldbundle, convention="NetCDF", purpose="FV3", &
-!           attrList=(/"nfhour"/), rc=rc)
-!         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-!           line=__LINE__, &
-!           file=__FILE__)) &
-!           return  ! bail out
-!         call ESMF_AttributeSet(fieldbundle, convention="NetCDF", purpose="FV3", &
-!           name="nfhour", value=real(nfhour,ESMF_KIND_R8), rc=rc)
-!         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-!           line=__LINE__, &
-!           file=__FILE__)) &
-!           return  ! bail out
+! for phys
+           nbdlphys = 2
+           allocate(fieldbundlephys(nbdlphys))
+           do j=1, nbdlphys
+             if( j==1 ) then
+               name_FB1 = trim(name_FB)//'_nearest_stod'
+             else
+               name_FB1 = trim(name_FB)//'_bilinear'
+             endif
+             fieldbundlephys(j) = ESMF_FieldBundleCreate(name=trim(name_FB1),rc=rc)
+             if(mype==0) print *,'af create fcst fieldbundle, name=',trim(name_FB1),'rc=',rc
+             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+               line=__LINE__, &
+               file=__FILE__)) &
+               return  ! bail out
+           enddo
 !
-! Add the field to the importState so parent can connect to it
-         call ESMF_StateAdd(exportState, (/fieldbundle/), rc=rc)
-         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-           line=__LINE__, &
-           file=__FILE__)) &
-           return  ! bail out
+           call fv_phys_bundle_setup(atm_int_state%Atm%axes,          &
+                fieldbundlephys, fcstgrid, quilting, nbdlphys)
+!
+           ! Add the field to the importState so parent can connect to it
+           do j=1,nbdlphys
+             call ESMF_StateAdd(exportState, (/fieldbundlephys(j)/), rc=rc)
+             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+               line=__LINE__, &
+               file=__FILE__)) &
+               return  ! bail out
+           enddo
+
+         endif
 !
         enddo
 
@@ -491,7 +495,7 @@
 !        WRITE(0,*)"PASS: Fcst_Initialize."
       ENDIF
 !
-!     if(mype==0) print *,'in fcst,init total time: ', mpi_wtime() - timeis
+      if(mype==0) print *,'in fcst,init total time: ', mpi_wtime() - timeis
 !
 !----------------------------------------------------------------------- 
 !
