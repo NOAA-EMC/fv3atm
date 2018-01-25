@@ -23,6 +23,6 @@
       integer,dimension(5) ::skeb_vfilt
       integer(8),dimension(5) ::iseed_sppt,iseed_shum,iseed_skeb
       logical stochini,sppt_logit
-      logical do_shum,do_sppt,do_skeb
+      logical do_shum,do_sppt,do_skeb,use_zmtnblck
 
       end module stochy_namelist_def

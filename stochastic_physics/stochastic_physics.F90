@@ -32,6 +32,7 @@ gis_stochy%nodes=nodes
 call init_stochdata(Model%levs,Model%dtp,Model%input_nml_file,Model%fn_nml,Init_parm%nlunit)
 ! check to see decomposition
 Model%do_sppt=do_sppt
+Model%use_zmtnblck=use_zmtnblck
 Model%do_shum=do_shum
 Model%do_skeb=do_skeb
 Model%skeb_npass=skeb_npass
@@ -54,7 +55,7 @@ if (do_sppt) then
    enddo
    if (sppt_sfclimit) then
        vfact_sppt(2)=vfact_sppt(3)*0.5
-       vfact_sppt(1)=vfact_sppt(3)*0.25
+       vfact_sppt(1)=0.0
    endif
    if (is_master()) then
       do k=1,MOdel%levs

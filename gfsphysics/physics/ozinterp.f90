@@ -122,31 +122,30 @@
       USE MACHINE,  ONLY : kind_phys
       USE OZNE_DEF
       implicit none
-      integer             iday,j,j1,j2,l,npts,nc,n1,n2
+      integer              iday,j,j1,j2,l,npts,nc,n1,n2
       real(kind=kind_phys) fhour,tem, tx1, tx2
 !
  
       integer  JINDX1(npts), JINDX2(npts)
-      integer  me,idate(4)
-      integer  IDAT(8),JDAT(8)
+      integer  me, idate(4), IDAT(8),JDAT(8)
 !
       real(kind=kind_phys) DDY(npts)
       real(kind=kind_phys) ozplout(npts,levozp,oz_coeff)
       real(kind=kind_phys) RINC(5), rjday
       integer jdow, jdoy, jday
       real(4) rinc4(5)
-      integer w3kindreal,w3kindint
+      integer w3kindreal, w3kindint
 !
-      IDAT=0
-      IDAT(1)=IDATE(4)
-      IDAT(2)=IDATE(2)
-      IDAT(3)=IDATE(3)
-      IDAT(5)=IDATE(1)
-      RINC=0.
-      RINC(2)=FHOUR
+      IDAT    = 0
+      IDAT(1) = IDATE(4)
+      IDAT(2) = IDATE(2)
+      IDAT(3) = IDATE(3)
+      IDAT(5) = IDATE(1)
+      RINC    = 0.
+      RINC(2) = FHOUR
       call w3kind(w3kindreal,w3kindint)
-      if(w3kindreal==4) then
-        rinc4=rinc
+      if(w3kindreal == 4) then
+        rinc4 = rinc
         CALL W3MOVDAT(RINC4,IDAT,JDAT)
       else
         CALL W3MOVDAT(RINC,IDAT,JDAT)
@@ -157,26 +156,25 @@
       jday = 0
       call w3doxdat(jdat,jdow,jdoy,jday)
       rjday = jdoy + jdat(5) / 24.
-      IF (RJDAY .LT. oz_time(1)) RJDAY = RJDAY+365.
+      IF (RJDAY < oz_time(1)) RJDAY = RJDAY + 365.
 !
       n2 = timeoz + 1
-      do j=1,timeoz
-        if (rjday .lt. oz_time(j)) then
+      do j=2,timeoz
+        if (rjday < oz_time(j)) then
           n2 = j
           exit
         endif
       enddo
       n1 = n2 - 1
-      if (n1 <= 0)     n1 = n1 + timeoz
-      if (n2 > timeoz) n2 = n2 - timeoz
-
 !
-!     if (me .eq. 0) print *,' n1=',n1,' n2=',n2,' rjday=',rjday
+!     if (me == 0) print *,' n1=',n1,' n2=',n2,' rjday=',rjday
 !    &,'oz_time=',oz_time(n1),oz_time(n2)
 !
 
       tx1 = (oz_time(n2) - rjday) / (oz_time(n2) - oz_time(n1))
       tx2 = 1.0 - tx1
+
+      if (n2 > timeoz) n2 = n2 - timeoz
 !
       do nc=1,oz_coeff
         DO L=1,levozp
@@ -184,9 +182,9 @@
             J1  = JINDX1(J)
             J2  = JINDX2(J)
             TEM = 1.0 - DDY(J)
-            ozplout(j,L,nc) = & 
-            tx1*(TEM*ozplin(J1,L,nc,n1)+DDY(J)*ozplin(J2,L,nc,n1)) & 
-          + tx2*(TEM*ozplin(J1,L,nc,n2)+DDY(J)*ozplin(J2,L,nc,n2))
+            ozplout(j,L,nc) =                                          &
+                tx1*(TEM*ozplin(J1,L,nc,n1)+DDY(J)*ozplin(J2,L,nc,n1)) &
+              + tx2*(TEM*ozplin(J1,L,nc,n2)+DDY(J)*ozplin(J2,L,nc,n2))
           ENDDO
         ENDDO
       enddo

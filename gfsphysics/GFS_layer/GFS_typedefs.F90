@@ -555,6 +555,7 @@ module GFS_typedefs
      
     !--- stochastic physics control parameters
     logical              :: do_sppt
+    logical              :: use_zmtnblck
     logical              :: do_shum
     logical              :: do_skeb
     integer              :: skeb_npass 
@@ -842,10 +843,11 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: wet1   (:)    => null()   !< normalized soil wetness
     real (kind=kind_phys), pointer :: sr     (:)    => null()   !< snow ratio : ratio of snow to total precipitation
 
-    real (kind=kind_phys), pointer :: skebu_wts(:,:)    => null()   !< 10 meater u/v wind speed
-    real (kind=kind_phys), pointer :: skebv_wts(:,:)    => null()   !< 10 meater u/v wind speed
+    real (kind=kind_phys), pointer :: skebu_wts(:,:)   => null()   !< 10 meater u/v wind speed
+    real (kind=kind_phys), pointer :: skebv_wts(:,:)   => null()   !< 10 meater u/v wind speed
     real (kind=kind_phys), pointer :: sppt_wts(:,:)    => null()   !< 10 meater u/v wind speed
     real (kind=kind_phys), pointer :: shum_wts(:,:)    => null()   !< 10 meater u/v wind speed
+    real (kind=kind_phys), pointer :: zmtnblck(:)      => null()   !<mountain blocking evel
     !--- accumulated quantities for 3D diagnostics
     real (kind=kind_phys), pointer :: du3dt (:,:,:) => null()   !< u momentum change due to physics
     real (kind=kind_phys), pointer :: dv3dt (:,:,:) => null()   !< v momentum change due to physics
@@ -1558,9 +1560,10 @@ module GFS_typedefs
     logical              :: debug          = .false.
     logical              :: pre_rad        = .false.         !< flag for testing purpose
     !--- stochastic physics control parameters
-    logical :: do_sppt   = .false.
-    logical :: do_shum   = .false.
-    logical :: do_skeb   = .false.
+    logical :: do_sppt      = .false.
+    logical :: use_zmtnblck = .false.
+    logical :: do_shum      = .false.
+    logical :: do_skeb      = .false.
     integer :: skeb_npass = 11
     !--- END NAMELIST VARIABLES
 
@@ -1813,6 +1816,7 @@ module GFS_typedefs
 
     !--- stochastic physics options
     Model%do_sppt          = do_sppt
+    Model%use_zmtnblck     = use_zmtnblck
     Model%do_shum          = do_shum
     Model%do_skeb          = do_skeb
 
@@ -2304,11 +2308,6 @@ module GFS_typedefs
       print *, ' xkzminv           : ', Model%xkzminv
       print *, ' moninq_fac        : ', Model%moninq_fac
       print *, ' '
-      print *, 'stochastic physics'
-      print *, ' do_sppt           : ', Model%do_sppt
-      print *, ' do_shum           : ', Model%do_shum
-      print *, ' do_skeb           : ', Model%do_skeb
-      print *, ' '
       print *, 'tracers'
       print *, ' tracer_names      : ', Model%tracer_names
       print *, ' ntrac             : ', Model%ntrac
@@ -2633,6 +2632,7 @@ module GFS_typedefs
     allocate (Diag%skebv_wts(IM,Model%levs))
     allocate (Diag%sppt_wts(IM,Model%levs))
     allocate (Diag%shum_wts(IM,Model%levs))
+    allocate (Diag%zmtnblck(IM))
     !--- 3D diagnostics
     if (Model%ldiag3d) then
       allocate (Diag%du3dt  (IM,Model%levs,4))

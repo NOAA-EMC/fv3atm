@@ -48,7 +48,7 @@
       shum_lscale,fhstoch,stochini,skeb_varspect_opt,sppt_sfclimit, &
       skeb,skeb_tau,skeb_vdof,skeb_lscale,iseed_skeb,skeb_vfilt,skeb_diss_smooth, &
       skeb_sigtop1,skeb_sigtop2,skebnorm,sppt_sigtop1,sppt_sigtop2,&
-      shum_sigefold,skebint,skeb_npass
+      shum_sigefold,skebint,skeb_npass,use_zmtnblck
        tol=0.01  ! tolerance for calculations
 !     spectral resolution defintion
       ntrunc=-999
@@ -61,6 +61,7 @@
       skeb             = -999.  ! stochastic KE backscatter amplitude
 ! logicals
       do_sppt = .false.
+      use_zmtnblck = .false.
       do_shum = .false.
       do_skeb = .false.
 ! for SKEB random patterns.
@@ -124,13 +125,16 @@
       IF (skeb(1) > 0 ) THEN
          do_skeb=.true.
          if (skebnorm==0) then ! stream function norm
-            skeb=skeb*5.0e5/sqrt(deltim)
+            skeb=skeb*1.111e3*sqrt(deltim)
+            !skeb=skeb*5.0e5/sqrt(deltim)
          endif
          if (skebnorm==1) then ! stream function norm
-            skeb=skeb*1/sqrt(deltim)
+            skeb=skeb*0.00222*sqrt(deltim)
+            !skeb=skeb*1/sqrt(deltim)
          endif
          if (skebnorm==2) then ! vorticty function norm
-            skeb=skeb*5.0e-7/sqrt(deltim)
+            skeb=skeb*1.111e-9*sqrt(deltim)
+            !skeb=skeb*5.0e-7/sqrt(deltim)
          endif
 !      adjust skeb values for resolution.
 !      scaling is such that a value of 1.0 at T574 with a 900 second

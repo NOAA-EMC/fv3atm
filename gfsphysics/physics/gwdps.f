@@ -184,7 +184,7 @@
      &               PRSI,DEL,PRSL,PRSLK,PHII, PHIL,DELTIM,KDT,         &
      &               HPRIME,OC,OA4,CLX4,THETA,SIGMA,GAMMA,ELVMAX,       &
      &               DUSFC,DVSFC,G, CP, RD, RV, IMX,                    &
-     &               nmtvr, cdmbgwd, me, lprnt, ipr)
+     &               nmtvr, cdmbgwd, me, lprnt, ipr,  rdxzb)
 !
 !   ********************************************************************
 ! ----->  I M P L E M E N T A T I O N    V E R S I O N   <----------
@@ -286,7 +286,7 @@
      &                     U1(IX,KM),   V1(IX,KM),     T1(IX,KM),       &
      &                     Q1(IX,KM),   PRSI(IX,KM+1), DEL(IX,KM),      &
      &                     PRSL(IX,KM), PRSLK(IX,KM),  PHIL(IX,KM),     &
-     &                     PHII(IX,KM+1)
+     &                     PHII(IX,KM+1),RDXZB(IY)
       real(kind=kind_phys) OC(IM),     OA4(IY,4), CLX4(IY,4)            &
      &,                    HPRIME(IM)
 ! for lm mtn blocking
@@ -408,6 +408,7 @@
 !
       IF ( NMTVR .eq. 14) then 
 ! ----  for lm and gwd calculation points
+        RDXZB(:)  = 0 
         ipt = 0
         npt = 0
         DO I = 1,IM
@@ -585,7 +586,10 @@
               EK(I)  = 0.5 *  UP(I) * UP(I) 
 
 ! --- Dividing Stream lime  is found when PE =exceeds EK.
-              IF ( PE(I) .ge.  EK(I) ) IDXZB(I) = K
+              IF ( PE(I) .ge.  EK(I) ) THEN
+                 IDXZB(I) = K
+                 RDXZB(J) = real(K,kind=kind_phys)
+              ENDIF
 ! --- Then mtn blocked flow is between Zb=k(IDXZB(I)) and surface
 !
 !> - The dividing streamline height (idxzb), of a subgrid scale 
@@ -709,6 +713,7 @@
 !
         do i=1,npt
           IDXZB(i) = 0
+          RDXZB(i) = 0.
         enddo
       ENDIF
 !

@@ -390,7 +390,7 @@
         write(dateSH,'(I2.2)')date_init(4)
         write(dateSN,'(I2.2)')date_init(5)
         write(dateSS,'(I2.2)')date_init(6)
-        dateS="hours since "//dateSY//'-'//dateSM//'-'//dateSD//'-'//dateSH//':'//    &
+        dateS="hours since "//dateSY//'-'//dateSM//'-'//dateSD//' '//dateSH//':'//    &
             dateSN//":"//dateSS
         if(mype==0) print *,'dateS=',trim(dateS),'date_init=',date_init
         call ESMF_AttributeSet(exportState, convention="NetCDF", purpose="FV3", &

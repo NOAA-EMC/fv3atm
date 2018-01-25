@@ -3354,6 +3354,24 @@ module physics_diag_layer
       IPD_Diag(idx)%data(nb)%var3p => Diag(nb)%skebv_wts(:,:)
     enddo
 
+    !---dividing streamline
+    idx = idx + 1
+    IPD_Diag(idx)%name           = 'zmtnblck'
+    IPD_Diag(idx)%output_name    = 'zmtnblck'
+    IPD_Diag(idx)%mod_name       = 'physics'
+    IPD_Diag(idx)%file_name      = 'surface'
+    IPD_Diag(idx)%desc           = 'perturbation velocity'
+    IPD_Diag(idx)%unit           = 'm/s'
+    IPD_Diag(idx)%type_stat_proc = 'inst'
+    IPD_Diag(idx)%level_type     = ''
+    IPD_Diag(idx)%level          = 1
+    IPD_Diag(idx)%cnvfac         = cn_one
+    IPD_Diag(idx)%zhour          = Model%zhour
+    IPD_Diag(idx)%fcst_hour      = Model%fhour
+    do nb = 1,nblks
+      IPD_Diag(idx)%data(nb)%var2p => Diag(nb)%zmtnblck(:)
+    enddo
+
     !---sppt  
     idx = idx + 1
     IPD_Diag(idx)%name           = 'sppt_wts'

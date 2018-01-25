@@ -42,7 +42,7 @@ module stochy_patterngenerator
    integer, intent(in) :: nlon,nlat,jcap,npatterns,varspect_opt
    integer, intent(in) :: ls_node(ls_dim,3),nlevs
    type(random_pattern), intent(out), dimension(npatterns) :: rpattern
-   integer(8), intent(in) :: iseed(npatterns)
+   integer(8), intent(inout) :: iseed(npatterns)
    integer m,j,l,n,nm,nn,np,indev1,indev2,indod1,indod2
    integer(8) count, count_rate, count_max, count_trunc
    integer(8) :: iscale = 10000000000
@@ -55,6 +55,15 @@ module stochy_patterngenerator
    nlats = nlat
    ntrunc = jcap
    ndimspec = (ntrunc+1)*(ntrunc+2)/2   
+!  propagate seed supplied from namelist to all patterns...
+   if (iseed(1) .NE. 0) then
+      do np=2,npatterns
+         if (iseed(np).EQ.0) then
+            iseed(np)=iseed(1)+np*100000000 
+         endif
+      enddo
+   endif
+   
    do np=1,npatterns
       allocate(rpattern(np)%idx(0:ntrunc,0:ntrunc))
       allocate(rpattern(np)%idx_e(len_trie_ls))

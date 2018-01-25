@@ -108,7 +108,7 @@ module FV3GFS_io_mod
    real(kind=kind_phys),dimension(:,:),allocatable  :: lon
    real(kind=kind_phys),dimension(:,:),allocatable  :: lat
    real(kind=kind_phys),dimension(:,:),allocatable  :: uwork
-   logical :: uwork_set
+   logical :: uwork_set = .false.
    character(128) :: uwindname
    integer, parameter :: DIAG_SIZE = 500
 !   real(kind=kind_phys), parameter :: missing_value = 1.d30
@@ -2167,6 +2167,7 @@ module FV3GFS_io_mod
     Diag(idx)%desc = 'averaged potential evaporation rate'
     Diag(idx)%unit = 'W/M**2'
     Diag(idx)%mod_name = 'gfs_phys'
+    Diag(idx)%time_avg = .TRUE.
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%ep(:)
@@ -2748,6 +2749,17 @@ module FV3GFS_io_mod
     enddo
 
     idx = idx + 1
+    Diag(idx)%axes = 2
+    Diag(idx)%name = 'zmtnblck'
+    Diag(idx)%desc = 'level of dividing streamline'
+    Diag(idx)%unit = 'm/s'
+    Diag(idx)%mod_name = 'gfs_phys'
+    allocate (Diag(idx)%data(nblks))
+    do nb = 1,nblks
+      Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%zmtnblck(:)
+    enddo
+
+    idx = idx + 1
     Diag(idx)%axes = 3
     Diag(idx)%name = 'sppt_wts'
     Diag(idx)%desc = 'perturbation velocity'
@@ -2769,7 +2781,6 @@ module FV3GFS_io_mod
       Diag(idx)%data(nb)%var3 => Gfs_diag(nb)%shum_wts(:,:)
     enddo
 !    if(mpp_pe()==mpp_root_pe())print *,'in gfdl_diag_register,af shum_wts,idx=',idx
-
 
 !--- three-dimensional variables that need to be handled special when writing 
 !rab    do num = 1,6

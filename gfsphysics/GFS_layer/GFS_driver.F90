@@ -361,13 +361,13 @@ module GFS_driver
           enddo
        enddo
     endif
-    if (Model%do_sppt) then
-       do nb = 1,nblks
-          do k=1,Model%levs
-             Diag(nb)%sppt_wts(:,k)=Coupling(nb)%sppt_wts(:,Model%levs-k+1)
-          enddo
-       enddo
-    endif
+    !if (Model%do_sppt) then
+    !   do nb = 1,nblks
+    !      do k=1,Model%levs
+    !         Diag(nb)%sppt_wts(:,k)=Coupling(nb)%sppt_wts(:,Model%levs-k+1)
+    !      enddo
+    !   enddo
+    !endif
     if (Model%do_shum) then
        do nb = 1,nblks
           do k=1,Model%levs
@@ -407,14 +407,34 @@ module GFS_driver
     type(GFS_diag_type),      intent(inout) :: Diag
     !--- local variables
     integer :: k, i
-    real(kind=kind_phys) :: upert, vpert, tpert, qpert, qnew
+    real(kind=kind_phys) :: upert, vpert, tpert, qpert, qnew,sppt_vwt
      if (Model%do_sppt) then
        do k = 1,size(Statein%tgrs,2)
          do i = 1,size(Statein%tgrs,1)
+           sppt_vwt=1.0
+           if (Diag%zmtnblck(i).EQ.0.0) then
+              sppt_vwt=1.0
+           else 
+              if (k.GT.Diag%zmtnblck(i)+2) then
+                 sppt_vwt=1.0
+              endif
+              if (k.LE.Diag%zmtnblck(i)) then
+                 sppt_vwt=0.0
+              endif
+              if (k.EQ.Diag%zmtnblck(i)+1) then
+                 sppt_vwt=0.333333
+              endif
+              if (k.EQ.Diag%zmtnblck(i)+2) then
+                 sppt_vwt=0.666667
+              endif
+           endif
+           if (Model%use_zmtnblck)then
+              Coupling%sppt_wts(i,k)=(Coupling%sppt_wts(i,k)-1)*sppt_vwt+1.0
+           endif
+           Diag%sppt_wts(i,Model%levs-k+1)=Coupling%sppt_wts(i,k)
       
            upert = (Stateout%gu0(i,k)   - Statein%ugrs(i,k))   * Coupling%sppt_wts(i,k)
            vpert = (Stateout%gv0(i,k)   - Statein%vgrs(i,k))   * Coupling%sppt_wts(i,k)
-!          tpert = (Stateout%gt0(i,k)   - Statein%tgrs(i,k))   * Coupling%sppt_wts(i,k) - Tbd%dtdtr(i,k)
            tpert = (Stateout%gt0(i,k)   - Statein%tgrs(i,k) - Tbd%dtdtr(i,k)) * Coupling%sppt_wts(i,k)
            qpert = (Stateout%gq0(i,k,1) - Statein%qgrs(i,k,1)) * Coupling%sppt_wts(i,k)
  
