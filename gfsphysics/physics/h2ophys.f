@@ -21,7 +21,7 @@
       real(kind=kind_phys) pmax, pmin, tem, temp
       real(kind=kind_phys) wk1(im), wk2(im), wk3(im), pltc(im,h2o_coeff)
      &,                    h2oib(im)
-      real, parameter :: prsmax=30000.0, pmaxl=log(prsmax)
+      real, parameter :: prsmax=10000.0, pmaxl=log(prsmax)
 !
 !     write(1000+me,*)' in h2ophys ix=',ix, im, levs, kh2o, dt
       do l=1,levs
