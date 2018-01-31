@@ -13,6 +13,7 @@ module module_write_nemsio
   integer :: im,jm,lm, idate(7),nmeta, nsoil,ncld, idrt, ntrac
   integer :: mype, ntasks, mpi_comm, nbdl
   logical :: hydrostatic
+  real(kind=ESMF_KIND_R4) :: varr4
   integer,dimension(200,100)      :: nfldlev
   character(16),dimension(3000,5) :: recname,reclevtyp 
   integer,dimension(3000,5)       :: reclev 
@@ -318,7 +319,7 @@ module module_write_nemsio
     if(mype==0) then
       nfseconds = nf_seconds*nfsecond_den + nfsecond_num
       call nemsio_open(nemsiofile,trim(FILENAME),'write',rc,    &
-        modelname="FV3GFS", gdatatype="bin4",                      &
+        modelname="FV3GFS", gdatatype="bin4",                   &
         idate=idate,nfhour=nf_hours, nfminute=nf_minutes,       &
         nfsecondn=nfseconds, nfsecondd=nfsecond_den,            &
         dimx=im,dimy=jm,dimz=lm, nmeta=nmeta,idrt=idrt,         &
@@ -328,10 +329,12 @@ module module_write_nemsio
         extrameta=extrameta(mybdl),recname=RECNAME(1:nrec(mybdl),mybdl), &
         reclevtyp=RECLEVTYP(1:nrec(mybdl),mybdl),  &
         reclev=RECLEV(1:nrec(mybdl),mybdl),        &
-        nmetavari=nmetavari(mybdl), nmetavarc=nmetavarc(mybdl),  &
-        nmetaaryi=nmetaaryi(mybdl),                              &
+        nmetavari=nmetavari(mybdl), nmetavarr=nmetavarr4(mybdl),        &
+        nmetavarc=nmetavarc(mybdl), nmetaaryi=nmetaaryi(mybdl),          &
         variname=variname(1:nmetavari(mybdl),mybdl), &
         varival=varival(1:nmetavari(mybdl),mybdl),   &
+        varrname=varr4name(1:nmetavarr4(mybdl),mybdl), &
+        varrval=varr4val(1:nmetavarr4(mybdl),mybdl),   &
         varcname=varcname(1:nmetavarc(mybdl),mybdl), &
         varcval=varcval(1:nmetavarc(mybdl),mybdl),   &
         aryiname=aryiname(1:nmetaaryi(mybdl),mybdl), &  
@@ -643,7 +646,7 @@ module module_write_nemsio
       call ESMF_AttributeGet(fldbundle, convention="NetCDF", purpose="FV3", &
         attnestflag=ESMF_ATTNEST_OFF, attributeIndex=i, name=attName, &
         typekind=typekind, itemCount=n,  rc=rc)
-!       print *,'in write nemsio fist get att, att=',trim(attName),'n=',n
+       print *,'in write nemsio fist get att, att=',trim(attName),'n=',n
       
       if (typekind==ESMF_TYPEKIND_I4 ) then
         if(n==1) then
@@ -666,7 +669,11 @@ module module_write_nemsio
          nr4 = nr4 + 1
          varr4name(nr4,mybdl) = trim(attName)
          call ESMF_AttributeGet(fldbundle, convention="NetCDF", purpose="FV3", &
-           name=trim(variname(nr4,mybdl)), value=varr4val(nr4,mybdl), rc=rc)
+           name=trim(varr4name(nr4,mybdl)), value=varr4val(nr4,mybdl), rc=rc)
+         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+           line=__LINE__, &
+           file=__FILE__)) &
+           return  ! bail out
         else
           if(trim(attName) =="ak") then
             allocate(ak4(n))
@@ -701,7 +708,7 @@ module module_write_nemsio
          nr8 = nr8 + 1
          varr8name(nr8,mybdl) = trim(attName)
          call ESMF_AttributeGet(fldbundle, convention="NetCDF", purpose="FV3", &
-           name=trim(variname(nr8,mybdl)), value=varr8val(nr8,mybdl), rc=rc)
+           name=trim(varr8name(nr8,mybdl)), value=varr8val(nr8,mybdl), rc=rc)
         else
           if(trim(attName) =="ak") then
             allocate(ak8(n))

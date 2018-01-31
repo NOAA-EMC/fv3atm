@@ -27,6 +27,7 @@ module FV3GFS_io_mod
   use diag_axis_mod,      only: get_axis_global_length, get_diag_axis
   use diag_data_mod,      only: output_fields, max_output_fields
   use diag_util_mod,      only: find_input_field
+  use constants_mod,      only: grav, rdgas
 !
 !--- GFS physics modules
   use machine,            only: kind_phys
@@ -99,6 +100,7 @@ module FV3GFS_io_mod
    integer :: total_outputlevel = 0
    integer :: isco,ieco,jsco,jeco
    integer :: fhzero, ncld, nsoil, imp_physics
+   real(4) :: dtp
    logical :: lprecip_accu
    character(len=64)  :: Sprecip_accu
    integer,dimension(:), allocatable :: nstt, nstt_vctbl
@@ -113,6 +115,8 @@ module FV3GFS_io_mod
    integer, parameter :: DIAG_SIZE = 500
 !   real(kind=kind_phys), parameter :: missing_value = 1.d30
    real(kind=kind_phys), parameter :: missing_value = 9.99e20
+   real, parameter:: stndrd_atmos_ps = 101325.
+   real, parameter:: stndrd_atmos_lapse = 0.0065
    type(gfdl_diag_type), dimension(DIAG_SIZE) :: Diag
 !-RAB
 
@@ -1216,6 +1220,7 @@ module FV3GFS_io_mod
     fhzero = nint(Model%fhzero)
     ncld   = Model%ncld
     nsoil  = Model%lsoil
+    dtp    = Model%dtp
     imp_physics  = Model%imp_physics
     lprecip_accu = Model%lprecip_accu
     if( lprecip_accu ) then
@@ -1223,8 +1228,8 @@ module FV3GFS_io_mod
     else
       Sprecip_accu = "no" 
     endif
-    print *,'in gfdl_diag_register,ncld=',Model%ncld,Model%lsoil,Model%imp_physics, &
-      'lprecip_accu=', lprecip_accu
+!    print *,'in gfdl_diag_register,ncld=',Model%ncld,Model%lsoil,Model%imp_physics, &
+!      'lprecip_accu=', lprecip_accu,' dtp=',dtp
 !
 !save lon/lat for vector interpolation
     allocate(lon(isco:ieco,jsco:jeco))
@@ -2462,6 +2467,7 @@ module FV3GFS_io_mod
     Diag(idx)%name = 'psurf'
     Diag(idx)%desc = 'surface pressure'
     Diag(idx)%unit = 'Pa'
+    Diag(idx)%mask = 'pseudo_ps'
     Diag(idx)%mod_name = 'gfs_phys'
     Diag(idx)%intpl_method = 'bilinear'
     allocate (Diag(idx)%data(nblks))
@@ -3115,7 +3121,7 @@ module FV3GFS_io_mod
     Diag(idx)%axes = 2
     Diag(idx)%name = 'tprcp'
     Diag(idx)%desc = 'total precipitation'
-    Diag(idx)%unit = 'XXX'
+    Diag(idx)%unit = 'kg/m**2'
     Diag(idx)%mod_name = 'gfs_sfc'
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
@@ -3716,6 +3722,28 @@ module FV3GFS_io_mod
                      Diag(idx)%data(nb)%var21(ix)
                enddo
              enddo
+           elseif (trim(Diag(idx)%mask) == 'pseudo_ps') then
+             if ( use_wrtgridcomp_output ) then
+               do j = 1, ny
+                 jj = j + jsc -1
+                 do i = 1, nx
+                   ii = i + isc -1
+                   nb = Atm_block%blkno(ii,jj)
+                   ix = Atm_block%ixp(ii,jj)
+                   var2(i,j) = (Diag(idx)%data(nb)%var2(ix)/stndrd_atmos_ps)**(rdgas/grav*stndrd_atmos_lapse)
+                 enddo
+               enddo
+             else
+               do j = 1, ny
+                 jj = j + jsc -1
+                 do i = 1, nx
+                   ii = i + isc -1
+                   nb = Atm_block%blkno(ii,jj)
+                   ix = Atm_block%ixp(ii,jj)
+                   var2(i,j) = Diag(idx)%data(nb)%var2(ix)
+                 enddo
+               enddo
+             endif
            elseif (trim(Diag(idx)%mask) == '') then
              do j = 1, ny
                jj = j + jsc -1
@@ -3976,7 +4004,7 @@ module FV3GFS_io_mod
 !      'bdl_intplmethod=',trim(bdl_intplmethod(ibdl))
 
      call ESMF_AttributeAdd(phys_bundle(ibdl), convention="NetCDF", purpose="FV3", &
-       attrList=(/"fhzero", "ncld", "nsoil", "imp_physics", "lprecip_accu"/), rc=rc)
+       attrList=(/"fhzero", "ncld", "nsoil", "imp_physics", "dtp", "lprecip_accu"/), rc=rc)
      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
        line=__LINE__, &
        file=__FILE__)) &
@@ -4001,6 +4029,13 @@ module FV3GFS_io_mod
        return  ! bail out
      call ESMF_AttributeSet(phys_bundle(ibdl), convention="NetCDF", purpose="FV3", &
        name="imp_physics", value=imp_physics, rc=rc)
+     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+       line=__LINE__, &
+       file=__FILE__)) &
+       return  ! bail out
+     call ESMF_AttributeSet(phys_bundle(ibdl), convention="NetCDF", purpose="FV3", &
+       name="dtp", value=dtp, rc=rc)
+!     print *,'in fcst gfdl diag, dtp=',dtp,' ibdl=',ibdl
      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
        line=__LINE__, &
        file=__FILE__)) &
