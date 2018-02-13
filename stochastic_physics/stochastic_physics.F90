@@ -170,7 +170,7 @@ character*6   :: STRFH
 if (do_sppt.EQ. .false. .AND. do_shum.EQ. .false. .and. do_skeb.EQ. .false.) return
 ! check to see if it is time to write out random patterns
 if (Model%phour .EQ. fhstoch) then
-   write(STRFH,FMT='(I6)') nint(Model%fhour)
+   write(STRFH,FMT='(I6.6)') nint(Model%fhour)
    sfile='stoch_out.F'//trim(STRFH)
    call dump_patterns(sfile)
 endif

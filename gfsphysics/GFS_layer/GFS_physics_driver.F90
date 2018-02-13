@@ -2897,15 +2897,11 @@ module module_physics_driver
       Diag%rain(:)  = Diag%rainc(:) + frain * rain1(:)
 
       if (Model%cal_pre) then       ! hchuang: add dominant precipitation type algorithm
-        i = min(3,Model%num_p3d)
 !
-! rsun: when ncld = 2  NEED ATTENTION HERE  need to re-write this routine 
-!
-        call calpreciptype (kdt, Model%nrcm, im, ix, levs, levs+1,        &
-                            Tbd%rann, Grid%xlat, Grid%xlon, Stateout%gt0, &
-                            Stateout%gq0, Statein%prsl, Statein%prsi,     &
-                            Diag%rain, Statein%phii, Model%num_p3d,       &
-                            Sfcprop%tsfc, Diag%sr, Tbd%phy_f3d(1,1,i),    &     ! input
+        call calpreciptype (kdt, Model%nrcm, im, ix, levs, levs+1,           &
+                            Tbd%rann, Grid%xlat, Grid%xlon, Stateout%gt0,    &
+                            Stateout%gq0, Statein%prsl, Statein%prsi,        &
+                            Diag%rain, Statein%phii, Sfcprop%tsfc,           &  !input
                             domr, domzr, domip, doms)                           ! output
 !
 !        if (lprnt) print*,'debug calpreciptype: DOMR,DOMZR,DOMIP,DOMS '
@@ -2917,14 +2913,18 @@ module module_physics_driver
 !     &    DOMR(i),DOMZR(i),DOMIP(i),DOMS(i)
 !       end do
 !       HCHUANG: use new precipitation type to decide snow flag for LSM snow accumulation
+        
+        if (Model%imp_physics /= 11) then
+          do i=1,im
+            Sfcprop%tprcp(i)  = max(0.0, Diag%rain(i) )
+            if(doms(i) > 0.0 .or. domip(i) > 0.0) then
+              Sfcprop%srflag(i) = 1.
+            else
+              Sfcprop%srflag(i) = 0.
+            end if
+          enddo
+        endif
 
-        do i=1,im
-          if(doms(i) > 0.0 .or. domip(i) > 0.0) then
-            Sfcprop%srflag(i) = 1.
-          else
-            Sfcprop%srflag(i) = 0.
-          end if
-        enddo
       endif
 
       if (Model%lssav) then
@@ -2932,6 +2932,13 @@ module module_physics_driver
         Diag%totice (:) = Diag%totice (:) + Diag%ice(:)
         Diag%totsnw (:) = Diag%totsnw (:) + Diag%snow(:)
         Diag%totgrp (:) = Diag%totgrp (:) + Diag%graupel(:)
+!
+        if (Model%cal_pre) then
+          Diag%tdomr(:)  = Diag%tdomr(:)  + domr(:)  * dtf
+          Diag%tdomzr(:) = Diag%tdomzr(:) + domzr(:) * dtf
+          Diag%tdomip(:) = Diag%tdomip(:) + domip(:) * dtf
+          Diag%tdoms(:)  = Diag%tdoms(:)  + doms(:)  * dtf
+        endif
 
         if (Model%ldiag3d) then
           Diag%dt3dt(:,:,6) = Diag%dt3dt(:,:,6) + (Stateout%gt0(:,:)-dtdt(:,:)) * frain
@@ -2953,51 +2960,32 @@ module module_physics_driver
         enddo
       enddo
 
-!  --- ...  lu: snow-rain detection is performed in land/sice module
-
-      if (Model%cal_pre) then ! hchuang: new precip type algorithm defines srflag
-        Sfcprop%tprcp(:) = max(0.0, Diag%rain(:))  ! clu: rain -> tprcp
-!rsun        if (Model%lgfdlmp) then
-!rsun          do i = 1, im 
-!rsun            Sfcprop%srflag(i) = 0.                     ! clu: default srflag as 'rain' (i.e. 0)
-!rsun! determine convective rain/snow by surface temperature
-!rsun! determine large-scale rain/snow by rain/snow coming out directly from MP
-!rsun            if (Sfcprop%tsfc(i) .ge. 273.15) then
-!rsun              crain = Diag%rainc(i)
-!rsun              csnow = 0.0
-!rsun            else
-!rsun              crain = 0.0
-!rsun              csnow = Diag%rainc(i)
-!rsun            endif
-!rsun            if ((snow0(i,1)+ice0(i,1)+graupel0(i,1)+csnow) .gt. (rain0(i,1)+crain)) then
-!rsun              Sfcprop%srflag(i) = 1.              ! clu: set srflag to 'snow' (i.e. 1)
-!rsun            endif
-!rsun          enddo 
-!rsun        endif
-      else
+      if (Model%imp_physics == 11) then
+! determine convective rain/snow by surface temperature
+! determine large-scale rain/snow by rain/snow coming out directly from MP
         do i = 1, im
           Sfcprop%tprcp(i)  = max(0.0, Diag%rain(i) )! clu: rain -> tprcp
           Sfcprop%srflag(i) = 0.                     ! clu: default srflag as 'rain' (i.e. 0)
-          if (Model%imp_physics == 11) then
-! determine convective rain/snow by surface temperature
-! determine large-scale rain/snow by rain/snow coming out directly from MP
-            if (Sfcprop%tsfc(i) .ge. 273.15) then
-              crain = Diag%rainc(i)
-              csnow = 0.0
-            else
-              crain = 0.0
-              csnow = Diag%rainc(i)
-            endif
-            if ((snow0(i,1)+ice0(i,1)+graupel0(i,1)+csnow) .gt. (rain0(i,1)+crain)) then
-              Sfcprop%srflag(i) = 1.              ! clu: set srflag to 'snow' (i.e. 1)
-            endif
+          if (Sfcprop%tsfc(i) .ge. 273.15) then
+            crain = Diag%rainc(i)
+            csnow = 0.0
           else
-           if (t850(i) <= 273.16) then
-             Sfcprop%srflag(i) = 1.       ! clu: set srflag to 'snow' (i.e. 1)
-           endif
+            crain = 0.0
+            csnow = Diag%rainc(i)
           endif
-        enddo
-      endif
+          if ((snow0(i,1)+ice0(i,1)+graupel0(i,1)+csnow) .gt. (rain0(i,1)+crain)) then
+            Sfcprop%srflag(i) = 1.                   ! clu: set srflag to 'snow' (i.e. 1)
+          endif
+       enddo
+     else if( .not. Model%cal_pre) then
+       do i = 1, im
+          Sfcprop%tprcp(i)  = max(0.0, Diag%rain(i) )! clu: rain -> tprcp
+          Sfcprop%srflag(i) = 0.                     ! clu: default srflag as 'rain' (i.e. 0)
+          if (t850(i) <= 273.16) then
+            Sfcprop%srflag(i) = 1.                   ! clu: set srflag to 'snow' (i.e. 1)
+          endif
+       enddo
+     endif
 
 !  --- ...  coupling insertion
 

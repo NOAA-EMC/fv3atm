@@ -2373,7 +2373,7 @@ module FV3GFS_io_mod
 
     idx = idx + 1
     Diag(idx)%axes = 2
-    Diag(idx)%name = 'totice'
+    Diag(idx)%name = 'totice_ave'
     Diag(idx)%desc = 'surface ice precipitation rate'
     Diag(idx)%unit = 'kg/m**2/s'
     Diag(idx)%mod_name = 'gfs_phys'
@@ -2387,7 +2387,7 @@ module FV3GFS_io_mod
 
     idx = idx + 1
     Diag(idx)%axes = 2
-    Diag(idx)%name = 'totsnw'
+    Diag(idx)%name = 'totsnw_ave'
     Diag(idx)%desc = 'surface snow precipitation rate'
     Diag(idx)%unit = 'kg/m**2/s'
     Diag(idx)%mod_name = 'gfs_phys'
@@ -2401,7 +2401,7 @@ module FV3GFS_io_mod
 
     idx = idx + 1
     Diag(idx)%axes = 2
-    Diag(idx)%name = 'totgrp'
+    Diag(idx)%name = 'totgrp_ave'
     Diag(idx)%desc = 'surface graupel precipitation rate'
     Diag(idx)%unit = 'kg/m**2/s'
     Diag(idx)%mod_name = 'gfs_phys'
@@ -2733,6 +2733,62 @@ module FV3GFS_io_mod
     enddo
 
     idx = idx + 1
+    Diag(idx)%axes = 2
+    Diag(idx)%name = 'crain_ave'
+    Diag(idx)%desc = 'averaged categorical rain'
+    Diag(idx)%unit = 'number'
+    Diag(idx)%mod_name = 'gfs_phys'
+    Diag(idx)%intpl_method = 'bilinear'
+    Diag(idx)%cnvfac = cn_one
+    Diag(idx)%time_avg = .TRUE.
+    allocate (Diag(idx)%data(nblks))
+    do nb = 1,nblks
+      Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%tdomr(:)
+    enddo
+
+    idx = idx + 1
+    Diag(idx)%axes = 2
+    Diag(idx)%name = 'csnow_ave'
+    Diag(idx)%desc = 'averaged categorical snow'
+    Diag(idx)%unit = 'number'
+    Diag(idx)%mod_name = 'gfs_phys'
+    Diag(idx)%intpl_method = 'bilinear'
+    Diag(idx)%cnvfac = cn_one
+    Diag(idx)%time_avg = .TRUE.
+    allocate (Diag(idx)%data(nblks))
+    do nb = 1,nblks
+      Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%tdoms(:)
+    enddo
+
+    idx = idx + 1
+    Diag(idx)%axes = 2
+    Diag(idx)%name = 'cfrzr_ave'
+    Diag(idx)%desc = 'averaged categorical freezing rain'
+    Diag(idx)%unit = 'number'
+    Diag(idx)%mod_name = 'gfs_phys'
+    Diag(idx)%intpl_method = 'bilinear'
+    Diag(idx)%cnvfac = cn_one
+    Diag(idx)%time_avg = .TRUE.
+    allocate (Diag(idx)%data(nblks))
+    do nb = 1,nblks
+      Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%tdomzr(:)
+    enddo
+
+    idx = idx + 1
+    Diag(idx)%axes = 2
+    Diag(idx)%name = 'cicep_ave'
+    Diag(idx)%desc = 'averaged categorical sleet'
+    Diag(idx)%unit = 'number'
+    Diag(idx)%mod_name = 'gfs_phys'
+    Diag(idx)%intpl_method = 'bilinear'
+    Diag(idx)%cnvfac = cn_one
+    Diag(idx)%time_avg = .TRUE.
+    allocate (Diag(idx)%data(nblks))
+    do nb = 1,nblks
+      Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%tdomip(:)
+    enddo
+
+    idx = idx + 1
     Diag(idx)%axes = 3
     Diag(idx)%name = 'skebu_wts'
     Diag(idx)%desc = 'perturbation velocity'
@@ -3040,7 +3096,7 @@ module FV3GFS_io_mod
     idx = idx + 1
     Diag(idx)%axes = 2
     Diag(idx)%name = 'crain'
-    Diag(idx)%desc = 'categorical rain'
+    Diag(idx)%desc = 'instantaneous categorical rain'
     Diag(idx)%unit = 'number'
     Diag(idx)%mod_name = 'gfs_sfc'
     Diag(idx)%cnvfac = cn_one
@@ -3983,7 +4039,6 @@ module FV3GFS_io_mod
        line=__LINE__, &
        file=__FILE__)) &
        return  ! bail out
-   if(mpp_pe()==mpp_root_pe())print *,'in fv_phys bundle,i=',i,'physbdl_name=',physbdl_name
      idx = index(physbdl_name,'_bilinear')
      if(idx > 0) then
        outputfile(ibdl) = physbdl_name(1:idx-1)

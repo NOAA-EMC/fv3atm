@@ -6,7 +6,7 @@ module get_stochy_pattern_mod
  use stochy_gg_def
  use stochy_patterngenerator
  use stochy_internal_state_mod
- use fv_mp_mod, only : mp_reduce_sum,is_master,mp_bcst
+ use fv_mp_mod, only : mp_reduce_sum,is_master
  use fv_arrays_mod,      only: fv_atmos_type
  use GFS_typedefs,       only: GFS_control_type, GFS_grid_type
  use mersenne_twister, only: random_seed
@@ -14,7 +14,7 @@ module get_stochy_pattern_mod
  private
 
  public  get_random_pattern_fv3,get_random_pattern_fv3_vect
- public dump_patterns,restore_patterns
+ public dump_patterns
  logical :: first_call=.true.
 #include "mpif.h"
  contains
@@ -305,7 +305,7 @@ subroutine scalarspect_to_gaugrid(&
 
 subroutine dump_patterns(sfile)
     implicit none
-    character*9 :: sfile
+    character*120 :: sfile
     integer :: stochlun,k,n
     stochlun=99
     if (is_master()) then
@@ -333,70 +333,6 @@ subroutine dump_patterns(sfile)
     endif
     close(stochlun)
  end subroutine dump_patterns
- subroutine restore_patterns(sfile)
-    implicit none
-    character*9 :: sfile
-    integer :: stochlun,k,n
-    stochlun=99
-    if (is_master()) then
-       if (nsppt > 0 .OR. nshum > 0 .OR. nskeb > 0) then
-          OPEN(stochlun,file=sfile,form='unformatted',status='old')
-       endif
-    endif
-    if (nsppt > 0) then
-       do n=1,nsppt
-       call read_pattern(rpattern_sppt(n),1,stochlun)
-       enddo
-    endif
-    if (nshum > 0) then
-       do n=1,nshum
-       call read_pattern(rpattern_shum(n),1,stochlun)
-       enddo
-    endif
-    if (nskeb > 0) then
-       do n=1,nskeb
-       do k=1,skeblevs
-          call read_pattern(rpattern_skeb(n),k,stochlun)
-       enddo
-       enddo
-    endif
-    close(stochlun)
- end subroutine restore_patterns
-subroutine read_pattern(rpattern,k,lunptn)
-   implicit none
-   type(random_pattern), intent(inout) :: rpattern
-   integer, intent(in) :: lunptn,k
-   real(kind_dbl_prec),allocatable  :: pattern2d(:)
-   integer nm,nn,ierr
-
-   allocate(pattern2d(2*ndimspec))
-
-   ! read only on root process, and send to all tasks
-   if (is_master()) then
-      read(lunptn) pattern2d
-      print*,'reading in random pattern (min/max/size)',minval(pattern2d),maxval(pattern2d),size(pattern2d)
-   endif
-   do nn=1,2*ndimspec
-      call mp_bcst(pattern2d(nn))
-   enddo
-   ! subset
-   do nn=1,len_trie_ls
-      nm = rpattern%idx_e(nn)
-      if (nm == 0) cycle
-      rpattern%spec_e(nn,1,k) = pattern2d(nm)
-      rpattern%spec_e(nn,2,k) = pattern2d(ndimspec+nm)
-   enddo
-   do nn=1,len_trio_ls
-      nm = rpattern%idx_o(nn)
-      if (nm == 0) cycle
-      rpattern%spec_o(nn,1,k) = pattern2d(nm)
-      rpattern%spec_o(nn,2,k) = pattern2d(ndimspec+nm)
-   enddo
-   !print*,'after scatter...',me,maxval(rpattern%spec_e),maxval(rpattern%spec_o) &
-   ! ,minval(rpattern%spec_e),minval(rpattern%spec_o)
-   deallocate(pattern2d)
- end subroutine read_pattern
-
  subroutine write_pattern(rpattern,lev,lunptn)
    implicit none
    type(random_pattern), intent(inout) :: rpattern

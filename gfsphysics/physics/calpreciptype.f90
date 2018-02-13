@@ -1,7 +1,7 @@
       subroutine calpreciptype(kdt,nrcm,im,ix,lm,lp1,randomno,      &
                                xlat,xlon,                           &
                                gt0,gq0,prsl,prsi,prec,              & !input
-                               phii,n3dfercld,tskin,sr,phy_f3d,     & !input
+                               phii,tskin,                          & !input
                                domr,domzr,domip,doms)  !output
 
 !$$$  subprogram documentation block
@@ -25,16 +25,16 @@
 !     
 !     declare variables.
 !     
-      integer,intent(in) :: kdt,nrcm,im,ix,lm,lp1,n3dfercld
+      integer,intent(in) :: kdt,nrcm,im,ix,lm,lp1
       real,intent(in)    :: xlat(im),xlon(im)
       real,intent(in)    :: randomno(ix,nrcm)
-      real(kind=kind_phys),dimension(im),    intent(in)  :: prec,sr,tskin
-      real(kind=kind_phys),dimension(ix,lm), intent(in)  :: gt0,gq0,prsl,phy_f3d
+      real(kind=kind_phys),dimension(im),    intent(in)  :: prec,tskin
+      real(kind=kind_phys),dimension(ix,lm), intent(in)  :: gt0,gq0,prsl
       real(kind=kind_phys),dimension(ix,lp1),intent(in)  :: prsi,phii
       real(kind=kind_phys),dimension(im),    intent(out) :: domr,domzr,domip,doms
       
       integer,             dimension(nalg) :: sleet,rain,freezr,snow
-      real(kind=kind_phys),dimension(lm)   :: t,q,pmid,f_rimef
+      real(kind=kind_phys),dimension(lm)   :: t,q,pmid
       real(kind=kind_phys),dimension(lp1)  :: pint,zint
       real(kind=kind_phys), allocatable    :: twet(:),rh(:),td(:)
 !
@@ -69,7 +69,6 @@
             t(k1)       = gt0(i,k)
             q(k1)       = gq0(i,k)
             pmid(k1)    = prsl(i,k)                      ! pressure in pascals
-            f_rimef(k1) = phy_f3d(i,k) 
 !
 !         compute wet bulb temperature
 !
@@ -105,9 +104,9 @@
 ! debug print statement
 !	if (abs(xlon(i)*57.29578-114.0) .lt. 0.2  .and. &
 !	   abs(xlat(i)*57.29578-40.0) .lt. 0.2)then
-!         print*,'debug in calpreciptype: i,im,lm,lp1,xlon,xlat,prec,tskin,sr,nrcm,randomno,n3dfercld ', &
-!         i,im,lm,lp1,xlon(i)*57.29578,xlat(i)*57.29578,prec(i),tskin(i),sr(i),  &
-!	 nrcm,randomno(i,1:nrcm),n3dfercld
+!         print*,'debug in calpreciptype: i,im,lm,lp1,xlon,xlat,prec,tskin,nrcm,randomno', &
+!         i,im,lm,lp1,xlon(i)*57.29578,xlat(i)*57.29578,prec(i),tskin(i),,  &
+!	 nrcm,randomno(i,1:nrcm)
 !         do l=1,lm
 !          print*,'debug in calpreciptype: l,t,q,p,pint,z,twet', &
 !	  l,t(l),q(l), &
@@ -182,18 +181,10 @@
 !
 ! explicit algorithm (under 18 not admitted without parent or guardian)
  
-        if(n3dfercld == 3) then ! ferrier's scheme
-          call calwxt_explicit(lm,tskin(i),sr(i),f_rimef,iwx)
-          snow(5)   = mod(iwx,2)
-          sleet(5)  = mod(iwx,4)/2
-          freezr(5) = mod(iwx,8)/4
-          rain(5)   = iwx/8
-        else
-          snow(5)   = 0
-          sleet(5)  = 0
-          freezr(5) = 0
-          rain(5)   = 0
-        endif
+        snow(5)   = 0
+        sleet(5)  = 0
+        freezr(5) = 0
+        rain(5)   = 0
 !               
          call calwxt_dominant(nalg,rain(1),freezr(1),sleet(1),         &
                             snow(1),domr(i),domzr(i),domip(i),doms(i))
@@ -1278,66 +1269,6 @@
       endif
 
       return
-      end
-!
-!
-      subroutine calwxt_explicit(lm,tskin,sr,f_rimef,iwx)
-! 
-!     file: calwxt.f
-!     written: 24 august 2005, g manikin and b ferrier 
-!
-!     routine to compute precipitation type using explicit fields
-!       from the model microphysics
-
-!- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-      implicit none
-!
-!  list of variables needed
-!    parameters:
-!
-!    input:
-      integer, intent(in) :: lm
-      real,intent(in)     ::  tskin, sr
-      real,intent(in)     :: f_rimef(lm)
-      integer,intent(out) :: iwx
-      real snow
-!     real psfc
-!
-!     allocate local storage
-!
-      iwx = 0
-
-!gsm  the rsm is currently incompatible with this routine
-!gsm   according to b ferrier, there may be a way to write
-!gsm   a version of this algorithm to work with the rsm
-!gsm   microphysics, but it doesn't exist at this time
-
-!  a snow ratio less than 0.5 eliminates snow and sleet
-!   use the skin temperature to distinguish rain from freezing rain
-!   note that 2-m temperature may be a better choice if the model
-!   has a cold bias for skin temperature
-! 
-      if (sr < 0.5) then
-!        surface (skin) potential temperature and temperature.
-!        psfc=pmid(lm)
-!        tskin=ths*(psfc/p1000)**capa 
-
-         if (tskin < 273.15) then !          freezing rain = 4
-           iwx = iwx + 4
-         else                     !          rain = 8
-           iwx = iwx + 8
-         endif
-      else
-!  
-!  distinguish snow from sleet with the rime factor
-! 
-        if(f_rimef(lm) >= 10) then !          sleet = 2
-           iwx = iwx + 2
-        else
-           snow = 1
-           iwx  = iwx + 1 
-        endif
-      endif
       end
 !
 !

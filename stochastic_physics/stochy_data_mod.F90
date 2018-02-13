@@ -107,10 +107,10 @@ module stochy_data_mod
    ! no spinup needed if initial patterns are defined correctly.
    spinup_efolds = 0
    if (nsppt > 0) then
+       if (is_master()) print *, 'Initialize random pattern for SPPT'
+       call patterngenerator_init(sppt_lscale,delt,sppt_tau,sppt,iseed_sppt,rpattern_sppt, &
+           lonf,latg,jcap,gis_stochy%ls_node,nsppt,1,0)
        do n=1,nsppt
-          if (is_master()) print *, 'Initialize random pattern for SPPT',n
-          call patterngenerator_init(sppt_lscale,delt,sppt_tau,sppt,iseed_sppt,rpattern_sppt, &
-              lonf,latg,jcap,gis_stochy%ls_node,nsppt,1,0)
           nspinup = spinup_efolds*sppt_tau(n)/delt
           if (stochini) then
              call read_pattern(rpattern_sppt(n),1,stochlun)
@@ -140,9 +140,9 @@ module stochy_data_mod
    endif
    if (nshum > 0) then
        if (is_master()) print *, 'Initialize random pattern for SHUM'
+       call patterngenerator_init(shum_lscale,delt,shum_tau,shum,iseed_shum,rpattern_shum, &
+           lonf,latg,jcap,gis_stochy%ls_node,nshum,1,0)
        do n=1,nshum
-          call patterngenerator_init(shum_lscale,delt,shum_tau,shum,iseed_shum,rpattern_shum, &
-              lonf,latg,jcap,gis_stochy%ls_node,nshum,1,0)
           nspinup = spinup_efolds*shum_tau(n)/delt
           if (stochini) then
              call read_pattern(rpattern_shum(n),1,stochlun)
@@ -176,9 +176,9 @@ module stochy_data_mod
    skeblevs=nint(skeb_tau(1)/delt*skeb_vdof)
 ! backscatter noise.
        if (is_master()) print *, 'Initialize random pattern for SKEB',skeblevs
+       call patterngenerator_init(skeb_lscale,delt,skeb_tau,skeb,iseed_skeb,rpattern_skeb, &
+           lonf,latg,jcap,gis_stochy%ls_node,nskeb,skeblevs,skeb_varspect_opt)
        do n=1,nskeb
-          call patterngenerator_init(skeb_lscale,delt,skeb_tau,skeb,iseed_skeb,rpattern_skeb, &
-              lonf,latg,jcap,gis_stochy%ls_node,nskeb,skeblevs,skeb_varspect_opt)
           do k=1,skeblevs
              nspinup = spinup_efolds*skeb_tau(n)/delt
              if (stochini) then
@@ -303,12 +303,8 @@ subroutine read_pattern(rpattern,k,lunptn)
       endif
       deallocate(pattern2din)
     endif
-    do nm=1,isize ! loop over elements since mp_bcast cannot handle integer array
-       call mp_bcst(isave(nm))  ! blast out seed 
-    enddo
-    do nm=1,2*ndimspec ! loop over elements since mp_bcast cannot handle integer array
-       call mp_bcst(pattern2d(nm))
-    enddo
+    call mp_bcst(isave,isize)  ! blast out seed 
+    call mp_bcst(pattern2d,2*ndimspec)
     call random_seed(put=isave,stat=rpattern%rstate)
    ! subset
    do nn=1,len_trie_ls

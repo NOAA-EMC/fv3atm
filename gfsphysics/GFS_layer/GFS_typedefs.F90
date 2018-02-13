@@ -842,6 +842,10 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: smcref2(:)    => null()   !< soil moisture threshold (volumetric)
     real (kind=kind_phys), pointer :: wet1   (:)    => null()   !< normalized soil wetness
     real (kind=kind_phys), pointer :: sr     (:)    => null()   !< snow ratio : ratio of snow to total precipitation
+    real (kind=kind_phys), pointer :: tdomr  (:)    => null()   !< accumulated rain type
+    real (kind=kind_phys), pointer :: tdomzr (:)    => null()   !< accumulated freezing rain type
+    real (kind=kind_phys), pointer :: tdomip (:)    => null()   !< accumulated sleet type
+    real (kind=kind_phys), pointer :: tdoms  (:)    => null()   !< accumulated snow type
 
     real (kind=kind_phys), pointer :: skebu_wts(:,:)   => null()   !< 10 meater u/v wind speed
     real (kind=kind_phys), pointer :: skebv_wts(:,:)   => null()   !< 10 meater u/v wind speed
@@ -2628,6 +2632,10 @@ module GFS_typedefs
     allocate (Diag%smcref2 (IM))
     allocate (Diag%wet1    (IM))
     allocate (Diag%sr      (IM))
+    allocate (Diag%tdomr   (IM))
+    allocate (Diag%tdomzr  (IM))
+    allocate (Diag%tdomip  (IM))
+    allocate (Diag%tdoms   (IM))
     allocate (Diag%skebu_wts(IM,Model%levs))
     allocate (Diag%skebv_wts(IM,Model%levs))
     allocate (Diag%sppt_wts(IM,Model%levs))
@@ -2701,7 +2709,6 @@ module GFS_typedefs
     Diag%dvsfc   = zero
     Diag%dtsfc   = zero
     Diag%dqsfc   = zero
-!    Diag%totprcp = zero
     Diag%gflux   = zero
     Diag%dlwsfc  = zero
     Diag%ulwsfc  = zero
@@ -2712,7 +2719,6 @@ module GFS_typedefs
     Diag%dugwd   = zero
     Diag%dvgwd   = zero
     Diag%psmean  = zero
-!    Diag%cnvprcp = zero
     Diag%spfhmin = huge
     Diag%spfhmax = zero
     Diag%u10mmax  = zero
@@ -2723,9 +2729,6 @@ module GFS_typedefs
     Diag%ice     = zero
     Diag%snow    = zero
     Diag%graupel = zero
-!    Diag%totice  = zero
-!    Diag%totsnw  = zero
-!    Diag%totgrp  = zero
 
     !--- Out
     Diag%u10m    = zero
@@ -2755,6 +2758,10 @@ module GFS_typedefs
     Diag%smcref2 = zero
     Diag%wet1    = zero
     Diag%sr      = zero
+    Diag%tdomr   = zero
+    Diag%tdomzr  = zero
+    Diag%tdomip  = zero
+    Diag%tdoms   = zero
     Diag%skebu_wts    = zero
     Diag%skebv_wts    = zero
     Diag%sppt_wts    = zero

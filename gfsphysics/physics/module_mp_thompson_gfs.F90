@@ -4076,24 +4076,21 @@
       INTEGER:: inu_c
       real, dimension(15), parameter:: g_ratio = (/24,60,120,210,336,            &
      &                504,720,990,1320,1716,2184,2730,3360,4080,4896/)
-      real :: Nt_c 
 
       has_qc = .false.
       has_qi = .false.
       has_qs = .false.
       
-      if(islmski == 1) then 
-       Nt_c = Nt_cl
-      else 
-       Nt_c = Nt_co
-      endif 
-     
 !     print*,'cal_eff:',islmski,Nt_c, Nt_cl,Nt_co
 
       do k = kts, kte
          rho(k) = 0.622*p1d(k)/(R*t1d(k)*(qv1d(k)+0.622))
          rc(k) = MAX(R1, qc1d(k)*rho(k))
-         nc(k) = Nt_c 
+         if(islmski == 1) then 
+           nc(k) = Nt_cl
+         else 
+           nc(k) = Nt_co
+         endif 
          if (rc(k).gt.R1 .and. nc(k).gt.R2) has_qc = .true.
          ri(k) = MAX(R1, qi1d(k)*rho(k))
          ni(k) = MAX(R2, ni1d(k)*rho(k))
