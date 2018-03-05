@@ -12,39 +12,39 @@
 !
 !---------------------------------------------------------------------------------
 !
-  use time_manager_mod,  only: time_type, set_calendar_type, set_time,    &
-                               set_date, days_in_month, month_name,       &
-                               operator(+), operator (<), operator (>),   &
-                               operator (/=), operator (/), operator (==),&
-                               operator (*), THIRTY_DAY_MONTHS, JULIAN,   &
-                               NOLEAP, NO_CALENDAR, date_to_string,       &
-                               get_date
+  use time_manager_mod,   only: time_type, set_calendar_type, set_time,    &
+                                set_date, days_in_month, month_name,       &
+                                operator(+), operator (<), operator (>),   &
+                                operator (/=), operator (/), operator (==),&
+                                operator (*), THIRTY_DAY_MONTHS, JULIAN,   &
+                                NOLEAP, NO_CALENDAR, date_to_string,       &
+                                get_date
 
-  use  atmos_model_mod,  only: atmos_model_init, atmos_model_end,  &
-                               update_atmos_model_dynamics,        &
-                               update_atmos_radiation_physics,     &
-                               update_atmos_model_state,           &
-                               atmos_data_type, atmos_model_restart
+  use  atmos_model_mod,   only: atmos_model_init, atmos_model_end,  &
+                                update_atmos_model_dynamics,        &
+                                update_atmos_radiation_physics,     &
+                                update_atmos_model_state,           &
+                                atmos_data_type, atmos_model_restart
 
-  use constants_mod,     only: constants_init
-  use       fms_mod,     only: open_namelist_file, file_exist, check_nml_error, &
-                               error_mesg, fms_init, fms_end, close_file,       &
-                               write_version_number, uppercase
+  use constants_mod,      only: constants_init
+  use       fms_mod,      only: open_namelist_file, file_exist, check_nml_error, &
+                                error_mesg, fms_init, fms_end, close_file,       &
+                                write_version_number, uppercase
 
-  use mpp_mod,           only: mpp_init, mpp_pe, mpp_root_pe, mpp_npes, mpp_get_current_pelist, &
-                               mpp_set_current_pelist, stdlog, mpp_error, NOTE, FATAL, WARNING
-  use mpp_mod,           only: mpp_clock_id, mpp_clock_begin, mpp_clock_end, mpp_sync
+  use mpp_mod,            only: mpp_init, mpp_pe, mpp_root_pe, mpp_npes, mpp_get_current_pelist, &
+                                mpp_set_current_pelist, stdlog, mpp_error, NOTE, FATAL, WARNING
+  use mpp_mod,            only: mpp_clock_id, mpp_clock_begin, mpp_clock_end, mpp_sync
 
-  use mpp_io_mod,        only: mpp_open, mpp_close, MPP_NATIVE, MPP_RDONLY, MPP_DELETE
+  use mpp_io_mod,         only: mpp_open, mpp_close, MPP_NATIVE, MPP_RDONLY, MPP_DELETE
 
-  use mpp_domains_mod,   only: mpp_get_global_domain, mpp_global_field, CORNER
-  use memutils_mod,      only: print_memuse_stats
-  use sat_vapor_pres_mod,only: sat_vapor_pres_init
+  use mpp_domains_mod,    only: mpp_get_global_domain, mpp_global_field, CORNER
+  use memutils_mod,       only: print_memuse_stats
+  use sat_vapor_pres_mod, only: sat_vapor_pres_init
 
-  use diag_manager_mod,  only: diag_manager_init, diag_manager_end, &
-                               get_base_date, diag_manager_set_time_end
+  use diag_manager_mod,   only: diag_manager_init, diag_manager_end, &
+                                get_base_date, diag_manager_set_time_end
 
-  use data_override_mod, only: data_override_init
+  use data_override_mod,  only: data_override_init
   use fv_nggps_diags_mod, only: fv_dyn_bundle_setup
   use fv3gfs_io_mod,      only: fv_phys_bundle_setup
 
@@ -553,7 +553,7 @@
       call ESMF_ClockGet(clock, advanceCount=NTIMESTEP_ESMF, rc=rc)   
       
       na = NTIMESTEP_ESMF
-      if(mype==0) print *,'in fcst run, na=',na
+!     if(mype==0) print *,'in fcst run, na=',na
 !
 !-----------------------------------------------------------------------
 ! *** call fcst integration subroutines  
@@ -590,7 +590,7 @@
 !        WRITE(0,*)"PASS: fcstRUN, na=",na
       ENDIF
 !
-      if(mype==0) print *,'fcst _run time is ', mpi_wtime()-tbeg1
+!     if(mype==0) print *,'fcst _run time is ', mpi_wtime()-tbeg1
 !
 !-----------------------------------------------------------------------
 !

@@ -75,13 +75,13 @@
        real    :: CNVDDRFC
        real    :: ANVDDRFC
        real    :: LSDDRFC
-       integer :: tanhrhcrit
-       real    :: minrhcrit
-       real    :: maxrhcrit
+!      integer :: tanhrhcrit
+!      real    :: minrhcrit
+!      real    :: maxrhcrit
+!      real    :: maxrhcritland
        real    :: turnrhcrit
        real    :: turnrhcrit_upper
        real    :: MIN_RI, MAX_RI, MIN_RL, MAX_RL, RI_ANV
-       real    :: maxrhcritland
 
 
        real, parameter :: T_ICE_MAX = MAPL_TICE
@@ -95,7 +95,7 @@
 
 
        real, parameter :: PI_0 = 4.*atan(1.)
-       real omeps, trinv
+       real omeps, trinv, t_ice_denom
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -103,7 +103,7 @@
 
 
        subroutine macro_cloud(IRUN, LM, DT, PP_dev, PPE_dev
-     &,                       EXNP_dev,   FRLAND_dev, RMFDTR_dev
+     &,                                   FRLAND_dev, RMFDTR_dev
      &,                       QLWDTR_dev, QRN_CU_dev, CNV_UPDFRC_dev
      &,                       U_dev,      V_dev,      TH_dev, Q_dev
      &,                       QLW_LS_dev, QLW_AN_dev, QIW_LS_dev
@@ -120,13 +120,12 @@
      &,                       CNV_NDROP_dev,  CNV_NICE_dev, SCICE_dev
      &,                       NCPL_dev,    NCPI_dev,   PFRZ_dev
      &,                                    QRAIN_CN,   QSNOW_CN
-     &,                       KCBL, lprnt, ipr )
+     &,                       KCBL, lprnt, ipr, rhc )
 
        integer, intent(in ) :: IRUN, LM
        real, intent(in )    :: DT
        real, intent(in ),   dimension(IRUN, LM)  :: PP_dev
        real, intent(in ),   dimension(IRUN,0:LM) :: PPE_dev
-       real, intent(in ),   dimension(IRUN, LM)  :: EXNP_dev
        real, intent(in ),   dimension(IRUN )     :: FRLAND_dev
        real, intent(in ),   dimension(IRUN, LM)  :: RMFDTR_dev
        real, intent(in ),   dimension(IRUN, LM)  :: QLWDTR_dev
@@ -134,6 +133,7 @@
        real, intent(inout), dimension(IRUN, LM)  :: CNV_UPDFRC_dev
        real, intent(in ),   dimension(IRUN, LM)  :: U_dev
        real, intent(in ),   dimension(IRUN, LM)  :: V_dev
+       real, intent(in ),   dimension(IRUN, LM)  :: rhc
        real, intent(inout), dimension(IRUN, LM)  :: TH_dev
        real, intent(inout), dimension(IRUN, LM)  :: Q_dev
        real, intent(inout), dimension(IRUN, LM)  :: QLW_LS_dev
@@ -189,13 +189,16 @@
 
        integer :: FRACTION_REMOVAL
 
-       real :: MASS, iMASS, TOTFRC, QRN_CU_1D, QSN_CU, QRN_ALL, QSN_ALL
+       real :: MASS,  iMASS, TOTFRC, QRN_CU_1D, QSN_CU, QRN_ALL, QSN_ALL
      &,        QTMP1, QTMP2, QTMP3, QTOT, TEMP, RHCRIT, AA3, BB3, ALPHA
      &,        VFALL, VFALLRN, VFALLSN,  TOT_PREC_UPD, AREA_UPD_PRC
-     &,        AREA_UPD_PRC_tolayer, U_above,U_below,  V_above,V_below
-     &,        DZET_above,DZET_below, PRN_CU_above, PSN_CU_above
+     &,        AREA_UPD_PRC_tolayer  
+     &,        PRN_CU_above, PSN_CU_above
+!    &,        AREA_UPD_PRC_tolayer, U_above,U_below,  V_above,V_below
+!    &,        DZET_above,DZET_below, PRN_CU_above, PSN_CU_above
      &,        EVAP_DD_CU_above, SUBL_DD_CU_above
      &,        NIX, TOTAL_WATER, dti, tx1, tend, fqi
+!    &,        NIX, TOTAL_WATER, dti, tx1, tend, fqi, psinv, pops
 
        logical :: use_autoconv_timescale
 !
@@ -203,9 +206,9 @@
 !
 
        omeps  = 1. - epsqs
+       dti    = 1.0 /dt
+       trinv  = 1.0/ttrice
 
-       dti = 1.0 /dt
-       trinv = 1.0/ttrice
        CNV_BETA      = PHYSPARAMS(1)
        ANV_BETA      = PHYSPARAMS(2)
        LS_BETA       = PHYSPARAMS(3)
@@ -244,11 +247,11 @@
        CNVDDRFC      = PHYSPARAMS(36)
        ANVDDRFC      = PHYSPARAMS(37)
        LSDDRFC       = PHYSPARAMS(38)
-       tanhrhcrit    = INT( PHYSPARAMS(41) )
-       minrhcrit     = PHYSPARAMS(42)
-       maxrhcrit     = PHYSPARAMS(43)
-       turnrhcrit    = PHYSPARAMS(45)
-       maxrhcritland = PHYSPARAMS(46)
+!      tanhrhcrit    = INT( PHYSPARAMS(41) )
+!      minrhcrit     = PHYSPARAMS(42)
+!      maxrhcrit     = PHYSPARAMS(43)
+       turnrhcrit    = PHYSPARAMS(45) * 0.001
+!      maxrhcritland = PHYSPARAMS(46)
        fr_ls_wat     = INT( PHYSPARAMS(47) )
        fr_ls_ice     = INT( PHYSPARAMS(48) )
        fr_an_wat     = INT( PHYSPARAMS(49) )
@@ -261,10 +264,11 @@
        pdfflag       = INT(PHYSPARAMS(57))
 
 
-       turnrhcrit_upper = PHYSPARAMS(58)
+       turnrhcrit_upper = PHYSPARAMS(58) * 0.001
 
        use_autoconv_timescale = .false.
 
+       t_ice_denom = 1.0 / (T_ICE_MAX-T_ICE_ALL)
 
        RUN_LOOP: DO I = 1, IRUN
 !      Anning initialization here
@@ -272,6 +276,7 @@
          PSN_CU_above     = 0.
          EVAP_DD_CU_above = 0.
          SUBL_DD_CU_above = 0.
+!        psinv            = 1.0 / ppe_dev(i,lm)
 
          K_LOOP: DO K = 1, LM
 
@@ -286,7 +291,6 @@
              CUARF_dev(I) = 0.
            end if
 
-
            QRN_CU_1D = 0.
            QSN_CU    = 0.
            VFALL     = 0.
@@ -298,8 +302,6 @@
              PFL_CN_dev(I,0) = 0.
              PFI_CN_dev(I,0) = 0.
            END IF
-
-
 
            RHX_dev(I,K)        = 0.0
            REV_CN_dev(I,K)     = 0.0
@@ -316,7 +318,6 @@
            VFALLSN             = 0.0
            VFALLRN             = 0.0
 
-
 !          DNDCNV_dev(I, K) = 0.0
 !          DNCCNV_dev(I, K) = 0.0
 !          RAS_DT_dev(I, K) = 0.0
@@ -325,13 +326,12 @@
            QSNOW_CN(I,K)    = 0.0
            NIX = 0.0
 
-
            QRN_CU_1D       = QRN_CU_dev(I,K)
 
            MASS            = (PPE_dev(I,K) - PPE_dev(I,K-1))
      &                     * (100./MAPL_GRAV)
            iMASS           = 1.0 / MASS
-           TEMP            = EXNP_dev(I,K) * TH_dev(I,K)
+           TEMP            = TH_dev(I,K)
            FRZ_PP_dev(I,K) = 0.00
 
 
@@ -369,37 +369,41 @@
            ANVFRC_dev(I,K)   = min(ANVFRC_dev(I,K) + TEND*DT, 1.0)
 
 !
-
 !          DCNVi_dev(I,K)  = (QIW_AN_dev(I,K) - DCNVi_dev(I,K) ) * DTi
 !          DCNVL_dev(I,K)  = (QLW_AN_dev(I,K) - DCNVL_dev(I,K) ) * DTi
 !          DNDCNV_dev(I,K) = (NCPL_dev(I,K)   - DNDCNV_dev(I,K)) * DTi
 !          DNCCNV_dev(I,K) = (NCPI_dev(I,K)   - DNCCNV_dev(I,K)) * DTi
 
 
-           if (k == 1 .or. k == lm) then
-             U_above = 0.0
-             U_below = 0.0
-             V_above = 0.0
-             V_below = 0.0
-             DZET_above = 0.0
-             DZET_below = 0.0
-           else
-             U_above = U_dev(i,k-1)
-             U_below = U_dev(i,k+1)
-             V_above = V_dev(i,k-1)
-             V_below = V_dev(i,k+1)
-             DZET_above = DZET_dev(i,k-1)
-             DZET_below = DZET_dev(i,k+1)
-           end if
+!          if (k == 1 .or. k == lm) then
+!            U_above = 0.0
+!            U_below = 0.0
+!            V_above = 0.0
+!            V_below = 0.0
+!            DZET_above = 0.0
+!            DZET_below = 0.0
+!          else
+!            U_above = U_dev(i,k-1)
+!            U_below = U_dev(i,k+1)
+!            V_above = V_dev(i,k-1)
+!            V_below = V_dev(i,k+1)
+!            DZET_above = DZET_dev(i,k-1)
+!            DZET_below = DZET_dev(i,k+1)
+!          end if
 
-           call pdf_spread (K, LM, U_dev(I,K), U_above, U_below,
-     &                      V_dev(I,K), V_above, V_below,
-     &                      DZET_above, DZET_below, CNV_UPDFRC_dev(I,K),
-     &                      PP_dev(I,K), ALPHA, ALPHT_dev(I,K),
-     &                      FRLAND_dev(I) )
+!          call pdf_spread (K, LM, U_dev(I,K), U_above, U_below,
+!    &                      V_dev(I,K), V_above, V_below,
+!    &                      DZET_above, DZET_below, CNV_UPDFRC_dev(I,K),
+!    &                      PP_dev(I,K), ALPHA, ALPHT_dev(I,K),
+!    &                      FRLAND_dev(I) )
+!          pops = PP_dev(I,K) * psinv
 
+!          call pdf_spread (K, LM,  PP_dev(I,K), ALPHA,  ALPHT_dev(I,K),
+!          call pdf_spread (K, LM,  pops, ALPHA,  ALPHT_dev(I,K),
+!    &                      FRLAND_dev(I), rhc(i) )
 
-           ALPHA = MAX( ALPHA , 1.0 - RH00 )
+           ALPHA = max(1.0e-4, 1.0-rhc(i,k))
+           ALPHT_dev(I,K) = ALPHA
 
            RHCRIT = 1.0 - ALPHA
 
@@ -407,10 +411,10 @@
 
 
              call Pfreezing (ALPHA , PP_dev(I,K) , TEMP , Q_dev(I,K),
-     &                     QLW_LS_dev(I,K),  QLW_AN_dev(I,K),
-     &                     QIW_LS_dev(I,K),  QIW_AN_dev(I,K),
-     &                     SCICE_dev(I,K) ,  CLDFRC_dev(I,K),
-     &                     ANVFRC_dev(I,K),  PFRZ_dev(I,K) )
+     &                       QLW_LS_dev(I,K),  QLW_AN_dev(I,K),
+     &                       QIW_LS_dev(I,K),  QIW_AN_dev(I,K),
+     &                       SCICE_dev(I,K) ,  CLDFRC_dev(I,K),
+     &                       ANVFRC_dev(I,K),  PFRZ_dev(I,K) )
 
 
 !=============Collect convective precip==============
@@ -538,14 +542,18 @@
 
            end if
 !*********************** end of if(false)********************************
+      if (lprnt .and. i== ipr) write(0,*)'in macrocld1 clffrc=',
+     & CLDFRC_dev(I,K) ,' k=',k
 
            CALL fix_up_clouds_2M( Q_dev(I,K) , TEMP , QLW_LS_dev(I,K),
      &              QIW_LS_dev(I,K), CLDFRC_dev(I,K), QLW_AN_dev(I,K),
      &              QIW_AN_dev(I,K), ANVFRC_dev(I,K), NCPL_dev(I, K),
      &              NCPI_dev(I, K))
 
+      if (lprnt .and. i== ipr) write(0,*)'in macrocld1 clffrc=',
+     &    CLDFRC_dev(I,K) , ' k=',k
 
-           TH_dev(I,K) = TEMP / EXNP_dev(I,K)
+           TH_dev(I,K) = TEMP
 
          end do K_LOOP
 
@@ -604,41 +612,36 @@
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-       subroutine pdf_spread (K,LM, U,U_above,U_below, V,V_above,
-     &                        V_below, DZ_above,DZ_below, UPDF,
-     &                        PP,ALPHA, ALPHT_DIAG, FRLAND )
+       subroutine pdf_spread (K, LM, PP, ALPHA, ALPHT_DIAG, FRLAND, rhc)
 
        integer, intent(in)  :: k,lm
-       real,    intent(in)  :: U, U_above, U_below, V, V_above, V_below
-     &,                        DZ_above, DZ_below, UPDF, PP, FRLAND
+       real,    intent(in)  :: PP, FRLAND, rhc
 
        real,    intent(out) :: ALPHA, ALPHT_DIAG
 
-       real                 :: tempmaxrh, slope, slope_up, turnrhcrit_up
-     &,                        aux1, aux2, maxalpha, A1,A2,A3
+!      real, parameter      :: slope = 20.0, slope_up = 20.0
+       real, parameter      :: slope = 0.02, slope_up = 0.02
 
-       slope    = 20.0
-       slope_up = 20.0
+       real                 :: aux1, aux2, maxalpha
 
-       turnrhcrit_up = turnrhcrit_upper
+!      maxalpha = 1.0 - minrhcrit
+       maxalpha = 1.0 - rhc
 
-       maxalpha = 1.0 - minrhcrit
-
-       aux1 = min(max((pp- turnrhcrit)/slope, -20.0), 20.0)
-       aux2 = min(max((turnrhcrit_up - pp)/slope_up, -20.0), 20.0)
+       aux1 = min(max((pp - turnrhcrit)/slope, -20.0), 20.0)
+       aux2 = min(max((turnrhcrit_upper - pp)/slope_up, -20.0), 20.0)
 
        if (frland > 0.05) then
-         aux1 = 1.0
+!        aux1 = 1.0
+         aux1 = 1.0 / (1.0+exp(aux1+aux1))
        else
-         aux1 = 1.0 / (1.0+exp(aux1))
+         aux1 = 2.0 / (1.0+exp(aux1+aux1))
        end if
 
        aux2  = 1.0 / (1.0+exp(aux2))
 
+       alpha = max(1.0e-4, min(0.3, maxalpha*aux1*aux2))
+!      alpha = min(0.3, maxalpha*aux1*aux2)    !Anning
 
-       alpha = maxalpha*aux1*aux2*2 !Anning 
-
-       ALPHA = MIN( ALPHA , 0.4 )
        ALPHT_DIAG = ALPHA
 
        end subroutine pdf_spread
@@ -744,48 +747,42 @@
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
        subroutine update_cld( irun, lm, DT, ALPHA,
-     &                        PDFSHAPE, PL, QV, QCl,
-     &                        QAl, QCi, QAi, TE, CF, AF,
-     &                        SCICE, NI, NL, NCnuc, RHcmicro)
+     &                        PDFSHAPE, PL, QV, QCl, QAl,
+     &                        QCi, QAi, TE, CF, AF,
+     &                        SCICE, NI, NL)
+!    &                        SCICE, NI, NL, NCnuc)
 
        integer, intent(in) :: irun, lm, pdfshape
        real,    intent(in) :: DT
-       real,    intent(in),    dimension(irun,lm) :: ALPHA,PL, NCnuc
+       real,    intent(in),    dimension(irun,lm) :: ALPHA, PL
+!      real,    intent(in),    dimension(irun,lm) :: ALPHA, PL, NCnuc
        real,    intent(inout), dimension(irun,lm) :: te, qv, qcl, qci
-     &,                        CF,QAl,QAi,AF, NI, RHCmicro, NL, SCICE
+     &,                        CF, QAl, QAi, AF, NI, NL, SCICE
 
-       real :: CFO,pl100
-       real :: QT, DQ
-
-       real ::     QSx,DQsx
-
-       real :: QCx, QC, QA
-
-       real :: QX, QSLIQ, QSICE, CFALL, DQx, FQA
+       real :: CFO, pl100, QT, DQ, QSx, DQsx, QCx, QC, QA
+     &,        QX, QSLIQ, QSICE, CFALL, DQx, FQA
 
        real :: esl, esi, esn !temp use only Anning
 
        integer :: i,k
 
-
-       pdfflag = PDFSHAPE
        do k=1,lm
          do i=1,irun
            if(QV(i,k) > 1.e-6) then
-             pl100=pl(i,k)*100
-             QC    = QCl(i,k) + QCi(i,k)
-             QA    = QAl(i,k) + QAi(i,k)
+              pl100 = pl(i,k)*100
+              QC    = QCl(i,k) + QCi(i,k)
+              QA    = QAl(i,k) + QAi(i,k)
              !Anning do not let empty cloud exist
-             if(QC.le.0.) CF(i,k)=0. 
-             if(QA.le.0.) AF(i,k)=0. 
-             QT    = QC + QA  + QV(i,k)
-             CFALL = AF(i,k)  + CF(i,k)
+              if(QC <= 0.) CF(i,k) = 0. 
+              if(QA <= 0.) AF(i,k) = 0. 
+              QT    = QC + QA  + QV(i,k)
+              CFALL = AF(i,k)  + CF(i,k)
 
-             if (QA+QC > 0.0) then
-               FQA = QA / (QA+QC)
-             else
-               FQA   = 0.0
-             end if
+              if (QA+QC > 0.0) then
+                FQA = QA / (QA+QC)
+              else
+                FQA   = 0.0
+              end if
 !================================================
 ! First find the cloud fraction that would correspond to the current
 ! condensate
@@ -795,67 +792,62 @@
 !    &                                esl,QSLIQ,DQx)
 !           call vqsatd2_ice_single(TE(i,k),PL(i,k)*100.0,
 !    &                              esi,QSICE,DQx)
-            esl=min(fpvsl(TE(i,k)),pl100)
-            QSLIQ= min(epsqs*esl/(pl100-omeps*esl),1.)
-            esi=min(fpvsi(TE(i,k)),pl100)
-            QSICE= min(epsqs*esi/(pl100-omeps*esi),1.)
+             esl   = min(fpvsl(TE(i,k)),pl100)
+             QSLIQ = min(epsqs*esl/(pl100-omeps*esl),1.)
+             esi   = min(fpvsi(TE(i,k)),pl100)
+             QSICE = min(epsqs*esi/(pl100-omeps*esi),1.)
 
-            if ((QC+QA) > 0.0) then
-              QSx = ( (QCl(i,k)+QAl(i,k))*QSLIQ
-     &              + (QCi(i,k)+QAi(i,k))*QSICE ) / (QC+QA)
-            else
-!             DQSx = DQSAT( TEo , PL , 35.0, QSAT=QSx )
+             if ((QC+QA) > 0.0) then
+               QSx = ( (QCl(i,k)+QAl(i,k))*QSLIQ
+     &               + (QCi(i,k)+QAi(i,k))*QSICE ) / (QC+QA)
+             else
+!              DQSx = DQSAT( TEo , PL , 35.0, QSAT=QSx )
 !             call vqsatd2_single( TE(i,k), pl(i,k)*100., esl,QSx,DQSx)
-              esn=min(fpvs(TE(i,k)),pl100)
-              QSx= min(epsqs*esn/(pl100-omeps*esn),1.)
+               esn = min(fpvs(TE(i,k)),pl100)
+               QSx = min(epsqs*esn/(pl100-omeps*esn),1.)
 
-            end if
+             end if
 
-            if (TE(i,k) > T_ICE_ALL) SCICE(i,k) = 1.0
-            QCx = QC + QA
-            QX  = QT - QSx*SCICE(i,k)
-            CFo = 0.
+!            if (TE(i,k) > T_ICE_ALL) SCICE(i,k) = 1.0
+
+             QCx = QC + QA
+             QX  = QT - QSx*SCICE(i,k)
+             CFo = 0.
 !      recalculate QX if too low and SCICE<SHOM
 
-            if ((QX <= QCx) .and. (QCx > 0.0)) then
-              CFo = (1.0+SQRT(1.0-(QX/QCx)))
-              if (CFo > 1.e-6) then
-                CFo = min(1.0/CFo, 1.0)
-                DQ  = 2.0*QCx/(CFo*CFo)
-              else
-                CFo = 0.0
-              end if
-            else
-              if (QCx > 0.0) then
-                CFo = 1.0
-              end if
-              DQ = 2.0*ALPHA(i,k)*QSx
-            end if
+             if ((QX <= QCx) .and. (QCx > 0.0)) then
+               CFo = (1.0+SQRT(1.0-(QX/QCx)))
+               if (CFo > 1.e-6) then
+                 CFo = min(1.0/CFo, 1.0)
+                 DQ  = 2.0*QCx/(CFo*CFo)
+               else
+                 CFo = 0.0
+               end if
+             else
+               if (QCx > 0.0) then
+                 CFo = 1.0
+               end if
+               DQ = 2.0*ALPHA(i,k)*QSx
+             end if
 
-            if (QSx > 0.0) then
-              RHCmicro(i,k) = SCICE(i,k) - 0.5*DQ/Qsx
-            else
-              RHCmicro(i,k) = 0.0
-            end if
+             CFALL = max(CFo, 0.0)
+             CFALL = min(CFo, 1.0)
 
-            CFALL = max(CFo, 0.0)
-            CFALL = min(CFo, 1.0)
-
-            CF(i,k) = CFALL*(1.0-FQA)
-            AF(i,k) = CFALL*FQA
+             CF(i,k) = CFALL*(1.0-FQA)
+             AF(i,k) = CFALL*FQA
 
 
-!           if ((TE(i,k) <= T_ICE_ALL)) cycle
+!            if ((TE(i,k) <= T_ICE_ALL)) cycle
 
 
-            call hystpdf( DT, ALPHA(i,k), PDFSHAPE, PL(i,k), QV(i,k)
-     &,                 QCl(i,k),   QAl(i,k), QCi(i,k)
-     &,                 QAi(i,k),   TE(i,k),  CF(i,k), AF(i,k)
-     &,                 SCICE(i,k), NI(i,k),  NL(i,k), i, k )
+             call hystpdf( DT, ALPHA(i,k), PDFSHAPE, PL(i,k), QV(i,k)
+     &,                    QCl(i,k),   QAl(i,k), QCi(i,k)
+     &,                    QAi(i,k),   TE(i,k),  CF(i,k), AF(i,k)
+     &,                    SCICE(i,k), NI(i,k),  NL(i,k), i, k )
 
             !Anning do not let empty cloud exist
-            if(QCl(i,k)+QCi(i,k).le.0.) CF(i,k)=0. 
-            if(QAl(i,k)+QAi(i,k).le.0.) AF(i,k)=0. 
+             if(QCl(i,k)+QCi(i,k) <= 0.0) CF(i,k) = 0. 
+             if(QAl(i,k)+QAi(i,k) <= 0.0) AF(i,k) = 0. 
            end if
          enddo
        enddo
@@ -873,84 +865,81 @@
        real, intent(inout) :: TE,QV,QCl,QCi,CF,QAl,QAi,AF, NI, NL,
      &                        SCICE
 
+       integer, parameter :: nmax=20
 
-       real :: QCO, QVO, CFO, QAO, TAU, SCICE_x
+       real :: QCO, QVO, CFO, QAO, TAU
        real :: QT, QMX, QMN, DQ, QVtop, sigmaqt1, sigmaqt2, qsnx
 
-       real :: TEO,QSx,DQsx,QS,DQs
-
-       real :: TEp, QSp, CFp, QVp, QCp
-       real :: TEn, QSn, CFn, QVn, QCn
+       real :: TEO, QSx, DQsx, QS,  DQs
+     &,        TEp, QSp, CFp,  QVp, QCp
+     &,        TEn, QSn, CFn,  QVn, QCn
 
        real :: QCx, QVx, CFx, QAx, QC, QA, fQi, fQi_A
-       real :: dQAi, dQAl, dQCi, dQCl
+     &,        dQAi, dQAl, dQCi, dQCl
 
-       real :: QX, QSLIQ, QSICE, CFALL, DQx, FQA, DQSI, DQSL, LHcorr,
-     &         fQip,pl100
+       real :: QX, QSLIQ, QSICE, CFALL, DQx, FQA, pl100, tmpARR
+     &,        ALHX, DQCALL, esn, desdt, tc, hltalt, tterm
 
-       real :: tmpARR
-       real :: esn,desdt,weight,tc,hlatsb,hlatvp,hltalt,tterm,gam
-       logical lflg
-       real :: ALHX, DQCALL
-
-
-       integer :: N, nmax,i,k
-
+       integer :: N, i, k
 
        pdfflag = PDFSHAPE
-       pl100=pl*100
+       pl100 = pl*100
 
        QC     = QCl + QCi
        QA     = QAl + QAi
-       QT     = QC + QA + QV
-       CFALL  = AF+CF
+       QT     = QC  + QA + QV
+       CFALL  = AF  + CF
        FQA    = 0.0
        fQi    = 0.0
        tmpARR = 0.0
-       nmax   = 20
        QAx    = 0.0
 
        if (QA+QC > 0.0)       FQA    = QA / (QA+QC)
        if (QA    > 0.0)       fQi_A  = QAi / QA
        if (QT    > 0.0)       fQi    = (QCI+QAI) / QT
        if (TE    < T_ICE_ALL) fQi    = 1.0
-       if ( AF   < 1.0 )      tmpARR = 1. / (1.-AF)
+       if ( AF   < 1.0 )      tmpARR = 1.0 / (1.0-AF)
 
        TEo = TE
 
-       fQi = ice_fraction( TEn )
+!
+       fqi = 1.0 - max(0.0, min(1.0, (te-t_ice_all)*t_ice_denom))
+       fqi = (max(0.0,min(1.0,fqi))) ** ICEFRPWR
+
+!      fQi = ice_fraction( TE  )
+!      fQi = ice_fraction( TEn )
 !      DQS = DQSAT( TE, PL, QSAT=QSx ) Anning changed to the foollowing
 !      DQSx = DQSAT( TE, PL, QSAT=QSx )
 !      call vqsatd2_single( TE, pl*100., esn,QSx,DQSx)
-       esn=min(fpvs(TE),pl100)
-       QSx= min(epsqs*esn/(pl100-omeps*esn),1.)
-       tc = TE - MAPL_TICE
-       lflg = (tc >= -ttrice .and. tc < 0.)
-       weight = min(-tc*trinv,1.0)
-       hlatsb = hlatv + weight*hlatf
-       hlatvp = hlatv - 2369.0*tc
-       if (TE < MAPL_TICE) then
-         hltalt = hlatsb
+
+       esn    = min(fpvs(TE),pl100)
+       QSx    = min(epsqs*esn/(pl100-omeps*esn),1.)
+
+       if (qsx < 1.0) then
+         tc     = TE - MAPL_TICE
+         if (TE < MAPL_TICE) then
+           hltalt = hlatv + hlatf * min(-tc*trinv,1.0)
+         else
+           hltalt = hlatv - 2369.0*tc
+         end if
+         if (tc >= -ttrice .and. tc < 0.0) then
+           tterm = pcf(1) + tc*(pcf(2) + tc*(pcf(3)
+     &                    + tc*(pcf(4) + tc*pcf(5))))
+         else
+           tterm = 0.0
+         end if
+         desdt = hltalt*esn/(rgasv*TE*TE) + tterm*trinv
+         dqsx  = qsx*pl100*desdt/(esn*(pl100-omeps*esn))
        else
-         hltalt = hlatvp
-       end if
-       if (lflg) then
-         tterm = pcf(1) + tc*(pcf(2) + tc*(pcf(3)
-     &         +tc*(pcf(4) + tc*pcf(5))))
-       else
-         tterm = 0.
-       end if
-       desdt = hltalt*esn/(rgasv*TE*TE) + tterm*trinv
-       gam = hltalt*qsx*pl100*desdt/(MAPL_cp*esn*(pl100-omeps*esn))
-       if (qsx == 1.0) gam = 0.0
-       DQSx=(MAPL_cp/hltalt)*gam
+         DQSx  = 0.0
+       endif
 
        CFx = CF*tmpARR
        QCx = QC*tmpARR
        QVx = ( QV - QSx*AF )*tmpARR
 
 !      if ( AF >= 1.0 ) QVx = QSx*1.e-4
-       if ( AF > 0. )   QAx = QA/AF
+       if ( AF > 0.0 )   QAx = QA/AF
 
        QT  = QCx + QVx
 
@@ -962,14 +951,13 @@
        QCn = QCx
        DQS = DQSx
 
-
        do n=1,nmax
 
          QVp = QVn
          QCp = QCn
          CFp = CFn
          TEp = TEn
-         fQip= fQi
+!        fQip= fQi
 
          if(pdfflag < 2) then
            sigmaqt1 = ALPHA*QSn
@@ -982,13 +970,13 @@
          endif
 
          qsnx = qsn*SCICE
-         if ((QCI >= 0.0) .and. (qsn > qt)) qsnx = qsn
+         if (QCI >= 0.0 .and. qsn > qt) qsnx = qsn
 
          call pdffrac(PDFSHAPE,qt,sigmaqt1,sigmaqt2,qsnx,CFn)
-         call pdfcondensate(PDFSHAPE,qt,sigmaqt1,sigmaqt2,qsnx,QCn, CFn)
+         call pdfcondensate(PDFSHAPE,qt,sigmaqt1,sigmaqt2,qsnx,QCn,CFn)
 
          DQCALL = QCn - QCp
-         CF = CFn * ( 1.-AF)
+         CF = CFn * ( 1.0-AF)
 
 !        call Bergeron_iter (DT, PL, TEp, QT, QCi, QAi, QCl, QAl,
 !    &                       CF, AF, NL, NI, DQCALL, fQi)
@@ -1004,60 +992,62 @@
 
          if(pdfflag == 1) then
            QCn = QCp + (QCn- QCp)
-     &         / (1. - (CFn*(ALPHA-1.) - QCn/QSn) *DQS*ALHX)
+     &               / (1.0 - (CFn*(ALPHA-1.0) - QCn/QSn) *DQS*ALHX)
          elseif(pdfflag == 2) then
-           if (n.ne.nmax) QCn = QCp + ( QCn - QCp ) *0.5
+           if (n < nmax) QCn = QCp + ( QCn - QCp ) * 0.5
          endif
 
          QVn = QVp - (QCn - QCp)
-         TEn = TEp + ((1.0-fQi)*alhlbcp + fQi*alhsbcp)
-     &       *((QCn - QCp)*(1.-AF) + (QAo-QAx)*AF)
+         TEn = TEp + ALHX * ((QCn-QCp)*(1.0-AF) + (QAo-QAx)*AF)
 
-         if (abs(Ten - Tep) < 0.00001) exit
+!        fqi = 1.0 - max(0.0, min(1.0, (ten-t_ice_all)*t_ice_denom))
+!        fqi = (max(0.0,min(1.0,fqi))) ** ICEFRPWR
+
+         if (abs(Ten-Tep) < 0.00001) exit
 
 !        DQS = DQSAT( TEn, PL, QSAT=QSn )
 !        call vqsatd2_single( TEn, pl*100., esn,QSn,DQS)
-         esn=min(fpvs(TEn),pl100)
-         QSn= min(epsqs*esn/(pl100-omeps*esn),1.)
-         tc = TEn - MAPL_TICE
-         lflg = (tc >= -ttrice .and. tc < 0.)
-         weight = min(-tc*trinv,1.0)
-         hlatsb = hlatv + weight*hlatf
-         hlatvp = hlatv - 2369.0*tc
-         if (TEn < MAPL_TICE) then
-           hltalt = hlatsb
+         esn    = min(fpvs(TEn),pl100)
+         QSn    = min(epsqs*esn/(pl100-omeps*esn),1.0)
+
+         if (qsx < 1.0) then
+           tc     = TEn - MAPL_TICE
+           if (TEn < MAPL_TICE) then
+             hltalt = hlatv + hlatf * min(-tc*trinv,1.0)
+           else
+             hltalt = hlatv - 2369.0*tc
+           end if
+           if (tc >= -ttrice .and. tc < 0.0) then
+             tterm = pcf(1) + tc*(pcf(2) + tc*(pcf(3)
+     &                      + tc*(pcf(4) + tc*pcf(5))))
+           else
+             tterm = 0.0
+           end if
+           desdt = hltalt*esn/(rgasv*TEn*TEn) + tterm*trinv
+           dqs   = QSn*pl100*desdt/(esn*(pl100-omeps*esn))
          else
-           hltalt = hlatvp
-         end if
-         if (lflg) then
-           tterm = pcf(1) + tc*(pcf(2) + tc*(pcf(3)
-     &           +tc*(pcf(4) + tc*pcf(5))))
-         else
-           tterm = 0.
-         end if
-         desdt = hltalt*esn/(rgasv*TEn*TEn) + tterm*trinv
-         gam = hltalt*QSn*pl100*desdt/(MAPL_cp*esn*(pl100-omeps*esn))
-         if (qsx == 1.0) gam = 0.0
-         DQS=(MAPL_cp/hltalt)*gam
+           DQS = 0.0
+         endif
 
        enddo
 
        CFo = CFn
        CF  = CFn
        QCo = QCn
-       QVo = QVn
-       TEo = TEn
+!      QVo = QVn
+!      TEo = TEn
+!      TE  = TEn
 
        if ( AF < 1.0 ) then
-         CF = CFo * ( 1.-AF)
-         QCo = QCo * ( 1.-AF)
+         CF  = CFo * ( 1.0-AF)
+         QCo = QCo * ( 1.0-AF)
          QAo = QAo * AF
        else
-         CF  = 0.
+         CF  = 0.0
          QAo = QA + QC
-         QCo = 0.
+         QCo = 0.0
          QT  = QAo + QV
-         QAo = MAX( QT - QSx, 0. )
+         QAo = MAX(QT-QSx, 0.0)
        end if
 
        dQCl = 0.0
@@ -1072,10 +1062,10 @@
        if (QCx < -1.e-3) QCx = -1.e-3
        if (QCx < 0.0) then
          dQCl = max(QCx, -QCl)
-         dQCi = max(QCx - dQCl, -QCi)
+         dQCi = max(QCx-dQCl, -QCi)
        else
-         dQCl = (1.0-fQi)*QCx
-         dQCi = fQi * QCx
+         dQCi = QCx * fQi
+         dQCl = QCx - dQCi
        end if
 
 !Anvil QAx is not in anvil 
@@ -1085,10 +1075,10 @@
 
        if (QAx < 0.0) then
          dQAl = max(QAx, -QAl)
-         dQAi = max(QAx - dQAl, -QAi)
+         dQAi = max(QAx-dQAl, -QAi)
        else
-         dQAl = (1.0-fQi)*QAx
-         dQAi = QAx*fQi
+         dQAi = QAx * fQi
+         dQAl = QAx - dQAi
        end if
 
 !     if(.false.) then !Anning turn it off causing unstable
@@ -1133,51 +1123,44 @@
 
        integer flag
 
-       real qtmean
-       real sigmaqt1
-       real sigmaqt2
-       real qstar
-       real clfrac
+       real :: qtmean, sigmaqt1, sigmaqt2, qstar, clfrac
 
-       real :: qtmode, qtmin, qtmax
+       real :: qtmode, qtmin, qtmax, qtmedian, aux
 
-
-       real :: qtmedian, aux
-
-       if(flag.eq.1) then
-         if((qtmean+sigmaqt1).lt.qstar) then
+       if(flag == 1) then
+         aux = qtmean + sigmaqt1 - qstar
+         if (aux < 0.0) then
            clfrac = 0.
          else
-           if(sigmaqt1.gt.0.) then
-             clfrac = min((qtmean + sigmaqt1 - qstar),2.*sigmaqt1)
-     &              /(2.*sigmaqt1)
+           if(sigmaqt1 > 0.0) then
+             clfrac = min(0.5*aux/sigmaqt1, 1.0)
            else
              clfrac = 1.
            endif
          endif
-       elseif(flag.eq.2) then
+       elseif(flag == 2) then
          qtmode = qtmean + (sigmaqt1-sigmaqt2)/3.
-         qtmin = min(qtmode-sigmaqt1,0.)
-         qtmax = qtmode + sigmaqt2
-         if(qtmax.lt.qstar) then
+         qtmin  = min(qtmode-sigmaqt1,0.)
+         qtmax  = qtmode + sigmaqt2
+         if(qtmax < qstar) then
            clfrac = 0.
-         elseif ( (qtmode.le.qstar).and.(qstar.lt.qtmax) ) then
+         elseif ( (qtmode <= qstar).and.(qstar < qtmax) ) then
            clfrac = (qtmax-qstar)*(qtmax-qstar) / 
      &            ((qtmax-qtmin)*(qtmax-qtmode))
-         elseif ( (qtmin.le.qstar).and.(qstar.lt.qtmode) ) then
+         elseif ( (qtmin <= qstar).and.(qstar < qtmode) ) then
            clfrac = 1. - ((qstar-qtmin)*(qstar-qtmin)
      &            /( (qtmax-qtmin)*(qtmode-qtmin)))
-         elseif ( qstar.le.qtmin ) then
+         elseif ( qstar <= qtmin ) then
            clfrac = 1.
          endif
-       elseif(flag.eq.4) then
-         if (qtmean .gt. 1.0e-20) then
+       elseif(flag == 4) then
+         if (qtmean > 1.0e-20) then
            qtmedian = qtmean*exp(-0.5*sigmaqt1*sigmaqt1)
-           aux = log(qtmedian/qstar)/sqrt(2.0)/sigmaqt1
-           aux=min(max(aux, -20.0), 20.0)
-           clfrac=0.5*(1.0+erf_app(aux))
+           aux      = log(qtmedian/qstar)/sqrt(2.0)/sigmaqt1
+           aux      = min(max(aux, -20.0), 20.0)
+           clfrac   = 0.5*(1.0+erf_app(aux))
          else
-           clfrac = 0.0
+           clfrac   = 0.0
          end if
        endif
 
@@ -2049,74 +2032,62 @@
       subroutine Pfreezing ( ALPHA , PL , TE , QV , QCl , QAl , QCi ,
      &                       QAi , SC_ICE , CF , AF , PF )
 
-
-
       real , intent(in) :: PL,ALPHA, QV, SC_ICE, AF, TE, QCl, QCi, QAl,
      &                     QAi, CF
       real , intent(out) :: PF
 
-
       real :: qt, QCx, QSn, tmpARR, CFALL, QVx, CFio, QA, QAx, QC, QI,
-     &        QL, DQSx
-      real :: sigmaqt1, sigmaqt2, qsnx
-      real :: esl, esi,pl100
+     &        QL, DQSx, sigmaqt1, sigmaqt2, qsnx, esl, esi,pl100
 
-      pl100=pl*100
+      pl100 = pl*100
 
-       QA = QAl + QAi
-       QC = QCl + QCi
-       CFALL = AF
+      QA = QAl + QAi
+      QC = QCl + QCi
+      CFALL = AF
 
-       if ( CFALL >= 1.0 ) then
-         PF = 0.0
-         return
-       end if
+      if ( CFALL >= 1.0 ) then
+        PF = 0.0
+        return
+      end if
 
-!      QSn = QSATIC( TE , PL*100.0 , DQ=DQSx )
-!      call vqsatd2_ice_single(TE,PL*100.0,esl,QSn,DQSx)
-       esi=min(fpvsi(TE),pl100)
-       QSn= min(epsqs*esi/(pl100-omeps*esi),1.)
+!     QSn = QSATIC( TE , PL*100.0 , DQ=DQSx )
+!     call vqsatd2_ice_single(TE,PL*100.0,esl,QSn,DQSx)
 
-       QSn = MAX( QSn , 1.0e-9 )
+      esi = min(fpvsi(TE),pl100)
+      QSn = max(min(epsqs*esi/(pl100-omeps*esi), 1.0), 1.0e-9)
 
+      tmpARR = 0.0
+      if ( CFALL < 0.99 ) then
+        tmpARR = 1./(1.0-CFALL)
+      end if
 
+      QCx = QC*tmpARR
+      QVx = ( QV - QSn*CFALL )*tmpARR
+!     QVx = QV*tmpARR
 
-       tmpARR = 0.0
-       if ( CFALL < 0.99 ) then
-         tmpARR = 1./(1.0-CFALL)
-       end if
+      qt  = QCx + QVx
 
-       QCx = QC*tmpARR
-       QVx = ( QV - QSn*CFALL )*tmpARR
-!      QVx = QV*tmpARR
+      CFio = 0.0
 
-       qt  = QCx + QVx
+      QSn  = QSn*SC_ICE
 
-       CFio = 0.0
-
-       QSn  = QSn*SC_ICE
-
-       if(pdfflag.lt.2) then
-         sigmaqt1 = max(ALPHA, 0.1)*QSn
-         sigmaqt2 = max(ALPHA, 0.1)*QSn
-       elseif(pdfflag.eq.2) then
+      if(pdfflag < 2) then
+        sigmaqt1 = max(ALPHA, 0.1) * QSn
+        sigmaqt2 = max(ALPHA, 0.1) * QSn
+      elseif(pdfflag == 2) then
 ! for triangular, symmetric: sigmaqt1 = sigmaqt2 = alpha*qsn (alpha is half width)
 ! for triangular, skewed r : sigmaqt1 < sigmaqt2
 ! try: skewed right below 500 mb
 !!!       if(pl.lt.500.) then
-         sigmaqt1 = ALPHA*QSn
-         sigmaqt2 = ALPHA*QSn
-       elseif(pdfflag .eq. 4) then
-         sigmaqt1 = max(ALPHA/sqrt(3.0), 0.001)
-       endif
+        sigmaqt1 = ALPHA * QSn
+        sigmaqt2 = ALPHA * QSn
+      elseif(pdfflag == 4) then
+        sigmaqt1 = max(ALPHA/sqrt(3.0), 0.001)
+      endif
 
+      call pdffrac(pdfflag,qt,sigmaqt1,sigmaqt2,qsn,CFio)
 
-
-       call pdffrac(pdfflag,qt,sigmaqt1,sigmaqt2,qsn,CFio)
-
-       PF = CFio*(1.0-CFALL)
-
-       PF = min(max(PF, 0.0), 0.999)
+      PF = min(max(CFio*(1.0-CFALL), 0.0), 0.999)
 
 
       end subroutine Pfreezing

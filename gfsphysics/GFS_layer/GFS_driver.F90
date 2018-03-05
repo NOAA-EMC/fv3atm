@@ -13,6 +13,10 @@ module GFS_driver
   use module_radlw_parameters,  only: topflw_type, sfcflw_type
   use funcphys,                 only: gfuncphys
   use gfdl_cloud_microphys_mod, only: gfdl_cloud_microphys_init
+  use physcons,                 only: gravit => con_g,    rair    => con_rd, &
+                                      rh2o   => con_rv,                      &
+                                      tmelt  => con_ttp,  cpair   => con_cp, &
+                                      latvap => con_hvap, latice  => con_hfus
 
   implicit none
 
@@ -98,12 +102,13 @@ module GFS_driver
 !--------------
 ! GFS initialze
 !--------------
-  subroutine GFS_initialize (Model, Statein, Stateout, Sfcprop,    &
+  subroutine GFS_initialize (Model, Statein, Stateout, Sfcprop,     &
                              Coupling, Grid, Tbd, Cldprop, Radtend, & 
                              Diag, Init_parm)
 
-    use module_microphysics, only: gsmconst
+!   use module_microphysics, only: gsmconst
     use cldwat2m_micro,      only: ini_micro
+    use micro_mg2_0,         only: micro_mg_init
     use aer_cloud,           only: aer_cloud_init
     use module_ras,          only: ras_init
     use module_mp_thompson,  only: thompson_init
@@ -126,6 +131,7 @@ module GFS_driver
     integer :: nb
     integer :: nblks
     integer :: ntrac
+    integer :: ix
     real(kind=kind_phys), allocatable :: si(:)
     real(kind=kind_phys), parameter   :: p_ref = 101325.0d0
 
@@ -155,16 +161,18 @@ module GFS_driver
     call read_h2odata (Model%h2o_phys, Model%me, Model%master)
 
     do nb = 1,nblks
-      call Statein  (nb)%create (Init_parm%blksz(nb), Model)
-      call Stateout (nb)%create (Init_parm%blksz(nb), Model)
-      call Sfcprop  (nb)%create (Init_parm%blksz(nb), Model)
-      call Coupling (nb)%create (Init_parm%blksz(nb), Model)
-      call Grid     (nb)%create (Init_parm%blksz(nb), Model)
-      call Tbd      (nb)%create (Init_parm%blksz(nb), Model)
-      call Cldprop  (nb)%create (Init_parm%blksz(nb), Model)
-      call Radtend  (nb)%create (Init_parm%blksz(nb), Model)
-      !--- internal representation of diagnostics
-      call Diag     (nb)%create (Init_parm%blksz(nb), Model)
+      ix = Init_parm%blksz(nb)
+!     write(0,*)' ix in gfs_driver=',ix,' nb=',nb
+      call Statein  (nb)%create (ix, Model)
+      call Stateout (nb)%create (ix, Model)
+      call Sfcprop  (nb)%create (ix, Model)
+      call Coupling (nb)%create (ix, Model)
+      call Grid     (nb)%create (ix, Model)
+      call Tbd      (nb)%create (ix, Model)
+      call Cldprop  (nb)%create (ix, Model)
+      call Radtend  (nb)%create (ix, Model)
+!--- internal representation of diagnostics
+      call Diag     (nb)%create (ix, Model)
     enddo
 
     !--- populate the grid components
@@ -188,7 +196,7 @@ module GFS_driver
     !--- Call gfuncphys (funcphys.f) to compute all physics function tables.
     call gfuncphys ()
 
-    call gsmconst (Model%dtp, Model%me, .TRUE.)
+!   call gsmconst (Model%dtp, Model%me, .TRUE.) ! This is for Ferrier microphysics - notused - moorthi
 
     !--- define sigma level for radiation initialization 
     !--- The formula converting hybrid sigma pressure coefficients to sigma coefficients follows Eckermann (2009, MWR)
@@ -197,47 +205,63 @@ module GFS_driver
     allocate(si(Model%levr+1))
     si = (Init_parm%ak + Init_parm%bk * p_ref - Init_parm%ak(Model%levr+1)) &
              / (p_ref - Init_parm%ak(Model%levr+1))
-    call rad_initialize (si, Model%levr, Model%ictm, Model%isol, &
-           Model%ico2, Model%iaer, Model%ialb, Model%iems,       &
-           Model%ntcw, Model%num_p2d,  Model%num_p3d,            &
-           Model%npdf3d, Model%ntoz,                             &
-           Model%iovr_sw, Model%iovr_lw, Model%isubc_sw,         &
-           Model%isubc_lw, Model%crick_proof, Model%ccnorm,      &
-           Model%imp_physics,                                    &
-           Model%norad_precip, Model%idate,Model%iflip, Model%me)
+
+    call rad_initialize (si,   Model%levr,         Model%ictm,    Model%isol,     &
+           Model%ico2,         Model%iaer,         Model%ialb,    Model%iems,     &
+           Model%ntcw,         Model%num_p2d,      Model%num_p3d, Model%npdf3d,   &
+           Model%ntoz,         Model%iovr_sw,      Model%iovr_lw, Model%isubc_sw, &
+           Model%isubc_lw,     Model%crick_proof,  Model%ccnorm,                  &
+           Model%imp_physics,  Model%norad_precip, Model%idate,   Model%iflip,  Model%me)
     deallocate (si)
 
-    !--- initialize Morrison-Gettleman microphysics
-!   if (Model%ncld == 2) then
-    if(Model%imp_physics == 8) then             !--- initialize Thompson Cloud microphysics
-       call thompson_init()                     !--- add aerosol version later 
-       if(Model%do_shoc) then 
-          print *,'SHOC is not currently compatible with Thompson MP -- shutting down'
-          stop 
-       endif 
-       if(Model%ltaerosol) then 
-          print *,'Aerosol awareness is not included in this version of Thompson MP -- shutting down'
-          stop 
-       endif 
-    else if(Model%imp_physics == 6) then        !--- initialize WSM6 Cloud microphysics
-       call  wsm6init()
-       if(Model%do_shoc) then 
-          print *,'SHOC is not currently compatible with WSM6 -- shutting down'
-          stop 
-       endif 
-       
-    else if(Model%imp_physics == 11) then       !--- initialize GFDL Cloud microphysics
+!   microphysics initialization calls
+!   --------------------------------- 
+
+    if (Model%imp_physics == 10) then          !--- initialize Morrison-Gettleman microphysics
+      if (Model%fprcp <= 0) then
+        call ini_micro (Model%mg_dcs, Model%mg_qcvar, Model%mg_ts_auto_ice)
+      else
+        call micro_mg_init( kind_phys, gravit, rair, rh2o, cpair,          &
+                            tmelt, latvap, latice, 1.01_kind_phys,         &
+                            Model%mg_dcs,Model%mg_ts_auto_ice,             &
+                            Model%mg_qcvar,                                &
+                            Model%microp_uniform, Model%do_cldice,         &
+                            Model%hetfrz_classnuc,                         &
+!                          .false., .true., .false.,                       &
+!                          'in_cloud        ', 2._kind_phys,               &
+!                          .true., .true., .false.,                        &
+                           'max_overlap     ', 2._kind_phys,               &
+                           .true., .true.,                                 &
+                           .false., .false., 100.e6_kind_phys, 0.15e6_kind_phys )
+      endif
+      call aer_cloud_init ()
+!
+    elseif (Model%imp_physics == 8) then       !--- initialize Thompson Cloud microphysics
+      if(Model%do_shoc) then 
+        print *,'SHOC is not currently compatible with Thompson MP -- shutting down'
+        stop 
+      endif 
+      call thompson_init()                     !--- add aerosol version later 
+      if(Model%ltaerosol) then 
+        print *,'Aerosol awareness is not included in this version of Thompson MP -- shutting down'
+        stop 
+      endif 
+!
+    elseif(Model%imp_physics == 6) then        !--- initialize WSM6 Cloud microphysics
+      if(Model%do_shoc) then 
+        print *,'SHOC is not currently compatible with WSM6 -- shutting down'
+        stop 
+      endif 
+      call  wsm6init()
+!      
+    else if(Model%imp_physics == 11) then      !--- initialize GFDL Cloud microphysics
+      if(Model%do_shoc) then 
+         print *,'SHOC is not currently compatible with GFDL MP -- shutting down'
+         stop 
+      endif 
        call gfdl_cloud_microphys_init (Model%me, Model%master, Model%nlunit, Model%input_nml_file, &
                                        Init_parm%logunit, Model%fn_nml)
-       if(Model%do_shoc) then 
-          print *,'SHOC is not currently compatible with GFDL MP -- shutting down'
-          stop 
-       endif 
-    else if(Model%imp_physics == 10) then       !--- initialize MG Cloud microphysics
-        call ini_micro (Model%mg_dcs, Model%mg_qcvar, Model%mg_ts_auto_ice)
-        call aer_cloud_init ()
     endif 
-!   endif
 
     !--- initialize ras
     if (Model%ras) call ras_init (Model%levs, Model%me)
@@ -288,7 +312,7 @@ module GFS_driver
     type(GFS_radtend_type),   intent(inout) :: Radtend(:)
     type(GFS_diag_type),      intent(inout) :: Diag(:)
     !--- local variables
-    integer :: nb, nblks,k
+    integer :: nb, nblks, k
     real(kind=kind_phys) :: rinc(5)
     real(kind=kind_phys) :: sec
 
@@ -443,7 +467,7 @@ module GFS_driver
  
            !negative humidity check
            qnew = Statein%qgrs(i,k,1)+qpert
-           if (qnew .GE. 1.0e-10) then
+           if (qnew >= 1.0e-10) then
               Stateout%gq0(i,k,1) = qnew
               Stateout%gt0(i,k)   = Statein%tgrs(i,k) + tpert + Tbd%dtdtr(i,k)
            endif
@@ -508,8 +532,8 @@ module GFS_driver
 
     nblks = size(blksz,1)
 
-    call radupdate (Model%idat, Model%jdat, Model%fhswr, Model%dtf, Model%lsswr, &
-                    Model%me, Model%slag, Model%sdec, Model%cdec, Model%solcon )
+    call radupdate (Model%idat, Model%jdat, Model%fhswr, Model%dtf,  Model%lsswr, &
+                    Model%me,   Model%slag, Model%sdec,  Model%cdec, Model%solcon)
 
     !--- set up random seed index in a reproducible way for entire cubed-sphere face (lat-lon grid)
     if ((Model%isubc_lw==2) .or. (Model%isubc_sw==2)) then
@@ -523,7 +547,7 @@ module GFS_driver
       do j = 1,Model%ny
         do i = 1,Model%nx
           ix = ix + 1
-          if (ix .gt. blksz(nb)) then
+          if (ix > blksz(nb)) then
             ix = 1
             nb = nb + 1
           endif
@@ -607,7 +631,7 @@ module GFS_driver
         do j = 1,Model%ny
           do i = 1,Model%nx
             ix = ix + 1
-            if (ix .gt. blksz(nb)) then
+            if (ix > blksz(nb)) then
               ix = 1
               nb = nb + 1
             endif
@@ -620,7 +644,7 @@ module GFS_driver
     !--- o3 interpolation
     if (Model%ntoz > 0) then
       do nb = 1, nblks
-        call ozinterpol (Model%me, blksz(nb), Model%idate, Model%fhour, &
+        call ozinterpol (Model%me, blksz(nb), Model%idate, Model%fhour,     &
                          Grid(nb)%jindx1_o3, Grid(nb)%jindx2_o3,            &
                          Tbd(nb)%ozpl, Grid(nb)%ddy_o3)
       enddo
@@ -661,7 +685,7 @@ module GFS_driver
     do j = 1,size(xlon,2)
       do i = 1,size(xlon,1)
         ix=ix+1
-        if (ix .gt. blksz) then
+        if (ix > blksz) then
           nb = nb + 1
           ix = 1
         endif

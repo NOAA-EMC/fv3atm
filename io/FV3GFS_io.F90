@@ -15,8 +15,8 @@ module FV3GFS_io_mod
 !
 !--- FMS/GFDL modules
   use block_control_mod,  only: block_control_type
-  use mpp_mod,            only: mpp_error, mpp_pe, mpp_root_pe, &
-                                mpp_chksum, NOTE, FATAL
+  use mpp_mod,            only: mpp_error,  mpp_pe, mpp_root_pe, &
+                                mpp_chksum, NOTE,   FATAL
   use fms_mod,            only: file_exist, stdout
   use fms_io_mod,         only: restart_file_type, free_restart_type, &
                                 register_restart_field,               &
@@ -71,9 +71,9 @@ module FV3GFS_io_mod
 
 !-RAB
   type data_subtype
-    real(kind=kind_phys), dimension(:),   pointer :: var2 => NULL()
+    real(kind=kind_phys), dimension(:),   pointer :: var2  => NULL()
     real(kind=kind_phys), dimension(:),   pointer :: var21 => NULL()
-    real(kind=kind_phys), dimension(:,:),   pointer :: var3 => NULL()
+    real(kind=kind_phys), dimension(:,:), pointer :: var3  => NULL()
   end type data_subtype
   !--- data type definition for use with GFDL FMS diagnostic manager until write component is working
   type gfdl_diag_type

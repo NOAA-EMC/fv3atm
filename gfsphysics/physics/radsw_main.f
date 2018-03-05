@@ -402,6 +402,7 @@
 !!  This model is provided as is without any express or implied warranties.
 !!  (http://www.rtweb.aer.com/)
 !! @{
+!     FEB 2017    A.Cheng   - add odpth output, effective radius input !
 !========================================!
       module module_radsw_main           !
 !........................................!
@@ -780,7 +781,7 @@
       real (kind=kind_phys), dimension(npts,4),    intent(in) :: sfcalb
 
       real (kind=kind_phys), dimension(npts,nlay,9),intent(in):: gasvmr
-      real (kind=kind_phys), dimension(npts,nlay,9),intent(in):: clouds
+      real (kind=kind_phys), dimension(npts,nlay,11):: clouds
       real (kind=kind_phys), dimension(npts,nlay,nbdsw,3),intent(in)::  &
      &       aerosols
 
@@ -1149,7 +1150,9 @@
             enddo
           enddo
         endif   ! end if_zcf1_block
-
+        do k = 1, nlay
+          clouds(j1,k,10) = taucw(k,10)
+        end do 
 !> -# Call setcoef() to compute various coefficients needed in
 !!    radiative transfer calculations.
         call setcoef                                                    &

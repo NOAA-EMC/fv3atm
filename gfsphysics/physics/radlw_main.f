@@ -229,6 +229,8 @@
 !                    cloud-snow optical property scheme.                   !
 !       nov 2012,  yu-tai hou        -- modified control parameters thru   !
 !                     module 'physparam'.                                  !  
+!       FEB 2017    A.Cheng   - add odpth output, effective radius input   !
+!                                                                          !
 !                                                                          !
 !!!!!  ==============================================================  !!!!!
 !!!!!                         end descriptions                         !!!!!
@@ -641,8 +643,8 @@
       real (kind=kind_phys), dimension(npts,nlay), intent(in) :: plyr,  &
      &       tlyr, qlyr, olyr
 
-      real (kind=kind_phys), dimension(npts,nlay,9),intent(in):: gasvmr
-      real (kind=kind_phys), dimension(npts,nlay,9),intent(in):: clouds
+      real (kind=kind_phys), dimension(npts,nlay,9), intent(in):: gasvmr
+      real (kind=kind_phys), dimension(npts,nlay,11)           :: clouds
 
       real (kind=kind_phys), dimension(npts), intent(in) :: sfemis,     &
      &       sfgtmp
@@ -1044,6 +1046,10 @@
           cldfmc = f_zero
           taucld = f_zero
         endif
+        do k = 1, nlay
+          clouds(iplon,k,11) = taucld(6,k)                              &
+     &                       + taucld(7,k) + taucld(8,k)
+        end do
 
 !     if (lprnt) then
 !      print *,' after cldprop'
@@ -4672,8 +4678,8 @@
         jmo3p = jmo3 + 1
 
         if (specparm < 0.125) then
-          p0 = fs - f_one
-          p40 = p0**4
+          p0   = fs - f_one
+          p40  = p0**4
           fk00 = p40
           fk10 = f_one - p0 - 2.0*p40
           fk20 = p0 + p40
@@ -4685,8 +4691,8 @@
           id200 = ind0 + 2
           id210 = ind0 +11
         elseif (specparm > 0.875) then
-          p0 = -fs
-          p40 = p0**4
+          p0   = -fs
+          p40  = p0**4
           fk00 = p40
           fk10 = f_one - p0 - 2.0*p40
           fk20 = p0 + p40
@@ -4718,8 +4724,8 @@
         fac210 = fk20 * fac10(k)
 
         if (specparm1 < 0.125) then
-          p1 = fs1 - f_one
-          p41 = p1**4
+          p1   = fs1 - f_one
+          p41  = p1**4
           fk01 = p41
           fk11 = f_one - p1 - 2.0*p41
           fk21 = p1 + p41
@@ -4731,8 +4737,8 @@
           id201 = ind1 + 2
           id211 = ind1 +11
         elseif (specparm1 > 0.875) then
-          p1 = -fs1
-          p41 = p1**4
+          p1   = -fs1
+          p41  = p1**4
           fk01 = p41
           fk11 = f_one - p1 - 2.0*p41
           fk21 = p1 + p41

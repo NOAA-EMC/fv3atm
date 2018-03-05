@@ -40,14 +40,13 @@
 !
 !    locals
 !
-      integer i,iprt,is,k,kk,km1,kmpbl
-      integer kx1(im)
+      integer i,iprt,is,k,kk,km1,kmpbl,kp1
 !
       logical  pblflg(im), sfcflg(im), flg(im)
 
       real(kind=kind_phys), dimension(im) ::  evap, heat, phih, phim
      &,                     rbdn, rbup, sflux, z0, crb, zol, thermal
-     &,                     stress, beta, tx1, tx2
+     &,                     stress, beta, tx1
 !
       real(kind=kind_phys), dimension(im,km)  :: theta, thvx, zl, a1, ad
       real(kind=kind_phys), dimension(im,km-1):: xkzo, xkzmo, al, au
@@ -57,18 +56,19 @@
       real(kind=kind_phys) zi(im,km+1), a2(im,km*(ntrac+1))
 !
       real(kind=kind_phys) dsdz2,  dsdzq,  dsdzt, dsig, dt2, rdt
-     &,                    dtodsd, dtodsu, rdz,   tem,  tem1, ptem
+     &,                    dtodsd, dtodsu, rdz,   tem,  tem1
      &,                    ttend,  utend, vtend,  qtend
      &,                    spdk2,  rbint, ri,     zol1, robn, bvf2
 !
-      real(kind=kind_phys), parameter :: gravi=1.0/grav, zolcr=0.2,
-     &                      zolcru=-0.5, rimin=-100.,    sfcfrac=0.1,
-     &                      crbcon=0.25, crbmin=0.15,    crbmax=0.35,
-     &                      qmin=1.e-8,  zfmin=1.e-8,    qlmin=1.e-12,
-     &                      aphi5=5.,    aphi16=16.,     f0=1.e-4
-     &,                     cont=cp/grav, conq=hvap/grav,conw=1.0/grav
-     &,                     dkmin=0.0,    dkmax=1000.,   xkzminv=0.3
-     &,                     gocp=grav/cp, prmin=0.25,    prmax=4.0
+      real(kind=kind_phys), parameter ::  gravi=1.0/grav, zolcr=0.2,
+     &                      zolcru=-0.5,  rimin=-100.,    sfcfrac=0.1,
+     &                      crbcon=0.25,  crbmin=0.15,    crbmax=0.35,
+     &                      qmin=1.e-8,   zfmin=1.e-8,    qlmin=1.e-12,
+     &                      aphi5=5.,     aphi16=16.,     f0=1.e-4
+     &,                     cont=cp/grav, conq=hvap/grav, conw=1.0/grav
+     &,                     dkmin=0.0,    dkmax=1000.
+!    &,                     dkmin=0.0,    dkmax=1000.,    xkzminv=0.3
+     &,                     gocp=grav/cp, prmin=0.25,     prmax=4.0
      &,                     vk=0.4, cfac=6.5
 !
 !-----------------------------------------------------------------------
@@ -77,7 +77,7 @@
 !
       if (ix < im) stop
 !
-      if (lprnt) write(0,*)' in moninshoc tsea=',tsea(ipr)
+!     if (lprnt) write(0,*)' in moninshoc tsea=',tsea(ipr)
       dt2   = delt
       rdt   = 1. / dt2
       km1   = km - 1
@@ -102,31 +102,18 @@
 !               Setup backgrond diffision
       do i=1,im
         prnum(i,km) = 1.0
-        kx1(i) = 1
         tx1(i) = 1.0 / prsi(i,1)
-        tx2(i) = tx1(i)
       enddo
       do k = 1,km1
         do i=1,im
           xkzo(i,k)  = 0.0
           xkzmo(i,k) = 0.0
           if (k < kinver(i)) then
-!                                  vertical background diffusivity
-            ptem      = prsi(i,k+1) * tx1(i)
-            tem1      = 1.0 - ptem
-            tem1      = tem1 * tem1 * 10.0
-            xkzo(i,k) = xkzm_h * min(1.0, exp(-tem1))
-
-!                                  vertical background diffusivity for momentum
-            if (ptem >= xkzm_s) then
-              xkzmo(i,k) = xkzm_m
-              kx1(i)     = k + 1
-            else
-              if (k == kx1(i) .and. k > 1) tx2(i) = 1.0 / prsi(i,k)
-              tem1 = 1.0 - prsi(i,k+1) * tx2(i)
-              tem1 = tem1 * tem1 * 5.0
-              xkzmo(i,k) = xkzm_m * min(1.0, exp(-tem1))
-            endif
+!    vertical background diffusivity for heat and momentum
+            tem1       = 1.0 - prsi(i,k+1) * tx1(i)
+            tem1       = min(1.0, exp(-tem1 * tem1 * 10.0))
+            xkzo(i,k)  = xkzm_h * tem1
+            xkzmo(i,k) = xkzm_m * tem1
           endif
         enddo
       enddo
@@ -137,16 +124,16 @@
 !
 !  diffusivity in the inversion layer is set to be xkzminv (m^2/s)
 !
-      do k = 1,kmpbl
-        do i=1,im
-          if(zi(i,k+1) > 250.) then
-            tem1 = (t1(i,k+1)-t1(i,k)) * rdzt(i,k)
-            if(tem1 > 1.e-5) then
-               xkzo(i,k)  = min(xkzo(i,k),xkzminv)
-            endif
-          endif
-        enddo
-      enddo
+!     do k = 1,kmpbl
+!       do i=1,im
+!         if(zi(i,k+1) > 250.) then
+!           tem1 = (t1(i,k+1)-t1(i,k)) * rdzt(i,k)
+!           if(tem1 > 1.e-5) then
+!              xkzo(i,k)  = min(xkzo(i,k),xkzminv)
+!           endif
+!         endif
+!       enddo
+!     enddo
 !
 !
       do i = 1,im
@@ -170,6 +157,7 @@
         enddo
       enddo
 !
+!     if (lprnt) write(0,*)' heat=',heat(ipr),' evap=',evap(ipr)
       do i = 1,im
          sflux(i)  = heat(i) + evap(i)*fv*theta(i,1)
          if(.not.sfcflg(i) .or. sflux(i) <= 0.) pblflg(i)=.false.
@@ -305,29 +293,30 @@
 !  compute Prandtl number above boundary layer
 !
       do k = 1, km1
+        kp1 = k + 1
         do i=1,im
           if(k >= kpbl(i)) then
             rdz  = rdzt(i,k)
-            tem  = u1(i,k)-u1(i,k+1)
-            tem1 = v1(i,k)-v1(i,k+1)
+            tem  = u1(i,k) - u1(i,kp1)
+            tem1 = v1(i,k) - v1(i,kp1)
             tem  = (tem*tem + tem1*tem1) * rdz * rdz
-            bvf2 = (0.5*grav)*(thvx(i,k+1)-thvx(i,k))*rdz
-     &           / (t1(i,k)+t1(i,k+1))
+            bvf2 = (0.5*grav)*(thvx(i,kp1)-thvx(i,k))*rdz
+     &           / (t1(i,k)+t1(i,kp1))
             ri   = max(bvf2/tem,rimin)
             if(ri < 0.) then ! unstable regime
-              prnum(i,k) = 1.0
+              prnum(i,kp1) = 1.0
             else
-              prnum(i,k) = min(1.0 + 2.1*ri, prmax)
+              prnum(i,kp1) = min(1.0 + 2.1*ri, prmax)
             endif
           elseif (k > 1) then
-            prnum(i,k) = prnum(i,1)
+            prnum(i,kp1) = prnum(i,1)
           endif
 !
-!         prnum(i,k) = 1.0
-          prnum(i,k) = max(prmin, min(prmax, prnum(i,k)))
-          tem      = tkh(i,k+1) * prnum(i,k)
+!         prnum(i,kp1) = 1.0
+          prnum(i,kp1) = max(prmin, min(prmax, prnum(i,kp1)))
+          tem      = tkh(i,kp1) * prnum(i,kp1)
           dku(i,k) = max(min(tem+xkzmo(i,k),       dkmax), xkzmo(i,k))
-          dkt(i,k) = max(min(tkh(i,k+1)+xkzo(i,k), dkmax), xkzo(i,k))
+          dkt(i,k) = max(min(tkh(i,kp1)+xkzo(i,k), dkmax), xkzo(i,k))
         enddo
       enddo
 !
@@ -338,6 +327,8 @@
          a1(i,1) = t1(i,1)   + beta(i) * heat(i)
          a2(i,1) = q1(i,1,1) + beta(i) * evap(i)
       enddo
+!     if (lprnt) write(0,*)' a1=',a1(ipr,1),' beta=',beta(ipr)
+!    &,' heat=',heat(ipr), ' t1=',t1(ipr,1)
 
       if(ntrac > 2) then
         do k = 2, ntrac-1
@@ -392,6 +383,8 @@
             ttend      = (a1(i,k)-t1(i,k))   * rdt
             qtend      = (a2(i,k)-q1(i,k,1)) * rdt
             tau(i,k)   = tau(i,k)   + ttend
+!     if(lprnt .and. i==ipr .and. k<11) write(0,*)' tau=',tau(ipr,k)
+!    &,' ttend=',ttend,' a1=',a1(ipr,k),' t1=',t1(ipr,k)
             rtg(i,k,1) = rtg(i,k,1) + qtend
             dtsfc(i)   = dtsfc(i)   + cont*del(i,k)*ttend
             dqsfc(i)   = dqsfc(i)   + conq*del(i,k)*qtend

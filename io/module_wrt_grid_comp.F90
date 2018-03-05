@@ -833,7 +833,7 @@
                         ,rc       =RC)
 
       call ESMF_TimeGet(time=wrt_int_state%IO_BASETIME,yy=date(1),mm=date(2),dd=date(3),h=date(4), &
-                      m=date(5),s=date(6),rc=rc)
+                        m=date(5),s=date(6),rc=rc)
       if(wrt_int_state%mype == lead_write_task) print *,'in wrt initial, io_baseline time=',date,'rc=',rc
       idate(1:6) = date(1:6)
       idate(7) = 1

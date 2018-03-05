@@ -302,10 +302,10 @@ module module_write_nemsio
 !
 !**  OPEN NEMSIO FILE
 !
-    if(mype==0) print *,'in write_nemsio,bf nemsio_open, filename=',trim(filename), &
-      'idate=',idate,'nfour=',NF_HOURS,NF_MINUTES,NF_SECONDS, 'mybdl=',mybdl,&
-      'dim=',im,jm,lm,'nmeta=',nmeta,'idrt=',idrt,'nsoil=',nsoil, &
-      'ntrac=',ntrac,'nrec=',nrec(mybdl),'extrameta=',extrameta(mybdl), &
+    if(mype==0) print *,'in write_nemsio,bf nemsio_open, filename=',trim(filename),    &
+      'idate=',idate,'nfour=',NF_HOURS,NF_MINUTES,NF_SECONDS, 'mybdl=',mybdl,          &
+      'dim=',im,jm,lm,'nmeta=',nmeta,'idrt=',idrt,'nsoil=',nsoil,                      &
+      'ntrac=',ntrac,'nrec=',nrec(mybdl),'extrameta=',extrameta(mybdl),                &
       'vcoord=',vcoord(1:5,1,1),'nfhours=',nf_hours,nf_minutes,nfseconds,nfsecond_den, &
       'idsl=',idsl(mybdl),'idvc=',idvc(mybdl),idvm(mybdl)
 !      'nmetavari=',nmetavari(mybdl),'nmetavarc=',nmetavarc(mybdl)
@@ -318,28 +318,28 @@ module module_write_nemsio
  
     if(mype==0) then
       nfseconds = nf_seconds*nfsecond_den + nfsecond_num
-      call nemsio_open(nemsiofile,trim(FILENAME),'write',rc,    &
-        modelname="FV3GFS", gdatatype="bin4",                   &
-        idate=idate,nfhour=nf_hours, nfminute=nf_minutes,       &
-        nfsecondn=nfseconds, nfsecondd=nfsecond_den,            &
-        dimx=im,dimy=jm,dimz=lm, nmeta=nmeta,idrt=idrt,         &
-        nsoil=nsoil,ntrac=ntrac,nrec=nrec(mybdl), ncldt=ncld,   &
-        idsl=idsl(mybdl),idvc=idvc(mybdl), idvm=idvm(mybdl),    &
-        vcoord=vcoord, lon=lon1d,lat=lat1d,  &
+      call nemsio_open(nemsiofile,trim(FILENAME),'write',rc,             &
+        modelname="FV3GFS", gdatatype="bin4",                            &
+        idate=idate,nfhour=nf_hours, nfminute=nf_minutes,                &
+        nfsecondn=nfseconds, nfsecondd=nfsecond_den,                     &
+        dimx=im,dimy=jm,dimz=lm, nmeta=nmeta,idrt=idrt,                  &
+        nsoil=nsoil,ntrac=ntrac,nrec=nrec(mybdl), ncldt=ncld,            &
+        idsl=idsl(mybdl),idvc=idvc(mybdl), idvm=idvm(mybdl),             &
+        vcoord=vcoord, lon=lon1d,lat=lat1d,                              &
         extrameta=extrameta(mybdl),recname=RECNAME(1:nrec(mybdl),mybdl), &
-        reclevtyp=RECLEVTYP(1:nrec(mybdl),mybdl),  &
-        reclev=RECLEV(1:nrec(mybdl),mybdl),        &
-        nmetavari=nmetavari(mybdl), nmetavarr=nmetavarr4(mybdl),        &
+        reclevtyp=RECLEVTYP(1:nrec(mybdl),mybdl),                        &
+        reclev=RECLEV(1:nrec(mybdl),mybdl),                              &
+        nmetavari=nmetavari(mybdl), nmetavarr=nmetavarr4(mybdl),         &
         nmetavarc=nmetavarc(mybdl), nmetaaryi=nmetaaryi(mybdl),          &
-        variname=variname(1:nmetavari(mybdl),mybdl), &
-        varival=varival(1:nmetavari(mybdl),mybdl),   &
-        varrname=varr4name(1:nmetavarr4(mybdl),mybdl), &
-        varrval=varr4val(1:nmetavarr4(mybdl),mybdl),   &
-        varcname=varcname(1:nmetavarc(mybdl),mybdl), &
-        varcval=varcval(1:nmetavarc(mybdl),mybdl),   &
-        aryiname=aryiname(1:nmetaaryi(mybdl),mybdl), &  
-        aryilen=aryilen(1:nmetaaryi(mybdl),mybdl),   & 
-        aryival=aryival(1:maxval(aryilen(1:nmetaaryi(mybdl),mybdl)),&
+        variname=variname(1:nmetavari(mybdl),mybdl),                     &
+        varival=varival(1:nmetavari(mybdl),mybdl),                       &
+        varrname=varr4name(1:nmetavarr4(mybdl),mybdl),                   &
+        varrval=varr4val(1:nmetavarr4(mybdl),mybdl),                     &
+        varcname=varcname(1:nmetavarc(mybdl),mybdl),                     &
+        varcval=varcval(1:nmetavarc(mybdl),mybdl),                       &
+        aryiname=aryiname(1:nmetaaryi(mybdl),mybdl),                     &  
+        aryilen=aryilen(1:nmetaaryi(mybdl),mybdl),                       & 
+        aryival=aryival(1:maxval(aryilen(1:nmetaaryi(mybdl),mybdl)),     &
           1:nmetaaryi(mybdl),mybdl) )
        if(rc/=0) print *,'nemsio_open, file=',trim(filename),' iret=',rc
 
@@ -522,7 +522,7 @@ module module_write_nemsio
     if(allocated(lon1d))  deallocate(lon1d)
     if(allocated(lat1d))  deallocate(lat1d)
     if(allocated(vcoord)) deallocate(vcoord)
-    if(allocated(idsl)) deallocate(idsl, idvc,idvm)
+    if(allocated(idsl))   deallocate(idsl, idvc,idvm)
     deallocate(irecv)
     deallocate(idisp)
     deallocate(fieldcount)

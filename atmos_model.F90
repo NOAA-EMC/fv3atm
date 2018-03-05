@@ -81,9 +81,9 @@ use block_control_mod,  only: block_control_type, define_blocks_packed
 use IPD_typedefs,       only: IPD_init_type, IPD_control_type, &
                               IPD_data_type, IPD_diag_type,    &
                               IPD_restart_type, kind_phys
-use IPD_driver,         only: IPD_initialize, IPD_setup_step, &
-                              IPD_radiation_step,             &
-                              IPD_physics_step1,              &
+use IPD_driver,         only: IPD_initialize, IPD_setup_step,  &
+                              IPD_radiation_step,              &
+                              IPD_physics_step1,               &
                               IPD_physics_step2
 use FV3GFS_io_mod,      only: FV3GFS_restart_read, FV3GFS_restart_write, &
                               FV3GFS_IPD_checksum,                       &
@@ -119,13 +119,10 @@ public atmos_model_restart
      type(grid_box_type)           :: grid               ! hold grid information needed for 2nd order conservative flux exchange 
                                                          ! to calculate gradient on cubic sphere grid.
      integer                       :: layout(2)          ! computer task laytout
-     real(kind=8), pointer, dimension(:) :: ak
-     real(kind=8), pointer, dimension(:) :: bk
-     real(kind=8), pointer, dimension(:,:,:) :: layer_hgt
-     real(kind=8), pointer, dimension(:,:,:) :: level_hgt
-     real(kind=kind_phys), pointer, dimension(:,:) :: dx
-     real(kind=kind_phys), pointer, dimension(:,:) :: dy
-     real(kind=8), pointer, dimension(:,:) :: area
+     real(kind=8), pointer, dimension(:)           :: ak, bk
+     real(kind=kind_phys), pointer, dimension(:,:) :: dx, dy
+     real(kind=8), pointer, dimension(:,:)         :: area
+     real(kind=8), pointer, dimension(:,:,:)       :: layer_hgt, level_hgt
  end type atmos_data_type
 !</PUBLICTYPE >
 
@@ -137,8 +134,10 @@ logical :: chksum_debug = .false.
 logical :: dycore_only  = .false.
 logical :: debug        = .false.
 logical :: sync         = .false.
-real, dimension(2048) :: fdiag = 0.
-namelist /atmos_model_nml/ blocksize, chksum_debug, dycore_only, debug, sync, fdiag
+integer, parameter     :: maxhr = 4096
+real, dimension(maxhr) :: fdiag = 0.
+real                   :: fhmax=240.0, fhmaxhf=120.0, fhout=3.0, fhouthf=1.0
+namelist /atmos_model_nml/ blocksize, chksum_debug, dycore_only, debug, sync, fdiag, fhmax, fhmaxhf, fhout, fhouthf
 type (time_type) :: diag_time
 
 !--- concurrent and decoupled radiation and physics variables
@@ -223,9 +222,11 @@ subroutine update_atmos_radiation_physics (Atmos)
       call mpp_clock_end(setupClock)
 
       if (mpp_pe() == mpp_root_pe() .and. debug) write(6,*) "radiation driver"
+
 !--- execute the IPD atmospheric radiation subcomponent (RRTM)
+
       call mpp_clock_begin(radClock)
-!$OMP parallel do default (none) &
+!$OMP parallel do default (none)       &
 !$OMP            schedule (dynamic,1), &
 !$OMP            shared   (Atm_block, IPD_Control, IPD_Data, IPD_Diag, IPD_Restart) &
 !$OMP            private  (nb)
@@ -240,7 +241,9 @@ subroutine update_atmos_radiation_physics (Atmos)
       endif
 
       if (mpp_pe() == mpp_root_pe() .and. debug) write(6,*) "physics driver"
+
 !--- execute the IPD atmospheric physics step1 subcomponent (main physics driver)
+
       call mpp_clock_begin(physClock)
 !$OMP parallel do default (none) &
 !$OMP            schedule (dynamic,1), &
@@ -257,7 +260,9 @@ subroutine update_atmos_radiation_physics (Atmos)
       endif
 
       if (mpp_pe() == mpp_root_pe() .and. debug) write(6,*) "stochastic physics driver"
+
 !--- execute the IPD atmospheric physics step2 subcomponent (stochastic physics driver)
+
       call mpp_clock_begin(physClock)
 !$OMP parallel do default (none) &
 !$OMP            schedule (dynamic,1), &
@@ -301,15 +306,15 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
   integer :: isd, ied, jsd, jed
   integer :: blk, ibs, ibe, jbs, jbe
   real(kind=kind_phys) :: dt_phys
-  real, allocatable :: q(:,:,:,:), p_half(:,:,:)
-  character(len=80) :: control
-  character(len=64) :: filename, filename2, pelist_name
-  character(len=132) :: text
-  logical :: p_hydro, hydro, fexist
-  logical, save :: block_message = .true.
-  type(IPD_init_type) :: Init_parm
-  integer :: bdat(8), cdat(8)
-  integer :: ntracers
+  real, allocatable    :: q(:,:,:,:), p_half(:,:,:)
+  character(len=80)    :: control
+  character(len=64)    :: filename, filename2, pelist_name
+  character(len=132)   :: text
+  logical              :: p_hydro, hydro, fexist
+  logical, save        :: block_message = .true.
+  type(IPD_init_type)  :: Init_parm
+  integer              :: bdat(8), cdat(8)
+  integer              :: ntracers, maxhf, maxh
   character(len=32), allocatable, target :: tracer_names(:)
 !-----------------------------------------------------------------------
 
@@ -344,6 +349,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
  10     call close_file (unit)
 #endif
    endif
+
 !-----------------------------------------------------------------------
    call atmosphere_resolution (nlon, nlat, global=.false.)
    call atmosphere_resolution (mlon, mlat, global=.true.)
@@ -416,7 +422,9 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
 #endif
 
    call IPD_initialize (IPD_Control, IPD_Data, IPD_Diag, IPD_Restart, Init_parm)
-   Atm(mytile)%flagstruct%do_skeb=IPD_Control%do_skeb
+
+   Atm(mytile)%flagstruct%do_skeb = IPD_Control%do_skeb
+
 !  initialize the IAU module
    call iau_initialize (IPD_Control,IAU_data,Init_parm)
 
@@ -453,9 +461,23 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
 #ifdef GFS_PHYS
 !--- check fdiag to see if it is an interval or a list
    if (nint(fdiag(2)) == 0) then
-     do i = 2, size(fdiag,1)
-       fdiag(i) = fdiag(i-1) + fdiag(1)
-     enddo
+     if (fhmaxhf > 0) then
+       maxhf = fhmaxhf / fhouthf
+       maxh  = maxhf + (fhmax-fhmaxhf) / fhout
+       fdiag(1) = fhouthf
+       do i=2,maxhf
+        fdiag(i) = fdiag(i-1) + fhouthf
+       enddo
+       do i=maxhf+1,maxh
+         fdiag(i) = fdiag(i-1) + fhout
+       enddo
+     else
+       maxh  = fhmax / fhout
+       fdiag(1) = fdiag(1) + fhout
+       do i = 2, maxh
+         fdiag(i) = fdiag(i-1) + fhout
+       enddo
+     endif
    endif
    if (mpp_pe() == mpp_root_pe()) write(6,*) "---fdiag",fdiag(1:40)
 #endif
@@ -521,8 +543,8 @@ subroutine update_atmos_model_state (Atmos)
 
     call get_time (Atmos%Time - diag_time, isec)
     call get_time (Atmos%Time - Atmos%Time_init, seconds)
-    if (mpp_pe() == mpp_root_pe()) write(6,*) "---isec,seconds",isec,seconds
     if (ANY(nint(fdiag(:)*3600.0) == seconds) .or. (IPD_Control%kdt == 1) ) then
+      if (mpp_pe() == mpp_root_pe()) write(6,*) "---isec,seconds",isec,seconds
       time_int = real(isec)
       time_intfull = real(seconds)
       if (mpp_pe() == mpp_root_pe()) write(6,*) ' gfs diags time since last bucket empty: ',time_int/3600.,'hrs'
@@ -530,8 +552,8 @@ subroutine update_atmos_model_state (Atmos)
       call gfdl_diag_output(Atmos%Time, Atm_block, IPD_Control%nx, IPD_Control%ny, &
                             IPD_Control%levs, 1, 1, 1.d0, time_int, time_intfull)
       if (mod(isec,3600*nint(IPD_Control%fhzero)) == 0) diag_time = Atmos%Time
+      call diag_send_complete_extra (Atmos%Time)
     endif
-    call diag_send_complete_extra (Atmos%Time)
 
  end subroutine update_atmos_model_state
 ! </SUBROUTINE>

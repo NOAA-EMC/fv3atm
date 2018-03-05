@@ -5430,8 +5430,8 @@ c ----------------------------------------------------------------------
 !
 !  --- ...  calc the ratio of the actual to the max psbl soil h2o content
 
-      factr1 = 0.2 / smcmax
-      factr2 = smc / smcmax
+      factr1 = min(1.0, max(0.0, 0.2/smcmax))
+      factr2 = min(1.0, max(0.0, smc/smcmax))
 
 !  --- ...  prep an expntl coef and calc the soil water diffusivity
 

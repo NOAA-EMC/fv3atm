@@ -111,20 +111,20 @@ module gfdl_cloud_microphys_mod
     ! cloud microphysics switchers
     
     integer :: icloud_f = 0 ! cloud scheme
-    integer :: irain_f = 0 ! cloud water to rain auto conversion scheme
+    integer :: irain_f  = 0 ! cloud water to rain auto conversion scheme
     
     logical :: de_ice = .false. ! to prevent excessive build - up of cloud ice from external sources
     logical :: sedi_transport = .true. ! transport of momentum in sedimentation
-    logical :: do_sedi_w = .false. ! transport of vertical motion in sedimentation
-    logical :: do_sedi_heat = .true. ! transport of heat in sedimentation
-    logical :: prog_ccn = .false. ! do prognostic ccn (yi ming's method)
-    logical :: do_qa = .true. ! do inline cloud fraction
-    logical :: rad_snow = .true. ! consider snow in cloud fraciton calculation
-    logical :: rad_graupel = .true. ! consider graupel in cloud fraction calculation
-    logical :: rad_rain = .true. ! consider rain in cloud fraction calculation
-    logical :: fix_negative = .false. ! fix negative water species
-    logical :: do_setup = .true. ! setup constants and parameters
-    logical :: p_nonhydro = .false. ! perform hydrosatic adjustment on air density
+    logical :: do_sedi_w = .false.     ! transport of vertical motion in sedimentation
+    logical :: do_sedi_heat = .true.   ! transport of heat in sedimentation
+    logical :: prog_ccn = .false.      ! do prognostic ccn (yi ming's method)
+    logical :: do_qa = .true.          ! do inline cloud fraction
+    logical :: rad_snow = .true.       ! consider snow in cloud fraciton calculation
+    logical :: rad_graupel = .true.    ! consider graupel in cloud fraction calculation
+    logical :: rad_rain = .true.       ! consider rain in cloud fraction calculation
+    logical :: fix_negative = .false.  ! fix negative water species
+    logical :: do_setup = .true.       ! setup constants and parameters
+    logical :: p_nonhydro = .false.    ! perform hydrosatic adjustment on air density
     
     real, allocatable :: table (:), table2 (:), table3 (:), tablew (:)
     real, allocatable :: des (:), des2 (:), des3 (:), desw (:)
@@ -168,25 +168,25 @@ module gfdl_cloud_microphys_mod
     
     ! conversion time scale
     
-    real :: tau_r2g = 900. ! rain freezing during fast_sat
-    real :: tau_smlt = 900. ! snow melting
-    real :: tau_g2r = 600. ! graupel melting to rain
-    real :: tau_imlt = 600. ! cloud ice melting
-    real :: tau_i2s = 1000. ! cloud ice to snow auto - conversion
-    real :: tau_l2r = 900. ! cloud water to rain auto - conversion
-    real :: tau_v2l = 150. ! water vapor to cloud water (condensation)
-    real :: tau_l2v = 300. ! cloud water to water vapor (evaporation)
-    real :: tau_g2v = 900. ! grapuel sublimation
-    real :: tau_v2g = 21600. ! grapuel deposition -- make it a slow process
+    real :: tau_r2g  = 900.   ! rain freezing during fast_sat
+    real :: tau_smlt = 900.   ! snow melting
+    real :: tau_g2r  = 600.   ! graupel melting to rain
+    real :: tau_imlt = 600.   ! cloud ice melting
+    real :: tau_i2s  = 1000.  ! cloud ice to snow auto - conversion
+    real :: tau_l2r  = 900.   ! cloud water to rain auto - conversion
+    real :: tau_v2l  = 150.   ! water vapor to cloud water (condensation)
+    real :: tau_l2v  = 300.   ! cloud water to water vapor (evaporation)
+    real :: tau_g2v  = 900.   ! grapuel sublimation
+    real :: tau_v2g  = 21600. ! grapuel deposition -- make it a slow process
     
     ! horizontal subgrid variability
     
-    real :: dw_land = 0.20 ! base value for subgrid deviation / variability over land
+    real :: dw_land  = 0.20 ! base value for subgrid deviation / variability over land
     real :: dw_ocean = 0.10 ! base value for ocean
     
     ! prescribed ccn
     
-    real :: ccn_o = 90. ! ccn over ocean (cm^ - 3)
+    real :: ccn_o = 90.  ! ccn over ocean (cm^ - 3)
     real :: ccn_l = 270. ! ccn over land (cm^ - 3)
     
     real :: rthresh = 10.0e-6 ! critical cloud drop radius (micro m)
@@ -222,10 +222,10 @@ module gfdl_cloud_microphys_mod
     ! lfo used * mixing ratio * = 1.e-4 (hail in lfo)
     real :: qs0_crt = 1.0e-3 ! snow to graupel density threshold (0.6e-3 in purdue lin scheme)
     
-    real :: c_paut = 0.55 ! autoconversion cloud water to rain (use 0.5 to reduce autoconversion)
+    real :: c_paut  = 0.55 ! autoconversion cloud water to rain (use 0.5 to reduce autoconversion)
     real :: c_psaci = 0.02 ! accretion: cloud ice to snow (was 0.1 in zetac)
-    real :: c_piacr = 5.0 ! accretion: rain to ice:
-    real :: c_cracw = 0.9 ! rain accretion efficiency
+    real :: c_piacr = 5.0  ! accretion: rain to ice:
+    real :: c_cracw = 0.9  ! rain accretion efficiency
     real :: c_pgacs = 2.0e-3 ! snow to graupel "accretion" eff. (was 0.1 in zetac)
     
     ! decreasing clin to reduce csacw (so as to reduce cloud water --- > snow)
@@ -257,12 +257,12 @@ module gfdl_cloud_microphys_mod
     ! cloud microphysics switchers
     
     logical :: fast_sat_adj = .false. ! has fast saturation adjustments
-    logical :: z_slope_liq = .true. ! use linear mono slope for autocconversions
-    logical :: z_slope_ice = .false. ! use linear mono slope for autocconversions
-    logical :: use_ccn = .false. ! must be true when prog_ccn is false
-    logical :: use_ppm = .false. ! use ppm fall scheme
-    logical :: mono_prof = .true. ! perform terminal fall with mono ppm scheme
-    logical :: mp_print = .false. ! cloud microphysics debugging printout
+    logical :: z_slope_liq  = .true.  ! use linear mono slope for autocconversions
+    logical :: z_slope_ice  = .false. ! use linear mono slope for autocconversions
+    logical :: use_ccn      = .false. ! must be true when prog_ccn is false
+    logical :: use_ppm      = .false. ! use ppm fall scheme
+    logical :: mono_prof    = .true.  ! perform terminal fall with mono ppm scheme
+    logical :: mp_print     = .false. ! cloud microphysics debugging printout
     
     ! real :: global_area = - 1.
     
@@ -272,28 +272,28 @@ module gfdl_cloud_microphys_mod
     ! namelist
     ! -----------------------------------------------------------------------
     
-    namelist / gfdl_cloud_microphysics_nml / &
+    namelist / gfdl_cloud_microphysics_nml /                                  &
         mp_time, t_min, t_sub, tau_r2g, tau_smlt, tau_g2r, dw_land, dw_ocean, &
-        vi_fac, vr_fac, vs_fac, vg_fac, ql_mlt, do_qa, fix_negative, vi_max, &
-        vs_max, vg_max, vr_max, qs_mlt, qs0_crt, qi_gen, ql0_max, qi0_max, &
-        qi0_crt, qr0_crt, fast_sat_adj, rh_inc, rh_ins, rh_inr, const_vi, &
+        vi_fac, vr_fac, vs_fac, vg_fac, ql_mlt, do_qa, fix_negative, vi_max,  &
+        vs_max, vg_max, vr_max, qs_mlt, qs0_crt, qi_gen, ql0_max, qi0_max,    &
+        qi0_crt, qr0_crt, fast_sat_adj, rh_inc, rh_ins, rh_inr, const_vi,     &
         const_vs, const_vg, const_vr, use_ccn, rthresh, ccn_l, ccn_o, qc_crt, &
-        tau_g2v, tau_v2g, sat_adj0, c_piacr, tau_imlt, tau_v2l, tau_l2v, &
-        tau_i2s, tau_l2r, qi_lim, ql_gen, c_paut, c_psaci, c_pgacs, &
-        z_slope_liq, z_slope_ice, prog_ccn, c_cracw, alin, clin, tice, &
-        rad_snow, rad_graupel, rad_rain, cld_min, use_ppm, mono_prof, &
+        tau_g2v, tau_v2g, sat_adj0, c_piacr, tau_imlt, tau_v2l, tau_l2v,      &
+        tau_i2s, tau_l2r, qi_lim, ql_gen, c_paut, c_psaci, c_pgacs,           &
+        z_slope_liq, z_slope_ice, prog_ccn, c_cracw, alin, clin, tice,        &
+        rad_snow, rad_graupel, rad_rain, cld_min, use_ppm, mono_prof,         &
         do_sedi_heat, sedi_transport, do_sedi_w, de_ice, icloud_f, irain_f, mp_print
     
-    public &
+    public                                                                    &
         mp_time, t_min, t_sub, tau_r2g, tau_smlt, tau_g2r, dw_land, dw_ocean, &
-        vi_fac, vr_fac, vs_fac, vg_fac, ql_mlt, do_qa, fix_negative, vi_max, &
-        vs_max, vg_max, vr_max, qs_mlt, qs0_crt, qi_gen, ql0_max, qi0_max, &
-        qi0_crt, qr0_crt, fast_sat_adj, rh_inc, rh_ins, rh_inr, const_vi, &
+        vi_fac, vr_fac, vs_fac, vg_fac, ql_mlt, do_qa, fix_negative, vi_max,  &
+        vs_max, vg_max, vr_max, qs_mlt, qs0_crt, qi_gen, ql0_max, qi0_max,    &
+        qi0_crt, qr0_crt, fast_sat_adj, rh_inc, rh_ins, rh_inr, const_vi,     &
         const_vs, const_vg, const_vr, use_ccn, rthresh, ccn_l, ccn_o, qc_crt, &
-        tau_g2v, tau_v2g, sat_adj0, c_piacr, tau_imlt, tau_v2l, tau_l2v, &
-        tau_i2s, tau_l2r, qi_lim, ql_gen, c_paut, c_psaci, c_pgacs, &
-        z_slope_liq, z_slope_ice, prog_ccn, c_cracw, alin, clin, tice, &
-        rad_snow, rad_graupel, rad_rain, cld_min, use_ppm, mono_prof, &
+        tau_g2v, tau_v2g, sat_adj0, c_piacr, tau_imlt, tau_v2l, tau_l2v,      &
+        tau_i2s, tau_l2r, qi_lim, ql_gen, c_paut, c_psaci, c_pgacs,           &
+        z_slope_liq, z_slope_ice, prog_ccn, c_cracw, alin, clin, tice,        &
+        rad_snow, rad_graupel, rad_rain, cld_min, use_ppm, mono_prof,         &
         do_sedi_heat, sedi_transport, do_sedi_w, de_ice, icloud_f, irain_f, mp_print
     
 contains
@@ -309,10 +309,10 @@ contains
 ! hydrostatic, phys_hydrostatic, &
 ! iis, iie, jjs, jje, kks, kke, ktop, kbot, time)
 
-subroutine gfdl_cloud_microphys_driver (qv, ql, qr, qi, qs, qg, qa, qn, &
-        qv_dt, ql_dt, qr_dt, qi_dt, qs_dt, qg_dt, qa_dt, pt_dt, pt, w, &
+subroutine gfdl_cloud_microphys_driver (qv, ql, qr, qi, qs, qg, qa, qn,   &
+        qv_dt, ql_dt, qr_dt, qi_dt, qs_dt, qg_dt, qa_dt, pt_dt, pt, w,    &
         uin, vin, udt, vdt, dz, delp, area, dt_in, land, rain, snow, ice, &
-        graupel, hydrostatic, phys_hydrostatic, iis, iie, jjs, jje, kks, &
+        graupel, hydrostatic, phys_hydrostatic, iis, iie, jjs, jje, kks,  &
         kke, ktop, kbot, seconds)
     
     implicit none
@@ -401,8 +401,8 @@ subroutine gfdl_cloud_microphys_driver (qv, ql, qr, qi, qs, qg, qa, qn, &
     ! define cloud microphysics sub time step
     ! -----------------------------------------------------------------------
     
-    mpdt = min (dt_in, mp_time)
-    rdt = 1. / dt_in
+    mpdt   = min (dt_in, mp_time)
+    rdt    = 1. / dt_in
     ntimes = nint (dt_in / mpdt)
     
     ! small time step:
@@ -429,11 +429,11 @@ subroutine gfdl_cloud_microphys_driver (qv, ql, qr, qi, qs, qg, qa, qn, &
     ! -----------------------------------------------------------------------
     
     do j = js, je
-        call mpdrv (hydrostatic, uin, vin, w, delp, pt, qv, ql, qr, qi, qs, qg, &
-            qa, qn, dz, is, ie, js, je, ks, ke, ktop, kbot, j, dt_in, ntimes, &
-            rain (:, j), snow (:, j), graupel (:, j), ice (:, j), m2_rain, &
-            m2_sol, cond (:, j), area (:, j), land (:, j), udt, vdt, pt_dt, &
-            qv_dt, ql_dt, qr_dt, qi_dt, qs_dt, qg_dt, qa_dt, w_var, vt_r, &
+        call mpdrv (hydrostatic, uin, vin, w, delp, pt, qv, ql, qr, qi, qs, qg,&
+            qa, qn, dz, is, ie, js, je, ks, ke, ktop, kbot, j, dt_in, ntimes,  &
+            rain (:, j), snow (:, j), graupel (:, j), ice (:, j), m2_rain,     &
+            m2_sol, cond (:, j), area (:, j), land (:, j), udt, vdt, pt_dt,    &
+            qv_dt, ql_dt, qr_dt, qi_dt, qs_dt, qg_dt, qa_dt, w_var, vt_r,      &
             vt_s, vt_g, vt_i, qn2)
     enddo
     
@@ -586,10 +586,10 @@ end subroutine gfdl_cloud_microphys_driver
 ! 6) qg: graupel (kg / kg)
 ! -----------------------------------------------------------------------
 
-subroutine mpdrv (hydrostatic, uin, vin, w, delp, pt, qv, ql, qr, qi, qs, &
+subroutine mpdrv (hydrostatic, uin, vin, w, delp, pt, qv, ql, qr, qi, qs,     &
         qg, qa, qn, dz, is, ie, js, je, ks, ke, ktop, kbot, j, dt_in, ntimes, &
-        rain, snow, graupel, ice, m2_rain, m2_sol, cond, area1, land, &
-        u_dt, v_dt, pt_dt, qv_dt, ql_dt, qr_dt, qi_dt, qs_dt, qg_dt, qa_dt, &
+        rain, snow, graupel, ice, m2_rain, m2_sol, cond, area1, land,         &
+        u_dt, v_dt, pt_dt, qv_dt, ql_dt, qr_dt, qi_dt, qs_dt, qg_dt, qa_dt,   &
         w_var, vt_r, vt_s, vt_g, vt_i, qn2)
     
     implicit none

@@ -243,6 +243,7 @@ module fv3gfs_cap_mod
     if(mype==0) print *,'af nems config,quilting=',quilting,'calendar=', &
      trim(calendar)
 !
+    nfhout=0; nfhmax_hf=0; nfhout_hf=0; nsout=0
     if ( quilting ) then
       CALL ESMF_ConfigGetAttribute(config=CF,value=write_groups, &
                                  label ='write_groups:',rc=rc)
@@ -749,13 +750,13 @@ module fv3gfs_cap_mod
     character(len=*),parameter  :: subname='(fv3_cap:ModelAdvance)'
     character(240)              :: msgString
 !jw debug
-    character(ESMF_MAXSTR)          :: name
-    type(ESMF_VM)                :: vm
+    character(ESMF_MAXSTR)      :: name
+    type(ESMF_VM)               :: vm
     integer :: mype,date(6), fieldcount, fcst_nfld
     real(kind=ESMF_KIND_R4), pointer  :: dataPtr(:,:,:), dataPtr2d(:,:)
     character(64)  :: fcstbdl_name
-    real(kind=8) :: MPI_Wtime
-    real(kind=8) :: timeri,timewri, timewr, timerhi, timerh
+    real(kind=8)   :: MPI_Wtime
+    real(kind=8)   :: timeri, timewri, timewr, timerhi, timerh
 
 !-----------------------------------------------------------------------------
 
@@ -867,7 +868,7 @@ module fv3gfs_cap_mod
       time_elapsed  = currtime - starttime
       na = nint(time_elapsed/timeStep)
 !
-     if(mype==0) print *,'n fv3_cap,in model run, advance,na=',na
+!    if(mype==0) print *,'in fv3_cap,in model run, advance,na=',na
 
 !-------------------------------------------------------------------------------
 !*** if alarms ring, call data transfer and write grid comp run
@@ -891,8 +892,8 @@ module fv3gfs_cap_mod
        if(ESMF_AlarmIsEnabled(alarm = ALARM_OUTPUT, rc = RC)) then
          if(ESMF_AlarmIsRinging(alarm = ALARM_OUTPUT,rc = Rc)) LALARM = .true.
        endif
-       if (mype == 0 .or. mype == lead_wrttask(1)) print *,' aft fcst run lalarm=',lalarm, &
-       'FBcount=',FBcount,'na=',na
+!      if (mype == 0 .or. mype == lead_wrttask(1)) print *,' aft fcst run lalarm=',lalarm, &
+!      'FBcount=',FBcount,'na=',na
 
        output: IF(lalarm .or. na==1 ) then
 
@@ -912,8 +913,8 @@ module fv3gfs_cap_mod
 !
 !end FBcount
           enddo
-        if (mype == 0 .or. mype == lead_wrttask(n_group)) print *,'aft fieldbundleregrid,na=',na,  &
-        ' time=', timerh- timerhi
+!       if (mype == 0 .or. mype == lead_wrttask(n_group)) print *,'aft fieldbundleregrid,na=',na,  &
+!       ' time=', timerh- timerhi
 
 !      if(mype==0 .or. mype==lead_wrttask(1))  print *,'on wrt bf wrt run, na=',na
           call ESMF_LogWrite('Model Advance: before wrtcomp run ', ESMF_LOGMSG_INFO, rc=rc)
@@ -933,8 +934,8 @@ module fv3gfs_cap_mod
             line=__LINE__, &
             file=__FILE__)) &
             call ESMF_Finalize(endflag=ESMF_END_ABORT)
-        if (mype == 0 .or. mype == lead_wrttask(n_group)) print *,'aft wrtgridcomp run,na=',na,  &
-         ' time=', timerh- timerhi
+!       if (mype == 0 .or. mype == lead_wrttask(n_group)) print *,'aft wrtgridcomp run,na=',na,  &
+!        ' time=', timerh- timerhi
 
           call ESMF_LogWrite('Model Advance: after wrtcomp run ', ESMF_LOGMSG_INFO, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
@@ -942,8 +943,8 @@ module fv3gfs_cap_mod
             file=__FILE__)) &
             call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
-        if (mype == 0 .or. mype == lead_wrttask(n_group)) print *,'fv3_cap,aft model advance,na=', &
-        na,' time=', mpi_wtime()- timewri
+!       if (mype == 0 .or. mype == lead_wrttask(n_group)) print *,'fv3_cap,aft model advance,na=', &
+!       na,' time=', mpi_wtime()- timewri
 
 
           if(n_group == write_groups) then

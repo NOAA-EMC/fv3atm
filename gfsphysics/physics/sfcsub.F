@@ -1411,7 +1411,8 @@
      &           irttg3,irtscv,irtacn,irtsmc,irtstc,irtveg,
      &           irtvet,irtsot,irtalf
      &,          irtvmn,irtvmx,irtslp,irtabs, 
-     &           imsk, jmsk, slmskh, rla, rlo, gausm, blnmsk, bltmsk,me)
+     &           imsk, jmsk, slmskh, rla, rlo, gausm, blnmsk, bltmsk
+     &,          me, lanom)
 !     if(lprnt) print *,' tsfanl=',tsfanl(iprnt)
 !
 !  scale zor and alb to match forecast model units
@@ -1433,7 +1434,7 @@
 !
 !  interpolate climatology but fixing initial anomaly
 !
-      if(fh.gt.0.0.and.fntsfa(1:8).ne.'        '.and.lanom) then
+      if(fh > 0.0 .and. fntsfa(1:8) /= '        ' .and. lanom) then
         call anomint(tsfan0,tsfclm,tsfcl0,tsfanl,len)
       endif
 !
@@ -3333,9 +3334,9 @@
 !cggg end
 
           enddo
-          kmami=1
-          if (me == 0 .and. num_threads == 1)
-     &                  call maxmin(gauout(i1_t),len_thread,kmami)
+!         kmami=1
+!         if (me == 0 .and. num_threads == 1)
+!    &                  call maxmin(gauout(i1_t),len_thread,kmami)
         else  ! nearest neighbor interpolation
 
 !
@@ -3511,8 +3512,8 @@
         deallocate (ifill)
       endif
 !
-      kmami=1
-      if (me .eq. 0) call maxmin(gauout,len,kmami)
+!     kmami = 1
+!     if (me == 0) call maxmin(gauout,len,kmami)
 !
       return
       end subroutine la2ga
@@ -3670,9 +3671,10 @@
 !clu [+1l] add irt() for vmn, vmx, slp, abs
      &,                irtvmn,irtvmx,irtslp,irtabs
      &,                imsk, jmsk, slmskh, outlat, outlon
-     &,                gaus, blno, blto, me)
+     &,                gaus, blno, blto, me, lanom)
       use machine , only : kind_io8,kind_io4
       implicit none
+      logical  lanom
       integer irtsmc,irtacn,irtstc,irtvet,irtveg,irtscv,irtzor,irtsno,
      &        irtalb,irttg3,irtais,iret,me,kk,kpdvet,i,irtalf,irtsot,
 !cggg snow mods start     & imsk,jmsk,irtwet,lsoil,len, kpdtsf,kpdsno,kpdwet,iy,
@@ -3717,24 +3719,24 @@
       irttsf = 1
       if(fntsfa(1:8).ne.'        ') then
         call fixrda(lugb,fntsfa,kpdtsf,slmask,
-     &             iy,im,id,ih,fh,tsfanl,len,iret
-     &,            imsk, jmsk, slmskh, gaus,blno, blto
-     &,            outlat, outlon, me)
+     &              iy,im,id,ih,fh,tsfanl,len,iret
+     &,             imsk, jmsk, slmskh, gaus,blno, blto
+     &,             outlat, outlon, me)
         irttsf = iret
-        if(iret.eq.1) then
+        if(iret == 1) then
           write(6,*) 't surface analysis read error'
           call abort
-        elseif(iret.eq.-1) then
-          if (me .eq. 0) then
-          print *,'old t surface analysis provided, indicating proper',
-     &            ' file name is given.  no error suspected.'
-          write(6,*) 'forecast guess will be used'
+        elseif(iret == -1) then
+          if (me == 0) then
+            print *,'old t surface analysis provided, indicating proper'
+     &,           ' file name is given.  no error suspected.'
+            write(6,*) 'forecast guess will be used'
           endif
         else
-          if (me .eq. 0) print *,'t surface analysis provided.'
+          if (me == 0) print *,'t surface analysis provided.'
         endif
       else
-        if (me .eq. 0) then
+        if (me == 0) then
 !       print *,'************************************************'
         print *,'no tsf analysis available.  climatology used'
         endif
@@ -3742,25 +3744,27 @@
 !
 ! tsf0
 !
-!     if(fntsfa(1:8).ne.'        ') then
-!       call fixrda(lugb,fntsfa,kpdtsf,slmask,
-!    &             iy,im,id,ih,0.,tsfan0,len,iret
-!    &,            imsk, jmsk, slmskh, gaus,blno, blto
-!    &,            outlat, outlon, me)
-!       if(iret.eq.1) then
-!         write(6,*) 't surface at ft=0 analysis read error'
-!         call abort
-!       elseif(iret.eq.-1) then
-!         write(6,*) 'could not find t surface analysis at ft=0'
-!         call abort
-!       else
-!         print *,'t surface analysis at ft=0 found.'
-!       endif
-!     else
-!       do i=1,len
-!         tsfan0(i)=-999.9
-!       enddo
-!     endif
+      if(fntsfa(1:8).ne.'        ' .and. lanom) then
+        call fixrda(lugb,fntsfa,kpdtsf,slmask,
+     &              iy,im,id,ih,0.,tsfan0,len,iret
+     &,             imsk, jmsk, slmskh, gaus,blno, blto
+     &,             outlat, outlon, me)
+        if(iret == 1) then
+          write(6,*) 't surface at ft=0 analysis read error'
+          call abort
+        elseif(iret == -1) then
+          if (me == 0) then
+            write(6,*) 'could not find t surface analysis at ft=0'
+          endif
+          call abort
+        else
+          print *,'t surface analysis at ft=0 found.'
+        endif
+      else
+        do i=1,len
+          tsfan0(i)=-999.9
+        enddo
+      endif
 !
 !  albedo
 !
@@ -6863,7 +6867,7 @@ cjfe
      &                     tg3(:),   alb(:,:,:), alf(:,:),
      &                     vet(:),   sot(:),     tsf2(:),
      &                     veg(:,:), stc(:,:,:)
-     &,                    vmn(:), vmx(:),  slp(:), abs(:)
+     &,                    vmn(:), vmx(:),  slp(:), absm(:)
 !
       integer mon1s, mon2s, sea1s, sea2s, sea1, sea2, hyr1, hyr2
       data first/.true./
@@ -6871,7 +6875,7 @@ cjfe
 !
       save first, tsf, sno, zor, wet,  ais, acn, scv, smc, tg3,
      &     alb,   alf, vet, sot, tsf2, veg, stc,
-     &     vmn,   vmx, slp, abs,
+     &     vmn,   vmx, slp, absm,
      &     mon1s, mon2s, sea1s, sea2s, dayhf, k1, k2, m1, m2,
      &     landice_cat
 !
@@ -6927,7 +6931,7 @@ cjfe
      &           tg3(len),   alb(len,4,2),    alf(len,2),
      &           vet(len),   sot(len), tsf2(len),
 !clu [+1l] add vmn, vmx, slp, abs
-     &           vmn(len),   vmx(len), slp(len), abs(len),
+     &           vmn(len),   vmx(len), slp(len), absm(len),
      &           veg(len,2), stc(len,lsoil,2))
 !
 !     get tsf climatology for the begining of the forecast
@@ -7233,7 +7237,7 @@ cjfe
         if(fnabsc(1:8).ne.'        ') then
           kpd7=-1
           call fixrdc(lugb,fnabsc,kpdabs,kpd7,kpd9,slmask,
-     &                abs,len,iret
+     &                absm,len,iret
      &,               imsk, jmsk, slmskh, gaus,blno, blto
      &,               outlat, outlon, me)
           if (me .eq. 0) write(6,*) 'climatological snoalb read in.'
@@ -7823,25 +7827,25 @@ cjfe
 !
       if(fnvmnc(1:8).ne.'        ') then
         do i=1,len
-          vmnclm(i) =         vmn(i)
+          vmnclm(i) = vmn(i)
         enddo
       endif
 !
       if(fnvmxc(1:8).ne.'        ') then
         do i=1,len
-          vmxclm(i) =         vmx(i)
+          vmxclm(i) = vmx(i)
         enddo
       endif
 !
       if(fnslpc(1:8).ne.'        ') then
         do i=1,len
-          slpclm(i) =         slp(i)
+          slpclm(i) = slp(i)
         enddo
       endif
 !
       if(fnabsc(1:8).ne.'        ') then
         do i=1,len
-          absclm(i) =         abs(i)
+          absclm(i) = absm(i)
         enddo
       endif
 !clu ----------------------------------------------------------------------
@@ -8000,16 +8004,16 @@ cjfe
         call abort
       endif
 !
-      if (me .eq. 0) then
-      write(6,*) ' maxmin of input as is'
-      kmami=1
-      call maxmin(data(1,1),ijmax,kmami)
-      endif
+!     if (me == 0) then
+!       write(6,*) ' maxmin of input as is'
+!       kmami=1
+!       call maxmin(data(1,1),ijmax,kmami)
+!     endif
 !
       call getarea(kgds,dlat,dlon,rslat,rnlat,wlon,elon,ijordr,me)
-      if (me .eq. 0) then
-      write(6,*) 'imax,jmax,ijmax,dlon,dlat,ijordr,wlon,rnlat='
-      write(6,*)  imax,jmax,ijmax,dlon,dlat,ijordr,wlon,rnlat
+      if (me == 0) then
+        write(6,*) 'imax,jmax,ijmax,dlon,dlat,ijordr,wlon,rnlat='
+        write(6,*)  imax,jmax,ijmax,dlon,dlat,ijordr,wlon,rnlat
       endif
       call subst(data,imax,jmax,dlon,dlat,ijordr)
 !
@@ -8308,16 +8312,16 @@ cjfe
       endif
 !
    80 continue
-      if (me .eq. 0) then
-      write(6,*) ' maxmin of input as is'
-      kmami=1
-      call maxmin(data(1,1),ijmax,kmami)
-      endif
+!     if (me == 0) then
+!       write(6,*) ' maxmin of input as is'
+!       kmami=1
+!       call maxmin(data(1,1),ijmax,kmami)
+!     endif
 !
       call getarea(kgds,dlat,dlon,rslat,rnlat,wlon,elon,ijordr,me)
-      if (me .eq. 0) then
-      write(6,*) 'imax,jmax,ijmax,dlon,dlat,ijordr,wlon,rnlat='
-      write(6,*)  imax,jmax,ijmax,dlon,dlat,ijordr,wlon,rnlat
+      if (me == 0) then
+        write(6,*) 'imax,jmax,ijmax,dlon,dlat,ijordr,wlon,rnlat='
+        write(6,*)  imax,jmax,ijmax,dlon,dlat,ijordr,wlon,rnlat
       endif
       call subst(data,imax,jmax,dlon,dlat,ijordr)
 !

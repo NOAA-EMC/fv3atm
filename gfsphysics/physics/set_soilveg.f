@@ -45,14 +45,14 @@ cmy end locals
 c-----------------------------
       rgltbl =(/30.0,  30.0,  30.0,  30.0,  30.0,  65.0,
      &  	  100.0, 100.0, 100.0, 100.0, 100.0, 100.0,
-     &  	  100.0,   0.0,   0.0,   0.0,	0.0,   0.0,
-     &  	    0.0,   0.0,   0.0,   0.0,	0.0,   0.0,
-     &  	    0.0,   0.0,   0.0,   0.0,	0.0,   0.0/)
+     &  	  100.0,   0.0,   0.0,   0.0,   0.0,   0.0,
+     &  	    0.0,   0.0,   0.0,   0.0,   0.0,   0.0,
+     &  	    0.0,   0.0,   0.0,   0.0,   0.0,   0.0/)
       hstbl =(/41.69, 54.53, 51.93, 47.35,  47.35, 54.53,
      &  	  36.35, 42.00, 42.00, 42.00,  42.00, 36.35,
-     &  	  42.00,  0.00,  0.00,  0.00,	0.00,  0.00,
-     &  	   0.00,  0.00,  0.00,  0.00,	0.00,  0.00,
-     &  	   0.00,  0.00,  0.00,  0.00,	0.00,  0.00/)
+     &  	  42.00,  0.00,  0.00,  0.00,   0.00,  0.00,
+     &  	   0.00,  0.00,  0.00,  0.00,   0.00,  0.00,
+     &  	   0.00,  0.00,  0.00,  0.00,   0.00,  0.00/)
 !     changed for version 2.6 on june 2nd 2003
 !      data snupx  /0.080, 0.080, 0.080, 0.080, 0.080, 0.080,
 !     &  	   0.040, 0.040, 0.040, 0.040, 0.025, 0.040,
@@ -387,13 +387,13 @@ c-----------------------------
          
          DO I = 1,DEFINED_SOIL
            if (satdk(i) /= 0.0 .and. bb(i) > 0.0) then
-           SATDW(I)  = BB(I)*SATDK(I)*(SATPSI(I)/MAXSMC(I))
-           F11(I)    = ALOG10(SATPSI(I)) + BB(I)*ALOG10(MAXSMC(I)) + 2.0
-           REFSMC1   = MAXSMC(I)*(5.79E-9/SATDK(I))
+             SATDW(I)  = BB(I)*SATDK(I)*(SATPSI(I)/MAXSMC(I))
+             F11(I)    = LOG10(SATPSI(I)) + BB(I)*LOG10(MAXSMC(I)) + 2.0
+             REFSMC1   = MAXSMC(I)*(5.79E-9/SATDK(I))
      &                  **(1.0/(2.0*BB(I)+3.0))
-           REFSMC(I) = REFSMC1 + (MAXSMC(I)-REFSMC1) / SMHIGH
-           WLTSMC1   = MAXSMC(I) * (200.0/SATPSI(I))**(-1.0/BB(I))
-           WLTSMC(I) = WLTSMC1 - SMLOW * WLTSMC1
+             REFSMC(I) = REFSMC1 + (MAXSMC(I)-REFSMC1) / SMHIGH
+             WLTSMC1   = MAXSMC(I) * (200.0/SATPSI(I))**(-1.0/BB(I))
+             WLTSMC(I) = WLTSMC1 - SMLOW * WLTSMC1
             
 !     ----------------------------------------------------------------------
 !     CURRENT VERSION DRYSMC VALUES THAT EQUATE TO WLTSMC.
