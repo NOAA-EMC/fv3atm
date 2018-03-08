@@ -21,7 +21,7 @@ module FV3GFS_io_mod
   use fms_io_mod,         only: restart_file_type, free_restart_type, &
                                 register_restart_field,               &
                                 restore_state, save_restart
-  use mpp_domains_mod,    only: domain1d, domain2d
+  use mpp_domains_mod,    only: domain1d, domain2d, domainUG
   use time_manager_mod,   only: time_type
   use diag_manager_mod,   only: register_diag_field, send_data
   use diag_axis_mod,      only: get_axis_global_length, get_diag_axis
@@ -30,7 +30,6 @@ module FV3GFS_io_mod
   use constants_mod,      only: grav, rdgas
 !
 !--- GFS physics modules
-  use machine,            only: kind_phys
 !--- variables needed for calculating 'sncovr'
   use namelist_soilveg,   only: salp_data, snupx
 !
@@ -40,7 +39,7 @@ module FV3GFS_io_mod
 !
 !--- IPD typdefs
   use IPD_typedefs,       only: IPD_control_type, IPD_data_type, &
-                                IPD_restart_type
+                                IPD_restart_type, kind_phys
 !
 !-----------------------------------------------------------------------
   implicit none
@@ -3688,9 +3687,9 @@ module FV3GFS_io_mod
     integer :: i, j, idx, nblks, nb, ix, ii, jj
     integer :: is_in, js_in, isc, jsc
     character(len=2) :: xtra
-    real(kind=kind_phys), dimension(nx*ny) :: var2p
+    real(kind=kind_phys), dimension(nx*ny)      :: var2p
     real(kind=kind_phys), dimension(nx*ny,levs) :: var3p
-    real(kind=kind_phys), dimension(nx,ny) :: var2
+    real(kind=kind_phys), dimension(nx,ny)      :: var2
     real(kind=kind_phys), dimension(nx,ny,levs) :: var3
     real(kind=kind_phys) :: rdt, rtime_int, rtime_intfull, lcnvfac
     logical :: used
@@ -4012,6 +4011,7 @@ module FV3GFS_io_mod
    character(128)    :: output_name, physbdl_name, outputfile1
    logical           :: lput2physbdl, loutputfile, l2dvector
    type(domain1d)    :: Domain
+   type(domainUG)    :: DomainU
    type(ESMF_Field)  :: field
    real,dimension(:),allocatable               :: axis_data
    character(128),dimension(:), allocatable    :: bdl_intplmethod, outputfile
@@ -4111,7 +4111,7 @@ module FV3GFS_io_mod
      axis_length =  get_axis_global_length(axes(id))
      allocate(axis_data(axis_length))
      call get_diag_axis( axes(id), axis_name, units, long_name, cart_name, &
-                         direction, edges, Domain, axis_data,        &
+                         direction, edges, Domain, DomainU, axis_data,     &
                          num_attributes=num_attributes,              &
                          attributes=attributes)
 !

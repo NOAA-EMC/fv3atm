@@ -1,6 +1,25 @@
 ! -*-f90-*-
 
 
+!***********************************************************************
+!*                   GNU Lesser General Public License
+!*
+!* This file is part of the GFDL Flexible Modeling System (FMS).
+!*
+!* FMS is free software: you can redistribute it and/or modify it under
+!* the terms of the GNU Lesser General Public License as published by
+!* the Free Software Foundation, either version 3 of the License, or (at
+!* your option) any later version.
+!*
+!* FMS is distributed in the hope that it will be useful, but WITHOUT
+!* ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+!* FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+!* for more details.
+!*
+!* You should have received a copy of the GNU Lesser General Public
+!* License along with FMS.  If not, see <http://www.gnu.org/licenses/>.
+!***********************************************************************
+
 #ifdef use_libSMA
 #include <mpp_util_sma.inc>
 #elif defined(use_libMPI)
@@ -1309,12 +1328,12 @@ end function rarray_to_char
 ! Include variable "version" to be written to log file.
 #include<file_version.h>
 
-    character(len=32), intent(in), optional :: pelist_name_in
+    character(len=*), intent(in), optional :: pelist_name_in
 ! private variables
     integer :: log_unit
     integer :: num_lines, i
     logical :: file_exist
-    character(len=32) :: pelist_name
+    character(len=len(peset(current_peset_num)%name)) :: pelist_name
     character(len=128) :: filename
 
 ! check the status of input_nml_file
@@ -1324,8 +1343,14 @@ end function rarray_to_char
 
 ! the following code is necessary for using alternate namelist files (nests, stretched grids, etc)
     if (PRESENT(pelist_name_in)) then
-      pelist_name = pelist_name_in
-     else
+      ! test to make sure length of pelist_name_in is <= pelist_name
+      if (LEN(pelist_name_in) > LEN(pelist_name)) then
+        call mpp_error(FATAL,  &
+           "mpp_util.inc: read_input_nml optional argument pelist_name_in has size greater than local pelist_name")
+      else
+        pelist_name = pelist_name_in
+      endif
+    else
       pelist_name = mpp_get_current_pelist_name()
     endif
     filename='input_'//trim(pelist_name)//'.nml'

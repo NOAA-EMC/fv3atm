@@ -56,7 +56,7 @@ use fms_mod,            only: file_exist, error_mesg
 use fms_mod,            only: close_file, write_version_number, stdlog, stdout
 use fms_mod,            only: clock_flag_default
 use fms_mod,            only: check_nml_error
-use diag_manager_mod,   only: diag_send_complete_extra
+use diag_manager_mod,   only: diag_send_complete_instant
 use time_manager_mod,   only: time_type, get_time, get_date, &
                               operator(+), operator(-)
 use field_manager_mod,  only: MODEL_ATMOS
@@ -552,7 +552,7 @@ subroutine update_atmos_model_state (Atmos)
       call gfdl_diag_output(Atmos%Time, Atm_block, IPD_Control%nx, IPD_Control%ny, &
                             IPD_Control%levs, 1, 1, 1.d0, time_int, time_intfull)
       if (mod(isec,3600*nint(IPD_Control%fhzero)) == 0) diag_time = Atmos%Time
-      call diag_send_complete_extra (Atmos%Time)
+      call diag_send_complete_instant (Atmos%Time)
     endif
 
  end subroutine update_atmos_model_state
