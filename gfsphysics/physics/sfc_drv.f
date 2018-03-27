@@ -1,3 +1,32 @@
+!>  \file sfc_drv.f
+!!  This file contains the NOAH land surface scheme.
+!> \defgroup NOAH NOAH Land Surface
+!! @{
+!!
+!!  The Noah LSM (Chen et al., 1996; Koren et al., 1999; Ek et al., 2003) is targeted for moderate complexity and good computational efficiency for numerical weather prediction and climate models. Thus, it omits subgrid surface tiling and uses a single-layer snowpack. The surface energy balance is solved via a Penman-based approximation for latent heat flux. The Noah model includes packages to simulate soil moisture, soil ice, soil temperature, skin temperature, snow depth, snow water equivalent, energy fluxes such as latent heat, sensible heat and ground heat, and water fluxes such as evaporation and total runoff. The Noah surface infiltration scheme follows that of Schaake et al. (1996) for its treatment of the subgrid variability of precipitation and soil moisture.
+!!
+!!  On 31 May and 14 June 2005, NCEP extensively upgraded the land-surface component of its Global Forecast System (GFS), including its Global Data Assimilation System (GDAS). The Noah LSM upgrade includes an increase from two (10, 190 cm thick) to four soil layers (10, 30, 60, 100 cm thick), addition of frozen soil physics, new formulations for infiltration and runoff (giving more runoff for unsaturated soils), revised physics of the snowpack and its influence on surface heat fluxes and albedo, tuning and adding canopy resistance parameters, allowing spatially varying root depth, revised treatment of ground heat flux and soil thermal conductivity, reformulation for dependence of direct surface evaporation on first layer soil moisture, and improved seasonality of green vegetation cover. The frozen soil physics includes soil heat sinks/sources from freezing/thawing and influences vertical transport of soil moisture, soil thermal conductivity and heat capacity, and surface infiltration. The prognostic states of snowpack depth and liquid soil moisture were added to the already present prognostic states of snowpack water-equivalent (SWE), total soil moisture (liquid plus frozen), soil temperature, canopy water, and skin temperature. SWE divided by the snowpack depth gives the snowpack density. Total soil moisture minus liquid soil moisture gives the frozen soil moisture (Mitchell et al. 2005)
+!!
+!!  The addition of Noah LSM greatly reduced the two prominent biases in land-surface processes: 1) an early depletion of snowpack; and 2) a high bias in both surface evaporation and precipitation in the warm season in non-arid mid-latitudes. However, a lower tropospheric warm bias as well as increased surface sensible heat flux emerged, particularly over the arid areas during the daytime. Extensive tests attributed this bias mainly to improper treatment of the thermal roughness length. In May 2011, a new thermal roughness length formulation, which assigned a smaller value for the thermal roughness length compared to the momentum roughness length, was implemented. This greatly reduced the warm surface air temperature bias and the cold skin temperature bias over the arid areas during the daytime (Wei et al. 2009; Zheng et al. 2012).
+!!
+!!  In January 2015, CFS/GLDAS soil moisture climatology at T574 was used for soil moisture nudge to replace the out-of-date coarse resolution bucket soil moisture climatology; a dependence of the ratio of the thermal and momentum roughness on vegetation type was added to address the land-atmosphere coupling strength; a look-up table based on vegetation type was used to replace 1.0 degree momentum roughness length climatology. After this implementation summer warm/dry biases were found over cropland/grassland areas. Some evaporation-related parameters were refined to increase the evaporation to address this issue. The refinement was implemented in May 2016.
+!!
+!!  In July 2017, new high-resolution MODIS-based snow-free albedo, maximum snow albedo, soil type and vegetation type were used to address the cold biases over the snow area and the blockiness of surface fields due to the coarse resolution data of soil type and vegetation type. The surface layer parameterization scheme was upgraded to modify the roughness-length formulation and introduce a stability parameter constraint in the Monin-Obukhov similarity theory to prevent the land-atmosphere system from decoupling which causes the rapid temperature drop during the sunset (Zheng et al. 2017).
+!!
+!!  \section diagram Calling Hierarchy Diagram
+!!  \section intraphysics Intraphysics Communication
+!!
+!> \brief Brief description of the subroutine
+!!
+!!
+!! \section arg_table_Noah_run Arguments
+!! | local var name | longname                                           | description                        | units   | rank | type    |    kind   | intent | optional |
+!! |----------------|----------------------------------------------------|------------------------------------|---------|------|---------|-----------|--------|----------|
+!! | im             | horizontal_loop_extent                             | horizontal loop extent, start at 1 | index   |    0 | integer |           | in     | F        |
+!!
+!!  \section general General Algorithm
+!!  \section detailed Detailed Algorithm
+!!  @{
 ! ===================================================================== !
 !  description:                                                         !
 !                                                                       !
@@ -546,4 +575,5 @@
 !...................................
       end subroutine sfc_drv
 !-----------------------------------
-
+!> @}
+!> @}

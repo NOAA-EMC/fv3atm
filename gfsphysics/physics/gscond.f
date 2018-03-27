@@ -2,8 +2,7 @@
 !! This file contains the subroutine that calculates grid-scale 
 !! condensation and evaporation for use in the Zhao and Carr (1997) 
 !! \cite zhao_and_carr_1997 scheme.
-
-!> \defgroup MPscheme Grid-scale Condensation, Evaporation and Precipitation
+!>  \defgroup Zhao-Carr Zhao-Carr-Sundqvist Microphysics
 !! @{
 !! \brief The GFS scheme for large-scale condensation and precipitation
 !! , based on Zhao and Carr (1997) \cite zhao_and_carr_1997
@@ -29,14 +28,15 @@
 !! the amount of cloud condensate in the atmosphere and thus the cloud 
 !! radiative properties:
 !! - PSAUTCO, PRAUTCO: Auto conversion coefficients (ice and water)
-!! - WMINCO(2): Coefficients for minimum value of cloud condensate to 
+!! - WMINCO(2): Coefficients for minimum value of cloud condensate to
 !! conversion from condensate (water and ice)  to precipitation
 !! - EVPCO: Coefficient for evaporation of precipitation
+!! - CRTRH: Critical relative humidity for cloud generation
 !!
 !! \section intramps Intraphysics Communication
-!! - Routine GSCOND is called from GBPHYS after call to SHALCNV
-!! - Routine PRECPD is called from GBPHYS after call to GSCOND
-
+!! - Routine GSCOND is called from GFS_physics_driver after call to shallow convection scheme
+!! - Routine PRECPD is called from GFS_physics_driver after call to GSCOND
+!!
 !> \defgroup condense Grid-Scale Condensation and Evaporation of Cloud
 !! This subroutine computes grid-scale condensation and evaporation of 
 !! cloud condensate.

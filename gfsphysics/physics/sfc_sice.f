@@ -1,3 +1,22 @@
+!>  \file sfc_sice.f
+!!  This file contains the GFS thermodynamics surface ice model.
+
+!> \defgroup GFS_Ice GFS Thermodynamics Surface Ice
+!! @{
+!!  \brief Brief description of the parameterization
+!!  \section diagram Calling Hierarchy Diagram
+!!  \section intraphysics Intraphysics Communication
+
+!> \brief Brief description of the subroutine
+!!
+!! \section arg_table_sice_run Arguments
+!! | local var name | longname                                              | description                        | units   | rank | type    |    kind   | intent | optional |
+!! |----------------|-------------------------------------------------------|------------------------------------|---------|------|---------|-----------|--------|----------|
+!! | im             | horizontal_loop_extent                                | horizontal loop extent, start at 1 | index   |    0 | integer |           | in     | F        |
+!!
+!!  \section general General Algorithm
+!!  \section detailed Detailed Algorithm
+!!  @{
 !-----------------------------------
       subroutine sfc_sice                                               &
 !...................................
@@ -87,8 +106,8 @@
 !     qsurf    - real, specific humidity at sfc                    im   !
 !     snowmt   - real, snow melt (m)                               im   !
 !     gflux    - real, soil heat flux (w/m**2)                     im   !
-!     cmm      - real,                                             im   !
-!     chh      - real,                                             im   !
+!     cmm      - real, surface exchange coeff for momentum(m/s)    im   !
+!     chh      - real, surface exchange coeff heat&moisture (m/s)  im   !
 !     evap     - real, evaperation from latent heat flux           im   !
 !     hflx     - real, sensible heat flux                          im   !
 !                                                                       !
@@ -380,7 +399,11 @@
       contains
 ! =================
 
+!> @}
 
+!-----------------------------------
+!> \brief Brief description of the subroutine
+!!
 !-----------------------------------
       subroutine ice3lay
 !...................................
@@ -650,3 +673,5 @@
 !...................................
       end subroutine sfc_sice
 !-----------------------------------
+
+!> @}

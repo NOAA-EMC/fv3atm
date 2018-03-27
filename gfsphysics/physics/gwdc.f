@@ -1,34 +1,42 @@
 !> \file gwdc.f This file is the original code for parameterization of
-!! stationary convection forced gravity wave drag based on Chun and 
+!! stationary convection forced gravity wave drag based on Chun and
 !! Baik(1998) \cite chun_and_baik_1998
 
-!> \ingroup gwd
-!> \defgroup convective Convective Gravity Wave Drag
+!> \ingroup GFS_gwd
+!> \defgroup GFS_cgwd GFS Convective Gravity Wave Drag
 !! This subroutine is the parameterization of convective gravity wave
-!! drag based on the theory given by Chun and Baik (1998) 
-!! \cite chun_and_baik_1998 modified for implementation into the 
+!! drag based on the theory given by Chun and Baik (1998)
+!! \cite chun_and_baik_1998 modified for implementation into the
 !! GFS/CFS by Ake Johansson(Aug 2005).
 !!
-!> Parameterizing subgrid-scale convection-induced gravity wave 
+!! - The parameterization of stationary convectively-forced GWD follows
+!! the development of Chun and Baik (1998) \cite chun_and_baik_1998 ,
+!! which was tested in GCMs by Chun et al. (2001,2004)
+!! \cite chun_et_al_2001 \cite chun_et_al_2004 was implemented in GFS
+!! by Ake Johansson (2008) and the work of the GCWMB staff. Modest
+!! positive effects from using the parameterization are seen in the
+!! tropical upper troposphere and lower stratosphere.
+!!
+!> Parameterizing subgrid-scale convection-induced gravity wave
 !! momentum flux for use in large-scale models inherently requires
 !! some information from subgrid-scale cumulus parameterization.
 !! The methodology for parameterizing the zonal momentum flux induced
 !! by thermal forcing can be summarized as follows. From the cloud-base
 !! to cloud-top height, the effect of the momentum flux
 !! induced by subgrid-scale diabatic forcing is not considered because
-!! subgrid-scale cumulus convection in large-scale models is only 
+!! subgrid-scale cumulus convection in large-scale models is only
 !! activated in a conditionally unstable atmosphere. Below the cloud
-!! base, the momentum flux is also not considered because of the wave 
-!! momentum cancellation. At the cloud top, the momentum flux is 
-!! obtained by eq.(18) and (19) in Chun and Baik (1998) 
+!! base, the momentum flux is also not considered because of the wave
+!! momentum cancellation. At the cloud top, the momentum flux is
+!! obtained by eq.(18) and (19) in Chun and Baik (1998)
 !! \cite chun_and_baik_1998.  Above the cloud top, there are two ways to
 !! construct the momentum flux profile. One way is to specify a
 !! vertical structure of the momentum flux normalized by the cloud-top
-!! value, similar to what has been done for mountain drag 
+!! value, similar to what has been done for mountain drag
 !! parameterization. The other way is to apply the wave saturation
 !! hypothesis in order to find wave breaking levels in terms of the
-!! Richardon number criterion using the nonlinearity factor of 
-!! thermally induced waves. 
+!! Richardon number criterion using the nonlinearity factor of
+!! thermally induced waves.
 !!@{
 
 !> \param[in] IM       horizontal number of used pts
@@ -43,29 +51,34 @@
 !> \param[in] PMID1    mean layer pressure
 !> \param[in] PINT1    pressure at layer interfaces
 !> \param[in] DPMID1   mean layer delta p
-!> \param[in] QMAX     maximum convective heating rate (k/s) in a 
-!!                     horizontal grid point calculated 
+!> \param[in] QMAX     maximum convective heating rate (k/s) in a
+!!                     horizontal grid point calculated
 !!                     from cumulus parameterization
 !> \param[in] KTOP     vertical level index for cloud top
 !> \param[in] KBOT     vertical level index for cloud bottom
 !> \param[in] KCNV     (0,1) dependent on whether convection occur or not
 !> \param[in] CLDF     deep convective cloud fraction at the cloud top
 !> \param[in] GRAV     gravity defined in physcon
-!> \param[in] CP       specific heat at constant pressure defined in 
+!> \param[in] CP       specific heat at constant pressure defined in
 !!                     physcon
 !> \param[in] RD       gas constant air defined in physcon
 !> \param[in] FV       con_fvirt = con_rv/con_rd-1
-!> \param[in] DLENGTH  grid spacing in the direction of basic wind at 
+!> \param[in] DLENGTH  grid spacing in the direction of basic wind at
 !!                     the cloud top
 !> \param[in] LPRNT    logical print flag
 !> \param[in] IPR      check print point for debugging
 !> \param[in] FHOUR    forecast hour
 !> \param[out] UTGWC   zonal wind tendency
 !> \param[out] VTGWC   meridional wind tendency
-!> \param[out] TAUCTX  wave stress at the cloud top projected in the 
+!> \param[out] TAUCTX  wave stress at the cloud top projected in the
 !!                     east
-!> \param[out] TAUCTY  wave stress at the cloud top projected in the 
+!> \param[out] TAUCTY  wave stress at the cloud top projected in the
 !!                     north
+!!
+!! \section arg_table_gwdc_run Arguments
+!! | local var name | longname                                              | description                        | units   | rank | type    |    kind   | intent | optional |
+!! |----------------|-------------------------------------------------------|------------------------------------|---------|------|---------|-----------|--------|----------|
+!! | im             | horizontal_loop_extent                                | horizontal loop extent, start at 1 | index   |    0 | integer |           | in     | F        |
 !!
 !> \section al_gwdc General Algorithm
 !> @{

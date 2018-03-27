@@ -2,7 +2,7 @@
 !!  Contains most of the hybrid eddy-diffusivity mass-flux scheme except for the
 !!  subroutine that calculates the mass flux and updraft properties.
 
-!> \defgroup PBL Hybrid Eddy-diffusivity Mass-flux Scheme
+!> \defgroup HEDMF Hybrid Eddy-diffusivity Mass-flux Scheme
 !! @{
 !!  \brief The Hybrid EDMF scheme is a first-order turbulent transport scheme used for subgrid-scale vertical turbulent mixing in the PBL and above. It blends the traditional first-order approach that has been used and improved over the last several years with a more recent scheme that uses a mass-flux approach to calculate the countergradient diffusion terms.
 !!
@@ -1073,35 +1073,35 @@ c
 !!  Following Han et al. (2015) \cite han_et_al_2015 , turbulence dissipation contributes to the tendency of temperature in the following way. First, turbulence dissipation is calculated by equation 17 of Han et al. (2015) \cite han_et_al_2015 for the PBL and equation 16 for the surface layer.
       if(dspheat) then
 !
-        do k = 1,km1
-          do i = 1,im
-            diss(i,k) = dku(i,k)*shr2(i,k)-g*ti(i,k)*dkt(i,k)*bf(i,k)
-!           diss(i,k) = dku(i,k)*shr2(i,k)
-          enddo
+      do k = 1,km1
+        do i = 1,im
+          diss(i,k) = dku(i,k)*shr2(i,k)-g*ti(i,k)*dkt(i,k)*bf(i,k)
+!         diss(i,k) = dku(i,k)*shr2(i,k)
         enddo
+      enddo
 !
 !     add dissipative heating at the first model layer
 !
 !>  Next, the temperature tendency is updated following equation 14.
-        do i = 1,im
-           tem   = govrth(i)*sflux(i)
-           tem1  = tem + stress(i)*spd1(i)/zl(i,1)
-           tem2  = 0.5 * (tem1+diss(i,1))
-           tem2  = max(tem2, 0.)
-           ttend = tem2 / cp
-           tau(i,1) = tau(i,1)+0.5*ttend
-        enddo
+      do i = 1,im
+         tem   = govrth(i)*sflux(i)
+         tem1  = tem + stress(i)*spd1(i)/zl(i,1)
+         tem2  = 0.5 * (tem1+diss(i,1))
+         tem2  = max(tem2, 0.)
+         ttend = tem2 / cp
+         tau(i,1) = tau(i,1)+0.5*ttend
+      enddo
 !
 !     add dissipative heating above the first model layer
 !
-        do k = 2,km1
-          do i = 1,im
-            tem = 0.5 * (diss(i,k-1)+diss(i,k))
-            tem  = max(tem, 0.)
-            ttend = tem / cp
-            tau(i,k) = tau(i,k) + 0.5*ttend
-          enddo
+      do k = 2,km1
+        do i = 1,im
+          tem = 0.5 * (diss(i,k-1)+diss(i,k))
+          tem  = max(tem, 0.)
+          ttend = tem / cp
+          tau(i,k) = tau(i,k) + 0.5*ttend
         enddo
+      enddo
 !
       endif
 !

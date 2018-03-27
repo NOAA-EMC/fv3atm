@@ -1,8 +1,8 @@
 !> \file ozphys.f
 !! This file is ozone sources and sinks.
 
-!> \defgroup ozn Ozone Sources and Sinks
-!! The operational GFS currently parameterizes ozone production and 
+!> \defgroup GFS_ozn GFS Ozone Sources and Sinks
+!! The operational GFS currently parameterizes ozone production and
 !! destruction based on monthly mean coefficients provided by Naval
 !! Research Laboratory through CHEM2D chemistry model
 !! (McCormack et al. 2006 \cite mccormack_et_al_2006).
@@ -12,9 +12,15 @@
 !! Original version of these terms were provided by NASA/DAO based on
 !! NASA 2D Chemistry model - GSM is capable of running both versions
 !!
-!! \section intra_oz Intraphysics Cummunication
+!! \section intra_oz Intraphysics Communication
 !! - Routine OZPHYS is called from GBPHYS after call to RAYLEIGH_DAMP
 !! @{
+
+!>
+!! \section arg_table_ozphys_run Arguments
+!! | local var name | longname                                              | description                        | units   | rank | type    |    kind   | intent | optional |
+!! |----------------|-------------------------------------------------------|------------------------------------|---------|------|---------|-----------|--------|----------|
+!! | im             | horizontal_loop_extent                                | horizontal loop extent, start at 1 | index   |    0 | integer |           | in     | F        |
 !!
 !! \param[in] ix,im     integer, horizontal dimension and num of used pts
 !! \param[in] levs      integer, vertical layer dimension
@@ -27,9 +33,9 @@
 !!                      (ln(Pa))
 !! \param[in] prsl      real, (ix,levs),mean layer pressure
 !! \param[in] prdout    real, (ix,ko3,pl_coeff),ozone forcing data
-!! \param[in] pl_coeff  integer, number coefficients in ozone forcing 
+!! \param[in] pl_coeff  integer, number coefficients in ozone forcing
 !! \param[in] delp      real, (ix,levs)
-!! \param[in] ldiag3d   logical, flag for 3d diagnostic fields 
+!! \param[in] ldiag3d   logical, flag for 3d diagnostic fields
 !! \param[out] ozp       real, ozone change due to physics
 !! \param[in] me        integer, pe number - used for debug prints
 !! \section gen_al General Algorithm
