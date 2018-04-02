@@ -330,7 +330,6 @@ module GFS_typedefs
     character(len=256), pointer :: input_nml_file(:) !< character string containing full namelist
                                                    !< for use with internal file reads
     real(kind=kind_phys) :: fhzero          !< seconds between clearing of diagnostic buckets
-    logical              :: lprecip_accu    !< flag for precip accumulation without bucket (fhzero)
     logical              :: ldiag3d         !< flag for 3d diagnostic fields
     logical              :: lssav           !< logical flag for storing diagnostics
     real(kind=kind_phys) :: fhcyc           !< frequency for surface data cycling (secs)
@@ -798,6 +797,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: dtsfc  (:)     => null()   !< sensible heat flux (w/m2)
     real (kind=kind_phys), pointer :: dqsfc  (:)     => null()   !< latent heat flux (w/m2)
     real (kind=kind_phys), pointer :: totprcp(:)     => null()   !< accumulated total precipitation (kg/m2)
+    real (kind=kind_phys), pointer :: totprcpb(:)     => null()   !< accumulated total precipitation in bucket(kg/m2)
     real (kind=kind_phys), pointer :: gflux  (:)     => null()   !< groud conductive heat flux
     real (kind=kind_phys), pointer :: dlwsfc (:)     => null()   !< time accumulated sfc dn lw flux ( w/m**2 )
     real (kind=kind_phys), pointer :: ulwsfc (:)     => null()   !< time accumulated sfc up lw flux ( w/m**2 )
@@ -809,6 +809,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: dvgwd  (:)     => null()   !< vertically integrated v change by OGWD
     real (kind=kind_phys), pointer :: psmean (:)     => null()   !< surface pressure (kPa)
     real (kind=kind_phys), pointer :: cnvprcp(:)     => null()   !< accumulated convective precipitation (kg/m2)
+    real (kind=kind_phys), pointer :: cnvprcpb(:)    => null()   !< accumulated convective precipitation in bucket (kg/m2)
     real (kind=kind_phys), pointer :: spfhmin(:)     => null()   !< minimum specific humidity
     real (kind=kind_phys), pointer :: spfhmax(:)     => null()   !< maximum specific humidity
     real (kind=kind_phys), pointer :: u10mmax(:)     => null()   !< maximum u-wind
@@ -822,6 +823,9 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: totice (:)     => null()   !< accumulated ice precipitation (kg/m2)
     real (kind=kind_phys), pointer :: totsnw (:)     => null()   !< accumulated snow precipitation (kg/m2)
     real (kind=kind_phys), pointer :: totgrp (:)     => null()   !< accumulated graupel precipitation (kg/m2)
+    real (kind=kind_phys), pointer :: toticeb(:)     => null()   !< accumulated ice precipitation in bucket (kg/m2)
+    real (kind=kind_phys), pointer :: totsnwb(:)     => null()   !< accumulated snow precipitation in bucket (kg/m2)
+    real (kind=kind_phys), pointer :: totgrpb(:)     => null()   !< accumulated graupel precipitation in bucket (kg/m2)
 
 ! Output - only in physics
     real (kind=kind_phys), pointer :: u10m   (:)     => null()   !< 10 meater u/v wind speed
@@ -1371,7 +1375,6 @@ module GFS_typedefs
 
 !--- BEGIN NAMELIST VARIABLES
     real(kind=kind_phys) :: fhzero         = 0.0             !< seconds between clearing of diagnostic buckets
-    logical              :: lprecip_accu   = .true.          !< flag for precip accumulation without bucket (fhzero)
     logical              :: ldiag3d        = .false.         !< flag for 3d diagnostic fields
     logical              :: lssav          = .false.         !< logical flag for storing diagnostics
     real(kind=kind_phys) :: fhcyc          = 0.              !< frequency for surface data cycling (secs)
@@ -1595,7 +1598,7 @@ module GFS_typedefs
 
     NAMELIST /gfs_physics_nml/                                                              &
                           !--- general parameters
-                               fhzero,lprecip_accu, ldiag3d, lssav, fhcyc, lgocart, fhgoc3d,&
+                               fhzero, ldiag3d, lssav, fhcyc, lgocart, fhgoc3d,             &
                                thermodyn_id, sfcpress_id,                                   &
                           !--- coupling parameters
                                cplflx, cplwav, lsidea,                                      &
@@ -1678,7 +1681,6 @@ module GFS_typedefs
     Model%nlunit           = nlunit
     Model%fn_nml           = fn_nml
     Model%fhzero           = fhzero
-    Model%lprecip_accu     = lprecip_accu
     Model%ldiag3d          = ldiag3d
     Model%lssav            = lssav
     Model%fhcyc            = fhcyc
@@ -2199,8 +2201,6 @@ module GFS_typedefs
       print *, ' nlunit            : ', Model%nlunit
       print *, ' fn_nml            : ', trim(Model%fn_nml)
       print *, ' fhzero            : ', Model%fhzero
-      print *, ' lprecip_accu      : ', Model%lprecip_accu
-      if (Model%lprecip_accu) print *,' continuous accumulation precip bucket is used'
       print *, ' ldiag3d           : ', Model%ldiag3d
       print *, ' lssav             : ', Model%lssav
       print *, ' fhcyc             : ', Model%fhcyc
@@ -2656,6 +2656,7 @@ module GFS_typedefs
     allocate (Diag%dtsfc   (IM))
     allocate (Diag%dqsfc   (IM))
     allocate (Diag%totprcp (IM))
+    allocate (Diag%totprcpb(IM))
     allocate (Diag%gflux   (IM))
     allocate (Diag%dlwsfc  (IM))
     allocate (Diag%ulwsfc  (IM))
@@ -2667,6 +2668,7 @@ module GFS_typedefs
     allocate (Diag%dvgwd   (IM))
     allocate (Diag%psmean  (IM))
     allocate (Diag%cnvprcp (IM))
+    allocate (Diag%cnvprcpb(IM))
     allocate (Diag%spfhmin (IM))
     allocate (Diag%spfhmax (IM))
     allocate (Diag%u10mmax (IM))
@@ -2680,6 +2682,9 @@ module GFS_typedefs
     allocate (Diag%totice  (IM))
     allocate (Diag%totsnw  (IM))
     allocate (Diag%totgrp  (IM))
+    allocate (Diag%toticeb (IM))
+    allocate (Diag%totsnwb (IM))
+    allocate (Diag%totgrpb (IM))
     allocate (Diag%u10m    (IM))
     allocate (Diag%v10m    (IM))
     allocate (Diag%dpt2m   (IM))
@@ -2841,6 +2846,12 @@ module GFS_typedefs
     Diag%skebv_wts  = zero
     Diag%sppt_wts   = zero
     Diag%shum_wts   = zero
+    Diag%totprcpb   = zero
+    Diag%cnvprcpb   = zero
+    Diag%toticeb    = zero
+    Diag%totsnwb    = zero
+    Diag%totgrpb    = zero
+!    if(Model%me == Model%master) print *,'in diag_phys_zero, totprcpb set to 0,kdt=',Model%kdt
 
     if (Model%ldiag3d) then
       Diag%du3dt   = zero
@@ -2856,14 +2867,14 @@ module GFS_typedefs
       Diag%refl_10cm = zero
     endif
 
-    if ((present (linit).and.linit) .or. .not. Model%lprecip_accu) then
+    if ((present (linit).and.linit)) then
       Diag%totprcp = zero
       Diag%cnvprcp = zero
       Diag%totice  = zero
       Diag%totsnw  = zero
       Diag%totgrp  = zero
-!     if(Model%me == Model%master) print *,'in diag_phys_zero, set diag variable to zero',&
-!                                           'size(Diag%totprcp)=',size(Diag%totprcp)
+!     if(Model%me == Model%master) print *,'in diag_phys_zero, called in init step,set precip diag variable to zero',&
+!                                           'size(Diag%totprcp)=',size(Diag%totprcp),'me=',Model%me,'kdt=',Model%kdt
     endif
   end subroutine diag_phys_zero
 

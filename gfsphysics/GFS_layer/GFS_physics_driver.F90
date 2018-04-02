@@ -26,6 +26,7 @@ module module_physics_driver
   !--- CONSTANT PARAMETERS
   real(kind=kind_phys), parameter :: hocp    = con_hvap/con_cp
   real(kind=kind_phys), parameter :: qmin    = 1.0e-10
+  real(kind=kind_phys), parameter :: rainmin = 1.0e-13
   real(kind=kind_phys), parameter :: p850    = 85000.0
   real(kind=kind_phys), parameter :: epsq    = 1.e-20
   real(kind=kind_phys), parameter :: hsub    = con_hvap+con_hfus
@@ -34,6 +35,7 @@ module module_physics_driver
   real(kind=kind_phys), parameter :: albdf   = 0.06 
   real(kind=kind_phys), parameter :: tf=258.16, tcr=273.16, tcrf=1.0/(tcr-tf)
   real(kind=kind_phys), parameter :: con_p001= 0.001d0
+  real(kind=kind_phys), parameter :: con_d00 = 0.0d0
   real(kind=kind_phys), parameter :: con_day = 86400.d0
 
 
@@ -2430,8 +2432,9 @@ module module_physics_driver
 !
       if (Model%lssav) then
         do i=1,im
-          Diag%cldwrk (i) = Diag%cldwrk (i) + cld1d(i) * dtf
-          Diag%cnvprcp(i) = Diag%cnvprcp(i) + Diag%rainc(i)
+          Diag%cldwrk (i)  = Diag%cldwrk (i)  + cld1d(i) * dtf
+          Diag%cnvprcp(i)  = Diag%cnvprcp(i)  + Diag%rainc(i)
+          Diag%cnvprcpb(i) = Diag%cnvprcpb(i) + Diag%rainc(i)
         enddo
 
         if (Model%ldiag3d) then
@@ -2712,7 +2715,8 @@ module module_physics_driver
             enddo
             if (Model%lssav) then
               do i=1,im
-                Diag%cnvprcp(i) = Diag%cnvprcp(i) + raincs(i)
+                Diag%cnvprcp(i)  = Diag%cnvprcp(i)  + raincs(i)
+                Diag%cnvprcpb(i) = Diag%cnvprcpb(i) + raincs(i)
               enddo
             endif
 ! in shalcnv,  'cnvw' and 'cnvc' are not set to zero:
@@ -2748,7 +2752,8 @@ module module_physics_driver
             enddo
             if (Model%lssav) then
               do i=1,im
-                Diag%cnvprcp(i) = Diag%cnvprcp(i) + raincs(i)
+                Diag%cnvprcp(i)  = Diag%cnvprcp(i)  + raincs(i)
+                Diag%cnvprcpb(i) = Diag%cnvprcpb(i) + raincs(i)
               enddo
             endif
 ! in  mfshalcnv,  'cnvw' and 'cnvc' are set to zero before computation starts:
@@ -3000,7 +3005,8 @@ module module_physics_driver
         enddo
         if(Model%lssav) then
           do i=1,im
-            Diag%cnvprcp(i) = Diag%cnvprcp(i) + rain1(i) * frain
+            Diag%cnvprcp(i)  = Diag%cnvprcp(i)  + rain1(i) * frain
+            Diag%cnvprcpb(i) = Diag%cnvprcpb(i) + rain1(i) * frain
           enddo
 
 ! update dqdt_v to include moisture tendency due to surface processes
@@ -3372,15 +3378,19 @@ module module_physics_driver
 
           tem = dtp * con_p001 / con_day
           do i = 1, im
+            rain0(i,1) = max(con_d00, rain0(i,1))
+            snow0(i,1) = max(con_d00, snow0(i,1))
+            ice0(i,1)  = max(con_d00, ice0(i,1))
+            graupel0(i,1)  = max(con_d00, graupel0(i,1))
             rain1(i)        = (rain0(i,1)+snow0(i,1)+ice0(i,1)+graupel0(i,1)) * tem
             Diag%ice(i)     = ice0    (i,1) * tem
             Diag%snow(i)    = snow0   (i,1) * tem
             Diag%graupel(i) = graupel0(i,1) * tem
-            if (rain1(i) > 0.0) then
+            if ( rain1(i) > rainmin ) then
               Diag%sr(i)  = (snow0(i,1) + ice0(i,1)  + graupel0(i,1)) &
                           / (rain0(i,1) + snow0(i,1) + ice0(i,1) + graupel0(i,1))
             else
-              Diag%sr(i) = 0.0
+              Diag%sr(i)  = 0.0
             endif
           enddo
           do k = 1, levs
@@ -3495,11 +3505,18 @@ module module_physics_driver
       endif
 
       if (Model%lssav) then
+!        if (Model%me == 0) print *,'in phys drive, kdt=',Model%kdt, &
+!          'totprcpb=', Diag%totprcpb(1),'totprcp=',Diag%totprcp(1), &
+!          'rain=',Diag%rain(1)
         do i=1,im
-          Diag%totprcp(i) = Diag%totprcp(i) + Diag%rain(i)
-          Diag%totice (i) = Diag%totice (i) + Diag%ice(i)
-          Diag%totsnw (i) = Diag%totsnw (i) + Diag%snow(i)
-          Diag%totgrp (i) = Diag%totgrp (i) + Diag%graupel(i)
+          Diag%totprcp (i) = Diag%totprcp (i) + Diag%rain(i)
+          Diag%totice  (i) = Diag%totice  (i) + Diag%ice(i)
+          Diag%totsnw  (i) = Diag%totsnw  (i) + Diag%snow(i)
+          Diag%totgrp  (i) = Diag%totgrp  (i) + Diag%graupel(i)
+          Diag%totprcpb(i) = Diag%totprcpb(i) + Diag%rain(i)
+          Diag%toticeb (i) = Diag%toticeb (i) + Diag%ice(i)
+          Diag%totsnwb (i) = Diag%totsnwb (i) + Diag%snow(i)
+          Diag%totgrpb (i) = Diag%totgrpb (i) + Diag%graupel(i)
 !
           if (Model%cal_pre) then
             Diag%tdomr(i)  = Diag%tdomr(i)  + domr(i)  * dtf

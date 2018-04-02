@@ -100,8 +100,6 @@ module FV3GFS_io_mod
    integer :: isco,ieco,jsco,jeco
    integer :: fhzero, ncld, nsoil, imp_physics
    real(4) :: dtp
-   logical :: lprecip_accu
-   character(len=64)  :: Sprecip_accu
    integer,dimension(:), allocatable :: nstt, nstt_vctbl
    real(4), dimension(:,:,:), allocatable, target   :: buffer_phys_bl
    real(4), dimension(:,:,:), allocatable, target   :: buffer_phys_nb
@@ -1221,14 +1219,8 @@ module FV3GFS_io_mod
     nsoil  = Model%lsoil
     dtp    = Model%dtp
     imp_physics  = Model%imp_physics
-    lprecip_accu = Model%lprecip_accu
-    if( lprecip_accu ) then
-      Sprecip_accu = "yes" 
-    else
-      Sprecip_accu = "no" 
-    endif
 !    print *,'in gfdl_diag_register,ncld=',Model%ncld,Model%lsoil,Model%imp_physics, &
-!      'lprecip_accu=', lprecip_accu,' dtp=',dtp
+!      ' dtp=',dtp
 !
 !save lon/lat for vector interpolation
     allocate(lon(isco:ieco,jsco:jeco))
@@ -2105,6 +2097,20 @@ module FV3GFS_io_mod
 
     idx = idx + 1
     Diag(idx)%axes = 2
+    Diag(idx)%name = 'totprcpb_ave'
+    Diag(idx)%desc = 'bucket surface precipitation rate'
+    Diag(idx)%unit = 'kg/m**2/s'
+    Diag(idx)%mod_name = 'gfs_phys'
+    Diag(idx)%cnvfac = cn_th
+    Diag(idx)%time_avg = .TRUE.
+    Diag(idx)%intpl_method = 'bilinear'
+    allocate (Diag(idx)%data(nblks))
+    do nb = 1,nblks
+      Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%totprcpb(:)
+    enddo
+
+    idx = idx + 1
+    Diag(idx)%axes = 2
     Diag(idx)%name = 'gflux_ave'
     Diag(idx)%desc = 'surface ground heat flux'
     Diag(idx)%unit = 'W/m**2'
@@ -2242,6 +2248,20 @@ module FV3GFS_io_mod
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%cnvprcp(:)
+    enddo
+
+    idx = idx + 1
+    Diag(idx)%axes = 2
+    Diag(idx)%name = 'cnvprcpb_ave'
+    Diag(idx)%desc = 'averaged bucket surface convective precipitation rate'
+    Diag(idx)%unit = 'kg/m**2/s'
+    Diag(idx)%mod_name = 'gfs_phys'
+    Diag(idx)%cnvfac = cn_th
+    Diag(idx)%time_avg = .TRUE.
+    Diag(idx)%intpl_method = 'bilinear'
+    allocate (Diag(idx)%data(nblks))
+    do nb = 1,nblks
+      Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%cnvprcpb(:)
     enddo
 
     idx = idx + 1
@@ -2386,6 +2406,19 @@ module FV3GFS_io_mod
 
     idx = idx + 1
     Diag(idx)%axes = 2
+    Diag(idx)%name = 'toticeb_ave'
+    Diag(idx)%desc = 'bucket surface ice precipitation rate'
+    Diag(idx)%unit = 'kg/m**2/s'
+    Diag(idx)%mod_name = 'gfs_phys'
+    Diag(idx)%cnvfac = cn_th
+    Diag(idx)%time_avg = .TRUE.
+    allocate (Diag(idx)%data(nblks))
+    do nb = 1,nblks
+      Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%toticeb(:)
+    enddo
+
+    idx = idx + 1
+    Diag(idx)%axes = 2
     Diag(idx)%name = 'totsnw_ave'
     Diag(idx)%desc = 'surface snow precipitation rate'
     Diag(idx)%unit = 'kg/m**2/s'
@@ -2396,6 +2429,19 @@ module FV3GFS_io_mod
     allocate (Diag(idx)%data(nblks))
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%totsnw(:)
+    enddo
+
+    idx = idx + 1
+    Diag(idx)%axes = 2
+    Diag(idx)%name = 'totsnwb_ave'
+    Diag(idx)%desc = 'bucket surface snow precipitation rate'
+    Diag(idx)%unit = 'kg/m**2/s'
+    Diag(idx)%mod_name = 'gfs_phys'
+    Diag(idx)%cnvfac = cn_th
+    Diag(idx)%time_avg = .TRUE.
+    allocate (Diag(idx)%data(nblks))
+    do nb = 1,nblks
+      Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%totsnwb(:)
     enddo
 
     idx = idx + 1
@@ -2411,6 +2457,20 @@ module FV3GFS_io_mod
     do nb = 1,nblks
       Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%totgrp(:)
     enddo
+
+    idx = idx + 1
+    Diag(idx)%axes = 2
+    Diag(idx)%name = 'totgrpb_ave'
+    Diag(idx)%desc = 'bucket surface graupel precipitation rate'
+    Diag(idx)%unit = 'kg/m**2/s'
+    Diag(idx)%mod_name = 'gfs_phys'
+    Diag(idx)%cnvfac = cn_th
+    Diag(idx)%time_avg = .TRUE.
+    allocate (Diag(idx)%data(nblks))
+    do nb = 1,nblks
+      Diag(idx)%data(nb)%var2 => Gfs_diag(nb)%totgrpb(:)
+    enddo
+
 !    if(mpp_pe()==mpp_root_pe())print *,'in gfdl_diag_register,af totgrp,idx=',idx
 
 !--- physics instantaneous diagnostics ---
@@ -3704,12 +3764,14 @@ module FV3GFS_io_mod
      is_in = atm_block%isc
      js_in = atm_block%jsc
 
+!     if(mpp_pe()==mpp_root_pe())print *,'in,fv3gfs_io. time avg, time_int=',time_int
      do idx = 1,tot_diag_idx
        if (diag(idx)%id > 0) then
          lcnvfac = diag(idx)%cnvfac
          if (diag(idx)%time_avg) then
-           if ( diag(idx)%full_time_avg .and. lprecip_accu ) then
+           if ( diag(idx)%full_time_avg ) then
              lcnvfac = lcnvfac*rtime_intfull
+!             if(mpp_pe()==mpp_root_pe())print *,'in,fv3gfs_io. full time avg, field=',trim(Diag(idx)%name),' time=',time_intfull
            else
              lcnvfac = lcnvfac*rtime_int
            endif
@@ -4059,7 +4121,7 @@ module FV3GFS_io_mod
 !      'bdl_intplmethod=',trim(bdl_intplmethod(ibdl))
 
      call ESMF_AttributeAdd(phys_bundle(ibdl), convention="NetCDF", purpose="FV3", &
-       attrList=(/"fhzero", "ncld", "nsoil", "imp_physics", "dtp", "lprecip_accu"/), rc=rc)
+       attrList=(/"fhzero", "ncld", "nsoil", "imp_physics", "dtp"/), rc=rc)
      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
        line=__LINE__, &
        file=__FILE__)) &
@@ -4091,12 +4153,6 @@ module FV3GFS_io_mod
      call ESMF_AttributeSet(phys_bundle(ibdl), convention="NetCDF", purpose="FV3", &
        name="dtp", value=dtp, rc=rc)
 !     print *,'in fcst gfdl diag, dtp=',dtp,' ibdl=',ibdl
-     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-       line=__LINE__, &
-       file=__FILE__)) &
-       return  ! bail out
-     call ESMF_AttributeSet(phys_bundle(ibdl), convention="NetCDF", purpose="FV3", &
-       name="lprecip_accu", value=trim(Sprecip_accu), rc=rc)
      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
        line=__LINE__, &
        file=__FILE__)) &
