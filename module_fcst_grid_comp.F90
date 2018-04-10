@@ -20,10 +20,10 @@
                                 NOLEAP, NO_CALENDAR, date_to_string,       &
                                 get_date
 
-  use  atmos_model_mod,   only: atmos_model_init, atmos_model_end,  &
-                                update_atmos_model_dynamics,        &
-                                update_atmos_radiation_physics,     &
-                                update_atmos_model_state,           &
+  use  atmos_model_mod,   only: atmos_model_init, atmos_model_end,    &
+                                update_atmos_model_dynamics,          &
+                                update_atmos_radiation_physics,       &
+                                update_atmos_model_state,             &
                                 atmos_data_type, atmos_model_restart
 
   use constants_mod,      only: constants_init
@@ -468,7 +468,7 @@
                return  ! bail out
            enddo
 !
-           call fv_phys_bundle_setup(atm_int_state%Atm%axes,          &
+           call fv_phys_bundle_setup(atm_int_state%Atm%diag, atm_int_state%Atm%axes, &
                 fieldbundlephys, fcstgrid, quilting, nbdlphys)
 !
            ! Add the field to the importState so parent can connect to it

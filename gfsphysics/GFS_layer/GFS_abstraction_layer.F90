@@ -1,5 +1,6 @@
 module physics_abstraction_layer
 
+  use machine,         only: kind_phys
   use GFS_typedefs,    only: init_type        =>  GFS_init_type,     &
                              control_type     =>  GFS_control_type,  &
                              statein_type     =>  GFS_statein_type,  &
@@ -12,11 +13,26 @@ module physics_abstraction_layer
                              radtend_type     =>  GFS_radtend_type,  &
                              intdiag_type     =>  GFS_diag_type
 
+  use GFS_restart,     only: restart_type     =>  GFS_restart_type,    &
+                             restart_populate =>  GFS_restart_populate
+
+  use GFS_diagnostics, only: diagnostic_type      =>  GFS_externaldiag_type,    &
+                             diagnostic_populate  =>  GFS_externaldiag_populate
+
   use GFS_driver,      only: initialize       =>  GFS_initialize,       &
                              time_vary_step   =>  GFS_time_vary_step,   &
                              radiation_step1  =>  GFS_radiation_driver, &
                              physics_step1    =>  GFS_physics_driver,   &
                              physics_step2    =>  GFS_stochastic_driver
+
+  integer :: num_time_vary_steps  = 1
+  integer :: num_rad_steps  = 1
+  integer :: num_phys_steps = 2
+
+!-------------------------
+!  public physics dataspec
+!-------------------------
+  public  kind_phys
 
 !----------------------
 !  public physics types
@@ -32,6 +48,15 @@ module physics_abstraction_layer
   public  cldprop_type
   public  radtend_type
   public  intdiag_type
+  public  restart_type
+  public  diagnostic_type
+
+!------------------
+!  public variables 
+!------------------
+  public  num_time_vary_steps
+  public  num_rad_steps
+  public  num_phys_steps
 
 !--------------------------
 !  public physics functions

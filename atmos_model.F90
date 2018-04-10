@@ -80,14 +80,14 @@ use atmosphere_mod,     only: Atm, mytile
 use block_control_mod,  only: block_control_type, define_blocks_packed
 use IPD_typedefs,       only: IPD_init_type, IPD_control_type, &
                               IPD_data_type, IPD_diag_type,    &
-                              IPD_restart_type, kind_phys
-use IPD_driver,         only: IPD_initialize, IPD_setup_step,  &
-                              IPD_radiation_step,              &
-                              IPD_physics_step1,               &
-                              IPD_physics_step2
+                              IPD_restart_type, IPD_kind_phys, &
+                              IPD_func0d_proc, IPD_func1d_proc
+use IPD_driver,         only: IPD_initialize, IPD_step
+use physics_abstraction_layer, only: time_vary_step, radiation_step1, physics_step1, physics_step2
 use FV3GFS_io_mod,      only: FV3GFS_restart_read, FV3GFS_restart_write, &
                               FV3GFS_IPD_checksum,                       &
-                              gfdl_diag_register, gfdl_diag_output
+                              FV3GFS_diag_register, FV3GFS_diag_output,  &
+                              DIAG_SIZE
 use fv_iau_mod, only: iau_external_data_type,getiauforcing,iau_initialize
 
 !-----------------------------------------------------------------------
@@ -104,26 +104,27 @@ public atmos_model_restart
 
 !<PUBLICTYPE >
  type atmos_data_type
-     type (domain2d)               :: domain             ! domain decomposition
      integer                       :: axes(4)            ! axis indices (returned by diag_manager) for the atmospheric grid 
                                                          ! (they correspond to the x, y, pfull, phalf axes)
-     real,                 pointer, dimension(:,:) :: lon_bnd  => null() ! local longitude axis grid box corners in radians.
-     real,                 pointer, dimension(:,:) :: lat_bnd  => null() ! local latitude axis grid box corners in radians.
-     real(kind=kind_phys), pointer, dimension(:,:) :: lon      => null() ! local longitude axis grid box centers in radians.
-     real(kind=kind_phys), pointer, dimension(:,:) :: lat      => null() ! local latitude axis grid box centers in radians.
-     type (time_type)              :: Time               ! current time
-     type (time_type)              :: Time_step          ! atmospheric time step.
-     type (time_type)              :: Time_init          ! reference time.
      integer, pointer              :: pelist(:) =>null() ! pelist where atmosphere is running.
-     logical                       :: pe                 ! current pe.
-     type(grid_box_type)           :: grid               ! hold grid information needed for 2nd order conservative flux exchange 
-                                                         ! to calculate gradient on cubic sphere grid.
      integer                       :: layout(2)          ! computer task laytout
-     real(kind=8), pointer, dimension(:)           :: ak, bk
-     real(kind=kind_phys), pointer, dimension(:,:) :: dx, dy
-     real(kind=8), pointer, dimension(:,:)         :: area
-     real(kind=8), pointer, dimension(:,:,:)       :: layer_hgt, level_hgt
+     logical                       :: pe                 ! current pe.
+     real(kind=8),             pointer, dimension(:)     :: ak, bk
+     real,                     pointer, dimension(:,:)   :: lon_bnd  => null() ! local longitude axis grid box corners in radians.
+     real,                     pointer, dimension(:,:)   :: lat_bnd  => null() ! local latitude axis grid box corners in radians.
+     real(kind=IPD_kind_phys), pointer, dimension(:,:)   :: lon      => null() ! local longitude axis grid box centers in radians.
+     real(kind=IPD_kind_phys), pointer, dimension(:,:)   :: lat      => null() ! local latitude axis grid box centers in radians.
+     real(kind=IPD_kind_phys), pointer, dimension(:,:)   :: dx, dy
+     real(kind=8),             pointer, dimension(:,:)   :: area
+     real(kind=8),             pointer, dimension(:,:,:) :: layer_hgt, level_hgt
+     type(domain2d)                :: domain             ! domain decomposition
+     type(time_type)               :: Time               ! current time
+     type(time_type)               :: Time_step          ! atmospheric time step.
+     type(time_type)               :: Time_init          ! reference time.
+     type(grid_box_type)           :: grid               ! hold grid information needed for 2nd order conservative flux exchange 
+     type(IPD_diag_type), pointer, dimension(:) :: Diag
  end type atmos_data_type
+                                                         ! to calculate gradient on cubic sphere grid.
 !</PUBLICTYPE >
 
 integer :: fv3Clock, getClock, updClock, setupClock, radClock, physClock
@@ -146,7 +147,7 @@ type (time_type) :: diag_time
 !----------------
 type(IPD_control_type)              :: IPD_Control
 type(IPD_data_type),    allocatable :: IPD_Data(:)  ! number of blocks
-type(IPD_diag_type)                 :: IPD_Diag(250)
+type(IPD_diag_type),    target      :: IPD_Diag(DIAG_SIZE)
 type(IPD_restart_type)              :: IPD_Restart
 
 ! IAU container
@@ -191,6 +192,8 @@ subroutine update_atmos_radiation_physics (Atmos)
   type (atmos_data_type), intent(in) :: Atmos
 !--- local variables---
     integer :: nb, jdat(8)
+    procedure(IPD_func0d_proc), pointer :: Func0d => NULL()
+    procedure(IPD_func1d_proc), pointer :: Func1d => NULL()
 
     if (mpp_pe() == mpp_root_pe() .and. debug) write(6,*) "statein driver"
 !--- get atmospheric state from the dynamic core
@@ -218,7 +221,8 @@ subroutine update_atmos_radiation_physics (Atmos)
       IPD_Control%jdat(:) = jdat(:)
 !--- execute the IPD atmospheric setup step
       call mpp_clock_begin(setupClock)
-      call IPD_setup_step (IPD_Control, IPD_Data, IPD_Diag, IPD_Restart)
+      Func1d => time_vary_step
+      call IPD_step (IPD_Control, IPD_Data(:), IPD_Diag, IPD_Restart, IPD_func1d=Func1d)
       call mpp_clock_end(setupClock)
 
       if (mpp_pe() == mpp_root_pe() .and. debug) write(6,*) "radiation driver"
@@ -226,12 +230,13 @@ subroutine update_atmos_radiation_physics (Atmos)
 !--- execute the IPD atmospheric radiation subcomponent (RRTM)
 
       call mpp_clock_begin(radClock)
+      Func0d => radiation_step1
 !$OMP parallel do default (none)       &
 !$OMP            schedule (dynamic,1), &
-!$OMP            shared   (Atm_block, IPD_Control, IPD_Data, IPD_Diag, IPD_Restart) &
+!$OMP            shared   (Atm_block, IPD_Control, IPD_Data, IPD_Diag, IPD_Restart, Func0d) &
 !$OMP            private  (nb)
       do nb = 1,Atm_block%nblks
-        call IPD_radiation_step (IPD_Control, IPD_Data(nb), IPD_Diag, IPD_Restart)
+        call IPD_step (IPD_Control, IPD_Data(nb:nb), IPD_Diag, IPD_Restart, IPD_func0d=Func0d)
       enddo
       call mpp_clock_end(radClock)
 
@@ -245,12 +250,13 @@ subroutine update_atmos_radiation_physics (Atmos)
 !--- execute the IPD atmospheric physics step1 subcomponent (main physics driver)
 
       call mpp_clock_begin(physClock)
+      Func0d => physics_step1
 !$OMP parallel do default (none) &
 !$OMP            schedule (dynamic,1), &
-!$OMP            shared   (Atm_block, IPD_Control, IPD_Data, IPD_Diag, IPD_Restart) &
+!$OMP            shared   (Atm_block, IPD_Control, IPD_Data, IPD_Diag, IPD_Restart, Func0d) &
 !$OMP            private  (nb)
       do nb = 1,Atm_block%nblks
-        call IPD_physics_step1 (IPD_Control, IPD_Data(nb), IPD_Diag, IPD_Restart)
+        call IPD_step (IPD_Control, IPD_Data(nb:nb), IPD_Diag, IPD_Restart, IPD_func0d=Func0d)
       enddo
       call mpp_clock_end(physClock)
 
@@ -264,12 +270,13 @@ subroutine update_atmos_radiation_physics (Atmos)
 !--- execute the IPD atmospheric physics step2 subcomponent (stochastic physics driver)
 
       call mpp_clock_begin(physClock)
+      Func0d => physics_step2
 !$OMP parallel do default (none) &
 !$OMP            schedule (dynamic,1), &
-!$OMP            shared   (Atm_block, IPD_Control, IPD_Data, IPD_Diag, IPD_Restart) &
+!$OMP            shared   (Atm_block, IPD_Control, IPD_Data, IPD_Diag, IPD_Restart, Func0d) &
 !$OMP            private  (nb)
       do nb = 1,Atm_block%nblks
-        call IPD_physics_step2 (IPD_Control, IPD_Data(nb), IPD_Diag, IPD_Restart)
+        call IPD_step (IPD_Control, IPD_Data(nb:nb), IPD_Diag, IPD_Restart, IPD_func0d=Func0d)
       enddo
       call mpp_clock_end(physClock)
 
@@ -305,7 +312,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
   integer :: isc, iec, jsc, jec
   integer :: isd, ied, jsd, jed
   integer :: blk, ibs, ibe, jbs, jbe
-  real(kind=kind_phys) :: dt_phys
+  real(kind=IPD_kind_phys) :: dt_phys
   real, allocatable    :: q(:,:,:,:), p_half(:,:,:)
   character(len=80)    :: control
   character(len=64)    :: filename, filename2, pelist_name
@@ -422,6 +429,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
 #endif
 
    call IPD_initialize (IPD_Control, IPD_Data, IPD_Diag, IPD_Restart, Init_parm)
+   Atmos%Diag => IPD_Diag
 
    Atm(mytile)%flagstruct%do_skeb = IPD_Control%do_skeb
 
@@ -441,7 +449,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
 !rab   call atmosphere_tracer_postinit (IPD_Data, Atm_block)
 
    call atmosphere_nggps_diag (Time, init=.true.)
-   call gfdl_diag_register (Time, IPD_Data(:)%Sfcprop, IPD_Data(:)%Cldprop, IPD_Data(:)%IntDiag, IPD_Data(:)%grid, Atm_block, IPD_Control, Atmos%axes)
+   call FV3GFS_diag_register (IPD_Diag, Time, Atm_block, IPD_Control, Atmos%lon, Atmos%lat, Atmos%axes)
    call FV3GFS_restart_read (IPD_Data, IPD_Restart, Atm_block, IPD_Control, Atmos%domain)
 
    !--- set the initial diagnostic timestamp
@@ -524,7 +532,7 @@ subroutine update_atmos_model_state (Atmos)
   type (atmos_data_type), intent(inout) :: Atmos
 !--- local variables
   integer :: isec,seconds
-  real(kind=kind_phys) :: time_int, time_intfull
+  real(kind=IPD_kind_phys) :: time_int, time_intfull
 
     call set_atmosphere_pelist()
     call mpp_clock_begin(fv3Clock)
@@ -549,7 +557,7 @@ subroutine update_atmos_model_state (Atmos)
       time_intfull = real(seconds)
       if (mpp_pe() == mpp_root_pe()) write(6,*) ' gfs diags time since last bucket empty: ',time_int/3600.,'hrs'
       call atmosphere_nggps_diag(Atmos%Time)
-      call gfdl_diag_output(Atmos%Time, Atm_block, IPD_Control%nx, IPD_Control%ny, &
+      call FV3GFS_diag_output(Atmos%Time, IPD_DIag, Atm_block, IPD_Control%nx, IPD_Control%ny, &
                             IPD_Control%levs, 1, 1, 1.d0, time_int, time_intfull)
       if (mod(isec,3600*nint(IPD_Control%fhzero)) == 0) diag_time = Atmos%Time
       call diag_send_complete_instant (Atmos%Time)

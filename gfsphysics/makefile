@@ -141,7 +141,7 @@ SRCS_F90 = \
 	   ./physics/gfdl_cloud_microphys.F90					     \
 	   ./physics/micro_mg_utils.F90                                              \
 	   ./physics/micro_mg2_0.F90                                                 \
-	   ./physics/module_mp_radar.F90						     \
+	   ./physics/module_mp_radar.F90                                             \
 	   ./physics/module_mp_thompson_gfs.F90                                      \
 	   ./physics/module_mp_wsm6_fv3.F90                                          \
 	   ./GFS_layer/GFS_abstraction_layer.F90 				     \
@@ -150,9 +150,7 @@ SRCS_F90 = \
 	   ./GFS_layer/GFS_physics_driver.F90    				     \
 	   ./GFS_layer/GFS_radiation_driver.F90  				     \
 	   ./GFS_layer/GFS_restart.F90           				     \
-	   ./GFS_layer/GFS_typedefs.F90          				     \
-	   ./IPD_layer/IPD_driver.F90						     \
-	   ./IPD_layer/IPD_typedefs.F90
+	   ./GFS_layer/GFS_typedefs.F90          				     
 
 SRCS_c   =
 
