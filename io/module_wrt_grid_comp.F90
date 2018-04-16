@@ -25,6 +25,8 @@
 !
 !---------------------------------------------------------------------------------
 !
+      use fms_io_mod,         only: field_exist, read_data
+
       use esmf
       use write_internal_state
       use module_fv3_io_def, only : num_pes_fcst,lead_wrttask, last_wrttask,  &
@@ -168,6 +170,10 @@
       real, dimension(:), allocatable               :: slat, lat, lon, axesdata
       real(ESMF_KIND_R8), dimension(:,:), pointer   :: lonPtr, latPtr
       type(ESMF_DataCopy_Flag) :: copyflag=ESMF_DATACOPY_REFERENCE
+      real(8),parameter :: PI=3.14159265358979d0
+
+      character(256)                          :: gridfile
+
 !
       logical,save                            :: first=.true.
 !test
@@ -228,10 +234,20 @@
           decomptile(1,tl) = 1
           decomptile(2,tl) = jidx
         enddo
-        wrtgrid = ESMF_GridCreateMosaic(filename='INPUT/grid_spec.nc',      &
-                              regDecompPTile=decomptile,tileFilePath='INPUT/', &
-                              staggerlocList=(/ESMF_STAGGERLOC_CENTER, ESMF_STAGGERLOC_CORNER/), &
-                              name='wrt_grid', rc=rc)
+        
+      call ESMF_AttributeGet(imp_state_write, convention="NetCDF", purpose="FV3", &
+        name="gridfile", value=gridfile, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, &
+        file=__FILE__)) &
+        return  ! bail out
+        
+      CALL ESMF_LogWrite("wrtComp: gridfile:"//trim(gridfile),ESMF_LOGMSG_INFO,rc=rc)
+
+        wrtgrid = ESMF_GridCreateMosaic(filename="INPUT/"//trim(gridfile),   &
+          regDecompPTile=decomptile,tileFilePath="INPUT/",                   &
+          staggerlocList=(/ESMF_STAGGERLOC_CENTER, ESMF_STAGGERLOC_CORNER/), &
+          name='wrt_grid', rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
           line=__LINE__, &
           file=__FILE__)) &
@@ -693,7 +709,7 @@
         return  ! bail out
 
       call ESMF_AttributeGet(wrtGrid, convention="NetCDF", purpose="FV3", &
-      name="ESMF:gridded_dim_labels", valueList=attrValueSList, rc=rc)
+        name="ESMF:gridded_dim_labels", valueList=attrValueSList, rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
         line=__LINE__, &
         file=__FILE__)) &

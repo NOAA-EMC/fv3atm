@@ -22,6 +22,7 @@
   type(ESMF_TimeInterval)  :: output_hfmax
   type(ESMF_TimeInterval)  :: output_interval,output_interval_hf
 !
+  logical                  :: cpl, cplprint_flag
   logical                  :: quilting
   logical                  :: force_date_from_configure
 !

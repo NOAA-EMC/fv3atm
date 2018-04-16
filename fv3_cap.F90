@@ -7,6 +7,7 @@
 ! revision history
 ! 11 Oct 2016: J. Wang          Initial code
 ! 18 Apr 2017: J. Wang          set up fcst grid component and write grid components
+! 24 Jul 2017: J. Wang          initialization and time stepping changes for coupling 
 ! 02 Nov 2017: J. Wang          Use Gerhard's transferable RouteHandle
 !
 
@@ -14,28 +15,37 @@ module fv3gfs_cap_mod
 
   use ESMF
   use NUOPC
-  use NUOPC_Model,        only: model_routine_SS      => SetServices,  &
-                                model_label_Advance   => label_Advance,&
-                                model_label_Finalize  => label_Finalize
+  use NUOPC_Model,            only: model_routine_SS        => SetServices,  &
+                                    model_label_Advance     => label_Advance,&
+                                    model_label_CheckImport => label_CheckImport, &
+                                    model_label_Finalize    => label_Finalize
 !
-  use module_fv3_config,  only: quilting, restart_interval,             &
-                                nfhout, nfhout_hf, nsout, dt_atmos,     &
-                                nfhmax, nfhmax_hf,output_hfmax,         &
-                                output_interval,output_interval_hf,     &
-                                alarm_output_hf, alarm_output,          &
-                                calendar, calendar_type,                &
-                                force_date_from_configure
-  use module_fv3_io_def,  only: num_pes_fcst,write_groups,              &
-                                num_files, filename_base,               &
-                                wrttasks_per_group, n_group,            &
-                                lead_wrttask, last_wrttask,             &
-                                output_grid, output_file,               &
-                                imo, jmo, write_nemsioflip,             &
-                                write_fsyncflag
+  use module_fv3_config,      only: quilting, restart_interval,              &
+                                    nfhout, nfhout_hf, nsout, dt_atmos,      &
+                                    nfhmax, nfhmax_hf,output_hfmax,          &
+                                    output_interval,output_interval_hf,      &
+                                    alarm_output_hf, alarm_output,           &
+                                    calendar, calendar_type, cpl,            &
+                                    force_date_from_configure,               &
+                                    cplprint_flag
+  use module_fv3_io_def,      only: num_pes_fcst,write_groups,               &
+                                    num_files, filename_base,                &
+                                    wrttasks_per_group, n_group,             &
+                                    lead_wrttask, last_wrttask,              &
+                                    output_grid, output_file,                &
+                                    imo, jmo, write_nemsioflip,              &
+                                    write_fsyncflag
 !
-  use module_fcst_grid_comp,  only: fcstSS => SetServices
+  use module_fcst_grid_comp,  only: fcstSS => SetServices, fcstGrid
   use module_wrt_grid_comp,   only: wrtSS => SetServices
 !
+  use module_cplfields,       only: nExportFields, exportFields,             &
+                                    exportFieldsList,importFieldsList,       &
+                                    nImportFields, importFields
+  use module_cap_cpl,         only: realizeConnectedInternCplField,          &
+                                    clock_cplIntval, Dump_cplFields
+
+
   implicit none
   private
   public SetServices
@@ -59,6 +69,10 @@ module fv3gfs_cap_mod
   integer, allocatable                        :: fcstPetList(:)
   
   logical :: profile_memory = .true.
+
+  character(len=160) :: nuopcMsg
+  integer            :: timeslice = 0
+
 
 !-----------------------------------------------------------------------
 
@@ -93,13 +107,14 @@ module fv3gfs_cap_mod
 
     ! set entry point for methods that require specific implementation
     call NUOPC_CompSetEntryPoint(gcomp, ESMF_METHOD_INITIALIZE, &
-      phaseLabelList=(/"IPDv00p1"/), userRoutine=InitializeAdvertise, rc=rc)
+      phaseLabelList=(/"IPDv01p1"/), userRoutine=InitializeAdvertise, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
       return  ! bail out
+
     call NUOPC_CompSetEntryPoint(gcomp, ESMF_METHOD_INITIALIZE, &
-      phaseLabelList=(/"IPDv00p2"/), userRoutine=InitializeRealize, rc=rc)
+      phaseLabelList=(/"IPDv01p3"/), userRoutine=InitializeRealize, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
@@ -108,6 +123,20 @@ module fv3gfs_cap_mod
     ! model advance method(s)
     call NUOPC_CompSpecialize(gcomp, specLabel=model_label_Advance, &
       specRoutine=ModelAdvance, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+      
+    ! checking the import fields is a bit more complex because of coldstart option
+    call ESMF_MethodRemove(gcomp, model_label_CheckImport, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+    call NUOPC_CompSpecialize(gcomp, specLabel=model_label_CheckImport, &
+      specRoutine=NUOPC_NoOp, rc=rc)  !TODO: replace this with a real method
+      !TODO: for now just disable all timestamp checking of import fields
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
@@ -131,13 +160,16 @@ module fv3gfs_cap_mod
     type(ESMF_Clock)      :: clock
     integer, intent(out)  :: rc
     
-    character(len=10)                         :: value
+    character(len=10)     :: value
+    character(240)        :: msgString
+
+    character(len=*),parameter  :: subname='(fv3gfs_cap:InitializeP0)'
 
     rc = ESMF_SUCCESS
 
     ! Switch to IPDv01 by filtering all other phaseMap entries
     call NUOPC_CompFilterPhaseMap(gcomp, ESMF_METHOD_INITIALIZE, &
-      acceptStringList=(/"IPDv00p"/), rc=rc)
+      acceptStringList=(/"IPDv01p"/), rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
@@ -148,8 +180,15 @@ module fv3gfs_cap_mod
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
-      return  ! bail out
-    profile_memory=(trim(value)/="false")
+    profile_memory = (trim(value)/="false")
+
+    call ESMF_AttributeGet(gcomp, name="DumpFields", value=value, defaultValue="false", &
+      convention="NUOPC", purpose="Instance", rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, file=__FILE__)) return  ! bail out
+    cplprint_flag = (trim(value)=="true")
+    write(msgString,'(A,l6)') trim(subname)//' cplprint_flag = ',cplprint_flag
+    call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_INFO, rc=rc)
 
   end subroutine
   
@@ -161,6 +200,7 @@ module fv3gfs_cap_mod
     type(ESMF_State)                       :: importState, exportState
     type(ESMF_Clock)                       :: clock
     integer, intent(out)                   :: rc
+
 !
 ! local variables
     type(ESMF_VM)                          :: vm
@@ -170,6 +210,7 @@ module fv3gfs_cap_mod
     type(ESMF_TimeInterval)                :: RunDuration, timeStep
     type(ESMF_Config)                      :: cf
     type(ESMF_RegridMethod_Flag)           :: regridmethod
+    type(ESMF_TimeInterval)                :: earthStep
 
     integer,dimension(6)                   :: date, date_init
     integer                                :: mpi_comm_atm
@@ -207,8 +248,13 @@ module fv3gfs_cap_mod
       return  ! bail out
 !    print *,'in fv3_cap,initAdvertize,name=',trim(name),'mpi_comm=',mpi_comm_atm, &
 !       'petcount=',petcount,'mype=',mype
-
-    clock_fv3=clock
+!
+! create an instance clock for fv3
+    clock_fv3=ESMF_ClockCreate(clock, rc=RC)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
 !
 !------------------------------------------------------------------------
 ! get config variables
@@ -229,6 +275,13 @@ module fv3gfs_cap_mod
 !
     CALL ESMF_ConfigGetAttribute(config=CF,value=calendar, &
                                  label ='calendar:',rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+!
+    cpl = .false.
+    CALL ESMF_ConfigGetAttribute(config=CF,value=cpl, label ='cpl:',rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
@@ -347,6 +400,10 @@ module fv3gfs_cap_mod
     call ESMF_VMbroadcast(vm, date, 6, 0)
     call ESMF_TimeSet(time=CurrTime,yy=date(1),mm=date(2),dd=date(3),h=date(4), &
                       m=date(5),s=date(6),rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      call ESMF_Finalize(endflag=ESMF_END_ABORT)
 999 continue
 998 continue
 !    if(mype==0) print *,'final date =',date,'date_init=',date_init
@@ -354,7 +411,42 @@ module fv3gfs_cap_mod
 !reset CurrTime in clock
     call ESMF_ClockSet(clock_fv3, currTIME=CurrTime, startTime=startTime,  &
                        stopTime=stopTime, timeStep=timeStep, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
+!
+    !
+    !Under NUOPC, the EARTH driver clock is a separate instance from the
+    ! - fv3 clock. However, the fv3 clock may have been reset from restart
+    ! - therefore the EARTH driver clock must also be adjusted.
+    ! - Affected: currTime, timeStep
+    call ESMF_ClockGet(clock, timeStep=earthStep, rc=RC)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      call ESMF_Finalize(endflag=ESMF_END_ABORT)
+
+    if (earthStep>(stopTime-currTime)) earthStep=stopTime-currTime
+    call ESMF_ClockSet(clock, currTime=currTime, &
+      timeStep=earthStep, rc=RC)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      call ESMF_Finalize(endflag=ESMF_END_ABORT)
+
+    ! Set fv3 component clock as copy of EARTH clock.
+    call NUOPC_CompSetClock(gcomp, clock, rc=RC)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      call ESMF_Finalize(endflag=ESMF_END_ABORT)
+
+    ! Read in the FV3 coupling interval
+    if ( cpl ) then
+      call clock_cplIntval(gcomp, CF)
+    endif
 !
 !#######################################################################
 ! set up fcst grid component
@@ -515,6 +607,7 @@ module fv3gfs_cap_mod
           call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
 ! add the fcst FieldBundles to the wrtState(i) so write component can
+! use this info to create mirror objects
         call ESMF_AttributeCopy(fcstState, wrtState(i), &
            attcopy=ESMF_ATTCOPY_REFERENCE, rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
@@ -522,7 +615,6 @@ module fv3gfs_cap_mod
           file=__FILE__)) &
           call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
-! use this info to create mirror objects
         call ESMF_StateAdd(wrtState(i), fcstFB, rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
           line=__LINE__, &
@@ -706,12 +798,33 @@ module fv3gfs_cap_mod
 !end quilting
     endif
 !
+    ! --- advertise Fields in importState and exportState -------------------
+
+    if( cpl ) then
+      if (ESMF_GridCompIsPetLocal(fcstComp, rc=rc)) then
+    
+        ! importable fields:
+        call NUOPC_Advertise(importState, StandardNames=ImportFieldsList, rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, &
+          file=__FILE__)) &
+          return  ! bail out
+
+        ! exportable fields:
+        call NUOPC_Advertise(exportState, StandardNames=ExportFieldsList, rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, &
+          file=__FILE__)) &
+          return  ! bail out
+        
+      endif
+      if(mype==0) print *,'in fv3_cap, aft import, export fields in atmos'
+    endif
+
     if(mype==0) print *,'in fv3_cap, init time=',mpi_wtime()-timeis
 !-----------------------------------------------------------------------
 !
   end subroutine InitializeAdvertise
-!
-  !-----------------------------------------------------------------------------
 
   subroutine InitializeRealize(gcomp, importState, exportState, clock, rc)
     type(ESMF_GridComp)  :: gcomp
@@ -720,13 +833,39 @@ module fv3gfs_cap_mod
     integer, intent(out) :: rc
 
     ! local variables
-    type(ESMF_Grid)         :: grid
+    integer :: n
 
     rc = ESMF_SUCCESS
 
-    ! nothing is realized in the import/export States
+    ! --- conditionally realize or remove Fields in importState and exportState -------------------
 
-  end subroutine
+    if ( cpl ) then
+      if (ESMF_GridCompIsPetLocal(fcstComp, rc=rc)) then
+
+        do n = 1,nImportFields
+          call realizeConnectedInternCplField(importState, &
+            field=importFields(n), standardName=trim(importFieldsList(n)), &
+            grid=fcstGrid, rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+            line=__LINE__, &
+            file=__FILE__)) &
+            return  ! bail out
+        enddo
+
+        do n = 1,nExportFields
+          call realizeConnectedInternCplField(exportState, &
+            field=exportFields(n), standardName=trim(exportFieldsList(n)), &
+            grid=fcstGrid, rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+            line=__LINE__, &
+            file=__FILE__)) &
+            return  ! bail out
+        enddo
+      
+      endif
+    endif
+
+  end subroutine InitializeRealize
 
   !-----------------------------------------------------------------------------
 
@@ -757,6 +896,7 @@ module fv3gfs_cap_mod
     character(64)  :: fcstbdl_name
     real(kind=8)   :: MPI_Wtime
     real(kind=8)   :: timeri, timewri, timewr, timerhi, timerh
+
 
 !-----------------------------------------------------------------------------
 
@@ -796,30 +936,60 @@ module fv3gfs_cap_mod
       file=__FILE__)) &
       return  ! bail out
     
+!-----------------------------------------------------------------------
+!***  Use the internal Clock set by NUOPC layer for FV3 but update stopTime
+!-----------------------------------------------------------------------
+
+    ! Component internal Clock gets updated per NUOPC rules
+    call ESMF_GridCompGet(gcomp, clock=clock, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+
+    ! The stopTime will be updated to be the next coupling time
+    call ESMF_ClockGet(clock, currTime=currTime, stopTime=stopTime, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+
+    ! Set the coupling time to be stopTime in Clock that FV3 core uses
+    call ESMF_ClockSet(clock_fv3, currTime=currTime, stopTime=stopTime, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+
+    call ESMF_ClockPrint(clock_fv3, options="currTime", &
+      preString="entering FV3_ADVANCE with clock_fv3 current: ", &
+      unit=nuopcMsg)
+    call ESMF_LogWrite(nuopcMsg, ESMF_LOGMSG_INFO)
+    call ESMF_ClockPrint(clock_fv3, options="startTime", &
+      preString="entering FV3_ADVANCE with clock_fv3 start:   ", &
+      unit=nuopcMsg)
+    call ESMF_LogWrite(nuopcMsg, ESMF_LOGMSG_INFO)
+    call ESMF_ClockPrint(clock_fv3, options="stopTime", &
+      preString="entering FV3_ADVANCE with clock_fv3 stop:    ", &
+      unit=nuopcMsg)
+    call ESMF_LogWrite(nuopcMsg, ESMF_LOGMSG_INFO)
+
     call ESMF_ClockGet(clock_fv3, startTime=startTime, currTime=currTime, &
       timeStep=timeStep, stopTime=stopTime, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
       return  ! bail out
-!   if(mype==0)  print *,'total steps=', nint((stopTime-startTime)/timeStep)
-!   if(mype==lead_wrttask(1))  print *,'on wrt lead,total steps=', nint((stopTime-startTime)/timeStep)
+!    if(mype==0)  print *,'total steps=', nint((stopTime-startTime)/timeStep)
+!    if(mype==lead_wrttask(1))  print *,'on wrt lead,total steps=', nint((stopTime-startTime)/timeStep)
     call ESMF_TimeGet(time=stopTime,yy=date(1),mm=date(2),dd=date(3),h=date(4), &
                       m=date(5),s=date(6),rc=rc)
-!    if(mype==0) print *,'af clock,stop date=',date
-!    if(mype==lead_wrttask(1)) print *,'on wrt lead,af clock,stop date=',date
+!     if(mype==0) print *,'af clock,stop date=',date
+!     if(mype==lead_wrttask(1)) print *,'on wrt lead,af clock,stop date=',date
     call ESMF_TimeIntervalGet(timeStep,yy=date(1),mm=date(2),d=date(3),h=date(4), &
                       m=date(5),s=date(6),rc=rc)
-!    if(mype==0) print *,'af clock,timestep date=',date
-!    if(mype==lead_wrttask(1)) print *,'on wrt lead,af clock,timestep date=',date
-    
-    call ESMF_TimePrint(currTime + timeStep, &
-      preString="--------------------------------> to: ", &
-      unit=msgString, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
+!     if(mype==0) print *,'af clock,timestep date=',date
+!     if(mype==lead_wrttask(1)) print *,'on wrt lead,af clock,timestep date=',date
 !
 !-----------------------------------------------------------------------------
 !*** integration loop
@@ -964,6 +1134,13 @@ module fv3gfs_cap_mod
 
 !*** end integreate loop
     enddo integrate
+!
+!jw for coupled, check clock and dump import and export state
+    if ( cpl ) then
+       call Dump_cplFields(gcomp, importState, exportstate, clock_fv3,    &
+         cplprint_flag, timeslice) 
+    endif
+
     print *,'fv3_cap,end integrate,na=',na,' time=',mpi_wtime()- timeri
 
     if(profile_memory) call ESMF_VMLogMemInfo("Leaving FV3 Model_ADVANCE: ")
@@ -1050,6 +1227,7 @@ module fv3gfs_cap_mod
   end subroutine atmos_model_finalize
 
 !#######################################################################
+!
 !
 !-----------------------------------------------------------------------------
 

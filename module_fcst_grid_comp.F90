@@ -20,11 +20,12 @@
                                 NOLEAP, NO_CALENDAR, date_to_string,       &
                                 get_date
 
-  use  atmos_model_mod,   only: atmos_model_init, atmos_model_end,    &
-                                update_atmos_model_dynamics,          &
-                                update_atmos_radiation_physics,       &
-                                update_atmos_model_state,             &
-                                atmos_data_type, atmos_model_restart
+  use  atmos_model_mod,   only: atmos_model_init, atmos_model_end,         &
+                                update_atmos_model_dynamics,               &
+                                update_atmos_radiation_physics,            &
+                                update_atmos_model_state,                  &
+                                atmos_data_type, atmos_model_restart,      &
+                                addLsmask2grid
 
   use constants_mod,      only: constants_init
   use       fms_mod,      only: open_namelist_file, file_exist, check_nml_error, &
@@ -47,13 +48,15 @@
   use data_override_mod,  only: data_override_init
   use fv_nggps_diags_mod, only: fv_dyn_bundle_setup
   use fv3gfs_io_mod,      only: fv_phys_bundle_setup
+  
+  use fms_io_mod,         only: field_exist, read_data
 
   use esmf
 !
   use module_fv3_io_def, only:  num_pes_fcst, num_files, filename_base, nbdlphys
   use module_fv3_config, only:  dt_atmos, calendar, restart_interval, &
-                                quilting, calendar_type,              &
-                                force_date_from_configure
+                                quilting, calendar_type, cpl,         &
+                                cplprint_flag, force_date_from_configure
 !
 !-----------------------------------------------------------------------
 !
@@ -82,6 +85,7 @@
   type(atmos_internalstate_type),pointer,save :: atm_int_state
   type(atmos_internalstate_wrapper),save      :: wrap
   type(ESMF_VM),save                          :: VM
+  type(ESMF_Grid)                             :: fcstGrid
 
 !----- coupled model date -----
 
@@ -89,7 +93,7 @@
 !
 !-----------------------------------------------------------------------
 !
-  public SetServices
+  public SetServices, fcstGrid
 !
   contains
 !
@@ -147,7 +151,6 @@
     integer                                :: tl, i, j
     integer,dimension(2,6)                 :: decomptile                  !define delayout for the 6 cubed-sphere tiles
     type(ESMF_FieldBundle)                 :: fieldbundle
-    type(ESMF_Grid)                        :: fcstGrid
 !
     type(ESMF_Time)                        :: CurrTime, TINI, StopTime
     type(ESMF_TimeInterval)                :: TINT, RunDuration, TimeElapsed
@@ -167,6 +170,8 @@
     character(2) dateSM,dateSD,dateSH,dateSN,dateSS
     character(128) name_FB, name_FB1, dateS
     real,    allocatable, dimension(:,:) :: glon_bnd, glat_bnd
+    
+    character(256)                         :: gridfile
     type(ESMF_FieldBundle),dimension(:), allocatable  :: fieldbundlephys
 
     real(8) mpi_wtime, timeis
@@ -336,7 +341,7 @@
 !
 !
 !-----------------------------------------------------------------------
-!*** create grid for oupout fields
+!*** create grid for output fields
 !*** first try: Create cubed sphere grid from file
 !-----------------------------------------------------------------------
 !
@@ -347,10 +352,42 @@
           decomptile(1,tl) = atm_int_state%Atm%layout(1)
           decomptile(2,tl) = atm_int_state%Atm%layout(2)
         enddo
-        fcstGrid = ESMF_GridCreateMosaic(filename='INPUT/grid_spec.nc',      &
-                              regDecompPTile=decomptile,tileFilePath='INPUT/',          &
-                              staggerlocList=(/ESMF_STAGGERLOC_CENTER, ESMF_STAGGERLOC_CORNER/), &
-                              name='fcst_grid', rc=rc)
+        
+        gridfile="grid_spec.nc" ! default
+        if (field_exist("INPUT/grid_spec.nc", "atm_mosaic_file")) then
+          call read_data("INPUT/grid_spec.nc", "atm_mosaic_file", gridfile)
+        endif
+        
+        CALL ESMF_LogWrite("fcst: gridfile:"//trim(gridfile),ESMF_LOGMSG_INFO,rc=rc)
+        
+        fcstGrid = ESMF_GridCreateMosaic(filename="INPUT/"//trim(gridfile),  &
+          regDecompPTile=decomptile,tileFilePath="INPUT/",                   &
+          staggerlocList=(/ESMF_STAGGERLOC_CENTER, ESMF_STAGGERLOC_CORNER/), &
+          name='fcst_grid', rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, &
+          file=__FILE__)) &
+          return  ! bail out
+!
+!test to write out vtk file:
+        if( cpl ) then
+          call addLsmask2grid(fcstGrid, rc=rc)
+!         print *,'call addLsmask2grid after fcstgrid, rc=',rc
+          if( cplprint_flag ) then
+            call ESMF_GridWriteVTK(fcstgrid, staggerloc=ESMF_STAGGERLOC_CENTER,  &
+                 filename='fv3cap_fv3Grid', rc=rc)
+          endif
+        endif
+!
+! Add gridfile Attribute to the exportState
+        call ESMF_AttributeAdd(exportState, convention="NetCDF", purpose="FV3", &
+          attrList=(/"gridfile"/), rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, &
+          file=__FILE__)) &
+          return  ! bail out
+        call ESMF_AttributeSet(exportState, convention="NetCDF", purpose="FV3", &
+          name="gridfile", value=trim(gridfile), rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
           line=__LINE__, &
           file=__FILE__)) &

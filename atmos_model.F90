@@ -75,9 +75,11 @@ use atmosphere_mod,     only: atmosphere_etalvls, atmosphere_hgt
 !rab use atmosphere_mod,     only: atmosphere_tracer_postinit
 use atmosphere_mod,     only: atmosphere_diss_est, atmosphere_nggps_diag
 use atmosphere_mod,     only: atmosphere_scalar_field_halo
+use atmosphere_mod,     only: atmosphere_get_bottom_layer
 use atmosphere_mod,     only: set_atmosphere_pelist
 use atmosphere_mod,     only: Atm, mytile
 use block_control_mod,  only: block_control_type, define_blocks_packed
+use DYCORE_typedefs,    only: DYCORE_data_type, DYCORE_diag_type
 use IPD_typedefs,       only: IPD_init_type, IPD_control_type, &
                               IPD_data_type, IPD_diag_type,    &
                               IPD_restart_type, IPD_kind_phys, &
@@ -100,6 +102,7 @@ public update_atmos_model_state
 public update_atmos_model_dynamics
 public atmos_model_init, atmos_model_end, atmos_data_type
 public atmos_model_restart
+public addLsmask2grid
 !-----------------------------------------------------------------------
 
 !<PUBLICTYPE >
@@ -142,6 +145,12 @@ namelist /atmos_model_nml/ blocksize, chksum_debug, dycore_only, debug, sync, fd
 type (time_type) :: diag_time
 
 !--- concurrent and decoupled radiation and physics variables
+!-------------------
+!  DYCORE containers
+!-------------------
+type(DYCORE_data_type),    allocatable :: DYCORE_Data(:)  ! number of blocks
+type(DYCORE_diag_type)                 :: DYCORE_Diag(25)
+
 !----------------
 !  IPD containers
 !----------------
@@ -150,7 +159,9 @@ type(IPD_data_type),    allocatable :: IPD_Data(:)  ! number of blocks
 type(IPD_diag_type),    target      :: IPD_Diag(DIAG_SIZE)
 type(IPD_restart_type)              :: IPD_Restart
 
+!--------------
 ! IAU container
+!--------------
 type(iau_external_data_type)        :: IAU_Data ! number of blocks
 
 !-----------------
@@ -191,10 +202,9 @@ subroutine update_atmos_radiation_physics (Atmos)
 !-----------------------------------------------------------------------
   type (atmos_data_type), intent(in) :: Atmos
 !--- local variables---
-    integer :: nb, jdat(8)
+    integer :: nb, jdat(8), rc
     procedure(IPD_func0d_proc), pointer :: Func0d => NULL()
     procedure(IPD_func1d_proc), pointer :: Func1d => NULL()
-
     if (mpp_pe() == mpp_root_pe() .and. debug) write(6,*) "statein driver"
 !--- get atmospheric state from the dynamic core
     call set_atmosphere_pelist()
@@ -219,10 +229,21 @@ subroutine update_atmos_radiation_physics (Atmos)
       call get_date (Atmos%Time, jdat(1), jdat(2), jdat(3),  &
                                  jdat(5), jdat(6), jdat(7))
       IPD_Control%jdat(:) = jdat(:)
+
 !--- execute the IPD atmospheric setup step
       call mpp_clock_begin(setupClock)
       Func1d => time_vary_step
       call IPD_step (IPD_Control, IPD_Data(:), IPD_Diag, IPD_Restart, IPD_func1d=Func1d)
+!--- if coupled, assign coupled fields
+      if( IPD_Control%cplflx ) then
+!        print *,'in atmos_model,nblks=',Atm_block%nblks
+!        print *,'in atmos_model,IPD_Data size=',size(IPD_Data)
+!        print *,'in atmos_model,tsfc(1)=',IPD_Data(1)%sfcprop%tsfc(1)
+!        print *,'in atmos_model, tsfc size=',size(IPD_Data(1)%sfcprop%tsfc)
+        call assign_importdata(rc)
+!        print *,'in atmos_model, after assign_importdata, rc=',rc
+      endif
+
       call mpp_clock_end(setupClock)
 
       if (mpp_pe() == mpp_root_pe() .and. debug) write(6,*) "radiation driver"
@@ -376,6 +397,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    call define_blocks_packed ('atmos_model', Atm_block, isc, iec, jsc, jec, nlev, &
                               blocksize, block_message)
    
+   allocate(DYCORE_Data(Atm_block%nblks))
    allocate(IPD_Data(Atm_block%nblks))
 
 !--- update IPD_Control%jdat(8)
@@ -532,8 +554,9 @@ subroutine update_atmos_model_state (Atmos)
   type (atmos_data_type), intent(inout) :: Atmos
 !--- local variables
   integer :: isec,seconds
+  integer :: rc
   real(kind=IPD_kind_phys) :: time_int, time_intfull
-
+!
     call set_atmosphere_pelist()
     call mpp_clock_begin(fv3Clock)
     call mpp_clock_begin(updClock)
@@ -543,10 +566,11 @@ subroutine update_atmos_model_state (Atmos)
 
     if (chksum_debug) then
       if (mpp_pe() == mpp_root_pe()) print *,'UPDATE STATE    ', IPD_Control%kdt, IPD_Control%fhour
+      if (mpp_pe() == mpp_root_pe()) print *,'in UPDATE STATE    ', size(IPD_Data(1)%SfcProp%tsfc),'nblks=',Atm_block%nblks
       call FV3GFS_IPD_checksum(IPD_Control, IPD_Data, Atm_block)
     endif
 
-!------ advance time ------
+    !--- advance time ---
     Atmos % Time = Atmos % Time + Atmos % Time_step
 
     call get_time (Atmos%Time - diag_time, isec)
@@ -561,6 +585,19 @@ subroutine update_atmos_model_state (Atmos)
                             IPD_Control%levs, 1, 1, 1.d0, time_int, time_intfull)
       if (mod(isec,3600*nint(IPD_Control%fhzero)) == 0) diag_time = Atmos%Time
       call diag_send_complete_instant (Atmos%Time)
+    endif
+
+    !--- this may not be necessary once write_component is fully implemented
+    !!!call diag_send_complete_extra (Atmos%Time)
+
+    !--- get bottom layer data from dynamical core for coupling
+    call atmosphere_get_bottom_layer (Atm_block, DYCORE_Data) 
+
+    !if in coupled mode, set up coupled fields
+    if (IPD_Control%cplflx) then
+      print *,'COUPLING: IPD layer'
+!jw       call setup_exportdata(IPD_Control, IPD_Data, Atm_block)
+      call setup_exportdata(rc)
     endif
 
  end subroutine update_atmos_model_state
@@ -685,5 +722,962 @@ end subroutine atmos_data_type_chksum
                 Atmos%lon,     &
                 Atmos%lat      )
   end subroutine dealloc_atmos_data_type
+
+  subroutine assign_importdata(rc)
+
+    use module_cplfields,  only: importFields, nImportFields
+    use ESMF
+!
+    implicit none
+    integer, intent(out) :: rc
+
+    !--- local variables
+    integer :: n, j, i, ix, nb, isc, iec, jsc, jec, dimCount
+    character(len=128) :: impfield_name, fldname
+    type(ESMF_TypeKind_Flag)                           :: datatype
+    real(kind=ESMF_KIND_R4), dimension(:,:), pointer   :: datar42d
+    real(kind=ESMF_KIND_R8), dimension(:,:), pointer   :: datar82d
+    real(kind=IPD_kind_phys), dimension(:,:), pointer  :: datar8
+    logical found
+!
+!------------------------------------------------------------------------------
+!
+    ! set up local dimension
+    rc=-999
+    isc = IPD_control%isc
+    iec = IPD_control%isc+IPD_control%nx-1
+    jsc = IPD_control%jsc
+    jec = IPD_control%jsc+IPD_control%ny-1
+
+    allocate(datar8(isc:iec,jsc:jec))
+    print *,'in cplImp,dim=',isc,iec,jsc,jec
+    print *,'in cplImp,IPD_Data, size', size(IPD_Data)
+    print *,'in cplImp,tsfc, size', size(IPD_Data(1)%sfcprop%tsfc)
+
+    do n=1,nImportFields
+
+      ! Each import field is only available if it was connected in the
+      ! import state.
+      found = .false.
+      if (ESMF_FieldIsCreated(importFields(n))) then
+
+        ! put the data from local cubed sphere grid to column grid for phys
+        datar8 = -99999.0
+        call ESMF_FieldGet(importFields(n), dimCount=dimCount ,typekind=datatype, &
+          name=impfield_name, rc=rc)
+        if ( dimCount == 2) then
+          if ( datatype == ESMF_TYPEKIND_R8) then
+            call ESMF_FieldGet(importFields(n),farrayPtr=datar82d,localDE=0, rc=rc)
+            datar8=datar82d
+            print *,'in cplIMP, get sst, datar8=',maxval(datar8),minval(datar8), &
+               datar8(isc,jsc)
+            found = .true.
+! gfs physics runs with r8
+!          else
+!            call ESMF_FieldGet(importFields(n),farrayPtr=datar42d,localDE=0,
+!            rc=rc)
+!            datar8=datar42d
+          endif
+        endif
+!
+        ! get sea land mask: in order to update the coupling fields over the ocean/ice
+        fldname = 'land_mask'
+        if (trim(impfield_name) == trim(fldname) .and. found) then
+          do j=jsc,jec
+            do i=isc,iec
+              nb = Atm_block%blkno(i,j)
+              ix = Atm_block%ixp(i,j)
+              IPD_Data(nb)%Coupling%slimskin_cpl(ix) = datar8(i,j)
+            enddo
+          enddo
+        endif
+
+        ! get surface temperature: update ice temperature for atm ??? can SST be applied here???
+        fldname = 'surface_temperature'
+        if (trim(impfield_name) == trim(fldname) .and. found) then
+          do j=jsc,jec
+            do i=isc,iec
+              nb = Atm_block%blkno(i,j)
+              ix = Atm_block%ixp(i,j)
+              IPD_Data(nb)%Coupling%tisfcin_cpl(ix) = datar8(i,j)
+            enddo
+          enddo
+        endif
+
+        ! get sst:  sst needs to be adjusted by land sea mask before passing to
+        ! fv3
+        fldname = 'sea_surface_temperature'
+        if (trim(impfield_name) == trim(fldname) .and. found) then
+!
+          do j=jsc,jec
+            do i=isc,iec
+              nb = Atm_block%blkno(i,j)
+              ix = Atm_block%ixp(i,j)
+!             if (Sfcprop%slimskin(i,j) < 3.1 .and. Sfcprop%slimskin(i,j) > 2.9) then
+!               if (Sfcprop%slmsk(i,j) < 0.1 .or. Sfcprop%slmsk(i,j) > 1.9) then
+                  IPD_Data(nb)%Coupling%tseain_cpl(ix) = datar8(i,j)
+!                 IPD_Data(nb)%Sfcprop%tsfc(ix) = datar8(i,j)
+!               endif
+!             endif
+            enddo
+          enddo
+        endif
+
+        ! get sea ice fraction:  fice or sea ice concentration from the mediator
+        fldname = 'ice_fraction'
+        if (trim(impfield_name) == trim(fldname) .and. found) then
+          do j=jsc,jec
+            do i=isc,iec
+              nb = Atm_block%blkno(i,j)
+              ix = Atm_block%ixp(i,j)
+              IPD_Data(nb)%Coupling%ficein_cpl(ix) = datar8(i,j)
+            enddo
+          enddo
+        endif
+
+        ! get upward LW flux:  for sea ice covered area
+        fldname = 'mean_up_lw_flx'
+        if (trim(impfield_name) == trim(fldname) .and. found) then
+          do j=jsc,jec
+            do i=isc,iec
+              nb = Atm_block%blkno(i,j)
+              ix = Atm_block%ixp(i,j)
+              IPD_Data(nb)%Coupling%ulwsfcin_cpl(ix) = datar8(i,j)
+            enddo
+          enddo
+        endif
+
+        ! get latent heat flux:  for sea ice covered area
+        fldname = 'mean_laten_heat_flx'
+        if (trim(impfield_name) == trim(fldname) .and. found) then
+          do j=jsc,jec
+            do i=isc,iec
+              nb = Atm_block%blkno(i,j)
+              ix = Atm_block%ixp(i,j)
+              IPD_Data(nb)%Coupling%dqsfcin_cpl(ix) = datar8(i,j)
+            enddo
+          enddo
+        endif
+
+        ! get sensible heat flux:  for sea ice covered area
+        fldname = 'mean_sensi_heat_flx'
+        if (trim(impfield_name) == trim(fldname) .and. found) then
+          do j=jsc,jec
+            do i=isc,iec
+              nb = Atm_block%blkno(i,j)
+              ix = Atm_block%ixp(i,j)
+              IPD_Data(nb)%Coupling%dtsfcin_cpl(ix) = datar8(i,j)
+            enddo
+          enddo
+        endif
+
+        ! get zonal compt of momentum flux:  for sea ice covered area
+        fldname = 'mean_zonal_moment_flx'
+        if (trim(impfield_name) == trim(fldname) .and. found) then
+          do j=jsc,jec
+            do i=isc,iec
+              nb = Atm_block%blkno(i,j)
+              ix = Atm_block%ixp(i,j)
+              IPD_Data(nb)%Coupling%dusfcin_cpl(ix) = datar8(i,j)
+            enddo
+          enddo
+        endif
+
+        ! get meridional compt of momentum flux:  for sea ice covered area
+        fldname = 'mean_merid_moment_flx'
+        if (trim(impfield_name) == trim(fldname) .and. found) then
+          do j=jsc,jec
+            do i=isc,iec
+              nb = Atm_block%blkno(i,j)
+              ix = Atm_block%ixp(i,j)
+              IPD_Data(nb)%Coupling%dvsfcin_cpl(ix) = datar8(i,j)
+            enddo
+          enddo
+        endif
+
+        ! get sea ice volume:  for sea ice covered area
+        fldname = 'mean_ice_volume'
+        if (trim(impfield_name) == trim(fldname) .and. found) then
+          do j=jsc,jec
+            do i=isc,iec
+              nb = Atm_block%blkno(i,j)
+              ix = Atm_block%ixp(i,j)
+              IPD_Data(nb)%Coupling%hicein_cpl(ix) = datar8(i,j)
+            enddo
+          enddo
+        endif
+
+        ! get snow volume:  for sea ice covered area
+        fldname = 'mean_snow_volume'
+        if (trim(impfield_name) == trim(fldname) .and. found) then
+          do j=jsc,jec
+            do i=isc,iec
+              nb = Atm_block%blkno(i,j)
+              ix = Atm_block%ixp(i,j)
+              IPD_Data(nb)%Coupling%hsnoin_cpl(ix) = datar8(i,j)
+            enddo
+          enddo
+        endif
+
+      endif
+    enddo
+
+    deallocate(datar8)
+    rc=0
+!
+    print *,'end of assign_importdata'
+  end subroutine assign_importdata
+
+!
+  subroutine setup_exportdata (rc)
+
+    use module_cplfields,  only: exportData, nExportFields, exportFieldsList, &
+                                 queryFieldList, fillExportFields
+
+    implicit none
+
+!------------------------------------------------------------------------------
+
+    !--- interface variables
+    integer, intent(out) :: rc
+
+    !--- local variables
+    integer            :: j, i, ix, nb, isc, iec, jsc, jec, idx
+    real(IPD_kind_phys)    :: rtime
+!
+    print *,'enter setup_exportdata'
+
+    isc = IPD_control%isc
+    iec = IPD_control%isc+IPD_control%nx-1
+    jsc = IPD_control%jsc
+    jec = IPD_control%jsc+IPD_control%ny-1
+
+    rtime  = 1./IPD_control%dtp
+!    print *,'in cplExp,dim=',isc,iec,jsc,jec,'nExportFields=',nExportFields
+!    print *,'in cplExp,IPD_Data, size', size(IPD_Data)
+!    print *,'in cplExp,u10micpl, size', size(IPD_Data(1)%coupling%u10mi_cpl)
+
+    if(.not.allocated(exportData)) then
+      allocate(exportData(isc:iec,jsc:jec,nExportFields))
+    endif
+
+    ! set cpl fields to export Data
+    ! MEAN Zonal compt of momentum flux (N/m**2)
+    idx = queryfieldlist(exportFieldsList,'mean_zonal_moment_flx')
+    if (idx > 0 ) then
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          exportData(i,j,idx) = IPD_Data(nb)%coupling%dusfc_cpl(ix) * rtime
+        enddo
+      enddo
+    endif
+
+    ! MEAN Merid compt of momentum flux (N/m**2)
+    idx = queryfieldlist(exportFieldsList,'mean_merid_moment_flx')
+    if (idx > 0 ) then
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          exportData(i,j,idx) = IPD_Data(nb)%coupling%dvsfc_cpl(ix) * rtime
+        enddo
+      enddo
+    endif
+
+    ! MEAN Sensible heat flux (W/m**2)
+    idx = queryfieldlist(exportFieldsList,'mean_sensi_heat_flx')
+    if (idx > 0 ) then
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          exportData(i,j,idx) = IPD_Data(nb)%coupling%dtsfc_cpl(ix) * rtime
+        enddo
+      enddo
+    endif
+
+    ! MEAN Latent heat flux (W/m**2)
+    idx = queryfieldlist(exportFieldsList,'mean_laten_heat_flx')
+    if (idx > 0 ) then
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          exportData(i,j,idx) = IPD_Data(nb)%coupling%dqsfc_cpl(ix) * rtime
+        enddo
+      enddo
+    endif
+
+    ! MEAN Downward LW heat flux (W/m**2)
+    idx = queryfieldlist(exportFieldsList,'mean_down_lw_flx')
+    if (idx > 0 ) then
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          exportData(i,j,idx) = IPD_Data(nb)%coupling%dlwsfc_cpl(ix) * rtime
+        enddo
+      enddo
+    endif
+
+    ! MEAN Downward SW heat flux (W/m**2)
+    idx = queryfieldlist(exportFieldsList,'mean_down_sw_flx')
+    if (idx > 0 ) then
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          exportData(i,j,idx) = IPD_Data(nb)%coupling%dswsfc_cpl(ix) * rtime
+        enddo
+      enddo
+    endif
+
+    ! MEAN precipitation rate (kg/m2) ?????? checking unit ??????
+    idx = queryfieldlist(exportFieldsList,'mean_prec_rate')
+    if (idx > 0 ) then
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          exportData(i,j,idx) = IPD_Data(nb)%coupling%rain_cpl(ix) * rtime
+        enddo
+      enddo
+    endif
+
+    ! Instataneous Zonal compt of momentum flux (N/m**2)
+    idx = queryfieldlist(exportFieldsList,'inst_zonal_moment_flx')
+    if (idx > 0 ) then
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          exportData(i,j,idx) = IPD_Data(nb)%coupling%dusfci_cpl(ix)
+        enddo
+      enddo
+    endif
+
+    ! Instataneous Merid compt of momentum flux (N/m**2)
+    idx = queryfieldlist(exportFieldsList,'inst_merid_moment_flx')
+    if (idx > 0 ) then
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          exportData(i,j,idx) = IPD_Data(nb)%coupling%dvsfci_cpl(ix)
+        enddo
+      enddo
+    endif
+
+    ! Instataneous Sensible heat flux (W/m**2)
+    idx = queryfieldlist(exportFieldsList,'inst_sensi_heat_flx')
+    if (idx > 0 ) then
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          exportData(i,j,idx) = IPD_Data(nb)%coupling%dtsfci_cpl(ix)
+        enddo
+      enddo
+    endif
+
+    ! Instataneous Latent heat flux (W/m**2)
+    idx = queryfieldlist(exportFieldsList,'inst_laten_heat_flx')
+    if (idx > 0 ) then
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          exportData(i,j,idx) = IPD_Data(nb)%coupling%dqsfci_cpl(ix)
+        enddo
+      enddo
+    endif
+
+    ! Instataneous Downward long wave radiation flux (W/m**2)
+    idx = queryfieldlist(exportFieldsList,'inst_down_lw_flx')
+    if (idx > 0 ) then
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          exportData(i,j,idx) = IPD_Data(nb)%coupling%dlwsfci_cpl(ix)
+        enddo
+      enddo
+    endif
+
+    ! Instataneous Downward solar radiation flux (W/m**2)
+    idx = queryfieldlist(exportFieldsList,'inst_down_sw_flx')
+    if (idx > 0 ) then
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          exportData(i,j,idx) = IPD_Data(nb)%coupling%dswsfci_cpl(ix)
+        enddo
+      enddo
+    endif
+
+    ! Instataneous Temperature (K) 2 m above ground
+    idx = queryfieldlist(exportFieldsList,'inst_temp_height2m')
+    if (idx > 0 ) then
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          exportData(i,j,idx) = IPD_Data(nb)%coupling%t2mi_cpl(ix)
+        enddo
+      enddo
+    endif
+
+    ! Instataneous Specific humidity (kg/kg) 2 m above ground
+    idx = queryfieldlist(exportFieldsList,'inst_spec_humid_height2m')
+    if (idx > 0 ) then
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          exportData(i,j,idx) = IPD_Data(nb)%coupling%q2mi_cpl(ix)
+        enddo
+      enddo
+    endif
+
+    ! Instataneous u wind (m/s) 10 m above ground
+    idx = queryfieldlist(exportFieldsList,'inst_zonal_wind_height10m')
+    if (idx > 0 ) then
+      print *,'cpl, in get u10mi_cpl'
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+!          if(i==isc.and.j==jsc) then
+!            print *,'in cpl exp, nb=',nb,'ix=',ix,'idx=',idx
+!            print *,'in cpl exp, u10mi_cpl=',IPD_Data(nb)%coupling%u10mi_cpl(ix)
+!          endif
+          exportData(i,j,idx) = IPD_Data(nb)%coupling%u10mi_cpl(ix)
+        enddo
+      enddo
+!      print *,'cpl, get u10mi_cpl, exportData=',exportData(isc,jsc,idx),'idx=',idx
+    endif
+
+    ! Instataneous v wind (m/s) 10 m above ground
+    idx = queryfieldlist(exportFieldsList,'inst_merid_wind_height10m')
+    if (idx > 0 ) then
+      print *,'cpl, in get v10mi_cpl'
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          exportData(i,j,idx) = IPD_Data(nb)%coupling%v10mi_cpl(ix)
+        enddo
+      enddo
+      print *,'cpl, get v10mi_cpl, exportData=',exportData(isc,jsc,idx),'idx=',idx
+    endif
+
+    ! Instataneous Temperature (K) at surface
+    idx = queryfieldlist(exportFieldsList,'inst_temp_height_surface')
+    if (idx > 0 ) then
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          exportData(i,j,idx) = IPD_Data(nb)%coupling%tsfci_cpl(ix)
+        enddo
+      enddo
+    endif
+
+    ! Instataneous Pressure (Pa) land and sea surface
+    idx = queryfieldlist(exportFieldsList,'inst_pres_height_surface')
+    if (idx > 0 ) then
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          exportData(i,j,idx) = IPD_Data(nb)%coupling%psurfi_cpl(ix)
+        enddo
+      enddo
+    endif
+
+    ! Instataneous Surface height (m)
+    idx = queryfieldlist(exportFieldsList,'inst_surface_height')
+    if (idx > 0 ) then
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          exportData(i,j,idx) = IPD_Data(nb)%coupling%oro_cpl(ix)
+        enddo
+      enddo
+    endif
+
+    ! MEAN NET long wave radiation flux (W/m**2)
+    idx = queryfieldlist(exportFieldsList,'mean_net_lw_flx')
+    if (idx > 0 ) then
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          exportData(i,j,idx) = IPD_Data(nb)%coupling%nlwsfc_cpl(ix) * rtime
+        enddo
+      enddo
+    endif
+
+    ! MEAN NET solar radiation flux over the ocean (W/m**2)
+    idx = queryfieldlist(exportFieldsList,'mean_net_sw_flx')
+    if (idx > 0 ) then
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          exportData(i,j,idx) = IPD_Data(nb)%coupling%nswsfc_cpl(ix) * rtime
+        enddo
+      enddo
+    endif
+
+    ! Instataneous NET long wave radiation flux (W/m**2)
+    idx = queryfieldlist(exportFieldsList,'inst_net_lw_flx')
+    if (idx > 0 ) then
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          exportData(i,j,idx) = IPD_Data(nb)%coupling%nlwsfci_cpl(ix)
+        enddo
+      enddo
+    endif
+
+    ! Instataneous NET solar radiation flux over the ocean (W/m**2)
+    idx = queryfieldlist(exportFieldsList,'inst_net_sw_flx')
+    if (idx > 0 ) then
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          exportData(i,j,idx) = IPD_Data(nb)%coupling%nswsfci_cpl(ix)
+        enddo
+      enddo
+    endif
+
+    ! MEAN sfc downward nir direct flux (W/m**2)
+    idx = queryfieldlist(exportFieldsList,'mean_down_sw_ir_dir_flx')
+    if (idx > 0 ) then
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          exportData(i,j,idx) = IPD_Data(nb)%coupling%dnirbm_cpl(ix) * rtime
+        enddo
+      enddo
+    endif
+
+    ! MEAN sfc downward nir diffused flux (W/m**2)
+    idx = queryfieldlist(exportFieldsList,'mean_down_sw_ir_dif_flx')
+    if (idx > 0 ) then
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          exportData(i,j,idx) = IPD_Data(nb)%coupling%dnirdf_cpl(ix) * rtime
+        enddo
+      enddo
+    endif
+
+    ! MEAN sfc downward uv+vis direct flux (W/m**2)
+    idx = queryfieldlist(exportFieldsList,'mean_down_sw_vis_dir_flx')
+    if (idx > 0 ) then
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          exportData(i,j,idx) = IPD_Data(nb)%coupling%dvisbm_cpl(ix) * rtime
+        enddo
+      enddo
+    endif
+
+    ! MEAN sfc downward uv+vis diffused flux (W/m**2)
+    idx = queryfieldlist(exportFieldsList,'mean_down_sw_vis_dif_flx')
+    if (idx > 0 ) then
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          exportData(i,j,idx) = IPD_Data(nb)%coupling%dvisdf_cpl(ix) * rtime
+        enddo
+      enddo
+    endif
+
+    ! Instataneous sfc downward nir direct flux (W/m**2)
+    idx = queryfieldlist(exportFieldsList,'inst_down_sw_ir_dir_flx')
+    if (idx > 0 ) then
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          exportData(i,j,idx) = IPD_Data(nb)%coupling%dnirbmi_cpl(ix)
+        enddo
+      enddo
+    endif
+
+    ! Instataneous sfc downward nir diffused flux (W/m**2)
+    idx = queryfieldlist(exportFieldsList,'inst_down_sw_ir_dif_flx')
+    if (idx > 0 ) then
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          exportData(i,j,idx) = IPD_Data(nb)%coupling%dnirdfi_cpl(ix)
+        enddo
+      enddo
+    endif
+
+    ! Instataneous sfc downward uv+vis direct flux (W/m**2)
+    idx = queryfieldlist(exportFieldsList,'inst_down_sw_vis_dir_flx')
+    if (idx > 0 ) then
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          exportData(i,j,idx) = IPD_Data(nb)%coupling%dvisbmi_cpl(ix)
+        enddo
+      enddo
+    endif
+
+    ! Instataneous sfc downward uv+vis diffused flux (W/m**2)
+    idx = queryfieldlist(exportFieldsList,'inst_down_sw_vis_dif_flx')
+    if (idx > 0 ) then
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          exportData(i,j,idx) = IPD_Data(nb)%coupling%dvisdfi_cpl(ix)
+        enddo
+      enddo
+    endif
+
+    ! MEAN NET sfc nir direct flux (W/m**2)
+    idx = queryfieldlist(exportFieldsList,'mean_net_sw_ir_dir_flx')
+    if (idx > 0 ) then
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          exportData(i,j,idx) = IPD_Data(nb)%coupling%nnirbm_cpl(ix) * rtime
+        enddo
+      enddo
+    endif
+
+    ! MEAN NET sfc nir diffused flux (W/m**2)
+    idx = queryfieldlist(exportFieldsList,'mean_net_sw_ir_dif_flx')
+    if (idx > 0 ) then
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          exportData(i,j,idx) = IPD_Data(nb)%coupling%nnirdf_cpl(ix) * rtime
+        enddo
+      enddo
+    endif
+
+    ! MEAN NET sfc uv+vis direct flux (W/m**2)
+    idx = queryfieldlist(exportFieldsList,'mean_net_sw_vis_dir_flx')
+    if (idx > 0 ) then
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          exportData(i,j,idx) = IPD_Data(nb)%coupling%nvisbm_cpl(ix) * rtime
+        enddo
+      enddo
+    endif
+
+    ! MEAN NET sfc uv+vis diffused flux (W/m**2)
+    idx = queryfieldlist(exportFieldsList,'mean_net_sw_vis_dif_flx')
+    if (idx > 0 ) then
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          exportData(i,j,idx) = IPD_Data(nb)%coupling%nvisdf_cpl(ix) * rtime
+        enddo
+      enddo
+    endif
+
+    ! Instataneous net sfc nir direct flux (W/m**2)
+    idx = queryfieldlist(exportFieldsList,'inst_net_sw_ir_dir_flx')
+    if (idx > 0 ) then
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          exportData(i,j,idx) = IPD_Data(nb)%coupling%nnirbmi_cpl(ix)
+        enddo
+      enddo
+    endif
+
+    ! Instataneous net sfc nir diffused flux (W/m**2)
+    idx = queryfieldlist(exportFieldsList,'inst_net_sw_ir_dif_flx')
+    if (idx > 0 ) then
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          exportData(i,j,idx) = IPD_Data(nb)%coupling%nnirdfi_cpl(ix)
+        enddo
+      enddo
+    endif
+
+    ! Instataneous net sfc uv+vis direct flux (W/m**2)
+    idx = queryfieldlist(exportFieldsList,'inst_net_sw_vis_dir_flx')
+    if (idx > 0 ) then
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          exportData(i,j,idx) = IPD_Data(nb)%coupling%nvisbmi_cpl(ix)
+        enddo
+      enddo
+    endif
+
+    ! Instataneous net sfc uv+vis diffused flux (W/m**2)
+    idx = queryfieldlist(exportFieldsList,'inst_net_sw_vis_dif_flx')
+    if (idx > 0 ) then
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          exportData(i,j,idx) = IPD_Data(nb)%coupling%nvisdfi_cpl(ix)
+        enddo
+      enddo
+    endif
+
+    ! Land/Sea mask (sea:0,land:1)
+    idx = queryfieldlist(exportFieldsList,'inst_land_sea_mask')
+    if (idx > 0 ) then
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          exportData(i,j,idx) = IPD_Data(nb)%coupling%slmsk_cpl(ix)
+        enddo
+      enddo
+    endif
+
+! Data from DYCORE:
+
+    ! bottom layer temperature (t)
+    idx = queryfieldlist(exportFieldsList,'inst_temp_height_lowest')
+    if (idx > 0 ) then
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          if (associated(DYCORE_Data(nb)%coupling%t_bot)) then 
+            exportData(i,j,idx) = DYCORE_Data(nb)%coupling%t_bot(ix)
+          else 
+            exportData(i,j,idx) = 0.0
+          endif 
+        enddo
+      enddo
+    endif
+
+    ! bottom layer specific humidity (q)
+    !!! CHECK if tracer 1 is for specific humidity !!!
+    idx = queryfieldlist(exportFieldsList,'inst_spec_humid_height_lowest')
+    if (idx > 0 ) then
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          if (associated(DYCORE_Data(nb)%coupling%tr_bot)) then
+            exportData(i,j,idx) = DYCORE_Data(nb)%coupling%tr_bot(ix,1)
+          else 
+            exportData(i,j,idx)=0.0
+          endif 
+        enddo
+      enddo
+    endif
+
+    ! bottom layer zonal wind (u)
+    idx = queryfieldlist(exportFieldsList,'inst_zonal_wind_height_lowest')
+    if (idx > 0 ) then
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          if (associated(DYCORE_Data(nb)%coupling%u_bot)) then
+            exportData(i,j,idx) = DYCORE_Data(nb)%coupling%u_bot(ix)
+          else
+            exportData(i,j,idx) = 0.0
+          endif 
+        enddo
+      enddo
+    endif
+
+    ! bottom layer meridionalw wind (v)
+    idx = queryfieldlist(exportFieldsList,'inst_merid_wind_height_lowest')
+    if (idx > 0 ) then
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          if (associated(DYCORE_Data(nb)%coupling%v_bot)) then
+            exportData(i,j,idx) = DYCORE_Data(nb)%coupling%v_bot(ix)
+          else 
+            exportData(i,j,idx) = 0.0 
+          endif 
+        enddo
+      enddo
+    endif
+
+    ! bottom layer pressure (p)
+    idx = queryfieldlist(exportFieldsList,'inst_pres_height_lowest')
+    if (idx > 0 ) then
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          if (associated(DYCORE_Data(nb)%coupling%p_bot)) then
+            exportData(i,j,idx) = DYCORE_Data(nb)%coupling%p_bot(ix)
+          else 
+            exportData(i,j,idx) = 0.0
+          endif 
+        enddo
+      enddo
+    endif
+
+    ! bottom layer height (z)
+    idx = queryfieldlist(exportFieldsList,'inst_height_lowest')
+    if (idx > 0 ) then
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          if (associated(DYCORE_Data(nb)%coupling%z_bot)) then
+            exportData(i,j,idx) = DYCORE_Data(nb)%coupling%z_bot(ix)
+          else 
+            exportData(i,j,idx) = 0.0 
+          endif 
+        enddo
+      enddo
+    endif
+
+! END Data from DYCORE.
+
+    ! MEAN snow precipitation rate (kg/m2) ?????? checking unit ??????
+    idx = queryfieldlist(exportFieldsList,'mean_fprec_rate')
+    if (idx > 0 ) then
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          exportData(i,j,idx) = IPD_Data(nb)%coupling%snow_cpl(ix) * rtime
+        enddo
+      enddo
+    endif
+
+!---
+    ! Fill the export Fields for ESMF/NUOPC style coupling
+    call fillExportFields(exportData,rc)
+
+!---
+    ! zero out accumulated fields
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          IPD_Data(nb)%coupling%dusfc_cpl(ix)  = 0.
+          IPD_Data(nb)%coupling%dvsfc_cpl(ix)  = 0.
+          IPD_Data(nb)%coupling%dtsfc_cpl(ix)  = 0.
+          IPD_Data(nb)%coupling%dqsfc_cpl(ix)  = 0.
+          IPD_Data(nb)%coupling%dlwsfc_cpl(ix) = 0.
+          IPD_Data(nb)%coupling%dswsfc_cpl(ix) = 0.
+          IPD_Data(nb)%coupling%rain_cpl(ix)   = 0.
+          IPD_Data(nb)%coupling%nlwsfc_cpl(ix) = 0.
+          IPD_Data(nb)%coupling%nswsfc_cpl(ix) = 0.
+          IPD_Data(nb)%coupling%dnirbm_cpl(ix) = 0.
+          IPD_Data(nb)%coupling%dnirdf_cpl(ix) = 0.
+          IPD_Data(nb)%coupling%dvisbm_cpl(ix) = 0.
+          IPD_Data(nb)%coupling%dvisdf_cpl(ix) = 0.
+          IPD_Data(nb)%coupling%nnirbm_cpl(ix) = 0.
+          IPD_Data(nb)%coupling%nnirdf_cpl(ix) = 0.
+          IPD_Data(nb)%coupling%nvisbm_cpl(ix) = 0.
+          IPD_Data(nb)%coupling%nvisdf_cpl(ix) = 0.
+          IPD_Data(nb)%coupling%snow_cpl(ix)   = 0.
+        enddo
+      enddo
+    print *,'end of setup_exportdata'
+
+  end subroutine setup_exportdata
+
+  subroutine addLsmask2grid(fcstgrid, rc)
+
+    use ESMF
+!
+    implicit none
+    type(ESMF_Grid)      :: fcstgrid
+    integer, optional, intent(out) :: rc
+!
+!  local vars
+    integer isc, iec, jsc, jec
+    integer i, j, nb, ix
+!    integer CLbnd(2), CUbnd(2), CCount(2), TLbnd(2), TUbnd(2), TCount(2)
+    type(ESMF_StaggerLoc) :: staggerloc
+    integer, allocatable :: lsmask(:,:)
+    integer(kind=ESMF_KIND_I4), pointer  :: maskPtr(:,:)
+!
+    isc = IPD_control%isc
+    iec = IPD_control%isc+IPD_control%nx-1
+    jsc = IPD_control%jsc
+    jec = IPD_control%jsc+IPD_control%ny-1
+    allocate(lsmask(isc:iec,jsc:jec))
+!
+    do j=jsc,jec
+      do i=isc,iec
+        nb = Atm_block%blkno(i,j)
+        ix = Atm_block%ixp(i,j)
+        lsmask(i,j) = IPD_Data(nb)%SfcProp%slmsk(ix)
+      enddo
+    enddo
+!
+! Get mask
+    call ESMF_GridAddItem(fcstgrid, itemflag=ESMF_GRIDITEM_MASK,   &
+         staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+
+!    call ESMF_GridGetItemBounds(fcstgrid, itemflag=ESMF_GRIDITEM_MASK,   &
+!         staggerloc=ESMF_STAGGERLOC_CENTER, computationalLBound=ClBnd,  &
+!         computationalUBound=CUbnd, computationalCount=Ccount,  &
+!         totalLBound=TLbnd, totalUBound=TUbnd, totalCount=Tcount, rc=rc)
+!    print *,'in set up grid, aft add esmfgridadd item mask, rc=',rc, &
+!     'ClBnd=',ClBnd,'CUbnd=',CUbnd,'Ccount=',Ccount, &
+!     'TlBnd=',TlBnd,'TUbnd=',TUbnd,'Tcount=',Tcount
+!    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+!      line=__LINE__, &
+!      file=__FILE__)) &
+!      return  ! bail out
+
+    call ESMF_GridGetItem(fcstgrid, itemflag=ESMF_GRIDITEM_MASK,   &
+         staggerloc=ESMF_STAGGERLOC_CENTER,farrayPtr=maskPtr, rc=rc)
+!    print *,'in set up grid, aft get maskptr, rc=',rc, 'size=',size(maskPtr,1),size(maskPtr,2), &
+!      'bound(maskPtr)=', LBOUND(maskPtr,1),LBOUND(maskPtr,2),UBOUND(maskPtr,1),UBOUND(maskPtr,2)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, &
+        file=__FILE__)) &
+        return  ! bail out
+!    
+    do j=jsc,jec
+      do i=isc,iec
+        maskPtr(i-isc+1,j-jsc+1) = lsmask(i,j)
+      enddo
+    enddo
+!      print *,'in set set lsmask, maskPtr=', maxval(maskPtr), minval(maskPtr)
+!
+    deallocate(lsmask)  
+
+  end subroutine addLsmask2grid
+!------------------------------------------------------------------------------
 
 end module atmos_model_mod
