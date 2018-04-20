@@ -17,7 +17,8 @@
 
  subroutine shoc(ix, nx, ny, nzm, nz, dtn, me, lat,              &
                  prsl, phii, phil, u, v, omega, tabs,            &
-                 qwv, qi, qc, qpi, qpl, rhc, supice, pcrit,      &
+                 qwv, qi, qc, qpi, qpl, rhc, supice,             &
+                 pcrit, cefac, cesfac, tkef1, dis_opt,           &
                  cld_sgs, tke, hflx, evap, prnum, tkh,           &
                  wthv_sec, lprnt, ipr, ncpl, ncpi)
 
@@ -36,20 +37,26 @@
 
   implicit none
 
+  real, parameter :: zero=0.0,  one=1.0,  half=0.5, two=2.0,    eps=0.622,           &
+                     three=3.0, oneb3=one/three, twoby3=two/three
   real, parameter :: lsub = lcond+lfus, fac_cond = lcond/cp, fac_fus = lfus/cp,      &
                      cpolv = cp/lcond,                                               &
                      fac_sub = lsub/cp, ggri = 1.0/ggr,      kapa = rgas/cp,         &
-                     gocp = ggr/cp,     rog = rgas*ggri,     sqrt2 = sqrt(2.0),      &
-                     sqrtpii = 1.0/sqrt(pi+pi), epsterm = rgas/rv, twoby3 = 2.0/3.0, &
-                     onebeps = 1.0/epsterm, twoby15 = 2.0 / 15.0,                    &
+                     gocp = ggr/cp,     rog = rgas*ggri,     sqrt2 = sqrt(two),      &
+                     sqrtpii = one/sqrt(pi+pi), epsterm = rgas/rv,                   &
+                     onebeps = one/epsterm, twoby15 = two / 15.0,                    &
+                     onebrvcp= one/(rv*cp), skew_facw=1.2, skew_fact=0.0,            &
+                     tkhmax=300.0, scrit=2.0e-6
+
 !                    onebrvcp= 1.0/(rv*cp), skew_facw=1.2, skew_fact=1.0,            &
-                     onebrvcp= 1.0/(rv*cp), skew_facw=1.2, skew_fact=0.0,            &
 !                    tkef1=0.5, tkef2=1.0-tkef1, tkhmax=1000.0, cefac=3.0,           &
-                     tkef1=0.5, tkef2=1.0-tkef1, tkhmax=1000.0, cefac=1.5,           &
+!                    tkef1=0.5, tkef2=1.0-tkef1, tkhmax=1000.0, cefac=1.5,           &
+!                    tkef1=0.5, tkef2=1.0-tkef1, tkhmax=200.0,  cefac=1.5,           &
 !                    tkef1=0.7, tkef2=1.0-tkef1, tkhmax=1000.0, cefac=1.5,           &
-                     zero=0.0,  one=1.0,  half=0.5, two=2.0,    eps=0.622,           &
-                     three=3.0, oneb3=one/three,                                     &
-                     scrit=2.0e-6
+!                    tkef1=0.7, tkef2=1.0-tkef1, tkhmax=300.0,  cefac=1.0,           &
+!                    tkef1=0.7, tkef2=1.0-tkef1, tkhmax=300.0,  cefac=1.5,           &
+!                    tkef1=1.1, tkef2=1.0-tkef1, tkhmax=200.0,  cefac=1.5,           &
+!                    tkef1=0.7, tkef2=1.0-tkef1, tkhmax=1000.0, cefac=1.5,           &
 
 !                    scrit=5.0e-8
 !                    scrit=3.0e-6
@@ -57,24 +64,27 @@
 !                    scrit=5.0e-6
 !                    scrit=1.0e-5
 !                    scrit=1.0e-6
-!                    skew_facw=1.2, skew_fact=0.5
-!                    onebeps = 1.0/epsterm, twoby15 = 2.0 / 15.0, skew_facw=1.2  ! orig
 
 ! real, parameter :: supice=1.05
 
   logical lprnt
   integer ipr
-  integer, intent(in) :: ix    ! max number of points in the physics window in the x
-  integer, intent(in) :: nx    ! Number of points in the physics window in the x
-  integer, intent(in) :: ny    ! and y directions
-  integer, intent(in) :: me    ! MPI rank
-  integer, intent(in) :: lat   ! latitude
+  integer, intent(in) :: ix      ! max number of points in the physics window in the x
+  integer, intent(in) :: nx      ! Number of points in the physics window in the x
+  integer, intent(in) :: ny      ! and y directions
+  integer, intent(in) :: me      ! MPI rank
+  integer, intent(in) :: lat     ! latitude
 
-  integer, intent(in) :: nzm   ! Number of vertical layers
-  integer, intent(in) :: nz    ! Number of layer interfaces  (= nzm + 1)   
-  real,    intent(in) :: dtn   ! Physics time step, s 
-  real,    intent(in) :: pcrit ! pressure in Pa below which additional tke 
-                               ! dissipation is applied
+  integer, intent(in) :: nzm     ! Number of vertical layers
+  integer, intent(in) :: nz      ! Number of layer interfaces  (= nzm + 1)   
+  real,    intent(in) :: dtn     ! Physics time step, s 
+
+  real,    intent(in) :: pcrit   ! pressure in Pa below which additional tke dissipation is applied
+  real,    intent(in) :: cefac   ! tunable multiplier to dissipation term
+  real,    intent(in) :: cesfac  ! tunable multiplier to dissipation term for bottom level
+  real,    intent(in) :: tkef1   ! uncentering terms in implicit tke integration
+  real,    intent(in) :: dis_opt ! when > 0 use different formula for near surface dissipation
+ 
   real,    intent(in) :: hflx(nx)
   real,    intent(in) :: evap(nx)
 
@@ -110,20 +120,20 @@
   real, parameter :: lambda  = 0.04
 ! real, parameter :: min_tke = 1e-6  ! Minumum TKE value, m**2/s**2 
   real, parameter :: min_tke = 1e-4  ! Minumum TKE value, m**2/s**2 
-  real, parameter :: max_tke = 100.0 ! Maximum TKE value, m**2/s**2 
+! real, parameter :: max_tke = 100.0 ! Maximum TKE value, m**2/s**2 
+  real, parameter :: max_tke = 40.0  ! Maximum TKE value, m**2/s**2 
 ! Maximum turbulent eddy length scale, m
 ! real, parameter :: max_eddy_length_scale  = 2000. 
   real, parameter :: max_eddy_length_scale  = 1000. 
 ! Maximum "return-to-isotropy" time scale, s
   real, parameter :: max_eddy_dissipation_time_scale = 2000.  
   real, parameter :: Pr    = 1.0             ! Prandtl number
-! real, parameter :: Prnum = 1.0             ! Prandtl number
 
 ! Constants for the TKE dissipation term based on Deardorff (1980)
-! real, parameter :: pt19=0.19, pt51=0.51, pt01=0.01
   real, parameter :: pt19=0.19, pt51=0.51, pt01=0.01, atmin=0.10, atmax=one-atmin
   real, parameter :: Cs  = 0.15, epsln=1.0e-6
   real, parameter :: Ck  = 0.1     ! Coeff in the eddy diffusivity - TKE relationship, see Eq. 7 in BK13 
+
 ! real, parameter :: Ce  = Ck**3/(0.7*Cs**4) 
 ! real, parameter :: Ce  = Ck**3/(0.7*Cs**4) * 2.2 
 ! real, parameter :: Ce  = Ck**3/(0.7*Cs**4) * 3.0 , Ces = Ce 
@@ -132,7 +142,8 @@
 
 ! real, parameter :: Ce  = Ck**3/(0.7*Cs**4), Ces = Ce*3.0/0.7 ! Commented Moor
 
-  real, parameter :: Ce  = Ck**3/Cs**4, Ces = Ce*3.0/0.7
+  real, parameter :: Ce  = Ck**3/Cs**4, Ces = Ce
+! real, parameter :: Ce  = Ck**3/Cs**4, Ces = Ce*3.0/0.7
 
 ! real, parameter :: vonk=0.35  ! Von Karman constant
   real, parameter :: vonk=0.4   ! Von Karman constant Moorthi - as in GFS
@@ -190,6 +201,8 @@
 ! real isotropy_debug (nx,ny,nzm) ! Return to isotropy scale, s without artificial limits
   real brunt    (nx,ny,nzm) ! Moist Brunt-Vaisalla frequency, s^-1
   real conv_vel2(nx,ny,nzm) ! Convective velocity scale cubed, m^3/s^3
+
+  real cek(nx,ny)
 
 ! Output of SHOC
   real diag_frac, diag_qn, diag_qi, diag_ql
@@ -446,9 +459,9 @@ contains
 ! This subroutine solves the TKE equation, 
 ! Heavily based on SAM's tke_full.f90 by Marat Khairoutdinov
 
-    real grd,betdz,Cek,Cee,lstarn, lstarp, bbb, omn, omp,qsatt,dqsat, smix,         &
+    real grd,betdz,Cee,lstarn, lstarp, bbb, omn, omp,qsatt,dqsat, smix,         &
          buoy_sgs,ratio,a_prod_sh,a_prod_bu,a_diss,a_prod_bu_debug, buoy_sgs_debug, &
-         tscale1, wrk, wrk1, wtke, wtk2, rdtn
+         tscale1, wrk, wrk1, wtke, wtk2, rdtn, tkef2
     integer i,j,k,ku,kd,itr,k1
 
     rdtn = one / dtn
@@ -471,28 +484,42 @@ contains
     call eddy_length()   ! Find turbulent mixing length
     call check_eddy()    ! Make sure it's reasonable
 
+    tkef2 = 1.0 - tkef1
     do k=1,nzm      
       ku = k+1
       kd = k
       
-      Cek = Ce * cefac
+!     Cek = Ce * cefac
 
       if(k == 1) then
         ku = 2
         kd = 2
-        Cek = Ces
+!       Cek = Ces
       elseif(k == nzm) then
         ku = k
         kd = k
-        Cek = Ces
+!       Cek = Ces
+      endif
+
+      if (dis_opt > 0) then
+        do j=1,ny
+          do i=1,nx
+            wrk = (zl(i,j,k)-zi(i,j,1)) / adzl(i,j,1) + 1.5
+            cek(i,j) = 1.0 + 2.0 / max((wrk*wrk - 3.3), 0.5)
+          enddo
+        enddo
+      else
+        if (k == 1) then
+          cek = ces * cesfac
+        else
+          cek = ce  * cefac
+        endif
       endif
 
       do j=1,ny
         do i=1,nx
           grd = adzl(i,j,k)             !  adzl(k) = zi(k+1)-zi(k)
 
-!         wrk = zl(i,j,k) / grd + 1.5
-!         cek = one + 2.0 / (wrk*wrk -3.3)
 
 ! TKE boyancy production term. wthv_sec (buoyancy flux) is calculated in
 ! assumed_pdf(). The value used here is from the previous time step
@@ -516,7 +543,7 @@ contains
           endif
 
           ratio     = smix/grd
-          Cee       = Cek* (pt19 + pt51*ratio) * max(one, sqrt(pcrit/prsl(i,j,k)))
+          Cee       = Cek(i,j) * (pt19 + pt51*ratio) * max(one, sqrt(pcrit/prsl(i,j,k)))
 
 ! TKE shear production term
           a_prod_sh = half*(def2(i,j,ku)*tkh(i,j,ku)*prnum(i,j,ku)   &
@@ -536,15 +563,20 @@ contains
           wrk  = (dtn*Cee) / smixt(i,j,k)
           wrk1 = wtke + dtn*(a_prod_sh+a_prod_bu)
 
+!     if (lprnt .and. i == ipr .and. k<20) write(0,*)' wtke=',wtke,' wrk1=',wrk1,&
+!       ' a_prod_sh=',a_prod_sh,' a_prod_bu=',a_prod_bu,' dtn=',dtn,' smixt=',&
+!         smixt(i,j,k),' tkh=',tkh(i,j,ku),tkh(i,j,kd),' def2=',def2(i,j,ku),def2(i,j,kd)&
+!       ,' prnum=',prnum(i,j,ku),prnum(i,j,kd),' wthv_sec=',wthv_sec(i,j,k),' thv=',thv(i,j,k)
+
           do itr=1,nitr                        ! iterate for implicit solution
             wtke   = min(max(min_tke, wtke), max_tke)
             a_diss = wrk*sqrt(wtke)            ! Coefficient in the TKE dissipation term
             wtke   = wrk1 / (one+a_diss)
             wtke   = tkef1*wtke + tkef2*wtk2   ! tkef1+tkef2 = 1.0
 
-!     if (lprnt .and. i == ipr .and. k<15) write(0,*)' wtke=',wtke,' wtk2=',wtk2,&
+!     if (lprnt .and. i == ipr .and. k<20) write(0,*)' wtke=',wtke,' wtk2=',wtk2,&
 !        ' a_diss=',a_diss,' a_prod_sh=',a_prod_sh,' a_prod_bu=',a_prod_bu,&
-!        ' wrk1=',wrk1,' kdt=',kdt,' itr=',itr,' k=',k
+!        ' wrk1=',wrk1,' itr=',itr,' k=',k
 
             wtk2   = wtke
      

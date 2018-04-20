@@ -527,7 +527,7 @@ module cs_conv
 !
    IMPLICIT NONE
       
-   Integer, parameter    :: ntrq=4                    ! tarting index for tracers
+   Integer, parameter    :: ntrq=4                    ! starting index for tracers
    INTEGER, INTENT(IN)   :: im, IJSDIM, KMAX, NTR, mype, nctp, ipr !! DD, for GFS, pass in
    logical, intent(in)   :: do_aw, do_awdd, flx_form  ! switch to apply Arakawa-Wu to the tendencies
    logical, intent(in)   :: otspt1(ntr), otspt2(ntr), lprnt
@@ -1024,33 +1024,36 @@ module cs_conv
                    tem = - fsigma * gcym(i,l,ctp) * cbmfl
 
 ! first get environment variables at layer interface
-!                  l1 = l - 1
-!                  GDQM  = half * (GDQ(I,l,1) + GDQ(I,l1,1))
-!                  GDlM  = half * (GDQ(I,l,3) + GDQ(I,l1,3))
-!                  GDiM  = half * (GDQ(I,l,2) + GDQ(I,l1,2))
+                   l1 = l - 1
+                   GDQM  = half * (GDQ(I,l,1) + GDQ(I,l1,1))
+                   GDlM  = half * (GDQ(I,l,3) + GDQ(I,l1,3))
+                   GDiM  = half * (GDQ(I,l,2) + GDQ(I,l1,2))
 !!                 GDwM  = half * (GDw(I,l)   + GDw(I,l1))
-!                  do n = ntrq,NTR
-!                    GDtrM(n)   = half * (GDQ(I,l,n) + GDQ(I,l1,n))  ! as computed in cumup
-!                  enddo
+                   do n = ntrq,NTR
+                     GDtrM(n)   = half * (GDQ(I,l,n) + GDQ(I,l1,n))  ! as computed in cumup
+                   enddo
 
 ! flux = mass flux * (updraft variable minus environment variable)
 !centered differences
-!                  sfluxtem(l)  = tem * (gdtm(i,l)-gctbl(i,l))
-!                  qvfluxtem(l) = tem * (gdqm-gcqbl(i,l))
-!                  qlfluxtem(l) = tem * (gdlm-gcqlbl(i,l))
-!                  qifluxtem(l) = tem * (gdim-gcqibl(i,l))
-!                   do n = ntrq,NTR
-!                     trfluxtem(l,n)  = tem * (gdtrm(n)-gctrbl(i,l,n))
-!                   enddo
+                   sfluxtem(l)  = tem * (gdtm(i,l)-gctbl(i,l))
+                   qvfluxtem(l) = tem * (gdqm-gcqbl(i,l))
+                   qlfluxtem(l) = tem * (gdlm-gcqlbl(i,l))
+                   qifluxtem(l) = tem * (gdim-gcqibl(i,l))
+                   do n = ntrq,NTR
+                     trfluxtem(l,n)  = tem * (gdtrm(n)-gctrbl(i,l,n))
+                   enddo
+
+!  The following commented out by Moorthi on April 13, 2018 because tke below
+!  cloud base becomes too large otherwise when shoc is used
 
 !upstream - This better matches what the original CS tendencies do
-                   sfluxtem(l)  = tem * (gdt(i,l)+gocp*(gdz(i,l)-gdzm(i,l))-gctbl(i,l))
-                   qvfluxtem(l) = tem * (gdq(i,l,1)-gcqbl(i,l))
-                   qlfluxtem(l) = tem * (gdq(i,l,3)-gcqlbl(i,l))
-                   qifluxtem(l) = tem * (gdq(i,l,2)-gcqibl(i,l))
-                   do n = ntrq,NTR
-                     trfluxtem(l,n)  = tem * (gdq(i,l,n)-gctrbl(i,l,n))
-                   enddo
+!                  sfluxtem(l)  = tem * (gdt(i,l)+gocp*(gdz(i,l)-gdzm(i,l))-gctbl(i,l))
+!                  qvfluxtem(l) = tem * (gdq(i,l,1)-gcqbl(i,l))
+!                  qlfluxtem(l) = tem * (gdq(i,l,3)-gcqlbl(i,l))
+!                  qifluxtem(l) = tem * (gdq(i,l,2)-gcqibl(i,l))
+!                  do n = ntrq,NTR
+!                    trfluxtem(l,n)  = tem * (gdq(i,l,n)-gctrbl(i,l,n))
+!                  enddo
 
                  enddo
                else

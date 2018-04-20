@@ -9,8 +9,10 @@
      &,                         CNV_NDROP_i,CNV_NICE_i, q_io, lwm_o     &
      &,                         qi_o,     t_io,    rn_o, sr_o           &
      &,                         ncpl_io,  ncpi_io, fprcp, rnw_io, snw_io&
-     &,                         ncpr_io,  ncps_io, CLLS_io, KCBL        &
+     &,                         qgl_io,   ncpr_io, ncps_io, ncgl_io     &
+     &,                         CLLS_io,  KCBL                          &
      &,                         CLDREFFL, CLDREFFI, CLDREFFR, CLDREFFS  &
+     &,                         CLDREFFG                                &
      &,                         aero_in,  skip_macro, cn_prc2, cn_snr   &
      &,                         lprnt,    ipr, kdt, xlat, xlon, rhc_i)
 
@@ -30,7 +32,8 @@
        use cldmacro,      only: macro_cloud,meltfrz_inst,update_cld,    &
      &                          meltfrz_inst
        use cldwat2m_micro,only: mmicro_pcond
-       use micro_mg2_0,   only: micro_mg_tend, qcvar
+       use micro_mg2_0,   only: micro_mg_tend2_0 => micro_mg_tend, qcvar2 => qcvar
+       use micro_mg3_0,   only: micro_mg_tend3_0 => micro_mg_tend, qcvar3 => qcvar
 
 !      use wv_saturation, only: aqsat
 
@@ -41,6 +44,8 @@
 !    treat other parts of the model
 !    Anning Cheng 9/29/2017 implemented the MG2 from NCAR
 !                 alphar8 for qc_var scaled from climatology value
+!
+!   Feb 2018 : S. Moorthi Updated for MG3 with graupel as prognostic variable
 !------------------------------------
 !   input 
 !      real,   parameter  :: r_air = 3.47d-3
@@ -70,14 +75,15 @@
 
 !   output
        real (kind=kind_phys),dimension(ix,lm) :: lwm_o, qi_o,           &
-                         cldreffl, cldreffi, cldreffr, cldreffs
+                        cldreffl, cldreffi, cldreffr, cldreffs, cldreffg
        real (kind=kind_phys),dimension(im)    :: rn_o,  sr_o
 
 !   input and output
        real (kind=kind_phys),dimension(ix,lm),intent(inout):: q_io, t_io,   &
      &                                             ncpl_io,ncpi_io,CLLS_io
        real (kind=kind_phys),dimension(im,lm),intent(inout):: rnw_io,snw_io,&
-     &                                             ncpr_io, ncps_io
+     &                                             ncpr_io, ncps_io,        &
+     &                                             qgl_io,  ncgl_io
 !Moo   real (kind=kind_phys),dimension(im,lm),intent(inout):: CLLS_io
 
 
@@ -93,37 +99,53 @@
 
        real(kind=kind_phys), dimension(IM,LM)::ncpl,ncpi,omega,SC_ICE,  &
      & RAD_CF, radheat,Q1,U1,V1,    PLO, ZLO,    temp,                  &
-     & QLLS, QLCN, QILS,QICN,        CNV_CVW,CNV_UPDF,SMAXL,SMAXI,      &
-     & NHET_NUC, NLIM_NUC, CDNC_NUC,INC_NUC,CNN01,CNN04,CNN1,DNHET_IMM, &
+     & QLLS, QLCN, QILS,QICN,        CNV_CVW,CNV_UPDF,                  &
+!    & QLLS, QLCN, QILS,QICN,        CNV_CVW,CNV_UPDF,SMAXL,SMAXI,      &
+!    & NHET_NUC, NLIM_NUC, CDNC_NUC,INC_NUC,CNN01,CNN04,CNN1,DNHET_IMM, &
+     & NHET_NUC, NLIM_NUC, CDNC_NUC,INC_NUC,                 DNHET_IMM, &
      & NHET_IMM,NHET_DEP,NHET_DHF,DUST_IMM,DUST_DEP, DUST_DHF,WSUB,     &
-     & SIGW_GW,SIGW_CNV,SIGW_TURB,SIGW_RC,REV_CN_X,REV_LS_X,RSU_CN_X,   &
-     & RSU_LS_X, ALPHT_X, DLPDF_X, DIPDF_X,rnw,snw,ncpr,ncps,           &
-     & ACLL_CN_X,ACIL_CN_X, PFRZ, FQA,QCNTOT,QTOT,QL_TOT,qi_tot,blk_l,rhc
+     & SIGW_GW,SIGW_CNV,SIGW_TURB,                                      &
+!    & SIGW_GW,SIGW_CNV,SIGW_TURB,SIGW_RC,REV_CN_X,REV_LS_X,            &
+     &                                     rnw,snw,ncpr,ncps,qgl,ncgl,  &
+!    & RSU_LS_X, ALPHT_X, DLPDF_X, DIPDF_X,rnw,snw,ncpr,ncps,qgl,ncgl,  &
+!    & ACLL_CN_X,ACIL_CN_X, PFRZ, FQA,QCNTOT,QTOT,QL_TOT,qi_tot,blk_l,rhc
+     &                            FQA,QL_TOT,qi_tot,blk_l,rhc
 
-       real(kind=kind_phys), dimension(IM,LM):: DQRL_X,                 &
-     &                                          CNV_DQLDT, CLCN,CLLS,   &
+       real(kind=kind_phys) :: QCNTOT, QTOT
+
+!      real(kind=kind_phys), dimension(IM,LM):: DQRL_X,                 &
+       real(kind=kind_phys), dimension(IM,LM):: CNV_DQLDT, CLCN,CLLS,   &
      &                                          CCN01,CCN04,CCN1
 
-       real(kind=kind_phys), dimension(IM,LM):: QST3, DZET,   QDDF3,    &
-     &                                          MASS, RHX_X,  CFPDF_X,  &
-     &                                          VFALLSN_CN_X, QSNOW_CN, &
-     &                                          VFALLRN_CN_X, QRAIN_CN, dum
+       real(kind=kind_phys), allocatable, dimension(:,:) :: RHX_X       &
+     &,        CFPDF_X, VFALLSN_CN_X, QSNOW_CN, VFALLRN_CN_X, QRAIN_CN  &
+     &,        REV_CN_X, RSU_CN_X, DLPDF_X, DIPDF_X, ALPHT_X, PFRZ      &
+     &,        ACLL_CN_X, ACIL_CN_X, DQRL_X                             &
+     &,        PFI_CN_X,  PFL_CN_X, QST3, DZET, QDDF3
+       real(kind=kind_phys), allocatable, dimension(:) :: vmip
+
+!      real(kind=kind_phys), dimension(IM,LM) :: QDDF3
+!      real(kind=kind_phys), dimension(IM,LM):: QST3, DZET, QDDF3
+!    &                                          MASS, RHX_X,  CFPDF_X,  &
+!    &                                          VFALLSN_CN_X, QSNOW_CN, &
+!    &                                          VFALLRN_CN_X, QRAIN_CN
+!    &                                          VFALLRN_CN_X, QRAIN_CN, dum
 
        real(kind=kind_phys), dimension(IM,LM+1) :: ZET
-       real(kind=kind_phys), dimension(IM,0:LM) :: PLE, PKE, kh,PFI_CN_X,&
-                                                   PFL_CN_X
+       real(kind=kind_phys), dimension(IM,0:LM) :: PLE,      kh
+!      real(kind=kind_phys), dimension(IM,0:LM) :: PLE, PKE, kh
+!    &,                                            PFI_CN_X, PFL_CN_X
 
-       real(kind=kind_phys),dimension(0:LM)    ::SIGE
        real(kind=kind_phys),dimension(LM)      :: rhdfdar8, rhu00r8,    &
      &         ttendr8,qtendr8, cwtendr8,npre8, npccninr8,ter8,         &
      &         plevr8,ndropr8,qir8,qcr8,wparc_turb,qvr8, nir8,ncr8,     &
-     &         nimmr8,nsootr8,rnsootr8,omegr8,qrr8,qsr8,nrr8,nsr8
+     &         nimmr8,nsootr8,rnsootr8,omegr8,qrr8,qsr8,nrr8,nsr8,      &
+     &         qgr8,  ngr8
 
        real(kind=kind_phys), dimension(1:LM,10) :: rndstr8,naconr8
 
        real(kind=kind_phys), dimension(IM)      :: CN_PRC2,CN_SNR,CN_ARFX,&
-     &                                             LS_SNR,LS_PRC2, TPREC, &
-     &                                             VMIP
+     &                                             LS_SNR,LS_PRC2, TPREC
 !    &                                             VMIP, twat
 !      Anning Cheng 10/24/2016 twat for total water, diagnostic purpose
        integer, dimension(IM)                   :: KCBL
@@ -141,11 +163,13 @@
      &   prodsnowr8, cmeoutr8, deffir8, pgamradr8, lamcradr8,qsoutr8,   &
      &   qroutr8,droutr8, qcsevapr8,qisevapr8, qvresr8,                 &
      &   cmeioutr8, dsoutr8, qcsinksum_rate1ord,qrtend,nrtend,          &
-     &   qstend,    nstend,  alphar8, rhr8
+     &   qstend,    nstend,  alphar8, rhr8,                             &
+
+     &   qgtend, ngtend, qgoutr8, ngoutr8, dgoutr8 
 
        real(kind=kind_phys),  dimension(1)      :: prectr8, precir8
 
-       real(kind=kind_phys), dimension (LM)    :: vtrmcr8,vtrmir8,    &
+       real(kind=kind_phys), dimension (LM)    :: vtrmcr8,vtrmir8,      &
      &   qcsedtenr8,qisedtenr8, praor8,prcor8,mnucccor8, mnucctor8,     &
      &   msacwior8,psacwsor8, bergsor8,bergor8,meltor8, homoor8,        &
      &   qcresor8,                                                      &
@@ -155,15 +179,22 @@
      &   nnuccdor8, nnucccor8,naair8,                                   &
      &   nsacwior8, nsubior8, nprcior8, npraior8, npccnor8, npsacwsor8, &
      &   nsubcor8, npraor8, nprc1or8, tlatauxr8,pfrz_inc_r8,sadice,     &
-     &   sadsnow,am_evp_st,lflx,iflx,rflx,sflx,reff_rain,reff_snow,     &
+     &   sadsnow,  am_evp_st, reff_rain, reff_snow,                     &
      &   umr,ums,qrsedten,qssedten,refl,arefl,areflz,frefl,csrfl,       &
      &   acsrfl,fcsrfl,rercld,qrout2,qsout2,nrout2,nsout2,drout2,       &
-     &   dsout2,freqs,freqr,nfice,qcrat,prer_evap
+     &   dsout2,freqs,freqr,nfice,qcrat,prer_evap,                      &
+!    graupel related
+     &              reff_grau, umg,      qgsedtenr8, mnuccrior8,        &
+     &   pracgr8,   psacwgr8,  pgsacwr8, pgracsr8,   prdgr8,   qmultgr8,&
+     &   qmultrgr8, psacrr8,   npracgr8, nscngr8,    ngracsr8, nmultgr8,&
+     &   nmultrgr8, npsacwgr8, qgout2,   ngout2,     dgout2,   freqg 
 
-       real(kind=kind_phys), dimension (0:LM) :: pi_gw, rhoi_gw,     &
+       real(kind=kind_phys), dimension (0:LM) :: pi_gw, rhoi_gw,        &
      &                                           ni_gw, ti_gw
 
-       real(kind=kind_phys), dimension(LM+1)  :: pintr8, kkvhr8
+       real(kind=kind_phys), dimension(LM+1)    :: pintr8, kkvhr8
+       real(kind=kind_phys), dimension(2:LM+1)  :: lflx, iflx, rflx,    &
+                                                   sflx, gflx
 
 !      real (kind=kind_phys), parameter :: disp_liu=2., ui_scale=1.0    &
 !    &,                                    dcrit=20.0e-6                &
@@ -226,8 +257,10 @@
              ncpi(i,k)      = ncpi_io(i,ll)
              rnw(i,k)       = rnw_io(i,ll)
              snw(i,k)       = snw_io(i,ll)
+             qgl(i,k)       = qgl_io(i,ll)
              ncpr(i,k)      = ncpr_io(i,ll)
              ncps(i,k)      = ncps_io(i,ll)
+             ncgl(i,k)      = ncgl_io(i,ll)
 !                                                  QLLS is the total cloud water
              QLLS(i,k)      = QLLS_i(i,ll)-QLCN_i(i,ll)
              QLCN(i,k)      = QLCN_i(i,ll)
@@ -280,8 +313,10 @@
              ncpi(i,k)      = ncpi_io(i,k)
              rnw(i,k)       = rnw_io(i,k)
              snw(i,k)       = snw_io(i,k)
+             qgl(i,k)       = qgl_io(i,k)
              ncpr(i,k)      = ncpr_io(i,k)
              ncps(i,k)      = ncps_io(i,k)
+             ncgl(i,k)      = ncgl_io(i,k)
 !                                                  QLLS is the total cloud water
              QLLS(i,k)      = QLLS_i(i,k)-QLCN_i(i,k)
              QLCN(i,k)      = QLCN_i(i,k)
@@ -326,7 +361,6 @@
 
        do i=1,im
          KCBL(i)     = max(LM-KCBL(i),10)
-         vmip(i)     = 0.0
          KCT(i)      = 10
        enddo
 
@@ -340,15 +374,15 @@
          END DO
        END DO
 
-       do L=LM,1,-1
-         do i=1,im
-           DZET(i,L)   = ZET(i,L)   - ZET(i,L+1)
-           tx1       = plo(i,l)*100.0
-           est3      = min(tx1, fpvs(temp(i,l)))
-           qst3(i,l) = min(eps*est3/max(tx1+epsm1*est3,1.0e-10),1.0)
-           MASS(i,l) = (ple(i,l) - ple(i,l-1)) * (100.0/grav)
-         enddo
-       enddo
+!      do L=LM,1,-1
+!        do i=1,im
+!          DZET(i,L)   = ZET(i,L)   - ZET(i,L+1)
+!          tx1       = plo(i,l)*100.0
+!          est3      = min(tx1, fpvs(temp(i,l)))
+!          qst3(i,l) = min(eps*est3/max(tx1+epsm1*est3,1.0e-10),1.0)
+!          MASS(i,l) = (ple(i,l) - ple(i,l-1)) * (100.0/grav)
+!        enddo
+!      enddo
 !------------------------------------------------------------------------------
 !      call aqsat(temp,plo*100.,est3,qst3,im,im,lm,1,lm)
 !      do k=1,lm
@@ -381,24 +415,34 @@
 !      enddo
 !------------------------------------------------------------------------------
 
-       DO K = LM, 1, -1
+       if (.not. skip_macro) then
+         allocate(qddf3(im,lm))
+         allocate(vmip(im))
          do i=1,im
-           if (zet(i,k) < 3000.0) then
-             qddf3(i,k) = - (zet(i,k) - 3000.0) * zet(i,k) * mass(i,k)
-           else
-             qddf3(i,k) = 0.0
-           endif
-           vmip(i) = vmip(i) + qddf3(i,k)
+           vmip(i) = 0.0
          enddo
-       END DO
-       do i=1,im
-         if (vmip(i) /= 0.0) vmip(i) = 1.0 / vmip(i)
-       enddo
-       DO K = 1,LM
+         DO K = LM, 1, -1
+           do i=1,im
+             if (zet(i,k) < 3000.0) then
+!              qddf3(i,k) = - (zet(i,k) - 3000.0) * zet(i,k) * mass(i,k)
+               qddf3(i,k) = - (zet(i,k) - 3000.0) * zet(i,k)            &
+     &                    * (ple(i,k) - ple(i,k-1)) * (100.0/grav)
+             else
+               qddf3(i,k) = 0.0
+             endif
+             vmip(i) = vmip(i) + qddf3(i,k)
+           enddo
+         END DO
          do i=1,im
-           QDDF3(i,K) = QDDF3(i,K) * VMIP(i)
+           if (vmip(i) /= 0.0) vmip(i) = 1.0 / vmip(i)
          enddo
-       END DO
+         DO K = 1,LM
+           do i=1,im
+             QDDF3(i,K) = QDDF3(i,K) * VMIP(i)
+           enddo
+         END DO
+         deallocate (vmip)
+       endif
 
 
        do l=lm-1,1,-1
@@ -654,12 +698,13 @@
 !    &            ndropr8(k), qcr8(K), npccninr8(K), smaxliq(K),        &
      &            naair8(K), smaxicer8(K), nheticer8(K), nhet_immr8(K), &
      &            dnhet_immr8(K), nhet_depr8(k), nhet_dhfr8(k),         &
-     &            sc_icer8(k), dust_immr8(K), dust_depr8(k),            &
-     &            dust_dhfr8(k), nlimicer8(k), use_average_v,           &
-     &            CCN_PARAM,     IN_PARAM,     fdust_drop,              &
+     &            sc_icer8(k),    dust_immr8(K), dust_depr8(k),         &
+     &            dust_dhfr8(k),  nlimicer8(k),  use_average_v,         &
+     &            CCN_PARAM,      IN_PARAM,      fdust_drop,            &
      &            fsoot_drop,pfrz_inc_r8(K),sigma_nuc_r8, rh1_r8,       &
      &            size(ccn_diag))
 
+             if (npccninr8(k) < 1.0e-12) npccninr8(k) = 0.0
 
              CCN01(I,K) = max(ccn_diag(1)*1e-6, 0.0)
              CCN04(I,K) = max(ccn_diag(2)*1e-6, 0.0)
@@ -688,8 +733,8 @@
 
            end if
 
-           SMAXL(I,k)      = smaxliq(k)   * 100.0
-           SMAXI(I,k)      = smaxicer8(k) * 100.0
+!          SMAXL(I,k)      = smaxliq(k)   * 100.0
+!          SMAXI(I,k)      = smaxicer8(k) * 100.0
            NHET_NUC(I,k)   = nheticer8(k) * 1e-6
            NLIM_NUC(I,k)   = nlimicer8(k) * 1e-6
            SC_ICE(I,k)     = min(max(sc_icer8(k),1.0),2.0)
@@ -725,21 +770,21 @@
 !===========================Begin Cloud Macrophysics ===========================
 !                           ------------------
 
-      do k=1,lm
-        do i=1,im
-          REV_CN_X(i,k) = 0.0
-          REV_LS_X(i,k) = 0.0
-          RSU_CN_X(i,k) = 0.0
-          RSU_LS_X(i,k) = 0.0
+!     do k=1,lm
+!       do i=1,im
+!         REV_CN_X(i,k) = 0.0
+!         REV_LS_X(i,k) = 0.0
+!         RSU_CN_X(i,k) = 0.0
+!         RSU_LS_X(i,k) = 0.0
 !         CFX(i,k) = INC_NUC(i,k) + NHET_IMM(i,k)
-        enddo
-      enddo
-      do k=0,lm
-        do i=1,im
-          PFI_CN_X(i,k) = 0.0
-          PFL_CN_X(i,k) = 0.0
-        enddo
-      enddo
+!       enddo
+!     enddo
+!     do k=0,lm
+!       do i=1,im
+!         PFI_CN_X(i,k) = 0.0
+!         PFL_CN_X(i,k) = 0.0
+!       enddo
+!     enddo
 
 !     if(lprnt) write(0,*)' skip_macro=',skip_macro
 
@@ -749,6 +794,36 @@
 !    &,' qils=',qils(ipr,25)
 !       if(lprnt) write(0,*)' bef macro_cloud clcn=',clcn(ipr,:)
 !       if(lprnt) write(0,*)' bef macro_cloud clls=',clls(ipr,:)
+
+        allocate(RHX_X(im,lm),     CFPDF_X(im,lm), VFALLSN_CN_X(im,lm), &
+     &           QSNOW_CN(im,lm),  VFALLRN_CN_X(im,lm), QRAIN_CN(im,lm),&
+     &           REV_CN_X(im,lm),  RSU_CN_X(im,lm), DLPDF_X(im,lm),     &
+     &           DIPDF_X(im,lm),   ALPHT_X(im,lm),  PFRZ(im,lm),        &
+     &           ACLL_CN_X(im,lm), ACIL_CN_X(im,lm), DQRL_X(im,lm),     &
+     &           DZET(im,lm),      qst3(im,lm))
+        allocate (PFI_CN_X(im,0:lm), PFL_CN_X(im,0:lm))
+
+        do L=LM,1,-1
+          do i=1,im
+            DZET(i,L)   = ZET(i,L)   - ZET(i,L+1)
+            tx1       = plo(i,l)*100.0
+            est3      = min(tx1, fpvs(temp(i,l)))
+            qst3(i,l) = min(eps*est3/max(tx1+epsm1*est3,1.0e-10),1.0)
+!           MASS(i,l) = (ple(i,l) - ple(i,l-1)) * (100.0/grav)
+          enddo
+        enddo
+        do k=1,lm
+          do i=1,im
+            REV_CN_X(i,k) = 0.0
+            RSU_CN_X(i,k) = 0.0
+          enddo
+        enddo
+        do k=0,lm
+          do i=1,im
+            PFI_CN_X(i,k) = 0.0
+            PFL_CN_X(i,k) = 0.0
+          enddo
+        enddo
 
 !       call macro_cloud (IM, LM, DT_MOIST, PLO, PLE, PK, FRLAND,       &
         call macro_cloud (IM, LM, DT_MOIST, PLO, PLE,     FRLAND,       &
@@ -764,6 +839,7 @@
      &                    VFALLRN_CN_X, CNV_FICE, CNV_NDROP, CNV_NICE,  &
      &                    SC_ICE,   NCPL,     NCPI,  PFRZ,              &
      &                    QRAIN_CN, QSNOW_CN, KCBL,  lprnt, ipr, rhc)
+
 
 !       if (lprnt) write(0,*) ' in micro qicn3=',qicn(ipr,25)
 !       if(lprnt) write(0,*)' aft macro_cloud clcn=',clcn(ipr,:)
@@ -807,6 +883,11 @@
 !    &,                 NCPL, INC_NUC, RHCmicro )
 !============ Put cloud fraction back in contact with the PDF (Barahona et al., GMD, 2014)============
 
+        deallocate(RHX_X,    CFPDF_X,      VFALLSN_CN_X,                &
+     &             QSNOW_CN, VFALLRN_CN_X, QRAIN_CN, REV_CN_X, RSU_CN_X,&
+     &             DLPDF_X, DIPDF_X, PFRZ, ACLL_CN_X, ACIL_CN_X, DQRL_X,&
+     &             PFI_CN_X, PFL_CN_X,  DZET, qst3, qddf3)
+
       else
         do i=1,im
           CN_PRC2(i) = 0.0
@@ -826,12 +907,12 @@
 
       do k=1,lm
         do i=1,im
-          QCNTOT(i,k) = QLCN(i,k)   + QICN(i,k)
-          QTOT(i,k)   = QCNTOT(i,k) + QLLS(i,k) + QILS(i,k)
+          QCNTOT      = QLCN(i,k)   + QICN(i,k)
+          QTOT        = QCNTOT      + QLLS(i,k) + QILS(i,k)
           QL_TOT(i,k) = QLCN(i,k)   + QLLS(i,k)
           QI_TOT(i,k) = QICN(i,k)   + QILS(i,k)
-          if (QTOT(i,k) > 0.0) then
-            FQA(i,k) = min(max(QCNTOT(i,k)/QTOT(i,k), 0.0), 1.0)
+          if (QTOT > 0.0) then
+            FQA(i,k) = min(max(QCNTOT / QTOT, 0.0), 1.0)
           else
             FQA(i,k) = 0.0
           endif
@@ -900,8 +981,10 @@
           nir8(k)   = MAX(NCPI(I,k), 0.0)
           qrr8(k)   = rnw(I,k)
           qsr8(k)   = snw(I,k)
+          qgr8(k)   = qgl(I,k)
           nrr8(k)   = MAX(NCPR(I,k), 0.0)
           nsr8(k)   = MAX(NCPS(I,k), 0.0)
+          ngr8(k)   = MAX(ncgl(I,k), 0.0)
 
 
           naair8(k)    = INC_NUC(I,k)
@@ -940,7 +1023,7 @@
           ficer8(k)  = qir8(k) /( qcr8(k)+qir8(k) + 1.e-10 )
           omegr8(k)  = WSUB(I,k)
 !         alphar8(k) = max(alpht_x(i,k)/maxval(alpht_x(i,:))*8.,0.5)
-          alphar8(k) = qcvar
+!         alphar8(k) = qcvar2
           rhr8(k)    = rhc(i,k)
 
         END DO
@@ -1033,93 +1116,106 @@
 
           enddo       ! K loop
 
-        else
-          ltrue = any(qcr8 >= qsmall) .or. any(qir8 >= qsmall)     &
-              .or.any(qsr8 >= qsmall) .or. any(qrr8 >= qsmall)
+        elseif (fprcp == 1) then         ! callo mg2
 !     if (lprnt .and. i == ipr) then
 !       write(0,*)' bef micro_mg_tend ter8= ', ter8(:)
 !       write(0,*)' bef micro_mg_tend qvr8= ', qvr8(:),'dt_r8=',dt_r8
 !       write(0,*)' bef micro_mg_tend rhr8= ', rhr8(:)
 !     endif
-      lprint = lprnt .and. i == ipr
+          lprint = lprnt .and. i == ipr
+          ltrue = any(qcr8 >= qsmall) .or. any(qir8 >= qsmall)          &
+             .or. any(qsr8 >= qsmall) .or. any(qrr8 >= qsmall)
           if (ltrue) then
-            call micro_mg_tend (                                           &
-     &         ncolmicro,          lm,                 dt_r8,              &
-     &         ter8,                         qvr8,                         &
-     &         qcr8,                         qir8,                         &
-     &         ncr8,                         nir8,                         &
-     &         qrr8,                         qsr8,                         &
-     &         nrr8,                         nsr8,                         &
-     &         alphar8,                      1.,                           &
-     &         plevr8,                       pdelr8,                       &
-!    &         cldfr8,  liqcldfr8,      icecldfr8,     rhc,                &
-     &         cldfr8,  liqcldfr8,      icecldfr8,     rhr8,               &
-     &         qcsinksum_rate1ord,                                         &
-     &         naair8,                       npccninr8,                    &
-     &         rndstr8,                      naconr8,                      &
-     &         tlatr8,                       qvlatr8,                      &
-     &         qctendr8,                     qitendr8,                     &
-     &         nctendr8,                     nitendr8,                     &
-     &         qrtend,                       qstend,                       &
-     &         nrtend,                       nstend,                       &
-     &         effcr8,             effc_fnr8,          effir8,             &
-     &         sadice,                       sadsnow,                      &
-     &         prectr8,                      precir8,                      &
-     &         nevaprr8,                     evapsnowr8,                   &
-     &         am_evp_st,                                                  &
-     &         prainr8,                      prodsnowr8,                   &
-     &         cmeoutr8,                     deffir8,                      &
-     &         pgamradr8,                    lamcradr8,                    &
-     &         qsoutr8,                      dsoutr8,                      &
-     &         lflx,               iflx,                                   &
-     &         rflx,               sflx,               qroutr8,            &
-     &         reff_rain,                    reff_snow,                    &
-     &         qcsevapr8,          qisevapr8,          qvresr8,            &
-     &         cmeioutr8,          vtrmcr8,            vtrmir8,            &
-     &         umr,                          ums,                          &
-     &         qcsedtenr8,                   qisedtenr8,                   &
-     &         qrsedten,                     qssedten,                     &
-     &         praor8,                       prcor8,                       &
-     &         mnucccor8,          mnucctor8,          msacwior8,          &
-     &         psacwsor8,          bergsor8,           bergor8,            &
-     &         meltor8,                      homoor8,                      &
-     &         qcresor8,           prcior8,            praior8,            &
-     &         qiresor8,           mnuccror8,          pracsor8,           &
-     &         meltsdtr8,          frzrdtr8,           mnuccdor8,          &
-     &         nroutr8,                      nsoutr8,                      &
-     &         refl,               arefl,              areflz,             &
-     &         frefl,              csrfl,              acsrfl,             &
-     &         fcsrfl,                       rercld,                       &
-     &         ncair8,                       ncalr8,                       &
-     &         qrout2,                       qsout2,                       &
-     &         nrout2,                       nsout2,                       &
-     &         drout2,                       dsout2,                       &
-     &         freqs,                        freqr,                        &
-     &         nfice,                        qcrat,                        &
-     &         prer_evap,xlat(i),xlon(i), lprint)
+            alphar8(:) = qcvar2
 
+!           if(lprint) then
+!             write(0,*)' calling micro_mg_tend2_0 qcvar2=',qcvar2
+!             write(0,*)' qcr8=',qcr8(:)
+!             write(0,*)' ncr8=',ncr8(:)
+!             write(0,*)' npccninr8=',npccninr8(:)
+!             write(0,*)' plevr8=',plevr8(:)
+!             write(0,*)' ter8=',ter8(:)
+!           endif
+
+            call micro_mg_tend2_0 (                                     &
+     &         ncolmicro,          lm,                 dt_r8,           &
+     &         ter8,                         qvr8,                      &
+     &         qcr8,                         qir8,                      &
+     &         ncr8,                         nir8,                      &
+     &         qrr8,                         qsr8,                      &
+     &         nrr8,                         nsr8,                      &
+     &         alphar8,                      1.,                        &
+     &         plevr8,                       pdelr8,                    &
+!    &         cldfr8,  liqcldfr8,      icecldfr8,     rhc,             &
+     &         cldfr8,  liqcldfr8,      icecldfr8,     rhr8,            &
+     &         qcsinksum_rate1ord,                                      &
+     &         naair8,                       npccninr8,                 &
+     &         rndstr8,                      naconr8,                   &
+     &         tlatr8,                       qvlatr8,                   &
+     &         qctendr8,                     qitendr8,                  &
+     &         nctendr8,                     nitendr8,                  &
+     &         qrtend,                       qstend,                    &
+     &         nrtend,                       nstend,                    &
+     &         effcr8,             effc_fnr8,          effir8,          &
+     &         sadice,                       sadsnow,                   &
+     &         prectr8,                      precir8,                   &
+     &         nevaprr8,                     evapsnowr8,                &
+     &         am_evp_st,                                               &
+     &         prainr8,                      prodsnowr8,                &
+     &         cmeoutr8,                     deffir8,                   &
+     &         pgamradr8,                    lamcradr8,                 &
+     &         qsoutr8,                      dsoutr8,                   &
+     &         lflx,               iflx,                                &
+     &         rflx,               sflx,               qroutr8,         &
+     &         reff_rain,                    reff_snow,                 &
+     &         qcsevapr8,          qisevapr8,          qvresr8,         &
+     &         cmeioutr8,          vtrmcr8,            vtrmir8,         &
+     &         umr,                          ums,                       &
+     &         qcsedtenr8,                   qisedtenr8,                &
+     &         qrsedten,                     qssedten,                  &
+     &         praor8,                       prcor8,                    &
+     &         mnucccor8,          mnucctor8,          msacwior8,       &
+     &         psacwsor8,          bergsor8,           bergor8,         &
+     &         meltor8,                      homoor8,                   &
+     &         qcresor8,           prcior8,            praior8,         &
+     &         qiresor8,           mnuccror8,          pracsor8,        &
+     &         meltsdtr8,          frzrdtr8,           mnuccdor8,       &
+     &         nroutr8,                      nsoutr8,                   &
+     &         refl,               arefl,              areflz,          &
+     &         frefl,              csrfl,              acsrfl,          &
+     &         fcsrfl,                       rercld,                    &
+     &         ncair8,                       ncalr8,                    &
+     &         qrout2,                       qsout2,                    &
+     &         nrout2,                       nsout2,                    &
+     &         drout2,                       dsout2,                    &
+     &         freqs,                        freqr,                     &
+     &         nfice,                        qcrat,                     &
+     &         prer_evap,xlat(i),xlon(i), lprint)
+!
             LS_PRC2(I) = max(1000.*(prectr8(1)-precir8(1)), 0.0)
             LS_SNR(I)  = max(1000.*precir8(1), 0.0)
             do k=1,lm
-              QL_TOT(I,k) = QL_TOT(I,k) + qctendr8(k)*DT_R8
-              QI_TOT(I,k) = QI_TOT(I,k) + qitendr8(k)*DT_R8
-              Q1(I,k)     = Q1(I,k) + qvlatr8(k)*DT_R8
-              TEMP(I,k)   = TEMP(I,k) + tlatr8(k)*DT_R8*onebcp
-              NCPL(I,k)   = MAX(NCPL(I,k) + nctendr8(k) * DT_R8, 0.0)
-              NCPI(I,k)   = MAX(NCPI(I,k) + nitendr8(k) * DT_R8, 0.0)
-              rnw(I,k)    = rnw(I,k) + qrtend(k)*dt_r8
-              snw(I,k)    = snw(I,k) + qstend(k)*dt_r8
-              NCPR(I,k)   = NCPR(I,k) + nrtend(k)*dt_r8
-              NCPS(I,k)   = NCPS(I,k) + nstend(k)*dt_r8
+              QL_TOT(I,k)   = QL_TOT(I,k) + qctendr8(k)*DT_R8
+              QI_TOT(I,k)   = QI_TOT(I,k) + qitendr8(k)*DT_R8
+              Q1(I,k)       = Q1(I,k)     + qvlatr8(k)*DT_R8
+              TEMP(I,k)     = TEMP(I,k)   + tlatr8(k)*DT_R8*onebcp
+              rnw(I,k)      = rnw(I,k)    + qrtend(k)*dt_r8
+              snw(I,k)      = snw(I,k)    + qstend(k)*dt_r8
+
+              NCPL(I,k)     = MAX(NCPL(I,k) + nctendr8(k)*DT_R8, 0.0)
+              NCPI(I,k)     = MAX(NCPI(I,k) + nitendr8(k)*DT_R8, 0.0)
+              NCPR(I,k)     = max(NCPR(I,k) + nrtend(k)*dt_r8,   0.0)
+              NCPS(I,k)     = max(NCPS(I,k) + nstend(k)*dt_r8,   0.0)
 
               CLDREFFL(I,k) = min(max(effcr8(k), 10.),150.)
               CLDREFFI(I,k) = min(max(effir8(k), 20.),150.)
               CLDREFFR(I,k) = max(reff_rain(k),150.)
               CLDREFFS(I,k) = max(reff_snow(k),250.)
             enddo       ! K loop
-!     if (lprnt .and. i == ipr) then
+!     if (lprint) then
 !       write(0,*)' aft micro_mg_tend temp= ', temp(i,:)
 !       write(0,*)' aft micro_mg_tend q1= ', q1(i,:)
+!       write(0,*)' aft micro_mg_tend LS_PRC2= ', LS_PRC2(i),' ls_snr=',ls_snr(i)
 !     endif
           else
             LS_PRC2(I) = 0.
@@ -1129,7 +1225,139 @@
               CLDREFFI(I,k) = 50.
               CLDREFFR(I,k) = 1000.
               CLDREFFS(I,k) = 250.
+            enddo       ! K loop
+          endif
+        else
+          ltrue = any(qcr8 >= qsmall) .or. any(qir8 >= qsmall)          &
+             .or. any(qsr8 >= qsmall) .or. any(qrr8 >= qsmall)          &
+             .or. any(qgr8 >= qsmall)
+          lprint = lprnt .and. i == ipr
+          if (ltrue) then
+            alphar8(:) = qcvar3
+!           if(lprint) then
+!             write(0,*)' calling micro_mg_tend3_0 qcvar3=',qcvar3,' i=',i
+!             write(0,*)' qcr8=',qcr8(:)
+!             write(0,*)' ncr8=',ncr8(:)
+!             write(0,*)' npccninr8=',npccninr8(:)
+!             write(0,*)' plevr8=',plevr8(:)
+!             write(0,*)' ter8=',ter8(:)
+!           endif
+            call micro_mg_tend3_0 (                                     &
+     &         ncolmicro,          lm,                 dt_r8,           &
+     &         ter8,                         qvr8,                      &
+     &         qcr8,                         qir8,                      &
+     &         ncr8,                         nir8,                      &
+     &         qrr8,                         qsr8,                      &
+     &         nrr8,                         nsr8,                      &
+     &         qgr8,                         ngr8,                      &
+     &         alphar8,                      1.,                        &
+     &         plevr8,                       pdelr8,                    &
+!    &         cldfr8,  liqcldfr8,      icecldfr8,     rhc,             &
+     &         cldfr8,  liqcldfr8,      icecldfr8,     rhr8,            &
+     &         qcsinksum_rate1ord,                                      &
+     &         naair8,                       npccninr8,                 &
+     &         rndstr8,                      naconr8,                   &
+     &         tlatr8,                       qvlatr8,                   &
+     &         qctendr8,                     qitendr8,                  &
+     &         nctendr8,                     nitendr8,                  &
+     &         qrtend,                       qstend,                    &
+     &         nrtend,                       nstend,                    &
+!
+     &         qgtend,                       ngtend,                    &
+!
+     &         effcr8,             effc_fnr8,          effir8,          &
+     &         sadice,                       sadsnow,                   &
+     &         prectr8,                      precir8,                   &
+     &         nevaprr8,                     evapsnowr8,                &
+     &         am_evp_st,                                               &
+     &         prainr8,                      prodsnowr8,                &
+     &         cmeoutr8,                     deffir8,                   &
+     &         pgamradr8,                    lamcradr8,                 &
+     &         qsoutr8,                      dsoutr8,                   &
+!
+     &         qgoutr8,            ngoutr8,  dgoutr8,                   &
+!
+     &         lflx,               iflx,     gflx,                      &
+!
+     &         rflx,               sflx,               qroutr8,         &
+!
+     &         reff_rain,          reff_snow, reff_grau,                &
+!
+     &         qcsevapr8,          qisevapr8,          qvresr8,         &
+     &         cmeioutr8,          vtrmcr8,            vtrmir8,         &
+     &         umr,                          ums,                       &
+!
+     &         umg,                          qgsedtenr8,                &
+!
+     &         qcsedtenr8,                   qisedtenr8,                &
+     &         qrsedten,                     qssedten,                  &
+     &         praor8,                       prcor8,                    &
+     &         mnucccor8,          mnucctor8,          msacwior8,       &
+     &         psacwsor8,          bergsor8,           bergor8,         &
+     &         meltor8,                      homoor8,                   &
+     &         qcresor8,           prcior8,            praior8,         &
+!
+     &         qiresor8,           mnuccror8, mnuccrior8, pracsor8,     &
+!
+     &         meltsdtr8,          frzrdtr8,           mnuccdor8,       &
+!
+     &         pracgr8,            psacwgr8,           pgsacwr8,        &
+     &         pgracsr8,           prdgr8,                              &
+     &         qmultgr8,           qmultrgr8,          psacrr8,         &
+     &         npracgr8,           nscngr8,            ngracsr8,        &
+     &         nmultgr8,           nmultrgr8,          npsacwgr8,       &
+!
+     &         nroutr8,                      nsoutr8,                   &
+     &         refl,               arefl,              areflz,          &
+     &         frefl,              csrfl,              acsrfl,          &
+     &         fcsrfl,                       rercld,                    &
+     &         ncair8,                       ncalr8,                    &
+     &         qrout2,                       qsout2,                    &
+     &         nrout2,                       nsout2,                    &
+     &         drout2,                       dsout2,                    &
+!
+     &         qgout2,             ngout2,   dgout2, freqg,             &
+     &         freqs,                        freqr,                     &
+     &         nfice,                        qcrat,                     &
+     &         prer_evap, xlat(i), xlon(i), lprint)
 
+            LS_PRC2(I) = max(1000.*(prectr8(1)-precir8(1)), 0.0)
+            LS_SNR(I)  = max(1000.*precir8(1), 0.0)
+            do k=1,lm
+              QL_TOT(I,k)   = QL_TOT(I,k) + qctendr8(k)*DT_R8
+              QI_TOT(I,k)   = QI_TOT(I,k) + qitendr8(k)*DT_R8
+              Q1(I,k)       = Q1(I,k)     + qvlatr8(k)*DT_R8
+              TEMP(I,k)     = TEMP(I,k)   + tlatr8(k)*DT_R8*onebcp
+              rnw(I,k)      = rnw(I,k)    + qrtend(k)*dt_r8
+              snw(I,k)      = snw(I,k)    + qstend(k)*dt_r8
+              qgl(I,k)      = qgl(I,k)    + qgtend(k)*dt_r8
+
+              NCPL(I,k)     = MAX(NCPL(I,k) + nctendr8(k)*DT_R8, 0.0)
+              NCPI(I,k)     = MAX(NCPI(I,k) + nitendr8(k)*DT_R8, 0.0)
+              NCPR(I,k)     = max(NCPR(I,k) + nrtend(k)*dt_r8,   0.0)
+              NCPS(I,k)     = max(NCPS(I,k) + nstend(k)*dt_r8,   0.0)
+              NCGL(I,k)     = max(NCGL(I,k) + ngtend(k)*dt_r8,   0.0)
+
+              CLDREFFL(I,k) = min(max(effcr8(k), 10.),150.)
+              CLDREFFI(I,k) = min(max(effir8(k), 20.),150.)
+              CLDREFFR(I,k) = max(reff_rain(k),150.)
+              CLDREFFS(I,k) = max(reff_snow(k),250.)
+              CLDREFFG(I,k) = max(reff_grau(k),250.)
+            enddo       ! K loop
+!     if (lprint) then
+!       write(0,*)' aft micro_mg_tend temp= ', temp(i,:)
+!       write(0,*)' aft micro_mg_tend q1= ', q1(i,:)
+!       write(0,*)' aft micro_mg_tend LS_PRC2= ', LS_PRC2(i),' ls_snr=',ls_snr(i)
+!     endif
+          else
+            LS_PRC2(I) = 0.
+            LS_SNR(I)  = 0.
+            do k=1,lm
+              CLDREFFL(I,k) = 10.
+              CLDREFFI(I,k) = 50.
+              CLDREFFR(I,k) = 1000.
+              CLDREFFS(I,k) = 250.
+              CLDREFFG(I,k) = 250.
             enddo       ! K loop
           endif
         endif
@@ -1192,8 +1420,10 @@
              ncpl_io(i,k) = NCPL(i,ll)
              rnw_io(i,k)  = rnw(i,ll)
              snw_io(i,k)  = snw(i,ll)
+             qgl_io(i,k)  = qgl(i,ll)
              ncpr_io(i,k) = NCPR(i,ll)
              ncps_io(i,k) = NCPS(i,ll)
+             ncgl_io(i,k) = NCGL(i,ll)
              lwm_o(i,k)   = QL_TOT(i,ll)
              qi_o(i,k)    = QI_TOT(i,ll)
 !            CLLS_io(i,k) = CLLS(i,ll)
@@ -1209,8 +1439,10 @@
              ncpl_io(i,k) = NCPL(i,k)
              rnw_io(i,k)  = rnw(i,k)
              snw_io(i,k)  = snw(i,k)
+             qgl_io(i,k)  = qgl(i,k)
              ncpr_io(i,k) = NCPR(i,k)
              ncps_io(i,k) = NCPS(i,k)
+             ncgl_io(i,k) = NCGL(i,k)
              lwm_o(i,k)   = QL_TOT(i,k)
              qi_o(i,k)    = QI_TOT(i,k)
 !            CLLS_io(i,k) = CLLS(i,k)
@@ -1231,6 +1463,8 @@
          cn_prc2(i) = cn_prc2(i) * dt_i * 0.001
          cn_snr(i)  = cn_snr(i)  * dt_i * 0.001
        END DO
+
+       if (allocated(ALPHT_X)) deallocate (ALPHT_X)
 
 !     if (lprnt) then
 !       write(0,*)' end micro_mg_tend t_io= ', t_io(ipr,:)

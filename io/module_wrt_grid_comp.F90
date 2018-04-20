@@ -22,6 +22,7 @@
 !***
 !     Jul 2017:  J. Wang/G. Theurich  - initial code for fv3 write grid component
 !     Aug 2017:  J. Wang              - add nemsio binary output for Gaussian grid
+!     Mar 2018:  S  Moorthi           - changing cfhour to accomodate up to 99999 hours
 !
 !---------------------------------------------------------------------------------
 !
@@ -29,10 +30,11 @@
 
       use esmf
       use write_internal_state
-      use module_fv3_io_def, only : num_pes_fcst,lead_wrttask, last_wrttask,  &
-                                    n_group, num_files, &
-                                    filename_base, output_grid, output_file,  &
-                                    imo, jmo, write_nemsioflip
+      use module_fv3_io_def,   only : num_pes_fcst,lead_wrttask, last_wrttask,  &
+                                      n_group, num_files,                       &
+                                      filename_base, output_grid, output_file,  &
+                                      imo, jmo, write_nemsioflip,               &
+                                      nsout => nsout_io
       use module_write_nemsio, only : nemsio_first_call, write_nemsio
       use module_write_netcdf, only : write_netcdf
 !
@@ -85,7 +87,7 @@
       end interface splat
 !
       type optimizeT
-        type(ESMF_State)      :: state
+        type(ESMF_State)                   :: state
         type(ESMF_GridComp), allocatable   :: comps(:)
       end type
 
@@ -102,15 +104,15 @@
         rc = ESMF_SUCCESS
 
         call ESMF_GridCompSetEntryPoint(wrt_comp, ESMF_METHOD_INITIALIZE, &
-             userRoutine=wrt_initialize, rc=rc)
+                                        userRoutine=wrt_initialize, rc=rc)
         if(rc/=0) write(*,*)'Error: write grid comp, initial'
 !
         call ESMF_GridCompSetEntryPoint(wrt_comp, ESMF_METHOD_RUN, &
-             userRoutine=wrt_run, rc=rc)
+                                        userRoutine=wrt_run, rc=rc)
         if(rc/=0) write(*,*)'Error: write grid comp, run'
 !
         call ESMF_GridCompSetEntryPoint(wrt_comp, ESMF_METHOD_FINALIZE, &
-             userRoutine=wrt_finalize, rc=rc)
+                                        userRoutine=wrt_finalize, rc=rc)
         if(rc/=0) write(*,*)'Error: write grid comp, run'
 
       end subroutine SetServices
@@ -921,8 +923,7 @@
       type(write_wrap)                      :: wrap
       type(wrt_internal_state),pointer      :: wrt_int_state
 !
-      integer,dimension(:),allocatable,save :: ih_int  &
-                                              ,ih_real
+      integer,dimension(:),allocatable,save :: ih_int, ih_real
 !
       INTEGER,SAVE                          :: NPOSN_1,NPOSN_2
 !
@@ -932,7 +933,7 @@
                                                nseconds,nseconds_num,nseconds_den
 !
       integer                               :: id
-      integer                               :: nbdl, idx, date(6)
+      integer                               :: nbdl, idx, date(6), ndig
       integer                               :: step=1
 !
       REAL                                  :: DEGRAD
@@ -942,7 +943,7 @@
       logical,save                          :: file_first=.true.
 !
       character(filename_maxstr)            :: filename,compname,bundle_name
-      character(3)                          :: cfhour
+      character(40)                         :: cfhour, cform
       character(10)                         :: stepString
       character(80)                         :: attrValueS
       integer                               :: attrValueI
@@ -952,11 +953,11 @@
 !
 !-----------------------------------------------------------------------
 !
-      real(kind=8) :: wait_time, MPI_Wtime
-      real(kind=8)         :: times,times2,etim
-      character(10)        :: timeb
-      real(kind=8) :: tbeg,tend
-      real(kind=8) :: wbeg,wend
+      real(kind=8)  :: wait_time, MPI_Wtime
+      real(kind=8)  :: times,times2,etim
+      character(10) :: timeb
+      real(kind=8)  :: tbeg,tend
+      real(kind=8)  :: wbeg,wend
 
       integer fieldcount, dimCount
       real(kind=ESMF_KIND_R8), dimension(:,:,:), pointer   :: datar8
@@ -969,7 +970,7 @@
 !-----------------------------------------------------------------------
 !
       tbeg = MPI_Wtime()
-      rc     = esmf_success
+      rc   = esmf_success
 !
 !-----------------------------------------------------------------------
 !***  get the current write grid comp name, id, and internal state
@@ -1049,9 +1050,18 @@
        nf_hours   = int(nf_seconds/3600.)
        nf_minutes = int((nf_seconds-nf_hours*3600.)/60.)
        nseconds   = int(nf_seconds-nf_hours*3600.-nf_minutes*60.)
-       write(cfhour,'(I3.3)')int(wrt_int_state%nfhour)
-    if(mype == lead_write_task) print *,'in wrt run, 2, nf_hours=',nf_hours,nf_minutes,nseconds, &
-       'nseconds_num=',nseconds_num,nseconds_den,' FBCount=',FBCount
+       if (nf_seconds-nf_hours*3600 > 0 .and. nsout > 0) then
+         ndig = max(log10(nf_hours+0.5)+1., 3.)
+         write(cform, '("(I",I1,".",I1,",A1,I2.2,A1,I2.2)")') ndig, ndig
+         write(cfhour, cform) nf_hours,':',nf_minutes,':',nseconds
+       else
+         ndig = max(log10(nf_hours+0.5)+1., 3.)
+         write(cform, '("(I",I1,".",I1,")")') ndig, ndig
+         write(cfhour, cform) nf_hours
+       endif
+!
+       if(mype == lead_write_task) print *,'in wrt run, 2, nf_hours=',nf_hours,nf_minutes,nseconds, &
+       'nseconds_num=',nseconds_num,nseconds_den,' FBCount=',FBCount,' cfhour=',trim(cfhour)
 
 !    if(mype == lead_write_task) print *,'in wrt run, cfhour=',cfhour, &
 !     print *,'in wrt run, cfhour=',cfhour, &
@@ -1060,7 +1070,7 @@
 ! access the time Attribute which is updated by the driver each time
        call ESMF_LogWrite("before Write component get time", ESMF_LOGMSG_INFO, rc=rc)
        call ESMF_AttributeGet(imp_state_write, convention="NetCDF", purpose="FV3", &
-         name="time", value=time, rc=rc)
+                              name="time", value=time, rc=rc)
        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
          line=__LINE__, &
          file=__FILE__)) &
@@ -1092,9 +1102,9 @@
          endif
 
          if ( trim(output_file) == 'nemsio' ) then
-            filename = trim(wrt_int_state%wrtFB_names(nbdl))//'f'//cfhour//'.nemsio'
+            filename = trim(wrt_int_state%wrtFB_names(nbdl))//'f'//trim(cfhour)//'.nemsio'
          else
-            filename = trim(wrt_int_state%wrtFB_names(nbdl))//'f'//cfhour//'.nc'
+            filename = trim(wrt_int_state%wrtFB_names(nbdl))//'f'//trim(cfhour)//'.nc'
          endif
 !         if(mype == lead_write_task) print *,'in wrt run,filename=',trim(filename)
 
@@ -1139,7 +1149,7 @@
               return  ! bail out
           wend = MPI_Wtime()
           if (mype == lead_write_task) then
-            write(*,'(A,F10.5,A,I2.2,A,I2.2)')' actual    netcdf Write Time is ',wend-wbeg &
+            write(*,'(A,F10.5,A,I4.2,A,I2.2)')' actual    netcdf Write Time is ',wend-wbeg &
                      ,' at Fcst ',NF_HOURS,':',NF_MINUTES
           endif
 
@@ -1152,7 +1162,7 @@
                                nseconds, nseconds_num, nseconds_den,nbdl, rc)
              wend = MPI_Wtime()
              if (mype == lead_write_task) then
-               write(*,'(A,F10.5,A,I2.2,A,I2.2)')' nemsio      Write Time is ',wend-wbeg  &
+               write(*,'(A,F10.5,A,I4.2,A,I2.2)')' nemsio      Write Time is ',wend-wbeg  &
                         ,' at Fcst ',NF_HOURS,':',NF_MINUTES
              endif
 
@@ -1163,7 +1173,7 @@
                                wrt_mpi_comm,wrt_int_state%mype,imo,jmo,rc)
              wend = MPI_Wtime()
              if (mype == lead_write_task) then
-               write(*,'(A,F10.5,A,I2.2,A,I2.2)')' netcdf      Write Time is ',wend-wbeg  &
+               write(*,'(A,F10.5,A,I4.2,A,I2.2)')' netcdf      Write Time is ',wend-wbeg  &
                         ,' at Fcst ',NF_HOURS,':',NF_MINUTES
              endif
 
@@ -1187,7 +1197,7 @@
                  return  ! bail out
              wend = MPI_Wtime()
              if (mype == lead_write_task) then
-               write(*,'(A,F10.5,A,I2.2,A,I2.2)')' netcdf_esmf Write Time is ',wend-wbeg &
+               write(*,'(A,F10.5,A,I4.2,A,I2.2)')' netcdf_esmf Write Time is ',wend-wbeg &
                         ,' at Fcst ',NF_HOURS,':',NF_MINUTES
              endif
 
@@ -1216,7 +1226,7 @@
         endif
       enddo
 !
-      open(nolog,file='logf'//cfhour,form='FORMATTED')
+      open(nolog,file='logf'//trim(cfhour),form='FORMATTED')
         write(nolog,100)wrt_int_state%nfhour,idate(1:6)
 100     format(' completed fv3gfs fhour=',f10.3,2x,6(i4,2x))
       close(nolog)
@@ -1230,7 +1240,7 @@
       write_run_tim=MPI_Wtime()-tbeg
 !
       IF(mype == lead_write_task)THEN
-        WRITE(*,'(A,F10.5,A,I2.2,A,I2.2)')' total            Write Time is ',write_run_tim  &
+        WRITE(*,'(A,F10.5,A,I4.2,A,I2.2)')' total            Write Time is ',write_run_tim  &
                  ,' at Fcst ',NF_HOURS,':',NF_MINUTES
       ENDIF
 !
@@ -1268,7 +1278,7 @@
 !
       integer :: stat
 !
-      type(write_wrap)                  :: wrap
+      type(write_wrap)               :: wrap
 !
 !-----------------------------------------------------------------------
 !***********************************************************************
@@ -1499,24 +1509,24 @@
     ! Restrictions:
     !   - All Fields in the FieldBundle must have the same tileCount
     
-    integer                       :: i, j, ind
-    integer                       :: fieldCount, tileCount, itemCount
-    type(ESMF_Field), allocatable :: fieldList(:), tileFieldList(:)
-    type(ESMF_Grid)               :: grid
-    type(ESMF_Array)              :: array
-    type(ESMF_DistGrid)           :: distgrid
-    type(ESMF_DELayout)           :: delayout
-    type(ESMF_FieldBundle)        :: wrtTileFB
+    integer                             :: i, j, ind
+    integer                             :: fieldCount, tileCount, itemCount
+    type(ESMF_Field), allocatable       :: fieldList(:), tileFieldList(:)
+    type(ESMF_Grid)                     :: grid
+    type(ESMF_Array)                    :: array
+    type(ESMF_DistGrid)                 :: distgrid
+    type(ESMF_DELayout)                 :: delayout
+    type(ESMF_FieldBundle)              :: wrtTileFB
     type(ESMF_FieldBundle), allocatable :: wrtTileFBList(:)
     character(len=80), allocatable      :: itemNameList(:)
     logical                             :: stateIsEmpty
-    character(len=80)             :: tileFileName
-    character(len=80)             :: statusStr
-    integer, allocatable          :: petList(:)
-    character(1024)               :: msgString
-    type(ESMF_State), allocatable :: ioState(:)
-    integer                       :: timesliceOpt
-    integer                       :: urc
+    character(len=80)                   :: tileFileName
+    character(len=80)                   :: statusStr
+    integer, allocatable                :: petList(:)
+    character(1024)                     :: msgString
+    type(ESMF_State), allocatable       :: ioState(:)
+    integer                             :: timesliceOpt
+    integer                             :: urc
 
     if (present(rc)) rc = ESMF_SUCCESS
 
@@ -1873,35 +1883,35 @@
     type(ESMF_Clock)      :: clock
     integer, intent(out)  :: rc
 
-    type(ESMF_FieldBundle)        :: wrtTileFB
-    character(len=80)             :: tileFileName
-    character(len=80)             :: convention
-    character(len=80)             :: purpose
-    integer                       :: timeslice
-    character(len=80)             :: statusStr
-    type(ESMF_FileStatus_Flag)    :: status
-    character(len=80)             :: itemNameList(1)
+    type(ESMF_FieldBundle)           :: wrtTileFB
+    character(len=80)                :: tileFileName
+    character(len=80)                :: convention
+    character(len=80)                :: purpose
+    integer                          :: timeslice
+    character(len=80)                :: statusStr
+    type(ESMF_FileStatus_Flag)       :: status
+    character(len=80)                :: itemNameList(1)
 
-    integer                       :: localPet, i, j, k, ind
-    type(ESMF_Grid)               :: grid
+    integer                          :: localPet, i, j, k, ind
+    type(ESMF_Grid)                  :: grid
     real(ESMF_KIND_R4), allocatable  :: valueListr4(:)
     real(ESMF_KIND_R8), allocatable  :: valueListr8(:)
-    integer                       :: valueCount, fieldCount, udimCount
-    character(80), allocatable    :: udimList(:)
-    integer                       :: ncerr, ncid, dimid, varid
-    type(ESMF_Field), allocatable :: fieldList(:)
-    type(ESMF_Field)              :: field
-    logical                       :: isPresent
-    real(ESMF_KIND_R8)            :: time
-    integer                       :: itemCount, attCount
-    character(len=80),         allocatable  :: attNameList(:)
-    character(len=80)             :: attName
-    type(ESMF_TypeKind_Flag)      :: typekind
-    character(len=80)             :: valueS
-    integer                       :: valueI4
-    real(ESMF_KIND_R4)            :: valueR4
-    real(ESMF_KIND_R8)            :: valueR8
-    logical                       :: thereAreVerticals
+    integer                          :: valueCount, fieldCount, udimCount
+    character(80),      allocatable  :: udimList(:)
+    integer                          :: ncerr, ncid, dimid, varid
+    type(ESMF_Field),   allocatable  :: fieldList(:)
+    type(ESMF_Field)                 :: field
+    logical                          :: isPresent
+    real(ESMF_KIND_R8)               :: time
+    integer                          :: itemCount, attCount
+    character(len=80),  allocatable  :: attNameList(:)
+    character(len=80)                :: attName
+    type(ESMF_TypeKind_Flag)         :: typekind
+    character(len=80)                :: valueS
+    integer                          :: valueI4
+    real(ESMF_KIND_R4)               :: valueR4
+    real(ESMF_KIND_R8)               :: valueR8
+    logical                          :: thereAreVerticals
 
     rc = ESMF_SUCCESS
 

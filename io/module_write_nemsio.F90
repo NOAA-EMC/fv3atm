@@ -302,7 +302,11 @@ module module_write_nemsio
 !
 !**  OPEN NEMSIO FILE
 !
-    if(mype==0) print *,'in write_nemsio,bf nemsio_open, filename=',trim(filename),    &
+    if (mype == 0) then
+
+      nfseconds = nf_seconds*nfsecond_den + nfsecond_num
+
+      print *,'in write_nemsio,bf nemsio_open, filename=',trim(filename),    &
       'idate=',idate,'nfour=',NF_HOURS,NF_MINUTES,NF_SECONDS, 'mybdl=',mybdl,          &
       'dim=',im,jm,lm,'nmeta=',nmeta,'idrt=',idrt,'nsoil=',nsoil,                      &
       'ntrac=',ntrac,'nrec=',nrec(mybdl),'extrameta=',extrameta(mybdl),                &
@@ -316,8 +320,6 @@ module module_write_nemsio
 !    if(nmetaaryi(mybdl)>0) print *,'in write_nemsio,bf nemsio_open,nmetaaryi=', &
 !      nmetaaryi(mybdl),'aryival=',trim(aryiname(1,mybdl)),aryilen(1,mybdl),aryival(1:3,1,mybdl)
  
-    if(mype==0) then
-      nfseconds = nf_seconds*nfsecond_den + nfsecond_num
       call nemsio_open(nemsiofile,trim(FILENAME),'write',rc,             &
         modelname="FV3GFS", gdatatype="bin4",                            &
         idate=idate,nfhour=nf_hours, nfminute=nf_minutes,                &

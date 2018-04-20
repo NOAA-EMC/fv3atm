@@ -141,7 +141,8 @@ SRCS_F90 = \
 	   ./physics/gfdl_cloud_microphys.F90					     \
 	   ./physics/micro_mg_utils.F90                                              \
 	   ./physics/micro_mg2_0.F90                                                 \
-	   ./physics/module_mp_radar.F90                                             \
+	   ./physics/micro_mg3_0.F90                                                 \
+	   ./physics/module_mp_radar.F90     				             \
 	   ./physics/module_mp_thompson_gfs.F90                                      \
 	   ./physics/module_mp_wsm6_fv3.F90                                          \
 	   ./GFS_layer/GFS_abstraction_layer.F90 				     \

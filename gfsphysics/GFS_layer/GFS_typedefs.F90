@@ -418,24 +418,41 @@ module GFS_typedefs
 !--- microphysical switch
     integer              :: ncld            !< cnoice of cloud scheme
     !--- new microphysical switch
-    integer              :: imp_physics     !< cnoice of cloud scheme
+    integer              :: imp_physics        !< cnoice of cloud scheme
     !--- Z-C microphysical parameters
-    real(kind=kind_phys) :: psautco(2)      !< [in] auto conversion coeff from ice to snow
-    real(kind=kind_phys) :: prautco(2)      !< [in] auto conversion coeff from cloud to rain
-    real(kind=kind_phys) :: evpco           !< [in] coeff for evaporation of largescale rain
-    real(kind=kind_phys) :: wminco(2)       !< [in] water and ice minimum threshold for Zhao
+    real(kind=kind_phys) :: psautco(2)         !< [in] auto conversion coeff from ice to snow
+    real(kind=kind_phys) :: prautco(2)         !< [in] auto conversion coeff from cloud to rain
+    real(kind=kind_phys) :: evpco              !< [in] coeff for evaporation of largescale rain
+    real(kind=kind_phys) :: wminco(2)          !< [in] water and ice minimum threshold for Zhao
 
     !--- M-G microphysical parameters
-    integer              :: fprcp           !< no prognostic rain and snow (MG)
-    real(kind=kind_phys) :: mg_dcs          !< Morrison-Gettleman microphysics parameters
+    integer              :: fprcp              !< no prognostic rain and snow (MG)
+    real(kind=kind_phys) :: mg_dcs             !< Morrison-Gettleman microphysics parameters
     real(kind=kind_phys) :: mg_qcvar      
-    real(kind=kind_phys) :: mg_ts_auto_ice  !< ice auto conversion time scale
-    logical              :: effr_in         !< eg to turn on ffective radii for MG
+    real(kind=kind_phys) :: mg_ts_auto_ice     !< ice auto conversion time scale
+
+    real(kind=kind_phys) :: mg_ncnst           !< constant droplet num concentration (m-3)
+    real(kind=kind_phys) :: mg_ninst           !< constant ice num concentration (m-3)
+    real(kind=kind_phys) :: mg_ngnst           !< constant graupel/hail num concentration (m-3)
+    real(kind=kind_phys) :: mg_berg_eff_factor !< berg efficiency factor
+    character(len=16)    :: mg_precip_frac_method ! type of precipitation fraction method
+
+!
+    logical              :: effr_in            !< eg to turn on ffective radii for MG
     logical              :: microp_uniform
+    logical              :: do_cldliq
     logical              :: do_cldice
     logical              :: hetfrz_classnuc
 
-    real(kind=kind_phys) :: shoc_pcrit      !< critical pressure in Pa for tke dissipation in shoc
+    logical              :: mg_nccons
+    logical              :: mg_nicons
+    logical              :: mg_ngcons
+    logical              :: sed_supersat
+    logical              :: do_sb_physics
+    logical              :: mg_do_graupel
+    logical              :: mg_do_hail
+
+    real(kind=kind_phys) :: shoc_parm(5)    !< critical pressure in Pa for tke dissipation in shoc
     integer              :: ncnd            !< number of cloud condensate types
 
     !--- Thompson's microphysical paramters 
@@ -588,6 +605,7 @@ module GFS_typedefs
     integer              :: ntinc           !< tracer index for ice    number concentration
     integer              :: ntrnc           !< tracer index for rain   number concentration
     integer              :: ntsnc           !< tracer index for snow   number concentration
+    integer              :: ntgnc           !< tracer index for graupel number concentration
     integer              :: ntke            !< tracer index for kinetic energy
     integer              :: nto             !< tracer index for oxygen ion
     integer              :: nto2            !< tracer index for oxygen
@@ -1457,10 +1475,24 @@ module GFS_typedefs
     real(kind=kind_phys) :: mg_dcs         = 350.0              !< Morrison-Gettleman microphysics parameters
     real(kind=kind_phys) :: mg_qcvar       = 2.0
     real(kind=kind_phys) :: mg_ts_auto_ice = 3600.0             !< ice auto conversion time scale
-    logical              :: effr_in        = .false.            !< flag to use effective radii of cloud species in radiation
-    logical              :: microp_uniform = .false.
-    logical              :: do_cldice      = .true.
+    real(kind=kind_phys) :: mg_ncnst       = 100.e6             !< constant droplet num concentration (m-3)
+    real(kind=kind_phys) :: mg_ninst       = 0.15e6             !< constant ice num concentration (m-3)
+    real(kind=kind_phys) :: mg_ngnst       = 0.10e6             !< constant graupel/hail num concentration (m-3) = 0.1e6_r8
+    real(kind=kind_phys) :: mg_berg_eff_factor = 2.0            !< berg efficiency factor
+    character(len=16)    :: mg_precip_frac_method = 'max_overlap' !< type of precipitation fraction method
+!
+    logical              :: effr_in         = .false.           !< flag to use effective radii of cloud species in radiation
+    logical              :: microp_uniform  = .false.
+    logical              :: do_cldliq       = .true.
+    logical              :: do_cldice       = .true.
     logical              :: hetfrz_classnuc = .false.
+    logical              :: mg_nccons       = .false.           !< set .true. to specify constant cloud droplet number
+    logical              :: mg_nicons       = .false.           !< set .true. to specify constant cloud ice number
+    logical              :: mg_ngcons       = .false.           !< set .true. to specify constant graupel/hail number
+    logical              :: sed_supersat    = .true.
+    logical              :: do_sb_physics   = .true.
+    logical              :: mg_do_graupel   = .true.            !< set .true. to turn on prognostic grapuel (with fprcp=2)
+    logical              :: mg_do_hail      = .false.           !< set .true. to turn on prognostic hail (with fprcp=2)
 
     !--- Thompson microphysical parameters
     logical              :: ltaerosol      = .false.            !< flag for aerosol version
@@ -1536,7 +1568,7 @@ module GFS_typedefs
     real(kind=kind_phys) :: dlqf(2)        = (/0.0d0,0.0d0/)          !< factor for cloud condensate detrainment 
                                                                       !< from cloud edges for RAS
     real(kind=kind_phys) :: rbcr           = 0.25                     !< Critical Richardson Number in PBL scheme
-    real(kind=kind_phys) :: shoc_pcrit     = 7000.0                   !< critical pressure in Pa for tke dissipation in shoc
+    real(kind=kind_phys) :: shoc_parm(5)   = (/7000.0,1.0,4.2857143,0.7,-999.0/)  !< some tunable parameters for shoc
 
 !--- Rayleigh friction
     real(kind=kind_phys) :: prslrd0        = 0.0d0           !< pressure level from which Rayleigh Damping is applied
@@ -1626,6 +1658,8 @@ module GFS_typedefs
                                ncld, imp_physics, psautco, prautco, evpco, wminco,          &
                                fprcp, mg_dcs, mg_qcvar, mg_ts_auto_ice, effr_in,            &
                                microp_uniform, do_cldice, hetfrz_classnuc,                  &
+                               mg_do_graupel, mg_do_hail, mg_nccons, mg_nicons, mg_ngcons,  &
+                               mg_ncnst, mg_ninst, mg_ngnst, sed_supersat, do_sb_physics,   &
                                ltaerosol, lradar, lgfdlmprad,                               & 
                           !--- land/surface model control
                                lsm, lsoil, nmtvr, ivegsrc, mom4ice, use_ufo,                &
@@ -1635,7 +1669,7 @@ module GFS_typedefs
                                h2o_phys, pdfcld, shcnvcw, redrag, hybedmf, dspheat, cnvcld, &
                                random_clds, shal_cnv, imfshalcnv, imfdeepcnv, do_deep, jcap,&
                                cs_parm, flgmin, cgwf, ccwf, cdmbgwd, sup, ctei_rm, crtrh,   &
-                               dlqf, rbcr, shoc_pcrit,                                      &
+                               dlqf, rbcr, shoc_parm,                                       &
                           !--- Rayleigh friction
                                prslrd0, ral_ts,                                             &
                           !--- mass flux deep convection
@@ -1781,14 +1815,19 @@ module GFS_typedefs
     Model%microp_uniform   = microp_uniform
     Model%do_cldice        = do_cldice
     Model%hetfrz_classnuc  = hetfrz_classnuc
-    if (ncld == 1) then     ! ncnd is the number of cloud condensate types
-      Model%ncnd = 1
-    else
-      Model%ncnd = ncld
-      if(abs(fprcp) == 1 .and. ncld == 2) then
-        Model%ncnd = 4
-      endif
-    endif
+    Model%mg_do_graupel    = mg_do_graupel
+    Model%mg_do_hail       = mg_do_hail
+    Model%mg_nccons        = mg_nccons
+    Model%mg_nicons        = mg_nicons
+    Model%mg_ngcons        = mg_ngcons
+    Model%mg_ncnst         = mg_ncnst
+    Model%mg_ninst         = mg_ninst
+    Model%mg_ngnst         = mg_ngnst
+    Model%sed_supersat     = sed_supersat
+    Model%do_sb_physics    = do_sb_physics
+    Model%mg_precip_frac_method  = mg_precip_frac_method
+    Model%mg_berg_eff_factor     = mg_berg_eff_factor
+
 !--- Thompson MP parameters
     Model%ltaerosol        = ltaerosol
     Model%lradar           = lradar
@@ -1816,7 +1855,7 @@ module GFS_typedefs
     Model%do_aw            = do_aw
     Model%cs_parm          = cs_parm
     Model%do_shoc          = do_shoc
-    Model%shoc_pcrit       = shoc_pcrit
+    Model%shoc_parm        = shoc_parm
     Model%shocaftcnv       = shocaftcnv
     Model%shoc_cld         = shoc_cld
     Model%h2o_phys         = h2o_phys
@@ -1892,20 +1931,21 @@ module GFS_typedefs
     Model%ntrac            = size(tracer_names)
     allocate (Model%tracer_names(Model%ntrac))
     Model%tracer_names(:)  = tracer_names(:)
-    Model%ntoz             = get_tracer_index(Model%tracer_names, 'o3mr',     Model%me, Model%master, Model%debug)
-    Model%ntcw             = get_tracer_index(Model%tracer_names, 'liq_wat',  Model%me, Model%master, Model%debug)
-    Model%ntiw             = get_tracer_index(Model%tracer_names, 'ice_wat',  Model%me, Model%master, Model%debug)
-    Model%ntrw             = get_tracer_index(Model%tracer_names, 'rainwat',  Model%me, Model%master, Model%debug)
-    Model%ntsw             = get_tracer_index(Model%tracer_names, 'snowwat',  Model%me, Model%master, Model%debug)
-    Model%ntgl             = get_tracer_index(Model%tracer_names, 'graupel',  Model%me, Model%master, Model%debug)
-    Model%ntclamt          = get_tracer_index(Model%tracer_names, 'cld_amt',  Model%me, Model%master, Model%debug)
-    Model%ntlnc            = get_tracer_index(Model%tracer_names, 'water_nc', Model%me, Model%master, Model%debug)
-    Model%ntinc            = get_tracer_index(Model%tracer_names, 'ice_nc',   Model%me, Model%master, Model%debug)
-    Model%ntrnc            = get_tracer_index(Model%tracer_names, 'rain_nc',  Model%me, Model%master, Model%debug)
-    Model%ntsnc            = get_tracer_index(Model%tracer_names, 'snow_nc',  Model%me, Model%master, Model%debug)
-    Model%ntke             = get_tracer_index(Model%tracer_names, 'sgs_tke',  Model%me, Model%master, Model%debug)
-    Model%ntwa             = get_tracer_index(Model%tracer_names, 'liq_aero',  Model%me, Model%master, Model%debug)
-    Model%ntia             = get_tracer_index(Model%tracer_names, 'ice_aero',  Model%me, Model%master, Model%debug)
+    Model%ntoz             = get_tracer_index(Model%tracer_names, 'o3mr',       Model%me, Model%master, Model%debug)
+    Model%ntcw             = get_tracer_index(Model%tracer_names, 'liq_wat',    Model%me, Model%master, Model%debug)
+    Model%ntiw             = get_tracer_index(Model%tracer_names, 'ice_wat',    Model%me, Model%master, Model%debug)
+    Model%ntrw             = get_tracer_index(Model%tracer_names, 'rainwat',    Model%me, Model%master, Model%debug)
+    Model%ntsw             = get_tracer_index(Model%tracer_names, 'snowwat',    Model%me, Model%master, Model%debug)
+    Model%ntgl             = get_tracer_index(Model%tracer_names, 'graupel',    Model%me, Model%master, Model%debug)
+    Model%ntclamt          = get_tracer_index(Model%tracer_names, 'cld_amt',    Model%me, Model%master, Model%debug)
+    Model%ntlnc            = get_tracer_index(Model%tracer_names, 'water_nc',   Model%me, Model%master, Model%debug)
+    Model%ntinc            = get_tracer_index(Model%tracer_names, 'ice_nc',     Model%me, Model%master, Model%debug)
+    Model%ntrnc            = get_tracer_index(Model%tracer_names, 'rain_nc',    Model%me, Model%master, Model%debug)
+    Model%ntsnc            = get_tracer_index(Model%tracer_names, 'snow_nc',    Model%me, Model%master, Model%debug)
+    Model%ntgnc            = get_tracer_index(Model%tracer_names, 'graupel_nc', Model%me, Model%master, Model%debug)
+    Model%ntke             = get_tracer_index(Model%tracer_names, 'sgs_tke',    Model%me, Model%master, Model%debug)
+    Model%ntwa             = get_tracer_index(Model%tracer_names, 'liq_aero',   Model%me, Model%master, Model%debug)
+    Model%ntia             = get_tracer_index(Model%tracer_names, 'ice_aero',   Model%me, Model%master, Model%debug)
 
 !--- quantities to be used to derive phy_f*d totals
     Model%nshoc_2d         = nshoc_2d
@@ -1980,7 +2020,7 @@ module GFS_typedefs
                                             ' Boundary layer and Shallow Convection',          &
                                             ' nshoc_3d=',Model%nshoc_3d,                       &
                                             ' nshoc_2d=',Model%nshoc_2d,                       &
-                                            ' ntke=',Model%ntke,' shoc_pcrit=',shoc_pcrit
+                                            ' ntke=',Model%ntke,' shoc_parm=',shoc_parm
     endif
 
 !--- set number of cloud types
@@ -2088,12 +2128,14 @@ module GFS_typedefs
       Model%num_p3d = 4
       Model%num_p2d = 3
       Model%shcnvcw = .false.
+      Model%ncnd    = 1                   ! ncnd is the number of cloud condensate types
       if (Model%me == Model%master) print *,' Using Zhao/Carr/Sundqvist Microphysics'
 
     elseif (Model%imp_physics == 98) then !Zhao Microphysics with PDF cloud
       Model%npdf3d  = 3
       Model%num_p3d = 4
       Model%num_p2d = 3
+      Model%ncnd    = 1
       if (Model%me == Model%master) print *,'Using Zhao/Carr/Sundqvist Microphysics with PDF Cloud'
 
     else if (Model%imp_physics == 5) then        ! F-A goes here
@@ -2106,6 +2148,7 @@ module GFS_typedefs
       Model%num_p2d = 1
       Model%pdfcld  = .false.
       Model%shcnvcw = .false.
+      Model%ncnd    = 5
       if (Model%me == Model%master) print *,' Using wsm6 microphysics'
 
     elseif (Model%imp_physics == 8) then !Thompson microphysics 
@@ -2114,6 +2157,7 @@ module GFS_typedefs
       Model%num_p2d = 1
       Model%pdfcld  = .false.
       Model%shcnvcw = .false.
+      Model%ncnd    = 5
 !      if(Model%ltaerosol) then
 !         Model%ltaerosol=.false.
 !         if (Model%me == Model%master) print *, &
@@ -2125,15 +2169,32 @@ module GFS_typedefs
                                           ' lradar =',Model%lradar,Model%num_p3d,Model%num_p2d
 
     else if (Model%imp_physics == 10) then        ! Morrison-Gettelman Microphysics 
-        Model%npdf3d  = 0
-        Model%num_p3d = 5
-        Model%num_p2d = 1
-        Model%pdfcld  = .false.
-        Model%shcnvcw = .false.
-      if (Model%me == Model%master) print *,' Using Morrison-Gettelman double moment', &
-                                            ' microphysics',' aero_in=',Model%aero_in, &
-                                            ' mg_dcs=',Model%mg_dcs,' mg_qcvar=',Model%mg_qcvar, &
-                                            ' mg_ts_auto_ice=',Model%mg_ts_auto_ice
+      Model%npdf3d  = 0
+      Model%num_p3d = 5
+      Model%num_p2d = 1
+      Model%pdfcld  = .false.
+      Model%shcnvcw = .false.
+      Model%ncnd    = 2
+      if (abs(Model%fprcp) == 1) then
+        Model%ncnd = 4
+      elseif (Model%fprcp >= 2) then
+        Model%ncnd = 4
+        if (Model%mg_do_graupel .or. Model%mg_do_hail) then
+          Model%ncnd = 5
+        endif
+        Model%num_p3d = 6
+      endif
+      if (Model%me == Model%master)                                                            &
+         print *,' Using Morrison-Gettelman double moment microphysics',                       &
+                 ' aero_in=',       Model%aero_in,                                             &
+                 ' mg_dcs=',        Model%mg_dcs,' mg_qcvar=',Model%mg_qcvar,                  &
+                 ' mg_ts_auto_ice=',Model%mg_ts_auto_ice,                                      &
+                 ' mg_do_graupel=', Model%mg_do_graupel,' mg_do_hail=',    Model%mg_do_hail,   &
+                 ' mg_nccons=',     Model%mg_nccons,    ' mg_nicon=',      Model%mg_nicons,    &
+                 ' mg_ngcons=',     Model%mg_ngcons ,   ' mg_ncnst=',      Model%mg_ncnst,     &
+                 ' mg_ninst=',      Model%mg_ninst ,    ' mg_ngnst=',      Model%mg_ngnst,     &
+                 ' sed_supersat=',  Model%sed_supersat ,' do_sb_physics=', Model%do_sb_physics,&
+                 ' ncnd=',Model%ncnd
 
     elseif (Model%imp_physics == 11) then !GFDL microphysics
       Model%npdf3d  = 0
@@ -2142,11 +2203,11 @@ module GFS_typedefs
       Model%pdfcld  = .false.
       Model%shcnvcw = .false.
       Model%cnvcld  = .false.
+      Model%ncnd    = 5
       if (Model%me == Model%master) print *,' Using GFDL Cloud Microphysics'
-
     else
-       if (Model%me == Model%master) print *,'Wrong imp_physics value. Job abort.'
-       stop
+      if (Model%me == Model%master) print *,'Wrong imp_physics value. Job abort.'
+      stop
     endif
 
     Model%uni_cld = .false.
@@ -2169,7 +2230,7 @@ module GFS_typedefs
                                     ' do_shoc=',Model%do_shoc,' nshoc3d=',Model%nshoc_3d,   &
                                     ' nshoc_2d=',Model%nshoc_2d,' shoc_cld=',Model%shoc_cld,& 
                                     ' ntot3d=',Model%ntot3d,' ntot2d=',Model%ntot2d,        &
-                                    ' shocaftcnv=',Model%shocaftcnv,' shoc_pcrit=',Model%shoc_pcrit
+                                    ' shocaftcnv=',Model%shocaftcnv,' shoc_parm=',Model%shoc_parm
 
 !--- END CODE FROM COMPNS_PHYSICS
 
@@ -2333,7 +2394,7 @@ module GFS_typedefs
       print *, ' cal_pre           : ', Model%cal_pre
       print *, ' do_aw             : ', Model%do_aw
       print *, ' do_shoc           : ', Model%do_shoc
-      print *, ' shoc_pcrit        : ', Model%shoc_pcrit
+      print *, ' shoc_parm         : ', Model%shoc_parm
       print *, ' shocaftcnv        : ', Model%shocaftcnv
       print *, ' shoc_cld          : ', Model%shoc_cld
       print *, ' uni_cld           : ', Model%uni_cld
@@ -2415,6 +2476,7 @@ module GFS_typedefs
       print *, ' ntinc             : ', Model%ntinc
       print *, ' ntrnc             : ', Model%ntrnc
       print *, ' ntsnc             : ', Model%ntsnc
+      print *, ' ntgnc             : ', Model%ntgnc
       print *, ' ntke              : ', Model%ntke
       print *, ' nto               : ', Model%nto
       print *, ' nto2              : ', Model%nto2

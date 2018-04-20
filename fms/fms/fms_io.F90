@@ -304,20 +304,20 @@ type restart_file_type
    logical                                  :: is_compressed = .FALSE.
    logical                                  :: unlimited_axis = .FALSE.
    integer                                  :: tile_count = 1
-   type(ax_type),  allocatable              :: axes(:)  ! Currently define X,Y,Compressed, unlimited and maybe Z
-   type(meta_type),                pointer  :: first =>NULL() ! pointer to first additional global metadata element
-   type(var_type), dimension(:),   pointer  :: var  => NULL()
-   type(Ptr0Dr),   dimension(:,:), pointer  :: p0dr => NULL()
-   type(Ptr1Dr),   dimension(:,:), pointer  :: p1dr => NULL()
-   type(Ptr2Dr),   dimension(:,:), pointer  :: p2dr => NULL()
-   type(Ptr3Dr),   dimension(:,:), pointer  :: p3dr => NULL()
+   type(ax_type),  allocatable              :: axes(:)         ! Currently define X,Y,Compressed, unlimited and maybe Z
+   type(meta_type),                pointer  :: first => NULL() ! pointer to first additional global metadata element
+   type(var_type), dimension(:),   pointer  :: var   => NULL()
+   type(Ptr0Dr),   dimension(:,:), pointer  :: p0dr  => NULL()
+   type(Ptr1Dr),   dimension(:,:), pointer  :: p1dr  => NULL()
+   type(Ptr2Dr),   dimension(:,:), pointer  :: p2dr  => NULL()
+   type(Ptr3Dr),   dimension(:,:), pointer  :: p3dr  => NULL()
    type(Ptr2Dr8),  dimension(:,:), pointer  :: p2dr8 => NULL()
    type(Ptr3Dr8),  dimension(:,:), pointer  :: p3dr8 => NULL()
-   type(Ptr4Dr),   dimension(:,:), pointer  :: p4dr => NULL()
-   type(Ptr0Di),   dimension(:,:), pointer  :: p0di => NULL()
-   type(Ptr1Di),   dimension(:,:), pointer  :: p1di => NULL()
-   type(Ptr2Di),   dimension(:,:), pointer  :: p2di => NULL()
-   type(Ptr3Di),   dimension(:,:), pointer  :: p3di => NULL()
+   type(Ptr4Dr),   dimension(:,:), pointer  :: p4dr  => NULL()
+   type(Ptr0Di),   dimension(:,:), pointer  :: p0di  => NULL()
+   type(Ptr1Di),   dimension(:,:), pointer  :: p1di  => NULL()
+   type(Ptr2Di),   dimension(:,:), pointer  :: p2di  => NULL()
+   type(Ptr3Di),   dimension(:,:), pointer  :: p3di  => NULL()
 end type restart_file_type
 
 interface read_data

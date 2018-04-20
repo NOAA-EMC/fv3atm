@@ -4,8 +4,6 @@
 ! 2015-05-04 - Shrinivas Moorthi - original version based on monin
 ! 2018-03-21 - Shrinivas Moorthi - fixed a bug related to tke vertical diffusion
 !                                  and gneralized the tke location in tracer array
-! 2018-03-23 - Shrinivas Moorthi - used twice the momentum diffusion coefficient
-!                                  for tke as in Deardorff (1980) - added tridi1
 ! 
       subroutine moninshoc(ix,im,km,ntrac,ntcw,ncnd,dv,du,tau,rtg,
      &                     u1,v1,t1,q1,tkh,prnum,ntke,
@@ -433,6 +431,11 @@
          a1(i,1) = u1(i,1)
          a2(i,1) = v1(i,1)
       enddo
+      if (ntke > 0) then
+        do i = 1, im
+          a2(i,1+km) = q1(i,1,ntke)
+        enddo
+      endif
 !
       do k = 1,km1
         kp1 = k + 1
@@ -453,8 +456,24 @@
 !
         enddo
       enddo
-
-      call tridi2(im,km,al,ad,au,a1,a2,au,a1,a2)
+      if (ntke > 0) then    ! solve tridiagonal problem for momentum and tke
+        do k = 1, km1
+          kp1 = k + 1
+          do i = 1, im
+            a2(i,kp1+km) = q1(i,kp1,ntke)
+          enddo
+        enddo
+        call tridin(im,km,2,al,ad,au,a1,a2,au,a1,a2)
+!
+        do k = 1, km !     recover tendencies of tke
+          do i = 1, im
+            qtend = (a2(i,k+km)-q1(i,k,ntke))*rdt
+            rtg(i,k,ntke) = rtg(i,k,ntke) + qtend
+          enddo
+        enddo
+      else                 ! solve tridiagonal problem for momentum
+        call tridi2(im,km,al,ad,au,a1,a2,au,a1,a2)
+      endif
 !
 !     recover tendencies of momentum
 !
@@ -466,77 +485,6 @@
           dv(i,k)  = dv(i,k)  + vtend
           dusfc(i) = dusfc(i) + conw*del(i,k)*utend
           dvsfc(i) = dvsfc(i) + conw*del(i,k)*vtend
-        enddo
-      enddo
-!
-      if (ntke > 0) then    ! solve tridiagonal problem for momentum and tke
-!
-!     compute tridiagonal matrix elements for tke
-!
-        do i=1,im
-           ad(i,1) = 1.0
-           a1(i,1) = q1(i,1,ntke)
-        enddo
-!
-        do k = 1,km1
-          kp1 = k + 1
-          do i=1,im
-            dtodsd    = dt2odel(i,k)
-            dtodsu    = dt2odel(i,kp1)
-            dsig      = prsl(i,k)-prsl(i,kp1)
-            rdz       = rdzt(i,k)
-            tem1      = dsig*dku(i,k)*(rdz+rdz)
-            dsdz2     = tem1 * rdz
-            au(i,k)   = -dtodsd*dsdz2
-            al(i,k)   = -dtodsu*dsdz2
-!
-            ad(i,k)   = ad(i,k) - au(i,k)
-            ad(i,kp1) = 1.0 - al(i,k)
-            a1(i,kp1) = q1(i,kp1,ntke)
-          enddo
-        enddo
-
-        call tridi1(im,km,al,ad,au,a1,au,a1)
-!
-        do k = 1, km !     recover tendencies of tke
-          do i = 1, im
-            qtend = (a1(i,k)-q1(i,k,ntke))*rdt
-            rtg(i,k,ntke) = rtg(i,k,ntke) + qtend
-          enddo
-        enddo
-      endif
-!
-      return
-      end
-      subroutine tridi1(l,n,cl,cm,cu,r1,au,a1)
-!
-      use machine     , only : kind_phys
-      implicit none
-      integer             k,n,l,i
-      real(kind=kind_phys) fk
-!
-      real(kind=kind_phys) cl(l,2:n),cm(l,n),cu(l,n-1),r1(l,n),         &
-     &                     au(l,n-1),a1(l,n)
-!
-      do i=1,l
-        fk      = 1./cm(i,1)
-        au(i,1) = fk*cu(i,1)
-        a1(i,1) = fk*r1(i,1)
-      enddo
-      do k=2,n-1
-        do i=1,l
-          fk      = 1./(cm(i,k)-cl(i,k)*au(i,k-1))
-          au(i,k) = fk*cu(i,k)
-          a1(i,k) = fk*(r1(i,k)-cl(i,k)*a1(i,k-1))
-        enddo
-      enddo
-      do i=1,l
-        fk      = 1./(cm(i,n)-cl(i,n)*au(i,n-1))
-        a1(i,n) = fk*(r1(i,n)-cl(i,n)*a1(i,n-1))
-      enddo
-      do k=n-1,1,-1
-        do i=1,l
-          a1(i,k) = a1(i,k)-au(i,k)*a1(i,k+1)
         enddo
       enddo
 !

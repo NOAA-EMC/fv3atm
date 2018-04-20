@@ -19,7 +19,7 @@
         return
       endif
 
-      open(unit=kh2opltc,file='INPUT/global_h2oprdlos.f77', form='unformatted', convert='big_endian')
+      open(unit=kh2opltc,file='global_h2oprdlos.f77', form='unformatted', convert='big_endian')
 
 !--- read in indices
 !---

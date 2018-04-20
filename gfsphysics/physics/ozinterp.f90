@@ -29,7 +29,7 @@
         return
       endif
 
-      open(unit=kozpl,file='INPUT/global_o3prdlos.f77', form='unformatted', convert='big_endian')
+      open(unit=kozpl,file='global_o3prdlos.f77', form='unformatted', convert='big_endian')
 
 !--- read in indices
 !---

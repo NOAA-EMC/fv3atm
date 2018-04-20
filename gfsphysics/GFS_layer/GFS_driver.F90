@@ -108,7 +108,8 @@ module GFS_driver
 
 !   use module_microphysics, only: gsmconst
     use cldwat2m_micro,      only: ini_micro
-    use micro_mg2_0,         only: micro_mg_init
+    use micro_mg2_0,         only: micro_mg_init2_0 => micro_mg_init
+    use micro_mg3_0,         only: micro_mg_init3_0 => micro_mg_init
     use aer_cloud,           only: aer_cloud_init
     use module_ras,          only: ras_init
     use module_mp_thompson,  only: thompson_init
@@ -220,19 +221,36 @@ module GFS_driver
     if (Model%imp_physics == 10) then          !--- initialize Morrison-Gettleman microphysics
       if (Model%fprcp <= 0) then
         call ini_micro (Model%mg_dcs, Model%mg_qcvar, Model%mg_ts_auto_ice)
+      elseif (Model%fprcp == 1) then
+        call micro_mg_init2_0(kind_phys, gravit, rair, rh2o, cpair,          &
+                              tmelt, latvap, latice, 1.01_kind_phys,         &
+                              Model%mg_dcs, Model%mg_ts_auto_ice,            &
+                              Model%mg_qcvar,                                &
+                              Model%microp_uniform, Model%do_cldice,         &
+                              Model%hetfrz_classnuc,                         &
+                              Model%mg_precip_frac_method,                   &
+                              Model%mg_berg_eff_factor,                      &
+                              Model%sed_supersat, Model%do_sb_physics,       &
+                              Model%mg_nccons,Model%mg_nicons,               &
+                              Model%mg_ncnst, Model%mg_ninst)
+      elseif (Model%fprcp == 2) then
+        call micro_mg_init3_0(kind_phys, gravit, rair, rh2o, cpair,              &
+                              tmelt, latvap, latice, 1.01_kind_phys,             &
+                              Model%mg_dcs, Model%mg_ts_auto_ice,                &
+                              Model%mg_qcvar,                                    &
+                              Model%mg_do_hail,       Model%mg_do_graupel,       &
+                              Model%microp_uniform,   Model%do_cldice,           &
+                              Model%hetfrz_classnuc,                             &
+                              Model%mg_precip_frac_method,                       &
+                              Model%mg_berg_eff_factor,                          &
+                              Model%sed_supersat, Model%do_sb_physics,           &
+                              Model%mg_nccons,    Model%mg_nicons,               &
+                              Model%mg_ncnst,     Model%mg_ninst,                &
+                              Model%mg_ngcons,    Model%mg_ngnst)
       else
-        call micro_mg_init( kind_phys, gravit, rair, rh2o, cpair,          &
-                            tmelt, latvap, latice, 1.01_kind_phys,         &
-                            Model%mg_dcs,Model%mg_ts_auto_ice,             &
-                            Model%mg_qcvar,                                &
-                            Model%microp_uniform, Model%do_cldice,         &
-                            Model%hetfrz_classnuc,                         &
-!                          .false., .true., .false.,                       &
-!                          'in_cloud        ', 2._kind_phys,               &
-!                          .true., .true., .false.,                        &
-                           'max_overlap     ', 2._kind_phys,               &
-                           .true., .true.,                                 &
-                           .false., .false., 100.e6_kind_phys, 0.15e6_kind_phys )
+        write(0,*)' Model%fprcp = ',Model%fprcp,' is not a valid option - aborting'
+        stop
+      
       endif
       call aer_cloud_init ()
 !

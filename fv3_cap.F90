@@ -15,8 +15,8 @@ module fv3gfs_cap_mod
 
   use ESMF
   use NUOPC
-  use NUOPC_Model,            only: model_routine_SS        => SetServices,  &
-                                    model_label_Advance     => label_Advance,&
+  use NUOPC_Model,            only: model_routine_SS        => SetServices,       &
+                                    model_label_Advance     => label_Advance,     &
                                     model_label_CheckImport => label_CheckImport, &
                                     model_label_Finalize    => label_Finalize
 !
@@ -34,7 +34,7 @@ module fv3gfs_cap_mod
                                     lead_wrttask, last_wrttask,              &
                                     output_grid, output_file,                &
                                     imo, jmo, write_nemsioflip,              &
-                                    write_fsyncflag
+                                    write_fsyncflag, nsout_io
 !
   use module_fcst_grid_comp,  only: fcstSS => SetServices, fcstGrid
   use module_wrt_grid_comp,   only: wrtSS => SetServices
@@ -339,6 +339,7 @@ module fv3gfs_cap_mod
       call ESMF_ConfigGetAttribute(config=CF,value=nfhmax_hf,label ='nfhmax_hf:',rc=rc)
       call ESMF_ConfigGetAttribute(config=CF,value=nfhout_hf,label ='nfhout_hf:',rc=rc)
       call ESMF_ConfigGetAttribute(config=CF,value=nsout,    label ='nsout:',rc=rc)
+      nsout_io = nsout
       if(mype==0) print *,'af nems config,nfhout=',nfhout,nfhmax_hf,nfhout_hf, nsout
 ! variables for I/O options
       call ESMF_ConfigGetAttribute(config=CF,value=output_grid, label ='output_grid:',rc=rc)
@@ -737,7 +738,7 @@ module fv3gfs_cap_mod
 !
 !--- for every time step output, overwrite nfhout
 
-      if(nsout>0) then
+      if(nsout > 0) then
         nfhout = int(nsout*dt_atmos/3600.)
         nfmout = int((nsout*dt_atmos-nfhout*3600.)/60.)
         nfsout = int(nsout*dt_atmos-nfhout*3600.-nfmout*60)
