@@ -2062,7 +2062,7 @@ module module_physics_driver
               ncpi(i,k)  = Stateout%gq0(i,k,ntinc)
             enddo
           enddo
-          if (abs(Model%fprcp) == 1) then
+          if (abs(Model%fprcp) == 1 .or. mg3_as_mg2) then
             do k=1,levs
               do i=1,im
                 qrn(i,k)  = Stateout%gq0(i,k,ntrw)
@@ -2832,7 +2832,7 @@ module module_physics_driver
 !             enddo
 !           enddo
 !         endif     ! Anning ncld ==2
-          if (abs(Model%fprcp) == 1) then
+          if (abs(Model%fprcp) == 1 .or. mg3_as_mg2) then
             do k=1,levs
               do i=1,im
                 qrn(i,k)  = Stateout%gq0(i,k,ntrw)

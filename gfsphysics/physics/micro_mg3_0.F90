@@ -1055,10 +1055,10 @@ subroutine micro_mg_tend (                                       &
   integer nstep, mdust, nlb, nstep_def
 
   ! Varaibles to scale fall velocity between small and regular ice regimes.
-  real(r8) :: irad, ifrac
+  real(r8) :: irad, ifrac, tsfac
   logical, parameter  :: do_ice_gmao=.false., do_liq_liu=.false.
 ! logical, parameter  :: do_ice_gmao=.true., do_liq_liu=.true.
-  real(r8), parameter :: qimax=0.010, qimin=0.005, qiinv=one/(qimax-qimin), &
+  real(r8), parameter :: qimax=0.010, qimin=0.001, qiinv=one/(qimax-qimin), &
                          ts_au_min=180.0
 
   !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -1072,6 +1072,7 @@ subroutine micro_mg_tend (                                       &
   nlb       = nlev/3
 ! nstep_def = max(1, nint(deltat/20))
   nstep_def = max(1, nint(deltat/5))
+  tsfac     = log(ts_au/ts_au_min) * qiinv
 
   ! Copies of input concentrations that may be changed internally.
   do k=1,nlev
@@ -1804,7 +1805,8 @@ subroutine micro_mg_tend (                                       &
           elseif (qiic(i,k) <= qimin) then
             ts_au_loc(i) = ts_au
           else
-            ts_au_loc(i) = (ts_au*(qimax-qiic(i,k)) + ts_au_min*(qiic(i,k)-qimin)) * qiinv
+!           ts_au_loc(i) = (ts_au*(qimax-qiic(i,k)) + ts_au_min*(qiic(i,k)-qimin)) * qiinv
+            ts_au_loc(i) = ts_au_min *exp(-tsfac*(qiic(i,k)-qimin))
           endif
         enddo
         if(do_ice_gmao) then
@@ -2215,7 +2217,7 @@ subroutine micro_mg_tend (                                       &
 !        if (minval(nscng(:,k)).lt.0._r8) &
 !             write(iulog,*) "OOPS, nscng < 0 : min=",minval(nscng(:,k))
 
-!    else
+     else
 ! Routine without Graupel (original)
         call evaporate_sublimate_precip(t(:,k), rho(:,k),                         &
           dv(:,k), mu(:,k), sc(:,k), q(:,k), qvl(:,k), qvi(:,k),                  &

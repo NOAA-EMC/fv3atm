@@ -846,7 +846,7 @@ subroutine sb2001v2_liq_autoconversion(pgam,qc,nc,qr,rho,relvar,au,nprc,nprc1,mg
 
     pra_coef = var_coef(relvar(i), 2.47_r8)
      if (qc(i) > qsmall) then
-       dumi = int(pgam(i))
+       dumi = max(1, min(int(pgam(i)), 15))
        nu   = dnu(dumi) + (dnu(dumi+1)-dnu(dumi))* (pgam(i)-dumi)
 
        !Anning fixed a bug here for FV3GFS 10/13/2017

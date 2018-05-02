@@ -1723,6 +1723,30 @@ module GFS_diagnostics
 
     idx = idx + 1
     ExtDiag(idx)%axes = 3
+    ExtDiag(idx)%name = 'refl_10cm'
+    ExtDiag(idx)%desc = 'Radar reflectivity'
+    ExtDiag(idx)%unit = 'dBz'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%refl_10cm(:,:)
+    enddo
+
+    idx = idx + 1
+    ExtDiag(idx)%axes = 3
+    ExtDiag(idx)%name = 'cnvw'
+    ExtDiag(idx)%desc = 'subgrid scale convective cloud water'
+    ExtDiag(idx)%unit = 'kg/kg'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    allocate (ExtDiag(idx)%data(nblks))
+    if( Model%ncnvw > 0 ) then
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var3 => Tbd(nb)%phy_f3d(:,:,Model%ncnvw)
+      enddo
+    endif
+
+    idx = idx + 1
+    ExtDiag(idx)%axes = 3
     ExtDiag(idx)%name = 'skebu_wts'
     ExtDiag(idx)%desc = 'perturbation velocity'
     ExtDiag(idx)%unit = 'm/s'
@@ -2287,7 +2311,6 @@ module GFS_diagnostics
     do nb = 1,nblks
       ExtDiag(idx)%data(nb)%var2 => sfcprop(nb)%stc(:,4)
     enddo
-!    print *,'in gfdl_diag_register,af soilt4,idx=',idx,model%nstf_name(1)
 
 !--------------------------nsst variables
   if (model%nstf_name(1) > 0) then
@@ -2492,6 +2515,7 @@ module GFS_diagnostics
     enddo
 !--------------------------nsst variables
   endif
+!  print *,'in gfdl_diag_register,af all extdiag, idx=',idx
 
 !--- prognostic variable tendencies (t, u, v, sph, clwmr, o3)
 !rab    idx = idx + 1

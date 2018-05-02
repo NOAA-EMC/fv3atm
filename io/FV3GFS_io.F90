@@ -24,7 +24,8 @@ module FV3GFS_io_mod
   use mpp_domains_mod,    only: domain1d, domain2d, domainUG
   use time_manager_mod,   only: time_type
   use diag_manager_mod,   only: register_diag_field, send_data
-  use diag_axis_mod,      only: get_axis_global_length, get_diag_axis
+  use diag_axis_mod,      only: get_axis_global_length, get_diag_axis, &
+                                get_diag_axis_name
   use diag_data_mod,      only: output_fields, max_output_fields
   use diag_util_mod,      only: find_input_field
   use constants_mod,      only: grav, rdgas
@@ -74,18 +75,20 @@ module FV3GFS_io_mod
 !
   integer :: tot_diag_idx = 0
   integer :: total_outputlevel = 0
-  integer :: isco,ieco,jsco,jeco
+  integer :: isco,ieco,jsco,jeco,levo,num_axes_phys
   integer :: fhzero, ncld, nsoil, imp_physics
   real(4) :: dtp
   logical :: lprecip_accu
   character(len=64)  :: Sprecip_accu
-  integer,dimension(:), allocatable :: nstt, nstt_vctbl
+  integer,dimension(:), allocatable :: nstt, nstt_vctbl, all_axes
+  character(20),dimension(:), allocatable          :: axis_name,axis_name_vert
   real(4), dimension(:,:,:), allocatable, target   :: buffer_phys_bl
   real(4), dimension(:,:,:), allocatable, target   :: buffer_phys_nb
   real(4), dimension(:,:,:,:), allocatable, target :: buffer_phys_windvect
   real(kind=kind_phys),dimension(:,:),allocatable  :: lon
   real(kind=kind_phys),dimension(:,:),allocatable  :: lat
   real(kind=kind_phys),dimension(:,:),allocatable  :: uwork
+  real(kind=kind_phys),dimension(:,:,:),allocatable:: uwork3d
   logical :: uwork_set = .false.
   character(128) :: uwindname
   integer, parameter, public :: DIAG_SIZE = 500
@@ -1173,6 +1176,7 @@ module FV3GFS_io_mod
     ieco = Atm_block%iec
     jsco = Atm_block%jsc
     jeco = Atm_block%jec
+    levo = model%levs
     fhzero = nint(Model%fhzero)
     ncld   = Model%ncld
     nsoil  = Model%lsoil
@@ -1202,6 +1206,7 @@ module FV3GFS_io_mod
     nrgst_bl = 0
     nrgst_nb = 0
     nrgst_vctbl = 0
+    num_axes_phys = 2
     do idx = 1,tot_diag_idx
       if (diag(idx)%axes == -99) then
         call mpp_error(fatal, 'gfs_driver::gfs_diag_register - attempt to register an undefined variable')
@@ -1219,14 +1224,28 @@ module FV3GFS_io_mod
              nstt(idx) = nrgst_nb
            endif
            if(trim(Diag(idx)%intpl_method) == 'vector_bilinear') then
-             if(Diag(idx)%name(1:1) == 'v' .or. Diag(idx)%name(1:1) == 'v') then
+             if(Diag(idx)%name(1:1) == 'v' .or. Diag(idx)%name(1:1) == 'V') then
                nrgst_vctbl = nrgst_vctbl + 1
                nstt_vctbl(idx) = nrgst_vctbl
 !             print *,'in phy_setup, vector_bilinear, name=', trim(Diag(idx)%name),' nstt_vctbl=', nstt_vctbl(idx), 'idx=',idx
              endif
            endif
-!        elif (Diag(idx)%axes == 3) then
-!           nrgst = nrgst+levs
+        else if (diag(idx)%axes == 3) then
+           if( index(trim(diag(idx)%intpl_method),'bilinear') > 0 ) then
+             nstt(idx) = nrgst_bl + 1
+             nrgst_bl  = nrgst_bl + levo
+           else if (trim(diag(idx)%intpl_method) == 'nearest_stod' ) then
+             nstt(idx) = nrgst_nb + 1
+             nrgst_nb  = nrgst_nb + levo
+           endif
+           if(trim(diag(idx)%intpl_method) == 'vector_bilinear') then
+             if(diag(idx)%name(1:1) == 'v' .or. diag(idx)%name(1:1) == 'V') then
+               nstt_vctbl(idx) = nrgst_vctbl + 1
+               nrgst_vctbl = nrgst_vctbl + levo
+!             print *,'in phy_setup, vector_bilinear, name=', trim(diag(idx)%name),' nstt_vctbl=', nstt_vctbl(idx), 'idx=',idx
+             endif
+           endif
+           num_axes_phys = 3
         endif
       endif
 
@@ -1240,7 +1259,7 @@ module FV3GFS_io_mod
     buffer_phys_nb = 0.
     buffer_phys_windvect = 0.
     if(mpp_pe() == mpp_root_pe()) print *,'in fv3gfs_diag_register, nrgst_bl=',nrgst_bl,' nrgst_nb=',nrgst_nb, &
-       ' nrgst_vctbl=',nrgst_vctbl, 'isco=',isco,ieco,'jsco=',jsco,jeco
+       ' nrgst_vctbl=',nrgst_vctbl, 'isco=',isco,ieco,'jsco=',jsco,jeco,' num_axes_phys=', num_axes_phys
 
   end subroutine fv3gfs_diag_register
 !-------------------------------------------------------------------------      
@@ -1265,7 +1284,7 @@ module FV3GFS_io_mod
     real(kind=kind_phys),      intent(in) :: time_int
     real(kind=kind_phys),      intent(in) :: time_intfull
 !--- local variables
-    integer :: i, j, idx, nblks, nb, ix, ii, jj
+    integer :: i, j, k, idx, nblks, nb, ix, ii, jj
     integer :: is_in, js_in, isc, jsc
     character(len=2) :: xtra
     real(kind=kind_phys), dimension(nx*ny)      :: var2p
@@ -1400,18 +1419,24 @@ module FV3GFS_io_mod
 !             ' lcnvfac=', lcnvfac
          elseif (Diag(idx)%axes == 3) then
          !---
-         !--- skipping the 3D variables with the following else statement
+         !--- skipping other 3D variables with the following else statement
          !---
+         if(mpp_pe()==mpp_root_pe())print *,'in,fv3gfs_io. 3D fields, idx=',idx,'varname=',trim(diag(idx)%name), &
+             'lcnvfac=',lcnvfac, 'levo=',levo,'nx=',nx,'ny=',ny
+           do k=1, levo
              do j = 1, ny
                jj = j + jsc -1
                do i = 1, nx
                  ii = i + isc -1
                  nb = Atm_block%blkno(ii,jj)
                  ix = Atm_block%ixp(ii,jj)
-                 var3(i,j,1:levs) = Diag(idx)%data(nb)%var3(ix,1:levs)*lcnvfac
+!         if(mpp_pe()==mpp_root_pe())print *,'in,fv3gfs_io,sze(Diag(idx)%data(nb)%var3)=',  &
+!             size(Diag(idx)%data(nb)%var3,1),size(Diag(idx)%data(nb)%var3,2)
+                 var3(i,j,k) = Diag(idx)%data(nb)%var3(ix,levo-k+1)*lcnvfac
                enddo
              enddo
-           used=send_data(Diag(idx)%id, var3, Time)
+           enddo
+           call store_data3D(Diag(idx)%id, var3, Time, idx, Diag(idx)%intpl_method, Diag(idx)%name)
 #ifdef JUNK
          else
            !--- dt3dt variables
@@ -1562,6 +1587,87 @@ module FV3GFS_io_mod
     endif
 !
  end subroutine store_data
+!
+!-------------------------------------------------------------------------
+!
+  subroutine store_data3D(id, work, Time, idx, intpl_method, fldname)
+    integer, intent(in)                 :: id
+    integer, intent(in)                 :: idx
+    real(kind=kind_phys), intent(in)    :: work(ieco-isco+1,jeco-jsco+1,levo)
+    type(time_type), intent(in)         :: Time
+    character(*), intent(in)            :: intpl_method
+    character(*), intent(in)            :: fldname
+!
+    integer k,j,i,kb
+    logical used
+!
+    if( id > 0 ) then
+      if( use_wrtgridcomp_output ) then
+        if( trim(intpl_method) == 'bilinear') then
+          do k= 1,levo
+            do j= jsco,jeco
+              do i= isco,ieco
+                buffer_phys_bl(i,j,nstt(idx)+k-1) = work(i-isco+1,j-jsco+1,k)
+              enddo
+            enddo
+          enddo
+        else if(trim(intpl_method) == 'nearest_stod') then
+          do k= 1,levo
+            do j= jsco,jeco
+              do i= isco,ieco
+                buffer_phys_nb(i,j,nstt(idx)+k-1) = work(i-isco+1,j-jsco+1,k)
+              enddo
+            enddo
+          enddo
+        else if(trim(intpl_method) == 'vector_bilinear') then
+!first save the data
+          do k= 1,levo
+            do j= jsco,jeco
+              do i= isco,ieco
+                buffer_phys_bl(i,j,nstt(idx)+k-1) = work(i-isco+1,j-jsco+1,k)
+              enddo
+            enddo
+          enddo
+          if( fldname(1:1) == 'u' .or. fldname(1:1) == 'U') then
+            if(.not.allocated(uwork3d)) allocate(uwork3d(isco:ieco,jsco:jeco,levo))
+            do k= 1, levo
+              do j= jsco,jeco
+                do i= isco,ieco
+                  uwork3d(i,j,k) = work(i-isco+1,j-jsco+1,k)
+                enddo
+              enddo
+            enddo
+            uwindname = fldname
+            uwork_set = .true.
+          endif
+          if( fldname(1:1) == 'v' .or. fldname(1:1) == 'V') then
+!set up wind vector
+            if( uwork_set .and. trim(uwindname(2:)) == trim(fldname(2:))) then
+              do k= 1, levo
+                do j= jsco,jeco
+                  do i= isco,ieco
+                     buffer_phys_windvect(1,i,j,nstt_vctbl(idx)+k-1) = uwork3d(i,j,k)*cos(lon(i,j)) &
+                       - work(i-isco+1,j-jsco+1,k)*sin(lat(i,j))*sin(lon(i,j))
+                     buffer_phys_windvect(2,i,j,nstt_vctbl(idx)+k-1) = uwork3d(i,j,k)*sin(lon(i,j)) &
+                       + work(i-isco+1,j-jsco+1,k)*sin(lat(i,j))*cos(lon(i,j))
+                     buffer_phys_windvect(3,i,j,nstt_vctbl(idx)+k-1) = work(i-isco+1,j-jsco+1,k)*cos(lat(i,j))
+                  enddo
+                enddo
+              enddo
+            endif
+            uwork3d = 0.
+            uwindname = ''
+            uwork_set = .false.
+          endif
+
+        endif
+      else
+        used = send_data(id, work, Time)
+      endif
+    endif
+!
+ end subroutine store_data3D
+!
 !-------------------------------------------------------------------------
 !
 #ifdef use_WRTCOMP
@@ -1569,7 +1675,7 @@ module FV3GFS_io_mod
  subroutine fv_phys_bundle_setup(Diag, axes, phys_bundle, fcst_grid, quilting, nbdlphys)
 !
 !-------------------------------------------------------------
-!*** set esmf bundle for dyn output fields
+!*** set esmf bundle for phys output fields
 !------------------------------------------------------------
 !
    use esmf
@@ -1586,11 +1692,11 @@ module FV3GFS_io_mod
 !
 !*** local variables
    integer i, j, k, n, rc, idx, ibdl, nbdl
-   integer num_axes, id, axis_length, direction, edges, axis_typ
+   integer id, axis_length, direction, edges, axis_typ
    integer num_attributes, num_field_dyn
    integer currdate(6)
    character(2) axis_id
-   character(255)    :: axis_name, units, long_name, cart_name, axesname
+   character(255)    :: units, long_name, cart_name, axis_direct, edgesS
    character(128)    :: output_name, physbdl_name, outputfile1
    logical           :: lput2physbdl, loutputfile, l2dvector
    type(domain1d)    :: Domain
@@ -1682,18 +1788,116 @@ module FV3GFS_io_mod
 !end ibdl
    enddo
 !
-!*** add attributes (for phys, set axes to 2)
-   num_axes = 2
-   do id = 1,num_axes
+!*** get axis names
+   allocate(axis_name(num_axes_phys))
+   do id = 1,num_axes_phys
+     call get_diag_axis_name( axes(id), axis_name(id))
+   enddo
+   if( num_axes_phys>2 ) then
+     allocate(axis_name_vert(num_axes_phys-2))
+     do id=3,num_axes_phys
+       axis_name_vert(id-2) = axis_name(id)
+     enddo
+     if(mpp_pe()==mpp_root_pe())print *,'in fv_dyn bundle,axis_name_vert=',axis_name_vert
+     call ESMF_AttributeAdd(fcst_grid, convention="NetCDF", purpose="FV3",  &
+       attrList=(/"vertical_dim_labels"/), rc=rc)
+     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+       line=__LINE__, &
+       file=__FILE__)) &
+       return  ! bail out
+     call ESMF_AttributeSet(fcst_grid, convention="NetCDF", purpose="FV3", &
+       name="vertical_dim_labels", valueList=axis_name_vert, rc=rc)
+     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+       line=__LINE__, &
+       file=__FILE__)) &
+       return  ! bail out
+   endif
+
+!*** add attributes
+   if(allocated(all_axes)) deallocate(all_axes)
+   allocate(all_axes(num_axes_phys))
+   all_axes(1:num_axes_phys) = axes(1:num_axes_phys)
+   do id = 1,num_axes_phys
      axis_length =  get_axis_global_length(axes(id))
      allocate(axis_data(axis_length))
-     call get_diag_axis( axes(id), axis_name, units, long_name, cart_name, &
+     call get_diag_axis( axes(id), axis_name(id), units, long_name, cart_name, &
                          direction, edges, Domain, DomainU, axis_data,     &
                          num_attributes=num_attributes,              &
                          attributes=attributes)
 !
+     edgesS=''
+     do i = 1,num_axes_phys
+       if(axes(i) == edges) edgesS=axis_name(i)
+     enddo
+! Add vertical dimension Attributes to Grid
+     if( id>2 ) then
+!      if(mpp_pe()==mpp_root_pe())print *,' in dyn add grid, axis_name=',     &
+!         trim(axis_name(id)),'axis_data=',axis_data
+      if(trim(edgesS)/='') then
+        call ESMF_AttributeAdd(fcst_grid, convention="NetCDF", purpose="FV3",  &
+          attrList=(/trim(axis_name(id)),trim(axis_name(id))//":long_name",    &
+                    trim(axis_name(id))//":units", trim(axis_name(id))//":cartesian_axis", &
+                    trim(axis_name(id))//":positive", trim(axis_name(id))//":edges"/), rc=rc)
+      else
+        call ESMF_AttributeAdd(fcst_grid, convention="NetCDF", purpose="FV3",  &
+          attrList=(/trim(axis_name(id)),trim(axis_name(id))//":long_name",    &
+                    trim(axis_name(id))//":units", trim(axis_name(id))//":cartesian_axis", &
+                    trim(axis_name(id))//":positive"/), rc=rc)
+      endif
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, &
+        file=__FILE__)) &
+        return  ! bail out
+      call ESMF_AttributeSet(fcst_grid, convention="NetCDF", purpose="FV3", &
+        name=trim(axis_name(id)), valueList=axis_data, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, &
+        file=__FILE__)) &
+        return  ! bail out
+      call ESMF_AttributeSet(fcst_grid, convention="NetCDF", purpose="FV3", &
+        name=trim(axis_name(id))//":long_name", value=trim(long_name), rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, &
+        file=__FILE__)) &
+        return  ! bail out
+      call ESMF_AttributeSet(fcst_grid, convention="NetCDF", purpose="FV3", &
+        name=trim(axis_name(id))//":units", value=trim(units), rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, &
+        file=__FILE__)) &
+        return  ! bail out
+      call ESMF_AttributeSet(fcst_grid, convention="NetCDF", purpose="FV3", &
+        name=trim(axis_name(id))//":cartesian_axis", value=trim(cart_name), rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, &
+        file=__FILE__)) &
+        return  ! bail out
+      if(direction>0) then
+          axis_direct="up"
+      else
+          axis_direct="down"
+      endif
+      call ESMF_AttributeSet(fcst_grid, convention="NetCDF", purpose="FV3", &
+        name=trim(axis_name(id))//":positive", value=trim(axis_direct), rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, &
+        file=__FILE__)) &
+        return  ! bail out
+      if(trim(edgesS)/='') then
+        call ESMF_AttributeSet(fcst_grid, convention="NetCDF", purpose="FV3", &
+          name=trim(axis_name(id))//":edges", value=trim(edgesS), rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, &
+          file=__FILE__)) &
+          return  ! bail out
+      endif
+
+     endif
+!
      deallocate(axis_data)
    enddo
+   print *,'in setup fieldbundle_phys, num_axes_phys=',num_axes_phys,'tot_diag_idx=',tot_diag_idx, &
+       'nbdlphys=',nbdlphys
 !
 !-----------------------------------------------------------------------------------------
 !*** add esmf fields
@@ -1759,12 +1963,12 @@ module FV3GFS_io_mod
 !*** local variable
    type(ESMF_Field)         :: field
    type(ESMF_DataCopy_Flag) :: copyflag=ESMF_DATACOPY_REFERENCE
-   integer rc
+   integer rc, i, j, idx
    real(4),dimension(:,:),pointer   :: temp_r2d
    real(4),dimension(:,:,:),pointer :: temp_r3d
 !
 !*** create esmf field
-   if( present(l2dvector) .and. l2dvector ) then
+   if( present(l2dvector) .and. l2dvector .and. size(axes)==2) then
      temp_r3d => buffer_phys_windvect(1:3,isco:ieco,jsco:jeco,kstt)
 !     if( mpp_root_pe() == 0) print *,'phys, create wind vector esmf field'
      call ESMF_LogWrite('bf create winde vector esmf field '//trim(var_name), ESMF_LOGMSG_INFO, rc=rc)
@@ -1806,23 +2010,44 @@ module FV3GFS_io_mod
      call ESMF_LogWrite('aft winde vector esmf field add to fieldbundle'//trim(var_name), ESMF_LOGMSG_INFO, rc=rc)
      return
    else if( trim(intpl_method) == 'nearest_stod' ) then
-     temp_r2d => buffer_phys_nb(isco:ieco,jsco:jeco,kstt)
-     field = ESMF_FieldCreate(phys_grid, temp_r2d, datacopyflag=copyflag, &
-                            name=var_name, indexFlag=ESMF_INDEX_DELOCAL, rc=rc)
-     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-       line=__LINE__, &
-       file=__FILE__)) &
-       call ESMF_Finalize(endflag=ESMF_END_ABORT)
-!     if( mpp_root_pe() == 0) print *,'add field to after nearest_stod, fld=', trim(var_name)
+     if(size(axes) == 2) then
+       temp_r2d => buffer_phys_nb(isco:ieco,jsco:jeco,kstt)
+       field = ESMF_FieldCreate(phys_grid, temp_r2d, datacopyflag=copyflag, &
+                              name=var_name, indexFlag=ESMF_INDEX_DELOCAL, rc=rc)
+       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+         line=__LINE__, &
+         file=__FILE__)) &
+         call ESMF_Finalize(endflag=ESMF_END_ABORT)
+     else if(size(axes) == 3) then
+       temp_r3d => buffer_phys_nb(isco:ieco,jsco:jeco,kstt:kstt+levo-1)
+       field = ESMF_FieldCreate(phys_grid, temp_r3d, datacopyflag=copyflag, &
+                              name=var_name, indexFlag=ESMF_INDEX_DELOCAL, rc=rc)
+       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+         line=__LINE__, &
+         file=__FILE__)) &
+         call ESMF_Finalize(endflag=ESMF_END_ABORT)
+
+     if( mpp_root_pe() == 0) print *,'add 3D field to after nearest_stod, fld=', trim(var_name)
+     endif
    else if( trim(intpl_method) == 'bilinear' ) then
-     temp_r2d => buffer_phys_bl(isco:ieco,jsco:jeco,kstt)
-     field = ESMF_FieldCreate(phys_grid, temp_r2d, datacopyflag=copyflag, &
+     if(size(axes) == 2) then
+       temp_r2d => buffer_phys_bl(isco:ieco,jsco:jeco,kstt)
+       field = ESMF_FieldCreate(phys_grid, temp_r2d, datacopyflag=copyflag, &
                             name=var_name, indexFlag=ESMF_INDEX_DELOCAL, rc=rc)
-     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-       line=__LINE__, &
-       file=__FILE__)) &
-       call ESMF_Finalize(endflag=ESMF_END_ABORT)
-!     if( mpp_root_pe() == 0) print *,'add field to after bilinear, fld=', trim(var_name)
+       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+         line=__LINE__, &
+         file=__FILE__)) &
+         call ESMF_Finalize(endflag=ESMF_END_ABORT)
+     else if(size(axes) == 3) then
+       temp_r3d => buffer_phys_bl(isco:ieco,jsco:jeco,kstt:kstt+levo-1)
+       field = ESMF_FieldCreate(phys_grid, temp_r3d, datacopyflag=copyflag, &
+                            name=var_name, indexFlag=ESMF_INDEX_DELOCAL, rc=rc)
+       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+         line=__LINE__, &
+         file=__FILE__)) &
+         call ESMF_Finalize(endflag=ESMF_END_ABORT)
+       if( mpp_root_pe() == 0) print *,'add field to after bilinear, fld=', trim(var_name)
+     endif
    endif
 !
 !*** add field attributes
@@ -1903,6 +2128,34 @@ module FV3GFS_io_mod
      line=__LINE__, &
      file=__FILE__)) &
      call ESMF_Finalize(endflag=ESMF_END_ABORT)
+
+!
+!*** add vertical coord attribute:
+   if( size(axes) > 2) then
+     do i=3,size(axes)
+       idx=0
+       do j=1,size(all_axes)
+         if (axes(i)==all_axes(j)) then
+           idx=j
+           exit
+         endif
+       enddo
+       if (idx>0) then
+         call ESMF_AttributeAdd(field, convention="NetCDF", purpose="FV3", &
+           attrList=(/"ESMF:ungridded_dim_labels"/), rc=rc)
+         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+           line=__LINE__, &
+           file=__FILE__)) &
+           return  ! bail out
+         call ESMF_AttributeSet(field, convention="NetCDF", purpose="FV3", &
+           name="ESMF:ungridded_dim_labels", valueList=(/trim(axis_name(idx))/), rc=rc)
+         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+           line=__LINE__, &
+           file=__FILE__)) &
+           return  ! bail out
+       endif
+     enddo
+   endif
 
 !*** add field into bundle
    call ESMF_FieldBundleAdd(phys_bundle,(/field/), rc=rc)

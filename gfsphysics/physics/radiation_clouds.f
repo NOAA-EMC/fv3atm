@@ -1880,7 +1880,7 @@
 !...................................
 
 !  ---  inputs:
-     &     ( plyr,plvl,tlyr,tvly,qlyr,qstl,rhly,clw,                    &
+     &     ( plyr,plvl,tlyr,tvly,qlyr,qstl,rhly,clw,cnvw,cnvc,          &
      &       xlat,xlon,slmsk,cldtot,                                    &
      &       IX, NLAY, NLP1,                                            &
 !  ---  outputs:
@@ -1919,6 +1919,8 @@
 !   qstl  (IX,NLAY) : layer saturate humidity in gm/gm                  !
 !   rhly  (IX,NLAY) : layer relative humidity (=qlyr/qstl)              !
 !   clw   (IX,NLAY) : layer cloud condensate amount                     !
+!   cnvw  (IX,NLAY) : layer convective cloud condensate                 !
+!   cnvc  (IX,NLAY) : layer convective cloud cover                      !
 !   xlat  (IX)      : grid latitude in radians, default to pi/2 -> -pi/2!
 !                     range, otherwise see in-line comment              !
 !   xlon  (IX)      : grid longitude in radians  (not used)             !
@@ -1962,7 +1964,7 @@
       integer,  intent(in) :: IX, NLAY, NLP1
 
       real (kind=kind_phys), dimension(:,:), intent(in) :: plvl, plyr,  &
-     &       tlyr, tvly, qlyr, qstl, rhly, clw, cldtot
+     &       tlyr, tvly, qlyr, qstl, rhly, clw, cldtot, cnvw, cnvc
 
       real (kind=kind_phys), dimension(:),   intent(in) :: xlat, xlon,  &
      &       slmsk
@@ -2052,7 +2054,7 @@
         do k = 1, NLAY
           do i = 1, IX
             delp(i,k) = plvl(i,k+1) - plvl(i,k)
-            clwt     = max(0.0, clwf(i,k)) * gfac * delp(i,k)
+            clwt     = max(0.0,(clwf(i,k)+cnvw(i,k))) * gfac * delp(i,k)
             cip(i,k) = clwt * tem2d(i,k)
             cwp(i,k) = clwt - cip(i,k)
           enddo
@@ -2061,7 +2063,7 @@
         do k = 1, NLAY
           do i = 1, IX
             delp(i,k) = plvl(i,k) - plvl(i,k+1)
-            clwt     = max(0.0, clwf(i,k)) * gfac * delp(i,k)
+            clwt     = max(0.0,(clwf(i,k)+cnvw(i,k))) * gfac * delp(i,k)
             cip(i,k) = clwt * tem2d(i,k)
             cwp(i,k) = clwt - cip(i,k)
           enddo

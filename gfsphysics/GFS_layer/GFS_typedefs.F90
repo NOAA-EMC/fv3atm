@@ -622,6 +622,7 @@ module GFS_typedefs
     integer              :: ncnvcld3d       !< number of convective 3d clouds fields
     integer              :: npdf3d          !< number of 3d arrays associated with pdf based clouds/microphysics
     integer              :: nctp            !< number of cloud types in Chikira-Sugiyama scheme
+    integer              :: ncnvw           !< the index of cnvw in phy_f3d
 
 !--- debug flag
     logical              :: debug         
@@ -2202,7 +2203,6 @@ module GFS_typedefs
       Model%num_p2d = 1
       Model%pdfcld  = .false.
       Model%shcnvcw = .false.
-      Model%cnvcld  = .false.
       Model%ncnd    = 5
       if (Model%me == Model%master) print *,' Using GFDL Cloud Microphysics'
     else
@@ -2219,6 +2219,14 @@ module GFS_typedefs
     if(Model%ras     .or. Model%cscnv)  Model%cnvcld = .false.
     if(Model%do_shoc .or. Model%pdfcld) Model%cnvcld = .false.
     if(Model%cnvcld) Model%ncnvcld3d = 1
+
+!--- get cnvw index in phy_f3d
+    Model%ncnvw = -999
+    if ((Model%npdf3d == 3) .and. (Model%num_p3d == 4)) then
+      Model%ncnvw = Model%num_p3d + 2
+    elseif ((Model%npdf3d == 0) .and. (Model%ncnvcld3d == 1)) then
+      Model%ncnvw = Model%num_p3d + 1
+    endif
  
 !--- derived totals for phy_f*d
     Model%ntot2d = Model%num_p2d + Model%nshoc_2d
@@ -2230,7 +2238,8 @@ module GFS_typedefs
                                     ' do_shoc=',Model%do_shoc,' nshoc3d=',Model%nshoc_3d,   &
                                     ' nshoc_2d=',Model%nshoc_2d,' shoc_cld=',Model%shoc_cld,& 
                                     ' ntot3d=',Model%ntot3d,' ntot2d=',Model%ntot2d,        &
-                                    ' shocaftcnv=',Model%shocaftcnv,' shoc_parm=',Model%shoc_parm
+                                    ' shocaftcnv=',Model%shocaftcnv,                        &
+                                    ' shoc_parm=',Model%shoc_parm,' ncnvw=', Model%ncnvw
 
 !--- END CODE FROM COMPNS_PHYSICS
 
