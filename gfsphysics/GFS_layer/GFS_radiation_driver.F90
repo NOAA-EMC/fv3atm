@@ -345,6 +345,8 @@
                                            GFS_cldprop_type,             &
                                            GFS_radtend_type,             &
                                            GFS_diag_type
+
+      use module_physics_driver,     only: dgamln, cdfgam, cdfnor
 !
       implicit   none
 !
@@ -1216,6 +1218,10 @@
       real(kind=kind_phys), dimension(size(Grid%xlon,1),Model%levr+ltp,NBDLW,NF_AELW) ::faerlw
       real(kind=kind_phys), dimension(size(Grid%xlon,1),Model%levr+ltp,Model%ncnd)    :: ccnd
 
+      !  mg, sfc perts
+      real(kind=kind_phys), dimension(size(Grid%xlon,1)) :: alb1d
+      real(kind=kind_phys) :: cdfz
+
       !--- TYPED VARIABLES
       type (cmpfsw_type),    dimension(size(Grid%xlon,1)) :: scmpsw
 
@@ -1360,7 +1366,7 @@
 
 !>  - Call coszmn(), to compute cosine of zenith angle.
       call coszmn (Grid%xlon,Grid%sinlat,           &     !  ---  inputs
-                   Grid%coslat,Model%solhr, IM, me, & 
+                   Grid%coslat,Model%solhr, IM, me, &
                    Radtend%coszen, Radtend%coszdg)        !  ---  outputs
 
 !>  - Call getgases(), to set up non-prognostic gas volume mixing
@@ -1681,7 +1687,7 @@
 
         elseif (Model%imp_physics == 11) then           ! GFDL cloud scheme
 
-          if (.not.Model%lgfdlmprad) then 
+          if (.not.Model%lgfdlmprad) then
             call progcld4 (plyr, plvl, tlyr, tvly, qlyr, qstl, rhly,      &    !  ---  inputs
                            ccnd(1:IM,1:LMK,1), cnvw, cnvc,                &
                            Grid%xlat, Grid%xlon, Sfcprop%slmsk,           &
@@ -1748,6 +1754,25 @@
 
 !  --- ...  start radiation calculations
 !           remember to set heating rate unit to k/sec!
+
+
+! mg, sfc-perts
+!  ---  scale random patterns for surface perturbations with
+!  perturbation size
+!  ---  turn vegetation fraction pattern into percentile pattern
+      alb1d(:) = 0.
+      if (Model%do_sfcperts) then
+        if (Model%pertalb(1) > 0.) then
+          do i=1,im
+            call cdfnor(Coupling%sfc_wts(i,5),cdfz)
+            alb1d(i) = cdfz
+          enddo
+        endif
+      endif
+! mg, sfc-perts
+
+
+
 !> -# Start SW radiation calculations
       if (Model%lsswr) then
 
@@ -1760,6 +1785,7 @@
                      Sfcprop%alnsf, Sfcprop%alvwf, Sfcprop%alnwf, &
                      Sfcprop%facsf, Sfcprop%facwf, Sfcprop%fice,  &
                      Sfcprop%tisfc, IM,                           &
+                     alb1d, Model%pertalb,                        &    !  mg, sfc-perts
                      sfcalb)                                           !  ---  outputs
 
 !> -# Approximate mean surface albedo from vis- and nir-  diffuse values.

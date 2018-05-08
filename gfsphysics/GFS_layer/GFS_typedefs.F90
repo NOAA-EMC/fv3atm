@@ -110,7 +110,11 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: qgrs (:,:,:) => null()  !< layer mean tracer concentration
 ! dissipation estimate
     real (kind=kind_phys), pointer :: diss_est(:,:)   => null()  !< model layer mean temperature in k
-
+    ! soil state variables - for soil SPPT - sfc-perts, mgehne
+    real (kind=kind_phys), pointer :: smc (:,:)   => null()  !< soil moisture content
+    real (kind=kind_phys), pointer :: stc (:,:)   => null()  !< soil temperature content
+    real (kind=kind_phys), pointer :: slc (:,:)   => null()  !< soil liquid water content
+ 
     contains
       procedure :: create  => statein_create  !<   allocate array data
   end type GFS_statein_type
@@ -256,17 +260,17 @@ module GFS_typedefs
 
 !--- outgoing accumulated quantities
     real (kind=kind_phys), pointer :: rain_cpl  (:)  => null()   !< total rain precipitation
-    real (kind=kind_phys), pointer :: snow_cpl  (:)  => null()   !< total snow precipitation  
+    real (kind=kind_phys), pointer :: snow_cpl  (:)  => null()   !< total snow precipitation
     real (kind=kind_phys), pointer :: dusfc_cpl (:)  => null()   !< sfc u momentum flux
     real (kind=kind_phys), pointer :: dvsfc_cpl (:)  => null()   !< sfc v momentum flux
     real (kind=kind_phys), pointer :: dtsfc_cpl (:)  => null()   !< sfc sensible heat flux
     real (kind=kind_phys), pointer :: dqsfc_cpl (:)  => null()   !< sfc   latent heat flux
     real (kind=kind_phys), pointer :: dlwsfc_cpl(:)  => null()   !< sfc downward lw flux (w/m**2)
     real (kind=kind_phys), pointer :: dswsfc_cpl(:)  => null()   !< sfc downward sw flux (w/m**2)
-    real (kind=kind_phys), pointer :: dnirbm_cpl(:)  => null()   !< sfc nir beam downward sw flux (w/m**2) 
-    real (kind=kind_phys), pointer :: dnirdf_cpl(:)  => null()   !< sfc nir diff downward sw flux (w/m**2) 
-    real (kind=kind_phys), pointer :: dvisbm_cpl(:)  => null()   !< sfc uv+vis beam dnwd sw flux (w/m**2) 
-    real (kind=kind_phys), pointer :: dvisdf_cpl(:)  => null()   !< sfc uv+vis diff dnwd sw flux (w/m**2) 
+    real (kind=kind_phys), pointer :: dnirbm_cpl(:)  => null()   !< sfc nir beam downward sw flux (w/m**2)
+    real (kind=kind_phys), pointer :: dnirdf_cpl(:)  => null()   !< sfc nir diff downward sw flux (w/m**2)
+    real (kind=kind_phys), pointer :: dvisbm_cpl(:)  => null()   !< sfc uv+vis beam dnwd sw flux (w/m**2)
+    real (kind=kind_phys), pointer :: dvisdf_cpl(:)  => null()   !< sfc uv+vis diff dnwd sw flux (w/m**2)
     real (kind=kind_phys), pointer :: nlwsfc_cpl(:)  => null()   !< net downward lw flux (w/m**2)
     real (kind=kind_phys), pointer :: nswsfc_cpl(:)  => null()   !< net downward sw flux (w/m**2)
     real (kind=kind_phys), pointer :: nnirbm_cpl(:)  => null()   !< net nir beam downward sw flux (w/m**2)
@@ -307,6 +311,8 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: sppt_wts  (:,:)   => null()  !
     real (kind=kind_phys), pointer :: skebu_wts (:,:)   => null()  !
     real (kind=kind_phys), pointer :: skebv_wts (:,:)   => null()  !
+    real (kind=kind_phys), pointer :: sfc_wts   (:,:)   => null()  ! mg, sfc-perts
+    integer              :: nsfcpert=6                             !< number of sfc perturbations
 
 !--- instantaneous quantities for GoCart and will be accumulated for 3D diagnostics
     real (kind=kind_phys), pointer :: dqdti   (:,:)   => null()  !< instantaneous total moisture tendency (kg/kg/s)
@@ -315,7 +321,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: dwn_mfi (:,:)   => null()  !< instantaneous convective downdraft mass flux
     real (kind=kind_phys), pointer :: det_mfi (:,:)   => null()  !< instantaneous convective detrainment mass flux
     real (kind=kind_phys), pointer :: cldcovi (:,:)   => null()  !< instantaneous 3D cloud fraction
-    real (kind=kind_phys), pointer :: nwfa2d  (:)    => null()  !< instantaneous sfc aerosol source 
+    real (kind=kind_phys), pointer :: nwfa2d  (:)    => null()  !< instantaneous sfc aerosol source
 
     contains
       procedure :: create  => coupling_create  !<   allocate array data
@@ -583,14 +589,21 @@ module GFS_typedefs
                                             !< nstf_name(5) : zsea2 in mm
     real(kind=kind_phys) :: xkzminv         !< diffusivity in inversion layers
     real(kind=kind_phys) :: moninq_fac      !< turbulence diffusion coefficient factor
-     
+
 !--- stochastic physics control parameters
     logical              :: do_sppt
     logical              :: use_zmtnblck
     logical              :: do_shum
     logical              :: do_skeb
-    integer              :: skeb_npass 
-    
+    integer              :: skeb_npass
+    logical              :: do_sfcperts
+    integer              :: nsfcpert=6
+    real(kind=kind_phys) :: pertz0(5)          ! mg, sfc-perts
+    real(kind=kind_phys) :: pertzt(5)          ! mg, sfc-perts
+    real(kind=kind_phys) :: pertshc(5)         ! mg, sfc-perts
+    real(kind=kind_phys) :: pertlai(5)         ! mg, sfc-perts
+    real(kind=kind_phys) :: pertalb(5)         ! mg, sfc-perts
+    real(kind=kind_phys) :: pertvegf(5)        ! mg, sfc-perts
 !--- tracer handling
     character(len=32), pointer :: tracer_names(:) !< array of initialized tracers from dynamic core
     integer              :: ntrac           !< number of tracers
@@ -971,6 +984,15 @@ module GFS_typedefs
     Statein%ugrs   = clear_val
     Statein%vgrs   = clear_val
 
+    !--- soil state variables - for soil SPPT - sfc-perts, mgehne
+    allocate (Statein%smc  (IM,Model%lsoil))
+    allocate (Statein%stc  (IM,Model%lsoil))
+    allocate (Statein%slc  (IM,Model%lsoil))
+
+    Statein%smc   = clear_val
+    Statein%stc   = clear_val
+    Statein%slc   = clear_val
+
   end subroutine statein_create
 
 
@@ -1331,6 +1353,12 @@ module GFS_typedefs
       Coupling%skebv_wts = clear_val
     endif
 
+    !--- stochastic physics option
+    if (Model%do_sfcperts) then
+      allocate (Coupling%sfc_wts  (IM,Model%nsfcpert))
+      Coupling%sfc_wts = clear_val
+    endif
+
 
     !--- needed for either GoCart or 3D diagnostics
     if (Model%lgocart .or. Model%ldiag3d) then
@@ -1642,7 +1670,14 @@ module GFS_typedefs
     logical :: do_shum      = .false.
     logical :: do_skeb      = .false.
     integer :: skeb_npass = 11
-
+    logical :: do_sfcperts = .false.   ! mg, sfc-perts
+    integer :: nsfcpert    =  6        ! mg, sfc-perts
+    real(kind=kind_phys) :: pertz0 = -999.
+    real(kind=kind_phys) :: pertzt = -999.
+    real(kind=kind_phys) :: pertshc = -999.
+    real(kind=kind_phys) :: pertlai = -999.
+    real(kind=kind_phys) :: pertalb = -999.
+    real(kind=kind_phys) :: pertvegf = -999.
 !--- END NAMELIST VARIABLES
 
     NAMELIST /gfs_physics_nml/                                                              &
@@ -1921,12 +1956,20 @@ module GFS_typedefs
     Model%use_zmtnblck     = use_zmtnblck
     Model%do_shum          = do_shum
     Model%do_skeb          = do_skeb
+    Model%do_sfcperts      = do_sfcperts ! mg, sfc-perts
+    Model%nsfcpert         = nsfcpert    ! mg, sfc-perts
+    Model%pertz0           = pertz0
+    Model%pertzt           = pertzt
+    Model%pertshc          = pertshc
+    Model%pertlai          = pertlai
+    Model%pertalb          = pertalb
+    Model%pertvegf         = pertvegf
 
 ! IAU flags
 !--- iau parameters
     Model%iaufhrs         = iaufhrs
     Model%iau_inc_files   = iau_inc_files
-    Model%iau_delthrs     = iau_delthrs  
+    Model%iau_delthrs     = iau_delthrs
 
 !--- tracer handling
     Model%ntrac            = size(tracer_names)
@@ -2470,6 +2513,12 @@ module GFS_typedefs
       print *, ' xkzm_s            : ', Model%xkzm_s
       print *, ' xkzminv           : ', Model%xkzminv
       print *, ' moninq_fac        : ', Model%moninq_fac
+      print *, ' '
+      print *, 'stochastic physics'
+      print *, ' do_sppt           : ', Model%do_sppt
+      print *, ' do_shum           : ', Model%do_shum
+      print *, ' do_skeb           : ', Model%do_skeb
+      print *, ' do_sfcperts       : ', Model%do_sfcperts
       print *, ' '
       print *, 'tracers'
       print *, ' tracer_names      : ', Model%tracer_names

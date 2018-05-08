@@ -49,21 +49,39 @@
       skeb,skeb_tau,skeb_vdof,skeb_lscale,iseed_skeb,skeb_vfilt,skeb_diss_smooth, &
       skeb_sigtop1,skeb_sigtop2,skebnorm,sppt_sigtop1,sppt_sigtop2,&
       shum_sigefold,skebint,skeb_npass,use_zmtnblck
-       tol=0.01  ! tolerance for calculations
+      namelist /nam_sfcperts/nsfcpert,pertz0,pertshc,pertzt,pertlai, & ! mg, sfcperts
+      pertvegf,pertalb,iseed_sfc,sfc_tau,sfc_lscale,sppt_land
+
+      tol=0.01  ! tolerance for calculations
 !     spectral resolution defintion
       ntrunc=-999
       lon_s=-999
       lat_s=-999
-      ! can specify up to 5 values for the stochastic physics parameters 
+      ! can specify up to 5 values for the stochastic physics parameters
       ! (each is an array of length 5)
       sppt             = -999.  ! stochastic physics tendency amplitude
-      shum             = -999.  ! stochastic boundary layer spf hum amp   
+      shum             = -999.  ! stochastic boundary layer spf hum amp
       skeb             = -999.  ! stochastic KE backscatter amplitude
+      ! mg, sfcperts 
+      pertz0           = -999.  ! momentum roughness length amplitude
+      pertshc          = -999.  ! soil hydraulic conductivity amp
+      pertzt           = -999.  ! mom/heat roughness length amplitude
+      pertlai          = -999.  ! leaf area index amplitude
+      pertvegf         = -999.  ! vegetation fraction amplitude
+      pertalb          = -999.  ! albedo perturbations amplitude
 ! logicals
       do_sppt = .false.
       use_zmtnblck = .false.
       do_shum = .false.
       do_skeb = .false.
+      ! mg, sfcperts
+      do_sfcperts = .false.
+      sppt_land = .false.
+      nsfcpert = 0
+! for sfcperts random patterns
+      sfc_lscale  = -999.       ! length scales
+      sfc_tau     = -999.       ! time scales
+      iseed_sfc   = 0           ! random seeds (if 0 use system clock)
 ! for SKEB random patterns.
       skeb_vfilt       = 0
       skebint          = 0
@@ -102,6 +120,13 @@
       rewind (nlunit)
       open (unit=nlunit, file=fn_nml, READONLY, status='OLD', iostat=ios)
       read(nlunit,nam_stochy)
+#endif
+#ifdef INTERNAL_FILE_NML
+      read(input_nml_file, nml=nam_sfcperts)
+#else
+      rewind (nlunit)
+      open (unit=nlunit, file=fn_nml, READONLY, status='OLD', iostat=ios)
+      read(nlunit,nam_sfcperts)
 #endif
 
       if (me == 0) then
@@ -154,6 +179,11 @@
         iret=9
         return
       ENDIF
+! mg, sfcperts
+      IF (pertz0(1) > 0 .OR. pertshc(1) > 0 .OR. pertzt(1) > 0 .OR. &
+          pertlai(1) > 0 .OR. pertvegf(1) > 0 .OR. pertalb(1) > 0) THEN
+        do_sfcperts=.true.
+      ENDIF
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 !
 !  All checks are successful.
@@ -163,8 +193,9 @@
          print *, ' do_sppt : ', do_sppt
          print *, ' do_shum : ', do_shum
          print *, ' do_skeb : ', do_skeb
+         print *, ' do_sfcperts : ', do_sfcperts
       endif
       iret = 0
 !
       return
-      end subroutine compns_stochy   
+      end subroutine compns_stochy

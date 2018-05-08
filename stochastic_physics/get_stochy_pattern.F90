@@ -14,7 +14,8 @@ module get_stochy_pattern_mod
  private
 
  public  get_random_pattern_fv3,get_random_pattern_fv3_vect
- public dump_patterns
+ public  get_random_pattern_sfc_fv3
+ public  dump_patterns
  logical :: first_call=.true.
 #include "mpif.h"
  contains
@@ -50,7 +51,7 @@ subroutine get_random_pattern_fv3(rpattern,npatterns,&
  kmsk0 = 0
  glolal = 0.
  do n=1,npatterns
-    call patterngenerator_advance(rpattern(n),1)
+    call patterngenerator_advance(rpattern(n),1,.false.)
     call scalarspect_to_gaugrid(                       &
          rpattern(n)%spec_e,rpattern(n)%spec_o,wrk2d,&
          gis_stochy%ls_node,gis_stochy%ls_nodes,gis_stochy%max_ls_nodes,&
@@ -94,6 +95,90 @@ subroutine get_random_pattern_fv3(rpattern,npatterns,&
    
 end subroutine get_random_pattern_fv3 
 
+
+subroutine get_random_pattern_sfc_fv3(rpattern,npatterns,&
+           gis_stochy,Model,Grid,nblks,pattern_3d)
+
+! generate a random pattern for stochastic physics
+ implicit none
+ type(random_pattern), intent(inout) :: rpattern(npatterns)
+ type(stochy_internal_state), target :: gis_stochy
+ type(GFS_control_type),   intent(in) :: Model
+ type(GFS_grid_type),      intent(in) :: Grid(nblks)
+ integer,intent(in)::   npatterns,nblks
+
+ integer i,j,l,lat,ierr,n,nn,k,nt
+ real(kind=kind_dbl_prec), dimension(lonf,gis_stochy%lats_node_a,1):: wrk2d
+
+ integer :: num2d
+! logical lprint
+
+ real(kind=kind_dbl_prec), allocatable, dimension(:,:) :: workg
+ real (kind=kind_dbl_prec)   glolal(lonf,gis_stochy%lats_node_a)
+ integer kmsk0(lonf,gis_stochy%lats_node_a),len
+ real(kind=kind_dbl_prec) :: globalvar,globalvar0
+ real(kind=kind_dbl_prec) :: pattern_3d(nblks,Model%isc:Model%isc+Model%nx-1,nsfcpert)
+ real(kind=kind_dbl_prec) :: pattern_1d(Model%isc:Model%isc+Model%nx)
+ real(kind=kind_dbl_prec), allocatable, dimension(:,:) :: rslmsk
+ real(kind=kind_dbl_prec), allocatable, dimension(:) :: slmask,tlats,tlons
+ integer :: inttyp,blk
+
+ character*2 proc
+
+ do k=1,nsfcpert
+   kmsk0 = 0
+   glolal = 0.
+   do n=1,npatterns
+     if (is_master()) print *, 'Random pattern for SFC-PERTS in get_random_pattern_sfc_fv3: k, min, max ',k,minval(rpattern_sfc(n)%spec_o(:,:,k)), maxval(rpattern_sfc(n)%spec_o(:,:,k))
+     call scalarspect_to_gaugrid(                       &
+         rpattern(n)%spec_e(:,:,k),rpattern(n)%spec_o(:,:,k),wrk2d,&
+         gis_stochy%ls_node,gis_stochy%ls_nodes,gis_stochy%max_ls_nodes,&
+         gis_stochy%lats_nodes_a,gis_stochy%global_lats_a,gis_stochy%lonsperlat,&
+         gis_stochy%plnev_a,gis_stochy%plnod_a,1)
+     glolal = glolal + wrk2d(:,:,1)
+   enddo
+
+   allocate(workg(lonf,latg))
+   workg = 0.
+   do j=1,gis_stochy%lats_node_a
+     lat=gis_stochy%global_lats_a(ipt_lats_node_a-1+j)
+     do i=1,lonf
+        workg(i,lat) = glolal(i,j)
+     enddo
+   enddo
+
+   call mp_reduce_sum(workg,lonf,latg)
+   if (is_master()) print *, 'workg after mp_reduce_sum for SFC-PERTS in get_random_pattern_sfc_fv3: k, min, max ',k,minval(workg), maxval(workg) 
+
+! interpolate to cube grid
+
+   allocate(rslmsk(lonf,latg))
+   do blk=1,nblks
+      len=size(Grid(blk)%xlat,1)
+      allocate(SLMASK(len))
+      allocate(tlats(len))
+      allocate(tlons(len))
+      tlats=Grid(blk)%xlat*rad2deg
+      tlons=Grid(blk)%xlon*rad2deg
+      call la2ga(workg,lonf,latg,gg_lons,gg_lats,wlon,rnlat,inttyp,&
+                 pattern_1d,len,.false.,rslmsk,slmask,&
+                 tlats,tlons,me)
+      pattern_3d(blk,:,k)=pattern_1d(:)
+      deallocate(SLMASK)
+      deallocate(tlats)
+      deallocate(tlons)
+   enddo
+   if (is_master()) print *, '3D pattern for SFC-PERTS in get_random_pattern_sfc_fv3: k, min, max ',k,minval(pattern_3d(:,:,k)), maxval(pattern_3d(:,:,k)) 
+   deallocate(rslmsk)
+   deallocate(workg)
+  
+ enddo  ! loop over k, nsfcpert 
+
+end subroutine get_random_pattern_sfc_fv3
+
+
+
+
 subroutine get_random_pattern_fv3_vect(rpattern,npatterns,&
            gis_stochy,Model,Grid,nblks,upattern_3d,vpattern_3d)
 
@@ -129,16 +214,16 @@ integer kmsk0(lonf,gis_stochy%lats_node_a),i1,i2,j1
  if (first_call) then
     allocate(skebu_save(nblks,Model%isc:Model%isc+Model%nx-1,skeblevs))
     allocate(skebv_save(nblks,Model%isc:Model%isc+Model%nx-1,skeblevs))
-    do k=1,skeblevs-1
+    do k=2,skeblevs
        workgu = 0.
        workgv = 0.
        do n=1,npatterns
-          call patterngenerator_advance(rpattern(n),1)
+          if (.not. stochini) call patterngenerator_advance(rpattern(n),k,first_call)
       !   ke norm (convert streamfunction forcing to vorticity forcing)
           divspec_e = 0; divspec_o = 0.
           do nn=1,2
-             vrtspec_e(:,nn,1) = gis_stochy%kenorm_e*rpattern(n)%spec_e(:,nn,1)
-             vrtspec_o(:,nn,1) = gis_stochy%kenorm_o*rpattern(n)%spec_o(:,nn,1)
+             vrtspec_e(:,nn,1) = gis_stochy%kenorm_e*rpattern(n)%spec_e(:,nn,k)
+             vrtspec_o(:,nn,1) = gis_stochy%kenorm_o*rpattern(n)%spec_o(:,nn,k)
           enddo
         ! convert to winds
           call vrtdivspect_to_uvgrid(&
@@ -179,25 +264,30 @@ integer kmsk0(lonf,gis_stochy%lats_node_a),i1,i2,j1
        deallocate(tlons)
     enddo
   enddo
-    first_call=.false.
- else
-! shift patterns
-   do k=1,skeblevs-1
-      skebu_save(:,:,k)=skebu_save(:,:,k+1)
-      skebv_save(:,:,k)=skebv_save(:,:,k+1)
-   enddo
  endif
+ do k=1,skeblevs-1
+    skebu_save(:,:,k)=skebu_save(:,:,k+1)
+    skebv_save(:,:,k)=skebv_save(:,:,k+1)
+    do n=1,npatterns
+       rpattern(n)%spec_e(:,:,k)=rpattern(n)%spec_e(:,:,k+1)
+       rpattern(n)%spec_o(:,:,k)=rpattern(n)%spec_o(:,:,k+1)
+    enddo
+ enddo
  
 ! get pattern for last level 
  workgu = 0.
  workgv = 0.
  do n=1,npatterns
-    call patterngenerator_advance(rpattern(n),1)
+!    if (stochini.AND. first_call) then
+!       print*,'skipping advance'
+!     else
+       call patterngenerator_advance(rpattern(n),skeblevs,first_call)
+!    endif
 !   ke norm (convert streamfunction forcing to vorticity forcing)
     divspec_e = 0; divspec_o = 0.
     do nn=1,2
-       vrtspec_e(:,nn,1) = gis_stochy%kenorm_e*rpattern(n)%spec_e(:,nn,1)
-       vrtspec_o(:,nn,1) = gis_stochy%kenorm_o*rpattern(n)%spec_o(:,nn,1)
+       vrtspec_e(:,nn,1) = gis_stochy%kenorm_e*rpattern(n)%spec_e(:,nn,skeblevs)
+       vrtspec_o(:,nn,1) = gis_stochy%kenorm_o*rpattern(n)%spec_o(:,nn,skeblevs)
     enddo
   ! convert to winds
     call vrtdivspect_to_uvgrid(&
@@ -228,11 +318,11 @@ integer kmsk0(lonf,gis_stochy%lats_node_a),i1,i2,j1
     call la2ga(workgu,lonf,latg,gg_lons,gg_lats,wlon,rnlat,inttyp,&
                pattern_1d,len,.false.,rslmsk,slmask,&
                tlats,tlons,me)
-    skebu_save(blk,:,k)=pattern_1d(:)
+    skebu_save(blk,:,skeblevs)=pattern_1d(:)
     call la2ga(workgv,lonf,latg,gg_lons,gg_lats,wlon,rnlat,inttyp,&
                pattern_1d,len,.false.,rslmsk,slmask,&
                tlats,tlons,me)
-    skebv_save(blk,:,k)=-1*pattern_1d(:)
+    skebv_save(blk,:,skeblevs)=-1*pattern_1d(:)
     deallocate(SLMASK)
     deallocate(tlats)
     deallocate(tlons)
@@ -247,6 +337,7 @@ integer kmsk0(lonf,gis_stochy%lats_node_a),i1,i2,j1
        vpattern_3d(blk,:,k) = skeb_vwts(k,1)*skebv_save(blk,:,skeb_vpts(k,1))+skeb_vwts(k,2)*skebv_save(blk,:,skeb_vpts(k,2))
     enddo
  enddo
+ first_call=.false.
  
 end subroutine get_random_pattern_fv3_vect
 

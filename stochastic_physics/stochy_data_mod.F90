@@ -14,15 +14,16 @@ module stochy_data_mod
 ! use mersenne_twister_stochy, only : random_seed
  use mersenne_twister, only : random_seed
 
- implicit none 
+ implicit none
  private
  public :: init_stochdata
 
  type(random_pattern), public, save, allocatable, dimension(:) :: &
-       rpattern_sppt,rpattern_shum,rpattern_skeb
+       rpattern_sppt,rpattern_shum,rpattern_skeb, rpattern_sfc
  integer, public :: nsppt=0
  integer, public :: nshum=0
  integer, public :: nskeb=0
+ integer, public :: npsfc=0
  real*8, public,allocatable :: sl(:)
 
  real(kind=kind_dbl_prec),public, allocatable :: vfact_sppt(:),vfact_shum(:),vfact_skeb(:)
@@ -42,6 +43,7 @@ module stochy_data_mod
    character(len=*),  intent(in) :: input_nml_file(:)
    character(len=64), intent(in) :: fn_nml
    real, intent(in) :: delt
+   real :: pertsfc(1)
 
    real :: rnn1
    integer :: nn,nspinup,k,nm,spinup_efolds,stochlun,ierr,iret,n
@@ -56,7 +58,7 @@ module stochy_data_mod
    iret=0
    if(is_master()) print*,'in init stochdata'
    call compns_stochy (me,size(input_nml_file,1),input_nml_file(:),fn_nml,nlunit,delt,iret)
-   if (do_sppt.EQ. .false. .AND. do_shum.EQ. .false..AND.do_skeb.EQ..false.) return
+   if (do_sppt.EQ. .false. .AND. do_shum.EQ. .false..AND.do_skeb.EQ..false..AND.do_sfcperts.EQ..false.) return
    nodes=mpp_npes()
    if (nodes.GE.lat_s/2) then
       lat_s=(int(nodes/12)+1)*24
@@ -91,10 +93,32 @@ module stochy_data_mod
      endif
    enddo
    if (is_master()) print *,'nskeb = ',nskeb
+   ! mg, sfc-perts
+   do n=1,size(pertz0)
+     if (pertz0(n) > 0 .or. pertzt(n)>0 .or. pertshc(n)>0 .or. &
+         pertvegf(n)>0 .or. pertlai(n)>0 .or. pertalb(n)>0) then
+        npsfc=npsfc+1
+     else
+        exit
+     endif
+   enddo
+   if (is_master()) then
+     if (npsfc > 0) then
+       print *,' npsfc   = ', npsfc
+       print *,' pertz0  = ', pertz0
+       print *,' pertzt  = ', pertzt
+       print *,' pertshc = ', pertshc
+       print *,' pertlai = ', pertlai
+       print *,' pertalb = ', pertalb
+       print *,' pertvegf = ', pertvegf
+     endif
+   endif
 
    if (nsppt > 0) allocate(rpattern_sppt(nsppt))
    if (nshum > 0) allocate(rpattern_shum(nshum))
    if (nskeb > 0) allocate(rpattern_skeb(nskeb))
+   ! mg, sfc perts
+   if (npsfc > 0) allocate(rpattern_sfc(npsfc))
 
 !  if stochini is true, then read in pattern from a file
    if (is_master()) then
@@ -133,7 +157,7 @@ module stochy_data_mod
                 rpattern_sppt(n)%spec_o(nn,2,1) = rpattern_sppt(n)%stdev*rpattern_sppt(n)%spec_o(nn,2,1)*rpattern_sppt(n)%varspectrum(nm)
              enddo
              do nn=1,nspinup
-                call patterngenerator_advance(rpattern_sppt(n),1)
+                call patterngenerator_advance(rpattern_sppt(n),1,.false.)
              enddo
           endif
        enddo
@@ -165,7 +189,7 @@ module stochy_data_mod
                 rpattern_shum(n)%spec_o(nn,2,1) = rpattern_shum(n)%stdev*rpattern_shum(n)%spec_o(nn,2,1)*rpattern_shum(n)%varspectrum(nm)
              enddo
              do nn=1,nspinup
-                call patterngenerator_advance(rpattern_shum(n),1)
+                call patterngenerator_advance(rpattern_shum(n),1,.false.)
              enddo
           endif
        enddo
@@ -183,6 +207,7 @@ module stochy_data_mod
              nspinup = spinup_efolds*skeb_tau(n)/delt
              if (stochini) then
                 call read_pattern(rpattern_skeb(n),k,stochlun)
+                if (is_master()) print *, 'skeb read',k,rpattern_skeb(n)%spec_o(5,1,k)
              else
                 call getnoise(rpattern_skeb(n),noise_e,noise_o)
                 do nn=1,len_trie_ls
@@ -201,13 +226,13 @@ module stochy_data_mod
                    rpattern_skeb(n)%spec_o(nn,1,k) = rpattern_skeb(n)%stdev*rpattern_skeb(n)%spec_o(nn,1,k)*rpattern_skeb(n)%varspectrum(nm)
                    rpattern_skeb(n)%spec_o(nn,2,k) = rpattern_skeb(n)%stdev*rpattern_skeb(n)%spec_o(nn,2,k)*rpattern_skeb(n)%varspectrum(nm)
                 enddo
-                do nn=1,nspinup
-                   call patterngenerator_advance(rpattern_skeb(n),k)
-                enddo
              endif
           enddo
+          do nn=1,nspinup
+             call patterngenerator_advance(rpattern_skeb(n),skeblevs,.false.)
+          enddo
        enddo
-       
+
     gis_stochy%kenorm_e=1.
     gis_stochy%kenorm_o=1. ! used to convert forcing pattern to wind field.
 if (skebnorm==0) then
@@ -262,13 +287,45 @@ do locl=1,ls_max_node
       gis_stochy%kenorm_o(indlsod(jcap+1,l)) = 0.
    endif
 enddo
-      
+
    endif ! skeb > 0
+! mg, sfc-perts
+if (npsfc > 0) then
+       pertsfc(1) = 1.
+       call patterngenerator_init(sfc_lscale,delt,sfc_tau,pertsfc,iseed_sfc,rpattern_sfc, &
+              lonf,latg,jcap,gis_stochy%ls_node,npsfc,nsfcpert,0)
+       do n=1,npsfc
+          if (is_master()) print *, 'Initialize random pattern for SFC-PERTS',n
+          do k=1,nsfcpert
+           nspinup = spinup_efolds*sfc_tau(n)/delt
+           call getnoise(rpattern_sfc(n),noise_e,noise_o)
+           do nn=1,len_trie_ls
+              rpattern_sfc(n)%spec_e(nn,1,k)=noise_e(nn,1)
+              rpattern_sfc(n)%spec_e(nn,2,k)=noise_e(nn,2)
+              nm = rpattern_sfc(n)%idx_e(nn)
+              if (nm .eq. 0) cycle
+              rpattern_sfc(n)%spec_e(nn,1,k) = rpattern_sfc(n)%stdev*rpattern_sfc(n)%spec_e(nn,1,k)*rpattern_sfc(n)%varspectrum(nm)
+              rpattern_sfc(n)%spec_e(nn,2,k) = rpattern_sfc(n)%stdev*rpattern_sfc(n)%spec_e(nn,2,k)*rpattern_sfc(n)%varspectrum(nm)
+           enddo
+           do nn=1,len_trio_ls
+              rpattern_sfc(n)%spec_o(nn,1,k)=noise_o(nn,1)
+              rpattern_sfc(n)%spec_o(nn,2,k)=noise_o(nn,2)
+              nm = rpattern_sfc(n)%idx_o(nn)
+              if (nm .eq. 0) cycle
+              rpattern_sfc(n)%spec_o(nn,1,k) = rpattern_sfc(n)%stdev*rpattern_sfc(n)%spec_o(nn,1,k)*rpattern_sfc(n)%varspectrum(nm)
+              rpattern_sfc(n)%spec_o(nn,2,k) = rpattern_sfc(n)%stdev*rpattern_sfc(n)%spec_o(nn,2,k)*rpattern_sfc(n)%varspectrum(nm)
+           enddo
+           do nn=1,nspinup
+              call patterngenerator_advance(rpattern_sfc(n),k,.false.)
+           enddo
+           if (is_master()) print *, 'Random pattern for SFC-PERTS: k, min, max ',k, minval(rpattern_sfc(1)%spec_o(:,:,k)), maxval(rpattern_sfc(1)%spec_o(:,:,k))   
+         enddo ! k, nsfcpert
+       enddo ! n, npsfc
+   endif ! npsfc > 0
    if (is_master() .and. stochini) CLOSE(stochlun)
    deallocate(noise_e,noise_o)
  end subroutine init_stochdata
 
- 
 subroutine read_pattern(rpattern,k,lunptn)
    type(random_pattern), intent(inout) :: rpattern
    integer, intent(in) :: lunptn
@@ -303,7 +360,7 @@ subroutine read_pattern(rpattern,k,lunptn)
       endif
       deallocate(pattern2din)
     endif
-    call mp_bcst(isave,isize)  ! blast out seed 
+    call mp_bcst(isave,isize)  ! blast out seed
     call mp_bcst(pattern2d,2*ndimspec)
     call random_seed(put=isave,stat=rpattern%rstate)
    ! subset

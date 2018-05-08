@@ -25,4 +25,13 @@
       logical stochini,sppt_logit
       logical do_shum,do_sppt,do_skeb,use_zmtnblck
 
+! mg surface perturbations
+      real(kind=kind_dbl_prec), dimension(5) :: sfc_lscale,sfc_tau
+      real(kind=kind_dbl_prec), dimension(5) :: pertz0,pertshc,pertzt
+      real(kind=kind_dbl_prec), dimension(5) :: pertlai,pertvegf,pertalb
+      integer nsfcpert
+      integer(8),dimension(5) ::iseed_sfc
+      logical sppt_land
+      logical do_sfcperts
+
       end module stochy_namelist_def

@@ -141,6 +141,7 @@
      &       prsl1, prslki, zf, islimsk, ddvel, slopetyp,               &
      &       shdmin, shdmax, snoalb, sfalb, flag_iter, flag_guess,      &
      &       isot, ivegsrc,                                             &
+     &       bexppert, xlaipert, vegfpert,pertvegf,                     &  ! sfc perts, mgehne
 !  ---  in/outs:
      &       weasd, snwdph, tskin, tprcp, srflag, smc, stc, slc,        &
      &       canopy, trans, tsurf, zorl,                                &
@@ -156,6 +157,8 @@
      &                     hvap   => con_hvap, rd   => con_rd,          &
      &                     eps    => con_eps, epsm1 => con_epsm1,       &
      &                     rvrdm1 => con_fvirt
+
+      use module_radiation_surface, only : ppfbet
 
       implicit none
 
@@ -174,13 +177,15 @@
 
 !  ---  input:
       integer, intent(in) :: im, km, isot, ivegsrc
+      real (kind=kind_phys), dimension(6), intent(in) :: pertvegf
 
       integer, dimension(im), intent(in) :: soiltyp, vegtype, slopetyp
 
       real (kind=kind_phys), dimension(im), intent(in) :: ps, u1, v1,   &
      &       t1, q1, sigmaf, sfcemis, dlwflx, dswsfc, snet, tg3, cm,    &
      &       ch, prsl1, prslki, ddvel, shdmin, shdmax,                  &
-     &       snoalb, sfalb, zf
+     &       snoalb, sfalb, zf,
+     &       bexppert, xlaipert, vegfpert
 
       integer, dimension(im), intent(in) :: islimsk
       real (kind=kind_phys),  intent(in) :: delt
@@ -219,10 +224,11 @@
      &       sfcems, sheat, shdfac, shdmin1d, shdmax1d, smcwlt,         &
      &       smcdry, smcref, smcmax, sneqv, snoalb1d, snowh,            &
      &       snomlt, sncovr, soilw, soilm, ssoil, tsea, th2, tbot,      &
-     &       xlai, zlvl, swdn, tem,z0
+     &       xlai, zlvl, swdn, tem, z0, bexpp, xlaip, vegfp,            &
+     &       mv,sv,alphav,betav,vegftmp
 
       integer :: couple, ice, nsoil, nroot, slope, stype, vtype 
-      integer :: i, k
+      integer :: i, k, iflag
 
       logical :: flag(im)
 !
@@ -378,9 +384,26 @@
           slope = slopetyp(i)
           shdfac= sigmaf(i)
 
-          shdmin1d = shdmin(i)   
-          shdmax1d = shdmax(i)     
-          snoalb1d = snoalb(i)    
+!  perturb vegetation fraction that goes into sflx, use the same
+!  perturbation strategy as for albedo (percentile matching)
+        vegfp  = vegfpert(i)                    ! sfc-perts, mgehne
+        ! sfc perts, mgehne
+        if (pertvegf(1)>0.0) then
+                ! compute beta distribution parameters for vegetation fraction
+                mv = shdfac
+                sv = pertvegf(1)*mv*(1.-mv)
+                alphav = mv*mv*(1.-mv)/(sv*sv)-mv
+                betav  = alphav*(1.-mv)/mv
+                ! compute beta distribution value corresponding
+                ! to the given percentile albPpert to use as new albedo
+                call ppfbet(vegfp,alphav,betav,iflag,vegftmp)
+                shdfac = vegftmp
+        endif
+! *** sfc-perts, mgehne
+
+          shdmin1d = shdmin(i)
+          shdmax1d = shdmax(i)
+          snoalb1d = snoalb(i)
 
           ptu  = 0.0
           alb  = sfalb(i)
@@ -421,6 +444,9 @@
 
 !  ---- ... outside sflx, roughness uses cm as unit
           z0 = zorl(i)/100.
+!  ---- mgehne, sfc-perts
+          bexpp  = bexppert(i)                   ! sfc perts, mgehne
+          xlaip  = xlaipert(i)                   ! sfc perts, mgehne
 
 !  --- ...  call noah lsm
 
@@ -430,15 +456,16 @@
      &       swdn, solnet, lwdn, sfcems, sfcprs, sfctmp,                &
      &       sfcspd, prcp, q2, q2sat, dqsdt2, th2, ivegsrc,             &
      &       vtype, stype, slope, shdmin1d, alb, snoalb1d,              &
+     &       bexpp, xlaip,                                              & ! sfc-perts, mgehne
 !  ---  input/outputs:
      &       tbot, cmc, tsea, stsoil, smsoil, slsoil, sneqv, chx, cmx,  &
-     &       z0,                                                        & 
+     &       z0,                                                        &
 !  ---  outputs:
      &       nroot, shdfac, snowh, albedo, eta, sheat, ec,              &
      &       edir, et, ett, esnow, drip, dew, beta, etp, ssoil,         &
      &       flx1, flx2, flx3, runoff1, runoff2, runoff3,               &
      &       snomlt, sncovr, rc, pc, rsmin, xlai, rcs, rct, rcq,        &
-     &       rcsoil, soilw, soilm, smcwlt, smcdry, smcref, smcmax) 
+     &       rcsoil, soilw, soilm, smcwlt, smcdry, smcref, smcmax)
 
 !  --- ...  noah: prepare variables for return to parent mode
 !   6. output (o):

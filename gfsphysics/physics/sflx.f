@@ -6,6 +6,7 @@
      &       swdn, swnet, lwdn, sfcems, sfcprs, sfctmp,                 &
      &       sfcspd, prcp, q2, q2sat, dqsdt2, th2, ivegsrc,             &
      &       vegtyp, soiltyp, slopetyp, shdmin, alb, snoalb,            &
+     &       bexpp, xlaip,                                              & !  sfc-perts, mgehne
 !  ---  input/outputs:
      &       tbot, cmc, t1, stc, smc, sh2o, sneqv, ch, cm,z0,           &
 !  ---  outputs:
@@ -197,7 +198,8 @@
 
       real (kind=kind_phys), intent(in) :: ffrozp, dt, zlvl, lwdn,      &
      &       sldpth(nsoil), swdn, swnet, sfcems, sfcprs, sfctmp,        &
-     &       sfcspd, prcp, q2, q2sat, dqsdt2, th2, shdmin, alb, snoalb
+     &       sfcspd, prcp, q2, q2sat, dqsdt2, th2, shdmin, alb, snoalb, &
+     &       bexpp, xlaip                                               & !sfc-perts, mgehne
 
 !  ---  input/outputs:
       real (kind=kind_phys), intent(inout) :: tbot, cmc, t1, sneqv,     &
@@ -312,6 +314,18 @@
 !            snup, salp, bexp, dksat, dwsat, smcmax, smcwlt,               !
 !            smcref, smcdry, f1, quartz, fxexp, rtdis, nroot,              !
 !            z0, czil, xlai, csoil )                                       !
+
+
+!  --- ...  bexp sfc-perts, mgehne
+      if( bexpp < 0.) then
+         bexp = bexp * max(1.+bexpp, 0.)
+      endif
+      if( bexpp >= 0.) then
+         bexp = bexp * min(1.+bexpp, 2.)
+      endif
+!  --- ...  lai sfc-perts, mgehne
+      xlai = xlai * (1.+xlaip)
+      xlai = amax1(xlai, .75)
 
 !  --- ...  initialize precipitation logicals.
 

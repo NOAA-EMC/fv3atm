@@ -1,10 +1,11 @@
 
-subroutine init_stochastic_physics(Model,Init_parm)
+subroutine init_stochastic_physics(Model,Init_parm,nblks,Grid)
 use fv_mp_mod, only : is_master
 use stochy_internal_state_mod
 use stochy_data_mod, only : nshum,rpattern_shum,init_stochdata,rpattern_sppt,nsppt,rpattern_skeb,nskeb,gg_lats,gg_lons,&
                             rad2deg,INTTYP,wlon,rnlat,gis_stochy,vfact_skeb,vfact_sppt,vfact_shum,skeb_vpts,skeb_vwts,sl
-use get_stochy_pattern_mod,only : get_random_pattern_fv3_vect
+
+use get_stochy_pattern_mod,only : get_random_pattern_fv3_vect, get_random_pattern_sfc_fv3
 use stochy_resol_def , only : latg,lonf,skeblevs
 use stochy_gg_def,only : colrad_a
 use stochy_namelist_def
@@ -12,11 +13,13 @@ use physcons, only: con_pi
 use spectral_layout,only:me
 use mpp_mod
 use MPI
-use GFS_typedefs,       only: GFS_control_type, GFS_init_type
+use GFS_typedefs,       only: GFS_control_type, GFS_init_type, GFS_coupling_type, GFS_grid_type
 
 implicit none
 type(GFS_control_type),   intent(inout) :: Model
 type(GFS_init_type),      intent(in) :: Init_parm
+integer,intent(in) :: nblks
+type(GFS_grid_type),      intent(in) :: Grid(nblks)
 real*8 :: PRSI(Model%levs),PRSL(Model%levs),dx
 real, allocatable :: skeb_vloc(:)
 integer :: k,kflip,latghf,nodes,blk,k2
@@ -36,7 +39,15 @@ Model%use_zmtnblck=use_zmtnblck
 Model%do_shum=do_shum
 Model%do_skeb=do_skeb
 Model%skeb_npass=skeb_npass
-if (do_sppt.EQ. .false. .AND. do_shum.EQ. .false..AND.do_skeb.EQ..false.) return
+Model%do_sfcperts=do_sfcperts             ! mg, sfc-perts
+Model%nsfcpert=nsfcpert         ! mg, sfc-perts
+Model%pertz0=pertz0         ! mg, sfc-perts
+Model%pertzt=pertzt         ! mg, sfc-perts
+Model%pertshc=pertshc         ! mg, sfc-perts
+Model%pertlai=pertlai         ! mg, sfc-perts
+Model%pertalb=pertalb         ! mg, sfc-perts
+Model%pertvegf=pertvegf         ! mg, sfc-perts
+if (do_sppt.EQ. .false. .AND. do_shum.EQ..false..AND.do_skeb.EQ..false..AND.do_sfcperts.EQ..false.) return
 allocate(sl(Model%levs))
 do k=1,Model%levs
    sl(k)= 0.5*(Init_parm%ak(k)/101300.+Init_parm%bk(k)+Init_parm%ak(k+1)/101300.0+Init_parm%bk(k+1)) ! si are now sigmas
@@ -139,15 +150,20 @@ enddo
 WLON=gg_lons(1)-(gg_lons(2)-gg_lons(1))
 RNLAT=gg_lats(1)*2-gg_lats(2)
 
+
+
 !print *,'done with init_stochastic_physics'
 
 end subroutine init_stochastic_physics
 
 subroutine run_stochastic_physics(nblks,Model,Grid,Coupling)
+use fv_mp_mod, only : is_master
 use stochy_internal_state_mod
-use stochy_data_mod, only : nshum,rpattern_shum,rpattern_sppt,nsppt,rpattern_skeb,nskeb,gg_lats,gg_lons,&
+use stochy_data_mod, only : nshum,rpattern_shum,rpattern_sppt,nsppt,rpattern_skeb,nskeb,&
                             rad2deg,INTTYP,wlon,rnlat,gis_stochy,vfact_sppt,vfact_shum,vfact_skeb
-use get_stochy_pattern_mod,only : get_random_pattern_fv3,get_random_pattern_fv3_vect,dump_patterns
+                            
+use get_stochy_pattern_mod,only : get_random_pattern_fv3,get_random_pattern_fv3_vect,dump_patterns,&
+                                  get_random_pattern_sfc_fv3                                                    ! mg, sfc-perts
 use stochy_resol_def , only : latg,lonf
 use stochy_namelist_def
 use spectral_layout,only:me
@@ -159,7 +175,7 @@ integer,intent(in) :: nblks
 type(GFS_control_type),   intent(in) :: Model
 type(GFS_grid_type),      intent(in) :: Grid(nblks)
 type(GFS_coupling_type),  intent(inout) :: Coupling(nblks)
-         
+
 real,allocatable :: tmp_wts(:,:),tmpu_wts(:,:,:),tmpv_wts(:,:,:)
 !D-grid
 integer :: k
@@ -167,10 +183,10 @@ integer j,ierr,i
 integer :: blk
 character*120 :: sfile
 character*6   :: STRFH
-if (do_sppt.EQ. .false. .AND. do_shum.EQ. .false. .and. do_skeb.EQ. .false.) return
+if (do_sppt.EQ. .false. .AND. do_shum.EQ. .false. .and. do_skeb.EQ. .false. .and. do_sfcperts.EQ..false.) return
 ! check to see if it is time to write out random patterns
 if (Model%phour .EQ. fhstoch) then
-   write(STRFH,FMT='(I6.6)') nint(Model%fhour)
+   write(STRFH,FMT='(I6.6)') nint(Model%phour)
    sfile='stoch_out.F'//trim(STRFH)
    call dump_patterns(sfile)
 endif
@@ -209,3 +225,47 @@ deallocate(tmpu_wts)
 deallocate(tmpv_wts)
 
 end subroutine run_stochastic_physics
+
+subroutine run_stochastic_physics_sfc(nblks,Model,Grid,Coupling)
+use fv_mp_mod, only : is_master
+use stochy_internal_state_mod
+use stochy_data_mod, only : rad2deg,INTTYP,wlon,rnlat,gis_stochy, rpattern_sfc,npsfc                      ! mg, sfc-perts
+use get_stochy_pattern_mod,only : get_random_pattern_sfc_fv3                                              ! mg, sfc-perts
+use stochy_resol_def , only : latg,lonf
+use stochy_namelist_def
+use spectral_layout,only:me
+use mpp_mod
+use MPI
+use GFS_typedefs,       only: GFS_control_type, GFS_grid_type,GFS_Coupling_type
+implicit none
+integer,intent(in) :: nblks
+type(GFS_control_type),   intent(in) :: Model
+type(GFS_grid_type),      intent(in) :: Grid(nblks)
+type(GFS_coupling_type),  intent(inout) :: Coupling(nblks)
+
+real,allocatable :: tmpsfc_wts(:,:,:)
+!D-grid
+integer :: k
+integer j,ierr,i
+integer :: blk
+character*120 :: sfile
+character*6   :: STRFH
+if (do_sfcperts.EQ. .false. ) return
+
+allocate(tmpsfc_wts(nblks,Model%isc:Model%isc+Model%nx-1,Model%nsfcpert))  ! mg, sfc-perts
+if (is_master()) then
+  print*,'In init_stochastic_physics: do_sfcperts ',do_sfcperts
+endif
+call get_random_pattern_sfc_fv3(rpattern_sfc,npsfc,gis_stochy,Model,Grid,nblks,tmpsfc_wts)
+DO blk=1,nblks
+   DO k=1,Model%nsfcpert
+      Coupling(blk)%sfc_wts(:,k)=tmpsfc_wts(blk,:,k)
+   ENDDO
+ENDDO
+if (is_master()) then
+   print*,'tmpsfc_wts(blk,1,:) =',tmpsfc_wts(1,1,1),tmpsfc_wts(1,1,2),tmpsfc_wts(1,1,3),tmpsfc_wts(1,1,4),tmpsfc_wts(1,1,5)
+   print*,'min(tmpsfc_wts(:,:,:)) =',minval(tmpsfc_wts(:,:,:))
+endif
+deallocate(tmpsfc_wts)
+
+end subroutine run_stochastic_physics_sfc

@@ -155,12 +155,13 @@ module GFS_driver
                      Init_parm%tracer_names,                       &
                      Init_parm%input_nml_file)
 
-    call init_stochastic_physics(Model,Init_parm)
-    if(Model%me == Model%master) print*,'do_skeb=',Model%do_skeb
 
     call read_o3data  (Model%ntoz, Model%me, Model%master)
     call read_h2odata (Model%h2o_phys, Model%me, Model%master)
 
+    call init_stochastic_physics(Model,Init_parm,nblks,Grid)
+
+    if(Model%me == Model%master) print*,'do_skeb=',Model%do_skeb
     do nb = 1,nblks
       ix = Init_parm%blksz(nb)
 !     write(0,*)' ix in gfs_driver=',ix,' nb=',nb
@@ -176,13 +177,18 @@ module GFS_driver
       call Diag     (nb)%create (ix, Model)
     enddo
 
+
     !--- populate the grid components
     call GFS_grid_populate (Grid, Init_parm%xlon, Init_parm%xlat, Init_parm%area)
-     
+
+!   get land surface perturbations here (move to GFS_time_vary if wanting to
+!   update each time-step
+    call run_stochastic_physics_sfc(nblks,Model,Grid,Coupling)
+
     !--- read in and initialize ozone and water
     if (Model%ntoz > 0) then
       do nb = 1, nblks
-        call setindxoz (Init_parm%blksz(nb), Grid(nb)%xlat_d, Grid(nb)%jindx1_o3, &
+          call setindxoz (Init_parm%blksz(nb), Grid(nb)%xlat_d, Grid(nb)%jindx1_o3, &
                         Grid(nb)%jindx2_o3, Grid(nb)%ddy_o3)
       enddo
     endif

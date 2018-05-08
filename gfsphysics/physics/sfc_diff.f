@@ -4,10 +4,11 @@
      &                    stress,fm,fh,
      &                    ustar,wind,ddvel,fm10,fh2,
      &                    sigmaf,vegtype,shdmax,ivegsrc,
+     &                    z0pert,ztpert,                        ! mg, sfc-perts
      &                    tsurf,flag_iter,redrag)
 !
       use machine , only : kind_phys
-      use funcphys, only : fpvs    
+      use funcphys, only : fpvs
       use physcons, grav => con_g,       cp => con_cp
      &,             rvrdm1 => con_fvirt, rd => con_rd
      &,             eps => con_eps, epsm1 => con_epsm1
@@ -21,6 +22,7 @@
      &,                                      fm, fh, ustar, wind, ddvel
      &,                                      fm10, fh2, sigmaf, shdmax
      &,                                      tsurf, snwdph
+     &,                                      z0pert,ztpert               ! mg, sfc-perts
       integer, dimension(im)              ::  vegtype, islimsk
 
       logical   flag_iter(im) ! added by s.lu
@@ -145,14 +147,27 @@
                 endif
 
             endif
+
+
+! mg, sfc-perts: add surface perturbations to z0max over land
+            if ( islimsk(i) == 1 .and. z0pert(i) /= 0.0 ) then
+              z0max = z0max * (10.**z0pert(i))
+            endif
+ 
             z0max = max(z0max,1.0e-6)
-!
+
 !           czilc = 10.0 ** (- (0.40/0.07) * z0) ! fei's canopy height dependance of czil
             czilc = 0.8
 
             tem1 = 1.0 - sigmaf(i)
             ztmax = z0max*exp( - tem1*tem1
      &                         * czilc*ca*sqrt(ustar(i)*(0.01/1.5e-05)))
+
+! mg, sfc-perts: add surface perturbations to ztmax/z0max ratio over land
+            if ( islimsk(i) == 1  .and. ztpert(i) /= 0.0) then
+              ztmax = ztmax * (10.**ztpert(i))
+            endif
+
 
           endif       ! end of if(islimsk(i) == 0) then
 

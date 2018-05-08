@@ -158,6 +158,8 @@ module stochy_patterngenerator
    enddo ! n=1,npatterns
  end subroutine patterngenerator_init
 
+
+
  subroutine patterngenerator_destroy(rpattern,npatterns)
    type(random_pattern), intent(inout) :: rpattern(npatterns)
    integer, intent(in) :: npatterns
@@ -235,28 +237,34 @@ module stochy_patterngenerator
    enddo
  end subroutine getnoise
  
- subroutine patterngenerator_advance(rpattern,k)
+ subroutine patterngenerator_advance(rpattern,k,skeb_first_call)
     ! advance 1st-order autoregressive process with
     ! specified autocorrelation (phi) and variance spectrum (spectrum)
     real(kind_dbl_prec) :: noise_e(len_trie_ls,2)
     real(kind_dbl_prec) :: noise_o(len_trio_ls,2)
     type(random_pattern), intent(inout) :: rpattern
-    integer j,l,n,nn,nm,k
+    logical, intent(in) :: skeb_first_call
+    integer j,l,n,nn,nm,k,k2
     call getnoise(rpattern,noise_e,noise_o)
+    if (k.GT.1.AND.skeb_first_call) then
+       k2=k-1
+    else
+       k2=k
+    endif
     do nn=1,len_trie_ls
        nm = rpattern%idx_e(nn)
        if (nm == 0) cycle
-       rpattern%spec_e(nn,1,k) =  rpattern%phi*rpattern%spec_e(nn,1,k) + &
+       rpattern%spec_e(nn,1,k) =  rpattern%phi*rpattern%spec_e(nn,1,k2) + &
        rpattern%stdev*sqrt(1.-rpattern%phi**2)*rpattern%varspectrum(nm)*noise_e(nn,1)
-       rpattern%spec_e(nn,2,k) =  rpattern%phi*rpattern%spec_e(nn,2,k) + &
+       rpattern%spec_e(nn,2,k) =  rpattern%phi*rpattern%spec_e(nn,2,k2) + &
        rpattern%stdev*sqrt(1.-rpattern%phi**2)*rpattern%varspectrum(nm)*noise_e(nn,2)
     enddo
     do nn=1,len_trio_ls
        nm = rpattern%idx_o(nn)
        if (nm == 0) cycle
-       rpattern%spec_o(nn,1,k) =  rpattern%phi*rpattern%spec_o(nn,1,k) + &
+       rpattern%spec_o(nn,1,k) =  rpattern%phi*rpattern%spec_o(nn,1,k2) + &
        rpattern%stdev*sqrt(1.-rpattern%phi**2)*rpattern%varspectrum(nm)*noise_o(nn,1)
-       rpattern%spec_o(nn,2,k) =  rpattern%phi*rpattern%spec_o(nn,2,k) + &
+       rpattern%spec_o(nn,2,k) =  rpattern%phi*rpattern%spec_o(nn,2,k2) + &
        rpattern%stdev*sqrt(1.-rpattern%phi**2)*rpattern%varspectrum(nm)*noise_o(nn,2)
     enddo
  end subroutine patterngenerator_advance

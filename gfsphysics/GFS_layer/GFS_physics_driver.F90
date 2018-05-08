@@ -394,7 +394,7 @@ module module_physics_driver
 !!   - Deallocate arrays for SHOC scheme, deep convective scheme, and Morrison et al. microphysics
 
 
-  public GFS_physics_driver
+  public GFS_physics_driver, dgamln, cdfgam, cdfnor
 
   CONTAINS
 !*******************************************************************************************
@@ -505,11 +505,15 @@ module module_physics_driver
       real(kind=kind_phys), dimension(size(Grid%xlon,1),Model%levs,oz_coeff+5) ::  &
            dq3dt_loc
 
+!  mg, sfc perts
+      real (kind=kind_phys), dimension(size(Grid%xlon,1)) :: &
+         z01d, zt1d, bexp1d, xlai1d, alb1d, vegf1d
+      real(kind=kind_phys) :: cdfz
 !--- ALLOCATABLE ELEMENTS
       !--- in clw, the first two varaibles are cloud water and ice.
       !--- from third to ntrac are convective transportable tracers,
       !--- third being the ozone, when ntrac=3 (valid only with ras)
-      !--- Anning Cheng 9/21/2016 leave a hook here for diagnosed snow, 
+      !--- Anning Cheng 9/21/2016 leave a hook here for diagnosed snow,
       !--- rain, and their numbers
       real(kind=kind_phys), allocatable ::                              &
            clw(:,:,:), qrn(:,:),  qsnw(:,:), ncpl(:,:), ncpi(:,:),      &
@@ -646,6 +650,47 @@ module module_physics_driver
           Tbd%drain_cpl(i) = Coupling%rain_cpl (i)
           Tbd%dsnow_cpl(i) = Coupling%snow_cpl (i)
         enddo
+      endif
+
+! mg, sfc-perts
+!  ---  scale random patterns for surface perturbations with perturbation size
+!  ---  turn vegetation fraction pattern into percentile pattern
+      do i=1,im
+         z01d(i)  = 0.
+         zt1d(i)  = 0.
+         bexp1d(i)= 0.
+         xlai1d(i)= 0.
+!      alb1d(i) = 0.
+         vegf1d(i)= 0.
+      enddo
+      if (Model%do_sfcperts) then
+        if (Model%pertz0(1) > 0.) then
+          z01d(:) = Model%pertz0(1) * Coupling%sfc_wts(:,1)
+!          if (me == 0) print*,'Coupling%sfc_wts(:,1) min and max',minval(Coupling%sfc_wts(:,1)),maxval(Coupling%sfc_wts(:,1))
+!          if (me == 0) print*,'z01d min and max ',minval(z01d),maxval(z01d)
+        endif
+        if (Model%pertzt(1) > 0.) then
+          zt1d(:) = Model%pertzt(1) * Coupling%sfc_wts(:,2)
+        endif
+        if (Model%pertshc(1) > 0.) then
+          bexp1d(:) = Model%pertshc(1) * Coupling%sfc_wts(:,3)
+        endif
+        if (Model%pertlai(1) > 0.) then
+          xlai1d(:) = Model%pertlai(1) * Coupling%sfc_wts(:,4)
+        endif
+! --- do the albedo percentile calculation in GFS_radiation_driver instead --- !
+!        if (Model%pertalb(1) > 0.) then
+!          do i=1,im
+!            call cdfnor(Coupling%sfc_wts(i,5),cdfz)
+!            alb1d(i) = cdfz
+!          enddo
+!        endif
+        if (Model%pertvegf(1) > 0.) then
+          do i=1,im
+            call cdfnor(Coupling%sfc_wts(i,6),cdfz)
+            vegf1d(i) = cdfz
+          enddo
+        endif
       endif
 !
       if (Model%do_shoc) then
@@ -1031,6 +1076,7 @@ module module_physics_driver
                        Sfcprop%ffmm,  Sfcprop%ffhh, Sfcprop%uustar,       &
                        wind,  Tbd%phy_f2d(1,Model%num_p2d), fm10, fh2,    &
                        sigmaf, vegtype, Sfcprop%shdmax, Model%ivegsrc,    &
+                       z01d, zt1d,                                        &  ! mg, sfc-perts
                        tsurf, flag_iter, Model%redrag)
 
 !  --- ...  lu: update flag_guess
@@ -1133,6 +1179,7 @@ module module_physics_driver
             Sfcprop%shdmin, Sfcprop%shdmax, Sfcprop%snoalb,            &
             Radtend%sfalb, flag_iter, flag_guess, Model%isot,          &
             Model%ivegsrc,                                             &
+            bexp1d, xlai1d, vegf1d, Model%pertvegf,                    &
 !  ---  in/outs:
             Sfcprop%weasd, Sfcprop%snowd, Sfcprop%tsfc, Sfcprop%tprcp, &
             Sfcprop%srflag, smsoil, stsoil, slsoil, Sfcprop%canopy,    &
@@ -3879,8 +3926,169 @@ module module_physics_driver
 !       endif
       enddo
       return
-      
+
     end subroutine moist_bud
+
+! mg, sfc-perts ***
+! the routines below are used in the percentile matching algorithm for the
+! albedo and vegetation fraction perturbations 
+      subroutine cdfnor(z,cdfz)
+      use machine
+
+      implicit none
+      real(kind=kind_phys), intent(out) :: cdfz
+      real(kind=kind_phys),intent(in) ::  z
+! local vars
+      integer              iflag
+      real(kind=kind_phys) del,x,cdfx,eps
+
+      eps = 1.0E-5
+
+
+      ! definition of passed parameters !
+      ! z  = value for which the normal CDF is to be computed
+      ! eps = the absolute accuracy requirment for the CDF
+      ! iflag = error indicator on output 0->no errors, 1->errorflag from
+      ! cdfgam, 2->errorflag from cdfgam
+      ! cdfz = the CDF of the standard normal distribution evaluated at z
+
+        del = 2.0*eps
+        if (z.eq.0.0) then
+          cdfz = 0.5
+        else
+          x = 0.5*z*z
+          call cdfgam(x,0.5,del,iflag, cdfx)
+          if (iflag.ne.0) return
+          if (z.gt.0.0) then
+            cdfz = 0.5+0.5*cdfx
+          else
+            cdfz = 0.5-0.5*cdfx
+          endif
+        endif
+
+      return
+      end
+
+      subroutine cdfgam(x,alpha,eps,iflag,cdfx)
+      use machine
+
+      implicit none
+      real(kind=kind_phys), intent(out) :: cdfx
+      real(kind=kind_phys),intent(in) ::  x, alpha, eps
+! local vars
+      integer              iflag,i,j,k, imax
+      logical              LL
+      real(kind=kind_phys) dx, dgln, p,u,epsx,pdfl, eta, bl, uflo
+      data imax, uflo / 5000, 1.0E-37 /
+
+
+      ! definition of passed parameters !
+      ! x  = value for which the CDF is to be computed
+      ! alpha = parameter of gamma function (>0)
+      ! eps = the absolute accuracy requirment for the CDF
+      ! iflag = error indicator on output 0->no errors, 1->either alpha or eps
+      ! is <= oflo, 2->number of terms evaluated in the infinite series exceeds
+      ! imax.
+      ! cdf = the CDF evaluated at x
+
+        cdfx = 0.0
+
+        if (alpha.le.uflo.or.eps.le.uflo) then
+          iflag=1
+          return
+        endif
+        iflag=0
+
+        ! check for special case of x
+        if (x.le.0) return
+
+        dx = x
+        call dgamln(alpha,dgln)
+        pdfl = (alpha-1.0)*log(dx)-dx-dgln
+        if (pdfl.lt.log(uflo)) then
+          if (x.ge.alpha) cdfx = 1.0
+        else
+          p = alpha
+          u = exp(pdfl)
+          LL = .true.
+          if (x.ge.p) then
+            k = int(p)
+            if (p.le.real(k)) k = k-1
+            eta = p - real(k)
+            call dgamln(eta,dgln)
+            bl = (eta-1)*log(dx)-dx-dgln
+            LL = bl.gt.log(eps)
+          endif
+          epsx = eps/x
+          if (LL) then
+            do i=0,imax
+              if (u.le.epsx*(p-x)) return
+              u = x*u/p
+              cdfx = cdfx+u
+              p = p+1.0
+            enddo
+            iflag = 2
+          else
+            do j=1,k
+              p=p-1.0
+              if (u.le.epsx*(x-p)) continue
+              cdfx = cdfx+u
+              u = p*u/x
+            enddo
+            cdfx = 1.0-cdfx
+          endif
+        endif
+        return
+      end subroutine cdfgam
+
+      subroutine dgamln(x,dgamlnout)
+
+      use machine
+      implicit none
+      real(kind=kind_phys), intent(in) ::  x
+      real(kind=kind_phys), intent(out) ::  dgamlnout
+! local vars
+      integer              i, n
+      real(kind=kind_phys) absacc, b1, b2, b3, b4, b5, b6, b7, b8
+      real(kind=kind_phys) c, dx, q, r, xmin, xn
+      data xmin, absacc / 6.894d0, 1.0E-15 /
+      data c / 0.918938533204672741780329736d0 /
+      data b1 / 0.833333333333333333333333333d-1 /
+      data b2 / - 0.277777777777777777777777778d-2 /
+      data b3 / 0.793650793650793650793650794d-3 /
+      data b4 / - 0.595238095238095238095238095d-3 /
+      data b5 / 0.841750841750841750841750842d-3 /
+      data b6 / - 0.191752691752691752691752692d-2 /
+      data b7 / 0.641025641025641025641025641d-2 /
+      data b8 / - 0.295506535947712418300653595d-1 /
+
+      if (x.le.0.0) stop '*** x<=0.0 in function dgamln ***'
+      dx = x
+      n = max(0,int(xmin - dx + 1.0d0) )
+      xn = dx + n
+      r = 1.0d0/xn
+      q = r*r
+      dgamlnout = r*( b1+q*( b2+q*( b3+q*( b4+q*( b5+q*( b6+q*( b7+q*b8 ) ) ) ) ) ) ) +c + (xn-0.5d0)*log(xn)-xn
+
+      if (n.gt.0) then
+        q = 1.0d0
+        do i=0, n-1
+          q = q*(dx+i)
+        enddo
+        dgamlnout = dgamlnout-log(q)
+      endif
+
+      if (dgamlnout + absacc.eq.dgamlnout) then
+        print *,' ********* WARNING FROM FUNCTION DGAMLN *********'
+        print *,' REQUIRED ABSOLUTE ACCURACY NOT ATTAINED FOR X = ',x
+      endif
+      return
+      end subroutine dgamln
+
+! *** mg, sfc-perts
+
+
+
 !> @}
 
 end module module_physics_driver

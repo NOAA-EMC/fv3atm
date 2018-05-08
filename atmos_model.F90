@@ -503,7 +503,6 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
        enddo
      else
        maxh  = fhmax / fhout
-       fdiag(1) = fdiag(1) + fhout
        do i = 2, maxh
          fdiag(i) = fdiag(i-1) + fhout
        enddo

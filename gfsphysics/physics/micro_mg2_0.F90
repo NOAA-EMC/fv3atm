@@ -1108,6 +1108,7 @@ subroutine micro_mg_tend ( &
       ncai(i,k)   = zero
 
       nfice(i,k)  = zero
+      npccn(i,k)  = zero
     enddo
   enddo
   ! initialize precip at surface
