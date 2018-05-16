@@ -51,7 +51,9 @@ esmf_make_fragment:
 	@echo "# src location $(PWD)" >> fv3.mk
 	@echo  >> fv3.mk
 	@echo "ESMF_DEP_FRONT     = fv3gfs_cap_mod"  >> fv3.mk
-	@echo "ESMF_DEP_INCPATH   = $(PWD)/nems_dir" >> fv3.mk
+	# additional include files needed for PGI
+	#@echo "ESMF_DEP_INCPATH   = $(PWD)/nems_dir" >> fv3.mk
+	@echo "ESMF_DEP_INCPATH   = $(PWD) $(addprefix $(PWD)/, nems_dir atmos_cubed_sphere io fms gfsphysics cpl ipd)" >> fv3.mk
 	@echo "ESMF_DEP_CMPL_OBJS ="                 >> fv3.mk
 	@echo "ESMF_DEP_LINK_OBJS = $(addprefix $(PWD)/nems_dir/, libfv3cap.a libfv3core.a libfv3io.a libipd.a libgfsphys.a libfv3cpl.a libfms.a libstochastic_physics.a)"  >> fv3.mk
 	@echo "ESMF_DEP_SHRD_PATH ="                 >> fv3.mk

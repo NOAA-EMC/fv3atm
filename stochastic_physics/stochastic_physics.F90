@@ -47,7 +47,7 @@ Model%pertshc=pertshc         ! mg, sfc-perts
 Model%pertlai=pertlai         ! mg, sfc-perts
 Model%pertalb=pertalb         ! mg, sfc-perts
 Model%pertvegf=pertvegf         ! mg, sfc-perts
-if (do_sppt.EQ. .false. .AND. do_shum.EQ..false..AND.do_skeb.EQ..false..AND.do_sfcperts.EQ..false.) return
+if ( (.NOT. do_sppt) .AND. (.NOT. do_shum) .AND. (.NOT. do_skeb)  .AND. (.NOT. do_sfcperts) ) return
 allocate(sl(Model%levs))
 do k=1,Model%levs
    sl(k)= 0.5*(Init_parm%ak(k)/101300.+Init_parm%bk(k)+Init_parm%ak(k+1)/101300.0+Init_parm%bk(k+1)) ! si are now sigmas
@@ -183,7 +183,7 @@ integer j,ierr,i
 integer :: blk
 character*120 :: sfile
 character*6   :: STRFH
-if (do_sppt.EQ. .false. .AND. do_shum.EQ. .false. .and. do_skeb.EQ. .false. .and. do_sfcperts.EQ..false.) return
+if ( (.NOT. do_sppt) .AND. (.NOT. do_shum) .AND. (.NOT. do_skeb)  .AND. (.NOT. do_sfcperts) ) return
 ! check to see if it is time to write out random patterns
 if (Model%phour .EQ. fhstoch) then
    write(STRFH,FMT='(I6.6)') nint(Model%phour)
@@ -250,7 +250,7 @@ integer j,ierr,i
 integer :: blk
 character*120 :: sfile
 character*6   :: STRFH
-if (do_sfcperts.EQ. .false. ) return
+if (.NOT. do_sfcperts) return
 
 allocate(tmpsfc_wts(nblks,Model%isc:Model%isc+Model%nx-1,Model%nsfcpert))  ! mg, sfc-perts
 if (is_master()) then

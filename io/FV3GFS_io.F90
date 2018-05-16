@@ -1748,7 +1748,11 @@ module FV3GFS_io_mod
 !      'bdl_intplmethod=',trim(bdl_intplmethod(ibdl))
 
      call ESMF_AttributeAdd(phys_bundle(ibdl), convention="NetCDF", purpose="FV3", &
-       attrList=(/"fhzero", "ncld", "nsoil", "imp_physics", "dtp"/), rc=rc)
+       attrList=(/ "fhzero     ", &
+                 & "ncld       ", &
+                 & "nsoil      ", &
+                 & "imp_physics", & 
+                 & "dtp        " /), rc=rc)
      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
        line=__LINE__, &
        file=__FILE__)) &
@@ -1966,9 +1970,18 @@ module FV3GFS_io_mod
    integer rc, i, j, idx
    real(4),dimension(:,:),pointer   :: temp_r2d
    real(4),dimension(:,:,:),pointer :: temp_r3d
+   logical :: l2dvector_local
+!
+   ! fix for non-standard compilers (e.g. PGI)
+   l2dvector_local = .false.
+   if (present(l2dvector)) then
+     if (l2dvector) then
+         l2dvector_local = .true.
+     end if
+   end if
 !
 !*** create esmf field
-   if( present(l2dvector) .and. l2dvector .and. size(axes)==2) then
+   if (l2dvector_local .and. size(axes)==2) then
      temp_r3d => buffer_phys_windvect(1:3,isco:ieco,jsco:jeco,kstt)
 !     if( mpp_root_pe() == 0) print *,'phys, create wind vector esmf field'
      call ESMF_LogWrite('bf create winde vector esmf field '//trim(var_name), ESMF_LOGMSG_INFO, rc=rc)

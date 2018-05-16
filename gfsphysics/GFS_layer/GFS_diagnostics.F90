@@ -715,6 +715,11 @@ module GFS_diagnostics
 !rab      enddo
 !rab    enddo
 
+! DH gfortran cannot point to members of arrays of derived types such
+! as IntDiag(nb)%topfsw(:)%upfxc (the compilation succeeds, but the
+! pointers do not reference the correct data and the output either
+! contains garbage (Inf, NaN), or the netCDF I/O layer crashes.
+#ifndef __GFORTRAN__
     idx = idx + 1
     ExtDiag(idx)%axes = 2
     ExtDiag(idx)%name = 'sw_upfxc'
@@ -774,6 +779,7 @@ module GFS_diagnostics
     do nb = 1,nblks
       ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%topflw(:)%upfx0
     enddo
+#endif
 
 !--- physics accumulated diagnostics ---
     idx = idx + 1

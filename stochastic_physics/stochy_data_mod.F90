@@ -58,7 +58,7 @@ module stochy_data_mod
    iret=0
    if(is_master()) print*,'in init stochdata'
    call compns_stochy (me,size(input_nml_file,1),input_nml_file(:),fn_nml,nlunit,delt,iret)
-   if (do_sppt.EQ. .false. .AND. do_shum.EQ. .false..AND.do_skeb.EQ..false..AND.do_sfcperts.EQ..false.) return
+   if ( (.NOT. do_sppt) .AND. (.NOT. do_shum) .AND. (.NOT. do_skeb)  .AND. (.NOT. do_sfcperts) ) return
    nodes=mpp_npes()
    if (nodes.GE.lat_s/2) then
       lat_s=(int(nodes/12)+1)*24

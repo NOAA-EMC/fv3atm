@@ -136,7 +136,7 @@
         write(6,*) 'gcycle:: namelist file: ',trim(Model%fn_nml),' does not exist'
         stop
       else
-        open (unit=Model%nlunit, file=trim(Model%fn_nml), READONLY, status='OLD', iostat=ios)
+        open (unit=Model%nlunit, file=trim(Model%fn_nml), action='READ', status='OLD', iostat=ios)
         rewind (Model%nlunit)
       endif
 #endif

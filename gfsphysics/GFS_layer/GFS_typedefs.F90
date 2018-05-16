@@ -81,7 +81,7 @@ module GFS_typedefs
                                                   !< based on name location in array
     character(len=65) :: fn_nml                   !< namelist filename
     character(len=256), pointer :: input_nml_file(:) !< character string containing full namelist
-                                                   !< for use with internal file reads
+                                                     !< for use with internal file reads
   end type GFS_init_type
 
 
@@ -340,7 +340,7 @@ module GFS_typedefs
     integer              :: nlunit          !< unit for namelist
     character(len=64)    :: fn_nml          !< namelist filename for surface data cycling
     character(len=256), pointer :: input_nml_file(:) !< character string containing full namelist
-                                                   !< for use with internal file reads
+                                                     !< for use with internal file reads
     real(kind=kind_phys) :: fhzero          !< seconds between clearing of diagnostic buckets
     logical              :: ldiag3d         !< flag for 3d diagnostic fields
     logical              :: lssav           !< logical flag for storing diagnostics
@@ -809,7 +809,7 @@ module GFS_typedefs
   type GFS_diag_type
 
 !! Input/Output only in radiation
-    real (kind=kind_phys), pointer :: fluxr (:,:)    => null()   !< to save time accumulated 2-d fields defined as:!
+    real (kind=kind_phys), pointer :: fluxr(:,:)    => null()    !< to save time accumulated 2-d fields defined as:!
                                                                  !< hardcoded field indices, opt. includes aerosols!
     type (topfsw_type),    pointer :: topfsw(:)      => null()   !< sw radiation fluxes at toa, components:        
                                                !       %upfxc    - total sky upward sw flux at toa (w/m**2)     
@@ -919,9 +919,9 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: refl_10cm(:,:) => null()  !< instantaneous refl_10cm 
 
     contains
-      procedure create    => diag_create
-      procedure rad_zero  => diag_rad_zero
-      procedure phys_zero => diag_phys_zero
+      procedure :: create    => diag_create
+      procedure :: rad_zero  => diag_rad_zero
+      procedure :: phys_zero => diag_phys_zero
   end type GFS_diag_type
 
 !----------------
@@ -1425,7 +1425,7 @@ module GFS_typedefs
     integer,                intent(in) :: idat(8)
     integer,                intent(in) :: jdat(8)
     character(len=32),      intent(in) :: tracer_names(:)
-    character(len=*),       intent(in), pointer :: input_nml_file(:)
+    character(len=256),     intent(in), pointer :: input_nml_file(:)
     !--- local variables
     integer :: n
     integer :: ios
@@ -1748,7 +1748,7 @@ module GFS_typedefs
       write(6,*) 'GFS_namelist_read:: namelist file: ',trim(fn_nml),' does not exist'
       stop
     else
-      open (unit=nlunit, file=fn_nml, READONLY, status='OLD', iostat=ios)
+      open (unit=nlunit, file=fn_nml, action='READ', status='OLD', iostat=ios)
     endif
     rewind(nlunit)
     read (nlunit, nml=gfs_physics_nml)
@@ -2899,7 +2899,6 @@ module GFS_typedefs
       Diag%cldcov     = zero
     endif
 
-
   end subroutine diag_rad_zero
 
 !------------------------
@@ -3003,14 +3002,16 @@ module GFS_typedefs
       Diag%refl_10cm = zero
     endif
 
-    if ((present (linit).and.linit)) then
-      Diag%totprcp = zero
-      Diag%cnvprcp = zero
-      Diag%totice  = zero
-      Diag%totsnw  = zero
-      Diag%totgrp  = zero
-!     if(Model%me == Model%master) print *,'in diag_phys_zero, called in init step,set precip diag variable to zero',&
-!                                           'size(Diag%totprcp)=',size(Diag%totprcp),'me=',Model%me,'kdt=',Model%kdt
+    if (present(linit)) then
+      if (linit) then
+        Diag%totprcp = zero
+        Diag%cnvprcp = zero
+        Diag%totice  = zero
+        Diag%totsnw  = zero
+        Diag%totgrp  = zero
+!       if(Model%me == Model%master) print *,'in diag_phys_zero, called in init step,set precip diag variable to zero',&
+!                                            'size(Diag%totprcp)=',size(Diag%totprcp),'me=',Model%me,'kdt=',Model%kdt
+      endif
     endif
   end subroutine diag_phys_zero
 

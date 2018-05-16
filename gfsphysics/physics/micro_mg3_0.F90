@@ -1450,8 +1450,6 @@ subroutine micro_mg_tend (                                       &
      npccn = max((npccnin*lcldm-nc)*oneodt, zero)
      nc    = max(nc + npccn*deltat, zero)
      ncal  = nc*rho/lcldm ! sghan minimum in #/cm3
-  elsewhere
-     ncal = zero
   end where
 
   do k=1,nlev

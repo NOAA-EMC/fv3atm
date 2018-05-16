@@ -308,8 +308,8 @@
      res_intvl = restart_interval*3600
      atm_int_state%Time_step_restart = set_time (res_intvl, 0)
      atm_int_state%Time_restart = atm_int_state%Time_atmos + atm_int_state%Time_step_restart
-     atm_int_state%intrm_rst = .false.
-     if (res_intvl>0) atm_int_state%intrm_rst = .true.
+     atm_int_state%intrm_rst = 0
+     if (res_intvl>0) atm_int_state%intrm_rst = 1
 !
 !
 !----- write time stamps (for start time and end time) ------
@@ -409,8 +409,12 @@
 !
 ! Add time Attribute to the exportState
         call ESMF_AttributeAdd(exportState, convention="NetCDF", purpose="FV3", &
-          attrList=(/"time        ","time:long_name","time:units    ",          &
-          "time:cartesian_axis","time:calendar_type","time:calendar "/), rc=rc)
+          attrList=(/ "time               ", &
+                      "time:long_name     ", &
+                      "time:units         ", &
+                      "time:cartesian_axis", &
+                      "time:calendar_type ", &
+                      "time:calendar      " /), rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
           line=__LINE__, &
           file=__FILE__)) &
@@ -606,7 +610,7 @@
       call update_atmos_model_state (atm_int_state%Atm)
 
 !--- intermediate restart
-      if (atm_int_state%intrm_rst) then
+      if (atm_int_state%intrm_rst>0) then
         if ((na /= atm_int_state%num_atmos_calls) .and.   &
            (atm_int_state%Time_atmos == atm_int_state%Time_restart)) then
           timestamp = date_to_string (atm_int_state%Time_restart)

@@ -173,9 +173,16 @@ $(LIBRARY): $(OBJS)
 # this is the place to override default (implicit) compilation rules
 # and create specific (explicit) rules
 
+ifneq (,$(findstring xCORE-AVX2,$(FFLAGS)))
 ./physics/radiation_aerosols.o : ./physics/radiation_aerosols.f
 	$(FC) $(FFLAGS) $(OTHER_FFLAGS) -xCORE-AVX-I -c $< -o $@
-
+else ifneq (,$(findstring xHOST,$(FFLAGS)))
+./physics/radiation_aerosols.o : ./physics/radiation_aerosols.f
+	$(FC) $(FFLAGS) $(OTHER_FFLAGS) -xCORE-AVX-I -c $< -o $@
+else
+./physics/radiation_aerosols.o : ./physics/radiation_aerosols.f
+	$(FC) $(FFLAGS) $(OTHER_FFLAGS) -c $< -o $@
+endif
 ./GFS_layer/GFS_diagnostics.o : ./GFS_layer/GFS_diagnostics.F90
 	$(FC) $(FFLAGS) $(OTHER_FFLAGS) -O0 -c $< -o $@
 

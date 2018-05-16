@@ -5234,7 +5234,7 @@ end subroutine check_message_size
     real,    dimension(4*num_contact) :: refineRecv, refineSend
     integer, dimension(4*num_contact) :: rotateSend, rotateRecv, tileSend, tileRecv
     integer                           :: nsend, nrecv, nsend2, nrecv2
-    type(contact_type), dimension(domain%ntiles)            :: eCont, wCont, sCont, nCont
+    type(contact_type), dimension(:), allocatable           :: eCont, wCont, sCont, nCont
     type(overlap_type), dimension(0:size(domain%list(:))-1) :: overlapSend, overlapRecv
     integer                                                 :: unit
 
@@ -5242,8 +5242,12 @@ end subroutine check_message_size
          "routine define_contact_point can only be used to calculate overlapping for cell center.")
 
     ntiles  = domain%ntiles
+    allocate(eCont(1:ntiles))
+    allocate(wCont(1:ntiles))
+    allocate(sCont(1:ntiles))
+    allocate(nCont(1:ntiles))
 
-    eCont(:)%ncontact = 0; 
+    eCont(:)%ncontact = 0
 
     do n = 1, ntiles
        eCont(n)%ncontact = 0; sCont(n)%ncontact = 0; wCont(n)%ncontact = 0; nCont(n)%ncontact = 0;
@@ -5811,6 +5815,11 @@ end subroutine check_message_size
        deallocate(nCont(n)%is1, nCont(n)%ie1, nCont(n)%js1, nCont(n)%je1 )
        deallocate(nCont(n)%is2, nCont(n)%ie2, nCont(n)%js2, nCont(n)%je2 )
     end do
+
+    deallocate(eCont)
+    deallocate(wCont)
+    deallocate(sCont)
+    deallocate(nCont)
 
     domain%initialized = .true.
 
