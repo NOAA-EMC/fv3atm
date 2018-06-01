@@ -4,6 +4,8 @@
 !!
 !!  The previous version of the shallow convection scheme (shalcnv.f) is described in Han and Pan (2011) \cite han_and_pan_2011 and differences between the shallow and deep convection schemes are presented in Han and Pan (2011) \cite han_and_pan_2011 and Han et al. (2017) \cite han_et_al_2017 . Details of scale- and aerosol-aware parameterizations are described in Han et al. (2017) \cite han_et_al_2017 .
 !!
+!! In further update for FY19 GFS implementation, interaction with turbulent kinetic energy (TKE), which is a prognostic variable used in a scale-aware TKE-based moist EDMF vertical turbulent mixing scheme, is included. Entrainment rates in updrafts are proportional to sub-cloud mean TKE. TKE is transported by cumulus convection. TKE contribution from cumulus convection is deduced from cumulus mass flux. On the other hand, tracers such as ozone and aerosol are also transported by cumulus convection.
+!!
 !!  \section diagram Calling Hierarchy Diagram
 !!  \image html SAMF_shal_Flowchart.png "Diagram depicting how the SAMF shallow convection scheme is called from the FV3GFS physics time loop" height=2cm
 !!  \section intraphysics Intraphysics Communication
@@ -19,12 +21,14 @@
 !!  \param[in] im number of used points
 !!  \param[in] ix horizontal dimension
 !!  \param[in] km vertical layer dimension
-!!  \param[in] jcap number of spectral wave trancation
 !!  \param[in] delt physics time step in seconds
+!!  \param[in] ntk index for TKE
+!!  \param[in] ntr total number of tracers including TKE
 !!  \param[in] delp pressure difference between level k and k+1 (Pa)
 !!  \param[in] prslp mean layer presure (Pa)
 !!  \param[in] psp surface pressure (Pa)
 !!  \param[in] phil layer geopotential (\f$m^s/s^2\f$)
+!!  \param[in] qtr tracer array including cloud condensate (\f$kg/kg\f$)
 !!  \param[inout] ql cloud water or ice (kg/kg)
 !!  \param[inout] q1 updated tracers (kg/kg)
 !!  \param[inout] t1 updated temperature (K)
@@ -58,10 +62,10 @@
 !!  -# For the "feedback control", calculate updated values of the state variables by multiplying the cloud base mass flux and the tendencies calculated per unit cloud base mass flux from the static control.
 !!  \section detailed Detailed Algorithm
 !!  @{
-      subroutine samfshalcnv(im,ix,km,delt,delp,prslp,psp,phil,ql,
-     &     q1,t1,u1,v1,rn,kbot,ktop,kcnv,islimsk,garea,
+      subroutine samfshalcnv(im,ix,km,delt,ntk,ntr,delp,
+     &     prslp,psp,phil,qtr,q1,t1,u1,v1,
+     &     rn,kbot,ktop,kcnv,islimsk,garea,
      &     dot,ncloud,hpbl,ud_mf,dt_mf,cnvw,cnvc,
-!    &     dot,ncloud,hpbl,ud_mf,dt_mf,cnvw,cnvc,me)
      &     clam,c0s,c1,pgcon,asolfac)
 !
       use machine , only : kind_phys
@@ -72,34 +76,37 @@
      &,             eps => con_eps, epsm1 => con_epsm1
       implicit none
 !
-      integer            im, ix,  km, ncloud,
-     &                   kbot(im), ktop(im), kcnv(im) 
-!    &,                  me
-      real(kind=kind_phys) delt
-      real(kind=kind_phys) psp(im),    delp(ix,km), prslp(ix,km)
-      real(kind=kind_phys) ps(im),     del(ix,km),  prsl(ix,km),
-     &                     ql(ix,km,2),q1(ix,km),   t1(ix,km),
-     &                     u1(ix,km),  v1(ix,km),
-!    &                     u1(ix,km),  v1(ix,km),   rcs(im),
-     &                     rn(im),     garea(im),
-     &                     dot(ix,km), phil(ix,km), hpbl(im),
-     &                     cnvw(ix,km),cnvc(ix,km)
-! hchuang code change mass flux output
-     &,                    ud_mf(im,km),dt_mf(im,km)
+      integer, intent(in)  :: im, ix,  km, ntk, ntr, ncloud
+      integer, intent(in)  :: islimsk(im)
+      real(kind=kind_phys), intent(in) ::  delt
+      real(kind=kind_phys), intent(in) :: psp(im), delp(ix,km),
+     &   prslp(ix,km), garea(im), hpbl(im), dot(ix,km), phil(ix,km)
 !
+      integer, intent(inout)  :: kcnv(im)
+      real(kind=kind_phys), intent(inout) ::   qtr(ix,km,ntr+2),
+     &   q1(ix,km), t1(ix,km), u1(ix,km), v1(ix,km)
+!
+      integer, intent(out) :: kbot(im), ktop(im)
+      real(kind=kind_phys), intent(out) :: rn(im),
+     &   cnvw(ix,km), cnvc(ix,km), ud_mf(im,km), dt_mf(im,km)
+!
+      real(kind=kind_phys) clam,    c0s,     c1,
+     &                     asolfac, pgcon
+!
+!  local variables
       integer              i,j,indx, k, kk, km1, n
       integer              kpbl(im)
-      integer, dimension(im), intent(in) :: islimsk
+!
+      real(kind=kind_phys) clamd,   tkemx,   tkemn,   dtke
 !
       real(kind=kind_phys) dellat,  delta,
-     &                     c0l,     c0s,     d0,
-     &                     c1,      asolfac,
+     &                     c0l,     d0,
      &                     desdt,   dp,
      &                     dq,      dqsdp,   dqsdt,   dt,
      &                     dt2,     dtmax,   dtmin,   dxcrt,
      &                     dv1h,    dv2h,    dv3h,
      &                     dv1q,    dv2q,    dv3q,
-     &                     dz,      dz1,     e1,      clam,
+     &                     dz,      dz1,     e1,
      &                     el2orc,  elocp,   aafac,   cm,
      &                     es,      etah,    h1,
      &                     evef,    evfact,  evfactl, fact1,
@@ -112,15 +119,16 @@
      &                     w2l,     w2s,     w3,      w3l,
      &                     w3s,     w4,      w4l,     w4s,
      &                     rho,     tem,     tem1,    tem2,    
-     &                     ptem,    ptem1,
-     &                     pgcon
+     &                     ptem,    ptem1
 !
       integer              kb(im), kbcon(im), kbcon1(im),
      &                     ktcon(im), ktcon1(im), ktconn(im),
      &                     kbm(im), kmax(im)
 !
       real(kind=kind_phys) aa1(im),     cina(im),   
-     &                     umean(im),  tauadv(im),  gdx(im),
+     &                     tkemean(im), clamt(im),
+     &                     ps(im),      del(ix,km), prsl(ix,km),
+     &                     umean(im),   tauadv(im), gdx(im),
      &                     delhbar(im), delq(im),   delq2(im),
      &                     delqbar(im), delqev(im), deltbar(im),
      &                     deltv(im),   dtconv(im), edt(im),
@@ -128,6 +136,7 @@
      &                     qcond(im),   qevap(im),  hmax(im),
      &                     rntot(im),   vshear(im),
      &                     xlamud(im),  xmb(im),    xmbmax(im),
+     &                     delebar(im,ntr),
      &                     delubar(im), delvbar(im)
 !
       real(kind=kind_phys) c0(im)
@@ -156,10 +165,12 @@ c  physical parameters
 !      cx = min([-0.7 ln(Nccn) + 24]*1.e-4, c0s)
 !      Nccn: CCN number concentration in cm^(-3)
 !      Until a realistic Nccn is provided, Nccns are assumed
-!      as Nccn=100 for sea and Nccn=7000 for land
+!      as Nccn=100 for sea and Nccn=1000 for land
 !
       parameter(cm=1.0,delta=fv)
       parameter(fact1=(cvap-cliq)/rv,fact2=hvap/rv-fact1*t0c)
+      parameter(clamd=0.1,tkemx=0.65,tkemn=0.05)
+      parameter(dtke=tkemx-tkemn)
       parameter(dthk=25.)
       parameter(cinpcrmx=180.,cinpcrmn=120.)
 !     parameter(cinacrmx=-120.,cinacrmn=-120.)
@@ -171,7 +182,8 @@ c  physical parameters
       parameter(h1=0.33333333)
 c  local variables and arrays
       real(kind=kind_phys) pfld(im,km),    to(im,km),     qo(im,km),
-     &                     uo(im,km),      vo(im,km),     qeso(im,km)
+     &                     uo(im,km),      vo(im,km),     qeso(im,km),
+     &                     ctr(im,km,ntr), ctro(im,km,ntr)
 !  for updraft velocity calculation
       real(kind=kind_phys) wu2(im,km),     buo(im,km),    drag(im,km)
       real(kind=kind_phys) wc(im),         scaldfunc(im), sigmagfm(im)
@@ -182,9 +194,11 @@ c  cloud water
      &                     dbyo(im,km),    zo(im,km),     xlamue(im,km),
      &                     heo(im,km),     heso(im,km), 
      &                     dellah(im,km),  dellaq(im,km),
+     &                     dellae(im,km,ntr),
      &                     dellau(im,km),  dellav(im,km), hcko(im,km),
      &                     ucko(im,km),    vcko(im,km),   qcko(im,km),
-     &                     qrcko(im,km),   eta(im,km),
+     &                     qrcko(im,km),   ecko(im,km,ntr),
+     &                     eta(im,km),
      &                     zi(im,km),      pwo(im,km),    c0t(im,km),
      &                     sumx(im),       tx1(im),       cnvwt(im,km)
 !
@@ -324,15 +338,11 @@ c
           zo(i,k) = phil(i,k) / g
         enddo
       enddo
-!>  - Calculate interface height and the entrainment rate as an inverse function of height.
+!>  - Calculate interface height
       do k = 1, km1
         do i=1,im
           zi(i,k) = 0.5*(zo(i,k)+zo(i,k+1))
-          xlamue(i,k) = clam / zi(i,k)
         enddo
-      enddo
-      do i=1,im
-        xlamue(i,km) = xlamue(i,km1)
       enddo
 c
 c  pbl height
@@ -383,6 +393,21 @@ c
             drag(i,k) = 0.
             cnvwt(i,k) = 0.
           endif
+        enddo
+      enddo
+!
+!  initialize tracer variables
+!
+      do n = 3, ntr+2
+        kk = n-2
+        do k = 1, km
+          do i = 1, im
+            if (cnvflg(i) .and. k <= kmax(i)) then
+              ctr(i,k,kk)  = qtr(i,k,n)
+              ctro(i,k,kk) = qtr(i,k,n)
+              ecko(i,k,kk) = 0.
+            endif
+          enddo
         enddo
       enddo
 !>  - Calculate saturation specific humidity and enforce minimum moisture values.
@@ -480,6 +505,15 @@ c
           endif
         enddo
       enddo
+      do n = 1, ntr
+      do k = 1, km1
+        do i=1,im
+          if (cnvflg(i) .and. k <= kmax(i)-1) then
+            ctro(i,k,n) = .5 * (ctro(i,k,n) + ctro(i,k+1,n))
+          endif
+        enddo
+      enddo
+      enddo
 c
 c  look for the level of free convection as cloud base
 c
@@ -562,7 +596,73 @@ c
         totflg = totflg .and. (.not. cnvflg(i))
       enddo
       if(totflg) return
+!
+! turbulent entrainment rate assumed to be proportional
+!   to subcloud mean TKE
+!
+      if(ntk > 0) then
+!
+        do i= 1, im
+          if(cnvflg(i)) then
+            sumx(i) = 0.
+            tkemean(i) = 0.
+          endif
+        enddo
+        do k = 1, km1
+          do i = 1, im
+            if(cnvflg(i)) then
+              if(k >= kb(i) .and. k < kbcon(i)) then
+                dz = zo(i,k+1) - zo(i,k)
+                tem = 0.5 * (qtr(i,k,ntk)+qtr(i,k+1,ntk))
+                tkemean(i) = tkemean(i) + tem * dz
+                sumx(i) = sumx(i) + dz
+              endif
+            endif
+          enddo
+        enddo
+!
+        do i= 1, im
+          if(cnvflg(i)) then
+             tkemean(i) = tkemean(i) / sumx(i)
+             if(tkemean(i) > tkemx) then
+               clamt(i) = clam + clamd
+             else if(tkemean(i) < tkemn) then
+               clamt(i) = clam - clamd
+             else
+               tem = tkemx - tkemean(i)
+               tem1 = 1. - 2. *  tem / dtke
+               clamt(i) = clam + clamd * tem1
+             endif
+          endif
+        enddo
+!
+      else
+!
+        do i= 1, im
+          if(cnvflg(i)) then
+            clamt(i)  = clam
+          endif
+        enddo
+!
+      endif
 !!
+!
+!  assume updraft entrainment rate
+!     is an inverse function of height
+!
+      do k = 1, km1
+        do i=1,im
+          if(cnvflg(i)) then
+            xlamue(i,k) = clamt(i) / zi(i,k)
+!           xlamue(i,k) = max(xlamue(i,k), crtlamu)
+          endif
+        enddo
+      enddo
+      do i=1,im
+        if(cnvflg(i)) then
+          xlamue(i,km) = xlamue(i,km1)
+        endif
+      enddo
 c
 c  specify the detrainment rate for the updrafts
 c
@@ -627,6 +727,15 @@ c
           vcko(i,indx) = vo(i,indx)
         endif
       enddo
+!  for tracers
+      do n = 1, ntr
+        do i = 1, im
+          if(cnvflg(i)) then
+            indx = kb(i)
+            ecko(i,indx,n) = ctro(i,indx,n)
+          endif
+        enddo
+      enddo
 c
 !  cm is an enhancement factor in entrainment rates for momentum
 !
@@ -654,6 +763,21 @@ c
             endif
           endif
         enddo
+      enddo
+      do n = 1, ntr
+      do k = 2, km1
+        do i = 1, im
+          if (cnvflg(i)) then
+            if(k > kb(i) .and. k < kmax(i)) then
+              dz   = zi(i,k) - zi(i,k-1)
+              tem  = 0.25 * (xlamue(i,k)+xlamue(i,k-1)) * dz
+              factor = 1. + tem
+              ecko(i,k,n) = ((1.-tem)*ecko(i,k-1,n)+tem*
+     &                     (ctro(i,k,n)+ctro(i,k-1,n)))/factor
+            endif
+          endif
+        enddo
+      enddo
       enddo
 c
 c   taking account into convection inhibition due to existence of
@@ -1174,6 +1298,15 @@ c
           endif
         enddo
       enddo
+      do n = 1, ntr
+      do k = 1, km
+        do i = 1, im
+          if(cnvflg(i) .and. k <= kmax(i)) then
+            dellae(i,k,n) = 0.
+          endif
+        enddo
+      enddo
+      enddo
 c
 c--- changed due to subsidence and entrainment
 c
@@ -1218,6 +1351,22 @@ cj
           endif
         enddo
       enddo
+      do n = 1, ntr
+      do k = 2, km1
+        do i = 1, im
+          if (cnvflg(i)) then
+            if(k > kb(i) .and. k < ktcon(i)) then
+              dp = 1000. * del(i,k)
+cj
+              tem1=eta(i,k)*(ctro(i,k,n)-ecko(i,k,n))
+              tem2=eta(i,k-1)*(ctro(i,k-1,n)-ecko(i,k-1,n))
+              dellae(i,k,n) = dellae(i,k,n) + (tem1-tem2) * g/dp
+cj
+            endif
+          endif
+        enddo
+      enddo
+      enddo
 c
 c------- cloud top
 c
@@ -1242,7 +1391,16 @@ c
      &                     qlko_ktcon(i) * g / dp
         endif
       enddo
-!
+      do n = 1, ntr
+      do i = 1, im
+        if(cnvflg(i)) then
+          indx = ktcon(i)
+          dp = 1000. * del(i,indx)
+          dellae(i,indx,n) = eta(i,indx-1) *
+     &           (ecko(i,indx-1,n) - ctro(i,indx-1,n)) * g / dp
+        endif
+      enddo
+      enddo
 !
 !  compute convective turn-over time
 !
@@ -1354,6 +1512,11 @@ c
         delvbar(i) = 0.
         qcond(i) = 0.
       enddo
+      do n = 1, ntr
+      do i = 1, im
+        delebar(i,n) = 0.
+      enddo
+      enddo
       do k = 1, km
         do i = 1, im
           if (cnvflg(i)) then
@@ -1375,6 +1538,20 @@ c
             endif
           endif
         enddo
+      enddo
+      do n = 1, ntr
+         kk = n+2
+      do k = 1, km
+        do i = 1, im
+          if (cnvflg(i) .and. k <= kmax(i)) then
+            if(k <= ktcon(i)) then
+              ctr(i,k,n) = ctr(i,k,n)+dellae(i,k,n)*xmb(i)*dt2
+              delebar(i,n)=delebar(i,n)+dellae(i,k,n)*xmb(i)*dp/g
+              qtr(i,k,kk) = ctr(i,k,n)
+            endif
+          endif
+        enddo
+      enddo
       enddo
 !
 !> - Recalculate saturation specific humidity using the updated temperature.
@@ -1474,6 +1651,14 @@ cj
 !       print*,'pdif= ',pfld(i,kbcon(i))-pfld(i,ktcon(i))
 !     endif
 !     enddo
+!     do n = 1, ntr
+!     do i = 1, im
+!     if(me == 31 .and. cnvflg(i)) then
+!     if(cnvflg(i)) then
+!       print *, ' tracer delebar = ',delebar(i,n)
+!     endif
+!     enddo
+!     enddo
 cj
       do i = 1, im
         if(cnvflg(i)) then
@@ -1525,11 +1710,11 @@ c
             if (k >= kbcon(i) .and. k <= ktcon(i)) then
               tem  = dellal(i,k) * xmb(i) * dt2
               tem1 = max(0.0, min(1.0, (tcr-t1(i,k))*tcrf))
-              if (ql(i,k,2) > -999.0) then
-                ql(i,k,1) = ql(i,k,1) + tem * tem1            ! ice
-                ql(i,k,2) = ql(i,k,2) + tem *(1.0-tem1)       ! water
+              if (qtr(i,k,2) > -999.0) then
+                qtr(i,k,1) = qtr(i,k,1) + tem * tem1            ! ice
+                qtr(i,k,2) = qtr(i,k,2) + tem *(1.0-tem1)       ! water
               else
-                ql(i,k,1) = ql(i,k,1) + tem
+                qtr(i,k,1) = qtr(i,k,1) + tem
               endif
             endif
           endif
@@ -1559,6 +1744,26 @@ c
            dt_mf(i,k) = ud_mf(i,k)
         endif
       enddo
+!
+!   include TKE contribution from shallow convection
+!
+      if (ntk > 0) then
+!
+      do k = 2, km1
+        do i = 1, im
+          if(cnvflg(i)) then
+            if(k > kb(i) .and. k < ktop(i)) then
+              tem = 0.5 * (eta(i,k-1) + eta(i,k)) * xmb(i)
+              tem1 = pfld(i,k) * 100. / (rd * t1(i,k))
+              sigmagfm(i) = max(sigmagfm(i), betaw)
+              ptem = tem / (sigmagfm(i) * tem1)
+              qtr(i,k,ntk)=qtr(i,k,ntk)+0.5*sigmagfm(i)*ptem*ptem
+            endif
+          endif
+        enddo
+      enddo
+!
+      endif
 !!
       return
       end

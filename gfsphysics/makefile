@@ -52,9 +52,9 @@ SRCS_f   =  \
 	   ./physics/iounitdef.f                                                     \
 	   ./physics/lrgsclr.f                                                       \
 	   ./physics/mersenne_twister.f                                              \
-	   ./physics/samfdeepcnv.f                                                   \
 	   ./physics/mfpbl.f                                                         \
-	   ./physics/samfshalcnv.f                                                   \
+	   ./physics/mfpblt.f                                                        \
+	   ./physics/mfscu.f                                                         \
 	   ./physics/module_bfmicrophysics.f                                         \
 	   ./physics/moninedmf.f                                                     \
 	   ./physics/moninp.f                                                        \
@@ -92,8 +92,11 @@ SRCS_f   =  \
 	   ./physics/rascnvv2.f                                                      \
 	   ./physics/rayleigh_damp.f                                                 \
 	   ./physics/rayleigh_damp_mesopause.f                                       \
+	   ./physics/samfdeepcnv.f                                                   \
+	   ./physics/samfshalcnv.f                                                   \
 	   ./physics/sascnv.f                                                        \
 	   ./physics/sascnvn.f                                                       \
+	   ./physics/satmedmfvdif.f                                                  \
 	   ./physics/set_soilveg.f                                                   \
 	   ./physics/sfc_cice.f                                                      \
 	   ./physics/sfc_diag.f                                                      \
