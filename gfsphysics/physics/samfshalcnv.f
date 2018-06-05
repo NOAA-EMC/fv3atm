@@ -6,6 +6,8 @@
 !!
 !! In further update for FY19 GFS implementation, interaction with turbulent kinetic energy (TKE), which is a prognostic variable used in a scale-aware TKE-based moist EDMF vertical turbulent mixing scheme, is included. Entrainment rates in updrafts are proportional to sub-cloud mean TKE. TKE is transported by cumulus convection. TKE contribution from cumulus convection is deduced from cumulus mass flux. On the other hand, tracers such as ozone and aerosol are also transported by cumulus convection.
 !!
+!! To reduce too much convective cooling at the cloud top, the convection schemes have been modified for the rain conversion rate, entrainment and detrainment rates, overshooting layers, and maximum allowable cloudbase mass flux (as of June 2018).
+!!
 !!  \section diagram Calling Hierarchy Diagram
 !!  \image html SAMF_shal_Flowchart.png "Diagram depicting how the SAMF shallow convection scheme is called from the FV3GFS physics time loop" height=2cm
 !!  \section intraphysics Intraphysics Communication
@@ -157,7 +159,8 @@ c  physical parameters
       parameter(elocp=hvap/cp,
      &          el2orc=hvap*hvap/(rv*cp))
 !     parameter(c0s=0.002,c1=5.e-4,d0=.01)
-      parameter(d0=.01)
+!     parameter(d0=.01)
+      parameter(d0=.001)
 !     parameter(c0l=c0s*asolfac)
 !
 ! asolfac: aerosol-aware parameter based on Lim & Hong (2012)
@@ -293,7 +296,8 @@ c
 !
 c  model tunable parameters are all here
 !     clam    = .3
-      aafac   = .1
+!     aafac   = .1
+      aafac   = .05
 c     evef    = 0.07
       evfact  = 0.3
       evfactl = 0.3
@@ -654,7 +658,6 @@ c
         do i=1,im
           if(cnvflg(i)) then
             xlamue(i,k) = clamt(i) / zi(i,k)
-!           xlamue(i,k) = max(xlamue(i,k), crtlamu)
           endif
         enddo
       enddo
@@ -666,11 +669,14 @@ c
 c
 c  specify the detrainment rate for the updrafts
 c
-!> - The updraft detrainment rate is set constant and equal to the entrainment rate at cloud base.
+!! (The updraft detrainment rate is set constant and equal to the entrainment rate at cloud base.)
+!!
+!> - The updraft detrainment rate is vertically constant and proportional to clamt
       do i = 1, im
         if(cnvflg(i)) then
-          xlamud(i) = xlamue(i,kbcon(i))
+!         xlamud(i) = xlamue(i,kbcon(i))
 !         xlamud(i) = crtlamd
+          xlamud(i) = 0.001 * clamt(i)
         endif
       enddo
 c
@@ -915,7 +921,9 @@ c
 !
           k = kbcon(i)
           dp = 1000. * del(i,k)
-          xmbmax(i) = dp / (g * dt2)
+          xmbmax(i) = dp / (2. * g * dt2)
+!
+!         xmbmax(i) = dp / (g * dt2)
 !
 !         tem = dp / (g * dt2)
 !         xmbmax(i) = min(tem, xmbmax(i))

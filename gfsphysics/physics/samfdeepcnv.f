@@ -8,6 +8,8 @@
 !!
 !! In further update for FY19 GFS implementation, interaction with turbulent kinetic energy (TKE), which is a prognostic variable used in a scale-aware TKE-based moist EDMF vertical turbulent mixing scheme, is included. Entrainment rates in updrafts and downdrafts are proportional to sub-cloud mean TKE. TKE is transported by cumulus convection. TKE contribution from cumulus convection is deduced from cumulus mass flux. On the other hand, tracers such as ozone and aerosol are also transported by cumulus convection.
 !!
+!! Occasional model crashes have been occurred when stochastic physics is on, due to too much convective cooling and heating tendencies near the cumulus top which are amplified by stochastic physics. To reduce too much convective cooling at the cloud top, the convection schemes have been modified for the rain conversion rate, entrainment and detrainment rates, overshooting layers, and maximum allowable cloudbase mass flux (as of June 2018). 
+!!
 !!  \section diagram Calling Hierarchy Diagram
 !!  \image html SAMF_Flowchart.png "Diagram depicting how the SAMF deep convection scheme is called from the FV3GFS physics time loop" height=2cm
 !!  \section intraphysics Intraphysics Communication
@@ -118,7 +120,7 @@
      &                     beta,    dbeta,   betamx,  betamn,
      &                     cxlame,  cxlamd,
      &                     xlamde,  xlamdd,
-     &                     crtlamu, crtlamd
+     &                     crtlame, crtlamd
 ! 
 !     real(kind=kind_phys) detad
       real(kind=kind_phys) adw,     aup,     aafac,   d0,
@@ -126,7 +128,7 @@
      &                     dh,      dhh,     dp,
      &                     dq,      dqsdp,   dqsdt,   dt,
      &                     dt2,     dtmax,   dtmin,   
-     &                     dxcrtas, dxcrtuf,
+     &                     dxcrtas, dxcrtuf, 
      &                     dv1h,    dv2h,    dv3h,
      &                     dv1q,    dv2q,    dv3q,
      &                     dz,      dz1,     e1,      edtmax,
@@ -169,7 +171,8 @@
      &                     rntot(im),   vshear(im), xaa0(im),
      &                     xlamd(im),   xk(im),     cina(im),
      &                     xmb(im),     xmbmax(im), xpwav(im),
-     &                     xpwev(im),   xlamx(im),  delebar(im,ntr),
+!    &                     xpwev(im),   xlamx(im),  delebar(im,ntr),
+     &                     xpwev(im),   delebar(im,ntr),
      &                     delubar(im), delvbar(im)
 !
       real(kind=kind_phys) c0(im)
@@ -188,7 +191,8 @@ c  physical parameters
       parameter(g=grav)
       parameter(elocp=hvap/cp,el2orc=hvap*hvap/(rv*cp))
 !     parameter(c0s=.002,c1=.002,d0=.01)
-      parameter(d0=.01)
+!     parameter(d0=.01)
+      parameter(d0=.001)
 !     parameter(c0l=c0s*asolfac)
 !
 ! asolfac: aerosol-aware parameter based on Lim (2011)
@@ -352,7 +356,8 @@ c  model tunable parameters are all here
       edtmaxl = .3
       edtmaxs = .3
 !     clam    = .1
-      aafac   = .1
+!     aafac   = .1
+      aafac   = .05
 !     betal   = .15
 !     betas   = .15
 !     betal   = .05
@@ -361,11 +366,12 @@ c  model tunable parameters are all here
 !     evfact  = 0.3
 !     evfactl = 0.3
 !
-      crtlamu = 1.0e-4
+      crtlame = 1.0e-4
       crtlamd = 1.0e-4
 !
-      cxlame  = 1.0e-3
-      cxlamd  = 1.0e-3
+!     cxlame  = 1.0e-3
+      cxlame  = 1.0e-4
+      cxlamd  = 1.0e-4
       xlamde  = 1.0e-4
       xlamdd  = 1.0e-4
 !
@@ -721,7 +727,7 @@ c
         do i=1,im
           if(cnvflg(i)) then
             xlamue(i,k) = clamt(i) / zi(i,k)
-!           xlamue(i,k) = max(xlamue(i,k), crtlamu)
+            xlamue(i,k) = max(xlamue(i,k), crtlame)
           endif
         enddo
       enddo
@@ -734,28 +740,31 @@ c
 !!  \epsilon = \epsilon_0F_0 + d_1\left(1-RH\right)F_1
 !!  \f]
 !!  where \f$\epsilon_0\f$ is the cloud base entrainment rate, \f$d_1\f$ is a tunable constant, and \f$F_0=\left(\frac{q_s}{q_{s,b}}\right)^2\f$ and \f$F_1=\left(\frac{q_s}{q_{s,b}}\right)^3\f$ where \f$q_s\f$ and \f$q_{s,b}\f$ are the saturation specific humidities at a given level and cloud base, respectively. The detrainment rate in the cloud is assumed to be equal to the entrainment rate at cloud base.
-      do i=1,im
-        if(cnvflg(i)) then
-          xlamx(i) = xlamue(i,kbcon(i))
-        endif
-      enddo
-      do k = 2, km1
-        do i=1,im
-          if(cnvflg(i).and.
-     &      (k > kbcon(i) .and. k < kmax(i))) then
-              xlamue(i,k) = xlamx(i)
-          endif
-        enddo
-      enddo
+!     do i=1,im
+!       if(cnvflg(i)) then
+!         xlamx(i) = xlamue(i,kbcon(i))
+!       endif
+!     enddo
+!     do k = 2, km1
+!       do i=1,im
+!         if(cnvflg(i).and.
+!    &      (k > kbcon(i) .and. k < kmax(i))) then
+!             xlamue(i,k) = xlamx(i)
+!         endif
+!       enddo
+!     enddo
 c
 c  specify detrainment rate for the updrafts
 c
-!> - The updraft detrainment rate is set constant and equal to the entrainment rate at cloud base.
+!! (The updraft detrainment rate is set constant and equal to the entrainment rate at cloud base.)
+!!
+!> - The updraft detrainment rate is vertically constant and proportional to clamt
       do k = 1, km1
         do i=1,im
           if(cnvflg(i) .and. k < kmax(i)) then
-            xlamud(i,k) = xlamx(i)
+!           xlamud(i,k) = xlamx(i)
 !           xlamud(i,k) = crtlamd
+            xlamud(i,k) = 0.001 * clamt(i)
           endif
         enddo
       enddo
@@ -775,7 +784,7 @@ c
         enddo
       enddo
 c
-c  final entrainment rate as the sum of turbulent part and
+c  final entrainment and detrainment rates as the sum of turbulent part and
 c    organized one depending on the environmental relative humidity
 c    (Bechtold et al., 2008; Derbyshire et al., 2011)
 c
@@ -785,8 +794,8 @@ c
      &      (k > kbcon(i) .and. k < kmax(i))) then
               tem = cxlame * frh(i,k) * fent2(i,k)
               xlamue(i,k) = xlamue(i,k)*fent1(i,k) + tem
-!             tem1 = cxlamd * frh(i,k)
-!             xlamud(i,k) = xlamud(i,k) + tem1
+              tem1 = cxlamd * frh(i,k)
+              xlamud(i,k) = xlamud(i,k) + tem1
           endif
         enddo
       enddo
@@ -1085,7 +1094,9 @@ c
 !
           k = kbcon(i)
           dp = 1000. * del(i,k)
-          xmbmax(i) = dp / (g * dt2)
+          xmbmax(i) = dp / (2. * g * dt2)
+!
+!         xmbmax(i) = dp / (g * dt2)
 !
 !         mbdt(i) = 0.1 * dp / g
 !
@@ -2327,7 +2338,7 @@ c
 !> - For scale-aware parameterization, the updraft fraction (sigmagfm) is first computed as a function of the lateral entrainment rate at cloud base (see Han et al.'s (2017) \cite han_et_al_2017 equation 4 and 5), following the study by Grell and Freitas (2014) \cite grell_and_freitus_2014.
       do i = 1, im
         if(cnvflg(i)) then
-          tem = min(max(xlamx(i), 7.e-5), 3.e-4)
+          tem = min(max(xlamue(i,kbcon(i)), 7.e-5), 3.e-4)
           tem = 0.2 / tem
           tem1 = 3.14 * tem * tem
           sigmagfm(i) = tem1 / garea(i)
