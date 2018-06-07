@@ -21,10 +21,13 @@
                                 get_date
 
   use  atmos_model_mod,   only: atmos_model_init, atmos_model_end,         &
+                                get_atmos_model_ungridded_dim,             &
                                 update_atmos_model_dynamics,               &
                                 update_atmos_radiation_physics,            &
                                 update_atmos_model_state,                  &
                                 atmos_data_type, atmos_model_restart,      &
+                                atmos_model_exchange_phase_1,              &
+                                atmos_model_exchange_phase_2,              &
                                 addLsmask2grid
 
   use constants_mod,      only: constants_init
@@ -87,13 +90,17 @@
   type(ESMF_VM),save                          :: VM
   type(ESMF_Grid)                             :: fcstGrid
 
-!----- coupled model date -----
+!----- coupled model data -----
 
   integer :: date_init(6)
+  integer :: numLevels = 0
+  integer :: numTracers = 0
+  integer :: numSoilLayers = 0
 !
 !-----------------------------------------------------------------------
 !
   public SetServices, fcstGrid
+  public numLevels, numTracers, numSoilLayers
 !
   contains
 !
@@ -116,7 +123,13 @@
       return  ! bail out
 !
     call ESMF_GridCompSetEntryPoint(fcst_comp, ESMF_METHOD_RUN, &
-         userRoutine=fcst_run, rc=rc)
+         userRoutine=fcst_run_phase_1, phase=1, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+    call ESMF_GridCompSetEntryPoint(fcst_comp, ESMF_METHOD_RUN, &
+         userRoutine=fcst_run_phase_2, phase=2, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
@@ -372,10 +385,18 @@
 !test to write out vtk file:
         if( cpl ) then
           call addLsmask2grid(fcstGrid, rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+            line=__LINE__, &
+            file=__FILE__)) &
+            return  ! bail out
 !         print *,'call addLsmask2grid after fcstgrid, rc=',rc
           if( cplprint_flag ) then
             call ESMF_GridWriteVTK(fcstgrid, staggerloc=ESMF_STAGGERLOC_CENTER,  &
                  filename='fv3cap_fv3Grid', rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+              line=__LINE__, &
+              file=__FILE__)) &
+              return  ! bail out
           endif
         endif
 !
@@ -527,6 +548,9 @@
 
 !end qulting
       endif
+
+      call get_atmos_model_ungridded_dim(nlev=numLevels, ntracers=numTracers, &
+        nsoillev=numSoilLayers)
 !
 !-----------------------------------------------------------------------
 !
@@ -538,19 +562,19 @@
 !
       if(mype==0) print *,'in fcst,init total time: ', mpi_wtime() - timeis
 !
-!----------------------------------------------------------------------- 
+!-----------------------------------------------------------------------
 !
    end subroutine fcst_initialize
 !
-!----------------------------------------------------------------------- 
-!####################################################################### 
-!----------------------------------------------------------------------- 
+!-----------------------------------------------------------------------
+!#######################################################################
+!-----------------------------------------------------------------------
 !
-   subroutine fcst_run(fcst_comp, importState, exportState,clock,rc)
+   subroutine fcst_run_phase_1(fcst_comp, importState, exportState,clock,rc)
 !
-!----------------------------------------------------------------------- 
-!***  the run step for the fcst gridded component.  
-!----------------------------------------------------------------------- 
+!-----------------------------------------------------------------------
+!***  the run step for the fcst gridded component.
+!-----------------------------------------------------------------------
 !
       type(ESMF_GridComp)        :: fcst_comp
       type(ESMF_State)           :: importState, exportState
@@ -578,26 +602,26 @@
 !-----------------------------------------------------------------------
 !
       tbeg1 = mpi_wtime()
-      rc     = esmf_success
+      rc    = esmf_success
 !
 !-----------------------------------------------------------------------
 !
-      call ESMF_GridCompGet(fcst_comp, name=compname, rc=rc)
+      call ESMF_GridCompGet(fcst_comp, name=compname, localpet=mype, rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
         line=__LINE__, &
         file=__FILE__)) &
         return  ! bail out
 !
-      call ESMF_VMGetCurrent(VM,rc=RC)
-!
-      call ESMF_VMGet(VM, localpet=mype,rc=rc)
-      call ESMF_ClockGet(clock, advanceCount=NTIMESTEP_ESMF, rc=rc)   
-      
+      call ESMF_ClockGet(clock, advanceCount=NTIMESTEP_ESMF, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, &
+        file=__FILE__)) &
+        return  ! bail out
+
       na = NTIMESTEP_ESMF
-!     if(mype==0) print *,'in fcst run, na=',na
 !
 !-----------------------------------------------------------------------
-! *** call fcst integration subroutines  
+! *** call fcst integration subroutines
 
       call get_date (atm_int_state%Time_atmos, date(1), date(2), date(3),  &
                                date(4), date(5), date(6))
@@ -606,6 +630,90 @@
       call update_atmos_model_dynamics (atm_int_state%Atm)
 
       call update_atmos_radiation_physics (atm_int_state%Atm)
+
+      call atmos_model_exchange_phase_1 (atm_int_state%Atm, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, &
+        file=__FILE__)) &
+        return  ! bail out
+
+!-----------------------------------------------------------------------
+!
+!     IF(RC /= ESMF_SUCCESS) THEN
+!       WRITE(0,*)"FAIL: fcst_RUN"
+!      ELSE
+         WRITE(0,*)"PASS: fcstRUN, na=",na
+!     ENDIF
+!
+      if(mype==0) print *,'fcst_run_phase_1 time is ', mpi_wtime()-tbeg1
+!
+!-----------------------------------------------------------------------
+!
+   end subroutine fcst_run_phase_1
+!
+!-----------------------------------------------------------------------
+!&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+!-----------------------------------------------------------------------
+!
+   subroutine fcst_run_phase_2(fcst_comp, importState, exportState,clock,rc)
+!
+!-----------------------------------------------------------------------
+!***  the run step for the fcst gridded component.
+!-----------------------------------------------------------------------
+!
+      type(ESMF_GridComp)        :: fcst_comp
+      type(ESMF_State)           :: importState, exportState
+      type(ESMF_Clock)           :: clock
+      integer,intent(out)        :: rc
+!
+!-----------------------------------------------------------------------
+!***  local variables
+!
+      type(ESMF_FieldBundle)     :: file_bundle
+!
+      integer                    :: i,j, mype, na, date(6)
+      character(20)              :: compname
+
+      type(ESMF_Time)            :: currtime
+      integer(kind=ESMF_KIND_I8) :: ntimestep_esmf
+      character(len=64)          :: timestamp
+!
+!-----------------------------------------------------------------------
+!
+      real(kind=8)   :: mpi_wtime, tbeg1
+!
+!-----------------------------------------------------------------------
+!***********************************************************************
+!-----------------------------------------------------------------------
+!
+      tbeg1 = mpi_wtime()
+      rc    = esmf_success
+!
+!-----------------------------------------------------------------------
+!
+      call ESMF_GridCompGet(fcst_comp, name=compname, localpet=mype, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, &
+        file=__FILE__)) &
+        return  ! bail out
+!
+      call ESMF_ClockGet(clock, advanceCount=NTIMESTEP_ESMF, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, &
+        file=__FILE__)) &
+        return  ! bail out
+
+      na = NTIMESTEP_ESMF
+      if(mype==0) print *,'in fcst run phase 2, na=',na
+!
+!-----------------------------------------------------------------------
+! *** call fcst integration subroutines
+
+      call atmos_model_exchange_phase_2 (atm_int_state%Atm, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, &
+        file=__FILE__)) &
+        return  ! bail out
 
       call update_atmos_model_state (atm_int_state%Atm)
 
@@ -625,17 +733,17 @@
 !
 !-----------------------------------------------------------------------
 !
-      IF(RC /= ESMF_SUCCESS) THEN
-        WRITE(0,*)"FAIL: fcst_RUN"
+!     IF(RC /= ESMF_SUCCESS) THEN
+!       WRITE(0,*)"FAIL: fcst_RUN"
 !      ELSE
-!        WRITE(0,*)"PASS: fcstRUN, na=",na
-      ENDIF
+         WRITE(0,*)"PASS: fcstRUN, na=",na
+!     ENDIF
 !
-!     if(mype==0) print *,'fcst _run time is ', mpi_wtime()-tbeg1
+      if(mype==0) print *,'fcst_run_phase_2 time is ', mpi_wtime()-tbeg1
 !
 !-----------------------------------------------------------------------
 !
-   end subroutine fcst_run
+   end subroutine fcst_run_phase_2
 !
 !-----------------------------------------------------------------------
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&

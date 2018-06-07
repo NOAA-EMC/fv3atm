@@ -1248,8 +1248,8 @@ module module_physics_driver
             Sfcprop%snowd, qss, snowmt, gflx, Diag%cmm, Diag%chh, evap, &
             hflx)
 
-        if (Model%cplflx) then
-          do i=1,im
+        if (Model%cplflx .or. Model%cplchm) then
+          do i = 1, im
             if (flag_cice(i)) then
                islmsk(i) = nint(Sfcprop%slmsk(i))
             endif
@@ -1687,6 +1687,15 @@ module module_physics_driver
                   dtsfc1(i) = dtsfc_cice(i)
           endif
         enddo
+      endif
+
+      if (Model%cplchm) then
+        do i = 1, im
+          tem1 = max(Diag%q1(i), 1.e-8)
+          tem  = Statein%prsl(i,1) / (con_rd*Diag%t1(i)*(1.0+con_fvirt*tem1))
+          Coupling%ushfsfci(i) = -con_cp * tem * hflx(i) ! upward sensible heat flux
+        enddo
+        Coupling%dkt     (:,:) = dkt (:,:)
       endif
 
 !     if (lprnt) then
@@ -3758,6 +3767,12 @@ module module_physics_driver
         enddo
       endif
 
+      if ((Model%cplchm).and.(.not.Model%cplflx)) then
+        do i = 1, im
+             Coupling%rain_cpl(i) = Coupling%rain_cpl(i) + Diag%rain(i)
+             Coupling%rainc_cpl(i) = Coupling%rainc_cpl(i) + Diag%rainc(i)
+        enddo
+      endif
 !  --- ...  end coupling insertion
 
 !!! update surface diagnosis fields at the end of phys package

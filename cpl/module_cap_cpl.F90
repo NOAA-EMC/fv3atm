@@ -12,6 +12,7 @@ module module_cap_cpl
   private
   public clock_cplIntval
   public realizeConnectedInternCplField
+  public realizeConnectedCplFields
   public Dump_cplFields
 !
   contains
@@ -19,7 +20,7 @@ module module_cap_cpl
   !-----------------------------------------------------------------------------
   !-----------------------------------------------------------------------------
 
-    subroutine clock_cplIntval(gcomp, CF) 
+    subroutine clock_cplIntval(gcomp, CF)
 
       type(ESMF_GridComp)      :: gcomp
       type(ESMF_Config)        :: CF
@@ -114,6 +115,92 @@ module module_cap_cpl
       endif
 
     end subroutine realizeConnectedInternCplField
+
+  !-----------------------------------------------------------------------------
+
+    subroutine realizeConnectedCplFields(state, grid, &
+      numLevels, numSoilLayers, numTracers, fieldNames, fieldTypes, fieldList, rc)
+
+      type(ESMF_State),            intent(inout)  :: state
+      type(ESMF_Grid),                intent(in)  :: grid
+      integer,                        intent(in)  :: numLevels
+      integer,                        intent(in)  :: numSoilLayers
+      integer,                        intent(in)  :: numTracers
+      character(len=*), dimension(:), intent(in)  :: fieldNames
+      character(len=*), dimension(:), intent(in)  :: fieldTypes
+      type(ESMF_Field), dimension(:), intent(out) :: fieldList
+      integer,                        intent(out) :: rc
+
+      ! local variables
+      integer          :: item
+      type(ESMF_Field) :: field
+
+      ! begin
+      rc = ESMF_SUCCESS
+
+      if (size(fieldNames) /= size(fieldTypes)) then
+        call ESMF_LogSetError(rcToCheck=ESMF_RC_ARG_SIZE, &
+          msg="fieldNames and fieldTypes must have same size.", &
+          line=__LINE__, file=__FILE__, rcToReturn=rc)
+        return
+      end if
+
+      do item = 1, size(fieldNames)
+        if (NUOPC_IsConnected(state, fieldName=trim(fieldNames(item)))) then
+          select case (fieldTypes(item))
+            case ('l','layer')
+              field = ESMF_FieldCreate(grid, typekind=ESMF_TYPEKIND_R8, &
+                name=trim(fieldNames(item)), &
+                ungriddedLBound=(/1/), ungriddedUBound=(/numLevels/), rc=rc)
+              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+                line=__LINE__, file=__FILE__)) return  ! bail out
+            case ('i','interface')
+              field = ESMF_FieldCreate(grid, typekind=ESMF_TYPEKIND_R8, &
+                name=trim(fieldNames(item)), &
+                ungriddedLBound=(/1/), ungriddedUBound=(/numLevels+1/), rc=rc)
+              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+                line=__LINE__, file=__FILE__)) return  ! bail out
+            case ('t','tracer')
+              field = ESMF_FieldCreate(grid, typekind=ESMF_TYPEKIND_R8, &
+                name=trim(fieldNames(item)), &
+                ungriddedLBound=(/1,1/), ungriddedUBound=(/numLevels, numTracers/), rc=rc)
+              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+                line=__LINE__, file=__FILE__)) return  ! bail out
+            case ('s','surface')
+              field = ESMF_FieldCreate(grid, typekind=ESMF_TYPEKIND_R8, &
+                name=trim(fieldNames(item)), rc=rc)
+              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+                line=__LINE__, file=__FILE__)) return  ! bail out
+            case ('g','soil')
+              field = ESMF_FieldCreate(grid, typekind=ESMF_TYPEKIND_R8, &
+                name=trim(fieldNames(item)), &
+                ungriddedLBound=(/1/), ungriddedUBound=(/numSoilLayers/), rc=rc)
+              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+                line=__LINE__, file=__FILE__)) return  ! bail out
+            case default
+              call ESMF_LogSetError(ESMF_RC_NOT_VALID, &
+                msg="exportFieldType = '"//trim(fieldTypes(item))//"' not recognized", &
+                line=__LINE__, file=__FILE__, rcToReturn=rc)
+              return
+          end select
+          call NUOPC_Realize(state, field=field, rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+            line=__LINE__, &
+            file=__FILE__)) &
+            return
+          ! -- save field
+          fieldList(item) = field
+        else
+          ! remove a not connected Field from State
+          call ESMF_StateRemove(state, (/trim(fieldNames(item))/), rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+            line=__LINE__, &
+            file=__FILE__)) &
+            return  ! bail out
+        end if
+      end do
+
+    end subroutine realizeConnectedCplFields
 
   !-----------------------------------------------------------------------------
 
