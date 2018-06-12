@@ -179,6 +179,9 @@ $(LIBRARY): $(OBJS)
 ifneq (,$(findstring xCORE-AVX2,$(FFLAGS)))
 ./physics/radiation_aerosols.o : ./physics/radiation_aerosols.f
 	$(FC) $(FFLAGS) $(OTHER_FFLAGS) -xCORE-AVX-I -c $< -o $@
+else ifneq (,$(findstring axSSE4.2,AVX,CORE-AVX2,$(FFLAGS)))
+./physics/radiation_aerosols.o : ./physics/radiation_aerosols.f
+	$(FC) $(FFLAGS) $(OTHER_FFLAGS) -axSSE4.2,AVX,CORE-AVX-I -c $< -o $@
 else ifneq (,$(findstring xHOST,$(FFLAGS)))
 ./physics/radiation_aerosols.o : ./physics/radiation_aerosols.f
 	$(FC) $(FFLAGS) $(OTHER_FFLAGS) -xCORE-AVX-I -c $< -o $@
