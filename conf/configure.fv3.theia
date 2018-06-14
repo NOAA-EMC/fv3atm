@@ -48,6 +48,10 @@ endif
 
 CPPDEFS += -DNEW_TAUCTMAX -DINTERNAL_FILE_NML 
 
+ifeq ($(NAM_phys),Y)
+CPPDEFS += -DNAM_phys
+endif
+
 ifeq ($(32BIT),Y)
 CPPDEFS += -DOVERLOAD_R4
 FFLAGS += -i4 -real-size 32

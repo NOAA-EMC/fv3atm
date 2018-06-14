@@ -18,7 +18,7 @@ $(info $$ESMF_INC is [${ESMF_INC}])
 
 LIBRARY  = libfv3io.a
 
-FFLAGS   += -I../fms -I../gfsphysics -I../ipd
+FFLAGS   += -I../fms -I../gfsphysics -I../ipd -I../namphysics
 
 SRCS_f   =
 

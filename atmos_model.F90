@@ -177,6 +177,12 @@ type (block_control_type), target   :: Atm_block
 character(len=128) :: version = '$Id$'
 character(len=128) :: tagname = '$Name$'
 
+#ifdef NAM_phys
+  logical,parameter :: flip_vc = .false.
+#else
+  logical,parameter :: flip_vc = .true.
+#endif
+
 contains
 
 !#######################################################################
@@ -213,7 +219,7 @@ subroutine update_atmos_radiation_physics (Atmos)
     call set_atmosphere_pelist()
     call mpp_clock_begin(getClock)
     if (IPD_control%do_skeb) call atmosphere_diss_est (IPD_control%skeb_npass) !  do smoothing for SKEB
-    call atmos_phys_driver_statein (IPD_data, Atm_block)
+    call atmos_phys_driver_statein (IPD_data, Atm_block, flip_vc)
     call mpp_clock_end(getClock)
 
 !--- if dycore only run, set up the dummy physics output state as the input state
@@ -387,11 +393,11 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    call alloc_atmos_data_type (nlon, nlat, Atmos)
    call atmosphere_domain (Atmos%domain, Atmos%layout)
    call atmosphere_diag_axes (Atmos%axes)
-   call atmosphere_etalvls (Atmos%ak, Atmos%bk, flip=.true.)
+   call atmosphere_etalvls (Atmos%ak, Atmos%bk, flip=flip_vc)
    call atmosphere_grid_bdry (Atmos%lon_bnd, Atmos%lat_bnd, global=.false.)
    call atmosphere_grid_ctr (Atmos%lon, Atmos%lat)
-   call atmosphere_hgt (Atmos%layer_hgt, 'layer', relative=.false., flip=.true.)
-   call atmosphere_hgt (Atmos%level_hgt, 'level', relative=.false., flip=.true.)
+   call atmosphere_hgt (Atmos%layer_hgt, 'layer', relative=.false., flip=flip_vc)
+   call atmosphere_hgt (Atmos%level_hgt, 'level', relative=.false., flip=flip_vc)
 
 !-----------------------------------------------------------------------
 !--- before going any further check definitions for 'blocks'
@@ -640,7 +646,7 @@ subroutine update_atmos_model_state (Atmos)
     call set_atmosphere_pelist()
     call mpp_clock_begin(fv3Clock)
     call mpp_clock_begin(updClock)
-    call atmosphere_state_update (Atmos%Time, IPD_Data, IAU_Data, Atm_block)
+    call atmosphere_state_update (Atmos%Time, IPD_Data, IAU_Data, Atm_block, flip_vc)
     call mpp_clock_end(updClock)
     call mpp_clock_end(fv3Clock)
 

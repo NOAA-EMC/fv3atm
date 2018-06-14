@@ -2,7 +2,13 @@ SHELL = /bin/sh
 
 include conf/configure.fv3
 
-FFLAGS   += -Ifms -Igfsphysics -Iipd -Icpl -Iio -Iatmos_cubed_sphere
+ifeq ($(NAM_phys),Y)
+  PHYSP  = nam
+else
+  PHYSP  = gfs
+endif
+
+FFLAGS   += -Ifms -I$(PHYSP)physics -Iipd -Icpl -Iio -Iatmos_cubed_sphere
 
 FV3_EXE  = fv3.exe
 FV3CAP_LIB  = libfv3cap.a
@@ -17,13 +23,13 @@ nems: libs
 libs:
 	$(MAKE) -C fms                 $(MAKEFLAGS)
 	$(MAKE) -C cpl                 $(MAKEFLAGS)
-	$(MAKE) -C gfsphysics          $(MAKEFLAGS) 32BIT=N  # force gfs physics to 64bit
+	$(MAKE) -C $(PHYSP)physics     $(MAKEFLAGS) 32BIT=N  # force gfs physics to 64bit
 	$(MAKE) -C ipd                 $(MAKEFLAGS) 32BIT=N  # force gfs physics to 64bit
 	$(MAKE) -C io                  $(MAKEFLAGS)
 	$(MAKE) -C atmos_cubed_sphere  $(MAKEFLAGS)
 	$(MAKE) -C stochastic_physics  $(MAKEFLAGS) 32BIT=N  # force gfs physics to 64bit
 
-$(FV3_EXE): atmos_model.o coupler_main.o atmos_cubed_sphere/libfv3core.a io/libfv3io.a ipd/libipd.a gfsphysics/libgfsphys.a stochastic_physics/libstochastic_physics.a cpl/libfv3cpl.a fms/libfms.a 
+$(FV3_EXE): atmos_model.o coupler_main.o atmos_cubed_sphere/libfv3core.a io/libfv3io.a ipd/libipd.a $(PHYSP)physics/lib$(PHYSP)phys.a stochastic_physics/libstochastic_physics.a cpl/libfv3cpl.a fms/libfms.a 
 	$(LD) -o $@ $^ $(NCEPLIBS) $(LDFLAGS)
 
 $(FV3CAP_LIB): atmos_model.o module_fv3_config.o module_fcst_grid_comp.o time_utils.o fv3_cap.o
@@ -45,7 +51,7 @@ DEPEND_FILES = time_utils.F90 module_fv3_config.F90 atmos_model.F90 module_fcst_
 
 esmf_make_fragment:
 	@rm -rf nems_dir; mkdir nems_dir
-	@cp $(FV3CAP_LIB) atmos_cubed_sphere/libfv3core.a io/libfv3io.a ipd/libipd.a gfsphysics/libgfsphys.a cpl/libfv3cpl.a fms/libfms.a stochastic_physics/libstochastic_physics.a nems_dir
+	@cp $(FV3CAP_LIB) atmos_cubed_sphere/libfv3core.a io/libfv3io.a ipd/libipd.a $(PHYSP)physics/lib$(PHYSP)phys.a cpl/libfv3cpl.a fms/libfms.a stochastic_physics/libstochastic_physics.a nems_dir
 	@cp fv3gfs_cap_mod.mod nems_dir
 	@echo "# ESMF self-describing build dependency makefile fragment" > fv3.mk
 	@echo "# src location $(PWD)" >> fv3.mk
@@ -55,7 +61,7 @@ esmf_make_fragment:
 	#@echo "ESMF_DEP_INCPATH   = $(PWD)/nems_dir" >> fv3.mk
 	@echo "ESMF_DEP_INCPATH   = $(PWD) $(addprefix $(PWD)/, nems_dir atmos_cubed_sphere io fms gfsphysics cpl ipd)" >> fv3.mk
 	@echo "ESMF_DEP_CMPL_OBJS ="                 >> fv3.mk
-	@echo "ESMF_DEP_LINK_OBJS = $(addprefix $(PWD)/nems_dir/, libfv3cap.a libfv3core.a libfv3io.a libipd.a libgfsphys.a libfv3cpl.a libfms.a libstochastic_physics.a)"  >> fv3.mk
+	@echo "ESMF_DEP_LINK_OBJS = $(addprefix $(PWD)/nems_dir/, libfv3cap.a libfv3core.a libfv3io.a libipd.a lib$(PHYSP)phys.a libfv3cpl.a libfms.a libstochastic_physics.a)"  >> fv3.mk
 	@echo "ESMF_DEP_SHRD_PATH ="                 >> fv3.mk
 	@echo "ESMF_DEP_SHRD_LIBS ="                 >> fv3.mk
 	@echo
@@ -78,7 +84,7 @@ clean:
 	@echo "Cleaning ... "
 	@echo
 	(cd fms                 && make clean)
-	(cd gfsphysics          && make clean)
+	(cd $(PHYSP)physics     && make clean)
 	(cd ipd                 && make clean)
 	(cd stochastic_physics  && make clean)
 	(cd io                  && make clean)
