@@ -42,20 +42,6 @@ all default: depend $(LIBRARY)
 $(LIBRARY): $(OBJS)
 	$(AR) $(ARFLAGS) $@ $?
 
-# this is the place to override default (implicit) compilation rules
-# and create specific (explicit) rules
-
-ifneq (,$(findstring axSSE4.2,AVX,CORE-AVX2,$(FFLAGS)))
-./physics/radiation_aerosols.o : ./physics/radiation_aerosols.f
-	$(FC) $(FFLAGS) $(OTHER_FFLAGS) -axSSE4.2,AVX,CORE-AVX-I -c $< -o $@
-else
-./physics/radiation_aerosols.o : ./physics/radiation_aerosols.f
-	$(FC) $(FFLAGS) $(OTHER_FFLAGS) -xCORE-AVX-I -c $< -o $@
-endif
-
-./GFS_layer/GFS_diagnostics.o : ./GFS_layer/GFS_diagnostics.F90
-	$(FC) $(FFLAGS) $(OTHER_FFLAGS) -O0 -c $< -o $@
-
 .PHONY: clean
 clean:
 	@echo "Cleaning ipd  ... "

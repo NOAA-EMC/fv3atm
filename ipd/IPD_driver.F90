@@ -3,12 +3,10 @@ module IPD_driver
   use IPD_typedefs,               only: IPD_kind_phys,     IPD_init_type,    &
                                         IPD_control_type,  IPD_data_type,    &
                                         IPD_diag_type,     IPD_restart_type, &
-                                        IPD_func0d_proc,   IPD_func1d_proc
-
-  use physics_abstraction_layer,  only: initialize,        time_vary_step,   &
-                                        radiation_step1,   physics_step1,    &
-                                        physics_step2,                       &
-                                        diagnostic_populate, restart_populate
+                                        IPD_func0d_proc,   IPD_func1d_proc,  &
+                                        initialize,                          &
+                                        diagnostic_populate,                 &
+                                        restart_populate
 
   implicit none
 
@@ -27,10 +25,6 @@ module IPD_driver
 ! functions
   public IPD_initialize
   public IPD_step 
-!rab  public IPD_setup_step 
-!rab  public IPD_radiation_step
-!rab  public IPD_physics_step1
-!rab  public IPD_physics_step2
 
   CONTAINS
 !*******************************************************************************************
