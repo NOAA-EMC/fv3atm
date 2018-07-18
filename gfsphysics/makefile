@@ -19,7 +19,7 @@ LIBRARY  = libgfsphys.a
 
 FFLAGS   += -I../fms -I../fms/include -I../cpl
 
-CPPDEFS = -DNEW_TAUCTMAX -DSMALL_PE -DNEMS_GSM -DINTERNAL_FILE_NML
+CPPDEFS += -DNEW_TAUCTMAX -DSMALL_PE -DNEMS_GSM -DINTERNAL_FILE_NML
 
 SRCS_f   =  \
 	   ./physics/cnvc90.f                                                        \

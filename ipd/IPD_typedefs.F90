@@ -16,7 +16,12 @@ module IPD_typedefs
                                        sfcprop_type,  coupling_type,         &
                                        grid_type,     tbd_type,              &
                                        cldprop_type,  radtend_type,          &
+#ifdef CCPP
+                                       intdiag_type,                         &
+                                       IPD_fastphys_type => fastphys_type
+#else
                                        intdiag_type
+#endif
 
 !-------------------------------------------------
 ! Physics/Radiation routines to pass to IPD_driver
@@ -140,6 +145,9 @@ module IPD_typedefs
   public IPD_restart_type
   public IPD_diag_type
   public IPD_init_type
+#ifdef CCPP
+  public IPD_fastphys_type
+#endif
 
 
 !-----------------------------------

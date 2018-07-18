@@ -11,7 +11,13 @@ module physics_abstraction_layer
                              tbd_type         =>  GFS_tbd_type,      &
                              cldprop_type     =>  GFS_cldprop_type,  &
                              radtend_type     =>  GFS_radtend_type,  &
+#ifdef CCPP
+                             intdiag_type     =>  GFS_diag_type,     &
+                             fastphys_type    =>  GFS_fastphys_type
+#else
                              intdiag_type     =>  GFS_diag_type
+#endif
+
 
   use GFS_restart,     only: restart_type     =>  GFS_restart_type,    &
                              restart_populate =>  GFS_restart_populate
@@ -50,6 +56,9 @@ module physics_abstraction_layer
   public  intdiag_type
   public  restart_type
   public  diagnostic_type
+#ifdef CCPP
+  public  fastphys_type
+#endif
 
 !------------------
 !  public variables 

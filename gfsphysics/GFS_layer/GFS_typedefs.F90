@@ -333,6 +333,14 @@ module GFS_typedefs
   end type GFS_coupling_type
 
 
+#ifdef CCPP
+! DH* for testing of CCPP integration
+!! \section arg_table_GFS_control_type
+!! | local_name          | standard_name              | long_name                                      | units | rank | type      | kind    | intent | optional |
+!! |---------------------|----------------------------|------------------------------------------------|-------|------|-----------|---------|--------|----------|
+!! | IPD_Control%me      | mpi_rank                   | current MPI-rank                               | index |    0 | integer   |         | none   | F        |
+!!
+#endif
 !----------------------------------------------------------------------------------
 ! GFS_control_type
 !   model control parameters input from a namelist and/or derived from others
@@ -931,6 +939,30 @@ module GFS_typedefs
       procedure :: rad_zero  => diag_rad_zero
       procedure :: phys_zero => diag_phys_zero
   end type GFS_diag_type
+
+#ifdef CCPP
+! DH* for testing of CCPP integration
+!! \section arg_table_GFS_fastphys_type
+!! | local_name          | standard_name              | long_name                                      | units | rank | type      | kind    | intent | optional |
+!! |---------------------|----------------------------|------------------------------------------------|-------|------|-----------|---------|--------|----------|
+!! | IPD_fastphys%dummy  | FV3_ccpp_integration_dummy | dummy variable to test CCPP integration in FV3 | none  |    0 | integer   |         | none   | F        |
+!! | IPD_fastphys%errmsg | error_message              | error message for error handling in CCPP       | none  |    0 | character | len=512 | none   | F        |
+!! | IPD_fastphys%errflg | error_flag                 | error flag for error handling in CCPP          | flag  |    0 | integer   |         | none   | F        |
+!!
+!----------------------------------------------------------------
+! GFS_fastphys_type
+!  data type holding interstitial variables for fast physics
+!----------------------------------------------------------------
+  type GFS_fastphys_type
+
+    integer                             :: dummy
+    character(len=512)                  :: errmsg
+    integer                             :: errflg
+
+  contains
+    procedure :: create => fastphys_create
+  end type GFS_fastphys_type
+#endif
 
 !----------------
 ! PUBLIC ENTITIES
@@ -3047,5 +3079,23 @@ module GFS_typedefs
       endif
     endif
   end subroutine diag_phys_zero
+
+#ifdef CCPP
+! DH* for testing of CCPP integration
+!--------------------
+! GFS_fastphys_type%create
+!--------------------
+  subroutine fastphys_create (Fastphys)
+
+    implicit none
+
+    class(GFS_fastphys_type)           :: Fastphys
+
+    Fastphys%dummy  = 0
+    Fastphys%errmsg = ''
+    Fastphys%errflg = 0
+
+    end subroutine fastphys_create
+#endif
 
 end module GFS_typedefs

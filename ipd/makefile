@@ -15,14 +15,21 @@ else
     $(info )
 endif
 
+ifneq (,$(findstring CCPP,$(CPPDEFS)))
+    IPD_CCPP_DRIVER = IPD_CCPP_driver.F90
+else
+    IPD_CCPP_DRIVER =
+endif
+
 LIBRARY  = libipd.a
 
 FFLAGS   += -I../fms -I../fms/include -I../gfsphysics -I../namphysics
 
-CPPDEFS = -DNEW_TAUCTMAX -DSMALL_PE -DNEMS_GSM -DINTERNAL_FILE_NML
+CPPDEFS += -DNEW_TAUCTMAX -DSMALL_PE -DNEMS_GSM -DINTERNAL_FILE_NML
 
 SRCS_F90 = \
-	   ./IPD_driver.F90						     \
+	   ./IPD_driver.F90 \
+	   $(IPD_CCPP_DRIVER) \
 	   ./IPD_typedefs.F90
 
 SRCS_c   =
