@@ -90,7 +90,7 @@ clean:
 	(cd io                  && make clean)
 	(cd atmos_cubed_sphere  && make clean)
 	(cd cpl                 && make clean)
-	$(RM) -f $(FV3_EXE) $(FV3CAP_LIB) *.o *.mod *.lst depend
+	$(RM) -f $(FV3_EXE) $(FV3CAP_LIB) *.o *.mod *.i90 *.lst depend
 
 cleanall: clean
 	$(RM) -rf nems_dir fv3.mk $(INSTDIR)

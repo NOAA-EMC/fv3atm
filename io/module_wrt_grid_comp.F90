@@ -34,7 +34,10 @@
                                       n_group, num_files,                       &
                                       filename_base, output_grid, output_file,  &
                                       imo, jmo, write_nemsioflip,               &
-                                      nsout => nsout_io
+                                      nsout => nsout_io,                        &
+                                      cen_lon, cen_lat,                         &
+                                      lon1, lat1, lon2, lat2, dlon, dlat,       &
+                                      stdlat1, stdlat2, dx, dy
       use module_write_nemsio, only : nemsio_first_call, write_nemsio
       use module_write_netcdf, only : write_netcdf
 !
@@ -171,6 +174,10 @@
       character(128),dimension(:,:), allocatable    :: outfilename
       real, dimension(:), allocatable               :: slat, lat, lon, axesdata
       real(ESMF_KIND_R8), dimension(:,:), pointer   :: lonPtr, latPtr
+      real(ESMF_KIND_R8)                            :: rot_lon, rot_lat
+      real(ESMF_KIND_R8)                            :: geo_lon, geo_lat
+      real(ESMF_KIND_R8)                            :: lon1_r8, lat1_r8
+      real(ESMF_KIND_R8)                            :: x1, y1, x, y
       type(ESMF_DataCopy_Flag) :: copyflag=ESMF_DATACOPY_REFERENCE
       real(8),parameter :: PI=3.14159265358979d0
 
@@ -320,6 +327,79 @@
             return  ! bail out
 !        if(wrt_int_state%mype == lead_write_task) print *,'af wrtgrd, latlon,rc=',rc, &
 !         'imo=',imo,' jmo=',jmo
+
+      else if ( trim(output_grid) == 'regional_latlon' .or. &
+                trim(output_grid) == 'rotated_latlon' .or. &
+                trim(output_grid) == 'lambert_conformal' ) then
+
+        wrtgrid = ESMF_GridCreate1PeriDim(minIndex=(/1,1/), &
+                  maxIndex=(/imo,jmo/), regDecomp=(/1,ntasks/), &
+                  indexflag=ESMF_INDEX_GLOBAL, &
+                  name='wrt_grid',rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+            line=__LINE__, &
+            file=__FILE__)) &
+            return  ! bail out
+
+        call ESMF_GridAddCoord(wrtgrid, staggerLoc=ESMF_STAGGERLOC_CENTER, rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+            line=__LINE__, &
+            file=__FILE__)) &
+            return  ! bail out
+
+        call ESMF_GridGetCoord(wrtgrid, coordDim=1, farrayPtr=lonPtr, rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+            line=__LINE__, &
+            file=__FILE__)) &
+            return  ! bail out
+        call ESMF_GridGetCoord(wrtgrid, coordDim=2, farrayPtr=latPtr, rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+            line=__LINE__, &
+            file=__FILE__)) &
+            return  ! bail out
+
+        if ( trim(output_grid) == 'regional_latlon' ) then
+            do j=lbound(lonPtr,2),ubound(lonPtr,2)
+            do i=lbound(lonPtr,1),ubound(lonPtr,1)
+              lonPtr(i,j) = lon1 + (lon2-lon1)/(imo-1) * (i-1)
+              latPtr(i,j) = lat1 + (lat2-lat1)/(jmo-1) * (j-1)
+            enddo
+            enddo
+        else if ( trim(output_grid) == 'rotated_latlon' ) then
+            do j=lbound(lonPtr,2),ubound(lonPtr,2)
+            do i=lbound(lonPtr,1),ubound(lonPtr,1)
+              rot_lon = lon1 + (lon2-lon1)/(imo-1) * (i-1)
+              rot_lat = lat1 + (lat2-lat1)/(jmo-1) * (j-1)
+              call rtll(rot_lon, rot_lat, geo_lon, geo_lat, dble(cen_lon), dble(cen_lat))
+              if (geo_lon <0.0) geo_lon = geo_lon + 360.0
+              lonPtr(i,j) = geo_lon
+              latPtr(i,j) = geo_lat
+            enddo
+            enddo
+        else if ( trim(output_grid) == 'lambert_conformal' ) then
+            lon1_r8 = dble(lon1)
+            lat1_r8 = dble(lat1)
+            call lambert(dble(stdlat1),dble(stdlat2),dble(cen_lat),dble(cen_lon), &
+                         lon1_r8,lat1_r8,x1,y1, 1)
+            do j=lbound(lonPtr,2),ubound(lonPtr,2)
+            do i=lbound(lonPtr,1),ubound(lonPtr,1)
+              x = x1 + dx * (i-1)
+              y = y1 + dy * (j-1)
+              call lambert(dble(stdlat1),dble(stdlat2),dble(cen_lat),dble(cen_lon), &
+                           geo_lon,geo_lat,x,y,-1)
+              if (geo_lon <0.0) geo_lon = geo_lon + 360.0
+              lonPtr(i,j) = geo_lon
+              latPtr(i,j) = geo_lat
+            enddo
+            enddo
+        endif
+
+      else
+
+        write(0,*)"wrt_initialize: Unknown output_grid ", trim(output_grid)
+        call ESMF_LogWrite("wrt_initialize: Unknown output_grid "//trim(output_grid),ESMF_LOGMSG_ERROR,rc=RC)
+        call ESMF_Finalize(endflag=ESMF_END_ABORT)
+
       endif
 
 
@@ -567,11 +647,110 @@
           deallocate(fcstField, fieldnamelist)
 
         endif
-!end FBcount
-      enddo
 
-!end wrt FBcount
-    enddo
+! add output grid related attributes
+
+!!!!!!! TEMPORARILY remove after new baseline is created
+        if ( .not. (trim(output_grid) == 'cubed_sphere_grid' .or. trim(output_grid) == 'gaussian_grid') ) then
+!!!!!!!
+        call ESMF_AttributeAdd(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
+             attrList=(/"source","grid"/), rc=rc)
+        call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
+             name="source", value="FV3GFS", rc=rc)
+
+        if (trim(output_grid) == 'cubed_sphere_grid') then
+
+          call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
+               name="grid", value="cubed_sphere", rc=rc)
+
+        else if (trim(output_grid) == 'gaussian_grid') then
+
+          call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
+               name="grid", value="gaussian", rc=rc)
+          call ESMF_AttributeAdd(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
+               attrList=(/"im","jm"/), rc=rc)
+          call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
+               name="im", value=imo, rc=rc)
+          call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
+               name="jm", value=jmo, rc=rc)
+
+        else if (trim(output_grid) == 'regional_latlon') then
+
+          call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
+               name="grid", value="latlon", rc=rc)
+          call ESMF_AttributeAdd(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
+               attrList=(/"lon1","lat1","lon2","lat2","dlon","dlat"/), rc=rc)
+          call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
+               name="lon1", value=lon1, rc=rc)
+          call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
+               name="lat1", value=lat1, rc=rc)
+          call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
+               name="lon2", value=lon2, rc=rc)
+          call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
+               name="lat2", value=lat2, rc=rc)
+          call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
+               name="dlon", value=dlon, rc=rc)
+          call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
+               name="dlat", value=dlat, rc=rc)
+
+        else if (trim(output_grid) == 'rotated_latlon') then
+
+          call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
+               name="grid", value="rotated_latlon", rc=rc)
+          call ESMF_AttributeAdd(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
+               attrList=(/"cen_lon","cen_lat","lon1","lat1","lon2","lat2","dlon","dlat"/), rc=rc)
+          call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
+               name="cen_lon", value=cen_lon, rc=rc)
+          call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
+               name="cen_lat", value=cen_lat, rc=rc)
+          call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
+               name="lon1", value=lon1, rc=rc)
+          call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
+               name="lat1", value=lat1, rc=rc)
+          call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
+               name="lon2", value=lon2, rc=rc)
+          call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
+               name="lat2", value=lat2, rc=rc)
+          call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
+               name="dlon", value=dlon, rc=rc)
+          call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
+               name="dlat", value=dlat, rc=rc)
+
+        else if (trim(output_grid) == 'lambert_conformal') then
+
+          call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
+               name="grid", value="lambert_conformal", rc=rc)
+          call ESMF_AttributeAdd(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
+               attrList=(/"cen_lon","cen_lat","stdlat1","stdlat2","nx","ny","lon1","lat1","dx","dy"/), rc=rc)
+          call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
+               name="cen_lon", value=cen_lon, rc=rc)
+          call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
+               name="cen_lat", value=cen_lat, rc=rc)
+          call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
+               name="stdlat1", value=stdlat1, rc=rc)
+          call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
+               name="stdlat2", value=stdlat2, rc=rc)
+          call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
+               name="nx", value=imo, rc=rc)
+          call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
+               name="ny", value=jmo, rc=rc)
+          call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
+               name="lat1", value=lat1, rc=rc)
+          call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
+               name="lon1", value=lon1, rc=rc)
+          call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
+               name="dx", value=dx, rc=rc)
+          call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
+               name="dy", value=dy, rc=rc)
+
+        end if
+
+!!!!!!! TEMPORARILY remove after new baseline is created
+        endif
+!!!!!!!
+
+      enddo ! end FBcount
+    enddo ! end wrt_int_state%FBcount
 !
 ! add time Attribute
 ! look at the importState attributes and copy those starting with "time"
@@ -1153,7 +1332,7 @@
                      ,' at Fcst ',NF_HOURS,':',NF_MINUTES
           endif
 
-        else if (trim(output_grid) == 'gaussian_grid') then
+         else if (trim(output_grid) == 'gaussian_grid') then
 
            if (trim(output_file) == 'nemsio') then
 
@@ -1204,12 +1383,36 @@
            else ! unknown output_file
 
              call ESMF_LogWrite("wrt_run: Unknown output_file",ESMF_LOGMSG_ERROR,rc=RC)
+             call ESMF_Finalize(endflag=ESMF_END_ABORT)
+
+           endif
+
+        else if (trim(output_grid) == 'regional_latlon' .or. &
+                 trim(output_grid) == 'rotated_latlon' .or. &
+                 trim(output_grid) == 'lambert_conformal') then
+
+           if (trim(output_file) == 'netcdf') then
+
+             wbeg = MPI_Wtime()
+             call write_netcdf(file_bundle,wrt_int_state%wrtFB(nbdl),trim(filename), &
+                               wrt_mpi_comm,wrt_int_state%mype,imo,jmo,rc)
+             wend = MPI_Wtime()
+             if (mype == lead_write_task) then
+               write(*,'(A,F10.5,A,I4.2,A,I2.2)')' netcdf      Write Time is ',wend-wbeg  &
+                        ,' at Fcst ',NF_HOURS,':',NF_MINUTES
+             endif
+
+           else ! unknown output_file
+
+             call ESMF_LogWrite("wrt_run: Unknown output_file",ESMF_LOGMSG_ERROR,rc=RC)
+             call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
            endif
 
         else ! unknown output_grid
 
           call ESMF_LogWrite("wrt_run: Unknown output_grid",ESMF_LOGMSG_ERROR,rc=RC)
+          call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
         endif
 
@@ -2895,6 +3098,111 @@ call ESMF_LogWrite(msg, ESMF_LOGMSG_INFO, rc=rc)
       ENDIF
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
      end subroutine splat8
+!
+!
+   subroutine rtll(tlmd,tphd,almd,aphd,tlm0d,tph0d)
+!-------------------------------------------------------------------------------
+      real(ESMF_KIND_R8), intent(in) :: tlmd, tphd
+      real(ESMF_KIND_R8), intent(out) :: almd, aphd
+      real(ESMF_KIND_R8), intent(in) :: tph0d, tlm0d
+!-------------------------------------------------------------------------------
+      real(ESMF_KIND_R8), parameter :: pi=3.14159265358979323846
+      real(ESMF_KIND_R8), parameter :: dtr=pi/180.0
+!
+      real(ESMF_KIND_R8) :: tph0, ctph0, stph0, tlm, tph, stph, ctph, ctlm, stlm, aph, cph
+      real(ESMF_KIND_R8) :: xx, yy
+!-------------------------------------------------------------------------------
+!
+      tph0=tph0d*dtr
+      ctph0=cos(tph0)
+      stph0=sin(tph0)
+!
+      tlm=tlmd*dtr
+      tph=tphd*dtr
+      stph=sin(tph)
+      ctph=cos(tph)
+      ctlm=cos(tlm)
+      stlm=sin(tlm)
+!
+      xx=stph0*ctph*ctlm+ctph0*stph
+      xx=max(xx,-1.0)
+      xx=min(xx, 1.0)
+      aph=asin(xx)
+      cph=cos(aph)
+!
+      xx=(ctph0*ctph*ctlm-stph0*stph)/cph
+      xx=max(xx,-1.0)
+      xx=min(xx, 1.0)
+      xx=acos(xx)/dtr
+      yy=ctph*stlm/cph
+      xx=sign(xx,yy)
+      almd=tlm0d+xx
+
+      aphd=aph/dtr
+!
+      if (almd > 180.0) then
+         almd=almd-360.0
+      end if
+      if (almd < -180.0)  then
+         almd=almd+360.0
+      end if
+!
+      return
+!
+     end subroutine rtll
+!
+!-----------------------------------------------------------------------
+!
+     subroutine lambert(stlat1,stlat2,c_lat,c_lon,glon,glat,x,y,inv)
+
+!-------------------------------------------------------------------------------
+      real(ESMF_KIND_R8),      intent(in)  :: stlat1,stlat2,c_lat,c_lon
+      real(ESMF_KIND_R8),      intent(inout)  :: glon, glat
+      real(ESMF_KIND_R8),      intent(inout) :: x, y
+      integer,                 intent(in)  :: inv
+!-------------------------------------------------------------------------------
+      real(ESMF_KIND_R8), parameter :: pi=3.14159265358979323846
+      real(ESMF_KIND_R8), parameter :: dtor=pi/180.0
+      real(ESMF_KIND_R8), parameter :: rtod=180.0/pi
+      real(ESMF_KIND_R8), parameter :: a = 6371200.0
+!-------------------------------------------------------------------------------
+! inv == 1     (glon,glat) ---> (x,y)    lat/lon to grid
+! inv == -1    (x,y) ---> (glon,glat)    grid to lat/lon
+
+      real(ESMF_KIND_R8) :: en,f,rho,rho0, dlon, theta, xp, yp
+
+      IF (stlat1 == stlat2) THEN
+         en=sin(stlat1*dtor)
+      ELSE
+         en=log(cos(stlat1*dtor)/cos(stlat2*dtor))/ &
+            log(tan((45+0.5*stlat2)*dtor)/tan((45+0.5*stlat1)*dtor))
+      ENDIF
+
+      f=(cos(stlat1*dtor)*tan((45+0.5*stlat1)*dtor)**en)/en
+      rho0=a*f/(tan((45+0.5*c_lat)*dtor)**en)
+
+      if (inv == 1) then          ! FORWARD TRANSFORMATION
+            rho=a*f/(tan((45+0.5*glat)*dtor)**en)
+            dlon=modulo(glon-c_lon+180+3600,360.)-180.D0
+            theta=en*dlon*dtor
+            x=rho*sin(theta)
+            y=rho0-rho*cos(theta)
+      else if (inv == -1) then    ! INVERSE TRANSFORMATION
+            y=rho0-y
+            rho = sqrt(x*x+y*y)
+            theta=atan2(x,y)
+            glon=c_lon+(theta/en)*rtod
+            glon=modulo(glon+180+3600,360.)-180.D0
+!            glat=(2.0*atan((a*f/rho)**(1.0/en))-0.5*pi)*rtod
+            glat=(0.5*pi-2.0*atan((rho/(a*f))**(1.0/en)))*rtod
+      else
+        write (unit=*,fmt=*) " lambert: unknown inv argument"
+        return
+      end if
+
+      return
+     end subroutine lambert
+!
 !-----------------------------------------------------------------------
 !
      subroutine get_outfile(nfl, filename, outfile_name,noutfile)

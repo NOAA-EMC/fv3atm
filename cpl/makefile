@@ -54,7 +54,7 @@ module_cap_cpl.o: module_cap_cpl.F90
 clean:
 	@echo "Cleaning io ... "
 	@echo
-	$(RM) -f $(LIBRARY) *.o *.mod *.lst *.i depend
+	$(RM) -f $(LIBRARY) *.o *.mod *.lst *.i90 depend
 
 MKDEPENDS = ../mkDepends.pl
 include ../conf/make.rules

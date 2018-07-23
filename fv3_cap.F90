@@ -37,7 +37,10 @@ module fv3gfs_cap_mod
                                     lead_wrttask, last_wrttask,              &
                                     output_grid, output_file,                &
                                     imo, jmo, write_nemsioflip,              &
-                                    write_fsyncflag, nsout_io
+                                    write_fsyncflag, nsout_io,               &
+                                    cen_lon, cen_lat,                        &
+                                    lon1, lat1, lon2, lat2, dlon, dlat,      &
+                                    stdlat1, stdlat2, dx, dy
 !
   use module_fcst_grid_comp,  only: fcstSS => SetServices,                   &
                                     fcstGrid, numLevels, numTracers,         &
@@ -383,11 +386,14 @@ module fv3gfs_cap_mod
       call ESMF_ConfigGetAttribute(config=CF,value=nsout,    label ='nsout:',rc=rc)
       nsout_io = nsout
       if(mype==0) print *,'af nems config,nfhout=',nfhout,nfhmax_hf,nfhout_hf, nsout
+
 ! variables for I/O options
       call ESMF_ConfigGetAttribute(config=CF,value=output_grid, label ='output_grid:',rc=rc)
-      if(mype==0) print *,'af nems config,output_grid=',trim(output_grid)
       call ESMF_ConfigGetAttribute(config=CF,value=output_file, label ='output_file:',rc=rc)
-      if(mype==0) print *,'af nems config,output_file=',trim(output_file)
+      if (mype==0) then
+        print *,'output_grid=',trim(output_grid)
+        print *,'output_file=',trim(output_file)
+      end if
       write_nemsioflip=.false.
       write_fsyncflag =.false.
       if(trim(output_grid) == 'gaussian_grid') then
@@ -395,11 +401,63 @@ module fv3gfs_cap_mod
         call ESMF_ConfigGetAttribute(config=CF,value=jmo, label ='jmo:',rc=rc)
         call ESMF_ConfigGetAttribute(config=CF,value=write_nemsioflip, label ='write_nemsioflip:',rc=rc)
         call ESMF_ConfigGetAttribute(config=CF,value=write_fsyncflag, label ='write_fsyncflag:',rc=rc)
-        if(mype==0) print *,'af nems config,imo=',imo,'jmo=',jmo
-        if(mype==0) print *,'af nems config,write_nemsioflip=',write_nemsioflip,'write_fsyncflag=',write_fsyncflag
-      endif
-!end quilting
-    endif
+        if (mype==0) then
+          print *,'imo=',imo,'jmo=',jmo
+          print *,'write_nemsioflip=',write_nemsioflip,'write_fsyncflag=',write_fsyncflag
+        end if
+      else if(trim(output_grid) == 'regional_latlon') then
+        call ESMF_ConfigGetAttribute(config=CF,value=lon1, label ='lon1:',rc=rc)
+        call ESMF_ConfigGetAttribute(config=CF,value=lat1, label ='lat1:',rc=rc)
+        call ESMF_ConfigGetAttribute(config=CF,value=lon2, label ='lon2:',rc=rc)
+        call ESMF_ConfigGetAttribute(config=CF,value=lat2, label ='lat2:',rc=rc)
+        call ESMF_ConfigGetAttribute(config=CF,value=dlon, label ='dlon:',rc=rc)
+        call ESMF_ConfigGetAttribute(config=CF,value=dlat, label ='dlat:',rc=rc)
+        imo = (lon2-lon1)/dlon + 1
+        jmo = (lat2-lat1)/dlat + 1
+        if (mype==0) then
+          print *,'lon1=',lon1,' lat1=',lat1
+          print *,'lon2=',lon2,' lat2=',lat2
+          print *,'dlon=',dlon,' dlat=',dlat
+          print *,'imo =',imo, ' jmo=',jmo
+        end if
+      else if (trim(output_grid) == 'rotated_latlon') then
+        call ESMF_ConfigGetAttribute(config=CF,value=cen_lon, label ='cen_lon:',rc=rc)
+        call ESMF_ConfigGetAttribute(config=CF,value=cen_lat, label ='cen_lat:',rc=rc)
+        call ESMF_ConfigGetAttribute(config=CF,value=lon1, label ='lon1:',rc=rc)
+        call ESMF_ConfigGetAttribute(config=CF,value=lat1, label ='lat1:',rc=rc)
+        call ESMF_ConfigGetAttribute(config=CF,value=lon2, label ='lon2:',rc=rc)
+        call ESMF_ConfigGetAttribute(config=CF,value=lat2, label ='lat2:',rc=rc)
+        call ESMF_ConfigGetAttribute(config=CF,value=dlon, label ='dlon:',rc=rc)
+        call ESMF_ConfigGetAttribute(config=CF,value=dlat, label ='dlat:',rc=rc)
+        imo = (lon2-lon1)/dlon + 1
+        jmo = (lat2-lat1)/dlat + 1
+        if (mype==0) then
+          print *,'lon1=',lon1,' lat1=',lat1
+          print *,'lon2=',lon2,' lat2=',lat2
+          print *,'dlon=',dlon,' dlat=',dlat
+          print *,'imo =',imo, ' jmo=',jmo
+        end if
+      else if (trim(output_grid) == 'lambert_conformal') then
+        call ESMF_ConfigGetAttribute(config=CF,value=cen_lon, label ='cen_lon:',rc=rc)
+        call ESMF_ConfigGetAttribute(config=CF,value=cen_lat, label ='cen_lat:',rc=rc)
+        call ESMF_ConfigGetAttribute(config=CF,value=stdlat1, label ='stdlat1:',rc=rc)
+        call ESMF_ConfigGetAttribute(config=CF,value=stdlat2, label ='stdlat2:',rc=rc)
+        call ESMF_ConfigGetAttribute(config=CF,value=imo, label ='nx:',rc=rc)
+        call ESMF_ConfigGetAttribute(config=CF,value=jmo, label ='ny:',rc=rc)
+        call ESMF_ConfigGetAttribute(config=CF,value=lon1, label ='lon1:',rc=rc)
+        call ESMF_ConfigGetAttribute(config=CF,value=lat1, label ='lat1:',rc=rc)
+        call ESMF_ConfigGetAttribute(config=CF,value=dx, label ='dx:',rc=rc)
+        call ESMF_ConfigGetAttribute(config=CF,value=dy, label ='dy:',rc=rc)
+        if (mype==0) then
+          print *,'cen_lon=',cen_lon,' cen_lat=',cen_lat
+          print *,'stdlat1=',stdlat1,' stdlat2=',stdlat2
+          print *,'lon1=',lon1,' lat1=',lat1
+          print *,'nx=',imo, ' ny=',jmo
+          print *,'dx=',dx,' dy=',dy
+        endif
+      endif ! output_grid
+
+    endif ! quilting
 !
     call ESMF_ConfigGetAttribute(config=CF,value=dt_atmos, label ='dt_atmos:',rc=rc)
     call ESMF_ConfigGetAttribute(config=CF,value=nfhmax,   label ='nhours_fcst:',rc=rc)

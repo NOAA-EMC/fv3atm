@@ -122,6 +122,8 @@ public addLsmask2grid
                                                          ! (they correspond to the x, y, pfull, phalf axes)
      integer, pointer              :: pelist(:) =>null() ! pelist where atmosphere is running.
      integer                       :: layout(2)          ! computer task laytout
+     logical                       :: regional           ! true if domain is regional
+     integer                       :: mlon, mlat
      logical                       :: pe                 ! current pe.
      real(kind=8),             pointer, dimension(:)     :: ak, bk
      real,                     pointer, dimension(:,:)   :: lon_bnd  => null() ! local longitude axis grid box corners in radians.
@@ -409,7 +411,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    call atmosphere_resolution (nlon, nlat, global=.false.)
    call atmosphere_resolution (mlon, mlat, global=.true.)
    call alloc_atmos_data_type (nlon, nlat, Atmos)
-   call atmosphere_domain (Atmos%domain, Atmos%layout)
+   call atmosphere_domain (Atmos%domain, Atmos%layout, Atmos%regional)
    call atmosphere_diag_axes (Atmos%axes)
    call atmosphere_etalvls (Atmos%ak, Atmos%bk, flip=flip_vc)
    call atmosphere_grid_bdry (Atmos%lon_bnd, Atmos%lat_bnd, global=.false.)
@@ -417,6 +419,8 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    call atmosphere_hgt (Atmos%layer_hgt, 'layer', relative=.false., flip=flip_vc)
    call atmosphere_hgt (Atmos%level_hgt, 'level', relative=.false., flip=flip_vc)
 
+   Atmos%mlon = mlon
+   Atmos%mlat = mlat
 !-----------------------------------------------------------------------
 !--- before going any further check definitions for 'blocks'
 !-----------------------------------------------------------------------

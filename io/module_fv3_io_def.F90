@@ -20,6 +20,8 @@
   integer           :: imo,jmo
   integer           :: nbdlphys
   integer           :: nsout_io
+  real              :: cen_lon, cen_lat, lon1, lat1, lon2, lat2, dlon, dlat
+  real              :: stdlat1, stdlat2, dx, dy
   character(255),dimension(:),allocatable :: filename_base
 !
   integer,dimension(:),allocatable     :: lead_wrttask, last_wrttask

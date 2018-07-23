@@ -134,7 +134,7 @@ $(LIBRARY): $(OBJS)
 clean:
 	@echo "Cleaning namphysics  ... "
 	@echo
-	$(RM) -f $(LIBRARY) *__genmod.f90 *.o */*.o *.mod *.lst *.i depend
+	$(RM) -f $(LIBRARY) *__genmod.f90 *.o */*.o *.mod *.i90 *.lst *.i depend
 
 MKDEPENDS = ../mkDepends.pl
 include ../conf/make.rules

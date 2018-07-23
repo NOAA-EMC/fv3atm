@@ -1,3 +1,5 @@
+#define ESMF_ERR_ABORT(rc) \
+if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundError(rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
 !-----------------------------------------------------------------------
 !
   module module_fcst_grid_comp
@@ -41,7 +43,8 @@
 
   use mpp_io_mod,         only: mpp_open, mpp_close, MPP_NATIVE, MPP_RDONLY, MPP_DELETE
 
-  use mpp_domains_mod,    only: mpp_get_global_domain, mpp_global_field, CORNER
+  use mpp_domains_mod,    only: mpp_get_global_domain, mpp_global_field, CORNER, domain2d
+  use mpp_domains_mod,    only: mpp_get_compute_domains
   use memutils_mod,       only: print_memuse_stats
   use sat_vapor_pres_mod, only: sat_vapor_pres_init
 
@@ -54,6 +57,7 @@
   
   use fms_io_mod,         only: field_exist, read_data
 
+  use atmosphere_mod,     only: atmosphere_control_data
   use esmf
 !
   use module_fv3_io_def, only:  num_pes_fcst, num_files, filename_base, nbdlphys
@@ -163,10 +167,11 @@
 !
     integer                                :: tl, i, j
     integer,dimension(2,6)                 :: decomptile                  !define delayout for the 6 cubed-sphere tiles
+    integer,dimension(2,1)                 :: reg_decomptile              !define delayout for the regional grid
     type(ESMF_FieldBundle)                 :: fieldbundle
 !
-    type(ESMF_Time)                        :: CurrTime, TINI, StopTime
-    type(ESMF_TimeInterval)                :: TINT, RunDuration, TimeElapsed
+    type(ESMF_Time)                        :: CurrTime, StartTime, StopTime
+    type(ESMF_TimeInterval)                :: RunDuration, TimeElapsed
     type(ESMF_Config)                      :: cf
 
     integer                                :: Run_length
@@ -188,6 +193,16 @@
     type(ESMF_FieldBundle),dimension(:), allocatable  :: fieldbundlephys
 
     real(8) mpi_wtime, timeis
+
+    type(ESMF_DELayout) :: delayout
+    type(ESMF_DistGrid) :: distgrid
+    real(ESMF_KIND_R8),dimension(:,:), pointer :: glatPtr, glonPtr
+    real(ESMF_KIND_R8),parameter :: dtor = 180.0_ESMF_KIND_R8 / 3.1415926535897931_ESMF_KIND_R8
+    integer :: jsc, jec, isc, iec, nlev
+    type(domain2D) :: domain
+    integer :: n, fcstNpes
+    integer, allocatable, dimension(:) :: isl, iel, jsl, jel
+    integer, allocatable, dimension(:,:,:) :: deBlockList
 !
 !----------------------------------------------------------------------- 
 !*********************************************************************** 
@@ -251,16 +266,25 @@
 !***  set atmos time
 !----------------------------------------------------------------------- 
 !
-    call ESMF_ClockGet(clock, currTIME=CurrTime, rc=rc)
-    call ESMF_ClockGet(clock, TimeStep=TINT, rc=rc)
-    call ESMF_ClockGet(clock, StartTime=TINI, rc=rc)
-    call ESMF_ClockGet(clock, RunDuration=RunDuration, rc=rc)
-    call ESMF_ClockGet(clock, currTIME=CurrTime, TimeStep=TINT,      &
-                       StartTime=TINI, RunDuration=RunDuration, rc=rc)
+    call ESMF_ClockGet(clock, CurrTime=CurrTime, StartTime=StartTime, &
+                       StopTime=StopTime, RunDuration=RunDuration, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
       return  ! bail out
+
+    date_init=0
+    call ESMF_TimeGet (StartTime,                      &
+                       YY=date_init(1), MM=date_init(2), DD=date_init(3), &
+                       H=date_init(4),  M =date_init(5), S =date_init(6), RC=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+    if ( date_init(1) == 0 ) date_init = date
+    atm_int_state%Time_init  = set_date (date_init(1), date_init(2), date_init(3), &
+                                         date_init(4), date_init(5), date_init(6))
+    if(mype==0) write(*,'(A,6I5)') 'StartTime=',date_init
 
     date=0
     call ESMF_TimeGet (CurrTime,                    &
@@ -270,25 +294,11 @@
       line=__LINE__, &
       file=__FILE__)) &
       return  ! bail out
-    if(mype==0) print *,'CurrTime=',date
+    if(mype==0) write(*,'(A,6I5)') 'CurrTime =',date
 
     atm_int_state%Time_atmos = set_date (date(1), date(2), date(3),  &
-                            date(4), date(5), date(6))
+                                         date(4), date(5), date(6))
 
-    date_init=0
-    call ESMF_TimeGet (TINI,                      &
-                       YY=date_init(1), MM=date_init(2), DD=date_init(3), &
-                       H=date_init(4),  M =date_init(5), S =date_init(6), RC=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
-    if ( date_init(1) == 0 ) date_init = date
-    atm_int_state%Time_init  = set_date (date_init(1), date_init(2), date_init(3), &
-                            date_init(4), date_init(5), date_init(6))
-    if(mype==0) print *,'InitTime=',date_init
-!
-    stopTime = CurrTime + RunDuration
     date_end=0
     call ESMF_TimeGet (StopTime,                      &
                        YY=date_end(1), MM=date_end(2), DD=date_end(3), &
@@ -299,8 +309,8 @@
       return  ! bail out
     if ( date_end(1) == 0 ) date_end = date
     atm_int_state%Time_end   = set_date (date_end(1), date_end(2), date_end(3),  &
-                            date_end(4), date_end(5), date_end(6))
-    if(mype==0) print *,'StopTime=',date_end,'date=',date
+                                         date_end(4), date_end(5), date_end(6))
+    if(mype==0) write(*,'(A,6I5)') 'StopTime =',date_end
 !
     call diag_manager_set_time_end(atm_int_state%Time_end)
 !
@@ -365,22 +375,78 @@
           decomptile(1,tl) = atm_int_state%Atm%layout(1)
           decomptile(2,tl) = atm_int_state%Atm%layout(2)
         enddo
-        
+
         gridfile="grid_spec.nc" ! default
         if (field_exist("INPUT/grid_spec.nc", "atm_mosaic_file")) then
           call read_data("INPUT/grid_spec.nc", "atm_mosaic_file", gridfile)
         endif
-        
-        CALL ESMF_LogWrite("fcst: gridfile:"//trim(gridfile),ESMF_LOGMSG_INFO,rc=rc)
-        
-        fcstGrid = ESMF_GridCreateMosaic(filename="INPUT/"//trim(gridfile),  &
-          regDecompPTile=decomptile,tileFilePath="INPUT/",                   &
-          staggerlocList=(/ESMF_STAGGERLOC_CENTER, ESMF_STAGGERLOC_CORNER/), &
-          name='fcst_grid', rc=rc)
-        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-          line=__LINE__, &
-          file=__FILE__)) &
-          return  ! bail out
+
+        if( atm_int_state%Atm%regional) then
+
+          call atmosphere_control_data (isc, iec, jsc, jec, nlev)
+
+          domain = atm_int_state%Atm%domain
+          fcstNpes = atm_int_state%Atm%layout(1)*atm_int_state%Atm%layout(2)
+          allocate(isl(fcstNpes), iel(fcstNpes), jsl(fcstNpes), jel(fcstNpes))
+          allocate(deBlockList(2,2,fcstNpes))
+          call mpp_get_compute_domains(domain,xbegin=isl,xend=iel,ybegin=jsl,yend=jel)
+          do n=1,fcstNpes
+             deBlockList(:,1,n) = (/ isl(n),iel(n) /)
+             deBlockList(:,2,n) = (/ jsl(n),jel(n) /)
+          end do
+          delayout = ESMF_DELayoutCreate(petMap=(/(i,i=0,fcstNpes-1)/), rc=rc); ESMF_ERR_ABORT(rc)
+          distgrid = ESMF_DistGridCreate(minIndex=(/1,1/), &
+                                         maxIndex=(/atm_int_state%Atm%mlon,atm_int_state%Atm%mlat/), &
+                                         delayout=delayout, &
+                                         deBlockList=deBlockList, rc=rc); ESMF_ERR_ABORT(rc)
+
+          fcstGrid = ESMF_GridCreateNoPeriDim(regDecomp=(/atm_int_state%Atm%layout(1),atm_int_state%Atm%layout(2)/), &
+                                              minIndex=(/1,1/), &
+                                              maxIndex=(/atm_int_state%Atm%mlon,atm_int_state%Atm%mlat/), &
+                                              gridEdgeLWidth=(/0,0/), &
+                                              gridEdgeUWidth=(/0,0/), &
+                                              name="fcst_grid", &
+                                              indexflag=ESMF_INDEX_DELOCAL, &
+                                              rc=rc); ESMF_ERR_ABORT(rc)
+
+          ! add and define "center" coordinate values
+          call ESMF_GridAddCoord(fcstGrid, staggerLoc=ESMF_STAGGERLOC_CENTER, rc=rc); ESMF_ERR_ABORT(rc)
+          call ESMF_GridGetCoord(fcstGrid, coordDim=1, staggerLoc=ESMF_STAGGERLOC_CENTER, &
+                                 farrayPtr=glonPtr, rc=rc); ESMF_ERR_ABORT(rc)
+          call ESMF_GridGetCoord(fcstGrid, coordDim=2, staggerLoc=ESMF_STAGGERLOC_CENTER, &
+                                 farrayPtr=glatPtr, rc=rc); ESMF_ERR_ABORT(rc)
+
+          do j = jsc, jec
+          do i = isc, iec
+            glonPtr(i-isc+1,j-jsc+1) = atm_int_state%Atm%lon(i-isc+1,j-jsc+1) * dtor
+            glatPtr(i-isc+1,j-jsc+1) = atm_int_state%Atm%lat(i-isc+1,j-jsc+1) * dtor
+          enddo
+          enddo
+
+          ! add and define "corner" coordinate values
+          !call ESMF_GridAddCoord(fcstGrid, staggerLoc=ESMF_STAGGERLOC_CORNER, staggerAlign=(/1,1/), rc=rc); ESMF_ERR_ABORT(rc)
+          !call ESMF_GridGetCoord(fcstGrid, coordDim=1, staggerLoc=ESMF_STAGGERLOC_CORNER,           farrayPtr=glonPtr, rc=rc); ESMF_ERR_ABORT(rc)
+          !call ESMF_GridGetCoord(fcstGrid, coordDim=2, staggerLoc=ESMF_STAGGERLOC_CORNER,           farrayPtr=glatPtr, rc=rc); ESMF_ERR_ABORT(rc)
+
+          !do j = jsc, jec
+          !do i = isc, iec
+          !  glonPtr(i,j) = atm_int_state%Atm%gridstruct%agrid_64(i,j,1)
+          !  glatPtr(i,j) = atm_int_state%Atm%gridstruct%agrid_64(i,j,2)
+          !enddo
+          !enddo
+
+        else ! not regional
+
+          fcstGrid = ESMF_GridCreateMosaic(filename="INPUT/"//trim(gridfile),  &
+            regDecompPTile=decomptile,tileFilePath="INPUT/",                   &
+            staggerlocList=(/ESMF_STAGGERLOC_CENTER, ESMF_STAGGERLOC_CORNER/), &
+            name='fcst_grid', rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+            line=__LINE__, &
+            file=__FILE__)) &
+            return  ! bail out
+
+        end if
 !
 !test to write out vtk file:
         if( cpl ) then

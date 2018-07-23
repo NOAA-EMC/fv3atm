@@ -294,6 +294,7 @@ module module_write_netcdf
 
     integer :: varival
     real(ESMF_KIND_R4) :: varr4val
+    real(ESMF_KIND_R4), dimension(:), allocatable :: varr4list
     real(ESMF_KIND_R8) :: varr8val
     real(ESMF_KIND_R8), dimension(:), allocatable :: varr8list
     integer :: itemCount
@@ -308,7 +309,7 @@ module module_write_netcdf
 
       call ESMF_AttributeGet(fldbundle, convention="NetCDF", purpose="FV3", &
                              attnestflag=ESMF_ATTNEST_OFF, attributeIndex=i, name=attName, &
-                             typekind=typekind, itemCount=itemCount, rc=rc)
+                             typekind=typekind, itemCount=itemCount, rc=rc); ESMF_ERR_RETURN(rc)
 
       if (typekind==ESMF_TYPEKIND_I4) then
          call ESMF_AttributeGet(fldbundle, convention="NetCDF", purpose="FV3", &
@@ -316,9 +317,11 @@ module module_write_netcdf
          ncerr = nf90_put_att(ncid, NF90_GLOBAL, trim(attName), varival); NC_ERR_STOP(ncerr)
 
       else if (typekind==ESMF_TYPEKIND_R4) then
+         allocate (varr4list(itemCount))
          call ESMF_AttributeGet(fldbundle, convention="NetCDF", purpose="FV3", &
-                                name=trim(attName), value=varr4val, rc=rc); ESMF_ERR_RETURN(rc)
-         ncerr = nf90_put_att(ncid, NF90_GLOBAL, trim(attName), varr4val); NC_ERR_STOP(ncerr)
+                                name=trim(attName), valueList=varr4list, rc=rc); ESMF_ERR_RETURN(rc)
+         ncerr = nf90_put_att(ncid, NF90_GLOBAL, trim(attName), varr4list); NC_ERR_STOP(ncerr)
+         deallocate(varr4list)
 
       else if (typekind==ESMF_TYPEKIND_R8) then
          allocate (varr8list(itemCount))

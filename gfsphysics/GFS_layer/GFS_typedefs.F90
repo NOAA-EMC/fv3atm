@@ -2095,7 +2095,7 @@ module GFS_typedefs
     dxmin   = log(tem/(min_lon*min_lat))
     dxinv   = 1.0d0 / (dxmax-dxmin)
     rhc_max = rhcmax
-    if (Model%me == Model%master) write(0,*)' dxmax=',dxmax,' dxmin=',dxmin,' dxinv=',dxinv, &
+    if (Model%me == Model%master) write(*,*)' dxmax=',dxmax,' dxmin=',dxmin,' dxinv=',dxinv, &
        'max_lon=',max_lon,' max_lat=',max_lat,' min_lon=',min_lon,' min_lat=',min_lat,       &
        ' rhc_max=',rhc_max
 
