@@ -706,9 +706,9 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !-----------------------------------------------------------------------
 !
 !     IF(RC /= ESMF_SUCCESS) THEN
-!       WRITE(0,*)"FAIL: fcst_RUN"
+!       if(mype==0) WRITE(0,*)"FAIL: fcst_RUN"
 !      ELSE
-         WRITE(0,*)"PASS: fcstRUN, na=",na
+        if(mype==0) WRITE(0,*)"PASS: fcstRUN, na=",na
 !     ENDIF
 !
       if(mype==0) print *,'fcst_run_phase_1 time is ', mpi_wtime()-tbeg1
@@ -800,9 +800,9 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !-----------------------------------------------------------------------
 !
 !     IF(RC /= ESMF_SUCCESS) THEN
-!       WRITE(0,*)"FAIL: fcst_RUN"
+!      if(mype==0) WRITE(0,*)"FAIL: fcst_RUN"
 !      ELSE
-         WRITE(0,*)"PASS: fcstRUN, na=",na
+       if(mype==0) WRITE(0,*)"PASS: fcstRUN, na=",na
 !     ENDIF
 !
       if(mype==0) print *,'fcst_run_phase_2 time is ', mpi_wtime()-tbeg1
