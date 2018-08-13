@@ -316,6 +316,12 @@ module module_cap_cpl
 
       deallocate(typeList, itemNameList)
 
+      call ESMF_GridDestroy(outGrid,noGarbage=.true., rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, &
+        file=__FILE__)) &
+        return  ! bail out
+
     end subroutine ESMFPP_RegridWriteState
 
     subroutine ESMFPP_RegridWrite(inField, outGrid, regridMethod, fileName, fieldName, timeslice, rc)
@@ -357,6 +363,18 @@ module module_cap_cpl
         return  ! bail out
 
       call ESMF_FieldWrite(outField, fileName, variableName=fieldName, timeslice=timeslice, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, &
+        file=__FILE__)) &
+        return  ! bail out
+
+      call ESMF_FieldRegridRelease(routehandle=rh, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, &
+        file=__FILE__)) &
+        return  ! bail out
+
+      call ESMF_FieldDestroy(outField,noGarbage=.true., rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
         line=__LINE__, &
         file=__FILE__)) &

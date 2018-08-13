@@ -52,7 +52,8 @@ module fv3gfs_cap_mod
                                     exportFieldShare,                        &
                                     nImportFields,    importFields,          &
                                     importFieldsList, importFieldTypes,      &
-                                    importFieldShare
+                                    importFieldShare, importFieldsValid,     &
+                                    queryFieldList
   use module_cap_cpl,         only: realizeConnectedCplFields,               &
                                     clock_cplIntval, Dump_cplFields
 
@@ -83,6 +84,7 @@ module fv3gfs_cap_mod
 
   character(len=160) :: nuopcMsg
   integer            :: timeslice = 0
+  integer            :: fcstmype
 
 
 !-----------------------------------------------------------------------
@@ -146,8 +148,7 @@ module fv3gfs_cap_mod
       file=__FILE__)) &
       return  ! bail out
     call NUOPC_CompSpecialize(gcomp, specLabel=model_label_CheckImport, &
-      specRoutine=NUOPC_NoOp, rc=rc)  !TODO: replace this with a real method
-      !TODO: for now just disable all timestamp checking of import fields
+      specRoutine=fv3_checkimport, rc=rc)  
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
@@ -291,6 +292,7 @@ module fv3gfs_cap_mod
       line=__LINE__, &
       file=__FILE__)) &
       return  ! bail out
+    fcstmype = mype
 !    print *,'in fv3_cap,initAdvertize,name=',trim(name),'mpi_comm=',mpi_comm_atm, &
 !       'petcount=',petcount,'mype=',mype
 !
@@ -1298,7 +1300,7 @@ module fv3gfs_cap_mod
          cplprint_flag, timeslice) 
     endif
 
-    print *,'fv3_cap,end integrate,na=',na,' time=',mpi_wtime()- timeri
+    if(mype==0) print *,'fv3_cap,end integrate,na=',na,' time=',mpi_wtime()- timeri
 
     if(profile_memory) call ESMF_VMLogMemInfo("Leaving FV3 Model_ADVANCE: ")
 
@@ -1717,9 +1719,106 @@ module fv3gfs_cap_mod
     
   end subroutine SetRunClock_onestep
 
-  !-----------------------------------------------------------------------------
-
 !-----------------------------------------------------------------------------
+!-----------------------------------------------------------------------------
+  subroutine fv3_checkimport(gcomp, rc)
+!
+!***  Check the import state fields
+!
+    type(ESMF_GridComp)   :: gcomp
+    integer, intent(out)  :: rc
+!
+    integer :: n, nf
+    type(ESMF_Clock)   :: clock
+    type(ESMF_Time)    :: currTime, invalidTime
+    type(ESMF_State)   :: importState
+    logical            :: timeCheck1,timeCheck2
+    type(ESMF_Field),pointer  :: fieldList(:)
+    character(len=128) :: fldname
+    character(esmf_maxstr) :: MESSAGE_CHECK
+!jwtest
+    integer date(6)
+
+    ! query the Component for its clock
+    call ESMF_GridCompGet(gcomp, clock=clock, &
+      importState=importState, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+
+    ! get the current time out of the clock
+    call ESMF_ClockGet(clock, currTime=currTime, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+!jwtest:
+    date(1:6) = 0
+    call ESMF_TimeGet(time=CurrTime,yy=date(1),mm=date(2),dd=date(3),h=date(4), &
+                      m=date(5),s=date(6),rc=rc)
+    if(fcstmype==0) print *,'in fv3_checkimport, currtime=',date(1:6)
+
+    ! set up invalid time (by convention)
+    call ESMF_TimeSet(invalidTime, yy=99999999, mm=01, dd=01, &
+      h=00, m=00, s=00, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+
+    nullify(fieldList)
+    call NUOPC_GetStateMemberLists(importState, &
+      fieldList=fieldList, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+
+    ! set the importFieldsValid flag
+    ! associated(fieldList) will be false if there are no fields
+
+    importFieldsValid(:) = .true.
+    if (associated(fieldList)) then
+      if(fcstmype==0) print *,'in fv3_checkimport, inside associated(fieldList)'
+      do n = 1,size(fieldList)
+        call ESMF_FieldGet(fieldList(n), name=fldname, rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, &
+          file=__FILE__)) &
+          return  ! bail out
+        nf = queryFieldList(ImportFieldsList,fldname)
+        timeCheck1 = NUOPC_IsAtTime(fieldList(n), invalidTime, rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, &
+          file=__FILE__)) &
+          return  ! bail out
+        if (timeCheck1) then
+          importFieldsValid(nf) = .false.
+          if(fcstmype==0) print *,'in fv3_checkimport,',trim(fldname),' is set unvalid, nf=',nf,' at time',date(1:6)
+        else
+          timeCheck2 = NUOPC_IsAtTime(fieldList(n), currTime, rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+            line=__LINE__, &
+            file=__FILE__)) &
+            return  ! bail out
+          if (.not.timeCheck2) then
+            !TODO: introduce and use INCOMPATIBILITY return codes!!!!
+            call ESMF_LogSetError(ESMF_RC_ARG_BAD, &
+              msg="NUOPC INCOMPATIBILITY DETECTED: Import Field not at current time", &
+              line=__LINE__, file=__FILE__, &
+              rcToReturn=rc)
+              return  ! bail out
+          endif
+        endif
+        write(MESSAGE_CHECK,'(A,2i4,l3)') &
+          "FV3_CHECKIMPORT "//trim(fldname),n,nf,importFieldsValid(nf)
+        CALL ESMF_LogWrite(MESSAGE_CHECK,ESMF_LOGMSG_INFO,rc=RC)
+      enddo
+    endif
+
+  end subroutine fv3_checkimport
+
 !-----------------------------------------------------------------------------
 
   subroutine atmos_model_finalize(gcomp, rc)

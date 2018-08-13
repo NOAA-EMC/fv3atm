@@ -137,33 +137,32 @@ module module_cplfields
   real(kind=8), allocatable, public :: exportData(:,:,:)
 
 ! Import Fields ----------------------------------------
-  integer, public, parameter  :: NimportFields = 12
+  integer, public, parameter :: NimportFields = 12
+  logical, public            :: importFieldsValid(NimportFields)
   type(ESMF_Field), target, public    :: importFields(NimportFields)
   character(len=*), public, parameter :: importFieldsList(NimportFields) = (/ &
-       "inst_tracer_mass_frac                    ", &
-       "land_mask                                ", &
-       "surface_temperature                      ", &
-       "sea_surface_temperature                  ", &
-       "ice_fraction                             ", &
-!      "inst_ice_ir_dif_albedo                   ", &
-!      "inst_ice_ir_dir_albedo                   ", &
-!      "inst_ice_vis_dif_albedo                  ", &
-!      "inst_ice_vis_dir_albedo                  ", &
-       "mean_up_lw_flx                           ", &
-       "mean_laten_heat_flx                      ", &
-       "mean_sensi_heat_flx                      ", &
-!      "mean_evap_rate                           ", &
-       "mean_zonal_moment_flx                    ", &
-       "mean_merid_moment_flx                    ", &
-       "mean_ice_volume                          ", &
-       "mean_snow_volume                         "  &
+       "inst_tracer_mass_frac                  ", &
+       "land_mask                              ", &
+       "surface_temperature                    ", &
+       "sea_surface_temperature                ", &
+       "ice_fraction                           ", &
+!      "inst_ice_ir_dif_albedo                 ", &
+!      "inst_ice_ir_dir_albedo                 ", &
+!      "inst_ice_vis_dif_albedo                ", &
+!      "inst_ice_vis_dir_albedo                ", &
+       "mean_up_lw_flx                         ", &
+       "mean_laten_heat_flx                    ", &
+       "mean_sensi_heat_flx                    ", &
+!      "mean_evap_rate                         ", &
+       "mean_zonal_moment_flx                  ", &
+       "mean_merid_moment_flx                  ", &
+       "mean_ice_volume                        ", &
+       "mean_snow_volume                       "  &
   /)
   character(len=*), public, parameter :: importFieldTypes(NimportFields) = (/ &
        "t",                                 &
        "s","s","s","s",                     &
-!      "s","s","s","s",                     &
        "s","s","s",                         &
-!      "s",                                 &
        "s","s","s","s"                      &
   /)
   ! Set importFieldShare to .true. if field is provided as memory reference
@@ -171,9 +170,7 @@ module module_cplfields
   logical, public, parameter :: importFieldShare(NimportFields) = (/ &
        .true.,                          &
        .false.,.false.,.false.,.false., &
-!      .false.,.false.,.false.,.false., &
        .false.,.false.,.false.,         &
-!      .false.,                         &
        .false.,.false.,.false.,.false.  &
   /)
 

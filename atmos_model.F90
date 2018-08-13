@@ -712,7 +712,7 @@ subroutine update_atmos_model_state (Atmos)
 
     !if in coupled mode, set up coupled fields
     if (IPD_Control%cplflx) then
-      print *,'COUPLING: IPD layer'
+      if (mpp_pe() == mpp_root_pe()) print *,'COUPLING: IPD layer'
 !jw       call setup_exportdata(IPD_Control, IPD_Data, Atm_block)
       call setup_exportdata(rc)
     endif
@@ -1191,20 +1191,21 @@ end subroutine atmos_data_type_chksum
 
   subroutine assign_importdata(rc)
 
-    use module_cplfields,  only: importFields, nImportFields
+    use module_cplfields,  only: importFields, nImportFields, QueryFieldList, &
+                                 ImportFieldsList, importFieldsValid
     use ESMF
 !
     implicit none
     integer, intent(out) :: rc
 
     !--- local variables
-    integer :: n, j, i, ix, nb, isc, iec, jsc, jec, dimCount
+    integer :: n, j, i, ix, nb, isc, iec, jsc, jec, dimCount, findex
     character(len=128) :: impfield_name, fldname
     type(ESMF_TypeKind_Flag)                           :: datatype
     real(kind=ESMF_KIND_R4), dimension(:,:), pointer   :: datar42d
     real(kind=ESMF_KIND_R8), dimension(:,:), pointer   :: datar82d
     real(kind=IPD_kind_phys), dimension(:,:), pointer  :: datar8
-    logical found
+    logical found, lcpl_fice
 !
 !------------------------------------------------------------------------------
 !
@@ -1214,11 +1215,12 @@ end subroutine atmos_data_type_chksum
     iec = IPD_control%isc+IPD_control%nx-1
     jsc = IPD_control%jsc
     jec = IPD_control%jsc+IPD_control%ny-1
+    lcpl_fice = .false.
 
     allocate(datar8(isc:iec,jsc:jec))
-    print *,'in cplImp,dim=',isc,iec,jsc,jec
-    print *,'in cplImp,IPD_Data, size', size(IPD_Data)
-    print *,'in cplImp,tsfc, size', size(IPD_Data(1)%sfcprop%tsfc)
+    if (mpp_pe() == mpp_root_pe() .and. debug) print *,'in cplImp,dim=',isc,iec,jsc,jec
+    if (mpp_pe() == mpp_root_pe() .and. debug) print *,'in cplImp,IPD_Data, size', size(IPD_Data)
+    if (mpp_pe() == mpp_root_pe() .and. debug) print *,'in cplImp,tsfc, size', size(IPD_Data(1)%sfcprop%tsfc)
 
     do n=1,nImportFields
 
@@ -1231,11 +1233,12 @@ end subroutine atmos_data_type_chksum
         datar8 = -99999.0
         call ESMF_FieldGet(importFields(n), dimCount=dimCount ,typekind=datatype, &
           name=impfield_name, rc=rc)
+
         if ( dimCount == 2) then
           if ( datatype == ESMF_TYPEKIND_R8) then
             call ESMF_FieldGet(importFields(n),farrayPtr=datar82d,localDE=0, rc=rc)
             datar8=datar82d
-            print *,'in cplIMP, get sst, datar8=',maxval(datar8),minval(datar8), &
+            if (mpp_pe() == mpp_root_pe() .and. debug) print *,'in cplIMP,atmos gets ',trim(impfield_name),' datar8=',maxval(datar8),minval(datar8), &
                datar8(isc,jsc)
             found = .true.
 ! gfs physics runs with r8
@@ -1247,151 +1250,238 @@ end subroutine atmos_data_type_chksum
         endif
 !
         ! get sea land mask: in order to update the coupling fields over the ocean/ice
-        fldname = 'land_mask'
-        if (trim(impfield_name) == trim(fldname) .and. found) then
-          do j=jsc,jec
-            do i=isc,iec
-              nb = Atm_block%blkno(i,j)
-              ix = Atm_block%ixp(i,j)
-              IPD_Data(nb)%Coupling%slimskin_cpl(ix) = datar8(i,j)
-            enddo
-          enddo
-        endif
+!        fldname = 'land_mask'
+!        findex = QueryFieldList(ImportFieldsList,fldname)
+!        if (importFieldsValid(findex) .and. datar8(isc,jsc) > -99999.0) then
+!          if (trim(impfield_name) == trim(fldname) .and. found) then
+!            do j=jsc,jec
+!            do i=isc,iec
+!              nb = Atm_block%blkno(i,j)
+!              ix = Atm_block%ixp(i,j)
+!              IPD_Data(nb)%Coupling%slimskin_cpl(ix) = datar8(i,j)
+!            enddo
+!            enddo
+!            if( mpp_pe()==mpp_root_pe()) print *,'get land mask from mediator'
+!          endif
+!        endif
 
         ! get surface temperature: update ice temperature for atm ??? can SST be applied here???
         fldname = 'surface_temperature'
-        if (trim(impfield_name) == trim(fldname) .and. found) then
-          do j=jsc,jec
+        findex = QueryFieldList(ImportFieldsList,fldname)
+        if (importFieldsValid(findex) .and. datar8(isc,jsc) > -99999.0) then
+          if (trim(impfield_name) == trim(fldname) .and. found) then
+            do j=jsc,jec
             do i=isc,iec
               nb = Atm_block%blkno(i,j)
               ix = Atm_block%ixp(i,j)
               IPD_Data(nb)%Coupling%tisfcin_cpl(ix) = datar8(i,j)
             enddo
-          enddo
+            enddo
+          endif
         endif
 
         ! get sst:  sst needs to be adjusted by land sea mask before passing to
         ! fv3
         fldname = 'sea_surface_temperature'
-        if (trim(impfield_name) == trim(fldname) .and. found) then
+        findex = QueryFieldList(ImportFieldsList,fldname)
+        if (importFieldsValid(findex) .and. datar8(isc,jsc) > -99999.0) then
+          if (trim(impfield_name) == trim(fldname) .and. found) then
 !
-          do j=jsc,jec
+            do j=jsc,jec
             do i=isc,iec
               nb = Atm_block%blkno(i,j)
               ix = Atm_block%ixp(i,j)
 !             if (Sfcprop%slimskin(i,j) < 3.1 .and. Sfcprop%slimskin(i,j) > 2.9) then
-!               if (Sfcprop%slmsk(i,j) < 0.1 .or. Sfcprop%slmsk(i,j) > 1.9) then
+!if it is ocean or ice get sst from mediator
+               if (IPD_Data(nb)%Sfcprop%slmsk(ix) < 0.1 .or. IPD_Data(nb)%Sfcprop%slmsk(ix) > 1.9) then
                   IPD_Data(nb)%Coupling%tseain_cpl(ix) = datar8(i,j)
-!                 IPD_Data(nb)%Sfcprop%tsfc(ix) = datar8(i,j)
-!               endif
+                 IPD_Data(nb)%Sfcprop%tsfc(ix) = datar8(i,j)
+               endif
 !             endif
             enddo
-          enddo
+            enddo
+            if (mpp_pe() == mpp_root_pe() .and. debug)  print *,'get sst from mediator'
+          endif
         endif
 
         ! get sea ice fraction:  fice or sea ice concentration from the mediator
         fldname = 'ice_fraction'
-        if (trim(impfield_name) == trim(fldname) .and. found) then
-          do j=jsc,jec
+        findex = QueryFieldList(ImportFieldsList,fldname)
+        if (importFieldsValid(findex) .and. datar8(isc,jsc) > -99999.0) then
+          if (trim(impfield_name) == trim(fldname) .and. found) then
+            lcpl_fice = .true.
+            do j=jsc,jec
             do i=isc,iec
               nb = Atm_block%blkno(i,j)
               ix = Atm_block%ixp(i,j)
               IPD_Data(nb)%Coupling%ficein_cpl(ix) = datar8(i,j)
+!if it is ocean or ice get sst from mediator
+              if (IPD_Data(nb)%Sfcprop%slmsk(ix) < 0.1 .or. IPD_Data(nb)%Sfcprop%slmsk(ix) > 1.9) then
+                if( datar8(i,j) > 0.15 .and. IPD_Data(nb)%Sfcprop%lakemsk(ix) /= 1 ) then
+                  IPD_Data(nb)%Sfcprop%fice(ix) = datar8(i,j)
+                  IPD_Data(nb)%Sfcprop%slmsk(ix) = 2.0
+                  IPD_Data(nb)%Coupling%slimskin_cpl(ix) = 4.
+                  else
+                  IPD_Data(nb)%Sfcprop%fice(ix) = 0.0
+                endif
+              endif
             enddo
-          enddo
+            enddo
+            if (mpp_pe() == mpp_root_pe() .and. debug)  print *,'fv3 assign_import: get fice from mediator'
+          endif
         endif
 
         ! get upward LW flux:  for sea ice covered area
         fldname = 'mean_up_lw_flx'
-        if (trim(impfield_name) == trim(fldname) .and. found) then
-          do j=jsc,jec
+        findex = QueryFieldList(ImportFieldsList,fldname)
+        if (importFieldsValid(findex) .and. datar8(isc,jsc) > -99999.0) then
+          if (trim(impfield_name) == trim(fldname) .and. found) then
+            do j=jsc,jec
             do i=isc,iec
               nb = Atm_block%blkno(i,j)
               ix = Atm_block%ixp(i,j)
-              IPD_Data(nb)%Coupling%ulwsfcin_cpl(ix) = datar8(i,j)
+          if (IPD_Data(nb)%Sfcprop%slmsk(ix) < 0.1 .or. IPD_Data(nb)%Sfcprop%slmsk(ix) > 1.9) then
+              IPD_Data(nb)%Coupling%ulwsfcin_cpl(ix) = -datar8(i,j)
+          endif
             enddo
-          enddo
+            enddo
+            if (mpp_pe() == mpp_root_pe() .and. debug)  print *,'fv3 assign_import: get lwflx from mediator'
+          endif
         endif
 
         ! get latent heat flux:  for sea ice covered area
         fldname = 'mean_laten_heat_flx'
-        if (trim(impfield_name) == trim(fldname) .and. found) then
-          do j=jsc,jec
+        findex = QueryFieldList(ImportFieldsList,fldname)
+        if (importFieldsValid(findex) .and. datar8(isc,jsc) > -99999.0) then
+          if (trim(impfield_name) == trim(fldname) .and. found) then
+            do j=jsc,jec
             do i=isc,iec
               nb = Atm_block%blkno(i,j)
               ix = Atm_block%ixp(i,j)
-              IPD_Data(nb)%Coupling%dqsfcin_cpl(ix) = datar8(i,j)
+          if (IPD_Data(nb)%Sfcprop%slmsk(ix) < 0.1 .or. IPD_Data(nb)%Sfcprop%slmsk(ix) > 1.9) then
+              IPD_Data(nb)%Coupling%dqsfcin_cpl(ix) = -datar8(i,j)
+          endif
             enddo
-          enddo
+            enddo
+            if (mpp_pe() == mpp_root_pe() .and. debug)  print *,'fv3 assign_import: get laten_heat from mediator'
+          endif
         endif
 
         ! get sensible heat flux:  for sea ice covered area
         fldname = 'mean_sensi_heat_flx'
-        if (trim(impfield_name) == trim(fldname) .and. found) then
-          do j=jsc,jec
+        findex = QueryFieldList(ImportFieldsList,fldname)
+        if (importFieldsValid(findex) .and. datar8(isc,jsc) > -99999.0) then
+          if (trim(impfield_name) == trim(fldname) .and. found) then
+            do j=jsc,jec
             do i=isc,iec
               nb = Atm_block%blkno(i,j)
               ix = Atm_block%ixp(i,j)
-              IPD_Data(nb)%Coupling%dtsfcin_cpl(ix) = datar8(i,j)
+          if (IPD_Data(nb)%Sfcprop%slmsk(ix) < 0.1 .or. IPD_Data(nb)%Sfcprop%slmsk(ix) > 1.9) then
+              IPD_Data(nb)%Coupling%dtsfcin_cpl(ix) = -datar8(i,j)
+          endif
             enddo
-          enddo
+            enddo
+            if (mpp_pe() == mpp_root_pe() .and. debug)  print *,'fv3 assign_import: get sensi_heat from mediator'
+          endif
         endif
 
         ! get zonal compt of momentum flux:  for sea ice covered area
         fldname = 'mean_zonal_moment_flx'
-        if (trim(impfield_name) == trim(fldname) .and. found) then
-          do j=jsc,jec
+        findex = QueryFieldList(ImportFieldsList,fldname)
+        if (importFieldsValid(findex) .and. datar8(isc,jsc) > -99999.0) then
+          if (trim(impfield_name) == trim(fldname) .and. found) then
+            do j=jsc,jec
             do i=isc,iec
               nb = Atm_block%blkno(i,j)
               ix = Atm_block%ixp(i,j)
-              IPD_Data(nb)%Coupling%dusfcin_cpl(ix) = datar8(i,j)
+          if (IPD_Data(nb)%Sfcprop%slmsk(ix) < 0.1 .or. IPD_Data(nb)%Sfcprop%slmsk(ix) > 1.9) then
+              IPD_Data(nb)%Coupling%dusfcin_cpl(ix) = -datar8(i,j)
+          endif
             enddo
-          enddo
+            enddo
+            if (mpp_pe() == mpp_root_pe() .and. debug)  print *,'fv3 assign_import: get zonal_moment_flx from mediator'
+          endif
         endif
 
         ! get meridional compt of momentum flux:  for sea ice covered area
         fldname = 'mean_merid_moment_flx'
-        if (trim(impfield_name) == trim(fldname) .and. found) then
-          do j=jsc,jec
+        findex = QueryFieldList(ImportFieldsList,fldname)
+        if (importFieldsValid(findex) .and. datar8(isc,jsc) > -99999.0) then
+          if (trim(impfield_name) == trim(fldname) .and. found) then
+            do j=jsc,jec
             do i=isc,iec
               nb = Atm_block%blkno(i,j)
               ix = Atm_block%ixp(i,j)
-              IPD_Data(nb)%Coupling%dvsfcin_cpl(ix) = datar8(i,j)
+          if (IPD_Data(nb)%Sfcprop%slmsk(ix) < 0.1 .or. IPD_Data(nb)%Sfcprop%slmsk(ix) > 1.9) then
+              IPD_Data(nb)%Coupling%dvsfcin_cpl(ix) = -datar8(i,j)
+          endif
             enddo
-          enddo
+            enddo
+            if (mpp_pe() == mpp_root_pe() .and. debug)  print *,'fv3 assign_import: get merid_moment_flx from mediator'
+          endif
         endif
 
         ! get sea ice volume:  for sea ice covered area
         fldname = 'mean_ice_volume'
-        if (trim(impfield_name) == trim(fldname) .and. found) then
-          do j=jsc,jec
+        findex = QueryFieldList(ImportFieldsList,fldname)
+        if (importFieldsValid(findex) .and. datar8(isc,jsc) > -99999.0) then
+          if (trim(impfield_name) == trim(fldname) .and. found) then
+            do j=jsc,jec
             do i=isc,iec
               nb = Atm_block%blkno(i,j)
               ix = Atm_block%ixp(i,j)
               IPD_Data(nb)%Coupling%hicein_cpl(ix) = datar8(i,j)
             enddo
-          enddo
+            enddo
+            if (mpp_pe() == mpp_root_pe() .and. debug) print *,'fv3 assign_import: get ice_volume  from mediator'
+          endif
         endif
 
         ! get snow volume:  for sea ice covered area
         fldname = 'mean_snow_volume'
-        if (trim(impfield_name) == trim(fldname) .and. found) then
-          do j=jsc,jec
+        findex = QueryFieldList(ImportFieldsList,fldname)
+        if (importFieldsValid(findex) .and. datar8(isc,jsc) > -99999.0) then
+          if (trim(impfield_name) == trim(fldname) .and. found) then
+            do j=jsc,jec
             do i=isc,iec
               nb = Atm_block%blkno(i,j)
               ix = Atm_block%ixp(i,j)
               IPD_Data(nb)%Coupling%hsnoin_cpl(ix) = datar8(i,j)
             enddo
-          enddo
+            enddo
+            if (mpp_pe() == mpp_root_pe() .and. debug)  print *,'fv3 assign_import: get snow_volume  from mediator'
+          endif
         endif
 
       endif
     enddo
-
+!
     deallocate(datar8)
+
+! update sea ice related fields:
+    if( lcpl_fice ) then
+      do j=jsc,jec
+      do i=isc,iec
+        nb = Atm_block%blkno(i,j)
+        ix = Atm_block%ixp(i,j)
+!if it is ocean or ice get sst from mediator
+        if (IPD_Data(nb)%Sfcprop%slmsk(ix) < 0.1 .or.  IPD_Data(nb)%Sfcprop%slmsk(ix) > 1.9) then
+           IPD_Data(nb)%Sfcprop%tisfc(ix) = IPD_Data(nb)%Coupling%tisfcin_cpl(ix)
+          if( IPD_Data(nb)%Sfcprop%fice(ix) > 0.15 .and. IPD_Data(nb)%Sfcprop%lakemsk(ix) /= 1 ) then
+            IPD_Data(nb)%Sfcprop%hice(ix)  = IPD_Data(nb)%Coupling%hicein_cpl(ix)
+            IPD_Data(nb)%Sfcprop%snowd(ix) = IPD_Data(nb)%Coupling%hsnoin_cpl(ix)
+          else
+            IPD_Data(nb)%Sfcprop%hice(ix)  = 0.
+            IPD_Data(nb)%Sfcprop%snowd(ix) = 0.
+          endif
+        endif
+      enddo
+      enddo
+    endif
+
     rc=0
 !
-    print *,'end of assign_importdata'
+    if (mpp_pe() == mpp_root_pe()) print *,'end of assign_importdata'
   end subroutine assign_importdata
 
 !
@@ -1411,7 +1501,7 @@ end subroutine atmos_data_type_chksum
     integer            :: j, i, ix, nb, isc, iec, jsc, jec, idx
     real(IPD_kind_phys)    :: rtime
 !
-    print *,'enter setup_exportdata'
+    if (mpp_pe() == mpp_root_pe()) print *,'enter setup_exportdata'
 
     isc = IPD_control%isc
     iec = IPD_control%isc+IPD_control%nx-1
@@ -1611,7 +1701,7 @@ end subroutine atmos_data_type_chksum
     ! Instataneous u wind (m/s) 10 m above ground
     idx = queryfieldlist(exportFieldsList,'inst_zonal_wind_height10m')
     if (idx > 0 ) then
-      print *,'cpl, in get u10mi_cpl'
+      if (mpp_pe() == mpp_root_pe() .and. debug) print *,'cpl, in get u10mi_cpl'
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
@@ -1629,7 +1719,7 @@ end subroutine atmos_data_type_chksum
     ! Instataneous v wind (m/s) 10 m above ground
     idx = queryfieldlist(exportFieldsList,'inst_merid_wind_height10m')
     if (idx > 0 ) then
-      print *,'cpl, in get v10mi_cpl'
+      if (mpp_pe() == mpp_root_pe() .and. debug) print *,'cpl, in get v10mi_cpl'
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
@@ -1637,7 +1727,7 @@ end subroutine atmos_data_type_chksum
           exportData(i,j,idx) = IPD_Data(nb)%coupling%v10mi_cpl(ix)
         enddo
       enddo
-      print *,'cpl, get v10mi_cpl, exportData=',exportData(isc,jsc,idx),'idx=',idx
+      if (mpp_pe() == mpp_root_pe() .and. debug) print *,'cpl, get v10mi_cpl, exportData=',exportData(isc,jsc,idx),'idx=',idx
     endif
 
     ! Instataneous Temperature (K) at surface
@@ -2071,7 +2161,7 @@ end subroutine atmos_data_type_chksum
           IPD_Data(nb)%coupling%snow_cpl(ix)   = 0.
         enddo
       enddo
-    print *,'end of setup_exportdata'
+    if (mpp_pe() == mpp_root_pe()) print *,'end of setup_exportdata'
 
   end subroutine setup_exportdata
 
@@ -2101,6 +2191,7 @@ end subroutine atmos_data_type_chksum
       do i=isc,iec
         nb = Atm_block%blkno(i,j)
         ix = Atm_block%ixp(i,j)
+! use land sea mask: land:1, ocean:0
         lsmask(i,j) = IPD_Data(nb)%SfcProp%slmsk(ix)
       enddo
     enddo
