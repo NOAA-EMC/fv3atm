@@ -1291,13 +1291,11 @@ end subroutine atmos_data_type_chksum
             do i=isc,iec
               nb = Atm_block%blkno(i,j)
               ix = Atm_block%ixp(i,j)
-!             if (Sfcprop%slimskin(i,j) < 3.1 .and. Sfcprop%slimskin(i,j) > 2.9) then
 !if it is ocean or ice get sst from mediator
-               if (IPD_Data(nb)%Sfcprop%slmsk(ix) < 0.1 .or. IPD_Data(nb)%Sfcprop%slmsk(ix) > 1.9) then
-                  IPD_Data(nb)%Coupling%tseain_cpl(ix) = datar8(i,j)
-                 IPD_Data(nb)%Sfcprop%tsfc(ix) = datar8(i,j)
-               endif
-!             endif
+              if (IPD_Data(nb)%Sfcprop%slmsk(ix) < 0.1 .or. IPD_Data(nb)%Sfcprop%slmsk(ix) > 1.9) then
+                IPD_Data(nb)%Coupling%tseain_cpl(ix) = datar8(i,j)
+                IPD_Data(nb)%Sfcprop%tsfc(ix) = datar8(i,j)
+              endif
             enddo
             enddo
             if (mpp_pe() == mpp_root_pe() .and. debug)  print *,'get sst from mediator'
@@ -1314,15 +1312,13 @@ end subroutine atmos_data_type_chksum
             do i=isc,iec
               nb = Atm_block%blkno(i,j)
               ix = Atm_block%ixp(i,j)
-              IPD_Data(nb)%Coupling%ficein_cpl(ix) = datar8(i,j)
+              IPD_Data(nb)%Coupling%ficein_cpl(ix) = 0.
 !if it is ocean or ice get sst from mediator
               if (IPD_Data(nb)%Sfcprop%slmsk(ix) < 0.1 .or. IPD_Data(nb)%Sfcprop%slmsk(ix) > 1.9) then
                 if( datar8(i,j) > 0.15 .and. IPD_Data(nb)%Sfcprop%lakemsk(ix) /= 1 ) then
-                  IPD_Data(nb)%Sfcprop%fice(ix) = datar8(i,j)
+                  IPD_Data(nb)%Coupling%ficein_cpl(ix) = datar8(i,j)
                   IPD_Data(nb)%Sfcprop%slmsk(ix) = 2.0
                   IPD_Data(nb)%Coupling%slimskin_cpl(ix) = 4.
-                  else
-                  IPD_Data(nb)%Sfcprop%fice(ix) = 0.0
                 endif
               endif
             enddo
@@ -1340,9 +1336,9 @@ end subroutine atmos_data_type_chksum
             do i=isc,iec
               nb = Atm_block%blkno(i,j)
               ix = Atm_block%ixp(i,j)
-          if (IPD_Data(nb)%Sfcprop%slmsk(ix) < 0.1 .or. IPD_Data(nb)%Sfcprop%slmsk(ix) > 1.9) then
-              IPD_Data(nb)%Coupling%ulwsfcin_cpl(ix) = -datar8(i,j)
-          endif
+              if (IPD_Data(nb)%Sfcprop%slmsk(ix) < 0.1 .or. IPD_Data(nb)%Sfcprop%slmsk(ix) > 1.9) then
+                IPD_Data(nb)%Coupling%ulwsfcin_cpl(ix) = -datar8(i,j)
+              endif
             enddo
             enddo
             if (mpp_pe() == mpp_root_pe() .and. debug)  print *,'fv3 assign_import: get lwflx from mediator'
@@ -1358,9 +1354,9 @@ end subroutine atmos_data_type_chksum
             do i=isc,iec
               nb = Atm_block%blkno(i,j)
               ix = Atm_block%ixp(i,j)
-          if (IPD_Data(nb)%Sfcprop%slmsk(ix) < 0.1 .or. IPD_Data(nb)%Sfcprop%slmsk(ix) > 1.9) then
-              IPD_Data(nb)%Coupling%dqsfcin_cpl(ix) = -datar8(i,j)
-          endif
+              if (IPD_Data(nb)%Sfcprop%slmsk(ix) < 0.1 .or. IPD_Data(nb)%Sfcprop%slmsk(ix) > 1.9) then
+                IPD_Data(nb)%Coupling%dqsfcin_cpl(ix) = -datar8(i,j)
+              endif
             enddo
             enddo
             if (mpp_pe() == mpp_root_pe() .and. debug)  print *,'fv3 assign_import: get laten_heat from mediator'
@@ -1376,9 +1372,9 @@ end subroutine atmos_data_type_chksum
             do i=isc,iec
               nb = Atm_block%blkno(i,j)
               ix = Atm_block%ixp(i,j)
-          if (IPD_Data(nb)%Sfcprop%slmsk(ix) < 0.1 .or. IPD_Data(nb)%Sfcprop%slmsk(ix) > 1.9) then
-              IPD_Data(nb)%Coupling%dtsfcin_cpl(ix) = -datar8(i,j)
-          endif
+              if (IPD_Data(nb)%Sfcprop%slmsk(ix) < 0.1 .or. IPD_Data(nb)%Sfcprop%slmsk(ix) > 1.9) then
+                IPD_Data(nb)%Coupling%dtsfcin_cpl(ix) = -datar8(i,j)
+              endif
             enddo
             enddo
             if (mpp_pe() == mpp_root_pe() .and. debug)  print *,'fv3 assign_import: get sensi_heat from mediator'
@@ -1394,9 +1390,9 @@ end subroutine atmos_data_type_chksum
             do i=isc,iec
               nb = Atm_block%blkno(i,j)
               ix = Atm_block%ixp(i,j)
-          if (IPD_Data(nb)%Sfcprop%slmsk(ix) < 0.1 .or. IPD_Data(nb)%Sfcprop%slmsk(ix) > 1.9) then
-              IPD_Data(nb)%Coupling%dusfcin_cpl(ix) = -datar8(i,j)
-          endif
+              if (IPD_Data(nb)%Sfcprop%slmsk(ix) < 0.1 .or. IPD_Data(nb)%Sfcprop%slmsk(ix) > 1.9) then
+                IPD_Data(nb)%Coupling%dusfcin_cpl(ix) = -datar8(i,j)
+              endif
             enddo
             enddo
             if (mpp_pe() == mpp_root_pe() .and. debug)  print *,'fv3 assign_import: get zonal_moment_flx from mediator'
@@ -1412,9 +1408,9 @@ end subroutine atmos_data_type_chksum
             do i=isc,iec
               nb = Atm_block%blkno(i,j)
               ix = Atm_block%ixp(i,j)
-          if (IPD_Data(nb)%Sfcprop%slmsk(ix) < 0.1 .or. IPD_Data(nb)%Sfcprop%slmsk(ix) > 1.9) then
-              IPD_Data(nb)%Coupling%dvsfcin_cpl(ix) = -datar8(i,j)
-          endif
+              if (IPD_Data(nb)%Sfcprop%slmsk(ix) < 0.1 .or. IPD_Data(nb)%Sfcprop%slmsk(ix) > 1.9) then
+                IPD_Data(nb)%Coupling%dvsfcin_cpl(ix) = -datar8(i,j)
+              endif
             enddo
             enddo
             if (mpp_pe() == mpp_root_pe() .and. debug)  print *,'fv3 assign_import: get merid_moment_flx from mediator'
@@ -1467,13 +1463,17 @@ end subroutine atmos_data_type_chksum
 !if it is ocean or ice get sst from mediator
         if (IPD_Data(nb)%Sfcprop%slmsk(ix) < 0.1 .or.  IPD_Data(nb)%Sfcprop%slmsk(ix) > 1.9) then
            IPD_Data(nb)%Sfcprop%tisfc(ix) = IPD_Data(nb)%Coupling%tisfcin_cpl(ix)
-          if( IPD_Data(nb)%Sfcprop%fice(ix) > 0.15 .and. IPD_Data(nb)%Sfcprop%lakemsk(ix) /= 1 ) then
-            IPD_Data(nb)%Sfcprop%hice(ix)  = IPD_Data(nb)%Coupling%hicein_cpl(ix)
-            IPD_Data(nb)%Sfcprop%snowd(ix) = IPD_Data(nb)%Coupling%hsnoin_cpl(ix)
-          else
-            IPD_Data(nb)%Sfcprop%hice(ix)  = 0.
-            IPD_Data(nb)%Sfcprop%snowd(ix) = 0.
-          endif
+           if( IPD_Data(nb)%Sfcprop%lakemsk(ix) /= 1 ) then
+             if( IPD_Data(nb)%Coupling%ficein_cpl(ix) > 0.15 ) then
+               IPD_Data(nb)%Sfcprop%fice(ix)  = IPD_Data(nb)%Coupling%ficein_cpl(ix)
+               IPD_Data(nb)%Sfcprop%hice(ix)  = IPD_Data(nb)%Coupling%hicein_cpl(ix)
+               IPD_Data(nb)%Sfcprop%snowd(ix) = IPD_Data(nb)%Coupling%hsnoin_cpl(ix)
+             else
+               IPD_Data(nb)%Sfcprop%fice(ix)  = 0.
+               IPD_Data(nb)%Sfcprop%hice(ix)  = 0.
+               IPD_Data(nb)%Sfcprop%snowd(ix) = 0.
+             endif
+           endif
         endif
       enddo
       enddo
