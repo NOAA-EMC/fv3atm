@@ -1077,6 +1077,7 @@ module GFS_diagnostics
     ExtDiag(idx)%desc = 'total water runoff'
     ExtDiag(idx)%unit = 'kg/m**2'
     ExtDiag(idx)%mod_name = 'gfs_phys'
+    ExtDiag(idx)%cnvfac = cn_th
     allocate (ExtDiag(idx)%data(nblks))
     do nb = 1,nblks
       ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%runoff(:)
