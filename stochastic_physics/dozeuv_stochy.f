@@ -1,5 +1,5 @@
       subroutine dozeuv_stochy(dod,zev,uod,vev,epsedn,epsodn,
-     x                  snnp1ev,snnp1od,ls_node)
+     &                  snnp1ev,snnp1od,ls_node)
 cc
       use stochy_resol_def
       use spectral_layout

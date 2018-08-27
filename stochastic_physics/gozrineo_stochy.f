@@ -1,7 +1,7 @@
       subroutine gozrineo_a_stochy(plnev_a,plnod_a,
-     x                      pddev_a,pddod_a,
-     x                      plnew_a,plnow_a,
-     x                      epse,epso,rcs2_a,wgt_a,ls_node,num_lat)
+     &                      pddev_a,pddod_a,
+     &                      plnew_a,plnow_a,
+     &                      epse,epso,rcs2_a,wgt_a,ls_node,num_lat)
 cc
       use stochy_resol_def
       use spectral_layout
@@ -63,7 +63,7 @@ cc
 cc
 cc
             pddev_a(indlsev(l,l),lat) = -epso(indlsod(l+1,l))
-     x                              * plnod_a(indlsod(l+1,l),lat) * rn
+     &                              * plnod_a(indlsod(l+1,l),lat) * rn
             indev1 = indlsev(L,L) + 1
             if (mod(L,2).eq.mod(jcap+1,2)) then
                indev2 = indlsev(jcap-1,L)
@@ -78,9 +78,9 @@ cc
             do indev = indev1 , indev2
 cc
                pddev_a(indev,lat) = epse(indev)
-     x                         * plnod_a(indev-inddif  ,lat) * rnp1
-     x                            - epso(indev-inddif+1)
-     x                         * plnod_a(indev-inddif+1,lat) * rn
+     &                         * plnod_a(indev-inddif  ,lat) * rnp1
+     &                            - epso(indev-inddif+1)
+     &                         * plnod_a(indev-inddif+1,lat) * rn
 cc
                rn   = rn   + cons2     !constant
                rnp1 = rnp1 + cons2     !constant
@@ -101,9 +101,9 @@ cc
             do indev = indev1 , indev2
 cc
                pddod_a(indev-inddif,lat) = epso(indev-inddif)
-     x                                * plnev_a(indev  ,lat) * rnp1
-     x                                   - epse(indev+1)
-     x                                * plnev_a(indev+1,lat) * rn
+     &                                * plnev_a(indev  ,lat) * rnp1
+     &                                   - epse(indev+1)
+     &                                * plnev_a(indev+1,lat) * rn
 cc
                rn   = rn   + cons2     !constant
                rnp1 = rnp1 + cons2     !constant

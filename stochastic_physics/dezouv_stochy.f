@@ -1,5 +1,5 @@
       subroutine dezouv_stochy(dev,zod,uev,vod,epsedn,epsodn,
-     x                  snnp1ev,snnp1od,ls_node)
+     &                  snnp1ev,snnp1od,ls_node)
 cc
 
 cc

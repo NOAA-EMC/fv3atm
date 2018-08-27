@@ -1,5 +1,5 @@
       subroutine pln2eo_a_stochy(plnev_a,plnod_a,epse,epso,colrad_a,
-     x                    ls_node,num_lat)
+     &                    ls_node,num_lat)
 !
 ! use x-number method to archieve accuracy due to recursive to avoid
 ! underflow and overflow if necessary by henry juang 2012 july
