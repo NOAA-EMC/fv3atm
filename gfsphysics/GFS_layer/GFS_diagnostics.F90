@@ -892,6 +892,7 @@ module GFS_diagnostics
     ExtDiag(idx)%unit = '%'
     ExtDiag(idx)%mod_name = 'gfs_phys'
     ExtDiag(idx)%time_avg = .TRUE.
+    ExtDiag(idx)%cnvfac = cn_100
     allocate (ExtDiag(idx)%data(nblks))
     do nb = 1,nblks
       ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%snowca(:)
@@ -1028,11 +1029,11 @@ module GFS_diagnostics
     ExtDiag(idx)%mod_name = 'gfs_phys'
     ExtDiag(idx)%cnvfac = cn_one
     ExtDiag(idx)%time_avg = .TRUE.
-    ExtDiag(idx)%mask = "land_ice_only"
+!    ExtDiag(idx)%mask = "land_ice_only"
     allocate (ExtDiag(idx)%data(nblks))
     do nb = 1,nblks
       ExtDiag(idx)%data(nb)%var2  => IntDiag(nb)%gflux(:)
-      ExtDiag(idx)%data(nb)%var21 => Sfcprop(nb)%slmsk(:)
+!      ExtDiag(idx)%data(nb)%var21 => Sfcprop(nb)%slmsk(:)
     enddo
 
     idx = idx + 1
@@ -1077,6 +1078,7 @@ module GFS_diagnostics
     ExtDiag(idx)%desc = 'total water runoff'
     ExtDiag(idx)%unit = 'kg/m**2'
     ExtDiag(idx)%mod_name = 'gfs_phys'
+    ExtDiag(idx)%cnvfac = cn_th
     allocate (ExtDiag(idx)%data(nblks))
     do nb = 1,nblks
       ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%runoff(:)
@@ -1639,7 +1641,7 @@ module GFS_diagnostics
     ExtDiag(idx)%axes = 2
     ExtDiag(idx)%name = 'gfluxi'
     ExtDiag(idx)%desc = 'instantaneous surface ground heat flux'
-    ExtDiag(idx)%unit = 'XXX'
+    ExtDiag(idx)%unit = 'W/m**2'
     ExtDiag(idx)%mod_name = 'gfs_phys'
     allocate (ExtDiag(idx)%data(nblks))
     do nb = 1,nblks
@@ -1892,7 +1894,7 @@ module GFS_diagnostics
     ExtDiag(idx)%axes = 2
     ExtDiag(idx)%name = 'alnsf'
     ExtDiag(idx)%desc = 'mean nir albedo with strong cosz dependency'
-    ExtDiag(idx)%unit = 'XXX'
+    ExtDiag(idx)%unit = '%'
     ExtDiag(idx)%mod_name = 'gfs_sfc'
     allocate (ExtDiag(idx)%data(nblks))
     do nb = 1,nblks
@@ -1903,7 +1905,7 @@ module GFS_diagnostics
     ExtDiag(idx)%axes = 2
     ExtDiag(idx)%name = 'alnwf'
     ExtDiag(idx)%desc = 'mean nir albedo with weak cosz dependency'
-    ExtDiag(idx)%unit = 'XXX'
+    ExtDiag(idx)%unit = '%'
     ExtDiag(idx)%mod_name = 'gfs_sfc'
     allocate (ExtDiag(idx)%data(nblks))
     do nb = 1,nblks
@@ -1914,7 +1916,7 @@ module GFS_diagnostics
     ExtDiag(idx)%axes = 2
     ExtDiag(idx)%name = 'alvsf'
     ExtDiag(idx)%desc = 'mean vis albedo with strong cosz dependency'
-    ExtDiag(idx)%unit = 'XXX'
+    ExtDiag(idx)%unit = '%'
     ExtDiag(idx)%mod_name = 'gfs_sfc'
     allocate (ExtDiag(idx)%data(nblks))
     do nb = 1,nblks
@@ -1925,7 +1927,7 @@ module GFS_diagnostics
     ExtDiag(idx)%axes = 2
     ExtDiag(idx)%name = 'alvwf'
     ExtDiag(idx)%desc = 'mean vis albedo with weak cosz dependency'
-    ExtDiag(idx)%unit = 'XXX'
+    ExtDiag(idx)%unit = '%'
     ExtDiag(idx)%mod_name = 'gfs_sfc'
     allocate (ExtDiag(idx)%data(nblks))
     do nb = 1,nblks
@@ -2045,7 +2047,7 @@ module GFS_diagnostics
     idx = idx + 1
     ExtDiag(idx)%axes = 2
     ExtDiag(idx)%name = 'snoalb'
-    ExtDiag(idx)%desc = 'maximum snow albedo in fraction (salbd?? in gfs data)'
+    ExtDiag(idx)%desc = 'maximum snow albedo in fraction'
     ExtDiag(idx)%unit = 'XXX'
     ExtDiag(idx)%mod_name = 'gfs_sfc'
     allocate (ExtDiag(idx)%data(nblks))
