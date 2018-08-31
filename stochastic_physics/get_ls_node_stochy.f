@@ -60,7 +60,7 @@
          if(ls_node(ijk) >= 0) then
             ls_max_node_fake = ijk
             if(iprint == 1)
-     x      print 230, me_fake, ijk, ls_node(ijk)
+     &      print 230, me_fake, ijk, ls_node(ijk)
          endif
   230    format ('me_fake=',i5,'  get_ls_node  ls_node(', i5, ')=',i5)
       enddo

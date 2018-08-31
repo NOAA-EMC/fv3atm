@@ -1,6 +1,6 @@
       subroutine get_lats_node_a_stochy(me_fake,global_lats_a,
-     .          lats_nodes_a_fake,gl_lats_index,
-     .          global_time_sort_index,iprint)
+     &          lats_nodes_a_fake,gl_lats_index,
+     &          global_time_sort_index,iprint)
 cc
       use stochy_resol_def
       use spectral_layout
@@ -77,8 +77,8 @@ c$$$     .         lats_nodes_a_fake
   220 format ('completed loop 200 in  get_lats_a  ')
 c
       if(iprint.eq.1)
-     x   print*,'completed  get_lats_node, lats_nodes_a_fake=',
-     x   lats_nodes_a_fake
+     &   print*,'completed  get_lats_node, lats_nodes_a_fake=',
+     &   lats_nodes_a_fake
 cc
       return
       end

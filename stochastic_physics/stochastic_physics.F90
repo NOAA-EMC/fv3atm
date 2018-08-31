@@ -150,8 +150,6 @@ enddo
 WLON=gg_lons(1)-(gg_lons(2)-gg_lons(1))
 RNLAT=gg_lats(1)*2-gg_lats(2)
 
-
-
 !print *,'done with init_stochastic_physics'
 
 end subroutine init_stochastic_physics
@@ -180,43 +178,51 @@ real,allocatable :: tmp_wts(:,:),tmpu_wts(:,:,:),tmpv_wts(:,:,:)
 !D-grid
 integer :: k
 integer j,ierr,i
-integer :: blk
+integer :: blk, len, maxlen
 character*120 :: sfile
 character*6   :: STRFH
+
 if ( (.NOT. do_sppt) .AND. (.NOT. do_shum) .AND. (.NOT. do_skeb)  .AND. (.NOT. do_sfcperts) ) return
+maxlen = 0
+DO blk=1,nblks
+   maxlen = max(maxlen,size(Grid(blk)%xlat,1))
+ENDDO
 ! check to see if it is time to write out random patterns
 if (Model%phour .EQ. fhstoch) then
    write(STRFH,FMT='(I6.6)') nint(Model%phour)
    sfile='stoch_out.F'//trim(STRFH)
    call dump_patterns(sfile)
 endif
-allocate(tmp_wts(nblks,Model%isc:Model%isc+Model%nx-1))
-allocate(tmpu_wts(nblks,Model%isc:Model%isc+Model%nx-1,Model%levs))
-allocate(tmpv_wts(nblks,Model%isc:Model%isc+Model%nx-1,Model%levs))
+allocate(tmp_wts(nblks,maxlen))
+allocate(tmpu_wts(nblks,maxlen,Model%levs))
+allocate(tmpv_wts(nblks,maxlen,Model%levs))
 if (do_sppt) then
-   call get_random_pattern_fv3(rpattern_sppt,nsppt,gis_stochy,Model,Grid,nblks,tmp_wts)
+   call get_random_pattern_fv3(rpattern_sppt,nsppt,gis_stochy,Model,Grid,nblks,maxlen,tmp_wts)
    DO blk=1,nblks
+      len=size(Grid(blk)%xlat,1)
       DO k=1,Model%levs
-         Coupling(blk)%sppt_wts(:,k)=tmp_wts(blk,:)*vfact_sppt(k)
+         Coupling(blk)%sppt_wts(:,k)=tmp_wts(blk,1:len)*vfact_sppt(k)
       ENDDO
       if (sppt_logit) Coupling(blk)%sppt_wts(:,:) = (2./(1.+exp(Coupling(blk)%sppt_wts(:,:))))-1.
        Coupling(blk)%sppt_wts(:,:)= Coupling(blk)%sppt_wts(:,:)+1.0
    ENDDO
 endif
 if (do_shum) then
-   call get_random_pattern_fv3(rpattern_shum,nshum,gis_stochy,Model,Grid,nblks,tmp_wts)
+   call get_random_pattern_fv3(rpattern_shum,nshum,gis_stochy,Model,Grid,nblks,maxlen,tmp_wts)
    DO blk=1,nblks
+      len=size(Grid(blk)%xlat,1)
       DO k=1,Model%levs
-         Coupling(blk)%shum_wts(:,k)=tmp_wts(blk,:)*vfact_shum(k)
+         Coupling(blk)%shum_wts(:,k)=tmp_wts(blk,1:len)*vfact_shum(k)
       ENDDO
    ENDDO
 endif
 if (do_skeb) then
-   call get_random_pattern_fv3_vect(rpattern_skeb,nskeb,gis_stochy,Model,Grid,nblks,tmpu_wts,tmpv_wts)
+   call get_random_pattern_fv3_vect(rpattern_skeb,nskeb,gis_stochy,Model,Grid,nblks,maxlen,tmpu_wts,tmpv_wts)
    DO blk=1,nblks
-         DO k=1,Model%levs
-         Coupling(blk)%skebu_wts(:,k)=tmpu_wts(blk,:,k)*vfact_skeb(k)
-         Coupling(blk)%skebv_wts(:,k)=tmpv_wts(blk,:,k)*vfact_skeb(k)
+      len=size(Grid(blk)%xlat,1)
+      DO k=1,Model%levs
+         Coupling(blk)%skebu_wts(:,k)=tmpu_wts(blk,1:len,k)*vfact_skeb(k)
+         Coupling(blk)%skebv_wts(:,k)=tmpv_wts(blk,1:len,k)*vfact_skeb(k)
       ENDDO
    ENDDO
 endif
@@ -247,19 +253,23 @@ real,allocatable :: tmpsfc_wts(:,:,:)
 !D-grid
 integer :: k
 integer j,ierr,i
-integer :: blk
+integer :: blk, len, maxlen
 character*120 :: sfile
 character*6   :: STRFH
 if (.NOT. do_sfcperts) return
-
-allocate(tmpsfc_wts(nblks,Model%isc:Model%isc+Model%nx-1,Model%nsfcpert))  ! mg, sfc-perts
+maxlen = 0
+DO blk=1,nblks
+   maxlen = max(maxlen,size(Grid(blk)%xlat,1))
+ENDDO
+allocate(tmpsfc_wts(nblks,maxlen,Model%nsfcpert))  ! mg, sfc-perts
 if (is_master()) then
   print*,'In init_stochastic_physics: do_sfcperts ',do_sfcperts
 endif
-call get_random_pattern_sfc_fv3(rpattern_sfc,npsfc,gis_stochy,Model,Grid,nblks,tmpsfc_wts)
+call get_random_pattern_sfc_fv3(rpattern_sfc,npsfc,gis_stochy,Model,Grid,nblks,maxlen,tmpsfc_wts)
 DO blk=1,nblks
+   len=size(Grid(blk)%xlat,1)
    DO k=1,Model%nsfcpert
-      Coupling(blk)%sfc_wts(:,k)=tmpsfc_wts(blk,:,k)
+      Coupling(blk)%sfc_wts(:,k)=tmpsfc_wts(blk,1:len,k)
    ENDDO
 ENDDO
 if (is_master()) then

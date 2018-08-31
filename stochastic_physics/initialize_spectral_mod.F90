@@ -63,7 +63,6 @@
       nodes  = gis_stochy%nodes
       npe_single_member = gis_stochy%npe_single_member
 
-
       lon_dim_a = lon_s + 2
       jcap=ntrunc
       jcap1  = jcap+1 

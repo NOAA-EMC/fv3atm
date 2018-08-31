@@ -64,7 +64,7 @@ module stochy_data_mod
       lat_s=(int(nodes/12)+1)*24
       lon_s=lat_s*2
       ntrunc=lat_s-2
-      if (is_master()) print*,'WARNING: spectral resolution is too low for number of mpi_tasks, restting lon_s,lat_s,and ntrunc to',lon_s,lat_s,ntrunc
+      if (is_master()) print*,'WARNING: spectral resolution is too low for number of mpi_tasks, resetting lon_s,lat_s,and ntrunc to',lon_s,lat_s,ntrunc
    endif
    call initialize_spectral(gis_stochy, iret)
    allocate(noise_e(len_trie_ls,2),noise_o(len_trio_ls,2))

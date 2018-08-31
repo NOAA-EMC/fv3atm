@@ -5,7 +5,7 @@
 ! 20130202:   Henry Juang revise reduced grid and add x number
 !
       implicit none
-      
+
       integer   jcap,jcap1,jcap2,latg,latg2
       integer   levh,levm1,levp1,skeblevs,levs,lnt,lnt2,lnt22,levr
       integer   lnte,lnted,lnto,lntod,lnuv

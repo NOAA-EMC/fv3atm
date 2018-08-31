@@ -33,11 +33,11 @@
       implicit none
 
  
-      integer,              intent(out)   :: iret
-      integer,              intent(in)    :: nlunit,me,sz_nml
-      character(len=*),     intent(in)    :: input_nml_file(sz_nml)
-      character(len=64),    intent(in)    :: fn_nml
-      real,                 intent(inout) :: deltim
+      integer,              intent(out) :: iret
+      integer,              intent(in)  :: nlunit,me,sz_nml
+      character(len=*),     intent(in)  :: input_nml_file(sz_nml)
+      character(len=64),    intent(in)  :: fn_nml
+      real,                 intent(in)  :: deltim
       real tol
       integer k,ios
 
