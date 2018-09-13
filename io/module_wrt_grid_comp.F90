@@ -167,9 +167,11 @@
       real(ESMF_KIND_R8)                      :: valueR8
 
       integer :: attCount, axeslen, jidx, noutfile
+      real(8) :: radi
       character(128) :: FBlist_outfilename(100), outfile_name
       character(128),dimension(:,:), allocatable    :: outfilename
-      real, dimension(:), allocatable               :: slat, lat, lon, axesdata
+      real(8), dimension(:), allocatable            :: slat
+      real, dimension(:), allocatable               :: lat, lon, axesdata
       real(ESMF_KIND_R8), dimension(:,:), pointer   :: lonPtr, latPtr
       type(ESMF_DataCopy_Flag) :: copyflag=ESMF_DATACOPY_REFERENCE
       real(8),parameter :: PI=3.14159265358979d0
@@ -285,13 +287,14 @@
 !
         allocate(slat(jmo),lat(jmo), lon(imo))
         call splat(4,jmo, slat)
+        radi = 180.0d0/(4.d0*atan(1.0d0))
         if(write_nemsioflip) then
           do j=1,jmo
-            lat(j) = asin(slat(j)) * 180./pi
+            lat(j) = asin(slat(j)) * radi
           enddo
         else
           do j=1,jmo
-            lat(jmo-j+1) = asin(slat(j)) * 180./pi
+            lat(jmo-j+1) = asin(slat(j)) * radi
           enddo
         endif
         do j=1,imo
