@@ -1251,6 +1251,10 @@
 !
 !===> ...  begin here
 !
+!only call GFS_radiation_driver at radiation time step
+
+      if (.not. (Model%lsswr .or. Model%lslwr )) return
+!
 !--- set commonly used integers
       me    = Model%me
       LM    = Model%levr
@@ -1386,9 +1390,11 @@
       endif                               ! end_if_ntoz
 
 !>  - Call coszmn(), to compute cosine of zenith angle.
-      call coszmn (Grid%xlon,Grid%sinlat,           &     !  ---  inputs
-                   Grid%coslat,Model%solhr, IM, me, &
+      if( Model%lsswr ) then
+        call coszmn (Grid%xlon,Grid%sinlat,           &   !  ---  inputs
+                   Grid%coslat,Model%solhr, IM, me,   &
                    Radtend%coszen, Radtend%coszdg)        !  ---  outputs
+      endif
 
 !>  - Call getgases(), to set up non-prognostic gas volume mixing
 !!    ratioes (gasvmr).
@@ -2010,7 +2016,7 @@
             if (Radtend%coszen(i) > 0.) then
 !  ---                                  sw total-sky fluxes
 !                                       -------------------
-              tem0d = Model%fhswr * Radtend%coszdg(i)  / Radtend%coszen(i)
+              tem0d = Model%fhswr
               Diag%fluxr(i,2 ) = Diag%fluxr(i,2)  +    Diag%topfsw(i)%upfxc * tem0d  ! total sky top sw up
               Diag%fluxr(i,3 ) = Diag%fluxr(i,3)  + Radtend%sfcfsw(i)%upfxc * tem0d  ! total sky sfc sw up
               Diag%fluxr(i,4 ) = Diag%fluxr(i,4)  + Radtend%sfcfsw(i)%dnfxc * tem0d  ! total sky sfc sw dn
