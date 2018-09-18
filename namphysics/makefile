@@ -17,7 +17,7 @@ endif
 
 LIBRARY  = libnamphys.a
 
-FFLAGS   += -I../fms -I../fms/include -I../cpl $(ESMF_INC)
+FFLAGS   += -I$(FMS_DIR) -I../cpl $(ESMF_INC)
 
 CPPDEFS = -DNEW_TAUCTMAX -DSMALL_PE -DNEMS_GSM -DINTERNAL_FILE_NML
 

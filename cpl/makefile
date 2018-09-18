@@ -17,7 +17,7 @@ endif
 
 LIBRARY  = libfv3cpl.a
 
-#FFLAGS   += -I../fms
+#FFLAGS   += -I$(FMS_DIR)
 
 SRCS_f   =
 
