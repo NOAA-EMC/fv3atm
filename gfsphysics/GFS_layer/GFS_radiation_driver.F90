@@ -2067,7 +2067,7 @@
 !       Anning adds optical depth and emissivity output
               tem1 = 0.
               tem2 = 0.
-              do k=ibtc+kb,itop+kt
+              do k=ibtc,itop
                  tem1 = tem1 + clouds(i,k,10)
                  tem2 = tem2 + clouds(i,k,11)
               end do
