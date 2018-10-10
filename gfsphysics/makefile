@@ -18,6 +18,8 @@ endif
 LIBRARY  = libgfsphys.a
 
 FFLAGS   += -I../fms -I../fms/include -I../cpl
+FFLAGSRAD1 = $(subst -xCORE-AVX2,-xCORE-AVX-I,$(FFLAGS))
+FFLAGSRAD2 = $(subst -xHOST,-xCORE-AVX-I,$(FFLAGS))
 
 CPPDEFS = -DNEW_TAUCTMAX -DSMALL_PE -DNEMS_GSM -DINTERNAL_FILE_NML
 
@@ -178,10 +180,10 @@ $(LIBRARY): $(OBJS)
 
 ifneq (,$(findstring xCORE-AVX2,$(FFLAGS)))
 ./physics/radiation_aerosols.o : ./physics/radiation_aerosols.f
-	$(FC) $(FFLAGS) $(OTHER_FFLAGS) -xCORE-AVX-I -c $< -o $@
+	$(FC) $(FFLAGSRAD1) $(OTHER_FFLAGS) -c $< -o $@
 else ifneq (,$(findstring xHOST,$(FFLAGS)))
 ./physics/radiation_aerosols.o : ./physics/radiation_aerosols.f
-	$(FC) $(FFLAGS) $(OTHER_FFLAGS) -xCORE-AVX-I -c $< -o $@
+	$(FC) $(FFLAGSRAD2) $(OTHER_FFLAGS) -c $< -o $@
 else
 ./physics/radiation_aerosols.o : ./physics/radiation_aerosols.f
 	$(FC) $(FFLAGS) $(OTHER_FFLAGS) -c $< -o $@
