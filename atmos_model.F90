@@ -1313,6 +1313,7 @@ end subroutine atmos_data_type_chksum
               nb = Atm_block%blkno(i,j)
               ix = Atm_block%ixp(i,j)
               IPD_Data(nb)%Coupling%ficein_cpl(ix) = 0.
+              IPD_Data(nb)%Coupling%slimskin_cpl(ix) = 0.
 !if it is ocean or ice get sst from mediator
               if (IPD_Data(nb)%Sfcprop%slmsk(ix) < 0.1 .or. IPD_Data(nb)%Sfcprop%slmsk(ix) > 1.9) then
                 if( datar8(i,j) > 0.15 .and. IPD_Data(nb)%Sfcprop%lakemsk(ix) /= 1 ) then
@@ -1472,6 +1473,7 @@ end subroutine atmos_data_type_chksum
                IPD_Data(nb)%Sfcprop%fice(ix)  = 0.
                IPD_Data(nb)%Sfcprop%hice(ix)  = 0.
                IPD_Data(nb)%Sfcprop%snowd(ix) = 0.
+               IPD_Data(nb)%Sfcprop%slmsk(ix) = 0.
              endif
            endif
         endif

@@ -443,7 +443,7 @@ module module_physics_driver
 
 !--- INTEGER VARIABLES
       integer :: me, lprint, ipr, ix, im, levs, ntrac, nvdiff, kdt,     &
-                 ntoz, ntcw, ntiw, ncld, ntke, ntlnc, ntinc, lsoil,     &
+                 ntoz, ntcw, ntiw, ncld,ntke,ntkev, ntlnc, ntinc, lsoil,&
                  ntrw, ntsw, ntrnc, ntsnc, ntot3d, ntgl, ntgnc, ntclamt,&
                  ims, ime, kms, kme, its, ite, kts, kte, imp_physics,   &
                  ntwa, ntia
@@ -580,9 +580,6 @@ module module_physics_driver
       ncld    = Model%ncld
       ntke    = Model%ntke
 !
-!  scal-aware TKE-based moist EDMF (satmedmfvdif) scheme is coded assuming
-!    ntke=ntrac. If ntrac > ntke, the code needs to be modified. (Jongil Han)
-!
       ntlnc   = Model%ntlnc
       ntinc   = Model%ntinc
       ntrw    = Model%ntrw
@@ -606,12 +603,19 @@ module module_physics_driver
         else
           nvdiff = 5
         endif
+        if (Model%satmedmf) then
+          nvdiff = nvdiff + 1
+        endif
         nncl = 5
       elseif (imp_physics == 6) then
         nvdiff = ntrac -3
         nncl = 5
       elseif (ntclamt > 0) then             ! for GFDL MP don't diffuse cloud amount
         nvdiff = ntrac - 1
+      endif
+
+      if (imp_physics == 11) then
+        nncl = 5
       endif
 
       if (imp_physics == 10) then
@@ -629,6 +633,8 @@ module module_physics_driver
         endif
       endif
 
+      ntkev = nvdiff
+!
 !-------------------------------------------------------------------------------------------
 !     lprnt   = .false.
 
@@ -1450,7 +1456,7 @@ module module_physics_driver
 !  if (lprnt) write(0,*)'aftmonshocdtdt=',dtdt(ipr,1:10)
         else
           if (Model%satmedmf) then
-              call satmedmfvdif(ix, im, levs, nvdiff, ntcw, ntke,                   &
+              call satmedmfvdif(ix, im, levs, nvdiff, ntcw, ntiw, nncl, ntke,       &
                        dvdt, dudt, dtdt, dqdt,                                      &
                        Statein%ugrs, Statein%vgrs, Statein%tgrs, Statein%qgrs,      &
                        Radtend%htrsw, Radtend%htrlw, xmu, garea,                    &
@@ -1563,6 +1569,14 @@ module module_physics_driver
           enddo
         endif
 !
+        if (Model%satmedmf) then
+          do k=1,levs
+            do i=1,im
+              vdftra(i,k,ntkev) = Statein%qgrs(i,k,ntke)
+            enddo
+          enddo
+        endif
+!
         if (Model%do_shoc) then
           call moninshoc(ix, im, levs, nvdiff, ntcw, nncl, dvdt, dudt, dtdt, dvdftra, &
                          Statein%ugrs, Statein%vgrs, Statein%tgrs, vdftra,            &
@@ -1574,7 +1588,18 @@ module module_physics_driver
                          dvsfc1, dtsfc1, dqsfc1, dkt, Diag%hpbl, kinver,              &
                          Model%xkzm_m, Model%xkzm_h, Model%xkzm_s, lprnt, ipr, me)
         else
-          if (Model%hybedmf) then
+          if (Model%satmedmf) then
+              call satmedmfvdif(ix, im, levs, nvdiff, ntcw, ntiw, nncl, ntkev,      &
+                       dvdt, dudt, dtdt, dqdt,                                      &
+                       Statein%ugrs, Statein%vgrs, Statein%tgrs, Statein%qgrs,      &
+                       Radtend%htrsw, Radtend%htrlw, xmu, garea,                    &
+                       Statein%prsik(1,1), rb, Sfcprop%zorl, Diag%u10m, Diag%v10m,  &
+                       Sfcprop%ffmm, Sfcprop%ffhh, Sfcprop%tsfc, hflx, evap,        &
+                       stress, wind, kpbl, Statein%prsi, del, Statein%prsl,         &
+                       Statein%prslk, Statein%phii, Statein%phil, dtp,              &
+                       Model%dspheat, dusfc1, dvsfc1, dtsfc1, dqsfc1, Diag%hpbl,    &
+                       kinver, Model%xkzm_m, Model%xkzm_h, Model%xkzm_s)
+          elseif (Model%hybedmf) then
               call moninedmf(ix, im, levs, nvdiff, ntcw, dvdt, dudt, dtdt, dvdftra, &
                            Statein%ugrs, Statein%vgrs, Statein%tgrs, vdftra,        &
                            Radtend%htrsw, Radtend%htrlw, xmu, Statein%prsik(1,1),   &
@@ -1671,7 +1696,15 @@ module module_physics_driver
             enddo
           enddo
         endif
-
+!
+        if (Model%satmedmf) then
+          do k=1,levs
+            do i=1,im
+              dqdt(i,k,ntke)  = dvdftra(i,k,ntkev)
+            enddo
+          enddo
+        endif
+!
         deallocate(vdftra, dvdftra)
 
       endif

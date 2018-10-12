@@ -14,7 +14,7 @@
 !  For local turbulence mixing, a TKE closure model is used.
 !
 !----------------------------------------------------------------------
-      subroutine satmedmfvdif(ix,im,km,ntrac,ntcw,ntke,
+      subroutine satmedmfvdif(ix,im,km,ntrac,ntcw,ntiw,nthm,ntke,
      &     dv,du,tdt,rtg,u1,v1,t1,q1,swh,hlw,xmu,garea,
      &     psk,rbsoil,zorl,u10m,v10m,fm,fh,
      &     tsea,heat,evap,stress,spd1,kpbl,
@@ -32,7 +32,7 @@
       implicit none
 !
 !----------------------------------------------------------------------
-      integer ix, im, km, ntrac, ntcw, ntke
+      integer ix, im, km, ntrac, ntcw, ntiw, nthm, ntke
       integer kpbl(im), kinver(im)
 !
       real(kind=kind_phys) delt, xkzm_m, xkzm_h, xkzm_s
@@ -69,15 +69,15 @@
       real(kind=kind_phys) tke(im,km),  tkeh(im,km-1)
 !
       real(kind=kind_phys) theta(im,km),thvx(im,km),  thlvx(im,km),
-     &                     qlx(im,km),  thetae(im,km),
-     &                     slx(im,km),  svx(im,km),   thlx(im,km),
-     &                     tvx(im,km),  pix(im,km),
-     &                     qtx(im,km),  radx(im,km-1),
+     &                     qlx(im,km),  thetae(im,km),thlx(im,km),
+!    &                     slx(im,km),  svx(im,km),   qtx(im,km),
+     &                     tvx(im,km),  pix(im,km),   radx(im,km-1),
      &                     dku(im,km-1),dkt(im,km-1), dkq(im,km-1),
      &                     cku(im,km-1),ckt(im,km-1)
 !
-      real(kind=kind_phys) plyr(im,km), rhly(im,km),  cfly(im,km),
-     &                     qstl(im,km)
+!     real(kind=kind_phys) plyr(im,km), rhly(im,km),  cfly(im,km),
+!    &                     qstl(im,km)
+      real(kind=kind_phys) plyr(im,km)
 !
       real(kind=kind_phys) dtdz1(im), gdx(im),
      &                     phih(im),  phim(im),    prn(im),
@@ -170,7 +170,8 @@
       parameter(rlmn=30.,rlmx=300.,elmx=300.)
       parameter(prmin=0.25,prmax=4.0,prtke=1.0,prscu=0.67)
       parameter(f0=1.e-4,crbmin=0.15,crbmax=0.35)
-      parameter(tkmin=5.e-5,dspfac=0.5,dspmax=10.0)
+!     parameter(tkmin=5.e-5,dspfac=0.5,dspmax=10.0)
+      parameter(tkmin=1.e-9,dspfac=0.5,dspmax=10.0)
       parameter(qmin=1.e-8,qlmin=1.e-12,zfmin=1.e-8)
       parameter(aphi5=5.,aphi16=16.)
       parameter(elmfac=1.0,elefac=1.0,cql=100.)
@@ -302,22 +303,39 @@
          endif
       enddo
 !
-      do k=1,km
+      do k = 1,km
         do i=1,im
+          tx1(i) = 0.0
+        enddo
+        do kk=1,nthm
+          do i=1,im
+            tx1(i) = tx1(i) + max(q1(i,k,ntcw+kk-1), qlmin)
+          enddo
+        enddo
+        do i = 1,im
           pix(i,k)   = psk(i) / prslk(i,k)
           theta(i,k) = t1(i,k) * pix(i,k)
-          qlx(i,k)   = max(q1(i,k,ntcw),qlmin)
-          qtx(i,k)   = max(q1(i,k,1),qmin)+qlx(i,k)
-          ptem       = qlx(i,k)
-          tem        = 1.+fv*max(q1(i,k,1),qmin)-ptem
+          tem        = 1.+fv*max(q1(i,k,1),qmin)-tx1(i)
+          thvx(i,k)  = theta(i,k) * tem
           tvx(i,k)   = t1(i,k) * tem
-          slx(i,k)   = cp * t1(i,k) + phil(i,k) - hvap * ptem
-          thlx(i,k)  = theta(i,k) - pix(i,k) * elocp * ptem
-          thlvx(i,k) = thlx(i,k)*(1.+fv*qtx(i,k))
-          svx(i,k)   = cp * tvx(i,k) + phil(i,k)
+        enddo
+      enddo
+!
+      do k=1,km
+        do i=1,im
+          if(ntiw > 0) then
+            qlx(i,k) = max((q1(i,k,ntcw)+q1(i,k,ntiw)),qlmin)
+          else
+            qlx(i,k) = max(q1(i,k,ntcw),qlmin)
+          endif
+!         qtx(i,k) = max(q1(i,k,1),qmin)+qlx(i,k)
+          ptem = max(q1(i,k,1),qmin) + qlx(i,k)
+!         slx(i,k)   = cp * t1(i,k) + phil(i,k) - hvap*qlx(i,k)
+          thlx(i,k)  = theta(i,k) - pix(i,k)*elocp*qlx(i,k)
+          thlvx(i,k) = thlx(i,k) * (1. + fv * ptem)
+!         svx(i,k)   = cp * tvx(i,k) + phil(i,k)
           ptem1      = elocp * pix(i,k) * max(q1(i,k,1),qmin)
           thetae(i,k)= theta(i,k) +  ptem1
-          thvx(i,k)  = theta(i,k) * tem
           gotvx(i,k) = g / tvx(i,k)
         enddo
       enddo
@@ -342,48 +360,48 @@
         do i = 1, im
           plyr(i,k)   = 0.01 * prsl(i,k)   ! pa to mb (hpa)
 !  --- ...  compute relative humidity
-          es  = 0.01 * fpvs(t1(i,k))       ! fpvs in pa
-          qs  = max(qmin, eps * es / (plyr(i,k) + epsm1*es))
-          rhly(i,k) = max(0.0, min(1.0, max(qmin, q1(i,k,1))/qs))
-          qstl(i,k) = qs
+!         es  = 0.01 * fpvs(t1(i,k))       ! fpvs in pa
+!         qs  = max(qmin, eps * es / (plyr(i,k) + epsm1*es))
+!         rhly(i,k) = max(0.0, min(1.0, max(qmin, q1(i,k,1))/qs))
+!         qstl(i,k) = qs
         enddo
       enddo
 !
-      do k = 1, km
-        do i = 1, im
-          cfly(i,k) = 0.
-          clwt = 1.0e-6 * (plyr(i,k)*0.001)
-          if (qlx(i,k) > clwt) then
-            onemrh= max(1.e-10, 1.0-rhly(i,k))
-            tem1  = min(max((onemrh*qstl(i,k))**0.49,0.0001),1.0)
-            tem1  = cql / tem1
-            value = max(min( tem1*qlx(i,k), 50.0), 0.0)
-            tem2  = sqrt(sqrt(rhly(i,k)))
-            cfly(i,k) = max(tem2*(1.0-exp(-value)), 0.0)
-          endif
-        enddo
-      enddo
+!     do k = 1, km
+!       do i = 1, im
+!         cfly(i,k) = 0.
+!         clwt = 1.0e-6 * (plyr(i,k)*0.001)
+!         if (qlx(i,k) > clwt) then
+!           onemrh= max(1.e-10, 1.0-rhly(i,k))
+!           tem1  = min(max((onemrh*qstl(i,k))**0.49,0.0001),1.0)
+!           tem1  = cql / tem1
+!           value = max(min( tem1*qlx(i,k), 50.0), 0.0)
+!           tem2  = sqrt(sqrt(rhly(i,k)))
+!           cfly(i,k) = max(tem2*(1.0-exp(-value)), 0.0)
+!         endif
+!       enddo
+!     enddo
 !
 !  compute buoyancy modified by clouds
 !
-      do k = 1, km1
-        do i = 1, im
-          tem  = 0.5 * (svx(i,k) + svx(i,k+1))
-          tem1 = 0.5 * (t1(i,k) + t1(i,k+1))
-          tem2 = 0.5 * (qstl(i,k) + qstl(i,k+1))
-          cfh  = min(cfly(i,k+1),0.5*(cfly(i,k)+cfly(i,k+1)))
-          alp  = g / tem
-          gamma = el2orc * tem2 / (tem1**2)
-          epsi  = tem1 / elocp
-          beta  = (1. + gamma*epsi*(1.+fv)) / (1. + gamma)
-          chx   = cfh * alp * beta + (1. - cfh) * alp
-          cqx   = cfh * alp * hvap * (beta - epsi)
-          cqx   = cqx + (1. - cfh) * fv * g
-          ptem1 = (slx(i,k+1)-slx(i,k))*rdzt(i,k)
-          ptem2 = (qtx(i,k+1)-qtx(i,k))*rdzt(i,k)
-          bf(i,k) = chx * ptem1 + cqx * ptem2
-        enddo
-      enddo
+!     do k = 1, km1
+!       do i = 1, im
+!         tem  = 0.5 * (svx(i,k) + svx(i,k+1))
+!         tem1 = 0.5 * (t1(i,k) + t1(i,k+1))
+!         tem2 = 0.5 * (qstl(i,k) + qstl(i,k+1))
+!         cfh  = min(cfly(i,k+1),0.5*(cfly(i,k)+cfly(i,k+1)))
+!         alp  = g / tem
+!         gamma = el2orc * tem2 / (tem1**2)
+!         epsi  = tem1 / elocp
+!         beta  = (1. + gamma*epsi*(1.+fv)) / (1. + gamma)
+!         chx   = cfh * alp * beta + (1. - cfh) * alp
+!         cqx   = cfh * alp * hvap * (beta - epsi)
+!         cqx   = cqx + (1. - cfh) * fv * g
+!         ptem1 = (slx(i,k+1)-slx(i,k))*rdzt(i,k)
+!         ptem2 = (qtx(i,k+1)-qtx(i,k))*rdzt(i,k)
+!         bf(i,k) = chx * ptem1 + cqx * ptem2
+!       enddo
+!     enddo
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -435,7 +453,7 @@
       do k = 1, km1
       do i = 1, im
          rdz  = rdzt(i,k)
-!        bf(i,k) = gotvx(i,k)*(thvx(i,k+1)-thvx(i,k))*rdz
+         bf(i,k) = gotvx(i,k)*(thvx(i,k+1)-thvx(i,k))*rdz
          dw2  = (u1(i,k)-u1(i,k+1))**2
      &        + (v1(i,k)-v1(i,k+1))**2
          shr2(i,k) = max(dw2,dw2min)*rdz*rdz
@@ -691,8 +709,8 @@
           do n = k, km1
             if(mlenflg) then
               dz = zl(i,n+1) - zl(i,n)
-!             ptem = gotvx(i,n)*(thvx(i,n+1)-thvx(i,k))*dz
-              ptem = gotvx(i,n)*(thlvx(i,n+1)-thlvx(i,k))*dz
+              ptem = gotvx(i,n)*(thvx(i,n+1)-thvx(i,k))*dz
+!             ptem = gotvx(i,n)*(thlvx(i,n+1)-thlvx(i,k))*dz
               bsum = bsum + ptem
               zlup = zlup + dz
               if(bsum >= tke(i,k)) then
@@ -718,11 +736,11 @@
                 tem1 = tsea(i)*(1.+fv*max(q1(i,1,1),qmin))
               else
                 dz = zl(i,n) - zl(i,n-1)
-!               tem1 = thvx(i,n-1)
-                tem1 = thlvx(i,n-1)
+                tem1 = thvx(i,n-1)
+!               tem1 = thlvx(i,n-1)
               endif
-!             ptem = gotvx(i,n)*(thvx(i,k)-tem1)*dz
-              ptem = gotvx(i,n)*(thlvx(i,k)-tem1)*dz
+              ptem = gotvx(i,n)*(thvx(i,k)-tem1)*dz
+!             ptem = gotvx(i,n)*(thlvx(i,k)-tem1)*dz
               bsum = bsum + ptem
               zldn = zldn + dz
               if(bsum >= tke(i,k)) then
@@ -811,14 +829,14 @@
               endif
            endif
 !
-           if(scuflg(i)) then
-             if(k >= mrad(i) .and. k < krad(i)) then
-                tem1 = ck0 * tem
-                ptem1 = tem1 / prscu
-                dku(i,k) = max(dku(i,k), tem1)
-                dkt(i,k) = max(dkt(i,k), ptem1)
-             endif
-           endif
+!          if(scuflg(i)) then
+!            if(k >= mrad(i) .and. k < krad(i)) then
+!               tem1 = ck0 * tem
+!               ptem1 = tem1 / prscu
+!               dku(i,k) = max(dku(i,k), tem1)
+!               dkt(i,k) = max(dkt(i,k), ptem1)
+!            endif
+!          endif
 !
            dkq(i,k) = prtke * dkt(i,k)
 !
