@@ -411,6 +411,7 @@ module GFS_typedefs
                                             !< 1 => use modis based alb
     integer              :: iems            !< use fixed value of 1.0
     integer              :: iaer            !< default aerosol effect in sw only
+    integer              :: icliq_sw        !< sw optical property for liquid clouds
     integer              :: iovr_sw         !< sw: max-random overlap clouds
     integer              :: iovr_lw         !< lw: max-random overlap clouds
     integer              :: ictm            !< ictm=0 => use data at initial cond time, if not
@@ -1526,6 +1527,7 @@ module GFS_typedefs
                                                              !< 1 => use modis based alb
     integer              :: iems           =  0              !< use fixed value of 1.0
     integer              :: iaer           =  1              !< default aerosol effect in sw only
+    integer              :: icliq_sw       =  1              !< sw optical property for liquid clouds
     integer              :: iovr_sw        =  1              !< sw: max-random overlap clouds
     integer              :: iovr_lw        =  1              !< lw: max-random overlap clouds
     integer              :: ictm           =  1              !< ictm=0 => use data at initial cond time, if not
@@ -1750,7 +1752,7 @@ module GFS_typedefs
                                cplflx, cplwav, cplchm, lsidea,                              &
                           !--- radiation parameters
                                fhswr, fhlwr, levr, nfxr, aero_in, iflip, isol, ico2, ialb,  &
-                               isot, iems,  iaer, iovr_sw, iovr_lw, ictm, isubc_sw,         &
+                               isot, iems, iaer, icliq_sw, iovr_sw, iovr_lw, ictm, isubc_sw,&
                                isubc_lw, crick_proof, ccnorm, lwhtr, swhtr,                 &
                           !--- microphysical parameterizations
                                ncld, imp_physics, psautco, prautco, evpco, wminco,          &
@@ -1888,6 +1890,7 @@ module GFS_typedefs
     Model%ialb             = ialb
     Model%iems             = iems
     Model%iaer             = iaer
+    Model%icliq_sw         = icliq_sw
     Model%iovr_sw          = iovr_sw
     Model%iovr_lw          = iovr_lw
     Model%ictm             = ictm
@@ -2449,6 +2452,7 @@ module GFS_typedefs
       print *, ' ialb              : ', Model%ialb
       print *, ' iems              : ', Model%iems
       print *, ' iaer              : ', Model%iaer
+      print *, ' icliq_sw          : ', Model%icliq_sw
       print *, ' iovr_sw           : ', Model%iovr_sw
       print *, ' iovr_lw           : ', Model%iovr_lw
       print *, ' ictm              : ', Model%ictm

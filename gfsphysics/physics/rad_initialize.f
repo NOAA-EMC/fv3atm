@@ -4,9 +4,8 @@
 !  ---  inputs:
      &     ( si,levr,ictm,isol,ico2,iaer,ialb,iems,ntcw, num_p2d,       &
      &       num_p3d,npdf3d,ntoz,iovr_sw,iovr_lw,isubc_sw,isubc_lw,     &
-     &       crick_proof,ccnorm,                                        &
-     &       imp_physics,                                               &
-     &       norad_precip,idate,iflip,me )
+     &       icliq_sw,crick_proof,ccnorm,                               &                  
+     &       imp_physics,norad_precip,idate,iflip,me )
 !  ---  outputs: ( none )
 
 ! =================   subprogram documentation block   ================ !
@@ -83,9 +82,17 @@
 !   ntoz             : ozone data control flag                          !
 !                     =0: use climatological ozone profile              !
 !                     >0: use interactive ozone profile                 !
+!   icliq_sw         : sw optical property for liquid clouds            !
+!                     =0:input cld opt depth, ignoring iswcice setting  !
+!                     =1:cloud optical property scheme based on Hu and  !
+!                        Stamnes(1993) \cite hu_and_stamnes_1993 method !
+!                     =2:cloud optical property scheme based on Hu and  !
+!                        Stamnes(1993) -updated                         !
 !   iovr_sw/iovr_lw  : control flag for cloud overlap (sw/lw rad)       !
 !                     =0: random overlapping clouds                     !
 !                     =1: max/ran overlapping clouds                    !
+!                     =2: maximum overlap clouds       (mcica only)     !
+!                     =3: decorrelation-length overlap (mcica only)     !
 !   isubc_sw/isubc_lw: sub-column cloud approx control flag (sw/lw rad) !
 !                     =0: with out sub-column cloud approximation       !
 !                     =1: mcica sub-col approx. prescribed random seed  !
@@ -105,9 +112,11 @@
 !  ===================================================================  !
 !
       use physparam, only : isolar , ictmflg, ico2flg, ioznflg, iaerflg,&
-     &             iaermdl, laswflg, lalwflg, lavoflg, icldflg,         &
+!    &             iaermdl, laswflg, lalwflg, lavoflg, icldflg,         &
+     &             iaermdl,                            icldflg,         &
      &             iovrsw , iovrlw , lcrick , lcnorm , lnoprec,         &
      &             ialbflg, iemsflg, isubcsw, isubclw, ivflip , ipsd0,  &
+     &             iswcliq,                                             &
      &             kind_phys
 
       use module_radiation_driver, only : radinit
@@ -117,7 +126,7 @@
 !  ---  input:
       integer,  intent(in) :: levr, ictm, isol, ico2, iaer, num_p2d,    &
      &       ntcw, ialb, iems, num_p3d, npdf3d, ntoz, iovr_sw, iovr_lw, &
-     &       isubc_sw, isubc_lw, iflip, me, idate(4)
+     &       isubc_sw, isubc_lw, icliq_sw, iflip, me, idate(4)
 
       real (kind=kind_phys), intent(in) :: si(levr+1)
       integer, intent(in) :: imp_physics
@@ -127,7 +136,6 @@
 !  ---  output: ( none )
 
 !  ---  local:
-      integer :: icld
 !
 !===> ...  start here
 !
@@ -144,20 +152,19 @@
       else
         iaerflg = mod(iaer, 1000)   
       endif
-      laswflg= (mod(iaerflg,10) > 0)    ! control flag for sw tropospheric aerosol
-      lalwflg= (mod(iaerflg/10,10) > 0) ! control flag for lw tropospheric aerosol
-      lavoflg= (iaerflg >= 100)         ! control flag for stratospheric volcanic aeros
       iaermdl = iaer/1000               ! control flag for aerosol scheme selection                              
-      if ( iaermdl < 0 .or.  iaermdl > 2) then
+      if ( iaermdl < 0 .or.  (iaermdl>2 .and. iaermdl/=5) ) then
          print *, ' Error -- IAER flag is incorrect, Abort'
          stop 7777
       endif
 
-      if ( ntcw > 0 ) then
+!     if ( ntcw > 0 ) then
         icldflg = 1                     ! prognostic cloud optical prop scheme
-      else
-        icldflg = 0                     ! diagnostic cloud optical prop scheme
-      endif
+!     else
+!       icldflg = 0                     ! no support for diag cloud opt prop scheme
+!     endif
+
+      iswcliq = icliq_sw                ! optical property for liquid clouds for sw
 
       iovrsw = iovr_sw                  ! cloud overlapping control flag for sw
       iovrlw = iovr_lw                  ! cloud overlapping control flag for lw
@@ -186,7 +193,8 @@
      &          ' iaer=',iaer,' ialb=',ialb,' iems=',iems,' ntcw=',ntcw
         print *,' np3d=',num_p3d,' ntoz=',ntoz,' iovr_sw=',iovr_sw,     &
      &          ' iovr_lw=',iovr_lw,' isubc_sw=',isubc_sw,              &
-     &          ' isubc_lw=',isubc_lw,' iflip=',iflip,'  me=',me
+     &          ' isubc_lw=',isubc_lw,' icliq_sw=',icliq_sw,            &
+     &          ' iflip=',iflip,'  me=',me
         print *,' crick_proof=',crick_proof,                            &
      &          ' ccnorm=',ccnorm,' norad_precip=',norad_precip
       endif
