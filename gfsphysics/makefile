@@ -68,6 +68,8 @@ SRCS_f   =  \
 	   ./physics/mstcnv.f                                                        \
 	   ./physics/namelist_soilveg.f                                              \
 	   ./physics/ozne_def.f                                                      \
+           ./physics/iccn_def.f                                                      \
+           ./physics/aerclm_def.f                                                    \
 	   ./physics/ozphys.f                                                        \
 	   ./physics/ozphys_2015.f                                                   \
 	   ./physics/physparam.f                                                     \
@@ -127,6 +129,8 @@ SRCS_f90 = \
 	   ./physics/module_nst_parameters.f90                                       \
 	   ./physics/module_nst_water_prop.f90                                       \
 	   ./physics/ozinterp.f90                                                    \
+           ./physics/iccninterp.f90                                                  \
+           ./physics/aerinterp.f90                                                   \
 	   ./physics/physcons.f90						     \
 	   ./physics/wam_f107_kp_mod.f90
 

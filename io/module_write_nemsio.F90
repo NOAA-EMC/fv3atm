@@ -18,19 +18,19 @@ module module_write_nemsio
   character(16),dimension(3000,5) :: recname,reclevtyp
   integer,dimension(3000,5)       :: reclev
 
-  integer,dimension(:), allocatable    :: nrec
-  integer,dimension(:), allocatable    :: idsl, idvc,idvm
-  integer,dimension(:), allocatable    :: fieldcount
+  integer, dimension(:), allocatable   :: nrec
+  integer, dimension(:), allocatable   :: idsl, idvc,idvm
+  integer, dimension(:), allocatable   :: fieldcount
   integer, dimension(:), allocatable   :: idisp, irecv
 !
   integer,dimension(:), allocatable :: nmetavari,nmetavarc, nmetavarr4,nmetavarr8
   integer,dimension(:), allocatable :: nmetaaryi,nmetaaryc, nmetaaryr4,nmetaaryr8
   character(16),dimension(:,:),allocatable :: variname, varcname, varr4name, varr8name
   character(16),dimension(:,:),allocatable :: aryiname
-  integer, dimension(:,:), allocatable   :: varival, aryilen
-  integer, dimension(:,:,:), allocatable :: aryival
-  real(4), dimension(:,:), allocatable   :: varr4val
-  real(8), dimension(:,:), allocatable   :: varr8val
+  integer, dimension(:,:),   allocatable   :: varival, aryilen
+  integer, dimension(:,:,:), allocatable   :: aryival
+  real(4), dimension(:,:),   allocatable   :: varr4val
+  real(8), dimension(:,:),   allocatable   :: varr8val
   character(16), dimension(:,:), allocatable   :: varcval
   logical, dimension(:), allocatable :: extrameta
 !
@@ -381,6 +381,7 @@ module module_write_nemsio
            jend   = ubound(arrayr82d,2)
            nlen   = (iend-istart+1) * (jend-jstart+1)
            allocate( arrayr42d(istart:iend,jstart:jend))
+!$omp parallel do default(none) shared(arrayr42d,arrayr82d,jstart,jend,istart,iend) private(m,n)
            do n=jstart,jend
              do m=istart,iend
                arrayr42d(m,n) = arrayr82d(m,n)
@@ -454,28 +455,30 @@ module module_write_nemsio
          allocate(arrayr42d(istart:iend,jstart:jend))
 !         do k=kstart,kend
          if ( write_nemsioflip ) then
-           k1=kend;   k2=kstart; k3=-1
+           k1=kend   ; k2=kstart ; k3=-1
          else
-           k1=kstart; k2=kend;   k3=1
+           k1=kstart ; k2=kend   ; k3=1
          endif
          do k=k1,k2,k3
            if (typekind == ESMF_TYPEKIND_R4) then
+!$omp parallel do default(none) shared(arrayr42d,arrayr43d,jstart,jend,istart,iend,k) private(m,n)
              do n=jstart,jend
                do m=istart,iend
-                  arrayr42d(m,n)=arrayr43d(m,n,k)
+                  arrayr42d(m,n) = arrayr43d(m,n,k)    
                enddo
              enddo
            elseif (typekind == ESMF_TYPEKIND_R8) then
+!$omp parallel do default(none) shared(arrayr42d,arrayr83d,jstart,jend,istart,iend,k) private(m,n)
              do n=jstart,jend
                do m=istart,iend
-                  arrayr42d(m,n)=arrayr83d(m,n,k)
+                  arrayr42d(m,n) = arrayr83d(m,n,k)    
                enddo
              enddo
            endif
 !
            call mpi_gatherv(arrayr42d, nlen, MPI_REAL, arrayr4, irecv,idisp, MPI_REAL, &
-              0, mpi_comm, rc)
-           if(mype==0) then
+                            0, mpi_comm, rc)
+           if(mype == 0) then
              tmp = reshape(arrayr4, (/im*jm/))
              call nemsio_writerec(nemsiofile, jrec, tmp, iret=rc)
              jrec = jrec + 1
@@ -549,7 +552,7 @@ module module_write_nemsio
 !
 ! look at the field bundle attributes
     call ESMF_AttributeGet(fldbundle, convention="NetCDF", purpose="FV3", &
-      attnestflag=ESMF_ATTNEST_OFF, Count=attcount, rc=rc)
+                           attnestflag=ESMF_ATTNEST_OFF, Count=attcount, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
@@ -755,19 +758,19 @@ module module_write_nemsio
     enddo
 !
     if(write_nemsioflip) then
-      nc=nc+1
+      nc = nc + 1
       varcname(nc,mybdl) = 'y-direction'
-      varcval(nc,mybdl) = 'north2south'
-      nc=nc+1
+      varcval(nc,mybdl)  = 'north2south'
+      nc = nc + 1
       varcname(nc,mybdl) = 'z-direction'
-      varcval(nc,mybdl) = 'bottom2top'
+      varcval(nc,mybdl)  = 'bottom2top'
     else
-      nc=nc+1
+      nc = nc + 1
       varcname(nc,mybdl) = 'y-direction'
-      varcval(nc,mybdl) = 'south2north'
-      nc=nc+1
+      varcval(nc,mybdl)  = 'south2north'
+      nc = nc + 1
       varcname(nc,mybdl) = 'z-direction'
-      varcval(nc,mybdl) = 'top2bottom'
+      varcval(nc,mybdl)  = 'top2bottom'
     endif
 !
 !output lpl

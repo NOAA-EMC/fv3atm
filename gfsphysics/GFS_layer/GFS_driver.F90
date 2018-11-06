@@ -157,6 +157,13 @@ module GFS_driver
     call read_o3data  (Model%ntoz, Model%me, Model%master)
     call read_h2odata (Model%h2o_phys, Model%me, Model%master)
 
+    if (Model%aero_in) then
+      call read_aerdata (Model%me,Model%master,Model%iflip,Model%idate)
+    endif
+    if (Model%iccn) then
+      call read_cidata  ( Model%me, Model%master)
+    endif
+
     call init_stochastic_physics(Model,Init_parm,nblks,Grid)
 
     if(Model%me == Model%master) print*,'do_skeb=',Model%do_skeb
@@ -188,6 +195,25 @@ module GFS_driver
       do nb = 1, nblks
           call setindxoz (Init_parm%blksz(nb), Grid(nb)%xlat_d, Grid(nb)%jindx1_o3, &
                         Grid(nb)%jindx2_o3, Grid(nb)%ddy_o3)
+      enddo
+    endif
+
+    !--- read in and initialize IN and CCN
+    if (Model%iccn) then
+      do nb = 1, nblks
+        call setindxci (Init_parm%blksz(nb), Grid(nb)%xlat_d, Grid(nb)%jindx1_ci, &
+                        Grid(nb)%jindx2_ci, Grid(nb)%ddy_ci, Grid(nb)%xlon_d,     &
+                        Grid(nb)%iindx1_ci,Grid(nb)%iindx2_ci,Grid(nb)%ddx_ci)
+      enddo
+    endif
+
+    !--- read in and initialize aerosols
+    if (Model%aero_in) then
+      do nb = 1, nblks
+        call setindxaer (Init_parm%blksz(nb),Grid(nb)%xlat_d,Grid(nb)%jindx1_aer, &
+                        Grid(nb)%jindx2_aer, Grid(nb)%ddy_aer, Grid(nb)%xlon_d,   &
+                        Grid(nb)%iindx1_aer,Grid(nb)%iindx2_aer,Grid(nb)%ddx_aer, &
+                        Init_parm%me, Init_parm%master )
       enddo
     endif
 
@@ -224,19 +250,20 @@ module GFS_driver
 
     if (Model%imp_physics == 10) then          !--- initialize Morrison-Gettleman microphysics
       if (Model%fprcp <= 0) then
-        call ini_micro (Model%mg_dcs, Model%mg_qcvar, Model%mg_ts_auto_ice)
+        call ini_micro (Model%mg_dcs, Model%mg_qcvar, Model%mg_ts_auto_ice(1))
       elseif (Model%fprcp == 1) then
-        call micro_mg_init2_0(kind_phys, gravit, rair, rh2o, cpair,          &
-                              tmelt, latvap, latice, 1.01_kind_phys,         &
-                              Model%mg_dcs, Model%mg_ts_auto_ice,            &
-                              Model%mg_qcvar,                                &
-                              Model%microp_uniform, Model%do_cldice,         &
-                              Model%hetfrz_classnuc,                         &
-                              Model%mg_precip_frac_method,                   &
-                              Model%mg_berg_eff_factor,                      &
-                              Model%sed_supersat, Model%do_sb_physics,       &
-                              Model%mg_nccons,Model%mg_nicons,               &
-                              Model%mg_ncnst, Model%mg_ninst)
+        call micro_mg_init2_0(kind_phys, gravit, rair, rh2o, cpair,              &
+                              tmelt, latvap, latice, 1.01_kind_phys,             &
+                              Model%mg_dcs, Model%mg_ts_auto_ice,                &
+                              Model%mg_qcvar,                                    &
+                              Model%microp_uniform, Model%do_cldice,             &
+                              Model%hetfrz_classnuc,                             &
+                              Model%mg_precip_frac_method,                       &
+                              Model%mg_berg_eff_factor,                          &
+                              Model%sed_supersat,    Model%do_sb_physics,        &
+                              Model%mg_do_ice_gmao,  Model%mg_do_liq_liu,        &
+                              Model%mg_nccons,       Model%mg_nicons,            &
+                              Model%mg_ncnst,        Model%mg_ninst)
       elseif (Model%fprcp == 2) then
         call micro_mg_init3_0(kind_phys, gravit, rair, rh2o, cpair,              &
                               tmelt, latvap, latice, 1.01_kind_phys,             &
@@ -247,10 +274,11 @@ module GFS_driver
                               Model%hetfrz_classnuc,                             &
                               Model%mg_precip_frac_method,                       &
                               Model%mg_berg_eff_factor,                          &
-                              Model%sed_supersat, Model%do_sb_physics,           &
-                              Model%mg_nccons,    Model%mg_nicons,               &
-                              Model%mg_ncnst,     Model%mg_ninst,                &
-                              Model%mg_ngcons,    Model%mg_ngnst)
+                              Model%sed_supersat,    Model%do_sb_physics,        &
+                              Model%mg_do_ice_gmao,  Model%mg_do_liq_liu,        &
+                              Model%mg_nccons,       Model%mg_nicons,            &
+                              Model%mg_ncnst,        Model%mg_ninst,             &
+                              Model%mg_ngcons,       Model%mg_ngnst)
       else
         write(0,*)' Model%fprcp = ',Model%fprcp,' is not a valid option - aborting'
         stop
@@ -380,7 +408,7 @@ module GFS_driver
     endif
 
     !--- physics time varying routine
-    call GFS_phys_time_vary (Model, Grid, Tbd)
+    call GFS_phys_time_vary (Model, Grid, Tbd, Statein)
 
     !--- repopulate specific time-varying sfc properties for AMIP/forecast runs
     if (Model%nscyc >  0) then
@@ -400,26 +428,26 @@ module GFS_driver
     call run_stochastic_physics(nblks,Model,Grid(:),Coupling(:))
 ! kludge for output
     if (Model%do_skeb) then
-       do nb = 1,nblks
-          do k=1,Model%levs
-             Diag(nb)%skebu_wts(:,k)=Coupling(nb)%skebu_wts(:,Model%levs-k+1)
-             Diag(nb)%skebv_wts(:,k)=Coupling(nb)%skebv_wts(:,Model%levs-k+1)
-          enddo
-       enddo
+      do nb = 1,nblks
+        do k=1,Model%levs
+          Diag(nb)%skebu_wts(:,k) = Coupling(nb)%skebu_wts(:,Model%levs-k+1)
+          Diag(nb)%skebv_wts(:,k) = Coupling(nb)%skebv_wts(:,Model%levs-k+1)
+        enddo
+      enddo
     endif
     !if (Model%do_sppt) then
-    !   do nb = 1,nblks
-    !      do k=1,Model%levs
-    !         Diag(nb)%sppt_wts(:,k)=Coupling(nb)%sppt_wts(:,Model%levs-k+1)
-    !      enddo
-    !   enddo
+    !  do nb = 1,nblks
+    !    do k=1,Model%levs
+    !      Diag(nb)%sppt_wts(:,k) = Coupling(nb)%sppt_wts(:,Model%levs-k+1)
+    !    enddo
+    !  enddo
     !endif
     if (Model%do_shum) then
-       do nb = 1,nblks
-          do k=1,Model%levs
-             Diag(nb)%shum_wts(:,k)=Coupling(nb)%shum_wts(:,Model%levs-k+1)
-          enddo
-       enddo
+      do nb = 1,nblks
+        do k=1,Model%levs
+          Diag(nb)%shum_wts(:,k)=Coupling(nb)%shum_wts(:,Model%levs-k+1)
+        enddo
+      enddo
     endif
 
   end subroutine GFS_time_vary_step
@@ -629,13 +657,14 @@ module GFS_driver
 !  Routine containing all of the setup logic originally in phys/gloopb.f
 !
 !-----------------------------------------------------------------------
-  subroutine GFS_phys_time_vary (Model, Grid, Tbd)
+  subroutine GFS_phys_time_vary (Model, Grid, Tbd, Statein)
     use mersenne_twister, only: random_setseed, random_number
 
     implicit none
     type(GFS_control_type),   intent(inout) :: Model
     type(GFS_grid_type),      intent(inout) :: Grid(:)
     type(GFS_tbd_type),       intent(inout) :: Tbd(:)
+    type(GFS_statein_type),   intent(in)    :: Statein(:)
     !--- local variables
     integer :: nb, ix, k, j, i, nblks, iseed, iskip
     real(kind=kind_phys) :: wrk(1)
@@ -661,12 +690,13 @@ module GFS_driver
     endif
 
     !--- random number needed for RAS and old SAS and when cal_pre=.true.
-    if ( ((Model%imfdeepcnv <= 0) .or. (Model%cal_pre)) .and. (Model%random_clds) ) then
+    !    Model%imfdeepcnv < 0 when Model%ras = .true.
+    if ( (Model%imfdeepcnv <= 0 .or. Model%cal_pre) .and. Model%random_clds ) then
       iseed = mod(con_100*sqrt(Model%fhour*con_hr),1.0d9) + Model%seed0
       call random_setseed(iseed)
       call random_number(wrk)
       do i = 1,Model%cnx*Model%nrcm
-        iseed = iseed + nint(wrk(1)) * i
+        iseed = iseed + nint(wrk(1)*1000.0) * i
         call random_setseed(iseed)
         call random_number(rannie)
         rndval(1+(i-1)*Model%cny:i*Model%cny) = rannie(1:Model%cny)
@@ -693,18 +723,43 @@ module GFS_driver
     if (Model%ntoz > 0) then
       do nb = 1, nblks
         call ozinterpol (Model%me, blksz(nb), Model%idate, Model%fhour,     &
-                         Grid(nb)%jindx1_o3, Grid(nb)%jindx2_o3,            &
-                         Tbd(nb)%ozpl, Grid(nb)%ddy_o3)
+                         Grid(nb)%jindx1_o3,  Grid(nb)%jindx2_o3,           &
+                         Tbd(nb)%ozpl,        Grid(nb)%ddy_o3)
       enddo
     endif
 
     !--- h2o interpolation
      if (Model%h2o_phys) then
        do nb = 1, nblks
-         call h2ointerpol (Model%me, blksz(nb), Model%idate, Model%fhour, &
-                           Grid(nb)%jindx1_h, Grid(nb)%jindx2_h,          &
-                           Tbd(nb)%h2opl, Grid(nb)%ddy_h)
+         call h2ointerpol (Model%me, blksz(nb), Model%idate, Model%fhour,   &
+                           Grid(nb)%jindx1_h,   Grid(nb)%jindx2_h,          &
+                           Tbd(nb)%h2opl,       Grid(nb)%ddy_h)
        enddo
+     endif
+
+    !--- ICCN interpolation
+    if (Model%ICCN ) then
+      do nb = 1, nblks
+        call ciinterpol (Model%me, blksz(nb), Model%idate, Model%fhour, &
+                         Grid(nb)%jindx1_ci, Grid(nb)%jindx2_ci,        &
+                         Grid(nb)%ddy_ci,Grid(nb)%iindx1_ci,            &
+                         Grid(nb)%iindx2_ci,Grid(nb)%ddx_ci,            &
+                         Model%levs,Statein(nb)%prsl,                   &
+                         Tbd(nb)%in_nm, Tbd(nb)%ccn_nm)
+      enddo
+    endif
+
+    !--- aerosol interpolation
+     if (Model%aero_in ) then
+      do nb = 1, nblks
+        call aerinterpol (Model%me, Model%master, blksz(nb),            &
+                         Model%idate, Model%fhour,                      &
+                         Grid(nb)%jindx1_aer, Grid(nb)%jindx2_aer,      &
+                         Grid(nb)%ddy_aer,Grid(nb)%iindx1_aer,          &
+                         Grid(nb)%iindx2_aer,Grid(nb)%ddx_aer,          &
+                         Model%levs,Statein(nb)%prsl,                   &
+                         Tbd(nb)%aer_nm)
+      enddo
      endif
 
   end subroutine GFS_phys_time_vary
@@ -722,6 +777,7 @@ module GFS_driver
     real(kind=kind_phys), intent(in) :: xlon(:,:)
     real(kind=kind_phys), intent(in) :: xlat(:,:)
     real(kind=kind_phys), intent(in) :: area(:,:)
+    real(kind=kind_phys), parameter  :: rad2deg = 180.0_kind_phys/pi
 
     !--- local variables
     integer :: nb, ix, blksz, i, j
@@ -739,7 +795,8 @@ module GFS_driver
         endif
         Grid(nb)%xlon(ix)   = xlon(i,j)
         Grid(nb)%xlat(ix)   = xlat(i,j)
-        Grid(nb)%xlat_d(ix) = xlat(i,j) * 180.0_kind_phys/pi
+        Grid(nb)%xlat_d(ix) = xlat(i,j) * rad2deg
+        Grid(nb)%xlon_d(ix) = xlon(i,j) * rad2deg
         Grid(nb)%sinlat(ix) = sin(Grid(nb)%xlat(ix))
         Grid(nb)%coslat(ix) = sqrt(1.0_kind_phys - Grid(nb)%sinlat(ix)*Grid(nb)%sinlat(ix))
         Grid(nb)%area(ix)   = area(i,j)

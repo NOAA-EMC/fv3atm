@@ -2,7 +2,8 @@
      &,                         prsl_i,   prsi_i, phil,   phii          &
      &,                         omega_i,  QLLS_i, QLCN_i, QILS_i, QICN_i&
      &,                         lwheat_i, swheat_i, w_upi, cf_upi       &
-     &,                         FRLAND,   ZPBL, CNV_MFD_i, CNV_PRC3_i   &
+     &,                         FRLAND,   ZPBL, CNV_MFD_i               &
+!    &,                         FRLAND,   ZPBL, CNV_MFD_i, CNV_PRC3_i   &
      &,                         CNV_DQLDT_i, CLCN_i, u_i, v_i           &
      &,                         TAUGWX,   TAUGWY,  TAUX, TAUY           &
      &,                         TAUOROX,  TAUOROY, CNV_FICE_i           &
@@ -12,9 +13,12 @@
      &,                         qgl_io,   ncpr_io, ncps_io, ncgl_io     &
      &,                         CLLS_io,  KCBL                          &
      &,                         CLDREFFL, CLDREFFI, CLDREFFR, CLDREFFS  &
-     &,                         CLDREFFG                                &
-     &,                         aero_in,  skip_macro, cn_prc2, cn_snr   &
-     &,                         lprnt,    ipr, kdt, xlat, xlon, rhc_i)
+     &,                         CLDREFFG, aerfld_i                      &
+     &,                         aero_in,  naai_i, npccn_i, iccn         &
+     &,                         skip_macro                              &
+!    &,                         skip_macro, cn_prc2, cn_snr             &
+     &,                         lprnt, alf_fac, qc_min, pdfflag         &
+     &,                         ipr, kdt, xlat, xlon, rhc_i)
 
        use machine ,      only: kind_phys
        use physcons,           grav   => con_g,    pi     => con_pi,    &
@@ -25,7 +29,7 @@
      &                         VIREPS => con_fvirt,                     &
      &                         latvap => con_hvap, latice => con_hfus
 
-       use funcphys,      only: fpvs                ! saturation vapor pressure for water-ice mixed
+!      use funcphys,      only: fpvs                ! saturation vapor pressure for water-ice mixed
 !      use funcphys,      only: fpvsl, fpvsi, fpvs  ! saturation vapor pressure for water,ice & mixed
        use aer_cloud,     only: AerProps, getINsubset,init_aer,         &
      &                          aerosol_activate,AerConversion1
@@ -34,6 +38,7 @@
        use cldwat2m_micro,only: mmicro_pcond
        use micro_mg2_0,   only: micro_mg_tend2_0 => micro_mg_tend, qcvar2 => qcvar
        use micro_mg3_0,   only: micro_mg_tend3_0 => micro_mg_tend, qcvar3 => qcvar
+       use aerclm_def,    only: ntrcaer
 
 !      use wv_saturation, only: aqsat
 
@@ -52,12 +57,12 @@
        real,   parameter  :: one=1.0, oneb3=one/3.0, onebcp=one/cp,      &
      &                       kapa=rgas*onebcp,  cpbg=cp/grav,            &
      &                       lvbcp=hvap*onebcp, lsbcp=(hvap+hfus)*onebcp,&
-                             qsmall=1.e-14
+                             qsmall=1.e-14, rainmin = 1.0e-13
 
        integer, parameter :: ncolmicro = 1
-       integer,intent(in) :: im, ix,lm, ipr, kdt, fprcp
-       logical,intent(in) :: flipv, aero_in, skip_macro, lprnt
-       real (kind=kind_phys), intent(in):: dt_i
+       integer,intent(in) :: im, ix,lm, ipr, kdt, fprcp, pdfflag
+       logical,intent(in) :: flipv, aero_in, skip_macro, lprnt, iccn
+       real (kind=kind_phys), intent(in):: dt_i, alf_fac, qc_min(2)
 
        real (kind=kind_phys), dimension(ix,lm),intent(in)  ::           &
      &                prsl_i,u_i,v_i,phil,   omega_i, QLLS_i,QILS_i,    &
@@ -66,8 +71,11 @@
      &                                                        phii
        real (kind=kind_phys), dimension(im,lm),intent(in)  ::           &
      &       CNV_DQLDT_i, CLCN_i,     QLCN_i, QICN_i,                   &
-     &       CNV_MFD_i,   CNV_PRC3_i, cf_upi, CNV_FICE_i, CNV_NDROP_i,  &
-     &       CNV_NICE_i,  w_upi, rhc_i
+     &       CNV_MFD_i,               cf_upi, CNV_FICE_i, CNV_NDROP_i,  &
+!    &       CNV_MFD_i,   CNV_PRC3_i, cf_upi, CNV_FICE_i, CNV_NDROP_i,  &
+     &       CNV_NICE_i,  w_upi, rhc_i, naai_i, npccn_i
+       real (kind=kind_phys), dimension(im,lm,ntrcaer),intent(in) ::    &
+     &       aerfld_i
        real (kind=kind_phys),dimension(im),intent(in):: TAUGWX,         &
      &       TAUGWY, TAUX, TAUY, TAUOROX, TAUOROY, FRLAND,ZPBL,xlat,xlon
 !    &       TAUGWY, TAUX, TAUY, TAUOROX, TAUOROY,ps_i,FRLAND,ZPBL
@@ -95,10 +103,11 @@
      &    TMAXLL, USURF,LTS_UP, LTS_LOW, MIN_EXP, fracover, c2_gw, est3
 
        real(kind=kind_phys), allocatable, dimension(:,:) ::             &
-     &            CNV_MFD,CNV_PRC3,CNV_FICE,CNV_NDROP,CNV_NICE
+     &            CNV_MFD,         CNV_FICE,CNV_NDROP,CNV_NICE
+!    &            CNV_MFD,CNV_PRC3,CNV_FICE,CNV_NDROP,CNV_NICE
 
        real(kind=kind_phys), dimension(IM,LM)::ncpl,ncpi,omega,SC_ICE,  &
-     & RAD_CF, radheat,Q1,U1,V1,    PLO, ZLO,    temp,                  &
+     & RAD_CF, radheat,Q1,U1,V1,     PLO, ZLO,    temp,                 &
      & QLLS, QLCN, QILS,QICN,        CNV_CVW,CNV_UPDF,                  &
 !    & QLLS, QLCN, QILS,QICN,        CNV_CVW,CNV_UPDF,SMAXL,SMAXI,      &
 !    & NHET_NUC, NLIM_NUC, CDNC_NUC,INC_NUC,CNN01,CNN04,CNN1,DNHET_IMM, &
@@ -113,16 +122,27 @@
 
        real(kind=kind_phys) :: QCNTOT, QTOT
 
-!      real(kind=kind_phys), dimension(IM,LM):: DQRL_X,                 &
-       real(kind=kind_phys), dimension(IM,LM):: CNV_DQLDT, CLCN,CLLS,   &
-     &                                          CCN01,CCN04,CCN1
+       real(kind=kind_phys), dimension(IM,LM):: CNV_DQLDT, CLCN, CLLS
 
-       real(kind=kind_phys), allocatable, dimension(:,:) :: RHX_X       &
-     &,        CFPDF_X, VFALLSN_CN_X, QSNOW_CN, VFALLRN_CN_X, QRAIN_CN  &
-     &,        REV_CN_X, RSU_CN_X, DLPDF_X, DIPDF_X, ALPHT_X, PFRZ      &
-     &,        ACLL_CN_X, ACIL_CN_X, DQRL_X                             &
-     &,        PFI_CN_X,  PFL_CN_X, QST3, DZET, QDDF3
-       real(kind=kind_phys), allocatable, dimension(:) :: vmip
+!      real(kind=kind_phys), dimension(IM,LM):: DQRL_X,                 &
+!      real(kind=kind_phys), dimension(IM,LM):: CNV_DQLDT, CLCN,CLLS,   &
+!    &                                          CCN01,CCN04,CCN1
+
+!      real(kind=kind_phys), allocatable, dimension(:,:) :: RHX_X       &
+!    &,        CFPDF_X, VFALLSN_CN_X, QSNOW_CN, VFALLRN_CN_X, QRAIN_CN  &
+
+       real(kind=kind_phys), allocatable, dimension(:,:) ::             &
+     &                                               ALPHT_X, PFRZ
+!    &                           QSNOW_CN, QRAIN_CN, ALPHT_X, PFRZ
+
+!      real(kind=kind_phys), allocatable, dimension(:,:) ::             &
+!    &                                QSNOW_CN,               QRAIN_CN  &
+!!   &,        CFPDF_X,               QSNOW_CN,               QRAIN_CN  &
+!    &,                                              ALPHT_X, PFRZ
+!!   &,        REV_CN_X, RSU_CN_X, DLPDF_X, DIPDF_X, ALPHT_X, PFRZ      &
+!!   &,        ACLL_CN_X, ACIL_CN_X, DQRL_X                             &
+!!   &,        PFI_CN_X,  PFL_CN_X, QST3, DZET, QDDF3
+!!     real(kind=kind_phys), allocatable, dimension(:) :: vmip
 
 !      real(kind=kind_phys), dimension(IM,LM) :: QDDF3
 !      real(kind=kind_phys), dimension(IM,LM):: QST3, DZET, QDDF3
@@ -132,7 +152,8 @@
 !    &                                          VFALLRN_CN_X, QRAIN_CN, dum
 
        real(kind=kind_phys), dimension(IM,LM+1) :: ZET
-       real(kind=kind_phys), dimension(IM,0:LM) :: PLE,      kh
+       real(kind=kind_phys), dimension(IM,0:LM) :: PLE, kh
+
 !      real(kind=kind_phys), dimension(IM,0:LM) :: PLE, PKE, kh
 !    &,                                            PFI_CN_X, PFL_CN_X
 
@@ -144,8 +165,9 @@
 
        real(kind=kind_phys), dimension(1:LM,10) :: rndstr8,naconr8
 
-       real(kind=kind_phys), dimension(IM)      :: CN_PRC2,CN_SNR,CN_ARFX,&
-     &                                             LS_SNR,LS_PRC2, TPREC
+!      real(kind=kind_phys), dimension(IM)      :: CN_PRC2,CN_SNR,CN_ARFX,&
+!    &                                             LS_SNR, LS_PRC2, TPREC
+       real(kind=kind_phys), dimension(IM)      :: LS_SNR, LS_PRC2
 !    &                                             VMIP, twat
 !      Anning Cheng 10/24/2016 twat for total water, diagnostic purpose
        integer, dimension(IM)                   :: KCBL
@@ -206,6 +228,10 @@
      &,                                    ncnstr8 = 100.0e6
 
        real(kind=kind_phys):: k_gw, maxkh, tausurf_gw, overscale, tx1, rh1_r8
+       real(kind=kind_phys)::  t_ice_denom
+
+       integer, dimension(1)           :: lev_sed_strt      ! sedimentation start level
+       real(kind=kind_phys), parameter :: sig_sed_strt=0.05 ! normalized pressure at sedimentation start
 
        real(kind=kind_phys),dimension(3)  :: ccn_diag
        real(kind=kind_phys),dimension(58) :: cloudparams
@@ -240,8 +266,9 @@
 !    &, 0.0 , 0.0  , 1.0e-3, 8.0e-4, 1.0  , 0.95 , 1.0  , 0.0   ,  880.0&
 !    &, 0.0 , 0.0  , 1.0e-3, 8.0e-4, 1.0  , 0.95 , 1.0  , 0.0   ,  980.0&
      &, 1.0 , 1.0  , 1.0   , 0.0   , 0.0  , 1.e-5, 2.e-5, 2.1e-5,  4.e-5&
-!    &, 3e-5, 0.1  , 4.0   , 250./
-     &, 3e-5, 0.1  , 1.0   , 150./
+!    &, 3e-5, 0.1  , 4.0   , 250./          ! Annings version
+     &, 3e-5, 0.1  , 4.0   , 150./          ! Annings version
+!    &, 3e-5, 0.1  , 1.0   , 150./
 
 
 !      rhr8 = 1.0
@@ -276,6 +303,10 @@
              temp(i,k)      = t_io(i,ll)
              radheat(i,k)   = lwheat_i(i,ll) + swheat_i(i,ll)
              rhc(i,k)       = rhc_i(i,ll)
+             if (iccn) then
+               CDNC_NUC(i,k) = npccn_i(i,ll)
+               INC_NUC(i,k)  = naai_i (i,ll)
+             endif
 
            END DO
          END DO
@@ -287,13 +318,14 @@
            END DO
          END DO
          if (.not. skip_macro) then
-           allocate(CNV_MFD(im,lm),   CNV_PRC3(im,lm), CNV_FICE(im,lm)  &
+!          allocate(CNV_MFD(im,lm),   CNV_PRC3(im,lm), CNV_FICE(im,lm)  &
+           allocate(CNV_MFD(im,lm),                    CNV_FICE(im,lm)  &
      &,             CNV_NDROP(im,lm), CNV_NICE(im,lm))
            DO K=1, LM
              ll = lm-k+1
              DO I = 1,IM
                CNV_MFD(i,k)   = CNV_MFD_i(i,ll)
-               CNV_PRC3(i,k)  = CNV_PRC3_i(i,ll)
+!              CNV_PRC3(i,k)  = CNV_PRC3_i(i,ll)
                CNV_FICE(i,k)  = CNV_FICE_i(i,ll)
                CNV_NDROP(i,k) = CNV_NDROP_i(i,ll)
                CNV_NICE(i,k)  = CNV_NICE_i(i,ll)
@@ -332,6 +364,10 @@
              temp(i,k)      = t_io(i,k)
              radheat(i,k)   = lwheat_i(i,k) + swheat_i(i,k)
              rhc(i,k)       = rhc_i(i,k)
+             if (iccn) then
+               CDNC_NUC(i,k) = npccn_i(i,k)
+               INC_NUC(i,k)  = naai_i (i,k)
+             endif
 
            END DO
          END DO
@@ -342,12 +378,13 @@
            END DO
          END DO
          if (.not. skip_macro) then
-           allocate(CNV_MFD(im,lm),   CNV_PRC3(im,lm), CNV_FICE(im,lm)  &
+!          allocate(CNV_MFD(im,lm),   CNV_PRC3(im,lm), CNV_FICE(im,lm)  &
+           allocate(CNV_MFD(im,lm),                    CNV_FICE(im,lm)  &
      &,             CNV_NDROP(im,lm), CNV_NICE(im,lm))
            DO K=1, LM
              DO I = 1,IM
                CNV_MFD(i,k)   = CNV_MFD_i(i,k)
-               CNV_PRC3(i,k)  = CNV_PRC3_i(i,k)
+!              CNV_PRC3(i,k)  = CNV_PRC3_i(i,k)
                CNV_FICE(i,k)  = CNV_FICE_i(i,k)
                CNV_NDROP(i,k) = CNV_NDROP_i(i,k)
                CNV_NICE(i,k)  = CNV_NICE_i(i,k)
@@ -415,39 +452,39 @@
 !      enddo
 !------------------------------------------------------------------------------
 
-       if (.not. skip_macro) then
-         allocate(qddf3(im,lm))
-         allocate(vmip(im))
-         do i=1,im
-           vmip(i) = 0.0
-         enddo
-         DO K = LM, 1, -1
-           do i=1,im
-             if (zet(i,k) < 3000.0) then
-!              qddf3(i,k) = - (zet(i,k) - 3000.0) * zet(i,k) * mass(i,k)
-               qddf3(i,k) = - (zet(i,k) - 3000.0) * zet(i,k)            &
-     &                    * (ple(i,k) - ple(i,k-1)) * (100.0/grav)
-             else
-               qddf3(i,k) = 0.0
-             endif
-             vmip(i) = vmip(i) + qddf3(i,k)
-           enddo
-         END DO
-         do i=1,im
-           if (vmip(i) /= 0.0) vmip(i) = 1.0 / vmip(i)
-         enddo
-         DO K = 1,LM
-           do i=1,im
-             QDDF3(i,K) = QDDF3(i,K) * VMIP(i)
-           enddo
-         END DO
-         deallocate (vmip)
-       endif
+!      if (.not. skip_macro) then
+!        allocate(qddf3(im,lm))
+!        allocate(vmip(im))
+!        do i=1,im
+!          vmip(i) = 0.0
+!        enddo
+!        DO K = LM, 1, -1
+!          do i=1,im
+!            if (zet(i,k) < 3000.0) then
+!!             qddf3(i,k) = - (zet(i,k) - 3000.0) * zet(i,k) * mass(i,k)
+!              qddf3(i,k) = - (zet(i,k) - 3000.0) * zet(i,k)            &
+!    &                    * (ple(i,k) - ple(i,k-1)) * (100.0/grav)
+!            else
+!              qddf3(i,k) = 0.0
+!            endif
+!            vmip(i) = vmip(i) + qddf3(i,k)
+!          enddo
+!        END DO
+!        do i=1,im
+!          if (vmip(i) /= 0.0) vmip(i) = 1.0 / vmip(i)
+!        enddo
+!        DO K = 1,LM
+!          do i=1,im
+!            QDDF3(i,K) = QDDF3(i,K) * VMIP(i)
+!          enddo
+!        END DO
+!        deallocate (vmip)
+!      endif
 
 
        do l=lm-1,1,-1
          do i=1,im
-           tx1 = 0.5 * (temp(i,l+1) + temp(i,l))
+           tx1     = 0.5 * (temp(i,l+1) + temp(i,l))
            kh(i,l) = 3.55e-7*tx1**2.5*(rgas*0.01) / ple(i,l)   !kh molecule diff only needing refinement
          enddo
        end do
@@ -457,21 +494,23 @@
        enddo
        do L=LM,1,-1
          do i=1,im
-           blk_l(i,l)    = 1.0 / ( 1.0/max(0.15*ZPBL(i),0.4*zlo(i,lm-1))&
-     &                   + 1.0/(zlo(i,l)*.4) )
+           blk_l(i,l)  = 1.0 / ( 1.0/max(0.15*ZPBL(i),0.4*zlo(i,lm-1))&
+     &                 + 1.0/(zlo(i,l)*.4) )
 
-           SC_ICE(i,l)   = 1.0
-           NCPL(i,l)     = MAX( NCPL(i,l), 0.)
-           NCPI(i,l)     = MAX( NCPI(i,l), 0.)
-           RAD_CF(i,l)   = max(0.0, min(CLLS(i,l)+CLCN(i,l), 1.0))
-           CDNC_NUC(i,l) = 0.0
-           INC_NUC(i,l)  = 0.0
+           SC_ICE(i,l) = 1.0
+           NCPL(i,l)   = MAX( NCPL(i,l), 0.)
+           NCPI(i,l)   = MAX( NCPI(i,l), 0.)
+           RAD_CF(i,l) = max(0.0, min(CLLS(i,l)+CLCN(i,l), 1.0))
+           if (.not. iccn) then
+             CDNC_NUC(i,l) = 0.0
+             INC_NUC(i,l)  = 0.0
+           endif
 
          enddo
        end do
 !      T_ICE_ALL = TICE - 40.0
        T_ICE_ALL = CLOUDPARAMS(33) + TICE
-
+       t_ice_denom = 1.0 / (tice - t_ice_all)
 
 
        do l=1,lm
@@ -501,12 +540,31 @@
 !=======================================================================================================================
 !=======================================================================================================================
 !=======================================================================================================================
-       if(aero_in) then
-         allocate(AERMASSMIX  (IM,LM, 15))
-         AERMASSMIX = 1.e-15
-         call AerConversion1 (AERMASSMIX,  AeroProps)
-         deallocate(AERMASSMIX)
+!      if(aero_in) then
+!        allocate(AERMASSMIX  (IM,LM, 15))
+!        AERMASSMIX = 1.e-15
+!        call AerConversion1 (AERMASSMIX,  AeroProps)
+!        deallocate(AERMASSMIX)
+!      end if
+
+!
+       do k=1,lm
+         do i=1,im
+           call init_Aer(AeroProps(I, K))
+         enddo
+       enddo
+!
+
+       allocate(AERMASSMIX(IM,LM,15))
+       if ( aero_in ) then
+         AERMASSMIX(:,:,1:ntrcaer) = aerfld_i(:,:,1:ntrcaer)
+       else
+         AERMASSMIX(:,:,1:5) = 1.e-6
+         AERMASSMIX(:,:,6:15) = 2.e-14
        end if
+       call AerConversion1 (AERMASSMIX,  AeroProps)
+       deallocate(AERMASSMIX)
+
        use_average_v = .false.
        if (USE_AV_V > 0.0) then
          use_average_v = .true.
@@ -580,7 +638,7 @@
 
 
          call gw_prof (1, LM, 1, tm_gw, pm_gw, pi_gw, rhoi_gw, ni_gw,   &
-     &                 ti_gw, nm_gw)
+     &                 ti_gw, nm_gw, q1(i,:))
 
          do k=1,lm
            nm_gw(k)    = max(nm_gw(k), 0.005)
@@ -630,7 +688,7 @@
 
 
          kbmin = KCBL(I)
-         kbmin = min(int(kbmin), LM-1)-4
+         kbmin = min(kbmin, LM-1) - 4
          do K = 1, LM
            wparc_turb(k) = KH(I,k) / lc_turb(k)
            dummyW(k)     = 10.0
@@ -669,7 +727,7 @@
 
          do K = 1, LM
 
-           if (plevr8(K) > 100.0) then
+           if (plevr8(K) > 70.0) then
 
              ccn_diag(1) = 0.001
              ccn_diag(2) = 0.004
@@ -681,16 +739,19 @@
                tauxr8 = ter8(K)
              endif
 
-             if(aero_in) then
+!            if(aero_in) then
                AeroAux = AeroProps(I, K)
-             else
-               call init_Aer(AeroAux)
-               call init_Aer(AeroAux_b)
-             endif
+!            else
+!              call init_Aer(AeroAux)
+!              call init_Aer(AeroAux_b)
+!            endif
 
              pfrz_inc_r8(k) = 0.0 
              rh1_r8         = 0.0 !related to cnv_dql_dt, needed to changed soon
 
+!     if (lprnt) write(0,*)' bef aero npccninr8=',npccninr8(k),' k=',k  &
+!    &,' ccn_param=',ccn_param,' in_param=',in_param                    &
+!    &,' AeroAux%kap=',AeroAux%kap
 
              call aerosol_activate(tauxr8, plevr8(K), swparc(K),        &
      &            wparc_ls(K), AeroAux, npre8(k), dpre8(k), ccn_diag,   &
@@ -703,12 +764,14 @@
      &            CCN_PARAM,      IN_PARAM,      fdust_drop,            &
      &            fsoot_drop,pfrz_inc_r8(K),sigma_nuc_r8, rh1_r8,       &
      &            size(ccn_diag))
+!    &            size(ccn_diag), lprnt)
+!     if (lprnt) write(0,*)' aft aero npccninr8=',npccninr8(k),' k=',k
 
              if (npccninr8(k) < 1.0e-12) npccninr8(k) = 0.0
 
-             CCN01(I,K) = max(ccn_diag(1)*1e-6, 0.0)
-             CCN04(I,K) = max(ccn_diag(2)*1e-6, 0.0)
-             CCN1 (I,K) = max(ccn_diag(3)*1e-6, 0.0)
+!            CCN01(I,K) = max(ccn_diag(1)*1e-6, 0.0)
+!            CCN04(I,K) = max(ccn_diag(2)*1e-6, 0.0)
+!            CCN1 (I,K) = max(ccn_diag(3)*1e-6, 0.0)
 
 
 
@@ -739,10 +802,27 @@
            NLIM_NUC(I,k)   = nlimicer8(k) * 1e-6
            SC_ICE(I,k)     = min(max(sc_icer8(k),1.0),2.0)
 !          SC_ICE(I,k)     = min(max(sc_icer8(k),1.0),1.2)
-           if(temp(i,k) > T_ICE_ALL) SC_ICE(i,k) = 1.0
-           if(temp(i,k) > TICE)      SC_ICE(i,k) = rhc(i,k)
-           CDNC_NUC(I,k)   = npccninr8(k)
-           INC_NUC (I,k)   = naair8(k)
+!          if(temp(i,k) < T_ICE_ALL) SC_ICE(i,k) = max(SC_ICE(I,k), 1.2)
+!          if(temp(i,k) < T_ICE_ALL) SC_ICE(i,k) = max(SC_ICE(I,k), 1.5)
+!          if(temp(i,k) > T_ICE_ALL) SC_ICE(i,k) = 1.0
+!          if(temp(i,k) > TICE)      SC_ICE(i,k) = rhc(i,k)
+!
+           if(temp(i,k) < T_ICE_ALL) then
+!            SC_ICE(i,k) = max(SC_ICE(I,k), 1.2)
+             SC_ICE(i,k) = max(SC_ICE(I,k), 1.5)
+           elseif(temp(i,k) > TICE) then
+             SC_ICE(i,k) = rhc(i,k)
+           else
+!            SC_ICE(i,k) = 1.0
+!            tx1 = max(SC_ICE(I,k), 1.2)
+             tx1 = max(SC_ICE(I,k), 1.5)
+             SC_ICE(i,k) = ((tice-temp(i,k))*tx1 + (temp(i,k)-t_ice_all)*rhc(i,k)) &
+                         * t_ice_denom
+           endif
+           if (.not. iccn) then
+             CDNC_NUC(I,k) = npccninr8(k)
+             INC_NUC (I,k) = naair8(k)
+           endif
            NHET_IMM(I,k)   = max(nhet_immr8(k), 0.0)
            DNHET_IMM(I,k)  = max(dnhet_immr8(k), 0.0)
            NHET_DEP(I,k)   = nhet_depr8(k) * 1e-6
@@ -795,50 +875,64 @@
 !       if(lprnt) write(0,*)' bef macro_cloud clcn=',clcn(ipr,:)
 !       if(lprnt) write(0,*)' bef macro_cloud clls=',clls(ipr,:)
 
-        allocate(RHX_X(im,lm),     CFPDF_X(im,lm), VFALLSN_CN_X(im,lm), &
-     &           QSNOW_CN(im,lm),  VFALLRN_CN_X(im,lm), QRAIN_CN(im,lm),&
-     &           REV_CN_X(im,lm),  RSU_CN_X(im,lm), DLPDF_X(im,lm),     &
-     &           DIPDF_X(im,lm),   ALPHT_X(im,lm),  PFRZ(im,lm),        &
-     &           ACLL_CN_X(im,lm), ACIL_CN_X(im,lm), DQRL_X(im,lm),     &
-     &           DZET(im,lm),      qst3(im,lm))
-        allocate (PFI_CN_X(im,0:lm), PFL_CN_X(im,0:lm))
+!       allocate(RHX_X(im,lm),     CFPDF_X(im,lm), VFALLSN_CN_X(im,lm), &
+        allocate(                                                       &
+!    &           QSNOW_CN(im,lm),  VFALLRN_CN_X(im,lm), QRAIN_CN(im,lm),&
+!    &           QSNOW_CN(im,lm),                       QRAIN_CN(im,lm),&
+!    &           REV_CN_X(im,lm),  RSU_CN_X(im,lm), DLPDF_X(im,lm),     &
+!    &           DIPDF_X(im,lm),   ALPHT_X(im,lm),  PFRZ(im,lm),        &
+     &                             ALPHT_X(im,lm),  PFRZ(im,lm))
+!    &           ACLL_CN_X(im,lm), ACIL_CN_X(im,lm), DQRL_X(im,lm) 
+!    &           ACLL_CN_X(im,lm), ACIL_CN_X(im,lm), DQRL_X(im,lm),     &
+!    &           DZET(im,lm))
+!    &           DZET(im,lm),      qst3(im,lm))
+!       allocate (PFI_CN_X(im,0:lm), PFL_CN_X(im,0:lm))
 
-        do L=LM,1,-1
-          do i=1,im
-            DZET(i,L)   = ZET(i,L)   - ZET(i,L+1)
-            tx1       = plo(i,l)*100.0
-            est3      = min(tx1, fpvs(temp(i,l)))
-            qst3(i,l) = min(eps*est3/max(tx1+epsm1*est3,1.0e-10),1.0)
-!           MASS(i,l) = (ple(i,l) - ple(i,l-1)) * (100.0/grav)
-          enddo
-        enddo
-        do k=1,lm
-          do i=1,im
-            REV_CN_X(i,k) = 0.0
-            RSU_CN_X(i,k) = 0.0
-          enddo
-        enddo
-        do k=0,lm
-          do i=1,im
-            PFI_CN_X(i,k) = 0.0
-            PFL_CN_X(i,k) = 0.0
-          enddo
-        enddo
+!       do L=LM,1,-1
+!         do i=1,im
+!           DZET(i,L)   = ZET(i,L)   - ZET(i,L+1)
+!           tx1       = plo(i,l)*100.0
+!           est3      = min(tx1, fpvs(temp(i,l)))
+!           qst3(i,l) = min(eps*est3/max(tx1+epsm1*est3,1.0e-10),1.0)
+!!          MASS(i,l) = (ple(i,l) - ple(i,l-1)) * (100.0/grav)
+!         enddo
+!       enddo
+!       do k=1,lm
+!         do i=1,im
+!           REV_CN_X(i,k) = 0.0
+!           RSU_CN_X(i,k) = 0.0
+!         enddo
+!       enddo
+!       do k=0,lm
+!         do i=1,im
+!           PFI_CN_X(i,k) = 0.0
+!           PFL_CN_X(i,k) = 0.0
+!         enddo
+!       enddo
 
 !       call macro_cloud (IM, LM, DT_MOIST, PLO, PLE, PK, FRLAND,       &
-        call macro_cloud (IM, LM, DT_MOIST, PLO, PLE,     FRLAND,       &
-     &                    CNV_MFD, CNV_DQLDT, CNV_PRC3, CNV_UPDF,       &
-     &                    U1, V1, temp, Q1, QLLS,  QLCN, QILS, QICN,    &
+!       call macro_cloud (IM, LM, DT_MOIST, PLO, PLE,     FRLAND,       &
+        call macro_cloud (IM, LM, DT_MOIST, alf_fac, PLO, PLE,          &
+     &                             CNV_DQLDT,                           &
+!    &                    CNV_MFD, CNV_DQLDT,                           &
+!    &                    CNV_MFD, CNV_DQLDT, CNV_PRC3, CNV_UPDF,       &
+!    &                    U1, V1, temp, Q1, QLLS,  QLCN, QILS, QICN,    &
+     &                            temp, Q1, QLLS,  QLCN, QILS, QICN,    &
 !    &                    U1, V1, TH1, Q1, QLLS,  QLCN, QILS, QICN,     &
-     &                    CLCN, CLLS, CN_PRC2, CN_ARFX, CN_SNR,         &
-     &                    CLOUDPARAMS, SCLMFDFR, QST3, DZET, QDDF3,     &
-     &                    RHX_X, REV_CN_X, RSU_CN_X,                    &
-     &                    ACLL_CN_X, ACIL_CN_X, PFL_CN_X,               &
-     &                    PFI_CN_X, DLPDF_X, DIPDF_X,                   &
-     &                    ALPHT_X,  CFPDF_X, DQRL_X, VFALLSN_CN_X,      &
-     &                    VFALLRN_CN_X, CNV_FICE, CNV_NDROP, CNV_NICE,  &
+     &                    CLCN, CLLS,                                   &
+!    &                    CLCN, CLLS, CN_PRC2, CN_ARFX, CN_SNR,         &
+     &                    CLOUDPARAMS, SCLMFDFR,                        &
+!    &                    CLOUDPARAMS, SCLMFDFR, QST3, DZET, QDDF3,     &
+!    &                    RHX_X, REV_CN_X, RSU_CN_X,                    &
+!    &                    ACLL_CN_X, ACIL_CN_X, PFL_CN_X,               &
+!    &                    PFI_CN_X, DLPDF_X, DIPDF_X,                   &
+!    &                    ALPHT_X,  CFPDF_X, DQRL_X, VFALLSN_CN_X,      &
+!    &                    VFALLRN_CN_X, CNV_FICE, CNV_NDROP, CNV_NICE,  &
+     &                    ALPHT_X,                                      &
+     &                                  CNV_FICE, CNV_NDROP, CNV_NICE,  &
      &                    SC_ICE,   NCPL,     NCPI,  PFRZ,              &
-     &                    QRAIN_CN, QSNOW_CN, KCBL,  lprnt, ipr, rhc)
+     &                              lprnt, ipr, rhc, pdfflag, qc_min)
+!    &                    QRAIN_CN, QSNOW_CN, KCBL,  lprnt, ipr, rhc)
 
 
 !       if (lprnt) write(0,*) ' in micro qicn3=',qicn(ipr,25)
@@ -859,13 +953,15 @@
             endif
 !           temp(i,k)   = th1(i,k) * PK(i,k)
             RAD_CF(i,k) = min(CLLS(i,k)+CLCN(i,k), 1.0)
-
-            if (PFRZ(i,k) > 0.0) then
-              INC_NUC(i,k)  = INC_NUC(i,k)  * PFRZ(i,k)
-              NHET_NUC(i,k) = NHET_NUC(i,k) * PFRZ(i,k)
-            else
-              INC_NUC(i,k)  = 0.0
-              NHET_NUC(i,k) = 0.0
+!
+            if (.not. iccn) then
+              if (PFRZ(i,k) > 0.0) then
+                INC_NUC(i,k)  = INC_NUC(i,k)  * PFRZ(i,k)
+                NHET_NUC(i,k) = NHET_NUC(i,k) * PFRZ(i,k)
+              else
+                INC_NUC(i,k)  = 0.0
+                NHET_NUC(i,k) = 0.0
+              endif
             endif
              
           enddo
@@ -873,26 +969,35 @@
 
 
 !make sure QI , NI stay within T limits
-         call meltfrz_inst(IM, LM, TEMP, QLLS, QLCN, QILS, QICN, NCPL, NCPI)
+!        call meltfrz_inst(IM, LM, TEMP, QLLS, QLCN, QILS, QICN, NCPL, NCPI)
 
 !============ a little treatment of cloud before micorphysics
-!        call update_cld(im,lm,DT_MOIST, ALPHT_X                       &
-!    &,                 INT(CLOUDPARAMS(57)),  PLO , Q1, QLLS           &
+!        call update_cld(im,lm,DT_MOIST, ALPHT_X, qc_min                &
+!    &,                 pdfflag,       PLO , Q1, QLLS                   &
 !    &,                 QLCN, QILS,    QICN,   TEMP                     &
 !    &,                 CLLS, CLCN,    SC_ICE, NCPI                     &
-!    &,                 NCPL, INC_NUC, RHCmicro )
+!    &,                 NCPL)
+!!   &,                 NCPL, INC_NUC)
 !============ Put cloud fraction back in contact with the PDF (Barahona et al., GMD, 2014)============
 
-        deallocate(RHX_X,    CFPDF_X,      VFALLSN_CN_X,                &
-     &             QSNOW_CN, VFALLRN_CN_X, QRAIN_CN, REV_CN_X, RSU_CN_X,&
-     &             DLPDF_X, DIPDF_X, PFRZ, ACLL_CN_X, ACIL_CN_X, DQRL_X,&
-     &             PFI_CN_X, PFL_CN_X,  DZET, qst3, qddf3)
+!make sure QI , NI stay within T limits
+         call meltfrz_inst(IM, LM, TEMP, QLLS, QLCN, QILS, QICN, NCPL, NCPI)
+
+
+!       deallocate(RHX_X,    CFPDF_X,      VFALLSN_CN_X,                &
+        deallocate(                                                     &
+!    &             QSNOW_CN, VFALLRN_CN_X, QRAIN_CN, REV_CN_X, RSU_CN_X,&
+!    &             QSNOW_CN,               QRAIN_CN,                    &
+     &                               PFRZ)
+!    &             DLPDF_X, DIPDF_X, PFRZ, ACLL_CN_X, ACIL_CN_X, DQRL_X,&
+!    &             PFI_CN_X, PFL_CN_X)
+!    &             PFI_CN_X, PFL_CN_X,  DZET, qst3, qddf3)
 
       else
-        do i=1,im
-          CN_PRC2(i) = 0.0
-          CN_SNR(i)  = 0.0
-        enddo
+!       do i=1,im
+!         CN_PRC2(i) = 0.0
+!         CN_SNR(i)  = 0.0
+!       enddo
 
 
       endif    ! .not. skip_macro
@@ -908,14 +1013,8 @@
       do k=1,lm
         do i=1,im
           QCNTOT      = QLCN(i,k)   + QICN(i,k)
-          QTOT        = QCNTOT      + QLLS(i,k) + QILS(i,k)
           QL_TOT(i,k) = QLCN(i,k)   + QLLS(i,k)
           QI_TOT(i,k) = QICN(i,k)   + QILS(i,k)
-          if (QTOT > 0.0) then
-            FQA(i,k) = min(max(QCNTOT / QTOT, 0.0), 1.0)
-          else
-            FQA(i,k) = 0.0
-          endif
 !         Anning if negative, borrow water and ice from vapor 11/23/2016
           if (QL_TOT(i,k) < 0.0) then
             Q1(i,k)     = Q1(i,k)   + QL_TOT(i,k)
@@ -926,6 +1025,12 @@
             Q1(i,k)     = Q1(i,k)   + QI_TOT(i,k)
             TEMP(i,k)   = TEMP(i,k) - lsbcp*QI_TOT(i,k)
             QI_TOT(i,k) = 0.0
+          endif
+          QTOT = QL_TOT(i,k) + QI_TOT(i,k)
+          if (QTOT > 0.0) then
+            FQA(i,k) = min(max(QCNTOT / QTOT, 0.0), 1.0)
+          else
+            FQA(i,k) = 0.0
           endif
         enddo
       enddo
@@ -952,7 +1057,8 @@
           naair8(k)    = 0.0
           omegr8(k)    = 0.0
 
-          tx1 = MIN(CLLS(I,k) + CLCN(I,k), 0.99)
+!         tx1 = MIN(CLLS(I,k) + CLCN(I,k), 0.99)
+          tx1 = MIN(CLLS(I,k) + CLCN(I,k), 1.00)
           if (tx1 > 0.0) then
             cldfr8(k) = min(max(tx1, 0.00001), 1.0)
           else
@@ -997,30 +1103,31 @@
           endif
 
 
-          if(aero_in) then
+!         if(aero_in) then
             AeroAux = AeroProps(I, K)
-          else
-            call init_Aer(AeroAux)
-          end if
+!         else
+!           call init_Aer(AeroAux)
+!         end if
           call getINsubset(1, AeroAux, AeroAux_b)
           naux = AeroAux_b%nmods
           if (nbincontactdust < naux) then
             nbincontactdust = naux
-          end if
+          endif
           naconr8(K, 1:naux) = AeroAux_b%num(1:naux)
           rndstr8(K, 1:naux) = AeroAux_b%dpg(1:naux) * 0.5
 
+! The following moved inside of if(fprcp <= 0) then loop
 ! Get black carbon properties for contact ice nucleation
-          call getINsubset(2, AeroAux, AeroAux_b)
-          nsootr8 (K) = sum(AeroAux_b%num)
-          naux         = AeroAux_b%nmods
-          rnsootr8 (K) = sum(AeroAux_b%dpg(1:naux))/naux
+!         call getINsubset(2, AeroAux, AeroAux_b)
+!         nsootr8 (K)  = sum(AeroAux_b%num)
+!         naux         = AeroAux_b%nmods
+!         rnsootr8 (K) = sum(AeroAux_b%dpg(1:naux))/naux
 
           pdelr8(k)  = (PLE(I,k) - PLE(I,k-1)) * 100.0
-          rpdelr8(k) = 1./pdelr8(k)
-          plevr8(k)  = 100.*PLO(I,k)
+          rpdelr8(k) = 1. / pdelr8(k)
+          plevr8(k)  = 100. * PLO(I,k)
           zmr8(k)    = ZLO(I,k)
-          ficer8(k)  = qir8(k) /( qcr8(k)+qir8(k) + 1.e-10 )
+          ficer8(k)  = qir8(k) / (qcr8(k)+qir8(k) + 1.e-10)
           omegr8(k)  = WSUB(I,k)
 !         alphar8(k) = max(alpht_x(i,k)/maxval(alpht_x(i,:))*8.,0.5)
 !         alphar8(k) = qcvar2
@@ -1031,6 +1138,18 @@
           pintr8(k)  = PLE(I,k-1) * 100.0
           kkvhr8(k)  = KH(I,k-1)
         END DO
+
+        lev_sed_strt = 0
+        tx1 = 1.0 / pintr8(lm+1)
+        do k=1,lm
+          if (plevr8(k)*tx1 < sig_sed_strt) then
+            lev_sed_strt(1) = k
+          endif
+        enddo
+        lev_sed_strt(1) = max(lm/6, min(lm/3,lev_sed_strt(1)))
+!       if (kdt == 1)   &
+!       write(0,*)' lev_sed_strt=',lev_sed_strt,' plevr8=',plevr8(lev_sed_strt), &
+!                 ' pintr8=',pintr8(lm+1),' sig_sed_strt=',sig_sed_strt
 !
 !       do k=1,lm
 !         if (cldfr8(k) <= 0.2 ) then
@@ -1051,7 +1170,17 @@
 !!!Call to MG microphysics. Lives in cldwat2m_micro.f
 !  ttendr8, qtendr8,cwtendr8, not used so far Anning noted August 2015
 
-        if (fprcp <= 0) then  ! if fprcp=-1, then Anning's code for MG2 will be used
+        if (fprcp <= 0) then  ! if fprcp = -1, then Anning's code for MG2 will be used
+                              ! if fprcp = 0,  then MG1 is used
+
+! Get black carbon properties for contact ice nucleation
+          do k=1,lm
+            call getINsubset(2, AeroAux, AeroAux_b)
+            nsootr8 (K)  = sum(AeroAux_b%num)
+            naux         = AeroAux_b%nmods
+            rnsootr8 (K) = sum(AeroAux_b%dpg(1:naux))/naux
+          enddo
+
           call mmicro_pcond ( ncolmicro,  ncolmicro,                                 &
      &                        dt_r8,      ter8, ttendr8,                             &
      &                        ncolmicro,  LM , qvr8,                                 &
@@ -1090,6 +1219,7 @@
 
 !         if (lprint) write(0,*)' prectr8=',prectr8(1), &
 !    &     ' precir8=',precir8(1)
+
           LS_PRC2(I) = max(1000.*(prectr8(1)-precir8(1)), 0.0)
           LS_SNR(I)  = max(1000.*precir8(1), 0.0)
 
@@ -1109,14 +1239,15 @@
             NCPR(I,k)   = nrr8(k)
             NCPS(I,k)   = nsr8(k)
 
-           CLDREFFL(I,k) = min(max(effcr8(k), 10.),150.)
-           CLDREFFI(I,k) = min(max(effir8(k), 20.),150.)
-           CLDREFFR(I,k) = max(droutr8(k)*0.5*1.e6,150.)
-           CLDREFFS(I,k) = max(0.192*dsoutr8(k)*0.5*1.e6,250.)
+            CLDREFFL(I,k) = min(max(effcr8(k), 10.), 150.)
+            CLDREFFI(I,k) = min(max(effir8(k), 20.), 150.)
+            CLDREFFR(I,k) = max(droutr8(k)*0.5*1.e6, 150.)
+            CLDREFFS(I,k) = max(0.192*dsoutr8(k)*0.5*1.e6, 250.)
 
           enddo       ! K loop
 
-        elseif (fprcp == 1) then         ! callo mg2
+        elseif (fprcp == 1) then           ! Call MG2
+!                                            --------
 !     if (lprnt .and. i == ipr) then
 !       write(0,*)' bef micro_mg_tend ter8= ', ter8(:)
 !       write(0,*)' bef micro_mg_tend qvr8= ', qvr8(:),'dt_r8=',dt_r8
@@ -1190,7 +1321,8 @@
      &         drout2,                       dsout2,                    &
      &         freqs,                        freqr,                     &
      &         nfice,                        qcrat,                     &
-     &         prer_evap,xlat(i),xlon(i), lprint)
+     &         prer_evap, xlat(i), xlon(i), lprint, iccn, aero_in,      &
+     &         lev_sed_strt)
 !
             LS_PRC2(I) = max(1000.*(prectr8(1)-precir8(1)), 0.0)
             LS_SNR(I)  = max(1000.*precir8(1), 0.0)
@@ -1227,13 +1359,16 @@
               CLDREFFS(I,k) = 250.
             enddo       ! K loop
           endif
-        else
+!
+        else                               ! Call MG3
+!                                            --------
           ltrue = any(qcr8 >= qsmall) .or. any(qir8 >= qsmall)          &
              .or. any(qsr8 >= qsmall) .or. any(qrr8 >= qsmall)          &
              .or. any(qgr8 >= qsmall)
           lprint = lprnt .and. i == ipr
           if (ltrue) then
             alphar8(:) = qcvar3
+
 !           if(lprint) then
 !             write(0,*)' calling micro_mg_tend3_0 qcvar3=',qcvar3,' i=',i
 !             write(0,*)' qcr8=',qcr8(:)
@@ -1242,6 +1377,7 @@
 !             write(0,*)' plevr8=',plevr8(:)
 !             write(0,*)' ter8=',ter8(:)
 !           endif
+
             call micro_mg_tend3_0 (                                     &
      &         ncolmicro,          lm,                 dt_r8,           &
      &         ter8,                         qvr8,                      &
@@ -1319,7 +1455,8 @@
      &         qgout2,             ngout2,   dgout2, freqg,             &
      &         freqs,                        freqr,                     &
      &         nfice,                        qcrat,                     &
-     &         prer_evap, xlat(i), xlon(i), lprint)
+     &         prer_evap, xlat(i), xlon(i), lprint, iccn, aero_in,      &
+     &         lev_sed_strt)
 
             LS_PRC2(I) = max(1000.*(prectr8(1)-precir8(1)), 0.0)
             LS_SNR(I)  = max(1000.*precir8(1), 0.0)
@@ -1378,11 +1515,12 @@
           end do
         end do
 
-        call update_cld(im,lm, DT_MOIST, ALPHT_X                        &
-     &,                 INT(CLOUDPARAMS(57)),  PLO, Q1, QLLS, QLCN      &
-     &,                 QILS,   QICN, TEMP, CLLS,    CLCN               &
-     &,                 SC_ICE, NCPI, NCPL)
+        call update_cld(im, lm,  DT_MOIST,   ALPHT_X, qc_min            &
+     &,                 pdfflag, PLO,  Q1,   QLLS,    QLCN              &
+     &,                 QILS,    QICN, TEMP, CLLS,    CLCN              &
+     &,                 SC_ICE,  NCPI, NCPL)
 
+!       if(lprnt) write(0,*)' aft update_cloud clls=',clls(ipr,:)
 
         do k=1,lm
           do i=1,im
@@ -1390,7 +1528,8 @@
             QI_TOT(I,K) = QILS(I,K) + QICN(I,K)
           end do
         end do
-        deallocate(CNV_MFD,CNV_PRC3,CNV_FICE,CNV_NDROP,CNV_NICE)
+        deallocate(CNV_MFD,CNV_FICE,CNV_NDROP,CNV_NICE)
+!       deallocate(CNV_MFD,CNV_PRC3,CNV_FICE,CNV_NDROP,CNV_NICE)
       endif
 
 !     do I=1,IM
@@ -1426,10 +1565,17 @@
              ncgl_io(i,k) = NCGL(i,ll)
              lwm_o(i,k)   = QL_TOT(i,ll)
              qi_o(i,k)    = QI_TOT(i,ll)
-!            CLLS_io(i,k) = CLLS(i,ll)
-             CLLS_io(i,k) = min(CLLS(i,ll)+CLCN(i,ll),1.0)
            END DO
          END DO
+         if (.not. skip_macro) then
+           DO K=1, LM
+             ll = lm-k+1
+             DO I = 1,IM
+!              CLLS_io(i,k) = max(0.0, min(CLLS(i,ll)+CLCN(i,ll),1.0))
+               CLLS_io(i,k) = CLLS(i,ll)
+             enddo
+           enddo
+         endif
        else
          DO K=1, LM
            DO I = 1,IM
@@ -1445,29 +1591,34 @@
              ncgl_io(i,k) = NCGL(i,k)
              lwm_o(i,k)   = QL_TOT(i,k)
              qi_o(i,k)    = QI_TOT(i,k)
-!            CLLS_io(i,k) = CLLS(i,k)
-             CLLS_io(i,k) = min(CLLS(i,k)+CLCN(i,k),1.)
            END DO
          END DO
-       end if
+         if (.not. skip_macro) then
+           DO K=1, LM
+             DO I = 1,IM
+!              CLLS_io(i,k) = max(0.0, min(CLLS(i,k)+CLCN(i,k),1.0))
+               CLLS_io(i,k) = CLLS(i,k)
+             enddo
+           enddo
+         endif
+       endif
        DO I = 1,IM
-         TPREC(i) = CN_PRC2(i) + CN_SNR(i) + LS_PRC2(i) + LS_SNR(i)
-!        rn_o(i)  = TPREC(i) * dt_i * 0.001
-         rn_o(i)  =  (LS_PRC2(i) + LS_SNR(i)) * dt_i * 0.001
+         tx1     = LS_PRC2(i) + LS_SNR(i)
+         rn_o(i) = tx1 * dt_i * 0.001
 
-         if (rn_o(i) < 1.e-13) then
+         if (rn_o(i) < rainmin) then
            sr_o(i) = 0.
          else
-           sr_o(i) = (CN_SNR(i)+LS_SNR(i)) / rn_o(i)
+           sr_o(i) = LS_SNR(i) / tx1
          endif
-         cn_prc2(i) = cn_prc2(i) * dt_i * 0.001
-         cn_snr(i)  = cn_snr(i)  * dt_i * 0.001
-       END DO
+       ENDDO
 
        if (allocated(ALPHT_X)) deallocate (ALPHT_X)
 
 !     if (lprnt) then
+!       write(0,*)' rn_o=',rn_o(ipr),' ls_prc2=',ls_prc2(ipr),' ls_snr=',ls_snr(ipr)
 !       write(0,*)' end micro_mg_tend t_io= ', t_io(ipr,:)
+!       write(0,*)' end micro_mg_tend clls_io= ', clls_io(ipr,:)
 !     endif
 !      do k=1,lm
 !        do i=1,im
@@ -1493,9 +1644,11 @@
 !DONIF Calculate the Brunt_Vaisala frequency
 
 !===============================================================================
-       subroutine gw_prof (pcols, pver, ncol, t, pm, pi, rhoi, ni, ti, nm)
+       subroutine gw_prof (pcols, pver, ncol, t, pm, pi, rhoi, ni, ti,  &
+                           nm, sph)
        use machine , only : kind_phys
-       use physcons, grav => con_g, cp => con_cp, rgas => con_rd
+       use physcons, grav => con_g, cp => con_cp, rgas => con_rd,       &
+                     fv   => con_fvirt
        implicit none
 !-----------------------------------------------------------------------
 ! Compute profiles of background state quantities for the multiple
@@ -1505,30 +1658,27 @@
 ! concentrations are negligible in determining the density.
 !-----------------------------------------------------------------------
 !------------------------------Arguments--------------------------------
-       integer, intent(in) :: ncol
-       integer, intent(in) :: pcols
-       integer, intent(in) :: pver
+       integer, intent(in) :: ncol, pcols, pver
 
 
 
        real(kind=kind_phys), intent(in) :: t(pcols,pver)
        real(kind=kind_phys), intent(in) :: pm(pcols,pver)
        real(kind=kind_phys), intent(in) :: pi(pcols,0:pver)
+       real(kind=kind_phys), intent(in) :: sph(pcols,pver)
 
        real(kind=kind_phys), intent(out) :: rhoi(pcols,0:pver)
        real(kind=kind_phys), intent(out) :: ni(pcols,0:pver)
        real(kind=kind_phys), intent(out) :: ti(pcols,0:pver)
        real(kind=kind_phys), intent(out) :: nm(pcols,pver)
 
+       real(kind=kind_phys), parameter :: r=rgas, cpair=cp, g=grav, &
+                                          oneocp=1.0/cp, n2min=1.e-8
+
 !---------------------------Local storage-------------------------------
        integer :: ix,kx
 
-       real :: dtdp
-       real :: n2, cpair, r,g
-       real :: n2min = 1.e-8
-       r     = RGAS
-       cpair = CP
-       g     = GRAV
+       real :: dtdp, n2
 
 !-----------------------------------------------------------------------------
 ! Determine the interface densities and Brunt-Vaisala frequencies.
@@ -1539,7 +1689,7 @@
        kx = 0
        do ix = 1, ncol
          ti(ix,kx)   = t(ix,kx+1)
-         rhoi(ix,kx) = pi(ix,kx) / (r*ti(ix,kx))
+         rhoi(ix,kx) = pi(ix,kx) / (r*(ti(ix,kx)*(1.0+fv*sph(ix,kx+1))))
          ni(ix,kx)   = sqrt (g*g / (cpair*ti(ix,kx)))
        end do
 
@@ -1547,9 +1697,9 @@
        do kx = 1, pver-1
          do ix = 1, ncol
            ti(ix,kx)   = 0.5 * (t(ix,kx) + t(ix,kx+1))
-           rhoi(ix,kx) = pi(ix,kx) / (r*ti(ix,kx))
+           rhoi(ix,kx) = pi(ix,kx) / (r*ti(ix,kx)*(1.0+0.5*fv*(sph(ix,kx)+sph(ix,kx+1))))
            dtdp = (t(ix,kx+1)-t(ix,kx)) / (pm(ix,kx+1)-pm(ix,kx))
-           n2   = g*g/ti(ix,kx) * (1./cpair - rhoi(ix,kx)*dtdp)
+           n2   = g*g/ti(ix,kx) * (oneocp - rhoi(ix,kx)*dtdp)
            ni(ix,kx) = sqrt (max (n2min, n2))
          end do
        end do
@@ -1559,7 +1709,7 @@
        kx = pver
        do ix = 1, ncol
          ti(ix,kx)   = t(ix,kx)
-         rhoi(ix,kx) = pi(ix,kx) / (r*ti(ix,kx))
+         rhoi(ix,kx) = pi(ix,kx) / (r*ti(ix,kx)*(1.0+fv*sph(ix,kx)))
          ni(ix,kx)   = ni(ix,kx-1)
        end do
 

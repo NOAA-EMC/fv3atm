@@ -554,6 +554,7 @@ module FV3GFS_io_mod
     call mpp_error(NOTE,'reading surface properties data from INPUT/sfc_data.tile*.nc')
     call restore_state(Sfc_restart)
  
+!   write(0,*)' sfc_var2=',sfc_var2(:,:,12)
     !--- place the data into the block GFS containers
     do nb = 1, Atm_block%nblks
       do ix = 1, Atm_block%blksz(nb)
@@ -1762,46 +1763,36 @@ module FV3GFS_io_mod
 !      'bdl_intplmethod=',trim(bdl_intplmethod(ibdl))
 
      call ESMF_AttributeAdd(phys_bundle(ibdl), convention="NetCDF", purpose="FV3", &
-       attrList=(/ "fhzero     ", &
-                 & "ncld       ", &
-                 & "nsoil      ", &
-                 & "imp_physics", & 
-                 & "dtp        " /), rc=rc)
+       attrList=(/"fhzero", "ncld", "nsoil", "imp_physics", "dtp"/), rc=rc)
+
      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-       line=__LINE__, &
-       file=__FILE__)) &
-       return  ! bail out
+       line=__LINE__, file=__FILE__)) return  ! bail out
+
      call ESMF_AttributeSet(phys_bundle(ibdl), convention="NetCDF", purpose="FV3", &
        name="fhzero", value=fhzero, rc=rc)
      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-       line=__LINE__, &
-       file=__FILE__)) &
-       return  ! bail out
+       line=__LINE__, file=__FILE__)) return  ! bail out
+
      call ESMF_AttributeSet(phys_bundle(ibdl), convention="NetCDF", purpose="FV3", &
        name="ncld", value=ncld, rc=rc)
      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-       line=__LINE__, &
-       file=__FILE__)) &
-       return  ! bail out
+       line=__LINE__, file=__FILE__)) return  ! bail out
+
      call ESMF_AttributeSet(phys_bundle(ibdl), convention="NetCDF", purpose="FV3", &
        name="nsoil", value=nsoil, rc=rc)
      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-       line=__LINE__, &
-       file=__FILE__)) &
-       return  ! bail out
+       line=__LINE__, file=__FILE__)) return  ! bail out
+
      call ESMF_AttributeSet(phys_bundle(ibdl), convention="NetCDF", purpose="FV3", &
        name="imp_physics", value=imp_physics, rc=rc)
      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-       line=__LINE__, &
-       file=__FILE__)) &
-       return  ! bail out
+       line=__LINE__, file=__FILE__)) return  ! bail out
+
      call ESMF_AttributeSet(phys_bundle(ibdl), convention="NetCDF", purpose="FV3", &
        name="dtp", value=dtp, rc=rc)
 !     print *,'in fcst gfdl diag, dtp=',dtp,' ibdl=',ibdl
      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-       line=__LINE__, &
-       file=__FILE__)) &
-       return  ! bail out
+       line=__LINE__, file=__FILE__)) return  ! bail out
 
 !end ibdl
    enddo
@@ -1820,15 +1811,11 @@ module FV3GFS_io_mod
      call ESMF_AttributeAdd(fcst_grid, convention="NetCDF", purpose="FV3",  &
        attrList=(/"vertical_dim_labels"/), rc=rc)
      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-       line=__LINE__, &
-       file=__FILE__)) &
-       return  ! bail out
+       line=__LINE__, file=__FILE__)) return  ! bail out
      call ESMF_AttributeSet(fcst_grid, convention="NetCDF", purpose="FV3", &
        name="vertical_dim_labels", valueList=axis_name_vert, rc=rc)
      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-       line=__LINE__, &
-       file=__FILE__)) &
-       return  ! bail out
+       line=__LINE__, file=__FILE__)) return  ! bail out
    endif
 
 !*** add attributes
@@ -1863,33 +1850,28 @@ module FV3GFS_io_mod
                     trim(axis_name(id))//":positive"/), rc=rc)
       endif
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, &
-        file=__FILE__)) &
-        return  ! bail out
+        line=__LINE__, file=__FILE__)) return  ! bail out
+
       call ESMF_AttributeSet(fcst_grid, convention="NetCDF", purpose="FV3", &
         name=trim(axis_name(id)), valueList=axis_data, rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, &
-        file=__FILE__)) &
-        return  ! bail out
+        line=__LINE__, file=__FILE__)) return  ! bail out
+
       call ESMF_AttributeSet(fcst_grid, convention="NetCDF", purpose="FV3", &
         name=trim(axis_name(id))//":long_name", value=trim(long_name), rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, &
-        file=__FILE__)) &
-        return  ! bail out
+        line=__LINE__, file=__FILE__)) return  ! bail out
+
       call ESMF_AttributeSet(fcst_grid, convention="NetCDF", purpose="FV3", &
         name=trim(axis_name(id))//":units", value=trim(units), rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, &
-        file=__FILE__)) &
-        return  ! bail out
+        line=__LINE__, file=__FILE__)) return  ! bail out
+
       call ESMF_AttributeSet(fcst_grid, convention="NetCDF", purpose="FV3", &
         name=trim(axis_name(id))//":cartesian_axis", value=trim(cart_name), rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, &
-        file=__FILE__)) &
-        return  ! bail out
+        line=__LINE__, file=__FILE__)) return  ! bail out
+
       if(direction>0) then
           axis_direct="up"
       else
@@ -1898,16 +1880,13 @@ module FV3GFS_io_mod
       call ESMF_AttributeSet(fcst_grid, convention="NetCDF", purpose="FV3", &
         name=trim(axis_name(id))//":positive", value=trim(axis_direct), rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, &
-        file=__FILE__)) &
-        return  ! bail out
+        line=__LINE__, file=__FILE__)) return  ! bail out
+
       if(trim(edgesS)/='') then
         call ESMF_AttributeSet(fcst_grid, convention="NetCDF", purpose="FV3", &
           name=trim(axis_name(id))//":edges", value=trim(edgesS), rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-          line=__LINE__, &
-          file=__FILE__)) &
-          return  ! bail out
+          line=__LINE__, file=__FILE__)) return  ! bail out
       endif
 
      endif
@@ -2000,39 +1979,34 @@ module FV3GFS_io_mod
 !     if( mpp_root_pe() == 0) print *,'phys, create wind vector esmf field'
      call ESMF_LogWrite('bf create winde vector esmf field '//trim(var_name), ESMF_LOGMSG_INFO, rc=rc)
      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
+      line=__LINE__, file=__FILE__)) return  ! bail out
+
 !datacopyflag=ESMF_DATACOPY_VALUE, &
      field = ESMF_FieldCreate(phys_grid, temp_r3d, datacopyflag=ESMF_DATACOPY_REFERENCE, &
                             gridToFieldMap=(/2,3/), ungriddedLBound=(/1/), ungriddedUBound=(/3/), &
                             name=var_name, indexFlag=ESMF_INDEX_DELOCAL, rc=rc)
+
      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
+      line=__LINE__, file=__FILE__)) return  ! bail out
      call ESMF_LogWrite('af winde vector esmf field create '//trim(var_name), ESMF_LOGMSG_INFO, rc=rc)
 
      call ESMF_AttributeAdd(field, convention="NetCDF", purpose="FV3", &
         attrList=(/"output_file"/), rc=rc)
-     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-       line=__LINE__, &
-       file=__FILE__)) &
-       call ESMF_Finalize(endflag=ESMF_END_ABORT)
+     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,    &
+       line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
+
      call ESMF_AttributeSet(field, convention="NetCDF", purpose="FV3", &
         name='output_file',value=trim(output_file),rc=rc)
-     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-       line=__LINE__, &
-       file=__FILE__)) &
-       call ESMF_Finalize(endflag=ESMF_END_ABORT)
+     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,    &
+       line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
+
      call ESMF_LogWrite('before winde vector esmf field add output_file', ESMF_LOGMSG_INFO, rc=rc)
 
 !     if( mpp_root_pe() == 0)print *,'phys, aftercreate wind vector esmf field'
      call ESMF_FieldBundleAdd(phys_bundle,(/field/), rc=rc)
      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-       line=__LINE__, &
-       file=__FILE__)) &
-       call ESMF_Finalize(endflag=ESMF_END_ABORT)
+       line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
+
      if( present(rcd)) rcd=rc
      call ESMF_LogWrite('aft winde vector esmf field add to fieldbundle'//trim(var_name), ESMF_LOGMSG_INFO, rc=rc)
      return
@@ -2041,18 +2015,15 @@ module FV3GFS_io_mod
        temp_r2d => buffer_phys_nb(isco:ieco,jsco:jeco,kstt)
        field = ESMF_FieldCreate(phys_grid, temp_r2d, datacopyflag=copyflag, &
                               name=var_name, indexFlag=ESMF_INDEX_DELOCAL, rc=rc)
-       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-         line=__LINE__, &
-         file=__FILE__)) &
-         call ESMF_Finalize(endflag=ESMF_END_ABORT)
+       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,       &
+         line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
+
      else if(size(axes) == 3) then
        temp_r3d => buffer_phys_nb(isco:ieco,jsco:jeco,kstt:kstt+levo-1)
        field = ESMF_FieldCreate(phys_grid, temp_r3d, datacopyflag=copyflag, &
                               name=var_name, indexFlag=ESMF_INDEX_DELOCAL, rc=rc)
-       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-         line=__LINE__, &
-         file=__FILE__)) &
-         call ESMF_Finalize(endflag=ESMF_END_ABORT)
+       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,       &
+         line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
      if( mpp_root_pe() == 0) print *,'add 3D field to after nearest_stod, fld=', trim(var_name)
      endif
@@ -2061,18 +2032,14 @@ module FV3GFS_io_mod
        temp_r2d => buffer_phys_bl(isco:ieco,jsco:jeco,kstt)
        field = ESMF_FieldCreate(phys_grid, temp_r2d, datacopyflag=copyflag, &
                             name=var_name, indexFlag=ESMF_INDEX_DELOCAL, rc=rc)
-       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-         line=__LINE__, &
-         file=__FILE__)) &
-         call ESMF_Finalize(endflag=ESMF_END_ABORT)
+       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,       &
+         line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
      else if(size(axes) == 3) then
        temp_r3d => buffer_phys_bl(isco:ieco,jsco:jeco,kstt:kstt+levo-1)
        field = ESMF_FieldCreate(phys_grid, temp_r3d, datacopyflag=copyflag, &
                             name=var_name, indexFlag=ESMF_INDEX_DELOCAL, rc=rc)
-       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-         line=__LINE__, &
-         file=__FILE__)) &
-         call ESMF_Finalize(endflag=ESMF_END_ABORT)
+       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,       &
+         line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
        if( mpp_root_pe() == 0) print *,'add field to after bilinear, fld=', trim(var_name)
      endif
    endif
@@ -2080,81 +2047,63 @@ module FV3GFS_io_mod
 !*** add field attributes
    call ESMF_AttributeAdd(field, convention="NetCDF", purpose="FV3", &
         attrList=(/"long_name"/), rc=rc)
-   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-     line=__LINE__, &
-     file=__FILE__)) &
-     call ESMF_Finalize(endflag=ESMF_END_ABORT)
+   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,    &
+     line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
+
    call ESMF_AttributeSet(field, convention="NetCDF", purpose="FV3", &
         name='long_name',value=trim(long_name),rc=rc)
-   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-     line=__LINE__, &
-     file=__FILE__)) &
-     call ESMF_Finalize(endflag=ESMF_END_ABORT)
+   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,    &
+     line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
    call ESMF_AttributeAdd(field, convention="NetCDF", purpose="FV3", &
         attrList=(/"units"/), rc=rc)
-   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-     line=__LINE__, &
-     file=__FILE__)) &
-     call ESMF_Finalize(endflag=ESMF_END_ABORT)
+   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,    &
+     line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
+
    call ESMF_AttributeSet(field, convention="NetCDF", purpose="FV3", &
         name='units',value=trim(units),rc=rc)
-   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-     line=__LINE__, &
-     file=__FILE__)) &
-     call ESMF_Finalize(endflag=ESMF_END_ABORT)
+   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,    &
+     line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
    call ESMF_AttributeAdd(field, convention="NetCDF", purpose="FV3", &
         attrList=(/"missing_value"/), rc=rc)
-   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-     line=__LINE__, &
-     file=__FILE__)) &
-     call ESMF_Finalize(endflag=ESMF_END_ABORT)
+   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,    &
+     line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
+
    call ESMF_AttributeSet(field, convention="NetCDF", purpose="FV3", &
         name='missing_value',value=missing_value,rc=rc)
-   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-     line=__LINE__, &
-     file=__FILE__)) &
-     call ESMF_Finalize(endflag=ESMF_END_ABORT)
+   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,    &
+     line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
    call ESMF_AttributeAdd(field, convention="NetCDF", purpose="FV3", &
         attrList=(/"_FillValue"/), rc=rc)
-   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-     line=__LINE__, &
-     file=__FILE__)) &
-     call ESMF_Finalize(endflag=ESMF_END_ABORT)
+   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,    &
+     line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
+
    call ESMF_AttributeSet(field, convention="NetCDF", purpose="FV3", &
         name='_FillValue',value=missing_value,rc=rc)
-   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-     line=__LINE__, &
-     file=__FILE__)) &
-     call ESMF_Finalize(endflag=ESMF_END_ABORT)
+   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,    &
+     line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
    call ESMF_AttributeAdd(field, convention="NetCDF", purpose="FV3", &
         attrList=(/"cell_methods"/), rc=rc)
-   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-     line=__LINE__, &
-     file=__FILE__)) &
-     call ESMF_Finalize(endflag=ESMF_END_ABORT)
+   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,    &
+     line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
+
    call ESMF_AttributeSet(field, convention="NetCDF", purpose="FV3", &
         name='cell_methods',value=trim(cell_methods),rc=rc)
-   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-     line=__LINE__, &
-     file=__FILE__)) &
-     call ESMF_Finalize(endflag=ESMF_END_ABORT)
+   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,    &
+     line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
 !
    call ESMF_AttributeAdd(field, convention="NetCDF", purpose="FV3", &
         attrList=(/"output_file"/), rc=rc)
-   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-     line=__LINE__, &
-     file=__FILE__)) &
-     call ESMF_Finalize(endflag=ESMF_END_ABORT)
+   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,    &
+     line=__LINE__, file=__FILE__))  call ESMF_Finalize(endflag=ESMF_END_ABORT)
+
    call ESMF_AttributeSet(field, convention="NetCDF", purpose="FV3", &
         name='output_file',value=trim(output_file),rc=rc)
-   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-     line=__LINE__, &
-     file=__FILE__)) &
-     call ESMF_Finalize(endflag=ESMF_END_ABORT)
+   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,    &
+     line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
 !
 !*** add vertical coord attribute:
@@ -2170,16 +2119,12 @@ module FV3GFS_io_mod
        if (idx>0) then
          call ESMF_AttributeAdd(field, convention="NetCDF", purpose="FV3", &
            attrList=(/"ESMF:ungridded_dim_labels"/), rc=rc)
-         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-           line=__LINE__, &
-           file=__FILE__)) &
-           return  ! bail out
+         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,    &
+           line=__LINE__, file=__FILE__)) return  ! bail out
          call ESMF_AttributeSet(field, convention="NetCDF", purpose="FV3", &
            name="ESMF:ungridded_dim_labels", valueList=(/trim(axis_name(idx))/), rc=rc)
-         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-           line=__LINE__, &
-           file=__FILE__)) &
-           return  ! bail out
+         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,    &
+           line=__LINE__, file=__FILE__)) return  ! bail out
        endif
      enddo
    endif

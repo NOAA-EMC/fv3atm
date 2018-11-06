@@ -296,6 +296,8 @@
 !                    down spectral components sw fluxes as output.     !
 !     Mar 2017    Ruiyu s.- add effect radii and other cloud properties!
 !                    from the advanced MPs                             !
+!     ----2018    S. Moorthi - update to use unified cloud from SHOC   !
+!                    and/or MG2/3 microphysics and fix some bugs       !
 !     jun 2018    h-m lin/y-t hou - added option of de-correlation     !
 !                    length cloud overlap method (Barker, 2008), removed
 !                    the legacy rh based diagnostic cloud scheme       !
@@ -1201,10 +1203,10 @@
 !
 !  ---  local variables: (horizontal dimensioned by IM)
       !--- INTEGER VARIABLES
-      integer :: me, im, lm, nfxr, ntrac
+      integer :: me, im, lm, levs, nfxr, ntrac
       integer :: i, j, k, k1, lv, itop, ibtc, nday, LP1, LMK, LMP, kd,  &
                  lla, llb, lya, lyb, kt, kb, n, ntcw, ntiw, ncld, ntrw, &
-                 ntsw, ntgl
+                 ntsw, ntgl, k2, lsk
       integer, dimension(size(Grid%xlon,1))   :: idxday
       integer, dimension(size(Grid%xlon,1),3) :: mbota, mtopa
 
@@ -1219,8 +1221,8 @@
       real(kind=kind_phys), dimension(size(Grid%xlon,1),NF_ALBD) :: sfcalb
 
       real(kind=kind_phys), dimension(size(Grid%xlon,1),Model%levr+ltp) :: &
-           htswc, htlwc, gcice, grain, grime, htsw0, htlw0, plyr, tlyr,    &
-           qlyr, olyr, rhly, tvly,qstl, vvel, prslk1, tem2da,              &
+           htswc, htlwc, gcice, grain, grime, htsw0,  htlw0, plyr, tlyr,   &
+           qlyr,  olyr,  rhly,  tvly,  qstl,  prslk1, tem2da,              &
            dz,delp,cldcov, deltaq, cnvc, cnvw, effrl, effri, effrr, effrs
 
       real(kind=kind_phys), dimension(size(Grid%xlon,1),Model%levr+ltp+1) :: plvl, tlvl
@@ -1258,6 +1260,7 @@
 !--- set commonly used integers
       me    = Model%me
       LM    = Model%levr
+      LEVS  = Model%levs
       IM    = size(Grid%xlon,1)
       NFXR  = Model%nfxr
       NTRAC = Model%ntrac        ! tracers in grrad strip off sphum - start tracer1(2:NTRAC)
@@ -1324,20 +1327,23 @@
 
 !> -# Prepare atmospheric profiles for radiation input.
 !
+      lsk = 0
+      if (ivflip == 0 .and. lm < levs) lsk = levs - lm
+
 !           convert pressure unit from pa to mb
       do k = 1, LM
         k1 = k + kd
+        k2 = k + lsk
         do i = 1, IM
-          plvl(i,k1)   = 0.01 * Statein%prsi(i,k)   ! pa to mb (hpa)
-          plyr(i,k1)   = 0.01 * Statein%prsl(i,k)   ! pa to mb (hpa)
-          tlyr(i,k1)   = Statein%tgrs(i,k)
-          prslk1(i,k1) = Statein%prslk(i,k)
+          plvl(i,k1+kb) = Statein%prsi(i,k2+kb) * 0.01   ! pa to mb (hpa)
+          plyr(i,k1)    = Statein%prsl(i,k2)    * 0.01   ! pa to mb (hpa)
+          tlyr(i,k1)    = Statein%tgrs(i,k2)
+          prslk1(i,k1)  = Statein%prslk(i,k2)
 
 !>  - Compute relative humidity.
-!         es  = min( Statein%prsl(i,k), 0.001 * fpvs( Statein%tgrs(i,k) ) )   ! fpvs in pa
-          es  = min( Statein%prsl(i,k),  fpvs( Statein%tgrs(i,k) ) )  ! fpvs and prsl in pa
-          qs  = max( QMIN, eps * es / (Statein%prsl(i,k) + epsm1*es) )
-          rhly(i,k1) = max( 0.0, min( 1.0, max(QMIN, Statein%qgrs(i,k,1))/qs ) )
+          es  = min( Statein%prsl(i,k2),  fpvs( Statein%tgrs(i,k2) ) )  ! fpvs and prsl in pa
+          qs  = max( QMIN, eps * es / (Statein%prsl(i,k2) + epsm1*es) )
+          rhly(i,k1) = max( 0.0, min( 1.0, max(QMIN, Statein%qgrs(i,k2,1))/qs ) )
           qstl(i,k1) = qs
         enddo
       enddo
@@ -1346,18 +1352,29 @@
       do j = 2, NTRAC
         do k = 1, LM
           k1 = k + kd
-          tracer1(:,k1,j) = max(0.0, Statein%qgrs(:,k,j))
+          k2 = k + lsk
+          tracer1(:,k1,j) = max(0.0, Statein%qgrs(:,k2,j))
         enddo
       enddo
-
-      do i = 1, IM
-        plvl(i,LP1+kd) = 0.01 * Statein%prsi(i,LP1)  ! pa to mb (hpa)
-      enddo
-      if (Model%levr < Model%levs) then
+!
+      if (ivflip == 0) then                                ! input data from toa to sfc
         do i = 1, IM
-          plvl(i,LP1+kd) = 0.01 * Statein%prsi(i,Model%levs+1)  ! pa to mb (hpa)
-          plvl(i,LM+kd)  = 0.5 * (plvl(i,LP1+kd) + plvl(i,LM+kd))
+          plvl(i,1+kd) = 0.01 * Statein%prsi(i,1)          ! pa to mb (hpa)
         enddo
+        if (lsk /= 0) then
+          do i = 1, IM
+            plvl(i,1+kd)  = 0.5 * (plvl(i,2+kd) + plvl(i,1+kd))
+          enddo
+        endif
+      else                                                 ! input data from sfc to top
+        do i = 1, IM
+          plvl(i,LP1+kd) = 0.01 * Statein%prsi(i,LP1+lsk)  ! pa to mb (hpa)
+        enddo
+        if (lsk /= 0) then
+          do i = 1, IM
+            plvl(i,LM+kd)  = 0.5 * (plvl(i,LP1+kd) + plvl(i,LM+kd))
+          enddo
+        endif
       endif
 
       if ( lextop ) then                 ! values for extra top layer
@@ -1389,12 +1406,12 @@
                      olyr)                                !  ---  outputs
       endif                               ! end_if_ntoz
 
-!>  - Call coszmn(), to compute cosine of zenith angle.
+!>  - Call coszmn(), to compute cosine of zenith angle (only when SW is called)
 
-      if( Model%lsswr ) then
-        call coszmn (Grid%xlon,Grid%sinlat,           &     !  ---  inputs
+      if (Model%lsswr) then
+        call coszmn (Grid%xlon,Grid%sinlat,           &   !  ---  inputs
                      Grid%coslat,Model%solhr, IM, me, &
-                     Radtend%coszen, Radtend%coszdg)        !  ---  outputs
+                     Radtend%coszen, Radtend%coszdg)      !  ---  outputs
       endif
 
 !>  - Call getgases(), to set up non-prognostic gas volume mixing
@@ -1614,10 +1631,10 @@
             ccnd(:,:,1) = ccnd(:,:,1) + tracer1(:,1:LMK,ntsw)
             ccnd(:,:,1) = ccnd(:,:,1) + tracer1(:,1:LMK,ntgl)
 
-          else
-            do j=1,Model%ncld
-              ccnd(:,:,1) = ccnd(:,:,1) + tracer1(:,1:LMK,ntcw+j-1) ! cloud condensate amount
-            enddo
+!         else
+!           do j=1,Model%ncld
+!             ccnd(:,:,1) = ccnd(:,:,1) + tracer1(:,1:LMK,ntcw+j-1) ! cloud condensate amount
+!           enddo
           endif 
           do k=1,LMK
             do i=1,IM
@@ -1626,29 +1643,23 @@
           enddo
         endif 
 !
-        if (Model%shoc_cld) then                                        ! all but MG microphys
-          cldcov(1:IM,1+kd:LM+kd) = Tbd%phy_f3d(1:IM,1:LM,Model%ntot3d-2)
-          if (ncld == 2 .and. Model%effr_in) then
-            do k=1,lm
-              k1 = k + kd
-              do i=1,im
-                effrl(i,k1) = Tbd%phy_f3d(i,k,2)
-                effri(i,k1) = Tbd%phy_f3d(i,k,3)
-                effrr(i,k1) = Tbd%phy_f3d(i,k,4)
-                effrs(i,k1) = Tbd%phy_f3d(i,k,5)
-              enddo
-            enddo
-          endif
-        elseif (Model%imp_physics == 10) then                                 ! MG microphys
-          cldcov(1:IM,1+kd:LM+kd) = Tbd%phy_f3d(1:IM,1:LM,1)
+        if (Model%uni_cld) then
           if (Model%effr_in) then
             do k=1,lm
               k1 = k + kd
               do i=1,im
-                effrl(i,k1) = Tbd%phy_f3d(i,k,2)
-                effri(i,k1) = Tbd%phy_f3d(i,k,3)
-                effrr(i,k1) = Tbd%phy_f3d(i,k,4)
-                effrs(i,k1) = Tbd%phy_f3d(i,k,5)
+                cldcov(i,k1) = Tbd%phy_f3d(i,k,Model%indcld)
+                effrl(i,k1)  = Tbd%phy_f3d(i,k,2)
+                effri(i,k1)  = Tbd%phy_f3d(i,k,3)
+                effrr(i,k1)  = Tbd%phy_f3d(i,k,4)
+                effrs(i,k1)  = Tbd%phy_f3d(i,k,5)
+              enddo
+            enddo
+          else
+            do k=1,lm
+              k1 = k + kd
+              do i=1,im
+                cldcov(i,k1) = Tbd%phy_f3d(i,k,Model%indcld)
               enddo
             enddo
           endif
@@ -1856,12 +1867,13 @@
 
           do k = 1, LM
             k1 = k + kd
-            Radtend%htrsw(:,k) = htswc(:,k1)
+            Radtend%htrsw(1:im,k) = htswc(1:im,k1)
           enddo
-! --- repopulate the points above levr
-          if (Model%levr < Model%levs) then
-            do k = LM,Model%levs
-              Radtend%htrsw (:,k) = Radtend%htrsw (:,LM)
+!     We are assuming that radiative tendencies are from bottom to top 
+! --- repopulate the points above levr i.e. LM
+          if (lm < levs) then
+            do k = lm,levs
+              Radtend%htrsw (1:im,k) = Radtend%htrsw (1:im,LM)
             enddo
           endif
 
@@ -1870,9 +1882,9 @@
                k1 = k + kd
                Radtend%swhc(1:im,k) = htsw0(1:im,k1)
              enddo
-! --- repopulate the points above levr
-             if (Model%levr < Model%levs) then
-               do k = LM,Model%levs
+! --- repopulate the points above levr i.e. LM
+             if (lm < levs) then
+               do k = lm,levs
                  Radtend%swhc(1:im,k) = Radtend%swhc(1:im,LM) 
                enddo
              endif
@@ -1967,8 +1979,8 @@
             Radtend%htrlw(1:im,k) = htlwc(1:im,k1)
         enddo
 ! --- repopulate the points above levr
-        if (Model%levr < Model%levs) then
-          do k = LM,Model%levs
+        if (lm < levs) then
+          do k = lm,levs
             Radtend%htrlw (1:im,k) = Radtend%htrlw (1:im,LM)
           enddo
         endif
@@ -1979,8 +1991,8 @@
             Radtend%lwhc(1:im,k) = htlw0(1:im,k1)
           enddo
 ! --- repopulate the points above levr
-          if (Model%levr < Model%levs) then
-            do k = LM,Model%levs
+          if (lm < levs) then
+            do k = lm,levs
               Radtend%lwhc(1:im,k) = Radtend%lwhc(1:im,LM) 
             enddo
           endif
@@ -2032,7 +2044,7 @@
             if (Radtend%coszen(i) > 0.) then
 !  ---                                  sw total-sky fluxes
 !                                       -------------------
-              tem0d = Model%fhswr * Radtend%coszdg(i)  / Radtend%coszen(i)
+              tem0d = Model%fhswr * Radtend%coszdg(i) / Radtend%coszen(i)
               Diag%fluxr(i,2 ) = Diag%fluxr(i,2)  +    Diag%topfsw(i)%upfxc * tem0d  ! total sky top sw up
               Diag%fluxr(i,3 ) = Diag%fluxr(i,3)  + Radtend%sfcfsw(i)%upfxc * tem0d  ! total sky sfc sw up
               Diag%fluxr(i,4 ) = Diag%fluxr(i,4)  + Radtend%sfcfsw(i)%dnfxc * tem0d  ! total sky sfc sw dn
@@ -2084,9 +2096,9 @@
               tem1 = 0.
               tem2 = 0.
               do k=ibtc,itop
-                 tem1 = tem1 + cldtausw(i,k)      ! approx .55 mu channel
-                 tem2 = tem2 + cldtaulw(i,k)      ! approx 10. mu channel
-              end do
+                tem1 = tem1 + cldtausw(i,k)      ! approx .55 mu channel
+                tem2 = tem2 + cldtaulw(i,k)      ! approx 10. mu channel
+              enddo
               Diag%fluxr(i,43-j) = Diag%fluxr(i,43-j) + tem0d * tem1
               Diag%fluxr(i,46-j) = Diag%fluxr(i,46-j) + tem0d * (1.0-exp(-tem2))
             enddo

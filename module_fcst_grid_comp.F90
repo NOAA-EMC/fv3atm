@@ -122,29 +122,22 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     call ESMF_GridCompSetEntryPoint(fcst_comp, ESMF_METHOD_INITIALIZE, &
          userRoutine=fcst_initialize, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
+      line=__LINE__, file=__FILE__)) return  ! bail out
 !
     call ESMF_GridCompSetEntryPoint(fcst_comp, ESMF_METHOD_RUN, &
          userRoutine=fcst_run_phase_1, phase=1, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
+      line=__LINE__, file=__FILE__)) return  ! bail out
+
     call ESMF_GridCompSetEntryPoint(fcst_comp, ESMF_METHOD_RUN, &
          userRoutine=fcst_run_phase_2, phase=2, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
+      line=__LINE__, file=__FILE__)) return  ! bail out
 !
     call ESMF_GridCompSetEntryPoint(fcst_comp, ESMF_METHOD_FINALIZE, &
          userRoutine=fcst_finalize, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
+      line=__LINE__, file=__FILE__)) return  ! bail out
 
   end subroutine SetServices
 !
@@ -224,14 +217,12 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     wrap%ptr => atm_int_state
     call ESMF_GridCompSetInternalState(fcst_comp, wrap, rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
+      line=__LINE__, file=__FILE__)) return  ! bail out
 !
     call ESMF_VMGetCurrent(vm=VM,rc=RC)        
     call ESMF_VMGet(vm=VM, localPet=mype, mpiCommunicator=mpi_comm_comp, &
                     petCount=ntasks, rc=rc)
-    if(mype==0) print *,'in fcst comp init, ntasks=',ntasks
+    if (mype == 0) write(0,*)'in fcst comp init, ntasks=',ntasks
 !
     call fms_init(mpi_comm_comp)
     call mpp_init()
@@ -269,18 +260,15 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     call ESMF_ClockGet(clock, CurrTime=CurrTime, StartTime=StartTime, &
                        StopTime=StopTime, RunDuration=RunDuration, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
+      line=__LINE__, file=__FILE__)) return  ! bail out
 
-    date_init=0
+    date_init = 0
     call ESMF_TimeGet (StartTime,                      &
                        YY=date_init(1), MM=date_init(2), DD=date_init(3), &
                        H=date_init(4),  M =date_init(5), S =date_init(6), RC=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
+      line=__LINE__, file=__FILE__)) return  ! bail out
+
     if ( date_init(1) == 0 ) date_init = date
     atm_int_state%Time_init  = set_date (date_init(1), date_init(2), date_init(3), &
                                          date_init(4), date_init(5), date_init(6))
@@ -291,9 +279,8 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
                        YY=date(1), MM=date(2), DD=date(3), &
                        H=date(4),  M =date(5), S =date(6), RC=rc )
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
+      line=__LINE__, file=__FILE__)) return  ! bail out
+
     if(mype==0) write(*,'(A,6I5)') 'CurrTime =',date
 
     atm_int_state%Time_atmos = set_date (date(1), date(2), date(3),  &
@@ -304,9 +291,8 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
                        YY=date_end(1), MM=date_end(2), DD=date_end(3), &
                        H=date_end(4),  M =date_end(5), S =date_end(6), RC=rc )
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
+      line=__LINE__, file=__FILE__)) return  ! bail out
+
     if ( date_end(1) == 0 ) date_end = date
     atm_int_state%Time_end   = set_date (date_end(1), date_end(2), date_end(3),  &
                                          date_end(4), date_end(5), date_end(6))
@@ -316,16 +302,14 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !
     CALL ESMF_TimeIntervalGet(RunDuration, S=Run_length, RC=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, &
-        file=__FILE__)) &
-        return  ! bail out
+        line=__LINE__, file=__FILE__)) return  ! bail out
 !
     call diag_manager_init (TIME_INIT=date)
     call diag_manager_set_time_end(atm_int_state%Time_end)
 !
     atm_int_state%Time_step_atmos = set_time (dt_atmos,0)
     atm_int_state%num_atmos_calls = Run_length / dt_atmos
-    if(mype==0) print *,'num_atmos_calls=',atm_int_state%num_atmos_calls,'time_init=', &
+    if (mype == 0) write(0,*)'num_atmos_calls=',atm_int_state%num_atmos_calls,'time_init=', &
        date_init,'time_atmos=',date,'time_end=',date_end,'dt_atmos=',dt_atmos, &
        'Run_length=',Run_length
      res_intvl = restart_interval*3600
@@ -368,7 +352,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !*** first try: Create cubed sphere grid from file
 !-----------------------------------------------------------------------
 !
-      if(mype==0) print *,'be create fcst grid'
+      if (mype == 0) write(0,*)'be create fcst grid'
       if( quilting ) then
 
         do tl=1,6
@@ -442,9 +426,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
             staggerlocList=(/ESMF_STAGGERLOC_CENTER, ESMF_STAGGERLOC_CORNER/), &
             name='fcst_grid', rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-            line=__LINE__, &
-            file=__FILE__)) &
-            return  ! bail out
+            line=__LINE__, file=__FILE__)) return  ! bail out
 
         end if
 !
@@ -452,17 +434,13 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
         if( cpl ) then
           call addLsmask2grid(fcstGrid, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-            line=__LINE__, &
-            file=__FILE__)) &
-            return  ! bail out
+            line=__LINE__, file=__FILE__)) return  ! bail out
 !         print *,'call addLsmask2grid after fcstgrid, rc=',rc
           if( cplprint_flag ) then
             call ESMF_GridWriteVTK(fcstgrid, staggerloc=ESMF_STAGGERLOC_CENTER,  &
                  filename='fv3cap_fv3Grid', rc=rc)
             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-              line=__LINE__, &
-              file=__FILE__)) &
-              return  ! bail out
+              line=__LINE__, file=__FILE__)) return  ! bail out
           endif
         endif
 !
@@ -470,29 +448,23 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
         call ESMF_AttributeAdd(exportState, convention="NetCDF", purpose="FV3", &
           attrList=(/"gridfile"/), rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-          line=__LINE__, &
-          file=__FILE__)) &
-          return  ! bail out
+          line=__LINE__, file=__FILE__)) return  ! bail out
+
         call ESMF_AttributeSet(exportState, convention="NetCDF", purpose="FV3", &
           name="gridfile", value=trim(gridfile), rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-          line=__LINE__, &
-          file=__FILE__)) &
-          return  ! bail out
+          line=__LINE__, file=__FILE__)) return  ! bail out
 
 ! Add dimension Attributes to Grid
         call ESMF_AttributeAdd(fcstgrid, convention="NetCDF", purpose="FV3",  &
           attrList=(/"ESMF:gridded_dim_labels"/), rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-          line=__LINE__, &
-          file=__FILE__)) &
-          return  ! bail out
+          line=__LINE__, file=__FILE__)) return  ! bail out
+
         call ESMF_AttributeSet(fcstGrid, convention="NetCDF", purpose="FV3", &
           name="ESMF:gridded_dim_labels", valueList=(/"grid_xt", "grid_yt"/), rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-          line=__LINE__, &
-          file=__FILE__)) &
-          return  ! bail out
+          line=__LINE__, file=__FILE__)) return  ! bail out
 !
 ! Add time Attribute to the exportState
         call ESMF_AttributeAdd(exportState, convention="NetCDF", purpose="FV3", &
@@ -503,55 +475,49 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
                       "time:calendar_type ", &
                       "time:calendar      " /), rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-          line=__LINE__, &
-          file=__FILE__)) &
-          return  ! bail out
+          line=__LINE__, file=__FILE__)) return  ! bail out
+
         call ESMF_AttributeSet(exportState, convention="NetCDF", purpose="FV3", &
           name="time", value=real(0,ESMF_KIND_R8), rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-          line=__LINE__, &
-          file=__FILE__)) &
-          return  ! bail out
+          line=__LINE__, file=__FILE__)) return  ! bail out
+
         write(dateSY,'(I4.4)')date_init(1)
         write(dateSM,'(I2.2)')date_init(2)
         write(dateSD,'(I2.2)')date_init(3)
         write(dateSH,'(I2.2)')date_init(4)
         write(dateSN,'(I2.2)')date_init(5)
         write(dateSS,'(I2.2)')date_init(6)
+
         dateS="hours since "//dateSY//'-'//dateSM//'-'//dateSD//' '//dateSH//':'//    &
             dateSN//":"//dateSS
-        if(mype==0) print *,'dateS=',trim(dateS),'date_init=',date_init
+        if (mype == 0) write(0,*)'dateS=',trim(dateS),'date_init=',date_init
+
         call ESMF_AttributeSet(exportState, convention="NetCDF", purpose="FV3", &
           name="time:units", value=trim(dateS), rc=rc)
 !          name="time:units", value="hours since 2016-10-03 00:00:00", rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-         line=__LINE__, &
-         file=__FILE__)) &
-         return  ! bail out
+         line=__LINE__, file=__FILE__)) return  ! bail out
+
         call ESMF_AttributeSet(exportState, convention="NetCDF", purpose="FV3", &
           name="time:long_name", value="time", rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-          line=__LINE__, &
-          file=__FILE__)) &
-          return  ! bail out
+          line=__LINE__, file=__FILE__)) return  ! bail out
+
         call ESMF_AttributeSet(exportState, convention="NetCDF", purpose="FV3", &
           name="time:cartesian_axis", value="T", rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-          line=__LINE__, &
-          file=__FILE__)) &
-          return  ! bail out
+          line=__LINE__, file=__FILE__)) return  ! bail out
+
         call ESMF_AttributeSet(exportState, convention="NetCDF", purpose="FV3", &
           name="time:calendar_type", value="JULIAN", rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-          line=__LINE__, &
-          file=__FILE__)) &
-          return  ! bail out
+          line=__LINE__, file=__FILE__)) return  ! bail out
+
         call ESMF_AttributeSet(exportState, convention="NetCDF", purpose="FV3", &
           name="time:calendar", value="JULIAN", rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-          line=__LINE__, &
-          file=__FILE__)) &
-          return  ! bail out
+          line=__LINE__, file=__FILE__)) return  ! bail out
 !
 ! Create FieldBundle for Fields that need to be regridded bilinear
 
@@ -563,20 +529,17 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 ! for dyn
            name_FB1 = trim(name_FB)//'_bilinear'
            fieldbundle = ESMF_FieldBundleCreate(name=trim(name_FB1),rc=rc)
-           if(mype==0) print *,'af create fcst fieldbundle, name=',trim(name_FB),'rc=',rc
+           if (mype == 0) write(0,*)'af create fcst fieldbundle, name=',trim(name_FB),'rc=',rc
            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-             line=__LINE__, &
-             file=__FILE__)) &
-             return  ! bail out
+             line=__LINE__, file=__FILE__)) return  ! bail out
+
            call fv_dyn_bundle_setup(atm_int_state%Atm%axes,          &
                 fieldbundle, fcstgrid, quilting)
 
            ! Add the field to the importState so parent can connect to it
            call ESMF_StateAdd(exportState, (/fieldbundle/), rc=rc)
            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-             line=__LINE__, &
-             file=__FILE__)) &
-             return  ! bail out
+             line=__LINE__, file=__FILE__)) return  ! bail out
 
          else if( i==2 ) then
 ! for phys
@@ -589,11 +552,9 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
                name_FB1 = trim(name_FB)//'_bilinear'
              endif
              fieldbundlephys(j) = ESMF_FieldBundleCreate(name=trim(name_FB1),rc=rc)
-             if(mype==0) print *,'af create fcst fieldbundle, name=',trim(name_FB1),'rc=',rc
+             if (mype == 0) write(0,*)'af create fcst fieldbundle, name=',trim(name_FB1),'rc=',rc
              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-               line=__LINE__, &
-               file=__FILE__)) &
-               return  ! bail out
+               line=__LINE__, file=__FILE__)) return  ! bail out
            enddo
 !
            call fv_phys_bundle_setup(atm_int_state%Atm%diag, atm_int_state%Atm%axes, &
@@ -603,9 +564,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
            do j=1,nbdlphys
              call ESMF_StateAdd(exportState, (/fieldbundlephys(j)/), rc=rc)
              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-               line=__LINE__, &
-               file=__FILE__)) &
-               return  ! bail out
+               line=__LINE__, file=__FILE__)) return  ! bail out
            enddo
 
          endif
@@ -626,7 +585,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !        WRITE(0,*)"PASS: Fcst_Initialize."
       ENDIF
 !
-      if(mype==0) print *,'in fcst,init total time: ', mpi_wtime() - timeis
+      if (mype == 0) write(0,*)'in fcst,init total time: ', mpi_wtime() - timeis
 !
 !-----------------------------------------------------------------------
 !
@@ -674,15 +633,11 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !
       call ESMF_GridCompGet(fcst_comp, name=compname, localpet=mype, rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, &
-        file=__FILE__)) &
-        return  ! bail out
+        line=__LINE__, file=__FILE__)) return  ! bail out
 !
       call ESMF_ClockGet(clock, advanceCount=NTIMESTEP_ESMF, rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, &
-        file=__FILE__)) &
-        return  ! bail out
+        line=__LINE__, file=__FILE__)) return  ! bail out
 
       na = NTIMESTEP_ESMF
 !
@@ -699,19 +654,17 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 
       call atmos_model_exchange_phase_1 (atm_int_state%Atm, rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, &
-        file=__FILE__)) &
-        return  ! bail out
+        line=__LINE__, file=__FILE__)) return  ! bail out
 
 !-----------------------------------------------------------------------
 !
 !     IF(RC /= ESMF_SUCCESS) THEN
 !       if(mype==0) WRITE(0,*)"FAIL: fcst_RUN"
-!      ELSE
-        if(mype==0) WRITE(0,*)"PASS: fcstRUN, na=",na
+!     ELSE
+        if (mype == 0) WRITE(0,*)"PASS: fcstRUN, na=",na
 !     ENDIF
 !
-      if(mype==0) print *,'fcst_run_phase_1 time is ', mpi_wtime()-tbeg1
+      if (mype == 0) write(0,*)'fcst_run_phase_1 time is ', mpi_wtime()-tbeg1
 !
 !-----------------------------------------------------------------------
 !
@@ -759,27 +712,21 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !
       call ESMF_GridCompGet(fcst_comp, name=compname, localpet=mype, rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, &
-        file=__FILE__)) &
-        return  ! bail out
+        line=__LINE__, file=__FILE__)) return  ! bail out
 !
       call ESMF_ClockGet(clock, advanceCount=NTIMESTEP_ESMF, rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, &
-        file=__FILE__)) &
-        return  ! bail out
+        line=__LINE__, file=__FILE__)) return  ! bail out
 
       na = NTIMESTEP_ESMF
-      if(mype==0) print *,'in fcst run phase 2, na=',na
+      if (mype == 0) write(0,*)'in fcst run phase 2, na=',na
 !
 !-----------------------------------------------------------------------
 ! *** call fcst integration subroutines
 
       call atmos_model_exchange_phase_2 (atm_int_state%Atm, rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, &
-        file=__FILE__)) &
-        return  ! bail out
+        line=__LINE__, file=__FILE__)) return  ! bail out
 
       call update_atmos_model_state (atm_int_state%Atm)
 
@@ -800,12 +747,12 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !-----------------------------------------------------------------------
 !
 !     IF(RC /= ESMF_SUCCESS) THEN
-!      if(mype==0) WRITE(0,*)"FAIL: fcst_RUN"
-!      ELSE
-       if(mype==0) WRITE(0,*)"PASS: fcstRUN, na=",na
+!       if(mype==0) WRITE(0,*)"FAIL: fcst_RUN"
+!     ELSE
+        if (mype == 0) WRITE(0,*)"PASS: fcstRUN, na=",na
 !     ENDIF
 !
-      if(mype==0) print *,'fcst_run_phase_2 time is ', mpi_wtime()-tbeg1
+      if (mype == 0) write(0,*)'fcst_run_phase_2 time is ', mpi_wtime()-tbeg1
 !
 !-----------------------------------------------------------------------
 !

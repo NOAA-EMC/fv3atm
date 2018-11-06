@@ -153,7 +153,7 @@ logical :: debug        = .false.
 logical :: sync         = .false.
 integer, parameter     :: maxhr = 4096
 real, dimension(maxhr) :: fdiag = 0.
-real                   :: fhmax=240.0, fhmaxhf=120.0, fhout=3.0, fhouthf=1.0
+real                   :: fhmax=384.0, fhmaxhf=120.0, fhout=3.0, fhouthf=1.0
 namelist /atmos_model_nml/ blocksize, chksum_debug, dycore_only, debug, sync, fdiag, fhmax, fhmaxhf, fhout, fhouthf
 #ifdef CCPP
 character(len=256)     :: ccpp_suite='undefined.xml'
@@ -613,9 +613,7 @@ subroutine atmos_model_exchange_phase_1 (Atmos, rc)
       ! -- export fields to chemistry
       call update_atmos_chemistry('export', rc=localrc)
       if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, &
-        file=__FILE__, &
-        rcToReturn=rc)) return  ! bail out
+        line=__LINE__, file=__FILE__, rcToReturn=rc)) return  ! bail out
     endif
 
  end subroutine atmos_model_exchange_phase_1
@@ -652,9 +650,7 @@ subroutine atmos_model_exchange_phase_2 (Atmos, rc)
       ! -- import fields from chemistry
       call update_atmos_chemistry('import', rc=localrc)
       if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, &
-        file=__FILE__, &
-        rcToReturn=rc)) return  ! bail out
+        line=__LINE__, file=__FILE__, rcToReturn=rc)) return  ! bail out
     endif
 
  end subroutine atmos_model_exchange_phase_2
@@ -2202,9 +2198,7 @@ end subroutine atmos_data_type_chksum
     call ESMF_GridAddItem(fcstgrid, itemflag=ESMF_GRIDITEM_MASK,   &
          staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
+      line=__LINE__, file=__FILE__)) return  ! bail out
 
 !    call ESMF_GridGetItemBounds(fcstgrid, itemflag=ESMF_GRIDITEM_MASK,   &
 !         staggerloc=ESMF_STAGGERLOC_CENTER, computationalLBound=ClBnd,  &
@@ -2214,18 +2208,14 @@ end subroutine atmos_data_type_chksum
 !     'ClBnd=',ClBnd,'CUbnd=',CUbnd,'Ccount=',Ccount, &
 !     'TlBnd=',TlBnd,'TUbnd=',TUbnd,'Tcount=',Tcount
 !    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-!      line=__LINE__, &
-!      file=__FILE__)) &
-!      return  ! bail out
+!      line=__LINE__, file=__FILE__)) return  ! bail out
 
     call ESMF_GridGetItem(fcstgrid, itemflag=ESMF_GRIDITEM_MASK,   &
          staggerloc=ESMF_STAGGERLOC_CENTER,farrayPtr=maskPtr, rc=rc)
 !    print *,'in set up grid, aft get maskptr, rc=',rc, 'size=',size(maskPtr,1),size(maskPtr,2), &
 !      'bound(maskPtr)=', LBOUND(maskPtr,1),LBOUND(maskPtr,2),UBOUND(maskPtr,1),UBOUND(maskPtr,2)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, &
-        file=__FILE__)) &
-        return  ! bail out
+        line=__LINE__, file=__FILE__)) return  ! bail out
 !    
     do j=jsc,jec
       do i=isc,iec

@@ -20,7 +20,7 @@
       subroutine sfc_nst                                                &
 !...................................
 !  ---  inputs:
-     &     ( im, km, ps, u1, v1, t1, q1, tref, cm, ch,                  &
+     &     ( im,    ps, u1, v1, t1, q1, tref, cm, ch,                   &
      &       prsl1, prslki, islimsk, xlon, sinlat, stress,              &
      &       sfcemis, dlwflx, sfcnsw, rain, timestep, kdt, solhr,xcosz, &
      &       ddvel, flag_iter, flag_guess, nstf_name,                    &
@@ -40,7 +40,7 @@
 !                                                                       !
 !    call sfc_nst                                                       !
 !       inputs:                                                         !
-!          ( im, km, ps, u1, v1, t1, q1, tref, cm, ch,                  !
+!          ( im, ps, u1, v1, t1, q1, tref, cm, ch,                      !
 !            prsl1, prslki, islimsk, xlon, sinlat, stress,              !
 !            sfcemis, dlwflx, sfcnsw, rain, timestep, kdt,solhr,xcosz,  !
 !            ddvel, flag_iter, flag_guess, nstf_name,                    !
@@ -76,7 +76,6 @@
 !                                                                       !
 !  inputs:                                                       size   !
 !     im       - integer, horiz dimension                          1    !
-!     km       - integer, vertical dimension                       1    !
 !     ps       - real, surface pressure (pa)                       im   !
 !     u1, v1   - real, u/v component of surface layer wind (m/s)   im   !
 !     t1       - real, surface layer mean temperature ( k )        im   !
@@ -182,7 +181,7 @@
 
 
 !  ---  inputs:
-      integer, intent(in) :: im, km, kdt, ipr,nstf_name(5)
+      integer, intent(in) :: im, kdt, ipr,nstf_name(5)
       real (kind=kind_phys), dimension(im), intent(in) :: ps, u1, v1,   &
      &       t1, q1, tref, cm, ch, prsl1, prslki, xlon,xcosz,           &
      &       sinlat, stress, sfcemis, dlwflx, sfcnsw, rain, ddvel

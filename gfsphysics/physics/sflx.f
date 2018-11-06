@@ -325,7 +325,7 @@
       endif
 !  --- ...  lai sfc-perts, mgehne
       xlai = xlai * (1.+xlaip)
-      xlai = amax1(xlai, .75)
+      xlai = max(xlai, .75)
 
 !  --- ...  initialize precipitation logicals.
 

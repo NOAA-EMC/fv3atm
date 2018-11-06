@@ -124,7 +124,7 @@
      &       sfcdsw,sfcnsw,sfcdlw,swh,swhc,hlw,hlwc,                    &
      &       sfcnirbmu,sfcnirdfu,sfcvisbmu,sfcvisdfu,                   &
      &       sfcnirbmd,sfcnirdfd,sfcvisbmd,sfcvisdfd,                   &
-     &       ix, im, levs,                                              &
+     &       ix, im, levs, deltim,                                      &
 !  ---  input/output:
      &       dtdt,dtdtc,                                                &
 !  ---  outputs:
@@ -139,12 +139,15 @@
       implicit none
 !
 !  ---  constant parameters:
-      real(kind=kind_phys), parameter :: f_eps  = 0.0001, hour12 = 12.0
+      real(kind=kind_phys), parameter :: f_eps  = 0.0001, hour12 = 12.0,&
+     &                                   f7200  = 1.0/7200.0,           &
+     &                                   pid12  = con_pi / hour12
 
 !  ---  inputs:
       integer, intent(in) :: ix, im, levs
 
-      real(kind=kind_phys), intent(in) :: solhr, slag, cdec, sdec
+      real(kind=kind_phys), intent(in) :: solhr, slag, cdec, sdec,      &
+     &                                    deltim
 
       real(kind=kind_phys), dimension(im), intent(in) ::                &
      &      sinlat, coslat, xlon, coszen, tsea, tf, tsflw, sfcdlw,      &
@@ -172,7 +175,7 @@
 !
 !===> ...  begin here
 !
-      cns = con_pi * (solhr - hour12) / hour12 + slag
+      cns = pid12 * (solhr + deltim*f7200 - hour12) + slag
 !
       do i = 1, im
 
@@ -182,7 +185,7 @@
 !           compute 4th power of the ratio of layer 1 tf over the mean value tsflw
 
         tem1 = tf(i) / tsflw(i)
-        tem2  = tem1 * tem1
+        tem2 = tem1 * tem1
         adjsfcdlw(i) = sfcdlw(i) * tem2 * tem2
 
 !  --- ...  compute sfc upward lw flux from current sfc temp,
@@ -211,18 +214,18 @@
 !  --- ...  adjust sfc net and downward sw fluxes for zenith angle changes
 !      note: sfc emiss effect will not be appied here
 
-        adjsfcnsw(i) = sfcnsw(i)   * xmu(i)
-        adjsfcdsw(i) = sfcdsw(i)   * xmu(i)
+        adjsfcnsw(i) = sfcnsw(i)    * xmu(i)
+        adjsfcdsw(i) = sfcdsw(i)    * xmu(i)
 
-        adjnirbmu(i)  = sfcnirbmu(i) * xmu(i)
-        adjnirdfu(i)  = sfcnirdfu(i) * xmu(i)
-        adjvisbmu(i)  = sfcvisbmu(i) * xmu(i)
-        adjvisdfu(i)  = sfcvisdfu(i) * xmu(i)
+        adjnirbmu(i) = sfcnirbmu(i) * xmu(i)
+        adjnirdfu(i) = sfcnirdfu(i) * xmu(i)
+        adjvisbmu(i) = sfcvisbmu(i) * xmu(i)
+        adjvisdfu(i) = sfcvisdfu(i) * xmu(i)
 
-        adjnirbmd(i)  = sfcnirbmd(i) * xmu(i)
-        adjnirdfd(i)  = sfcnirdfd(i) * xmu(i)
-        adjvisbmd(i)  = sfcvisbmd(i) * xmu(i)
-        adjvisdfd(i)  = sfcvisdfd(i) * xmu(i)
+        adjnirbmd(i) = sfcnirbmd(i) * xmu(i)
+        adjnirdfd(i) = sfcnirdfd(i) * xmu(i)
+        adjvisbmd(i) = sfcvisbmd(i) * xmu(i)
+        adjvisdfd(i) = sfcvisdfd(i) * xmu(i)
       enddo
 
 !  --- ...  adjust sw heating rates with zenith angle change and

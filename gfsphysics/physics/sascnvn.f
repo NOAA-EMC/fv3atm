@@ -56,8 +56,9 @@
       subroutine sascnvn(im,ix,km,jcap,delt,delp,prslp,psp,phil,ql,     &
      &     q1,t1,u1,v1,cldwrk,rn,kbot,ktop,kcnv,islimsk,                &
      &     dot,ncloud,ud_mf,dd_mf,dt_mf,cnvw,cnvc,                      &
-!    &     q1,t1,u1,v1,rcs,cldwrk,rn,kbot,ktop,kcnv,islimsk,
-!    &     dot,ncloud,ud_mf,dd_mf,dt_mf,me)
+     &     QLCN, QICN, w_upi, cf_upi, CNV_MFD,                          &
+!    &     QLCN, QICN, w_upi, cf_upi, CNV_MFD, CNV_PRC3,                &
+     &     CNV_DQLDT,CLCN,CNV_FICE,CNV_NDROP,CNV_NICE,mp_phys,          &
      &     clam,c0,c1,betal,betas,evfact,evfactl,pgcon)
 !
       use machine , only : kind_phys
@@ -65,7 +66,7 @@
       use physcons, grav => con_g, cp => con_cp, hvap => con_hvap       &
      &,             rv => con_rv, fv => con_fvirt, t0c => con_t0c       &
      &,             cvap => con_cvap, cliq => con_cliq                  &
-     &,             eps => con_eps, epsm1 => con_epsm1
+     &,             eps => con_eps, epsm1 => con_epsm1,rgas => con_rd
       implicit none
 !
       integer            im, ix,  km, jcap, ncloud,                     &
@@ -80,8 +81,15 @@
      &                     dot(ix,km), phil(ix,km),                     &
      &                     cnvw(ix,km), cnvc(ix,km),                    &
      &                     ud_mf(im,km),dd_mf(im,km),dt_mf(im,km) ! hchuang code change mass flux output
+      real(kind=kind_phys), dimension(im,km)   :: qlcn, qicn, w_upi     &
+     &,                                          cnv_mfd                &
+!    &,                                          cnv_mfd, cnv_prc3      &
+     &,                                          cnv_dqldt, clcn        &
+     &,                                          cnv_fice, cnv_ndrop    &
+     &,                                          cnv_nice, cf_upi
+
 !
-      integer              i, indx, jmn, k, kk, km1
+      integer              i, indx, jmn, k, kk, km1, mp_phys
       integer, dimension(im), intent(in) :: islimsk
 !     integer              latd,lond
 !
@@ -234,6 +242,19 @@ c
           ud_mf(i,k) = 0.
           dd_mf(i,k) = 0.
           dt_mf(i,k) = 0.
+          if(mp_phys == 10) then
+              QLCN(i,k)      = 0.0
+              QICN(i,k)      = 0.0
+              w_upi(i,k)     = 0.0
+              cf_upi(i,k)    = 0.0
+              CNV_MFD(i,k)   = 0.0
+!             CNV_PRC3(i,k)  = 0.0
+              CNV_DQLDT(i,k) = 0.0
+              CLCN(i,k)      = 0.0
+              CNV_FICE(i,k)  = 0.0
+              CNV_NDROP(i,k) = 0.0
+              CNV_NICE(i,k)  = 0.0
+          end if
         enddo
       enddo
 !>  - Initialize the reference cloud work function, define min/max convective adjustment timescales, and tunable parameters.
@@ -2017,6 +2038,23 @@ c
           endif
         enddo
       enddo
+
+      if(mp_phys == 10) then
+        do k=1,km
+          do i=1,im
+            QLCN(i,k)      = ql(i,k,2)
+            QICN(i,k)      = ql(i,k,1)
+            cf_upi(i,k)    = cnvc(i,k)
+            w_upi(i,k)     = ud_mf(i,k)*t1(i,k)*rgas /
+     &                      (dt2*max(cf_upi(i,k),1.e-12)*prslp(i,k))
+            CNV_MFD(i,k)   = ud_mf(i,k)/dt2
+            CLCN(i,k)      = cnvc(i,k)
+            CNV_FICE(i,k)  = QICN(i,k)
+     &                         / max(1.e-10,QLCN(i,k)+QICN(i,k))
+          enddo
+        enddo
+      endif
+
 !!
       return
 !> @}
