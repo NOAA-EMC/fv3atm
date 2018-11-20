@@ -34,6 +34,9 @@ gis_stochy%me=me
 gis_stochy%nodes=nodes
 call init_stochdata(Model%levs,Model%dtp,Model%input_nml_file,Model%fn_nml,Init_parm%nlunit)
 ! check to see decomposition
+!if(Model%isppt_deep == .true.)then
+!do_sppt = .true.
+!endif
 Model%do_sppt=do_sppt
 Model%use_zmtnblck=use_zmtnblck
 Model%do_shum=do_shum

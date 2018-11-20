@@ -333,7 +333,20 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: oro_cpl    (:) => null()   !< orography          (  oro from GFS_sfcprop_type)
     real (kind=kind_phys), pointer :: slmsk_cpl  (:) => null()   !< Land/Sea/Ice mask  (slmsk from GFS_sfcprop_type)
 
-!--- stochastic physics
+    !--- cellular automata
+    real (kind=kind_phys), pointer :: tconvtend(:,:) => null()
+    real (kind=kind_phys), pointer :: qconvtend(:,:) => null()
+    real (kind=kind_phys), pointer :: uconvtend(:,:) => null()
+    real (kind=kind_phys), pointer :: vconvtend(:,:) => null()
+    real (kind=kind_phys), pointer :: ca_out (:) => null()  !
+    real (kind=kind_phys), pointer :: ca_deep (:) => null()  !
+    real (kind=kind_phys), pointer :: ca_turb (:) => null()  !
+    real (kind=kind_phys), pointer :: ca_shal (:) => null()  !
+    real (kind=kind_phys), pointer :: ca_rad (:) => null()  !
+    real (kind=kind_phys), pointer :: ca_micro (:) => null() !
+    real (kind=kind_phys), pointer :: cape  (:) => null() !
+    
+    !--- stochastic physics
     real (kind=kind_phys), pointer :: shum_wts  (:,:)   => null()  !
     real (kind=kind_phys), pointer :: sppt_wts  (:,:)   => null()  !
     real (kind=kind_phys), pointer :: skebu_wts (:,:)   => null()  !
@@ -606,7 +619,22 @@ module GFS_typedefs
                                             !< nstf_name(5) : zsea2 in mm
     real(kind=kind_phys) :: xkzminv         !< diffusivity in inversion layers
     real(kind=kind_phys) :: moninq_fac      !< turbulence diffusion coefficient factor
-     
+
+ !---cellular automata control parameters
+    integer              :: nca             !< number of independent cellular automata 
+    integer              :: nlives          !< cellular automata lifetime
+    integer              :: ncells          !< cellular automata finer grid
+    real(kind=kind_phys) :: nfracseed       !< cellular automata seed probability 
+    integer              :: nseed           !< cellular automata seed frequency
+    logical              :: do_ca           !< cellular automata main switch
+    logical              :: ca_sgs          !< switch for sgs ca
+    logical              :: ca_global       !< switch for global ca
+    logical              :: ca_smooth       !< switch for gaussian spatial filter
+    logical              :: isppt_deep      !< switch for combination with isppt_deep. OBS! Switches off SPPT on other tendencies!
+    integer              :: iseed_ca        !< seed for random number generation in ca scheme
+    integer              :: nspinup         !< number of iterations to spin up the ca
+    real(kind=kind_phys) :: nthresh         !< threshold used for perturbed vertical velocity
+    
 !--- stochastic physics control parameters
     logical              :: do_sppt
     logical              :: use_zmtnblck
@@ -1067,11 +1095,17 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: SOILTB    (:) => null()   !< deep ground soil temperature (K)
 !--- NAM physics
 
-    real (kind=kind_phys), pointer :: skebu_wts(:,:) => null()   !< 10 meater u/v wind speed
-    real (kind=kind_phys), pointer :: skebv_wts(:,:) => null()   !< 10 meater u/v wind speed
-    real (kind=kind_phys), pointer :: sppt_wts(:,:)  => null()   !< 10 meater u/v wind speed
-    real (kind=kind_phys), pointer :: shum_wts(:,:)  => null()   !< 10 meater u/v wind speed
-!--- accumulated quantities for 3D diagnostics
+    real (kind=kind_phys), pointer :: ca_out     (:)    => null()   !< cellular automata fraction
+    real (kind=kind_phys), pointer :: ca_deep     (:)    => null()   !< cellular automata fraction
+    real (kind=kind_phys), pointer :: ca_turb     (:)    => null()   !< cellular automata fraction
+    real (kind=kind_phys), pointer :: ca_shal     (:)    => null()   !< cellular automata fraction
+    real (kind=kind_phys), pointer :: ca_rad     (:)    => null()   !< cellular automata fraction
+    real (kind=kind_phys), pointer :: ca_micro     (:)    => null()   !< cellular automata fraction
+
+    real (kind=kind_phys), pointer :: skebu_wts(:,:)    => null()   !< 10 meater u/v wind speed
+    real (kind=kind_phys), pointer :: skebv_wts(:,:)    => null()   !< 10 meater u/v wind speed
+    real (kind=kind_phys), pointer :: sppt_wts(:,:)    => null()   !< 10 meater u/v wind speed
+    real (kind=kind_phys), pointer :: shum_wts(:,:)    => null()   !< 10 meater u/v wind speed
     real (kind=kind_phys), pointer :: zmtnblck(:)    => null()   !<mountain blocking evel
     real (kind=kind_phys), pointer :: du3dt (:,:,:)  => null()   !< u momentum change due to physics
     real (kind=kind_phys), pointer :: dv3dt (:,:,:)  => null()   !< v momentum change due to physics
@@ -1564,6 +1598,30 @@ module GFS_typedefs
 !!    Coupling%slmsk_cpl   = clear_val  !< pointer to sfcprop%slmsk
     endif
 
+   !-- cellular automata
+    allocate (Coupling%tconvtend (IM,Model%levs))
+    allocate (Coupling%qconvtend (IM,Model%levs))
+    allocate (Coupling%uconvtend (IM,Model%levs))
+    allocate (Coupling%vconvtend (IM,Model%levs))
+    allocate (Coupling%cape (IM))
+    allocate (Coupling%ca_out (IM))
+    allocate (Coupling%ca_deep (IM))
+    allocate (Coupling%ca_turb (IM))
+    allocate (Coupling%ca_shal (IM))
+    allocate (Coupling%ca_rad (IM))
+    allocate (Coupling%ca_micro (IM))
+    Coupling%ca_out = clear_val
+    Coupling%ca_deep = clear_val
+    Coupling%ca_turb = clear_val
+    Coupling%ca_shal = clear_val
+    Coupling%ca_rad =clear_val
+    Coupling%ca_micro = clear_val   
+    Coupling%cape = clear_val
+    Coupling%tconvtend = clear_val
+    Coupling%qconvtend = clear_val
+    Coupling%uconvtend = clear_val
+    Coupling%vconvtend = clear_val
+
     ! -- GSDCHEM coupling options
     if (Model%cplchm) then
       !--- outgoing instantaneous quantities
@@ -1899,7 +1957,23 @@ module GFS_typedefs
     real(kind=kind_phys) :: xkzminv        = 0.3             !< diffusivity in inversion layers
     real(kind=kind_phys) :: moninq_fac     = 1.0             !< turbulence diffusion coefficient factor
      
-!--- IAU options
+!---Cellular automaton options
+    integer              :: nca            = 1
+    integer              :: ncells         = 5
+    integer              :: nlives         = 10
+    real(kind=kind_phys) :: nfracseed      = 0.5
+    integer              :: nseed          = 100000
+    integer              :: iseed_ca       = 0
+    integer              :: nspinup        = 1
+    logical              :: do_ca          = .false.
+    logical              :: ca_sgs         = .false. 
+    logical              :: ca_global      = .false.
+    logical              :: ca_smooth      = .false.
+    logical              :: isppt_deep     = .false.
+    real(kind=kind_phys) :: nthresh        = 0.0
+  
+
+    !--- IAU options
     real(kind=kind_phys)  :: iau_delthrs = 6                 ! iau time interval (to scale increments)
     character(len=240)    :: iau_inc_files(7)=''             ! list of increment files
     real(kind=kind_phys)  :: iaufhrs(7)=-1                   ! forecast hours associated with increment files
@@ -1962,6 +2036,9 @@ module GFS_typedefs
                           !--- near surface temperature model
                                nst_anl, lsea, xkzm_m, xkzm_h, xkzm_s, nstf_name,            &
                                xkzminv, moninq_fac,                                         &
+                          !----cellular automata                         
+                               nca, ncells, nlives, nfracseed,nseed, nthresh, do_ca,        &
+                               ca_sgs, ca_global,iseed_ca,ca_smooth,isppt_deep,nspinup,     &
                           !--- IAU
                                iau_delthrs,iaufhrs,iau_inc_files,                           &
                           !--- debug options
@@ -2297,11 +2374,26 @@ module GFS_typedefs
     Model%pertalb          = pertalb
     Model%pertvegf         = pertvegf
 
-! IAU flags
-!--- iau parameters
+    !--- cellular automata options
+    Model%nca              = nca
+    Model%ncells           = ncells
+    Model%nlives           = nlives
+    Model%nfracseed        = nfracseed
+    Model%nseed            = nseed
+    Model%ca_global        = ca_global
+    Model%do_ca            = do_ca
+    Model%ca_sgs           = ca_sgs
+    Model%iseed_ca         = iseed_ca
+    Model%ca_smooth        = ca_smooth
+    Model%isppt_deep       = isppt_deep
+    Model%nspinup          = nspinup  
+    Model%nthresh          = nthresh 
+
+    ! IAU flags
+    !--- iau parameters
     Model%iaufhrs         = iaufhrs
     Model%iau_inc_files   = iau_inc_files
-    Model%iau_delthrs     = iau_delthrs  
+    Model%iau_delthrs     = iau_delthrs
 
 !--- tracer handling
     Model%ntrac            = size(tracer_names)
@@ -3143,6 +3235,21 @@ module GFS_typedefs
       print *, ' do_skeb           : ', Model%do_skeb
       print *, ' do_sfcperts       : ', Model%do_sfcperts
       print *, ' '
+      print *, 'cellular automata'
+      print *, ' nca               : ', Model%ncells
+      print *, ' ncells            : ', Model%ncells
+      print *, ' nlives            : ', Model%nlives
+      print *, ' nfracseed         : ', Model%nfracseed
+      print *, ' nseed             : ', Model%nseed
+      print *, ' ca_global         : ', Model%ca_global
+      print *, ' ca_sgs            : ', Model%ca_sgs
+      print *, ' do_ca             : ', Model%do_ca
+      print *, ' iseed_ca          : ', Model%iseed_ca
+      print *, ' ca_smooth         : ', Model%ca_smooth
+      print *, ' isppt_deep        : ', Model%isppt_deep
+      print *, ' nspinup           : ', Model%nspinup
+      print *, ' nthresh           : ', Model%nthresh
+      print *, ' '
       print *, 'tracers'
       print *, ' tracer_names      : ', Model%tracer_names
       print *, ' ntrac             : ', Model%ntrac
@@ -3481,6 +3588,15 @@ module GFS_typedefs
     allocate (Diag%skebv_wts(IM,Model%levs))
     allocate (Diag%sppt_wts(IM,Model%levs))
     allocate (Diag%shum_wts(IM,Model%levs))
+    allocate (Diag%zmtnblck(IM))    
+
+    allocate (Diag%ca_out  (IM))
+    allocate (Diag%ca_deep  (IM))
+    allocate (Diag%ca_turb  (IM))
+    allocate (Diag%ca_shal  (IM))
+    allocate (Diag%ca_rad (IM))
+    allocate (Diag%ca_micro  (IM))
+
 !--- NAM
     allocate (Diag%cuppt     (IM))
     allocate (Diag%pshltr    (IM))

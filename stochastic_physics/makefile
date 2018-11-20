@@ -21,7 +21,10 @@ FFLAGS   += -I./include -I./mpp/include -I../gfsphysics/ -I../atmos_cubed_sphere
 
 SRCS_F   =
 
-SRCS_f90 = 
+SRCS_f90 =  \
+                ./cellular_automata.f90                     \
+                ./update_ca.f90                             \
+                ./plumes.f90
 
 SRCS_f   =  \
 		./spectral_layout.f                         \

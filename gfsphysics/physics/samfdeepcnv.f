@@ -81,7 +81,7 @@
 !!  @{
       subroutine samfdeepcnv(im,ix,km,delt,ntk,ntr,delp,
      &     prslp,psp,phil,qtr,q1,t1,u1,v1,
-     &     cldwrk,rn,kbot,ktop,kcnv,islimsk,garea,
+     &     do_ca,ca_deep,cldwrk,rn,kbot,ktop,kcnv,islimsk,garea,
      &     dot,ncloud,ud_mf,dd_mf,dt_mf,cnvw,cnvc,
      &     QLCN, QICN, w_upi, cf_upi, CNV_MFD,
 !    &     QLCN, QICN, w_upi, cf_upi, CNV_MFD, CNV_PRC3,
@@ -101,7 +101,8 @@
       real(kind=kind_phys), intent(in) ::  delt
       real(kind=kind_phys), intent(in) :: psp(im), delp(ix,km), 
      &   prslp(ix,km),  garea(im), dot(ix,km), phil(ix,km) 
-
+      real(kind=kind_phys), intent(in) :: ca_deep(ix)
+      logical, intent(in)  :: do_ca
       integer, intent(inout)  :: kcnv(im)        
       real(kind=kind_phys), intent(inout) ::   qtr(ix,km,ntr+2),
      &   q1(ix,km), t1(ix,km),   u1(ix,km), v1(ix,km)
@@ -2387,6 +2388,15 @@ c
           xmb(i) = min(xmb(i),xmbmax(i))
         endif
       enddo
+
+!If stochastic physics using cellular automata is .true. then perturb the mass-flux here:
+
+      if(do_ca == .true.)then
+        do i=1,im
+         xmb(i) = xmb(i)*(1.0 + ca_deep(i)*5.)
+        enddo
+      endif
+
 c
 c  restore to,qo,uo,vo to t1,q1,u1,v1 in case convection stops
 c
