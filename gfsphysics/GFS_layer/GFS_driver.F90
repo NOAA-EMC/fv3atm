@@ -153,7 +153,7 @@ module GFS_driver
                      Init_parm%dt_dycore, Init_parm%dt_phys,       &
                      Init_parm%bdat, Init_parm%cdat,               &
                      Init_parm%tracer_names,                       &
-                     Init_parm%input_nml_file)
+                     Init_parm%input_nml_file, Init_parm%tile_num)
 
 
     call read_o3data  (Model%ntoz, Model%me, Model%master)

@@ -48,6 +48,7 @@ module GFS_typedefs
   type GFS_init_type
     integer :: me                                !< my MPI-rank
     integer :: master                            !< master MPI-rank
+    integer :: tile_num                          !< tile number for this MPI rank
     integer :: isc                               !< starting i-index for this MPI-domain
     integer :: jsc                               !< starting j-index for this MPI-domain
     integer :: nx                                !< number of points in i-dir for this MPI rank
@@ -1693,7 +1694,7 @@ module GFS_typedefs
                                  logunit, isc, jsc, nx, ny, levs,   &
                                  cnx, cny, gnx, gny, dt_dycore,     &
                                  dt_phys, idat, jdat, tracer_names, &
-                                 input_nml_file)
+                                 input_nml_file, tile_num)
 
 !--- modules
     use physcons,         only: dxmax, dxmin, dxinv, con_rerth, con_pi, rhc_max
@@ -1726,6 +1727,7 @@ module GFS_typedefs
     integer,                intent(in) :: me
     integer,                intent(in) :: master
     integer,                intent(in) :: logunit
+    integer,                intent(in) :: tile_num
     integer,                intent(in) :: isc
     integer,                intent(in) :: jsc
     integer,                intent(in) :: nx
