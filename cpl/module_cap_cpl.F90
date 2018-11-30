@@ -134,6 +134,7 @@ module module_cap_cpl
       ! local variables
       integer          :: item
       type(ESMF_Field) :: field
+      real(ESMF_KIND_R8), pointer     :: fptr(:,:)
 
       ! begin
       rc = ESMF_SUCCESS
@@ -188,6 +189,13 @@ module module_cap_cpl
             line=__LINE__, &
             file=__FILE__)) &
             return
+          ! -- zero out field 
+          call ESMF_FieldGet(field, farrayPtr=fptr, rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+            line=__LINE__, &
+            file=__FILE__)) &
+            return  ! bail out
+          fptr=0._ESMF_KIND_R8 ! zero out the entire field
           ! -- save field
           fieldList(item) = field
         else

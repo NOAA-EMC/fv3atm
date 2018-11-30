@@ -264,7 +264,7 @@ subroutine update_atmos_radiation_physics (Atmos)
       Func1d => time_vary_step
       call IPD_step (IPD_Control, IPD_Data(:), IPD_Diag, IPD_Restart, IPD_func1d=Func1d)
 !--- if coupled, assign coupled fields
-      if( IPD_Control%cplflx ) then
+      if( IPD_Control%cplflx .or. IPD_Control%cplwav ) then
 !        print *,'in atmos_model,nblks=',Atm_block%nblks
 !        print *,'in atmos_model,IPD_Data size=',size(IPD_Data)
 !        print *,'in atmos_model,tsfc(1)=',IPD_Data(1)%sfcprop%tsfc(1)
@@ -708,7 +708,7 @@ subroutine update_atmos_model_state (Atmos)
     call atmosphere_get_bottom_layer (Atm_block, DYCORE_Data) 
 
     !if in coupled mode, set up coupled fields
-    if (IPD_Control%cplflx) then
+    if (IPD_Control%cplflx .or. IPD_Control%cplwav) then
       if (mpp_pe() == mpp_root_pe()) print *,'COUPLING: IPD layer'
 !jw       call setup_exportdata(IPD_Control, IPD_Data, Atm_block)
       call setup_exportdata(rc)
@@ -1517,6 +1517,38 @@ end subroutine atmos_data_type_chksum
     endif
 
     ! set cpl fields to export Data
+
+    if (IPD_Control%cplflx .or. IPD_Control%cplwav) then 
+    ! Instantaneous u wind (m/s) 10 m above ground
+    idx = queryfieldlist(exportFieldsList,'inst_zonal_wind_height10m')
+    if (idx > 0 ) then
+      if (mpp_pe() == mpp_root_pe() .and. debug) print *,'cpl, in get u10mi_cpl'
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          exportData(i,j,idx) = IPD_Data(nb)%coupling%u10mi_cpl(ix)
+        enddo
+      enddo
+    endif
+
+    ! Instantaneous v wind (m/s) 10 m above ground
+    idx = queryfieldlist(exportFieldsList,'inst_merid_wind_height10m')
+    if (idx > 0 ) then
+      if (mpp_pe() == mpp_root_pe() .and. debug) print *,'cpl, in get v10mi_cpl'
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          exportData(i,j,idx) = IPD_Data(nb)%coupling%v10mi_cpl(ix)
+        enddo
+      enddo
+      if (mpp_pe() == mpp_root_pe() .and. debug) print *,'cpl, get v10mi_cpl, exportData=',exportData(isc,jsc,idx),'idx=',idx
+    endif
+
+    endif !if cplflx or cplwav 
+
+    if (IPD_Control%cplflx) then
     ! MEAN Zonal compt of momentum flux (N/m**2)
     idx = queryfieldlist(exportFieldsList,'mean_zonal_moment_flx')
     if (idx > 0 ) then
@@ -1695,38 +1727,6 @@ end subroutine atmos_data_type_chksum
           exportData(i,j,idx) = IPD_Data(nb)%coupling%q2mi_cpl(ix)
         enddo
       enddo
-    endif
-
-    ! Instataneous u wind (m/s) 10 m above ground
-    idx = queryfieldlist(exportFieldsList,'inst_zonal_wind_height10m')
-    if (idx > 0 ) then
-      if (mpp_pe() == mpp_root_pe() .and. debug) print *,'cpl, in get u10mi_cpl'
-      do j=jsc,jec
-        do i=isc,iec
-          nb = Atm_block%blkno(i,j)
-          ix = Atm_block%ixp(i,j)
-!          if(i==isc.and.j==jsc) then
-!            print *,'in cpl exp, nb=',nb,'ix=',ix,'idx=',idx
-!            print *,'in cpl exp, u10mi_cpl=',IPD_Data(nb)%coupling%u10mi_cpl(ix)
-!          endif
-          exportData(i,j,idx) = IPD_Data(nb)%coupling%u10mi_cpl(ix)
-        enddo
-      enddo
-!      print *,'cpl, get u10mi_cpl, exportData=',exportData(isc,jsc,idx),'idx=',idx
-    endif
-
-    ! Instataneous v wind (m/s) 10 m above ground
-    idx = queryfieldlist(exportFieldsList,'inst_merid_wind_height10m')
-    if (idx > 0 ) then
-      if (mpp_pe() == mpp_root_pe() .and. debug) print *,'cpl, in get v10mi_cpl'
-      do j=jsc,jec
-        do i=isc,iec
-          nb = Atm_block%blkno(i,j)
-          ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = IPD_Data(nb)%coupling%v10mi_cpl(ix)
-        enddo
-      enddo
-      if (mpp_pe() == mpp_root_pe() .and. debug) print *,'cpl, get v10mi_cpl, exportData=',exportData(isc,jsc,idx),'idx=',idx
     endif
 
     ! Instataneous Temperature (K) at surface
@@ -2129,12 +2129,14 @@ end subroutine atmos_data_type_chksum
         enddo
       enddo
     endif
+    endif !cplflx 
 
 !---
     ! Fill the export Fields for ESMF/NUOPC style coupling
     call fillExportFields(exportData)
 
 !---
+    if (IPD_Control%cplflx) then 
     ! zero out accumulated fields
       do j=jsc,jec
         do i=isc,iec
@@ -2160,6 +2162,7 @@ end subroutine atmos_data_type_chksum
           IPD_Data(nb)%coupling%snow_cpl(ix)   = 0.
         enddo
       enddo
+    endif !cplflx
     if (mpp_pe() == mpp_root_pe()) print *,'end of setup_exportdata'
 
   end subroutine setup_exportdata
