@@ -3191,9 +3191,7 @@ module GFS_typedefs
       allocate (Diag%cldcov (IM,Model%levs))
     endif
     !--- 3D diagnostics for Thompson MP  
-    if(Model%lradar) then
       allocate (Diag%refl_10cm(IM,Model%levs))
-    endif
 
     call Diag%rad_zero  (Model)
 !    print *,'in diag_create, call phys_zero'
@@ -3325,9 +3323,7 @@ module GFS_typedefs
       Diag%det_mf  = zero
     endif
 
-    if (Model%lradar) then
       Diag%refl_10cm = zero
-    endif
 
     if (present(linit)) then
       if (linit) then

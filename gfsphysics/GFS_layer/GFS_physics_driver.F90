@@ -527,7 +527,7 @@ module module_physics_driver
       real(kind=kind_phys), allocatable, dimension(:,:,:) ::            &
            delp, dz, uin, vin, pt, qv1, ql1, qr1, qg1, qa1, qn1, qi1,   &
            qs1, pt_dt, qa_dt, udt, vdt, w, qv_dt, ql_dt, qr_dt, qi_dt,  &
-           qs_dt, qg_dt
+           qs_dt, qg_dt,p123,refl
 !
       real(kind=kind_phys), dimension(size(Grid%xlon,1),Model%levs,Model%ntrac) :: &
            dqdt
@@ -813,7 +813,7 @@ module module_physics_driver
                     qi1(im,1,levs),   qs1(im,1,levs),   pt_dt(im,1,levs), qa_dt(im,1,levs),&
                     udt(im,1,levs),   vdt(im,1,levs),   w(im,1,levs),     qv_dt(im,1,levs),&
                     ql_dt(im,1,levs), qr_dt(im,1,levs), qi_dt(im,1,levs), qs_dt(im,1,levs),&
-                    qg_dt(im,1,levs))
+                    qg_dt(im,1,levs), p123(im,1,levs),  refl(im,1,levs))
         endif
       endif
 
@@ -3659,6 +3659,8 @@ module module_physics_driver
               vin  (i,1,k) =  Stateout%gv0(i,kk)
               delp (i,1,k) =  del(i,kk)
               dz   (i,1,k) = (Statein%phii(i,kk)-Statein%phii(i,kk+1)) * onebg
+              p123 (i,1,k) = Statein%prsl(i,kk)
+              refl (i,1,k) = Diag%refl_10cm(i,kk)
             enddo
           enddo
 
@@ -3670,7 +3672,7 @@ module module_physics_driver
                                            area, dtp, land, rain0, snow0,     &
                                            ice0, graupel0, .false., .true.,   &
                                            1, im, 1, 1, 1, levs, 1, levs,     &
-                                           seconds)
+                                           seconds,p123,Model%lradar,refl)
 
           tem = dtp * con_p001 / con_day
           do i = 1, im
@@ -3715,6 +3717,7 @@ module module_physics_driver
               Stateout%gt0(i,k)         = Stateout%gt0(i,k) + pt_dt(i,1,kk) * dtp
               Stateout%gu0(i,k)         = Stateout%gu0(i,k) + udt  (i,1,kk) * dtp
               Stateout%gv0(i,k)         = Stateout%gv0(i,k) + vdt  (i,1,kk) * dtp
+              Diag%refl_10cm(i,k)       = refl(i,1,kk)
             enddo
           enddo
 
@@ -4048,7 +4051,7 @@ module module_physics_driver
       if (imp_physics == 11) then
         deallocate (delp,  dz,    uin,   vin,   pt,    qv1,   ql1, qr1,        &
                     qg1,   qa1,   qn1,   qi1,   qs1,   pt_dt, qa_dt, udt, vdt, &
-                    w,     qv_dt, ql_dt, qr_dt, qi_dt, qs_dt, qg_dt)
+                    w,     qv_dt, ql_dt, qr_dt, qi_dt, qs_dt, qg_dt,p123,refl)
       endif
 
 !     if (kdt > 2 ) stop
