@@ -726,6 +726,7 @@ module GFS_typedefs
     real(kind=kind_phys) :: iau_delthrs     ! iau time interval (to scale increments) in hours
     character(len=240)   :: iau_inc_files(7)! list of increment files
     real(kind=kind_phys) :: iaufhrs(7)      ! forecast hours associated with increment files
+    logical :: iau_filter_increments
 
     contains
       procedure :: init  => control_initialize
@@ -1622,7 +1623,7 @@ module GFS_typedefs
     integer              :: levr           = -99             !< number of vertical levels for radiation calculations
     integer              :: nfxr           = 39+6            !< second dimension of input/output array fluxr   
     logical              :: aero_in        = .false.         !< flag for initializing aero data 
-    logical              :: iccn           = .true.          !< logical to use IN CCN forcing for MG2/3
+    logical              :: iccn           = .false.         !< logical to use IN CCN forcing for MG2/3
     integer              :: iflip          =  1              !< iflip - is not the same as flipv
     integer              :: isol           =  0              !< use prescribed solar constant
     integer              :: ico2           =  0              !< prescribed global mean value (old opernl)
@@ -1850,6 +1851,7 @@ module GFS_typedefs
     real(kind=kind_phys)  :: iau_delthrs = 6                 ! iau time interval (to scale increments)
     character(len=240)    :: iau_inc_files(7)=''             ! list of increment files
     real(kind=kind_phys)  :: iaufhrs(7)=-1                   ! forecast hours associated with increment files
+    logical  :: iau_filter_increments = .false.   ! filter IAU increments
 
 !--- debug flag
     logical              :: debug          = .false.
@@ -1921,7 +1923,7 @@ module GFS_typedefs
                                nca, ncells, nlives, nfracseed,nseed, nthresh, do_ca,        &
                                ca_sgs, ca_global,iseed_ca,ca_smooth,isppt_deep,nspinup,     &
                           !--- IAU
-                               iau_delthrs,iaufhrs,iau_inc_files,                           &
+                               iau_delthrs,iaufhrs,iau_inc_files,iau_filter_increments,     &
                           !--- debug options
                                debug, pre_rad,                                              &
                           !--- parameter range for critical relative humidity
@@ -2209,6 +2211,7 @@ module GFS_typedefs
     Model%iaufhrs         = iaufhrs
     Model%iau_inc_files   = iau_inc_files
     Model%iau_delthrs     = iau_delthrs
+    Model%iau_filter_increments = iau_filter_increments
 
 !--- tracer handling
     Model%ntrac            = size(tracer_names)
