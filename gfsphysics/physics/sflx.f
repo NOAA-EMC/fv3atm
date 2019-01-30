@@ -7,6 +7,7 @@
      &       sfcspd, prcp, q2, q2sat, dqsdt2, th2, ivegsrc,             &
      &       vegtyp, soiltyp, slopetyp, shdmin, alb, snoalb,            &
      &       bexpp, xlaip,                                              & !  sfc-perts, mgehne
+     &       lheatstrg,                                                 &
 !  ---  input/outputs:
      &       tbot, cmc, t1, stc, smc, sh2o, sneqv, ch, cm,z0,           &
 !  ---  outputs:
@@ -62,7 +63,8 @@
 !                       streamlined and reformatted the code, and       !
 !                       consolidated constents/parameters by using      !
 !                       module physcons, and added program documentation!               !
-!    sep  2009 -- s. moorthi minor fixes
+!    sep  2009 -- s. moorthi minor fixes                                !
+!    nov  2018 -- j. han add canopy heat storage parameterization       !
 !                                                                       !
 !  ====================  defination of variables  ====================  !
 !                                                                       !
@@ -95,6 +97,8 @@
 !     shdmin   - real, min areal coverage of green veg (fraction)  1    !
 !     alb      - real, bkground snow-free sfc albedo (fraction)    1    !
 !     snoalb   - real, max albedo over deep snow     (fraction)    1    !
+!     lheatstrg- logical, flag for canopy heat storage             1    !
+!                         parameterization                              !
 !                                                                       !
 !  input/outputs:                                                       !
 !     tbot     - real, bottom soil temp (k)                        1    !
@@ -201,6 +205,8 @@
      &       sfcspd, prcp, q2, q2sat, dqsdt2, th2, shdmin, alb, snoalb, &
      &       bexpp, xlaip                                               & !sfc-perts, mgehne
 
+      logical, intent(in) :: lheatstrg
+
 !  ---  input/outputs:
       real (kind=kind_phys), intent(inout) :: tbot, cmc, t1, sneqv,     &
      &       stc(nsoil), smc(nsoil), sh2o(nsoil), ch, cm
@@ -229,6 +235,12 @@
       logical :: frzgra, snowng
 
       integer :: ice, k, kz
+!
+!  --- parameters for heat storage parametrization
+!
+      real (kind=kind_phys) ::  cpx, cpx1, cpfac, xx1, xx2, xx3
+      real (kind=kind_phys), parameter :: z0min=0.2
+      real (kind=kind_phys), parameter :: z0max=1.0
 
 !
 !===> ...  begin here
@@ -643,6 +655,23 @@
         fdown = swnet + lwdn
 
       endif   ! end if_couple_block
+!
+!  ---  enhance cp as a function of z0 to mimic heat storage
+!
+      cpx = cp
+      cpx1 = cp1
+      cpfac = 1.
+      if(lheatstrg) then
+      if((ivegsrc == 1 .and. vegtyp /= 13)
+     &       .or. ivegsrc == 2) then
+        xx1 = (z0 - z0min) / (z0max - z0min)
+        xx2 = min(max(xx1, 0.), 1.)
+        xx3 = 1. + xx2
+        cpx = cp * xx3
+        cpx1 = cp1 * xx3
+        cpfac = cp / cpx
+      endif
+      endif
 
 !  --- ...  call penman subroutine to calculate potential evaporation (etp),
 !           and other partial products and sums save in common/rite for later
@@ -651,7 +680,7 @@
       call penman
 !  ---  inputs:                                                         !
 !          ( sfctmp, sfcprs, sfcems, ch, t2v, th2, prcp, fdown,         !
-!            ssoil, q2, q2sat, dqsdt2, snowng, frzgra,                  !
+!            cpx, cpfac, ssoil, q2, q2sat, dqsdt2, snowng, frzgra,      !
 !  ---  outputs:                                                        !
 !            t24, etp, rch, epsca, rr, flx2 )                           !
 
@@ -666,7 +695,7 @@
         call canres
 !  ---  inputs:                                                         !
 !          ( nsoil, nroot, swdn, ch, q2, q2sat, dqsdt2, sfctmp,         !
-!            sfcprs, sfcems, sh2o, smcwlt, smcref, zsoil, rsmin,        !
+!            cpx1, sfcprs, sfcems, sh2o, smcwlt, smcref, zsoil, rsmin,  !
 !            rsmax, topt, rgl, hs, xlai,                                !
 !  ---  outputs:                                                        !
 !            rc, pc, rcs, rct, rcq, rcsoil )                            !
@@ -881,7 +910,7 @@
 !...................................
 !  ---  inputs:
 !    &     ( nsoil, nroot, swdn, ch, q2, q2sat, dqsdt2, sfctmp,         &
-!    &       sfcprs, sfcems, sh2o, smcwlt, smcref, zsoil, rsmin,        &
+!    &       cpx1, sfcprs, sfcems, sh2o, smcwlt, smcref, zsoil, rsmin,  &
 !    &       rsmax, topt, rgl, hs, xlai,                                &
 !  ---  outputs:
 !    &       rc, pc, rcs, rct, rcq, rcsoil                              &
@@ -914,6 +943,7 @@
 !     q2sat    - real, sat. air humidity at 1st level abv ground   1    !
 !     dqsdt2   - real, slope of sat. humidity function wrt temp    1    !
 !     sfctmp   - real, sfc temperature at 1st level above ground   1    !
+!     cpx1     - real, enhanced air heat capacity for heat storage 1    !
 !     sfcprs   - real, sfc pressure                                1    !
 !     sfcems   - real, sfc emissivity for lw radiation             1    !
 !     sh2o     - real, volumetric soil moisture                  nsoil  !
@@ -1019,8 +1049,8 @@
 !           evaporation (containing rc term).
 
       rc = rsmin / (xlai*rcs*rct*rcq*rcsoil)
-      rr = (4.0*sfcems*sigma1*rd1/cp1) * (sfctmp**4.0)/(sfcprs*ch) + 1.0
-      delta = (lsubc/cp1) * dqsdt2
+      rr = (4.0*sfcems*sigma1*rd1/cpx1) * (sfctmp**4.0)/(sfcprs*ch) + 1.0
+      delta = (lsubc/cpx1) * dqsdt2
 
       pc = (rr + delta) / (rr*(1.0 + rc*ch) + delta)
 !
@@ -1359,7 +1389,7 @@
 !...................................
 !  ---  inputs:
 !    &     ( sfctmp, sfcprs, sfcems, ch, t2v, th2, prcp, fdown,         &
-!    &       ssoil, q2, q2sat, dqsdt2, snowng, frzgra,                  &
+!    &       cpx, cpfac, ssoil, q2, q2sat, dqsdt2, snowng, frzgra,      &
 !  ---  outputs:
 !    &       t24, etp, rch, epsca, rr, flx2                             &
 !    &     )
@@ -1385,6 +1415,8 @@
 !     th2      - real, air potential temp at zlvl abv grnd         1    !
 !     prcp     - real, precip rate                                 1    !
 !     fdown    - real, net solar + downward lw flux at sfc         1    !
+!     cpx      - real, enhanced air heat capacity for heat storage 1    !
+!     cpfac    - real, ratio air heat capacity to enhanced one     1    !
 !     ssoil    - real, upward soil heat flux                       1    !
 !     q2       - real, mixing ratio at hght zlvl abv ground        1    !
 !     q2sat    - real, sat mixing ratio at zlvl abv ground         1    !
@@ -1422,11 +1454,11 @@
 
 !  --- ...  prepare partial quantities for penman equation.
 
-      delta = elcp * dqsdt2
+      delta = elcp * cpfac * dqsdt2
       t24 = sfctmp * sfctmp * sfctmp * sfctmp
       rr  = t24 * 6.48e-8 / (sfcprs*ch) + 1.0
       rho = sfcprs / (rd1*t2v)
-      rch = rho * cp * ch
+      rch = rho * cpx * ch
 
 !  --- ...  adjust the partial sums / products with the latent heat
 !           effects caused by falling precipitation.
@@ -1450,7 +1482,7 @@
 !  --- ...  finish penman equation calculations.
 
       rad = fnet/rch + th2 - sfctmp
-      a = elcp * (q2sat - q2)
+      a = elcp * cpfac * (q2sat - q2)
       epsca = (a*rr + rad*delta) / (delta + rr)
       etp = epsca * rch / lsubc
 !

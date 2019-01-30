@@ -38,7 +38,7 @@
 !            sfcemis, dlwflx, dswsfc, snet, delt, tg3, cm, ch,          !
 !            prsl1, prslki, zf, islimsk, ddvel, slopetyp,               !
 !            shdmin, shdmax, snoalb, sfalb, flag_iter, flag_guess,      !
-!            isot, ivegsrc,                                             !
+!            lheatstrg, isot, ivegsrc,                                  !
 !  ---  in/outs:                                                        !
 !            weasd, snwdph, tskin, tprcp, srflag, smc, stc, slc,        !
 !            canopy, trans, tsurf, zorl,                                !
@@ -92,6 +92,8 @@
 !     sfalb    - real, mean sfc diffused sw albedo (fractional)    im   !
 !     flag_iter- logical,                                          im   !
 !     flag_guess-logical,                                          im   !
+!     lheatstrg- logical, flag for canopy heat storage             1    !
+!                         parameterization                              !
 !     isot     - integer, sfc soil type data source zobler or statsgo   !
 !     ivegsrc  - integer, sfc veg type data source umd or igbp          !
 !                                                                       !
@@ -140,7 +142,7 @@
      &       sfcemis, dlwflx, dswsfc, snet, delt, tg3, cm, ch,          &
      &       prsl1, prslki, zf, islimsk, ddvel, slopetyp,               &
      &       shdmin, shdmax, snoalb, sfalb, flag_iter, flag_guess,      &
-     &       isot, ivegsrc,                                             &
+     &       lheatstrg, isot, ivegsrc,                                  &
      &       bexppert, xlaipert, vegfpert,pertvegf,                     &  ! sfc perts, mgehne
 !  ---  in/outs:
      &       weasd, snwdph, tskin, tprcp, srflag, smc, stc, slc,        &
@@ -191,6 +193,8 @@
       real (kind=kind_phys),  intent(in) :: delt
 
       logical, dimension(im), intent(in) :: flag_iter, flag_guess
+
+      logical, intent(in) :: lheatstrg
 
 !  ---  in/out:
       real (kind=kind_phys), dimension(im), intent(inout) :: weasd,     &
@@ -457,6 +461,7 @@
      &       sfcspd, prcp, q2, q2sat, dqsdt2, th2, ivegsrc,             &
      &       vtype, stype, slope, shdmin1d, alb, snoalb1d,              &
      &       bexpp, xlaip,                                              & ! sfc-perts, mgehne
+     &       lheatstrg,                                                 &
 !  ---  input/outputs:
      &       tbot, cmc, tsea, stsoil, smsoil, slsoil, sneqv, chx, cmx,  &
      &       z0,                                                        &
