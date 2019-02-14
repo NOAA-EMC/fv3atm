@@ -2492,7 +2492,8 @@ module GFS_typedefs
 
     elseif (Model%imp_physics == 11) then !GFDL microphysics
       Model%npdf3d  = 0
-      Model%num_p3d = 1 ! rsun 4 before
+      Model%num_p3d = 1 
+      if(Model%effr_in) Model%num_p3d = 5
       Model%num_p2d = 1
       Model%pdfcld  = .false.
       Model%shcnvcw = .false.

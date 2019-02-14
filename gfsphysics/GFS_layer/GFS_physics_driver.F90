@@ -15,7 +15,8 @@ module module_physics_driver
                                    GFS_control_type, GFS_grid_type,     &
                                    GFS_tbd_type,     GFS_cldprop_type,  &
                                    GFS_radtend_type, GFS_diag_type
-  use gfdl_cloud_microphys_mod, only: gfdl_cloud_microphys_driver
+  use gfdl_cloud_microphys_mod, only: gfdl_cloud_microphys_driver,      &
+				   cloud_diagnosis
   use module_mp_thompson,    only: mp_gt_driver
   use module_mp_wsm6,        only: wsm6
   use funcphys,              only: ftdp
@@ -173,6 +174,8 @@ module module_physics_driver
 !      Jun  2018    J. Han      Add scal-aware TKE-based moist EDMF     !
 !                               vertical turbulent mixng scheme         !
 !      Nov  2018    J. Han      Add canopy heat storage parameterization!
+!      Feb  2019    Ruiyu S.    Add an alternate method to use          ! 
+!				hydrometeors from GFDL MP in radiation  !
 !
 !  ====================    end of description    =====================
 !  ====================  definition of variables  ====================  !
@@ -574,6 +577,9 @@ module module_physics_driver
       real(kind=kind_phys), parameter :: liqm = 4./3.*con_pi*1.e-12,    &
                               icem = 4./3.*con_pi*3.2768*1.e-14*890.
 
+      real(kind=kind_phys), allocatable, dimension(:,:) ::              &
+           den 
+
 !
 !===> ...  begin here
 
@@ -819,6 +825,7 @@ module module_physics_driver
                     udt(im,1,levs),   vdt(im,1,levs),   w(im,1,levs),     qv_dt(im,1,levs),&
                     ql_dt(im,1,levs), qr_dt(im,1,levs), qi_dt(im,1,levs), qs_dt(im,1,levs),&
                     qg_dt(im,1,levs), p123(im,1,levs),  refl(im,1,levs))
+          allocate (den(im,levs))
         endif
       endif
 
@@ -3724,7 +3731,43 @@ module module_physics_driver
               Stateout%gv0(i,k)         = Stateout%gv0(i,k) + vdt  (i,1,kk) * dtp
               Diag%refl_10cm(i,k)       = refl(i,1,kk)
             enddo
+
+
+            if(Model%effr_in) then 
+              do i =1, im
+                den(i,k)=0.622*Statein%prsl(i,k)/ &
+                      (con_rd*Stateout%gt0(i,k)*(Stateout%gq0(i,k,1)+0.622))
+              enddo
+            endif 
           enddo
+
+          if(Model%effr_in) then 
+            call cloud_diagnosis (1, im, 1, levs, den(1:im,1:levs),             & 
+               Stateout%gq0(1:im,1:levs,ntcw), Stateout%gq0(1:im,1:levs,ntiw),  & 
+               Stateout%gq0(1:im,1:levs,ntrw), Stateout%gq0(1:im,1:levs,ntsw),  & 
+               Stateout%gq0(1:im,1:levs,ntgl), Stateout%gt0(1,1:levs),          &
+               Tbd%phy_f3d(1:im,1:levs,1),     Tbd%phy_f3d(1:im,1:levs,2),      & 
+               Tbd%phy_f3d(1:im,1:levs,3),     Tbd%phy_f3d(1:im,1:levs,4),      & 
+               Tbd%phy_f3d(1:im,1:levs,5))
+
+!            do k = 1, levs
+!              do i=1,im
+!
+!                if(Model%me==0) then
+!		  if(Tbd%phy_f3d(i,k,1) > 5.) then 
+!                    write(6,*) 'phy driver:cloud radii:',Model%kdt, i,k,        &
+!				Tbd%phy_f3d(i,k,1)
+!                  endif 
+!		  if(Tbd%phy_f3d(i,k,3)> 0.0) then 
+!                    write(6,*) 'phy driver:rain radii:',Model%kdt, i,k,         & 
+!				Tbd%phy_f3d(i,k,3)
+!                  endif 
+!
+!                endif 
+!              enddo 
+!            enddo 
+
+          endif 
 
         endif  ! end of if(Model%imp_physics)
       endif    ! end if_ncld
@@ -4057,6 +4100,7 @@ module module_physics_driver
         deallocate (delp,  dz,    uin,   vin,   pt,    qv1,   ql1, qr1,        &
                     qg1,   qa1,   qn1,   qi1,   qs1,   pt_dt, qa_dt, udt, vdt, &
                     w,     qv_dt, ql_dt, qr_dt, qi_dt, qs_dt, qg_dt,p123,refl)
+        deallocate (den)
       endif
 
 !     if (kdt > 2 ) stop

@@ -4636,7 +4636,8 @@ end subroutine interpolate_z
 ! =======================================================================
 
 subroutine cloud_diagnosis (is, ie, js, je, den, qw, qi, qr, qs, qg, t, &
-        qcw, qci, qcr, qcs, qcg, rew, rei, rer, res, reg)
+        rew, rei, rer, res, reg)
+!       qcw, qci, qcr, qcs, qcg, rew, rei, rer, res, reg)
     
     implicit none
     
@@ -4645,7 +4646,8 @@ subroutine cloud_diagnosis (is, ie, js, je, den, qw, qi, qr, qs, qg, t, &
     real, intent (in), dimension (is:ie, js:je) :: den, t
     real, intent (in), dimension (is:ie, js:je) :: qw, qi, qr, qs, qg !< units: kg / kg
     
-    real, intent (out), dimension (is:ie, js:je) :: qcw, qci, qcr, qcs, qcg !< units: kg / m^3
+!   real, intent (out), dimension (is:ie, js:je) :: qcw, qci, qcr, qcs, qcg !< units: kg / m^3
+    real, dimension (is:ie, js:je) :: qcw, qci, qcr, qcs, qcg !< units: kg / m^3
     real, intent (out), dimension (is:ie, js:je) :: rew, rei, rer, res, reg !< units: micron
     
     integer :: i, j
@@ -4656,7 +4658,11 @@ subroutine cloud_diagnosis (is, ie, js, je, den, qw, qi, qr, qs, qg, t, &
     real :: n0r = 8.0e6, n0s = 3.0e6, n0g = 4.0e6
     real :: alphar = 0.8, alphas = 0.25, alphag = 0.5
     real :: gammar = 17.837789, gammas = 8.2850630, gammag = 11.631769
-    real :: qmin = 1.0e-5, ccn = 1.0e8, beta = 1.22
+!   real :: qmin = 1.0e-5, ccn = 1.0e8, beta = 1.22
+    real :: qmin = 5.0e-6, ccn = 1.0e8, beta = 1.22
+!   real :: qmin = 1.0e-6, ccn = 1.0e8, beta = 1.22
+!   real :: qmin = 1.0e-8, ccn = 1.0e8, beta = 1.22
+!   real :: qmin = 1.0e-12, ccn = 1.0e8, beta = 1.22
     
     ! real :: rewmin = 1.0, rewmax = 25.0
     ! real :: reimin = 10.0, reimax = 300.0
@@ -4665,9 +4671,12 @@ subroutine cloud_diagnosis (is, ie, js, je, den, qw, qi, qr, qs, qg, t, &
     ! real :: regmin = 1000.0, regmax = 1.0e5
     real :: rewmin = 5.0, rewmax = 10.0
     real :: reimin = 10.0, reimax = 150.0
-    real :: rermin = 0.0, rermax = 10000.0
-    real :: resmin = 0.0, resmax = 10000.0
-    real :: regmin = 0.0, regmax = 10000.0
+!   real :: rermin = 0.0, rermax = 10000.0
+!   real :: resmin = 0.0, resmax = 10000.0
+!   real :: regmin = 0.0, regmax = 10000.0
+    real :: rermin = 50.0, rermax = 10000.0
+    real :: resmin = 100.0, resmax = 10000.0
+    real :: regmin = 300.0, regmax = 10000.0
     
     do j = js, je
         do i = is, ie
