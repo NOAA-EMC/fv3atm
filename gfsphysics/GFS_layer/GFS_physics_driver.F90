@@ -475,7 +475,7 @@ module module_physics_driver
 !--- experimental for shoc sub-stepping 
            dtshoc,                                                      &
 !--- GFDL Cloud microphysics
-           crain, csnow
+           crain, csnow, total_precip 
 
       real(kind=kind_phys), dimension(Model%ntrac-Model%ncld+2) ::      &
            fscav, fswtr
@@ -3735,20 +3735,26 @@ module module_physics_driver
       if (Model%imp_physics == 11) then
 ! determine convective rain/snow by surface temperature
 ! determine large-scale rain/snow by rain/snow coming out directly from MP
+        tem = dtp * con_p001 / con_day
         do i = 1, im
           Sfcprop%tprcp(i)  = max(0.0, Diag%rain(i) )! clu: rain -> tprcp
           Sfcprop%srflag(i) = 0.                     ! clu: default srflag as 'rain' (i.e. 0)
-          if (Sfcprop%tsfc(i) .ge. 273.15) then
-            crain = Diag%rainc(i)
-            csnow = 0.0
-          else
-            crain = 0.0
-            csnow = Diag%rainc(i)
-          endif
-!         if ((snow0(i,1)+ice0(i,1)+graupel0(i,1)+csnow) > (rain0(i,1)+crain)) then
-          if ((snow0(i,1)+ice0(i,1)+graupel0(i,1)+csnow) > 0.0) then
-            Sfcprop%srflag(i) = 1.                   ! clu: set srflag to 'snow' (i.e. 1)
-          endif
+! compute fractional srflag
+!          if (Sfcprop%tsfc(i) .ge. 273.15) then
+!            crain = Diag%rainc(i)
+!            csnow = 0.0
+!          else
+!            crain = 0.0
+!            csnow = Diag%rainc(i)
+!          endif
+!!         if ((snow0(i,1)+ice0(i,1)+graupel0(i,1)+csnow) > (rain0(i,1)+crain)) then
+!          if ((snow0(i,1)+ice0(i,1)+graupel0(i,1)+csnow) > 0.0) then
+!            Sfcprop%srflag(i) = 1.                   ! clu: set srflag to 'snow' (i.e. 1)
+!          endif
+           total_precip = snow0(i,1)+ice0(i,1)+graupel0(i,1)+rain0(i,1)+Diag%rainc(i)
+           if (total_precip*tem > rainmin) then
+             Sfcprop%srflag(i) = (snow0(i,1)+ice0(i,1)+graupel0(i,1))/total_precip
+           endif
         enddo
       elseif( .not. Model%cal_pre) then
         do i = 1, im
