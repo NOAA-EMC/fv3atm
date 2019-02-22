@@ -296,6 +296,9 @@
 !                    down spectral components sw fluxes as output.     !
 !     Mar 2017    Ruiyu s.- add effect radii and other cloud properties!
 !                    from the advanced MPs                             !
+!     Feb 2019   Ruiyu Sun - add passing the effective radii from      !
+!                    gfdl mp to radiation
+!
 !                                                                      !
 !!!!!  ==========================================================  !!!!!
 !!!!!                       end descriptions                       !!!!!
@@ -1623,6 +1626,17 @@
           endif
         elseif (Model%imp_physics == 11) then                          ! GFDL MP
           cldcov(1:IM,1+kd:LM+kd) = tracer1(1:IM,1:LM,Model%ntclamt)
+          if(Model%effr_in) then
+            do k=1,lm
+              k1 = k + kd
+              do i=1,im
+                effrl(i,k1) = Tbd%phy_f3d(i,k,1)
+                effri(i,k1) = Tbd%phy_f3d(i,k,2)
+                effrr(i,k1) = Tbd%phy_f3d(i,k,3)
+                effrs(i,k1) = Tbd%phy_f3d(i,k,4)
+              enddo
+            enddo
+          endif
         else                                                           ! neither of the other two cases
           cldcov = 0.0
         endif
