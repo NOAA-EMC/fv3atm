@@ -3608,7 +3608,7 @@ module module_physics_driver
             call cloud_diagnosis (1, im, 1, levs, den(1:im,1:levs), &
                Stateout%gq0(1:im,1:levs,ntcw), Stateout%gq0(1:im,1:levs,ntiw), &
                Stateout%gq0(1:im,1:levs,ntrw), Stateout%gq0(1:im,1:levs,ntsw), &
-               Stateout%gq0(1:im,1:levs,ntgl), Stateout%gt0(1,1:levs), &
+               Stateout%gq0(1:im,1:levs,ntgl), Stateout%gt0(1:im,1:levs), &
                Tbd%phy_f3d(1:im,1:levs,1),     Tbd%phy_f3d(1:im,1:levs,2), &
                Tbd%phy_f3d(1:im,1:levs,3),     Tbd%phy_f3d(1:im,1:levs,4), &
                Tbd%phy_f3d(1:im,1:levs,5))
@@ -3762,21 +3762,22 @@ module module_physics_driver
         do i = 1, im
           Sfcprop%tprcp(i)  = max(0.0, Diag%rain(i) )! clu: rain -> tprcp
           Sfcprop%srflag(i) = 0.                     ! clu: default srflag as 'rain' (i.e. 0)
+
 ! compute fractional srflag
-!          if (Sfcprop%tsfc(i) .ge. 273.15) then
-!            crain = Diag%rainc(i)
-!            csnow = 0.0
-!          else
-!            crain = 0.0
-!            csnow = Diag%rainc(i)
-!          endif
+           if (Sfcprop%tsfc(i) .ge. 273.15) then
+             crain = Diag%rainc(i)
+             csnow = 0.0
+           else
+             crain = 0.0
+             csnow = Diag%rainc(i)
+           endif
 !!         if ((snow0(i,1)+ice0(i,1)+graupel0(i,1)+csnow) > (rain0(i,1)+crain)) then
 !          if ((snow0(i,1)+ice0(i,1)+graupel0(i,1)+csnow) > 0.0) then
 !            Sfcprop%srflag(i) = 1.                   ! clu: set srflag to 'snow' (i.e. 1)
 !          endif
            total_precip = snow0(i,1)+ice0(i,1)+graupel0(i,1)+rain0(i,1)+Diag%rainc(i)
            if (total_precip*tem > rainmin) then
-             Sfcprop%srflag(i) = (snow0(i,1)+ice0(i,1)+graupel0(i,1))/total_precip
+             Sfcprop%srflag(i) = (snow0(i,1)+ice0(i,1)+graupel0(i,1)+csnow)/total_precip
            endif
         enddo
       elseif( .not. Model%cal_pre) then

@@ -1586,10 +1586,10 @@
             ccnd(:,:,1) = ccnd(:,:,1) + tracer1(:,1:LMK,ntsw)
             ccnd(:,:,1) = ccnd(:,:,1) + tracer1(:,1:LMK,ntgl)
 
-          else
-            do j=1,Model%ncld
-              ccnd(:,:,1) = ccnd(:,:,1) + tracer1(:,1:LMK,ntcw+j-1) ! cloud condensate amount
-            enddo
+!         else
+!           do j=1,Model%ncld
+!             ccnd(:,:,1) = ccnd(:,:,1) + tracer1(:,1:LMK,ntcw+j-1) ! cloud condensate amount
+!           enddo
           endif 
           do k=1,LMK
             do i=1,IM
