@@ -73,7 +73,7 @@
 !     couple   - integer, =0:uncoupled (land model only)           1    !
 !                         =1:coupled with parent atmos model            !
 !     icein    - integer, sea-ice flag (=1: sea-ice, =0: land)     1    !
-!     ffrozp   - real,                                             1    !
+!     ffrozp   - real, fractional snow/rain                        1    !
 !     dt       - real, time step (<3600 sec)                       1    !
 !     zlvl     - real, height abv atmos ground forcing vars (m)    1    !
 !     sldpth   - real, thickness of each soil layer (m)          nsoil  !
@@ -178,7 +178,7 @@
 !     real (kind=kind_phys), parameter :: gs      = con_g       ! con_g   =9.80665
       real (kind=kind_phys), parameter :: gs1     = 9.8         ! con_g in sfcdif
       real (kind=kind_phys), parameter :: gs2     = 9.81        ! con_g in snowpack, frh2o
-      real (kind=kind_phys), parameter :: tfreez  = con_t0c     ! con_t0c =275.15
+      real (kind=kind_phys), parameter :: tfreez  = con_t0c     ! con_t0c =273.16
       real (kind=kind_phys), parameter :: lsubc   = 2.501e+6    ! con_hvap=2.5000e+6
       real (kind=kind_phys), parameter :: lsubf   = 3.335e5     ! con_hfus=3.3358e+5
       real (kind=kind_phys), parameter :: lsubs   = 2.83e+6     ! ? in sflx, snopac
@@ -407,7 +407,7 @@
 !           temp is colder than 0 c, freezing rain is presumed to be falling.
 
       if (prcp > 0.0) then
-        if (ffrozp > 0.5) then
+        if (ffrozp > 0.) then
           snowng = .true.
         else
           if (t1 <= tfreez) frzgra = .true.
@@ -422,9 +422,18 @@
 
       if (snowng .or. frzgra) then
 
+!   snowfall
+       if (snowng) then
+        sn_new = ffrozp*prcp * dt * 0.001
+        sneqv = sneqv + sn_new
+        prcp1 = (1.-ffrozp)*prcp
+       endif
+!    freezing rain
+       if (frzgra) then
         sn_new = prcp * dt * 0.001
         sneqv = sneqv + sn_new
         prcp1 = 0.0
+       endif
 
 !  --- ...  update snow density based on new snowfall, using old and new
 !           snow.  update snow thermal conductivity
@@ -1466,7 +1475,9 @@
       if (.not. snowng) then
         if (prcp > 0.0)  rr = rr + cph2o1*prcp/rch
       else
-        rr = rr + cpice*prcp/rch
+! ---- ...  fractional snowfall/rainfall
+        rr = rr + (cpice*ffrozp+cph2o1*(1.-ffrozp))                      &
+     &       *prcp/rch
       endif
 
       fnet = fdown - sfcems*sigma1*t24 - ssoil
@@ -2380,7 +2391,9 @@
 
       flx1 = 0.0
       if ( snowng ) then
-        flx1 = cpice * prcp * (t1 - sfctmp)
+!  --- ... fractional snowfall/rainfall
+        flx1 = (cpice* ffrozp + cph2o1*(1.-ffrozp))                     &
+     &         * prcp * (t1 - sfctmp)
       else
         if (prcp > 0.0) flx1 = cph2o1 * prcp * (t1 - sfctmp)
       endif

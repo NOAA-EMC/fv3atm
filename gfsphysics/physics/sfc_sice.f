@@ -79,7 +79,7 @@
 !     dlwflx   - real, total sky sfc downward lw flux ( w/m**2 )   im   !
 !     sfcnsw   - real, total sky sfc netsw flx into ground(w/m**2) im   !
 !     sfcdsw   - real, total sky sfc downward sw flux ( w/m**2 )   im   !
-!     srflag   - real, snow/rain flag for precipitation            im   !
+!     srflag   - real, snow/rain fraction for precipitation        im   !
 !     cm       - real, surface exchange coeff for momentum (m/s)   im   !
 !     ch       - real, surface exchange coeff heat & moisture(m/s) im   !
 !     prsl1    - real, surface layer mean pressure                 im   !
@@ -205,10 +205,10 @@
       elseif (lsm > 0) then           !  --- ...  snow-rain detection
         do i = 1, im
           if (flag(i)) then
-            if (srflag(i) == 1.0) then
-              ep(i) = 0.0
-              weasd(i) = weasd(i) + 1.e3*tprcp(i)
-              tprcp(i)  = 0.0
+            if (srflag(i) > 0) then
+              ep(i) = ep(i)*(1.-srflag(i))
+              weasd(i) = weasd(i) + 1.e3*tprcp(i)*srflag(i)
+              tprcp(i)  = tprcp(i)*(1.-srflag(i))
             endif
           endif
         enddo

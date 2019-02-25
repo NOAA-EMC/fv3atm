@@ -316,7 +316,7 @@
 !   1. configuration information (c):
 !      ------------------------------
 !    couple  - couple-uncouple flag (=1: coupled, =0: uncoupled) 
-!    ffrozp  - flag for snow-rain detection (1.=snow, 0.=rain)                
+!    ffrozp  - flag for snow-rain detection (1.=all snow, 0.=all rain, 0-1 mixed)
 !    ice     - sea-ice flag (=1: sea-ice, =0: land)
 !    dt      - timestep (sec) (dt should not exceed 3600 secs) = delt
 !    zlvl    - height (m) above ground of atmospheric forcing variables
@@ -324,12 +324,13 @@
 !    sldpth  - the thickness of each soil layer (m)
 
           couple = 1                      ! run noah lsm in 'couple' mode
-
-          if     (srflag(i) == 1.0) then  ! snow phase
-            ffrozp = 1.0
-          elseif (srflag(i) == 0.0) then  ! rain phase
-            ffrozp = 0.0
-          endif
+! use srflag directly to allow fractional rain/snow
+!          if     (srflag(i) == 1.0) then  ! snow phase
+!            ffrozp = 1.0
+!          elseif (srflag(i) == 0.0) then  ! rain phase
+!            ffrozp = 0.0
+!          endif
+          ffrozp = srflag(i)
           ice = 0
 
           zlvl = zf(i)
