@@ -79,7 +79,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 
   type atmos_internalstate_type
     type(atmos_data_type)  :: Atm
-    type (time_type)       :: Time_atmos, Time_init, Time_end,  &
+    type(time_type)        :: Time_atmos, Time_init, Time_end,  &
                               Time_step_atmos, Time_step_ocean, &
                               Time_restart, Time_step_restart
     integer :: num_atmos_calls, ret, intrm_rst
@@ -160,7 +160,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !
     integer                                :: tl, i, j
     integer,dimension(2,6)                 :: decomptile                  !define delayout for the 6 cubed-sphere tiles
-    integer,dimension(2,1)                 :: reg_decomptile              !define delayout for the regional grid
+    integer,dimension(2)                   :: regdecomp                   !define delayout for the nest grid
     type(ESMF_FieldBundle)                 :: fieldbundle
 !
     type(ESMF_Time)                        :: CurrTime, StartTime, StopTime
@@ -196,6 +196,10 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     integer :: n, fcstNpes
     integer, allocatable, dimension(:) :: isl, iel, jsl, jel
     integer, allocatable, dimension(:,:,:) :: deBlockList
+
+    integer               :: globalTileLayout(2)
+    integer               :: nestRootPet, peListSize(1)
+    integer, allocatable  :: petMap(:)
 !
 !----------------------------------------------------------------------- 
 !*********************************************************************** 
@@ -355,17 +359,12 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
       if (mype == 0) write(0,*)'be create fcst grid'
       if( quilting ) then
 
-        do tl=1,6
-          decomptile(1,tl) = atm_int_state%Atm%layout(1)
-          decomptile(2,tl) = atm_int_state%Atm%layout(2)
-        enddo
-
         gridfile="grid_spec.nc" ! default
         if (field_exist("INPUT/grid_spec.nc", "atm_mosaic_file")) then
           call read_data("INPUT/grid_spec.nc", "atm_mosaic_file", gridfile)
         endif
 
-        if( atm_int_state%Atm%regional) then
+        if( atm_int_state%Atm%regional ) then
 
           call atmosphere_control_data (isc, iec, jsc, jec, nlev)
 
@@ -421,14 +420,96 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 
         else ! not regional
 
-          fcstGrid = ESMF_GridCreateMosaic(filename="INPUT/"//trim(gridfile),  &
-            regDecompPTile=decomptile,tileFilePath="INPUT/",                   &
-            staggerlocList=(/ESMF_STAGGERLOC_CENTER, ESMF_STAGGERLOC_CORNER/), &
-            name='fcst_grid', rc=rc)
-          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-            line=__LINE__, file=__FILE__)) return  ! bail out
+          if ( .not. atm_int_state%Atm%nested ) then  !! global only
 
-        end if
+            do tl=1,6
+              decomptile(1,tl) = atm_int_state%Atm%layout(1)
+              decomptile(2,tl) = atm_int_state%Atm%layout(2)
+            enddo
+
+            fcstGrid = ESMF_GridCreateMosaic(filename="INPUT/"//trim(gridfile), &
+              regDecompPTile=decomptile,tileFilePath="INPUT/",                   &
+              staggerlocList=(/ESMF_STAGGERLOC_CENTER, ESMF_STAGGERLOC_CORNER/), &
+              name='fcst_grid', rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+              line=__LINE__, &
+              file=__FILE__)) &
+              return  ! bail out
+
+          else !! nesting
+
+#if ESMF_VERSION_MAJOR >= 8
+            if (mype==0) globalTileLayout = atm_int_state%Atm%layout
+            call ESMF_VMBroadcast(vm, bcstData=globalTileLayout, count=2, &
+              rootPet=0, rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+              line=__LINE__, &
+              file=__FILE__)) &
+              return  ! bail out
+
+            nestRootPet = globalTileLayout(1) * globalTileLayout(2) * 6
+
+            if (mype==nestRootPet) then
+              if (nestRootPet /= atm_int_state%Atm%pelist(1)) then
+                write(0,*)'error in fcst_initialize: nestRootPet /= atm_int_state%Atm%pelist(1)'
+                write(0,*)'error in fcst_initialize: nestRootPet = ',nestRootPet
+                write(0,*)'error in fcst_initialize: atm_int_state%Atm%pelist(1) = ',atm_int_state%Atm%pelist(1)
+                ESMF_ERR_ABORT(100)
+              endif
+            endif
+
+            ! nest rootPet shares peList with others
+            if (mype==nestRootPet) peListSize(1) = size(atm_int_state%Atm%pelist)
+            call ESMF_VMBroadcast(vm, bcstData=peListSize, count=1, &
+              rootPet=nestRootPet, rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+              line=__LINE__, &
+              file=__FILE__)) &
+              return  ! bail out
+
+            ! nest rootPet shares layout with others
+            if (mype==nestRootPet) regDecomp = atm_int_state%Atm%layout
+            call ESMF_VMBroadcast(vm, bcstData=regDecomp, count=2, &
+              rootPet=nestRootPet, rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+              line=__LINE__, &
+              file=__FILE__)) &
+              return  ! bail out
+
+            ! prepare petMap variable
+            allocate(petMap(peListSize(1)))
+            if (mype==nestRootPet) petMap = atm_int_state%Atm%pelist
+            ! do the actual broadcast of the petMap
+            call ESMF_VMBroadcast(vm, bcstData=petMap, count=peListSize(1), &
+              rootPet=nestRootPet, rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+              line=__LINE__, &
+              file=__FILE__)) &
+              return  ! bail out
+
+            ! create the DELayout that maps DEs to the PETs in the petMap
+            delayout = ESMF_DELayoutCreate(petMap=petMap, rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+              line=__LINE__, &
+              file=__FILE__)) &
+              return  ! bail out
+
+            ! create the nest Grid by reading it from file but use DELayout
+            fcstGrid = ESMF_GridCreate(filename='INPUT/grid.nest02.tile7.nc', &
+              fileformat=ESMF_FILEFORMAT_GRIDSPEC, regDecomp=regDecomp, &
+              delayout=delayout, isSphere=.false., indexflag=ESMF_INDEX_DELOCAL, &
+              rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+              line=__LINE__, &
+              file=__FILE__)) &
+              return  ! bail out
+#else
+            write(0,*)'nest quilting is supported only with ESMF 8'
+            call ESMF_Finalize(endflag=ESMF_END_ABORT)
+#endif
+          endif
+
+        endif
 !
 !test to write out vtk file:
         if( cpl ) then
@@ -529,12 +610,18 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 ! for dyn
            name_FB1 = trim(name_FB)//'_bilinear'
            fieldbundle = ESMF_FieldBundleCreate(name=trim(name_FB1),rc=rc)
-           if (mype == 0) write(0,*)'af create fcst fieldbundle, name=',trim(name_FB),'rc=',rc
+           if(mype==0) print *,'af create fcst fieldbundle, name=',trim(name_FB),' rc=',rc
            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-             line=__LINE__, file=__FILE__)) return  ! bail out
+             line=__LINE__, &
+             file=__FILE__)) &
+             return  ! bail out
 
            call fv_dyn_bundle_setup(atm_int_state%Atm%axes,          &
-                fieldbundle, fcstgrid, quilting)
+                fieldbundle, fcstgrid, quilting, rc=rc)
+           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+             line=__LINE__, &
+             file=__FILE__)) &
+             return  ! bail out
 
            ! Add the field to the importState so parent can connect to it
            call ESMF_StateAdd(exportState, (/fieldbundle/), rc=rc)
@@ -552,7 +639,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
                name_FB1 = trim(name_FB)//'_bilinear'
              endif
              fieldbundlephys(j) = ESMF_FieldBundleCreate(name=trim(name_FB1),rc=rc)
-             if (mype == 0) write(0,*)'af create fcst fieldbundle, name=',trim(name_FB1),'rc=',rc
+             if(mype==0) print *,'af create fcst fieldbundle, name=',trim(name_FB1),' rc=',rc
              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
                line=__LINE__, file=__FILE__)) return  ! bail out
            enddo
@@ -566,6 +653,11 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
                line=__LINE__, file=__FILE__)) return  ! bail out
            enddo
+
+         else
+
+           write(0,*)' unknown name_FB ', trim(name_FB)
+           ESMF_ERR_ABORT(101)
 
          endif
 !
@@ -608,8 +700,6 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !
 !-----------------------------------------------------------------------
 !***  local variables
-!
-      type(ESMF_FieldBundle)     :: file_bundle 
 !
       integer                    :: i,j, mype, na, date(6)
       character(20)              :: compname
@@ -660,11 +750,9 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !
 !     IF(RC /= ESMF_SUCCESS) THEN
 !       if(mype==0) WRITE(0,*)"FAIL: fcst_RUN"
-!     ELSE
-        if (mype == 0) WRITE(0,*)"PASS: fcstRUN, na=",na
+!      ELSE
+        if(mype==0) WRITE(*,*)"PASS: fcstRUN phase 1, na = ",na, ' time is ', mpi_wtime()-tbeg1
 !     ENDIF
-!
-      if (mype == 0) write(0,*)'fcst_run_phase_1 time is ', mpi_wtime()-tbeg1
 !
 !-----------------------------------------------------------------------
 !
@@ -687,8 +775,6 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !
 !-----------------------------------------------------------------------
 !***  local variables
-!
-      type(ESMF_FieldBundle)     :: file_bundle
 !
       integer                    :: i,j, mype, na, date(6)
       character(20)              :: compname
@@ -747,12 +833,10 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !-----------------------------------------------------------------------
 !
 !     IF(RC /= ESMF_SUCCESS) THEN
-!       if(mype==0) WRITE(0,*)"FAIL: fcst_RUN"
-!     ELSE
-        if (mype == 0) WRITE(0,*)"PASS: fcstRUN, na=",na
+!      if(mype==0) WRITE(0,*)"FAIL: fcst_RUN"
+!      ELSE
+       if(mype==0) WRITE(*,*)"PASS: fcstRUN phase 2, na = ",na, ' time is ', mpi_wtime()-tbeg1
 !     ENDIF
-!
-      if (mype == 0) write(0,*)'fcst_run_phase_2 time is ', mpi_wtime()-tbeg1
 !
 !-----------------------------------------------------------------------
 !

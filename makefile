@@ -18,6 +18,7 @@ else
 endif
 
 FFLAGS   += -I$(FMS_DIR) -I$(PHYSP)physics -Iipd -Icpl -Iio -Iatmos_cubed_sphere
+CPPDEFS  += -DESMF_VERSION_MAJOR=$(ESMF_VERSION_MAJOR)
 
 FV3_EXE  = fv3.exe
 FV3CAP_LIB  = libfv3cap.a

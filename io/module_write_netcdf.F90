@@ -8,10 +8,6 @@
     if (status /= nf90_noerr) write(0,*) "line ", __LINE__, trim(nf90_strerror(status)); \
     if (status /= nf90_noerr) call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
-#define NF_ERR_STOP(status) \
-    if (status /= nf_noerr) write(0,*) "line ", __LINE__, trim(nfmpi_strerror(status)); \
-    if (status /= nf_noerr) call ESMF_Finalize(endflag=ESMF_END_ABORT)
-
 module module_write_netcdf
 
   use esmf
@@ -440,6 +436,17 @@ module module_write_netcdf
        ncerr = nf90_put_var(ncid, dim_varid, values=valueListR8 ); NC_ERR_STOP(ncerr)
        ncerr = nf90_redef(ncid=ncid); NC_ERR_STOP(ncerr)
        deallocate(valueListR8)
+!    else if (typekind==ESMF_TYPEKIND_R4) then
+!       allocate(valueListR4(n))
+!       call ESMF_AttributeGet(grid, convention="NetCDF", purpose="FV3", &
+!                              name=trim(dim_name), valueList=valueListR4, rc=rc); ESMF_ERR_RETURN(rc)
+!       ncerr = nf90_enddef(ncid=ncid); NC_ERR_STOP(ncerr)
+!       ncerr = nf90_put_var(ncid, dim_varid, values=valueListR4 ); NC_ERR_STOP(ncerr)
+!       ncerr = nf90_redef(ncid=ncid); NC_ERR_STOP(ncerr)
+!       deallocate(valueListR4)
+!    else
+!       write(0,*)'Error in module_write_netcdf.F90(add_dim) unknown typekind for ',trim(dim_name)
+!       call ESMF_Finalize(endflag=ESMF_END_ABORT)
     end if
 
     call get_grid_attr(grid, dim_name, ncid, dim_varid, rc)

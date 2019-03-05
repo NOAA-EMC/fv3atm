@@ -123,6 +123,7 @@ public addLsmask2grid
      integer, pointer              :: pelist(:) =>null() ! pelist where atmosphere is running.
      integer                       :: layout(2)          ! computer task laytout
      logical                       :: regional           ! true if domain is regional
+     logical                       :: nested             ! true if there is a nest
      integer                       :: mlon, mlat
      logical                       :: pe                 ! current pe.
      real(kind=8),             pointer, dimension(:)     :: ak, bk
@@ -411,7 +412,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    call atmosphere_resolution (nlon, nlat, global=.false.)
    call atmosphere_resolution (mlon, mlat, global=.true.)
    call alloc_atmos_data_type (nlon, nlat, Atmos)
-   call atmosphere_domain (Atmos%domain, Atmos%layout, Atmos%regional)
+   call atmosphere_domain (Atmos%domain, Atmos%layout, Atmos%regional, Atmos%nested, Atmos%pelist)
    call atmosphere_diag_axes (Atmos%axes)
    call atmosphere_etalvls (Atmos%ak, Atmos%bk, flip=flip_vc)
    call atmosphere_grid_bdry (Atmos%lon_bnd, Atmos%lat_bnd, global=.false.)

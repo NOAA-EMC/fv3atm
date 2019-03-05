@@ -1601,8 +1601,8 @@ module GFS_typedefs
       Coupling%q2mi_cpl    = clear_val
       Coupling%tsfci_cpl   = clear_val
       Coupling%psurfi_cpl  = clear_val
-!!    Coupling%oro_cpl     = clear_val  !< pointer to sfcprop%oro
-!!    Coupling%slmsk_cpl   = clear_val  !< pointer to sfcprop%slmsk
+      Coupling%oro_cpl     = clear_val  !< pointer to sfcprop%oro
+      Coupling%slmsk_cpl   = clear_val  !< pointer to sfcprop%slmsk
     endif
 
    !-- cellular automata

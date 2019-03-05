@@ -696,7 +696,7 @@ module fv3gfs_cap_mod
           call ESMF_StateGet(wrtState(i), &
              itemName="mirror_"//trim(fcstItemNameList(j)), &
              fieldbundle=wrtFB(j,i), rc=rc)
-      if(mype==0) print *,'af get wrtfb=',"mirror_"//trim(fcstItemNameList(j)),'rc=',rc
+          if(mype==0) print *,'af get wrtfb=',"mirror_"//trim(fcstItemNameList(j)),'rc=',rc
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
             line=__LINE__, file=__FILE__)) return  ! bail out
 
@@ -729,9 +729,17 @@ module fv3gfs_cap_mod
             isrctermprocessing = 1
             call ESMF_FieldBundleRegridStore(fcstFB(j), wrtFB(j,i), &
               regridMethod=regridmethod, routehandle=routehandle(j,i),  &
-              srcTermProcessing=isrctermprocessing, rc=rc)
-
-           if(mype==0) print *,'after regrid store, group i=',i,' fb=',j,' time=',mpi_wtime()-timewri
+              srcTermProcessing=isrctermprocessing, &
+              rc=rc)
+            !if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+            !  line=__LINE__, &
+            !  file=__FILE__)) &
+            !  return  ! bail out
+            if (rc /= ESMF_SUCCESS) then
+              write(0,*)'fv3_cap.F90:InitializeAdvertise error in ESMF_FieldBundleRegridStore'
+              call ESMF_LogWrite('fv3_cap.F90:InitializeAdvertise error in ESMF_FieldBundleRegridStore', ESMF_LOGMSG_ERROR, rc=rc)
+              call ESMF_Finalize(endflag=ESMF_END_ABORT)
+            end if
             call ESMF_LogWrite('af FieldBundleRegridStore', ESMF_LOGMSG_INFO, rc=rc)
             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
               line=__LINE__, file=__FILE__)) return  ! bail out

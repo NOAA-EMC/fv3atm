@@ -2133,7 +2133,7 @@ module FV3GFS_io_mod
    call ESMF_FieldBundleAdd(phys_bundle,(/field/), rc=rc)
    if( present(rcd)) rcd=rc
 !
-   call ESMF_LogWrite('phys field add to fieldbundle'//trim(var_name), ESMF_LOGMSG_INFO, rc=rc)
+   call ESMF_LogWrite('phys field add to fieldbundle '//trim(var_name), ESMF_LOGMSG_INFO, rc=rc)
 
  end subroutine add_field_to_phybundle
 !

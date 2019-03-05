@@ -509,9 +509,10 @@
                     name="output_file", value=outfile_name, rc=rc)
 
                if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-                 line=__LINE__, file=__FILE__)) return  ! bail out
-
-               CALL ESMF_LogWrite("bf fcstfield, get output_file"//trim(outfile_name)//trim(fieldName),ESMF_LOGMSG_INFO,rc=RC)
+                 line=__LINE__, &
+                 file=__FILE__)) &
+                 return  ! bail out
+               CALL ESMF_LogWrite("bf fcstfield, get output_file "//trim(outfile_name)//" "//trim(fieldName),ESMF_LOGMSG_INFO,rc=RC)
                if( trim(outfile_name) /= '') then
                  outfilename(j,i) = trim(outfile_name)
                endif
@@ -1184,7 +1185,7 @@
          write(cfhour, cform) nf_hours
        endif
 !
-       if(mype == lead_write_task) print *,'in wrt run, 2, nf_hours=',nf_hours,nf_minutes,nseconds, &
+       if(mype == lead_write_task) print *,'in wrt run, nf_hours=',nf_hours,nf_minutes,nseconds, &
        'nseconds_num=',nseconds_num,nseconds_den,' FBCount=',FBCount,' cfhour=',trim(cfhour)
 
 !    if(mype == lead_write_task) print *,'in wrt run, cfhour=',cfhour, &
@@ -1485,6 +1486,10 @@
 ! get filed count
      call ESMF_FieldBundleGet(file_bundle, fieldCount=fieldCount, &
          grid=fieldGrid, rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+            line=__LINE__, &
+            file=__FILE__)) &
+            return  ! bail out
 !
      CALL ESMF_LogWrite("call recover field on wrt comp",ESMF_LOGMSG_INFO,rc=RC)
      call ESMF_GridGet(fieldgrid, dimCount=gridDimCount, rc=rc)
