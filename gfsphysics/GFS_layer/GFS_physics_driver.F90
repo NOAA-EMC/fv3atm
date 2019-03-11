@@ -4,7 +4,9 @@ module module_physics_driver
   use physcons,              only: con_cp, con_fvirt, con_g, con_rd,    &
                                    con_rv, con_hvap, con_hfus,          &
                                    con_rerth, con_pi, rhc_max, dxmin,   &
-                                   dxinv, pa2mb, rlapse, con_eps, con_epsm1
+                                   dxinv, pa2mb, rlapse, con_eps,       &
+                                   con_epsm1,PQ0,A2A,A3,A4,RHmin        
+                                   
   use cs_conv,               only: cs_convr
   use ozne_def,              only: levozp,  oz_coeff, oz_pres
   use h2o_def,               only: levh2o, h2o_coeff, h2o_pres
@@ -69,7 +71,7 @@ module module_physics_driver
 !     sfc_ocean,sfc_drv,  sfc_land, sfc_sice, sfc_diag, moninp1,        !
 !     moninp,   moninq1,  moninq,   satmedmfvdif,                       !
 !     gwdps,    ozphys,   get_phi,                                      !
-!     sascnv,   sascnvn,  samfdeepcnv,  rascnv,   cs_convr, gwdc,       !
+!     sascnv,   sascnvn,  samfdeepcnv, rascnv,   cs_convr, gwdc,        !
 !     shalcvt3, shalcv,   samfshalcnv,                                  !
 !     shalcnv,  cnvc90,   lrgscl,   gsmdrive, gscond,   precpd,         !
 !     progt2.                                                           !
@@ -576,11 +578,13 @@ module module_physics_driver
 !     real(kind=kind_phys), allocatable, dimension(:) ::  nwfa2d    
       real(kind=kind_phys), parameter :: liqm = 4./3.*con_pi*1.e-12,    &
                               icem = 4./3.*con_pi*3.2768*1.e-14*890.
-
+      real, allocatable, dimension(:) :: refd,REFD263K
+      integer :: nsteps_per_reset
+      integer :: kdtminus1
+! For computing saturation vapor pressure and rh at 2m
+      real :: pshltr,QCQ,rh02
       real(kind=kind_phys), allocatable, dimension(:,:) ::              &
            den 
-
-!
 !===> ...  begin here
 
       me      = Model%me
@@ -655,6 +659,8 @@ module module_physics_driver
       endif
 
       ntkev = nvdiff
+      nsteps_per_reset=nint(Model%avg_max_length/dtp)
+      kdtminus1=kdt-1
 !
 !-------------------------------------------------------------------------------------------
       lprnt   = .false.
@@ -1257,7 +1263,7 @@ module module_physics_driver
             islmsk, Tbd%phy_f2d(1,Model%num_p2d), slopetyp,            &
             Sfcprop%shdmin, Sfcprop%shdmax, Sfcprop%snoalb,            &
             Radtend%sfalb, flag_iter, flag_guess, Model%lheatstrg,     &
-            Model%isot, Model%ivegsrc,                                 &
+            Model%isot,Model%ivegsrc,                                  &
             bexp1d, xlai1d, vegf1d, Model%pertvegf,                    &
 !  ---  in/outs:
             Sfcprop%weasd, Sfcprop%snowd, Sfcprop%tsfc, Sfcprop%tprcp, &
@@ -1426,7 +1432,6 @@ module module_physics_driver
           Coupling%nvisdf_cpl(i)  = Coupling%nvisdf_cpl(i)  + Coupling%nvisdfi_cpl(i)*dtf
         enddo
       endif
-
       if (Model%lssav) then
         do i=1,im
           Diag%gflux(i)   = Diag%gflux(i)  + gflx(i)  * dtf
@@ -3684,8 +3689,8 @@ module module_physics_driver
                                            area, dtp, land, rain0, snow0,     &
                                            ice0, graupel0, .false., .true.,   &
                                            1, im, 1, 1, 1, levs, 1, levs,     &
-                                           seconds,p123,Model%lradar,refl)
-
+                                           seconds,p123,Model%lradar,refl,kdt,&
+                                           nsteps_per_reset)
           tem = dtp * con_p001 / con_day
           do i = 1, im
 !            rain0(i,1) = max(con_d00, rain0(i,1))
@@ -3740,7 +3745,23 @@ module module_physics_driver
               enddo
             endif 
           enddo
-
+!Calculate hourly max 1-km agl and -10C reflectivity
+        if(Model%lradar .and. (imp_physics == 11 .or. imp_physics == 8)) then
+           allocate(refd(im))
+           allocate(refd263k(im))
+           call max_fields(Statein%phil,Diag%refl_10cm,con_g,im,levs,refd,Stateout%gt0,refd263k)
+           do i=1,im
+              if(mod(kdtminus1,nsteps_per_reset)==0)then
+                 Diag%refdmax(I) = -35.
+                 Diag%refdmax263k(I) = -35.
+              endif
+              Diag%refdmax(i) = max(Diag%refdmax(i),refd(i))
+              Diag%refdmax263k(i) = max(Diag%refdmax263k(i),refd263k(i))
+           enddo
+          deallocate (refd) 
+          deallocate (refd263k)
+        endif
+!
           if(Model%effr_in) then 
             call cloud_diagnosis (1, im, 1, levs, den(1:im,1:levs),             & 
                Stateout%gq0(1:im,1:levs,ntcw), Stateout%gq0(1:im,1:levs,ntiw),  & 
@@ -4108,6 +4129,37 @@ module module_physics_driver
                     w,     qv_dt, ql_dt, qr_dt, qi_dt, qs_dt, qg_dt,p123,refl)
         deallocate (den)
       endif
+         do i=1, im
+! find max hourly wind speed then decompose
+            tem = sqrt(Diag%u10m(i)*Diag%u10m(i) + Diag%v10m(i)*Diag%v10m(i))
+            if(mod(kdtminus1,nsteps_per_reset)==0)then
+               Diag%spd10max(i) = -999.
+               Diag%u10max(i)    = -999.
+               Diag%v10max(i)    = -999.
+               Diag%t02max(i)    = -999.
+               Diag%t02min(i)    = 999.
+               Diag%rh02max(i)    = -999.
+               Diag%rh02min(i)    = 999.
+            endif
+            if (tem > Diag%spd10max(i)) then
+               Diag%spd10max(i) = tem
+               Diag%u10max(i)    = Diag%u10m(i)
+               Diag%v10max(i)    = Diag%v10m(i)
+            endif
+            pshltr=Statein%pgr(i)*exp(-0.068283/Stateout%gt0(i,1))
+            QCQ=PQ0/pshltr*EXP(A2A*(Sfcprop%t2m(i)-A3)/(Sfcprop%t2m(i)-A4))
+            rh02=Sfcprop%q2m(i)/QCQ
+            IF (rh02.GT.1.0) THEN
+               rh02=1.0
+            ENDIF
+            IF (rh02.LT.RHmin) THEN  !use smaller RH limit for stratosphere
+               rh02=RHmin
+            ENDIF
+            Diag%rh02max(i)=max(Diag%rh02max(i),rh02)
+            Diag%rh02min(i)=min(Diag%rh02min(i),rh02)
+            Diag%T02MAX(I)=MAX(Diag%T02MAX(I),Sfcprop%t2m(i))  !<--- Hourly max 2m T
+            Diag%T02MIN(I)=MIN(Diag%T02MIN(I),Sfcprop%t2m(i))  !<--- Hourly min 2m T
+         enddo
 
 !     if (kdt > 2 ) stop
       return
@@ -4116,7 +4168,92 @@ module module_physics_driver
 !-----------------------------------
 
 
-      subroutine moist_bud(im,ix,ix2,levs,me,kdt,grav,dtp,delp,rain, &
+      subroutine max_fields(phil,ref3D,grav,im,levs,refd,tk,refd263k)
+      use machine, only : kind_phys
+      integer, intent(in)               :: im,levs
+      real (kind=kind_phys), intent(in) :: grav
+      real (kind=kind_phys), intent(in),dimension(im,levs)  :: phil,ref3D,tk
+      integer               :: i,k,ll,ipt,kpt
+      real :: dbz1avg,zmidp1,zmidloc,refl,fact
+      real, dimension(im,levs) :: z
+      real, dimension(im) :: zintsfc
+      real, dimension(im), intent(inout) :: refd,refd263k
+      REAL :: dbz1(2),dbzk,dbzk1
+      logical counter
+      do i=1,im
+         do k=1,levs
+            z(i,k)=phil(i,k)/grav
+         enddo
+      enddo
+      do i=1,im
+         refd(I) = -35.
+  vloop:  do k=1,levs-1
+            if ( (z(i,k+1)) .ge. 1000.     &
+             .and.(z(i,k))   .le. 1000.)  then
+               zmidp1=z(i,k+1)
+               zmidLOC=z(i,k)
+               dbz1(1)=ref3d(i,k+1)   !- dBZ (not Z) values
+               dbz1(2)=ref3d(i,k) !- dBZ values
+               exit vloop
+            endif
+         enddo vloop
+
+!!! Initial curefl value without reduction above freezing level
+!
+!         curefl=0.
+!         if (cprate(i,j)>0.) then
+!           cuprate=rdtphs*cprate(i,j)
+!           curefl=cu_a*cuprate**cu_b
+!         endif
+         do ll=1,2
+           refl=0.
+           if (dbz1(ll)>-35.) refl=10.**(0.1*dbz1(ll))
+!           dbz1(l)=curefl+refl    !- in Z units
+             dbz1(ll)=refl
+         enddo
+!-- Vertical interpolation of Z (units of mm**6/m**3)
+         fact=(1000.-zmidloc)/(zmidloc-zmidp1)
+         dbz1avg=dbz1(2)+(dbz1(2)-dbz1(1))*fact
+!-- Convert to dBZ (10*logZ) as the last step
+         if (dbz1avg>0.01) then
+           dbz1avg=10.*alog10(dbz1avg)
+         else
+           dbz1avg=-35.
+         endif
+         refd(I)=max(refd(I),dbz1avg)
+      enddo
+
+!-- refl at -10C
+      do i=1,im
+         dbz1(1) = -35.
+         dbz1(2) = -35.
+  vloopm10:  do k=1,levs-1
+            if (tk(i,k+1) .le. 263.15 .and. tk(i,k) .ge. 263.15)  then     
+               dbz1(1)=ref3d(i,k+1)   !- dBZ (not Z) values
+               dbz1(2)=ref3d(i,k) !- dBZ values
+               exit vloopm10
+            endif
+         enddo vloopm10
+         
+         do ll=1,2
+           refl=0.
+           if (dbz1(ll)>-35.) refl=10.**(0.1*dbz1(ll))
+!           dbz1(l)=curefl+refl    !- in Z units
+             dbz1(ll)=refl
+         enddo
+!-- Take max of bounding reflectivity values 
+         dbz1avg=maxval(dbz1)
+!-- Convert to dBZ (10*logZ) as the last step
+         if (dbz1avg>0.01) then
+           dbz1avg=10.*alog10(dbz1avg)
+         else
+           dbz1avg=-35.
+         endif
+         refd263K(I)=dbz1avg
+      enddo
+      end subroutine max_fields
+
+ subroutine moist_bud(im,ix,ix2,levs,me,kdt,grav,dtp,delp,rain, &
                            qv0,ql0,qi0,qv1,ql1,qi1,comp, xlon, xlat)
 !  nov 2016 - S. Moorthi - routine to compute local moisture budget
       use machine, only : kind_phys
