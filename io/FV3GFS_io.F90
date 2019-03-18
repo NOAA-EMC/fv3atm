@@ -1722,6 +1722,10 @@ module FV3GFS_io_mod
    type(diag_atttype),dimension(:),allocatable :: attributes
    real(4),dimension(:,:),pointer              :: dataPtr2d
 !
+   logical isPresent
+   integer udimCount
+   character(80),dimension(:),allocatable :: udimList
+!
 !------------------------------------------------------------
 !--- use wrte grid component for output
    use_wrtgridcomp_output = quilting
@@ -1802,99 +1806,122 @@ module FV3GFS_io_mod
    do id = 1,num_axes_phys
      call get_diag_axis_name( axes(id), axis_name(id))
    enddo
+   isPresent = .false.
    if( num_axes_phys>2 ) then
      allocate(axis_name_vert(num_axes_phys-2))
      do id=3,num_axes_phys
        axis_name_vert(id-2) = axis_name(id)
      enddo
-     if(mpp_pe()==mpp_root_pe())print *,'in fv_dyn bundle,axis_name_vert=',axis_name_vert
-     call ESMF_AttributeAdd(fcst_grid, convention="NetCDF", purpose="FV3",  &
-       attrList=(/"vertical_dim_labels"/), rc=rc)
+!
+     call ESMF_AttributeGet(fcst_grid, convention="NetCDF", purpose="FV3", &
+       name="vertical_dim_labels", isPresent=isPresent, &
+       itemCount=udimCount, rc=rc)
      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
        line=__LINE__, file=__FILE__)) return  ! bail out
-     call ESMF_AttributeSet(fcst_grid, convention="NetCDF", purpose="FV3", &
-       name="vertical_dim_labels", valueList=axis_name_vert, rc=rc)
-     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-       line=__LINE__, file=__FILE__)) return  ! bail out
+
+     if (isPresent .and. (udimCount>num_axes_phys-2) ) then
+       allocate(udimList(udimCount))
+       call ESMF_AttributeGet(fcst_grid, convention="NetCDF", purpose="FV3", &
+         name="vertical_dim_labels", valueList=udimList, rc=rc)
+!       if(mpp_pe()==mpp_root_pe())print *,'in fv3gfsio, vertical
+!       list=',udimList(1:udimCount),'rc=',rc
+
+       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+         line=__LINE__, file=__FILE__)) return  ! bail out
+
+     else
+
+       if(mpp_pe()==mpp_root_pe())print *,'in fv_dyn bundle,axis_name_vert=',axis_name_vert
+       call ESMF_AttributeAdd(fcst_grid, convention="NetCDF", purpose="FV3",  &
+         attrList=(/"vertical_dim_labels"/), rc=rc)
+       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+         line=__LINE__, file=__FILE__)) return  ! bail out
+       call ESMF_AttributeSet(fcst_grid, convention="NetCDF", purpose="FV3", &
+         name="vertical_dim_labels", valueList=axis_name_vert, rc=rc)
+       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+         line=__LINE__, file=__FILE__)) return  ! bail out
+     endif
    endif
 
 !*** add attributes
    if(allocated(all_axes)) deallocate(all_axes)
    allocate(all_axes(num_axes_phys))
    all_axes(1:num_axes_phys) = axes(1:num_axes_phys)
-   do id = 1,num_axes_phys
-     axis_length =  get_axis_global_length(axes(id))
-     allocate(axis_data(axis_length))
-     call get_diag_axis( axes(id), axis_name(id), units, long_name, cart_name, &
+   if (.not. isPresent .or. (udimCount<num_axes_phys-2) ) then
+     do id = 1,num_axes_phys
+       axis_length =  get_axis_global_length(axes(id))
+       allocate(axis_data(axis_length))
+       call get_diag_axis( axes(id), axis_name(id), units, long_name, cart_name, &
                          direction, edges, Domain, DomainU, axis_data,     &
                          num_attributes=num_attributes,              &
                          attributes=attributes)
 !
-     edgesS=''
-     do i = 1,num_axes_phys
-       if(axes(i) == edges) edgesS=axis_name(i)
-     enddo
+       edgesS=''
+       do i = 1,num_axes_phys
+         if(axes(i) == edges) edgesS=axis_name(i)
+       enddo
 ! Add vertical dimension Attributes to Grid
-     if( id>2 ) then
+       if( id>2 ) then
 !      if(mpp_pe()==mpp_root_pe())print *,' in dyn add grid, axis_name=',     &
 !         trim(axis_name(id)),'axis_data=',axis_data
-      if(trim(edgesS)/='') then
-        call ESMF_AttributeAdd(fcst_grid, convention="NetCDF", purpose="FV3",  &
-          attrList=(/trim(axis_name(id)),trim(axis_name(id))//":long_name",    &
+         if(trim(edgesS)/='') then
+           call ESMF_AttributeAdd(fcst_grid, convention="NetCDF", purpose="FV3",  &
+             attrList=(/trim(axis_name(id)),trim(axis_name(id))//":long_name",    &
                     trim(axis_name(id))//":units", trim(axis_name(id))//":cartesian_axis", &
                     trim(axis_name(id))//":positive", trim(axis_name(id))//":edges"/), rc=rc)
-      else
-        call ESMF_AttributeAdd(fcst_grid, convention="NetCDF", purpose="FV3",  &
-          attrList=(/trim(axis_name(id)),trim(axis_name(id))//":long_name",    &
+         else
+           call ESMF_AttributeAdd(fcst_grid, convention="NetCDF", purpose="FV3",  &
+             attrList=(/trim(axis_name(id)),trim(axis_name(id))//":long_name",    &
                     trim(axis_name(id))//":units", trim(axis_name(id))//":cartesian_axis", &
                     trim(axis_name(id))//":positive"/), rc=rc)
-      endif
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, file=__FILE__)) return  ! bail out
+         endif
+         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+           line=__LINE__, file=__FILE__)) return  ! bail out
 
-      call ESMF_AttributeSet(fcst_grid, convention="NetCDF", purpose="FV3", &
-        name=trim(axis_name(id)), valueList=axis_data, rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, file=__FILE__)) return  ! bail out
+         call ESMF_AttributeSet(fcst_grid, convention="NetCDF", purpose="FV3", &
+           name=trim(axis_name(id)), valueList=axis_data, rc=rc)
+         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+           line=__LINE__, file=__FILE__)) return  ! bail out
 
-      call ESMF_AttributeSet(fcst_grid, convention="NetCDF", purpose="FV3", &
-        name=trim(axis_name(id))//":long_name", value=trim(long_name), rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, file=__FILE__)) return  ! bail out
+         call ESMF_AttributeSet(fcst_grid, convention="NetCDF", purpose="FV3", &
+           name=trim(axis_name(id))//":long_name", value=trim(long_name), rc=rc)
+         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+           line=__LINE__, file=__FILE__)) return  ! bail out
 
-      call ESMF_AttributeSet(fcst_grid, convention="NetCDF", purpose="FV3", &
-        name=trim(axis_name(id))//":units", value=trim(units), rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, file=__FILE__)) return  ! bail out
+         call ESMF_AttributeSet(fcst_grid, convention="NetCDF", purpose="FV3", &
+           name=trim(axis_name(id))//":units", value=trim(units), rc=rc)
+         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+           line=__LINE__, file=__FILE__)) return  ! bail out
 
-      call ESMF_AttributeSet(fcst_grid, convention="NetCDF", purpose="FV3", &
-        name=trim(axis_name(id))//":cartesian_axis", value=trim(cart_name), rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, file=__FILE__)) return  ! bail out
+         call ESMF_AttributeSet(fcst_grid, convention="NetCDF", purpose="FV3", &
+           name=trim(axis_name(id))//":cartesian_axis", value=trim(cart_name), rc=rc)
+         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+           line=__LINE__, file=__FILE__)) return  ! bail out
 
-      if(direction>0) then
+         if(direction>0) then
           axis_direct="up"
-      else
+         else
           axis_direct="down"
-      endif
-      call ESMF_AttributeSet(fcst_grid, convention="NetCDF", purpose="FV3", &
-        name=trim(axis_name(id))//":positive", value=trim(axis_direct), rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, file=__FILE__)) return  ! bail out
+         endif
+         call ESMF_AttributeSet(fcst_grid, convention="NetCDF", purpose="FV3", &
+           name=trim(axis_name(id))//":positive", value=trim(axis_direct), rc=rc)
+         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+           line=__LINE__, file=__FILE__)) return  ! bail out
 
-      if(trim(edgesS)/='') then
-        call ESMF_AttributeSet(fcst_grid, convention="NetCDF", purpose="FV3", &
-          name=trim(axis_name(id))//":edges", value=trim(edgesS), rc=rc)
-        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-          line=__LINE__, file=__FILE__)) return  ! bail out
-      endif
+         if(trim(edgesS)/='') then
+           call ESMF_AttributeSet(fcst_grid, convention="NetCDF", purpose="FV3", &
+             name=trim(axis_name(id))//":edges", value=trim(edgesS), rc=rc)
+           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+             line=__LINE__, file=__FILE__)) return  ! bail out
+         endif
 
-     endif
+        endif
 !
-     deallocate(axis_data)
-   enddo
-   print *,'in setup fieldbundle_phys, num_axes_phys=',num_axes_phys,'tot_diag_idx=',tot_diag_idx, &
-       'nbdlphys=',nbdlphys
+        deallocate(axis_data)
+      enddo
+    endif
+!   print *,'in setup fieldbundle_phys, num_axes_phys=',num_axes_phys,'tot_diag_idx=',tot_diag_idx, &
+!       'nbdlphys=',nbdlphys
 !
 !-----------------------------------------------------------------------------------------
 !*** add esmf fields

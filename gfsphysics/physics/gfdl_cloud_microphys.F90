@@ -4665,7 +4665,8 @@ subroutine cloud_diagnosis (is, ie, js, je, den, qw, qi, qr, qs, qg, t, &
     real :: alphar = 0.8, alphas = 0.25, alphag = 0.5
     real :: gammar = 17.837789, gammas = 8.2850630, gammag = 11.631769
 !   real :: qmin = 1.0e-5, ccn = 1.0e8, beta = 1.22
-    real :: qmin = 5.0e-6, ccn = 1.0e8, beta = 1.22
+!   real :: qmin = 5.0e-6, ccn = 1.0e8, beta = 1.22
+    real :: qmin = 9.0e-6, ccn = 1.0e8, beta = 1.22
 !   real :: qmin = 1.0e-6, ccn = 1.0e8, beta = 1.22
 !   real :: qmin = 1.0e-8, ccn = 1.0e8, beta = 1.22
 !   real :: qmin = 1.0e-12, ccn = 1.0e8, beta = 1.22

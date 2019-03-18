@@ -1862,19 +1862,19 @@ module module_physics_driver
 !             enddo
 !           enddo
 !         endif
-          do k=1,levs
-            do i=1,im
-              tem  = dqdt(i,k,1) * dtf
-              Diag%dq3dt(i,k,1) = Diag%dq3dt(i,k,1) + tem
-            enddo
-          enddo
-          if (ntoz > 0) then
-            do k=1,levs
-              do i=1,im
-                Diag%dq3dt(i,k,5) = Diag%dq3dt(i,k,5) + dqdt(i,k,ntoz) * dtf
-              enddo
-            enddo
-          endif
+!          do k=1,levs
+!            do i=1,im
+!              tem  = dqdt(i,k,1) * dtf
+!              Diag%dq3dt(i,k,1) = Diag%dq3dt(i,k,1) + tem
+!            enddo
+!          enddo
+!          if (ntoz > 0) then
+!            do k=1,levs
+!              do i=1,im
+!                Diag%dq3dt(i,k,5) = Diag%dq3dt(i,k,5) + dqdt(i,k,ntoz) * dtf
+!              enddo
+!            enddo
+!          endif
         endif
 
       endif   ! end if_lssav
@@ -1929,6 +1929,16 @@ module module_physics_driver
 
       endif   ! end if_nmtvr
 
+      if (Model%lssav) then
+        if (Model%ldiag3d) then
+          do k=1,levs
+            do i=1,im
+              Diag%dt3dt(i,k,7) = Diag%dt3dt(i,k,7) - dtdt(i,k)
+            enddo
+         enddo
+        endif
+      endif
+
       call gwdps(im, ix, im, levs, dvdt, dudt, dtdt,        &
                  Statein%ugrs, Statein%vgrs, Statein%tgrs,  &
                  Statein%qgrs, kpbl, Statein%prsi, del,     &
@@ -1951,7 +1961,7 @@ module module_physics_driver
             do i=1,im
               Diag%du3dt(i,k,2) = Diag%du3dt(i,k,2) + dudt(i,k) * dtf
               Diag%dv3dt(i,k,2) = Diag%dv3dt(i,k,2) + dvdt(i,k) * dtf
-              Diag%dt3dt(i,k,2) = Diag%dt3dt(i,k,2) + dtdt(i,k) * dtf
+              Diag%dt3dt(i,k,7) = Diag%dt3dt(i,k,7) + dtdt(i,k) * dtf
             enddo
           enddo
         endif
@@ -1993,16 +2003,16 @@ module module_physics_driver
                             Stateout%gt0, oz_pres, Statein%prsl,     &
                             Tbd%ozpl, oz_coeff, del, Model%ldiag3d,  &
                             dq3dt_loc(1,1,6), me)
-          if (Model%ldiag3d) then
-            do k=1,levs
-              do i=1,im
-                Diag%dq3dt(i,k,6) = dq3dt_loc(i,k,6)
-                Diag%dq3dt(i,k,7) = dq3dt_loc(i,k,7)
-                Diag%dq3dt(i,k,8) = dq3dt_loc(i,k,8)
-                Diag%dq3dt(i,k,9) = dq3dt_loc(i,k,9)
-              enddo
-            enddo
-          endif
+!          if (Model%ldiag3d) then
+!            do k=1,levs
+!              do i=1,im
+!                Diag%dq3dt(i,k,6) = dq3dt_loc(i,k,6)
+!                Diag%dq3dt(i,k,7) = dq3dt_loc(i,k,7)
+!                Diag%dq3dt(i,k,8) = dq3dt_loc(i,k,8)
+!                Diag%dq3dt(i,k,9) = dq3dt_loc(i,k,9)
+!              enddo
+!            enddo
+!          endif
         else
           call ozphys (ix, im, levs, levozp, dtp,                 &
                        Stateout%gq0(1,1,ntoz),                    &
@@ -2010,16 +2020,16 @@ module module_physics_driver
                        Stateout%gt0, oz_pres, Statein%prsl,       &
                        Tbd%ozpl, oz_coeff, del, Model%ldiag3d,    &
                        dq3dt_loc(1,1,6), me)
-          if (Model%ldiag3d) then
-            do k=1,levs
-              do i=1,im
-                Diag%dq3dt(i,k,6) = dq3dt_loc(i,k,6)
-                Diag%dq3dt(i,k,7) = dq3dt_loc(i,k,7)
-                Diag%dq3dt(i,k,8) = dq3dt_loc(i,k,8)
-                Diag%dq3dt(i,k,9) = dq3dt_loc(i,k,9)
-              enddo
-            enddo
-          endif
+!          if (Model%ldiag3d) then
+!            do k=1,levs
+!              do i=1,im
+!                Diag%dq3dt(i,k,6) = dq3dt_loc(i,k,6)
+!                Diag%dq3dt(i,k,7) = dq3dt_loc(i,k,7)
+!                Diag%dq3dt(i,k,8) = dq3dt_loc(i,k,8)
+!                Diag%dq3dt(i,k,9) = dq3dt_loc(i,k,9)
+!              enddo
+!            enddo
+!          endif
         endif
       endif
 
@@ -2617,35 +2627,35 @@ module module_physics_driver
 
           cld1d = 0
 
-          if (Model%ldiag3d .or. Model%lgocart) then
-            do k=1,levs
-              do i=1,im
-                Coupling%upd_mfi(i,k) = 0.
-                Coupling%dwn_mfi(i,k) = 0.
-                Coupling%det_mfi(i,k) = 0.
-              enddo
-            enddo
-          endif
-          if (Model%lgocart) then
-            do k=1,levs
-              do i=1,im
-                Coupling%dqdti(i,k)  = 0.
-                Coupling%cnvqci(i,k) = 0.
-              enddo
-            enddo
-          endif
+!          if (Model%ldiag3d .or. Model%lgocart) then
+!            do k=1,levs
+!              do i=1,im
+!                Coupling%upd_mfi(i,k) = 0.
+!                Coupling%dwn_mfi(i,k) = 0.
+!                Coupling%det_mfi(i,k) = 0.
+!              enddo
+!            enddo
+!          endif
+!          if (Model%lgocart) then
+!            do k=1,levs
+!              do i=1,im
+!                Coupling%dqdti(i,k)  = 0.
+!                Coupling%cnvqci(i,k) = 0.
+!              enddo
+!            enddo
+!          endif
 
-          if (Model%lgocart) then
-            do k=1,levs
-              do i=1,im
-                Coupling%upd_mfi(i,k)  = Coupling%upd_mfi(i,k)  + ud_mf(i,k) * frain
-                Coupling%dwn_mfi(i,k)  = Coupling%dwn_mfi(i,k)  + dd_mf(i,k) * frain
-                Coupling%det_mfi(i,k)  = Coupling%det_mfi(i,k)  + dt_mf(i,k) * frain
-                Coupling%cnvqci (i,k)  = Coupling%cnvqci (i,k)  + (clw(i,k,1)+clw(i,k,2) - &
-                                        Stateout%gq0(i,k,ntcw)) * frain
-              enddo
-            enddo
-          endif ! if (lgocart)
+!          if (Model%lgocart) then
+!            do k=1,levs
+!              do i=1,im
+!                Coupling%upd_mfi(i,k)  = Coupling%upd_mfi(i,k)  + ud_mf(i,k) * frain
+!                Coupling%dwn_mfi(i,k)  = Coupling%dwn_mfi(i,k)  + dd_mf(i,k) * frain
+!                Coupling%det_mfi(i,k)  = Coupling%det_mfi(i,k)  + dt_mf(i,k) * frain
+!                Coupling%cnvqci (i,k)  = Coupling%cnvqci (i,k)  + (clw(i,k,1)+clw(i,k,2) - &
+!                                        Stateout%gq0(i,k,ntcw)) * frain
+!              enddo
+!            enddo
+!          endif ! if (lgocart)
 
         endif   ! end if_not_ras
 
@@ -2686,13 +2696,13 @@ module module_physics_driver
           do k=1,levs
             do i=1,im
               Diag%dt3dt(i,k,4) = Diag%dt3dt(i,k,4) + (Stateout%gt0(i,k)-dtdt(i,k)) * frain
-              Diag%dq3dt(i,k,2) = Diag%dq3dt(i,k,2) + (Stateout%gq0(i,k,1)-dqdt(i,k,1)) * frain
+!              Diag%dq3dt(i,k,2) = Diag%dq3dt(i,k,2) + (Stateout%gq0(i,k,1)-dqdt(i,k,1)) * frain
               Diag%du3dt(i,k,3) = Diag%du3dt(i,k,3) + (Stateout%gu0(i,k)-dudt(i,k)) * frain
               Diag%dv3dt(i,k,3) = Diag%dv3dt(i,k,3) + (Stateout%gv0(i,k)-dvdt(i,k)) * frain
 
-              Diag%upd_mf(i,k)  = Diag%upd_mf(i,k)  + ud_mf(i,k) * (con_g*frain)
-              Diag%dwn_mf(i,k)  = Diag%dwn_mf(i,k)  + dd_mf(i,k) * (con_g*frain)
-              Diag%det_mf(i,k)  = Diag%det_mf(i,k)  + dt_mf(i,k) * (con_g*frain)
+!              Diag%upd_mf(i,k)  = Diag%upd_mf(i,k)  + ud_mf(i,k) * (con_g*frain)
+!              Diag%dwn_mf(i,k)  = Diag%dwn_mf(i,k)  + dd_mf(i,k) * (con_g*frain)
+!              Diag%det_mf(i,k)  = Diag%det_mf(i,k)  + dt_mf(i,k) * (con_g*frain)
             enddo
           enddo
         endif ! if (ldiag3d)
@@ -2700,17 +2710,17 @@ module module_physics_driver
       endif   ! end if_lssav
 !
 !       update dqdt_v to include moisture tendency due to deep convection
-      if (Model%lgocart) then
-        do k=1,levs
-          do i=1,im
-            Coupling%dqdti  (i,k) = (Stateout%gq0(i,k,1)  - dqdt(i,k,1)) * frain
-            Coupling%upd_mfi(i,k) = Coupling%upd_mfi(i,k) + ud_mf(i,k)   * frain
-            Coupling%dwn_mfi(i,k) = Coupling%dwn_mfi(i,k) + dd_mf(i,k)   * frain
-            Coupling%det_mfi(i,k) = Coupling%det_mfi(i,k) + dt_mf(i,k)   * frain
-            Coupling%cnvqci (i,k) = Coupling%cnvqci (i,k) + (clw(i,k,1)+clw(i,k,2))*frain
-          enddo
-        enddo
-      endif ! if (lgocart)
+!      if (Model%lgocart) then
+!        do k=1,levs
+!          do i=1,im
+!            Coupling%dqdti  (i,k) = (Stateout%gq0(i,k,1)  - dqdt(i,k,1)) * frain
+!            Coupling%upd_mfi(i,k) = Coupling%upd_mfi(i,k) + ud_mf(i,k)   * frain
+!            Coupling%dwn_mfi(i,k) = Coupling%dwn_mfi(i,k) + dd_mf(i,k)   * frain
+!            Coupling%det_mfi(i,k) = Coupling%det_mfi(i,k) + dt_mf(i,k)   * frain
+!            Coupling%cnvqci (i,k) = Coupling%cnvqci (i,k) + (clw(i,k,1)+clw(i,k,2))*frain
+!          enddo
+!        enddo
+!      endif ! if (lgocart)
 !
 
 !     if (lprnt) write(7000,*)' bef cnvgwd gu0=',gu0(ipr,:)
@@ -2901,13 +2911,13 @@ module module_physics_driver
           enddo
         enddo
       endif
-      if (Model%ldiag3d .or. Model%lgocart) then
-        do k=1,levs
-          do i=1,im
-            dqdt(i,k,1) = Stateout%gq0(i,k,1)
-          enddo
-        enddo
-      endif
+!      if (Model%ldiag3d .or. Model%lgocart) then
+!        do k=1,levs
+!          do i=1,im
+!            dqdt(i,k,1) = Stateout%gq0(i,k,1)
+!          enddo
+!        enddo
+!      endif
 
 !     write(0,*)' before do_shoc shal clstp=',clstp,' kdt=',kdt,
 !    &         ' lat=',lat
@@ -3048,7 +3058,7 @@ module module_physics_driver
             do k=1,levs
               do i=1,im
                 Diag%dt3dt(i,k,5) = Diag%dt3dt(i,k,5) + (Stateout%gt0(i,k)  -dtdt(i,k))   * frain
-                Diag%dq3dt(i,k,3) = Diag%dq3dt(i,k,3) + (Stateout%gq0(i,k,1)-dqdt(i,k,1)) * frain
+!                Diag%dq3dt(i,k,3) = Diag%dq3dt(i,k,3) + (Stateout%gq0(i,k,1)-dqdt(i,k,1)) * frain
               enddo
             enddo
           endif
@@ -3283,8 +3293,8 @@ module module_physics_driver
           if (Model%ldiag3d) then
             do k=1,levs
               do i=1,im
-                Diag%dt3dt(i,k,4) = Diag%dt3dt(i,k,4) + (Stateout%gt0(i,k)  -dtdt(i,k)  ) * frain
-                Diag%dq3dt(i,k,2) = Diag%dq3dt(i,k,2) + (Stateout%gq0(i,k,1)-dqdt(i,k,1)) * frain
+                Diag%dt3dt(i,k,8) = Diag%dt3dt(i,k,8) + (Stateout%gt0(i,k)  -dtdt(i,k)  ) * frain
+!                Diag%dq3dt(i,k,2) = Diag%dq3dt(i,k,2) + (Stateout%gq0(i,k,1)-dqdt(i,k,1)) * frain
               enddo
             enddo
           endif
@@ -3894,7 +3904,7 @@ module module_physics_driver
           do k=1,levs
             do i=1,im
               Diag%dt3dt(i,k,6) = Diag%dt3dt(i,k,6) + (Stateout%gt0(i,k)-dtdt(i,k)) * frain
-              Diag%dq3dt(i,k,4) = Diag%dq3dt(i,k,4) + (Stateout%gq0(i,k,1)-dqdt(i,k,1)) * frain
+!              Diag%dq3dt(i,k,4) = Diag%dq3dt(i,k,4) + (Stateout%gq0(i,k,1)-dqdt(i,k,1)) * frain
             enddo
           enddo
         endif
