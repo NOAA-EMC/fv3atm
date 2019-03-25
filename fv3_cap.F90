@@ -30,7 +30,9 @@ module fv3gfs_cap_mod
                                     alarm_output_hf, alarm_output,           &
                                     calendar, calendar_type, cpl,            &
                                     force_date_from_configure,               &
-                                    cplprint_flag
+                                    cplprint_flag,output_1st_tstep_rst,      &
+                                    first_kdt                            
+
   use module_fv3_io_def,      only: num_pes_fcst,write_groups,               &
                                     num_files, filename_base,                &
                                     wrttasks_per_group, n_group,             &
@@ -231,10 +233,11 @@ module fv3gfs_cap_mod
     type(ESMF_Time)                        :: CurrTime, starttime, StopTime
     type(ESMF_Time)                        :: alarm_output_hf_ring, alarm_output_ring
     type(ESMF_Time)                        :: alarm_output_hf_stop, alarm_output_stop
-    type(ESMF_TimeInterval)                :: RunDuration, timeStep
+    type(ESMF_TimeInterval)                :: RunDuration, timeStep, rsthour
     type(ESMF_Config)                      :: cf
     type(ESMF_RegridMethod_Flag)           :: regridmethod
     type(ESMF_TimeInterval)                :: earthStep
+    integer(ESMF_KIND_I4)                  :: nhf, nrg
 
     integer,dimension(6)                   :: date, date_init
     integer                                :: mpi_comm_atm
@@ -301,6 +304,12 @@ module fv3gfs_cap_mod
 !
     CALL ESMF_ConfigGetAttribute(config=CF,value=quilting, &
                                  label ='quilting:',rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, file=__FILE__)) return  ! bail out
+
+    output_1st_tstep_rst = .false.
+    CALL ESMF_ConfigGetAttribute(config=CF,value=output_1st_tstep_rst, &
+                                 label ='output_1st_tstep_rst:',rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, file=__FILE__)) return  ! bail out
 
@@ -470,7 +479,6 @@ module fv3gfs_cap_mod
                        stopTime=stopTime, timeStep=timeStep, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, file=__FILE__)) return  ! bail out
-!
     !
     !Under NUOPC, the EARTH driver clock is a separate instance from the
     ! - fv3 clock. However, the fv3 clock may have been reset from restart
@@ -478,47 +486,28 @@ module fv3gfs_cap_mod
     ! - Affected: currTime, timeStep
     call ESMF_ClockGet(clock, timeStep=earthStep, rc=RC)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, file=__FILE__)) return  ! bail out
+      line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
     if (earthStep>(stopTime-currTime)) earthStep=stopTime-currTime
     call ESMF_ClockSet(clock, currTime=currTime, &
       timeStep=earthStep, rc=RC)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, file=__FILE__)) return  ! bail out
+      line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
     ! Set fv3 component clock as copy of EARTH clock.
     call NUOPC_CompSetClock(gcomp, clock, rc=RC)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, file=__FILE__)) return  ! bail out
+      line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
     ! Read in the FV3 coupling interval
     if ( cpl ) then
       call clock_cplIntval(gcomp, CF)
     endif
 !
-    !
-    !Under NUOPC, the EARTH driver clock is a separate instance from the
-    ! - fv3 clock. However, the fv3 clock may have been reset from restart
-    ! - therefore the EARTH driver clock must also be adjusted.
-    ! - Affected: currTime, timeStep
-    call ESMF_ClockGet(clock, timeStep=earthStep, rc=RC)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
-
-    if (earthStep>(stopTime-currTime)) earthStep=stopTime-currTime
-    call ESMF_ClockSet(clock, currTime=currTime, &
-      timeStep=earthStep, rc=RC)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
-
-    ! Set fv3 component clock as copy of EARTH clock.
-    call NUOPC_CompSetClock(gcomp, clock, rc=RC)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
-
-    ! Read in the FV3 coupling interval
-    if ( cpl ) then
-      call clock_cplIntval(gcomp, CF)
+    first_kdt = 1
+    if( output_1st_tstep_rst) then
+      rsthour = CurrTime - StartTime
+      first_kdt = nint(rsthour/timeStep) + 1
     endif
 !
 !#######################################################################
@@ -791,7 +780,8 @@ module fv3gfs_cap_mod
         call ESMF_TimeIntervalSet(output_hfmax, h=nfhmax_hf, m=0, s=0, rc=rc)
         alarm_output_hf_stop = starttime + output_hfmax + output_interval_hf 
         if (currtime <= starttime+output_hfmax) then
-          alarm_output_hf_ring = currtime  + output_interval_hf
+          nhf = (currtime-starttime)/output_interval_hf
+          alarm_output_hf_ring = startTime + (nhf+1_ESMF_KIND_I4)*output_interval_hf
           alarm_output_hf = ESMF_AlarmCreate(clock_fv3,name='ALARM_OUTPUT_HF',  &
                                                ringTime =alarm_output_hf_ring,&
                                                ringInterval =output_interval_hf,  &  !<-- Time interval between
@@ -802,12 +792,14 @@ module fv3gfs_cap_mod
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
             line=__LINE__, file=__FILE__)) return  ! bail out
 
-          alarm_output_ring = currtime + output_hfmax + output_interval
+          alarm_output_ring = starttime + output_hfmax + output_interval
         else
-          alarm_output_ring = currtime + output_interval
+          nrg = (currtime-starttime-output_hfmax)/output_interval
+          alarm_output_ring = startTime + output_hfmax + (nrg+1_ESMF_KIND_I4) * output_interval
         endif
       else
-         alarm_output_ring = currtime + output_interval
+          nrg = (currtime-starttime)/output_interval
+          alarm_output_ring = startTime + (nrg+1_ESMF_KIND_I4) * output_interval
       endif
 
       call ESMF_TimeIntervalSet(output_interval, h=nfhout, m=nfmout, &
@@ -1078,7 +1070,6 @@ module fv3gfs_cap_mod
              if(ESMF_AlarmIsRinging(alarm = ALARM_OUTPUT,rc = Rc)) LALARM = .true.
            endif
          endif
-
        endif
 !
        if(ESMF_AlarmIsEnabled(alarm = ALARM_OUTPUT, rc = RC)) then
@@ -1087,7 +1078,7 @@ module fv3gfs_cap_mod
 !      if (mype == 0 .or. mype == lead_wrttask(1)) print *,' aft fcst run lalarm=',lalarm, &
 !      'FBcount=',FBcount,'na=',na
 
-       output: IF(lalarm .or. na==1 ) then
+       output: IF(lalarm .or. na==first_kdt ) then
 
          timerhi = mpi_wtime()
          do i=1, FBCount
@@ -1390,7 +1381,7 @@ module fv3gfs_cap_mod
        if (mype == 0 .or. mype == lead_wrttask(1)) print *,' aft fcst run lalarm=',lalarm, &
        'FBcount=',FBcount,'na=',na
 
-       output: IF(lalarm .or. na==1 ) then
+       output: IF(lalarm .or. na==first_kdt ) then
 
          timerhi = mpi_wtime()
          do i=1, FBCount

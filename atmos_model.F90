@@ -58,7 +58,7 @@ use fms_mod,            only: clock_flag_default
 use fms_mod,            only: check_nml_error
 use diag_manager_mod,   only: diag_send_complete_instant
 use time_manager_mod,   only: time_type, get_time, get_date, &
-                              operator(+), operator(-)
+                              operator(+), operator(-),real_to_time_type
 use field_manager_mod,  only: MODEL_ATMOS
 use tracer_manager_mod, only: get_number_tracers, get_tracer_names, &
                               get_tracer_index
@@ -100,6 +100,7 @@ use FV3GFS_io_mod,      only: FV3GFS_restart_read, FV3GFS_restart_write, &
                               FV3GFS_diag_register, FV3GFS_diag_output,  &
                               DIAG_SIZE
 use fv_iau_mod, only: iau_external_data_type,getiauforcing,iau_initialize
+use module_fv3_config, only:  output_1st_tstep_rst, first_kdt
 
 !-----------------------------------------------------------------------
 
@@ -516,7 +517,10 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    call FV3GFS_restart_read (IPD_Data, IPD_Restart, Atm_block, IPD_Control, Atmos%domain)
 
    !--- set the initial diagnostic timestamp
-   diag_time = Time
+   diag_time = Time 
+   if (output_1st_tstep_rst) then
+     diag_time = Time - real_to_time_type(mod(int((first_kdt - 1)*dt_phys/3600.),6)*3600.0)
+   endif
 
    !---- print version number to logfile ----
 
@@ -690,7 +694,7 @@ subroutine update_atmos_model_state (Atmos)
     call get_time (Atmos%Time - diag_time, isec)
     call get_time (Atmos%Time - Atmos%Time_init, seconds)
     call atmosphere_nggps_diag(Atmos%Time,ltavg=.true.,avg_max_length=avg_max_length)
-    if (ANY(nint(fdiag(:)*3600.0) == seconds) .or. (IPD_Control%kdt == 1) ) then
+    if (ANY(nint(fdiag(:)*3600.0) == seconds) .or. (IPD_Control%kdt == first_kdt) ) then
       if (mpp_pe() == mpp_root_pe()) write(6,*) "---isec,seconds",isec,seconds
       time_int = real(isec)
       time_intfull = real(seconds)
