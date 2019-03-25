@@ -211,6 +211,7 @@ module fv3gfs_cap_mod
     type(ESMF_Config)                      :: cf
     type(ESMF_RegridMethod_Flag)           :: regridmethod
     type(ESMF_TimeInterval)                :: earthStep
+    integer(ESMF_KIND_I4)                  :: nhf, nrg
 
     integer,dimension(6)                   :: date, date_init
     integer                                :: mpi_comm_atm
@@ -757,7 +758,8 @@ module fv3gfs_cap_mod
         call ESMF_TimeIntervalSet(output_hfmax, h=nfhmax_hf, m=0, s=0, rc=rc)
         alarm_output_hf_stop = starttime + output_hfmax + output_interval_hf 
         if (currtime <= starttime+output_hfmax) then
-          alarm_output_hf_ring = currtime  + output_interval_hf
+          nhf = (currtime-starttime)/output_interval_hf
+          alarm_output_hf_ring = startTime + (nhf+1_ESMF_KIND_I4)*output_interval_hf
           alarm_output_hf = ESMF_AlarmCreate(clock_fv3,name='ALARM_OUTPUT_HF',  &
                                                ringTime =alarm_output_hf_ring,&
                                                ringInterval =output_interval_hf,  &  !<-- Time interval between
@@ -769,12 +771,14 @@ module fv3gfs_cap_mod
             line=__LINE__, &
             file=__FILE__)) &
             call ESMF_Finalize(endflag=ESMF_END_ABORT)
-          alarm_output_ring = currtime + output_hfmax + output_interval
+          alarm_output_ring = starttime + output_hfmax + output_interval
         else
-          alarm_output_ring = currtime + output_interval
+          nrg = (currtime-starttime-output_hfmax)/output_interval
+          alarm_output_ring = startTime + output_hfmax + (nrg+1_ESMF_KIND_I4) * output_interval
         endif
       else
-         alarm_output_ring = currtime + output_interval
+         nrg = (currtime-starttime)/output_interval
+         alarm_output_ring = startTime + (nrg+1_ESMF_KIND_I4) * output_interval
       endif
 
       call ESMF_TimeIntervalSet(output_interval, h=nfhout, m=nfmout, &
