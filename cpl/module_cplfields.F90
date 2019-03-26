@@ -143,7 +143,7 @@ module module_cplfields
   character(len=*), public, parameter :: importFieldsList(NimportFields) = (/ &
        "inst_tracer_mass_frac                  ", &
        "land_mask                              ", &
-       "surface_temperature                    ", &
+       "sea_ice_surface_temperature            ", &
        "sea_surface_temperature                ", &
        "ice_fraction                           ", &
 !      "inst_ice_ir_dif_albedo                 ", &

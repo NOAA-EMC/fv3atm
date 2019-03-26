@@ -1268,8 +1268,8 @@ end subroutine atmos_data_type_chksum
 !          endif
 !        endif
 
-        ! get surface temperature: update ice temperature for atm ??? can SST be applied here???
-        fldname = 'surface_temperature'
+        ! get sea ice surface temperature 
+        fldname = 'sea_ice_surface_temperature'
         findex = QueryFieldList(ImportFieldsList,fldname)
         if (importFieldsValid(findex) .and. datar8(isc,jsc) > -99999.0) then
           if (trim(impfield_name) == trim(fldname) .and. found) then

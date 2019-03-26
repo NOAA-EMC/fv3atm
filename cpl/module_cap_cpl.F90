@@ -283,7 +283,8 @@ module module_cap_cpl
 
       rc = ESMF_SUCCESS
 
-      outGrid = ESMF_GridCreate1PeriDimUfrm( maxIndex=(/180,360/), &
+      ! 1degx1deg
+      outGrid = ESMF_GridCreate1PeriDimUfrm( maxIndex=(/360,180/), &
         minCornerCoord=(/0.0_ESMF_KIND_R8,-90.0_ESMF_KIND_R8/), &
         maxCornerCoord=(/360.0_ESMF_KIND_R8,90.0_ESMF_KIND_R8/), &
         staggerLocList=(/ESMF_STAGGERLOC_CORNER, ESMF_STAGGERLOC_CENTER/), rc=rc)
