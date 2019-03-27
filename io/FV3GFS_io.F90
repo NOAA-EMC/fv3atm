@@ -990,7 +990,7 @@ module FV3GFS_io_mod
     integer :: i, j, k, nb, ix, num
     integer :: isc, iec, jsc, jec, npz, nx, ny
     integer :: id_restart
-    integer :: nvar2d, nvar3d
+    integer :: nvar2d, nvar3d, ndiag
     character(len=64) :: fname
     real(kind=kind_phys), pointer, dimension(:,:)   :: var2_p => NULL()
     real(kind=kind_phys), pointer, dimension(:,:,:) :: var3_p => NULL()
@@ -1005,6 +1005,7 @@ module FV3GFS_io_mod
     ny = (jec - jsc + 1)
     nvar2d = IPD_Restart%num2d
     nvar3d = IPD_Restart%num3d
+    ndiag = IPD_Restart%ndiag
  
     !--- register the restart fields
     if (.not. allocated(phy_var2)) then
@@ -1048,6 +1049,19 @@ module FV3GFS_io_mod
         enddo
       enddo
     enddo
+    !-- if restart from init time, reset accumulated diag fields
+    if( Model%phour < 1.e-7) then
+      do num = nvar2d-ndiag+1,nvar2d
+        do nb = 1,Atm_block%nblks
+          do ix = 1, Atm_block%blksz(nb)
+            i = Atm_block%index(nb)%ii(ix) - isc + 1
+            j = Atm_block%index(nb)%jj(ix) - jsc + 1
+            IPD_Restart%data(nb,num)%var2p(ix) = 0.
+          enddo
+        enddo
+      enddo
+    endif
+
     do num = 1,nvar3d
       do nb = 1,Atm_block%nblks
         do k=1,npz

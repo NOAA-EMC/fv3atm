@@ -84,7 +84,7 @@ use IPD_typedefs,       only: IPD_init_type, IPD_control_type, &
                               IPD_data_type, IPD_diag_type,    &
                               IPD_restart_type, IPD_kind_phys, &
                               IPD_func0d_proc, IPD_func1d_proc
-use IPD_driver,         only: IPD_initialize, IPD_step
+use IPD_driver,         only: IPD_initialize, IPD_initialize_rst, IPD_step
 use physics_abstraction_layer, only: time_vary_step, radiation_step1, physics_step1, physics_step2
 use FV3GFS_io_mod,      only: FV3GFS_restart_read, FV3GFS_restart_write, &
                               FV3GFS_IPD_checksum,                       &
@@ -472,6 +472,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
 
    call atmosphere_nggps_diag (Time, init=.true.)
    call FV3GFS_diag_register (IPD_Diag, Time, Atm_block, IPD_Control, Atmos%lon, Atmos%lat, Atmos%axes)
+   call IPD_initialize_rst (IPD_Control, IPD_Data, IPD_Diag, IPD_Restart, Init_parm)
    call FV3GFS_restart_read (IPD_Data, IPD_Restart, Atm_block, IPD_Control, Atmos%domain)
 
    !--- set the initial diagnostic timestamp
