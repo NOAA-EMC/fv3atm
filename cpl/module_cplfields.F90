@@ -117,19 +117,19 @@ module module_cplfields
   ! Set exportFieldShare to .true. if field is provided as memory reference
   ! to coupled components
   logical, public, parameter :: exportFieldShare(NexportFields) = (/ &
-       .true., .true., .true., .true., .true.,  &
-       .true., .true., .true., .true., .true.,  &
-       .true., .true., .true., .true., .true.,  &
-       .true., .true., .true., .true., .true.,  &
-       .true., .true., .true., .true., .true.,  &
+       .true. ,.true. ,.true. ,.true. ,.true. , &
+       .true. ,.true. ,.true. ,.true. ,.true. , &
+       .true. ,.true. ,.true. ,.true. ,.true. , &
+       .true. ,.true. ,.true. ,.true. ,.true. , &
+       .true. ,.true. ,.false.,.false.,.false., &
+       .false.,.false.,.false.,.false.,.false., &
+       .false.,.false.,.false.,.false.,.true. , &
+       .false.,.false.,.false.,.false.,.true. , &
        .false.,.false.,.false.,.false.,.false., &
        .false.,.false.,.false.,.false.,.false., &
        .false.,.false.,.false.,.false.,.false., &
        .false.,.false.,.false.,.false.,.false., &
-       .false.,.false.,.false.,.false.,.false., &
-       .false.,.false.,.false.,.false.,.false., &
-       .false.,.false.,.false.,.false.,.false., &
-       .false.,.false.,.false.,.false.,.false., &
+       .false.,.false.,.true. ,.false.,.false., &
        .false.,.false.,.false.,.false.,.false.  &
 !      .false.,.false.,.false.,.false.,.false., &
 !      .false.,.false.,.false.                  &
@@ -137,11 +137,15 @@ module module_cplfields
   real(kind=8), allocatable, public :: exportData(:,:,:)
 
 ! Import Fields ----------------------------------------
-  integer, public, parameter :: NimportFields = 12
+  integer, public, parameter :: NimportFields = 16
   logical, public            :: importFieldsValid(NimportFields)
   type(ESMF_Field), target, public    :: importFields(NimportFields)
   character(len=*), public, parameter :: importFieldsList(NimportFields) = (/ &
        "inst_tracer_mass_frac                  ", &
+       "inst_tracer_up_surface_flx             ", &
+       "inst_tracer_down_surface_flx           ", &
+       "inst_tracer_clmn_mass_dens             ", &
+       "inst_tracer_anth_biom_flx              ", &
        "land_mask                              ", &
        "sea_ice_surface_temperature            ", &
        "sea_surface_temperature                ", &
@@ -160,18 +164,18 @@ module module_cplfields
        "mean_snow_volume                       "  &
   /)
   character(len=*), public, parameter :: importFieldTypes(NimportFields) = (/ &
-       "t",                                 &
-       "s","s","s","s",                     &
-       "s","s","s",                         &
-       "s","s","s","s"                      &
+       "t","u","d","c","b",                 &
+       "s","s","s","s","s",                 &
+       "s","s","s","s","s",                 &
+       "s"                                  &
   /)
   ! Set importFieldShare to .true. if field is provided as memory reference
   ! from coupled components
   logical, public, parameter :: importFieldShare(NimportFields) = (/ &
-       .true.,                          &
-       .false.,.false.,.false.,.false., &
-       .false.,.false.,.false.,         &
-       .false.,.false.,.false.,.false.  &
+       .true. ,.true. ,.true. ,.true. ,.true. , &
+       .false.,.false.,.false.,.false.,.false., &
+       .false.,.false.,.false.,.false.,.false., &
+       .false.                                  &
   /)
 
   ! Methods
@@ -190,6 +194,7 @@ module module_cplfields
 
     integer                               :: localrc
     integer                               :: n,dimCount
+    logical                               :: isCreated
     type(ESMF_TypeKind_Flag)              :: datatype
     real(kind=ESMF_KIND_R4), dimension(:,:), pointer   :: datar42d
     real(kind=ESMF_KIND_R8), dimension(:,:), pointer   :: datar82d
@@ -198,7 +203,11 @@ module module_cplfields
     if (present(rc)) rc=ESMF_SUCCESS
 
     do n=1, size(exportFields)
-      if (ESMF_FieldIsCreated(exportFields(n))) then
+      isCreated = ESMF_FieldIsCreated(exportFields(n), rc=localrc)
+      if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, file=__FILE__, &
+        rcToReturn=rc)) return
+      if (isCreated) then
 ! set data 
         call ESMF_FieldGet(exportFields(n), dimCount=dimCount, &
           typekind=datatype, rc=localrc)
@@ -312,6 +321,7 @@ module module_cplfields
     !--- local variables
     integer                    :: localrc
     integer                    :: de, item, fieldCount, rank
+    logical                    :: isCreated
     type(ESMF_Field), pointer  :: fieldList(:)
     character(len=ESMF_MAXSTR) :: fieldName
 
@@ -331,7 +341,11 @@ module module_cplfields
       rcToReturn=rc)) return
 
     do item = 1, fieldCount
-      if (NUOPC_IsConnected(fieldList(item))) then
+      isCreated = ESMF_FieldIsCreated(fieldList(item), rc=localrc)
+      if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, file=__FILE__, &
+        rcToReturn=rc)) return
+      if (isCreated) then
         call ESMF_FieldGet(fieldList(item), name=fieldName, rc=localrc)
         if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
           line=__LINE__, file=__FILE__, &

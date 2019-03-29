@@ -790,8 +790,8 @@ subroutine mpdrv (hydrostatic, uin, vin, w, delp, pt, qv, ql, qr, qi, qs, &
         if (fix_negative) &
             call neg_adj (ktop, kbot, tz, dp1, qvz, qlz, qrz, qiz, qsz, qgz)
         
-        m2_rain (:, :) = 0.
-        m2_sol (:, :) = 0.
+        m2_rain (i, :) = 0.
+        m2_sol (i, :) = 0.
         
         do n = 1, ntimes
             
@@ -873,6 +873,10 @@ subroutine mpdrv (hydrostatic, uin, vin, w, delp, pt, qv, ql, qr, qi, qs, &
             
         enddo
         
+        ! convert units from Pa*kg/kg to kg/m^2/s
+        m2_rain (i, :) = m2_rain (i, :) * rdt * rgrav
+        m2_sol (i, :) = m2_sol (i, :) * rdt * rgrav
+
         ! -----------------------------------------------------------------------
         ! momentum transportation during sedimentation
         ! note: dp1 is dry mass; dp0 is the old moist (total) mass
