@@ -3775,9 +3775,9 @@ module module_physics_driver
 !          if ((snow0(i,1)+ice0(i,1)+graupel0(i,1)+csnow) > 0.0) then
 !            Sfcprop%srflag(i) = 1.                   ! clu: set srflag to 'snow' (i.e. 1)
 !          endif
-           total_precip = snow0(i,1)+ice0(i,1)+graupel0(i,1)+rain0(i,1)+Diag%rainc(i)
-           if (total_precip*tem > rainmin) then
-             Sfcprop%srflag(i) = (snow0(i,1)+ice0(i,1)+graupel0(i,1)+csnow)/total_precip
+           total_precip = (snow0(i,1)+ice0(i,1)+graupel0(i,1)+rain0(i,1))*tem+Diag%rainc(i)
+           if (total_precip > rainmin) then
+             Sfcprop%srflag(i) = ((snow0(i,1)+ice0(i,1)+graupel0(i,1))*tem+csnow)/total_precip
            endif
         enddo
       elseif( .not. Model%cal_pre) then
