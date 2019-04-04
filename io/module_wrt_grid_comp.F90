@@ -31,7 +31,7 @@
       use esmf
       use write_internal_state
       use module_fv3_io_def,   only : num_pes_fcst,lead_wrttask, last_wrttask,  &
-                                      n_group, num_files,                       &
+                                      n_group, num_files, app_domain,           &
                                       filename_base, output_grid, output_file,  &
                                       imo, jmo, write_nemsioflip,               &
                                       nsout => nsout_io,                        &
@@ -145,9 +145,11 @@
 
       integer                                 :: ISTAT, tl, i, j, n, k,date(6)
       integer,dimension(2,6)                  :: decomptile
+      integer,dimension(2)                    :: regDecomp !define delayout for the nest grid
       integer                                 :: fieldCount
       integer                                 :: vm_mpi_comm
       character(40)                           :: fieldName, axesname,longname
+      type(ESMF_DELayout)                     :: delayout
       type(ESMF_Grid)                         :: wrtGrid, fcstGrid
       type(ESMF_Array)                        :: array_work, array
       type(ESMF_FieldBundle)                  :: fieldbdl_work
@@ -160,6 +162,7 @@
       type(ESMF_TypeKind_Flag)                :: typekind
       character(len=80),         allocatable  :: fieldnamelist(:)
       integer                                 :: fieldDimCount, gridDimCount
+      integer,                   allocatable  :: petMap(:)
       integer,                   allocatable  :: gridToFieldMap(:)
       integer,                   allocatable  :: ungriddedLBound(:)
       integer,                   allocatable  :: ungriddedUBound(:)
@@ -237,27 +240,52 @@
 !
       if ( trim(output_grid) == 'cubed_sphere_grid' ) then
 
-        mytile = mod(wrt_int_state%mype,ntasks)+1
-        do tl=1,6
-          decomptile(1,tl) = 1
-          decomptile(2,tl) = jidx
-        enddo
+        if ( trim(app_domain) == 'global' ) then
+
+          do tl=1,6
+            decomptile(1,tl) = 1
+            decomptile(2,tl) = jidx
+          enddo
         
-      call ESMF_AttributeGet(imp_state_write, convention="NetCDF", purpose="FV3", &
-        name="gridfile", value=gridfile, rc=rc)
-
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, file=__FILE__)) return  ! bail out
+          call ESMF_AttributeGet(imp_state_write, convention="NetCDF", purpose="FV3", &
+               name="gridfile", value=gridfile, rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+            line=__LINE__, file=__FILE__)) return  ! bail out
         
-      CALL ESMF_LogWrite("wrtComp: gridfile:"//trim(gridfile),ESMF_LOGMSG_INFO,rc=rc)
+          CALL ESMF_LogWrite("wrtComp: gridfile:"//trim(gridfile),ESMF_LOGMSG_INFO,rc=rc)
 
-        wrtgrid = ESMF_GridCreateMosaic(filename="INPUT/"//trim(gridfile),   &
-          regDecompPTile=decomptile,tileFilePath="INPUT/",                   &
-          staggerlocList=(/ESMF_STAGGERLOC_CENTER, ESMF_STAGGERLOC_CORNER/), &
-          name='wrt_grid', rc=rc)
+          wrtgrid = ESMF_GridCreateMosaic(filename="INPUT/"//trim(gridfile),   &
+            regDecompPTile=decomptile,tileFilePath="INPUT/",                   &
+            staggerlocList=(/ESMF_STAGGERLOC_CENTER, ESMF_STAGGERLOC_CORNER/), &
+            name='wrt_grid', rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+            line=__LINE__, file=__FILE__)) return  ! bail out
 
-        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-          line=__LINE__, file=__FILE__)) return  ! bail out
+        else
+
+          regDecomp(1) = 1
+          regDecomp(2) = ntasks
+          allocate(petMap(ntasks))
+          do i=1, ntasks
+            petMap(i) = i-1
+          enddo
+          delayout = ESMF_DELayoutCreate(petMap=petMap, rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+              line=__LINE__, file=__FILE__)) return  ! bail out
+
+          ! create the nest Grid by reading it from file but use DELayout
+          wrtGrid = ESMF_GridCreate(filename='INPUT/grid.nest02.tile7.nc', &
+            fileformat=ESMF_FILEFORMAT_GRIDSPEC, regDecomp=regDecomp, &
+            delayout=delayout, isSphere=.false., indexflag=ESMF_INDEX_DELOCAL, &
+            rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+            line=__LINE__, file=__FILE__)) return  ! bail out
+
+          print *,'in nested cubed_sphere grid, regDecomp=',regDecomp,' PetMap=',petMap(1),petMap(ntasks)
+          deallocate(petMap)
+
+        endif
+
       else if ( trim(output_grid) == 'gaussian_grid') then
         
         wrtgrid = ESMF_GridCreate1PeriDim(minIndex=(/1,1/), &
