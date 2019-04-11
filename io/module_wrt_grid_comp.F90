@@ -193,6 +193,7 @@
       logical,save                            :: first=.true.
 !test
       integer myattCount
+      real(ESMF_KIND_R8),dimension(:,:), pointer :: glatPtr, glonPtr
 !
 !----------------------------------------------------------------------- 
 !*********************************************************************** 
@@ -261,7 +262,13 @@
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
             line=__LINE__, file=__FILE__)) return  ! bail out
 
-        else
+        else 
+
+          if(trim(app_domain) == 'nested') then
+            gridfile='grid.nest02.tile7.nc'
+          else if(trim(app_domain) == 'regional') then
+            gridfile='C96_grid.tile7_wrt.nc'
+          endif
 
           regDecomp(1) = 1
           regDecomp(2) = ntasks
@@ -274,15 +281,34 @@
               line=__LINE__, file=__FILE__)) return  ! bail out
 
           ! create the nest Grid by reading it from file but use DELayout
-          wrtGrid = ESMF_GridCreate(filename='INPUT/grid.nest02.tile7.nc', &
+          wrtGrid = ESMF_GridCreate(filename="INPUT/"//trim(gridfile), &
             fileformat=ESMF_FILEFORMAT_GRIDSPEC, regDecomp=regDecomp, &
             delayout=delayout, isSphere=.false., indexflag=ESMF_INDEX_DELOCAL, &
             rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
             line=__LINE__, file=__FILE__)) return  ! bail out
 
-          print *,'in nested cubed_sphere grid, regDecomp=',regDecomp,' PetMap=',petMap(1),petMap(ntasks)
+! jwtest
+          ! check "center" coordinate values
+          !!call ESMF_GridAddCoord(wrtGrid, staggerLoc=ESMF_STAGGERLOC_CENTER, rc=rc)
+          !!if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          !!  line=__LINE__, file=__FILE__)) return  ! bail out
+          !call ESMF_GridGetCoord(wrtGrid, coordDim=1, staggerLoc=ESMF_STAGGERLOC_CENTER, &
+          !                       farrayPtr=glonPtr, rc=rc)
+          !if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          !  line=__LINE__, file=__FILE__)) return  ! bail out
+          !call ESMF_GridGetCoord(wrtGrid, coordDim=2, staggerLoc=ESMF_STAGGERLOC_CENTER, &
+          !                       farrayPtr=glatPtr, rc=rc)
+          !if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          !  line=__LINE__, file=__FILE__)) return  ! bail out
+          !if(wrt_int_state%mype == lead_write_task) print *,'in regional cubed_sphere grid, center p1 lon/lat=',glonPtr(1,1),glatPtr(1,1), &
+          !    'p2, lon/lat=',glonPtr(2,1),glatPtr(2,1), 'p3, lon/lat=',glonPtr(1,2),glatPtr(1,2), &
+          !    'p4, lon/lat=',glonPtr(2,2),glatPtr(2,2)
+
+          print *,'in nested/regional cubed_sphere grid, regDecomp=',regDecomp,' PetMap=',petMap(1),petMap(ntasks), &
+            'gridfile=',trim(gridfile)
           deallocate(petMap)
+
 
         endif
 
