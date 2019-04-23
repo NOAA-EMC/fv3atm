@@ -81,20 +81,28 @@ use atmosphere_mod,     only: set_atmosphere_pelist
 use atmosphere_mod,     only: Atm, mytile
 use block_control_mod,  only: block_control_type, define_blocks_packed
 use DYCORE_typedefs,    only: DYCORE_data_type, DYCORE_diag_type
+#ifdef CCPP
+use IPD_typedefs,       only: IPD_init_type, IPD_diag_type,    &
+                              IPD_restart_type, IPD_kind_phys, &
+                              IPD_func0d_proc, IPD_func1d_proc
+#else
 use IPD_typedefs,       only: IPD_init_type, IPD_control_type, &
                               IPD_data_type, IPD_diag_type,    &
                               IPD_restart_type, IPD_kind_phys, &
-#ifdef CCPP
-                              IPD_func0d_proc, IPD_func1d_proc,&
-                              IPD_fastphys_type
-#else
                               IPD_func0d_proc, IPD_func1d_proc
 #endif
-use IPD_driver,         only: IPD_initialize, IPD_initialize_rst, IPD_step
+
 #ifdef CCPP
-use IPD_CCPP_driver,    only: IPD_CCPP_step
-#endif
+use CCPP_data,          only: ccpp_suite,                      &
+                              IPD_control => GFS_control,      &
+                              IPD_data => GFS_data,            &
+                              IPD_interstitial => GFS_interstitial
+use IPD_driver,         only: IPD_initialize, IPD_initialize_rst
+use CCPP_driver,        only: CCPP_step, non_uniform_blocks
+#else
+use IPD_driver,         only: IPD_initialize, IPD_initialize_rst, IPD_step
 use physics_abstraction_layer, only: time_vary_step, radiation_step1, physics_step1, physics_step2
+#endif
 use FV3GFS_io_mod,      only: FV3GFS_restart_read, FV3GFS_restart_write, &
                               FV3GFS_IPD_checksum,                       &
                               FV3GFS_diag_register, FV3GFS_diag_output,  &
@@ -157,10 +165,8 @@ logical :: sync         = .false.
 integer, parameter     :: maxhr = 4096
 real, dimension(maxhr) :: fdiag = 0.
 real                   :: fhmax=384.0, fhmaxhf=120.0, fhout=3.0, fhouthf=1.0,avg_max_length=3600.
-namelist /atmos_model_nml/ blocksize, chksum_debug, dycore_only, debug, sync, fdiag, fhmax, fhmaxhf, fhout, fhouthf, avg_max_length
 #ifdef CCPP
-character(len=256)     :: ccpp_suite='undefined.xml'
-namelist /atmos_model_nml/ blocksize, chksum_debug, dycore_only, debug, sync, fdiag, fhmax, fhmaxhf, fhout, fhouthf, ccpp_suite
+namelist /atmos_model_nml/ blocksize, chksum_debug, dycore_only, debug, sync, fdiag, fhmax, fhmaxhf, fhout, fhouthf, ccpp_suite, avg_max_length
 #else
 namelist /atmos_model_nml/ blocksize, chksum_debug, dycore_only, debug, sync, fdiag, fhmax, fhmaxhf, fhout, fhouthf, avg_max_length
 #endif
@@ -177,12 +183,15 @@ type(DYCORE_diag_type)                 :: DYCORE_Diag(25)
 !----------------
 !  IPD containers
 !----------------
+#ifndef CCPP
 type(IPD_control_type)              :: IPD_Control
 type(IPD_data_type),    allocatable :: IPD_Data(:)  ! number of blocks
 type(IPD_diag_type),    target      :: IPD_Diag(DIAG_SIZE)
 type(IPD_restart_type)              :: IPD_Restart
-#ifdef CCPP
-type(IPD_fastphys_type)             :: IPD_Fastphys
+#else
+! IPD_Control and IPD_Data are coming from CCPP_data
+type(IPD_diag_type),    target      :: IPD_Diag(DIAG_SIZE)
+type(IPD_restart_type)              :: IPD_Restart
 #endif
 
 !--------------
@@ -237,6 +246,9 @@ subroutine update_atmos_radiation_physics (Atmos)
     integer :: nb, jdat(8), rc
     procedure(IPD_func0d_proc), pointer :: Func0d => NULL()
     procedure(IPD_func1d_proc), pointer :: Func1d => NULL()
+#ifdef CCPP
+    integer :: ierr
+#endif
     if (mpp_pe() == mpp_root_pe() .and. debug) write(6,*) "statein driver"
 !--- get atmospheric state from the dynamic core
     call set_atmosphere_pelist()
@@ -264,8 +276,13 @@ subroutine update_atmos_radiation_physics (Atmos)
 
 !--- execute the IPD atmospheric setup step
       call mpp_clock_begin(setupClock)
+#ifdef CCPP
+      call CCPP_step (step="time_vary", nblks=Atm_block%nblks, ierr=ierr)
+      if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP time_vary step failed')
+#else
       Func1d => time_vary_step
       call IPD_step (IPD_Control, IPD_Data(:), IPD_Diag, IPD_Restart, IPD_func1d=Func1d)
+#endif
 !--- if coupled, assign coupled fields
       if( IPD_Control%cplflx .or. IPD_Control%cplwav ) then
 !        print *,'in atmos_model,nblks=',Atm_block%nblks
@@ -283,6 +300,13 @@ subroutine update_atmos_radiation_physics (Atmos)
 !--- execute the IPD atmospheric radiation subcomponent (RRTM)
 
       call mpp_clock_begin(radClock)
+#ifdef CCPP
+      ! Performance improvement. Only enter if it is time to call the radiation physics.
+      if (IPD_Control%lsswr .or. IPD_Control%lslwr) then
+        call CCPP_step (step="radiation", nblks=Atm_block%nblks, ierr=ierr)
+        if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP radiation step failed')
+      endif
+#else
       Func0d => radiation_step1
 !$OMP parallel do default (none)       &
 !$OMP            schedule (dynamic,1), &
@@ -291,6 +315,7 @@ subroutine update_atmos_radiation_physics (Atmos)
       do nb = 1,Atm_block%nblks
         call IPD_step (IPD_Control, IPD_Data(nb:nb), IPD_Diag, IPD_Restart, IPD_func0d=Func0d)
       enddo
+#endif
       call mpp_clock_end(radClock)
 
       if (chksum_debug) then
@@ -303,6 +328,10 @@ subroutine update_atmos_radiation_physics (Atmos)
 !--- execute the IPD atmospheric physics step1 subcomponent (main physics driver)
 
       call mpp_clock_begin(physClock)
+#ifdef CCPP
+      call CCPP_step (step="physics", nblks=Atm_block%nblks, ierr=ierr)
+      if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP physics step failed')
+#else
       Func0d => physics_step1
 !$OMP parallel do default (none) &
 !$OMP            schedule (dynamic,1), &
@@ -311,6 +340,7 @@ subroutine update_atmos_radiation_physics (Atmos)
       do nb = 1,Atm_block%nblks
         call IPD_step (IPD_Control, IPD_Data(nb:nb), IPD_Diag, IPD_Restart, IPD_func0d=Func0d)
       enddo
+#endif
       call mpp_clock_end(physClock)
 
       if (chksum_debug) then
@@ -323,6 +353,10 @@ subroutine update_atmos_radiation_physics (Atmos)
 !--- execute the IPD atmospheric physics step2 subcomponent (stochastic physics driver)
 
       call mpp_clock_begin(physClock)
+#ifdef CCPP
+      call CCPP_step (step="stochastics", nblks=Atm_block%nblks, ierr=ierr)
+      if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP stochastics step failed')
+#else
       Func0d => physics_step2
 !$OMP parallel do default (none) &
 !$OMP            schedule (dynamic,1), &
@@ -331,6 +365,7 @@ subroutine update_atmos_radiation_physics (Atmos)
       do nb = 1,Atm_block%nblks
         call IPD_step (IPD_Control, IPD_Data(nb:nb), IPD_Diag, IPD_Restart, IPD_func0d=Func0d)
       enddo
+#endif
       call mpp_clock_end(physClock)
 
       if (chksum_debug) then
@@ -341,6 +376,10 @@ subroutine update_atmos_radiation_physics (Atmos)
       if (mpp_pe() == mpp_root_pe() .and. debug) write(6,*) "end of radiation and physics step"
     endif
 
+#ifdef CCPP
+    ! Update flag for first time step of time integration
+    IPD_Control%first_time_step = .false.
+#endif
 !-----------------------------------------------------------------------
  end subroutine update_atmos_radiation_physics
 ! </SUBROUTINE>
@@ -354,6 +393,14 @@ subroutine update_atmos_radiation_physics (Atmos)
 ! </OVERVIEW>
 
 subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
+
+#ifdef CCPP
+#ifdef OPENMP
+  use omp_lib
+#endif
+  use fv_mp_mod, only: commglobal
+  use mpp_mod, only: mpp_npes
+#endif
 
   type (atmos_data_type), intent(inout) :: Atmos
   type (time_type), intent(in) :: Time_init, Time, Time_step
@@ -376,6 +423,10 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
   integer              :: bdat(8), cdat(8)
   integer              :: ntracers, maxhf, maxh
   character(len=32), allocatable, target :: tracer_names(:)
+#ifdef CCPP
+  integer :: nthrds
+#endif
+
 !-----------------------------------------------------------------------
 
 !---- set the atmospheric model time ------
@@ -391,9 +442,11 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
 !-----------------------------------------------------------------------
 ! initialize atmospheric model -----
 
+#ifndef CCPP
 !---------- initialize atmospheric dynamics -------
    call atmosphere_init (Atmos%Time_init, Atmos%Time, Atmos%Time_step,&
                          Atmos%grid, Atmos%area)
+#endif
 
    IF ( file_exist('input.nml')) THEN
 #ifdef INTERNAL_FILE_NML
@@ -409,6 +462,13 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
  10     call close_file (unit)
 #endif
    endif
+
+#ifdef CCPP
+!---------- initialize atmospheric dynamics after reading the namelist -------
+!---------- (need name of CCPP suite definition file from input.nml) ---------
+   call atmosphere_init (Atmos%Time_init, Atmos%Time, Atmos%Time_step,&
+                         Atmos%grid, Atmos%area)
+#endif
 
 !-----------------------------------------------------------------------
    call atmosphere_resolution (nlon, nlat, global=.false.)
@@ -433,6 +493,34 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    
    allocate(DYCORE_Data(Atm_block%nblks))
    allocate(IPD_Data(Atm_block%nblks))
+#ifdef CCPP
+#ifdef OPENMP
+   nthrds = omp_get_max_threads()
+#else
+   nthrds = 1
+#endif
+
+   ! This logic deals with non-uniform block sizes for CCPP.
+   ! When non-uniform block sizes are used, it is required
+   ! that only the last block has a different (smaller)
+   ! size than all other blocks. This is the standard in
+   ! FV3. If this is the case, set non_uniform_blocks (a
+   ! variable imported from CCPP_driver) to .true. and
+   ! allocate nthreads+1 elements of the interstitial array.
+   ! The extra element will be used by the thread that
+   ! runs over the last, smaller block.
+   if (minval(Atm_block%blksz)==maxval(Atm_block%blksz)) then
+      non_uniform_blocks = .false.
+      allocate(IPD_Interstitial(nthrds))
+   else if (all(minloc(Atm_block%blksz)==(/size(Atm_block%blksz)/))) then
+      non_uniform_blocks = .true.
+      allocate(IPD_Interstitial(nthrds+1))
+   else
+      call mpp_error(FATAL, 'For non-uniform blocksizes, only the last element ' // &
+                            'in Atm_block%blksz can be different from the others')
+   end if
+
+#endif
 
 !--- update IPD_Control%jdat(8)
    bdat(:) = 0
@@ -472,6 +560,10 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    Init_parm%xlat            => Atmos%lat
    Init_parm%area            => Atmos%area
    Init_parm%tracer_names    => tracer_names
+#ifdef CCPP
+   Init_parm%restart         = Atm(mytile)%flagstruct%warm_start
+   Init_parm%hydrostatic     = Atm(mytile)%flagstruct%hydrostatic
+#endif
 
 #ifdef INTERNAL_FILE_NML
    Init_parm%input_nml_file  => input_nml_file
@@ -486,14 +578,23 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
 #endif
 
 #ifdef CCPP
-! DH* for testing of CCPP integration
-  ! Fast physics runs over all blocks, initialize here to avoid changing all the interfaces down to GFS_driver
-   call IPD_Fastphys%create()
-   call IPD_CCPP_step (step="init", IPD_Control=IPD_Control, IPD_Fastphys=IPD_Fastphys, ccpp_suite=trim(ccpp_suite), ierr=ierr)
-   if (ierr/=0)  call mpp_error(FATAL, 'Call to IPD-CCPP init step failed')
+   call IPD_initialize (IPD_Control, IPD_Data, IPD_Diag, IPD_Restart, &
+                        IPD_Interstitial, commglobal, mpp_npes(), Init_parm)
+#else
+   call IPD_initialize (IPD_Control, IPD_Data, IPD_Diag, IPD_Restart, Init_parm)
 #endif
 
-   call IPD_initialize (IPD_Control, IPD_Data, IPD_Diag, IPD_Restart, Init_parm)
+#ifdef CCPP
+   ! Initialize the CCPP framework
+   call CCPP_step (step="init", nblks=Atm_block%nblks, ierr=ierr)
+   if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP init step failed')
+   ! Doing the init here requires logic in thompson aerosol init if no aerosol
+   ! profiles are specified and internal profiles are calculated, because these
+   ! require temperature/geopotential etc which are not yet set. Sim. for RUC LSM.
+   call CCPP_step (step="physics_init", nblks=Atm_block%nblks, ierr=ierr)
+   if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP physics_init step failed')
+#endif
+
    Atmos%Diag => IPD_Diag
 
    Atm(mytile)%flagstruct%do_skeb = IPD_Control%do_skeb
@@ -516,7 +617,11 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    call atmosphere_nggps_diag (Time, init=.true.)
    call FV3GFS_diag_register (IPD_Diag, Time, Atm_block, IPD_Control, Atmos%lon, Atmos%lat, Atmos%axes)
    call IPD_initialize_rst (IPD_Control, IPD_Data, IPD_Diag, IPD_Restart, Init_parm)
+#ifdef CCPP
+   call FV3GFS_restart_read (IPD_Data, IPD_Restart, Atm_block, IPD_Control, Atmos%domain, Atm(mytile)%flagstruct%warm_start)
+#else
    call FV3GFS_restart_read (IPD_Data, IPD_Restart, Atm_block, IPD_Control, Atmos%domain)
+#endif
 
    !--- set the initial diagnostic timestamp
    diag_time = Time 
@@ -569,6 +674,10 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
      fv3Clock = mpp_clock_id( 'FV3 Dycore            ', flags=clock_flag_default, grain=CLOCK_COMPONENT )
    endif
 
+#ifdef CCPP
+   ! Set flag for first time step of time integration
+   IPD_Control%first_time_step = .true.
+#endif
 !-----------------------------------------------------------------------
 end subroutine atmos_model_init
 ! </SUBROUTINE>
@@ -766,8 +875,11 @@ subroutine atmos_model_end (Atmos)
                                IPD_Control, Atmos%domain)
 
 #ifdef CCPP
-   call IPD_CCPP_step (step="finalize", ierr=ierr)
-   if (ierr/=0)  call mpp_error(FATAL, 'Call to IPD-CCPP finalize step failed')
+!   Fast physics (from dynamics) are finalized in atmosphere_end above;
+!   standard/slow physics (from IPD) are finalized in CCPP_step 'finalize'.
+!   The CCPP framework for all cdata structures is finalized in CCPP_step 'finalize'.
+    call CCPP_step (step="finalize", nblks=Atm_block%nblks, ierr=ierr)
+    if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP finalize step failed')
 #endif
 
 end subroutine atmos_model_end

@@ -17,7 +17,8 @@ module GFS_restart
   type GFS_restart_type
     integer           :: num2d                    !< current number of registered 2D restart variables
     integer           :: num3d                    !< current number of registered 3D restart variables
-    integer           :: ndiag                    !< current number of diagnostic fields in restart file
+    integer           :: fdiag                    !< index of first diagnostic field in restart file
+    integer           :: ldiag                    !< index of last diagnostic field in restart file
 
     character(len=32), allocatable :: name2d(:)   !< variable name as it will appear in the restart file
     character(len=32), allocatable :: name3d(:)   !< variable name as it will appear in the restart file
@@ -91,7 +92,9 @@ module GFS_restart
       endif
     enddo
 
-    Restart%ndiag = ndiag_rst
+    ! Store first and last index of diagnostic fields:
+    Restart%fdiag = 3 + Model%ntot2d + Model%nctp + 1
+    Restart%ldiag = 3 + Model%ntot2d + Model%nctp + ndiag_rst
     Restart%num2d = 3 + Model%ntot2d + Model%nctp + ndiag_rst
     Restart%num3d = Model%ntot3d
 

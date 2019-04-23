@@ -11,11 +11,10 @@ module physics_abstraction_layer
                              tbd_type         =>  GFS_tbd_type,      &
                              cldprop_type     =>  GFS_cldprop_type,  &
                              radtend_type     =>  GFS_radtend_type,  &
-#ifdef CCPP
-                             intdiag_type     =>  GFS_diag_type,     &
-                             fastphys_type    =>  GFS_fastphys_type
-#else
                              intdiag_type     =>  GFS_diag_type
+#ifdef CCPP
+  use GFS_typedefs,    only: interstitial_type =>  GFS_interstitial_type, &
+                             data_type         =>  GFS_data_type
 #endif
 
 
@@ -25,15 +24,23 @@ module physics_abstraction_layer
   use GFS_diagnostics, only: diagnostic_type      =>  GFS_externaldiag_type,    &
                              diagnostic_populate  =>  GFS_externaldiag_populate
 
+#ifdef CCPP
+  use GFS_driver,      only: initialize       =>  GFS_initialize
+#else
   use GFS_driver,      only: initialize       =>  GFS_initialize,       &
                              time_vary_step   =>  GFS_time_vary_step,   &
                              radiation_step1  =>  GFS_radiation_driver, &
                              physics_step1    =>  GFS_physics_driver,   &
                              physics_step2    =>  GFS_stochastic_driver
+#endif
 
+#ifndef CCPP
+  ! DH* even in the non-CCPP build, these don't get used (same for NAM physics)
   integer :: num_time_vary_steps  = 1
   integer :: num_rad_steps  = 1
   integer :: num_phys_steps = 2
+  ! *DH
+#endif
 
 !-------------------------
 !  public physics dataspec
@@ -57,24 +64,30 @@ module physics_abstraction_layer
   public  restart_type
   public  diagnostic_type
 #ifdef CCPP
-  public  fastphys_type
+  public  interstitial_type
 #endif
 
 !------------------
 !  public variables 
 !------------------
+#ifndef CCPP
+  ! DH* even in the non-CCPP build, these don't get used (same for NAM physics)
   public  num_time_vary_steps
   public  num_rad_steps
   public  num_phys_steps
+  ! *DH
+#endif
 
 !--------------------------
 !  public physics functions
 !--------------------------
   public  initialize
+#ifndef CCPP
   public  time_vary_step
   public  radiation_step1
   public  physics_step1
   public  physics_step2
+#endif
 
 CONTAINS
 

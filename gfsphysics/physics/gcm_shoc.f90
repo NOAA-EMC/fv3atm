@@ -1567,7 +1567,7 @@ contains
         cld_sgs(i,k) = diag_frac
 
 ! Update ncpl and ncpi Moorthi  12/12/2018
-        if (imp_phys) then
+        if (imp_phys>0) then
           if (ncpl(i,k) > nmin) then
             ncpl(i,k) = diag_ql/max(qc(i,k),1.e-10)*ncpl(i,k)
           else

@@ -622,7 +622,7 @@
         if ( .not. (trim(output_grid) == 'cubed_sphere_grid' .or. trim(output_grid) == 'gaussian_grid') ) then
 !!!!!!!
         call ESMF_AttributeAdd(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                               attrList=(/"source","grid"/), rc=rc)
+                               attrList=(/"source","grid  "/), rc=rc)
         call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
                                name="source", value="FV3GFS", rc=rc)
 
@@ -666,7 +666,14 @@
           call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
                                  name="grid", value="rotated_latlon", rc=rc)
           call ESMF_AttributeAdd(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                                 attrList=(/"cen_lon","cen_lat","lon1","lat1","lon2","lat2","dlon","dlat"/), rc=rc)
+               attrList=(/"cen_lon",&
+                          "cen_lat",&
+                          "lon1   ",&
+                          "lat1   ",&
+                          "lon2   ",&
+                          "lat2   ",&
+                          "dlon   ",&
+                          "dlat   "/), rc=rc)
           call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
                                  name="cen_lon", value=cen_lon, rc=rc)
           call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
@@ -689,7 +696,16 @@
           call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
                                  name="grid", value="lambert_conformal", rc=rc)
           call ESMF_AttributeAdd(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                                 attrList=(/"cen_lon","cen_lat","stdlat1","stdlat2","nx","ny","lon1","lat1","dx","dy"/), rc=rc)
+               attrList=(/"cen_lon",&
+                          "cen_lat",&
+                          "stdlat1",&
+                          "stdlat2",&
+                          "nx     ",&
+                          "ny     ",&
+                          "lon1   ",&
+                          "lat1   ",&
+                          "dx     ",&
+                          "dy     "/), rc=rc)
           call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
                                  name="cen_lon", value=cen_lon, rc=rc)
           call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &

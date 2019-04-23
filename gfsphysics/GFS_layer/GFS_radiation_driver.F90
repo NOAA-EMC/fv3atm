@@ -354,7 +354,7 @@
                                            GFS_radtend_type,             &
                                            GFS_diag_type
 
-      use module_physics_driver,     only: dgamln, cdfgam, cdfnor
+      use surface_perturbation,      only: cdfnor
 !
       implicit   none
 !
@@ -1577,7 +1577,7 @@
 !  --- ...  obtain cloud information for radiation calculations
 
 !     if (ntcw > 0) then                                          ! prognostic cloud schemes
-
+        ccnd = 0.0_kind_phys
         if (Model%ncnd == 1) then                                 ! Zhao_Carr_Sundqvist
           do k=1,LMK
             do i=1,IM

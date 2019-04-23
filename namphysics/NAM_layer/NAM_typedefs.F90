@@ -544,6 +544,8 @@ module GFS_typedefs
 
     !--- land/surface model parameters
     integer              :: lsm             !< flag for land surface model lsm=1 for noah lsm
+    integer              :: lsm_noah=1      !< flag for NOAH land surface model
+    integer              :: lsm_noahmp=2    !< flag for NOAH land surface model
     integer              :: lsoil           !< number of soil layers
     integer              :: ivegsrc         !< ivegsrc = 0   => USGS, 
                                             !< ivegsrc = 1   => IGBP (20 category)
@@ -1526,7 +1528,7 @@ module GFS_typedefs
 
 ! Noah MP allocate and init when used
 !
-    if (Model%lsm > 1 ) then
+    if (Model%lsm == Model%lsm_noahmp ) then
 
     allocate (Sfcprop%snowxy   (IM))
     allocate (Sfcprop%tvxy     (IM))
@@ -2953,7 +2955,7 @@ module GFS_typedefs
 
 !--- output information about the run
     if (Model%me == Model%master) then
-      if (Model%lsm == 1) then
+      if (Model%lsm == Model%lsm_noah) then
         print *,' NOAH Land Surface Model used'
       elseif (Model%lsm == 0) then
         print *,' OSU no longer supported - job aborted'

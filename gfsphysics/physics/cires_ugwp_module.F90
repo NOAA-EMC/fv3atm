@@ -149,7 +149,7 @@ module  cires_ugwp_module
        if (me == master) &
         write (6, *) 'separate ugwp :: namelist file: ', trim (fn_nml), ' does not exist'
     else
-        open (unit = nlunit, file = trim(fn_nml), readonly, status = 'old', iostat = ios)
+        open (unit = nlunit, file = trim(fn_nml), action = 'read', status = 'old', iostat = ios)
     endif
     rewind (nlunit)
     read   (nlunit, nml = cires_ugwp_nml)

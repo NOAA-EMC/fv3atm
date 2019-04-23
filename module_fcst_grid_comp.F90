@@ -1,5 +1,11 @@
+#ifdef __PGI
+#define ESMF_ERR_ABORT(rc) \
+if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; call ESMF_Finalize(endflag=ESMF_END_ABORT)
+#else
 #define ESMF_ERR_ABORT(rc) \
 if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundError(rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
+#endif
+
 !-----------------------------------------------------------------------
 !
   module module_fcst_grid_comp

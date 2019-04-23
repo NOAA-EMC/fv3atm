@@ -966,6 +966,10 @@ module cs_conv
 
 !! CUMUP computes In-cloud Properties
 
+! DH* GNU crashes - check all arguments to CUMUP for their dimensions
+! before and after CUMUP (i.e. here), and inside the routine, in
+! particular: gctm, gcqm, gcwm, gchm, gcwt, gclm, gcim,gctrm
+! also, inside, check that no reads/writes out of bounds occur *DH
      CALL CUMUP(IJSDIM, KMAX, NTR,   ntrq,                          & !DD dimensions
                 ACWF        ,                                       & ! output
                 GCLZ        , GCIZ        , GPRCIZ      , GSNWIZ,   & ! output
@@ -1980,15 +1984,10 @@ module cs_conv
       REAL(r8) ::  esat, tem
 !     REAL(r8) ::  esat, tem, rhs_h, rhs_q
 !
-!   [INTERNAL FUNC]
-      REAL(r8)     FPREC   ! precipitation ratio in condensate
-      REAL(r8)     FRICE   ! ice ratio in cloud water
       REAL(r8)     Z       ! altitude
       REAL(r8)     ZH      ! scale height
       REAL(r8)     T       ! temperature
 !
-      FPREC(Z,ZH) = MIN(MAX(one-EXP(-(Z-PRECZ0)/ZH), zero), one)
-      FRICE(T)    = MIN(MAX((TSICE-T)/(TSICE-TWICE), zero), one)
 !
 ! Note: iteration is not made to diagnose cloud ice for simplicity
 !
@@ -2455,6 +2454,24 @@ module cs_conv
 !
 !      WRITE( CTNUM, '(I2.2)' ) CTP
 !
+
+contains
+
+    pure function FPREC(Z,ZH)
+        implicit none
+        real(r8), intent(in) :: Z
+        real(r8), intent(in) :: ZH
+        real(r8) :: FPREC
+        FPREC = MIN(MAX(one-EXP(-(Z-PRECZ0)/ZH), zero), one)
+    end function FPREC
+
+    pure function FRICE(T)
+        implicit none
+        real(r8), intent(in) :: T
+        real(r8) :: FRICE
+        FRICE = MIN(MAX((TSICE-T)/(TSICE-TWICE), zero), one)
+    end function FRICE
+
       END SUBROUTINE CUMUP
 !***********************************************************************
       SUBROUTINE CUMBMX                    & !! cloud base mass flux
@@ -3853,8 +3870,8 @@ module cs_conv
       REAL(r8) :: CLWMAX  = 1.e-3_r8
       REAL(r8) :: TPRPMAX = 1.e-2_r8
       REAL(r8) :: GTQIMAX = 1.e-5_r8
-      REAL(r8) :: GTM2MAX = 1._r8
-      REAL(r8) :: GTM3MAX = 1._r8
+      !REAL(r8) :: GTM2MAX = 1._r8
+      !REAL(r8) :: GTM3MAX = 1._r8
 !
       DO K=1,KMAX
         DO I=ISTS, IENS

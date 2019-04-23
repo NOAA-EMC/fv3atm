@@ -93,7 +93,7 @@
       use physcons, grav => con_g,  cp    => con_cp,    hvap => con_hvap
      &,             rv   => con_rv, fv    => con_fvirt, t0c  => con_t0c
      &,             rd   => con_rd, cvap  => con_cvap,  cliq => con_cliq
-     &,             eps  => con_eps,epsm1 => con_epsm1, rgas => con_rd
+     &,             eps  => con_eps,epsm1 => con_epsm1
       implicit none
 !
       integer, intent(in)  :: im, ix,  km, ntk, ntr, ncloud
@@ -2391,7 +2391,7 @@ c
 
 !If stochastic physics using cellular automata is .true. then perturb the mass-flux here:
 
-      if(do_ca == .true.)then
+      if(do_ca)then
         do i=1,im
          xmb(i) = xmb(i)*(1.0 + ca_deep(i)*5.)
         enddo
@@ -2752,7 +2752,7 @@ c
             QLCN(i,k)     = qtr(i,k,2) - qlcn(i,k)
             QICN(i,k)     = qtr(i,k,1) - qicn(i,k)
             cf_upi(i,k)   = cnvc(i,k)
-            w_upi(i,k)    = ud_mf(i,k)*t1(i,k)*rgas /
+            w_upi(i,k)    = ud_mf(i,k)*t1(i,k)*rd /
      &                     (dt2*max(sigmagfm(i),1.e-12)*prslp(i,k))
             CNV_MFD(i,k)  = ud_mf(i,k)/dt2
             CLCN(i,k)     = cnvc(i,k)

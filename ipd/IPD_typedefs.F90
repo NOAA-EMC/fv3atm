@@ -8,6 +8,9 @@ module IPD_typedefs
                                        IPD_restart_type => restart_type,     &
                                        IPD_diag_type    => diagnostic_type,  &
                                        IPD_kind_phys    => kind_phys
+#ifdef CCPP
+  use physics_abstraction_layer, only: IPD_interstitial_type => interstitial_type
+#endif
 
 !---------------------------------------------------------
 ! Physics/Radiation types used to create the IPD_data_type
@@ -16,11 +19,9 @@ module IPD_typedefs
                                        sfcprop_type,  coupling_type,         &
                                        grid_type,     tbd_type,              &
                                        cldprop_type,  radtend_type,          &
-#ifdef CCPP
-                                       intdiag_type,                         &
-                                       IPD_fastphys_type => fastphys_type
-#else
                                        intdiag_type
+#ifdef CCPP
+  use physics_abstraction_layer, only: IPD_data_type    => data_type
 #endif
 
 !-------------------------------------------------
@@ -30,7 +31,7 @@ module IPD_typedefs
                                         diagnostic_populate, &
                                         restart_populate
 
-
+#ifndef CCPP
 !-------------------------------------------------------
 !  IPD_data_type 
 !    container of physics data types that can be blocked
@@ -46,6 +47,7 @@ module IPD_typedefs
     type(radtend_type)  :: Radtend
     type(intdiag_type)  :: Intdiag
   end type IPD_data_type
+#endif
 
 
 !------------------------------------------------------
@@ -146,7 +148,7 @@ module IPD_typedefs
   public IPD_diag_type
   public IPD_init_type
 #ifdef CCPP
-  public IPD_fastphys_type
+  public IPD_interstitial_type
 #endif
 
 
@@ -156,7 +158,6 @@ module IPD_typedefs
   public initialize
   public diagnostic_populate
   public restart_populate
-
 
   CONTAINS
 !*******************************************************************************************
