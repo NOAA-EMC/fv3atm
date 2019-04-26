@@ -142,10 +142,8 @@ module fv3gfs_cap_mod
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, file=__FILE__)) return  ! bail out
 
-    ! temporarily disable timestamp check for import fields as chemistry fields
-    ! require to be handled differently due to the coupling run sequence
     call NUOPC_CompSpecialize(gcomp, specLabel=model_label_CheckImport, &
-      specRoutine=NUOPC_NoOp, rc=rc)
+      specRoutine=fv3_checkimport, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, file=__FILE__)) return  ! bail out
 
@@ -304,8 +302,7 @@ module fv3gfs_cap_mod
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, file=__FILE__)) return  ! bail out
 !
-    cpl = .false.
-    CALL ESMF_ConfigGetAttribute(config=CF,value=cpl, label ='cpl:',rc=rc)
+    CALL ESMF_ConfigGetAttribute(config=CF,value=cpl,default=.false.,label ='cpl:',rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, file=__FILE__)) return  ! bail out
 !
@@ -314,9 +311,8 @@ module fv3gfs_cap_mod
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, file=__FILE__)) return  ! bail out
 
-    output_1st_tstep_rst = .false.
     CALL ESMF_ConfigGetAttribute(config=CF,value=output_1st_tstep_rst, &
-                                 label ='output_1st_tstep_rst:',rc=rc)
+                                 default=.false., label ='output_1st_tstep_rst:',rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, file=__FILE__)) return  ! bail out
 

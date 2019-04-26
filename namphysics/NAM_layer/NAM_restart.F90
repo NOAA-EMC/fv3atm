@@ -6,7 +6,8 @@ module GFS_restart
                               GFS_coupling_type, GFS_grid_type,     &
                               GFS_tbd_type,      GFS_cldprop_type,  &
                               GFS_radtend_type,  GFS_diag_type,     &
-                              GFS_init_type   
+                              GFS_init_type
+  use GFS_diagnostics,  only: GFS_externaldiag_type
 
   type var_subtype
     real(kind=kind_phys), pointer :: var2p(:)   => null()  !< 2D data saved in packed format [dim(ix)]
@@ -16,6 +17,8 @@ module GFS_restart
   type GFS_restart_type
     integer           :: num2d                    !< current number of registered 2D restart variables
     integer           :: num3d                    !< current number of registered 3D restart variables
+    integer           :: ndiag                    !< current number of diagnostic fields in restart file
+
     character(len=32), allocatable :: name2d(:)   !< variable name as it will appear in the restart file
     character(len=32), allocatable :: name3d(:)   !< variable name as it will appear in the restart file
     type(var_subtype), allocatable :: data(:,:)   !< holds pointers to data in packed format (allocated to (nblks,max(2d/3dfields))
@@ -30,7 +33,7 @@ module GFS_restart
 ! GFS_restart_populate
 !---------------------
   subroutine GFS_restart_populate (Restart, Model, Statein, Stateout, Sfcprop, &
-                                   Coupling, Grid, Tbd, Cldprop, Radtend, IntDiag, Init_parm)
+                                   Coupling, Grid, Tbd, Cldprop, Radtend, IntDiag, Init_parm, ExtDiag)
 !----------------------------------------------------------------------------------------!
 !   RESTART_METADATA                                                                         !
 !     Restart%num2d          [int*4  ]  number of 2D variables to output             !
@@ -52,15 +55,44 @@ module GFS_restart
     type(GFS_radtend_type),     intent(in)    :: Radtend(:)
     type(GFS_diag_type),        intent(in)    :: IntDiag(:)
     type(GFS_init_type),        intent(in)    :: Init_parm
+    type(GFS_externaldiag_type),intent(in)    :: ExtDiag(:)
 
     !--- local variables
+    integer :: idx, ndiag_rst
+    integer :: ndiag_idx(20)
     integer :: nblks, num, nb, max_rstrt, offset
     character(len=2) :: c2 = ''
     
     nblks = size(Init_parm%blksz)
     max_rstrt = size(Restart%name2d)
 
-    Restart%num2d = 3 + Model%ntot2d + Model%nctp
+    !--- check if continuous accumulated total precip and total cnvc precip are
+    !requested in output
+    ndiag_rst = 0
+    ndiag_idx(1:20) = 0
+    do idx=1, size(ExtDiag)
+      if( ExtDiag(idx)%id > 0) then
+        if( trim(ExtDiag(idx)%name) == 'totprcp_ave') then
+          ndiag_rst = ndiag_rst +1
+          ndiag_idx(ndiag_rst) = idx
+        else if( trim(ExtDiag(idx)%name) == 'cnvprcp_ave') then
+          ndiag_rst = ndiag_rst +1
+          ndiag_idx(ndiag_rst) = idx
+        else if( trim(ExtDiag(idx)%name) == 'totice_ave') then
+          ndiag_rst = ndiag_rst +1
+          ndiag_idx(ndiag_rst) = idx
+        else if( trim(ExtDiag(idx)%name) == 'totsnw_ave') then
+          ndiag_rst = ndiag_rst +1
+          ndiag_idx(ndiag_rst) = idx
+        else if( trim(ExtDiag(idx)%name) == 'totgrp_ave') then
+          ndiag_rst = ndiag_rst +1
+          ndiag_idx(ndiag_rst) = idx
+        endif
+      endif
+    enddo
+
+    Restart%ndiag = ndiag_rst
+    Restart%num2d = 3 + Model%ntot2d + Model%nctp + ndiag_rst
     Restart%num3d = Model%ntot3d
 
     allocate (Restart%name2d(Restart%num2d))
@@ -100,6 +132,18 @@ module GFS_restart
       do nb = 1,nblks
         Restart%data(nb,num+offset)%var2p => Tbd(nb)%phy_fctd(:,num)
       enddo
+    enddo
+
+    !--- Diagnostic variables
+    offset = offset + Model%nctp
+    do idx = 1,ndiag_rst
+      if( ndiag_idx(idx) > 0 ) then
+        Restart%name2d(offset+idx) = trim(ExtDiag(ndiag_idx(idx))%name)
+        do nb = 1,nblks
+          Restart%data(nb,offset+idx)%var2p => ExtDiag(ndiag_idx(idx))%data(nb)%var2
+        enddo
+      endif
+!      print *,'in restart 2d field, Restart%name2d(',offset+idx,')=',trim(Restart%name2d(offset+idx))
     enddo
 
     !--- phy_f3d variables
