@@ -17,6 +17,17 @@
 !!  \section general General Algorithm
 !!  \section detailed Detailed Algorithm
 !!  @{
+      module module_sfc_sice
+      use machine , only : kind_phys
+      use funcphys, only : fpvs
+      use physcons, only :    sbc => con_sbc,  hvap => con_hvap,        &
+     &                      tgice => con_tice,   cp => con_cp,          &
+     &                        eps => con_eps, epsm1 => con_epsm1,       &
+     &                     rvrdm1 => con_fvirt, t0c => con_t0c,         &
+     &                         rd => con_rd
+      implicit none
+      real (kind=kind_phys), parameter :: cimin=0.15 !  --- minimum ice concentration
+      contains
 !-----------------------------------
       subroutine sfc_sice                                               &
 !...................................
@@ -113,15 +124,7 @@
 !                                                                       !
 ! ===================================================================== !
 !
-      use machine , only : kind_phys
-      use funcphys, only : fpvs
-      use physcons, only : sbc => con_sbc, hvap => con_hvap,            &
-     &                     tgice => con_tice, cp => con_cp,             &
-     &                     eps => con_eps, epsm1 => con_epsm1,          &
-     &                     grav => con_g, rvrdm1 => con_fvirt,          &
-     &                     t0c => con_t0c, rd => con_rd
 !
-      implicit none
 !
 !  ---  constant parameters:
       integer,              parameter :: kmi   = 2        ! 2-layer of ice
@@ -167,7 +170,7 @@
 
       real (kind=kind_phys) :: t12, t14, tem, stsice(im,kmi)
      &,                        hflxi, hflxw, q0, qs1, wind, qssi, qssw
-      real (kind=kind_phys), parameter :: cimin=0.15 !  --- minimum ice concentration
+
 
       integer :: i, k
  
@@ -321,9 +324,9 @@
 !     if (lprnt) write(0,*)' tice2=',tice(ipr)
       call ice3lay
 !  ---  inputs:                                                         !
-!    &     ( im, kmi, fice, flag, hfi, hfd, sneti, focn, delt,          !
+     &     ( im, kmi, fice, flag, hfi, hfd, sneti, focn, delt,          !
 !  ---  outputs:                                                        !
-!    &       snowd, hice, stsice, tice, snof, snowmt, gflux )           !
+     &       snowd, hice, stsice, tice, snof, snowmt, gflux )           !
 
 !     if (lprnt) write(0,*)' tice3=',tice(ipr)
       if (mom4ice) then
@@ -394,12 +397,8 @@
       enddo
 !
       return
+      end subroutine sfc_sice
 
-! =================
-      contains
-! =================
-
-!> @}
 
 !-----------------------------------
 !> \brief Brief description of the subroutine
@@ -408,12 +407,12 @@
       subroutine ice3lay
 !...................................
 !  ---  inputs:
-!    &     ( im, kmi, fice, flag, hfi, hfd, sneti, focn, delt,          &
+     &     ( im, kmi, fice, flag, hfi, hfd, sneti, focn, delt,          &
 !  ---  input/outputs:
-!    &       snowd, hice, stsice, tice, snof,                           &
+     &       snowd, hice, stsice, tice, snof,                           &
 !  ---  outputs:
-!    &       snowmt, gflux                                              &
-!    &     )
+     &       snowmt, gflux                                              &
+     &     )
 
 !**************************************************************************
 !                                                                         *
@@ -472,7 +471,6 @@
       real (kind=kind_phys), parameter :: dw   =1000.0    ! fresh water density  (kg/m^3)
       real (kind=kind_phys), parameter :: dsdw = ds/dw
       real (kind=kind_phys), parameter :: dwds = dw/ds
-      real (kind=kind_phys), parameter :: t0c  =273.15    ! freezing temp of fresh ice (k)
       real (kind=kind_phys), parameter :: ks   = 0.31     ! conductivity of snow   (w/mk)
       real (kind=kind_phys), parameter :: i0   = 0.3      ! ice surface penetrating solar fraction
       real (kind=kind_phys), parameter :: ki   = 2.03     ! conductivity of ice  (w/mk)
@@ -492,24 +490,24 @@
       real (kind=kind_phys), parameter :: ki4  = ki*4.0
 
 !  ---  inputs:
-!     integer, intent(in) :: im, kmi
+      integer, intent(in) :: im, kmi
 
-!     real (kind=kind_phys), dimension(im), intent(in) :: fice, hfi,    &
-!    &       hfd, sneti, focn
+      real (kind=kind_phys), dimension(im), intent(in) :: fice, hfi,    &
+     &       hfd, sneti, focn
 
-!     real (kind=kind_phys), intent(in) :: delt
+      real (kind=kind_phys), intent(in) :: delt
 
-!     logical, dimension(im), intent(in) :: flag
+      logical, dimension(im), intent(in) :: flag
 
 !  ---  input/outputs:
-!     real (kind=kind_phys), dimension(im), intent(inout) :: snowd,     &
-!    &       hice, tice, snof
+      real (kind=kind_phys), dimension(im), intent(inout) :: snowd,     &
+     &       hice, tice, snof
 
-!     real (kind=kind_phys), dimension(im,kmi), intent(inout) :: stsice
+      real (kind=kind_phys), dimension(im,kmi), intent(inout) :: stsice
 
 !  ---  outputs:
-!     real (kind=kind_phys), dimension(im), intent(out) :: snowmt,      &
-!    &       gflux
+      real (kind=kind_phys), dimension(im), intent(out) :: snowmt,      &
+     &       gflux
 
 !  ---  locals:
 
@@ -666,12 +664,6 @@
       end subroutine ice3lay
 !-----------------------------------
 
-! =========================== !
-!     end contain programs    !
-! =========================== !
-
-!...................................
-      end subroutine sfc_sice
 !-----------------------------------
-
+      end module module_sfc_sice
 !> @}
