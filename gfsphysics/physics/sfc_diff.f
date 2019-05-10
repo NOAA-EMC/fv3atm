@@ -10,6 +10,8 @@
      &                    sigmaf,vegtype,shdmax,ivegsrc,        !intent(in)
      &                    z0pert,ztpert,        ! mg, sfc-perts !intent(in)
      &                    flag_iter,redrag,                     !intent(in)
+     &                    u10m,v10m,     !wang
+
      &                    wet,dry,icy,fice,                     !intent(in)
      &                    tskin_ocn, tskin_lnd, tskin_ice,      !intent(in)
      &                    tsurf_ocn, tsurf_lnd, tsurf_ice,      !intent(in)
@@ -43,6 +45,8 @@
      &                    ps,u1,v1,t1,q1,z1,prsl1,prslki,ddvel,
      &                    sigmaf,shdmax,
      &                    z0pert,ztpert ! mg, sfc-perts
+      real(kind=kind_phys), dimension(im), intent(in) :: 
+     &                    u10m,v10m                              !wang
       real(kind=kind_phys), dimension(im), intent(in)    ::
      &                    tskin_ocn, tskin_lnd, tskin_ice,
      &                    tsurf_ocn, tsurf_lnd, tsurf_ice,
@@ -66,6 +70,8 @@
 !
 !     locals
 !
+      logical :: run_tc                                    !wang
+      real(kind=kind_phys), dimension(im) :: wind10m     !wang
       integer   i
 !
       real(kind=kind_phys) :: qs1,  rat, thv1, restar,
@@ -101,6 +107,10 @@
 !  ps is in pascals, wind is wind speed, 
 !  surface roughness length is converted to m from cm
 !
+! Weiguo Wang added 20190425
+!      run_tc=.true.       ! use obs-based roughness length ~ 10m
+       run_tc=.false.     ! not
+
       do i=1,im
         ztmax_ocn = 0.; ztmax_lnd = 0.; ztmax_ice = 0.
         if(flag_iter(i)) then 
@@ -120,7 +130,8 @@
           z0max_lnd   = max(1.0e-6, min(z0_lnd,z1(i)))
           z0_ice      = 0.01 * z0rl_ice(i)
           z0max_ice   = max(1.0e-6, min(z0_ice,z1(i)))
-
+           wind10m(i) = max(sqrt( u10m(i)*u10m(i) + v10m(i)*v10m(i) ),
+     &                 1.0)
 !  compute stability dependent exchange coefficients
 !  this portion of the code is presently suppressed
 !
@@ -143,6 +154,9 @@
 
             rat    = min(7.0, 2.67 * sqrt(sqrt(restar)) - 2.57)
             ztmax_ocn  = z0max_ocn * exp(-rat)
+
+          if (run_tc) call znot_t_v7(wind10m(i),ztmax_ocn)   ! 10-m wind,m/s, ztmax(m)
+
           endif ! Open ocean
           if (dry(i) .or. icy(i)) then ! over land or sea ice
 !** xubin's new z0  over land and sea ice
@@ -269,6 +283,12 @@
             else
               z0rl_ocn(i) = 100.0 * max(min(z0_ocn,.1), 1.e-7)
             endif
+
+            if (run_tc) then   ! wang
+              call znot_m_v7(wind10m(i),z0_ocn)   ! wind, m/s, z0, m
+              z0rl_ocn(i)=100.0 * z0_ocn          ! cm
+            endif              !wang
+
           endif              ! end of if(open ocean)
         endif                ! end of if(flagiter) loop
       enddo
@@ -434,6 +454,154 @@
 !.................................
       end subroutine stability
 !---------------------------------
+
+!! add fitted z0,zt curves for hurricane application (used in HWRF/HMON)
+!! Weiguo Wang, 2019-0425
+       SUBROUTINE znot_m_v7(uref,znotm)
+        IMPLICIT NONE
+! Calculate areodynamical roughness over water with input 10-m wind
+! For low-to-moderate winds, try to match the Cd-U10 relationship from COARE V3.5 (Edson et al. 2013)
+! For high winds, try to fit available observational data
+! Comparing to znot_t_v6, slightly decrease Cd for higher wind speed
+!
+! Bin Liu, NOAA/NCEP/EMC 2018
+!
+! uref(m/s)   :   wind speed at 10-m height
+! znotm(meter):   areodynamical roughness scale over water
+!
+
+      REAL, INTENT(IN) :: uref
+      REAL, INTENT(OUT):: znotm
+      REAL             :: p13, p12, p11, p10
+      REAL             :: p25, p24, p23, p22, p21, p20
+      REAL             :: p35, p34, p33, p32, p31, p30
+      REAL             :: p40
+
+       p13 = -1.296521881682694e-02
+       p12 =  2.855780863283819e-01
+       p11 = -1.597898515251717e+00
+       p10 = -8.396975715683501e+00
+
+       p25 =  3.790846746036765e-10
+       p24 =  3.281964357650687e-09
+       p23 =  1.962282433562894e-07
+       p22 = -1.240239171056262e-06
+       p21 =  1.739759082358234e-07
+       p20 =  2.147264020369413e-05
+
+
+       p35 =  1.897534489606422e-07
+       p34 = -3.019495980684978e-05
+       p33 =  1.931392924987349e-03
+       p32 = -6.797293095862357e-02
+       p31 =  1.346757797103756e+00
+       p30 = -1.707846930193362e+01
+
+       p40 =  3.371427455376717e-04
+
+       if (uref >= 0.0 .and.  uref <= 6.5 ) then
+        znotm = exp( p10 + p11*uref + p12*uref**2 + p13*uref**3)
+       elseif (uref > 6.5 .and. uref <= 15.7) then
+        znotm = p25*uref**5 + p24*uref**4 + p23*uref**3 + 
+     &          p22*uref**2 + p21*uref + p20
+       elseif (uref > 15.7 .and. uref <= 53.0) then
+        znotm = exp( p35*uref**5 + p34*uref**4 + p33*uref**3 
+     &          + p32*uref**2 + p31*uref + p30 )
+       elseif ( uref > 53.0) then
+        znotm = p40
+       else
+        print*, 'Wrong input uref value:',uref
+       endif
+
+      END SUBROUTINE znot_m_v7
+      SUBROUTINE znot_t_v7(uref,znott)
+       IMPLICIT NONE
+! Calculate scalar roughness over water with input 10-m wind
+! For low-to-moderate winds, try to match the Ck-U10 relationship from COARE algorithm
+! For high winds, try to retain the Ck-U10 relationship of FY2015 HWRF
+! To be compatible with the slightly decreased Cd for higher wind speed
+!
+! Bin Liu, NOAA/NCEP/EMC 2018
+!
+! uref(m/s)   :   wind speed at 10-m height
+! znott(meter):   scalar roughness scale over water
+!
+
+        REAL, INTENT(IN) :: uref
+        REAL, INTENT(OUT):: znott
+
+        REAL             :: p00
+        REAL             :: p15, p14, p13, p12, p11, p10
+        REAL             :: p25, p24, p23, p22, p21, p20
+        REAL             :: p35, p34, p33, p32, p31, p30
+        REAL             :: p45, p44, p43, p42, p41, p40
+        REAL             :: p56, p55, p54, p53, p52, p51, p50
+        REAL             :: p60
+
+         p00 =  1.100000000000000e-04
+
+         p15 = -9.193764479895316e-10
+          p14 =  7.052217518653943e-08
+         p13 = -2.163419217747114e-06
+         p12 =  3.342963077911962e-05
+         p11 = -2.633566691328004e-04
+         p10 =  8.644979973037803e-04
+
+         p25 = -9.402722450219142e-12
+         p24 =  1.325396583616614e-09
+         p23 = -7.299148051141852e-08
+         p22 =  1.982901461144764e-06
+         p21 = -2.680293455916390e-05
+         p20 =  1.484341646128200e-04
+
+         p35 =  7.921446674311864e-12
+         p34 = -1.019028029546602e-09
+         p33 =  5.251986927351103e-08
+         p32 = -1.337841892062716e-06
+         p31 =  1.659454106237737e-05
+         p30 = -7.558911792344770e-05
+
+         p45 = -2.694370426850801e-10
+          p44 =  5.817362913967911e-08
+         p43 = -5.000813324746342e-06
+         p42 =  2.143803523428029e-04
+         p41 = -4.588070983722060e-03
+         p40 =  3.924356617245624e-02
+
+        p56 = -1.663918773476178e-13
+        p55 =  6.724854483077447e-11
+        p54 = -1.127030176632823e-08
+         p53 =  1.003683177025925e-06
+        p52 = -5.012618091180904e-05
+        p51 =  1.329762020689302e-03
+        p50 = -1.450062148367566e-02
+
+        p60 =  6.840803042788488e-05
+
+        if (uref >= 0.0 .and. uref < 5.9 ) then
+            znott = p00
+         elseif (uref >= 5.9 .and. uref <= 15.4) then
+           znott = p15*uref**5 + p14*uref**4 + p13*uref**3 + 
+     &             p12*uref**2 + p11*uref + p10
+         elseif (uref > 15.4 .and. uref <= 21.6) then
+           znott = p25*uref**5 + p24*uref**4 + p23*uref**3 + 
+     &             p22*uref**2 + p21*uref + p20
+         elseif (uref > 21.6 .and. uref <= 42.6) then
+           znott = p35*uref**5 + p34*uref**4 + p33*uref**3 + 
+     &             p32*uref**2 + p31*uref + p30
+         elseif ( uref > 42.6 .and. uref <= 53.0) then
+           znott = p45*uref**5 + p44*uref**4 + p43*uref**3 + 
+     &             p42*uref**2 + p41*uref + p40
+         elseif ( uref > 53.0 .and. uref <= 80.0) then
+           znott = p56*uref**6 + p55*uref**5 + p54*uref**4 + 
+     &             p53*uref**3 + p52*uref**2 + p51*uref + p50
+         elseif ( uref > 80.0) then
+           znott = p60
+        else
+           print*, 'Wrong input uref value:',uref
+         endif
+
+        END SUBROUTINE znot_t_v7
 
 !---------------------------------
       end module module_sfc_diff

@@ -1289,6 +1289,8 @@ module module_physics_driver
            Sfcprop%shdmax, Model%ivegsrc,                               &
            z01d, zt1d,                                                  & ! mg, sfc-perts
            flag_iter, Model%redrag,                                     &
+! Weiguo Wang 2019/04 use 10-m wind diagnose zo
+           Diag%u10m,    Diag%v10m,                                     &  !wang, use 10-m wind diagnose zo 
            wet, dry, icy, cice,                                         &
              tsfc_ocean,   tsfc_land,   tsfc_ice,                       &
             tsurf_ocean,  tsurf_land,  tsurf_ice,                       &
@@ -1798,7 +1800,10 @@ module module_physics_driver
                            Model%dspheat, dusfc1, dvsfc1, dtsfc1, dqsfc1, Diag%hpbl,&
                            gamt, gamq, dkt, kinver, Model%xkzm_m, Model%xkzm_h,     &
                            Model%xkzm_s, lprnt, ipr,                                &
-                           Model%xkzminv, Model%moninq_fac)
+                           !!Model%xkzminv, Model%moninq_fac)
+                           ! Weiguo Wang 2019/04 HWRF PBL
+                           Model%xkzminv, Model%moninq_fac,islmsk)
+
 !     if (lprnt)  write(0,*)' dtdtm=',(dtdt(ipr,k),k=1,15)
 !     if (lprnt)  write(0,*)' dqdtm=',(dqdt(ipr,k,1),k=1,15)
           elseif (.not. Model%old_monin) then
@@ -1947,7 +1952,10 @@ module module_physics_driver
                              Model%dspheat, dusfc1, dvsfc1, dtsfc1, dqsfc1, Diag%hpbl,&
                              gamt, gamq, dkt, kinver, Model%xkzm_m, Model%xkzm_h,     &
                              Model%xkzm_s, lprnt, ipr,                                &
-                             Model%xkzminv, Model%moninq_fac)
+                             !!Model%xkzminv, Model%moninq_fac)
+                             ! Weiguo Wang 2019/04 HWRF PBL
+                             Model%xkzminv, Model%moninq_fac,islmsk)
+
           elseif (.not. Model%old_monin) then
             call moninq(ix, im, levs, nvdiff, ntcw, dvdt, dudt, dtdt, dvdftra,        &
                         Statein%ugrs, Statein%vgrs, Statein%tgrs, vdftra,             &

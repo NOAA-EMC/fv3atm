@@ -1873,6 +1873,9 @@ module GFS_typedefs
     real(kind=kind_phys) :: xkzminv        = 0.3             !< diffusivity in inversion layers
     real(kind=kind_phys) :: moninq_fac     = 1.0             !< turbulence diffusion coefficient factor
 
+! to use TC-related algorithms in PBL, ,set -1.0 , Weiguo Wang 2019/04
+!    real(kind=kind_phys) :: moninq_fac     = -1.0             !< turbulence diffusion coefficient factor 
+
      
 !---Cellular automaton options
     integer              :: nca            = 1
