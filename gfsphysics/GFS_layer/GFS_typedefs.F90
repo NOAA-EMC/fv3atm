@@ -16,7 +16,7 @@ module GFS_typedefs
 
        !--- parameter constants used for default initializations
        real(kind=kind_phys), parameter :: zero      = 0.0_kind_phys
-       real(kind=kind_phys), parameter :: huge      = 9.9692099683868690E36 ! NetCDF float FillValue
+       real(kind=kind_phys), parameter :: huge      = 9.9999D15
        real(kind=kind_phys), parameter :: clear_val = zero
       !real(kind=kind_phys), parameter :: clear_val = -9.9999e80
        real(kind=kind_phys), parameter :: rann_init = 0.6_kind_phys
@@ -149,18 +149,12 @@ module GFS_typedefs
 
 !--- In (radiation and physics)
     real (kind=kind_phys), pointer :: slmsk  (:)   => null()  !< sea/land mask array (sea:0,land:1,sea-ice:2)
-    real (kind=kind_phys), pointer :: oceanfrac(:) => null()  !< ocean fraction [0:1]
-    real (kind=kind_phys), pointer :: landfrac(:)  => null()  !<  land fraction [0:1]
-    real (kind=kind_phys), pointer :: lakefrac(:)  => null()  !<  lake fraction [0:1]
-    real (kind=kind_phys), pointer :: tsfc   (:)   => null()  !< surface air temperature in k 
+    real (kind=kind_phys), pointer :: lakemsk(:)   => null()  !< lake mask array (lake:1, non-lake:0)
+    real (kind=kind_phys), pointer :: tsfc   (:)   => null()  !< surface temperature in k 
                                                               !< [tsea in gbphys.f]
-    real (kind=kind_phys), pointer :: tsfco  (:)   => null()  !< sst in k 
-    real (kind=kind_phys), pointer :: tsfcl  (:)   => null()  !< surface land temperature in k 
     real (kind=kind_phys), pointer :: tisfc  (:)   => null()  !< surface temperature over ice fraction 
     real (kind=kind_phys), pointer :: snowd  (:)   => null()  !< snow depth water equivalent in mm ; same as snwdph
-    real (kind=kind_phys), pointer :: zorl   (:)   => null()  !< composite surface roughness in cm 
-    real (kind=kind_phys), pointer :: zorlo  (:)   => null()  !< ocean surface roughness in cm 
-    real (kind=kind_phys), pointer :: zorll  (:)   => null()  !< land surface roughness in cm 
+    real (kind=kind_phys), pointer :: zorl   (:)   => null()  !< surface roughness in cm 
     real (kind=kind_phys), pointer :: fice   (:)   => null()  !< ice fraction over open water grid 
     real (kind=kind_phys), pointer :: hprim  (:)   => null()  !< topographic standard deviation in m            !
     real (kind=kind_phys), pointer :: hprime (:,:) => null()  !< orographic metrics
@@ -1179,37 +1173,25 @@ module GFS_typedefs
     type(GFS_control_type), intent(in) :: Model
 
     !--- physics and radiation
-    allocate (Sfcprop%slmsk    (IM))
-    allocate (Sfcprop%oceanfrac(IM))
-    allocate (Sfcprop%landfrac (IM))
-    allocate (Sfcprop%lakefrac (IM))
-    allocate (Sfcprop%tsfc     (IM))
-    allocate (Sfcprop%tsfco    (IM))
-    allocate (Sfcprop%tsfcl    (IM))
-    allocate (Sfcprop%tisfc    (IM))
-    allocate (Sfcprop%snowd    (IM))
-    allocate (Sfcprop%zorl     (IM))
-    allocate (Sfcprop%zorlo    (IM))
-    allocate (Sfcprop%zorll    (IM))
-    allocate (Sfcprop%fice     (IM))
-    allocate (Sfcprop%hprim    (IM))
-    allocate (Sfcprop%hprime   (IM,Model%nmtvr))
+    allocate (Sfcprop%slmsk  (IM))
+    allocate (Sfcprop%lakemsk(IM))
+    allocate (Sfcprop%tsfc   (IM))
+    allocate (Sfcprop%tisfc  (IM))
+    allocate (Sfcprop%snowd  (IM))
+    allocate (Sfcprop%zorl   (IM))
+    allocate (Sfcprop%fice   (IM))
+    allocate (Sfcprop%hprim  (IM))
+    allocate (Sfcprop%hprime (IM,Model%nmtvr))
 
-    Sfcprop%slmsk     = clear_val
-    Sfcprop%oceanfrac = clear_val
-    Sfcprop%landfrac  = clear_val
-    Sfcprop%lakefrac  = clear_val
-    Sfcprop%tsfc      = clear_val
-    Sfcprop%tsfco     = clear_val
-    Sfcprop%tsfcl     = clear_val
-    Sfcprop%tisfc     = clear_val
-    Sfcprop%snowd     = clear_val
-    Sfcprop%zorl      = clear_val
-    Sfcprop%zorlo     = clear_val
-    Sfcprop%zorll     = clear_val
-    Sfcprop%fice      = clear_val
-    Sfcprop%hprim     = clear_val
-    Sfcprop%hprime    = clear_val
+    Sfcprop%slmsk   = clear_val
+    Sfcprop%lakemsk = clear_val
+    Sfcprop%tsfc    = clear_val
+    Sfcprop%tisfc   = clear_val
+    Sfcprop%snowd   = clear_val
+    Sfcprop%zorl    = clear_val
+    Sfcprop%fice    = clear_val
+    Sfcprop%hprim   = clear_val
+    Sfcprop%hprime  = clear_val
 
 !--- In (radiation only)
     allocate (Sfcprop%sncovr (IM))
