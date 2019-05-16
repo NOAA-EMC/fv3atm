@@ -33,7 +33,7 @@ module fv3gfs_cap_mod
                                     cplprint_flag,output_1st_tstep_rst,      &
                                     first_kdt                            
 
-  use module_fv3_io_def,      only: num_pes_fcst,write_groups,               &
+  use module_fv3_io_def,      only: num_pes_fcst,write_groups,app_domain,    &
                                     num_files, filename_base,                &
                                     wrttasks_per_group, n_group,             &
                                     lead_wrttask, last_wrttask,              &
@@ -331,6 +331,11 @@ module fv3gfs_cap_mod
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
         line=__LINE__, file=__FILE__)) return  ! bail out
 
+      CALL ESMF_ConfigGetAttribute(config=CF,value=app_domain, default="global",&
+                                 label ='app_domain:',rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, file=__FILE__)) return  ! bail out
+!
       if(mype==0) print *,'af nems config,restart_interval=',restart_interval, &
       'quilting=',quilting,'write_groups=',write_groups,wrttasks_per_group, &
       'calendar=',trim(calendar),'calendar_type=',calendar_type

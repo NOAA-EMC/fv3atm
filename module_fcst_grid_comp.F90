@@ -398,6 +398,8 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
                                               name="fcst_grid", &
                                               indexflag=ESMF_INDEX_DELOCAL, &
                                               rc=rc); ESMF_ERR_ABORT(rc)
+          print *,'in fcst grid, dim=',isc, iec, jsc, jec,'fcstNpes=',fcstNpes,' mlon=',atm_int_state%Atm%mlon, &
+           'mlat=',atm_int_state%Atm%mlat
 
           ! add and define "center" coordinate values
           call ESMF_GridAddCoord(fcstGrid, staggerLoc=ESMF_STAGGERLOC_CENTER, rc=rc); ESMF_ERR_ABORT(rc)
@@ -412,6 +414,8 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
             glatPtr(i-isc+1,j-jsc+1) = atm_int_state%Atm%lat(i-isc+1,j-jsc+1) * dtor
           enddo
           enddo
+          if( mype==0) print *,'pe=0, in fcst grid, lon=',atm_int_state%Atm%lon(1,1)*dtor, 'lat=',atm_int_state%Atm%lat(1,1)
+          if( mype==fcstNpes-1) print *,'pe fcstpe,in fcst grid, lon=',atm_int_state%Atm%lon(1,1)*dtor, 'lat=',atm_int_state%Atm%lat(1,1)
 
           ! add and define "corner" coordinate values
           !call ESMF_GridAddCoord(fcstGrid, staggerLoc=ESMF_STAGGERLOC_CORNER, staggerAlign=(/1,1/), rc=rc); ESMF_ERR_ABORT(rc)
