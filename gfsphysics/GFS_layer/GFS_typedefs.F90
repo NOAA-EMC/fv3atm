@@ -317,20 +317,20 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: qconvtend(:,:) => null()
     real (kind=kind_phys), pointer :: uconvtend(:,:) => null()
     real (kind=kind_phys), pointer :: vconvtend(:,:) => null()
-    real (kind=kind_phys), pointer :: ca_out (:) => null()  !
-    real (kind=kind_phys), pointer :: ca_deep (:) => null()  !
-    real (kind=kind_phys), pointer :: ca_turb (:) => null()  !
-    real (kind=kind_phys), pointer :: ca_shal (:) => null()  !
-    real (kind=kind_phys), pointer :: ca_rad (:) => null()  !
-    real (kind=kind_phys), pointer :: ca_micro (:) => null() !
-    real (kind=kind_phys), pointer :: cape  (:) => null() !
+    real (kind=kind_phys), pointer :: ca_out   (:)   => null() !
+    real (kind=kind_phys), pointer :: ca_deep  (:)   => null() !
+    real (kind=kind_phys), pointer :: ca_turb  (:)   => null() !
+    real (kind=kind_phys), pointer :: ca_shal  (:)   => null() !
+    real (kind=kind_phys), pointer :: ca_rad   (:)   => null() !
+    real (kind=kind_phys), pointer :: ca_micro (:)   => null() !
+    real (kind=kind_phys), pointer :: cape     (:)   => null() !
     
     !--- stochastic physics
-    real (kind=kind_phys), pointer :: shum_wts  (:,:)   => null()  !
-    real (kind=kind_phys), pointer :: sppt_wts  (:,:)   => null()  !
-    real (kind=kind_phys), pointer :: skebu_wts (:,:)   => null()  !
-    real (kind=kind_phys), pointer :: skebv_wts (:,:)   => null()  !
-    real (kind=kind_phys), pointer :: sfc_wts   (:,:)   => null()  ! mg, sfc-perts
+    real (kind=kind_phys), pointer :: shum_wts  (:,:) => null()  !
+    real (kind=kind_phys), pointer :: sppt_wts  (:,:) => null()  !
+    real (kind=kind_phys), pointer :: skebu_wts (:,:) => null()  !
+    real (kind=kind_phys), pointer :: skebv_wts (:,:) => null()  !
+    real (kind=kind_phys), pointer :: sfc_wts   (:,:) => null()  ! mg, sfc-perts
     integer              :: nsfcpert=6                             !< number of sfc perturbations
 
 !--- instantaneous quantities for GoCart and will be accumulated for 3D diagnostics
@@ -340,7 +340,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: dwn_mfi (:,:)   => null()  !< instantaneous convective downdraft mass flux
     real (kind=kind_phys), pointer :: det_mfi (:,:)   => null()  !< instantaneous convective detrainment mass flux
     real (kind=kind_phys), pointer :: cldcovi (:,:)   => null()  !< instantaneous 3D cloud fraction
-    real (kind=kind_phys), pointer :: nwfa2d  (:)    => null()  !< instantaneous sfc aerosol source
+    real (kind=kind_phys), pointer :: nwfa2d  (:)     => null()  !< instantaneous sfc aerosol source
 
     !--- instantaneous quantities for GSDCHEM coupling
     real (kind=kind_phys), pointer :: ushfsfci(:)     => null()  !< instantaneous upward sensible heat flux (w/m**2)
@@ -402,6 +402,12 @@ module GFS_typedefs
 !--- integrated dynamics through earth's atmosphere
     logical              :: lsidea         
 
+!vay 2018  GW physics switches
+
+    logical              :: ldiag_ugwp
+    logical              :: do_ugwp         ! do mesoscale UGWP + TOFD + RF
+    logical              :: do_tofd         ! tofd flag in gwdps.f
+
 !--- calendars and time parameters and activation triggers
     real(kind=kind_phys) :: dtp             !< physics timestep in seconds
     real(kind=kind_phys) :: dtf             !< dynamics timestep in seconds
@@ -418,7 +424,7 @@ module GFS_typedefs
     integer              :: nslwr           !< integer trigger for longwave  radiation
     integer              :: levr            !< number of vertical levels for radiation calculations
     integer              :: nfxr            !< second dimension for fluxr diagnostic variable (radiation)
-    logical              :: aero_in         !< aerosol flag for gbphys
+    logical              :: aero_in         !< flag for initializing aerosol data
     logical              :: lmfshal         !< parameter for radiation
     logical              :: lmfdeep2        !< parameter for radiation
     integer              :: nrcm            !< second dimension of random number stream for RAS
@@ -515,7 +521,6 @@ module GFS_typedefs
                                             !< ivegsrc = 2   => UMD  (13 category)
     integer              :: isot            !< isot = 0   => Zobler soil type  ( 9 category)
                                             !< isot = 1   => STATSGO soil type (19 category)
-    logical              :: mom4ice         !< flag controls mom4 sea ice
     logical              :: use_ufo         !< flag for gcycle surface option
 
 !--- tuning parameters for physical parameterizations
@@ -900,7 +905,7 @@ module GFS_typedefs
   type GFS_diag_type
 
 !! Input/Output only in radiation
-    real (kind=kind_phys), pointer :: fluxr(:,:)    => null()    !< to save time accumulated 2-d fields defined as:!
+    real (kind=kind_phys), pointer :: fluxr(:,:)     => null()   !< to save time accumulated 2-d fields defined as:!
                                                                  !< hardcoded field indices, opt. includes aerosols!
     type (topfsw_type),    pointer :: topfsw(:)      => null()   !< sw radiation fluxes at toa, components:
                                                !       %upfxc    - total sky upward sw flux at toa (w/m**2)
@@ -926,7 +931,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: dtsfc  (:)     => null()   !< sensible heat flux (w/m2)
     real (kind=kind_phys), pointer :: dqsfc  (:)     => null()   !< latent heat flux (w/m2)
     real (kind=kind_phys), pointer :: totprcp(:)     => null()   !< accumulated total precipitation (kg/m2)
-    real (kind=kind_phys), pointer :: totprcpb(:)     => null()   !< accumulated total precipitation in bucket(kg/m2)
+    real (kind=kind_phys), pointer :: totprcpb(:)    => null()   !< accumulated total precipitation in bucket(kg/m2)
     real (kind=kind_phys), pointer :: gflux  (:)     => null()   !< groud conductive heat flux
     real (kind=kind_phys), pointer :: dlwsfc (:)     => null()   !< time accumulated sfc dn lw flux ( w/m**2 )
     real (kind=kind_phys), pointer :: ulwsfc (:)     => null()   !< time accumulated sfc up lw flux ( w/m**2 )
@@ -992,28 +997,28 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: tdomip (:)     => null()   !< accumulated sleet type
     real (kind=kind_phys), pointer :: tdoms  (:)     => null()   !< accumulated snow type
 
-    real (kind=kind_phys), pointer :: ca_out     (:)    => null()   !< cellular automata fraction
-    real (kind=kind_phys), pointer :: ca_deep     (:)    => null()   !< cellular automata fraction
-    real (kind=kind_phys), pointer :: ca_turb     (:)    => null()   !< cellular automata fraction
-    real (kind=kind_phys), pointer :: ca_shal     (:)    => null()   !< cellular automata fraction
-    real (kind=kind_phys), pointer :: ca_rad     (:)    => null()   !< cellular automata fraction
-    real (kind=kind_phys), pointer :: ca_micro     (:)    => null()   !< cellular automata fraction
+    real (kind=kind_phys), pointer :: ca_out  (:)    => null()   !< cellular automata fraction
+    real (kind=kind_phys), pointer :: ca_deep  (:)   => null()   !< cellular automata fraction
+    real (kind=kind_phys), pointer :: ca_turb  (:)   => null()   !< cellular automata fraction
+    real (kind=kind_phys), pointer :: ca_shal  (:)   => null()   !< cellular automata fraction
+    real (kind=kind_phys), pointer :: ca_rad   (:)   => null()   !< cellular automata fraction
+    real (kind=kind_phys), pointer :: ca_micro (:)   => null()   !< cellular automata fraction
 
-    real (kind=kind_phys), pointer :: skebu_wts(:,:)    => null()   !< 10 meater u/v wind speed
-    real (kind=kind_phys), pointer :: skebv_wts(:,:)    => null()   !< 10 meater u/v wind speed
-    real (kind=kind_phys), pointer :: sppt_wts(:,:)    => null()   !< 10 meater u/v wind speed
-    real (kind=kind_phys), pointer :: shum_wts(:,:)    => null()   !< 10 meater u/v wind speed
+    real (kind=kind_phys), pointer :: skebu_wts(:,:) => null()   !< 10 meater u/v wind speed
+    real (kind=kind_phys), pointer :: skebv_wts(:,:) => null()   !< 10 meater u/v wind speed
+    real (kind=kind_phys), pointer :: sppt_wts(:,:)  => null()   !< 10 meater u/v wind speed
+    real (kind=kind_phys), pointer :: shum_wts(:,:)  => null()   !< 10 meater u/v wind speed
     real (kind=kind_phys), pointer :: zmtnblck(:)    => null()   !<mountain blocking evel
     real (kind=kind_phys), pointer :: du3dt (:,:,:)  => null()   !< u momentum change due to physics
     real (kind=kind_phys), pointer :: dv3dt (:,:,:)  => null()   !< v momentum change due to physics
     real (kind=kind_phys), pointer :: dt3dt (:,:,:)  => null()   !< temperature change due to physics
     real (kind=kind_phys), pointer :: dq3dt (:,:,:)  => null()   !< moisture change due to physics
-    real (kind=kind_phys), pointer :: refdmax (:)  => null()   !< max hourly 1-km agl reflectivity
-    real (kind=kind_phys), pointer :: refdmax263k (:)  => null()   !< max hourly -10C reflectivity
-    real (kind=kind_phys), pointer :: t02max (:)  => null()   !< max hourly 2m T
-    real (kind=kind_phys), pointer :: t02min (:)  => null()   !< min hourly 2m T
-    real (kind=kind_phys), pointer :: rh02max (:)  => null()   !< max hourly 2m RH
-    real (kind=kind_phys), pointer :: rh02min (:)  => null()   !< min hourly 2m RH
+    real (kind=kind_phys), pointer :: refdmax (:)    => null()   !< max hourly 1-km agl reflectivity
+    real (kind=kind_phys), pointer :: refdmax263k(:) => null()   !< max hourly -10C reflectivity
+    real (kind=kind_phys), pointer :: t02max  (:)    => null()   !< max hourly 2m T
+    real (kind=kind_phys), pointer :: t02min  (:)    => null()   !< min hourly 2m T
+    real (kind=kind_phys), pointer :: rh02max (:)    => null()   !< max hourly 2m RH
+    real (kind=kind_phys), pointer :: rh02min (:)    => null()   !< min hourly 2m RH
 !--- accumulated quantities for 3D diagnostics
     real (kind=kind_phys), pointer :: upd_mf (:,:)   => null()  !< instantaneous convective updraft mass flux
     real (kind=kind_phys), pointer :: dwn_mf (:,:)   => null()  !< instantaneous convective downdraft mass flux
@@ -1022,6 +1027,80 @@ module GFS_typedefs
 
     !--- MP quantities for 3D diagnositics 
     real (kind=kind_phys), pointer :: refl_10cm(:,:) => null()  !< instantaneous refl_10cm 
+
+!---vay-2018 UGWP-diagnostics daily mean
+!
+    real (kind=kind_phys), pointer :: dudt_tot (:,:) => null()  !< daily aver GFS_phys tend for WE-U
+    real (kind=kind_phys), pointer :: dvdt_tot (:,:) => null()  !< daily aver GFS_phys tend for SN-V
+    real (kind=kind_phys), pointer :: dtdt_tot (:,:) => null()  !< daily aver GFS_phys tend for Temp-re
+!
+    real (kind=kind_phys), pointer :: du3dt_pbl(:,:) => null()  !< daily aver GFS_phys tend for WE-U pbl
+    real (kind=kind_phys), pointer :: dv3dt_pbl(:,:) => null()  !< daily aver GFS_phys tend for SN-V pbl
+    real (kind=kind_phys), pointer :: dt3dt_pbl(:,:) => null()  !< daily aver GFS_phys tend for Temp pbl
+!
+    real (kind=kind_phys), pointer :: du3dt_ogw(:,:) => null()  !< daily aver GFS_phys tend for WE-U OGW
+    real (kind=kind_phys), pointer :: dv3dt_ogw(:,:) => null()  !< daily aver GFS_phys tend for SN-V OGW
+    real (kind=kind_phys), pointer :: dt3dt_ogw(:,:) => null()  !< daily aver GFS_phys tend for Temp OGW
+!
+    real (kind=kind_phys), pointer :: du3dt_mtb(:,:) => null()  !< daily aver GFS_phys tend for WE-U MTB
+    real (kind=kind_phys), pointer :: dv3dt_mtb(:,:) => null()  !< daily aver GFS_phys tend for SN-V MTB
+    real (kind=kind_phys), pointer :: dt3dt_mtb(:,:) => null()  !< daily aver GFS_phys tend for Temp MTB
+!
+    real (kind=kind_phys), pointer :: du3dt_tms(:,:) => null()  !< daily aver GFS_phys tend for WE-U TMS
+    real (kind=kind_phys), pointer :: dv3dt_tms(:,:) => null()  !< daily aver GFS_phys tend for SN-V TMS
+    real (kind=kind_phys), pointer :: dt3dt_tms(:,:) => null()  !< daily aver GFS_phys tend for Temp TMS
+!
+    real (kind=kind_phys), pointer :: du3dt_ngw(:,:) => null()  !< daily aver GFS_phys tend for WE-U NGW
+    real (kind=kind_phys), pointer :: dv3dt_ngw(:,:) => null()  !< daily aver GFS_phys tend for SN-V NGW
+    real (kind=kind_phys), pointer :: dt3dt_ngw(:,:) => null()  !< daily aver GFS_phys tend for Temp NGW
+!
+    real (kind=kind_phys), pointer :: du3dt_cgw(:,:) => null()  !< daily aver GFS_phys tend for WE-U NGW
+    real (kind=kind_phys), pointer :: dv3dt_cgw(:,:) => null()  !< daily aver GFS_phys tend for SN-V NGW
+    real (kind=kind_phys), pointer :: dt3dt_cgw(:,:) => null()  !< daily aver GFS_phys tend for Temp NGW
+!
+    real (kind=kind_phys), pointer :: du3dt_moist(:,:) => null()  !< daily aver GFS_phys tend for WE-U MOIST
+    real (kind=kind_phys), pointer :: dv3dt_moist(:,:) => null()  !< daily aver GFS_phys tend for SN-V MOIST
+    real (kind=kind_phys), pointer :: dt3dt_moist(:,:) => null()  !< daily aver GFS_phys tend for Temp MOIST
+!
+!--- Instantaneous UGWP-diagnostics  16-variables
+!       Diag%gwp_ax, Diag%gwp_axo, Diag%gwp_axc, Diag%gwp_axf,       &
+!       Diag%gwp_ay, Diag%gwp_ayo, Diag%gwp_ayc, Diag%gwp_ayf,       &
+!       Diag%gwp_dtdt,   Diag%gwp_kdis, Diag%gwp_okw, Diag%gwp_fgf,  &
+!       Diag%gwp_dcheat, Diag%gwp_precip, Diag%gwp_klevs,            &
+!       Diag%gwp_scheat
+
+    real (kind=kind_phys), pointer :: gwp_scheat(:,:) => null()  ! instant shal-conv heat tendency
+    real (kind=kind_phys), pointer :: gwp_dcheat(:,:) => null()  ! instant deep-conv heat tendency
+    real (kind=kind_phys), pointer :: gwp_precip(:) => null()    ! total precip rates
+    integer , pointer              :: gwp_klevs(:,:)=> null()    ! instant levels for GW-launches
+    real (kind=kind_phys), pointer :: gwp_fgf(:)    => null()    ! fgf triggers
+    real (kind=kind_phys), pointer :: gwp_okw(:)    => null()    ! okw triggers
+
+    real (kind=kind_phys), pointer :: gwp_ax(:,:)   => null()    ! instant total UGWP tend m/s/s EW
+    real (kind=kind_phys), pointer :: gwp_ay(:,:)   => null()    ! instant total UGWP tend m/s/s NS
+    real (kind=kind_phys), pointer :: gwp_dtdt(:,:) => null()    ! instant total heat tend   K/s
+    real (kind=kind_phys), pointer :: gwp_kdis(:,:) => null()    ! instant total eddy mixing m2/s
+    real (kind=kind_phys), pointer :: gwp_axc(:,:)   => null()   ! instant con-UGWP tend m/s/s EW
+    real (kind=kind_phys), pointer :: gwp_ayc(:,:)   => null()   ! instant con-UGWP tend m/s/s NS
+    real (kind=kind_phys), pointer :: gwp_axo(:,:)   => null()   ! instant oro-UGWP tend m/s/s EW
+    real (kind=kind_phys), pointer :: gwp_ayo(:,:)   => null()   ! instant oro-UGWP tend m/s/s NS
+    real (kind=kind_phys), pointer :: gwp_axf(:,:)   => null()   ! instant jet-UGWP tend m/s/s EW
+    real (kind=kind_phys), pointer :: gwp_ayf(:,:)   => null()   ! instant jet-UGWP tend m/s/s NS
+
+    real (kind=kind_phys), pointer :: uav_ugwp(:,:)   => null()   ! aver  wind UAV from physics
+    real (kind=kind_phys), pointer :: tav_ugwp(:,:)   => null()   ! aver  temp UAV from physics
+    real (kind=kind_phys), pointer :: du3dt_dyn(:,:)  => null()   ! U Tend-dynamics "In"-"PhysOut"
+
+!
+!--- COODRE ORO diagnostics
+    real (kind=kind_phys), pointer :: zmtb(:)         => null()   !
+    real (kind=kind_phys), pointer :: zogw(:)         => null()   !
+    real (kind=kind_phys), pointer :: zlwb(:)         => null()   !!
+    real (kind=kind_phys), pointer :: tau_ogw(:)      => null()   !!
+    real (kind=kind_phys), pointer :: tau_ngw(:)      => null()   !!
+    real (kind=kind_phys), pointer :: tau_mtb(:)      => null()   !
+    real (kind=kind_phys), pointer :: tau_tofd(:)     => null()   !
+!---vay-2018 UGWP-diagnostics
 
     !--- Output diagnostics for coupled chemistry
     real (kind=kind_phys), pointer :: duem  (:,:) => null()    !< instantaneous dust emission flux                             ( kg/m**2/s )
@@ -1328,14 +1407,14 @@ module GFS_typedefs
 
     !--- radiation out
     !--- physics in
-    allocate (Coupling%nirbmdi  (IM))
-    allocate (Coupling%nirdfdi  (IM))
-    allocate (Coupling%visbmdi  (IM))   
-    allocate (Coupling%visdfdi  (IM))   
-    allocate (Coupling%nirbmui  (IM))   
-    allocate (Coupling%nirdfui  (IM))   
-    allocate (Coupling%visbmui  (IM))   
-    allocate (Coupling%visdfui  (IM))   
+    allocate (Coupling%nirbmdi (IM))
+    allocate (Coupling%nirdfdi (IM))
+    allocate (Coupling%visbmdi (IM))   
+    allocate (Coupling%visdfdi (IM))   
+    allocate (Coupling%nirbmui (IM))   
+    allocate (Coupling%nirdfui (IM))   
+    allocate (Coupling%visbmui (IM))   
+    allocate (Coupling%visdfui (IM))   
 
     Coupling%nirbmdi = clear_val
     Coupling%nirdfdi = clear_val
@@ -1346,28 +1425,28 @@ module GFS_typedefs
     Coupling%visbmui = clear_val
     Coupling%visdfui = clear_val
 
-    allocate (Coupling%sfcdsw    (IM))
-    allocate (Coupling%sfcnsw    (IM))
-    allocate (Coupling%sfcdlw    (IM))
+    allocate (Coupling%sfcdsw (IM))
+    allocate (Coupling%sfcnsw (IM))
+    allocate (Coupling%sfcdlw (IM))
 
-    Coupling%sfcdsw    = clear_val
-    Coupling%sfcnsw    = clear_val
-    Coupling%sfcdlw    = clear_val
+    Coupling%sfcdsw = clear_val
+    Coupling%sfcnsw = clear_val
+    Coupling%sfcdlw = clear_val
 
     if (Model%cplflx .or. Model%do_sppt .or. Model%cplchm) then
-      allocate (Coupling%rain_cpl     (IM))
-      allocate (Coupling%snow_cpl     (IM))
-      Coupling%rain_cpl     = clear_val
-      Coupling%snow_cpl     = clear_val
+      allocate (Coupling%rain_cpl (IM))
+      allocate (Coupling%snow_cpl (IM))
+      Coupling%rain_cpl = clear_val
+      Coupling%snow_cpl = clear_val
     endif
 
     if (Model%cplflx .or. Model%cplwav) then
       !--- instantaneous quantities 
-      allocate (Coupling%u10mi_cpl   (IM))
-      allocate (Coupling%v10mi_cpl   (IM))
+      allocate (Coupling%u10mi_cpl (IM))
+      allocate (Coupling%v10mi_cpl (IM))
 
-      Coupling%u10mi_cpl   = clear_val
-      Coupling%v10mi_cpl   = clear_val
+      Coupling%u10mi_cpl = clear_val
+      Coupling%v10mi_cpl = clear_val
     endif 
 
     if (Model%cplflx) then
@@ -1397,39 +1476,39 @@ module GFS_typedefs
       Coupling%hsnoin_cpl   = clear_val
 
       !--- accumulated quantities
-      allocate (Coupling%dusfc_cpl    (IM))
-      allocate (Coupling%dvsfc_cpl    (IM))
-      allocate (Coupling%dtsfc_cpl    (IM))
-      allocate (Coupling%dqsfc_cpl    (IM))
-      allocate (Coupling%dlwsfc_cpl   (IM))
-      allocate (Coupling%dswsfc_cpl   (IM))
-      allocate (Coupling%dnirbm_cpl   (IM))
-      allocate (Coupling%dnirdf_cpl   (IM))
-      allocate (Coupling%dvisbm_cpl   (IM))
-      allocate (Coupling%dvisdf_cpl   (IM))
-      allocate (Coupling%nlwsfc_cpl   (IM))
-      allocate (Coupling%nswsfc_cpl   (IM))
-      allocate (Coupling%nnirbm_cpl   (IM))
-      allocate (Coupling%nnirdf_cpl   (IM))
-      allocate (Coupling%nvisbm_cpl   (IM))
-      allocate (Coupling%nvisdf_cpl   (IM))
+      allocate (Coupling%dusfc_cpl  (IM))
+      allocate (Coupling%dvsfc_cpl  (IM))
+      allocate (Coupling%dtsfc_cpl  (IM))
+      allocate (Coupling%dqsfc_cpl  (IM))
+      allocate (Coupling%dlwsfc_cpl (IM))
+      allocate (Coupling%dswsfc_cpl (IM))
+      allocate (Coupling%dnirbm_cpl (IM))
+      allocate (Coupling%dnirdf_cpl (IM))
+      allocate (Coupling%dvisbm_cpl (IM))
+      allocate (Coupling%dvisdf_cpl (IM))
+      allocate (Coupling%nlwsfc_cpl (IM))
+      allocate (Coupling%nswsfc_cpl (IM))
+      allocate (Coupling%nnirbm_cpl (IM))
+      allocate (Coupling%nnirdf_cpl (IM))
+      allocate (Coupling%nvisbm_cpl (IM))
+      allocate (Coupling%nvisdf_cpl (IM))
 
-      Coupling%dusfc_cpl    = clear_val
-      Coupling%dvsfc_cpl    = clear_val
-      Coupling%dtsfc_cpl    = clear_val
-      Coupling%dqsfc_cpl    = clear_val
-      Coupling%dlwsfc_cpl   = clear_val
-      Coupling%dswsfc_cpl   = clear_val
-      Coupling%dnirbm_cpl   = clear_val
-      Coupling%dnirdf_cpl   = clear_val
-      Coupling%dvisbm_cpl   = clear_val
-      Coupling%dvisdf_cpl   = clear_val
-      Coupling%nlwsfc_cpl   = clear_val
-      Coupling%nswsfc_cpl   = clear_val
-      Coupling%nnirbm_cpl   = clear_val
-      Coupling%nnirdf_cpl   = clear_val
-      Coupling%nvisbm_cpl   = clear_val
-      Coupling%nvisdf_cpl   = clear_val
+      Coupling%dusfc_cpl  = clear_val
+      Coupling%dvsfc_cpl  = clear_val
+      Coupling%dtsfc_cpl  = clear_val
+      Coupling%dqsfc_cpl  = clear_val
+      Coupling%dlwsfc_cpl = clear_val
+      Coupling%dswsfc_cpl = clear_val
+      Coupling%dnirbm_cpl = clear_val
+      Coupling%dnirdf_cpl = clear_val
+      Coupling%dvisbm_cpl = clear_val
+      Coupling%dvisdf_cpl = clear_val
+      Coupling%nlwsfc_cpl = clear_val
+      Coupling%nswsfc_cpl = clear_val
+      Coupling%nnirbm_cpl = clear_val
+      Coupling%nnirdf_cpl = clear_val
+      Coupling%nvisbm_cpl = clear_val
+      Coupling%nvisdf_cpl = clear_val
 
       !--- instantaneous quantities
       allocate (Coupling%dusfci_cpl  (IM))
@@ -1480,28 +1559,30 @@ module GFS_typedefs
     endif
 
    !-- cellular automata
-    allocate (Coupling%tconvtend (IM,Model%levs))
-    allocate (Coupling%qconvtend (IM,Model%levs))
-    allocate (Coupling%uconvtend (IM,Model%levs))
-    allocate (Coupling%vconvtend (IM,Model%levs))
-    allocate (Coupling%cape (IM))
-    allocate (Coupling%ca_out (IM))
-    allocate (Coupling%ca_deep (IM))
-    allocate (Coupling%ca_turb (IM))
-    allocate (Coupling%ca_shal (IM))
-    allocate (Coupling%ca_rad (IM))
-    allocate (Coupling%ca_micro (IM))
-    Coupling%ca_out = clear_val
-    Coupling%ca_deep = clear_val
-    Coupling%ca_turb = clear_val
-    Coupling%ca_shal = clear_val
-    Coupling%ca_rad =clear_val
-    Coupling%ca_micro = clear_val   
-    Coupling%cape = clear_val
-    Coupling%tconvtend = clear_val
-    Coupling%qconvtend = clear_val
-    Coupling%uconvtend = clear_val
-    Coupling%vconvtend = clear_val
+    if (Model%do_ca) then
+      allocate (Coupling%tconvtend (IM,Model%levs))
+      allocate (Coupling%qconvtend (IM,Model%levs))
+      allocate (Coupling%uconvtend (IM,Model%levs))
+      allocate (Coupling%vconvtend (IM,Model%levs))
+      allocate (Coupling%cape     (IM))
+      allocate (Coupling%ca_out   (IM))
+      allocate (Coupling%ca_deep  (IM))
+      allocate (Coupling%ca_turb  (IM))
+      allocate (Coupling%ca_shal  (IM))
+      allocate (Coupling%ca_rad   (IM))
+      allocate (Coupling%ca_micro (IM))
+      Coupling%ca_out    = clear_val
+      Coupling%ca_deep   = clear_val
+      Coupling%ca_turb   = clear_val
+      Coupling%ca_shal   = clear_val
+      Coupling%ca_rad    = clear_val
+      Coupling%ca_micro  = clear_val   
+      Coupling%cape      = clear_val
+      Coupling%tconvtend = clear_val
+      Coupling%qconvtend = clear_val
+      Coupling%uconvtend = clear_val
+      Coupling%vconvtend = clear_val
+    endif
 
     ! -- GSDCHEM coupling options
     if (Model%cplchm) then
@@ -1553,12 +1634,12 @@ module GFS_typedefs
       allocate (Coupling%det_mfi (IM,Model%levs))
       allocate (Coupling%cldcovi (IM,Model%levs))
 
-      Coupling%dqdti    = clear_val
-      Coupling%cnvqci   = clear_val
-      Coupling%upd_mfi  = clear_val
-      Coupling%dwn_mfi  = clear_val
-      Coupling%det_mfi  = clear_val
-      Coupling%cldcovi  = clear_val
+      Coupling%dqdti   = clear_val
+      Coupling%cnvqci  = clear_val
+      Coupling%upd_mfi = clear_val
+      Coupling%dwn_mfi = clear_val
+      Coupling%det_mfi = clear_val
+      Coupling%cldcovi = clear_val
     endif
 
     !--- needed for Thompson's aerosol option 
@@ -1625,6 +1706,12 @@ module GFS_typedefs
     real(kind=kind_phys) :: fhzero         = 0.0             !< seconds between clearing of diagnostic buckets
     logical              :: ldiag3d        = .false.         !< flag for 3d diagnostic fields
     logical              :: lssav          = .false.         !< logical flag for storing diagnostics
+
+!--- vay-2018
+    logical              :: ldiag_ugwp     = .false.         !< flag for UGWP diag fields
+    logical              :: do_ugwp        = .false.         !< flag do UGWP+RF
+    logical              :: do_tofd        = .false.         !< flag do Turb oro Form Drag
+
     real(kind=kind_phys) :: fhcyc          = 0.              !< frequency for surface data cycling (secs)
     logical              :: lgocart        = .false.         !< flag for 3d diagnostic fields for gocart 1
     real(kind=kind_phys) :: fhgoc3d        = 0.0             !< seconds between calls to gocart
@@ -1734,7 +1821,6 @@ module GFS_typedefs
                                                              !< ivegsrc = 2   => UMD  (13 category)
     integer              :: isot           =  0              !< isot = 0   => Zobler soil type  ( 9 category)
                                                              !< isot = 1   => STATSGO soil type (19 category)
-    logical              :: mom4ice        = .false.         !< flag controls mom4 sea ice
     logical              :: use_ufo        = .false.         !< flag for gcycle surface option
 
 !--- tuning parameters for physical parameterizations
@@ -1925,7 +2011,7 @@ module GFS_typedefs
                           !--- max hourly
                                avg_max_length,                                              &
                           !--- land/surface model control
-                               lsm, lsoil, nmtvr, ivegsrc, mom4ice, use_ufo,                &
+                               lsm, lsoil, nmtvr, ivegsrc, use_ufo,                         &
                           !--- physical parameterizations
                                ras, trans_trac, old_monin, cnvgwd, mstrat, moist_adj,       &
                                cscnv, cal_pre, do_aw, do_shoc, shocaftcnv, shoc_cld,        &
@@ -1935,7 +2021,7 @@ module GFS_typedefs
                                cs_parm, flgmin, cgwf, ccwf, cdmbgwd, sup, ctei_rm, crtrh,   &
                                dlqf, rbcr, shoc_parm, psauras, prauras, wminras,            &
                           !--- Rayleigh friction
-                               prslrd0, ral_ts,                                             &
+                               prslrd0, ral_ts,  ldiag_ugwp, do_ugwp, do_tofd,              &
                           !--- mass flux deep convection
                                clam_deep, c0s_deep, c1_deep, betal_deep,                    &
                                betas_deep, evfact_deep, evfactl_deep, pgcon_deep,           &
@@ -2000,6 +2086,13 @@ module GFS_typedefs
     Model%fn_nml           = fn_nml
     Model%fhzero           = fhzero
     Model%ldiag3d          = ldiag3d
+!
+!VAY-ugwp  --- set some GW-related switches
+!
+    Model%ldiag_ugwp       = ldiag_ugwp
+    Model%do_ugwp          = do_ugwp
+    Model%do_tofd          = do_tofd
+!
     Model%lssav            = lssav
     Model%fhcyc            = fhcyc
     Model%lgocart          = lgocart
@@ -2124,7 +2217,6 @@ module GFS_typedefs
     Model%lsoil            = lsoil
     Model%ivegsrc          = ivegsrc
     Model%isot             = isot
-    Model%mom4ice          = mom4ice
     Model%use_ufo          = use_ufo
 
 !--- tuning parameters for physical parameterizations
@@ -2421,7 +2513,14 @@ module GFS_typedefs
       else
         print*, ' Deep convection scheme disabled'
       endif
-      if (.not. Model%old_monin .and. .not. Model%do_shoc) print *,' New PBL scheme used'
+!
+      if (Model%satmedmf) then
+        print *,' scale-aware TKE-based moist edmf PBL scheme used'
+      elseif (Model%hybedmf) then
+        print *,' scale-aware hybrid edmf PBL scheme used'
+      elseif (Model%old_monin) then
+        print *,' old (old_monin) PBL scheme used'
+      endif
       if (.not. Model%shal_cnv) then
         Model%imfshalcnv = -1
         print *,' No shallow convection used'
@@ -2749,7 +2848,6 @@ module GFS_typedefs
       print *, ' lsoil             : ', Model%lsoil
       print *, ' ivegsrc           : ', Model%ivegsrc
       print *, ' isot              : ', Model%isot
-      print *, ' mom4ice           : ', Model%mom4ice
       print *, ' use_ufo           : ', Model%use_ufo
       print *, ' '
       print *, 'tuning parameters for physical parameterizations'
@@ -3255,6 +3353,76 @@ module GFS_typedefs
 !      allocate (Diag%det_mf (IM,Model%levs))
 !      allocate (Diag%cldcov (IM,Model%levs))
     endif
+!vay-2018
+    if (Model%ldiag_ugwp) then
+      allocate (Diag%du3dt_dyn  (IM,Model%levs) )
+
+      allocate (Diag%du3dt_pbl  (IM,Model%levs) )
+      allocate (Diag%dv3dt_pbl  (IM,Model%levs) )
+      allocate (Diag%dt3dt_pbl  (IM,Model%levs) )
+
+      allocate (Diag%du3dt_ogw  (IM,Model%levs) )
+      allocate (Diag%dv3dt_ogw  (IM,Model%levs) )
+      allocate (Diag%dt3dt_ogw  (IM,Model%levs) )
+
+      allocate (Diag%du3dt_mtb  (IM,Model%levs) )
+      allocate (Diag%dv3dt_mtb  (IM,Model%levs) )
+      allocate (Diag%dt3dt_mtb  (IM,Model%levs) )
+
+      allocate (Diag%du3dt_tms  (IM,Model%levs) )
+      allocate (Diag%dv3dt_tms  (IM,Model%levs) )
+      allocate (Diag%dt3dt_tms  (IM,Model%levs) )
+
+      allocate (Diag%du3dt_ngw  (IM,Model%levs) )
+      allocate (Diag%dv3dt_ngw  (IM,Model%levs) )
+      allocate (Diag%dt3dt_ngw  (IM,Model%levs) )
+
+      allocate (Diag%du3dt_cgw  (IM,Model%levs) )
+      allocate (Diag%dv3dt_cgw  (IM,Model%levs) )
+      allocate (Diag%dt3dt_moist  (IM,Model%levs) )
+
+      allocate (Diag%dudt_tot  (IM,Model%levs) )
+      allocate (Diag%dvdt_tot  (IM,Model%levs) )
+      allocate (Diag%dtdt_tot  (IM,Model%levs) )
+
+       allocate (Diag%uav_ugwp  (IM,Model%levs) )
+       allocate (Diag%tav_ugwp  (IM,Model%levs) )
+    endif
+
+       allocate (Diag%zmtb      (IM) )
+       allocate (Diag%zogw      (IM) )
+       allocate (Diag%zlwb      (IM) )
+       allocate (Diag%tau_ogw   (IM) )
+       allocate (Diag%tau_ngw   (IM) )
+       allocate (Diag%tau_mtb   (IM) )
+       allocate (Diag%tau_tofd  (IM) )
+!   endif
+
+!
+!ugwp - instant
+!
+    if (Model%do_ugwp) then
+      allocate (Diag%gwp_ax  (IM,Model%levs) )
+      allocate (Diag%gwp_ay  (IM,Model%levs) )
+      allocate (Diag%gwp_dtdt(IM,Model%levs) )
+      allocate (Diag%gwp_kdis(IM,Model%levs) )
+
+      allocate (Diag%gwp_axo  (IM,Model%levs) )
+      allocate (Diag%gwp_ayo  (IM,Model%levs) )
+      allocate (Diag%gwp_axc  (IM,Model%levs) )
+      allocate (Diag%gwp_ayc  (IM,Model%levs) )
+      allocate (Diag%gwp_axf  (IM,Model%levs) )
+      allocate (Diag%gwp_ayf  (IM,Model%levs) )
+!GW-sources
+      allocate (Diag%gwp_dcheat(IM,Model%levs) )
+      allocate (Diag%gwp_scheat(IM,Model%levs) )
+      allocate (Diag%gwp_fgf  (IM            ) )
+      allocate (Diag%gwp_okw  (IM            ) )
+
+      allocate (Diag%gwp_precip(IM) )
+      allocate (Diag%gwp_klevs (IM, 3) )
+
+    endif
 
     !--- 3D diagnostics for Thompson MP  
     allocate (Diag%refl_10cm(IM,Model%levs))
@@ -3335,9 +3503,9 @@ module GFS_typedefs
     Diag%u10mmax    = zero
     Diag%v10mmax    = zero
     Diag%wind10mmax = zero
-    Diag%u10max    = zero
-    Diag%v10max    = zero
-    Diag%spd10max = zero
+    Diag%u10max     = zero
+    Diag%v10max     = zero
+    Diag%spd10max   = zero
     Diag%rain       = zero
     Diag%rainc      = zero
     Diag%ice        = zero
@@ -3385,32 +3553,101 @@ module GFS_typedefs
     Diag%toticeb    = zero
     Diag%totsnwb    = zero
     Diag%totgrpb    = zero
-    Diag%ca_out  = zero
-    Diag%ca_deep  = zero
-    Diag%ca_turb  = zero
-    Diag%ca_shal = zero
-    Diag%ca_rad  = zero
-    Diag%ca_micro = zero
+!
+    if (Model%do_ca) then
+      Diag%ca_out   = zero
+      Diag%ca_deep  = zero
+      Diag%ca_turb  = zero
+      Diag%ca_shal  = zero
+      Diag%ca_rad   = zero
+      Diag%ca_micro = zero
+    endif
 !    if(Model%me == Model%master) print *,'in diag_phys_zero, totprcpb set to 0,kdt=',Model%kdt
 
     if (Model%ldiag3d) then
-      Diag%du3dt   = zero
-      Diag%dv3dt   = zero
-      Diag%dt3dt   = zero
-!      Diag%dq3dt   = zero
-!      Diag%upd_mf  = zero
-!      Diag%dwn_mf  = zero
-!      Diag%det_mf  = zero
+      Diag%du3dt    = zero
+      Diag%dv3dt    = zero
+      Diag%dt3dt    = zero
+!     Diag%dq3dt    = zero
+!     Diag%upd_mf   = zero
+!     Diag%dwn_mf   = zero
+!     Diag%det_mf   = zero
     endif
 
+!
+!-----------------------------
+    if (Model%ldiag_ugwp)   then
+      if(Model%me == Model%master) print *,'VAY in diag_phys_zero at kdt=',Model%kdt, Model%ldiag_ugwp
+      Diag%du3dt_pbl   = zero
+      Diag%dv3dt_pbl   = zero
+      Diag%dt3dt_pbl   = zero
+!
+      Diag%du3dt_ogw   = zero
+      Diag%dv3dt_ogw   = zero
+      Diag%dt3dt_ogw   = zero
+
+      Diag%du3dt_mtb   = zero
+      Diag%dv3dt_mtb   = zero
+      Diag%dt3dt_mtb   = zero
+
+      Diag%du3dt_tms   = zero
+      Diag%dv3dt_tms   = zero
+      Diag%dt3dt_tms   = zero
+
+      Diag%du3dt_ngw   = zero
+      Diag%dv3dt_ngw   = zero
+      Diag%dt3dt_ngw   = zero
+
+      Diag%du3dt_moist = zero
+      Diag%dv3dt_moist = zero
+      Diag%dt3dt_moist = zero
+
+      Diag%dudt_tot    = zero
+      Diag%dvdt_tot    = zero
+      Diag%dtdt_tot    = zero
+
+      Diag%uav_ugwp    = zero
+      Diag%tav_ugwp    = zero
+!COORDE
+      Diag%du3dt_dyn   = zero
+      Diag%zmtb        = zero
+      Diag%zogw        = zero
+      Diag%zlwb        = zero
+
+      Diag%tau_mtb     = zero
+      Diag%tau_ogw     = zero
+      Diag%tau_ngw     = zero
+      Diag%tau_tofd    = zero
+    endif
+!
+    if (Model%do_ugwp)   then
+      Diag%gwp_ax     = zero
+      Diag%gwp_ay     = zero
+      Diag%gwp_dtdt   = zero
+      Diag%gwp_kdis   = zero
+      Diag%gwp_axo    = zero
+      Diag%gwp_ayo    = zero
+      Diag%gwp_axc    = zero
+      Diag%gwp_ayc    = zero
+      Diag%gwp_axf    = zero
+      Diag%gwp_ayf    = zero
+      Diag%gwp_dcheat = zero
+      Diag%gwp_scheat = zero
+      Diag%gwp_precip = zero
+      Diag%gwp_klevs  = -99
+      Diag%gwp_fgf    = zero
+      Diag%gwp_okw    = zero
+    endif
+!-----------------------------
+
 ! max hourly diagnostics
-      Diag%refl_10cm = zero
-      Diag%refdmax = -35.
+      Diag%refl_10cm   = zero
+      Diag%refdmax     = -35.
       Diag%refdmax263k = -35.
-      Diag%t02max = -999.
-      Diag%t02min = 999.
-      Diag%rh02max = -999.
-      Diag%rh02min = 999.
+      Diag%t02max      = -999.
+      Diag%t02min      = 999.
+      Diag%rh02max     = -999.
+      Diag%rh02min     = 999.
     if (present(linit)) then
       if (linit) then
         Diag%totprcp = zero

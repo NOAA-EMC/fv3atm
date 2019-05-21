@@ -24,7 +24,7 @@
      &     ( im, km, ps, u1, v1, t1, q1, delt,                          &
      &       sfcemis, dlwflx, sfcnsw, sfcdsw, srflag,                   &
      &       cm, ch, prsl1, prslki, islimsk, ddvel,                     &
-     &       flag_iter, mom4ice, lsm, lprnt,ipr,                        &
+     &       flag_iter, lprnt, ipr,                                     &
 !  ---  input/outputs:
      &       hice, fice, tice, weasd, tskin, tprcp, stc, ep,            &
 !  ---  outputs:
@@ -41,7 +41,7 @@
 !          ( im, km, ps, u1, v1, t1, q1, delt,                          !
 !            sfcemis, dlwflx, sfcnsw, sfcdsw, srflag,                   !
 !            cm, ch, prsl1, prslki, islimsk, ddvel,                     !
-!            flag_iter, mom4ice, lsm,                                   !
+!            flag_iter,                                                 !
 !       input/outputs:                                                  !
 !            hice, fice, tice, weasd, tskin, tprcp, stc, ep,            !
 !       outputs:                                                        !
@@ -54,7 +54,8 @@
 !                     two-layer ice model                               !
 !         200x  -- sarah lu    added flag_iter                          !
 !    oct  2006  -- h. wei      added cmm and chh to output              !
-!         2007  -- x. wu modified for mom4 coupling (i.e. mom4ice)      !
+!         2007  -- x. wu modified for mom4 coupling (i.e. cpldice)      !
+!                                    (not used anymore)                 !
 !         2007  -- s. moorthi micellaneous changes                      !
 !    may  2009  -- y.-t. hou   modified to include surface emissivity   !
 !                     effect on lw radiation. replaced the confusing    !
@@ -87,9 +88,6 @@
 !     islimsk  - integer, sea/land/ice mask (=0/1/2)               im   !
 !     ddvel    - real,                                             im   !
 !     flag_iter- logical,                                          im   !
-!     mom4ice  - logical,                                          im   !
-!     lsm      - integer, flag for land surface model scheme       1    !
-!                =0: use osu scheme; =1: use noah scheme                !
 !                                                                       !
 !  input/outputs:                                                       !
 !     hice     - real, sea-ice thickness                           im   !
@@ -115,11 +113,11 @@
 !
       use machine , only : kind_phys
       use funcphys, only : fpvs
-      use physcons, only : sbc => con_sbc, hvap => con_hvap,            &
-     &                     tgice => con_tice, cp => con_cp,             &
-     &                     eps => con_eps, epsm1 => con_epsm1,          &
-     &                     grav => con_g, rvrdm1 => con_fvirt,          &
-     &                     t0c => con_t0c, rd => con_rd
+      use physcons, only : sbc   => con_sbc,  hvap => con_hvap,         &
+     &                     tgice => con_tice,   cp => con_cp,           &
+     &                     eps   => con_eps, epsm1 => con_epsm1,        &
+     &                     grav  => con_g,  rvrdm1 => con_fvirt,        &
+     &                     t0c   => con_t0c,    rd => con_rd
 !
       implicit none
 !
@@ -136,7 +134,7 @@
       real(kind=kind_phys), parameter :: dsi   = 1.0/0.33
 
 !  ---  inputs:
-      integer, intent(in) :: im, km, lsm, ipr
+      integer, intent(in) :: im, km, ipr
       logical, intent(in) :: lprnt
 
       real (kind=kind_phys), dimension(im), intent(in) :: ps, u1, v1,   &
@@ -146,7 +144,7 @@
       integer, dimension(im), intent(in) :: islimsk
       real (kind=kind_phys), intent(in)  :: delt
 
-      logical, intent(in) :: flag_iter(im), mom4ice
+      logical, intent(in) :: flag_iter(im)
 
 !  ---  input/outputs:
       real (kind=kind_phys), dimension(im), intent(inout) :: hice,      &
@@ -162,7 +160,7 @@
       real (kind=kind_phys), dimension(im) :: ffw, evapi, evapw,        &
      &       sneti, snetw, hfd, hfi,                                    &
 !    &       hflxi, hflxw, sneti, snetw, qssi, qssw, hfd, hfi, hfw,     &
-     &       focn, snof, hi_save, hs_save,                 rch, rho,    &
+     &       focn, snof,                                   rch, rho,    &
      &       snowd, theta1
 
       real (kind=kind_phys) :: t12, t14, tem, stsice(im,kmi)
@@ -184,7 +182,16 @@
           fice(i) = 0.0
         endif
       enddo
-
+!
+      do i = 1, im
+        if (flag(i)) then
+          if (srflag(i) > 0) then
+            ep(i)    = ep(i)*(1.-srflag(i))
+            weasd(i) = weasd(i) + 1.e3*tprcp(i)*srflag(i)
+            tprcp(i) = tprcp(i)*(1.-srflag(i))
+          endif
+        endif
+      enddo
 !  --- ...  update sea ice temperature
 
       do k = 1, kmi
@@ -194,25 +201,6 @@
           endif
         enddo
       enddo
-!
-      if (mom4ice) then
-        do i = 1, im
-          if (flag(i)) then
-            hi_save(i) = hice(i)
-            hs_save(i) = weasd(i) * 0.001
-          endif
-        enddo
-      elseif (lsm > 0) then           !  --- ...  snow-rain detection
-        do i = 1, im
-          if (flag(i)) then
-            if (srflag(i) > 0) then
-              ep(i) = ep(i)*(1.-srflag(i))
-              weasd(i) = weasd(i) + 1.e3*tprcp(i)*srflag(i)
-              tprcp(i)  = tprcp(i)*(1.-srflag(i))
-            endif
-          endif
-        enddo
-      endif
 
 !  --- ...  initialize variables. all units are supposedly m.k.s. unless specifie
 !           psurf is in pascals, wind is wind speed, theta1 is adiabatic surface
@@ -229,7 +217,7 @@
 !         sfcnsw is the net shortwave flux (direction: dn-up)
 
           wind      = max(sqrt(u1(i)*u1(i) + v1(i)*v1(i))               &
-     &                  + max(0.0, min(ddvel(i), 30.0)), 1.0)
+     &              + max(0.0, min(ddvel(i), 30.0)), 1.0)
 
           q0        = max(q1(i), 1.0e-8)
 !         tsurf(i)  = tskin(i)
@@ -239,15 +227,14 @@
           qs1       = max(eps*qs1 / (prsl1(i) + epsm1*qs1), 1.e-8)
           q0        = min(qs1, q0)
 
-          ffw(i)    = 1.0 - fice(i)
           if (fice(i) < cimin) then
             print *,'warning: ice fraction is low:', fice(i)
             fice(i) = cimin
-            ffw (i) = 1.0 - fice(i)
             tice(i) = tgice
             tskin(i)= tgice
             print *,'fix ice fraction: reset it to:', fice(i)
           endif
+          ffw(i)    = 1.0 - fice(i)
 
           qssi = fpvs(tice(i))
           qssi = eps*qssi / (ps(i) + epsm1*qssi)
@@ -256,11 +243,7 @@
 
 !  --- ...  snow depth in water equivalent is converted from mm to m unit
 
-          if (mom4ice) then
-            snowd(i) = weasd(i) * 0.001 / fice(i)
-          else
-            snowd(i) = weasd(i) * 0.001
-          endif
+          snowd(i) = weasd(i) * 0.001
 !         flagsnw(i) = .false.
 
 !  --- ...  when snow depth is less than 1 mm, a patchy snow is assumed and
@@ -279,8 +262,6 @@
           evapi(i) = elocp * rch(i) * (qssi - q0)
           evapw(i) = elocp * rch(i) * (qssw - q0)
 !         evap(i)  = fice(i)*evapi(i) + ffw(i)*evapw(i)
-
-!     if (lprnt) write(0,*)' tice=',tice(ipr)
 
           snetw(i) = sfcdsw(i) * (1.0 - albfw)
           snetw(i) = min(3.0*sfcnsw(i)/(1.0+2.0*ffw(i)), snetw(i))
@@ -318,35 +299,24 @@
         endif
       enddo
 
-!     if (lprnt) write(0,*)' tice2=',tice(ipr)
       call ice3lay
 !  ---  inputs:                                                         !
 !    &     ( im, kmi, fice, flag, hfi, hfd, sneti, focn, delt,          !
 !  ---  outputs:                                                        !
 !    &       snowd, hice, stsice, tice, snof, snowmt, gflux )           !
 
-!     if (lprnt) write(0,*)' tice3=',tice(ipr)
-      if (mom4ice) then
-        do i = 1, im
-          if (flag(i)) then
-            hice(i)  = hi_save(i)
-            snowd(i) = hs_save(i)
-          endif
-        enddo
-      endif
-
       do i = 1, im
         if (flag(i)) then
           if (tice(i) < timin) then
             print *,'warning: snow/ice temperature is too low:',tice(i)
-     &,' i=',i
+     &,             ' i=',i
             tice(i) = timin
             print *,'fix snow/ice temperature: reset it to:',tice(i)
           endif
 
           if (stsice(i,1) < timin) then
             print *,'warning: layer 1 ice temp is too low:',stsice(i,1)
-     &,' i=',i
+     &,             ' i=',i
             stsice(i,1) = timin
             print *,'fix layer 1 ice temp: reset it to:',stsice(i,1)
           endif

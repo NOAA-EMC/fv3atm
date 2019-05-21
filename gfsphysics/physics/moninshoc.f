@@ -13,7 +13,8 @@
      &                     tsea,heat,evap,stress,spd1,kpbl,
      &                     prsi,del,prsl,prslk,phii,phil,delt,
      &                     dusfc,dvsfc,dtsfc,dqsfc,dkt,hpbl,
-     &                     kinver,xkzm_m,xkzm_h,xkzm_s,lprnt,ipr,me)
+     &                     kinver,xkzm_m,xkzm_h,xkzm_s,xkzminv,
+     &                     lprnt,ipr,me)
 !
       use machine  , only : kind_phys
       use funcphys , only : fpvs
@@ -27,7 +28,7 @@
       integer ipr, me , ix, im, km, ntrac, ntcw, ncnd, ntke
       integer, dimension(im) ::  kinver, kpbl
 !
-      real(kind=kind_phys) delt, xkzm_m, xkzm_h, xkzm_s
+      real(kind=kind_phys) delt, xkzm_m, xkzm_h, xkzm_s, xkzminv
       real(kind=kind_phys), dimension(im,km) :: du, dv, tau, prnum
 !
       real(kind=kind_phys), dimension(im,km,ntrac) :: rtg
@@ -113,7 +114,8 @@
         do i=1,im
           xkzo(i,k)  = 0.0
           xkzmo(i,k) = 0.0
-          if (k < kinver(i)) then
+!         if (k < kinver(i)) then
+          if (k <= kinver(i)) then
 !    vertical background diffusivity for heat and momentum
             tem1       = 1.0 - prsi(i,k+1) * tx1(i)
             tem1       = min(1.0, exp(-tem1 * tem1 * 10.0))
@@ -129,16 +131,16 @@
 !
 !  diffusivity in the inversion layer is set to be xkzminv (m^2/s)
 !
-!     do k = 1,kmpbl
-!       do i=1,im
-!         if(zi(i,k+1) > 250.) then
-!           tem1 = (t1(i,k+1)-t1(i,k)) * rdzt(i,k)
-!           if(tem1 > 1.e-5) then
-!              xkzo(i,k)  = min(xkzo(i,k),xkzminv)
-!           endif
-!         endif
-!       enddo
-!     enddo
+      do k = 1,kmpbl
+        do i=1,im
+          if(zi(i,k+1) > 250.) then
+            tem1 = (t1(i,k+1)-t1(i,k)) * rdzt(i,k)
+            if(tem1 > 1.e-5) then
+               xkzo(i,k)  = min(xkzo(i,k),xkzminv)
+            endif
+          endif
+        enddo
+      enddo
 !
 !
       do i = 1,im
@@ -373,7 +375,6 @@
           a1(i,k)   = a1(i,k)   + dtodsd*dsdzt
           a1(i,kp1) = t1(i,kp1) - dtodsu*dsdzt
           a2(i,kp1) = q1(i,kp1,1)
-!
         enddo
       enddo
 !
@@ -395,7 +396,6 @@
 !     solve tridiagonal problem for heat and moisture
 !
       call tridin(im,km,ntloc,al,ad,au,a1,a2,au,a1,a2)
-
 !
 !     recover tendencies of heat and moisture
 !
@@ -404,8 +404,6 @@
             ttend      = (a1(i,k)-t1(i,k))   * rdt
             qtend      = (a2(i,k)-q1(i,k,1)) * rdt
             tau(i,k)   = tau(i,k)   + ttend
-!     if(lprnt .and. i==ipr .and. k<11) write(0,*)' tau=',tau(ipr,k)
-!    &,' ttend=',ttend,' a1=',a1(ipr,k),' t1=',t1(ipr,k)
             rtg(i,k,1) = rtg(i,k,1) + qtend
             dtsfc(i)   = dtsfc(i)   + cont*del(i,k)*ttend
             dqsfc(i)   = dqsfc(i)   + conq*del(i,k)*qtend

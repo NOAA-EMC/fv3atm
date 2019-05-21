@@ -439,8 +439,10 @@
 !
         if (fix_ncld_hr) then
 !!!       NCRND = min(nrcmax, (KRMAX-KRMIN+1)) * (DTF/1200) + 0.50001
-          NCRND = min(nrcmax, (KRMAX-KRMIN+1)) * (DTF/1200) + 0.10001
-!!        NCRND = min(nrcmax, (KRMAX-KRMIN+1)) * (DTF/600) + 0.50001
+          NCRND = min(nrcmax, (KRMAX-KRMIN+1)) * (DTF/1800) + 0.10001
+!         NCRND = min(nrcmax, (KRMAX-KRMIN+1)) * (DTF/1200) + 0.10001
+!         NCRND = min(nrcmax, (KRMAX-KRMIN+1)) * (DTF/900) + 0.50001
+!         NCRND = min(nrcmax, (KRMAX-KRMIN+1)) * (DTF/600) + 0.50001
 !         NCRND = min(nrcmax, (KRMAX-KRMIN+1)) * (DTF/360) + 0.50001
 !    &                                         + 0.50001
 !         NCRND = min(nrcmax, (KRMAX-KRMIN+1)) * min(1.0,DTF/360) + 0.1
