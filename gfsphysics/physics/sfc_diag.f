@@ -1,5 +1,3 @@
-      module module_sfc_diag
-      contains
       subroutine sfc_diag(im,ps,u1,v1,t1,q1,
      &                    tskin,qsurf,f10m,u10m,v10m,t2m,q2m,
      &                    prslki,evap,fm,fh,fm10,fh2)
@@ -10,10 +8,8 @@
      &              eps => con_eps, epsm1 => con_epsm1
       implicit none
 !
-      integer, intent(IN) :: im
-      real, dimension(im), intent(IN)  ::
-     &                        ps,   u1,   v1,   t1,  q1,  tskin,  qsurf
-      real, dimension(im), intent(OUT) ::
+      integer              im
+      real, dimension(im) :: ps,   u1,   v1,   t1,  q1,  tskin,  qsurf,
      &                       f10m, u10m, v10m, t2m, q2m, prslki, evap,
      &                       fm,   fh,   fm10, fh2
 !
@@ -61,5 +57,4 @@
       enddo
 
       return
-      end subroutine sfc_diag
-      end module module_sfc_diag
+      end

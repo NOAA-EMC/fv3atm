@@ -2,7 +2,7 @@ module module_physics_driver
 
   use machine,               only: kind_phys
   use physcons,              only: con_cp, con_fvirt, con_g, con_rd,    &
-                                   con_rv, con_hvap, con_hfus, con_pi,  &
+                                   con_rv, con_hvap, con_hfus,          &
                                    con_rerth, con_pi, rhc_max, dxmin,   &
                                    dxinv, pa2mb, rlapse, con_eps,       &
                                    con_epsm1,PQ0,A2A,A3,A4,RHmin        
@@ -16,20 +16,12 @@ module module_physics_driver
                                    GFS_sfcprop_type, GFS_coupling_type, &
                                    GFS_control_type, GFS_grid_type,     &
                                    GFS_tbd_type,     GFS_cldprop_type,  &
-                                   GFS_radtend_type, GFS_diag_type, huge
+                                   GFS_radtend_type, GFS_diag_type
   use gfdl_cloud_microphys_mod, only: gfdl_cloud_microphys_driver,      &
-                                      cloud_diagnosis
+				   cloud_diagnosis
   use module_mp_thompson,    only: mp_gt_driver
   use module_mp_wsm6,        only: wsm6
   use funcphys,              only: ftdp
-
-  use module_sfc_diff,  only: sfc_diff
-  use module_sfc_ocean, only: sfc_ocean
-  use module_sfc_drv,   only: sfc_drv
-  use module_sfc_sice,  only: sfc_sice, cimin
-  use module_sfc_cice,  only: sfc_cice
-  use module_sfc_nst,   only: sfc_nst
-  use module_sfc_diag,  only: sfc_diag
 
   implicit none
 
@@ -49,7 +41,7 @@ module module_physics_driver
   real(kind=kind_phys), parameter :: con_p001= 0.001d0
   real(kind=kind_phys), parameter :: con_d00 = 0.0d0
   real(kind=kind_phys), parameter :: con_day = 86400.d0
-  real(kind=kind_phys), parameter :: rad2dg  = 180.d0/con_pi
+
 
 !> GFS Physics Implementation Layer
 !> @brief Layer that invokes individual GFS physics routines
@@ -76,7 +68,7 @@ module module_physics_driver
 !  subprograms called:                                                  !
 !                                                                       !
 !     get_prs,  dcyc2t2_pre_rad (testing),    dcyc2t3,  sfc_diff,       !
-!     sfc_ocean,sfc_drv,  sfc_sice, sfc_cice, sfc_diag, moninp1,        !
+!     sfc_ocean,sfc_drv,  sfc_land, sfc_sice, sfc_diag, moninp1,        !
 !     moninp,   moninq1,  moninq,   satmedmfvdif,                       !
 !     gwdps,    ozphys,   get_phi,                                      !
 !     sascnv,   sascnvn,  samfdeepcnv, rascnv,   cs_convr, gwdc,        !
@@ -185,7 +177,7 @@ module module_physics_driver
 !                               vertical turbulent mixng scheme         !
 !      Nov  2018    J. Han      Add canopy heat storage parameterization!
 !      Feb  2019    Ruiyu S.    Add an alternate method to use          ! 
-!                               hydrometeors from GFDL MP in radiation  !
+!				hydrometeors from GFDL MP in radiation  !
 !
 !  ====================    end of description    =====================
 !  ====================  definition of variables  ====================  !
@@ -497,9 +489,6 @@ module module_physics_driver
 !--- GFDL Cloud microphysics
            crain, csnow, total_precip
 
-      real(kind=kind_phys) :: rho
-
-
       real(kind=kind_phys), dimension(Model%ntrac-Model%ncld+2) ::      &
            fscav, fswtr
 
@@ -521,36 +510,7 @@ module module_physics_driver
            dtsfc_cice, dqsfc_cice, dusfc_cice, dvsfc_cice, ulwsfc_cice, &
            tisfc_cice, tsea_cice, hice_cice, fice_cice,                 &
 !--- for CS-convection
-           wcbmax,                                                      &
-!--- required by module conversion:
-           prsl1,ddvel
-
-      real(kind=kind_phys), dimension(size(Grid%xlon,1))  ::            &
-             zorl_ocean,   zorl_land,   zorl_ice,                       &
-               cd_ocean,     cd_land,     cd_ice,                       &
-              cdq_ocean,    cdq_land,    cdq_ice,                       &
-               rb_ocean,     rb_land,     rb_ice,                       &
-           stress_ocean, stress_land, stress_ice,                       &
-             ffmm_ocean,   ffmm_land,   ffmm_ice,                       &
-             ffhh_ocean,   ffhh_land,   ffhh_ice,                       &
-           uustar_ocean, uustar_land, uustar_ice,                       &
-             fm10_ocean,   fm10_land,   fm10_ice,                       &
-              fh2_ocean,    fh2_land,    fh2_ice,                       &
-              qss_ocean,    qss_land,    qss_ice,                       &
-              cmm_ocean,    cmm_land,    cmm_ice,                       &
-              chh_ocean,    chh_land,    chh_ice,                       &
-             gflx_ocean,   gflx_land,   gflx_ice,                       &
-             evap_ocean,   evap_land,   evap_ice,                       &
-             hflx_ocean,   hflx_land,   hflx_ice,                       &
-             ep1d_ocean,   ep1d_land,   ep1d_ice,                       &
-                          weasd_land,  weasd_ice,                       &
-            snowd_ocean,  snowd_land,  snowd_ice,                       &
-            tprcp_ocean,  tprcp_land,  tprcp_ice,                       &
-             tsfc_ocean,   tsfc_land,   tsfc_ice,                       &
-            tsurf_ocean,  tsurf_land,  tsurf_ice
-
-      logical, dimension(size(Grid%xlon,1))                ::           &
-           wet, dry, ocean, lake, icy
+           wcbmax
 
       real(kind=kind_phys), dimension(size(Grid%xlon,1),1) ::           &
           area, land, rain0, snow0, ice0, graupel0
@@ -710,22 +670,22 @@ module module_physics_driver
       lprnt   = .false.
 
 !     do i=1,im
-!       lprnt = kdt >=   1 .and. abs(grid%xlon(i)*rad2dg-119.78) < 0.101 &
-!                          .and. abs(grid%xlat(i)*rad2dg-19.49)  < 0.101
-!       lprnt = kdt >= 250 .and. abs(grid%xlon(i)*rad2dg-227.34) < 0.101 &
-!                          .and. abs(grid%xlat(i)*rad2dg-6.206)  < 0.101
-!       lprnt = kdt >=   0 .and. abs(grid%xlon(i)*rad2dg-90.9375)< 0.501 &
-!                          .and. abs(grid%xlat(i)*rad2dg-36.0)   < 0.501
-!       lprnt = kdt >=   0 .and. abs(grid%xlon(i)*rad2dg-285.938 < 0.501 &
-!                          .and. abs(grid%xlat(i)*rad2dg+46.286) < 0.501
-!       lprnt = kdt >=   0 .and. abs(grid%xlon(i)*rad2dg-108.41) < 0.501 &
-!                          .and. abs(grid%xlat(i)*rad2dg-32.97)  < 0.501
+!       lprnt = kdt >= 1 .and. abs(grid%xlon(i)*57.29578-119.78) < 0.101      &
+!                        .and. abs(grid%xlat(i)*57.29578-19.49)  < 0.101
+!       lprnt = kdt >= 250 .and. abs(grid%xlon(i)*57.29578-227.34) < 0.101      &
+!                        .and. abs(grid%xlat(i)*57.29578-6.206)  < 0.101
+!       lprnt = kdt >= 0 .and. abs(grid%xlon(i)*57.29578-90.9375) < 0.501      &
+!                        .and. abs(grid%xlat(i)*57.29578-36.0)  < 0.501
+!       lprnt = kdt >= 0 .and. abs(grid%xlon(i)*57.29578-285.938) < 0.501      &
+!                        .and. abs(grid%xlat(i)*57.29578+46.286)  < 0.501
+!       lprnt = kdt >= 0 .and. abs(grid%xlon(i)*57.29578-108.41) < 0.501      &
+!                        .and. abs(grid%xlat(i)*57.29578-32.97)  < 0.501
 !       if (kdt == 1) &
-!         write(2000+me,*)' i=',i,' xlon=',grid%xlon(i)*rad2dg,          &
-!                       ' xlat=',grid%xlat(i)*rad2dg,' me=',me
+!         write(2000+me,*)' i=',i,' xlon=',grid%xlon(i)*57.29578,             &
+!                       ' xlat=',grid%xlat(i)*57.29578,' me=',me
 !       if (lprnt) then
 !         ipr = i
-!         write(0,*)' ipr=',ipr,'xlon=',grid%xlon(i)*rad2dg,' xlat=',grid%xlat(i)*rad2dg,' me=',me
+!         write(0,*)' ipr=',ipr,'xlon=',grid%xlon(i)*57.29578,' xlat=',grid%xlat(i)*57.29578,' me=',me
 !         exit
 !       endif
 !     enddo
@@ -886,7 +846,7 @@ module module_physics_driver
                    Statein%prsl, Statein%prslk, Statein%phii, Statein%phil, del)
 #else
 !GFDL   Adjust the geopotential height hydrostatically in a way consistent with FV3 discretization
-      call get_prs_fv3 (ix, levs, ntrac, Statein%phii, Statein%prsi,    &
+      call get_prs_fv3 (ix, levs, ntrac, Statein%phii, Statein%prsi, &
                         Statein%tgrs, Statein%qgrs, del, del_gz)
 #endif
 !
@@ -897,20 +857,6 @@ module module_physics_driver
 !  --- ...  frain=factor for centered difference scheme correction of rain amount.
 
       frain = dtf / dtp
-
-      do i = 1, IM
-         wet(i) = .false.
-         dry(i) = .false.
-       ocean(i) = .false.
-        lake(i) = .false.
-         icy(i) = .false.
-
-        if(Sfcprop%oceanfrac(i)>0.) ocean(i) = .true.
-        if(Sfcprop%landfrac(i) >0.)   dry(i) = .true.
-        if(Sfcprop%lakefrac(i) >0.)  lake(i) = .true.
-        if(ocean(i) .or. lake(i))     wet(i) = .true.
-        if(Sfcprop%fice(i) > cimin*max(Sfcprop%oceanfrac(i),Sfcprop%lakefrac(i))) icy(i) = .true.
-      enddo
 
       do i=1,im
         sigmaf(i) = max( Sfcprop%vfrac(i),0.01 )
@@ -974,10 +920,10 @@ module module_physics_driver
           dtsfc_cice(i)  = Coupling%dtsfcin_cpl(i)
           dqsfc_cice(i)  = Coupling%dqsfcin_cpl(i)
           tisfc_cice(i)  = Sfcprop%tisfc(i)
-          tsea_cice(i)   = Sfcprop%tsfco(i)
+          tsea_cice(i)   = Sfcprop%tsfc(i)
           fice_cice(i)   = Sfcprop%fice(i)
           hice_cice(i)   = Sfcprop%hice(i)
-          if(flag_cice(i)) Sfcprop%tsfc(i) = fice_cice(i)*tisfc_cice(i) + (1. - fice_cice(i))*tsea_cice(i)
+          if(flag_cice(i))Sfcprop%tsfc(i) = fice_cice(i)*tisfc_cice(i) + (1.0 - fice_cice(i))*tsea_cice(i)
         enddo
       endif
 
@@ -1191,7 +1137,6 @@ module module_physics_driver
         flag_iter(i)    = .true.
         drain(i)        = 0.0
         ep1d(i)         = 0.0
-        gflx(i)         = 0.0
         runof(i)        = 0.0
         hflx(i)         = 0.0
         evap(i)         = 0.0
@@ -1206,73 +1151,6 @@ module module_physics_driver
         Diag%smcref2(i) = 0.0
       enddo
 
-! --- aux arrays required if subroutines are embedded in modules:
-      prsl1(:) = Statein%prsl(:,1)
-      ddvel(:) = Tbd%phy_f2d(:,Model%num_p2d)
-
-          cd_ocean(:) = huge ;      cd_land(:) = huge ;      cd_ice(:) = huge
-         cdq_ocean(:) = huge ;     cdq_land(:) = huge ;     cdq_ice(:) = huge
-          rb_ocean(:) = huge ;      rb_land(:) = huge ;      rb_ice(:) = huge
-      stress_ocean(:) = huge ;  stress_land(:) = huge ;  stress_ice(:) = huge
-        ffmm_ocean(:) = huge ;    ffmm_land(:) = huge ;    ffmm_ice(:) = huge
-        ffhh_ocean(:) = huge ;    ffhh_land(:) = huge ;    ffhh_ice(:) = huge
-        fm10_ocean(:) = huge ;    fm10_land(:) = huge ;    fm10_ice(:) = huge
-         fh2_ocean(:) = huge ;     fh2_land(:) = huge ;     fh2_ice(:) = huge
-         qss_ocean(:) = huge ;     qss_land(:) = huge ;     qss_ice(:) = huge
-         cmm_ocean(:) = huge ;     cmm_land(:) = huge ;     cmm_ice(:) = huge
-         chh_ocean(:) = huge ;     chh_land(:) = huge ;     chh_ice(:) = huge
-        gflx_ocean(:) = huge ;    gflx_land(:) = huge ;    gflx_ice(:) = huge
-        evap_ocean(:) = huge ;    evap_land(:) = huge ;    evap_ice(:) = huge
-        hflx_ocean(:) = huge ;    hflx_land(:) = huge ;    hflx_ice(:) = huge
-        ep1d_ocean(:) = huge ;    ep1d_land(:) = huge ;    ep1d_ice(:) = huge 
-      uustar_ocean(:) = huge ;  uustar_land(:) = huge ;  uustar_ice(:) = huge
-                                 weasd_land(:) = huge ;   weasd_ice(:) = huge
-       snowd_ocean(:) = huge ;   snowd_land(:) = huge ;   snowd_ice(:) = huge
-       tprcp_ocean(:) = huge ;   tprcp_land(:) = huge ;   tprcp_ice(:) = huge
-        tsfc_ocean(:) = huge ;    tsfc_land(:) = huge ;    tsfc_ice(:) = huge
-       tsurf_ocean(:) = huge ;   tsurf_land(:) = huge ;   tsurf_ice(:) = huge
-        zorl_ocean(:) = huge ;    zorl_land(:) = huge ;    zorl_ice(:) = huge
-        wind(:)     = huge
-
-      do i=1,im
-        if (.not. Model%cplflx) then
-          Sfcprop%zorll(i) = Sfcprop%zorl(i)
-          Sfcprop%zorlo(i) = Sfcprop%zorl(i)
-          Sfcprop%tsfcl(i) = Sfcprop%tsfc(i)
-          Sfcprop%tsfco(i) = Sfcprop%tsfc(i)
-          Sfcprop%tisfc(i) = Sfcprop%tsfc(i)
-        end if
-        if(wet(i)) then
-           snowd_ocean(i) = Sfcprop%snowd(i)
-           tprcp_ocean(i) = Sfcprop%tprcp(i)
-            zorl_ocean(i) = Sfcprop%zorlo(i)
-            tsfc_ocean(i) = Sfcprop%tsfco(i)
-           tsurf_ocean(i) = Sfcprop%tsfco(i)
-        endif
-!
-        if (dry(i)) then
-          uustar_land(i) = Sfcprop%uustar(i)
-           weasd_land(i) = Sfcprop%weasd(i)
-           tprcp_land(i) = Sfcprop%tprcp(i)
-            zorl_land(i) = Sfcprop%zorll(i)
-            tsfc_land(i) = Sfcprop%tsfcl(i)
-           tsurf_land(i) = Sfcprop%tsfcl(i)
-           snowd_land(i) = Sfcprop%snowd(i)
-        end if
-!
-        if (icy(i)) then
-          uustar_ice(i) = Sfcprop%uustar(i)
-           weasd_ice(i) = Sfcprop%weasd(i)
-           tprcp_ice(i) = Sfcprop%tprcp(i)
-            zorl_ice(i) = Sfcprop%zorll(i)
-            tsfc_ice(i) = Sfcprop%tisfc(i)
-           tsurf_ice(i) = Sfcprop%tisfc(i)
-           snowd_ice(i) = Sfcprop%snowd(i)
-            ep1d_ice(i) = 0.
-            gflx_ice(i) = 0.
-        end if
-      enddo
-
 !  --- ...  lu: iter-loop over (sfc_diff,sfc_drv,sfc_ocean,sfc_sice)
 
       do iter=1,2
@@ -1281,33 +1159,16 @@ module module_physics_driver
 !
 !     if (lprnt) write(0,*)' tsfc=',Sfcprop%tsfc(ipr),' tsurf=',tsurf(ipr),iter
 
-        call sfc_diff                                                   &
-!  ---  inputs:
-          (im, Statein%pgr, Statein%ugrs, Statein%vgrs,                 &
-           Statein%tgrs, Statein%qgrs, Diag%zlvl,                       &
-           prsl1, work3, ddvel, sigmaf, vegtype,                        &
-           Sfcprop%shdmax, Model%ivegsrc,                               &
-           z01d, zt1d,                                                  & ! mg, sfc-perts
-           flag_iter, Model%redrag,                                     &
-! Weiguo Wang 2019/04 use 10-m wind diagnose zo
-           Diag%u10m,    Diag%v10m,                                     &  !wang, use 10-m wind diagnose zo 
-           wet, dry, icy, cice,                                         &
-             tsfc_ocean,   tsfc_land,   tsfc_ice,                       &
-            tsurf_ocean,  tsurf_land,  tsurf_ice,                       &
-            snowd_ocean,  snowd_land,  snowd_ice,                       &
-!  ---  input/output:
-             zorl_ocean,   zorl_land,   zorl_ice,                       &
-           uustar_ocean, uustar_land, uustar_ice,                       &
-!  ---  outputs:
-           cd_ocean,cd_land,cd_ice,cdq_ocean,cdq_land,cdq_ice,          &
-               rb_ocean,     rb_land,     rb_ice,                       &
-           stress_ocean, stress_land, stress_ice,                       &
-             ffmm_ocean,   ffmm_land,   ffmm_ice,                       &
-             ffhh_ocean,   ffhh_land,   ffhh_ice,                       &
-             fm10_ocean,   fm10_land,   fm10_ice,                       &
-              fh2_ocean,    fh2_land,    fh2_ice,                       &
-              wind)
-!
+        call sfc_diff (im, Statein%pgr, Statein%ugrs, Statein%vgrs,       &
+                       Statein%tgrs, Statein%qgrs, Diag%zlvl,             &
+                       Sfcprop%snowd, Sfcprop%tsfc,  Sfcprop%zorl, cd,    &
+                       cdq, rb, Statein%prsl(1,1), work3, islmsk, stress, &
+                       Sfcprop%ffmm,  Sfcprop%ffhh, Sfcprop%uustar,       &
+                       wind,   Tbd%phy_f2d(1,Model%num_p2d), fm10, fh2,   &
+                       sigmaf, vegtype, Sfcprop%shdmax, Model%ivegsrc,    &
+                       z01d,   zt1d,                                      &  ! mg, sfc-perts
+                       tsurf,  flag_iter, Model%redrag)
+
 !  --- ...  lu: update flag_guess
 
         do i=1,im
@@ -1319,54 +1180,37 @@ module module_physics_driver
         if (Model%nstf_name(1) > 0) then
 
           do i=1,im
-            if(icy(i)) then
-                zorl_ocean(i) = zorl_ice(i)
-                  cd_ocean(i) = cd_ice(i)
-                 cdq_ocean(i) = cdq_ice(i)
-                  rb_ocean(i) = rb_ice(i)
-              stress_ocean(i) = stress_ice(i)
-                ffmm_ocean(i) = ffmm_ice(i)
-                ffhh_ocean(i) = ffhh_ice(i)
-              uustar_ocean(i) = uustar_ice(i)
-                fm10_ocean(i) = fm10_ice(i)
-                 fh2_ocean(i) = fh2_ice(i)
-            endif
-          enddo
-
-          do i=1,im
-            if ( wet(i) .and. .not.icy(i) ) then
+            if (islmsk(i) == 0) then
               tem      = (Sfcprop%oro(i)-Sfcprop%oro_uf(i)) * rlapse
-              tseal(i) = tsfc_ocean(i)  + tem
-              tsurf_ocean(i) = tsurf_ocean(i) + tem
+              tseal(i) = Sfcprop%tsfc(i) + tem
+              tsurf(i) = tsurf(i)        + tem
             endif
           enddo
 
-          call sfc_nst                                                  & 
-!  ---  inputs:
-            (im, Statein%pgr, Statein%ugrs,                             &
-             Statein%vgrs, Statein%tgrs, Statein%qgrs,                  &
-             Sfcprop%tref, cd_ocean, cdq_ocean, prsl1, work3,           &
-             wet, icy,                                                  &
-             Grid%xlon, Grid%sinlat,stress_ocean,                       &
-             Radtend%semis, gabsbdlw, adjsfcnsw, tprcp_ocean,           &
-             dtf, kdt, Model%solhr, xcosz,                              &
-             ddvel, flag_iter,                                          &
-             flag_guess, Model%nstf_name, lprnt, ipr,                   &
-!  ---  input/output
-             tseal, tsurf_ocean, Sfcprop%xt, Sfcprop%xs,                &
-             Sfcprop%xu,Sfcprop%xv, Sfcprop%xz, Sfcprop%zm,             &
-             Sfcprop%xtts,Sfcprop%xzts, Sfcprop%dt_cool,                &
-             Sfcprop%z_c,Sfcprop%c_0, Sfcprop%c_d,                      &
-             Sfcprop%w_0, Sfcprop%w_d,Sfcprop%d_conv,                   &
-             Sfcprop%ifd, Sfcprop%qrain,                                &
+          call sfc_nst (im, Statein%pgr, Statein%ugrs,                     &
+                        Statein%vgrs, Statein%tgrs, Statein%qgrs,          &
+                        Sfcprop%tref, cd, cdq, Statein%prsl(1,1), work3,   &
+                        islmsk, Grid%xlon, Grid%sinlat, stress,            &
+                        Radtend%semis, gabsbdlw, adjsfcnsw, Sfcprop%tprcp, &
+                        dtf, kdt, Model%solhr, xcosz,                      &
+                        Tbd%phy_f2d(1,Model%num_p2d), flag_iter,           &
+                        flag_guess, Model%nstf_name, lprnt, ipr,           &
+!  --- Input/output
+                        tseal, tsurf, Sfcprop%xt, Sfcprop%xs, Sfcprop%xu,  &
+                        Sfcprop%xv, Sfcprop%xz, Sfcprop%zm, Sfcprop%xtts,  &
+                        Sfcprop%xzts, Sfcprop%dt_cool, Sfcprop%z_c,        &
+                        Sfcprop%c_0, Sfcprop%c_d, Sfcprop%w_0, Sfcprop%w_d,&
+                        Sfcprop%d_conv, Sfcprop%ifd, Sfcprop%qrain,        &
 !  ---  outputs:
-             qss_ocean, gflx_ocean, cmm_ocean, chh_ocean, evap_ocean,   &
-             hflx_ocean, ep1d_ocean)
+                        qss, gflx, Diag%cmm, Diag%chh, evap, hflx, ep1d)
+
+!         if (lprnt) write(0,*)' tseaz2=',tseal(ipr),' tref=', Sfcprop%tref(ipr),   &
+!    &     ' dt_cool=',dt_cool(ipr),' dt_warm=',2.0*xt(ipr)/xz(ipr),       &
+!    &     ' kdt=',kdt
 
           do i=1,im
-            if (wet(i) .and. .not.icy(i)) then
-              tsurf_ocean(i) = tsurf_ocean(i)                           &
-               - (Sfcprop%oro(i)-Sfcprop%oro_uf(i)) * rlapse
+            if ( islmsk(i) == 0 ) then
+              tsurf(i) = tsurf(i) - (Sfcprop%oro(i)-Sfcprop%oro_uf(i)) * rlapse
             endif
           enddo
 
@@ -1375,12 +1219,12 @@ module module_physics_driver
           if (Model%nstf_name(1) > 1) then
             zsea1 = 0.001*real(Model%nstf_name(4))
             zsea2 = 0.001*real(Model%nstf_name(5))
-            call get_dtzm_2d (Sfcprop%xt,  Sfcprop%xz, Sfcprop%dt_cool, &
-                              Sfcprop%z_c, wet, icy, zsea1, zsea2,      &
+            call get_dtzm_2d (Sfcprop%xt,  Sfcprop%xz, Sfcprop%dt_cool,  &
+                              Sfcprop%z_c, Sfcprop%slmsk, zsea1, zsea2,  &
                               im, 1, dtzm)
             do i=1,im
-              if (wet(i) .and. .not.icy(i)) then
-                tsfc_ocean(i) = max(271.2,Sfcprop%tref(i) + dtzm(i)) -  &
+              if ( islmsk(i) == 0 ) then
+              Sfcprop%tsfc(i) = max(271.2,Sfcprop%tref(i) + dtzm(i)) -   &
                                 (Sfcprop%oro(i)-Sfcprop%oro_uf(i))*rlapse
               endif
             enddo
@@ -1393,20 +1237,19 @@ module module_physics_driver
 
 !  --- ...  surface energy balance over ocean
 
-          call sfc_ocean                                                         &
+          call sfc_ocean                                                &
 !  ---  inputs:
-           (im, Statein%pgr, Statein%ugrs, Statein%vgrs, Statein%tgrs,           &
-            Statein%qgrs, tsfc_ocean, cd_ocean, cdq_ocean, prsl1,                &
-            work3, wet, cice, ddvel, flag_iter,                                  &
+           (im, Statein%pgr, Statein%ugrs, Statein%vgrs, Statein%tgrs,  &
+            Statein%qgrs, Sfcprop%tsfc, cd, cdq, Statein%prsl(1,1),     &
+            work3, islmsk, Tbd%phy_f2d(1,Model%num_p2d), flag_iter,     &
 !  ---  outputs:
-            qss_ocean, cmm_ocean, chh_ocean, gflx_ocean, evap_ocean, hflx_ocean, &
-            ep1d_ocean)
+             qss, Diag%cmm, Diag%chh, gflx, evap, hflx, ep1d)
 
         endif       ! if ( nstf_name(1) > 0 ) then
 
-!       if (lprnt) write(0,*)' sfalb=',Radtend%sfalb(ipr),' ipr=',ipr   &
-!     ,   ' weasd=',Sfcprop%weasd(ipr)                                  &
-!     ,   ' tprcp=',Sfcprop%tprcp(ipr),' kdt=',kdt,' iter=',iter        &
+!       if (lprnt) write(0,*)' sfalb=',Radtend%sfalb(ipr),' ipr=',ipr          &
+!     ,   ' weasd=',Sfcprop%weasd(ipr)             &
+!     ,   ' tprcp=',Sfcprop%tprcp(ipr),' kdt=',kdt,' iter=',iter               &
 !     ,' tseabefland=',Sfcprop%tsfc(ipr)
 
 !  --- ...  surface energy balance over land
@@ -1416,31 +1259,30 @@ module module_physics_driver
 !     if (lprnt) write(0,*)' tsead=',tsea(ipr),' tsurf=',tsurf(ipr),iter &
 !    &,' pgr=',pgr(ipr),' sfcemis=',sfcemis(ipr)
 
-          call sfc_drv                                                  &
+          call sfc_drv                                                 &
 !  ---  inputs:
-           (im, lsoil, Statein%pgr, Statein%ugrs, Statein%vgrs,         &
-            Statein%tgrs, Statein%qgrs, soiltyp, vegtype, sigmaf,       &
-            Radtend%semis, gabsbdlw, adjsfcdsw, adjsfcnsw, dtf,         &
-            Sfcprop%tg3, cd_land, cdq_land, prsl1, work3, Diag%zlvl,    &
-            dry, ddvel, slopetyp,                                       &
-            Sfcprop%shdmin, Sfcprop%shdmax, Sfcprop%snoalb,             &
-            Radtend%sfalb, flag_iter, flag_guess, Model%lheatstrg,      &
-            Model%isot, Model%ivegsrc,                                  &
-            bexp1d, xlai1d, vegf1d, Model%pertvegf,                     &
-!  ---  input/output:
-            weasd_land, snowd_land, tsfc_land, tprcp_land,              &
-            Sfcprop%srflag, smsoil, stsoil, slsoil, Sfcprop%canopy,     &
-            trans, tsurf_land, zorl_land,                               &
+           (im, lsoil, Statein%pgr, Statein%ugrs, Statein%vgrs,        &
+            Statein%tgrs, Statein%qgrs, soiltyp, vegtype, sigmaf,      &
+            Radtend%semis, gabsbdlw, adjsfcdsw, adjsfcnsw, dtf,        &
+            Sfcprop%tg3, cd, cdq, Statein%prsl(1,1), work3, Diag%zlvl, &
+            islmsk, Tbd%phy_f2d(1,Model%num_p2d), slopetyp,            &
+            Sfcprop%shdmin, Sfcprop%shdmax, Sfcprop%snoalb,            &
+            Radtend%sfalb, flag_iter, flag_guess, Model%lheatstrg,     &
+            Model%isot,Model%ivegsrc,                                  &
+            bexp1d, xlai1d, vegf1d, Model%pertvegf,                    &
+!  ---  in/outs:
+            Sfcprop%weasd, Sfcprop%snowd, Sfcprop%tsfc, Sfcprop%tprcp, &
+            Sfcprop%srflag, smsoil, stsoil, slsoil, Sfcprop%canopy,    &
+            trans, tsurf, Sfcprop%zorl,                                &
 !  ---  outputs:
-            Sfcprop%sncovr, qss_land, gflx_land, drain, evap_land,      &
-            hflx_land,ep1d_land, runof,                                 &
-            cmm_land, chh_land, evbs, evcw, sbsno, snowc, Diag%soilm,   &
+            Sfcprop%sncovr, qss, gflx, drain, evap, hflx, ep1d, runof, &
+            Diag%cmm, Diag%chh, evbs, evcw, sbsno, snowc, Diag%soilm,  &
             snohf, Diag%smcwlt2, Diag%smcref2, Diag%wet1)
 
 !     if (lprnt) write(0,*)' tseae=',tsea(ipr),' tsurf=',tsurf(ipr),iter &
 !    &,' phy_f2d=',phy_f2d(ipr,num_p2d)
 
-        endif !lsm
+        endif
 
 !       if (lprnt) write(0,*)' tseabeficemodel =',Sfcprop%tsfc(ipr),' me=',me   &
 !    &,   ' kdt=',kdt
@@ -1459,15 +1301,16 @@ module module_physics_driver
 !  ---  inputs:
            (im, lsoil, Statein%pgr, Statein%ugrs, Statein%vgrs,         &
             Statein%tgrs, Statein%qgrs, dtf, Radtend%semis, gabsbdlw,   &
-            adjsfcnsw, adjsfcdsw, Sfcprop%srflag, cd_ice, cdq_ice,      &
-            prsl1, work3, islmsk, ddvel, flag_iter, Model%mom4ice,      &
+            adjsfcnsw, adjsfcdsw, Sfcprop%srflag, cd, cdq,              &
+            Statein%prsl(1,1), work3, islmsk,                           &
+            Tbd%phy_f2d(1,Model%num_p2d), flag_iter, Model%mom4ice,     &
             Model%lsm, lprnt, ipr,                                      &
-!  ---  input/output:
-            zice, cice, tice, weasd_ice, tsfc_ice, tprcp_ice, stsoil,   &
-            ep1d_ice,                                                   &
+!  ---  input/outputs:
+            zice, cice, tice, Sfcprop%weasd, Sfcprop%tsfc,              &
+            Sfcprop%tprcp, stsoil, ep1d,                                & 
 !  ---  outputs:
-            snowd_ice, qss_ice, snowmt, gflx_ice, cmm_ice, chh_ice,     &
-            evap_ice, hflx_ice)
+            Sfcprop%snowd, qss, snowmt, gflx, Diag%cmm, Diag%chh, evap, &
+            hflx)
 
         if (Model%cplflx .or. Model%cplchm) then
           do i = 1, im
@@ -1477,12 +1320,13 @@ module module_physics_driver
           enddo
 
           call sfc_cice                                                 &
-!  ---  inputs:
+!  ---     inputs:
            (im, Statein%ugrs, Statein%vgrs, Statein%tgrs, Statein%qgrs, &
-            cd_ice, cdq_ice, prsl1, work3, islmsk_cice,                 &
-            ddvel, flag_iter, dqsfc_cice, dtsfc_cice,                   &
-!  ---  outputs:
-            qss_ice, cmm_ice, chh_ice, evap_ice, hflx_ice)
+            cd, cdq, Statein%prsl(1,1), work3, islmsk_cice,             &
+            Tbd%phy_f2d(1,Model%num_p2d),flag_iter, dqsfc_cice,         &
+            dtsfc_cice,                                                 &
+!  ---     outputs:
+            qss, Diag%cmm, Diag%chh, evap, hflx)
         endif
 
 !  --- ...  lu: update flag_iter and flag_guess
@@ -1492,124 +1336,21 @@ module module_physics_driver
           flag_guess(i) = .false.
 
           if (iter == 1 .and. wind(i) < 2.0) then
-            if (dry(i) .or. (wet(i) .and. .not.icy(i)                   &
-                .and. Model%nstf_name(1) > 0)) then
+            if (islmsk(i) == 1 .or. (islmsk(i) == 0 .and.           &
+                                     Model%nstf_name(1) > 0)) then
               flag_iter(i) = .true.
             endif
           endif
 
+!         if(islmsk(i) == 1 .and. iter == 1) then
+!           if (wind(i) < 2.0) flag_iter(i) = .true.
+!         elseif (islmsk(i) == 0 .and. iter == 1                        &
+!    &                           .and. nstf_name(1) > 0) then
+!           if (wind(i) < 2.0) flag_iter(i) = .true.
+!         endif
         enddo
 
       enddo   ! end iter_loop
-
-! --- generate ocean/land/ice composites
-
-      do i=1, im
-!            
-! Three-way composites (fields from sfc_diff)
-        Sfcprop%zorl(i)   = cmposit3(Sfcprop%oceanfrac(i),Sfcprop%landfrac(i), &
-                                      Sfcprop%lakefrac(i), cice(i),            &
-                              zorl_ocean(i), zorl_land(i), zorl_ice(i))
-        cd(i)             = cmposit3(Sfcprop%oceanfrac(i),Sfcprop%landfrac(i), &
-                                      Sfcprop%lakefrac(i), cice(i),            &
-                                cd_ocean(i),   cd_land(i), cd_ice(i))
-        cdq(i)            = cmposit3(Sfcprop%oceanfrac(i),Sfcprop%landfrac(i), &
-                                      Sfcprop%lakefrac(i), cice(i),            &
-                               cdq_ocean(i),  cdq_land(i), cdq_ice(i))
-        rb(i)             = cmposit3(Sfcprop%oceanfrac(i),Sfcprop%landfrac(i), &
-                                      Sfcprop%lakefrac(i), cice(i),            &
-                                rb_ocean(i),   rb_land(i), rb_ice(i))
-        stress(i)         = cmposit3(Sfcprop%oceanfrac(i),Sfcprop%landfrac(i), &
-                                      Sfcprop%lakefrac(i), cice(i),            &
-                           stress_ocean(i),stress_land(i), stress_ice(i))
-        Sfcprop%ffmm(i)   = cmposit3(Sfcprop%oceanfrac(i),Sfcprop%landfrac(i), &
-                                      Sfcprop%lakefrac(i), cice(i),            &
-                              ffmm_ocean(i), ffmm_land(i), ffmm_ice(i))
-        Sfcprop%ffhh(i)   = cmposit3(Sfcprop%oceanfrac(i),Sfcprop%landfrac(i), &
-                                      Sfcprop%lakefrac(i), cice(i),            &
-                              ffhh_ocean(i), ffhh_land(i), ffhh_ice(i))
-        Sfcprop%uustar(i) = cmposit3(Sfcprop%oceanfrac(i),Sfcprop%landfrac(i), &
-                                      Sfcprop%lakefrac(i), cice(i),            &
-                           uustar_ocean(i),uustar_land(i), uustar_ice(i))
-        fm10(i)           = cmposit3(Sfcprop%oceanfrac(i),Sfcprop%landfrac(i), &
-                                      Sfcprop%lakefrac(i), cice(i),            &
-                              fm10_ocean(i), fm10_land(i), fm10_ice(i))
-        fh2(i)            = cmposit3(Sfcprop%oceanfrac(i),Sfcprop%landfrac(i), &
-                                      Sfcprop%lakefrac(i), cice(i),            &
-                                fh2_ocean(i), fh2_land(i), fh2_ice(i))
-        tsurf(i)          = cmposit3(Sfcprop%oceanfrac(i),Sfcprop%landfrac(i), &
-                                      Sfcprop%lakefrac(i), cice(i),            &
-                             tsurf_ocean(i),tsurf_land(i), tsurf_ice(i))
-        Diag%cmm(i)       = cmposit3(Sfcprop%oceanfrac(i),Sfcprop%landfrac(i), &
-                                      Sfcprop%lakefrac(i), cice(i),            &
-                               cmm_ocean(i),  cmm_land(i), cmm_ice(i))
-        Diag%chh(i)       = cmposit3(Sfcprop%oceanfrac(i),Sfcprop%landfrac(i), &
-                                      Sfcprop%lakefrac(i), cice(i),            &
-                               chh_ocean(i),  chh_land(i), chh_ice(i))
-        gflx(i)           = cmposit3(Sfcprop%oceanfrac(i),Sfcprop%landfrac(i), &
-                                      Sfcprop%lakefrac(i), cice(i),            &
-                              gflx_ocean(i), gflx_land(i), gflx_ice(i))
-        ep1d(i)           = cmposit3(Sfcprop%oceanfrac(i),Sfcprop%landfrac(i), &
-                                      Sfcprop%lakefrac(i), cice(i),            &
-                              ep1d_ocean(i), ep1d_land(i), ep1d_ice(i))
-        Sfcprop%weasd(i)  = cmposit3(Sfcprop%oceanfrac(i),Sfcprop%landfrac(i), &
-                                      Sfcprop%lakefrac(i), cice(i),            &
-                           Sfcprop%weasd(i),weasd_land(i), weasd_ice(i))
-        Sfcprop%snowd(i)  = cmposit3(Sfcprop%oceanfrac(i),Sfcprop%landfrac(i), &
-                                      Sfcprop%lakefrac(i), cice(i),            &
-                            snowd_ocean(i), snowd_land(i), snowd_ice(i))
-        Sfcprop%tprcp(i)  = cmposit3(Sfcprop%oceanfrac(i),Sfcprop%landfrac(i), &
-                                      Sfcprop%lakefrac(i), cice(i),            &
-                            tprcp_ocean(i), tprcp_land(i), tprcp_ice(i))
-
-      if(Model%cplflx .and. flag_cice(i)) then ! 3-way when sfc_cice is used
-        evap(i)           = cmposit3(Sfcprop%oceanfrac(i),Sfcprop%landfrac(i), &
-                                      Sfcprop%lakefrac(i), cice(i),            &
-                              evap_ocean(i), evap_land(i), evap_ice(i))
-        hflx(i)           = cmposit3(Sfcprop%oceanfrac(i),Sfcprop%landfrac(i), &
-                                      Sfcprop%lakefrac(i), cice(i),            &
-                              hflx_ocean(i), hflx_land(i), hflx_ice(i))
-        qss(i)            = cmposit3(Sfcprop%oceanfrac(i),Sfcprop%landfrac(i), &
-                                      Sfcprop%lakefrac(i), cice(i),            &
-                               qss_ocean(i),  qss_land(i), qss_ice(i))
-        Sfcprop%tsfc(i)   = cmposit3(Sfcprop%oceanfrac(i),Sfcprop%landfrac(i), &
-                                      Sfcprop%lakefrac(i), cice(i),            &
-                              tsfc_ocean(i), tsfc_land(i), tsfc_ice(i))
-      else ! 2-way when sfc_sice used (fields already composited in sfc_sice)
-        evap(i)           = cmposit2(Sfcprop%oceanfrac(i),Sfcprop%landfrac(i), &
-                                      Sfcprop%lakefrac(i), cice(i),            &
-                              evap_ocean(i), evap_land(i), evap_ice(i))
-        hflx(i)           = cmposit2(Sfcprop%oceanfrac(i),Sfcprop%landfrac(i), &
-                                      Sfcprop%lakefrac(i), cice(i),            &
-                              hflx_ocean(i), hflx_land(i), hflx_ice(i))
-        qss(i)            = cmposit2(Sfcprop%oceanfrac(i),Sfcprop%landfrac(i), &
-                                      Sfcprop%lakefrac(i), cice(i),            &
-                                qss_ocean(i), qss_land(i), qss_ice(i))
-        Sfcprop%tsfc(i)   = cmposit2(Sfcprop%oceanfrac(i),Sfcprop%landfrac(i), &
-                                      Sfcprop%lakefrac(i), cice(i),            &
-                              tsfc_ocean(i), tsfc_land(i), tsfc_ice(i))
-        if (icy(i)) then
-          Diag%cmm(i)      =   cmm_ice(i)
-          Diag%chh(i)      =   chh_ice(i)
-          gflx(i)          =  gflx_ice(i)
-          ep1d(i)          =  ep1d_ice(i)
-          Sfcprop%weasd(i) = weasd_ice(i)
-          Sfcprop%snowd(i) = snowd_ice(i)
-        end if
-      endif ! cplflx .and. flag_cice
-
-        Sfcprop%zorll(i) = zorl_land(i)
-        Sfcprop%zorlo(i) = zorl_ocean(i)
-
-        if (dry(i)) Sfcprop%tsfcl(i) = tsfc_land(i)
-        if (wet(i)) then
-          Sfcprop%tsfco(i) = tsfc_ocean(i)
-          Sfcprop%tisfc(i) = tsfc_ice(i)
-        end if
-
-      end do
-
-! --- compositing done
 
       do i=1,im
         Diag%epi(i)     = ep1d(i)
@@ -1626,10 +1367,10 @@ module module_physics_driver
 
 !  --- ...  update near surface fields
 
-      call sfc_diag (im, Statein%pgr, Statein%ugrs, Statein%vgrs,       &
-                     Statein%tgrs, Statein%qgrs, Sfcprop%tsfc, qss,     &
-                     Sfcprop%f10m, Diag%u10m,    Diag%v10m,             &
-                     Sfcprop%t2m,  Sfcprop%q2m,  work3, evap,           &
+      call sfc_diag (im, Statein%pgr, Statein%ugrs, Statein%vgrs,     &
+                     Statein%tgrs, Statein%qgrs, Sfcprop%tsfc, qss,   &
+                     Sfcprop%f10m, Diag%u10m,    Diag%v10m,           &
+                     Sfcprop%t2m,  Sfcprop%q2m,  work3, evap,         &
                      Sfcprop%ffmm, Sfcprop%ffhh, fm10, fh2)
 
       Tbd%phy_f2d(:,Model%num_p2d) = 0.0
@@ -1667,7 +1408,7 @@ module module_physics_driver
 !       them to net SW heat fluxes
 
         do i=1,im
-           if(Sfcprop%landfrac(i) < 1.) then ! Not 100% land
+          if (islmsk(i) /= 1) then  ! not a land point
 !  ---  compute open water albedo
             xcosz_loc = max( 0.0, min( 1.0, xcosz(i) ))
             ocalnirdf_cpl(i) = 0.06
@@ -1800,10 +1541,7 @@ module module_physics_driver
                            Model%dspheat, dusfc1, dvsfc1, dtsfc1, dqsfc1, Diag%hpbl,&
                            gamt, gamq, dkt, kinver, Model%xkzm_m, Model%xkzm_h,     &
                            Model%xkzm_s, lprnt, ipr,                                &
-                           !!Model%xkzminv, Model%moninq_fac)
-                           ! Weiguo Wang 2019/04 HWRF PBL
-                           Model%xkzminv, Model%moninq_fac,islmsk)
-
+                           Model%xkzminv, Model%moninq_fac)
 !     if (lprnt)  write(0,*)' dtdtm=',(dtdt(ipr,k),k=1,15)
 !     if (lprnt)  write(0,*)' dqdtm=',(dqdt(ipr,k,1),k=1,15)
           elseif (.not. Model%old_monin) then
@@ -1952,10 +1690,7 @@ module module_physics_driver
                              Model%dspheat, dusfc1, dvsfc1, dtsfc1, dqsfc1, Diag%hpbl,&
                              gamt, gamq, dkt, kinver, Model%xkzm_m, Model%xkzm_h,     &
                              Model%xkzm_s, lprnt, ipr,                                &
-                             !!Model%xkzminv, Model%moninq_fac)
-                             ! Weiguo Wang 2019/04 HWRF PBL
-                             Model%xkzminv, Model%moninq_fac,islmsk)
-
+                             Model%xkzminv, Model%moninq_fac)
           elseif (.not. Model%old_monin) then
             call moninq(ix, im, levs, nvdiff, ntcw, dvdt, dudt, dtdt, dvdftra,        &
                         Statein%ugrs, Statein%vgrs, Statein%tgrs, vdftra,             &
@@ -2065,6 +1800,18 @@ module module_physics_driver
 
       endif
 
+      if (Model%cplflx) then
+        do i=1,im
+          if (flag_cice(i)) then
+                    cice(i) = fice_cice(i)
+                  dusfc1(i) = dusfc_cice(i)
+                  dvsfc1(i) = dvsfc_cice(i)
+                  dqsfc1(i) = dqsfc_cice(i)
+                  dtsfc1(i) = dtsfc_cice(i)
+          endif
+        enddo
+      endif
+
       if (Model%cplchm) then
         do i = 1, im
           tem1 = max(Diag%q1(i), 1.e-8)
@@ -2087,38 +1834,14 @@ module module_physics_driver
 
       if (Model%cplflx) then
         do i=1,im
-          if (ocean(i)) then ! Ocean only, NO LAKES
-            if (flag_cice(i)) cice(i) = fice_cice(i)
-            if (cice(i) == 1.) then ! use results from CICE
-              Coupling%dusfci_cpl(i) = dusfc_cice(i)
-              Coupling%dvsfci_cpl(i) = dvsfc_cice(i)
-              Coupling%dtsfci_cpl(i) = dtsfc_cice(i)
-              Coupling%dqsfci_cpl(i) = dqsfc_cice(i)
-            elseif (dry(i) .or. icy(i)) then ! use stress_ocean from sfc_diff for opw component at mixed point
-              tem1 = max(Diag%q1(i), 1.e-8)
-              rho = Statein%prsl(i,1) / (con_rd*Diag%t1(i)*(1.0+con_fvirt*tem1))
-              if (wind(i) > 0.) then
-                Coupling%dusfci_cpl(i) = -rho * stress_ocean(i) * Statein%ugrs(i,1) / wind(i) ! U-momentum flux
-                Coupling%dvsfci_cpl(i) = -rho * stress_ocean(i) * Statein%vgrs(i,1) / wind(i) ! V-momentum flux
-              else
-                Coupling%dusfci_cpl(i) = 0.
-                Coupling%dvsfci_cpl(i) = 0.
-              end if
-              Coupling%dtsfci_cpl(i) = con_cp   * rho * hflx_ocean(i) !sensible heat flux over open ocean
-              Coupling%dqsfci_cpl(i) = con_hvap * rho * evap_ocean(i) !  latent heat flux over open ocean
-            else  ! use results from PBL scheme for 100% open ocean
-              Coupling%dusfci_cpl(i) = dusfc1(i)
-              Coupling%dvsfci_cpl(i) = dvsfc1(i)
-              Coupling%dtsfci_cpl(i) = dtsfc1(i)
-              Coupling%dqsfci_cpl(i) = dqsfc1(i)
-            endif
-
-            Coupling%dusfc_cpl (i) = Coupling%dusfc_cpl(i) + Coupling%dusfci_cpl(i) * dtf
-            Coupling%dvsfc_cpl (i) = Coupling%dvsfc_cpl(i) + Coupling%dvsfci_cpl(i) * dtf
-            Coupling%dtsfc_cpl (i) = Coupling%dtsfc_cpl(i) + Coupling%dtsfci_cpl(i) * dtf
-            Coupling%dqsfc_cpl (i) = Coupling%dqsfc_cpl(i) + Coupling%dqsfci_cpl(i) * dtf
-!
-          endif ! Ocean only, NO LAKES
+          Coupling%dusfc_cpl (i) = Coupling%dusfc_cpl(i) + dusfc1(i)*dtf
+          Coupling%dvsfc_cpl (i) = Coupling%dvsfc_cpl(i) + dvsfc1(i)*dtf
+          Coupling%dtsfc_cpl (i) = Coupling%dtsfc_cpl(i) + dtsfc1(i)*dtf
+          Coupling%dqsfc_cpl (i) = Coupling%dqsfc_cpl(i) + dqsfc1(i)*dtf
+          Coupling%dusfci_cpl(i) = dusfc1(i)
+          Coupling%dvsfci_cpl(i) = dvsfc1(i)
+          Coupling%dtsfci_cpl(i) = dtsfc1(i)
+          Coupling%dqsfci_cpl(i) = dqsfc1(i)
         enddo
       endif
 !-------------------------------------------------------lssav if loop ----------
@@ -3067,8 +2790,8 @@ module module_physics_driver
 !       if (lprnt) then
 !         if (kbot(ipr) <= ktop(ipr)) then
 !           write(*,*) 'kbot <= ktop     for (lat,lon) = ',             &
-!    &            xlon(ipr)*rad2dg,xlat(ipr)*rad2dg
-!           write(*,*) 'kcnv kbot ktop dlength  ',kcnv(ipr),            &
+!    &            xlon(ipr)*57.29578,xlat(ipr)*57.29578
+!           write(*,*) 'kcnv kbot ktop dlength  ',kcnv(ipr),       &
 !    &            kbot(ipr),ktop(ipr),dlength(ipr)
 !           write(*,9000) kdt
 !9000       format(/,3x,'k',5x,'cuhr(k)',4x,'cumchr(k)',5x,             &
@@ -4088,13 +3811,13 @@ module module_physics_driver
 !              do i=1,im
 !
 !                if(Model%me==0) then
-!                  if(Tbd%phy_f3d(i,k,1) > 5.) then 
+!		  if(Tbd%phy_f3d(i,k,1) > 5.) then 
 !                    write(6,*) 'phy driver:cloud radii:',Model%kdt, i,k,        &
-!                               Tbd%phy_f3d(i,k,1)
+!				Tbd%phy_f3d(i,k,1)
 !                  endif 
-!                 if(Tbd%phy_f3d(i,k,3)> 0.0) then 
+!		  if(Tbd%phy_f3d(i,k,3)> 0.0) then 
 !                    write(6,*) 'phy driver:rain radii:',Model%kdt, i,k,         & 
-!                               Tbd%phy_f3d(i,k,3)
+!				Tbd%phy_f3d(i,k,3)
 !                  endif 
 !
 !                endif 
@@ -4161,8 +3884,8 @@ module module_physics_driver
 !        if (lprnt) print*,'debug calpreciptype: DOMR,DOMZR,DOMIP,DOMS '
 !     &,DOMR(ipr),DOMZR(ipr),DOMIP(ipr),DOMS(ipr)
 !        do i=1,im
-!         if (abs(xlon(i)*rad2dg-114.0) .lt. 0.2  .and.
-!     &       abs(xlat(i)*rad2dg- 40.0) .lt. 0.2)
+!         if (abs(xlon(i)*57.29578-114.0) .lt. 0.2  .and.
+!     &    abs(xlat(i)*57.29578-40.0) .lt. 0.2)
 !     &    print*,'debug calpreciptype: DOMR,DOMZR,DOMIP,DOMS ',
 !     &    DOMR(i),DOMZR(i),DOMIP(i),DOMS(i)
 !       end do
@@ -4323,7 +4046,6 @@ module module_physics_driver
         enddo
       endif
 
-    if(.not. Model%cplflx) then
 !  --- ...  xw: return updated ice thickness & concentration to global array
       do i = 1, im
         if (islmsk(i) == 2) then
@@ -4336,7 +4058,6 @@ module module_physics_driver
           Sfcprop%tisfc(i) = Sfcprop%tsfc(i)
         endif
       enddo
-    endif
 
 !  --- ...  return updated smsoil and stsoil to global arrays
       do k=1,lsoil
@@ -4432,7 +4153,7 @@ module module_physics_driver
 !     if (kdt > 2 ) call mpi_quit(70)
 !    if (lprnt) write(0,*)'qt0out=',Stateout%gt0(ipr,:)    &
 !    if (lprnt) write(0,*)'gq0outtke=',Stateout%gq0(ipr,1:25,ntke)    &
-!      ,'xlon=',grid%xlon(ipr)*rad2dg,' xlat=',grid%xlat(ipr)*rad2dg
+!      ,'xlon=',grid%xlon(ipr)*57.29578,' xlat=',grid%xlat(ipr)*57.29578
 !     if (lprnt) write(0,*)' clouddriverend=',Tbd%phy_f3d(ipr,:,1)*100,' kdt=',kdt
 
 !     deallocate (qlcn, qicn, w_upi, cf_upi, CNV_MFD, CNV_PRC3, &
@@ -4449,17 +4170,17 @@ module module_physics_driver
             tem = sqrt(Diag%u10m(i)*Diag%u10m(i) + Diag%v10m(i)*Diag%v10m(i))
             if(mod(kdtminus1,nsteps_per_reset)==0)then
                Diag%spd10max(i) = -999.
-               Diag%u10max(i)   = -999.
-               Diag%v10max(i)   = -999.
-               Diag%t02max(i)   = -999.
-               Diag%t02min(i)   =  999.
-               Diag%rh02max(i)  = -999.
-               Diag%rh02min(i)  =  999.
+               Diag%u10max(i)    = -999.
+               Diag%v10max(i)    = -999.
+               Diag%t02max(i)    = -999.
+               Diag%t02min(i)    = 999.
+               Diag%rh02max(i)    = -999.
+               Diag%rh02min(i)    = 999.
             endif
             if (tem > Diag%spd10max(i)) then
                Diag%spd10max(i) = tem
-               Diag%u10max(i)   = Diag%u10m(i)
-               Diag%v10max(i)   = Diag%v10m(i)
+               Diag%u10max(i)    = Diag%u10m(i)
+               Diag%v10max(i)    = Diag%v10m(i)
             endif
             pshltr=Statein%pgr(i)*exp(-0.068283/Stateout%gt0(i,1))
             QCQ=PQ0/pshltr*EXP(A2A*(Sfcprop%t2m(i)-A3)/(Sfcprop%t2m(i)-A4))
@@ -4828,36 +4549,6 @@ module module_physics_driver
       endif
       return
       end subroutine dgamln
-
-
-    real function cmposit2(frac_ocean,frac_dry,frac_lake,frac_ice,oceanval,landval,iceval)
-! --- 2-way compositing (use with ice/non-ice composited variables)
-    implicit none
-    real(kind=kind_phys),intent(IN) :: frac_ocean,frac_dry,frac_lake,frac_ice,oceanval,landval,iceval
-    real(kind=kind_phys)            :: frac_wet
-
-    frac_wet=max(frac_lake,frac_ocean)
-    if (frac_ice == 0.) then
-      cmposit2 = frac_dry*landval + frac_wet*oceanval
-    else
-      cmposit2 = frac_dry*landval + frac_wet*iceval
-    end if
-    return
-    end function cmposit2
-
-
-    real function cmposit3(frac_ocean,frac_dry,frac_lake,frac_ice,oceanval,landval,iceval)
-! --- 3-way compositing
-    implicit none
-    real(kind=kind_phys),intent(IN) :: frac_ocean,frac_dry,frac_lake,frac_ice,oceanval,landval,iceval
-
-    if (frac_dry == 0.0 .and. iceval == oceanval) then
-      cmposit3 = oceanval
-    else
-      cmposit3 = frac_dry*landval + frac_ice*iceval + (1.-frac_dry-frac_ice)*oceanval
-    endif
-    return
-    end function cmposit3
 
 ! *** mg, sfc-perts
 

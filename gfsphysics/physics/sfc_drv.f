@@ -1,5 +1,3 @@
-       module module_sfc_drv
-       contains
 !>  \file sfc_drv.f
 !!  This file contains the NOAH land surface scheme.
 !> \defgroup NOAH NOAH Land Surface
@@ -38,7 +36,7 @@
 !  ---  inputs:                                                         !
 !          ( im, km, ps, u1, v1, t1, q1, soiltyp, vegtype, sigmaf,      !
 !            sfcemis, dlwflx, dswsfc, snet, delt, tg3, cm, ch,          !
-!            prsl1, prslki, zf, land, ddvel, slopetyp,                  !
+!            prsl1, prslki, zf, islimsk, ddvel, slopetyp,               !
 !            shdmin, shdmax, snoalb, sfalb, flag_iter, flag_guess,      !
 !            lheatstrg, isot, ivegsrc,                                  !
 !  ---  in/outs:                                                        !
@@ -85,7 +83,7 @@
 !     prsl1    - real, sfc layer 1 mean pressure (pa)              im   !
 !     prslki   - real,                                             im   !
 !     zf       - real, height of bottom layer (m)                  im   !
-!     land     - logical, = T if a point with any land             im   !
+!     islimsk  - integer, sea/land/ice mask (=0/1/2)               im   !
 !     ddvel    - real,                                             im   !
 !     slopetyp - integer, class of sfc slope (integer index)       im   !
 !     shdmin   - real, min fractional coverage of green veg        im   !
@@ -111,7 +109,6 @@
 !     canopy   - real, canopy moisture content (m)                 im   !
 !     trans    - real, total plant transpiration (m/s)             im   !
 !     tsurf    - real, surface skin temperature (after iteration)  im   !
-!     zorl     - real, surface roughness                           im   !
 !                                                                       !
 !  outputs:                                                             !
 !     sncovr1  - real, snow cover over land (fractional)           im   !
@@ -132,6 +129,7 @@
 !     snohf    - real, snow/freezing-rain latent heat flux (w/m**2)im   !
 !     smcwlt2  - real, dry soil moisture threshold                 im   !
 !     smcref2  - real, soil moisture threshold                     im   !
+!     zorl     - real, surface roughness                           im   !
 !     wet1     - real, normalized soil wetness                     im   !
 !                                                                       !
 !  ====================    end of description    =====================  !
@@ -142,7 +140,7 @@
 !  ---  inputs:
      &     ( im, km, ps, u1, v1, t1, q1, soiltyp, vegtype, sigmaf,      &
      &       sfcemis, dlwflx, dswsfc, snet, delt, tg3, cm, ch,          &
-     &       prsl1, prslki, zf, land, ddvel, slopetyp,                  &
+     &       prsl1, prslki, zf, islimsk, ddvel, slopetyp,               &
      &       shdmin, shdmax, snoalb, sfalb, flag_iter, flag_guess,      &
      &       lheatstrg, isot, ivegsrc,                                  &
      &       bexppert, xlaipert, vegfpert,pertvegf,                     &  ! sfc perts, mgehne
@@ -181,7 +179,7 @@
 
 !  ---  input:
       integer, intent(in) :: im, km, isot, ivegsrc
-      real (kind=kind_phys), dimension(5), intent(in) :: pertvegf
+      real (kind=kind_phys), dimension(6), intent(in) :: pertvegf
 
       integer, dimension(im), intent(in) :: soiltyp, vegtype, slopetyp
 
@@ -191,15 +189,16 @@
      &       snoalb, sfalb, zf,
      &       bexppert, xlaipert, vegfpert
 
+      integer, dimension(im), intent(in) :: islimsk
       real (kind=kind_phys),  intent(in) :: delt
 
-      logical, dimension(im), intent(in) :: flag_iter, flag_guess, land
+      logical, dimension(im), intent(in) :: flag_iter, flag_guess
 
       logical, intent(in) :: lheatstrg
 
 !  ---  in/out:
       real (kind=kind_phys), dimension(im), intent(inout) :: weasd,     &
-     &       snwdph, tskin, tprcp, srflag, canopy, trans, tsurf, zorl
+     &       snwdph, tskin, tprcp, srflag, canopy, trans, tsurf
 
       real (kind=kind_phys), dimension(im,km), intent(inout) ::         &
      &       smc, stc, slc
@@ -208,7 +207,7 @@
       real (kind=kind_phys), dimension(im), intent(out) :: sncovr1,     &
      &       qsurf, gflux, drain, evap, hflx, ep, runoff, cmm, chh,     &
      &       evbs, evcw, sbsno, snowc, stm, snohf, smcwlt2, smcref2,    &
-     &       wet1
+     &       zorl, wet1
     
 !  ---  locals:
       real (kind=kind_phys), dimension(im) :: rch, rho,                 &
@@ -235,13 +234,21 @@
       integer :: couple, ice, nsoil, nroot, slope, stype, vtype 
       integer :: i, k, iflag
 
+      logical :: flag(im)
 !
 !===> ...  begin here
 !
+
+!  --- ...  set flag for land points
+
+      do i = 1, im
+        flag(i) = (islimsk(i) == 1)
+      enddo
+
 !  --- ...  save land-related prognostic fields for guess run
 
       do i = 1, im
-        if (land(i) .and. flag_guess(i)) then
+        if (flag(i) .and. flag_guess(i)) then
           weasd_old(i)  = weasd(i)
           snwdph_old(i) = snwdph(i)
           tskin_old(i)  = tskin(i)
@@ -254,13 +261,13 @@
             stc_old(i,k) = stc(i,k)
             slc_old(i,k) = slc(i,k)
           enddo
-        endif   ! land & flag_guess
+        endif
       enddo
 
 !  --- ...  initialization block
 
       do i = 1, im
-        if (flag_iter(i) .and. land(i)) then
+        if (flag_iter(i) .and. flag(i)) then
           ep(i)     = 0.0
           evap (i)  = 0.0
           hflx (i)  = 0.0
@@ -274,13 +281,13 @@
           sbsno(i)  = 0.0
           snowc(i)  = 0.0
           snohf(i)  = 0.0
-        endif   ! flag_iter & land
+        endif
       enddo
 
 !  --- ...  initialize variables 
 
       do i = 1, im
-        if (flag_iter(i) .and. land(i)) then
+        if (flag_iter(i) .and. flag(i)) then
           wind(i) = max(sqrt( u1(i)*u1(i) + v1(i)*v1(i) )               &
      &                + max(0.0, min(ddvel(i), 30.0)), 1.0)
 
@@ -291,19 +298,19 @@
           qs1(i) = fpvs( t1(i) )        !* qs1=sat. humidity at level 1 (kg/kg)
           qs1(i) = max(eps*qs1(i) / (prsl1(i)+epsm1*qs1(i)), 1.e-8)
           q0 (i) = min(qs1(i), q0(i))
-        endif   ! flag_iter & land
+        endif
       enddo
 
       do i = 1, im
-        if (flag_iter(i) .and. land(i)) then
+        if (flag_iter(i) .and. flag(i)) then
           do k = 1, km
             zsoil(i,k) = zsoil_noah(k)
           enddo
-        endif   ! flag_iter & land
+        endif
       enddo
 
       do i = 1, im
-        if (flag_iter(i) .and. land(i)) then
+        if (flag_iter(i) .and. flag(i)) then
 
 !  --- ...  noah: prepare variables to run noah lsm
 !   1. configuration information (c):
@@ -554,30 +561,30 @@
 !    nroot   - number of root layers, a function of veg type, determined
 !              in subroutine redprm.
 
-        endif   ! flag_iter and flag
+        endif   ! end if_flag_iter_and_flag_block
       enddo   ! end do_i_loop
 
 !   --- ...  compute qsurf (specific humidity at sfc)
 
       do i = 1, im
-        if (flag_iter(i) .and. land(i)) then
+        if (flag_iter(i) .and. flag(i)) then
           rch(i)   = rho(i) * cp * ch(i) * wind(i)
           qsurf(i) = q1(i)  + evap(i) / (elocp * rch(i))
-        endif   ! flag_iter & flag
+        endif
       enddo
 
       do i = 1, im
-        if (flag_iter(i) .and. land(i)) then
+        if (flag_iter(i) .and. flag(i)) then
           tem     = 1.0 / rho(i)
           hflx(i) = hflx(i) * tem * cpinv
           evap(i) = evap(i) * tem * hvapi
-        endif   ! flag_iter & flag
+        endif
       enddo
 
 !  --- ...  restore land-related prognostic fields for guess run
 
       do i = 1, im
-        if (land(i)) then
+        if (flag(i)) then
           if (flag_guess(i)) then
             weasd(i)  = weasd_old(i)
             snwdph(i) = snwdph_old(i)
@@ -591,11 +598,10 @@
               stc(i,k) = stc_old(i,k)
               slc(i,k) = slc_old(i,k)
             enddo
-          else    ! flag_guess = F
+          else
             tskin(i) = tsurf(i)    
-          endif   ! flag_guess
-        endif     ! flag
-
+          endif
+        endif
       enddo
 !
       return
@@ -604,4 +610,3 @@
 !-----------------------------------
 !> @}
 !> @}
-       end module module_sfc_drv

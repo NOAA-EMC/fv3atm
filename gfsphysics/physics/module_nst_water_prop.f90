@@ -597,7 +597,7 @@ end subroutine solar_time_from_julian
 
  end subroutine get_dtzm_point
 
- subroutine get_dtzm_2d(xt,xz,dt_cool,zc,wet,icy,z1,z2,nx,ny,dtm)
+ subroutine get_dtzm_2d(xt,xz,dt_cool,zc,slmsk,z1,z2,nx,ny,dtm)
 ! ===================================================================== !
 !                                                                       !
 !  description:  get dtm = mean of dT(z) (z1 - z2) with NSST dT(z)      !
@@ -605,7 +605,7 @@ end subroutine solar_time_from_julian
 !                                                                       !
 !  usage:                                                               !
 !                                                                       !
-!    call get_dtzm_2d                                                   !
+!    call get_dtzm_2d                                                     !
 !                                                                       !
 !       inputs:                                                         !
 !          (xt,xz,dt_cool,zc,z1,z2,                                     !
@@ -620,8 +620,6 @@ end subroutine solar_time_from_julian
 !     xz      - real, dtl thickness                                  1  !
 !     dt_cool - real, sub-layer cooling amount                       1  !
 !     zc      - sub-layer cooling thickness                          1  !
-!     wet     - logical, flag for wet point (ocean or lake)          1  !
-!     icy     - logical, flag for ice point (ocean or lake)          1  !
 !     nx      - integer, dimension in x-direction (zonal)            1  !
 !     ny      - integer, dimension in y-direction (meridional)       1  !
 !     z1      - lower bound of depth of sea temperature              1  !
@@ -634,8 +632,7 @@ end subroutine solar_time_from_julian
   implicit none
 
   integer, intent(in) :: nx,ny
-  real (kind=kind_phys), dimension(nx,ny), intent(in)  :: xt,xz,dt_cool,zc
-  logical, dimension(nx,ny), intent(in)  :: wet,icy
+  real (kind=kind_phys), dimension(nx,ny), intent(in)  :: xt,xz,dt_cool,zc,slmsk
   real (kind=kind_phys), intent(in)  :: z1,z2
   real (kind=kind_phys), dimension(nx,ny), intent(out) :: dtm                    
 ! Local variables
@@ -652,7 +649,7 @@ end subroutine solar_time_from_julian
 !
       dtw(i,j) = 0.0      
       dtc(i,j) = 0.0      
-      if ( wet(i,j) .and. .not.icy(i,j) ) then
+      if ( slmsk(i,j) == 0.0 ) then
 !
 !       get the mean warming in the range of z=z1 to z=z2
 !
@@ -686,7 +683,7 @@ end subroutine solar_time_from_julian
             endif
           endif
         endif
-      endif        ! if ( wet(i,j) .and. .not.icy(i,j) ) then
+      endif        ! if ( slmsk(i,j) == 0 ) then
     enddo
   enddo 
 !
@@ -695,7 +692,7 @@ end subroutine solar_time_from_julian
 !$omp parallel do private(j,i)
   do j = 1, ny
     do i= 1, nx
-      if ( wet(i,j) .and. .not.icy(i,j)) then
+      if ( slmsk(i,j) == 0.0 ) then
         dtm(i,j) = dtw(i,j) - dtc(i,j)
       endif
     enddo
