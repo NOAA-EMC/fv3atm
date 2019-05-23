@@ -2008,6 +2008,219 @@ module GFS_diagnostics
       ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%ca_micro(:)
     enddo
 
+  if (Model%ldiag_ugwp) THEN
+!
+! VAY-2018: Momentum and Temp-re tendencies
+! du3dt_pbl dv3dt_pbl  dT3dt_pbl
+!
+    idx = idx + 1
+    ExtDiag(idx)%axes = 2
+    ExtDiag(idx)%name = 'zmtb'
+    ExtDiag(idx)%desc = 'height of dividing streamline'
+    ExtDiag(idx)%unit = 'm'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%zmtb(:)
+    enddo
+
+    idx = idx + 1
+    ExtDiag(idx)%axes = 2
+    ExtDiag(idx)%name = 'zogw'
+    ExtDiag(idx)%desc = 'height of OGW-launch'
+    ExtDiag(idx)%unit = 'm'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%zogw(:)
+    enddo
+
+    idx = idx + 1
+    ExtDiag(idx)%axes = 2
+    ExtDiag(idx)%name = 'zlwb'
+    ExtDiag(idx)%desc = 'height of LWB-level'
+    ExtDiag(idx)%unit = 'm'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%zlwb(:)
+    enddo
+
+    idx = idx + 1
+    ExtDiag(idx)%axes = 2
+    ExtDiag(idx)%name = 'tau_ogw'
+    ExtDiag(idx)%desc = ' OGW vertical MF at launch level'
+    ExtDiag(idx)%unit = 'N/m2'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%tau_ogw(:)
+    enddo
+
+    idx = idx + 1
+    ExtDiag(idx)%axes = 2
+    ExtDiag(idx)%name = 'tau_mtb'
+    ExtDiag(idx)%desc = ' ORO-MTB integrated flux from surface'
+    ExtDiag(idx)%unit = 'N/m2'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%tau_mtb(:)
+    enddo
+
+    idx = idx + 1
+    ExtDiag(idx)%axes = 2
+    ExtDiag(idx)%name = 'tau_tofd'
+    ExtDiag(idx)%desc = ' ORO-TOFD integrated flux from surface'
+    ExtDiag(idx)%unit = 'N/m2'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%tau_tofd(:)
+    enddo
+
+    idx = idx + 1
+    ExtDiag(idx)%axes = 2
+    ExtDiag(idx)%name = 'tau_ngw'
+    ExtDiag(idx)%desc = ' NGW momentum flux at launch level '
+    ExtDiag(idx)%unit = 'N/m2'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%tau_ngw(:)
+    enddo
+
+    idx = idx + 1
+    ExtDiag(idx)%axes = 3
+    ExtDiag(idx)%name = 'du3dt_pbl_ugwp'
+    ExtDiag(idx)%desc = 'U-tendency due to PBL physics'
+    ExtDiag(idx)%unit = 'm/s/s'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%du3dt_pbl(:,:)
+    enddo
+!    
+! dv3dt_pbl     
+    idx = idx + 1
+    ExtDiag(idx)%axes = 3
+    ExtDiag(idx)%name = 'dv3dt_pbl_ugwp'
+    ExtDiag(idx)%desc = 'V-tendency due to PBL physics'
+    ExtDiag(idx)%unit = 'm/s/s'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%dv3dt_pbl(:,:)
+    enddo
+!    
+! dt3dt_pbl     
+    idx = idx + 1
+    ExtDiag(idx)%axes = 3
+    ExtDiag(idx)%name = 'dt3dt_pbl_ugwp'
+    ExtDiag(idx)%desc = 'T-tendency due to PBL physics'
+    ExtDiag(idx)%unit = 'K/s'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%dt3dt_pbl(:,:)
+    enddo
+!
+! uav_ugwp 
+! 
+    idx = idx + 1
+    ExtDiag(idx)%axes = 3
+    ExtDiag(idx)%name = 'uav_ugwp'
+    ExtDiag(idx)%desc = 'U-daily mean for UGWP'
+    ExtDiag(idx)%unit = 'm/s'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%uav_ugwp(:,:)
+    enddo
+!
+! tav_ugwp 
+! 
+    idx = idx + 1
+    ExtDiag(idx)%axes = 3
+    ExtDiag(idx)%name = 'tav_ugwp'
+    ExtDiag(idx)%desc = 'T-daily mean for UGWP'
+    ExtDiag(idx)%unit = 'K'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%tav_ugwp(:,:)
+    enddo
+
+    idx = idx + 1
+    ExtDiag(idx)%axes = 3
+    ExtDiag(idx)%name = 'du3dt_ogw'
+    ExtDiag(idx)%desc = 'axz_oro averaged E-W OROGW-tendency'
+    ExtDiag(idx)%unit = 'm/s/s'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%du3dt_ogw(:,:)
+    enddo
+
+    idx = idx + 1
+    ExtDiag(idx)%axes = 3
+    ExtDiag(idx)%name = 'du3dt_ngw'
+    ExtDiag(idx)%desc = 'axz_oro averaged E-W GWALL-tendency'
+    ExtDiag(idx)%unit = 'm/s/s'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%du3dt_ngw(:,:)
+    enddo
+!
+!    
+    idx = idx + 1
+    ExtDiag(idx)%axes = 3
+    ExtDiag(idx)%name = 'du3dt_mtb'
+    ExtDiag(idx)%desc = 'axz_oro averaged E-W MTB-tendency'
+    ExtDiag(idx)%unit = 'm/s/s'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%du3dt_mtb(:,:)
+    enddo
+
+    idx = idx + 1
+    ExtDiag(idx)%axes = 3
+    ExtDiag(idx)%name = 'du3dt_tms'
+    ExtDiag(idx)%desc = 'axz_oro averaged E-W TMS-tendency'
+    ExtDiag(idx)%unit = 'm/s/s'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%du3dt_tms(:,:)
+    enddo
+
+    idx = idx + 1
+    ExtDiag(idx)%axes = 3
+    ExtDiag(idx)%name = 'dudt_tot'
+    ExtDiag(idx)%desc = ' dudt_tot averaged E-W dycore-tendency'
+    ExtDiag(idx)%unit = 'm/s/s'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%dudt_tot(:,:)
+    enddo
+
+     idx = idx + 1
+    ExtDiag(idx)%axes = 3
+    ExtDiag(idx)%name = 'dtdt_tot'
+    ExtDiag(idx)%desc = ' dtdt_tot averaged Temp dycore-tendency'
+    ExtDiag(idx)%unit = 'Ks'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%dtdt_tot(:,:)
+    enddo
+   ENDIF
+
+
+
 !    if(mpp_pe()==mpp_root_pe())print *,'in gfdl_diag_register,af shum_wts,idx=',idx
 
 !--- three-dimensional variables that need to be handled special when writing 

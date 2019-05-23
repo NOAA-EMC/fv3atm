@@ -20,7 +20,7 @@
 !            sfcdsw,sfcnsw,sfcdlw,swh,swhc,hlw,hlwc,                    !
 !            sfcnirbmu,sfcnirdfu,sfcvisbmu,sfcvisdfu,                   !
 !            sfcnirbmd,sfcnirdfd,sfcvisbmd,sfcvisdfd,                   !
-!            ix, im, levs,                                              !
+!            ix, im, levs, deltim, fhswr,                               !
 !      input/output:                                                    !
 !            dtdt,dtdtc,                                                !
 !      outputs:                                                         !
@@ -52,9 +52,12 @@
 !                             list for the coupled model input          !
 !     jul  2014  s moorthi  - merge gfs and nems versions               !
 !     jun  2014  y. hou     - revised to include both up and down sw    !
-!                 spectral component fluxes                             !
+!                             spectral component fluxes                 !
 !     Oct  2014  y. hous s. moorthi - add emissivity contribution to    !
 !                             upward longwave flux                      !
+!     Mar  2019  s. moorthi - modify xmu calculation in a time centered !
+!                             way and add more accuracy when physics    !
+!                             time step is close to radiation time step !
 !                                                                       !
 !  subprograms called:  none                                            !
 !                                                                       !
@@ -90,6 +93,8 @@
 !     sfcvisdfd(im)- real, tot sky sfc uv+vis-diff sw dnward flux (w/m2)!
 !     ix, im       - integer, horiz. dimention and num of used points   !
 !     levs         - integer, vertical layer dimension                  !
+!     deltim       - real, physics time step in seconds                 !
+!     fhswr        - real, Short wave radiation time step in seconds    !
 !                                                                       !
 !  input/output:                                                        !
 !     dtdt(im,levs)- real, model time step adjusted total radiation     !
@@ -124,7 +129,7 @@
      &       sfcdsw,sfcnsw,sfcdlw,swh,swhc,hlw,hlwc,                    &
      &       sfcnirbmu,sfcnirdfu,sfcvisbmu,sfcvisdfu,                   &
      &       sfcnirbmd,sfcnirdfd,sfcvisbmd,sfcvisdfd,                   &
-     &       ix, im, levs, deltim,                                      &
+     &       ix, im, levs, deltim, fhswr,                               &
 !  ---  input/output:
      &       dtdt,dtdtc,                                                &
 !  ---  outputs:
@@ -139,15 +144,18 @@
       implicit none
 !
 !  ---  constant parameters:
-      real(kind=kind_phys), parameter :: f_eps  = 0.0001, hour12 = 12.0,&
-     &                                   f7200  = 1.0/7200.0,           &
+      real(kind=kind_phys), parameter :: f_eps  = 0.0001_kind_phys,     &
+     &                                   hour12 = 12.0_kind_phys,       &
+     &                                   f3600  = 1.0/3600.0_kind_phys, &
+     &                                   f7200  = 1.0/7200.0_kind_phys, &
+     &                                   czlimt = 0.0001_kind_phys,     &    ! ~ cos(89.99427)
      &                                   pid12  = con_pi / hour12
 
 !  ---  inputs:
       integer, intent(in) :: ix, im, levs
 
       real(kind=kind_phys), intent(in) :: solhr, slag, cdec, sdec,      &
-     &                                    deltim
+     &                                    deltim, fhswr
 
       real(kind=kind_phys), dimension(im), intent(in) ::                &
      &      sinlat, coslat, xlon, coszen, tsea, tf, tsflw, sfcdlw,      &
@@ -170,12 +178,47 @@
      &      adjnirbmd, adjnirdfd, adjvisbmd, adjvisdfd
 
 !  ---  locals:
-      integer :: i, k
-      real(kind=kind_phys) :: cns, ss, cc, ch, tem1, tem2
+      integer :: i, k, nstp, nstl, it, istsun(im)
+      real(kind=kind_phys) :: cns,  coszn, tem1, tem2, anginc,          &
+     &                        rstl, solang
 !
 !===> ...  begin here
 !
-      cns = pid12 * (solhr + deltim*f7200 - hour12) + slag
+      tem1 = fhswr / deltim
+      nstp = max(6, nint(tem1))
+      nstl = max(1, nint(nstp/tem1))
+!
+!  --- ...  sw time-step adjustment for current cosine of zenith angle
+!           ----------------------------------------------------------
+      if (nstl == 1) then
+        cns = pid12 * (solhr + deltim*f7200 - hour12) + slag
+        do i = 1, IM
+          xcosz(i) = sdec*sinlat(i) + cdec*coslat(i)*cos(cns+xlon(i))
+        enddo
+      elseif (nstl == nstp) then
+        do i = 1, IM
+          xcosz(i) = coszen(i)
+        enddo
+      else
+        rstl = 1.0 / float(nstl)
+        solang = pid12 * (solhr - hour12)         
+        anginc = pid12 * deltim * f3600 * rstl
+        do i = 1, im
+          xcosz(i)  = 0.0
+          istsun(i) = 0.0
+        enddo
+        do it=1,nstl
+          cns = solang + (float(it)-0.5)*anginc + slag
+          do i = 1, IM
+            coszn    = sdec*sinlat(i) + cdec*coslat(i)*cos(cns+xlon(i))
+            xcosz(i) = xcosz(i) + max(0.0, coszn)
+            if (coszn > czlimt) istsun(i) = istsun(i) + 1
+          enddo
+        enddo
+        do i = 1, IM
+          if (istsun(i) > 0) xcosz(i) = xcosz(i) / istsun(i)  ! mean cosine of solar zenith angle at current time
+        enddo
+      endif
 !
       do i = 1, im
 
@@ -195,16 +238,7 @@
         adjsfculw(i) =  sfcemis(i) * con_sbc * tem2 * tem2
      &               + (1.0 - sfcemis(i)) * adjsfcdlw(i)
 !
-!  --- ...  sw time-step adjustment
-!           -----------------------
-
-        ss     = sinlat(i) * sdec
-        cc     = coslat(i) * cdec
-        ch     = cc * cos( xlon(i)+cns )
-        xcosz(i) = ch + ss        ! cosine of solar zenith angle at current time
-
 !  --- ...  normalize by average value over radiation period for daytime.
-
         if ( xcosz(i) > f_eps .and. coszen(i) > f_eps ) then
           xmu(i) = xcosz(i) / coszen(i)
         else

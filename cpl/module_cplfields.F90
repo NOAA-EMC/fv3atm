@@ -13,7 +13,7 @@ module module_cplfields
   private
 
 ! Export Fields ----------------------------------------
-  integer, public, parameter  :: NexportFields = 70
+  integer,          public, parameter :: NexportFields = 70
   type(ESMF_Field), target, public    :: exportFields(NexportFields)
   character(len=*), public, parameter :: exportFieldsList(NexportFields) = (/ &
        "inst_pres_interface                      ", &
@@ -137,8 +137,8 @@ module module_cplfields
   real(kind=8), allocatable, public :: exportData(:,:,:)
 
 ! Import Fields ----------------------------------------
-  integer, public, parameter :: NimportFields = 16
-  logical, public            :: importFieldsValid(NimportFields)
+  integer,          public, parameter :: NimportFields = 16
+  logical,          public            :: importFieldsValid(NimportFields)
   type(ESMF_Field), target, public    :: importFields(NimportFields)
   character(len=*), public, parameter :: importFieldsList(NimportFields) = (/ &
        "inst_tracer_mass_frac                  ", &
@@ -192,10 +192,10 @@ module module_cplfields
     real(kind=8), target, intent(in)            :: data_a2oi(:,:,:)
     integer, intent(out), optional              :: rc
 
-    integer                               :: localrc
-    integer                               :: n,dimCount
-    logical                               :: isCreated
-    type(ESMF_TypeKind_Flag)              :: datatype
+    integer                                     :: localrc
+    integer                                     :: n,dimCount
+    logical                                     :: isCreated
+    type(ESMF_TypeKind_Flag)                    :: datatype
     real(kind=ESMF_KIND_R4), dimension(:,:), pointer   :: datar42d
     real(kind=ESMF_KIND_R8), dimension(:,:), pointer   :: datar82d
     
@@ -204,35 +204,22 @@ module module_cplfields
 
     do n=1, size(exportFields)
       isCreated = ESMF_FieldIsCreated(exportFields(n), rc=localrc)
-      if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, file=__FILE__, &
-        rcToReturn=rc)) return
+      if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
       if (isCreated) then
 ! set data 
-        call ESMF_FieldGet(exportFields(n), dimCount=dimCount, &
-          typekind=datatype, rc=localrc)
-        if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
-          line=__LINE__, file=__FILE__, &
-          rcToReturn=rc)) return
+        call ESMF_FieldGet(exportFields(n), dimCount=dimCount, typekind=datatype, rc=localrc)
+        if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
         if ( datatype == ESMF_TYPEKIND_R8) then
            if ( dimCount == 2) then
-             call ESMF_FieldGet(exportFields(n),farrayPtr=datar82d,localDE=0, &
-               rc=localrc)
-             if (ESMF_LogFoundError(rcToCheck=localrc, &
-               msg=ESMF_LOGERR_PASSTHRU,               &
-               line=__LINE__, file=__FILE__,           &
-               rcToReturn=rc)) return
-             datar82d=data_a2oi(:,:,n)
+             call ESMF_FieldGet(exportFields(n),farrayPtr=datar82d,localDE=0, rc=localrc)
+             if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+             datar82d = data_a2oi(:,:,n)
            endif
         else if ( datatype == ESMF_TYPEKIND_R4) then
            if ( dimCount == 2) then
-             call ESMF_FieldGet(exportFields(n),farrayPtr=datar82d,localDE=0, &
-               rc=localrc)
-             if (ESMF_LogFoundError(rcToCheck=localrc, &
-               msg=ESMF_LOGERR_PASSTHRU,               &
-               line=__LINE__, file=__FILE__,           &
-               rcToReturn=rc)) return
-             datar42d=data_a2oi(:,:,n)
+             call ESMF_FieldGet(exportFields(n),farrayPtr=datar82d,localDE=0, rc=localrc)
+             if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+             datar42d = data_a2oi(:,:,n)
            endif
         endif
       endif
@@ -244,13 +231,13 @@ module module_cplfields
   integer function queryFieldList(fieldlist, fieldname, abortflag, rc)
     ! returns integer index of first found fieldname in fieldlist
     ! by default, will abort if field not found, set abortflag to false
-    !   to turn off the abort.
+    ! to turn off the abort.
     ! return value of < 1 means the field was not found
 
     character(len=*),intent(in) :: fieldlist(:)
     character(len=*),intent(in) :: fieldname
-    logical, optional :: abortflag
-    integer, optional :: rc
+    logical, optional           :: abortflag
+    integer, optional           :: rc
 
     integer :: n
     logical :: labort
@@ -272,7 +259,7 @@ module module_cplfields
 
     if (labort .and. queryFieldList < 1) then
       call ESMF_LogWrite('queryFieldList ABORT on fieldname '//trim(fieldname), &
-        ESMF_LOGMSG_INFO, line=__LINE__, file=__FILE__, rc=rc)
+                          ESMF_LOGMSG_INFO, line=__LINE__, file=__FILE__, rc=rc)
       CALL ESMF_Finalize(endflag=ESMF_END_ABORT)
     endif
   end function queryFieldList
@@ -299,8 +286,7 @@ module module_cplfields
       case default
         call ESMF_LogSetError(ESMF_RC_ARG_OUTOFRANGE, &
           msg="state argument can only be import(i)/export(o).", &
-          line=__LINE__, file=__FILE__,&
-          rcToReturn=rc)
+          line=__LINE__, file=__FILE__, rcToReturn=rc)
         return
     end select
 
@@ -308,7 +294,7 @@ module module_cplfields
 
 
   subroutine cplFieldGet(state, name, localDe, &
-    farrayPtr2d, farrayPtr3d, farrayPtr4d, rc)
+                         farrayPtr2d, farrayPtr3d, farrayPtr4d, rc)
 
     character(len=*),   intent(in)            :: state
     character(len=*),   intent(in)            :: name
@@ -336,55 +322,36 @@ module module_cplfields
     if (present(localDe)) de = localDe
 
     call cplStateGet(state, fieldList=fieldList, fieldCount=fieldCount, rc=localrc)
-    if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, file=__FILE__, &
-      rcToReturn=rc)) return
+    if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
     do item = 1, fieldCount
       isCreated = ESMF_FieldIsCreated(fieldList(item), rc=localrc)
-      if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, file=__FILE__, &
-        rcToReturn=rc)) return
+      if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
       if (isCreated) then
         call ESMF_FieldGet(fieldList(item), name=fieldName, rc=localrc)
-        if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
-          line=__LINE__, file=__FILE__, &
-          rcToReturn=rc)) return
+        if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
         if (trim(fieldName) == trim(name)) then
           call ESMF_FieldGet(fieldList(item), rank=rank, rc=localrc)
-          if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
-            line=__LINE__, file=__FILE__, &
-            rcToReturn=rc)) return
+          if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
           select case (rank)
             case (2)
               if (present(farrayPtr2d)) then
-                call ESMF_FieldGet(fieldList(item), localDe=de, farrayPtr=farrayPtr2d, &
-                  rc=localrc)
-                if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
-                  line=__LINE__, file=__FILE__, &
-                  rcToReturn=rc)) return
+                call ESMF_FieldGet(fieldList(item), localDe=de, farrayPtr=farrayPtr2d, rc=localrc)
+                if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
               end if
             case (3)
               if (present(farrayPtr3d)) then
-                call ESMF_FieldGet(fieldList(item), localDe=de, farrayPtr=farrayPtr3d, &
-                  rc=localrc)
-                if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
-                  line=__LINE__, file=__FILE__, &
-                  rcToReturn=rc)) return
+                call ESMF_FieldGet(fieldList(item), localDe=de, farrayPtr=farrayPtr3d, rc=localrc)
+                if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
               end if
             case (4)
               if (present(farrayPtr4d)) then
-                call ESMF_FieldGet(fieldList(item), localDe=de, farrayPtr=farrayPtr4d, &
-                  rc=localrc)
-                if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
-                  line=__LINE__, file=__FILE__, &
-                  rcToReturn=rc)) return
+                call ESMF_FieldGet(fieldList(item), localDe=de, farrayPtr=farrayPtr4d, rc=localrc)
+                if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
               end if
             case default
-              call ESMF_LogSetError(ESMF_RC_NOT_IMPL, &
-                msg="field rank should be 2, 3, or 4.", &
-                line=__LINE__, file=__FILE__, &
-                rcToReturn=rc)
+              call ESMF_LogSetError(ESMF_RC_NOT_IMPL, msg="field rank should be 2, 3, or 4.", &
+                                    line=__LINE__, file=__FILE__, rcToReturn=rc)
               return
           end select
           exit

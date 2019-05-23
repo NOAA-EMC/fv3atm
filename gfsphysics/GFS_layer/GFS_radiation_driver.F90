@@ -1208,7 +1208,7 @@
       integer :: me, im, lm, levs, nfxr, ntrac
       integer :: i, j, k, k1, lv, itop, ibtc, nday, LP1, LMK, LMP, kd,  &
                  lla, llb, lya, lyb, kt, kb, n, ntcw, ntiw, ncld, ntrw, &
-                 ntsw, ntgl, k2, lsk
+                 ntsw, ntgl, k2, lsk, ncndl
       integer, dimension(size(Grid%xlon,1))   :: idxday
       integer, dimension(size(Grid%xlon,1),3) :: mbota, mtopa
 
@@ -1237,7 +1237,7 @@
 
       real(kind=kind_phys), dimension(size(Grid%xlon,1),Model%levr+ltp,NBDSW,NF_AESW) ::faersw
       real(kind=kind_phys), dimension(size(Grid%xlon,1),Model%levr+ltp,NBDLW,NF_AELW) ::faerlw
-      real(kind=kind_phys), dimension(size(Grid%xlon,1),Model%levr+ltp,Model%ncnd)    :: ccnd
+      real(kind=kind_phys), dimension(size(Grid%xlon,1),Model%levr+ltp,min(4,Model%ncnd)) :: ccnd
 
       !  mg, sfc perts
       real(kind=kind_phys), dimension(size(Grid%xlon,1)) :: alb1d
@@ -1272,6 +1272,7 @@
       ntrw  = Model%ntrw
       ntsw  = Model%ntsw
       ntgl  = Model%ntgl
+      ncndl = min(Model%ncnd,4)
 
       LP1   = LM + 1             ! num of in/out levels
 
@@ -1609,7 +1610,7 @@
             enddo
           enddo
         endif
-        do n=1,Model%ncnd
+        do n=1,ncndl
           do k=1,LMK
             do i=1,IM
               if (ccnd(i,k,n) < epsq) ccnd(i,k,n) = 0.0
@@ -1750,14 +1751,14 @@
         endif
 
 
-        if (Model%imp_physics == 99 .or. Model%imp_physics == 10) then           ! zhao/moorthi's prognostic cloud scheme
-                                         ! or unified cloud and/or with MG microphysics
+        if (Model%imp_physics == 99 .or. Model%imp_physics == 10) then    ! zhao/moorthi's prognostic cloud scheme
+                                                                          ! or unified cloud and/or with MG microphysics
 
           if (Model%uni_cld .and. ncld >= 2) then
-            call progclduni (plyr, plvl, tlyr, tvly, ccnd, Model%ncnd,  & !  ---  inputs
-                             Grid%xlat, Grid%xlon, Sfcprop%slmsk,dz,delp, &
-                             IM, LMK, LMP, cldcov,                      &
-                             effrl, effri, effrr, effrs, Model%effr_in, &
+            call progclduni (plyr, plvl, tlyr, tvly, ccnd, ncndl,        &!  ---  inputs
+                             Grid%xlat, Grid%xlon, Sfcprop%slmsk,dz,delp,&
+                             IM, LMK, LMP, cldcov,                       &
+                             effrl, effri, effrr, effrs, Model%effr_in,  &
                              clouds, cldsa, mtopa, mbota, de_lgth)        !  ---  outputs
           else
             call progcld1 (plyr ,plvl, tlyr, tvly, qlyr, qstl, rhly,    & !  ---  inputs
@@ -1771,28 +1772,28 @@
 
         elseif(Model%imp_physics == 98) then      ! zhao/moorthi's prognostic cloud+pdfcld
 
-          call progcld3 (plyr, plvl, tlyr, tvly, qlyr, qstl, rhly,      &    !  ---  inputs
+          call progcld3 (plyr, plvl, tlyr, tvly, qlyr, qstl, rhly,      & !  ---  inputs
                          ccnd(1:IM,1:LMK,1),                            &
                          cnvw, cnvc, Grid%xlat, Grid%xlon,              &
                          Sfcprop%slmsk, dz, delp, im, lmk, lmp, deltaq, &
                          Model%sup, Model%kdt, me,                      &
-                         clouds, cldsa, mtopa, mbota, de_lgth)             !  ---  outputs
+                         clouds, cldsa, mtopa, mbota, de_lgth)            !  ---  outputs
 
         elseif (Model%imp_physics == 11) then           ! GFDL cloud scheme
 
           if (.not.Model%lgfdlmprad) then
-            call progcld4 (plyr, plvl, tlyr, tvly, qlyr, qstl, rhly,      &    !  ---  inputs
-                           ccnd(1:IM,1:LMK,1), cnvw, cnvc,                &
-                           Grid%xlat, Grid%xlon, Sfcprop%slmsk,           &
-                           cldcov, dz, delp, im, lmk, lmp,                &
-                           clouds, cldsa, mtopa, mbota, de_lgth)             !  ---  outputs
+            call progcld4 (plyr, plvl, tlyr, tvly, qlyr, qstl, rhly,     &!  ---  inputs
+                           ccnd(1:IM,1:LMK,1), cnvw, cnvc,               &
+                           Grid%xlat, Grid%xlon, Sfcprop%slmsk,          &
+                           cldcov, dz, delp, im, lmk, lmp,               &
+                           clouds, cldsa, mtopa, mbota, de_lgth)          !  ---  outputs
           else
 
-            call progclduni (plyr, plvl, tlyr, tvly, ccnd, Model%ncnd,    &    !  ---  inputs
-                            Grid%xlat, Grid%xlon, Sfcprop%slmsk, dz,delp, &
-                            IM, LMK, LMP, cldcov,                         &
-                            effrl, effri, effrr, effrs, Model%effr_in,    &
-                            clouds, cldsa, mtopa, mbota, de_lgth)           !  ---  outputs
+            call progclduni (plyr, plvl, tlyr, tvly, ccnd, ncndl,        &!  ---  inputs
+                            Grid%xlat, Grid%xlon, Sfcprop%slmsk, dz,delp,&
+                            IM, LMK, LMP, cldcov,                        &
+                            effrl, effri, effrr, effrs, Model%effr_in,   &
+                            clouds, cldsa, mtopa, mbota, de_lgth)         !  ---  outputs
 !           call progcld4o (plyr, plvl, tlyr, tvly, qlyr, qstl, rhly,       &    !  ---  inputs
 !                           tracer1, Grid%xlat, Grid%xlon, Sfcprop%slmsk,   &
 !                           dz, delp,                                       &
@@ -1802,7 +1803,7 @@
 !                           clouds, cldsa, mtopa, mbota, de_lgth)         !  ---  outputs
           endif 
 
-        elseif(Model%imp_physics == 8 .or. Model%imp_physics == 6) then		       ! Thompson / WSM6 cloud micrphysics scheme 
+        elseif(Model%imp_physics == 8 .or. Model%imp_physics == 6) then   ! Thompson / WSM6 cloud micrphysics scheme 
 
           if (Model%kdt == 1) then
             Tbd%phy_f3d(:,:,1) = 10.
@@ -2087,7 +2088,7 @@
               Diag%fluxr(i,27) = Diag%fluxr(i,27) + scmpsw(i)%nirdf * tem0d          ! nir diff sw dn
 !  ---                                  sw clear-sky fluxes
 !                                       -------------------
-              Diag%fluxr(i,29) = Diag%fluxr(i,29) + Diag%topfsw(i)%upfx0 * tem0d  ! clear sky top sw up
+              Diag%fluxr(i,29) = Diag%fluxr(i,29) +    Diag%topfsw(i)%upfx0 * tem0d  ! clear sky top sw up
               Diag%fluxr(i,31) = Diag%fluxr(i,31) + Radtend%sfcfsw(i)%upfx0 * tem0d  ! clear sky sfc sw up
               Diag%fluxr(i,32) = Diag%fluxr(i,32) + Radtend%sfcfsw(i)%dnfx0 * tem0d  ! clear sky sfc sw dn
             endif

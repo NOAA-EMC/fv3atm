@@ -332,14 +332,15 @@ subroutine gfdl_cloud_microphys_driver (qv, ql, qr, qi, qs, qg, qa, qn,   &
         qv_dt, ql_dt, qr_dt, qi_dt, qs_dt, qg_dt, qa_dt, pt_dt, pt, w,    &
         uin, vin, udt, vdt, dz, delp, area, dt_in, land, rain, snow, ice, &
         graupel, hydrostatic, phys_hydrostatic, iis, iie, jjs, jje, kks,  &
-        kke, ktop, kbot, seconds,p,lradar,refl_10cm,kdt,nsteps_per_reset)
+        kke, ktop, kbot, seconds,p,lradar,refl_10cm,reset)
     implicit none
     
     logical, intent (in) :: hydrostatic, phys_hydrostatic,lradar
     integer, intent (in) :: iis, iie, jjs, jje !< physics window
     integer, intent (in) :: kks, kke !< vertical dimension
     integer, intent (in) :: ktop, kbot !< vertical compute domain
-    integer, intent (in) :: seconds, kdt, nsteps_per_reset
+    integer, intent (in) :: seconds
+    logical, intent (in) :: reset
     
     real, intent (in) :: dt_in !< physics time step
     
@@ -593,10 +594,10 @@ subroutine gfdl_cloud_microphys_driver (qv, ql, qr, qi, qs, qg, qa, qn,   &
     ! call mpp_clock_end (gfdl_mp_clock)
     if(lradar) then
     ! Only set melti to true at the output times
-       if(mod(kdt,nsteps_per_reset)==0)then
-         melti=.true.
+       if (reset) then
+         melti = .true.
        else
-         melti=.false.
+         melti = .false.
        endif
        do j = js, je
           do i = is, ie

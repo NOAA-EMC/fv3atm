@@ -1175,7 +1175,8 @@
        nf_hours   = int(nf_seconds/3600.)
        nf_minutes = int((nf_seconds-nf_hours*3600.)/60.)
        nseconds   = int(nf_seconds-nf_hours*3600.-nf_minutes*60.)
-       if (nf_seconds-nf_hours*3600 > 0 .and. nsout > 0) then
+!      if (nf_seconds-nf_hours*3600 > 0 .and. nsout > 0) then
+       if (nsout > 0) then
          ndig = max(log10(nf_hours+0.5)+1., 3.)
          write(cform, '("(I",I1,".",I1,",A1,I2.2,A1,I2.2)")') ndig, ndig
          write(cfhour, cform) nf_hours,':',nf_minutes,':',nseconds
@@ -1186,7 +1187,7 @@
        endif
 !
        if(mype == lead_write_task) print *,'in wrt run, nf_hours=',nf_hours,nf_minutes,nseconds, &
-       'nseconds_num=',nseconds_num,nseconds_den,' FBCount=',FBCount,' cfhour=',trim(cfhour)
+         'nseconds_num=',nseconds_num,nseconds_den,' FBCount=',FBCount,' cfhour=',trim(cfhour)
 
 !    if(mype == lead_write_task) print *,'in wrt run, cfhour=',cfhour, &
 !     print *,'in wrt run, cfhour=',cfhour, &

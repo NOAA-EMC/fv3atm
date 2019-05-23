@@ -152,6 +152,7 @@ integer :: blocksize    = 1
 logical :: chksum_debug = .false.
 logical :: dycore_only  = .false.
 logical :: debug        = .false.
+!logical :: debug        = .true.
 logical :: sync         = .false.
 integer, parameter     :: maxhr = 4096
 real, dimension(maxhr) :: fdiag = 0.
@@ -619,8 +620,7 @@ subroutine atmos_model_exchange_phase_1 (Atmos, rc)
     if( IPD_Control%cplchm ) then
       ! -- export fields to chemistry
       call update_atmos_chemistry('export', rc=localrc)
-      if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, file=__FILE__, rcToReturn=rc)) return  ! bail out
+      if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
     endif
 
  end subroutine atmos_model_exchange_phase_1
@@ -656,8 +656,7 @@ subroutine atmos_model_exchange_phase_2 (Atmos, rc)
     if( IPD_Control%cplchm ) then
       ! -- import fields from chemistry
       call update_atmos_chemistry('import', rc=localrc)
-      if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, file=__FILE__, rcToReturn=rc)) return  ! bail out
+      if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
     endif
 
  end subroutine atmos_model_exchange_phase_2
@@ -704,7 +703,11 @@ subroutine update_atmos_model_state (Atmos)
       call FV3GFS_diag_output(Atmos%Time, IPD_DIag, Atm_block, IPD_Control%nx, IPD_Control%ny, &
                             IPD_Control%levs, 1, 1, 1.d0, time_int, time_intfull,              &
                             IPD_Control%fhswr, IPD_Control%fhlwr)
-      if (mod(isec,3600*nint(IPD_Control%fhzero)) == 0) diag_time = Atmos%Time
+      if (nint(IPD_Control%fhzero) > 0) then 
+        if (mod(isec,3600*nint(IPD_Control%fhzero)) == 0) diag_time = Atmos%Time
+      else
+        if (mod(isec,nint(3600*IPD_Control%fhzero)) == 0) diag_time = Atmos%Time
+      endif
       call diag_send_complete_instant (Atmos%Time)
     endif
 
@@ -716,7 +719,7 @@ subroutine update_atmos_model_state (Atmos)
 
     !if in coupled mode, set up coupled fields
     if (IPD_Control%cplflx .or. IPD_Control%cplwav) then
-      if (mpp_pe() == mpp_root_pe()) print *,'COUPLING: IPD layer'
+!     if (mpp_pe() == mpp_root_pe()) print *,'COUPLING: IPD layer'
 !jw       call setup_exportdata(IPD_Control, IPD_Data, Atm_block)
       call setup_exportdata(rc)
     endif
@@ -918,8 +921,7 @@ subroutine update_atmos_chemistry(state, rc)
   select case (trim(state))
     case ('import')
       !--- retrieve references to allocated memory for each field
-      call cplFieldGet(state,'inst_tracer_mass_frac', &
-        farrayPtr4d=q, rc=localrc)
+      call cplFieldGet(state,'inst_tracer_mass_frac', farrayPtr4d=q, rc=localrc)
       if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
         line=__LINE__, file=__FILE__, rcToReturn=rc)) return
       call cplFieldGet(state,'inst_tracer_up_surface_flx', &
@@ -1068,8 +1070,7 @@ subroutine update_atmos_chemistry(state, rc)
       if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
         line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
-      call cplFieldGet(state,'inst_pres_levels', &
-        farrayPtr3d=prsl, rc=localrc)
+      call cplFieldGet(state,'inst_pres_levels', farrayPtr3d=prsl, rc=localrc)
       if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
         line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
@@ -1077,8 +1078,7 @@ subroutine update_atmos_chemistry(state, rc)
       if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
         line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
-      call cplFieldGet(state,'inst_geop_levels', &
-        farrayPtr3d=phil, rc=localrc)
+      call cplFieldGet(state,'inst_geop_levels', farrayPtr3d=phil, rc=localrc)
       if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
         line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
@@ -1098,13 +1098,12 @@ subroutine update_atmos_chemistry(state, rc)
       if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
         line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
-      call cplFieldGet(state,'inst_tracer_mass_frac', &
-        farrayPtr4d=q, rc=localrc)
+      call cplFieldGet(state,'inst_tracer_mass_frac', farrayPtr4d=q, rc=localrc)
       if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
         line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
       call cplFieldGet(state,'inst_soil_moisture_content', &
-        farrayPtr3d=slc, rc=localrc)
+                       farrayPtr3d=slc, rc=localrc)
       if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
         line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
@@ -1112,8 +1111,7 @@ subroutine update_atmos_chemistry(state, rc)
       if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
         line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
-      call cplFieldGet(state,'inst_pbl_height', &
-        farrayPtr2d=hpbl, rc=localrc)
+      call cplFieldGet(state,'inst_pbl_height', farrayPtr2d=hpbl, rc=localrc)
       if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
         line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
@@ -1122,12 +1120,12 @@ subroutine update_atmos_chemistry(state, rc)
         line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
       call cplFieldGet(state,'inst_convective_rainfall_amount', &
-        farrayPtr2d=rainc, rc=localrc)
+                       farrayPtr2d=rainc, rc=localrc)
       if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
         line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
       call cplFieldGet(state,'inst_exchange_coefficient_heat_levels', &
-        farrayPtr3d=dkt, rc=localrc)
+                       farrayPtr3d=dkt, rc=localrc)
       if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
         line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
@@ -1139,8 +1137,7 @@ subroutine update_atmos_chemistry(state, rc)
       if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
         line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
-      call cplFieldGet(state,'inst_down_sw_flx', &
-        farrayPtr2d=sfcdsw, rc=localrc)
+      call cplFieldGet(state,'inst_down_sw_flx', farrayPtr2d=sfcdsw, rc=localrc)
       if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
         line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
@@ -1152,13 +1149,11 @@ subroutine update_atmos_chemistry(state, rc)
       if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
         line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
-      call cplFieldGet(state,'inst_up_sensi_heat_flx', &
-        farrayPtr2d=shfsfc, rc=localrc)
+      call cplFieldGet(state,'inst_up_sensi_heat_flx', farrayPtr2d=shfsfc, rc=localrc)
       if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
         line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
-      call cplFieldGet(state,'inst_lwe_snow_thickness', &
-        farrayPtr2d=snowd, rc=localrc)
+      call cplFieldGet(state,'inst_lwe_snow_thickness', farrayPtr2d=snowd, rc=localrc)
       if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
         line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
@@ -1166,8 +1161,7 @@ subroutine update_atmos_chemistry(state, rc)
       if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
         line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
-      call cplFieldGet(state,'inst_vegetation_area_frac', &
-        farrayPtr2d=vfrac, rc=localrc)
+      call cplFieldGet(state,'inst_vegetation_area_frac', farrayPtr2d=vfrac, rc=localrc)
       if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
         line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
@@ -1203,6 +1197,7 @@ subroutine update_atmos_chemistry(state, rc)
 
       !--- top interface values
       k = nk+1
+!$omp parallel do default(shared) private(i,j,jb,ib,nb,ix)
       do j = 1, nj
         jb = j + Atm_block%jsc - 1
         do i = 1, ni
@@ -1243,51 +1238,51 @@ subroutine update_atmos_chemistry(state, rc)
           ib = i + Atm_block%isc - 1
           nb = Atm_block%blkno(ib,jb)
           ix = Atm_block%ixp(ib,jb)
-          hpbl(i,j)    = IPD_Data(nb)%IntDiag%hpbl(ix)
-          area(i,j)    = IPD_Data(nb)%Grid%area(ix)
-          stype(i,j)   = IPD_Data(nb)%Sfcprop%stype(ix)
-          rainc(i,j)   = IPD_Data(nb)%Coupling%rainc_cpl(ix)
-          rain(i,j)    = IPD_Data(nb)%Coupling%rain_cpl(ix)  &
-                       + IPD_Data(nb)%Coupling%snow_cpl(ix)
-          uustar(i,j)  = IPD_Data(nb)%Sfcprop%uustar(ix)
-          sfcdsw(i,j)  = IPD_Data(nb)%Coupling%sfcdsw(ix)
-          slmsk(i,j)   = IPD_Data(nb)%Sfcprop%slmsk(ix)
-          snowd(i,j)   = IPD_Data(nb)%Sfcprop%snowd(ix)
-          tsfc(i,j)    = IPD_Data(nb)%Sfcprop%tsfc(ix)
-          shfsfc(i,j)  = IPD_Data(nb)%Coupling%ushfsfci(ix)
-          vtype(i,j)   = IPD_Data(nb)%Sfcprop%vtype(ix)
-          vfrac(i,j)   = IPD_Data(nb)%Sfcprop%vfrac(ix)
-          zorl(i,j)    = IPD_Data(nb)%Sfcprop%zorl(ix)
-          slc(i,j,:)   = IPD_Data(nb)%Sfcprop%slc(ix,:)
+          hpbl(i,j)   = IPD_Data(nb)%IntDiag%hpbl(ix)
+          area(i,j)   = IPD_Data(nb)%Grid%area(ix)
+          stype(i,j)  = IPD_Data(nb)%Sfcprop%stype(ix)
+          rainc(i,j)  = IPD_Data(nb)%Coupling%rainc_cpl(ix)
+          rain(i,j)   = IPD_Data(nb)%Coupling%rain_cpl(ix)  &
+                      + IPD_Data(nb)%Coupling%snow_cpl(ix)
+          uustar(i,j) = IPD_Data(nb)%Sfcprop%uustar(ix)
+          sfcdsw(i,j) = IPD_Data(nb)%Coupling%sfcdsw(ix)
+          slmsk(i,j)  = IPD_Data(nb)%Sfcprop%slmsk(ix)
+          snowd(i,j)  = IPD_Data(nb)%Sfcprop%snowd(ix)
+          tsfc(i,j)   = IPD_Data(nb)%Sfcprop%tsfc(ix)
+          shfsfc(i,j) = IPD_Data(nb)%Coupling%ushfsfci(ix)
+          vtype(i,j)  = IPD_Data(nb)%Sfcprop%vtype(ix)
+          vfrac(i,j)  = IPD_Data(nb)%Sfcprop%vfrac(ix)
+          zorl(i,j)   = IPD_Data(nb)%Sfcprop%zorl(ix)
+          slc(i,j,:)  = IPD_Data(nb)%Sfcprop%slc(ix,:)
         enddo
       enddo
 
       if (IPD_Control%debug) then
         ! -- diagnostics
-        write(6,'("update_atmos: prsi - min/max/avg",3g16.6)') minval(prsi), maxval(prsi), sum(prsi)/size(prsi)
-        write(6,'("update_atmos: phii - min/max/avg",3g16.6)') minval(phii), maxval(phii), sum(phii)/size(phii)
-        write(6,'("update_atmos: prsl - min/max/avg",3g16.6)') minval(prsl), maxval(prsl), sum(prsl)/size(prsl)
-        write(6,'("update_atmos: phil - min/max/avg",3g16.6)') minval(phil), maxval(phil), sum(phil)/size(phil)
-        write(6,'("update_atmos: tgrs - min/max/avg",3g16.6)') minval(temp), maxval(temp), sum(temp)/size(temp)
-        write(6,'("update_atmos: ugrs - min/max/avg",3g16.6)') minval(ua), maxval(ua), sum(ua)/size(ua)
-        write(6,'("update_atmos: vgrs - min/max/avg",3g16.6)') minval(va), maxval(va), sum(va)/size(va)
-        write(6,'("update_atmos: vvl  - min/max/avg",3g16.6)') minval(vvl), maxval(vvl), sum(vvl)/size(vvl)
-        write(6,'("update_atmos: qgrs - min/max/avg",3g16.6)') minval(q), maxval(q), sum(q)/size(q)
+        write(6,'("update_atmos: prsi   - min/max/avg",3g16.6)') minval(prsi),   maxval(prsi),   sum(prsi)/size(prsi)
+        write(6,'("update_atmos: phii   - min/max/avg",3g16.6)') minval(phii),   maxval(phii),   sum(phii)/size(phii)
+        write(6,'("update_atmos: prsl   - min/max/avg",3g16.6)') minval(prsl),   maxval(prsl),   sum(prsl)/size(prsl)
+        write(6,'("update_atmos: phil   - min/max/avg",3g16.6)') minval(phil),   maxval(phil),   sum(phil)/size(phil)
+        write(6,'("update_atmos: tgrs   - min/max/avg",3g16.6)') minval(temp),   maxval(temp),   sum(temp)/size(temp)
+        write(6,'("update_atmos: ugrs   - min/max/avg",3g16.6)') minval(ua),     maxval(ua),     sum(ua)/size(ua)
+        write(6,'("update_atmos: vgrs   - min/max/avg",3g16.6)') minval(va),     maxval(va),     sum(va)/size(va)
+        write(6,'("update_atmos: vvl    - min/max/avg",3g16.6)') minval(vvl),    maxval(vvl),    sum(vvl)/size(vvl)
+        write(6,'("update_atmos: qgrs   - min/max/avg",3g16.6)') minval(q),      maxval(q),      sum(q)/size(q)
 
-        write(6,'("update_atmos: hpbl - min/max/avg",3g16.6)') minval(hpbl), maxval(hpbl), sum(hpbl)/size(hpbl)
-        write(6,'("update_atmos: rainc - min/max/avg",3g16.6)') minval(rainc), maxval(rainc), sum(rainc)/size(rainc)
-        write(6,'("update_atmos: rain - min/max/avg",3g16.6)') minval(rain), maxval(rain), sum(rain)/size(rain)
+        write(6,'("update_atmos: hpbl   - min/max/avg",3g16.6)') minval(hpbl),   maxval(hpbl),   sum(hpbl)/size(hpbl)
+        write(6,'("update_atmos: rainc  - min/max/avg",3g16.6)') minval(rainc),  maxval(rainc),  sum(rainc)/size(rainc)
+        write(6,'("update_atmos: rain   - min/max/avg",3g16.6)') minval(rain),   maxval(rain),   sum(rain)/size(rain)
         write(6,'("update_atmos: shfsfc - min/max/avg",3g16.6)') minval(shfsfc), maxval(shfsfc), sum(shfsfc)/size(shfsfc)
         write(6,'("update_atmos: sfcdsw - min/max/avg",3g16.6)') minval(sfcdsw), maxval(sfcdsw), sum(sfcdsw)/size(sfcdsw)
-        write(6,'("update_atmos: slmsk - min/max/avg",3g16.6)') minval(slmsk), maxval(slmsk), sum(slmsk)/size(slmsk)
-        write(6,'("update_atmos: snowd - min/max/avg",3g16.6)') minval(snowd), maxval(snowd), sum(snowd)/size(snowd)
-        write(6,'("update_atmos: tsfc - min/max/avg",3g16.6)') minval(tsfc), maxval(tsfc), sum(tsfc)/size(tsfc)
-        write(6,'("update_atmos: vtype - min/max/avg",3g16.6)') minval(vtype), maxval(vtype), sum(vtype)/size(vtype)
-        write(6,'("update_atmos: vfrac - min/max/avg",3g16.6)') minval(vfrac), maxval(vfrac), sum(vfrac)/size(vfrac)
-        write(6,'("update_atmos: area - min/max/avg",3g16.6)') minval(area), maxval(area), sum(area)/size(area)
-        write(6,'("update_atmos: stype - min/max/avg",3g16.6)') minval(stype), maxval(stype), sum(stype)/size(stype)
-        write(6,'("update_atmos: zorl - min/max/avg",3g16.6)') minval(zorl), maxval(zorl), sum(zorl)/size(zorl)
-        write(6,'("update_atmos: slc - min/max/avg",3g16.6)') minval(slc), maxval(slc), sum(slc)/size(slc)
+        write(6,'("update_atmos: slmsk  - min/max/avg",3g16.6)') minval(slmsk),  maxval(slmsk),  sum(slmsk)/size(slmsk)
+        write(6,'("update_atmos: snowd  - min/max/avg",3g16.6)') minval(snowd),  maxval(snowd),  sum(snowd)/size(snowd)
+        write(6,'("update_atmos: tsfc   - min/max/avg",3g16.6)') minval(tsfc),   maxval(tsfc),   sum(tsfc)/size(tsfc)
+        write(6,'("update_atmos: vtype  - min/max/avg",3g16.6)') minval(vtype),  maxval(vtype),  sum(vtype)/size(vtype)
+        write(6,'("update_atmos: vfrac  - min/max/avg",3g16.6)') minval(vfrac),  maxval(vfrac),  sum(vfrac)/size(vfrac)
+        write(6,'("update_atmos: area   - min/max/avg",3g16.6)') minval(area),   maxval(area),   sum(area)/size(area)
+        write(6,'("update_atmos: stype  - min/max/avg",3g16.6)') minval(stype),  maxval(stype),  sum(stype)/size(stype)
+        write(6,'("update_atmos: zorl   - min/max/avg",3g16.6)') minval(zorl),   maxval(zorl),   sum(zorl)/size(zorl)
+        write(6,'("update_atmos: slc    - min/max/avg",3g16.6)') minval(slc),    maxval(slc),    sum(slc)/size(slc)
       end if
 
     case default
@@ -1326,8 +1321,8 @@ end subroutine update_atmos_chemistry
 !
 subroutine atmos_data_type_chksum(id, timestep, atm)
 type(atmos_data_type), intent(in) :: atm 
-    character(len=*), intent(in) :: id
-    integer         , intent(in) :: timestep
+    character(len=*),  intent(in) :: id
+    integer         ,  intent(in) :: timestep
     integer :: n, outunit
 
 100 format("CHECKSUM::",A32," = ",Z20)
@@ -1335,10 +1330,10 @@ type(atmos_data_type), intent(in) :: atm
 
   outunit = stdout()
   write(outunit,*) 'BEGIN CHECKSUM(Atmos_data_type):: ', id, timestep
-  write(outunit,100) ' atm%lon_bnd                ', mpp_chksum(atm%lon_bnd               )
-  write(outunit,100) ' atm%lat_bnd                ', mpp_chksum(atm%lat_bnd               )
-  write(outunit,100) ' atm%lon                    ', mpp_chksum(atm%lon                   )
-  write(outunit,100) ' atm%lat                    ', mpp_chksum(atm%lat                   )
+  write(outunit,100) ' atm%lon_bnd                ', mpp_chksum(atm%lon_bnd)
+  write(outunit,100) ' atm%lat_bnd                ', mpp_chksum(atm%lat_bnd)
+  write(outunit,100) ' atm%lon                    ', mpp_chksum(atm%lon)
+  write(outunit,100) ' atm%lat                    ', mpp_chksum(atm%lat)
 
 end subroutine atmos_data_type_chksum
 
@@ -1375,9 +1370,11 @@ end subroutine atmos_data_type_chksum
     integer :: n, j, i, ix, nb, isc, iec, jsc, jec, dimCount, findex
     character(len=128) :: impfield_name, fldname
     type(ESMF_TypeKind_Flag)                           :: datatype
-    real(kind=ESMF_KIND_R4), dimension(:,:), pointer   :: datar42d
-    real(kind=ESMF_KIND_R8), dimension(:,:), pointer   :: datar82d
+    real(kind=ESMF_KIND_R4),  dimension(:,:), pointer  :: datar42d
+    real(kind=ESMF_KIND_R8),  dimension(:,:), pointer  :: datar82d
     real(kind=IPD_kind_phys), dimension(:,:), pointer  :: datar8
+    real(kind=IPD_kind_phys), parameter                :: icemin=1.0e-6_IPD_kind_phys
+!   real(kind=IPD_kind_phys), parameter                :: icemin=0.15_IPD_kind_phys
     logical found, isFieldCreated, lcpl_fice
 !
 !------------------------------------------------------------------------------
@@ -1402,26 +1399,23 @@ end subroutine atmos_data_type_chksum
       found = .false.
 
       isFieldCreated = ESMF_FieldIsCreated(importFields(n), rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, file=__FILE__)) return  ! bail out
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
       if (isFieldCreated) then
 
         ! put the data from local cubed sphere grid to column grid for phys
         datar8 = -99999.0
         call ESMF_FieldGet(importFields(n), dimCount=dimCount ,typekind=datatype, &
-          name=impfield_name, rc=rc)
-        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-          line=__LINE__, file=__FILE__)) return  ! bail out
+                           name=impfield_name, rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
         if ( dimCount == 2) then
           if ( datatype == ESMF_TYPEKIND_R8) then
             call ESMF_FieldGet(importFields(n),farrayPtr=datar82d,localDE=0, rc=rc)
-            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-              line=__LINE__, file=__FILE__)) return  ! bail out
-            datar8=datar82d
-            if (mpp_pe() == mpp_root_pe() .and. debug) print *,'in cplIMP,atmos gets ',trim(impfield_name),' datar8=',maxval(datar8),minval(datar8), &
-               datar8(isc,jsc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+            datar8 = datar82d
+            if (mpp_pe() == mpp_root_pe() .and. debug) print *,'in cplIMP,atmos gets ',trim(impfield_name),' datar8=', &
+                                                               datar8(isc,jsc), maxval(datar8), minval(datar8)
             found = .true.
 ! gfs physics runs with r8
 !          else
@@ -1436,197 +1430,220 @@ end subroutine atmos_data_type_chksum
 !        findex = QueryFieldList(ImportFieldsList,fldname)
 !        if (importFieldsValid(findex) .and. datar8(isc,jsc) > -99999.0) then
 !          if (trim(impfield_name) == trim(fldname) .and. found) then
+!!$omp parallel do default(shared) private(i,j,nb,ix)
 !            do j=jsc,jec
-!            do i=isc,iec
-!              nb = Atm_block%blkno(i,j)
-!              ix = Atm_block%ixp(i,j)
-!              IPD_Data(nb)%Coupling%slimskin_cpl(ix) = datar8(i,j)
-!            enddo
+!              do i=isc,iec
+!                nb = Atm_block%blkno(i,j)
+!                ix = Atm_block%ixp(i,j)
+!                IPD_Data(nb)%Coupling%slimskin_cpl(ix) = datar8(i,j)
+!              enddo
 !            enddo
 !            if( mpp_pe()==mpp_root_pe()) print *,'get land mask from mediator'
 !          endif
 !        endif
 
-        ! get sea ice surface temperature 
+! get sea ice surface temperature
+!----------------------------
         fldname = 'sea_ice_surface_temperature'
         findex = QueryFieldList(ImportFieldsList,fldname)
         if (importFieldsValid(findex) .and. datar8(isc,jsc) > -99999.0) then
           if (trim(impfield_name) == trim(fldname) .and. found) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
             do j=jsc,jec
-            do i=isc,iec
-              nb = Atm_block%blkno(i,j)
-              ix = Atm_block%ixp(i,j)
-              IPD_Data(nb)%Coupling%tisfcin_cpl(ix) = datar8(i,j)
-            enddo
+              do i=isc,iec
+                nb = Atm_block%blkno(i,j)
+                ix = Atm_block%ixp(i,j)
+                IPD_Data(nb)%Coupling%tisfcin_cpl(ix) = datar8(i,j)
+              enddo
             enddo
           endif
         endif
 
-        ! get sst:  sst needs to be adjusted by land sea mask before passing to
-        ! fv3
+! get sst:  sst needs to be adjusted by land sea mask before passing to fv3
+!--------------
         fldname = 'sea_surface_temperature'
-        findex = QueryFieldList(ImportFieldsList,fldname)
+        findex  = QueryFieldList(ImportFieldsList,fldname)
+!       if (mpp_pe() == mpp_root_pe() .and. debug)  print *,' for sst', &
+!    ' fldname=',fldname,' findex=',findex,' importFieldsValid=',importFieldsValid(findex)
+
         if (importFieldsValid(findex) .and. datar8(isc,jsc) > -99999.0) then
           if (trim(impfield_name) == trim(fldname) .and. found) then
 !
+!$omp parallel do default(shared) private(i,j,nb,ix)
             do j=jsc,jec
-            do i=isc,iec
-              nb = Atm_block%blkno(i,j)
-              ix = Atm_block%ixp(i,j)
+              do i=isc,iec
+                nb = Atm_block%blkno(i,j)
+                ix = Atm_block%ixp(i,j)
 !if it is ocean or ice get sst from mediator
-              if (IPD_Data(nb)%Sfcprop%slmsk(ix) < 0.1 .or. IPD_Data(nb)%Sfcprop%slmsk(ix) > 1.9) then
-                IPD_Data(nb)%Coupling%tseain_cpl(ix) = datar8(i,j)
-                IPD_Data(nb)%Sfcprop%tsfc(ix) = datar8(i,j)
-              endif
-            enddo
+                if (IPD_Data(nb)%Sfcprop%slmsk(ix) < 0.1 .or. IPD_Data(nb)%Sfcprop%slmsk(ix) > 1.9) then
+                  IPD_Data(nb)%Coupling%tseain_cpl(ix) = datar8(i,j)
+                  IPD_Data(nb)%Sfcprop%tsfc(ix) = datar8(i,j)
+                endif
+              enddo
             enddo
             if (mpp_pe() == mpp_root_pe() .and. debug)  print *,'get sst from mediator'
           endif
         endif
 
-        ! get sea ice fraction:  fice or sea ice concentration from the mediator
+! get sea ice fraction:  fice or sea ice concentration from the mediator
+!----------------------
         fldname = 'ice_fraction'
-        findex = QueryFieldList(ImportFieldsList,fldname)
+        findex  = QueryFieldList(ImportFieldsList,fldname)
         if (importFieldsValid(findex) .and. datar8(isc,jsc) > -99999.0) then
           if (trim(impfield_name) == trim(fldname) .and. found) then
             lcpl_fice = .true.
+!$omp parallel do default(shared) private(i,j,nb,ix)
             do j=jsc,jec
-            do i=isc,iec
-              nb = Atm_block%blkno(i,j)
-              ix = Atm_block%ixp(i,j)
-              IPD_Data(nb)%Coupling%ficein_cpl(ix) = 0.
-              IPD_Data(nb)%Coupling%slimskin_cpl(ix) = 0.
+              do i=isc,iec
+                nb = Atm_block%blkno(i,j)
+                ix = Atm_block%ixp(i,j)
+                IPD_Data(nb)%Coupling%ficein_cpl(ix) = 0.
+                 IPD_Data(nb)%Coupling%slimskin_cpl(ix) = 0.
 !if it is ocean or ice get sst from mediator
-              if (IPD_Data(nb)%Sfcprop%slmsk(ix) < 0.1 .or. IPD_Data(nb)%Sfcprop%slmsk(ix) > 1.9) then
-                if( datar8(i,j) > 0.15 .and. IPD_Data(nb)%Sfcprop%lakemsk(ix) /= 1 ) then
-                  IPD_Data(nb)%Coupling%ficein_cpl(ix) = datar8(i,j)
-                  IPD_Data(nb)%Sfcprop%slmsk(ix) = 2.0
-                  IPD_Data(nb)%Coupling%slimskin_cpl(ix) = 4.
+                if (IPD_Data(nb)%Sfcprop%slmsk(ix) < 0.1 .or. IPD_Data(nb)%Sfcprop%slmsk(ix) > 1.9) then
+                  if( datar8(i,j) > icemin .and. IPD_Data(nb)%Sfcprop%lakemsk(ix) /= 1 ) then
+                    IPD_Data(nb)%Coupling%ficein_cpl(ix)   = datar8(i,j)
+                    IPD_Data(nb)%Sfcprop%slmsk(ix)         = 2.0
+                    IPD_Data(nb)%Coupling%slimskin_cpl(ix) = 4.0
+                  endif
                 endif
-              endif
-            enddo
+              enddo
             enddo
             if (mpp_pe() == mpp_root_pe() .and. debug)  print *,'fv3 assign_import: get fice from mediator'
           endif
         endif
 
-        ! get upward LW flux:  for sea ice covered area
+! get upward LW flux:  for sea ice covered area
+!--------------------
         fldname = 'mean_up_lw_flx'
-        findex = QueryFieldList(ImportFieldsList,fldname)
+        findex  = QueryFieldList(ImportFieldsList,fldname)
         if (importFieldsValid(findex) .and. datar8(isc,jsc) > -99999.0) then
           if (trim(impfield_name) == trim(fldname) .and. found) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
             do j=jsc,jec
-            do i=isc,iec
-              nb = Atm_block%blkno(i,j)
-              ix = Atm_block%ixp(i,j)
-              if (IPD_Data(nb)%Sfcprop%slmsk(ix) < 0.1 .or. IPD_Data(nb)%Sfcprop%slmsk(ix) > 1.9) then
-                IPD_Data(nb)%Coupling%ulwsfcin_cpl(ix) = -datar8(i,j)
-              endif
-            enddo
+              do i=isc,iec
+                nb = Atm_block%blkno(i,j)
+                ix = Atm_block%ixp(i,j)
+                if (IPD_Data(nb)%Sfcprop%slmsk(ix) < 0.1 .or. IPD_Data(nb)%Sfcprop%slmsk(ix) > 1.9) then
+                  IPD_Data(nb)%Coupling%ulwsfcin_cpl(ix) = -datar8(i,j)
+                endif
+              enddo
             enddo
             if (mpp_pe() == mpp_root_pe() .and. debug)  print *,'fv3 assign_import: get lwflx from mediator'
           endif
         endif
 
-        ! get latent heat flux:  for sea ice covered area
+! get latent heat flux:  for sea ice covered area
+!----------------------
         fldname = 'mean_laten_heat_flx'
-        findex = QueryFieldList(ImportFieldsList,fldname)
+        findex  = QueryFieldList(ImportFieldsList,fldname)
         if (importFieldsValid(findex) .and. datar8(isc,jsc) > -99999.0) then
           if (trim(impfield_name) == trim(fldname) .and. found) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
             do j=jsc,jec
-            do i=isc,iec
-              nb = Atm_block%blkno(i,j)
-              ix = Atm_block%ixp(i,j)
-              if (IPD_Data(nb)%Sfcprop%slmsk(ix) < 0.1 .or. IPD_Data(nb)%Sfcprop%slmsk(ix) > 1.9) then
-                IPD_Data(nb)%Coupling%dqsfcin_cpl(ix) = -datar8(i,j)
-              endif
-            enddo
+              do i=isc,iec
+                nb = Atm_block%blkno(i,j)
+                ix = Atm_block%ixp(i,j)
+                if (IPD_Data(nb)%Sfcprop%slmsk(ix) < 0.1 .or. IPD_Data(nb)%Sfcprop%slmsk(ix) > 1.9) then
+                  IPD_Data(nb)%Coupling%dqsfcin_cpl(ix) = -datar8(i,j)
+                endif
+              enddo
             enddo
             if (mpp_pe() == mpp_root_pe() .and. debug)  print *,'fv3 assign_import: get laten_heat from mediator'
           endif
         endif
 
-        ! get sensible heat flux:  for sea ice covered area
+! get sensible heat flux:  for sea ice covered area
+!------------------------
         fldname = 'mean_sensi_heat_flx'
-        findex = QueryFieldList(ImportFieldsList,fldname)
+        findex  = QueryFieldList(ImportFieldsList,fldname)
         if (importFieldsValid(findex) .and. datar8(isc,jsc) > -99999.0) then
           if (trim(impfield_name) == trim(fldname) .and. found) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
             do j=jsc,jec
-            do i=isc,iec
-              nb = Atm_block%blkno(i,j)
-              ix = Atm_block%ixp(i,j)
-              if (IPD_Data(nb)%Sfcprop%slmsk(ix) < 0.1 .or. IPD_Data(nb)%Sfcprop%slmsk(ix) > 1.9) then
-                IPD_Data(nb)%Coupling%dtsfcin_cpl(ix) = -datar8(i,j)
-              endif
-            enddo
+              do i=isc,iec
+                nb = Atm_block%blkno(i,j)
+                ix = Atm_block%ixp(i,j)
+                if (IPD_Data(nb)%Sfcprop%slmsk(ix) < 0.1 .or. IPD_Data(nb)%Sfcprop%slmsk(ix) > 1.9) then
+                  IPD_Data(nb)%Coupling%dtsfcin_cpl(ix) = -datar8(i,j)
+                endif
+              enddo
             enddo
             if (mpp_pe() == mpp_root_pe() .and. debug)  print *,'fv3 assign_import: get sensi_heat from mediator'
           endif
         endif
 
-        ! get zonal compt of momentum flux:  for sea ice covered area
+! get zonal compt of momentum flux:  for sea ice covered area
+!----------------------------------
         fldname = 'mean_zonal_moment_flx'
-        findex = QueryFieldList(ImportFieldsList,fldname)
+        findex  = QueryFieldList(ImportFieldsList,fldname)
         if (importFieldsValid(findex) .and. datar8(isc,jsc) > -99999.0) then
           if (trim(impfield_name) == trim(fldname) .and. found) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
             do j=jsc,jec
-            do i=isc,iec
-              nb = Atm_block%blkno(i,j)
-              ix = Atm_block%ixp(i,j)
-              if (IPD_Data(nb)%Sfcprop%slmsk(ix) < 0.1 .or. IPD_Data(nb)%Sfcprop%slmsk(ix) > 1.9) then
-                IPD_Data(nb)%Coupling%dusfcin_cpl(ix) = -datar8(i,j)
-              endif
-            enddo
+              do i=isc,iec
+                nb = Atm_block%blkno(i,j)
+                ix = Atm_block%ixp(i,j)
+                if (IPD_Data(nb)%Sfcprop%slmsk(ix) < 0.1 .or. IPD_Data(nb)%Sfcprop%slmsk(ix) > 1.9) then
+                  IPD_Data(nb)%Coupling%dusfcin_cpl(ix) = -datar8(i,j)
+                endif
+              enddo
             enddo
             if (mpp_pe() == mpp_root_pe() .and. debug)  print *,'fv3 assign_import: get zonal_moment_flx from mediator'
           endif
         endif
 
-        ! get meridional compt of momentum flux:  for sea ice covered area
+! get meridional compt of momentum flux:  for sea ice covered area
+!---------------------------------------
         fldname = 'mean_merid_moment_flx'
-        findex = QueryFieldList(ImportFieldsList,fldname)
+        findex  = QueryFieldList(ImportFieldsList,fldname)
         if (importFieldsValid(findex) .and. datar8(isc,jsc) > -99999.0) then
           if (trim(impfield_name) == trim(fldname) .and. found) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
             do j=jsc,jec
-            do i=isc,iec
-              nb = Atm_block%blkno(i,j)
-              ix = Atm_block%ixp(i,j)
-              if (IPD_Data(nb)%Sfcprop%slmsk(ix) < 0.1 .or. IPD_Data(nb)%Sfcprop%slmsk(ix) > 1.9) then
-                IPD_Data(nb)%Coupling%dvsfcin_cpl(ix) = -datar8(i,j)
-              endif
-            enddo
+              do i=isc,iec
+                nb = Atm_block%blkno(i,j)
+                ix = Atm_block%ixp(i,j)
+                if (IPD_Data(nb)%Sfcprop%slmsk(ix) < 0.1 .or. IPD_Data(nb)%Sfcprop%slmsk(ix) > 1.9) then
+                  IPD_Data(nb)%Coupling%dvsfcin_cpl(ix) = -datar8(i,j)
+                endif
+              enddo
             enddo
             if (mpp_pe() == mpp_root_pe() .and. debug)  print *,'fv3 assign_import: get merid_moment_flx from mediator'
           endif
         endif
 
-        ! get sea ice volume:  for sea ice covered area
+! get sea ice volume:  for sea ice covered area
+!--------------------
         fldname = 'mean_ice_volume'
-        findex = QueryFieldList(ImportFieldsList,fldname)
+        findex  = QueryFieldList(ImportFieldsList,fldname)
         if (importFieldsValid(findex) .and. datar8(isc,jsc) > -99999.0) then
           if (trim(impfield_name) == trim(fldname) .and. found) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
             do j=jsc,jec
-            do i=isc,iec
-              nb = Atm_block%blkno(i,j)
-              ix = Atm_block%ixp(i,j)
-              IPD_Data(nb)%Coupling%hicein_cpl(ix) = datar8(i,j)
-            enddo
+              do i=isc,iec
+                nb = Atm_block%blkno(i,j)
+                ix = Atm_block%ixp(i,j)
+                IPD_Data(nb)%Coupling%hicein_cpl(ix) = datar8(i,j)
+              enddo
             enddo
             if (mpp_pe() == mpp_root_pe() .and. debug) print *,'fv3 assign_import: get ice_volume  from mediator'
           endif
         endif
 
-        ! get snow volume:  for sea ice covered area
+! get snow volume:  for sea ice covered area
+!----------------
         fldname = 'mean_snow_volume'
-        findex = QueryFieldList(ImportFieldsList,fldname)
+        findex  = QueryFieldList(ImportFieldsList,fldname)
         if (importFieldsValid(findex) .and. datar8(isc,jsc) > -99999.0) then
           if (trim(impfield_name) == trim(fldname) .and. found) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
             do j=jsc,jec
-            do i=isc,iec
-              nb = Atm_block%blkno(i,j)
-              ix = Atm_block%ixp(i,j)
-              IPD_Data(nb)%Coupling%hsnoin_cpl(ix) = datar8(i,j)
-            enddo
+              do i=isc,iec
+                nb = Atm_block%blkno(i,j)
+                ix = Atm_block%ixp(i,j)
+                IPD_Data(nb)%Coupling%hsnoin_cpl(ix) = datar8(i,j)
+              enddo
             enddo
             if (mpp_pe() == mpp_root_pe() .and. debug)  print *,'fv3 assign_import: get snow_volume  from mediator'
           endif
@@ -1639,27 +1656,28 @@ end subroutine atmos_data_type_chksum
 
 ! update sea ice related fields:
     if( lcpl_fice ) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
-      do i=isc,iec
-        nb = Atm_block%blkno(i,j)
-        ix = Atm_block%ixp(i,j)
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
 !if it is ocean or ice get sst from mediator
-        if (IPD_Data(nb)%Sfcprop%slmsk(ix) < 0.1 .or.  IPD_Data(nb)%Sfcprop%slmsk(ix) > 1.9) then
-           IPD_Data(nb)%Sfcprop%tisfc(ix) = IPD_Data(nb)%Coupling%tisfcin_cpl(ix)
-           if( IPD_Data(nb)%Sfcprop%lakemsk(ix) /= 1 ) then
-             if( IPD_Data(nb)%Coupling%ficein_cpl(ix) > 0.15 ) then
-               IPD_Data(nb)%Sfcprop%fice(ix)  = IPD_Data(nb)%Coupling%ficein_cpl(ix)
-               IPD_Data(nb)%Sfcprop%hice(ix)  = IPD_Data(nb)%Coupling%hicein_cpl(ix)
-               IPD_Data(nb)%Sfcprop%snowd(ix) = IPD_Data(nb)%Coupling%hsnoin_cpl(ix)
-             else
-               IPD_Data(nb)%Sfcprop%fice(ix)  = 0.
-               IPD_Data(nb)%Sfcprop%hice(ix)  = 0.
-               IPD_Data(nb)%Sfcprop%snowd(ix) = 0.
-               IPD_Data(nb)%Sfcprop%slmsk(ix) = 0.
+          if (IPD_Data(nb)%Sfcprop%slmsk(ix) < 0.1 .or.  IPD_Data(nb)%Sfcprop%slmsk(ix) > 1.9) then
+             IPD_Data(nb)%Sfcprop%tisfc(ix) = IPD_Data(nb)%Coupling%tisfcin_cpl(ix)
+             if( IPD_Data(nb)%Sfcprop%lakemsk(ix) /= 1 ) then
+               if( IPD_Data(nb)%Coupling%ficein_cpl(ix) > icemin ) then
+                 IPD_Data(nb)%Sfcprop%fice(ix)  = IPD_Data(nb)%Coupling%ficein_cpl(ix)
+                 IPD_Data(nb)%Sfcprop%hice(ix)  = IPD_Data(nb)%Coupling%hicein_cpl(ix)
+                 IPD_Data(nb)%Sfcprop%snowd(ix) = IPD_Data(nb)%Coupling%hsnoin_cpl(ix)
+               else
+                 IPD_Data(nb)%Sfcprop%fice(ix)  = 0.0
+                 IPD_Data(nb)%Sfcprop%hice(ix)  = 0.0
+                 IPD_Data(nb)%Sfcprop%snowd(ix) = 0.0
+                 IPD_Data(nb)%Sfcprop%slmsk(ix) = 0.0
+               endif
              endif
-           endif
-        endif
-      enddo
+          endif
+        enddo
       enddo
     endif
 
@@ -1682,10 +1700,10 @@ end subroutine atmos_data_type_chksum
     integer, intent(out) :: rc
 
     !--- local variables
-    integer            :: j, i, ix, nb, isc, iec, jsc, jec, idx
+    integer                :: j, i, ix, nb, isc, iec, jsc, jec, idx
     real(IPD_kind_phys)    :: rtime
 !
-    if (mpp_pe() == mpp_root_pe()) print *,'enter setup_exportdata'
+!   if (mpp_pe() == mpp_root_pe()) print *,'enter setup_exportdata'
 
     isc = IPD_control%isc
     iec = IPD_control%isc+IPD_control%nx-1
@@ -1708,6 +1726,7 @@ end subroutine atmos_data_type_chksum
     idx = queryfieldlist(exportFieldsList,'inst_zonal_wind_height10m')
     if (idx > 0 ) then
       if (mpp_pe() == mpp_root_pe() .and. debug) print *,'cpl, in get u10mi_cpl'
+!$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
@@ -1721,6 +1740,7 @@ end subroutine atmos_data_type_chksum
     idx = queryfieldlist(exportFieldsList,'inst_merid_wind_height10m')
     if (idx > 0 ) then
       if (mpp_pe() == mpp_root_pe() .and. debug) print *,'cpl, in get v10mi_cpl'
+!$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
@@ -1737,6 +1757,7 @@ end subroutine atmos_data_type_chksum
     ! MEAN Zonal compt of momentum flux (N/m**2)
     idx = queryfieldlist(exportFieldsList,'mean_zonal_moment_flx')
     if (idx > 0 ) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
@@ -1749,6 +1770,7 @@ end subroutine atmos_data_type_chksum
     ! MEAN Merid compt of momentum flux (N/m**2)
     idx = queryfieldlist(exportFieldsList,'mean_merid_moment_flx')
     if (idx > 0 ) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
@@ -1761,6 +1783,7 @@ end subroutine atmos_data_type_chksum
     ! MEAN Sensible heat flux (W/m**2)
     idx = queryfieldlist(exportFieldsList,'mean_sensi_heat_flx')
     if (idx > 0 ) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
@@ -1773,6 +1796,7 @@ end subroutine atmos_data_type_chksum
     ! MEAN Latent heat flux (W/m**2)
     idx = queryfieldlist(exportFieldsList,'mean_laten_heat_flx')
     if (idx > 0 ) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
@@ -1785,6 +1809,7 @@ end subroutine atmos_data_type_chksum
     ! MEAN Downward LW heat flux (W/m**2)
     idx = queryfieldlist(exportFieldsList,'mean_down_lw_flx')
     if (idx > 0 ) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
@@ -1797,6 +1822,7 @@ end subroutine atmos_data_type_chksum
     ! MEAN Downward SW heat flux (W/m**2)
     idx = queryfieldlist(exportFieldsList,'mean_down_sw_flx')
     if (idx > 0 ) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
@@ -1809,6 +1835,7 @@ end subroutine atmos_data_type_chksum
     ! MEAN precipitation rate (kg/m2) ?????? checking unit ??????
     idx = queryfieldlist(exportFieldsList,'mean_prec_rate')
     if (idx > 0 ) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
@@ -1821,6 +1848,7 @@ end subroutine atmos_data_type_chksum
     ! Instataneous Zonal compt of momentum flux (N/m**2)
     idx = queryfieldlist(exportFieldsList,'inst_zonal_moment_flx')
     if (idx > 0 ) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
@@ -1833,6 +1861,7 @@ end subroutine atmos_data_type_chksum
     ! Instataneous Merid compt of momentum flux (N/m**2)
     idx = queryfieldlist(exportFieldsList,'inst_merid_moment_flx')
     if (idx > 0 ) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
@@ -1845,6 +1874,7 @@ end subroutine atmos_data_type_chksum
     ! Instataneous Sensible heat flux (W/m**2)
     idx = queryfieldlist(exportFieldsList,'inst_sensi_heat_flx')
     if (idx > 0 ) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
@@ -1857,6 +1887,7 @@ end subroutine atmos_data_type_chksum
     ! Instataneous Latent heat flux (W/m**2)
     idx = queryfieldlist(exportFieldsList,'inst_laten_heat_flx')
     if (idx > 0 ) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
@@ -1869,6 +1900,7 @@ end subroutine atmos_data_type_chksum
     ! Instataneous Downward long wave radiation flux (W/m**2)
     idx = queryfieldlist(exportFieldsList,'inst_down_lw_flx')
     if (idx > 0 ) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
@@ -1881,6 +1913,7 @@ end subroutine atmos_data_type_chksum
     ! Instataneous Downward solar radiation flux (W/m**2)
     idx = queryfieldlist(exportFieldsList,'inst_down_sw_flx')
     if (idx > 0 ) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
@@ -1893,6 +1926,7 @@ end subroutine atmos_data_type_chksum
     ! Instataneous Temperature (K) 2 m above ground
     idx = queryfieldlist(exportFieldsList,'inst_temp_height2m')
     if (idx > 0 ) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
@@ -1905,6 +1939,7 @@ end subroutine atmos_data_type_chksum
     ! Instataneous Specific humidity (kg/kg) 2 m above ground
     idx = queryfieldlist(exportFieldsList,'inst_spec_humid_height2m')
     if (idx > 0 ) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
@@ -1917,6 +1952,7 @@ end subroutine atmos_data_type_chksum
     ! Instataneous Temperature (K) at surface
     idx = queryfieldlist(exportFieldsList,'inst_temp_height_surface')
     if (idx > 0 ) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
@@ -1929,6 +1965,7 @@ end subroutine atmos_data_type_chksum
     ! Instataneous Pressure (Pa) land and sea surface
     idx = queryfieldlist(exportFieldsList,'inst_pres_height_surface')
     if (idx > 0 ) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
@@ -1941,6 +1978,7 @@ end subroutine atmos_data_type_chksum
     ! Instataneous Surface height (m)
     idx = queryfieldlist(exportFieldsList,'inst_surface_height')
     if (idx > 0 ) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
@@ -1953,6 +1991,7 @@ end subroutine atmos_data_type_chksum
     ! MEAN NET long wave radiation flux (W/m**2)
     idx = queryfieldlist(exportFieldsList,'mean_net_lw_flx')
     if (idx > 0 ) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
@@ -1965,6 +2004,7 @@ end subroutine atmos_data_type_chksum
     ! MEAN NET solar radiation flux over the ocean (W/m**2)
     idx = queryfieldlist(exportFieldsList,'mean_net_sw_flx')
     if (idx > 0 ) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
@@ -1977,6 +2017,7 @@ end subroutine atmos_data_type_chksum
     ! Instataneous NET long wave radiation flux (W/m**2)
     idx = queryfieldlist(exportFieldsList,'inst_net_lw_flx')
     if (idx > 0 ) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
@@ -1989,6 +2030,7 @@ end subroutine atmos_data_type_chksum
     ! Instataneous NET solar radiation flux over the ocean (W/m**2)
     idx = queryfieldlist(exportFieldsList,'inst_net_sw_flx')
     if (idx > 0 ) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
@@ -2001,6 +2043,7 @@ end subroutine atmos_data_type_chksum
     ! MEAN sfc downward nir direct flux (W/m**2)
     idx = queryfieldlist(exportFieldsList,'mean_down_sw_ir_dir_flx')
     if (idx > 0 ) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
@@ -2013,6 +2056,7 @@ end subroutine atmos_data_type_chksum
     ! MEAN sfc downward nir diffused flux (W/m**2)
     idx = queryfieldlist(exportFieldsList,'mean_down_sw_ir_dif_flx')
     if (idx > 0 ) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
@@ -2025,6 +2069,7 @@ end subroutine atmos_data_type_chksum
     ! MEAN sfc downward uv+vis direct flux (W/m**2)
     idx = queryfieldlist(exportFieldsList,'mean_down_sw_vis_dir_flx')
     if (idx > 0 ) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
@@ -2037,6 +2082,7 @@ end subroutine atmos_data_type_chksum
     ! MEAN sfc downward uv+vis diffused flux (W/m**2)
     idx = queryfieldlist(exportFieldsList,'mean_down_sw_vis_dif_flx')
     if (idx > 0 ) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
@@ -2049,6 +2095,7 @@ end subroutine atmos_data_type_chksum
     ! Instataneous sfc downward nir direct flux (W/m**2)
     idx = queryfieldlist(exportFieldsList,'inst_down_sw_ir_dir_flx')
     if (idx > 0 ) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
@@ -2061,6 +2108,7 @@ end subroutine atmos_data_type_chksum
     ! Instataneous sfc downward nir diffused flux (W/m**2)
     idx = queryfieldlist(exportFieldsList,'inst_down_sw_ir_dif_flx')
     if (idx > 0 ) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
@@ -2073,6 +2121,7 @@ end subroutine atmos_data_type_chksum
     ! Instataneous sfc downward uv+vis direct flux (W/m**2)
     idx = queryfieldlist(exportFieldsList,'inst_down_sw_vis_dir_flx')
     if (idx > 0 ) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
@@ -2085,6 +2134,7 @@ end subroutine atmos_data_type_chksum
     ! Instataneous sfc downward uv+vis diffused flux (W/m**2)
     idx = queryfieldlist(exportFieldsList,'inst_down_sw_vis_dif_flx')
     if (idx > 0 ) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
@@ -2097,6 +2147,7 @@ end subroutine atmos_data_type_chksum
     ! MEAN NET sfc nir direct flux (W/m**2)
     idx = queryfieldlist(exportFieldsList,'mean_net_sw_ir_dir_flx')
     if (idx > 0 ) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
@@ -2109,6 +2160,7 @@ end subroutine atmos_data_type_chksum
     ! MEAN NET sfc nir diffused flux (W/m**2)
     idx = queryfieldlist(exportFieldsList,'mean_net_sw_ir_dif_flx')
     if (idx > 0 ) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
@@ -2121,6 +2173,7 @@ end subroutine atmos_data_type_chksum
     ! MEAN NET sfc uv+vis direct flux (W/m**2)
     idx = queryfieldlist(exportFieldsList,'mean_net_sw_vis_dir_flx')
     if (idx > 0 ) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
@@ -2133,6 +2186,7 @@ end subroutine atmos_data_type_chksum
     ! MEAN NET sfc uv+vis diffused flux (W/m**2)
     idx = queryfieldlist(exportFieldsList,'mean_net_sw_vis_dif_flx')
     if (idx > 0 ) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
@@ -2145,6 +2199,7 @@ end subroutine atmos_data_type_chksum
     ! Instataneous net sfc nir direct flux (W/m**2)
     idx = queryfieldlist(exportFieldsList,'inst_net_sw_ir_dir_flx')
     if (idx > 0 ) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
@@ -2157,6 +2212,7 @@ end subroutine atmos_data_type_chksum
     ! Instataneous net sfc nir diffused flux (W/m**2)
     idx = queryfieldlist(exportFieldsList,'inst_net_sw_ir_dif_flx')
     if (idx > 0 ) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
@@ -2169,6 +2225,7 @@ end subroutine atmos_data_type_chksum
     ! Instataneous net sfc uv+vis direct flux (W/m**2)
     idx = queryfieldlist(exportFieldsList,'inst_net_sw_vis_dir_flx')
     if (idx > 0 ) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
@@ -2181,6 +2238,7 @@ end subroutine atmos_data_type_chksum
     ! Instataneous net sfc uv+vis diffused flux (W/m**2)
     idx = queryfieldlist(exportFieldsList,'inst_net_sw_vis_dif_flx')
     if (idx > 0 ) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
@@ -2193,6 +2251,7 @@ end subroutine atmos_data_type_chksum
     ! Land/Sea mask (sea:0,land:1)
     idx = queryfieldlist(exportFieldsList,'inst_land_sea_mask')
     if (idx > 0 ) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
@@ -2207,6 +2266,7 @@ end subroutine atmos_data_type_chksum
     ! bottom layer temperature (t)
     idx = queryfieldlist(exportFieldsList,'inst_temp_height_lowest')
     if (idx > 0 ) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
@@ -2224,6 +2284,7 @@ end subroutine atmos_data_type_chksum
     !!! CHECK if tracer 1 is for specific humidity !!!
     idx = queryfieldlist(exportFieldsList,'inst_spec_humid_height_lowest')
     if (idx > 0 ) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
@@ -2231,7 +2292,7 @@ end subroutine atmos_data_type_chksum
           if (associated(DYCORE_Data(nb)%coupling%tr_bot)) then
             exportData(i,j,idx) = DYCORE_Data(nb)%coupling%tr_bot(ix,1)
           else 
-            exportData(i,j,idx)=0.0
+            exportData(i,j,idx) = 0.0
           endif 
         enddo
       enddo
@@ -2240,6 +2301,7 @@ end subroutine atmos_data_type_chksum
     ! bottom layer zonal wind (u)
     idx = queryfieldlist(exportFieldsList,'inst_zonal_wind_height_lowest')
     if (idx > 0 ) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
@@ -2256,6 +2318,7 @@ end subroutine atmos_data_type_chksum
     ! bottom layer meridionalw wind (v)
     idx = queryfieldlist(exportFieldsList,'inst_merid_wind_height_lowest')
     if (idx > 0 ) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
@@ -2272,6 +2335,7 @@ end subroutine atmos_data_type_chksum
     ! bottom layer pressure (p)
     idx = queryfieldlist(exportFieldsList,'inst_pres_height_lowest')
     if (idx > 0 ) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
@@ -2288,6 +2352,7 @@ end subroutine atmos_data_type_chksum
     ! bottom layer height (z)
     idx = queryfieldlist(exportFieldsList,'inst_height_lowest')
     if (idx > 0 ) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
@@ -2306,6 +2371,7 @@ end subroutine atmos_data_type_chksum
     ! MEAN snow precipitation rate (kg/m2) ?????? checking unit ??????
     idx = queryfieldlist(exportFieldsList,'mean_fprec_rate')
     if (idx > 0 ) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
@@ -2323,32 +2389,33 @@ end subroutine atmos_data_type_chksum
 !---
     if (IPD_Control%cplflx) then 
     ! zero out accumulated fields
+!$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          IPD_Data(nb)%coupling%dusfc_cpl(ix)  = 0.
-          IPD_Data(nb)%coupling%dvsfc_cpl(ix)  = 0.
-          IPD_Data(nb)%coupling%dtsfc_cpl(ix)  = 0.
-          IPD_Data(nb)%coupling%dqsfc_cpl(ix)  = 0.
-          IPD_Data(nb)%coupling%dlwsfc_cpl(ix) = 0.
-          IPD_Data(nb)%coupling%dswsfc_cpl(ix) = 0.
-          IPD_Data(nb)%coupling%rain_cpl(ix)   = 0.
-          IPD_Data(nb)%coupling%nlwsfc_cpl(ix) = 0.
-          IPD_Data(nb)%coupling%nswsfc_cpl(ix) = 0.
-          IPD_Data(nb)%coupling%dnirbm_cpl(ix) = 0.
-          IPD_Data(nb)%coupling%dnirdf_cpl(ix) = 0.
-          IPD_Data(nb)%coupling%dvisbm_cpl(ix) = 0.
-          IPD_Data(nb)%coupling%dvisdf_cpl(ix) = 0.
-          IPD_Data(nb)%coupling%nnirbm_cpl(ix) = 0.
-          IPD_Data(nb)%coupling%nnirdf_cpl(ix) = 0.
-          IPD_Data(nb)%coupling%nvisbm_cpl(ix) = 0.
-          IPD_Data(nb)%coupling%nvisdf_cpl(ix) = 0.
-          IPD_Data(nb)%coupling%snow_cpl(ix)   = 0.
+          IPD_Data(nb)%coupling%dusfc_cpl(ix)  = 0.0
+          IPD_Data(nb)%coupling%dvsfc_cpl(ix)  = 0.0
+          IPD_Data(nb)%coupling%dtsfc_cpl(ix)  = 0.0
+          IPD_Data(nb)%coupling%dqsfc_cpl(ix)  = 0.0
+          IPD_Data(nb)%coupling%dlwsfc_cpl(ix) = 0.0
+          IPD_Data(nb)%coupling%dswsfc_cpl(ix) = 0.0
+          IPD_Data(nb)%coupling%rain_cpl(ix)   = 0.0
+          IPD_Data(nb)%coupling%nlwsfc_cpl(ix) = 0.0
+          IPD_Data(nb)%coupling%nswsfc_cpl(ix) = 0.0
+          IPD_Data(nb)%coupling%dnirbm_cpl(ix) = 0.0
+          IPD_Data(nb)%coupling%dnirdf_cpl(ix) = 0.0
+          IPD_Data(nb)%coupling%dvisbm_cpl(ix) = 0.0
+          IPD_Data(nb)%coupling%dvisdf_cpl(ix) = 0.0
+          IPD_Data(nb)%coupling%nnirbm_cpl(ix) = 0.0
+          IPD_Data(nb)%coupling%nnirdf_cpl(ix) = 0.0
+          IPD_Data(nb)%coupling%nvisbm_cpl(ix) = 0.0
+          IPD_Data(nb)%coupling%nvisdf_cpl(ix) = 0.0
+          IPD_Data(nb)%coupling%snow_cpl(ix)   = 0.0
         enddo
       enddo
     endif !cplflx
-    if (mpp_pe() == mpp_root_pe()) print *,'end of setup_exportdata'
+!   if (mpp_pe() == mpp_root_pe()) print *,'end of setup_exportdata'
 
   end subroutine setup_exportdata
 
@@ -2374,6 +2441,7 @@ end subroutine atmos_data_type_chksum
     jec = IPD_control%jsc+IPD_control%ny-1
     allocate(lsmask(isc:iec,jsc:jec))
 !
+!$omp parallel do default(shared) private(i,j,nb,ix)
     do j=jsc,jec
       do i=isc,iec
         nb = Atm_block%blkno(i,j)
@@ -2385,9 +2453,8 @@ end subroutine atmos_data_type_chksum
 !
 ! Get mask
     call ESMF_GridAddItem(fcstgrid, itemflag=ESMF_GRIDITEM_MASK,   &
-         staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, file=__FILE__)) return  ! bail out
+                          staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
 !    call ESMF_GridGetItemBounds(fcstgrid, itemflag=ESMF_GRIDITEM_MASK,   &
 !         staggerloc=ESMF_STAGGERLOC_CENTER, computationalLBound=ClBnd,  &
@@ -2396,16 +2463,15 @@ end subroutine atmos_data_type_chksum
 !    print *,'in set up grid, aft add esmfgridadd item mask, rc=',rc, &
 !     'ClBnd=',ClBnd,'CUbnd=',CUbnd,'Ccount=',Ccount, &
 !     'TlBnd=',TlBnd,'TUbnd=',TUbnd,'Tcount=',Tcount
-!    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-!      line=__LINE__, file=__FILE__)) return  ! bail out
+!    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
     call ESMF_GridGetItem(fcstgrid, itemflag=ESMF_GRIDITEM_MASK,   &
-         staggerloc=ESMF_STAGGERLOC_CENTER,farrayPtr=maskPtr, rc=rc)
+                          staggerloc=ESMF_STAGGERLOC_CENTER,farrayPtr=maskPtr, rc=rc)
 !    print *,'in set up grid, aft get maskptr, rc=',rc, 'size=',size(maskPtr,1),size(maskPtr,2), &
 !      'bound(maskPtr)=', LBOUND(maskPtr,1),LBOUND(maskPtr,2),UBOUND(maskPtr,1),UBOUND(maskPtr,2)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, file=__FILE__)) return  ! bail out
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 !    
+!$omp parallel do default(shared) private(i,j)
     do j=jsc,jec
       do i=isc,iec
         maskPtr(i-isc+1,j-jsc+1) = lsmask(i,j)

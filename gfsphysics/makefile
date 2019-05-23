@@ -35,6 +35,8 @@ SRCS_f   =  \
 	   ./physics/gscondp.f                                                       \
 	   ./physics/gwdc.f                                                          \
 	   ./physics/gwdps.f                                                         \
+	   ./physics/ugwp_driver_v0.f                                                \
+	   ./physics/cires_orowam2017.f                                              \
 	   ./physics/h2o_def.f                                                       \
 	   ./physics/h2oc.f                                                          \
 	   ./physics/h2ohdc.f                                                        \
@@ -145,6 +147,14 @@ SRCS_F   = ./physics/aer_cloud.F						     \
 SRCS_F90 = \
 	   ./physics/GFDL_parse_tracers.F90					     \
 	   ./physics/gcycle.F90                                                      \
+  	   ./physics/cires_ugwp_initialize.F90                                       \
+	   ./physics/cires_ugwp_module.F90                                           \
+	   ./physics/cires_ugwp_utils.F90                                            \
+	   ./physics/cires_ugwp_triggers.F90                                         \
+	   ./physics/cires_ugwp_solvers.F90                                          \
+	   ./physics/cires_vert_lsatdis.F90                                          \
+	   ./physics/cires_vert_orodis.F90                                           \
+	   ./physics/cires_vert_wmsdis.F90                                           \
 	   ./physics/gfdl_cloud_microphys.F90					     \
 	   ./physics/micro_mg_utils.F90                                              \
 	   ./physics/micro_mg2_0.F90                                                 \

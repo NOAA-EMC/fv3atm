@@ -307,8 +307,8 @@
           cm(i)     = ca * ca / (fm(i) * fm(i))
           ch(i)     = ca * ca / (fm(i) * fh(i))
           tem1      = 0.00001/z1(i)
-          cm(i) = max(cm(i), tem1)
-          ch(i) = max(ch(i), tem1)
+          cm(i)     = max(cm(i), tem1)
+          ch(i)     = max(ch(i), tem1)
           stress(i) = cm(i) * wind(i) * wind(i)
           ustar(i)  = sqrt(stress(i))
 !
