@@ -726,8 +726,10 @@ module fv3gfs_cap_mod
             isrctermprocessing = 1
             call ESMF_FieldBundleRegridStore(fcstFB(j), wrtFB(j,i), &
               regridMethod=regridmethod, routehandle=routehandle(j,i),  &
+              unmappedaction=ESMF_UNMAPPEDACTION_IGNORE, &
               srcTermProcessing=isrctermprocessing, &
               rc=rc)
+
             !if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
             !  line=__LINE__, &
             !  file=__FILE__)) &
