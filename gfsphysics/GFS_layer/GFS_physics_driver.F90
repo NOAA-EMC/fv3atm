@@ -184,6 +184,7 @@ module module_physics_driver
 !      Nov  2018    J. Han      Add canopy heat storage parameterization!
 !      Feb  2019    Ruiyu S.    Add an alternate method to use          ! 
 !				hydrometeors from GFDL MP in radiation  !
+!      Mar  2019    Rongqian &Helin    Add Noah MP LSM                  ! 
 !      Mar  2019    S. Moorthi  update slflag for MG3 and update        !
 !                               rain/snow over sea-ice.  Update sfc_sice!
 !                               sfc_cice calls                          !
@@ -517,7 +518,7 @@ module module_physics_driver
            adjnirdfd, adjvisbmd, adjvisdfd, gabsbdlw, xcosz, tseal,     &
            snohf, dlqfac, work3, ctei_rml, cldf, domr, domzr, domip,    &
            doms, psautco_l, prautco_l, ocalnirbm_cpl, ocalnirdf_cpl,    &
-           ocalvisbm_cpl, ocalvisdf_cpl, dtzm, temrain1,                &
+           ocalvisbm_cpl, ocalvisdf_cpl, dtzm, temrain1,t2mmp,q2mp,     &
            psaur_l, praur_l,                                            &
 !--- coupling inputs for physics
            dtsfc_cice, dqsfc_cice, dusfc_cice, dvsfc_cice, ulwsfc_cice, &
@@ -538,6 +539,19 @@ module module_physics_driver
 !--- for isppt_deep
       real(kind=kind_phys), dimension(size(Grid%xlon,1),Model%levs) ::  &
           savet,saveq,saveu,savev
+
+!--- pass precip type from MP to Noah MP
+      real(kind=kind_phys), dimension(size(Grid%xlon,1)) ::              &
+          rainn_mp, rainc_mp, snow_mp, graupel_mp, ice_mp
+! 5 3D for Noah MP
+!
+      real(kind=kind_phys), dimension(size(Grid%xlon,1),-2:0       ) :: &
+          snicex, snliqx,tsnox
+      real(kind=kind_phys), dimension(size(Grid%xlon,1),-2:4       ) :: &
+          zsnsox
+
+      real(kind=kind_phys), dimension(size(Grid%xlon,1),Model%lsoil) :: &
+          smoiseqx
 
 !--- GFDL modification for FV3 
 
@@ -641,8 +655,12 @@ module module_physics_driver
       integer :: kdtminus1
       logical :: reset
 ! For computing saturation vapor pressure and rh at 2m
-      real    :: pshltr,QCQ,rh02
+      real :: pshltr,QCQ,rh02
       real(kind=kind_phys), allocatable, dimension(:,:) :: den 
+! Noah MP Julian day / yearlen
+      integer ::  yearlen,iyear,imn,imon,iday,ihr,imin,jd0,jd1
+      real    ::  julian,fjd
+      integer ::  iw3jdn
 
 !===> ...  begin here
       ldiag_ugwp = Model%ldiag_ugwp
@@ -816,7 +834,28 @@ module module_physics_driver
           num2 = Model%num_p3d + 1
         endif
       endif
-!
+!  ---  initization for those precip type used in Noah MP
+         if (Model%lsm == 2) then
+           do  i=1,im
+             rainn_mp(i) = 0
+             rainc_mp(i) = 0
+             snow_mp(i) = 0
+             graupel_mp(i) = 0
+             ice_mp(i) = 0
+           enddo
+         endif
+!  ---  get the amount of different precip type for Noah MP
+!  ---  convert from m/dtp to mm/s
+      if (Model%lsm == 2 .and. Model%imp_physics == 11) then
+        do  i=1,im
+          rainn_mp(i) = (Diag%rain(i)-Diag%rainc(i))/(dtp*con_p001) 
+          rainc_mp(i) = Diag%rainc(i)/(dtp*con_p001)
+          snow_mp(i) = Diag%snow(i)/(dtp*con_p001)
+          graupel_mp(i) = Diag%graupel(i)/(dtp*con_p001)
+          ice_mp(i) = Diag%ice(i)/(dtp*con_p001)
+        enddo
+      endif
+
 !  ---  set initial quantities for stochastic physics deltas
       if (Model%do_sppt) then
         Tbd%dtdtr = 0.0
@@ -938,7 +977,53 @@ module module_physics_driver
       call get_prs_fv3 (ix, levs, ntrac, Statein%phii, Statein%prsi, &
                         Statein%tgrs, Statein%qgrs, del, del_gz)
 #endif
+
+
+
 !
+! Julian day calculation (fcst day of the year)
+! we need imn to init lai and sai and yearln and julian to
+! pass to noah mp sflx, idate is init, jdat is fcst;idate = jdat when kdt=1
+! jdat is changing
+!
+      if (Model%lsm == 2) then
+
+        imn     = Model%idate(2)
+
+        iyear   = Model%jdat(1)
+        imon    = Model%jdat(2)
+        iday    = Model%jdat(3)
+        ihr     = Model%jdat(5)
+        imin    = Model%jdat(6)
+
+        jd1    = iw3jdn(iyear,imon,iday)
+        jd0    = iw3jdn(iyear,1,1)
+        fjd    = float(ihr)/24.0 + float(imin)/1440.0
+
+        julian = float(jd1-jd0) + fjd
+
+!
+! Year length
+!
+! what if the integration goes from one year to another?
+! iyr or jyr ? from 365 to 366 or from 366 to 365
+!
+! is this against model's noleap yr assumption?
+
+        yearlen = 365
+
+       if (mod(iyear,4) == 0) then
+           yearlen = 366
+        if (mod(iyear,100) == 0) then
+           yearlen = 365
+           if (mod(iyear,400) == 0) then
+              yearlen = 366
+           endif
+          endif
+       endif
+
+      endif
+
 !  --- ...  frain=factor for centered difference scheme correction of rain amount.
 
       frain = dtf / dtp
@@ -1020,6 +1105,31 @@ module module_physics_driver
           slsoil(i,k) = Sfcprop%slc(i,k)          !! clu: slc -> slsoil
         enddo
       enddo
+
+! -- Noah MP 3D global to local
+     if (Model%lsm == 2 ) then
+
+      do k = -2,0
+        do i = 1,im
+         snicex(i,k) = Sfcprop%snicexy(i,k)
+         snliqx(i,k) = Sfcprop%snliqxy(i,k)
+         tsnox(i,k)  = Sfcprop%tsnoxy(i,k)
+        enddo
+       enddo
+
+      do k = 1,4
+        do i = 1,im
+         smoiseqx(i,k) = Sfcprop%smoiseq(i,k)
+        enddo
+       enddo
+
+      do k = -2,4
+        do i = 1,im
+         zsnsox(i,k) = Sfcprop%zsnsoxy(i,k)
+        enddo
+       enddo
+
+     endif
 
       do k=1,levs
         do i=1,im
@@ -1338,6 +1448,7 @@ module module_physics_driver
         enddo
       endif
 
+
 !  --- ...  lu: initialize flag_guess, flag_iter, tsurf
 
       do i=1,im
@@ -1489,6 +1600,45 @@ module module_physics_driver
             Diag%cmm, Diag%chh, evbs, evcw, sbsno, snowc, Diag%soilm,     &
             snohf, Diag%smcwlt2, Diag%smcref2, Diag%wet1)
 
+! Noah MP call
+!
+       elseif (Model%lsm == 2) then
+          call noahmpdrv                                               &
+!  ---  inputs:
+           (im, lsoil,kdt,Statein%pgr, Statein%ugrs, Statein%vgrs,     &
+            Statein%tgrs, Statein%qgrs, soiltyp, vegtype, sigmaf,      &
+            Radtend%semis, gabsbdlw, adjsfcdsw, adjsfcnsw, dtf,        &
+            Sfcprop%tg3, cd, cdq, Statein%prsl(1,1), work3, Diag%zlvl, &
+            islmsk, Tbd%phy_f2d(1,Model%num_p2d), slopetyp,            &
+            Sfcprop%shdmin, Sfcprop%shdmax, Sfcprop%snoalb,            &
+            Radtend%sfalb, flag_iter, flag_guess,                      &
+            Model%iopt_dveg, Model%iopt_crs,Model%iopt_btr,            &
+            Model%iopt_run,Model%iopt_sfc,Model%iopt_frz,              &
+            Model%iopt_inf,Model%iopt_rad,Model%iopt_alb,              &
+            Model%iopt_snf,Model%iopt_tbot,Model%iopt_stc,             &
+            grid%xlat,xcosz,yearlen,julian,imn,                        &
+            rainn_mp,rainc_mp,snow_mp,graupel_mp,ice_mp,               &
+
+!  ---  in/outs:
+            Sfcprop%weasd, Sfcprop%snowd, Sfcprop%tsfc, Sfcprop%tprcp, &
+            Sfcprop%srflag, smsoil, stsoil, slsoil, Sfcprop%canopy,    &
+            trans, tsurf, Sfcprop%zorl,                                &
+!
+            Sfcprop%snowxy,Sfcprop%tvxy,Sfcprop%tgxy,Sfcprop%canicexy, &
+            Sfcprop%canliqxy,Sfcprop%eahxy,Sfcprop%tahxy,Sfcprop%cmxy, &
+            Sfcprop%chxy, Sfcprop%fwetxy, Sfcprop%sneqvoxy,            &
+            Sfcprop%alboldxy,Sfcprop%qsnowxy,Sfcprop%wslakexy,         &
+            Sfcprop%zwtxy, Sfcprop%waxy,Sfcprop%wtxy,tsnox,            &
+            zsnsox,snicex, snliqx,Sfcprop%lfmassxy,Sfcprop%rtmassxy,   &
+            Sfcprop%stmassxy,Sfcprop%woodxy, Sfcprop%stblcpxy,         &
+            Sfcprop%fastcpxy, Sfcprop%xlaixy, Sfcprop%xsaixy,          &
+            Sfcprop%taussxy, smoiseqx, Sfcprop%smcwtdxy,               &
+            Sfcprop%deeprechxy, Sfcprop%rechxy,                        &
+!  ---  outputs:
+            Sfcprop%sncovr, qss, gflx, drain, evap, hflx, ep1d, runof, &
+            Diag%cmm, Diag%chh, evbs, evcw, sbsno, snowc, Diag%soilm,  &
+            snohf, Diag%smcwlt2, Diag%smcref2, Diag%wet1,t2mmp,q2mp)
+
 !     if (lprnt) write(0,*)' tseae=',tsea(ipr),' tsurf=',tsurf(ipr),iter &
 !    &,' phy_f2d=',phy_f2d(ipr,num_p2d)
 
@@ -1588,6 +1738,15 @@ module module_physics_driver
                      Sfcprop%ffmm, Sfcprop%ffhh, fm10, fh2)
 
       Tbd%phy_f2d(:,Model%num_p2d) = 0.0
+
+      if (Model%lsm == 2) then
+        do i=1,im
+         if(islmsk(i) == 1)then
+          Sfcprop%t2m(i)=t2mmp(i)
+          Sfcprop%q2m(i)=q2mp(i)
+         endif
+        enddo
+      endif
 
       if (Model%cplflx .or. Model%cplwav) then
         do i=1,im
@@ -4184,6 +4343,7 @@ module module_physics_driver
             ice0     (i,1)   = 0.0
             graupel0 (i,1)   = 0.0
           enddo
+
           do k = 1, levs
             kk = levs-k+1
             do i = 1, im
@@ -4521,6 +4681,8 @@ module module_physics_driver
         endif
       endif
 
+
+
 !  --- ...  coupling insertion
 
       if (Model%cplflx .or. Model%cplchm) then
@@ -4549,6 +4711,15 @@ module module_physics_driver
                        Sfcprop%f10m, Diag%u10m, Diag%v10m, Sfcprop%t2m, &
                        Sfcprop%q2m,  work3, evap, Sfcprop%ffmm,         &
                        Sfcprop%ffhh, fm10, fh2)
+
+      if (Model%lsm == 2) then
+        do i=1,im
+         if(islmsk(i) == 1)then
+          Sfcprop%t2m(i)=t2mmp(i)
+          Sfcprop%q2m(i)=q2mp(i)
+         endif
+        enddo
+      endif
 
         if (Model%lssav) then
           do i=1,im
@@ -4603,6 +4774,32 @@ module module_physics_driver
           Sfcprop%slc(i,k) = slsoil(i,k)
         enddo
       enddo
+
+! Noah MP
+     if (Model%lsm == 2) then
+
+      do k = 1, lsoil
+        do i = 1, im
+          Sfcprop%smoiseq (i,k) = smoiseqx(i,k)
+        enddo
+      enddo
+
+       do k = -2, 0
+         do i = 1, im
+         Sfcprop%tsnoxy(i,k)  = tsnox(i,k)
+         Sfcprop%snliqxy(i,k) = snliqx(i,k)
+         Sfcprop%snicexy(i,k) = snicex(i,k)
+        enddo
+      enddo
+
+       do k = -2, 4
+         do i = 1, im
+         Sfcprop%zsnsoxy(i,k) = zsnsox(i,k)
+        enddo
+      enddo
+
+    endif
+
 
 !  --- ...  calculate column precipitable water "pwat"
       Diag%pwat(:) = 0.0

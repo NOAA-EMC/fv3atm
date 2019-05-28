@@ -106,6 +106,7 @@ SRCS_f   =  \
 	   ./physics/sfc_diag.f                                                      \
 	   ./physics/sfc_diff.f                                                      \
 	   ./physics/sfc_drv.f                                                       \
+	   ./physics/sfc_noahmp_drv.f                                                \
 	   ./physics/sfc_land.f                                                      \
 	   ./physics/sfc_nst.f                                                       \
 	   ./physics/sfc_ocean.f                                                     \
@@ -131,6 +132,10 @@ SRCS_f90 = \
 	   ./physics/module_nst_parameters.f90                                       \
 	   ./physics/module_nst_water_prop.f90                                       \
 	   ./physics/ozinterp.f90                                                    \
+	   ./physics/module_wrf_utl.f90                                              \
+	   ./physics/noahmp_tables.f90                                               \
+	   ./physics/module_sf_noahmplsm.f90                                         \
+	   ./physics/module_sf_noahmp_glacier.f90                                    \
            ./physics/iccninterp.f90                                                  \
            ./physics/aerinterp.f90                                                   \
 	   ./physics/physcons.f90						     \
