@@ -620,6 +620,9 @@ module GFS_typedefs
                                             !<           current operational version as of 2016
                                             !<     2: scale- & aerosol-aware mass-flux deep conv scheme (2017)
                                             !<     0: old SAS Convection scheme before July 2010
+    integer              :: isatmedmf       !< flag for scale-aware TKE-based moist edmf scheme                        
+                                            !<     0: initial version of satmedmf (Nov. 2018)
+                                            !<     1: updated version of satmedmf (as of May 2019)
     integer              :: nmtvr           !< number of topographic variables such as variance etc
                                             !< used in the GWD parameterization
     integer              :: jcap            !< number of spectral wave trancation used only by sascnv shalcnv
@@ -2012,6 +2015,9 @@ module GFS_typedefs
                                                                       !<     1: July 2010 version of SAS conv scheme
                                                                       !<           current operational version as of 2016
                                                                       !<     2: scale- & aerosol-aware mass-flux deep conv scheme (2017)
+    integer              :: isatmedmf      =  0                       !< flag for scale-aware TKE-based moist edmf scheme
+                                                                      !<     0: initial version of satmedmf (Nov. 2018)
+                                                                      !<     1: updated version of satmedmf (as of May 2019)
     logical              :: do_deep        = .true.                   !< whether to do deep convection
     integer              :: nmtvr          = 14                       !< number of topographic variables such as variance etc
                                                                       !< used in the GWD parameterization
@@ -2170,7 +2176,8 @@ module GFS_typedefs
                                cscnv, cal_pre, do_aw, do_shoc, shocaftcnv, shoc_cld,        &
                                h2o_phys, pdfcld, shcnvcw, redrag, hybedmf, satmedmf,        &
                                dspheat, lheatstrg, cnvcld,                                  &
-                               random_clds, shal_cnv, imfshalcnv, imfdeepcnv, do_deep, jcap,&
+                               random_clds, shal_cnv, imfshalcnv, imfdeepcnv, isatmedmf,    &
+                               do_deep, jcap,                                               &
                                cs_parm, flgmin, cgwf, ccwf, cdmbgwd, sup, ctei_rm, crtrh,   &
                                dlqf, rbcr, shoc_parm, psauras, prauras, wminras,            &
                           !--- Rayleigh friction
@@ -2416,6 +2423,7 @@ module GFS_typedefs
     Model%shal_cnv         = shal_cnv
     Model%imfshalcnv       = imfshalcnv
     Model%imfdeepcnv       = imfdeepcnv
+    Model%isatmedmf        = isatmedmf
     Model%do_deep          = do_deep
     Model%nmtvr            = nmtvr
     Model%jcap             = jcap
@@ -2709,11 +2717,14 @@ module GFS_typedefs
       else
         print*, ' Deep convection scheme disabled'
       endif
-!
       if (Model%satmedmf) then
-        print *,' scale-aware TKE-based moist edmf PBL scheme used'
+        if (Model%isatmedmf == 0) then
+          print *,' initial version (Nov 2018) of sale-aware TKE-based moist EDMF scheme used'
+        elseif(Model%isatmedmf == 1) then
+          print *,' update version (May 2019) of sale-aware TKE-based moist EDMF scheme used'
+        endif
       elseif (Model%hybedmf) then
-        print *,' scale-aware hybrid edmf PBL scheme used'
+        print *,' hybrid edmf PBL scheme used'
       elseif (Model%old_monin) then
         print *,' old (old_monin) PBL scheme used'
       endif

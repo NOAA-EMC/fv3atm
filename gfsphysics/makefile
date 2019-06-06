@@ -101,6 +101,7 @@ SRCS_f   =  \
 	   ./physics/sascnv.f                                                        \
 	   ./physics/sascnvn.f                                                       \
 	   ./physics/satmedmfvdif.f                                                  \
+	   ./physics/satmedmfvdifq.f                                                 \
 	   ./physics/set_soilveg.f                                                   \
 	   ./physics/sfc_cice.f                                                      \
 	   ./physics/sfc_diag.f                                                      \

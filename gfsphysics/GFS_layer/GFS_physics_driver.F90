@@ -192,6 +192,8 @@ module module_physics_driver
 !      Apr 22 2019  S. Moorthi  Porting Unified Gravitiy Wave drag      !
 !                               parameterrizaion package from V. Yudin, !
 !                               J. Alpert, T. Fuller-Rowll and R. Akmaev! 
+!      May  2019    J. Han      Add updated scal-aware TKE-based moist  !
+!                               EDMF vertical turbulent mixng scheme    !
 !
 !  ====================    end of description    =====================
 !  ====================  definition of variables  ====================  !
@@ -1894,7 +1896,8 @@ module module_physics_driver
 !  if (lprnt) write(0,*)'aftmonshocdtdt=',dtdt(ipr,1:10)
         else
           if (Model%satmedmf) then
-              call satmedmfvdif(ix, im, levs, nvdiff, ntcw, ntiw, ntke,             &
+             if (Model%isatmedmf == 0) then   ! initial version of satmedmfvdif (Nov 2018)
+                call satmedmfvdif(ix, im, levs, nvdiff, ntcw, ntiw, ntke,           &
                        dvdt, dudt, dtdt, dqdt,                                      &
                        Statein%ugrs, Statein%vgrs, Statein%tgrs, Statein%qgrs,      &
                        Radtend%htrsw, Radtend%htrlw, xmu, garea,                    &
@@ -1904,6 +1907,18 @@ module module_physics_driver
                        Statein%prslk, Statein%phii, Statein%phil, dtp,              &
                        Model%dspheat, dusfc1, dvsfc1, dtsfc1, dqsfc1, Diag%hpbl,    &
                        kinver, Model%xkzm_m, Model%xkzm_h, Model%xkzm_s)
+             elseif (Model%isatmedmf == 1) then   ! updated version of satmedmfvdif (May 2019)
+                call satmedmfvdifq(ix, im, levs, nvdiff, ntcw, ntiw, ntke,          &
+                       dvdt, dudt, dtdt, dqdt,                                      &
+                       Statein%ugrs, Statein%vgrs, Statein%tgrs, Statein%qgrs,      &
+                       Radtend%htrsw, Radtend%htrlw, xmu, garea,                    &
+                       Statein%prsik(1,1), rb, Sfcprop%zorl, Diag%u10m, Diag%v10m,  &
+                       Sfcprop%ffmm, Sfcprop%ffhh, Sfcprop%tsfc, hflx, evap,        &
+                       stress, wind, kpbl, Statein%prsi, del, Statein%prsl,         &
+                       Statein%prslk, Statein%phii, Statein%phil, dtp,              &
+                       Model%dspheat, dusfc1, dvsfc1, dtsfc1, dqsfc1, Diag%hpbl,    &
+                       kinver, Model%xkzm_m, Model%xkzm_h, Model%xkzm_s)
+             endif
           elseif (Model%hybedmf) then
               call moninedmf(ix, im, levs, nvdiff, ntcw, dvdt, dudt, dtdt, dqdt,    &
                            Statein%ugrs, Statein%vgrs, Statein%tgrs, Statein%qgrs,  &
@@ -2079,16 +2094,29 @@ module module_physics_driver
                            lprnt, ipr, me)
         else
           if (Model%satmedmf) then
-            call satmedmfvdif(ix, im, levs, nvdiff, ntcw, ntiwx, ntkev,                 &
-                       dvdt, dudt, dtdt, dvdftra,                                       &
-                       Statein%ugrs, Statein%vgrs, Statein%tgrs, vdftra,                &
-                       Radtend%htrsw, Radtend%htrlw, xmu, garea,                        &
-                       Statein%prsik(1,1), rb, Sfcprop%zorl, Diag%u10m, Diag%v10m,      &
-                       Sfcprop%ffmm, Sfcprop%ffhh, Sfcprop%tsfc, hflx, evap,            &
-                       stress, wind, kpbl, Statein%prsi, del, Statein%prsl,             &
-                       Statein%prslk, Statein%phii, Statein%phil, dtp,                  &
-                       Model%dspheat, dusfc1, dvsfc1, dtsfc1, dqsfc1, Diag%hpbl,        &
-                       kinver, Model%xkzm_m, Model%xkzm_h, Model%xkzm_s)
+             if (Model%isatmedmf == 0) then   ! initial version of satmedmfvdif (Nov 2018)
+                call satmedmfvdif(ix, im, levs, nvdiff, ntcw, ntiwx, ntkev,           &
+                         dvdt, dudt, dtdt, dvdftra,                                   &
+                         Statein%ugrs, Statein%vgrs, Statein%tgrs, vdftra,            &
+                         Radtend%htrsw, Radtend%htrlw, xmu, garea,                    &
+                         Statein%prsik(1,1), rb, Sfcprop%zorl, Diag%u10m, Diag%v10m,  &
+                         Sfcprop%ffmm, Sfcprop%ffhh, Sfcprop%tsfc, hflx, evap,        &
+                         stress, wind, kpbl, Statein%prsi, del, Statein%prsl,         &
+                         Statein%prslk, Statein%phii, Statein%phil, dtp,              &
+                         Model%dspheat, dusfc1, dvsfc1, dtsfc1, dqsfc1, Diag%hpbl,    &
+                         kinver, Model%xkzm_m, Model%xkzm_h, Model%xkzm_s)
+             elseif (Model%isatmedmf == 1) then   ! updated version of satmedmfvdif (May 2019)
+                call satmedmfvdifq(ix, im, levs, nvdiff, ntcw, ntiwx, ntkev,          &
+                         dvdt, dudt, dtdt, dvdftra,                                   &
+                         Statein%ugrs, Statein%vgrs, Statein%tgrs, vdftra,            &
+                         Radtend%htrsw, Radtend%htrlw, xmu, garea,                    &
+                         Statein%prsik(1,1), rb, Sfcprop%zorl, Diag%u10m, Diag%v10m,  &
+                         Sfcprop%ffmm, Sfcprop%ffhh, Sfcprop%tsfc, hflx, evap,        &
+                         stress, wind, kpbl, Statein%prsi, del, Statein%prsl,         &
+                         Statein%prslk, Statein%phii, Statein%phil, dtp,              &
+                         Model%dspheat, dusfc1, dvsfc1, dtsfc1, dqsfc1, Diag%hpbl,    &
+                         kinver, Model%xkzm_m, Model%xkzm_h, Model%xkzm_s)
+             endif
           elseif (Model%hybedmf) then
             call moninedmf(ix, im, levs, nvdiff, ntcw, dvdt, dudt, dtdt, dvdftra,       &
                            Statein%ugrs, Statein%vgrs, Statein%tgrs, vdftra,            &
