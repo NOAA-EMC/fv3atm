@@ -108,7 +108,6 @@ SRCS_f   =  \
 	   ./physics/sfc_diff.f                                                      \
 	   ./physics/sfc_drv.f                                                       \
 	   ./physics/sfc_noahmp_drv.f                                                \
-	   ./physics/sfc_land.f                                                      \
 	   ./physics/sfc_nst.f                                                       \
 	   ./physics/sfc_ocean.f                                                     \
 	   ./physics/sfc_sice.f                                                      \

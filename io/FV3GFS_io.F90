@@ -126,7 +126,7 @@ module FV3GFS_io_mod
     type(IPD_data_type),      intent(inout) :: IPD_Data(:)
     type(IPD_restart_type),   intent(inout) :: IPD_Restart
     type(block_control_type), intent(in)    :: Atm_block
-    type(IPD_control_type),   intent(in)    :: Model
+    type(IPD_control_type),   intent(inout) :: Model
     type(domain2d),           intent(in)    :: fv_domain
  
     !--- read in surface data from chgres 
@@ -180,10 +180,10 @@ module FV3GFS_io_mod
 
    ntr = size(IPD_Data(1)%Statein%qgrs,3)
 
-   if(Model%lsm==2) then
+   if(Model%lsm == 2) then
      nsfcprop2d = 149  
    else
-     nsfcprop2d= 100
+     nsfcprop2d = 100
    endif
 
    allocate (temp2d(isc:iec,jsc:jec,nsfcprop2d+Model%ntot3d+Model%nctp))
@@ -431,7 +431,7 @@ module FV3GFS_io_mod
     !--- interface variable definitions
     type(GFS_sfcprop_type),    intent(inout) :: Sfcprop(:)
     type (block_control_type), intent(in)    :: Atm_block
-    type(IPD_control_type),    intent(in)    :: Model
+    type(IPD_control_type),    intent(inout) :: Model
     type (domain2d),           intent(in)    :: fv_domain
     !--- local variables
     integer :: i, j, k, ix, lsoil, num, nb
@@ -447,7 +447,7 @@ module FV3GFS_io_mod
     !--- local variables for sncovr calculation
     integer :: vegtyp
     logical :: mand
-    real(kind=kind_phys) :: rsnow
+    real(kind=kind_phys) :: rsnow, tem
     !--- Noah MP
     integer              :: soiltyp,ns,imon,iter,imn
     real(kind=kind_phys) :: masslai, masssai,snd
@@ -462,8 +462,12 @@ module FV3GFS_io_mod
     data zsoil /-0.1,-0.4,-1.0,-2.0/
 
     
-    nvar_o2  = 17
-    nvar_s2m = 32
+    if (Model%cplflx) then ! needs more variables
+      nvar_s2m = 34
+    else
+      nvar_s2m = 32
+    endif
+    nvar_o2  = 20
     nvar_s2o = 18
     nvar_s3  = 3
 
@@ -480,8 +484,8 @@ module FV3GFS_io_mod
     jsc = Atm_block%jsc
     jec = Atm_block%jec
     npz = Atm_block%npz
-    nx = (iec - isc + 1)
-    ny = (jec - jsc + 1)
+    nx  = (iec - isc + 1)
+    ny  = (jec - jsc + 1)
  
     !--- OROGRAPHY FILE
     if (.not. allocated(oro_name2)) then
@@ -507,10 +511,18 @@ module FV3GFS_io_mod
       oro_name2(15) = 'elvmax'     ! hprime(ix,14)
       oro_name2(16) = 'orog_filt'  ! oro
       oro_name2(17) = 'orog_raw'   ! oro_uf
+      oro_name2(18) = 'land_frac'  ! land fraction [0:1]
+      !--- variables below here are optional
+      oro_name2(19) = 'lake_frac'  ! lake fraction [0:1]
+      oro_name2(20) = 'lake_depth' ! lake depth(m)
       !--- register the 2D fields
       do num = 1,nvar_o2
         var2_p => oro_var2(:,:,num)
-        id_restart = register_restart_field(Oro_restart, fn_oro, oro_name2(num), var2_p, domain=fv_domain)
+        if (trim(oro_name2(num)) == 'lake_frac' .or. trim(oro_name2(num)) == 'lake_depth') then
+          id_restart = register_restart_field(Oro_restart, fn_oro, oro_name2(num), var2_p, domain=fv_domain, mandatory=.false.)
+        else
+          id_restart = register_restart_field(Oro_restart, fn_oro, oro_name2(num), var2_p, domain=fv_domain)
+        endif
       enddo
       nullify(var2_p)
     endif
@@ -519,6 +531,7 @@ module FV3GFS_io_mod
     call mpp_error(NOTE,'reading topographic/orographic information from INPUT/oro_data.tile*.nc')
     call restore_state(Oro_restart)
 
+    Model%frac_grid = .false.
     !--- copy data into GFS containers
     do nb = 1, Atm_block%nblks
       !--- 2D variables
@@ -526,7 +539,7 @@ module FV3GFS_io_mod
         i = Atm_block%index(nb)%ii(ix) - isc + 1
         j = Atm_block%index(nb)%jj(ix) - jsc + 1
         !--- stddev
-        Sfcprop(nb)%hprim(ix)      = oro_var2(i,j,1)
+        Sfcprop(nb)%hprim(ix)     = oro_var2(i,j,1)
         !--- hprime(1:14)
         Sfcprop(nb)%hprime(ix,1)  = oro_var2(i,j,2)
         Sfcprop(nb)%hprime(ix,2)  = oro_var2(i,j,3)
@@ -543,12 +556,28 @@ module FV3GFS_io_mod
         Sfcprop(nb)%hprime(ix,13) = oro_var2(i,j,14)
         Sfcprop(nb)%hprime(ix,14) = oro_var2(i,j,15)
         !--- oro
-        Sfcprop(nb)%oro(ix)        = oro_var2(i,j,16)
+        Sfcprop(nb)%oro(ix)       = oro_var2(i,j,16)
         !--- oro_uf
-        Sfcprop(nb)%oro_uf(ix)     = oro_var2(i,j,17)
+        Sfcprop(nb)%oro_uf(ix)    = oro_var2(i,j,17)
+        Sfcprop(nb)%landfrac(ix)  = oro_var2(i,j,18) !land frac [0:1]
+        Sfcprop(nb)%lakefrac(ix)  = oro_var2(i,j,19) !lake frac [0:1]
       enddo
     enddo
  
+    if (nint(oro_var2(1,1,19)) == -9999._kind_phys) then ! lakefrac doesn't exist in the restart, need to create it
+      if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing lakefrac') 
+      do nb = 1, Atm_block%nblks
+        do ix = 1, Atm_block%blksz(nb)
+          Sfcprop(nb)%lakefrac(ix) = 0.
+        enddo
+      enddo
+      Model%frac_grid = .false.
+    else
+      Model%frac_grid = .true.
+    endif
+
+    if (Model%me == Model%master ) write(0,*)' resetting Model%frac_grid=',Model%frac_grid
+
     !--- deallocate containers and free restart container
     deallocate(oro_name2, oro_var2)
     call free_restart_type(Oro_restart)
@@ -566,8 +595,8 @@ module FV3GFS_io_mod
       allocate(sfc_var3eq(nx,ny,1:4,7:7))
       allocate(sfc_var3zn(nx,ny,-2:4,8:8))
 
-      sfc_var2 = -9999._kind_phys
-      sfc_var3 = -9999._kind_phys
+      sfc_var2   = -9999._kind_phys
+      sfc_var3   = -9999._kind_phys
       sfc_var3sn = -9999._kind_phys
       sfc_var3eq = -9999._kind_phys
       sfc_var3zn = -9999._kind_phys
@@ -604,66 +633,71 @@ module FV3GFS_io_mod
       sfc_name2(29) = 'shdmax'
       sfc_name2(30) = 'slope'
       sfc_name2(31) = 'snoalb'
-      !--- below here all variables are optional
+      !--- variables below here are optional
       sfc_name2(32) = 'sncovr'
+      if(Model%cplflx) then
+        sfc_name2(33) = 'tsfcl'   !temp on land portion of a cell
+        sfc_name2(34) = 'zorll'   !zorl on land portion of a cell
+      end if
+
       !--- NSSTM inputs only needed when (nstf_name(1) > 0) .and. (nstf_name(2)) == 0) 
-      sfc_name2(33) = 'tref'
-      sfc_name2(34) = 'z_c'
-      sfc_name2(35) = 'c_0'
-      sfc_name2(36) = 'c_d'
-      sfc_name2(37) = 'w_0'
-      sfc_name2(38) = 'w_d'
-      sfc_name2(39) = 'xt'
-      sfc_name2(40) = 'xs'
-      sfc_name2(41) = 'xu'
-      sfc_name2(42) = 'xv'
-      sfc_name2(43) = 'xz'
-      sfc_name2(44) = 'zm'
-      sfc_name2(45) = 'xtts'
-      sfc_name2(46) = 'xzts'
-      sfc_name2(47) = 'd_conv'
-      sfc_name2(48) = 'ifd'
-      sfc_name2(49) = 'dt_cool'
-      sfc_name2(50) = 'qrain'
+      sfc_name2(nvar_s2m+1)  = 'tref'
+      sfc_name2(nvar_s2m+2)  = 'z_c'
+      sfc_name2(nvar_s2m+3)  = 'c_0'
+      sfc_name2(nvar_s2m+4)  = 'c_d'
+      sfc_name2(nvar_s2m+5)  = 'w_0'
+      sfc_name2(nvar_s2m+6)  = 'w_d'
+      sfc_name2(nvar_s2m+7)  = 'xt'
+      sfc_name2(nvar_s2m+8)  = 'xs'
+      sfc_name2(nvar_s2m+9)  = 'xu'
+      sfc_name2(nvar_s2m+10) = 'xv'
+      sfc_name2(nvar_s2m+11) = 'xz'
+      sfc_name2(nvar_s2m+12) = 'zm'
+      sfc_name2(nvar_s2m+13) = 'xtts'
+      sfc_name2(nvar_s2m+14) = 'xzts'
+      sfc_name2(nvar_s2m+15) = 'd_conv'
+      sfc_name2(nvar_s2m+16) = 'ifd'
+      sfc_name2(nvar_s2m+17) = 'dt_cool'
+      sfc_name2(nvar_s2m+18) = 'qrain'
 !
 ! Only needed when Noah MP LSM is used - 29 2D
 !
       if( Model%lsm == 2) then
-       sfc_name2(51) =  'snowxy'
-       sfc_name2(52) =  'tvxy'
-       sfc_name2(53) =  'tgxy'
-       sfc_name2(54) =  'canicexy'
-       sfc_name2(55) =  'canliqxy'
-       sfc_name2(56) =  'eahxy'
-       sfc_name2(57) =  'tahxy'
-       sfc_name2(58) =  'cmxy'
-       sfc_name2(59) =  'chxy'
-       sfc_name2(60) =  'fwetxy'
-       sfc_name2(61) =  'sneqvoxy'
-       sfc_name2(62) =  'alboldxy'
-       sfc_name2(63) =  'qsnowxy'
-       sfc_name2(64) =  'wslakexy'
-       sfc_name2(65) =  'zwtxy'
-       sfc_name2(66) =  'waxy'
-       sfc_name2(67) =  'wtxy'
-       sfc_name2(68) =  'lfmassxy'
-       sfc_name2(69) =  'rtmassxy'
-       sfc_name2(70) =  'stmassxy'
-       sfc_name2(71) =  'woodxy'
-       sfc_name2(72) =  'stblcpxy'
-       sfc_name2(73) =  'fastcpxy'
-       sfc_name2(74) =  'xsaixy'
-       sfc_name2(75) =  'xlaixy'
-       sfc_name2(76) =  'taussxy'
-       sfc_name2(77) =  'smcwtdxy'
-       sfc_name2(78) =  'deeprechxy'
-       sfc_name2(79) =  'rechxy'
+        sfc_name2(nvar_s2m+19) =  'snowxy'
+        sfc_name2(nvar_s2m+20) =  'tvxy'
+        sfc_name2(nvar_s2m+21) =  'tgxy'
+        sfc_name2(nvar_s2m+22) =  'canicexy'
+        sfc_name2(nvar_s2m+23) =  'canliqxy'
+        sfc_name2(nvar_s2m+24) =  'eahxy'
+        sfc_name2(nvar_s2m+25) =  'tahxy'
+        sfc_name2(nvar_s2m+26) =  'cmxy'
+        sfc_name2(nvar_s2m+27) =  'chxy'
+        sfc_name2(nvar_s2m+28) =  'fwetxy'
+        sfc_name2(nvar_s2m+29) =  'sneqvoxy'
+        sfc_name2(nvar_s2m+30) =  'alboldxy'
+        sfc_name2(nvar_s2m+31) =  'qsnowxy'
+        sfc_name2(nvar_s2m+32) =  'wslakexy'
+        sfc_name2(nvar_s2m+33) =  'zwtxy'
+        sfc_name2(nvar_s2m+34) =  'waxy'
+        sfc_name2(nvar_s2m+35) =  'wtxy'
+        sfc_name2(nvar_s2m+36) =  'lfmassxy'
+        sfc_name2(nvar_s2m+37) =  'rtmassxy'
+        sfc_name2(nvar_s2m+38) =  'stmassxy'
+        sfc_name2(nvar_s2m+39) =  'woodxy'
+        sfc_name2(nvar_s2m+40) =  'stblcpxy'
+        sfc_name2(nvar_s2m+41) =  'fastcpxy'
+        sfc_name2(nvar_s2m+42) =  'xsaixy'
+        sfc_name2(nvar_s2m+43) =  'xlaixy'
+        sfc_name2(nvar_s2m+44) =  'taussxy'
+        sfc_name2(nvar_s2m+45) =  'smcwtdxy'
+        sfc_name2(nvar_s2m+46) =  'deeprechxy'
+        sfc_name2(nvar_s2m+47) =  'rechxy'
       endif
  
       !--- register the 2D fields
       do num = 1,nvar_s2m
         var2_p => sfc_var2(:,:,num)
-        if (trim(sfc_name2(num)) == 'sncovr') then
+        if (trim(sfc_name2(num)) == 'sncovr'.or.trim(sfc_name2(num)) == 'tsfcl'.or.trim(sfc_name2(num)) == 'zorll') then
           id_restart = register_restart_field(Sfc_restart, fn_srf, sfc_name2(num), var2_p, domain=fv_domain, mandatory=.false.)
         else
           id_restart = register_restart_field(Sfc_restart, fn_srf, sfc_name2(num), var2_p, domain=fv_domain)
@@ -687,39 +721,39 @@ module FV3GFS_io_mod
           id_restart = register_restart_field(Sfc_restart, fn_srf, sfc_name2(num), var2_p, domain=fv_domain, mandatory=mand)
         enddo
       endif ! mp
-     endif  ! if not allocated
+    endif  ! if not allocated
 
-      nullify(var2_p)
+    nullify(var2_p)
  
       !--- names of the 3D variables to save
-      sfc_name3(1) = 'stc'
-      sfc_name3(2) = 'smc'
-      sfc_name3(3) = 'slc'
+    sfc_name3(1) = 'stc'
+    sfc_name3(2) = 'smc'
+    sfc_name3(3) = 'slc'
       !--- Noah MP
-      if (Model%lsm == 2) then
-       sfc_name3(4) = 'snicexy'
-       sfc_name3(5) = 'snliqxy'
-       sfc_name3(6) = 'tsnoxy'
-       sfc_name3(7) = 'smoiseq'
-       sfc_name3(8) = 'zsnsoxy'
-      endif
+    if (Model%lsm == 2) then
+      sfc_name3(4) = 'snicexy'
+      sfc_name3(5) = 'snliqxy'
+      sfc_name3(6) = 'tsnoxy'
+      sfc_name3(7) = 'smoiseq'
+      sfc_name3(8) = 'zsnsoxy'
+    endif
  
       !--- register the 3D fields
-      do num = 1,nvar_s3
-        var3_p => sfc_var3(:,:,:,num)
-        id_restart = register_restart_field(Sfc_restart, fn_srf, sfc_name3(num), var3_p, domain=fv_domain)
-      enddo
-      if (Model%lsm == 2) then
-        mand = .false.
+    do num = 1,nvar_s3
+      var3_p => sfc_var3(:,:,:,num)
+      id_restart = register_restart_field(Sfc_restart, fn_srf, sfc_name3(num), var3_p, domain=fv_domain)
+    enddo
+    if (Model%lsm == 2) then
+      mand = .false.
       do num = nvar_s3+1,nvar_s3+3
-         var3_p1 => sfc_var3sn(:,:,:,num)
-      id_restart = register_restart_field(Sfc_restart, fn_srf, sfc_name3(num), var3_p1, domain=fv_domain,mandatory=mand)
+        var3_p1 => sfc_var3sn(:,:,:,num)
+        id_restart = register_restart_field(Sfc_restart, fn_srf, sfc_name3(num), var3_p1, domain=fv_domain,mandatory=mand)
       enddo
 
-         var3_p2 => sfc_var3eq(:,:,:,7)
+      var3_p2 => sfc_var3eq(:,:,:,7)
       id_restart = register_restart_field(Sfc_restart, fn_srf, sfc_name3(7), var3_p2, domain=fv_domain,mandatory=mand)
 
-         var3_p3 => sfc_var3zn(:,:,:,8)
+      var3_p3 => sfc_var3zn(:,:,:,8)
       id_restart = register_restart_fIeld(Sfc_restart, fn_srf, sfc_name3(8), var3_p3, domain=fv_domain,mandatory=mand)
 
       nullify(var3_p1)
@@ -728,7 +762,7 @@ module FV3GFS_io_mod
 
     endif   !mp
 
-      nullify(var3_p)
+    nullify(var3_p)
  
     !--- read the surface restart/data
     call mpp_error(NOTE,'reading surface properties data from INPUT/sfc_data.tile*.nc')
@@ -740,181 +774,135 @@ module FV3GFS_io_mod
       do ix = 1, Atm_block%blksz(nb)
         i = Atm_block%index(nb)%ii(ix) - isc + 1
         j = Atm_block%index(nb)%jj(ix) - jsc + 1
-        !--- 2D variables
-        !--- slmsk
-        Sfcprop(nb)%slmsk(ix)  = sfc_var2(i,j,1)
-        !--- tsfc (tsea in sfc file)
-        Sfcprop(nb)%tsfc(ix)   = sfc_var2(i,j,2)
-        !--- weasd (sheleg in sfc file)
-        Sfcprop(nb)%weasd(ix)  = sfc_var2(i,j,3)
-        !--- tg3
-        Sfcprop(nb)%tg3(ix)    = sfc_var2(i,j,4)
-        !--- zorl
-        Sfcprop(nb)%zorl(ix)   = sfc_var2(i,j,5)
-        !--- alvsf
-        Sfcprop(nb)%alvsf(ix)  = sfc_var2(i,j,6)
-        !--- alvwf
-        Sfcprop(nb)%alvwf(ix)  = sfc_var2(i,j,7)
-        !--- alnsf
-        Sfcprop(nb)%alnsf(ix)  = sfc_var2(i,j,8)
-        !--- alnwf
-        Sfcprop(nb)%alnwf(ix)  = sfc_var2(i,j,9)
-        !--- facsf
-        Sfcprop(nb)%facsf(ix)  = sfc_var2(i,j,10)
-        !--- facwf
-        Sfcprop(nb)%facwf(ix)  = sfc_var2(i,j,11)
-        !--- vfrac
-        Sfcprop(nb)%vfrac(ix)  = sfc_var2(i,j,12)
-        !--- canopy
-        Sfcprop(nb)%canopy(ix) = sfc_var2(i,j,13)
-        !--- f10m
-        Sfcprop(nb)%f10m(ix)   = sfc_var2(i,j,14)
-        !--- t2m
-        Sfcprop(nb)%t2m(ix)    = sfc_var2(i,j,15)
-        !--- q2m
-        Sfcprop(nb)%q2m(ix)    = sfc_var2(i,j,16)
-        !--- vtype
-        Sfcprop(nb)%vtype(ix)  = sfc_var2(i,j,17)
-        !--- stype
-        Sfcprop(nb)%stype(ix)  = sfc_var2(i,j,18)
-        !--- uustar
-        Sfcprop(nb)%uustar(ix) = sfc_var2(i,j,19)
-        !--- ffmm
-        Sfcprop(nb)%ffmm(ix)   = sfc_var2(i,j,20)
-        !--- ffhh
-        Sfcprop(nb)%ffhh(ix)   = sfc_var2(i,j,21)
-        !--- hice
-        Sfcprop(nb)%hice(ix)   = sfc_var2(i,j,22)
-        !--- fice
-        Sfcprop(nb)%fice(ix)   = sfc_var2(i,j,23)
-        !--- tisfc
-        Sfcprop(nb)%tisfc(ix)  = sfc_var2(i,j,24)
-        !--- tprcp
-        Sfcprop(nb)%tprcp(ix)  = sfc_var2(i,j,25)
-        !--- srflag
-        Sfcprop(nb)%srflag(ix) = sfc_var2(i,j,26)
-        !--- snowd (snwdph in the file)
-        Sfcprop(nb)%snowd(ix)  = sfc_var2(i,j,27)
-        !--- shdmin
-        Sfcprop(nb)%shdmin(ix) = sfc_var2(i,j,28)
-        !--- shdmax
-        Sfcprop(nb)%shdmax(ix) = sfc_var2(i,j,29)
-        !--- slope
-        Sfcprop(nb)%slope(ix)  = sfc_var2(i,j,30)
-        !--- snoalb
-        Sfcprop(nb)%snoalb(ix) = sfc_var2(i,j,31)
-        !--- sncovr
-        Sfcprop(nb)%sncovr(ix) = sfc_var2(i,j,32)
+
+!--- 2D variables
+!    ------------
+        Sfcprop(nb)%slmsk(ix)  = sfc_var2(i,j,1)    !--- slmsk
+        Sfcprop(nb)%tsfco(ix)  = sfc_var2(i,j,2)    !--- tsfc (tsea in sfc file)
+        Sfcprop(nb)%weasd(ix)  = sfc_var2(i,j,3)    !--- weasd (sheleg in sfc file)
+        Sfcprop(nb)%tg3(ix)    = sfc_var2(i,j,4)    !--- tg3
+        Sfcprop(nb)%zorlo(ix)  = sfc_var2(i,j,5)    !--- zorl on ocean
+        Sfcprop(nb)%alvsf(ix)  = sfc_var2(i,j,6)    !--- alvsf
+        Sfcprop(nb)%alvwf(ix)  = sfc_var2(i,j,7)    !--- alvwf
+        Sfcprop(nb)%alnsf(ix)  = sfc_var2(i,j,8)    !--- alnsf
+        Sfcprop(nb)%alnwf(ix)  = sfc_var2(i,j,9)    !--- alnwf
+        Sfcprop(nb)%facsf(ix)  = sfc_var2(i,j,10)   !--- facsf
+        Sfcprop(nb)%facwf(ix)  = sfc_var2(i,j,11)   !--- facwf
+        Sfcprop(nb)%vfrac(ix)  = sfc_var2(i,j,12)   !--- vfrac
+        Sfcprop(nb)%canopy(ix) = sfc_var2(i,j,13)   !--- canopy
+        Sfcprop(nb)%f10m(ix)   = sfc_var2(i,j,14)   !--- f10m
+        Sfcprop(nb)%t2m(ix)    = sfc_var2(i,j,15)   !--- t2m
+        Sfcprop(nb)%q2m(ix)    = sfc_var2(i,j,16)   !--- q2m
+        Sfcprop(nb)%vtype(ix)  = sfc_var2(i,j,17)   !--- vtype
+        Sfcprop(nb)%stype(ix)  = sfc_var2(i,j,18)   !--- stype
+        Sfcprop(nb)%uustar(ix) = sfc_var2(i,j,19)   !--- uustar
+        Sfcprop(nb)%ffmm(ix)   = sfc_var2(i,j,20)   !--- ffmm
+        Sfcprop(nb)%ffhh(ix)   = sfc_var2(i,j,21)   !--- ffhh
+        Sfcprop(nb)%hice(ix)   = sfc_var2(i,j,22)   !--- hice
+        Sfcprop(nb)%fice(ix)   = sfc_var2(i,j,23)   !--- fice
+        Sfcprop(nb)%tisfc(ix)  = sfc_var2(i,j,24)   !--- tisfc
+        Sfcprop(nb)%tprcp(ix)  = sfc_var2(i,j,25)   !--- tprcp
+        Sfcprop(nb)%srflag(ix) = sfc_var2(i,j,26)   !--- srflag
+        Sfcprop(nb)%snowd(ix)  = sfc_var2(i,j,27)   !--- snowd (snwdph in the file)
+        Sfcprop(nb)%shdmin(ix) = sfc_var2(i,j,28)   !--- shdmin
+        Sfcprop(nb)%shdmax(ix) = sfc_var2(i,j,29)   !--- shdmax
+        Sfcprop(nb)%slope(ix)  = sfc_var2(i,j,30)   !--- slope
+        Sfcprop(nb)%snoalb(ix) = sfc_var2(i,j,31)   !--- snoalb
+        Sfcprop(nb)%sncovr(ix) = sfc_var2(i,j,32)   !--- sncovr
+        if(Model%cplflx) then
+          Sfcprop(nb)%tsfcl(ix)  = sfc_var2(i,j,33) !--- sfcl  (temp on land portion of a cell)
+          Sfcprop(nb)%zorll(ix)  = sfc_var2(i,j,34) !--- zorll (zorl on land portion of a cell)
+        end if
         !
         !--- NSSTM variables
         if ((Model%nstf_name(1) > 0) .and. (Model%nstf_name(2) == 1)) then
           !--- nsstm tref
-          Sfcprop(nb)%tref(ix)    = Sfcprop(nb)%tsfc(ix)
+          Sfcprop(nb)%tref(ix)    = Sfcprop(nb)%tsfco(ix)
           Sfcprop(nb)%xz(ix)      = 30.0d0
         endif
         if ((Model%nstf_name(1) > 0) .and. (Model%nstf_name(2) == 0)) then
-          !--- nsstm tref
-          Sfcprop(nb)%tref(ix)    = sfc_var2(i,j,33)
-          !--- nsstm z_c
-          Sfcprop(nb)%z_c(ix)     = sfc_var2(i,j,34)
-          !--- nsstm c_0
-          Sfcprop(nb)%c_0(ix)     = sfc_var2(i,j,35)
-          !--- nsstm c_d
-          Sfcprop(nb)%c_d(ix)     = sfc_var2(i,j,36)
-          !--- nsstm w_0
-          Sfcprop(nb)%w_0(ix)     = sfc_var2(i,j,37)
-          !--- nsstm w_d
-          Sfcprop(nb)%w_d(ix)     = sfc_var2(i,j,38)
-          !--- nsstm xt
-          Sfcprop(nb)%xt(ix)      = sfc_var2(i,j,39)
-          !--- nsstm xs
-          Sfcprop(nb)%xs(ix)      = sfc_var2(i,j,40)
-          !--- nsstm xu
-          Sfcprop(nb)%xu(ix)      = sfc_var2(i,j,41)
-          !--- nsstm xv
-          Sfcprop(nb)%xv(ix)      = sfc_var2(i,j,42)
-          !--- nsstm xz
-          Sfcprop(nb)%xz(ix)      = sfc_var2(i,j,43)
-          !--- nsstm zm
-          Sfcprop(nb)%zm(ix)      = sfc_var2(i,j,44)
-          !--- nsstm xtts
-          Sfcprop(nb)%xtts(ix)    = sfc_var2(i,j,45)
-          !--- nsstm xzts
-          Sfcprop(nb)%xzts(ix)    = sfc_var2(i,j,46)
-          !--- nsstm d_conv
-          Sfcprop(nb)%d_conv(ix)  = sfc_var2(i,j,47)
-          !--- nsstm ifd
-          Sfcprop(nb)%ifd(ix)     = sfc_var2(i,j,48)
-          !--- nsstm dt_cool
-          Sfcprop(nb)%dt_cool(ix) = sfc_var2(i,j,49)
-          !--- nsstm qrain
-          Sfcprop(nb)%qrain(ix)   = sfc_var2(i,j,50)
+          Sfcprop(nb)%tref(ix)    = sfc_var2(i,j,nvar_s2m+1)  !--- nsstm tref
+          Sfcprop(nb)%z_c(ix)     = sfc_var2(i,j,nvar_s2m+2)  !--- nsstm z_c
+          Sfcprop(nb)%c_0(ix)     = sfc_var2(i,j,nvar_s2m+3)  !--- nsstm c_0
+          Sfcprop(nb)%c_d(ix)     = sfc_var2(i,j,nvar_s2m+4)  !--- nsstm c_d
+          Sfcprop(nb)%w_0(ix)     = sfc_var2(i,j,nvar_s2m+5)  !--- nsstm w_0
+          Sfcprop(nb)%w_d(ix)     = sfc_var2(i,j,nvar_s2m+6)  !--- nsstm w_d
+          Sfcprop(nb)%xt(ix)      = sfc_var2(i,j,nvar_s2m+7)  !--- nsstm xt
+          Sfcprop(nb)%xs(ix)      = sfc_var2(i,j,nvar_s2m+8)  !--- nsstm xs
+          Sfcprop(nb)%xu(ix)      = sfc_var2(i,j,nvar_s2m+9)  !--- nsstm xu
+          Sfcprop(nb)%xv(ix)      = sfc_var2(i,j,nvar_s2m+10) !--- nsstm xv
+          Sfcprop(nb)%xz(ix)      = sfc_var2(i,j,nvar_s2m+11) !--- nsstm xz
+          Sfcprop(nb)%zm(ix)      = sfc_var2(i,j,nvar_s2m+12) !--- nsstm zm
+          Sfcprop(nb)%xtts(ix)    = sfc_var2(i,j,nvar_s2m+13) !--- nsstm xtts
+          Sfcprop(nb)%xzts(ix)    = sfc_var2(i,j,nvar_s2m+14) !--- nsstm xzts
+          Sfcprop(nb)%d_conv(ix)  = sfc_var2(i,j,nvar_s2m+15) !--- nsstm d_conv
+          Sfcprop(nb)%ifd(ix)     = sfc_var2(i,j,nvar_s2m+16) !--- nsstm ifd
+          Sfcprop(nb)%dt_cool(ix) = sfc_var2(i,j,nvar_s2m+17) !--- nsstm dt_cool
+          Sfcprop(nb)%qrain(ix)   = sfc_var2(i,j,nvar_s2m+18) !--- nsstm qrain
         endif
 ! Noah MP
+! -------
         if (Model%lsm == 2 ) then
 
-        Sfcprop(nb)%snowxy(ix)    = sfc_var2(i,j,51)
-        Sfcprop(nb)%tvxy(ix)       = sfc_var2(i,j,52)
-        Sfcprop(nb)%tgxy(ix)       = sfc_var2(i,j,53)
-        Sfcprop(nb)%canicexy(ix)   = sfc_var2(i,j,54)
-        Sfcprop(nb)%canliqxy(ix)   = sfc_var2(i,j,55)
-        Sfcprop(nb)%eahxy(ix)      = sfc_var2(i,j,56)
-        Sfcprop(nb)%tahxy(ix)      = sfc_var2(i,j,57)
-        Sfcprop(nb)%cmxy(ix)       = sfc_var2(i,j,58)
-        Sfcprop(nb)%chxy(ix)       = sfc_var2(i,j,59)
-        Sfcprop(nb)%fwetxy(ix)     = sfc_var2(i,j,60)
-        Sfcprop(nb)%sneqvoxy(ix)   = sfc_var2(i,j,61)
-        Sfcprop(nb)%alboldxy(ix)   = sfc_var2(i,j,62)
-        Sfcprop(nb)%qsnowxy(ix)    = sfc_var2(i,j,63)
-        Sfcprop(nb)%wslakexy(ix)   = sfc_var2(i,j,64)
-        Sfcprop(nb)%zwtxy(ix)      = sfc_var2(i,j,65)
-        Sfcprop(nb)%waxy(ix)       = sfc_var2(i,j,66)
-        Sfcprop(nb)%wtxy(ix)       = sfc_var2(i,j,67)
-        Sfcprop(nb)%lfmassxy(ix)   = sfc_var2(i,j,68)
-        Sfcprop(nb)%rtmassxy(ix)   = sfc_var2(i,j,69)
-        Sfcprop(nb)%stmassxy(ix)   = sfc_var2(i,j,70)
-        Sfcprop(nb)%woodxy(ix)     = sfc_var2(i,j,71)
-        Sfcprop(nb)%stblcpxy(ix)   = sfc_var2(i,j,72)
-        Sfcprop(nb)%fastcpxy(ix)   = sfc_var2(i,j,73)
-        Sfcprop(nb)%xsaixy(ix)     = sfc_var2(i,j,74)
-        Sfcprop(nb)%xlaixy(ix)     = sfc_var2(i,j,75)
-        Sfcprop(nb)%taussxy(ix)    = sfc_var2(i,j,76)
-        Sfcprop(nb)%smcwtdxy(ix)   = sfc_var2(i,j,77)
-        Sfcprop(nb)%deeprechxy(ix) = sfc_var2(i,j,78)
-        Sfcprop(nb)%rechxy(ix)     = sfc_var2(i,j,79)
-
+          Sfcprop(nb)%snowxy(ix)     = sfc_var2(i,j,nvar_s2m+19)
+          Sfcprop(nb)%tvxy(ix)       = sfc_var2(i,j,nvar_s2m+20)
+          Sfcprop(nb)%tgxy(ix)       = sfc_var2(i,j,nvar_s2m+21)
+          Sfcprop(nb)%canicexy(ix)   = sfc_var2(i,j,nvar_s2m+22)
+          Sfcprop(nb)%canliqxy(ix)   = sfc_var2(i,j,nvar_s2m+23)
+          Sfcprop(nb)%eahxy(ix)      = sfc_var2(i,j,nvar_s2m+24)
+          Sfcprop(nb)%tahxy(ix)      = sfc_var2(i,j,nvar_s2m+25)
+          Sfcprop(nb)%cmxy(ix)       = sfc_var2(i,j,nvar_s2m+26)
+          Sfcprop(nb)%chxy(ix)       = sfc_var2(i,j,nvar_s2m+27)
+          Sfcprop(nb)%fwetxy(ix)     = sfc_var2(i,j,nvar_s2m+28)
+          Sfcprop(nb)%sneqvoxy(ix)   = sfc_var2(i,j,nvar_s2m+29)
+          Sfcprop(nb)%alboldxy(ix)   = sfc_var2(i,j,nvar_s2m+30)
+          Sfcprop(nb)%qsnowxy(ix)    = sfc_var2(i,j,nvar_s2m+31)
+          Sfcprop(nb)%wslakexy(ix)   = sfc_var2(i,j,nvar_s2m+32)
+          Sfcprop(nb)%zwtxy(ix)      = sfc_var2(i,j,nvar_s2m+33)
+          Sfcprop(nb)%waxy(ix)       = sfc_var2(i,j,nvar_s2m+34)
+          Sfcprop(nb)%wtxy(ix)       = sfc_var2(i,j,nvar_s2m+35)
+          Sfcprop(nb)%lfmassxy(ix)   = sfc_var2(i,j,nvar_s2m+36)
+          Sfcprop(nb)%rtmassxy(ix)   = sfc_var2(i,j,nvar_s2m+37)
+          Sfcprop(nb)%stmassxy(ix)   = sfc_var2(i,j,nvar_s2m+38)
+          Sfcprop(nb)%woodxy(ix)     = sfc_var2(i,j,nvar_s2m+39)
+          Sfcprop(nb)%stblcpxy(ix)   = sfc_var2(i,j,nvar_s2m+40)
+          Sfcprop(nb)%fastcpxy(ix)   = sfc_var2(i,j,nvar_s2m+41)
+          Sfcprop(nb)%xsaixy(ix)     = sfc_var2(i,j,nvar_s2m+42)
+          Sfcprop(nb)%xlaixy(ix)     = sfc_var2(i,j,nvar_s2m+43)
+          Sfcprop(nb)%taussxy(ix)    = sfc_var2(i,j,nvar_s2m+44)
+          Sfcprop(nb)%smcwtdxy(ix)   = sfc_var2(i,j,nvar_s2m+45)
+          Sfcprop(nb)%deeprechxy(ix) = sfc_var2(i,j,nvar_s2m+46)
+          Sfcprop(nb)%rechxy(ix)     = sfc_var2(i,j,nvar_s2m+47)
         endif
 
 
-        !--- 3D variables
+!--- 3D variables
+!    ------------
         do lsoil = 1,Model%lsoil
-            !--- stc
-            Sfcprop(nb)%stc(ix,lsoil) = sfc_var3(i,j,lsoil,1)
-            !--- smc
-            Sfcprop(nb)%smc(ix,lsoil) = sfc_var3(i,j,lsoil,2)
-            !--- slc
-            Sfcprop(nb)%slc(ix,lsoil) = sfc_var3(i,j,lsoil,3)
+          Sfcprop(nb)%stc(ix,lsoil) = sfc_var3(i,j,lsoil,1)   !--- stc
+          Sfcprop(nb)%smc(ix,lsoil) = sfc_var3(i,j,lsoil,2)   !--- smc
+          Sfcprop(nb)%slc(ix,lsoil) = sfc_var3(i,j,lsoil,3)   !--- slc
         enddo
 
         if (Model%lsm == 2) then
-           do lsoil = -2, 0
+          do lsoil = -2, 0
             Sfcprop(nb)%snicexy(ix,lsoil) = sfc_var3sn(i,j,lsoil,4)
             Sfcprop(nb)%snliqxy(ix,lsoil) = sfc_var3sn(i,j,lsoil,5)
             Sfcprop(nb)%tsnoxy(ix,lsoil)  = sfc_var3sn(i,j,lsoil,6)
-           enddo 
+          enddo 
 
-           do lsoil = 1, 4
-            Sfcprop(nb)%smoiseq(ix,lsoil)  = sfc_var3eq(i,j,lsoil,7)
-           enddo 
+          do lsoil = 1, 4
+           Sfcprop(nb)%smoiseq(ix,lsoil)  = sfc_var3eq(i,j,lsoil,7)
+          enddo 
 
-           do lsoil = -2, 4
-            Sfcprop(nb)%zsnsoxy(ix,lsoil)  = sfc_var3zn(i,j,lsoil,8)
-           enddo 
-         endif
+          do lsoil = -2, 4
+           Sfcprop(nb)%zsnsoxy(ix,lsoil)  = sfc_var3zn(i,j,lsoil,8)
+          enddo 
+        endif
 
-       enddo   !ix
-      enddo    !nb
-        call mpp_error(NOTE, 'gfs_driver:: - after put to container ')
+      enddo   !ix
+    enddo    !nb
+    call mpp_error(NOTE, 'gfs_driver:: - after put to container ')
 
 ! so far: cold start everything is 9999.0, warm start snowxy has values
 ! but the 3D of snow  fieds not avaialble because not allocate yet
@@ -925,14 +913,84 @@ module FV3GFS_io_mod
 ! exact snow layers to pass 3D fields correctly, snow layers are
 ! different fro grid to grid, we have to init point by point/grid.
 ! It has to be done after the weasd is available
-! sfc_var2(1,1,33) is the first; we need this to allocate snow related fields
+! sfc_var2(1,1,32) is the first; we need this to allocate snow related fields
+
+    !--- if sncovr does not exist in the restart, need to create it
+    if (nint(sfc_var2(1,1,32)) == -9999) then
+      if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing sncovr') 
+      !--- compute sncovr from existing variables
+      !--- code taken directly from read_fix.f
+      do nb = 1, Atm_block%nblks
+        do ix = 1, Atm_block%blksz(nb)
+          Sfcprop(nb)%sncovr(ix) = 0.0
+          if (Sfcprop(nb)%slmsk(ix) > 0.001) then
+            vegtyp = Sfcprop(nb)%vtype(ix)
+            if (vegtyp == 0) vegtyp = 7
+            rsnow  = 0.001*Sfcprop(nb)%weasd(ix)/snupx(vegtyp)
+            if (0.001*Sfcprop(nb)%weasd(ix) < snupx(vegtyp)) then
+              Sfcprop(nb)%sncovr(ix) = 1.0 - (exp(-salp_data*rsnow) - rsnow*exp(-salp_data))
+            else
+              Sfcprop(nb)%sncovr(ix) = 1.0
+            endif
+          endif
+        enddo
+      enddo
+    endif
+
+    if (.not.Model%frac_grid) then ! tsfcl/zorll don't exist in the restart, need to create them
+      if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing tsfcl & zorll') 
+      !--- compute tsfcl/zorll from existing variable tsfco/zorlo
+      do nb = 1, Atm_block%nblks
+        do ix = 1, Atm_block%blksz(nb)
+          Sfcprop(nb)%tsfcl(ix) = Sfcprop(nb)%tsfco(ix)
+          Sfcprop(nb)%zorll(ix) = Sfcprop(nb)%zorlo(ix)
+        enddo
+      enddo
+    endif ! if .not.Model%frac_grid
+
+    if(Model%cplflx .and. Model%frac_grid) then ! 3-way composite
+      do nb = 1, Atm_block%nblks
+        do ix = 1, Atm_block%blksz(nb)
+          tem = 1.0 - Sfcprop(nb)%landfrac(ix) - Sfcprop(nb)%fice(ix)
+          Sfcprop(nb)%zorl(ix) = Sfcprop(nb)%zorll(ix) * Sfcprop(nb)%landfrac(ix) &
+                               + Sfcprop(nb)%zorll(ix) * Sfcprop(nb)%fice(ix)     & !zorl ice = zorl land
+                               + Sfcprop(nb)%zorlo(ix) * tem
+          Sfcprop(nb)%tsfc(ix) = Sfcprop(nb)%tsfcl(ix) * Sfcprop(nb)%landfrac(ix) &
+                                +Sfcprop(nb)%tisfc(ix) * Sfcprop(nb)%fice(ix)     &
+                                +Sfcprop(nb)%tsfco(ix) * tem
+        enddo
+      enddo
+    else     ! in this case ice fracion is fraction of water fraction
+      do nb = 1, Atm_block%nblks
+        do ix = 1, Atm_block%blksz(nb)
+          Sfcprop(nb)%zorl(ix) = Sfcprop(nb)%zorlo(ix)
+          Sfcprop(nb)%tsfc(ix) = Sfcprop(nb)%tsfco(ix)
+          if (Sfcprop(nb)%slmsk(ix) > 1.9) then
+            Sfcprop(nb)%landfrac(ix) = 0.0
+          else
+            Sfcprop(nb)%landfrac(ix) = Sfcprop(nb)%slmsk(ix) 
+          end if
+        enddo
+      enddo
+    end if ! if cplflx .and. frac_grid
+
+    do nb = 1, Atm_block%nblks
+      do ix = 1, Atm_block%blksz(nb)
+      if (Sfcprop(nb)%lakefrac(ix) > 0.) then
+        Sfcprop(nb)%oceanfrac(ix) = 0. ! lake & ocean don't coexist in a cell
+      else
+        Sfcprop(nb)%oceanfrac(ix) = 1. - Sfcprop(nb)%landfrac(ix)  !LHS:ocean frac [0:1]
+      end if
+
+      enddo
+    enddo
 
     if ( Model%lsm == 2 ) then 
-      if (nint(sfc_var2(1,1,51)) == -9999) then
-         if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver:: - Cold start Noah MP ')
+      if (nint(sfc_var2(1,1,nvar_s2m+19)) == -9999) then
+        if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver:: - Cold start Noah MP ')
 
-       do nb = 1, Atm_block%nblks
-         do ix = 1, Atm_block%blksz(nb)
+        do nb = 1, Atm_block%nblks
+          do ix = 1, Atm_block%blksz(nb)
 
             Sfcprop(nb)%tvxy(ix)     = 0.0
             Sfcprop(nb)%tgxy(ix)     = 0.0
@@ -971,15 +1029,15 @@ module FV3GFS_io_mod
             Sfcprop(nb)%smoiseq(ix,  1:4) = 0.0
             Sfcprop(nb)%zsnsoxy(ix, -2:4) = 0.0
 
-!         if (Sfcprop(nb)%slmsk(ix) > 0.01) then
+!           if (Sfcprop(nb)%slmsk(ix) > 0.01) then
 
-            Sfcprop(nb)%tvxy(ix)     = Sfcprop(nb)%tsfc(ix)
-            Sfcprop(nb)%tgxy(ix)     = Sfcprop(nb)%tsfc(ix)
-            Sfcprop(nb)%tahxy(ix)    = Sfcprop(nb)%tsfc(ix)
+            Sfcprop(nb)%tvxy(ix)     = Sfcprop(nb)%tsfcl(ix)
+            Sfcprop(nb)%tgxy(ix)     = Sfcprop(nb)%tsfcl(ix)
+            Sfcprop(nb)%tahxy(ix)    = Sfcprop(nb)%tsfcl(ix)
 
-            if (Sfcprop(nb)%snowd(ix) > 0.01 .and. Sfcprop(nb)%tsfc(ix) > 273.15 ) Sfcprop(nb)%tvxy  = 273.15
-            if (Sfcprop(nb)%snowd(ix) > 0.01 .and. Sfcprop(nb)%tsfc(ix) > 273.15 ) Sfcprop(nb)%tgxy  = 273.15
-            if (Sfcprop(nb)%snowd(ix) > 0.01 .and. Sfcprop(nb)%tsfc(ix) > 273.15 ) Sfcprop(nb)%tahxy = 273.15
+            if (Sfcprop(nb)%snowd(ix) > 0.01 .and. Sfcprop(nb)%tsfcl(ix) > 273.15 ) Sfcprop(nb)%tvxy  = 273.15
+            if (Sfcprop(nb)%snowd(ix) > 0.01 .and. Sfcprop(nb)%tsfcl(ix) > 273.15 ) Sfcprop(nb)%tgxy  = 273.15
+            if (Sfcprop(nb)%snowd(ix) > 0.01 .and. Sfcprop(nb)%tsfcl(ix) > 273.15 ) Sfcprop(nb)%tahxy = 273.15
   
             Sfcprop(nb)%canicexy(ix) = 0.0
             Sfcprop(nb)%canliqxy(ix) = Sfcprop(nb)%canopy(ix)
@@ -1010,83 +1068,83 @@ module FV3GFS_io_mod
             if (vegtyp == 0) vegtyp = 7
             imn                      = Model%idate(2)
 
-         if ((vegtyp == isbarren_table) .or. (vegtyp == isice_table) .or.  (vegtyp == isurban_table) .or. (vegtyp == iswater_table)) then
+            if ((vegtyp == isbarren_table) .or. (vegtyp == isice_table) .or.  (vegtyp == isurban_table) .or. (vegtyp == iswater_table)) then
 
-            Sfcprop(nb)%xlaixy(ix)   = 0.0
-            Sfcprop(nb)%xsaixy(ix)   = 0.0
+              Sfcprop(nb)%xlaixy(ix)   = 0.0
+              Sfcprop(nb)%xsaixy(ix)   = 0.0
 
-            Sfcprop(nb)%lfmassxy(ix) = 0.0
-            Sfcprop(nb)%stmassxy(ix) = 0.0
-            Sfcprop(nb)%rtmassxy(ix) = 0.0
+              Sfcprop(nb)%lfmassxy(ix) = 0.0
+              Sfcprop(nb)%stmassxy(ix) = 0.0
+              Sfcprop(nb)%rtmassxy(ix) = 0.0
 
-            Sfcprop(nb)%woodxy   (ix) = 0.0       
-            Sfcprop(nb)%stblcpxy (ix) = 0.0      
-            Sfcprop(nb)%fastcpxy (ix) = 0.0     
+              Sfcprop(nb)%woodxy   (ix) = 0.0       
+              Sfcprop(nb)%stblcpxy (ix) = 0.0      
+              Sfcprop(nb)%fastcpxy (ix) = 0.0     
 
-          else
+            else
 
-!           print *, 'vegtyp', vegtyp
-!           print *, 'imn', imn
-!           print *, 'xlaixy', Sfcprop(nb)%xlaixy(ix) 
+!             print *, 'vegtyp', vegtyp
+!             print *, 'imn', imn
+!             print *, 'xlaixy', Sfcprop(nb)%xlaixy(ix) 
 
-            Sfcprop(nb)%xlaixy(ix)   = max(laim_table(vegtyp, imn),0.05)
-!           Sfcprop(nb)%xsaixy(ix)   = max(saim_table(vegtyp, imn),0.05)
-            Sfcprop(nb)%xsaixy(ix)   = max(Sfcprop(nb)%xlaixy(ix)*0.1,0.05)
+              Sfcprop(nb)%xlaixy(ix)   = max(laim_table(vegtyp, imn),0.05)
+!             Sfcprop(nb)%xsaixy(ix)   = max(saim_table(vegtyp, imn),0.05)
+              Sfcprop(nb)%xsaixy(ix)   = max(Sfcprop(nb)%xlaixy(ix)*0.1,0.05)
 
-            masslai                  = 1000.0 / max(sla_table(vegtyp),1.0)
-            Sfcprop(nb)%lfmassxy(ix) = Sfcprop(nb)%xlaixy(ix)*masslai
-            masssai                  = 1000.0 / 3.0
-            Sfcprop(nb)%stmassxy(ix) = Sfcprop(nb)%xsaixy(ix)* masssai
+              masslai                  = 1000.0 / max(sla_table(vegtyp),1.0)
+              Sfcprop(nb)%lfmassxy(ix) = Sfcprop(nb)%xlaixy(ix)*masslai
+              masssai                  = 1000.0 / 3.0
+              Sfcprop(nb)%stmassxy(ix) = Sfcprop(nb)%xsaixy(ix)* masssai
 
-            Sfcprop(nb)%rtmassxy (ix) = 500.0      
+              Sfcprop(nb)%rtmassxy(ix) = 500.0      
 
-            Sfcprop(nb)%woodxy   (ix) = 500.0       
-            Sfcprop(nb)%stblcpxy (ix) = 1000.0      
-            Sfcprop(nb)%fastcpxy (ix) = 1000.0     
+              Sfcprop(nb)%woodxy  (ix) = 500.0       
+              Sfcprop(nb)%stblcpxy(ix) = 1000.0      
+              Sfcprop(nb)%fastcpxy(ix) = 1000.0     
 
-          endif  ! non urban ...
+            endif  ! non urban ...
 
 
-             snd   = Sfcprop(nb)%snowd(ix)/1000.0  ! go to m from snwdph
+            snd   = Sfcprop(nb)%snowd(ix)/1000.0  ! go to m from snwdph
 
-           if (Sfcprop(nb)%weasd(ix) /= 0.0 .and. snd == 0.0 ) then
+            if (Sfcprop(nb)%weasd(ix) /= 0.0 .and. snd == 0.0 ) then
               snd = Sfcprop(nb)%weasd(ix)/1000.0
-           endif
+            endif
 
-           if (vegtyp == 15) then                      ! land ice in MODIS/IGBP
-             if ( Sfcprop(nb)%weasd(ix) < 0.1) then
-                  Sfcprop(nb)%weasd(ix) = 0.1
-                  snd                   = 0.01
-             endif
-           endif
+            if (vegtyp == 15) then                      ! land ice in MODIS/IGBP
+              if ( Sfcprop(nb)%weasd(ix) < 0.1) then
+                Sfcprop(nb)%weasd(ix) = 0.1
+                snd                   = 0.01
+              endif
+            endif
 
-          if (snd < 0.025 ) then
-            Sfcprop(nb)%snowxy(ix)  = 0.0
-            dzsno(-2:0)             = 0.0
-          elseif (snd >= 0.025 .and. snd <= 0.05 ) then
-            Sfcprop(nb)%snowxy(ix)  = -1.0
-            dzsno(0)                 = snd
-          elseif (snd > 0.05 .and. snd <= 0.10 ) then
-            Sfcprop(nb)%snowxy(ix)  = -2.0
-            dzsno(-1)                = 0.5*snd
-            dzsno(0)                 = 0.5*snd
-          elseif (snd > 0.10 .and. snd <= 0.25 ) then
-            Sfcprop(nb)%snowxy(ix)   = -2.0
-            dzsno(-1)                = 0.05
-            dzsno(0)                 = snd - 0.05
-          elseif (snd > 0.25 .and. snd <= 0.45 ) then
-            Sfcprop(nb)%snowxy(ix)   = -3.0
-            dzsno(-2)                = 0.05
-            dzsno(-1)                = 0.5*(snd-0.05)
-            dzsno(0)                 = 0.5*(snd-0.05)
-          elseif (snd > 0.45) then 
-            Sfcprop(nb)%snowxy(ix)   = -3.0
-            dzsno(-2)                = 0.05
-            dzsno(-1)                = 0.20
-            dzsno(0)                 = snd - 0.05 - 0.20
-          else
-           call mpp_error(FATAL, 'problem with the logic assigning snow layers.') 
-         endif
+            if (snd < 0.025 ) then
+              Sfcprop(nb)%snowxy(ix)  = 0.0
+              dzsno(-2:0)             = 0.0
+            elseif (snd >= 0.025 .and. snd <= 0.05 ) then
+              Sfcprop(nb)%snowxy(ix)  = -1.0
+              dzsno(0)                 = snd
+            elseif (snd > 0.05 .and. snd <= 0.10 ) then
+              Sfcprop(nb)%snowxy(ix)  = -2.0
+              dzsno(-1)                = 0.5*snd
+              dzsno(0)                 = 0.5*snd
+            elseif (snd > 0.10 .and. snd <= 0.25 ) then
+              Sfcprop(nb)%snowxy(ix)   = -2.0
+              dzsno(-1)                = 0.05
+              dzsno(0)                 = snd - 0.05
+            elseif (snd > 0.25 .and. snd <= 0.45 ) then
+              Sfcprop(nb)%snowxy(ix)   = -3.0
+              dzsno(-2)                = 0.05
+              dzsno(-1)                = 0.5*(snd-0.05)
+              dzsno(0)                 = 0.5*(snd-0.05)
+            elseif (snd > 0.45) then 
+              Sfcprop(nb)%snowxy(ix)   = -3.0
+              dzsno(-2)                = 0.05
+              dzsno(-1)                = 0.20
+              dzsno(0)                 = snd - 0.05 - 0.20
+            else
+              call mpp_error(FATAL, 'problem with the logic assigning snow layers.') 
+            endif
 
 ! Now we have the snowxy field
 ! snice + snliq + tsno allocation and compute them from what we have
@@ -1097,115 +1155,92 @@ module FV3GFS_io_mod
             Sfcprop(nb)%snliqxy(ix,-2:0) = 0.0
             Sfcprop(nb)%zsnsoxy(ix,-2:4) = 0.0
 
-         isnow = nint(Sfcprop(nb)%snowxy(ix))+1    ! snowxy <=0.0, dzsno >= 0.0
+            isnow = nint(Sfcprop(nb)%snowxy(ix))+1    ! snowxy <=0.0, dzsno >= 0.0
 
-         do ns = isnow , 0
-             Sfcprop(nb)%tsnoxy(ix,ns)  = Sfcprop(nb)%tgxy(ix)
-             Sfcprop(nb)%snliqxy(ix,ns) = 0.0
-             Sfcprop(nb)%snicexy(ix,ns) = 1.00 * dzsno(ns) * Sfcprop(nb)%weasd(ix)/snd
-         enddo
+            do ns = isnow , 0
+              Sfcprop(nb)%tsnoxy(ix,ns)  = Sfcprop(nb)%tgxy(ix)
+              Sfcprop(nb)%snliqxy(ix,ns) = 0.0
+              Sfcprop(nb)%snicexy(ix,ns) = 1.00 * dzsno(ns) * Sfcprop(nb)%weasd(ix)/snd
+            enddo
 !
 !zsnsoxy, all negative ?
 !
             do ns = isnow, 0
-             dzsnso(ns) = -dzsno(ns)
+              dzsnso(ns) = -dzsno(ns)
             enddo
 
             do ns = 1 , 4
-             dzsnso(ns) = -dzs(ns)
-            end do
+              dzsnso(ns) = -dzs(ns)
+            enddo
 !
 ! Assign to zsnsoxy
 !
-          Sfcprop(nb)%zsnsoxy(ix,isnow) = dzsnso(isnow)
-          do ns = isnow+1,4
-            Sfcprop(nb)%zsnsoxy(ix,ns) = Sfcprop(nb)%zsnsoxy(ix,ns-1) + dzsnso(ns)
-          enddo
+            Sfcprop(nb)%zsnsoxy(ix,isnow) = dzsnso(isnow)
+            do ns = isnow+1,4
+              Sfcprop(nb)%zsnsoxy(ix,ns) = Sfcprop(nb)%zsnsoxy(ix,ns-1) + dzsnso(ns)
+            enddo
  
 !
 ! smoiseq
 ! Init water table related quantities here
 !
-           soiltyp  = Sfcprop(nb)%stype(ix)
+            soiltyp  = Sfcprop(nb)%stype(ix)
 
-           if (soiltyp /= 0) then
+            if (soiltyp /= 0) then
               bexp   = bexp_table(soiltyp)
               smcmax = smcmax_table(soiltyp)
               smcwlt = smcwlt_table(soiltyp)
               dwsat  = dwsat_table(soiltyp)
               dksat  = dksat_table(soiltyp)
               psisat = -psisat_table(soiltyp)
-           endif
+            endif
 
             if (vegtyp == isurban_table) then
-               smcmax = 0.45
-               smcwlt = 0.40
+              smcmax = 0.45
+              smcwlt = 0.40
             endif
 
-      if ((bexp > 0.0) .and. (smcmax > 0.0) .and. (-psisat > 0.0 )) then
-        do ns = 1, Model%lsoil          
-            if ( ns == 1 )then
-                ddz = -zsoil(ns+1) * 0.5
-            elseif ( ns < Model%lsoil ) then
-                ddz = ( zsoil(ns-1) - zsoil(ns+1) ) * 0.5
-            else
-                ddz = zsoil(ns-1) - zsoil(ns)
-            endif
+            if ((bexp > 0.0) .and. (smcmax > 0.0) .and. (-psisat > 0.0 )) then
+              do ns = 1, Model%lsoil          
+                if ( ns == 1 )then
+                  ddz = -zsoil(ns+1) * 0.5
+                elseif ( ns < Model%lsoil ) then
+                  ddz = ( zsoil(ns-1) - zsoil(ns+1) ) * 0.5
+                else
+                  ddz = zsoil(ns-1) - zsoil(ns)
+                endif
 !
 ! Use newton-raphson method to find eq soil moisture
 !
-            expon = bexp +1.
-            aa = dwsat/ddz
-            bb = dksat / smcmax ** expon
+                expon = bexp +1.
+                aa = dwsat/ddz
+                bb = dksat / smcmax ** expon
 
-            smc = 0.5 * smcmax
+                smc = 0.5 * smcmax
 
-            do iter = 1, 100
-              func = (smc - smcmax) * aa +  bb * smc ** expon
-              dfunc = aa + bb * expon * smc ** bexp
-              dx  = func/dfunc
-              smc = smc - dx
-              if ( abs (dx) < 1.e-6) exit
-            enddo                               ! iteration
-           Sfcprop(nb)%smoiseq(ix,ns) = min(max(smc,1.e-4),smcmax*0.99)
-          enddo                                 ! ddz soil layer
-      else                                      ! bexp <= 0.0 
-           Sfcprop(nb)%smoiseq(ix,1:4) = smcmax
-      endif                                     ! end the bexp condition
+                do iter = 1, 100
+                  func = (smc - smcmax) * aa +  bb * smc ** expon
+                  dfunc = aa + bb * expon * smc ** bexp
+                  dx  = func/dfunc
+                  smc = smc - dx
+                  if ( abs (dx) < 1.e-6) exit
+                enddo                               ! iteration
+                Sfcprop(nb)%smoiseq(ix,ns) = min(max(smc,1.e-4),smcmax*0.99)
+              enddo                                 ! ddz soil layer
+            else                                    ! bexp <= 0.0 
+              Sfcprop(nb)%smoiseq(ix,1:4) = smcmax
+            endif                                   ! end the bexp condition
 
 !
 !
-           Sfcprop(nb)%smcwtdxy(ix)   = smcmax
-           Sfcprop(nb)%deeprechxy(ix) = 0.0
-           Sfcprop(nb)%rechxy(ix)     = 0.0
+            Sfcprop(nb)%smcwtdxy(ix)   = smcmax
+            Sfcprop(nb)%deeprechxy(ix) = 0.0
+            Sfcprop(nb)%rechxy(ix)     = 0.0
 
-
-!       endif                                   ! land only
-       enddo                                    ! ix
-      enddo                                     ! nb
+        enddo ! ix
+       enddo  ! nb
      endif
-     endif                                      !if Noah MP cold start ends
-    !--- if sncovr does not exist in the restart, need to create it
-    if (nint(sfc_var2(1,1,32)) == -9999) then
-      if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing sncovr') 
-      !--- compute sncovr from existing variables
-      !--- code taken directly from read_fix.f
-      do nb = 1, Atm_block%nblks
-        do ix = 1, Atm_block%blksz(nb)
-          Sfcprop(nb)%sncovr(ix) = 0.0
-          if (Sfcprop(nb)%slmsk(ix) > 0.001) then
-            vegtyp = Sfcprop(nb)%vtype(ix)
-            if (vegtyp == 0) vegtyp = 7
-            rsnow  = 0.001*Sfcprop(nb)%weasd(ix)/snupx(vegtyp)
-            if (0.001*Sfcprop(nb)%weasd(ix) < snupx(vegtyp)) then
-              Sfcprop(nb)%sncovr(ix) = 1.0 - (exp(-salp_data*rsnow) - rsnow*exp(-salp_data))
-            else
-              Sfcprop(nb)%sncovr(ix) = 1.0
-            endif
-          endif
-        enddo
-      enddo
-    endif
+     endif   !if Noah MP cold start ends
 
   end subroutine sfc_prop_restart_read
 
@@ -1241,7 +1276,11 @@ module FV3GFS_io_mod
     real(kind=kind_phys), pointer, dimension(:,:,:) :: var3_p2 => NULL()
     real(kind=kind_phys), pointer, dimension(:,:,:) :: var3_p3 => NULL()
 
-    nvar2m = 32
+    if (Model%cplflx) then ! needs more variables
+      nvar2m = 34
+    else
+      nvar2m = 32
+    end if
     nvar2o = 18
     nvar3  = 3
     nvar2mp = 29
@@ -1304,64 +1343,68 @@ module FV3GFS_io_mod
       sfc_name2(29) = 'shdmax'
       sfc_name2(30) = 'slope'
       sfc_name2(31) = 'snoalb'
-      !--- below here all variables are optional
+      !--- variables below here are optional
       sfc_name2(32) = 'sncovr'
+      if (Model%cplflx) then
+        sfc_name2(33) = 'tsfcl'   !temp on land portion of a cell
+        sfc_name2(34) = 'zorll'   !zorl on land portion of a cell
+      end if
       !--- NSSTM inputs only needed when (nstf_name(1) > 0) .and. (nstf_name(2)) == 0)
-      sfc_name2(33) = 'tref'
-      sfc_name2(34) = 'z_c'
-      sfc_name2(35) = 'c_0'
-      sfc_name2(36) = 'c_d'
-      sfc_name2(37) = 'w_0'
-      sfc_name2(38) = 'w_d'
-      sfc_name2(39) = 'xt'
-      sfc_name2(40) = 'xs'
-      sfc_name2(41) = 'xu'
-      sfc_name2(42) = 'xv'
-      sfc_name2(43) = 'xz'
-      sfc_name2(44) = 'zm'
-      sfc_name2(45) = 'xtts'
-      sfc_name2(46) = 'xzts'
-      sfc_name2(47) = 'd_conv'
-      sfc_name2(48) = 'ifd'
-      sfc_name2(49) = 'dt_cool'
-      sfc_name2(50) = 'qrain'
+      sfc_name2(nvar2m+1)  = 'tref'
+      sfc_name2(nvar2m+2)  = 'z_c'
+      sfc_name2(nvar2m+3)  = 'c_0'
+      sfc_name2(nvar2m+4)  = 'c_d'
+      sfc_name2(nvar2m+5)  = 'w_0'
+      sfc_name2(nvar2m+6)  = 'w_d'
+      sfc_name2(nvar2m+7)  = 'xt'
+      sfc_name2(nvar2m+8)  = 'xs'
+      sfc_name2(nvar2m+9)  = 'xu'
+      sfc_name2(nvar2m+10) = 'xv'
+      sfc_name2(nvar2m+11) = 'xz'
+      sfc_name2(nvar2m+12) = 'zm'
+      sfc_name2(nvar2m+13) = 'xtts'
+      sfc_name2(nvar2m+14) = 'xzts'
+      sfc_name2(nvar2m+15) = 'd_conv'
+      sfc_name2(nvar2m+16) = 'ifd'
+      sfc_name2(nvar2m+17) = 'dt_cool'
+      sfc_name2(nvar2m+18) = 'qrain'
 ! Only needed when Noah MP LSM is used - 29 2D
       if( Model%lsm == 2 ) then
-       sfc_name2(51) =  'snowxy'
-       sfc_name2(52) =  'tvxy'
-       sfc_name2(53) =  'tgxy'
-       sfc_name2(54) =  'canicexy'
-       sfc_name2(55) =  'canliqxy'
-       sfc_name2(56) =  'eahxy'
-       sfc_name2(57) =  'tahxy'
-       sfc_name2(58) =  'cmxy'
-       sfc_name2(59) =  'chxy'
-       sfc_name2(60) =  'fwetxy'
-       sfc_name2(61) =  'sneqvoxy'
-       sfc_name2(62) =  'alboldxy'
-       sfc_name2(63) =  'qsnowxy'
-       sfc_name2(64) =  'wslakexy'
-       sfc_name2(65) =  'zwtxy'
-       sfc_name2(66) =  'waxy'
-       sfc_name2(67) =  'wtxy'
-       sfc_name2(68) =  'lfmassxy'
-       sfc_name2(69) =  'rtmassxy'
-       sfc_name2(70) =  'stmassxy'
-       sfc_name2(71) =  'woodxy'
-       sfc_name2(72) =  'stblcpxy'
-       sfc_name2(73) =  'fastcpxy'
-       sfc_name2(74) =  'xsaixy'
-       sfc_name2(75) =  'xlaixy'
-       sfc_name2(76) =  'taussxy'
-       sfc_name2(77) =  'smcwtdxy'
-       sfc_name2(78) =  'deeprechxy'
-       sfc_name2(79) =  'rechxy'
+       sfc_name2(nvar2m+19) =  'snowxy'
+       sfc_name2(nvar2m+20) =  'tvxy'
+       sfc_name2(nvar2m+21) =  'tgxy'
+       sfc_name2(nvar2m+22) =  'canicexy'
+       sfc_name2(nvar2m+23) =  'canliqxy'
+       sfc_name2(nvar2m+24) =  'eahxy'
+       sfc_name2(nvar2m+25) =  'tahxy'
+       sfc_name2(nvar2m+26) =  'cmxy'
+       sfc_name2(nvar2m+27) =  'chxy'
+       sfc_name2(nvar2m+28) =  'fwetxy'
+       sfc_name2(nvar2m+29) =  'sneqvoxy'
+       sfc_name2(nvar2m+30) =  'alboldxy'
+       sfc_name2(nvar2m+31) =  'qsnowxy'
+       sfc_name2(nvar2m+32) =  'wslakexy'
+       sfc_name2(nvar2m+33) =  'zwtxy'
+       sfc_name2(nvar2m+34) =  'waxy'
+       sfc_name2(nvar2m+35) =  'wtxy'
+       sfc_name2(nvar2m+36) =  'lfmassxy'
+       sfc_name2(nvar2m+37) =  'rtmassxy'
+       sfc_name2(nvar2m+38) =  'stmassxy'
+       sfc_name2(nvar2m+39) =  'woodxy'
+       sfc_name2(nvar2m+40) =  'stblcpxy'
+       sfc_name2(nvar2m+41) =  'fastcpxy'
+       sfc_name2(nvar2m+42) =  'xsaixy'
+       sfc_name2(nvar2m+43) =  'xlaixy'
+       sfc_name2(nvar2m+44) =  'taussxy'
+       sfc_name2(nvar2m+45) =  'smcwtdxy'
+       sfc_name2(nvar2m+46) =  'deeprechxy'
+       sfc_name2(nvar2m+47) =  'rechxy'
       endif
  
       !--- register the 2D fields
       do num = 1,nvar2m
         var2_p => sfc_var2(:,:,num)
-        if (trim(sfc_name2(num)) == 'sncovr') then
+        if (trim(sfc_name2(num)) == 'sncovr'.or.trim(sfc_name2(num)) == 'tsfcl'.or.trim(sfc_name2(num)) == 'zorll') then
           id_restart = register_restart_field(Sfc_restart, fn_srf, sfc_name2(num), var2_p, domain=fv_domain, mandatory=.false.)
         else
           id_restart = register_restart_field(Sfc_restart, fn_srf, sfc_name2(num), var2_p, domain=fv_domain)
@@ -1425,154 +1468,105 @@ module FV3GFS_io_mod
         !--- 2D variables
         i = Atm_block%index(nb)%ii(ix) - isc + 1
         j = Atm_block%index(nb)%jj(ix) - jsc + 1
-        !--- slmsk
-        sfc_var2(i,j,1)  = Sfcprop(nb)%slmsk(ix)
-        !--- tsfc (tsea in sfc file)
-        sfc_var2(i,j,2)  = Sfcprop(nb)%tsfc(ix)
-        !--- weasd (sheleg in sfc file)
-        sfc_var2(i,j,3)  = Sfcprop(nb)%weasd(ix)
-        !--- tg3
-        sfc_var2(i,j,4)  = Sfcprop(nb)%tg3(ix)
-        !--- zorl
-        sfc_var2(i,j,5)  = Sfcprop(nb)%zorl(ix)
-        !--- alvsf
-        sfc_var2(i,j,6)  = Sfcprop(nb)%alvsf(ix)
-        !--- alvwf
-        sfc_var2(i,j,7)  = Sfcprop(nb)%alvwf(ix)
-        !--- alnsf
-        sfc_var2(i,j,8)  = Sfcprop(nb)%alnsf(ix)
-        !--- alnwf
-        sfc_var2(i,j,9)  = Sfcprop(nb)%alnwf(ix)
-        !--- facsf
-        sfc_var2(i,j,10) = Sfcprop(nb)%facsf(ix)
-        !--- facwf
-        sfc_var2(i,j,11) = Sfcprop(nb)%facwf(ix)
-        !--- vfrac
-        sfc_var2(i,j,12) = Sfcprop(nb)%vfrac(ix)
-        !--- canopy
-        sfc_var2(i,j,13) = Sfcprop(nb)%canopy(ix)
-        !--- f10m
-        sfc_var2(i,j,14) = Sfcprop(nb)%f10m(ix)
-        !--- t2m
-        sfc_var2(i,j,15) = Sfcprop(nb)%t2m(ix)
-        !--- q2m
-        sfc_var2(i,j,16) = Sfcprop(nb)%q2m(ix)
-        !--- vtype
-        sfc_var2(i,j,17) = Sfcprop(nb)%vtype(ix)
-        !--- stype
-        sfc_var2(i,j,18) = Sfcprop(nb)%stype(ix)
-        !--- uustar
-        sfc_var2(i,j,19) = Sfcprop(nb)%uustar(ix)
-        !--- ffmm
-        sfc_var2(i,j,20) = Sfcprop(nb)%ffmm(ix)
-        !--- ffhh
-        sfc_var2(i,j,21) = Sfcprop(nb)%ffhh(ix)
-        !--- hice
-        sfc_var2(i,j,22) = Sfcprop(nb)%hice(ix)
-        !--- fice
-        sfc_var2(i,j,23) = Sfcprop(nb)%fice(ix)
-        !--- tisfc
-        sfc_var2(i,j,24) = Sfcprop(nb)%tisfc(ix)
-        !--- tprcp
-        sfc_var2(i,j,25) = Sfcprop(nb)%tprcp(ix)
-        !--- srflag
-        sfc_var2(i,j,26) = Sfcprop(nb)%srflag(ix)
-        !--- snowd (snwdph in the file)
-        sfc_var2(i,j,27) = Sfcprop(nb)%snowd(ix)
-        !--- shdmin
-        sfc_var2(i,j,28) = Sfcprop(nb)%shdmin(ix)
-        !--- shdmax
-        sfc_var2(i,j,29) = Sfcprop(nb)%shdmax(ix)
-        !--- slope
-        sfc_var2(i,j,30) = Sfcprop(nb)%slope(ix)
-        !--- snoalb
-        sfc_var2(i,j,31) = Sfcprop(nb)%snoalb(ix)
-        !--- sncovr
-        sfc_var2(i,j,32) = Sfcprop(nb)%sncovr(ix)
+        sfc_var2(i,j,1)  = Sfcprop(nb)%slmsk(ix) !--- slmsk
+        sfc_var2(i,j,2)  = Sfcprop(nb)%tsfc(ix)  !--- tsfc (tsea in sfc file)
+        sfc_var2(i,j,3)  = Sfcprop(nb)%weasd(ix) !--- weasd (sheleg in sfc file)
+        sfc_var2(i,j,4)  = Sfcprop(nb)%tg3(ix)   !--- tg3
+        sfc_var2(i,j,5)  = Sfcprop(nb)%zorl(ix)  !--- zorl
+        sfc_var2(i,j,6)  = Sfcprop(nb)%alvsf(ix) !--- alvsf
+        sfc_var2(i,j,7)  = Sfcprop(nb)%alvwf(ix) !--- alvwf
+        sfc_var2(i,j,8)  = Sfcprop(nb)%alnsf(ix) !--- alnsf
+        sfc_var2(i,j,9)  = Sfcprop(nb)%alnwf(ix) !--- alnwf
+        sfc_var2(i,j,10) = Sfcprop(nb)%facsf(ix) !--- facsf
+        sfc_var2(i,j,11) = Sfcprop(nb)%facwf(ix) !--- facwf
+        sfc_var2(i,j,12) = Sfcprop(nb)%vfrac(ix) !--- vfrac
+        sfc_var2(i,j,13) = Sfcprop(nb)%canopy(ix)!--- canopy
+        sfc_var2(i,j,14) = Sfcprop(nb)%f10m(ix)  !--- f10m
+        sfc_var2(i,j,15) = Sfcprop(nb)%t2m(ix)   !--- t2m
+        sfc_var2(i,j,16) = Sfcprop(nb)%q2m(ix)   !--- q2m
+        sfc_var2(i,j,17) = Sfcprop(nb)%vtype(ix) !--- vtype
+        sfc_var2(i,j,18) = Sfcprop(nb)%stype(ix) !--- stype
+        sfc_var2(i,j,19) = Sfcprop(nb)%uustar(ix)!--- uustar
+        sfc_var2(i,j,20) = Sfcprop(nb)%ffmm(ix)  !--- ffmm
+        sfc_var2(i,j,21) = Sfcprop(nb)%ffhh(ix)  !--- ffhh
+        sfc_var2(i,j,22) = Sfcprop(nb)%hice(ix)  !--- hice
+        sfc_var2(i,j,23) = Sfcprop(nb)%fice(ix)  !--- fice
+        sfc_var2(i,j,24) = Sfcprop(nb)%tisfc(ix) !--- tisfc
+        sfc_var2(i,j,25) = Sfcprop(nb)%tprcp(ix) !--- tprcp
+        sfc_var2(i,j,26) = Sfcprop(nb)%srflag(ix)!--- srflag
+        sfc_var2(i,j,27) = Sfcprop(nb)%snowd(ix) !--- snowd (snwdph in the file)
+        sfc_var2(i,j,28) = Sfcprop(nb)%shdmin(ix)!--- shdmin
+        sfc_var2(i,j,29) = Sfcprop(nb)%shdmax(ix)!--- shdmax
+        sfc_var2(i,j,30) = Sfcprop(nb)%slope(ix) !--- slope
+        sfc_var2(i,j,31) = Sfcprop(nb)%snoalb(ix)!--- snoalb
+        sfc_var2(i,j,32) = Sfcprop(nb)%sncovr(ix)!--- sncovr
+        if (Model%cplflx) then
+          sfc_var2(i,j,33) = Sfcprop(nb)%tsfcl(ix) !--- tsfcl (temp on land)
+          sfc_var2(i,j,34) = Sfcprop(nb)%zorll(ix) !--- zorll (zorl on land)
+        end if
         !--- NSSTM variables
         if (Model%nstf_name(1) > 0) then
-          !--- nsstm tref
-          sfc_var2(i,j,33) = Sfcprop(nb)%tref(ix)
-          !--- nsstm z_c
-          sfc_var2(i,j,34) = Sfcprop(nb)%z_c(ix)
-          !--- nsstm c_0
-          sfc_var2(i,j,35) = Sfcprop(nb)%c_0(ix)
-          !--- nsstm c_d
-          sfc_var2(i,j,36) = Sfcprop(nb)%c_d(ix)
-          !--- nsstm w_0
-          sfc_var2(i,j,37) = Sfcprop(nb)%w_0(ix)
-          !--- nsstm w_d
-          sfc_var2(i,j,38) = Sfcprop(nb)%w_d(ix)
-          !--- nsstm xt
-          sfc_var2(i,j,39) = Sfcprop(nb)%xt(ix)
-          !--- nsstm xs
-          sfc_var2(i,j,40) = Sfcprop(nb)%xs(ix)
-          !--- nsstm xu
-          sfc_var2(i,j,41) = Sfcprop(nb)%xu(ix)
-          !--- nsstm xv
-          sfc_var2(i,j,42) = Sfcprop(nb)%xv(ix)
-          !--- nsstm xz
-          sfc_var2(i,j,43) = Sfcprop(nb)%xz(ix)
-          !--- nsstm zm
-          sfc_var2(i,j,44) = Sfcprop(nb)%zm(ix)
-          !--- nsstm xtts
-          sfc_var2(i,j,45) = Sfcprop(nb)%xtts(ix)
-          !--- nsstm xzts
-          sfc_var2(i,j,46) = Sfcprop(nb)%xzts(ix)
-          !--- nsstm d_conv
-          sfc_var2(i,j,47) = Sfcprop(nb)%d_conv(ix)
-          !--- nsstm ifd
-          sfc_var2(i,j,48) = Sfcprop(nb)%ifd(ix)
-          !--- nsstm dt_cool
-          sfc_var2(i,j,49) = Sfcprop(nb)%dt_cool(ix)
-          !--- nsstm qrain
-          sfc_var2(i,j,50) = Sfcprop(nb)%qrain(ix)
+          sfc_var2(i,j,nvar2m+1) = Sfcprop(nb)%tref(ix)    !--- nsstm tref
+          sfc_var2(i,j,nvar2m+2) = Sfcprop(nb)%z_c(ix)     !--- nsstm z_c
+          sfc_var2(i,j,nvar2m+3) = Sfcprop(nb)%c_0(ix)     !--- nsstm c_0
+          sfc_var2(i,j,nvar2m+4) = Sfcprop(nb)%c_d(ix)     !--- nsstm c_d
+          sfc_var2(i,j,nvar2m+5) = Sfcprop(nb)%w_0(ix)     !--- nsstm w_0
+          sfc_var2(i,j,nvar2m+6) = Sfcprop(nb)%w_d(ix)     !--- nsstm w_d
+          sfc_var2(i,j,nvar2m+7) = Sfcprop(nb)%xt(ix)      !--- nsstm xt
+          sfc_var2(i,j,nvar2m+8) = Sfcprop(nb)%xs(ix)      !--- nsstm xs
+          sfc_var2(i,j,nvar2m+9) = Sfcprop(nb)%xu(ix)      !--- nsstm xu
+          sfc_var2(i,j,nvar2m+10) = Sfcprop(nb)%xv(ix)     !--- nsstm xv
+          sfc_var2(i,j,nvar2m+11) = Sfcprop(nb)%xz(ix)     !--- nsstm xz
+          sfc_var2(i,j,nvar2m+12) = Sfcprop(nb)%zm(ix)     !--- nsstm zm
+          sfc_var2(i,j,nvar2m+13) = Sfcprop(nb)%xtts(ix)   !--- nsstm xtts
+          sfc_var2(i,j,nvar2m+14) = Sfcprop(nb)%xzts(ix)   !--- nsstm xzts
+          sfc_var2(i,j,nvar2m+15) = Sfcprop(nb)%d_conv(ix) !--- nsstm d_conv
+          sfc_var2(i,j,nvar2m+16) = Sfcprop(nb)%ifd(ix)    !--- nsstm ifd
+          sfc_var2(i,j,nvar2m+17) = Sfcprop(nb)%dt_cool(ix)!--- nsstm dt_cool
+          sfc_var2(i,j,nvar2m+18) = Sfcprop(nb)%qrain(ix)  !--- nsstm qrain
         endif
 
 ! Noah MP
 
         if (Model%lsm == 2) then
 
-        sfc_var2(i,j,51) = Sfcprop(nb)%snowxy(ix)
-        sfc_var2(i,j,52) = Sfcprop(nb)%tvxy(ix)
-        sfc_var2(i,j,53) = Sfcprop(nb)%tgxy(ix)
-        sfc_var2(i,j,54) = Sfcprop(nb)%canicexy(ix)
-        sfc_var2(i,j,55) = Sfcprop(nb)%canliqxy(ix)
-        sfc_var2(i,j,56) = Sfcprop(nb)%eahxy(ix)
-        sfc_var2(i,j,57) = Sfcprop(nb)%tahxy(ix)
-        sfc_var2(i,j,58) = Sfcprop(nb)%cmxy(ix)
-        sfc_var2(i,j,59) = Sfcprop(nb)%chxy(ix)
-        sfc_var2(i,j,60) = Sfcprop(nb)%fwetxy(ix)
-        sfc_var2(i,j,61) = Sfcprop(nb)%sneqvoxy(ix)
-        sfc_var2(i,j,62) = Sfcprop(nb)%alboldxy(ix)
-        sfc_var2(i,j,63) = Sfcprop(nb)%qsnowxy(ix)
-        sfc_var2(i,j,64) = Sfcprop(nb)%wslakexy(ix)
-        sfc_var2(i,j,65) = Sfcprop(nb)%zwtxy(ix)
-        sfc_var2(i,j,66) = Sfcprop(nb)%waxy(ix)
-        sfc_var2(i,j,67) = Sfcprop(nb)%wtxy(ix)
-        sfc_var2(i,j,68) = Sfcprop(nb)%lfmassxy(ix)
-        sfc_var2(i,j,69) = Sfcprop(nb)%rtmassxy(ix)
-        sfc_var2(i,j,70) = Sfcprop(nb)%stmassxy(ix)
-        sfc_var2(i,j,71) = Sfcprop(nb)%woodxy(ix)
-        sfc_var2(i,j,72) = Sfcprop(nb)%stblcpxy(ix)
-        sfc_var2(i,j,73) = Sfcprop(nb)%fastcpxy(ix)
-        sfc_var2(i,j,74) = Sfcprop(nb)%xsaixy(ix)
-        sfc_var2(i,j,75) = Sfcprop(nb)%xlaixy(ix)
-        sfc_var2(i,j,76) = Sfcprop(nb)%taussxy(ix)
-        sfc_var2(i,j,77) = Sfcprop(nb)%smcwtdxy(ix)
-        sfc_var2(i,j,78) = Sfcprop(nb)%deeprechxy(ix)
-        sfc_var2(i,j,79) = Sfcprop(nb)%rechxy(ix)
+        sfc_var2(i,j,nvar2m+19) = Sfcprop(nb)%snowxy(ix)
+        sfc_var2(i,j,nvar2m+20) = Sfcprop(nb)%tvxy(ix)
+        sfc_var2(i,j,nvar2m+21) = Sfcprop(nb)%tgxy(ix)
+        sfc_var2(i,j,nvar2m+22) = Sfcprop(nb)%canicexy(ix)
+        sfc_var2(i,j,nvar2m+23) = Sfcprop(nb)%canliqxy(ix)
+        sfc_var2(i,j,nvar2m+24) = Sfcprop(nb)%eahxy(ix)
+        sfc_var2(i,j,nvar2m+25) = Sfcprop(nb)%tahxy(ix)
+        sfc_var2(i,j,nvar2m+26) = Sfcprop(nb)%cmxy(ix)
+        sfc_var2(i,j,nvar2m+27) = Sfcprop(nb)%chxy(ix)
+        sfc_var2(i,j,nvar2m+28) = Sfcprop(nb)%fwetxy(ix)
+        sfc_var2(i,j,nvar2m+29) = Sfcprop(nb)%sneqvoxy(ix)
+        sfc_var2(i,j,nvar2m+30) = Sfcprop(nb)%alboldxy(ix)
+        sfc_var2(i,j,nvar2m+31) = Sfcprop(nb)%qsnowxy(ix)
+        sfc_var2(i,j,nvar2m+32) = Sfcprop(nb)%wslakexy(ix)
+        sfc_var2(i,j,nvar2m+33) = Sfcprop(nb)%zwtxy(ix)
+        sfc_var2(i,j,nvar2m+34) = Sfcprop(nb)%waxy(ix)
+        sfc_var2(i,j,nvar2m+35) = Sfcprop(nb)%wtxy(ix)
+        sfc_var2(i,j,nvar2m+36) = Sfcprop(nb)%lfmassxy(ix)
+        sfc_var2(i,j,nvar2m+37) = Sfcprop(nb)%rtmassxy(ix)
+        sfc_var2(i,j,nvar2m+38) = Sfcprop(nb)%stmassxy(ix)
+        sfc_var2(i,j,nvar2m+39) = Sfcprop(nb)%woodxy(ix)
+        sfc_var2(i,j,nvar2m+40) = Sfcprop(nb)%stblcpxy(ix)
+        sfc_var2(i,j,nvar2m+41) = Sfcprop(nb)%fastcpxy(ix)
+        sfc_var2(i,j,nvar2m+42) = Sfcprop(nb)%xsaixy(ix)
+        sfc_var2(i,j,nvar2m+43) = Sfcprop(nb)%xlaixy(ix)
+        sfc_var2(i,j,nvar2m+44) = Sfcprop(nb)%taussxy(ix)
+        sfc_var2(i,j,nvar2m+45) = Sfcprop(nb)%smcwtdxy(ix)
+        sfc_var2(i,j,nvar2m+46) = Sfcprop(nb)%deeprechxy(ix)
+        sfc_var2(i,j,nvar2m+47) = Sfcprop(nb)%rechxy(ix)
       endif
 
  
         !--- 3D variables
         do lsoil = 1,Model%lsoil
-          !--- stc
-          sfc_var3(i,j,lsoil,1) = Sfcprop(nb)%stc(ix,lsoil)
-          !--- smc
-          sfc_var3(i,j,lsoil,2) = Sfcprop(nb)%smc(ix,lsoil)
-          !--- slc
-          sfc_var3(i,j,lsoil,3) = Sfcprop(nb)%slc(ix,lsoil)
+          sfc_var3(i,j,lsoil,1) = Sfcprop(nb)%stc(ix,lsoil) !--- stc
+          sfc_var3(i,j,lsoil,2) = Sfcprop(nb)%smc(ix,lsoil) !--- smc
+          sfc_var3(i,j,lsoil,3) = Sfcprop(nb)%slc(ix,lsoil) !--- slc
         enddo
 ! 5 Noah MP 3D
          if (Model%lsm == 2) then

@@ -4,12 +4,12 @@
 !  ---  inputs:
      &     ( im, km,itime,ps, u1, v1, t1, q1, soiltyp, vegtype, sigmaf, &
      &       sfcemis, dlwflx, dswsfc, snet, delt, tg3, cm, ch,          &
-     &       prsl1, prslki, zf, islimsk, ddvel, slopetyp,               &
+     &       prsl1, prslki, zf, dry, ddvel, slopetyp,                   &
      &       shdmin, shdmax, snoalb, sfalb, flag_iter, flag_guess,      &
-     &      idveg,iopt_crs,  iopt_btr, iopt_run, iopt_sfc, iopt_frz,    &
-     &      iopt_inf,iopt_rad, iopt_alb, iopt_snf,iopt_tbot,iopt_stc,   &  
-     &      xlatin,xcoszin, iyrlen, julian,imon,                        &
-     &      rainn_mp,rainc_mp,snow_mp,graupel_mp,ice_mp,                &
+     &       idveg,iopt_crs, iopt_btr, iopt_run, iopt_sfc, iopt_frz,    &
+     &       iopt_inf,iopt_rad, iopt_alb, iopt_snf,iopt_tbot,iopt_stc,  &
+     &       xlatin,xcoszin, iyrlen, julian,imon,                       &
+     &       rainn_mp,rainc_mp,snow_mp,graupel_mp,ice_mp,               &
 
 !  ---  in/outs:
      &       weasd, snwdph, tskin, tprcp, srflag, smc, stc, slc,        &
@@ -89,7 +89,7 @@
      &       snoalb, sfalb, zf,                                         &
      &       rainn_mp,rainc_mp,snow_mp,graupel_mp,ice_mp
 
-      integer, dimension(im), intent(in) :: islimsk
+      logical, dimension(im), intent(in) :: dry
 
       real (kind=kind_phys),dimension(im),intent(in) :: xlatin,xcoszin
 
@@ -208,7 +208,7 @@
 !  --- ...  set flag for land points
 
       do i = 1, im
-        flag(i) = (islimsk(i) == 1)
+        flag(i) = dry(i)
       enddo
 
 !  --- ...  save land-related prognostic fields for guess run

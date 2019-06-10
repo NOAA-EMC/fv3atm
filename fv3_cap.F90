@@ -136,7 +136,6 @@ module fv3gfs_cap_mod
 
     call NUOPC_CompSpecialize(gcomp, specLabel=model_label_CheckImport, &
                               specRoutine=fv3_checkimport, rc=rc)
-!                             specRoutine=NUOPC_NoOp, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
     ! setup Run/Advance phase: phase1

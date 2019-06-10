@@ -17,6 +17,17 @@
 !!  \section general General Algorithm
 !!  \section detailed Detailed Algorithm
 !!  @{
+      module module_sfc_sice
+      use machine , only : kind_phys
+      use funcphys, only : fpvs
+      use physcons, only :    sbc => con_sbc,  hvap => con_hvap,        &
+     &                      tgice => con_tice,   cp => con_cp,          &
+     &                        eps => con_eps, epsm1 => con_epsm1,       &
+     &                     rvrdm1 => con_fvirt, t0c => con_t0c,         &
+     &                         rd => con_rd
+      implicit none
+      real (kind=kind_phys), parameter :: cimin=0.15 !  --- minimum ice concentration
+      contains
 !-----------------------------------
       subroutine sfc_sice                                               &
 !...................................
@@ -64,7 +75,7 @@
 !    sep  2009 -- s. moorthi removed rcl, changed pressure units and    !
 !                     further optimized                                 !
 !    jan  2015 -- x. wu change "cimin = 0.15" for both                  !
-!                              uncoupled and coupled case               !
+!                     uncoupled and coupled case                        !
 !                                                                       !
 !                                                                       !
 !  ====================  defination of variables  ====================  !
@@ -111,27 +122,19 @@
 !                                                                       !
 ! ===================================================================== !
 !
-      use machine , only : kind_phys
-      use funcphys, only : fpvs
-      use physcons, only : sbc   => con_sbc,  hvap => con_hvap,         &
-     &                     tgice => con_tice,   cp => con_cp,           &
-     &                     eps   => con_eps, epsm1 => con_epsm1,        &
-     &                     grav  => con_g,  rvrdm1 => con_fvirt,        &
-     &                     t0c   => con_t0c,    rd => con_rd
-!
-      implicit none
 !
 !  ---  constant parameters:
       integer,              parameter :: kmi   = 2        ! 2-layer of ice
-      real(kind=kind_phys), parameter :: cpinv = 1.0/cp
-      real(kind=kind_phys), parameter :: hvapi = 1.0/hvap
+      real(kind=kind_phys), parameter :: zero  = 0.0d0, one = 1.0d0
+      real(kind=kind_phys), parameter :: cpinv = one/cp
+      real(kind=kind_phys), parameter :: hvapi = one/hvap
       real(kind=kind_phys), parameter :: elocp = hvap/cp
-      real(kind=kind_phys), parameter :: himax = 8.0      ! maximum ice thickness allowed
-      real(kind=kind_phys), parameter :: himin = 0.1      ! minimum ice thickness required
-      real(kind=kind_phys), parameter :: hsmax = 2.0      ! maximum snow depth allowed
-      real(kind=kind_phys), parameter :: timin = 173.0    ! minimum temperature allowed for snow/ice
-      real(kind=kind_phys), parameter :: albfw = 0.06     ! albedo for lead
-      real(kind=kind_phys), parameter :: dsi   = 1.0/0.33
+      real(kind=kind_phys), parameter :: himax = 8.0d0      ! maximum ice thickness allowed
+      real(kind=kind_phys), parameter :: himin = 0.1d0      ! minimum ice thickness required
+      real(kind=kind_phys), parameter :: hsmax = 2.0d0      ! maximum snow depth allowed
+      real(kind=kind_phys), parameter :: timin = 173.0d0    ! minimum temperature allowed for snow/ice
+      real(kind=kind_phys), parameter :: albfw = 0.06d0     ! albedo for lead
+      real(kind=kind_phys), parameter :: dsi   = one/0.33d0
 
 !  ---  inputs:
       integer, intent(in) :: im, km, ipr
@@ -142,7 +145,7 @@
      &       prsl1, prslki, ddvel
 
       integer, dimension(im), intent(in) :: islimsk
-      real (kind=kind_phys), intent(in)  :: delt
+      real (kind=kind_phys),  intent(in) :: delt
 
       logical, intent(in) :: flag_iter(im)
 
@@ -165,7 +168,7 @@
 
       real (kind=kind_phys) :: t12, t14, tem, stsice(im,kmi)
      &,                        hflxi, hflxw, q0, qs1, wind, qssi, qssw
-      real (kind=kind_phys), parameter :: cimin=0.15 !  --- minimum ice concentration
+
 
       integer :: i, k
  
@@ -178,17 +181,17 @@
       do i = 1, im
         flag(i) = (islimsk(i) == 2) .and. flag_iter(i)
         if (flag_iter(i) .and. islimsk(i) < 2) then
-          hice(i) = 0.0
-          fice(i) = 0.0
+          hice(i) = zero
+          fice(i) = zero
         endif
       enddo
 !
       do i = 1, im
         if (flag(i)) then
-          if (srflag(i) > 0) then
-            ep(i)    = ep(i)*(1.-srflag(i))
+          if (srflag(i) > zero) then
+            ep(i)    = ep(i)*(one-srflag(i))
             weasd(i) = weasd(i) + 1.e3*tprcp(i)*srflag(i)
-            tprcp(i) = tprcp(i)*(1.-srflag(i))
+            tprcp(i) = tprcp(i)*(one-srflag(i))
           endif
         endif
       enddo
@@ -217,12 +220,12 @@
 !         sfcnsw is the net shortwave flux (direction: dn-up)
 
           wind      = max(sqrt(u1(i)*u1(i) + v1(i)*v1(i))               &
-     &              + max(0.0, min(ddvel(i), 30.0)), 1.0)
+     &              + max(zero, min(ddvel(i), 30.0d0)), one)
 
           q0        = max(q1(i), 1.0e-8)
 !         tsurf(i)  = tskin(i)
           theta1(i) = t1(i) * prslki(i)
-          rho(i)    = prsl1(i) / (rd*t1(i)*(1.0+rvrdm1*q0))
+          rho(i)    = prsl1(i) / (rd*t1(i)*(one+rvrdm1*q0))
           qs1       = fpvs(t1(i))
           qs1       = max(eps*qs1 / (prsl1(i) + epsm1*qs1), 1.e-8)
           q0        = min(qs1, q0)
@@ -243,7 +246,7 @@
 
 !  --- ...  snow depth in water equivalent is converted from mm to m unit
 
-          snowd(i) = weasd(i) * 0.001
+          snowd(i) = weasd(i) * 0.001d0
 !         flagsnw(i) = .false.
 
 !  --- ...  when snow depth is less than 1 mm, a patchy snow is assumed and
@@ -263,8 +266,8 @@
           evapw(i) = elocp * rch(i) * (qssw - q0)
 !         evap(i)  = fice(i)*evapi(i) + ffw(i)*evapw(i)
 
-          snetw(i) = sfcdsw(i) * (1.0 - albfw)
-          snetw(i) = min(3.0*sfcnsw(i)/(1.0+2.0*ffw(i)), snetw(i))
+          snetw(i) = sfcdsw(i) * (one - albfw)
+          snetw(i) = min(3.0*sfcnsw(i)/(one+2.0d0*ffw(i)), snetw(i))
           sneti(i) = (sfcnsw(i) - ffw(i)*snetw(i)) / fice(i)
 
           t12 = tice(i) * tice(i)
@@ -274,8 +277,9 @@
 
           hfi(i) = -dlwflx(i) + sfcemis(i)*sbc*t14 + evapi(i)           &
      &           + rch(i)*(tice(i) - theta1(i))
-          hfd(i) = 4.0*sfcemis(i)*sbc*tice(i)*t12                       &
-     &           + (1.0 + elocp*eps*hvap*qs1/(rd*t12)) * rch(i)
+          hfd(i) = 4.0d0*sfcemis(i)*sbc*tice(i)*t12                     &
+     &           + (one + elocp*eps*hvap*qs1/(rd*t12)) * rch(i)
+
 
           t12 = tgice * tgice
           t14 = t12 * t12
@@ -285,13 +289,13 @@
 !         hfw(i) = -dlwflx(i) + sfcemis(i)*sbc*t14 + evapw(i)           &
 !    &           + rch(i)*(tgice - theta1(i)) - snetw(i)
 
-          focn(i) = 2.0     ! heat flux from ocean - should be from ocn model
-          snof(i) = 0.0     ! snowfall rate - snow accumulates in gbphys
+          focn(i) = 2.0d0   ! heat flux from ocean - should be from ocn model
+          snof(i) = zero    ! snowfall rate - snow accumulates in gbphys
 
           hice(i) = max( min( hice(i), himax ), himin )
           snowd(i) = min( snowd(i), hsmax )
 
-          if (snowd(i) > (2.0*hice(i))) then
+          if (snowd(i) > (2.0d0*hice(i))) then
             print *, 'warning: too much snow :',snowd(i)
             snowd(i) = hice(i) + hice(i)
             print *,'fix: decrease snow depth to:',snowd(i)
@@ -301,9 +305,10 @@
 
       call ice3lay
 !  ---  inputs:                                                         !
-!    &     ( im, kmi, fice, flag, hfi, hfd, sneti, focn, delt,          !
+     &     ( im, kmi, fice, flag, hfi, hfd, sneti, focn, delt,          !
+     &       lprnt, ipr,
 !  ---  outputs:                                                        !
-!    &       snowd, hice, stsice, tice, snof, snowmt, gflux )           !
+     &       snowd, hice, stsice, tice, snof, snowmt, gflux )           !
 
       do i = 1, im
         if (flag(i)) then
@@ -364,12 +369,8 @@
       enddo
 !
       return
+      end subroutine sfc_sice
 
-! =================
-      contains
-! =================
-
-!> @}
 
 !-----------------------------------
 !> \brief Brief description of the subroutine
@@ -378,12 +379,13 @@
       subroutine ice3lay
 !...................................
 !  ---  inputs:
-!    &     ( im, kmi, fice, flag, hfi, hfd, sneti, focn, delt,          &
+     &     ( im, kmi, fice, flag, hfi, hfd, sneti, focn, delt,          &
+     &       lprnt, ipr,
 !  ---  input/outputs:
-!    &       snowd, hice, stsice, tice, snof,                           &
+     &       snowd, hice, stsice, tice, snof,                           &
 !  ---  outputs:
-!    &       snowmt, gflux                                              &
-!    &     )
+     &       snowmt, gflux                                              &
+     &     )
 
 !**************************************************************************
 !                                                                         *
@@ -438,48 +440,49 @@
 !
 
 !  ---  constant parameters: (properties of ice, snow, and seawater)
-      real (kind=kind_phys), parameter :: ds   = 330.0    ! snow (ov sea ice) density (kg/m^3)
-      real (kind=kind_phys), parameter :: dw   =1000.0    ! fresh water density  (kg/m^3)
+      real (kind=kind_phys), parameter :: ds   = 330.0d0    ! snow (ov sea ice) density (kg/m^3)
+      real (kind=kind_phys), parameter :: dw   =1000.0d0    ! fresh water density  (kg/m^3)
       real (kind=kind_phys), parameter :: dsdw = ds/dw
       real (kind=kind_phys), parameter :: dwds = dw/ds
-      real (kind=kind_phys), parameter :: t0c  =273.15    ! freezing temp of fresh ice (k)
-      real (kind=kind_phys), parameter :: ks   = 0.31     ! conductivity of snow   (w/mk)
-      real (kind=kind_phys), parameter :: i0   = 0.3      ! ice surface penetrating solar fraction
-      real (kind=kind_phys), parameter :: ki   = 2.03     ! conductivity of ice  (w/mk)
-      real (kind=kind_phys), parameter :: di   = 917.0    ! density of ice   (kg/m^3)
+      real (kind=kind_phys), parameter :: ks   = 0.31d0     ! conductivity of snow   (w/mk)
+      real (kind=kind_phys), parameter :: i0   = 0.3d0      ! ice surface penetrating solar fraction
+      real (kind=kind_phys), parameter :: ki   = 2.03d0     ! conductivity of ice  (w/mk)
+      real (kind=kind_phys), parameter :: di   = 917.0d0    ! density of ice   (kg/m^3)
       real (kind=kind_phys), parameter :: didw = di/dw
       real (kind=kind_phys), parameter :: dsdi = ds/di
-      real (kind=kind_phys), parameter :: ci   = 2054.0   ! heat capacity of fresh ice (j/kg/k)
-      real (kind=kind_phys), parameter :: li   = 3.34e5   ! latent heat of fusion (j/kg-ice)
-      real (kind=kind_phys), parameter :: si   = 1.0      ! salinity of sea ice
-      real (kind=kind_phys), parameter :: mu   = 0.054    ! relates freezing temp to salinity
-      real (kind=kind_phys), parameter :: tfi  = -mu*si   ! sea ice freezing temp = -mu*salinity
-      real (kind=kind_phys), parameter :: tfw  = -1.8     ! tfw - seawater freezing temp (c)
-      real (kind=kind_phys), parameter :: tfi0 = tfi-0.0001
+      real (kind=kind_phys), parameter :: ci   = 2054.0d0   ! heat capacity of fresh ice (j/kg/k)
+      real (kind=kind_phys), parameter :: li   = 3.34e5     ! latent heat of fusion (j/kg-ice)
+      real (kind=kind_phys), parameter :: si   = 1.0d0      ! salinity of sea ice
+      real (kind=kind_phys), parameter :: mu   = 0.054d0    ! relates freezing temp to salinity
+      real (kind=kind_phys), parameter :: tfi  = -mu*si     ! sea ice freezing temp = -mu*salinity
+      real (kind=kind_phys), parameter :: tfw  = -1.8d0     ! tfw - seawater freezing temp (c)
+      real (kind=kind_phys), parameter :: tfi0 = tfi-0.0001d0
       real (kind=kind_phys), parameter :: dici = di*ci 
       real (kind=kind_phys), parameter :: dili = di*li 
       real (kind=kind_phys), parameter :: dsli = ds*li 
-      real (kind=kind_phys), parameter :: ki4  = ki*4.0
+      real (kind=kind_phys), parameter :: ki4  = ki*4.0d0
+      real (kind=kind_phys), parameter :: zero = 0.0d0, one  = 1.0d0
 
 !  ---  inputs:
-!     integer, intent(in) :: im, kmi
+      integer, intent(in) :: im, kmi, ipr
+      logical             :: lprnt
 
-!     real (kind=kind_phys), dimension(im), intent(in) :: fice, hfi,    &
-!    &       hfd, sneti, focn
+      real (kind=kind_phys), dimension(im), intent(in) :: fice, hfi,    &
+     &       hfd, sneti, focn
 
-!     real (kind=kind_phys), intent(in) :: delt
+      real (kind=kind_phys),  intent(in) :: delt
 
-!     logical, dimension(im), intent(in) :: flag
+      logical, dimension(im), intent(in) :: flag
 
 !  ---  input/outputs:
-!     real (kind=kind_phys), dimension(im), intent(inout) :: snowd,     &
-!    &       hice, tice, snof
+      real (kind=kind_phys), dimension(im), intent(inout) :: snowd,     &
+     &       hice, tice, snof
 
-!     real (kind=kind_phys), dimension(im,kmi), intent(inout) :: stsice
+      real (kind=kind_phys), dimension(im,kmi), intent(inout) :: stsice
 
 !  ---  outputs:
-!     real (kind=kind_phys), dimension(im), intent(out) :: snowmt,      &
-!    &       gflux
+      real (kind=kind_phys), dimension(im), intent(out) :: snowmt,      &
+     &       gflux
 
 !  ---  locals:
 
@@ -491,10 +494,10 @@
 !
 !===> ...  begin here
 !
-      dt2  = 2.0 * delt
-      dt4  = 4.0 * delt
-      dt6  = 6.0 * delt
-      dt2i = 1.0 / dt2
+      dt2  = 2.0d0 * delt
+      dt4  = 4.0d0 * delt
+      dt6  = 6.0d0 * delt
+      dt2i = one / dt2
 
       do i = 1, im
         if (flag(i)) then
@@ -513,9 +516,9 @@
           stsice(i,2) = min(stsice(i,2)-t0c, tfi0)     ! degc
 
           ip = i0 * sneti(i)         ! ip +v (in winton ip=-i0*sneti as sol -v)
-          if (snowd(i) > 0.0) then
-            tsf = 0.0
-            ip  = 0.0
+          if (snowd(i) > zero) then
+            tsf = zero
+            ip  = zero
           else
             tsf = tfi
             ip  = i0 * sneti(i)      ! ip +v here (in winton ip=-i0*sneti)
@@ -529,7 +532,7 @@
           k12  = ki4*ks / (ks*hice(i) + ki4*snowd(i))
           k32  = (ki+ki) / hice(i)
 
-          wrk    = 1.0 / (dt6*k32 + dici*hice(i))
+          wrk    = one / (dt6*k32 + dici*hice(i))
           a10    = dici*hice(i)*dt2i + k32*(dt4*k32 + dici*hice(i))*wrk
           b10    = -di*hice(i) * (ci*stsice(i,1) + li*tfi/stsice(i,1))  &
      &           * dt2i - ip                                            &
@@ -540,17 +543,17 @@
           b1    = b10 + ai * wrk1
           c1    = dili * tfi * dt2i * hice(i)
 
-          stsice(i,1) = -(sqrt(b1*b1 - 4.0*a1*c1) + b1)/(a1+a1)
+          stsice(i,1) = -(sqrt(b1*b1 - 4.0d0*a1*c1) + b1)/(a1+a1)
           tice(i) = (k12*stsice(i,1) - ai) / (k12 + bi)
-
+  
           if (tice(i) > tsf) then
             a1 = a10 + k12
             b1 = b10 - k12*tsf
-            stsice(i,1) = -(sqrt(b1*b1 - 4.0*a1*c1) + b1)/(a1+a1)
+            stsice(i,1) = -(sqrt(b1*b1 - 4.0d0*a1*c1) + b1)/(a1+a1)
             tice(i) = tsf
             tmelt   = (k12*(stsice(i,1)-tsf) - (ai+bi*tsf)) * delt
           else
-            tmelt    = 0.0
+            tmelt    = zero
             snowd(i) = snowd(i) + snof(i)*delt
           endif
 
@@ -561,8 +564,8 @@
 
 !  --- ...  resize the ice ...
 
-          h1 = 0.5 * hice(i)
-          h2 = 0.5 * hice(i)
+          h1 = 0.5d0 * hice(i)
+          h2 = 0.5d0 * hice(i)
 
 !  --- ...  top ...
 
@@ -573,12 +576,12 @@
             snowmt(i) = snowd(i)
             h1 = h1 - (tmelt - snowd(i)*dsli)                           &
      &         / (di * (ci - li/stsice(i,1)) * (tfi - stsice(i,1)))
-            snowd(i) = 0.0
+            snowd(i) = zero
           endif
 
 !  --- ...  and bottom
 
-          if (bmelt < 0.0) then
+          if (bmelt < zero) then
             dh = -bmelt / (dili + dici*(tfi - tfw))
             stsice(i,2) = (h2*stsice(i,2) + dh*tfw) / (h2 + dh)
             h2 = h2 + dh
@@ -590,11 +593,11 @@
 
           hice(i) = h1 + h2
 
-          if (hice(i) > 0.0) then
-            if (h1 > 0.5*hice(i)) then
-              f1 = 1.0 - (h2+h2) / hice(i)
+          if (hice(i) > zero) then
+            if (h1 > 0.5d0*hice(i)) then
+              f1 = one - (h2+h2) / hice(i)
               stsice(i,2) = f1 * (stsice(i,1) + li*tfi/(ci*stsice(i,1)))&
-     &                    + (1.0 - f1)*stsice(i,2)
+     &                    + (one - f1)*stsice(i,2)
 
               if (stsice(i,2) > tfi) then
                 hice(i) = hice(i) - h2*ci*(stsice(i,2) - tfi)/ (li*delt)
@@ -603,29 +606,29 @@
             else
               f1 = (h1+h1) / hice(i)
               stsice(i,1) = f1 * (stsice(i,1) + li*tfi/(ci*stsice(i,1)))&
-     &                    + (1.0 - f1)*stsice(i,2)
+     &                    + (one - f1)*stsice(i,2)
               stsice(i,1) = (stsice(i,1) - sqrt(stsice(i,1)*stsice(i,1) &
-     &                    - 4.0*tfi*li/ci)) * 0.5
+     &                    - 4.0d0*tfi*li/ci)) * 0.5d0
             endif
 
             k12      = ki4*ks / (ks*hice(i) + ki4*snowd(i))
             gflux(i) = k12 * (stsice(i,1) - tice(i))
           else
             snowd(i) = snowd(i) + (h1*(ci*(stsice(i,1) - tfi)           &
-     &               - li*(1.0 - tfi/stsice(i,1)))                      &
+     &               - li*(one - tfi/stsice(i,1)))                      &
      &               + h2*(ci*(stsice(i,2) - tfi) - li)) / li
 
-            hice(i)     = max(0.0, snowd(i)*dsdi)
-            snowd(i)    = 0.0
+            hice(i)     = max(zero, snowd(i)*dsdi)
+            snowd(i)    = zero
             stsice(i,1) = tfw
             stsice(i,2) = tfw
-            gflux(i)    = 0.0
+            gflux(i)    = zero
           endif   ! end if_hice_block
 
           gflux(i)    = fice(i) * gflux(i)
           snowmt(i)   = snowmt(i) * dsdw
           snowd(i)    = snowd(i) * dsdw
-          tice(i)     = tice(i) + t0c
+          tice(i)     = tice(i)     + t0c
           stsice(i,1) = stsice(i,1) + t0c
           stsice(i,2) = stsice(i,2) + t0c
         endif   ! end if_flag_block
@@ -636,12 +639,6 @@
       end subroutine ice3lay
 !-----------------------------------
 
-! =========================== !
-!     end contain programs    !
-! =========================== !
-
-!...................................
-      end subroutine sfc_sice
 !-----------------------------------
-
+      end module module_sfc_sice
 !> @}

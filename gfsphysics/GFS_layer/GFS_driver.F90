@@ -336,10 +336,10 @@ module GFS_driver
     if (Model%do_ugwp) then
 !     if ( Model%me == Model%master) print *,  ' VAY-nml ',  Model%fn_nml,
 !     Model%input_nml_file
-      call cires_ugwp_init(Model%me,      Model%master, Model%nlunit, Init_parm%logunit, &
-                           Model%fn_nml,  Model%lonr,   Model%latr,   Model%levs,        &
-                           Init_parm%ak,  Init_parm%bk, p_ref,        Model%dtp,         &
-                           Model%cdmbgwd, Model%cgwf)
+      call cires_ugwp_init(Model%me,      Model%master, Model%nlunit,  Init_parm%logunit, &
+                           Model%fn_nml,  Model%lonr,   Model%latr,    Model%levs,        &
+                           Init_parm%ak,  Init_parm%bk, p_ref,         Model%dtp,         &
+                           Model%cdmbgwd, Model%cgwf,   Model%prslrd0, Model%ral_ts)
     endif
 
     !--- Initialize cellular automata

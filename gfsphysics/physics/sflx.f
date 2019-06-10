@@ -2555,7 +2555,7 @@
 
 !  --- ...  before call shflx in this snowpack case, set zz1 and yy arguments to
 !           special values that ensure that ground heat flux calculated in shflx
-!           matches that already computer for below the snowpack, thus the sfc
+!           matches that already computed for below the snowpack, thus the sfc
 !           heat flux to be computed in shflx will effectively be the flux at the
 !           snow top surface.  t11 is a dummy arguement so we will not use the
 !           skin temp value as revised by shflx.
