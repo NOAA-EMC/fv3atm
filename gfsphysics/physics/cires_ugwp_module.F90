@@ -95,9 +95,9 @@ module  cires_ugwp_module
    real, parameter :: F_kds   =0                    ! Eddy mixing due to GW-unstable below
    real, parameter :: iPr_ktgw =1./3., iPr_spgw=iPr_ktgw 
    real, parameter :: iPr_turb =1./3., iPr_mol =1.95
-   real, parameter ::  rhp1=1./hps, rhp2=0.5*rhp1, rhp4 = rhp2*rhp2
-   real, parameter ::  khp =  0.287*rhp1            ! R/Cp/Hp
-   real, parameter ::  cd_ulim = 1.0                ! critical level precision or Lz ~ 0 ~dz of model
+   real, parameter :: rhp1=1./hps, rhp2=0.5*rhp1, rhp4 = rhp2*rhp2
+   real, parameter :: khp =  0.287*rhp1             ! R/Cp/Hp
+   real, parameter :: cd_ulim = 1.0                 ! critical level precision or Lz ~ 0 ~dz of model
 
    contains
 !
@@ -107,7 +107,8 @@ module  cires_ugwp_module
 !
 ! -----------------------------------------------------------------------
    subroutine cires_ugwp_init (me, master, nlunit, logunit, fn_nml2, &
-              lonr, latr, levs, ak, bk, pref, dtp, cdmvgwd, cgwf)
+              lonr, latr, levs, ak, bk, pref, dtp, cdmvgwd, cgwf,    &
+              pa_rf_in, tau_rf_in)
 !
 !  input_nml_file ='input.nml'=fn_nml
 !
@@ -129,6 +130,7 @@ module  cires_ugwp_module
     real,    intent (in) :: ak(levs+1), bk(levs+1), pref
     real,    intent (in) :: dtp
     real,    intent (in) :: cdmvgwd(2), cgwf(2)             ! "scaling" controls for "old" GFS-GW schemes
+    real,    intent (in) :: pa_rf_in, tau_rf_in
  
     character(len=64), intent (in) :: fn_nml2
     character(len=64), parameter   :: fn_nml='input.nml'
@@ -154,6 +156,8 @@ module  cires_ugwp_module
     close  (nlunit)
 !
     ilaunch = launch_level
+    pa_rf   = pa_rf_in
+    tau_rf  = tau_rf_in
 
 ! write version number and namelist to log file
     if (me == master) then
@@ -166,12 +170,12 @@ module  cires_ugwp_module
 !
     dxsg =  pi2*arad/float(lonr) * knob_ugwp_ndx4lh
 !
-!    kxw  =  pi2/dxsg
+!   kxw  =  pi2/dxsg
 !
 ! init global background dissipation for ugwp -> 4d-variable for fv3wam linked with pbl-vert_diff
 !
 
-!    allocate(fcor(latr), fcor2(latr)  )
+!   allocate(fcor(latr), fcor2(latr)  )
 !
     allocate( kvg(levs+1),   ktg(levs+1)  )
     allocate( krad(levs+1),  kion(levs+1) )        

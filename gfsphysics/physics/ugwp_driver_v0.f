@@ -364,12 +364,13 @@
       gammin = min(sso_min/dsmax, 1.)
 
       sigmin = 2.*hpmin/dsmax      !dxres 
-      if (kdt == 1) then
-        print *, sgrmax, sgrmin , ' min-max sparea '
-        print *, 'sigmin-hpmin-dsmax', sigmin, hpmin, dsmax
-        print *, 'dxres/dsmax ', dxres, dsmax
-        print *, ' shilmin gammin ', shilmin, gammin
-      endif
+
+!     if (kdt == 1) then
+!       print *, sgrmax, sgrmin , ' min-max sparea '
+!       print *, 'sigmin-hpmin-dsmax', sigmin, hpmin, dsmax
+!       print *, 'dxres/dsmax ', dxres, dsmax
+!       print *, ' shilmin gammin ', shilmin, gammin
+!     endif
  
       kxridge = float(IMX)/arad * cdmbgwd(2)
  
@@ -735,7 +736,7 @@
         kref(I)   = MAX(IWK(I), KPBL(J)+1 )             ! reference level PBL or smt-else ????
         kref(I)   = MAX(kref(i), iwklm(i) )             ! iwklm => sigfac*hprime
 
-        if (kref(i) < idxzb(i)) kref(i) = idxzb(i) + 1 ! layer above zmtb
+        if (kref(i) <= idxzb(i)) kref(i) = idxzb(i) + 1 ! layer above zmtb
         KBPS      = MAX(KBPS,  kref(I))
         KMPS      = MIN(KMPS,  kref(I))
 !
@@ -998,7 +999,7 @@
 ! ---------------------------    
       IF( do_tofd ) then
         axtms(:,:) = 0.0 ; aytms(:,:) = 0.0 
-        if ( kdt == 1) then
+        if ( kdt == 1 .and. me == 0) then
           print *, 'VAY do_tofd  from surface to ', ztop_tofd 
         endif
         DO I = 1,npt          
@@ -1102,24 +1103,24 @@
 
 
 !============ debug ------------------------------------------------      
-       if (kdt <= 2 ) then
+       if (kdt <= 2 .and. me == 0) then
         print *, 'vgw-oro done gwdps_v0 in ugwp-v0 step-proc ', kdt, me
 !
         print *, maxval(pdudt)*86400.,  minval(pdudt)*86400, 'vgw_axoro'
         print *, maxval(pdvdt)*86400.,  minval(pdvdt)*86400, 'vgw_ayoro'
-!        print *, maxval(kdis),  minval(kdis),  'vgw_kdispro m2/sec'
+!       print *, maxval(kdis),  minval(kdis),  'vgw_kdispro m2/sec'
         print *, maxval(pdTdt)*86400.,  minval(pdTdt)*86400,'vgw_epsoro'
         print *, maxval(zmtb), ' z_mtb ',  maxval(tau_mtb), ' tau_mtb '
         print *, maxval(zogw), ' z_ogw ',  maxval(tau_ogw), ' tau_ogw '
-!        print *, maxval(tau_tofd),  ' tau_tofd '
-!        print *, maxval(axtms)*86400.,  minval(axtms)*86400, 'vgw_axtms'
-!      print *,maxval(dudt_mtb)*86400.,minval(dudt_mtb)*86400,'vgw_axmtb'
+!       print *, maxval(tau_tofd),  ' tau_tofd '
+!       print *, maxval(axtms)*86400.,  minval(axtms)*86400, 'vgw_axtms'
+!       print *,maxval(dudt_mtb)*86400.,minval(dudt_mtb)*86400,'vgw_axmtb'
         if (maxval(abs(pdudt))*86400. > 100.) then
 
-          print *, maxval(u1), minval(u1), ' u1 gwdps-v0 '
-          print *, maxval(v1), minval(v1), ' v1 gwdps-v0 '
-          print *, maxval(t1), minval(t1), ' t1 gwdps-v0 '
-          print *, maxval(q1), minval(q1), ' q1 gwdps-v0 '
+          print *, maxval(u1),  minval(u1),  ' u1 gwdps-v0 '
+          print *, maxval(v1),  minval(v1),  ' v1 gwdps-v0 '
+          print *, maxval(t1),  minval(t1),  ' t1 gwdps-v0 '
+          print *, maxval(q1),  minval(q1),  ' q1 gwdps-v0 '
           print *, maxval(del), minval(del), ' del gwdps-v0 '
           print *, maxval(phil)*rgrav,minval(phil)*rgrav, 'zmet'
           print *, maxval(phii)*rgrav,minval(phii)*rgrav, 'zmeti'

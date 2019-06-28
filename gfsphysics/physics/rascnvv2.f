@@ -2,12 +2,13 @@
       USE MACHINE , ONLY : kind_phys
       use physcons, grav => con_g,      cp   => con_cp, alhl => con_hvap&
      &,             alhf => con_hfus,   rgas => con_rd, rkap => con_rocp&
-     &,             nu   => con_FVirt,  pi   => con_pi
+     &,             nu   => con_FVirt,  pi   => con_pi, t0c  => con_t0c
       implicit none
       SAVE
 !
       integer,               parameter :: nrcmax=32 ! Maximum # of random clouds per 1200s
 
+      integer,               parameter :: idnmax=999
       real (kind=kind_phys), parameter :: delt_c=1800.0/3600.0          &
 !     Adjustment time scales in hrs for deep and shallow clouds
 !    &,                                   adjts_d=3.0, adjts_s=0.5
@@ -25,7 +26,8 @@
      &,                                   ONE_M2=1.E-2, ONE_M1=1.E-1    &
      &,                                   oneolog10=one/log(10.0)       &
      &,                                   cfmax=0.1                     &
-     &,                                   cmb2pa = 100.0  ! Conversion from Mb to Pa
+     &,                                   deg2rad=pi/180.d0             & ! conversion factor from degree to radians
+     &,                                   cmb2pa = 100.0                  ! Conversion from hPa to Pa
 !
       real(kind=kind_phys), parameter  ::                               &
      &           ONEBG    = ONE / GRAV,    GRAVCON = cmb2pa * ONEBG     &
@@ -42,6 +44,7 @@
      &,          ddunc1   = 0.25, ddunc2=one-ddunc1                     & uncentering for vvel in dd
 !    &,          ddunc1   = 0.3, ddunc2=one-ddunc1                      & uncentering for vvel in dd
      &,          zfac     = 0.28888889E-4 * ONEBG
+     &,          c0ifac   = 0.07                  ! following Han et al, 2016 MWR
 !
 !     logical, parameter :: advcld=.true., advups=.true., advtvd=.false.
       logical, parameter :: advcld=.true., advups=.false., advtvd=.true.
@@ -1573,15 +1576,15 @@
 !    1,               ' hcrit=',hcrit
 
       ELSE
-         KBL  = KPBL
+         KBL = KPBL
 !     if(lprnt)write(0,*)' 2nd kbl=',kbl
       ENDIF
 
 !     if(lprnt)write(0,*)' after CALKBL l=',l,' hol=',hol(l)
 !    1,               ' hst=',hst(l)
 !
-      KBL      = min(kmax,MAX(KBL,KD+2))
-      KB1      = KBL - 1
+      KBL = min(kmax,MAX(KBL,KD+2))
+      KB1 = KBL - 1
 !!
 !     if (lprnt) write(0,*)' kbl=',kbl,' prlkbl=',prl(kbl),prl(kp1)
 
@@ -1652,7 +1655,8 @@
         ENDIF
       ENDDO
       IDH = 1
-      IDH = MAX(KD1, IDH)
+!     IDH = MAX(KD1, IDH)
+      IDH = MAX(KD, IDH)       ! Moorthi May, 31, 2019
 !
       TEM1 = HBL - HOL(KD)
       TEM  = HBL - HST(KD1) - LTL(KD1) * NU *(QOL(KD1)-QST(KD1))
@@ -1771,7 +1775,7 @@
 !     endif
 !
       st1  = qil(kd)
-      st2  = c0i * st1
+      st2  = c0i * st1 * exp(c0ifac*min(tol(kd)-t0c,0.0))
       tem  = c0  * (one-st1)
       tem2 = st2*qi0 + tem*qw0
 !
@@ -1798,7 +1802,7 @@
          AKC(L) = one / AKT(L)
 !
          st1    = half * (qil(l)+qil(lp1))
-         st2    = c0i * st1
+         st2    = c0i * st1 * exp(c0ifac*min(tol(lp1)-t0c,0.0))
          tem    = c0  * (one-st1)
          tem2   = st2*qi0 + tem*qw0
 !
@@ -3056,7 +3060,8 @@
 !    &,                    WC2MIN, WCMIN,  WCBASE,  F2,   F3,    F5     &
      &,                    WC2MIN, WCMIN,           F2,   F3,    F5     &
      &,                    GMF1,   GMF5,   QRAF,    QRBF, del_tla       &
-     &,                    TLA,    STLA,   CTL2,    CTL3, ASIN          &
+     &,                    TLA,    STLA,   CTL2,    CTL3                &
+!    &,                    TLA,    STLA,   CTL2,    CTL3, ASIN          &
      &,                    RNT,    RNB,    ERRQ,    RNTP, QRPF,  VTPF   &
      &,                    EDZ,    DDZ,    CE,      QHS,  FAC,   FACG   &
      &,                    RSUM1,  RSUM2,  RSUM3,   CEE,  DOF,   DOFW
@@ -3231,14 +3236,14 @@
       ENDDO
       QW(KBL,KBL) = zero
 !
-      do ntla=1,numtla
-!
+      do ntla=1,numtla    ! numtla is the the maximimu number of tilting angle tries
+                          ! ------
 !       if (errq < 1.0 .or. tla > 45.0) cycle
         if (errq < 0.1 .or. tla > 45.0) cycle
 !
         tla  = tla + del_tla
-        STLA = SIN(TLA*PI/180.0)
-        CTL2 = one - STLA * STLA
+        STLA = SIN(TLA*deg2rad)     ! sine of tilting angle
+        CTL2 = one - STLA * STLA    ! cosine square of tilting angle
 !
 !       if (lprnt) write(0,*)' tla=',tla,' al2=',al2,' ptop='
 !    &,0.5*(prl(kd)+prl(kd1)),' ntla=',ntla,' f2=',f2,' stla=',stla
@@ -3684,7 +3689,7 @@
       else         ! rain profile converged - do downdraft calculation
                    ! ------------------------------------------------
 
-        wvlu(kd:kp1) = wvl(kd:kp1)
+        wvlu(kd:kp1) = wvl(kd:kp1) ! save updraft vertical velocity for output
 
 !     if (lprnt) write(0,*)' in ddrft kd=',kd,'wvlu=',wvlu(kd:kp1)
 !
@@ -3696,12 +3701,13 @@
         ENDDO
 !
         ERRQ  = 10.0
-!
+! At this point stlt contains inverse of updraft vertical velocity 1/Wu.
+
         KK = MAX(KB1,KD1)
         DO L=KK,K
           STLT(L) = STLT(L-1)
         ENDDO
-        TEM = stla / BB1
+        TEM = stla / BB1       ! this is 2/(pi*radius*grav)
 !
         DO L=KD,K
           IF (L <= KBL) THEN
@@ -3715,7 +3721,7 @@
         rsum1 = zero
         rsum2 = zero
 !
-        IDN      = 99
+        IDN(:) = idnmax
         DO L=KD,KP1
           ETD(L)  = zero
           WVL(L)  = zero
@@ -3761,7 +3767,7 @@
         DO L=KD1,KP1
 
           QA(1) = zero
-          ddlgk = idn(idnm) == 99
+          ddlgk = idn(idnm) == idnmax
           if (.not. ddlgk) cycle
           IF (L <= K) THEN
             ST1   = one - ALFIND(L)
@@ -3784,62 +3790,61 @@
           FACG    = FAC * half * GMF5     !  12/17/97
 !
 !         DDLGK   =  IDN(idnm) == 99
+
           BUD(KD) = ROR(L)
 
-!         IF (DDLGK) THEN
-            TX1    = TX5
-            WVL(L) = MAX(WVL(L-1),ONE_M1)
+          TX1    = TX5
+          WVL(L) = MAX(WVL(L-1),ONE_M1)
 
-            QRP(L) = MAX(QRP(L-1),QRP(L))
+          QRP(L) = MAX(QRP(L-1),QRP(L))
 !
-!           VT(1)  = GMS(L-1) * QRP(L-1) ** 0.1364
-            VT(1)  = GMS(L-1) * QRPF(QRP(L-1))
-            RNT    = ROR(L-1) * (WVL(L-1)+VT(1))*QRP(L-1)
+!         VT(1)  = GMS(L-1) * QRP(L-1) ** 0.1364
+          VT(1)  = GMS(L-1) * QRPF(QRP(L-1))
+          RNT    = ROR(L-1) * (WVL(L-1)+VT(1))*QRP(L-1)
 !     if(lprnt) write(0,*)' l=',l,' qa=',qa(1), ' tx1RNT=',RNT*tx1,
 !    *' wvl=',wvl(l-1)
 !    *,' qrp=',qrp(l-1),' tx5=',tx5,' tx1=',tx1,' rnt=',rnt
 
 !
 
-!           TEM    = MAX(ALM, 2.5E-4) * MAX(ETA(L), 1.0)
-            TEM    = MAX(ALM,ONE_M6) * MAX(ETA(L), ONE)
-!           TEM    = MAX(ALM, 1.0E-5) * MAX(ETA(L), 1.0)
-            TRW(1) = PICON*TEM*(QRB(L-1)+QRT(L-1))
-            TRW(2) = one / TRW(1)
+!         TEM    = MAX(ALM, 2.5E-4) * MAX(ETA(L), 1.0)
+          TEM    = MAX(ALM,ONE_M6) * MAX(ETA(L), ONE)
+!         TEM    = MAX(ALM, 1.0E-5) * MAX(ETA(L), 1.0)
+          TRW(1) = PICON*TEM*(QRB(L-1)+QRT(L-1))
+          TRW(2) = one / TRW(1)
 !
-            VRW(1) = half * (GAM(L-1) + GAM(L))
-            VRW(2) = one / (VRW(1) + VRW(1))
+          VRW(1) = half * (GAM(L-1) + GAM(L))
+          VRW(2) = one / (VRW(1) + VRW(1))
 !
-            TX4    =  (QRT(L-1)+QRB(L-1))*(ONEBG*FAC*500.00*EKNOB)
+          TX4    =  (QRT(L-1)+QRB(L-1))*(ONEBG*FAC*500.00*EKNOB)
 !
-            DOFW   = one / (WA(3) * (one + NU*WA(2)))      !  1.0 / TVbar!
+          DOFW   = one / (WA(3) * (one + NU*WA(2)))      !  1.0 / TVbar!
 !
-            ETD(L) = ETD(L-1)
-            HOD(L) = HOD(L-1)
-            QOD(L) = QOD(L-1)
+          ETD(L) = ETD(L-1)
+          HOD(L) = HOD(L-1)
+          QOD(L) = QOD(L-1)
 !
-            ERRQ   = 10.0
+          ERRQ   = 10.0
 
 !
-            IF (L <= KBL) THEN
-              TX3 = STLT(L-1) * QRT(L-1) * (half*FAC)
-              TX8 = STLT(L)   * QRB(L-1) * (half*FAC)
-              TX9 = TX8 + TX3
-            ELSE
-              TX3 = zero
-              TX8 = zero
-              TX9 = zero
-            ENDIF
+          IF (L <= KBL) THEN
+            TX3 = STLT(L-1) * QRT(L-1) * (half*FAC)
+            TX8 = STLT(L)   * QRB(L-1) * (half*FAC)
+            TX9 = TX8 + TX3
+          ELSE
+            TX3 = zero
+            TX8 = zero
+            TX9 = zero
+          ENDIF
 !
-            TEM  = WVL(L-1) + VT(1)
-            IF (TEM > zero) THEN
-              TEM1 = one / (TEM*ROR(L-1))
-              TX3 = VT(1) * TEM1 * ROR(L-1) * TX3
-              TX6 = TX1 * TEM1
-            ELSE
-              TX6 = one
-            ENDIF
-!         ENDIF
+          TEM  = WVL(L-1) + VT(1)
+          IF (TEM > zero) THEN
+            TEM1 = one / (TEM*ROR(L-1))
+            TX3 = VT(1) * TEM1 * ROR(L-1) * TX3
+            TX6 = TX1 * TEM1
+          ELSE
+            TX6 = one
+          ENDIF
 !
           IF (L == KD1) THEN
             IF (RNT > zero) THEN
@@ -3870,54 +3875,56 @@
             RNTP     = RNTP + RNT * TX1
             RNT      = zero
             WCB(L-1) = zero
-          ENDIF
+
+!         ENDIF
 !         BUD(KD) = ROR(L)
 !
 !       Iteration loop for a given level L begins
 !
 !         if (lprnt) write(0,*)' tx8=',tx8,' tx9=',tx9,' tx5=',tx5
 !    &,                        ' tx1=',tx1
-          DO ITR=1,ITRMD
+          else
+            DO ITR=1,ITRMD
 !
-!           cnvflg =  DDLGK .AND. (ERRQ > ERRMIN)
-            cnvflg =  ERRQ > ERRMIN
-            IF (cnvflg) THEN
+!             cnvflg =  DDLGK .AND. (ERRQ > ERRMIN)
+              cnvflg =  ERRQ > ERRMIN
+              IF (cnvflg) THEN
 !
-!             VT(1) = GMS(L) * QRP(L) ** 0.1364
-              VT(1) = GMS(L) * QRPF(QRP(L))
-              TEM   =  WVL(L) + VT(1)
+!               VT(1) = GMS(L) * QRP(L) ** 0.1364
+                VT(1) = GMS(L) * QRPF(QRP(L))
+                TEM   =  WVL(L) + VT(1)
 !
-              IF (TEM > zero) THEN
-                ST1  = ROR(L) * TEM * QRP(L) + RNT
-                IF (ST1 /= zero) ST1 = two * EVP(L-1) / ST1
-                TEM1 = one / (TEM*ROR(L))
-                TEM2 = VT(1) * TEM1 * ROR(L) * TX8
-              ELSE
-                TEM1 = zero
-                TEM2 = TX8
-                ST1  = zero
-              ENDIF
+                IF (TEM > zero) THEN
+                  ST1  = ROR(L) * TEM * QRP(L) + RNT
+                  IF (ST1 /= zero) ST1 = two * EVP(L-1) / ST1
+                  TEM1 = one / (TEM*ROR(L))
+                  TEM2 = VT(1) * TEM1 * ROR(L) * TX8
+                ELSE
+                  TEM1 = zero
+                  TEM2 = TX8
+                  ST1  = zero
+                ENDIF
 !     if (lprnt) write(0,*)' st1=',st1,' tem=',tem,' ror=',ror(l)
 !    &,' qrp=',qrp(l),' rnt=',rnt,' ror1=',ror(l-1),' wvl=',wvl(l)
 !    &,' wvl1=',wvl(l-1),' tem2=',tem2,' vt=',vt(1),' tx3=',tx3
 !
-              st2 = tx5
-              TEM = ROR(L)*WVL(L) - ROR(L-1)*WVL(L-1)
-              if (tem > zero) then
-                TX5 = (TX1 - ST1 + TEM2 + TX3)/(one+tem*tem1)
-              else
-                TX5 = TX1 - tem*tx6 - ST1 + TEM2 + TX3
-              endif
-              TX5   = MAX(TX5,ZERO)
-              tx5   = half * (tx5 + st2)
+                st2 = tx5
+                TEM = ROR(L)*WVL(L) - ROR(L-1)*WVL(L-1)
+                if (tem > zero) then
+                  TX5 = (TX1 - ST1 + TEM2 + TX3)/(one+tem*tem1)
+                else
+                  TX5 = TX1 - tem*tx6 - ST1 + TEM2 + TX3
+                endif
+                TX5   = MAX(TX5,ZERO)
+                tx5   = half * (tx5 + st2)
 !
-!             qqq = 1.0 + tem * tem1 * (1.0 - sialf)
+!               qqq = 1.0 + tem * tem1 * (1.0 - sialf)
 !
-!             if (qqq > 0.0) then
-!               TX5   = (TX1 - sialf*tem*tx6 - ST1 + TEM2 + TX3) / qqq
-!             else
-!               TX5   = (TX1 - tem*tx6 - ST1 + TEM2 + TX3)
-!             endif
+!               if (qqq > 0.0) then
+!                 TX5   = (TX1 - sialf*tem*tx6 - ST1 + TEM2 + TX3) / qqq
+!               else
+!                 TX5   = (TX1 - tem*tx6 - ST1 + TEM2 + TX3)
+!               endif
 !
 !     if(lprnt) write(0,*)' tx51=',tx5,' tx1=',tx1,' st1=',st1,' tem2='
 !     if(tx5 <= 0.0 .and. l > kd+2)
@@ -3930,147 +3937,148 @@
 
 
 !
-              TEM1   = ETD(L)
-              ETD(L) = ROR(L) * TX5 * MAX(WVL(L),ZERO)
+                TEM1   = ETD(L)
+                ETD(L) = ROR(L) * TX5 * MAX(WVL(L),ZERO)
 !
-              if (etd(l) > zero) etd(l) = half * (etd(l) + tem1)
+                if (etd(l) > zero) etd(l) = half * (etd(l) + tem1)
 !
 
-              DEL_ETA = ETD(L) - ETD(L-1)
+                DEL_ETA = ETD(L) - ETD(L-1)
 
-!               TEM       = DEL_ETA * TRW(2)
-!               TEM2      = MAX(MIN(TEM, 1.0), -1.0)
-!               IF (ABS(TEM) > 1.0 .AND. ETD(L) > 0.0 ) THEN
-!                 DEL_ETA = TEM2 * TRW(1)
-!                 ETD(L)  = ETD(L-1) + DEL_ETA
-!               ENDIF
-!               IF (WVL(L) > 0.0) TX5 = ETD(L) / (ROR(L)*WVL(L))
+!                 TEM       = DEL_ETA * TRW(2)
+!                 TEM2      = MAX(MIN(TEM, 1.0), -1.0)
+!                 IF (ABS(TEM) > 1.0 .AND. ETD(L) > 0.0 ) THEN
+!                   DEL_ETA = TEM2 * TRW(1)
+!                   ETD(L)  = ETD(L-1) + DEL_ETA
+!                 ENDIF
+!                 IF (WVL(L) > 0.0) TX5 = ETD(L) / (ROR(L)*WVL(L))
 !
-                ERRE  = ETD(L) - TEM1
+                  ERRE  = ETD(L) - TEM1
 !
-                tem  = max(abs(del_eta), trw(1))
-                tem2 = del_eta / tem
-                TEM1 = SQRT(MAX((tem+DEL_ETA)*(tem-DEL_ETA),ZERO))
-!               TEM1 = SQRT(MAX((TRW(1)+DEL_ETA)*(TRW(1)-DEL_ETA),0.0))
+                  tem  = max(abs(del_eta), trw(1))
+                  tem2 = del_eta / tem
+                  TEM1 = SQRT(MAX((tem+DEL_ETA)*(tem-DEL_ETA),ZERO))
+!                 TEM1 = SQRT(MAX((TRW(1)+DEL_ETA)*(TRW(1)-DEL_ETA),0.0))
 
-                EDZ  = (half + ASIN(TEM2)*PIINV)*DEL_ETA + TEM1*PIINV
+                  EDZ  = (half + ASIN(TEM2)*PIINV)*DEL_ETA + TEM1*PIINV
 
-              DDZ   = EDZ - DEL_ETA
-              WCB(L-1) = ETD(L) + DDZ
+                DDZ   = EDZ - DEL_ETA
+                WCB(L-1) = ETD(L) + DDZ
 !
-              TEM1  = HOD(L)
-              IF (DEL_ETA > zero) THEN
-                QQQ    = one / (ETD(L) + DDZ)
-                HOD(L) = (ETD(L-1)*HOD(L-1) + DEL_ETA*HOL(L-1)          &
-     &                                            + DDZ*WA(1)) * QQQ
-                QOD(L) = (ETD(L-1)*QOD(L-1) + DEL_ETA*QOL(L-1)          &
-     &                                            + DDZ*WA(2)) * QQQ
-              ELSEif((ETD(L-1) + EDZ) > zero) then
-                QQQ    = one / (ETD(L-1) + EDZ)
-                HOD(L) = (ETD(L-1)*HOD(L-1) + EDZ*WA(1)) * QQQ
-                QOD(L) = (ETD(L-1)*QOD(L-1) + EDZ*WA(2)) * QQQ
-              ENDIF
-              ERRH  = HOD(L) - TEM1
-              ERRQ  = ABS(ERRH/HOD(L))  + ABS(ERRE/MAX(ETD(L),ONE_M5))
+                TEM1  = HOD(L)
+                IF (DEL_ETA > zero) THEN
+                  QQQ    = one / (ETD(L) + DDZ)
+                  HOD(L) = (ETD(L-1)*HOD(L-1) + DEL_ETA*HOL(L-1)        &
+     &                                              + DDZ*WA(1)) * QQQ
+                  QOD(L) = (ETD(L-1)*QOD(L-1) + DEL_ETA*QOL(L-1)        &
+     &                                              + DDZ*WA(2)) * QQQ
+                ELSEif((ETD(L-1) + EDZ) > zero) then
+                  QQQ    = one / (ETD(L-1) + EDZ)
+                  HOD(L) = (ETD(L-1)*HOD(L-1) + EDZ*WA(1)) * QQQ
+                  QOD(L) = (ETD(L-1)*QOD(L-1) + EDZ*WA(2)) * QQQ
+                ENDIF
+                ERRH  = HOD(L) - TEM1
+                ERRQ  = ABS(ERRH/HOD(L))  + ABS(ERRE/MAX(ETD(L),ONE_M5))
 !     if (lprnt) write(0,*)' ERRQP=',errq,' errh=',errh,' hod=',hod(l)
 !    &,' erre=',erre,' etd=',etd(l),' del_eta=',del_eta
-              DOF   = DDZ
-              VT(2) = QQQ
+                DOF   = DDZ
+                VT(2) = QQQ
 !
-              DDZ  = DOF
-              TEM4 = QOD(L)
-              TEM1 = VRW(1)
+                DDZ  = DOF
+                TEM4 = QOD(L)
+                TEM1 = VRW(1)
 !
-              QHS  = QA(3) + half * (GAF(L-1)+GAF(L)) * (HOD(L)-QA(2))
+                QHS  = QA(3) + half * (GAF(L-1)+GAF(L)) * (HOD(L)-QA(2))
 !
 !                                           First iteration       !
 !
-              ST2  = PRL(L) * (QHS + TEM1 * (QHS-QOD(L)))
-              TEM2 = ROR(L) * QRP(L)
-              CALL QRABF(TEM2,QRAF,QRBF)
-              TEM6 = TX5 * (1.6 + 124.9 * QRAF) * QRBF * TX4
+                ST2  = PRL(L) * (QHS + TEM1 * (QHS-QOD(L)))
+                TEM2 = ROR(L) * QRP(L)
+                CALL QRABF(TEM2,QRAF,QRBF)
+                TEM6 = TX5 * (1.6 + 124.9 * QRAF) * QRBF * TX4
 !
-              CE   = TEM6 * ST2 / ((5.4E5*ST2 + 2.55E6)*(ETD(L)+DDZ))
+                CE   = TEM6 * ST2 / ((5.4E5*ST2 + 2.55E6)*(ETD(L)+DDZ))
 !
-              TEM2   = - ((one+TEM1)*(QHS+CE) + TEM1*QOD(L))
-              TEM3   = (one + TEM1) * QHS * (QOD(L)+CE)
-              TEM    = MAX(TEM2*TEM2 - four*TEM1*TEM3,ZERO)
-              QOD(L) = MAX(TEM4, (- TEM2 - SQRT(TEM)) * VRW(2))
+                TEM2   = - ((one+TEM1)*(QHS+CE) + TEM1*QOD(L))
+                TEM3   = (one + TEM1) * QHS * (QOD(L)+CE)
+                TEM    = MAX(TEM2*TEM2 - four*TEM1*TEM3,ZERO)
+                QOD(L) = MAX(TEM4, (- TEM2 - SQRT(TEM)) * VRW(2))
 !
 !
 !                                            second iteration   !
 !
-              ST2  = PRL(L) * (QHS + TEM1 * (QHS-QOD(L)))
-              CE   = TEM6 * ST2 / ((5.4E5*ST2 + 2.55E6)*(ETD(L)+DDZ))
-!             CEE  = CE * (ETD(L)+DDZ)
+                ST2  = PRL(L) * (QHS + TEM1 * (QHS-QOD(L)))
+                CE   = TEM6 * ST2 / ((5.4E5*ST2 + 2.55E6)*(ETD(L)+DDZ))
+!               CEE  = CE * (ETD(L)+DDZ)
 !
 
 
-              TEM2   = - ((one+TEM1)*(QHS+CE) + TEM1*tem4)
-              TEM3   = (one + TEM1) * QHS * (tem4+CE)
-              TEM    = MAX(TEM2*TEM2 - four*TEM1*TEM3,ZERO)
-              QOD(L) = MAX(TEM4, (- TEM2 - SQRT(TEM)) * VRW(2))
+                TEM2   = - ((one+TEM1)*(QHS+CE) + TEM1*tem4)
+                TEM3   = (one + TEM1) * QHS * (tem4+CE)
+                TEM    = MAX(TEM2*TEM2 - four*TEM1*TEM3,ZERO)
+                QOD(L) = MAX(TEM4, (- TEM2 - SQRT(TEM)) * VRW(2))
 !                                              Evaporation in Layer L-1
 !
-              EVP(L-1) = (QOD(L)-TEM4) * (ETD(L)+DDZ)
+                EVP(L-1) = (QOD(L)-TEM4) * (ETD(L)+DDZ)
 !                                              Calculate Pd (L+1/2)
-              QA(1)    = TX1*RNT + RNF(L-1) - EVP(L-1)
+                QA(1)    = TX1*RNT + RNF(L-1) - EVP(L-1)
 !
 !     if(lprnt) write(0,*)' etd=',etd(l),' tx5=',tx5,' rnt=',rnt
 !    *,' rnf=',rnf(l-1),' evp=',evp(l-1),' itr=',itr,' L=',L
 !
-              if (qa(1) > zero) then
-                IF (ETD(L) > zero) THEN
-                  TEM    = QA(1) / (ETD(L)+ROR(L)*TX5*VT(1))
-                  QRP(L) = MAX(TEM,ZERO)
-                ELSEIF (TX5 > zero) THEN
-                  QRP(L) = (MAX(ZERO,QA(1)/(ROR(L)*TX5*GMS(L))))        &
-     &                                          ** (one/1.1364)
-                ELSE
-                  QRP(L) = zero
-                ENDIF
-              else
-                qrp(l) = half * qrp(l)
-              endif
+                if (qa(1) > zero) then
+                  IF (ETD(L) > zero) THEN
+                    TEM    = QA(1) / (ETD(L)+ROR(L)*TX5*VT(1))
+                    QRP(L) = MAX(TEM,ZERO)
+                  ELSEIF (TX5 > zero) THEN
+                    QRP(L) = (MAX(ZERO,QA(1)/(ROR(L)*TX5*GMS(L))))      &
+     &                                            ** (one/1.1364)
+                  ELSE
+                    QRP(L) = zero
+                  ENDIF
+                else
+                  qrp(l) = half * qrp(l)
+                endif
 !                                              Compute Buoyancy
-              TEM1   = WA(3)+(HOD(L)-WA(1)-ALHL*(QOD(L)-WA(2))) * onebcp
+                TEM1   = WA(3) + (HOD(L)-WA(1)-ALHL*(QOD(L)-WA(2)))     &
+     &                         * onebcp
 !             if (lprnt) write(0,*)' tem1=',tem1,' wa3=',wa(3),' hod='
 !    &,hod(l),' wa1=',wa(1),' qod=',qod(l),' wa2=',wa(2),' alhl=',alhl
 !    &,' cmpor=',cmpor,' dofw=',dofw,' prl=',prl(l),' qrp=',qrp(l)
-              TEM1   = TEM1 * (one + NU*QOD(L))
-              ROR(L) = CMPOR * PRL(L) / TEM1
-              TEM1   = TEM1 * DOFW
-!!!           TEM1   = TEM1 * (1.0 + NU*QOD(L)) * DOFW
+                TEM1   = TEM1 * (one + NU*QOD(L))
+                ROR(L) = CMPOR * PRL(L) / TEM1
+                TEM1   = TEM1 * DOFW
+!!!             TEM1   = TEM1 * (1.0 + NU*QOD(L)) * DOFW
 
-              BUY(L) = (TEM1 - one - QRP(L)) * ROR(L) * TX5
+                BUY(L) = (TEM1 - one - QRP(L)) * ROR(L) * TX5
 !                                              Compute W (L+1/2)
 
-              TEM1   = WVL(L)
-!             IF (ETD(L) > 0.0) THEN
-              WVL(L) = VT(2) * (ETD(L-1)*WVL(L-1) - FACG                &
-     &                 * (BUY(L-1)*QRT(L-1)+BUY(L)*QRB(L-1)))
+                TEM1   = WVL(L)
+!               IF (ETD(L) > 0.0) THEN
+                WVL(L) = VT(2) * (ETD(L-1)*WVL(L-1) - FACG              &
+     &                   * (BUY(L-1)*QRT(L-1)+BUY(L)*QRB(L-1)))
 !
 !             if (lprnt) write(0,*)' wvl=',wvl(l),'vt2=',vt(2),' buy1='
 !    &,buy(l-1),' buy=',buy(l),' qrt1=',qrt(l-1),' qrb1=',qrb(l-1)
 !    &,' etd1=',etd(l-1),' wvl1=',wvl(l-1)
 !             ENDIF
 !
-              if (wvl(l) < zero) then
-!               WVL(L) = max(wvl(l), 0.1*tem1)
-!               WVL(L) = 0.5*tem1
-!               WVL(L) = 0.1*tem1
-!               WVL(L) = 0.0
-                WVL(L) = 1.0e-10
-              else
-                WVL(L) = half*(WVL(L)+TEM1)
-              endif
+                if (wvl(l) < zero) then
+!                 WVL(L) = max(wvl(l), 0.1*tem1)
+!                 WVL(L) = 0.5*tem1
+!                 WVL(L) = 0.1*tem1
+!                 WVL(L) = 0.0
+                  WVL(L) = 1.0e-10
+                else
+                  WVL(L) = half*(WVL(L)+TEM1)
+                endif
 
 !
-!             WVL(L) = max(0.5*(WVL(L)+TEM1), 0.0)
+!               WVL(L) = max(0.5*(WVL(L)+TEM1), 0.0)
 
-              ERRW   = WVL(L) - TEM1
+                ERRW   = WVL(L) - TEM1
 !
-              ERRQ   = ERRQ + ABS(ERRW/MAX(WVL(L),ONE_M5))
+                ERRQ   = ERRQ + ABS(ERRW/MAX(WVL(L),ONE_M5))
 
 !     if (lprnt) write(0,*)' errw=',errw,' wvl=',wvl(l)
 !     if(lprnt .or. tx5 == 0.0) then
@@ -4081,32 +4089,32 @@
 !     endif
 !
 !     if(lprnt) write(0,*)' itr=',itr,' itrmnd=',itrmnd,' itrmd=',itrmd
-!             IF (ITR >= MIN(ITRMIN,ITRMD/2)) THEN
-              IF (ITR >= MIN(ITRMND,ITRMD/2)) THEN
+!               IF (ITR >= MIN(ITRMIN,ITRMD/2)) THEN
+                IF (ITR >= MIN(ITRMND,ITRMD/2)) THEN
 !     if(lprnt) write(0,*)' itr=',itr,' etd1=',etd(l-1),' errq=',errq
-                IF (ETD(L-1) == zero .AND. ERRQ > 0.2) THEN
+                  IF (ETD(L-1) == zero .AND. ERRQ > 0.2) THEN
 !     if(lprnt) write(0,*)' bud=',bud(kd),' wa=',wa(1),wa(2)
-                  ROR(L) = BUD(KD)
-                  ETD(L) = zero
-                  WVL(L) = zero
-                  ERRQ   = zero
-                  HOD(L) = WA(1)
-                  QOD(L) = WA(2)
-!                 TX5      = TX1 + TX9
-                  if (L <= KBL) then
-                    TX5 = TX9
-                  else
-                    TX5 = (STLT(KB1) * QRT(KB1)                         &
-     &                  +  STLT(KBL) * QRB(KB1)) * (0.5*FAC)
-                  endif
+                    ROR(L) = BUD(KD)
+                    ETD(L) = zero
+                    WVL(L) = zero
+                    ERRQ   = zero
+                    HOD(L) = WA(1)
+                    QOD(L) = WA(2)
+!                   TX5      = TX1 + TX9
+                    if (L <= KBL) then
+                      TX5 = TX9
+                    else
+                      TX5 = (STLT(KB1) * QRT(KB1)                       &
+     &                    +  STLT(KBL) * QRB(KB1)) * (0.5*FAC)
+                    endif
 
 !     if(lprnt) write(0,*)' tx1=',tx1,' rnt=',rnt,' rnf=',rnf(l-1)
 !    *,' evp=',evp(l-1),' l=',l
 
-                  EVP(L-1) = zero
-                  TEM      = MAX(TX1*RNT+RNF(L-1),ZERO)
-                  QA(1)    = TEM - EVP(L-1)
-!                 IF (QA(1) > 0.0) THEN
+                    EVP(L-1) = zero
+                    TEM      = MAX(TX1*RNT+RNF(L-1),ZERO)
+                    QA(1)    = TEM - EVP(L-1)
+!                   IF (QA(1) > 0.0) THEN
 
 !     if(lprnt) write(0,*)' ror=',ror(l),' tx5=',tx5,' tx1=',tx1
 !    *,' tx9=',tx9,' gms=',gms(l),' qa=',qa(1)
@@ -4118,75 +4126,75 @@
 !    *,' kbl=',kbl,' etd1=',etd(l-1),' idnm=',idnm,' idn=',idn(idnm)
 !    *,' errq=',errq
 
-                  QRP(L)   = (QA(1) / (ROR(L)*TX5*GMS(L)))              &
-     &                                            ** (one/1.1364)
-!                 endif
-                  BUY(L)   = - ROR(L) * TX5 * QRP(L)
-                  WCB(L-1) = zero
-                ENDIF
+                    QRP(L)   = (QA(1) / (ROR(L)*TX5*GMS(L)))            &
+     &                                              ** (one/1.1364)
+!                   endif
+                    BUY(L)   = - ROR(L) * TX5 * QRP(L)
+                    WCB(L-1) = zero
+                  ENDIF
 !
-                DEL_ETA = ETD(L) - ETD(L-1)
-                IF(DEL_ETA < zero .AND. ERRQ > 0.1) THEN
-                  ROR(L)   = BUD(KD)
-                  ETD(L)   = zero
-                  WVL(L)   = zero
-!!!!!             TX5      = TX1 + TX9
-                  CLDFRD(L-1) = TX5
+                  DEL_ETA = ETD(L) - ETD(L-1)
+                  IF(DEL_ETA < zero .AND. ERRQ > 0.1) THEN
+                    ROR(L)   = BUD(KD)
+                    ETD(L)   = zero
+                    WVL(L)   = zero
+!!!!!               TX5      = TX1 + TX9
+                    CLDFRD(L-1) = TX5
 !
-                  DEL_ETA  = - ETD(L-1)
-                  EDZ      = zero
-                  DDZ      = -DEL_ETA
-                  WCB(L-1) = DDZ
+                    DEL_ETA  = - ETD(L-1)
+                    EDZ      = zero
+                    DDZ      = -DEL_ETA
+                    WCB(L-1) = DDZ
 !
-                  HOD(L)   = HOD(L-1)
-                  QOD(L)   = QOD(L-1)
+                    HOD(L)   = HOD(L-1)
+                    QOD(L)   = QOD(L-1)
 !
-                  TEM4     = QOD(L)
-                  TEM1     = VRW(1)
+                    TEM4     = QOD(L)
+                    TEM1     = VRW(1)
 !
-                  QHS      = QA(3) + half * (GAF(L-1)+GAF(L))           &
-     &                                    * (HOD(L)-QA(2))
+                    QHS      = QA(3) + half * (GAF(L-1)+GAF(L))         &
+     &                                      * (HOD(L)-QA(2))
 
 !
 !                                           First iteration       !
 !
-                  ST2  = PRL(L) * (QHS + TEM1 * (QHS-QOD(L)))
-                  TEM2 = ROR(L) * QRP(L-1)
-                  CALL QRABF(TEM2,QRAF,QRBF)
-                  TEM6 = TX5 * (1.6 + 124.9 * QRAF) * QRBF * TX4
+                    ST2  = PRL(L) * (QHS + TEM1 * (QHS-QOD(L)))
+                    TEM2 = ROR(L) * QRP(L-1)
+                    CALL QRABF(TEM2,QRAF,QRBF)
+                    TEM6 = TX5 * (1.6 + 124.9 * QRAF) * QRBF * TX4
 !
-                  CE   = TEM6*ST2/((5.4E5*ST2 + 2.55E6)*(ETD(L)+DDZ))
+                    CE   = TEM6*ST2/((5.4E5*ST2 + 2.55E6)*(ETD(L)+DDZ))
 !
 
-                  TEM2   = - ((one+TEM1)*(QHS+CE) + TEM1*QOD(L))
-                  TEM3   = (one + TEM1) * QHS * (QOD(L)+CE)
-                  TEM    = MAX(TEM2*TEM2 -FOUR*TEM1*TEM3,ZERO)
-                  QOD(L) = MAX(TEM4, (- TEM2 - SQRT(TEM)) * VRW(2))
+                    TEM2   = - ((one+TEM1)*(QHS+CE) + TEM1*QOD(L))
+                    TEM3   = (one + TEM1) * QHS * (QOD(L)+CE)
+                    TEM    = MAX(TEM2*TEM2 -FOUR*TEM1*TEM3,ZERO)
+                    QOD(L) = MAX(TEM4, (- TEM2 - SQRT(TEM)) * VRW(2))
 !
 !                                            second iteration   !
 !
-                  ST2  = PRL(L) * (QHS + TEM1 * (QHS-QOD(L)))
-                  CE   = TEM6*ST2/((5.4E5*ST2 + 2.55E6)*(ETD(L)+DDZ))
-!                 CEE  = CE * (ETD(L)+DDZ)
+                    ST2  = PRL(L) * (QHS + TEM1 * (QHS-QOD(L)))
+                    CE   = TEM6*ST2/((5.4E5*ST2 + 2.55E6)*(ETD(L)+DDZ))
+!                   CEE  = CE * (ETD(L)+DDZ)
 !
 
 
-                  TEM2   = - ((one+TEM1)*(QHS+CE) + TEM1*tem4)
-                  TEM3   = (one + TEM1) * QHS * (tem4+CE)
-                  TEM    = MAX(TEM2*TEM2 -FOUR*TEM1*TEM3,ZERO)
-                  QOD(L) = MAX(TEM4, (- TEM2 - SQRT(TEM)) * VRW(2))
+                    TEM2   = - ((one+TEM1)*(QHS+CE) + TEM1*tem4)
+                    TEM3   = (one + TEM1) * QHS * (tem4+CE)
+                    TEM    = MAX(TEM2*TEM2 -FOUR*TEM1*TEM3,ZERO)
+                    QOD(L) = MAX(TEM4, (- TEM2 - SQRT(TEM)) * VRW(2))
 
 !                                              Evaporation in Layer L-1
 !
-                  EVP(L-1) = (QOD(L)-TEM4) * (ETD(L)+DDZ)
+                    EVP(L-1) = (QOD(L)-TEM4) * (ETD(L)+DDZ)
 
 !                                               Calculate Pd (L+1/2)
-!                 RNN(L-1) = TX1*RNT + RNF(L-1) - EVP(L-1)
+!                   RNN(L-1) = TX1*RNT + RNF(L-1) - EVP(L-1)
 
-                  QA(1)    = TX1*RNT + RNF(L-1)
-                  EVP(L-1) = min(EVP(L-1), QA(1))
-                  QA(1)    = QA(1) - EVP(L-1)
-                  qrp(l)   = zero
+                    QA(1)    = TX1*RNT + RNF(L-1)
+                    EVP(L-1) = min(EVP(L-1), QA(1))
+                    QA(1)    = QA(1) - EVP(L-1)
+                    qrp(l)   = zero
 
 !
 !     if (tx5 == 0.0 .or. gms(l) == 0.0)
@@ -4196,84 +4204,84 @@
 !    *,' kbl=',kbl,' etd1=',etd(l-1),' DEL_ETA=',DEL_ETA
 !    &,' evp=',evp(l-1)
 !
-!                 IF (QA(1) > 0.0) THEN
-!!                  RNS(L-1) = QA(1)
-!!!                 tx5      = tx9
-!                   QRP(L) = (QA(1) / (ROR(L)*TX5*GMS(L)))              &
-!    &                                         ** (1.0/1.1364)
-!                 endif
-!                 ERRQ   = 0.0
+!                   IF (QA(1) > 0.0) THEN
+!!                    RNS(L-1) = QA(1)
+!!!                   tx5      = tx9
+!                     QRP(L) = (QA(1) / (ROR(L)*TX5*GMS(L)))              &
+!    &                                           ** (1.0/1.1364)
+!                   endif
+!                   ERRQ   = 0.0
 !                                              Compute Buoyancy
-!                 TEM1   = WA(3)+(HOD(L)-WA(1)-ALHL*(QOD(L)-WA(2)))     &
-!    &                                                  * (1.0/CP)
-!                 TEM1   = TEM1 * (1.0 + NU*QOD(L)) * DOFW
-!                 BUY(L) = (TEM1 - 1.0 - QRP(L)) * ROR(L) * TX5
+!                   TEM1   = WA(3)+(HOD(L)-WA(1)-ALHL*(QOD(L)-WA(2)))     &
+!    &                                                    * (1.0/CP)
+!                   TEM1   = TEM1 * (1.0 + NU*QOD(L)) * DOFW
+!                   BUY(L) = (TEM1 - 1.0 - QRP(L)) * ROR(L) * TX5
 !
-!                 IF (QA(1) > 0.0) RNS(L) = QA(1)
+!                   IF (QA(1) > 0.0) RNS(L) = QA(1)
 
-                  IF (L .LE. K) THEN
-                     RNS(L) = QA(1)
-                     QA(1)  = zero
-                  ENDIF
-                  tx5    = tx9
-                  ERRQ   = zero
-                  QRP(L) = zero
-                  BUY(L) = zero
+                    IF (L .LE. K) THEN
+                       RNS(L) = QA(1)
+                       QA(1)  = zero
+                    ENDIF
+                    tx5    = tx9
+                    ERRQ   = zero
+                    QRP(L) = zero
+                    BUY(L) = zero
 !
+                  ENDIF
                 ENDIF
               ENDIF
-            ENDIF
 !
-          ENDDO                ! End of the iteration loop  for a given L!
-          IF (L <= K) THEN
-            IF (ETD(L-1) == zero .AND. ERRQ > 0.1 .and. l <= kbl) THEN
-!!!  &         .AND. ERRQ > ERRMIN*10.0 .and. l <= kbl) THEN
-!    &         .AND. ERRQ > ERRMIN*10.0) THEN
-               ROR(L)   = BUD(KD)
-               HOD(L)   = WA(1)
-               QOD(L)   = WA(2)
-               TX5      =       TX9     ! Does not make too much difference!
-!              TX5      = TX1 + TX9
-               EVP(L-1) = zero
-!              EVP(L-1) = CEE * (1.0 - qod(l)/qa(3))
-               QA(1)    = TX1*RNT + RNF(L-1)
-               EVP(L-1) = min(EVP(L-1), QA(1))
-               QA(1)    = QA(1) - EVP(L-1)
+            ENDDO                ! End of the iteration loop  for a given L!
+            IF (L <= K) THEN
+              IF (ETD(L-1) == zero .AND. ERRQ > 0.1 .and. l <= kbl) THEN
+!!!  &           .AND. ERRQ > ERRMIN*10.0 .and. l <= kbl) THEN
+!    &           .AND. ERRQ > ERRMIN*10.0) THEN
+                 ROR(L)   = BUD(KD)
+                 HOD(L)   = WA(1)
+                 QOD(L)   = WA(2)
+                 TX5      =       TX9     ! Does not make too much difference!
+!                TX5      = TX1 + TX9
+                 EVP(L-1) = zero
+!                EVP(L-1) = CEE * (1.0 - qod(l)/qa(3))
+                 QA(1)    = TX1*RNT + RNF(L-1)
+                 EVP(L-1) = min(EVP(L-1), QA(1))
+                 QA(1)    = QA(1) - EVP(L-1)
 
-!              QRP(L)   = 0.0
+!                QRP(L)   = 0.0
 !              if (tx5 == 0.0 .or. gms(l) == 0.0) then
 !                write(0,*)' Ctx5=',tx5,' gms=',gms(l),' ror=',ror(l)   &
 !    &,          ' L=',L,' QA=',QA(1),' tx1=',tx1,' tx9=',tx9           &
 !    &,          ' kbl=',kbl,' etd1=',etd(l-1),' DEL_ETA=',DEL_ETA
 !              endif
-!              IF (QA(1) > 0.0) THEN
+!                IF (QA(1) > 0.0) THEN
 
-                 QRP(L) = (QA(1) / (ROR(L)*TX5*GMS(L)))                 &
-     &                                         ** (one/1.1364)
-!              ENDIF
-               ETD(L)   = zero
-               WVL(L)   = zero
-               ST1      = one - ALFIND(L)
+                   QRP(L) = (QA(1) / (ROR(L)*TX5*GMS(L)))               &
+     &                                           ** (one/1.1364)
+!                ENDIF
+                 ETD(L)   = zero
+                 WVL(L)   = zero
+                 ST1      = one - ALFIND(L)
 
-               ERRQ     = zero
-               BUY(L)   = - ROR(L) * TX5 * QRP(L)
-               WCB(L-1) = zero
+                 ERRQ     = zero
+                 BUY(L)   = - ROR(L) * TX5 * QRP(L)
+                 WCB(L-1) = zero
+              ENDIF
             ENDIF
-          ENDIF
 !
-          LL = MIN(IDN(idnm), KP1)
-          IF (ERRQ < one .AND. L <= LL) THEN
-            IF (ETD(L-1) > zero .AND. ETD(L) == zero) THEN
-             IDN(idnm) = L
-             wvl(l)    = zero
-             if (L < KBL .or. tx5 > zero) idnm  = idnm + 1
-             errq = zero
+            LL = MIN(IDN(idnm), KP1)
+            IF (ERRQ < one .AND. L <= LL) THEN
+              IF (ETD(L-1) > zero .AND. ETD(L) == zero) THEN
+               IDN(idnm) = L
+               wvl(l)    = zero
+               if (L < KBL .or. tx5 > zero) idnm  = idnm + 1
+               errq = zero
+              ENDIF
+              if (etd(l) == zero .and. l > kbl) then
+                idn(idnm) = l
+                if (tx5 > zero) idnm  = idnm + 1
+              endif
             ENDIF
-            if (etd(l) == zero .and. l > kbl) then
-              idn(idnm) = l
-              if (tx5 > zero) idnm  = idnm + 1
-            endif
-          ENDIF
 
 !         if (lprnt) then
 !           write(0,*)' ERRQ=',ERRQ,' IDN=',IDN(idnm),' idnm=',idnm
@@ -4285,11 +4293,11 @@
 !     If downdraft properties are not obtainable, (i.e.solution does
 !      not converge) , no downdraft is assumed
 !
-!         IF (ERRQ > ERRMIN*100.0 .AND. IDN(idnm) == 99)                &
-          IF (ERRQ > 0.1 .AND. IDN(idnm) == 99) DDFT = .FALSE.
+!           IF (ERRQ > ERRMIN*100.0 .AND. IDN(idnm) == 99)                &
+            IF (ERRQ > 0.1 .AND. IDN(idnm) == idnmax) DDFT = .FALSE.
 !
-          DOF = zero
-          IF (.NOT. DDFT) RETURN
+            DOF = zero
+            IF (.NOT. DDFT) RETURN
 !
 !         if (ddlgk .or. l .le. idn(idnm)) then
 !           rsum2 = rsum2 + evp(l-1)
@@ -4301,6 +4309,7 @@
 !     &     rnf(l-1)
 !         endif
 
+          endif         ! if (l < idh)
         ENDDO                      ! End of the L Loop of downdraft !
 
         TX1 = zero

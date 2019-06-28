@@ -55,7 +55,8 @@ SRCS_F   = ./physics/machine.F
 
 SRCS_f90 = \
            ./physics/funcphys.f90                                                    \
-           ./physics/physcons.f90
+           ./physics/physcons.f90                                                    \
+           ./physics/noahmp_tables.f90
 
 SRCS_F90 = \
            ./physics/module_BL_GFSPBL.F90                                            \

@@ -87,7 +87,7 @@ module IPD_driver
     procedure(IPD_func1d_proc), intent(in), optional, pointer :: IPD_func1d
 
     if (size(IPD_Data,1) == 1 .and. PRESENT(IPD_func0d)) then
-      call IPD_func0d (IPD_Control, IPD_Data(1)%Statein, IPD_Data(1)%Stateout,        &
+      call IPD_func0d (IPD_Control, IPD_Data(1)%Statein, IPD_Data(1)%Stateout,      &
                        IPD_Data(1)%Sfcprop, IPD_Data(1)%Coupling, IPD_Data(1)%Grid, &
                        IPD_Data(1)%Tbd, IPD_Data(1)%Cldprop, IPD_Data(1)%Radtend,   &
                        IPD_Data(1)%Intdiag)

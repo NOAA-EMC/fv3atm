@@ -18,7 +18,6 @@ module fv3gfs_cap_mod
   use NUOPC_Model,            only: model_routine_SS        => SetServices,       &
                                     model_routine_Run       => routine_Run,       &
                                     model_label_Advance     => label_Advance,     &
-                                    model_label_SetRunClock => label_SetRunClock, &
                                     model_label_CheckImport => label_CheckImport, &
                                     model_label_Finalize    => label_Finalize,    &
                                     NUOPC_ModelGet
@@ -92,7 +91,6 @@ module fv3gfs_cap_mod
   integer            :: timeslice = 0
   integer            :: fcstmype
 
-
 !-----------------------------------------------------------------------
 
   contains
@@ -138,7 +136,6 @@ module fv3gfs_cap_mod
 
     call NUOPC_CompSpecialize(gcomp, specLabel=model_label_CheckImport, &
                               specRoutine=fv3_checkimport, rc=rc)
-!                             specRoutine=NUOPC_NoOp, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
     ! setup Run/Advance phase: phase1
@@ -159,9 +156,21 @@ module fv3gfs_cap_mod
                               specPhaseLabel="phase2", specRoutine=ModelAdvance_phase2, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-    call NUOPC_CompSpecialize(gcomp, specLabel=model_label_SetRunClock, &
-                              specPhaseLabel="phase2", specRoutine=SetRunClock_onestep, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+    ! specializations required to support 'inline' run sequences
+    call NUOPC_CompSpecialize(gcomp, specLabel=model_label_CheckImport, &
+      specPhaseLabel="phase1", specRoutine=NUOPC_NoOp, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, file=__FILE__)) return  ! bail out
+
+    call NUOPC_CompSpecialize(gcomp, specLabel="ModelBase_TimestampExport", &
+      specPhaseLabel="phase1", specRoutine=TimestampExport_phase1, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, file=__FILE__)) return  ! bail out
+
+    call NUOPC_CompSpecialize(gcomp, specLabel=model_label_CheckImport, &
+      specPhaseLabel="phase2", specRoutine=NUOPC_NoOp, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, file=__FILE__)) return  ! bail out
 
     ! model finalize method(s)
     call NUOPC_CompSpecialize(gcomp, specLabel=model_label_Finalize, &
@@ -816,6 +825,8 @@ module fv3gfs_cap_mod
 !
   end subroutine InitializeAdvertise
 
+  !-----------------------------------------------------------------------------
+
   subroutine InitializeRealize(gcomp, importState, exportState, clock, rc)
     type(ESMF_GridComp)  :: gcomp
     type(ESMF_State)     :: importState, exportState
@@ -1390,62 +1401,6 @@ module fv3gfs_cap_mod
 
   !-----------------------------------------------------------------------------
 
-  subroutine SetRunClock_onestep(model, rc)
-    type(ESMF_GridComp)   :: model
-    integer, intent(out)  :: rc
-    
-    ! local variables
-    type(ESMF_Clock)          :: clock, driverClock
-    type(ESMF_Time)           :: checkCurrTime, currTime, stopTime
-    type(ESMF_TimeInterval)   :: checkTimeStep, timeStep
-    type(ESMF_Direction_Flag) :: direction
-
-    rc = ESMF_SUCCESS
-    
-    ! query component for clock and driver clock
-    call NUOPC_ModelGet(model, modelClock=clock, driverClock=driverClock, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-        
-    ! query driver clock for incoming information
-    call ESMF_ClockGet(driverClock, currTime=checkCurrTime, &
-                       timeStep=checkTimeStep, direction=direction, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-    ! query component clock for its information
-    call ESMF_ClockGet(clock, currTime=currTime, timeStep=timeStep, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-    
-    ! ensure the current times have the correct relationship
-    if (currTime /= checkCurrTime + checkTimeStep) then
-      call ESMF_LogSetError(ESMF_RC_ARG_BAD, &
-                            msg="NUOPC INCOMPATIBILITY DETECTED: "// &
-                            "component clock and driver clock currentTime not as expected!", &
-                            line=__LINE__, file=__FILE__, rcToReturn=rc)
-      return
-    endif
-    
-    ! ensure that the driver timestep is a multiple of the component timestep
-    if (ceiling(checkTimeStep/timeStep) /= floor(checkTimeStep/timeStep)) then
-      call ESMF_LogSetError(ESMF_RC_ARG_BAD, &
-                            msg="NUOPC INCOMPATIBILITY DETECTED: "// &
-                            "driver timestep is not multiple of model timestep!", &
-                            line=__LINE__, file=__FILE__, rcToReturn=rc)
-      return
-    endif
-    
-    ! adjust the currTime of the clock
-    if (direction==ESMF_DIRECTION_FORWARD) then
-      currTime = currTime - checkTimeStep
-    else
-      currTime = currTime + checkTimeStep
-    endif
-    call ESMF_ClockSet(clock, currTime=currTime, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-    
-  end subroutine SetRunClock_onestep
-
-!-----------------------------------------------------------------------------
-!-----------------------------------------------------------------------------
   subroutine fv3_checkimport(gcomp, rc)
 !
 !***  Check the import state fields
@@ -1529,7 +1484,38 @@ module fv3gfs_cap_mod
 
   end subroutine fv3_checkimport
 
-!-----------------------------------------------------------------------------
+  !-----------------------------------------------------------------------------
+
+  subroutine TimestampExport_phase1(gcomp, rc)
+    type(ESMF_GridComp)  :: gcomp
+    integer, intent(out) :: rc
+
+    ! local variables
+    type(ESMF_Clock)     :: driverClock, modelClock
+    type(ESMF_State)     :: exportState
+
+    rc = ESMF_SUCCESS
+
+    ! get driver and model clock
+    call NUOPC_ModelGet(gcomp, driverClock=driverClock, &
+      modelClock=modelClock, exportState=exportState, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, file=__FILE__)) return  ! bail out
+
+    ! reset model clock to initial time
+    call NUOPC_CheckSetClock(modelClock, driverClock, &
+      forceCurrTime=.true., rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, file=__FILE__)) return  ! bail out
+
+    ! update timestamp on export Fields
+    call NUOPC_SetTimestamp(exportState, modelClock, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, file=__FILE__)) return  ! bail out
+
+  end subroutine
+
+  !-----------------------------------------------------------------------------
 
   subroutine atmos_model_finalize(gcomp, rc)
 

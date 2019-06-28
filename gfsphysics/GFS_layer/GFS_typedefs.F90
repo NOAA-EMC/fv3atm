@@ -16,7 +16,7 @@ module GFS_typedefs
 
        !--- parameter constants used for default initializations
        real(kind=kind_phys), parameter :: zero      = 0.0_kind_phys
-       real(kind=kind_phys), parameter :: huge      = 9.9999D15
+       real(kind=kind_phys), parameter :: huge      = 9.9692099683868690E36 ! NetCDF float FillValue
        real(kind=kind_phys), parameter :: clear_val = zero
       !real(kind=kind_phys), parameter :: clear_val = -9.9999e80
        real(kind=kind_phys), parameter :: rann_init = 0.6_kind_phys
@@ -149,12 +149,18 @@ module GFS_typedefs
 
 !--- In (radiation and physics)
     real (kind=kind_phys), pointer :: slmsk  (:)   => null()  !< sea/land mask array (sea:0,land:1,sea-ice:2)
-    real (kind=kind_phys), pointer :: lakemsk(:)   => null()  !< lake mask array (lake:1, non-lake:0)
-    real (kind=kind_phys), pointer :: tsfc   (:)   => null()  !< surface temperature in k 
+    real (kind=kind_phys), pointer :: oceanfrac(:) => null()  !< ocean fraction [0:1]
+    real (kind=kind_phys), pointer :: landfrac(:)  => null()  !< land  fraction [0:1]
+    real (kind=kind_phys), pointer :: lakefrac(:)  => null()  !< lake  fraction [0:1]
+    real (kind=kind_phys), pointer :: tsfc   (:)   => null()  !< surface air temperature in k 
                                                               !< [tsea in gbphys.f]
+    real (kind=kind_phys), pointer :: tsfco  (:)   => null()  !< sst in k 
+    real (kind=kind_phys), pointer :: tsfcl  (:)   => null()  !< surface land temperature in k 
     real (kind=kind_phys), pointer :: tisfc  (:)   => null()  !< surface temperature over ice fraction 
     real (kind=kind_phys), pointer :: snowd  (:)   => null()  !< snow depth water equivalent in mm ; same as snwdph
-    real (kind=kind_phys), pointer :: zorl   (:)   => null()  !< surface roughness in cm 
+    real (kind=kind_phys), pointer :: zorl   (:)   => null()  !< composite surface roughness in cm 
+    real (kind=kind_phys), pointer :: zorlo  (:)   => null()  !< ocean surface roughness in cm 
+    real (kind=kind_phys), pointer :: zorll  (:)   => null()  !< land surface roughness in cm 
     real (kind=kind_phys), pointer :: fice   (:)   => null()  !< ice fraction over open water grid 
     real (kind=kind_phys), pointer :: hprim  (:)   => null()  !< topographic standard deviation in m            !
     real (kind=kind_phys), pointer :: hprime (:,:) => null()  !< orographic metrics
@@ -198,6 +204,45 @@ module GFS_typedefs
 !--- Out
     real (kind=kind_phys), pointer :: t2m    (:)   => null()  !< 2 meter temperature
     real (kind=kind_phys), pointer :: q2m    (:)   => null()  !< 2 meter humidity
+
+! -- In/Out for Noah MP 
+    real (kind=kind_phys), pointer  :: snowxy (:)  => null() !
+    real (kind=kind_phys), pointer :: tvxy    (:)  => null()  !< veg temp
+    real (kind=kind_phys), pointer :: tgxy    (:)  => null()  !< ground temp
+    real (kind=kind_phys), pointer :: canicexy(:)  => null()  !<
+    real (kind=kind_phys), pointer :: canliqxy(:)  => null()  !<
+    real (kind=kind_phys), pointer :: eahxy   (:)  => null()  !<
+    real (kind=kind_phys), pointer :: tahxy   (:)  => null()  !<
+    real (kind=kind_phys), pointer :: cmxy    (:)  => null()  !<
+    real (kind=kind_phys), pointer :: chxy    (:)  => null()  !<
+    real (kind=kind_phys), pointer :: fwetxy  (:)  => null()  !<
+    real (kind=kind_phys), pointer :: sneqvoxy(:)  => null()  !<
+    real (kind=kind_phys), pointer :: alboldxy(:)  => null()  !<
+    real (kind=kind_phys), pointer :: qsnowxy (:)  => null()  !<
+    real (kind=kind_phys), pointer :: wslakexy(:)  => null()  !<
+    real (kind=kind_phys), pointer :: zwtxy   (:)  => null()  !<
+    real (kind=kind_phys), pointer :: waxy    (:)  => null()  !<
+    real (kind=kind_phys), pointer :: wtxy    (:)  => null()  !<
+    real (kind=kind_phys), pointer :: lfmassxy(:)  => null()  !<
+    real (kind=kind_phys), pointer :: rtmassxy(:)  => null()  !<
+    real (kind=kind_phys), pointer :: stmassxy(:)  => null()  !<
+    real (kind=kind_phys), pointer :: woodxy  (:)  => null()  !<
+    real (kind=kind_phys), pointer :: stblcpxy(:)  => null()  !<
+    real (kind=kind_phys), pointer :: fastcpxy(:)  => null()  !<
+    real (kind=kind_phys), pointer :: xsaixy  (:)  => null()  !<
+    real (kind=kind_phys), pointer :: xlaixy  (:)  => null()  !<
+    real (kind=kind_phys), pointer :: taussxy (:)  => null()  !<
+    real (kind=kind_phys), pointer :: smcwtdxy(:)  => null()  !<
+    real (kind=kind_phys), pointer :: deeprechxy(:)  => null()  !<
+    real (kind=kind_phys), pointer :: rechxy  (:)  => null()  !<
+
+    real (kind=kind_phys), pointer :: snicexy   (:,:) => null()  !<
+    real (kind=kind_phys), pointer :: snliqxy   (:,:) => null()  !<
+    real (kind=kind_phys), pointer :: tsnoxy    (:,:) => null()  !<
+    real (kind=kind_phys), pointer :: smoiseq   (:,:) => null()  !<
+    real (kind=kind_phys), pointer :: zsnsoxy   (:,:) => null()  !<
+
+
 
 !--- NSSTM variables  (only allocated when [Model%nstf_name(1) > 0])
     real (kind=kind_phys), pointer :: tref   (:)   => null()  !< nst_fld%Tref - Reference Temperature
@@ -521,6 +566,21 @@ module GFS_typedefs
                                             !< ivegsrc = 2   => UMD  (13 category)
     integer              :: isot            !< isot = 0   => Zobler soil type  ( 9 category)
                                             !< isot = 1   => STATSGO soil type (19 category)
+    ! -- the Noah MP options
+
+    integer              :: iopt_dveg ! 1-> off table lai 2-> on 3-> off;4->off;5 -> on
+    integer              :: iopt_crs  !canopy stomatal resistance (1-> ball-berry; 2->jarvis)
+    integer              :: iopt_btr  !soil moisture factor for stomatal resistance (1-> noah; 2-> clm; 3-> ssib)
+    integer              :: iopt_run  !runoff and groundwater (1->simgm; 2->simtop; 3->schaake96; 4->bats)
+    integer              :: iopt_sfc  !surface layer drag coeff (ch & cm) (1->m-o; 2->chen97)
+    integer              :: iopt_frz  !supercooled liquid water (1-> ny06; 2->koren99)
+    integer              :: iopt_inf  !frozen soil permeability (1-> ny06; 2->koren99)
+    integer              :: iopt_rad  !radiation transfer (1->gap=f(3d,cosz); 2->gap=0; 3->gap=1-fveg)
+    integer              :: iopt_alb  !snow surface albedo (1->bats; 2->class)
+    integer              :: iopt_snf  !rainfall & snowfall (1-jordan91; 2->bats; 3->noah)
+    integer              :: iopt_tbot !lower boundary of soil temperature (1->zero-flux; 2->noah)
+    integer              :: iopt_stc  !snow/soil temperature time scheme (only layer 1)
+
     logical              :: use_ufo         !< flag for gcycle surface option
 
 !--- tuning parameters for physical parameterizations
@@ -565,6 +625,9 @@ module GFS_typedefs
                                             !<           current operational version as of 2016
                                             !<     2: scale- & aerosol-aware mass-flux deep conv scheme (2017)
                                             !<     0: old SAS Convection scheme before July 2010
+    integer              :: isatmedmf       !< flag for scale-aware TKE-based moist edmf scheme                        
+                                            !<     0: initial version of satmedmf (Nov. 2018)
+                                            !<     1: updated version of satmedmf (as of May 2019)
     integer              :: nmtvr           !< number of topographic variables such as variance etc
                                             !< used in the GWD parameterization
     integer              :: jcap            !< number of spectral wave trancation used only by sascnv shalcnv
@@ -636,6 +699,9 @@ module GFS_typedefs
                                             !< nstf_name(3) : 1 = NSST analysis on, 0 = NSSTM analysis off
                                             !< nstf_name(4) : zsea1 in mm
                                             !< nstf_name(5) : zsea2 in mm
+!--- fractional grid
+    logical              :: frac_grid       !< flag for fractional grid
+
 !--- background vertical diffusion
     real(kind=kind_phys) :: xkzm_m          !< [in] bkgd_vdif_m  background vertical diffusion for momentum  
     real(kind=kind_phys) :: xkzm_h          !< [in] bkgd_vdif_h  background vertical diffusion for heat q  
@@ -1027,7 +1093,7 @@ module GFS_typedefs
 
     !--- MP quantities for 3D diagnositics 
     real (kind=kind_phys), pointer :: refl_10cm(:,:) => null()  !< instantaneous refl_10cm 
-
+!
 !---vay-2018 UGWP-diagnostics daily mean
 !
     real (kind=kind_phys), pointer :: dudt_tot (:,:) => null()  !< daily aver GFS_phys tend for WE-U
@@ -1101,6 +1167,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: tau_mtb(:)      => null()   !
     real (kind=kind_phys), pointer :: tau_tofd(:)     => null()   !
 !---vay-2018 UGWP-diagnostics
+
 
     !--- Output diagnostics for coupled chemistry
     real (kind=kind_phys), pointer :: duem  (:,:) => null()    !< instantaneous dust emission flux                             ( kg/m**2/s )
@@ -1252,25 +1319,37 @@ module GFS_typedefs
     type(GFS_control_type), intent(in) :: Model
 
     !--- physics and radiation
-    allocate (Sfcprop%slmsk  (IM))
-    allocate (Sfcprop%lakemsk(IM))
-    allocate (Sfcprop%tsfc   (IM))
-    allocate (Sfcprop%tisfc  (IM))
-    allocate (Sfcprop%snowd  (IM))
-    allocate (Sfcprop%zorl   (IM))
-    allocate (Sfcprop%fice   (IM))
-    allocate (Sfcprop%hprim  (IM))
-    allocate (Sfcprop%hprime (IM,Model%nmtvr))
+    allocate (Sfcprop%slmsk    (IM))
+    allocate (Sfcprop%oceanfrac(IM))
+    allocate (Sfcprop%landfrac (IM))
+    allocate (Sfcprop%lakefrac (IM))
+    allocate (Sfcprop%tsfc     (IM))
+    allocate (Sfcprop%tsfco    (IM))
+    allocate (Sfcprop%tsfcl    (IM))
+    allocate (Sfcprop%tisfc    (IM))
+    allocate (Sfcprop%snowd    (IM))
+    allocate (Sfcprop%zorl     (IM))
+    allocate (Sfcprop%zorlo    (IM))
+    allocate (Sfcprop%zorll    (IM))
+    allocate (Sfcprop%fice     (IM))
+    allocate (Sfcprop%hprim    (IM))
+    allocate (Sfcprop%hprime   (IM,Model%nmtvr))
 
-    Sfcprop%slmsk   = clear_val
-    Sfcprop%lakemsk = clear_val
-    Sfcprop%tsfc    = clear_val
-    Sfcprop%tisfc   = clear_val
-    Sfcprop%snowd   = clear_val
-    Sfcprop%zorl    = clear_val
-    Sfcprop%fice    = clear_val
-    Sfcprop%hprim   = clear_val
-    Sfcprop%hprime  = clear_val
+    Sfcprop%slmsk     = clear_val
+    Sfcprop%oceanfrac = clear_val
+    Sfcprop%landfrac  = clear_val
+    Sfcprop%lakefrac  = clear_val
+    Sfcprop%tsfc      = clear_val
+    Sfcprop%tsfco     = clear_val
+    Sfcprop%tsfcl     = clear_val
+    Sfcprop%tisfc     = clear_val
+    Sfcprop%snowd     = clear_val
+    Sfcprop%zorl      = clear_val
+    Sfcprop%zorlo     = clear_val
+    Sfcprop%zorll     = clear_val
+    Sfcprop%fice      = clear_val
+    Sfcprop%hprim     = clear_val
+    Sfcprop%hprime    = clear_val
 
 !--- In (radiation only)
     allocate (Sfcprop%sncovr (IM))
@@ -1390,6 +1469,83 @@ module GFS_typedefs
       Sfcprop%dt_cool = zero
       Sfcprop%qrain   = zero
     endif
+
+! Noah MP allocate and init when used
+!
+    if (Model%lsm > 1 ) then
+
+    allocate (Sfcprop%snowxy   (IM))
+    allocate (Sfcprop%tvxy     (IM))
+    allocate (Sfcprop%tgxy     (IM))
+    allocate (Sfcprop%canicexy (IM))
+    allocate (Sfcprop%canliqxy (IM))
+    allocate (Sfcprop%eahxy    (IM))
+    allocate (Sfcprop%tahxy    (IM))
+    allocate (Sfcprop%cmxy     (IM))
+    allocate (Sfcprop%chxy     (IM))
+    allocate (Sfcprop%fwetxy   (IM))
+    allocate (Sfcprop%sneqvoxy (IM))
+    allocate (Sfcprop%alboldxy (IM))
+    allocate (Sfcprop%qsnowxy  (IM))
+    allocate (Sfcprop%wslakexy (IM))
+    allocate (Sfcprop%zwtxy    (IM))
+    allocate (Sfcprop%waxy     (IM))
+    allocate (Sfcprop%wtxy     (IM))
+    allocate (Sfcprop%lfmassxy (IM))
+    allocate (Sfcprop%rtmassxy (IM))
+    allocate (Sfcprop%stmassxy (IM))
+    allocate (Sfcprop%woodxy   (IM))
+    allocate (Sfcprop%stblcpxy (IM))
+    allocate (Sfcprop%fastcpxy (IM))
+    allocate (Sfcprop%xsaixy   (IM))
+    allocate (Sfcprop%xlaixy   (IM))
+    allocate (Sfcprop%taussxy  (IM))
+    allocate (Sfcprop%smcwtdxy (IM))
+    allocate (Sfcprop%deeprechxy (IM))
+    allocate (Sfcprop%rechxy    (IM))
+    allocate (Sfcprop%snicexy    (IM,-2:0))
+    allocate (Sfcprop%snliqxy    (IM,-2:0))
+    allocate (Sfcprop%tsnoxy     (IM,-2:0))
+    allocate (Sfcprop%smoiseq    (IM, 1:4))
+    allocate (Sfcprop%zsnsoxy    (IM,-2:4))
+
+    Sfcprop%snowxy     = clear_val
+    Sfcprop%tvxy       = clear_val
+    Sfcprop%tgxy       = clear_val
+    Sfcprop%canicexy   = clear_val
+    Sfcprop%canliqxy   = clear_val
+    Sfcprop%eahxy      = clear_val
+    Sfcprop%tahxy      = clear_val
+    Sfcprop%cmxy       = clear_val
+    Sfcprop%chxy       = clear_val
+    Sfcprop%fwetxy     = clear_val
+    Sfcprop%sneqvoxy   = clear_val
+    Sfcprop%alboldxy   = clear_val
+    Sfcprop%qsnowxy    = clear_val
+    Sfcprop%wslakexy   = clear_val
+    Sfcprop%zwtxy      = clear_val
+    Sfcprop%waxy       = clear_val
+    Sfcprop%wtxy       = clear_val
+    Sfcprop%lfmassxy   = clear_val
+    Sfcprop%rtmassxy   = clear_val
+    Sfcprop%stmassxy   = clear_val
+    Sfcprop%woodxy     = clear_val
+    Sfcprop%stblcpxy   = clear_val
+    Sfcprop%fastcpxy   = clear_val
+    Sfcprop%xsaixy     = clear_val
+    Sfcprop%xlaixy     = clear_val
+    Sfcprop%taussxy    = clear_val
+    Sfcprop%smcwtdxy   = clear_val
+    Sfcprop%deeprechxy = clear_val
+    Sfcprop%rechxy     = clear_val
+
+    Sfcprop%snicexy    = clear_val
+    Sfcprop%snliqxy    = clear_val
+    Sfcprop%tsnoxy     = clear_val
+    Sfcprop%smoiseq    = clear_val
+    Sfcprop%zsnsoxy    = clear_val
+
+   endif
 
   end subroutine sfcprop_create
 
@@ -1821,6 +1977,23 @@ module GFS_typedefs
                                                              !< ivegsrc = 2   => UMD  (13 category)
     integer              :: isot           =  0              !< isot = 0   => Zobler soil type  ( 9 category)
                                                              !< isot = 1   => STATSGO soil type (19 category)
+    ! -- to use Noah MP, lsm needs to be set to 2 and both ivegsrc and isot are set
+    ! to 1 - MODIS IGBP and STATSGO - the defaults are the same as in the
+    ! scripts;change from namelist
+
+    integer              :: iopt_dveg      =  4  ! 4 -> off (use table lai; use maximum vegetation fraction)
+    integer              :: iopt_crs       =  1  !canopy stomatal resistance (1-> ball-berry; 2->jarvis)
+    integer              :: iopt_btr       =  1  !soil moisture factor for stomatal resistance (1-> noah; 2-> clm; 3-> ssib)
+    integer              :: iopt_run       =  3  !runoff and groundwater (1->simgm; 2->simtop; 3->schaake96; 4->bats)
+    integer              :: iopt_sfc       =  1  !surface layer drag coeff (ch & cm) (1->m-o; 2->chen97)
+    integer              :: iopt_frz       =  1  !supercooled liquid water (1-> ny06; 2->koren99)
+    integer              :: iopt_inf       =  1  !frozen soil permeability (1-> ny06; 2->koren99)
+    integer              :: iopt_rad       =  3  !radiation transfer (1->gap=f(3d,cosz); 2->gap=0; 3->gap=1-fveg)
+    integer              :: iopt_alb       =  2  !snow surface albedo (1->bats; 2->class)
+    integer              :: iopt_snf       =  1  !rainfall & snowfall (1-jordan91; 2->bats; 3->noah)
+    integer              :: iopt_tbot      =  2  !lower boundary of soil temperature (1->zero-flux; 2->noah)
+    integer              :: iopt_stc       =  1  !snow/soil temperature time scheme (only layer 1)
+
     logical              :: use_ufo        = .false.         !< flag for gcycle surface option
 
 !--- tuning parameters for physical parameterizations
@@ -1862,6 +2035,9 @@ module GFS_typedefs
                                                                       !<     1: July 2010 version of SAS conv scheme
                                                                       !<           current operational version as of 2016
                                                                       !<     2: scale- & aerosol-aware mass-flux deep conv scheme (2017)
+    integer              :: isatmedmf      =  0                       !< flag for scale-aware TKE-based moist edmf scheme
+                                                                      !<     0: initial version of satmedmf (Nov. 2018)
+                                                                      !<     1: updated version of satmedmf (as of May 2019)
     logical              :: do_deep        = .true.                   !< whether to do deep convection
     integer              :: nmtvr          = 14                       !< number of topographic variables such as variance etc
                                                                       !< used in the GWD parameterization
@@ -1934,6 +2110,9 @@ module GFS_typedefs
                                                              !< nstf_name(3) : 1 = NSSTM analysis on, 0 = NSSTM analysis off
                                                              !< nstf_name(4) : zsea1 in mm
                                                              !< nstf_name(5) : zsea2 in mm
+!--- fractional grid
+    logical              :: frac_grid      = .false.         !< flag for fractional grid
+
 !--- background vertical diffusion
     real(kind=kind_phys) :: xkzm_m         = 1.0d0           !< [in] bkgd_vdif_m  background vertical diffusion for momentum  
     real(kind=kind_phys) :: xkzm_h         = 1.0d0           !< [in] bkgd_vdif_h  background vertical diffusion for heat q  
@@ -2015,12 +2194,16 @@ module GFS_typedefs
                                avg_max_length,                                              &
                           !--- land/surface model control
                                lsm, lsoil, nmtvr, ivegsrc, use_ufo,                         &
+                          !    Noah MP options
+                               iopt_dveg,iopt_crs,iopt_btr,iopt_run,iopt_sfc, iopt_frz,     &
+                               iopt_inf, iopt_rad,iopt_alb,iopt_snf,iopt_tbot,iopt_stc,     &
                           !--- physical parameterizations
                                ras, trans_trac, old_monin, cnvgwd, mstrat, moist_adj,       &
                                cscnv, cal_pre, do_aw, do_shoc, shocaftcnv, shoc_cld,        &
                                h2o_phys, pdfcld, shcnvcw, redrag, hybedmf, satmedmf,        &
                                dspheat, lheatstrg, cnvcld,                                  &
-                               random_clds, shal_cnv, imfshalcnv, imfdeepcnv, do_deep, jcap,&
+                               random_clds, shal_cnv, imfshalcnv, imfdeepcnv, isatmedmf,    &
+                               do_deep, jcap,                                               &
                                cs_parm, flgmin, cgwf, ccwf, cdmbgwd, sup, ctei_rm, crtrh,   &
                                dlqf, rbcr, shoc_parm, psauras, prauras, wminras,            &
                           !--- Rayleigh friction
@@ -2033,6 +2216,7 @@ module GFS_typedefs
                                clam_shal, c0s_shal, c1_shal, pgcon_shal, asolfac_shal,      &
                           !--- near surface sea temperature model
                                nst_anl, lsea, nstf_name,                                    &
+                               frac_grid,                                                   &
                           !    background vertical diffusion
                                xkzm_m, xkzm_h, xkzm_s, xkzminv, moninq_fac,                 &
                           !--- cellular automata                         
@@ -2222,6 +2406,21 @@ module GFS_typedefs
     Model%isot             = isot
     Model%use_ufo          = use_ufo
 
+! Noah MP options from namelist
+!
+    Model%iopt_dveg        = iopt_dveg
+    Model%iopt_crs         = iopt_crs
+    Model%iopt_btr         = iopt_btr
+    Model%iopt_run         = iopt_run
+    Model%iopt_sfc         = iopt_sfc
+    Model%iopt_frz         = iopt_frz
+    Model%iopt_inf         = iopt_inf
+    Model%iopt_rad         = iopt_rad
+    Model%iopt_alb         = iopt_alb
+    Model%iopt_snf         = iopt_snf
+    Model%iopt_tbot        = iopt_tbot
+    Model%iopt_stc         = iopt_stc
+
 !--- tuning parameters for physical parameterizations
     Model%ras              = ras
     Model%flipv            = flipv
@@ -2251,6 +2450,7 @@ module GFS_typedefs
     Model%shal_cnv         = shal_cnv
     Model%imfshalcnv       = imfshalcnv
     Model%imfdeepcnv       = imfdeepcnv
+    Model%isatmedmf        = isatmedmf
     Model%do_deep          = do_deep
     Model%nmtvr            = nmtvr
     Model%jcap             = jcap
@@ -2294,6 +2494,9 @@ module GFS_typedefs
     Model%nst_anl          = nst_anl
     Model%lsea             = lsea
     Model%nstf_name        = nstf_name
+
+!--- fractional grid
+    Model%frac_grid        = frac_grid
 
 !--- backgroud vertical diffusion
     Model%xkzm_m           = xkzm_m
@@ -2477,11 +2680,39 @@ module GFS_typedefs
       elseif (Model%lsm == 0) then
         print *,' OSU no longer supported - job aborted'
         stop
+      elseif (Model%lsm == 2) then
+        print *, 'New Noah MP Land Surface Model will be used'
+        print *, 'The Physics options are'
+
+        print *,'iopt_dveg  =  ', Model%iopt_dveg
+        print *,'iopt_crs   =  ', Model%iopt_crs
+        print *,'iopt_btr   =  ', Model%iopt_btr
+        print *,'iopt_run   =  ', Model%iopt_run
+        print *,'iopt_sfc   =  ', Model%iopt_sfc
+        print *,'iopt_frz   =  ', Model%iopt_frz
+        print *,'iopt_inf   =  ', Model%iopt_inf
+        print *,'iopt_rad   =  ', Model%iopt_rad
+        print *,'iopt_alb   =  ', Model%iopt_alb
+        print *,'iopt_snf   =  ', Model%iopt_snf
+        print *,'iopt_tbot   =  ',Model%iopt_tbot
+        print *,'iopt_stc   =  ', Model%iopt_stc
+
+      elseif (Model%lsm == 2 .and. Model%ivegsrc /= 1) then
+        print *,'Vegetation type must be IGBP if Noah MP is used'
+        stop
+      elseif (Model%lsm == 2 .and. Model%isot /= 1) then
+        print *,'Soil type must be STATSGO if Noah MP is used'
+        stop
       else
         print *,' Unsupported LSM type - job aborted - lsm=',Model%lsm
         stop
       endif
-      print *,' nst_anl=',Model%nst_anl,' use_ufo=',Model%use_ufo
+
+      if (Model%lsm == 2 .and. Model%iopt_snf == 4) then
+        if (Model%imp_physics /= 11) stop 'iopt_snf == 4 must use GFDL MP'
+      endif
+
+      print *,' nst_anl=',Model%nst_anl,' use_ufo=',Model%use_ufo,' frac_grid=',Model%frac_grid
       if (Model%nstf_name(1) > 0 ) then 
         print *,' NSSTM is active '
         print *,' nstf_name(1)=',Model%nstf_name(1)
@@ -2516,9 +2747,12 @@ module GFS_typedefs
       else
         print*, ' Deep convection scheme disabled'
       endif
-!
       if (Model%satmedmf) then
-        print *,' scale-aware TKE-based moist edmf PBL scheme used'
+        if (Model%isatmedmf == 0) then
+          print *,' initial version (Nov 2018) of sale-aware TKE-based moist EDMF scheme used'
+        elseif(Model%isatmedmf == 1) then
+          print *,' update version (May 2019) of sale-aware TKE-based moist EDMF scheme used'
+        endif
       elseif (Model%hybedmf) then
         print *,' scale-aware hybrid edmf PBL scheme used'
       elseif (Model%old_monin) then
@@ -2851,6 +3085,24 @@ module GFS_typedefs
       print *, ' lsoil             : ', Model%lsoil
       print *, ' ivegsrc           : ', Model%ivegsrc
       print *, ' isot              : ', Model%isot
+
+      if (Model%lsm == 2) then
+      print *, ' Noah MP LSM is used, the options are'
+      print *, ' iopt_dveg         : ', Model%iopt_dveg
+      print *, ' iopt_crs          : ', Model%iopt_crs
+      print *, ' iopt_btr          : ', Model%iopt_btr
+      print *, ' iopt_run          : ', Model%iopt_run
+      print *, ' iopt_sfc          : ', Model%iopt_sfc
+      print *, ' iopt_frz          : ', Model%iopt_frz
+      print *, ' iopt_inf          : ', Model%iopt_inf
+      print *, ' iopt_rad          : ', Model%iopt_rad
+      print *, ' iopt_alb          : ', Model%iopt_alb
+      print *, ' iopt_snf          : ', Model%iopt_snf
+      print *, ' iopt_tbot         : ', Model%iopt_tbot
+      print *, ' iopt_stc          : ', Model%iopt_stc
+
+     endif
+
       print *, ' use_ufo           : ', Model%use_ufo
       print *, ' '
       print *, 'tuning parameters for physical parameterizations'

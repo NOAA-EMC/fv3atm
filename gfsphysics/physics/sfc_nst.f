@@ -17,13 +17,15 @@
 !!  \section general General Algorithm
 !!  \section detailed Detailed Algorithm
 !!  @{
+      module module_sfc_nst
+      contains
       subroutine sfc_nst                                                &
 !...................................
 !  ---  inputs:
      &     ( im,    ps, u1, v1, t1, q1, tref, cm, ch,                   &
-     &       prsl1, prslki, islimsk, xlon, sinlat, stress,              &
+     &       prsl1, prslki, wet, icy, xlon, sinlat, stress,             &
      &       sfcemis, dlwflx, sfcnsw, rain, timestep, kdt, solhr,xcosz, &
-     &       ddvel, flag_iter, flag_guess, nstf_name,                    &
+     &       ddvel, flag_iter, flag_guess, nstf_name,                   &
      &       lprnt, ipr,                                                &
 !  --- input/output
      &       tskin, tsurf, xt, xs, xu, xv, xz, zm, xtts, xzts, dt_cool, &
@@ -41,9 +43,9 @@
 !    call sfc_nst                                                       !
 !       inputs:                                                         !
 !          ( im, ps, u1, v1, t1, q1, tref, cm, ch,                      !
-!            prsl1, prslki, islimsk, xlon, sinlat, stress,              !
+!            prsl1, prslki, wet, icy, xlon, sinlat, stress,             !
 !            sfcemis, dlwflx, sfcnsw, rain, timestep, kdt,solhr,xcosz,  !
-!            ddvel, flag_iter, flag_guess, nstf_name,                    !
+!            ddvel, flag_iter, flag_guess, nstf_name,                   !
 !            lprnt, ipr,                                                !
 !       input/outputs:                                                  !
 !            tskin, tsurf, xt, xs, xu, xv, xz, zm, xtts, xzts, dt_cool, !
@@ -85,7 +87,8 @@
 !     ch       - real, surface exchange coeff heat & moisture(m/s) im   !
 !     prsl1    - real, surface layer mean pressure (pa)            im   !
 !     prslki   - real,                                             im   !
-!     islimsk  - integer, sea/land/ice mask (=0/1/2)               im   !
+!     wet      - logical, =T if any ocn/lake water (F otherwise)   im   !
+!     icy      - logical, =T if any ice                            im   !
 !     xlon     - real, longitude         (radians)                 im   !
 !     sinlat   - real, sin of latitude                             im   !
 !     stress   - real, wind stress       (n/m**2)                  im   !
@@ -179,17 +182,17 @@
       real (kind=kind_phys), parameter :: f1440 = 1440.0   ! minutes/day
       real (kind=kind_phys), parameter :: czmin = 0.0001   ! cos(89.994)
 
-
 !  ---  inputs:
       integer, intent(in) :: im, kdt, ipr,nstf_name(5)
       real (kind=kind_phys), dimension(im), intent(in) :: ps, u1, v1,   &
      &       t1, q1, tref, cm, ch, prsl1, prslki, xlon,xcosz,           &
      &       sinlat, stress, sfcemis, dlwflx, sfcnsw, rain, ddvel
-      integer, intent(in), dimension(im):: islimsk
       real (kind=kind_phys), intent(in) :: timestep
       real (kind=kind_phys), intent(in) :: solhr
 
-      logical, intent(in) :: flag_iter(im), flag_guess(im), lprnt
+      logical, dimension(im), intent(in) :: flag_iter, flag_guess, wet, &
+     &                                      icy
+      logical,                intent(in) :: lprnt
 
 !  ---  input/outputs:
 ! control variables of dtl system (5+2) and sl (2) and coefficients for d(tz)/d(ts) calculation
@@ -242,13 +245,13 @@ cc
 ! flag for open water and where the iteration is on
 !
       do i = 1, im
-         flag(i) = islimsk(i) == 0 .and. flag_iter(i)
+        flag(i) = wet(i) .and. .not.icy(i) .and. flag_iter(i)
       enddo
 !
 !  save nst-related prognostic fields for guess run
 !
       do i=1, im
-        if((islimsk(i) == 0) .and. flag_guess(i)) then
+        if (wet(i) .and. .not.icy(i) .and. flag_guess(i)) then
           xt_old(i)      = xt(i)
           xs_old(i)      = xs(i)
           xu_old(i)      = xu(i)
@@ -505,8 +508,8 @@ cc
      &                        zsea1,zsea2,dtz)
           tsurf(i) = max(271.2, tref(i) + dtz )
 
-      if (lprnt .and. i == ipr) print *,' tsurf=',tsurf(i),' tref=',
-     &tref(i),' xz=',xz(i),' dt_cool=',dt_cool(i)
+!     if (lprnt .and. i == ipr) print *,' tsurf=',tsurf(i),' tref=',
+!    &tref(i),' xz=',xz(i),' dt_cool=',dt_cool(i)
 
           if ( xt(i) > 0.0 ) then
             call cal_w(kdt,xz(i),xt(i),xzts(i),xtts(i),w_0(i),w_d(i))
@@ -530,8 +533,8 @@ cc
 
 ! restore nst-related prognostic fields for guess run
       do i=1, im
-        if((islimsk(i) == 0) ) then
-          if(flag_guess(i)) then    ! when it is guess of 
+        if (wet(i) .and. .not.icy(i)) then
+          if (flag_guess(i)) then    ! when it is guess of 
             xt(i)      = xt_old(i)
             xs(i)      = xs_old(i)
             xu(i)      = xu_old(i)
@@ -551,9 +554,9 @@ cc
 !
             if ( nstf_name(1) > 1 ) then
               tskin(i) = tsurf(i)
-            endif               ! if ( nstf_name(1) > 1  then
-          endif                 ! if(flag_guess(i)) then
-        endif                   ! if((islimsk(i).eq. 0.) ) then
+            endif               ! if nstf_name(1) > 1
+          endif                 ! if flag_guess(i)
+        endif                   ! if wet(i) .and. .not.icy(i)
       enddo
 
 !     if (lprnt .and. i == ipr) print *,' beg xz8=',xz(i)
@@ -584,4 +587,5 @@ cc
 !     if (lprnt) print *,' tskin=',tskin(ipr)
 
       return
-      end
+      end subroutine sfc_nst
+      end module module_sfc_nst

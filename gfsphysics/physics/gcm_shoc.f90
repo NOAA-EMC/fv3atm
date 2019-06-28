@@ -334,12 +334,12 @@
     enddo
   enddo
   do i=1,nx
-    adzi(i,1)     = (zl(i,1)-zi(i,1)) !  unused in the code
-     adzi(i,nz)    = adzi(i,nzm)         ! at the top - probably unused
-     adzl(i,nzm)   = zi(i,nz) - zi(i,nzm)
+    adzi(i,1)     = (zl(i,1)-zi(i,1))   !  unused in the code
+    adzi(i,nz)    = adzi(i,nzm)         ! at the top - probably unused
+    adzl(i,nzm)   = zi(i,nz) - zi(i,nzm)
 !
-     wthl_sec(i,1) = hflx(i)
-     wqw_sec(i,1)  = evap(i)
+    wthl_sec(i,1) = hflx(i)
+    wqw_sec(i,1)  = evap(i)
   enddo
 
 

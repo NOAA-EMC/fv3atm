@@ -1474,10 +1474,10 @@ end subroutine atmos_data_type_chksum
               do i=isc,iec
                 nb = Atm_block%blkno(i,j)
                 ix = Atm_block%ixp(i,j)
-!if it is ocean or ice get sst from mediator
-                if (IPD_Data(nb)%Sfcprop%slmsk(ix) < 0.1 .or. IPD_Data(nb)%Sfcprop%slmsk(ix) > 1.9) then
+                if (1.0-IPD_Data(nb)%Sfcprop%landfrac(ix) > 0.0) then
                   IPD_Data(nb)%Coupling%tseain_cpl(ix) = datar8(i,j)
-                  IPD_Data(nb)%Sfcprop%tsfc(ix) = datar8(i,j)
+                  IPD_Data(nb)%Sfcprop%tsfco(ix)       = datar8(i,j)
+                  IPD_Data(nb)%Sfcprop%tsfc(ix)        = datar8(i,j)
                 endif
               enddo
             enddo
@@ -1497,15 +1497,12 @@ end subroutine atmos_data_type_chksum
               do i=isc,iec
                 nb = Atm_block%blkno(i,j)
                 ix = Atm_block%ixp(i,j)
-                IPD_Data(nb)%Coupling%ficein_cpl(ix) = 0.
-                 IPD_Data(nb)%Coupling%slimskin_cpl(ix) = 0.
-!if it is ocean or ice get sst from mediator
-                if (IPD_Data(nb)%Sfcprop%slmsk(ix) < 0.1 .or. IPD_Data(nb)%Sfcprop%slmsk(ix) > 1.9) then
-                  if( datar8(i,j) > icemin .and. IPD_Data(nb)%Sfcprop%lakemsk(ix) /= 1 ) then
-                    IPD_Data(nb)%Coupling%ficein_cpl(ix)   = datar8(i,j)
-                    IPD_Data(nb)%Sfcprop%slmsk(ix)         = 2.0
-                    IPD_Data(nb)%Coupling%slimskin_cpl(ix) = 4.0
-                  endif
+                IPD_Data(nb)%Coupling%ficein_cpl(ix)   = 0.
+                IPD_Data(nb)%Coupling%slimskin_cpl(ix) = 0.
+                if (1.0-IPD_Data(nb)%Sfcprop%landfrac(ix) > 0.0 .and. datar8(i,j) > icemin) then
+                  IPD_Data(nb)%Coupling%ficein_cpl(ix)   = datar8(i,j)
+                  if (IPD_Data(nb)%Sfcprop%oceanfrac(ix) == 1.) IPD_Data(nb)%Sfcprop%slmsk(ix) = 2. !slmsk=2 crashes in gcycle on partial land points
+                  IPD_Data(nb)%Coupling%slimskin_cpl(ix) = 4.
                 endif
               enddo
             enddo
@@ -1521,10 +1518,18 @@ end subroutine atmos_data_type_chksum
           if (trim(impfield_name) == trim(fldname) .and. found) then
 !$omp parallel do default(shared) private(i,j,nb,ix)
             do j=jsc,jec
+!             do i=isc,iec
+!               nb = Atm_block%blkno(i,j)
+!               ix = Atm_block%ixp(i,j)
+!               if (IPD_Data(nb)%Sfcprop%slmsk(ix) < 0.1 .or. IPD_Data(nb)%Sfcprop%slmsk(ix) > 1.9) then
+!                 IPD_Data(nb)%Coupling%ulwsfcin_cpl(ix) = -datar8(i,j)
+!               endif
+!             enddo
+!$omp parallel do default(shared) private(i,nb,ix)
               do i=isc,iec
                 nb = Atm_block%blkno(i,j)
                 ix = Atm_block%ixp(i,j)
-                if (IPD_Data(nb)%Sfcprop%slmsk(ix) < 0.1 .or. IPD_Data(nb)%Sfcprop%slmsk(ix) > 1.9) then
+                if (IPD_Data(nb)%Sfcprop%oceanfrac(ix) > 0.) then
                   IPD_Data(nb)%Coupling%ulwsfcin_cpl(ix) = -datar8(i,j)
                 endif
               enddo
@@ -1544,7 +1549,7 @@ end subroutine atmos_data_type_chksum
               do i=isc,iec
                 nb = Atm_block%blkno(i,j)
                 ix = Atm_block%ixp(i,j)
-                if (IPD_Data(nb)%Sfcprop%slmsk(ix) < 0.1 .or. IPD_Data(nb)%Sfcprop%slmsk(ix) > 1.9) then
+                if (IPD_Data(nb)%Sfcprop%oceanfrac(ix) > 0.) then
                   IPD_Data(nb)%Coupling%dqsfcin_cpl(ix) = -datar8(i,j)
                 endif
               enddo
@@ -1564,7 +1569,7 @@ end subroutine atmos_data_type_chksum
               do i=isc,iec
                 nb = Atm_block%blkno(i,j)
                 ix = Atm_block%ixp(i,j)
-                if (IPD_Data(nb)%Sfcprop%slmsk(ix) < 0.1 .or. IPD_Data(nb)%Sfcprop%slmsk(ix) > 1.9) then
+                if (IPD_Data(nb)%Sfcprop%oceanfrac(ix) > 0.) then
                   IPD_Data(nb)%Coupling%dtsfcin_cpl(ix) = -datar8(i,j)
                 endif
               enddo
@@ -1584,7 +1589,7 @@ end subroutine atmos_data_type_chksum
               do i=isc,iec
                 nb = Atm_block%blkno(i,j)
                 ix = Atm_block%ixp(i,j)
-                if (IPD_Data(nb)%Sfcprop%slmsk(ix) < 0.1 .or. IPD_Data(nb)%Sfcprop%slmsk(ix) > 1.9) then
+                if (IPD_Data(nb)%Sfcprop%oceanfrac(ix) > 0.) then
                   IPD_Data(nb)%Coupling%dusfcin_cpl(ix) = -datar8(i,j)
                 endif
               enddo
@@ -1604,7 +1609,7 @@ end subroutine atmos_data_type_chksum
               do i=isc,iec
                 nb = Atm_block%blkno(i,j)
                 ix = Atm_block%ixp(i,j)
-                if (IPD_Data(nb)%Sfcprop%slmsk(ix) < 0.1 .or. IPD_Data(nb)%Sfcprop%slmsk(ix) > 1.9) then
+                if (IPD_Data(nb)%Sfcprop%oceanfrac(ix) > 0.) then
                   IPD_Data(nb)%Coupling%dvsfcin_cpl(ix) = -datar8(i,j)
                 endif
               enddo
@@ -1661,21 +1666,19 @@ end subroutine atmos_data_type_chksum
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
+          if (IPD_Data(nb)%Sfcprop%oceanfrac(ix) > 0.) then
 !if it is ocean or ice get sst from mediator
-          if (IPD_Data(nb)%Sfcprop%slmsk(ix) < 0.1 .or.  IPD_Data(nb)%Sfcprop%slmsk(ix) > 1.9) then
-             IPD_Data(nb)%Sfcprop%tisfc(ix) = IPD_Data(nb)%Coupling%tisfcin_cpl(ix)
-             if( IPD_Data(nb)%Sfcprop%lakemsk(ix) /= 1 ) then
-               if( IPD_Data(nb)%Coupling%ficein_cpl(ix) > icemin ) then
-                 IPD_Data(nb)%Sfcprop%fice(ix)  = IPD_Data(nb)%Coupling%ficein_cpl(ix)
-                 IPD_Data(nb)%Sfcprop%hice(ix)  = IPD_Data(nb)%Coupling%hicein_cpl(ix)
-                 IPD_Data(nb)%Sfcprop%snowd(ix) = IPD_Data(nb)%Coupling%hsnoin_cpl(ix)
-               else
-                 IPD_Data(nb)%Sfcprop%fice(ix)  = 0.0
-                 IPD_Data(nb)%Sfcprop%hice(ix)  = 0.0
-                 IPD_Data(nb)%Sfcprop%snowd(ix) = 0.0
-                 IPD_Data(nb)%Sfcprop%slmsk(ix) = 0.0
-               endif
-             endif
+            if (IPD_Data(nb)%Coupling%ficein_cpl(ix) > icemin) then
+              IPD_Data(nb)%Sfcprop%tisfc(ix) = IPD_Data(nb)%Coupling%tisfcin_cpl(ix)
+              IPD_Data(nb)%Sfcprop%fice(ix)  = IPD_Data(nb)%Coupling%ficein_cpl(ix)
+              IPD_Data(nb)%Sfcprop%hice(ix)  = IPD_Data(nb)%Coupling%hicein_cpl(ix)
+              IPD_Data(nb)%Sfcprop%snowd(ix) = IPD_Data(nb)%Coupling%hsnoin_cpl(ix)
+            else 
+              IPD_Data(nb)%Sfcprop%fice(ix)  = 0.
+              IPD_Data(nb)%Sfcprop%hice(ix)  = 0.
+              IPD_Data(nb)%Sfcprop%snowd(ix) = 0.
+              if (IPD_Data(nb)%Sfcprop%oceanfrac(ix) == 1.) IPD_Data(nb)%Sfcprop%slmsk(ix) = 0. ! 100% open water
+            endif
           endif
         enddo
       enddo
@@ -2447,7 +2450,7 @@ end subroutine atmos_data_type_chksum
         nb = Atm_block%blkno(i,j)
         ix = Atm_block%ixp(i,j)
 ! use land sea mask: land:1, ocean:0
-        lsmask(i,j) = IPD_Data(nb)%SfcProp%slmsk(ix)
+        lsmask(i,j) = floor(IPD_Data(nb)%SfcProp%landfrac(ix))
       enddo
     enddo
 !

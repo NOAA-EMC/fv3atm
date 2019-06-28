@@ -172,11 +172,11 @@
 
   real(kind=kind_phys) :: dxmax, dxmin, dxinv, rhc_max
 ! For min/max hourly rh02m and t02m
-  real(kind=kind_phys),parameter :: PQ0=379.90516E0_kind_phys
-  real(kind=kind_phys),parameter :: A2A=17.2693882_kind_phys
-  real(kind=kind_phys),parameter :: A3=273.16_kind_phys
-  real(kind=kind_phys),parameter :: A4=35.86_kind_phys
-  real(kind=kind_phys),parameter :: RHmin=1.0E-6_kind_phys
+  real(kind=kind_phys),parameter :: PQ0   = 379.90516E0_kind_phys
+  real(kind=kind_phys),parameter :: A2A   = 17.2693882_kind_phys
+  real(kind=kind_phys),parameter :: A3    = 273.16_kind_phys
+  real(kind=kind_phys),parameter :: A4    = 35.86_kind_phys
+  real(kind=kind_phys),parameter :: RHmin = 1.0E-6_kind_phys
 !........................................!
       end module physcons                !
 !========================================!

@@ -142,10 +142,6 @@ module module_cplfields
   type(ESMF_Field), target, public    :: importFields(NimportFields)
   character(len=*), public, parameter :: importFieldsList(NimportFields) = (/ &
        "inst_tracer_mass_frac                  ", &
-       "inst_tracer_up_surface_flx             ", &
-       "inst_tracer_down_surface_flx           ", &
-       "inst_tracer_clmn_mass_dens             ", &
-       "inst_tracer_anth_biom_flx              ", &
        "land_mask                              ", &
        "sea_ice_surface_temperature            ", &
        "sea_surface_temperature                ", &
@@ -161,21 +157,25 @@ module module_cplfields
        "mean_zonal_moment_flx                  ", &
        "mean_merid_moment_flx                  ", &
        "mean_ice_volume                        ", &
-       "mean_snow_volume                       "  &
+       "mean_snow_volume                       ", &
+       "inst_tracer_up_surface_flx             ", &
+       "inst_tracer_down_surface_flx           ", &
+       "inst_tracer_clmn_mass_dens             ", &
+       "inst_tracer_anth_biom_flx              "  &
   /)
   character(len=*), public, parameter :: importFieldTypes(NimportFields) = (/ &
-       "t","u","d","c","b",                 &
+       "t",                                 &
        "s","s","s","s","s",                 &
        "s","s","s","s","s",                 &
-       "s"                                  &
+       "s","u","d","c","b"                  &
   /)
   ! Set importFieldShare to .true. if field is provided as memory reference
   ! from coupled components
   logical, public, parameter :: importFieldShare(NimportFields) = (/ &
-       .true. ,.true. ,.true. ,.true. ,.true. , &
+       .true. ,                                 &
        .false.,.false.,.false.,.false.,.false., &
        .false.,.false.,.false.,.false.,.false., &
-       .false.                                  &
+       .false.,.true. ,.true. ,.true. ,.true.   &
   /)
 
   ! Methods

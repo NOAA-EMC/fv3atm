@@ -1,3 +1,28 @@
+!>  \file sfc_cice.f
+!!  This file contains the sfc_sice for coupling to CICE
+!> \defgroup sfc_sice for coupling to CICE
+!! @{
+!!  \section diagram Calling Hierarchy Diagram
+!!  \section intraphysics Intraphysics Communication
+!!
+!> \brief Brief description of the subroutine
+!!
+!! \section arg_table_cice_run Arguments
+!! | local var name | longname                                           | description                        | units   | rank | type    |    kind   | intent | optional |
+!! |----------------|----------------------------------------------------|------------------------------------|---------|------|---------|-----------|--------|----------|
+!! | im             | horizontal_loop_extent                             | horizontal loop extent, start at 1 | index   |    0 | integer |           | in     | F        |
+!!
+!!  \section general General Algorithm
+!!  \section detailed Detailed Algorithm
+!!  @{
+!
+      module module_sfc_cice
+      use machine , only : kind_phys
+      use physcons, only : hvap   => con_hvap,  cp => con_cp,           &
+     &                     rvrdm1 => con_fvirt, rd => con_rd
+      implicit none
+      contains
+!
 !-----------------------------------
       subroutine sfc_cice                                               &
 !...................................
@@ -41,14 +66,8 @@
 !     chh      - real, ?
 !     evap     - real, evaperation from latent heat
 !     hflx     - real, sensible heat
-! ===================================================================== !
+!  ====================    end of description    =====================  !
 !
-      use machine , only : kind_phys
-      use funcphys, only : fpvs
-      use physcons, only : hvap   => con_hvap,  cp  => con_cp,          &
-     &                     rvrdm1 => con_fvirt, rd  => con_rd
-!
-      implicit none
 !
 !  ---  constant parameters:
       real(kind=kind_phys), parameter :: cpinv = 1.0/cp
@@ -97,5 +116,11 @@
       enddo
  
       return
-
+!-----------------------------------
       end subroutine sfc_cice
+!-----------------------------------
+
+!-----------------------------------
+      end module module_sfc_cice
+!-----------------------------------
+!> @}
