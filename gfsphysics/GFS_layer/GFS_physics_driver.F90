@@ -1617,6 +1617,9 @@ module module_physics_driver
            Statein%prsl(:,1), work3, Tbd%phy_f2d(:,Model%num_p2d),      &
            sigmaf, vegtype, Sfcprop%shdmax, Model%ivegsrc,              &
            z01d, zt1d, flag_iter, Model%redrag,                         &
+!Weiguo Wang 2019/04 use 10-m wind diagnose zo
+           Diag%u10m,    Diag%v10m,  Model%sfc_z0_type,                 &
+!wang, use 10-m wind diagnose zo
            wet, dry, icy, tsfc3, tsurf3, snowd3,                        &
 !  ---  input/output:
            zorl3, uustar3,                                              &
@@ -2200,7 +2203,10 @@ module module_physics_driver
                            Model%dspheat, dusfc1, dvsfc1, dtsfc1, dqsfc1, Diag%hpbl,&
                            gamt, gamq, dkt, kinver, Model%xkzm_m, Model%xkzm_h,     &
                            Model%xkzm_s, lprnt, ipr,                                &
-                           Model%xkzminv, Model%moninq_fac)
+!                           Model%xkzminv, Model%moninq_fac)
+! Weiguo Wang 2019/04 HWRF PBL
+                           Model%xkzminv, Model%moninq_fac,islmsk)
+
 !     if (lprnt)  write(0,*)' dtdtm=',(dtdt(ipr,k),k=1,15)
 !     if (lprnt)  write(0,*)' dqdtm=',(dqdt(ipr,k,1),k=1,15)
           elseif (.not. Model%old_monin) then
@@ -2397,7 +2403,9 @@ module module_physics_driver
                            Model%dspheat, dusfc1, dvsfc1, dtsfc1, dqsfc1, Diag%hpbl,    &
                            gamt, gamq, dkt, kinver, Model%xkzm_m, Model%xkzm_h,         &
                            Model%xkzm_s, lprnt, ipr,                                    &
-                           Model%xkzminv, Model%moninq_fac)
+!                           Model%xkzminv, Model%moninq_fac)
+! Weiguo Wang 2019/04 HWRF PBL
+                           Model%xkzminv, Model%moninq_fac,islmsk)
           elseif (.not. Model%old_monin) then
             call moninq(ix, im, levs, nvdiff, ntcw, dvdt, dudt, dtdt, dvdftra,          &
                         Statein%ugrs, Statein%vgrs, Statein%tgrs, vdftra,               &
