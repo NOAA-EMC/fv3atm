@@ -66,9 +66,10 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
   use atmosphere_mod,     only: atmosphere_control_data
   use esmf
 !
-  use module_fv3_io_def, only:  num_pes_fcst, num_files, filename_base, nbdlphys
-  use module_fv3_config, only:  dt_atmos, calendar, restart_interval, &
-                                quilting, calendar_type, cpl,         &
+  use module_fv3_io_def, only:  num_pes_fcst, num_files, filename_base, nbdlphys, &
+                                iau_offset
+  use module_fv3_config, only:  dt_atmos, calendar, restart_interval,             &
+                                quilting, calendar_type, cpl,                     &
                                 cplprint_flag, force_date_from_configure
 !
 !-----------------------------------------------------------------------
@@ -324,6 +325,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
      atm_int_state%Time_restart      = atm_int_state%Time_atmos + atm_int_state%Time_step_restart
      atm_int_state%intrm_rst         = 0
      if (res_intvl>0) atm_int_state%intrm_rst = 1
+     atm_int_state%Atm%iau_offset    = iau_offset
 !
 !
 !----- write time stamps (for start time and end time) ------

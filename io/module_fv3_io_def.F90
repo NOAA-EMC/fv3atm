@@ -19,7 +19,7 @@
   character(255)    :: output_file
   integer           :: imo,jmo
   integer           :: nbdlphys
-  integer           :: nsout_io
+  integer           :: nsout_io, iau_offset
   real              :: cen_lon, cen_lat, lon1, lat1, lon2, lat2, dlon, dlat
   real              :: stdlat1, stdlat2, dx, dy
   character(255),dimension(:),allocatable :: filename_base

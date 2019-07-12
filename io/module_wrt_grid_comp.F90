@@ -37,7 +37,7 @@
                                       nsout => nsout_io,                        &
                                       cen_lon, cen_lat,                         &
                                       lon1, lat1, lon2, lat2, dlon, dlat,       &
-                                      stdlat1, stdlat2, dx, dy
+                                      stdlat1, stdlat2, dx, dy, iau_offset
       use module_write_nemsio, only : nemsio_first_call, write_nemsio
       use module_write_netcdf, only : write_netcdf
       use physcons,            only : pi => con_pi
@@ -143,7 +143,7 @@
       type(write_wrap)                        :: WRAP
       type(wrt_internal_state),pointer        :: wrt_int_state
 
-      integer                                 :: ISTAT, tl, i, j, n, k,date(6)
+      integer                                 :: ISTAT, tl, i, j, n, k
       integer,dimension(2,6)                  :: decomptile
       integer                                 :: fieldCount
       integer                                 :: vm_mpi_comm
@@ -181,6 +181,8 @@
       real(ESMF_KIND_R8)                            :: geo_lon, geo_lat
       real(ESMF_KIND_R8)                            :: lon1_r8, lat1_r8
       real(ESMF_KIND_R8)                            :: x1, y1, x, y
+      type(ESMF_Time)                               :: IO_BASETIME_IAU
+      type(ESMF_TimeInterval)                       :: IAU_offsetTI
       type(ESMF_DataCopy_Flag) :: copyflag=ESMF_DATACOPY_REFERENCE
 !     real(8),parameter :: PI=3.14159265358979d0
 
@@ -998,11 +1000,17 @@
                         ,startTime=wrt_int_state%IO_BASETIME            &  !<-- The Clock's starting time
                         ,rc       =RC)
 
-      call ESMF_TimeGet(time=wrt_int_state%IO_BASETIME,yy=date(1),mm=date(2),dd=date(3),h=date(4), &
-                        m=date(5),s=date(6),rc=rc)
-      if(wrt_int_state%mype == lead_write_task) print *,'in wrt initial, io_baseline time=',date,'rc=',rc
-      idate(1:6) = date(1:6)
+      call ESMF_TimeGet(time=wrt_int_state%IO_BASETIME,yy=idate(1),mm=idate(2),dd=idate(3),h=idate(4), &
+                        m=idate(5),s=idate(6),rc=rc)
+      if(wrt_int_state%mype == lead_write_task) print *,'in wrt initial, io_baseline time=',idate,'rc=',rc
       idate(7) = 1
+      if(iau_offset > 0 ) then
+        call ESMF_TimeIntervalSet(IAU_offsetTI, h=iau_offset, rc=rc)
+        IO_BASETIME_IAU = wrt_int_state%IO_BASETIME + IAU_offsetTI
+        call ESMF_TimeGet(time=IO_BASETIME_IAU,yy=idate(1),mm=idate(2),dd=idate(3),h=idate(4), &
+                        m=idate(5),s=idate(6),rc=rc)
+      if(wrt_int_state%mype == lead_write_task) print *,'in wrt initial, with iau, io_baseline time=',idate,'rc=',rc
+      endif
 !
 !-----------------------------------------------------------------------
 !***  SET THE FIRST HISTORY FILE'S TIME INDEX.
@@ -1183,12 +1191,17 @@
                                    ,rc          =RC)
        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
          line=__LINE__, file=__FILE__)) return  ! bail out
-!    if(mype == lead_write_task) print *,'in wrt run, nf_hours=',nf_hours,nf_minutes,nseconds, &
-!       'nseconds_num=',nseconds_num,nseconds_den
+!       if(mype == lead_write_task) print *,'in wrt run, nf_hours=',nf_hours,nf_minutes,nseconds, &
+!         'nseconds_num=',nseconds_num,nseconds_den,'mype=',mype
 !
        nf_seconds = nf_hours*3600+nf_minuteS*60+nseconds+real(nseconds_num)/real(nseconds_den)
+       ! shift forecast hour by iau_offset if iau is on.
+       nf_seconds = nf_seconds - iau_offset*3600
        wrt_int_state%nfhour = nf_seconds/3600.
        nf_hours   = int(nf_seconds/3600.)
+       ! if iau_offset > nf_hours, don't write out anything
+       if (nf_hours < 0) return
+
        nf_minutes = int((nf_seconds-nf_hours*3600.)/60.)
        nseconds   = int(nf_seconds-nf_hours*3600.-nf_minutes*60.)
 !      if (nf_seconds-nf_hours*3600 > 0 .and. nsout > 0) then

@@ -64,6 +64,7 @@ module GFS_typedefs
     integer :: logunit                           !< fortran unit number for writing logfile
     integer :: bdat(8)                           !< model begin date in GFS format   (same as idat)
     integer :: cdat(8)                           !< model current date in GFS format (same as jdat)
+    integer :: iau_offset                        !< IAU running window lendth
     real(kind=kind_phys) :: dt_dycore            !< dynamics time step in seconds
     real(kind=kind_phys) :: dt_phys              !< physics  time step in seconds
 !--- blocking data
@@ -461,6 +462,7 @@ module GFS_typedefs
 !--- calendars and time parameters and activation triggers
     real(kind=kind_phys) :: dtp             !< physics timestep in seconds
     real(kind=kind_phys) :: dtf             !< dynamics timestep in seconds
+    integer              :: iau_offset      !< IAU running window length
     integer              :: nscyc           !< trigger for surface data cycling
     integer              :: nszero          !< trigger for zeroing diagnostic buckets
     integer              :: idat(1:8)       !< initialization date and time
@@ -1862,7 +1864,8 @@ module GFS_typedefs
   subroutine control_initialize (Model, nlunit, fn_nml, me, master, &
                                  logunit, isc, jsc, nx, ny, levs,   &
                                  cnx, cny, gnx, gny, dt_dycore,     &
-                                 dt_phys, idat, jdat, tracer_names, &
+                                 dt_phys, iau_offset, idat, jdat,   &
+                                 tracer_names, &
                                  input_nml_file, tile_num)
 
 !--- modules
@@ -1910,6 +1913,7 @@ module GFS_typedefs
     real(kind=kind_phys),   intent(in) :: dt_phys
     integer,                intent(in) :: idat(8)
     integer,                intent(in) :: jdat(8)
+    integer,                intent(in) :: iau_offset
     character(len=32),      intent(in) :: tracer_names(:)
     character(len=*),       intent(in), pointer :: input_nml_file(:)
     !--- local variables
@@ -2392,6 +2396,7 @@ module GFS_typedefs
     Model%idate(2)         = Model%idat(2)
     Model%idate(3)         = Model%idat(3)
     Model%idate(4)         = Model%idat(1)
+    Model%dtf              = iau_offset
 
 !--- radiation control parameters
     Model%fhswr            = fhswr

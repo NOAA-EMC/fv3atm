@@ -41,7 +41,7 @@ module fv3gfs_cap_mod
                                     write_fsyncflag, nsout_io,               &
                                     cen_lon, cen_lat,                        &
                                     lon1, lat1, lon2, lat2, dlon, dlat,      &
-                                    stdlat1, stdlat2, dx, dy
+                                    stdlat1, stdlat2, dx, dy, iau_offset
 !
   use module_fcst_grid_comp,  only: fcstSS => SetServices,                   &
                                     fcstGrid, numLevels, numSoilLayers,      &
@@ -229,7 +229,7 @@ module fv3gfs_cap_mod
     type(ESMF_Time)                        :: CurrTime, starttime, StopTime
     type(ESMF_Time)                        :: alarm_output_hf_ring, alarm_output_ring
     type(ESMF_Time)                        :: alarm_output_hf_stop, alarm_output_stop
-    type(ESMF_TimeInterval)                :: RunDuration, timeStep, rsthour
+    type(ESMF_TimeInterval)                :: RunDuration, timeStep, rsthour, IAU_offsetTI
     type(ESMF_Config)                      :: cf
     type(ESMF_RegridMethod_Flag)           :: regridmethod
     type(ESMF_TimeInterval)                :: earthStep
@@ -299,7 +299,10 @@ module fv3gfs_cap_mod
                                  default=.false., label ='output_1st_tstep_rst:',rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-    if(mype == 0) print *,'af nems config,quilting=',quilting,'calendar=', trim(calendar)
+    call ESMF_ConfigGetAttribute(config=CF,value=iau_offset,default=0,label ='iau_offset:',rc=rc)
+    if (iau_offset < 0) iau_offset=0
+
+    if(mype == 0) print *,'af nems config,quilting=',quilting,'calendar=', trim(calendar),'iau_offset=',iau_offset
 !
     nfhout = 0 ; nfhmax_hf = 0 ; nfhout_hf = 0 ; nsout = 0
     if ( quilting ) then
@@ -345,6 +348,7 @@ module fv3gfs_cap_mod
       end if
       write_nemsioflip =.false.
       write_fsyncflag  =.false.
+
       if(trim(output_grid) == 'gaussian_grid') then
         call ESMF_ConfigGetAttribute(config=CF, value=imo, label ='imo:',rc=rc)
         call ESMF_ConfigGetAttribute(config=CF, value=jmo, label ='jmo:',rc=rc)
@@ -572,6 +576,9 @@ module fv3gfs_cap_mod
 !
       allocate(petList(wrttasks_per_group))
       if(mype == 0) print *,'af allco wrtComp,write_groups=',write_groups
+
+! set up ESMF time interval at center of iau window 
+      call ESMF_TimeIntervalSet(IAU_offsetTI, h=iau_offset, rc=rc)
 !
       allocate(originPetList(num_pes_fcst+wrttasks_per_group))
       allocate(targetPetList(num_pes_fcst+wrttasks_per_group))
@@ -735,6 +742,9 @@ module fv3gfs_cap_mod
         if (currtime <= starttime+output_hfmax) then
           nhf = (currtime-starttime)/output_interval_hf
           alarm_output_hf_ring = startTime + (nhf+1_ESMF_KIND_I4)*output_interval_hf
+          if(iau_offset > 0) then
+            alarm_output_hf_ring = startTime + IAU_offsetTI
+          endif
           alarm_output_hf = ESMF_AlarmCreate(clock_fv3,name='ALARM_OUTPUT_HF',  &
                                              ringTime =alarm_output_hf_ring,    &
                                              ringInterval =output_interval_hf,  &  !<-- Time interval between
@@ -744,7 +754,7 @@ module fv3gfs_cap_mod
                                              rc               =RC)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-          alarm_output_ring = starttime + output_hfmax + output_interval
+          alarm_output_ring = startTime + output_hfmax + output_interval
         else
           nrg = (currtime-starttime-output_hfmax)/output_interval
           alarm_output_ring = startTime + output_hfmax + (nrg+1_ESMF_KIND_I4) * output_interval
@@ -752,6 +762,9 @@ module fv3gfs_cap_mod
       else
           nrg = (currtime-starttime)/output_interval
           alarm_output_ring = startTime + (nrg+1_ESMF_KIND_I4) * output_interval
+          if(iau_offset > 0) then
+            alarm_output_ring = startTime + IAU_offsetTI
+          endif
       endif
 
       call ESMF_TimeIntervalSet(output_interval, h=nfhout, m=nfmout, &
@@ -1037,6 +1050,7 @@ module fv3gfs_cap_mod
        output: IF(lalarm .or. na==first_kdt ) then
 
          timerhi = mpi_wtime()
+!         if (mype == 0 .or. mype == lead_wrttask(1)) print *,' aft fcst run alarm is on, na=',na,'mype=',mype
          do i=1, FBCount
 !
 ! get fcst fieldbundle

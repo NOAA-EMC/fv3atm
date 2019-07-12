@@ -134,6 +134,7 @@ public addLsmask2grid
      logical                       :: regional           ! true if domain is regional
      logical                       :: nested             ! true if there is a nest
      integer                       :: mlon, mlat
+     integer                       :: iau_offset         ! iau running window length
      logical                       :: pe                 ! current pe.
      real(kind=8),             pointer, dimension(:)     :: ak, bk
      real,                     pointer, dimension(:,:)   :: lon_bnd  => null() ! local longitude axis grid box corners in radians.
@@ -553,6 +554,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    Init_parm%cdat(:)         =  cdat(:)
    Init_parm%dt_dycore       =  dt_phys
    Init_parm%dt_phys         =  dt_phys
+   Init_parm%iau_offset      =  Atmos%iau_offset
    Init_parm%blksz           => Atm_block%blksz
    Init_parm%ak              => Atmos%ak
    Init_parm%bk              => Atmos%bk

@@ -162,6 +162,7 @@ module GFS_typedefs
 !! | logunit        |                                                        | fortran unit number for writing logfile                 | none          |    0 | integer  |           | none   | F        |
 !! | bdat           |                                                        | model begin date in GFS format   (same as idat)         | none          |    0 | integer  |           | none   | F        |
 !! | cdat           |                                                        | model current date in GFS format (same as jdat)         | none          |    0 | integer  |           | none   | F        |
+!! | iau_offset     |                                                        | iau running window length in hour                       | none          |    0 | integer  |           | none   | F        |
 !! | dt_dycore      |                                                        | dynamics time step in seconds                           | s             |    0 | real     | kind_phys | none   | F        |
 !! | dt_phys        |                                                        | physics  time step in seconds                           | s             |    0 | real     | kind_phys | none   | F        |
 !! | restart        |                                                        | flag for restart (warmstart) or coldstart               | flag          |    0 | logical  |           | none   | F        |
@@ -196,6 +197,7 @@ module GFS_typedefs
     integer :: logunit                           !< fortran unit number for writing logfile
     integer :: bdat(8)                           !< model begin date in GFS format   (same as idat)
     integer :: cdat(8)                           !< model current date in GFS format (same as jdat)
+    integer :: iau_offset                        !< iau running window length
     real(kind=kind_phys) :: dt_dycore            !< dynamics time step in seconds
     real(kind=kind_phys) :: dt_phys              !< physics  time step in seconds
 #ifdef CCPP
@@ -1654,6 +1656,7 @@ module GFS_typedefs
 #endif
 
 !--- IAU
+    integer              :: iau_offset
     real(kind=kind_phys) :: iau_delthrs     ! iau time interval (to scale increments) in hours
     character(len=240)   :: iau_inc_files(7)! list of increment files
     real(kind=kind_phys) :: iaufhrs(7)      ! forecast hours associated with increment files
@@ -3676,7 +3679,8 @@ module GFS_typedefs
   subroutine control_initialize (Model, nlunit, fn_nml, me, master, &
                                  logunit, isc, jsc, nx, ny, levs,   &
                                  cnx, cny, gnx, gny, dt_dycore,     &
-                                 dt_phys, idat, jdat, tracer_names, &
+                                 dt_phys, iau_offset, idat, jdat,   &
+                                 tracer_names,                      &
                                  input_nml_file, tile_num           &
 #ifdef CCPP
                                 ,ak, bk, blksz,                     &
@@ -3721,6 +3725,7 @@ module GFS_typedefs
     integer,                intent(in) :: gny
     real(kind=kind_phys),   intent(in) :: dt_dycore
     real(kind=kind_phys),   intent(in) :: dt_phys
+    integer,                intent(in) :: iau_offset
     integer,                intent(in) :: idat(8)
     integer,                intent(in) :: jdat(8)
     character(len=32),      intent(in) :: tracer_names(:)
@@ -4069,7 +4074,7 @@ module GFS_typedefs
   
 
     !--- IAU options
-    real(kind=kind_phys)  :: iau_delthrs = 6                 ! iau time interval (to scale increments)
+    real(kind=kind_phys)  :: iau_delthrs = 0                 ! iau time interval (to scale increments)
     character(len=240)    :: iau_inc_files(7)=''             ! list of increment files
     real(kind=kind_phys)  :: iaufhrs(7)=-1                   ! forecast hours associated with increment files
     logical  :: iau_filter_increments = .false.   ! filter IAU increments
@@ -4292,6 +4297,7 @@ module GFS_typedefs
     Model%idate(2)         = Model%idat(2)
     Model%idate(3)         = Model%idat(3)
     Model%idate(4)         = Model%idat(1)
+    Model%iau_offset       = iau_offset
 
 !--- radiation control parameters
     Model%fhswr            = fhswr
@@ -4620,6 +4626,7 @@ module GFS_typedefs
     Model%iau_inc_files   = iau_inc_files
     Model%iau_delthrs     = iau_delthrs
     Model%iau_filter_increments = iau_filter_increments
+    if(Model%me==0) print *,' model init,iaufhrs=',Model%iaufhrs
 
 !--- tracer handling
     Model%ntrac            = size(tracer_names)
@@ -6087,9 +6094,10 @@ module GFS_typedefs
     if (Model%cplchm) call Diag%chem_init(IM,Model)
 
     call Diag%rad_zero  (Model)
-!    print *,'in diag_create, call phys_zero'
+!    if(Model%me==0) print *,'in diag_create, call rad_zero'
     linit = .true.
     call Diag%phys_zero (Model, linit=linit)
+!    if(Model%me==0) print *,'in diag_create, call phys_zero'
     linit = .false.
 
   end subroutine diag_create
@@ -6116,10 +6124,12 @@ module GFS_typedefs
 !------------------------
 ! GFS_diag%phys_zero
 !------------------------
-  subroutine diag_phys_zero (Diag, Model, linit)
+  subroutine diag_phys_zero (Diag, Model, linit, iauwindow_center)
     class(GFS_diag_type)               :: Diag
     type(GFS_control_type), intent(in) :: Model
-    logical,optional, intent(in)       :: linit
+    logical,optional, intent(in)       :: linit, iauwindow_center
+
+    logical set_totprcp
 
     !--- In/Out
     Diag%srunoff    = zero
@@ -6295,23 +6305,22 @@ module GFS_typedefs
 !-----------------------------
 
 ! max hourly diagnostics
-      Diag%refl_10cm   = zero
-      Diag%refdmax     = -35.
-      Diag%refdmax263k = -35.
-      Diag%t02max      = -999.
-      Diag%t02min      = 999.
-      Diag%rh02max     = -999.
-      Diag%rh02min     = 999.
-    if (present(linit)) then
-      if (linit) then
-        Diag%totprcp = zero
-        Diag%cnvprcp = zero
-        Diag%totice  = zero
-        Diag%totsnw  = zero
-        Diag%totgrp  = zero
-!       if(Model%me == Model%master) print *,'in diag_phys_zero, called in init step,set precip diag variable to zero',&
-!                                            'size(Diag%totprcp)=',size(Diag%totprcp),'me=',Model%me,'kdt=',Model%kdt
-      endif
+    Diag%refl_10cm   = zero
+    Diag%refdmax     = -35.
+    Diag%refdmax263k = -35.
+    Diag%t02max      = -999.
+    Diag%t02min      = 999.
+    Diag%rh02max     = -999.
+    Diag%rh02min     = 999.
+    set_totprcp      = .false.
+    if (present(linit) ) set_totprcp = linit
+    if (present(iauwindow_center) ) set_totprcp = iauwindow_center
+    if (set_totprcp) then
+      Diag%totprcp = zero
+      Diag%cnvprcp = zero
+      Diag%totice  = zero
+      Diag%totsnw  = zero
+      Diag%totgrp  = zero
     endif
   end subroutine diag_phys_zero
 

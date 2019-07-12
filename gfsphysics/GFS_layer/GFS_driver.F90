@@ -186,8 +186,8 @@ module GFS_driver
                      Init_parm%levs, Init_parm%cnx, Init_parm%cny, &
                      Init_parm%gnx, Init_parm%gny,                 &
                      Init_parm%dt_dycore, Init_parm%dt_phys,       &
-                     Init_parm%bdat, Init_parm%cdat,               &
-                     Init_parm%tracer_names,                       &
+                     Init_parm%iau_offset, Init_parm%bdat,         &
+                     Init_parm%cdat, Init_parm%tracer_names,       &
                      Init_parm%input_nml_file, Init_parm%tile_num  &
 #ifdef CCPP
                     ,Init_parm%ak, Init_parm%bk, Init_parm%blksz,  &
@@ -505,7 +505,8 @@ module GFS_driver
 
 
     !--- local variables
-    integer :: nb, nblks, k, kdt_rad, blocksize
+    integer :: nb, nblks, k, kdt_rad, kdt_iau, blocksize
+    logical :: iauwindow_center
     real(kind=kind_phys) :: rinc(5)
     real(kind=kind_phys) :: sec, sec_zero
     real(kind=kind_phys), parameter :: cn_hr     = 3600._kind_phys
@@ -584,6 +585,18 @@ module GFS_driver
           call Diag(nb)%rad_zero  (Model)
     !!!!  THIS IS THE POINT AT WHICH DIAG%ZHOUR NEEDS TO BE UPDATED
         enddo
+      endif
+    endif
+!
+    if (Model%iau_offset > 0) then
+      kdt_iau = nint(Model%iau_offset*con_hr/Model%dtp)
+      if (Model%kdt == kdt_iau+1) then
+        iauwindow_center = .true.
+        do nb = 1,nblks
+          call Diag(nb)%rad_zero  (Model)
+          call Diag(nb)%phys_zero (Model,iauwindow_center=iauwindow_center)
+        enddo
+        if(Model%me == Model%master) print *,'in gfs_driver, at iau_center, zero out rad/phys accumulated diag fields, kdt=',Model%kdt,'kdt_iau=',kdt_iau,'iau_offset=',Model%iau_offset
       endif
     endif
     call run_stochastic_physics(nblks,Model,Grid(:),Coupling(:))
