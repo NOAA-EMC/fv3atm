@@ -204,6 +204,7 @@ module module_physics_driver
 !                               J. Alpert, T. Fuller-Rowll and R. Akmaev! 
 !      May  2019    J. Han      Add updated scal-aware TKE-based moist  !
 !                               EDMF vertical turbulent mixng scheme    !
+!      Jul  2019    Weiguo Wang Update PBL scheme for HAFS              !
 !
 !  ====================    end of description    =====================
 !  ====================  definition of variables  ====================  !
@@ -1660,6 +1661,7 @@ module module_physics_driver
            Statein%prsl(:,1), work3, Tbd%phy_f2d(:,Model%num_p2d),      &
            sigmaf, vegtype, Sfcprop%shdmax, Model%ivegsrc,              &
            z01d, zt1d, flag_iter, Model%redrag,                         &
+           Diag%u10m,    Diag%v10m,  Model%sfc_z0_type,                 &
            wet, dry, icy, tsfc3, tsurf3, snowd3,                        &
 !  ---  input/output:
            zorl3, uustar3,                                              &
@@ -2243,6 +2245,7 @@ module module_physics_driver
                        kinver, Model%xkzm_m, Model%xkzm_h, Model%xkzm_s)
              endif
           elseif (Model%hybedmf) then
+            if (Model%moninq_fac > 0) then
               call moninedmf(ix, im, levs, nvdiff, ntcw, dvdt, dudt, dtdt, dqdt,    &
                            Statein%ugrs, Statein%vgrs, Statein%tgrs, Statein%qgrs,  &
                            Radtend%htrsw, Radtend%htrlw, xmu, Statein%prsik(1,1),   &
@@ -2254,6 +2257,20 @@ module module_physics_driver
                            gamt, gamq, dkt, kinver, Model%xkzm_m, Model%xkzm_h,     &
                            Model%xkzm_s, lprnt, ipr,                                &
                            Model%xkzminv, Model%moninq_fac)
+            else
+              call moninedmf_hafs(ix, im, levs, nvdiff, ntcw, dvdt, dudt, dtdt, dqdt,&
+                           Statein%ugrs, Statein%vgrs, Statein%tgrs, Statein%qgrs,  &
+                           Radtend%htrsw, Radtend%htrlw, xmu, Statein%prsik(1,1),   &
+                           rb, Sfcprop%zorl, Diag%u10m, Diag%v10m, Sfcprop%ffmm,    &
+                           Sfcprop%ffhh, Sfcprop%tsfc, qss, hflx, evap, stress,     &
+                           wind, kpbl, Statein%prsi, del, Statein%prsl,             &
+                           Statein%prslk, Statein%phii, Statein%phil, dtp,          &
+                           Model%dspheat, dusfc1, dvsfc1, dtsfc1, dqsfc1, Diag%hpbl,&
+                           gamt, gamq, dkt, kinver, Model%xkzm_m, Model%xkzm_h,     &
+                           Model%xkzm_s, lprnt, ipr,                                &
+                           Model%xkzminv, Model%moninq_fac,islmsk)
+            endif
+>>>>>>> origin/HAFS_physics
 !     if (lprnt)  write(0,*)' dtdtm=',(dtdt(ipr,k),k=1,15)
 !     if (lprnt)  write(0,*)' dqdtm=',(dqdt(ipr,k,1),k=1,15)
           !elseif (Model%do_ysu) then
@@ -2452,6 +2469,7 @@ module module_physics_driver
                          kinver, Model%xkzm_m, Model%xkzm_h, Model%xkzm_s)
              endif
           elseif (Model%hybedmf) then
+           if ( Model%moninq_fac > 0 ) then 
             call moninedmf(ix, im, levs, nvdiff, ntcw, dvdt, dudt, dtdt, dvdftra,       &
                            Statein%ugrs, Statein%vgrs, Statein%tgrs, vdftra,            &
                            Radtend%htrsw, Radtend%htrlw, xmu, Statein%prsik(1,1),       &
@@ -2463,6 +2481,20 @@ module module_physics_driver
                            gamt, gamq, dkt, kinver, Model%xkzm_m, Model%xkzm_h,         &
                            Model%xkzm_s, lprnt, ipr,                                    &
                            Model%xkzminv, Model%moninq_fac)
+           else
+            call moninedmf_hafs(ix, im, levs, nvdiff, ntcw, dvdt, dudt, dtdt, dvdftra,  &
+                           Statein%ugrs, Statein%vgrs, Statein%tgrs, vdftra,            &
+                           Radtend%htrsw, Radtend%htrlw, xmu, Statein%prsik(1,1),       &
+                           rb, Sfcprop%zorl, Diag%u10m, Diag%v10m, Sfcprop%ffmm,        &
+                           Sfcprop%ffhh, Sfcprop%tsfc, qss, hflx, evap, stress,         &
+                           wind, kpbl, Statein%prsi, del, Statein%prsl,                 &
+                           Statein%prslk, Statein%phii, Statein%phil, dtp,              &
+                           Model%dspheat, dusfc1, dvsfc1, dtsfc1, dqsfc1, Diag%hpbl,    &
+                           gamt, gamq, dkt, kinver, Model%xkzm_m, Model%xkzm_h,         &
+                           Model%xkzm_s, lprnt, ipr,                                    &
+                           Model%xkzminv, Model%moninq_fac,islmsk)
+           endif
+>>>>>>> origin/HAFS_physics
           elseif (.not. Model%old_monin) then
             call moninq(ix, im, levs, nvdiff, ntcw, dvdt, dudt, dtdt, dvdftra,          &
                         Statein%ugrs, Statein%vgrs, Statein%tgrs, vdftra,               &

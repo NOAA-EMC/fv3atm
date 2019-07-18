@@ -94,6 +94,7 @@ SRCS_f =  \
 	   ./physics/mfscu.f                                                         \
 	   ./physics/module_bfmicrophysics.f                                         \
 	   ./physics/moninedmf.f                                                     \
+	   ./physics/moninedmf_hafs.f                                                \
 	   ./physics/moninp.f                                                        \
 	   ./physics/moninp1.f                                                       \
 	   ./physics/moninq.f                                                        \
