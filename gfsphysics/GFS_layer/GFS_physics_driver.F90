@@ -2270,7 +2270,6 @@ module module_physics_driver
                            Model%xkzm_s, lprnt, ipr,                                &
                            Model%xkzminv, Model%moninq_fac,islmsk)
             endif
->>>>>>> origin/HAFS_physics
 !     if (lprnt)  write(0,*)' dtdtm=',(dtdt(ipr,k),k=1,15)
 !     if (lprnt)  write(0,*)' dqdtm=',(dqdt(ipr,k,1),k=1,15)
           !elseif (Model%do_ysu) then
@@ -2494,7 +2493,6 @@ module module_physics_driver
                            Model%xkzm_s, lprnt, ipr,                                    &
                            Model%xkzminv, Model%moninq_fac,islmsk)
            endif
->>>>>>> origin/HAFS_physics
           elseif (.not. Model%old_monin) then
             call moninq(ix, im, levs, nvdiff, ntcw, dvdt, dudt, dtdt, dvdftra,          &
                         Statein%ugrs, Statein%vgrs, Statein%tgrs, vdftra,               &
