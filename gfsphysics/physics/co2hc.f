@@ -834,9 +834,9 @@
 ! Calculate composition on Victor grid above x=12.5 (index 50) for 
 !       recurrent formula
 !
-      call splin2(xhr,mu,xvic0(51),vicmu,lhr,itm50,im,jm)
-      call splin2(xhr,rn2,xvic0(51),vicn2,lhr,itm50,im,jm)
-      call splin2(xhr,ro2,xvic0(51),vico2,lhr,itm50,im,jm)
+      call splin2(xhr,mu,xvic0(51:),vicmu,lhr,itm50,im,jm)
+      call splin2(xhr,rn2,xvic0(51:),vicn2,lhr,itm50,im,jm)
+      call splin2(xhr,ro2,xvic0(51:),vico2,lhr,itm50,im,jm)
 !
 ! Feb 28, 2008
 ! idea change: the following portion of the code commented out and 
@@ -864,7 +864,7 @@
 !      call splin2(xhr(iwork),ro1(1:im,iwork:),xvic0(51),vico1,         &
 !     &     lhr-iwork+1,itm50,im,jm)
 !
-      call splin2(xhr,ro1,xvic0(51),vico1,lhr,itm50,im,jm)
+      call splin2(xhr,ro1,xvic0(51:),vico1,lhr,itm50,im,jm)
 !
 ! idea add: make sure O is non-negative
 !
@@ -1200,8 +1200,8 @@
          endif
       enddo
       j=i-1
-      call splin1(xmod,mu,xvic0(i),vmu(i),lmod,ivict-j)
-      call splin1(xmod,gr,xvic0(i),vgrav(i),lmod,ivict-j)
+      call splin1(xmod,mu,xvic0(i:),vmu(i:),lmod,ivict-j)
+      call splin1(xmod,gr,xvic0(i:),vgrav(i:),lmod,ivict-j)
 !
 ! Below x(i) assume constant mu and g
 !
@@ -1386,7 +1386,7 @@
          if(uco2(i+50).lt.uco2ro(1)) then
             war1(1)=0.
          else
-            call splin1(uco2ro,alo,uco2(i+50),war1,51,1)
+            call splin1(uco2ro,alo,uco2(i+50:),war1,51,1)
          endif
          co2int(1)=cor150(i)
          co2int(2)=cor360(i)
@@ -1396,7 +1396,7 @@
          uref(2) =uco2o(i+50)
          uref(3) =uco2o(i+50)*540./360.
          uref(4) =uco2o(i+50)*720./360.
-         call splin1(uref,co2int,uco2(i+50),war2,4,1)
+         call splin1(uref,co2int,uco2(i+50:),war2,4,1)
          alvic(i)=exp(war1(1)+war2(1))
       enddo
 !
@@ -1406,7 +1406,7 @@
          if(uco2(i+50).lt.uco2ro(1)) then
             war1(1)=0.
          else
-            call splin1(uco2ro,alo,uco2(i+50),war1,51,1)
+            call splin1(uco2ro,alo,uco2(i+50:),war1,51,1)
          endif
          alvic(i)=exp(war1(1))
       enddo

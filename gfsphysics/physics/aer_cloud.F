@@ -460,7 +460,9 @@
 !      allocate(sigdust_ice(nbindust_ice))
 !      allocate(ddust_ice(nbindust_ice))
 
-
+       ddust_ice = zero_par
+       ndust_ice = zero_par
+       sigdust_ice = zero_par
        do n=1,nbindust_ice
          ddust_ice(n)   = DBLE(Aeraux%dpg(n))
          ndust_ice(n)   = DBLE(Aeraux%num(n))*air_den
@@ -3076,7 +3078,8 @@
      & dNglassy, SIW, D_grid_bio, n_grid_bio,vpresw_ice,vpresi_ice
 
        real*8, dimension(3) :: sig_array, the_array, frac_array
-       real*8, dimension(:) :: ndust_ice, sigdust_ice,ddust_ice
+       real*8, dimension(1:nbindust_ice) :: ndust_ice, sigdust_ice,
+     &   ddust_ice
 
        real :: n_iw, DSh_s , nbc_s, dbc_s, Asolo
        real, dimension (nbindust_ice) :: ndust_s, ddust_s

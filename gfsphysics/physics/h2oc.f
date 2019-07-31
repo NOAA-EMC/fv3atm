@@ -837,9 +837,9 @@ c Determine the first model layer from the top below or about 100 km
       wvmy(:)=0.
       tmy(:)=0.
       call splin1(x0(kz0:1:-1),mmr0(kz0:1:-1),
-     $     xmy(lh2o),wvmy(lh2o),kz0,lmy+1-lh2o)
+     $     xmy(lh2o:),wvmy(lh2o:),kz0,lmy+1-lh2o)
       call splin1(x0(kz0:1:-1),tem0(kz0:1:-1),
-     $     xmy(lh2o),tmy(lh2o),kz0,lmy+1-lh2o)
+     $     xmy(lh2o:),tmy(lh2o:),kz0,lmy+1-lh2o)
 
 c For linear extrapolation of cooling rates upward of xmy(lh2o), count
 c how many model layers are between xmy(lh2o) and xmu(lh2o)+1 and 

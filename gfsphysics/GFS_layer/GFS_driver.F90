@@ -7,10 +7,14 @@ module GFS_driver
                                       GFS_control_type, GFS_grid_type,     &
                                       GFS_tbd_type,     GFS_cldprop_type,  &
                                       GFS_radtend_type, GFS_diag_type
+#ifdef CCPP
+  use GFS_typedefs,             only: GFS_interstitial_type
+#else
   use module_radiation_driver,  only: GFS_radiation_driver, radupdate
   use module_physics_driver,    only: GFS_physics_driver
   use funcphys,                 only: gfuncphys
   use gfdl_cloud_microphys_mod, only: gfdl_cloud_microphys_init
+#endif
   use physcons,                 only: gravit => con_g,    rair    => con_rd, &
                                       rh2o   => con_rv,                      &
                                       tmelt  => con_ttp,  cpair   => con_cp, &
@@ -87,11 +91,12 @@ module GFS_driver
 ! Public entities
 !----------------
   public  GFS_initialize              !< GFS initialization routine
+#ifndef CCPP
   public  GFS_time_vary_step          !< perform operations needed prior radiation or physics
   public  GFS_radiation_driver        !< radiation_driver (was grrad)
   public  GFS_physics_driver          !< physics_driver (was gbphys)
   public  GFS_stochastic_driver       !< stochastic physics
-
+#endif
 
   CONTAINS
 !*******************************************************************************************
@@ -102,8 +107,18 @@ module GFS_driver
 !--------------
   subroutine GFS_initialize (Model, Statein, Stateout, Sfcprop,     &
                              Coupling, Grid, Tbd, Cldprop, Radtend, & 
+#ifdef CCPP
+                             Diag, Interstitial, communicator,      &
+                             ntasks, Init_parm)
+#else
                              Diag, Init_parm)
+#endif
 
+#ifdef OPENMP
+    use omp_lib
+#endif
+
+#ifndef CCPP
 !   use module_microphysics, only: gsmconst
     use cldwat2m_micro,      only: ini_micro
     use micro_mg2_0,         only: micro_mg_init2_0 => micro_mg_init
@@ -112,8 +127,8 @@ module GFS_driver
     use module_ras,          only: ras_init
     use module_mp_thompson,  only: thompson_init
     use module_mp_wsm6,      only: wsm6init
-!vay-2018
     use cires_ugwp_module,   only: cires_ugwp_init
+#endif
 
     !--- interface variables
     type(GFS_control_type),   intent(inout) :: Model
@@ -126,24 +141,42 @@ module GFS_driver
     type(GFS_cldprop_type),   intent(inout) :: Cldprop(:)
     type(GFS_radtend_type),   intent(inout) :: Radtend(:)
     type(GFS_diag_type),      intent(inout) :: Diag(:)
+#ifdef CCPP
+    type(GFS_interstitial_type), intent(inout) :: Interstitial(:)
+    integer,                  intent(in)    :: communicator
+    integer,                  intent(in)    :: ntasks
+#endif
     type(GFS_init_type),      intent(in)    :: Init_parm
 
 
     !--- local variables
     integer :: nb
     integer :: nblks
+#ifdef CCPP
+    integer :: nt
+    integer :: nthrds
+    logical :: non_uniform_blocks
+#endif
     integer :: ntrac
     integer :: ix
+#ifndef CCPP
     integer :: blocksize
     real(kind=kind_phys), allocatable :: si(:)
     real(kind=kind_phys), parameter   :: p_ref = 101325.0d0
-
+#endif
 
     nblks = size(Init_parm%blksz)
     ntrac = size(Init_parm%tracer_names)
     allocate (blksz(nblks))
     blksz(:) = Init_parm%blksz(:)
-    !--- initializing stochastic physics
+
+#ifdef CCPP
+#ifdef OPENMP
+    nthrds = omp_get_max_threads()
+#else
+    nthrds = 1
+#endif
+#endif
 
     !--- set control properties (including namelist read)
     call Model%init (Init_parm%nlunit, Init_parm%fn_nml,           &
@@ -153,24 +186,39 @@ module GFS_driver
                      Init_parm%levs, Init_parm%cnx, Init_parm%cny, &
                      Init_parm%gnx, Init_parm%gny,                 &
                      Init_parm%dt_dycore, Init_parm%dt_phys,       &
-                     Init_parm%bdat, Init_parm%cdat,               &
-                     Init_parm%tracer_names,                       &
-                     Init_parm%input_nml_file, Init_parm%tile_num)
+                     Init_parm%iau_offset, Init_parm%bdat,         &
+                     Init_parm%cdat, Init_parm%tracer_names,       &
+                     Init_parm%input_nml_file, Init_parm%tile_num  &
+#ifdef CCPP
+                    ,Init_parm%ak, Init_parm%bk, Init_parm%blksz,  &
+                     Init_parm%restart, Init_parm%hydrostatic,     &
+                     communicator, ntasks, nthrds                  &
+#endif
+                     )
 
-
+! For CCPP,  these are called automatically in GFS_phys_time_vary_init as part of CCPP physics init.
+! The reason why these are in GFS_phys_time_vary_init and not in ozphys/h2ophys is that the ozone
+! and h2o interpolation of the data read here is done in GFS_phys_time_vary_run, i.e. all work
+! related to the ozone/h2o input data is in GFS_phys_time_vary, while ozphys/h2ophys are applying
+! ozone/h2o forcing to the model state.
+#ifndef CCPP
     call read_o3data  (Model%ntoz, Model%me, Model%master)
     call read_h2odata (Model%h2o_phys, Model%me, Model%master)
-
     if (Model%aero_in) then
       call read_aerdata (Model%me,Model%master,Model%iflip,Model%idate)
     endif
     if (Model%iccn) then
       call read_cidata  ( Model%me, Model%master)
     endif
+#endif
 
-    call init_stochastic_physics(Model,Init_parm,nblks,Grid)
-
+! For CCPP,  stochastic_physics_init is called automatically as part of CCPP physics init
+#ifndef CCPP
+    !--- initializing stochastic physics
+    call init_stochastic_physics(Model,Init_parm,nblks)
     if(Model%me == Model%master) print*,'do_skeb=',Model%do_skeb
+#endif
+
     do nb = 1,nblks
       ix = Init_parm%blksz(nb)
 !     write(0,*)' ix in gfs_driver=',ix,' nb=',nb
@@ -179,21 +227,61 @@ module GFS_driver
       call Sfcprop  (nb)%create (ix, Model)
       call Coupling (nb)%create (ix, Model)
       call Grid     (nb)%create (ix, Model)
+#ifndef CCPP
+      call Tbd      (nb)%create (ix, nb, Model)
+#else
       call Tbd      (nb)%create (ix, Model)
+#endif
       call Cldprop  (nb)%create (ix, Model)
       call Radtend  (nb)%create (ix, Model)
 !--- internal representation of diagnostics
       call Diag     (nb)%create (ix, Model)
     enddo
 
+#ifdef CCPP
+! This logic deals with non-uniform block sizes for CCPP. When non-uniform block sizes
+! are used, it is required that only the last block has a different (smaller) size than
+! all other blocks. This is the standard in FV3. If this is the case, set non_uniform_blocks
+! to .true. and initialize nthreads+1 elements of the interstitial array. The extra element
+! will be used by the thread that runs over the last, smaller block.
+
+    if (minval(Init_parm%blksz)==maxval(Init_parm%blksz)) then
+       non_uniform_blocks = .false.
+    elseif (all(minloc(Init_parm%blksz)==(/size(Init_parm%blksz)/))) then
+       non_uniform_blocks = .true.
+    else
+       write(0,'(2a)') 'For non-uniform blocksizes, only the last element ', &
+                       'in Init_parm%blksz can be different from the others'
+       stop
+    endif
+
+! Initialize the Interstitial data type in parallel so that
+! each thread creates (touches) its Interstitial(nt) first.
+!$OMP parallel do default (shared) &
+!$OMP            schedule (static,1) &
+!$OMP            private  (nt)
+    do nt=1,nthrds
+      call Interstitial (nt)%create (maxval(Init_parm%blksz), Model)
+    enddo
+!$OMP end parallel do
+
+    if (non_uniform_blocks) then
+      call Interstitial (nthrds+1)%create (Init_parm%blksz(nblks), Model)
+    end if
+#endif
 
     !--- populate the grid components
     call GFS_grid_populate (Grid, Init_parm%xlon, Init_parm%xlat, Init_parm%area)
 
+! For CCPP, stochastic_physics_sfc_init is called automatically as part of CCPP physics init
+#ifndef CCPP
 !   get land surface perturbations here (move to GFS_time_vary if wanting to
 !   update each time-step
     call run_stochastic_physics_sfc(nblks,Model,Grid,Coupling)
+#endif
 
+! For CCPP, these are called automatically in GFS_phys_time_vary_init as part of CCPP physics init
+#ifndef CCPP
     !--- read in and initialize ozone and water
     if (Model%ntoz > 0) then
       do nb = 1, nblks
@@ -227,12 +315,20 @@ module GFS_driver
                          Grid(nb)%jindx2_h, Grid(nb)%ddy_h)
       enddo
     endif
+#endif
 
+! For CCPP, this is called automatically in GFS_time_vary_pre_init as part of CCPP physics init
+#ifndef CCPP
     !--- Call gfuncphys (funcphys.f) to compute all physics function tables.
     call gfuncphys ()
+#endif
 
 !   call gsmconst (Model%dtp, Model%me, .TRUE.) ! This is for Ferrier microphysics - notused - moorthi
 
+#ifdef CCPP
+    ! For CCPP, Model%si is calculated in Model%init, and rad_initialize
+    ! is run automatically as part of GFS_rrtmg_setup
+#else
     !--- define sigma level for radiation initialization 
     !--- The formula converting hybrid sigma pressure coefficients to sigma coefficients follows Eckermann (2009, MWR)
     !--- ps is replaced with p0. The value of p0 uses that in http://www.emc.ncep.noaa.gov/officenotes/newernotes/on461.pdf
@@ -248,11 +344,13 @@ module GFS_driver
            Model%isubc_lw,    Model%icliq_sw,     Model%crick_proof, Model%ccnorm,&
            Model%imp_physics, Model%norad_precip, Model%idate,   Model%iflip,  Model%me)
     deallocate (si)
+#endif
 
 !   microphysics initialization calls
 !   --------------------------------- 
 
-    if (Model%imp_physics == 10) then          !--- initialize Morrison-Gettleman microphysics
+    if (Model%imp_physics == Model%imp_physics_mg) then          !--- initialize Morrison-Gettelman microphysics
+#ifndef CCPP
       if (Model%fprcp <= 0) then
         call ini_micro (Model%mg_dcs, Model%mg_qcvar, Model%mg_ts_auto_ice(1))
       elseif (Model%fprcp == 1) then
@@ -289,39 +387,52 @@ module GFS_driver
       
       endif
       call aer_cloud_init ()
+#endif
 !
-    elseif (Model%imp_physics == 8) then       !--- initialize Thompson Cloud microphysics
-      if(Model%do_shoc) then 
+    elseif (Model%imp_physics == Model%imp_physics_thompson) then       !--- initialize Thompson Cloud microphysics
+      if(Model%do_shoc) then
         print *,'SHOC is not currently compatible with Thompson MP -- shutting down'
         stop 
       endif 
-      call thompson_init()                     !--- add aerosol version later 
+! For CCPP the Thompson MP init is called automatically as part of CCPP physics init
+#ifndef CCPP
+      call thompson_init()                     !--- add aerosol version later
       if(Model%ltaerosol) then 
         print *,'Aerosol awareness is not included in this version of Thompson MP -- shutting down'
         stop 
       endif 
 !
-    elseif(Model%imp_physics == 6) then        !--- initialize WSM6 Cloud microphysics
+    elseif(Model%imp_physics == Model%imp_physics_wsm6) then        !--- initialize WSM6 Cloud microphysics
       if(Model%do_shoc) then 
         print *,'SHOC is not currently compatible with WSM6 -- shutting down'
         stop 
       endif 
       call  wsm6init()
-!      
-    else if(Model%imp_physics == 11) then      !--- initialize GFDL Cloud microphysics
+#endif
+!
+    else if(Model%imp_physics == Model%imp_physics_gfdl) then      !--- initialize GFDL Cloud microphysics
+! For CCPP the GFDL MP init is called automatically as part of CCPP physics init
+#ifndef CCPP
       if(Model%do_shoc) then 
          print *,'SHOC is not currently compatible with GFDL MP -- shutting down'
          stop 
       endif 
-      call gfdl_cloud_microphys_init (Model%me, Model%master, Model%nlunit, Model%input_nml_file, &
-                                      Init_parm%logunit, Model%fn_nml)
+       call gfdl_cloud_microphys_init (Model%me, Model%master, Model%nlunit, Model%input_nml_file, &
+                                       Init_parm%logunit, Model%fn_nml)
+#endif
     endif 
 
+#ifndef CCPP
     !--- initialize ras
     if (Model%ras) call ras_init (Model%levs, Model%me)
+#endif
 
+! DH* Even though this gets called through CCPP in lsm_noah_init, we also
+! need to do this here as long as FV3GFS_io.F90 is calculating Sfcprop%sncovr
+! when reading restart files (which it shouldn't, this should be moved to physics).
     !--- initialize soil vegetation
     call set_soilveg(Model%me, Model%isot, Model%ivegsrc, Model%nlunit)
+! *DH
 
     !--- lsidea initialization
     if (Model%lsidea) then
@@ -330,6 +441,7 @@ module GFS_driver
       !--- NEED TO get the logic from the old phys/gloopb.f initialization area
     endif
 
+#ifndef CCPP
 !----  initialization of cires_ugwp .
 !     if ( Model%me == Model%master) print *,  ' VAY-nml ',  Model%fn_nml
 !     if ( Model%me == Model%master) print *,  ' VAY-nml2 ', Model%input_nml_file
@@ -341,7 +453,10 @@ module GFS_driver
                            Init_parm%ak,  Init_parm%bk, p_ref,         Model%dtp,         &
                            Model%cdmbgwd, Model%cgwf,   Model%prslrd0, Model%ral_ts)
     endif
+#endif
 
+! For CCPP, this is called automatically as part of CCPP_physics_init
+#ifndef CCPP
     !--- Initialize cellular automata
     if(Model%do_ca)then
     blocksize=size(Grid(1)%xlon)
@@ -350,15 +465,17 @@ module GFS_driver
                            Model%nseed, Model%nthresh, Model%ca_global, Model%ca_sgs, &
                            Model%iseed_ca, Model%ca_smooth, Model%nspinup, blocksize)
     endif
+#endif
 
     !--- sncovr may not exist in ICs from chgres.
     !--- FV3GFS handles this as part of the IC ingest
-    !--- this note is placed here alertng users to study
+    !--- this note is placed here to alert users to study
     !--- the FV3GFS_io.F90 module
 
   end subroutine GFS_initialize
 
 
+#ifndef CCPP
 !-------------------------------------------------------------------------
 ! time_vary_step
 !-------------------------------------------------------------------------
@@ -388,7 +505,8 @@ module GFS_driver
 
 
     !--- local variables
-    integer :: nb, nblks, k, kdt_rad, blocksize
+    integer :: nb, nblks, k, kdt_rad, kdt_iau, blocksize
+    logical :: iauwindow_center
     real(kind=kind_phys) :: rinc(5)
     real(kind=kind_phys) :: sec, sec_zero
     real(kind=kind_phys), parameter :: cn_hr     = 3600._kind_phys
@@ -467,6 +585,18 @@ module GFS_driver
           call Diag(nb)%rad_zero  (Model)
     !!!!  THIS IS THE POINT AT WHICH DIAG%ZHOUR NEEDS TO BE UPDATED
         enddo
+      endif
+    endif
+!
+    if (Model%iau_offset > 0) then
+      kdt_iau = nint(Model%iau_offset*con_hr/Model%dtp)
+      if (Model%kdt == kdt_iau+1) then
+        iauwindow_center = .true.
+        do nb = 1,nblks
+          call Diag(nb)%rad_zero  (Model)
+          call Diag(nb)%phys_zero (Model,iauwindow_center=iauwindow_center)
+        enddo
+        if(Model%me == Model%master) print *,'in gfs_driver, at iau_center, zero out rad/phys accumulated diag fields, kdt=',Model%kdt,'kdt_iau=',kdt_iau,'iau_offset=',Model%iau_offset
       endif
     endif
     call run_stochastic_physics(nblks,Model,Grid(:),Coupling(:))
@@ -558,8 +688,8 @@ module GFS_driver
     !--- local variables
     integer :: k, i
     real(kind=kind_phys) :: upert, vpert, tpert, qpert, qnew,sppt_vwt
-    real(kind=kind_phys),dimension(size(Statein%tgrs,1),size(Statein%tgrs,2)) :: tconvtend, &
-                         qconvtend,uconvtend,vconvtend    
+    !real(kind=kind_phys),dimension(size(Statein%tgrs,1),size(Statein%tgrs,2)) :: tconvtend, &
+    !                     qconvtend,uconvtend,vconvtend
 
      if (Model%do_sppt) then
        do k = 1,size(Statein%tgrs,2)
@@ -858,6 +988,7 @@ module GFS_driver
      endif
 
   end subroutine GFS_phys_time_vary
+#endif
 
 
 !------------------

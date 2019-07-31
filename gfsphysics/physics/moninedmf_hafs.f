@@ -17,6 +17,8 @@
 !!
 !!  The scheme works on a basic level by calculating background diffusion coefficients and updating them according to which processes are occurring in the column. The most important difference in diffusion coefficients occurs between those levels in the PBL and those above the PBL, so the PBL height calculation is of utmost importance. An initial estimate is calculated in a "predictor" step in order to calculate Monin-Obukhov similarity values and a corrector step recalculates the PBL height based on updated surface thermal characteristics. Using the PBL height and the similarity parameters, the diffusion coefficients are updated below the PBL top based on Hong and Pan (1996) \cite hong_and_pan_1996 (including counter-gradient terms). Diffusion coefficients in the free troposphere (above the PBL top) are calculated according to Louis (1979) \cite louis_1979 with updated Richardson number-dependent functions. If it is diagnosed that PBL top-down mixing is occurring according to Lock et al. (2000) \cite lock_et_al_2000 , then then diffusion coefficients are updated accordingly. Finally, for convective boundary layers (defined as when the Obukhov length exceeds a threshold), the counter-gradient terms are replaced using the mass flux scheme of Siebesma et al. (2007) \cite siebesma_et_al_2007 . In order to return time tendencies, a fully implicit solution is found using tridiagonal matrices, and time tendencies are "backed out." Before returning, the time tendency of temperature is updated to reflect heating due to TKE dissipation following Han et al. (2015) \cite han_et_al_2015 .
 !!
+!!  WeiGuo Wang updated the scheme for HAFS in July, 2019.
+!!
 !!  \param[in] ix horizontal dimension
 !!  \param[in] im number of used points
 !!  \param[in] km vertical layer dimension
@@ -86,14 +88,14 @@
 !!  -# Solve for the horizontal momentum tendencies and add them to output tendency terms.
 !!  \section detailed Detailed Algorithm
 !!  @{
-      subroutine moninedmf(ix,im,km,ntrac,ntcw,dv,du,tau,rtg,           &
+      subroutine moninedmf_hafs(ix,im,km,ntrac,ntcw,dv,du,tau,rtg,      &
      &   u1,v1,t1,q1,swh,hlw,xmu,                                       &
      &   psk,rbsoil,zorl,u10m,v10m,fm,fh,                               &
      &   tsea,qss,heat,evap,stress,spd1,kpbl,                           &
      &   prsi,del,prsl,prslk,phii,phil,delt,dspheat,                    &
      &   dusfc,dvsfc,dtsfc,dqsfc,hpbl,hgamt,hgamq,dkt,                  &
      &   kinver,xkzm_m,xkzm_h,xkzm_s,lprnt,ipr,                         &
-     &   xkzminv,moninq_fac)
+     &   xkzminv,moninq_fac,islimsk)
 !
       use machine  , only : kind_phys
       use funcphys , only : fpvs
@@ -135,6 +137,7 @@
       integer i,iprt,is,iun,k,kk,km1,kmpbl,latd,lond
       integer lcld(im),icld(im),kcld(im),krad(im)
       integer kx1(im), kpblx(im)
+      integer islimsk(1:im)
 !
 !     real(kind=kind_phys) betaq(im), betat(im),   betaw(im),
       real(kind=kind_phys) evap(im),  heat(im),    phih(im),            &
@@ -201,7 +204,17 @@
 !
       real(kind=kind_phys) zstblmax,h1,     h2,     qlcr,  actei,
      &                     cldtime
-cc
+
+!! for aplha
+      real(kind=kind_phys) WSPM(IM,KM-1)
+      integer kLOC ! RGF
+      real :: xDKU, ALPHA    ! RGF
+
+      integer :: useshape
+      real :: smax,ashape,sz2h, sksfc,skmax,ashape1,skminusk0, hmax
+
+
+!cc
       parameter(gravi=1.0/grav)
       parameter(g=grav)
       parameter(gocp=g/cp)
@@ -231,6 +244,15 @@ cc
       parameter (zstblmax = 2500., qlcr=3.5e-5)
 !     parameter (actei = 0.23)
       parameter (actei = 0.7)
+
+! HAFS PBL: height-dependent ALPHA
+      useshape=2 !0-- no change, origincal ALPHA adjustment,1-- shape1, 2-- shape2(adjust above sfc)
+      alpha=moninq_fac
+
+  !    write(0,*)'in PBL,alpha=',alpha
+
+  !    write(0,*)'islimsk=',(islimsk(i),i=1,im)
+
 c
 c-----------------------------------------------------------------------
 c
@@ -316,6 +338,7 @@ c
           endif
         enddo
       enddo
+
 !     if (lprnt) then
 !       print *,' xkzo=',(xkzo(ipr,k),k=1,km1)
 !       print *,' xkzmo=',(xkzmo(ipr,k),k=1,km1)
@@ -441,19 +464,40 @@ c
       do i=1,im
          flg(i) = .false.
          rbup(i) = rbsoil(i)
-!
-         if(pblflg(i)) then
-           thermal(i) = thvx(i,1)
-           crb(i) = crbcon
-         else
-           thermal(i) = tsea(i)*(1.+fv*max(q1(i,1,1),qmin))
-           tem = sqrt(u10m(i)**2+v10m(i)**2)
-           tem = max(tem, 1.)
-           robn = tem / (f0 * z0(i))
-           tem1 = 1.e-7 * robn
-           crb(i) = 0.16 * (tem1 ** (-0.18))
-           crb(i) = max(min(crb(i), crbmax), crbmin)
-         endif
+
+        IF ( ALPHA .GT. 0.0) THEN  ! ALPHA
+
+          if(pblflg(i)) then
+            thermal(i) = thvx(i,1)
+            crb(i) = crbcon
+          else
+            thermal(i) = tsea(i)*(1.+fv*max(q1(i,1,1),qmin))
+            tem = sqrt(u10m(i)**2+v10m(i)**2)
+            tem = max(tem, 1.)
+            robn = tem / (f0 * z0(i))
+            tem1 = 1.e-7 * robn
+            crb(i) = 0.16 * (tem1 ** (-0.18))
+            crb(i) = max(min(crb(i), crbmax), crbmin)
+          endif
+
+        ELSE
+! use variable Ri for all conditions
+          if(pblflg(i)) then
+            thermal(i) = thvx(i,1)
+          else
+            thermal(i) = tsea(i)*(1.+fv*max(q1(i,1,1),qmin))
+          endif
+            tem = sqrt(u10m(i)**2+v10m(i)**2)
+            tem = max(tem, 1.)
+            robn = tem / (f0 * z0(i))
+            tem1 = 1.e-7 * robn
+!           crb(i) = 0.16 * (tem1 ** (-0.18))
+            crb(i) = crbcon
+            IF(islimsk(i).ne.0)  crb(I) = 0.16*(tem1)**(-0.18)
+            IF(islimsk(i).eq.0)  crb(I) = 0.25*(tem1)**(-0.18)
+            crb(i) = max(min(crb(i), crbmax), crbmin)
+        ENDIF   ! ALPHA
+
       enddo
 !>  Given the thermal's properties and the critical Richardson number, a loop is executed to find the first level above the surface where the modified Richardson number is greater than the critical Richardson number, using equation 10a from Troen and Mahrt (1986) \cite troen_and_mahrt_1986 (also equation 8 from Hong and Pan (1996) \cite hong_and_pan_1996):
 !!  \f[
@@ -735,10 +779,37 @@ c
           kpbl(i) = 1
         endif
       enddo
+
+!!! HAFS PBL, Bgin adjustment 
+! RGF determine wspd at roughly 500 m above surface, or as close as possible,
+! reuse SPDK2
+!  zi(i,k) is AGL, right?  May not matter if applied only to water grid points
+      if(moninq_fac.lt.0)then
+
+       DO I=1,IM
+         SPDK2 = 0.
+         WSPM(i,1) = 0.
+         DO K = 1, KMPBL ! kmpbl is like a max possible pbl height
+          if(zi(i,k).le.500.and.zi(i,k+1).gt.500.)then ! find level bracketing 500 m
+           SPDK2 = SQRT(U1(i,k)*U1(i,k)+V1(i,k)*V1(i,k)) ! wspd near 500 m
+           WSPM(i,1) = SPDK2/0.6  ! now the Km limit for 500 m.  just store in K=1
+           WSPM(i,2) = float(k)  ! height of level at gridpoint i. store in K=2
+!           if(i.eq.25) print *,' IK ',i,k,' ZI ',zi(i,k), ' WSPM1 ',wspm(i,1),'
+!           KMPBL ',kmpbl,' KPBL ',kpbl(i)
+          endif
+         ENDDO
+       ENDDO ! i
+
+      endif ! moninq_fac < 0
+
+
 !
 !     compute diffusion coefficients below pbl
 !>  ## Compute diffusion coefficients below the PBL top
 !!  Below the PBL top, the diffusion coefficients (\f$K_m\f$ and \f$K_h\f$) are calculated according to equation 2 in Hong and Pan (1996) \cite hong_and_pan_1996 where a different value for \f$w_s\f$ (PBL vertical velocity scale) is used depending on the PBL stability. \f$K_h\f$ is calculated from \f$K_m\f$ using the Prandtl number. The calculated diffusion coefficients are checked so that they are bounded by maximum values and the local background diffusion coefficients.
+
+      IF (ALPHA > 0) THEN   ! AAAAAAAAAAAAAAAAAAAAAAAAAAA
+
       do k = 1, kmpbl
       do i=1,im
          if(k < kpbl(i)) then
@@ -767,6 +838,188 @@ c
          endif
       enddo
       enddo
+
+      ELSE                               ! ALPHA <0 AAAAAAAAAAAAA
+
+      do i=1,im
+      do k = 1, kmpbl
+         if(k < kpbl(i)) then
+!           zfac = max((1.-(zi(i,k+1)-zl(i,1))/
+!    1             (hpbl(i)-zl(i,1))), zfmin)
+            zfac = max((1.-zi(i,k+1)/hpbl(i)), zfmin)
+           ! tem = zi(i,k+1) * (zfac**pfac) * moninq_fac ! lmh suggested by kg
+            tem = zi(i,k+1) * (zfac**pfac) * abs( moninq_fac)
+
+!!!! CHANGES FOR HEIGHT-DEPENDENT K ADJUSTMENT, WANG W
+             if(useshape .ge. 1) then
+                sz2h=(ZI(I,K+1)-ZL(I,1))/(HPBL(I)-ZL(I,1))
+                sz2h=max(sz2h,zfmin)
+                sz2h=min(sz2h,1.0)
+                    zfac=(1.0-sz2h)**pfac
+!                    smax=0.148  !! max value of this shape function
+                     smax=0.148  !! max value of this shape function
+                     hmax=0.333  !! roughly height if max K
+                     skmax=hmax*(1.0-hmax)**pfac
+                     sksfc=min(ZI(I,2)/HPBL(I),0.05)  ! surface layer top, 0.05H or ZI(2) (Zi(1)=0)
+                     sksfc=sksfc*(1-sksfc)**pfac
+
+                zfac=max(zfac,zfmin)
+                ashape=max(ABS(moninq_fac),0.2)  ! should not be smaller than 0.2, otherwise too much adjustment(?)
+                if(useshape ==1) then
+                 ashape=( 1.0 - ((sz2h*zfac/smax)**0.25) 
+     &                *( 1.0 - ashape )  )
+                 tem = zi(i,k+1) * (zfac) * ashape
+                endif
+
+                if (useshape == 2) then   !only adjus K that is > K_surface_top
+                  ashape1=1.0
+                 if (skmax > sksfc)  ashape1=(skmax*ashape-sksfc)/
+     &                                       (skmax-sksfc)
+                  skminusk0=ZI(I,K+1)*zfac - HPBL(i)*sksfc
+                   tem = zi(i,k+1) * (zfac) ! no adjustment
+                  if (skminusk0 > 0) then   ! only adjust K which is > surface top K
+                   tem = skminusk0*ashape1 + HPBL(i)*sksfc
+                  endif
+                endif
+             endif  ! endif useshape>1
+!!!! END OF CHAGES , WANG W
+
+
+            if(pblflg(i)) then
+              tem1 = vk * wscaleu(i) * tem
+!             dku(i,k) = xkzmo(i,k) + tem1
+!             dkt(i,k) = xkzo(i,k)  + tem1 * prinv(i)
+              dku(i,k) = tem1
+              dkt(i,k) = tem1 * prinv(i)
+            else
+              tem1 = vk * wscale(i) * tem
+!             dku(i,k) = xkzmo(i,k) + tem1
+!             dkt(i,k) = xkzo(i,k)  + tem1 * prinv(i)
+              dku(i,k) = tem1
+              dkt(i,k) = tem1 * prinv(i)
+            endif
+            dku(i,k) = min(dku(i,k),dkmax)
+            dku(i,k) = max(dku(i,k),xkzmo(i,k))
+            dkt(i,k) = min(dkt(i,k),dkmax)
+            dkt(i,k) = max(dkt(i,k),xkzo(i,k))
+            dktx(i,k)= dkt(i,k)
+         endif
+      enddo    !K loop
+
+! possible modification of first guess DKU, under certain conditions
+! (1) this applies only to columns over water
+
+        IF(islimsk(i).eq.0)then ! sea only
+
+! (2) alpha test
+! if alpha < 0, find alpha for each column and do the loop again
+! if alpha > 0, we are finished
+
+
+        if(alpha.lt.0)then      ! variable alpha test
+
+! k-level of layer around 500 m
+            kLOC = INT(WSPM(i,2))
+!            print *,' kLOC ',kLOC,' KPBL ',KPBL(I)
+
+! (3) only do  this IF KPBL(I) >= kLOC.  Otherwise, we are finished, with DKU as
+! if alpha = +1
+
+          if(KPBL(I).gt.kLOC)then
+
+            xDKU = DKU(i,kLOC)     ! Km at k-level
+! (4) DKU check.
+! WSPM(i,1) is the KM cap for the 500-m level.
+!  if DKU at 500-m level < WSPM(i,1), do not limit Km ANYWHERE.  Alpha =
+!  abs(alpha).  No need to recalc.
+!  if DKU at 500-m level > WSPM(i,1), then alpha = WSPM(i,1)/xDKU for entire
+!  column
+            if(xDKU.ge.WSPM(i,1)) then ! ONLY if DKU at 500-m exceeds cap, otherwise already done
+
+            WSPM(i,3) = WSPM(i,1)/xDKU  ! ratio of cap to Km at k-level, store in WSPM(i,3)
+            !WSPM(i,4) = amin1(WSPM(I,3),1.0) ! this is new column alpha. cap at 1. ! should never be needed
+            WSPM(i,4) = min(WSPM(I,3),1.0) ! this is new column alpha. cap at 1. ! should never be needed
+ !! recalculate K capped by WSPM(i,1)
+      do k = 1, kmpbl
+         if(k < kpbl(i)) then
+!           zfac = max((1.-(zi(i,k+1)-zl(i,1))/
+!    1             (hpbl(i)-zl(i,1))), zfmin)
+            zfac = max((1.-zi(i,k+1)/hpbl(i)), zfmin)
+         !   tem = zi(i,k+1) * (zfac**pfac)
+            tem = zi(i,k+1) * (zfac**pfac) * WSPM(i,4)
+
+
+!!!! CHANGES FOR HEIGHT-DEPENDENT K ADJUSTMENT, WANG W
+             if(useshape .ge. 1) then
+                sz2h=(ZI(I,K+1)-ZL(I,1))/(HPBL(I)-ZL(I,1))
+                sz2h=max(sz2h,zfmin)
+                sz2h=min(sz2h,1.0)
+                    zfac=(1.0-sz2h)**pfac
+                     smax=0.148  !! max value of this shape function
+                     hmax=0.333  !! roughly height if max K
+                     skmax=hmax*(1.0-hmax)**pfac
+                     sksfc=min(ZI(I,2)/HPBL(I),0.05)  ! surface layer top, 0.05H or ZI(2) (Zi(1)=0)
+                     sksfc=sksfc*(1-sksfc)**pfac
+
+                zfac=max(zfac,zfmin)
+                ashape=max(WSPM(i,4),0.2)  !! adjustment coef should not smaller than 0.2
+                if(useshape ==1) then
+                 ashape=( 1.0 - ((sz2h*zfac/smax)**0.25) 
+     &                  *( 1.0 - ashape )  )
+                 tem = zi(i,k+1) * (zfac) * ashape
+!                 if(k ==5) write(0,*)'min alf, height-depend alf',WSPM(i,4),ashape
+                endif  ! endif useshape=1
+
+                if (useshape == 2) then   !only adjus K that is > K_surface_top
+                  ashape1=1.0
+                 if (skmax > sksfc)  ashape1=(skmax*ashape-sksfc)/
+     &                                       (skmax-sksfc)
+
+                  skminusk0=ZI(I,K+1)*zfac - HPBL(i)*sksfc
+                 tem = zi(i,k+1) * (zfac) ! no adjustment
+!             if(k ==5) write(0,*)'before, dku,ashape,ashpe1',
+!     &             tem*wscaleu(i)*vk,ashape,ashape1
+                  if (skminusk0 > 0) then   ! only adjust K which is > surface top K
+                   tem = skminusk0*ashape1 + HPBL(i)*sksfc
+                  endif
+!            if(k ==5)write(0,*)
+!     &          'after,dku,k_sfc,skmax,sksfc,zi(2),hpbl' 
+!     &         ,tem*wscaleu(i)*vk,WSCALEU(I)*VK*HPBL(i)*sksfc, skmax,
+!     &          sksfc,ZI(I,2),HPBL(I)
+
+                endif  ! endif useshape=2
+             endif  ! endif useshape>1
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+            if(pblflg(i)) then
+              tem1 = vk * wscaleu(i) * tem
+!             dku(i,k) = xkzmo(i,k) + tem1
+!             dkt(i,k) = xkzo(i,k)  + tem1 * prinv(i)
+              dku(i,k) = tem1
+              dkt(i,k) = tem1 * prinv(i)
+            else
+              tem1 = vk * wscale(i) * tem
+!             dku(i,k) = xkzmo(i,k) + tem1
+!             dkt(i,k) = xkzo(i,k)  + tem1 * prinv(i)
+              dku(i,k) = tem1
+              dkt(i,k) = tem1 * prinv(i)
+            endif
+            dku(i,k) = min(dku(i,k),dkmax)
+            dku(i,k) = max(dku(i,k),xkzmo(i,k))
+            dkt(i,k) = min(dkt(i,k),dkmax)
+            dkt(i,k) = max(dkt(i,k),xkzo(i,k))
+            dktx(i,k)= dkt(i,k)
+         endif
+      enddo     !K loop
+            endif ! xDKU.ge.WSPM(i,1)
+          endif ! KPBL(I).ge.kLOC
+         endif ! alpha < 0
+         endif ! islimsk=0
+
+      enddo    !I loop
+      ENDIF    !AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+
 !
 ! compute diffusion coefficients based on local scheme above pbl
 !>  ## Compute diffusion coefficients above the PBL top
@@ -935,8 +1188,12 @@ c
       do k = 1, kmpbl
         do i=1,im
           if(scuflg(i)) then
-             dkt(i,k) = dkt(i,k)+ckt(i,k)
-             dku(i,k) = dku(i,k)+cku(i,k)
+            ! dkt(i,k) = dkt(i,k)+ckt(i,k)
+            ! dku(i,k) = dku(i,k)+cku(i,k)
+         !! if K needs to be adjusted by alpha, then no need to add this term
+            if(alpha .ge. 0.0)  dkt(i,k) = dkt(i,k)+ckt(i,k)
+            if(alpha .ge. 0.0)  dku(i,k) = dku(i,k)+cku(i,k)
+
              dkt(i,k) = min(dkt(i,k),dkmax)
              dku(i,k) = min(dku(i,k),dkmax)
           endif
@@ -1039,7 +1296,7 @@ c
 !     solve tridiagonal problem for heat and moisture
 !
 !>  The tridiagonal system is solved by calling the internal ::tridin subroutine.
-      call tridin(im,km,ntrac,al,ad,au,a1,a2,au,a1,a2)
+      call tridin99(im,km,ntrac,al,ad,au,a1,a2,au,a1,a2)
 
 !
 !     recover tendencies of heat and moisture
@@ -1089,7 +1346,11 @@ c
          tem2  = 0.5 * (tem1+diss(i,1))
          tem2  = max(tem2, 0.)
          ttend = tem2 / cp
-         tau(i,1) = tau(i,1)+0.5*ttend
+         if (alpha .gt. 0.0) then
+          tau(i,1) = tau(i,1)+0.5*ttend
+         else
+          tau(i,1) = tau(i,1)+0.7*ttend  ! in HWRF/HMON, use 0.7
+         endif
       enddo
 !
 !     add dissipative heating above the first model layer
@@ -1153,7 +1414,7 @@ c
 !
 !     solve tridiagonal problem for momentum
 !
-      call tridi2(im,km,al,ad,au,a1,a2,au,a1,a2)
+      call tridi299(im,km,al,ad,au,a1,a2,au,a1,a2)
 !
 !     recover tendencies of momentum
 !
@@ -1196,7 +1457,7 @@ c-----------------------------------------------------------------------
 !!  \brief Routine to solve the tridiagonal system to calculate temperature and moisture at \f$ t + \Delta t \f$; part of two-part process to calculate time tendencies due to vertical diffusion.
 !!
 !!  Origin of subroutine unknown.
-      subroutine tridi2(l,n,cl,cm,cu,r1,r2,au,a1,a2)             
+      subroutine tridi299(l,n,cl,cm,cu,r1,r2,au,a1,a2)             
 cc
       use machine     , only : kind_phys
       implicit none
@@ -1239,7 +1500,7 @@ c-----------------------------------------------------------------------
 !!  \brief Routine to solve the tridiagonal system to calculate u- and v-momentum at \f$ t + \Delta t \f$; part of two-part process to calculate time tendencies due to vertical diffusion.
 !!
 !!  Origin of subroutine unknown.
-      subroutine tridin(l,n,nt,cl,cm,cu,r1,r2,au,a1,a2)
+      subroutine tridin99(l,n,nt,cl,cm,cu,r1,r2,au,a1,a2)
 cc
       use machine     , only : kind_phys
       implicit none

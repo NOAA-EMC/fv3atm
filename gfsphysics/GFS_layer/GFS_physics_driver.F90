@@ -23,6 +23,7 @@ module module_physics_driver
   use module_mp_thompson,    only: mp_gt_driver
   use module_mp_wsm6,        only: wsm6
   use funcphys,              only: ftdp
+  use surface_perturbation,  only: cdfnor
 
   use module_sfc_diff,  only: sfc_diff
   use module_sfc_ocean, only: sfc_ocean
@@ -203,6 +204,7 @@ module module_physics_driver
 !                               J. Alpert, T. Fuller-Rowll and R. Akmaev! 
 !      May  2019    J. Han      Add updated scal-aware TKE-based moist  !
 !                               EDMF vertical turbulent mixng scheme    !
+!      Jul  2019    Weiguo Wang Update PBL scheme for HAFS              !
 !
 !  ====================    end of description    =====================
 !  ====================  definition of variables  ====================  !
@@ -313,7 +315,7 @@ module module_physics_driver
 !!  ## Calculate and apply the tendency of ozone.
 !!   - Call the convective adjustment scheme for IDEA
 !!   - Call 'ozphys_2015' or 'ozphys' depending on the value of pl_coeff, updating the ozone tracer within and outputing the tendency of ozone in dq3dt(:,:,6)
-!!   - Call 'h20phys' if necessary ("adaptation of NRL H20 phys for stratosphere and mesophere")
+!!   - Call 'h2ophys' if necessary ("adaptation of NRL H2O phys for stratosphere and mesophere")
 !!  .
 !!  ## Prepare input variables for physics routines that update the state variables within their subroutines.
 !!  - If diagnostics is active, save the updated values of the state variables in 'dudt', 'dvdt', 'dTdt', and 'dqdt(:,:,1)'
@@ -429,7 +431,7 @@ module module_physics_driver
 !!   - Deallocate arrays for SHOC scheme, deep convective scheme, and Morrison et al. microphysics
 
 
-  public GFS_physics_driver, dgamln, cdfgam, cdfnor
+  public GFS_physics_driver
 
   CONTAINS
 !*******************************************************************************************
@@ -494,10 +496,10 @@ module module_physics_driver
            islmsk_cice
 
 !--- LOGICAL VARIABLES
-      logical :: lprnt, revap, mg3_as_mg2
+      logical :: lprnt, revap, mg3_as_mg2, skip_macro
 
       logical, dimension(size(Grid%xlon,1)) ::                          &
-           flag_iter, flag_guess, invrsn, skip_macro,                   &
+           flag_iter, flag_guess, invrsn,                               &
 !--- coupling inputs for physics
            flag_cice
 
@@ -617,7 +619,7 @@ module module_physics_driver
 !      real(kind=kind_phys),parameter :: slope_mg = 0.02, slope_upmg = 0.02,  &
 !      real(kind=kind_phys),parameter :: slope_mg = 0.02, slope_upmg = 0.04,  &
 !                         turnrhcrit = 0.900, turnrhcrit_upper = 0.150
-! in the folloing inverse of slope_mg and slope_upmg are specified
+! in the following inverse of slope_mg and slope_upmg are specified
        real(kind=kind_phys),parameter :: slope_mg   = 50.0_kind_phys,   &
                                          slope_upmg = 25.0_kind_phys
 !
@@ -687,6 +689,28 @@ module module_physics_driver
       real    ::  julian,fjd
       integer ::  iw3jdn
 
+#ifdef TRANSITION
+      real(kind=kind_phys), volatile :: volatile_var1, volatile_var2
+#endif
+
+      !! Initialize local variables (mainly for debugging purposes, because the
+      !! corresponding variables Interstitial(nt)%... are reset to zero every time);
+      !! these variables are only modified over parts of the entire domain (related
+      !! to land surface mask etc.)
+      !snowmt = 0.
+      !gamq   = 0.
+      !gamt   = 0.
+      !gflx   = 0.
+      !hflx   = 0.
+      !
+      !! Strictly speaking, this is not required. But when
+      !! hunting for bit-for-bit differences, doing the same as
+      !! in GFS_suite_stateout_reset makes life a lot easier.
+      !Stateout%gt0(:,:)   = Statein%tgrs(:,:)
+      !Stateout%gu0(:,:)   = Statein%ugrs(:,:)
+      !Stateout%gv0(:,:)   = Statein%vgrs(:,:)
+      !Stateout%gq0(:,:,:) = Statein%qgrs(:,:,:)
+
 !===> ...  begin here
       ldiag_ugwp = Model%ldiag_ugwp
       do_tofd    = Model%do_tofd
@@ -704,6 +728,7 @@ module module_physics_driver
       dtf     = Model%dtf
       dtp     = Model%dtp
 
+! DH* this block not yet in CCPP
 !-------
 ! For COORDE-2019 averaging with fwindow, it was done before
 ! 3Diag fixes and averaging ingested using "fdaily"-factor
@@ -718,6 +743,7 @@ module module_physics_driver
         print *, 'VAY Model%fhzero = 0., Bad Averaged-diagnostics '
       endif
 !-------
+! *DH
 
       kdt     = Model%kdt
       lprnt   = Model%lprnt
@@ -746,7 +772,7 @@ module module_physics_driver
 
       nncl = ncld
 
-      if (imp_physics == 8) then
+      if (imp_physics == Model%imp_physics_thompson) then
         if (Model%ltaerosol) then
           nvdiff = 8
         else
@@ -754,7 +780,7 @@ module module_physics_driver
         endif
         if (Model%satmedmf) nvdiff = nvdiff + 1
         nncl = 5
-      elseif (imp_physics == 6) then
+      elseif (imp_physics == Model%imp_physics_wsm6) then
         nvdiff = ntrac -3
         if (Model%satmedmf) nvdiff = nvdiff + 1
         nncl = 5
@@ -762,11 +788,11 @@ module module_physics_driver
         nvdiff = ntrac - 1
       endif
 
-      if (imp_physics == 11) then
+      if (imp_physics == Model%imp_physics_gfdl) then
         nncl = 5
       endif
 
-      if (imp_physics == 10) then
+      if (imp_physics == Model%imp_physics_mg) then
         if (abs(Model%fprcp) == 1) then
           nncl = 4                          ! MG2 with rain and snow
           mg3_as_mg2 = .false.
@@ -796,6 +822,7 @@ module module_physics_driver
         if (ntke > 0) nvdiff = nvdiff + 1    ! adding tke to the list
       endif
 !
+      ! For CCPP, this is in GFS_Interstitial%phys_reset(Model) in GFS_typedefs.F90
       kdtminus1 = kdt - 1
       reset     = mod(kdtminus1, nint(Model%avg_max_length/dtp)) == 0
 
@@ -868,7 +895,11 @@ module module_physics_driver
         elseif (Model%npdf3d == 0 .and. Model%ncnvcld3d == 1) then
           num2 = Model%num_p3d + 1
         endif
+        !CCPP: num2 = Model%ncnvw
+        !CCPP: num3 = Model%ncnvc
       endif
+!
+! DH* this block not yet in CCPP
 !  ---  initization for those precip type used in Noah MP
          if (Model%lsm == 2) then
            do  i=1,im
@@ -891,6 +922,7 @@ module module_physics_driver
           ice_mp(i)     = tem * Diag%ice(i)
         enddo
       endif
+! *DH
 
 !  ---  set initial quantities for stochastic physics deltas
       if (Model%do_sppt) then
@@ -955,7 +987,7 @@ module module_physics_driver
         enddo
       endif
 !
-      if (imp_physics == 8 ) then
+      if (imp_physics == Model%imp_physics_thompson) then
         if(Model%ltaerosol) then
           allocate(ice00(im,levs))
           allocate(liq0(im,levs))
@@ -965,7 +997,7 @@ module module_physics_driver
         endif
       endif
 
-      if (imp_physics == 10) then         ! For MGB double moment microphysics
+      if (imp_physics == Model%imp_physics_mg) then         ! For MGB double moment microphysics
         allocate (qlcn(im,levs),      qicn(im,levs),    w_upi(im,levs),     &
                   cf_upi(im,levs),    CNV_MFD(im,levs),                     &
 !                 cf_upi(im,levs),    CNV_MFD(im,levs), CNV_PRC3(im,levs),  &
@@ -992,7 +1024,7 @@ module module_physics_driver
                   CNV_MFD(1,1),                CNV_DQLDT(1,1),              &
 !                 CNV_MFD(1,1), CNV_PRC3(1,1), CNV_DQLDT(1,1),              &
                   clcn(1,1),    cnv_fice(1,1), cnv_ndrop(1,1), cnv_nice(1,1))
-        if (imp_physics == 11) then       ! GFDL MP
+        if (imp_physics == Model%imp_physics_gfdl) then       ! GFDL MP
           allocate (delp(im,1,levs),  dz(im,1,levs),    uin(im,1,levs),                    &
                     vin(im,1,levs),   pt(im,1,levs),    qv1(im,1,levs),   ql1(im,1,levs),  &
                     qr1(im,1,levs),   qg1(im,1,levs),   qa1(im,1,levs),   qn1(im,1,levs),  &
@@ -1014,15 +1046,14 @@ module module_physics_driver
                         Statein%tgrs, Statein%qgrs, del, del_gz)
 #endif
 
-
-
+! DH* this block not yet in CCPP
 !
 ! Julian day calculation (fcst day of the year)
 ! we need imn to init lai and sai and yearln and julian to
 ! pass to noah mp sflx, idate is init, jdat is fcst;idate = jdat when kdt=1
 ! jdat is changing
 !
-      if (Model%lsm == 2) then
+      if (Model%lsm == Model%lsm_noahmp) then
 
         imn     = Model%idate(2)
 
@@ -1058,7 +1089,8 @@ module module_physics_driver
           endif
        endif
 
-      endif ! if Model%lsm == 2
+      endif ! if Model%lsm == Model%lsm_noahmp
+! *DH
 
 !  --- ...  frain=factor for centered difference scheme correction of rain amount.
 
@@ -1114,6 +1146,7 @@ module module_physics_driver
         flag_cice(i) = .false.
       enddo
 !
+! DH* note: this block is not yet in CCPP
       if (Model%cplflx) then
         do i=1,im
           islmsk_cice(i) = nint(Coupling%slimskin_cpl(i))
@@ -1126,7 +1159,9 @@ module module_physics_driver
           dqsfc_cice(i)  = Coupling%dqsfcin_cpl(i)
         enddo
       endif
+! *DH
 
+! DH* In CCPP, this is in GFS_surface_composites_pre
       do i = 1, IM
         frland(i) = Sfcprop%landfrac(i)
         fice(i)   = Sfcprop%fice(i) ! ice wrt whole cell
@@ -1150,6 +1185,7 @@ module module_physics_driver
           endif
         enddo
       endif
+! *DH
 
 !
 !  --- ...  transfer soil moisture and temperature from global to local variables
@@ -1161,8 +1197,9 @@ module module_physics_driver
         enddo
       enddo
 
+! DH* note: this block is not yet in CCPP
 ! -- Noah MP 3D global to local
-     if (Model%lsm == 2) then
+     if (Model%lsm == Model%lsm_noahmp) then
 
       do k = -2,0
         do i = 1,im
@@ -1184,7 +1221,8 @@ module module_physics_driver
         enddo
        enddo
 
-     endif ! if Model%lsm == 2
+     endif ! if Model%lsm == Model%lsm_noahmp
+! *DH
 
       do k=1,levs
         do i=1,im
@@ -1193,6 +1231,7 @@ module module_physics_driver
           dtdt(i,k)  = 0.
           dtdtc(i,k) = 0.
 
+! DH* note: this block is not yet in CCPP
 !vay-2018
 ! Pure tendency arrays w/o accumulation of Phys-tendencies from each
 !      chain of GFS-physics (later add container for species)
@@ -1208,6 +1247,7 @@ module module_physics_driver
           gw_dvdt(i,k) = 0.
           gw_dtdt(i,k) = 0.
           gw_kdis(i,k) = 0.
+! *DH
 
         enddo
       enddo
@@ -1219,6 +1259,7 @@ module module_physics_driver
         enddo
       enddo
 
+! DH* note: this block is not yet in CCPP
 !-----------------------------------------------
 !vay-2018-19 ORO/UGWP process-oriented diagnostics
 !
@@ -1324,6 +1365,7 @@ module module_physics_driver
         endif
       endif
 !===========================Above Phys-tend Diag for COORDE ======================
+! *DH
 
 !  --- ...  initialize dtdt with heating rate from dcyc2
 
@@ -1555,6 +1597,7 @@ module module_physics_driver
         enddo
       enddo
 
+! DH* In CCPP, this is in GFS_surface_composites_pre
       if (.not. Model%cplflx .or. .not. Model%frac_grid) then
         do i=1,im
           Sfcprop%zorll(i) = Sfcprop%zorl(i)
@@ -1600,6 +1643,7 @@ module module_physics_driver
             gflx3(i,2) = 0.
         endif
       enddo
+! *DH
 
 !  --- ...  lu: iter-loop over (sfc_diff,sfc_drv,sfc_ocean,sfc_sice)
 
@@ -1617,9 +1661,7 @@ module module_physics_driver
            Statein%prsl(:,1), work3, Tbd%phy_f2d(:,Model%num_p2d),      &
            sigmaf, vegtype, Sfcprop%shdmax, Model%ivegsrc,              &
            z01d, zt1d, flag_iter, Model%redrag,                         &
-!Weiguo Wang 2019/04 use 10-m wind diagnose zo
            Diag%u10m,    Diag%v10m,  Model%sfc_z0_type,                 &
-!wang, use 10-m wind diagnose zo
            wet, dry, icy, tsfc3, tsurf3, snowd3,                        &
 !  ---  input/output:
            zorl3, uustar3,                                              &
@@ -1717,7 +1759,7 @@ module module_physics_driver
 
 !  --- ...  surface energy balance over land
 !
-        if (Model%lsm == 1) then                          ! noah lsm call
+        if (Model%lsm == Model%lsm_noah) then                          ! noah lsm call
 
 !     if (lprnt) write(0,*)' tseal=',tseal(ipr),' tsurf=',tsurf(ipr),iter &
 !     ,' stsoil0=',stsoil(ipr,:)
@@ -1747,9 +1789,10 @@ module module_physics_driver
 !     if (lprnt) write(0,*)' tseae=',tseal(ipr),' tsurf=',tsurf(ipr),iter  
 !    &,' phy_f2d=',phy_f2d(ipr,num_p2d)
 
+! DH* this block not yet in CCPP
 ! Noah MP call
 !
-       elseif (Model%lsm == 2) then
+       elseif (Model%lsm == Model%lsm_noahmp) then
           call noahmpdrv                                               &
 !  ---  inputs:
            (im, lsoil,kdt, Statein%pgr,  Statein%ugrs, Statein%vgrs,   &
@@ -1789,6 +1832,11 @@ module module_physics_driver
 
 !     if (lprnt) write(0,*)' tseae=',tsea(ipr),' tsurf=',tsurf(ipr),iter &
 !    &,' phy_f2d=',phy_f2d(ipr,num_p2d)
+! *DH
+
+        elseif (Model%lsm == Model%lsm_ruc) then
+           write (0,*) 'RUC LSM is available only in CCPP'
+           stop
 
         endif !lsm
 
@@ -1804,7 +1852,8 @@ module module_physics_driver
                islmsk (i) = islmsk_cice(i)
             endif
           enddo
-!
+
+! DH* this block not yet in CCPP
 ! call sfc_cice for sea ice points in the coupled model (i.e. islmsk=4)
 !
           call sfc_cice                                                  &
@@ -1816,6 +1865,8 @@ module module_physics_driver
 !  ---  outputs:
             qss3(:,2), cmm3(:,2), chh3(:,2), evap3(:,2), hflx3(:,2))
         endif
+! *DH
+
 !
 ! call sfc_sice for lake ice and for the uncoupled case, sea ice (i.e. islmsk=2)
 !
@@ -1898,9 +1949,6 @@ module module_physics_driver
           qss(i)            = txl*qss3(i,1)    + txi*qss3(i,2)     + txo*qss3(i,3)
           Sfcprop%tsfc(i)   = txl*tsfc3(i,1)   + txi*tice(i)       + txo*tsfc3(i,3)
 !         Sfcprop%tsfc(i)   = txl*tsfc3(i,1)   + txi*tsfc3(i,2)    + txo*tsfc3(i,3)
-
-          Diag%cmm(i)       = txl*cmm3(i,1)    + txi*cmm3(i,2)     + txo*cmm3(i,3)
-          Diag%chh(i)       = txl*chh3(i,1)    + txi*chh3(i,2)     + txo*chh3(i,3)
 
           Sfcprop%zorll(i) = zorl3(i,1)
           Sfcprop%zorlo(i) = zorl3(i,3)
@@ -2008,7 +2056,8 @@ module module_physics_driver
 
       Tbd%phy_f2d(:,Model%num_p2d) = 0.0
 
-      if (Model%lsm == 2) then
+! DH* this block not yet in CCPP
+      if (Model%lsm == Model%lsm_noahmp) then
         do i=1,im
           if(dry(i)) then
             Sfcprop%t2m(i)=t2mmp(i)
@@ -2016,6 +2065,7 @@ module module_physics_driver
           endif
         enddo
       endif ! if Model%lsm == 2
+! *DH
 
       if (Model%cplflx .or. Model%cplwav) then
         do i=1,im
@@ -2149,8 +2199,10 @@ module module_physics_driver
 
 !     write(0,*)' before monsho hflx=',hflx,' me=',me
 !     write(0,*)' before monsho evap=',evap,' me=',me
-      if (nvdiff == ntrac) then
+      if (nvdiff == ntrac .or. Model%do_ysu .or. Model%shinhong) then
 !
+        ntiwx = 0
+
         if (Model%do_shoc) then
           call moninshoc(ix, im, levs, nvdiff, ntcw, nncl, dvdt, dudt, dtdt, dqdt, &
                          Statein%ugrs, Statein%vgrs, Statein%tgrs, Statein%qgrs,   &
@@ -2193,6 +2245,7 @@ module module_physics_driver
                        kinver, Model%xkzm_m, Model%xkzm_h, Model%xkzm_s)
              endif
           elseif (Model%hybedmf) then
+            if (Model%moninq_fac > 0) then
               call moninedmf(ix, im, levs, nvdiff, ntcw, dvdt, dudt, dtdt, dqdt,    &
                            Statein%ugrs, Statein%vgrs, Statein%tgrs, Statein%qgrs,  &
                            Radtend%htrsw, Radtend%htrlw, xmu, Statein%prsik(1,1),   &
@@ -2203,12 +2256,32 @@ module module_physics_driver
                            Model%dspheat, dusfc1, dvsfc1, dtsfc1, dqsfc1, Diag%hpbl,&
                            gamt, gamq, dkt, kinver, Model%xkzm_m, Model%xkzm_h,     &
                            Model%xkzm_s, lprnt, ipr,                                &
-!                           Model%xkzminv, Model%moninq_fac)
-! Weiguo Wang 2019/04 HWRF PBL
+                           Model%xkzminv, Model%moninq_fac)
+            else
+              call moninedmf_hafs(ix, im, levs, nvdiff, ntcw, dvdt, dudt, dtdt, dqdt,&
+                           Statein%ugrs, Statein%vgrs, Statein%tgrs, Statein%qgrs,  &
+                           Radtend%htrsw, Radtend%htrlw, xmu, Statein%prsik(1,1),   &
+                           rb, Sfcprop%zorl, Diag%u10m, Diag%v10m, Sfcprop%ffmm,    &
+                           Sfcprop%ffhh, Sfcprop%tsfc, qss, hflx, evap, stress,     &
+                           wind, kpbl, Statein%prsi, del, Statein%prsl,             &
+                           Statein%prslk, Statein%phii, Statein%phil, dtp,          &
+                           Model%dspheat, dusfc1, dvsfc1, dtsfc1, dqsfc1, Diag%hpbl,&
+                           gamt, gamq, dkt, kinver, Model%xkzm_m, Model%xkzm_h,     &
+                           Model%xkzm_s, lprnt, ipr,                                &
                            Model%xkzminv, Model%moninq_fac,islmsk)
-
+            endif
 !     if (lprnt)  write(0,*)' dtdtm=',(dtdt(ipr,k),k=1,15)
 !     if (lprnt)  write(0,*)' dqdtm=',(dqdt(ipr,k,1),k=1,15)
+          !elseif (Model%do_ysu) then
+          !  if (Model%me==0) then
+          !      write(0,*) 'Error, ysuvdif only available through CCPP'
+          !      stop
+          !  end if
+          !elseif (Model%shinhong) then
+          !  if (Model%me==0) then
+          !      write(0,*) 'Error, shinhongvdif only available through CCPP'
+          !      stop
+          !  end if
           elseif (.not. Model%old_monin) then
             call moninq(ix, im, levs, nvdiff, ntcw, dvdt, dudt, dtdt, dqdt,         &
                         Statein%ugrs, Statein%vgrs, Statein%tgrs, Statein%qgrs,     &
@@ -2247,7 +2320,8 @@ module module_physics_driver
         dvdftra(:,:,:) = 0.0
         ntiwx = 0
 !
-        if (imp_physics == 6) then                         ! WSM6
+        if (imp_physics == Model%imp_physics_wsm6) then
+! WSM6
           do k=1,levs
             do i=1,im
               vdftra(i,k,1) = Statein%qgrs(i,k,1)
@@ -2257,7 +2331,8 @@ module module_physics_driver
             enddo
           enddo
           ntiwx = 3
-        elseif (imp_physics == 8) then                     ! Thompson
+        elseif (imp_physics == Model%imp_physics_thompson) then
+! Thompson
           if(Model%ltaerosol) then
             do k=1,levs
               do i=1,im
@@ -2284,7 +2359,7 @@ module module_physics_driver
             enddo
             ntiwx = 3
           endif
-        elseif (imp_physics == 10) then                    ! MG3/2
+        elseif (imp_physics == Model%imp_physics_mg) then  ! MG3/2
           if (ntgl > 0) then                               ! MG3
             do k=1,levs
               do i=1,im
@@ -2320,7 +2395,7 @@ module module_physics_driver
           endif
           ntiwx = 3
 !
-        elseif (imp_physics == 11) then                    ! GFDL MP
+        elseif (imp_physics == Model%imp_physics_gfdl) then! GFDL MP
           do k=1,levs
             do i=1,im
               vdftra(i,k,1) = Statein%qgrs(i,k,1)
@@ -2393,6 +2468,7 @@ module module_physics_driver
                          kinver, Model%xkzm_m, Model%xkzm_h, Model%xkzm_s)
              endif
           elseif (Model%hybedmf) then
+           if ( Model%moninq_fac > 0 ) then 
             call moninedmf(ix, im, levs, nvdiff, ntcw, dvdt, dudt, dtdt, dvdftra,       &
                            Statein%ugrs, Statein%vgrs, Statein%tgrs, vdftra,            &
                            Radtend%htrsw, Radtend%htrlw, xmu, Statein%prsik(1,1),       &
@@ -2403,9 +2479,20 @@ module module_physics_driver
                            Model%dspheat, dusfc1, dvsfc1, dtsfc1, dqsfc1, Diag%hpbl,    &
                            gamt, gamq, dkt, kinver, Model%xkzm_m, Model%xkzm_h,         &
                            Model%xkzm_s, lprnt, ipr,                                    &
-!                           Model%xkzminv, Model%moninq_fac)
-! Weiguo Wang 2019/04 HWRF PBL
+                           Model%xkzminv, Model%moninq_fac)
+           else
+            call moninedmf_hafs(ix, im, levs, nvdiff, ntcw, dvdt, dudt, dtdt, dvdftra,  &
+                           Statein%ugrs, Statein%vgrs, Statein%tgrs, vdftra,            &
+                           Radtend%htrsw, Radtend%htrlw, xmu, Statein%prsik(1,1),       &
+                           rb, Sfcprop%zorl, Diag%u10m, Diag%v10m, Sfcprop%ffmm,        &
+                           Sfcprop%ffhh, Sfcprop%tsfc, qss, hflx, evap, stress,         &
+                           wind, kpbl, Statein%prsi, del, Statein%prsl,                 &
+                           Statein%prslk, Statein%phii, Statein%phil, dtp,              &
+                           Model%dspheat, dusfc1, dvsfc1, dtsfc1, dqsfc1, Diag%hpbl,    &
+                           gamt, gamq, dkt, kinver, Model%xkzm_m, Model%xkzm_h,         &
+                           Model%xkzm_s, lprnt, ipr,                                    &
                            Model%xkzminv, Model%moninq_fac,islmsk)
+           endif
           elseif (.not. Model%old_monin) then
             call moninq(ix, im, levs, nvdiff, ntcw, dvdt, dudt, dtdt, dvdftra,          &
                         Statein%ugrs, Statein%vgrs, Statein%tgrs, vdftra,               &
@@ -2447,7 +2534,7 @@ module module_physics_driver
             enddo
           enddo
         endif
-        if (imp_physics == 6) then                           ! WSM6
+        if (imp_physics == Model%imp_physics_wsm6) then         ! WSM6
           do k=1,levs
             do i=1,im
               dqdt(i,k,1)     = dvdftra(i,k,1)
@@ -2456,14 +2543,14 @@ module module_physics_driver
               dqdt(i,k,ntoz)  = dvdftra(i,k,4)
             enddo
           enddo
-        elseif (imp_physics == 8) then                       ! Thompson
+        elseif (imp_physics == Model%imp_physics_thompson) then ! Thompson
           if(Model%ltaerosol) then
             do k=1,levs
               do i=1,im
                 dqdt(i,k,1)     = dvdftra(i,k,1)
                 dqdt(i,k,ntcw)  = dvdftra(i,k,2)
-                dqdt(i,k,ntlnc) = dvdftra(i,k,3)
-                dqdt(i,k,ntiw)  = dvdftra(i,k,4)
+                dqdt(i,k,ntiw)  = dvdftra(i,k,3)
+                dqdt(i,k,ntlnc) = dvdftra(i,k,4)
                 dqdt(i,k,ntinc) = dvdftra(i,k,5)
                 dqdt(i,k,ntoz)  = dvdftra(i,k,6)
                 dqdt(i,k,ntwa)  = dvdftra(i,k,7)
@@ -2481,7 +2568,7 @@ module module_physics_driver
               enddo
             enddo
           endif
-        elseif (imp_physics == 10) then                      ! MG3/2
+        elseif (imp_physics == Model%imp_physics_mg) then    ! MG3/2
           if (ntgl > 0) then                                 ! MG
             do k=1,levs
               do i=1,im
@@ -2516,7 +2603,7 @@ module module_physics_driver
             enddo
           endif
 !
-        elseif (imp_physics == 11) then                      ! GFDL MP
+        elseif (imp_physics == Model%imp_physics_gfdl) then  ! GFDL MP
           do k=1,levs
             do i=1,im
               dqdt(i,k,1)    = dvdftra(i,k,1)
@@ -2545,6 +2632,7 @@ module module_physics_driver
 
       endif
 
+! DH* note: this block is not yet in CCPP
       if (Model%cplchm) then
         do i = 1, im
           tem1 = max(Diag%q1(i), 1.e-8)
@@ -2553,6 +2641,7 @@ module module_physics_driver
         enddo
         Coupling%dkt     (:,:) = dkt (:,:)
       endif
+! *DH
 
 !     if (lprnt) then
 !       write(0,*) ' dusfc1=',dusfc1(ipr),' kdt=',kdt,' lat=',lat
@@ -2565,6 +2654,7 @@ module module_physics_driver
 
 !  --- ...  coupling insertion
 
+! DH* this block not yet in CCPP (commented out in PBL_generic_post)
       if (Model%cplflx) then
         do i=1,im
           if (Sfcprop%oceanfrac(i) > 0.0) then ! Ocean only, NO LAKES
@@ -2601,6 +2691,7 @@ module module_physics_driver
           endif ! Ocean only, NO LAKES
         enddo
       endif
+! *DH
 !-------------------------------------------------------lssav if loop ----------
       if (Model%lssav) then
         do i=1,im
@@ -2662,6 +2753,7 @@ module module_physics_driver
 
       endif   ! end if_lssav
 
+! DH* this block not yet in CCPP
 !
       if (ldiag_ugwp) then
 !         
@@ -2678,12 +2770,17 @@ module module_physics_driver
           enddo
         enddo       
       endif
+! *DH
 
 !-------------------------------------------------------lssav if loop ----------
 !=============================================================  GW-physics start
 !
 !            Orographic gravity wave drag parameterization
 !            ---------------------------------------------
+
+! DH* this block, except for the UGWD parts, is in CCPP gwdps_pre;
+! since it now applies to both gwpds and ugwd, it should be moved
+! to a separate gwd_pre scheme and the missing UGWD bits added
 
       if (nmtvr == 14) then         ! current operational - as of 2014
         do i=1,im
@@ -2741,8 +2838,9 @@ module module_physics_driver
         elvmax = 0
 
       endif   ! end if_nmtvr
+! *DH
 
-
+! DH* UGWD not yet in CCPP
 !
 !===== UGWP-start: two versions V0 (knob_ugwp_version=0) and V1(knob_ugwp_version=1)
 !
@@ -2844,6 +2942,9 @@ module module_physics_driver
 
 
         do_congwd = .false.
+
+! *DH UGWD not yet in CCPP
+
 !
 !       if ( me == master)  print *, ' ugwp time-step=', kdt
 !
@@ -2945,7 +3046,8 @@ module module_physics_driver
 ! Standard accum-Update before "moist physics" by "PBL + GWP + RF" as in GFS/GSM
 !
 
-
+! DH* this is in GFS_suite_stateout_update (file GFS_suite_interstitital.F90),
+!     but without the gw_* terms
       do k=1,levs
         do i=1,im
           Stateout%gt0(i,k)  = Statein%tgrs(i,k) + (dtdt(i,k)+gw_dtdt(i,k)) * dtp
@@ -2954,7 +3056,9 @@ module module_physics_driver
         enddo
       enddo
       Stateout%gq0(1:im,:,:) = Statein%qgrs(1:im,:,:) + dqdt(1:im,:,:) * dtp
+! *DH
 
+! DH* this block not yet in CCPP
 !=======================================================================         
 !     above: updates of the state by UGWP oro-GWS and RF-damp
 !  Diag%tav_ugwp & Diag%uav_ugwp(i,k)-Updated U-T state before moist/micro !  physics
@@ -2969,6 +3073,7 @@ module module_physics_driver
           enddo
         enddo
       endif
+! *DH
 
 !================================================================================ 
 ! It is not clear Do we need it, "ideaca_up", having stability check inside UGWP-module
@@ -3090,7 +3195,7 @@ module module_physics_driver
         enddo
       enddo
 
-      if(imp_physics == 8) then
+      if(imp_physics == Model%imp_physics_thompson) then
         if(Model%ltaerosol) then
           ice00 (:,:) = 0.0
           liq0  (:,:) = 0.0
@@ -3145,11 +3250,12 @@ module module_physics_driver
 !           --------------------------------------------
 
       if (ntcw > 0) then
-!       if (imp_physics == 10 .and. .not. Model%do_shoc) then  ! compute rhc for GMAO macro physics cloud pdf
-        if (imp_physics == 10 .and. Model%crtrh(2) < 0.5) then ! compute rhc for GMAO macro physics cloud pdf
+!       if (imp_physics == Model%imp_physics_mg .and. .not. Model%do_shoc) then ! compute rhc for GMAO macro physics cloud pdf
+        if (imp_physics == Model%imp_physics_mg .and. Model%crtrh(2) < 0.5) then ! compute rhc for GMAO macro physics cloud pdf
           do i=1,im
             tx1(i) = 1.0 / Statein%prsi(i,1)
             tx2(i) = 1.0 - rhc_max*work1(i) - Model%crtrh(1)*work2(i)
+
             kk     = min(kinver(i), max(2,kpbl(i)))
             tx3(i) = Statein%prsi(i,kk)*tx1(i)
             tx4(i) = Model%crtrh(2) - Model%crtrh(3)*abs(cos(Grid%xlat(i)))
@@ -3201,9 +3307,9 @@ module module_physics_driver
             clw(i,k,1) = Stateout%gq0(i,k,ntcw)
           enddo
         enddo
-      elseif (imp_physics == 11) then
+      elseif (imp_physics == Model%imp_physics_gfdl) then
         clw(1:im,:,1) = Stateout%gq0(1:im,:,ntcw)
-      elseif (imp_physics == 8) then
+      elseif (imp_physics == Model%imp_physics_thompson) then
         do k=1,levs
           do i=1,im
             clw(i,k,1) = Stateout%gq0(i,k,ntiw)                    ! ice
@@ -3216,7 +3322,7 @@ module module_physics_driver
         else
           ice00(:,:) = clw(:,:,1)
         endif
-      elseif (imp_physics == 6 .or. imp_physics == 10) then
+      elseif (imp_physics == Model%imp_physics_wsm6 .or. imp_physics == Model%imp_physics_mg) then
         do k=1,levs
           do i=1,im
             clw(i,k,1) = Stateout%gq0(i,k,ntiw)                    ! ice
@@ -3233,10 +3339,13 @@ module module_physics_driver
 !
 !        Call SHOC if do_shoc is true and shocaftcnv is false
 !
+! DH* as of now, this is in CCPP's gcm_shoc
       if (Model%do_shoc .and. .not. Model%shocaftcnv) then
-        if (imp_physics == 10) then
+        if (imp_physics == Model%imp_physics_mg) then
           do k=1,levs
             do i=1,im
+! DH* TODO - THESE WERE COMMENTED OUT IN EARLIER VERSIONS OF THE CCPP CODE IN gcm_shoc.F90 and I can't find the code elsewhere
+! MAYBE THAT HAS BEEN MOVERD INTO m_micro_interstitial? *DH
 !             clw(i,k,1) = Stateout%gq0(i,k,ntiw)                    ! ice
 !             clw(i,k,2) = Stateout%gq0(i,k,ntcw)                    ! water
               ncpl(i,k)  = Stateout%gq0(i,k,ntlnc)
@@ -3259,7 +3368,7 @@ module module_physics_driver
               enddo
             enddo
           endif
-        elseif (imp_physics == 11) then  ! GFDL MP - needs modify for condensation
+        elseif (imp_physics == Model%imp_physics_gfdl) then  ! GFDL MP - needs modify for condensation
           do k=1,levs
             do i=1,im
               clw(i,k,1) = Stateout%gq0(i,k,ntiw)                    ! ice
@@ -3281,6 +3390,7 @@ module module_physics_driver
             enddo
           enddo
         endif
+! *DH
 
 !  if (lprnt) write(0,*)'gt01=',Stateout%gt0(ipr,:)
 !  if (lprnt) write(0,*)'gq01=',Stateout%gq0(ipr,:,1)
@@ -3325,7 +3435,7 @@ module module_physics_driver
 
 
 !       enddo
-!         if (imp_physics == 10 .and. Model%fprcp > 1) then
+!         if (imp_physics == Model%imp_physics_mg .and. Model%fprcp > 1) then
 !           do k=1,levs
 !             do i=1,im
 !               clw(i,k,1) = clw(i,k,1) - Stateout%gq0(i,k,ntgl)
@@ -3351,7 +3461,8 @@ module module_physics_driver
 !    &,              Stateout%gq0(1:ix,1:levs,1),clw(1,1,2),clw(1,1,1)      &
 !    &,              '   shoc   ', grid%xlon(1:im), grid%xlat(1:im))
 
-          if (imp_physics == 10) then
+! DH* as of now, this is in CCPP's gcm_shoc (but commented out because not needed)
+          if (imp_physics == Model%imp_physics_mg) then
             do k=1,levs
               do i=1,im
                 Stateout%gq0(i,k,ntlnc) = ncpl(i,k)
@@ -3359,6 +3470,7 @@ module module_physics_driver
               enddo
             enddo
           endif
+! *DH
 !       do k=1,levs
 !         do i=1,im
 !           sgs_cld(i,k) = sgs_cld(i,k) + shoc_cld(i,k)
@@ -3388,6 +3500,7 @@ module module_physics_driver
 !           -----------------------------------
       if (Model%do_deep) then
  
+! For CCPP compliant physics, this code is in GFS_DCNV_generic_pre
         if (Model%do_ca) then
           do k=1,levs                                                                                                                                                                          
             do i=1,im                                                                                                                                                                           
@@ -3441,6 +3554,16 @@ module module_physics_driver
                              Model%evfact_deep, Model%evfactl_deep,              &
                              Model%pgcon_deep,  Model%asolfac_deep)
 !           if (lprnt) print *,' rain1=',rain1(ipr)
+          !elseif (Model%imfdeepcnv == 3) then
+          !  if (Model%me==0) then
+          !      write(0,*) 'Error, GF convection scheme only available through CCPP'
+          !      stop
+          !  end if
+          !elseif (Model%imfdeepcnv == 4) then
+          !  if (Model%me==0) then
+          !      write(0,*) 'Error, New Tiedtke convection scheme only available through CCPP'
+          !      stop
+          !  end if
           elseif (Model%imfdeepcnv == 0) then         ! random cloud top
             call sascnv (im, ix, levs, Model%jcap, dtp, del,                     &
                          Statein%prsl, Statein%pgr, Statein%phil, clw(:,:,1:2),  &
@@ -3473,6 +3596,7 @@ module module_physics_driver
             enddo
           endif
 
+        ! For CCPP, this is in GFS_DCNV_generic_post
           if(Model%do_ca) then
             Coupling%cape(:) = cld1d(:)
           endif
@@ -3493,9 +3617,19 @@ module module_physics_driver
 !               dqdt(i,k,3) = clw(i,k,1)
 !             enddo
 !           enddo
-          
+
+!
+! JLS NOTE:  The convective mass fluxes (dt_mf, dd_mf and ud_mf) passed in and out of cs_conv have not been multiplied by
+!            the timestep (i.e, the are in kg/m2/sec) as they are in all other convective schemes.  EMC is aware of this problem, 
+!            and in the future will be fixing this discrepancy.  In the meantime, CCPP will use the same mass flux standard_name
+!            and long_name as the other convective schemes, where the units are in kg/m2. (Aug 2018)
+!
+
 !           if (lprnt) write(0,*)'befcsgt0=',Stateout%gt0(ipr,:)
 !           if (lprnt) write(0,*)'befcstke=',clw(ipr,1:25,ntk)
+
+! JLS NOTE:  The variable rain1 output from cs_convr (called prec inside the subroutine) is a precipitation flux (kg/m2/sec),
+!            not meters LWE like the other schemes.  It is converted to m after the call to cs_convr.
 
             call cs_convr (ix, im, levs, ntrac+1, nn, tottracer+3,          &
                            Model%nctp, otspt(1:ntrac+1,1:2), 1,             &
@@ -3547,6 +3681,8 @@ module module_physics_driver
 
           else      ! ras version 2
 
+! DH* this code not yet in CCPP (belongs to GFS_DCNV_generic_pre?)
+
             if (Model%ccwf(1) >= 0.0 .or. Model%ccwf(2) >= 0) then
               do i=1,im
                 ccwfac(i)  = Model%ccwf(1)*work1(i)    + Model%ccwf(2)*work2(i)
@@ -3562,6 +3698,7 @@ module module_physics_driver
                 praur_l(i) = Model%prauras(1)*work1(i) + Model%prauras(2)*work2(i)
               enddo
             endif
+! *DH
 !           if  (lprnt) write(0,*) ' calling ras for kdt=',kdt,' me=',me    &
 !    &,                            ' lprnt=',lprnt,' ccwfac=',ccwfac(ipr)
 
@@ -3653,6 +3790,8 @@ module module_physics_driver
 
         endif   ! end if_not_ras
 
+! For CCPP compliant physics, this code is partially in GFS_DCNV_generic_post
+
         if(Model%isppt_deep)then
            Coupling%tconvtend = Stateout%gt0 - savet
            Coupling%qconvtend = Stateout%gq0(:,:,1) - saveq
@@ -3714,6 +3853,7 @@ module module_physics_driver
 !       enddo
 !     endif ! if (lgocart)
 !
+! DH* this block not yet in CCPP
       if (ldiag_ugwp) then
         do k=1,levs
           do i=1,im
@@ -3742,6 +3882,7 @@ module module_physics_driver
 !     from previous time step we need:  LH-release + cld_top/bot + precip
 !      
 !     endif
+! *DH
 
 !     if (lprnt) write(7000,*)' bef cnvgwd gu0=',gu0(ipr,:)
 !    &,' lat=',lat,' kdt=',kdt,' me=',me
@@ -3749,6 +3890,7 @@ module module_physics_driver
 !
 !----------------Convective gravity wave drag parameterization starting --------
 
+! DH* this block is in gwdc_pre
       if (Model%cnvgwd .and. do_congwd) then         !        call convective gravity wave drag
 
 !  --- ...  calculate maximum convective heating rate 
@@ -3769,6 +3911,19 @@ module module_physics_driver
         do i=1,im
           if (work3(i) > 0.0) cumabs(i) = cumabs(i) / (dtp*work3(i))
         enddo
+! *DH
+
+! DH* 20180817 - note: the above non-CCPP code modifies work3, which until then was defined
+! as the ratio of the exner function between midlayer and interface at lowest model layer:
+!    work3(i) = Statein%prsik(i,1) / Statein%prslk(i,1)
+! This does not happen for the CCPP code, because gwdc_pre uses an internal array
+! work3 (maybe not a good name, given that we have work1/2/3 in GFS_physics_driver and
+! in the GFS_Interstitial DDT). Therefore, work3 is different from here on until the end
+! of GFS_physics_driver. This is ok as long as Model%lgocart is set to .false. - if
+! Model%lgocart is set to .true., sfc_diag is called again, which uses work3 as input.
+! This work3 used in sfc_diag should be the ratio of the exner function, not the modified
+! value derived in the non-CCPP code above. If we get different results for the surface
+! diagnstics with Model%lgocart=.true., then the CCPP code is correct! *DH 20180817
 
 !       do i = 1, im
 !         do k = kbot(i), ktop(i)
@@ -3994,11 +4149,12 @@ module module_physics_driver
                               Stateout%gq0(:,:,1), Stateout%gt0,               &
                               Stateout%gu0, Stateout%gv0,                      &
                               rain1, kbot, ktop, kcnv, islmsk, garea,          &
-                              Statein%vvl, ncld, DIag%hpbl, ud_mf,             &
+                              Statein%vvl, ncld, Diag%hpbl, ud_mf,             &
                               dt_mf, cnvw, cnvc,                               &
                               Model%clam_shal,  Model%c0s_shal, Model%c1_shal, &
                               Model%pgcon_shal, Model%asolfac_shal)
 
+! DH* this block is in samfshalcnv_post
             do i=1,im
               Diag%rainc(i) = Diag%rainc(i) + frain * rain1(i)
             enddo
@@ -4017,6 +4173,13 @@ module module_physics_driver
                 enddo
               enddo
             endif
+! *DH
+
+          !elseif (Model%imfshalcnv == 3) then
+          !if (Model%me==0) write(0,*) "CCPP DEBUG: shallow convection of GF is called in gf_driver"
+
+          !elseif (Model%imfshalcnv == 4) then
+          !if (Model%me==0) write(0,*) "CCPP DEBUG: shallow convection of New Tiedtke is called in cu_tiedtke"
 
           elseif (Model%imfshalcnv == 0) then    ! modified Tiedtke Shallow convecton
                                                  !-----------------------------------
@@ -4084,7 +4247,7 @@ module module_physics_driver
 !       endif
 
       elseif (Model%shocaftcnv) then ! if do_shoc is true and shocaftcnv is true call shoc
-        if (imp_physics == 10) then
+        if (imp_physics == Model%imp_physics_mg) then
           do k=1,levs
             do i=1,im
               ncpl(i,k)  = Stateout%gq0(i,k,ntlnc)
@@ -4152,7 +4315,7 @@ module module_physics_driver
                    lprnt, ipr, imp_physics, ncpl, ncpi)
 !       enddo
 
-        if (imp_physics == 10) then
+        if (imp_physics == Model%imp_physics_mg) then
           do k=1,levs
             do i=1,im
               Stateout%gq0(i,k,ntlnc) = ncpl(i,k)
@@ -4206,7 +4369,7 @@ module module_physics_driver
 
 !  for microphysics
         if (imp_physics == 99 .or. imp_physics == 98    &
-                              .or. imp_physics == 11) then
+                              .or. imp_physics == Model%imp_physics_gfdl) then
           Stateout%gq0(1:im,:,ntcw) = clw(1:im,:,1) + clw(1:im,:,2)
         elseif (ntiw > 0) then
           do k=1,levs
@@ -4215,7 +4378,7 @@ module module_physics_driver
               Stateout%gq0(i,k,ntcw) = clw(i,k,2)                     ! water
             enddo
           enddo
-          if (imp_physics == 8) then
+          if (imp_physics == Model%imp_physics_thompson) then
             if (Model%ltaerosol) then
               do k=1,levs
                 do i=1,im
@@ -4254,6 +4417,7 @@ module module_physics_driver
       call cnvc90 (Model%clstp, im, ix, Diag%rainc, kbot, ktop, levs, Statein%prsi,  &
                    Tbd%acv, Tbd%acvb, Tbd%acvt, Cldprop%cv, Cldprop%cvb, Cldprop%cvt)
 
+! DH* - this block is not yet in CCPP
       if (Model%moist_adj) then       ! moist convective adjustment
 !                                     ---------------------------
 !
@@ -4300,8 +4464,8 @@ module module_physics_driver
 !            enddo
 !          endif
 !       endif
-!
       endif               !       moist convective adjustment over
+! *DH
 !
       if (Model%ldiag3d .or. Model%do_aw) then
         do k=1,levs
@@ -4316,6 +4480,7 @@ module module_physics_driver
       endif
 
 ! dqdt_v : instaneous moisture tendency (kg/kg/sec)
+      !GF* the following code is executed in GFS_suite_interstitial_4 (relevant for shallow and deep convection)
       if (Model%lgocart) then
         do k=1,levs
           do i=1,im
@@ -4323,6 +4488,7 @@ module module_physics_driver
           enddo
         enddo
       endif
+      !*GF
 !
 !     grid-scale condensation/precipitations and microphysics parameterization
 !     ------------------------------------------------------------------------
@@ -4392,7 +4558,7 @@ module module_physics_driver
 
 !     if (lprnt) write(0,*) ' rain1=',rain1(ipr),' rainc=',rainc(ipr),' lat=',lat
 
-        elseif (imp_physics == 8) then      !  Thompson MP
+        elseif (imp_physics == Model%imp_physics_thompson) then      !  Thompson MP
                                             ! ------------
           ims = 1 ; ime = ix ; kms = 1 ; kme = levs ; its = 1 ; ite = ix ; kts = 1 ; kte = levs
 
@@ -4407,7 +4573,7 @@ module module_physics_driver
 !              Stateout%gq0(1:im,1:im,Model%ntrnc),                                        &
 !              Stateout%gt0, Statein%prsl, Statein%vvl, del, dtp, kdt,                     &
 !              rain1,                                                                      &
-!              diag%sr,                                                                    &
+!              Diag%sr,                                                                    &
 !!             Diag%refl_10cm, Model%lradar,                                               &
 !!             Tbd%phy_f3d(:,:,1),Tbd%phy_f3d(:,:,2),Tbd%phy_f3d(:,:,3),                   & !has_reqc, has_reqi, has_reqs,
 !!             ims,ime,kms,kme,its,ite,kts,kte)
@@ -4427,13 +4593,13 @@ module module_physics_driver
 !2014v         Stateout%gt0, Statein%prsl, Statein%vvl, del, dtp, kdt,                     &
                Stateout%gt0, Statein%prsl, del, dtp, kdt,                                  &
                rain1,                                                                      &
-               diag%sr,                                                                    &
+               Diag%sr,                                                                    &
                islmsk,                                                                     &
                Diag%refl_10cm, Model%lradar,                                               &
                Tbd%phy_f3d(:,:,1),Tbd%phy_f3d(:,:,2),Tbd%phy_f3d(:,:,3),me,Statein%phii)
           endif 
 
-        elseif (imp_physics == 6) then      ! WSM6
+        elseif (imp_physics == Model%imp_physics_wsm6) then      ! WSM6
                                             ! -----
           ims = 1 ; ime = ix ; kms = 1 ; kme = levs ; its = 1 ; ite = ix ; kts = 1 ; kte = levs
 
@@ -4445,14 +4611,15 @@ module module_physics_driver
                                 Stateout%gq0(1:im,1:levs,Model%ntsw),                           &
                                 Stateout%gq0(1:im,1:levs,Model%ntgl),                           &
                                 Statein%prsl, del, dtp, rain1,                                  &
-                                diag%sr,                                                        &
+                                Diag%sr,                                                        &
                                 islmsk,                                                         & 
                                 Tbd%phy_f3d(:,:,1),Tbd%phy_f3d(:,:,2),Tbd%phy_f3d(:,:,3),       &
                                 ims,ime, kms,kme,                                               &
                                 its,ite, kts,kte)
 !
-      elseif (imp_physics == 10) then       ! MGB double-moment microphysics
-                                            ! ------------------------------
+      elseif (imp_physics == Model%imp_physics_mg) then       ! MGB double-moment microphysics
+                                                              ! ------------------------------
+
         kk = 5
         if (Model%fprcp >= 2) kk = 6
 
@@ -4660,8 +4827,8 @@ module module_physics_driver
 !       if (lprnt) write(0,*)' qglba',qgl(ipr,:),' kdt=',kdt
 !
 
-        elseif (imp_physics == 11) then     ! GFDL MP
-                                            ! -------
+        elseif (imp_physics == Model%imp_physics_gfdl) then     ! GFDL MP
+                                                                ! -------
           do i = 1, im
             land     (i,1)   = frland(i)
             area     (i,1)   = Grid%area(i)
@@ -4734,17 +4901,36 @@ module module_physics_driver
               graupel0(i,1) = 0.0
             endif
 
+#ifdef TRANSITION
+            volatile_var1   = rain0(i,1)+snow0(i,1)+ice0(i,1)+graupel0(i,1)
+            volatile_var2   = snow0(i,1)+ice0(i,1)+graupel0(i,1)
+            rain1(i)        = volatile_var1 * tem
+#else
             rain1(i)        = (rain0(i,1)+snow0(i,1)+ice0(i,1)+graupel0(i,1)) * tem
+#endif
             Diag%ice(i)     = ice0    (i,1) * tem
             Diag%snow(i)    = snow0   (i,1) * tem
             Diag%graupel(i) = graupel0(i,1) * tem
+#ifdef TRANSITION
+            if ( volatile_var1 * tem > rainmin ) then
+              Diag%sr(i) = volatile_var2 / volatile_var1
+#else
             if ( rain1(i) > rainmin ) then
-              Diag%sr(i)  = (snow0(i,1) + ice0(i,1)  + graupel0(i,1)) &
-                          / (rain0(i,1) + snow0(i,1) + ice0(i,1) + graupel0(i,1))
+              Diag%sr(i) = (snow0(i,1) + ice0(i,1)  + graupel0(i,1)) &
+                         / (rain0(i,1) + snow0(i,1) + ice0(i,1) + graupel0(i,1))
+#endif
             else
-              Diag%sr(i)  = 0.0
+              Diag%sr(i) = 0.0
             endif
           enddo
+#if defined(TRANSITION) || defined(REPRO)
+          ! Convert rain0, ice0, graupel0 and snow0 from mm/day to m/physics-timestep
+          ! for later use (approx. lines 7970, calculation of srflag)
+          rain0 = tem*rain0
+          ice0  = tem*ice0
+          snow0 = tem*snow0
+          graupel0 = tem*graupel0
+#endif
           do k = 1, levs
             kk = levs-k+1
             do i=1,im
@@ -4770,7 +4956,7 @@ module module_physics_driver
             endif 
           enddo
 !Calculate hourly max 1-km agl and -10C reflectivity
-        if(Model%lradar .and. (imp_physics == 11 .or. imp_physics == 8)) then
+        if(Model%lradar .and. (imp_physics == Model%imp_physics_gfdl .or. imp_physics == Model%imp_physics_thompson)) then
           allocate(refd(im))
           allocate(refd263k(im))
           call max_fields(Statein%phil,Diag%refl_10cm,con_g,im,levs,refd,Stateout%gt0,refd263k)
@@ -4843,7 +5029,7 @@ module module_physics_driver
           enddo
         enddo
 ! add convective clouds if shoc is true and not MG microphysics
-        if (Model%do_shoc .and. imp_physics /= 10) then
+        if (Model%do_shoc .and. imp_physics /= Model%imp_physics_mg) then
           do k = 1,levs
             do i = 1,im
               Tbd%phy_f3d(i,k,ntot3d-2) = min(1.0, Tbd%phy_f3d(i,k,ntot3d-2)    &
@@ -4889,7 +5075,7 @@ module module_physics_driver
 !       end do
 !       HCHUANG: use new precipitation type to decide snow flag for LSM snow accumulation
         
-        if (Model%imp_physics /= 11) then
+        if (Model%imp_physics /= Model%imp_physics_gfdl) then
           do i=1,im
             Sfcprop%tprcp(i)  = max(0.0, Diag%rain(i) )
             if(doms(i) > 0.0 .or. domip(i) > 0.0) then
@@ -4938,6 +5124,7 @@ module module_physics_driver
         endif
       endif
 
+! DH* this block not yet in CCPP
 !--------------------------------
 ! vay-2018 for Dycore-Tendencies save Stateout%X => Diag%dX3dt_cgw
 !
@@ -4947,6 +5134,7 @@ module module_physics_driver
         Diag%du3dt_cgw = Stateout%gu0
       endif
 !--------------------------------
+! *DH
 
 !  --- ...  estimate t850 for rain-snow decision
 
@@ -4962,7 +5150,7 @@ module module_physics_driver
         enddo
       enddo
 
-      if (Model%imp_physics == 11) then
+      if (Model%imp_physics == Model%imp_physics_gfdl) then
 ! determine convective rain/snow by surface temperature
 ! determine large-scale rain/snow by rain/snow coming out directly from MP
         tem = dtp * con_p001 / con_day
@@ -4981,14 +5169,23 @@ module module_physics_driver
 !            Sfcprop%srflag(i) = 1.                   ! clu: set srflag to 'snow' (i.e. 1)
 !          endif
 ! compute fractional srflag
+#if defined(TRANSITION) || defined(REPRO)
+          ! For bit-for-bit identical results with CCPP code, snow0/ice0/graupel0/rain0
+          ! were converted from mm per day to m per physics timestep previously in the code
+          total_precip = snow0(i,1)+ice0(i,1)+graupel0(i,1)+rain0(i,1)+Diag%rainc(i)
+          if (total_precip > rainmin) then
+            Sfcprop%srflag(i) = (snow0(i,1)+ice0(i,1)+graupel0(i,1)+csnow)/total_precip
+          endif
+#else
           tem1 = snow0(i,1)+ice0(i,1)+graupel0(i,1)
           total_precip = (tem1+rain0(i,1)) * tem + Diag%rainc(i)
           if (total_precip > rainmin) then
             Sfcprop%srflag(i) = (tem1*tem+csnow) / total_precip
           endif
+#endif
         enddo
       elseif( .not. Model%cal_pre) then
-        if (Model%imp_physics == 10) then              ! MG microphysics
+        if (Model%imp_physics == Model%imp_physics_mg) then              ! MG microphysics
           do i=1,im
             if (Diag%rain(i)*tem > rainmin) then
               Sfcprop%srflag(i) = max(zero, min(one, (Diag%rain(i)-Diag%rainc(i))*Diag%sr(i)/Diag%rain(i)))
@@ -5032,20 +5229,24 @@ module module_physics_driver
 !!! this change allows gocart to use filtered wind fields
 !!!
       if (Model%lgocart) then
+        ! DH* 20180817 - see my comment further up (around gwdc_pre) that
+        ! work3 for the non-CCPP code is incorrect (CCPP code is correct) *DH
         call sfc_diag (im, Statein%pgr, Stateout%gu0, Stateout%gv0,     &
                        Stateout%gt0, Stateout%gq0, Sfcprop%tsfc, qss,   &
                        Sfcprop%f10m, Diag%u10m, Diag%v10m, Sfcprop%t2m, &
                        Sfcprop%q2m,  work3, evap, Sfcprop%ffmm,         &
                        Sfcprop%ffhh, fm10, fh2)
 
-      if (Model%lsm == 2) then
+! DH* this block not yet in CCPP
+      if (Model%lsm == Model%lsm_noahmp) then
         do i=1,im
           if (dry(i)) then
             Sfcprop%t2m(i)=t2mmp(i)
             Sfcprop%q2m(i)=q2mp(i)
           endif
         enddo
-      endif ! if Model%lsm == 2
+      endif ! if Model%lsm == Model%lsm_noahmp
+! *DH
 
         if (Model%lssav) then
           do i=1,im
@@ -5069,6 +5270,7 @@ module module_physics_driver
         endif
       endif
 
+      ! CCPP: this code is now in GFS_surface_generic_post
 !  --- ...  total runoff is composed of drainage into water table and
 !           runoff at the surface and is accumulated in unit of meters
       if (Model%lssav) then
@@ -5088,8 +5290,9 @@ module module_physics_driver
         enddo
       enddo
 
+! DH* this block not yet in CCPP
 ! Noah MP
-     if (Model%lsm == 2) then
+     if (Model%lsm == Model%lsm_noahmp) then
 
       do k = 1, lsoil
         do i = 1, im
@@ -5111,8 +5314,8 @@ module module_physics_driver
         enddo
       enddo
 
-    endif ! if Model%lsm == 2
-
+    endif ! if Model%lsm == Model%lsm_noahmp
+! *DH
 
 !  --- ...  calculate column precipitable water "pwat"
       Diag%pwat(:) = 0.0
@@ -5205,7 +5408,7 @@ module module_physics_driver
 !     deallocate (qlcn, qicn, w_upi, cf_upi, CNV_MFD, CNV_PRC3, &
       deallocate (qlcn, qicn, w_upi, cf_upi, CNV_MFD,           &
                   CNV_DQLDT, clcn, cnv_fice, cnv_ndrop, cnv_nice)
-      if (imp_physics == 11) then
+      if (imp_physics == Model%imp_physics_gfdl) then
         deallocate (delp,  dz,    uin,   vin,   pt,    qv1,   ql1, qr1,        &
                     qg1,   qa1,   qn1,   qi1,   qs1,   pt_dt, qa_dt, udt, vdt, &
                     w,     qv_dt, ql_dt, qr_dt, qi_dt, qs_dt, qg_dt,p123,refl)
@@ -5442,162 +5645,6 @@ module module_physics_driver
       return
 
       end subroutine moist_bud2
-
-! mg, sfc-perts ***
-! the routines below are used in the percentile matching algorithm for the
-! albedo and vegetation fraction perturbations 
-      subroutine cdfnor(z,cdfz)
-      use machine
-
-      implicit none
-      real(kind=kind_phys), intent(out) :: cdfz
-      real(kind=kind_phys),intent(in) ::  z
-! local vars
-      integer              iflag
-      real(kind=kind_phys) del,x,cdfx,eps
-
-      eps = 1.0E-5
-
-
-      ! definition of passed parameters !
-      ! z  = value for which the normal CDF is to be computed
-      ! eps = the absolute accuracy requirment for the CDF
-      ! iflag = error indicator on output 0->no errors, 1->errorflag from
-      ! cdfgam, 2->errorflag from cdfgam
-      ! cdfz = the CDF of the standard normal distribution evaluated at z
-
-        del = 2.0*eps
-        if (z.eq.0.0) then
-          cdfz = 0.5
-        else
-          x = 0.5*z*z
-          call cdfgam(x,0.5,del,iflag, cdfx)
-          if (iflag.ne.0) return
-          if (z.gt.0.0) then
-            cdfz = 0.5+0.5*cdfx
-          else
-            cdfz = 0.5-0.5*cdfx
-          endif
-        endif
-
-      return
-      end
-
-      subroutine cdfgam(x,alpha,eps,iflag,cdfx)
-      use machine
-
-      implicit none
-      real(kind=kind_phys), intent(out) :: cdfx
-      real(kind=kind_phys),intent(in) ::  x, alpha, eps
-! local vars
-      integer              iflag,i,j,k, imax
-      logical              LL
-      real(kind=kind_phys) dx, dgln, p,u,epsx,pdfl, eta, bl, uflo
-      data imax, uflo / 5000, 1.0E-37 /
-
-
-      ! definition of passed parameters !
-      ! x  = value for which the CDF is to be computed
-      ! alpha = parameter of gamma function (>0)
-      ! eps = the absolute accuracy requirment for the CDF
-      ! iflag = error indicator on output 0->no errors, 1->either alpha or eps
-      ! is <= oflo, 2->number of terms evaluated in the infinite series exceeds
-      ! imax.
-      ! cdf = the CDF evaluated at x
-
-        cdfx = 0.0
-
-        if (alpha.le.uflo.or.eps.le.uflo) then
-          iflag=1
-          return
-        endif
-        iflag=0
-
-        ! check for special case of x
-        if (x.le.0) return
-
-        dx = x
-        call dgamln(alpha,dgln)
-        pdfl = (alpha-1.0)*log(dx)-dx-dgln
-        if (pdfl.lt.log(uflo)) then
-          if (x.ge.alpha) cdfx = 1.0
-        else
-          p = alpha
-          u = exp(pdfl)
-          LL = .true.
-          if (x.ge.p) then
-            k = int(p)
-            if (p.le.real(k)) k = k-1
-            eta = p - real(k)
-            call dgamln(eta,dgln)
-            bl = (eta-1)*log(dx)-dx-dgln
-            LL = bl.gt.log(eps)
-          endif
-          epsx = eps/x
-          if (LL) then
-            do i=0,imax
-              if (u.le.epsx*(p-x)) return
-              u = x*u/p
-              cdfx = cdfx+u
-              p = p+1.0
-            enddo
-            iflag = 2
-          else
-            do j=1,k
-              p=p-1.0
-              if (u.le.epsx*(x-p)) continue
-              cdfx = cdfx+u
-              u = p*u/x
-            enddo
-            cdfx = 1.0-cdfx
-          endif
-        endif
-        return
-      end subroutine cdfgam
-
-      subroutine dgamln(x,dgamlnout)
-
-      use machine
-      implicit none
-      real(kind=kind_phys), intent(in) ::  x
-      real(kind=kind_phys), intent(out) ::  dgamlnout
-! local vars
-      integer              i, n
-      real(kind=kind_phys) absacc, b1, b2, b3, b4, b5, b6, b7, b8
-      real(kind=kind_phys) c, dx, q, r, xmin, xn
-      data xmin, absacc / 6.894d0, 1.0E-15 /
-      data c / 0.918938533204672741780329736d0 /
-      data b1 / 0.833333333333333333333333333d-1 /
-      data b2 / - 0.277777777777777777777777778d-2 /
-      data b3 / 0.793650793650793650793650794d-3 /
-      data b4 / - 0.595238095238095238095238095d-3 /
-      data b5 / 0.841750841750841750841750842d-3 /
-      data b6 / - 0.191752691752691752691752692d-2 /
-      data b7 / 0.641025641025641025641025641d-2 /
-      data b8 / - 0.295506535947712418300653595d-1 /
-
-      if (x.le.0.0) stop '*** x<=0.0 in function dgamln ***'
-      dx = x
-      n = max(0,int(xmin - dx + 1.0d0) )
-      xn = dx + n
-      r = 1.0d0/xn
-      q = r*r
-      dgamlnout = r*( b1+q*( b2+q*( b3+q*( b4+q*( b5+q*( b6+q*( b7+q*b8 ) ) ) ) ) ) ) +c + (xn-0.5d0)*log(xn)-xn
-
-      if (n.gt.0) then
-        q = 1.0d0
-        do i=0, n-1
-          q = q*(dx+i)
-        enddo
-        dgamlnout = dgamlnout-log(q)
-      endif
-
-      if (dgamlnout + absacc.eq.dgamlnout) then
-        print *,' ********* WARNING FROM FUNCTION DGAMLN *********'
-        print *,' REQUIRED ABSOLUTE ACCURACY NOT ATTAINED FOR X = ',x
-      endif
-      return
-      end subroutine dgamln
 
 ! *** mg, sfc-perts
 

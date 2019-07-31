@@ -84,7 +84,7 @@ k_in=1
  allocate(Cpert_halo(nxch,nych,1))
  endif
  
- if(ca_sgs == .true.)then  
+ if(ca_sgs)then  
 
   if(kstep <= 1)then
  
@@ -163,7 +163,7 @@ k_in=1
 !Step 1 - Solve the stochastic gaussian skewed SGS equation in order to generate
 !perturbations to the grid mean model fields.
 
-if (ca_sgs == .true.) then
+if (ca_sgs) then
 !Compute the SGS and perturb the vertical velocity field:                                                                                                          
 !Read these values in from namelist, guided from LES data:                                                                                                                            
 
@@ -194,7 +194,7 @@ endif
 
 do it=1,spinup
 
-if (ca_sgs == .true.) then
+if (ca_sgs) then
 
  !Random seed for SGS                                                                                                        
  noise1D1 = 0.0
@@ -288,7 +288,7 @@ endif !ca sgs true
 !take the updated board fields and extract the halo
 ! in order to have updated values in the halo region. 
 
- if(ca_global ==.true.)then 
+ if(ca_global)then 
   do j=1,nyc                                                                        
    do i=1,nxc                                                                                           
    field_in(i+(j-1)*nxc,1)=board(i,j,nf)                                                                
@@ -299,7 +299,7 @@ endif !ca sgs true
  endif
  
 
- if(ca_sgs==.true.)then
+ if(ca_sgs)then
   field_in=0
   do j=1,nyc
    do i=1,nxc
@@ -323,7 +323,7 @@ endif !ca sgs true
 
 
 !Step 4 - Compute the neighbourhood
-if(ca_sgs == .true.)then !SGSmethod
+if(ca_sgs)then !SGSmethod
 
  !Count the number of neighbours where perturbed massflux is larger than 
  !a threshold
@@ -403,7 +403,7 @@ else !global
 endif  !sgs/global
 ! Step 5 - Check rules; the birth condition differs between SGS and GOL method
 
-if(ca_sgs == .true.)then !SGS
+if(ca_sgs)then !SGS
 
  if(nf==1)then
  do j=1,nyc
@@ -483,7 +483,7 @@ endif
    enddo
   enddo
 
- if(ca_sgs == .true.)then
+ if(ca_sgs)then
   do j=1,nyc
    do i=1,nxc
     lives(i,j,nf)=lives(i,j,nf)+newcell(i,j)*ilives(i,j)
@@ -526,14 +526,14 @@ enddo !spinup
 lives_max=maxval(ilives)
 call mp_reduce_max(lives_max)
 
-  if(ca_sgs == .true.)then
+  if(ca_sgs)then
    CA(:,:) = (frac(:,:)/lives_max)
   else !global
    CA(:,:) = (frac(:,:)/real(nlives))
   endif
 
 
-if(nca_plumes == .true.) then
+if(nca_plumes) then
 !COMPUTE NUMBER OF CLUSTERS (CONVECTIVE PLUMES) IN EACH CA-CELL
 !Note, at the moment we only use the count of the plumes found in a grid-cell
 !In the future the routine "plumes" can also be used to give the size of 

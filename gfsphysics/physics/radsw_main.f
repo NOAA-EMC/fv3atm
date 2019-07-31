@@ -592,7 +592,7 @@
       subroutine swrad                                                  &
      &     ( plyr,plvl,tlyr,tlvl,qlyr,olyr,gasvmr,                      &    !  ---  inputs
      &       clouds,icseed,aerosols,sfcalb,                             &
-     $       dzlyr,delpin,de_lgth,                                      &
+     &       dzlyr,delpin,de_lgth,                                      &
      &       cosz,solcon,NDAY,idxday,                                   &
      &       npts, nlay, nlp1, lprnt,                                   &
      &       hswc,topflx,sfcflx,cldtau,                                 &   !  ---  outputs

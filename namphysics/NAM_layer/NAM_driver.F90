@@ -74,8 +74,8 @@ module GFS_driver
                      Init_parm%levs, Init_parm%cnx, Init_parm%cny, &
                      Init_parm%gnx, Init_parm%gny,                 &
                      Init_parm%dt_dycore, Init_parm%dt_phys,       &
-                     Init_parm%bdat, Init_parm%cdat,               &
-                     Init_parm%tracer_names,                       &
+                     Init_parm%iau_offset, Init_parm%bdat,         &
+                     Init_parm%cdat, Init_parm%tracer_names,       &
                      Init_parm%input_nml_file, Init_parm%tile_num)
 
     do nb = 1,nblks

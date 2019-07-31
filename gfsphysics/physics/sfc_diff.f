@@ -10,7 +10,7 @@
      &                    sigmaf,vegtype,shdmax,ivegsrc,        !intent(in)
      &                    z0pert,ztpert,        ! mg, sfc-perts !intent(in)
      &                    flag_iter,redrag,                     !intent(in)
-     &                    u10m,v10m,sfc_z0_type,  !wang,z0 type !intent(in)
+     &                    u10m,v10m,sfc_z0_type,  !hafs,z0 type !intent(in)
      &                    wet,dry,icy,                          !intent(in)
      &                    tskin, tsurf, snwdph, z0rl, ustar,
 !

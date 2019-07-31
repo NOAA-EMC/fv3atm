@@ -162,7 +162,7 @@
      &                     eps    => con_eps, epsm1 => con_epsm1,       &
      &                     rvrdm1 => con_fvirt
 
-      use module_radiation_surface, only : ppfbet
+      use surface_perturbation, only : ppfbet
 
       implicit none
 

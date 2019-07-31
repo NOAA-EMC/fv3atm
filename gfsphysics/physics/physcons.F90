@@ -153,6 +153,11 @@
 !> temperature the H.G.Nuc. ice starts
   real(kind=kind_phys), parameter:: con_thgni  =-38.15_kind_phys
 
+#ifdef CCPP
+!> minimum ice concentration
+  real(kind=kind_phys),parameter:: cimin      =0.15
+#endif
+
 !> \name Miscellaneous physics related constants (Moorthi - Jul 2014)
 
 ! integer, parameter :: max_lon=16000, max_lat=8000, min_lon=192, min_lat=94
@@ -170,6 +175,7 @@
   real(kind=kind_phys),parameter:: rhosnow  = 100._kind_phys          ! density of snow (kg/m^3)
   real(kind=kind_phys),parameter:: rhoair   = 1.28_kind_phys          ! density of air near surface (kg/m^3)
 
+#ifndef CCPP
   real(kind=kind_phys) :: dxmax, dxmin, dxinv, rhc_max
 ! For min/max hourly rh02m and t02m
   real(kind=kind_phys),parameter :: PQ0   = 379.90516E0_kind_phys
@@ -177,6 +183,8 @@
   real(kind=kind_phys),parameter :: A3    = 273.16_kind_phys
   real(kind=kind_phys),parameter :: A4    = 35.86_kind_phys
   real(kind=kind_phys),parameter :: RHmin = 1.0E-6_kind_phys
+#endif
+
 !........................................!
       end module physcons                !
 !========================================!

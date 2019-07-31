@@ -1,5 +1,5 @@
 
-subroutine init_stochastic_physics(Model,Init_parm,nblks,Grid)
+subroutine init_stochastic_physics(Model,Init_parm,nblks)
 use fv_mp_mod, only : is_master
 use stochy_internal_state_mod
 use stochy_data_mod, only : nshum,rpattern_shum,init_stochdata,rpattern_sppt,nsppt,rpattern_skeb,nskeb,gg_lats,gg_lons,&
@@ -13,13 +13,12 @@ use physcons, only: con_pi
 use spectral_layout,only:me
 use mpp_mod
 use MPI
-use GFS_typedefs,       only: GFS_control_type, GFS_init_type, GFS_coupling_type, GFS_grid_type
+use GFS_typedefs,       only: GFS_control_type, GFS_init_type, GFS_coupling_type
 
 implicit none
 type(GFS_control_type),   intent(inout) :: Model
 type(GFS_init_type),      intent(in) :: Init_parm
 integer,intent(in) :: nblks
-type(GFS_grid_type),      intent(in) :: Grid(nblks)
 real*8 :: PRSI(Model%levs),PRSL(Model%levs),dx
 real, allocatable :: skeb_vloc(:)
 integer :: k,kflip,latghf,nodes,blk,k2

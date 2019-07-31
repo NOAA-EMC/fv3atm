@@ -3,13 +3,92 @@
 module GFS_typedefs
 
        use machine,                  only: kind_phys
+#ifdef CCPP
+       use physcons,                 only: con_cp, con_fvirt, con_g, &
+                                           con_hvap, con_hfus, con_pi, con_rd, con_rv, &
+                                           con_t0c, con_cvap, con_cliq, con_eps, &
+                                           con_epsm1, con_ttp, rlapse, con_jcal, con_rhw0, &
+                                           con_sbc, con_tice, cimin
+       use module_radsw_parameters,  only: topfsw_type, sfcfsw_type, cmpfsw_type, NBDSW
+       use module_radlw_parameters,  only: topflw_type, sfcflw_type, NBDLW
+#else
        use module_radsw_parameters,  only: topfsw_type, sfcfsw_type
        use module_radlw_parameters,  only: topflw_type, sfcflw_type
        use ozne_def,                 only: levozp,      oz_coeff
        use h2o_def,                  only: levh2o,      h2o_coeff
        use aerclm_def,               only: ntrcaer,     ntrcaerm
+#endif
 
        implicit none
+
+#ifdef CCPP
+      ! To ensure that these values match what's in the physics,
+      ! array sizes are compared during model init in GFS_rrtmg_setup_init()
+      private :: NF_AESW, NF_AELW, NSPC, NSPC1, NF_CLDS, NF_VGAS, NF_ALBD, ntrcaerm
+      ! from module_radiation_aerosols
+      integer, parameter :: NF_AESW = 3
+      integer, parameter :: NF_AELW = 3
+      integer, parameter :: NSPC    = 5
+      integer, parameter :: NSPC1   = NSPC + 1
+      ! from module_radiation_clouds
+      integer, parameter :: NF_CLDS = 9
+      ! from module_radiation_gases
+      integer, parameter :: NF_VGAS = 10
+      ! from module_radiation_surface
+      integer, parameter :: NF_ALBD = 4
+      ! from aerclm_def
+      integer, parameter :: ntrcaerm = 15
+
+      ! These will be set later in GFS_Control%initialize,
+      ! since they depend on the runtime config (e.g. Model%ntoz, Model%h2o_phys, Model%aero_in)
+      private :: levozp, oz_coeff, levh2o, h2o_coeff, ntrcaer
+      integer :: levozp, oz_coeff, levh2o, h2o_coeff, ntrcaer
+#endif
+
+#if 0
+!> \section arg_table_GFS_typedefs
+!! | local_name                      | standard_name                                            | long_name                                               | units         | rank | type                  |    kind   | intent | optional |
+!! |---------------------------------|----------------------------------------------------------|---------------------------------------------------------|---------------|------|-----------------------|-----------|--------|----------|
+!! | GFS_cldprop_type                | GFS_cldprop_type                                         | definition of type GFS_cldprop_type                     | DDT           |    0 | GFS_cldprop_type      |           | none   | F        |
+!! | GFS_control_type                | GFS_control_type                                         | definition of type GFS_control_type                     | DDT           |    0 | GFS_control_type      |           | none   | F        |
+!! | GFS_coupling_type               | GFS_coupling_type                                        | definition of type GFS_coupling_type                    | DDT           |    0 | GFS_coupling_type     |           | none   | F        |
+!! | GFS_data_type                   | GFS_data_type                                            | definition of type GFS_data_type                        | DDT           |    0 | GFS_data_type         |           | none   | F        |
+!! | GFS_diag_type                   | GFS_diag_type                                            | definition of type GFS_diag_type                        | DDT           |    0 | GFS_diag_type         |           | none   | F        |
+!! | GFS_grid_type                   | GFS_grid_type                                            | definition of type GFS_grid_type                        | DDT           |    0 | GFS_grid_type         |           | none   | F        |
+!! | GFS_interstitial_type           | GFS_interstitial_type                                    | definition of type GFS_interstitial_type                | DDT           |    0 | GFS_interstitial_type |           | none   | F        |
+!! | GFS_radtend_type                | GFS_radtend_type                                         | definition of type GFS_radtend_type                     | DDT           |    0 | GFS_radtend_type      |           | none   | F        |
+!! | GFS_sfcprop_type                | GFS_sfcprop_type                                         | definition of type GFS_sfcprop_type                     | DDT           |    0 | GFS_sfcprop_type      |           | none   | F        |
+!! | GFS_statein_type                | GFS_statein_type                                         | definition of type GFS_statein_type                     | DDT           |    0 | GFS_statein_type      |           | none   | F        |
+!! | GFS_stateout_type               | GFS_stateout_type                                        | definition of type GFS_stateout_type                    | DDT           |    0 | GFS_stateout_type     |           | none   | F        |
+!! | GFS_tbd_type                    | GFS_tbd_type                                             | definition of type GFS_tbd_type                         | DDT           |    0 | GFS_tbd_type          |           | none   | F        |
+!! | cmpfsw_type                     | cmpfsw_type                                              | definition of type cmpfsw_type                          | DDT           |    0 | cmpfsw_type           |           | none   | F        |
+!! | sfcflw_type                     | sfcflw_type                                              | definition of type sfcflw_type                          | DDT           |    0 | sfcflw_type           |           | none   | F        |
+!! | sfcfsw_type                     | sfcfsw_type                                              | definition of type sfcfsw_type                          | DDT           |    0 | sfcfsw_type           |           | none   | F        |
+!! | topflw_type                     | topflw_type                                              | definition of type topflw_type                          | DDT           |    0 | topflw_type           |           | none   | F        |
+!! | topfsw_type                     | topfsw_type                                              | definition of type topfsw_type                          | DDT           |    0 | topfsw_type           |           | none   | F        |
+!! | LTP                             | extra_top_layer                                          | extra top layer for radiation                           | none          |    0 | integer               |           | none   | F        |
+!! | con_cliq                        | specific_heat_of_liquid_water_at_constant_pressure       | specific heat of liquid water at constant pressure      | J kg-1 K-1    |    0 | real                  | kind_phys | none   | F        |
+!! | con_cp                          | specific_heat_of_dry_air_at_constant_pressure            | specific heat of dry air at constant pressure           | J kg-1 K-1    |    0 | real                  | kind_phys | none   | F        |
+!! | con_cvap                        | specific_heat_of_water_vapor_at_constant_pressure        | specific heat of water vapor at constant pressure       | J kg-1 K-1    |    0 | real                  | kind_phys | none   | F        |
+!! | con_eps                         | ratio_of_dry_air_to_water_vapor_gas_constants            | rd/rv                                                   | none          |    0 | real                  | kind_phys | none   | F        |
+!! | con_epsm1                       | ratio_of_dry_air_to_water_vapor_gas_constants_minus_one  | (rd/rv) - 1                                             | none          |    0 | real                  | kind_phys | none   | F        |
+!! | con_fvirt                       | ratio_of_vapor_to_dry_air_gas_constants_minus_one        | (rv/rd) - 1 (rv = ideal gas constant for water vapor)   | none          |    0 | real                  | kind_phys | none   | F        |
+!! | con_g                           | gravitational_acceleration                               | gravitational acceleration                              | m s-2         |    0 | real                  | kind_phys | none   | F        |
+!! | con_hvap                        | latent_heat_of_vaporization_of_water_at_0C               | latent heat of evaporation/sublimation                  | J kg-1        |    0 | real                  | kind_phys | none   | F        |
+!! | con_hfus                        | latent_heat_of_fusion_of_water_at_0C                     | latent heat of fusion                                   | J kg-1        |    0 | real                  | kind_phys | none   | F        |
+!! | con_pi                          | pi                                                       | ratio of a circle's circumference to its diameter       | radians       |    0 | real                  | kind_phys | none   | F        |
+!! | con_rd                          | gas_constant_dry_air                                     | ideal gas constant for dry air                          | J kg-1 K-1    |    0 | real                  | kind_phys | none   | F        |
+!! | con_rv                          | gas_constant_water_vapor                                 | ideal gas constant for water vapor                      | J kg-1 K-1    |    0 | real                  | kind_phys | none   | F        |
+!! | con_t0c                         | temperature_at_zero_celsius                              | temperature at 0 degrees Celsius                        | K             |    0 | real                  | kind_phys | none   | F        |
+!! | con_ttp                         | triple_point_temperature_of_water                        | triple point temperature of water                       | K             |    0 | real                  | kind_phys | none   | F        |
+!! | cimin                           | minimum_sea_ice_concentration                            | minimum sea ice concentration                           | frac          |    0 | real                  | kind_phys | none   | F        |
+!! | rlapse                          | air_temperature_lapse_rate_constant                      | environmental air temperature lapse rate constant       | K m-1         |    0 | real                  | kind_phys | none   | F        |
+!! | con_jcal                        | joules_per_calorie_constant                              | joules per calorie constant                             | J cal-1       |    0 | real                  | kind_phys | none   | F        |
+!! | con_rhw0                        | sea_water_reference_density                              | sea water reference density                             | kg m-3        |    0 | real                  | kind_phys | none   | F        |
+!! | con_sbc                         | steffan_boltzmann_constant                               | Steffan-Boltzmann constant                              | W m-2 K-4     |    0 | real                  | kind_phys | none   | F        |
+!! | con_tice                        | freezing_point_temperature_of_seawater                   | freezing point temperature of seawater                  | K             |    0 | real                  | kind_phys | none   | F        |
+!!
+#endif
 
        !--- version of physics
        character(len=64) :: phys_version = 'v2018 FV3GFS BETA VERSION PHYSICS'
@@ -24,6 +103,16 @@ module GFS_typedefs
        real(kind=kind_phys), parameter :: cn_100    = 100._kind_phys
        real(kind=kind_phys), parameter :: cn_th     = 1000._kind_phys
        real(kind=kind_phys), parameter :: cn_hr     = 3600._kind_phys
+#ifdef CCPP
+       ! optional extra top layer on top of low ceiling models
+       ! this parameter was originally defined in the radiation driver
+       ! (and is still for standard non-CCPP builds), but is required
+       ! here for CCPP to allocate arrays used for the interstitial
+       ! calculations previously in GFS_{physics,radiation}_driver.F90
+       ! LTP=0: no extra top layer
+       integer, parameter :: LTP = 0   ! no extra top layer
+       !integer, parameter :: LTP = 1   ! add an extra top layer
+#endif
 
 !----------------
 ! Data Containers
@@ -39,9 +128,13 @@ module GFS_typedefs
 !    GFS_control_type        !< model control parameters 
 !    GFS_grid_type           !< grid and interpolation related data
 !    GFS_tbd_type            !< to be determined data that doesn't fit in any one container
-!    GFS_clprop_type         !< cloud fields needed by radiation from physics
+!    GFS_cldprop_type        !< cloud fields needed by radiation from physics
 !    GFS_radtend_type        !< radiation tendencies needed in physics
 !    GFS_diag_type           !< fields targetted for diagnostic output
+#ifdef CCPP
+!    GFS_interstitial_type   !< fields required to replace interstitial code in GFS_{physics,radiation}_driver.F90 in CCPP
+!    GFS_data_type           !< combined type of all of the above except GFS_control_type and GFS_interstitial_type
+#endif
 
 !--------------------------------------------------------------------------------
 ! GFS_init_type
@@ -49,6 +142,42 @@ module GFS_typedefs
 !   This container is the minimum set of data required from the dycore/atmosphere
 !   component to allow proper initialization of the GFS physics
 !--------------------------------------------------------------------------------
+#if 0
+!! \section arg_table_GFS_init_type
+!! | local_name     | standard_name                                          | long_name                                               | units         | rank | type     |    kind   | intent | optional |
+!! |----------------|--------------------------------------------------------|---------------------------------------------------------|---------------|------|----------|-----------|--------|----------|
+!! | me             |                                                        | current MPI-rank                                        | none          |    0 | integer  |           | none   | F        |
+!! | master         |                                                        | master MPI-rank                                         | none          |    0 | integer  |           | none   | F        |
+!! | tile_num       |                                                        | tile number                                             | none          |    0 | integer  |           | none   | F        |
+!! | isc            |                                                        | starting i-index for this MPI-domain                    | index         |    0 | integer  |           | none   | F        |
+!! | jsc            |                                                        | starting j-index for this MPI-domain                    | index         |    0 | integer  |           | none   | F        |
+!! | nx             |                                                        | number of points in i-dir for this MPI rank             | count         |    0 | integer  |           | none   | F        |
+!! | ny             |                                                        | number of points in j-dir for this MPI rank             | count         |    0 | integer  |           | none   | F        |
+!! | levs           |                                                        | number of vertical levels                               | count         |    0 | integer  |           | none   | F        |
+!! | cnx            |                                                        | number of points in i-dir for this cubed-sphere face    | count         |    0 | integer  |           | none   | F        |
+!! | cny            |                                                        | number of points in j-dir for this cubed-sphere face    | count         |    0 | integer  |           | none   | F        |
+!! | gnx            |                                                        | number of global points in x-dir (i) along the equator  | count         |    0 | integer  |           | none   | F        |
+!! | gny            |                                                        | number of global points in y-dir (j) along any meridian | count         |    0 | integer  |           | none   | F        |
+!! | nlunit         |                                                        | fortran unit number for file opens                      | none          |    0 | integer  |           | none   | F        |
+!! | logunit        |                                                        | fortran unit number for writing logfile                 | none          |    0 | integer  |           | none   | F        |
+!! | bdat           |                                                        | model begin date in GFS format   (same as idat)         | none          |    0 | integer  |           | none   | F        |
+!! | cdat           |                                                        | model current date in GFS format (same as jdat)         | none          |    0 | integer  |           | none   | F        |
+!! | iau_offset     |                                                        | iau running window length in hour                       | none          |    0 | integer  |           | none   | F        |
+!! | dt_dycore      |                                                        | dynamics time step in seconds                           | s             |    0 | real     | kind_phys | none   | F        |
+!! | dt_phys        |                                                        | physics  time step in seconds                           | s             |    0 | real     | kind_phys | none   | F        |
+!! | restart        |                                                        | flag for restart (warmstart) or coldstart               | flag          |    0 | logical  |           | none   | F        |
+!! | hydrostatic    |                                                        | flag for hydrostatic solver from dynamics               | flag          |    0 | logical  |           | none   | F        |
+!! | blksz          |                                                        | for explicit data blocking                              | count         |    1 | integer  |           | none   | F        |
+!! | ak             |                                                        | a parameter for sigma pressure level calculations       | Pa            |    1 | real     | kind_phys | none   | F        |
+!! | bk             |                                                        | b parameter for sigma pressure level calculations       | none          |    1 | real     | kind_phys | none   | F        |
+!! | xlon           |                                                        | column longitude for MPI rank                           | radians       |    2 | real     | kind_phys | none   | F        |
+!! | xlat           |                                                        | column latitude  for MPI rank                           | radians       |    2 | real     | kind_phys | none   | F        |
+!! | area           |                                                        | column area for length scale calculations               | m2            |    2 | real     | kind_phys | none   | F        |
+!! | tracer_names   |                                                        | tracers names to dereference tracer id                  | none          |    1 | charater | len=32    | none   | F        |
+!! | fn_nml         |                                                        | namelist filename                                       | none          |    0 | charater | len=65    | none   | F        |
+!! | input_nml_file |                                                        | namelist filename for internal file reads               | none          |    0 | charater | len=256   | none   | F        |
+!!
+#endif
   type GFS_init_type
     integer :: me                                !< my MPI-rank
     integer :: master                            !< master MPI-rank
@@ -61,15 +190,22 @@ module GFS_typedefs
     integer :: cnx                               !< number of points in i-dir for this cubed-sphere face
                                                  !< equal to gnx for lat-lon grids
     integer :: cny                               !< number of points in j-dir for this cubed-sphere face
-                                                 !< equal to gny*2 for lat-lon grids
+                                                 !< equal to gny for lat-lon grids
     integer :: gnx                               !< number of global points in x-dir (i) along the equator
     integer :: gny                               !< number of global points in y-dir (j) along any meridian
     integer :: nlunit                            !< fortran unit number for file opens
     integer :: logunit                           !< fortran unit number for writing logfile
     integer :: bdat(8)                           !< model begin date in GFS format   (same as idat)
     integer :: cdat(8)                           !< model current date in GFS format (same as jdat)
+    integer :: iau_offset                        !< iau running window length
     real(kind=kind_phys) :: dt_dycore            !< dynamics time step in seconds
     real(kind=kind_phys) :: dt_phys              !< physics  time step in seconds
+#ifdef CCPP
+!--- restart information
+    logical :: restart                           !< flag whether this is a coldstart (.false.) or a warmstart/restart (.true.)
+!--- hydrostatic/non-hydrostatic flag
+    logical :: hydrostatic                       !< flag whether this is a hydrostatic or non-hydrostatic run
+#endif
 !--- blocking data
     integer, pointer :: blksz(:)                 !< for explicit data blocking
                                                  !< default blksz(1)=[nx*ny]
@@ -93,6 +229,51 @@ module GFS_typedefs
 ! GFS_statein_type
 !   prognostic state variables with layer and level specific data
 !----------------------------------------------------------------
+#if 0
+!! \section arg_table_GFS_statein_type
+!! | local_name                                                | standard_name                                             | long_name                                                                           | units         | rank | type    |    kind   | intent | optional |
+!! |-----------------------------------------------------------|-----------------------------------------------------------|-------------------------------------------------------------------------------------|---------------|------|---------|-----------|--------|----------|
+!! | GFS_Data(cdata%blk_no)%Statein%phii                       | geopotential_at_interface                                 | geopotential at model layer interfaces                                              | m2 s-2        |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Statein%prsi                       | air_pressure_at_interface                                 | air pressure at model layer interfaces                                              | Pa            |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Statein%prsik                      | dimensionless_exner_function_at_model_interfaces          | dimensionless Exner function at model layer interfaces                              | none          |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Statein%prsik(:,1)                 | dimensionless_exner_function_at_lowest_model_interface    | dimensionless Exner function at lowest model interface                              | none          |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Statein%phil                       | geopotential                                              | geopotential at model layer centers                                                 | m2 s-2        |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Statein%prsl                       | air_pressure                                              | mean layer pressure                                                                 | Pa            |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Statein%prsl(:,1)                  | air_pressure_at_lowest_model_layer                        | mean pressure at lowest model layer                                                 | Pa            |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Statein%prslk                      | dimensionless_exner_function_at_model_layers              | dimensionless Exner function at model layer centers                                 | none          |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Statein%prslk(:,1)                 | dimensionless_exner_function_at_lowest_model_layer        | dimensionless Exner function at lowest model layer                                  | none          |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Statein%pgr                        | surface_air_pressure                                      | surface pressure                                                                    | Pa            |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Statein%ugrs                       | x_wind                                                    | zonal wind                                                                          | m s-1         |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Statein%ugrs(:,1)                  | x_wind_at_lowest_model_layer                              | zonal wind at lowest model layer                                                    | m s-1         |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Statein%vgrs                       | y_wind                                                    | meridional wind                                                                     | m s-1         |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Statein%vgrs(:,1)                  | y_wind_at_lowest_model_layer                              | meridional wind at lowest model layer                                               | m s-1         |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Statein%vvl                        | omega                                                     | layer mean vertical velocity                                                        | Pa s-1        |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Statein%tgrs                       | air_temperature                                           | model layer mean temperature                                                        | K             |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Statein%tgrs(:,1)                  | air_temperature_at_lowest_model_layer                     | mean temperature at lowest model layer                                              | K             |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Statein%qgrs                       | tracer_concentration                                      | model layer mean tracer concentration                                               | kg kg-1       |    3 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Statein%qgrs(:,:,GFS_Control%ntqv) | water_vapor_specific_humidity                             | water vapor specific humidity                                                       | kg kg-1       |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Statein%qgrs(:,1,GFS_Control%ntqv) | water_vapor_specific_humidity_at_lowest_model_layer       | water vapor specific humidity at lowest model layer                                 | kg kg-1       |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Statein%qgrs(:,:,GFS_Control%ntcw) | cloud_condensed_water_mixing_ratio                        | moist (dry+vapor, no condensates) mixing ratio of cloud water (condensate)          | kg kg-1       |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Statein%qgrs(:,1,GFS_Control%ntcw) | cloud_condensed_water_mixing_ratio_at_lowest_model_layer  | moist (dry+vapor, no condensates) mixing ratio of cloud water at lowest model layer | kg kg-1       |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Statein%qgrs(:,:,GFS_Control%ntiw) | ice_water_mixing_ratio                                    | moist (dry+vapor, no condensates) mixing ratio of ice water                         | kg kg-1       |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Statein%qgrs(:,:,GFS_Control%ntrw) | rain_water_mixing_ratio                                   | moist (dry+vapor, no condensates) mixing ratio of rain water                        | kg kg-1       |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Statein%qgrs(:,:,GFS_Control%ntsw) | snow_water_mixing_ratio                                   | moist (dry+vapor, no condensates) mixing ratio of snow water                        | kg kg-1       |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Statein%qgrs(:,:,GFS_Control%ntgl) | graupel_mixing_ratio                                      | moist (dry+vapor, no condensates) mixing ratio of graupel                           | kg kg-1       |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Statein%qgrs(:,:,GFS_Control%ntoz) | ozone_mixing_ratio                                        | ozone mixing ratio                                                                  | kg kg-1       |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Statein%qgrs(:,:,GFS_Control%ntwa) | water_friendly_aerosol_number_concentration               | number concentration of water-friendly aerosols                                     | kg-1          |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Statein%qgrs(:,:,GFS_Control%ntia) | ice_friendly_aerosol_number_concentration                 | number concentration of ice-friendly aerosols                                       | kg-1          |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Statein%qgrs(:,:,GFS_Control%ntlnc)| cloud_droplet_number_concentration                        | number concentration of cloud droplets (liquid)                                     | kg-1          |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Statein%qgrs(:,:,GFS_Control%ntinc)| ice_number_concentration                                  | number concentration of ice                                                         | kg-1          |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Statein%qgrs(:,:,GFS_Control%ntrnc)| rain_number_concentration                                 | number concentration of rain                                                        | kg-1          |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Statein%qgrs(:,:,GFS_Control%ntsnc)| snow_number_concentration                                 | number concentration of snow                                                        | kg-1          |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Statein%qgrs(:,:,GFS_Control%ntgnc)| graupel_number_concentration                              | number concentration of graupel                                                     | kg-1          |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Statein%qgrs(:,:,GFS_Control%ntke) | turbulent_kinetic_energy                                  | turbulent kinetic energy                                                            | J             |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Statein%diss_est                   | dissipation_estimate_of_air_temperature_at_model_layers   | dissipation estimate model layer mean temperature                                   | K             |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Statein%smc                        |                                                           | total soil moisture                                                                 | frac          |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Statein%stc                        |                                                           | soil temperature                                                                    | K             |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Statein%slc                        |                                                           | liquid soil moisture                                                                | frac          |    2 | real    | kind_phys | none   | F        |
+!!
+#endif
   type GFS_statein_type
 
 !--- level geopotential and pressures 
@@ -128,6 +309,35 @@ module GFS_typedefs
 ! GFS_stateout_type
 !   prognostic state or tendencies after physical parameterizations
 !------------------------------------------------------------------
+#if 0
+!! \section arg_table_GFS_stateout_type
+!! | local_name                                                   | standard_name                                                          | long_name                                                                                  | units   | rank | type    |    kind   | intent | optional |
+!! |--------------------------------------------------------------|------------------------------------------------------------------------|--------------------------------------------------------------------------------------------|---------|------|---------|-----------|--------|----------|
+!! | GFS_Data(cdata%blk_no)%Stateout%gu0                          | x_wind_updated_by_physics                                              | zonal wind updated by physics                                                              | m s-1   |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Stateout%gu0(:,1)                     | x_wind_at_lowest_model_layer_updated_by_physics                        | zonal wind at lowest model level updated by physics                                        | m s-1   |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Stateout%gv0                          | y_wind_updated_by_physics                                              | meridional wind updated by physics                                                         | m s-1   |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Stateout%gv0(:,1)                     | y_wind_at_lowest_model_layer_updated_by_physics                        | meridional wind at lowest model level updated by physics                                   | m s-1   |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Stateout%gt0                          | air_temperature_updated_by_physics                                     | temperature updated by physics                                                             | K       |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Stateout%gt0(:,1)                     | air_temperature_at_lowest_model_layer_updated_by_physics               | temperature at lowest model layer updated by physics                                       | K       |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Stateout%gq0                          | tracer_concentration_updated_by_physics                                | tracer concentration updated by physics                                                    | kg kg-1 |    3 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Stateout%gq0(:,:,GFS_Control%ntqv)    | water_vapor_specific_humidity_updated_by_physics                       | water vapor specific humidity updated by physics                                           | kg kg-1 |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Stateout%gq0(:,1,GFS_Control%ntqv)    | water_vapor_specific_humidity_at_lowest_model_layer_updated_by_physics | water vapor specific humidity at lowest model layer updated by physics                     | kg kg-1 |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Stateout%gq0(:,:,GFS_Control%ntoz)    | ozone_concentration_updated_by_physics                                 | ozone concentration updated by physics                                                     | kg kg-1 |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Stateout%gq0(:,:,GFS_Control%ntcw)    | cloud_condensed_water_mixing_ratio_updated_by_physics                  | moist (dry+vapor, no condensates) mixing ratio of cloud condensed water updated by physics | kg kg-1 |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Stateout%gq0(:,:,GFS_Control%ntiw)    | ice_water_mixing_ratio_updated_by_physics                              | moist (dry+vapor, no condensates) mixing ratio of ice water updated by physics             | kg kg-1 |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Stateout%gq0(:,:,GFS_Control%ntrw)    | rain_water_mixing_ratio_updated_by_physics                             | moist (dry+vapor, no condensates) mixing ratio of rain water updated by physics            | kg kg-1 |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Stateout%gq0(:,:,GFS_Control%ntsw)    | snow_water_mixing_ratio_updated_by_physics                             | moist (dry+vapor, no condensates) mixing ratio of snow water updated by physics            | kg kg-1 |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Stateout%gq0(:,:,GFS_Control%ntgl)    | graupel_mixing_ratio_updated_by_physics                                | moist (dry+vapor, no condensates) mixing ratio of graupel updated by physics               | kg kg-1 |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Stateout%gq0(:,:,GFS_Control%ntwa)    | water_friendly_aerosol_number_concentration_updated_by_physics         | number concentration of water-friendly aerosols updated by physics                         | kg-1    |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Stateout%gq0(:,:,GFS_Control%ntia)    | ice_friendly_aerosol_number_concentration_updated_by_physics           | number concentration of ice-friendly aerosols updated by physics                           | kg-1    |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Stateout%gq0(:,:,GFS_Control%ntlnc)   | cloud_droplet_number_concentration_updated_by_physics                  | number concentration of cloud droplets updated by physics                                  | kg-1    |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Stateout%gq0(:,:,GFS_Control%ntinc)   | ice_number_concentration_updated_by_physics                            | number concentration of ice updated by physics                                             | kg-1    |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Stateout%gq0(:,:,GFS_Control%ntrnc)   | rain_number_concentration_updated_by_physics                           | number concentration of rain updated by physics                                            | kg-1    |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Stateout%gq0(:,:,GFS_Control%ntsnc)   | snow_number_concentration_updated_by_physics                           | number concentration of snow updated by physics                                            | kg-1    |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Stateout%gq0(:,:,GFS_Control%ntgnc)   | graupel_number_concentration_updated_by_physics                        | number concentration of graupel updated by physics                                         | kg-1    |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Stateout%gq0(:,:,GFS_Control%ntclamt) | cloud_fraction_updated_by_physics                                      | cloud fraction updated by physics                                                          | frac    |    2 | real    | kind_phys | none   | F        |
+!!
+#endif
   type GFS_stateout_type
 
     !-- Out (physics only)
@@ -145,6 +355,101 @@ module GFS_typedefs
 ! GFS_sfcprop_type
 !   surface properties that may be read in and/or updated by climatology or observations
 !---------------------------------------------------------------------------------------
+#if 0
+!! \section arg_table_GFS_sfcprop_type
+!! | local_name                                 | standard_name                                                          | long_name                                              | units         | rank | type    |    kind   | intent | optional |
+!! |--------------------------------------------|------------------------------------------------------------------------|--------------------------------------------------------|---------------|------|---------|-----------|--------|----------|
+!! | GFS_Data(cdata%blk_no)%Sfcprop%slmsk       | sea_land_ice_mask_real                                                 | landmask: sea/land/ice=0/1/2                           | flag          |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%oceanfrac   | sea_area_fraction                                                      | fraction of horizontal grid area occupied by ocean     | frac          |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%landfrac    | land_area_fraction                                                     | fraction of horizontal grid area occupied by land      | frac          |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%lakefrac    | lake_area_fraction                                                     | fraction of horizontal grid area occupied by lake      | frac          |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%tsfc        | surface_skin_temperature                                               | surface skin temperature                               | K             |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%tsfco       | sea_surface_temperature                                                | sea surface temperature                                | K             |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%tsfcl       | surface_skin_temperature_over_land                                     | surface skin temperature over land                     | K             |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%tisfc       | sea_ice_temperature                                                    | sea ice surface skin temperature                       | K             |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%snowd       | surface_snow_thickness_water_equivalent                                | water equivalent snow depth                            | mm            |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%zorl        | surface_roughness_length                                               | surface roughness length                               | cm            |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%zorlo       | surface_roughness_length_over_ocean                                    | surface roughness length over ocean                    | cm            |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%zorll       | surface_roughness_length_over_land                                     | surface roughness length over land                     | cm            |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%fice        | sea_ice_concentration                                                  | ice fraction over open water                           | frac          |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%hprim       |                                                                        | topographic standard deviation                         | m             |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%hprime      | statistical_measures_of_subgrid_orography                              | orographic metrics                                     | various       |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%sncovr      | surface_snow_area_fraction_over_land                                   | surface snow area fraction                             | frac          |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%snoalb      | upper_bound_on_max_albedo_over_deep_snow                               | maximum snow albedo                                    | frac          |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%alvsf       |                                                                        | mean vis albedo with strong cosz dependency            | frac          |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%alnsf       |                                                                        | mean nir albedo with strong cosz dependency            | frac          |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%alvwf       | mean_vis_albedo_with_weak_cosz_dependency                              | mean vis albedo with weak cosz dependency              | frac          |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%alnwf       | mean_nir_albedo_with_weak_cosz_dependency                              | mean nir albedo with weak cosz dependency              | frac          |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%facsf       |                                                                        | fractional coverage with strong cosz dependency        | frac          |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%facwf       |                                                                        | fractional coverage with weak cosz dependency          | frac          |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%slope       | surface_slope_classification_real                                      | sfc slope type for lsm                                 | index         |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%shdmin      | minimum_vegetation_area_fraction                                       | min fractional coverage of green vegetation            | frac          |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%shdmax      | maximum_vegetation_area_fraction                                       | max fractional coverage of green vegetation            | frac          |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%tg3         | deep_soil_temperature                                                  | deep soil temperature                                  | K             |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%vfrac       | vegetation_area_fraction                                               | areal fractional cover of green vegetation             | frac          |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%vtype       | vegetation_type_classification_real                                    | vegetation type for lsm                                | index         |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%stype       | soil_type_classification_real                                          | soil type for lsm                                      | index         |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%uustar      | surface_friction_velocity                                              | boundary layer parameter                               | m s-1         |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%oro         | orography                                                              | orography                                              | m             |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%oro_uf      | orography_unfiltered                                                   | unfiltered orography                                   | m             |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%conv_act    | gf_memory_counter                                                      | Memory counter for GF                                  | none          |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%hice        | sea_ice_thickness                                                      | sea ice thickness                                      | m             |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%weasd       | water_equivalent_accumulated_snow_depth                                | water equiv of acc snow depth over land and sea ice    | mm            |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%canopy      | canopy_water_amount                                                    | canopy water amount                                    | kg m-2        |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%ffmm        | Monin-Obukhov_similarity_function_for_momentum                         | Monin-Obukhov similarity function for momentum         | none          |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%ffhh        | Monin-Obukhov_similarity_function_for_heat                             | Monin-Obukhov similarity function for heat             | none          |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%f10m        | ratio_of_wind_at_lowest_model_layer_and_wind_at_10m                    | ratio of sigma level 1 wind and 10m wind               | ratio         |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%tprcp       | nonnegative_lwe_thickness_of_precipitation_amount_on_dynamics_timestep | total precipitation amount in each time step           | m             |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%srflag      | flag_for_precipitation_type                                            | snow/rain flag for precipitation                       | flag          |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%slc         | volume_fraction_of_unfrozen_soil_moisture                              | liquid soil moisture                                   | frac          |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%smc         | volume_fraction_of_soil_moisture                                       | total soil moisture                                    | frac          |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%stc         | soil_temperature                                                       | soil temperature                                       | K             |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%t2m         | temperature_at_2m                                                      | 2 meter temperature                                    | K             |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%th2m        | potential_temperature_at_2m                                            | 2 meter potential temperature                          | K             |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%q2m         | specific_humidity_at_2m                                                | 2 meter specific humidity                              | kg kg-1       |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%tref        | sea_surface_reference_temperature                                      | sea surface reference temperature                      | K             |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%z_c         | sub-layer_cooling_thickness                                            | sub-layer cooling thickness                            | m             |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%c_0         | coefficient_c_0                                                        | coefficient 1 to calculate d(Tz)/d(Ts)                 | none          |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%c_d         | coefficient_c_d                                                        | coefficient 2 to calculate d(Tz)/d(Ts)                 | none          |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%w_0         | coefficient_w_0                                                        | coefficient 3 to calculate d(Tz)/d(Ts)                 | none          |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%w_d         | coefficient_w_d                                                        | coefficient 4 to calculate d(Tz)/d(Ts)                 | none          |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%xt          | diurnal_thermocline_layer_heat_content                                 | heat content in diurnal thermocline layer              | K m           |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%xs          | sea_water_salinity                                                     | salinity  content in diurnal thermocline layer         | ppt m         |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%xu          | diurnal_thermocline_layer_x_current                                    | u-current content in diurnal thermocline layer         | m2 s-1        |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%xv          | diurnal_thermocline_layer_y_current                                    | v-current content in diurnal thermocline layer         | m2 s-1        |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%xz          | diurnal_thermocline_layer_thickness                                    | diurnal thermocline layer thickness                    | m             |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%zm          | ocean_mixed_layer_thickness                                            | mixed layer thickness                                  | m             |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%xtts        | sensitivity_of_dtl_heat_content_to_surface_temperature                 | d(xt)/d(ts)                                            | m             |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%xzts        | sensitivity_of_dtl_thickness_to_surface_temperature                    | d(xz)/d(ts)                                            | m K-1         |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%d_conv      | free_convection_layer_thickness                                        | thickness of free convection layer (FCL)               | m             |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%ifd         | index_of_dtlm_start                                                    | index to start dtlm run or not                         | index         |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%dt_cool     | sub-layer_cooling_amount                                               | sub-layer cooling amount                               | K             |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%qrain       | sensible_heat_flux_due_to_rainfall                                     | sensible heat flux due to rainfall                     | W             |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%wetness     | normalized_soil_wetness_for_land_surface_model                         | normalized soil wetness for lsm                        | frac          |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%sh2o        | volume_fraction_of_unfrozen_soil_moisture_for_land_surface_model       | volume fraction of unfrozen soil moisture for lsm      | frac          |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%keepsmfr    | volume_fraction_of_frozen_soil_moisture_for_land_surface_model         | volume fraction of frozen soil moisture for lsm        | frac          |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%smois       | volume_fraction_of_soil_moisture_for_land_surface_model                | volumetric fraction of soil moisture for lsm           | frac          |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%tslb        | soil_temperature_for_land_surface_model                                | soil temperature for land surface model                | K             |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%zs          | depth_of_soil_levels_for_land_surface_model                            | depth of soil levels for land surface model            | m             |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%clw_surf    | cloud_condensed_water_mixing_ratio_at_surface                          | moist cloud water mixing ratio at surface              | kg kg-1       |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%qwv_surf    | water_vapor_mixing_ratio_at_surface                                    | water vapor mixing ratio at surface                    | kg kg-1       |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%cndm_surf   | surface_condensation_mass                                              | surface condensation mass                              | kg m-2        |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%flag_frsoil | flag_for_frozen_soil_physics                                           | flag for frozen soil physics (RUC)                     | flag          |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%rhofr       | density_of_frozen_precipitation                                        | density of frozen precipitation                        | kg m-3        |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%tsnow       | snow_temperature_bottom_first_layer                                    | snow temperature at the bottom of the first snow layer | K             |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%snowfallac  | total_accumulated_snowfall                                             | run-total snow accumulation on the ground              | kg m-2        |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%acsnow      | accumulated_water_equivalent_of_frozen_precip                          | snow water equivalent of run-total frozen precip       | kg m-2        |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%ustm        | surface_friction_velocity_drag                                         | friction velocity isolated for momentum only           | m s-1         |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%zol         | surface_stability_parameter                                            | monin obukhov surface stability parameter              | none          |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%mol         | theta_star                                                             | temperature flux divided by ustar (temperature scale)  | K             |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%rmol        | reciprocal_of_obukhov_length                                           | one over obukhov length                                | m-1           |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%flhc        | surface_exchange_coefficient_for_heat                                  | surface exchange coefficient for heat                  | W m-2 K-1     |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%flqc        | surface_exchange_coefficient_for_moisture                              | surface exchange coefficient for moisture              | kg m-2 s-1    |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%chs2        | surface_exchange_coefficient_for_heat_at_2m                            | exchange coefficient for heat at 2 meters              | m s-1         |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%cqs2        | surface_exchange_coefficient_for_moisture_at_2m                        | exchange coefficient for moisture at 2 meters          | m s-1         |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Sfcprop%lh          | surface_latent_heat                                                    | latent heating at the surface (pos = up)               | W m-2         |    1 | real    | kind_phys | none   | F        |
+!!
+#endif
   type GFS_sfcprop_type
 
 !--- In (radiation and physics)
@@ -152,17 +457,17 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: oceanfrac(:) => null()  !< ocean fraction [0:1]
     real (kind=kind_phys), pointer :: landfrac(:)  => null()  !< land  fraction [0:1]
     real (kind=kind_phys), pointer :: lakefrac(:)  => null()  !< lake  fraction [0:1]
-    real (kind=kind_phys), pointer :: tsfc   (:)   => null()  !< surface air temperature in k 
+    real (kind=kind_phys), pointer :: tsfc   (:)   => null()  !< surface air temperature in K
                                                               !< [tsea in gbphys.f]
-    real (kind=kind_phys), pointer :: tsfco  (:)   => null()  !< sst in k 
-    real (kind=kind_phys), pointer :: tsfcl  (:)   => null()  !< surface land temperature in k 
+    real (kind=kind_phys), pointer :: tsfco  (:)   => null()  !< sst in K
+    real (kind=kind_phys), pointer :: tsfcl  (:)   => null()  !< surface land temperature in K
     real (kind=kind_phys), pointer :: tisfc  (:)   => null()  !< surface temperature over ice fraction 
     real (kind=kind_phys), pointer :: snowd  (:)   => null()  !< snow depth water equivalent in mm ; same as snwdph
     real (kind=kind_phys), pointer :: zorl   (:)   => null()  !< composite surface roughness in cm 
     real (kind=kind_phys), pointer :: zorlo  (:)   => null()  !< ocean surface roughness in cm 
     real (kind=kind_phys), pointer :: zorll  (:)   => null()  !< land surface roughness in cm 
     real (kind=kind_phys), pointer :: fice   (:)   => null()  !< ice fraction over open water grid 
-    real (kind=kind_phys), pointer :: hprim  (:)   => null()  !< topographic standard deviation in m            !
+    real (kind=kind_phys), pointer :: hprim  (:)   => null()  !< topographic standard deviation in m
     real (kind=kind_phys), pointer :: hprime (:,:) => null()  !< orographic metrics
 
 !--- In (radiation only)
@@ -188,6 +493,9 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: oro_uf (:)   => null()  !< unfiltered orography
 
 !-- In/Out
+#ifdef CCPP
+    real (kind=kind_phys), pointer :: conv_act(:)  => null()  !< convective activity counter hli 09/2017
+#endif
     real (kind=kind_phys), pointer :: hice   (:)   => null()  !< sea ice thickness
     real (kind=kind_phys), pointer :: weasd  (:)   => null()  !< water equiv of accumulated snow depth (kg/m**2)
                                                               !< over land and sea ice
@@ -203,6 +511,9 @@ module GFS_typedefs
 
 !--- Out
     real (kind=kind_phys), pointer :: t2m    (:)   => null()  !< 2 meter temperature
+#ifdef CCPP
+    real (kind=kind_phys), pointer :: th2m   (:)   => null()  !< 2 meter potential temperature
+#endif
     real (kind=kind_phys), pointer :: q2m    (:)   => null()  !< 2 meter humidity
 
 ! -- In/Out for Noah MP 
@@ -264,6 +575,36 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: dt_cool(:)   => null()  !< nst_fld%dt_cool Sub layer cooling amount
     real (kind=kind_phys), pointer :: qrain  (:)   => null()  !< nst_fld%qrain   sensible heat flux due to rainfall (watts)
 
+#ifdef CCPP
+    ! Soil properties for RUC LSM (number of levels different from NOAH 4-layer model)
+    real (kind=kind_phys), pointer :: wetness(:)       => null()  !< normalized soil wetness for lsm
+    real (kind=kind_phys), pointer :: sh2o(:,:)        => null()  !< volume fraction of unfrozen soil moisture for lsm
+    real (kind=kind_phys), pointer :: keepsmfr(:,:)    => null()  !< RUC LSM: frozen moisture in soil
+    real (kind=kind_phys), pointer :: smois(:,:)       => null()  !< volumetric fraction of soil moisture for lsm
+    real (kind=kind_phys), pointer :: tslb(:,:)        => null()  !< soil temperature for land surface model
+    real (kind=kind_phys), pointer :: flag_frsoil(:,:) => null()  !< RUC LSM: flag for frozen soil physics
+    !
+    real (kind=kind_phys), pointer :: zs(:)            => null()  !< depth of soil levels for land surface model
+    real (kind=kind_phys), pointer :: clw_surf(:)      => null()  !< RUC LSM: moist cloud water mixing ratio at surface
+    real (kind=kind_phys), pointer :: qwv_surf(:)      => null()  !< RUC LSM: water vapor mixing ratio at surface
+    real (kind=kind_phys), pointer :: cndm_surf(:)     => null()  !< RUC LSM: surface condensation mass
+    real (kind=kind_phys), pointer :: rhofr(:)         => null()  !< RUC LSM: density of frozen precipitation
+    real (kind=kind_phys), pointer :: tsnow(:)         => null()  !< RUC LSM: snow temperature at the bottom of the first soil layer
+    real (kind=kind_phys), pointer :: snowfallac(:)    => null()  !< ruc lsm diagnostics
+    real (kind=kind_phys), pointer :: acsnow(:)        => null()  !< ruc lsm diagnostics
+
+    !  MYNN surface layer
+    real (kind=kind_phys), pointer :: ustm (:)         => null()  !u* including drag
+    real (kind=kind_phys), pointer :: zol(:)           => null()  !surface stability parameter
+    real (kind=kind_phys), pointer :: mol(:)           => null()  !theta star
+    real (kind=kind_phys), pointer :: rmol(:)          => null()  !reciprocal of obukhov length
+    real (kind=kind_phys), pointer :: flhc(:)          => null()  !drag coeff for heat
+    real (kind=kind_phys), pointer :: flqc(:)          => null()  !drag coeff for moisture
+    real (kind=kind_phys), pointer :: chs2(:)          => null()  !exch coeff for heat at 2m
+    real (kind=kind_phys), pointer :: cqs2(:)          => null()  !exch coeff for moisture at 2m
+    real (kind=kind_phys), pointer :: lh(:)            => null()  !latent heating at the surface
+#endif
+
     contains
       procedure :: create  => sfcprop_create  !<   allocate array data
   end type GFS_sfcprop_type
@@ -273,6 +614,106 @@ module GFS_typedefs
 ! GFS_coupling_type
 !   fields to/from other coupled components (e.g. land/ice/ocean/etc.)
 !---------------------------------------------------------------------
+#if 0
+!! \section arg_table_GFS_coupling_type
+!! | local_name                           | standard_name                                                                             | long_name                                            | units         | rank | type    |    kind   | intent | optional |
+!! |--------------------------------------|-------------------------------------------------------------------------------------------|------------------------------------------------------|---------------|------|---------|-----------|--------|----------|
+!! | GFS_Data(cdata%blk_no)%Coupling%nirbmdi        | surface_downwelling_direct_near_infrared_shortwave_flux_on_radiation_time_step            | sfc nir beam sw downward flux                        | W m-2         |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%nirdfdi        | surface_downwelling_diffuse_near_infrared_shortwave_flux_on_radiation_time_step           | sfc nir diff sw downward flux                        | W m-2         |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%visbmdi        | surface_downwelling_direct_ultraviolet_and_visible_shortwave_flux_on_radiation_time_step  | sfc uv+vis beam sw downward flux                     | W m-2         |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%visdfdi        | surface_downwelling_diffuse_ultraviolet_and_visible_shortwave_flux_on_radiation_time_step | sfc uv+vis diff sw downward flux                     | W m-2         |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%nirbmui        | surface_upwelling_direct_near_infrared_shortwave_flux_on_radiation_time_step              | sfc nir beam sw upward flux                          | W m-2         |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%nirdfui        | surface_upwelling_diffuse_near_infrared_shortwave_flux_on_radiation_time_step             | sfc nir diff sw upward flux                          | W m-2         |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%visbmui        | surface_upwelling_direct_ultraviolet_and_visible_shortwave_flux_on_radiation_time_step    | sfc uv+vis beam sw upward flux                       | W m-2         |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%visdfui        | surface_upwelling_diffuse_ultraviolet_and_visible_shortwave_flux_on_radiation_time_step   | sfc uv+vis diff sw upward flux                       | W m-2         |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%sfcdsw         | surface_downwelling_shortwave_flux_on_radiation_time_step                                 | total sky sfc downward sw flux                       | W m-2         |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%sfcnsw         | surface_net_downwelling_shortwave_flux_on_radiation_time_step                             | total sky sfc netsw flx into ground                  | W m-2         |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%sfcdlw         | surface_downwelling_longwave_flux_on_radiation_time_step                                  | total sky sfc downward lw flux                       | W m-2         |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%dusfcin_cpl    |                                                                                           | aoi_fld%dusfcin(item,lan)                            |               |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%dvsfcin_cpl    |                                                                                           | aoi_fld%dvsfcin(item,lan)                            |               |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%dtsfcin_cpl    |                                                                                           | aoi_fld%dtsfcin(item,lan)                            |               |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%dqsfcin_cpl    |                                                                                           | aoi_fld%dqsfcin(item,lan)                            |               |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%ulwsfcin_cpl   |                                                                                           | aoi_fld%ulwsfcin(item,lan)                           |               |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%tseain_cpl     |                                                                                           | aoi_fld%tseain(item,lan)                             |               |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%tisfcin_cpl    |                                                                                           | aoi_fld%tisfcin(item,lan)                            |               |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%ficein_cpl     |                                                                                           | aoi_fld%ficein(item,lan)                             |               |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%hicein_cpl     |                                                                                           | aoi_fld%hicein(item,lan)                             |               |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%hsnoin_cpl     |                                                                                           | aoi_fld%hsnoin(item,lan)                             |               |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%slimskin_cpl   |                                                                                           | aoi_fld%slimskin(item,lan)                           |               |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%rain_cpl       | lwe_thickness_of_precipitation_amount_for_coupling                                        | total rain precipitation                             | m             |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%rainc_cpl      | lwe_thickness_of_convective_precipitation_amount_for_coupling                             | total convective precipitation                       | m             |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%snow_cpl       | lwe_thickness_of_snow_amount_for_coupling                                                 | total snow precipitation                             | m             |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%dusfc_cpl      | cumulative_surface_x_momentum_flux_for_coupling_multiplied_by_timestep                    | cumulative sfc x momentum flux multiplied by timestep| Pa s          |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%dvsfc_cpl      | cumulative_surface_y_momentum_flux_for_coupling_multiplied_by_timestep                    | cumulative sfc y momentum flux multiplied by timestep| Pa s          |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%dtsfc_cpl      | cumulative_surface_upward_sensible_heat_flux_for_coupling_multiplied_by_timestep          | cumulative sfc sensible heat flux multiplied by timestep | W m-2 s   |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%dqsfc_cpl      | cumulative_surface_upward_latent_heat_flux_for_coupling_multiplied_by_timestep            | cumulative sfc latent heat flux multiplied by timestep | W m-2 s     |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%dlwsfc_cpl     | cumulative_surface_downwelling_longwave_flux_for_coupling_multiplied_by_timestep          | cumulative sfc downward lw flux mulitplied by timestep | W m-2 s     |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%dswsfc_cpl     | cumulative_surface_downwelling_shortwave_flux_for_coupling_multiplied_by_timestep         | cumulative sfc downward sw flux multiplied by timestep | W m-2 s     |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%dnirbm_cpl     | cumulative_surface_downwelling_direct_near_infrared_shortwave_flux_for_coupling_multiplied_by_timestep | cumulative sfc nir beam downward sw flux multiplied by timestep            | W m-2 s       |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%dnirdf_cpl     | cumulative_surface_downwelling_diffuse_near_infrared_shortwave_flux_for_coupling_multiplied_by_timestep | cumulative sfc nir diff downward sw flux multiplied by timestep                       | W m-2 s       |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%dvisbm_cpl     | cumulative_surface_downwelling_direct_ultraviolet_and_visible_shortwave_flux_for_coupling_multiplied_by_timestep | cumulative sfc uv+vis beam dnwd sw flux multiplied by timestep                        | W m-2 s       |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%dvisdf_cpl     | cumulative_surface_downwelling_diffuse_ultraviolet_and_visible_shortwave_flux_for_coupling_multiplied_by_timestep | cumulative sfc uv+vis diff dnwd sw flux multiplied by timestep                        | W m-2 s       |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%nlwsfc_cpl     | cumulative_surface_net_downward_longwave_flux_for_coupling_multiplied_by_timestep         | cumulative net downward lw flux multiplied by timestep                     | W m-2 s       |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%nswsfc_cpl     | cumulative_surface_net_downward_shortwave_flux_for_coupling_multiplied_by_timestep        | cumulative net downward sw flux multiplied by timestep                      | W m-2 s       |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%nnirbm_cpl     | cumulative_surface_net_downward_direct_near_infrared_shortwave_flux_for_coupling_multiplied_by_timestep | cumulative net nir beam downward sw flux multiplied by timestep | W m-2 s       |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%nnirdf_cpl     | cumulative_surface_net_downward_diffuse_near_infrared_shortwave_flux_for_coupling_multiplied_by_timestep | cumulative net nir diff downward sw flux multiplied by timestep | W m-2 s       |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%nvisbm_cpl     | cumulative_surface_net_downward_direct_ultraviolet_and_visible_shortwave_flux_for_coupling_multiplied_by_timestep | cumulative net uv+vis beam downward sw rad flux multiplied by timestep | W m-2 s       |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%nvisdf_cpl     | cumulative_surface_net_downward_diffuse_ultraviolet_and_visible_shortwave_flux_for_coupling_multiplied_by_timestep | cumulative net uv+vis diff downward sw rad flux multiplied by timestep | W m-2 s       |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%dusfci_cpl     | instantaneous_surface_x_momentum_flux_for_coupling                                        | instantaneous sfc x momentum flux                    | Pa            |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%dvsfci_cpl     | instantaneous_surface_y_momentum_flux_for_coupling                                        | instantaneous sfc y momentum flux                    | Pa            |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%dtsfci_cpl     | instantaneous_surface_upward_sensible_heat_flux_for_coupling                              | instantaneous sfc sensible heat flux                 | W m-2         |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%dqsfci_cpl     | instantaneous_surface_upward_latent_heat_flux_for_coupling                                | instantaneous sfc latent heat flux                   | W m-2         |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%dlwsfci_cpl    | instantaneous_surface_downwelling_longwave_flux_for_coupling                              | instantaneous sfc downward lw flux                   | W m-2         |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%dswsfci_cpl    | instantaneous_surface_downwelling_shortwave_flux_for_coupling                             | instantaneous sfc downward sw flux                   | W m-2         |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%dnirbmi_cpl    | instantaneous_surface_downwelling_direct_near_infrared_shortwave_flux_for_coupling        | instantaneous sfc nir beam downward sw flux          | W m-2         |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%dnirdfi_cpl    | instantaneous_surface_downwelling_diffuse_near_infrared_shortwave_flux_for_coupling       | instantaneous sfc nir diff downward sw flux          | W m-2         |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%dvisbmi_cpl    | instantaneous_surface_downwelling_direct_ultraviolet_and_visible_shortwave_flux_for_coupling | instantaneous sfc uv+vis beam downward sw flux       | W m-2         |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%dvisdfi_cpl    | instantaneous_surface_downwelling_diffuse_ultraviolet_and_visible_shortwave_flux_for_coupling | instantaneous sfc uv+vis diff downward sw flux       | W m-2         |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%nlwsfci_cpl    | instantaneous_surface_net_downward_longwave_flux_for_coupling                             | instantaneous net sfc downward lw flux               | W m-2         |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%nswsfci_cpl    | instantaneous_surface_net_downward_shortwave_flux_for_coupling                            | instantaneous net sfc downward sw flux               | W m-2         |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%nnirbmi_cpl    | instantaneous_surface_net_downward_direct_near_infrared_shortwave_flux_for_coupling       | instantaneous net nir beam sfc downward sw flux      | W m-2         |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%nnirdfi_cpl    | instantaneous_surface_net_downward_diffuse_near_infrared_shortwave_flux_for_coupling      | instantaneous net nir diff sfc downward sw flux      | W m-2         |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%nvisbmi_cpl    | instantaneous_surface_net_downward_direct_ultraviolet_and_visible_shortwave_flux_for_coupling  | instantaneous net uv+vis beam downward sw flux         | W m-2         |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%nvisdfi_cpl    | instantaneous_surface_net_downward_diffuse_ultraviolet_and_visible_shortwave_flux_for_coupling | instantaneous net uv+vis diff downward sw flux         | W m-2         |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%t2mi_cpl       | instantaneous_temperature_at_2m_for_coupling                                                   | instantaneous T2m                                      | K             |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%q2mi_cpl       | instantaneous_specific_humidity_at_2m_for_coupling                                             | instantaneous Q2m                                      | kg kg-1       |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%u10mi_cpl      | instantaneous_x_wind_at_10m_for_coupling                                                       | instantaneous U10m                                     | m s-1         |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%v10mi_cpl      | instantaneous_y_wind_at_10m_for_coupling                                                       | instantaneous V10m                                     | m s-1         |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%tsfci_cpl      | instantaneous_surface_skin_temperature_for_coupling                                            | instantaneous sfc temperature                          | K             |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%psurfi_cpl     | instantaneous_surface_air_pressure_for_coupling                                                | instantaneous sfc pressure                             | Pa            |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%oro_cpl        |                                                                                                | orography                                              |               |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%slmsk_cpl      |                                                                                                | land/sea/ice mask                                      |               |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%tconvtend      | tendency_of_air_temperature_due_to_deep_convection_for_coupling_on_physics_timestep            | tendency of air temperature due to deep convection     | K             |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%qconvtend      | tendency_of_water_vapor_specific_humidity_due_to_deep_convection_for_coupling_on_physics_timestep | tendency of specific humidity due to deep convection| kg kg-1       |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%uconvtend      | tendency_of_x_wind_due_to_deep_convection_for_coupling_on_physics_timestep                     | tendency_of_x_wind_due_to_deep_convection              | m s-1         |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%vconvtend      | tendency_of_y_wind_due_to_deep_convection_for_coupling_on_physics_timestep                     | tendency_of_y_wind_due_to_deep_convection              | m s-1         |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%ca_out         |                                                                                                |                                                        |               |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%ca_deep        | fraction_of_cellular_automata_for_deep_convection                                              | fraction of cellular automata for deep convection      | frac          |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%ca_turb        |                                                                                                |                                                        |               |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%ca_shal        |                                                                                                |                                                        |               |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%ca_rad         |                                                                                                |                                                        |               |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%ca_micro       |                                                                                                |                                                        |               |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%cape           | convective_available_potential_energy_for_coupling                                             | convective available potential energy for coupling     | m2 s-2        |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%shum_wts       | weights_for_stochastic_shum_perturbation                                                       | weights for stochastic shum perturbation               | none          |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%sppt_wts       | weights_for_stochastic_sppt_perturbation                                                       | weights for stochastic sppt perturbation               | none          |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%skebu_wts      | weights_for_stochastic_skeb_perturbation_of_x_wind                                             | weights for stochastic skeb perturbation of x wind     | none          |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%skebv_wts      | weights_for_stochastic_skeb_perturbation_of_y_wind                                             | weights for stochastic skeb perturbation of y wind     | none          |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%sfc_wts        | weights_for_stochastic_surface_physics_perturbation                                            | weights for stochastic surface physics perturbation    | none          |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%nsfcpert       |                                                                                                | number of surface perturbations (redundant? Model%...) |               |    0 | integer |           | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%vcu_wts        |                                                                                                |                                                        |               |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%vcv_wts        |                                                                                                |                                                        |               |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%dqdti          | instantaneous_water_vapor_specific_humidity_tendency_due_to_convection                         | instantaneous moisture tendency due to convection      | kg kg-1 s-1   |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%cnvqci         | instantaneous_deep_convective_cloud_condensate_mixing_ratio_on_dynamics_time_step              | instantaneous total convective condensate mixing ratio | kg kg-1       |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%upd_mfi        | instantaneous_atmosphere_updraft_convective_mass_flux_on_dynamics_timestep                     | (updraft mass flux) * delt                             | kg m-2        |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%dwn_mfi        | instantaneous_atmosphere_downdraft_convective_mass_flux_on_dynamics_timestep                   | (downdraft mass flux) * delt                           | kg m-2        |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%det_mfi        | instantaneous_atmosphere_detrainment_convective_mass_flux_on_dynamics_timestep                 | (detrainment mass flux) * delt                         | kg m-2        |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%cldcovi        |                                                                                                | instantaneous 3D cloud fraction                        |               |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%nwfa2d         | tendency_of_water_friendly_aerosols_at_surface                                                 | instantaneous water-friendly sfc aerosol source        | kg-1 s-1      |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%nifa2d         | tendency_of_ice_friendly_aerosols_at_surface                                                   | instantaneous ice-friendly sfc aerosol source          | kg-1 s-1      |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%ushfsfci       | instantaneous_upward_sensible_heat_flux                                                        | instantaneous upward sensible heat flux                | W m-2         |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Coupling%dkt            | instantaneous_atmosphere_heat_diffusivity                                                      | instantaneous atmospheric heat diffusivity             | m2 s-1        |    2 | real    | kind_phys | none   | F        |
+!!
+#endif
   type GFS_coupling_type
 
 !--- Out (radiation only)
@@ -385,7 +826,8 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: dwn_mfi (:,:)   => null()  !< instantaneous convective downdraft mass flux
     real (kind=kind_phys), pointer :: det_mfi (:,:)   => null()  !< instantaneous convective detrainment mass flux
     real (kind=kind_phys), pointer :: cldcovi (:,:)   => null()  !< instantaneous 3D cloud fraction
-    real (kind=kind_phys), pointer :: nwfa2d  (:)     => null()  !< instantaneous sfc aerosol source
+    real (kind=kind_phys), pointer :: nwfa2d  (:)     => null()  !< instantaneous water-friendly sfc aerosol source
+    real (kind=kind_phys), pointer :: nifa2d  (:)     => null()  !< instantaneous ice-friendly sfc aerosol source
 
     !--- instantaneous quantities for GSDCHEM coupling
     real (kind=kind_phys), pointer :: ushfsfci(:)     => null()  !< instantaneous upward sensible heat flux (w/m**2)
@@ -396,33 +838,373 @@ module GFS_typedefs
   end type GFS_coupling_type
 
 
-#ifdef CCPP
-! DH* for testing of CCPP integration
-!! \section arg_table_GFS_control_type
-!! | local_name          | standard_name              | long_name                                      | units | rank | type      | kind    | intent | optional |
-!! |---------------------|----------------------------|------------------------------------------------|-------|------|-----------|---------|--------|----------|
-!! | IPD_Control%me      | mpi_rank                   | current MPI-rank                               | index |    0 | integer   |         | none   | F        |
-!!
-#endif
 !----------------------------------------------------------------------------------
 ! GFS_control_type
 !   model control parameters input from a namelist and/or derived from others
 !   list of those that can be modified during the run are at the bottom of the list 
 !----------------------------------------------------------------------------------
+#if 0
+!! \section arg_table_GFS_control_type
+!! | local_name                           | standard_name                                                                 | long_name                                               | units         | rank | type      |    kind   | intent | optional |
+!! |--------------------------------------|-------------------------------------------------------------------------------|---------------------------------------------------------|---------------|------|-----------|-----------|--------|----------|
+!! | GFS_Control%me                       | mpi_rank                                                                      | current MPI-rank                                        | index         |    0 | integer   |           | none   | F        |
+!! | GFS_Control%master                   | mpi_root                                                                      | master MPI-rank                                         | index         |    0 | integer   |           | none   | F        |
+!! | GFS_Control%communicator             | mpi_comm                                                                      | MPI communicator                                        | index         |    0 | integer   |           | none   | F        |
+!! | GFS_Control%ntasks                   | mpi_size                                                                      | number of MPI tasks in communicator                     | count         |    0 | integer   |           | none   | F        |
+!! | GFS_Control%nthreads                 | omp_threads                                                                   | number of OpenMP threads available for physics schemes  | count         |    0 | integer   |           | none   | F        |
+!! | GFS_Control%nlunit                   | iounit_namelist                                                               | fortran unit number for file opens                      | none          |    0 | integer   |           | none   | F        |
+!! | GFS_Control%fn_nml                   | namelist_filename                                                             | namelist filename                                       | none          |    0 | character | len=64    | none   | F        |
+!! | GFS_Control%input_nml_file           | namelist_filename_for_internal_file_reads                                     | namelist filename for internal file reads               | none          |    1 | character | len=256   | none   | F        |
+!! | GFS_Control%logunit                  | iounit_log                                                                    | fortran unit number for logfile                         | none          |    0 | integer   |           | none   | F        |
+!! | GFS_Control%fhzero                   |                                                                               | hours between clearing of diagnostic buckets            | h             |    0 | real      | kind_phys | none   | F        |
+!! | GFS_Control%ldiag3d                  | flag_diagnostics_3D                                                           | flag for 3d diagnostic fields                           | flag          |    0 | logical   |           | none   | F        |
+!! | GFS_Control%lssav                    | flag_diagnostics                                                              | logical flag for storing diagnostics                    | flag          |    0 | logical   |           | none   | F        |
+!! | GFS_Control%fhcyc                    |                                                                               | frequency for surface data cycling (hours)              | h             |    0 | real      | kind_phys | none   | F        |
+!! | GFS_Control%lgocart                  | flag_gocart                                                                   | flag for 3d diagnostic fields for gocart 1              | flag          |    0 | logical   |           | none   | F        |
+!! | GFS_Control%fhgoc3d                  |                                                                               | hours between calls to gocart                           | h             |    0 | real      | kind_phys | none   | F        |
+!! | GFS_Control%thermodyn_id             |                                                                               | valid for GFS only for get_prs/phi                      | index         |    0 | integer   |           | none   | F        |
+!! | GFS_Control%sfcpress_id              |                                                                               | valid for GFS only for get_prs/phi                      | index         |    0 | integer   |           | none   | F        |
+!! | GFS_Control%gen_coord_hybrid         |                                                                               | flag for Henry's gen coord                              | flag          |    0 | logical   |           | none   | F        |
+!! | GFS_Control%isc                      |                                                                               | starting i-index for this MPI-domain                    | index         |    0 | integer   |           | none   | F        |
+!! | GFS_Control%jsc                      |                                                                               | starting j-index for this MPI-domain                    | index         |    0 | integer   |           | none   | F        |
+!! | GFS_Control%nx                       |                                                                               | number of points in i-dir for this MPI rank             | count         |    0 | integer   |           | none   | F        |
+!! | GFS_Control%ny                       |                                                                               | number of points in j-dir for this MPI rank             | count         |    0 | integer   |           | none   | F        |
+!! | GFS_Control%levs                     | vertical_dimension                                                            | number of vertical levels                               | count         |    0 | integer   |           | none   | F        |
+!! | GFS_Control%ak                       |                                                                               | a parameter for sigma pressure level calculations       | Pa            |    1 | real      | kind_phys | none   | F        |
+!! | GFS_Control%bk                       |                                                                               | b parameter for sigma pressure level calculations       | none          |    1 | real      | kind_phys | none   | F        |
+!! | GFS_Control%cnx                      |                                                                               | number of points in i-dir for this cubed-sphere face    | count         |    0 | integer   |           | none   | F        |
+!! | GFS_Control%cny                      |                                                                               | number of points in j-dir for this cubed-sphere face    | count         |    0 | integer   |           | none   | F        |
+!! | GFS_Control%lonr                     | number_of_equatorial_longitude_points                                         | number of global points in x-dir (i) along the equator  | count         |    0 | integer   |           | none   | F        |
+!! | GFS_Control%latr                     |                                                                               | number of global points in y-dir (j) along the meridian | count         |    0 | integer   |           | none   | F        |
+!! | GFS_Control%blksz                    | horizontal_block_size                                                         | for explicit data blocking: block sizes of all blocks   | count         |    1 | integer   |           | none   | F        |
+!! | GFS_Control%blksz(cdata%blk_no)      | horizontal_loop_extent                                                        | horizontal loop extent                                  | count         |    0 | integer   |           | none   | F        |
+!! | GFS_Control%blksz(cdata%blk_no)      | horizontal_dimension                                                          | horizontal dimension                                    | count         |    0 | integer   |           | none   | F        |
+!! | GFS_Control%tile_num                 | number_of_tile                                                                | tile number                                             | none          |    0 | integer   |           | none   | F        |
+!! | GFS_Control%cplflx                   | flag_for_flux_coupling                                                        | flag controlling cplflx collection (default off)        | flag          |    0 | logical   |           | none   | F        |
+!! | GFS_Control%cplwav                   | flag_for_wave_coupling                                                        | flag controlling cplwav collection (default off)        | flag          |    0 | logical   |           | none   | F        |
+!! | GFS_Control%cplchm                   | flag_for_chemistry_coupling                                                   | flag controlling cplchm collection (default off)        | flag          |    0 | logical   |           | none   | F        |
+!! | GFS_Control%lsidea                   | flag_idealized_physics                                                        | flag for idealized physics                              | flag          |    0 | logical   |           | none   | F        |
+!! | GFS_Control%dtp                      | time_step_for_physics                                                         | physics timestep                                        | s             |    0 | real      | kind_phys | none   | F        |
+!! | GFS_Control%dtf                      | time_step_for_dynamics                                                        | dynamics timestep                                       | s             |    0 | real      | kind_phys | none   | F        |
+!! | GFS_Control%nscyc                    |                                                                               | trigger for surface data cycling                        |               |    0 | integer   |           | none   | F        |
+!! | GFS_Control%nszero                   |                                                                               | trigger for zeroing diagnostic buckets                  |               |    0 | integer   |           | none   | F        |
+!! | GFS_Control%idat                     | date_and_time_at_model_initialization                                         | initialization date and time                            | none          |    1 | integer   |           | none   | F        |
+!! | GFS_Control%idate                    | date_and_time_at_model_initialization_reordered                               | initial date with different size and ordering           | none          |    1 | integer   |           | none   | F        |
+!! | GFS_Control%fhswr                    | frequency_for_shortwave_radiation                                             | frequency for shortwave radiation                       | s             |    0 | real      | kind_phys | none   | F        |
+!! | GFS_Control%fhlwr                    | frequency_for_longwave_radiation                                              | frequency for longwave radiation                        | s             |    0 | real      | kind_phys | none   | F        |
+!! | GFS_Control%nsswr                    |                                                                               | integer trigger for shortwave radiation                 |               |    0 | integer   |           | none   | F        |
+!! | GFS_Control%nslwr                    |                                                                               | integer trigger for longwave  radiation                 |               |    0 | integer   |           | none   | F        |
+!! | GFS_Control%levr                     | number_of_vertical_layers_for_radiation_calculations                          | number of vertical levels for radiation calculations    | count         |    0 | integer   |           | none   | F        |
+!! | GFS_Control%nfxr                     |                                                                               | second dimension for fluxr diagnostic variable          |               |    0 | integer   |           | none   | F        |
+!! | GFS_Control%aero_in                  | flag_for_aerosol_input_MG                                                     | flag for using aerosols in Morrison-Gettelman microphysics | flag       |    0 | logical   |           | none   | F        |
+!! | GFS_Control%lmfshal                  |                                                                               | parameter for radiation                                 |               |    0 | logical   |           | none   | F        |
+!! | GFS_Control%lmfdeep2                 |                                                                               | parameter for radiation                                 |               |    0 | logical   |           | none   | F        |
+!! | GFS_Control%nrcm                     | array_dimension_of_random_number                                              | second dimension of random number stream for RAS        | count         |    0 | integer   |           | none   | F        |
+!! | GFS_Control%iflip                    | flag_for_vertical_index_direction_control                                     | iflip - is not the same as flipv                        | flag          |    0 | integer   |           | none   | F        |
+!! | GFS_Control%isol                     | flag_for_solar_constant                                                       | use prescribed solar constant                           | flag          |    0 | integer   |           | none   | F        |
+!! | GFS_Control%ico2                     | flag_for_using_prescribed_global_mean_co2_value                               | prescribed global mean value (old opernl)               | flag          |    0 | integer   |           | none   | F        |
+!! | GFS_Control%ialb                     | flag_for_using_climatology_albedo                                             | flag for using climatology alb, based on sfc type       | flag          |    0 | integer   |           | none   | F        |
+!! | GFS_Control%iems                     | flag_for_surface_emissivity_control                                           | surface emissivity control flag, use fixed value of 1   | flag          |    0 | integer   |           | none   | F        |
+!! | GFS_Control%iaer                     | flag_for_default_aerosol_effect_in_shortwave_radiation                        | default aerosol effect in sw only                       | flag          |    0 | integer   |           | none   | F        |
+!! | GFS_Control%icliq_sw                 | flag_for_optical_property_for_liquid_clouds_for_shortwave_radiation           | sw optical property for liquid clouds                   | flag          |    0 | integer   |           | none   | F        |
+!! | GFS_Control%iovr_sw                  | flag_for_max-random_overlap_clouds_for_shortwave_radiation                    | sw: max-random overlap clouds                           | flag          |    0 | integer   |           | none   | F        |
+!! | GFS_Control%iovr_lw                  | flag_for_max-random_overlap_clouds_for_longwave_radiation                     | lw: max-random overlap clouds                           | flag          |    0 | integer   |           | none   | F        |
+!! | GFS_Control%ictm                     | flag_for_initial_time-date_control                                            | flag for initial conditions and forcing                 | flag          |    0 | integer   |           | none   | F        |
+!! | GFS_Control%isubc_sw                 | flag_for_sw_clouds_without_sub-grid_approximation                             | flag for sw clouds without sub-grid approximation       | flag          |    0 | integer   |           | none   | F        |
+!! | GFS_Control%isubc_lw                 | flag_for_lw_clouds_without_sub-grid_approximation                             | flag for lw clouds without sub-grid approximation       | flag          |    0 | integer   |           | none   | F        |
+!! | GFS_Control%crick_proof              | flag_for_CRICK-proof_cloud_water                                              | flag for CRICK-Proof cloud water                        | flag          |    0 | logical   |           | none   | F        |
+!! | GFS_Control%ccnorm                   | flag_for_cloud_condensate_normalized_by_cloud_cover                           | flag for cloud condensate normalized by cloud cover     | flag          |    0 | logical   |           | none   | F        |
+!! | GFS_Control%norad_precip             | flag_for_precipitation_effect_on_radiation                                    | radiation precip flag for Ferrier/Moorthi               | flag          |    0 | logical   |           | none   | F        |
+!! | GFS_Control%lwhtr                    | flag_for_output_of_longwave_heating_rate                                      | flag to output lw heating rate (Radtend%lwhc)           | flag          |    0 | logical   |           | none   | F        |
+!! | GFS_Control%swhtr                    | flag_for_output_of_shortwave_heating_rate                                     | flag to output sw heating rate (Radtend%swhc)           | flag          |    0 | logical   |           | none   | F        |
+!! | GFS_Control%ncld                     | number_of_hydrometeors                                                        | choice of cloud scheme / number of hydrometeors         | count         |    0 | integer   |           | none   | F        |
+!! | GFS_Control%imp_physics              | flag_for_microphysics_scheme                                                  | choice of microphysics scheme                           | flag          |    0 | integer   |           | none   | F        |
+!! | GFS_Control%imp_physics_gfdl         | flag_for_gfdl_microphysics_scheme                                             | choice of GFDL microphysics scheme                      | flag          |    0 | integer   |           | none   | F        |
+!! | GFS_Control%imp_physics_thompson     | flag_for_thompson_microphysics_scheme                                         | choice of Thompson microphysics scheme                  | flag          |    0 | integer   |           | none   | F        |
+!! | GFS_Control%imp_physics_wsm6         | flag_for_wsm6_microphysics_scheme                                             | choice of WSM6 microphysics scheme                      | flag          |    0 | integer   |           | none   | F        |
+!! | GFS_Control%imp_physics_zhao_carr    | flag_for_zhao_carr_microphysics_scheme                                        | choice of Zhao-Carr microphysics scheme                 | flag          |    0 | integer   |           | none   | F        |
+!! | GFS_Control%imp_physics_zhao_carr_pdf| flag_for_zhao_carr_pdf_microphysics_scheme                                    | choice of Zhao-Carr microphysics scheme with PDF clouds | flag          |    0 | integer   |           | none   | F        |
+!! | GFS_Control%imp_physics_mg           | flag_for_morrison_gettelman_microphysics_scheme                               | choice of Morrison-Gettelman microphysics scheme        | flag          |    0 | integer   |           | none   | F        |
+!! | GFS_Control%psautco                  | coefficient_from_cloud_ice_to_snow                                            | auto conversion coeff from ice to snow                  | none          |    1 | real      | kind_phys | none   | F        |
+!! | GFS_Control%prautco                  | coefficient_from_cloud_water_to_rain                                          | auto conversion coeff from cloud to rain                | none          |    1 | real      | kind_phys | none   | F        |
+!! | GFS_Control%evpco                    | coefficient_for_evaporation_of_rainfall                                       | coeff for evaporation of largescale rain                | none          |    0 | real      | kind_phys | none   | F        |
+!! | GFS_Control%wminco                   | cloud_condensed_water_conversion_threshold                                    | water and ice minimum threshold for Zhao                | none          |    1 | real      | kind_phys | none   | F        |
+!! | GFS_Control%avg_max_length           | time_interval_for_maximum_hourly_fields                                       | reset time interval for maximum hourly fields           | s             |    0 | real      | kind_phys | none   | F        |
+!! | GFS_Control%fprcp                    | number_of_frozen_precipitation_species                                        | number of frozen precipitation species                  | count         |    0 | integer   |           | none   | F        |
+!! | GFS_Control%pdfflag                  | flag_for_pdf_for_morrison_gettelman_microphysics_scheme                       | pdf flag for MG macrophysics                            | flag          |    0 | integer   |           | none   | F        |
+!! | GFS_Control%mg_dcs                   | mg_autoconversion_size_threshold_ice_snow                                     | autoconversion size threshold for cloud ice to snow for MG microphysics       | um      |    0 | real       | kind_phys | none   | F        |
+!! | GFS_Control%mg_qcvar                 | mg_cloud_water_variance                                                       | cloud water relative variance for MG microphysics                             |         |    0 | real       | kind_phys | none   | F        |
+!! | GFS_Control%mg_ts_auto_ice           | mg_time_scale_for_autoconversion_of_ice                                       | autoconversion time scale for ice for MG microphysics                         | s       |    1 | real       | kind_phys | none   | F        |
+!! | GFS_Control%mg_rhmini                | mg_minimum_rh_for_ice                                                         | relative humidity threshold parameter for nucleating ice for MG microphysics  | none    |    0 | real       | kind_phys | none   | F        |
+!! | GFS_Control%mg_ncnst                 | mg_drop_concentration_constant                                                | droplet concentration constant for MG microphysics                            | m-3     |    0 | real       | kind_phys | none   | F        |
+!! | GFS_Control%mg_ninst                 | mg_ice_concentration_constant                                                 | ice concentration constant for MG microphysics                                | m-3     |    0 | real       | kind_phys | none   | F        |
+!! | GFS_Control%mg_ngnst                 | mg_graupel_concentration_constant                                             | graupel concentration constant for MG microphysics                            | m-3     |    0 | real       | kind_phys | none   | F        |
+!! | GFS_Control%mg_berg_eff_factor       | mg_bergeron_efficiency_factor                                                 | bergeron efficiency factor for MG microphysics                                | frac    |    0 | real       | kind_phys | none   | F        |
+!! | GFS_Control%mg_alf                   | mg_tuning_factor_for_alphas                                                   | tuning factor for alphas (alpha = 1 - critical relative humidity)             | none    |    0 | real       | kind_phys | none   | F        |
+!! | GFS_Control%mg_qcmin                 | mg_minimum_cloud_condensed_water_and_ice_mixing_ratio                         | minimum cloud condensed water and ice mixing ratio in MG macro clouds         | kg kg-1 |    1 | real       | kind_phys | none   | F        |
+!! | GFS_Control%mg_qcmin(1)              | mg_minimum_cloud_condensed_water_mixing_ratio                                 | minimum cloud condensed water mixing ratio in MG macro clouds                 | kg kg-1 |    0 | real       | kind_phys | none   | F        |
+!! | GFS_Control%mg_qcmin(2)              | mg_minimum_ice_mixing_ratio                                                   | minimum ice mixing ratio in MG macro clouds                                   | kg kg-1 |    0 | real       | kind_phys | none   | F        |
+!! | GFS_Control%mg_precip_frac_method    | mg_type_of_precip_fraction_method                                             | type of precip fraction method for MG microphysics (in_cloud or max_overlap)  | none    |    0 | character  | len=16    | none   | F        |
+!! | GFS_Control%tf                       | frozen_cloud_threshold_temperature                                            | threshold temperature below which all cloud is ice                            | K       |    0 | real       | kind_phys | none   | F        |
+!! | GFS_Control%tcr                      | cloud_phase_transition_threshold_temperature                                  | threshold temperature below which cloud starts to freeze                      | K       |    0 | real       | kind_phys | none   | F        |
+!! | GFS_Control%tcrf                     | cloud_phase_transition_denominator                                            | denominator in cloud phase transition = 1/(tcr-tf)                            | K-1     |    0 | real       | kind_phys | none   | F        |
+!! | GFS_Control%effr_in                  | flag_for_cloud_effective_radii                                                | flag for cloud effective radii calculations in GFDL microphysics              |         |    0 | logical    |           | none   | F        |
+!! | GFS_Control%microp_uniform           | mg_flag_for_uniform_subcolumns                                                | flag for uniform subcolumns for MG microphysics                               | flag    |    0 | logical    |           | none   | F        |
+!! | GFS_Control%do_cldliq                |                                                                               |                                                                               |         |    0 | logical    |           | none   | F        |
+!! | GFS_Control%do_cldice                | mg_flag_for_cloud_ice_processes                                               | flag for cloud ice processes for MG microphysics                              | flag    |    0 | logical    |           | none   | F        |
+!! | GFS_Control%hetfrz_classnuc          | mg_flag_for_heterogeneous_freezing                                            | flag for heterogeneous freezing for MG microphysics                           | flag    |    0 | logical    |           | none   | F        |
+!! | GFS_Control%mg_nccons                | mg_flag_drop_concentration_constant                                           | flag for constant droplet concentration for MG microphysics                   | flag    |    0 | logical    |           | none   | F        |
+!! | GFS_Control%mg_nicons                | mg_flag_ice_concentration_constant                                            | flag for constant ice concentration for MG microphysics                       | flag    |    0 | logical    |           | none   | F        |
+!! | GFS_Control%mg_ngcons                | mg_flag_graupel_concentration_constant                                        | flag for constant graupel concentration for MG microphysics                   | flag    |    0 | logical    |           | none   | F        |
+!! | GFS_Control%sed_supersat             | mg_allow_supersat_after_sed                                                   | allow supersaturation after sedimentation for MG microphysics                 | flag    |    0 | logical    |           | none   | F        |
+!! | GFS_Control%do_sb_physics            | mg_flag_for_sb2001_autoconversion                                             | flag for SB 2001 autoconversion or accretion for MG microphysics              | flag    |    0 | logical    |           | none   | F        |
+!! | GFS_Control%mg_do_graupel            | mg_flag_for_graupel                                                           | flag for graupel for MG microphysics (hail possible if false)                 | flag    |    0 | logical    |           | none   | F        |
+!! | GFS_Control%mg_do_hail               | mg_flag_for_hail                                                              | flag for hail for MG microphysics (graupel possible if false)                 | flag    |    0 | logical    |           | none   | F        |
+!! | GFS_Control%mg_do_ice_gmao           | mg_flag_for_gmao_ice_formulation                                              | flag for gmao ice formulation                                                 | flag    |    0 | logical    |           | none   | F        |
+!! | GFS_Control%mg_do_liq_liu            | mg_flag_for_liu_liquid_treatment                                              | flag for liu liquid treatment                                                 | flag    |    0 | logical    |           | none   | F        |
+!! | GFS_Control%shoc_parm(1)             | shoc_tke_dissipatation_pressure_threshold                                     | pressure below which extra TKE diss. is applied in SHOC                       | Pa      |    0 | real       | kind_phys | none   | F        |
+!! | GFS_Control%shoc_parm(2)             | shoc_tke_dissipation_tunable_parameter                                        | mult. tuning parameter for TKE diss. in SHOC                                  | none    |    0 | real       | kind_phys | none   | F        |
+!! | GFS_Control%shoc_parm(3)             | shoc_tke_dissipation_tunable_parameter_near_surface                           | mult. tuning parameter for TKE diss. at surface in SHOC                       | none    |    0 | real       | kind_phys | none   | F        |
+!! | GFS_Control%shoc_parm(4)             | shoc_implicit_TKE_integration_uncentering_term                                | uncentering term for TKE integration in SHOC                                  | none    |    0 | real       | kind_phys | none   | F        |
+!! | GFS_Control%shoc_parm(5)             | shoc_flag_for_optional_surface_TKE_dissipation                                | flag for alt. TKE diss. near surface in SHOC (>0 = ON)                        | none    |    0 | real       | kind_phys | none   | F        |
+!! | GFS_Control%ncnd                     | number_of_cloud_condensate_types                                              | number of cloud condensate types                                              | count   |    0 | integer    |           | none   | F        |
+!! | GFS_Control%make_number_concentrations | flag_for_initial_number_concentration_calculation                           | flag for initial number concentration calculation for Thompson MP             | flag    |    0 | logical    |           | none   | F        |
+!! | GFS_Control%ltaerosol                | flag_for_aerosol_physics                                                      | flag for aerosol physics                                | flag          |    0 | logical   |           | none   | F        |
+!! | GFS_Control%lradar                   | flag_for_radar_reflectivity                                                   | flag for radar reflectivity                             | flag          |    0 | logical   |           | none   | F        |
+!! | GFS_Control%ttendlim                 | limit_for_temperature_tendency_for_microphysics                               | temperature tendency limiter per physics time step      | K s-1         |    0 | real      | kind_phys | none   | F        |
+!! | GFS_Control%lgfdlmprad               |                                                                               | flag for GFDL mp scheme and radiation consistency       |               |    0 | logical   |           | none   | F        |
+!! | GFS_Control%lsm                      | flag_for_land_surface_scheme                                                  | flag for land surface model                             | flag          |    0 | integer   |           | none   | F        |
+!! | GFS_Control%lsm_noah                 | flag_for_noah_land_surface_scheme                                             | flag for NOAH land surface model                        | flag          |    0 | integer   |           | none   | F        |
+!! | GFS_Control%lsm_noahmp               | flag_for_noahmp_land_surface_scheme                                           | flag for NOAH MP land surface model                     | flag          |    0 | integer   |           | none   | F        |
+!! | GFS_Control%lsm_ruc                  | flag_for_ruc_land_surface_scheme                                              | flag for RUC land surface model                         | flag          |    0 | integer   |           | none   | F        |
+!! | GFS_Control%lsoil                    | soil_vertical_dimension                                                       | number of soil layers                                   | count         |    0 | integer   |           | none   | F        |
+!! | GFS_Control%lsoil_lsm                | soil_vertical_dimension_for_land_surface_model                                | number of soil layers for land surface model            | count         |    0 | integer   |           | none   | F        |
+!! | GFS_Control%ivegsrc                  | vegetation_type_dataset_choice                                                | land use dataset choice                                 | index         |    0 | integer   |           | none   | F        |
+!! | GFS_Control%isot                     | soil_type_dataset_choice                                                      | soil type dataset choice                                | index         |    0 | integer   |           | none   | F        |
+!! | GFS_Control%mom4ice                  | flag_for_mom4_coupling                                                        | flag controls mom4 sea ice                              | flag          |    0 | logical   |           | none   | F        |
+!! | GFS_Control%use_ufo                  |                                                                               | flag for gcycle surface option                          |               |    0 | logical   |           | none   | F        |
+!! | GFS_Control%ras                      | flag_for_ras_deep_convection                                                  | flag for ras convection scheme                          | flag          |    0 | logical   |           | none   | F        |
+!! | GFS_Control%flipv                    | flag_flip                                                                     | vertical flip logical                                   | flag          |    0 | logical   |           | none   | F        |
+!! | GFS_Control%trans_trac               | flag_for_convective_transport_of_tracers                                      | flag for convective transport of tracers                | flag          |    0 | logical   |           | none   | F        |
+!! | GFS_Control%old_monin                | flag_for_old_PBL_scheme                                                       | flag for using old PBL schemes                          | flag          |    0 | logical   |           | none   | F        |
+!! | GFS_Control%cnvgwd                   | flag_convective_gravity_wave_drag                                             | flag for conv gravity wave drag                         | flag          |    0 | logical   |           | none   | F        |
+!! | GFS_Control%mstrat                   | flag_for_moorthi_stratus                                                      | flag for moorthi approach for stratus                   | flag          |    0 | logical   |           | none   | F        |
+!! | GFS_Control%moist_adj                |                                                                               | flag for moist convective adjustment                    |               |    0 | logical   |           | none   | F        |
+!! | GFS_Control%cscnv                    | flag_for_Chikira_Sugiyama_deep_convection                                     | flag for Chikira-Sugiyama convection                    | flag          |    0 | logical   |           | none   | F        |
+!! | GFS_Control%satmedmf                 | flag_for_scale_aware_TKE_moist_EDMF_PBL                                       | flag for scale-aware TKE moist EDMF PBL scheme          | flag          |    0 | logical   |           | none   | F        |
+!! | GFS_Control%shinhong                 | flag_for_scale_aware_Shinhong_PBL                                             | flag for scale-aware Shinhong PBL scheme                | flag          |    0 | logical   |           | none   | F        |
+!! | GFS_Control%do_ysu                   | flag_for_ysu                                                                  | flag for YSU PBL scheme                                 | flag          |    0 | logical   |           | none   | F        |
+!! | GFS_Control%cal_pre                  | flag_for_precipitation_type_algorithm                                         | flag controls precip type algorithm                     | flag          |    0 | logical   |           | none   | F        |
+!! | GFS_Control%do_aw                    | flag_for_Arakawa_Wu_adjustment                                                | flag for Arakawa Wu scale-aware adjustment              | flag          |    0 | logical   |           | none   | F        |
+!! | GFS_Control%do_awdd                  | flag_arakawa_wu_downdraft                                                     | AW scale-aware option in cs convection downdraft        | flag          |    0 | logical   |           | none   | F        |
+!! | GFS_Control%flx_form                 | flag_flux_form_CS                                                             | enable use of flux form of equations in CS scheme       | flag          |    0 | logical   |           | none   | F        |
+!! | GFS_Control%do_shoc                  | flag_for_shoc                                                                 | flag for SHOC                                           | flag          |    0 | logical   |           | none   | F        |
+!! | GFS_Control%shocaftcnv               | flag_for_shoc_after_convection                                                | flag to execute SHOC after convection                   | flag          |    0 | logical   |           | none   | F        |
+!! | GFS_Control%shoc_cld                 |                                                                               | flag for clouds                                         |               |    0 | logical   |           | none   | F        |
+!! | GFS_Control%uni_cld                  |                                                                               | flag for clouds in grrad                                |               |    0 | logical   |           | none   | F        |
+!! | GFS_Control%oz_phys                  | flag_for_ozone_physics                                                        | flag for old (2006) ozone physics                       | flag          |    0 | logical   |           | none   | F        |
+!! | GFS_Control%oz_phys_2015             | flag_for_2015_ozone_physics                                                   | flag for new (2015) ozone physics                       | flag          |    0 | logical   |           | none   | F        |
+!! | GFS_Control%h2o_phys                 |                                                                               | flag for stratosphere h2o                               |               |    0 | logical   |           | none   | F        |
+!! | GFS_Control%pdfcld                   |                                                                               | flag for pdfcld                                         |               |    0 | logical   |           | none   | F        |
+!! | GFS_Control%shcnvcw                  | flag_shallow_convective_cloud                                                 | flag for shallow convective cloud                       |               |    0 | logical   |           | none   | F        |
+!! | GFS_Control%redrag                   | flag_for_reduced_drag_coefficient_over_sea                                    | flag for reduced drag coeff. over sea                   | flag          |    0 | logical   |           | none   | F        |
+!! | GFS_Control%hybedmf                  | flag_for_hedmf                                                                | flag for hybrid edmf pbl scheme (moninedmf)             | flag          |    0 | logical   |           | none   | F        |
+!! | GFS_Control%dspheat                  | flag_TKE_dissipation_heating                                                  | flag for tke dissipative heating                        | flag          |    0 | logical   |           | none   | F        |
+!! | GFS_Control%lheatstrg                | flag_for_canopy_heat_storage                                                  | flag for canopy heat storage parameterization           | flag          |    0 | logical   |           | none   | F        |
+!! | GFS_Control%cnvcld                   |                                                                               |                                                         |               |    0 | logical   |           | none   | F        |
+!! | GFS_Control%random_clds              |                                                                               | flag controls whether clouds are random                 |               |    0 | logical   |           | none   | F        |
+!! | GFS_Control%shal_cnv                 | flag_for_shallow_convection                                                   | flag for calling shallow convection                     | flag          |    0 | logical   |           | none   | F        |
+!! | GFS_Control%do_deep                  |                                                                               | whether to do deep convection                           |               |    0 | logical   |           | none   | F        |
+!! | GFS_Control%imfshalcnv               | flag_for_mass_flux_shallow_convection_scheme                                  | flag for mass-flux shallow convection scheme            | flag          |    0 | integer   |           | none   | F        |
+!! | GFS_Control%imfdeepcnv               | flag_for_mass_flux_deep_convection_scheme                                     | flag for mass-flux deep convection scheme               | flag          |    0 | integer   |           | none   | F        |
+!! | GFS_Control%nmtvr                    | number_of_statistical_measures_of_subgrid_orography                           | number of topographic variables in GWD                  | count         |    0 | integer   |           | none   | F        |
+!! | GFS_Control%jcap                     |                                                                               | number of spectral wave trancation                      |               |    0 | integer   |           | none   | F        |
+!! | GFS_Control%cs_parm                  |                                                                               | tunable parameters for Chikira-Sugiyama convection      |               |    1 | real      | kind_phys | none   | F        |
+!! | GFS_Control%cs_parm(1)               | updraft_velocity_tunable_parameter_1_CS                                       | tunable parameter 1 for Chikira-Sugiyama convection     | m s-1         |    0 | real      | kind_phys | none   | F        |
+!! | GFS_Control%cs_parm(2)               | updraft_velocity_tunable_parameter_2_CS                                       | tunable parameter 2 for Chikira-Sugiyama convection     | m s-1         |    0 | real      | kind_phys | none   | F        |
+!! | GFS_Control%cs_parm(3)               | detrainment_and_precipitation_tunable_parameter_3_CS   | partition water between detrainment and precipitation (decrease for more precipitation) | m    |    0 | real      | kind_phys | none   | F        |
+!! | GFS_Control%cs_parm(4)               | detrainment_and_precipitation_tunable_parameter_4_CS   | partition water between detrainment and precipitation (decrease for more precipitation) | m    |    0 | real      | kind_phys | none   | F        |
+!! | GFS_Control%cs_parm(9)               | entrainment_efficiency_tunable_parameter_9_CS                                 | entrainment efficiency                                  | none          |    0 | real      | kind_phys | none   | F        |
+!! | GFS_Control%flgmin                   |                                                                               | [in] ice fraction bounds                                |               |    1 | real      | kind_phys | none   | F        |
+!! | GFS_Control%cgwf                     | multiplication_factors_for_convective_gravity_wave_drag                       | multiplication factor for convective GWD                | none          |    1 | real      | kind_phys | none   | F        |
+!! | GFS_Control%ccwf                     |                                                                               | multiplication factor for critical cloud workfunction   | none          |    1 | real      | kind_phys | none   | F        |
+!! | GFS_Control%cdmbgwd                  | multiplication_factors_for_mountain_blocking_and_orographic_gravity_wave_drag | multiplication factors for cdmb and gwd                 | none          |    1 | real      | kind_phys | none   | F        |
+!! | GFS_Control%sup                      | ice_supersaturation_threshold                                                 | ice supersaturation parameter for PDF clouds            | none          |    0 | real      | kind_phys | none   | F        |
+!! | GFS_Control%ctei_rm                  | critical_cloud_top_entrainment_instability_criteria                           | critical cloud top entrainment instability criteria     | none          |    1 | real      | kind_phys | none   | F        |
+!! | GFS_Control%crtrh                    |                                                                               | critical relative humidity at SFC, PBL top and TOA      | frac          |    1 | real      | kind_phys | none   | F        |
+!! | GFS_Control%crtrh(1)                 | critical_relative_humidity_at_surface                                         | critical relative humidity at the surface               | frac          |    0 | real      | kind_phys | none   | F        |
+!! | GFS_Control%crtrh(2)                 | critical_relative_humidity_at_PBL_top                                         | critical relative humidity at the PBL top               | frac          |    0 | real      | kind_phys | none   | F        |
+!! | GFS_Control%crtrh(3)                 | critical_relative_humidity_at_top_of_atmosphere                               | critical relative humidity at the top of atmosphere     | frac          |    0 | real      | kind_phys | none   | F        |
+!! | GFS_Control%dlqf                     |                                                                               | factor for cloud condensate detrainment from cloud edges|               |    1 | real      | kind_phys | none   | F        |
+!! | GFS_Control%psauras                  |                                                                               | auto conversion coeff from ice to snow in ras           |               |    1 | real      | kind_phys | none   | F        |
+!! | GFS_Control%prauras                  |                                                                               | auto conversion coeff from cloud to rain in ras         |               |    1 | real      | kind_phys | none   | F        |
+!! | GFS_Control%wminras                  |                                                                               | water and ice minimum threshold for ras                 |               |    1 | real      | kind_phys | none   | F        |
+!! | GFS_Control%seed0                    |                                                                               | random seed for radiation                               |               |    0 | integer   |           | none   | F        |
+!! | GFS_Control%rbcr                     |                                                                               | Critical Richardson Number in the PBL scheme            |               |    0 | real      | kind_phys | none   | F        |
+!! | GFS_Control%prslrd0                  | pressure_cutoff_for_rayleigh_damping                                          | pressure level from which Rayleigh Damping is applied   | Pa            |    0 | real      | kind_phys | none   | F        |
+!! | GFS_Control%ral_ts                   | time_scale_for_rayleigh_damping                                               | time scale for Rayleigh damping in days                 | d             |    0 | real      | kind_phys | none   | F        |
+!! | GFS_Control%clam_deep                | entrainment_rate_coefficient_deep_convection                                  | entrainment rate coefficient for deep conv.                                          | none    |    0 | real      | kind_phys | none   | F        |
+!! | GFS_Control%c0s_deep                 | rain_conversion_parameter_deep_convection                                     | convective rain conversion parameter for deep conv.                                  | m-1     |    0 | real      | kind_phys | none   | F        |
+!! | GFS_Control%c1_deep                  | detrainment_conversion_parameter_deep_convection                              | convective detrainment conversion parameter for deep conv.                           | m-1     |    0 | real      | kind_phys | none   | F        |
+!! | GFS_Control%betal_deep               | downdraft_fraction_reaching_surface_over_land_deep_convection                 | downdraft fraction reaching surface over land for deep conv.                         | frac    |    0 | real      | kind_phys | none   | F        |
+!! | GFS_Control%betas_deep               | downdraft_fraction_reaching_surface_over_ocean_deep_convection                | downdraft fraction reaching surface over ocean for deep conv.                        | frac    |    0 | real      | kind_phys | none   | F        |
+!! | GFS_Control%evfact_deep              | rain_evaporation_coefficient_deep_convection                                  | convective rain evaporation coefficient for deep conv.                               | frac    |    0 | real      | kind_phys | none   | F        |
+!! | GFS_Control%evfactl_deep             | rain_evaporation_coefficient_over_land_deep_convection                        | convective rain evaporation coefficient over land for deep conv.                     | frac    |    0 | real      | kind_phys | none   | F        |
+!! | GFS_Control%pgcon_deep               | momentum_transport_reduction_factor_pgf_deep_convection                       | reduction factor in momentum transport due to deep conv. induced pressure gradient force  | frac    |    0 | real      | kind_phys | none   | F        |
+!! | GFS_Control%asolfac_deep             | aerosol_aware_parameter_deep_convection                                       | aerosol-aware parameter inversely proportional to CCN number concentraion from Lim (2011) for deep conv. | none    |    0 | real      | kind_phys | none   | F        |
+!! | GFS_Control%clam_shal                | entrainment_rate_coefficient_shallow_convection                               | entrainment rate coefficient for shal conv.                                                              | none    |    0 | real      | kind_phys | none   | F        |
+!! | GFS_Control%c0s_shal                 | rain_conversion_parameter_shallow_convection                                  | convective rain conversion parameter for shal conv.                                                      | m-1     |    0 | real      | kind_phys | none   | F        |
+!! | GFS_Control%c1_shal                  | detrainment_conversion_parameter_shallow_convection                           | convective detrainment conversion parameter for shal conv.                                               | m-1     |    0 | real      | kind_phys | none   | F        |
+!! | GFS_Control%pgcon_shal               | momentum_transport_reduction_factor_pgf_shallow_convection                    | reduction factor in momentum transport due to shal conv. induced pressure gradient force                 | frac    |    0 | real      | kind_phys | none   | F        |
+!! | GFS_Control%asolfac_shal             | aerosol_aware_parameter_shallow_convection                                    | aerosol-aware parameter inversely proportional to CCN number concentraion from Lim (2011) for shal conv. | none    |    0 | real      | kind_phys | none   | F        |
+!! | GFS_Control%nst_anl                  |                                                                               | flag for NSSTM analysis in gcycle/sfcsub                             |               |    0 | logical   |           | none   | F        |
+!! | GFS_Control%lsea                     |                                                                               |                                                                      |               |    0 | integer   |           | none   | F        |
+!! | GFS_Control%xkzm_m                   | atmosphere_momentum_diffusivity_background                                    | background vertical diffusion for momentum                           | m2 s-1        |    0 | real      | kind_phys | none   | F        |
+!! | GFS_Control%xkzm_h                   | atmosphere_heat_diffusivity_background                                        | background vertical diffusion for heat q                             | m2 s-1        |    0 | real      | kind_phys | none   | F        |
+!! | GFS_Control%xkzm_s                   | diffusivity_background_sigma_level                                            | sigma threshold for background mom. diffusion                        | none          |    0 | real      | kind_phys | none   | F        |
+!! | GFS_Control%nstf_name                |                                                                               |                                                                      |               |    1 | integer   |           | none   | F        |
+!! | GFS_Control%nstf_name(1)             | flag_for_nsstm_run                                                            | NSSTM flag: off/uncoupled/coupled=0/1/2                              | flag          |    0 | integer   |           | none   | F        |
+!! | GFS_Control%nstf_name(4)             | vertical_temperature_average_range_lower_bound                                | zsea1 in mm                                                          | mm            |    0 | integer   |           | none   | F        |
+!! | GFS_Control%nstf_name(5)             | vertical_temperature_average_range_upper_bound                                | zsea2 in mm                                                          | mm            |    0 | integer   |           | none   | F        |
+!! | GFS_Control%frac_grid                | flag_for_fractional_grid                                                      | flag for fractional grid                                             | flag          |    0 | logical   |           | none   | F        |
+!! | GFS_Control%xkzminv                  | atmosphere_heat_diffusivity_background_maximum                                | maximum background value of heat diffusivity                         | m2 s-1        |    0 | real      | kind_phys | none   | F        |
+!! | GFS_Control%moninq_fac               | atmosphere_diffusivity_coefficient_factor                                     | multiplicative constant for atmospheric diffusivities                | none          |    0 | real      | kind_phys | none   | F        |
+!! | GFS_Control%nca                      | number_of_independent_cellular_automata                                       | number of independent cellular automata                              | count         |    0 | integer   |           | none   | F        |
+!! | GFS_Control%nlives                   | cellular_automata_lifetime                                                    | cellular automata lifetime                                           | count         |    0 | integer   |           | none   | F        |
+!! | GFS_Control%ncells                   | cellular_automata_finer_grid                                                  | cellular automata finer grid                                         | count         |    0 | integer   |           | none   | F        |
+!! | GFS_Control%nfracseed                | cellular_automata_seed_probability                                            | cellular automata seed probability                                   | fraction      |    0 | real      | kind_phys | none   | F        |
+!! | GFS_Control%nseed                    | cellular_automata_seed_frequency                                              | cellular automata seed frequency in units of time steps              | count         |    0 | integer   |           | none   | F        |
+!! | GFS_Control%do_ca                    | flag_for_cellular_automata                                                    | cellular automata main switch                                        | flag          |    0 | logical   |           | none   | F        |
+!! | GFS_Control%ca_sgs                   | flag_for_sgs_cellular_automata                                                | switch for sgs ca                                                    | flag          |    0 | logical   |           | none   | F        |
+!! | GFS_Control%ca_global                | flag_for_global_cellular_automata                                             | switch for global ca                                                 | flag          |    0 | logical   |           | none   | F        |
+!! | GFS_Control%ca_smooth                | flag_for_gaussian_spatial_filter                                              | switch for gaussian spatial filter                                   | flag          |    0 | logical   |           | none   | F        |
+!! | GFS_Control%isppt_deep               | flag_for_combination_of_sppt_with_isppt_deep                                  | switch for combination with isppt_deep.                              | flag          |    0 | logical   |           | none   | F        |
+!! | GFS_Control%iseed_ca                 | seed_for_random_number_generation_in_cellular_automata_scheme                 | seed for random number generation in ca scheme                       | none          |    0 | integer   |           | none   | F        |
+!! | GFS_Control%nspinup                  | number_of_iterations_to_spin_up_cellular_automata                             | number of iterations to spin up the ca                               | count         |    0 | integer   |           | none   | F        |
+!! | GFS_Control%nthresh                  | threshold_for_perturbed_vertical_velocity                                     | threshold used for perturbed vertical velocity                       | m s-1         |    0 | real      | kind_phys | none   | F        |
+!! | GFS_Control%do_sppt                  | flag_for_stochastic_surface_physics_perturbations                             | flag for stochastic surface physics perturbations                    | flag          |    0 | logical   |           | none   | F        |
+!! | GFS_Control%use_zmtnblck             | flag_for_mountain_blocking                                                    | flag for mountain blocking                                           | flag          |    0 | logical   |           | none   | F        |
+!! | GFS_Control%do_shum                  | flag_for_stochastic_shum_option                                               | flag for stochastic shum option                                      | flag          |    0 | logical   |           | none   | F        |
+!! | GFS_Control%do_skeb                  | flag_for_stochastic_skeb_option                                               | flag for stochastic skeb option                                      | flag          |    0 | logical   |           | none   | F        |
+!! | GFS_Control%skeb_npass               |                                                                               |                                                                      |               |    0 | integer   |           | none   | F        |
+!! | GFS_Control%do_sfcperts              | flag_for_stochastic_surface_perturbations                                     | flag for stochastic surface perturbations option                     | flag          |    0 | logical   |           | none   | F        |
+!! | GFS_Control%nsfcpert                 | number_of_surface_perturbations                                               | number of surface perturbations                                      | count         |    0 | integer   |           | none   | F        |
+!! | GFS_Control%pertz0                   | magnitude_of_perturbation_of_momentum_roughness_length                        | magnitude of perturbation of momentum roughness length               | frac          |    1 | real      | kind_phys | none   | F        |
+!! | GFS_Control%pertzt                   | magnitude_of_perturbation_of_heat_to_momentum_roughness_length_ratio          | magnitude of perturbation of heat to momentum roughness length ratio | frac          |    1 | real      | kind_phys | none   | F        |
+!! | GFS_Control%pertshc                  | magnitude_of_perturbation_of_soil_type_b_parameter                            | magnitude of perturbation of soil type b parameter                   | frac          |    1 | real      | kind_phys | none   | F        |
+!! | GFS_Control%pertlai                  | magnitude_of_perturbation_of_leaf_area_index                                  | magnitude of perturbation of leaf area index                         | frac          |    1 | real      | kind_phys | none   | F        |
+!! | GFS_Control%pertalb                  | magnitude_of_surface_albedo_perturbation                                      | magnitude of surface albedo perturbation                             | frac          |    1 | real      | kind_phys | none   | F        |
+!! | GFS_Control%pertvegf                 | magnitude_of_perturbation_of_vegetation_fraction                              | magnitude of perturbation of vegetation fraction                     | frac          |    1 | real      | kind_phys | none   | F        |
+!! | GFS_Control%tracer_names             |                                                                               | array of initialized tracers from dynamic core                       |               |    1 | character |           | none   | F        |
+!! | GFS_Control%ntrac                    | number_of_tracers                                                             | number of tracers                                                    | count         |    0 | integer   |           | none   | F        |
+!! | GFS_Control%ntracp1                  | number_of_tracers_plus_one                                                    | number of tracers plus one                                           | count         |    0 | integer   |           | none   | F        |
+!! | GFS_Control%ntqv                     | index_for_water_vapor                                                         | tracer index for water vapor (specific humidity)                     | index         |    0 | integer   |           | none   | F        |
+!! | GFS_Control%ntoz                     | index_for_ozone                                                               | tracer index for ozone mixing ratio                                  | index         |    0 | integer   |           | none   | F        |
+!! | GFS_Control%ntcw                     | index_for_liquid_cloud_condensate                                             | tracer index for cloud condensate (or liquid water)                  | index         |    0 | integer   |           | none   | F        |
+!! | GFS_Control%ntiw                     | index_for_ice_cloud_condensate                                                | tracer index for  ice water                                          | index         |    0 | integer   |           | none   | F        |
+!! | GFS_Control%ntrw                     | index_for_rain_water                                                          | tracer index for rain water                                          | index         |    0 | integer   |           | none   | F        |
+!! | GFS_Control%ntsw                     | index_for_snow_water                                                          | tracer index for snow water                                          | index         |    0 | integer   |           | none   | F        |
+!! | GFS_Control%ntgl                     | index_for_graupel                                                             | tracer index for graupel                                             | index         |    0 | integer   |           | none   | F        |
+!! | GFS_Control%ntclamt                  | index_for_cloud_amount                                                        | tracer index for cloud amount integer                                | index         |    0 | integer   |           | none   | F        |
+!! | GFS_Control%ntlnc                    | index_for_liquid_cloud_number_concentration                                   | tracer index for liquid number concentration                         | index         |    0 | integer   |           | none   | F        |
+!! | GFS_Control%ntinc                    | index_for_ice_cloud_number_concentration                                      | tracer index for ice    number concentration                         | index         |    0 | integer   |           | none   | F        |
+!! | GFS_Control%ntrnc                    | index_for_rain_number_concentration                                           | tracer index for rain   number concentration                         | index         |    0 | integer   |           | none   | F        |
+!! | GFS_Control%ntsnc                    | index_for_snow_number_concentration                                           | tracer index for snow   number concentration                         | index         |    0 | integer   |           | none   | F        |
+!! | GFS_Control%ntgnc                    | index_for_graupel_number_concentration                                        | tracer index for graupel number concentration                        | index         |    0 | integer   |           | none   | F        |
+!! | GFS_Control%ntke                     | index_for_turbulent_kinetic_energy                                            | tracer index for turbulent kinetic energy                            | index         |    0 | integer   |           | none   | F        |
+!! | GFS_Control%nto                      |                                                                               | tracer index for oxygen ion                                          |               |    0 | integer   |           | none   | F        |
+!! | GFS_Control%nto2                     |                                                                               | tracer index for oxygen                                              |               |    0 | integer   |           | none   | F        |
+!! | GFS_Control%ntwa                     | index_for_water_friendly_aerosols                                             | tracer index for water friendly aerosol                              | index         |    0 | integer   |           | none   | F        |
+!! | GFS_Control%ntia                     | index_for_ice_friendly_aerosols                                               | tracer index for ice friendly aerosol                                | index         |    0 | integer   |           | none   | F        |
+!! | GFS_Control%ntchm                    | number_of_chemical_tracers                                                    | number of chemical tracers                                           | count         |    0 | integer   |           | none   | F        |
+!! | GFS_Control%ntchs                    | index_for_first_chemical_tracer                                               | tracer index for first chemical tracer                               | index         |    0 | integer   |           | none   | F        |
+!! | GFS_Control%ntdiag                   | diagnostics_control_for_chemical_tracers                                      | array to control diagnostics for chemical tracers                    | flag          |    1 | logical   |           | none   | F        |
+!! | GFS_Control%ntot2d                   |                                                                               | total number of variables for phyf2d                                 |               |    0 | integer   |           | none   | F        |
+!! | GFS_Control%ntot3d                   |                                                                               | total number of variables for phyf3d                                 |               |    0 | integer   |           | none   | F        |
+!! | GFS_Control%indcld                   | index_for_cloud_fraction_in_3d_arrays_for_microphysics                        | index of cloud fraction in phyf3d (used only for SHOC or MG)         | index         |    0 | integer   |           | none   | F        |
+!! | GFS_Control%num_p2d                  | array_dimension_of_2d_arrays_for_microphysics                                 | number of 2D arrays needed for microphysics                          | count         |    0 | integer   |           | none   | F        |
+!! | GFS_Control%num_p3d                  | array_dimension_of_3d_arrays_for_microphysics                                 | number of 3D arrays needed for microphysics                          | count         |    0 | integer   |           | none   | F        |
+!! | GFS_Control%nshoc_2d                 |                                                                               | number of 2d fields for SHOC                                         |               |    0 | integer   |           | none   | F        |
+!! | GFS_Control%nshoc_3d                 |                                                                               | number of 3d fields for SHOC                                         |               |    0 | integer   |           | none   | F        |
+!! | GFS_Control%ncnvcld3d                | number_of_convective_3d_cloud_fields                                          | number of convective 3d clouds fields                                | count         |    0 | integer   |           | none   | F        |
+!! | GFS_Control%npdf3d                   | number_of_3d_arrays_associated_with_pdf-based_clouds                          | number of 3d arrays associated with pdf based clouds/mp              | count         |    0 | integer   |           | none   | F        |
+!! | GFS_Control%nctp                     | number_of_cloud_types_CS                                                      | number of cloud types in Chikira-Sugiyama scheme                     | count         |    0 | integer   |           | none   | F        |
+!! | GFS_Control%ncnvw                    |                                                                               | the index of cnvw in phy_f3d                                         |               |    0 | integer   |           | none   | F        |
+!! | GFS_Control%ncnvc                    |                                                                               | the index of cnvc in phy_f3d                                         |               |    0 | integer   |           | none   | F        |
+!! | GFS_Control%nleffr                   | index_for_cloud_liquid_water_effective_radius                                 | the index of cloud liquid water effective radius in phy_f3d          |               |    0 | integer   |           | none   | F        |
+!! | GFS_Control%nieffr                   | index_for_ice_effective_radius                                                | the index of ice effective radius in phy_f3d                         |               |    0 | integer   |           | none   | F        |
+!! | GFS_Control%nreffr                   | index_for_rain_effective_radius                                               | the index of rain effective radius in phy_f3d                        |               |    0 | integer   |           | none   | F        |
+!! | GFS_Control%nseffr                   | index_for_snow_effective_radius                                               | the index of snow effective radius in phy_f3d                        |               |    0 | integer   |           | none   | F        |
+!! | GFS_Control%ngeffr                   | index_for_graupel_effective_radius                                            | the index of graupel effective radius in phy_f3d                     |               |    0 | integer   |           | none   | F        |
+!! | GFS_Control%debug                    |                                                                               | debug flag                                                           |               |    0 | logical   |           | none   | F        |
+!! | GFS_Control%pre_rad                  |                                                                               | flag for testing purpose                                             |               |    0 | logical   |           | none   | F        |
+!! | GFS_Control%ipt                      |                                                                               | index for diagnostic printout point                                  |               |    0 | integer   |           | none   | F        |
+!! | GFS_Control%lprnt                    | flag_print                                                                    | control flag for diagnostic print out                                | flag          |    0 | logical   |           | none   | F        |
+!! | GFS_Control%lsswr                    | flag_to_calc_sw                                                               | logical flags for sw radiation calls                                 | flag          |    0 | logical   |           | none   | F        |
+!! | GFS_Control%lslwr                    | flag_to_calc_lw                                                               | logical flags for lw radiation calls                                 | flag          |    0 | logical   |           | none   | F        |
+!! | GFS_Control%solhr                    | forecast_hour                                                                 | hour time after 00z at the t-step                                    | h             |    0 | real      | kind_phys | none   | F        |
+!! | GFS_Control%solcon                   | solar_constant                                                                | solar constant (sun-earth distant adjusted)                          | W m-2         |    0 | real      | kind_phys | none   | F        |
+!! | GFS_Control%slag                     | equation_of_time                                                              | equation of time (radian)                                            | radians       |    0 | real      | kind_phys | none   | F        |
+!! | GFS_Control%sdec                     | sine_of_solar_declination_angle                                               | sin of the solar declination angle                                   | none          |    0 | real      | kind_phys | none   | F        |
+!! | GFS_Control%cdec                     | cosine_of_solar_declination_angle                                             | cos of the solar declination angle                                   | none          |    0 | real      | kind_phys | none   | F        |
+!! | GFS_Control%clstp                    | convective_cloud_switch                                                       | index used by cnvc90 (for convective clouds)                         | none          |    0 | real      | kind_phys | none   | F        |
+!! | GFS_Control%phour                    |                                                                               | previous forecast time                                               | h             |    0 | real      | kind_phys | none   | F        |
+!! | GFS_Control%fhour                    | forecast_time                                                                 | curent forecast time                                                 | h             |    0 | real      | kind_phys | none   | F        |
+!! | GFS_Control%zhour                    |                                                                               | previous hour diagnostic buckets emptied                             | h             |    0 | real      | kind_phys | none   | F        |
+!! | GFS_Control%kdt                      | index_of_time_step                                                            | current forecast iteration                                           | index         |    0 | integer   |           | none   | F        |
+!! | GFS_Control%first_time_step          | flag_for_first_time_step                                                      | flag for first time step for time integration loop (cold/warmstart)  | flag          |    0 | logical   |           | none   | F        |
+!! | GFS_Control%restart                  | flag_for_restart                                                              | flag for restart (warmstart) or coldstart                            | flag          |    0 | logical   |           | none   | F        |
+!! | GFS_Control%hydrostatic              | flag_for_hydrostatic_solver                                                   | flag for hydrostatic solver from dynamics                            | flag          |    0 | logical   |           | none   | F        |
+!! | GFS_Control%jdat                     | forecast_date_and_time                                                        | current forecast date and time                                       | none          |    1 | integer   |           | none   | F        |
+!! | GFS_Control%iccn                     | flag_for_in_ccn_forcing_for_morrison_gettelman_microphysics                   | flag for IN and CCN forcing for morrison gettelman microphysics      | flag          |    0 | logical   |           | none   | F        |
+!! | GFS_Control%sec                      | seconds_elapsed_since_model_initialization                                    | seconds elapsed since model initialization                           | s             |    0 | real      | kind_phys | none   | F        |
+!! | GFS_Control%si                       | vertical_sigma_coordinate_for_radiation_initialization                        | vertical sigma coordinate for radiation initialization               | none          |    1 | real      | kind_phys | none   | F        |
+!! | GFS_Control%iau_delthrs              |                                                                               | iau time interval (to scale increments) in hours                     |               |    0 | real      | kind_phys | none   | F        |
+!! | GFS_Control%iau_inc_files            |                                                                               | list of increment files                                              |               |    1 | character | len=240   | none   | F        |
+!! | GFS_Control%iaufhrs                  |                                                                               | forecast hours associated with increment files                       |               |    1 | real      | kind_phys | none   | F        |
+!! | GFS_Control%iau_filter_increments    |                                                                               |                                                                      |               |    0 | logical   |           | none   | F        |
+!! | GFS_Control%dxinv                    | inverse_scaling_factor_for_critical_relative_humidity                         | inverse scaling factor for critical relative humidity                | rad2 m-2      |    0 | real      | kind_phys | none   | F        |
+!! | GFS_Control%dxmax                    | maximum_scaling_factor_for_critical_relative_humidity                         | maximum scaling factor for critical relative humidity                | m2 rad-2      |    0 | real      | kind_phys | none   | F        |
+!! | GFS_Control%dxmin                    | minimum_scaling_factor_for_critical_relative_humidity                         | minimum scaling factor for critical relative humidity                | m2 rad-2      |    0 | real      | kind_phys | none   | F        |
+!! | GFS_Control%rhcmax                   | maximum_critical_relative_humidity                                            | maximum critical relative humidity                                   | frac          |    0 | real      | kind_phys | none   | F        |
+!! | GFS_Control%do_mynnedmf              | do_mynnedmf                                                                   | flag to activate MYNN-EDMF                                           | flag          |    0 | logical   |           | none   | F        |
+!! | GFS_Control%do_mynnsfclay            | do_mynnsfclay                                                                 | flag to activate MYNN surface layer                                  | flag          |    0 | logical   |           | none   | F        |
+!! | GFS_Control%grav_settling            | grav_settling                                                                 | flag to activate gravitational setting of fog                        | flag          |    0 | integer   |           | none   | F        |
+!! | GFS_Control%bl_mynn_tkebudget        | tke_budget                                                                    | flag for activating TKE budget                                       | flag          |    0 | integer   |           | none   | F        |
+!! | GFS_Control%bl_mynn_tkeadvect        | tke_advect                                                                    | flag for activating TKE advection                                    | flag          |    0 | logical   |           | none   | F        |
+!! | GFS_Control%bl_mynn_cloudpdf         | cloudpdf                                                                      | flag to determine which cloud PDF to use                             | flag          |    0 | integer   |           | none   | F        |
+!! | GFS_Control%bl_mynn_mixlength        | mixing_length_flag                                                            | flag to determine which mixing length form to use                    | flag          |    0 | integer   |           | none   | F        |
+!! | GFS_Control%bl_mynn_edmf             | edmf_flag                                                                     | flag to activate the mass-flux scheme                                | flag          |    0 | integer   |           | none   | F        |
+!! | GFS_Control%bl_mynn_edmf_mom         | edmf_momentum_transport_flag                                                  | flag to activate the transport of momentum                           | flag          |    0 | integer   |           | none   | F        |
+!! | GFS_Control%bl_mynn_edmf_tke         | edmf_tke_transport_flag                                                       | flag to activate the transport of TKE                                | flag          |    0 | integer   |           | none   | F        |
+!! | GFS_Control%bl_mynn_edmf_part        | edmf_partition_flag                                                           | flag to partitioning og the MF and ED areas                          | flag          |    0 | integer   |           | none   | F        |
+!! | GFS_Control%bl_mynn_cloudmix         | cloud_specie_mix_flag                                                         | flag to activate mixing of cloud species                             | flag          |    0 | integer   |           | none   | F        |
+!! | GFS_Control%bl_mynn_mixqt            | mix_total_water_flag                                                          | flag to mix total water or individual species                        | flag          |    0 | integer   |           | none   | F        |
+!! | GFS_Control%icloud_bl                | couple_sgs_clouds_to_radiation_flag                                           | flag for coupling sgs clouds to radiation                            | flag          |    0 | integer   |           | none   | F        |
+!!
+#endif
   type GFS_control_type
 
     integer              :: me              !< MPI rank designator
     integer              :: master          !< MPI rank of master atmosphere processor
+#ifdef CCPP
+    integer              :: communicator    !< MPI communicator
+    integer              :: ntasks          !< MPI size in communicator
+    integer              :: nthreads        !< OpenMP threads available for physics
+#endif
     integer              :: nlunit          !< unit for namelist
     character(len=64)    :: fn_nml          !< namelist filename for surface data cycling
     character(len=256), pointer :: input_nml_file(:) !< character string containing full namelist
-                                                     !< for use with internal file reads
-    real(kind=kind_phys) :: fhzero          !< seconds between clearing of diagnostic buckets
+                                                   !< for use with internal file reads
+#ifdef CCPP
+    integer              :: logunit
+#endif
+    real(kind=kind_phys) :: fhzero          !< hours between clearing of diagnostic buckets
     logical              :: ldiag3d         !< flag for 3d diagnostic fields
     logical              :: lssav           !< logical flag for storing diagnostics
-    real(kind=kind_phys) :: fhcyc           !< frequency for surface data cycling (secs)
+    real(kind=kind_phys) :: fhcyc           !< frequency for surface data cycling (hours)
     logical              :: lgocart         !< flag for 3d diagnostic fields for gocart 1
-    real(kind=kind_phys) :: fhgoc3d         !< seconds between calls to gocart
+    real(kind=kind_phys) :: fhgoc3d         !< hours between calls to gocart
     integer              :: thermodyn_id    !< valid for GFS only for get_prs/phi
     integer              :: sfcpress_id     !< valid for GFS only for get_prs/phi
     logical              :: gen_coord_hybrid!< for Henry's gen coord
@@ -433,11 +1215,19 @@ module GFS_typedefs
     integer              :: nx              !< number of points in the i-dir for this MPI-domain
     integer              :: ny              !< number of points in the j-dir for this MPI-domain
     integer              :: levs            !< number of vertical levels
+#ifdef CCPP
+    !--- ak/bk for pressure level calculations
+    real(kind=kind_phys), pointer :: ak(:)  !< from surface (k=1) to TOA (k=levs)
+    real(kind=kind_phys), pointer :: bk(:)  !< from surface (k=1) to TOA (k=levs)
+#endif
     integer              :: cnx             !< number of points in the i-dir for this cubed-sphere face
     integer              :: cny             !< number of points in the j-dir for this cubed-sphere face
     integer              :: lonr            !< number of global points in x-dir (i) along the equator
     integer              :: latr            !< number of global points in y-dir (j) along any meridian
     integer              :: tile_num
+#ifdef CCPP
+    integer,     pointer :: blksz(:)        !< for explicit data blocking: block sizes of all blocks
+#endif
 
 !--- coupling parameters
     logical              :: cplflx          !< default no cplflx collection
@@ -507,9 +1297,15 @@ module GFS_typedefs
     logical              :: swhtr           !< flag to output sw heating rate (Radtend%swhc)
 
 !--- microphysical switch
-    integer              :: ncld            !< cnoice of cloud scheme
+    integer              :: ncld            !< choice of cloud scheme
     !--- new microphysical switch
-    integer              :: imp_physics        !< cnoice of cloud scheme
+    integer              :: imp_physics                    !< choice of microphysics scheme
+    integer              :: imp_physics_gfdl = 11          !< choice of GFDL     microphysics scheme
+    integer              :: imp_physics_thompson = 8       !< choice of Thompson microphysics scheme
+    integer              :: imp_physics_wsm6 = 6           !< choice of WSMG     microphysics scheme
+    integer              :: imp_physics_zhao_carr = 99     !< choice of Zhao-Carr microphysics scheme
+    integer              :: imp_physics_zhao_carr_pdf = 98 !< choice of Zhao-Carr microphysics scheme with PDF clouds
+    integer              :: imp_physics_mg = 10            !< choice of Morrison-Gettelman microphysics scheme
     !--- Z-C microphysical parameters
     real(kind=kind_phys) :: psautco(2)         !< [in] auto conversion coeff from ice to snow
     real(kind=kind_phys) :: prautco(2)         !< [in] auto conversion coeff from cloud to rain
@@ -519,9 +1315,12 @@ module GFS_typedefs
     !--- M-G microphysical parameters
     integer              :: fprcp              !< no prognostic rain and snow (MG)
     integer              :: pdfflag            !< pdf flag for MG macrophysics
-    real(kind=kind_phys) :: mg_dcs             !< Morrison-Gettleman microphysics parameters
+    real(kind=kind_phys) :: mg_dcs             !< Morrison-Gettelman microphysics parameters
     real(kind=kind_phys) :: mg_qcvar      
     real(kind=kind_phys) :: mg_ts_auto_ice(2)  !< ice auto conversion time scale
+#ifdef CCPP
+    real(kind=kind_phys) :: mg_rhmini          !< relative humidity threshold parameter for nucleating ice
+#endif
 
     real(kind=kind_phys) :: mg_ncnst           !< constant droplet num concentration (m-3)
     real(kind=kind_phys) :: mg_ninst           !< constant ice num concentration (m-3)
@@ -530,7 +1329,11 @@ module GFS_typedefs
     real(kind=kind_phys) :: mg_alf             !< tuning factor for alphs in MG macrophysics
     real(kind=kind_phys) :: mg_qcmin(2)        !< min liquid and ice mixing ratio in Mg macro clouds
     character(len=16)    :: mg_precip_frac_method ! type of precipitation fraction method
-
+#ifdef CCPP
+    real(kind=kind_phys) :: tf
+    real(kind=kind_phys) :: tcr
+    real(kind=kind_phys) :: tcrf
+#endif
 !
     logical              :: effr_in            !< eg to turn on ffective radii for MG
     logical              :: microp_uniform
@@ -551,16 +1354,25 @@ module GFS_typedefs
     real(kind=kind_phys) :: shoc_parm(5)    !< critical pressure in Pa for tke dissipation in shoc
     integer              :: ncnd            !< number of cloud condensate types
 
-    !--- Thompson's microphysical paramters 
-    logical              :: ltaerosol       !< flag for aerosol version, currently not working yet 
+    !--- Thompson's microphysical parameters
+    logical              :: make_number_concentrations !< flag to calculate initial number concentrations
+                                                       !< from mass concentrations if not in ICs/BCs
+    logical              :: ltaerosol       !< flag for aerosol version
     logical              :: lradar          !< flag for radar reflectivity 
+    real(kind=kind_phys) :: ttendlim        !< temperature tendency limiter per time step in K/s
 
     !--- GFDL microphysical paramters
     logical              :: lgfdlmprad      !< flag for GFDL mp scheme and radiation consistency 
 
     !--- land/surface model parameters
     integer              :: lsm             !< flag for land surface model lsm=1 for noah lsm
+    integer              :: lsm_noah=1      !< flag for NOAH land surface model
+    integer              :: lsm_noahmp=2    !< flag for NOAH land surface model
+    integer              :: lsm_ruc=3       !< flag for RUC land surface model
     integer              :: lsoil           !< number of soil layers
+#ifdef CCPP
+    integer              :: lsoil_lsm       !< number of soil layers internal to land surface model
+#endif
     integer              :: ivegsrc         !< ivegsrc = 0   => USGS, 
                                             !< ivegsrc = 1   => IGBP (20 category)
                                             !< ivegsrc = 2   => UMD  (13 category)
@@ -601,6 +1413,10 @@ module GFS_typedefs
     logical              :: shocaftcnv      !< flag for SHOC
     logical              :: shoc_cld        !< flag for clouds
     logical              :: uni_cld         !< flag for clouds in grrad
+#ifdef CCPP
+    logical              :: oz_phys         !< flag for old (2006) ozone physics
+    logical              :: oz_phys_2015    !< flag for new (2015) ozone physics
+#endif
     logical              :: h2o_phys        !< flag for stratosphere h2o
     logical              :: pdfcld          !< flag for pdfcld
     logical              :: shcnvcw         !< flag for shallow convective cloud
@@ -608,6 +1424,8 @@ module GFS_typedefs
     logical              :: hybedmf         !< flag for hybrid edmf pbl scheme
     logical              :: satmedmf        !< flag for scale-aware TKE-based moist edmf
                                             !< vertical turbulent mixing scheme
+    logical              :: shinhong        !< flag for scale-aware Shinhong vertical turbulent mixing scheme
+    logical              :: do_ysu          !< flag for YSU turbulent mixing scheme
     logical              :: dspheat         !< flag for tke dissipative heating
     logical              :: lheatstrg       !< flag for canopy heat storage parameterization
     logical              :: cnvcld        
@@ -651,6 +1469,25 @@ module GFS_typedefs
     integer              :: seed0           !< random seed for radiation
 
     real(kind=kind_phys) :: rbcr            !< Critical Richardson Number in the PBL scheme
+#ifdef CCPP
+    !--- MYNN parameters/switches
+    logical              :: do_mynnedmf
+    logical              :: do_mynnsfclay
+    ! DH* TODO - move this to MYNN namelist section
+    integer              :: grav_settling      !< flag for initalizing fist time step
+    integer              :: bl_mynn_tkebudget  !< flag for activating TKE budget
+    logical              :: bl_mynn_tkeadvect  !< activate computation of TKE advection (not yet in use for FV3)
+    integer              :: bl_mynn_cloudpdf   !< flag to determine which cloud PDF to use
+    integer              :: bl_mynn_mixlength  !< flag for different version of mixing length formulation
+    integer              :: bl_mynn_edmf       !< flag to activate the mass-flux scheme
+    integer              :: bl_mynn_edmf_mom   !< flag to activate the transport of momentum
+    integer              :: bl_mynn_edmf_tke   !< flag to activate the transport of TKE
+    integer              :: bl_mynn_edmf_part  !< flag to partitioning og the MF and ED areas
+    integer              :: bl_mynn_cloudmix   !< flag to activate mixing of cloud species
+    integer              :: bl_mynn_mixqt      !< flag to mix total water or individual species
+    integer              :: icloud_bl          !< flag for coupling sgs clouds to radiation
+    ! *DH
+#endif
 
 !--- Rayleigh friction
     real(kind=kind_phys) :: prslrd0         !< pressure level from which Rayleigh Damping is applied
@@ -703,7 +1540,10 @@ module GFS_typedefs
     logical              :: frac_grid       !< flag for fractional grid
 
 !--- surface layer z0 scheme
-    integer              :: sfc_z0_type     !< surface roughness options over ocean
+    integer              :: sfc_z0_type     !< surface roughness options over ocean: 
+                                            !< 0=no change
+                                            !< 6=areodynamical roughness over water with input 10-m wind
+                                            !< 7=slightly decrease Cd for higher wind speed compare to 6
 
 !--- background vertical diffusion
     real(kind=kind_phys) :: xkzm_m          !< [in] bkgd_vdif_m  background vertical diffusion for momentum  
@@ -744,6 +1584,10 @@ module GFS_typedefs
 !--- tracer handling
     character(len=32), pointer :: tracer_names(:) !< array of initialized tracers from dynamic core
     integer              :: ntrac           !< number of tracers
+#ifdef CCPP
+    integer              :: ntracp1         !< number of tracers plus one
+    integer              :: ntqv            !< tracer index for water vapor (specific humidity)
+#endif
     integer              :: ntoz            !< tracer index for ozone mixing ratio
     integer              :: ntcw            !< tracer index for cloud condensate (or liquid water)
     integer              :: ntiw            !< tracer index for ice water
@@ -768,7 +1612,7 @@ module GFS_typedefs
     !--- derived totals for phy_f*d
     integer              :: ntot2d          !< total number of variables for phyf2d
     integer              :: ntot3d          !< total number of variables for phyf3d
-    integer              :: indcld          !< location of cloud fraction in phyf3d (used ony for SHOC or MG)
+    integer              :: indcld          !< location of cloud fraction in phyf3d (used only for SHOC or MG)
     integer              :: num_p2d         !< number of 2D arrays needed for microphysics
     integer              :: num_p3d         !< number of 3D arrays needed for microphysics
     integer              :: nshoc_2d        !< number of 2d fields for SHOC
@@ -777,6 +1621,12 @@ module GFS_typedefs
     integer              :: npdf3d          !< number of 3d arrays associated with pdf based clouds/microphysics
     integer              :: nctp            !< number of cloud types in Chikira-Sugiyama scheme
     integer              :: ncnvw           !< the index of cnvw in phy_f3d
+    integer              :: ncnvc           !< the index of cnvc in phy_f3d
+    integer              :: nleffr          !< the index of cloud liquid water effective radius in phy_f3d
+    integer              :: nieffr          !< the index of ice effective radius in phy_f3d
+    integer              :: nreffr          !< the index of rain effective radius in phy_f3d
+    integer              :: nseffr          !< the index of snow effective radius in phy_f3d
+    integer              :: ngeffr          !< the index of graupel effective radius in phy_f3d
 
 !--- debug flag
     logical              :: debug         
@@ -798,15 +1648,33 @@ module GFS_typedefs
     real(kind=kind_phys) :: fhour           !< curent forecast hour
     real(kind=kind_phys) :: zhour           !< previous hour diagnostic buckets emptied
     integer              :: kdt             !< current forecast iteration
+#ifdef CCPP
+    logical              :: first_time_step !< flag signaling first time step for time integration routine
+    logical              :: restart         !< flag whether this is a coldstart (.false.) or a warmstart/restart (.true.)
+    logical              :: hydrostatic     !< flag whether this is a hydrostatic or non-hydrostatic run
+#endif
     integer              :: jdat(1:8)       !< current forecast date and time
                                             !< (yr, mon, day, t-zone, hr, min, sec, mil-sec)
     logical              :: iccn            !< using IN CCN forcing for MG2/3
+#ifdef CCPP
+    real(kind=kind_phys)          :: sec    !< seconds since model initialization
+    real(kind=kind_phys), pointer :: si(:)  !< vertical sigma coordinate for model initialization
+#endif
 
 !--- IAU
+    integer              :: iau_offset
     real(kind=kind_phys) :: iau_delthrs     ! iau time interval (to scale increments) in hours
     character(len=240)   :: iau_inc_files(7)! list of increment files
     real(kind=kind_phys) :: iaufhrs(7)      ! forecast hours associated with increment files
     logical :: iau_filter_increments
+
+#ifdef CCPP
+    ! From physcons.F90, updated/set in control_initialize
+    real(kind=kind_phys) :: dxinv           ! inverse scaling factor for critical relative humidity, replaces dxinv in physcons.F90
+    real(kind=kind_phys) :: dxmax           ! maximum scaling factor for critical relative humidity, replaces dxmax in physcons.F90
+    real(kind=kind_phys) :: dxmin           ! minimum scaling factor for critical relative humidity, replaces dxmin in physcons.F90
+    real(kind=kind_phys) :: rhcmax          ! maximum critical relative humidity, replaces rhc_max in physcons.F90
+#endif
 
     contains
       procedure :: init  => control_initialize
@@ -818,6 +1686,18 @@ module GFS_typedefs
 ! GFS_grid_type
 !   grid data needed for interpolations and length-scale calculations
 !--------------------------------------------------------------------
+#if 0
+!! \section arg_table_GFS_grid_type
+!! | local_name                           | standard_name                                                   | long_name                           | units         | rank | type     |    kind   | intent | optional |
+!! |--------------------------------------|-----------------------------------------------------------------|-------------------------------------|---------------|------|----------|-----------|--------|----------|
+!! | GFS_Data(cdata%blk_no)%Grid%area     | cell_area                                                       | area of the grid cell               | m2            |    1 | real     | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Grid%dx       | cell_size                                                       | relative dx for the grid cell       | m             |    1 | real     | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Grid%xlat     | latitude                                                        | latitude                            | radians       |    1 | real     | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Grid%xlon     | longitude                                                       | longitude                           | radians       |    1 | real     | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Grid%coslat   | cosine_of_latitude                                              | cosine of latitude                  | none          |    1 | real     | kind_phys | in     | F        |
+!! | GFS_Data(cdata%blk_no)%Grid%sinlat   | sine_of_latitude                                                | sine of latitude                    | none          |    1 | real     | kind_phys | in     | F        |
+!!
+#endif
   type GFS_grid_type
  
     real (kind=kind_phys), pointer :: xlon   (:)    => null()   !< grid longitude in radians, ok for both 0->2pi
@@ -867,6 +1747,73 @@ module GFS_typedefs
 ! GFS_tbd_type
 !   data not yet assigned to a defined container
 !-----------------------------------------------
+#if 0
+!! \section arg_table_GFS_tbd_type
+!! | local_name                                                  | standard_name                                                                                  | long_name                                               | units         | rank | type    |    kind   | intent | optional |
+!! |-------------------------------------------------------------|------------------------------------------------------------------------------------------------|---------------------------------------------------------|---------------|------|---------|-----------|--------|----------|
+!! | GFS_Data(cdata%blk_no)%Tbd%icsdsw                           | seed_random_numbers_sw                                                                         | random seeds for sub-column cloud generators sw         | none          |    1 | integer |           | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Tbd%icsdlw                           | seed_random_numbers_lw                                                                         | random seeds for sub-column cloud generators lw         | none          |    1 | integer |           | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Tbd%ozpl                             | ozone_forcing                                                                                  | ozone forcing data                                      | various       |    3 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Tbd%h2opl                            | h2o_forcing                                                                                    | water forcing data                                      | various       |    3 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Tbd%in_nm                            | in_number_concentration                                                                        | IN number concentration                                 | kg-1?         |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Tbd%ccn_nm                           | ccn_number_concentration                                                                       | CCN number concentration                                | kg-1?         |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Tbd%aer_nm                           | aerosol_number_concentration_from_gocart_aerosol_climatology                                   | GOCART aerosol climatology number concentration         | kg-1?         |    3 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Tbd%imap                             | map_of_block_column_number_to_global_i_index                                                   | map of local index ix to global index i for this block  | none          |    1 | integer |           | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Tbd%jmap                             | map_of_block_column_number_to_global_j_index                                                   | map of local index ix to global index j for this block  | none          |    1 | integer |           | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Tbd%rann                             | random_number_array                                                                            | random number array (0-1)                               | none          |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Tbd%acv                              | accumulated_lwe_thickness_of_convective_precipitation_amount_cnvc90                            | accumulated convective rainfall amount for cnvc90 only  | m             |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Tbd%acvb                             | smallest_cloud_base_vertical_index_encountered_thus_far                                        | smallest cloud base vertical index encountered thus far | index         |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Tbd%acvt                             | largest_cloud_top_vertical_index_encountered_thus_far                                          | largest cloud top vertical index encountered thus far   | index         |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Tbd%dtdtr                            | tendency_of_air_temperature_due_to_radiative_heating_on_physics_time_step                      | temp. change due to radiative heating per time step     | K             |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Tbd%dtotprcp                         |                                                                                                | change in totprcp  (diag_type)                          |               |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Tbd%dcnvprcp                         |                                                                                                | change in cnvprcp  (diag_type)                          |               |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Tbd%drain_cpl                        | tendency_of_lwe_thickness_of_precipitation_amount_for_coupling                                 | change in rain_cpl (coupling_type)                      | m             |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Tbd%dsnow_cpl                        | tendency_of_lwe_thickness_of_snow_amount_for_coupling                                          | change in show_cpl (coupling_type)                      | m             |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Tbd%phy_fctd                         | cloud_base_mass_flux                                                                           | cloud base mass flux for CS convection                  | kg m-2 s-1    |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Tbd%phy_f2d                          |                                                                                                | 2d arrays saved for restart                             |               |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Tbd%phy_f2d(:,1)                     | surface_air_pressure_two_time_steps_back                                                       | surface air pressure two time steps back                | Pa            |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Tbd%phy_f2d(:,2)                     | surface_air_pressure_at_previous_time_step                                                     | surface air pressure at previous time step              | Pa            |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Tbd%phy_f2d(:,GFS_Control%num_p2d)   | surface_wind_enhancement_due_to_convection                                                     | surface wind enhancement due to convection              | m s-1         |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Tbd%phy_f3d                          |                                                                                                | 3d arrays saved for restart                             |               |    3 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Tbd%phy_f3d(:,:,1)                   | air_temperature_two_time_steps_back                                                            | air temperature two time steps back                     | K             |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Tbd%phy_f3d(:,:,2)                   | water_vapor_specific_humidity_two_time_steps_back                                              | water vapor specific humidity two time steps back       | kg kg-1       |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Tbd%phy_f3d(:,:,3)                   | air_temperature_at_previous_time_step                                                          | air temperature at previous time step                   | K             |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Tbd%phy_f3d(:,:,4)                   | water_vapor_specific_humidity_at_previous_time_step                                            | water vapor specific humidity at previous time step     | kg kg-1       |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Tbd%phy_f3d(:,:,GFS_Control%ncnvw)   | convective_cloud_water_mixing_ratio_in_phy_f3d                                                 | convective cloud water mixing ratio in the phy_f3d array| kg kg-1       |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Tbd%phy_f3d(:,:,GFS_Control%ncnvc)   | convective_cloud_cover_in_phy_f3d                                                              | convective cloud cover in the phy_f3d array             | frac          |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Tbd%phy_f3d(:,:,GFS_Control%ntot3d)  | kinematic_buoyancy_flux_from_shoc                                                              | upward kinematic buoyancy flux from the SHOC scheme     | K m s-1       |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Tbd%phy_f3d(:,:,GFS_Control%ntot3d-1)| atmosphere_heat_diffusivity_from_shoc                                                          | diffusivity for heat from the SHOC scheme               | m2 s-1        |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Tbd%phy_f3d(:,:,GFS_Control%ntot3d-2)| subgrid_scale_cloud_fraction_from_shoc                                                         | subgrid-scale cloud fraction from the SHOC scheme       | frac          |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Tbd%phy_f3d(:,:,GFS_Control%indcld)  | cloud_fraction_for_MG                                                                          | cloud fraction used by Morrison-Gettelman MP            | frac          |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Tbd%phy_f3d(:,:,GFS_Control%nleffr)  | effective_radius_of_stratiform_cloud_liquid_water_particle_in_um                               | eff. radius of cloud liquid water particle in micrometer| um            |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Tbd%phy_f3d(:,:,GFS_Control%nieffr)  | effective_radius_of_stratiform_cloud_ice_particle_in_um                                        | eff. radius of cloud ice water particle in micrometer   | um            |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Tbd%phy_f3d(:,:,GFS_Control%nreffr)  | effective_radius_of_stratiform_cloud_rain_particle_in_um                                       | effective radius of cloud rain particle in micrometers  | um            |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Tbd%phy_f3d(:,:,GFS_Control%nseffr)  | effective_radius_of_stratiform_cloud_snow_particle_in_um                                       | effective radius of cloud snow particle in micrometers  | um            |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Tbd%phy_f3d(:,:,GFS_Control%ngeffr)  | effective_radius_of_stratiform_cloud_graupel_particle_in_um                                    | eff. radius of cloud graupel particle in micrometer     | um            |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Tbd%htlwc                            | tendency_of_air_temperature_due_to_longwave_heating_on_radiation_time_step                     | total sky heating rate due to longwave radiation        | K s-1         |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Tbd%htlw0                            | tendency_of_air_temperature_due_to_longwave_heating_assuming_clear_sky_on_radiation_time_step  | clear sky heating rate due to longwave radiation        | K s-1         |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Tbd%htswc                            | tendency_of_air_temperature_due_to_shortwave_heating_on_radiation_time_step                    | total sky heating rate due to shortwave radiation       | K s-1         |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Tbd%htsw0                            | tendency_of_air_temperature_due_to_shortwave_heating_assuming_clear_sky_on_radiation_time_step | clear sky heating rates due to shortwave radiation      | K s-1         |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Tbd%forcet                           | temperature_tendency_due_to_dynamics                                                           | temperature tendency due to dynamics only               | K s-1         |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Tbd%forceq                           | moisture_tendency_due_to_dynamics                                                              | moisture tendency due to dynamics only                  | kg kg-1 s-1   |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Tbd%prevst                           | temperature_from_previous_timestep                                                             | temperature from previous time step                     | K             |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Tbd%prevsq                           | moisture_from_previous_timestep                                                                | moisture from previous time step                        | kg kg-1       |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Tbd%cactiv                           | conv_activity_counter                                                                          | convective activity memory                              | none          |    1 | integer |           | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Tbd%raincprv                         | lwe_thickness_of_explicit_rainfall_amount_from_previous_timestep                               | explicit rainfall from previous timestep                | m             |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Tbd%rainncprv                        | lwe_thickness_of_convective_precipitation_amount_from_previous_timestep                        | convective_precipitation_amount from previous timestep  | m             |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Tbd%iceprv                           | lwe_thickness_of_ice_amount_from_previous_timestep                                             | ice amount from previous timestep                       | m             |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Tbd%snowprv                          | lwe_thickness_of_snow_amount_from_previous_timestep                                            | snow amount from previous timestep                      | m             |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Tbd%graupelprv                       | lwe_thickness_of_graupel_amount_from_previous_timestep                                         | graupel amount from previous timestep                   | m             |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Tbd%CLDFRA_BL                        | subgrid_cloud_fraction_pbl                                                                     | subgrid cloud fraction from PBL scheme                  | frac          |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Tbd%QC_BL                            | subgrid_cloud_mixing_ratio_pbl                                                                 | subgrid cloud cloud mixing ratio from PBL scheme        | kg kg-1       |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Tbd%el_pbl                           | mixing_length                                                                                  | mixing length in meters                                 | m             |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Tbd%Sh3D                             | stability_function_for_heat                                                                    | stability function for heat                             | none          |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Tbd%qke                              | tke_at_mass_points                                                                             | 2 x tke at mass points                                  | m2 s-2        |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Tbd%tsq                              | t_prime_squared                                                                                | temperature fluctuation squared                         | K2            |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Tbd%qsq                              | q_prime_squared                                                                                | water vapor fluctuation squared                         | kg2 kg-2      |    2 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Tbd%cov                              | t_prime_q_prime                                                                                | covariance of temperature and moisture                  | K kg kg-1     |    2 | real    | kind_phys | none   | F        |
+!!
+#endif
   type GFS_tbd_type
 
 !--- radiation random seeds
@@ -883,6 +1830,10 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: aer_nm   (:,:,:) => null()  !< GOCART aerosol climo
 
     !--- active when ((.not. newsas .or. cal_pre) .and. random_clds)
+#ifdef CCPP
+    integer,               pointer :: imap     (:)     => null()  !< map of local index ix to global index i for this block
+    integer,               pointer :: jmap     (:)     => null()  !< map of local index ix to global index j for this block
+#endif
     real (kind=kind_phys), pointer :: rann     (:,:)   => null()  !< random number array (0-1)
 
 !--- In/Out
@@ -898,9 +1849,46 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: dsnow_cpl (:)    => null()  !< change in show_cpl (coupling_type)
 
 !--- phy_f*d variables needed for seamless restarts and moving data between grrad and gbphys
-    real (kind=kind_phys), pointer :: phy_fctd (:,:)   => null()  !< For CS convection
+    real (kind=kind_phys), pointer :: phy_fctd (:,:)   => null()  !< cloud base mass flux for CS convection
     real (kind=kind_phys), pointer :: phy_f2d  (:,:)   => null()  !< 2d arrays saved for restart
     real (kind=kind_phys), pointer :: phy_f3d  (:,:,:) => null()  !< 3d arrays saved for restart
+
+#ifndef CCPP
+!--- for explicit data blocking
+    integer                        :: blkno                       !< block number of this block
+#endif
+
+#ifdef CCPP
+    !--- radiation variables that need to be carried over from radiation to physics
+    real (kind=kind_phys), pointer :: htlwc(:,:)       => null()  !<
+    real (kind=kind_phys), pointer :: htlw0(:,:)       => null()  !<
+    real (kind=kind_phys), pointer :: htswc(:,:)       => null()  !<
+    real (kind=kind_phys), pointer :: htsw0(:,:)       => null()  !<
+
+    !--- dynamical forcing variables for Grell-Freitas convection
+    real (kind=kind_phys), pointer :: forcet (:,:)     => null()  !<
+    real (kind=kind_phys), pointer :: forceq (:,:)     => null()  !<
+    real (kind=kind_phys), pointer :: prevst (:,:)     => null()  !<
+    real (kind=kind_phys), pointer :: prevsq (:,:)     => null()  !<
+    integer,               pointer :: cactiv   (:)     => null()  !< convective activity memory contour
+    
+    !---- precipitation amounts from previous time step for RUC LSM
+    real (kind=kind_phys), pointer :: raincprv  (:)    => null()  !< explicit rainfall from previous timestep
+    real (kind=kind_phys), pointer :: rainncprv (:)    => null()  !< convective_precipitation_amount from previous timestep
+    real (kind=kind_phys), pointer :: iceprv    (:)    => null()  !< ice amount from previous timestep
+    real (kind=kind_phys), pointer :: snowprv   (:)    => null()  !< snow amount from previous timestep
+    real (kind=kind_phys), pointer :: graupelprv(:)    => null()  !< graupel amount from previous timestep
+
+    !--- MYNN prognostic variables that can't be in the Intdiag or Interstitial DDTs
+    real (kind=kind_phys), pointer :: CLDFRA_BL  (:,:)   => null()  !
+    real (kind=kind_phys), pointer :: QC_BL      (:,:)   => null()  !
+    real (kind=kind_phys), pointer :: el_pbl     (:,:)   => null()  !
+    real (kind=kind_phys), pointer :: Sh3D       (:,:)   => null()  !
+    real (kind=kind_phys), pointer :: qke        (:,:)   => null()  !
+    real (kind=kind_phys), pointer :: tsq        (:,:)   => null()  !
+    real (kind=kind_phys), pointer :: qsq        (:,:)   => null()  !
+    real (kind=kind_phys), pointer :: cov        (:,:)   => null()  !
+#endif
 
     contains
       procedure :: create  => tbd_create  !<   allocate array data
@@ -911,6 +1899,15 @@ module GFS_typedefs
 ! GFS_cldprop_type
 !  cloud properties and tendencies needed by radiation from physics 
 !------------------------------------------------------------------
+#if 0
+!! \section arg_table_GFS_cldprop_type
+!! | local_name                                | standard_name                                           | long_name                                               | units         | rank | type    |    kind   | intent | optional |
+!! |-------------------------------------------|---------------------------------------------------------|---------------------------------------------------------|---------------|------|---------|-----------|--------|----------|
+!! | GFS_Data(cdata%blk_no)%Cldprop%cv         | fraction_of_convective_cloud                            | fraction of convective cloud                            | frac          |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Cldprop%cvt        | pressure_at_top_of_convective_cloud                     | convective cloud top pressure                           | Pa            |    1 | real    | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Cldprop%cvb        | pressure_at_bottom_of_convective_cloud                  | convective cloud bottom pressure                        | Pa            |    1 | real    | kind_phys | none   | F        |
+!!
+#endif
   type GFS_cldprop_type
 
 !--- In     (radiation)
@@ -928,6 +1925,24 @@ module GFS_typedefs
 ! GFS_radtend_type
 !   radiation tendencies needed by physics
 !-----------------------------------------
+#if 0
+!! \section arg_table_GFS_radtend_type
+!! | local_name                                | standard_name                                                                                 | long_name                                               | units         | rank | type        |    kind   | intent | optional |
+!! |-------------------------------------------|-----------------------------------------------------------------------------------------------|---------------------------------------------------------|---------------|------|-------------|-----------|--------|----------|
+!! | GFS_Data(cdata%blk_no)%Radtend%sfcfsw     | sw_fluxes_sfc                                                                                 | sw radiation fluxes at sfc                              | W m-2         |    1 | sfcfsw_type |           | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Radtend%sfcflw     | lw_fluxes_sfc                                                                                 | lw radiation fluxes at sfc                              | W m-2         |    1 | sfcflw_type |           | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Radtend%htrsw      | tendency_of_air_temperature_due_to_shortwave_heating_on_radiation_timestep                    | total sky sw heating rate                               | K s-1         |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Radtend%htrlw      | tendency_of_air_temperature_due_to_longwave_heating_on_radiation_timestep                     | total sky lw heating rate                               | K s-1         |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Radtend%sfalb      | surface_diffused_shortwave_albedo                                                             | mean surface diffused sw albedo                         | frac          |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Radtend%coszen     | cosine_of_zenith_angle                                                                        | mean cos of zenith angle over rad call period           | none          |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Radtend%tsflw      | surface_midlayer_air_temperature_in_longwave_radiation                                        | surface air temp during lw calculation                  | K             |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Radtend%semis      | surface_longwave_emissivity                                                                   | surface lw emissivity in fraction                       | frac          |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Radtend%coszdg     |                                                                                               | daytime mean cosz over rad call period                  | none          |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Radtend%swhc       | tendency_of_air_temperature_due_to_shortwave_heating_assuming_clear_sky_on_radiation_timestep | clear sky sw heating rates                              | K s-1         |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Radtend%lwhc       | tendency_of_air_temperature_due_to_longwave_heating_assuming_clear_sky_on_radiation_timestep  | clear sky lw heating rates                              | K s-1         |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Radtend%lwhd       | tendency_of_air_temperature_due_to_longwave_heating_for_idea                                  | idea sky lw heating rates                               | K s-1         |    3 | real        | kind_phys | none   | F        |
+!!
+#endif
   type GFS_radtend_type
 
     type (sfcfsw_type),    pointer :: sfcfsw(:)   => null()   !< sw radiation fluxes at sfc
@@ -971,6 +1986,163 @@ module GFS_typedefs
 ! GFS_diag_type
 !  internal diagnostic type used as arguments to gbphys and grrad 
 !----------------------------------------------------------------
+#if 0
+!! \section arg_table_GFS_diag_type
+!! | local_name                                          | standard_name                                                           | long_name                                                       | units         | rank | type        |    kind   | intent | optional |
+!! |-----------------------------------------------------|-------------------------------------------------------------------------|-----------------------------------------------------------------|---------------|------|-------------|-----------|--------|----------|
+!! | GFS_Data(cdata%blk_no)%Intdiag%fluxr                |                                                                         | accumulated 2-d fields, opt. includes aerosols                  |               |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%topfsw               | sw_fluxes_top_atmosphere                                                | sw radiation fluxes at toa                                      | W m-2         |    1 | topfsw_type |           | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%topflw               | lw_fluxes_top_atmosphere                                                | lw radiation fluxes at top                                      | W m-2         |    1 | topflw_type |           | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%srunoff              | surface_runoff                                                          | surface water runoff (from lsm)                                 | kg m-2        |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%evbsa                | cumulative_soil_upward_latent_heat_flux_multiplied_by_timestep          | cumulative soil upward latent heat flux multiplied by timestep  | W m-2 s       |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%evcwa                | cumulative_canopy_upward_latent_heat_flu_multiplied_by_timestep         | cumulative canopy upward latent heat flux multiplied by timestep| W m-2 s       |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%snohfa               | cumulative_snow_freezing_rain_upward_latent_heat_flux_multiplied_by_timestep | cumulative latent heat flux due to snow and frz rain multiplied by timestep | W m-2 s         |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%transa               | cumulative_transpiration_flux_multiplied_by_timestep                    | cumulative total plant transpiration rate multiplied by timestep | kg m-2        |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%sbsnoa               | cumulative_snow_deposition_sublimation_upward_latent_heat_flux_multiplied_by_timestep | cumulative latent heat flux from snow depo/subl multiplied by timestep | W m-2 s       |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%snowca               | cumulative_surface_snow_area_fraction_multiplied_by_timestep            | cumulative surface snow area fraction multiplied by timestep    | s             |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%soilm                | soil_moisture_content                                                   | soil moisture                                                   | kg m-2        |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%tmpmin               | minimum_temperature_at_2m                                               | min temperature at 2m height                                    | K             |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%tmpmax               | maximum_temperature_at_2m                                               | max temperature at 2m height                                    | K             |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%dusfc                | cumulative_surface_x_momentum_flux_for_diag_multiplied_by_timestep           | cumulative sfc x momentum flux multiplied by timestep      | Pa s          |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%dvsfc                | cumulative_surface_y_momentum_flux_for_diag_multiplied_by_timestep           | cumulative sfc y momentum flux multiplied by timestep      | Pa s          |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%dtsfc                | cumulative_surface_upward_sensible_heat_flux_for_diag_multiplied_by_timestep | cumulative sfc sensible heat flux multiplied by timestep   | W m-2 s       |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%dqsfc                | cumulative_surface_upward_latent_heat_flux_for_diag_multiplied_by_timestep   | cumulative sfc latent heat flux multiplied by timestep     | W m-2 s       |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%totprcp              | accumulated_lwe_thickness_of_precipitation_amount                       | accumulated total precipitation                                 | m             |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%totice               | accumulated_lwe_thickness_of_ice_amount                                 | accumulated ice precipitation                                   | kg m-2        |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%totsnw               | accumulated_lwe_thickness_of_snow_amount                                | accumulated snow precipitation                                  | kg m-2        |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%totgrp               | accumulated_lwe_thickness_of_graupel_amount                             | accumulated graupel precipitation                               | kg m-2        |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%totprcpb             | accumulated_lwe_thickness_of_precipitation_amount_in_bucket             | accumulated total precipitation in bucket                       | m             |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%toticeb              | accumulated_lwe_thickness_of_ice_amount_in_bucket                       | accumulated ice precipitation in bucket                         | kg m-2        |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%totsnwb              | accumulated_lwe_thickness_of_snow_amount_in_bucket                      | accumulated snow precipitation in bucket                        | kg m-2        |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%totgrpb              | accumulated_lwe_thickness_of_graupel_amount_in_bucket                   | accumulated graupel precipitation in bucket                     | kg m-2        |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%gflux                | cumulative_surface_ground_heat_flux_multiplied_by_timestep              | cumulative groud conductive heat flux multiplied by timestep    | W m-2 s       |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%dlwsfc               | cumulative_surface_downwelling_longwave_flux_multiplied_by_timestep     | cumulative surface downwelling LW flux multiplied by timestep   | W m-2 s       |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%ulwsfc               | cumulative_surface_upwelling_longwave_flux_multiplied_by_timestep       | cumulative surface upwelling LW flux multiplied by timestep     | W m-2 s       |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%suntim               | duration_of_sunshine                                                    | sunshine duration time                                          | s             |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%runoff               | total_runoff                                                            | total water runoff                                              | kg m-2        |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%ep                   | cumulative_surface_upward_potential_latent_heat_flux_multiplied_by_timestep | cumulative surface upward potential latent heat flux multiplied by timestep | W m-2 s        |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%cldwrk               | cumulative_cloud_work_function                                          | cumulative cloud work function (valid only with sas)            | m2 s-1        |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%dugwd                | time_integral_of_x_stress_due_to_gravity_wave_drag                      | vertically integrated u change by OGWD                          | Pa s          |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%dvgwd                | time_integral_of_y_stress_due_to_gravity_wave_drag                      | vertically integrated v change by OGWD                          | Pa s          |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%psmean               | cumulative_surface_pressure_multiplied_by_timestep                      | cumulative surface pressure multiplied by timestep              | Pa s          |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%cnvprcp              | cumulative_lwe_thickness_of_convective_precipitation_amount             | cumulative convective precipitation                             | m             |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%cnvprcpb             | cumulative_lwe_thickness_of_convective_precipitation_amount_in_bucket   | cumulative convective precipitation in bucket                   | m             |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%spfhmin              | minimum_specific_humidity_at_2m                                         | minimum specific humidity at 2m height                          | kg kg-1       |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%spfhmax              | maximum_specific_humidity_at_2m                                         | maximum specific humidity at 2m height                          | kg kg-1       |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%u10mmax              | maximum_x_wind_at_10m                                                   | maximum x wind at 10 m                                          | m s-1         |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%v10mmax              | maximum_y_wind_at_10m                                                   | maximum y wind at 10 m                                          | m s-1         |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%wind10mmax           | maximum_wind_at_10m                                                     | maximum wind speed at 10 m                                      | m s-1         |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%u10max               | maximum_u_wind_at_10m_over_maximum_hourly_time_interval                 | maximum u wind at 10m over maximum hourly time interval         | m s-1         |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%v10max               | maximum_v_wind_at_10m_over_maximum_hourly_time_interval                 | maximum v wind at 10m over maximum hourly time interval         | m s-1         |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%spd10max             | maximum_wind_at_10m_over_maximum_hourly_time_interval                   | maximum wind at 10m over maximum hourly time interval           | m s-1         |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%rain                 | lwe_thickness_of_precipitation_amount_on_dynamics_timestep              | total rain at this time step                                    | m             |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%rainc                | lwe_thickness_of_convective_precipitation_amount_on_dynamics_timestep   | convective rain at this time step                               | m             |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%ice                  | lwe_thickness_of_ice_amount_on_dynamics_timestep                        | ice fall at this time step                                      | m             |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%snow                 | lwe_thickness_of_snow_amount_on_dynamics_timestep                       | snow fall at this time step                                     | m             |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%graupel              | lwe_thickness_of_graupel_amount_on_dynamics_timestep                    | graupel fall at this time step                                  | m             |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%u10m                 | x_wind_at_10m                                                           | 10 meter u wind speed                                           | m s-1         |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%v10m                 | y_wind_at_10m                                                           | 10 meter v wind speed                                           | m s-1         |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%dpt2m                | dewpoint_temperature_at_2m                                              | 2 meter dewpoint temperature                                    | K             |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%zlvl                 | height_above_ground_at_lowest_model_layer                               | layer 1 height above ground (not MSL)                           | m             |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%psurf                | surface_air_pressure_diag                                               | surface air pressure diagnostic                                 | Pa            |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%hpbl                 | atmosphere_boundary_layer_thickness                                     | pbl height                                                      | m             |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%pwat                 | column_precipitable_water                                               | precipitable water                                              | kg m-2        |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%t1                   | air_temperature_at_lowest_model_layer_for_diag                          | layer 1 temperature for diag                                    | K             |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%q1                   | water_vapor_specific_humidity_at_lowest_model_layer_for_diag            | layer 1 specific humidity for diag                              | kg kg-1       |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%u1                   | x_wind_at_lowest_model_layer_for_diag                                   | layer 1 x wind for diag                                         | m s-1         |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%v1                   | y_wind_at_lowest_model_layer_for_diag                                   | layer 1 y wind for diag                                         | m s-1         |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%chh                  | surface_drag_mass_flux_for_heat_and_moisture_in_air                     | thermal exchange coefficient                                    | kg m-2 s-1    |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%cmm                  | surface_drag_wind_speed_for_momentum_in_air                             | momentum exchange coefficient                                   | m s-1         |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%dlwsfci              | surface_downwelling_longwave_flux                                       | surface downwelling longwave flux at current time               | W m-2         |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%ulwsfci              | surface_upwelling_longwave_flux                                         | surface upwelling longwave flux at current time                 | W m-2         |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%dswsfci              | surface_downwelling_shortwave_flux                                      | surface downwelling shortwave flux at current time              | W m-2         |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%nswsfci              | surface_net_downwelling_shortwave_flux                                  | surface net downwelling shortwave flux at current time          | W m-2         |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%uswsfci              | surface_upwelling_shortwave_flux                                        | surface upwelling shortwave flux at current time                | W m-2         |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%dusfci               | instantaneous_surface_x_momentum_flux_for_diag                          | instantaneous sfc x momentum flux multiplied by timestep        | Pa            |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%dvsfci               | instantaneous_surface_y_momentum_flux_for_diag                          | instantaneous sfc y momentum flux multiplied by timestep        | Pa            |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%dtsfci               | instantaneous_surface_upward_sensible_heat_flux_for_diag                | instantaneous sfc sensible heat flux multiplied by timestep     | W m-2         |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%dqsfci               | instantaneous_surface_upward_latent_heat_flux_for_diag                  | instantaneous sfc latent heat flux multiplied by timestep       | W m-2         |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%gfluxi               | instantaneous_surface_ground_heat_flux                                  | instantaneous sfc ground heat flux                              | W m-2         |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%epi                  | instantaneous_surface_potential_evaporation                             | instantaneous sfc potential evaporation                         | W m-2         |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%smcwlt2              | volume_fraction_of_condensed_water_in_soil_at_wilting_point             | wilting point (volumetric)                                      | frac          |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%smcref2              | threshold_volume_fraction_of_condensed_water_in_soil                    | soil moisture threshold (volumetric)                            | frac          |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%sr                   | ratio_of_snowfall_to_rainfall                                           | snow ratio: ratio of snow to total precipitation (explicit only)| frac          |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%wet1                 | normalized_soil_wetness                                                 | normalized soil wetness                                         | frac          |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%tdomr                | dominant_rain_type                                                      | dominant rain type                                              | none          |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%tdomzr               | dominant_freezing_rain_type                                             | dominant freezing rain type                                     | none          |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%tdomip               | dominant_sleet_type                                                     | dominant sleet type                                             | none          |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%tdoms                | dominant_snow_type                                                      | dominant snow type                                              | none          |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%ca_out               |                                                                         | cellular automata fraction                                      |               |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%ca_deep              |                                                                         | cellular automata fraction                                      |               |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%ca_turb              |                                                                         | cellular automata fraction                                      |               |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%ca_shal              |                                                                         | cellular automata fraction                                      |               |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%ca_rad               |                                                                         | cellular automata fraction                                      |               |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%ca_micro             |                                                                         | cellular automata fraction                                      |               |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%skebu_wts            | weights_for_stochastic_skeb_perturbation_of_x_wind_flipped              | weights for stochastic skeb perturbation of x wind, flipped     | none          |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%skebv_wts            | weights_for_stochastic_skeb_perturbation_of_y_wind_flipped              | weights for stochastic skeb perturbation of y wind, flipped     | none          |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%sppt_wts             | weights_for_stochastic_sppt_perturbation_flipped                        | weights for stochastic sppt perturbation, flipped               | none          |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%shum_wts             | weights_for_stochastic_shum_perturbation_flipped                        | weights for stochastic shum perturbation, flipped               | none          |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%zmtnblck             | level_of_dividing_streamline                                            | level of the dividing streamline                                | none          |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%du3dt                |                                                                         | u momentum change due to physics                                |               |    3 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%du3dt(:,:,1)         | cumulative_change_in_x_wind_due_to_PBL                                  | cumulative change in x wind due to PBL                          | m s-1         |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%du3dt(:,:,2)         | cumulative_change_in_x_wind_due_to_orographic_gravity_wave_drag         | cumulative change in x wind due to orographic gravity wave drag | m s-1         |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%du3dt(:,:,3)         | cumulative_change_in_x_wind_due_to_deep_convection                      | cumulative change in x wind due to deep convection              | m s-1         |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%du3dt(:,:,4)         | cumulative_change_in_x_wind_due_to_convective_gravity_wave_drag         | cumulative change in x wind due to convective gravity wave drag | m s-1         |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%dv3dt                |                                                                         | v momentum change due to physics                                |               |    3 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%dv3dt(:,:,1)         | cumulative_change_in_y_wind_due_to_PBL                                  | cumulative change in y wind due to PBL                          | m s-1         |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%dv3dt(:,:,2)         | cumulative_change_in_y_wind_due_to_orographic_gravity_wave_drag         | cumulative change in y wind due to orographic gravity wave drag | m s-1         |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%dv3dt(:,:,3)         | cumulative_change_in_y_wind_due_to_deep_convection                      | cumulative change in y wind due to deep convection              | m s-1         |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%dv3dt(:,:,4)         | cumulative_change_in_y_wind_due_to_convective_gravity_wave_drag         | cumulative change in y wind due to convective gravity wave drag | m s-1         |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%dt3dt                |                                                                         | temperature change due to physics                               |               |    3 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%dt3dt(:,:,1)         | cumulative_change_in_temperature_due_to_longwave_radiation              | cumulative change in temperature due to longwave radiation      | K             |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%dt3dt(:,:,2)         | cumulative_change_in_temperature_due_to_shortwave_radiation             | cumulative change in temperature due to shortwave radiation     | K             |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%dt3dt(:,:,3)         | cumulative_change_in_temperature_due_to_PBL                               | cumulative change in temperature due to PBL                            | K             |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%dt3dt(:,:,4)         | cumulative_change_in_temperature_due_to_deep_convection                   | cumulative change in temperature due to deep conv.                     | K             |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%dt3dt(:,:,5)         | cumulative_change_in_temperature_due_to_shal_convection                   | cumulative change in temperature due to shal conv.                     | K             |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%dt3dt(:,:,6)         | cumulative_change_in_temperature_due_to_microphysics                      | cumulative change in temperature due to microphysics                   | K             |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%dt3dt(:,:,7)         | cumulative_change_in_temperature_due_to_orographic_gravity_wave_drag      | cumulative change in temperature due to orographic gravity wave drag   | K             |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%dq3dt                |                                                                           | cumulative change in water vapor specific humidity due to physics      | kg kg-1       |    3 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%dq3dt(:,:,1)         | cumulative_change_in_water_vapor_specific_humidity_due_to_PBL             | cumulative change in water vapor specific humidity due to PBL          | kg kg-1       |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%dq3dt(:,:,2)         | cumulative_change_in_water_vapor_specific_humidity_due_to_deep_convection | cumulative change in water vapor specific humidity due to deep conv.   | kg kg-1       |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%dq3dt(:,:,3)         | cumulative_change_in_water_vapor_specific_humidity_due_to_shal_convection | cumulative change in water vapor specific humidity due to shal conv.   | kg kg-1       |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%dq3dt(:,:,4)         | cumulative_change_in_water_vapor_specific_humidity_due_to_microphysics    | cumulative change in water vapor specific humidity due to microphysics | kg kg-1       |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%dq3dt(:,:,5)         | cumulative_change_in_ozone_mixing_ratio_due_to_PBL                        | cumulative change in ozone mixing ratio due to PBL                     | kg kg-1       |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%dq3dt(:,:,6)         | cumulative_change_in_ozone_concentration_due_to_production_and_loss_rate  | cumulative change in ozone concentration due to production and loss rate | kg kg-1     |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%dq3dt(:,:,7)         | cumulative_change_in_ozone_concentration_due_to_ozone_mixing_ratio        | cumulative change in ozone concentration due to ozone mixing ratio     | kg kg-1       |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%dq3dt(:,:,8)         | cumulative_change_in_ozone_concentration_due_to_temperature               | cumulative change in ozone concentration due to temperature            | kg kg-1       |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%dq3dt(:,:,9)         | cumulative_change_in_ozone_concentration_due_to_overhead_ozone_column     | cumulative change in ozone concentration due to overhead ozone column  | kg kg-1       |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%refdmax              | maximum_reflectivity_at_1km_agl_over_maximum_hourly_time_interval         | maximum reflectivity at 1km agl over maximum hourly time interval      | dBZ           |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%refdmax263k          | maximum_reflectivity_at_minus10c_over_maximum_hourly_time_interval        | maximum reflectivity at minus10c over maximum hourly time interval     | dBZ           |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%t02max               | maximum_temperature_at_2m_over_maximum_hourly_time_interval               | maximum temperature at 2m over maximum hourly time interval            | K             |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%t02min               | minimum_temperature_at_2m_over_maximum_hourly_time_interval               | minumum temperature at 2m over maximum hourly time interval            | K             |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%rh02max              | maximum_relative_humidity_at_2m_over_maximum_hourly_time_interval         | maximum relative humidity at 2m over maximum hourly time interval      | %             |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%rh02min              | minimum_relative_humidity_at_2m_over_maximum_hourly_time_interval         | minumum relative humidity at 2m over maximum hourly time interval      | %             |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%upd_mf               | cumulative_atmosphere_updraft_convective_mass_flux                        | cumulative updraft mass flux                                           | Pa            |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%dwn_mf               | cumulative_atmosphere_downdraft_convective_mass_flux                      | cumulative downdraft mass flux                                         | Pa            |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%det_mf               | cumulative_atmosphere_detrainment_convective_mass_flux                    | cumulative detrainment mass flux                                       | Pa            |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%cldcov               |                                                                           | instantaneous 3D cloud fraction                                        |               |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%refl_10cm            | radar_reflectivity_10cm                                                   | instantaneous refl_10cm                                                | dBZ           |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%duem                 | instantaneous_dust_emission_flux                                          | instantaneous dust emission flux                                       | kg m-2 s-1    |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%ssem                 | instantaneous_seasalt_emission_flux                                       | instantaneous sea salt emission flux                                   | kg m-2 s-1    |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%sedim                | instantaneous_sedimentation                                               | instantaneous sedimentation                                            | kg m-2 s-1    |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%drydep               | instantaneous_dry_deposition                                              | instantaneous dry deposition                                           | kg m-2 s-1    |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%wetdpl               | instantaneous_large-scale_wet_deposition                                  | instantaneous large-scale wet deposition                               | kg m-2 s-1    |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%wetdpc               | instantaneous_convective-scale_wet_deposition                             | instantaneous convective-scale wet deposition                          | kg m-2 s-1    |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%abem                 | instantaneous_anthopogenic_and_biomass_burning_emissions | instantaneous anthopogenic and biomass burning emissions for black carbon, organic carbon, and sulfur dioxide | ug m-2 s-1 | 2 | real | kind_phys | none | F |
+!! | GFS_Data(cdata%blk_no)%Intdiag%aecm                 | instantaneous_aerosol_column_mass_densities              | instantaneous aerosol column mass densities for pm2.5, black carbon, organic carbon, sulfate, dust, sea salt  | g m-2      | 2 | real | kind_phys | none | F |
+!! | GFS_Data(cdata%blk_no)%Intdiag%edmf_a               | emdf_updraft_area                                                         | updraft area from mass flux scheme                                     | frac          |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%edmf_w               | emdf_updraft_vertical_velocity                                            | updraft vertical velocity from mass flux scheme                        | m s-1         |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%edmf_qt              | emdf_updraft_total_water                                                  | updraft total water from mass flux scheme                              | kg kg-1       |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%edmf_thl             | emdf_updraft_theta_l                                                      | updraft theta-l from mass flux scheme                                  | K             |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%edmf_ent             | emdf_updraft_entrainment_rate                                             | updraft entranment rate from mass flux scheme                          | s-1           |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%edmf_qc              | emdf_updraft_cloud_water                                                  | updraft cloud water from mass flux scheme                              | kg kg-1       |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%nupdraft             | number_of_plumes                                                          | number of plumes per grid column                                       | count         |    1 | integer     |           | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%maxMF                | maximum_mass_flux                                                         | maximum mass flux within a column                                      | m s-1         |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%ktop_shallow         | k_level_of_highest_reaching_plume                                         | k-level of highest reaching plume                                      | count         |    1 | integer     |           | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%exch_h               | atmosphere_heat_diffusivity_for_mynnpbl                                   | diffusivity for heat for MYNN PBL (defined for all mass levels)        | m2 s-1        |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Data(cdata%blk_no)%Intdiag%exch_m               | atmosphere_momentum_diffusivity_for_mynnpbl                               | diffusivity for momentum for MYNN PBL (defined for all mass levels)    | m2 s-1        |    2 | real        | kind_phys | none   | F        |
+!!
+#endif
   type GFS_diag_type
 
 !! Input/Output only in radiation
@@ -1033,9 +2205,24 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: totsnwb(:)     => null()   !< accumulated snow precipitation in bucket (kg/m2)
     real (kind=kind_phys), pointer :: totgrpb(:)     => null()   !< accumulated graupel precipitation in bucket (kg/m2)
 
+#ifdef CCPP
+    !--- MYNN variables                                              
+    real (kind=kind_phys), pointer :: edmf_a     (:,:)   => null()  !
+    real (kind=kind_phys), pointer :: edmf_w     (:,:)   => null()  !
+    real (kind=kind_phys), pointer :: edmf_qt    (:,:)   => null()  !
+    real (kind=kind_phys), pointer :: edmf_thl   (:,:)   => null()  !
+    real (kind=kind_phys), pointer :: edmf_ent   (:,:)   => null()  !
+    real (kind=kind_phys), pointer :: edmf_qc    (:,:)   => null()  !
+    real (kind=kind_phys), pointer :: maxMF       (:)    => null()  !
+    integer, pointer               :: nupdraft    (:)    => null()  !
+    integer, pointer               :: ktop_shallow (:)   => null()  !
+    real (kind=kind_phys), pointer :: exch_h     (:,:)   => null()  !
+    real (kind=kind_phys), pointer :: exch_m     (:,:)   => null()  !
+#endif
+
 ! Output - only in physics
-    real (kind=kind_phys), pointer :: u10m   (:)     => null()   !< 10 meater u/v wind speed
-    real (kind=kind_phys), pointer :: v10m   (:)     => null()   !< 10 meater u/v wind speed
+    real (kind=kind_phys), pointer :: u10m   (:)     => null()   !< 10 meter u/v wind speed
+    real (kind=kind_phys), pointer :: v10m   (:)     => null()   !< 10 meter u/v wind speed
     real (kind=kind_phys), pointer :: dpt2m  (:)     => null()   !< 2 meter dew point temperature
     real (kind=kind_phys), pointer :: zlvl   (:)     => null()   !< layer 1 height (m)
     real (kind=kind_phys), pointer :: psurf  (:)     => null()   !< surface pressure (Pa)
@@ -1050,6 +2237,9 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: dlwsfci(:)     => null()   !< instantaneous sfc dnwd lw flux ( w/m**2 )
     real (kind=kind_phys), pointer :: ulwsfci(:)     => null()   !< instantaneous sfc upwd lw flux ( w/m**2 )
     real (kind=kind_phys), pointer :: dswsfci(:)     => null()   !< instantaneous sfc dnwd sw flux ( w/m**2 )
+#ifdef CCPP
+    real (kind=kind_phys), pointer :: nswsfci(:)     => null()   !< instantaneous sfc net dnwd sw flux ( w/m**2 )
+#endif
     real (kind=kind_phys), pointer :: uswsfci(:)     => null()   !< instantaneous sfc upwd sw flux ( w/m**2 )
     real (kind=kind_phys), pointer :: dusfci (:)     => null()   !< instantaneous u component of surface stress
     real (kind=kind_phys), pointer :: dvsfci (:)     => null()   !< instantaneous v component of surface stress
@@ -1061,10 +2251,10 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: smcref2(:)     => null()   !< soil moisture threshold (volumetric)
     real (kind=kind_phys), pointer :: wet1   (:)     => null()   !< normalized soil wetness
     real (kind=kind_phys), pointer :: sr     (:)     => null()   !< snow ratio : ratio of snow to total precipitation
-    real (kind=kind_phys), pointer :: tdomr  (:)     => null()   !< accumulated rain type
-    real (kind=kind_phys), pointer :: tdomzr (:)     => null()   !< accumulated freezing rain type
-    real (kind=kind_phys), pointer :: tdomip (:)     => null()   !< accumulated sleet type
-    real (kind=kind_phys), pointer :: tdoms  (:)     => null()   !< accumulated snow type
+    real (kind=kind_phys), pointer :: tdomr  (:)     => null()   !< dominant accumulated rain type
+    real (kind=kind_phys), pointer :: tdomzr (:)     => null()   !< dominant accumulated freezing rain type
+    real (kind=kind_phys), pointer :: tdomip (:)     => null()   !< dominant accumulated sleet type
+    real (kind=kind_phys), pointer :: tdoms  (:)     => null()   !< dominant accumulated snow type
 
     real (kind=kind_phys), pointer :: ca_out  (:)    => null()   !< cellular automata fraction
     real (kind=kind_phys), pointer :: ca_deep  (:)   => null()   !< cellular automata fraction
@@ -1073,10 +2263,10 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: ca_rad   (:)   => null()   !< cellular automata fraction
     real (kind=kind_phys), pointer :: ca_micro (:)   => null()   !< cellular automata fraction
 
-    real (kind=kind_phys), pointer :: skebu_wts(:,:) => null()   !< 10 meater u/v wind speed
-    real (kind=kind_phys), pointer :: skebv_wts(:,:) => null()   !< 10 meater u/v wind speed
-    real (kind=kind_phys), pointer :: sppt_wts(:,:)  => null()   !< 10 meater u/v wind speed
-    real (kind=kind_phys), pointer :: shum_wts(:,:)  => null()   !< 10 meater u/v wind speed
+    real (kind=kind_phys), pointer :: skebu_wts(:,:) => null()   !< 10 meter u wind speed
+    real (kind=kind_phys), pointer :: skebv_wts(:,:) => null()   !< 10 meter v wind speed
+    real (kind=kind_phys), pointer :: sppt_wts(:,:)  => null()   !<
+    real (kind=kind_phys), pointer :: shum_wts(:,:)  => null()   !<
     real (kind=kind_phys), pointer :: zmtnblck(:)    => null()   !<mountain blocking evel
     real (kind=kind_phys), pointer :: du3dt (:,:,:)  => null()   !< u momentum change due to physics
     real (kind=kind_phys), pointer :: dv3dt (:,:,:)  => null()   !< v momentum change due to physics
@@ -1191,27 +2381,632 @@ module GFS_typedefs
   end type GFS_diag_type
 
 #ifdef CCPP
-! DH* for testing of CCPP integration
-!! \section arg_table_GFS_fastphys_type
-!! | local_name          | standard_name              | long_name                                      | units | rank | type      | kind    | intent | optional |
-!! |---------------------|----------------------------|------------------------------------------------|-------|------|-----------|---------|--------|----------|
-!! | IPD_fastphys%dummy  | FV3_ccpp_integration_dummy | dummy variable to test CCPP integration in FV3 | none  |    0 | integer   |         | none   | F        |
-!! | IPD_fastphys%errmsg | error_message              | error message for error handling in CCPP       | none  |    0 | character | len=512 | none   | F        |
-!! | IPD_fastphys%errflg | error_flag                 | error flag for error handling in CCPP          | flag  |    0 | integer   |         | none   | F        |
+!---------------------------------------------------------------------
+! GFS_interstitial_type
+!   fields required for interstitial code in CCPP schemes, previously
+!   in GFS_{physics,radiation}_driver.F90
+!---------------------------------------------------------------------
+#if 0
+!! \section arg_table_GFS_interstitial_type
+!! | local_name                                                    | standard_name                                                                                  | long_name                                                                           | units         | rank | type        |    kind   | intent | optional |
+!! |---------------------------------------------------------------|------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------|---------------|------|-------------|-----------|--------|----------|
+!! | GFS_Interstitial(cdata%thrd_no)%adjnirbmd                     | surface_downwelling_direct_near_infrared_shortwave_flux                                        | surface downwelling beam near-infrared shortwave flux at current time               | W m-2         |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%adjnirbmu                     | surface_upwelling_direct_near_infrared_shortwave_flux                                          | surface upwelling beam near-infrared shortwave flux at current time                 | W m-2         |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%adjnirdfd                     | surface_downwelling_diffuse_near_infrared_shortwave_flux                                       | surface downwelling diffuse near-infrared shortwave flux at current time            | W m-2         |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%adjnirdfu                     | surface_upwelling_diffuse_near_infrared_shortwave_flux                                         | surface upwelling diffuse near-infrared shortwave flux at current time              | W m-2         |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%adjvisbmd                     | surface_downwelling_direct_ultraviolet_and_visible_shortwave_flux                              | surface downwelling beam ultraviolet plus visible shortwave flux at current time    | W m-2         |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%adjvisbmu                     | surface_upwelling_direct_ultraviolet_and_visible_shortwave_flux                                | surface upwelling beam ultraviolet plus visible shortwave flux at current time      | W m-2         |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%adjvisdfu                     | surface_upwelling_diffuse_ultraviolet_and_visible_shortwave_flux                               | surface upwelling diffuse ultraviolet plus visible shortwave flux at current time   | W m-2         |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%adjvisdfd                     | surface_downwelling_diffuse_ultraviolet_and_visible_shortwave_flux                             | surface downwelling diffuse ultraviolet plus visible shortwave flux at current time | W m-2         |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%aerodp                        | atmosphere_optical_thickness_due_to_ambient_aerosol_particles                                  | vertical integrated optical depth for various aerosol species                       | none          |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%alb1d                         | surface_albedo_perturbation                                                                    | surface albedo perturbation                                                         | frac          |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%bexp1d                        | perturbation_of_soil_type_b_parameter                                                          | perturbation of soil type "b" parameter                                             | frac          |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%cd                            | surface_drag_coefficient_for_momentum_in_air                                                   | surface exchange coeff for momentum                                                 | none          |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%cd_ocean                      | surface_drag_coefficient_for_momentum_in_air_over_ocean                                        | surface exchange coeff for momentum over ocean                                      | none          |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%cd_land                       | surface_drag_coefficient_for_momentum_in_air_over_land                                         | surface exchange coeff for momentum over land                                       | none          |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%cd_ice                        | surface_drag_coefficient_for_momentum_in_air_over_ice                                          | surface exchange coeff for momentum over ice                                        | none          |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%cdq                           | surface_drag_coefficient_for_heat_and_moisture_in_air                                          | surface exchange coeff heat & moisture                                              | none          |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%cdq_ocean                     | surface_drag_coefficient_for_heat_and_moisture_in_air_over_ocean                               | surface exchange coeff heat & moisture over ocean                                   | none          |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%cdq_land                      | surface_drag_coefficient_for_heat_and_moisture_in_air_over_land                                | surface exchange coeff heat & moisture over land                                    | none          |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%cdq_ice                       | surface_drag_coefficient_for_heat_and_moisture_in_air_over_ice                                 | surface exchange coeff heat & moisture over ice                                     | none          |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%chh_ocean                     | surface_drag_mass_flux_for_heat_and_moisture_in_air_over_ocean                                 | thermal exchange coefficient over ocean                                             | kg m-2 s-1    |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%chh_land                      | surface_drag_mass_flux_for_heat_and_moisture_in_air_over_land                                  | thermal exchange coefficient over land                                              | kg m-2 s-1    |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%chh_ice                       | surface_drag_mass_flux_for_heat_and_moisture_in_air_over_ice                                   | thermal exchange coefficient over ice                                               | kg m-2 s-1    |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%cf_upi                        | convective_cloud_fraction_for_microphysics                                                     | convective cloud fraction for microphysics                                          | frac          |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%clcn                          | convective_cloud_volume_fraction                                                               | convective cloud volume fraction                                                    | frac          |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%cldf                          | cloud_area_fraction                                                                            | fraction of grid box area in which updrafts occur                                   | frac          |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%cldsa                         | cloud_area_fraction_for_radiation                                                              | fraction of clouds for low, middle, high, total and BL                              | frac          |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%cldtaulw                      | cloud_optical_depth_layers_at_10mu_band                                                        | approx 10mu band layer cloud optical depth                                          | none          |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%cldtausw                      | cloud_optical_depth_layers_at_0.55mu_band                                                      | approx .55mu band layer cloud optical depth                                         | none          |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%cld1d                         | cloud_work_function                                                                            | cloud work function                                                                 | m2 s-2        |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%clouds                        |                                                                                                |                                                                                     | various       |    3 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%clouds(:,:,1)                 | total_cloud_fraction                                                                           | layer total cloud fraction                                                          | frac          |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%clouds(:,:,2)                 | cloud_liquid_water_path                                                                        | layer cloud liquid water path                                                       | g m-2         |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%clouds(:,:,3)                 | mean_effective_radius_for_liquid_cloud                                                         | mean effective radius for liquid cloud                                              | micron        |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%clouds(:,:,4)                 | cloud_ice_water_path                                                                           | layer cloud ice water path                                                          | g m-2         |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%clouds(:,:,5)                 | mean_effective_radius_for_ice_cloud                                                            | mean effective radius for ice cloud                                                 | micron        |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%clouds(:,:,6)                 | cloud_rain_water_path                                                                          | cloud rain water path                                                               | g m-2         |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%clouds(:,:,7)                 | mean_effective_radius_for_rain_drop                                                            | mean effective radius for rain drop                                                 | micron        |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%clouds(:,:,8)                 | cloud_snow_water_path                                                                          | cloud snow water path                                                               | g m-2         |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%clouds(:,:,9)                 | mean_effective_radius_for_snow_flake                                                           | mean effective radius for snow flake                                                | micron        |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%clw                           | convective_transportable_tracers                                                               | array to contain cloud water and other convective trans. tracers                    | kg kg-1       |    3 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%clw(:,:,1)                    | ice_water_mixing_ratio_convective_transport_tracer                            | moist (dry+vapor, no condensates) mixing ratio of ice water in the convectively transported tracer array | kg kg-1   |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%clw(:,:,2)                    | cloud_condensed_water_mixing_ratio_convective_transport_tracer | moist (dry+vapor, no condensates) mixing ratio of cloud water (condensate) in the convectively transported tracer array | kg kg-1   |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%clw(:,:,GFS_Interstitial(cdata%thrd_no)%ntk) | turbulent_kinetic_energy_convective_transport_tracer                            | turbulent kinetic energy in the convectively transported tracer array               | m2 s-2        |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%clx                           | fraction_of_grid_box_with_subgrid_orography_higher_than_critical_height                        | frac. of grid box with by subgrid orography higher than critical height             | frac          |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%cmm_ocean                     | surface_drag_wind_speed_for_momentum_in_air_over_ocean                                         | momentum exchange coefficient over ocean                                            | m s-1         |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%cmm_land                      | surface_drag_wind_speed_for_momentum_in_air_over_land                                          | momentum exchange coefficient over land                                             | m s-1         |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%cmm_ice                       | surface_drag_wind_speed_for_momentum_in_air_over_ice                                           | momentum exchange coefficient over ice                                              | m s-1         |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%cnv_dqldt                     | tendency_of_cloud_water_due_to_convective_microphysics                                         | tendency of cloud water due to convective microphysics                              | kg m-2 s-1    |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%cnv_fice                      | ice_fraction_in_convective_tower                                                               | ice fraction in convective tower                                                    | frac          |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%cnv_mfd                       | detrained_mass_flux                                                                            | detrained mass flux                                                                 | kg m-2 s-1    |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%cnv_ndrop                     | number_concentration_of_cloud_liquid_water_particles_for_detrainment                           | droplet number concentration in convective detrainment                              | m-3           |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%cnv_nice                      | number_concentration_of_ice_crystals_for_detrainment                                           | crystal number concentration in convective detrainment                              | m-3           |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%cnvc                          | convective_cloud_cover                                                                         | convective cloud cover                                                              | frac          |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%cnvw                          | convective_cloud_water_mixing_ratio                                                            | moist convective cloud water mixing ratio                                           | kg kg-1       |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%ctei_r                        | cloud_top_entrainment_instability_value                                                        | cloud top entrainment instability value                                             | none          |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%ctei_rml                      | grid_sensitive_critical_cloud_top_entrainment_instability_criteria                             | grid sensitive critical cloud top entrainment instability criteria                  | none          |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%cumabs                        | maximum_column_heating_rate                                                                    | maximum heating rate in column                                                      | K s-1         |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%dd_mf                         | instantaneous_atmosphere_downdraft_convective_mass_flux                                        | (downdraft mass flux) * delt                                                        | kg m-2        |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%de_lgth                       | cloud_decorrelation_length                                                                     | cloud decorrelation length                                                          | km            |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%del                           | air_pressure_difference_between_midlayers                                                      | air pressure difference between midlayers                                           | Pa            |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%del_gz                        | geopotential_difference_between_midlayers_divided_by_midlayer_virtual_temperature              | difference between mid-layer geopotentials divided by mid-layer virtual temperature | m2 s-2 K-1    |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%delr                          | layer_pressure_thickness_for_radiation                                                         | layer pressure thickness on radiation levels                                        | hPa           |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%dkt                           | atmosphere_heat_diffusivity                                                                    | diffusivity for heat                                                                | m2 s-1        |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%dlength                       | characteristic_grid_length_scale                                                               | representative horizontal length scale of grid box                                  | m             |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%dqdt                          | tendency_of_tracers_due_to_model_physics                                                       | updated tendency of the tracers due to model physics                                | kg kg-1 s-1   |    3 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%dqdt(:,:,GFS_Control%ntqv)    | tendency_of_water_vapor_specific_humidity_due_to_model_physics                                 | water vapor specific humidity tendency due to model physics                         | kg kg-1 s-1   |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%dqdt(:,:,GFS_Control%ntcw)    | tendency_of_liquid_cloud_water_mixing_ratio_due_to_model_physics                               | cloud condensed water mixing ratio tendency due to model physics                    | kg kg-1 s-1   |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%dqdt(:,:,GFS_Control%ntiw)    | tendency_of_ice_cloud_water_mixing_ratio_due_to_model_physics                                  | cloud condensed water mixing ratio tendency due to model physics                    | kg kg-1 s-1   |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%dqdt(:,:,GFS_Control%ntoz)    | tendency_of_ozone_mixing_ratio_due_to_model_physics                                            | ozone mixing ratio tendency due to model physics                                    | kg kg-1 s-1   |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%dqdt(:,:,GFS_Control%ntlnc)   | tendency_of_cloud_droplet_number_concentration_due_to_model_physics                            | number concentration of cloud droplets (liquid) tendency due to model physics       | kg-1 s-1      |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%dqdt(:,:,GFS_Control%ntinc)   | tendency_of_ice_number_concentration_due_to_model_physics                                      | number concentration of ice tendency due to model physics                           | kg-1 s-1      |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%dqdt(:,:,GFS_Control%ntwa)    | tendency_of_water_friendly_aerosol_number_concentration_due_to_model_physics                   | number concentration of water-friendly aerosols tendency due to model physics       | kg-1 s-1      |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%dqdt(:,:,GFS_Control%ntia)    | tendency_of_ice_friendly_aerosol_number_concentration_due_to_model_physics                     | number concentration of ice-friendly aerosols tendency due to model physics         | kg-1 s-1      |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%dqdt(:,:,GFS_Control%ntrw)    | tendency_of_rain_water_mixing_ratio_due_to_model_physics                                       | moist (dry+vapor, no condensates) mixing ratio of rain water tendency due to model physics | kg kg-1 s-1   |    2 | real | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%dqdt(:,:,GFS_Control%ntsw)    | tendency_of_snow_water_mixing_ratio_due_to_model_physics                                       | moist (dry+vapor, no condensates) mixing ratio of snow water tendency due to model physics | kg kg-1 s-1   |    2 | real | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%dqdt(:,:,GFS_Control%ntgl)    | tendency_of_graupel_mixing_ratio_due_to_model_physics                                          | moist (dry+vapor, no condensates) mixing ratio of graupel tendency due to model physics    | kg kg-1 s-1   |    2 | real | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%dqdt(:,:,GFS_Control%ntke)    | tendency_of_turbulent_kinetic_energy_due_to_model_physics                                      | turbulent kinetic energy tendency due to model physics                              | J s-1         |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%dqsfc1                        | instantaneous_surface_upward_latent_heat_flux                                                  | surface upward latent heat flux                                                     | W m-2         |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%drain                         | subsurface_runoff_flux                                                                         | subsurface runoff flux                                                              | g m-2 s-1     |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%dtdt                          | tendency_of_air_temperature_due_to_model_physics                                               | air temperature tendency due to model physics                                       | K s-1         |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%dtdtc                         | tendency_of_air_temperature_due_to_radiative_heating_assuming_clear_sky                        | clear sky radiative (shortwave + longwave) heating rate at current time             | K s-1         |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%dtsfc1                        | instantaneous_surface_upward_sensible_heat_flux                                                | surface upward sensible heat flux                                                   | W m-2         |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%dtzm                          | mean_change_over_depth_in_sea_water_temperature                                                | mean of dT(z)  (zsea1 to zsea2)                                                     | K             |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%dt_mf                         | instantaneous_atmosphere_detrainment_convective_mass_flux                                      | (detrainment mass flux) * delt                                                      | kg m-2        |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%dudt                          | tendency_of_x_wind_due_to_model_physics                                                        | zonal wind tendency due to model physics                                            | m s-2         |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%dusfcg                        | instantaneous_x_stress_due_to_gravity_wave_drag                                                | zonal surface stress due to orographic gravity wave drag                            | Pa            |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%dusfc1                        | instantaneous_surface_x_momentum_flux                                                          | x momentum flux                                                                     | Pa            |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%dvdftra                       | tendency_of_vertically_diffused_tracer_concentration                                           | updated tendency of the tracers due to vertical diffusion in PBL scheme             | kg kg-1 s-1   |    3 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%dvdt                          | tendency_of_y_wind_due_to_model_physics                                                        | meridional wind tendency due to model physics                                       | m s-2         |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%dvsfcg                        | instantaneous_y_stress_due_to_gravity_wave_drag                                                | meridional surface stress due to orographic gravity wave drag                       | Pa            |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%dvsfc1                        | instantaneous_surface_y_momentum_flux                                                          | y momentum flux                                                                     | Pa            |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%dzlyr                         | layer_thickness_for_radiation                                                                  | layer thickness on radiation levels                                                 | km            |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%elvmax                        | maximum_subgrid_orography                                                                      | maximum of subgrid orography                                                        | m             |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%ep1d                          | surface_upward_potential_latent_heat_flux                                                      | surface upward potential latent heat flux                                           | W m-2         |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%ep1d_ocean                    | surface_upward_potential_latent_heat_flux_over_ocean                                           | surface upward potential latent heat flux over ocean                                | W m-2         |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%ep1d_land                     | surface_upward_potential_latent_heat_flux_over_land                                            | surface upward potential latent heat flux over land                                 | W m-2         |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%ep1d_ice                      | surface_upward_potential_latent_heat_flux_over_ice                                             | surface upward potential latent heat flux over ice                                  | W m-2         |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%evap                          | kinematic_surface_upward_latent_heat_flux                                                      | kinematic surface upward latent heat flux                                           | kg kg-1 m s-1 |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%evap_ocean                    | kinematic_surface_upward_latent_heat_flux_over_ocean                                           | kinematic surface upward latent heat flux over ocean                                | kg kg-1 m s-1 |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%evap_land                     | kinematic_surface_upward_latent_heat_flux_over_land                                            | kinematic surface upward latent heat flux over land                                 | kg kg-1 m s-1 |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%evap_ice                      | kinematic_surface_upward_latent_heat_flux_over_ice                                             | kinematic surface upward latent heat flux over ice                                  | kg kg-1 m s-1 |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%evbs                          | soil_upward_latent_heat_flux                                                                   | soil upward latent heat flux                                                        | W m-2         |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%evcw                          | canopy_upward_latent_heat_flux                                                                 | canopy upward latent heat flux                                                      | W m-2         |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%faerlw                        | aerosol_optical_properties_for_longwave_bands_01-16                                            | aerosol optical properties for longwave bands 01-16                                 | various       |    4 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%faerlw(:,:,:,1)               | aerosol_optical_depth_for_longwave_bands_01-16                                                 | aerosol optical depth for longwave bands 01-16                                      | none          |    3 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%faerlw(:,:,:,2)               | aerosol_single_scattering_albedo_for_longwave_bands_01-16                                      | aerosol single scattering albedo for longwave bands 01-16                           | frac          |    3 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%faerlw(:,:,:,3)               | aerosol_asymmetry_parameter_for_longwave_bands_01-16                                           | aerosol asymmetry parameter for longwave bands 01-16                                | none          |    3 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%faersw                        | aerosol_optical_properties_for_shortwave_bands_01-16                                           | aerosol optical properties for shortwave bands 01-16                                | various       |    4 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%faersw(:,:,:,1)               | aerosol_optical_depth_for_shortwave_bands_01-16                                                | aerosol optical depth for shortwave bands 01-16                                     | none          |    3 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%faersw(:,:,:,2)               | aerosol_single_scattering_albedo_for_shortwave_bands_01-16                                     | aerosol single scattering albedo for shortwave bands 01-16                          | frac          |    3 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%faersw(:,:,:,3)               | aerosol_asymmetry_parameter_for_shortwave_bands_01-16                                          | aerosol asymmetry parameter for shortwave bands 01-16                               | none          |    3 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%ffhh_ocean                    | Monin-Obukhov_similarity_function_for_heat_over_ocean                                          | Monin-Obukhov similarity function for heat over ocean                               | none          |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%ffhh_land                     | Monin-Obukhov_similarity_function_for_heat_over_land                                           | Monin-Obukhov similarity function for heat over land                                | none          |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%ffhh_ice                      | Monin-Obukhov_similarity_function_for_heat_over_ice                                            | Monin-Obukhov similarity function for heat over ice                                 | none          |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%fh2                           | Monin-Obukhov_similarity_function_for_heat_at_2m                                               | Monin-Obukhov similarity parameter for heat at 2m                                   | none          |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%fh2_ocean                     | Monin-Obukhov_similarity_function_for_heat_at_2m_over_ocean                                    | Monin-Obukhov similarity parameter for heat at 2m over ocean                        | none          |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%fh2_land                      | Monin-Obukhov_similarity_function_for_heat_at_2m_over_land                                     | Monin-Obukhov similarity parameter for heat at 2m over land                         | none          |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%fh2_ice                       | Monin-Obukhov_similarity_function_for_heat_at_2m_over_ice                                      | Monin-Obukhov similarity parameter for heat at 2m over ice                          | none          |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%flag_cice                     | flag_for_cice                                                                                  | flag for cice                                                                       | flag          |    1 | logical     |           | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%flag_guess                    | flag_for_guess_run                                                                             | flag for guess run                                                                  | flag          |    1 | logical     |           | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%flag_iter                     | flag_for_iteration                                                                             | flag for iteration                                                                  | flag          |    1 | logical     |           | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%ffmm_ocean                    | Monin-Obukhov_similarity_function_for_momentum_over_ocean                                      | Monin-Obukhov similarity function for momentum over ocean                           | none          |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%ffmm_land                     | Monin-Obukhov_similarity_function_for_momentum_over_land                                       | Monin-Obukhov similarity function for momentum over land                            | none          |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%ffmm_ice                      | Monin-Obukhov_similarity_function_for_momentum_over_ice                                        | Monin-Obukhov similarity function for momentum over ice                             | none          |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%fm10                          | Monin-Obukhov_similarity_function_for_momentum_at_10m                                          | Monin-Obukhov similarity parameter for momentum at 10m                              | none          |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%fm10_ocean                    | Monin-Obukhov_similarity_function_for_momentum_at_10m_over_ocean                               | Monin-Obukhov similarity parameter for momentum at 10m over ocean                   | none          |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%fm10_land                     | Monin-Obukhov_similarity_function_for_momentum_at_10m_over_land                                | Monin-Obukhov similarity parameter for momentum at 10m over land                    | none          |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%fm10_ice                      | Monin-Obukhov_similarity_function_for_momentum_at_10m_over_ice                                 | Monin-Obukhov similarity parameter for momentum at 10m over ice                     | none          |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%frain                         | dynamics_to_physics_timestep_ratio                                                             | ratio of dynamics timestep to physics timestep                                      | none          |    0 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%frland                        | land_area_fraction_for_microphysics                                                            | land area fraction used in microphysics schemes                                     | frac          |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%fscav                         | fraction_of_tracer_scavenged                                                                   | fraction of the tracer (aerosols) that is scavenged by convection                   | km-1          |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%fswtr                         | fraction_of_cloud_top_water_scavenged                                                          | fraction of the tracer (cloud top water) that is scavenged by convection            | km-1          |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%gabsbdlw                      | surface_downwelling_longwave_flux_absorbed_by_ground                                           | total sky surface downward longwave flux absorbed by the ground                     | W m-2         |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%gamma                         | anisotropy_of_subgrid_orography                                                                | anisotropy of subgrid orography                                                     | none          |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%gamq                          | countergradient_mixing_term_for_water_vapor                                                    | countergradient mixing term for water vapor                                         | kg kg-1       |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%gamt                          | countergradient_mixing_term_for_temperature                                                    | countergradient mixing term for temperature                                         | K             |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%gasvmr                        |                                                                                                | gas volume mixing ratios                                                            | kg kg-1       |    3 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%gasvmr(:,:,1)                 | volume_mixing_ratio_co2                                                                        | volume mixing ratio co2                                                             | kg kg-1       |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%gasvmr(:,:,2)                 | volume_mixing_ratio_n2o                                                                        | volume mixing ratio no2                                                             | kg kg-1       |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%gasvmr(:,:,3)                 | volume_mixing_ratio_ch4                                                                        | volume mixing ratio ch4                                                             | kg kg-1       |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%gasvmr(:,:,4)                 | volume_mixing_ratio_o2                                                                         | volume mixing ratio o2                                                              | kg kg-1       |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%gasvmr(:,:,5)                 | volume_mixing_ratio_co                                                                         | volume mixing ratio co                                                              | kg kg-1       |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%gasvmr(:,:,6)                 | volume_mixing_ratio_cfc11                                                                      | volume mixing ratio cfc11                                                           | kg kg-1       |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%gasvmr(:,:,7)                 | volume_mixing_ratio_cfc12                                                                      | volume mixing ratio cfc12                                                           | kg kg-1       |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%gasvmr(:,:,8)                 | volume_mixing_ratio_cfc22                                                                      | volume mixing ratio cfc22                                                           | kg kg-1       |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%gasvmr(:,:,9)                 | volume_mixing_ratio_ccl4                                                                       | volume mixing ratio ccl4                                                            | kg kg-1       |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%gasvmr(:,:,10)                | volume_mixing_ratio_cfc113                                                                     | volume mixing ratio cfc113                                                          | kg kg-1       |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%gflx                          | upward_heat_flux_in_soil                                                                       | soil heat flux                                                                      | W m-2         |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%gflx_ocean                    | upward_heat_flux_in_soil_over_ocean                                                            | soil heat flux over ocean                                                           | W m-2         |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%gflx_land                     | upward_heat_flux_in_soil_over_land                                                             | soil heat flux over land                                                            | W m-2         |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%gflx_ice                      | upward_heat_flux_in_soil_over_ice                                                              | soil heat flux over ice                                                             | W m-2         |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%graupelmp                     | lwe_thickness_of_graupel_amount                                                                | explicit graupel fall on physics timestep                                           | m             |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%gwdcu                         | tendency_of_x_wind_due_to_convective_gravity_wave_drag                                         | zonal wind tendency due to convective gravity wave drag                             | m s-2         |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%gwdcv                         | tendency_of_y_wind_due_to_convective_gravity_wave_drag                                         | meridional wind tendency due to convective gravity wave drag                        | m s-2         |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%h2o_coeff                     | number_of_coefficients_in_h2o_forcing_data                                                     | number of coefficients in h2o forcing data                                          | index         |    0 | integer     |           | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%h2o_pres                      | natural_log_of_h2o_forcing_data_pressure_levels                                                | natural log of h2o forcing data pressure levels                                     | log(Pa)       |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%hflx                          | kinematic_surface_upward_sensible_heat_flux                                                    | kinematic surface upward sensible heat flux                                         | K m s-1       |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%hflx_ocean                    | kinematic_surface_upward_sensible_heat_flux_over_ocean                                         | kinematic surface upward sensible heat flux over ocean                              | K m s-1       |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%hflx_land                     | kinematic_surface_upward_sensible_heat_flux_over_land                                          | kinematic surface upward sensible heat flux over land                               | K m s-1       |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%hflx_ice                      | kinematic_surface_upward_sensible_heat_flux_over_ice                                           | kinematic surface upward sensible heat flux over ice                                | K m s-1       |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%hprime1                       | standard_deviation_of_subgrid_orography                                                        | standard deviation of subgrid orography                                             | m             |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%icemp                         | lwe_thickness_of_ice_amount                                                                    | explicit ice fall on physics timestep                                               | m             |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%dry                           | flag_nonzero_land_surface_fraction                                                             | flag indicating presence of some land surface area fraction                         | flag          |    1 | logical     |           | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%idxday                        | daytime_points                                                                                 | daytime points                                                                      | index         |    1 | integer     |           | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%icy                           | flag_nonzero_sea_ice_surface_fraction                                                          | flag indicating presence of some sea ice surface area fraction                      | flag          |    1 | logical     |           | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%lake                          | flag_nonzero_lake_surface_fraction                                                             | flag indicating presence of some lake surface area fraction                         | flag          |    1 | logical     |           | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%im                            | horizontal_loop_extent_OLD_NOW_MODEL_PERCENT_BLKSZ_OF_NB                                       | horizontal loop extent                                                              | count         |    0 | integer     |           | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%ocean                         | flag_nonzero_ocean_surface_fraction                                                            | flag indicating presence of some ocean surface area fraction                        | flag          |    1 | logical     |           | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%ipr                           | horizontal_index_of_printed_column                                                             | horizontal index of printed column                                                  | index         |    0 | integer     |           | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%islmsk                        | sea_land_ice_mask                                                                              | sea/land/ice mask (=0/1/2)                                                          | flag          |    1 | integer     |           | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%wet                           | flag_nonzero_wet_surface_fraction                                                              | flag indicating presence of some ocean or lake surface area fraction                | flag          |    1 | logical     |           | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%ix                            | horizontal_dimension_OLD_NOW_MODEL_PERCENT_BLKSZ_OF_NB                                         | horizontal dimension                                                                | count         |    0 | integer     |           | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%kb                            | vertical_index_difference_between_layer_and_lower_bound                                        | vertical index difference between layer and lower bound                             | index         |    0 | integer     |           | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%kbot                          | vertical_index_at_cloud_base                                                                   | vertical index at cloud base                                                        | index         |    1 | integer     |           | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%kcnv                          | flag_deep_convection                                                                           | flag indicating whether convection occurs in column (0 or 1)                        | flag          |    1 | integer     |           | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%kd                            | vertical_index_difference_between_inout_and_local                                              | vertical index difference between in/out and local                                  | index         |    0 | integer     |           | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%kinver                        | index_of_highest_temperature_inversion                                                         | index of highest temperature inversion                                              | index         |    1 | integer     |           | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%kpbl                          | vertical_index_at_top_of_atmosphere_boundary_layer                                             | vertical index at top atmospheric boundary layer                                    | index         |    1 | integer     |           | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%kt                            | vertical_index_difference_between_layer_and_upper_bound                                        | vertical index difference between layer and upper bound                             | index         |    0 | integer     |           | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%ktop                          | vertical_index_at_cloud_top                                                                    | vertical index at cloud top                                                         | index         |    1 | integer     |           | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%latidxprnt                    | latitude_index_in_debug_printouts                                                              | latitude index in debug printouts                                                   | index         |    0 | integer     |           | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%levi                          | vertical_interface_dimension                                                                   | vertical interface dimension                                                        | count         |    0 | integer     |           | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%levh2o                        | vertical_dimension_of_h2o_forcing_data                                                         | number of vertical layers in h2o forcing data                                       | count         |    0 | integer     |           | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%levozp                        | vertical_dimension_of_ozone_forcing_data                                                       | number of vertical layers in ozone forcing data                                     | count         |    0 | integer     |           | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%lm                            | vertical_layer_dimension_for_radiation                                                         | number of vertical layers for radiation                                             | count         |    0 | integer     |           | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%lmk                           | adjusted_vertical_layer_dimension_for_radiation                                                | adjusted number of vertical layers for radiation                                    | count         |    0 | integer     |           | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%lmp                           | adjusted_vertical_level_dimension_for_radiation                                                | adjusted number of vertical levels for radiation                                    | count         |    0 | integer     |           | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%mbota                         | model_layer_number_at_cloud_base                                                               | vertical indices for low, middle and high cloud bases                               | index         |    2 | integer     |           | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%mg3_as_mg2                    | flag_mg3_as_mg2                                                                                | flag for controlling prep for Morrison-Gettelman microphysics                       | flag          |    0 | logical     |           | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%mtopa                         | model_layer_number_at_cloud_top                                                                | vertical indices for low, middle and high cloud tops                                | index         |    2 | integer     |           | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%ncstrac                       | number_of_tracers_for_CS                                                                       | number of convectively transported tracers in Chikira-Sugiyama deep conv. scheme    | count         |    0 | integer     |           | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%nday                          | daytime_points_dimension                                                                       | daytime points dimension                                                            | count         |    0 | integer     |           | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%nn                            | number_of_tracers_for_convective_transport                                                     | number of tracers for convective transport                                          | count         |    0 | integer     |           | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%nncl                          | number_of_tracers_for_cloud_condensate                                                         | number of tracers for cloud condensate                                              | count         |    0 | integer     |           | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%nsamftrac                     | number_of_tracers_for_samf                                                                     | number of tracers for scale-aware mass flux schemes                                 | count         |    0 | integer     |           | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%ncgl                          | local_graupel_number_concentration                                                             | number concentration of graupel local to physics                                    | kg-1          |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%ncpi                          | local_ice_number_concentration                                                                 | number concentration of ice local to physics                                        | kg-1          |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%ncpl                          | local_condesed_water_number_concentration                                                      | number concentration of condensed water local to physics                            | kg-1          |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%ncpr                          | local_rain_number_concentration                                                                | number concentration of rain local to physics                                       | kg-1          |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%ncps                          | local_snow_number_concentration                                                                | number concentration of snow local to physics                                       | kg-1          |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%ntiwx                         | index_for_ice_cloud_condensate_vertical_diffusion_tracer                                       | index for ice cloud condensate n the vertically diffused tracer array               | index         |    0 | integer     |           | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%ntk                           | index_for_turbulent_kinetic_energy_convective_transport_tracer                                 | index for turbulent kinetic energy in the convectively transported tracer array     | index         |    0 | integer     |           | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%ntkev                         | index_for_turbulent_kinetic_energy_vertical_diffusion_tracer                                   | index for turbulent kinetic energy in the vertically diffused tracer array          | index         |    0 | integer     |           | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%nvdiff                        | number_of_vertical_diffusion_tracers                                                           | number of tracers to diffuse vertically                                             | count         |    0 | integer     |           | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%oa4                           | asymmetry_of_subgrid_orography                                                                 | asymmetry of subgrid orography                                                      | none          |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%oc                            | convexity_of_subgrid_orography                                                                 | convexity of subgrid orography                                                      | none          |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%olyr                          | ozone_concentration_at_layer_for_radiation                                                     | ozone concentration layer                                                           | kg kg-1       |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%otspt                         | flag_convective_tracer_transport                                                               | flag to enable tracer transport by updrafts/downdrafts[(:,1)] or subsidence [(:,2)] | flag          |    2 | logical     |           | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%oz_coeff                      | number_of_coefficients_in_ozone_forcing_data                                                   | number of coefficients in ozone forcing data                                        | index         |    0 | integer     |           | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%oz_pres                       | natural_log_of_ozone_forcing_data_pressure_levels                                              | natural log of ozone forcing data pressure levels                                   | log(Pa)       |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%phys_hydrostatic              | flag_for_hydrostatic_heating_from_physics                                                      | flag for use of hydrostatic heating in physics                                      | flag          |    0 | logical     |           | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%plvl                          | air_pressure_at_interface_for_radiation_in_hPa                                                 | air pressure at vertical interface for radiation calculation                        | hPa           |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%plyr                          | air_pressure_at_layer_for_radiation_in_hPa                                                     | air pressure at vertical layer for radiation calculation                            | hPa           |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%prnum                         | prandtl_number                                                                                 | turbulent Prandtl number                                                            | none          |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%qgl                           | local_graupel_mixing_ratio                                                                     | moist (dry+vapor, no condensates) mixing ratio of graupel local to physics          | kg kg-1       |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%qicn                          | mass_fraction_of_convective_cloud_ice                                                          | mass fraction of convective cloud ice water                                         | kg kg-1       |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%qlcn                          | mass_fraction_of_convective_cloud_liquid_water                                                 | mass fraction of convective cloud liquid water                                      | kg kg-1       |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%qlyr                          | water_vapor_specific_humidity_at_layer_for_radiation                                           | specific humidity layer                                                             | kg kg-1       |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%qrn                           | local_rain_water_mixing_ratio                                                                  | moist (dry+vapor, no condensates) mixing ratio of rain water local to physics       | kg kg-1       |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%qsnw                          | local_snow_water_mixing_ratio                                                                  | moist (dry+vapor, no condensates) mixing ratio of snow water local to physics       | kg kg-1       |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%prcpmp                        | lwe_thickness_of_explicit_precipitation_amount                                                 | explicit precipitation (rain, ice, snow, graupel, ...) on physics timestep          | m             |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%qss                           | surface_specific_humidity                                                                      | surface air saturation specific humidity                                            | kg kg-1       |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%qss_ocean                     | surface_specific_humidity_over_ocean                                                           | surface air saturation specific humidity over ocean                                 | kg kg-1       |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%qss_land                      | surface_specific_humidity_over_land                                                            | surface air saturation specific humidity over land                                  | kg kg-1       |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%qss_ice                       | surface_specific_humidity_over_ice                                                             | surface air saturation specific humidity over ice                                   | kg kg-1       |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%raddt                         | time_step_for_radiation                                                                        | radiation time step                                                                 | s             |    0 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%raincd                        | lwe_thickness_of_deep_convective_precipitation_amount                                          | deep convective rainfall amount on physics timestep                                 | m             |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%raincs                        | lwe_thickness_of_shallow_convective_precipitation_amount                                       | shallow convective rainfall amount on physics timestep                              | m             |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%rainmcadj                     | lwe_thickness_of_moist_convective_adj_precipitation_amount                                     | adjusted moist convective rainfall amount on physics timestep                       | m             |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%rainmp                        | lwe_thickness_of_explicit_rain_amount                                                          | explicit rain on physics timestep                                                   | m             |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%rainp                         | tendency_of_rain_water_mixing_ratio_due_to_microphysics                                        | tendency of rain water mixing ratio due to microphysics                             | kg kg-1 s-1   |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%rb                            | bulk_richardson_number_at_lowest_model_level                                                   | bulk Richardson number at the surface                                               | none          |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%rb_ocean                      | bulk_richardson_number_at_lowest_model_level_over_ocean                                        | bulk Richardson number at the surface over ocean                                    | none          |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%rb_land                       | bulk_richardson_number_at_lowest_model_level_over_land                                         | bulk Richardson number at the surface over land                                     | none          |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%rb_ice                        | bulk_richardson_number_at_lowest_model_level_over_ice                                          | bulk Richardson number at the surface over ice                                      | none          |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%reset                         | flag_reset_maximum_hourly_fields                                                               | flag for resetting maximum hourly fields                                            | flag          |    0 | logical     |           | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%rhc                           | critical_relative_humidity                                                                     | critical relative humidity                                                          | frac          |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%runoff                        | surface_runoff_flux                                                                            | surface runoff flux                                                                 | g m-2 s-1     |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%save_q(:,:,GFS_Control%ntcw)  | cloud_condensed_water_mixing_ratio_save                                | moist (dry+vapor, no condensates) mixing ratio of cloud water (condensate) before entering a physics scheme | kg kg-1       |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%save_q(:,:,GFS_Control%ntiw)  | ice_water_mixing_ratio_save                                                                    | cloud ice water mixing ratio before entering a physics scheme                       | kg kg-1       |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%save_q(:,:,1)                 | water_vapor_specific_humidity_save                                                             | water vapor specific humidity before entering a physics scheme                      | kg kg-1       |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%save_q                        | tracer_concentration_save                                                                      | tracer concentration before entering a physics scheme                               | kg kg-1       |    3 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%save_t                        | air_temperature_save                                                                           | air temperature before entering a physics scheme                                    | K             |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%save_u                        | x_wind_save                                                                                    | x-wind before entering a physics scheme                                             | m s-1         |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%save_v                        | y_wind_save                                                                                    | y-wind before entering a physics scheme                                             | m s-1         |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%sbsno                         | snow_deposition_sublimation_upward_latent_heat_flux                                            | latent heat flux from snow depo/subl                                                | W m-2         |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%scmpsw                        | components_of_surface_downward_shortwave_fluxes                                                | derived type for special components of surface downward shortwave fluxes            | W m-2         |    1 | cmpfsw_type |           | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%sfcalb                        |                                                                                                |                                                                                     | frac          |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%sfcalb(:,1)                   | surface_albedo_due_to_near_IR_direct                                                           | surface albedo due to near IR direct beam                                           | frac          |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%sfcalb(:,2)                   | surface_albedo_due_to_near_IR_diffused                                                         | surface albedo due to near IR diffused beam                                         | frac          |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%sfcalb(:,3)                   | surface_albedo_due_to_UV_and_VIS_direct                                                        | surface albedo due to UV+VIS direct beam                                            | frac          |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%sfcalb(:,4)                   | surface_albedo_due_to_UV_and_VIS_diffused                                                      | surface albedo due to UV+VIS diffused beam                                          | frac          |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%sigma                         | slope_of_subgrid_orography                                                                     | slope of subgrid orography                                                          | none          |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%sigmaf                        | bounded_vegetation_area_fraction                                                               | areal fractional cover of green vegetation bounded on the bottom                    | frac          |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%sigmafrac                     | convective_updraft_area_fraction                                                               | convective updraft area fraction                                                    | frac          |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%sigmatot                      | convective_updraft_area_fraction_at_model_interfaces                                           | convective updraft area fraction at model interfaces                                | frac          |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%skip_macro                    | flag_skip_macro                                                                                | flag to skip cloud macrophysics in Morrison scheme                                  | flag          |    0 | logical     |           | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%slopetype                     | surface_slope_classification                                                                   | surface slope type at each grid cell                                                | index         |    1 | integer     |           | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%snowc                         | surface_snow_area_fraction                                                                     | surface snow area fraction                                                          | frac          |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%snowd_ocean                   | surface_snow_thickness_water_equivalent_over_ocean                                             | water equivalent snow depth over ocean                                              | mm            |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%snowd_land                    | surface_snow_thickness_water_equivalent_over_land                                              | water equivalent snow depth over land                                               | mm            |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%snowd_ice                     | surface_snow_thickness_water_equivalent_over_ice                                               | water equivalent snow depth over ice                                                | mm            |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%snohf                         | snow_freezing_rain_upward_latent_heat_flux                                                     | latent heat flux due to snow and frz rain                                           | W m-2         |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%snowmp                        | lwe_thickness_of_snow_amount                                                                   | explicit snow fall on physics timestep                                              | m             |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%snowmt                        | surface_snow_melt                                                                              | snow melt during timestep                                                           | m             |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%soiltype                      | soil_type_classification                                                                       | soil type at each grid cell                                                         | index         |    1 | integer     |           | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%stress                        | surface_wind_stress                                                                            | surface wind stress                                                                 | m2 s-2        |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%stress_ocean                  | surface_wind_stress_over_ocean                                                                 | surface wind stress over ocean                                                      | m2 s-2        |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%stress_land                   | surface_wind_stress_over_land                                                                  | surface wind stress over land                                                       | m2 s-2        |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%stress_ice                    | surface_wind_stress_over_ice                                                                   | surface wind stress over ice                                                        | m2 s-2        |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%theta                         | angle_from_east_of_maximum_subgrid_orographic_variations                                       | angle with_respect to east of maximum subgrid orographic variations                 | degrees       |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%tice                          | sea_ice_temperature_interstitial                                                               | sea ice surface skin temperature use as interstitial                                | K             |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%tlvl                          | air_temperature_at_interface_for_radiation                                                     | air temperature at vertical interface for radiation calculation                     | K             |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%tlyr                          | air_temperature_at_layer_for_radiation                                                         | air temperature at vertical layer for radiation calculation                         | K             |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%tprcp_ocean                   | nonnegative_lwe_thickness_of_precipitation_amount_on_dynamics_timestep_over_ocean              | total precipitation amount in each time step over ocean                             | m             |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%tprcp_land                    | nonnegative_lwe_thickness_of_precipitation_amount_on_dynamics_timestep_over_land               | total precipitation amount in each time step over land                              | m             |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%tprcp_ice                     | nonnegative_lwe_thickness_of_precipitation_amount_on_dynamics_timestep_over_ice                | total precipitation amount in each time step over ice                               | m             |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%tracers_start_index           | start_index_of_other_tracers                                                                   | beginning index of the non-water tracer species                                     | index         |    0 | integer     |           | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%tracers_total                 | number_of_total_tracers                                                                        | total number of tracers                                                             | count         |    0 | integer     |           | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%trans                         | transpiration_flux                                                                             | total plant transpiration rate                                                      | kg m-2 s-1    |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%tseal                         | surface_skin_temperature_for_nsst                                                              | ocean surface skin temperature                                                      | K             |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%tsfa                          | surface_air_temperature_for_radiation                                                          | lowest model layer air temperature for radiation                                    | K             |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%tsfc_ocean                    | surface_skin_temperature_over_ocean_interstitial                                               | surface skin temperature over ocean (temporary use as interstitial)                 | K             |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%tsfc_land                     | surface_skin_temperature_over_land_interstitial                                                | surface skin temperature over land  (temporary use as interstitial)                 | K             |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%tsfc_ice                      | surface_skin_temperature_over_ice_interstitial                                                 | surface skin temperature over ice   (temporary use as interstitial)                 | K             |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%tsfg                          | surface_ground_temperature_for_radiation                                                       | surface ground temperature for radiation                                            | K             |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%tsurf                         | surface_skin_temperature_after_iteration                                                       | surface skin temperature after iteration                                            | K             |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%tsurf_ocean                   | surface_skin_temperature_after_iteration_over_ocean                                            | surface skin temperature after iteration over ocean                                 | K             |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%tsurf_land                    | surface_skin_temperature_after_iteration_over_land                                             | surface skin temperature after iteration over land                                  | K             |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%tsurf_ice                     | surface_skin_temperature_after_iteration_over_ice                                              | surface skin temperature after iteration over ice                                   | K             |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%tracers_water                 | number_of_water_tracers                                                                        | number of water-related tracers                                                     | count         |    0 | integer     |           | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%ud_mf                         | instantaneous_atmosphere_updraft_convective_mass_flux                                          | (updraft mass flux) * delt                                                          | kg m-2        |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%ulwsfc_cice                   | surface_upwelling_longwave_flux_for_cice                                                       | surface upwelling longwave flux for cice                                            | W m-2         |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%uustar_ocean                  | surface_friction_velocity_over_ocean                                                           | surface friction velocity over ocean                                                | m s-1         |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%uustar_land                   | surface_friction_velocity_over_land                                                            | surface friction velocity over land                                                 | m s-1         |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%uustar_ice                    | surface_friction_velocity_over_ice                                                             | surface friction velocity over ice                                                  | m s-1         |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%vdftra                        | vertically_diffused_tracer_concentration                                                       | tracer concentration diffused by PBL scheme                                         | kg kg-1       |    3 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%vegf1d                        | perturbation_of_vegetation_fraction                                                            | perturbation of vegetation fraction                                                 | frac          |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%vegtype                       | vegetation_type_classification                                                                 | vegetation type at each grid cell                                                   | index         |    1 | integer     |           | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%w_upi                         | vertical_velocity_for_updraft                                                                  | vertical velocity for updraft                                                       | m s-1         |    2 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%wcbmax                        | maximum_updraft_velocity_at_cloud_base                                                         | maximum updraft velocity at cloud base                                              | m s-1         |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%weasd_ocean                   | water_equivalent_accumulated_snow_depth_over_ocean                                             | water equiv of acc snow depth over ocean                                            | mm            |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%weasd_land                    | water_equivalent_accumulated_snow_depth_over_land                                              | water equiv of acc snow depth over land                                             | mm            |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%weasd_ice                     | water_equivalent_accumulated_snow_depth_over_ice                                               | water equiv of acc snow depth over ice                                              | mm            |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%wind                          | wind_speed_at_lowest_model_layer                                                               | wind speed at lowest model level                                                    | m s-1         |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%work1                         | grid_size_related_coefficient_used_in_scale-sensitive_schemes                                  | grid size related coefficient used in scale-sensitive schemes                       | none          |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%work2                         | grid_size_related_coefficient_used_in_scale-sensitive_schemes_complement                       | complement to work1                                                                 | none          |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%work3                         | ratio_of_exner_function_between_midlayer_and_interface_at_lowest_model_layer                   | Exner function ratio bt midlayer and interface at 1st layer                         | ratio         |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%xcosz                         | instantaneous_cosine_of_zenith_angle                                                           | cosine of zenith angle at current time                                              | none          |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%xlai1d                        | perturbation_of_leaf_area_index                                                                | perturbation of leaf area index                                                     | frac          |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%xmu                           | zenith_angle_temporal_adjustment_factor_for_shortwave_fluxes                                   | zenith angle temporal adjustment factor for shortwave                               | none          |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%z01d                          | perturbation_of_momentum_roughness_length                                                      | perturbation of momentum roughness length                                           | frac          |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%zorl_ocean                    | surface_roughness_length_over_ocean_interstitial                                               | surface roughness length over ocean (temporary use as interstitial)                 | cm            |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%zorl_land                     | surface_roughness_length_over_land_interstitial                                                | surface roughness length over land  (temporary use as interstitial)                 | cm            |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%zorl_ice                      | surface_roughness_length_over_ice_interstitial                                                 | surface roughness length over ice   (temporary use as interstitial)                 | cm            |    1 | real        | kind_phys | none   | F        |
+!! | GFS_Interstitial(cdata%thrd_no)%zt1d                          | perturbation_of_heat_to_momentum_roughness_length_ratio                                        | perturbation of heat to momentum roughness length ratio                             | frac          |    1 | real        | kind_phys | none   | F        |
 !!
-!----------------------------------------------------------------
-! GFS_fastphys_type
-!  data type holding interstitial variables for fast physics
-!----------------------------------------------------------------
-  type GFS_fastphys_type
+#endif
+  type GFS_interstitial_type
 
-    integer                             :: dummy
-    character(len=512)                  :: errmsg
-    integer                             :: errflg
+    real (kind=kind_phys), pointer      :: adjnirbmd(:)     => null()  !<
+    real (kind=kind_phys), pointer      :: adjnirbmu(:)     => null()  !<
+    real (kind=kind_phys), pointer      :: adjnirdfd(:)     => null()  !<
+    real (kind=kind_phys), pointer      :: adjnirdfu(:)     => null()  !<
+    real (kind=kind_phys), pointer      :: adjvisbmd(:)     => null()  !<
+    real (kind=kind_phys), pointer      :: adjvisbmu(:)     => null()  !<
+    real (kind=kind_phys), pointer      :: adjvisdfu(:)     => null()  !<
+    real (kind=kind_phys), pointer      :: adjvisdfd(:)     => null()  !<
+    real (kind=kind_phys), pointer      :: aerodp(:,:)      => null()  !<
+    real (kind=kind_phys), pointer      :: alb1d(:)         => null()  !<
+    real (kind=kind_phys), pointer      :: bexp1d(:)        => null()  !<
+    real (kind=kind_phys), pointer      :: cd(:)            => null()  !<
+    real (kind=kind_phys), pointer      :: cd_ice(:)        => null()  !<
+    real (kind=kind_phys), pointer      :: cd_land(:)       => null()  !<
+    real (kind=kind_phys), pointer      :: cd_ocean(:)      => null()  !<
+    real (kind=kind_phys), pointer      :: cdq(:)           => null()  !<
+    real (kind=kind_phys), pointer      :: cdq_ice(:)       => null()  !<
+    real (kind=kind_phys), pointer      :: cdq_land(:)      => null()  !<
+    real (kind=kind_phys), pointer      :: cdq_ocean(:)     => null()  !<
+    real (kind=kind_phys), pointer      :: cf_upi(:,:)      => null()  !<
+    real (kind=kind_phys), pointer      :: chh_ice(:)       => null()  !<
+    real (kind=kind_phys), pointer      :: chh_land(:)      => null()  !<
+    real (kind=kind_phys), pointer      :: chh_ocean(:)     => null()  !<
+    real (kind=kind_phys), pointer      :: clcn(:,:)        => null()  !<
+    real (kind=kind_phys), pointer      :: cldf(:)          => null()  !<
+    real (kind=kind_phys), pointer      :: cldsa(:,:)       => null()  !<
+    real (kind=kind_phys), pointer      :: cldtaulw(:,:)    => null()  !<
+    real (kind=kind_phys), pointer      :: cldtausw(:,:)    => null()  !<
+    real (kind=kind_phys), pointer      :: cld1d(:)         => null()  !<
+    real (kind=kind_phys), pointer      :: clouds(:,:,:)    => null()  !<
+    real (kind=kind_phys), pointer      :: clw(:,:,:)       => null()  !<
+    real (kind=kind_phys), pointer      :: clw_surf(:)      => null()  !<
+    real (kind=kind_phys), pointer      :: clx(:,:)         => null()  !<
+    real (kind=kind_phys), pointer      :: cmm_ice(:)       => null()  !<
+    real (kind=kind_phys), pointer      :: cmm_land(:)      => null()  !<
+    real (kind=kind_phys), pointer      :: cmm_ocean(:)     => null()  !<
+    real (kind=kind_phys), pointer      :: cndm_surf(:)     => null()  !<
+    real (kind=kind_phys), pointer      :: cnv_dqldt(:,:)   => null()  !<
+    real (kind=kind_phys), pointer      :: cnv_fice(:,:)    => null()  !<
+    real (kind=kind_phys), pointer      :: cnv_mfd(:,:)     => null()  !<
+    real (kind=kind_phys), pointer      :: cnv_ndrop(:,:)   => null()  !<
+    real (kind=kind_phys), pointer      :: cnv_nice(:,:)    => null()  !<
+    real (kind=kind_phys), pointer      :: cnvc(:,:)        => null()  !<
+    real (kind=kind_phys), pointer      :: cnvw(:,:)        => null()  !<
+    real (kind=kind_phys), pointer      :: ctei_r(:)        => null()  !<
+    real (kind=kind_phys), pointer      :: ctei_rml(:)      => null()  !<
+    real (kind=kind_phys), pointer      :: cumabs(:)        => null()  !<
+    real (kind=kind_phys), pointer      :: dd_mf(:,:)       => null()  !<
+    real (kind=kind_phys), pointer      :: de_lgth(:)       => null()  !<
+    real (kind=kind_phys), pointer      :: del(:,:)         => null()  !<
+    real (kind=kind_phys), pointer      :: del_gz(:,:)      => null()  !<
+    real (kind=kind_phys), pointer      :: delr(:,:)        => null()  !<
+    real (kind=kind_phys), pointer      :: dkt(:,:)         => null()  !<
+    real (kind=kind_phys), pointer      :: dlength(:)       => null()  !<
+    real (kind=kind_phys), pointer      :: dqdt(:,:,:)      => null()  !<
+    real (kind=kind_phys), pointer      :: dqsfc1(:)        => null()  !<
+    real (kind=kind_phys), pointer      :: drain(:)         => null()  !<
+    real (kind=kind_phys), pointer      :: dtdt(:,:)        => null()  !<
+    real (kind=kind_phys), pointer      :: dtdtc(:,:)       => null()  !<
+    real (kind=kind_phys), pointer      :: dtsfc1(:)        => null()  !<
+    real (kind=kind_phys), pointer      :: dtzm(:)          => null()  !<
+    real (kind=kind_phys), pointer      :: dt_mf(:,:)       => null()  !<
+    real (kind=kind_phys), pointer      :: dudt(:,:)        => null()  !<
+    real (kind=kind_phys), pointer      :: dusfcg(:)        => null()  !<
+    real (kind=kind_phys), pointer      :: dusfc1(:)        => null()  !<
+    real (kind=kind_phys), pointer      :: dvdftra(:,:,:)   => null()  !<
+    real (kind=kind_phys), pointer      :: dvdt(:,:)        => null()  !<
+    real (kind=kind_phys), pointer      :: dvsfcg(:)        => null()  !<
+    real (kind=kind_phys), pointer      :: dvsfc1(:)        => null()  !<
+    real (kind=kind_phys), pointer      :: dzlyr(:,:)       => null()  !<
+    real (kind=kind_phys), pointer      :: elvmax(:)        => null()  !<
+    real (kind=kind_phys), pointer      :: ep1d(:)          => null()  !<
+    real (kind=kind_phys), pointer      :: ep1d_ice(:)      => null()  !<
+    real (kind=kind_phys), pointer      :: ep1d_land(:)     => null()  !<
+    real (kind=kind_phys), pointer      :: ep1d_ocean(:)    => null()  !<
+    real (kind=kind_phys), pointer      :: evap(:)          => null()  !<
+    real (kind=kind_phys), pointer      :: evap_ice(:)      => null()  !<
+    real (kind=kind_phys), pointer      :: evap_land(:)     => null()  !<
+    real (kind=kind_phys), pointer      :: evap_ocean(:)    => null()  !<
+    real (kind=kind_phys), pointer      :: evbs(:)          => null()  !<
+    real (kind=kind_phys), pointer      :: evcw(:)          => null()  !<
+    real (kind=kind_phys), pointer      :: faerlw(:,:,:,:)  => null()  !<
+    real (kind=kind_phys), pointer      :: faersw(:,:,:,:)  => null()  !<
+    real (kind=kind_phys), pointer      :: ffhh_ice(:)      => null()  !<
+    real (kind=kind_phys), pointer      :: ffhh_land(:)     => null()  !<
+    real (kind=kind_phys), pointer      :: ffhh_ocean(:)    => null()  !<
+    real (kind=kind_phys), pointer      :: fh2(:)           => null()  !<
+    real (kind=kind_phys), pointer      :: fh2_ice(:)       => null()  !<
+    real (kind=kind_phys), pointer      :: fh2_land(:)      => null()  !<
+    real (kind=kind_phys), pointer      :: fh2_ocean(:)     => null()  !<
+    logical,               pointer      :: flag_cice(:)     => null()  !<
+    logical,               pointer      :: flag_guess(:)    => null()  !<
+    logical,               pointer      :: flag_iter(:)     => null()  !<
+    real (kind=kind_phys), pointer      :: ffmm_ice(:)      => null()  !<
+    real (kind=kind_phys), pointer      :: ffmm_land(:)     => null()  !<
+    real (kind=kind_phys), pointer      :: ffmm_ocean(:)    => null()  !<
+    real (kind=kind_phys), pointer      :: fm10(:)          => null()  !<
+    real (kind=kind_phys), pointer      :: fm10_ice(:)      => null()  !<
+    real (kind=kind_phys), pointer      :: fm10_land(:)     => null()  !<
+    real (kind=kind_phys), pointer      :: fm10_ocean(:)    => null()  !<
+    real (kind=kind_phys)               :: frain                       !<
+    real (kind=kind_phys), pointer      :: frland(:)        => null()  !<
+    real (kind=kind_phys), pointer      :: fscav(:)         => null()  !<
+    real (kind=kind_phys), pointer      :: fswtr(:)         => null()  !<
+    real (kind=kind_phys), pointer      :: gabsbdlw(:)      => null()  !<
+    real (kind=kind_phys), pointer      :: gamma(:)         => null()  !<
+    real (kind=kind_phys), pointer      :: gamq(:)          => null()  !<
+    real (kind=kind_phys), pointer      :: gamt(:)          => null()  !<
+    real (kind=kind_phys), pointer      :: gasvmr(:,:,:)    => null()  !<
+    real (kind=kind_phys), pointer      :: gflx(:)          => null()  !<
+    real (kind=kind_phys), pointer      :: gflx_ice(:)      => null()  !<
+    real (kind=kind_phys), pointer      :: gflx_land(:)     => null()  !<
+    real (kind=kind_phys), pointer      :: gflx_ocean(:)    => null()  !<
+    real (kind=kind_phys), pointer      :: graupelmp(:)     => null()  !<
+    real (kind=kind_phys), pointer      :: gwdcu(:,:)       => null()  !<
+    real (kind=kind_phys), pointer      :: gwdcv(:,:)       => null()  !<
+    integer                             :: h2o_coeff                   !<
+    real (kind=kind_phys), pointer      :: h2o_pres(:)      => null()  !<
+    real (kind=kind_phys), pointer      :: hflx(:)          => null()  !<
+    real (kind=kind_phys), pointer      :: hflx_ice(:)      => null()  !<
+    real (kind=kind_phys), pointer      :: hflx_land(:)     => null()  !<
+    real (kind=kind_phys), pointer      :: hflx_ocean(:)    => null()  !<
+    real (kind=kind_phys), pointer      :: hprime1(:)       => null()  !<
+    real (kind=kind_phys), pointer      :: icemp(:)         => null()  !<
+    logical,               pointer      :: dry(:)           => null()  !<
+    integer,               pointer      :: idxday(:)        => null()  !<
+    logical,               pointer      :: icy(:)           => null()  !<
+    logical,               pointer      :: lake(:)          => null()  !<
+    integer                             :: im                          !<
+    logical,               pointer      :: ocean(:)         => null()  !<
+    integer                             :: ipr                         !<
+    integer,               pointer      :: islmsk(:)        => null()  !<
+    logical,               pointer      :: wet(:)           => null()  !<
+    integer                             :: ix                          !<
+    integer                             :: kb                          !<
+    integer,               pointer      :: kbot(:)          => null()  !<
+    integer,               pointer      :: kcnv(:)          => null()  !<
+    integer                             :: kd                          !<
+    integer,               pointer      :: kinver(:)        => null()  !<
+    integer,               pointer      :: kpbl(:)          => null()  !<
+    integer                             :: kt                          !<
+    integer,               pointer      :: ktop(:)          => null()  !<
+    integer                             :: latidxprnt                  !<
+    integer                             :: levi                        !<
+    integer                             :: levh2o                      !<
+    integer                             :: levozp                      !<
+    integer                             :: lm                          !<
+    integer                             :: lmk                         !<
+    integer                             :: lmp                         !<
+    integer,               pointer      :: mbota(:,:)       => null()  !<
+    logical                             :: mg3_as_mg2                  !<
+    integer,               pointer      :: mtopa(:,:)       => null()  !<
+    real (kind=kind_phys), pointer      :: ncgl(:,:)        => null()  !<
+    real (kind=kind_phys), pointer      :: ncpi(:,:)        => null()  !<
+    real (kind=kind_phys), pointer      :: ncpl(:,:)        => null()  !<
+    real (kind=kind_phys), pointer      :: ncpr(:,:)        => null()  !<
+    real (kind=kind_phys), pointer      :: ncps(:,:)        => null()  !<
+    integer                             :: ncstrac                     !<
+    integer                             :: nday                        !<
+    integer                             :: nn                          !<
+    integer                             :: nncl                        !<
+    integer                             :: nsamftrac                   !<
+    integer                             :: ntiwx                       !<
+    integer                             :: ntk                         !<
+    integer                             :: ntkev                       !<
+    integer                             :: nvdiff                      !<
+    real (kind=kind_phys), pointer      :: oa4(:,:)         => null()  !<
+    real (kind=kind_phys), pointer      :: oc(:)            => null()  !<
+    real (kind=kind_phys), pointer      :: olyr(:,:)        => null()  !<
+    logical              , pointer      :: otspt(:,:)       => null()  !<
+    integer                             :: oz_coeff                    !<
+    real (kind=kind_phys), pointer      :: oz_pres(:)       => null()  !<
+    logical                             :: phys_hydrostatic            !<
+    real (kind=kind_phys), pointer      :: plvl(:,:)        => null()  !<
+    real (kind=kind_phys), pointer      :: plyr(:,:)        => null()  !<
+    real (kind=kind_phys), pointer      :: prcpmp(:)        => null()  !<
+    real (kind=kind_phys), pointer      :: prnum(:,:)       => null()  !<
+    real (kind=kind_phys), pointer      :: qgl(:,:)         => null()  !<
+    real (kind=kind_phys), pointer      :: qicn(:,:)        => null()  !<
+    real (kind=kind_phys), pointer      :: qlcn(:,:)        => null()  !<
+    real (kind=kind_phys), pointer      :: qlyr(:,:)        => null()  !<
+    real (kind=kind_phys), pointer      :: qrn(:,:)         => null()  !<
+    real (kind=kind_phys), pointer      :: qsnw(:,:)        => null()  !<
+    real (kind=kind_phys), pointer      :: qss(:)           => null()  !<
+    real (kind=kind_phys), pointer      :: qss_ice(:)       => null()  !<
+    real (kind=kind_phys), pointer      :: qss_land(:)      => null()  !<
+    real (kind=kind_phys), pointer      :: qss_ocean(:)     => null()  !<
+    real (kind=kind_phys)               :: raddt                       !<
+    real (kind=kind_phys), pointer      :: rainmp(:)        => null()  !<
+    real (kind=kind_phys), pointer      :: raincd(:)        => null()  !<
+    real (kind=kind_phys), pointer      :: raincs(:)        => null()  !<
+    real (kind=kind_phys), pointer      :: rainmcadj(:)     => null()  !<
+    real (kind=kind_phys), pointer      :: rainp(:,:)       => null()  !<
+    real (kind=kind_phys), pointer      :: rb(:)            => null()  !<
+    real (kind=kind_phys), pointer      :: rb_ice(:)        => null()  !<
+    real (kind=kind_phys), pointer      :: rb_land(:)       => null()  !<
+    real (kind=kind_phys), pointer      :: rb_ocean(:)      => null()  !<
+    logical                             :: reset
+    real (kind=kind_phys), pointer      :: rhc(:,:)         => null()  !<
+    real (kind=kind_phys), pointer      :: runoff(:)        => null()  !<
+    real (kind=kind_phys), pointer      :: save_q(:,:,:)    => null()  !<
+    real (kind=kind_phys), pointer      :: save_t(:,:)      => null()  !<
+    real (kind=kind_phys), pointer      :: save_u(:,:)      => null()  !<
+    real (kind=kind_phys), pointer      :: save_v(:,:)      => null()  !<
+    real (kind=kind_phys), pointer      :: sbsno(:)         => null()  !<
+    type (cmpfsw_type),    pointer      :: scmpsw(:)        => null()  !<
+    real (kind=kind_phys), pointer      :: sfcalb(:,:)      => null()  !<
+    real (kind=kind_phys), pointer      :: sigma(:)         => null()  !<
+    real (kind=kind_phys), pointer      :: sigmaf(:)        => null()  !<
+    real (kind=kind_phys), pointer      :: sigmafrac(:,:)   => null()  !<
+    real (kind=kind_phys), pointer      :: sigmatot(:,:)    => null()  !<
+    logical                             :: skip_macro                  !<
+    integer, pointer                    :: slopetype(:)     => null()  !<
+    real (kind=kind_phys), pointer      :: snowc(:)         => null()  !<
+    real (kind=kind_phys), pointer      :: snowd_ice(:)     => null()  !<
+    real (kind=kind_phys), pointer      :: snowd_land(:)    => null()  !<
+    real (kind=kind_phys), pointer      :: snowd_ocean(:)   => null()  !<
+    real (kind=kind_phys), pointer      :: snohf(:)         => null()  !<
+    real (kind=kind_phys), pointer      :: snowmp(:)        => null()  !<
+    real (kind=kind_phys), pointer      :: snowmt(:)        => null()  !<
+    integer, pointer                    :: soiltype(:)      => null()  !<
+    real (kind=kind_phys), pointer      :: stress(:)        => null()  !<
+    real (kind=kind_phys), pointer      :: stress_ice(:)    => null()  !<
+    real (kind=kind_phys), pointer      :: stress_land(:)   => null()  !<
+    real (kind=kind_phys), pointer      :: stress_ocean(:)  => null()  !<
+    real (kind=kind_phys), pointer      :: theta(:)         => null()  !<
+    real (kind=kind_phys), pointer      :: tice(:)          => null()  !<
+    real (kind=kind_phys), pointer      :: tlvl(:,:)        => null()  !<
+    real (kind=kind_phys), pointer      :: tlyr(:,:)        => null()  !<
+    real (kind=kind_phys), pointer      :: tprcp_ice(:)     => null()  !<
+    real (kind=kind_phys), pointer      :: tprcp_land(:)    => null()  !<
+    real (kind=kind_phys), pointer      :: tprcp_ocean(:)   => null()  !<
+    integer                             :: tracers_start_index         !<
+    integer                             :: tracers_total               !<
+    integer                             :: tracers_water               !<
+    real (kind=kind_phys), pointer      :: trans(:)         => null()  !<
+    real (kind=kind_phys), pointer      :: tseal(:)         => null()  !<
+    real (kind=kind_phys), pointer      :: tsfa(:)          => null()  !<
+    real (kind=kind_phys), pointer      :: tsfc_ice(:)      => null()  !<
+    real (kind=kind_phys), pointer      :: tsfc_land(:)     => null()  !<
+    real (kind=kind_phys), pointer      :: tsfc_ocean(:)    => null()  !<
+    real (kind=kind_phys), pointer      :: tsfg(:)          => null()  !<
+    real (kind=kind_phys), pointer      :: tsnow(:)         => null()  !<
+    real (kind=kind_phys), pointer      :: tsurf(:)         => null()  !<
+    real (kind=kind_phys), pointer      :: tsurf_ice(:)     => null()  !<
+    real (kind=kind_phys), pointer      :: tsurf_land(:)    => null()  !<
+    real (kind=kind_phys), pointer      :: tsurf_ocean(:)   => null()  !<
+    real (kind=kind_phys), pointer      :: ud_mf(:,:)       => null()  !<
+    real (kind=kind_phys), pointer      :: ulwsfc_cice(:)   => null()  !<
+    real (kind=kind_phys), pointer      :: uustar_ice(:)    => null()  !<
+    real (kind=kind_phys), pointer      :: uustar_land(:)   => null()  !<
+    real (kind=kind_phys), pointer      :: uustar_ocean(:)  => null()  !<
+    real (kind=kind_phys), pointer      :: vdftra(:,:,:)    => null()  !<
+    real (kind=kind_phys), pointer      :: vegf1d(:)        => null()  !<
+    integer, pointer                    :: vegtype(:)       => null()  !<
+    real (kind=kind_phys), pointer      :: w_upi(:,:)       => null()  !<
+    real (kind=kind_phys), pointer      :: wcbmax(:)        => null()  !<
+    real (kind=kind_phys), pointer      :: weasd_ocean(:)   => null()  !<
+    real (kind=kind_phys), pointer      :: weasd_land(:)    => null()  !<
+    real (kind=kind_phys), pointer      :: weasd_ice(:)     => null()  !<
+    real (kind=kind_phys), pointer      :: wind(:)          => null()  !<
+    real (kind=kind_phys), pointer      :: work1(:)         => null()  !<
+    real (kind=kind_phys), pointer      :: work2(:)         => null()  !<
+    real (kind=kind_phys), pointer      :: work3(:)         => null()  !<
+    real (kind=kind_phys), pointer      :: xcosz(:)         => null()  !<
+    real (kind=kind_phys), pointer      :: xlai1d(:)        => null()  !<
+    real (kind=kind_phys), pointer      :: xmu(:)           => null()  !<
+    real (kind=kind_phys), pointer      :: z01d(:)          => null()  !<
+    real (kind=kind_phys), pointer      :: zorl_ice(:)      => null()  !<
+    real (kind=kind_phys), pointer      :: zorl_land(:)     => null()  !<
+    real (kind=kind_phys), pointer      :: zorl_ocean(:)    => null()  !<
+    real (kind=kind_phys), pointer      :: zt1d(:)          => null()  !<
 
-  contains
-    procedure :: create => fastphys_create
-  end type GFS_fastphys_type
+    contains
+      procedure :: create      => interstitial_create     !<   allocate array data
+      procedure :: rad_reset   => interstitial_rad_reset  !<   reset array data for radiation
+      procedure :: phys_reset  => interstitial_phys_reset !<   reset array data for physics
+      procedure :: mprint      => interstitial_print      !<   print array data
+
+  end type GFS_interstitial_type
+#endif
+
+!-------------------------
+! GFS sub-containers
+!-------------------------
+#ifdef CCPP
+  type GFS_data_type
+     type(GFS_statein_type)  :: Statein
+     type(GFS_stateout_type) :: Stateout
+     type(GFS_sfcprop_type)  :: Sfcprop
+     type(GFS_coupling_type) :: Coupling
+     type(GFS_grid_type)     :: Grid
+     type(GFS_tbd_type)      :: Tbd
+     type(GFS_cldprop_type)  :: Cldprop
+     type(GFS_radtend_type)  :: Radtend
+     type(GFS_diag_type)     :: Intdiag
+  end type GFS_data_type
 #endif
 
 !----------------
@@ -1222,6 +3017,9 @@ module GFS_typedefs
          GFS_coupling_type
   public GFS_control_type,  GFS_grid_type,     GFS_tbd_type, &
          GFS_cldprop_type,  GFS_radtend_type,  GFS_diag_type
+#ifdef CCPP
+  public GFS_interstitial_type
+#endif
 
 !*******************************************************************************************
   CONTAINS
@@ -1428,9 +3226,15 @@ module GFS_typedefs
 
 !--- Out
     allocate (Sfcprop%t2m (IM))
+#ifdef CCPP
+    allocate (Sfcprop%th2m(IM))
+#endif
     allocate (Sfcprop%q2m (IM))
 
     Sfcprop%t2m = clear_val
+#ifdef CCPP
+    Sfcprop%th2m = clear_val
+#endif
     Sfcprop%q2m = clear_val
 
     if (Model%nstf_name(1) > 0) then
@@ -1475,7 +3279,7 @@ module GFS_typedefs
 
 ! Noah MP allocate and init when used
 !
-    if (Model%lsm > 1 ) then
+    if (Model%lsm == Model%lsm_noahmp ) then
 
     allocate (Sfcprop%snowxy   (IM))
     allocate (Sfcprop%tvxy     (IM))
@@ -1549,6 +3353,69 @@ module GFS_typedefs
     Sfcprop%zsnsoxy    = clear_val
 
    endif
+
+#ifdef CCPP
+    if (Model%lsm == Model%lsm_ruc) then
+       ! For land surface models with different numbers of levels than the four NOAH levels
+       allocate (Sfcprop%wetness     (IM))
+       allocate (Sfcprop%sh2o        (IM,Model%lsoil_lsm))
+       allocate (Sfcprop%keepsmfr    (IM,Model%lsoil_lsm))
+       allocate (Sfcprop%smois       (IM,Model%lsoil_lsm))
+       allocate (Sfcprop%tslb        (IM,Model%lsoil_lsm))
+       allocate (Sfcprop%flag_frsoil (IM,Model%lsoil_lsm))
+       allocate (Sfcprop%zs          (Model%lsoil_lsm))
+       allocate (Sfcprop%clw_surf    (IM))
+       allocate (Sfcprop%qwv_surf    (IM))
+       allocate (Sfcprop%cndm_surf   (IM))
+       allocate (Sfcprop%rhofr       (IM))
+       allocate (Sfcprop%tsnow       (IM))
+       allocate (Sfcprop%snowfallac  (IM))
+       allocate (Sfcprop%acsnow      (IM))
+       !
+       Sfcprop%wetness     = clear_val
+       Sfcprop%sh2o        = clear_val
+       Sfcprop%keepsmfr    = clear_val
+       Sfcprop%smois       = clear_val
+       Sfcprop%tslb        = clear_val
+       Sfcprop%zs          = clear_val
+       Sfcprop%clw_surf    = clear_val
+       Sfcprop%qwv_surf    = clear_val
+       Sfcprop%cndm_surf   = clear_val
+       Sfcprop%flag_frsoil = clear_val
+       Sfcprop%rhofr       = clear_val
+       Sfcprop%tsnow       = clear_val
+       Sfcprop%snowfallac  = clear_val
+       Sfcprop%acsnow      = clear_val
+    end if
+    if (Model%do_mynnsfclay) then
+    ! For MYNN surface layer scheme
+       !print*,"Allocating all MYNN-sfclay variables"
+       allocate (Sfcprop%ustm   (IM ))
+       allocate (Sfcprop%zol    (IM ))
+       allocate (Sfcprop%mol    (IM ))
+       allocate (Sfcprop%rmol   (IM ))
+       allocate (Sfcprop%flhc   (IM ))
+       allocate (Sfcprop%flqc   (IM ))
+       allocate (Sfcprop%chs2   (IM ))
+       allocate (Sfcprop%cqs2   (IM ))
+       allocate (Sfcprop%lh     (IM ))
+       !
+       !print*,"Initializing all MYNN-SfcLay variables with ",clear_val
+       Sfcprop%ustm        = clear_val
+       Sfcprop%zol         = clear_val
+       Sfcprop%mol         = clear_val
+       Sfcprop%rmol        = clear_val
+       Sfcprop%flhc        = clear_val
+       Sfcprop%flqc        = clear_val
+       Sfcprop%chs2        = clear_val
+       Sfcprop%cqs2        = clear_val
+       Sfcprop%lh          = clear_val
+    end if
+    if (Model%imfdeepcnv == 3) then
+        allocate (Sfcprop%conv_act(IM))
+        Sfcprop%conv_act = zero
+    end if
+#endif
 
   end subroutine sfcprop_create
 
@@ -1801,10 +3668,12 @@ module GFS_typedefs
       Coupling%cldcovi = clear_val
     endif
 
-    !--- needed for Thompson's aerosol option 
-    if(Model%imp_physics == 8.and.Model%ltaerosol) then 
+    !--- needed for Thompson's aerosol option
+    if(Model%imp_physics == Model%imp_physics_thompson .and. Model%ltaerosol) then 
       allocate (Coupling%nwfa2d (IM))
+      allocate (Coupling%nifa2d (IM))
       Coupling%nwfa2d   = clear_val
+      Coupling%nifa2d   = clear_val
     endif
 
   end subroutine coupling_create
@@ -1816,16 +3685,31 @@ module GFS_typedefs
   subroutine control_initialize (Model, nlunit, fn_nml, me, master, &
                                  logunit, isc, jsc, nx, ny, levs,   &
                                  cnx, cny, gnx, gny, dt_dycore,     &
-                                 dt_phys, idat, jdat, tracer_names, &
-                                 input_nml_file, tile_num)
+                                 dt_phys, iau_offset, idat, jdat,   &
+                                 tracer_names,                      &
+                                 input_nml_file, tile_num           &
+#ifdef CCPP
+                                ,ak, bk, blksz,                     &
+                                 restart, hydrostatic,              &
+                                 communicator, ntasks, nthreads     &
+#endif
+                                 )
 
 !--- modules
+#ifdef CCPP
+    use physcons,         only: con_rerth, con_pi
+#else
     use physcons,         only: dxmax, dxmin, dxinv, con_rerth, con_pi, rhc_max
+#endif
     use mersenne_twister, only: random_setseed, random_number
+#ifndef CCPP
     use module_ras,       only: nrcmax
+#endif
     use parse_tracers,    only: get_tracer_index
+#ifndef CCPP
     use wam_f107_kp_mod,  only: f107_kp_size, f107_kp_interval,     &
                                 f107_kp_skip_size, f107_kp_data_size
+#endif
     implicit none
 
 !--- interface variables
@@ -1847,10 +3731,21 @@ module GFS_typedefs
     integer,                intent(in) :: gny
     real(kind=kind_phys),   intent(in) :: dt_dycore
     real(kind=kind_phys),   intent(in) :: dt_phys
+    integer,                intent(in) :: iau_offset
     integer,                intent(in) :: idat(8)
     integer,                intent(in) :: jdat(8)
     character(len=32),      intent(in) :: tracer_names(:)
     character(len=256),     intent(in), pointer :: input_nml_file(:)
+#ifdef CCPP
+    real(kind=kind_phys), dimension(:), intent(in) :: ak
+    real(kind=kind_phys), dimension(:), intent(in) :: bk
+    integer,                intent(in) :: blksz(:)
+    logical,                intent(in) :: restart
+    logical,                intent(in) :: hydrostatic
+    integer,                intent(in) :: communicator
+    integer,                intent(in) :: ntasks
+    integer,                intent(in) :: nthreads
+#endif
     !--- local variables
     integer :: n
     integer :: ios
@@ -1860,9 +3755,12 @@ module GFS_typedefs
     real(kind=kind_phys) :: rinc(5)
     real(kind=kind_phys) :: wrk(1)
     real(kind=kind_phys), parameter :: con_hr = 3600.
+#ifdef CCPP
+    real(kind=kind_phys), parameter   :: p_ref = 101325.0d0
+#endif
 
 !--- BEGIN NAMELIST VARIABLES
-    real(kind=kind_phys) :: fhzero         = 0.0             !< seconds between clearing of diagnostic buckets
+    real(kind=kind_phys) :: fhzero         = 0.0             !< hours between clearing of diagnostic buckets
     logical              :: ldiag3d        = .false.         !< flag for 3d diagnostic fields
     logical              :: lssav          = .false.         !< logical flag for storing diagnostics
 
@@ -1871,9 +3769,9 @@ module GFS_typedefs
     logical              :: do_ugwp        = .false.         !< flag do UGWP+RF
     logical              :: do_tofd        = .false.         !< flag do Turb oro Form Drag
 
-    real(kind=kind_phys) :: fhcyc          = 0.              !< frequency for surface data cycling (secs)
+    real(kind=kind_phys) :: fhcyc          = 0.              !< frequency for surface data cycling (hours)
     logical              :: lgocart        = .false.         !< flag for 3d diagnostic fields for gocart 1
-    real(kind=kind_phys) :: fhgoc3d        = 0.0             !< seconds between calls to gocart
+    real(kind=kind_phys) :: fhgoc3d        = 0.0             !< hours between calls to gocart
     integer              :: thermodyn_id   =  1              !< valid for GFS only for get_prs/phi
     integer              :: sfcpress_id    =  1              !< valid for GFS only for get_prs/phi
 
@@ -1926,8 +3824,8 @@ module GFS_typedefs
     logical              :: swhtr             = .true.       !< flag to output sw heating rate (Radtend%swhc)
 
 !--- Z-C microphysical parameters
-    integer              :: ncld              =  1                 !< cnoice of cloud scheme
-    integer              :: imp_physics       =  99                !< cnoice of cloud scheme
+    integer              :: ncld              =  1                 !< choice of cloud scheme
+    integer              :: imp_physics       =  99                !< choice of cloud scheme
     real(kind=kind_phys) :: psautco(2)        = (/6.0d-4,3.0d-4/)  !< [in] auto conversion coeff from ice to snow
     real(kind=kind_phys) :: prautco(2)        = (/1.0d-4,1.0d-4/)  !< [in] auto conversion coeff from cloud to rain
     real(kind=kind_phys) :: evpco             = 2.0d-5             !< [in] coeff for evaporation of largescale rain
@@ -1938,9 +3836,12 @@ module GFS_typedefs
 !--- M-G microphysical parameters
     integer              :: fprcp             =  0                 !< no prognostic rain and snow (MG)
     integer              :: pdfflag           =  4                 !< pdf flag for MG macro physics
-    real(kind=kind_phys) :: mg_dcs            = 200.0              !< Morrison-Gettleman microphysics parameters
+    real(kind=kind_phys) :: mg_dcs            = 200.0              !< Morrison-Gettelman microphysics parameters
     real(kind=kind_phys) :: mg_qcvar          = 1.0
     real(kind=kind_phys) :: mg_ts_auto_ice(2) = (/180.0,180.0/)    !< ice auto conversion time scale
+#ifdef CCPP
+    real(kind=kind_phys) :: mg_rhmini         = 1.01               !< relative humidity threshold parameter for nucleating ice
+#endif
     real(kind=kind_phys) :: mg_ncnst          = 100.e6             !< constant droplet num concentration (m-3)
     real(kind=kind_phys) :: mg_ninst          = 0.15e6             !< constant ice num concentration (m-3)
     real(kind=kind_phys) :: mg_ngnst          = 0.10e6             !< constant graupel/hail num concentration (m-3) = 0.1e6_r8
@@ -1948,6 +3849,10 @@ module GFS_typedefs
     real(kind=kind_phys) :: mg_qcmin(2)       = (/1.0d-9,1.0d-9/)  !< min liquid and ice mixing ratio in Mg macro clouds
     real(kind=kind_phys) :: mg_berg_eff_factor = 2.0               !< berg efficiency factor
     character(len=16)    :: mg_precip_frac_method = 'max_overlap'  !< type of precipitation fraction method
+#ifdef CCPP
+    real(kind=kind_phys) :: tf              = 258.16d0
+    real(kind=kind_phys) :: tcr             = 273.16d0
+#endif
 !
     logical              :: effr_in         = .false.              !< flag to use effective radii of cloud species in radiation
     logical              :: microp_uniform  = .true.
@@ -1962,19 +3867,25 @@ module GFS_typedefs
     logical              :: mg_do_graupel   = .true.            !< set .true. to turn on prognostic grapuel (with fprcp=2)
     logical              :: mg_do_hail      = .false.           !< set .true. to turn on prognostic hail (with fprcp=2)
     logical              :: mg_do_ice_gmao  = .false.           !< set .true. to turn on gmao ice formulation
-    logical              :: mg_do_liq_liu   = .true.            !< set .true. to turn on liq liquid treatment  
+    logical              :: mg_do_liq_liu   = .true.            !< set .true. to turn on liu liquid treatment
 
 
     !--- Thompson microphysical parameters
+    logical              :: make_number_concentrations = .false.!< flag to calculate initial number concentrations
+                                                                !< from mass concentrations if not in ICs/BCs
     logical              :: ltaerosol      = .false.            !< flag for aerosol version
     logical              :: lradar         = .false.            !< flag for radar reflectivity 
+    real(kind=kind_phys) :: ttendlim       = -999.0             !< temperature tendency limiter, set to <0 to deactivate
 
     !--- GFDL microphysical parameters
     logical              :: lgfdlmprad     = .false.            !< flag for GFDLMP radiation interaction 
 
     !--- land/surface model parameters
-    integer              :: lsm            =  1              !< flag for land surface model to use =0  for osu lsm; =1  for noah lsm
+    integer              :: lsm            =  1              !< flag for land surface model to use =0  for osu lsm; =1  for noah lsm; =2  for noah mp lsm; =3  for RUC lsm
     integer              :: lsoil          =  4              !< number of soil layers
+#ifdef CCPP
+    integer              :: lsoil_lsm      =  -1             !< number of soil layers internal to land surface model; -1 use lsoil
+#endif
     integer              :: ivegsrc        =  2              !< ivegsrc = 0   => USGS,
                                                              !< ivegsrc = 1   => IGBP (20 category)
                                                              !< ivegsrc = 2   => UMD  (13 category)
@@ -2016,6 +3927,10 @@ module GFS_typedefs
     logical              :: do_shoc        = .false.                  !< flag for SHOC
     logical              :: shocaftcnv     = .false.                  !< flag for SHOC
     logical              :: shoc_cld       = .false.                  !< flag for SHOC in grrad
+#ifdef CCPP
+    logical              :: oz_phys        = .true.                   !< flag for old (2006) ozone physics
+    logical              :: oz_phys_2015   = .false.                  !< flag for new (2015) ozone physics
+#endif
     logical              :: h2o_phys       = .false.                  !< flag for stratosphere h2o
     logical              :: pdfcld         = .false.                  !< flag for pdfcld
     logical              :: shcnvcw        = .false.                  !< flag for shallow convective cloud
@@ -2023,6 +3938,8 @@ module GFS_typedefs
     logical              :: hybedmf        = .false.                  !< flag for hybrid edmf pbl scheme
     logical              :: satmedmf       = .false.                  !< flag for scale-aware TKE-based moist edmf
                                                                       !< vertical turbulent mixing scheme
+    logical              :: shinhong       = .false.                  !< flag for scale-aware Shinhong vertical turbulent mixing scheme
+    logical              :: do_ysu         = .false.                  !< flag for YSU vertical turbulent mixing scheme
     logical              :: dspheat        = .false.                  !< flag for tke dissipative heating
     logical              :: lheatstrg      = .false.                  !< flag for canopy heat storage parameterization
     logical              :: cnvcld         = .false.
@@ -2032,16 +3949,38 @@ module GFS_typedefs
                                                                       !<     1: July 2010 version of mass-flux shallow conv scheme
                                                                       !<         current operational version as of 2016
                                                                       !<     2: scale- & aerosol-aware mass-flux shallow conv scheme (2017)
+                                                                      !<     3: scale- & aerosol-aware Grell-Freitas scheme (GSD)
+                                                                      !<     4: New Tiedtke scheme (CAPS)
                                                                       !<     0: modified Tiedtke's eddy-diffusion shallow conv scheme
                                                                       !<    -1: no shallow convection used
     integer              :: imfdeepcnv     =  1                       !< flag for mass-flux deep convection scheme
                                                                       !<     1: July 2010 version of SAS conv scheme
                                                                       !<           current operational version as of 2016
                                                                       !<     2: scale- & aerosol-aware mass-flux deep conv scheme (2017)
+                                                                      !<     3: scale- & aerosol-aware Grell-Freitas scheme (GSD)
+                                                                      !<     4: New Tiedtke scheme (CAPS)
     integer              :: isatmedmf      =  0                       !< flag for scale-aware TKE-based moist edmf scheme
                                                                       !<     0: initial version of satmedmf (Nov. 2018)
                                                                       !<     1: updated version of satmedmf (as of May 2019)
     logical              :: do_deep        = .true.                   !< whether to do deep convection
+#ifdef CCPP
+    logical              :: do_mynnedmf       = .false.               !< flag for MYNN-EDMF
+    logical              :: do_mynnsfclay     = .false.               !< flag for MYNN Surface Layer Scheme
+    ! DH* TODO - move to MYNN namelist section
+    integer              :: grav_settling     = 0
+    integer              :: bl_mynn_tkebudget = 0
+    logical              :: bl_mynn_tkeadvect = .false.
+    integer              :: bl_mynn_cloudpdf  = 2
+    integer              :: bl_mynn_mixlength = 2
+    integer              :: bl_mynn_edmf      = 0
+    integer              :: bl_mynn_edmf_mom  = 1
+    integer              :: bl_mynn_edmf_tke  = 0
+    integer              :: bl_mynn_edmf_part = 0
+    integer              :: bl_mynn_cloudmix  = 1
+    integer              :: bl_mynn_mixqt     = 0
+    integer              :: icloud_bl         = 1
+    ! *DH
+#endif
     integer              :: nmtvr          = 14                       !< number of topographic variables such as variance etc
                                                                       !< used in the GWD parameterization
     integer              :: jcap           =  1              !< number of spectral wave trancation used only by sascnv shalcnv
@@ -2118,6 +4057,9 @@ module GFS_typedefs
 
 !--- surface layer z0 scheme
     integer              :: sfc_z0_type    = 0               !< surface roughness options over ocean
+                                                             !< 0=no change
+                                                             !< 6=areodynamical roughness over water with input 10-m wind
+                                                             !< 7=slightly decrease Cd for higher wind speed compare to 6
 
 !--- background vertical diffusion
     real(kind=kind_phys) :: xkzm_m         = 1.0d0           !< [in] bkgd_vdif_m  background vertical diffusion for momentum  
@@ -2144,7 +4086,7 @@ module GFS_typedefs
   
 
     !--- IAU options
-    real(kind=kind_phys)  :: iau_delthrs = 6                 ! iau time interval (to scale increments)
+    real(kind=kind_phys)  :: iau_delthrs = 0                 ! iau time interval (to scale increments)
     character(len=240)    :: iau_inc_files(7)=''             ! list of increment files
     real(kind=kind_phys)  :: iaufhrs(7)=-1                   ! forecast hours associated with increment files
     logical  :: iau_filter_increments = .false.   ! filter IAU increments
@@ -2187,28 +4129,50 @@ module GFS_typedefs
                                iccn,                                                        &
                           !--- microphysical parameterizations
                                ncld, imp_physics, psautco, prautco, evpco, wminco,          &
+#ifdef CCPP
+                               fprcp, pdfflag, mg_dcs, mg_qcvar, mg_ts_auto_ice, mg_rhmini, &
+                               effr_in, tf, tcr,                                            &
+#else
                                fprcp, pdfflag, mg_dcs, mg_qcvar, mg_ts_auto_ice, effr_in,   &
+#endif
                                microp_uniform, do_cldice, hetfrz_classnuc,                  &
                                mg_do_graupel, mg_do_hail, mg_nccons, mg_nicons, mg_ngcons,  &
                                mg_ncnst, mg_ninst, mg_ngnst, sed_supersat, do_sb_physics,   &
                                mg_alf,   mg_qcmin, mg_do_ice_gmao, mg_do_liq_liu,           &
-                               ltaerosol, lradar, lgfdlmprad,                               & 
+                               make_number_concentrations,                                  &
+                               ltaerosol, lradar, ttendlim, lgfdlmprad,                     &
                           !--- max hourly
                                avg_max_length,                                              &
                           !--- land/surface model control
+#ifdef CCPP
+                               lsm, lsoil, lsoil_lsm, nmtvr, ivegsrc, use_ufo,              &
+#else
                                lsm, lsoil, nmtvr, ivegsrc, use_ufo,                         &
+#endif
                           !    Noah MP options
                                iopt_dveg,iopt_crs,iopt_btr,iopt_run,iopt_sfc, iopt_frz,     &
                                iopt_inf, iopt_rad,iopt_alb,iopt_snf,iopt_tbot,iopt_stc,     &
                           !--- physical parameterizations
                                ras, trans_trac, old_monin, cnvgwd, mstrat, moist_adj,       &
                                cscnv, cal_pre, do_aw, do_shoc, shocaftcnv, shoc_cld,        &
+#ifdef CCPP
+                               oz_phys, oz_phys_2015,                                       &
+                               do_mynnedmf, do_mynnsfclay,                                  &
+                               ! DH* TODO - move to MYNN namelist section
+                               bl_mynn_cloudpdf, bl_mynn_edmf, bl_mynn_edmf_mom,            &
+                               bl_mynn_edmf_tke, bl_mynn_edmf_part, bl_mynn_cloudmix,       &
+                               bl_mynn_mixqt, icloud_bl, bl_mynn_tkeadvect,                 &
+                               ! *DH
+#endif
                                h2o_phys, pdfcld, shcnvcw, redrag, hybedmf, satmedmf,        &
-                               dspheat, lheatstrg, cnvcld,                                  &
+                               shinhong, do_ysu, dspheat, dspheat, lheatstrg, cnvcld,       &
                                random_clds, shal_cnv, imfshalcnv, imfdeepcnv, isatmedmf,    &
                                do_deep, jcap,                                               &
                                cs_parm, flgmin, cgwf, ccwf, cdmbgwd, sup, ctei_rm, crtrh,   &
                                dlqf, rbcr, shoc_parm, psauras, prauras, wminras,            &
+#ifdef CCPP
+                               do_sppt, do_shum, do_skeb, do_sfcperts,                      &
+#endif
                           !--- Rayleigh friction
                                prslrd0, ral_ts,  ldiag_ugwp, do_ugwp, do_tofd,              &
                           !--- mass flux deep convection
@@ -2248,7 +4212,6 @@ module GFS_typedefs
 
 
 !--- read in the namelist
-    !--- read in the namelist
 #ifdef INTERNAL_FILE_NML
     Model%input_nml_file => input_nml_file
     read(Model%input_nml_file, nml=gfs_physics_nml)
@@ -2274,8 +4237,16 @@ module GFS_typedefs
 !--- MPI parameters
     Model%me               = me
     Model%master           = master
+#ifdef CCPP
+    Model%communicator     = communicator
+    Model%ntasks           = ntasks
+    Model%nthreads         = nthreads
+#endif
     Model%nlunit           = nlunit
     Model%fn_nml           = fn_nml
+#ifdef CCPP
+    Model%logunit          = logunit
+#endif
     Model%fhzero           = fhzero
     Model%ldiag3d          = ldiag3d
 !
@@ -2284,6 +4255,12 @@ module GFS_typedefs
     Model%ldiag_ugwp       = ldiag_ugwp
     Model%do_ugwp          = do_ugwp
     Model%do_tofd          = do_tofd
+#ifdef CCPP
+    if (Model%ldiag_ugwp .or. Model%do_ugwp .or. Model%do_tofd) then
+      print *, "Error, unified gravity wavedrag parameterization not yet available in CCPP"
+      stop
+    endif
+#endif
 !
     Model%lssav            = lssav
     Model%fhcyc            = fhcyc
@@ -2300,10 +4277,20 @@ module GFS_typedefs
     Model%nx               = nx
     Model%ny               = ny
     Model%levs             = levs
+#ifdef CCPP
+    allocate(Model%ak(1:size(ak)))
+    allocate(Model%bk(1:size(bk)))
+    Model%ak               = ak
+    Model%bk               = bk
+#endif
     Model%cnx              = cnx
     Model%cny              = cny
     Model%lonr             = gnx         ! number longitudinal points
     Model%latr             = gny         ! number of latitudinal points from pole to pole
+#ifdef CCPP
+    allocate(Model%blksz(1:size(blksz)))
+    Model%blksz            = blksz
+#endif
 
 !--- coupling parameters
     Model%cplflx           = cplflx
@@ -2316,7 +4303,7 @@ module GFS_typedefs
 !--- calendars and time parameters and activation triggers
     Model%dtp              = dt_phys
     Model%dtf              = dt_dycore
-    Model%nscyc            = nint(fhcyc*3600./Model%dtp)
+    Model%nscyc            = nint(Model%fhcyc*con_hr/Model%dtp)
     Model%nszero           = nint(Model%fhzero*con_hr/Model%dtp)
     Model%idat(1:8)        = idat(1:8)
     Model%idate            = 0
@@ -2324,6 +4311,7 @@ module GFS_typedefs
     Model%idate(2)         = Model%idat(2)
     Model%idate(3)         = Model%idat(3)
     Model%idate(4)         = Model%idat(1)
+    Model%iau_offset       = iau_offset
 
 !--- radiation control parameters
     Model%fhswr            = fhswr
@@ -2344,6 +4332,9 @@ module GFS_typedefs
     endif
     Model%iccn             = iccn
     if (Model%aero_in) Model%iccn = .false.
+    ! further down: set Model%iccn to .false.
+    ! for all microphysics schemes except
+    ! MG2/3 (these are the only ones using ICCN)
     Model%iflip            = iflip
     Model%isol             = isol
     Model%ico2             = ico2
@@ -2360,10 +4351,22 @@ module GFS_typedefs
     Model%ccnorm           = ccnorm
     Model%lwhtr            = lwhtr
     Model%swhtr            = swhtr
+#ifdef CCPP
+    ! The CCPP versions of the RRTMG lw/sw schemes are configured
+    ! such that lw and sw heating rate are output, i.e. they rely
+    ! on the corresponding arrays to be allocated.
+    if (.not.lwhtr .or. .not.swhtr) then
+      write(0,*) "Logic error, the CCPP version of RRTMG lwrad/swrad require the output" // &
+             " of the lw/sw heating rates to be turned on (namelist options lwhtr and swhtr)"
+      stop
+    end if
+#endif
 
 !--- microphysical switch
     Model%ncld             = ncld
     Model%imp_physics      = imp_physics
+    ! turn off ICCN interpolation when MG2/3 are not used
+    if (.not. Model%imp_physics==Model%imp_physics_mg) Model%iccn = .false.
 !--- Zhao-Carr MP parameters
     Model%psautco          = psautco
     Model%prautco          = prautco
@@ -2371,12 +4374,15 @@ module GFS_typedefs
     Model%wminco           = wminco
 !--- Max hourly
     Model%avg_max_length   = avg_max_length
-!--- Morroson-Gettleman MP parameters
+!--- Morrison-Gettelman MP parameters
     Model%fprcp            = fprcp
     Model%pdfflag          = pdfflag
     Model%mg_dcs           = mg_dcs
     Model%mg_qcvar         = mg_qcvar
     Model%mg_ts_auto_ice   = mg_ts_auto_ice
+#ifdef CCPP
+    Model%mg_rhmini        = mg_rhmini
+#endif
     Model%mg_alf           = mg_alf
     Model%mg_qcmin         = mg_qcmin
     Model%effr_in          = effr_in
@@ -2397,16 +4403,36 @@ module GFS_typedefs
     Model%do_sb_physics    = do_sb_physics
     Model%mg_precip_frac_method  = mg_precip_frac_method
     Model%mg_berg_eff_factor     = mg_berg_eff_factor
+#ifdef CCPP
+    Model%tf               = tf
+    Model%tcr              = tcr
+    Model%tcrf             = 1.0/(tcr-tf)
+#endif
 
 !--- Thompson MP parameters
+    Model%make_number_concentrations = make_number_concentrations
     Model%ltaerosol        = ltaerosol
     Model%lradar           = lradar
+    Model%ttendlim         = ttendlim
 !--- gfdl  MP parameters
     Model%lgfdlmprad       = lgfdlmprad
 
 !--- land/surface model parameters
     Model%lsm              = lsm
     Model%lsoil            = lsoil
+#ifdef CCPP
+    ! Consistency check for RUC LSM
+    if (Model%lsm == Model%lsm_ruc .and. Model%nscyc>0) then
+      write(0,*) 'Logic error: RUC LSM cannot be used with surface data cycling at this point (fhcyc>0)'
+      stop
+    end if
+    ! Set surface layers for CCPP physics
+    if (lsoil_lsm==-1) then
+      Model%lsoil_lsm      = lsoil
+    else
+      Model%lsoil_lsm      = lsoil_lsm
+    end if
+#endif
     Model%ivegsrc          = ivegsrc
     Model%isot             = isot
     Model%use_ufo          = use_ufo
@@ -2439,15 +4465,44 @@ module GFS_typedefs
     Model%do_aw            = do_aw
     Model%cs_parm          = cs_parm
     Model%do_shoc          = do_shoc
+#ifdef CCPP
+    if (Model%do_shoc) then
+      print *, "Error, update of SHOC from May 22 2019 not yet in CCPP"
+      stop
+    end if
+#endif
     Model%shoc_parm        = shoc_parm
     Model%shocaftcnv       = shocaftcnv
     Model%shoc_cld         = shoc_cld
+#ifdef CCPP
+    if (oz_phys .and. oz_phys_2015) then
+       write(*,*) 'Logic error: can only use one ozone physics option (oz_phys or oz_phys_2015), not both. Exiting.'
+       stop
+    end if
+    Model%oz_phys          = oz_phys
+    Model%oz_phys_2015     = oz_phys_2015
+#endif
     Model%h2o_phys         = h2o_phys
+#ifdef CCPP
+    ! To ensure that these values match what's in the physics,
+    ! array sizes are compared during model init in GFS_phys_time_vary_init()
+    !
+    ! from module h2ointerp
+    if (h2o_phys) then
+       levh2o    = 72
+       h2o_coeff = 3
+    else
+       levh2o    = 1
+       h2o_coeff = 1
+    end if
+#endif
     Model%pdfcld           = pdfcld
     Model%shcnvcw          = shcnvcw
     Model%redrag           = redrag
     Model%hybedmf          = hybedmf
     Model%satmedmf         = satmedmf
+    Model%shinhong         = shinhong
+    Model%do_ysu           = do_ysu
     Model%dspheat          = dspheat
     Model%lheatstrg        = lheatstrg
     Model%cnvcld           = cnvcld
@@ -2471,7 +4526,23 @@ module GFS_typedefs
     Model%prauras          = prauras
     Model%wminras          = wminras
     Model%rbcr             = rbcr
-
+#ifdef CCPP
+    Model%do_mynnedmf       = do_mynnedmf
+    Model%do_mynnsfclay     = do_mynnsfclay
+    ! DH* TODO - move to MYNN namelist section
+    Model%bl_mynn_cloudpdf  = bl_mynn_cloudpdf
+    Model%bl_mynn_mixlength = bl_mynn_mixlength
+    Model%bl_mynn_edmf      = bl_mynn_edmf
+    Model%bl_mynn_edmf_mom  = bl_mynn_edmf_mom
+    Model%bl_mynn_edmf_tke  = bl_mynn_edmf_tke
+    Model%bl_mynn_cloudmix  = bl_mynn_cloudmix
+    Model%bl_mynn_mixqt     = bl_mynn_mixqt
+    Model%bl_mynn_edmf_part = bl_mynn_edmf_part
+    Model%bl_mynn_tkeadvect = bl_mynn_tkeadvect
+    Model%grav_settling     = grav_settling
+    Model%icloud_bl         = icloud_bl
+    ! *DH
+#endif
 
 !--- Rayleigh friction
     Model%prslrd0          = prslrd0
@@ -2514,6 +4585,21 @@ module GFS_typedefs
     Model%moninq_fac       = moninq_fac
 
 !--- stochastic physics options
+    ! DH* 20180730
+    ! For the standard/non-CCPP build, do_sppt, do_shum, do_skeb and do_sfcperts
+    ! are set to false here and updated later as part of init_stochastic_physics,
+    ! depending on values of other namelist parameters. Since these values are used
+    ! as conditionals for allocating components of Coupling and other DDTs, the call
+    ! to init_stochastic_physics is placed between creating the "Model" DDT and the
+    ! other DDTs.
+    ! This is confusing and not compatible with CCPP, because the CCPP physics init
+    ! can happen only after ALL DDTs are created and added to the CCPP data structure
+    ! (cdata). Hence, for CCPP do_sppt, do_shum, do_skeb and do_sfcperts are additional
+    ! namelist variables in group physics that are parsed here and then compared in
+    ! stochastic_physics_init (the CCPP version of init_stochastic_physics) to the
+    ! stochastic physics namelist parameters to ensure consistency.
+    ! DH* 20190518 - the same functionality is needed for separating stochastic_physics
+    ! from both IPD and CCPP, i.e. keep this code *DH
     Model%do_sppt          = do_sppt
     Model%use_zmtnblck     = use_zmtnblck
     Model%do_shum          = do_shum
@@ -2526,6 +4612,7 @@ module GFS_typedefs
     Model%pertlai          = pertlai
     Model%pertalb          = pertalb
     Model%pertvegf         = pertvegf
+    ! *DH 20180730
 
     !--- cellular automata options
     Model%nca              = nca
@@ -2535,6 +4622,14 @@ module GFS_typedefs
     Model%nseed            = nseed
     Model%ca_global        = ca_global
     Model%do_ca            = do_ca
+#ifdef CCPP
+    if(Model%do_ca)then
+      print *,'Cellular automata cannot be used when CCPP is turned on until'
+      print *,'the stochastic physics pattern generation code has been pulled'
+      print *,'out of the FV3 repository and updated with the CCPP version.'
+      stop
+    endif
+#endif
     Model%ca_sgs           = ca_sgs
     Model%iseed_ca         = iseed_ca
     Model%ca_smooth        = ca_smooth
@@ -2548,11 +4643,18 @@ module GFS_typedefs
     Model%iau_inc_files   = iau_inc_files
     Model%iau_delthrs     = iau_delthrs
     Model%iau_filter_increments = iau_filter_increments
+    if(Model%me==0) print *,' model init,iaufhrs=',Model%iaufhrs
 
 !--- tracer handling
     Model%ntrac            = size(tracer_names)
+#ifdef CCPP
+    Model%ntracp1          = Model%ntrac + 1
+#endif
     allocate (Model%tracer_names(Model%ntrac))
     Model%tracer_names(:)  = tracer_names(:)
+#ifdef CCPP
+    Model%ntqv             = 1
+#endif
 #ifdef MULTI_GASES
     Model%nto              = get_tracer_index(Model%tracer_names, 'spfo',        Model%me, Model%master, Model%debug)
     Model%nto2             = get_tracer_index(Model%tracer_names, 'spfo2',       Model%me, Model%master, Model%debug)
@@ -2593,6 +4695,33 @@ module GFS_typedefs
       endif
     endif
 
+#ifdef CCPP
+    ! To ensure that these values match what's in the physics,
+    ! array sizes are compared during model init in GFS_phys_time_vary_init()
+    !
+    ! from module ozinterp
+    if (Model%ntoz>0) then
+       if (Model%oz_phys) then
+          levozp   = 80
+          oz_coeff = 4
+       else if (Model%oz_phys_2015) then
+          levozp   = 53
+          oz_coeff = 6
+       else
+          write(*,*) 'Logic error, ntoz>0 but no ozone physics selected'
+          stop
+       end if
+    else
+       if (Model%oz_phys .or. Model%oz_phys_2015) then
+          write(*,*) 'Logic error, ozone physics are selected, but ntoz<=0'
+          stop
+       else
+          levozp   = 1
+          oz_coeff = 0
+       end if
+    end if
+#endif
+
 !--- quantities to be used to derive phy_f*d totals
     Model%nshoc_2d         = nshoc_2d
     Model%nshoc_3d         = nshoc_3d
@@ -2620,17 +4749,47 @@ module GFS_typedefs
     Model%fhour            = (rinc(4) + Model%dtp)/con_hr
     Model%zhour            = mod(Model%phour,Model%fhzero)
     Model%kdt              = 0
+#ifdef CCPP
+    Model%first_time_step  = .true.
+    Model%restart          = restart
+    Model%hydrostatic      = hydrostatic
+#endif
     Model%jdat(1:8)        = jdat(1:8)
+#ifdef CCPP
+    Model%sec              = 0
+    allocate(Model%si(Model%levr+1))
+    !--- Define sigma level for radiation initialization
+    !--- The formula converting hybrid sigma pressure coefficients to sigma coefficients follows Eckermann (2009, MWR)
+    !--- ps is replaced with p0. The value of p0 uses that in http://www.emc.ncep.noaa.gov/officenotes/newernotes/on461.pdf
+    !--- ak/bk have been flipped from their original FV3 orientation and are defined sfc -> toa
+    Model%si = (ak + bk * p_ref - ak(Model%levr+1)) / (p_ref - ak(Model%levr+1))
+#endif
 
+#ifndef CCPP
+    ! Beware! The values set here reside in wam_f107_kp_mod and determine sizes of arrays
+    ! inside that module. These arrays get used later in modules idea_tracer.f, idea_ion.f,
+    ! idea_solar_heating.f, efield.f, and idea_composition.f.
+    ! Since in wam_f107_kp_mod no default values are assigned to the four integers below, not
+    ! setting them here can lead to memory corruption that is hard to detect.
 !--- stored in wam_f107_kp module
     f107_kp_size      = 56
     f107_kp_skip_size = 0
     f107_kp_data_size = 56
     f107_kp_interval  = 10800
+#endif
 
 !--- BEGIN CODE FROM GFS_PHYSICS_INITIALIZE
 !--- define physcons module variables
     tem     = con_rerth*con_rerth*(con_pi+con_pi)*con_pi
+#ifdef CCPP
+    Model%dxmax  = log(tem/(max_lon*max_lat))
+    Model%dxmin  = log(tem/(min_lon*min_lat))
+    Model%dxinv  = 1.0d0 / (Model%dxmax-Model%dxmin)
+    Model%rhcmax = rhcmax
+    if (Model%me == Model%master) write(*,*)' dxmax=',Model%dxmax,' dxmin=',Model%dxmin,' dxinv=',Model%dxinv, &
+       'max_lon=',max_lon,' max_lat=',max_lat,' min_lon=',min_lon,' min_lat=',min_lat,       &
+       ' rhc_max=',Model%rhcmax
+#else
     dxmax   = log(tem/(max_lon*max_lat))
     dxmin   = log(tem/(min_lon*min_lat))
     dxinv   = 1.0d0 / (dxmax-dxmin)
@@ -2638,14 +4797,19 @@ module GFS_typedefs
     if (Model%me == Model%master) write(*,*)' dxmax=',dxmax,' dxmin=',dxmin,' dxinv=',dxinv, &
        'max_lon=',max_lon,' max_lat=',max_lat,' min_lon=',min_lon,' min_lat=',min_lat,       &
        ' rhc_max=',rhc_max
+#endif
 
 !--- set nrcm 
 
+#ifndef CCPP
     if (Model%ras) then
       Model%nrcm = min(nrcmax, Model%levs-1) * (Model%dtp/1200.d0) + 0.10001d0
     else
       Model%nrcm = 2
     endif
+#else
+    Model%nrcm = 2
+#endif
 
 !--- cal_pre
     if (Model%cal_pre) then
@@ -2670,6 +4834,29 @@ module GFS_typedefs
                                             ' ntke=',Model%ntke,' shoc_parm=',shoc_parm
     endif
 
+#ifdef CCPP
+    !--- mynn-edmf scheme
+    if (Model%do_mynnedmf) then
+      if (Model%do_shoc .or. Model%hybedmf .or. Model%satmedmf) then
+          print *,' Logic error: MYNN EDMF cannot be run with SHOC, HEDMF or SATMEDMF'
+          stop
+      end if
+!      Model%shal_cnv   = .false.
+!      Model%imfshalcnv = -1
+      ! DH* substitute for MYNN namelist section
+      Model%icloud_bl         = 1
+      !Model%bl_mynn_tkeadvect = .true.
+      Model%bl_mynn_edmf      = 1
+      !Model%bl_mynn_edmf_mom  = 1
+      ! *DH
+      if (Model%me == Model%master) print *,' MYNN-EDMF scheme is used for both',                &
+                                            ' boundary layer turbulence and shallow convection', &
+                                            ' bl_mynn_cloudpdf=',Model%bl_mynn_cloudpdf,         &
+                                            ' bl_mynn_mixlength=',Model%bl_mynn_mixlength,       &
+                                            ' bl_mynn_edmf=',Model%bl_mynn_edmf
+    endif
+#endif
+
 !--- set number of cloud types
     if (Model%cscnv) then
       Model%nctp = nint(Model%cs_parm(5))
@@ -2688,7 +4875,21 @@ module GFS_typedefs
       elseif (Model%lsm == 0) then
         print *,' OSU no longer supported - job aborted'
         stop
-      elseif (Model%lsm == 2) then
+#ifdef CCPP
+      elseif (Model%lsm == Model%lsm_ruc) then
+        print *,' RUC Land Surface Model used'
+      elseif (Model%lsm == Model%lsm_noahmp) then
+        print *,' Error, NOAH MP Land Surface Model not yet available in CCPP - job aborted'
+        stop
+#else
+      elseif (Model%lsm == Model%lsm_noahmp) then
+        if (Model%ivegsrc /= 1) then
+          print *,'Vegetation type must be IGBP if Noah MP is used'
+          stop
+        elseif (Model%isot /= 1) then
+          print *,'Soil type must be STATSGO if Noah MP is used'
+          stop
+        endif
         print *, 'New Noah MP Land Surface Model will be used'
         print *, 'The Physics options are'
 
@@ -2704,20 +4905,17 @@ module GFS_typedefs
         print *,'iopt_snf   =  ', Model%iopt_snf
         print *,'iopt_tbot   =  ',Model%iopt_tbot
         print *,'iopt_stc   =  ', Model%iopt_stc
-
-      elseif (Model%lsm == 2 .and. Model%ivegsrc /= 1) then
-        print *,'Vegetation type must be IGBP if Noah MP is used'
+      elseif (Model%lsm == Model%lsm_ruc) then
+        print *,' RUC Land Surface Model only available through CCPP - job aborted'
         stop
-      elseif (Model%lsm == 2 .and. Model%isot /= 1) then
-        print *,'Soil type must be STATSGO if Noah MP is used'
-        stop
+#endif
       else
         print *,' Unsupported LSM type - job aborted - lsm=',Model%lsm
         stop
       endif
 
-      if (Model%lsm == 2 .and. Model%iopt_snf == 4) then
-        if (Model%imp_physics /= 11) stop 'iopt_snf == 4 must use GFDL MP'
+      if (Model%lsm == Model%lsm_noahmp .and. Model%iopt_snf == 4) then
+        if (Model%imp_physics /= Model%imp_physics_gfdl) stop 'iopt_snf == 4 must use GFDL MP'
       endif
 
       print *,' nst_anl=',Model%nst_anl,' use_ufo=',Model%use_ufo,' frac_grid=',Model%frac_grid
@@ -2730,6 +4928,23 @@ module GFS_typedefs
         print *,' nstf_name(5)=',Model%nstf_name(5)
       endif
       if (Model%do_deep) then
+#ifdef CCPP
+        ! Consistency check for NTDK convection: deep and shallow convection are bundled
+        ! and cannot be combined with any other deep or shallow convection scheme
+        if ( (Model%imfdeepcnv == 4 .or. Model%imfshalcnv == 4) .and. &
+            .not. (Model%imfdeepcnv == 4 .and. Model%imfshalcnv == 4) ) then
+            write(0,*) "Logic error: if NTDK deep convection is used, must also use NTDK shallow convection (and vice versa)"
+            stop
+        end if
+#else
+        if (Model%imfdeepcnv == 3 .or. Model%imfshalcnv == 3) then
+            write(0,*) "Error, GF convection scheme only available through CCPP"
+            stop
+        else if (Model%imfdeepcnv == 4 .or. Model%imfshalcnv == 4) then
+            write(0,*) "Error, NTDK convection scheme only available through CCPP"
+            stop
+        end if
+#endif
         if (.not. Model%cscnv) then
           if (Model%ras) then
             print *,' RAS Convection scheme used with ccwf=',Model%ccwf
@@ -2741,6 +4956,10 @@ module GFS_typedefs
                print *,' July 2010 version of SAS conv scheme used'
             elseif(Model%imfdeepcnv == 2) then
                print *,' scale & aerosol-aware mass-flux deep conv scheme'
+            elseif(Model%imfdeepcnv == 3) then
+               print *,' Grell-Freitas scale & aerosol-aware mass-flux deep conv scheme'
+            elseif(Model%imfdeepcnv == 4) then
+               print *,' New Tiedtke cumulus scheme'
             endif
           endif
         else
@@ -2759,12 +4978,21 @@ module GFS_typedefs
         if (Model%isatmedmf == 0) then
           print *,' initial version (Nov 2018) of sale-aware TKE-based moist EDMF scheme used'
         elseif(Model%isatmedmf == 1) then
+#ifdef CCPP
+          print *,' Error: updated version (May 2019) of sale-aware TKE-based moist EDMF scheme not yet available in CCPP'
+          stop
+#else
           print *,' update version (May 2019) of sale-aware TKE-based moist EDMF scheme used'
+#endif
         endif
       elseif (Model%hybedmf) then
         print *,' scale-aware hybrid edmf PBL scheme used'
       elseif (Model%old_monin) then
         print *,' old (old_monin) PBL scheme used'
+#ifdef CCPP
+      elseif (Model%do_mynnedmf) then
+        print *,' MYNN PBL scheme used'
+#endif
       endif
       if (.not. Model%shal_cnv) then
         Model%imfshalcnv = -1
@@ -2776,6 +5004,10 @@ module GFS_typedefs
           print *,' July 2010 version of mass-flux shallow conv scheme used'
         elseif (Model%imfshalcnv == 2) then
           print *,' scale- & aerosol-aware mass-flux shallow conv scheme (2017)'
+        elseif (Model%imfshalcnv == 3) then
+          print *,' Grell-Freitas scale- & aerosol-aware mass-flux shallow conv scheme (2013)'
+        elseif (Model%imfshalcnv == 4) then
+          print *,' New Tiedtke cumulus scheme'
         else
           print *,' unknown mass-flux scheme in use - defaulting to no shallow convection'
           Model%imfshalcnv = -1
@@ -2809,7 +5041,12 @@ module GFS_typedefs
     endif
 
 !--- set up cloud schemes and tracer elements
-    if (Model%imp_physics == 99) then
+    Model%nleffr = -999
+    Model%nieffr = -999
+    Model%nreffr = -999
+    Model%nseffr = -999
+    Model%ngeffr = -999
+    if (Model%imp_physics == Model%imp_physics_zhao_carr) then
       Model%npdf3d  = 0
       Model%num_p3d = 4
       Model%num_p2d = 3
@@ -2817,7 +5054,7 @@ module GFS_typedefs
       Model%ncnd    = 1                   ! ncnd is the number of cloud condensate types
       if (Model%me == Model%master) print *,' Using Zhao/Carr/Sundqvist Microphysics'
 
-    elseif (Model%imp_physics == 98) then !Zhao Microphysics with PDF cloud
+    elseif (Model%imp_physics == Model%imp_physics_zhao_carr_pdf) then !Zhao Microphysics with PDF cloud
       Model%npdf3d  = 3
       Model%num_p3d = 4
       Model%num_p2d = 3
@@ -2828,39 +5065,45 @@ module GFS_typedefs
       print *,' Ferrier Microphysics scheme has been deprecated - job aborted'
       stop
 
-    elseif (Model%imp_physics == 6) then !WSM6 microphysics 
+    elseif (Model%imp_physics == Model%imp_physics_wsm6) then !WSM6 microphysics
       Model%npdf3d  = 0
       Model%num_p3d = 3
       Model%num_p2d = 1
       Model%pdfcld  = .false.
       Model%shcnvcw = .false.
       Model%ncnd    = 5
+      Model%nleffr = 1
+      Model%nieffr = 2
+      Model%nseffr = 3
       if (Model%me == Model%master) print *,' Using wsm6 microphysics'
 
-    elseif (Model%imp_physics == 8) then !Thompson microphysics 
+    elseif (Model%imp_physics == Model%imp_physics_thompson) then !Thompson microphysics
       Model%npdf3d  = 0
       Model%num_p3d = 3
       Model%num_p2d = 1
       Model%pdfcld  = .false.
       Model%shcnvcw = .false.
       Model%ncnd    = 5
-!      if(Model%ltaerosol) then
-!         Model%ltaerosol=.false.
-!         if (Model%me == Model%master) print *, &
-!           'ltaerosol does not currently work with Thompson MP. ltaerosol is set to false'
-!      endif
-
+      Model%nleffr = 1
+      Model%nieffr = 2
+      Model%nseffr = 3
       if (Model%me == Model%master) print *,' Using Thompson double moment', &
                                           ' microphysics',' ltaerosol = ',Model%ltaerosol, &
+                                          ' make_number_concentrations = ',Model%make_number_concentrations, &
+                                          ' ttendlim =',Model%ttendlim, &
                                           ' lradar =',Model%lradar,Model%num_p3d,Model%num_p2d
 
-    else if (Model%imp_physics == 10) then        ! Morrison-Gettelman Microphysics 
+    else if (Model%imp_physics == Model%imp_physics_mg) then        ! Morrison-Gettelman Microphysics
       Model%npdf3d  = 0
       Model%num_p3d = 5
       Model%num_p2d = 1
       Model%pdfcld  = .false.
       Model%shcnvcw = .false.
       Model%ncnd    = 2
+      Model%nleffr = 2
+      Model%nieffr = 3
+      Model%nreffr = 4
+      Model%nseffr = 5
       if (abs(Model%fprcp) == 1) then
         Model%ncnd = 4
       elseif (Model%fprcp >= 2) then
@@ -2869,6 +5112,7 @@ module GFS_typedefs
           Model%ncnd = 5
         endif
         Model%num_p3d = 6
+        Model%ngeffr = 6
       endif
       if (Model%me == Model%master)                                                                 &
          print *,' Using Morrison-Gettelman double moment microphysics',                            &
@@ -2885,10 +5129,15 @@ module GFS_typedefs
                  ' mg_alf=',          Model%mg_alf,          ' mg_qcmin=',      Model%mg_qcmin,     &
                  ' mg_do_ice_gmao=',  Model%mg_do_ice_gmao,  ' mg_do_liq_liu=', Model%mg_do_liq_liu
 
-    elseif (Model%imp_physics == 11) then !GFDL microphysics
+    elseif (Model%imp_physics == Model%imp_physics_gfdl) then !GFDL microphysics
       Model%npdf3d  = 0
       Model%num_p3d = 1 
       if(Model%effr_in) Model%num_p3d = 5
+      Model%nleffr = 1
+      Model%nieffr = 2
+      Model%nreffr = 3
+      Model%nseffr = 4
+      Model%ngeffr = 5
       Model%num_p2d = 1
       Model%pdfcld  = .false.
       Model%shcnvcw = .false.
@@ -2901,13 +5150,19 @@ module GFS_typedefs
     endif
 
     if(Model%ras     .or. Model%cscnv)  Model%cnvcld = .false.
+#ifdef CCPP
+    if(Model%do_shoc .or. Model%pdfcld .or. Model%do_mynnedmf) Model%cnvcld = .false.
+#else
     if(Model%do_shoc .or. Model%pdfcld) Model%cnvcld = .false.
+#endif
     if(Model%cnvcld) Model%ncnvcld3d = 1
 
-!--- get cnvw index in phy_f3d
+!--- get cnvw and cnvc indices in phy_f3d
     Model%ncnvw = -999
+    Model%ncnvc = -999
     if ((Model%npdf3d == 3) .and. (Model%num_p3d == 4)) then
       Model%ncnvw = Model%num_p3d + 2
+      Model%ncnvc = Model%ncnvw + 1
     elseif ((Model%npdf3d == 0) .and. (Model%ncnvcld3d == 1)) then
       Model%ncnvw = Model%num_p3d + 1
     endif
@@ -2920,7 +5175,7 @@ module GFS_typedefs
     Model%uni_cld = .false.
     Model%indcld  = -1
 !   if (Model%shoc_cld .or. Model%ncld == 2 .or. Model%ntclamt > 0) then
-    if (Model%imp_physics == 10) then
+    if (Model%imp_physics == Model%imp_physics_mg) then
       Model%uni_cld = .true.
       Model%indcld  = 1
     elseif (Model%shoc_cld) then
@@ -2938,7 +5193,8 @@ module GFS_typedefs
                  ' uni_cld=',   Model%uni_cld,                                  &
                  ' ntot3d=',    Model%ntot3d,    ' ntot2d=',   Model%ntot2d,    &
                  ' shocaftcnv=',Model%shocaftcnv,' indcld=',   Model%indcld,    &
-                 ' shoc_parm=', Model%shoc_parm, ' ncnvw=',    Model%ncnvw
+                 ' shoc_parm=', Model%shoc_parm,                                &
+                 ' ncnvw=',     Model%ncnvw,     ' ncnvc=',     Model%ncnvc
 
 !--- END CODE FROM COMPNS_PHYSICS
 
@@ -2947,7 +5203,11 @@ module GFS_typedefs
 !--- set up parameters for Xu & Randell's cloudiness computation (Radiation)
 
     Model%lmfshal  = (Model%shal_cnv .and. Model%imfshalcnv > 0)
+#ifdef CCPP
+    Model%lmfdeep2 = (Model%imfdeepcnv == 2 .or. Model%imfdeepcnv == 3 .or. Model%imfdeepcnv == 4)
+#else
     Model%lmfdeep2 = (Model%imfdeepcnv == 2)
+#endif
 !--- END CODE FROM GLOOPR
 
 !--- BEGIN CODE FROM GLOOPB
@@ -2984,6 +5244,9 @@ module GFS_typedefs
       print *, 'basic control parameters'
       print *, ' me                : ', Model%me
       print *, ' master            : ', Model%master
+#ifdef CCPP
+      print *, ' communicator      : ', Model%communicator
+#endif
       print *, ' nlunit            : ', Model%nlunit
       print *, ' fn_nml            : ', trim(Model%fn_nml)
       print *, ' fhzero            : ', Model%fhzero
@@ -3006,6 +5269,10 @@ module GFS_typedefs
       print *, ' cny               : ', Model%cny
       print *, ' lonr              : ', Model%lonr
       print *, ' latr              : ', Model%latr
+#ifdef CCPP
+      print *, ' blksz(1)          : ', Model%blksz(1)
+      print *, ' blksz(nblks)      : ', Model%blksz(size(Model%blksz))
+#endif
       print *, ' '
       print *, 'coupling parameters'
       print *, ' cplflx            : ', Model%cplflx
@@ -3057,7 +5324,7 @@ module GFS_typedefs
       print *, ' imp_physics       : ', Model%imp_physics
       print *, ' '
 
-      if (Model%imp_physics == 99 .or. Model%imp_physics == 98) then
+      if (Model%imp_physics == Model%imp_physics_zhao_carr .or. Model%imp_physics == Model%imp_physics_zhao_carr_pdf) then
         print *, ' Z-C microphysical parameters'
         print *, ' psautco           : ', Model%psautco
         print *, ' prautco           : ', Model%prautco
@@ -3065,13 +5332,15 @@ module GFS_typedefs
         print *, ' wminco            : ', Model%wminco
         print *, ' '
       endif
-      if (Model%imp_physics == 6 .or. Model%imp_physics == 8) then
+      if (Model%imp_physics == Model%imp_physics_wsm6 .or. Model%imp_physics == Model%imp_physics_thompson) then
         print *, ' Thompson microphysical parameters'
+        print *, ' make_number_concentrations : ', Model%make_number_concentrations
         print *, ' ltaerosol         : ', Model%ltaerosol
         print *, ' lradar            : ', Model%lradar
+        print *, ' ttendlim          : ', Model%ttendlim
         print *, ' '
       endif
-      if (Model%imp_physics == 10) then
+      if (Model%imp_physics == Model%imp_physics_mg) then
         print *, ' M-G microphysical parameters'
         print *, ' fprcp             : ', Model%fprcp
         print *, ' mg_dcs            : ', Model%mg_dcs
@@ -3082,7 +5351,7 @@ module GFS_typedefs
         print *, ' pdfflag           : ', Model%pdfflag
         print *, ' '
       endif
-      if (Model%imp_physics == 11) then
+      if (Model%imp_physics == Model%imp_physics_gfdl) then
         print *, ' GFDL microphysical parameters'
         print *, ' GFDL MP radiation inter: ', Model%lgfdlmprad
         print *, ' '
@@ -3091,10 +5360,13 @@ module GFS_typedefs
       print *, 'land/surface model parameters'
       print *, ' lsm               : ', Model%lsm
       print *, ' lsoil             : ', Model%lsoil
+#ifdef CCPP
+      print *, ' lsoil_lsm         : ', Model%lsoil_lsm
+#endif
       print *, ' ivegsrc           : ', Model%ivegsrc
       print *, ' isot              : ', Model%isot
 
-      if (Model%lsm == 2) then
+      if (Model%lsm == Model%lsm_noahmp) then
       print *, ' Noah MP LSM is used, the options are'
       print *, ' iopt_dveg         : ', Model%iopt_dveg
       print *, ' iopt_crs          : ', Model%iopt_crs
@@ -3141,6 +5413,8 @@ module GFS_typedefs
       print *, ' redrag            : ', Model%redrag
       print *, ' hybedmf           : ', Model%hybedmf
       print *, ' satmedmf          : ', Model%satmedmf
+      print *, ' shinhong          : ', Model%shinhong
+      print *, ' do_ysu            : ', Model%do_ysu
       print *, ' dspheat           : ', Model%dspheat
       print *, ' lheatstrg         : ', Model%lheatstrg
       print *, ' cnvcld            : ', Model%cnvcld
@@ -3162,6 +5436,10 @@ module GFS_typedefs
       print *, ' dlqf              : ', Model%dlqf
       print *, ' seed0             : ', Model%seed0
       print *, ' rbcr              : ', Model%rbcr
+#ifdef CCPP
+      print *, ' do_mynnedmf       : ', Model%do_mynnedmf
+      print *, ' do_mynnsfclay     : ', Model%do_mynnsfclay
+#endif
       print *, ' '
       print *, 'Rayleigh friction'
       print *, ' prslrd0           : ', Model%prslrd0
@@ -3228,6 +5506,9 @@ module GFS_typedefs
       print *, 'tracers'
       print *, ' tracer_names      : ', Model%tracer_names
       print *, ' ntrac             : ', Model%ntrac
+#ifdef CCPP
+      print *, ' ntqv              : ', Model%ntqv
+#endif
       print *, ' ntoz              : ', Model%ntoz
       print *, ' ntcw              : ', Model%ntcw
       print *, ' ntiw              : ', Model%ntiw
@@ -3279,6 +5560,13 @@ module GFS_typedefs
       print *, ' zhour             : ', Model%zhour
       print *, ' kdt               : ', Model%kdt
       print *, ' jdat              : ', Model%jdat
+#ifdef CCPP
+      print *, ' sec               : ', Model%sec
+      print *, ' si                : ', Model%si
+      print *, ' first_time_step   : ', Model%first_time_step
+      print *, ' restart           : ', Model%restart
+      print *, ' hydrostatic       : ', Model%hydrostatic
+#endif
     endif
 
   end subroutine control_print
@@ -3352,12 +5640,19 @@ module GFS_typedefs
 !--------------------
 ! GFS_tbd_type%create
 !--------------------
+#ifndef CCPP
+  subroutine tbd_create (Tbd, IM, BLKNO, Model)
+#else
   subroutine tbd_create (Tbd, IM, Model)
+#endif
 
     implicit none
 
     class(GFS_tbd_type)                :: Tbd
     integer,                intent(in) :: IM
+#ifndef CCPP
+    integer,                intent(in) :: BLKNO
+#endif
     type(GFS_control_type), intent(in) :: Model
 
 !--- In
@@ -3382,6 +5677,16 @@ module GFS_typedefs
 !--- aerosol fields
     allocate (Tbd%aer_nm  (IM,Model%levs,ntrcaer))
     Tbd%aer_nm = clear_val
+
+#ifdef CCPP
+! DH* TODO - MOVE THIS TO a block-vector dependent structure in GFS_control?
+! e.g. GFS_Control%imap(blk), GFS_Control%jmap(blk), or ii instead if imap etc? *DH
+!--- maps of local index ix to global indices i and j for this block
+    allocate (Tbd%imap (IM))
+    allocate (Tbd%jmap (IM))
+    Tbd%imap = 0
+    Tbd%jmap = 0
+#endif
 
     allocate (Tbd%rann (IM,Model%nrcm))
     Tbd%rann = rann_init
@@ -3418,6 +5723,73 @@ module GFS_typedefs
     Tbd%phy_f3d  = clear_val
 !   if (Model%do_shoc) Tbd%phy_f3d(:,1,Model%ntot3d-1) = 3.0
 !   if (Model%do_shoc) Tbd%phy_f3d(:,:,Model%ntot3d-1) = 1.0
+
+#ifndef CCPP
+    Tbd%blkno = BLKNO
+#endif
+
+#ifdef CCPP
+    allocate (Tbd%htlwc (IM,Model%levr+LTP))
+    allocate (Tbd%htlw0 (IM,Model%levr+LTP))
+    allocate (Tbd%htswc (IM,Model%levr+LTP))
+    allocate (Tbd%htsw0 (IM,Model%levr+LTP))
+
+    Tbd%htlwc = clear_val
+    Tbd%htlw0 = clear_val
+    Tbd%htswc = clear_val
+    Tbd%htsw0 = clear_val
+
+    if (Model%imfdeepcnv == 3 .or. Model%imfdeepcnv == 4) then
+       allocate(Tbd%forcet(IM, Model%levs))
+       allocate(Tbd%forceq(IM, Model%levs))
+       allocate(Tbd%prevst(IM, Model%levs))
+       allocate(Tbd%prevsq(IM, Model%levs))
+       Tbd%forcet = clear_val
+       Tbd%forceq = clear_val
+       Tbd%prevst = clear_val
+       Tbd%prevsq = clear_val
+   end if
+
+   if (Model%imfdeepcnv == 3) then
+      allocate(Tbd%cactiv(IM))
+      Tbd%cactiv = zero
+  end if
+
+   if (Model%lsm == Model%lsm_ruc) then
+       allocate(Tbd%raincprv  (IM))
+       allocate(Tbd%rainncprv (IM))
+       allocate(Tbd%iceprv    (IM))
+       allocate(Tbd%snowprv   (IM))
+       allocate(Tbd%graupelprv(IM))
+       Tbd%raincprv   = clear_val
+       Tbd%rainncprv  = clear_val
+       Tbd%iceprv     = clear_val
+       Tbd%snowprv    = clear_val
+       Tbd%graupelprv = clear_val
+    end if
+
+    !--- MYNN variables:
+    if (Model%do_mynnedmf) then
+       !print*,"Allocating all MYNN-EDMF variables:"
+       allocate (Tbd%cldfra_bl (IM,Model%levs))
+       allocate (Tbd%qc_bl     (IM,Model%levs))
+       allocate (Tbd%el_pbl    (IM,Model%levs))
+       allocate (Tbd%sh3d      (IM,Model%levs))
+       allocate (Tbd%qke       (IM,Model%levs))
+       allocate (Tbd%tsq       (IM,Model%levs))
+       allocate (Tbd%qsq       (IM,Model%levs))
+       allocate (Tbd%cov       (IM,Model%levs))
+       !print*,"Allocating all MYNN-EDMF variables:"
+       Tbd%cldfra_bl     = clear_val
+       Tbd%qc_bl         = clear_val
+       Tbd%el_pbl        = clear_val
+       Tbd%sh3d          = clear_val
+       Tbd%qke           = zero
+       Tbd%tsq           = clear_val
+       Tbd%qsq           = clear_val
+       Tbd%cov           = clear_val
+    end if
+#endif
 
   end subroutine tbd_create
 
@@ -3579,6 +5951,9 @@ module GFS_typedefs
     allocate (Diag%dlwsfci (IM))
     allocate (Diag%ulwsfci (IM))
     allocate (Diag%dswsfci (IM))
+#ifdef CCPP
+    allocate (Diag%nswsfci (IM))
+#endif
     allocate (Diag%uswsfci (IM))
     allocate (Diag%dusfci  (IM))
     allocate (Diag%dvsfci  (IM))
@@ -3588,7 +5963,9 @@ module GFS_typedefs
     allocate (Diag%epi     (IM))
     allocate (Diag%smcwlt2 (IM))
     allocate (Diag%smcref2 (IM))
-    allocate (Diag%wet1    (IM))
+    if (.not. Model%lsm == Model%lsm_ruc) then
+      allocate (Diag%wet1    (IM))
+    end if
     allocate (Diag%sr      (IM))
     allocate (Diag%tdomr   (IM))
     allocate (Diag%tdomzr  (IM))
@@ -3612,6 +5989,7 @@ module GFS_typedefs
       allocate (Diag%du3dt  (IM,Model%levs,4))
       allocate (Diag%dv3dt  (IM,Model%levs,4))
       allocate (Diag%dt3dt  (IM,Model%levs,7))
+      allocate (Diag%dq3dt  (IM,Model%levs,9))
 !      allocate (Diag%dq3dt  (IM,Model%levs,oz_coeff+5))
 !--- needed to allocate GoCart coupling fields
 !      allocate (Diag%upd_mf (IM,Model%levs))
@@ -3619,6 +5997,7 @@ module GFS_typedefs
 !      allocate (Diag%det_mf (IM,Model%levs))
 !      allocate (Diag%cldcov (IM,Model%levs))
     endif
+
 !vay-2018
     if (Model%ldiag_ugwp) then
       allocate (Diag%du3dt_dyn  (IM,Model%levs) )
@@ -3690,7 +6069,7 @@ module GFS_typedefs
 
     endif
 
-    !--- 3D diagnostics for Thompson MP  
+    !--- 3D diagnostics for Thompson MP / GFDL MP
     allocate (Diag%refl_10cm(IM,Model%levs))
 
     !--  New max hourly diag.
@@ -3701,13 +6080,44 @@ module GFS_typedefs
     allocate (Diag%rh02max(IM))
     allocate (Diag%rh02min(IM))
 
+#ifdef CCPP
+    !--- MYNN variables:
+    if (Model%do_mynnedmf) then
+      !print*,"Allocating all MYNN-EDMF variables:"
+      allocate (Diag%edmf_a    (IM,Model%levs))
+      allocate (Diag%edmf_w    (IM,Model%levs))
+      allocate (Diag%edmf_qt   (IM,Model%levs))
+      allocate (Diag%edmf_thl  (IM,Model%levs))
+      allocate (Diag%edmf_ent  (IM,Model%levs))
+      allocate (Diag%edmf_qc   (IM,Model%levs))
+      allocate (Diag%nupdraft  (IM))
+      allocate (Diag%maxmf     (IM))
+      allocate (Diag%ktop_shallow(IM))
+      allocate (Diag%exch_h    (IM,Model%levs))
+      allocate (Diag%exch_m    (IM,Model%levs))
+      !print*,"Initializing all MYNN-EDMF variables with ",clear_val
+      Diag%edmf_a        = clear_val
+      Diag%edmf_w        = clear_val
+      Diag%edmf_qt       = clear_val
+      Diag%edmf_thl      = clear_val
+      Diag%edmf_ent      = clear_val
+      Diag%edmf_qc       = clear_val
+      Diag%nupdraft      = 0
+      Diag%maxmf         = clear_val
+      Diag%ktop_shallow  = 0
+      Diag%exch_h        = clear_val
+      Diag%exch_m        = clear_val
+    endif
+#endif
+
     !--- diagnostics for coupled chemistry
     if (Model%cplchm) call Diag%chem_init(IM,Model)
 
     call Diag%rad_zero  (Model)
-!    print *,'in diag_create, call phys_zero'
+!    if(Model%me==0) print *,'in diag_create, call rad_zero'
     linit = .true.
     call Diag%phys_zero (Model, linit=linit)
+!    if(Model%me==0) print *,'in diag_create, call phys_zero'
     linit = .false.
 
   end subroutine diag_create
@@ -3734,10 +6144,12 @@ module GFS_typedefs
 !------------------------
 ! GFS_diag%phys_zero
 !------------------------
-  subroutine diag_phys_zero (Diag, Model, linit)
+  subroutine diag_phys_zero (Diag, Model, linit, iauwindow_center)
     class(GFS_diag_type)               :: Diag
     type(GFS_control_type), intent(in) :: Model
-    logical,optional, intent(in)       :: linit
+    logical,optional, intent(in)       :: linit, iauwindow_center
+
+    logical set_totprcp
 
     !--- In/Out
     Diag%srunoff    = zero
@@ -3795,6 +6207,9 @@ module GFS_typedefs
     Diag%dlwsfci    = zero
     Diag%ulwsfci    = zero
     Diag%dswsfci    = zero
+#ifdef CCPP
+    Diag%nswsfci    = zero
+#endif
     Diag%uswsfci    = zero
     Diag%dusfci     = zero
     Diag%dvsfci     = zero
@@ -3804,7 +6219,9 @@ module GFS_typedefs
     Diag%epi        = zero
     Diag%smcwlt2    = zero
     Diag%smcref2    = zero
-    Diag%wet1       = zero
+    if (.not. Model%lsm == Model%lsm_ruc) then
+      Diag%wet1       = zero
+    end if
     Diag%sr         = zero
     Diag%tdomr      = zero
     Diag%tdomzr     = zero
@@ -3814,6 +6231,7 @@ module GFS_typedefs
     Diag%skebv_wts  = zero
     Diag%sppt_wts   = zero
     Diag%shum_wts   = zero
+    Diag%zmtnblck   = zero
     Diag%totprcpb   = zero
     Diag%cnvprcpb   = zero
     Diag%toticeb    = zero
@@ -3907,23 +6325,22 @@ module GFS_typedefs
 !-----------------------------
 
 ! max hourly diagnostics
-      Diag%refl_10cm   = zero
-      Diag%refdmax     = -35.
-      Diag%refdmax263k = -35.
-      Diag%t02max      = -999.
-      Diag%t02min      = 999.
-      Diag%rh02max     = -999.
-      Diag%rh02min     = 999.
-    if (present(linit)) then
-      if (linit) then
-        Diag%totprcp = zero
-        Diag%cnvprcp = zero
-        Diag%totice  = zero
-        Diag%totsnw  = zero
-        Diag%totgrp  = zero
-!       if(Model%me == Model%master) print *,'in diag_phys_zero, called in init step,set precip diag variable to zero',&
-!                                            'size(Diag%totprcp)=',size(Diag%totprcp),'me=',Model%me,'kdt=',Model%kdt
-      endif
+    Diag%refl_10cm   = zero
+    Diag%refdmax     = -35.
+    Diag%refdmax263k = -35.
+    Diag%t02max      = -999.
+    Diag%t02min      = 999.
+    Diag%rh02max     = -999.
+    Diag%rh02min     = 999.
+    set_totprcp      = .false.
+    if (present(linit) ) set_totprcp = linit
+    if (present(iauwindow_center) ) set_totprcp = iauwindow_center
+    if (set_totprcp) then
+      Diag%totprcp = zero
+      Diag%cnvprcp = zero
+      Diag%totice  = zero
+      Diag%totsnw  = zero
+      Diag%totgrp  = zero
     endif
   end subroutine diag_phys_zero
 
@@ -4022,21 +6439,1008 @@ module GFS_typedefs
   end subroutine diag_chem_init
 
 #ifdef CCPP
-! DH* for testing of CCPP integration
-!--------------------
-! GFS_fastphys_type%create
-!--------------------
-  subroutine fastphys_create (Fastphys)
-
+  !-------------------------
+  ! GFS_interstitial_type%create
+  !-------------------------
+  subroutine interstitial_create (Interstitial, IM, Model)
+    !
     implicit none
+    !
+    class(GFS_interstitial_type)       :: Interstitial
+    integer,                intent(in) :: IM
+    type(GFS_control_type), intent(in) :: Model
+    !
+    allocate (Interstitial%otspt      (Model%ntracp1,2))
+    ! Set up numbers of tracers for PBL, convection, etc: sets
+    ! Interstitial%{nncl,nvdiff,mg3_as_mg2,nn,tracers_total,ntiwx,ntk,ntkev,otspt,nsamftrac,ncstrac}
+    call interstitial_setup_tracers(Interstitial, Model)
+    ! Allocate arrays
+    allocate (Interstitial%adjnirbmd  (IM))
+    allocate (Interstitial%adjnirbmu  (IM))
+    allocate (Interstitial%adjnirdfd  (IM))
+    allocate (Interstitial%adjnirdfu  (IM))
+    allocate (Interstitial%adjvisbmd  (IM))
+    allocate (Interstitial%adjvisbmu  (IM))
+    allocate (Interstitial%adjvisdfu  (IM))
+    allocate (Interstitial%adjvisdfd  (IM))
+    allocate (Interstitial%aerodp     (IM,NSPC1))
+    allocate (Interstitial%alb1d      (IM))
+    allocate (Interstitial%bexp1d     (IM))
+    allocate (Interstitial%cd         (IM))
+    allocate (Interstitial%cd_ice     (IM))
+    allocate (Interstitial%cd_land    (IM))
+    allocate (Interstitial%cd_ocean   (IM))
+    allocate (Interstitial%cdq        (IM))
+    allocate (Interstitial%cdq_ice    (IM))
+    allocate (Interstitial%cdq_land   (IM))
+    allocate (Interstitial%cdq_ocean  (IM))
+    allocate (Interstitial%cf_upi     (IM,Model%levs))
+    allocate (Interstitial%chh_ice    (IM))
+    allocate (Interstitial%chh_land   (IM))
+    allocate (Interstitial%chh_ocean  (IM))
+    allocate (Interstitial%clcn       (IM,Model%levs))
+    allocate (Interstitial%cldf       (IM))
+    allocate (Interstitial%cldsa      (IM,5))
+    allocate (Interstitial%cldtaulw   (IM,Model%levr+LTP))
+    allocate (Interstitial%cldtausw   (IM,Model%levr+LTP))
+    allocate (Interstitial%cld1d      (IM))
+    allocate (Interstitial%clouds     (IM,Model%levr+LTP,NF_CLDS))
+    allocate (Interstitial%clw        (IM,Model%levs,Interstitial%nn))
+    allocate (Interstitial%clx        (IM,4))
+    allocate (Interstitial%cmm_ice    (IM))
+    allocate (Interstitial%cmm_land   (IM))
+    allocate (Interstitial%cmm_ocean  (IM))
+    allocate (Interstitial%cnv_dqldt  (IM,Model%levs))
+    allocate (Interstitial%cnv_fice   (IM,Model%levs))
+    allocate (Interstitial%cnv_mfd    (IM,Model%levs))
+    allocate (Interstitial%cnv_ndrop  (IM,Model%levs))
+    allocate (Interstitial%cnv_nice   (IM,Model%levs))
+    allocate (Interstitial%cnvc       (IM,Model%levs))
+    allocate (Interstitial%cnvw       (IM,Model%levs))
+    allocate (Interstitial%ctei_r     (IM))
+    allocate (Interstitial%ctei_rml   (IM))
+    allocate (Interstitial%cumabs     (IM))
+    allocate (Interstitial%dd_mf      (IM,Model%levs))
+    allocate (Interstitial%de_lgth    (IM))
+    allocate (Interstitial%del        (IM,Model%levs))
+    allocate (Interstitial%del_gz     (IM,Model%levs+1))
+    allocate (Interstitial%delr       (IM,Model%levr+LTP))
+    allocate (Interstitial%dkt        (IM,Model%levs-1))
+    allocate (Interstitial%dlength    (IM))
+    allocate (Interstitial%dqdt       (IM,Model%levs,Model%ntrac))
+    allocate (Interstitial%dqsfc1     (IM))
+    allocate (Interstitial%drain      (IM))
+    allocate (Interstitial%dtdt       (IM,Model%levs))
+    allocate (Interstitial%dtdtc      (IM,Model%levs))
+    allocate (Interstitial%dtsfc1     (IM))
+    allocate (Interstitial%dt_mf      (IM,Model%levs))
+    allocate (Interstitial%dtzm       (IM))
+    allocate (Interstitial%dudt       (IM,Model%levs))
+    allocate (Interstitial%dusfcg     (IM))
+    allocate (Interstitial%dusfc1     (IM))
+    allocate (Interstitial%dvdt       (IM,Model%levs))
+    allocate (Interstitial%dvsfcg     (IM))
+    allocate (Interstitial%dvsfc1     (IM))
+    allocate (Interstitial%dvdftra    (IM,Model%levs,Interstitial%nvdiff))
+    allocate (Interstitial%dzlyr      (IM,Model%levr+LTP))
+    allocate (Interstitial%elvmax     (IM))
+    allocate (Interstitial%ep1d       (IM))
+    allocate (Interstitial%ep1d_ice   (IM))
+    allocate (Interstitial%ep1d_land  (IM))
+    allocate (Interstitial%ep1d_ocean (IM))
+    allocate (Interstitial%evap       (IM))
+    allocate (Interstitial%evap_ice   (IM))
+    allocate (Interstitial%evap_land  (IM))
+    allocate (Interstitial%evap_ocean (IM))
+    allocate (Interstitial%evbs       (IM))
+    allocate (Interstitial%evcw       (IM))
+    allocate (Interstitial%faerlw     (IM,Model%levr+LTP,NBDLW,NF_AELW))
+    allocate (Interstitial%faersw     (IM,Model%levr+LTP,NBDSW,NF_AESW))
+    allocate (Interstitial%ffhh_ice   (IM))
+    allocate (Interstitial%ffhh_land  (IM))
+    allocate (Interstitial%ffhh_ocean (IM))
+    allocate (Interstitial%fh2        (IM))
+    allocate (Interstitial%fh2_ice    (IM))
+    allocate (Interstitial%fh2_land   (IM))
+    allocate (Interstitial%fh2_ocean  (IM))
+    allocate (Interstitial%flag_cice  (IM))
+    allocate (Interstitial%flag_guess (IM))
+    allocate (Interstitial%flag_iter  (IM))
+    allocate (Interstitial%ffmm_ice   (IM))
+    allocate (Interstitial%ffmm_land  (IM))
+    allocate (Interstitial%ffmm_ocean (IM))
+    allocate (Interstitial%fm10       (IM))
+    allocate (Interstitial%fm10_ice   (IM))
+    allocate (Interstitial%fm10_land  (IM))
+    allocate (Interstitial%fm10_ocean (IM))
+    allocate (Interstitial%frland     (IM))
+    allocate (Interstitial%fscav      (Model%ntrac-Model%ncld+2))
+    allocate (Interstitial%fswtr      (Model%ntrac-Model%ncld+2))
+    allocate (Interstitial%gabsbdlw   (IM))
+    allocate (Interstitial%gamma      (IM))
+    allocate (Interstitial%gamq       (IM))
+    allocate (Interstitial%gamt       (IM))
+    allocate (Interstitial%gasvmr     (IM,Model%levr+LTP,NF_VGAS))
+    allocate (Interstitial%gflx       (IM))
+    allocate (Interstitial%gflx_ice   (IM))
+    allocate (Interstitial%gflx_land  (IM))
+    allocate (Interstitial%gflx_ocean (IM))
+    allocate (Interstitial%gwdcu      (IM,Model%levs))
+    allocate (Interstitial%gwdcv      (IM,Model%levs))
+    allocate (Interstitial%h2o_pres   (levh2o))
+    allocate (Interstitial%hflx       (IM))
+    allocate (Interstitial%hflx_ice   (IM))
+    allocate (Interstitial%hflx_land  (IM))
+    allocate (Interstitial%hflx_ocean (IM))
+    allocate (Interstitial%hprime1    (IM))
+    allocate (Interstitial%dry        (IM))
+    allocate (Interstitial%idxday     (IM))
+    allocate (Interstitial%icy        (IM))
+    allocate (Interstitial%lake       (IM))
+    allocate (Interstitial%ocean      (IM))
+    allocate (Interstitial%islmsk     (IM))
+    allocate (Interstitial%wet        (IM))
+    allocate (Interstitial%kbot       (IM))
+    allocate (Interstitial%kcnv       (IM))
+    allocate (Interstitial%kinver     (IM))
+    allocate (Interstitial%kpbl       (IM))
+    allocate (Interstitial%ktop       (IM))
+    allocate (Interstitial%mbota      (IM,3))
+    allocate (Interstitial%mtopa      (IM,3))
+    allocate (Interstitial%oa4        (IM,4))
+    allocate (Interstitial%oc         (IM))
+    allocate (Interstitial%olyr       (IM,Model%levr+LTP))
+    allocate (Interstitial%oz_pres    (levozp))
+    allocate (Interstitial%plvl       (IM,Model%levr+1+LTP))
+    allocate (Interstitial%plyr       (IM,Model%levr+LTP))
+    allocate (Interstitial%prnum      (IM,Model%levs))
+    allocate (Interstitial%qicn       (IM,Model%levs))
+    allocate (Interstitial%qlcn       (IM,Model%levs))
+    allocate (Interstitial%qlyr       (IM,Model%levr+LTP))
+    allocate (Interstitial%prcpmp     (IM))
+    allocate (Interstitial%qss        (IM))
+    allocate (Interstitial%qss_ice    (IM))
+    allocate (Interstitial%qss_land   (IM))
+    allocate (Interstitial%qss_ocean  (IM))
+    allocate (Interstitial%raincd     (IM))
+    allocate (Interstitial%raincs     (IM))
+    allocate (Interstitial%rainmcadj  (IM))
+    allocate (Interstitial%rainp      (IM,Model%levs))
+    allocate (Interstitial%rb         (IM))
+    allocate (Interstitial%rb_ice     (IM))
+    allocate (Interstitial%rb_land    (IM))
+    allocate (Interstitial%rb_ocean   (IM))
+    allocate (Interstitial%rhc        (IM,Model%levs))
+    allocate (Interstitial%runoff     (IM))
+    allocate (Interstitial%save_q     (IM,Model%levs,Model%ntrac))
+    allocate (Interstitial%save_t     (IM,Model%levs))
+    allocate (Interstitial%save_u     (IM,Model%levs))
+    allocate (Interstitial%save_v     (IM,Model%levs))
+    allocate (Interstitial%sbsno      (IM))
+    allocate (Interstitial%scmpsw     (IM))
+    allocate (Interstitial%sfcalb     (IM,NF_ALBD))
+    allocate (Interstitial%sigma      (IM))
+    allocate (Interstitial%sigmaf     (IM))
+    allocate (Interstitial%sigmafrac  (IM,Model%levs))
+    allocate (Interstitial%sigmatot   (IM,Model%levs))
+    allocate (Interstitial%slopetype  (IM))
+    allocate (Interstitial%snowc      (IM))
+    allocate (Interstitial%snowd_ice  (IM))
+    allocate (Interstitial%snowd_land (IM))
+    allocate (Interstitial%snowd_ocean(IM))
+    allocate (Interstitial%snohf      (IM))
+    allocate (Interstitial%snowmt     (IM))
+    allocate (Interstitial%soiltype   (IM))
+    allocate (Interstitial%stress     (IM))
+    allocate (Interstitial%stress_ice (IM))
+    allocate (Interstitial%stress_land(IM))
+    allocate (Interstitial%stress_ocean(IM))
+    allocate (Interstitial%theta      (IM))
+    allocate (Interstitial%tice       (IM))
+    allocate (Interstitial%tlvl       (IM,Model%levr+1+LTP))
+    allocate (Interstitial%tlyr       (IM,Model%levr+LTP))
+    allocate (Interstitial%tprcp_ice  (IM))
+    allocate (Interstitial%tprcp_land (IM))
+    allocate (Interstitial%tprcp_ocean(IM))
+    allocate (Interstitial%trans      (IM))
+    allocate (Interstitial%tseal      (IM))
+    allocate (Interstitial%tsfa       (IM))
+    allocate (Interstitial%tsfc_ice   (IM))
+    allocate (Interstitial%tsfc_land  (IM))
+    allocate (Interstitial%tsfc_ocean (IM))
+    allocate (Interstitial%tsfg       (IM))
+    allocate (Interstitial%tsurf      (IM))
+    allocate (Interstitial%tsurf_ice  (IM))
+    allocate (Interstitial%tsurf_land (IM))
+    allocate (Interstitial%tsurf_ocean(IM))
+    allocate (Interstitial%ud_mf      (IM,Model%levs))
+    allocate (Interstitial%ulwsfc_cice(IM))
+    allocate (Interstitial%uustar_ice (IM))
+    allocate (Interstitial%uustar_land(IM))
+    allocate (Interstitial%uustar_ocean(IM))
+    allocate (Interstitial%vdftra     (IM,Model%levs,Interstitial%nvdiff))  !GJF first dimension was set as 'IX' in GFS_physics_driver
+    allocate (Interstitial%vegf1d     (IM))
+    allocate (Interstitial%vegtype    (IM))
+    allocate (Interstitial%w_upi      (IM,Model%levs))
+    allocate (Interstitial%wcbmax     (IM))
+    allocate (Interstitial%weasd_ice  (IM))
+    allocate (Interstitial%weasd_land (IM))
+    allocate (Interstitial%weasd_ocean(IM))
+    allocate (Interstitial%wind       (IM))
+    allocate (Interstitial%work1      (IM))
+    allocate (Interstitial%work2      (IM))
+    allocate (Interstitial%work3      (IM))
+    allocate (Interstitial%xcosz      (IM))
+    allocate (Interstitial%xlai1d     (IM))
+    allocate (Interstitial%xmu        (IM))
+    allocate (Interstitial%z01d       (IM))
+    allocate (Interstitial%zorl_ice   (IM))
+    allocate (Interstitial%zorl_land  (IM))
+    allocate (Interstitial%zorl_ocean (IM))
+    allocate (Interstitial%zt1d       (IM))
+    ! Allocate arrays that are conditional on physics choices
+    if (Model%imp_physics == Model%imp_physics_gfdl .or. Model%imp_physics == Model%imp_physics_thompson) then
+       allocate (Interstitial%graupelmp  (IM))
+       allocate (Interstitial%icemp      (IM))
+       allocate (Interstitial%rainmp     (IM))
+       allocate (Interstitial%snowmp     (IM))
+    else if (Model%imp_physics == Model%imp_physics_mg) then
+       allocate (Interstitial%ncgl       (IM,Model%levs))
+       allocate (Interstitial%ncpr       (IM,Model%levs))
+       allocate (Interstitial%ncps       (IM,Model%levs))
+       allocate (Interstitial%qgl        (IM,Model%levs))
+       allocate (Interstitial%qrn        (IM,Model%levs))
+       allocate (Interstitial%qsnw       (IM,Model%levs))
+    end if
+    if (Model%do_shoc) then
+       if (.not. associated(Interstitial%qrn))  allocate (Interstitial%qrn  (IM,Model%levs))
+       if (.not. associated(Interstitial%qsnw)) allocate (Interstitial%qsnw (IM,Model%levs))
+       ! DH* updated version of shoc from May 22 2019 (not yet in CCPP) doesn't use qgl? remove?
+       if (.not. associated(Interstitial%qgl))  allocate (Interstitial%qgl  (IM,Model%levs))
+       ! *DH
+       allocate (Interstitial%ncpi (IM,Model%levs))
+       allocate (Interstitial%ncpl (IM,Model%levs))
+    end if
+    !
+    ! Set components that do not change
+    Interstitial%im               = IM
+    Interstitial%ipr              = min(IM,10)
+    Interstitial%ix               = IM
+    Interstitial%latidxprnt       = 1
+    Interstitial%levi             = Model%levs+1
+    Interstitial%levh2o           = levh2o
+    Interstitial%levozp           = levozp
+    Interstitial%lm               = Model%levr
+    Interstitial%lmk              = Model%levr+LTP
+    Interstitial%lmp              = Model%levr+1+LTP
+    Interstitial%h2o_coeff        = h2o_coeff
+    Interstitial%oz_coeff         = oz_coeff
+    ! h2o_pres and oz_pres do not change during the run, but
+    ! need to be set later in GFS_phys_time_vary_init (after
+    ! h2o_pres/oz_pres are read in read_h2odata/read_o3data)
+    Interstitial%h2o_pres         = clear_val
+    Interstitial%oz_pres          = clear_val
+    !
+    Interstitial%skip_macro       = .false.
+    ! The value phys_hydrostatic from dynamics does not match the
+    ! hardcoded value for calling GFDL MP in GFS_physics_driver.F90,
+    ! which is set to .true.
+    Interstitial%phys_hydrostatic = .true.
+    !
+    ! Reset all other variables
+    call Interstitial%rad_reset ()
+    call Interstitial%phys_reset (Model)
+    !
+  end subroutine interstitial_create
 
-    class(GFS_fastphys_type)           :: Fastphys
+  subroutine interstitial_setup_tracers(Interstitial, Model)
+    !
+    implicit none
+    !
+    class(GFS_interstitial_type)       :: Interstitial
+    type(GFS_control_type), intent(in) :: Model
+    integer :: n, tracers
 
-    Fastphys%dummy  = 0
-    Fastphys%errmsg = ''
-    Fastphys%errflg = 0
+    !first, initialize the values (in case the values don't get initialized within if statements below)
+    Interstitial%nncl             = Model%ncld
+    Interstitial%nvdiff           = Model%ntrac
+    Interstitial%mg3_as_mg2       = .false.
+    Interstitial%nn               = Model%ntrac + 1
+    Interstitial%ntk              = 0
+    Interstitial%ntkev            = 0
+    Interstitial%tracers_total    = 0
+    Interstitial%otspt(:,:)       = .true.
+    Interstitial%nsamftrac        = 0
+    Interstitial%ncstrac          = 0
 
-    end subroutine fastphys_create
+    if (Model%imp_physics == Model%imp_physics_thompson) then
+      if (Model%ltaerosol) then
+        Interstitial%nvdiff = 8
+      else
+        Interstitial%nvdiff = 5
+      endif
+      if (Model%satmedmf) Interstitial%nvdiff = Interstitial%nvdiff + 1
+      Interstitial%nncl = 5
+    elseif (Model%imp_physics == Model%imp_physics_wsm6) then
+      Interstitial%nvdiff = Model%ntrac -3
+      if (Model%satmedmf) Interstitial%nvdiff = Interstitial%nvdiff + 1
+      Interstitial%nncl = 5
+    elseif (Model%ntclamt > 0) then             ! for GFDL MP don't diffuse cloud amount
+      Interstitial%nvdiff = Model%ntrac - 1
+    endif
+
+    if (Model%imp_physics == Model%imp_physics_gfdl) then
+      Interstitial%nncl = 5
+    endif
+
+    if (Model%imp_physics == Model%imp_physics_mg) then
+      if (abs(Model%fprcp) == 1) then
+        Interstitial%nncl = 4                          ! MG2 with rain and snow
+        Interstitial%mg3_as_mg2 = .false.
+      elseif (Model%fprcp >= 2) then
+        if(Model%ntgl > 0 .and. (Model%mg_do_graupel .or. Model%mg_do_hail)) then
+          Interstitial%nncl = 5                        ! MG3 with rain and snow and grapuel/hail
+          Interstitial%mg3_as_mg2 = .false.
+        else                              ! MG3 code run without graupel/hail i.e. as MG2
+          Interstitial%nncl = 4
+          Interstitial%mg3_as_mg2 = .true.
+        endif
+      endif
+    endif
+
+    ! DH* STILL VALID GIVEN THE CHANGES BELOW FOR CPLCHM?
+    if (Interstitial%nvdiff == Model%ntrac) then
+      Interstitial%ntiwx = Model%ntiw
+    else
+      if (Model%imp_physics == Model%imp_physics_wsm6) then
+        Interstitial%ntiwx = 3
+      elseif (Model%imp_physics == Model%imp_physics_thompson) then
+        if(Model%ltaerosol) then
+          Interstitial%ntiwx = 3
+        else
+          Interstitial%ntiwx = 3
+        endif
+      elseif (Model%imp_physics == Model%imp_physics_gfdl) then
+        Interstitial%ntiwx = 3
+      elseif (Model%imp_physics == Model%imp_physics_mg) then
+        Interstitial%ntiwx = 3
+      else
+        Interstitial%ntiwx = 0
+      endif
+    endif
+    ! *DH
+
+    if (Model%cplchm) then
+      if (Model%imp_physics == Model%imp_physics_zhao_carr) then
+        Interstitial%nvdiff = 3
+      elseif (Model%imp_physics == Model%imp_physics_mg) then
+        if (Model%ntgl > 0) then
+          Interstitial%nvdiff = 12
+        else
+          Interstitial%nvdiff = 10
+        endif
+      elseif (Model%imp_physics == Model%imp_physics_gfdl) then
+        Interstitial%nvdiff = 7
+      ! DH* WHAT ABOUT THOMPSON? *DH
+      endif
+      if (Model%ntke > 0) Interstitial%nvdiff = Interstitial%nvdiff + 1    ! adding tke to the list
+    endif
+
+    Interstitial%ntkev = Interstitial%nvdiff
+
+    if (Model%ntiw > 0) then
+      if (Model%ntclamt > 0) then
+        Interstitial%nn = Model%ntrac - 2
+      else
+        Interstitial%nn = Model%ntrac - 1
+      endif
+    elseif (Model%ntcw > 0) then
+      Interstitial%nn = Model%ntrac
+    else
+      Interstitial%nn = Model%ntrac + 1
+    endif
+
+    if (Model%cscnv .or. Model%satmedmf .or. Model%trans_trac ) then
+      Interstitial%otspt(:,:)   = .true.     ! otspt is used only for cscnv
+      Interstitial%otspt(1:3,:) = .false.    ! this is for sp.hum, ice and liquid water
+      tracers = 2
+      do n=2,Model%ntrac
+        if ( n /= Model%ntcw  .and. n /= Model%ntiw  .and. n /= Model%ntclamt .and. &
+             n /= Model%ntrw  .and. n /= Model%ntsw  .and. n /= Model%ntrnc   .and. &
+             n /= Model%ntsnc .and. n /= Model%ntgl  .and. n /= Model%ntgnc) then
+          tracers = tracers + 1
+          if (Model%ntke  == n ) then
+            Interstitial%otspt(tracers+1,1) = .false.
+            Interstitial%ntk = tracers
+          endif
+          if (Model%ntlnc == n .or. Model%ntinc == n .or. Model%ntrnc == n .or. Model%ntsnc == n .or. Model%ntgnc == n)    &
+!           if (ntlnc == n .or. ntinc == n .or. ntrnc == n .or. ntsnc == n .or.&
+!               ntrw  == n .or. ntsw  == n .or. ntgl  == n)                    &
+                  Interstitial%otspt(tracers+1,1) = .false.
+        endif
+      enddo
+      Interstitial%tracers_total = tracers - 2
+    endif   ! end if_ras or cfscnv or samf
+    if(.not. Model%satmedmf .and. .not. Model%trans_trac) then
+       Interstitial%nsamftrac = 0
+    else
+       Interstitial%nsamftrac = Interstitial%tracers_total
+    endif
+    Interstitial%ncstrac = Interstitial%tracers_total + 3
+
+  end subroutine interstitial_setup_tracers
+
+  subroutine interstitial_rad_reset (Interstitial)
+    !
+    implicit none
+    !
+    class(GFS_interstitial_type) :: Interstitial
+    !
+    Interstitial%aerodp       = clear_val
+    Interstitial%alb1d        = clear_val
+    Interstitial%cldsa        = clear_val
+    Interstitial%cldtaulw     = clear_val
+    Interstitial%cldtausw     = clear_val
+    Interstitial%clouds       = clear_val
+    Interstitial%de_lgth      = clear_val
+    Interstitial%delr         = clear_val
+    Interstitial%dzlyr        = clear_val
+    Interstitial%faerlw       = clear_val
+    Interstitial%faersw       = clear_val
+    Interstitial%gasvmr       = clear_val
+    Interstitial%idxday       = 0
+    Interstitial%kb           = 0
+    Interstitial%kd           = 0
+    Interstitial%kt           = 0
+    Interstitial%mbota        = 0
+    Interstitial%mtopa        = 0
+    Interstitial%nday         = 0
+    Interstitial%olyr         = clear_val
+    Interstitial%plvl         = clear_val
+    Interstitial%plyr         = clear_val
+    Interstitial%qlyr         = clear_val
+    Interstitial%raddt        = clear_val
+    Interstitial%scmpsw%uvbfc = clear_val
+    Interstitial%scmpsw%uvbf0 = clear_val
+    Interstitial%scmpsw%nirbm = clear_val
+    Interstitial%scmpsw%nirdf = clear_val
+    Interstitial%scmpsw%visbm = clear_val
+    Interstitial%scmpsw%visdf = clear_val
+    Interstitial%sfcalb       = clear_val
+    Interstitial%tlvl         = clear_val
+    Interstitial%tlyr         = clear_val
+    Interstitial%tsfa         = clear_val
+    Interstitial%tsfg         = clear_val
+    !
+  end subroutine interstitial_rad_reset
+
+  subroutine interstitial_phys_reset (Interstitial, Model)
+    !
+    implicit none
+    !
+    class(GFS_interstitial_type) :: Interstitial
+    type(GFS_control_type), intent(in) :: Model
+    !
+    Interstitial%adjnirbmd    = clear_val
+    Interstitial%adjnirbmu    = clear_val
+    Interstitial%adjnirdfd    = clear_val
+    Interstitial%adjnirdfu    = clear_val
+    Interstitial%adjvisbmd    = clear_val
+    Interstitial%adjvisbmu    = clear_val
+    Interstitial%adjvisdfu    = clear_val
+    Interstitial%adjvisdfd    = clear_val
+    Interstitial%bexp1d       = clear_val
+    Interstitial%cd           = clear_val
+    Interstitial%cd_ice       = huge
+    Interstitial%cd_land      = huge
+    Interstitial%cd_ocean     = huge
+    Interstitial%cdq          = clear_val
+    Interstitial%cdq_ice      = huge
+    Interstitial%cdq_land     = huge
+    Interstitial%cdq_ocean    = huge
+    Interstitial%cf_upi       = clear_val
+    Interstitial%chh_ice      = huge
+    Interstitial%chh_land     = huge
+    Interstitial%chh_ocean    = huge
+    Interstitial%clcn         = clear_val
+    Interstitial%cld1d        = clear_val
+    Interstitial%cldf         = clear_val
+    Interstitial%clw          = clear_val
+    Interstitial%clw(:,:,2)   = -999.9
+    Interstitial%clx          = clear_val
+    Interstitial%cmm_ice      = huge
+    Interstitial%cmm_land     = huge
+    Interstitial%cmm_ocean    = huge
+    Interstitial%cnv_dqldt    = clear_val
+    Interstitial%cnv_fice     = clear_val
+    Interstitial%cnv_mfd      = clear_val
+    Interstitial%cnv_ndrop    = clear_val
+    Interstitial%cnv_nice     = clear_val
+    Interstitial%cnvc         = clear_val
+    Interstitial%cnvw         = clear_val
+    Interstitial%ctei_r       = clear_val
+    Interstitial%ctei_rml     = clear_val
+    Interstitial%cumabs       = clear_val
+    Interstitial%dd_mf        = clear_val
+    Interstitial%del          = clear_val
+    Interstitial%del_gz       = clear_val
+    Interstitial%dkt          = clear_val
+    Interstitial%dlength      = clear_val
+    Interstitial%dqdt         = clear_val
+    Interstitial%dqsfc1       = clear_val
+    Interstitial%drain        = clear_val
+    Interstitial%dt_mf        = clear_val
+    Interstitial%dtdt         = clear_val
+    Interstitial%dtdtc        = clear_val
+    Interstitial%dtsfc1       = clear_val
+    Interstitial%dtzm         = clear_val
+    Interstitial%dudt         = clear_val
+    Interstitial%dusfcg       = clear_val
+    Interstitial%dusfc1       = clear_val
+    Interstitial%dvdftra      = clear_val
+    Interstitial%dvdt         = clear_val
+    Interstitial%dvsfcg       = clear_val
+    Interstitial%dvsfc1       = clear_val
+    Interstitial%elvmax       = clear_val
+    Interstitial%ep1d         = clear_val
+    Interstitial%ep1d_ice     = huge
+    Interstitial%ep1d_land    = huge
+    Interstitial%ep1d_ocean   = huge
+    Interstitial%evap         = clear_val
+    Interstitial%evap_ice     = huge
+    Interstitial%evap_land    = huge
+    Interstitial%evap_ocean   = huge
+    Interstitial%evbs         = clear_val
+    Interstitial%evcw         = clear_val
+    Interstitial%ffhh_ice     = huge
+    Interstitial%ffhh_land    = huge
+    Interstitial%ffhh_ocean   = huge
+    Interstitial%fh2          = clear_val
+    Interstitial%fh2_ice      = huge
+    Interstitial%fh2_land     = huge
+    Interstitial%fh2_ocean    = huge
+    Interstitial%flag_cice    = .false.
+    Interstitial%flag_guess   = .false.
+    Interstitial%flag_iter    = .true.
+    Interstitial%ffmm_ice     = huge
+    Interstitial%ffmm_land    = huge
+    Interstitial%ffmm_ocean   = huge
+    Interstitial%fm10         = clear_val
+    Interstitial%fm10_ice     = huge
+    Interstitial%fm10_land    = huge
+    Interstitial%fm10_ocean   = huge
+    Interstitial%frain        = clear_val
+    Interstitial%frland       = clear_val
+    Interstitial%fscav        = clear_val
+    Interstitial%fswtr        = clear_val
+    Interstitial%gabsbdlw     = clear_val
+    Interstitial%gamma        = clear_val
+    Interstitial%gamq         = clear_val
+    Interstitial%gamt         = clear_val
+    Interstitial%gflx         = clear_val
+    Interstitial%gflx_ice     = huge
+    Interstitial%gflx_land    = huge
+    Interstitial%gflx_ocean   = huge
+    Interstitial%gwdcu        = clear_val
+    Interstitial%gwdcv        = clear_val
+    Interstitial%hflx         = clear_val
+    Interstitial%hflx_ice     = huge
+    Interstitial%hflx_land    = huge
+    Interstitial%hflx_ocean   = huge
+    Interstitial%hprime1      = clear_val
+    Interstitial%dry          = .false.
+    Interstitial%icy          = .false.
+    Interstitial%lake         = .false.
+    Interstitial%ocean        = .false.
+    Interstitial%islmsk       = 0
+    Interstitial%wet          = .false.
+    Interstitial%kbot         = Model%levs
+    Interstitial%kcnv         = 0
+    Interstitial%kinver       = Model%levs
+    Interstitial%kpbl         = 0
+    Interstitial%ktop         = 1
+    Interstitial%oa4          = clear_val
+    Interstitial%oc           = clear_val
+    Interstitial%prcpmp       = clear_val
+    Interstitial%prnum        = clear_val
+    Interstitial%qicn         = clear_val
+    Interstitial%qlcn         = clear_val
+    Interstitial%qss          = clear_val
+    Interstitial%qss_ice      = huge
+    Interstitial%qss_land     = huge
+    Interstitial%qss_ocean    = huge
+    Interstitial%raincd       = clear_val
+    Interstitial%raincs       = clear_val
+    Interstitial%rainmcadj    = clear_val
+    Interstitial%rainp        = clear_val
+    Interstitial%rb           = clear_val
+    Interstitial%rb_ice       = huge
+    Interstitial%rb_land      = huge
+    Interstitial%rb_ocean     = huge
+    Interstitial%rhc          = clear_val
+    Interstitial%runoff       = clear_val
+    Interstitial%save_q       = clear_val
+    Interstitial%save_t       = clear_val
+    Interstitial%save_u       = clear_val
+    Interstitial%save_v       = clear_val
+    Interstitial%sbsno        = clear_val
+    Interstitial%sigma        = clear_val
+    Interstitial%sigmaf       = clear_val
+    Interstitial%sigmafrac    = clear_val
+    Interstitial%sigmatot     = clear_val
+    Interstitial%slopetype    = 0
+    Interstitial%snowc        = clear_val
+    Interstitial%snowd_ice    = huge
+    Interstitial%snowd_land   = huge
+    Interstitial%snowd_ocean  = huge
+    Interstitial%snohf        = clear_val
+    Interstitial%snowmt       = clear_val
+    Interstitial%soiltype     = 0
+    Interstitial%stress       = clear_val
+    Interstitial%stress_ice   = huge
+    Interstitial%stress_land  = huge
+    Interstitial%stress_ocean = huge
+    Interstitial%theta        = clear_val
+    Interstitial%tice         = clear_val
+    Interstitial%tprcp_ice    = huge
+    Interstitial%tprcp_land   = huge
+    Interstitial%tprcp_ocean  = huge
+    Interstitial%trans        = clear_val
+    Interstitial%tseal        = clear_val
+    Interstitial%tsfc_ice     = huge
+    Interstitial%tsfc_land    = huge
+    Interstitial%tsfc_ocean   = huge
+    Interstitial%tsurf        = clear_val
+    Interstitial%tsurf_ice    = huge
+    Interstitial%tsurf_land   = huge
+    Interstitial%tsurf_ocean  = huge
+    Interstitial%ud_mf        = clear_val
+    Interstitial%ulwsfc_cice  = clear_val
+    Interstitial%uustar_ice   = huge
+    Interstitial%uustar_land  = huge
+    Interstitial%uustar_ocean = huge
+    Interstitial%vdftra       = clear_val
+    Interstitial%vegf1d       = clear_val
+    Interstitial%vegtype      = 0
+    Interstitial%w_upi        = clear_val
+    Interstitial%wcbmax       = clear_val
+    Interstitial%weasd_ice    = huge
+    Interstitial%weasd_land   = huge
+    Interstitial%weasd_ocean  = huge
+    Interstitial%wind         = huge
+    Interstitial%work1        = clear_val
+    Interstitial%work2        = clear_val
+    Interstitial%work3        = clear_val
+    Interstitial%xcosz        = clear_val
+    Interstitial%xlai1d       = clear_val
+    Interstitial%xmu          = clear_val
+    Interstitial%z01d         = clear_val
+    Interstitial%zorl_ice     = huge
+    Interstitial%zorl_land    = huge
+    Interstitial%zorl_ocean   = huge
+    Interstitial%zt1d         = clear_val
+    ! Reset fields that are conditional on physics choices
+    if (Model%imp_physics == Model%imp_physics_gfdl .or. Model%imp_physics == Model%imp_physics_thompson) then
+       Interstitial%graupelmp = clear_val
+       Interstitial%icemp     = clear_val
+       Interstitial%rainmp    = clear_val
+       Interstitial%snowmp    = clear_val
+    else if (Model%imp_physics == Model%imp_physics_mg) then
+       Interstitial%ncgl      = clear_val
+       Interstitial%ncpr      = clear_val
+       Interstitial%ncps      = clear_val
+       Interstitial%qgl       = clear_val
+       Interstitial%qrn       = clear_val
+       Interstitial%qsnw      = clear_val
+    end if
+    if (Model%do_shoc) then
+       Interstitial%qrn       = clear_val
+       Interstitial%qsnw      = clear_val
+       ! DH* updated version of shoc from May 22 2019 doesn't use qgl? remove?
+       Interstitial%qgl       = clear_val
+       ! *DH
+       Interstitial%ncpi      = clear_val
+       Interstitial%ncpl      = clear_val
+    end if
+    !
+    ! Set flag for resetting maximum hourly output fields
+    Interstitial%reset = mod(Model%kdt-1, nint(Model%avg_max_length/Model%dtp)) == 0
+    !
+  end subroutine interstitial_phys_reset
+
+  subroutine interstitial_print(Interstitial, Model, mpirank, omprank, blkno)
+    !
+    implicit none
+    !
+    class(GFS_interstitial_type) :: Interstitial
+    type(GFS_control_type), intent(in) :: Model
+    integer, intent(in) :: mpirank, omprank, blkno
+    !
+    ! Print static variables
+    write (0,'(a,3i6)') 'Interstitial_print for mpirank, omprank, blkno: ', mpirank, omprank, blkno
+    write (0,*) 'Interstitial_print: values that do not change'
+    write (0,*) 'Interstitial%h2o_coeff         = ', Interstitial%h2o_coeff
+    write (0,*) 'sum(Interstitial%h2o_pres)     = ', sum(Interstitial%h2o_pres)
+    write (0,*) 'Interstitial%im                = ', Interstitial%im
+    write (0,*) 'Interstitial%ipr               = ', Interstitial%ipr
+    write (0,*) 'Interstitial%ix                = ', Interstitial%ix
+    write (0,*) 'Interstitial%latidxprnt        = ', Interstitial%latidxprnt
+    write (0,*) 'Interstitial%levi              = ', Interstitial%levi
+    write (0,*) 'Interstitial%levh2o            = ', Interstitial%levh2o
+    write (0,*) 'Interstitial%levozp            = ', Interstitial%levozp
+    write (0,*) 'Interstitial%lm                = ', Interstitial%lm
+    write (0,*) 'Interstitial%lmk               = ', Interstitial%lmk
+    write (0,*) 'Interstitial%lmp               = ', Interstitial%lmp
+    write (0,*) 'Interstitial%nsamftrac         = ', Interstitial%nsamftrac
+    write (0,*) 'Interstitial%ntiwx             = ', Interstitial%ntiwx
+    write (0,*) 'Interstitial%nvdiff            = ', Interstitial%nvdiff
+    write (0,*) 'Interstitial%oz_coeff          = ', Interstitial%oz_coeff
+    write (0,*) 'sum(Interstitial%oz_pres)      = ', sum(Interstitial%oz_pres)
+    write (0,*) 'Interstitial%phys_hydrostatic  = ', Interstitial%phys_hydrostatic
+    write (0,*) 'Interstitial%skip_macro        = ', Interstitial%skip_macro
+    ! Print all other variables
+    write (0,*) 'Interstitial_print: values that change'
+    write (0,*) 'sum(Interstitial%adjnirbmd   ) = ', sum(Interstitial%adjnirbmd   )
+    write (0,*) 'sum(Interstitial%adjnirbmu   ) = ', sum(Interstitial%adjnirbmu   )
+    write (0,*) 'sum(Interstitial%adjnirdfd   ) = ', sum(Interstitial%adjnirdfd   )
+    write (0,*) 'sum(Interstitial%adjnirdfu   ) = ', sum(Interstitial%adjnirdfu   )
+    write (0,*) 'sum(Interstitial%adjvisbmd   ) = ', sum(Interstitial%adjvisbmd   )
+    write (0,*) 'sum(Interstitial%adjvisbmu   ) = ', sum(Interstitial%adjvisbmu   )
+    write (0,*) 'sum(Interstitial%adjvisdfu   ) = ', sum(Interstitial%adjvisdfu   )
+    write (0,*) 'sum(Interstitial%adjvisdfd   ) = ', sum(Interstitial%adjvisdfd   )
+    write (0,*) 'sum(Interstitial%aerodp      ) = ', sum(Interstitial%aerodp      )
+    write (0,*) 'sum(Interstitial%alb1d       ) = ', sum(Interstitial%alb1d       )
+    write (0,*) 'sum(Interstitial%bexp1d      ) = ', sum(Interstitial%bexp1d      )
+    write (0,*) 'sum(Interstitial%cd          ) = ', sum(Interstitial%cd          )
+    write (0,*) 'sum(Interstitial%cd_ice      ) = ', sum(Interstitial%cd_ice      )
+    write (0,*) 'sum(Interstitial%cd_land     ) = ', sum(Interstitial%cd_land     )
+    write (0,*) 'sum(Interstitial%cd_ocean    ) = ', sum(Interstitial%cd_ocean    )
+    write (0,*) 'sum(Interstitial%cdq         ) = ', sum(Interstitial%cdq         )
+    write (0,*) 'sum(Interstitial%cdq_ice     ) = ', sum(Interstitial%cdq_ice     )
+    write (0,*) 'sum(Interstitial%cdq_land    ) = ', sum(Interstitial%cdq_land    )
+    write (0,*) 'sum(Interstitial%cdq_ocean   ) = ', sum(Interstitial%cdq_ocean   )
+    write (0,*) 'sum(Interstitial%cf_upi      ) = ', sum(Interstitial%cf_upi      )
+    write (0,*) 'sum(Interstitial%chh_ice     ) = ', sum(Interstitial%chh_ice     )
+    write (0,*) 'sum(Interstitial%chh_land    ) = ', sum(Interstitial%chh_land    )
+    write (0,*) 'sum(Interstitial%chh_ocean   ) = ', sum(Interstitial%chh_ocean   )
+    write (0,*) 'sum(Interstitial%clcn        ) = ', sum(Interstitial%clcn        )
+    write (0,*) 'sum(Interstitial%cldf        ) = ', sum(Interstitial%cldf        )
+    write (0,*) 'sum(Interstitial%cldsa       ) = ', sum(Interstitial%cldsa       )
+    write (0,*) 'sum(Interstitial%cldtaulw    ) = ', sum(Interstitial%cldtaulw    )
+    write (0,*) 'sum(Interstitial%cldtausw    ) = ', sum(Interstitial%cldtausw    )
+    write (0,*) 'sum(Interstitial%cld1d       ) = ', sum(Interstitial%cld1d       )
+    write (0,*) 'sum(Interstitial%clw         ) = ', sum(Interstitial%clw         )
+    write (0,*) 'sum(Interstitial%clx         ) = ', sum(Interstitial%clx         )
+    write (0,*) 'sum(Interstitial%clouds      ) = ', sum(Interstitial%clouds      )
+    write (0,*) 'sum(Interstitial%cmm_ice     ) = ', sum(Interstitial%cmm_ice     )
+    write (0,*) 'sum(Interstitial%cmm_land    ) = ', sum(Interstitial%cmm_land    )
+    write (0,*) 'sum(Interstitial%cmm_ocean   ) = ', sum(Interstitial%cmm_ocean   )
+    write (0,*) 'sum(Interstitial%cnv_dqldt   ) = ', sum(Interstitial%cnv_dqldt   )
+    write (0,*) 'sum(Interstitial%cnv_fice    ) = ', sum(Interstitial%cnv_fice    )
+    write (0,*) 'sum(Interstitial%cnv_mfd     ) = ', sum(Interstitial%cnv_mfd     )
+    write (0,*) 'sum(Interstitial%cnv_ndrop   ) = ', sum(Interstitial%cnv_ndrop   )
+    write (0,*) 'sum(Interstitial%cnv_nice    ) = ', sum(Interstitial%cnv_nice    )
+    write (0,*) 'sum(Interstitial%cnvc        ) = ', sum(Interstitial%cnvc        )
+    write (0,*) 'sum(Interstitial%cnvw        ) = ', sum(Interstitial%cnvw        )
+    write (0,*) 'sum(Interstitial%ctei_r      ) = ', sum(Interstitial%ctei_r      )
+    write (0,*) 'sum(Interstitial%ctei_rml    ) = ', sum(Interstitial%ctei_rml    )
+    write (0,*) 'sum(Interstitial%cumabs      ) = ', sum(Interstitial%cumabs      )
+    write (0,*) 'sum(Interstitial%dd_mf       ) = ', sum(Interstitial%dd_mf       )
+    write (0,*) 'sum(Interstitial%de_lgth     ) = ', sum(Interstitial%de_lgth     )
+    write (0,*) 'sum(Interstitial%del         ) = ', sum(Interstitial%del         )
+    write (0,*) 'sum(Interstitial%del_gz      ) = ', sum(Interstitial%del_gz      )
+    write (0,*) 'sum(Interstitial%delr        ) = ', sum(Interstitial%delr        )
+    write (0,*) 'sum(Interstitial%dkt         ) = ', sum(Interstitial%dkt         )
+    write (0,*) 'sum(Interstitial%dlength     ) = ', sum(Interstitial%dlength     )
+    write (0,*) 'sum(Interstitial%dqdt        ) = ', sum(Interstitial%dqdt        )
+    write (0,*) 'sum(Interstitial%dqsfc1      ) = ', sum(Interstitial%dqsfc1      )
+    write (0,*) 'sum(Interstitial%drain       ) = ', sum(Interstitial%drain       )
+    write (0,*) 'sum(Interstitial%dtdt        ) = ', sum(Interstitial%dtdt        )
+    write (0,*) 'sum(Interstitial%dtdtc       ) = ', sum(Interstitial%dtdtc       )
+    write (0,*) 'sum(Interstitial%dtsfc1      ) = ', sum(Interstitial%dtsfc1      )
+    write (0,*) 'sum(Interstitial%dtzm        ) = ', sum(Interstitial%dtzm        )
+    write (0,*) 'sum(Interstitial%dt_mf       ) = ', sum(Interstitial%dt_mf       )
+    write (0,*) 'sum(Interstitial%dudt        ) = ', sum(Interstitial%dudt        )
+    write (0,*) 'sum(Interstitial%dusfcg      ) = ', sum(Interstitial%dusfcg      )
+    write (0,*) 'sum(Interstitial%dusfc1      ) = ', sum(Interstitial%dusfc1      )
+    write (0,*) 'sum(Interstitial%dvdftra     ) = ', sum(Interstitial%dvdftra     )
+    write (0,*) 'sum(Interstitial%dvdt        ) = ', sum(Interstitial%dvdt        )
+    write (0,*) 'sum(Interstitial%dvsfcg      ) = ', sum(Interstitial%dvsfcg      )
+    write (0,*) 'sum(Interstitial%dvsfc1      ) = ', sum(Interstitial%dvsfc1      )
+    write (0,*) 'sum(Interstitial%dzlyr       ) = ', sum(Interstitial%dzlyr       )
+    write (0,*) 'sum(Interstitial%elvmax      ) = ', sum(Interstitial%elvmax      )
+    write (0,*) 'sum(Interstitial%ep1d        ) = ', sum(Interstitial%ep1d        )
+    write (0,*) 'sum(Interstitial%ep1d_ice    ) = ', sum(Interstitial%ep1d_ice    )
+    write (0,*) 'sum(Interstitial%ep1d_land   ) = ', sum(Interstitial%ep1d_land   )
+    write (0,*) 'sum(Interstitial%ep1d_ocean  ) = ', sum(Interstitial%ep1d_ocean  )
+    write (0,*) 'sum(Interstitial%evap        ) = ', sum(Interstitial%evap        )
+    write (0,*) 'sum(Interstitial%evap_ice    ) = ', sum(Interstitial%evap_ice    )
+    write (0,*) 'sum(Interstitial%evap_land   ) = ', sum(Interstitial%evap_land   )
+    write (0,*) 'sum(Interstitial%evap_ocean  ) = ', sum(Interstitial%evap_ocean  )
+    write (0,*) 'sum(Interstitial%evbs        ) = ', sum(Interstitial%evbs        )
+    write (0,*) 'sum(Interstitial%evcw        ) = ', sum(Interstitial%evcw        )
+    write (0,*) 'sum(Interstitial%faerlw      ) = ', sum(Interstitial%faerlw      )
+    write (0,*) 'sum(Interstitial%faersw      ) = ', sum(Interstitial%faersw      )
+    write (0,*) 'sum(Interstitial%ffhh_ice    ) = ', sum(Interstitial%ffhh_ice    )
+    write (0,*) 'sum(Interstitial%ffhh_land   ) = ', sum(Interstitial%ffhh_land   )
+    write (0,*) 'sum(Interstitial%ffhh_ocean  ) = ', sum(Interstitial%ffhh_ocean  )
+    write (0,*) 'sum(Interstitial%fh2         ) = ', sum(Interstitial%fh2         )
+    write (0,*) 'sum(Interstitial%fh2_ice     ) = ', sum(Interstitial%fh2_ice     )
+    write (0,*) 'sum(Interstitial%fh2_land    ) = ', sum(Interstitial%fh2_land    )
+    write (0,*) 'sum(Interstitial%fh2_ocean   ) = ', sum(Interstitial%fh2_ocean   )
+    write (0,*) 'Interstitial%flag_cice(1)      = ', Interstitial%flag_cice(1)
+    write (0,*) 'Interstitial%flag_guess(1)     = ', Interstitial%flag_guess(1)
+    write (0,*) 'Interstitial%flag_iter(1)      = ', Interstitial%flag_iter(1)
+    write (0,*) 'sum(Interstitial%ffmm_ice    ) = ', sum(Interstitial%ffmm_ice    )
+    write (0,*) 'sum(Interstitial%ffmm_land   ) = ', sum(Interstitial%ffmm_land   )
+    write (0,*) 'sum(Interstitial%ffmm_ocean  ) = ', sum(Interstitial%ffmm_ocean  )
+    write (0,*) 'sum(Interstitial%fm10        ) = ', sum(Interstitial%fm10        )
+    write (0,*) 'sum(Interstitial%fm10_ice    ) = ', sum(Interstitial%fm10_ice    )
+    write (0,*) 'sum(Interstitial%fm10_land   ) = ', sum(Interstitial%fm10_land   )
+    write (0,*) 'sum(Interstitial%fm10_ocean  ) = ', sum(Interstitial%fm10_ocean  )
+    write (0,*) 'Interstitial%frain             = ', Interstitial%frain
+    write (0,*) 'sum(Interstitial%frland      ) = ', sum(Interstitial%frland      )
+    write (0,*) 'sum(Interstitial%fscav       ) = ', sum(Interstitial%fscav       )
+    write (0,*) 'sum(Interstitial%fswtr       ) = ', sum(Interstitial%fswtr       )
+    write (0,*) 'sum(Interstitial%gabsbdlw    ) = ', sum(Interstitial%gabsbdlw    )
+    write (0,*) 'sum(Interstitial%gamma       ) = ', sum(Interstitial%gamma       )
+    write (0,*) 'sum(Interstitial%gamq        ) = ', sum(Interstitial%gamq        )
+    write (0,*) 'sum(Interstitial%gamt        ) = ', sum(Interstitial%gamt        )
+    write (0,*) 'sum(Interstitial%gasvmr      ) = ', sum(Interstitial%gasvmr      )
+    write (0,*) 'sum(Interstitial%gflx        ) = ', sum(Interstitial%gflx        )
+    write (0,*) 'sum(Interstitial%gflx_ice    ) = ', sum(Interstitial%gflx_ice    )
+    write (0,*) 'sum(Interstitial%gflx_land   ) = ', sum(Interstitial%gflx_land   )
+    write (0,*) 'sum(Interstitial%gflx_ocean  ) = ', sum(Interstitial%gflx_ocean  )
+    write (0,*) 'sum(Interstitial%gwdcu       ) = ', sum(Interstitial%gwdcu       )
+    write (0,*) 'sum(Interstitial%gwdcv       ) = ', sum(Interstitial%gwdcv       )
+    write (0,*) 'sum(Interstitial%hflx        ) = ', sum(Interstitial%hflx        )
+    write (0,*) 'sum(Interstitial%hflx_ice    ) = ', sum(Interstitial%hflx_ice    )
+    write (0,*) 'sum(Interstitial%hflx_land   ) = ', sum(Interstitial%hflx_land   )
+    write (0,*) 'sum(Interstitial%hflx_ocean  ) = ', sum(Interstitial%hflx_ocean  )
+    write (0,*) 'sum(Interstitial%hprime1     ) = ', sum(Interstitial%hprime1     )
+    write (0,*) 'Interstitial%dry(:)==.true.    = ', count(Interstitial%dry(:))
+    write (0,*) 'sum(Interstitial%idxday      ) = ', sum(Interstitial%idxday      )
+    write (0,*) 'Interstitial%icy(:)==.true.    = ', count(Interstitial%icy(:))
+    write (0,*) 'Interstitial%lake(:)==.true.   = ', count(Interstitial%lake(:))
+    write (0,*) 'Interstitial%ocean(:)==.true.  = ', count(Interstitial%ocean(:))
+    write (0,*) 'sum(Interstitial%islmsk      ) = ', sum(Interstitial%islmsk      )
+    write (0,*) 'Interstitial%wet(:)==.true.    = ', count(Interstitial%wet(:))
+    write (0,*) 'Interstitial%kb                = ', Interstitial%kb
+    write (0,*) 'sum(Interstitial%kbot        ) = ', sum(Interstitial%kbot        )
+    write (0,*) 'sum(Interstitial%kcnv        ) = ', sum(Interstitial%kcnv        )
+    write (0,*) 'Interstitial%kd                = ', Interstitial%kd
+    write (0,*) 'sum(Interstitial%kinver      ) = ', sum(Interstitial%kinver      )
+    write (0,*) 'sum(Interstitial%kpbl        ) = ', sum(Interstitial%kpbl        )
+    write (0,*) 'Interstitial%kt                = ', Interstitial%kt
+    write (0,*) 'sum(Interstitial%ktop        ) = ', sum(Interstitial%ktop        )
+    write (0,*) 'sum(Interstitial%mbota       ) = ', sum(Interstitial%mbota       )
+    write (0,*) 'sum(Interstitial%mtopa       ) = ', sum(Interstitial%mtopa       )
+    write (0,*) 'Interstitial%nday              = ', Interstitial%nday
+    write (0,*) 'sum(Interstitial%oa4         ) = ', sum(Interstitial%oa4         )
+    write (0,*) 'sum(Interstitial%oc          ) = ', sum(Interstitial%oc          )
+    write (0,*) 'sum(Interstitial%olyr        ) = ', sum(Interstitial%olyr        )
+    write (0,*) 'sum(Interstitial%plvl        ) = ', sum(Interstitial%plvl        )
+    write (0,*) 'sum(Interstitial%plyr        ) = ', sum(Interstitial%plyr        )
+    write (0,*) 'sum(Interstitial%prcpmp      ) = ', sum(Interstitial%prcpmp      )
+    write (0,*) 'sum(Interstitial%prnum       ) = ', sum(Interstitial%prnum       )
+    write (0,*) 'sum(Interstitial%qicn        ) = ', sum(Interstitial%qicn        )
+    write (0,*) 'sum(Interstitial%qlcn        ) = ', sum(Interstitial%qlcn        )
+    write (0,*) 'sum(Interstitial%qlyr        ) = ', sum(Interstitial%qlyr        )
+    write (0,*) 'sum(Interstitial%qss         ) = ', sum(Interstitial%qss         )
+    write (0,*) 'sum(Interstitial%qss_ice     ) = ', sum(Interstitial%qss_ice     )
+    write (0,*) 'sum(Interstitial%qss_land    ) = ', sum(Interstitial%qss_land    )
+    write (0,*) 'sum(Interstitial%qss_ocean   ) = ', sum(Interstitial%qss_ocean   )
+    write (0,*) 'Interstitial%raddt             = ', Interstitial%raddt
+    write (0,*) 'sum(Interstitial%raincd      ) = ', sum(Interstitial%raincd      )
+    write (0,*) 'sum(Interstitial%raincs      ) = ', sum(Interstitial%raincs      )
+    write (0,*) 'sum(Interstitial%rainmcadj   ) = ', sum(Interstitial%rainmcadj   )
+    write (0,*) 'sum(Interstitial%rainp       ) = ', sum(Interstitial%rainp       )
+    write (0,*) 'sum(Interstitial%rb          ) = ', sum(Interstitial%rb          )
+    write (0,*) 'sum(Interstitial%rb_ice      ) = ', sum(Interstitial%rb_ice      )
+    write (0,*) 'sum(Interstitial%rb_land     ) = ', sum(Interstitial%rb_land     )
+    write (0,*) 'sum(Interstitial%rb_ocean    ) = ', sum(Interstitial%rb_ocean    )
+    write (0,*) 'Interstitial%reset             = ', Interstitial%reset
+    write (0,*) 'sum(Interstitial%rhc         ) = ', sum(Interstitial%rhc         )
+    write (0,*) 'sum(Interstitial%runoff      ) = ', sum(Interstitial%runoff      )
+    write (0,*) 'sum(Interstitial%save_q      ) = ', sum(Interstitial%save_q      )
+    write (0,*) 'sum(Interstitial%save_t      ) = ', sum(Interstitial%save_t      )
+    write (0,*) 'sum(Interstitial%save_u      ) = ', sum(Interstitial%save_u      )
+    write (0,*) 'sum(Interstitial%save_v      ) = ', sum(Interstitial%save_v      )
+    write (0,*) 'sum(Interstitial%sbsno       ) = ', sum(Interstitial%sbsno       )
+    write (0,*) 'sum(Interstitial%scmpsw%uvbfc) = ', sum(Interstitial%scmpsw%uvbfc)
+    write (0,*) 'sum(Interstitial%scmpsw%uvbf0) = ', sum(Interstitial%scmpsw%uvbf0)
+    write (0,*) 'sum(Interstitial%scmpsw%nirbm) = ', sum(Interstitial%scmpsw%nirbm)
+    write (0,*) 'sum(Interstitial%scmpsw%nirdf) = ', sum(Interstitial%scmpsw%nirdf)
+    write (0,*) 'sum(Interstitial%scmpsw%visbm) = ', sum(Interstitial%scmpsw%visbm)
+    write (0,*) 'sum(Interstitial%scmpsw%visdf) = ', sum(Interstitial%scmpsw%visdf)
+    write (0,*) 'sum(Interstitial%sfcalb      ) = ', sum(Interstitial%sfcalb      )
+    write (0,*) 'sum(Interstitial%sigma       ) = ', sum(Interstitial%sigma       )
+    write (0,*) 'sum(Interstitial%sigmaf      ) = ', sum(Interstitial%sigmaf      )
+    write (0,*) 'sum(Interstitial%sigmafrac   ) = ', sum(Interstitial%sigmafrac   )
+    write (0,*) 'sum(Interstitial%sigmatot    ) = ', sum(Interstitial%sigmatot    )
+    write (0,*) 'sum(Interstitial%slopetype   ) = ', sum(Interstitial%slopetype   )
+    write (0,*) 'sum(Interstitial%snowc       ) = ', sum(Interstitial%snowc       )
+    write (0,*) 'sum(Interstitial%snowd_ice   ) = ', sum(Interstitial%snowd_ice   )
+    write (0,*) 'sum(Interstitial%snowd_land  ) = ', sum(Interstitial%snowd_land  )
+    write (0,*) 'sum(Interstitial%snowd_ocean ) = ', sum(Interstitial%snowd_ocean )
+    write (0,*) 'sum(Interstitial%snohf       ) = ', sum(Interstitial%snohf       )
+    write (0,*) 'sum(Interstitial%snowmt      ) = ', sum(Interstitial%snowmt      )
+    write (0,*) 'sum(Interstitial%soiltype    ) = ', sum(Interstitial%soiltype    )
+    write (0,*) 'sum(Interstitial%stress      ) = ', sum(Interstitial%stress      )
+    write (0,*) 'sum(Interstitial%stress_ice  ) = ', sum(Interstitial%stress_ice  )
+    write (0,*) 'sum(Interstitial%stress_land ) = ', sum(Interstitial%stress_land )
+    write (0,*) 'sum(Interstitial%stress_ocean) = ', sum(Interstitial%stress_ocean)
+    write (0,*) 'sum(Interstitial%theta       ) = ', sum(Interstitial%theta       )
+    write (0,*) 'sum(Interstitial%tice        ) = ', sum(Interstitial%tice        )
+    write (0,*) 'sum(Interstitial%tlvl        ) = ', sum(Interstitial%tlvl        )
+    write (0,*) 'sum(Interstitial%tlyr        ) = ', sum(Interstitial%tlyr        )
+    write (0,*) 'sum(Interstitial%tprcp_ice   ) = ', sum(Interstitial%tprcp_ice   )
+    write (0,*) 'sum(Interstitial%tprcp_land  ) = ', sum(Interstitial%tprcp_land  )
+    write (0,*) 'sum(Interstitial%tprcp_ocean ) = ', sum(Interstitial%tprcp_ocean )
+    write (0,*) 'sum(Interstitial%trans       ) = ', sum(Interstitial%trans       )
+    write (0,*) 'sum(Interstitial%tseal       ) = ', sum(Interstitial%tseal       )
+    write (0,*) 'sum(Interstitial%tsfa        ) = ', sum(Interstitial%tsfa        )
+    write (0,*) 'sum(Interstitial%tsfc_ice    ) = ', sum(Interstitial%tsfc_ice    )
+    write (0,*) 'sum(Interstitial%tsfc_land   ) = ', sum(Interstitial%tsfc_land   )
+    write (0,*) 'sum(Interstitial%tsfc_ocean  ) = ', sum(Interstitial%tsfc_ocean  )
+    write (0,*) 'sum(Interstitial%tsfg        ) = ', sum(Interstitial%tsfg        )
+    write (0,*) 'sum(Interstitial%tsurf       ) = ', sum(Interstitial%tsurf       )
+    write (0,*) 'sum(Interstitial%tsurf_ice   ) = ', sum(Interstitial%tsurf_ice   )
+    write (0,*) 'sum(Interstitial%tsurf_land  ) = ', sum(Interstitial%tsurf_land  )
+    write (0,*) 'sum(Interstitial%tsurf_ocean ) = ', sum(Interstitial%tsurf_ocean )
+    write (0,*) 'sum(Interstitial%ud_mf       ) = ', sum(Interstitial%ud_mf       )
+    write (0,*) 'sum(Interstitial%ulwsfc_cice ) = ', sum(Interstitial%ulwsfc_cice )
+    write (0,*) 'sum(Interstitial%uustar_ice  ) = ', sum(Interstitial%uustar_ice  )
+    write (0,*) 'sum(Interstitial%uustar_land ) = ', sum(Interstitial%uustar_land )
+    write (0,*) 'sum(Interstitial%uustar_ocean) = ', sum(Interstitial%uustar_ocean)
+    write (0,*) 'sum(Interstitial%vdftra      ) = ', sum(Interstitial%vdftra      )
+    write (0,*) 'sum(Interstitial%vegf1d      ) = ', sum(Interstitial%vegf1d      )
+    write (0,*) 'sum(Interstitial%vegtype     ) = ', sum(Interstitial%vegtype     )
+    write (0,*) 'sum(Interstitial%w_upi       ) = ', sum(Interstitial%w_upi       )
+    write (0,*) 'sum(Interstitial%wcbmax      ) = ', sum(Interstitial%wcbmax      )
+    write (0,*) 'sum(Interstitial%weasd_ice   ) = ', sum(Interstitial%weasd_ice   )
+    write (0,*) 'sum(Interstitial%weasd_land  ) = ', sum(Interstitial%weasd_land  )
+    write (0,*) 'sum(Interstitial%weasd_ocean ) = ', sum(Interstitial%weasd_ocean )
+    write (0,*) 'sum(Interstitial%wind        ) = ', sum(Interstitial%wind        )
+    write (0,*) 'sum(Interstitial%work1       ) = ', sum(Interstitial%work1       )
+    write (0,*) 'sum(Interstitial%work2       ) = ', sum(Interstitial%work2       )
+    write (0,*) 'sum(Interstitial%work3       ) = ', sum(Interstitial%work3       )
+    write (0,*) 'sum(Interstitial%xcosz       ) = ', sum(Interstitial%xcosz       )
+    write (0,*) 'sum(Interstitial%xlai1d      ) = ', sum(Interstitial%xlai1d      )
+    write (0,*) 'sum(Interstitial%xmu         ) = ', sum(Interstitial%xmu         )
+    write (0,*) 'sum(Interstitial%z01d        ) = ', sum(Interstitial%z01d        )
+    write (0,*) 'sum(Interstitial%zorl_ice    ) = ', sum(Interstitial%zorl_ice    )
+    write (0,*) 'sum(Interstitial%zorl_land   ) = ', sum(Interstitial%zorl_land   )
+    write (0,*) 'sum(Interstitial%zorl_ocean  ) = ', sum(Interstitial%zorl_ocean  )
+    write (0,*) 'sum(Interstitial%zt1d        ) = ', sum(Interstitial%zt1d        )
+    ! Print arrays that are conditional on physics choices
+    if (Model%imp_physics == Model%imp_physics_gfdl .or. Model%imp_physics == Model%imp_physics_thompson) then
+       write (0,*) 'Interstitial_print: values specific to GFDL/Thompson microphysics'
+       write (0,*) 'sum(Interstitial%graupelmp) = ', sum(Interstitial%graupelmp   )
+       write (0,*) 'sum(Interstitial%icemp    ) = ', sum(Interstitial%icemp       )
+       write (0,*) 'sum(Interstitial%rainmp   ) = ', sum(Interstitial%rainmp      )
+       write (0,*) 'sum(Interstitial%snowmp   ) = ', sum(Interstitial%snowmp      )
+    else if (Model%imp_physics == Model%imp_physics_mg) then
+       write (0,*) 'Interstitial_print: values specific to MG microphysics'
+       write (0,*) 'sum(Interstitial%ncgl     ) = ', sum(Interstitial%ncgl        )
+       write (0,*) 'sum(Interstitial%ncpr     ) = ', sum(Interstitial%ncpr        )
+       write (0,*) 'sum(Interstitial%ncps     ) = ', sum(Interstitial%ncps        )
+       write (0,*) 'sum(Interstitial%qgl      ) = ', sum(Interstitial%qgl         )
+       write (0,*) 'sum(Interstitial%qrn      ) = ', sum(Interstitial%qrn         )
+       write (0,*) 'sum(Interstitial%qsnw     ) = ', sum(Interstitial%qsnw        )
+    end if
+    if (Model%do_shoc) then
+       write (0,*) 'Interstitial_print: values specific to SHOC'
+       write (0,*) 'sum(Interstitial%ncgl     ) = ', sum(Interstitial%ncgl        )
+       write (0,*) 'sum(Interstitial%qrn      ) = ', sum(Interstitial%qrn         )
+       write (0,*) 'sum(Interstitial%qsnw     ) = ', sum(Interstitial%qsnw        )
+       write (0,*) 'sum(Interstitial%qgl      ) = ', sum(Interstitial%qgl         )
+       write (0,*) 'sum(Interstitial%ncpi     ) = ', sum(Interstitial%ncpi        )
+       write (0,*) 'sum(Interstitial%ncpl     ) = ', sum(Interstitial%ncpl        )
+    end if
+    write (0,*) 'Interstitial_print: end'
+    !
+  end subroutine interstitial_print
 #endif
 
 end module GFS_typedefs

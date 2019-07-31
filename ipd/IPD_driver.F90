@@ -7,6 +7,9 @@ module IPD_driver
                                         initialize,                          &
                                         diagnostic_populate,                 &
                                         restart_populate
+#ifdef CCPP
+  use IPD_typedefs,               only: IPD_interstitial_type
+#endif
 
   implicit none
 
@@ -33,18 +36,33 @@ module IPD_driver
 !----------------
 !  IPD Initialize 
 !----------------
+#ifdef CCPP
+  subroutine IPD_initialize (IPD_Control, IPD_Data, IPD_Diag, IPD_Restart, &
+                             IPD_Interstitial, communicator, ntasks, IPD_init_parm)
+#else
   subroutine IPD_initialize (IPD_Control, IPD_Data, IPD_Diag, IPD_Restart, IPD_init_parm)
+#endif
     type(IPD_control_type), intent(inout) :: IPD_Control
     type(IPD_data_type),    intent(inout) :: IPD_Data(:)
     type(IPD_diag_type),    intent(inout) :: IPD_Diag(:)
     type(IPD_restart_type), intent(inout) :: IPD_Restart
+#ifdef CCPP
+    type(IPD_interstitial_type), intent(inout) :: IPD_Interstitial(:)
+    integer, intent(in)                   :: communicator
+    integer, intent(in)                   :: ntasks
+#endif
     type(IPD_init_type),    intent(in)    :: IPD_init_parm
 
     !--- initialize the physics suite
     call initialize (IPD_Control, IPD_Data(:)%Statein, IPD_Data(:)%Stateout,      &
                      IPD_Data(:)%Sfcprop, IPD_Data(:)%Coupling, IPD_Data(:)%Grid, &
                      IPD_Data(:)%Tbd, IPD_Data(:)%Cldprop, IPD_Data(:)%Radtend,   &
+#ifdef CCPP
+                     IPD_Data(:)%Intdiag, IPD_Interstitial(:), communicator,      &
+                     ntasks, IPD_init_parm)
+#else
                      IPD_Data(:)%Intdiag, IPD_init_parm)
+#endif
 
 
     !--- populate/associate the Diag container elements

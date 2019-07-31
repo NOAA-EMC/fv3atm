@@ -17,7 +17,8 @@ module GFS_restart
   type GFS_restart_type
     integer           :: num2d                    !< current number of registered 2D restart variables
     integer           :: num3d                    !< current number of registered 3D restart variables
-    integer           :: ndiag                    !< current number of diagnostic fields in restart file
+    integer           :: fdiag                    !< index of first diagnostic field in restart file
+    integer           :: ldiag                    !< index of last diagnostic field in restart file
 
     character(len=32), allocatable :: name2d(:)   !< variable name as it will appear in the restart file
     character(len=32), allocatable :: name3d(:)   !< variable name as it will appear in the restart file
@@ -91,9 +92,41 @@ module GFS_restart
       endif
     enddo
 
-    Restart%ndiag = ndiag_rst
+    ! Store first and last index of diagnostic fields:
+    Restart%fdiag = 3 + Model%ntot2d + Model%nctp + 1
+    Restart%ldiag = 3 + Model%ntot2d + Model%nctp + ndiag_rst
     Restart%num2d = 3 + Model%ntot2d + Model%nctp + ndiag_rst
+
+#ifdef CCPP
+    ! GF
+    if (Model%imfdeepcnv == 3) then
+      Restart%num2d = Restart%num2d + 1
+    endif
+    ! RUC 
+    if (Model%lsm == Model%lsm_ruc) then
+      Restart%num2d = Restart%num2d + 5
+    endif
+    ! MYNN SFC
+    if (Model%do_mynnsfclay) then
+      Restart%num2d = Restart%num2d + 1
+    endif
+    ! Thompson aerosol-aware
+    if (Model%imp_physics == Model%imp_physics_thompson .and. Model%ltaerosol) then
+      Restart%num2d = Restart%num2d + 2
+    endif
+#endif
+
     Restart%num3d = Model%ntot3d
+#ifdef CCPP
+    ! GF
+    if (Model%imfdeepcnv == 3) then
+      Restart%num3d = Restart%num3d + 2
+    endif
+    ! MYNN PBL 
+    if (Model%do_mynnedmf) then
+      Restart%num3d = Restart%num3d + 8
+    endif
+#endif
 
     allocate (Restart%name2d(Restart%num2d))
     allocate (Restart%name3d(Restart%num3d))
@@ -146,6 +179,68 @@ module GFS_restart
 !      print *,'in restart 2d field, Restart%name2d(',offset+idx,')=',trim(Restart%name2d(offset+idx))
     enddo
 
+#ifdef CCPP
+    !--- RAP/HRRR-specific variables, 2D
+    num = offset + ndiag_rst
+    ! GF
+    if (Model%imfdeepcnv == 3) then
+      num = num + 1
+      Restart%name2d(num) = 'gf_2d_conv_act'
+      do nb = 1,nblks
+        Restart%data(nb,num)%var2p => Sfcprop(nb)%conv_act(:)
+      enddo
+    endif
+    ! RUC 
+    if (Model%lsm == Model%lsm_ruc) then
+      num = num + 1
+      Restart%name2d(num) = 'ruc_2d_raincprv'
+      do nb = 1,nblks
+        Restart%data(nb,num)%var2p => Tbd(nb)%raincprv(:)
+      enddo
+      num = num + 1
+      Restart%name2d(num) = 'ruc_2d_rainncprv'
+      do nb = 1,nblks
+        Restart%data(nb,num)%var2p => Tbd(nb)%rainncprv(:)
+      enddo
+      num = num + 1
+      Restart%name2d(num) = 'ruc_2d_iceprv'
+      do nb = 1,nblks
+        Restart%data(nb,num)%var2p => Tbd(nb)%iceprv(:)
+      enddo
+      num = num + 1
+      Restart%name2d(num) = 'ruc_2d_snowprv'
+      do nb = 1,nblks
+        Restart%data(nb,num)%var2p => Tbd(nb)%snowprv(:)
+      enddo
+      num = num + 1
+      Restart%name2d(num) = 'ruc_2d_graupelprv'
+      do nb = 1,nblks
+        Restart%data(nb,num)%var2p => Tbd(nb)%graupelprv(:)
+      enddo
+    endif
+    ! MYNN SFC
+    if (Model%do_mynnsfclay) then
+        num = num + 1
+        Restart%name2d(num) = 'mynn_2d_uustar'
+        do nb = 1,nblks
+          Restart%data(nb,num)%var2p => Sfcprop(nb)%uustar(:)
+        enddo
+    endif
+    ! Thompson aerosol-aware
+    if (Model%imp_physics == Model%imp_physics_thompson .and. Model%ltaerosol) then
+      num = num + 1
+      Restart%name2d(num) = 'thompson_2d_nwfa2d'
+      do nb = 1,nblks
+        Restart%data(nb,num)%var2p => Coupling(nb)%nwfa2d(:)
+      enddo
+      num = num + 1
+      Restart%name2d(num) = 'thompson_2d_nifa2d'
+      do nb = 1,nblks
+        Restart%data(nb,num)%var2p => Coupling(nb)%nifa2d(:)
+      enddo
+    endif
+#endif
+
     !--- phy_f3d variables
     do num = 1,Model%ntot3d
        !--- set the variable name
@@ -155,6 +250,68 @@ module GFS_restart
         Restart%data(nb,num)%var3p => Tbd(nb)%phy_f3d(:,:,num)
       enddo
     enddo
+
+#ifdef CCPP
+    !--- RAP/HRRR-specific variables, 3D
+    num = Model%ntot3d
+
+    ! GF
+    if (Model%imfdeepcnv == 3) then
+      num = num + 1
+      Restart%name3d(num) = 'gf_3d_prevst'
+      do nb = 1,nblks
+        Restart%data(nb,num)%var3p => Tbd(nb)%prevst(:,:)
+      enddo
+      num = num + 1
+      Restart%name3d(num) = 'gf_3d_prevsq'
+      do nb = 1,nblks
+        Restart%data(nb,num)%var3p => Tbd(nb)%prevsq(:,:)
+      enddo
+    endif
+    ! MYNN PBL
+    if (Model%do_mynnedmf) then
+      num = num + 1
+      Restart%name3d(num) = 'mynn_3d_cldfra_bl'
+      do nb = 1,nblks
+        Restart%data(nb,num)%var3p => Tbd(nb)%cldfra_bl(:,:)
+      enddo
+      num = num + 1
+      Restart%name3d(num) = 'mynn_3d_qc_bl'
+      do nb = 1,nblks
+        Restart%data(nb,num)%var3p => Tbd(nb)%qc_bl(:,:)
+      enddo
+      num = num + 1
+      Restart%name3d(num) = 'mynn_3d_el_pbl'
+      do nb = 1,nblks
+        Restart%data(nb,num)%var3p => Tbd(nb)%el_pbl(:,:)
+      enddo
+      num = num + 1
+      Restart%name3d(num) = 'mynn_3d_sh3d'
+      do nb = 1,nblks
+        Restart%data(nb,num)%var3p => Tbd(nb)%sh3d(:,:)
+      enddo
+      num = num + 1
+      Restart%name3d(num) = 'mynn_3d_qke'
+      do nb = 1,nblks
+        Restart%data(nb,num)%var3p => Tbd(nb)%qke(:,:)
+      enddo
+      num = num + 1
+      Restart%name3d(num) = 'mynn_3d_tsq'
+      do nb = 1,nblks
+        Restart%data(nb,num)%var3p => Tbd(nb)%tsq(:,:)
+      enddo
+      num = num + 1
+      Restart%name3d(num) = 'mynn_3d_qsq'
+      do nb = 1,nblks
+        Restart%data(nb,num)%var3p => Tbd(nb)%qsq(:,:)
+      enddo
+      num = num + 1
+      Restart%name3d(num) = 'mynn_3d_cov'
+      do nb = 1,nblks
+        Restart%data(nb,num)%var3p => Tbd(nb)%cov(:,:)
+      enddo
+    endif
+#endif
 
   end subroutine GFS_restart_populate
 

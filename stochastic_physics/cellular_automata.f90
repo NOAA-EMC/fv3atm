@@ -96,12 +96,12 @@ nca_plumes = .false.
  stop
  endif
 
- if(ca_global == .true. .and. ca_sgs == .true.)then
+ if(ca_global .and. ca_sgs)then
  write(0,*)'Namelist options ca_global and ca_sgs cannot both be true - exiting'
  stop
  endif
 
- if(ca_sgs == .true. .and. ca_smooth == .true.)then
+ if(ca_sgs .and. ca_smooth)then
  write(0,*)'Currently ca_smooth does not work with ca_sgs - exiting'
  stop
  endif
@@ -275,7 +275,7 @@ CAstore = 0.
 
 do nf=1,nca !update each ca
  
- if(ca_sgs == .true.)then
+ if(ca_sgs)then
 
   if(nf==1)then 
   inci=ncells
@@ -427,9 +427,9 @@ do nf=1,nca !update each ca
                    nlives, ncells, nfracseed, nseed,nthresh, ca_global, &
                    ca_sgs,nspinup, condition, vertvelhigh,nf,nca_plumes)
  
-  if(ca_global == .true.)then
+  if(ca_global)then
   CAstore(:,:) = CAstore(:,:) + CA(:,:)
-  elseif(ca_sgs == .true.)then
+  elseif(ca_sgs)then
    if(nf==1)then
    CA_DEEP(:,:)=CA(:,:)
    elseif(nf==2)then
@@ -447,13 +447,13 @@ do nf=1,nca !update each ca
 
  enddo !nf (nca)
 
- if(ca_global == .true.)then
+ if(ca_global)then
  CAavg = CAstore / real(nca)
  endif
 
 !smooth CA field
 
-if (ca_smooth ==.true. .and. ca_global ==.true.) then
+if (ca_smooth .and. ca_global) then
 field_in=0.
 
 !get halo
@@ -527,7 +527,7 @@ endif !smooth
 !endif
 
 !Set the range for the nca individual ca_sgs patterns:
-if(ca_sgs ==.true.)then
+if(ca_sgs)then
 
 Detmax(1)=maxval(CA_DEEP(:,:))
 call mp_reduce_max(Detmax(1))

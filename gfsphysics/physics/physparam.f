@@ -209,7 +209,7 @@
 !> ozone data source control flag
 !!\n =0:use seasonal climatology ozone data
 !!\n >0:use prognostic ozone scheme (also depend on other model control
-!!      variable at initial time
+!!      variable at initial time)
       integer, save :: ioznflg = 1
 
 !> external co2 2d monthly obsv data table: co2historicaldata_2004.txt
