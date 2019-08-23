@@ -1242,6 +1242,8 @@ module GFS_typedefs
     logical              :: ldiag_ugwp
     logical              :: do_ugwp         ! do mesoscale UGWP + TOFD + RF
     logical              :: do_tofd         ! tofd flag in gwdps.f
+    logical              :: do_gwd          ! logical for gravity wave drag (gwd)      
+
 
 !--- calendars and time parameters and activation triggers
     real(kind=kind_phys) :: dtp             !< physics timestep in seconds
@@ -3917,6 +3919,7 @@ module GFS_typedefs
     logical              :: trans_trac     = .false.                  !< flag for convective transport of tracers (RAS, CS, or SAMF)
     logical              :: old_monin      = .false.                  !< flag for diff monin schemes
     logical              :: cnvgwd         = .false.                  !< flag for conv gravity wave drag
+    logical              :: do_gwd         = .false.                  !< flag for running gravity wave drag               
     logical              :: mstrat         = .false.                  !< flag for moorthi approach for stratus
     logical              :: moist_adj      = .false.                  !< flag for moist convective adjustment
     logical              :: cscnv          = .false.                  !< flag for Chikira-Sugiyama convection
@@ -4526,6 +4529,7 @@ module GFS_typedefs
     Model%prauras          = prauras
     Model%wminras          = wminras
     Model%rbcr             = rbcr
+    Model%do_gwd            = maxval(Model%cdmbgwd) > 0.0
 #ifdef CCPP
     Model%do_mynnedmf       = do_mynnedmf
     Model%do_mynnsfclay     = do_mynnsfclay
@@ -5014,6 +5018,7 @@ module GFS_typedefs
         endif
       endif
       if (Model%cnvgwd)      print *,' Convective GWD parameterization used'
+      if (Model%do_gwd)      print *,' GWD used'
       if (Model%crick_proof) print *,' CRICK-Proof cloud water used in radiation '
       if (Model%ccnorm)      print *,' Cloud condensate normalized by cloud cover for radiation'
 
@@ -5396,6 +5401,7 @@ module GFS_typedefs
       print *, ' trans_trac        : ', Model%trans_trac
       print *, ' old_monin         : ', Model%old_monin
       print *, ' cnvgwd            : ', Model%cnvgwd
+      print *, ' do_gwd            : ', Model%do_gwd
       print *, ' mstrat            : ', Model%mstrat
       print *, ' moist_adj         : ', Model%moist_adj
       print *, ' cscnv             : ', Model%cscnv

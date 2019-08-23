@@ -2844,6 +2844,9 @@ module module_physics_driver
 !
 !===== UGWP-start: two versions V0 (knob_ugwp_version=0) and V1(knob_ugwp_version=1)
 !
+
+     if (Model%do_gwd) then
+
       if (Model%do_ugwp .and. nmtvr == 14) then
 !
         if (knob_ugwp_version == 1 ) then
@@ -3016,6 +3019,9 @@ module module_physics_driver
 !       endif   !   nmtvr == 14    we don't need code works only with 14-orotype
 
       endif     ! if (Model%do_ugwp)
+
+     endif    ! if (do_gwd) then
+
 !
 !===============================================
 !
