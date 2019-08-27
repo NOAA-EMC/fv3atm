@@ -172,7 +172,7 @@ namelist /atmos_model_nml/ blocksize, chksum_debug, dycore_only, debug, sync, fd
 namelist /atmos_model_nml/ blocksize, chksum_debug, dycore_only, debug, sync, fdiag, fhmax, fhmaxhf, fhout, fhouthf, avg_max_length
 #endif
 
-type (time_type) :: diag_time
+type (time_type) :: diag_time,diag_time_fhzero
 
 !--- concurrent and decoupled radiation and physics variables
 !-------------------
@@ -630,6 +630,10 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    if (output_1st_tstep_rst) then
      diag_time = Time - real_to_time_type(mod(int((first_kdt - 1)*dt_phys/3600.),6)*3600.0)
    endif
+   if (Atmos%iau_offset > 0.) then
+     diag_time = Atmos%Time_init
+     diag_time_fhzero = Atmos%Time
+   endif
 
    !---- print version number to logfile ----
 
@@ -782,7 +786,7 @@ subroutine update_atmos_model_state (Atmos)
 ! to update the model state after all concurrency is completed
   type (atmos_data_type), intent(inout) :: Atmos
 !--- local variables
-  integer :: isec,seconds
+  integer :: isec,seconds,isec_fhzero
   integer :: rc
   real(kind=IPD_kind_phys) :: time_int, time_intfull
 !
@@ -808,7 +812,21 @@ subroutine update_atmos_model_state (Atmos)
     if (ANY(nint(fdiag(:)*3600.0) == seconds) .or. (IPD_Control%kdt == first_kdt) ) then
       if (mpp_pe() == mpp_root_pe()) write(6,*) "---isec,seconds",isec,seconds
       time_int = real(isec)
+      if(Atmos%iau_offset > 0.) then
+        if( time_int - Atmos%iau_offset*3600. > 0. ) then
+          time_int = time_int - Atmos%iau_offset*3600.
+        else if(seconds == Atmos%iau_offset*3600) then
+          call get_time (Atmos%Time - diag_time_fhzero, isec_fhzero)
+          time_int = real(isec_fhzero)
+          if (mpp_pe() == mpp_root_pe()) write(6,*) "---iseczero",isec_fhzero
+        endif
+      endif
       time_intfull = real(seconds)
+      if(Atmos%iau_offset > 0.) then
+        if( time_intfull - Atmos%iau_offset*3600. > 0. ) then
+          time_intfull = time_intfull - Atmos%iau_offset*3600.
+        endif
+      endif
       if (mpp_pe() == mpp_root_pe()) write(6,*) ' gfs diags time since last bucket empty: ',time_int/3600.,'hrs'
       call atmosphere_nggps_diag(Atmos%Time)
       call FV3GFS_diag_output(Atmos%Time, IPD_DIag, Atm_block, IPD_Control%nx, IPD_Control%ny, &
