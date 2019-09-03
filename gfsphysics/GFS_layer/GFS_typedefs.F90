@@ -1607,7 +1607,8 @@ module GFS_typedefs
     integer              :: ntia            !< tracer index for ice friendly aerosol
     integer              :: ntchm           !< number of chemical tracers
     integer              :: ntchs           !< tracer index for first chemical tracer
-    logical, pointer     :: ntdiag(:) => null() !< array to control diagnostics for chemical tracers
+    logical,              pointer :: ntdiag(:) => null() !< array to control diagnostics for chemical tracers
+    real(kind=kind_phys), pointer :: fscav(:)  => null() !< array of aerosol scavenging coefficients
  
     !--- derived totals for phy_f*d
     integer              :: ntot2d          !< total number of variables for phyf2d
@@ -3615,12 +3616,14 @@ module GFS_typedefs
       !--- outgoing instantaneous quantities
       allocate (Coupling%ushfsfci  (IM))
       allocate (Coupling%dkt       (IM,Model%levs))
+      allocate (Coupling%dqdti     (IM,Model%levs))
       !--- accumulated convective rainfall
       allocate (Coupling%rainc_cpl (IM))
 
       Coupling%rainc_cpl = clear_val
       Coupling%ushfsfci  = clear_val
       Coupling%dkt       = clear_val
+      Coupling%dqdti     = clear_val
     endif
 
     !--- stochastic physics option
@@ -3653,14 +3656,16 @@ module GFS_typedefs
 
     !--- needed for either GoCart or 3D diagnostics
     if (Model%lgocart .or. Model%ldiag3d) then
-      allocate (Coupling%dqdti   (IM,Model%levs))
       allocate (Coupling%cnvqci  (IM,Model%levs))
       allocate (Coupling%upd_mfi (IM,Model%levs))
       allocate (Coupling%dwn_mfi (IM,Model%levs))
       allocate (Coupling%det_mfi (IM,Model%levs))
       allocate (Coupling%cldcovi (IM,Model%levs))
 
-      Coupling%dqdti   = clear_val
+      if (.not.Model%cplchm) then
+        allocate (Coupling%dqdti (IM,Model%levs))
+        Coupling%dqdti = clear_val
+      endif
       Coupling%cnvqci  = clear_val
       Coupling%upd_mfi = clear_val
       Coupling%dwn_mfi = clear_val
@@ -3747,7 +3752,7 @@ module GFS_typedefs
     integer,                intent(in) :: nthreads
 #endif
     !--- local variables
-    integer :: n
+    integer :: i, j, n
     integer :: ios
     integer :: seed0
     logical :: exists
@@ -4113,6 +4118,9 @@ module GFS_typedefs
     real(kind=kind_phys) :: pertlai  = -999.
     real(kind=kind_phys) :: pertalb  = -999.
     real(kind=kind_phys) :: pertvegf = -999.
+
+!--- aerosol scavenging factors
+    character(len=20) :: fscav_aero(20) = 'default'
 !--- END NAMELIST VARIABLES
 
     NAMELIST /gfs_physics_nml/                                                              &
@@ -4197,7 +4205,10 @@ module GFS_typedefs
                                debug, pre_rad,                                              &
                           !--- parameter range for critical relative humidity
                                max_lon, max_lat, min_lon, min_lat, rhcmax,                  &
-                               phys_version
+                               phys_version,                                                &
+                          !--- aerosol scavenging factors ('name:value' string array)
+                               fscav_aero
+
 
 !--- other parameters 
     integer :: nctp    =  0                !< number of cloud types in CS scheme
@@ -4693,6 +4704,38 @@ module GFS_typedefs
         n = get_tracer_index(Model%tracer_names, 'msa', Model%me, Model%master, Model%debug) - Model%ntchs + 1
         if (n > 0) Model%ntdiag(n) = .false.
       endif
+    endif
+    ! -- setup aerosol scavenging factors
+    allocate(Model%fscav(Model%ntchm))
+    if (Model%ntchm > 0) then
+      ! -- initialize to default
+      Model%fscav = 0.6_kind_phys
+      n = get_tracer_index(Model%tracer_names, 'seas1', Model%me, Model%master, Model%debug) - Model%ntchs + 1
+      if (n > 0) Model%fscav(n) = 1.0_kind_phys
+      n = get_tracer_index(Model%tracer_names, 'seas2', Model%me, Model%master, Model%debug) - Model%ntchs + 1
+      if (n > 0) Model%fscav(n) = 1.0_kind_phys
+      n = get_tracer_index(Model%tracer_names, 'seas3', Model%me, Model%master, Model%debug) - Model%ntchs + 1
+      if (n > 0) Model%fscav(n) = 1.0_kind_phys
+      n = get_tracer_index(Model%tracer_names, 'seas4', Model%me, Model%master, Model%debug) - Model%ntchs + 1
+      if (n > 0) Model%fscav(n) = 1.0_kind_phys
+      n = get_tracer_index(Model%tracer_names, 'seas5', Model%me, Model%master, Model%debug) - Model%ntchs + 1
+      if (n > 0) Model%fscav(n) = 1.0_kind_phys
+      ! -- read factors from namelist
+      do i = 1, size(fscav_aero)
+        j = index(fscav_aero(i),":")
+        if (j > 1) then
+          read(fscav_aero(i)(j+1:), *, iostat=ios) tem
+          if (ios /= 0) cycle
+          if (adjustl(fscav_aero(i)(:j-1)) == "*") then
+            Model%fscav = tem
+            exit
+          else
+            n = get_tracer_index(Model%tracer_names, adjustl(fscav_aero(i)(:j-1)), Model%me, Model%master, Model%debug) &
+                - Model%ntchs + 1
+            if (n > 0) Model%fscav(n) = tem
+          endif
+        endif
+      enddo
     endif
 
 #ifdef CCPP
@@ -5528,6 +5571,7 @@ module GFS_typedefs
       print *, ' ntia              : ', Model%ntia
       print *, ' ntchm             : ', Model%ntchm
       print *, ' ntchs             : ', Model%ntchs
+      print *, ' fscav             : ', Model%fscav
       print *, ' '
       print *, 'derived totals for phy_f*d'
       print *, ' ntot2d            : ', Model%ntot2d

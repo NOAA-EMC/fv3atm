@@ -132,6 +132,7 @@ SRCS_f =  \
 	   ./physics/rascnvv2.f                                                      \
 	   ./physics/rayleigh_damp.f                                                 \
 	   ./physics/rayleigh_damp_mesopause.f                                       \
+	   ./physics/samfaerosols.f                                                  \
 	   ./physics/samfdeepcnv.f                                                   \
 	   ./physics/samfshalcnv.f                                                   \
 	   ./physics/sascnv.f                                                        \
