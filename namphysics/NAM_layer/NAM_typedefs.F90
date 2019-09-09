@@ -450,6 +450,7 @@ module GFS_typedefs
     integer              :: cny             !< number of points in the j-dir for this cubed-sphere face
     integer              :: lonr            !< number of global points in x-dir (i) along the equator
     integer              :: latr            !< number of global points in y-dir (j) along any meridian
+    integer,     pointer :: blksz(:)        !< for explicit data blocking: block sizes of all blocks
 
 !--- coupling parameters
     logical              :: cplflx          !< default no cplflx collection
@@ -1866,7 +1867,7 @@ module GFS_typedefs
                                  cnx, cny, gnx, gny, dt_dycore,     &
                                  dt_phys, iau_offset, idat, jdat,   &
                                  tracer_names, &
-                                 input_nml_file, tile_num)
+                                 input_nml_file, tile_num, blksz)
 
 !--- modules
     use physcons,         only: dxmax, dxmin, dxinv, con_rerth, con_pi, rhc_max
@@ -1916,6 +1917,7 @@ module GFS_typedefs
     integer,                intent(in) :: iau_offset
     character(len=32),      intent(in) :: tracer_names(:)
     character(len=*),       intent(in), pointer :: input_nml_file(:)
+    integer,                intent(in) :: blksz(:)
     !--- local variables
     integer :: n
     integer :: ios
@@ -2376,6 +2378,8 @@ module GFS_typedefs
     Model%cny              = cny
     Model%lonr             = gnx         ! number longitudinal points
     Model%latr             = gny         ! number of latitudinal points from pole to pole
+    allocate(Model%blksz(1:size(blksz)))
+    Model%blksz            = blksz
 
 !--- coupling parameters
     Model%cplflx           = cplflx
@@ -3201,6 +3205,8 @@ module GFS_typedefs
       print *, ' cny               : ', Model%cny
       print *, ' lonr              : ', Model%lonr
       print *, ' latr              : ', Model%latr
+      print *, ' blksz(1)          : ', Model%blksz(1)
+      print *, ' blksz(nblks)      : ', Model%blksz(size(Model%blksz))
       print *, ' '
       print *, 'coupling parameters'
       print *, ' cplflx            : ', Model%cplflx

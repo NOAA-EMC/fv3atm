@@ -1,34 +1,8 @@
 module CCPP_data
 
-#if 0
 !! \section arg_table_CCPP_data Argument Table
-!! | local_name                      | standard_name                                            | long_name                                               | units   | rank | type                   |    kind   | intent | optional |
-!! |---------------------------------|----------------------------------------------------------|---------------------------------------------------------|---------|------|------------------------|-----------|--------|----------|
-!! | cdata                           | ccpp_t_instance                                          | instance of derived data type ccpp_t                    | DDT     |    0 | ccpp_t                 |           | none   | F        |
-!! | CCPP_interstitial               | CCPP_interstitial_type_instance                          | instance of derived type CCPP_interstitial_type         | DDT     |    0 | CCPP_interstitial_type |           | none   | F        |
-!! | GFS_Control                     | GFS_control_type_instance                                | instance of derived type GFS_control_type               | DDT     |    0 | GFS_control_type       |           | none   | F        |
-!! | GFS_Data(cdata%blk_no)          | GFS_data_type_instance                                   | instance of derived type GFS_data_type                  | DDT     |    0 | GFS_data_type          |           | none   | F        |
-!! | GFS_Data(cdata%blk_no)%Cldprop  | GFS_cldprop_type_instance                                | instance of derived type GFS_cldprop_type               | DDT     |    0 | GFS_cldprop_type       |           | none   | F        |
-!! | GFS_Data(cdata%blk_no)%Coupling | GFS_coupling_type_instance                               | instance of derived type GFS_coupling_type              | DDT     |    0 | GFS_coupling_type      |           | none   | F        |
-!! | GFS_Data(cdata%blk_no)%Intdiag  | GFS_diag_type_instance                                   | instance of derived type GFS_diag_type                  | DDT     |    0 | GFS_diag_type          |           | none   | F        |
-!! | GFS_Data(cdata%blk_no)%Grid     | GFS_grid_type_instance                                   | instance of derived type GFS_grid_type                  | DDT     |    0 | GFS_grid_type          |           | none   | F        |
-!! | GFS_Data(cdata%blk_no)%Radtend  | GFS_radtend_type_instance                                | instance of derived type GFS_radtend_type               | DDT     |    0 | GFS_radtend_type       |           | none   | F        |
-!! | GFS_Data(cdata%blk_no)%Sfcprop  | GFS_sfcprop_type_instance                                | instance of derived type GFS_sfcprop_type               | DDT     |    0 | GFS_sfcprop_type       |           | none   | F        |
-!! | GFS_Data(cdata%blk_no)%Statein  | GFS_statein_type_instance                                | instance of derived type GFS_statein_type               | DDT     |    0 | GFS_statein_type       |           | none   | F        |
-!! | GFS_Data(cdata%blk_no)%Stateout | GFS_stateout_type_instance                               | instance of derived type GFS_stateout_type              | DDT     |    0 | GFS_stateout_type      |           | none   | F        |
-!! | GFS_Data(cdata%blk_no)%Tbd      | GFS_tbd_type_instance                                    | instance of derived type GFS_tbd_type                   | DDT     |    0 | GFS_tbd_type           |           | none   | F        |
-!! | GFS_Interstitial(cdata%thrd_no) | GFS_interstitial_type_instance                           | instance of derived type GFS_interstitial_type          | DDT     |    0 | GFS_interstitial_type  |           | none   | F        |
-!! | GFS_Data(:)                     | GFS_data_type_instance_all_blocks                        | instance of derived type GFS_data_type                  | DDT     |    1 | GFS_data_type          |           | none   | F        |
-!! | GFS_Data(:)%Statein             | GFS_statein_type_instance_all_blocks                     | instance of derived type GFS_statein_type               | DDT     |    1 | GFS_statein_type       |           | none   | F        |
-!! | GFS_Data(:)%Grid                | GFS_grid_type_instance_all_blocks                        | instance of derived type GFS_grid_type                  | DDT     |    1 | GFS_grid_type          |           | none   | F        |
-!! | GFS_Data(:)%Tbd                 | GFS_tbd_type_instance_all_blocks                         | instance of derived type GFS_tbd_type                   | DDT     |    1 | GFS_tbd_type           |           | none   | F        |
-!! | GFS_Data(:)%Sfcprop             | GFS_sfcprop_type_instance_all_blocks                     | instance of derived type GFS_sfcprop_type               | DDT     |    1 | GFS_sfcprop_type       |           | none   | F        |
-!! | GFS_Data(:)%Cldprop             | GFS_cldprop_type_instance_all_blocks                     | instance of derived type GFS_cldprop_type               | DDT     |    1 | GFS_cldprop_type       |           | none   | F        |
-!! | GFS_Data(:)%Coupling            | GFS_coupling_type_instance_all_blocks                    | instance of derived type GFS_coupling_type              | DDT     |    1 | GFS_coupling_type      |           | none   | F        |
-!! | GFS_Data(:)%Intdiag             | GFS_diag_type_instance_all_blocks                        | instance of derived type GFS_diag_type                  | DDT     |    1 | GFS_diag_type          |           | none   | F        |
-!! | GFS_Interstitial(:)             | GFS_interstitial_type_instance_all_threads               | instance of derived type GFS_interstitial_type          | DDT     |    1 | GFS_interstitial_type  |           | none   | F        |
+!! \htmlinclude CCPP_data.html
 !!
-#endif
 
     use ccpp_types,    only: ccpp_t
     use CCPP_typedefs, only: CCPP_interstitial_type
