@@ -172,7 +172,7 @@ namelist /atmos_model_nml/ blocksize, chksum_debug, dycore_only, debug, sync, fd
 namelist /atmos_model_nml/ blocksize, chksum_debug, dycore_only, debug, sync, fdiag, fhmax, fhmaxhf, fhout, fhouthf, avg_max_length
 #endif
 
-type (time_type) :: diag_time
+type (time_type) :: diag_time,diag_time_fhzero
 
 !--- concurrent and decoupled radiation and physics variables
 !-------------------
@@ -630,6 +630,10 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    if (output_1st_tstep_rst) then
      diag_time = Time - real_to_time_type(mod(int((first_kdt - 1)*dt_phys/3600.),6)*3600.0)
    endif
+   if (Atmos%iau_offset > 0.) then
+     diag_time = Atmos%Time_init
+     diag_time_fhzero = Atmos%Time
+   endif
 
    !---- print version number to logfile ----
 
@@ -782,7 +786,7 @@ subroutine update_atmos_model_state (Atmos)
 ! to update the model state after all concurrency is completed
   type (atmos_data_type), intent(inout) :: Atmos
 !--- local variables
-  integer :: isec,seconds
+  integer :: isec,seconds,isec_fhzero
   integer :: rc
   real(kind=IPD_kind_phys) :: time_int, time_intfull
 !
@@ -808,7 +812,21 @@ subroutine update_atmos_model_state (Atmos)
     if (ANY(nint(fdiag(:)*3600.0) == seconds) .or. (IPD_Control%kdt == first_kdt) ) then
       if (mpp_pe() == mpp_root_pe()) write(6,*) "---isec,seconds",isec,seconds
       time_int = real(isec)
+      if(Atmos%iau_offset > 0.) then
+        if( time_int - Atmos%iau_offset*3600. > 0. ) then
+          time_int = time_int - Atmos%iau_offset*3600.
+        else if(seconds == Atmos%iau_offset*3600) then
+          call get_time (Atmos%Time - diag_time_fhzero, isec_fhzero)
+          time_int = real(isec_fhzero)
+          if (mpp_pe() == mpp_root_pe()) write(6,*) "---iseczero",isec_fhzero
+        endif
+      endif
       time_intfull = real(seconds)
+      if(Atmos%iau_offset > 0.) then
+        if( time_intfull - Atmos%iau_offset*3600. > 0. ) then
+          time_intfull = time_intfull - Atmos%iau_offset*3600.
+        endif
+      endif
       if (mpp_pe() == mpp_root_pe()) write(6,*) ' gfs diags time since last bucket empty: ',time_int/3600.,'hrs'
       call atmosphere_nggps_diag(Atmos%Time)
       call FV3GFS_diag_output(Atmos%Time, IPD_DIag, Atm_block, IPD_Control%nx, IPD_Control%ny, &
@@ -1011,7 +1029,7 @@ subroutine update_atmos_chemistry(state, rc)
 
   real(ESMF_KIND_R8), dimension(:,:,:),   pointer :: prsl, phil,  &
                                                      prsi, phii,  &
-                                                     temp,        &
+                                                     temp, dqdt,  &
                                                      ua, va, vvl, &
                                                      dkt, slc,    &
                                                      qb, qm, qu
@@ -1212,6 +1230,11 @@ subroutine update_atmos_chemistry(state, rc)
       if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
         line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
+      call cplFieldGet(state,'inst_spec_humid_conv_tendency_levels', &
+                       farrayPtr3d=dqdt, rc=localrc)
+      if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+
       call cplFieldGet(state,'inst_tracer_mass_frac', farrayPtr4d=q, rc=localrc)
       if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
         line=__LINE__, file=__FILE__, rcToReturn=rc)) return
@@ -1285,7 +1308,7 @@ subroutine update_atmos_chemistry(state, rc)
 
       !--- handle all three-dimensional variables
 !$OMP parallel do default (none) &
-!$OMP             shared  (nk, nj, ni, Atm_block, IPD_Data, prsi, phii, prsl, phil, temp, ua, va, vvl, dkt)  &
+!$OMP             shared  (nk, nj, ni, Atm_block, IPD_Data, prsi, phii, prsl, phil, temp, ua, va, vvl, dkt, dqdt)  &
 !$OMP             private (k, j, jb, i, ib, nb, ix)
       do k = 1, nk
         do j = 1, nj
@@ -1295,16 +1318,17 @@ subroutine update_atmos_chemistry(state, rc)
             nb = Atm_block%blkno(ib,jb)
             ix = Atm_block%ixp(ib,jb)
             !--- interface values
-            prsi(i,j,k) = IPD_Data(nb)%Statein%prsi(ix,k)
-            phii(i,j,k) = IPD_Data(nb)%Statein%phii(ix,k)
+            prsi(i,j,k) = IPD_Data(nb)%Statein%prsi  (ix,k)
+            phii(i,j,k) = IPD_Data(nb)%Statein%phii  (ix,k)
             !--- layer values
-            prsl(i,j,k) = IPD_Data(nb)%Statein%prsl(ix,k)
-            phil(i,j,k) = IPD_Data(nb)%Statein%phil(ix,k)
-            temp(i,j,k) = IPD_Data(nb)%Stateout%gt0(ix,k)
-            ua  (i,j,k) = IPD_Data(nb)%Stateout%gu0(ix,k)
-            va  (i,j,k) = IPD_Data(nb)%Stateout%gv0(ix,k)
-            vvl (i,j,k) = IPD_Data(nb)%Statein%vvl (ix,k)
-            dkt (i,j,k) = IPD_Data(nb)%Coupling%dkt(ix,k)
+            prsl(i,j,k) = IPD_Data(nb)%Statein%prsl  (ix,k)
+            phil(i,j,k) = IPD_Data(nb)%Statein%phil  (ix,k)
+            temp(i,j,k) = IPD_Data(nb)%Stateout%gt0  (ix,k)
+            ua  (i,j,k) = IPD_Data(nb)%Stateout%gu0  (ix,k)
+            va  (i,j,k) = IPD_Data(nb)%Stateout%gv0  (ix,k)
+            vvl (i,j,k) = IPD_Data(nb)%Statein%vvl   (ix,k)
+            dkt (i,j,k) = IPD_Data(nb)%Coupling%dkt  (ix,k)
+            dqdt(i,j,k) = IPD_Data(nb)%Coupling%dqdti(ix,k)
           enddo
         enddo
       enddo
@@ -1381,6 +1405,7 @@ subroutine update_atmos_chemistry(state, rc)
         write(6,'("update_atmos: ugrs   - min/max/avg",3g16.6)') minval(ua),     maxval(ua),     sum(ua)/size(ua)
         write(6,'("update_atmos: vgrs   - min/max/avg",3g16.6)') minval(va),     maxval(va),     sum(va)/size(va)
         write(6,'("update_atmos: vvl    - min/max/avg",3g16.6)') minval(vvl),    maxval(vvl),    sum(vvl)/size(vvl)
+        write(6,'("update_atmos: dqdt   - min/max/avg",3g16.6)') minval(dqdt),   maxval(dqdt),   sum(dqdt)/size(dqdt)
         write(6,'("update_atmos: qgrs   - min/max/avg",3g16.6)') minval(q),      maxval(q),      sum(q)/size(q)
 
         write(6,'("update_atmos: hpbl   - min/max/avg",3g16.6)') minval(hpbl),   maxval(hpbl),   sum(hpbl)/size(hpbl)

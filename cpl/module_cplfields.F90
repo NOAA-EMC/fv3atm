@@ -13,7 +13,7 @@ module module_cplfields
   private
 
 ! Export Fields ----------------------------------------
-  integer,          public, parameter :: NexportFields = 70
+  integer,          public, parameter :: NexportFields = 71
   type(ESMF_Field), target, public    :: exportFields(NexportFields)
   character(len=*), public, parameter :: exportFieldsList(NexportFields) = (/ &
        "inst_pres_interface                      ", &
@@ -30,6 +30,7 @@ module module_cplfields
        "surface_cell_area                        ", &
        "inst_convective_rainfall_amount          ", &
        "inst_exchange_coefficient_heat_levels    ", &
+       "inst_spec_humid_conv_tendency_levels     ", &
        "inst_friction_velocity                   ", &
        "inst_rainfall_amount                     ", &
        "inst_soil_moisture_content               ", &
@@ -104,7 +105,7 @@ module module_cplfields
   !  t : tracers (4D)
   character(len=*), public, parameter :: exportFieldTypes(NexportFields) = (/ &
        "i","l","i","l","l","l","l","l","t", &
-       "s","s","s","s","l","s","s","g",     &
+       "s","s","s","s","l","l","s","s","g", &
        "s","s","s","s","s","s","s","s",     &
        "s","s","s","s","s","s","s","s",     &
        "s","s","s","s","s","s","s","s",     &
@@ -121,16 +122,17 @@ module module_cplfields
        .true. ,.true. ,.true. ,.true. ,.true. , &
        .true. ,.true. ,.true. ,.true. ,.true. , &
        .true. ,.true. ,.true. ,.true. ,.true. , &
-       .true. ,.true. ,.false.,.false.,.false., &
+       .true. ,.true. ,.true. ,.false.,.false., &
        .false.,.false.,.false.,.false.,.false., &
-       .false.,.false.,.false.,.false.,.true. , &
-       .false.,.false.,.false.,.false.,.true. , &
+       .false.,.false.,.false.,.false.,.false. , &
+       .true. ,.false.,.false.,.false.,.false. , &
+       .true. ,.false.,.false.,.false.,.false., &
        .false.,.false.,.false.,.false.,.false., &
        .false.,.false.,.false.,.false.,.false., &
        .false.,.false.,.false.,.false.,.false., &
+       .false.,.false.,.false.,.true. ,.false., &
        .false.,.false.,.false.,.false.,.false., &
-       .false.,.false.,.true. ,.false.,.false., &
-       .false.,.false.,.false.,.false.,.false.  &
+       .false.                                  &
 !      .false.,.false.,.false.,.false.,.false., &
 !      .false.,.false.,.false.                  &
   /)

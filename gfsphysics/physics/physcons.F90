@@ -157,6 +157,8 @@
 !> minimum ice concentration
   real(kind=kind_phys),parameter:: cimin      =0.15
 #endif
+!> minimum aerosol concentration
+  real(kind=kind_phys),parameter:: qamin = 1.e-16_kind_phys
 
 !> \name Miscellaneous physics related constants (Moorthi - Jul 2014)
 
