@@ -103,6 +103,11 @@ use CCPP_driver,        only: CCPP_step, non_uniform_blocks
 use IPD_driver,         only: IPD_initialize, IPD_initialize_rst, IPD_step
 use physics_abstraction_layer, only: time_vary_step, radiation_step1, physics_step1, physics_step2
 #endif
+
+use stochastic_physics, only: init_stochastic_physics,         &
+                              run_stochastic_physics
+use stochastic_physics_sfc, only: run_stochastic_physics_sfc
+
 use FV3GFS_io_mod,      only: FV3GFS_restart_read, FV3GFS_restart_write, &
                               FV3GFS_IPD_checksum,                       &
                               FV3GFS_diag_register, FV3GFS_diag_output,  &
@@ -241,15 +246,26 @@ contains
 ! </INOUT>
 
 subroutine update_atmos_radiation_physics (Atmos)
+#ifdef OPENMP
+    use omp_lib
+#endif
 !-----------------------------------------------------------------------
   type (atmos_data_type), intent(in) :: Atmos
 !--- local variables---
     integer :: nb, jdat(8), rc
     procedure(IPD_func0d_proc), pointer :: Func0d => NULL()
     procedure(IPD_func1d_proc), pointer :: Func1d => NULL()
+    integer :: nthrds
 #ifdef CCPP
     integer :: ierr
 #endif
+
+#ifdef OPENMP
+    nthrds = omp_get_max_threads()
+#else
+    nthrds = 1
+#endif
+
     if (mpp_pe() == mpp_root_pe() .and. debug) write(6,*) "statein driver"
 !--- get atmospheric state from the dynamic core
     call set_atmosphere_pelist()
@@ -284,6 +300,23 @@ subroutine update_atmos_radiation_physics (Atmos)
       Func1d => time_vary_step
       call IPD_step (IPD_Control, IPD_Data(:), IPD_Diag, IPD_Restart, IPD_func1d=Func1d)
 #endif
+
+!--- call stochastic physics pattern generation / cellular automata
+    if (IPD_Control%do_sppt .OR. IPD_Control%do_shum .OR. IPD_Control%do_skeb .OR. IPD_Control%do_sfcperts) then
+       call run_stochastic_physics(IPD_Control, IPD_Data(:)%Grid, IPD_Data(:)%Coupling, nthrds)
+    end if
+
+    if(IPD_Control%do_ca)then
+       ! DH* The current implementation of cellular_automata assumes that all blocksizes are the
+       ! same, this is tested in the initialization call to cellular_automata, no need to redo *DH
+       call cellular_automata(IPD_Control%kdt, IPD_Data(:)%Statein, IPD_Data(:)%Coupling, IPD_Data(:)%Intdiag, &
+                              Atm_block%nblks, IPD_Control%levs, IPD_Control%nca, IPD_Control%ncells,          &
+                              IPD_Control%nlives, IPD_Control%nfracseed, IPD_Control%nseed,                    &
+                              IPD_Control%nthresh, IPD_Control%ca_global, IPD_Control%ca_sgs,                  &
+                              IPD_Control%iseed_ca, IPD_Control%ca_smooth, IPD_Control%nspinup,                &
+                              Atm_block%blksz(1))
+    endif
+
 !--- if coupled, assign coupled fields
       if( IPD_Control%cplflx .or. IPD_Control%cplwav ) then
 !        print *,'in atmos_model,nblks=',Atm_block%nblks
@@ -395,13 +428,13 @@ subroutine update_atmos_radiation_physics (Atmos)
 
 subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
 
-#ifdef CCPP
 #ifdef OPENMP
   use omp_lib
 #endif
+#ifdef CCPP
   use fv_mp_mod, only: commglobal
-  use mpp_mod, only: mpp_npes
 #endif
+  use mpp_mod, only: mpp_npes
 
   type (atmos_data_type), intent(inout) :: Atmos
   type (time_type), intent(in) :: Time_init, Time, Time_step
@@ -424,9 +457,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
   integer              :: bdat(8), cdat(8)
   integer              :: ntracers, maxhf, maxh
   character(len=32), allocatable, target :: tracer_names(:)
-#ifdef CCPP
   integer :: nthrds
-#endif
 
 !-----------------------------------------------------------------------
 
@@ -494,13 +525,14 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    
    allocate(DYCORE_Data(Atm_block%nblks))
    allocate(IPD_Data(Atm_block%nblks))
-#ifdef CCPP
+
 #ifdef OPENMP
    nthrds = omp_get_max_threads()
 #else
    nthrds = 1
 #endif
 
+#ifdef CCPP
    ! This logic deals with non-uniform block sizes for CCPP.
    ! When non-uniform block sizes are used, it is required
    ! that only the last block has a different (smaller)
@@ -586,6 +618,12 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    call IPD_initialize (IPD_Control, IPD_Data, IPD_Diag, IPD_Restart, Init_parm)
 #endif
 
+   if (IPD_Control%do_sppt .OR. IPD_Control%do_shum .OR. IPD_Control%do_skeb .OR. IPD_Control%do_sfcperts) then
+      ! Initialize stochastic physics
+      call init_stochastic_physics(IPD_Control, Init_parm, mpp_npes(), nthrds)
+      if(IPD_Control%me == IPD_Control%master) print *,'do_skeb=',IPD_Control%do_skeb
+   end if
+
 #ifdef CCPP
    ! Initialize the CCPP framework
    call CCPP_step (step="init", nblks=Atm_block%nblks, ierr=ierr)
@@ -598,6 +636,28 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
 #endif
 
    Atmos%Diag => IPD_Diag
+
+   if (IPD_Control%do_sfcperts) then
+      ! Get land surface perturbations here (move to GFS_time_vary
+      ! step if wanting to update each time-step)
+      call run_stochastic_physics_sfc(IPD_Control, IPD_Data(:)%Grid, IPD_Data(:)%Coupling)
+   end if
+
+   ! Initialize cellular automata
+   if(IPD_Control%do_ca)then
+      ! DH* The current implementation of cellular_automata assumes that all blocksizes are the
+      ! same - abort if this is not the case, otherwise proceed with Atm_block%blksz(1) below
+      if (.not. minval(Atm_block%blksz)==maxval(Atm_block%blksz)) then
+         call mpp_error(FATAL, 'Logic errror: cellular_automata not compatible with non-uniform blocksizes')
+      end if
+      ! *DH
+      call cellular_automata(IPD_Control%kdt, IPD_Data(:)%Statein, IPD_Data(:)%Coupling, IPD_Data(:)%Intdiag, &
+                             Atm_block%nblks, IPD_Control%levs, IPD_Control%nca, IPD_Control%ncells,          &
+                             IPD_Control%nlives, IPD_Control%nfracseed, IPD_Control%nseed,                    &
+                             IPD_Control%nthresh, IPD_Control%ca_global, IPD_Control%ca_sgs,                  &
+                             IPD_Control%iseed_ca, IPD_Control%ca_smooth, IPD_Control%nspinup,                &
+                             Atm_block%blksz(1))
+   endif
 
    Atm(mytile)%flagstruct%do_skeb = IPD_Control%do_skeb
 

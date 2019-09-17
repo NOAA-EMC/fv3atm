@@ -76,7 +76,8 @@ module GFS_driver
                      Init_parm%dt_dycore, Init_parm%dt_phys,       &
                      Init_parm%iau_offset, Init_parm%bdat,         &
                      Init_parm%cdat, Init_parm%tracer_names,       &
-                     Init_parm%input_nml_file, Init_parm%tile_num)
+                     Init_parm%input_nml_file, Init_parm%tile_num, &
+                     Init_parm%blksz)
 
     do nb = 1,nblks
       call Statein  (nb)%create (Init_parm%blksz(nb), Model)

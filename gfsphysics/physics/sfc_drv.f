@@ -485,7 +485,7 @@
           trans(i) = ett
           sbsno(i) = esnow
           snowc(i) = sncovr
-          stm(i)   = soilm
+          stm(i)   = soilm * 1000.0 ! unit conversion (from m to kg m-2)
           snohf(i) = flx1 + flx2 + flx3
 
           smcwlt2(i) = smcwlt
@@ -501,7 +501,7 @@
           enddo
           wet1(i) = smsoil(1) / smcmax !Sarah Lu added 09/09/2010 (for GOCART)
 
-!  --- ...  unit conversion (from m s-1 to mm s-1)
+!  --- ...  unit conversion (from m s-1 to mm s-1 and kg m-2 s-1)
           runoff(i)  = runoff1 * 1000.0
           drain (i)  = runoff2 * 1000.0
 

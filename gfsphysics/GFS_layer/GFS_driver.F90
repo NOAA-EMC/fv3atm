@@ -188,19 +188,15 @@ module GFS_driver
                      Init_parm%dt_dycore, Init_parm%dt_phys,       &
                      Init_parm%iau_offset, Init_parm%bdat,         &
                      Init_parm%cdat, Init_parm%tracer_names,       &
-                     Init_parm%input_nml_file, Init_parm%tile_num  &
+                     Init_parm%input_nml_file, Init_parm%tile_num, &
+                     Init_parm%blksz                               &
 #ifdef CCPP
-                    ,Init_parm%ak, Init_parm%bk, Init_parm%blksz,  &
+                    ,Init_parm%ak, Init_parm%bk,                   &
                      Init_parm%restart, Init_parm%hydrostatic,     &
                      communicator, ntasks, nthrds                  &
 #endif
                      )
 
-! For CCPP,  these are called automatically in GFS_phys_time_vary_init as part of CCPP physics init.
-! The reason why these are in GFS_phys_time_vary_init and not in ozphys/h2ophys is that the ozone
-! and h2o interpolation of the data read here is done in GFS_phys_time_vary_run, i.e. all work
-! related to the ozone/h2o input data is in GFS_phys_time_vary, while ozphys/h2ophys are applying
-! ozone/h2o forcing to the model state.
 #ifndef CCPP
     call read_o3data  (Model%ntoz, Model%me, Model%master)
     call read_h2odata (Model%h2o_phys, Model%me, Model%master)
@@ -210,13 +206,6 @@ module GFS_driver
     if (Model%iccn) then
       call read_cidata  ( Model%me, Model%master)
     endif
-#endif
-
-! For CCPP,  stochastic_physics_init is called automatically as part of CCPP physics init
-#ifndef CCPP
-    !--- initializing stochastic physics
-    call init_stochastic_physics(Model,Init_parm,nblks)
-    if(Model%me == Model%master) print*,'do_skeb=',Model%do_skeb
 #endif
 
     do nb = 1,nblks
@@ -273,14 +262,6 @@ module GFS_driver
     !--- populate the grid components
     call GFS_grid_populate (Grid, Init_parm%xlon, Init_parm%xlat, Init_parm%area)
 
-! For CCPP, stochastic_physics_sfc_init is called automatically as part of CCPP physics init
-#ifndef CCPP
-!   get land surface perturbations here (move to GFS_time_vary if wanting to
-!   update each time-step
-    call run_stochastic_physics_sfc(nblks,Model,Grid,Coupling)
-#endif
-
-! For CCPP, these are called automatically in GFS_phys_time_vary_init as part of CCPP physics init
 #ifndef CCPP
     !--- read in and initialize ozone and water
     if (Model%ntoz > 0) then
@@ -317,7 +298,6 @@ module GFS_driver
     endif
 #endif
 
-! For CCPP, this is called automatically in GFS_time_vary_pre_init as part of CCPP physics init
 #ifndef CCPP
     !--- Call gfuncphys (funcphys.f) to compute all physics function tables.
     call gfuncphys ()
@@ -325,10 +305,7 @@ module GFS_driver
 
 !   call gsmconst (Model%dtp, Model%me, .TRUE.) ! This is for Ferrier microphysics - notused - moorthi
 
-#ifdef CCPP
-    ! For CCPP, Model%si is calculated in Model%init, and rad_initialize
-    ! is run automatically as part of GFS_rrtmg_setup
-#else
+#ifndef CCPP
     !--- define sigma level for radiation initialization 
     !--- The formula converting hybrid sigma pressure coefficients to sigma coefficients follows Eckermann (2009, MWR)
     !--- ps is replaced with p0. The value of p0 uses that in http://www.emc.ncep.noaa.gov/officenotes/newernotes/on461.pdf
@@ -394,7 +371,6 @@ module GFS_driver
         print *,'SHOC is not currently compatible with Thompson MP -- shutting down'
         stop 
       endif 
-! For CCPP the Thompson MP init is called automatically as part of CCPP physics init
 #ifndef CCPP
       call thompson_init()                     !--- add aerosol version later
       if(Model%ltaerosol) then 
@@ -411,7 +387,6 @@ module GFS_driver
 #endif
 !
     else if(Model%imp_physics == Model%imp_physics_gfdl) then      !--- initialize GFDL Cloud microphysics
-! For CCPP the GFDL MP init is called automatically as part of CCPP physics init
 #ifndef CCPP
       if(Model%do_shoc) then 
          print *,'SHOC is not currently compatible with GFDL MP -- shutting down'
@@ -427,12 +402,8 @@ module GFS_driver
     if (Model%ras) call ras_init (Model%levs, Model%me)
 #endif
 
-! DH* Even though this gets called through CCPP in lsm_noah_init, we also
-! need to do this here as long as FV3GFS_io.F90 is calculating Sfcprop%sncovr
-! when reading restart files (which it shouldn't, this should be moved to physics).
     !--- initialize soil vegetation
     call set_soilveg(Model%me, Model%isot, Model%ivegsrc, Model%nlunit)
-! *DH
 
     !--- lsidea initialization
     if (Model%lsidea) then
@@ -452,18 +423,6 @@ module GFS_driver
                            Model%fn_nml,  Model%lonr,   Model%latr,    Model%levs,        &
                            Init_parm%ak,  Init_parm%bk, p_ref,         Model%dtp,         &
                            Model%cdmbgwd, Model%cgwf,   Model%prslrd0, Model%ral_ts)
-    endif
-#endif
-
-! For CCPP, this is called automatically as part of CCPP_physics_init
-#ifndef CCPP
-    !--- Initialize cellular automata
-    if(Model%do_ca)then
-    blocksize=size(Grid(1)%xlon)
-    call cellular_automata(Model%kdt, Statein, Coupling, Diag, nblks, Model%levs,     &
-                           Model%nca, Model%ncells, Model%nlives, Model%nfracseed,    &
-                           Model%nseed, Model%nthresh, Model%ca_global, Model%ca_sgs, &
-                           Model%iseed_ca, Model%ca_smooth, Model%nspinup, blocksize)
     endif
 #endif
 
@@ -602,16 +561,6 @@ module GFS_driver
         if(Model%me == Model%master) print *,'in gfs_driver, at iau_center, zero out rad/phys accumulated diag fields, kdt=',Model%kdt,'kdt_iau=',kdt_iau,'iau_offset=',Model%iau_offset
       endif
     endif
-    call run_stochastic_physics(nblks,Model,Grid(:),Coupling(:))
-
-    if(Model%do_ca)then
-      blocksize = size(Grid(1)%xlon)
-      call cellular_automata(Model%kdt,Statein,Coupling,Diag,nblks,Model%levs,      &
-              Model%nca,Model%ncells,Model%nlives,Model%nfracseed,                  &
-              Model%nseed,Model%nthresh,Model%ca_global,Model%ca_sgs,Model%iseed_ca,&
-              Model%ca_smooth,Model%nspinup,blocksize)
-    endif
-
 
 ! kludge for output
     if (Model%do_skeb) then
