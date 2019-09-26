@@ -416,7 +416,7 @@ module GFS_driver
 !----  initialization of cires_ugwp .
 !     if ( Model%me == Model%master) print *,  ' VAY-nml ',  Model%fn_nml
 !     if ( Model%me == Model%master) print *,  ' VAY-nml2 ', Model%input_nml_file
-    if (Model%do_ugwp) then
+    if (Model%do_ugwp .or. Model%cdmbgwd(3) > 0.0) then
 !     if ( Model%me == Model%master) print *,  ' VAY-nml ',  Model%fn_nml,
 !     Model%input_nml_file
       call cires_ugwp_init(Model%me,      Model%master, Model%nlunit,  Init_parm%logunit, &
@@ -467,7 +467,9 @@ module GFS_driver
     integer :: nb, nblks, k, kdt_rad, kdt_iau, blocksize
     logical :: iauwindow_center
     real(kind=kind_phys) :: rinc(5)
-    real(kind=kind_phys) :: sec, sec_zero
+    real(kind=kind_phys) :: sec, sec_zero, fjd
+    integer              :: iyear, imon, iday, ihr, imin, jd0, jd1
+    integer              :: iw3jdn
     real(kind=kind_phys), parameter :: cn_hr     = 3600._kind_phys
 
     nblks = size(blksz)
@@ -489,12 +491,54 @@ module GFS_driver
     !--- radiation triggers
     Model%lsswr  = (mod(Model%kdt, Model%nsswr) == 1)
     Model%lslwr  = (mod(Model%kdt, Model%nslwr) == 1)
-    !--- allow for radiation to be called on every physics time step, if needed
+   !--- allow for radiation to be called on every physics time step, if needed
     if (Model%nsswr == 1)  Model%lsswr = .true.
     if (Model%nslwr == 1)  Model%lslwr = .true.
 
     !--- set the solar hour based on a combination of phour and time initial hour
     Model%solhr  = mod(Model%phour+Model%idate(1),con_24)
+!
+    if (Model%lsm == Model%lsm_noahmp) then
+!
+! Julian day calculation (fcst day of the year)
+! we need imn to init lai and sai and yearln and julian to
+! pass to noah mp sflx, idate is init, jdat is fcst;idate = jdat when kdt=1
+! jdat is changing
+!
+
+      Model%imn = Model%idate(2)
+
+      iyear = Model%jdat(1)
+      imon  = Model%jdat(2)
+      iday  = Model%jdat(3)
+      ihr   = Model%jdat(5)
+      imin  = Model%jdat(6)
+
+      jd1   = iw3jdn(iyear,imon,iday)
+      jd0   = iw3jdn(iyear,1,1)
+      fjd   = float(ihr)/24.0 + float(imin)/1440.0
+
+      Model%julian = float(jd1-jd0) + fjd
+
+!
+! Year length
+!
+! what if the integration goes from one year to another?
+! iyr or jyr ? from 365 to 366 or from 366 to 365
+!
+! is this against model's noleap yr assumption?
+
+      if (mod(iyear,400) == 0) then
+        Model%yearlen = 366
+      elseif (mod(iyear,100) == 0) then
+        Model%yearlen = 365
+      elseif (mod(iyear,4) == 0) then
+        Model%yearlen = 366
+      else
+        Model%yearlen = 365
+      endif
+    endif !  if (Model%lsm == Model%lsm_noahmp)
+!
 
     if ((Model%debug) .and. (Model%me == Model%master)) then
       print *,'   sec ', sec

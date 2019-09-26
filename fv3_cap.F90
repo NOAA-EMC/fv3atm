@@ -39,9 +39,10 @@ module fv3gfs_cap_mod
                                     output_grid, output_file,                &
                                     imo, jmo, write_nemsioflip,              &
                                     write_fsyncflag, nsout_io,               &
-                                    cen_lon, cen_lat,                        &
+                                    cen_lon, cen_lat, ideflate,              &
                                     lon1, lat1, lon2, lat2, dlon, dlat,      &
-                                    stdlat1, stdlat2, dx, dy, iau_offset
+                                    stdlat1, stdlat2, dx, dy, iau_offset,    &
+                                    nbits
 !
   use module_fcst_grid_comp,  only: fcstSS => SetServices,                   &
                                     fcstGrid, numLevels, numSoilLayers,      &
@@ -158,19 +159,16 @@ module fv3gfs_cap_mod
 
     ! specializations required to support 'inline' run sequences
     call NUOPC_CompSpecialize(gcomp, specLabel=model_label_CheckImport, &
-      specPhaseLabel="phase1", specRoutine=NUOPC_NoOp, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, file=__FILE__)) return  ! bail out
+                              specPhaseLabel="phase1", specRoutine=NUOPC_NoOp, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
     call NUOPC_CompSpecialize(gcomp, specLabel="ModelBase_TimestampExport", &
-      specPhaseLabel="phase1", specRoutine=TimestampExport_phase1, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, file=__FILE__)) return  ! bail out
+                              specPhaseLabel="phase1", specRoutine=TimestampExport_phase1, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
     call NUOPC_CompSpecialize(gcomp, specLabel=model_label_CheckImport, &
-      specPhaseLabel="phase2", specRoutine=NUOPC_NoOp, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, file=__FILE__)) return  ! bail out
+                              specPhaseLabel="phase2", specRoutine=NUOPC_NoOp, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
     ! model finalize method(s)
     call NUOPC_CompSpecialize(gcomp, specLabel=model_label_Finalize, &
@@ -302,7 +300,17 @@ module fv3gfs_cap_mod
     call ESMF_ConfigGetAttribute(config=CF,value=iau_offset,default=0,label ='iau_offset:',rc=rc)
     if (iau_offset < 0) iau_offset=0
 
-    if(mype == 0) print *,'af nems config,quilting=',quilting,'calendar=', trim(calendar),'iau_offset=',iau_offset
+    call ESMF_ConfigGetAttribute(config=CF,value=ideflate,default=0,label ='ideflate:',rc=rc)
+    if (ideflate < 0) ideflate=0
+
+    call ESMF_ConfigGetAttribute(config=CF,value=nbits,default=0,label ='nbits:',rc=rc)
+    ! nbits quantization level for lossy compression (must be between 1 and 31)
+    ! 1 is most compression, 31 is least. If outside this range, set to zero
+    ! which means use lossless compression.
+    if (nbits < 1 .or. nbits > 31)  nbits=0  ! lossless compression (no quantization)
+
+    if(mype == 0) print *,'af nems config,quilting=',quilting,'calendar=', trim(calendar),' iau_offset=',iau_offset
+    if(mype == 0) print *,'af nems config,ideflate=',ideflate,'nbits=',nbits
 !
     nfhout = 0 ; nfhmax_hf = 0 ; nfhout_hf = 0 ; nsout = 0
     if ( quilting ) then
@@ -337,7 +345,7 @@ module fv3gfs_cap_mod
       call ESMF_ConfigGetAttribute(config=CF, value=nfhout_hf,label ='nfhout_hf:',rc=rc)
       call ESMF_ConfigGetAttribute(config=CF, value=nsout,    label ='nsout:',rc=rc)
       nsout_io = nsout
-      if(mype==0) print *,'af nems config,nfhout=',nfhout,nfhmax_hf,nfhout_hf, nsout
+      if(mype==0) print *,'af nems config,nfhout,nsout=',nfhout,nfhmax_hf,nfhout_hf, nsout
 
 ! variables for I/O options
       call ESMF_ConfigGetAttribute(config=CF, value=output_grid, label ='output_grid:',rc=rc)
@@ -472,9 +480,8 @@ module fv3gfs_cap_mod
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
-    if (earthStep>(stopTime-currTime)) earthStep=stopTime-currTime
-    call ESMF_ClockSet(clock, currTime=currTime, &
-                       timeStep=earthStep, rc=RC)
+    if (earthStep > (stopTime-currTime)) earthStep = stopTime - currTime
+    call ESMF_ClockSet(clock, currTime=currTime, timeStep=earthStep, rc=RC)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
@@ -490,7 +497,7 @@ module fv3gfs_cap_mod
 !
     first_kdt = 1
     if( output_1st_tstep_rst) then
-      rsthour = CurrTime - StartTime
+      rsthour   = CurrTime - StartTime
       first_kdt = nint(rsthour/timeStep) + 1
     endif
 !
@@ -547,7 +554,7 @@ module fv3gfs_cap_mod
 !
 ! loop over all items in the fcstState and collect all FieldBundles
     do i=1, FBcount
-      if (fcstItemTypeList(i)==ESMF_STATEITEM_FIELDBUNDLE) then
+      if (fcstItemTypeList(i) == ESMF_STATEITEM_FIELDBUNDLE) then
         ! access the FieldBundle
         call ESMF_StateGet(fcstState, itemName=fcstItemNameList(i), &
                            fieldbundle=fcstFB(i), rc=rc)
@@ -559,7 +566,7 @@ module fv3gfs_cap_mod
           call ESMF_LogSetError(ESMF_RC_ARG_BAD,                                 &
                                 msg="Only FieldBundles supported in fcstState.", &
                                 line=__LINE__, file=__FILE__, rcToReturn=rc)
-            return
+          return
       endif
     enddo
 !
@@ -732,7 +739,7 @@ module fv3gfs_cap_mod
       call ESMF_TimeIntervalSet(output_interval, h=nfhout, m=nfmout,  s=nfsout, rc=rc)
       if(mype==0) print *,'af set up output_interval,rc=',rc,'nfhout=',nfhout,nfmout,nfsout
 
-      if (nfhmax_hf > 0) then
+      if (nfhmax_hf > 0 .and. nsout <= 0) then
 
         nfmout_hf = 0; nfsout_hf = 0
         call ESMF_TimeIntervalSet(output_interval_hf, h=nfhout_hf, m=nfmout_hf, &
@@ -760,15 +767,15 @@ module fv3gfs_cap_mod
           alarm_output_ring = startTime + output_hfmax + (nrg+1_ESMF_KIND_I4) * output_interval
         endif
       else
-          nrg = (currtime-starttime)/output_interval
-          alarm_output_ring = startTime + (nrg+1_ESMF_KIND_I4) * output_interval
-          if(iau_offset > 0) then
-            alarm_output_ring = startTime + IAU_offsetTI
-          endif
+        nrg = (currtime-starttime)/output_interval
+        alarm_output_ring = startTime + (nrg+1_ESMF_KIND_I4) * output_interval
+        if(iau_offset > 0) then
+          alarm_output_ring = startTime + IAU_offsetTI
+        endif
       endif
 
       call ESMF_TimeIntervalSet(output_interval, h=nfhout, m=nfmout, &
-                              s=nfsout, rc=rc)
+                                s=nfsout, rc=rc)
       alarm_output = ESMF_AlarmCreate(clock_fv3, name  ='ALARM_OUTPUT',    &
                                       ringTime         =alarm_output_ring, & !<-- Forecast/Restart start time (ESMF)
                                       ringInterval     =output_interval,   & !<-- Time interval between
@@ -983,7 +990,7 @@ module fv3gfs_cap_mod
      
       timewri = mpi_wtime()
       call ESMF_LogWrite('Model Advance: before fcstcomp run ', ESMF_LOGMSG_INFO, rc=rc)
-        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
       call ESMF_GridCompRun(fcstComp, exportState=fcstState, clock=clock_fv3, &
                             phase=1, userRc=urc, rc=rc)
@@ -1506,20 +1513,16 @@ module fv3gfs_cap_mod
 
     ! get driver and model clock
     call NUOPC_ModelGet(gcomp, driverClock=driverClock, &
-      modelClock=modelClock, exportState=exportState, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, file=__FILE__)) return  ! bail out
+                        modelClock=modelClock, exportState=exportState, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
     ! reset model clock to initial time
-    call NUOPC_CheckSetClock(modelClock, driverClock, &
-      forceCurrTime=.true., rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, file=__FILE__)) return  ! bail out
+    call NUOPC_CheckSetClock(modelClock, driverClock, forceCurrTime=.true., rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
     ! update timestamp on export Fields
     call NUOPC_SetTimestamp(exportState, modelClock, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, file=__FILE__)) return  ! bail out
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
   end subroutine
 

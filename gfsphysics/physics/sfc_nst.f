@@ -23,9 +23,10 @@
 !...................................
 !  ---  inputs:
      &     ( im,    ps, u1, v1, t1, q1, tref, cm, ch,                   &
-     &       prsl1, prslki, wet, icy, xlon, sinlat, stress,             &
+     &       prsl1, prslki, wet, xlon, sinlat, stress,                  &
+!    &       prsl1, prslki, wet, icy, xlon, sinlat, stress,             &
      &       sfcemis, dlwflx, sfcnsw, rain, timestep, kdt, solhr,xcosz, &
-     &       ddvel, flag_iter, flag_guess, nstf_name,                   &
+     &       wind,  flag_iter, flag_guess, nstf_name,                   &
      &       lprnt, ipr,                                                &
 !  --- input/output
      &       tskin, tsurf, xt, xs, xu, xv, xz, zm, xtts, xzts, dt_cool, &
@@ -45,7 +46,7 @@
 !          ( im, ps, u1, v1, t1, q1, tref, cm, ch,                      !
 !            prsl1, prslki, wet, icy, xlon, sinlat, stress,             !
 !            sfcemis, dlwflx, sfcnsw, rain, timestep, kdt,solhr,xcosz,  !
-!            ddvel, flag_iter, flag_guess, nstf_name,                   !
+!            wind,  flag_iter, flag_guess, nstf_name,                   !
 !            lprnt, ipr,                                                !
 !       input/outputs:                                                  !
 !            tskin, tsurf, xt, xs, xu, xv, xz, zm, xtts, xzts, dt_cool, !
@@ -100,7 +101,7 @@
 !     kdt      - integer, time step counter                        1    !
 !     solhr    - real, fcst hour at the end of prev time step      1    !
 !     xcosz    - real, consine of solar zenith angle               1    !
-!     ddvel    - real, wind enhancement due to convection (m/s)    im   !
+!     wind     - real, wind speed (m/s)                            im   !
 !     flag_iter- logical, execution or not                         im   !
 !                when iter = 1, flag_iter = .true. for all grids   im   !
 !                when iter = 2, flag_iter = .true. when wind < 2   im   !
@@ -186,12 +187,12 @@
       integer, intent(in) :: im, kdt, ipr,nstf_name(5)
       real (kind=kind_phys), dimension(im), intent(in) :: ps, u1, v1,   &
      &       t1, q1, tref, cm, ch, prsl1, prslki, xlon,xcosz,           &
-     &       sinlat, stress, sfcemis, dlwflx, sfcnsw, rain, ddvel
+     &       sinlat, stress, sfcemis, dlwflx, sfcnsw, rain, wind
       real (kind=kind_phys), intent(in) :: timestep
       real (kind=kind_phys), intent(in) :: solhr
 
-      logical, dimension(im), intent(in) :: flag_iter, flag_guess, wet, &
-     &                                      icy
+      logical, dimension(im), intent(in) :: flag_iter, flag_guess, wet
+!    &,      icy
       logical,                intent(in) :: lprnt
 
 !  ---  input/outputs:
@@ -210,7 +211,7 @@
       integer :: k,i
 !
       real (kind=kind_phys), dimension(im) ::  q0, qss, rch, 
-     &                     rho_a, theta1, tv1, wind, wndmag
+     &                     rho_a, theta1, tv1, wndmag
 
       real(kind=kind_phys) elocp,tem
 !
@@ -245,13 +246,15 @@ cc
 ! flag for open water and where the iteration is on
 !
       do i = 1, im
-        flag(i) = wet(i) .and. .not.icy(i) .and. flag_iter(i)
+!       flag(i) = wet(i) .and. .not.icy(i) .and. flag_iter(i)
+        flag(i) = wet(i) .and. flag_iter(i)
       enddo
 !
 !  save nst-related prognostic fields for guess run
 !
       do i=1, im
-        if (wet(i) .and. .not.icy(i) .and. flag_guess(i)) then
+!       if(wet(i) .and. .not.icy(i) .and. flag_guess(i)) then
+        if(wet(i) .and. flag_guess(i)) then
           xt_old(i)      = xt(i)
           xs_old(i)      = xs(i)
           xu_old(i)      = xu(i)
@@ -278,8 +281,6 @@ cc
 
           nswsfc(i) = sfcnsw(i) ! net solar radiation at the air-sea surface (positive downward)
           wndmag(i) = sqrt(u1(i)*u1(i) + v1(i)*v1(i))
-          wind(i)   = wndmag(i) + max( 0.0, min( ddvel(i), 30.0 ) )
-          wind(i)   = max( wind(i), 1.0 )
 
           q0(i)     = max(q1(i), 1.0e-8)
           theta1(i) = t1(i) * prslki(i)
@@ -527,14 +528,15 @@ cc
 
 !         qrain(i) = rig(i)
           zm(i) = wind(i)
-        
+
         endif
       enddo
 
 ! restore nst-related prognostic fields for guess run
       do i=1, im
-        if (wet(i) .and. .not.icy(i)) then
-          if (flag_guess(i)) then    ! when it is guess of 
+!       if (wet(i) .and. .not.icy(i)) then
+        if (wet(i)) then
+          if (flag_guess(i)) then    ! when it is guess of
             xt(i)      = xt_old(i)
             xs(i)      = xs_old(i)
             xu(i)      = xu_old(i)
@@ -554,9 +556,9 @@ cc
 !
             if ( nstf_name(1) > 1 ) then
               tskin(i) = tsurf(i)
-            endif               ! if nstf_name(1) > 1
-          endif                 ! if flag_guess(i)
-        endif                   ! if wet(i) .and. .not.icy(i)
+            endif               ! if ( nstf_name(1) > 1  then
+          endif                 ! if(flag_guess(i)) then
+        endif                   ! if(wet(i) .and. .not.icy(i)) then
       enddo
 
 !     if (lprnt .and. i == ipr) print *,' beg xz8=',xz(i)

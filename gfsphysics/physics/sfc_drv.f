@@ -36,9 +36,9 @@
 !                                                                       !
 !      call sfc_drv                                                     !
 !  ---  inputs:                                                         !
-!          ( im, km, ps, u1, v1, t1, q1, soiltyp, vegtype, sigmaf,      !
+!          ( im, km, ps, t1, q1, soiltyp, vegtype, sigmaf,              !
 !            sfcemis, dlwflx, dswsfc, snet, delt, tg3, cm, ch,          !
-!            prsl1, prslki, zf, land, ddvel, slopetyp,                  !
+!            prsl1, prslki, zf, land, wind,  slopetyp,                  !
 !            shdmin, shdmax, snoalb, sfalb, flag_iter, flag_guess,      !
 !            lheatstrg, isot, ivegsrc,                                  !
 !  ---  in/outs:                                                        !
@@ -68,7 +68,6 @@
 !     im       - integer, horiz dimention and num of used pts      1    !
 !     km       - integer, vertical soil layer dimension            1    !
 !     ps       - real, surface pressure (pa)                       im   !
-!     u1, v1   - real, u/v component of surface layer wind         im   !
 !     t1       - real, surface layer mean temperature (k)          im   !
 !     q1       - real, surface layer mean specific humidity        im   !
 !     soiltyp  - integer, soil type (integer index)                im   !
@@ -86,7 +85,7 @@
 !     prslki   - real,                                             im   !
 !     zf       - real, height of bottom layer (m)                  im   !
 !     land     - logical, = T if a point with any land             im   !
-!     ddvel    - real,                                             im   !
+!     wind     - real, wind speed (m/s)                            im   !
 !     slopetyp - integer, class of sfc slope (integer index)       im   !
 !     shdmin   - real, min fractional coverage of green veg        im   !
 !     shdmax   - real, max fractnl cover of green veg (not used)   im   !
@@ -140,9 +139,9 @@
       subroutine sfc_drv                                                &
 !...................................
 !  ---  inputs:
-     &     ( im, km, ps, u1, v1, t1, q1, soiltyp, vegtype, sigmaf,      &
+     &     ( im, km, ps, t1, q1, soiltyp, vegtype, sigmaf,              &
      &       sfcemis, dlwflx, dswsfc, snet, delt, tg3, cm, ch,          &
-     &       prsl1, prslki, zf, land, ddvel, slopetyp,                  &
+     &       prsl1, prslki, zf, land, wind, slopetyp,                   &
      &       shdmin, shdmax, snoalb, sfalb, flag_iter, flag_guess,      &
      &       lheatstrg, isot, ivegsrc,                                  &
      &       bexppert, xlaipert, vegfpert,pertvegf,                     &  ! sfc perts, mgehne
@@ -185,9 +184,9 @@
 
       integer, dimension(im), intent(in) :: soiltyp, vegtype, slopetyp
 
-      real (kind=kind_phys), dimension(im), intent(in) :: ps, u1, v1,   &
+      real (kind=kind_phys), dimension(im), intent(in) :: ps,           &
      &       t1, q1, sigmaf, sfcemis, dlwflx, dswsfc, snet, tg3, cm,    &
-     &       ch, prsl1, prslki, ddvel, shdmin, shdmax,                  &
+     &       ch, prsl1, prslki, wind, shdmin, shdmax,                   &
      &       snoalb, sfalb, zf,
      &       bexppert, xlaipert, vegfpert
 
@@ -209,10 +208,10 @@
      &       qsurf, gflux, drain, evap, hflx, ep, runoff, cmm, chh,     &
      &       evbs, evcw, sbsno, snowc, stm, snohf, smcwlt2, smcref2,    &
      &       wet1
-    
+
 !  ---  locals:
       real (kind=kind_phys), dimension(im) :: rch, rho,                 &
-     &       q0, qs1, theta1, wind, weasd_old, snwdph_old,              &
+     &       q0, qs1, theta1,       weasd_old, snwdph_old,              &
      &       tprcp_old, srflag_old, tskin_old, canopy_old
 
       real (kind=kind_phys), dimension(km) :: et, sldpth, stsoil,       &
@@ -232,7 +231,7 @@
      &       xlai, zlvl, swdn, tem, z0, bexpp, xlaip, vegfp,            &
      &       mv,sv,alphav,betav,vegftmp
 
-      integer :: couple, ice, nsoil, nroot, slope, stype, vtype 
+      integer :: couple, ice, nsoil, nroot, slope, stype, vtype
       integer :: i, k, iflag
 
 !
@@ -277,13 +276,10 @@
         endif   ! flag_iter & land
       enddo
 
-!  --- ...  initialize variables 
+!  --- ...  initialize variables
 
       do i = 1, im
         if (flag_iter(i) .and. land(i)) then
-          wind(i) = max(sqrt( u1(i)*u1(i) + v1(i)*v1(i) )               &
-     &                + max(0.0, min(ddvel(i), 30.0)), 1.0)
-
           q0(i)   = max(q1(i), 1.e-8)   !* q1=specific humidity at level 1 (kg/kg)
           theta1(i) = t1(i) * prslki(i) !* adiabatic temp at level 1 (k)
 
@@ -308,7 +304,7 @@
 !  --- ...  noah: prepare variables to run noah lsm
 !   1. configuration information (c):
 !      ------------------------------
-!    couple  - couple-uncouple flag (=1: coupled, =0: uncoupled) 
+!    couple  - couple-uncouple flag (=1: coupled, =0: uncoupled)
 !    ffrozp  - flag for snow-rain detection (1.=all snow, 0.=all rain, 0-1 mixed)
 !    ice     - sea-ice flag (=1: sea-ice, =0: land)
 !    dt      - timestep (sec) (dt should not exceed 3600 secs) = delt
@@ -591,7 +587,7 @@
               slc(i,k) = slc_old(i,k)
             enddo
           else    ! flag_guess = F
-            tskin(i) = tsurf(i)    
+            tskin(i) = tsurf(i)
           endif   ! flag_guess
         endif     ! flag
 

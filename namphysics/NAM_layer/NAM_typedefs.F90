@@ -434,8 +434,6 @@ module GFS_typedefs
     logical              :: ldiag3d         !< flag for 3d diagnostic fields
     logical              :: lssav           !< logical flag for storing diagnostics
     real(kind=kind_phys) :: fhcyc           !< frequency for surface data cycling (secs)
-    logical              :: lgocart         !< flag for 3d diagnostic fields for gocart 1
-    real(kind=kind_phys) :: fhgoc3d         !< seconds between calls to gocart
     integer              :: thermodyn_id    !< valid for GFS only for get_prs/phi
     integer              :: sfcpress_id     !< valid for GFS only for get_prs/phi
     logical              :: gen_coord_hybrid!< for Henry's gen coord
@@ -685,6 +683,7 @@ module GFS_typedefs
     logical              :: frac_grid       !< flag for fractional grid
     real(kind=kind_phys) :: xkzminv         !< diffusivity in inversion layers
     real(kind=kind_phys) :: moninq_fac      !< turbulence diffusion coefficient factor
+    real(kind=kind_phys) :: dspfac          !< tke dissipative heating factor
 
  !---cellular automata control parameters
     integer              :: nca             !< number of independent cellular automata 
@@ -1832,24 +1831,6 @@ module GFS_typedefs
       Coupling%skebv_wts = clear_val
     endif
 
-
-    !--- needed for either GoCart or 3D diagnostics
-    if (Model%lgocart .or. Model%ldiag3d) then
-      allocate (Coupling%dqdti   (IM,Model%levs))
-      allocate (Coupling%cnvqci  (IM,Model%levs))
-      allocate (Coupling%upd_mfi (IM,Model%levs))
-      allocate (Coupling%dwn_mfi (IM,Model%levs))
-      allocate (Coupling%det_mfi (IM,Model%levs))
-      allocate (Coupling%cldcovi (IM,Model%levs))
-
-      Coupling%dqdti    = clear_val
-      Coupling%cnvqci   = clear_val
-      Coupling%upd_mfi  = clear_val
-      Coupling%dwn_mfi  = clear_val
-      Coupling%det_mfi  = clear_val
-      Coupling%cldcovi  = clear_val
-    endif
-
     !--- needed for Thompson's aerosol option 
     if(Model%imp_physics == 8.and.Model%ltaerosol) then 
       allocate (Coupling%nwfa2d (IM))
@@ -1934,8 +1915,6 @@ module GFS_typedefs
     logical              :: ldiag3d        = .false.         !< flag for 3d diagnostic fields
     logical              :: lssav          = .false.         !< logical flag for storing diagnostics
     real(kind=kind_phys) :: fhcyc          = 0.              !< frequency for surface data cycling (secs)
-    logical              :: lgocart        = .false.         !< flag for 3d diagnostic fields for gocart 1
-    real(kind=kind_phys) :: fhgoc3d        = 0.0             !< seconds between calls to gocart
     integer              :: thermodyn_id   =  1              !< valid for GFS only for get_prs/phi
     integer              :: sfcpress_id    =  1              !< valid for GFS only for get_prs/phi
 
@@ -2135,6 +2114,7 @@ module GFS_typedefs
     logical              :: frac_grid      = .false.         !< flag for fractional grid
     real(kind=kind_phys) :: xkzminv        = 0.3             !< diffusivity in inversion layers
     real(kind=kind_phys) :: moninq_fac     = 1.0             !< turbulence diffusion coefficient factor
+    real(kind=kind_phys) :: dspfac         = 1.0             !< tke dissipative heating factor
      
 !---Cellular automaton options
     integer              :: nca            = 1
@@ -2183,7 +2163,7 @@ module GFS_typedefs
 
     NAMELIST /gfs_physics_nml/                                                              &
                           !--- general parameters
-                               fhzero, ldiag3d, lssav, fhcyc, lgocart, fhgoc3d,             &
+                               fhzero, ldiag3d, lssav, fhcyc,                               &
                                thermodyn_id, sfcpress_id,                                   &
                           !--- coupling parameters
                                cplflx, cplwav, cplchm, lsidea,                              &
@@ -2215,7 +2195,7 @@ module GFS_typedefs
                                clam_shal, c0s_shal, c1_shal, pgcon_shal, asolfac_shal,      &
                           !--- near surface temperature model
                                nst_anl, lsea, xkzm_m, xkzm_h, xkzm_s, nstf_name,            &
-                               xkzminv, moninq_fac, frac_grid,                              &
+                               xkzminv, moninq_fac, dspfac, frac_grid,                              &
                           !----cellular automata                         
                                nca, ncells, nlives, nfracseed,nseed, nthresh, do_ca,        &
                                ca_sgs, ca_global,iseed_ca,ca_smooth,isppt_deep,nspinup,     &
@@ -2362,8 +2342,6 @@ module GFS_typedefs
     Model%ldiag3d          = ldiag3d
     Model%lssav            = lssav
     Model%fhcyc            = fhcyc
-    Model%lgocart          = lgocart
-    Model%fhgoc3d          = fhgoc3d
     Model%thermodyn_id     = thermodyn_id
     Model%sfcpress_id      = sfcpress_id
     Model%gen_coord_hybrid = gen_coord_hybrid
@@ -2547,6 +2525,7 @@ module GFS_typedefs
     Model%nstf_name        = nstf_name
     Model%xkzminv          = xkzminv
     Model%moninq_fac       = moninq_fac
+    Model%dspfac           = dspfac
 
 !--- stochastic physics options
     Model%do_sppt          = do_sppt
@@ -3189,8 +3168,6 @@ module GFS_typedefs
       print *, ' ldiag3d           : ', Model%ldiag3d
       print *, ' lssav             : ', Model%lssav
       print *, ' fhcyc             : ', Model%fhcyc
-      print *, ' lgocart           : ', Model%lgocart
-      print *, ' fhgoc3d           : ', Model%fhgoc3d
       print *, ' thermodyn_id      : ', Model%thermodyn_id
       print *, ' sfcpress_id       : ', Model%sfcpress_id
       print *, ' gen_coord_hybrid  : ', Model%gen_coord_hybrid
@@ -3437,6 +3414,7 @@ module GFS_typedefs
       print *, ' xkzm_s            : ', Model%xkzm_s
       print *, ' xkzminv           : ', Model%xkzminv
       print *, ' moninq_fac        : ', Model%moninq_fac
+      print *, ' dspfac            : ', Model%dspfac
       print *, ' '
       print *, 'stochastic physics'
       print *, ' do_sppt           : ', Model%do_sppt

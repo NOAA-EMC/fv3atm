@@ -1880,13 +1880,6 @@ module GFS_diagnostics
 !rab      ExtDiag(idx)%mod_name = 'gfs_phys'
 !rab    enddo
 !rab
-!rab    idx = idx + 1
-!rab    ExtDiag(idx)%axes = 3
-!rab    !Requires lgocart = .T.
-!rab    ExtDiag(idx)%name = 'dqdt_v'
-!rab    ExtDiag(idx)%desc = 'instantaneous total moisture tendency'
-!rab    ExtDiag(idx)%unit = 'XXX'
-!rab    ExtDiag(idx)%mod_name = 'gfs_phys'
 
 !--- Surface diagnostics in gfs_sfc
     idx = idx + 1

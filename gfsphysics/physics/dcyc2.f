@@ -16,11 +16,12 @@
 !    call dcyc2t3                                                       !
 !      inputs:                                                          !
 !          ( solhr,slag,sdec,cdec,sinlat,coslat,                        !
-!            xlon,coszen,tsea,tf,tsflw,sfcemis,                         !
+!            xlon,coszen,tsfc3,tf,tsflw,sfcemis,                        !
 !            sfcdsw,sfcnsw,sfcdlw,swh,swhc,hlw,hlwc,                    !
 !            sfcnirbmu,sfcnirdfu,sfcvisbmu,sfcvisdfu,                   !
 !            sfcnirbmd,sfcnirdfd,sfcvisbmd,sfcvisdfd,                   !
 !            ix, im, levs, deltim, fhswr,                               !
+!            dry, icy, wet                                              !
 !      input/output:                                                    !
 !            dtdt,dtdtc,                                                !
 !      outputs:                                                         !
@@ -72,9 +73,10 @@
 !                  - real, sin and cos of latitude                      !
 !     xlon   (im)  - real, longitude in radians                         !
 !     coszen (im)  - real, avg of cosz over daytime sw call interval    !
-!     tsea   (im)  - real, ground surface temperature (k)               !
+!     tsfc3  (im,3)- real, bottom surface (1 - land, 2 - ice, 3 - water !
+!                          temperature (k)               !
 !     tf     (im)  - real, surface air (layer 1) temperature (k)        !
-!     sfcemis(im)  - real, surface emissivity (fraction)                !
+!     sfcemis(im,3)- real, surface emissivity (fraction)                !
 !     tsflw  (im)  - real, sfc air (layer 1) temp in k saved in lw call !
 !     sfcdsw (im)  - real, total sky sfc downward sw flux ( w/m**2 )    !
 !     sfcnsw (im)  - real, total sky sfc net sw into ground (w/m**2)    !
@@ -95,6 +97,9 @@
 !     levs         - integer, vertical layer dimension                  !
 !     deltim       - real, physics time step in seconds                 !
 !     fhswr        - real, Short wave radiation time step in seconds    !
+!     dry          - logical, true over land                            !
+!     icy          - logical, true over ice                             !
+!     wet          - logical, true over water                           !
 !                                                                       !
 !  input/output:                                                        !
 !     dtdt(im,levs)- real, model time step adjusted total radiation     !
@@ -125,11 +130,13 @@
 !...................................
 !  ---  inputs:
      &     ( solhr,slag,sdec,cdec,sinlat,coslat,                        &
-     &       xlon,coszen,tsea,tf,tsflw,sfcemis,                         &
+     &       xlon,coszen,tsfc3,tf,tsflw,sfcemis,                        &
      &       sfcdsw,sfcnsw,sfcdlw,swh,swhc,hlw,hlwc,                    &
      &       sfcnirbmu,sfcnirdfu,sfcvisbmu,sfcvisdfu,                   &
      &       sfcnirbmd,sfcnirdfd,sfcvisbmd,sfcvisdfd,                   &
      &       ix, im, levs, deltim, fhswr,                               &
+     &       dry, icy, wet,                                             &
+!    &       dry, icy, wet, lprnt, ipr,                                 &
 !  ---  input/output:
      &       dtdt,dtdtc,                                                &
 !  ---  outputs:
@@ -145,21 +152,29 @@
 !
 !  ---  constant parameters:
       real(kind=kind_phys), parameter :: f_eps  = 0.0001_kind_phys,     &
+     &                                   zero   = 0.0d0, one = 1.0d0,   &
      &                                   hour12 = 12.0_kind_phys,       &
-     &                                   f3600  = 1.0/3600.0_kind_phys, &
-     &                                   f7200  = 1.0/7200.0_kind_phys, &
+     &                                   f3600  = one/3600.0_kind_phys, &
+     &                                   f7200  = one/7200.0_kind_phys, &
      &                                   czlimt = 0.0001_kind_phys,     &    ! ~ cos(89.99427)
      &                                   pid12  = con_pi / hour12
 
 !  ---  inputs:
       integer, intent(in) :: ix, im, levs
 
-      real(kind=kind_phys), intent(in) :: solhr, slag, cdec, sdec,      &
-     &                                    deltim, fhswr
+!     integer, intent(in) :: ipr
+!     logical lprnt
+      logical, dimension(im), intent(in) :: dry, icy, wet
+      real(kind=kind_phys),   intent(in) :: solhr, slag, cdec, sdec,    &
+     &                                      deltim, fhswr
 
       real(kind=kind_phys), dimension(im), intent(in) ::                &
-     &      sinlat, coslat, xlon, coszen, tsea, tf, tsflw, sfcdlw,      &
-     &      sfcdsw, sfcnsw, sfcemis
+     &      sinlat, coslat, xlon, coszen, tf, tsflw, sfcdlw,            &
+     &      sfcdsw, sfcnsw
+
+      real(kind=kind_phys), dimension(im,3), intent(in) ::              &
+     &                         tsfc3, sfcemis
+
       real(kind=kind_phys), dimension(im), intent(in) ::                &
      &      sfcnirbmu, sfcnirdfu, sfcvisbmu, sfcvisdfu,                 &
      &      sfcnirbmd, sfcnirdfd, sfcvisbmd, sfcvisdfd
@@ -173,9 +188,11 @@
 
 !  ---  outputs:
       real(kind=kind_phys), dimension(im), intent(out) ::               &
-     &      adjsfcdsw, adjsfcnsw, adjsfcdlw, adjsfculw, xmu, xcosz,     &
+     &      adjsfcdsw, adjsfcnsw, adjsfcdlw,            xmu, xcosz,     &
      &      adjnirbmu, adjnirdfu, adjvisbmu, adjvisdfu,                 &
      &      adjnirbmd, adjnirdfd, adjvisbmd, adjvisdfd
+
+      real(kind=kind_phys), dimension(im,3), intent(out) :: adjsfculw
 
 !  ---  locals:
       integer :: i, k, nstp, nstl, it, istsun(im)
@@ -200,12 +217,12 @@
           xcosz(i) = coszen(i)
         enddo
       else
-        rstl = 1.0 / float(nstl)
+        rstl = one / float(nstl)
         solang = pid12 * (solhr - hour12)         
         anginc = pid12 * deltim * f3600 * rstl
         do i = 1, im
-          xcosz(i)  = 0.0
-          istsun(i) = 0.0
+          xcosz(i)  = zero
+          istsun(i) = zero
         enddo
         do it=1,nstl
           cns = solang + (float(it)-0.5)*anginc + slag
@@ -234,9 +251,24 @@
 !  --- ...  compute sfc upward lw flux from current sfc temp,
 !      note: sfc emiss effect is not appied here, and will be dealt in other place
 
-        tem2 = tsea(i) * tsea(i)
-        adjsfculw(i) =  sfcemis(i) * con_sbc * tem2 * tem2
-     &               + (1.0 - sfcemis(i)) * adjsfcdlw(i)
+        if (dry(i)) then
+          tem2 = tsfc3(i,1) * tsfc3(i,1)
+          adjsfculw(i,1) =  sfcemis(i,1) * con_sbc * tem2 * tem2
+     &                   + (one - sfcemis(i,1)) * adjsfcdlw(i)
+        endif
+        if (icy(i)) then
+          tem2 = tsfc3(i,2) * tsfc3(i,2)
+          adjsfculw(i,2) =  sfcemis(i,2) * con_sbc * tem2 * tem2
+     &                   + (one - sfcemis(i,2)) * adjsfcdlw(i)
+        endif
+        if (wet(i)) then
+          tem2 = tsfc3(i,3) * tsfc3(i,3)
+          adjsfculw(i,3) =  sfcemis(i,3) * con_sbc * tem2 * tem2
+     &                   + (one - sfcemis(i,3)) * adjsfcdlw(i)
+        endif
+!     if (lprnt .and. i == ipr) write(0,*)' in dcyc3: dry==',dry(i)
+!    &,' wet=',wet(i),' icy=',icy(i),' tsfc3=',tsfc3(i,:)
+!    &,' sfcemis=',sfcemis(i,:),' adjsfculw=',adjsfculw(i,:)
 !
 !  --- ...  normalize by average value over radiation period for daytime.
         if ( xcosz(i) > f_eps .and. coszen(i) > f_eps ) then

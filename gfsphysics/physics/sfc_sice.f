@@ -26,16 +26,16 @@
      &                     rvrdm1 => con_fvirt, t0c => con_t0c,         &
      &                         rd => con_rd
       implicit none
-      real (kind=kind_phys), parameter :: cimin=0.15 !  --- minimum ice concentration
       contains
 !-----------------------------------
       subroutine sfc_sice                                               &
 !...................................
 !  ---  inputs:
-     &     ( im, km, ps, u1, v1, t1, q1, delt,                          &
+     &     ( im, km, ps, t1, q1, delt,                                  &
+!    &     ( im, km, ps, u1, v1, t1, q1, delt,                          &
      &       sfcemis, dlwflx, sfcnsw, sfcdsw, srflag,                   &
-     &       cm, ch, prsl1, prslki, islimsk, ddvel,                     &
-     &       flag_iter, lprnt, ipr,                                     &
+     &       cm, ch, prsl1, prslki, islimsk, wind,                      &
+     &       flag_iter, lprnt, ipr, cimin,                              &
 !  ---  input/outputs:
      &       hice, fice, tice, weasd, tskin, tprcp, stc, ep,            &
 !  ---  outputs:
@@ -49,9 +49,10 @@
 !                                                                       !
 !    call sfc_sice                                                      !
 !       inputs:                                                         !
-!          ( im, km, ps, u1, v1, t1, q1, delt,                          !
+!          ( im, km, ps, t1, q1, delt,                                  !
+!!         ( im, km, ps, u1, v1, t1, q1, delt,                          !
 !            sfcemis, dlwflx, sfcnsw, sfcdsw, srflag,                   !
-!            cm, ch, prsl1, prslki, islimsk, ddvel,                     !
+!            cm, ch, prsl1, prslki, islimsk, wind,                      !
 !            flag_iter,                                                 !
 !       input/outputs:                                                  !
 !            hice, fice, tice, weasd, tskin, tprcp, stc, ep,            !
@@ -83,7 +84,6 @@
 !  inputs:                                                       size   !
 !     im, km   - integer, horiz dimension and num of soil layers   1    !
 !     ps       - real, surface pressure                            im   !
-!     u1, v1   - real, u/v component of surface layer wind         im   !
 !     t1       - real, surface layer mean temperature ( k )        im   !
 !     q1       - real, surface layer mean specific humidity        im   !
 !     delt     - real, time interval (second)                      1    !
@@ -97,7 +97,7 @@
 !     prsl1    - real, surface layer mean pressure                 im   !
 !     prslki   - real,                                             im   !
 !     islimsk  - integer, sea/land/ice mask (=0/1/2)               im   !
-!     ddvel    - real,                                             im   !
+!     wind     - real,                                             im   !
 !     flag_iter- logical,                                          im   !
 !                                                                       !
 !  input/outputs:                                                       !
@@ -140,12 +140,12 @@
       integer, intent(in) :: im, km, ipr
       logical, intent(in) :: lprnt
 
-      real (kind=kind_phys), dimension(im), intent(in) :: ps, u1, v1,   &
+      real (kind=kind_phys), dimension(im), intent(in) :: ps,           &
      &       t1, q1, sfcemis, dlwflx, sfcnsw, sfcdsw, srflag, cm, ch,   &
-     &       prsl1, prslki, ddvel
+     &       prsl1, prslki, wind
 
       integer, dimension(im), intent(in) :: islimsk
-      real (kind=kind_phys),  intent(in) :: delt
+      real (kind=kind_phys),  intent(in) :: delt, cimin
 
       logical, intent(in) :: flag_iter(im)
 
@@ -167,7 +167,7 @@
      &       snowd, theta1
 
       real (kind=kind_phys) :: t12, t14, tem, stsice(im,kmi)
-     &,                        hflxi, hflxw, q0, qs1, wind, qssi, qssw
+     &,                        hflxi, hflxw, q0, qs1, qssi, qssw
 
 
       integer :: i, k
@@ -219,9 +219,6 @@
 !         dlwflx has been given a negative sign for downward longwave
 !         sfcnsw is the net shortwave flux (direction: dn-up)
 
-          wind      = max(sqrt(u1(i)*u1(i) + v1(i)*v1(i))               &
-     &              + max(zero, min(ddvel(i), 30.0d0)), one)
-
           q0        = max(q1(i), 1.0e-8)
 !         tsurf(i)  = tskin(i)
           theta1(i) = t1(i) * prslki(i)
@@ -256,8 +253,8 @@
 
 !  --- ...  rcp = rho cp ch v
 
-          cmm(i) = cm(i)  * wind
-          chh(i) = rho(i) * ch(i) * wind
+          cmm(i) = cm(i)  * wind(i)
+          chh(i) = rho(i) * ch(i) * wind(i)
           rch(i) = chh(i) * cp
 
 !  --- ...  sensible and latent heat flux over open water & sea ice
@@ -457,9 +454,9 @@
       real (kind=kind_phys), parameter :: tfi  = -mu*si     ! sea ice freezing temp = -mu*salinity
       real (kind=kind_phys), parameter :: tfw  = -1.8d0     ! tfw - seawater freezing temp (c)
       real (kind=kind_phys), parameter :: tfi0 = tfi-0.0001d0
-      real (kind=kind_phys), parameter :: dici = di*ci 
-      real (kind=kind_phys), parameter :: dili = di*li 
-      real (kind=kind_phys), parameter :: dsli = ds*li 
+      real (kind=kind_phys), parameter :: dici = di*ci
+      real (kind=kind_phys), parameter :: dili = di*li
+      real (kind=kind_phys), parameter :: dsli = ds*li
       real (kind=kind_phys), parameter :: ki4  = ki*4.0d0
       real (kind=kind_phys), parameter :: zero = 0.0d0, one  = 1.0d0
 
