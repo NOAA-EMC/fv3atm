@@ -2297,7 +2297,7 @@ module module_physics_driver
                        Statein%prslk, Statein%phii, Statein%phil, dtp,              &
                        Model%dspheat, dusfc1, dvsfc1, dtsfc1, dqsfc1, Diag%hpbl,    &
                        kinver, Model%xkzm_m, Model%xkzm_h, Model%xkzm_s,            &
-                       Model%dspfac)
+                       Model%dspfac, Model%bl_upfr, Model%bl_dnfr)
              endif
           elseif (Model%hybedmf) then
             if (Model%moninq_fac > 0) then
@@ -2537,7 +2537,8 @@ module module_physics_driver
                          stress, wind, kpbl, Statein%prsi, del, Statein%prsl,         &
                          Statein%prslk, Statein%phii, Statein%phil, dtp,              &
                          Model%dspheat, dusfc1, dvsfc1, dtsfc1, dqsfc1, Diag%hpbl,    &
-                         kinver, Model%xkzm_m, Model%xkzm_h, Model%xkzm_s)
+                         kinver, Model%xkzm_m, Model%xkzm_h, Model%xkzm_s,            &
+                         Model%dspfac, Model%bl_upfr, Model%bl_dnfr)
              endif
           elseif (Model%hybedmf) then
            if ( Model%moninq_fac > 0 ) then 
