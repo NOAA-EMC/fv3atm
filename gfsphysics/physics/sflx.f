@@ -2427,8 +2427,8 @@
       if (t12 <= tfreez) then
 
         t1 = t12
-!       ssoil = df1 * (t1 - stc(1)) / dtot
-        ssoil = (t1 - stc (1)) * max(7.0, df1/dtot)
+       ssoil = df1 * (t1 - stc(1)) / dtot
+!        ssoil = (t1 - stc (1)) * max(7.0, df1/dtot)
         sneqv = max(0.0, sneqv-esnow2)
         flx3 = 0.0
         ex = 0.0
