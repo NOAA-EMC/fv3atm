@@ -544,7 +544,6 @@ module FV3GFS_io_mod
       allocate(oro_var2(nx,ny,nvar_o2))
       oro_var2 = -9999._kind_phys
 
-!     oro_name2(1)  = 'stddev'     ! hprim
       oro_name2(1)  = 'stddev'     ! hprime(ix,1)
       oro_name2(2)  = 'convexity'  ! hprime(ix,2)
       oro_name2(3)  = 'oa1'        ! hprime(ix,3)

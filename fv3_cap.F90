@@ -613,8 +613,11 @@ module fv3gfs_cap_mod
 ! call into wrtComp(i) SetServices
         call ESMF_GridCompSetServices(wrtComp(i), wrtSS, userRc=urc, rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
         if (ESMF_LogFoundError(rcToCheck=urc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+
+! add configuration file
+        call ESMF_GridCompSet(gridcomp=wrtComp(i),config=CF,rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
 ! create wrtstate(i)
         wrtstate(i) = ESMF_StateCreate(rc=rc)
