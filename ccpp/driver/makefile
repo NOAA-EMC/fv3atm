@@ -4,11 +4,11 @@ inside_nems := $(wildcard ../../../conf/configure.nems)
 ifneq ($(strip $(inside_nems)),)
     include ../../../conf/configure.nems
 else
-    exist_configure_fv3 := $(wildcard ../conf/configure.fv3)
+    exist_configure_fv3 := $(wildcard ../../conf/configure.fv3)
     ifneq ($(strip $(exist_configure_fv3)),)
-        include ../conf/configure.fv3
+        include ../../conf/configure.fv3
     else
-        $(error "../conf/configure.fv3 file is missing. Run ./configure")
+        $(error "../../conf/configure.fv3 file is missing. Run ./configure")
     endif
     $(info )
     $(info Build CCPP layer ...)
@@ -20,7 +20,7 @@ CCPP_DRIVER = CCPP_driver.F90
 LIBRARY  = libccppdriver.a
 
 # Needed for ccpp_data.mod, fv_arrays_mod.mod, ...
-FFLAGS   += -I$(FMS_DIR) -I../gfsphysics -I../atmos_cubed_sphere
+FFLAGS   += -I$(FMS_DIR) -I../../gfsphysics -I../../atmos_cubed_sphere
 
 #CPPDEFS += -DNEW_TAUCTMAX -DSMALL_PE -DNEMS_GSM -DINTERNAL_FILE_NML
 
@@ -61,8 +61,8 @@ clean:
 	@echo
 	$(RM) -f $(LIBRARY) *__genmod.f90 *.tmp.f90 *.o */*.o *.mod *.i90 *.lst *.i depend
 
-MKDEPENDS = ../mkDepends.pl
-include ../conf/make.rules
+MKDEPENDS = ../../mkDepends.pl
+include ../../conf/make.rules
 
 include ./depend
 
