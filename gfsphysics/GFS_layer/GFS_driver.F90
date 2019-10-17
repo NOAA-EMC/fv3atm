@@ -445,7 +445,7 @@ module GFS_driver
 !      5) interpolates coefficients for prognostic ozone calculation
 !      6) performs surface data cycling via the GFS gcycle routine
 !-------------------------------------------------------------------------
-  subroutine GFS_time_vary_step (Model, Statein, Stateout, Sfcprop, Coupling, & 
+  subroutine GFS_time_vary_step (Model, Statein, Stateout, Sfcprop, Coupling, &
                                  Grid, Tbd, Cldprop, Radtend, Diag)
 
     implicit none

@@ -228,12 +228,12 @@ module GFS_typedefs
                                                               !< [tsea in gbphys.f]
     real (kind=kind_phys), pointer :: tsfco  (:)   => null()  !< sst in K
     real (kind=kind_phys), pointer :: tsfcl  (:)   => null()  !< surface land temperature in K
-    real (kind=kind_phys), pointer :: tisfc  (:)   => null()  !< surface temperature over ice fraction 
+    real (kind=kind_phys), pointer :: tisfc  (:)   => null()  !< surface temperature over ice fraction
     real (kind=kind_phys), pointer :: snowd  (:)   => null()  !< snow depth water equivalent in mm ; same as snwdph
-    real (kind=kind_phys), pointer :: zorl   (:)   => null()  !< composite surface roughness in cm 
-    real (kind=kind_phys), pointer :: zorlo  (:)   => null()  !< ocean surface roughness in cm 
-    real (kind=kind_phys), pointer :: zorll  (:)   => null()  !< land surface roughness in cm 
-    real (kind=kind_phys), pointer :: fice   (:)   => null()  !< ice fraction over open water grid 
+    real (kind=kind_phys), pointer :: zorl   (:)   => null()  !< composite surface roughness in cm
+    real (kind=kind_phys), pointer :: zorlo  (:)   => null()  !< ocean surface roughness in cm
+    real (kind=kind_phys), pointer :: zorll  (:)   => null()  !< land surface roughness in cm
+    real (kind=kind_phys), pointer :: fice   (:)   => null()  !< ice fraction over open water grid
 !   real (kind=kind_phys), pointer :: hprim  (:)   => null()  !< topographic standard deviation in m
     real (kind=kind_phys), pointer :: hprime (:,:) => null()  !< orographic metrics
 
@@ -571,7 +571,7 @@ module GFS_typedefs
     logical              :: cplchm          !< default no cplchm collection
 
 !--- integrated dynamics through earth's atmosphere
-    logical              :: lsidea         
+    logical              :: lsidea
 
 !vay 2018  GW physics switches
 
@@ -865,7 +865,7 @@ module GFS_typedefs
                                             !< cx = min([-0.7 ln(Nccn) + 24]*1.e-4, c0s)
                                             !< Nccn: CCN number concentration in cm^(-3)
                                             !< Until a realistic Nccn is provided, Nccns are assumed
-                                            !< as Nccn=100 for sea and Nccn=1000 for land 
+                                            !< as Nccn=100 for sea and Nccn=1000 for land
 
 !--- near surface temperature model
     logical              :: nst_anl         !< flag for NSSTM analysis in gcycle/sfcsub
@@ -885,7 +885,7 @@ module GFS_typedefs
     real(kind=kind_phys) :: rho_h2o         !< density of fresh water
 
 !--- surface layer z0 scheme
-    integer              :: sfc_z0_type     !< surface roughness options over ocean: 
+    integer              :: sfc_z0_type     !< surface roughness options over ocean:
                                             !< 0=no change
                                             !< 6=areodynamical roughness over water with input 10-m wind
                                             !< 7=slightly decrease Cd for higher wind speed compare to 6
@@ -951,7 +951,7 @@ module GFS_typedefs
     integer              :: ntke            !< tracer index for kinetic energy
     integer              :: nto             !< tracer index for oxygen ion
     integer              :: nto2            !< tracer index for oxygen
-    integer              :: ntwa            !< tracer index for water friendly aerosol 
+    integer              :: ntwa            !< tracer index for water friendly aerosol
     integer              :: ntia            !< tracer index for ice friendly aerosol
     integer              :: ntchm           !< number of chemical tracers
     integer              :: ntchs           !< tracer index for first chemical tracer
@@ -2484,7 +2484,7 @@ module GFS_typedefs
     endif
 
     !--- needed for Thompson's aerosol option
-    if(Model%imp_physics == Model%imp_physics_thompson .and. Model%ltaerosol) then 
+    if(Model%imp_physics == Model%imp_physics_thompson .and. Model%ltaerosol) then
       allocate (Coupling%nwfa2d (IM))
       allocate (Coupling%nifa2d (IM))
       Coupling%nwfa2d   = clear_val
@@ -2881,6 +2881,7 @@ module GFS_typedefs
     real(kind=kind_phys) :: xkzminv        = 0.3             !< diffusivity in inversion layers
     real(kind=kind_phys) :: moninq_fac     = 1.0             !< turbulence diffusion coefficient factor
     real(kind=kind_phys) :: dspfac         = 1.0             !< tke dissipative heating factor
+
     real(kind=kind_phys) :: bl_upfr        = 0.13            !< updraft fraction in boundary layer mass flux scheme
     real(kind=kind_phys) :: bl_dnfr        = 0.1             !< downdraft fraction in boundary layer mass flux scheme
 
@@ -2894,12 +2895,11 @@ module GFS_typedefs
     integer              :: iseed_ca       = 0
     integer              :: nspinup        = 1
     logical              :: do_ca          = .false.
-    logical              :: ca_sgs         = .false. 
+    logical              :: ca_sgs         = .false.
     logical              :: ca_global      = .false.
     logical              :: ca_smooth      = .false.
     logical              :: isppt_deep     = .false.
     real(kind=kind_phys) :: nthresh        = 0.0
-  
 
 !--- IAU options
     real(kind=kind_phys)  :: iau_delthrs      = 0           !< iau time interval (to scale increments)
@@ -4896,12 +4896,12 @@ module GFS_typedefs
       allocate (Diag%dv3dt  (IM,Model%levs,4))
       allocate (Diag%dt3dt  (IM,Model%levs,7))
       allocate (Diag%dq3dt  (IM,Model%levs,9))
-!      allocate (Diag%dq3dt  (IM,Model%levs,oz_coeff+5))
+!     allocate (Diag%dq3dt  (IM,Model%levs,oz_coeff+5))
 !--- needed to allocate GoCart coupling fields
-!      allocate (Diag%upd_mf (IM,Model%levs))
-!      allocate (Diag%dwn_mf (IM,Model%levs))
-!      allocate (Diag%det_mf (IM,Model%levs))
-!      allocate (Diag%cldcov (IM,Model%levs))
+!     allocate (Diag%upd_mf (IM,Model%levs))
+!     allocate (Diag%dwn_mf (IM,Model%levs))
+!     allocate (Diag%det_mf (IM,Model%levs))
+!     allocate (Diag%cldcov (IM,Model%levs))
     endif
 
 !vay-2018

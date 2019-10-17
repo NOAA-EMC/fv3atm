@@ -1106,7 +1106,7 @@ module FV3GFS_io_mod
                                + Sfcprop(nb)%tsfco(ix) * tem
         enddo
       enddo
-    else     ! in this case ice fracion is fraction of water fraction
+    else     ! in this case ice fraction is fraction of water fraction
       do nb = 1, Atm_block%nblks
         do ix = 1, Atm_block%blksz(nb)
       !--- specify tsfcl/zorll from existing variable tsfco/zorlo
@@ -1114,15 +1114,16 @@ module FV3GFS_io_mod
           Sfcprop(nb)%zorll(ix) = Sfcprop(nb)%zorlo(ix)
           Sfcprop(nb)%zorl(ix)  = Sfcprop(nb)%zorlo(ix)
           Sfcprop(nb)%tsfc(ix)  = Sfcprop(nb)%tsfco(ix)
-          if (Sfcprop(nb)%slmsk(ix) < 0.1 .or. Sfcprop(nb)%slmsk(ix) > 1.9) then
+          if (abs(1.0-Sfcprop(nb)%slmsk(ix)) < 0.1) then
+            Sfcprop(nb)%landfrac(ix) = 1.0        ! land
+            Sfcprop(nb)%lakefrac(ix) = 0.0
+          else
             Sfcprop(nb)%landfrac(ix) = 0.0
             if (Sfcprop(nb)%oro_uf(ix) > 0.01) then
               Sfcprop(nb)%lakefrac(ix) = 1.0        ! lake
             else
               Sfcprop(nb)%lakefrac(ix) = 0.0        ! ocean
             endif
-          else
-            Sfcprop(nb)%landfrac(ix) = 1.0          ! land
           endif
         enddo
       enddo

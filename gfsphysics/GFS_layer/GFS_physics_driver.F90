@@ -2656,33 +2656,33 @@ module module_physics_driver
           if (ntgl > 0) then                                 ! MG
             do k=1,levs
               do i=1,im
-                dqdt(i,k,1)     = vdftra(i,k,1)
-                dqdt(i,k,ntcw)  = vdftra(i,k,2)
-                dqdt(i,k,ntiw)  = vdftra(i,k,3)
-                dqdt(i,k,ntrw)  = vdftra(i,k,4)
-                dqdt(i,k,ntsw)  = vdftra(i,k,5)
-                dqdt(i,k,ntgl)  = vdftra(i,k,6)
-                dqdt(i,k,ntlnc) = vdftra(i,k,7)
-                dqdt(i,k,ntinc) = vdftra(i,k,8)
-                dqdt(i,k,ntrnc) = vdftra(i,k,9)
-                dqdt(i,k,ntsnc) = vdftra(i,k,10)
-                dqdt(i,k,ntgnc) = vdftra(i,k,11)
-                dqdt(i,k,ntoz)  = vdftra(i,k,12)
+                dqdt(i,k,1)     = dvdftra(i,k,1)
+                dqdt(i,k,ntcw)  = dvdftra(i,k,2)
+                dqdt(i,k,ntiw)  = dvdftra(i,k,3)
+                dqdt(i,k,ntrw)  = dvdftra(i,k,4)
+                dqdt(i,k,ntsw)  = dvdftra(i,k,5)
+                dqdt(i,k,ntgl)  = dvdftra(i,k,6)
+                dqdt(i,k,ntlnc) = dvdftra(i,k,7)
+                dqdt(i,k,ntinc) = dvdftra(i,k,8)
+                dqdt(i,k,ntrnc) = dvdftra(i,k,9)
+                dqdt(i,k,ntsnc) = dvdftra(i,k,10)
+                dqdt(i,k,ntgnc) = dvdftra(i,k,11)
+                dqdt(i,k,ntoz)  = dvdftra(i,k,12)
               enddo
             enddo
           else                                               ! MG2
             do k=1,levs
               do i=1,im
-                dqdt(i,k,1)     = vdftra(i,k,1)
-                dqdt(i,k,ntcw)  = vdftra(i,k,2)
-                dqdt(i,k,ntiw)  = vdftra(i,k,3)
-                dqdt(i,k,ntrw)  = vdftra(i,k,4)
-                dqdt(i,k,ntsw)  = vdftra(i,k,5)
-                dqdt(i,k,ntlnc) = vdftra(i,k,6)
-                dqdt(i,k,ntinc) = vdftra(i,k,7)
-                dqdt(i,k,ntrnc) = vdftra(i,k,8)
-                dqdt(i,k,ntsnc) = vdftra(i,k,9)
-                dqdt(i,k,ntoz)  = vdftra(i,k,10)
+                dqdt(i,k,1)     = dvdftra(i,k,1)
+                dqdt(i,k,ntcw)  = dvdftra(i,k,2)
+                dqdt(i,k,ntiw)  = dvdftra(i,k,3)
+                dqdt(i,k,ntrw)  = dvdftra(i,k,4)
+                dqdt(i,k,ntsw)  = dvdftra(i,k,5)
+                dqdt(i,k,ntlnc) = dvdftra(i,k,6)
+                dqdt(i,k,ntinc) = dvdftra(i,k,7)
+                dqdt(i,k,ntrnc) = dvdftra(i,k,8)
+                dqdt(i,k,ntsnc) = dvdftra(i,k,9)
+                dqdt(i,k,ntoz)  = dvdftra(i,k,10)
               enddo
             enddo
           endif

@@ -30,7 +30,7 @@ module fv3gfs_cap_mod
                                     calendar, calendar_type, cpl,            &
                                     force_date_from_configure,               &
                                     cplprint_flag,output_1st_tstep_rst,      &
-                                    first_kdt                            
+                                    first_kdt
 
   use module_fv3_io_def,      only: num_pes_fcst,write_groups,               &
                                     num_files, filename_base,                &
@@ -1274,7 +1274,7 @@ module fv3gfs_cap_mod
     rc = ESMF_SUCCESS
     if(profile_memory) &
       call ESMF_VMLogMemInfo("Entering FV3 Model_ADVANCE phase2: ")
-!    
+!
     call ESMF_GridCompGet(gcomp, name=name, localpet=mype, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
@@ -1285,7 +1285,7 @@ module fv3gfs_cap_mod
 
 !
 !*** for forecast tasks
-     
+
       timewri = mpi_wtime()
       call ESMF_LogWrite('Model Advance phase2: before fcstcomp run ', ESMF_LOGMSG_INFO, rc=rc)
 

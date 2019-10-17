@@ -1566,6 +1566,7 @@ end subroutine atmos_data_type_chksum
 !
     implicit none
     integer, intent(out) :: rc
+    real(kind=IPD_kind_phys), parameter :: epsln=1.0d-10
 
     !--- local variables
     integer :: n, j, i, ix, nb, isc, iec, jsc, jec, dimCount, findex
@@ -1652,7 +1653,9 @@ end subroutine atmos_data_type_chksum
                 do i=isc,iec
                   nb = Atm_block%blkno(i,j)
                   ix = Atm_block%ixp(i,j)
-                  IPD_Data(nb)%Coupling%tisfcin_cpl(ix) = datar8(i,j)
+                  if (IPD_Data(nb)%Sfcprop%oceanfrac(ix) > zero) then
+                    IPD_Data(nb)%Coupling%tisfcin_cpl(ix) = datar8(i,j)
+                  endif
                 enddo
               enddo
             endif
@@ -1696,19 +1699,16 @@ end subroutine atmos_data_type_chksum
                   nb = Atm_block%blkno(i,j)
                   ix = Atm_block%ixp(i,j)
                   IPD_Data(nb)%Coupling%ficein_cpl(ix)   = zero
+                  IPD_Data(nb)%Coupling%slimskin_cpl(ix) = IPD_Data(nb)%Sfcprop%slmsk(ix)
                   if (IPD_Data(nb)%Sfcprop%oceanfrac(ix) > zero) then
                     if (datar8(i,j) >= IPD_control%min_seaice*IPD_Data(nb)%Sfcprop%oceanfrac(ix)) then
                       IPD_Data(nb)%Coupling%ficein_cpl(ix) = datar8(i,j)
-!                     if (IPD_Data(nb)%Sfcprop%oceanfrac(ix) == one) IPD_Data(nb)%Sfcprop%slmsk(ix) = 2. !slmsk=2 crashes in gcycle on partial land points
                       IPD_Data(nb)%Sfcprop%slmsk(ix)         = 2.                                        !slmsk=2 crashes in gcycle on partial land points
                       IPD_Data(nb)%Coupling%slimskin_cpl(ix) = 4.
                     else
-                      if (IPD_Data(nb)%Sfcprop%oceanfrac(ix) == one) IPD_Data(nb)%Sfcprop%slmsk(ix) = zero
+                      if (abs(one-IPD_Data(nb)%Sfcprop%oceanfrac(ix)) < epsln) IPD_Data(nb)%Sfcprop%slmsk(ix) = zero
                       IPD_Data(nb)%Coupling%slimskin_cpl(ix) = zero
                     endif
-                  else
-                    IPD_Data(nb)%Sfcprop%slmsk(ix)         = one
-                    IPD_Data(nb)%Coupling%slimskin_cpl(ix) = one
                   endif
                 enddo
               enddo
@@ -1884,6 +1884,7 @@ end subroutine atmos_data_type_chksum
               IPD_Data(nb)%Sfcprop%hice(ix)  = IPD_Data(nb)%Coupling%hicein_cpl(ix)
               IPD_Data(nb)%Sfcprop%snowd(ix) = IPD_Data(nb)%Coupling%hsnoin_cpl(ix)
             else 
+              IPD_Data(nb)%Sfcprop%tisfc(ix) = max(IPD_Data(nb)%Coupling%tseain_cpl(ix), 271.2)
               IPD_Data(nb)%Sfcprop%fice(ix)  = zero
               IPD_Data(nb)%Sfcprop%hice(ix)  = zero
               IPD_Data(nb)%Sfcprop%snowd(ix) = zero
@@ -1894,12 +1895,27 @@ end subroutine atmos_data_type_chksum
               IPD_Data(nb)%Coupling%dvsfcin_cpl(ix)  = -99999.0 !                 ,,
               IPD_Data(nb)%Coupling%dtsfcin_cpl(ix)  = -99999.0 !                 ,,
               IPD_Data(nb)%Coupling%ulwsfcin_cpl(ix) = -99999.0 !                 ,,
-              if (IPD_Data(nb)%Sfcprop%oceanfrac(ix) == one) IPD_Data(nb)%Sfcprop%slmsk(ix) = zero ! 100% open water
             endif
           endif
         enddo
       enddo
     endif
+!-------------------------------------------------------------------------------
+!   do j=jsc,jec
+!     do i=isc,iec
+!       nb = Atm_block%blkno(i,j)
+!       ix = Atm_block%ixp(i,j)
+!       if (abs(IPD_Data(nb)%Grid%xlon_d(ix)-2.89) < 0.1 .and. &
+!           abs(IPD_Data(nb)%Grid%xlat_d(ix)+58.99) < 0.1) then
+!         write(0,*)' in assign tisfc=',IPD_Data(nb)%Sfcprop%tisfc(ix),     &
+!          ' oceanfrac=',IPD_Data(nb)%Sfcprop%oceanfrac(ix),' i=',i,' j=',j,&
+!          ' tisfcin=',IPD_Data(nb)%Coupling%tisfcin_cpl(ix),               &
+!          ' fice=',IPD_Data(nb)%Sfcprop%fice(ix)
+!       endif
+!     enddo
+!   enddo
+!-------------------------------------------------------------------------------
+!
 
     rc=0
 !
