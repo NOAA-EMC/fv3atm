@@ -12,7 +12,7 @@ module module_write_netcdf
 
   use esmf
   use netcdf
-  use module_fv3_io_def,only : ideflate, nbits, &
+  use module_fv3_io_def,only : ideflate, nbits, iau_offset, &
                                output_grid,dx,dy,lon1,lat1,lon2,lat2
 
   implicit none
@@ -59,8 +59,6 @@ module module_write_netcdf
     real(4) :: varr4val, scale_fact, compress_err, offset, dataMin, dataMax
     real(8) :: varr8val
     character(len=ESMF_MAXSTR) :: varcval
-
-    character(128) :: time_units
 
     integer :: ncerr
     integer :: ncid
@@ -520,6 +518,10 @@ module module_write_netcdf
     real(ESMF_KIND_R4), allocatable  :: valueListR4(:)
     real(ESMF_KIND_R8), allocatable  :: valueListR8(:)
     character(len=ESMF_MAXSTR), allocatable  :: valueListC(:)
+    character(nf90_max_name) :: time_units
+    integer idate(6)
+    real(8) rinc(5)
+    integer idat(8),jdat(8)
 !
     call ESMF_AttributeGet(grid, convention="NetCDF", purpose="FV3", &
                            attnestflag=ESMF_ATTNEST_OFF, name=dim_name, &
@@ -555,8 +557,73 @@ module module_write_netcdf
     end if
 
     call get_grid_attr(grid, dim_name, ncid, dim_varid, rc)
+    
+    ! if iau_offset set, update time units attribute.
+    if ( trim(dim_name) == "time" .and. iau_offset > 0) then
+! get time units just written to file
+       ncerr = nf90_get_att(ncid, dim_varid, 'units', time_units); NC_ERR_STOP(ncerr)
+! idate: year,month,day,hour,minute,second
+       idate = get_idate_from_time_units(time_units)
+! idat: year,month,day,time zone,hour,minute,second,millsecond
+       idat = 0
+       idat(1:3) = idate(1:3)
+       idat(5:7) = idate(4:6)
+! rinc: days,hours,minutes,seconds,milliseconds
+       rinc = 0; rinc(2) = iau_offset
+       call w3movdat(rinc,idat,jdat)
+! update idate using iau_offset
+       idate(1:3)=jdat(1:3)
+       idate(4:6)=jdat(5:7)
+       time_units  = get_time_units_from_idate(idate)
+! rewrite time units attribute.
+       ncerr = nf90_put_att(ncid, dim_varid, 'units', trim(time_units)); NC_ERR_STOP(ncerr)
+    endif
 
   end subroutine add_dim
+
+  function get_idate_from_time_units(time_units) result(idate)
+      ! return integer array with year,month,day,hour,minute,second
+      ! parsed from time units attribute.
+      integer idate(6)
+      character(len=nf90_max_name), intent(in) :: time_units
+      integer ipos1,ipos2
+      ipos1 = scan(time_units,"since",back=.true.)+1
+      ipos2 = scan(time_units,"-",back=.false.)-1
+      read(time_units(ipos1:ipos2),*) idate(1)
+      ipos1 = ipos2+2; ipos2=ipos1+1
+      read(time_units(ipos1:ipos2),*) idate(2)
+      ipos1 = ipos2+2; ipos2=ipos1+1
+      read(time_units(ipos1:ipos2),*) idate(3)
+      ipos1 = scan(time_units,":")-2
+      ipos2 = ipos1+1
+      read(time_units(ipos1:ipos2),*) idate(4)
+      ipos1 = ipos2+2
+      ipos2 = ipos1+1
+      read(time_units(ipos1:ipos2),*) idate(5)
+      ipos1 = ipos2+2
+      ipos2 = ipos1+1
+      read(time_units(ipos1:ipos2),*) idate(6)
+  end function get_idate_from_time_units
+  
+  function get_time_units_from_idate(idate, time_measure) result(time_units)
+      ! create time units attribute of form 'hours since YYYY-MM-DD HH:MM:SS'
+      ! from integer array with year,month,day,hour,minute,second
+      ! optional argument 'time_measure' can be used to change 'hours' to
+      ! 'days', 'minutes', 'seconds' etc.
+      character(len=*), intent(in), optional :: time_measure
+      integer, intent(in) ::  idate(6)
+      character(len=12) :: timechar
+      character(len=nf90_max_name) :: time_units
+      if (present(time_measure)) then
+         timechar = trim(time_measure)
+      else
+         timechar = 'hours'
+      endif
+      write(time_units,101) idate
+101   format(' since ',i4.4,'-',i2.2,'-',i2.2,' ',&
+      i2.2,':',i2.2,':',i2.2)
+      time_units = trim(adjustl(timechar))//time_units
+  end function get_time_units_from_idate
 !
 !----------------------------------------------------------------------------------------
   subroutine nccheck(status)
