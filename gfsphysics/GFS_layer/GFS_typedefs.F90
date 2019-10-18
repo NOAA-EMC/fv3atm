@@ -703,6 +703,9 @@ module GFS_typedefs
     logical              :: lradar          !< flag for radar reflectivity 
     real(kind=kind_phys) :: ttendlim        !< temperature tendency limiter per time step in K/s
 
+    !--- Thompson,GFDL mp parameter
+    logical              :: lrefres          !< flag for radar reflectivity in restart file
+
     !--- GFDL microphysical paramters
     logical              :: lgfdlmprad      !< flag for GFDL mp scheme and radiation consistency 
 
@@ -2679,6 +2682,9 @@ module GFS_typedefs
     logical              :: lradar         = .false.            !< flag for radar reflectivity 
     real(kind=kind_phys) :: ttendlim       = -999.0             !< temperature tendency limiter, set to <0 to deactivate
 
+    !--- Thompson,GFDL microphysical parameter
+    logical              :: lrefres        = .false.            !< flag for radar reflectivity in restart file
+
     !--- GFDL microphysical parameters
     logical              :: lgfdlmprad     = .false.            !< flag for GFDLMP radiation interaction 
 
@@ -2959,7 +2965,7 @@ module GFS_typedefs
                                mg_do_graupel, mg_do_hail, mg_nccons, mg_nicons, mg_ngcons,  &
                                mg_ncnst, mg_ninst, mg_ngnst, sed_supersat, do_sb_physics,   &
                                mg_alf,   mg_qcmin, mg_do_ice_gmao, mg_do_liq_liu,           &
-                               ltaerosol, lradar, ttendlim, lgfdlmprad,                     &
+                               ltaerosol, lradar, lrefres, ttendlim, lgfdlmprad,            &
                           !--- max hourly
                                avg_max_length,                                              &
                           !--- land/surface model control
@@ -3245,6 +3251,10 @@ module GFS_typedefs
     Model%ltaerosol        = ltaerosol
     Model%lradar           = lradar
     Model%ttendlim         = ttendlim
+
+!--- Thompson,GFDL MP parameter
+    Model%lrefres          = lrefres
+
 !--- gfdl  MP parameters
     Model%lgfdlmprad       = lgfdlmprad
 
@@ -4225,6 +4235,7 @@ module GFS_typedefs
         print *, ' Thompson microphysical parameters'
         print *, ' ltaerosol         : ', Model%ltaerosol
         print *, ' lradar            : ', Model%lradar
+        print *, ' lrefres           : ', Model%lrefres
         print *, ' ttendlim          : ', Model%ttendlim
         print *, ' '
       endif
@@ -4242,6 +4253,7 @@ module GFS_typedefs
       if (Model%imp_physics == Model%imp_physics_gfdl) then
         print *, ' GFDL microphysical parameters'
         print *, ' GFDL MP radiation inter: ', Model%lgfdlmprad
+        print *, ' lrefres                : ', Model%lrefres
         print *, ' '
       endif
 
