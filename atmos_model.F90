@@ -1884,7 +1884,7 @@ end subroutine atmos_data_type_chksum
               IPD_Data(nb)%Sfcprop%hice(ix)  = IPD_Data(nb)%Coupling%hicein_cpl(ix)
               IPD_Data(nb)%Sfcprop%snowd(ix) = IPD_Data(nb)%Coupling%hsnoin_cpl(ix)
             else 
-              IPD_Data(nb)%Sfcprop%tisfc(ix) = max(IPD_Data(nb)%Coupling%tseain_cpl(ix), 271.2)
+              IPD_Data(nb)%Sfcprop%tisfc(ix) = IPD_Data(nb)%Coupling%tseain_cpl(ix)
               IPD_Data(nb)%Sfcprop%fice(ix)  = zero
               IPD_Data(nb)%Sfcprop%hice(ix)  = zero
               IPD_Data(nb)%Sfcprop%snowd(ix) = zero
