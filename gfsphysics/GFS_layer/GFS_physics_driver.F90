@@ -43,6 +43,7 @@ module module_physics_driver
 
   !--- CONSTANT PARAMETERS
   real(kind=kind_phys), parameter :: hocp    = con_hvap/con_cp
+  real(kind=kind_phys), parameter :: epsln   = 1.0d-10
   real(kind=kind_phys), parameter :: qmin    = 1.0d-10
   real(kind=kind_phys), parameter :: qsmall  = 1.0d-20
   real(kind=kind_phys), parameter :: rainmin = 1.0d-13
@@ -1108,7 +1109,7 @@ module module_physics_driver
           frland(i) = Sfcprop%landfrac(i)
           if (frland(i) > zero) dry(i) = .true.
           tem = one - frland(i)
-          if (tem > zero) then
+          if (tem > epsln) then
             if (flag_cice(i)) then
               if (fice(i) >= Model%min_seaice*tem) then
                 icy(i)  = .true.
@@ -1123,7 +1124,7 @@ module module_physics_driver
                 fice(i) = zero
               endif
             endif
-            if (icy(i)) Sfcprop%tsfco(i) = max(Sfcprop%tsfco(i), Sfcprop%tisfc(i), tgice)
+!           if (icy(i)) Sfcprop%tsfco(i) = max(Sfcprop%tsfco(i), Sfcprop%tisfc(i), tgice)
           else
             fice(i) = zero
           endif
@@ -1133,7 +1134,7 @@ module module_physics_driver
           if (tem1 > zero) then
             wet(i) = .true.             ! there is some open water!
 !           if (icy(i)) Sfcprop%tsfco(i) = max(Sfcprop%tsfco(i), tgice)
-            if (icy(i)) Sfcprop%tsfco(i) = max(Sfcprop%tisfc(i), tgice)
+!           if (icy(i)) Sfcprop%tsfco(i) = max(Sfcprop%tisfc(i), tgice)
           endif
         enddo
       else
@@ -1154,7 +1155,7 @@ module module_physics_driver
             if (fice(i) < one) then
               wet(i) = .true.
 !             Sfcprop%tsfco(i) = tgice
-              Sfcprop%tsfco(i) = max(Sfcprop%tisfc(i), tgice)
+!             Sfcprop%tsfco(i) = max(Sfcprop%tisfc(i), tgice)
 !             Sfcprop%tsfco(i) = max((Sfcprop%tsfc(i) - fice(i)*sfcprop%tisfc(i)) &
 !                                     / (one - fice(i)), tgice)
             endif
@@ -1740,7 +1741,7 @@ module module_physics_driver
 !             if (wet(i) .and. .not.icy(i)) then
 !             if (wet(i) .and. (Model%frac_grid .or. .not. icy(i))) then
               if (wet(i)) then
-                tsfc3(i,3) = max(271.2,Sfcprop%tref(i) + dtzm(i))
+                tsfc3(i,3) = max(tgice,Sfcprop%tref(i) + dtzm(i))
 !               tsfc3(i,3) = max(271.2,Sfcprop%tref(i) + dtzm(i)) -  &
 !                               (Sfcprop%oro(i)-Sfcprop%oro_uf(i))*rlapse
               endif
