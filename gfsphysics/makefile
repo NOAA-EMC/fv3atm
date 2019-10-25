@@ -91,7 +91,9 @@ SRCS_f =  \
 	   ./physics/mersenne_twister.f                                              \
 	   ./physics/mfpbl.f                                                         \
 	   ./physics/mfpblt.f                                                        \
+           ./physics/mfpbltq.f                                                       \
 	   ./physics/mfscu.f                                                         \
+           ./physics/mfscuq.f                                                        \
 	   ./physics/module_bfmicrophysics.f                                         \
 	   ./physics/moninedmf.f                                                     \
 	   ./physics/moninedmf_hafs.f                                                \

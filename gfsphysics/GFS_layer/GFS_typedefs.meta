@@ -1647,12 +1647,6 @@
   units = flag
   dimensions = ()
   type = logical
-[lgocart]
-  standard_name = flag_gocart
-  long_name = flag for 3d diagnostic fields for gocart 1
-  units = flag
-  dimensions = ()
-  type = logical
 [levs]
   standard_name = vertical_dimension
   long_name = number of vertical levels
@@ -2743,6 +2737,27 @@
   dimensions = ()
   type = real
   kind = kind_phys
+[dspfac]
+  standard_name = tke_dissipative_heating_factor
+  long_name = tke dissipative heating factor
+  units = none
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[bl_upfr]
+  standard_name = updraft_fraction_in_boundary_layer_mass_flux_scheme
+  long_name = updraft fraction in boundary layer mass flux scheme
+  units = none
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[bl_dnfr]
+  standard_name = downdraft_fraction_in_boundary_layer_mass_flux_scheme
+  long_name = downdraft fraction in boundary layer mass flux scheme
+  units = none
+  dimensions = ()
+  type = real
+  kind = kind_phys
 [nca]
   standard_name = number_of_independent_cellular_automata
   long_name = number of independent cellular automata
@@ -3386,6 +3401,12 @@
 [ldiag_ugwp]
   standard_name = diag_ugwp_flag
   long_name = flag for CIRES UGWP Diagnostics
+  units = flag
+  dimensions = ()
+  type = logical
+[lgocart]
+  standard_name = flag_gocart
+  long_name = temporary flag for deprecated gocart option
   units = flag
   dimensions = ()
   type = logical

@@ -5,8 +5,8 @@
       subroutine sfc_ocean                                              &
 !...................................
 !  ---  inputs:
-     &     ( im, ps, u1, v1, t1, q1, tskin, cm, ch,                     &
-     &       prsl1, prslki, wet, ddvel, flag_iter,                      &
+     &     ( im, ps, t1, q1, tskin, cm, ch,                             &
+     &       prsl1, prslki, wet, wind, flag_iter,                       &
 !  ---  outputs:
      &       qsurf, cmm, chh, gflux, evap, hflx, ep                     &
      &     )
@@ -18,8 +18,9 @@
 !                                                                       !
 !    call sfc_ocean                                                     !
 !       inputs:                                                         !
-!          ( im, ps, u1, v1, t1, q1, tskin, cm, ch,                     !
-!            prsl1, prslki, wet, ddvel, flag_iter,                      !
+!          ( im, ps, t1, q1, tskin, cm, ch,                             !
+!!         ( im, ps, u1, v1, t1, q1, tskin, cm, ch,                     !
+!            prsl1, prslki, wet, wind, flag_iter,                       !
 !       outputs:                                                        !
 !            qsurf, cmm, chh, gflux, evap, hflx, ep )                   !
 !                                                                       !
@@ -42,7 +43,6 @@
 !  inputs:                                                       size   !
 !     im       - integer, horizontal dimension                     1    !
 !     ps       - real, surface pressure                            im   !
-!     u1, v1   - real, u/v component of surface layer wind         im   !
 !     t1       - real, surface layer mean temperature ( k )        im   !
 !     q1       - real, surface layer mean specific humidity        im   !
 !     tskin    - real, ground surface skin temperature ( k )       im   !
@@ -51,7 +51,7 @@
 !     prsl1    - real, surface layer mean pressure                 im   !
 !     prslki   - real,                                             im   !
 !     wet      - logical, =T if any ocean/lak, =F otherwise        im   !
-!     ddvel    - real, wind enhancement due to convection (m/s)    im   !
+!     wind     - real, wind speed (m/s)                            im   !
 !     flag_iter- logical,                                          im   !
 !                                                                       !
 !  outputs:                                                             !
@@ -80,8 +80,9 @@
 
 !  ---  inputs:
       integer, intent(in) :: im
-      real (kind=kind_phys), dimension(im), intent(in) :: ps, u1, v1,   &
-     &      t1, q1, tskin, cm, ch, prsl1, prslki, ddvel
+!     real (kind=kind_phys), dimension(im), intent(in) :: ps, u1, v1,   &
+      real (kind=kind_phys), dimension(im), intent(in) :: ps,           &
+     &      t1, q1, tskin, cm, ch, prsl1, prslki, wind
 
       logical, dimension(im), intent(in) :: flag_iter, wet
 
@@ -91,7 +92,7 @@
 
 !  ---  locals:
 
-      real (kind=kind_phys) :: q0, qss, rch, rho, wind, tem
+      real (kind=kind_phys) :: q0, qss, rch, rho, tem
 
       integer :: i
 
@@ -104,14 +105,10 @@
         flag(i) = (wet(i) .and. flag_iter(i))
 
 !  --- ...  initialize variables. all units are supposedly m.k.s. unless specified
-!           ps is in pascals, wind is wind speed, 
+!           ps is in pascals, wind is wind speed,
 !           rho is density, qss is sat. hum. at surface
 
         if ( flag(i) ) then
-
-          wind     = max(sqrt(u1(i)*u1(i) + v1(i)*v1(i))                &
-     &                 + max( 0.0, min( ddvel(i), 30.0 ) ), 1.0)
-
           q0       = max( q1(i), 1.0e-8 )
           rho      = prsl1(i) / (rd*t1(i)*(1.0 + rvrdm1*q0))
 
@@ -125,9 +122,9 @@
 
 !  --- ...    rcp  = rho cp ch v
 
-          rch      = rho * cp * ch(i) * wind
-          cmm(i)   = cm(i) * wind
-          chh(i)   = rho * ch(i) * wind
+          rch      = rho * cp * ch(i) * wind(i)
+          cmm(i)   = cm(i) * wind(i)
+          chh(i)   = rho * ch(i) * wind(i)
 
 !  --- ...  sensible and latent heat flux over open water
 

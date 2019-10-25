@@ -155,20 +155,22 @@ module GFS_restart
         Restart%data(nb,num+offset)%var2p => Tbd(nb)%phy_f2d(:,num)
       enddo
     enddo
+    offset = offset + Model%ntot2d
 
     !--- phy_fctd variables
-    offset = offset + Model%ntot2d
-    do num = 1, Model%nctp
+    if (Model%nctp > 0) then
+      do num = 1, Model%nctp
        !--- set the variable name
-      write(c2,'(i2.2)') num
-      Restart%name2d(num+offset) = 'phy_fctd_'//c2
-      do nb = 1,nblks
-        Restart%data(nb,num+offset)%var2p => Tbd(nb)%phy_fctd(:,num)
+        write(c2,'(i2.2)') num
+        Restart%name2d(num+offset) = 'phy_fctd_'//c2
+        do nb = 1,nblks
+          Restart%data(nb,num+offset)%var2p => Tbd(nb)%phy_fctd(:,num)
+        enddo
       enddo
-    enddo
+      offset = offset + Model%nctp
+    endif
 
     !--- Diagnostic variables
-    offset = offset + Model%nctp
     do idx = 1,ndiag_rst
       if( ndiag_idx(idx) > 0 ) then
         Restart%name2d(offset+idx) = trim(ExtDiag(ndiag_idx(idx))%name)

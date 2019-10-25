@@ -120,7 +120,7 @@
                      call print_var(mpirank,omprank, blkno, 'Sfcprop%zorlo'    , Sfcprop%zorlo)
                      call print_var(mpirank,omprank, blkno, 'Sfcprop%zorll'    , Sfcprop%zorll)
                      call print_var(mpirank,omprank, blkno, 'Sfcprop%fice'     , Sfcprop%fice)
-                     call print_var(mpirank,omprank, blkno, 'Sfcprop%hprim'    , Sfcprop%hprim)
+!                    call print_var(mpirank,omprank, blkno, 'Sfcprop%hprim'    , Sfcprop%hprim)
                      call print_var(mpirank,omprank, blkno, 'Sfcprop%hprime'   , Sfcprop%hprime)
                      call print_var(mpirank,omprank, blkno, 'Sfcprop%sncovr'   , Sfcprop%sncovr)
                      call print_var(mpirank,omprank, blkno, 'Sfcprop%snoalb'   , Sfcprop%snoalb)
@@ -445,6 +445,7 @@
                         call print_var(mpirank,omprank, blkno, 'Coupling%rainc_cpl', Coupling%rainc_cpl)
                         call print_var(mpirank,omprank, blkno, 'Coupling%ushfsfci ', Coupling%ushfsfci )
                         call print_var(mpirank,omprank, blkno, 'Coupling%dkt      ', Coupling%dkt      )
+                        call print_var(mpirank,omprank, blkno, 'Coupling%dqdti    ', Coupling%dqdti    )
                      end if
                      if (Model%do_sppt) then
                         call print_var(mpirank,omprank, blkno, 'Coupling%sppt_wts', Coupling%sppt_wts)
@@ -458,14 +459,6 @@
                      end if
                      if (Model%do_sfcperts) then
                         call print_var(mpirank,omprank, blkno, 'Coupling%sfc_wts', Coupling%sfc_wts)
-                     end if
-                     if (Model%lgocart .or. Model%ldiag3d) then
-                        call print_var(mpirank,omprank, blkno, 'Coupling%dqdti  ', Coupling%dqdti  )
-                        call print_var(mpirank,omprank, blkno, 'Coupling%cnvqci ', Coupling%cnvqci )
-                        call print_var(mpirank,omprank, blkno, 'Coupling%upd_mfi', Coupling%upd_mfi)
-                        call print_var(mpirank,omprank, blkno, 'Coupling%dwn_mfi', Coupling%dwn_mfi)
-                        call print_var(mpirank,omprank, blkno, 'Coupling%det_mfi', Coupling%det_mfi)
-                        call print_var(mpirank,omprank, blkno, 'Coupling%cldcovi', Coupling%cldcovi)
                      end if
                      if(Model%imp_physics == Model%imp_physics_thompson .and. Model%ltaerosol) then
                         call print_var(mpirank,omprank, blkno, 'Coupling%nwfa2d', Coupling%nwfa2d)

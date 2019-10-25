@@ -72,9 +72,7 @@ module FV3GFS_io_mod
   character(len=32)  :: fn_phy = 'phy_data.nc'
 
   !--- GFDL FMS netcdf restart data types
-  type(restart_file_type) :: Oro_restart
-  type(restart_file_type) :: Sfc_restart
-  type(restart_file_type) :: Phy_restart
+  type(restart_file_type) :: Oro_restart, Sfc_restart, Phy_restart
  
   !--- GFDL FMS restart containers
   character(len=32),    allocatable,         dimension(:)       :: oro_name2, sfc_name2, sfc_name3
@@ -92,19 +90,16 @@ module FV3GFS_io_mod
   real(4) :: dtp
   logical :: lprecip_accu
   character(len=64)  :: Sprecip_accu
-  integer,dimension(:), allocatable :: nstt, nstt_vctbl, all_axes
-  character(20),dimension(:), allocatable          :: axis_name,axis_name_vert
-  real(4), dimension(:,:,:), allocatable, target   :: buffer_phys_bl
-  real(4), dimension(:,:,:), allocatable, target   :: buffer_phys_nb
+  integer,dimension(:),        allocatable         :: nstt, nstt_vctbl, all_axes
+  character(20),dimension(:),  allocatable         :: axis_name, axis_name_vert
+  real(4), dimension(:,:,:),   allocatable, target :: buffer_phys_bl, buffer_phys_nb
   real(4), dimension(:,:,:,:), allocatable, target :: buffer_phys_windvect
-  real(kind=kind_phys),dimension(:,:),allocatable  :: lon
-  real(kind=kind_phys),dimension(:,:),allocatable  :: lat
-  real(kind=kind_phys),dimension(:,:),allocatable  :: uwork
+  real(kind=kind_phys),dimension(:,:),allocatable  :: lon, lat, uwork
   real(kind=kind_phys),dimension(:,:,:),allocatable:: uwork3d
-  logical :: uwork_set = .false.
-  character(128) :: uwindname
+  logical                    :: uwork_set = .false.
+  character(128)             :: uwindname
   integer, parameter, public :: DIAG_SIZE = 500
-!  real(kind=kind_phys), parameter :: missing_value = 1.d30
+! real(kind=kind_phys), parameter :: missing_value = 1.d30
   real(kind=kind_phys), parameter :: missing_value = 9.99e20
   real, parameter:: stndrd_atmos_ps = 101325.
   real, parameter:: stndrd_atmos_lapse = 0.0065
@@ -217,7 +212,7 @@ module FV3GFS_io_mod
        temp2d(i,j, 5) = IPD_Data(nb)%Sfcprop%snowd(ix)
        temp2d(i,j, 6) = IPD_Data(nb)%Sfcprop%zorl(ix)
        temp2d(i,j, 7) = IPD_Data(nb)%Sfcprop%fice(ix)
-       temp2d(i,j, 8) = IPD_Data(nb)%Sfcprop%hprim(ix)
+       temp2d(i,j, 8) = IPD_Data(nb)%Sfcprop%hprime(ix,1)
        temp2d(i,j, 9) = IPD_Data(nb)%Sfcprop%sncovr(ix)
        temp2d(i,j,10) = IPD_Data(nb)%Sfcprop%snoalb(ix)
        temp2d(i,j,11) = IPD_Data(nb)%Sfcprop%alvsf(ix)
@@ -484,8 +479,8 @@ module FV3GFS_io_mod
 #ifdef CCPP
     integer :: nvar_s2r
 #endif
-    real(kind=kind_phys), pointer, dimension(:,:)   :: var2_p => NULL()
-    real(kind=kind_phys), pointer, dimension(:,:,:) :: var3_p => NULL()
+    real(kind=kind_phys), pointer, dimension(:,:)   :: var2_p  => NULL()
+    real(kind=kind_phys), pointer, dimension(:,:,:) :: var3_p  => NULL()
     real(kind=kind_phys), pointer, dimension(:,:,:) :: var3_p1 => NULL()
     real(kind=kind_phys), pointer, dimension(:,:,:) :: var3_p2 => NULL()
     real(kind=kind_phys), pointer, dimension(:,:,:) :: var3_p3 => NULL()
@@ -512,7 +507,7 @@ module FV3GFS_io_mod
     else
       nvar_s2m = 32
     endif
-    nvar_o2  = 20
+    nvar_o2  = 19
     nvar_s2o = 18
 #ifdef CCPP
     if (Model%lsm == Model%lsm_ruc .and. warm_start) then
@@ -527,11 +522,11 @@ module FV3GFS_io_mod
 #endif
 
     if (Model%lsm == Model%lsm_noahmp) then
-     nvar_s2mp =29       !mp 2D
-     nvar_s3mp =5        !mp 3D
+      nvar_s2mp = 29       !mp 2D
+      nvar_s3mp = 5        !mp 3D
     else
-     nvar_s2mp =0        !mp 2D
-     nvar_s3mp =0        !mp 3D
+      nvar_s2mp = 0        !mp 2D
+      nvar_s3mp = 0        !mp 3D
     endif
 
     isc = Atm_block%isc
@@ -549,27 +544,26 @@ module FV3GFS_io_mod
       allocate(oro_var2(nx,ny,nvar_o2))
       oro_var2 = -9999._kind_phys
 
-      oro_name2(1)  = 'stddev'     ! hprim
-      oro_name2(2)  = 'stddev'     ! hprime(ix,1)
-      oro_name2(3)  = 'convexity'  ! hprime(ix,2)
-      oro_name2(4)  = 'oa1'        ! hprime(ix,3)
-      oro_name2(5)  = 'oa2'        ! hprime(ix,4)
-      oro_name2(6)  = 'oa3'        ! hprime(ix,5)
-      oro_name2(7)  = 'oa4'        ! hprime(ix,6)
-      oro_name2(8)  = 'ol1'        ! hprime(ix,7)
-      oro_name2(9)  = 'ol2'        ! hprime(ix,8)
-      oro_name2(10) = 'ol3'        ! hprime(ix,9)
-      oro_name2(11) = 'ol4'        ! hprime(ix,10)
-      oro_name2(12) = 'theta'      ! hprime(ix,11)
-      oro_name2(13) = 'gamma'      ! hprime(ix,12)
-      oro_name2(14) = 'sigma'      ! hprime(ix,13)
-      oro_name2(15) = 'elvmax'     ! hprime(ix,14)
-      oro_name2(16) = 'orog_filt'  ! oro
-      oro_name2(17) = 'orog_raw'   ! oro_uf
-      oro_name2(18) = 'land_frac'  ! land fraction [0:1]
+      oro_name2(1)  = 'stddev'     ! hprime(ix,1)
+      oro_name2(2)  = 'convexity'  ! hprime(ix,2)
+      oro_name2(3)  = 'oa1'        ! hprime(ix,3)
+      oro_name2(4)  = 'oa2'        ! hprime(ix,4)
+      oro_name2(5)  = 'oa3'        ! hprime(ix,5)
+      oro_name2(6)  = 'oa4'        ! hprime(ix,6)
+      oro_name2(7)  = 'ol1'        ! hprime(ix,7)
+      oro_name2(8)  = 'ol2'        ! hprime(ix,8)
+      oro_name2(9)  = 'ol3'        ! hprime(ix,9)
+      oro_name2(10) = 'ol4'        ! hprime(ix,10)
+      oro_name2(11) = 'theta'      ! hprime(ix,11)
+      oro_name2(12) = 'gamma'      ! hprime(ix,12)
+      oro_name2(13) = 'sigma'      ! hprime(ix,13)
+      oro_name2(14) = 'elvmax'     ! hprime(ix,14)
+      oro_name2(15) = 'orog_filt'  ! oro
+      oro_name2(16) = 'orog_raw'   ! oro_uf
+      oro_name2(17) = 'land_frac'  ! land fraction [0:1]
       !--- variables below here are optional
-      oro_name2(19) = 'lake_frac'  ! lake fraction [0:1]
-      oro_name2(20) = 'lake_depth' ! lake depth(m)
+      oro_name2(18) = 'lake_frac'  ! lake fraction [0:1]
+      oro_name2(19) = 'lake_depth' ! lake depth(m)
       !--- register the 2D fields
       do num = 1,nvar_o2
         var2_p => oro_var2(:,:,num)
@@ -594,38 +588,33 @@ module FV3GFS_io_mod
         i = Atm_block%index(nb)%ii(ix) - isc + 1
         j = Atm_block%index(nb)%jj(ix) - jsc + 1
         !--- stddev
-        Sfcprop(nb)%hprim(ix)     = oro_var2(i,j,1)
+!       Sfcprop(nb)%hprim(ix)     = oro_var2(i,j,1)
         !--- hprime(1:14)
-        Sfcprop(nb)%hprime(ix,1)  = oro_var2(i,j,2)
-        Sfcprop(nb)%hprime(ix,2)  = oro_var2(i,j,3)
-        Sfcprop(nb)%hprime(ix,3)  = oro_var2(i,j,4)
-        Sfcprop(nb)%hprime(ix,4)  = oro_var2(i,j,5)
-        Sfcprop(nb)%hprime(ix,5)  = oro_var2(i,j,6)
-        Sfcprop(nb)%hprime(ix,6)  = oro_var2(i,j,7)
-        Sfcprop(nb)%hprime(ix,7)  = oro_var2(i,j,8)
-        Sfcprop(nb)%hprime(ix,8)  = oro_var2(i,j,9)
-        Sfcprop(nb)%hprime(ix,9)  = oro_var2(i,j,10)
-        Sfcprop(nb)%hprime(ix,10) = oro_var2(i,j,11)
-        Sfcprop(nb)%hprime(ix,11) = oro_var2(i,j,12)
-        Sfcprop(nb)%hprime(ix,12) = oro_var2(i,j,13)
-        Sfcprop(nb)%hprime(ix,13) = oro_var2(i,j,14)
-        Sfcprop(nb)%hprime(ix,14) = oro_var2(i,j,15)
+        Sfcprop(nb)%hprime(ix,1)  = oro_var2(i,j,1)
+        Sfcprop(nb)%hprime(ix,2)  = oro_var2(i,j,2)
+        Sfcprop(nb)%hprime(ix,3)  = oro_var2(i,j,3)
+        Sfcprop(nb)%hprime(ix,4)  = oro_var2(i,j,4)
+        Sfcprop(nb)%hprime(ix,5)  = oro_var2(i,j,5)
+        Sfcprop(nb)%hprime(ix,6)  = oro_var2(i,j,6)
+        Sfcprop(nb)%hprime(ix,7)  = oro_var2(i,j,7)
+        Sfcprop(nb)%hprime(ix,8)  = oro_var2(i,j,8)
+        Sfcprop(nb)%hprime(ix,9)  = oro_var2(i,j,9)
+        Sfcprop(nb)%hprime(ix,10) = oro_var2(i,j,10)
+        Sfcprop(nb)%hprime(ix,11) = oro_var2(i,j,11)
+        Sfcprop(nb)%hprime(ix,12) = oro_var2(i,j,12)
+        Sfcprop(nb)%hprime(ix,13) = oro_var2(i,j,13)
+        Sfcprop(nb)%hprime(ix,14) = oro_var2(i,j,14)
         !--- oro
-        Sfcprop(nb)%oro(ix)       = oro_var2(i,j,16)
+        Sfcprop(nb)%oro(ix)       = oro_var2(i,j,15)
         !--- oro_uf
-        Sfcprop(nb)%oro_uf(ix)    = oro_var2(i,j,17)
-        Sfcprop(nb)%landfrac(ix)  = oro_var2(i,j,18) !land frac [0:1]
-        Sfcprop(nb)%lakefrac(ix)  = oro_var2(i,j,19) !lake frac [0:1]
+        Sfcprop(nb)%oro_uf(ix)    = oro_var2(i,j,16)
+        Sfcprop(nb)%landfrac(ix)  = oro_var2(i,j,17) !land frac [0:1]
+        Sfcprop(nb)%lakefrac(ix)  = oro_var2(i,j,18) !lake frac [0:1]
       enddo
     enddo
  
-    if (nint(oro_var2(1,1,19)) == -9999._kind_phys) then ! lakefrac doesn't exist in the restart, need to create it
-      if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing lakefrac') 
-      do nb = 1, Atm_block%nblks
-        do ix = 1, Atm_block%blksz(nb)
-          Sfcprop(nb)%lakefrac(ix) = 0.
-        enddo
-      enddo
+    if (nint(oro_var2(1,1,18)) == -9999._kind_phys) then ! lakefrac doesn't exist in the restart, need to create it
+      if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - will computing lakefrac') 
       Model%frac_grid = .false.
     else
       Model%frac_grid = .true.
@@ -655,29 +644,19 @@ module FV3GFS_io_mod
       allocate(sfc_name3(nvar_s3+nvar_s3mp))
 
       allocate(sfc_var2(nx,ny,nvar_s2m+nvar_s2o+nvar_s2mp))
-      allocate(sfc_var3(nx,ny,1:4,1:3))
+      allocate(sfc_var3(nx,ny,Model%lsoil,nvar_s3))
 #endif
-#ifdef CCPP
-      if (Model%lsm == Model%lsm_noahmp) then
-#endif
-      allocate(sfc_var3sn(nx,ny,-2:0,4:6))
-      allocate(sfc_var3eq(nx,ny,1:4,7:7))
-      allocate(sfc_var3zn(nx,ny,-2:4,8:8))
-#ifdef CCPP
-      end if
-#endif
-
       sfc_var2   = -9999._kind_phys
       sfc_var3   = -9999._kind_phys
-#ifdef CCPP
+!
       if (Model%lsm == Model%lsm_noahmp) then
-#endif
-      sfc_var3sn = -9999._kind_phys
-      sfc_var3eq = -9999._kind_phys
-      sfc_var3zn = -9999._kind_phys
-#ifdef CCPP
+        allocate(sfc_var3sn(nx,ny,-2:0,4:6))
+        allocate(sfc_var3eq(nx,ny,1:4,7:7))
+        allocate(sfc_var3zn(nx,ny,-2:4,8:8))
+        sfc_var3sn = -9999._kind_phys
+        sfc_var3eq = -9999._kind_phys
+        sfc_var3zn = -9999._kind_phys
       end if
-#endif
 
       !--- names of the 2D variables to save
       sfc_name2(1)  = 'slmsk'
@@ -741,35 +720,35 @@ module FV3GFS_io_mod
 ! Only needed when Noah MP LSM is used - 29 2D
 !
       if (Model%lsm == Model%lsm_noahmp) then
-        sfc_name2(nvar_s2m+19) =  'snowxy'
-        sfc_name2(nvar_s2m+20) =  'tvxy'
-        sfc_name2(nvar_s2m+21) =  'tgxy'
-        sfc_name2(nvar_s2m+22) =  'canicexy'
-        sfc_name2(nvar_s2m+23) =  'canliqxy'
-        sfc_name2(nvar_s2m+24) =  'eahxy'
-        sfc_name2(nvar_s2m+25) =  'tahxy'
-        sfc_name2(nvar_s2m+26) =  'cmxy'
-        sfc_name2(nvar_s2m+27) =  'chxy'
-        sfc_name2(nvar_s2m+28) =  'fwetxy'
-        sfc_name2(nvar_s2m+29) =  'sneqvoxy'
-        sfc_name2(nvar_s2m+30) =  'alboldxy'
-        sfc_name2(nvar_s2m+31) =  'qsnowxy'
-        sfc_name2(nvar_s2m+32) =  'wslakexy'
-        sfc_name2(nvar_s2m+33) =  'zwtxy'
-        sfc_name2(nvar_s2m+34) =  'waxy'
-        sfc_name2(nvar_s2m+35) =  'wtxy'
-        sfc_name2(nvar_s2m+36) =  'lfmassxy'
-        sfc_name2(nvar_s2m+37) =  'rtmassxy'
-        sfc_name2(nvar_s2m+38) =  'stmassxy'
-        sfc_name2(nvar_s2m+39) =  'woodxy'
-        sfc_name2(nvar_s2m+40) =  'stblcpxy'
-        sfc_name2(nvar_s2m+41) =  'fastcpxy'
-        sfc_name2(nvar_s2m+42) =  'xsaixy'
-        sfc_name2(nvar_s2m+43) =  'xlaixy'
-        sfc_name2(nvar_s2m+44) =  'taussxy'
-        sfc_name2(nvar_s2m+45) =  'smcwtdxy'
-        sfc_name2(nvar_s2m+46) =  'deeprechxy'
-        sfc_name2(nvar_s2m+47) =  'rechxy'
+        sfc_name2(nvar_s2m+19) = 'snowxy'
+        sfc_name2(nvar_s2m+20) = 'tvxy'
+        sfc_name2(nvar_s2m+21) = 'tgxy'
+        sfc_name2(nvar_s2m+22) = 'canicexy'
+        sfc_name2(nvar_s2m+23) = 'canliqxy'
+        sfc_name2(nvar_s2m+24) = 'eahxy'
+        sfc_name2(nvar_s2m+25) = 'tahxy'
+        sfc_name2(nvar_s2m+26) = 'cmxy'
+        sfc_name2(nvar_s2m+27) = 'chxy'
+        sfc_name2(nvar_s2m+28) = 'fwetxy'
+        sfc_name2(nvar_s2m+29) = 'sneqvoxy'
+        sfc_name2(nvar_s2m+30) = 'alboldxy'
+        sfc_name2(nvar_s2m+31) = 'qsnowxy'
+        sfc_name2(nvar_s2m+32) = 'wslakexy'
+        sfc_name2(nvar_s2m+33) = 'zwtxy'
+        sfc_name2(nvar_s2m+34) = 'waxy'
+        sfc_name2(nvar_s2m+35) = 'wtxy'
+        sfc_name2(nvar_s2m+36) = 'lfmassxy'
+        sfc_name2(nvar_s2m+37) = 'rtmassxy'
+        sfc_name2(nvar_s2m+38) = 'stmassxy'
+        sfc_name2(nvar_s2m+39) = 'woodxy'
+        sfc_name2(nvar_s2m+40) = 'stblcpxy'
+        sfc_name2(nvar_s2m+41) = 'fastcpxy'
+        sfc_name2(nvar_s2m+42) = 'xsaixy'
+        sfc_name2(nvar_s2m+43) = 'xlaixy'
+        sfc_name2(nvar_s2m+44) = 'taussxy'
+        sfc_name2(nvar_s2m+45) = 'smcwtdxy'
+        sfc_name2(nvar_s2m+46) = 'deeprechxy'
+        sfc_name2(nvar_s2m+47) = 'rechxy'
 #ifdef CCPP
       else if (Model%lsm == Model%lsm_ruc .and. warm_start) then
         sfc_name2(nvar_s2m+19) = 'wetness'
@@ -790,6 +769,8 @@ module FV3GFS_io_mod
           id_restart = register_restart_field(Sfc_restart, fn_srf, sfc_name2(num), var2_p, domain=fv_domain)
         endif
       enddo
+
+
       if (Model%nstf_name(1) > 0) then
         mand = .false.
         if (Model%nstf_name(2) == 0) mand = .true.
@@ -804,17 +785,16 @@ module FV3GFS_io_mod
           var2_p => sfc_var2(:,:,num)
           id_restart = register_restart_field(Sfc_restart, fn_srf, sfc_name2(num), var2_p, domain=fv_domain)
         enddo
-      else if (Model%lsm == Model%lsm_noahmp) then
-#else
-! Noah MP register only necessary only lsm = 2, not necessary has values
-      if (Model%lsm == Model%lsm_noahmp) then
+      endif ! mp/ruc
 #endif
+! Noah MP register only necessary only lsm = 2, not necessary has values
+      if (nvar_s2mp > 0) then
         mand = .false.
         do num = nvar_s2m+nvar_s2o+1,nvar_s2m+nvar_s2o+nvar_s2mp
           var2_p => sfc_var2(:,:,num)
           id_restart = register_restart_field(Sfc_restart, fn_srf, sfc_name2(num), var2_p, domain=fv_domain, mandatory=mand)
         enddo
-      endif ! mp/ruc
+      endif ! noahmp
 
       nullify(var2_p)
     endif  ! if not allocated
@@ -884,15 +864,17 @@ module FV3GFS_io_mod
 !--- Noah MP define arbitrary value (number layers of snow) to indicate
 !coldstart(sfcfile doesn't include noah mp fields) or not
 
-    if (Model%lsm == 2) then
-     sfc_var2(1,1,nvar_s2m+19) = -66666.
+    if (Model%lsm == Model%lsm_noahmp) then
+      sfc_var2(1,1,nvar_s2m+19) = -66666.
     endif
 
     !--- read the surface restart/data
     call mpp_error(NOTE,'reading surface properties data from INPUT/sfc_data.tile*.nc')
     call restore_state(Sfc_restart)
 
+!   write(0,*)' stype read in min,max=',minval(sfc_var2(:,:,18)),maxval(sfc_var2(:,:,18))
 !   write(0,*)' sfc_var2=',sfc_var2(:,:,12)
+
     !--- place the data into the block GFS containers
     do nb = 1, Atm_block%nblks
       do ix = 1, Atm_block%blksz(nb)
@@ -966,20 +948,19 @@ module FV3GFS_io_mod
         endif
 #ifdef CCPP
         if (Model%lsm == Model%lsm_ruc .and. warm_start) then
-          !--- Extra RUC variables
+!--- Extra RUC variables
+! --------------------------
           Sfcprop(nb)%wetness(ix)    = sfc_var2(i,j,nvar_s2m+19)
           Sfcprop(nb)%clw_surf(ix)   = sfc_var2(i,j,nvar_s2m+20)
           Sfcprop(nb)%qwv_surf(ix)   = sfc_var2(i,j,nvar_s2m+21)
           Sfcprop(nb)%tsnow(ix)      = sfc_var2(i,j,nvar_s2m+22)
           Sfcprop(nb)%snowfallac(ix) = sfc_var2(i,j,nvar_s2m+23)
           Sfcprop(nb)%acsnow(ix)     = sfc_var2(i,j,nvar_s2m+24)
-        elseif (Model%lsm == Model%lsm_noahmp) then
-          !--- Extra Noah MP variables
-#else
-! Noah MP
-! -------
+        endif
+#endif
+!--- Extra Noah MP variables
+! --------------------------
         if (Model%lsm == Model%lsm_noahmp) then
-
           Sfcprop(nb)%snowxy(ix)     = sfc_var2(i,j,nvar_s2m+19)
           Sfcprop(nb)%tvxy(ix)       = sfc_var2(i,j,nvar_s2m+20)
           Sfcprop(nb)%tgxy(ix)       = sfc_var2(i,j,nvar_s2m+21)
@@ -1009,7 +990,6 @@ module FV3GFS_io_mod
           Sfcprop(nb)%smcwtdxy(ix)   = sfc_var2(i,j,nvar_s2m+45)
           Sfcprop(nb)%deeprechxy(ix) = sfc_var2(i,j,nvar_s2m+46)
           Sfcprop(nb)%rechxy(ix)     = sfc_var2(i,j,nvar_s2m+47)
-#endif
         endif
 
 #ifdef CCPP
@@ -1063,11 +1043,11 @@ module FV3GFS_io_mod
           enddo 
 
           do lsoil = 1, 4
-           Sfcprop(nb)%smoiseq(ix,lsoil)  = sfc_var3eq(i,j,lsoil,7)
+            Sfcprop(nb)%smoiseq(ix,lsoil)  = sfc_var3eq(i,j,lsoil,7)
           enddo 
 
           do lsoil = -2, 4
-           Sfcprop(nb)%zsnsoxy(ix,lsoil)  = sfc_var3zn(i,j,lsoil,8)
+            Sfcprop(nb)%zsnsoxy(ix,lsoil)  = sfc_var3zn(i,j,lsoil,8)
           enddo 
         endif
 #endif
@@ -1076,16 +1056,16 @@ module FV3GFS_io_mod
     enddo    !nb
     call mpp_error(NOTE, 'gfs_driver:: - after put to container ')
 
-! so far: cold start everything is 9999.0, warm start snowxy has values
-! but the 3D of snow  fieds not avaialble because not allocate yet
-!ix,nb loops may be consolidate with the Noah MP isnowxy init
-! restore traditional vars first,we need some of them to init snow fields
-! snow depth to actual snow layers; so we can allocate and register
-! note zsnsoxy is from -2:4 - isnowxy is from 0:-2, but we need
-! exact snow layers to pass 3D fields correctly, snow layers are
-! different fro grid to grid, we have to init point by point/grid.
-! It has to be done after the weasd is available
-! sfc_var2(1,1,32) is the first; we need this to allocate snow related fields
+! so far: At cold start everything is 9999.0, warm start snowxy has values
+!         but the 3D of snow fields are not available because not allocated yet.
+!         ix,nb loops may be consolidate with the Noah MP isnowxy init
+!         restore traditional vars first,we need some of them to init snow fields
+!         snow depth to actual snow layers; so we can allocate and register
+!         note zsnsoxy is from -2:4 - isnowxy is from 0:-2, but we need
+!         exact snow layers to pass 3D fields correctly, snow layers are
+!         different fro grid to grid, we have to init point by point/grid.
+!         It has to be done after the weasd is available
+!         sfc_var2(1,1,32) is the first; we need this to allocate snow related fields
 
 #ifdef CCPP
     ! Calculating sncovr does NOT belong into an I/O routine!
@@ -1114,18 +1094,7 @@ module FV3GFS_io_mod
       enddo
     endif
 
-    if (.not.Model%frac_grid) then ! tsfcl/zorll don't exist in the restart, need to create them
-      if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing tsfcl & zorll') 
-      !--- compute tsfcl/zorll from existing variable tsfco/zorlo
-      do nb = 1, Atm_block%nblks
-        do ix = 1, Atm_block%blksz(nb)
-          Sfcprop(nb)%tsfcl(ix) = Sfcprop(nb)%tsfco(ix)
-          Sfcprop(nb)%zorll(ix) = Sfcprop(nb)%zorlo(ix)
-        enddo
-      enddo
-    endif ! if .not.Model%frac_grid
-
-    if(Model%cplflx .and. Model%frac_grid) then ! 3-way composite
+    if(Model%frac_grid) then ! 3-way composite
       do nb = 1, Atm_block%nblks
         do ix = 1, Atm_block%blksz(nb)
           tem = 1.0 - Sfcprop(nb)%landfrac(ix) - Sfcprop(nb)%fice(ix)
@@ -1133,31 +1102,39 @@ module FV3GFS_io_mod
                                + Sfcprop(nb)%zorll(ix) * Sfcprop(nb)%fice(ix)     & !zorl ice = zorl land
                                + Sfcprop(nb)%zorlo(ix) * tem
           Sfcprop(nb)%tsfc(ix) = Sfcprop(nb)%tsfcl(ix) * Sfcprop(nb)%landfrac(ix) &
-                                +Sfcprop(nb)%tisfc(ix) * Sfcprop(nb)%fice(ix)     &
-                                +Sfcprop(nb)%tsfco(ix) * tem
+                               + Sfcprop(nb)%tisfc(ix) * Sfcprop(nb)%fice(ix)     &
+                               + Sfcprop(nb)%tsfco(ix) * tem
         enddo
       enddo
     else     ! in this case ice fracion is fraction of water fraction
       do nb = 1, Atm_block%nblks
         do ix = 1, Atm_block%blksz(nb)
-          Sfcprop(nb)%zorl(ix) = Sfcprop(nb)%zorlo(ix)
-          Sfcprop(nb)%tsfc(ix) = Sfcprop(nb)%tsfco(ix)
-          if (Sfcprop(nb)%slmsk(ix) > 1.9) then
+      !--- specify tsfcl/zorll from existing variable tsfco/zorlo
+          Sfcprop(nb)%tsfcl(ix) = Sfcprop(nb)%tsfco(ix)
+          Sfcprop(nb)%zorll(ix) = Sfcprop(nb)%zorlo(ix)
+          Sfcprop(nb)%zorl(ix)  = Sfcprop(nb)%zorlo(ix)
+          Sfcprop(nb)%tsfc(ix)  = Sfcprop(nb)%tsfco(ix)
+          if (Sfcprop(nb)%slmsk(ix) < 0.1 .or. Sfcprop(nb)%slmsk(ix) > 1.9) then
             Sfcprop(nb)%landfrac(ix) = 0.0
+            if (Sfcprop(nb)%oro_uf(ix) > 0.01) then
+              Sfcprop(nb)%lakefrac(ix) = 1.0        ! lake
+            else
+              Sfcprop(nb)%lakefrac(ix) = 0.0        ! ocean
+            endif
           else
-            Sfcprop(nb)%landfrac(ix) = Sfcprop(nb)%slmsk(ix) 
-          end if
+            Sfcprop(nb)%landfrac(ix) = 1.0          ! land
+          endif
         enddo
       enddo
-    end if ! if cplflx .and. frac_grid
+    endif ! if (Model%frac_grid)
 
     do nb = 1, Atm_block%nblks
       do ix = 1, Atm_block%blksz(nb)
-      if (Sfcprop(nb)%lakefrac(ix) > 0.) then
-        Sfcprop(nb)%oceanfrac(ix) = 0. ! lake & ocean don't coexist in a cell
-      else
-        Sfcprop(nb)%oceanfrac(ix) = 1. - Sfcprop(nb)%landfrac(ix)  !LHS:ocean frac [0:1]
-      end if
+        if (Sfcprop(nb)%lakefrac(ix) > 0.0) then
+          Sfcprop(nb)%oceanfrac(ix) = 0.0 ! lake & ocean don't coexist in a cell
+        else
+          Sfcprop(nb)%oceanfrac(ix) = 1.0 - Sfcprop(nb)%landfrac(ix)  !LHS:ocean frac [0:1]
+        endif
 
       enddo
     enddo
@@ -1303,33 +1280,33 @@ module FV3GFS_io_mod
                 endif
               endif
 
-              if (snd < 0.025 ) then
-                Sfcprop(nb)%snowxy(ix)  = 0.0
-                dzsno(-2:0)             = 0.0
-              elseif (snd >= 0.025 .and. snd <= 0.05 ) then
-                Sfcprop(nb)%snowxy(ix)  = -1.0
-                dzsno(0)                 = snd
-              elseif (snd > 0.05 .and. snd <= 0.10 ) then
-                Sfcprop(nb)%snowxy(ix)  = -2.0
-                dzsno(-1)                = 0.5*snd
-                dzsno(0)                 = 0.5*snd
-              elseif (snd > 0.10 .and. snd <= 0.25 ) then
-                Sfcprop(nb)%snowxy(ix)   = -2.0
-                dzsno(-1)                = 0.05
-                dzsno(0)                 = snd - 0.05
-              elseif (snd > 0.25 .and. snd <= 0.45 ) then
-                Sfcprop(nb)%snowxy(ix)   = -3.0
-                dzsno(-2)                = 0.05
-                dzsno(-1)                = 0.5*(snd-0.05)
-                dzsno(0)                 = 0.5*(snd-0.05)
-              elseif (snd > 0.45) then 
-                Sfcprop(nb)%snowxy(ix)   = -3.0
-                dzsno(-2)                = 0.05
-                dzsno(-1)                = 0.20
-                dzsno(0)                 = snd - 0.05 - 0.20
-              else
-                call mpp_error(FATAL, 'problem with the logic assigning snow layers.') 
-              endif
+            if (snd < 0.025 ) then
+              Sfcprop(nb)%snowxy(ix)   = 0.0
+              dzsno(-2:0)              = 0.0
+            elseif (snd >= 0.025 .and. snd <= 0.05 ) then
+              Sfcprop(nb)%snowxy(ix)   = -1.0
+              dzsno(0)                 = snd
+            elseif (snd > 0.05 .and. snd <= 0.10 ) then
+              Sfcprop(nb)%snowxy(ix)   = -2.0
+              dzsno(-1)                = 0.5*snd
+              dzsno(0)                 = 0.5*snd
+            elseif (snd > 0.10 .and. snd <= 0.25 ) then
+              Sfcprop(nb)%snowxy(ix)   = -2.0
+              dzsno(-1)                = 0.05
+              dzsno(0)                 = snd - 0.05
+            elseif (snd > 0.25 .and. snd <= 0.45 ) then
+              Sfcprop(nb)%snowxy(ix)   = -3.0
+              dzsno(-2)                = 0.05
+              dzsno(-1)                = 0.5*(snd-0.05)
+              dzsno(0)                 = 0.5*(snd-0.05)
+            elseif (snd > 0.45) then 
+              Sfcprop(nb)%snowxy(ix)   = -3.0
+              dzsno(-2)                = 0.05
+              dzsno(-1)                = 0.20
+              dzsno(0)                 = snd - 0.05 - 0.20
+            else
+              call mpp_error(FATAL, 'problem with the logic assigning snow layers.') 
+            endif
 
 ! Now we have the snowxy field
 ! snice + snliq + tsno allocation and compute them from what we have
@@ -1397,22 +1374,22 @@ module FV3GFS_io_mod
 !
 ! Use newton-raphson method to find eq soil moisture
 !
-                  expon = bexp +1.
-                  aa = dwsat/ddz
-                  bb = dksat / smcmax ** expon
+                expon = bexp + 1.
+                aa    = dwsat / ddz
+                bb    = dksat / smcmax ** expon
 
-                  smc = 0.5 * smcmax
+                smc = 0.5 * smcmax
 
-                  do iter = 1, 100
-                    func = (smc - smcmax) * aa +  bb * smc ** expon
-                    dfunc = aa + bb * expon * smc ** bexp
-                    dx  = func/dfunc
-                    smc = smc - dx
-                    if ( abs (dx) < 1.e-6) exit
-                  enddo                               ! iteration
-                  Sfcprop(nb)%smoiseq(ix,ns) = min(max(smc,1.e-4),smcmax*0.99)
-                enddo                                 ! ddz soil layer
-              else                                    ! bexp <= 0.0 
+                do iter = 1, 100
+                  func  = (smc - smcmax) * aa +  bb * smc ** expon
+                  dfunc = aa + bb * expon * smc ** bexp
+                  dx    = func / dfunc
+                  smc   = smc - dx
+                  if ( abs (dx) < 1.e-6) exit
+                enddo                               ! iteration
+                Sfcprop(nb)%smoiseq(ix,ns) = min(max(smc,1.e-4),smcmax*0.99)
+              enddo                                 ! ddz soil layer
+            else                                    ! bexp <= 0.0 
               Sfcprop(nb)%smoiseq(ix,1:4) = smcmax
               endif                                   ! end the bexp condition
 !
@@ -1459,8 +1436,8 @@ module FV3GFS_io_mod
 #endif
     logical :: mand
     character(len=32) :: fn_srf = 'sfc_data.nc'
-    real(kind=kind_phys), pointer, dimension(:,:)   :: var2_p => NULL()
-    real(kind=kind_phys), pointer, dimension(:,:,:) :: var3_p => NULL()
+    real(kind=kind_phys), pointer, dimension(:,:)   :: var2_p  => NULL()
+    real(kind=kind_phys), pointer, dimension(:,:,:) :: var3_p  => NULL()
     real(kind=kind_phys), pointer, dimension(:,:,:) :: var3_p1 => NULL()
     real(kind=kind_phys), pointer, dimension(:,:,:) :: var3_p2 => NULL()
     real(kind=kind_phys), pointer, dimension(:,:,:) :: var3_p3 => NULL()
@@ -1469,7 +1446,7 @@ module FV3GFS_io_mod
       nvar2m = 34
     else
       nvar2m = 32
-    end if
+    endif
     nvar2o = 18
 #ifdef CCPP
     if (Model%lsm == Model%lsm_ruc) then
@@ -1482,16 +1459,20 @@ module FV3GFS_io_mod
 #else
     nvar3  = 3
 #endif
-    nvar2mp = 29
-    nvar3mp = 5
+    nvar2mp = 0
+    nvar3mp = 0
+    if (Model%lsm == Model%lsm_noahmp) then
+      nvar2mp = 29
+      nvar3mp = 5
+    endif
 
     isc = Atm_block%isc
     iec = Atm_block%iec
     jsc = Atm_block%jsc
     jec = Atm_block%jec
     npz = Atm_block%npz
-    nx = (iec - isc + 1)
-    ny = (jec - jsc + 1)
+    nx  = (iec - isc + 1)
+    ny  = (jec - jsc + 1)
 
 #ifdef CCPP
     if (Model%lsm == Model%lsm_ruc) then
@@ -1516,39 +1497,29 @@ module FV3GFS_io_mod
       allocate(sfc_var2(nx,ny,nvar2m+nvar2o+nvar2mp+nvar2r))
       if (Model%lsm == Model%lsm_noah) then
         allocate(sfc_var3(nx,ny,Model%lsoil,nvar3))
-      else if (Model%lsm == Model%lsm_ruc) then
+      elseif (Model%lsm == Model%lsm_ruc) then
         allocate(sfc_var3(nx,ny,Model%lsoil_lsm,nvar3))
-      end if
+      endif
 #else
       allocate(sfc_name2(nvar2m+nvar2o+nvar2mp))
       allocate(sfc_name3(nvar3+nvar3mp))
       allocate(sfc_var2(nx,ny,nvar2m+nvar2o+nvar2mp))
       allocate(sfc_var3(nx,ny,Model%lsoil,nvar3))
 #endif
-#ifdef CCPP
+      sfc_var2   = -9999._kind_phys
+      sfc_var3   = -9999._kind_phys
       if (Model%lsm == Model%lsm_noahmp) then
-#endif
-      allocate(sfc_var3sn(nx,ny,-2:0,4:6))
-      allocate(sfc_var3eq(nx,ny,1:4,7:7))
-      allocate(sfc_var3zn(nx,ny,-2:4,8:8))
-#ifdef CCPP
-      end if
-#endif
+        allocate(sfc_var3sn(nx,ny,-2:0,4:6))
+        allocate(sfc_var3eq(nx,ny,1:4,7:7))
+        allocate(sfc_var3zn(nx,ny,-2:4,8:8))
 
-      sfc_var2 = -9999._kind_phys
-      sfc_var3 = -9999._kind_phys
-#ifdef CCPP
-      if (Model%lsm == Model%lsm_noahmp) then
-#endif
-      sfc_var3sn = -9999._kind_phys
-      sfc_var3eq = -9999._kind_phys
-      sfc_var3zn = -9999._kind_phys
-#ifdef CCPP
-      end if
-#endif
+        sfc_var3sn = -9999._kind_phys
+        sfc_var3eq = -9999._kind_phys
+        sfc_var3zn = -9999._kind_phys
+      endif
 
 
-      !--- names of the 2D variables to save
+    !--- names of the 2D variables to save
       sfc_name2(1)  = 'slmsk'
       sfc_name2(2)  = 'tsea'    !tsfc
       sfc_name2(3)  = 'sheleg'  !weasd
@@ -1580,13 +1551,13 @@ module FV3GFS_io_mod
       sfc_name2(29) = 'shdmax'
       sfc_name2(30) = 'slope'
       sfc_name2(31) = 'snoalb'
-      !--- variables below here are optional
+    !--- variables below here are optional
       sfc_name2(32) = 'sncovr'
       if (Model%cplflx) then
         sfc_name2(33) = 'tsfcl'   !temp on land portion of a cell
         sfc_name2(34) = 'zorll'   !zorl on land portion of a cell
       end if
-      !--- NSSTM inputs only needed when (nstf_name(1) > 0) .and. (nstf_name(2)) == 0)
+    !--- NSSTM inputs only needed when (nstf_name(1) > 0) .and. (nstf_name(2)) == 0)
       sfc_name2(nvar2m+1)  = 'tref'
       sfc_name2(nvar2m+2)  = 'z_c'
       sfc_name2(nvar2m+3)  = 'c_0'
@@ -1617,39 +1588,39 @@ module FV3GFS_io_mod
 #else
 ! Only needed when Noah MP LSM is used - 29 2D
       if(Model%lsm == Model%lsm_noahmp) then
-       sfc_name2(nvar2m+19) =  'snowxy'
-       sfc_name2(nvar2m+20) =  'tvxy'
-       sfc_name2(nvar2m+21) =  'tgxy'
-       sfc_name2(nvar2m+22) =  'canicexy'
-       sfc_name2(nvar2m+23) =  'canliqxy'
-       sfc_name2(nvar2m+24) =  'eahxy'
-       sfc_name2(nvar2m+25) =  'tahxy'
-       sfc_name2(nvar2m+26) =  'cmxy'
-       sfc_name2(nvar2m+27) =  'chxy'
-       sfc_name2(nvar2m+28) =  'fwetxy'
-       sfc_name2(nvar2m+29) =  'sneqvoxy'
-       sfc_name2(nvar2m+30) =  'alboldxy'
-       sfc_name2(nvar2m+31) =  'qsnowxy'
-       sfc_name2(nvar2m+32) =  'wslakexy'
-       sfc_name2(nvar2m+33) =  'zwtxy'
-       sfc_name2(nvar2m+34) =  'waxy'
-       sfc_name2(nvar2m+35) =  'wtxy'
-       sfc_name2(nvar2m+36) =  'lfmassxy'
-       sfc_name2(nvar2m+37) =  'rtmassxy'
-       sfc_name2(nvar2m+38) =  'stmassxy'
-       sfc_name2(nvar2m+39) =  'woodxy'
-       sfc_name2(nvar2m+40) =  'stblcpxy'
-       sfc_name2(nvar2m+41) =  'fastcpxy'
-       sfc_name2(nvar2m+42) =  'xsaixy'
-       sfc_name2(nvar2m+43) =  'xlaixy'
-       sfc_name2(nvar2m+44) =  'taussxy'
-       sfc_name2(nvar2m+45) =  'smcwtdxy'
-       sfc_name2(nvar2m+46) =  'deeprechxy'
-       sfc_name2(nvar2m+47) =  'rechxy'
+        sfc_name2(nvar2m+19) = 'snowxy'
+        sfc_name2(nvar2m+20) = 'tvxy'
+        sfc_name2(nvar2m+21) = 'tgxy'
+        sfc_name2(nvar2m+22) = 'canicexy'
+        sfc_name2(nvar2m+23) = 'canliqxy'
+        sfc_name2(nvar2m+24) = 'eahxy'
+        sfc_name2(nvar2m+25) = 'tahxy'
+        sfc_name2(nvar2m+26) = 'cmxy'
+        sfc_name2(nvar2m+27) = 'chxy'
+        sfc_name2(nvar2m+28) = 'fwetxy'
+        sfc_name2(nvar2m+29) = 'sneqvoxy'
+        sfc_name2(nvar2m+30) = 'alboldxy'
+        sfc_name2(nvar2m+31) = 'qsnowxy'
+        sfc_name2(nvar2m+32) = 'wslakexy'
+        sfc_name2(nvar2m+33) = 'zwtxy'
+        sfc_name2(nvar2m+34) = 'waxy'
+        sfc_name2(nvar2m+35) = 'wtxy'
+        sfc_name2(nvar2m+36) = 'lfmassxy'
+        sfc_name2(nvar2m+37) = 'rtmassxy'
+        sfc_name2(nvar2m+38) = 'stmassxy'
+        sfc_name2(nvar2m+39) = 'woodxy'
+        sfc_name2(nvar2m+40) = 'stblcpxy'
+        sfc_name2(nvar2m+41) = 'fastcpxy'
+        sfc_name2(nvar2m+42) = 'xsaixy'
+        sfc_name2(nvar2m+43) = 'xlaixy'
+        sfc_name2(nvar2m+44) = 'taussxy'
+        sfc_name2(nvar2m+45) = 'smcwtdxy'
+        sfc_name2(nvar2m+46) = 'deeprechxy'
+        sfc_name2(nvar2m+47) = 'rechxy'
 #endif
       endif
  
-      !--- register the 2D fields
+    !--- register the 2D fields
       do num = 1,nvar2m
         var2_p => sfc_var2(:,:,num)
         if (trim(sfc_name2(num)) == 'sncovr'.or.trim(sfc_name2(num)) == 'tsfcl'.or.trim(sfc_name2(num)) == 'zorll') then
@@ -1708,11 +1679,13 @@ module FV3GFS_io_mod
       sfc_name3(1) = 'stc'
       sfc_name3(2) = 'smc'
       sfc_name3(3) = 'slc'
-      sfc_name3(4) = 'snicexy'
-      sfc_name3(5) = 'snliqxy'
-      sfc_name3(6) = 'tsnoxy'
-      sfc_name3(7) = 'smoiseq'
-      sfc_name3(8) = 'zsnsoxy'
+      if (Model%lsm == Model%lsm_noahmp) then
+        sfc_name3(4) = 'snicexy'
+        sfc_name3(5) = 'snliqxy'
+        sfc_name3(6) = 'tsnoxy'
+        sfc_name3(7) = 'smoiseq'
+        sfc_name3(8) = 'zsnsoxy'
+      endif
 #endif
 
       !--- register the 3D fields
@@ -1720,6 +1693,8 @@ module FV3GFS_io_mod
         var3_p => sfc_var3(:,:,:,num)
         id_restart = register_restart_field(Sfc_restart, fn_srf, sfc_name3(num), var3_p, domain=fv_domain)
       enddo
+      nullify(var3_p)
+
       if (Model%lsm == Model%lsm_noahmp) then
         mand = .true.
         do num = nvar3+1,nvar3+3
@@ -1730,16 +1705,15 @@ module FV3GFS_io_mod
         var3_p2 => sfc_var3eq(:,:,:,7)
         id_restart = register_restart_field(Sfc_restart, fn_srf, sfc_name3(7), var3_p2, domain=fv_domain,mandatory=mand)
 
-         var3_p3 => sfc_var3zn(:,:,:,8)
+        var3_p3 => sfc_var3zn(:,:,:,8)
         id_restart = register_restart_fIeld(Sfc_restart, fn_srf, sfc_name3(8), var3_p3, domain=fv_domain,mandatory=mand)
 
         nullify(var3_p1)
         nullify(var3_p2)
         nullify(var3_p3)
-    endif ! lsm = lsm_noahmp
-
-      nullify(var3_p)
+      endif ! lsm = lsm_noahmp
     endif
+
    
     do nb = 1, Atm_block%nblks
       do ix = 1, Atm_block%blksz(nb)
@@ -1819,36 +1793,36 @@ module FV3GFS_io_mod
         if (Model%lsm == Model%lsm_noahmp) then
 #endif
 
-        sfc_var2(i,j,nvar2m+19) = Sfcprop(nb)%snowxy(ix)
-        sfc_var2(i,j,nvar2m+20) = Sfcprop(nb)%tvxy(ix)
-        sfc_var2(i,j,nvar2m+21) = Sfcprop(nb)%tgxy(ix)
-        sfc_var2(i,j,nvar2m+22) = Sfcprop(nb)%canicexy(ix)
-        sfc_var2(i,j,nvar2m+23) = Sfcprop(nb)%canliqxy(ix)
-        sfc_var2(i,j,nvar2m+24) = Sfcprop(nb)%eahxy(ix)
-        sfc_var2(i,j,nvar2m+25) = Sfcprop(nb)%tahxy(ix)
-        sfc_var2(i,j,nvar2m+26) = Sfcprop(nb)%cmxy(ix)
-        sfc_var2(i,j,nvar2m+27) = Sfcprop(nb)%chxy(ix)
-        sfc_var2(i,j,nvar2m+28) = Sfcprop(nb)%fwetxy(ix)
-        sfc_var2(i,j,nvar2m+29) = Sfcprop(nb)%sneqvoxy(ix)
-        sfc_var2(i,j,nvar2m+30) = Sfcprop(nb)%alboldxy(ix)
-        sfc_var2(i,j,nvar2m+31) = Sfcprop(nb)%qsnowxy(ix)
-        sfc_var2(i,j,nvar2m+32) = Sfcprop(nb)%wslakexy(ix)
-        sfc_var2(i,j,nvar2m+33) = Sfcprop(nb)%zwtxy(ix)
-        sfc_var2(i,j,nvar2m+34) = Sfcprop(nb)%waxy(ix)
-        sfc_var2(i,j,nvar2m+35) = Sfcprop(nb)%wtxy(ix)
-        sfc_var2(i,j,nvar2m+36) = Sfcprop(nb)%lfmassxy(ix)
-        sfc_var2(i,j,nvar2m+37) = Sfcprop(nb)%rtmassxy(ix)
-        sfc_var2(i,j,nvar2m+38) = Sfcprop(nb)%stmassxy(ix)
-        sfc_var2(i,j,nvar2m+39) = Sfcprop(nb)%woodxy(ix)
-        sfc_var2(i,j,nvar2m+40) = Sfcprop(nb)%stblcpxy(ix)
-        sfc_var2(i,j,nvar2m+41) = Sfcprop(nb)%fastcpxy(ix)
-        sfc_var2(i,j,nvar2m+42) = Sfcprop(nb)%xsaixy(ix)
-        sfc_var2(i,j,nvar2m+43) = Sfcprop(nb)%xlaixy(ix)
-        sfc_var2(i,j,nvar2m+44) = Sfcprop(nb)%taussxy(ix)
-        sfc_var2(i,j,nvar2m+45) = Sfcprop(nb)%smcwtdxy(ix)
-        sfc_var2(i,j,nvar2m+46) = Sfcprop(nb)%deeprechxy(ix)
-        sfc_var2(i,j,nvar2m+47) = Sfcprop(nb)%rechxy(ix)
-      endif
+          sfc_var2(i,j,nvar2m+19) = Sfcprop(nb)%snowxy(ix)
+          sfc_var2(i,j,nvar2m+20) = Sfcprop(nb)%tvxy(ix)
+          sfc_var2(i,j,nvar2m+21) = Sfcprop(nb)%tgxy(ix)
+          sfc_var2(i,j,nvar2m+22) = Sfcprop(nb)%canicexy(ix)
+          sfc_var2(i,j,nvar2m+23) = Sfcprop(nb)%canliqxy(ix)
+          sfc_var2(i,j,nvar2m+24) = Sfcprop(nb)%eahxy(ix)
+          sfc_var2(i,j,nvar2m+25) = Sfcprop(nb)%tahxy(ix)
+          sfc_var2(i,j,nvar2m+26) = Sfcprop(nb)%cmxy(ix)
+          sfc_var2(i,j,nvar2m+27) = Sfcprop(nb)%chxy(ix)
+          sfc_var2(i,j,nvar2m+28) = Sfcprop(nb)%fwetxy(ix)
+          sfc_var2(i,j,nvar2m+29) = Sfcprop(nb)%sneqvoxy(ix)
+          sfc_var2(i,j,nvar2m+30) = Sfcprop(nb)%alboldxy(ix)
+          sfc_var2(i,j,nvar2m+31) = Sfcprop(nb)%qsnowxy(ix)
+          sfc_var2(i,j,nvar2m+32) = Sfcprop(nb)%wslakexy(ix)
+          sfc_var2(i,j,nvar2m+33) = Sfcprop(nb)%zwtxy(ix)
+          sfc_var2(i,j,nvar2m+34) = Sfcprop(nb)%waxy(ix)
+          sfc_var2(i,j,nvar2m+35) = Sfcprop(nb)%wtxy(ix)
+          sfc_var2(i,j,nvar2m+36) = Sfcprop(nb)%lfmassxy(ix)
+          sfc_var2(i,j,nvar2m+37) = Sfcprop(nb)%rtmassxy(ix)
+          sfc_var2(i,j,nvar2m+38) = Sfcprop(nb)%stmassxy(ix)
+          sfc_var2(i,j,nvar2m+39) = Sfcprop(nb)%woodxy(ix)
+          sfc_var2(i,j,nvar2m+40) = Sfcprop(nb)%stblcpxy(ix)
+          sfc_var2(i,j,nvar2m+41) = Sfcprop(nb)%fastcpxy(ix)
+          sfc_var2(i,j,nvar2m+42) = Sfcprop(nb)%xsaixy(ix)
+          sfc_var2(i,j,nvar2m+43) = Sfcprop(nb)%xlaixy(ix)
+          sfc_var2(i,j,nvar2m+44) = Sfcprop(nb)%taussxy(ix)
+          sfc_var2(i,j,nvar2m+45) = Sfcprop(nb)%smcwtdxy(ix)
+          sfc_var2(i,j,nvar2m+46) = Sfcprop(nb)%deeprechxy(ix)
+          sfc_var2(i,j,nvar2m+47) = Sfcprop(nb)%rechxy(ix)
+        endif
 
 #ifdef CCPP
         if (Model%lsm == Model%lsm_noah) then
@@ -1894,23 +1868,23 @@ module FV3GFS_io_mod
           sfc_var3(i,j,lsoil,3) = Sfcprop(nb)%slc(ix,lsoil) !--- slc
         enddo
 ! 5 Noah MP 3D
-         if (Model%lsm == Model%lsm_noahmp) then
+        if (Model%lsm == Model%lsm_noahmp) then
 
-        do lsoil = -2,0
-           sfc_var3sn(i,j,lsoil,4) = Sfcprop(nb)%snicexy(ix,lsoil)
-           sfc_var3sn(i,j,lsoil,5) = Sfcprop(nb)%snliqxy(ix,lsoil)
-           sfc_var3sn(i,j,lsoil,6) = Sfcprop(nb)%tsnoxy(ix,lsoil)
-        enddo
+          do lsoil = -2,0
+            sfc_var3sn(i,j,lsoil,4) = Sfcprop(nb)%snicexy(ix,lsoil)
+            sfc_var3sn(i,j,lsoil,5) = Sfcprop(nb)%snliqxy(ix,lsoil)
+            sfc_var3sn(i,j,lsoil,6) = Sfcprop(nb)%tsnoxy(ix,lsoil)
+          enddo
 
-        do lsoil = 1,Model%lsoil
-          sfc_var3eq(i,j,lsoil,7)  = Sfcprop(nb)%smoiseq(ix,lsoil)
-        enddo
+          do lsoil = 1,Model%lsoil
+            sfc_var3eq(i,j,lsoil,7)  = Sfcprop(nb)%smoiseq(ix,lsoil)
+          enddo
 
-        do lsoil = -2,4
-          sfc_var3zn(i,j,lsoil,8)  = Sfcprop(nb)%zsnsoxy(ix,lsoil)
-        enddo
+          do lsoil = -2,4
+            sfc_var3zn(i,j,lsoil,8)  = Sfcprop(nb)%zsnsoxy(ix,lsoil)
+          enddo
 
-       endif  ! Noah MP
+        endif  ! Noah MP
 #endif
       enddo
     enddo
@@ -1954,12 +1928,12 @@ module FV3GFS_io_mod
     jsc = Atm_block%jsc
     jec = Atm_block%jec
     npz = Atm_block%npz
-    nx = (iec - isc + 1)
-    ny = (jec - jsc + 1)
+    nx  = (iec - isc + 1)
+    ny  = (jec - jsc + 1)
     nvar2d = IPD_Restart%num2d
     nvar3d = IPD_Restart%num3d
-    fdiag = IPD_Restart%fdiag
-    ldiag = IPD_Restart%ldiag
+    fdiag  = IPD_Restart%fdiag
+    ldiag  = IPD_Restart%ldiag
  
     !--- register the restart fields
     if (.not. allocated(phy_var2)) then
@@ -2061,8 +2035,8 @@ module FV3GFS_io_mod
     jsc = Atm_block%jsc
     jec = Atm_block%jec
     npz = Atm_block%npz
-    nx = (iec - isc + 1)
-    ny = (jec - jsc + 1)
+    nx  = (iec - isc + 1)
+    ny  = (jec - jsc + 1)
     nvar2d = IPD_Restart%num2d
     nvar3d = IPD_Restart%num3d
 
@@ -2139,11 +2113,11 @@ module FV3GFS_io_mod
 !--- local variables
     integer :: idx, nrgst_bl, nrgst_nb, nrgst_vctbl
 
-    isco = Atm_block%isc
-    ieco = Atm_block%iec
-    jsco = Atm_block%jsc
-    jeco = Atm_block%jec
-    levo = model%levs
+    isco   = Atm_block%isc
+    ieco   = Atm_block%iec
+    jsco   = Atm_block%jsc
+    jeco   = Atm_block%jec
+    levo   = model%levs
     fhzero = nint(Model%fhzero)
     ncld   = Model%ncld
     nsoil  = Model%lsoil
@@ -2168,11 +2142,11 @@ module FV3GFS_io_mod
     endif
 
     allocate(nstt(tot_diag_idx), nstt_vctbl(tot_diag_idx))
-    nstt = 0
-    nstt_vctbl = 0
-    nrgst_bl = 0
-    nrgst_nb = 0
-    nrgst_vctbl = 0
+    nstt          = 0
+    nstt_vctbl    = 0
+    nrgst_bl      = 0
+    nrgst_nb      = 0
+    nrgst_vctbl   = 0
     num_axes_phys = 2
     do idx = 1,tot_diag_idx
       if (diag(idx)%axes == -99) then
@@ -2241,7 +2215,7 @@ module FV3GFS_io_mod
 !    calls:  send_data
 !-------------------------------------------------------------------------      
   subroutine fv3gfs_diag_output(time, diag, atm_block, nx, ny, levs, ntcw, ntoz, &
-                              dt, time_int, time_intfull, time_radsw, time_radlw)
+                                dt, time_int, time_intfull, time_radsw, time_radlw)
 !--- subroutine interface variable definitions
     type(time_type),           intent(in) :: time
     type(IPD_diag_type),       intent(in) :: diag(:)
@@ -2264,15 +2238,15 @@ module FV3GFS_io_mod
     real(kind=kind_phys) :: rtime_radsw, rtime_radlw
     logical :: used
 
-     nblks = atm_block%nblks
+     nblks         = atm_block%nblks
      rdt           = 1.0d0/dt
      rtime_int     = 1.0d0/time_int
      rtime_intfull = 1.0d0/time_intfull
      rtime_radsw   = 1.0d0/time_radsw
      rtime_radlw   = 1.0d0/time_radlw
 
-     isc = atm_block%isc
-     jsc = atm_block%jsc
+     isc   = atm_block%isc
+     jsc   = atm_block%jsc
      is_in = atm_block%isc
      js_in = atm_block%jsc
 
@@ -2511,18 +2485,21 @@ module FV3GFS_io_mod
     character(*), intent(in)            :: intpl_method
     character(*), intent(in)            :: fldname
 !
-    integer k,j,i,kb
+    real(kind=kind_phys)                :: sinlat, sinlon, coslon
+    integer k,j,i,kb,nv,i1,j1
     logical used
 !
     if( id > 0 ) then
       if( use_wrtgridcomp_output ) then
         if( trim(intpl_method) == 'bilinear') then
+!$omp parallel do default(shared) private(i,j)
           do j= jsco,jeco
             do i= isco,ieco
               buffer_phys_bl(i,j,nstt(idx)) = work(i-isco+1,j-jsco+1)
             enddo
           enddo
         else if(trim(intpl_method) == 'nearest_stod') then
+!$omp parallel do default(shared) private(i,j)
           do j= jsco,jeco
             do i= isco,ieco
               buffer_phys_nb(i,j,nstt(idx)) = work(i-isco+1,j-jsco+1)
@@ -2530,6 +2507,7 @@ module FV3GFS_io_mod
           enddo
         else if(trim(intpl_method) == 'vector_bilinear') then
 !first save the data
+!$omp parallel do default(shared) private(i,j)
           do j= jsco,jeco
             do i= isco,ieco
               buffer_phys_bl(i,j,nstt(idx)) = work(i-isco+1,j-jsco+1)
@@ -2537,6 +2515,7 @@ module FV3GFS_io_mod
           enddo
           if( fldname(1:1) == 'u' .or. fldname(1:1) == 'U') then
             if(.not.allocated(uwork)) allocate(uwork(isco:ieco,jsco:jeco))
+!$omp parallel do default(shared) private(i,j)
             do j= jsco,jeco
               do i= isco,ieco
                 uwork(i,j) = work(i-isco+1,j-jsco+1)
@@ -2548,15 +2527,22 @@ module FV3GFS_io_mod
           if( fldname(1:1) == 'v' .or. fldname(1:1) == 'V') then
 !set up wind vector
             if( uwork_set .and. trim(uwindname(2:)) == trim(fldname(2:))) then
+              nv = nstt_vctbl(idx)
+!$omp parallel do default(shared) private(i,j,i1,j1,sinlat,sinlon,coslon)
               do j= jsco,jeco
+                j1 = j-jsco+1
                 do i= isco,ieco
-                   buffer_phys_windvect(1,i,j,nstt_vctbl(idx)) = uwork(i,j)*cos(lon(i,j)) - work(i-isco+1,j-jsco+1)*sin(lat(i,j))*sin(lon(i,j))
-                   buffer_phys_windvect(2,i,j,nstt_vctbl(idx)) = uwork(i,j)*sin(lon(i,j)) + work(i-isco+1,j-jsco+1)*sin(lat(i,j))*cos(lon(i,j))
-                   buffer_phys_windvect(3,i,j,nstt_vctbl(idx)) = work(i-isco+1,j-jsco+1)*cos(lat(i,j))
+                  i1 = i-isco+1
+                  sinlat = sin(lat(i,j))
+                  sinlon = sin(lon(i,j))
+                  coslon = cos(lon(i,j))
+                  buffer_phys_windvect(1,i,j,nv) = uwork(i,j)*coslon - work(i1,j1)*sinlat*sinlon
+                  buffer_phys_windvect(2,i,j,nv) = uwork(i,j)*sinlon + work(i1,j1)*sinlat*coslon
+                  buffer_phys_windvect(3,i,j,nv) =                     work(i1,j1)*cos(lat(i,j))
                 enddo
               enddo
             endif
-            uwork = 0.
+            uwork     = 0.0
             uwindname = ''
             uwork_set = .false.
           endif
@@ -2579,12 +2565,14 @@ module FV3GFS_io_mod
     character(*), intent(in)            :: intpl_method
     character(*), intent(in)            :: fldname
 !
-    integer k,j,i,kb
+    real(kind=kind_phys), allocatable, dimension(:,:) :: sinlon, coslon, sinlat, coslat
+    integer k,j,i,kb,nv,i1,j1
     logical used
 !
     if( id > 0 ) then
       if( use_wrtgridcomp_output ) then
         if( trim(intpl_method) == 'bilinear') then
+!$omp parallel do default(shared) private(i,j,k)
           do k= 1,levo
             do j= jsco,jeco
               do i= isco,ieco
@@ -2593,6 +2581,7 @@ module FV3GFS_io_mod
             enddo
           enddo
         else if(trim(intpl_method) == 'nearest_stod') then
+!$omp parallel do default(shared) private(i,j,k)
           do k= 1,levo
             do j= jsco,jeco
               do i= isco,ieco
@@ -2602,6 +2591,7 @@ module FV3GFS_io_mod
           enddo
         else if(trim(intpl_method) == 'vector_bilinear') then
 !first save the data
+!$omp parallel do default(shared) private(i,j,k)
           do k= 1,levo
             do j= jsco,jeco
               do i= isco,ieco
@@ -2611,6 +2601,7 @@ module FV3GFS_io_mod
           enddo
           if( fldname(1:1) == 'u' .or. fldname(1:1) == 'U') then
             if(.not.allocated(uwork3d)) allocate(uwork3d(isco:ieco,jsco:jeco,levo))
+!$omp parallel do default(shared) private(i,j,k)
             do k= 1, levo
               do j= jsco,jeco
                 do i= isco,ieco
@@ -2624,19 +2615,35 @@ module FV3GFS_io_mod
           if( fldname(1:1) == 'v' .or. fldname(1:1) == 'V') then
 !set up wind vector
             if( uwork_set .and. trim(uwindname(2:)) == trim(fldname(2:))) then
+              allocate (sinlon(isco:ieco,jsco:jeco), coslon(isco:ieco,jsco:jeco), &
+                        sinlat(isco:ieco,jsco:jeco), coslat(isco:ieco,jsco:jeco))
+!$omp parallel do default(shared) private(i,j)
+              do j= jsco,jeco
+                do i= isco,ieco
+                  sinlon(i,j) = sin(lon(i,j))
+                  coslon(i,j) = cos(lon(i,j))
+                  sinlat(i,j) = sin(lat(i,j))
+                  coslat(i,j) = cos(lat(i,j))
+                enddo
+              enddo
+!$omp parallel do default(shared) private(i,j,k,nv,i1,j1)
               do k= 1, levo
+                nv = nstt_vctbl(idx)+k-1
                 do j= jsco,jeco
+                  j1 = j-jsco+1
                   do i= isco,ieco
-                     buffer_phys_windvect(1,i,j,nstt_vctbl(idx)+k-1) = uwork3d(i,j,k)*cos(lon(i,j)) &
-                       - work(i-isco+1,j-jsco+1,k)*sin(lat(i,j))*sin(lon(i,j))
-                     buffer_phys_windvect(2,i,j,nstt_vctbl(idx)+k-1) = uwork3d(i,j,k)*sin(lon(i,j)) &
-                       + work(i-isco+1,j-jsco+1,k)*sin(lat(i,j))*cos(lon(i,j))
-                     buffer_phys_windvect(3,i,j,nstt_vctbl(idx)+k-1) = work(i-isco+1,j-jsco+1,k)*cos(lat(i,j))
+                    i1 = i-isco+1
+                    buffer_phys_windvect(1,i,j,nv) = uwork3d(i,j,k)*coslon(i,j) &
+                                                   - work(i1,j1,k)*sinlat(i,j)*sinlon(i,j)
+                    buffer_phys_windvect(2,i,j,nv) = uwork3d(i,j,k)*sinlon(i,j) &
+                                                   + work(i1,j1,k)*sinlat(i,j)*coslon(i,j)
+                    buffer_phys_windvect(3,i,j,nv) = work(i1,j1,k)*coslat(i,j)
                   enddo
                 enddo
               enddo
+              deallocate (sinlon, coslon, sinlat, coslat)
             endif
-            uwork3d = 0.
+            uwork3d   = 0.
             uwindname = ''
             uwork_set = .false.
           endif
@@ -2709,60 +2716,52 @@ module FV3GFS_io_mod
    do ibdl = 1, nbdlphys
      loutputfile = .false.
      call ESMF_FieldBundleGet(phys_bundle(ibdl), name=physbdl_name,rc=rc)
-     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-       line=__LINE__, &
-       file=__FILE__)) &
-       return  ! bail out
+     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
      idx = index(physbdl_name,'_bilinear')
      if(idx > 0) then
-       outputfile(ibdl) = physbdl_name(1:idx-1)
+       outputfile(ibdl)      = physbdl_name(1:idx-1)
        bdl_intplmethod(ibdl) = 'bilinear'
-       loutputfile = .true.
+       loutputfile           = .true.
      endif
      idx = index(physbdl_name,'_nearest_stod')
      if(idx > 0) then
-       outputfile(ibdl) = physbdl_name(1:idx-1)
+       outputfile(ibdl)      = physbdl_name(1:idx-1)
        bdl_intplmethod(ibdl) = 'nearest_stod'
-       loutputfile = .true.
+       loutputfile           = .true.
      endif
      if( .not. loutputfile) then
-       outputfile(ibdl) = 'phy'
+       outputfile(ibdl)      = 'phy'
        bdl_intplmethod(ibdl) = 'nearest_stod'
      endif
 !    print *,'in fv_phys bundle,i=',ibdl,'outputfile=',trim(outputfile(ibdl)), &
 !      'bdl_intplmethod=',trim(bdl_intplmethod(ibdl))
 
      call ESMF_AttributeAdd(phys_bundle(ibdl), convention="NetCDF", purpose="FV3", &
-       attrList=(/"fhzero     ", "ncld       ", "nsoil      ", "imp_physics", "dtp        "/), rc=rc)
+                            attrList=(/"fhzero     ", "ncld       ", "nsoil      ",&
+                                       "imp_physics", "dtp        "/), rc=rc)
 
-     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-       line=__LINE__, file=__FILE__)) return  ! bail out
-
-     call ESMF_AttributeSet(phys_bundle(ibdl), convention="NetCDF", purpose="FV3", &
-       name="fhzero", value=fhzero, rc=rc)
-     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-       line=__LINE__, file=__FILE__)) return  ! bail out
+     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
      call ESMF_AttributeSet(phys_bundle(ibdl), convention="NetCDF", purpose="FV3", &
-       name="ncld", value=ncld, rc=rc)
-     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-       line=__LINE__, file=__FILE__)) return  ! bail out
+                            name="fhzero", value=fhzero, rc=rc)
+     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
      call ESMF_AttributeSet(phys_bundle(ibdl), convention="NetCDF", purpose="FV3", &
-       name="nsoil", value=nsoil, rc=rc)
-     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-       line=__LINE__, file=__FILE__)) return  ! bail out
+                            name="ncld", value=ncld, rc=rc)
+     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
      call ESMF_AttributeSet(phys_bundle(ibdl), convention="NetCDF", purpose="FV3", &
-       name="imp_physics", value=imp_physics, rc=rc)
-     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-       line=__LINE__, file=__FILE__)) return  ! bail out
+                            name="nsoil", value=nsoil, rc=rc)
+     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
      call ESMF_AttributeSet(phys_bundle(ibdl), convention="NetCDF", purpose="FV3", &
-       name="dtp", value=dtp, rc=rc)
+                            name="imp_physics", value=imp_physics, rc=rc)
+     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+     call ESMF_AttributeSet(phys_bundle(ibdl), convention="NetCDF", purpose="FV3", &
+                            name="dtp", value=dtp, rc=rc)
 !     print *,'in fcst gfdl diag, dtp=',dtp,' ibdl=',ibdl
-     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-       line=__LINE__, file=__FILE__)) return  ! bail out
+     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
 !end ibdl
    enddo
@@ -2780,32 +2779,28 @@ module FV3GFS_io_mod
      enddo
 !
      call ESMF_AttributeGet(fcst_grid, convention="NetCDF", purpose="FV3", &
-       name="vertical_dim_labels", isPresent=isPresent, &
-       itemCount=udimCount, rc=rc)
-     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-       line=__LINE__, file=__FILE__)) return  ! bail out
+                            name="vertical_dim_labels", isPresent=isPresent, &
+                            itemCount=udimCount, rc=rc)
+     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
      if (isPresent .and. (udimCount>num_axes_phys-2) ) then
        allocate(udimList(udimCount))
        call ESMF_AttributeGet(fcst_grid, convention="NetCDF", purpose="FV3", &
-         name="vertical_dim_labels", valueList=udimList, rc=rc)
+                              name="vertical_dim_labels", valueList=udimList, rc=rc)
 !       if(mpp_pe()==mpp_root_pe())print *,'in fv3gfsio, vertical
 !       list=',udimList(1:udimCount),'rc=',rc
 
-       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-         line=__LINE__, file=__FILE__)) return  ! bail out
+       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
      else
 
        if(mpp_pe()==mpp_root_pe())print *,'in fv_dyn bundle,axis_name_vert=',axis_name_vert
        call ESMF_AttributeAdd(fcst_grid, convention="NetCDF", purpose="FV3",  &
-         attrList=(/"vertical_dim_labels"/), rc=rc)
-       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-         line=__LINE__, file=__FILE__)) return  ! bail out
+                              attrList=(/"vertical_dim_labels"/), rc=rc)
+       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
        call ESMF_AttributeSet(fcst_grid, convention="NetCDF", purpose="FV3", &
-         name="vertical_dim_labels", valueList=axis_name_vert, rc=rc)
-       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-         line=__LINE__, file=__FILE__)) return  ! bail out
+                              name="vertical_dim_labels", valueList=axis_name_vert, rc=rc)
+       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
      endif
    endif
 
@@ -2818,9 +2813,8 @@ module FV3GFS_io_mod
        axis_length =  get_axis_global_length(axes(id))
        allocate(axis_data(axis_length))
        call get_diag_axis( axes(id), axis_name(id), units, long_name, cart_name, &
-                         direction, edges, Domain, DomainU, axis_data,     &
-                         num_attributes=num_attributes,              &
-                         attributes=attributes)
+                         direction, edges, Domain, DomainU, axis_data,           &
+                         num_attributes=num_attributes, attributes=attributes)
 !
        edgesS=''
        do i = 1,num_axes_phys
@@ -2841,44 +2835,37 @@ module FV3GFS_io_mod
                     trim(axis_name(id))//":units", trim(axis_name(id))//":cartesian_axis", &
                     trim(axis_name(id))//":positive"/), rc=rc)
          endif
-         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-           line=__LINE__, file=__FILE__)) return  ! bail out
+         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
          call ESMF_AttributeSet(fcst_grid, convention="NetCDF", purpose="FV3", &
-           name=trim(axis_name(id)), valueList=axis_data, rc=rc)
-         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-           line=__LINE__, file=__FILE__)) return  ! bail out
+                                name=trim(axis_name(id)), valueList=axis_data, rc=rc)
+         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
          call ESMF_AttributeSet(fcst_grid, convention="NetCDF", purpose="FV3", &
-           name=trim(axis_name(id))//":long_name", value=trim(long_name), rc=rc)
-         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-           line=__LINE__, file=__FILE__)) return  ! bail out
+                                name=trim(axis_name(id))//":long_name", value=trim(long_name), rc=rc)
+         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
          call ESMF_AttributeSet(fcst_grid, convention="NetCDF", purpose="FV3", &
-           name=trim(axis_name(id))//":units", value=trim(units), rc=rc)
-         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-           line=__LINE__, file=__FILE__)) return  ! bail out
+                                name=trim(axis_name(id))//":units", value=trim(units), rc=rc)
+         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
          call ESMF_AttributeSet(fcst_grid, convention="NetCDF", purpose="FV3", &
-           name=trim(axis_name(id))//":cartesian_axis", value=trim(cart_name), rc=rc)
-         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-           line=__LINE__, file=__FILE__)) return  ! bail out
+                                name=trim(axis_name(id))//":cartesian_axis", value=trim(cart_name), rc=rc)
+         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-         if(direction>0) then
-          axis_direct="up"
+         if(direction > 0) then
+           axis_direct = "up"
          else
-          axis_direct="down"
+           axis_direct = "down"
          endif
          call ESMF_AttributeSet(fcst_grid, convention="NetCDF", purpose="FV3", &
-           name=trim(axis_name(id))//":positive", value=trim(axis_direct), rc=rc)
-         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-           line=__LINE__, file=__FILE__)) return  ! bail out
+                                name=trim(axis_name(id))//":positive", value=trim(axis_direct), rc=rc)
+         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
          if(trim(edgesS)/='') then
            call ESMF_AttributeSet(fcst_grid, convention="NetCDF", purpose="FV3", &
-             name=trim(axis_name(id))//":edges", value=trim(edgesS), rc=rc)
-           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-             line=__LINE__, file=__FILE__)) return  ! bail out
+                                  name=trim(axis_name(id))//":edges", value=trim(edgesS), rc=rc)
+           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
          endif
 
         endif
@@ -2903,9 +2890,9 @@ module FV3GFS_io_mod
            call find_output_name(trim(Diag(idx)%mod_name),trim(Diag(idx)%name),output_name)
 
 !add origin field
-           call add_field_to_phybundle(trim(output_name),trim(Diag(idx)%desc),trim(Diag(idx)%unit), "time: point", &
-             axes(1:Diag(idx)%axes), fcst_grid, nstt(idx),phys_bundle(ibdl), outputfile(ibdl),   &
-             bdl_intplmethod(ibdl), rcd=rc)
+           call add_field_to_phybundle(trim(output_name),trim(Diag(idx)%desc),trim(Diag(idx)%unit), "time: point",         &
+                                       axes(1:Diag(idx)%axes), fcst_grid, nstt(idx), phys_bundle(ibdl), outputfile(ibdl),  &
+                                       bdl_intplmethod(ibdl), rcd=rc)
 !           if( mpp_pe() == mpp_root_pe()) print *,'phys, add field,',trim(Diag(idx)%name),'idx=',idx,'ibdl=',ibdl
 !
            if( index(trim(Diag(idx)%intpl_method), "vector") > 0) then
@@ -2913,9 +2900,9 @@ module FV3GFS_io_mod
              if (nstt_vctbl(idx) > 0) then
                output_name = 'wind'//trim(output_name)//'vector'
                outputfile1 = 'none'
-               call add_field_to_phybundle(trim(output_name),trim(Diag(idx)%desc),trim(Diag(idx)%unit), "time: point", &
-                 axes(1:Diag(idx)%axes), fcst_grid, nstt_vctbl(idx),phys_bundle(ibdl), outputfile1, &
-                 bdl_intplmethod(ibdl),l2dvector=l2dvector,  rcd=rc)
+               call add_field_to_phybundle(trim(output_name),trim(Diag(idx)%desc),trim(Diag(idx)%unit), "time: point",       &
+                                          axes(1:Diag(idx)%axes), fcst_grid, nstt_vctbl(idx),phys_bundle(ibdl), outputfile1, &
+                                          bdl_intplmethod(ibdl),l2dvector=l2dvector,  rcd=rc)
 !               if( mpp_pe() == mpp_root_pe()) print *,'in phys, add vector field,',trim(Diag(idx)%name),' idx=',idx,' ibdl=',ibdl
              endif
            endif
@@ -2971,25 +2958,23 @@ module FV3GFS_io_mod
      temp_r3d => buffer_phys_windvect(1:3,isco:ieco,jsco:jeco,kstt)
 !     if( mpp_root_pe() == 0) print *,'phys, create wind vector esmf field'
      call ESMF_LogWrite('bf create winde vector esmf field '//trim(var_name), ESMF_LOGMSG_INFO, rc=rc)
-     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, file=__FILE__)) return  ! bail out
+     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
 !datacopyflag=ESMF_DATACOPY_VALUE, &
-     field = ESMF_FieldCreate(phys_grid, temp_r3d, datacopyflag=ESMF_DATACOPY_REFERENCE, &
+     field = ESMF_FieldCreate(phys_grid, temp_r3d, datacopyflag=ESMF_DATACOPY_REFERENCE,          &
                             gridToFieldMap=(/2,3/), ungriddedLBound=(/1/), ungriddedUBound=(/3/), &
                             name=var_name, indexFlag=ESMF_INDEX_DELOCAL, rc=rc)
 
-     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, file=__FILE__)) return  ! bail out
+     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
      call ESMF_LogWrite('af winde vector esmf field create '//trim(var_name), ESMF_LOGMSG_INFO, rc=rc)
 
      call ESMF_AttributeAdd(field, convention="NetCDF", purpose="FV3", &
-        attrList=(/"output_file"/), rc=rc)
+                            attrList=(/"output_file"/), rc=rc)
      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,    &
        line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
      call ESMF_AttributeSet(field, convention="NetCDF", purpose="FV3", &
-        name='output_file',value=trim(output_file),rc=rc)
+                            name='output_file',value=trim(output_file),rc=rc)
      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,    &
        line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
@@ -3111,13 +3096,11 @@ module FV3GFS_io_mod
        enddo
        if (idx>0) then
          call ESMF_AttributeAdd(field, convention="NetCDF", purpose="FV3", &
-           attrList=(/"ESMF:ungridded_dim_labels"/), rc=rc)
-         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,    &
-           line=__LINE__, file=__FILE__)) return  ! bail out
+                                attrList=(/"ESMF:ungridded_dim_labels"/), rc=rc)
+         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
          call ESMF_AttributeSet(field, convention="NetCDF", purpose="FV3", &
-           name="ESMF:ungridded_dim_labels", valueList=(/trim(axis_name(idx))/), rc=rc)
-         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,    &
-           line=__LINE__, file=__FILE__)) return  ! bail out
+                                name="ESMF:ungridded_dim_labels", valueList=(/trim(axis_name(idx))/), rc=rc)
+         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
        endif
      enddo
    endif
@@ -3139,17 +3122,17 @@ module FV3GFS_io_mod
    integer i,in_num, out_num
    integer tile_count
 !
-   tile_count=1
+   tile_count = 1
    in_num = find_input_field(module_name, field_name, tile_count)
 !
-   output_name=''
+   output_name = ''
    do i=1, max_output_fields
      if(output_fields(i)%input_field == in_num) then
-       output_name=output_fields(i)%output_name
+       output_name = output_fields(i)%output_name
        exit
      endif
    enddo
-   if(output_name=='') then
+   if(output_name == '') then
      print *,'Error, cant find out put name'
    endif
 

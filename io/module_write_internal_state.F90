@@ -38,9 +38,20 @@
 !***  full domain information
 !-----------------------------
 !
-      integer,dimension(:),allocatable :: im
-      integer,dimension(:),allocatable :: jm
-      integer,dimension(:),allocatable :: lm
+      integer :: im
+      integer :: jm
+      integer :: lm
+!
+!-----------------------------
+!***  subdomain domain information
+!-----------------------------
+!
+      integer :: lat_start, lon_start
+      integer :: lat_end, lon_end
+      real    :: latstart, latlast, lonstart, lonlast
+      integer,dimension(:),allocatable :: lat_start_wrtgrp
+      integer,dimension(:),allocatable :: lat_end_wrtgrp
+      real,dimension(:,:),allocatable  :: lonPtr, latPtr
 !
 !--------------------------
 !*** file bundle for output
@@ -70,23 +81,33 @@
       type(ESMF_Time)         :: io_basetime
       type(ESMF_TimeInterval) :: io_currtimediff
       real                    :: nfhour
+      integer                 :: idate(7)
+      integer                 :: fdate(7)
 !
 !-----------------------------------------
 !***  I/O direction flags (Read or Write)
 !-----------------------------------------
 !
+      logical :: output_history
       logical :: write_nemsioflag
       logical :: write_netcdfflag
 !
 !-----------------------------------------
-!***  POST flags  (place holder for now)
+!***  POST flags and required variables
 !-----------------------------------------
 !
-      logical                  :: WRITE_DOPOST
-      character(esmf_maxstr)   :: POST_GRIBVERSION
-      integer                  :: nlunit           
+      logical                  :: write_dopost
+      integer                  :: post_nlunit
       character(80)            :: post_namelist
- 
+!
+      integer                  :: post_maptype
+      integer                  :: fhzero
+      integer                  :: ntrac
+      integer                  :: ncld
+      integer                  :: nsoil
+      integer                  :: imp_physics
+      integer                  :: dtp
+      real,dimension(:),allocatable :: ak,bk
 !-----------------------------------------------------------------------
 !
       end type wrt_internal_state

@@ -5,7 +5,7 @@
 !
 !  For the convective boundary layer, the scheme adopts
 !  EDMF parameterization (Siebesma et al., 2007) to take
-!  into account nonlocal transport by large eddies (mfpblt.f).
+!  into account nonlocal transport by large eddies (mfpbltq.f).
 !
 !  A new mass-flux parameterization for stratocumulus-top-induced turbulence
 !  mixing has been introduced (previously, it was eddy diffusion form)
@@ -24,7 +24,7 @@
      &     tsea,heat,evap,stress,spd1,kpbl,
      &     prsi,del,prsl,prslk,phii,phil,delt,
      &     dspheat,dusfc,dvsfc,dtsfc,dqsfc,hpbl,
-     &     kinver,xkzm_m,xkzm_h,xkzm_s)
+     &     kinver,xkzm_m,xkzm_h,xkzm_s,dspfac,bl_upfr,bl_dnfr)
 !
       use machine  , only : kind_phys
       use funcphys , only : fpvs
@@ -39,7 +39,8 @@
       integer ix, im, km, ntrac, ntcw, ntiw, ntke
       integer kpbl(im), kinver(im)
 !
-      real(kind=kind_phys) delt, xkzm_m, xkzm_h, xkzm_s
+      real(kind=kind_phys) delt, xkzm_m, xkzm_h, xkzm_s, dspfac,
+     &                     bl_upfr, bl_dnfr
       real(kind=kind_phys) dv(im,km),     du(im,km),
      &                     tdt(im,km),    rtg(im,km,ntrac),
      &                     u1(ix,km),     v1(ix,km),
@@ -66,7 +67,7 @@
 !***
 !***  local variables
 !***
-      integer i,is,k,kk,n,km1,kmpbl,kmscu,ntrac1
+      integer i,is,k,kk,n,ndt,km1,kmpbl,kmscu,ntrac1
       integer lcld(im),kcld(im),krad(im),mrad(im)
       integer kx1(im), kpblx(im)
 !
@@ -90,22 +91,20 @@
      &                     z0(im),    crb(im),
      &                     hgamt(im), hgamq(im),
      &                     wscale(im),vpert(im),
-     &                     zol(im),   sflux(im),   radj(im),
+     &                     zol(im),   sflux(im),
      &                     tx1(im),   tx2(im)
 !
       real(kind=kind_phys) radmin(im)
 !
       real(kind=kind_phys) zi(im,km+1),  zl(im,km),   zm(im,km),
      &                     xkzo(im,km-1),xkzmo(im,km-1),
-     &                     xkzm_hx(im),  xkzm_mx(im),
+     &                     xkzm_hx(im),  xkzm_mx(im), tkmnz(im,km-1),
      &                     rdzt(im,km-1),rlmnz(im,km),
      &                     al(im,km-1),  ad(im,km),   au(im,km-1),
      &                     f1(im,km),    f2(im,km*(ntrac-1))
 !
-      real(kind=kind_phys) elm(im,km),   ele(im,km),  rle(im,km-1),
-     &                     cez(im,km-1), ckz(im,km),  chz(im,km), 
-     &                     frik(im,km-1),frie(im,km-1),
-     &                     riz(im,km-1),
+      real(kind=kind_phys) elm(im,km),   ele(im,km),
+     &                     ckz(im,km),   chz(im,km),  frik(im),
      &                     diss(im,km-1),prod(im,km-1), 
      &                     bf(im,km-1),  shr2(im,km-1),
      &                     xlamue(im,km-1), xlamde(im,km-1),
@@ -137,9 +136,9 @@
      &                     dsig,    dt2,    dtodsd,
      &                     dtodsu,  g,      factor, dz,
      &                     gocp,    gravi,  zol1,   zolcru,
-     &                     buop,    shrp,   dtn,    cdtn,
+     &                     buop,    shrp,   dtn,
      &                     prnum,   prmax,  prmin,  prtke,
-     &                     prscu,   pr0,    rizl,
+     &                     prscu,   pr0,    ri,
      &                     dw2,     dw2min, zk,     
      &                     elmfac,  elefac, dspmax,
      &                     alp,     clwt,   cql,
@@ -152,12 +151,12 @@
      &                     rlmn,    rlmn1,  rlmx,   elmx,
      &                     ttend,   utend,  vtend,  qtend,
      &                     zfac,    zfmin,  vk,     spdk2,
-     &                     tkmin,   xkzinv, dspfac, xkgdx,
+     &                     tkmin,   xkzinv, xkgdx,
      &                     zlup,    zldn,   bsum,
      &                     tem,     tem1,   tem2,
      &                     ptem,    ptem0,  ptem1,  ptem2
 !
-      real(kind=kind_phys) ck0, ck1, ch0, ch1, ce0, ce1, rchck
+      real(kind=kind_phys) ck0, ck1, ch0, ch1, ce0, rchck
 !
       real(kind=kind_phys) qlcr, zstblmax
 !
@@ -169,24 +168,24 @@
       parameter(cont=cp/g,conq=hvap/g,conw=1.0/g)  ! for del in pa
 !     parameter(cont=1000.*cp/g,conq=1000.*hvap/g,conw=1000./g) !kpa
       parameter(elocp=hvap/cp,el2orc=hvap*hvap/(rv*cp))
-      parameter(wfac=7.0,cfac=4.0)
+      parameter(wfac=7.0,cfac=3.0)
       parameter(gamcrt=3.,gamcrq=0.,sfcfrac=0.1)
       parameter(vk=0.4,rimin=-100.)
       parameter(rbcr=0.25,zolcru=-0.02,tdzmin=1.e-3)
-      parameter(rlmn=30.,rlmn1=5.,rlmx=500.,elmx=500.)
+      parameter(rlmn=30.,rlmn1=5.,rlmx=300.,elmx=300.)
       parameter(prmin=0.25,prmax=4.0)
       parameter(pr0=1.0,prtke=1.0,prscu=0.67)
       parameter(f0=1.e-4,crbmin=0.15,crbmax=0.35)
-      parameter(tkmin=1.e-9,dspfac=0.5,dspmax=10.0)
+      parameter(tkmin=1.e-9,dspmax=10.0)
       parameter(qmin=1.e-8,qlmin=1.e-12,zfmin=1.e-8)
       parameter(aphi5=5.,aphi16=16.)
       parameter(elmfac=1.0,elefac=1.0,cql=100.)
-      parameter(dw2min=1.e-4,dkmax=1000.,xkgdx=5000.)
-      parameter(qlcr=3.5e-5,zstblmax=2500.,xkzinv=0.15)
+      parameter(dw2min=1.e-4,dkmax=1000.,xkgdx=25000.)
+      parameter(qlcr=3.5e-5,zstblmax=2500.,xkzinv=0.1)
       parameter(h1=0.33333333)
-      parameter(ck0=0.4,ck1=0.2,ch0=0.4,ch1=0.2)
-      parameter(ce0=0.4,ce1=0.4)
-      parameter(rchck=1.5,cdtn=25.)
+      parameter(ck0=0.4,ck1=0.15,ch0=0.4,ch1=0.15)
+      parameter(ce0=0.4)
+      parameter(rchck=1.5,ndt=20)
 !
 !************************************************************************
       dt2  = delt
@@ -213,12 +212,8 @@
           rlmnz(i,k) = rlmn
         enddo
       enddo
-      do k=1,km1
-        do i=1,im
-          frik(i,k) = 1.0
-          frie(i,k) = 1.0
-          cez(i,k) = ce0
-        enddo
+      do i=1,im
+        frik(i) = 1.0
       enddo
       do i=1,im
         zi(i,km+1) = phii(i,km+1) * gravi
@@ -281,8 +276,7 @@
 !                                  vertical background diffusivity
             ptem      = prsi(i,k+1) * tx1(i)
             tem1      = 1.0 - ptem
-!           tem2      = tem1 * tem1 * 10.0
-            tem2      = tem1 * tem1 * 2.5
+            tem2      = tem1 * tem1 * 10.0
             tem2      = min(1.0, exp(-tem2))
             xkzo(i,k) = xkzm_hx(i) * tem2
 !
@@ -299,8 +293,7 @@
             else
               if (k == kx1(i) .and. k > 1) tx2(i) = 1.0 / prsi(i,k)
               tem1 = 1.0 - prsi(i,k+1) * tx2(i)
-!             tem1 = tem1 * tem1 * 5.0
-              tem1 = tem1 * tem1 * 2.5
+              tem1 = tem1 * tem1 * 5.0
               xkzmo(i,k) = xkzm_mx(i) * min(1.0, exp(-tem1))
             endif
           endif
@@ -551,52 +544,8 @@
            hgamq(i) = evap(i)/wscale(i)
            vpert(i) = hgamt(i) + hgamq(i)*fv*theta(i,1)
            vpert(i) = max(vpert(i),0.)
-           tem = min(cfac*vpert(i),gamcrt)
-           thermal(i)= thermal(i) + tem
+           vpert(i) = min(cfac*vpert(i),gamcrt)
          endif
-      enddo
-!
-!  enhance the pbl height by considering the thermal excess
-!     (overshoot pbl top)
-!
-      do i=1,im
-         flg(i)  = .true.
-         if(pcnvflg(i)) then
-           flg(i)  = .false.
-           rbup(i) = rbsoil(i)
-         endif
-      enddo
-      do k = 2, kmpbl
-      do i = 1, im
-        if(.not.flg(i)) then
-          rbdn(i) = rbup(i)
-          spdk2   = max((u1(i,k)**2+v1(i,k)**2),1.)
-          rbup(i) = (thlvx(i,k)-thermal(i))*
-     &              (g*zl(i,k)/thlvx(i,1))/spdk2
-          kpbl(i) = k
-          flg(i)  = rbup(i) > crb(i)
-        endif
-      enddo
-      enddo
-      do i = 1,im
-        if(pcnvflg(i)) then
-           k = kpbl(i)
-           if(rbdn(i) >= crb(i)) then
-             rbint = 0.
-           elseif(rbup(i) <= crb(i)) then
-             rbint = 1.
-           else
-             rbint = (crb(i)-rbdn(i))/(rbup(i)-rbdn(i))
-           endif
-           hpbl(i) = zl(i,k-1) + rbint*(zl(i,k)-zl(i,k-1))
-           if(hpbl(i) < zi(i,kpbl(i))) then 
-             kpbl(i) = kpbl(i) - 1
-           endif
-           if(kpbl(i) <= 1) then
-              pcnvflg(i) = .false.
-              pblflg(i) = .false.
-           endif
-        endif
       enddo
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -683,16 +632,16 @@
       enddo
       enddo
 !
-      call mfpblt(im,ix,km,kmpbl,ntcw,ntrac1,dt2,
+      call mfpbltq(im,ix,km,kmpbl,ntcw,ntrac1,dt2,
      &    pcnvflg,zl,zm,q1,t1,u1,v1,plyr,pix,thlx,thvx,
      &    gdx,hpbl,kpbl,vpert,buou,xmf,
-     &    tcko,qcko,ucko,vcko,xlamue)
+     &    tcko,qcko,ucko,vcko,xlamue,bl_upfr)
 !
-      call mfscu(im,ix,km,kmscu,ntcw,ntrac1,dt2,
+      call mfscuq(im,ix,km,kmscu,ntcw,ntrac1,dt2,
      &    scuflg,zl,zm,q1,t1,u1,v1,plyr,pix,
-     &    thlx,thvx,thlvx,gdx,thetae,radj,
+     &    thlx,thvx,thlvx,gdx,thetae,
      &    krad,mrad,radmin,buod,xmfd,
-     &    tcdo,qcdo,ucdo,vcdo,xlamde)
+     &    tcdo,qcdo,ucdo,vcdo,xlamde,bl_dnfr)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !   compute prandtl number and exchange coefficient varying with height
@@ -723,66 +672,20 @@
         enddo
       enddo
 !
-!  compute stability (Richardson number) dependent functions
-!   for background diffusivity, minimum mixing length, and tke dissipation rate
+!  background diffusivity decreasing with increasing surface layer stability
 !
-      do k = 1, km1
-        do i = 1, im
-          riz(i,k) = max(bf(i,k)/shr2(i,k),rimin)
-          if(pcnvflg(i) .and. k < kpbl(i)) then
-            frik(i,k) = 1.0
-          else
-            if(riz(i,k) > 0.) then
-              tem = 1. + riz(i,k)
-              frik(i,k) = 0.15 + 0.85 / tem
-            else
-              frik(i,k) = 1.0
-            endif
-          endif
-          if(scuflg(i)) then
-            if(k >= mrad(i) .and. k < krad(i)) then
-              frik(i,k) = 1.0
-            endif
-          endif
-        enddo
+      do i = 1, im
+        if(.not.sfcflg(i)) then
+          tem = (1. + 5. * rbsoil(i))**2.
+!         tem = (1. + 5. * zol(i))**2.
+          frik(i) = 0.1 + 0.9 / tem
+        endif
       enddo
-      do k = 1, km1
-        do i = 1, im
-          if(pcnvflg(i) .and. k < kpbl(i)) then
-            frie(i,k) = 1.0
-          else
-            if (k == 1) then
-              rizl = rbsoil(i)
-            else
-              tem = 0.5 * (bf(i,k-1) + bf(i,k))
-              ptem = 0.5 * (shr2(i,k-1) + shr2(i,k))
-              rizl = max(tem/ptem, rimin)
-            endif
-            if(rizl > 0.) then
-              tem1 = 1. + rizl
-              frie(i,k) = 0.15 + 0.85 / tem1
-            else
-              frie(i,k) = 1.0
-            endif
-          endif
-!
-          if(scuflg(i)) then
-            if(k >= mrad(i) .and. k < krad(i)) then
-              frie(i,k) = 1.0
-            endif
-          endif
-!
-        enddo
-      enddo
-!
-!  compute background diffusivity, minimum mixing length, 
-!    and coefficient for tke dissipation dependent on stability 
 !
       do k = 1,km1
         do i=1,im
-          xkzo(i,k) = frik(i,k) * xkzo(i,k)
-          xkzmo(i,k)= frik(i,k) * xkzmo(i,k)
-          cez(i,k)  = frie(i,k) * ce0
+          xkzo(i,k) = frik(i) * xkzo(i,k)
+          xkzmo(i,k)= frik(i) * xkzmo(i,k)
         enddo
       enddo
 !
@@ -911,12 +814,13 @@
         do i = 1, im
            tem = 0.5 * (elm(i,k) + elm(i,k+1))
            tem = tem * sqrt(tkeh(i,k))
+           ri = max(bf(i,k)/shr2(i,k),rimin)
            if(k < kpbl(i)) then
              if(pcnvflg(i)) then
                dku(i,k) = ckz(i,k) * tem
                dkt(i,k) = dku(i,k) / prn(i,k)
              else
-               if(riz(i,k) < 0.) then ! unstable regime
+               if(ri < 0.) then ! unstable regime
                  dku(i,k) = ckz(i,k) * tem
                  dkt(i,k) = dku(i,k) / prn(i,k)
                else             ! stable regime
@@ -925,12 +829,12 @@
                endif
              endif
            else
-              if(riz(i,k) < 0.) then ! unstable regime
+              if(ri < 0.) then ! unstable regime
                 dku(i,k) = ck1 * tem
                 dkt(i,k) = rchck * dku(i,k)
               else             ! stable regime
                 dkt(i,k) = ch1 * tem
-                prnum = 1.0 + 2.1 * riz(i,k)
+                prnum = 1.0 + 2.1 * ri
                 prnum = min(prnum,prmax)
                 dku(i,k) = dkt(i,k) * prnum
               endif
@@ -957,16 +861,21 @@
         enddo
       enddo
 !
-      do i = 1, im
-        if(scuflg(i)) then
-           k = krad(i)
-           tem = bf(i,k) / gotvx(i,k)
-           tem1 = max(tem, tdzmin)
-           ptem = radj(i) / tem1
-           dkt(i,k) = dkt(i,k) + ptem
-           dku(i,k) = dku(i,k) + ptem
-           dkq(i,k) = dkq(i,k) + ptem
-        endif
+!  compute a minimum TKE deduced from background diffusivity for momentum.
+!
+      do k = 1, km1
+        do i = 1, im
+          if(k == 1) then
+            tem = ckz(i,1)
+            tem1 = xkzmo(i,1)
+          else
+            tem = 0.5 * (ckz(i,k-1) + ckz(i,k))
+            tem1 = 0.5 * (xkzmo(i,k-1) + xkzmo(i,k))
+          endif
+          ptem = tem1 / (tem * elm(i,k))
+          tkmnz(i,k) = ptem * ptem
+          tkmnz(i,k) = max(tkmnz(i,k), tkmin)
+        enddo
       enddo
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1096,27 +1005,18 @@
 !----------------------------------------------------------------------
 !     first predict tke due to tke production & dissipation(diss) 
 !
-!     do i = 1, im
-!       cez(i,1) = ce1
-!     enddo
-!
-      do k = 1,km1
-        do i=1,im
-           rle(i,k) = cez(i,k) / ele(i,k)
-        enddo
-      enddo
-!
-      kk = max(nint(dt2/cdtn), 1)
-      dtn = dt2 / float(kk)
-      do n = 1, kk
+      dtn = dt2 / float(ndt)
+      do n = 1, ndt
       do k = 1,km1
         do i=1,im
            tem = sqrt(tke(i,k))
-           diss(i,k) = rle(i,k) * tke(i,k) * tem
+           ptem = ce0 / ele(i,k)
+           diss(i,k) = ptem * tke(i,k) * tem
            tem1 = prod(i,k) + tke(i,k) / dtn
            diss(i,k)=max(min(diss(i,k), tem1), 0.)
            tke(i,k) = tke(i,k) + dtn * (prod(i,k)-diss(i,k))
-           tke(i,k) = max(tke(i,k), tkmin)
+!          tke(i,k) = max(tke(i,k), tkmin)
+           tke(i,k) = max(tke(i,k), tkmnz(i,k))
         enddo
       enddo
       enddo
