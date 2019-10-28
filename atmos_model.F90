@@ -1645,20 +1645,20 @@ end subroutine atmos_data_type_chksum
 
 ! get sea-state dependent surface roughness (if cplwav2atm=true) 
 !----------------------------
-        fldname = 'wave_z0_roughness_length'
-        findex = QueryFieldList(ImportFieldsList,fldname)
-        if (importFieldsValid(findex) .and. datar8(isc,jsc) > -99999.0) then
-          if (trim(impfield_name) == trim(fldname) .and. found) then
+          fldname = 'wave_z0_roughness_length'
+          if (trim(impfield_name) == trim(fldname)) then
+            findex = QueryFieldList(ImportFieldsList,fldname)
+            if (importFieldsValid(findex)) then
 !$omp parallel do default(shared) private(i,j,nb,ix)
-            do j=jsc,jec
-              do i=isc,iec
-                nb = Atm_block%blkno(i,j)
-                ix = Atm_block%ixp(i,j)
-                IPD_Data(nb)%Coupling%zorlwav_cpl(ix) = datar8(i,j)
+              do j=jsc,jec
+                do i=isc,iec
+                  nb = Atm_block%blkno(i,j)
+                  ix = Atm_block%ixp(i,j)
+                 IPD_Data(nb)%Coupling%zorlwav_cpl(ix) = datar8(i,j)
+                enddo
               enddo
-            enddo
+            endif
           endif
-        endif
 !JDM TO DO:   Coupling%zorlwav_cpl 
 ! if ocean point with incoming wave z0  set 
 ! IPD_Data(nb)%Sfcprop%zorl(ix) = IPD_Data(nb)%Coupling%zorlwav_cpl(ix) 
