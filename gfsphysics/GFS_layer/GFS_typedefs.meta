@@ -1977,6 +1977,20 @@
   dimensions = (2)
   type = real
   kind = kind_phys
+[psauras]
+  standard_name = coefficient_from_cloud_ice_to_snow_ras
+  long_name = conversion coefficient from cloud ice to snow in ras
+  units = none
+  dimensions = (2)
+  type = real
+  kind = kind_phys
+[prauras]
+  standard_name = coefficient_from_cloud_water_to_rain_ras
+  long_name = conversion coefficient from cloud water to rain in ras
+  units = none
+  dimensions = (2)
+  type = real
+  kind = kind_phys
 [evpco]
   standard_name = coefficient_for_evaporation_of_rainfall
   long_name = coeff for evaporation of largescale rain
@@ -1987,6 +2001,20 @@
 [wminco]
   standard_name = cloud_condensed_water_conversion_threshold
   long_name = water and ice minimum threshold for Zhao
+  units = none
+  dimensions = (2)
+  type = real
+  kind = kind_phys
+[wminras]
+  standard_name = cloud_condensed_water_ice_conversion_threshold_ras
+  long_name = conversion coefficient from cloud liquid and ice to precipitation in ras
+  units = none
+  dimensions = (2)
+  type = real
+  kind = kind_phys
+[dlqf]
+  standard_name = condensate_fraction_detrained_in_updraft_layers
+  long_name = condensate fraction detrained with in a updraft layers
   units = none
   dimensions = (2)
   type = real
@@ -2308,12 +2336,6 @@
   units = index
   dimensions = ()
   type = integer
-[mom4ice]
-  standard_name = flag_for_mom4_coupling
-  long_name = flag controls mom4 sea ice
-  units = flag
-  dimensions = ()
-  type = logical
 [ras]
   standard_name = flag_for_ras_deep_convection
   long_name = flag for ras convection scheme
@@ -2521,6 +2543,13 @@
 [cdmbgwd]
   standard_name = multiplication_factors_for_mountain_blocking_and_orographic_gravity_wave_drag
   long_name = multiplication factors for cdmb and gwd
+  units = none
+  dimensions = (4)
+  type = real
+  kind = kind_phys
+[ccwf]
+  standard_name = multiplication_factor_for_critical_cloud_workfunction
+  long_name = multiplication factor for tical_cloud_workfunction
   units = none
   dimensions = (2)
   type = real

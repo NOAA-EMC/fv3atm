@@ -1009,9 +1009,9 @@ module GFS_typedefs
 #endif
     integer              :: jdat(1:8)       !< current forecast date and time
                                             !< (yr, mon, day, t-zone, hr, min, sec, mil-sec)
-    integer              :: imn             !< current forecast month
-    integer              :: julian          !< current forecast julian date
-    integer              :: yearlen         !< current length of the year
+    integer              :: imn             !< initial forecast month
+    real(kind=kind_phys) :: julian          !< julian day using midnight of January 1 of forecast year as initial epoch
+    integer              :: yearlen         !< length of the current forecast year in days
 !
     logical              :: iccn            !< using IN CCN forcing for MG2/3
 #ifdef CCPP
@@ -2865,7 +2865,7 @@ module GFS_typedefs
 !--- fractional grid
     logical              :: frac_grid      = .false.         !< flag for fractional grid
     real(kind=kind_phys) :: min_lakeice    = 0.15d0          !< minimum lake ice value
-    real(kind=kind_phys) :: min_seaice     = 1.0d-6          !< minimum sea  ice value
+    real(kind=kind_phys) :: min_seaice     = 1.0d-11         !< minimum sea  ice value
     real(kind=kind_phys) :: rho_h2o        = rhowater        !< fresh water density
 
 !--- surface layer z0 scheme
@@ -2905,7 +2905,7 @@ module GFS_typedefs
     real(kind=kind_phys)  :: iau_delthrs      = 0           !< iau time interval (to scale increments)
     character(len=240)    :: iau_inc_files(7) = ''          !< list of increment files
     real(kind=kind_phys)  :: iaufhrs(7)       = -1          !< forecast hours associated with increment files
-    logical  :: iau_filter_increments         = .false.     !< filter IAU increments
+    logical               :: iau_filter_increments = .false.!< filter IAU increments
 
 !--- debug flag
     logical              :: debug          = .false.
@@ -3617,6 +3617,11 @@ module GFS_typedefs
     !--- ps is replaced with p0. The value of p0 uses that in http://www.emc.ncep.noaa.gov/officenotes/newernotes/on461.pdf
     !--- ak/bk have been flipped from their original FV3 orientation and are defined sfc -> toa
     Model%si = (ak + bk * con_p0 - ak(Model%levr+1)) / (con_p0 - ak(Model%levr+1))
+
+    if (Model%lsm == Model%lsm_noahmp) then
+      Model%yearlen        = 365
+      Model%julian         = -9999.
+    endif
 #endif
 
 #ifndef CCPP
