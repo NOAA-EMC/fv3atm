@@ -415,7 +415,8 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: ficein_cpl(:)  => null()   !< aoi_fld%ficein(item,lan)
     real (kind=kind_phys), pointer :: hicein_cpl(:)  => null()   !< aoi_fld%hicein(item,lan)
     real (kind=kind_phys), pointer :: hsnoin_cpl(:)  => null()   !< aoi_fld%hsnoin(item,lan)
-    !--- only variable needed for cplwav=.TRUE.
+    !--- only variable needed for cplwav2atm=.TRUE.
+    real (kind=kind_phys), pointer :: zorlwav_cpl(:) => null()   !< roughness length from wave model
     !--- also needed for ice/ocn coupling - Xingren
     real (kind=kind_phys), pointer :: slimskin_cpl(:)=> null()   !< aoi_fld%slimskin(item,lan)
 
@@ -568,6 +569,7 @@ module GFS_typedefs
 !--- coupling parameters
     logical              :: cplflx          !< default no cplflx collection
     logical              :: cplwav          !< default no cplwav collection
+    logical              :: cplwav2atm      !< default no wav->atm coupling
     logical              :: cplchm          !< default no cplchm collection
 
 !--- integrated dynamics through earth's atmosphere
@@ -2306,6 +2308,13 @@ module GFS_typedefs
       Coupling%v10mi_cpl = clear_val
     endif 
 
+    if (Model%cplwav2atm) then
+      !--- incoming quantities
+      allocate (Coupling%zorlwav_cpl (IM))
+
+      Coupling%zorlwav_cpl  = clear_val
+    end if
+
     if (Model%cplflx) then
       !--- incoming quantities
       allocate (Coupling%slimskin_cpl (IM))
@@ -2582,6 +2591,7 @@ module GFS_typedefs
     !--- coupling parameters
     logical              :: cplflx         = .false.         !< default no cplflx collection
     logical              :: cplwav         = .false.         !< default no cplwav collection
+    logical              :: cplwav2atm     = .false.         !< default no cplwav2atm coupling
     logical              :: cplchm         = .false.         !< default no cplchm collection
 
 !--- integrated dynamics through earth's atmosphere
@@ -2940,7 +2950,7 @@ module GFS_typedefs
                                fhzero, ldiag3d, lssav, fhcyc,                               &
                                thermodyn_id, sfcpress_id,                                   &
                           !--- coupling parameters
-                               cplflx, cplwav, cplchm, lsidea,                              &
+                               cplflx, cplwav, cplwav2atm, cplchm, lsidea,                  &
                           !--- radiation parameters
                                fhswr, fhlwr, levr, nfxr, aero_in, iflip, isol, ico2, ialb,  &
                                isot, iems, iaer, icliq_sw, iovr_sw, iovr_lw, ictm, isubc_sw,&
@@ -3121,6 +3131,7 @@ module GFS_typedefs
 !--- coupling parameters
     Model%cplflx           = cplflx
     Model%cplwav           = cplwav
+    Model%cplwav2atm       = cplwav2atm
     Model%cplchm           = cplchm
 
 !--- integrated dynamics through earth's atmosphere
@@ -4168,6 +4179,7 @@ module GFS_typedefs
       print *, 'coupling parameters'
       print *, ' cplflx            : ', Model%cplflx
       print *, ' cplwav            : ', Model%cplwav
+      print *, ' cplwav2atm        : ', Model%cplwav2atm
       print *, ' cplchm            : ', Model%cplchm
       print *, ' '
       print *, 'integrated dynamics through earth atmosphere'
