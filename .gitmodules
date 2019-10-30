@@ -1,4 +1,4 @@
 [submodule "atmos_cubed_sphere"]
 	path = atmos_cubed_sphere
-	url = https://github.com/NOAA-EMC/GFDL_atmos_cubed_sphere
-	branch = dev/emc
+	url = https://github.com/TomBlack-NOAA/GFDL_atmos_cubed_sphere
+	branch = blend_DA
