@@ -103,7 +103,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 
 !----- coupled model data -----
 
-  integer :: date_init(6)
+  integer :: date_init(6), date_init2(6)
   integer :: numLevels     = 0
   integer :: numSoilLayers = 0
   integer :: numTracers    = 0
@@ -210,6 +210,8 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     integer               :: globalTileLayout(2)
     integer               :: nestRootPet, peListSize(1)
     integer, allocatable  :: petMap(:)
+    real(8) rinc(5)
+    integer idat(8),jdat(8)
 !
 !----------------------------------------------------------------------- 
 !*********************************************************************** 
@@ -536,20 +538,36 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
                                name="time", value=real(0,ESMF_KIND_R8), rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-        write(dateSY,'(I4.4)')date_init(1)
-        write(dateSM,'(I2.2)')date_init(2)
-        write(dateSD,'(I2.2)')date_init(3)
-        write(dateSH,'(I2.2)')date_init(4)
-        write(dateSN,'(I2.2)')date_init(5)
-        write(dateSS,'(I2.2)')date_init(6)
+! update date_init with iau_offset
+        date_init2 = date_init
+        if (atm_int_state%Atm%iau_offset > 0) then
+! date_init: year,month,day,hour,minute,second
+! idat: year,month,day,time zone,hour,minute,second,millsecond
+           idat = 0
+           idat(1:3) = date_init2(1:3)
+           idat(5:7) = date_init2(4:6)
+! rinc: days,hours,minutes,seconds,milliseconds
+           rinc = 0; rinc(2) = iau_offset
+           call w3movdat(rinc,idat,jdat)
+! update date_init using iau_offset
+           date_init2(1:3)=jdat(1:3)
+           date_init2(4:6)=jdat(5:7)
+        endif
+
+! time:units attribute uses date_init modified by iau_offset
+        write(dateSY,'(I4.4)')date_init2(1)
+        write(dateSM,'(I2.2)')date_init2(2)
+        write(dateSD,'(I2.2)')date_init2(3)
+        write(dateSH,'(I2.2)')date_init2(4)
+        write(dateSN,'(I2.2)')date_init2(5)
+        write(dateSS,'(I2.2)')date_init2(6)
 
         dateS="hours since "//dateSY//'-'//dateSM//'-'//dateSD//' '//dateSH//':'//    &
             dateSN//":"//dateSS
-        if (mype == 0) write(0,*)'dateS=',trim(dateS),'date_init=',date_init
+        if (mype == 0) write(0,*)'dateS=',trim(dateS),'date_init=',date_init2
 
         call ESMF_AttributeSet(exportState, convention="NetCDF", purpose="FV3", &
                                name="time:units", value=trim(dateS), rc=rc)
-!                              name="time:units", value="hours since 2016-10-03 00:00:00", rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
         call ESMF_AttributeSet(exportState, convention="NetCDF", purpose="FV3", &
