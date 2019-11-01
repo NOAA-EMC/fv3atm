@@ -518,10 +518,6 @@ module module_write_netcdf
     real(ESMF_KIND_R4), allocatable  :: valueListR4(:)
     real(ESMF_KIND_R8), allocatable  :: valueListR8(:)
     character(len=ESMF_MAXSTR), allocatable  :: valueListC(:)
-    character(nf90_max_name) :: time_units
-    integer idate(6)
-    real(8) rinc(5)
-    integer idat(8),jdat(8)
 !
     call ESMF_AttributeGet(grid, convention="NetCDF", purpose="FV3", &
                            attnestflag=ESMF_ATTNEST_OFF, name=dim_name, &
@@ -557,9 +553,8 @@ module module_write_netcdf
     end if
 
     call get_grid_attr(grid, dim_name, ncid, dim_varid, rc)
-    
-  end subroutine add_dim
 
+  end subroutine add_dim
 !
 !----------------------------------------------------------------------------------------
   subroutine nccheck(status)
