@@ -2883,6 +2883,7 @@ module GFS_typedefs
                                                              !< 0=no change
                                                              !< 6=areodynamical roughness over water with input 10-m wind
                                                              !< 7=slightly decrease Cd for higher wind speed compare to 6
+                                                             !< negative when cplwav2atm=.true. - i.e. two way wave coupling
 
 !--- background vertical diffusion
     real(kind=kind_phys) :: xkzm_m         = 1.0d0           !< [in] bkgd_vdif_m  background vertical diffusion for momentum  
@@ -3423,6 +3424,7 @@ module GFS_typedefs
 
 !--- surface layer
     Model%sfc_z0_type      = sfc_z0_type
+    if (Model%cplwav2atm) Model%sfc_z0_type = -1
 
 !--- backgroud vertical diffusion
     Model%xkzm_m           = xkzm_m

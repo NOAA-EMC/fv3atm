@@ -1575,6 +1575,7 @@ end subroutine atmos_data_type_chksum
     real(kind=ESMF_KIND_R4),  dimension(:,:), pointer  :: datar42d
     real(kind=ESMF_KIND_R8),  dimension(:,:), pointer  :: datar82d
     real(kind=IPD_kind_phys), dimension(:,:), pointer  :: datar8
+    real(kind=IPD_kind_phys)                           :: tem
     logical found, isFieldCreated, lcpl_fice
 !
 !------------------------------------------------------------------------------
@@ -1648,20 +1649,22 @@ end subroutine atmos_data_type_chksum
           fldname = 'wave_z0_roughness_length'
           if (trim(impfield_name) == trim(fldname)) then
             findex = QueryFieldList(ImportFieldsList,fldname)
-            if (importFieldsValid(findex)) then
+            if (importFieldsValid(findex) .and. IPD_control%cplwav2atm) then
 !$omp parallel do default(shared) private(i,j,nb,ix)
               do j=jsc,jec
                 do i=isc,iec
                   nb = Atm_block%blkno(i,j)
                   ix = Atm_block%ixp(i,j)
-                 IPD_Data(nb)%Coupling%zorlwav_cpl(ix) = datar8(i,j)
+                  if (IPD_Data(nb)%Sfcprop%oceanfrac(ix) > zero) then
+                    tem = 100.0 * max(zero, min(0.1, datar8(i,j)))
+                    IPD_Data(nb)%Coupling%zorlwav_cpl(ix) = tem
+                    IPD_Data(nb)%Sfcprop%zorlo(ix)        = tem
+
+                  endif
                 enddo
               enddo
             endif
           endif
-!JDM TO DO:   Coupling%zorlwav_cpl 
-! if ocean point with incoming wave z0  set 
-! IPD_Data(nb)%Sfcprop%zorl(ix) = IPD_Data(nb)%Coupling%zorlwav_cpl(ix) 
 
 ! get sea ice surface temperature
 !--------------------------------
@@ -1921,6 +1924,7 @@ end subroutine atmos_data_type_chksum
         enddo
       enddo
     endif
+!
 !-------------------------------------------------------------------------------
 !   do j=jsc,jec
 !     do i=isc,iec

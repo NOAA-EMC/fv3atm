@@ -1129,9 +1129,7 @@ module module_physics_driver
             fice(i) = zero
           endif
                                         ! ocean/lake area that is not frozen
-          tem1 = max(zero, tem - Sfcprop%fice(i))
-
-          if (tem1 > zero) then
+          if (tem-fice(i) > epsln) then
             wet(i) = .true.             ! there is some open water!
 !           if (icy(i)) Sfcprop%tsfco(i) = max(Sfcprop%tsfco(i), tgice)
 !           if (icy(i)) Sfcprop%tsfco(i) = max(Sfcprop%tisfc(i), tgice)
@@ -1197,11 +1195,16 @@ module module_physics_driver
 
 ! DH* In CCPP, this is in GFS_surface_composites_pre
       if (.not. Model%cplflx .or. .not. Model%frac_grid) then
-        do i=1,im
-          Sfcprop%zorll(i) = Sfcprop%zorl(i)
-          Sfcprop%zorlo(i) = Sfcprop%zorl(i)
-!         Sfcprop%tisfc(i) = Sfcprop%tsfc(i)
-        enddo
+        if (Model%cplwav2atm) then
+          do i=1,im
+            Sfcprop%zorll(i) = Sfcprop%zorl(i)
+          enddo
+        else
+          do i=1,im
+            Sfcprop%zorll(i) = Sfcprop%zorl(i)
+            Sfcprop%zorlo(i) = Sfcprop%zorl(i)
+          enddo
+        endif
       endif
       do i=1,im
         if(wet(i)) then                    ! Water
@@ -1680,7 +1683,7 @@ module module_physics_driver
           if (Model%cplflx) then
             tem1 = half / omz1
             do i=1,im
-              if (wet(i)) then
+              if (wet(i) .and. Sfcprop%oceanfrac(i) > zero) then
                 tem2 = one / Sfcprop%xz(i)
                 dt_warm = (Sfcprop%xt(i)+Sfcprop%xt(i)) * tem2
                 if ( Sfcprop%xz(i) > omz1) then
@@ -1691,7 +1694,7 @@ module module_physics_driver
                                   -  Sfcprop%z_c(i)*Sfcprop%dt_cool(i))*tem1
                 endif
                 TSEAl(i) = Sfcprop%tref(i) + dt_warm - Sfcprop%dt_cool(i)
-!                      - (Sfcprop%oro(i)-Sfcprop%oro_uf(i))*rlapse
+!                        - (Sfcprop%oro(i)-Sfcprop%oro_uf(i))*rlapse
                 tsurf3(i,3) = TSEAl(i)
               endif
             enddo
@@ -1735,8 +1738,7 @@ module module_physics_driver
             zsea1 = 0.001*real(Model%nstf_name(4))
             zsea2 = 0.001*real(Model%nstf_name(5))
             call get_dtzm_2d (Sfcprop%xt,  Sfcprop%xz, Sfcprop%dt_cool, &
-                              Sfcprop%z_c, wet,      zsea1, zsea2,      &
-                              im, 1, dtzm)
+                              Sfcprop%z_c, wet, zsea1, zsea2, im, 1, dtzm)
             do i=1,im
 !             if (wet(i) .and. .not.icy(i)) then
 !             if (wet(i) .and. (Model%frac_grid .or. .not. icy(i))) then
