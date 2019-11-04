@@ -19,7 +19,7 @@ target_link_libraries(ccppdriver ${PHYS}physics)
 target_link_libraries(ccppdriver ccpp)
 target_link_libraries(ccppdriver ccppphys)
 
-target_include_directories(ccppdriver PRIVATE ${CMAKE_BINARY_DIR}/ccpp/framework/src)
+target_include_directories(ccppdriver PRIVATE ${CMAKE_BINARY_DIR}/FV3/ccpp/framework/src)
 
 set_target_properties(ccppdriver PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mod)
 target_include_directories(ccppdriver PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/mod)

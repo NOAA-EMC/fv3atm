@@ -6,6 +6,13 @@ if (PHYS MATCHES "nam")
   add_definitions(-DNAM_phys)
 endif()
 
+if(CCPP)
+  add_definitions(-DCCPP)
+  if(STATIC)
+    add_definitions(-DSTATIC)
+  endif()
+endif()
+
 add_subdirectory(cpl)
 add_subdirectory(${PHYS}physics)
 add_subdirectory(ipd)
@@ -65,27 +72,34 @@ add_library(
 set_property(SOURCE atmos_cubed_sphere/model/nh_utils.F90 APPEND_STRING PROPERTY COMPILE_FLAGS "${FAST}")
 set_property(SOURCE atmos_cubed_sphere/model/fv_mapz.F90  APPEND_STRING PROPERTY COMPILE_FLAGS "${FAST}")
 
-target_link_libraries(fv3core fms)
-target_link_libraries(fv3core ${PHYS}physics)
-target_link_libraries(fv3core ipd)
+target_link_libraries(fv3core PRIVATE fms)
+target_link_libraries(fv3core PRIVATE ${PHYS}physics)
+target_link_libraries(fv3core PRIVATE ipd)
 
 target_include_directories(fv3core PRIVATE ${ESMF_MOD})
+
+# end of fv3core
+
+###############################################################################
+### ccpp
+###############################################################################
 if(CCPP)
-  target_include_directories(fv3core PRIVATE ${CMAKE_BINARY_DIR}/ccpp/framework/src)
+  add_subdirectory(ccpp)
+  add_subdirectory(ccpp/driver)
+  add_dependencies(${PHYS}physics ccpp ccppphys)
+  add_dependencies(ccppdriver ccpp ccppphys)
+  add_dependencies(ccppphys ccpp)
+
+  target_include_directories(fv3core PRIVATE ${CMAKE_BINARY_DIR}/FV3/ccpp/framework/src)
+  target_include_directories(fv3core PRIVATE ${CMAKE_BINARY_DIR}/FV3/ccpp/driver)
 endif()
 
 set_target_properties(fv3core PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mod)
 target_include_directories(fv3core PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/mod)
 
-# end of fv3core
-
 # When specifying an out-of-tree source a binary directory must be explicitly specified.
 #add_subdirectory(../stochastic_physics stochastic_physics)
 add_subdirectory(stochastic_physics)
-
-if(CCPP)
-  add_subdirectory(CCPP_layer)
-endif()
 
 add_library(
     fv3cap
@@ -97,6 +111,9 @@ add_library(
     time_utils.F90
 )
 
+if(CCPP)
+target_include_directories(fv3cap PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/ccpp/driver/mod)
+endif()
 target_include_directories(fv3cap PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/stochastic_physics)
 target_compile_definitions(fv3cap PRIVATE -DESMF_VERSION_MAJOR=${ESMF_VERSION_MAJOR})
 target_include_directories(fv3cap PRIVATE ${ESMF_MOD})
@@ -108,10 +125,6 @@ target_link_libraries(fv3cap PRIVATE ipd)
 target_link_libraries(fv3cap PRIVATE io)
 target_link_libraries(fv3cap PRIVATE fv3core)
 target_link_libraries(fv3cap PRIVATE stochastic_physics)
-
-if(CCPP)
-  target_link_libraries(fv3cap PRIVATE ccppdriver)
-endif()
 
 set_target_properties(fv3cap PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mod)
 target_include_directories(fv3cap PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/mod)
