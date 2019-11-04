@@ -5,10 +5,10 @@
     module GFS_diagtoscreen
 
       private
- 
+
       public GFS_diagtoscreen_init, GFS_diagtoscreen_run, GFS_diagtoscreen_finalize
 
-      public print_my_stuff, chksum_int, chksum_real
+      public print_my_stuff, chksum_int, chksum_real, print_var
 
 ! Calculating the checksum leads to segmentation faults with gfortran (bug in malloc?),
 ! thus print the sum of the array instead of the checksum.
@@ -120,7 +120,6 @@
                      call print_var(mpirank,omprank, blkno, 'Sfcprop%zorlo'    , Sfcprop%zorlo)
                      call print_var(mpirank,omprank, blkno, 'Sfcprop%zorll'    , Sfcprop%zorll)
                      call print_var(mpirank,omprank, blkno, 'Sfcprop%fice'     , Sfcprop%fice)
-!                    call print_var(mpirank,omprank, blkno, 'Sfcprop%hprim'    , Sfcprop%hprim)
                      call print_var(mpirank,omprank, blkno, 'Sfcprop%hprime'   , Sfcprop%hprime)
                      call print_var(mpirank,omprank, blkno, 'Sfcprop%sncovr'   , Sfcprop%sncovr)
                      call print_var(mpirank,omprank, blkno, 'Sfcprop%snoalb'   , Sfcprop%snoalb)
@@ -185,6 +184,8 @@
                      !   call print_var(mpirank,omprank, blkno, 'Sfcprop%flag_frsoil', Sfcprop%flag_frsoil)
                      !   call print_var(mpirank,omprank, blkno, 'Sfcprop%rhofr',       Sfcprop%rhofr)
                      !   call print_var(mpirank,omprank, blkno, 'Sfcprop%tsnow',       Sfcprop%tsnow)
+                     !   call print_var(mpirank,omprank, blkno, 'Sfcprop%snowfallac  ', Sfcprop%snowfallac)
+                     !   call print_var(mpirank,omprank, blkno, 'Sfcprop%acsnow      ', Sfcprop%acsnow)
                      !end if
                      ! Radtend
                      call print_var(mpirank,omprank, blkno, 'Radtend%sfcfsw%upfxc', Radtend%sfcfsw(:)%upfxc)
@@ -221,7 +222,9 @@
                        call print_var(mpirank,omprank, blkno, 'Tbd%drain_cpl'     , Tbd%drain_cpl)
                        call print_var(mpirank,omprank, blkno, 'Tbd%dsnow_cpl'     , Tbd%dsnow_cpl)
                      end if
-                     call print_var(mpirank,omprank, blkno, 'Tbd%phy_fctd'        , Tbd%phy_fctd)
+                     if (Model%nctp > 0 .and. Model%cscnv) then
+                       call print_var(mpirank,omprank, blkno, 'Tbd%phy_fctd'      , Tbd%phy_fctd)
+                     end if
                      call print_var(mpirank,omprank, blkno, 'Tbd%phy_f2d'         , Tbd%phy_f2d)
                      call print_var(mpirank,omprank, blkno, 'Tbd%phy_f3d'         , Tbd%phy_f3d)
                      do n=1,size(Tbd%phy_f3d(1,1,:))
@@ -297,10 +300,12 @@
                      call print_var(mpirank,omprank, blkno, 'Diag%tdomzr      ',    Diag%tdomzr)
                      call print_var(mpirank,omprank, blkno, 'Diag%tdomip      ',    Diag%tdomip)
                      call print_var(mpirank,omprank, blkno, 'Diag%tdoms       ',    Diag%tdoms)
-                     call print_var(mpirank,omprank, blkno, 'Diag%wet1        ',    Diag%wet1)
                      ! CCPP only
-                     !call print_var(mpirank,omprank, blkno, 'Diag%snowfallac  ',    Diag%snowfallac)
-                     !call print_var(mpirank,omprank, blkno, 'Diag%acsnow      ',    Diag%acsnow)
+                     !if (Model%lsm == Model%lsm_ruc) then
+                     !  call print_var(mpirank,omprank, blkno, 'Diag%wet1        ',  Sfcprop%wetness)
+                     !else
+                       call print_var(mpirank,omprank, blkno, 'Diag%wet1        ',  Diag%wet1)
+                     !end if
                      call print_var(mpirank,omprank, blkno, 'Diag%skebu_wts   ',    Diag%skebu_wts)
                      call print_var(mpirank,omprank, blkno, 'Diag%skebv_wts   ',    Diag%skebv_wts)
                      call print_var(mpirank,omprank, blkno, 'Diag%sppt_wts    ',    Diag%sppt_wts)
@@ -385,7 +390,7 @@
                      call print_var(mpirank,omprank, blkno, 'Coupling%sfcdsw ', Coupling%sfcdsw )
                      call print_var(mpirank,omprank, blkno, 'Coupling%sfcnsw ', Coupling%sfcnsw )
                      call print_var(mpirank,omprank, blkno, 'Coupling%sfcdlw ', Coupling%sfcdlw )
-                     if (Model%cplflx .or. Model%do_sppt) then
+                     if (Model%cplflx .or. Model%do_sppt .or. Model%cplchm) then
                         call print_var(mpirank,omprank, blkno, 'Coupling%rain_cpl', Coupling%rain_cpl)
                         call print_var(mpirank,omprank, blkno, 'Coupling%snow_cpl', Coupling%snow_cpl)
                      end if
@@ -441,7 +446,6 @@
                         call print_var(mpirank,omprank, blkno, 'Coupling%psurfi_cpl  ', Coupling%psurfi_cpl   )
                      end if
                      if (Model%cplchm) then
-                        call print_var(mpirank,omprank, blkno, 'Coupling%rain_cpl ', Coupling%rain_cpl )
                         call print_var(mpirank,omprank, blkno, 'Coupling%rainc_cpl', Coupling%rainc_cpl)
                         call print_var(mpirank,omprank, blkno, 'Coupling%ushfsfci ', Coupling%ushfsfci )
                         call print_var(mpirank,omprank, blkno, 'Coupling%dkt      ', Coupling%dkt      )
@@ -598,7 +602,7 @@
           integer, intent(in) :: mpirank, omprank, blkno
           character(len=*), intent(in) :: name
           real(kind_phys), intent(in) :: var(:,:)
-          
+
           integer :: k, i
 
 #ifdef PRINT_SUM
@@ -724,7 +728,7 @@
     module GFS_abort
 
       private
- 
+
       public GFS_abort_init, GFS_abort_run, GFS_abort_finalize
 
       contains
