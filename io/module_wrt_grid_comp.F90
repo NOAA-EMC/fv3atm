@@ -255,6 +255,12 @@
         line=__LINE__, file=__FILE__)) return
 
       if( wrt_int_state%write_dopost ) then
+#ifdef NO_INLINE_POST
+        rc = ESMF_RC_NOT_IMPL
+        print *,'inline post not available on this machine'
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, file=__FILE__)) return
+#endif
         call esmf_configgetattribute(cf,wrt_int_state%post_nlunit,default=777,label='nlunit:',rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
           line=__LINE__, file=__FILE__)) return
