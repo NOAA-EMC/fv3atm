@@ -412,6 +412,7 @@
       contains
 ! =================
 
+!## CCPP ## This is now a private subroutine in GFS_rrtmg_setup.F90/radinit.
 !> This subroutine initialize a model's radiation process through
 !! calling of specific initialization subprograms that directly
 !! related to radiation calculations. This subroutine needs to be
@@ -652,6 +653,7 @@
 !-----------------------------------
 !> @}
 
+!## CCPP ## This is now a private subroutine in GFS_rrtmg_setup.F90/radupdate.
 !> This subroutine checks and updates time sensitive data used by
 !! radiation computations. This subroutine needs to be placed inside
 !! the time advancement loop but outside of the horizontal grid loop.
@@ -1256,7 +1258,8 @@
 !
 
 !--- only call GFS_radiation_driver at radiation time step
-
+!## CCPP ##* GFS_rrtmg_pre.F90/GFS_rrtmg_pre_run for code required to run before 
+! SW and LW.
       if (.not. (Model%lsswr .or. Model%lslwr )) return
 
 !--- set commonly used integers
@@ -1544,9 +1547,10 @@
 !         enddo
         enddo
       endif                              ! end_if_ivflip
+!*## CCPP ##
 
 !>  - Check for daytime points for SW radiation.
-
+!## CCPP ##* rrtmg_sw_pre.F90/rrtmg_sw_pre_run
       nday = 0
       do i = 1, IM
         if (Radtend%coszen(i) >= 0.0001) then
@@ -1554,12 +1558,13 @@
           idxday(nday) = i
         endif
       enddo
+!*## CCPP ##
 
 !>  - Call module_radiation_aerosols::setaer(),to setup aerosols
 !! property profile for radiation.
 
 !check  print *,' in grrad : calling setaer '
-
+!## CCPP ##* GFS_rrtmg_pre.F90/GFS_rrtmg_pre_run
       call setaer (plvl, plyr, prslk1, tvly, rhly, Sfcprop%slmsk,  &  !  ---  inputs
                    tracer1, Grid%xlon, Grid%xlat, IM, LMK, LMP,    &
                    Model%lsswr,Model%lslwr,                        &
@@ -1843,9 +1848,9 @@
         endif
       endif
 ! mg, sfc-perts
+!*## CCPP ##
 
-
-
+!## CCPP ##* rrtmg_sw_pre.F90/rrtmg_sw_pre_run; Note: includes check for lsswr in scheme
 !> -# Start SW radiation calculations
       if (Model%lsswr) then
 
@@ -1863,7 +1868,10 @@
 
 !> -# Approximate mean surface albedo from vis- and nir-  diffuse values.
         Radtend%sfalb(:) = max(0.01, 0.5 * (sfcalb(:,2) + sfcalb(:,4)))
+!*## CCPP ##
 
+!## CCPP ##* radsw_main.f/rrtmg_sw_run; Note: The checks for nday and lsswr are included in the scheme (returns if 
+! nday <= 0 or lsswr == F). Optional arguments are used to handle the different calls below.
         if (nday > 0) then
 
 !>  - Call module_radsw_main::swrad(), to compute SW heating rates and
@@ -1889,7 +1897,9 @@
                         cldtausw,                               &
                         FDNCMP=scmpsw)                                 ! ---  optional 
           endif
+!*## CCPP ##
 
+!## CCPP ##* rrtmg_sw_post.F90/rrtmg_sw_post_run
           do k = 1, LM
             k1 = k + kd
             Radtend%htrsw(1:im,k) = htswc(1:im,k1)
@@ -1964,7 +1974,9 @@
         enddo
 
       endif                                ! end_if_lsswr
+!*## CCPP ##
 
+!## CCPP ## rrtmg_lw_pre.F90/rrtmg_lw_pre_run; Note: scheme includes check for lslwr.
 !> -# Start LW radiation calculations
       if (Model%lslwr) then
 
@@ -1975,11 +1987,14 @@
                       Sfcprop%snowd, Sfcprop%sncovr, Sfcprop%zorl, &
                       tsfg, tsfa, Sfcprop%hprime(:,1), IM,         & 
                       Radtend%semis)                                              !  ---  outputs
+!*## CCPP ##
 
 !>  - Call module_radlw_main::lwrad(), to compute LW heating rates and
 !!    fluxes.
 !     print *,' in grrad : calling lwrad'
 
+!## CCPP ##* radlw_main.f/rrtmg_lw_run; Note: The check lslwr is included in the scheme (returns if 
+! lslwr == F). Optional arguments are used to handle the different calls below.
         if (Model%lwhtr) then
           call lwrad (plyr, plvl, tlyr, tlvl, qlyr, olyr, gasvmr,  &        !  ---  inputs
                       clouds, Tbd%icsdlw, faerlw, Radtend%semis,   &
@@ -1994,7 +2009,9 @@
                             IM, LMK, LMP, Model%lprnt,             &
                       htlwc, Diag%topflw, Radtend%sfcflw, cldtaulw)         !  ---  outputs
         endif
+!*## CCPP ##
 
+!## CCPP ## rrtmg_lw_post.F90/rrtmg_lw_post_run; Note: includes check for lslwr.
 !> -# Save calculation results
 !>  - Save surface air temp for diurnal adjustment at model t-steps
         Radtend%tsflw (:) = tsfa(:)
@@ -2027,7 +2044,9 @@
         Coupling%sfcdlw(:) = Radtend%sfcflw(:)%dnfxc
 
       endif                                ! end_if_lslwr
+!*## CCPP ##
 
+!## CCPP ## GFS_rrtmg_post.F90/GFS_rrtmg_post_run
 !>  - For time averaged output quantities (including total-sky and
 !!    clear-sky SW and LW fluxes at TOA and surface; conventional
 !!    3-domain cloud amount, cloud top and base pressure, and cloud top
@@ -2131,7 +2150,7 @@
         endif
 
       endif                                ! end_if_lssav
-!
+!*## CCPP ##
       return
 !........................................
       end subroutine GFS_radiation_driver
