@@ -675,10 +675,6 @@ module module_physics_driver
       real    :: pshltr,QCQ,rh02
       real(kind=kind_phys), allocatable, dimension(:,:) :: den
 
-#ifdef TRANSITION
-      real(kind=kind_phys), volatile :: volatile_var1, volatile_var2
-#endif
-
       !! Initialize local variables (mainly for debugging purposes, because the
       !! corresponding variables Interstitial(nt)%... are reset to zero every time);
       !! these variables are only modified over parts of the entire domain (related
@@ -911,7 +907,6 @@ module module_physics_driver
           enddo
         endif
       endif !  if (Model%lsm == Model%lsm_noahmp)
-! *DH
 
 !  ---  set initial quantities for stochastic physics deltas
       if (Model%do_sppt) then
@@ -2704,15 +2699,13 @@ module module_physics_driver
           enddo
 
         elseif (imp_physics == Model%imp_physics_zhao_carr) then   !  Zhao/Carr/Sundqvist
-          if (Model%cplchm) then
-            do k=1,levs
-              do i=1,im
-                dqdt(i,k,1)    = dvdftra(i,k,1)
-                dqdt(i,k,ntcw) = dvdftra(i,k,2)
-                dqdt(i,k,ntoz) = dvdftra(i,k,3)
-              enddo
+          do k=1,levs
+            do i=1,im
+              dqdt(i,k,1)    = dvdftra(i,k,1)
+              dqdt(i,k,ntcw) = dvdftra(i,k,2)
+              dqdt(i,k,ntoz) = dvdftra(i,k,3)
             enddo
-          endif
+          enddo
         endif
 !
         deallocate(vdftra, dvdftra)
@@ -4854,29 +4847,18 @@ module module_physics_driver
               graupel0(i,1) = zero
             endif
 
-#ifdef TRANSITION
-            volatile_var1   = rain0(i,1)+snow0(i,1)+ice0(i,1)+graupel0(i,1)
-            volatile_var2   = snow0(i,1)+ice0(i,1)+graupel0(i,1)
-            rain1(i)        = volatile_var1 * tem
-#else
             rain1(i)        = (rain0(i,1)+snow0(i,1)+ice0(i,1)+graupel0(i,1)) * tem
-#endif
             Diag%ice(i)     = ice0    (i,1) * tem
             Diag%snow(i)    = snow0   (i,1) * tem
             Diag%graupel(i) = graupel0(i,1) * tem
-#ifdef TRANSITION
-            if ( volatile_var1 * tem > rainmin ) then
-              Diag%sr(i) = volatile_var2 / volatile_var1
-#else
             if ( rain1(i) > rainmin ) then
               Diag%sr(i) = (snow0(i,1) + ice0(i,1)  + graupel0(i,1)) &
                          / (rain0(i,1) + snow0(i,1) + ice0(i,1) + graupel0(i,1))
-#endif
             else
               Diag%sr(i)  = zero
             endif
           enddo
-#if defined(TRANSITION) || defined(REPRO)
+#ifdef REPRO
           ! Convert rain0, ice0, graupel0 and snow0 from mm/day to m/physics-timestep
           ! for later use (approx. lines 7970, calculation of srflag)
           rain0 = tem*rain0
@@ -5125,7 +5107,7 @@ module module_physics_driver
 !            Sfcprop%srflag(i) = one                   ! clu: set srflag to 'snow' (i.e. 1)
 !          endif
 ! compute fractional srflag
-#if defined(TRANSITION) || defined(REPRO)
+#ifdef REPRO
           ! For bit-for-bit identical results with CCPP code, snow0/ice0/graupel0/rain0
           ! were converted from mm per day to m per physics timestep previously in the code
           total_precip = snow0(i,1)+ice0(i,1)+graupel0(i,1)+rain0(i,1)+Diag%rainc(i)
