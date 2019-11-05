@@ -451,8 +451,7 @@ module post_gfs
       end do
 !
 ! GFS does not output PD
-!      pt    = 10000.          ! this is for 100 hPa added by Moorthi
-      pt    = 0.
+      pt    = ak5(1)
 
 ! GFS may not have model derived radar ref.
 !                        TKE
@@ -1296,7 +1295,7 @@ module post_gfs
             endif
 
             ! inst incoming sfc longwave
-            if(trim(fieldname)=='dlwsf') then
+            if(trim(fieldname)=='dlwrf') then
               !$omp parallel do private(i,j)
               do j=jsta,jend
                 do i=ista, iend
@@ -1848,6 +1847,16 @@ module post_gfs
               !$omp parallel do private(i,j)
               do j=jsta,jend
                 do i=ista, iend
+                  alwoutc(i,j) = arrayr42d(i,j)
+                enddo
+              enddo
+            endif
+
+            ! time averaged TOA clear sky outgoing LW
+            if(trim(fieldname)=='csulftoa') then
+              !$omp parallel do private(i,j)
+              do j=jsta,jend
+                do i=ista, iend
                   alwtoac(i,j) = arrayr42d(i,j)
                 enddo
               enddo
@@ -1864,7 +1873,7 @@ module post_gfs
             endif
 
             ! time averaged TOA clear sky outgoing SW
-            if(trim(fieldname)=='csusf') then
+            if(trim(fieldname)=='csusftoa') then
               !$omp parallel do private(i,j)
               do j=jsta,jend
                 do i=ista, iend
@@ -2271,7 +2280,6 @@ module post_gfs
         enddo
       end do
 
-!??? reset pint(lev=1)
 !$omp parallel do private(i,j)
       do j=jsta,jend
         do i=1,im
@@ -2282,7 +2290,7 @@ module post_gfs
 !      print *,'in setvar, pt=',pt,'ak5(lp1)=', ak5(lp1),'ak5(1)=',ak5(1)
 
 ! compute alpint
-      do l=lp1,2,-1
+      do l=lp1,1,-1
 !$omp parallel do private(i,j)
         do j=jsta,jend
           do i=1,im
@@ -2320,6 +2328,18 @@ module post_gfs
           endif
         enddo
       enddo
+
+! compute cwm for gfdlmp
+      if(  imp_physics == 11 ) then
+        do l=1,lm
+!$omp parallel do private(i,j)
+          do j=jsta,jend
+            do i=ista,iend
+              cwm(i,j,l)=qqg(i,j,l)+qqs(i,j,l)+qqr(i,j,l)+qqi(i,j,l)+qqw(i,j,l)
+            enddo
+          enddo
+        enddo
+      endif
 
 ! estimate 2m pres and convert t2m to theta
 !$omp parallel do private(i,j)

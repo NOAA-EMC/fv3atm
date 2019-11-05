@@ -1386,7 +1386,7 @@
 
               wbeg = MPI_Wtime()
               call write_netcdf(file_bundle,wrt_int_state%wrtFB(nbdl),trim(filename), &
-                               wrt_mpi_comm,wrt_int_state%mype,imo,jmo,rc)
+                               wrt_mpi_comm,wrt_int_state%mype,imo,jmo,idate,rc)
               wend = MPI_Wtime()
               if (lprnt) then
                 write(*,'(A,F10.5,A,I4.2,A,I2.2)')' netcdf      Write Time is ',wend-wbeg  &
@@ -1431,7 +1431,7 @@
 
               wbeg = MPI_Wtime()
               call write_netcdf(file_bundle,wrt_int_state%wrtFB(nbdl),trim(filename), &
-                                wrt_mpi_comm,wrt_int_state%mype,imo,jmo,rc)
+                                wrt_mpi_comm,wrt_int_state%mype,imo,jmo,idate,rc)
               wend = MPI_Wtime()
               if (mype == lead_write_task) then
                 write(*,'(A,F10.5,A,I4.2,A,I2.2)')' netcdf      Write Time is ',wend-wbeg  &
