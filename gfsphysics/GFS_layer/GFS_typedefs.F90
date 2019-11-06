@@ -1017,15 +1017,9 @@ module GFS_typedefs
 #endif
     integer              :: jdat(1:8)       !< current forecast date and time
                                             !< (yr, mon, day, t-zone, hr, min, sec, mil-sec)
-<<<<<<< HEAD
     integer              :: imn             !< initial forecast month
     real(kind=kind_phys) :: julian          !< julian day using midnight of January 1 of forecast year as initial epoch
     integer              :: yearlen         !< length of the current forecast year in days
-=======
-    integer              :: imn             !< current forecast month
-    real(kind=kind_phys) :: julian          !< current forecast julian date
-    integer              :: yearlen         !< current length of the year
->>>>>>> 45dbc34bdb8cf2d6d3ed1fc0b0067d00be8422d8
 !
     logical              :: iccn            !< using IN CCN forcing for MG2/3
 #ifdef CCPP
