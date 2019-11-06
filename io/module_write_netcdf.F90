@@ -504,17 +504,18 @@ module module_write_netcdf
 
   end subroutine get_grid_attr
 
-  subroutine add_dim(ncid, dim_name, dimid, grid, idate, rc)
+  subroutine add_dim(ncid, dim_name, dimid, grid, rc, idate)
     integer, intent(in)             :: ncid
     character(len=*), intent(in)    :: dim_name
     integer, intent(inout)          :: dimid
     type(ESMF_Grid), intent(in)     :: grid
-    integer, intent(in), optional   :: idate(7)
     integer, intent(out)            :: rc
+    integer, intent(in), optional   :: idate(7)
 
 ! local variable
     integer :: i, attcount, n, dim_varid
     integer :: ncerr
+    character(255)             :: time_units
     character(len=ESMF_MAXSTR) :: attName
     type(ESMF_TypeKind_Flag)   :: typekind
 
