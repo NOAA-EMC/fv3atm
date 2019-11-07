@@ -4,9 +4,11 @@ remove_definitions(-DOVERLOAD_R8)
 remove_definitions(-DOVERLOAD_R4)
 endif()
 
+message ("Force 64 bits in CCPP_layer")
 if(CMAKE_Fortran_COMPILER_ID MATCHES "Intel")
-    message ("Force 64 bits in CCPP_layer")
     string (REPLACE "-i4 -real-size 32" "-i4 -real-size 64 -no-prec-div -no-prec-sqrt" CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS}")
+elseif(CMAKE_Fortran_COMPILER_ID MATCHES "GNU")
+    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fdefault-real-8")
 endif()
 
 add_library(

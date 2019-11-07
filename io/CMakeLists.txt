@@ -1,16 +1,21 @@
+if(INLINE_POST)
+  set(POST_SRC post_gfs.F90 post_nems_routines.F90)
+else()
+  set(POST_SRC post_gfs_stub.F90)
+  add_definitions(-DNO_INLINE_POST)
+endif()
 
 add_library(
     io
 
     ffsync.F90
     FV3GFS_io.F90
-    post_gfs.F90
-    post_nems_routines.F90
     module_write_nemsio.F90
     module_write_netcdf.F90
     module_fv3_io_def.F90
     module_write_internal_state.F90
     module_wrt_grid_comp.F90
+    ${POST_SRC}
 )
 
 set_source_files_properties(post_gfs.F90 post_nems_routines.F90
