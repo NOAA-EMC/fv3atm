@@ -22,7 +22,7 @@ module module_write_netcdf
   contains
 
 !----------------------------------------------------------------------------------------
-  subroutine write_netcdf(fieldbundle, wrtfb, filename, mpi_comm, mype, im, jm, idate, rc)
+  subroutine write_netcdf(fieldbundle, wrtfb, filename, mpi_comm, mype, im, jm, rc)
 !
     type(ESMF_FieldBundle), intent(in) :: fieldbundle
     type(ESMF_FieldBundle), intent(in) :: wrtfb
@@ -30,7 +30,6 @@ module module_write_netcdf
     integer, intent(in)                :: mpi_comm
     integer, intent(in)                :: mype
     integer, intent(in)                :: im, jm
-    integer, intent(in)                :: idate(7)
     integer, optional,intent(out)      :: rc
 !
 !** local vars
@@ -147,7 +146,7 @@ module module_write_netcdf
       call add_dim(ncid, "phalf", phalf_dimid, wrtgrid, rc)
     end if
 
-    call add_dim(ncid, "time", time_dimid, wrtgrid, rc, idate=idate)
+    call add_dim(ncid, "time", time_dimid, wrtgrid, rc)
 
     call get_global_attr(wrtfb, ncid, rc)
 
@@ -504,18 +503,16 @@ module module_write_netcdf
 
   end subroutine get_grid_attr
 
-  subroutine add_dim(ncid, dim_name, dimid, grid, rc, idate)
+  subroutine add_dim(ncid, dim_name, dimid, grid, rc)
     integer, intent(in)             :: ncid
     character(len=*), intent(in)    :: dim_name
-    integer, intent(inout)          :: dimid
+    integer, intent(inout) :: dimid
     type(ESMF_Grid), intent(in)     :: grid
     integer, intent(out)            :: rc
-    integer, intent(in), optional   :: idate(7)
 
 ! local variable
     integer :: i, attcount, n, dim_varid
     integer :: ncerr
-    character(255)             :: time_units
     character(len=ESMF_MAXSTR) :: attName
     type(ESMF_TypeKind_Flag)   :: typekind
 
@@ -559,38 +556,9 @@ module module_write_netcdf
 
     call get_grid_attr(grid, dim_name, ncid, dim_varid, rc)
 
-    ! if write grid comp changes time units
-    if ( present (idate) ) then
-      if ( trim(dim_name) == "time") then
-        ncerr = nf90_get_att(ncid, dim_varid, 'units', time_units); NC_ERR_STOP(ncerr)
-        time_units  = get_time_units_from_idate(idate)
-        ncerr = nf90_put_att(ncid, dim_varid, 'units', trim(time_units)); NC_ERR_STOP(ncerr)
-      endif
-    endif
-
   end subroutine add_dim
 !
 !----------------------------------------------------------------------------------------
-  function get_time_units_from_idate(idate, time_measure) result(time_units)
-      ! create time units attribute of form 'hours since YYYY-MM-DD HH:MM:SS'
-      ! from integer array with year,month,day,hour,minute,second
-      ! optional argument 'time_measure' can be used to change 'hours' to
-      ! 'days', 'minutes', 'seconds' etc.
-      character(len=*), intent(in), optional :: time_measure
-      integer, intent(in) ::  idate(7)
-      character(len=12) :: timechar
-      character(len=nf90_max_name) :: time_units
-      if (present(time_measure)) then
-         timechar = trim(time_measure)
-      else
-         timechar = 'hours'
-      endif
-      write(time_units,101) idate(1:6)
-101   format(' since ',i4.4,'-',i2.2,'-',i2.2,' ',&
-      i2.2,':',i2.2,':',i2.2)
-      time_units = trim(adjustl(timechar))//time_units
-  end function get_time_units_from_idate
-!
   subroutine nccheck(status)
     use netcdf
     implicit none
