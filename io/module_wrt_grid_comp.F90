@@ -492,7 +492,7 @@
                           m=idate(5),s=idate(6),rc=rc)
         wrt_int_state%idate = idate
         change_wrtidate = .true.
-       if (mype == lead_write_task) print *,'in wrt initial, with iau, io_baseline time=',idate,'rc=',rc
+       if (lprnt) print *,'in wrt initial, with iau, io_baseline time=',idate,'rc=',rc
       endif
 !
 ! Create field bundle
@@ -895,11 +895,11 @@
         if ( index(trim(attNameList(i)),'time:units')>0) then
           if ( change_wrtidate ) then
             idx = index(trim(valueS),' since ')
-            if(mype == lead_write_task) print *,'in write grid comp, time:unit=',trim(valueS)
+            if(lprnt) print *,'in write grid comp, time:unit=',trim(valueS)
             write(newdate,'(I4.4,a,I2.2,a,I2.2,a,I2.2,a,I2.2,a,I2.2)') idate(1),'-',   &
               idate(2),'-',idate(3),' ',idate(4),':',idate(5),':',idate(6)
             valueS = valueS(1:idx+6)//newdate
-            if(mype == lead_write_task) print *,'in write grid comp, new time:unit=',trim(valueS)
+            if(lprnt) print *,'in write grid comp, new time:unit=',trim(valueS)
           endif
         endif
         call ESMF_AttributeSet(wrtgrid, convention="NetCDF", purpose="FV3", &
