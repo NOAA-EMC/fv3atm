@@ -28,7 +28,7 @@ module post_gfs
 !
       use ctlblk_mod, only : komax,ifhr,ifmin,modelname,datapd,fld_info, &
                              npset,grib,gocart_on,icount_calmict, jsta,  &
-                             jend,im, nsoil
+                             jend,im, nsoil, ihrst
       use gridspec_mod, only : maptype, gridtype
       use grib2_module, only : gribit2,num_pset,nrecout,first_grbtbl
 !
@@ -369,7 +369,7 @@ module post_gfs
 !
       integer i, ip1, j, l, k, n, iret, ibdl, rc, kstart, kend
       integer ista,iend,fieldDimCount,gridDimCount,ncount_field
-      integer idate(8), jdate(8)
+      integer jdate(8)
       logical foundland, foundice, found
       real(4) rinc(5)
       real    tlmh,RADI,TMP,ES,TV,RHOAIR,tem,tstart,dtp
@@ -641,26 +641,16 @@ module post_gfs
       enddo
 !
 ! get inital date
-      idate    = 0
-      idate(1) = wrt_int_state%idate(1)
-      idate(2) = wrt_int_state%idate(2)
-      idate(3) = wrt_int_state%idate(3)
-      idate(5) = wrt_int_state%idate(4)
-      idate(6) = wrt_int_state%idate(5)
       sdat(1)  = wrt_int_state%idate(2)   !month
       sdat(2)  = wrt_int_state%idate(3)   !day
       sdat(3)  = wrt_int_state%idate(1)   !year
-      jdate    = 0
-      jdate(1) = wrt_int_state%fdate(1)
-      jdate(2) = wrt_int_state%fdate(2)
-      jdate(3) = wrt_int_state%fdate(3)  !jdate(4): time zone
-      jdate(5) = wrt_int_state%fdate(4)
-      jdate(6) = wrt_int_state%fdate(5)
-      idat(1)  = wrt_int_state%idate(2)
-      idat(2)  = wrt_int_state%idate(3)
-      idat(3)  = wrt_int_state%idate(1)
-      idat(4)  = IFHR
-      idat(5)  = IFMIN
+      ihrst    = wrt_int_state%idate(4)   !hour
+
+      idat(1)  = wrt_int_state%fdate(2)
+      idat(2)  = wrt_int_state%fdate(3)
+      idat(3)  = wrt_int_state%fdate(1)
+      idat(4)  = wrt_int_state%fdate(4)
+      idat(5)  = wrt_int_state%fdate(5)
 !
 !      if(mype==0) print *,'jdate=',jdate,'idate=',idate,'sdat=',sdat
 !      CALL W3DIFDAT(JDATE,IDATE,0,RINC)
