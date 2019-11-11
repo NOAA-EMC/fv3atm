@@ -28,7 +28,7 @@ module post_gfs
 !
       use ctlblk_mod, only : komax,ifhr,ifmin,modelname,datapd,fld_info, &
                              npset,grib,gocart_on,icount_calmict, jsta,  &
-                             jend,im, nsoil, ihrst
+                             jend,im, nsoil
       use gridspec_mod, only : maptype, gridtype
       use grib2_module, only : gribit2,num_pset,nrecout,first_grbtbl
 !
@@ -342,7 +342,7 @@ module post_gfs
                              tprec, tclod, trdlw, trdsw, tsrfc, tmaxmin, theat, &
                              ardlw, ardsw, asrfc, avrain, avcnvc, iSF_SURFACE_PHYSICS,&
                              td3d, idat, sdat, ifhr, ifmin, dt, nphs, dtq2, pt_tbl, &
-                             alsl, spl 
+                             alsl, spl, ihrst 
       use params_mod,  only: erad, dtr, capa, p1000
       use gridspec_mod,only: latstart, latlast, lonstart, lonlast, cenlon, cenlat
       use lookup_mod,  only: thl, plq, ptbl, ttbl, rdq, rdth, rdp, rdthe, pl,   &
@@ -652,7 +652,7 @@ module post_gfs
       idat(4)  = wrt_int_state%fdate(4)
       idat(5)  = wrt_int_state%fdate(5)
 !
-!      if(mype==0) print *,'jdate=',jdate,'idate=',idate,'sdat=',sdat
+      if(mype==0) print *,'idat=',idat,'sdat=',sdat,'ihrst=',ihrst
 !      CALL W3DIFDAT(JDATE,IDATE,0,RINC)
 !
 !      if(mype==0)print *,' rinc=',rinc
@@ -690,7 +690,7 @@ module post_gfs
         call ESMF_FieldBundleGet(wrt_int_state%wrtFB(ibdl),fieldName='land',isPresent=found, rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
           line=__LINE__, file=__FILE__)) return  ! bail out
-        if(mype==0) print *,'ibdl=',ibdl,'land, found=',found
+!        if(mype==0) print *,'ibdl=',ibdl,'land, found=',found
         if (found) then
           call ESMF_FieldBundleGet(wrt_int_state%wrtFB(ibdl),'land',field=theField, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
@@ -714,7 +714,7 @@ module post_gfs
         call ESMF_FieldBundleGet(wrt_int_state%wrtFB(ibdl),'icec',isPresent=found, rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
           line=__LINE__, file=__FILE__)) return  ! bail out
-        if(mype==0) print *,'ibdl=',ibdl,'ice, found=',found
+!        if(mype==0) print *,'ibdl=',ibdl,'ice, found=',found
         if (found) then
           call ESMF_FieldBundleGet(wrt_int_state%wrtFB(ibdl),'icec',field=theField, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
