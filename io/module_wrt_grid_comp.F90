@@ -485,6 +485,7 @@
       idate(7) = 1
       wrt_int_state%idate = idate
       wrt_int_state%fdate = idate
+! update IO-BASETIME and idate on write grid comp when IAU is enabled
       if(iau_offset > 0 ) then
         call ESMF_TimeIntervalSet(IAU_offsetTI, h=iau_offset, rc=rc)
         wrt_int_state%IO_BASETIME = wrt_int_state%IO_BASETIME + IAU_offsetTI
@@ -891,7 +892,7 @@
 
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-! add iau here
+! update the time:units when idate on write grid component is changed 
         if ( index(trim(attNameList(i)),'time:units')>0) then
           if ( change_wrtidate ) then
             idx = index(trim(valueS),' since ')
@@ -1263,8 +1264,6 @@
 !         'nseconds_num=',nseconds_num,nseconds_den,'mype=',mype
 !
       nf_seconds = nf_hours*3600+nf_minuteS*60+nseconds+real(nseconds_num)/real(nseconds_den)
-      ! shift forecast hour by iau_offset if iau is on.
-      !nf_seconds = nf_seconds - iau_offset*3600
       wrt_int_state%nfhour = nf_seconds/3600.
       nf_hours   = int(nf_seconds/3600.)
       if(mype == lead_write_task) print *,'in write grid comp, nf_hours=',nf_hours
