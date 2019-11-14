@@ -4068,7 +4068,11 @@ module GFS_typedefs
       Model%nleffr = 1
       Model%nieffr = 2
       Model%nseffr = 3
-      if (Model%me == Model%master) print *,' Using Ferrier-Aligo MP scheme'
+      if (Model%me == Model%master) print *,' Using Ferrier-Aligo MP scheme', &
+                                          ' microphysics', &
+                                          ' lradar =',Model%lradar
+
+
     elseif (Model%imp_physics == Model%imp_physics_wsm6) then !WSM6 microphysics
       Model%npdf3d  = 0
       Model%num_p3d = 3
@@ -5977,15 +5981,16 @@ module GFS_typedefs
       endif
       if (Model%satmedmf) Interstitial%nvdiff = Interstitial%nvdiff + 1
       Interstitial%nncl = 5
+!MZ* nvdiff = 7: qv, qc,qi,qr,qs,q_rimef,o3
 !--- F-A scheme
-    elseif (Model%imp_physics == Model%imp_physics_fer_hires) then
-      if (Model%spec_adv) then
-        Interstitial%nvdiff = 5 !qv, qc, qr, qi, qrime
-      else
-        Interstitial%nvdiff = 5 !qv, qc(total condensate), f_ice, f_rain,f_rimef
-      endif
-      if (Model%satmedmf) Interstitial%nvdiff = Interstitial%nvdiff + 1
-      Interstitial%nncl = 5
+!    elseif (Model%imp_physics == Model%imp_physics_fer_hires) then
+!      if (Model%spec_adv) then
+!        Interstitial%nvdiff = 5 !qv, qc, qr, qi, qrime
+!      else
+!        Interstitial%nvdiff = 5 !qv, qc(total condensate), f_ice, f_rain,f_rimef
+!      endif
+!      if (Model%satmedmf) Interstitial%nvdiff = Interstitial%nvdiff + 1
+!      Interstitial%nncl = 5
     elseif (Model%imp_physics == Model%imp_physics_wsm6) then
       Interstitial%nvdiff = Model%ntrac -3
       if (Model%satmedmf) Interstitial%nvdiff = Interstitial%nvdiff + 1
