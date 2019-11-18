@@ -781,16 +781,36 @@ module GFS_typedefs
                                             !<     1: July 2010 version of mass-flux shallow conv scheme
                                             !<         current operational version as of 2016
                                             !<     2: scale- & aerosol-aware mass-flux shallow conv scheme (2017)
+                                            !<     3: scale- & aerosol-aware Grell-Freitas scheme (GSD)
+                                            !<     4: New Tiedtke scheme (CAPS)
                                             !<     0: modified Tiedtke's eddy-diffusion shallow conv scheme
                                             !<    -1: no shallow convection used
+#ifdef CCPP
+    integer              :: imfshalcnv_sas      = 1 !< flag for SAS mass-flux shallow convection scheme
+    integer              :: imfshalcnv_samf     = 2 !< flag for SAMF scale- & aerosol-aware mass-flux shallow convection scheme
+    integer              :: imfshalcnv_gf       = 3 !< flag for scale- & aerosol-aware Grell-Freitas scheme (GSD)
+    integer              :: imfshalcnv_ntiedtke = 4 !< flag for new Tiedtke scheme (CAPS)
+#endif
     integer              :: imfdeepcnv      !< flag for mass-flux deep convection scheme
                                             !<     1: July 2010 version of SAS conv scheme
                                             !<           current operational version as of 2016
                                             !<     2: scale- & aerosol-aware mass-flux deep conv scheme (2017)
+                                            !<     3: scale- & aerosol-aware Grell-Freitas scheme (GSD)
+                                            !<     4: New Tiedtke scheme (CAPS)
                                             !<     0: old SAS Convection scheme before July 2010
-    integer              :: isatmedmf       !< flag for scale-aware TKE-based moist edmf scheme                        
+#ifdef CCPP
+    integer              :: imfdeepcnv_sas      = 1 !< flag for SAS mass-flux deep convection scheme
+    integer              :: imfdeepcnv_samf     = 2 !< flag for SAMF scale- & aerosol-aware mass-flux deep convection scheme
+    integer              :: imfdeepcnv_gf       = 3 !< flag for scale- & aerosol-aware Grell-Freitas scheme (GSD)
+    integer              :: imfdeepcnv_ntiedtke = 4 !< flag for new Tiedtke scheme (CAPS)
+#endif
+    integer              :: isatmedmf       !< flag for scale-aware TKE-based moist edmf scheme
                                             !<     0: initial version of satmedmf (Nov. 2018)
                                             !<     1: updated version of satmedmf (as of May 2019)
+#ifdef CCPP
+    integer              :: isatmedmf_vdif  = 0 !< flag for initial version of satmedmf (Nov. 2018)
+    integer              :: isatmedmf_vdifq = 1 !< flag for updated version of satmedmf (as of May 2019)
+#endif
     integer              :: nmtvr           !< number of topographic variables such as variance etc
                                             !< used in the GWD parameterization
     integer              :: jcap            !< number of spectral wave trancation used only by sascnv shalcnv
@@ -2300,7 +2320,7 @@ module GFS_typedefs
        Sfcprop%cqs2        = clear_val
        Sfcprop%lh          = clear_val
     end if
-    if (Model%imfdeepcnv == 3) then
+    if (Model%imfdeepcnv == Model%imfdeepcnv_gf) then
         allocate (Sfcprop%conv_act(IM))
         Sfcprop%conv_act = zero
     end if
@@ -3869,8 +3889,8 @@ module GFS_typedefs
 #ifdef CCPP
         ! Consistency check for NTDK convection: deep and shallow convection are bundled
         ! and cannot be combined with any other deep or shallow convection scheme
-        if ( (Model%imfdeepcnv == 4 .or. Model%imfshalcnv == 4) .and. &
-            .not. (Model%imfdeepcnv == 4 .and. Model%imfshalcnv == 4) ) then
+        if ( (Model%imfdeepcnv == Model%imfdeepcnv_ntiedtke .or. Model%imfshalcnv == Model%imfshalcnv_ntiedtke) .and. &
+            .not. (Model%imfdeepcnv == Model%imfdeepcnv_ntiedtke .and. Model%imfshalcnv == Model%imfshalcnv_ntiedtke) ) then
             write(0,*) "Logic error: if NTDK deep convection is used, must also use NTDK shallow convection (and vice versa)"
             stop
         end if
@@ -3890,14 +3910,21 @@ module GFS_typedefs
           else
             if (Model%imfdeepcnv == 0) then
                print *,' old SAS Convection scheme before July 2010 used'
+#ifdef CCPP
+            elseif(Model%imfdeepcnv == Model%imfdeepcnv_sas) then
+               print *,' July 2010 version of SAS conv scheme used'
+            elseif(Model%imfdeepcnv == Model%imfdeepcnv_samf) then
+               print *,' scale & aerosol-aware mass-flux deep conv scheme'
+            elseif(Model%imfdeepcnv == Model%imfdeepcnv_gf) then
+               print *,' Grell-Freitas scale & aerosol-aware mass-flux deep conv scheme'
+            elseif(Model%imfdeepcnv == Model%imfdeepcnv_ntiedtke) then
+               print *,' New Tiedtke cumulus scheme'
+#else
             elseif(Model%imfdeepcnv == 1) then
                print *,' July 2010 version of SAS conv scheme used'
             elseif(Model%imfdeepcnv == 2) then
                print *,' scale & aerosol-aware mass-flux deep conv scheme'
-            elseif(Model%imfdeepcnv == 3) then
-               print *,' Grell-Freitas scale & aerosol-aware mass-flux deep conv scheme'
-            elseif(Model%imfdeepcnv == 4) then
-               print *,' New Tiedtke cumulus scheme'
+#endif
             endif
           endif
         else
@@ -3913,16 +3940,19 @@ module GFS_typedefs
         print*, ' Deep convection scheme disabled'
       endif
       if (Model%satmedmf) then
+#ifdef CCPP
+        if (Model%isatmedmf == Model%isatmedmf_vdif) then
+          print *,' initial version (Nov 2018) of sale-aware TKE-based moist EDMF scheme used'
+        elseif(Model%isatmedmf == Model%isatmedmf_vdifq) then
+          print *,' update version (May 2019) of sale-aware TKE-based moist EDMF scheme used'
+        endif
+#else
         if (Model%isatmedmf == 0) then
           print *,' initial version (Nov 2018) of sale-aware TKE-based moist EDMF scheme used'
         elseif(Model%isatmedmf == 1) then
-#ifdef CCPP
-          print *,' Error: updated version (May 2019) of sale-aware TKE-based moist EDMF scheme not yet available in CCPP'
-          stop
-#else
           print *,' update version (May 2019) of sale-aware TKE-based moist EDMF scheme used'
-#endif
         endif
+#endif
       elseif (Model%hybedmf) then
         print *,' scale-aware hybrid edmf PBL scheme used'
       elseif (Model%old_monin) then
@@ -3940,14 +3970,21 @@ module GFS_typedefs
       else
         if (Model%imfshalcnv == 0) then
           print *,' modified Tiedtke eddy-diffusion shallow conv scheme used'
+#ifdef CCPP
+        elseif (Model%imfshalcnv == Model%imfshalcnv_sas) then
+          print *,' July 2010 version of mass-flux shallow conv scheme used'
+        elseif (Model%imfshalcnv == Model%imfshalcnv_samf) then
+          print *,' scale- & aerosol-aware mass-flux shallow conv scheme (2017)'
+        elseif (Model%imfshalcnv == Model%imfshalcnv_gf) then
+          print *,' Grell-Freitas scale- & aerosol-aware mass-flux shallow conv scheme (2013)'
+        elseif (Model%imfshalcnv == Model%imfshalcnv_ntiedtke) then
+          print *,' New Tiedtke cumulus scheme'
+#else
         elseif (Model%imfshalcnv == 1) then
           print *,' July 2010 version of mass-flux shallow conv scheme used'
         elseif (Model%imfshalcnv == 2) then
           print *,' scale- & aerosol-aware mass-flux shallow conv scheme (2017)'
-        elseif (Model%imfshalcnv == 3) then
-          print *,' Grell-Freitas scale- & aerosol-aware mass-flux shallow conv scheme (2013)'
-        elseif (Model%imfshalcnv == 4) then
-          print *,' New Tiedtke cumulus scheme'
+#endif
         else
           print *,' unknown mass-flux scheme in use - defaulting to no shallow convection'
           Model%imfshalcnv = -1
@@ -4179,7 +4216,9 @@ module GFS_typedefs
 
     Model%lmfshal  = (Model%shal_cnv .and. Model%imfshalcnv > 0)
 #ifdef CCPP
-    Model%lmfdeep2 = (Model%imfdeepcnv == 2 .or. Model%imfdeepcnv == 3 .or. Model%imfdeepcnv == 4)
+    Model%lmfdeep2 = (Model%imfdeepcnv == Model%imfdeepcnv_sas          &
+                      .or. Model%imfdeepcnv == Model%imfdeepcnv_gf      &
+                      .or. Model%imfdeepcnv == Model%imfdeepcnv_ntiedtke)
 #else
     Model%lmfdeep2 = (Model%imfdeepcnv == 2)
 #endif
@@ -4389,6 +4428,7 @@ module GFS_typedefs
       print *, ' redrag            : ', Model%redrag
       print *, ' hybedmf           : ', Model%hybedmf
       print *, ' satmedmf          : ', Model%satmedmf
+      print *, ' isatmedmf         : ', Model%isatmedmf
       print *, ' shinhong          : ', Model%shinhong
       print *, ' do_ysu            : ', Model%do_ysu
       print *, ' dspheat           : ', Model%dspheat
@@ -4734,7 +4774,7 @@ module GFS_typedefs
     Tbd%htswc = clear_val
     Tbd%htsw0 = clear_val
 
-    if (Model%imfdeepcnv == 3 .or. Model%imfdeepcnv == 4) then
+    if (Model%imfdeepcnv == Model%imfdeepcnv_gf .or. Model%imfdeepcnv == Model%imfdeepcnv_ntiedtke) then
        allocate(Tbd%forcet(IM, Model%levs))
        allocate(Tbd%forceq(IM, Model%levs))
        allocate(Tbd%prevst(IM, Model%levs))
@@ -4745,7 +4785,7 @@ module GFS_typedefs
        Tbd%prevsq = clear_val
    end if
 
-   if (Model%imfdeepcnv == 3) then
+   if (Model%imfdeepcnv == Model%imfdeepcnv_gf) then
       allocate(Tbd%cactiv(IM))
       Tbd%cactiv = zero
    end if
