@@ -1119,15 +1119,10 @@ module FV3GFS_io_mod
           Sfcprop(nb)%zorll(ix) = Sfcprop(nb)%zorlo(ix)
           Sfcprop(nb)%zorl(ix)  = Sfcprop(nb)%zorlo(ix)
           Sfcprop(nb)%tsfc(ix)  = Sfcprop(nb)%tsfco(ix)
-          if (Sfcprop(nb)%slmsk(ix) < 0.1 .or. Sfcprop(nb)%slmsk(ix) > 1.9) then
+          if (Sfcprop(nb)%slmsk(ix) > 1.9) then
             Sfcprop(nb)%landfrac(ix) = 0.0
-            if (Sfcprop(nb)%oro_uf(ix) > 0.01) then
-              Sfcprop(nb)%lakefrac(ix) = 1.0        ! lake
-            else
-              Sfcprop(nb)%lakefrac(ix) = 0.0        ! ocean
-            endif
           else
-            Sfcprop(nb)%landfrac(ix) = 1.0          ! land
+            Sfcprop(nb)%landfrac(ix) = Sfcprop(nb)%slmsk(ix)
           endif
         enddo
       enddo

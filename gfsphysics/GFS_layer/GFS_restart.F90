@@ -117,6 +117,9 @@ module GFS_restart
 #endif
 
     Restart%num3d = Model%ntot3d
+    if(Model%lrefres) then
+       Restart%num3d = Model%ntot3d+1
+    endif
 #ifdef CCPP
     ! GF
     if (Model%imfdeepcnv == 3) then
@@ -252,7 +255,13 @@ module GFS_restart
         Restart%data(nb,num)%var3p => Tbd(nb)%phy_f3d(:,:,num)
       enddo
     enddo
-
+    if (Model%lrefres) then
+      num = Model%ntot3d+1
+      restart%name3d(num) = 'ref_f3d'
+      do nb = 1,nblks
+        Restart%data(nb,num)%var3p => IntDiag(nb)%refl_10cm(:,:)
+      enddo
+    endif
 #ifdef CCPP
     !--- RAP/HRRR-specific variables, 3D
     num = Model%ntot3d
