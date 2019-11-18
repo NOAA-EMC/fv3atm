@@ -180,7 +180,7 @@
      &      sfcnirbmd, sfcnirdfd, sfcvisbmd, sfcvisdfd
 
       real(kind=kind_phys), dimension(ix,levs), intent(in) :: swh,  hlw
-     &,                                                       swhc, hlwc&
+     &,                                                       swhc, hlwc
 
 !  ---  input/output:
       real(kind=kind_phys), dimension(im,levs), intent(inout) :: dtdt   &

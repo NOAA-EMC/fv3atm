@@ -71,6 +71,7 @@
       logical,save      :: first_init=.false.
       logical,save      :: first_run=.false.
       logical,save      :: first_getlatlon=.true.
+      logical,save      :: change_wrtidate=.false.
 !
 !-----------------------------------------------------------------------
 !
@@ -173,7 +174,8 @@
       real(ESMF_KIND_R4)                      :: valueR4
       real(ESMF_KIND_R8)                      :: valueR8
 
-      integer :: attCount, axeslen, jidx, noutfile
+      integer :: attCount, axeslen, jidx, idx, noutfile
+      character(19)  :: newdate
       character(128) :: FBlist_outfilename(100), outfile_name
       character(128),dimension(:,:), allocatable    :: outfilename
       real(8), dimension(:),         allocatable    :: slat
@@ -183,7 +185,6 @@
       real(ESMF_KIND_R8)                            :: geo_lon, geo_lat
       real(ESMF_KIND_R8)                            :: lon1_r8, lat1_r8
       real(ESMF_KIND_R8)                            :: x1, y1, x, y
-      type(ESMF_Time)                               :: IO_BASETIME_IAU
       type(ESMF_TimeInterval)                       :: IAU_offsetTI
       type(ESMF_DataCopy_Flag) :: copyflag=ESMF_DATACOPY_REFERENCE
 !     real(8),parameter :: PI=3.14159265358979d0
@@ -255,6 +256,12 @@
         line=__LINE__, file=__FILE__)) return
 
       if( wrt_int_state%write_dopost ) then
+#ifdef NO_INLINE_POST
+        rc = ESMF_RC_NOT_IMPL
+        print *,'inline post not available on this machine'
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, file=__FILE__)) return
+#endif
         call esmf_configgetattribute(cf,wrt_int_state%post_nlunit,default=777,label='nlunit:',rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
           line=__LINE__, file=__FILE__)) return
@@ -463,8 +470,32 @@
         call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
       endif
+!
+!-----------------------------------------------------------------------
+!***  get write grid component initial time from clock
+!-----------------------------------------------------------------------
+!
+      call ESMF_ClockGet(clock    =CLOCK                                &  !<-- The ESMF Clock
+                        ,startTime=wrt_int_state%IO_BASETIME            &  !<-- The Clock's starting time
+                        ,rc       =RC)
 
-
+      call ESMF_TimeGet(time=wrt_int_state%IO_BASETIME,yy=idate(1),mm=idate(2),dd=idate(3),h=idate(4), &
+                        m=idate(5),s=idate(6),rc=rc)
+!     if (lprnt) write(0,*) 'in wrt initial, io_baseline time=',idate,'rc=',rc
+      idate(7) = 1
+      wrt_int_state%idate = idate
+      wrt_int_state%fdate = idate
+! update IO-BASETIME and idate on write grid comp when IAU is enabled
+      if(iau_offset > 0 ) then
+        call ESMF_TimeIntervalSet(IAU_offsetTI, h=iau_offset, rc=rc)
+        wrt_int_state%IO_BASETIME = wrt_int_state%IO_BASETIME + IAU_offsetTI
+        call ESMF_TimeGet(time=wrt_int_state%IO_BASETIME,yy=idate(1),mm=idate(2),dd=idate(3),h=idate(4), &
+                          m=idate(5),s=idate(6),rc=rc)
+        wrt_int_state%idate = idate
+        change_wrtidate = .true.
+       if (lprnt) print *,'in wrt initial, with iau, io_baseline time=',idate,'rc=',rc
+      endif
+!
 ! Create field bundle
 !-------------------------------------------------------------------
 !
@@ -861,6 +892,17 @@
 
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
+! update the time:units when idate on write grid component is changed 
+        if ( index(trim(attNameList(i)),'time:units')>0) then
+          if ( change_wrtidate ) then
+            idx = index(trim(valueS),' since ')
+            if(lprnt) print *,'in write grid comp, time:unit=',trim(valueS)
+            write(newdate,'(I4.4,a,I2.2,a,I2.2,a,I2.2,a,I2.2,a,I2.2)') idate(1),'-',   &
+              idate(2),'-',idate(3),' ',idate(4),':',idate(5),':',idate(6)
+            valueS = valueS(1:idx+6)//newdate
+            if(lprnt) print *,'in write grid comp, new time:unit=',trim(valueS)
+          endif
+        endif
         call ESMF_AttributeSet(wrtgrid, convention="NetCDF", purpose="FV3", &
                                name=trim(attNameList(i)), value=valueS, rc=rc)
 
@@ -1028,28 +1070,6 @@
       call ESMF_FieldBundleAdd(gridFB, (/field/), rc=rc)
 
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-!
-!-----------------------------------------------------------------------
-!***  SET THE IO_BaseTime TO THE INITIAL CLOCK TIME.
-!-----------------------------------------------------------------------
-!
-      call ESMF_ClockGet(clock    =CLOCK                                &  !<-- The ESMF Clock
-                        ,startTime=wrt_int_state%IO_BASETIME            &  !<-- The Clock's starting time
-                        ,rc       =RC)
-
-      call ESMF_TimeGet(time=wrt_int_state%IO_BASETIME,yy=idate(1),mm=idate(2),dd=idate(3),h=idate(4), &
-                        m=idate(5),s=idate(6),rc=rc)
-!     if (lprnt) write(0,*) 'in wrt initial, io_baseline time=',idate,'rc=',rc
-      idate(7) = 1
-      wrt_int_state%idate = idate
-      wrt_int_state%fdate = idate
-      if(iau_offset > 0 ) then
-        call ESMF_TimeIntervalSet(IAU_offsetTI, h=iau_offset, rc=rc)
-        IO_BASETIME_IAU = wrt_int_state%IO_BASETIME + IAU_offsetTI
-        call ESMF_TimeGet(time=IO_BASETIME_IAU,yy=idate(1),mm=idate(2),dd=idate(3),h=idate(4), &
-                          m=idate(5),s=idate(6),rc=rc)
-!       if (lprnt) write(0,*) 'in wrt initial, with iau, io_baseline time=',idate,'rc=',rc
-      endif
 !
 !-----------------------------------------------------------------------
 !***  SET THE FIRST HISTORY FILE'S TIME INDEX.
@@ -1244,10 +1264,9 @@
 !         'nseconds_num=',nseconds_num,nseconds_den,'mype=',mype
 !
       nf_seconds = nf_hours*3600+nf_minuteS*60+nseconds+real(nseconds_num)/real(nseconds_den)
-      ! shift forecast hour by iau_offset if iau is on.
-      nf_seconds = nf_seconds - iau_offset*3600
       wrt_int_state%nfhour = nf_seconds/3600.
       nf_hours   = int(nf_seconds/3600.)
+      if(mype == lead_write_task) print *,'in write grid comp, nf_hours=',nf_hours
       ! if iau_offset > nf_hours, don't write out anything
       if (nf_hours < 0) return
 
