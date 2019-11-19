@@ -4216,7 +4216,7 @@ module GFS_typedefs
 
     Model%lmfshal  = (Model%shal_cnv .and. Model%imfshalcnv > 0)
 #ifdef CCPP
-    Model%lmfdeep2 = (Model%imfdeepcnv == Model%imfdeepcnv_sas          &
+    Model%lmfdeep2 = (Model%imfdeepcnv == Model%imfdeepcnv_samf         &
                       .or. Model%imfdeepcnv == Model%imfdeepcnv_gf      &
                       .or. Model%imfdeepcnv == Model%imfdeepcnv_ntiedtke)
 #else
