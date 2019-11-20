@@ -3206,6 +3206,10 @@ module module_physics_driver
         dqdt(1:im,:,1) = Stateout%gq0(1:im,:,1)
       endif   ! end if_ldiag3d/lgocart
 
+      if (Model%lgocart .or. Model%cplchm) then
+        Coupling%dqdti(1:im,:) = 0._kind_phys
+      endif   ! end if_lgocart/cplchm
+
 #ifdef GFS_HYDRO
       call get_phi(im, ix, levs, ntrac, Stateout%gt0, Stateout%gq0,    &
                    Model%thermodyn_id, Model%sfcpress_id,              &
