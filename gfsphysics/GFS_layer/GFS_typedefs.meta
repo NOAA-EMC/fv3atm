@@ -2777,15 +2777,87 @@
   units = flag
   dimensions = ()
   type = integer
+[imfshalcnv_sas]
+  standard_name = flag_for_sas_shallow_convection_scheme
+  long_name = flag for SAS shallow convection scheme
+  units = flag
+  dimensions = ()
+  type = integer
+[imfshalcnv_samf]
+  standard_name = flag_for_samf_shallow_convection_scheme
+  long_name = flag for SAMF shallow convection scheme
+  units = flag
+  dimensions = ()
+  type = integer
+[imfshalcnv_gf]
+  standard_name = flag_for_gf_shallow_convection_scheme
+  long_name = flag for Grell-Freitas shallow convection scheme
+  units = flag
+  dimensions = ()
+  type = integer
+[imfshalcnv_gf]
+  standard_name = flag_for_ntiedtke_shallow_convection_scheme
+  long_name = flag for new Tiedtke shallow convection scheme
+  units = flag
+  dimensions = ()
+  type = integer
 [imfdeepcnv]
   standard_name = flag_for_mass_flux_deep_convection_scheme
   long_name = flag for mass-flux deep convection scheme
   units = flag
   dimensions = ()
   type = integer
+[imfdeepcnv_sas]
+  standard_name = flag_for_sas_deep_convection_scheme
+  long_name = flag for SAS deep convection scheme
+  units = flag
+  dimensions = ()
+  type = integer
+[imfdeepcnv_samf]
+  standard_name = flag_for_samf_deep_convection_scheme
+  long_name = flag for SAMF deep convection scheme
+  units = flag
+  dimensions = ()
+  type = integer
+[imfdeepcnv_gf]
+  standard_name = flag_for_gf_deep_convection_scheme
+  long_name = flag for Grell-Freitas deep convection scheme
+  units = flag
+  dimensions = ()
+  type = integer
+[imfdeepcnv_ntiedtke]
+  standard_name = flag_for_ntiedtke_deep_convection_scheme
+  long_name = flag for new Tiedtke deep convection scheme
+  units = flag
+  dimensions = ()
+  type = integer
+[isatmedmf]
+  standard_name = choice_of_scale_aware_TKE_moist_EDMF_PBL
+  long_name = choice of scale-aware TKE moist EDMF PBL scheme
+  units = none
+  dimensions = ()
+  type = integer
+[isatmedmf_vdif]
+  standard_name = choice_of_original_scale_aware_TKE_moist_EDMF_PBL
+  long_name = choice of original scale-aware TKE moist EDMF PBL scheme
+  units = none
+  dimensions = ()
+  type = integer
+[isatmedmf_vdifq]
+  standard_name = choice_of_updated_scale_aware_TKE_moist_EDMF_PBL
+  long_name = choice of updated scale-aware TKE moist EDMF PBL scheme
+  units = none
+  dimensions = ()
+  type = integer
 [nmtvr]
   standard_name = number_of_statistical_measures_of_subgrid_orography
   long_name = number of topographic variables in GWD
+  units = count
+  dimensions = ()
+  type = integer
+[jcap]
+  standard_name = number_of_spectral_wave_trancation_for_sas
+  long_name = number of spectral wave trancation used only by sascnv and shalcnv
   units = count
   dimensions = ()
   type = integer
@@ -2896,91 +2968,91 @@
   kind = kind_phys
 [c0s_deep]
   standard_name = rain_conversion_parameter_deep_convection
-  long_name = convective rain conversion parameter for deep conv.
+  long_name = convective rain conversion parameter for deep convection
   units = m-1
   dimensions = ()
   type = real
   kind = kind_phys
 [c1_deep]
   standard_name = detrainment_conversion_parameter_deep_convection
-  long_name = convective detrainment conversion parameter for deep conv.
+  long_name = convective detrainment conversion parameter for deep convection
   units = m-1
   dimensions = ()
   type = real
   kind = kind_phys
 [betal_deep]
   standard_name = downdraft_fraction_reaching_surface_over_land_deep_convection
-  long_name = downdraft fraction reaching surface over land for deep conv.
+  long_name = downdraft fraction reaching surface over land for deep convection
   units = frac
   dimensions = ()
   type = real
   kind = kind_phys
 [betas_deep]
   standard_name = downdraft_fraction_reaching_surface_over_ocean_deep_convection
-  long_name = downdraft fraction reaching surface over ocean for deep conv.
+  long_name = downdraft fraction reaching surface over ocean for deep convection
   units = frac
   dimensions = ()
   type = real
   kind = kind_phys
 [evfact_deep]
   standard_name = rain_evaporation_coefficient_deep_convection
-  long_name = convective rain evaporation coefficient for deep conv.
+  long_name = convective rain evaporation coefficient for deep convection
   units = frac
   dimensions = ()
   type = real
   kind = kind_phys
 [evfactl_deep]
   standard_name = rain_evaporation_coefficient_over_land_deep_convection
-  long_name = convective rain evaporation coefficient over land for deep conv.
+  long_name = convective rain evaporation coefficient over land for deep convection
   units = frac
   dimensions = ()
   type = real
   kind = kind_phys
 [pgcon_deep]
   standard_name = momentum_transport_reduction_factor_pgf_deep_convection
-  long_name = reduction factor in momentum transport due to deep conv. induced pressure gradient force
+  long_name = reduction factor in momentum transport due to deep convection induced pressure gradient force
   units = frac
   dimensions = ()
   type = real
   kind = kind_phys
 [asolfac_deep]
   standard_name = aerosol_aware_parameter_deep_convection
-  long_name = aerosol-aware parameter inversely proportional to CCN number concentraion from Lim (2011) for deep conv.
+  long_name = aerosol-aware parameter inversely proportional to CCN number concentraion from Lim (2011) for deep convection
   units = none
   dimensions = ()
   type = real
   kind = kind_phys
 [clam_shal]
   standard_name = entrainment_rate_coefficient_shallow_convection
-  long_name = entrainment rate coefficient for shal conv.
+  long_name = entrainment rate coefficient for shallow convection
   units = none
   dimensions = ()
   type = real
   kind = kind_phys
 [c0s_shal]
   standard_name = rain_conversion_parameter_shallow_convection
-  long_name = convective rain conversion parameter for shal conv.
+  long_name = convective rain conversion parameter for shallow convection
   units = m-1
   dimensions = ()
   type = real
   kind = kind_phys
 [c1_shal]
   standard_name = detrainment_conversion_parameter_shallow_convection
-  long_name = convective detrainment conversion parameter for shal conv.
+  long_name = convective detrainment conversion parameter for shallow convection
   units = m-1
   dimensions = ()
   type = real
   kind = kind_phys
 [pgcon_shal]
   standard_name = momentum_transport_reduction_factor_pgf_shallow_convection
-  long_name = reduction factor in momentum transport due to shal conv. induced pressure gradient force
+  long_name = reduction factor in momentum transport due to shallow convection induced pressure gradient force
   units = frac
   dimensions = ()
   type = real
   kind = kind_phys
 [asolfac_shal]
   standard_name = aerosol_aware_parameter_shallow_convection
-  long_name = aerosol-aware parameter inversely proportional to CCN number concentraion from Lim (2011) for shal conv.
+  long_name = aerosol-aware parameter inversely proportional to CCN number concentraion from Lim (2011) for shallow convection
   units = none
   dimensions = ()
   type = real
@@ -5294,14 +5366,14 @@
   kind = kind_phys
 [dt3dt(:,:,4)]
   standard_name = cumulative_change_in_temperature_due_to_deep_convection
-  long_name = cumulative change in temperature due to deep conv.
+  long_name = cumulative change in temperature due to deep convection
   units = K
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
 [dt3dt(:,:,5)]
   standard_name = cumulative_change_in_temperature_due_to_shal_convection
-  long_name = cumulative change in temperature due to shal conv.
+  long_name = cumulative change in temperature due to shallow convection
   units = K
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
@@ -5329,14 +5401,14 @@
   kind = kind_phys
 [dq3dt(:,:,2)]
   standard_name = cumulative_change_in_water_vapor_specific_humidity_due_to_deep_convection
-  long_name = cumulative change in water vapor specific humidity due to deep conv.
+  long_name = cumulative change in water vapor specific humidity due to deep convection
   units = kg kg-1
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
 [dq3dt(:,:,3)]
   standard_name = cumulative_change_in_water_vapor_specific_humidity_due_to_shal_convection
-  long_name = cumulative change in water vapor specific humidity due to shal conv.
+  long_name = cumulative change in water vapor specific humidity due to shallow convection
   units = kg kg-1
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
@@ -7103,7 +7175,7 @@
   kind = kind_phys
 [ncstrac]
   standard_name = number_of_tracers_for_CS
-  long_name = number of convectively transported tracers in Chikira-Sugiyama deep conv. scheme
+  long_name = number of convectively transported tracers in Chikira-Sugiyama deep convection scheme
   units = count
   dimensions = ()
   type = integer
