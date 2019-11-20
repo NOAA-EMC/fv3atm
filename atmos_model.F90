@@ -2554,24 +2554,24 @@ end subroutine atmos_data_type_chksum
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          IPD_Data(nb)%coupling%dusfc_cpl(ix)  = 0.0
-          IPD_Data(nb)%coupling%dvsfc_cpl(ix)  = 0.0
-          IPD_Data(nb)%coupling%dtsfc_cpl(ix)  = 0.0
-          IPD_Data(nb)%coupling%dqsfc_cpl(ix)  = 0.0
-          IPD_Data(nb)%coupling%dlwsfc_cpl(ix) = 0.0
-          IPD_Data(nb)%coupling%dswsfc_cpl(ix) = 0.0
-          IPD_Data(nb)%coupling%rain_cpl(ix)   = 0.0
-          IPD_Data(nb)%coupling%nlwsfc_cpl(ix) = 0.0
-          IPD_Data(nb)%coupling%nswsfc_cpl(ix) = 0.0
-          IPD_Data(nb)%coupling%dnirbm_cpl(ix) = 0.0
-          IPD_Data(nb)%coupling%dnirdf_cpl(ix) = 0.0
-          IPD_Data(nb)%coupling%dvisbm_cpl(ix) = 0.0
-          IPD_Data(nb)%coupling%dvisdf_cpl(ix) = 0.0
-          IPD_Data(nb)%coupling%nnirbm_cpl(ix) = 0.0
-          IPD_Data(nb)%coupling%nnirdf_cpl(ix) = 0.0
-          IPD_Data(nb)%coupling%nvisbm_cpl(ix) = 0.0
-          IPD_Data(nb)%coupling%nvisdf_cpl(ix) = 0.0
-          IPD_Data(nb)%coupling%snow_cpl(ix)   = 0.0
+          IPD_Data(nb)%coupling%dusfc_cpl(ix)  = 0._IPD_kind_phys
+          IPD_Data(nb)%coupling%dvsfc_cpl(ix)  = 0._IPD_kind_phys
+          IPD_Data(nb)%coupling%dtsfc_cpl(ix)  = 0._IPD_kind_phys
+          IPD_Data(nb)%coupling%dqsfc_cpl(ix)  = 0._IPD_kind_phys
+          IPD_Data(nb)%coupling%dlwsfc_cpl(ix) = 0._IPD_kind_phys
+          IPD_Data(nb)%coupling%dswsfc_cpl(ix) = 0._IPD_kind_phys
+          IPD_Data(nb)%coupling%rain_cpl(ix)   = 0._IPD_kind_phys
+          IPD_Data(nb)%coupling%nlwsfc_cpl(ix) = 0._IPD_kind_phys
+          IPD_Data(nb)%coupling%nswsfc_cpl(ix) = 0._IPD_kind_phys
+          IPD_Data(nb)%coupling%dnirbm_cpl(ix) = 0._IPD_kind_phys
+          IPD_Data(nb)%coupling%dnirdf_cpl(ix) = 0._IPD_kind_phys
+          IPD_Data(nb)%coupling%dvisbm_cpl(ix) = 0._IPD_kind_phys
+          IPD_Data(nb)%coupling%dvisdf_cpl(ix) = 0._IPD_kind_phys
+          IPD_Data(nb)%coupling%nnirbm_cpl(ix) = 0._IPD_kind_phys
+          IPD_Data(nb)%coupling%nnirdf_cpl(ix) = 0._IPD_kind_phys
+          IPD_Data(nb)%coupling%nvisbm_cpl(ix) = 0._IPD_kind_phys
+          IPD_Data(nb)%coupling%nvisdf_cpl(ix) = 0._IPD_kind_phys
+          IPD_Data(nb)%coupling%snow_cpl(ix)   = 0._IPD_kind_phys
         enddo
       enddo
     endif !cplflx
