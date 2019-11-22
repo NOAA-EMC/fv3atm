@@ -2379,6 +2379,7 @@ module module_physics_driver
         else
           if (Model%satmedmf) then
              if (Model%isatmedmf == 0) then   ! initial version of satmedmfvdif (Nov 2018)
+!## CCPP ##* satmedmfvdif.F/satmedmfvdif_run Note: The conditional above is checked in satmedmfvdif_init
                 call satmedmfvdif(ix, im, levs, nvdiff, ntcw, ntiw, ntke,           &
                        dvdt, dudt, dtdt, dqdt,                                      &
                        Statein%ugrs, Statein%vgrs, Statein%tgrs, Statein%qgrs,      &
@@ -2389,7 +2390,9 @@ module module_physics_driver
                        Statein%prslk, Statein%phii, Statein%phil, dtp,              &
                        Model%dspheat, dusfc1, dvsfc1, dtsfc1, dqsfc1, Diag%hpbl,    &
                        kinver, Model%xkzm_m, Model%xkzm_h, Model%xkzm_s)
+!*## CCPP ##
              elseif (Model%isatmedmf == 1) then   ! updated version of satmedmfvdif (May 2019)
+!## CCPP ##* satmedmfvdifq.F/satmedmfvdifq_run Note: The conditional above is checked in satmedmfvdifq_init
                 call satmedmfvdifq(ix, im, levs, nvdiff, ntcw, ntiw, ntke,          &
                        dvdt, dudt, dtdt, dqdt,                                      &
                        Statein%ugrs, Statein%vgrs, Statein%tgrs, Statein%qgrs,      &
@@ -2401,6 +2404,7 @@ module module_physics_driver
                        Model%dspheat, dusfc1, dvsfc1, dtsfc1, dqsfc1, Diag%hpbl,    &
                        kinver, Model%xkzm_m, Model%xkzm_h, Model%xkzm_s,            &
                        Model%dspfac, Model%bl_upfr, Model%bl_dnfr)
+!*## CCPP ##
              endif
           elseif (Model%hybedmf) then
             if (Model%moninq_fac > 0) then
@@ -2628,8 +2632,7 @@ module module_physics_driver
         else
           if (Model%satmedmf) then
              if (Model%isatmedmf == 0) then   ! initial version of satmedmfvdif (Nov 2018)
-!## CCPP ## satmedmfvdif.F/satmedmfvdif_run Note: The conditional above is not checked in the CCPP scheme;
-! therefore the use of this scheme is controlled via the CCPP SDF
+!## CCPP ##* satmedmfvdif.F/satmedmfvdif_run Note: The conditional above is checked in satmedmfvdif_init
                 call satmedmfvdif(ix, im, levs, nvdiff, ntcw, ntiwx, ntkev,           &
                          dvdt, dudt, dtdt, dvdftra,                                   &
                          Statein%ugrs, Statein%vgrs, Statein%tgrs, vdftra,            &
@@ -2642,7 +2645,7 @@ module module_physics_driver
                          kinver, Model%xkzm_m, Model%xkzm_h, Model%xkzm_s)
 !*## CCPP ##
              elseif (Model%isatmedmf == 1) then   ! updated version of satmedmfvdif (May 2019)
-!## CCPP ##* This scheme is not in the CCPP yet.
+!## CCPP ##* satmedmfvdifq.F/satmedmfvdifq_run Note: The conditional above is checked in satmedmfvdifq_init
                 call satmedmfvdifq(ix, im, levs, nvdiff, ntcw, ntiwx, ntkev,          &
                          dvdt, dudt, dtdt, dvdftra,                                   &
                          Statein%ugrs, Statein%vgrs, Statein%tgrs, vdftra,            &
@@ -3720,10 +3723,10 @@ module module_physics_driver
           enddo
         endif
 !*## CCPP ##
-!## CCPP ##* This scheme is not in the CCPP.
         if (.not. Model%ras .and. .not. Model%cscnv) then
 
           if (Model%imfdeepcnv == 1) then             ! no random cloud top
+!## CCPP ##* sascnvn.F/sascnvn_run
             call sascnvn (im, ix, levs, Model%jcap, dtp, del,                    &
                           Statein%prsl, Statein%pgr, Statein%phil, clw(:,:,1:2), &
                           Stateout%gq0(:,:,1), Stateout%gt0, Stateout%gu0,       &
@@ -4288,7 +4291,7 @@ module module_physics_driver
 !                                               --------------------------------------
           if (Model%imfshalcnv == 1) then      ! opr option now at 2014
                                                !-----------------------
-!## CCPP ##* Not in the CCPP yet.
+!## CCPP ##* shalcnv.F/shalcnv_run
             call shalcnv (im, ix, levs, Model%jcap, dtp, del, Statein%prsl, &
                           Statein%pgr, Statein%phil, clw, Stateout%gq0,     &
                           Stateout%gt0, Stateout%gu0, Stateout%gv0, rain1,  &
@@ -4296,7 +4299,9 @@ module module_physics_driver
                           Diag%hpbl, hflx, evap, ud_mf, dt_mf, cnvw, cnvc,  &
                           Model%clam_shal, Model%c0s_shal, Model%c1_shal,   &
                           Model%pgcon_shal)
+!*## CCPP ##
 
+!## CCPP ##* GFS_SCNV_generic.F90/GFS_SCNV_generic_post_run
             do i=1,im
               Diag%rainc(i) = Diag%rainc(i) + frain * rain1(i)
             enddo
@@ -4336,7 +4341,7 @@ module module_physics_driver
                               Model%clam_shal,  Model%c0s_shal, Model%c1_shal,     &
                               Model%pgcon_shal, Model%asolfac_shal)
 !*## CCPP ##
-!## CCPP ##* samfshalcnv.f/samfshalcnv_post_run
+!## CCPP ##* GFS_SCNV_generic.F90/GFS_SCNV_generic_post_run
             do i=1,im
               Diag%rainc(i) = Diag%rainc(i) + frain * rain1(i)
             enddo
