@@ -368,6 +368,13 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+[gq0(:,:,index_for_mass_weighted_rime_factor)]
+  standard_name = mass_weighted_rime_factor_updated_by_physics
+  long_name = mass weighted rime factor updated by physics
+  units = kg kg-1
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
 [gq0(:,:,index_for_water_friendly_aerosols)]
   standard_name = water_friendly_aerosol_number_concentration_updated_by_physics
   long_name = number concentration of water-friendly aerosols updated by physics
@@ -2162,6 +2169,12 @@
   units = flag
   dimensions = ()
   type = integer
+[imp_physics_fer_hires]
+  standard_name = flag_for_fer_hires_microphysics_scheme
+  long_name = choice of Ferrier-Aligo microphysics scheme
+  units = flag
+  dimensions = ()
+  type = integer
 [imp_physics_gfdl]
   standard_name = flag_for_gfdl_microphysics_scheme
   long_name = choice of GFDL microphysics scheme
@@ -2555,6 +2568,19 @@
   units = index
   dimensions = ()
   type = integer
+[spec_adv]
+  standard_name = flag_for_individual_cloud_species_advected 
+  long_name = flag for individual cloud species advected
+  units = flag 
+  dimensions = ()
+  type = logical
+[flgmin]
+  standard_name = minimum_large_ice_fraction
+  long_name = minimum large ice fraction in F-A mp scheme
+  units = frac
+  dimensions = (2)
+  type = real
+  kind = kind_phys
 [iopt_dveg]
   standard_name = flag_for_dynamic_vegetation_option
   long_name = choice for dynamic vegetation option (see noahmp module for definition)
@@ -2639,6 +2665,13 @@
   units = flag
   dimensions = ()
   type = logical
+[rhgrd]
+  standard_name = fa_threshold_relative_humidity_for_onset_of_condensation
+  long_name = relative humidity threshold parameter for condensation for FA scheme
+  units = none
+  dimensions = ()
+  type = real
+  kind = kind_phys
 [flipv]
   standard_name = flag_flip
   long_name = vertical flip logical
@@ -3415,6 +3448,12 @@
 [ntke]
   standard_name = index_for_turbulent_kinetic_energy
   long_name = tracer index for turbulent kinetic energy
+  units = index
+  dimensions = ()
+  type = integer
+[nqrimef]
+  standard_name = index_for_mass_weighted_rime_factor
+  long_name = tracer index for mass weighted rime factor
   units = index
   dimensions = ()
   type = integer
@@ -4853,6 +4892,13 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+[train]
+  standard_name = accumulated_change_of_air_temperature_due_to_FA_scheme
+  long_name = accumulated change of air temperature due to FA MP scheme
+  units = K
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
 [gflux]
   standard_name = cumulative_surface_ground_heat_flux_multiplied_by_timestep
   long_name = cumulative groud conductive heat flux multiplied by timestep
@@ -5764,6 +5810,76 @@
 [ccpp-arg-table]
   name = GFS_interstitial_type
   type = ddt
+[qv_r]
+  standard_name = humidity_mixing_ratio
+  long_name = the ratio of the mass of water vapor to the mass of dry air
+  units = kg kg-1
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+[qc_r]
+  standard_name = cloud_liquid_water_mixing_ratio
+  long_name = the ratio of the mass of liquid water to the mass of dry air
+  units = kg kg-1
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+[qr_r]
+  standard_name = cloud_rain_water_mixing_ratio
+  long_name = the ratio of the mass rain water to the mass of dry air
+  units = kg kg-1
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+[qi_r]
+  standard_name = cloud_ice_mixing_ratio
+  long_name = the ratio of the mass of ice to the mass of dry air
+  units = kg kg-1
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+[qs_r]
+  standard_name = cloud_snow_mixing_ratio
+  long_name = the ratio of the mass of snow to mass of dry air
+  units = kg kg-1
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+[qg_r]
+  standard_name = mass_weighted_rime_factor_mixing_ratio
+  long_name = the ratio of the mass of rime factor to mass of dry air
+  units = kg kg-1
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+[f_ice]
+  standard_name = fraction_of_ice_water_cloud
+  long_name = fraction of ice water cloud
+  units = frac
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+[f_rain]
+  standard_name = fraction_of_rain_water_cloud
+  long_name = fraction of rain water cloud
+  units = frac
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+[f_rimef]
+  standard_name = rime_factor
+  long_name = rime factor
+  units = frac
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+[cwm]
+  standard_name = total_cloud_condensate_mixing_ratio_updated_by_physics
+  long_name = total cloud condensate mixing ratio (except water vapor) updated by physics
+  units = kg kg-1
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
 [adjsfculw_ocean]
   standard_name = surface_upwelling_longwave_flux_over_ocean_interstitial
   long_name = surface upwelling longwave flux at current time over ocean (temporary use as interstitial)
@@ -7229,7 +7345,7 @@
   type = integer
 [ntiwx]
   standard_name = index_for_ice_cloud_condensate_vertical_diffusion_tracer
-  long_name = index for ice cloud condensate n the vertically diffused tracer array
+  long_name = index for ice cloud condensate in the vertically diffused tracer array
   units = index
   dimensions = ()
   type = integer
@@ -8314,6 +8430,13 @@
   standard_name = ratio_of_dry_air_to_water_vapor_gas_constants
   long_name = rd/rv
   units = none
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[con_epsq]
+  standard_name = minimum_value_of_specific_humidity
+  long_name = floor value for specific humidity
+  units = kg kg-1
   dimensions = ()
   type = real
   kind = kind_phys
