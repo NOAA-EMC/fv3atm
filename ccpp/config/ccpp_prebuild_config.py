@@ -233,7 +233,6 @@ SCHEME_FILES = {
     'FV3/ccpp/physics/physics/sfc_sice.f'                        : [ 'slow_physics' ],
     # HAFS FER_HIRES
     'FV3/ccpp/physics/physics/mp_fer_hires.F90'                  : [ 'slow_physics' ],
-    'FV3/ccpp/physics/physics/HAFS_update_moist.F90'             : [ 'slow_physics' ],
     # for testing the <init> and <finalize> sections
     'FV3/ccpp/physics/physics/GFS_suite_init_finalize_test.F90'  : [ 'slow_physics' ],
     }
