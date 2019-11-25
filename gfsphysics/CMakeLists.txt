@@ -22,7 +22,7 @@ set(CCPP_SOURCES
     physics/radsw_param.f
     physics/set_soilveg.f
 
-	physics/noahmp_tables.f90
+    physics/noahmp_tables.f90
 
     physics/machine.F
 
@@ -130,7 +130,7 @@ set(IPD_SOURCES
     physics/sfc_diag.f
     physics/sfc_diff.f
     physics/sfc_drv.f
-	physics/sfc_noahmp_drv.f
+    physics/sfc_noahmp_drv.f
     physics/sfc_nst.f
     physics/sfc_ocean.f
     physics/sfc_sice.f
@@ -152,10 +152,10 @@ set(IPD_SOURCES
     physics/module_nst_parameters.f90
     physics/module_nst_water_prop.f90
     physics/ozinterp.f90
-	physics/module_wrf_utl.f90
-	physics/noahmp_tables.f90
-	physics/module_sf_noahmplsm.f90
-	physics/module_sf_noahmp_glacier.f90
+    physics/module_wrf_utl.f90
+    physics/noahmp_tables.f90
+    physics/module_sf_noahmplsm.f90
+    physics/module_sf_noahmp_glacier.f90
     physics/iccninterp.f90
     physics/aerinterp.f90
     physics/wam_f107_kp_mod.f90
