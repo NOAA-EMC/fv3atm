@@ -513,10 +513,18 @@ module FV3GFS_io_mod
     nvar_s2o = 18
 #ifdef CCPP
     if (Model%lsm == Model%lsm_ruc .and. warm_start) then
-      nvar_s2r = 6
+      if(Model%rdlai) then
+        nvar_s2r = 7
+      else
+        nvar_s2r = 6
+      end if
       nvar_s3  = 5
     else
-      nvar_s2r = 0
+      if(Model%rdlai) then
+       nvar_s2r = 1
+      else
+       nvar_s2r = 0
+      endif
       nvar_s3  = 3
     endif
 #else
@@ -759,6 +767,11 @@ module FV3GFS_io_mod
         sfc_name2(nvar_s2m+22) = 'tsnow'
         sfc_name2(nvar_s2m+23) = 'snowfall_acc'
         sfc_name2(nvar_s2m+24) = 'swe_snowfall_acc'
+        if (Model%rdlai) then
+          sfc_name2(nvar_s2m+25) = 'lai'
+        endif
+      else if (Model%lsm == Model%lsm_ruc .and. Model%rdlai) then
+        sfc_name2(nvar_s2m+19) = 'lai'
 #endif
       endif
 
@@ -957,6 +970,11 @@ module FV3GFS_io_mod
           Sfcprop(nb)%tsnow(ix)      = sfc_var2(i,j,nvar_s2m+22)
           Sfcprop(nb)%snowfallac(ix) = sfc_var2(i,j,nvar_s2m+23)
           Sfcprop(nb)%acsnow(ix)     = sfc_var2(i,j,nvar_s2m+24)
+          if (Model%rdlai) then
+            Sfcprop(nb)%xlaixy(ix)   = sfc_var2(i,j,nvar_s2m+25)
+          endif
+        else if (Model%lsm == Model%lsm_ruc .and. Model%rdlai) then
+          Sfcprop(nb)%xlaixy(ix)     = sfc_var2(i,j,nvar_s2m+19)
         elseif (Model%lsm == Model%lsm_noahmp) then
           !--- Extra Noah MP variables
 #else
@@ -1453,7 +1471,11 @@ module FV3GFS_io_mod
     nvar2o = 18
 #ifdef CCPP
     if (Model%lsm == Model%lsm_ruc) then
-      nvar2r = 6
+      if (Model%rdlai) then
+        nvar2r = 7
+      else
+        nvar2r = 6
+      endif
       nvar3  = 5
     else
       nvar2r = 0
@@ -1587,6 +1609,9 @@ module FV3GFS_io_mod
         sfc_name2(nvar2m+22) = 'tsnow'
         sfc_name2(nvar2m+23) = 'snowfall_acc'
         sfc_name2(nvar2m+24) = 'swe_snowfall_acc'
+        if (Model%rdlai) then
+          sfc_name2(nvar2m+25) = 'lai'
+        endif
       else if(Model%lsm == Model%lsm_noahmp) then
 #else
 ! Only needed when Noah MP LSM is used - 29 2D
@@ -1789,6 +1814,9 @@ module FV3GFS_io_mod
           sfc_var2(i,j,nvar2m+22) = Sfcprop(nb)%tsnow(ix)
           sfc_var2(i,j,nvar2m+23) = Sfcprop(nb)%snowfallac(ix)
           sfc_var2(i,j,nvar2m+24) = Sfcprop(nb)%acsnow(ix)
+          if (Model%rdlai) then
+            sfc_var2(i,j,nvar2m+25) = Sfcprop(nb)%xlaixy(ix)
+          endif
         else if (Model%lsm == Model%lsm_noahmp) then
 
 #else

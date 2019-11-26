@@ -2556,6 +2556,12 @@
   units = count
   dimensions = ()
   type = integer
+[rdlai]
+  standard_name = flag_for_reading_leaf_area_index_from_input
+  long_name = flag for reading leaf area index from initial conditions for RUC LSM
+  units = flag
+  dimensions = ()
+  type = logical
 [ivegsrc]
   standard_name = vegetation_type_dataset_choice
   long_name = land use dataset choice
