@@ -242,6 +242,10 @@ SCHEME_FILES = {
     'FV3/ccpp/physics/physics/GFS_suite_init_finalize_test.F90'  : [ 'slow_physics' ],
     }
 
+# Default build dir, relative to current working directory,
+# if not specified as command-line argument
+DEFAULT_BUILD_DIR = 'FV3'
+
 # Auto-generated makefile/cmakefile snippets that contain all schemes
 SCHEMES_MAKEFILE   = '{build_dir}/ccpp/physics/CCPP_SCHEMES.mk'
 SCHEMES_CMAKEFILE  = '{build_dir}/ccpp/physics/CCPP_SCHEMES.cmake'
