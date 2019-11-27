@@ -1206,7 +1206,7 @@ module module_physics_driver
             if (fice(i) < one) then
               wet(i) = .true.
 !             Sfcprop%tsfco(i) = tgice
-              Sfcprop%tsfco(i) = max(Sfcprop%tisfc(i), tgice)
+              if (.not. Model%cplflx) Sfcprop%tsfco(i) = max(Sfcprop%tisfc(i), tgice)
 !             Sfcprop%tsfco(i) = max((Sfcprop%tsfc(i) - fice(i)*sfcprop%tisfc(i)) &
 !                                     / (one - fice(i)), tgice)
             endif
