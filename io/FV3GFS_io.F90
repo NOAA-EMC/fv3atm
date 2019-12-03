@@ -31,9 +31,11 @@ module FV3GFS_io_mod
   use constants_mod,      only: grav, rdgas
 !
 !--- GFS physics modules
+!#ifndef CCPP
 !--- variables needed for calculating 'sncovr'
   use namelist_soilveg,   only: salp_data, snupx
-#ifndef CCPP
+!#endif
+
 !
 ! --- variables needed for Noah MP init
 !
@@ -42,7 +44,7 @@ module FV3GFS_io_mod
                                 dwsat_table,dksat_table,psisat_table, &
                                 isurban_table,isbarren_table,         &
                                 isice_table,iswater_table
-#endif
+
 !
 !--- GFS_typedefs
 !rab  use GFS_typedefs,       only: GFS_sfcprop_type, GFS_diag_type, &
@@ -99,8 +101,7 @@ module FV3GFS_io_mod
   logical                    :: uwork_set = .false.
   character(128)             :: uwindname
   integer, parameter, public :: DIAG_SIZE = 500
-! real(kind=kind_phys), parameter :: missing_value = 1.d30
-  real(kind=kind_phys), parameter :: missing_value = 9.99e20
+  real, parameter :: missing_value = 9.99e20
   real, parameter:: stndrd_atmos_ps = 101325.
   real, parameter:: stndrd_atmos_lapse = 0.0065
  
@@ -948,19 +949,20 @@ module FV3GFS_io_mod
         endif
 #ifdef CCPP
         if (Model%lsm == Model%lsm_ruc .and. warm_start) then
-!--- Extra RUC variables
-! --------------------------
+          !--- Extra RUC variables
           Sfcprop(nb)%wetness(ix)    = sfc_var2(i,j,nvar_s2m+19)
           Sfcprop(nb)%clw_surf(ix)   = sfc_var2(i,j,nvar_s2m+20)
           Sfcprop(nb)%qwv_surf(ix)   = sfc_var2(i,j,nvar_s2m+21)
           Sfcprop(nb)%tsnow(ix)      = sfc_var2(i,j,nvar_s2m+22)
           Sfcprop(nb)%snowfallac(ix) = sfc_var2(i,j,nvar_s2m+23)
           Sfcprop(nb)%acsnow(ix)     = sfc_var2(i,j,nvar_s2m+24)
-        endif
-#endif
-!--- Extra Noah MP variables
-! --------------------------
+        elseif (Model%lsm == Model%lsm_noahmp) then
+          !--- Extra Noah MP variables
+#else
+! Noah MP
+! -------
         if (Model%lsm == Model%lsm_noahmp) then
+#endif
           Sfcprop(nb)%snowxy(ix)     = sfc_var2(i,j,nvar_s2m+19)
           Sfcprop(nb)%tvxy(ix)       = sfc_var2(i,j,nvar_s2m+20)
           Sfcprop(nb)%tgxy(ix)       = sfc_var2(i,j,nvar_s2m+21)
@@ -1072,6 +1074,7 @@ module FV3GFS_io_mod
     ! TODO: move to physics and stop building namelist_soilveg/set_soilveg
     ! in the FV3/non-CCPP physics when the CCPP-enabled executable is built.
 #endif
+!#ifndef CCPP
     !--- if sncovr does not exist in the restart, need to create it
     if (nint(sfc_var2(1,1,32)) == -9999) then
       if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing sncovr') 
@@ -1093,6 +1096,7 @@ module FV3GFS_io_mod
         enddo
       enddo
     endif
+!#endif
 
     if(Model%frac_grid) then ! 3-way composite
       do nb = 1, Atm_block%nblks
@@ -1114,15 +1118,10 @@ module FV3GFS_io_mod
           Sfcprop(nb)%zorll(ix) = Sfcprop(nb)%zorlo(ix)
           Sfcprop(nb)%zorl(ix)  = Sfcprop(nb)%zorlo(ix)
           Sfcprop(nb)%tsfc(ix)  = Sfcprop(nb)%tsfco(ix)
-          if (Sfcprop(nb)%slmsk(ix) < 0.1 .or. Sfcprop(nb)%slmsk(ix) > 1.9) then
+          if (Sfcprop(nb)%slmsk(ix) > 1.9) then
             Sfcprop(nb)%landfrac(ix) = 0.0
-            if (Sfcprop(nb)%oro_uf(ix) > 0.01) then
-              Sfcprop(nb)%lakefrac(ix) = 1.0        ! lake
-            else
-              Sfcprop(nb)%lakefrac(ix) = 0.0        ! ocean
-            endif
           else
-            Sfcprop(nb)%landfrac(ix) = 1.0          ! land
+            Sfcprop(nb)%landfrac(ix) = Sfcprop(nb)%slmsk(ix)
           endif
         enddo
       enddo
@@ -1139,7 +1138,6 @@ module FV3GFS_io_mod
       enddo
     enddo
 
-#ifndef CCPP
     if (Model%lsm == Model%lsm_noahmp) then 
       if (nint(sfc_var2(1,1,nvar_s2m+19)) == -66666) then
         if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver:: - Cold start Noah MP ')
@@ -1403,7 +1401,6 @@ module FV3GFS_io_mod
         enddo  ! nb
       endif
     endif   !if Noah MP cold start ends
-#endif
 
   end subroutine sfc_prop_restart_read
 
@@ -1495,7 +1492,7 @@ module FV3GFS_io_mod
       allocate(sfc_name2(nvar2m+nvar2o+nvar2mp+nvar2r))
       allocate(sfc_name3(nvar3+nvar3mp))
       allocate(sfc_var2(nx,ny,nvar2m+nvar2o+nvar2mp+nvar2r))
-      if (Model%lsm == Model%lsm_noah) then
+      if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp) then
         allocate(sfc_var3(nx,ny,Model%lsoil,nvar3))
       elseif (Model%lsm == Model%lsm_ruc) then
         allocate(sfc_var3(nx,ny,Model%lsoil_lsm,nvar3))
@@ -1588,6 +1585,7 @@ module FV3GFS_io_mod
 #else
 ! Only needed when Noah MP LSM is used - 29 2D
       if(Model%lsm == Model%lsm_noahmp) then
+#endif
         sfc_name2(nvar2m+19) = 'snowxy'
         sfc_name2(nvar2m+20) = 'tvxy'
         sfc_name2(nvar2m+21) = 'tgxy'
@@ -1617,7 +1615,6 @@ module FV3GFS_io_mod
         sfc_name2(nvar2m+45) = 'smcwtdxy'
         sfc_name2(nvar2m+46) = 'deeprechxy'
         sfc_name2(nvar2m+47) = 'rechxy'
-#endif
       endif
  
     !--- register the 2D fields
@@ -1825,7 +1822,7 @@ module FV3GFS_io_mod
         endif
 
 #ifdef CCPP
-        if (Model%lsm == Model%lsm_noah) then
+        if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp) then
           !--- 3D variables
           do lsoil = 1,Model%lsoil
             sfc_var3(i,j,lsoil,1) = Sfcprop(nb)%stc(ix,lsoil) !--- stc

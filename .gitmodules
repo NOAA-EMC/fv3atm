@@ -2,3 +2,9 @@
 	path = atmos_cubed_sphere
 	url = https://github.com/TomBlack-NOAA/GFDL_atmos_cubed_sphere
 	branch = blend_DA
+[submodule "ccpp/framework"]
+	path = ccpp/framework
+	url = https://github.com/NCAR/ccpp-framework
+[submodule "ccpp/physics"]
+	path = ccpp/physics
+	url = https://github.com/NCAR/ccpp-physics
