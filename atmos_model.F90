@@ -221,7 +221,8 @@ character(len=128) :: tagname = '$Name$'
   logical,parameter :: flip_vc = .true.
 #endif
 
-  real(kind=IPD_kind_phys), parameter :: zero=0.0, one=1.0
+  real(kind=IPD_kind_phys), parameter :: zero = 0.0_IPD_kind_phys, &
+                                         one  = 1.0_IPD_kind_phys
 
 contains
 
