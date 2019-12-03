@@ -101,8 +101,7 @@ module FV3GFS_io_mod
   logical                    :: uwork_set = .false.
   character(128)             :: uwindname
   integer, parameter, public :: DIAG_SIZE = 500
-! real(kind=kind_phys), parameter :: missing_value = 1.d30
-  real(kind=kind_phys), parameter :: missing_value = 9.99e20
+  real, parameter :: missing_value = 9.99e20
   real, parameter:: stndrd_atmos_ps = 101325.
   real, parameter:: stndrd_atmos_lapse = 0.0065
  
@@ -1137,15 +1136,10 @@ module FV3GFS_io_mod
           Sfcprop(nb)%zorll(ix) = Sfcprop(nb)%zorlo(ix)
           Sfcprop(nb)%zorl(ix)  = Sfcprop(nb)%zorlo(ix)
           Sfcprop(nb)%tsfc(ix)  = Sfcprop(nb)%tsfco(ix)
-          if (Sfcprop(nb)%slmsk(ix) < 0.1 .or. Sfcprop(nb)%slmsk(ix) > 1.9) then
+          if (Sfcprop(nb)%slmsk(ix) > 1.9) then
             Sfcprop(nb)%landfrac(ix) = 0.0
-            if (Sfcprop(nb)%oro_uf(ix) > 0.01) then
-              Sfcprop(nb)%lakefrac(ix) = 1.0        ! lake
-            else
-              Sfcprop(nb)%lakefrac(ix) = 0.0        ! ocean
-            endif
           else
-            Sfcprop(nb)%landfrac(ix) = 1.0          ! land
+            Sfcprop(nb)%landfrac(ix) = Sfcprop(nb)%slmsk(ix)
           endif
         enddo
       enddo

@@ -342,7 +342,7 @@ module post_gfs
                              tprec, tclod, trdlw, trdsw, tsrfc, tmaxmin, theat, &
                              ardlw, ardsw, asrfc, avrain, avcnvc, iSF_SURFACE_PHYSICS,&
                              td3d, idat, sdat, ifhr, ifmin, dt, nphs, dtq2, pt_tbl, &
-                             alsl, spl 
+                             alsl, spl, ihrst 
       use params_mod,  only: erad, dtr, capa, p1000
       use gridspec_mod,only: latstart, latlast, lonstart, lonlast, cenlon, cenlat
       use lookup_mod,  only: thl, plq, ptbl, ttbl, rdq, rdth, rdp, rdthe, pl,   &
@@ -369,7 +369,7 @@ module post_gfs
 !
       integer i, ip1, j, l, k, n, iret, ibdl, rc, kstart, kend
       integer ista,iend,fieldDimCount,gridDimCount,ncount_field
-      integer idate(8), jdate(8)
+      integer jdate(8)
       logical foundland, foundice, found
       real(4) rinc(5)
       real    tlmh,RADI,TMP,ES,TV,RHOAIR,tem,tstart,dtp
@@ -451,8 +451,7 @@ module post_gfs
       end do
 !
 ! GFS does not output PD
-!      pt    = 10000.          ! this is for 100 hPa added by Moorthi
-      pt    = 0.
+      pt    = ak5(1)
 
 ! GFS may not have model derived radar ref.
 !                        TKE
@@ -642,28 +641,18 @@ module post_gfs
       enddo
 !
 ! get inital date
-      idate    = 0
-      idate(1) = wrt_int_state%idate(1)
-      idate(2) = wrt_int_state%idate(2)
-      idate(3) = wrt_int_state%idate(3)
-      idate(5) = wrt_int_state%idate(4)
-      idate(6) = wrt_int_state%idate(5)
       sdat(1)  = wrt_int_state%idate(2)   !month
       sdat(2)  = wrt_int_state%idate(3)   !day
       sdat(3)  = wrt_int_state%idate(1)   !year
-      jdate    = 0
-      jdate(1) = wrt_int_state%fdate(1)
-      jdate(2) = wrt_int_state%fdate(2)
-      jdate(3) = wrt_int_state%fdate(3)  !jdate(4): time zone
-      jdate(5) = wrt_int_state%fdate(4)
-      jdate(6) = wrt_int_state%fdate(5)
-      idat(1)  = wrt_int_state%idate(2)
-      idat(2)  = wrt_int_state%idate(3)
-      idat(3)  = wrt_int_state%idate(1)
-      idat(4)  = IFHR
-      idat(5)  = IFMIN
+      ihrst    = wrt_int_state%idate(4)   !hour
+
+      idat(1)  = wrt_int_state%fdate(2)
+      idat(2)  = wrt_int_state%fdate(3)
+      idat(3)  = wrt_int_state%fdate(1)
+      idat(4)  = wrt_int_state%fdate(4)
+      idat(5)  = wrt_int_state%fdate(5)
 !
-!      if(mype==0) print *,'jdate=',jdate,'idate=',idate,'sdat=',sdat
+      if(mype==0) print *,'idat=',idat,'sdat=',sdat,'ihrst=',ihrst
 !      CALL W3DIFDAT(JDATE,IDATE,0,RINC)
 !
 !      if(mype==0)print *,' rinc=',rinc
@@ -701,7 +690,7 @@ module post_gfs
         call ESMF_FieldBundleGet(wrt_int_state%wrtFB(ibdl),fieldName='land',isPresent=found, rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
           line=__LINE__, file=__FILE__)) return  ! bail out
-        if(mype==0) print *,'ibdl=',ibdl,'land, found=',found
+!        if(mype==0) print *,'ibdl=',ibdl,'land, found=',found
         if (found) then
           call ESMF_FieldBundleGet(wrt_int_state%wrtFB(ibdl),'land',field=theField, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
@@ -725,7 +714,7 @@ module post_gfs
         call ESMF_FieldBundleGet(wrt_int_state%wrtFB(ibdl),'icec',isPresent=found, rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
           line=__LINE__, file=__FILE__)) return  ! bail out
-        if(mype==0) print *,'ibdl=',ibdl,'ice, found=',found
+!        if(mype==0) print *,'ibdl=',ibdl,'ice, found=',found
         if (found) then
           call ESMF_FieldBundleGet(wrt_int_state%wrtFB(ibdl),'icec',field=theField, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
@@ -1296,7 +1285,7 @@ module post_gfs
             endif
 
             ! inst incoming sfc longwave
-            if(trim(fieldname)=='dlwsf') then
+            if(trim(fieldname)=='dlwrf') then
               !$omp parallel do private(i,j)
               do j=jsta,jend
                 do i=ista, iend
@@ -1848,6 +1837,16 @@ module post_gfs
               !$omp parallel do private(i,j)
               do j=jsta,jend
                 do i=ista, iend
+                  alwoutc(i,j) = arrayr42d(i,j)
+                enddo
+              enddo
+            endif
+
+            ! time averaged TOA clear sky outgoing LW
+            if(trim(fieldname)=='csulftoa') then
+              !$omp parallel do private(i,j)
+              do j=jsta,jend
+                do i=ista, iend
                   alwtoac(i,j) = arrayr42d(i,j)
                 enddo
               enddo
@@ -1864,7 +1863,7 @@ module post_gfs
             endif
 
             ! time averaged TOA clear sky outgoing SW
-            if(trim(fieldname)=='csusf') then
+            if(trim(fieldname)=='csusftoa') then
               !$omp parallel do private(i,j)
               do j=jsta,jend
                 do i=ista, iend
@@ -2271,7 +2270,6 @@ module post_gfs
         enddo
       end do
 
-!??? reset pint(lev=1)
 !$omp parallel do private(i,j)
       do j=jsta,jend
         do i=1,im
@@ -2282,7 +2280,7 @@ module post_gfs
 !      print *,'in setvar, pt=',pt,'ak5(lp1)=', ak5(lp1),'ak5(1)=',ak5(1)
 
 ! compute alpint
-      do l=lp1,2,-1
+      do l=lp1,1,-1
 !$omp parallel do private(i,j)
         do j=jsta,jend
           do i=1,im
@@ -2320,6 +2318,18 @@ module post_gfs
           endif
         enddo
       enddo
+
+! compute cwm for gfdlmp
+      if(  imp_physics == 11 ) then
+        do l=1,lm
+!$omp parallel do private(i,j)
+          do j=jsta,jend
+            do i=ista,iend
+              cwm(i,j,l)=qqg(i,j,l)+qqs(i,j,l)+qqr(i,j,l)+qqi(i,j,l)+qqw(i,j,l)
+            enddo
+          enddo
+        enddo
+      endif
 
 ! estimate 2m pres and convert t2m to theta
 !$omp parallel do private(i,j)

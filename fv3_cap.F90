@@ -32,7 +32,7 @@ module fv3gfs_cap_mod
                                     cplprint_flag,output_1st_tstep_rst,      &
                                     first_kdt                            
 
-  use module_fv3_io_def,      only: num_pes_fcst,write_groups,               &
+  use module_fv3_io_def,      only: num_pes_fcst,write_groups,app_domain,    &
                                     num_files, filename_base,                &
                                     wrttasks_per_group, n_group,             &
                                     lead_wrttask, last_wrttask,              &
@@ -320,6 +320,10 @@ module fv3gfs_cap_mod
 !
       CALL ESMF_ConfigGetAttribute(config=CF,value=wrttasks_per_group, &
                                    label ='write_tasks_per_group:',rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+      CALL ESMF_ConfigGetAttribute(config=CF,value=app_domain, default="global", &
+                                   label ='app_domain:',rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
       if(mype == 0) print *,'af nems config,restart_interval=',restart_interval, &
@@ -692,6 +696,7 @@ module fv3gfs_cap_mod
             isrctermprocessing = 1
             call ESMF_FieldBundleRegridStore(fcstFB(j), wrtFB(j,i),                                    &
                                              regridMethod=regridmethod, routehandle=routehandle(j,i),  &
+                                             unmappedaction=ESMF_UNMAPPEDACTION_IGNORE,                &
                                              srcTermProcessing=isrctermprocessing, rc=rc)
 
 !           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return

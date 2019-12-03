@@ -15,6 +15,7 @@
   logical           :: write_nemsioflip
   logical           :: write_fsyncflag
   integer           :: num_files
+  character(255)    :: app_domain
   character(255)    :: output_grid
   character(255)    :: output_file
   integer           :: imo,jmo
