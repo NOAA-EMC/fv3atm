@@ -81,7 +81,8 @@
 !!  @{
       subroutine samfdeepcnv(im,ix,km,delt,itc,ntc,ntk,ntr,delp,
      &     prslp,psp,phil,qtr,q1,t1,u1,v1,fscav,
-     &     do_ca,ca_deep,cldwrk,rn,kbot,ktop,kcnv,islimsk,garea,
+     &     do_ca,ca_deep,ca_trigger,ca_flux,ca_amplitude,
+     &     cldwrk,rn,kbot,ktop,kcnv,islimsk,garea,
      &     dot,ncloud,ud_mf,dd_mf,dt_mf,cnvw,cnvc,
      &     QLCN, QICN, w_upi, cf_upi, CNV_MFD,
 !    &     QLCN, QICN, w_upi, cf_upi, CNV_MFD, CNV_PRC3,
@@ -98,12 +99,12 @@
 !
       integer, intent(in)  :: im, ix, km, itc, ntc, ntk, ntr, ncloud
       integer, intent(in)  :: islimsk(im)
-      real(kind=kind_phys), intent(in) ::  delt
+      real(kind=kind_phys), intent(in) ::  delt,ca_amplitude
       real(kind=kind_phys), intent(in) :: psp(im), delp(ix,km), 
      &   prslp(ix,km),  garea(im), dot(ix,km), phil(ix,km) 
       real(kind=kind_phys), intent(in) :: fscav(ntc)
       real(kind=kind_phys), intent(in) :: ca_deep(ix)
-      logical, intent(in)  :: do_ca
+      logical, intent(in)  :: do_ca,ca_trigger,ca_flux
       integer, intent(inout)  :: kcnv(im)        
       real(kind=kind_phys), intent(inout) ::   qtr(ix,km,ntr+2),
      &   q1(ix,km), t1(ix,km),   u1(ix,km), v1(ix,km)
@@ -2399,9 +2400,9 @@ c
 
 !If stochastic physics using cellular automata is .true. then perturb the mass-flux here:
 
-      if(do_ca)then
+      if(do_ca == .true. .and. ca_flux == .true.)then
         do i=1,im
-         xmb(i) = xmb(i)*(1.0 + ca_deep(i)*5.)
+         xmb(i) = xmb(i)*ca_deep(i) 
         enddo
       endif
 

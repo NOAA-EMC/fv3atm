@@ -2215,6 +2215,20 @@ module module_physics_driver
 
       endif
 
+
+!!!!!!Cellular automata stochastic physics:
+      if(Model%do_ca .and. Model%pert_flux)then
+         do i=1,im
+            hflx(i)=hflx(i)*(((Coupling%ca3(i)-1.0)/Model%ca_amplitude)+1.0)
+            evap(i)=evap(i)*(2.0-(((Coupling%ca3(i)-1.0)/Model%ca_amplitude)+1.0))
+         enddo
+      endif
+
+
+
+
+
+
 !!!!!!!!!!!!!!!!!Commented by Moorthi on July 18, 2012 !!!!!!!!!!!!!!!!!!!
 !     do i=1,im
 !  --- ...  compute coefficient of evaporation in evapc
@@ -2252,6 +2266,8 @@ module module_physics_driver
 
 !     write(0,*)' before monsho hflx=',hflx,' me=',me
 !     write(0,*)' before monsho evap=',evap,' me=',me
+
+
       if (nvdiff == ntrac .or. Model%do_ysu .or. Model%shinhong) then
 !
         ntiwx = 0
@@ -2311,7 +2327,9 @@ module module_physics_driver
                            Model%dspheat, dusfc1, dvsfc1, dtsfc1, dqsfc1, Diag%hpbl,&
                            gamt, gamq, dkt, kinver, Model%xkzm_m, Model%xkzm_h,     &
                            Model%xkzm_s, lprnt, ipr,                                &
-                           Model%xkzminv, Model%moninq_fac)
+                           Model%xkzminv, Model%moninq_fac, Model%do_ca,            &
+                           Coupling%ca3, Coupling%ca2, Model%pert_trigger,          &
+                           Model%pert_flux, Model%ca_amplitude)
             else
               call moninedmf_hafs(ix, im, levs, nvdiff, ntcw, dvdt, dudt, dtdt, dqdt,&
                            Statein%ugrs, Statein%vgrs, Statein%tgrs, Statein%qgrs,  &
@@ -2552,7 +2570,9 @@ module module_physics_driver
                            Model%dspheat, dusfc1, dvsfc1, dtsfc1, dqsfc1, Diag%hpbl,    &
                            gamt, gamq, dkt, kinver, Model%xkzm_m, Model%xkzm_h,         &
                            Model%xkzm_s, lprnt, ipr,                                    &
-                           Model%xkzminv, Model%moninq_fac)
+                           Model%xkzminv, Model%moninq_fac, Model%do_ca,                &
+                           Coupling%ca3, Coupling%ca2, Model%pert_trigger,              &
+                           Model%pert_flux, Model%ca_amplitude)
            else
             call moninedmf_hafs(ix, im, levs, nvdiff, ntcw, dvdt, dudt, dtdt, dvdftra,  &
                            Statein%ugrs, Statein%vgrs, Statein%tgrs, vdftra,            &
@@ -3516,14 +3536,6 @@ module module_physics_driver
 !           -----------------------------------
       if (Model%do_deep) then
  
-        if (Model%do_ca) then
-          do k=1,levs
-            do i=1,im
-              Stateout%gq0(i,k,1) = Stateout%gq0(i,k,1)*(one + Coupling%ca_deep(i)/500.)
-            enddo
-          enddo
-        endif
-
         if (Model%isppt_deep) then
           allocate(savet(im,levs), saveq(im,levs), saveu(im,levs), savev(im,levs))
           do k=1,levs
@@ -3562,7 +3574,9 @@ module module_physics_driver
                              del, Statein%prsl, Statein%pgr, Statein%phil, clw,    &
                              Stateout%gq0(:,:,1), Stateout%gt0,                    &
                              Stateout%gu0, Stateout%gv0, Model%fscav, Model%do_ca, &
-                             Coupling%ca_deep, cld1d, rain1, kbot, ktop, kcnv,     &
+                             Coupling%ca1,Model%pert_trigger,                      &
+                             Model%pert_flux, Model%ca_amplitude,                  &
+                             cld1d, rain1, kbot, ktop, kcnv,                       &
                              islmsk, garea,                                        &
                              Statein%vvl, ncld, ud_mf, dd_mf, dt_mf, cnvw, cnvc,   &
                              QLCN, QICN, w_upi,cf_upi, CNV_MFD,                    &
@@ -4111,13 +4125,20 @@ module module_physics_driver
                               Stateout%gu0, Stateout%gv0, Model%fscav,             &
                               rain1, kbot, ktop, kcnv, islmsk, garea,              &
                               Statein%vvl, ncld, Diag%hpbl, ud_mf,                 &
-                              dt_mf, cnvw, cnvc,                                   &
+                              dt_mf, cnvw, cnvc,Model%do_ca,Coupling%ca2,          &
+                              Model%pert_trigger,                                  &
+                              Model%pert_flux, Model%ca_amplitude,                 &
                               Model%clam_shal,  Model%c0s_shal, Model%c1_shal,     &
                               Model%pgcon_shal, Model%asolfac_shal)
 
             do i=1,im
               Diag%rainc(i) = Diag%rainc(i) + frain * rain1(i)
             enddo
+
+            if(Model%do_ca) then
+               Coupling%ca_shal(:)=kcnv(:)
+            endif
+
 ! in  mfshalcnv,  'cnvw' and 'cnvc' are set to zero before computation starts:
             if (Model%shcnvcw .and. Model%num_p3d == 4 .and. Model%npdf3d == 3) then
               do k=1,levs

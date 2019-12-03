@@ -93,7 +93,8 @@
      &   prsi,del,prsl,prslk,phii,phil,delt,dspheat,                    &
      &   dusfc,dvsfc,dtsfc,dqsfc,hpbl,hgamt,hgamq,dkt,                  &
      &   kinver,xkzm_m,xkzm_h,xkzm_s,lprnt,ipr,                         &
-     &   xkzminv,moninq_fac)
+     &   xkzminv,moninq_fac,do_ca,ca_turb,ca_shal,ca_trigger,ca_flux,   &
+     &   ca_amplitude)
 !
       use machine  , only : kind_phys
       use funcphys , only : fpvs
@@ -103,11 +104,11 @@
 !
 !     arguments
 !
-      logical lprnt
+      logical lprnt, do_ca, ca_trigger, ca_flux
       integer ipr
       integer ix, im, km, ntrac, ntcw, kpbl(im), kinver(im)
 !
-      real(kind=kind_phys) delt, xkzm_m, xkzm_h, xkzm_s
+      real(kind=kind_phys) delt, xkzm_m, xkzm_h, xkzm_s, ca_amplitude
       real(kind=kind_phys) dv(im,km),     du(im,km),                    &
      &                     tau(im,km),    rtg(im,km,ntrac),             &
      &                     u1(ix,km),     v1(ix,km),                    &
@@ -125,7 +126,8 @@
      &                     dusfc(im),     dvsfc(im),                    &
      &                     dtsfc(im),     dqsfc(im),                    &
      &                     hpbl(im),      hpblx(im),                    &
-     &                     hgamt(im),     hgamq(im)
+     &                     hgamt(im),     hgamq(im),                    &
+     &                     ca_shal(im),   ca_turb(im)
 !
       logical dspheat
 !          flag for tke dissipative heating
@@ -563,6 +565,16 @@ c
            hgamq(i)  = max(hgamq(i),0.0)
          endif
       enddo
+
+       if(do_ca == .true. .and. ca_flux == .true.)then
+          do i = 1, im
+           if(ublflg(i)) then
+             hgamt(i)=hgamt(i)*ca_turb(i) 
+             hgamq(i)=hgamq(i)*ca_turb(i) 
+           endif
+          enddo
+       endif 
+
 !
 !  enhance the pbl height by considering the thermal excess
 !>  The PBL height calculation follows the same procedure as the predictor step, except that it uses an updated virtual potential temperature for the thermal.
@@ -874,6 +886,17 @@ c
      &       zl,zi,thvx,q1,t1,u1,v1,hpbl,kpbl,
      &       sflux,ustar,wstar,xmf,tcko,qcko,ucko,vcko)
 !
+
+      if(do_ca == .true. .and. ca_flux == .true.)then
+          do k = 1, km
+             do i = 1, im
+                if(pcnvflg(i)) then
+                xmf(i,k)=xmf(i,k)*ca_shal(i) 
+                endif
+             enddo
+          enddo
+      endif
+
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !  compute diffusion coefficients for cloud-top driven diffusion
 !  if the condition for cloud-top instability is met,

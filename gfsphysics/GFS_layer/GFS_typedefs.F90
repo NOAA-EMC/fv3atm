@@ -473,7 +473,9 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: qconvtend(:,:) => null()
     real (kind=kind_phys), pointer :: uconvtend(:,:) => null()
     real (kind=kind_phys), pointer :: vconvtend(:,:) => null()
-    real (kind=kind_phys), pointer :: ca_out   (:)   => null() !
+    real (kind=kind_phys), pointer :: ca1      (:)   => null() !
+    real (kind=kind_phys), pointer :: ca2      (:)   => null() !
+    real (kind=kind_phys), pointer :: ca3      (:)   => null() !  
     real (kind=kind_phys), pointer :: ca_deep  (:)   => null() !
     real (kind=kind_phys), pointer :: ca_turb  (:)   => null() !
     real (kind=kind_phys), pointer :: ca_shal  (:)   => null() !
@@ -901,10 +903,10 @@ module GFS_typedefs
     real(kind=kind_phys) :: bl_dnfr         !< downdraft fraction in boundary layer mass flux scheme
 
  !---cellular automata control parameters
-    integer              :: nca             !< number of independent cellular automata
+    integer              :: nca             !< number of independent cellular automata 
     integer              :: nlives          !< cellular automata lifetime
     integer              :: ncells          !< cellular automata finer grid
-    real(kind=kind_phys) :: nfracseed       !< cellular automata seed probability
+    real(kind=kind_phys) :: nfracseed       !< cellular automata seed probability 
     integer              :: nseed           !< cellular automata seed frequency
     logical              :: do_ca           !< cellular automata main switch
     logical              :: ca_sgs          !< switch for sgs ca
@@ -914,6 +916,10 @@ module GFS_typedefs
     integer              :: iseed_ca        !< seed for random number generation in ca scheme
     integer              :: nspinup         !< number of iterations to spin up the ca
     real(kind=kind_phys) :: nthresh         !< threshold used for perturbed vertical velocity
+    logical              :: pert_flux       !< perturb mass-flux or counter gradient term
+    logical              :: pert_trigger    !< perturb trigger with ca
+    real                 :: ca_amplitude    !< amplitude of ca trigger perturbation
+    integer              :: nsmooth
 
 !--- stochastic physics control parameters
     logical              :: do_sppt
@@ -1370,7 +1376,9 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: tdomip (:)     => null()   !< dominant accumulated sleet type
     real (kind=kind_phys), pointer :: tdoms  (:)     => null()   !< dominant accumulated snow type
 
-    real (kind=kind_phys), pointer :: ca_out  (:)    => null()   !< cellular automata fraction
+    real (kind=kind_phys), pointer :: ca1      (:)   => null() ! 
+    real (kind=kind_phys), pointer :: ca2      (:)   => null() !
+    real (kind=kind_phys), pointer :: ca3      (:)   => null() ! 
     real (kind=kind_phys), pointer :: ca_deep  (:)   => null()   !< cellular automata fraction
     real (kind=kind_phys), pointer :: ca_turb  (:)   => null()   !< cellular automata fraction
     real (kind=kind_phys), pointer :: ca_shal  (:)   => null()   !< cellular automata fraction
@@ -2422,13 +2430,17 @@ module GFS_typedefs
       allocate (Coupling%uconvtend (IM,Model%levs))
       allocate (Coupling%vconvtend (IM,Model%levs))
       allocate (Coupling%cape     (IM))
-      allocate (Coupling%ca_out   (IM))
+      allocate (Coupling%ca1      (IM))
+      allocate (Coupling%ca2      (IM))
+      allocate (Coupling%ca3      (IM))
       allocate (Coupling%ca_deep  (IM))
       allocate (Coupling%ca_turb  (IM))
       allocate (Coupling%ca_shal  (IM))
       allocate (Coupling%ca_rad   (IM))
       allocate (Coupling%ca_micro (IM))
-      Coupling%ca_out    = clear_val
+      Coupling%ca1       = clear_val
+      Coupling%ca2       = clear_val
+      Coupling%ca3       = clear_val
       Coupling%ca_deep   = clear_val
       Coupling%ca_turb   = clear_val
       Coupling%ca_shal   = clear_val
@@ -2899,7 +2911,10 @@ module GFS_typedefs
     logical              :: ca_smooth      = .false.
     logical              :: isppt_deep     = .false.
     real(kind=kind_phys) :: nthresh        = 0.0
-  
+    logical              :: pert_flux      = .false.
+    logical              :: pert_trigger   = .false.
+    real                 :: ca_amplitude   = 500.
+    integer              :: nsmooth        = 100 
 
 !--- IAU options
     real(kind=kind_phys)  :: iau_delthrs      = 0           !< iau time interval (to scale increments)
@@ -3010,6 +3025,7 @@ module GFS_typedefs
                           !--- cellular automata
                                nca, ncells, nlives, nfracseed,nseed, nthresh, do_ca,        &
                                ca_sgs, ca_global,iseed_ca,ca_smooth,isppt_deep,nspinup,     &
+                               pert_flux, pert_trigger, ca_amplitude,nsmooth,               &
                           !--- IAU
                                iau_delthrs,iaufhrs,iau_inc_files,iau_filter_increments,     &
                           !--- debug options
@@ -3454,6 +3470,10 @@ module GFS_typedefs
     Model%isppt_deep       = isppt_deep
     Model%nspinup          = nspinup  
     Model%nthresh          = nthresh 
+    Model%pert_trigger     = pert_trigger
+    Model%pert_flux        = pert_flux
+    Model%ca_amplitude     = ca_amplitude
+    Model%nsmooth          = nsmooth
 
     ! IAU flags
     !--- iau parameters
@@ -4395,6 +4415,10 @@ module GFS_typedefs
       print *, ' isppt_deep        : ', Model%isppt_deep
       print *, ' nspinup           : ', Model%nspinup
       print *, ' nthresh           : ', Model%nthresh
+      print *, ' pert_trigger      : ', Model%pert_trigger
+      print *, ' pert_flux         : ', Model%pert_flux
+      print *, ' ca_amplitude      : ', Model%ca_amplitude
+      print *, ' nsmooth           : ', Model%nsmooth
       print *, ' '
       print *, 'tracers'
       print *, ' tracer_names      : ', Model%tracer_names
@@ -4883,7 +4907,9 @@ module GFS_typedefs
     allocate (Diag%shum_wts(IM,Model%levs))
     allocate (Diag%zmtnblck(IM))    
 
-    allocate (Diag%ca_out  (IM))
+    allocate (Diag%ca1      (IM))
+    allocate (Diag%ca2      (IM))
+    allocate (Diag%ca3      (IM))
     allocate (Diag%ca_deep  (IM))
     allocate (Diag%ca_turb  (IM))
     allocate (Diag%ca_shal  (IM))
@@ -5145,7 +5171,9 @@ module GFS_typedefs
     Diag%totgrpb    = zero
 !
     if (Model%do_ca) then
-      Diag%ca_out   = zero
+      Diag%ca1      = zero
+      Diag%ca2      = zero
+      Diag%ca3      = zero
       Diag%ca_deep  = zero
       Diag%ca_turb  = zero
       Diag%ca_shal  = zero
