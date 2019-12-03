@@ -1457,6 +1457,24 @@ subroutine update_atmos_chemistry(state, rc)
         enddo
       enddo
 
+      ! -- zero out accumulated fields
+!$OMP parallel do default (none) &
+!$OMP             shared  (nj, ni, Atm_block, IPD_Control, IPD_Data) &
+!$OMP             private (j, jb, i, ib, nb, ix)
+      do j = 1, nj
+        jb = j + Atm_block%jsc - 1
+        do i = 1, ni
+          ib = i + Atm_block%isc - 1
+          nb = Atm_block%blkno(ib,jb)
+          ix = Atm_block%ixp(ib,jb)
+          IPD_Data(nb)%coupling%rainc_cpl(ix)  = zero
+          if (.not.IPD_Control%cplflx) then
+            IPD_Data(nb)%coupling%rain_cpl(ix) = zero
+            IPD_Data(nb)%coupling%snow_cpl(ix) = zero
+          end if
+        enddo
+      enddo
+
       if (IPD_Control%debug) then
         ! -- diagnostics
         write(6,'("update_atmos: prsi   - min/max/avg",3g16.6)') minval(prsi),   maxval(prsi),   sum(prsi)/size(prsi)
