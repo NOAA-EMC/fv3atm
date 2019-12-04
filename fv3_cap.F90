@@ -23,6 +23,7 @@ module fv3gfs_cap_mod
                                     NUOPC_ModelGet
 !
   use module_fv3_config,      only: quilting, restart_interval,              &
+                                    other_restart_time,                      &
                                     nfhout, nfhout_hf, nsout, dt_atmos,      &
                                     nfhmax, nfhmax_hf,output_hfmax,          &
                                     output_interval,output_interval_hf,      &
@@ -282,6 +283,10 @@ module fv3gfs_cap_mod
 !
     CALL ESMF_ConfigGetAttribute(config=CF,value=restart_interval, &
                                  label ='restart_interval:',rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+!
+    CALL ESMF_ConfigGetAttribute(config=CF,value=other_restart_time, &
+                                 label ='other_restart_time:',rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 !
     CALL ESMF_ConfigGetAttribute(config=CF,value=calendar, &

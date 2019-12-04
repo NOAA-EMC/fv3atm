@@ -14,7 +14,7 @@
   implicit none
 !
   
-  integer                  :: restart_interval
+  integer                  :: restart_interval, other_restart_time
 !
   integer                  :: nfhout, nfhout_hf, nsout, dt_atmos
   integer                  :: nfhmax, nfhmax_hf, first_kdt
