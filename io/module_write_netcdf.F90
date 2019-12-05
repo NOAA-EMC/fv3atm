@@ -164,7 +164,7 @@ module module_write_netcdf
             ncerr = nf90_def_var(ncid, trim(fldName), NF90_FLOAT, &
                     (/im_dimid,jm_dimid,time_dimid/), varids(i), &
                     shuffle=.true.,deflate_level=ideflate,&
-                    chunksizes=(/im,jm,1/),cache_size=20*im*jm); NC_ERR_STOP(ncerr)
+                    chunksizes=(/im,jm,1/),cache_size=40*im*jm); NC_ERR_STOP(ncerr)
           else
             ncerr = nf90_def_var(ncid, trim(fldName), NF90_FLOAT, &
             (/im_dimid,jm_dimid,time_dimid/), varids(i)); NC_ERR_STOP(ncerr)
@@ -182,7 +182,7 @@ module module_write_netcdf
              ncerr = nf90_def_var(ncid, trim(fldName), NF90_FLOAT, &
                     (/im_dimid,jm_dimid,pfull_dimid,time_dimid/), varids(i), &
                     shuffle=.false.,deflate_level=ideflate,&
-                    chunksizes=(/im,jm,lm,1/),cache_size=20*im*jm*lm); NC_ERR_STOP(ncerr)
+                    chunksizes=(/im,jm,1,1/),cache_size=40*im*jm); NC_ERR_STOP(ncerr)
            else
              ncerr = nf90_def_var(ncid, trim(fldName), NF90_FLOAT, &
                      (/im_dimid,jm_dimid,pfull_dimid,time_dimid/), varids(i)); NC_ERR_STOP(ncerr)
