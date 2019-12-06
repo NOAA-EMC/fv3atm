@@ -127,7 +127,6 @@ module module_write_netcdf
         ncerr = nf90_create(trim(filename), cmode=IOR(IOR(NF90_CLOBBER,NF90_NETCDF4),NF90_CLASSIC_MODEL), &
         ncid=ncid); NC_ERR_STOP(ncerr)
         ncerr = nf90_set_fill(ncid, NF90_NOFILL, oldMode); NC_ERR_STOP(ncerr)
-        ! if compression on use HDF5 format with default _FillValue
     endif
 
     ! define dimensions
@@ -227,8 +226,8 @@ module module_write_netcdf
            call ESMF_AttributeGet(fcstField(i), convention="NetCDF", purpose="FV3", &
                                   name=trim(attName), value=varr8val, &
                                   rc=rc); ESMF_ERR_RETURN(rc)
-           if (trim(attName) /= '_FillValue' .or. ideflate == 0) then
-              ! FIXME:  _FillValue must be cast to var type when using NF90_NETCDF4
+           if (trim(attName) /= '_FillValue') then
+              ! FIXME:  _FillValue must be cast to var type for recent versions of netcdf
               ncerr = nf90_put_att(ncid, varids(i), trim(attName), varr8val); NC_ERR_STOP(ncerr)
            endif
 
@@ -495,9 +494,9 @@ module module_write_netcdf
          else if (typekind==ESMF_TYPEKIND_R8) then
             call ESMF_AttributeGet(grid, convention="NetCDF", purpose="FV3", &
                                    name=trim(attName), value=varr8val, rc=rc); ESMF_ERR_RETURN(rc)
-            if (trim(attName) /= '_FillValue' .or. ideflate == 0) then
-              ! FIXME:  _FillValue must be cast to var type when using
-              ! NF90_NETCDF4. Until this is fixed, using netCDF default _FillValue.
+            if (trim(attName) /= '_FillValue') then
+              ! FIXME:  _FillValue must be cast to var type for recent versions
+              ! of netcdf
               ncerr = nf90_put_att(ncid, varid, trim(attName(ind+1:len(attName))), varr8val); NC_ERR_STOP(ncerr)
             endif
 
