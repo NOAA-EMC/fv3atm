@@ -5231,7 +5231,7 @@ module module_physics_driver
       
 !  ---  get the amount of different precip type for Noah MP
 !  ---  convert from m/dtp to mm/s
-      if (lsm==lsm_noahmp) then
+      if (Model%lsm==Model%lsm_noahmp) then
         if (Model%imp_physics == Model%imp_physics_mg .or. &
             Model%imp_physics == Model%imp_physics_gfdl) then
           !GJF: Should all precipitation rates have the same denominator below? 
