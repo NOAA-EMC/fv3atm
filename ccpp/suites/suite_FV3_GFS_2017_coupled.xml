@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<suite name="FV3_GFS_2017_couple" lib="ccppphys" ver="3">
+<suite name="FV3_GFS_2017_coupled" lib="ccppphys" ver="3">
   <!-- <init></init> -->
   <group name="time_vary">
     <subcycle loop="1">
@@ -58,6 +58,7 @@
       <scheme>GFS_GWD_generic_pre</scheme>
       <scheme>cires_ugwp</scheme>
       <scheme>cires_ugwp_post</scheme>
+       <scheme>GFS_GWD_generic_post</scheme>
       <scheme>rayleigh_damp</scheme>
       <scheme>GFS_suite_stateout_update</scheme>
       <scheme>ozphys</scheme>
@@ -68,7 +69,6 @@
       <scheme>GFS_DCNV_generic_post</scheme>
       <scheme>GFS_SCNV_generic_pre</scheme>
       <scheme>samfshalcnv</scheme>
-      <scheme>samfshalcnv_post</scheme>
       <scheme>GFS_SCNV_generic_post</scheme>
       <scheme>GFS_suite_interstitial_4</scheme>
       <scheme>cnvc90</scheme>
