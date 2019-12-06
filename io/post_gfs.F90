@@ -133,6 +133,7 @@ module post_gfs
 !
       ifhr  = mynfhr
       ifmin = mynfmin
+      if (ifhr == 0 ) ifmin = 0
       if(mype==0) print *,'bf set_postvars,ifmin=',ifmin,'ifhr=',ifhr
       call set_postvars_gfs(wrt_int_state,mpicomp,setvar_atmfile,   &
            setvar_sfcfile)
