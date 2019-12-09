@@ -1,0 +1,214 @@
+#!/usr/bin/env python
+
+"""
+build fv3gfs library
+"""
+import sys, os
+
+_CIMEROOT = os.environ.get("CIMEROOT")
+if _CIMEROOT is None:
+    raise SystemExit("ERROR: must set CIMEROOT environment variable")
+
+_LIBDIR = os.path.join(_CIMEROOT, "scripts", "Tools")
+sys.path.append(_LIBDIR)
+
+from standard_script_setup import *
+from CIME.buildlib import parse_input
+from CIME.case import Case
+from CIME.utils import run_cmd, expect, new_lid, stringify_bool, safe_copy
+from CIME.build import get_standard_makefile_args
+
+logger = logging.getLogger(__name__)
+
+def _build_ccpp_cmake_files(ccpp_blddir, ccpp_srcmods):
+    """
+    Set env variables CCPP_SCHEMES and CCPP_CAPS to the full path list of files to be compiled.
+    Check the case SourceMods/src.fv3gfs for files and update the env variables if required.
+    """
+    needs_update = False
+    for ccppfile in ("SCHEMES","CAPS"):
+        ccpp_srcfiles = []
+        current_settings_fname = os.path.join(ccpp_blddir,"cime_cmake_{}.txt".format(ccppfile))
+        current_settings = None
+        if os.path.isfile(current_settings_fname):
+            with open(current_settings_fname,"r") as fcs:
+                current_settings = fcs.read()
+
+        with open(os.path.join(ccpp_blddir,"physics","CCPP_{}.cmake").format(ccppfile)) as fd:
+            env_var = "CCPP_{}".format(ccppfile)
+            for line in fd:
+                line = line.strip()
+                if os.path.isfile(line):
+                    tfile = os.path.basename(line)
+                    if os.path.isfile(os.path.join(ccpp_srcmods,tfile)):
+                        line = os.path.join(ccpp_srcmods,tfile)
+                    ccpp_srcfiles.append(line)
+        os.environ[env_var] = ";".join(ccpp_srcfiles)
+        if not current_settings or current_settings != os.environ[env_var]:
+            needs_update = True
+            with open(current_settings_fname,"w") as fw:
+                fw.write(os.environ[env_var])
+
+    return needs_update
+
+def _install_configure_file(case, srcroot, bldroot, ccpp):
+    """
+    Create a file configure.fv3 used by the fv3 build system
+    """
+    machine = case.get_value("MACH")
+    compiler = case.get_value("COMPILER")
+    debug = case.get_value("DEBUG")
+    openmp = case.get_value("BUILD_THREADED")
+    mpilib = case.get_value("MPILIB")
+    caseroot = case.get_value("CASEROOT")
+
+    conf_template_dir = os.path.join(srcroot,"src","model","conf")
+    expect(os.path.isdir(conf_template_dir),"ERROR: conf dir {} not found".format(conf_template_dir))
+    conf_file = "configure.fv3.{}.{}".format(machine,compiler)
+    if not os.path.isfile(os.path.join(conf_template_dir,conf_file)):
+        # try generic
+        conf_file = "configure.fv3.linux.{}".format(compiler)
+
+    expect(os.path.isfile(os.path.join(conf_template_dir,conf_file)),"ERROR no configuration file found for {} {} {}".format(machine,compiler,mpilib))
+    conf_file = os.path.join(conf_template_dir, conf_file)
+    conf_dir = os.path.join(bldroot,"conf")
+    if not os.path.isdir(conf_dir):
+        os.makedirs(os.path.join(bldroot,"conf"))
+    with open(conf_file) as finp, open(os.path.join(conf_dir,"configure.fv3"), 'w') as fout:
+        for s in finp.xreadlines():
+            if s.startswith("SHELL"):
+                fout.write(s)
+                fout.write("-include {}\n".format(os.path.join(caseroot,"Macros.make")))
+                fout.write("CPPDEFS += -DSTATIC\n")
+                fout.write("FPPFLAGS += -DSTATIC\n")
+                continue
+            if s.startswith("DEBUG ="):
+                fout.write("DEBUG = {}\n".format("Y" if debug else "N"))
+                continue
+            if s.startswith("OPENMP ="):
+                fout.write("OPENMP = {}\n".format("Y" if openmp else "N"))
+                continue
+            if s.startswith("CCPP ="):
+                fout.write("CCPP = {}\n".format("Y" if ccpp else "N"))
+                continue
+            if s.startswith("LDFLAGS :="):
+                fout.write(s.rstrip()+"-L$(ESMF_LIBSDIR) -lesmf -L. -lfv3cap\n")
+                continue
+            if s.startswith("INCLUDE ="):
+                if ccpp:
+                    s = s.rstrip()+" -I{} ".format(os.path.join(bldroot,"ccpp","physics"))
+                s+= "-I{}\n".format(os.path.join(bldroot,"gfsphysics"))
+            fout.write(s)
+    return conf_dir
+
+def _create_dir_structure(srcdir,targetdir, sourcemods=None):
+    """
+    Reproduce the directory structure of srcdir in targetdir with
+    links to the files of srcdir.  If a sourcemods dir is provided and
+    a file in the source tree matchs a file in the sourcemods directory
+    link the sourcemods file instead
+    """
+    for dirpath, _, filenames in os.walk(srcdir):
+        structure = targetdir + dirpath[len(srcdir):]
+        if not os.path.isdir(structure):
+            os.mkdir(structure)
+        for fname in filenames:
+            # ignore some files
+            if fname.startswith('.') or fname.startswith('#') or fname.startswith('~'):
+                continue
+            newfullpath = os.path.join(structure,fname)
+            if sourcemods and os.path.isfile(os.path.join(sourcemods,fname)):
+                # If file exists in case sourcemods use it
+                linkto = os.path.join(sourcemods,fname)
+            else:
+                # otherwise link original file
+                linkto = os.path.join(dirpath,fname)
+
+            # Broken link or link to wrong path - remove it
+            if (os.path.lexists(newfullpath) and not os.path.exists(newfullpath)) or \
+               (os.path.exists(newfullpath) and not os.path.samefile(linkto,newfullpath)):
+                os.unlink(newfullpath)
+            # Create new link
+            if not os.path.exists(newfullpath):
+                os.symlink(linkto,newfullpath)
+
+
+
+###############################################################################
+def buildlib(caseroot, libroot, bldroot):
+###############################################################################
+
+    with Case(caseroot) as case:
+        # retrieve variables
+        srcroot = case.get_value("SRCROOT")
+        srcdir = os.path.join(srcroot,"src","model")
+        # fv3_bldroot = os.path.join(bldroot,"FV3")
+
+        _create_dir_structure(srcdir,bldroot,
+                               sourcemods=os.path.join(caseroot,"SourceMods","src.fv3gfs"))
+
+        #Now build ccpp if needed
+        ccpp = case.get_value("BUILD_CCPP") #__CCPP__ Y/N
+        gmake = case.get_value("GMAKE")
+        gmake_j = case.get_value("GMAKE_J")
+        cmake_flags = " -DCOMPILER={} ".format(case.get_value("COMPILER"))
+        cmake_flags += " -DMPILIB={} ".format(case.get_value("MPILIB"))
+        cmake_flags += " -DDEBUG={} ".format(stringify_bool(case.get_value("DEBUG")))
+
+        if ccpp:
+            ccpp_srcmods = os.path.join(caseroot,"SourceMods","src.fv3gfs")
+            ccpp_suites = case.get_value("CCPP_SUITES")
+
+            ccpp_srcroot = os.path.join(srcdir,"FV3","ccpp")
+            ccpp_blddir=os.path.join(bldroot,"FV3","ccpp")
+            if not os.path.exists(os.path.join(ccpp_blddir,"cime_cmake_CAPS.txt")):
+                ccpp_preconfig = os.path.join(ccpp_srcroot,"framework","scripts","ccpp_prebuild.py")
+                ccpp_config = os.path.join(ccpp_srcroot,"config","ccpp_prebuild_config.py")
+
+                run_cmd("{} --config {} --static --suites={} --builddir {}"
+                        .format(ccpp_preconfig, ccpp_config, ccpp_suites,
+                                os.path.join(bldroot,"FV3"),verbose=True,
+                                from_dir=srcdir))
+            _build_ccpp_cmake_files(ccpp_blddir,os.path.join(caseroot,"SourceMods","src.fv3gfs"))
+            cmake_flags += " -DCCPP=ON -DSUITES={} ".format(ccpp_suites)
+        cmake_flags += " -DMPI=ON "
+        cmake_flags += " -DSTATIC=ON "
+
+        if case.get_value("BUILD_THREADED"):
+            cmake_flags += " -DOPENMP=ON -Dcompile_threaded=TRUE "
+        mklroot = os.environ.get("MKLROOT")
+        if mklroot:
+            cmake_flags += " -DMKL_DIR={}".format(mklroot)
+        for name in ("NETCDF", "NETCDF_DIR", "NETCDF_PATH", "TACC_NETCDF_DIR", "NETCDFROOT"):
+            netcdf = os.environ.get(name)
+            if netcdf:
+                cmake_flags += " -DNETCDF_DIR={} ".format(netcdf)
+                break
+            if not netcdf:
+                # one last try
+                from distutils.spawn import find_executable
+                netcdf = find_executable("ncdump")
+                if netcdf:
+                    netcdf = os.path.dirname(netcdf).parent
+                    cmake_flags += " -DNETCDF_DIR={} ".format(netcdf)
+#        cmake_flags += " -DCMAKE_INSTALL_PREFIX={} ".format(libroot)
+        os.environ["CMAKE_C_COMPILER"]="mpicc"
+        os.environ["CMAKE_CXX_COMPILER"]="mpicxx"
+        os.environ["CMAKE_Fortran_COMPILER"]="mpif90"
+        os.environ["CMAKE_Platform"]="cime"
+        safe_copy(os.path.join(srcroot,"src","model","FV3","cime","cime_config","configure_cime.cmake"),
+                  os.path.join(srcroot,"src","model","cmake"))
+        run_cmd("cmake {} {} ".format(cmake_flags,os.path.join(srcroot,"src","model")),from_dir=bldroot,verbose=True)
+        gmake_args = "-j {} ".format(gmake_j)+get_standard_makefile_args(case)
+        gmake_args += " VERBOSE=1 "
+        stat, out, err = run_cmd("{} {}".format(gmake,gmake_args),from_dir=bldroot,verbose=True)
+        expect(stat==0,"Build error from fv3 {}".format(err))
+
+def _main_func():
+    caseroot, libroot, bldroot = parse_input(sys.argv)
+    buildlib(caseroot, libroot, bldroot)
+
+###############################################################################
+
+if __name__ == "__main__":
+    _main_func()

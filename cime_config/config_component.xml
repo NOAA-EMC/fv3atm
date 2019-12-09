@@ -1,0 +1,66 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="definitions_variables.xsl" ?>
+
+<entry_id version="3.0">
+
+  <description>
+    <desc atm="FV3GFS">FV3GFS Atmosphere </desc>
+  </description>
+
+  <entry id="COMP_ATM">
+    <type>char</type>
+    <valid_values>fv3gfs</valid_values>
+    <default_value>fv3gfs</default_value>
+    <group>case_comp</group>
+    <file>env_case.xml</file>
+    <desc>FV3GFS Atmosphere component</desc>
+  </entry>
+
+  <entry id="BUILD_CCPP">
+    <type>logical</type>
+    <default_value>TRUE</default_value>
+    <group>case_comp</group>
+    <file>env_case.xml</file>
+    <desc>Option for FV3GFS CCPP feature</desc>
+  </entry>
+
+  <entry id="CCPP_SUITES">
+    <type>char</type>
+    <valid_values></valid_values>
+    <default_value>FV3_GFS_v15</default_value>
+    <values match="last">
+      <value>FV3_GFS_v15</value>
+      <value>FV3_GFS_v15,FV3_GFS_v16beta</value>
+    </values>    
+    <group>case_comp</group>
+    <file>env_case.xml</file>
+    <desc>Suite option for CCPP physics package</desc>
+  </entry>
+
+<!--
+  <entry id="FV3GFS_PHYSP">
+    <type>char</type>
+    <valid_values>gfs,nam</valid_values>
+    <default_value>gfs</default_value>
+    <group>case_comp</group>
+    <file>env_case.xml</file>
+    <desc>Option for FV3GFS physics package</desc>
+  </entry>
+
+  <entry id="FV3GFS_INLINE_POST">
+    <type>logical</type>
+    <default_value>FALSE</default_value>
+    <group>case_comp</group>
+    <file>env_case.xml</file>
+    <desc>Option for FV3GFS inline post support</desc>
+  </entry>
+-->
+
+  <help>
+    =========================================
+    Say something
+    =========================================
+  </help>
+
+</entry_id>

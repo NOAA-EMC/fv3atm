@@ -1,0 +1,3649 @@
+<?xml version="1.0"?>
+
+<entry_id version="2.0">
+
+  <!-- Each namelist variable is defined in an <entry> element.  The
+     content of the element is the documentation of how the variable is
+     used.  Other elements  are:
+     id
+          The variable's name.  *** N.B. *** The name must be lower case.
+          The module convert all namelist variable names to lower case
+          since Fortran is case insensitive.
+     type
+          An abbreviation of the fortran declaration for the variable.
+          Valid declarations are:
+             char, integer, logical, real
+          Any of these types may be followed by a comma separated list of
+          integers enclosed in parenthesis to indicate an array.
+          The current namelist validation code only distinquishes between
+          string and non-string types.
+     category
+          A category assigned for organizing the documentation.
+     group
+          The namelist group that the variable is declared in.
+     valid_values
+          This is an optional attribute that is mainly useful for variables
+          that have only a small number of allowed values.
+  -->
+
+  <!-- =========================== -->
+  <!-- amip_interp_nml parameterizations -->
+  <!-- =========================== -->
+
+  <entry id="interp_oi_sst">
+    <type>logical</type>
+    <category>amip</category>
+    <group>amip_interp_nml</group>
+    <desc>
+    </desc>
+    <values>
+      <value>.true.</value>
+    </values>
+  </entry>
+
+  <entry id="use_ncep_sst">
+    <type>logical</type>
+    <category>amip</category>
+    <group>amip_interp_nml</group>
+    <desc>
+    </desc>
+    <values>
+      <value>.true.</value>
+    </values>
+  </entry>
+
+  <entry id="use_ncep_ice">
+    <type>logical</type>
+    <category>amip</category>
+    <group>amip_interp_nml</group>
+    <desc>
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="no_anom_sst">
+    <type>logical</type>
+    <category>amip</category>
+    <group>amip_interp_nml</group>
+    <desc>
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="data_set">
+    <type>char</type>
+    <category>amip</category>
+    <group>amip_interp_nml</group>
+    <desc>
+    </desc>
+    <values>
+      <value>reynolds_oi</value>
+    </values>
+  </entry>
+
+  <entry id="date_out_of_range">
+    <type>char</type>
+    <category>amip</category>
+    <group>amip_interp_nml</group>
+    <desc>
+    </desc>
+    <values>
+      <value>climo</value>
+    </values>
+  </entry>
+
+  <!-- =========================== -->
+  <!-- atmos_model_nml parameterizations -->
+  <!-- =========================== -->
+
+  <entry id="blocksize">
+    <type>integer</type>
+    <category>fv3gfs</category>
+    <group>atmos_model_nml</group>
+    <desc>
+      number of columns in each block sent to the physics. OpenMP threading is done over the number of blocks
+    </desc>
+    <values>
+      <value>32</value>
+    </values>
+  </entry>
+
+  <entry id="chksum_debug">
+    <type>logical</type>
+    <category>fv3gfs</category>
+    <group>atmos_model_nml</group>
+    <desc>
+      whether to compute checksums for all variables passed into the GFS physics, before and after each physics timestep  
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="dycore_only">
+    <type>logical</type>
+    <category>fv3gfs</category>
+    <group>atmos_model_nml</group>
+    <desc>
+      whether only the dynamical core (and not the GFS physics) is executed when running the model, essentially running the model as a solo dynamical core
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="fdiag">
+    <type>real(1028)</type>
+    <category>fv3gfs</category>
+    <group>atmos_model_nml</group>
+    <desc>
+      array listing the diagnostic output times (in hours) for the GFS physics
+    </desc>
+    <values>
+      <value>6.0</value>
+    </values>
+  </entry>
+
+  <entry id="fhmax">
+    <type>real</type>
+    <category>fv3gfs</category>
+    <group>atmos_model_nml</group>
+    <desc>
+    </desc>
+    <values>
+      <value>840.0</value>
+    </values>
+  </entry>
+
+  <entry id="fhout">
+    <type>real</type>
+    <category>fv3gfs</category>
+    <group>atmos_model_nml</group>
+    <desc>
+    </desc>
+    <values>
+      <value>6.0</value>
+    </values>
+  </entry>
+
+  <entry id="fhmaxhf">
+    <type>real</type>
+    <category>fv3gfs</category>
+    <group>atmos_model_nml</group>
+    <desc>
+    </desc>
+    <values>
+      <value>0.0</value>
+    </values>
+  </entry>
+
+  <entry id="fhouthf">
+    <type>real</type>
+    <category>fv3gfs</category>
+    <group>atmos_model_nml</group>
+    <desc>
+    </desc>
+    <values>
+      <value>-1.0</value>
+    </values>
+  </entry>
+
+  <!-- =========================== -->
+  <!-- diag_manager_nml parameterizations -->
+  <!-- =========================== -->
+
+  <entry id="prepend_date">
+    <type>logical</type>
+    <category>fv3gfs</category>
+    <group>diag_manager_nml</group>
+    <desc>
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <!-- =========================== -->
+  <!-- fms_io_nml parameterizations -->
+  <!-- =========================== -->
+
+  <entry id="checksum_required">
+    <type>logical</type>
+    <category>fmsio</category>
+    <group>fms_io_nml</group>
+    <desc>
+      set checksum_required to true to compare checksums stored in the attribute of a field against the checksum after reading in the data
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="max_files_r">
+    <type>integer</type>
+    <category>fmsio</category>
+    <group>fms_io_nml</group>
+    <desc>
+    </desc>
+    <values>
+      <value>100</value>
+    </values>
+  </entry>
+
+  <entry id="max_files_w">
+    <type>integer</type>
+    <category>fmsio</category>
+    <group>fms_io_nml</group>
+    <desc>
+    </desc>
+    <values>
+      <value>100</value>
+    </values>
+  </entry>
+
+  <!-- =========================== -->
+  <!-- fms_nml parameterizations -->
+  <!-- =========================== -->
+
+  <entry id="clock_grain">
+    <type>char</type>
+    <category>fms</category>
+    <group>fms_nml</group>
+    <desc>
+      the level of clock granularity used for performance timing sections of code
+    </desc>
+    <valid_values>NONE,COMPONENT,SUBCOMPONENT,MODULE_DRIVER,MODULE,ROUTINE,LOOP,INFRA</valid_values> 
+    <values>
+      <value>ROUTINE</value>
+    </values>
+  </entry>
+
+  <entry id="domains_stack_size">
+    <type>integer</type>
+    <category>fms</category>
+    <group>fms_nml</group>
+    <desc>
+      the size in words of the MPP_DOMAINS user stack
+    </desc>
+    <values>
+      <value>3000000</value>
+    </values>
+  </entry>
+
+  <entry id="print_memory_usage">
+    <type>logical</type>
+    <category>fms</category>
+    <group>fms_nml</group>
+    <desc>
+      if set to true, memory usage statistics will be printed at various points in the code
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <!-- =========================== -->
+  <!-- fv_core_nml parameterizations -->
+  <!-- =========================== -->
+
+  <entry id="layout">
+    <type>integer(2)</type>
+    <category>required</category>
+    <group>fv_core_nml</group>
+    <desc>
+      processor layout on each tile.
+    </desc>
+    <values>
+      <value>6,8</value>
+    </values>
+  </entry>
+
+  <entry id="io_layout">
+    <type>integer(2)</type>
+    <category>io</category>
+    <group>fv_core_nml</group>
+    <desc>
+      layout of output files on each tile.
+    </desc>
+    <values>
+      <value>1,1</value>
+    </values>
+  </entry>
+
+  <entry id="ntiles">
+    <type>integer</type>
+    <category>required</category>
+    <group>fv_core_nml</group>
+    <desc>
+      number of tiles on the domain
+    </desc>
+    <values>
+      <value>6</value>
+    </values>
+  </entry>
+
+  <entry id="npx">
+    <type>integer</type>
+    <category>required</category>
+    <group>fv_core_nml</group>
+    <desc>
+      number of grid corners in the x­direction on one tile of the domain
+    </desc>
+    <values>
+      <value>385</value>
+    </values>
+  </entry>
+
+  <entry id="npy">
+    <type>integer</type>
+    <category>required</category>
+    <group>fv_core_nml</group>
+    <desc>
+      number of grid corners in the x­direction on one tile of the domain
+    </desc>
+    <values>
+      <value>385</value>
+    </values>
+  </entry>
+
+  <entry id="npz">
+    <type>integer</type>
+    <category>required</category>
+    <group>fv_core_nml</group>
+    <desc>
+      number of vertical levels
+    </desc>
+    <values>
+      <value>64</value>
+    </values>
+  </entry>
+
+  <entry id="grid_type">
+    <type>integer</type>
+    <category>grid</category>
+    <group>fv_core_nml</group>
+    <desc>
+      which type of grid to use.
+    </desc>
+    <values>
+      <value>-1</value>
+    </values>
+</entry>
+
+  <entry id="make_nh">
+    <type>logical</type>
+    <category>nonhydrostatic</category>
+    <group>fv_core_nml</group>
+    <desc>
+      whether to re­initialize the nonhydrostatic state, by re­computing dz from hydrostatic balance and setting w to 0  
+    </desc>
+    <values>
+      <value>.true.</value>
+    </values>
+  </entry>
+
+  <entry id="fv_debug">
+    <type>logical</type>
+    <category>diagnostic</category>
+    <group>fv_core_nml</group>
+    <desc>
+      whether to turn on additional diagnostics in fv_dynamics
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="range_warn">
+    <type>logical</type>
+    <category>diagnostic</category>
+    <group>fv_core_nml</group>
+    <desc>
+      checks whether the values of a number of variables are within a reasonable range at the end of a dynamics time step, and prints a warning if not
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="reset_eta">
+    <type>logical</type>
+    <category>initialization</category>
+    <group>fv_core_nml</group>
+    <desc>
+      whether to reset the model vertical levels on startup to the values hard­coded in fv_eta.F90, instead of using the values in the restart files
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="n_sponge">
+    <type>integer</type>
+    <category>damping</category>
+    <group>fv_core_nml</group>
+    <desc>
+      controls behavior of sponge layers at the upper boundary
+    </desc>
+    <values>
+      <value>10</value>
+    </values>
+  </entry>
+
+  <entry id="nudge_qv">
+    <type>logical</type>
+    <category>initialization</category>
+    <group>fv_core_nml</group>
+    <desc>
+      whether to nudge the stratospheric water vapor back to an analytic approximation of HALOE climatology
+    </desc>
+    <values>
+      <value>.true.</value>
+    </values>
+  </entry>
+
+  <entry id="nudge_dz">
+    <type>logical</type>
+    <category>initialization</category>
+    <group>fv_core_nml</group>
+    <desc>
+      during the adiabatic initialization (na_init > 0), if set to .true., delz is nudged back to the value specified in the initial conditions, instead of nudging the temperature back to the initial value.
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="tau">
+    <type>real</type>
+    <category>solver</category>
+    <group>fv_core_nml</group>
+    <desc>
+      time scale (in days) for Rayleigh friction applied to horizontal and vertical winds
+    </desc>
+    <values>
+      <value>10.0</value>
+    </values>
+  </entry>
+
+  <entry id="rf_cutoff">
+    <type>real</type>
+    <category>solver</category>
+    <group>fv_core_nml</group>
+    <desc>
+      pressure below which no Rayleigh damping is applied if tau > 0
+    </desc>
+    <values>
+      <value>7.5e2</value>
+    </values>
+  </entry>
+
+  <entry id="d2_bg_k1">
+    <type>real</type>
+    <category>damping</category>
+    <group>fv_core_nml</group>
+    <desc>
+      strength of second­order diffusion in the top sponge layer
+    </desc>
+    <values>
+      <value>0.15</value>
+    </values>
+  </entry>
+
+  <entry id="d2_bg_k2">
+    <type>real</type>
+    <category>damping</category>
+    <group>fv_core_nml</group>
+    <desc>
+      strength of second­order diffusion in the second sponge layer from the model top
+    </desc>
+    <values>
+      <value>0.02</value>
+    </values>
+  </entry>
+
+  <entry id="kord_tm">
+    <type>integer</type>
+    <category>solver</category>
+    <group>fv_core_nml</group>
+    <desc>
+      vertical remapping scheme for temperature
+    </desc>
+    <values>
+      <value>-9</value>
+    </values>
+  </entry>
+
+  <entry id="kord_mt">
+    <type>integer</type>
+    <category>solver</category>
+    <group>fv_core_nml</group>
+    <desc>
+      vertical remapping scheme for the winds
+    </desc>
+    <values>
+      <value>9</value>
+    </values>
+  </entry>
+
+  <entry id="kord_wz">
+    <type>integer</type>
+    <category>solver</category>
+    <group>fv_core_nml</group>
+    <desc>
+      vertical remapping scheme for vertical velocity in nonhydrostatic simulations
+    </desc>
+    <values>
+      <value>9</value>
+    </values>
+  </entry>
+
+  <entry id="kord_tr">
+    <type>integer</type>
+    <category>solver</category>
+    <group>fv_core_nml</group>
+    <desc>
+      vertical remapping scheme for tracers
+    </desc>
+    <values>
+      <value>9</value>
+    </values>
+  </entry>
+
+  <entry id="hydrostatic">
+    <type>logical</type>
+    <category>nonhydrostatic</category>
+    <group>fv_core_nml</group>
+    <desc>
+      whether to use the hydrostatic or nonhydrostatic solver
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="phys_hydrostatic">
+    <type>logical</type>
+    <category>tracers</category>
+    <group>fv_core_nml</group>
+    <desc>
+      option to enable hydrostatic application of heating from the physics in a nonhydrostatic simulation
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="use_hydro_pressure">
+    <type>logical</type>
+    <category>tracers</category>
+    <group>fv_core_nml</group>
+    <desc>
+      whether to compute hydrostatic pressure for input to the physics
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="beta">
+    <type>real</type>
+    <category>solver</category>
+    <group>fv_core_nml</group>
+    <desc>
+      parameter specifying fraction of time­off­centering for backwards evaluation of the pressure gradient force
+    </desc>
+    <values>
+      <value>0.0</value>
+    </values>
+  </entry>
+
+  <entry id="a_imp">
+    <type>real</type>
+    <category>nonhydrostatic</category>
+    <group>fv_core_nml</group>
+    <desc>
+      controls behavior of the non­hydrostatic solver
+    </desc>
+    <values>
+      <value>1.0</value>
+    </values>
+  </entry>
+
+  <entry id="p_fac">
+    <type>real</type>
+    <category>nonhydrostatic</category>
+    <group>fv_core_nml</group>
+    <desc>
+      safety factor for minimum nonhydrostatic pressures, which will be limited so the full pressure is no less than p_fac times the hydrostatic pressure
+    </desc>
+    <values>
+      <value>0.1</value>
+    </values>
+  </entry>
+
+  <entry id="k_split">
+    <type>integer</type>
+    <category>timestep</category>
+    <group>fv_core_nml</group>
+    <desc>
+      number of vertical remappings per dt_atmos (physics time step)
+    </desc>
+    <values>
+      <value>2</value>
+    </values>
+  </entry>
+
+  <entry id="n_split">
+    <type>integer</type>
+    <category>timestep</category>
+    <group>fv_core_nml</group>
+    <desc>
+      number of small dynamics (acoustic) timesteps between vertical remapping
+    </desc>
+    <values>
+      <value>6</value>
+    </values>
+  </entry>
+
+  <entry id="nwat">
+    <type>integer</type>
+    <category>tracers</category>
+    <group>fv_core_nml</group>
+    <desc>
+      number of water species to be included in condensate and water vapor loading
+    </desc>
+    <values>
+      <value>6</value>
+    </values>
+  </entry>
+
+  <entry id="na_init">
+    <type>integer</type>
+    <category>initialization</category>
+    <group>fv_core_nml</group>
+    <desc>
+      number of forward­backward dynamics steps used to initialize adiabatic solver
+    </desc>
+    <values>
+      <value>1</value>
+    </values>
+  </entry>
+
+  <entry id="d_ext">
+    <type>real</type>
+    <category>damping</category>
+    <group>fv_core_nml</group>
+    <desc>
+      coefficient for external (barotropic) mode damping
+    </desc>
+    <values>
+      <value>0.0</value>
+    </values>
+  </entry>
+
+  <entry id="dnats">
+    <type>integer</type>
+    <category>tracers</category>
+    <group>fv_core_nml</group>
+    <desc>
+      the number of tracers which are not to be advected by the dynamical core, but still passed into the dynamical core; the last dnats+pnats tracers in field_table are not advected
+    </desc>
+    <values>
+      <value>1</value>
+    </values>
+  </entry>
+
+  <entry id="fv_sg_adj">
+    <type>real</type>
+    <category>solver</category>
+    <group>fv_core_nml</group>
+    <desc>
+      timescale (in seconds) at which to remove two­delta­z instability when the local (between two adjacent levels) Richardson number is less than 1
+    </desc>
+    <values>
+      <value>450.0</value>
+    </values>
+  </entry>
+
+  <entry id="d2_bg">
+    <type>real</type>
+    <category>damping</category>
+    <group>fv_core_nml</group>
+    <desc>
+      coefficient for background second­order divergence damping
+    </desc>
+    <values>
+      <value>0.0</value>
+    </values>
+  </entry>
+
+  <entry id="nord">
+    <type>integer</type>
+    <category>damping</category>
+    <group>fv_core_nml</group>
+    <desc>
+      order of divergence damping (0 = second­order, 1 = fourth­order, 2 = sixth­order, 3 = eighth­order)
+    </desc>
+    <values>
+      <value>2</value>
+    </values>
+  </entry>
+
+  <entry id="dddmp">
+    <type>real</type>
+    <category>damping</category>
+    <group>fv_core_nml</group>
+    <desc>
+      dimensionless coefficient for the second­order Smagorinsky­type divergence damping
+    </desc>
+    <values>
+      <value>0.1</value>
+    </values>
+  </entry>
+
+  <entry id="d4_bg">
+    <type>real</type>
+    <category>damping</category>
+    <group>fv_core_nml</group>
+    <desc>
+      dimensionless coefficient for background higher­order divergence damping
+    </desc>
+    <values>
+      <value>0.12</value>
+    </values>
+  </entry>
+
+  <entry id="vtdm4">
+    <type>real</type>
+    <category>damping</category>
+    <group>fv_core_nml</group>
+    <desc>
+      coefficient for background other­variable damping
+    </desc>
+    <values>
+      <value>0.02</value>
+    </values>
+  </entry>
+
+  <entry id="delt_max">
+    <type>real</type>
+    <category>damping</category>
+    <group>fv_core_nml</group>
+    <desc>
+      limit on heating from damped kinetic energy (K/s)
+    </desc>
+    <values>
+      <value>0.002</value>
+    </values>
+  </entry>
+
+  <entry id="ke_bg">
+    <type>real</type>
+    <category>damping</category>
+    <group>fv_core_nml</group>
+    <desc>
+      background KE production (m^2/s^3) over a small step
+    </desc>
+    <values>
+      <value>0.0</value>
+    </values>
+  </entry>
+
+  <entry id="do_vort_damp">
+    <type>logical</type>
+    <category>damping</category>
+    <group>fv_core_nml</group>
+    <desc>
+      whether to apply damping (of strength governed by vtdm4) to the other dynamical variables: vorticity, and nonhydrostatic vertical velocity, but not to the tracers
+    </desc>
+    <values>
+      <value>.true.</value>
+    </values>
+  </entry>
+
+  <entry id="external_ic">
+    <type>logical</type>
+    <category>initialization</category>
+    <group>fv_core_nml</group>
+    <desc>
+      whether to initialize the model state using the data in an externally specified file, given in res_latlon_dynamics
+    </desc>
+    <values>
+      <value>.true.</value>
+    </values>
+  </entry>
+
+  <entry id="external_eta">
+    <type>logical</type>
+    <category>initialization</category>
+    <group>fv_core_nml</group>
+    <desc>
+      read vertical level coefficients (ak, bk) from restarts instead of hard-coded values
+    </desc>
+    <values>
+      <value>.true.</value>
+    </values>
+  </entry>
+
+  <entry id="gfs_phil">
+    <type>logical</type>
+    <category>solver</category>
+    <group>fv_core_nml</group>
+    <desc>
+      if it is set to true, compute geopotential inside of GFS physics
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="nggps_ic">
+    <type>logical</type>
+    <category>initialization</category>
+    <group>fv_core_nml</group>
+    <desc>
+      if external_ic = .true., reads in vapor, liquid, and ice phases of water and ozone from the NCEP analysis or reanalysis file. ncep_ic must be false
+    </desc>
+    <values>
+      <value>.true.</value>
+    </values>
+  </entry>
+
+  <entry id="mountain">
+    <type>logical</type>
+    <category>initialization</category>
+    <group>fv_core_nml</group>
+    <desc>
+      takes topography into account when initializing the model
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="ncep_ic">
+    <type>logical</type>
+    <category>initialization</category>
+    <group>fv_core_nml</group>
+    <desc>
+      if external_ic = .true., this variable says whether the file in res_latlon_dynamics is an NCEP analysis or reanalysis file
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="d_con">
+    <type>real</type>
+    <category>solver</category>
+    <group>fv_core_nml</group>
+    <desc>
+      fraction of kinetic energy lost to net damping (divergence and vorticity) to be converted to heat
+    </desc>
+    <values>
+      <value>1.0</value>
+    </values>
+  </entry>
+
+  <entry id="hord_mt">
+    <type>integer</type>
+    <category>solver</category>
+    <group>fv_core_nml</group>
+    <desc>
+      horizontal advection scheme for momentum fluxes
+    </desc>
+    <values>
+      <value>6</value>
+    </values>
+  </entry>
+
+  <entry id="hord_vt">
+    <type>integer</type>
+    <category>solver</category>
+    <group>fv_core_nml</group>
+    <desc>
+      horizontal advection scheme for absolute vorticity and for vertical velocity in nonhydrostatic simulations
+    </desc>
+    <values>
+      <value>6</value>
+    </values>
+  </entry>
+
+  <entry id="hord_tm">
+    <type>integer</type>
+    <category>solver</category>
+    <group>fv_core_nml</group>
+    <desc>
+      horizontal advection scheme for potential temperature and layer thickness in nonhydrostatic simulations
+    </desc>
+    <values>
+      <value>6</value>
+    </values>
+  </entry>
+
+  <entry id="hord_dp">
+    <type>integer</type>
+    <category>solver</category>
+    <group>fv_core_nml</group>
+    <desc>
+      horizontal advection scheme for mass
+    </desc>
+    <values>
+      <value>-6</value>
+    </values>
+  </entry>
+
+  <entry id="hord_tr">
+    <type>integer</type>
+    <category>solver</category>
+    <group>fv_core_nml</group>
+    <desc>
+      horizontal advection scheme for tracers
+    </desc>
+    <values>
+      <value>8</value>
+    </values>
+  </entry>
+
+  <entry id="adjust_dry_mass">
+    <type>logical</type>
+    <category>initialization</category>
+    <group>fv_core_nml</group>
+    <desc>
+      whether to adjust the global dry­air mass to the value set by dry_mass
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="consv_te">
+    <type>real</type>
+    <category>solver</category>
+    <group>fv_core_nml</group>
+    <desc>
+      fraction of total energy lost during one full dynamic step to be added back globally as heat; essentially the strength of the energy fixer in the physics
+    </desc>
+    <values>
+      <value>1.0</value>
+    </values>
+  </entry>
+
+  <entry id="do_sat_adj">
+    <type>logical</type>
+    <category>initialization</category>
+    <group>fv_core_nml</group>
+    <desc>
+    </desc>
+    <values>
+      <value>.true.</value>
+    </values>
+  </entry>
+
+  <entry id="consv_am">
+    <type>logical</type>
+    <category>solver</category>
+    <group>fv_core_nml</group>
+    <desc>
+      whether to enable Angular momentum fixer
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="fill">
+    <type>logical</type>
+    <category>tracers</category>
+    <group>fv_core_nml</group>
+    <desc>
+      whether to enable Angular momentum fixer
+    </desc>
+    <values>
+      <value>.true.</value>
+    </values>
+  </entry>
+
+  <entry id="dwind_2d">
+    <type>logical</type>
+    <category>tracers</category>
+    <group>fv_core_nml</group>
+    <desc>
+      whether to use a simpler and faster algorithm for interpolating the A­grid (cell­centered) wind tendencies computed from the physics to the D­grid
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="print_freq">
+    <type>integer</type>
+    <category>diagnostic</category>
+    <group>fv_core_nml</group>
+    <desc>
+      number of hours between print out of max/min and air/tracer mass diagnostics to standard output
+    </desc>
+    <values>
+      <value>6</value>
+    </values>
+  </entry>
+
+  <entry id="warm_start">
+    <type>logical</type>
+    <category>initialization</category>
+    <group>fv_core_nml</group>
+    <desc>
+      whether to start from restart files, instead of cold­starting the model
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="no_dycore">
+    <type>logical</type>
+    <category>solver</category>
+    <group>fv_core_nml</group>
+    <desc>
+      disables execution of the dynamical core, only running the initialization, diagnostic, and I/O routines, and any physics that may be enabled
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="z_tracer">
+    <type>logical</type>
+    <category>tracers</category>
+    <group>fv_core_nml</group>
+    <desc>
+      whether to transport sub­cycled tracers layer­by­layer, each with its own computed sub­cycling timestep (if q_split = 0)
+    </desc>
+    <values>
+      <value>.true.</value>
+    </values>
+  </entry>
+
+  <entry id="agrid_vel_rst">
+    <type>logical</type>
+    <category>diagnostics</category>
+    <group>fv_core_nml</group>
+    <desc>
+      write out interpolated A-grid winds to restart files
+    </desc>
+    <values>
+      <value>.true.</value>
+    </values>
+  </entry>
+
+  <entry id="read_increment">
+    <type>logical</type>
+    <category>initialization</category>
+    <group>fv_core_nml</group>
+    <desc>
+      whether to read a DA increment from an external file and apply it in an FV-consistent way
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="res_latlon_dynamics">
+    <type>char</type>
+    <category>initialization</category>
+    <group>fv_core_nml</group>
+    <desc>
+      if external_ic = .true. gives the filename of the input IC file
+    </desc>
+    <values>
+      <value></value>
+    </values>
+  </entry>
+
+  <!-- =========================== -->
+  <!-- external_ic_nml parameterizations -->
+  <!-- =========================== -->
+
+  <entry id="filtered_terrain">
+    <type>logical</type>
+    <category>ic</category>
+    <group>external_ic_nml</group>
+    <desc>
+      use orography maker filtered terrain mapping
+    </desc>
+    <values>
+      <value>.true.</value>
+    </values>
+  </entry>
+
+  <entry id="levp">
+    <type>integer</type>
+    <category>ic</category>
+    <group>external_ic_nml</group>
+    <desc>
+      number of pressure levels 
+    </desc>
+    <values>
+      <value>65</value>
+    </values>
+  </entry>
+
+  <entry id="gfs_dwinds">
+    <type>logical</type>
+    <category>ic</category>
+    <group>external_ic_nml</group>
+    <desc>
+    </desc>
+    <values>
+      <value>.true.</value>
+    </values>
+  </entry>
+
+  <entry id="checker_tr">
+    <type>logical</type>
+    <category>ic</category>
+    <group>external_ic_nml</group>
+    <desc>
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="nt_checker">
+    <type>integer</type>
+    <category>ic</category>
+    <group>external_ic_nml</group>
+    <desc>
+    </desc>
+    <values>
+      <value>0</value>
+    </values>
+  </entry>
+
+  <!-- =========================== -->
+  <!-- gfs_physics_nml parameterizations -->
+  <!-- =========================== -->
+
+  <entry id="fhzero">
+    <type>real</type>
+    <category>gfs</category>
+    <group>gfs_physics_nml</group>
+    <desc>
+      seconds between clearing of diagnostic buckets
+    </desc>
+    <values>
+      <value>6.0</value>
+    </values>
+  </entry>
+
+  <entry id="h2o_phys">
+    <type>logical</type>
+    <category>gfs</category>
+    <group>gfs_physics_nml</group>
+    <desc>
+      flag for stratosphere h2o
+    </desc>
+    <values>
+      <value>.true.</value>
+    </values>
+  </entry>
+
+  <entry id="ldiag3d">
+    <type>logical</type>
+    <category>gfs</category>
+    <group>gfs_physics_nml</group>
+    <desc>
+      flag for 3d diagnostic fields
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="fhcyc">
+    <type>real</type>
+    <category>gfs</category>
+    <group>gfs_physics_nml</group>
+    <desc>
+       frequency for surface data cycling (s)
+    </desc>
+    <values>
+      <value>24.0</value>
+    </values>
+  </entry>
+
+  <entry id="use_ufo">
+    <type>logical</type>
+    <category>gfs</category>
+    <group>gfs_physics_nml</group>
+    <desc>
+      flag for gcycle surface option
+    </desc>
+    <values>
+      <value>.true.</value>
+    </values>
+  </entry>
+
+  <entry id="pre_rad">
+    <type>logical</type>
+    <category>gfs</category>
+    <group>gfs_physics_nml</group>
+    <desc>
+      flag for testing purpose
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="ncld">
+    <type>integer</type>
+    <category>gfs</category>
+    <group>gfs_physics_nml</group>
+    <desc>
+    </desc>
+    <values>
+      <value>5</value>
+    </values>
+  </entry>
+
+  <entry id="imp_physics">
+    <type>integer</type>
+    <category>gfs</category>
+    <group>gfs_physics_nml</group>
+    <desc>
+      cloud microphysics scheme control flag
+    </desc>
+    <values>
+      <value>11</value>
+    </values>
+  </entry>
+
+  <entry id="pdfcld">
+    <type>logical</type>
+    <category>gfs</category>
+    <group>gfs_physics_nml</group>
+    <desc>
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="fhswr">
+    <type>real</type>
+    <category>gfs</category>
+    <group>gfs_physics_nml</group>
+    <desc>
+       frequency for shortwave radiation (s)
+    </desc>
+    <values>
+      <value>3600.0</value>
+    </values>
+  </entry>
+
+  <entry id="fhlwr">
+    <type>real</type>
+    <category>gfs</category>
+    <group>gfs_physics_nml</group>
+    <desc>
+       frequency for longwave radiation (s)
+    </desc>
+    <values>
+      <value>3600.0</value>
+    </values>
+  </entry>
+
+  <entry id="ialb">
+    <type>integer</type>
+    <category>gfs</category>
+    <group>gfs_physics_nml</group>
+    <desc>
+      use climatology alb, based on sfc type
+    </desc>
+    <values>
+      <value>1</value>
+    </values>
+  </entry>
+
+  <entry id="iems">
+    <type>integer</type>
+    <category>gfs</category>
+    <group>gfs_physics_nml</group>
+    <desc>
+      use climatology alb, based on sfc type
+    </desc>
+    <values>
+      <value>1</value>
+    </values>
+  </entry>
+
+  <entry id="iaer">
+    <type>integer</type>
+    <category>gfs</category>
+    <group>gfs_physics_nml</group>
+    <desc>
+      4-digit aerosol flag (dabc for aermdl,volc,lw,sw)
+    </desc>
+    <values>
+      <value>111</value>
+    </values>
+  </entry>
+
+  <entry id="ico2">
+    <type>integer</type>
+    <category>gfs</category>
+    <group>gfs_physics_nml</group>
+    <desc>
+      use prescribed global mean co2
+    </desc>
+    <values>
+      <value>2</value>
+    </values>
+  </entry>
+
+  <entry id="isubc_sw">
+    <type>integer</type>
+    <category>gfs</category>
+    <group>gfs_physics_nml</group>
+    <desc>
+      sub-column cloud approx flag in shortwave radiation
+    </desc>
+    <values>
+      <value>2</value>
+    </values>
+  </entry>
+
+  <entry id="isubc_lw">
+    <type>integer</type>
+    <category>gfs</category>
+    <group>gfs_physics_nml</group>
+    <desc>
+      sub-column cloud approx flag in longwave radiation
+    </desc>
+    <values>
+      <value>2</value>
+    </values>
+  </entry>
+
+  <entry id="isol">
+    <type>integer</type>
+    <category>gfs</category>
+    <group>gfs_physics_nml</group>
+    <desc>
+      use the old fixed solar constant in physcon
+    </desc>
+    <values>
+      <value>2</value>
+    </values>
+  </entry>
+
+  <entry id="lwhtr">
+    <type>logical</type>
+    <category>gfs</category>
+    <group>gfs_physics_nml</group>
+    <desc>
+      flag to output longwave heating rate
+    </desc>
+    <values>
+      <value>.true.</value>
+    </values>
+  </entry>
+
+  <entry id="swhtr">
+    <type>logical</type>
+    <category>gfs</category>
+    <group>gfs_physics_nml</group>
+    <desc>
+      flag to output shortwave heating rate
+    </desc>
+    <values>
+      <value>.true.</value>
+    </values>
+  </entry>
+
+  <entry id="cnvgwd">
+    <type>logical</type>
+    <category>gfs</category>
+    <group>gfs_physics_nml</group>
+    <desc>
+      flag for convective gravity wave drag
+    </desc>
+    <values>
+      <value>.true.</value>
+    </values>
+  </entry>
+
+  <entry id="shal_cnv">
+    <type>logical</type>
+    <category>gfs</category>
+    <group>gfs_physics_nml</group>
+    <desc>
+      flag for calling shallow convection
+    </desc>
+    <values>
+      <value>.true.</value>
+    </values>
+  </entry>
+
+  <entry id="cal_pre">
+    <type>logical</type>
+    <category>gfs</category>
+    <group>gfs_physics_nml</group>
+    <desc>
+      flag controls preciptation type algorithm
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="redrag">
+    <type>logical</type>
+    <category>gfs</category>
+    <group>gfs_physics_nml</group>
+    <desc>
+      reduced drag coefficent flag for high wind over sea
+    </desc>
+    <values>
+      <value>.true.</value>
+    </values>
+  </entry>
+
+  <entry id="dspheat">
+    <type>logical</type>
+    <category>gfs</category>
+    <group>gfs_physics_nml</group>
+    <desc>
+      flag for tke dissipative heating
+    </desc>
+    <values>
+      <value>.true.</value>
+    </values>
+  </entry>
+
+  <entry id="hybedmf">
+    <type>logical</type>
+    <category>gfs</category>
+    <group>gfs_physics_nml</group>
+    <desc>
+      flag for hybrid edmf pbl scheme
+    </desc>
+    <values>
+      <value>.true.</value>
+    </values>
+  </entry>
+
+  <entry id="random_clds">
+    <type>logical</type>
+    <category>gfs</category>
+    <group>gfs_physics_nml</group>
+    <desc>
+      flag controls whether clouds are random
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="trans_trac">
+    <type>logical</type>
+    <category>gfs</category>
+    <group>gfs_physics_nml</group>
+    <desc>
+      flag for convective transport of tracers (RAS, CS, or SAMF)
+    </desc>
+    <values>
+      <value>.true.</value>
+    </values>
+  </entry>
+
+  <entry id="cnvcld">
+    <type>logical</type>
+    <category>gfs</category>
+    <group>gfs_physics_nml</group>
+    <desc>
+    </desc>
+    <values>
+      <value>.true.</value>
+    </values>
+  </entry>
+
+  <entry id="imfshalcnv">
+    <type>integer</type>
+    <category>gfs</category>
+    <group>gfs_physics_nml</group>
+    <desc>
+      flag for mass-flux shallow convection scheme
+    </desc>
+    <values>
+      <value>2</value>
+    </values>
+  </entry>
+
+  <entry id="imfdeepcnv">
+    <type>integer</type>
+    <category>gfs</category>
+    <group>gfs_physics_nml</group>
+    <desc>
+      flag for mass-flux deep convection scheme
+    </desc>
+    <values>
+      <value>2</value>
+    </values>
+  </entry>
+
+  <entry id="cdmbgwd">
+    <type>real(2)</type>
+    <category>gfs</category>
+    <group>gfs_physics_nml</group>
+    <desc>
+      multiplication factors for cdmb and gwd
+    </desc>
+    <values>
+      <value>1.0,1.2</value>
+    </values>
+  </entry>
+
+  <entry id="prslrd0">
+    <type>real</type>
+    <category>gfs</category>
+    <group>gfs_physics_nml</group>
+    <desc>
+      pressure level above which to apply Rayleigh damping
+    </desc>
+    <values>
+      <value>0.0</value>
+    </values>
+  </entry>
+
+  <entry id="ivegsrc">
+    <type>integer</type>
+    <category>gfs</category>
+    <group>gfs_physics_nml</group>
+    <desc>
+      sfc veg type data source (0 = USGS, 1 = IGBP, 2 = UMD)
+    </desc>
+    <values>
+      <value>1</value>
+    </values>
+  </entry>
+
+  <entry id="isot">
+    <type>integer</type>
+    <category>gfs</category>
+    <group>gfs_physics_nml</group>
+    <desc>
+      flag for soil type data source (0 = Zobler soil type, 1 = STATSGO soil type) 
+    </desc>
+    <values>
+      <value>1</value>
+    </values>
+  </entry>
+
+  <entry id="debug">
+    <type>logical</type>
+    <category>gfs</category>
+    <group>gfs_physics_nml</group>
+    <desc>
+      for debugging purpose
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="nstf_name">
+    <type>integer(5)</type>
+    <category>gfs</category>
+    <group>gfs_physics_nml</group>
+    <desc>
+      NSST related parameters (0 = no NST, 1 = uncoupled NST, 2 = coupled NST)
+    </desc>
+    <values>
+      <value>0,0,0,0,0</value>
+    </values>
+  </entry>
+
+  <entry id="nst_anl">
+    <type>logical</type>
+    <category>gfs</category>
+    <group>gfs_physics_nml</group>
+    <desc>
+      flag for NSSTM analysis in gcycle/sfcsub
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="psautco">
+    <type>real(2)</type>
+    <category>gfs</category>
+    <group>gfs_physics_nml</group>
+    <desc>
+      auto conversion coeff from ice to snow
+    </desc>
+    <values>
+      <value>0.0008,0.0005</value>
+    </values>
+  </entry>
+
+  <entry id="prautco">
+    <type>real(2)</type>
+    <category>gfs</category>
+    <group>gfs_physics_nml</group>
+    <desc>
+      auto conversion coeff from cloud to rain
+    </desc>
+    <values>
+      <value>0.00015,0.00015</value>
+    </values>
+  </entry>
+
+  <entry id="cplflx">
+    <type>logical</type>
+    <category>gfs</category>
+    <group>gfs_physics_nml</group>
+    <desc>
+    </desc>
+    <values>
+      <value>.true.</value>
+    </values>
+  </entry>
+
+  <!-- =========================== -->
+  <!-- gfdl_cloud_microphysics_nml parameterizations -->
+  <!-- =========================== -->
+
+  <entry id="sedi_transport">
+    <type>logical</type>
+    <category>gfdl</category>
+    <group>gfdl_cloud_microphysics_nml</group>
+    <desc>
+      transport of momentum in sedimentation
+    </desc>
+    <values>
+      <value>.true.</value>
+    </values>
+  </entry>
+
+  <entry id="do_sedi_heat">
+    <type>logical</type>
+    <category>gfdl</category>
+    <group>gfdl_cloud_microphysics_nml</group>
+    <desc>
+      transport of heat in sedimentation
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="rad_snow">
+    <type>logical</type>
+    <category>gfdl</category>
+    <group>gfdl_cloud_microphysics_nml</group>
+    <desc>
+      consider snow in cloud fraciton calculation
+    </desc>
+    <values>
+      <value>.true.</value>
+    </values>
+  </entry>
+
+  <entry id="rad_graupel">
+    <type>logical</type>
+    <category>gfdl</category>
+    <group>gfdl_cloud_microphysics_nml</group>
+    <desc>
+      consider graupel in cloud fraction calculation
+    </desc>
+    <values>
+      <value>.true.</value>
+    </values>
+  </entry>
+
+  <entry id="rad_rain">
+    <type>logical</type>
+    <category>gfdl</category>
+    <group>gfdl_cloud_microphysics_nml</group>
+    <desc>
+      consider rain in cloud fraciton calculation
+    </desc>
+    <values>
+      <value>.true.</value>
+    </values>
+  </entry>
+
+  <entry id="const_vi">
+    <type>logical</type>
+    <category>gfdl</category>
+    <group>gfdl_cloud_microphysics_nml</group>
+    <desc>
+      if it is true, the constants are specified by v * _fac
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="const_vs">
+    <type>logical</type>
+    <category>gfdl</category>
+    <group>gfdl_cloud_microphysics_nml</group>
+    <desc>
+      if it is true, the constants are specified by v * _fac
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="const_vg">
+    <type>logical</type>
+    <category>gfdl</category>
+    <group>gfdl_cloud_microphysics_nml</group>
+    <desc>
+      if it is true, the constants are specified by v * _fac
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="const_vr">
+    <type>logical</type>
+    <category>gfdl</category>
+    <group>gfdl_cloud_microphysics_nml</group>
+    <desc>
+      if it is true, the constants are specified by v * _fac
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="vi_max">
+    <type>real</type>
+    <category>gfdl</category>
+    <group>gfdl_cloud_microphysics_nml</group>
+    <desc>
+      max fall speed for ice
+    </desc>
+    <values>
+      <value>1.0</value>
+    </values>
+  </entry>
+
+  <entry id="vs_max">
+    <type>real</type>
+    <category>gfdl</category>
+    <group>gfdl_cloud_microphysics_nml</group>
+    <desc>
+      max fall speed for snow
+    </desc>
+    <values>
+      <value>2.0</value>
+    </values>
+  </entry>
+
+  <entry id="vg_max">
+    <type>real</type>
+    <category>gfdl</category>
+    <group>gfdl_cloud_microphysics_nml</group>
+    <desc>
+      max fall speed for graupel
+    </desc>
+    <values>
+      <value>12.0</value>
+    </values>
+  </entry>
+
+  <entry id="vr_max">
+    <type>real</type>
+    <category>gfdl</category>
+    <group>gfdl_cloud_microphysics_nml</group>
+    <desc>
+      max fall speed for rain
+    </desc>
+    <values>
+      <value>12.0</value>
+    </values>
+  </entry>
+
+  <entry id="qi_lim">
+    <type>real</type>
+    <category>gfdl</category>
+    <group>gfdl_cloud_microphysics_nml</group>
+    <desc>
+      cloud ice limiter to prevent large ice build up
+    </desc>
+    <values>
+      <value>1.0</value>
+    </values>
+  </entry>
+
+  <entry id="prog_ccn">
+    <type>logical</type>
+    <category>gfdl</category>
+    <group>gfdl_cloud_microphysics_nml</group>
+    <desc>
+      do prognostic ccn (yi ming's method)
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="do_qa">
+    <type>logical</type>
+    <category>gfdl</category>
+    <group>gfdl_cloud_microphysics_nml</group>
+    <desc>
+      do inline cloud fraction
+    </desc>
+    <values>
+      <value>.true.</value>
+    </values>
+  </entry>
+
+  <entry id="fast_sat_adj">
+    <type>logical</type>
+    <category>gfdl</category>
+    <group>gfdl_cloud_microphysics_nml</group>
+    <desc>
+      has fast saturation adjustments
+    </desc>
+    <values>
+      <value>.true.</value>
+    </values>
+  </entry>
+
+  <entry id="tau_l2v">
+    <type>real</type>
+    <category>gfdl</category>
+    <group>gfdl_cloud_microphysics_nml</group>
+    <desc>
+      cloud water to water vapor (evaporation)
+    </desc>
+    <values>
+      <value>225.0</value>
+    </values>
+  </entry>
+
+  <entry id="tau_v2l">
+    <type>real</type>
+    <category>gfdl</category>
+    <group>gfdl_cloud_microphysics_nml</group>
+    <desc>
+      water vapor to cloud water (condensation)
+    </desc>
+    <values>
+      <value>150.0</value>
+    </values>
+  </entry>
+
+  <entry id="tau_g2v">
+    <type>real</type>
+    <category>gfdl</category>
+    <group>gfdl_cloud_microphysics_nml</group>
+    <desc>
+      graupel sublimation
+    </desc>
+    <values>
+      <value>900.0</value>
+    </values>
+  </entry>
+
+  <entry id="rthresh">
+    <type>real</type>
+    <category>gfdl</category>
+    <group>gfdl_cloud_microphysics_nml</group>
+    <desc>
+      critical cloud drop radius (micro m)
+    </desc>
+    <values>
+      <value>10.0e-6</value>
+    </values>
+  </entry>
+
+  <entry id="dw_land">
+    <type>real</type>
+    <category>gfdl</category>
+    <group>gfdl_cloud_microphysics_nml</group>
+    <desc>
+      base value for subgrid deviation / variability over land
+    </desc>
+    <values>
+      <value>0.16</value>
+    </values>
+  </entry>
+
+  <entry id="dw_ocean">
+    <type>real</type>
+    <category>gfdl</category>
+    <group>gfdl_cloud_microphysics_nml</group>
+    <desc>
+      base value for subgrid deviation / variability over ocean
+    </desc>
+    <values>
+      <value>0.10</value>
+    </values>
+  </entry>
+
+  <entry id="ql_gen">
+    <type>real</type>
+    <category>gfdl</category>
+    <group>gfdl_cloud_microphysics_nml</group>
+    <desc>
+      max cloud water generation during remapping step if fast_sat_adj is set to true
+    </desc>
+    <values>
+      <value>1.0e-3</value>
+    </values>
+  </entry>
+
+  <entry id="ql_mlt">
+    <type>real</type>
+    <category>gfdl</category>
+    <group>gfdl_cloud_microphysics_nml</group>
+    <desc>
+      max value of cloud water allowed from melted cloud ice
+    </desc>
+    <values>
+      <value>1.0e-3</value>
+    </values>
+  </entry>
+
+  <entry id="qi0_crt">
+    <type>real</type>
+    <category>gfdl</category>
+    <group>gfdl_cloud_microphysics_nml</group>
+    <desc>
+      cloud ice to snow autoconversion threshold. it is highly dependent on horizontal resolution
+    </desc>
+    <values>
+      <value>8.0E-5</value>
+    </values>
+  </entry>
+
+  <entry id="qs0_crt">
+    <type>real</type>
+    <category>gfdl</category>
+    <group>gfdl_cloud_microphysics_nml</group>
+    <desc>
+      snow to graupel density threshold (0.6e-3 in purdue lin scheme)
+    </desc>
+    <values>
+      <value>1.0e-3</value>
+    </values>
+  </entry>
+
+  <entry id="tau_i2s">
+    <type>real</type>
+    <category>gfdl</category>
+    <group>gfdl_cloud_microphysics_nml</group>
+    <desc>
+      cloud ice to snow auto-conversion
+    </desc>
+    <values>
+      <value>1000.0</value>
+    </values>
+  </entry>
+
+  <entry id="c_psaci">
+    <type>real</type>
+    <category>gfdl</category>
+    <group>gfdl_cloud_microphysics_nml</group>
+    <desc>
+      accretion: cloud ice to snow (was 0.1 in zetac)
+    </desc>
+    <values>
+      <value>0.05</value>
+    </values>
+  </entry>
+
+  <entry id="c_pgacs">
+    <type>real</type>
+    <category>gfdl</category>
+    <group>gfdl_cloud_microphysics_nml</group>
+    <desc>
+      snow to graupel accretion eff. (was 0.1 in zetac)
+    </desc>
+    <values>
+      <value>0.01</value>
+    </values>
+  </entry>
+
+  <entry id="rh_inc">
+    <type>real</type>
+    <category>gfdl</category>
+    <group>gfdl_cloud_microphysics_nml</group>
+    <desc>
+      rh increment for complete evaporation of cloud water and cloud ice
+    </desc>
+    <values>
+      <value>0.30</value>
+    </values>
+  </entry>
+
+  <entry id="rh_inr">
+    <type>real</type>
+    <category>gfdl</category>
+    <group>gfdl_cloud_microphysics_nml</group>
+    <desc>
+      rh increment for minimum evaporation of rain
+    </desc>
+    <values>
+      <value>0.30</value>
+    </values>
+  </entry>
+
+  <entry id="rh_ins">
+    <type>real</type>
+    <category>gfdl</category>
+    <group>gfdl_cloud_microphysics_nml</group>
+    <desc>
+      rh increment for sublimation of snow
+    </desc>
+    <values>
+      <value>0.30</value>
+    </values>
+  </entry>
+
+  <entry id="ccn_l">
+    <type>real</type>
+    <category>gfdl</category>
+    <group>gfdl_cloud_microphysics_nml</group>
+    <desc>
+      ccn over land (cm^-3)
+    </desc>
+    <values>
+      <value>300.0</value>
+    </values>
+  </entry>
+
+  <entry id="ccn_o">
+    <type>real</type>
+    <category>gfdl</category>
+    <group>gfdl_cloud_microphysics_nml</group>
+    <desc>
+      ccn over ocean (cm^-3)
+    </desc>
+    <values>
+      <value>100.0</value>
+    </values>
+  </entry>
+
+  <entry id="c_paut">
+    <type>real</type>
+    <category>gfdl</category>
+    <group>gfdl_cloud_microphysics_nml</group>
+    <desc>
+      autoconversion cloud water to rain (use 0.5 to reduce autoconversion)
+    </desc>
+    <values>
+      <value>0.5</value>
+    </values>
+  </entry>
+
+  <entry id="c_cracw">
+    <type>real</type>
+    <category>gfdl</category>
+    <group>gfdl_cloud_microphysics_nml</group>
+    <desc>
+      rain accretion efficiency
+    </desc>
+    <values>
+      <value>0.8</value>
+    </values>
+  </entry>
+
+  <entry id="use_ppm">
+    <type>logical</type>
+    <category>gfdl</category>
+    <group>gfdl_cloud_microphysics_nml</group>
+    <desc>
+      use ppm fall scheme
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="use_ccn">
+    <type>logical</type>
+    <category>gfdl</category>
+    <group>gfdl_cloud_microphysics_nml</group>
+    <desc>
+      must be true when prog_ccn is false
+    </desc>
+    <values>
+      <value>.true.</value>
+    </values>
+  </entry>
+
+  <entry id="mono_prof">
+    <type>logical</type>
+    <category>gfdl</category>
+    <group>gfdl_cloud_microphysics_nml</group>
+    <desc>
+      perform terminal fall with mono ppm scheme
+    </desc>
+    <values>
+      <value>.true.</value>
+    </values>
+  </entry>
+
+  <entry id="z_slope_liq">
+    <type>logical</type>
+    <category>gfdl</category>
+    <group>gfdl_cloud_microphysics_nml</group>
+    <desc>
+      use linear mono slope for liquid autocconversions
+    </desc>
+    <values>
+      <value>.true.</value>
+    </values>
+  </entry>
+
+  <entry id="z_slope_ice">
+    <type>logical</type>
+    <category>gfdl</category>
+    <group>gfdl_cloud_microphysics_nml</group>
+    <desc>
+      use linear mono slope for ice autocconversions
+    </desc>
+    <values>
+      <value>.true.</value>
+    </values>
+  </entry>
+
+  <entry id="de_ice">
+    <type>logical</type>
+    <category>gfdl</category>
+    <group>gfdl_cloud_microphysics_nml</group>
+    <desc>
+      to prevent excessive build up of cloud ice from external sources
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="fix_negative">
+    <type>logical</type>
+    <category>gfdl</category>
+    <group>gfdl_cloud_microphysics_nml</group>
+    <desc>
+      fix negative water species
+    </desc>
+    <values>
+      <value>.true.</value>
+    </values>
+  </entry>
+
+  <entry id="icloud_f">
+    <type>integer</type>
+    <category>gfdl</category>
+    <group>gfdl_cloud_microphysics_nml</group>
+    <desc>
+      cloud scheme
+    </desc>
+    <values>
+      <value>1</value>
+    </values>
+  </entry>
+
+  <entry id="mp_time">
+    <type>real</type>
+    <category>gfdl</category>
+    <group>gfdl_cloud_microphysics_nml</group>
+    <desc>
+      maximum micro - physics time step (s)
+    </desc>
+    <values>
+      <value>150.0</value>
+    </values>
+  </entry>
+
+  <!-- =========================== -->
+  <!-- interpolator_nml parameterizations -->
+  <!-- =========================== -->
+
+  <entry id="interp_method">
+    <type>char</type>
+    <category>interpolation</category>
+    <group>interpolator_nml</group>
+    <desc>
+    </desc>
+    <values>
+      <value>conserve_great_circle</value>
+    </values>
+  </entry>
+
+  <!-- =========================== -->
+  <!-- namsfc parameterizations -->
+  <!-- =========================== -->
+
+  <entry id="FNGLAC">
+    <type>char</type>
+    <category>nam</category>
+    <group>namsfc</group>
+    <desc>
+    </desc>
+    <values>
+      <value>global_glacier.2x2.grb</value>
+    </values>
+  </entry>
+
+  <entry id="FNMXIC">
+    <type>char</type>
+    <category>nam</category>
+    <group>namsfc</group>
+    <desc>
+    </desc>
+    <values>
+      <value>global_maxice.2x2.grb</value>
+    </values>
+  </entry>
+
+  <entry id="FNTSFC">
+    <type>char</type>
+    <category>nam</category>
+    <group>namsfc</group>
+    <desc>
+    </desc>
+    <values>
+      <value>RTGSST.1982.2012.monthly.clim.grb</value>
+    </values>
+  </entry>
+
+  <entry id="FNSNOC">
+    <type>char</type>
+    <category>nam</category>
+    <group>namsfc</group>
+    <desc>
+    </desc>
+    <values>
+      <value>global_snoclim.1.875.grb</value>
+    </values>
+  </entry>
+
+  <entry id="FNZORC">
+    <type>char</type>
+    <category>nam</category>
+    <group>namsfc</group>
+    <desc>
+    </desc>
+    <values>
+      <value>igbp</value>
+    </values>
+  </entry>
+
+  <entry id="FNALBC">
+    <type>char</type>
+    <category>nam</category>
+    <group>namsfc</group>
+    <desc>
+    </desc>
+    <values>
+      <value>global_snowfree_albedo.bosu.t766.1536.768.rg.grb</value>
+    </values>
+  </entry>
+
+  <entry id="FNALBC2">
+    <type>char</type>
+    <category>nam</category>
+    <group>namsfc</group>
+    <desc>
+    </desc>
+    <values>
+      <value>global_albedo4.1x1.grb</value>
+    </values>
+  </entry>
+
+  <entry id="FNAISC">
+    <type>char</type>
+    <category>nam</category>
+    <group>namsfc</group>
+    <desc>
+    </desc>
+    <values>
+      <value>CFSR.SEAICE.1982.2012.monthly.clim.grb</value>
+    </values>
+  </entry>
+
+  <entry id="FNTG3C">
+    <type>char</type>
+    <category>nam</category>
+    <group>namsfc</group>
+    <desc>
+    </desc>
+    <values>
+      <value>global_tg3clim.2.6x1.5.grb</value>
+    </values>
+  </entry>
+
+  <entry id="FNVEGC">
+    <type>char</type>
+    <category>nam</category>
+    <group>namsfc</group>
+    <desc>
+    </desc>
+    <values>
+      <value>global_vegfrac.0.144.decpercent.grb</value>
+    </values>
+  </entry>
+
+  <entry id="FNVETC">
+    <type>char</type>
+    <category>nam</category>
+    <group>namsfc</group>
+    <desc>
+    </desc>
+    <values>
+      <value>global_vegtype.igbp.t766.1536.768.rg.grb</value>
+    </values>
+  </entry>
+
+  <entry id="FNSOTC">
+    <type>char</type>
+    <category>nam</category>
+    <group>namsfc</group>
+    <desc>
+    </desc>
+    <values>
+      <value>global_soiltype.statsgo.t766.1536.768.rg.grb</value>
+    </values>
+  </entry>
+
+  <entry id="FNSMCC">
+    <type>char</type>
+    <category>nam</category>
+    <group>namsfc</group>
+    <desc>
+    </desc>
+    <values>
+      <value>global_soilmgldas.statsgo.t766.1536.768.grb</value>
+    </values>
+  </entry>
+
+  <entry id="FNMSKH">
+    <type>char</type>
+    <category>nam</category>
+    <group>namsfc</group>
+    <desc>
+    </desc>
+    <values>
+      <value>seaice_newland.grb</value>
+    </values>
+  </entry>
+
+  <entry id="FNTSFA">
+    <type>char</type>
+    <category>nam</category>
+    <group>namsfc</group>
+    <desc>
+    </desc>
+    <values>
+      <value></value>
+    </values>
+  </entry>
+
+  <entry id="FNACNA">
+    <type>char</type>
+    <category>nam</category>
+    <group>namsfc</group>
+    <desc>
+    </desc>
+    <values>
+      <value></value>
+    </values>
+  </entry>
+
+  <entry id="FNSNOA">
+    <type>char</type>
+    <category>nam</category>
+    <group>namsfc</group>
+    <desc>
+    </desc>
+    <values>
+      <value></value>
+    </values>
+  </entry>
+
+  <entry id="FNVMNC">
+    <type>char</type>
+    <category>nam</category>
+    <group>namsfc</group>
+    <desc>
+    </desc>
+    <values>
+      <value>global_shdmin.0.144x0.144.grb</value>
+    </values>
+  </entry>
+
+  <entry id="FNVMXC">
+    <type>char</type>
+    <category>nam</category>
+    <group>namsfc</group>
+    <desc>
+    </desc>
+    <values>
+      <value>global_shdmax.0.144x0.144.grb</value>
+    </values>
+  </entry>
+
+  <entry id="FNSLPC">
+    <type>char</type>
+    <category>nam</category>
+    <group>namsfc</group>
+    <desc>
+    </desc>
+    <values>
+      <value>global_slope.1x1.grb</value>
+    </values>
+  </entry>
+
+  <entry id="FNABSC">
+    <type>char</type>
+    <category>nam</category>
+    <group>namsfc</group>
+    <desc>
+    </desc>
+    <values>
+      <value>global_mxsnoalb.uariz.t766.1536.768.rg.grb</value>
+    </values>
+  </entry>
+
+  <entry id="LDEBUG">
+    <type>logical</type>
+    <category>nam</category>
+    <group>namsfc</group>
+    <desc>
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="FSMCL">
+    <type>real(25)</type>
+    <category>nam</category>
+    <group>namsfc</group>
+    <desc>
+    </desc>
+    <values>
+      <value>99999</value>
+    </values>
+  </entry>
+
+  <entry id="FTSFS">
+    <type>real</type>
+    <category>nam</category>
+    <group>namsfc</group>
+    <desc>
+    </desc>
+    <values>
+      <value>90.0</value>
+    </values>
+  </entry>
+
+  <entry id="FAISL">
+    <type>real</type>
+    <category>nam</category>
+    <group>namsfc</group>
+    <desc>
+    </desc>
+    <values>
+      <value>99999.0</value>
+    </values>
+  </entry>
+
+  <entry id="FAISS">
+    <type>real</type>
+    <category>nam</category>
+    <group>namsfc</group>
+    <desc>
+    </desc>
+    <values>
+      <value>99999.0</value>
+    </values>
+  </entry>
+
+  <entry id="FSNOL">
+    <type>real</type>
+    <category>nam</category>
+    <group>namsfc</group>
+    <desc>
+    </desc>
+    <values>
+      <value>99999.0</value>
+    </values>
+  </entry>
+
+  <entry id="FSNOS">
+    <type>real</type>
+    <category>nam</category>
+    <group>namsfc</group>
+    <desc>
+    </desc>
+    <values>
+      <value>99999.0</value>
+    </values>
+  </entry>
+
+  <entry id="FSICL">
+    <type>real</type>
+    <category>nam</category>
+    <group>namsfc</group>
+    <desc>
+    </desc>
+    <values>
+      <value>99999.0</value>
+    </values>
+  </entry>
+
+  <entry id="FSICS">
+    <type>real</type>
+    <category>nam</category>
+    <group>namsfc</group>
+    <desc>
+    </desc>
+    <values>
+      <value>99999.0</value>
+    </values>
+  </entry>
+
+  <entry id="FTSFL">
+    <type>real</type>
+    <category>nam</category>
+    <group>namsfc</group>
+    <desc>
+    </desc>
+    <values>
+      <value>99999.0</value>
+    </values>
+  </entry>
+
+  <entry id="FVETL">
+    <type>real</type>
+    <category>nam</category>
+    <group>namsfc</group>
+    <desc>
+    </desc>
+    <values>
+      <value>99999.0</value>
+    </values>
+  </entry>
+
+  <entry id="FSOTL">
+    <type>real</type>
+    <category>nam</category>
+    <group>namsfc</group>
+    <desc>
+    </desc>
+    <values>
+      <value>99999.0</value>
+    </values>
+  </entry>
+
+  <entry id="FvmnL">
+    <type>real</type>
+    <category>nam</category>
+    <group>namsfc</group>
+    <desc>
+    </desc>
+    <values>
+      <value>99999.0</value>
+    </values>
+  </entry>
+
+  <entry id="FvmxL">
+    <type>real</type>
+    <category>nam</category>
+    <group>namsfc</group>
+    <desc>
+    </desc>
+    <values>
+      <value>99999.0</value>
+    </values>
+  </entry>
+
+  <entry id="FSLPL">
+    <type>real</type>
+    <category>nam</category>
+    <group>namsfc</group>
+    <desc>
+    </desc>
+    <values>
+      <value>99999.0</value>
+    </values>
+  </entry>
+
+  <entry id="FABSL">
+    <type>real</type>
+    <category>nam</category>
+    <group>namsfc</group>
+    <desc>
+    </desc>
+    <values>
+      <value>99999.0</value>
+    </values>
+  </entry>
+
+  <!-- =========================== -->
+  <!-- fv_grid_nml parameterizations -->
+  <!-- =========================== -->
+
+  <entry id="grid_file">
+    <type>char</type>
+    <category>fv3</category>
+    <group>fv_grid_nml</group>
+    <desc>
+    </desc>
+    <values>
+      <value>INPUT/grid_spec.nc</value>
+    </values>
+  </entry>
+
+  <!-- =========================== -->
+  <!-- nam_stochy parameterizations -->
+  <!-- =========================== -->
+
+
+  <!-- =========================== -->
+  <!-- nam_sfcperts parameterizations -->
+  <!-- =========================== -->
+
+
+  <!-- =========================== -->
+  <!-- MOM_input_nml parameterizations -->
+  <!-- =========================== -->
+
+  <entry id="output_directory">
+    <type>char</type>
+    <category>mominput</category>
+    <group>MOM_input_nml</group>
+    <desc>
+    </desc>
+    <values>
+      <value>./</value>
+    </values>
+  </entry>
+
+  <entry id="restart_input_dir">
+    <type>char</type>
+    <category>mominput</category>
+    <group>MOM_input_nml</group>
+    <desc>
+    </desc>
+    <values>
+      <value>./</value>
+    </values>
+  </entry>
+
+  <entry id="restart_output_dir">
+    <type>char</type>
+    <category>mominput</category>
+    <group>MOM_input_nml</group>
+    <desc>
+    </desc>
+    <values>
+      <value>./</value>
+    </values>
+  </entry>
+
+  <entry id="parameter_filename">
+    <type>char(2)</type>
+    <category>mominput</category>
+    <group>MOM_input_nml</group>
+    <desc>
+    </desc>
+    <values>
+      <value>INPUT/MOM_input,INPUT/MOM_override</value>
+    </values>
+  </entry>
+
+  <!-- =========================== -->
+  <!-- _no_group_var -->
+  <!-- =========================== -->
+
+  <entry id="total_member">
+    <type>integer</type>
+    <category>esmf_config</category>
+    <group>_no_group_var</group>
+    <desc>
+    </desc>
+    <values>
+      <value>1</value>
+    </values>
+  </entry>
+
+  <entry id="print_esmf">
+    <type>logical</type>
+    <category>esmf_config</category>
+    <group>_no_group_var</group>
+    <desc>
+    </desc>
+    <values>
+      <value>.true.</value>
+    </values>
+  </entry>
+
+  <entry id="PE_MEMBER01">
+    <type>integer</type>
+    <category>esmf_config</category>
+    <group>_no_group_var</group>
+    <desc>
+    </desc>
+    <values>
+      <value>480</value>
+    </values>
+  </entry>
+
+  <entry id="start_year">
+    <type>integer</type>
+    <category>esmf_config</category>
+    <group>_no_group_var</group>
+    <desc>
+    </desc>
+    <values>
+      <value>2012</value>
+    </values>
+  </entry>
+
+  <entry id="start_month">
+    <type>integer</type>
+    <category>esmf_config</category>
+    <group>_no_group_var</group>
+    <desc>
+    </desc>
+    <values>             
+      <value>1</value>
+    </values>            
+  </entry>
+
+  <entry id="start_day">
+    <type>integer</type>
+    <category>esmf_config</category>
+    <group>_no_group_var</group>
+    <desc>
+    </desc>
+    <values>             
+      <value>2012</value>
+    </values>            
+  </entry>
+
+  <entry id="start_hour">
+    <type>integer</type>
+    <category>esmf_config</category>
+    <group>_no_group_var</group>
+    <desc>
+    </desc>
+    <values>             
+      <value>0</value>
+    </values>            
+  </entry>
+
+  <entry id="start_minute">
+    <type>integer</type>
+    <category>esmf_config</category>
+    <group>_no_group_var</group>
+    <desc>
+    </desc>
+    <values>
+      <value>0</value>
+    </values>
+  </entry>
+
+  <entry id="start_second">
+    <type>integer</type>
+    <category>esmf_config</category>
+    <group>_no_group_var</group>
+    <desc>
+    </desc>
+    <values>
+      <value>0</value>
+    </values>
+  </entry>
+
+  <entry id="nhours_fcst">
+    <type>integer</type>
+    <category>esmf_config</category>
+    <group>_no_group_var</group>
+    <desc>
+    </desc>
+    <values>
+      <value>840</value>
+    </values>
+  </entry>
+
+  <entry id="RUN_CONTINUE">
+    <type>logical</type>
+    <category>esmf_config</category>
+    <group>_no_group_var</group>
+    <desc>
+    </desc>
+    <values>
+      <value>.true.</value>
+    </values>
+  </entry>
+
+  <entry id="ENS_SPS">
+    <type>logical</type>
+    <category>esmf_config</category>
+    <group>_no_group_var</group>
+    <desc>
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="dt_atmos">
+    <type>integer</type>
+    <category>esmf_config</category>
+    <group>_no_group_var</group>
+    <desc>
+    </desc>
+    <values>
+      <value>450</value>
+    </values>
+  </entry>
+
+  <entry id="calendar">
+    <type>char</type>
+    <category>esmf_config</category>
+    <group>_no_group_var</group>
+    <desc>
+    </desc>
+    <valid_values>julian,noleap,thirty_day,no_calendar</valid_values>
+    <values>
+      <value>julian</value>
+    </values>
+  </entry>
+
+  <entry id="cpl">
+    <type>logical</type>
+    <category>esmf_config</category>
+    <group>_no_group_var</group>
+    <desc>
+    </desc>
+    <values>
+      <value>.true.</value>
+    </values>
+  </entry>
+
+  <entry id="memuse_verbose">
+    <type>logical</type>
+    <category>esmf_config</category>
+    <group>_no_group_var</group>
+    <desc>
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="atmos_nthreads">
+    <type>integer</type>
+    <category>esmf_config</category>
+    <group>_no_group_var</group>
+    <desc>
+    </desc>
+    <values>
+      <value>1</value>
+    </values>
+  </entry>
+
+  <entry id="use_hyper_thread">
+    <type>logical</type>
+    <category>esmf_config</category>
+    <group>_no_group_var</group>
+    <desc>
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="ncores_per_node">
+    <type>integer</type>
+    <category>esmf_config</category>
+    <group>_no_group_var</group>
+    <desc>
+    </desc>
+    <values>
+      <value>24</value>
+    </values>
+  </entry>
+
+  <entry id="restart_interval">
+    <type>integer</type>
+    <category>esmf_config</category>
+    <group>_no_group_var</group>
+    <desc>
+    </desc>
+    <values>
+      <value>0</value>
+    </values>
+  </entry>
+
+  <entry id="quilting">
+    <type>logical</type>
+    <category>esmf_config</category>
+    <group>_no_group_var</group>
+    <desc>
+    </desc>
+    <values>
+      <value>.true.</value>
+    </values>
+  </entry>
+
+  <entry id="write_groups">
+    <type>integer</type>
+    <category>esmf_config</category>
+    <group>_no_group_var</group>
+    <desc>
+    </desc>
+    <values>
+      <value>1</value>
+    </values>
+  </entry>
+
+  <entry id="write_tasks_per_group">
+    <type>integer</type>
+    <category>esmf_config</category>
+    <group>_no_group_var</group>
+    <desc>
+    </desc>
+    <values>
+      <value>48</value>
+    </values>
+  </entry>
+
+  <entry id="num_files">
+    <type>integer</type>
+    <category>esmf_config</category>
+    <group>_no_group_var</group>
+    <desc>
+    </desc>
+    <values>
+      <value>2</value>
+    </values>
+  </entry>
+
+  <entry id="filename_base">
+    <type>char</type>
+    <category>esmf_config</category>
+    <group>_no_group_var</group>
+    <desc>
+    </desc>
+    <values>
+      <value>dyn sfc</value>
+    </values>
+  </entry>
+
+  <entry id="output_grid">
+    <type>char</type>
+    <category>esmf_config</category>
+    <group>_no_group_var</group>
+    <desc>
+    </desc>
+    <valid_values>gaussian_grid,regional_latlon,rotated_latlon,lambert_conformal</valid_values>
+    <values>
+      <value>gaussian_grid</value>
+    </values>
+  </entry>
+
+  <entry id="output_file">
+    <type>char</type>
+    <category>esmf_config</category>
+    <group>_no_group_var</group>
+    <desc>
+    </desc>
+    <valid_values>netcdf,netcdf_esmf,nemsio</valid_values>
+    <values>
+      <value>netcdf</value>
+    </values>
+  </entry>
+
+  <entry id="write_nemsioflip">
+    <type>logical</type>
+    <category>esmf_config</category>
+    <group>_no_group_var</group>
+    <desc>
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="write_fsyncflag">
+    <type>logical</type>
+    <category>esmf_config</category>
+    <group>_no_group_var</group>
+    <desc>
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="imo">
+    <type>integer</type>
+    <category>esmf_config</category>
+    <group>_no_group_var</group>
+    <desc>
+    </desc>
+    <values>
+      <value>1536</value>
+    </values>
+  </entry>
+
+  <entry id="jmo">
+    <type>integer</type>
+    <category>esmf_config</category>
+    <group>_no_group_var</group>
+    <desc>
+    </desc>
+    <values>
+      <value>768</value>
+    </values>
+  </entry>
+
+  <entry id="nfhout">
+    <type>integer</type>
+    <category>esmf_config</category>
+    <group>_no_group_var</group>
+    <desc>
+    </desc>
+    <values>
+      <value>3</value>
+    </values>
+  </entry>
+
+  <entry id="nfhmax_hf">
+    <type>integer</type>
+    <category>esmf_config</category>
+    <group>_no_group_var</group>
+    <desc>
+    </desc>
+    <values>
+      <value>12</value>
+    </values>
+  </entry>
+
+  <entry id="nfhout_hf">
+    <type>integer</type>
+    <category>esmf_config</category>
+    <group>_no_group_var</group>
+    <desc>
+    </desc>
+    <values>
+      <value>1</value>
+    </values>
+  </entry>
+
+  <entry id="nsout">
+    <type>integer</type>
+    <category>esmf_config</category>
+    <group>_no_group_var</group>
+    <desc>
+    </desc>
+    <values>
+      <value>-1</value>
+    </values>
+  </entry>
+
+  <entry id="finalize_fms">
+    <type>logical</type>
+    <category>esmf_config</category>
+    <group>_no_group_var</group>
+    <desc>
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <!-- =========================== -->
+  <!-- chgres -->
+  <!-- =========================== -->
+
+  <entry id="mosaic_file_target_grid">
+    <type>char</type>
+    <category>chgres</category>
+    <group>config</group>
+    <desc>
+    Target grid mosaic file
+    </desc>
+    <values>
+      <value>INPUT/C96_mosaic.nc</value>
+    </values>
+  </entry>
+
+  <entry id="fix_dir_target_grid">
+    <type>char</type>
+    <category>chgres</category>
+    <group>config</group>
+    <desc>
+    Directory containing target grid pre-computed fixed data (ex: soil type)
+    </desc>
+    <values>
+      <value>/glade/scratch/turuncu/fv3gfs/chgres/fix_sfc</value>
+    </values>
+  </entry>
+
+  <entry id="orog_dir_target_grid">
+    <type>char</type>
+    <category>chgres</category>
+    <group>config</group>
+    <desc>
+    Directory containing the target grid orography files
+    </desc>
+    <values>
+      <value>INPUT</value>
+    </values>
+  </entry>
+
+  <entry id="orog_files_target_grid">
+    <type>char(6)</type>
+    <category>chgres</category>
+    <group>config</group>
+    <desc>
+    Target grid orography files.
+    </desc>
+    <values>
+      <value>oro_data.tile1.nc,oro_data.tile2.nc,oro_data.tile3.nc,oro_data.tile4.nc,oro_data.tile5.nc,oro_data.tile6.nc</value>
+    </values>
+  </entry>
+
+<!--
+  <entry id="mosaic_file_input_grid">
+    <type>char</type>
+    <category>chgres</category>
+    <group>config</group>
+    <desc>
+    Input grid mosaic file. Not used with "gaussian" or "gfs_gaussian" input type.
+    </desc>
+    <values>
+      <value></value>
+    </values>
+  </entry>
+
+  <entry id="orog_dir_input_grid">
+    <type>char</type>
+    <category>chgres</category>
+    <group>config</group>
+    <desc>
+    Directory containing the input grid orography files. Not used for "gaussian" or "gfs_gaussian" input types.
+    </desc>
+    <values>
+      <value></value>
+    </values>
+  </entry>
+
+  <entry id="orog_files_input_grid">
+    <type>char(6)</type>
+    <category>chgres</category>
+    <group>config</group>
+    <desc>
+    Input grid orography files. Not used for "gaussian" or "gfs_gaussian" input types.
+    </desc>
+    <values>
+      <value></value>
+    </values>
+  </entry>
+
+  <entry id="nst_files_input_grid">
+    <type>char</type>
+    <category>chgres</category>
+    <group>config</group>
+    <desc>
+    File name of input nst data. Only used for input_type "gfs_gaussian". 
+    </desc>
+    <values>
+      <value></value>
+    </values>
+  </entry>
+-->
+
+  <entry id="sfc_files_input_grid">
+    <type>char(6)</type>
+    <category>chgres</category>
+    <group>config</group>
+    <desc>
+    File names containing input surface data
+    </desc>
+    <values>
+      <value>gfs.t00z.sfcanl.nemsio</value>
+    </values>
+  </entry>
+
+  <entry id="atm_files_input_grid">
+    <type>char(6)</type>
+    <category>chgres</category>
+    <group>config</group>
+    <desc>
+    File names of input atmospheric data    
+    </desc>
+    <values>
+      <value>gfs.t00z.atmanl.nemsio</value>
+    </values>
+  </entry>
+
+<!--
+  <entry id="atm_core_files_input_grid">
+    <type>char(7)</type>
+    <category>chgres</category>
+    <group>config</group>
+    <desc>
+    File names of input atmospheric restart core files
+    </desc>
+    <values>
+      <value></value>
+    </values>
+  </entry>
+
+  <entry id="atm_tracer_files_input_grid">
+    <type>char(6)</type>
+    <category>chgres</category>
+    <group>config</group>
+    <desc>
+    File names of input atmospheric restart tracer files
+    </desc>
+    <values>
+      <value></value>
+    </values>
+  </entry>
+-->
+
+  <entry id="data_dir_input_grid">
+    <type>char</type>
+    <category>chgres</category>
+    <group>config</group>
+    <desc>
+    Directory containing input atm or sfc files
+    </desc>
+    <values>
+      <value>/glade/scratch/turuncu/fv3gfs/chgres/gfs.20190909</value>
+    </values>
+  </entry>
+
+  <entry id="vcoord_file_target_grid">
+    <type>char</type>
+    <category>chgres</category>
+    <group>config</group>
+    <desc>
+    Vertical coordinate definition file
+    </desc>
+    <values>
+      <value>/glade/scratch/turuncu/fv3gfs/chgres/global_hyblev.l65.txt</value>
+    </values>
+  </entry>
+
+  <entry id="cycle_mon">
+    <type>integer</type>
+    <category>chgres</category>
+    <group>config</group>
+    <desc>
+    Cycle month
+    </desc>
+    <values>
+      <value>9</value>
+    </values>
+  </entry>
+
+  <entry id="cycle_day">
+    <type>integer</type>
+    <category>chgres</category>
+    <group>config</group>
+    <desc>
+    Cycle day
+    </desc>
+    <values>
+      <value>9</value>
+    </values>
+  </entry>
+
+  <entry id="cycle_hour">
+    <type>integer</type>
+    <category>chgres</category>
+    <group>config</group>
+    <desc>
+    Cycle hour
+    </desc>
+    <values>
+      <value>0</value>
+    </values>
+  </entry>
+
+  <entry id="convert_atm">
+    <type>logical</type>
+    <category>chgres</category>
+    <group>config</group>
+    <desc>
+    Convert atmospheric data when true
+    </desc>
+    <values>
+      <value>.true.</value>
+    </values>
+  </entry>
+
+  <entry id="convert_nst">
+    <type>logical</type>
+    <category>chgres</category>
+    <group>config</group>
+    <desc>
+    Convert nst data when true
+    </desc>
+    <values>
+      <value>.true.</value>
+    </values>
+  </entry>
+
+  <entry id="convert_sfc">
+    <type>logical</type>
+    <category>chgres</category>
+    <group>config</group>
+    <desc>
+    Convert sfc data when true
+    </desc>
+    <values>
+      <value>.true.</value>
+    </values>
+  </entry>
+
+<!--
+  <entry id="regional">
+    <type>integer</type>
+    <category>chgres</category>
+    <group>config</group>
+    <desc>
+    For regional target grids. When '1' remove boundary halo region from atmospheric/surface data and output atmospheric boundary file. When '2' output boundary file only. Default is '0' (global grids).
+    </desc>
+    <valid_values>0,1,2</valid_values>
+    <values>
+      <value>0</value>
+    </values>
+  </entry>
+-->
+
+  <entry id="input_type">
+    <type>char</type>
+    <category>chgres</category>
+    <group>config</group>
+    <desc>
+    Input data type: "restart" for fv3 tiled restart files; "history" for fv3 tiled history files; "gaussian" for fv3 gaussian nemsio files; "gfs_gaussian" for spectral gfs gaussian nemsio files.
+    </desc>
+    <valid_values>restart,history,gaussian,gfs_gaussian</valid_values>
+    <values>
+      <value>gaussian</value>
+    </values>
+  </entry>
+
+<!--
+  <entry id="atm_weight_file">
+    <type>char</type>
+    <category>chgres</category>
+    <group>config</group>
+    <desc>
+    File containing pre-computed weights to horizontally interpolate atmospheric fields
+    </desc>
+    <values>
+      <value></value>
+    </values>
+  </entry>
+-->
+
+  <entry id="tracers">
+    <type>char(100)</type>
+    <category>chgres</category>
+    <group>config</group>
+    <desc>
+    Name of each atmos tracer to be processed. These names will be used to identify the tracer records in the output files. Follows the convention in the field table.
+    </desc>
+    <values>
+      <value>sphum,liq_wat,o3mr,ice_wat,rainwat,snowwat,graupel</value>
+    </values>
+  </entry>
+
+  <entry id="tracers_input">
+    <type>char(100)</type>
+    <category>chgres</category>
+    <group>config</group>
+    <desc>
+    Name of each atmos tracer record in the input file.  May be different from value in 'tracers'.
+    </desc>
+    <values>
+      <value>spfh,clwmr,o3mr,icmr,rwmr,snmr,grle</value>
+    </values>
+  </entry>
+
+<!--
+  <entry id="halo_bndy">
+    <type>integer</type>
+    <category>chgres</category>
+    <group>config</group>
+    <desc>
+    Number of row/cols of lateral halo, where pure lateral bndy conditions are applied (regional target grids). 
+    </desc>
+    <values>
+      <value>0</value>
+    </values>
+  </entry>
+
+  <entry id="halo_blend">
+    <type>integer</type>
+    <category>chgres</category>
+    <group>config</group>
+    <desc>
+    Number of row/cols of blending halo, where model tendencies and lateral boundary tendencies are applied. Regional target grids only.
+    </desc>
+    <values>
+      <value>0</value>
+    </values>
+  </entry>
+-->
+
+  <!-- =========================== -->
+  <!-- ncep_post -->
+  <!-- =========================== -->
+
+  <entry id="kpo">
+    <type>integer</type>
+    <category>ncep_post</category>
+    <group>nampgb</group>
+    <desc>
+    </desc>
+    <values>
+      <value>50</value>
+    </values>
+  </entry>
+
+  <entry id="po">
+    <type>real(70)</type>
+    <category>ncep_post</category>
+    <group>nampgb</group>
+    <desc>
+    </desc>
+    <values>
+      <value>1000.,975.,950.,925.,900.,875.,850.,825.,800.,775.,750.,725.,700.,675.,650.,625.,600.,575.,550.,525.,500.,475.,450.,425.,400.,375.,350.,325.,300.,275.,250.,225.,200.,175.,150.,125.,100.,70.,50.,40.,30.,20.,15.,10.,7.,5.,3.,2.,1.,0.4</value>
+    </values>
+  </entry>
+
+<!--
+  <entry id="kth">
+    <type>integer</type>
+    <category>ncep_post</category>
+    <group>nampgb</group>
+    <desc>
+    </desc>
+    <values>
+      <value>6</value>
+    </values>
+  </entry>
+
+  <entry id="th">
+    <type>real(70)</type>
+    <category>ncep_post</category>
+    <group>nampgb</group>
+    <desc>
+    </desc>
+    <values>
+      <value>310.0,320.0,350.0,450.0,550.0,650.0</value>
+    </values>
+  </entry>
+
+  <entry id="kpv">
+    <type>integer</type>
+    <category>ncep_post</category>
+    <group>nampgb</group>
+    <desc>
+    </desc>
+    <values>
+      <value>8</value>
+    </values>
+  </entry>
+
+  <entry id="pv">
+    <type>real(70)</type>
+    <category>ncep_post</category>
+    <group>nampgb</group>
+    <desc>
+    </desc>
+    <values>
+      <value>0.5,-0.5,1.0,-1.0,1.5,-1.5,2.0,-2.0</value>
+    </values>
+  </entry>
+
+  <entry id="filenameaer">
+    <type>char</type>
+    <category>ncep_post</category>
+    <group>nampgb</group>
+    <desc>
+    </desc>
+    <values>
+      <value></value>
+    </values>
+  </entry>
+
+  <entry id="d3d_on">
+    <type>logical</type>
+    <category>ncep_post</category>
+    <group>nampgb</group>
+    <desc>
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="gocart_on">
+    <type>logical</type>
+    <category>ncep_post</category>
+    <group>nampgb</group>
+    <desc>
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="popascal">
+    <type>logical</type>
+    <category>ncep_post</category>
+    <group>nampgb</group>
+    <desc>
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="hyb_sigp">
+    <type>logical</type>
+    <category>ncep_post</category>
+    <group>nampgb</group>
+    <desc>
+    </desc>
+    <values>
+      <value>.true.</value>
+    </values>
+  </entry>
+-->
+
+  <entry id="filename">
+    <type>char</type>
+    <category>ncep_post</category>
+    <group>freeform</group>
+    <desc>
+    Output file name
+    </desc>
+    <values>
+      <value>nemsfile</value>
+    </values>
+  </entry>
+
+  <entry id="ioform">
+    <type>char</type>
+    <category>ncep_post</category>
+    <group>freeform</group>
+    <desc>
+    Input file format
+    </desc>
+    <valid_values>netcdf,binary,binarympiio,grib,binarynemsiompiio,sigio,binarynemsio</valid_values>
+    <values>
+      <value>binarynemsiompiio</value>
+    </values>
+  </entry>
+
+  <entry id="outform">
+    <type>char</type>
+    <category>ncep_post</category>
+    <group>freeform</group>
+    <desc>
+    Output file format
+    </desc>
+    <valid_values>grib1,grib2</valid_values>
+    <values>
+      <value>grib2</value>
+    </values>
+  </entry>
+
+  <entry id="modelname">
+    <type>char</type>
+    <category>ncep_post</category>
+    <group>freeform</group>
+    <desc>
+    Model name
+    </desc>
+    <valid_values>GFS,FV3R,RAPR,RSM,NMM,NCAR</valid_values>
+    <values>
+      <value>GFS</value>
+    </values>
+  </entry>
+
+  <entry id="filenameflux">
+    <type>char</type>
+    <category>ncep_post</category>
+    <group>freeform</group>
+    <desc>
+    Flux file name
+    </desc>
+    <values>
+      <value>flxfile</value>
+    </values>
+  </entry>
+
+</entry_id>

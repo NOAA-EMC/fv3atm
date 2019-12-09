@@ -1,0 +1,216 @@
+<?xml version="1.0"?>
+
+<entry_id version="2.0">
+
+  <!-- Each namelist variable is defined in an <entry> element.  The
+     content of the element is the documentation of how the variable is
+     used.  Other elements  are:
+     id
+          The variable's name.  *** N.B. *** The name must be lower case.
+          The module convert all namelist variable names to lower case
+          since Fortran is case insensitive.
+     type
+          An abbreviation of the fortran declaration for the variable.
+          Valid declarations are:
+             char, integer, logical, real
+          Any of these types may be followed by a comma separated list of
+          integers enclosed in parenthesis to indicate an array.
+          The current namelist validation code only distinquishes between
+          string and non-string types.
+     category
+          A category assigned for organizing the documentation.
+     group
+          The namelist group that the variable is declared in.
+     valid_values
+          This is an optional attribute that is mainly useful for variables
+          that have only a small number of allowed values.
+  -->
+
+  <entry id="mosaic_file_target_grid">
+    <type>char</type>
+    <category>chgres</category>
+    <group>config</group>
+    <desc>
+    </desc>
+    <values>
+      <value>INPUT/C96_mosaic.nc</value>
+    </values>
+  </entry>
+
+  <entry id="fix_dir_target_grid">
+    <type>char</type>
+    <category>chgres</category>
+    <group>config</group>
+    <desc>
+    </desc>
+    <values>
+      <value>/glade/scratch/turuncu/fv3gfs/chgres/fix_sfc</value>
+    </values>
+  </entry>
+
+  <entry id="orog_dir_target_grid">
+    <type>char</type>
+    <category>chgres</category>
+    <group>config</group>
+    <desc>
+    </desc>
+    <values>
+      <value>INPUT</value>
+    </values>
+  </entry>
+
+  <entry id="orog_files_target_grid">
+    <type>char(6)</type>
+    <category>chgres</category>
+    <group>config</group>
+    <desc>
+    </desc>
+    <values>
+      <value>oro_data.tile1.nc,oro_data.tile2.nc,oro_data.tile3.nc,oro_data.tile4.nc,oro_data.tile5.nc,oro_data.tile6.nc</value>
+    </values>
+  </entry>
+
+  <entry id="vcoord_file_target_grid">
+    <type>char</type>
+    <category>chgres</category>
+    <group>config</group>
+    <desc>
+    </desc>
+    <values>
+      <value>/glade/scratch/turuncu/fv3gfs/chgres/global_hyblev.l65.txt</value>
+    </values>
+  </entry>
+
+  <entry id="data_dir_input_grid">
+    <type>char</type>
+    <category>chgres</category>
+    <group>config</group>
+    <desc>
+    </desc>
+    <values>
+      <value>/glade/scratch/turuncu/fv3gfs/chgres/gfs.20190909</value>
+    </values>
+  </entry>
+
+  <entry id="atm_files_input_grid">
+    <type>char</type>
+    <category>chgres</category>
+    <group>config</group>
+    <desc>
+    </desc>
+    <values>
+      <value>gfs.t00z.atmanl.nemsio</value>
+    </values>
+  </entry>
+
+  <entry id="sfc_files_input_grid">
+    <type>char</type>
+    <category>chgres</category>
+    <group>config</group>
+    <desc>
+    </desc>
+    <values>
+      <value>gfs.t00z.sfcanl.nemsio</value>
+    </values>
+  </entry>
+
+  <entry id="cycle_mon">
+    <type>integer</type>
+    <category>chgres</category>
+    <group>config</group>
+    <desc>
+    </desc>
+    <values>
+      <value>9</value>
+    </values>
+  </entry>
+
+  <entry id="cycle_day">
+    <type>integer</type>
+    <category>chgres</category>
+    <group>config</group>
+    <desc>
+    </desc>
+    <values>
+      <value>9</value>
+    </values>
+  </entry>
+
+  <entry id="cycle_hour">
+    <type>integer</type>
+    <category>chgres</category>
+    <group>config</group>
+    <desc>
+    </desc>
+    <values>
+      <value>0</value>
+    </values>
+  </entry>
+
+  <entry id="convert_atm">
+    <type>logical</type>
+    <category>chgres</category>
+    <group>config</group>
+    <desc>
+    </desc>
+    <values>
+      <value>.true.</value>
+    </values>
+  </entry>
+
+  <entry id="convert_sfc">
+    <type>logical</type>
+    <category>chgres</category>
+    <group>config</group>
+    <desc>
+    </desc>
+    <values>
+      <value>.true.</value>
+    </values>
+  </entry>
+
+  <entry id="convert_nst">
+    <type>logical</type>
+    <category>chgres</category>
+    <group>config</group>
+    <desc>
+    </desc>
+    <values>
+      <value>.true.</value>
+    </values>
+  </entry>
+
+  <entry id="input_type">
+    <type>char</type>
+    <category>chgres</category>
+    <group>config</group>
+    <desc>
+    </desc>
+    <values>
+      <value>gaussian</value>
+    </values>
+  </entry>
+
+  <entry id="tracers">
+    <type>char(7)</type>
+    <category>chgres</category>
+    <group>config</group>
+    <desc>
+    </desc>
+    <values>
+      <value>sphum,liq_wat,o3mr,ice_wat,rainwat,snowwat,graupel</value>
+    </values>
+  </entry>
+
+  <entry id="tracers_input">
+    <type>char(7)</type>
+    <category>chgres</category>
+    <group>config</group>
+    <desc>
+    </desc>
+    <values>
+      <value>spfh,clwmr,o3mr,icmr,rwmr,snmr,grle</value>
+    </values>
+  </entry>
+
+</entry_id>
