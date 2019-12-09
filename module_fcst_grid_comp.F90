@@ -327,7 +327,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
      atm_int_state%Time_step_restart = set_time (res_intvl, 0)
      atm_int_state%Time_other_restart = set_time (res_time, 0)
      atm_int_state%Time_restart      = atm_int_state%Time_atmos + atm_int_state%Time_step_restart
-     atm_int_state%Time_restart1 = atm_int_state%Time_atmos + atm_int_state%Time_other_restart
+     atm_int_state%Time_restart1 = atm_int_state%Time_init + atm_int_state%Time_other_restart
      atm_int_state%intrm_rst         = 0
      if (res_intvl>0 .or. res_time>0) atm_int_state%intrm_rst = 1
      atm_int_state%Atm%iau_offset    = iau_offset
