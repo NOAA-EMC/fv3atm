@@ -200,27 +200,27 @@ module GFS_restart
       num = num + 1
       Restart%name2d(num) = 'ruc_2d_raincprv'
       do nb = 1,nblks
-        Restart%data(nb,num)%var2p => Tbd(nb)%raincprv(:)
+        Restart%data(nb,num)%var2p => Sfcprop(nb)%raincprv(:)
       enddo
       num = num + 1
       Restart%name2d(num) = 'ruc_2d_rainncprv'
       do nb = 1,nblks
-        Restart%data(nb,num)%var2p => Tbd(nb)%rainncprv(:)
+        Restart%data(nb,num)%var2p => Sfcprop(nb)%rainncprv(:)
       enddo
       num = num + 1
       Restart%name2d(num) = 'ruc_2d_iceprv'
       do nb = 1,nblks
-        Restart%data(nb,num)%var2p => Tbd(nb)%iceprv(:)
+        Restart%data(nb,num)%var2p => Sfcprop(nb)%iceprv(:)
       enddo
       num = num + 1
       Restart%name2d(num) = 'ruc_2d_snowprv'
       do nb = 1,nblks
-        Restart%data(nb,num)%var2p => Tbd(nb)%snowprv(:)
+        Restart%data(nb,num)%var2p => Sfcprop(nb)%snowprv(:)
       enddo
       num = num + 1
       Restart%name2d(num) = 'ruc_2d_graupelprv'
       do nb = 1,nblks
-        Restart%data(nb,num)%var2p => Tbd(nb)%graupelprv(:)
+        Restart%data(nb,num)%var2p => Sfcprop(nb)%graupelprv(:)
       enddo
     endif
     ! MYNN SFC

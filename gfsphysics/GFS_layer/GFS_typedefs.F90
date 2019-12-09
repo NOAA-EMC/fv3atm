@@ -372,6 +372,20 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: lh(:)            => null()  !latent heating at the surface
 #endif
 
+    !---- precipitation amounts from previous time step for RUC LSM/NoahMP LSM
+    real (kind=kind_phys), pointer :: raincprv  (:)    => null()  !< explicit rainfall from previous timestep
+    real (kind=kind_phys), pointer :: rainncprv (:)    => null()  !< convective_precipitation_amount from previous timestep
+    real (kind=kind_phys), pointer :: iceprv    (:)    => null()  !< ice amount from previous timestep
+    real (kind=kind_phys), pointer :: snowprv   (:)    => null()  !< snow amount from previous timestep
+    real (kind=kind_phys), pointer :: graupelprv(:)    => null()  !< graupel amount from previous timestep
+
+    !---- precipitation rates from previous time step for NoahMP LSM
+    real (kind=kind_phys), pointer :: draincprv  (:)    => null()  !< convective precipitation rate from previous timestep
+    real (kind=kind_phys), pointer :: drainncprv (:)    => null()  !< explicit rainfall rate from previous timestep
+    real (kind=kind_phys), pointer :: diceprv    (:)    => null()  !< ice precipitation rate from previous timestep
+    real (kind=kind_phys), pointer :: dsnowprv   (:)    => null()  !< snow precipitation rate from previous timestep
+    real (kind=kind_phys), pointer :: dgraupelprv(:)    => null()  !< graupel precipitation rate from previous timestep
+
     contains
       procedure :: create  => sfcprop_create  !<   allocate array data
   end type GFS_sfcprop_type
@@ -1192,20 +1206,6 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: prevst (:,:)     => null()  !<
     real (kind=kind_phys), pointer :: prevsq (:,:)     => null()  !<
     integer,               pointer :: cactiv   (:)     => null()  !< convective activity memory contour
-    
-    !---- precipitation amounts from previous time step for RUC LSM
-    real (kind=kind_phys), pointer :: raincprv  (:)    => null()  !< explicit rainfall from previous timestep
-    real (kind=kind_phys), pointer :: rainncprv (:)    => null()  !< convective_precipitation_amount from previous timestep
-    real (kind=kind_phys), pointer :: iceprv    (:)    => null()  !< ice amount from previous timestep
-    real (kind=kind_phys), pointer :: snowprv   (:)    => null()  !< snow amount from previous timestep
-    real (kind=kind_phys), pointer :: graupelprv(:)    => null()  !< graupel amount from previous timestep
-
-    !---- precipitation rates from previous time step for NoahMP LSM
-    real (kind=kind_phys), pointer :: draincprv  (:)    => null()  !< convective precipitation rate from previous timestep
-    real (kind=kind_phys), pointer :: drainncprv (:)    => null()  !< explicit rainfall rate from previous timestep
-    real (kind=kind_phys), pointer :: diceprv    (:)    => null()  !< ice precipitation rate from previous timestep
-    real (kind=kind_phys), pointer :: dsnowprv   (:)    => null()  !< snow precipitation rate from previous timestep
-    real (kind=kind_phys), pointer :: dgraupelprv(:)    => null()  !< graupel precipitation rate from previous timestep
 
     !--- MYNN prognostic variables that can't be in the Intdiag or Interstitial DDTs
     real (kind=kind_phys), pointer :: CLDFRA_BL  (:,:)   => null()  !
@@ -2207,7 +2207,18 @@ module GFS_typedefs
       Sfcprop%dt_cool = zero
       Sfcprop%qrain   = zero
     endif
-
+    if (Model%lsm == Model%lsm_ruc .or. Model%lsm == Model%lsm_noahmp) then
+      allocate(Sfcprop%raincprv  (IM))
+      allocate(Sfcprop%rainncprv (IM))
+      allocate(Sfcprop%iceprv    (IM))
+      allocate(Sfcprop%snowprv   (IM))
+      allocate(Sfcprop%graupelprv(IM))
+      Sfcprop%raincprv   = clear_val
+      Sfcprop%rainncprv  = clear_val
+      Sfcprop%iceprv     = clear_val
+      Sfcprop%snowprv    = clear_val
+      Sfcprop%graupelprv = clear_val
+    end if
 ! Noah MP allocate and init when used
 !
     if (Model%lsm == Model%lsm_noahmp ) then
@@ -2290,7 +2301,19 @@ module GFS_typedefs
     Sfcprop%tsnoxy     = clear_val
     Sfcprop%smoiseq    = clear_val
     Sfcprop%zsnsoxy    = clear_val
+    
+    allocate(Sfcprop%draincprv  (IM))
+    allocate(Sfcprop%drainncprv (IM))
+    allocate(Sfcprop%diceprv    (IM))
+    allocate(Sfcprop%dsnowprv   (IM))
+    allocate(Sfcprop%dgraupelprv(IM))
 
+    Sfcprop%draincprv   = clear_val
+    Sfcprop%drainncprv  = clear_val
+    Sfcprop%diceprv     = clear_val
+    Sfcprop%dsnowprv    = clear_val
+    Sfcprop%dgraupelprv = clear_val
+    
    endif
 
 #ifdef CCPP
@@ -2330,6 +2353,7 @@ module GFS_typedefs
           allocate (Sfcprop%xlaixy (IM))
           Sfcprop%xlaixy = clear_val
        end if
+              
     end if
     if (Model%do_mynnsfclay) then
     ! For MYNN surface layer scheme
@@ -2359,6 +2383,7 @@ module GFS_typedefs
         allocate (Sfcprop%conv_act(IM))
         Sfcprop%conv_act = zero
     end if
+    
 #endif
 
   end subroutine sfcprop_create
@@ -4879,32 +4904,6 @@ module GFS_typedefs
       allocate(Tbd%cactiv(IM))
       Tbd%cactiv = zero
    end if
-
-   if (Model%lsm == Model%lsm_ruc) then
-       allocate(Tbd%raincprv  (IM))
-       allocate(Tbd%rainncprv (IM))
-       allocate(Tbd%iceprv    (IM))
-       allocate(Tbd%snowprv   (IM))
-       allocate(Tbd%graupelprv(IM))
-       Tbd%raincprv   = clear_val
-       Tbd%rainncprv  = clear_val
-       Tbd%iceprv     = clear_val
-       Tbd%snowprv    = clear_val
-       Tbd%graupelprv = clear_val
-    end if
-
-    if (Model%lsm == Model%lsm_noahmp) then
-        allocate(Tbd%draincprv  (IM))
-        allocate(Tbd%drainncprv (IM))
-        allocate(Tbd%diceprv    (IM))
-        allocate(Tbd%dsnowprv   (IM))
-        allocate(Tbd%dgraupelprv(IM))
-        Tbd%draincprv   = clear_val
-        Tbd%drainncprv  = clear_val
-        Tbd%diceprv     = clear_val
-        Tbd%dsnowprv    = clear_val
-        Tbd%dgraupelprv = clear_val
-    end if
 
     !--- MYNN variables:
     if (Model%do_mynnedmf) then
