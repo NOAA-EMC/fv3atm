@@ -1262,6 +1262,76 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+[raincprv]
+  standard_name = lwe_thickness_of_convective_precipitation_amount_from_previous_timestep
+  long_name = convective_precipitation_amount from previous timestep
+  units = m
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+[rainncprv]
+  standard_name = lwe_thickness_of_explicit_rainfall_amount_from_previous_timestep
+  long_name = explicit rainfall from previous timestep
+  units = m
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+[iceprv]
+  standard_name = lwe_thickness_of_ice_amount_from_previous_timestep
+  long_name = ice amount from previous timestep
+  units = m
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+[snowprv]
+  standard_name = lwe_thickness_of_snow_amount_from_previous_timestep
+  long_name = snow amount from previous timestep
+  units = m
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+[graupelprv]
+  standard_name = lwe_thickness_of_graupel_amount_from_previous_timestep
+  long_name = graupel amount from previous timestep
+  units = m
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+[draincprv]
+  standard_name = convective_precipitation_rate_from_previous_timestep
+  long_name = convective precipitation rate from previous timestep
+  units = mm s-1
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+[drainncprv]
+  standard_name = explicit_rainfall_rate_from_previous_timestep
+  long_name = explicit rainfall rate previous timestep
+  units = mm s-1
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+[diceprv]
+  standard_name = ice_precipitation_rate_from_previous_timestep
+  long_name = ice precipitation rate from previous timestep
+  units = mm s-1
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+[dsnowprv]
+  standard_name = snow_precipitation_rate_from_previous_timestep
+  long_name = snow precipitation rate from previous timestep
+  units = mm s-1
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+[dgraupelprv]
+  standard_name = graupel_precipitation_rate_from_previous_timestep
+  long_name = graupel precipitation rate from previous timestep
+  units = mm s-1
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
 
 ########################################################################
 [ccpp-arg-table]
@@ -2543,6 +2613,12 @@
   units = count
   dimensions = ()
   type = integer
+[rdlai]
+  standard_name = flag_for_reading_leaf_area_index_from_input
+  long_name = flag for reading leaf area index from initial conditions for RUC LSM
+  units = flag
+  dimensions = ()
+  type = logical
 [ivegsrc]
   standard_name = vegetation_type_dataset_choice
   long_name = land use dataset choice
@@ -2777,10 +2853,76 @@
   units = flag
   dimensions = ()
   type = integer
+[imfshalcnv_sas]
+  standard_name = flag_for_sas_shallow_convection_scheme
+  long_name = flag for SAS shallow convection scheme
+  units = flag
+  dimensions = ()
+  type = integer
+[imfshalcnv_samf]
+  standard_name = flag_for_samf_shallow_convection_scheme
+  long_name = flag for SAMF shallow convection scheme
+  units = flag
+  dimensions = ()
+  type = integer
+[imfshalcnv_gf]
+  standard_name = flag_for_gf_shallow_convection_scheme
+  long_name = flag for Grell-Freitas shallow convection scheme
+  units = flag
+  dimensions = ()
+  type = integer
+[imfshalcnv_gf]
+  standard_name = flag_for_ntiedtke_shallow_convection_scheme
+  long_name = flag for new Tiedtke shallow convection scheme
+  units = flag
+  dimensions = ()
+  type = integer
 [imfdeepcnv]
   standard_name = flag_for_mass_flux_deep_convection_scheme
   long_name = flag for mass-flux deep convection scheme
   units = flag
+  dimensions = ()
+  type = integer
+[imfdeepcnv_sas]
+  standard_name = flag_for_sas_deep_convection_scheme
+  long_name = flag for SAS deep convection scheme
+  units = flag
+  dimensions = ()
+  type = integer
+[imfdeepcnv_samf]
+  standard_name = flag_for_samf_deep_convection_scheme
+  long_name = flag for SAMF deep convection scheme
+  units = flag
+  dimensions = ()
+  type = integer
+[imfdeepcnv_gf]
+  standard_name = flag_for_gf_deep_convection_scheme
+  long_name = flag for Grell-Freitas deep convection scheme
+  units = flag
+  dimensions = ()
+  type = integer
+[imfdeepcnv_ntiedtke]
+  standard_name = flag_for_ntiedtke_deep_convection_scheme
+  long_name = flag for new Tiedtke deep convection scheme
+  units = flag
+  dimensions = ()
+  type = integer
+[isatmedmf]
+  standard_name = choice_of_scale_aware_TKE_moist_EDMF_PBL
+  long_name = choice of scale-aware TKE moist EDMF PBL scheme
+  units = none
+  dimensions = ()
+  type = integer
+[isatmedmf_vdif]
+  standard_name = choice_of_original_scale_aware_TKE_moist_EDMF_PBL
+  long_name = choice of original scale-aware TKE moist EDMF PBL scheme
+  units = none
+  dimensions = ()
+  type = integer
+[isatmedmf_vdifq]
+  standard_name = choice_of_updated_scale_aware_TKE_moist_EDMF_PBL
+  long_name = choice of updated scale-aware TKE moist EDMF PBL scheme
+  units = none
   dimensions = ()
   type = integer
 [nmtvr]
@@ -4175,76 +4317,6 @@
   units = none
   dimensions = (horizontal_dimension)
   type = integer
-[raincprv]
-  standard_name = lwe_thickness_of_convective_precipitation_amount_from_previous_timestep
-  long_name = convective_precipitation_amount from previous timestep
-  units = m
-  dimensions = (horizontal_dimension)
-  type = real
-  kind = kind_phys
-[rainncprv]
-  standard_name = lwe_thickness_of_explicit_rainfall_amount_from_previous_timestep
-  long_name = explicit rainfall from previous timestep
-  units = m
-  dimensions = (horizontal_dimension)
-  type = real
-  kind = kind_phys
-[iceprv]
-  standard_name = lwe_thickness_of_ice_amount_from_previous_timestep
-  long_name = ice amount from previous timestep
-  units = m
-  dimensions = (horizontal_dimension)
-  type = real
-  kind = kind_phys
-[snowprv]
-  standard_name = lwe_thickness_of_snow_amount_from_previous_timestep
-  long_name = snow amount from previous timestep
-  units = m
-  dimensions = (horizontal_dimension)
-  type = real
-  kind = kind_phys
-[graupelprv]
-  standard_name = lwe_thickness_of_graupel_amount_from_previous_timestep
-  long_name = graupel amount from previous timestep
-  units = m
-  dimensions = (horizontal_dimension)
-  type = real
-  kind = kind_phys
-[draincprv]
-  standard_name = convective_precipitation_rate_from_previous_timestep
-  long_name = convective precipitation rate from previous timestep
-  units = mm s-1
-  dimensions = (horizontal_dimension)
-  type = real
-  kind = kind_phys
-[drainncprv]
-  standard_name = explicit_rainfall_rate_from_previous_timestep
-  long_name = explicit rainfall rate previous timestep
-  units = mm s-1
-  dimensions = (horizontal_dimension)
-  type = real
-  kind = kind_phys
-[diceprv]
-  standard_name = ice_precipitation_rate_from_previous_timestep
-  long_name = ice precipitation rate from previous timestep
-  units = mm s-1
-  dimensions = (horizontal_dimension)
-  type = real
-  kind = kind_phys
-[dsnowprv]
-  standard_name = snow_precipitation_rate_from_previous_timestep
-  long_name = snow precipitation rate from previous timestep
-  units = mm s-1
-  dimensions = (horizontal_dimension)
-  type = real
-  kind = kind_phys
-[dgraupelprv]
-  standard_name = graupel_precipitation_rate_from_previous_timestep
-  long_name = graupel precipitation rate from previous timestep
-  units = mm s-1
-  dimensions = (horizontal_dimension)
-  type = real
-  kind = kind_phys
 [CLDFRA_BL]
   standard_name = subgrid_cloud_fraction_pbl
   long_name = subgrid cloud fraction from PBL scheme
@@ -7157,7 +7229,7 @@
   type = integer
 [ntiwx]
   standard_name = index_for_ice_cloud_condensate_vertical_diffusion_tracer
-  long_name = index for ice cloud condensate n the vertically diffused tracer array
+  long_name = index for ice cloud condensate in the vertically diffused tracer array
   units = index
   dimensions = ()
   type = integer
