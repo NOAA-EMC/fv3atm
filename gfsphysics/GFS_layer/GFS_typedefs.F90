@@ -725,7 +725,6 @@ module GFS_typedefs
     integer              :: lsoil_lsm       !< number of soil layers internal to land surface model
     integer              :: lsnow_lsm       !< maximum number of snow layers internal to land surface model
     integer              :: lsnow_lsm_lbound!< lower bound for snow arrays, depending on lsnow_lsm
-    logical              :: rdlai=.false.   !< flag to read leaf area index from initial/boundary conditions
 #endif
     integer              :: ivegsrc         !< ivegsrc = 0   => USGS, 
                                             !< ivegsrc = 1   => IGBP (20 category)
@@ -800,12 +799,6 @@ module GFS_typedefs
                                             !<     4: New Tiedtke scheme (CAPS)
                                             !<     0: modified Tiedtke's eddy-diffusion shallow conv scheme
                                             !<    -1: no shallow convection used
-#ifdef CCPP
-    integer              :: imfshalcnv_sas      = 1 !< flag for SAS mass-flux shallow convection scheme
-    integer              :: imfshalcnv_samf     = 2 !< flag for SAMF scale- & aerosol-aware mass-flux shallow convection scheme
-    integer              :: imfshalcnv_gf       = 3 !< flag for scale- & aerosol-aware Grell-Freitas scheme (GSD)
-    integer              :: imfshalcnv_ntiedtke = 4 !< flag for new Tiedtke scheme (CAPS)
-#endif
     integer              :: imfdeepcnv      !< flag for mass-flux deep convection scheme
                                             !<     1: July 2010 version of SAS conv scheme
                                             !<           current operational version as of 2016
@@ -813,12 +806,6 @@ module GFS_typedefs
                                             !<     3: scale- & aerosol-aware Grell-Freitas scheme (GSD)
                                             !<     4: New Tiedtke scheme (CAPS)
                                             !<     0: old SAS Convection scheme before July 2010
-#ifdef CCPP
-    integer              :: imfdeepcnv_sas      = 1 !< flag for SAS mass-flux deep convection scheme
-    integer              :: imfdeepcnv_samf     = 2 !< flag for SAMF scale- & aerosol-aware mass-flux deep convection scheme
-    integer              :: imfdeepcnv_gf       = 3 !< flag for scale- & aerosol-aware Grell-Freitas scheme (GSD)
-    integer              :: imfdeepcnv_ntiedtke = 4 !< flag for new Tiedtke scheme (CAPS)
-#endif
     integer              :: isatmedmf       !< flag for scale-aware TKE-based moist edmf scheme
                                             !<     0: initial version of satmedmf (Nov. 2018)
                                             !<     1: updated version of satmedmf (as of May 2019)
@@ -2344,7 +2331,7 @@ module GFS_typedefs
        Sfcprop%cqs2        = clear_val
        Sfcprop%lh          = clear_val
     end if
-    if (Model%imfdeepcnv == Model%imfdeepcnv_gf) then
+    if (Model%imfdeepcnv == 3) then
         allocate (Sfcprop%conv_act(IM))
         Sfcprop%conv_act = zero
     end if
@@ -3913,8 +3900,8 @@ module GFS_typedefs
 #ifdef CCPP
         ! Consistency check for NTDK convection: deep and shallow convection are bundled
         ! and cannot be combined with any other deep or shallow convection scheme
-        if ( (Model%imfdeepcnv == Model%imfdeepcnv_ntiedtke .or. Model%imfshalcnv == Model%imfshalcnv_ntiedtke) .and. &
-            .not. (Model%imfdeepcnv == Model%imfdeepcnv_ntiedtke .and. Model%imfshalcnv == Model%imfshalcnv_ntiedtke) ) then
+        if ( (Model%imfdeepcnv == 4 .or. Model%imfshalcnv == 4) .and. &
+            .not. (Model%imfdeepcnv == 4 .and. Model%imfshalcnv == 4) ) then
             write(0,*) "Logic error: if NTDK deep convection is used, must also use NTDK shallow convection (and vice versa)"
             stop
         end if
@@ -4226,9 +4213,7 @@ module GFS_typedefs
 
     Model%lmfshal  = (Model%shal_cnv .and. Model%imfshalcnv > 0)
 #ifdef CCPP
-    Model%lmfdeep2 = (Model%imfdeepcnv == Model%imfdeepcnv_samf         &
-                      .or. Model%imfdeepcnv == Model%imfdeepcnv_gf      &
-                      .or. Model%imfdeepcnv == Model%imfdeepcnv_ntiedtke)
+    Model%lmfdeep2 = (Model%imfdeepcnv == 2 .or. Model%imfdeepcnv == 3 .or. Model%imfdeepcnv == 4)
 #else
     Model%lmfdeep2 = (Model%imfdeepcnv == 2)
 #endif
@@ -4383,7 +4368,6 @@ module GFS_typedefs
       print *, ' lsm               : ', Model%lsm
       print *, ' lsoil             : ', Model%lsoil
 #ifdef CCPP
-      print *, ' rdlai             : ', Model%rdlai
       print *, ' lsoil_lsm         : ', Model%lsoil_lsm
       print *, ' lsnow_lsm         : ', Model%lsnow_lsm
 #endif
@@ -4785,7 +4769,7 @@ module GFS_typedefs
     Tbd%htswc = clear_val
     Tbd%htsw0 = clear_val
 
-    if (Model%imfdeepcnv == Model%imfdeepcnv_gf .or. Model%imfdeepcnv == Model%imfdeepcnv_ntiedtke) then
+    if (Model%imfdeepcnv == 3 .or. Model%imfdeepcnv == 4) then
        allocate(Tbd%forcet(IM, Model%levs))
        allocate(Tbd%forceq(IM, Model%levs))
        allocate(Tbd%prevst(IM, Model%levs))
@@ -4796,7 +4780,7 @@ module GFS_typedefs
        Tbd%prevsq = clear_val
    end if
 
-   if (Model%imfdeepcnv == Model%imfdeepcnv_gf) then
+   if (Model%imfdeepcnv == 3) then
       allocate(Tbd%cactiv(IM))
       Tbd%cactiv = zero
    end if

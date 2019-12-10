@@ -2613,12 +2613,6 @@
   units = count
   dimensions = ()
   type = integer
-[rdlai]
-  standard_name = flag_for_reading_leaf_area_index_from_input
-  long_name = flag for reading leaf area index from initial conditions for RUC LSM
-  units = flag
-  dimensions = ()
-  type = logical
 [ivegsrc]
   standard_name = vegetation_type_dataset_choice
   long_name = land use dataset choice
@@ -2853,57 +2847,9 @@
   units = flag
   dimensions = ()
   type = integer
-[imfshalcnv_sas]
-  standard_name = flag_for_sas_shallow_convection_scheme
-  long_name = flag for SAS shallow convection scheme
-  units = flag
-  dimensions = ()
-  type = integer
-[imfshalcnv_samf]
-  standard_name = flag_for_samf_shallow_convection_scheme
-  long_name = flag for SAMF shallow convection scheme
-  units = flag
-  dimensions = ()
-  type = integer
-[imfshalcnv_gf]
-  standard_name = flag_for_gf_shallow_convection_scheme
-  long_name = flag for Grell-Freitas shallow convection scheme
-  units = flag
-  dimensions = ()
-  type = integer
-[imfshalcnv_gf]
-  standard_name = flag_for_ntiedtke_shallow_convection_scheme
-  long_name = flag for new Tiedtke shallow convection scheme
-  units = flag
-  dimensions = ()
-  type = integer
 [imfdeepcnv]
   standard_name = flag_for_mass_flux_deep_convection_scheme
   long_name = flag for mass-flux deep convection scheme
-  units = flag
-  dimensions = ()
-  type = integer
-[imfdeepcnv_sas]
-  standard_name = flag_for_sas_deep_convection_scheme
-  long_name = flag for SAS deep convection scheme
-  units = flag
-  dimensions = ()
-  type = integer
-[imfdeepcnv_samf]
-  standard_name = flag_for_samf_deep_convection_scheme
-  long_name = flag for SAMF deep convection scheme
-  units = flag
-  dimensions = ()
-  type = integer
-[imfdeepcnv_gf]
-  standard_name = flag_for_gf_deep_convection_scheme
-  long_name = flag for Grell-Freitas deep convection scheme
-  units = flag
-  dimensions = ()
-  type = integer
-[imfdeepcnv_ntiedtke]
-  standard_name = flag_for_ntiedtke_deep_convection_scheme
-  long_name = flag for new Tiedtke deep convection scheme
   units = flag
   dimensions = ()
   type = integer
