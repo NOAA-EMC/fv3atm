@@ -2025,6 +2025,12 @@
   dimensions = ()
   type = real
   kind = kind_phys
+[nhfrad]
+  standard_name = number_of_timesteps_for_radiation_calls_on_physics_timestep
+  long_name = number of timesteps for radiation calls on physics timestep (coldstarts only)
+  units = count
+  dimensions = ()
+  type = integer
 [levr]
   standard_name = number_of_vertical_layers_for_radiation_calculations
   long_name = number of vertical levels for radiation calculations

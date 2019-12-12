@@ -590,6 +590,9 @@ module GFS_typedefs
     real(kind=kind_phys) :: fhlwr           !< frequency for longwave radiation (secs)
     integer              :: nsswr           !< integer trigger for shortwave radiation
     integer              :: nslwr           !< integer trigger for longwave  radiation
+#ifdef CCPP
+    integer              :: nhfrad          !< number of timesteps for which to call radiation on physics timestep (coldstarts)
+#endif
     integer              :: levr            !< number of vertical levels for radiation calculations
 #ifdef CCPP
     integer              :: levrp1          !< number of vertical levels for radiation calculations plus one
@@ -2703,6 +2706,9 @@ module GFS_typedefs
 !--- radiation parameters
     real(kind=kind_phys) :: fhswr          = 3600.           !< frequency for shortwave radiation (secs)
     real(kind=kind_phys) :: fhlwr          = 3600.           !< frequency for longwave radiation (secs)
+#ifdef CCPP
+    integer              :: nhfrad         = 0               !< number of timesteps for which to call radiation on physics timestep (coldstarts)
+#endif
     integer              :: levr           = -99             !< number of vertical levels for radiation calculations
     integer              :: nfxr           = 39+6            !< second dimension of input/output array fluxr   
     logical              :: aero_in        = .false.         !< flag for initializing aero data 
@@ -3072,6 +3078,9 @@ module GFS_typedefs
                                fhswr, fhlwr, levr, nfxr, aero_in, iflip, isol, ico2, ialb,  &
                                isot, iems, iaer, icliq_sw, iovr_sw, iovr_lw, ictm, isubc_sw,&
                                isubc_lw, crick_proof, ccnorm, lwhtr, swhtr,                 &
+#ifdef CCPP
+                               nhfrad,                                                      &
+#endif
                           ! IN CCN forcing
                                iccn,                                                        &
                           !--- microphysical parameterizations
@@ -3277,6 +3286,17 @@ module GFS_typedefs
     Model%fhlwr            = fhlwr
     Model%nsswr            = nint(fhswr/Model%dtp)
     Model%nslwr            = nint(fhlwr/Model%dtp)
+#ifdef CCPP
+    if (restart) then
+      Model%nhfrad         = 0
+      if (Model%me == Model%master .and. nhfrad>0) &
+        write(*,'(a)') 'Disable high-frequency radiation calls for restart run'
+    else
+      Model%nhfrad         = nhfrad
+      if (Model%me == Model%master .and. nhfrad>0) &
+        write(*,'(a,i0)') 'Number of high-frequency radiation calls for coldstart run: ', nhfrad
+    endif
+#endif
     if (levr < 0) then
       Model%levr           = levs
     else
@@ -4384,6 +4404,9 @@ module GFS_typedefs
       print *, ' fhlwr             : ', Model%fhlwr
       print *, ' nsswr             : ', Model%nsswr
       print *, ' nslwr             : ', Model%nslwr
+#ifdef CCPP
+      print *, ' nhfrad            : ', Model%nhfrad
+#endif
       print *, ' levr              : ', Model%levr
       print *, ' nfxr              : ', Model%nfxr
       print *, ' aero_in           : ', Model%aero_in
