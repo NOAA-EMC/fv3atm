@@ -12,6 +12,7 @@ module post_gfs
   include 'mpif.h'
 
   integer mype, nbdl
+  logical setvar_atmfile, setvar_sfcfile, read_postcntrl
   public  post_run_gfs, post_getattr_gfs
 
   contains
@@ -28,9 +29,10 @@ module post_gfs
 !
       use ctlblk_mod, only : komax,ifhr,ifmin,modelname,datapd,fld_info, &
                              npset,grib,gocart_on,icount_calmict, jsta,  &
-                             jend,im, nsoil
+                             jend,im, nsoil, filenameflat
       use gridspec_mod, only : maptype, gridtype
       use grib2_module, only : gribit2,num_pset,nrecout,first_grbtbl
+      use xml_perl_data,only : paramset
 !
 !-----------------------------------------------------------------------
 !
@@ -53,9 +55,8 @@ module post_gfs
       integer n,nwtpg,ieof,lcntrl,ierr,i,j,k,jts,jte,mynsoil
       integer,allocatable  :: jstagrp(:),jendgrp(:)
       integer,save         :: kpo,kth,kpv
+      logical,save         :: log_postalct=.false.
       real,dimension(komax),save :: po, th, pv
-      logical,save   :: log_postalct=.false.
-      logical,save   :: setvar_atmfile=.false.,setvar_sfcfile=.false.
       logical        :: Log_runpost
       character(255) :: post_fname*255
 
@@ -124,6 +125,7 @@ module post_gfs
 !
         log_postalct = .true.
         first_grbtbl = .true.
+        read_postcntrl = .true.
 !
       ENDIF
 !
@@ -135,6 +137,8 @@ module post_gfs
       ifmin = mynfmin
       if (ifhr == 0 ) ifmin = 0
       if(mype==0) print *,'bf set_postvars,ifmin=',ifmin,'ifhr=',ifhr
+      setvar_atmfile=.false.
+      setvar_sfcfile=.false.
       call set_postvars_gfs(wrt_int_state,mpicomp,setvar_atmfile,   &
            setvar_sfcfile)
 
@@ -145,8 +149,28 @@ module post_gfs
 ! 20190807 no need to call microinit for GFDLMP
 !        call MICROINIT
 !
-        if(grib=="grib2" .and. first_grbtbl) then
-          call read_xml()
+        if(grib=="grib2" .and. read_postcntrl) then
+          if (ifhr == 0) then
+            filenameflat = 'postxconfig-NT_FH00.txt'
+            call read_xml()
+            if(mype==0) print *,'af read_xml at fh00,name=',trim(filenameflat)
+          else if(ifhr > 0) then
+            filenameflat = 'postxconfig-NT.txt'
+            if(size(paramset)>0) then
+              do i=1,size(paramset)
+                if (size(paramset(i)%param)>0) then
+                  deallocate(paramset(i)%param)
+                  nullify(paramset(i)%param)
+                endif
+              enddo
+              deallocate(paramset)
+              nullify(paramset)
+            endif
+            num_pset = 0
+            call read_xml()
+            if(mype==0) print *,'af read_xml,name=',trim(filenameflat),'ifhr=',ifhr
+            read_postcntrl = .false.
+          endif
         endif
 !
         IEOF  = 0
@@ -181,9 +205,6 @@ module post_gfs
           endif
 !
         enddo
-!
-        setvar_atmfile = .false.
-        setvar_sfcfile = .false.
 !
       endif
 

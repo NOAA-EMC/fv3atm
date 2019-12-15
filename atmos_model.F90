@@ -113,7 +113,8 @@ use FV3GFS_io_mod,      only: FV3GFS_restart_read, FV3GFS_restart_write, &
                               FV3GFS_diag_register, FV3GFS_diag_output,  &
                               DIAG_SIZE
 use fv_iau_mod,         only: iau_external_data_type,getiauforcing,iau_initialize
-use module_fv3_config,  only: output_1st_tstep_rst, first_kdt, nsout
+use module_fv3_config,  only: output_1st_tstep_rst, first_kdt, nsout,    &
+                              frestart, restart_endfcst
 
 !-----------------------------------------------------------------------
 
@@ -944,7 +945,7 @@ subroutine update_atmos_model_state (Atmos)
 subroutine atmos_model_end (Atmos)
   type (atmos_data_type), intent(inout) :: Atmos
 !---local variables
-  integer :: idx
+  integer :: idx, seconds
 #ifdef CCPP
   integer :: ierr
 #endif
@@ -952,9 +953,13 @@ subroutine atmos_model_end (Atmos)
 !-----------------------------------------------------------------------
 !---- termination routine for atmospheric model ----
                                               
-    call atmosphere_end (Atmos % Time, Atmos%grid)
-    call FV3GFS_restart_write (IPD_Data, IPD_Restart, Atm_block, &
-                               IPD_Control, Atmos%domain)
+!    if (mpp_pe() == mpp_root_pe() )print *,'in atmos_model_end,restart_endfcst=',restart_endfcst
+    call atmosphere_end (Atmos % Time, Atmos%grid, restart_endfcst)
+    if(restart_endfcst) then
+      call FV3GFS_restart_write (IPD_Data, IPD_Restart, Atm_block, &
+                                 IPD_Control, Atmos%domain)
+!      if (mpp_pe() == mpp_root_pe() )print *,'in atmos_model_end,write final restart'
+    endif
 
 #ifdef CCPP
 !   Fast physics (from dynamics) are finalized in atmosphere_end above;
