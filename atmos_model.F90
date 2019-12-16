@@ -954,12 +954,10 @@ subroutine atmos_model_end (Atmos)
 !-----------------------------------------------------------------------
 !---- termination routine for atmospheric model ----
                                               
-!    if (mpp_pe() == mpp_root_pe() )print *,'in atmos_model_end,restart_endfcst=',restart_endfcst
     call atmosphere_end (Atmos % Time, Atmos%grid, restart_endfcst)
     if(restart_endfcst) then
       call FV3GFS_restart_write (IPD_Data, IPD_Restart, Atm_block, &
                                  IPD_Control, Atmos%domain)
-!      if (mpp_pe() == mpp_root_pe() )print *,'in atmos_model_end,write final restart'
     endif
 
 #ifdef CCPP
