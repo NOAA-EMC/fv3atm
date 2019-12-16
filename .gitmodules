@@ -4,9 +4,9 @@
 	branch = ufs_public_release
 [submodule "ccpp/framework"]
 	path = ccpp/framework
-	url = https://github.com/climbfuji/ccpp-framework
-	branch = ufs_public_release_update_from_dtc_20191210
+	url = https://github.com/NCAR/ccpp-framework
+	branch = ufs_public_release
 [submodule "ccpp/physics"]
 	path = ccpp/physics
-	url = https://github.com/climbfuji/ccpp-physics
-	branch = ufs_public_release_update_from_dtc_20191210
+	url = https://github.com/NCAR/ccpp-physics
+	branch = ufs_public_release
