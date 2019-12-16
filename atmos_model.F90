@@ -222,7 +222,8 @@ character(len=128) :: tagname = '$Name$'
   logical,parameter :: flip_vc = .true.
 #endif
 
-  real(kind=IPD_kind_phys), parameter :: zero=0.0, one=1.0
+  real(kind=IPD_kind_phys), parameter :: zero = 0.0_IPD_kind_phys, &
+                                         one  = 1.0_IPD_kind_phys
 
 contains
 
@@ -1459,6 +1460,24 @@ subroutine update_atmos_chemistry(state, rc)
           vfrac(i,j)  = IPD_Data(nb)%Sfcprop%vfrac(ix)
           zorl(i,j)   = IPD_Data(nb)%Sfcprop%zorl(ix)
           slc(i,j,:)  = IPD_Data(nb)%Sfcprop%slc(ix,:)
+        enddo
+      enddo
+
+      ! -- zero out accumulated fields
+!$OMP parallel do default (none) &
+!$OMP             shared  (nj, ni, Atm_block, IPD_Control, IPD_Data) &
+!$OMP             private (j, jb, i, ib, nb, ix)
+      do j = 1, nj
+        jb = j + Atm_block%jsc - 1
+        do i = 1, ni
+          ib = i + Atm_block%isc - 1
+          nb = Atm_block%blkno(ib,jb)
+          ix = Atm_block%ixp(ib,jb)
+          IPD_Data(nb)%coupling%rainc_cpl(ix)  = zero
+          if (.not.IPD_Control%cplflx) then
+            IPD_Data(nb)%coupling%rain_cpl(ix) = zero
+            IPD_Data(nb)%coupling%snow_cpl(ix) = zero
+          end if
         enddo
       enddo
 
