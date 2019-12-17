@@ -372,6 +372,20 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: lh(:)            => null()  !latent heating at the surface
 #endif
 
+    !---- precipitation amounts from previous time step for RUC LSM/NoahMP LSM
+    real (kind=kind_phys), pointer :: raincprv  (:)    => null()  !< explicit rainfall from previous timestep
+    real (kind=kind_phys), pointer :: rainncprv (:)    => null()  !< convective_precipitation_amount from previous timestep
+    real (kind=kind_phys), pointer :: iceprv    (:)    => null()  !< ice amount from previous timestep
+    real (kind=kind_phys), pointer :: snowprv   (:)    => null()  !< snow amount from previous timestep
+    real (kind=kind_phys), pointer :: graupelprv(:)    => null()  !< graupel amount from previous timestep
+
+    !---- precipitation rates from previous time step for NoahMP LSM
+    real (kind=kind_phys), pointer :: draincprv  (:)    => null()  !< convective precipitation rate from previous timestep
+    real (kind=kind_phys), pointer :: drainncprv (:)    => null()  !< explicit rainfall rate from previous timestep
+    real (kind=kind_phys), pointer :: diceprv    (:)    => null()  !< ice precipitation rate from previous timestep
+    real (kind=kind_phys), pointer :: dsnowprv   (:)    => null()  !< snow precipitation rate from previous timestep
+    real (kind=kind_phys), pointer :: dgraupelprv(:)    => null()  !< graupel precipitation rate from previous timestep
+
     contains
       procedure :: create  => sfcprop_create  !<   allocate array data
   end type GFS_sfcprop_type
@@ -781,16 +795,24 @@ module GFS_typedefs
                                             !<     1: July 2010 version of mass-flux shallow conv scheme
                                             !<         current operational version as of 2016
                                             !<     2: scale- & aerosol-aware mass-flux shallow conv scheme (2017)
+                                            !<     3: scale- & aerosol-aware Grell-Freitas scheme (GSD)
+                                            !<     4: New Tiedtke scheme (CAPS)
                                             !<     0: modified Tiedtke's eddy-diffusion shallow conv scheme
                                             !<    -1: no shallow convection used
     integer              :: imfdeepcnv      !< flag for mass-flux deep convection scheme
                                             !<     1: July 2010 version of SAS conv scheme
                                             !<           current operational version as of 2016
                                             !<     2: scale- & aerosol-aware mass-flux deep conv scheme (2017)
+                                            !<     3: scale- & aerosol-aware Grell-Freitas scheme (GSD)
+                                            !<     4: New Tiedtke scheme (CAPS)
                                             !<     0: old SAS Convection scheme before July 2010
-    integer              :: isatmedmf       !< flag for scale-aware TKE-based moist edmf scheme                        
+    integer              :: isatmedmf       !< flag for scale-aware TKE-based moist edmf scheme
                                             !<     0: initial version of satmedmf (Nov. 2018)
                                             !<     1: updated version of satmedmf (as of May 2019)
+#ifdef CCPP
+    integer              :: isatmedmf_vdif  = 0 !< flag for initial version of satmedmf (Nov. 2018)
+    integer              :: isatmedmf_vdifq = 1 !< flag for updated version of satmedmf (as of May 2019)
+#endif
     integer              :: nmtvr           !< number of topographic variables such as variance etc
                                             !< used in the GWD parameterization
     integer              :: jcap            !< number of spectral wave trancation used only by sascnv shalcnv
@@ -1162,20 +1184,6 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: prevst (:,:)     => null()  !<
     real (kind=kind_phys), pointer :: prevsq (:,:)     => null()  !<
     integer,               pointer :: cactiv   (:)     => null()  !< convective activity memory contour
-    
-    !---- precipitation amounts from previous time step for RUC LSM
-    real (kind=kind_phys), pointer :: raincprv  (:)    => null()  !< explicit rainfall from previous timestep
-    real (kind=kind_phys), pointer :: rainncprv (:)    => null()  !< convective_precipitation_amount from previous timestep
-    real (kind=kind_phys), pointer :: iceprv    (:)    => null()  !< ice amount from previous timestep
-    real (kind=kind_phys), pointer :: snowprv   (:)    => null()  !< snow amount from previous timestep
-    real (kind=kind_phys), pointer :: graupelprv(:)    => null()  !< graupel amount from previous timestep
-
-    !---- precipitation rates from previous time step for NoahMP LSM
-    real (kind=kind_phys), pointer :: draincprv  (:)    => null()  !< convective precipitation rate from previous timestep
-    real (kind=kind_phys), pointer :: drainncprv (:)    => null()  !< explicit rainfall rate from previous timestep
-    real (kind=kind_phys), pointer :: diceprv    (:)    => null()  !< ice precipitation rate from previous timestep
-    real (kind=kind_phys), pointer :: dsnowprv   (:)    => null()  !< snow precipitation rate from previous timestep
-    real (kind=kind_phys), pointer :: dgraupelprv(:)    => null()  !< graupel precipitation rate from previous timestep
 
     !--- MYNN prognostic variables that can't be in the Intdiag or Interstitial DDTs
     real (kind=kind_phys), pointer :: CLDFRA_BL  (:,:)   => null()  !
@@ -2157,7 +2165,18 @@ module GFS_typedefs
       Sfcprop%dt_cool = zero
       Sfcprop%qrain   = zero
     endif
-
+    if (Model%lsm == Model%lsm_ruc .or. Model%lsm == Model%lsm_noahmp) then
+      allocate(Sfcprop%raincprv  (IM))
+      allocate(Sfcprop%rainncprv (IM))
+      allocate(Sfcprop%iceprv    (IM))
+      allocate(Sfcprop%snowprv   (IM))
+      allocate(Sfcprop%graupelprv(IM))
+      Sfcprop%raincprv   = clear_val
+      Sfcprop%rainncprv  = clear_val
+      Sfcprop%iceprv     = clear_val
+      Sfcprop%snowprv    = clear_val
+      Sfcprop%graupelprv = clear_val
+    end if
 ! Noah MP allocate and init when used
 !
     if (Model%lsm == Model%lsm_noahmp ) then
@@ -2240,7 +2259,19 @@ module GFS_typedefs
     Sfcprop%tsnoxy     = clear_val
     Sfcprop%smoiseq    = clear_val
     Sfcprop%zsnsoxy    = clear_val
+    
+    allocate(Sfcprop%draincprv  (IM))
+    allocate(Sfcprop%drainncprv (IM))
+    allocate(Sfcprop%diceprv    (IM))
+    allocate(Sfcprop%dsnowprv   (IM))
+    allocate(Sfcprop%dgraupelprv(IM))
 
+    Sfcprop%draincprv   = clear_val
+    Sfcprop%drainncprv  = clear_val
+    Sfcprop%diceprv     = clear_val
+    Sfcprop%dsnowprv    = clear_val
+    Sfcprop%dgraupelprv = clear_val
+    
    endif
 
 #ifdef CCPP
@@ -3913,16 +3944,19 @@ module GFS_typedefs
         print*, ' Deep convection scheme disabled'
       endif
       if (Model%satmedmf) then
+#ifdef CCPP
+        if (Model%isatmedmf == Model%isatmedmf_vdif) then
+          print *,' initial version (Nov 2018) of sale-aware TKE-based moist EDMF scheme used'
+        elseif(Model%isatmedmf == Model%isatmedmf_vdifq) then
+          print *,' update version (May 2019) of sale-aware TKE-based moist EDMF scheme used'
+        endif
+#else
         if (Model%isatmedmf == 0) then
           print *,' initial version (Nov 2018) of sale-aware TKE-based moist EDMF scheme used'
         elseif(Model%isatmedmf == 1) then
-#ifdef CCPP
-          print *,' Error: updated version (May 2019) of sale-aware TKE-based moist EDMF scheme not yet available in CCPP'
-          stop
-#else
           print *,' update version (May 2019) of sale-aware TKE-based moist EDMF scheme used'
-#endif
         endif
+#endif
       elseif (Model%hybedmf) then
         print *,' scale-aware hybrid edmf PBL scheme used'
       elseif (Model%old_monin) then
@@ -4389,6 +4423,7 @@ module GFS_typedefs
       print *, ' redrag            : ', Model%redrag
       print *, ' hybedmf           : ', Model%hybedmf
       print *, ' satmedmf          : ', Model%satmedmf
+      print *, ' isatmedmf         : ', Model%isatmedmf
       print *, ' shinhong          : ', Model%shinhong
       print *, ' do_ysu            : ', Model%do_ysu
       print *, ' dspheat           : ', Model%dspheat
@@ -4749,32 +4784,6 @@ module GFS_typedefs
       allocate(Tbd%cactiv(IM))
       Tbd%cactiv = zero
    end if
-
-   if (Model%lsm == Model%lsm_ruc) then
-       allocate(Tbd%raincprv  (IM))
-       allocate(Tbd%rainncprv (IM))
-       allocate(Tbd%iceprv    (IM))
-       allocate(Tbd%snowprv   (IM))
-       allocate(Tbd%graupelprv(IM))
-       Tbd%raincprv   = clear_val
-       Tbd%rainncprv  = clear_val
-       Tbd%iceprv     = clear_val
-       Tbd%snowprv    = clear_val
-       Tbd%graupelprv = clear_val
-    end if
-
-    if (Model%lsm == Model%lsm_noahmp) then
-        allocate(Tbd%draincprv  (IM))
-        allocate(Tbd%drainncprv (IM))
-        allocate(Tbd%diceprv    (IM))
-        allocate(Tbd%dsnowprv   (IM))
-        allocate(Tbd%dgraupelprv(IM))
-        Tbd%draincprv   = clear_val
-        Tbd%drainncprv  = clear_val
-        Tbd%diceprv     = clear_val
-        Tbd%dsnowprv    = clear_val
-        Tbd%dgraupelprv = clear_val
-    end if
 
     !--- MYNN variables:
     if (Model%do_mynnedmf) then

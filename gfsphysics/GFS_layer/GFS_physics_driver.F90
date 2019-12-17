@@ -569,10 +569,6 @@ module module_physics_driver
       real(kind=kind_phys), allocatable, dimension(:,:) ::              &
                                            savet, saveq, saveu, savev
 
-!--- pass precip type from MP to Noah MP
-      real(kind=kind_phys), dimension(size(Grid%xlon,1)) ::              &
-          rainn_mp, rainc_mp, snow_mp, graupel_mp, ice_mp
-
 !--- GFDL modification for FV3 
 
       real(kind=kind_phys), dimension(size(Grid%xlon,1),Model%levs+1) ::&
@@ -881,31 +877,6 @@ module module_physics_driver
         !CCPP: num2 = Model%ncnvw
         !CCPP: num3 = Model%ncnvc
       endif
-!
-!  ---  initization for those precip type used in Noah MP
-!
-      if (Model%lsm == Model%lsm_noahmp) then
-        do  i=1,im
-          rainn_mp(i)   = zero
-          rainc_mp(i)   = zero
-          snow_mp(i)    = zero
-          graupel_mp(i) = zero
-          ice_mp(i)     = zero
-        enddo
-!  ---  get the amount of different precip type for Noah MP
-!  ---  convert from m/dtp to mm/s
-        if (Model%imp_physics == Model%imp_physics_mg .or. &
-            Model%imp_physics == Model%imp_physics_gfdl) then
-          tem = one / (dtp*con_p001)
-          do  i=1,im
-            rainn_mp(i)   = tem * (Diag%rain(i)-Diag%rainc(i))
-            rainc_mp(i)   = tem * Diag%rainc(i)
-            snow_mp(i)    = tem * Diag%snow(i)
-            graupel_mp(i) = tem * Diag%graupel(i)
-            ice_mp(i)     = tem * Diag%ice(i)
-          enddo
-        endif
-      endif !  if (Model%lsm == Model%lsm_noahmp)
 
 !  ---  set initial quantities for stochastic physics deltas
       if (Model%do_sppt) then
@@ -1097,7 +1068,6 @@ module module_physics_driver
         enddo
       endif
 
-! DH* In CCPP, this is in GFS_surface_composites_pre
       if (Model%frac_grid) then  ! here Sfcprop%fice is fraction of the whole grid that is ice
         do i = 1, IM
           frland(i) = Sfcprop%landfrac(i)
@@ -1189,7 +1159,6 @@ module module_physics_driver
         enddo
       enddo
 
-! DH* In CCPP, this is in GFS_surface_composites_pre
       if (.not. Model%cplflx .or. .not. Model%frac_grid) then
         do i=1,im
           Sfcprop%zorll(i) = Sfcprop%zorl(i)
@@ -1820,8 +1789,8 @@ module module_physics_driver
             Model%iopt_inf,   Model%iopt_rad,  Model%iopt_alb,         &
             Model%iopt_snf,   Model%iopt_tbot, Model%iopt_stc,         &
             grid%xlat, xcosz, Model%yearlen,   Model%julian, Model%imn,&
-            rainn_mp, rainc_mp, snow_mp, graupel_mp, ice_mp,           &
-
+            Sfcprop%drainncprv, Sfcprop%draincprv, Sfcprop%dsnowprv,   &
+            Sfcprop%dgraupelprv, Sfcprop%diceprv,                      &
 !  ---  in/outs:
             weasd3(:,1), snowd3(:,1), tsfc3(:,1), tprcp3(:,1),         &
             Sfcprop%srflag, smsoil, stsoil, slsoil, Sfcprop%canopy,    &
@@ -3068,9 +3037,6 @@ module module_physics_driver
       enddo
       Stateout%gq0(1:im,:,:) = Statein%qgrs(1:im,:,:) + dqdt(1:im,:,:) * dtp
 
-! *DH
-
-! DH* this block not yet in CCPP
 !================================================================================
 !     above: updates of the state by UGWP oro-GWS and RF-damp
 !  Diag%tav_ugwp & Diag%uav_ugwp(i,k)-Updated U-T state before moist/micro !  physics
@@ -3694,7 +3660,6 @@ module module_physics_driver
 
           else      ! ras version 2
 
-! DH* this code not yet in CCPP (belongs to GFS_DCNV_generic_pre?)
             if (Model%ccwf(1) >= zero .or. Model%ccwf(2) >= 0) then
               do i=1,im
                 ccwfac(i)  = Model%ccwf(1)*work1(i)    + Model%ccwf(2)*work2(i)
@@ -3861,7 +3826,6 @@ module module_physics_driver
 !
 !----------------Convective gravity wave drag parameterization starting --------
 
-! DH* this block is in gwdc_pre
       if (Model%do_cnvgwd) then         !        call convective gravity wave drag
 
         allocate(gwdcu(im,levs), gwdcv(im,levs))
@@ -4993,7 +4957,31 @@ module module_physics_driver
       endif
 
       Diag%rain(:) = Diag%rainc(:) + frain * rain1(:)
-
+      
+!  ---  get the amount of different precip type for Noah MP
+!  ---  convert from m/dtp to mm/s
+      if (Model%lsm==Model%lsm_noahmp) then
+        if (Model%imp_physics == Model%imp_physics_mg .or. &
+            Model%imp_physics == Model%imp_physics_gfdl) then
+          !GJF: Should all precipitation rates have the same denominator below? 
+          ! It appears that Diag%rain and Diag%rainc are on the dynamics time step,
+          ! but Diag%snow,graupel,ice are on the physics time step? This doesn't
+          ! matter as long as dtp=dtf (frain=1).
+          tem = 1.0 / (dtp*con_p001)
+          Sfcprop%draincprv(:)   = tem * Diag%rainc(:)
+          Sfcprop%drainncprv(:)  = tem * (frain * rain1(:))
+          Sfcprop%dsnowprv(:)    = tem * Diag%snow(:)
+          Sfcprop%dgraupelprv(:) = tem * Diag%graupel(:)
+          Sfcprop%diceprv(:)     = tem * Diag%ice(:)
+        else
+          Sfcprop%draincprv(:)   = 0.0
+          Sfcprop%drainncprv(:)  = 0.0
+          Sfcprop%dsnowprv(:)    = 0.0
+          Sfcprop%dgraupelprv(:) = 0.0
+          Sfcprop%diceprv(:)     = 0.0
+        endif
+      end if !  if (Model%lsm == Model%lsm_noahmp)
+      
       if (Model%cal_pre) then       ! hchuang: add dominant precipitation type algorithm
 !
         call calpreciptype (kdt, Model%nrcm, im, ix, levs, levs+1,           &

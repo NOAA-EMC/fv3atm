@@ -111,7 +111,9 @@ SCHEME_FILES_DEPENDENCIES = [
     'FV3/ccpp/physics/physics/cires_vert_wmsdis.F90',
     'FV3/ccpp/physics/physics/namelist_soilveg.f',
     'FV3/ccpp/physics/physics/mfpblt.f',
+    'FV3/ccpp/physics/physics/mfpbltq.f',
     'FV3/ccpp/physics/physics/mfscu.f',
+    'FV3/ccpp/physics/physics/mfscuq.f',
     'FV3/ccpp/physics/physics/noahmp_tables.f90',
     'FV3/ccpp/physics/physics/num_parthds.F',
     'FV3/ccpp/physics/physics/ozne_def.f',
@@ -197,6 +199,7 @@ SCHEME_FILES = {
     'FV3/ccpp/physics/physics/moninedmf.f'                       : [ 'slow_physics' ],
     'FV3/ccpp/physics/physics/moninshoc.f'                       : [ 'slow_physics' ],
     'FV3/ccpp/physics/physics/satmedmfvdif.F'                    : [ 'slow_physics' ],
+    'FV3/ccpp/physics/physics/satmedmfvdifq.F'                   : [ 'slow_physics' ],
     'FV3/ccpp/physics/physics/shinhongvdif.F90'                  : [ 'slow_physics' ],
     'FV3/ccpp/physics/physics/ysuvdif.F90'                       : [ 'slow_physics' ],
     'FV3/ccpp/physics/physics/module_MYNNPBL_wrapper.F90'        : [ 'slow_physics' ],
@@ -225,7 +228,6 @@ SCHEME_FILES = {
     'FV3/ccpp/physics/physics/sfc_cice.f'                        : [ 'slow_physics' ],
     'FV3/ccpp/physics/physics/sfc_diff.f'                        : [ 'slow_physics' ],
     'FV3/ccpp/physics/physics/sfc_drv.f'                         : [ 'slow_physics' ],
-    'FV3/ccpp/physics/physics/sfc_noahmp_pre.F90'                : [ 'slow_physics' ],
     'FV3/ccpp/physics/physics/sfc_noahmp_drv.f'                  : [ 'slow_physics' ],
     'FV3/ccpp/physics/physics/sfc_nst.f'                         : [ 'slow_physics' ],
     'FV3/ccpp/physics/physics/sfc_ocean.F'                       : [ 'slow_physics' ],
@@ -233,6 +235,10 @@ SCHEME_FILES = {
     # for testing the <init> and <finalize> sections
     'FV3/ccpp/physics/physics/GFS_suite_init_finalize_test.F90'  : [ 'slow_physics' ],
     }
+
+# Default build dir, relative to current working directory,
+# if not specified as command-line argument
+DEFAULT_BUILD_DIR = 'FV3'
 
 # Auto-generated makefile/cmakefile snippets that contain all schemes
 SCHEMES_MAKEFILE   = '{build_dir}/ccpp/physics/CCPP_SCHEMES.mk'
