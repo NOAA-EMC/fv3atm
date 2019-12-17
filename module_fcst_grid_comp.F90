@@ -274,8 +274,9 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !----------------------------------------------------------------------- 
 !
     call ESMF_ClockGet(clock, CurrTime=CurrTime, StartTime=StartTime, &
-                       StopTime=StopTime, RunDuration=RunDuration, rc=rc)
+                       StopTime=StopTime, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+    RunDuration = StopTime - CurrTime
 
     date_init = 0
     call ESMF_TimeGet (StartTime,                      &
