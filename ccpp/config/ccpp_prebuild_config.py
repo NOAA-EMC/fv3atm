@@ -195,6 +195,7 @@ SCHEME_FILES = {
     'FV3/ccpp/physics/physics/cu_gf_driver.F90'                  : [ 'slow_physics' ],
     'FV3/ccpp/physics/physics/cu_gf_driver_post.F90'             : [ 'slow_physics' ],
     'FV3/ccpp/physics/physics/moninedmf.f'                       : [ 'slow_physics' ],
+    'FV3/ccpp/physics/physics/moninedmf_hafs.f'                  : [ 'slow_physics' ],
     'FV3/ccpp/physics/physics/moninshoc.f'                       : [ 'slow_physics' ],
     'FV3/ccpp/physics/physics/satmedmfvdif.F'                    : [ 'slow_physics' ],
     'FV3/ccpp/physics/physics/shinhongvdif.F90'                  : [ 'slow_physics' ],

@@ -7,4 +7,4 @@
 	url = https://github.com/NCAR/ccpp-framework
 [submodule "ccpp/physics"]
 	path = ccpp/physics
-	url = https://github.com/NCAR/ccpp-physics
+	url = https://github.com/hafs-community/ccpp-physics
