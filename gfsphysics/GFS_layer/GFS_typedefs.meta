@@ -1865,6 +1865,12 @@
   units = flag
   dimensions = ()
   type = logical
+[qdiag3d]
+  standard_name = flag_tracer_diagnostics_3D
+  long_name = flag for 3d tracer diagnostic fields
+  units = flag
+  dimensions = ()
+  type = logical
 [lssav]
   standard_name = flag_diagnostics
   long_name = logical flag for storing diagnostics
@@ -5373,6 +5379,13 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+[du3dt(:,:,5)]
+  standard_name = cumulative_change_in_x_wind_due_to_rayleigh_damping
+  long_name = cumulative change in x wind due to Rayleigh damping
+  units = m s-1
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
 [dv3dt(:,:,1)]
   standard_name = cumulative_change_in_y_wind_due_to_PBL
   long_name = cumulative change in y wind due to PBL
@@ -5397,6 +5410,13 @@
 [dv3dt(:,:,4)]
   standard_name = cumulative_change_in_y_wind_due_to_convective_gravity_wave_drag
   long_name = cumulative change in y wind due to convective gravity wave drag
+  units = m s-1
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+[dv3dt(:,:,5)]
+  standard_name = cumulative_change_in_y_wind_due_to_rayleigh_damping
+  long_name = cumulative change in y wind due to Rayleigh damping
   units = m s-1
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
@@ -5446,6 +5466,13 @@
 [dt3dt(:,:,7)]
   standard_name = cumulative_change_in_temperature_due_to_orographic_gravity_wave_drag
   long_name = cumulative change in temperature due to orographic gravity wave drag
+  units = K
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+[dt3dt(:,:,8)]
+  standard_name = cumulative_change_in_temperature_due_to_rayleigh_damping
+  long_name = cumulative change in temperature due to Rayleigh damping
   units = K
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
