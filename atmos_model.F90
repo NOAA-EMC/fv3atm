@@ -215,13 +215,9 @@ type (block_control_type), target   :: Atm_block
 character(len=128) :: version = '$Id$'
 character(len=128) :: tagname = '$Name$'
 
-#ifdef NAM_phys
-  logical,parameter :: flip_vc = .false.
-#else
-  logical,parameter :: flip_vc = .true.
-#endif
+logical,parameter :: flip_vc = .true.
 
-  real(kind=IPD_kind_phys), parameter :: zero=0.0, one=1.0
+real(kind=IPD_kind_phys), parameter :: zero=0.0, one=1.0
 
 contains
 
