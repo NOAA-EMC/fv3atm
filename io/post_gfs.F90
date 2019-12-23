@@ -356,7 +356,7 @@ module post_gfs
                              avgetrans, avgesnow, avgprec_cont, avgcprate_cont,&
                              avisbeamswin, avisdiffswin, airbeamswin, airdiffswin, &
                              alwoutc, alwtoac, aswoutc, aswtoac, alwinc, aswinc,& 
-                             avgpotevp, snoavg, si, cuppt
+                             avgpotevp, snoavg, ti, si, cuppt
       use soil,        only: sldpth, sh2o, smc, stc
       use masks,       only: lmv, lmh, htm, vtm, gdlat, gdlon, dx, dy, hbm2, sm, sice
       use ctlblk_mod,  only: im, jm, lm, lp1, jsta, jend, jsta_2l, jend_2u, jsta_m,jend_m, &
@@ -498,6 +498,7 @@ module post_gfs
           qs(i,j) = SPVAL
           twbs(i,j) = SPVAL
           qwbs(i,j) = SPVAL
+          ths(i,j) = SPVAL
         enddo
       enddo
 
@@ -1143,9 +1144,30 @@ module post_gfs
               !$omp parallel do private(i,j)
               do j=jsta,jend
                 do i=ista, iend
-                  sr(i,j) = arrayr42d(i,j)
+                  if (arrayr42d(i,j) /= spval) then
+                  !set range within (0,1)
+                    sr(i,j) = min(1.,max(0.,sr(i,j)))
+                  else
+                    sr(i,j) = spval
+                  endif
                 enddo
               enddo
+            endif
+
+            ! sea ice skin temperature
+            if(trim(fieldname)=='tisfc') then
+              !$omp parallel do private(i,j)
+              do j=jsta,jend
+                do i=1,im
+                  if (arrayr42d(i,j) /= spval) then
+                    ti(i,j) = arrayr42d(i,j)
+                    if (sice(i,j) == spval .or. sice(i,j) == 0.) ti(i,j)=spval
+                  else
+                    ti(i,j) = spval
+                  endif
+                enddo
+              enddo
+              print *,'in gfs_post, get tisfc=',maxval(ti), minval(ti)
             endif
 
             ! vegetation fraction
@@ -1258,7 +1280,8 @@ module post_gfs
               do j=jsta,jend
                 do i=ista, iend
                   stc(i,j,1) = arrayr42d(i,j)
-                  if (sm(i,j) /= 0.0) stc(i,j,1) = spval
+                  !mask open water areas, combine with sea ice tmp
+                  if (sm(i,j) /= 0.0 .and. sice(i,j) ==0.) stc(i,j,1) = spval
                 enddo
               enddo
             endif
@@ -1269,7 +1292,8 @@ module post_gfs
               do j=jsta,jend
                 do i=ista, iend
                   stc(i,j,2) = arrayr42d(i,j)
-                  if (sm(i,j) /= 0.0) stc(i,j,2) = spval
+                  !mask open water areas, combine with sea ice tmp
+                  if (sm(i,j) /= 0.0 .and. sice(i,j) ==0.) stc(i,j,2) = spval
                 enddo
               enddo
             endif
@@ -1280,7 +1304,8 @@ module post_gfs
               do j=jsta,jend
                 do i=ista, iend
                   stc(i,j,3) = arrayr42d(i,j)
-                  if (sm(i,j) /= 0.0) stc(i,j,3) = spval
+                  !mask open water areas, combine with sea ice tmp
+                  if (sm(i,j) /= 0.0 .and. sice(i,j) ==0.) stc(i,j,3) = spval
                 enddo
               enddo
             endif
@@ -1291,7 +1316,8 @@ module post_gfs
               do j=jsta,jend
                 do i=ista, iend
                   stc(i,j,4) = arrayr42d(i,j)
-                  if (sm(i,j) /= 0.0) stc(i,j,4) = spval
+                  !mask open water areas, combine with sea ice tmp
+                  if (sm(i,j) /= 0.0 .and. sice(i,j) ==0.) stc(i,j,4) = spval
                 enddo
               enddo
             endif
@@ -2334,6 +2360,12 @@ module post_gfs
 !$omp parallel do private(i,j)
       do j=jsta,jend
         do i=ista, iend
+          !assign sst
+          if (sm(i,j) /= 0.0 .and. ths(i,j) /= spval) then
+             sst(i,j) = ths(i,j)
+          else
+             sst(i,j) = spval
+          endif
           if (ths(i,j) /= spval) then
             ths(i,j)  = ths(i,j)* (p1000/pint(i,j,lp1))**capa
             thz0(i,j) = ths(i,j)
