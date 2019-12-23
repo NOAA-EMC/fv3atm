@@ -1496,7 +1496,10 @@ module FV3GFS_io_mod
 #ifdef CCPP
     if (Model%lsm == Model%lsm_ruc) then
       if (allocated(sfc_name2)) then
-        if (size(sfc_var3,dim=3).ne.Model%lsoil_lsm) then
+        ! Re-allocate if one or more of the dimensions don't match
+        if (size(sfc_name2).ne.nvar2m+nvar2o+nvar2mp+nvar2r .or. &
+            size(sfc_name3).ne.nvar3+nvar3mp .or.                &
+            size(sfc_var3,dim=3).ne.Model%lsoil_lsm) then
           !--- deallocate containers and free restart container
           deallocate(sfc_name2)
           deallocate(sfc_name3)
@@ -1679,17 +1682,19 @@ module FV3GFS_io_mod
 
 #ifdef CCPP
       if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp) then
-        !--- names of the 2D variables to save
+        !--- names of the 3D variables to save
         sfc_name3(1) = 'stc'
         sfc_name3(2) = 'smc'
         sfc_name3(3) = 'slc'
-        sfc_name3(4) = 'snicexy'
-        sfc_name3(5) = 'snliqxy'
-        sfc_name3(6) = 'tsnoxy'
-        sfc_name3(7) = 'smoiseq'
-        sfc_name3(8) = 'zsnsoxy'
+        if (Model%lsm == Model%lsm_noahmp) then
+          sfc_name3(4) = 'snicexy'
+          sfc_name3(5) = 'snliqxy'
+          sfc_name3(6) = 'tsnoxy'
+          sfc_name3(7) = 'smoiseq'
+          sfc_name3(8) = 'zsnsoxy'
+        endif
       else if (Model%lsm == Model%lsm_ruc) then
-        !--- names of the 2D variables to save
+        !--- names of the 3D variables to save
         sfc_name3(1) = 'tslb'
         sfc_name3(2) = 'smois'
         sfc_name3(3) = 'sh2o'
