@@ -4,7 +4,8 @@
 	branch = dev/emc
 [submodule "ccpp/framework"]
 	path = ccpp/framework
-	url = https://github.com/NCAR/ccpp-framework
+	url = https://github.com/AnningCheng-NOAA/ccpp-framework
+	branch = MG3_v1
 [submodule "ccpp/physics"]
 	path = ccpp/physics
 	url = https://github.com/AnningCheng-NOAA/ccpp-physics
