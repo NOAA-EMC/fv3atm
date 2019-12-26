@@ -30,7 +30,7 @@ module fv3gfs_cap_mod
                                     calendar, calendar_type, cpl,            &
                                     force_date_from_configure,               &
                                     cplprint_flag,output_1st_tstep_rst,      &
-                                    first_kdt                            
+                                    first_kdt,num_restart_interval       
 
   use module_fv3_io_def,      only: num_pes_fcst,write_groups,app_domain,    &
                                     num_files, filename_base,                &
@@ -278,9 +278,16 @@ module fv3gfs_cap_mod
     CALL ESMF_ConfigLoadFile(config=CF ,filename='model_configure' ,rc=RC)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 !
-    CALL ESMF_ConfigGetAttribute(config=CF,value=restart_interval, &
-                                 label ='restart_interval:',rc=rc)
+    num_restart_interval = ESMF_ConfigGetLen(config=CF, label ='restart_interval:',rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+    if(mype == 0) print *,'af nems config,num_restart_interval=',num_restart_interval
+    if (num_restart_interval<=0) num_restart_interval = 1
+    allocate(restart_interval(num_restart_interval))
+    restart_interval = 0
+    CALL  ESMF_ConfigGetAttribute(CF,valueList=restart_interval,label='restart_interval:', &
+      count=num_restart_interval, rc=RC)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+    if(mype == 0) print *,'af nems config,restart_interval=',restart_interval
 !
     CALL ESMF_ConfigGetAttribute(config=CF,value=calendar, &
                                  label ='calendar:',rc=rc)
@@ -326,9 +333,8 @@ module fv3gfs_cap_mod
                                    label ='app_domain:',rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-      if(mype == 0) print *,'af nems config,restart_interval=',restart_interval, &
-      'quilting=',quilting,'write_groups=',write_groups,wrttasks_per_group,      &
-      'calendar=',trim(calendar),'calendar_type=',calendar_type
+      if(mype == 0) print *,'af nems config,quilting=',quilting,'write_groups=', &
+        write_groups,wrttasks_per_group,'calendar=',trim(calendar),'calendar_type=',calendar_type
 !
       CALL ESMF_ConfigGetAttribute(config=CF,value=num_files, &
                                    label ='num_files:',rc=rc)
