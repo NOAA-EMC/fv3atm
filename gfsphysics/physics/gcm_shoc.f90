@@ -92,12 +92,12 @@
 
   real, intent(inout) :: ncpl   (nx,nzm)   ! cloud water number concentration,/m^3
   real, intent(inout) :: ncpi   (nx,nzm)   ! cloud ice   number concentration,/m^3
-  real, intent(inout) :: qpl    (nx,nzm)   ! rain    mixing ratio, kg/kg
-  real, intent(inout) :: qpi    (nx,nzm)   ! snow    mixing ratio, kg/kg
+  real, intent(in)    :: qpl    (nx,nzm)   ! rain    mixing ratio, kg/kg
+  real, intent(in)    :: qpi    (nx,nzm)   ! snow    mixing ratio, kg/kg
 
   real, intent(inout) :: rhc    (nx,nzm)   ! critical relative humidity
   real, intent(in)    :: supice               ! ice supersaturation parameter
-  real, intent(inout) :: cld_sgs(ix,nzm)   ! sgs cloud fraction
+  real, intent(out)   :: cld_sgs(ix,nzm)   ! sgs cloud fraction
 ! real, intent(inout) :: cld_sgs(nx,nzm)   ! sgs cloud fraction
   real, intent(inout) :: tke    (ix,nzm)   ! turbulent kinetic energy. m**2/s**2
 ! real, intent(inout) :: tk     (nx,nzm)   ! eddy viscosity
@@ -176,8 +176,6 @@
   real w       (nx,nzm)  ! z-wind, m/s
   real bet     (nx,nzm)  ! ggr/tv0
   real gamaz   (nx,nzm)  ! ggr/cp*z
-! real qpi     (nx,nzm)  ! snow + graupel mixing ratio, kg/kg
-! real qpl     (nx,nzm)  ! rain           mixing ratio, kg/kg
 
 ! Moments of the trivariate double Gaussian PDF for the SGS total water mixing ratio
 ! SGS liquid/ice static energy, and vertical velocity
@@ -256,12 +254,13 @@
     enddo
   enddo
 
-! if (lprnt) write(0,*)' tabsin=',tabs(ipr,1,1:40)
-! if (lprnt) write(0,*)' qcin=',qc(ipr,1,1:40)
-! if (lprnt) write(0,*)' qwvin=',qwv(ipr,1,1:40)
-! if (lprnt) write(0,*)' qiin=',qi(ipr,1,1:40)
-! if (lprnt) write(0,*)' qplin=',qpl(ipr,1,1:40)
-! if (lprnt) write(0,*)' qpiin=',qpi(ipr,1,1:40)
+! if (lprnt) write(0,*)' tabsin=',tabs(ipr,:)
+! if (lprnt) write(0,*)' qcin=',qc(ipr,:)
+! if (lprnt) write(0,*)' qwvin=',qwv(ipr,:)
+! if (lprnt) write(0,*)' qiin=',qi(ipr,:)
+! if (lprnt) write(0,*)' qplin=',qpl(ipr,:)
+! if (lprnt) write(0,*)' qpiin=',qpi(ipr,:)
+! if (lprnt) write(0,*)' tkein=',tke(ipr,:)
 !
 ! move water from vapor to condensate if the condensate is negative
 !
@@ -289,7 +288,8 @@
     enddo
   enddo
              
-! if (lprnt) write(0,*)' tabsin2=',tabs(ipr,1,1:40)
+! if (lprnt) write(0,*)' tabsin2=',tabs(ipr,:)
+! if (lprnt) write(0,*)' qwvin2=',qwv(ipr,:)
 
   do k=1,nzm
     do i=1,nx
@@ -318,11 +318,15 @@
 ! Liquid/ice water static energy - ! Note the the units are degrees K
       hl(i,k) = tabs(i,k) + gamaz(i,k) - fac_cond*(qcl(i,k)+qpl(i,k)) &
                                        - fac_sub *(qci(i,k)+qpi(i,k))
+!     if (lprnt .and. i == ipr .and. k<=10) write(0,*)' hl=',hl(i,k), &
+!     ' tabs=',tabs(i,k),' gamaz=',gamaz(i,k), ' fac_cond=',fac_cond, &
+!     ' qcl=',qcl(i,k),' qpl=',qpl(i,k),' qci=',qci(i,k),' qpi=',qpi(i,k),&
+!     ' fac_sub=',fac_sub,' k=',k
       w3(i,k) = zero
     enddo
   enddo
 
-! if (lprnt) write(0,*)' hlin=',hl(ipr,1,1:40)
+! if (lprnt) write(0,*)' hlin=',hl(ipr,1:40)
    
 ! Define vertical grid increments for later use in the vertical differentiation
 
@@ -444,6 +448,11 @@
 ! and moisture variables
 
   call assumed_pdf()
+
+! if (lprnt) write(0,*)' tabsout=',tabs(ipr,1:40)
+! if (lprnt) write(0,*)' qcout=',qc(ipr,1:40)
+! if (lprnt) write(0,*)' qwvout=',qwv(ipr,1:40)
+! if (lprnt) write(0,*)' qiout=',qi(ipr,1:40)
 
 contains
 
@@ -586,6 +595,8 @@ contains
           isotropy(i,k) = min(max_eddy_dissipation_time_scale,          &
                            tscale1/(one+lambda*buoy_sgs*tscale1*tscale1))
         endif
+!       if (lprnt .and. i == ipr .and. k<40) write(0,*)' isotropy=',isotropy(i,k),&
+!        ' buoy_sgs=',buoy_sgs,' lambda=',lambda,' tscale1=',tscale1
 
 ! TKE budget terms
 
@@ -605,6 +616,8 @@ contains
         tkh(i,k) = min(tkhmax, wrk * (isotropy(i,k)  * tke(i,k)    &
                                    +  isotropy(i,k1) * tke(i,k1))) ! Eddy thermal diffusivity
       enddo ! i
+!     if (lprnt) write(0,*)' shocendtkh=',tkh(ipr,k),' tke=',tke(ipr,k),&
+!       tke(ipr,k1),' isot=',isotropy(ipr,k),isotropy(ipr,k1),'k=',k,' k1=',k1
     enddo     ! k
 
 
@@ -985,8 +998,8 @@ contains
 
     real bet2,   f0,     f1,     f2,  f3,    f4,   f5,  iso, isosqr,         &
          omega0, omega1, omega2, X0,  Y0,    X1,   Y1,  AA0, AA1, buoy_sgs2, &
-!                wrk, wrk1,  wrk2, wrk3, avew
-         cond_w,  wrk, wrk1,  wrk2, wrk3, avew
+                 wrk, wrk1,  wrk2, wrk3, avew
+!        cond_w, wrk, wrk1,  wrk2, wrk3, avew
 !
 ! See Eq. 7 in C01 (B.7 in Pete's dissertation)
     real, parameter :: c=7.0d0,    a0=0.52d0/(c*c*(c-2.0d0)), a1=0.87d0/(c*c),      &
@@ -1040,8 +1053,7 @@ contains
 ! This is not a bug, but an algorithmical change.
 ! The line below calculates cond_w ,an estimate of the maximum allowed value of the third moment.
 ! It is used at the end of this subroutine to limit the value of w3.
-! Here the second moment is interpolated from the layer centers to the interface, where w3 is
-! defined.
+! Here the second moment is interpolated from the layer centers to the interface, where w3 is defined.
 ! In the presence of strong vertical gradients of w2, the value interpolated to the interface can
 ! be as much as twice as as large (or as small) as the value on in layer center. When the skewness
 ! of W PDF is calculated in assumed_pdf(), the code there uses w2 on the layer center, and the value
@@ -1328,6 +1340,9 @@ contains
           qw1_1 = - corrtest2 / w1_2            ! A.7
           qw1_2 = - corrtest2 / w1_1            ! A.8
 
+!       if (lprnt .and. i == ipr .and. k<40) write(0,*)' qw1_1=',qw1_1,' corrtest2=',corrtest2,&
+!         ' w1_2=',w1_2,' wqwsec=',wqwsec,' sqrtw2=',sqrtw2,' sqrtqt=',sqrtqt,' qwsec=',qwsec
+
           tsign = abs(qw1_2-qw1_1)
 
 !         Skew_qw = skew_facw*Skew_w
@@ -1397,6 +1412,7 @@ contains
         IF (Tl1_1 >= tbgmax) THEN
           lstarn1  = lcond
           esval    = min(fpvsl(Tl1_1), pval)
+!         if (lprnt .and. i == ipr .and. k<40) write(0,*)' esval=',esval,' pval=',pval,' eps=',eps
           qs1      = eps * esval / (pval-0.378d0*esval)
         ELSE IF (Tl1_1 <= tbgmin) THEN
           lstarn1  = lsub
@@ -1460,6 +1476,9 @@ contains
         s1     = qw1_1 - wrk                                              ! A.17
         cthl1  = cqt1*wrk*cpolv*beta1*pkap                                ! A.20
 
+!     if (lprnt .and. i == ipr .and. k<40) write(0,*)' in shoc s1=',s1,' qw1_1=',qw1_1,'wrk=',wrk,&
+!    ' qs1=',qs1,' beta1=',beta1,' cqt1=',cqt1
+
         wrk1   = cthl1 * cthl1
         wrk2   = cqt1  * cqt1
 !       std_s1 = sqrt(max(zero,wrk1*thl2_1+wrk2*qw2_1-2.*cthl1*sqrtthl2_1*cqt1*sqrtqw2_1*r_qwthl_1))
@@ -1473,13 +1492,13 @@ contains
           wrk = s1 / (std_s1*sqrt2)
           C1 = max(zero, min(one, half*(one+erf(wrk))))                   ! A.15
 
-!     if (lprnt .and. i == ipr .and. k<40) write(0,*)' in shoc wrk=',wrk,' s1=','std=',std_s1,&
+!     if (lprnt .and. i == ipr .and. k<40) write(0,*)' in shoc wrk=',wrk,' s1=',s1,'std=',std_s1,&
 !         ' c1=',c1*100,' qs1=',qs1,' qw1_1=',qw1_1,' k=',k
 
           IF (C1 > zero) qn1 = s1*C1 + (std_s1*sqrtpii)*exp(-wrk*wrk)     ! A.16
-        ELSEIF (s1 >= qcmin) THEN
-          C1  = one
-          qn1 = s1
+!!      ELSEIF (s1 >= qcmin) THEN
+!!        C1  = one
+!!        qn1 = s1
         ENDIF
              
 ! now compute non-precipitating cloud condensate 
@@ -1512,9 +1531,9 @@ contains
             wrk = s2 / (std_s2*sqrt2)
             C2  = max(zero, min(one, half*(one+erf(wrk))))
             IF (C2 > zero) qn2 = s2*C2 + (std_s2*sqrtpii)*exp(-wrk*wrk)
-          ELSEIF (s2 >= qcmin) THEN
-            C2  = one
-            qn2 = s2
+!!        ELSEIF (s2 >= qcmin) THEN
+!!          C2  = one
+!!          qn2 = s2
           ENDIF
                
         ENDIF
@@ -1551,7 +1570,7 @@ contains
                                          + fac_sub *(diag_qi+qpi(i,k)) &
                   + tkesbdiss(i,k) * (dtn/cp)      ! tke dissipative heating
 
-! if (lprnt .and. i == ipr .and. k < 40) write(0,*)' tabsout=',tabs(ipr,1,k),' k=',k&
+! if (lprnt .and. i == ipr .and. k < 40) write(0,*)' tabsout=',tabs(ipr,k),' k=',k&
 !    ,' hl=',hl(i,k),' gamaz=',gamaz(i,k),' diag_ql=',diag_ql,' qpl=',qpl(i,k)&
 !    ,' diag_qi=',diag_qi,' qpi=',qpi(i,k),' diag_qn =',diag_qn ,' aterm=',aterm,' onema=',onema&
 !    ,' qn1=',qn1 ,' qn2=',qn2,' ql1=',ql1,' ql2=',ql2

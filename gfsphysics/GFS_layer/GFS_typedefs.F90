@@ -659,9 +659,7 @@ module GFS_typedefs
     real(kind=kind_phys) :: mg_dcs             !< Morrison-Gettelman microphysics parameters
     real(kind=kind_phys) :: mg_qcvar      
     real(kind=kind_phys) :: mg_ts_auto_ice(2)  !< ice auto conversion time scale
-#ifdef CCPP
     real(kind=kind_phys) :: mg_rhmini          !< relative humidity threshold parameter for nucleating ice
-#endif
 
     real(kind=kind_phys) :: mg_ncnst           !< constant droplet num concentration (m-3)
     real(kind=kind_phys) :: mg_ninst           !< constant ice num concentration (m-3)
@@ -670,11 +668,9 @@ module GFS_typedefs
     real(kind=kind_phys) :: mg_alf             !< tuning factor for alphs in MG macrophysics
     real(kind=kind_phys) :: mg_qcmin(2)        !< min liquid and ice mixing ratio in Mg macro clouds
     character(len=16)    :: mg_precip_frac_method ! type of precipitation fraction method
-#ifdef CCPP
     real(kind=kind_phys) :: tf
     real(kind=kind_phys) :: tcr
     real(kind=kind_phys) :: tcrf
-#endif
 !
     logical              :: effr_in            !< eg to turn on ffective radii for MG
     logical              :: microp_uniform
@@ -2579,18 +2575,16 @@ module GFS_typedefs
 !--- modules
 #ifdef CCPP
     use physcons,         only: con_rerth, con_pi
+!   use rascnv,           only: nrcmax
 #else
     use physcons,         only: dxmax, dxmin, dxinv, con_rerth, con_pi, rhc_max
-#endif
-    use mersenne_twister, only: random_setseed, random_number
-#ifndef CCPP
     use module_ras,       only: nrcmax
-#endif
-    use parse_tracers,    only: get_tracer_index
-#ifndef CCPP
     use wam_f107_kp_mod,  only: f107_kp_size, f107_kp_interval,     &
                                 f107_kp_skip_size, f107_kp_data_size
 #endif
+    use mersenne_twister, only: random_setseed, random_number
+    use parse_tracers,    only: get_tracer_index
+!
     implicit none
 
 !--- interface variables
@@ -2711,9 +2705,7 @@ module GFS_typedefs
     real(kind=kind_phys) :: mg_dcs            = 200.0              !< Morrison-Gettelman microphysics parameters
     real(kind=kind_phys) :: mg_qcvar          = 1.0
     real(kind=kind_phys) :: mg_ts_auto_ice(2) = (/180.0,180.0/)    !< ice auto conversion time scale
-#ifdef CCPP
     real(kind=kind_phys) :: mg_rhmini         = 1.01               !< relative humidity threshold parameter for nucleating ice
-#endif
     real(kind=kind_phys) :: mg_ncnst          = 100.e6             !< constant droplet num concentration (m-3)
     real(kind=kind_phys) :: mg_ninst          = 0.15e6             !< constant ice num concentration (m-3)
     real(kind=kind_phys) :: mg_ngnst          = 0.10e6             !< constant graupel/hail num concentration (m-3) = 0.1e6_r8
@@ -2721,10 +2713,8 @@ module GFS_typedefs
     real(kind=kind_phys) :: mg_qcmin(2)       = (/1.0d-9,1.0d-9/)  !< min liquid and ice mixing ratio in Mg macro clouds
     real(kind=kind_phys) :: mg_berg_eff_factor = 2.0               !< berg efficiency factor
     character(len=16)    :: mg_precip_frac_method = 'max_overlap'  !< type of precipitation fraction method
-#ifdef CCPP
     real(kind=kind_phys) :: tf              = 258.16d0
     real(kind=kind_phys) :: tcr             = 273.16d0
-#endif
 !
     logical              :: effr_in         = .false.              !< flag to use effective radii of cloud species in radiation
     logical              :: microp_uniform  = .true.
@@ -2886,6 +2876,9 @@ module GFS_typedefs
     real(kind=kind_phys) :: psauras(2)     = (/1.0d-3,1.0d-3/)        !< [in] auto conversion coeff from ice to snow in ras
     real(kind=kind_phys) :: prauras(2)     = (/2.0d-3,2.0d-3/)        !< [in] auto conversion coeff from cloud to rain in ras
     real(kind=kind_phys) :: wminras(2)     = (/1.0d-5,1.0d-5/)        !< [in] water and ice minimum threshold for ras
+#ifdef CCPP
+    integer              :: nrcmax         = 32                       !< number of random numbers used in RAS
+#endif
 
     real(kind=kind_phys) :: rbcr           = 0.25                     !< Critical Richardson Number in PBL scheme
     real(kind=kind_phys) :: shoc_parm(5)   = (/7000.0,1.0,4.2857143,0.7,-999.0/)  !< some tunable parameters for shoc
@@ -3024,12 +3017,8 @@ module GFS_typedefs
                                iccn,                                                        &
                           !--- microphysical parameterizations
                                ncld, imp_physics, psautco, prautco, evpco, wminco,          &
-#ifdef CCPP
                                fprcp, pdfflag, mg_dcs, mg_qcvar, mg_ts_auto_ice, mg_rhmini, &
                                effr_in, tf, tcr,                                            &
-#else
-                               fprcp, pdfflag, mg_dcs, mg_qcvar, mg_ts_auto_ice, effr_in,   &
-#endif
                                microp_uniform, do_cldice, hetfrz_classnuc,                  &
                                mg_do_graupel, mg_do_hail, mg_nccons, mg_nicons, mg_ngcons,  &
                                mg_ncnst, mg_ninst, mg_ngnst, sed_supersat, do_sb_physics,   &
@@ -3289,9 +3278,7 @@ module GFS_typedefs
     Model%mg_dcs           = mg_dcs
     Model%mg_qcvar         = mg_qcvar
     Model%mg_ts_auto_ice   = mg_ts_auto_ice
-#ifdef CCPP
     Model%mg_rhmini        = mg_rhmini
-#endif
     Model%mg_alf           = mg_alf
     Model%mg_qcmin         = mg_qcmin
     Model%effr_in          = effr_in
@@ -3312,11 +3299,9 @@ module GFS_typedefs
     Model%do_sb_physics    = do_sb_physics
     Model%mg_precip_frac_method  = mg_precip_frac_method
     Model%mg_berg_eff_factor     = mg_berg_eff_factor
-#ifdef CCPP
     Model%tf               = tf
     Model%tcr              = tcr
     Model%tcrf             = 1.0/(tcr-tf)
-#endif
 
 !--- Thompson MP parameters
     Model%ltaerosol        = ltaerosol
@@ -3381,12 +3366,12 @@ module GFS_typedefs
     Model%do_aw            = do_aw
     Model%cs_parm          = cs_parm
     Model%do_shoc          = do_shoc
-#ifdef CCPP
-    if (Model%do_shoc) then
-      print *, "Error, update of SHOC from May 22 2019 not yet in CCPP"
-      stop
-    end if
-#endif
+!#ifdef CCPP
+!   if (Model%do_shoc) then
+!     print *, "Error, update of SHOC from May 22 2019 not yet in CCPP"
+!     stop
+!   end if
+!#endif
     Model%shoc_parm        = shoc_parm
     Model%shocaftcnv       = shocaftcnv
     Model%shoc_cld         = shoc_cld
@@ -3443,7 +3428,8 @@ module GFS_typedefs
     Model%wminras           = wminras
     Model%rbcr              = rbcr
     Model%do_gwd            = maxval(Model%cdmbgwd) > 0.0
-    Model%do_cnvgwd         = Model%cnvgwd .and. maxval(Model%cdmbgwd(3:4)) == 0.0
+      
+    Model%do_cnvgwd         = Model%cnvgwd .and. (maxval(Model%cdmbgwd(3:4)) == 0.0 .and. .not. Model%do_ugwp)
 #ifdef CCPP
     Model%do_mynnedmf       = do_mynnedmf
     Model%do_mynnsfclay     = do_mynnsfclay
@@ -3759,15 +3745,15 @@ module GFS_typedefs
 
 !--- set nrcm 
 
-#ifndef CCPP
+!#ifndef CCPP
     if (Model%ras) then
       Model%nrcm = min(nrcmax, Model%levs-1) * (Model%dtp/1200.d0) + 0.10001d0
     else
       Model%nrcm = 2
     endif
-#else
-    Model%nrcm = 2
-#endif
+!#else
+!   Model%nrcm = 2
+!#endif
 
 !--- cal_pre
     if (Model%cal_pre) then
@@ -3981,7 +3967,7 @@ module GFS_typedefs
           print *,' do_gwd=',Model%do_gwd
       endif
       if (Model%do_cnvgwd) then
-        print *,' Convective GWD parameterization used, do_cnvgwd=',do_cnvgwd
+        print *,' Convective GWD parameterization used, do_cnvgwd=',Model%do_cnvgwd
       endif
       if (Model%crick_proof) print *,' CRICK-Proof cloud water used in radiation '
       if (Model%ccnorm)      print *,' Cloud condensate normalized by cloud cover for radiation'
@@ -4340,6 +4326,7 @@ module GFS_typedefs
         print *, ' mg_ts_auto_ice    : ', Model%mg_ts_auto_ice
         print *, ' mg_alf            : ', Model%mg_alf
         print *, ' mg_qcmin          : ', Model%mg_qcmin
+        print *, ' mg_rhmini         : ', Model%mg_rhmini
         print *, ' pdfflag           : ', Model%pdfflag
         print *, ' '
       endif
@@ -5280,8 +5267,8 @@ module GFS_typedefs
     Diag%u10max     = zero
     Diag%v10max     = zero
     Diag%spd10max   = zero
-    Diag%rain       = zero
-    Diag%rainc      = zero
+!   Diag%rain       = zero
+!   Diag%rainc      = zero
     Diag%ice        = zero
     Diag%snow       = zero
     Diag%graupel    = zero
@@ -5999,6 +5986,7 @@ module GFS_typedefs
       do n=2,Model%ntrac
         if ( n /= Model%ntcw  .and. n /= Model%ntiw  .and. n /= Model%ntclamt .and. &
              n /= Model%ntrw  .and. n /= Model%ntsw  .and. n /= Model%ntrnc   .and. &
+             n /= Model%ntlnc .and. n /= Model%ntinc .and.                          &
              n /= Model%ntsnc .and. n /= Model%ntgl  .and. n /= Model%ntgnc) then
           tracers = tracers + 1
           if (Model%ntke  == n ) then
@@ -6014,7 +6002,8 @@ module GFS_typedefs
       enddo
       Interstitial%tracers_total = tracers - 2
     endif   ! end if_ras or cfscnv or samf
-    if(.not. Model%satmedmf .and. .not. Model%trans_trac) then
+    if (.not. Model%satmedmf .and. .not. Model%trans_trac .and. &
+        .not. Model%ras      .and. .not. Model%do_shoc) then
        Interstitial%nsamftrac = 0
     else
        Interstitial%nsamftrac = Interstitial%tracers_total
@@ -6169,9 +6158,9 @@ module GFS_typedefs
     Interstitial%gamq            = clear_val
     Interstitial%gamt            = clear_val
     Interstitial%gflx            = clear_val
-    Interstitial%gflx_ice        = zero
-    Interstitial%gflx_land       = zero
-    Interstitial%gflx_ocean      = zero
+    Interstitial%gflx_ice        = clear_val
+    Interstitial%gflx_land       = clear_val
+    Interstitial%gflx_ocean      = clear_val
     Interstitial%gwdcu           = clear_val
     Interstitial%gwdcv           = clear_val
     Interstitial%hflx            = clear_val
