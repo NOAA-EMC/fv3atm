@@ -408,12 +408,12 @@
      &                            QICN(I,K), CLCN(I,K), NCPL(I,K),      &
      &                            NCPI(I,K), qc_min)
              if (rnw(i,k) <= qc_min(1)) then
-               ncpl(i,k) = 0.0
-             elseif (ncpl(i,k) <= nmin) then ! make sure NL > 0 if Q >0
-               ncpl(i,k) = max(rnw(i,k) / (fourb3 * PI *RL_cub*997.0), nmin)
+               ncpr(i,k) = 0.0
+             elseif (ncpr(i,k) <= nmin) then ! make sure NL > 0 if Q >0
+               ncpr(i,k) = max(rnw(i,k) / (fourb3 * PI *RL_cub*997.0), nmin)
              endif
              if (snw(i,k) <= qc_min(2)) then
-               ncpl(i,k) = 0.0
+               ncps(i,k) = 0.0
              elseif (ncps(i,k) <= nmin) then
                ncps(i,k) = max(snw(i,k) / (fourb3 * PI *RL_cub*500.0), nmin)
              endif

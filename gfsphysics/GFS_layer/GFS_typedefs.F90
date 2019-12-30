@@ -5986,7 +5986,7 @@ module GFS_typedefs
       do n=2,Model%ntrac
         if ( n /= Model%ntcw  .and. n /= Model%ntiw  .and. n /= Model%ntclamt .and. &
              n /= Model%ntrw  .and. n /= Model%ntsw  .and. n /= Model%ntrnc   .and. &
-             n /= Model%ntlnc .and. n /= Model%ntinc .and.                          &
+!            n /= Model%ntlnc .and. n /= Model%ntinc .and.                          &
              n /= Model%ntsnc .and. n /= Model%ntgl  .and. n /= Model%ntgnc) then
           tracers = tracers + 1
           if (Model%ntke  == n ) then

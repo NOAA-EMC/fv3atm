@@ -3240,7 +3240,7 @@ module module_physics_driver
         do n=2,ntrac
           if ( n /= ntcw  .and. n /= ntiw  .and. n /= ntclamt .and. &
                n /= ntrw  .and. n /= ntsw  .and. n /= ntrnc   .and. &
-               n /= ntlnc .and. n /= ntinc .and.                    &
+!              n /= ntlnc .and. n /= ntinc .and.                    &
                n /= ntsnc .and. n /= ntgl  .and. n /= ntgnc) then
             tracers = tracers + 1
             do k=1,levs
@@ -4341,7 +4341,7 @@ module module_physics_driver
 !         if ( n /= ntcw .and. n /= ntiw .and. n /= ntclamt) then
           if ( n /= ntcw  .and. n /= ntiw  .and. n /= ntclamt .and. &
                n /= ntrw  .and. n /= ntsw  .and. n /= ntrnc   .and. &
-               n /= ntlnc .and. n /= ntinc .and.                    &
+!              n /= ntlnc .and. n /= ntinc .and.                    &
                n /= ntsnc .and. n /= ntgl  .and. n /= ntgnc ) then
               tracers = tracers + 1
             do k=1,levs
