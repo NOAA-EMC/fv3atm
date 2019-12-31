@@ -4691,7 +4691,7 @@ module module_physics_driver
                              Tbd%phy_f3d(1,1,2),  Tbd%phy_f3d(1,1,3),            &
                              Tbd%phy_f3d(1,1,4),  Tbd%phy_f3d(1,1,5),            &
                              Tbd%phy_f3d(1,1,kk), Tbd%aer_nm,                    &
-                             Model%aero_in, Tbd%in_nm, Tbd%ccn_nm, Model%iccn,   &
+                             Tbd%in_nm, Tbd%ccn_nm, Model%iccn,                  &
                              skip_macro,                 lprnt,                  &
 !                            skip_macro, cn_prc, cn_snr, lprnt,                  &
 !                            ipr, kdt, Grid%xlat, Grid%xlon)

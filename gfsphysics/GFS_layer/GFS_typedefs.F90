@@ -595,7 +595,7 @@ module GFS_typedefs
     integer              :: levrp1          !< number of vertical levels for radiation calculations plus one
 #endif
     integer              :: nfxr            !< second dimension for fluxr diagnostic variable (radiation)
-    logical              :: aero_in         !< flag for initializing aerosol data
+    logical              :: iaerclm         !< flag for initializing aerosol data
 #ifdef CCPP
     integer              :: ntrcaer         !< number of aerosol tracers for Morrison-Gettelman microphysics
 #endif
@@ -1022,7 +1022,7 @@ module GFS_typedefs
     real(kind=kind_phys) :: julian          !< current forecast julian date
     integer              :: yearlen         !< current length of the year
 !
-    logical              :: iccn            !< using IN CCN forcing for MG2/3
+    integer              :: iccn            !< using IN CCN forcing for MG2/3
 #ifdef CCPP
     real(kind=kind_phys)          :: sec    !< seconds since model initialization
     real(kind=kind_phys), pointer :: si(:)  !< vertical sigma coordinate for model initialization
@@ -2653,8 +2653,8 @@ module GFS_typedefs
     real(kind=kind_phys) :: fhlwr          = 3600.           !< frequency for longwave radiation (secs)
     integer              :: levr           = -99             !< number of vertical levels for radiation calculations
     integer              :: nfxr           = 39+6            !< second dimension of input/output array fluxr   
-    logical              :: aero_in        = .false.         !< flag for initializing aero data 
-    logical              :: iccn           = .false.         !< logical to use IN CCN forcing for MG2/3
+    logical              :: iaerclm        = .false.         !< flag for initializing aero data 
+    integer              :: iccn           =  0              !< logical to use IN CCN forcing for MG2/3
     integer              :: iflip          =  1              !< iflip - is not the same as flipv
     integer              :: isol           =  0              !< use prescribed solar constant
     integer              :: ico2           =  0              !< prescribed global mean value (old opernl)
@@ -3012,7 +3012,7 @@ module GFS_typedefs
                           !--- coupling parameters
                                cplflx, cplwav, cplchm, lsidea,                              &
                           !--- radiation parameters
-                               fhswr, fhlwr, levr, nfxr, aero_in, iflip, isol, ico2, ialb,  &
+                               fhswr, fhlwr, levr, nfxr, iaerclm, iflip, isol, ico2, ialb,  &
                                isot, iems, iaer, icliq_sw, iovr_sw, iovr_lw, ictm, isubc_sw,&
                                isubc_lw, crick_proof, ccnorm, lwhtr, swhtr,                 &
                           ! IN CCN forcing
@@ -3224,17 +3224,7 @@ module GFS_typedefs
     Model%levrp1           = Model%levr + 1
 #endif
     Model%nfxr             = nfxr
-    Model%aero_in          = aero_in
-    if (Model%aero_in) then
-      ntrcaer = ntrcaerm
-    else
-      ntrcaer = 1
-    endif
-#ifdef CCPP
-    Model%ntrcaer          = ntrcaer
-#endif
     Model%iccn             = iccn
-    if (Model%aero_in) Model%iccn = .false.
     ! further down: set Model%iccn to .false.
     ! for all microphysics schemes except
     ! MG2/3 (these are the only ones using ICCN)
@@ -3244,6 +3234,15 @@ module GFS_typedefs
     Model%ialb             = ialb
     Model%iems             = iems
     Model%iaer             = iaer
+    if (iaer/1000 == 1 .or. Model%iccn == 2) then
+      Model%iaerclm = .true.
+      ntrcaer = ntrcaerm
+    else
+      ntrcaer = 1
+    endif
+#ifdef CCPP
+    Model%ntrcaer          = ntrcaer
+#endif
     Model%icliq_sw         = icliq_sw
     Model%iovr_sw          = iovr_sw
     Model%iovr_lw          = iovr_lw
@@ -3269,7 +3268,7 @@ module GFS_typedefs
     Model%ncld             = ncld
     Model%imp_physics      = imp_physics
     ! turn off ICCN interpolation when MG2/3 are not used
-    if (.not. Model%imp_physics==Model%imp_physics_mg) Model%iccn = .false.
+    if (.not. Model%imp_physics==Model%imp_physics_mg) Model%iccn = 0
 !--- Zhao-Carr MP parameters
     Model%psautco          = psautco
     Model%prautco          = prautco
@@ -4074,7 +4073,7 @@ module GFS_typedefs
       endif
       if (Model%me == Model%master)                                                                 &
          print *,' Using Morrison-Gettelman double moment microphysics',                            &
-                 ' aero_in=',         Model%aero_in,         ' iccn=',          Model%iccn,         &
+                 ' iaerclm=',         Model%iaerclm,         ' iccn=',          Model%iccn,         &
                  ' mg_dcs=',          Model%mg_dcs,          ' mg_qcvar=',      Model%mg_qcvar,     &
                  ' mg_ts_auto_ice=',  Model%mg_ts_auto_ice,  ' pdfflag=',       Model%pdfflag,      &
                  ' mg_do_graupel=',   Model%mg_do_graupel,   ' mg_do_hail=',    Model%mg_do_hail,   &
@@ -4276,7 +4275,6 @@ module GFS_typedefs
       print *, ' nslwr             : ', Model%nslwr
       print *, ' levr              : ', Model%levr
       print *, ' nfxr              : ', Model%nfxr
-      print *, ' aero_in           : ', Model%aero_in
 #ifdef CCPP
       print *, ' ntrcaer           : ', Model%ntrcaer
 #endif
@@ -4614,7 +4612,7 @@ module GFS_typedefs
     endif
 
 !--- iccn active
-    if ( Model%iccn ) then
+    if ( Model%iccn == 1) then
       allocate (Grid%ddy_ci    (IM))
       allocate (Grid%jindx1_ci (IM))
       allocate (Grid%jindx2_ci (IM))
@@ -4624,7 +4622,7 @@ module GFS_typedefs
     endif
 
 !--- iaerclm active
-    if ( Model%aero_in ) then
+    if ( Model%iaerclm ) then
       allocate (Grid%ddy_aer   (IM))
       allocate (Grid%jindx1_aer(IM))
       allocate (Grid%jindx2_aer(IM))

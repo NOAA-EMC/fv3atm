@@ -2030,9 +2030,9 @@
   units = count
   dimensions = ()
   type = integer
-[aero_in]
-  standard_name = flag_for_aerosol_input_MG
-  long_name = flag for using aerosols in Morrison-Gettelman MP
+[iaerclm]
+  standard_name = flag_for_aerosol_input_MG_radiation
+  long_name = flag for using aerosols in Morrison-Gettelman MP_radiation
   units = flag
   dimensions = ()
   type = logical
@@ -3636,9 +3636,9 @@
 [iccn]
   standard_name = flag_for_in_ccn_forcing_for_morrison_gettelman_microphysics
   long_name = flag for IN and CCN forcing for morrison gettelman microphysics
-  units = flag
+  units = none
   dimensions = ()
-  type = logical
+  type = integer
 [sec]
   standard_name = seconds_elapsed_since_model_initialization
   long_name = seconds elapsed since model initialization
