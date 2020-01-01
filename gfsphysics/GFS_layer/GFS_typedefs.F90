@@ -699,6 +699,9 @@ module GFS_typedefs
     !--- GFDL microphysical paramters
     logical              :: lgfdlmprad      !< flag for GFDL mp scheme and radiation consistency 
 
+    !--- Thompson,GFDL mp parameter
+    logical              :: lrefres          !< flag for radar reflectivity in restart file
+
     !--- land/surface model parameters
     integer              :: lsm             !< flag for land surface model lsm=1 for noah lsm
     integer              :: lsm_noah=1      !< flag for NOAH land surface model
@@ -2740,6 +2743,9 @@ module GFS_typedefs
     !--- GFDL microphysical parameters
     logical              :: lgfdlmprad     = .false.            !< flag for GFDLMP radiation interaction 
 
+    !--- Thompson,GFDL microphysical parameter
+    logical              :: lrefres        = .false.            !< flag for radar reflectivity in restart file
+
     !--- land/surface model parameters
     integer              :: lsm            =  1              !< flag for land surface model to use =0  for osu lsm; =1  for noah lsm; =2  for noah mp lsm; =3  for RUC lsm
     integer              :: lsoil          =  4              !< number of soil layers
@@ -3023,7 +3029,7 @@ module GFS_typedefs
                                mg_do_graupel, mg_do_hail, mg_nccons, mg_nicons, mg_ngcons,  &
                                mg_ncnst, mg_ninst, mg_ngnst, sed_supersat, do_sb_physics,   &
                                mg_alf,   mg_qcmin, mg_do_ice_gmao, mg_do_liq_liu,           &
-                               ltaerosol, lradar, ttendlim, lgfdlmprad,                     &
+                               ltaerosol, lradar, lrefres, ttendlim, lgfdlmprad,            &
                           !--- max hourly
                                avg_max_length,                                              &
                           !--- land/surface model control
@@ -3309,6 +3315,8 @@ module GFS_typedefs
     Model%ttendlim         = ttendlim
 !--- gfdl  MP parameters
     Model%lgfdlmprad       = lgfdlmprad
+!--- Thompson,GFDL MP parameter
+    Model%lrefres          = lrefres
 
 !--- land/surface model parameters
     Model%lsm              = lsm
@@ -4315,6 +4323,7 @@ module GFS_typedefs
         print *, ' Thompson microphysical parameters'
         print *, ' ltaerosol         : ', Model%ltaerosol
         print *, ' lradar            : ', Model%lradar
+        print *, ' lrefres           : ', Model%lrefres
         print *, ' ttendlim          : ', Model%ttendlim
         print *, ' '
       endif
@@ -4333,6 +4342,7 @@ module GFS_typedefs
       if (Model%imp_physics == Model%imp_physics_gfdl) then
         print *, ' GFDL microphysical parameters'
         print *, ' GFDL MP radiation inter: ', Model%lgfdlmprad
+        print *, ' lrefres                : ', Model%lrefres
         print *, ' '
       endif
 
