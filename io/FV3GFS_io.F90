@@ -157,10 +157,10 @@ module FV3GFS_io_mod
     type(domain2d),              intent(in)    :: fv_domain
     character(len=32), optional, intent(in)    :: timestamp
  
-    !--- read in surface data from chgres 
+    !--- write surface data from chgres 
     call sfc_prop_restart_write (IPD_Data%Sfcprop, Atm_block, Model, fv_domain, timestamp)
  
-    !--- read in physics restart data
+    !--- write physics restart data
     call phys_restart_write (IPD_Restart, Atm_block, Model, fv_domain, timestamp)
 
   end subroutine FV3GFS_restart_write

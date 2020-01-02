@@ -505,7 +505,7 @@ subroutine micro_mg_tend (                                       &
 !--ag
      freqs,                        freqr,                        &
      nfice,                        qcrat,                        &
-     prer_evap, xlat, xlon, lprnt, iccn, nlball)
+     prer_evap, xlat, xlon, lprnt, iccn, aero_in, nlball)
 
   ! Constituent properties.
   use micro_mg_utils, only: mg_liq_props,    &
@@ -593,8 +593,7 @@ subroutine micro_mg_tend (                                       &
   real(r8), intent(in) :: liqcldf(mgncol,nlev)    ! liquid cloud fraction (no units)
   real(r8), intent(in) :: icecldf(mgncol,nlev)    ! ice cloud fraction (no units)
   real(r8), intent(in) :: qsatfac(mgncol,nlev)    ! subgrid cloud water saturation scaling factor (no units)
-  logical, intent(in)  :: lprnt
-  integer, intent(in)  :: iccn
+  logical, intent(in)  :: lprnt, iccn, aero_in
 
 
   ! used for scavenging
@@ -1442,7 +1441,7 @@ subroutine micro_mg_tend (                                       &
     enddo
   enddo
 !
-  if (iccn == 1) then
+  if (iccn) then
     do k=1,nlev
       do i=1,mgncol
         npccn(i,k) = npccnin(i,k)
@@ -1496,7 +1495,7 @@ subroutine micro_mg_tend (                                       &
     enddo
   enddo
 
-  if (iccn == 1) then
+  if (iccn) then
     do k=1,nlev
       do i=1,mgncol
         if (t(i,k) < icenuct) then
@@ -1511,7 +1510,7 @@ subroutine micro_mg_tend (                                       &
         endif
       enddo
     enddo
-  elseif (iccn == 2) then
+  elseif (aero_in) then
     do k=1,nlev
       do i=1,mgncol
         if (t(i,k) < icenuct) then
