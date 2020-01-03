@@ -531,6 +531,7 @@ module GFS_typedefs
     real(kind=kind_phys) :: fhzero          !< hours between clearing of diagnostic buckets
     logical              :: ldiag3d         !< flag for 3d diagnostic fields
     logical              :: qdiag3d         !< flag for 3d tracer diagnostic fields
+    logical              :: gwd_generic_tend!< true if GFS_GWD_generic should calculate tendencies
     logical              :: lssav           !< logical flag for storing diagnostics
     real(kind=kind_phys) :: fhcyc           !< frequency for surface data cycling (hours)
     integer              :: thermodyn_id    !< valid for GFS only for get_prs/phi
@@ -3223,6 +3224,7 @@ module GFS_typedefs
     Model%fhzero           = fhzero
     Model%ldiag3d          = ldiag3d
     Model%qdiag3d          = qdiag3d
+    Model%gwd_generic_tend = .false.
 !
 !VAY-ugwp  --- set some GW-related switches
 !
@@ -5192,7 +5194,7 @@ module GFS_typedefs
     if (Model%ldiag3d) then
       allocate (Diag%du3dt  (IM,Model%levs,5))
       allocate (Diag%dv3dt  (IM,Model%levs,5))
-      allocate (Diag%dt3dt  (IM,Model%levs,8))
+      allocate (Diag%dt3dt  (IM,Model%levs,9))
       if (Model%qdiag3d) then
         allocate (Diag%dq3dt  (IM,Model%levs,9))
       endif

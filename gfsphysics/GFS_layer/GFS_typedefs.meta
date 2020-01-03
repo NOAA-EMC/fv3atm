@@ -1871,6 +1871,12 @@
   units = flag
   dimensions = ()
   type = logical
+[gwd_generic_tend]
+  standard_name = true_if_GFS_GWD_generic_should_calculate_tendencies
+  long_name = true if GFS_GWD_generic should calculate tendencies
+  units = flag
+  dimensions = ()
+  type = logical
 [lssav]
   standard_name = flag_diagnostics
   long_name = logical flag for storing diagnostics
@@ -5473,6 +5479,13 @@
 [dt3dt(:,:,8)]
   standard_name = cumulative_change_in_temperature_due_to_rayleigh_damping
   long_name = cumulative change in temperature due to Rayleigh damping
+  units = K
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+[dt3dt(:,:,9)]
+  standard_name = cumulative_change_in_temperature_due_to_convective_gravity_wave_drag
+  long_name = cumulative change in temperature due to convective gravity wave drag
   units = K
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
