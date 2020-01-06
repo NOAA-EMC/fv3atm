@@ -530,6 +530,8 @@ module GFS_typedefs
 #endif
     real(kind=kind_phys) :: fhzero          !< hours between clearing of diagnostic buckets
     logical              :: ldiag3d         !< flag for 3d diagnostic fields
+    logical              :: qdiag3d         !< flag for 3d tracer diagnostic fields
+    logical              :: gwd_generic_tend!< true if GFS_GWD_generic should calculate tendencies
     logical              :: lssav           !< logical flag for storing diagnostics
     real(kind=kind_phys) :: fhcyc           !< frequency for surface data cycling (hours)
     integer              :: thermodyn_id    !< valid for GFS only for get_prs/phi
@@ -2689,6 +2691,7 @@ module GFS_typedefs
 !--- BEGIN NAMELIST VARIABLES
     real(kind=kind_phys) :: fhzero         = 0.0             !< hours between clearing of diagnostic buckets
     logical              :: ldiag3d        = .false.         !< flag for 3d diagnostic fields
+    logical              :: qdiag3d        = .false.         !< flag for 3d tracer diagnostic fields
     logical              :: lssav          = .false.         !< logical flag for storing diagnostics
 
     real(kind=kind_phys) :: fhcyc          = 0.              !< frequency for surface data cycling (hours)
@@ -3070,7 +3073,7 @@ module GFS_typedefs
 
     NAMELIST /gfs_physics_nml/                                                              &
                           !--- general parameters
-                               fhzero, ldiag3d, lssav, fhcyc,                               &
+                               fhzero, ldiag3d, qdiag3d, lssav, fhcyc,                      &
                                thermodyn_id, sfcpress_id,                                   &
                           !--- coupling parameters
                                cplflx, cplwav, cplchm, lsidea,                              &
@@ -3220,6 +3223,8 @@ module GFS_typedefs
 #endif
     Model%fhzero           = fhzero
     Model%ldiag3d          = ldiag3d
+    Model%qdiag3d          = qdiag3d
+    Model%gwd_generic_tend = .false.
 !
 !VAY-ugwp  --- set some GW-related switches
 !
@@ -4364,6 +4369,7 @@ module GFS_typedefs
       print *, ' fn_nml            : ', trim(Model%fn_nml)
       print *, ' fhzero            : ', Model%fhzero
       print *, ' ldiag3d           : ', Model%ldiag3d
+      print *, ' qdiag3d           : ', Model%qdiag3d
       print *, ' lssav             : ', Model%lssav
       print *, ' fhcyc             : ', Model%fhcyc
       print *, ' thermodyn_id      : ', Model%thermodyn_id
@@ -5186,10 +5192,12 @@ module GFS_typedefs
     
     !--- 3D diagnostics
     if (Model%ldiag3d) then
-      allocate (Diag%du3dt  (IM,Model%levs,4))
-      allocate (Diag%dv3dt  (IM,Model%levs,4))
-      allocate (Diag%dt3dt  (IM,Model%levs,7))
-      allocate (Diag%dq3dt  (IM,Model%levs,9))
+      allocate (Diag%du3dt  (IM,Model%levs,5))
+      allocate (Diag%dv3dt  (IM,Model%levs,5))
+      allocate (Diag%dt3dt  (IM,Model%levs,9))
+      if (Model%qdiag3d) then
+        allocate (Diag%dq3dt  (IM,Model%levs,9))
+      endif
 !      allocate (Diag%dq3dt  (IM,Model%levs,oz_coeff+5))
 !--- needed to allocate GoCart coupling fields
 !      allocate (Diag%upd_mf (IM,Model%levs))
@@ -5495,7 +5503,9 @@ module GFS_typedefs
       Diag%du3dt    = zero
       Diag%dv3dt    = zero
       Diag%dt3dt    = zero
-!     Diag%dq3dt    = zero
+      if (Model%qdiag3d) then
+         Diag%dq3dt    = zero
+      endif
 !     Diag%upd_mf   = zero
 !     Diag%dwn_mf   = zero
 !     Diag%det_mf   = zero
