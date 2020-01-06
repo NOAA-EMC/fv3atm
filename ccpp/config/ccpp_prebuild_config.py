@@ -304,10 +304,14 @@ OPTIONAL_ARGUMENTS = {
         },
     'mp_thompson' : {
         'mp_thompson_init' : [
+            'cloud_droplet_number_concentration',
             'water_friendly_aerosol_number_concentration',
             'ice_friendly_aerosol_number_concentration',
             'tendency_of_water_friendly_aerosols_at_surface',
             'tendency_of_ice_friendly_aerosols_at_surface',
+            'mean_effective_radius_for_liquid_cloud',
+            'mean_effective_radius_for_ice_cloud',
+            'mean_effective_radius_for_snow_flake',
             ],
         'mp_thompson_run' : [
             'cloud_droplet_number_concentration_updated_by_physics',
@@ -318,15 +322,6 @@ OPTIONAL_ARGUMENTS = {
             'mean_effective_radius_for_liquid_cloud',
             'mean_effective_radius_for_ice_cloud',
             'mean_effective_radius_for_snow_flake',
-            ],
-        },
-    'mp_thompson_pre' : {
-        'mp_thompson_pre_run' : [
-            'cloud_droplet_number_concentration_updated_by_physics',
-            'water_friendly_aerosol_number_concentration_updated_by_physics',
-            'ice_friendly_aerosol_number_concentration_updated_by_physics',
-            'tendency_of_water_friendly_aerosols_at_surface',
-            'tendency_of_ice_friendly_aerosols_at_surface',
             ],
         },
     'mp_fer_hires' : {

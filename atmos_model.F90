@@ -276,6 +276,16 @@ subroutine update_atmos_radiation_physics (Atmos)
     call atmos_phys_driver_statein (IPD_data, Atm_block, flip_vc)
     call mpp_clock_end(getClock)
 
+#ifdef CCPP
+    if (IPD_Control%first_time_step) then
+      ! Initialize the CCPP framework and physics
+      call CCPP_step (step="init", nblks=Atm_block%nblks, ierr=ierr)
+      if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP init step failed')
+      call CCPP_step (step="physics_init", nblks=Atm_block%nblks, ierr=ierr)
+      if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP physics_init step failed')
+    end if
+#endif
+
 !--- if dycore only run, set up the dummy physics output state as the input state
     if (dycore_only) then
       do nb = 1,Atm_block%nblks
@@ -625,17 +635,6 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
       call init_stochastic_physics(IPD_Control, Init_parm, mpp_npes(), nthrds)
       if(IPD_Control%me == IPD_Control%master) print *,'do_skeb=',IPD_Control%do_skeb
    end if
-
-#ifdef CCPP
-   ! Initialize the CCPP framework
-   call CCPP_step (step="init", nblks=Atm_block%nblks, ierr=ierr)
-   if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP init step failed')
-   ! Doing the init here requires logic in thompson aerosol init if no aerosol
-   ! profiles are specified and internal profiles are calculated, because these
-   ! require temperature/geopotential etc which are not yet set. Sim. for RUC LSM.
-   call CCPP_step (step="physics_init", nblks=Atm_block%nblks, ierr=ierr)
-   if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP physics_init step failed')
-#endif
 
    Atmos%Diag => IPD_Diag
 
