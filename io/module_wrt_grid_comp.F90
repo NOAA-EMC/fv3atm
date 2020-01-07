@@ -183,7 +183,7 @@
       character(128) :: FBlist_outfilename(100), outfile_name
       character(128),dimension(:,:), allocatable    :: outfilename
       real(8), dimension(:),         allocatable    :: slat
-      real, dimension(:),            allocatable    :: lat, lon, axesdata
+      real(8), dimension(:),         allocatable    :: lat, lon
       real(ESMF_KIND_R8), dimension(:,:), pointer   :: lonPtr, latPtr
       real(ESMF_KIND_R8)                            :: rot_lon, rot_lat
       real(ESMF_KIND_R8)                            :: geo_lon, geo_lat
@@ -358,19 +358,20 @@
         wrt_int_state%latstart = lat(1)
         wrt_int_state%latlast  = lat(jmo)
         do j=1,imo
-          lon(j) = 360./real(imo) *real(j-1)
+          lon(j) = 360.d0/real(imo,8) *real(j-1,8)
         enddo
         wrt_int_state%lonstart = lon(1)
         wrt_int_state%lonlast  = lon(imo)
         do j=lbound(latPtr,2),ubound(latPtr,2)
           do i=lbound(lonPtr,1),ubound(lonPtr,1)
-            lonPtr(i,j) = 360./real(imo) * (i-1)
+            lonPtr(i,j) = 360.d0/real(imo,8) * real(i-1,8)
             latPtr(i,j) = lat(j)
           enddo
         enddo 
 !        print *,'aft wrtgrd, Gaussian, dimi,i=',lbound(lonPtr,1),ubound(lonPtr,1), &
 !         ' j=',lbound(lonPtr,2),ubound(lonPtr,2),'imo=',imo,'jmo=',jmo
-!        print *,'aft wrtgrd, lon=',lonPtr(lbound(lonPtr,1),lbound(lonPtr,2)), &
+!       if(wrt_int_state%mype==0) print *,'aft wrtgrd, lon=',lonPtr(1:5,1), &
+!        'lat=',latPtr(1,1:5),'imo,jmo=',imo,jmo
 !        lonPtr(lbound(lonPtr,1),ubound(lonPtr,2)),'lat=',latPtr(lbound(lonPtr,1),lbound(lonPtr,2)), &
 !        latPtr(lbound(lonPtr,1),ubound(lonPtr,2))
         wrt_int_state%lat_start = lbound(latPtr,2)
@@ -1622,13 +1623,14 @@
      character(100) fieldName,uwindname,vwindname
      type(ESMF_Field),   allocatable  :: fcstField(:)
      real(ESMF_KIND_R8), dimension(:,:),     pointer  :: lon, lat
+     real(ESMF_KIND_R8), dimension(:,:),     pointer  :: lonloc, latloc
      real(ESMF_KIND_R4), dimension(:,:),     pointer  :: pressfc
      real(ESMF_KIND_R4), dimension(:,:),     pointer  :: uwind2dr4,vwind2dr4
      real(ESMF_KIND_R4), dimension(:,:,:),   pointer  :: uwind3dr4,vwind3dr4
      real(ESMF_KIND_R4), dimension(:,:,:),   pointer  :: cart3dPtr2dr4
      real(ESMF_KIND_R4), dimension(:,:,:,:), pointer  :: cart3dPtr3dr4
      real(ESMF_KIND_R8), dimension(:,:,:,:), pointer  :: cart3dPtr3dr8
-     save lon, lat
+     save lonloc, latloc
      real(ESMF_KIND_R8) :: coslon, sinlon, sinlat
 !
 ! get filed count
@@ -1648,9 +1650,18 @@
 
        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-       lon = lon * pi/180.
-!     print *,'in 3DCartesian2wind, lon dim=',lbound(lon,1),ubound(lon,1),lbound(lon,2),ubound(lon,2), &
-!       'lon=',lon(lbound(lon,1),lbound(lon,2)), lon(ubound(lon,1),ubound(lon,2))
+       allocate(lonloc(lbound(lon,1):ubound(lon,1),lbound(lon,2):ubound(lon,2)))
+       istart = lbound(lon,1)
+       iend   = ubound(lon,1)
+       jstart = lbound(lon,2)
+       jend   = ubound(lon,2)
+!$omp parallel do default(none) shared(lon,lonloc,jstart,jend,istart,iend) &
+!$omp             private(i,j)
+       do j=jstart,jend
+        do i=istart,iend
+          lonloc(i,j) = lon(i,j) * pi/180.
+        enddo
+       enddo
 
        CALL ESMF_LogWrite("call recover field get coord 2",ESMF_LOGMSG_INFO,rc=RC)
 
@@ -1658,9 +1669,18 @@
 
        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-       lat = lat * pi/180.
-!     print *,'in 3DCartesian2wind, lat dim=',lbound(lat,1),ubound(lat,1),lbound(lat,2),ubound(lat,2), &
-!       'lat=',lat(lbound(lon,1),lbound(lon,2)), lat(ubound(lon,1),ubound(lon,2))
+       allocate(latloc(lbound(lat,1):ubound(lat,1),lbound(lat,2):ubound(lat,2)))
+       istart = lbound(lat,1)
+       iend   = ubound(lat,1)
+       jstart = lbound(lat,2)
+       jend   = ubound(lat,2)
+!$omp parallel do default(none) shared(lat,latloc,jstart,jend,istart,iend) &
+!$omp             private(i,j)
+       do j=jstart,jend
+        do i=istart,iend
+          latloc(i,j) = lat(i,j) * pi/180.d0
+        enddo
+       enddo
        first_getlatlon = .false.
      endif
 !
@@ -1718,18 +1738,18 @@
 ! update u , v wind
 !$omp parallel do default(shared) private(i,j,k,coslon,sinlon,sinlat)
              do k=kstart,kend
-!!$omp parallel do default(none) shared(uwind3dr4,vwind3dr4,lon,lat,cart3dPtr3dr4,jstart,jend,istart,iend,k) &
-!!$omp             private(i,j,coslon,sinlon,sinlat)
+!$omp parallel do default(none) shared(uwind3dr4,vwind3dr4,lonloc,latloc,cart3dPtr3dr4,jstart,jend,istart,iend,k) &
+!$omp             private(i,j,coslon,sinlon,sinlat)
                do j=jstart, jend
                  do i=istart, iend
-                  coslon = cos(lon(i,j))
-                  sinlon = sin(lon(i,j))
-                  sinlat = sin(lat(i,j))
+                  coslon = cos(lonloc(i,j))
+                  sinlon = sin(lonloc(i,j))
+                  sinlat = sin(latloc(i,j))
                   uwind3dr4(i,j,k) = cart3dPtr3dr4(1,i,j,k) * coslon           &
                                    + cart3dPtr3dr4(2,i,j,k) * sinlon
                   vwind3dr4(i,j,k) =-cart3dPtr3dr4(1,i,j,k) * sinlat*sinlon    &
                                    + cart3dPtr3dr4(2,i,j,k) * sinlat*coslon    &
-                                   + cart3dPtr3dr4(3,i,j,k) * cos(lat(i,j))
+                                   + cart3dPtr3dr4(3,i,j,k) * cos(latloc(i,j))
                  enddo
                enddo
              enddo
@@ -1749,18 +1769,18 @@
              call ESMF_FieldGet(ufield, localDe=0, farrayPtr=uwind2dr4,rc=rc)
              call ESMF_FieldGet(vfield, localDe=0, farrayPtr=vwind2dr4,rc=rc)
               ! update u , v wind
-!$omp parallel do default(none) shared(uwind2dr4,vwind2dr4,lon,lat,cart3dPtr2dr4,jstart,jend,istart,iend) &
+!$omp parallel do default(none) shared(uwind2dr4,vwind2dr4,lonloc,latloc,cart3dPtr2dr4,jstart,jend,istart,iend) &
 !$omp             private(i,j,k,coslon,sinlon,sinlat)
              do j=jstart, jend
                do i=istart, iend
-                  coslon = cos(lon(i,j))
-                  sinlon = sin(lon(i,j))
-                  sinlat = sin(lat(i,j))
+                  coslon = cos(lonloc(i,j))
+                  sinlon = sin(lonloc(i,j))
+                  sinlat = sin(latloc(i,j))
                   uwind2dr4(i,j) = cart3dPtr2dr4(1,i,j) * coslon         &
                                  + cart3dPtr2dr4(2,i,j) * sinlon
                   vwind2dr4(i,j) =-cart3dPtr2dr4(1,i,j) * sinlat*sinlon  &
                                  + cart3dPtr2dr4(2,i,j) * sinlat*coslon  &
-                                 + cart3dPtr2dr4(3,i,j) * cos(lat(i,j))
+                                 + cart3dPtr2dr4(3,i,j) * cos(latloc(i,j))
                enddo
              enddo
            endif

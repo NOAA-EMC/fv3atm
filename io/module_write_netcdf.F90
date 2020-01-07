@@ -42,7 +42,7 @@ module module_write_netcdf
     real(4), dimension(:,:,:), allocatable :: arrayr4_3d,arrayr4_3d_save
     real(8), dimension(:,:,:), allocatable :: arrayr8_3d
 
-    real(8) rad2dg,x(im),y(jm)
+    real(8) x(im),y(jm)
     integer :: fieldCount, fieldDimCount, gridDimCount
     integer, dimension(:), allocatable   :: ungriddedLBound, ungriddedUBound
 
@@ -71,7 +71,6 @@ module module_write_netcdf
 !
 !!
 !
-    rad2dg = 45./atan(1.0)
 
     call ESMF_FieldBundleGet(fieldbundle, fieldCount=fieldCount, rc=rc); ESMF_ERR_RETURN(rc)
 
@@ -247,7 +246,7 @@ module module_write_netcdf
     if (mype==0) then
        if (trim(output_grid) == 'gaussian_grid' .or. &
            trim(output_grid) == 'regional_latlon') then
-          ncerr = nf90_put_var(ncid, im_varid, values=rad2dg*arrayr8(:,1)  ); NC_ERR_STOP(ncerr)
+          ncerr = nf90_put_var(ncid, im_varid, values=arrayr8(:,1)  ); NC_ERR_STOP(ncerr)
           ncerr = nf90_redef(ncid=ncid); NC_ERR_STOP(ncerr)
           ncerr = nf90_put_att(ncid, im_varid, "long_name", "T-cell longitude"); NC_ERR_STOP(ncerr)
           ncerr = nf90_put_att(ncid, im_varid, "units", "degrees_E"); NC_ERR_STOP(ncerr)
@@ -271,7 +270,7 @@ module module_write_netcdf
           ncerr = nf90_put_att(ncid, im_varid, "units", "meters"); NC_ERR_STOP(ncerr)
           ncerr = nf90_enddef(ncid=ncid); NC_ERR_STOP(ncerr)
        endif
-       ncerr = nf90_put_var(ncid, lon_varid, values=rad2dg*arrayr8 ); NC_ERR_STOP(ncerr)
+       ncerr = nf90_put_var(ncid, lon_varid, values=arrayr8 ); NC_ERR_STOP(ncerr)
     endif
 
     call ESMF_GridGetCoord(wrtGrid, coordDim=2, array=array, rc=rc); ESMF_ERR_RETURN(rc)
@@ -279,7 +278,7 @@ module module_write_netcdf
     if (mype==0) then
        if (trim(output_grid) == 'gaussian_grid' .or. &
            trim(output_grid) == 'regional_latlon') then
-          ncerr = nf90_put_var(ncid, jm_varid, values=rad2dg*arrayr8(1,:)  ); NC_ERR_STOP(ncerr)
+          ncerr = nf90_put_var(ncid, jm_varid, values=arrayr8(1,:)  ); NC_ERR_STOP(ncerr)
           ncerr = nf90_redef(ncid=ncid); NC_ERR_STOP(ncerr)
           ncerr = nf90_put_att(ncid, jm_varid, "long_name", "T-cell latiitude"); NC_ERR_STOP(ncerr)
           ncerr = nf90_put_att(ncid, jm_varid, "units", "degrees_N"); NC_ERR_STOP(ncerr)
@@ -303,7 +302,7 @@ module module_write_netcdf
           ncerr = nf90_put_att(ncid, jm_varid, "units", "meters"); NC_ERR_STOP(ncerr)
           ncerr = nf90_enddef(ncid=ncid); NC_ERR_STOP(ncerr)
        endif
-       ncerr = nf90_put_var(ncid, lat_varid, values=rad2dg*arrayr8 ); NC_ERR_STOP(ncerr)
+       ncerr = nf90_put_var(ncid, lat_varid, values=arrayr8 ); NC_ERR_STOP(ncerr)
     endif
 
     do i=1, fieldCount
