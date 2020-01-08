@@ -29,6 +29,7 @@ module FV3GFS_io_mod
   use diag_data_mod,      only: output_fields, max_output_fields
   use diag_util_mod,      only: find_input_field
   use constants_mod,      only: grav, rdgas
+  use physcons,           only: con_tice          !saltwater freezing temp (K)
 !
 !--- GFS physics modules
 !#ifndef CCPP
@@ -104,6 +105,7 @@ module FV3GFS_io_mod
   real, parameter :: missing_value = 9.99e20
   real, parameter:: stndrd_atmos_ps = 101325.
   real, parameter:: stndrd_atmos_lapse = 0.0065
+  real, parameter:: drythresh = 1.e-4
  
 !--- miscellaneous other variables
   logical :: use_wrtgridcomp_output = .FALSE.
@@ -1083,7 +1085,8 @@ module FV3GFS_io_mod
       do nb = 1, Atm_block%nblks
         do ix = 1, Atm_block%blksz(nb)
           Sfcprop(nb)%sncovr(ix) = 0.0
-          if (Sfcprop(nb)%slmsk(ix) > 0.001) then
+         !if (Sfcprop(nb)%slmsk(ix) > 0.001) then
+          if (Sfcprop(nb)%landfrac(ix) >= drythresh) then
             vegtyp = Sfcprop(nb)%vtype(ix)
             if (vegtyp == 0) vegtyp = 7
             rsnow  = 0.001*Sfcprop(nb)%weasd(ix)/snupx(vegtyp)
@@ -1098,16 +1101,31 @@ module FV3GFS_io_mod
     endif
 !#endif
 
+    do nb = 1, Atm_block%nblks
+      do ix = 1, Atm_block%blksz(nb)
+        if (Sfcprop(nb)%lakefrac(ix) > 0.0) then
+          Sfcprop(nb)%oceanfrac(ix) = 0.0 ! lake & ocean don't coexist in a cell
+          if (Sfcprop(nb)%fice(ix) < Model%min_lakeice) Sfcprop(nb)%fice(ix) = 0.
+        else
+          Sfcprop(nb)%oceanfrac(ix) = 1.0 - Sfcprop(nb)%landfrac(ix)  !LHS:ocean frac [0:1]
+          if (Sfcprop(nb)%fice(ix) < Model%min_seaice) Sfcprop(nb)%fice(ix) = 0.
+        endif
+        Sfcprop(nb)%slmsk(ix) = ceiling(Sfcprop(nb)%landfrac(ix))
+        if (Sfcprop(nb)%fice(ix) > 0. .and. Sfcprop(nb)%landfrac(ix)==0.) Sfcprop(nb)%slmsk(ix) = 2 ! land dominates over ice if co-exist
+      enddo
+    enddo
+
     if(Model%frac_grid) then ! 3-way composite
       do nb = 1, Atm_block%nblks
         do ix = 1, Atm_block%blksz(nb)
-          tem = 1.0 - Sfcprop(nb)%landfrac(ix) - Sfcprop(nb)%fice(ix)
+          Sfcprop(nb)%tsfco(ix) = max(con_tice, Sfcprop(nb)%tsfco(ix))
+          tem = (1.-Sfcprop(nb)%landfrac(ix)) * Sfcprop(nb)%fice(ix) ! tem = ice fraction wrt whole cell
           Sfcprop(nb)%zorl(ix) = Sfcprop(nb)%zorll(ix) * Sfcprop(nb)%landfrac(ix) &
-                               + Sfcprop(nb)%zorll(ix) * Sfcprop(nb)%fice(ix)     & !zorl ice = zorl land
-                               + Sfcprop(nb)%zorlo(ix) * tem
+                               + Sfcprop(nb)%zorll(ix) * tem &     !zorl ice = zorl land
+                               + Sfcprop(nb)%zorlo(ix) * (1.-Sfcprop(nb)%landfrac(ix)-tem)
           Sfcprop(nb)%tsfc(ix) = Sfcprop(nb)%tsfcl(ix) * Sfcprop(nb)%landfrac(ix) &
-                               + Sfcprop(nb)%tisfc(ix) * Sfcprop(nb)%fice(ix)     &
-                               + Sfcprop(nb)%tsfco(ix) * tem
+                               + Sfcprop(nb)%tisfc(ix) * tem &
+                               + Sfcprop(nb)%tsfco(ix) * (1.-Sfcprop(nb)%landfrac(ix)-tem)
         enddo
       enddo
     else     ! in this case ice fracion is fraction of water fraction
@@ -1118,6 +1136,7 @@ module FV3GFS_io_mod
           Sfcprop(nb)%zorll(ix) = Sfcprop(nb)%zorlo(ix)
           Sfcprop(nb)%zorl(ix)  = Sfcprop(nb)%zorlo(ix)
           Sfcprop(nb)%tsfc(ix)  = Sfcprop(nb)%tsfco(ix)
+          Sfcprop(nb)%tsfco(ix) = max(con_tice, Sfcprop(nb)%tsfco(ix))
           if (Sfcprop(nb)%slmsk(ix) > 1.9) then
             Sfcprop(nb)%landfrac(ix) = 0.0
           else
@@ -1126,17 +1145,6 @@ module FV3GFS_io_mod
         enddo
       enddo
     endif ! if (Model%frac_grid)
-
-    do nb = 1, Atm_block%nblks
-      do ix = 1, Atm_block%blksz(nb)
-        if (Sfcprop(nb)%lakefrac(ix) > 0.0) then
-          Sfcprop(nb)%oceanfrac(ix) = 0.0 ! lake & ocean don't coexist in a cell
-        else
-          Sfcprop(nb)%oceanfrac(ix) = 1.0 - Sfcprop(nb)%landfrac(ix)  !LHS:ocean frac [0:1]
-        endif
-
-      enddo
-    enddo
 
     if (Model%lsm == Model%lsm_noahmp) then 
       if (nint(sfc_var2(1,1,nvar_s2m+19)) == -66666) then
@@ -1182,7 +1190,8 @@ module FV3GFS_io_mod
             Sfcprop(nb)%smoiseq(ix,  1:4) = missing_value
             Sfcprop(nb)%zsnsoxy(ix, -2:4) = missing_value
 
-            if (Sfcprop(nb)%slmsk(ix) > 0.01) then
+           ! if (Sfcprop(nb)%slmsk(ix) > 0.01) then
+            if (Sfcprop(nb)%landfrac(ix) >= drythresh) then
 
               Sfcprop(nb)%tvxy(ix)     = Sfcprop(nb)%tsfcl(ix)
               Sfcprop(nb)%tgxy(ix)     = Sfcprop(nb)%tsfcl(ix)
@@ -1385,7 +1394,7 @@ module FV3GFS_io_mod
                   smc   = smc - dx
                   if ( abs (dx) < 1.e-6) exit
                 enddo                               ! iteration
-                Sfcprop(nb)%smoiseq(ix,ns) = min(max(smc,1.e-4),smcmax*0.99)
+                Sfcprop(nb)%smoiseq(ix,ns) = min(max(smc,drythresh),smcmax*0.99)
               enddo                                 ! ddz soil layer
             else                                    ! bexp <= 0.0 
               Sfcprop(nb)%smoiseq(ix,1:4) = smcmax
