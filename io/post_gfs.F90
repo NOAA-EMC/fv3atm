@@ -1146,7 +1146,7 @@ module post_gfs
                 do i=ista, iend
                   if (arrayr42d(i,j) /= spval) then
                   !set range within (0,1)
-                    sr(i,j) = min(1.,max(0.,sr(i,j)))
+                    sr(i,j) = min(1.,max(0.,arrayr42d(i,j)))
                   else
                     sr(i,j) = spval
                   endif
