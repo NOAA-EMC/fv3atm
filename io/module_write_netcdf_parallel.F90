@@ -116,20 +116,12 @@ module module_write_netcdf_parallel
 !    allocate(arrayr4_3d(im,jm,lm),arrayr4_3d_save(im,jm,lm))
 !    allocate(arrayr8_3d(im,jm,lm))
 
-! create netcdf file and enter define mode
-!not build with pnetcdf
-!    if (ideflate == 0) then
-!        ncerr = nf90_create(trim(filename), cmode=IOR(NF90_CLOBBER,NF90_64BIT_OFFSET), &
-!        comm=mpi_comm, info = MPI_INFO_NULL,ncid=ncid); NC_ERR_STOP(ncerr)
-!        ncerr = nf90_set_fill(ncid, NF90_NOFILL, oldMode); NC_ERR_STOP(ncerr)
-!    else
-!        ncerr = nf90_create(trim(filename), cmode=IOR(IOR(NF90_CLOBBER,NF90_NETCDF4),NF90_CLASSIC_MODEL), &
-!        ncid=ncid); NC_ERR_STOP(ncerr)
-!        ! if compression on use HDF5 format with default _FillValue
-!    endif
-!
-    ncerr = nf90_create(trim(filename), cmode=IOR(NF90_CLOBBER,NF90_NETCDF4), &
+! create netcdf file for parallel access
+
+    ncerr = nf90_create(trim(filename),&
+            cmode=IOR(IOR(NF90_CLOBBER,NF90_NETCDF4),NF90_CLASSIC_MODEL),&
             comm=mpi_comm, info = MPI_INFO_NULL, ncid=ncid); NC_ERR_STOP(ncerr)
+! disable auto filling.
     ncerr = nf90_set_fill(ncid, NF90_NOFILL, oldMode); NC_ERR_STOP(ncerr)
 
     ! define dimensions
@@ -193,6 +185,8 @@ module module_write_netcdf_parallel
           stop
         end if
       end if
+      ! time dimension is unlimited, so must use collective access.
+      !ncerr = nf90_var_par_access(ncid, varids(i), NF90_COLLECTIVE)
 
       ! define variable attributes
       call ESMF_AttributeGet(fcstField(i), convention="NetCDF", purpose="FV3", &
@@ -225,7 +219,7 @@ module module_write_netcdf_parallel
            call ESMF_AttributeGet(fcstField(i), convention="NetCDF", purpose="FV3", &
                                   name=trim(attName), value=varr8val, &
                                   rc=rc); ESMF_ERR_RETURN(rc)
-           if (trim(attName) /= '_FillValue' .or. ideflate == 0) then
+           if (trim(attName) /= '_FillValue') then
               ! FIXME:  _FillValue must be cast to var type when using NF90_NETCDF4
               ncerr = nf90_put_att(ncid, varids(i), trim(attName), varr8val); NC_ERR_STOP(ncerr)
            endif
@@ -249,8 +243,6 @@ module module_write_netcdf_parallel
     ! write grid_xt, grid_yt values
     call ESMF_GridGetCoord(wrtGrid, coordDim=1, farrayPtr=arrayr8, rc=rc); ESMF_ERR_RETURN(rc)
 
-!    call ESMF_ArrayGather(array, arrayr8, rootPet=0, rc=rc); ESMF_ERR_RETURN(rc)
-!    if (mype==0) then
     if (trim(output_grid) == 'gaussian_grid' .or. trim(output_grid) == 'regional_latlon') then
       istart = lbound(arrayr8,1)
       iend   = ubound(arrayr8,1)
@@ -286,22 +278,22 @@ module module_write_netcdf_parallel
     start = (/istart,jstart/)
     count = (/iend-istart+1,jend-jstart+1/)
     ncerr = nf90_put_var(ncid, lon_varid, values=rad2dg*arrayr8, start=start, count=count ); NC_ERR_STOP(ncerr)
+    print *,'done write lon'
 
     call ESMF_GridGetCoord(wrtGrid, coordDim=2, farrayPtr=arrayr8, rc=rc); ESMF_ERR_RETURN(rc)
-!    call ESMF_ArrayGather(array, arrayr8, rootPet=0, rc=rc); ESMF_ERR_RETURN(rc)
     if (trim(output_grid) == 'gaussian_grid' .or. trim(output_grid) == 'regional_latlon') then
-      istart = lbound(arrayr8,1)
-      iend   = ubound(arrayr8,1)
-      jstart = lbound(arrayr8,2)
-      jend   = ubound(arrayr8,2)
-      print *,'in write netcdf mpi, istart=',istart,iend,'jstart=',jstart,jend
-      start1d(1) = jstart
-      count1d(1) = jend - jstart + 1
-      ncerr = nf90_put_var(ncid, jm_varid, values=rad2dg*arrayr8(1,:),start=start1d,count=count1d  ); NC_ERR_STOP(ncerr)
-      ncerr = nf90_redef(ncid=ncid); NC_ERR_STOP(ncerr)
-      ncerr = nf90_put_att(ncid, jm_varid, "long_name", "T-cell latiitude"); NC_ERR_STOP(ncerr)
-      ncerr = nf90_put_att(ncid, jm_varid, "units", "degrees_N"); NC_ERR_STOP(ncerr)
-      ncerr = nf90_enddef(ncid=ncid); NC_ERR_STOP(ncerr)
+          istart = lbound(arrayr8,1)
+          iend   = ubound(arrayr8,1)
+          jstart = lbound(arrayr8,2)
+          jend   = ubound(arrayr8,2)
+          print *,'in write netcdf mpi, istart=',istart,iend,'jstart=',jstart,jend
+          start1d(1) = jstart
+          count1d(1) = jend - jstart + 1
+          ncerr = nf90_put_var(ncid, jm_varid, values=rad2dg*arrayr8(1,:),start=start1d,count=count1d  ); NC_ERR_STOP(ncerr)
+          ncerr = nf90_redef(ncid=ncid); NC_ERR_STOP(ncerr)
+          ncerr = nf90_put_att(ncid, jm_varid, "long_name", "T-cell latiitude"); NC_ERR_STOP(ncerr)
+          ncerr = nf90_put_att(ncid, jm_varid, "units", "degrees_N"); NC_ERR_STOP(ncerr)
+          ncerr = nf90_enddef(ncid=ncid); NC_ERR_STOP(ncerr)
     else if (trim(output_grid) == 'rotated_latlon') then
           do j=1,jm
              y(j) = lat1 + (lat2-lat1)/(jm-1) * (j-1)
@@ -324,6 +316,7 @@ module module_write_netcdf_parallel
     start = (/istart,jstart/)
     count = (/iend-istart+1, jend-jstart+1/)
     ncerr = nf90_put_var(ncid, lat_varid, values=rad2dg*arrayr8, start=start, count=count ); NC_ERR_STOP(ncerr)
+    print *,'done write lat'
 
     do i=1, fieldCount
 
@@ -345,7 +338,7 @@ module module_write_netcdf_parallel
       else if (fldlev(i) > 1) then
          if (typekind == ESMF_TYPEKIND_R4) then
            call ESMF_FieldGet(fcstField(i), localDe=0, farrayPtr=arrayr4_3d, totalLBound=totalLBound3d, totalUBound=totalUBound3d,rc=rc); ESMF_ERR_RETURN(rc)
-          print *,'field name=',trim(fldName),'bound=',totalLBound3d,'ubound=',totalUBound3d
+           print *,'field name=',trim(fldName),'bound=',totalLBound3d,'ubound=',totalUBound3d
            if (ideflate > 0 .and. nbits > 0) then
                 ! Lossy compression if nbits>0.
                 ! The floating point data is quantized to improve compression
@@ -396,9 +389,8 @@ module module_write_netcdf_parallel
     deallocate(fcstField)
     deallocate(varids)
 
-    if (mype==0) then
     ncerr = nf90_close(ncid=ncid); NC_ERR_STOP(ncerr)
-    end if
+    print *,'netcdf parallel close, finished write_netcdf_parallel'
 
   end subroutine write_netcdf_parallel
 
@@ -509,7 +501,7 @@ module module_write_netcdf_parallel
          else if (typekind==ESMF_TYPEKIND_R8) then
             call ESMF_AttributeGet(grid, convention="NetCDF", purpose="FV3", &
                                    name=trim(attName), value=varr8val, rc=rc); ESMF_ERR_RETURN(rc)
-            if (trim(attName) /= '_FillValue' .or. ideflate == 0) then
+            if (trim(attName) /= '_FillValue') then
               ! FIXME:  _FillValue must be cast to var type when using
               ! NF90_NETCDF4. Until this is fixed, using netCDF default _FillValue.
               ncerr = nf90_put_att(ncid, varid, trim(attName(ind+1:len(attName))), varr8val); NC_ERR_STOP(ncerr)
@@ -551,7 +543,8 @@ module module_write_netcdf_parallel
                            typekind=typekind, itemCount=n, rc=rc); ESMF_ERR_RETURN(rc)
 
     if ( trim(dim_name) == "time" ) then
-    ncerr = nf90_def_dim(ncid, trim(dim_name), NF90_UNLIMITED, dimid); NC_ERR_STOP(ncerr)
+    !ncerr = nf90_def_dim(ncid, trim(dim_name), NF90_UNLIMITED, dimid); NC_ERR_STOP(ncerr)
+    ncerr = nf90_def_dim(ncid, trim(dim_name), 1, dimid); NC_ERR_STOP(ncerr)
     else
     ncerr = nf90_def_dim(ncid, trim(dim_name), n, dimid); NC_ERR_STOP(ncerr)
     end if
@@ -562,6 +555,7 @@ module module_write_netcdf_parallel
        call ESMF_AttributeGet(grid, convention="NetCDF", purpose="FV3", &
                               name=trim(dim_name), valueList=valueListR8, rc=rc); ESMF_ERR_RETURN(rc)
        ncerr = nf90_enddef(ncid=ncid); NC_ERR_STOP(ncerr)
+       !ncerr = nf90_var_par_access(ncid, dim_varid, NF90_COLLECTIVE)
        ncerr = nf90_put_var(ncid, dim_varid, values=valueListR8 ); NC_ERR_STOP(ncerr)
        ncerr = nf90_redef(ncid=ncid); NC_ERR_STOP(ncerr)
        deallocate(valueListR8)
@@ -571,6 +565,7 @@ module module_write_netcdf_parallel
        call ESMF_AttributeGet(grid, convention="NetCDF", purpose="FV3", &
                               name=trim(dim_name), valueList=valueListR4, rc=rc); ESMF_ERR_RETURN(rc)
        ncerr = nf90_enddef(ncid=ncid); NC_ERR_STOP(ncerr)
+       !ncerr = nf90_var_par_access(ncid, dim_varid, NF90_COLLECTIVE)
        ncerr = nf90_put_var(ncid, dim_varid, values=valueListR4 ); NC_ERR_STOP(ncerr)
        ncerr = nf90_redef(ncid=ncid); NC_ERR_STOP(ncerr)
        deallocate(valueListR4)
