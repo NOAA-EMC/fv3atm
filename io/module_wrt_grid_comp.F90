@@ -1693,7 +1693,7 @@
         enddo
        enddo
 
-       lat = lat * pi/180.
+       !lat = lat * pi/180.
 !     print *,'in 3DCartesian2wind, lat dim=',lbound(lat,1),ubound(lat,1),lbound(lat,2),ubound(lat,2), &
 !       'lat=',lat(lbound(lon,1),lbound(lon,2)), lat(ubound(lon,1),ubound(lon,2))
        first_getlatlon = .false.
