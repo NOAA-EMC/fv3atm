@@ -118,8 +118,9 @@ module module_write_netcdf
 ! create netcdf file and enter define mode
     if (mype==0) then
 
-    ncerr = nf90_create(trim(filename), cmode=IOR(NF90_CLOBBER,NF90_NETCDF4), &
-    ncid=ncid); NC_ERR_STOP(ncerr)
+    ncerr = nf90_create(trim(filename),&
+            cmode=IOR(IOR(NF90_CLOBBER,NF90_NETCDF4),NF90_CLASSIC_MODEL),&
+            ncid=ncid); NC_ERR_STOP(ncerr)
     ncerr = nf90_set_fill(ncid, NF90_NOFILL, oldMode); NC_ERR_STOP(ncerr)
 
     ! define dimensions
