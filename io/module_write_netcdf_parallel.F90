@@ -58,9 +58,8 @@ module module_write_netcdf_parallel
     integer :: totalLBound2d(2),totalUBound2d(2),totalLBound3d(3),totalUBound3d(3)
 
     integer :: varival
-    real(4) :: varr4val, scale_fact, offset, dataMin, dataMax, dataMin1, &
-               dataMax1
-    real(4), allocatable, dimension(:) :: compress_err,compress_err1
+    real(4) :: varr4val, scale_fact, offset, dataMin, dataMax
+    real(4), allocatable, dimension(:) :: compress_err
     real(8) :: varr8val
     character(len=ESMF_MAXSTR) :: varcval
 
@@ -76,7 +75,6 @@ module module_write_netcdf_parallel
     call ESMF_FieldBundleGet(fieldbundle, fieldCount=fieldCount, rc=rc); ESMF_ERR_RETURN(rc)
 
     allocate(compress_err(fieldCount)); compress_err=-999.
-    allocate(compress_err1(fieldCount)); compress_err1=0.
     allocate(fldlev(fieldCount)) ; fldlev = 0
     allocate(fcstField(fieldCount))
     allocate(varids(fieldCount))
@@ -325,10 +323,10 @@ module module_write_netcdf_parallel
               i1=totalLBound3d(1);i2=totalUBound3d(1)
               j1=totalLBound3d(2);j2=totalUBound3d(2)
               k1=totalLBound3d(3);k2=totalUBound3d(3)
-              dataMax1 = maxval(arrayr4_3d(i1:i2,j1:j2,k1:k2))
-              dataMin1 = minval(arrayr4_3d(i1:i2,j1:j2,k1:k2))
-              call mpi_allreduce(dataMax1,dataMax,1,mpi_real4,mpi_max,mpi_comm,ierr)
-              call mpi_allreduce(dataMin1,dataMin,1,mpi_real4,mpi_min,mpi_comm,ierr)
+              dataMax = maxval(arrayr4_3d(i1:i2,j1:j2,k1:k2))
+              dataMin = minval(arrayr4_3d(i1:i2,j1:j2,k1:k2))
+              call mpi_allreduce(mpi_in_place,dataMax,1,mpi_real4,mpi_max,mpi_comm,ierr)
+              call mpi_allreduce(mpi_in_place,dataMin,1,mpi_real4,mpi_min,mpi_comm,ierr)
               ! Lossy compression if nbits>0.
               ! The floating point data is quantized to improve compression
               ! See doi:10.5194/gmd-10-413-2017.  The method employed
@@ -344,12 +342,12 @@ module module_write_netcdf_parallel
               scale_fact = (dataMax - dataMin) / (2**nbits-1); offset = dataMin
               allocate(arrayr4_3d_save(i1:i2,j1:j2,k1:k2))
               arrayr4_3d_save(i1:i2,j1:j2,k1:k2)=arrayr4_3d(i1:i2,j1:j2,k1:k2)
-              arrayr4_3d(i1:i2,j1:j2,k1:k2)=scale_fact*(nint((arrayr4_3d(i1:i2,j1:j2,k1:k2)-offset)/scale_fact))+offset
+              arrayr4_3d = scale_fact*(nint((arrayr4_3d_save - offset) / scale_fact)) + offset
               ! compute max abs compression error.
-              compress_err1(i) = &
+              compress_err(i) = &
               maxval(abs(arrayr4_3d_save(i1:i2,j1:j2,k1:k2)-arrayr4_3d(i1:i2,j1:j2,k1:k2)))
               deallocate(arrayr4_3d_save)
-              call mpi_allreduce(compress_err1(i),compress_err(i),1,mpi_real4,mpi_max,mpi_comm,ierr)
+              call mpi_allreduce(mpi_in_place,compress_err(i),1,mpi_real4,mpi_max,mpi_comm,ierr)
               !print *,'field name=',trim(fldName),dataMin,dataMax,compress_err(i)
            endif
            ncerr = nf90_put_var(ncid, varids(i), values=arrayr4_3d, start=(/totalLBound3d(1),totalLBound3d(2),totalLBound3d(3),1/)); NC_ERR_STOP(ncerr)
@@ -376,7 +374,7 @@ module module_write_netcdf_parallel
 
     deallocate(fcstField)
     deallocate(varids)
-    deallocate(compress_err,compress_err1)
+    deallocate(compress_err)
 
     ncerr = nf90_close(ncid=ncid); NC_ERR_STOP(ncerr)
     !call mpi_barrier(mpi_comm,ierr)
