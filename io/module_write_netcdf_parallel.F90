@@ -177,7 +177,7 @@ module module_write_netcdf_parallel
           if (ideflate > 0) then
             ncerr = nf90_def_var(ncid, trim(fldName), NF90_FLOAT, &
                     (/im_dimid,jm_dimid,pfull_dimid,time_dimid/), varids(i), &
-                    shuffle=.true.,deflate_level=ideflate,&
+                    shuffle=.false.,deflate_level=ideflate,&
                     chunksizes=(/im,jm,1,1/),cache_size=40*im*jm); NC_ERR_STOP(ncerr)
             ! compression filters require collective access.
             ncerr = nf90_var_par_access(ncid, varids(i), NF90_COLLECTIVE) 
