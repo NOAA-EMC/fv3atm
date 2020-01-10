@@ -34,7 +34,7 @@ module module_write_netcdf_parallel
     integer, optional,intent(out)      :: rc
 !
 !** local vars
-    integer :: i,j,m,n,k,istart,iend,jstart,jend
+    integer :: i,j,m,n,k,istart,iend,jstart,jend,i1,i2,j1,j2,k1,k2
     integer :: lm
 
     integer, dimension(:), allocatable     :: fldlev
@@ -58,8 +58,9 @@ module module_write_netcdf_parallel
     integer :: totalLBound2d(2),totalUBound2d(2),totalLBound3d(3),totalUBound3d(3)
 
     integer :: varival
-    real(4) :: varr4val, scale_fact, offset, dataMin, dataMax
-    real(4), allocatable, dimension(:) :: compress_err
+    real(4) :: varr4val, scale_fact, offset, dataMin, dataMax, dataMin1, &
+               dataMax1
+    real(4), allocatable, dimension(:) :: compress_err,compress_err1
     real(8) :: varr8val
     character(len=ESMF_MAXSTR) :: varcval
 
@@ -75,6 +76,7 @@ module module_write_netcdf_parallel
     call ESMF_FieldBundleGet(fieldbundle, fieldCount=fieldCount, rc=rc); ESMF_ERR_RETURN(rc)
 
     allocate(compress_err(fieldCount)); compress_err=-999.
+    allocate(compress_err1(fieldCount)); compress_err1=0.
     allocate(fldlev(fieldCount)) ; fldlev = 0
     allocate(fcstField(fieldCount))
     allocate(varids(fieldCount))
@@ -319,26 +321,37 @@ module module_write_netcdf_parallel
       else if (fldlev(i) > 1) then
          if (typekind == ESMF_TYPEKIND_R4) then
            call ESMF_FieldGet(fcstField(i), localDe=0, farrayPtr=arrayr4_3d, totalLBound=totalLBound3d, totalUBound=totalUBound3d,rc=rc); ESMF_ERR_RETURN(rc)
-           !print *,'field name=',trim(fldName),'bound=',totalLBound3d,'ubound=',totalUBound3d
            if (ideflate > 0 .and. nbits > 0) then
-                ! Lossy compression if nbits>0.
-                ! The floating point data is quantized to improve compression
-                ! See doi:10.5194/gmd-10-413-2017.  The method employed
-                ! here is identical to the 'scaled linear packing' method in
-                ! that paper, except that the data are scaling into an arbitrary
-                ! range (2**nbits-1 not just 2**16-1) and are stored as
-                ! re-scaled floats instead of short integers.
-                ! The zlib algorithm does almost as
-                ! well packing the re-scaled floats as it does the scaled
-                ! integers, and this avoids the need for the client to apply the
-                ! rescaling (plus it allows the ability to adjust the packing
-                ! range)
-                arrayr4_3d_save = arrayr4_3d
-                dataMax = maxval(arrayr4_3d); dataMin = minval(arrayr4_3d)
-                arrayr4_3d = quantized(arrayr4_3d_save, nbits, dataMin, dataMax)
-                ! compute max abs compression error, save as a variable
-                ! attribute.
-                compress_err(i) = maxval(abs(arrayr4_3d_save-arrayr4_3d))
+              i1=totalLBound3d(1);i2=totalUBound3d(1)
+              j1=totalLBound3d(2);j2=totalUBound3d(2)
+              k1=totalLBound3d(3);k2=totalUBound3d(3)
+              dataMax1 = maxval(arrayr4_3d(i1:i2,j1:j2,k1:k2))
+              dataMin1 = minval(arrayr4_3d(i1:i2,j1:j2,k1:k2))
+              call mpi_allreduce(dataMax1,dataMax,1,mpi_real4,mpi_max,mpi_comm,ierr)
+              call mpi_allreduce(dataMin1,dataMin,1,mpi_real4,mpi_min,mpi_comm,ierr)
+              ! Lossy compression if nbits>0.
+              ! The floating point data is quantized to improve compression
+              ! See doi:10.5194/gmd-10-413-2017.  The method employed
+              ! here is identical to the 'scaled linear packing' method in
+              ! that paper, except that the data are scaling into an arbitrary
+              ! range (2**nbits-1 not just 2**16-1) and are stored as
+              ! re-scaled floats instead of short integers.
+              ! The zlib algorithm does almost as
+              ! well packing the re-scaled floats as it does the scaled
+              ! integers, and this avoids the need for the client to apply the
+              ! rescaling (plus it allows the ability to adjust the packing
+              ! range)
+              scale_fact = (dataMax - dataMin) / (2**nbits-1); offset = dataMin
+              allocate(arrayr4_3d_save,mold=arrayr4_3d)
+              arrayr4_3d_save=arrayr4_3d
+              arrayr4_3d=scale_fact*(nint((arrayr4_3d-offset)/scale_fact))+offset
+              ! compute max abs compression error.
+              compress_err1(i) = &
+              maxval(abs(arrayr4_3d_save(i1:i2,j1:j2,k1:k2)-arrayr4_3d(i1:i2,j1:j2,k1:k2)))
+              deallocate(arrayr4_3d_save)
+              call mpi_allreduce(compress_err1(i),compress_err(i),1,mpi_real4,mpi_max,mpi_comm,ierr)
+              print *,'field name=',trim(fldName),dataMin,dataMax,compress_err(i),&
+              minval(arrayr4_3d(i1:i2,j1:j2,k1:k2)),maxval(arrayr4_3d(i1:i2,j1:j2,k1:k2))
            endif
            ncerr = nf90_put_var(ncid, varids(i), values=arrayr4_3d, start=(/totalLBound3d(1),totalLBound3d(2),totalLBound3d(3),1/)); NC_ERR_STOP(ncerr)
          else if (typekind == ESMF_TYPEKIND_R8) then
@@ -364,7 +377,7 @@ module module_write_netcdf_parallel
 
     deallocate(fcstField)
     deallocate(varids)
-    deallocate(compress_err)
+    deallocate(compress_err,compress_err1)
 
     ncerr = nf90_close(ncid=ncid); NC_ERR_STOP(ncerr)
     !call mpi_barrier(mpi_comm,ierr)
@@ -570,16 +583,4 @@ module module_write_netcdf_parallel
     end if
   end subroutine nccheck
  
-  elemental real function quantized(dataIn, nbits, dataMin, dataMax)
-    integer, intent(in) :: nbits
-    real(4), intent(in) :: dataIn, dataMin, dataMax
-    real(4) offset, scale_fact
-    ! convert data to 32 bit integers in range 0 to 2**nbits-1, then cast
-    ! cast back to 32 bit floats (data is then quantized in steps
-    ! proportional to 2**nbits so last 32-nbits in floating
-    ! point representation should be zero for efficient zlib compression).
-    scale_fact = (dataMax - dataMin) / (2**nbits-1); offset = dataMin
-    quantized = scale_fact*(nint((dataIn - offset) / scale_fact)) + offset
-  end function quantized
-
 end module module_write_netcdf_parallel
