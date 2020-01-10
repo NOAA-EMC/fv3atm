@@ -342,16 +342,15 @@ module module_write_netcdf_parallel
               ! rescaling (plus it allows the ability to adjust the packing
               ! range)
               scale_fact = (dataMax - dataMin) / (2**nbits-1); offset = dataMin
-              allocate(arrayr4_3d_save,mold=arrayr4_3d)
-              arrayr4_3d_save=arrayr4_3d
-              arrayr4_3d=scale_fact*(nint((arrayr4_3d-offset)/scale_fact))+offset
+              allocate(arrayr4_3d_save(i1:i2,j1:j2,k1:k2))
+              arrayr4_3d_save(i1:i2,j1:j2,k1:k2)=arrayr4_3d(i1:i2,j1:j2,k1:k2)
+              arrayr4_3d(i1:i2,j1:j2,k1:k2)=scale_fact*(nint((arrayr4_3d(i1:i2,j1:j2,k1:k2)-offset)/scale_fact))+offset
               ! compute max abs compression error.
               compress_err1(i) = &
               maxval(abs(arrayr4_3d_save(i1:i2,j1:j2,k1:k2)-arrayr4_3d(i1:i2,j1:j2,k1:k2)))
               deallocate(arrayr4_3d_save)
               call mpi_allreduce(compress_err1(i),compress_err(i),1,mpi_real4,mpi_max,mpi_comm,ierr)
-              print *,'field name=',trim(fldName),dataMin,dataMax,compress_err(i),&
-              minval(arrayr4_3d(i1:i2,j1:j2,k1:k2)),maxval(arrayr4_3d(i1:i2,j1:j2,k1:k2))
+              !print *,'field name=',trim(fldName),dataMin,dataMax,compress_err(i)
            endif
            ncerr = nf90_put_var(ncid, varids(i), values=arrayr4_3d, start=(/totalLBound3d(1),totalLBound3d(2),totalLBound3d(3),1/)); NC_ERR_STOP(ncerr)
          else if (typekind == ESMF_TYPEKIND_R8) then
