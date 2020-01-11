@@ -2059,7 +2059,7 @@ module module_physics_driver
           Sfcprop%zorll(i)  = zorl3(i,1)
           Sfcprop%zorlo(i)  = zorl3(i,3)
 
-          if (flag_cice(i)) then    ! this was already done for lake ice in sfc_sice
+          if (flag_cice(i) .and. wet(i)) then    ! this was already done for lake ice in sfc_sice
             txi = Sfcprop%fice(i)
             txo = one - txi
             evap(i)         = txi * evap3(i,2) + txo * evap3(i,3)
