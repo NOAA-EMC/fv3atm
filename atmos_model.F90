@@ -1697,7 +1697,7 @@ end subroutine atmos_data_type_chksum
                   ix = Atm_block%ixp(i,j)
                   IPD_Data(nb)%Coupling%ficein_cpl(ix)   = zero
                   if (IPD_Data(nb)%Sfcprop%oceanfrac(ix) > zero) then
-                    datar8(i,j) = datar8(i,j)/IPD_Data(nb)%Sfcprop%oceanfrac(ix) !LHS: ice frac wrt non-land portion (not whole cell)
+                    datar8(i,j) = datar8(i,j)/IPD_Data(nb)%Sfcprop%oceanfrac(ix) !convert ice frac wrt whole cell to water area
                     if (datar8(i,j) >= IPD_control%min_seaice) then
                       IPD_Data(nb)%Coupling%ficein_cpl(ix) = datar8(i,j)
                       if (IPD_Data(nb)%Sfcprop%oceanfrac(ix) == one) IPD_Data(nb)%Sfcprop%slmsk(ix) = 2. !slmsk=2 crashes in gcycle on partial land points

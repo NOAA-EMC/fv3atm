@@ -1100,23 +1100,21 @@ module FV3GFS_io_mod
       enddo
     endif
 
-  if(Model%cplflx) then
+  if(Model%cplflx .or. Model%frac_grid) then
     if (nint(sfc_var2(1,1,33)) == -9999) then
-      if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing tsfcl') 
-      !--- compute tsfcl from existing variables
+      if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing tsfcl')
       do nb = 1, Atm_block%nblks
         do ix = 1, Atm_block%blksz(nb)
-          Sfcprop(nb)%tsfcl(ix) = Sfcprop(nb)%tsfco(ix)
+          Sfcprop(nb)%tsfcl(ix) = Sfcprop(nb)%tsfco(ix) !--- compute tsfcl from existing variables
         enddo
       enddo
     endif
 
     if (nint(sfc_var2(1,1,34)) == -9999) then
-      if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing zorll') 
-      !--- compute zorll from existing variables
+      if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing zorll')
       do nb = 1, Atm_block%nblks
         do ix = 1, Atm_block%blksz(nb)
-          Sfcprop(nb)%zorll(ix) = Sfcprop(nb)%zorlo(ix)
+          Sfcprop(nb)%zorll(ix) = Sfcprop(nb)%zorlo(ix) !--- compute zorll from existing variables
         enddo
       enddo
     endif

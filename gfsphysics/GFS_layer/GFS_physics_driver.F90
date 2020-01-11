@@ -1054,9 +1054,9 @@ module module_physics_driver
           if (slopetyp(i) < 1) slopetyp(i) = 1
         endif
 !  --- ...  xw: transfer ice thickness & concentration from global to local variables
-        zice(i)    = Sfcprop%hice(i)
         Sfcprop%fice(i) = min(one,Sfcprop%fice(i)) ! sea/lake ice fraction wrt water portion, not whole cell
         fice(i)    = Sfcprop%fice(i)
+        zice(i)    = Sfcprop%hice(i)
         tice(i)    = Sfcprop%tisfc(i)
 !
 !GFDL   work1(i)   = (log(coslat(i) / (nlons(i)*latr)) - dxmin) * dxinv
@@ -1986,7 +1986,7 @@ module module_physics_driver
           if (.not. flag_cice(i)) then
             if (islmsk(i) == 2) then                           ! return updated lake ice thickness & concentration to global array
               Sfcprop%hice(i)  = zice(i)
-              Sfcprop%fice(i)  = min(one, fice(i))
+              Sfcprop%fice(i)  = fice(i) 
               Sfcprop%tisfc(i) = tice(i)
             else                                               ! this would be over open ocean or land (no ice fraction)
               Sfcprop%hice(i)  = zero
