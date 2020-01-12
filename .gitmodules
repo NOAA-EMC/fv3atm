@@ -7,4 +7,5 @@
 	url = https://github.com/NCAR/ccpp-framework
 [submodule "ccpp/physics"]
 	path = ccpp/physics
-	url = https://github.com/NCAR/ccpp-physics
+	url = https://github.com/climbfuji/ccpp-physics
+	branch = gfsv16_netcdf_post_ficein_cpl
