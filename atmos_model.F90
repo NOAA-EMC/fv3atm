@@ -276,16 +276,6 @@ subroutine update_atmos_radiation_physics (Atmos)
     call atmos_phys_driver_statein (IPD_data, Atm_block, flip_vc)
     call mpp_clock_end(getClock)
 
-#ifdef CCPP
-    if (IPD_Control%first_time_step) then
-      ! Initialize the CCPP framework and physics
-      call CCPP_step (step="init", nblks=Atm_block%nblks, ierr=ierr)
-      if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP init step failed')
-      call CCPP_step (step="physics_init", nblks=Atm_block%nblks, ierr=ierr)
-      if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP physics_init step failed')
-    end if
-#endif
-
 !--- if dycore only run, set up the dummy physics output state as the input state
     if (dycore_only) then
       do nb = 1,Atm_block%nblks
@@ -684,6 +674,18 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    call FV3GFS_restart_read (IPD_Data, IPD_Restart, Atm_block, IPD_Control, Atmos%domain, Atm(mytile)%flagstruct%warm_start)
 #else
    call FV3GFS_restart_read (IPD_Data, IPD_Restart, Atm_block, IPD_Control, Atmos%domain)
+#endif
+
+#ifdef CCPP
+   ! Populate the IPD_Data%Statein container with the prognostic state
+   ! in Atm_block, which contains the initial conditions/restart data.
+   call atmos_phys_driver_statein (IPD_data, Atm_block, flip_vc)
+   ! Initialize the CCPP framework
+   call CCPP_step (step="init", nblks=Atm_block%nblks, ierr=ierr)
+   if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP init step failed')
+   ! Initialize the CCPP physics
+   call CCPP_step (step="physics_init", nblks=Atm_block%nblks, ierr=ierr)
+   if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP physics_init step failed')
 #endif
 
    !--- set the initial diagnostic timestamp
