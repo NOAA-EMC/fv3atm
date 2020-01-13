@@ -368,6 +368,13 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+[gq0(:,:,index_for_mass_weighted_rime_factor)]
+  standard_name = mass_weighted_rime_factor_updated_by_physics
+  long_name = mass weighted rime factor updated by physics
+  units = kg kg-1
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
 [gq0(:,:,index_for_water_friendly_aerosols)]
   standard_name = water_friendly_aerosol_number_concentration_updated_by_physics
   long_name = number concentration of water-friendly aerosols updated by physics
@@ -1259,6 +1266,76 @@
   standard_name = surface_latent_heat
   long_name = latent heating at the surface (pos = up)
   units = W m-2
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+[raincprv]
+  standard_name = lwe_thickness_of_convective_precipitation_amount_from_previous_timestep
+  long_name = convective_precipitation_amount from previous timestep
+  units = m
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+[rainncprv]
+  standard_name = lwe_thickness_of_explicit_rainfall_amount_from_previous_timestep
+  long_name = explicit rainfall from previous timestep
+  units = m
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+[iceprv]
+  standard_name = lwe_thickness_of_ice_amount_from_previous_timestep
+  long_name = ice amount from previous timestep
+  units = m
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+[snowprv]
+  standard_name = lwe_thickness_of_snow_amount_from_previous_timestep
+  long_name = snow amount from previous timestep
+  units = m
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+[graupelprv]
+  standard_name = lwe_thickness_of_graupel_amount_from_previous_timestep
+  long_name = graupel amount from previous timestep
+  units = m
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+[draincprv]
+  standard_name = convective_precipitation_rate_from_previous_timestep
+  long_name = convective precipitation rate from previous timestep
+  units = mm s-1
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+[drainncprv]
+  standard_name = explicit_rainfall_rate_from_previous_timestep
+  long_name = explicit rainfall rate previous timestep
+  units = mm s-1
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+[diceprv]
+  standard_name = ice_precipitation_rate_from_previous_timestep
+  long_name = ice precipitation rate from previous timestep
+  units = mm s-1
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+[dsnowprv]
+  standard_name = snow_precipitation_rate_from_previous_timestep
+  long_name = snow precipitation rate from previous timestep
+  units = mm s-1
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+[dgraupelprv]
+  standard_name = graupel_precipitation_rate_from_previous_timestep
+  long_name = graupel precipitation rate from previous timestep
+  units = mm s-1
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
@@ -2168,6 +2245,12 @@
   units = flag
   dimensions = ()
   type = integer
+[imp_physics_fer_hires]
+  standard_name = flag_for_fer_hires_microphysics_scheme
+  long_name = choice of Ferrier-Aligo microphysics scheme
+  units = flag
+  dimensions = ()
+  type = integer
 [imp_physics_gfdl]
   standard_name = flag_for_gfdl_microphysics_scheme
   long_name = choice of GFDL microphysics scheme
@@ -2577,6 +2660,12 @@
   units = count
   dimensions = ()
   type = integer
+[rdlai]
+  standard_name = flag_for_reading_leaf_area_index_from_input
+  long_name = flag for reading leaf area index from initial conditions for RUC LSM
+  units = flag
+  dimensions = ()
+  type = logical
 [ivegsrc]
   standard_name = vegetation_type_dataset_choice
   long_name = land use dataset choice
@@ -2589,6 +2678,19 @@
   units = index
   dimensions = ()
   type = integer
+[spec_adv]
+  standard_name = flag_for_individual_cloud_species_advected 
+  long_name = flag for individual cloud species advected
+  units = flag 
+  dimensions = ()
+  type = logical
+[flgmin]
+  standard_name = minimum_large_ice_fraction
+  long_name = minimum large ice fraction in F-A mp scheme
+  units = frac
+  dimensions = (2)
+  type = real
+  kind = kind_phys
 [iopt_dveg]
   standard_name = flag_for_dynamic_vegetation_option
   long_name = choice for dynamic vegetation option (see noahmp module for definition)
@@ -2667,6 +2769,13 @@
   units = flag
   dimensions = ()
   type = logical
+[rhgrd]
+  standard_name = fa_threshold_relative_humidity_for_onset_of_condensation
+  long_name = relative humidity threshold parameter for condensation for FA scheme
+  units = none
+  dimensions = ()
+  type = real
+  kind = kind_phys
 [flipv]
   standard_name = flag_flip
   long_name = vertical flip logical
@@ -2805,15 +2914,87 @@
   units = flag
   dimensions = ()
   type = integer
+[imfshalcnv_sas]
+  standard_name = flag_for_sas_shallow_convection_scheme
+  long_name = flag for SAS shallow convection scheme
+  units = flag
+  dimensions = ()
+  type = integer
+[imfshalcnv_samf]
+  standard_name = flag_for_samf_shallow_convection_scheme
+  long_name = flag for SAMF shallow convection scheme
+  units = flag
+  dimensions = ()
+  type = integer
+[imfshalcnv_gf]
+  standard_name = flag_for_gf_shallow_convection_scheme
+  long_name = flag for Grell-Freitas shallow convection scheme
+  units = flag
+  dimensions = ()
+  type = integer
+[imfshalcnv_gf]
+  standard_name = flag_for_ntiedtke_shallow_convection_scheme
+  long_name = flag for new Tiedtke shallow convection scheme
+  units = flag
+  dimensions = ()
+  type = integer
 [imfdeepcnv]
   standard_name = flag_for_mass_flux_deep_convection_scheme
   long_name = flag for mass-flux deep convection scheme
   units = flag
   dimensions = ()
   type = integer
+[imfdeepcnv_sas]
+  standard_name = flag_for_sas_deep_convection_scheme
+  long_name = flag for SAS deep convection scheme
+  units = flag
+  dimensions = ()
+  type = integer
+[imfdeepcnv_samf]
+  standard_name = flag_for_samf_deep_convection_scheme
+  long_name = flag for SAMF deep convection scheme
+  units = flag
+  dimensions = ()
+  type = integer
+[imfdeepcnv_gf]
+  standard_name = flag_for_gf_deep_convection_scheme
+  long_name = flag for Grell-Freitas deep convection scheme
+  units = flag
+  dimensions = ()
+  type = integer
+[imfdeepcnv_ntiedtke]
+  standard_name = flag_for_ntiedtke_deep_convection_scheme
+  long_name = flag for new Tiedtke deep convection scheme
+  units = flag
+  dimensions = ()
+  type = integer
+[isatmedmf]
+  standard_name = choice_of_scale_aware_TKE_moist_EDMF_PBL
+  long_name = choice of scale-aware TKE moist EDMF PBL scheme
+  units = none
+  dimensions = ()
+  type = integer
+[isatmedmf_vdif]
+  standard_name = choice_of_original_scale_aware_TKE_moist_EDMF_PBL
+  long_name = choice of original scale-aware TKE moist EDMF PBL scheme
+  units = none
+  dimensions = ()
+  type = integer
+[isatmedmf_vdifq]
+  standard_name = choice_of_updated_scale_aware_TKE_moist_EDMF_PBL
+  long_name = choice of updated scale-aware TKE moist EDMF PBL scheme
+  units = none
+  dimensions = ()
+  type = integer
 [nmtvr]
   standard_name = number_of_statistical_measures_of_subgrid_orography
   long_name = number of topographic variables in GWD
+  units = count
+  dimensions = ()
+  type = integer
+[jcap]
+  standard_name = number_of_spectral_wave_trancation_for_sas
+  long_name = number of spectral wave trancation used only by sascnv and shalcnv
   units = count
   dimensions = ()
   type = integer
@@ -2931,91 +3112,91 @@
   kind = kind_phys
 [c0s_deep]
   standard_name = rain_conversion_parameter_deep_convection
-  long_name = convective rain conversion parameter for deep conv.
+  long_name = convective rain conversion parameter for deep convection
   units = m-1
   dimensions = ()
   type = real
   kind = kind_phys
 [c1_deep]
   standard_name = detrainment_conversion_parameter_deep_convection
-  long_name = convective detrainment conversion parameter for deep conv.
+  long_name = convective detrainment conversion parameter for deep convection
   units = m-1
   dimensions = ()
   type = real
   kind = kind_phys
 [betal_deep]
   standard_name = downdraft_fraction_reaching_surface_over_land_deep_convection
-  long_name = downdraft fraction reaching surface over land for deep conv.
+  long_name = downdraft fraction reaching surface over land for deep convection
   units = frac
   dimensions = ()
   type = real
   kind = kind_phys
 [betas_deep]
   standard_name = downdraft_fraction_reaching_surface_over_ocean_deep_convection
-  long_name = downdraft fraction reaching surface over ocean for deep conv.
+  long_name = downdraft fraction reaching surface over ocean for deep convection
   units = frac
   dimensions = ()
   type = real
   kind = kind_phys
 [evfact_deep]
   standard_name = rain_evaporation_coefficient_deep_convection
-  long_name = convective rain evaporation coefficient for deep conv.
+  long_name = convective rain evaporation coefficient for deep convection
   units = frac
   dimensions = ()
   type = real
   kind = kind_phys
 [evfactl_deep]
   standard_name = rain_evaporation_coefficient_over_land_deep_convection
-  long_name = convective rain evaporation coefficient over land for deep conv.
+  long_name = convective rain evaporation coefficient over land for deep convection
   units = frac
   dimensions = ()
   type = real
   kind = kind_phys
 [pgcon_deep]
   standard_name = momentum_transport_reduction_factor_pgf_deep_convection
-  long_name = reduction factor in momentum transport due to deep conv. induced pressure gradient force
+  long_name = reduction factor in momentum transport due to deep convection induced pressure gradient force
   units = frac
   dimensions = ()
   type = real
   kind = kind_phys
 [asolfac_deep]
   standard_name = aerosol_aware_parameter_deep_convection
-  long_name = aerosol-aware parameter inversely proportional to CCN number concentraion from Lim (2011) for deep conv.
+  long_name = aerosol-aware parameter inversely proportional to CCN number concentraion from Lim (2011) for deep convection
   units = none
   dimensions = ()
   type = real
   kind = kind_phys
 [clam_shal]
   standard_name = entrainment_rate_coefficient_shallow_convection
-  long_name = entrainment rate coefficient for shal conv.
+  long_name = entrainment rate coefficient for shallow convection
   units = none
   dimensions = ()
   type = real
   kind = kind_phys
 [c0s_shal]
   standard_name = rain_conversion_parameter_shallow_convection
-  long_name = convective rain conversion parameter for shal conv.
+  long_name = convective rain conversion parameter for shallow convection
   units = m-1
   dimensions = ()
   type = real
   kind = kind_phys
 [c1_shal]
   standard_name = detrainment_conversion_parameter_shallow_convection
-  long_name = convective detrainment conversion parameter for shal conv.
+  long_name = convective detrainment conversion parameter for shallow convection
   units = m-1
   dimensions = ()
   type = real
   kind = kind_phys
 [pgcon_shal]
   standard_name = momentum_transport_reduction_factor_pgf_shallow_convection
-  long_name = reduction factor in momentum transport due to shal conv. induced pressure gradient force
+  long_name = reduction factor in momentum transport due to shallow convection induced pressure gradient force
   units = frac
   dimensions = ()
   type = real
   kind = kind_phys
 [asolfac_shal]
   standard_name = aerosol_aware_parameter_shallow_convection
-  long_name = aerosol-aware parameter inversely proportional to CCN number concentraion from Lim (2011) for shal conv.
+  long_name = aerosol-aware parameter inversely proportional to CCN number concentraion from Lim (2011) for shallow convection
   units = none
   dimensions = ()
   type = real
@@ -3378,6 +3559,12 @@
 [ntke]
   standard_name = index_for_turbulent_kinetic_energy
   long_name = tracer index for turbulent kinetic energy
+  units = index
+  dimensions = ()
+  type = integer
+[nqrimef]
+  standard_name = index_for_mass_weighted_rime_factor
+  long_name = tracer index for mass weighted rime factor
   units = index
   dimensions = ()
   type = integer
@@ -4210,76 +4397,6 @@
   units = none
   dimensions = (horizontal_dimension)
   type = integer
-[raincprv]
-  standard_name = lwe_thickness_of_convective_precipitation_amount_from_previous_timestep
-  long_name = convective_precipitation_amount from previous timestep
-  units = m
-  dimensions = (horizontal_dimension)
-  type = real
-  kind = kind_phys
-[rainncprv]
-  standard_name = lwe_thickness_of_explicit_rainfall_amount_from_previous_timestep
-  long_name = explicit rainfall from previous timestep
-  units = m
-  dimensions = (horizontal_dimension)
-  type = real
-  kind = kind_phys
-[iceprv]
-  standard_name = lwe_thickness_of_ice_amount_from_previous_timestep
-  long_name = ice amount from previous timestep
-  units = m
-  dimensions = (horizontal_dimension)
-  type = real
-  kind = kind_phys
-[snowprv]
-  standard_name = lwe_thickness_of_snow_amount_from_previous_timestep
-  long_name = snow amount from previous timestep
-  units = m
-  dimensions = (horizontal_dimension)
-  type = real
-  kind = kind_phys
-[graupelprv]
-  standard_name = lwe_thickness_of_graupel_amount_from_previous_timestep
-  long_name = graupel amount from previous timestep
-  units = m
-  dimensions = (horizontal_dimension)
-  type = real
-  kind = kind_phys
-[draincprv]
-  standard_name = convective_precipitation_rate_from_previous_timestep
-  long_name = convective precipitation rate from previous timestep
-  units = mm s-1
-  dimensions = (horizontal_dimension)
-  type = real
-  kind = kind_phys
-[drainncprv]
-  standard_name = explicit_rainfall_rate_from_previous_timestep
-  long_name = explicit rainfall rate previous timestep
-  units = mm s-1
-  dimensions = (horizontal_dimension)
-  type = real
-  kind = kind_phys
-[diceprv]
-  standard_name = ice_precipitation_rate_from_previous_timestep
-  long_name = ice precipitation rate from previous timestep
-  units = mm s-1
-  dimensions = (horizontal_dimension)
-  type = real
-  kind = kind_phys
-[dsnowprv]
-  standard_name = snow_precipitation_rate_from_previous_timestep
-  long_name = snow precipitation rate from previous timestep
-  units = mm s-1
-  dimensions = (horizontal_dimension)
-  type = real
-  kind = kind_phys
-[dgraupelprv]
-  standard_name = graupel_precipitation_rate_from_previous_timestep
-  long_name = graupel precipitation rate from previous timestep
-  units = mm s-1
-  dimensions = (horizontal_dimension)
-  type = real
-  kind = kind_phys
 [CLDFRA_BL]
   standard_name = subgrid_cloud_fraction_pbl
   long_name = subgrid cloud fraction from PBL scheme
@@ -4816,6 +4933,13 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+[train]
+  standard_name = accumulated_change_of_air_temperature_due_to_FA_scheme
+  long_name = accumulated change of air temperature due to FA MP scheme
+  units = K
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
 [gflux]
   standard_name = cumulative_surface_ground_heat_flux_multiplied_by_timestep
   long_name = cumulative groud conductive heat flux multiplied by timestep
@@ -5329,14 +5453,14 @@
   kind = kind_phys
 [dt3dt(:,:,4)]
   standard_name = cumulative_change_in_temperature_due_to_deep_convection
-  long_name = cumulative change in temperature due to deep conv.
+  long_name = cumulative change in temperature due to deep convection
   units = K
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
 [dt3dt(:,:,5)]
   standard_name = cumulative_change_in_temperature_due_to_shal_convection
-  long_name = cumulative change in temperature due to shal conv.
+  long_name = cumulative change in temperature due to shallow convection
   units = K
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
@@ -5364,14 +5488,14 @@
   kind = kind_phys
 [dq3dt(:,:,2)]
   standard_name = cumulative_change_in_water_vapor_specific_humidity_due_to_deep_convection
-  long_name = cumulative change in water vapor specific humidity due to deep conv.
+  long_name = cumulative change in water vapor specific humidity due to deep convection
   units = kg kg-1
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
 [dq3dt(:,:,3)]
   standard_name = cumulative_change_in_water_vapor_specific_humidity_due_to_shal_convection
-  long_name = cumulative change in water vapor specific humidity due to shal conv.
+  long_name = cumulative change in water vapor specific humidity due to shallow convection
   units = kg kg-1
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
@@ -5727,6 +5851,76 @@
 [ccpp-arg-table]
   name = GFS_interstitial_type
   type = ddt
+[qv_r]
+  standard_name = humidity_mixing_ratio
+  long_name = the ratio of the mass of water vapor to the mass of dry air
+  units = kg kg-1
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+[qc_r]
+  standard_name = cloud_liquid_water_mixing_ratio
+  long_name = the ratio of the mass of liquid water to the mass of dry air
+  units = kg kg-1
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+[qr_r]
+  standard_name = cloud_rain_water_mixing_ratio
+  long_name = the ratio of the mass rain water to the mass of dry air
+  units = kg kg-1
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+[qi_r]
+  standard_name = cloud_ice_mixing_ratio
+  long_name = the ratio of the mass of ice to the mass of dry air
+  units = kg kg-1
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+[qs_r]
+  standard_name = cloud_snow_mixing_ratio
+  long_name = the ratio of the mass of snow to mass of dry air
+  units = kg kg-1
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+[qg_r]
+  standard_name = mass_weighted_rime_factor_mixing_ratio
+  long_name = the ratio of the mass of rime factor to mass of dry air
+  units = kg kg-1
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+[f_ice]
+  standard_name = fraction_of_ice_water_cloud
+  long_name = fraction of ice water cloud
+  units = frac
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+[f_rain]
+  standard_name = fraction_of_rain_water_cloud
+  long_name = fraction of rain water cloud
+  units = frac
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+[f_rimef]
+  standard_name = rime_factor
+  long_name = rime factor
+  units = frac
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+[cwm]
+  standard_name = total_cloud_condensate_mixing_ratio_updated_by_physics
+  long_name = total cloud condensate mixing ratio (except water vapor) updated by physics
+  units = kg kg-1
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
 [adjsfculw_ocean]
   standard_name = surface_upwelling_longwave_flux_over_ocean_interstitial
   long_name = surface upwelling longwave flux at current time over ocean (temporary use as interstitial)
@@ -7138,7 +7332,7 @@
   kind = kind_phys
 [ncstrac]
   standard_name = number_of_tracers_for_CS
-  long_name = number of convectively transported tracers in Chikira-Sugiyama deep conv. scheme
+  long_name = number of convectively transported tracers in Chikira-Sugiyama deep convection scheme
   units = count
   dimensions = ()
   type = integer
@@ -7192,7 +7386,7 @@
   type = integer
 [ntiwx]
   standard_name = index_for_ice_cloud_condensate_vertical_diffusion_tracer
-  long_name = index for ice cloud condensate n the vertically diffused tracer array
+  long_name = index for ice cloud condensate in the vertically diffused tracer array
   units = index
   dimensions = ()
   type = integer
@@ -8277,6 +8471,13 @@
   standard_name = ratio_of_dry_air_to_water_vapor_gas_constants
   long_name = rd/rv
   units = none
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[con_epsq]
+  standard_name = minimum_value_of_specific_humidity
+  long_name = floor value for specific humidity
+  units = kg kg-1
   dimensions = ()
   type = real
   kind = kind_phys
