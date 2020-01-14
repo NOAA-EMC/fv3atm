@@ -532,6 +532,7 @@ module GFS_typedefs
     logical              :: ldiag3d         !< flag for 3d diagnostic fields
     logical              :: qdiag3d         !< flag for 3d tracer diagnostic fields
     logical              :: gwd_generic_tend!< true if GFS_GWD_generic should calculate tendencies
+    logical              :: pbl_generic_tend!< true if GFS_PBL_generic should calculate tendencies
     logical              :: lssav           !< logical flag for storing diagnostics
     real(kind=kind_phys) :: fhcyc           !< frequency for surface data cycling (hours)
     integer              :: thermodyn_id    !< valid for GFS only for get_prs/phi
@@ -3225,6 +3226,7 @@ module GFS_typedefs
     Model%ldiag3d          = ldiag3d
     Model%qdiag3d          = qdiag3d
     Model%gwd_generic_tend = .false.
+    Model%pbl_generic_tend = .false.
 !
 !VAY-ugwp  --- set some GW-related switches
 !
