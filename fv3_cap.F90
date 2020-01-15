@@ -75,7 +75,7 @@ module fv3gfs_cap_mod
 
   type(ESMF_GridComp)                         :: fcstComp
   type(ESMF_State)                            :: fcstState
-  character(len=80),         allocatable      :: fcstItemNameList(:)
+  character(len=esmf_maxstr),allocatable      :: fcstItemNameList(:)
   type(ESMF_StateItem_Flag), allocatable      :: fcstItemTypeList(:)
   type(ESMF_FieldBundle),    allocatable      :: fcstFB(:)
   integer, save                               :: FBCount
