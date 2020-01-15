@@ -38,7 +38,8 @@
                                       nsout => nsout_io,                        &
                                       cen_lon, cen_lat,                         &
                                       lon1, lat1, lon2, lat2, dlon, dlat,       &
-                                      stdlat1, stdlat2, dx, dy, iau_offset
+                                      stdlat1, stdlat2, dx, dy, iau_offset,     &
+                                      max_filename_len
       use module_write_nemsio, only : nemsio_first_call, write_nemsio
       use module_write_netcdf, only : write_netcdf
       use physcons,            only : pi => con_pi
@@ -56,7 +57,7 @@
 !
 !-----------------------------------------------------------------------
 !
-      integer,parameter :: filename_maxstr=255
+
       real, parameter   :: rdgas=287.04, grav=9.80
       real, parameter   :: stndrd_atmos_ps = 101325.
       real, parameter   :: stndrd_atmos_lapse = 0.0065
@@ -77,7 +78,7 @@
       type(wrt_internal_state),pointer :: wrt_int_state                 ! The internal state pointer.
       type(ESMF_FieldBundle)           :: gridFB
       integer                          :: FBcount
-      character(len=80),allocatable    :: fcstItemNameList(:)
+      character(len=max_filename_len+14),allocatable    :: fcstItemNameList(:)
 !
 !-----------------------------------------------------------------------
       REAL(KIND=8)             :: btim,btim0
@@ -1155,7 +1156,7 @@
       logical,save                          :: first=.true.
       logical,save                          :: file_first=.true.
 !
-      character(filename_maxstr)            :: filename,compname,bundle_name
+      character(max_filename_len)            :: filename,compname,bundle_name
       character(40)                         :: cfhour, cform
       character(10)                         :: stepString
       character(80)                         :: attrValueS

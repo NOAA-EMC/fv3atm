@@ -9,20 +9,21 @@
 !
   implicit none
 !
+  integer,parameter :: max_filename_len=255
   integer           :: num_pes_fcst
   integer           :: wrttasks_per_group, write_groups
   integer           :: n_group
   logical           :: write_nemsioflip
   logical           :: write_fsyncflag
   integer           :: num_files
-  character(255)    :: output_grid
-  character(255)    :: output_file
+  character(len=max_filename_len)    :: output_grid
+  character(len=max_filename_len)    :: output_file
   integer           :: imo,jmo
   integer           :: nbdlphys
   integer           :: nsout_io, iau_offset, ideflate, nbits
   real              :: cen_lon, cen_lat, lon1, lat1, lon2, lat2, dlon, dlat
   real              :: stdlat1, stdlat2, dx, dy
-  character(255),dimension(:),allocatable :: filename_base
+  character(len=max_filename_len),dimension(:),allocatable :: filename_base
 !
   integer,dimension(:),allocatable     :: lead_wrttask, last_wrttask
 !

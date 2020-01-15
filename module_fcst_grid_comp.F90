@@ -67,7 +67,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
   use esmf
 !
   use module_fv3_io_def, only:  num_pes_fcst, num_files, filename_base, nbdlphys, &
-                                iau_offset
+                                iau_offset, max_filename_len
   use module_fv3_config, only:  dt_atmos, calendar, restart_interval,             &
                                 quilting, calendar_type, cpl,                     &
                                 cplprint_flag, force_date_from_configure
@@ -189,7 +189,8 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     character(3) cfhour
     character(4) dateSY
     character(2) dateSM,dateSD,dateSH,dateSN,dateSS
-    character(128) name_FB, name_FB1, dateS
+    character(len=max_filename_len+14) name_FB, name_FB1
+    character(len=80) :: dateS
     real,    allocatable, dimension(:,:) :: glon_bnd, glat_bnd
     
     character(256)                         :: gridfile
