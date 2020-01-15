@@ -7,7 +7,7 @@
 !
 !------------------------------------------------------------------------
 !
-  use esmf, only    :: esmf_maxstr
+  use esmf, only     : esmf_maxstr
   implicit none
 !
   integer           :: num_pes_fcst
