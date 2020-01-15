@@ -32,8 +32,7 @@ module fv3gfs_cap_mod
                                     cplprint_flag,output_1st_tstep_rst,      &
                                     first_kdt                            
 
-  use module_fv3_io_def,      only: max_filename_len,                        &
-                                    num_pes_fcst,write_groups,               &
+  use module_fv3_io_def,      only: num_pes_fcst,write_groups,               &
                                     num_files, filename_base,                &
                                     wrttasks_per_group, n_group,             &
                                     lead_wrttask, last_wrttask,              &
@@ -75,7 +74,7 @@ module fv3gfs_cap_mod
 
   type(ESMF_GridComp)                         :: fcstComp
   type(ESMF_State)                            :: fcstState
-  character(len=max_filename_len+14),allocatable :: fcstItemNameList(:)
+  character(len=esmf_maxstr),allocatable :: fcstItemNameList(:)
   type(ESMF_StateItem_Flag), allocatable      :: fcstItemTypeList(:)
   type(ESMF_FieldBundle),    allocatable      :: fcstFB(:)
   integer, save                               :: FBCount

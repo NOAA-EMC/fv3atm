@@ -7,23 +7,23 @@
 !
 !------------------------------------------------------------------------
 !
+  use esmf, only    :: esmf_maxstr
   implicit none
 !
-  integer,parameter :: max_filename_len=255
   integer           :: num_pes_fcst
   integer           :: wrttasks_per_group, write_groups
   integer           :: n_group
   logical           :: write_nemsioflip
   logical           :: write_fsyncflag
   integer           :: num_files
-  character(len=max_filename_len)    :: output_grid
-  character(len=max_filename_len)    :: output_file
+  character(len=esmf_maxstr)    :: output_grid
+  character(len=esmf_maxstr)    :: output_file
   integer           :: imo,jmo
   integer           :: nbdlphys
   integer           :: nsout_io, iau_offset, ideflate, nbits
   real              :: cen_lon, cen_lat, lon1, lat1, lon2, lat2, dlon, dlat
   real              :: stdlat1, stdlat2, dx, dy
-  character(len=max_filename_len),dimension(:),allocatable :: filename_base
+  character(len=esmf_maxstr),dimension(:),allocatable :: filename_base
 !
   integer,dimension(:),allocatable     :: lead_wrttask, last_wrttask
 !
