@@ -625,6 +625,8 @@ module FV3GFS_io_mod
     if (nint(oro_var2(1,1,18)) == -9999._kind_phys) then ! lakefrac doesn't exist in the restart, need to create it
       if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - will computing lakefrac') 
       Model%frac_grid = .false.
+    elseif (Model%frac_grid_off) then
+      Model%frac_grid = .false.
     else
       Model%frac_grid = .true.
     endif
@@ -1140,8 +1142,8 @@ module FV3GFS_io_mod
             Sfcprop(nb)%landfrac(ix) = 1.0        ! land
             Sfcprop(nb)%lakefrac(ix) = 0.0
           else
-            Sfcprop(nb)%landfrac(ix) = 0.0
-            if (Sfcprop(nb)%oro_uf(ix) > 200.00) then
+            Sfcprop(nb)%landfrac(ix) = 0.0        ! water
+            if (Sfcprop(nb)%lakefrac(ix) > 0.0 .or. Sfcprop(nb)%oro_uf(ix) > 250.0) then
               Sfcprop(nb)%lakefrac(ix) = 1.0        ! lake
             else
               Sfcprop(nb)%lakefrac(ix) = 0.0        ! ocean

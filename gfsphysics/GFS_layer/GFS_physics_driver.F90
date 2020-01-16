@@ -1146,13 +1146,13 @@ module module_physics_driver
                 fice(i) = zero
               endif
             endif
-!           if (icy(i)) Sfcprop%tsfco(i) = max(Sfcprop%tsfco(i), Sfcprop%tisfc(i), tgice)
           else
             fice(i) = zero
           endif
                                         ! ocean/lake area that is not frozen
           if (tem-fice(i) > epsln) then
             wet(i) = .true.             ! there is some open water!
+            if (.not. Model%cplflx) Sfcprop%tsfco(i) = max(Sfcprop%tsfco(i), Sfcprop%tisfc(i), tgice)
 !           if (icy(i)) Sfcprop%tsfco(i) = max(Sfcprop%tsfco(i), tgice)
 !           if (icy(i)) Sfcprop%tsfco(i) = max(Sfcprop%tisfc(i), tgice)
           endif
@@ -1720,7 +1720,7 @@ module module_physics_driver
               tsurf3(i,3) = tsurf3(i,3) + tem
             endif
           enddo
-          if (Model%cplflx) then
+          if (Model%cplflx) then       ! apply only at ocean points
             tem1 = half / omz1
             do i=1,im
               if (wet(i) .and. Sfcprop%oceanfrac(i) > zero) then
@@ -5460,7 +5460,6 @@ module module_physics_driver
           enddo
         endif
       endif
-
 
 
 !  --- ...  coupling insertion

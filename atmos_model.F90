@@ -1941,7 +1941,8 @@ end subroutine atmos_data_type_chksum
               IPD_Data(nb)%Coupling%dvsfcin_cpl(ix)  = -99999.0 !                 ,,
               IPD_Data(nb)%Coupling%dtsfcin_cpl(ix)  = -99999.0 !                 ,,
               IPD_Data(nb)%Coupling%ulwsfcin_cpl(ix) = -99999.0 !                 ,,
-              IPD_Data(nb)%Coupling%slimskin_cpl(ix) = zero
+              if (abs(one-IPD_Data(nb)%Sfcprop%oceanfrac(ix)) < epsln) &
+                          IPD_Data(nb)%Coupling%slimskin_cpl(ix) = zero ! 100% open water
             endif
           endif
         enddo
