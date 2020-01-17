@@ -31,3 +31,4 @@ target_include_directories(io PRIVATE ${NEMSIO_INC})
 
 set_target_properties(io PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mod)
 target_include_directories(io PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/mod)
+target_include_directories(io PUBLIC ${MPI_Fortran_INCLUDE_DIRS})
