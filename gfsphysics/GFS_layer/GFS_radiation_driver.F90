@@ -1561,7 +1561,8 @@
 !check  print *,' in grrad : calling setaer '
 
       call setaer (plvl, plyr, prslk1, tvly, rhly, Sfcprop%slmsk,  &  !  ---  inputs
-                   tracer1, Grid%xlon, Grid%xlat, IM, LMK, LMP,    &
+                   tracer1, Tbd%aer_nm,                               &
+                   Grid%xlon, Grid%xlat, IM, LMK, LMP,             &
                    Model%lsswr,Model%lslwr,                        &
                    faersw,faerlw,aerodp)                              !  ---  outputs
 
@@ -2039,12 +2040,18 @@
       if (Model%lssav) then
         if (Model%lsswr) then
           do i=1,im
-            Diag%fluxr(i,34) = Diag%fluxr(i,34) + Model%fhswr*aerodp(i,1)  ! total aod at 550nm
-            Diag%fluxr(i,35) = Diag%fluxr(i,35) + Model%fhswr*aerodp(i,2)  ! DU aod at 550nm
-            Diag%fluxr(i,36) = Diag%fluxr(i,36) + Model%fhswr*aerodp(i,3)  ! BC aod at 550nm
-            Diag%fluxr(i,37) = Diag%fluxr(i,37) + Model%fhswr*aerodp(i,4)  ! OC aod at 550nm
-            Diag%fluxr(i,38) = Diag%fluxr(i,38) + Model%fhswr*aerodp(i,5)  ! SU aod at 550nm
-            Diag%fluxr(i,39) = Diag%fluxr(i,39) + Model%fhswr*aerodp(i,6)  ! SS aod at 550nm
+!            Diag%fluxr(i,34) = Diag%fluxr(i,34) + Model%fhswr*aerodp(i,1)  ! total aod at 550nm
+!            Diag%fluxr(i,35) = Diag%fluxr(i,35) + Model%fhswr*aerodp(i,2)  ! DU aod at 550nm
+!            Diag%fluxr(i,36) = Diag%fluxr(i,36) + Model%fhswr*aerodp(i,3)  ! BC aod at 550nm
+!            Diag%fluxr(i,37) = Diag%fluxr(i,37) + Model%fhswr*aerodp(i,4)  ! OC aod at 550nm
+!            Diag%fluxr(i,38) = Diag%fluxr(i,38) + Model%fhswr*aerodp(i,5)  ! SU aod at 550nm
+!            Diag%fluxr(i,39) = Diag%fluxr(i,39) + Model%fhswr*aerodp(i,6)  ! SS aod at 550nm
+            Diag%fluxr(i,34) = aerodp(i,1)  ! total aod at 550nm
+            Diag%fluxr(i,35) = aerodp(i,2)  ! DU aod at 550nm
+            Diag%fluxr(i,36) = aerodp(i,3)  ! BC aod at 550nm
+            Diag%fluxr(i,37) = aerodp(i,4)  ! OC aod at 550nm
+            Diag%fluxr(i,38) = aerodp(i,5)  ! SU aod at 550nm
+            Diag%fluxr(i,39) = aerodp(i,6)  ! SS aod at 550nm
           enddo
         endif
 
