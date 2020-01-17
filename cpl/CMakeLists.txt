@@ -7,6 +7,7 @@ add_library(
 )
 
 target_include_directories(fv3cpl PRIVATE ${ESMF_MOD})
+target_include_directories(fv3cpl PRIVATE ${CMAKE_INSTALL_PREFIX}/mod )
 
 set_target_properties(fv3cpl PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mod)
 target_include_directories(fv3cpl PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/mod)
