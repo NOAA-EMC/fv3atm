@@ -341,6 +341,7 @@ module module_write_netcdf
                 ! compute max abs compression error, save as a variable
                 ! attribute.
                 compress_err(i) = maxval(abs(arrayr4_3d_save-arrayr4_3d))
+                !print *,'field name=',trim(fldName),dataMin,dataMax,compress_err(i)
              endif
              ncerr = nf90_put_var(ncid, varids(i), values=arrayr4_3d, start=(/1,1,1/),count=(/im,jm,lm,1/) ); NC_ERR_STOP(ncerr)
            end if
