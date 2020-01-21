@@ -75,12 +75,13 @@ set_property(SOURCE atmos_cubed_sphere/model/fv_mapz.F90  APPEND_STRING PROPERTY
 target_link_libraries(fv3core PRIVATE fms)
 target_link_libraries(fv3core PRIVATE ${PHYS}physics)
 target_link_libraries(fv3core PRIVATE ipd)
-target_include_directories(fv3core PRIVATE ${MPI_Fortran_INCLUDE_DIRS} )
+target_include_directories(fv3core PRIVATE ${MPI_Fortran_INCLUDE_PATH} )
 target_include_directories(fv3core PRIVATE ${CMAKE_INSTALL_PREFIX}/include )
 target_include_directories(fv3core PRIVATE ${CMAKE_INSTALL_PREFIX}/mod )
 
 target_include_directories(fv3core PRIVATE ${ESMF_MOD})
-target_include_directories(fv3core PRIVATE ${MPI_Fortran_INCLUDE_DIRS})
+message("HEY fort inc are ${MPI_Fortran_INCLUDE_PATH}")
+target_include_directories(fv3core PRIVATE ${MPI_Fortran_INCLUDE_PATH})
 
 # end of fv3core
 
@@ -119,9 +120,9 @@ if(CCPP)
 target_include_directories(fv3cap PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/ccpp/driver/mod)
 endif()
 target_include_directories(fv3cap PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/stochastic_physics)
-target_include_directories(fv3cap PRIVATE ${MPI_Fortran_INCLUDE_DIRS})
+target_include_directories(fv3cap PRIVATE ${MPI_Fortran_INCLUDE_PATH})
 target_compile_definitions(fv3cap PRIVATE -DESMF_VERSION_MAJOR=${ESMF_VERSION_MAJOR})
-target_include_directories(fv3cap PRIVATE ${MPI_Fortran_INCLUDE_DIRS})
+target_include_directories(fv3cap PRIVATE ${MPI_Fortran_INCLUDE_PATH})
 target_include_directories(fv3cap PRIVATE ${CMAKE_INSTALL_PREFIX}/include )
 target_include_directories(fv3cap PRIVATE ${CMAKE_INSTALL_PREFIX}/mod )
 target_include_directories(fv3cap PRIVATE ${ESMF_MOD})

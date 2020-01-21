@@ -28,10 +28,10 @@ target_link_libraries(io ipd)
 
 target_include_directories(io PRIVATE ${ESMF_MOD})
 target_include_directories(io PRIVATE ${NEMSIO_INC})
-target_include_directories(io PRIVATE ${MPI_Fortran_INCLUDE_DIRS})
+target_include_directories(io PRIVATE ${MPI_Fortran_INCLUDE_PATH})
 target_include_directories(io PRIVATE ${CMAKE_INSTALL_PREFIX}/include)
 target_include_directories(io PRIVATE ${CMAKE_INSTALL_PREFIX}/mod)
 
 set_target_properties(io PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mod)
 target_include_directories(io PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/mod)
-target_include_directories(io PUBLIC ${MPI_Fortran_INCLUDE_DIRS})
+target_include_directories(io PUBLIC ${MPI_Fortran_INCLUDE_PATH})
