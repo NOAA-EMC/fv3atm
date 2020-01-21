@@ -1,6 +1,8 @@
 if(INLINE_POST)
+  message("inline post is set")
   set(POST_SRC post_gfs.F90 post_nems_routines.F90)
 else()
+  message("inline post is NOT set")
   set(POST_SRC post_gfs_stub.F90)
   add_definitions(-DNO_INLINE_POST)
 endif()
@@ -18,6 +20,7 @@ add_library(
     ${POST_SRC}
 )
 
+message("HEY post_inc is ${POST_INC}, and src is ${POST_SRC}")
 set_source_files_properties(post_gfs.F90 post_nems_routines.F90
                             PROPERTIES
                             COMPILE_FLAGS "-I${POST_INC}")
