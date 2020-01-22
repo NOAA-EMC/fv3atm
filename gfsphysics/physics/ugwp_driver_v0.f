@@ -46,7 +46,9 @@
      &,                            rain
 
        real(kind=kind_phys), intent(in), dimension(im,levs) :: ugrs
-     &,        vgrs, tgrs, qgrs, prsi, prsl, prslk, phii, phil, del
+     &,        vgrs, tgrs, qgrs, prsl, prslk, phil, del
+       real(kind=kind_phys), intent(in), dimension(im,levs+1) :: prsi
+     &,        phii
 
 !      real(kind=kind_phys), intent(in) :: oro_stat(im,nmtvr)
        real(kind=kind_phys), intent(in), dimension(im) :: hprime, oc
@@ -1991,8 +1993,8 @@
         Km(1:levs) = ksum(1:levs) * rho(1:levs)* rho(1:levs)
  
         do j=1, nstab
-          call diff_1d_wtend(levs, dtstab, Fw, Fw1, levs,
-     &                       del(i,:), Sw, Sw1)
+          call diff_1d_wtend(levs, dtstab, Fw, Fw1, Km,
+     &                       rdp, rdpm, Sw, Sw1)
           Fw  = Sw
           Fw1 = Sw1
         enddo
@@ -2004,7 +2006,7 @@
         Kpt = Km*iPr_pt
         Fw(1:levs) =  pdTdt(i, 1:levs)*Ptmap(1:levs)
         do j=1, nstab
-          call diff_1d_ptend(levs, dtstab, Fw, Kpt, del(i,:), Sw)
+          call diff_1d_ptend(levs, dtstab, Fw, Kpt, rdp, rdpm, Sw)
           Fw  = Sw
         enddo
          ed_dtdt(i,1:levs) = Sw(1:levs)/Ptmap(1:levs)
