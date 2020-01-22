@@ -1438,8 +1438,13 @@
             else if (trim(output_file) == 'netcdf_parallel') then
 
               wbeg = MPI_Wtime()
-              call write_netcdf_parallel(file_bundle,wrt_int_state%wrtFB(nbdl),   &
-                   trim(filename), wrt_mpi_comm,wrt_int_state%mype,imo,jmo,rc)
+              if (nbdl == 1) then ! only use parallel write for 3D file 
+                 call write_netcdf_parallel(file_bundle,wrt_int_state%wrtFB(nbdl),   &
+                                   trim(filename), wrt_mpi_comm,wrt_int_state%mype,imo,jmo,rc)
+              else
+                 call write_netcdf(file_bundle,wrt_int_state%wrtFB(nbdl),trim(filename), &
+                                   wrt_mpi_comm,wrt_int_state%mype,imo,jmo,rc)
+              endif
               wend = MPI_Wtime()
               if (lprnt) then
                 write(*,'(A,F10.5,A,I4.2,A,I2.2)')' parallel netcdf      Write Time is ',wend-wbeg  &
