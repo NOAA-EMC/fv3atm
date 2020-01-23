@@ -2219,8 +2219,8 @@ module module_physics_driver
 !!!!!!Cellular automata stochastic physics:
       if(Model%do_ca .and. Model%pert_flux)then
          do i=1,im
-            hflx(i)=hflx(i)*(((Coupling%ca3(i)-1.0)/Model%ca_amplitude)+1.0)
-            evap(i)=evap(i)*(2.0-(((Coupling%ca3(i)-1.0)/Model%ca_amplitude)+1.0))
+            hflx(i)=hflx(i)*(((Coupling%ca1(i)-1.0)/Model%ca_amplitude)+1.0)
+            evap(i)=evap(i)*(2.0-(((Coupling%ca1(i)-1.0)/Model%ca_amplitude)+1.0))
          enddo
       endif
 
@@ -2328,7 +2328,7 @@ module module_physics_driver
                            gamt, gamq, dkt, kinver, Model%xkzm_m, Model%xkzm_h,     &
                            Model%xkzm_s, lprnt, ipr,                                &
                            Model%xkzminv, Model%moninq_fac, Model%do_ca,            &
-                           Coupling%ca3, Coupling%ca2, Model%pert_trigger,          &
+                           Coupling%ca1, Coupling%ca1, Model%pert_trigger,          &
                            Model%pert_flux, Model%ca_amplitude)
             else
               call moninedmf_hafs(ix, im, levs, nvdiff, ntcw, dvdt, dudt, dtdt, dqdt,&
@@ -2571,7 +2571,7 @@ module module_physics_driver
                            gamt, gamq, dkt, kinver, Model%xkzm_m, Model%xkzm_h,         &
                            Model%xkzm_s, lprnt, ipr,                                    &
                            Model%xkzminv, Model%moninq_fac, Model%do_ca,                &
-                           Coupling%ca3, Coupling%ca2, Model%pert_trigger,              &
+                           Coupling%ca1, Coupling%ca1, Model%pert_trigger,              &
                            Model%pert_flux, Model%ca_amplitude)
            else
             call moninedmf_hafs(ix, im, levs, nvdiff, ntcw, dvdt, dudt, dtdt, dvdftra,  &
@@ -4125,7 +4125,7 @@ module module_physics_driver
                               Stateout%gu0, Stateout%gv0, Model%fscav,             &
                               rain1, kbot, ktop, kcnv, islmsk, garea,              &
                               Statein%vvl, ncld, Diag%hpbl, ud_mf,                 &
-                              dt_mf, cnvw, cnvc,Model%do_ca,Coupling%ca2,          &
+                              dt_mf, cnvw, cnvc,Model%do_ca,Coupling%ca1,          &
                               Model%pert_trigger,                                  &
                               Model%pert_flux, Model%ca_amplitude,                 &
                               Model%clam_shal,  Model%c0s_shal, Model%c1_shal,     &
