@@ -219,7 +219,7 @@ else
     CCPP_LINK_OBJS="-L${PATH_CCPP_LIB} -lccpp ${CCPP_XML2_LIB}"
   fi
 fi
-echo "ESMF_DEP_INCPATH=-I${PATH_CCPP_INC}" > ${CCPP_MK}
+echo "ESMF_DEP_INCPATH=${PATH_CCPP_INC}" > ${CCPP_MK}
 echo "ESMF_DEP_LINK_OBJS=${CCPP_LINK_OBJS}" >> ${CCPP_MK}
 
 if [ $clean_after = YES ]; then
