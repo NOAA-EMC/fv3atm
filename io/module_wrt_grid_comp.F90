@@ -1122,14 +1122,14 @@
 !-----------------------------------------------------------------------
 !
       call ESMF_LogWrite("before initialize for nemsio file", ESMF_LOGMSG_INFO, rc=rc)
-      if (trim(output_grid) == 'gaussian_grid' .and. trim(output_file) == 'nemsio') then
-!     if (lprnt) write(0,*) 'in wrt initial, befnemsio_first_call wrt_int_state%FBcount=',wrt_int_state%FBcount
-        do i= 1, wrt_int_state%FBcount
-          call nemsio_first_call(wrt_int_state%wrtFB(i), imo, jmo,         &
-                                 wrt_int_state%mype, ntasks, wrt_mpi_comm, &
-                                 wrt_int_state%FBcount, i, idate, lat, lon, rc) 
-        enddo
-      endif
+      do i= 1, wrt_int_state%FBcount
+         if (trim(output_grid) == 'gaussian_grid' .and. trim(output_file(i)) == 'nemsio') then
+!           if (lprnt) write(0,*) 'in wrt initial, befnemsio_first_call wrt_int_state%FBcount=',wrt_int_state%FBcount
+             call nemsio_first_call(wrt_int_state%wrtFB(i), imo, jmo,         &
+                                   wrt_int_state%mype, ntasks, wrt_mpi_comm, &
+                                   wrt_int_state%FBcount, i, idate, lat, lon, rc) 
+         endif
+      enddo
       call ESMF_LogWrite("after initialize for nemsio file", ESMF_LOGMSG_INFO, rc=rc)
 !
 !-----------------------------------------------------------------------
@@ -1363,7 +1363,7 @@
             file_bundle = wrt_int_state%wrtFB(nbdl)
           endif
 
-          if ( trim(output_file) == 'nemsio' ) then
+          if ( trim(output_file(nbdl)) == 'nemsio' ) then
              filename = trim(wrt_int_state%wrtFB_names(nbdl))//'f'//trim(cfhour)//'.nemsio'
           else
              filename = trim(wrt_int_state%wrtFB_names(nbdl))//'f'//trim(cfhour)//'.nc'
@@ -1413,7 +1413,7 @@
 
           else if (trim(output_grid) == 'gaussian_grid') then
 
-            if (trim(output_file) == 'nemsio') then
+            if (trim(output_file(nbdl)) == 'nemsio') then
 
               wbeg = MPI_Wtime()
               call write_nemsio(file_bundle,trim(filename),nf_hours, nf_minutes, &
@@ -1424,7 +1424,7 @@
                       ,' at Fcst ',NF_HOURS,':',NF_MINUTES
               endif
 
-            else if (trim(output_file) == 'netcdf') then
+            else if (trim(output_file(nbdl)) == 'netcdf') then
 
               wbeg = MPI_Wtime()
               call write_netcdf(file_bundle,wrt_int_state%wrtFB(nbdl),trim(filename), &
@@ -1435,23 +1435,18 @@
                         ,' at Fcst ',NF_HOURS,':',NF_MINUTES
               endif
 
-            else if (trim(output_file) == 'netcdf_parallel') then
+            else if (trim(output_file(nbdl)) == 'netcdf_parallel') then
 
               wbeg = MPI_Wtime()
-              if (nbdl == 1) then ! only use parallel write for 3D file 
-                 call write_netcdf_parallel(file_bundle,wrt_int_state%wrtFB(nbdl),   &
-                                   trim(filename), wrt_mpi_comm,wrt_int_state%mype,imo,jmo,rc)
-              else
-                 call write_netcdf(file_bundle,wrt_int_state%wrtFB(nbdl),trim(filename), &
-                                   wrt_mpi_comm,wrt_int_state%mype,imo,jmo,rc)
-              endif
+              call write_netcdf_parallel(file_bundle,wrt_int_state%wrtFB(nbdl),   &
+                                trim(filename), wrt_mpi_comm,wrt_int_state%mype,imo,jmo,rc)
               wend = MPI_Wtime()
               if (lprnt) then
                 write(*,'(A,F10.5,A,I4.2,A,I2.2)')' parallel netcdf      Write Time is ',wend-wbeg  &
                         ,' at Fcst ',NF_HOURS,':',NF_MINUTES
               endif
 
-            else if (trim(output_file) == 'netcdf_esmf') then
+            else if (trim(output_file(nbdl)) == 'netcdf_esmf') then
 
               wbeg = MPI_Wtime()
               call ESMFproto_FieldBundleWrite(gridFB, filename=trim(filename),    &
@@ -1498,7 +1493,7 @@
               write(*,'(A,F10.5,A,I4.2,A,I2.2)')' mask_fields time is ',wend-wbeg
             endif
 
-            if (trim(output_file) == 'netcdf') then
+            if (trim(output_file(nbdl)) == 'netcdf') then
 
               wbeg = MPI_Wtime()
               call write_netcdf(file_bundle,wrt_int_state%wrtFB(nbdl),trim(filename), &

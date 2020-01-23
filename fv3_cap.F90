@@ -235,7 +235,7 @@ module fv3gfs_cap_mod
 
     integer,dimension(6)                   :: date, date_init
     integer                                :: mpi_comm_atm
-    integer                                :: i, j, k, io_unit, urc
+    integer                                :: i, j, k, io_unit, urc, ierr
     integer                                :: petcount, mype
     logical                                :: isPetLocal
     logical                                :: OPENED
@@ -346,8 +346,38 @@ module fv3gfs_cap_mod
         CALL ESMF_ConfigGetAttribute(config=CF,value=filename_base(i), rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
       enddo
-      if(mype == 0) print *,'af nems config,num_files=',num_files, &
-                            'filename_base=',filename_base
+      allocate(output_file(num_files))
+      CALL ESMF_ConfigFindLabel(CF,'output_file:',rc=RC)
+      ierr = 0
+      do i=1,num_files
+        CALL ESMF_ConfigGetAttribute(config=CF,value=output_file(i), rc=rc)
+        ! if only 1 output_file specified, copy to all elements
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) then
+           ierr = 1
+           if (i .eq. 1) then
+              return
+           else
+              output_file(i) = output_file(i-1)
+           endif
+        endif
+        ! specifying multiple values of output_file will only work if
+        ! they all start with 'netcdf' - need to add a check for this
+        ! Mixing netcdf and nemsio will not work.
+        if (i > 1 .and. ierr == 0) then
+           if (output_file(i)(1:6) .ne. 'netcdf' .or. &
+               output_file(i-1)(1:6) .ne. 'netcdf') then
+              write(0,*)'fv3_cap.F90:muliple values of output_file must all begin with netcdf'
+              call ESMF_Finalize(endflag=ESMF_END_ABORT)
+           endif
+        endif
+      enddo
+      if(mype == 0) then
+        print *,'af nems config,num_files=',num_files
+        do i=1,num_files
+           print *,'num_file=',i,'filename_base= ',trim(filename_base(i)),&
+           ' output_file= ',trim(output_file(i))
+        enddo
+      endif
 !
 ! variables for alarms
       call ESMF_ConfigGetAttribute(config=CF, value=nfhout,   label ='nfhout:',   rc=rc)
@@ -359,10 +389,8 @@ module fv3gfs_cap_mod
 
 ! variables for I/O options
       call ESMF_ConfigGetAttribute(config=CF, value=output_grid, label ='output_grid:',rc=rc)
-      call ESMF_ConfigGetAttribute(config=CF, value=output_file, label ='output_file:',rc=rc)
       if (mype == 0) then
         print *,'output_grid=',trim(output_grid)
-        print *,'output_file=',trim(output_file)
       end if
       write_nemsioflip =.false.
       write_fsyncflag  =.false.
