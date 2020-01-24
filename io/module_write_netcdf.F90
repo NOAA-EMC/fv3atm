@@ -38,7 +38,7 @@ module module_write_netcdf
     real(4), dimension(:,:,:), allocatable :: arrayr4_3d,arrayr4_3d_save
     real(8), dimension(:,:,:), allocatable :: arrayr8_3d
 
-    real(8) rad2dg,x(im),y(jm)
+    real(8) x(im),y(jm)
     integer :: fieldCount, fieldDimCount, gridDimCount
     integer, dimension(:), allocatable   :: ungriddedLBound, ungriddedUBound
 
@@ -65,10 +65,6 @@ module module_write_netcdf
     integer :: im_dimid, jm_dimid, pfull_dimid, phalf_dimid, time_dimid
     integer :: im_varid, jm_varid, lm_varid, time_varid, lon_varid, lat_varid
     integer, dimension(:), allocatable :: varids
-!
-!!
-!
-    rad2dg = 45./atan(1.0)
 
     call ESMF_FieldBundleGet(fieldbundle, fieldCount=fieldCount, rc=rc); ESMF_ERR_RETURN(rc)
 
