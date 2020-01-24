@@ -1,12 +1,12 @@
 [submodule "atmos_cubed_sphere"]
 	path = atmos_cubed_sphere
-	url = https://github.com/valbonakunkel-noaa/GFDL_atmos_cubed_sphere
+	url = https://github.com/NOAA-EMC/GFDL_atmos_cubed_sphere
 	branch = ufs_public_release
 [submodule "ccpp/framework"]
 	path = ccpp/framework
-	url = https://github.com/climbfuji/ccpp-framework
-	branch = bugfixes_optional_attributes_log_messages
+	url = https://github.com/NCAR/ccpp-framework
+	branch = ufs_public_release
 [submodule "ccpp/physics"]
 	path = ccpp/physics
-	url = https://github.com/climbfuji/ccpp-physics
-	branch = ufs_public_release_thompson_threading_fix
+	url = https://github.com/NCAR/ccpp-physics
+	branch = ufs_public_release
