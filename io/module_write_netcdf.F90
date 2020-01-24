@@ -42,7 +42,7 @@ module module_write_netcdf
     real(4), dimension(:,:,:), allocatable :: arrayr4_3d,arrayr4_3d_save
     real(8), dimension(:,:,:), allocatable :: arrayr8_3d
 
-    real(8) rad2dg,x(im),y(jm)
+    real(8) x(im),y(jm)
     integer :: fieldCount, fieldDimCount, gridDimCount
     integer, dimension(:), allocatable   :: ungriddedLBound, ungriddedUBound
 
@@ -56,7 +56,8 @@ module module_write_netcdf
     character(len=ESMF_MAXSTR) :: attName, fldName
 
     integer :: varival
-    real(4) :: varr4val, scale_fact, compress_err, offset, dataMin, dataMax
+    real(4) :: varr4val, scale_fact, offset, dataMin, dataMax
+    real(4), allocatable, dimension(:) :: compress_err
     real(8) :: varr8val
     character(len=ESMF_MAXSTR) :: varcval
 
@@ -71,10 +72,10 @@ module module_write_netcdf
 !
 !!
 !
-    rad2dg = 45./atan(1.0)
 
     call ESMF_FieldBundleGet(fieldbundle, fieldCount=fieldCount, rc=rc); ESMF_ERR_RETURN(rc)
 
+    allocate(compress_err(fieldCount)); compress_err=-999.
     allocate(fldlev(fieldCount)) ; fldlev = 0
     allocate(fcstField(fieldCount))
     allocate(varids(fieldCount))
@@ -117,13 +118,13 @@ module module_write_netcdf
     if (mype==0) then
 
     if (ideflate == 0) then
-        ncerr = nf90_create(trim(filename), cmode=IOR(NF90_CLOBBER,NF90_64BIT_OFFSET), &
+        ncerr = nf90_create(trim(filename), cmode=IOR(IOR(NF90_CLOBBER,NF90_64BIT_OFFSET),NF90_SHARE), &
         ncid=ncid); NC_ERR_STOP(ncerr)
         ncerr = nf90_set_fill(ncid, NF90_NOFILL, oldMode); NC_ERR_STOP(ncerr)
     else
         ncerr = nf90_create(trim(filename), cmode=IOR(IOR(NF90_CLOBBER,NF90_NETCDF4),NF90_CLASSIC_MODEL), &
         ncid=ncid); NC_ERR_STOP(ncerr)
-        ! if compression on use HDF5 format with default _FillValue
+        ncerr = nf90_set_fill(ncid, NF90_NOFILL, oldMode); NC_ERR_STOP(ncerr)
     endif
 
     ! define dimensions
@@ -156,28 +157,32 @@ module module_write_netcdf
       ! define variables
       if (fldlev(i) == 1) then
         if (typekind == ESMF_TYPEKIND_R4) then
-          ncerr = nf90_def_var(ncid, trim(fldName), NF90_FLOAT, &
-                               (/im_dimid,jm_dimid,time_dimid/), varids(i)); NC_ERR_STOP(ncerr)
           if (ideflate > 0) then
-             ! shuffle filter on for lossless compression
-             ncerr = nf90_def_var_deflate(ncid, varids(i), 1, 1, ideflate)
-             NC_ERR_STOP(ncerr)
+            ncerr = nf90_def_var(ncid, trim(fldName), NF90_FLOAT, &
+                                (/im_dimid,jm_dimid,time_dimid/), varids(i), &
+                                 shuffle=.true.,deflate_level=ideflate, &
+                                 chunksizes=(/im,jm,1/)); NC_ERR_STOP(ncerr)
+          else
+            ncerr = nf90_def_var(ncid, trim(fldName), NF90_FLOAT, &
+                                (/im_dimid,jm_dimid,time_dimid/), varids(i)); NC_ERR_STOP(ncerr)
           endif
         else if (typekind == ESMF_TYPEKIND_R8) then
           ncerr = nf90_def_var(ncid, trim(fldName), NF90_DOUBLE, &
-                               (/im_dimid,jm_dimid,time_dimid/), varids(i)); NC_ERR_STOP(ncerr)
+                              (/im_dimid,jm_dimid,time_dimid/), varids(i)); NC_ERR_STOP(ncerr)
         else
           write(0,*)'Unsupported typekind ', typekind
           stop
         end if
       else if (fldlev(i) > 1) then
          if (typekind == ESMF_TYPEKIND_R4) then
-           ncerr = nf90_def_var(ncid, trim(fldName), NF90_FLOAT, &
-                                (/im_dimid,jm_dimid,pfull_dimid,time_dimid/), varids(i)); NC_ERR_STOP(ncerr)
            if (ideflate > 0) then
-              ! shuffle filter off since lossy compression used
-              ncerr = nf90_def_var_deflate(ncid, varids(i), 0, 1, ideflate)
-              NC_ERR_STOP(ncerr)
+             ncerr = nf90_def_var(ncid, trim(fldName), NF90_FLOAT, &
+                                 (/im_dimid,jm_dimid,pfull_dimid,time_dimid/), varids(i), &
+                                 shuffle=.false.,deflate_level=ideflate, &
+                                 chunksizes=(/im,jm,1,1/)); NC_ERR_STOP(ncerr)
+           else
+             ncerr = nf90_def_var(ncid, trim(fldName), NF90_FLOAT, &
+                                 (/im_dimid,jm_dimid,pfull_dimid,time_dimid/), varids(i)); NC_ERR_STOP(ncerr)
            endif
          else if (typekind == ESMF_TYPEKIND_R8) then
            ncerr = nf90_def_var(ncid, trim(fldName), NF90_DOUBLE, &
@@ -219,8 +224,8 @@ module module_write_netcdf
            call ESMF_AttributeGet(fcstField(i), convention="NetCDF", purpose="FV3", &
                                   name=trim(attName), value=varr8val, &
                                   rc=rc); ESMF_ERR_RETURN(rc)
-           if (trim(attName) /= '_FillValue' .or. ideflate == 0) then
-              ! FIXME:  _FillValue must be cast to var type when using NF90_NETCDF4
+           if (trim(attName) /= '_FillValue' ) then
+              ! FIXME:  _FillValue must be cast to var type for recent versions of netcdf
               ncerr = nf90_put_att(ncid, varids(i), trim(attName), varr8val); NC_ERR_STOP(ncerr)
            endif
 
@@ -236,6 +241,25 @@ module module_write_netcdf
 
     end do   ! i=1,fieldCount
 
+! write grid_xt, grid_yt attributes
+    if (trim(output_grid) == 'gaussian_grid' .or. &
+        trim(output_grid) == 'regional_latlon') then
+      ncerr = nf90_put_att(ncid, im_varid, "long_name", "T-cell longitude"); NC_ERR_STOP(ncerr)
+      ncerr = nf90_put_att(ncid, im_varid, "units", "degrees_E"); NC_ERR_STOP(ncerr)
+      ncerr = nf90_put_att(ncid, jm_varid, "long_name", "T-cell latiitude"); NC_ERR_STOP(ncerr)
+      ncerr = nf90_put_att(ncid, jm_varid, "units", "degrees_N"); NC_ERR_STOP(ncerr)
+    else if (trim(output_grid) == 'rotated_latlon') then
+      ncerr = nf90_put_att(ncid, im_varid, "long_name", "rotated T-cell longiitude"); NC_ERR_STOP(ncerr)
+      ncerr = nf90_put_att(ncid, im_varid, "units", "degrees"); NC_ERR_STOP(ncerr)
+      ncerr = nf90_put_att(ncid, jm_varid, "long_name", "rotated T-cell latiitude"); NC_ERR_STOP(ncerr)
+      ncerr = nf90_put_att(ncid, jm_varid, "units", "degrees"); NC_ERR_STOP(ncerr)
+    else if (trim(output_grid) == 'lambert_conformal') then
+      ncerr = nf90_put_att(ncid, im_varid, "long_name", "x-coordinate of projection"); NC_ERR_STOP(ncerr)
+      ncerr = nf90_put_att(ncid, im_varid, "units", "meters"); NC_ERR_STOP(ncerr)
+      ncerr = nf90_put_att(ncid, jm_varid, "long_name", "y-coordinate of projection"); NC_ERR_STOP(ncerr)
+      ncerr = nf90_put_att(ncid, jm_varid, "units", "meters"); NC_ERR_STOP(ncerr)
+    endif
+
     ncerr = nf90_enddef(ncid); NC_ERR_STOP(ncerr)
     end if
 
@@ -247,31 +271,19 @@ module module_write_netcdf
     if (mype==0) then
        if (trim(output_grid) == 'gaussian_grid' .or. &
            trim(output_grid) == 'regional_latlon') then
-          ncerr = nf90_put_var(ncid, im_varid, values=rad2dg*arrayr8(:,1)  ); NC_ERR_STOP(ncerr)
-          ncerr = nf90_redef(ncid=ncid); NC_ERR_STOP(ncerr)
-          ncerr = nf90_put_att(ncid, im_varid, "long_name", "T-cell longitude"); NC_ERR_STOP(ncerr)
-          ncerr = nf90_put_att(ncid, im_varid, "units", "degrees_E"); NC_ERR_STOP(ncerr)
-          ncerr = nf90_enddef(ncid=ncid); NC_ERR_STOP(ncerr)
+          ncerr = nf90_put_var(ncid, im_varid, values=arrayr8(:,1)  ); NC_ERR_STOP(ncerr)
        else if (trim(output_grid) == 'rotated_latlon') then
           do i=1,im
              x(i) = lon1 + (lon2-lon1)/(im-1) * (i-1)
           enddo
           ncerr = nf90_put_var(ncid, im_varid, values=x  ); NC_ERR_STOP(ncerr)
-          ncerr = nf90_redef(ncid=ncid); NC_ERR_STOP(ncerr)
-          ncerr = nf90_put_att(ncid, im_varid, "long_name", "rotated T-cell longiitude"); NC_ERR_STOP(ncerr)
-          ncerr = nf90_put_att(ncid, im_varid, "units", "degrees"); NC_ERR_STOP(ncerr)
-          ncerr = nf90_enddef(ncid=ncid); NC_ERR_STOP(ncerr)
        else if (trim(output_grid) == 'lambert_conformal') then
           do i=1,im
              x(i) = dx * (i-1)
           enddo
           ncerr = nf90_put_var(ncid, im_varid, values=x  ); NC_ERR_STOP(ncerr)
-          ncerr = nf90_redef(ncid=ncid); NC_ERR_STOP(ncerr)
-          ncerr = nf90_put_att(ncid, im_varid, "long_name", "x-coordinate of projection"); NC_ERR_STOP(ncerr)
-          ncerr = nf90_put_att(ncid, im_varid, "units", "meters"); NC_ERR_STOP(ncerr)
-          ncerr = nf90_enddef(ncid=ncid); NC_ERR_STOP(ncerr)
        endif
-       ncerr = nf90_put_var(ncid, lon_varid, values=rad2dg*arrayr8 ); NC_ERR_STOP(ncerr)
+       ncerr = nf90_put_var(ncid, lon_varid, values=arrayr8 ); NC_ERR_STOP(ncerr)
     endif
 
     call ESMF_GridGetCoord(wrtGrid, coordDim=2, array=array, rc=rc); ESMF_ERR_RETURN(rc)
@@ -279,31 +291,19 @@ module module_write_netcdf
     if (mype==0) then
        if (trim(output_grid) == 'gaussian_grid' .or. &
            trim(output_grid) == 'regional_latlon') then
-          ncerr = nf90_put_var(ncid, jm_varid, values=rad2dg*arrayr8(1,:)  ); NC_ERR_STOP(ncerr)
-          ncerr = nf90_redef(ncid=ncid); NC_ERR_STOP(ncerr)
-          ncerr = nf90_put_att(ncid, jm_varid, "long_name", "T-cell latiitude"); NC_ERR_STOP(ncerr)
-          ncerr = nf90_put_att(ncid, jm_varid, "units", "degrees_N"); NC_ERR_STOP(ncerr)
-          ncerr = nf90_enddef(ncid=ncid); NC_ERR_STOP(ncerr)
+          ncerr = nf90_put_var(ncid, jm_varid, values=arrayr8(1,:)  ); NC_ERR_STOP(ncerr)
        else if (trim(output_grid) == 'rotated_latlon') then
           do j=1,jm
              y(j) = lat1 + (lat2-lat1)/(jm-1) * (j-1)
           enddo
           ncerr = nf90_put_var(ncid, jm_varid, values=y  ); NC_ERR_STOP(ncerr)
-          ncerr = nf90_redef(ncid=ncid); NC_ERR_STOP(ncerr)
-          ncerr = nf90_put_att(ncid, jm_varid, "long_name", "rotated T-cell latiitude"); NC_ERR_STOP(ncerr)
-          ncerr = nf90_put_att(ncid, jm_varid, "units", "degrees"); NC_ERR_STOP(ncerr)
-          ncerr = nf90_enddef(ncid=ncid); NC_ERR_STOP(ncerr)
        else if (trim(output_grid) == 'lambert_conformal') then
           do j=1,jm
              y(j) = dy * (j-1)
           enddo
           ncerr = nf90_put_var(ncid, jm_varid, values=y  ); NC_ERR_STOP(ncerr)
-          ncerr = nf90_redef(ncid=ncid); NC_ERR_STOP(ncerr)
-          ncerr = nf90_put_att(ncid, jm_varid, "long_name", "y-coordinate of projection"); NC_ERR_STOP(ncerr)
-          ncerr = nf90_put_att(ncid, jm_varid, "units", "meters"); NC_ERR_STOP(ncerr)
-          ncerr = nf90_enddef(ncid=ncid); NC_ERR_STOP(ncerr)
        endif
-       ncerr = nf90_put_var(ncid, lat_varid, values=rad2dg*arrayr8 ); NC_ERR_STOP(ncerr)
+       ncerr = nf90_put_var(ncid, lat_varid, values=arrayr8 ); NC_ERR_STOP(ncerr)
     endif
 
     do i=1, fieldCount
@@ -344,11 +344,7 @@ module module_write_netcdf
                 arrayr4_3d = quantized(arrayr4_3d_save, nbits, dataMin, dataMax)
                 ! compute max abs compression error, save as a variable
                 ! attribute.
-                compress_err = maxval(abs(arrayr4_3d_save-arrayr4_3d))
-                ncerr = nf90_redef(ncid=ncid); NC_ERR_STOP(ncerr)
-                ncerr = nf90_put_att(ncid, varids(i), 'max_abs_compression_error', compress_err); NC_ERR_STOP(ncerr)
-                ncerr = nf90_put_att(ncid, varids(i), 'nbits', nbits); NC_ERR_STOP(ncerr)
-                ncerr = nf90_enddef(ncid=ncid); NC_ERR_STOP(ncerr)
+                compress_err(i) = maxval(abs(arrayr4_3d_save-arrayr4_3d))
              endif
              ncerr = nf90_put_var(ncid, varids(i), values=arrayr4_3d, start=(/1,1,1/),count=(/im,jm,lm,1/) ); NC_ERR_STOP(ncerr)
            end if
@@ -362,6 +358,17 @@ module module_write_netcdf
       end if
 
     end do
+
+    if (ideflate > 0 .and. nbits > 0 .and. mype == 0) then
+       ncerr = nf90_redef(ncid=ncid); NC_ERR_STOP(ncerr)
+       do i=1, fieldCount
+          if (compress_err(i) > 0) then
+             ncerr = nf90_put_att(ncid, varids(i), 'max_abs_compression_error', compress_err(i)); NC_ERR_STOP(ncerr)
+             ncerr = nf90_put_att(ncid, varids(i), 'nbits', nbits); NC_ERR_STOP(ncerr)
+          endif
+       enddo
+       ncerr = nf90_enddef(ncid=ncid); NC_ERR_STOP(ncerr)
+    endif
 
     deallocate(arrayr4)
     deallocate(arrayr8)
@@ -484,9 +491,9 @@ module module_write_netcdf
          else if (typekind==ESMF_TYPEKIND_R8) then
             call ESMF_AttributeGet(grid, convention="NetCDF", purpose="FV3", &
                                    name=trim(attName), value=varr8val, rc=rc); ESMF_ERR_RETURN(rc)
-            if (trim(attName) /= '_FillValue' .or. ideflate == 0) then
-              ! FIXME:  _FillValue must be cast to var type when using
-              ! NF90_NETCDF4. Until this is fixed, using netCDF default _FillValue.
+            if (trim(attName) /= '_FillValue') then
+              ! FIXME:  _FillValue must be cast to var type for recent versions
+              ! of netcdf
               ncerr = nf90_put_att(ncid, varid, trim(attName(ind+1:len(attName))), varr8val); NC_ERR_STOP(ncerr)
             endif
 
