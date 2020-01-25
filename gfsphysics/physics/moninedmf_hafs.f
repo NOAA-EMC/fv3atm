@@ -1360,7 +1360,11 @@ c
           tem = 0.5 * (diss(i,k-1)+diss(i,k))
           tem  = max(tem, 0.)
           ttend = tem / cp
-          tau(i,k) = tau(i,k) + 0.5*ttend
+          if (alpha .gt. 0.0) then
+            tau(i,k) = tau(i,k) + 0.5*ttend
+          else
+            tau(i,k) = tau(i,k) + 0.7*ttend  ! in HWRF/HMON, use 0.7
+          endif
         enddo
       enddo
 !
