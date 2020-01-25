@@ -29,6 +29,14 @@ POST_SRC = \
 		   ./post_nems_routines.F90
 endif
 
+ifneq (,$(findstring NO_PARALLEL_NETCDF,$(CPPDEFS)))
+NETCDF_PARALLEL_SRC = \
+		   ./module_write_netcdf_parallel_stub.F90 
+else
+NETCDF_PARALLEL_SRC = \
+		   ./module_write_netcdf_parallel.F90      
+endif
+
 SRCS_f   =
 
 SRCS_f90 = 
@@ -41,7 +49,7 @@ SRCS_F90 = \
 		   $(POST_SRC)                         \
 		   ./module_write_nemsio.F90           \
 		   ./module_write_netcdf.F90           \
-		   ./module_write_netcdf_parallel.F90  \
+		   $(NETCDF_PARALLEL_SRC)              \
 		   ./module_fv3_io_def.F90             \
 		   ./module_write_internal_state.F90   \
 		   ./module_wrt_grid_comp.F90
@@ -73,6 +81,8 @@ module_write_netcdf.o: module_write_netcdf.F90
 	$(FC) $(CPPDEFS) $(CPPFLAGS) $(FPPFLAGS) $(FFLAGS) $(OTHERFLAGS) $(OTHER_FFLAGS) $(ESMF_INC) -c module_write_netcdf.F90
 module_write_netcdf_parallel.o: module_write_netcdf_parallel.F90
 	$(FC) $(CPPDEFS) $(CPPFLAGS) $(FPPFLAGS) $(FFLAGS) $(OTHERFLAGS) $(OTHER_FFLAGS) $(ESMF_INC) -c module_write_netcdf_parallel.F90
+module_write_netcdf_parallel_stub.o: module_write_netcdf_parallel_stub.F90
+	$(FC) $(CPPDEFS) $(CPPFLAGS) $(FPPFLAGS) $(FFLAGS) $(OTHERFLAGS) $(OTHER_FFLAGS) $(ESMF_INC) -c module_write_netcdf_parallel_stub.F90
 module_write_internal_state.o: module_write_internal_state.F90
 	$(FC) $(CPPDEFS) $(CPPFLAGS) $(FPPFLAGS) $(FFLAGS) $(OTHERFLAGS) $(OTHER_FFLAGS) $(ESMF_INC) -c module_write_internal_state.F90
 module_wrt_grid_comp.o: module_wrt_grid_comp.F90

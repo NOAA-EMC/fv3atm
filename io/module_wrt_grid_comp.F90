@@ -1437,6 +1437,13 @@
 
             else if (trim(output_file(nbdl)) == 'netcdf_parallel') then
 
+#ifdef NO_PARALLEL_NETCDF
+              rc = ESMF_RC_NOT_IMPL
+              print *,'netcdf_parallel post not available on this machine'
+              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+              line=__LINE__, file=__FILE__)) return
+#endif
+
               wbeg = MPI_Wtime()
               call write_netcdf_parallel(file_bundle,wrt_int_state%wrtFB(nbdl),   &
                                 trim(filename), wrt_mpi_comm,wrt_int_state%mype,imo,jmo,rc)
