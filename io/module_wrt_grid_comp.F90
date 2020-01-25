@@ -1439,7 +1439,7 @@
 
 #ifdef NO_PARALLEL_NETCDF
               rc = ESMF_RC_NOT_IMPL
-              print *,'netcdf_parallel post not available on this machine'
+              print *,'netcdf_parallel not available on this machine'
               if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
               line=__LINE__, file=__FILE__)) return
 #endif
