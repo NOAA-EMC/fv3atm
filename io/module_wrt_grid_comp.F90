@@ -34,7 +34,7 @@
       use module_fv3_io_def,   only : num_pes_fcst,lead_wrttask, last_wrttask,  &
                                       n_group, num_files, app_domain,           &
                                       filename_base, output_grid, output_file,  &
-                                      imo, jmo, write_nemsioflip,               &
+                                      imo,jmo,ichunk2d,jchunk2d,write_nemsioflip,&
                                       nsout => nsout_io,                        &
                                       cen_lon, cen_lat,                         &
                                       lon1, lat1, lon2, lat2, dlon, dlat,       &
@@ -1444,10 +1444,21 @@
               if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
               line=__LINE__, file=__FILE__)) return
 #endif
-
+              ! set default chunksizes for 2d arrays
+              if (ichunk2d <= 0) then
+                 ichunk2d = wrt_int_state%lon_end-wrt_int_state%lon_start+1
+                 call mpi_bcast(ichunk2d,1,mpi_integer,0,wrt_mpi_comm,rc)
+              endif
+              if (jchunk2d <= 0) then
+                 jchunk2d = wrt_int_state%lat_end-wrt_int_state%lat_start+1
+                 call mpi_bcast(jchunk2d,1,mpi_integer,0,wrt_mpi_comm,rc)
+              endif
+              if (wrt_int_state%mype == 0) then
+                 print *,'ichunk2d,jchunk2d',ichunk2d,jchunk2d
+              endif
               wbeg = MPI_Wtime()
               call write_netcdf_parallel(file_bundle,wrt_int_state%wrtFB(nbdl),   &
-                                trim(filename), wrt_mpi_comm,wrt_int_state%mype,imo,jmo,rc)
+              trim(filename), wrt_mpi_comm,wrt_int_state%mype,imo,jmo,ichunk2d,jchunk2d,rc)
               wend = MPI_Wtime()
               if (lprnt) then
                 write(*,'(A,F10.5,A,I4.2,A,I2.2)')' parallel netcdf      Write Time is ',wend-wbeg  &

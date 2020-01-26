@@ -37,7 +37,7 @@ module fv3gfs_cap_mod
                                     wrttasks_per_group, n_group,             &
                                     lead_wrttask, last_wrttask,              &
                                     output_grid, output_file,                &
-                                    imo, jmo, write_nemsioflip,              &
+                                    imo,jmo,ichunk2d,jchunk2d,write_nemsioflip,&
                                     write_fsyncflag, nsout_io,               &
                                     cen_lon, cen_lat, ideflate,              &
                                     lon1, lat1, lon2, lat2, dlon, dlat,      &
@@ -307,6 +307,11 @@ module fv3gfs_cap_mod
     call ESMF_ConfigGetAttribute(config=CF,value=iau_offset,default=0,label ='iau_offset:',rc=rc)
     if (iau_offset < 0) iau_offset=0
 
+    ! chunksizes for netcdf_parallel
+    call ESMF_ConfigGetAttribute(config=CF,value=ichunk2d,default=0,label ='ichunk2d:',rc=rc)
+    call ESMF_ConfigGetAttribute(config=CF,value=jchunk2d,default=0,label ='jchunk2d:',rc=rc)
+    
+    ! zlib compression flag
     call ESMF_ConfigGetAttribute(config=CF,value=ideflate,default=0,label ='ideflate:',rc=rc)
     if (ideflate < 0) ideflate=0
 
