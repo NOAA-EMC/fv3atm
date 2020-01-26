@@ -2295,7 +2295,6 @@ module post_gfs
         do j=jsta,jend
           do i=1,im
             omga(i,j,l) = (-1.) * wh(i,j,l) * dpres(i,j,l)/zint(i,j,l)
-            pmid(i,j,l) = rgas*dpres(i,j,l) * t(i,j,l)*(q(i,j,l)*fv+1.0)/grav/zint(i,j,l)
             zint(i,j,l) = zint(i,j,l) + zint(i,j,l+1)
           enddo
         enddo
@@ -2318,6 +2317,15 @@ module post_gfs
         enddo
       end do
 
+!compute pmid from averaged two layer pint
+      do l=lm,1,-1
+        do j=jsta,jend
+          do i=1,im
+            pmid(i,j,l) = 0.5*(pint(i,j,l)+pint(i,j,l+1))
+          enddo
+        enddo
+      enddo
+
 !$omp parallel do private(i,j)
       do j=jsta,jend
         do i=1,im
@@ -2337,7 +2345,7 @@ module post_gfs
         end do
       end do
 
-! compute zmid  ??? where is definition of alpint(1)
+! compute zmid  
       do l=lm,1,-1
 !$omp parallel do private(i,j)
         do j=jsta,jend
