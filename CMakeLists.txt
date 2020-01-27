@@ -12,7 +12,7 @@ if(CCPP)
     add_definitions(-DSTATIC)
   endif()
 endif()
-
+set(CMAKE_FIND_PACKAGE_PREFER_CONFIG false)
 add_subdirectory(cpl)
 add_subdirectory(${PHYS}physics)
 add_subdirectory(ipd)
@@ -78,8 +78,9 @@ target_link_libraries(fv3core PRIVATE ipd)
 target_include_directories(fv3core PRIVATE ${MPI_Fortran_INCLUDE_PATH} )
 target_include_directories(fv3core PRIVATE ${CMAKE_INSTALL_PREFIX}/include )
 target_include_directories(fv3core PRIVATE ${CMAKE_INSTALL_PREFIX}/mod )
+target_include_directories(fv3core PRIVATE ${NETCDF_INCLUDES_F90} )
 
-target_include_directories(fv3core PRIVATE ${ESMF_MOD})
+target_include_directories(fv3core PRIVATE ${ESMF_F90COMPILEPATHS})
 message("HEY fort inc are ${MPI_Fortran_INCLUDE_PATH}")
 target_include_directories(fv3core PRIVATE ${MPI_Fortran_INCLUDE_PATH})
 
@@ -125,7 +126,7 @@ target_compile_definitions(fv3cap PRIVATE -DESMF_VERSION_MAJOR=${ESMF_VERSION_MA
 target_include_directories(fv3cap PRIVATE ${MPI_Fortran_INCLUDE_PATH})
 target_include_directories(fv3cap PRIVATE ${CMAKE_INSTALL_PREFIX}/include )
 target_include_directories(fv3cap PRIVATE ${CMAKE_INSTALL_PREFIX}/mod )
-target_include_directories(fv3cap PRIVATE ${ESMF_MOD})
+target_include_directories(fv3cap PRIVATE ${ESMF_F90COMPILEPATHS})
 
 target_link_libraries(fv3cap PRIVATE fms)
 target_link_libraries(fv3cap PRIVATE fv3cpl)

@@ -101,7 +101,7 @@ set_property(SOURCE physics/radsw_main_nmmb.f          APPEND_STRING PROPERTY CO
 
 set_property(SOURCE NAM_layer/NAM_diagnostics.F90      APPEND_STRING PROPERTY COMPILE_FLAGS "-O0")
 
-target_include_directories(namphysics PRIVATE ${ESMF_MOD})
+target_include_directories(namphysics PRIVATE ${ESMF_F90COMPILEPATHS})
 
 set_target_properties(namphysics PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mod)
 target_include_directories(namphysics PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/mod)
