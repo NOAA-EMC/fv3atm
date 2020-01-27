@@ -6,9 +6,9 @@ else()
 endif()
 
 if(PARALLEL_NETCDF)
-  set(NETCDF_PARALLEL_SRC model_write_netcdf_parallel.F90)
+  set(NETCDF_PARALLEL_SRC module_write_netcdf_parallel.F90)
 else()
-  set(NETCDF_PARALLEL_SRC model_write_netcdf_parallel_stub.F90)
+  set(NETCDF_PARALLEL_SRC module_write_netcdf_parallel_stub.F90)
   add_definitions(-DNO_PARALLEL_NETCDF)
 endif()
 
