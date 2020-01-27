@@ -594,8 +594,7 @@ subroutine micro_mg_tend (                                       &
   real(r8), intent(in) :: icecldf(mgncol,nlev)    ! ice cloud fraction (no units)
   real(r8), intent(in) :: qsatfac(mgncol,nlev)    ! subgrid cloud water saturation scaling factor (no units)
   logical, intent(in)  :: lprnt
-  integer, intent(in)  :: iccn
-
+  integer,  intent(in)  :: iccn
 
   ! used for scavenging
   ! Inputs for aerosol activation
@@ -1516,6 +1515,8 @@ subroutine micro_mg_tend (                                       &
       do i=1,mgncol
         if (t(i,k) < icenuct) then
           ncai(i,k) = naai(i,k)*rho(i,k)
+          ncai(i,k) = min(ncai(i,k), 710.0e3_r8)
+          naai(i,k) = ncai(i,k)*rhoinv(i,k)
         else
           naai(i,k) = zero
           ncai(i,k) = zero
@@ -2834,7 +2835,6 @@ subroutine micro_mg_tend (                                       &
        qctend(i,k) = qctend(i,k)+ &
              (-pra(i,k)-prc(i,k)-mnuccc(i,k)-mnucct(i,k)-msacwi(i,k)- &
              psacws(i,k)-bergs(i,k)-qmultg(i,k)-psacwg(i,k)-pgsacw(i,k))*lcldm(i,k)-berg(i,k)
-
         if (do_cldice) then
 !          qitend(i,k) = qitend(i,k) + &
 !               (mnuccc(i,k)+mnucct(i,k)+mnudep(i,k)+msacwi(i,k))*lcldm(i,k)+(-prci(i,k)- &
