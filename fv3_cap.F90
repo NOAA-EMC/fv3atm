@@ -360,7 +360,7 @@ module fv3gfs_cap_mod
       ierr = 0
       do i=1,num_files
         CALL ESMF_ConfigGetAttribute(config=CF,value=output_file(i), rc=rc)
-        ! if only 1 output_file specified, copy to all elements
+        ! if only 1 output_file specified, copy to all elements, set ierr=1
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) then
            ierr = 1
            if (i .eq. 1) then
@@ -370,9 +370,11 @@ module fv3gfs_cap_mod
            endif
         endif
         ! specifying multiple values of output_file will only work if
-        ! they all start with 'netcdf' - need to add a check for this
+        ! they all start with 'netcdf'.
         ! Mixing netcdf and nemsio will not work.
         if (i > 1 .and. ierr == 0) then
+           ! if multiple values of output_file specified, check that 
+           ! they all start with 'netcdf'.
            if (output_file(i)(1:6) .ne. 'netcdf' .or. &
                output_file(i-1)(1:6) .ne. 'netcdf') then
               write(0,*)'fv3_cap.F90:muliple values of output_file must all begin with netcdf'
