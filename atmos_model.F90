@@ -113,7 +113,8 @@ use FV3GFS_io_mod,      only: FV3GFS_restart_read, FV3GFS_restart_write, &
                               FV3GFS_diag_register, FV3GFS_diag_output,  &
                               DIAG_SIZE
 use fv_iau_mod,         only: iau_external_data_type,getiauforcing,iau_initialize
-use module_fv3_config,  only: output_1st_tstep_rst, first_kdt, nsout
+use module_fv3_config,  only: output_1st_tstep_rst, first_kdt, nsout,    &
+                              frestart, restart_endfcst
 
 !-----------------------------------------------------------------------
 
@@ -221,7 +222,8 @@ character(len=128) :: tagname = '$Name$'
   logical,parameter :: flip_vc = .true.
 #endif
 
-  real(kind=IPD_kind_phys), parameter :: zero=0.0, one=1.0
+  real(kind=IPD_kind_phys), parameter :: zero = 0.0_IPD_kind_phys, &
+                                         one  = 1.0_IPD_kind_phys
 
 contains
 
@@ -944,7 +946,7 @@ subroutine update_atmos_model_state (Atmos)
 subroutine atmos_model_end (Atmos)
   type (atmos_data_type), intent(inout) :: Atmos
 !---local variables
-  integer :: idx
+  integer :: idx, seconds
 #ifdef CCPP
   integer :: ierr
 #endif
@@ -952,9 +954,11 @@ subroutine atmos_model_end (Atmos)
 !-----------------------------------------------------------------------
 !---- termination routine for atmospheric model ----
                                               
-    call atmosphere_end (Atmos % Time, Atmos%grid)
-    call FV3GFS_restart_write (IPD_Data, IPD_Restart, Atm_block, &
-                               IPD_Control, Atmos%domain)
+    call atmosphere_end (Atmos % Time, Atmos%grid, restart_endfcst)
+    if(restart_endfcst) then
+      call FV3GFS_restart_write (IPD_Data, IPD_Restart, Atm_block, &
+                                 IPD_Control, Atmos%domain)
+    endif
 
 #ifdef CCPP
 !   Fast physics (from dynamics) are finalized in atmosphere_end above;
@@ -1457,6 +1461,24 @@ subroutine update_atmos_chemistry(state, rc)
         enddo
       enddo
 
+      ! -- zero out accumulated fields
+!$OMP parallel do default (none) &
+!$OMP             shared  (nj, ni, Atm_block, IPD_Control, IPD_Data) &
+!$OMP             private (j, jb, i, ib, nb, ix)
+      do j = 1, nj
+        jb = j + Atm_block%jsc - 1
+        do i = 1, ni
+          ib = i + Atm_block%isc - 1
+          nb = Atm_block%blkno(ib,jb)
+          ix = Atm_block%ixp(ib,jb)
+          IPD_Data(nb)%coupling%rainc_cpl(ix)  = zero
+          if (.not.IPD_Control%cplflx) then
+            IPD_Data(nb)%coupling%rain_cpl(ix) = zero
+            IPD_Data(nb)%coupling%snow_cpl(ix) = zero
+          end if
+        enddo
+      enddo
+
       if (IPD_Control%debug) then
         ! -- diagnostics
         write(6,'("update_atmos: prsi   - min/max/avg",3g16.6)') minval(prsi),   maxval(prsi),   sum(prsi)/size(prsi)
@@ -1698,7 +1720,7 @@ end subroutine atmos_data_type_chksum
                   IPD_Data(nb)%Coupling%ficein_cpl(ix)   = zero
                   if (IPD_Data(nb)%Sfcprop%oceanfrac(ix) > zero) then
                     if (datar8(i,j) >= IPD_control%min_seaice*IPD_Data(nb)%Sfcprop%oceanfrac(ix)) then
-                      IPD_Data(nb)%Coupling%ficein_cpl(ix) = datar8(i,j)
+                      IPD_Data(nb)%Coupling%ficein_cpl(ix) = max(zero, min(datar8(i,j),one))
 !                     if (IPD_Data(nb)%Sfcprop%oceanfrac(ix) == one) IPD_Data(nb)%Sfcprop%slmsk(ix) = 2. !slmsk=2 crashes in gcycle on partial land points
                       IPD_Data(nb)%Sfcprop%slmsk(ix)         = 2.                                        !slmsk=2 crashes in gcycle on partial land points
                       IPD_Data(nb)%Coupling%slimskin_cpl(ix) = 4.

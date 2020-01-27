@@ -1103,7 +1103,7 @@ module module_physics_driver
 !*## CCPP ##
       enddo
 !
-!## CCPP ##* note: this block is not yet in CCPP
+!## CCPP ##* GFS_surface_generic.F90/GFS_surface_generic_pre_run
       if (Model%cplflx) then
         do i=1,im
           islmsk_cice(i) = nint(Coupling%slimskin_cpl(i))
@@ -1273,7 +1273,7 @@ module module_physics_driver
           dtdt(i,k)  = zero
           dtdtc(i,k) = zero
 
-!## CCPP ##* note: this block is not yet in CCPP
+!## CCPP ##* GFS_typedefs.F90/interstitial_phys_reset
 !vay-2018
 ! Pure tendency arrays w/o accumulation of Phys-tendencies from each
 !      chain of GFS-physics (later add container for species)
@@ -1911,14 +1911,16 @@ module module_physics_driver
 !    &,' stsoil=',stsoil(ipr,:)
 
 !  --- ...  surface energy balance over seaice
-!## CCPP ##* This section is not in the CCPP yet
+!## CCPP ##* sfc_sice.f/sfc_sice_run (local adjustment to avoid resetting islmsk after call to sfc_sice_run)
         if (Model%cplflx) then
           do i=1,im
             if (flag_cice(i)) then
                islmsk (i) = islmsk_cice(i)
             endif
           enddo
+!*## CCPP ##
 
+!## CCPP ##* sfc_cice.f/sfc_cice_run
 ! call sfc_cice for sea ice points in the coupled model (i.e. islmsk=4)
 !
           call sfc_cice                                                  &
@@ -1954,7 +1956,7 @@ module module_physics_driver
             snowd3(:,2), qss3(:,2), snowmt, gflx3(:,2), cmm3(:,2), chh3(:,2),    &
             evap3(:,2),  hflx3(:,2))
 !*## CCPP ##
-!## CCPP ##* This section is not in the CCPP yet.
+!## CCPP ##* This section is not needed for CCPP.
         if (Model%cplflx) then
           do i = 1, im
             if (flag_cice(i)) then
@@ -2805,7 +2807,7 @@ module module_physics_driver
       endif
 !*## CCPP ##
 
-!## CCPP ##* This block is not yet in CCPP
+!## CCPP ##* GFS_PBL_generic.F90/GFS_PBL_generic_post_run
       if (Model%cplchm) then
         do i = 1, im
           tem1 = max(Diag%q1(i), 1.e-8)
@@ -2814,7 +2816,6 @@ module module_physics_driver
         enddo
         Coupling%dkt     (:,:) = dkt (:,:)
       endif
-!*## CCPP ##
 
 !     if (lprnt) then
 !       write(0,*) ' dusfc1=',dusfc1(ipr),' kdt=',kdt,' lat=',lat
@@ -2827,8 +2828,6 @@ module module_physics_driver
 
 !  --- ...  coupling insertion
 
-!## CCPP ## This block is not in the CCPP yet. It should probably be put in 
-! GFS_PBL_generic.F90/GFS_PBL_generic_post_run.
       if (Model%cplflx) then
         do i=1,im
           if (Sfcprop%oceanfrac(i) > zero) then               ! Ocean only, NO LAKES
@@ -3182,7 +3181,7 @@ module module_physics_driver
       Stateout%gq0(1:im,:,:) = Statein%qgrs(1:im,:,:) + dqdt(1:im,:,:) * dtp
 !*## CCPP ##
 
-! DH* TODO - WHERE IS THIS IN CCPP?
+!## CCPP ##* This is not in the CCPP yet.
 !================================================================================
 !     above: updates of the state by UGWP oro-GWS and RF-damp
 !  Diag%tav_ugwp & Diag%uav_ugwp(i,k)-Updated U-T state before moist/micro !  physics
@@ -3197,7 +3196,7 @@ module module_physics_driver
           enddo
         enddo
       endif
-! *DH
+!*## CCPP ##
 
 !================================================================================
 ! It is not clear Do we need it, "ideaca_up", having stability check inside UGWP-module
@@ -3308,9 +3307,13 @@ module module_physics_driver
         dtdt(1:im,:) = Stateout%gt0(1:im,:)
       endif   ! end if_ldiag3d/cnvgwd
 
-      if (Model%ldiag3d) then
+      if (Model%ldiag3d .or. Model%cplchm) then
         dqdt(1:im,:,1) = Stateout%gq0(1:im,:,1)
-      endif   ! end if_ldiag3d
+      endif   ! end if_ldiag3d/cplchm
+
+      if (Model%cplchm) then
+        Coupling%dqdti(1:im,:) = zero
+      endif   ! end if_cplchm
 !*## CCPP ##
 
 !## CCPP ## Only get_prs_fv3.F90/get_phi_fv3_run is a scheme (GFS_HYDRO is assumed to be undefined)
