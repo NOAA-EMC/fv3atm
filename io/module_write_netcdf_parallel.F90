@@ -82,6 +82,7 @@ end module module_write_netcdf_parallel
     integer :: im_dimid, jm_dimid, pfull_dimid, phalf_dimid, time_dimid
     integer :: im_varid, jm_varid, lm_varid, time_varid, lon_varid, lat_varid
     integer, dimension(:), allocatable :: varids
+    logical shuffle
 !
     call ESMF_FieldBundleGet(fieldbundle, fieldCount=fieldCount, rc=rc); ESMF_ERR_RETURN(rc)
 
@@ -162,10 +163,18 @@ end module module_write_netcdf_parallel
       if (fldlev(i) == 1) then
         if (typekind == ESMF_TYPEKIND_R4) then
           if (ideflate > 0) then
-            ncerr = nf90_def_var(ncid, trim(fldName), NF90_FLOAT, &
-                    (/im_dimid,jm_dimid,time_dimid/), varids(i), &
-                    shuffle=.false.,deflate_level=ideflate,&
-                    chunksizes=(/ichunk2d,jchunk2d,1/)); NC_ERR_STOP(ncerr)
+            if (ichunk2d < 0 .or. jchunk2d < 0) then
+               ! let netcdf lib choose chunksize
+               ! shuffle filter on for 2d fields (lossless compression)
+               ncerr = nf90_def_var(ncid, trim(fldName), NF90_FLOAT, &
+                       (/im_dimid,jm_dimid,time_dimid/), varids(i), &
+                       shuffle=.true.,deflate_level=ideflate); NC_ERR_STOP(ncerr)
+            else
+               ncerr = nf90_def_var(ncid, trim(fldName), NF90_FLOAT, &
+                       (/im_dimid,jm_dimid,time_dimid/), varids(i), &
+                       shuffle=.true.,deflate_level=ideflate,&
+                       chunksizes=(/ichunk2d,jchunk2d,1/)); NC_ERR_STOP(ncerr)
+            endif
             ! compression filters require collective access.
             ncerr = nf90_var_par_access(ncid, varids(i), NF90_COLLECTIVE) 
           else
@@ -184,10 +193,23 @@ end module module_write_netcdf_parallel
       else if (fldlev(i) > 1) then
         if (typekind == ESMF_TYPEKIND_R4) then
           if (ideflate > 0) then
-            ncerr = nf90_def_var(ncid, trim(fldName), NF90_FLOAT, &
-                    (/im_dimid,jm_dimid,pfull_dimid,time_dimid/), varids(i), &
-                    shuffle=.false.,deflate_level=ideflate,&
-                    chunksizes=(/ichunk3d,jchunk3d,kchunk3d,1/)); NC_ERR_STOP(ncerr)
+            ! shuffle filter off for 3d fields using lossy compression
+            if (nbits > 0) then
+                shuffle=.false.
+            else
+                shuffle=.true.
+            endif
+            if (ichunk3d < 0 .or. jchunk3d < 0 .or. kchunk3d < 0) then
+               ! let netcdf lib choose chunksize
+               ncerr = nf90_def_var(ncid, trim(fldName), NF90_FLOAT, &
+                       (/im_dimid,jm_dimid,pfull_dimid,time_dimid/), varids(i), &
+                       shuffle=shuffle,deflate_level=ideflate); NC_ERR_STOP(ncerr)
+            else
+               ncerr = nf90_def_var(ncid, trim(fldName), NF90_FLOAT, &
+                       (/im_dimid,jm_dimid,pfull_dimid,time_dimid/), varids(i), &
+                       shuffle=shuffle,deflate_level=ideflate,&
+                       chunksizes=(/ichunk3d,jchunk3d,kchunk3d,1/)); NC_ERR_STOP(ncerr)
+            endif
             ! compression filters require collective access.
             ncerr = nf90_var_par_access(ncid, varids(i), NF90_COLLECTIVE) 
           else

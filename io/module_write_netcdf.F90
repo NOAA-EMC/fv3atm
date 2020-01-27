@@ -18,7 +18,7 @@ module module_write_netcdf
   contains
 
 !----------------------------------------------------------------------------------------
-  subroutine write_netcdf(fieldbundle, wrtfb, filename, mpi_comm, mype, im, jm, rc)
+  subroutine write_netcdf(fieldbundle, wrtfb, filename, mpi_comm, mype, im, jm, ichunk2d,jchunk2d,ichunk3d,jchunk3d,kchunk3d, rc)
 !
     type(ESMF_FieldBundle), intent(in) :: fieldbundle
     type(ESMF_FieldBundle), intent(in) :: wrtfb
@@ -26,6 +26,7 @@ module module_write_netcdf
     integer, intent(in)                :: mpi_comm
     integer, intent(in)                :: mype
     integer, intent(in)                :: im, jm
+    integer, intent(in)                :: ichunk2d,jchunk2d,ichunk3d,jchunk3d,kchunk3d
     integer, optional,intent(out)      :: rc
 !
 !** local vars
@@ -65,6 +66,7 @@ module module_write_netcdf
     integer :: im_dimid, jm_dimid, pfull_dimid, phalf_dimid, time_dimid
     integer :: im_varid, jm_varid, lm_varid, time_varid, lon_varid, lat_varid
     integer, dimension(:), allocatable :: varids
+    logical shuffle
 
     call ESMF_FieldBundleGet(fieldbundle, fieldCount=fieldCount, rc=rc); ESMF_ERR_RETURN(rc)
 
@@ -146,28 +148,49 @@ module module_write_netcdf
       if (fldlev(i) == 1) then
         if (typekind == ESMF_TYPEKIND_R4) then
           if (ideflate > 0) then
-            ncerr = nf90_def_var(ncid, trim(fldName), NF90_FLOAT, &
-                    (/im_dimid,jm_dimid,time_dimid/), varids(i), &
-                    shuffle=.true.,deflate_level=ideflate,&
-                    chunksizes=(/im,jm,1/),cache_size=40*im*jm); NC_ERR_STOP(ncerr)
+             if (ichunk2d < 0 .or. jchunk2d < 0) then
+                ! let netcdf lib choose chunksize
+                ! shuffle filter on for 2d fields (lossless compression)
+                ncerr = nf90_def_var(ncid, trim(fldName), NF90_FLOAT, &
+                        (/im_dimid,jm_dimid,time_dimid/), varids(i), &
+                        shuffle=.true.,deflate_level=ideflate); NC_ERR_STOP(ncerr)
+             else
+                ncerr = nf90_def_var(ncid, trim(fldName), NF90_FLOAT, &
+                        (/im_dimid,jm_dimid,time_dimid/), varids(i), &
+                        shuffle=.true.,deflate_level=ideflate,&
+                        chunksizes=(/ichunk2d,jchunk2d,1/),cache_size=40*im*jm); NC_ERR_STOP(ncerr)
+             endif
           else
-            ncerr = nf90_def_var(ncid, trim(fldName), NF90_FLOAT, &
-            (/im_dimid,jm_dimid,time_dimid/), varids(i)); NC_ERR_STOP(ncerr)
+             ncerr = nf90_def_var(ncid, trim(fldName), NF90_FLOAT, &
+             (/im_dimid,jm_dimid,time_dimid/), varids(i)); NC_ERR_STOP(ncerr)
           endif
         else if (typekind == ESMF_TYPEKIND_R8) then
-          ncerr = nf90_def_var(ncid, trim(fldName), NF90_DOUBLE, &
-                              (/im_dimid,jm_dimid,time_dimid/), varids(i)); NC_ERR_STOP(ncerr)
+           ncerr = nf90_def_var(ncid, trim(fldName), NF90_DOUBLE, &
+                               (/im_dimid,jm_dimid,time_dimid/), varids(i)); NC_ERR_STOP(ncerr)
         else
-          write(0,*)'Unsupported typekind ', typekind
-          stop
+           write(0,*)'Unsupported typekind ', typekind
+           stop
         end if
       else if (fldlev(i) > 1) then
          if (typekind == ESMF_TYPEKIND_R4) then
            if (ideflate > 0) then
-             ncerr = nf90_def_var(ncid, trim(fldName), NF90_FLOAT, &
-                    (/im_dimid,jm_dimid,pfull_dimid,time_dimid/), varids(i), &
-                    shuffle=.false.,deflate_level=ideflate,&
-                    chunksizes=(/im,jm,1,1/),cache_size=40*im*jm); NC_ERR_STOP(ncerr)
+             ! shuffle filter off for 3d fields using lossy compression
+             if (nbits > 0) then
+                shuffle=.false.
+             else
+                shuffle=.true.
+             endif
+             if (ichunk3d < 0 .or. jchunk3d < 0 .or. kchunk3d < 0) then
+                ! let netcdf lib choose chunksize
+                ncerr = nf90_def_var(ncid, trim(fldName), NF90_FLOAT, &
+                        (/im_dimid,jm_dimid,pfull_dimid,time_dimid/), varids(i), &
+                        shuffle=shuffle,deflate_level=ideflate); NC_ERR_STOP(ncerr)
+             else
+                ncerr = nf90_def_var(ncid, trim(fldName), NF90_FLOAT, &
+                       (/im_dimid,jm_dimid,pfull_dimid,time_dimid/), varids(i), &
+                       shuffle=shuffle,deflate_level=ideflate,&
+                       chunksizes=(/ichunk3d,jchunk3d,kchunk3d,1/)); NC_ERR_STOP(ncerr)
+             endif
            else
              ncerr = nf90_def_var(ncid, trim(fldName), NF90_FLOAT, &
                      (/im_dimid,jm_dimid,pfull_dimid,time_dimid/), varids(i)); NC_ERR_STOP(ncerr)
