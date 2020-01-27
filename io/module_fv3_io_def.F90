@@ -18,7 +18,7 @@
   character(255)    :: app_domain
   character(255)    :: output_grid
   integer           :: imo,jmo
-  integer           :: ichunk2d,jchunk2d
+  integer           :: ichunk2d,jchunk2d,ichunk3d,jchunk3d,kchunk3d
   integer           :: nbdlphys
   integer           :: nsout_io, iau_offset, ideflate, nbits
   real              :: cen_lon, cen_lat, lon1, lat1, lon2, lat2, dlon, dlat

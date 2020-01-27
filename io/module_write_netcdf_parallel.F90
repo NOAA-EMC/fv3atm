@@ -19,14 +19,15 @@ module module_write_netcdf_parallel
   contains
 
 !----------------------------------------------------------------------------------------
-  subroutine write_netcdf_parallel(fieldbundle, wrtfb, filename, mpi_comm, mype, im, jm, ichunk2d, jchunk2d, rc)
+  subroutine write_netcdf_parallel(fieldbundle, wrtfb, filename, mpi_comm, mype, im, jm, ichunk2d, jchunk2d, ichunk3d, jchunk3d, kchunk3d, rc)
 !
     type(ESMF_FieldBundle), intent(in) :: fieldbundle
     type(ESMF_FieldBundle), intent(in) :: wrtfb
     character(*), intent(in)           :: filename
     integer, intent(in)                :: mpi_comm
     integer, intent(in)                :: mype
-    integer, intent(in)                :: im, jm, ichunk2d, jchunk2d
+    integer, intent(in)                :: im, jm, ichunk2d, jchunk2d, &
+                                          ichunk3d, jchunk3d, kchunk3d
     integer, optional,intent(out)      :: rc
 !
 !** local vars
@@ -172,7 +173,7 @@ module module_write_netcdf_parallel
             ncerr = nf90_def_var(ncid, trim(fldName), NF90_FLOAT, &
                     (/im_dimid,jm_dimid,pfull_dimid,time_dimid/), varids(i), &
                     shuffle=.false.,deflate_level=ideflate,&
-                    chunksizes=(/im,jm,1,1/)); NC_ERR_STOP(ncerr)
+                    chunksizes=(/ichunk3d,jchunk3d,kchunk3d,1/)); NC_ERR_STOP(ncerr)
             ! compression filters require collective access.
             ncerr = nf90_var_par_access(ncid, varids(i), NF90_COLLECTIVE) 
           else

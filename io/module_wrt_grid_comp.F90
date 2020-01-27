@@ -35,6 +35,7 @@
                                       n_group, num_files, app_domain,           &
                                       filename_base, output_grid, output_file,  &
                                       imo,jmo,ichunk2d,jchunk2d,write_nemsioflip,&
+                                      ichunk3d,jchunk3d,kchunk3d,               &
                                       nsout => nsout_io,                        &
                                       cen_lon, cen_lat,                         &
                                       lon1, lat1, lon2, lat2, dlon, dlat,       &
@@ -1171,7 +1172,7 @@
       type(ESMF_Time)                       :: currtime
       type(ESMF_TypeKind_Flag)              :: datatype
       type(ESMF_Field)                      :: field_work
-      type(ESMF_Grid)                       :: grid_work, fbgrid
+      type(ESMF_Grid)                       :: grid_work, fbgrid, wrtgrid
       type(ESMF_Array)                      :: array_work
       type(ESMF_State),save                 :: stateGridFB
       type(optimizeT), save                 :: optimize(4)
@@ -1444,7 +1445,7 @@
               if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
               line=__LINE__, file=__FILE__)) return
 #endif
-              ! set default chunksizes for 2d arrays
+              ! set default chunksizes
               if (ichunk2d <= 0) then
                  ichunk2d = wrt_int_state%lon_end-wrt_int_state%lon_start+1
                  call mpi_bcast(ichunk2d,1,mpi_integer,0,wrt_mpi_comm,rc)
@@ -1453,12 +1454,29 @@
                  jchunk2d = wrt_int_state%lat_end-wrt_int_state%lat_start+1
                  call mpi_bcast(jchunk2d,1,mpi_integer,0,wrt_mpi_comm,rc)
               endif
+              if (ichunk3d <= 0) then
+                 ichunk3d = wrt_int_state%lon_end-wrt_int_state%lon_start+1
+                 call mpi_bcast(ichunk3d,1,mpi_integer,0,wrt_mpi_comm,rc)
+              endif
+              if (jchunk3d <= 0) then
+                 jchunk3d = wrt_int_state%lat_end-wrt_int_state%lat_start+1
+                 call mpi_bcast(jchunk3d,1,mpi_integer,0,wrt_mpi_comm,rc)
+              endif
+              if (kchunk3d <= 0 .and. nbdl == 1) then
+                 call ESMF_FieldBundleGet(wrt_int_state%wrtFB(nbdl), grid=wrtgrid)
+                 call ESMF_AttributeGet(wrtgrid, convention="NetCDF", purpose="FV3", &
+                           attnestflag=ESMF_ATTNEST_OFF, name='pfull', &
+                           itemCount=kchunk3d, rc=rc)
+                 call mpi_bcast(kchunk3d,1,mpi_integer,0,wrt_mpi_comm,rc)
+              endif
               if (wrt_int_state%mype == 0) then
                  print *,'ichunk2d,jchunk2d',ichunk2d,jchunk2d
+                 print *,'ichunk3d,jchunk3d,kchunk3d',ichunk3d,jchunk3d,kchunk3d
               endif
               wbeg = MPI_Wtime()
               call write_netcdf_parallel(file_bundle,wrt_int_state%wrtFB(nbdl),   &
-              trim(filename), wrt_mpi_comm,wrt_int_state%mype,imo,jmo,ichunk2d,jchunk2d,rc)
+              trim(filename), wrt_mpi_comm,wrt_int_state%mype,imo,jmo,&
+              ichunk2d,jchunk2d,ichunk3d,jchunk3d,kchunk3d,rc)
               wend = MPI_Wtime()
               if (lprnt) then
                 write(*,'(A,F10.5,A,I4.2,A,I2.2)')' parallel netcdf      Write Time is ',wend-wbeg  &
