@@ -1,12 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<suite name="FV3_GFS_2017_gfdlmp_noahmp" lib="ccppphys" ver="3">
+<suite name="FV3_GFS_2017_coupled" lib="ccppphys" ver="3">
   <!-- <init></init> -->
-  <group name="fast_physics">
-    <subcycle loop="1">
-      <scheme>fv_sat_adj</scheme>
-    </subcycle>
-  </group>
   <group name="time_vary">
     <subcycle loop="1">
       <scheme>GFS_time_vary_pre</scheme>
@@ -44,10 +39,9 @@
     <subcycle loop="2">
       <scheme>sfc_diff</scheme>
       <scheme>GFS_surface_loop_control_part1</scheme>
-      <scheme>sfc_nst_pre</scheme>
-      <scheme>sfc_nst</scheme>
-      <scheme>sfc_nst_post</scheme>
-      <scheme>noahmpdrv</scheme>
+      <scheme>sfc_ocean</scheme>
+      <scheme>lsm_noah</scheme>
+      <scheme>sfc_cice</scheme>
       <scheme>sfc_sice</scheme>
       <scheme>GFS_surface_loop_control_part2</scheme>
     </subcycle>
@@ -64,7 +58,7 @@
       <scheme>GFS_GWD_generic_pre</scheme>
       <scheme>cires_ugwp</scheme>
       <scheme>cires_ugwp_post</scheme>
-      <scheme>GFS_GWD_generic_post</scheme>
+       <scheme>GFS_GWD_generic_post</scheme>
       <scheme>rayleigh_damp</scheme>
       <scheme>GFS_suite_stateout_update</scheme>
       <scheme>ozphys</scheme>
@@ -79,7 +73,8 @@
       <scheme>GFS_suite_interstitial_4</scheme>
       <scheme>cnvc90</scheme>
       <scheme>GFS_MP_generic_pre</scheme>
-      <scheme>gfdl_cloud_microphys</scheme>
+      <scheme>zhaocarr_gscond</scheme>
+      <scheme>zhaocarr_precpd</scheme>
       <scheme>GFS_MP_generic_post</scheme>
       <scheme>maximum_hourly_diagnostics</scheme>
     </subcycle>

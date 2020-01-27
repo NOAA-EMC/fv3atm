@@ -231,7 +231,6 @@ SCHEME_FILES = {
     'FV3/ccpp/physics/physics/sfc_cice.f'                        : [ 'slow_physics' ],
     'FV3/ccpp/physics/physics/sfc_diff.f'                        : [ 'slow_physics' ],
     'FV3/ccpp/physics/physics/sfc_drv.f'                         : [ 'slow_physics' ],
-    'FV3/ccpp/physics/physics/sfc_noahmp_pre.F90'                : [ 'slow_physics' ],
     'FV3/ccpp/physics/physics/sfc_noahmp_drv.f'                  : [ 'slow_physics' ],
     'FV3/ccpp/physics/physics/sfc_nst.f'                         : [ 'slow_physics' ],
     'FV3/ccpp/physics/physics/sfc_ocean.F'                       : [ 'slow_physics' ],
