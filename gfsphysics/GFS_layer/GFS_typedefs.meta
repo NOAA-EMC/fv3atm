@@ -5398,6 +5398,27 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+[du3dt(:,:,6)]
+  standard_name = cumulative_change_in_x_wind_from_ccpp
+  long_name = cumulative change in x wind from CCPP
+  units = m s-1
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+[du3dt(:,:,7)]
+  standard_name = cumulative_change_in_x_wind_from_model
+  long_name = cumulative change in x wind from model
+  units = m s-1
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+[du3dt(:,:,8)]
+  standard_name = cumulative_change_in_x_wind
+  long_name = cumulative change in x wind
+  units = m s-1
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
 [dv3dt(:,:,1)]
   standard_name = cumulative_change_in_y_wind_due_to_PBL
   long_name = cumulative change in y wind due to PBL
@@ -5429,6 +5450,27 @@
 [dv3dt(:,:,5)]
   standard_name = cumulative_change_in_y_wind_due_to_rayleigh_damping
   long_name = cumulative change in y wind due to Rayleigh damping
+  units = m s-1
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+[dv3dt(:,:,6)]
+  standard_name = cumulative_change_in_y_wind_from_ccpp
+  long_name = cumulative change in y wind from CCPP
+  units = m s-1
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+[dv3dt(:,:,7)]
+  standard_name = cumulative_change_in_y_wind_from_model
+  long_name = cumulative change in y wind from model
+  units = m s-1
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+[dv3dt(:,:,8)]
+  standard_name = cumulative_change_in_y_wind
+  long_name = cumulative change in y wind
   units = m s-1
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
@@ -5496,6 +5538,27 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+[dt3dt(:,:,10)]
+  standard_name = cumulative_change_in_temperature_from_ccpp
+  long_name = cumulative change in temperature from CCPP
+  units = K
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+[dt3dt(:,:,11)]
+  standard_name = cumulative_change_in_temperature_from_model
+  long_name = cumulative change in temperature from model
+  units = K
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+[dt3dt(:,:,12)]
+  standard_name = cumulative_change_in_temperature
+  long_name = cumulative change in temperature
+  units = K
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
 [dq3dt(:,:,1)]
   standard_name = cumulative_change_in_water_vapor_specific_humidity_due_to_PBL
   long_name = cumulative change in water vapor specific humidity due to PBL
@@ -5556,6 +5619,111 @@
   standard_name = cumulative_change_in_ozone_concentration_due_to_overhead_ozone_column
   long_name = cumulative change in ozone concentration due to overhead ozone column
   units = kg kg-1
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+[dq3dt(:,:,10)]
+  standard_name = cumulative_change_in_water_vapor_specific_humidity_from_CCPP
+  long_name = cumulative change in water vapor specific humidity from CCPP
+  units = kg kg-1
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+[dq3dt(:,:,11)]
+  standard_name = cumulative_change_in_water_vapor_specific_humidity_from_model
+  long_name = cumulative change in water vapor specific humidity from model
+  units = kg kg-1
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+[dq3dt(:,:,12)]
+  standard_name = cumulative_change_in_water_vapor_specific_humidity
+  long_name = cumulative change in water vapor specific humidity
+  units = kg kg-1
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+[tend_book(:,:,1)]
+  standard_name = temperature_at_start_of_ccpp
+  long_name = temperature at start of ccpp
+  units = K
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+[tend_book(:,:,2)]
+  standard_name = temperature_at_end_of_ccpp
+  long_name = temperature at end of ccpp
+  units = K
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+[tend_book(:,:,3)]
+  standard_name = temperature_at_total_check_point
+  long_name = temperature when model total is calculated in ccpp
+  units = K
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+[tend_book(:,:,4)]
+  standard_name = x_wind_at_start_of_ccpp
+  long_name = x wind at start of ccpp
+  units = K
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+[tend_book(:,:,5)]
+  standard_name = x_wind_at_end_of_ccpp
+  long_name = x wind at end of ccpp
+  units = K
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+[tend_book(:,:,6)]
+  standard_name = x_wind_at_total_check_point
+  long_name = x when model total is calculated in ccpp
+  units = K
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+[tend_book(:,:,7)]
+  standard_name = y_wind_at_start_of_ccpp
+  long_name = y wind at start of ccpp
+  units = K
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+[tend_book(:,:,8)]
+  standard_name = y_wind_at_end_of_ccpp
+  long_name = y wind at start of ccpp
+  units = K
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+[tend_book(:,:,9)]
+  standard_name = y_wind_at_total_check_point
+  long_name = y when model total is calculated in ccpp
+  units = K
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+[tend_book(:,:,10)]
+  standard_name = water_vapor_specific_humidity_at_start_of_ccpp
+  long_name = water vapor specific humidity at start of ccpp
+  units = K
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+[tend_book(:,:,11)]
+  standard_name = water_vapor_specific_humidity_at_end_of_ccpp
+  long_name = water vapor specific humidity at end of ccpp
+  units = K
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+[tend_book(:,:,12)]
+  standard_name = water_vapor_specific_humidity_at_total_check_point
+  long_name = water vapor specific humidity when model total is calculated in ccpp
+  units = K
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys

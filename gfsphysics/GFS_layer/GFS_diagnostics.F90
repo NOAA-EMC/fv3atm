@@ -2432,8 +2432,140 @@ module GFS_diagnostics
          ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%dv3dt(:,:,5)
       enddo
 
+      idx = idx + 1
+      ExtDiag(idx)%axes = 3
+      ExtDiag(idx)%name = 'du3dt_ccpp'
+      ExtDiag(idx)%desc = 'cumulative change in x wind from CCPP'
+      ExtDiag(idx)%unit = 'm/s'
+      ExtDiag(idx)%mod_name = 'gfs_phys'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+         ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%du3dt(:,:,6)
+      enddo
+
+      idx = idx + 1
+      ExtDiag(idx)%axes = 3
+      ExtDiag(idx)%name = 'dv3dt_ccpp'
+      ExtDiag(idx)%desc = 'cumulative change in y wind from CCPP'
+      ExtDiag(idx)%unit = 'm/s'
+      ExtDiag(idx)%mod_name = 'gfs_phys'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+         ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%dv3dt(:,:,6)
+      enddo
+
+      idx = idx + 1
+      ExtDiag(idx)%axes = 3
+      ExtDiag(idx)%name = 'du3dt_model'
+      ExtDiag(idx)%desc = 'cumulative change in x wind from model'
+      ExtDiag(idx)%unit = 'm/s'
+      ExtDiag(idx)%mod_name = 'gfs_phys'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+         ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%du3dt(:,:,7)
+      enddo
+
+      idx = idx + 1
+      ExtDiag(idx)%axes = 3
+      ExtDiag(idx)%name = 'dv3dt_model'
+      ExtDiag(idx)%desc = 'cumulative change in y wind from model'
+      ExtDiag(idx)%unit = 'm/s'
+      ExtDiag(idx)%mod_name = 'gfs_phys'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+         ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%dv3dt(:,:,7)
+      enddo
+
+      idx = idx + 1
+      ExtDiag(idx)%axes = 3
+      ExtDiag(idx)%name = 'du3dt_total'
+      ExtDiag(idx)%desc = 'cumulative change in x wind'
+      ExtDiag(idx)%unit = 'm/s'
+      ExtDiag(idx)%mod_name = 'gfs_phys'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+         ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%du3dt(:,:,8)
+      enddo
+
+      idx = idx + 1
+      ExtDiag(idx)%axes = 3
+      ExtDiag(idx)%name = 'dv3dt_total'
+      ExtDiag(idx)%desc = 'cumulative change in y wind'
+      ExtDiag(idx)%unit = 'm/s'
+      ExtDiag(idx)%mod_name = 'gfs_phys'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+         ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%dv3dt(:,:,8)
+      enddo
+
+      idx = idx + 1
+      ExtDiag(idx)%axes = 3
+      ExtDiag(idx)%name = 'dt3dt_ccpp'
+      ExtDiag(idx)%desc = 'cumulative change in temperature from CCPP'
+      ExtDiag(idx)%unit = 'K'
+      ExtDiag(idx)%mod_name = 'gfs_phys'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+         ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%dt3dt(:,:,10)
+      enddo
+
+      idx = idx + 1
+      ExtDiag(idx)%axes = 3
+      ExtDiag(idx)%name = 'dt3dt_model'
+      ExtDiag(idx)%desc = 'cumulative change in temperature from model'
+      ExtDiag(idx)%unit = 'K'
+      ExtDiag(idx)%mod_name = 'gfs_phys'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+         ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%dt3dt(:,:,11)
+      enddo
+
+      idx = idx + 1
+      ExtDiag(idx)%axes = 3
+      ExtDiag(idx)%name = 'dt3dt_total'
+      ExtDiag(idx)%desc = 'cumulative change in temperature'
+      ExtDiag(idx)%unit = 'K'
+      ExtDiag(idx)%mod_name = 'gfs_phys'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+         ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%dt3dt(:,:,12)
+      enddo
+
 #ifdef CCPP
       if_qdiag3d: if(Model%qdiag3d) then
+        idx = idx + 1
+        ExtDiag(idx)%axes = 3
+        ExtDiag(idx)%name = 'dq3dt_ccpp'
+        ExtDiag(idx)%desc = 'cumulative change in water vapor specific humidity from CCPP'
+        ExtDiag(idx)%unit = 'kg kg-1'
+        ExtDiag(idx)%mod_name = 'gfs_phys'
+        allocate (ExtDiag(idx)%data(nblks))
+        do nb = 1,nblks
+          ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%dq3dt(:,:,10)
+        enddo
+
+        idx = idx + 1
+        ExtDiag(idx)%axes = 3
+        ExtDiag(idx)%name = 'dq3dt_model'
+        ExtDiag(idx)%desc = 'cumulative change in water vapor specific humidity from model'
+        ExtDiag(idx)%unit = 'kg kg-1'
+        ExtDiag(idx)%mod_name = 'gfs_phys'
+        allocate (ExtDiag(idx)%data(nblks))
+        do nb = 1,nblks
+          ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%dq3dt(:,:,11)
+        enddo
+
+        idx = idx + 1
+        ExtDiag(idx)%axes = 3
+        ExtDiag(idx)%name = 'dq3dt_total'
+        ExtDiag(idx)%desc = 'cumulative change in water vapor specific humidity'
+        ExtDiag(idx)%unit = 'kg kg-1'
+        ExtDiag(idx)%mod_name = 'gfs_phys'
+        allocate (ExtDiag(idx)%data(nblks))
+        do nb = 1,nblks
+          ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%dq3dt(:,:,12)
+        enddo
+
          idx = idx + 1
          ExtDiag(idx)%axes = 3
          ExtDiag(idx)%name = 'dq3dt_pbl'

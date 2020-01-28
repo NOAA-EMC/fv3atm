@@ -1464,6 +1464,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: dv3dt (:,:,:)  => null()   !< v momentum change due to physics
     real (kind=kind_phys), pointer :: dt3dt (:,:,:)  => null()   !< temperature change due to physics
     real (kind=kind_phys), pointer :: dq3dt (:,:,:)  => null()   !< moisture change due to physics
+    real (kind=kind_phys), pointer :: tend_book(:,:,:)=>null()   !< CCPP tendency storage
     real (kind=kind_phys), pointer :: refdmax (:)    => null()   !< max hourly 1-km agl reflectivity
     real (kind=kind_phys), pointer :: refdmax263k(:) => null()   !< max hourly -10C reflectivity
     real (kind=kind_phys), pointer :: t02max  (:)    => null()   !< max hourly 2m T
@@ -5194,12 +5195,16 @@ module GFS_typedefs
     
     !--- 3D diagnostics
     if (Model%ldiag3d) then
-      allocate (Diag%du3dt  (IM,Model%levs,5))
-      allocate (Diag%dv3dt  (IM,Model%levs,5))
-      allocate (Diag%dt3dt  (IM,Model%levs,9))
+      allocate (Diag%du3dt  (IM,Model%levs,8))
+      allocate (Diag%dv3dt  (IM,Model%levs,8))
+      allocate (Diag%dt3dt  (IM,Model%levs,12))
       if (Model%qdiag3d) then
-        allocate (Diag%dq3dt  (IM,Model%levs,9))
+        allocate (Diag%dq3dt  (IM,Model%levs,12))
+        allocate (Diag%tend_book(IM,Model%levs,12))
+      else
+        allocate (Diag%tend_book(IM,Model%levs,9))
       endif
+      Diag%tend_book=0
 !      allocate (Diag%dq3dt  (IM,Model%levs,oz_coeff+5))
 !--- needed to allocate GoCart coupling fields
 !      allocate (Diag%upd_mf (IM,Model%levs))
@@ -5505,6 +5510,7 @@ module GFS_typedefs
       Diag%du3dt    = zero
       Diag%dv3dt    = zero
       Diag%dt3dt    = zero
+      
       if (Model%qdiag3d) then
          Diag%dq3dt    = zero
       endif
