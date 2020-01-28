@@ -8,7 +8,8 @@ module GFS_typedefs
                                            con_hvap, con_hfus, con_pi, con_rd, con_rv,     &
                                            con_t0c, con_cvap, con_cliq, con_eps, con_epsq, &
                                            con_epsm1, con_ttp, rlapse, con_jcal, con_rhw0, &
-                                           con_sbc, con_tice, cimin, con_p0, rhowater
+                                           con_sbc, con_tice, cimin, con_p0, rhowater,     &
+                                           con_csol
        use module_radsw_parameters,  only: topfsw_type, sfcfsw_type, cmpfsw_type, NBDSW
        use module_radlw_parameters,  only: topflw_type, sfcflw_type, NBDLW
 #else

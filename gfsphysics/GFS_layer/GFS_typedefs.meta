@@ -8607,3 +8607,12 @@
   dimensions = ()
   type = real
   kind = kind_phys
+[con_csol]
+  standard_name = specific_heat_of_ice_at_constant_pressure
+  long_name = specific heat of ice at constant pressure
+  units = J kg-1 K-1
+  dimensions = ()
+  type = real 
+  kind = kind_phys
+  intent = in 
+  optional = F
