@@ -460,7 +460,7 @@ module GFS_driver
       call cires_ugwp_init(Model%me,      Model%master, Model%nlunit,  Init_parm%logunit, &
                            Model%fn_nml,  Model%lonr,   Model%latr,    Model%levs,        &
                            Init_parm%ak,  Init_parm%bk, p_ref,         Model%dtp,         &
-                           Model%cdmbgwd, Model%cgwf,   Model%prslrd0, Model%ral_ts)
+                           Model%cdmbgwd(1:2), Model%cgwf,   Model%prslrd0, Model%ral_ts)
     endif
 #endif
 
