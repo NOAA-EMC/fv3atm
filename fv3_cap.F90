@@ -238,6 +238,7 @@ module fv3gfs_cap_mod
     integer                                :: mpi_comm_atm
     integer                                :: i, j, k, io_unit, urc, ierr
     integer                                :: petcount, mype
+    integer                                :: num_output_file
     logical                                :: isPetLocal
     logical                                :: OPENED
     character(ESMF_MAXSTR)                 :: name
@@ -355,33 +356,26 @@ module fv3gfs_cap_mod
         CALL ESMF_ConfigGetAttribute(config=CF,value=filename_base(i), rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
       enddo
+
       allocate(output_file(num_files))
-      CALL ESMF_ConfigFindLabel(CF,'output_file:',rc=RC)
-      ierr = 0
-      do i=1,num_files
-        CALL ESMF_ConfigGetAttribute(config=CF,value=output_file(i), rc=rc)
-        ! if only 1 output_file specified, copy to all elements, set ierr=1
-        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) then
-           ierr = 1
-           if (i .eq. 1) then
-              return
-           else
-              output_file(i) = output_file(i-1)
-           endif
-        endif
-        ! specifying multiple values of output_file will only work if
-        ! they all start with 'netcdf'.
-        ! Mixing netcdf and nemsio will not work.
-        if (i > 1 .and. ierr == 0) then
-           ! if multiple values of output_file specified, check that 
-           ! they all start with 'netcdf'.
-           if (output_file(i)(1:6) .ne. 'netcdf' .or. &
-               output_file(i-1)(1:6) .ne. 'netcdf') then
-              write(0,*)'fv3_cap.F90:muliple values of output_file must all begin with netcdf'
-              call ESMF_Finalize(endflag=ESMF_END_ABORT)
-           endif
-        endif
-      enddo
+      num_output_file = ESMF_ConfigGetLen(config=CF, label ='output_file:',rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+      if (num_files == num_output_file) then
+        CALL ESMF_ConfigGetAttribute(CF,valueList=output_file,label='output_file:', &
+             count=num_files, rc=RC)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+        do i = 1, num_files
+          if(output_file(i) /= "netcdf" .and. output_file(i) /= "netcdf_parallel") then
+            write(0,*)"fv3_cap.F90: only netcdf and netcdf_parallel are allowed for multiple values of output_file"
+            call ESMF_Finalize(endflag=ESMF_END_ABORT)
+          endif
+        enddo
+      else if ( num_output_file == 1) then
+        CALL ESMF_ConfigGetAttribute(CF,valuelist=output_file,label='output_file:', count=1, rc=RC)
+        output_file(1:num_files) = output_file(1)
+      else
+        output_file(1:num_files) = 'netcdf'
+      ndif
       if(mype == 0) then
         print *,'af nems config,num_files=',num_files
         do i=1,num_files
