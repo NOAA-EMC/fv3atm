@@ -81,7 +81,6 @@ target_include_directories(fv3core PRIVATE ${CMAKE_INSTALL_PREFIX}/mod )
 target_include_directories(fv3core PRIVATE ${NETCDF_INCLUDES_F90} )
 
 target_include_directories(fv3core PRIVATE ${ESMF_F90COMPILEPATHS})
-message("HEY fort inc are ${MPI_Fortran_INCLUDE_PATH}")
 target_include_directories(fv3core PRIVATE ${MPI_Fortran_INCLUDE_PATH})
 
 # end of fv3core
