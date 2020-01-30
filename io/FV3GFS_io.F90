@@ -101,7 +101,8 @@ module FV3GFS_io_mod
   logical                    :: uwork_set = .false.
   character(128)             :: uwindname
   integer, parameter, public :: DIAG_SIZE = 500
-  real, parameter :: missing_value = 9.99e20
+! real(kind=kind_phys), parameter :: missing_value = 1.d30
+  real(kind=kind_phys), parameter :: missing_value = 9.99e20
   real, parameter:: stndrd_atmos_ps = 101325.
   real, parameter:: stndrd_atmos_lapse = 0.0065
  
@@ -157,10 +158,10 @@ module FV3GFS_io_mod
     type(domain2d),              intent(in)    :: fv_domain
     character(len=32), optional, intent(in)    :: timestamp
  
-    !--- write surface data from chgres 
+    !--- read in surface data from chgres 
     call sfc_prop_restart_write (IPD_Data%Sfcprop, Atm_block, Model, fv_domain, timestamp)
  
-    !--- write physics restart data
+    !--- read in physics restart data
     call phys_restart_write (IPD_Restart, Atm_block, Model, fv_domain, timestamp)
 
   end subroutine FV3GFS_restart_write
@@ -512,18 +513,10 @@ module FV3GFS_io_mod
     nvar_s2o = 18
 #ifdef CCPP
     if (Model%lsm == Model%lsm_ruc .and. warm_start) then
-      if(Model%rdlai) then
-        nvar_s2r = 7
-      else
-        nvar_s2r = 6
-      end if
+      nvar_s2r = 6
       nvar_s3  = 5
     else
-      if(Model%rdlai) then
-       nvar_s2r = 1
-      else
-       nvar_s2r = 0
-      endif
+      nvar_s2r = 0
       nvar_s3  = 3
     endif
 #else
@@ -766,11 +759,6 @@ module FV3GFS_io_mod
         sfc_name2(nvar_s2m+22) = 'tsnow'
         sfc_name2(nvar_s2m+23) = 'snowfall_acc'
         sfc_name2(nvar_s2m+24) = 'swe_snowfall_acc'
-        if (Model%rdlai) then
-          sfc_name2(nvar_s2m+25) = 'lai'
-        endif
-      else if (Model%lsm == Model%lsm_ruc .and. Model%rdlai) then
-        sfc_name2(nvar_s2m+19) = 'lai'
 #endif
       endif
 
@@ -969,11 +957,6 @@ module FV3GFS_io_mod
           Sfcprop(nb)%tsnow(ix)      = sfc_var2(i,j,nvar_s2m+22)
           Sfcprop(nb)%snowfallac(ix) = sfc_var2(i,j,nvar_s2m+23)
           Sfcprop(nb)%acsnow(ix)     = sfc_var2(i,j,nvar_s2m+24)
-          if (Model%rdlai) then
-            Sfcprop(nb)%xlaixy(ix)   = sfc_var2(i,j,nvar_s2m+25)
-          endif
-        else if (Model%lsm == Model%lsm_ruc .and. Model%rdlai) then
-          Sfcprop(nb)%xlaixy(ix)     = sfc_var2(i,j,nvar_s2m+19)
         elseif (Model%lsm == Model%lsm_noahmp) then
           !--- Extra Noah MP variables
 #else
@@ -1136,10 +1119,15 @@ module FV3GFS_io_mod
           Sfcprop(nb)%zorll(ix) = Sfcprop(nb)%zorlo(ix)
           Sfcprop(nb)%zorl(ix)  = Sfcprop(nb)%zorlo(ix)
           Sfcprop(nb)%tsfc(ix)  = Sfcprop(nb)%tsfco(ix)
-          if (Sfcprop(nb)%slmsk(ix) > 1.9) then
+          if (Sfcprop(nb)%slmsk(ix) < 0.1 .or. Sfcprop(nb)%slmsk(ix) > 1.9) then
             Sfcprop(nb)%landfrac(ix) = 0.0
+            if (Sfcprop(nb)%oro_uf(ix) > 0.01) then
+              Sfcprop(nb)%lakefrac(ix) = 1.0        ! lake
+            else
+              Sfcprop(nb)%lakefrac(ix) = 0.0        ! ocean
+            endif
           else
-            Sfcprop(nb)%landfrac(ix) = Sfcprop(nb)%slmsk(ix)
+            Sfcprop(nb)%landfrac(ix) = 1.0          ! land
           endif
         enddo
       enddo
@@ -1465,11 +1453,7 @@ module FV3GFS_io_mod
     nvar2o = 18
 #ifdef CCPP
     if (Model%lsm == Model%lsm_ruc) then
-      if (Model%rdlai) then
-        nvar2r = 7
-      else
-        nvar2r = 6
-      endif
+      nvar2r = 6
       nvar3  = 5
     else
       nvar2r = 0
@@ -1496,10 +1480,7 @@ module FV3GFS_io_mod
 #ifdef CCPP
     if (Model%lsm == Model%lsm_ruc) then
       if (allocated(sfc_name2)) then
-        ! Re-allocate if one or more of the dimensions don't match
-        if (size(sfc_name2).ne.nvar2m+nvar2o+nvar2mp+nvar2r .or. &
-            size(sfc_name3).ne.nvar3+nvar3mp .or.                &
-            size(sfc_var3,dim=3).ne.Model%lsoil_lsm) then
+        if (size(sfc_var3,dim=3).ne.Model%lsoil_lsm) then
           !--- deallocate containers and free restart container
           deallocate(sfc_name2)
           deallocate(sfc_name3)
@@ -1606,9 +1587,6 @@ module FV3GFS_io_mod
         sfc_name2(nvar2m+22) = 'tsnow'
         sfc_name2(nvar2m+23) = 'snowfall_acc'
         sfc_name2(nvar2m+24) = 'swe_snowfall_acc'
-        if (Model%rdlai) then
-          sfc_name2(nvar2m+25) = 'lai'
-        endif
       else if(Model%lsm == Model%lsm_noahmp) then
 #else
 ! Only needed when Noah MP LSM is used - 29 2D
@@ -1682,19 +1660,17 @@ module FV3GFS_io_mod
 
 #ifdef CCPP
       if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp) then
-        !--- names of the 3D variables to save
+        !--- names of the 2D variables to save
         sfc_name3(1) = 'stc'
         sfc_name3(2) = 'smc'
         sfc_name3(3) = 'slc'
-        if (Model%lsm == Model%lsm_noahmp) then
-          sfc_name3(4) = 'snicexy'
-          sfc_name3(5) = 'snliqxy'
-          sfc_name3(6) = 'tsnoxy'
-          sfc_name3(7) = 'smoiseq'
-          sfc_name3(8) = 'zsnsoxy'
-        endif
+        sfc_name3(4) = 'snicexy'
+        sfc_name3(5) = 'snliqxy'
+        sfc_name3(6) = 'tsnoxy'
+        sfc_name3(7) = 'smoiseq'
+        sfc_name3(8) = 'zsnsoxy'
       else if (Model%lsm == Model%lsm_ruc) then
-        !--- names of the 3D variables to save
+        !--- names of the 2D variables to save
         sfc_name3(1) = 'tslb'
         sfc_name3(2) = 'smois'
         sfc_name3(3) = 'sh2o'
@@ -1813,9 +1789,6 @@ module FV3GFS_io_mod
           sfc_var2(i,j,nvar2m+22) = Sfcprop(nb)%tsnow(ix)
           sfc_var2(i,j,nvar2m+23) = Sfcprop(nb)%snowfallac(ix)
           sfc_var2(i,j,nvar2m+24) = Sfcprop(nb)%acsnow(ix)
-          if (Model%rdlai) then
-            sfc_var2(i,j,nvar2m+25) = Sfcprop(nb)%xlaixy(ix)
-          endif
         else if (Model%lsm == Model%lsm_noahmp) then
 
 #else

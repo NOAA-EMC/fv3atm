@@ -30,9 +30,9 @@ module fv3gfs_cap_mod
                                     calendar, calendar_type, cpl,            &
                                     force_date_from_configure,               &
                                     cplprint_flag,output_1st_tstep_rst,      &
-                                    first_kdt,num_restart_interval       
+                                    first_kdt                            
 
-  use module_fv3_io_def,      only: num_pes_fcst,write_groups,app_domain,    &
+  use module_fv3_io_def,      only: num_pes_fcst,write_groups,               &
                                     num_files, filename_base,                &
                                     wrttasks_per_group, n_group,             &
                                     lead_wrttask, last_wrttask,              &
@@ -74,7 +74,7 @@ module fv3gfs_cap_mod
 
   type(ESMF_GridComp)                         :: fcstComp
   type(ESMF_State)                            :: fcstState
-  character(len=80),         allocatable      :: fcstItemNameList(:)
+  character(len=esmf_maxstr),allocatable :: fcstItemNameList(:)
   type(ESMF_StateItem_Flag), allocatable      :: fcstItemTypeList(:)
   type(ESMF_FieldBundle),    allocatable      :: fcstFB(:)
   integer, save                               :: FBCount
@@ -278,19 +278,13 @@ module fv3gfs_cap_mod
     CALL ESMF_ConfigLoadFile(config=CF ,filename='model_configure' ,rc=RC)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 !
-    num_restart_interval = ESMF_ConfigGetLen(config=CF, label ='restart_interval:',rc=rc)
+    CALL ESMF_ConfigGetAttribute(config=CF,value=restart_interval, &
+                                 label ='restart_interval:',rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-    if(mype == 0) print *,'af nems config,num_restart_interval=',num_restart_interval
-    if (num_restart_interval<=0) num_restart_interval = 1
-    allocate(restart_interval(num_restart_interval))
-    restart_interval = 0
-    CALL  ESMF_ConfigGetAttribute(CF,valueList=restart_interval,label='restart_interval:', &
-      count=num_restart_interval, rc=RC)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-    if(mype == 0) print *,'af nems config,restart_interval=',restart_interval
 !
     CALL ESMF_ConfigGetAttribute(config=CF,value=calendar, &
-                                 label ='calendar:',rc=rc)
+                                 label ='calendar:', &
+                                 default='gregorian',rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 !
     CALL ESMF_ConfigGetAttribute(config=CF,value=cpl,default=.false.,label ='cpl:',rc=rc)
@@ -329,12 +323,9 @@ module fv3gfs_cap_mod
                                    label ='write_tasks_per_group:',rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-      CALL ESMF_ConfigGetAttribute(config=CF,value=app_domain, default="global", &
-                                   label ='app_domain:',rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-      if(mype == 0) print *,'af nems config,quilting=',quilting,'write_groups=', &
-        write_groups,wrttasks_per_group,'calendar=',trim(calendar),'calendar_type=',calendar_type
+      if(mype == 0) print *,'af nems config,restart_interval=',restart_interval, &
+      'quilting=',quilting,'write_groups=',write_groups,wrttasks_per_group,      &
+      'calendar=',trim(calendar),'calendar_type=',calendar_type
 !
       CALL ESMF_ConfigGetAttribute(config=CF,value=num_files, &
                                    label ='num_files:',rc=rc)
@@ -370,8 +361,8 @@ module fv3gfs_cap_mod
       if(trim(output_grid) == 'gaussian_grid') then
         call ESMF_ConfigGetAttribute(config=CF, value=imo, label ='imo:',rc=rc)
         call ESMF_ConfigGetAttribute(config=CF, value=jmo, label ='jmo:',rc=rc)
-        call ESMF_ConfigGetAttribute(config=CF, value=write_nemsioflip, label ='write_nemsioflip:',rc=rc)
-        call ESMF_ConfigGetAttribute(config=CF, value=write_fsyncflag,  label ='write_fsyncflag:',rc=rc)
+        call ESMF_ConfigGetAttribute(config=CF, value=write_nemsioflip, label ='write_nemsioflip:', default=.true., rc=rc)
+        call ESMF_ConfigGetAttribute(config=CF, value=write_fsyncflag,  label ='write_fsyncflag:', default=.true., rc=rc)
         if (mype == 0) then
           print *,'imo=',imo,'jmo=',jmo
           print *,'write_nemsioflip=',write_nemsioflip,'write_fsyncflag=',write_fsyncflag
@@ -702,7 +693,6 @@ module fv3gfs_cap_mod
             isrctermprocessing = 1
             call ESMF_FieldBundleRegridStore(fcstFB(j), wrtFB(j,i),                                    &
                                              regridMethod=regridmethod, routehandle=routehandle(j,i),  &
-                                             unmappedaction=ESMF_UNMAPPEDACTION_IGNORE,                &
                                              srcTermProcessing=isrctermprocessing, rc=rc)
 
 !           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return

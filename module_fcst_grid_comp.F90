@@ -22,12 +22,11 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !
   use time_manager_mod,   only: time_type, set_calendar_type, set_time,    &
                                 set_date, days_in_month, month_name,       &
-                                operator(+), operator(-), operator (<),    &
-                                operator (>), operator (/=), operator (/), &
-                                operator (==), operator (*),               &
-                                THIRTY_DAY_MONTHS, JULIAN, NOLEAP,         &
-                                NO_CALENDAR, date_to_string, get_date,     &
-                                get_time
+                                operator(+), operator (<), operator (>),   &
+                                operator (/=), operator (/), operator (==),&
+                                operator (*), THIRTY_DAY_MONTHS, JULIAN,   &
+                                GREGORIAN, NOLEAP, NO_CALENDAR,            &
+                                date_to_string, get_date
 
   use  atmos_model_mod,   only: atmos_model_init, atmos_model_end,         &
                                 get_atmos_model_ungridded_dim,             &
@@ -71,8 +70,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
                                 iau_offset
   use module_fv3_config, only:  dt_atmos, calendar, restart_interval,             &
                                 quilting, calendar_type, cpl,                     &
-                                cplprint_flag, force_date_from_configure,         &
-                                num_restart_interval, frestart, restart_endfcst
+                                cplprint_flag, force_date_from_configure
 !
 !-----------------------------------------------------------------------
 !
@@ -90,8 +88,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     type(atmos_data_type)  :: Atm
     type(time_type)        :: Time_atmos, Time_init, Time_end,  &
                               Time_step_atmos, Time_step_ocean, &
-                              Time_restart, Time_step_restart,  &
-                              Time_atstart
+                              Time_restart, Time_step_restart
     integer :: num_atmos_calls, ret, intrm_rst
   end type
 
@@ -182,16 +179,18 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 
     integer                                :: Run_length
     integer,dimension(6)                   :: date, date_end
+    integer                                :: res_intvl
     integer                                :: mpi_comm_comp
 !
     logical,save                           :: first=.true.
     character(len=9) :: month
-    integer :: initClock, unit, nfhour, total_inttime
+    integer :: initClock, unit, nfhour
     integer :: mype, ntasks
     character(3) cfhour
     character(4) dateSY
     character(2) dateSM,dateSD,dateSH,dateSN,dateSS
-    character(128) name_FB, name_FB1, dateS
+    character(len=esmf_maxstr) name_FB, name_FB1
+    character(len=80) :: dateS
     real,    allocatable, dimension(:,:) :: glon_bnd, glat_bnd
     
     character(256)                         :: gridfile
@@ -205,8 +204,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     real(ESMF_KIND_R8),parameter :: dtor = 180.0_ESMF_KIND_R8 / 3.1415926535897931_ESMF_KIND_R8
     integer :: jsc, jec, isc, iec, nlev
     type(domain2D) :: domain
-    integer :: n, fcstNpes, tmpvar
-    logical :: single_restart
+    integer :: n, fcstNpes
     integer, allocatable, dimension(:) :: isl, iel, jsl, jel
     integer, allocatable, dimension(:,:,:) :: deBlockList
 
@@ -254,6 +252,8 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
       select case( uppercase(trim(calendar)) )
       case( 'JULIAN' )
           calendar_type = JULIAN
+      case( 'GREGORIAN' )
+          calendar_type = GREGORIAN
       case( 'NOLEAP' )
           calendar_type = NOLEAP
       case( 'THIRTY_DAY' )
@@ -261,8 +261,8 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
       case( 'NO_CALENDAR' )
           calendar_type = NO_CALENDAR
       case default
-          call mpp_error ( FATAL, 'COUPLER_MAIN: coupler_nml entry calendar must '// &
-                                  'be one of JULIAN|NOLEAP|THIRTY_DAY|NO_CALENDAR.' )
+          call mpp_error ( FATAL, 'fcst_initialize: calendar must be one of '// &
+                                  'JULIAN|GREGORIAN|NOLEAP|THIRTY_DAY|NO_CALENDAR.' )
       end select
 
     endif
@@ -274,9 +274,8 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !----------------------------------------------------------------------- 
 !
     call ESMF_ClockGet(clock, CurrTime=CurrTime, StartTime=StartTime, &
-                       StopTime=StopTime, rc=rc)
+                       StopTime=StopTime, RunDuration=RunDuration, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-    RunDuration = StopTime - CurrTime
 
     date_init = 0
     call ESMF_TimeGet (StartTime,                      &
@@ -321,46 +320,16 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !
     atm_int_state%Time_step_atmos = set_time (dt_atmos,0)
     atm_int_state%num_atmos_calls = Run_length / dt_atmos
-    atm_int_state%Time_atstart = atm_int_state%Time_atmos
     if (mype == 0) write(0,*)'num_atmos_calls=',atm_int_state%num_atmos_calls,'time_init=', &
                     date_init,'time_atmos=',date,'time_end=',date_end,'dt_atmos=',dt_atmos, &
                     'Run_length=',Run_length
-    frestart = 0
-    single_restart = .false.
-    call get_time(atm_int_state%Time_end - atm_int_state%Time_atstart,total_inttime)
-    if(num_restart_interval == 2) then
-      if(restart_interval(2)== -1) single_restart = .true.
-    endif
-    if(single_restart) then
-      frestart(1) =  restart_interval(1) * 3600
-    elseif ( num_restart_interval == 1) then
-      if(restart_interval(1) == 0) then
-        frestart(1) = total_inttime
-      else if(restart_interval(1) > 0) then
-        tmpvar = restart_interval(1) * 3600
-        frestart(1) = tmpvar
-        atm_int_state%Time_step_restart = set_time (tmpvar, 0)
-        atm_int_state%Time_restart      = atm_int_state%Time_atstart + atm_int_state%Time_step_restart
-        i = 2
-        do while ( atm_int_state%Time_restart < atm_int_state%Time_end ) 
-          frestart(i) = frestart(i-1) + tmpvar
-          atm_int_state%Time_restart = atm_int_state%Time_restart + atm_int_state%Time_step_restart
-           i = i + 1
-        enddo
-      endif
-    else if(num_restart_interval > 1) then
-      do i=1,num_restart_interval
-        frestart(i) = restart_interval(i) * 3600
-      enddo
-    endif
-    restart_endfcst = .false.
-    if ( ANY(frestart(:) == total_inttime) ) restart_endfcst = .true. 
-    if (mype == 0) print *,'frestart=',frestart(1:10)/3600, 'restart_endfcst=',restart_endfcst, &
-      'total_inttime=',total_inttime
-       
-    atm_int_state%intrm_rst         = 0
-    if (frestart(1)>0) atm_int_state%intrm_rst = 1
-    atm_int_state%Atm%iau_offset    = iau_offset
+     res_intvl = restart_interval*3600
+     atm_int_state%Time_step_restart = set_time (res_intvl, 0)
+     atm_int_state%Time_restart      = atm_int_state%Time_atmos + atm_int_state%Time_step_restart
+     atm_int_state%intrm_rst         = 0
+     if (res_intvl>0) atm_int_state%intrm_rst = 1
+     atm_int_state%Atm%iau_offset    = iau_offset
+!
 !
 !----- write time stamps (for start time and end time) ------
 
@@ -595,11 +564,11 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
         call ESMF_AttributeSet(exportState, convention="NetCDF", purpose="FV3", &
-                               name="time:calendar_type", value="JULIAN", rc=rc)
+                               name="time:calendar_type", value=uppercase(trim(calendar)), rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
         call ESMF_AttributeSet(exportState, convention="NetCDF", purpose="FV3", &
-                               name="time:calendar", value="JULIAN", rc=rc)
+                               name="time:calendar", value=uppercase(trim(calendar)), rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 !
 ! Create FieldBundle for Fields that need to be regridded bilinear
@@ -771,10 +740,9 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !-----------------------------------------------------------------------
 !***  local variables
 !
-      integer                    :: i,j, mype, na, date(6), seconds
+      integer                    :: i,j, mype, na, date(6)
       character(20)              :: compname
- 
-      type(time_type)            :: restart_inctime
+
       type(ESMF_Time)            :: currtime
       integer(kind=ESMF_KIND_I8) :: ntimestep_esmf
       character(len=64)          :: timestamp
@@ -811,16 +779,13 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 
 !--- intermediate restart
       if (atm_int_state%intrm_rst>0) then
-        if (na /= atm_int_state%num_atmos_calls-1) then 
-          call get_time(atm_int_state%Time_atmos - atm_int_state%Time_atstart, seconds)
-          if (ANY(frestart(:) == seconds)) then
-            restart_inctime = set_time(seconds, 0)
-            atm_int_state%Time_restart = atm_int_state%Time_atstart + restart_inctime
-            timestamp = date_to_string (atm_int_state%Time_restart)
-            call atmos_model_restart(atm_int_state%Atm, timestamp)
+        if ((na /= atm_int_state%num_atmos_calls) .and.   &
+           (atm_int_state%Time_atmos == atm_int_state%Time_restart)) then
+          timestamp = date_to_string (atm_int_state%Time_restart)
+          call atmos_model_restart(atm_int_state%Atm, timestamp)
 
-            call wrt_atmres_timestamp(atm_int_state,timestamp)
-          endif
+          call wrt_atmres_timestamp(atm_int_state,timestamp)
+          atm_int_state%Time_restart = atm_int_state%Time_restart + atm_int_state%Time_step_restart
         endif
       endif
 !
@@ -885,21 +850,20 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
                          'final time does not match expected ending time', WARNING)
 
 !*** write restart file
-      if( restart_endfcst ) then
-        call get_date (atm_int_state%Time_atmos, date(1), date(2), date(3),  &
+
+      call get_date (atm_int_state%Time_atmos, date(1), date(2), date(3),  &
                                date(4), date(5), date(6))
-        call mpp_open( unit, 'RESTART/coupler.res', nohdrs=.TRUE. )
-        if (mpp_pe() == mpp_root_pe())then
-          write( unit, '(i6,8x,a)' )calendar_type, &
+      call mpp_open( unit, 'RESTART/coupler.res', nohdrs=.TRUE. )
+      if (mpp_pe() == mpp_root_pe())then
+         write( unit, '(i6,8x,a)' )calendar_type, &
               '(Calendar: no_calendar=0, thirty_day_months=1, julian=2, gregorian=3, noleap=4)'
 
-          write( unit, '(6i6,8x,a)' )date_init, &
+         write( unit, '(6i6,8x,a)' )date_init, &
               'Model start time:   year, month, day, hour, minute, second'
-          write( unit, '(6i6,8x,a)' )date, &
+         write( unit, '(6i6,8x,a)' )date, &
               'Current model time: year, month, day, hour, minute, second'
-        endif
-        call mpp_close(unit)
       endif
+      call mpp_close(unit)
 !
       call diag_manager_end(atm_int_state%Time_atmos )
 

@@ -12,7 +12,6 @@ module post_gfs
   include 'mpif.h'
 
   integer mype, nbdl
-  logical setvar_atmfile, setvar_sfcfile, read_postcntrl
   public  post_run_gfs, post_getattr_gfs
 
   contains
@@ -29,10 +28,9 @@ module post_gfs
 !
       use ctlblk_mod, only : komax,ifhr,ifmin,modelname,datapd,fld_info, &
                              npset,grib,gocart_on,icount_calmict, jsta,  &
-                             jend,im, nsoil, filenameflat
+                             jend,im, nsoil
       use gridspec_mod, only : maptype, gridtype
       use grib2_module, only : gribit2,num_pset,nrecout,first_grbtbl
-      use xml_perl_data,only : paramset
 !
 !-----------------------------------------------------------------------
 !
@@ -55,8 +53,9 @@ module post_gfs
       integer n,nwtpg,ieof,lcntrl,ierr,i,j,k,jts,jte,mynsoil
       integer,allocatable  :: jstagrp(:),jendgrp(:)
       integer,save         :: kpo,kth,kpv
-      logical,save         :: log_postalct=.false.
       real,dimension(komax),save :: po, th, pv
+      logical,save   :: log_postalct=.false.
+      logical,save   :: setvar_atmfile=.false.,setvar_sfcfile=.false.
       logical        :: Log_runpost
       character(255) :: post_fname*255
 
@@ -125,7 +124,6 @@ module post_gfs
 !
         log_postalct = .true.
         first_grbtbl = .true.
-        read_postcntrl = .true.
 !
       ENDIF
 !
@@ -135,10 +133,7 @@ module post_gfs
 !
       ifhr  = mynfhr
       ifmin = mynfmin
-      if (ifhr == 0 ) ifmin = 0
       if(mype==0) print *,'bf set_postvars,ifmin=',ifmin,'ifhr=',ifhr
-      setvar_atmfile=.false.
-      setvar_sfcfile=.false.
       call set_postvars_gfs(wrt_int_state,mpicomp,setvar_atmfile,   &
            setvar_sfcfile)
 
@@ -149,28 +144,8 @@ module post_gfs
 ! 20190807 no need to call microinit for GFDLMP
 !        call MICROINIT
 !
-        if(grib=="grib2" .and. read_postcntrl) then
-          if (ifhr == 0) then
-            filenameflat = 'postxconfig-NT_FH00.txt'
-            call read_xml()
-            if(mype==0) print *,'af read_xml at fh00,name=',trim(filenameflat)
-          else if(ifhr > 0) then
-            filenameflat = 'postxconfig-NT.txt'
-            if(size(paramset)>0) then
-              do i=1,size(paramset)
-                if (size(paramset(i)%param)>0) then
-                  deallocate(paramset(i)%param)
-                  nullify(paramset(i)%param)
-                endif
-              enddo
-              deallocate(paramset)
-              nullify(paramset)
-            endif
-            num_pset = 0
-            call read_xml()
-            if(mype==0) print *,'af read_xml,name=',trim(filenameflat),'ifhr=',ifhr
-            read_postcntrl = .false.
-          endif
+        if(grib=="grib2" .and. first_grbtbl) then
+          call read_xml()
         endif
 !
         IEOF  = 0
@@ -205,6 +180,9 @@ module post_gfs
           endif
 !
         enddo
+!
+        setvar_atmfile = .false.
+        setvar_sfcfile = .false.
 !
       endif
 
@@ -356,7 +334,7 @@ module post_gfs
                              avgetrans, avgesnow, avgprec_cont, avgcprate_cont,&
                              avisbeamswin, avisdiffswin, airbeamswin, airdiffswin, &
                              alwoutc, alwtoac, aswoutc, aswtoac, alwinc, aswinc,& 
-                             avgpotevp, snoavg, ti, si, cuppt
+                             avgpotevp, snoavg, si, cuppt
       use soil,        only: sldpth, sh2o, smc, stc
       use masks,       only: lmv, lmh, htm, vtm, gdlat, gdlon, dx, dy, hbm2, sm, sice
       use ctlblk_mod,  only: im, jm, lm, lp1, jsta, jend, jsta_2l, jend_2u, jsta_m,jend_m, &
@@ -364,7 +342,7 @@ module post_gfs
                              tprec, tclod, trdlw, trdsw, tsrfc, tmaxmin, theat, &
                              ardlw, ardsw, asrfc, avrain, avcnvc, iSF_SURFACE_PHYSICS,&
                              td3d, idat, sdat, ifhr, ifmin, dt, nphs, dtq2, pt_tbl, &
-                             alsl, spl, ihrst 
+                             alsl, spl 
       use params_mod,  only: erad, dtr, capa, p1000
       use gridspec_mod,only: latstart, latlast, lonstart, lonlast, cenlon, cenlat
       use lookup_mod,  only: thl, plq, ptbl, ttbl, rdq, rdth, rdp, rdthe, pl,   &
@@ -391,7 +369,7 @@ module post_gfs
 !
       integer i, ip1, j, l, k, n, iret, ibdl, rc, kstart, kend
       integer ista,iend,fieldDimCount,gridDimCount,ncount_field
-      integer jdate(8)
+      integer idate(8), jdate(8)
       logical foundland, foundice, found
       real(4) rinc(5)
       real    tlmh,RADI,TMP,ES,TV,RHOAIR,tem,tstart,dtp
@@ -473,7 +451,8 @@ module post_gfs
       end do
 !
 ! GFS does not output PD
-      pt    = ak5(1)
+!      pt    = 10000.          ! this is for 100 hPa added by Moorthi
+      pt    = 0.
 
 ! GFS may not have model derived radar ref.
 !                        TKE
@@ -498,7 +477,6 @@ module post_gfs
           qs(i,j) = SPVAL
           twbs(i,j) = SPVAL
           qwbs(i,j) = SPVAL
-          ths(i,j) = SPVAL
         enddo
       enddo
 
@@ -664,18 +642,28 @@ module post_gfs
       enddo
 !
 ! get inital date
+      idate    = 0
+      idate(1) = wrt_int_state%idate(1)
+      idate(2) = wrt_int_state%idate(2)
+      idate(3) = wrt_int_state%idate(3)
+      idate(5) = wrt_int_state%idate(4)
+      idate(6) = wrt_int_state%idate(5)
       sdat(1)  = wrt_int_state%idate(2)   !month
       sdat(2)  = wrt_int_state%idate(3)   !day
       sdat(3)  = wrt_int_state%idate(1)   !year
-      ihrst    = wrt_int_state%idate(4)   !hour
-
-      idat(1)  = wrt_int_state%fdate(2)
-      idat(2)  = wrt_int_state%fdate(3)
-      idat(3)  = wrt_int_state%fdate(1)
-      idat(4)  = wrt_int_state%fdate(4)
-      idat(5)  = wrt_int_state%fdate(5)
+      jdate    = 0
+      jdate(1) = wrt_int_state%fdate(1)
+      jdate(2) = wrt_int_state%fdate(2)
+      jdate(3) = wrt_int_state%fdate(3)  !jdate(4): time zone
+      jdate(5) = wrt_int_state%fdate(4)
+      jdate(6) = wrt_int_state%fdate(5)
+      idat(1)  = wrt_int_state%idate(2)
+      idat(2)  = wrt_int_state%idate(3)
+      idat(3)  = wrt_int_state%idate(1)
+      idat(4)  = IFHR
+      idat(5)  = IFMIN
 !
-      if(mype==0) print *,'idat=',idat,'sdat=',sdat,'ihrst=',ihrst
+!      if(mype==0) print *,'jdate=',jdate,'idate=',idate,'sdat=',sdat
 !      CALL W3DIFDAT(JDATE,IDATE,0,RINC)
 !
 !      if(mype==0)print *,' rinc=',rinc
@@ -713,7 +701,7 @@ module post_gfs
         call ESMF_FieldBundleGet(wrt_int_state%wrtFB(ibdl),fieldName='land',isPresent=found, rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
           line=__LINE__, file=__FILE__)) return  ! bail out
-!        if(mype==0) print *,'ibdl=',ibdl,'land, found=',found
+        if(mype==0) print *,'ibdl=',ibdl,'land, found=',found
         if (found) then
           call ESMF_FieldBundleGet(wrt_int_state%wrtFB(ibdl),'land',field=theField, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
@@ -737,7 +725,7 @@ module post_gfs
         call ESMF_FieldBundleGet(wrt_int_state%wrtFB(ibdl),'icec',isPresent=found, rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
           line=__LINE__, file=__FILE__)) return  ! bail out
-!        if(mype==0) print *,'ibdl=',ibdl,'ice, found=',found
+        if(mype==0) print *,'ibdl=',ibdl,'ice, found=',found
         if (found) then
           call ESMF_FieldBundleGet(wrt_int_state%wrtFB(ibdl),'icec',field=theField, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
@@ -1144,30 +1132,9 @@ module post_gfs
               !$omp parallel do private(i,j)
               do j=jsta,jend
                 do i=ista, iend
-                  if (arrayr42d(i,j) /= spval) then
-                  !set range within (0,1)
-                    sr(i,j) = min(1.,max(0.,sr(i,j)))
-                  else
-                    sr(i,j) = spval
-                  endif
+                  sr(i,j) = arrayr42d(i,j)
                 enddo
               enddo
-            endif
-
-            ! sea ice skin temperature
-            if(trim(fieldname)=='tisfc') then
-              !$omp parallel do private(i,j)
-              do j=jsta,jend
-                do i=1,im
-                  if (arrayr42d(i,j) /= spval) then
-                    ti(i,j) = arrayr42d(i,j)
-                    if (sice(i,j) == spval .or. sice(i,j) == 0.) ti(i,j)=spval
-                  else
-                    ti(i,j) = spval
-                  endif
-                enddo
-              enddo
-!              print *,'in gfs_post, get tisfc=',maxval(ti), minval(ti)
             endif
 
             ! vegetation fraction
@@ -1280,8 +1247,7 @@ module post_gfs
               do j=jsta,jend
                 do i=ista, iend
                   stc(i,j,1) = arrayr42d(i,j)
-                  !mask open water areas, combine with sea ice tmp
-                  if (sm(i,j) /= 0.0 .and. sice(i,j) ==0.) stc(i,j,1) = spval
+                  if (sm(i,j) /= 0.0) stc(i,j,1) = spval
                 enddo
               enddo
             endif
@@ -1292,8 +1258,7 @@ module post_gfs
               do j=jsta,jend
                 do i=ista, iend
                   stc(i,j,2) = arrayr42d(i,j)
-                  !mask open water areas, combine with sea ice tmp
-                  if (sm(i,j) /= 0.0 .and. sice(i,j) ==0.) stc(i,j,2) = spval
+                  if (sm(i,j) /= 0.0) stc(i,j,2) = spval
                 enddo
               enddo
             endif
@@ -1304,8 +1269,7 @@ module post_gfs
               do j=jsta,jend
                 do i=ista, iend
                   stc(i,j,3) = arrayr42d(i,j)
-                  !mask open water areas, combine with sea ice tmp
-                  if (sm(i,j) /= 0.0 .and. sice(i,j) ==0.) stc(i,j,3) = spval
+                  if (sm(i,j) /= 0.0) stc(i,j,3) = spval
                 enddo
               enddo
             endif
@@ -1316,8 +1280,7 @@ module post_gfs
               do j=jsta,jend
                 do i=ista, iend
                   stc(i,j,4) = arrayr42d(i,j)
-                  !mask open water areas, combine with sea ice tmp
-                  if (sm(i,j) /= 0.0 .and. sice(i,j) ==0.) stc(i,j,4) = spval
+                  if (sm(i,j) /= 0.0) stc(i,j,4) = spval
                 enddo
               enddo
             endif
@@ -1333,7 +1296,7 @@ module post_gfs
             endif
 
             ! inst incoming sfc longwave
-            if(trim(fieldname)=='dlwrf') then
+            if(trim(fieldname)=='dlwsf') then
               !$omp parallel do private(i,j)
               do j=jsta,jend
                 do i=ista, iend
@@ -1885,16 +1848,6 @@ module post_gfs
               !$omp parallel do private(i,j)
               do j=jsta,jend
                 do i=ista, iend
-                  alwoutc(i,j) = arrayr42d(i,j)
-                enddo
-              enddo
-            endif
-
-            ! time averaged TOA clear sky outgoing LW
-            if(trim(fieldname)=='csulftoa') then
-              !$omp parallel do private(i,j)
-              do j=jsta,jend
-                do i=ista, iend
                   alwtoac(i,j) = arrayr42d(i,j)
                 enddo
               enddo
@@ -1911,7 +1864,7 @@ module post_gfs
             endif
 
             ! time averaged TOA clear sky outgoing SW
-            if(trim(fieldname)=='csusftoa') then
+            if(trim(fieldname)=='csusf') then
               !$omp parallel do private(i,j)
               do j=jsta,jend
                 do i=ista, iend
@@ -2318,6 +2271,7 @@ module post_gfs
         enddo
       end do
 
+!??? reset pint(lev=1)
 !$omp parallel do private(i,j)
       do j=jsta,jend
         do i=1,im
@@ -2328,7 +2282,7 @@ module post_gfs
 !      print *,'in setvar, pt=',pt,'ak5(lp1)=', ak5(lp1),'ak5(1)=',ak5(1)
 
 ! compute alpint
-      do l=lp1,1,-1
+      do l=lp1,2,-1
 !$omp parallel do private(i,j)
         do j=jsta,jend
           do i=1,im
@@ -2360,30 +2314,12 @@ module post_gfs
 !$omp parallel do private(i,j)
       do j=jsta,jend
         do i=ista, iend
-          !assign sst
-          if (sm(i,j) /= 0.0 .and. ths(i,j) /= spval) then
-             sst(i,j) = ths(i,j)
-          else
-             sst(i,j) = spval
-          endif
           if (ths(i,j) /= spval) then
             ths(i,j)  = ths(i,j)* (p1000/pint(i,j,lp1))**capa
             thz0(i,j) = ths(i,j)
           endif
         enddo
       enddo
-
-! compute cwm for gfdlmp
-      if(  imp_physics == 11 ) then
-        do l=1,lm
-!$omp parallel do private(i,j)
-          do j=jsta,jend
-            do i=ista,iend
-              cwm(i,j,l)=qqg(i,j,l)+qqs(i,j,l)+qqr(i,j,l)+qqi(i,j,l)+qqw(i,j,l)
-            enddo
-          enddo
-        enddo
-      endif
 
 ! estimate 2m pres and convert t2m to theta
 !$omp parallel do private(i,j)

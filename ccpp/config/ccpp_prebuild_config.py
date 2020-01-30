@@ -93,7 +93,6 @@ SCHEME_FILES_DEPENDENCIES = [
     'FV3/ccpp/physics/physics/module_mp_radar.F90',
     'FV3/ccpp/physics/physics/module_mp_thompson.F90',
     'FV3/ccpp/physics/physics/module_mp_thompson_make_number_concentrations.F90',
-    'FV3/ccpp/physics/physics/module_MP_FER_HIRES.F90',
     'FV3/ccpp/physics/physics/module_bl_mynn.F90',
     'FV3/ccpp/physics/physics/module_sf_mynn.F90',
     'FV3/ccpp/physics/physics/module_SF_JSFC.F90',
@@ -191,8 +190,6 @@ SCHEME_FILES = {
     'FV3/ccpp/physics/physics/h2ophys.f'                         : [ 'slow_physics' ],
     'FV3/ccpp/physics/physics/samfdeepcnv.f'                     : [ 'slow_physics' ],
     'FV3/ccpp/physics/physics/samfshalcnv.f'                     : [ 'slow_physics' ],
-    'FV3/ccpp/physics/physics/sascnvn.F'                         : [ 'slow_physics' ],
-    'FV3/ccpp/physics/physics/shalcnv.F'                         : [ 'slow_physics' ],
     'FV3/ccpp/physics/physics/maximum_hourly_diagnostics.F90'    : [ 'slow_physics' ],
     'FV3/ccpp/physics/physics/m_micro.F90'                       : [ 'slow_physics' ],
     'FV3/ccpp/physics/physics/m_micro_interstitial.F90'          : [ 'slow_physics' ],
@@ -235,8 +232,6 @@ SCHEME_FILES = {
     'FV3/ccpp/physics/physics/sfc_nst.f'                         : [ 'slow_physics' ],
     'FV3/ccpp/physics/physics/sfc_ocean.F'                       : [ 'slow_physics' ],
     'FV3/ccpp/physics/physics/sfc_sice.f'                        : [ 'slow_physics' ],
-    # HAFS FER_HIRES
-    'FV3/ccpp/physics/physics/mp_fer_hires.F90'                  : [ 'slow_physics' ],
     # for testing the <init> and <finalize> sections
     'FV3/ccpp/physics/physics/GFS_suite_init_finalize_test.F90'  : [ 'slow_physics' ],
     }
@@ -328,14 +323,6 @@ OPTIONAL_ARGUMENTS = {
             'tendency_of_ice_friendly_aerosols_at_surface',
             ],
         },
-    'mp_fer_hires' : {
-        'mp_fer_hires_init' : [
-            'fraction_of_ice_water_cloud',
-            'fraction_of_rain_water_cloud',
-            'rime_factor',
-            ],
-        },
-
     #'subroutine_name_1' : 'all',
     #'subroutine_name_2' : 'none',
     #'subroutine_name_2' : [ 'var1', 'var3'],
