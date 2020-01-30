@@ -375,7 +375,7 @@ module fv3gfs_cap_mod
         output_file(1:num_files) = output_file(1)
       else
         output_file(1:num_files) = 'netcdf'
-      ndif
+      endif
       if(mype == 0) then
         print *,'af nems config,num_files=',num_files
         do i=1,num_files

@@ -1366,31 +1366,37 @@
           endif
 
           ! set default chunksizes for netcdf output
-          ! (use use MPI decomposition size).
+          ! (use MPI decomposition size).
           ! if chunksize parameter set to negative value,
           ! netcdf library default is used.
           if (output_file(nbdl)(1:6) == 'netcdf') then 
              if (ichunk2d == 0) then
-                ichunk2d = wrt_int_state%lon_end-wrt_int_state%lon_start+1
+                if( wrt_int_state%mype == 0 ) &
+                  ichunk2d = wrt_int_state%lon_end-wrt_int_state%lon_start+1
                 call mpi_bcast(ichunk2d,1,mpi_integer,0,wrt_mpi_comm,rc)
              endif
              if (jchunk2d == 0) then
-                jchunk2d = wrt_int_state%lat_end-wrt_int_state%lat_start+1
+                if( wrt_int_state%mype == 0 ) &
+                  jchunk2d = wrt_int_state%lat_end-wrt_int_state%lat_start+1
                 call mpi_bcast(jchunk2d,1,mpi_integer,0,wrt_mpi_comm,rc)
              endif
              if (ichunk3d == 0) then
-                ichunk3d = wrt_int_state%lon_end-wrt_int_state%lon_start+1
+                if( wrt_int_state%mype == 0 ) &
+                  ichunk3d = wrt_int_state%lon_end-wrt_int_state%lon_start+1
                 call mpi_bcast(ichunk3d,1,mpi_integer,0,wrt_mpi_comm,rc)
              endif
              if (jchunk3d == 0) then
-                jchunk3d = wrt_int_state%lat_end-wrt_int_state%lat_start+1
+                if( wrt_int_state%mype == 0 ) &
+                  jchunk3d = wrt_int_state%lat_end-wrt_int_state%lat_start+1
                 call mpi_bcast(jchunk3d,1,mpi_integer,0,wrt_mpi_comm,rc)
              endif
              if (kchunk3d == 0 .and. nbdl == 1) then
-                call ESMF_FieldBundleGet(wrt_int_state%wrtFB(nbdl), grid=wrtgrid)
-                call ESMF_AttributeGet(wrtgrid, convention="NetCDF", purpose="FV3", &
+                if( wrt_int_state%mype == 0 )  then
+                  call ESMF_FieldBundleGet(wrt_int_state%wrtFB(nbdl), grid=wrtgrid)
+                  call ESMF_AttributeGet(wrtgrid, convention="NetCDF", purpose="FV3", &
                           attnestflag=ESMF_ATTNEST_OFF, name='pfull', &
                           itemCount=kchunk3d, rc=rc)
+                endif
                 call mpi_bcast(kchunk3d,1,mpi_integer,0,wrt_mpi_comm,rc)
              endif
              if (wrt_int_state%mype == 0) then
