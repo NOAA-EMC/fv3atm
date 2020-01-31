@@ -497,6 +497,8 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: dqdti   (:,:)   => null()  !< instantaneous total moisture tendency (kg/kg/s)
     real (kind=kind_phys), pointer :: ushfsfci(:)     => null()  !< instantaneous upward sensible heat flux (w/m**2)
     real (kind=kind_phys), pointer :: dkt     (:,:)   => null()  !< instantaneous dkt diffusion coefficient for temperature (m**2/s)
+    real (kind=kind_phys), pointer :: qci_conv(:,:)   => null()  !< convective cloud condesate after rainout
+
 
     contains
       procedure :: create  => coupling_create  !<   allocate array data
@@ -2606,6 +2608,12 @@ module GFS_typedefs
       Coupling%nwfa2d   = clear_val
       Coupling%nifa2d   = clear_val
     endif
+#ifdef CCPP
+    if (Model%imfdeepcnv == Model%imfdeepcnv_gf) then
+      allocate (Coupling%qci_conv (IM,Model%levs))
+      Coupling%qci_conv   = clear_val
+    endif
+#endif
 
   end subroutine coupling_create
 
