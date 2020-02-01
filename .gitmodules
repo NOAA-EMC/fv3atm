@@ -3,9 +3,9 @@
 	url = https://github.com/SMoorthi-emc/GFDL_atmos_cubed_sphere
 	branch = dev/emc
 [submodule "ccpp/framework"]
-        path = ccpp/framework
-        url = https://github.com/NCAR/ccpp-framework
+	path = ccpp/framework
+	url = https://github.com/NCAR/ccpp-framework
 [submodule "ccpp/physics"]
-        path = ccpp/physics
-        url = https://github.com/SMoorthi-EMC/ccpp-physics
+	path = ccpp/physics
+	url = https://github.com/SMoorthi-EMC/ccpp-physics
 	branch = SM_Jan102020
