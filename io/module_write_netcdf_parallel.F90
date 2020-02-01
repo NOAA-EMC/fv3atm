@@ -20,17 +20,17 @@ module module_write_netcdf_parallel
 
 #ifdef NO_PARALLEL_NETCDF
 !----------------------------------------------------------------------------------------
-  subroutine write_netcdf_parallel(fieldbundle, wrtfb, filename, mpi_comm, mype, im, jm, rc)
+  subroutine write_netcdf_parallel(fieldbundle, wrtfb, filename, mpi_comm, mype, im, jm, ichunk2d, jchunk2d, ichunk3d, jchunk3d, kchunk3d, rc)
     type(ESMF_FieldBundle), intent(in) :: fieldbundle
     type(ESMF_FieldBundle), intent(in) :: wrtfb
     character(*), intent(in)           :: filename
     integer, intent(in)                :: mpi_comm
     integer, intent(in)                :: mype
-    integer, intent(in)                :: im, jm
+    integer, intent(in)                :: im, jm, ichunk2d, jchunk2d, &
+                                          ichunk3d, jchunk3d, kchunk3d
     integer, optional,intent(out)      :: rc
     print *,'in stub write_netcdf_parallel - model not built with parallel netcdf support, return'
   end subroutine write_netcdf_parallel
-end module module_write_netcdf_parallel
 #else
 !----------------------------------------------------------------------------------------
   subroutine write_netcdf_parallel(fieldbundle, wrtfb, filename, mpi_comm, mype, im, jm, ichunk2d, jchunk2d, ichunk3d, jchunk3d, kchunk3d, rc)
