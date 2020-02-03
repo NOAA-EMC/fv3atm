@@ -157,10 +157,10 @@ module FV3GFS_io_mod
     type(domain2d),              intent(in)    :: fv_domain
     character(len=32), optional, intent(in)    :: timestamp
  
-    !--- read in surface data from chgres 
+    !--- write surface data from chgres 
     call sfc_prop_restart_write (IPD_Data%Sfcprop, Atm_block, Model, fv_domain, timestamp)
  
-    !--- read in physics restart data
+    !--- write physics restart data
     call phys_restart_write (IPD_Restart, Atm_block, Model, fv_domain, timestamp)
 
   end subroutine FV3GFS_restart_write
@@ -285,7 +285,7 @@ module FV3GFS_io_mod
        temp2d(i,j,55) = IPD_Data(nb)%Coupling%visbmui(ix)
        temp2d(i,j,56) = IPD_Data(nb)%Coupling%visdfui(ix)
        temp2d(i,j,57) = IPD_Data(nb)%Coupling%sfcdsw(ix)
-       temp2d(i,j,59) = IPD_Data(nb)%Coupling%sfcnsw(ix)
+       temp2d(i,j,58) = IPD_Data(nb)%Coupling%sfcnsw(ix)
        temp2d(i,j,59) = IPD_Data(nb)%Coupling%sfcdlw(ix)
        temp2d(i,j,60) = IPD_Data(nb)%Grid%xlon(ix)
        temp2d(i,j,61) = IPD_Data(nb)%Grid%xlat(ix)
