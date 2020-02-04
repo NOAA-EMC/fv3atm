@@ -929,6 +929,7 @@ module GFS_typedefs
 !--- fractional grid
     logical              :: frac_grid       !< flag for fractional grid
     logical              :: frac_grid_off   !< flag for using fractional grid
+    logical              :: ignore_lake     !< flag for ignoring lakes 
     real(kind=kind_phys) :: min_lakeice     !< minimum lake ice value
     real(kind=kind_phys) :: min_seaice      !< minimum sea  ice value
     real(kind=kind_phys) :: rho_h2o         !< density of fresh water
@@ -3022,6 +3023,7 @@ module GFS_typedefs
 !--- fractional grid
     logical              :: frac_grid      = .false.         !< flag for fractional grid
     logical              :: frac_grid_off  = .true.          !< flag for using fractional grid
+    logical              :: ignore_lake    = .true.          !< flag for ignoring lakes
     real(kind=kind_phys) :: min_lakeice    = 0.15d0          !< minimum lake ice value
     real(kind=kind_phys) :: min_seaice     = 1.0d-11         !< minimum sea  ice value
     real(kind=kind_phys) :: rho_h2o        = rhowater        !< fresh water density
@@ -3162,7 +3164,7 @@ module GFS_typedefs
                           !--- near surface sea temperature model
                                nst_anl, lsea, nstf_name,                                    &
                                frac_grid, min_lakeice, min_seaice,                          &
-                               frac_grid_off,                                               &
+                               frac_grid_off, ignore_lake,                                  &
                           !--- surface layer
                                sfc_z0_type,                                                 &
                           !    background vertical diffusion
@@ -3591,6 +3593,7 @@ module GFS_typedefs
 !--- fractional grid
     Model%frac_grid        = frac_grid
     Model%frac_grid_off    = frac_grid_off
+    Model%ignore_lake      = ignore_lake
 #ifdef CCPP
     if (Model%frac_grid) then
       write(0,*) "ERROR: CCPP has not been tested with fractional landmask turned on"
@@ -3974,7 +3977,7 @@ module GFS_typedefs
       endif
 
       print *,' nst_anl=',Model%nst_anl,' use_ufo=',Model%use_ufo,' frac_grid=',Model%frac_grid,&
-              ' frac_grid_off=',frac_grid_off
+              ' frac_grid_off=',frac_grid_off,' ignore_lake=',ignore_lake
       print *,' min_lakeice=',Model%min_lakeice,' min_seaice=',Model%min_seaice
       if (Model%nstf_name(1) > 0 ) then
         print *,' NSSTM is active '
