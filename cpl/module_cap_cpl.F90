@@ -102,7 +102,7 @@ module module_cap_cpl
                                          numLevels, numSoilLayers, numTracers,             &
                                          num_diag_sfc_emis_flux, num_diag_down_flux,       &
                                          num_diag_type_down_flux, num_diag_burn_emis_flux, &
-                                         num_diag_cmass, fieldNames, fieldTypes, fieldList, rc)
+                                         num_diag_cmass, fieldNames, fieldTypes, fieldList, tag, rc)
 
       type(ESMF_State),            intent(inout)  :: state
       type(ESMF_Grid),                intent(in)  :: grid
@@ -117,6 +117,7 @@ module module_cap_cpl
       character(len=*), dimension(:), intent(in)  :: fieldNames
       character(len=*), dimension(:), intent(in)  :: fieldTypes
       type(ESMF_Field), dimension(:), intent(out) :: fieldList
+      character(len=*),               intent(in)  :: tag !< Import or export.
       integer,                        intent(out) :: rc
 
       ! local variables
@@ -196,10 +197,15 @@ module module_cap_cpl
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
           ! -- save field
           fieldList(item) = field
+          call ESMF_LogWrite('realizeConnectedCplFields '//trim(tag)//' Field '//trim(fieldNames(item))// ' is connected ', &
+                             ESMF_LOGMSG_INFO, line=__LINE__, file=__FILE__, rc=rc)
         else
           ! remove a not connected Field from State
           call ESMF_StateRemove(state, (/trim(fieldNames(item))/), rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+          call ESMF_LogWrite('realizeConnectedCplFields '//trim(tag)//' Field '//trim(fieldNames(item))// ' is not connected ', &
+                             ESMF_LOGMSG_INFO, line=__LINE__, file=__FILE__, rc=rc)
         end if
       end do
 
