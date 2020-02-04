@@ -2866,6 +2866,12 @@ module module_physics_driver
             Coupling%dtsfc_cpl (i) = Coupling%dtsfc_cpl(i) + Coupling%dtsfci_cpl(i) * dtf
             Coupling%dqsfc_cpl (i) = Coupling%dqsfc_cpl(i) + Coupling%dqsfci_cpl(i) * dtf
 !
+          else
+          !endif ! Ocean only, NO LAKES
+            Coupling%dusfc_cpl (i) = huge
+            Coupling%dvsfc_cpl (i) = huge
+            Coupling%dtsfc_cpl (i) = huge
+            Coupling%dqsfc_cpl (i) = huge
           endif ! Ocean only, NO LAKES
         enddo
       endif
