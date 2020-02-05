@@ -4,9 +4,9 @@
 	branch = dtc/develop
 [submodule "ccpp/framework"]
 	path = ccpp/framework
-	url = https://github.com/NCAR/ccpp-framework
-	branch = dtc/develop
+	url = https://github.com/climbfuji/ccpp-framework
+	branch = dom_combine_prs_20200204
 [submodule "ccpp/physics"]
 	path = ccpp/physics
-	url = https://github.com/NCAR/ccpp-physics
-	branch = dtc/develop
+	url = https://github.com/climbfuji/ccpp-physics
+	branch = dom_combine_prs_20200204
