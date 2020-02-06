@@ -531,8 +531,10 @@ module GFS_typedefs
     real(kind=kind_phys) :: fhzero          !< hours between clearing of diagnostic buckets
     logical              :: ldiag3d         !< flag for 3d diagnostic fields
     logical              :: qdiag3d         !< flag for 3d tracer diagnostic fields
-    logical              :: gwd_generic_tend!< true if GFS_GWD_generic should calculate tendencies
-    logical              :: pbl_generic_tend!< true if GFS_PBL_generic should calculate tendencies
+    logical              :: flag_for_gwd_generic_tend!< true if GFS_GWD_generic should calculate tendencies
+    logical              :: flag_for_pbl_generic_tend!< true if GFS_PBL_generic should calculate tendencies
+    logical              :: flag_for_scnv_generic_tend!< true if GFS_DCNV_generic should calculate tendencies
+    logical              :: flag_for_dcnv_generic_tend!< true if GFS_DCNV_generic should calculate tendencies
     logical              :: lssav           !< logical flag for storing diagnostics
     real(kind=kind_phys) :: fhcyc           !< frequency for surface data cycling (hours)
     integer              :: thermodyn_id    !< valid for GFS only for get_prs/phi
@@ -3226,8 +3228,51 @@ module GFS_typedefs
     Model%fhzero           = fhzero
     Model%ldiag3d          = ldiag3d
     Model%qdiag3d          = qdiag3d
-    Model%gwd_generic_tend = .false.
-    Model%pbl_generic_tend = .false.
+    Model%flag_for_gwd_generic_tend = .true.
+    Model%flag_for_pbl_generic_tend = .true.
+    Model%flag_for_scnv_generic_tend = .true.
+    Model%flag_for_dcnv_generic_tend = .true.
+
+    write(0,*) 'GOT HERE (stderr)'
+    print *,'GOT HERE (stdout)'
+
+    if(gwd_opt==1) then
+      write(0,*) 'FLAG: gwd_opt==1 so gwd not generic'
+      Model%flag_for_gwd_generic_tend=.false.
+    else
+      write(0,*) 'NO FLAG: gwd is generic'
+    endif
+
+    if(satmedmf) then
+      write(0,*) 'FLAG: satmedmf so pbl not generic'
+      Model%flag_for_pbl_generic_tend=.false.
+    else if(do_mynnedmf) then
+      write(0,*) 'FLAG: do_mynnedmf so pbl not generic'
+      Model%flag_for_pbl_generic_tend=.false.
+    else
+      write(0,*) 'NO FLAG: pbl is generic'
+    endif
+
+    if(imfshalcnv == Model%imfshalcnv_gf) then
+      write(0,*) 'FLAG: imfshalcnv_gf so scnv not generic'
+      Model%flag_for_scnv_generic_tend=.false.
+    else if(imfshalcnv == Model%imfshalcnv_samf) then
+      write(0,*) 'FLAG: imfshalcnv_samf so scnv not generic'
+      Model%flag_for_scnv_generic_tend=.false.
+    else
+      write(0,*) 'NO FLAG: scnv is generic'
+    endif
+
+    if(imfdeepcnv == Model%imfdeepcnv_gf) then
+      write(0,*) 'FLAG: imfdeepcnv_gf so dcnv not generic'
+      Model%flag_for_scnv_generic_tend=.false.
+    else if(imfdeepcnv == Model%imfdeepcnv_samf) then
+      write(0,*) 'FLAG: imfdeepcnv_samf so dcnv not generic'
+      Model%flag_for_scnv_generic_tend=.false.
+    else
+      write(0,*) 'NO FLAG: dcnv is generic'
+    endif
+
 !
 !VAY-ugwp  --- set some GW-related switches
 !
@@ -5195,8 +5240,8 @@ module GFS_typedefs
     
     !--- 3D diagnostics
     if (Model%ldiag3d) then
-      allocate (Diag%du3dt  (IM,Model%levs,8))
-      allocate (Diag%dv3dt  (IM,Model%levs,8))
+      allocate (Diag%du3dt  (IM,Model%levs,9))
+      allocate (Diag%dv3dt  (IM,Model%levs,9))
       allocate (Diag%dt3dt  (IM,Model%levs,12))
       if (Model%qdiag3d) then
         allocate (Diag%dq3dt  (IM,Model%levs,12))

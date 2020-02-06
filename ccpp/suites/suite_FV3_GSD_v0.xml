@@ -4,10 +4,12 @@
   <!-- <init></init> -->
   <group name="time_vary">
     <subcycle loop="1">
+      <scheme>model_tend_pre</scheme>
       <scheme>GFS_time_vary_pre</scheme>
       <scheme>GFS_rrtmg_setup</scheme>
       <scheme>GFS_rad_time_vary</scheme>
       <scheme>GFS_phys_time_vary</scheme>
+      <scheme>model_tend_post</scheme>
     </subcycle>
   </group>
   <group name="radiation">

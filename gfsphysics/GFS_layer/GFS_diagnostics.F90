@@ -2323,7 +2323,7 @@ module GFS_diagnostics
     idx = idx + 1
     ExtDiag(idx)%axes = 3
     ExtDiag(idx)%name = 'du3dt_pbl'
-    ExtDiag(idx)%desc = 'u momentum change due to PBL'
+    ExtDiag(idx)%desc = 'u wind change due to PBL'
     ExtDiag(idx)%unit = 'm/s'
     ExtDiag(idx)%mod_name = 'gfs_phys'
     allocate (ExtDiag(idx)%data(nblks))

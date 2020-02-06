@@ -1871,15 +1871,27 @@
   units = flag
   dimensions = ()
   type = logical
-[gwd_generic_tend]
+[flag_for_gwd_generic_tend]
   standard_name = true_if_GFS_GWD_generic_should_calculate_tendencies
   long_name = true if GFS_GWD_generic should calculate tendencies
   units = flag
   dimensions = ()
   type = logical
-[pbl_generic_tend]
+[flag_for_pbl_generic_tend]
   standard_name = true_if_GFS_PBL_generic_should_calculate_tendencies
   long_name = true if GFS_PBL_generic should calculate tendencies
+  units = flag
+  dimensions = ()
+  type = logical
+[flag_for_dcnv_generic_tend]
+  standard_name = true_if_GFS_DCNV_generic_should_calculate_tendencies
+  long_name = true if GFS_DCNV_generic should calculate tendencies
+  units = flag
+  dimensions = ()
+  type = logical
+[flag_for_scnv_generic_tend]
+  standard_name = true_if_GFS_SCNV_generic_should_calculate_tendencies
+  long_name = true if GFS_SCNV_generic should calculate tendencies
   units = flag
   dimensions = ()
   type = logical
@@ -5399,20 +5411,27 @@
   type = real
   kind = kind_phys
 [du3dt(:,:,6)]
+  standard_name = cumulative_change_in_x_wind_due_to_shal_convection
+  long_name = cumulative change in x wind due to shallow convection
+  units = m s-1
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+[du3dt(:,:,7)]
   standard_name = cumulative_change_in_x_wind_from_ccpp
   long_name = cumulative change in x wind from CCPP
   units = m s-1
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
-[du3dt(:,:,7)]
+[du3dt(:,:,8)]
   standard_name = cumulative_change_in_x_wind_from_model
   long_name = cumulative change in x wind from model
   units = m s-1
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
-[du3dt(:,:,8)]
+[du3dt(:,:,9)]
   standard_name = cumulative_change_in_x_wind
   long_name = cumulative change in x wind
   units = m s-1
@@ -5455,20 +5474,27 @@
   type = real
   kind = kind_phys
 [dv3dt(:,:,6)]
+  standard_name = cumulative_change_in_y_wind_due_to_shal_convection
+  long_name = cumulative change in y wind due to shallow convection
+  units = m s-1
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+[dv3dt(:,:,7)]
   standard_name = cumulative_change_in_y_wind_from_ccpp
   long_name = cumulative change in y wind from CCPP
   units = m s-1
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
-[dv3dt(:,:,7)]
+[dv3dt(:,:,8)]
   standard_name = cumulative_change_in_y_wind_from_model
   long_name = cumulative change in y wind from model
   units = m s-1
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
-[dv3dt(:,:,8)]
+[dv3dt(:,:,9)]
   standard_name = cumulative_change_in_y_wind
   long_name = cumulative change in y wind
   units = m s-1
