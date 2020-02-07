@@ -576,10 +576,6 @@ module module_physics_driver
       real(kind=kind_phys), allocatable, dimension(:,:) ::              &
                                            savet, saveq, saveu, savev
 
-!--- pass precip type from MP to Noah MP
-      real(kind=kind_phys), dimension(size(Grid%xlon,1)) ::              &
-          rainn_mp, rainc_mp, snow_mp, graupel_mp, ice_mp
-
 !--- GFDL modification for FV3 
 
       real(kind=kind_phys), dimension(size(Grid%xlon,1),Model%levs+1) ::&
@@ -905,36 +901,6 @@ module module_physics_driver
         !CCPP: num3 = Model%ncnvc
       endif
 !*## CCPP ##
-!
-!## CCPP ##* initialization in GFS_typedefs.F90/tbd_create; calculation in sfc_noahmp_pre.F90/sfc_noahmp_pre_run,
-!            although similar variables are calculated in GFS_MP_generic_post_run using up-to-date values of Diag%X,
-!            which arguably makes more sense (the way it is done probably erroneously causes NoahMP to use 0 for 
-!            these values after diagnostics are zeroed.)
-!  ---  initization for those precip type used in Noah MP
-!
-      if (Model%lsm == Model%lsm_noahmp) then
-        do  i=1,im
-          rainn_mp(i)   = zero
-          rainc_mp(i)   = zero
-          snow_mp(i)    = zero
-          graupel_mp(i) = zero
-          ice_mp(i)     = zero
-        enddo
-!  ---  get the amount of different precip type for Noah MP
-!  ---  convert from m/dtp to mm/s
-        if (Model%imp_physics == Model%imp_physics_mg .or. &
-            Model%imp_physics == Model%imp_physics_gfdl) then
-          tem = one / (dtp*con_p001)
-          do  i=1,im
-            rainn_mp(i)   = tem * (Diag%rain(i)-Diag%rainc(i))
-            rainc_mp(i)   = tem * Diag%rainc(i)
-            snow_mp(i)    = tem * Diag%snow(i)
-            graupel_mp(i) = tem * Diag%graupel(i)
-            ice_mp(i)     = tem * Diag%ice(i)
-          enddo
-        endif
-      endif !  if (Model%lsm == Model%lsm_noahmp)
-!*## CCPP ##
 
 !## CCPP ##* GFS_surface_generic.F90/GFS_surface_generic_pre_run
 !  ---  set initial quantities for stochastic physics deltas
@@ -1137,7 +1103,7 @@ module module_physics_driver
 !*## CCPP ##
       enddo
 !
-!## CCPP ##* note: this block is not yet in CCPP
+!## CCPP ##* GFS_surface_generic.F90/GFS_surface_generic_pre_run
       if (Model%cplflx) then
         do i=1,im
           islmsk_cice(i) = nint(Coupling%slimskin_cpl(i))
@@ -1307,7 +1273,7 @@ module module_physics_driver
           dtdt(i,k)  = zero
           dtdtc(i,k) = zero
 
-!## CCPP ##* note: this block is not yet in CCPP
+!## CCPP ##* GFS_typedefs.F90/interstitial_phys_reset
 !vay-2018
 ! Pure tendency arrays w/o accumulation of Phys-tendencies from each
 !      chain of GFS-physics (later add container for species)
@@ -1906,8 +1872,8 @@ module module_physics_driver
             Model%iopt_inf,   Model%iopt_rad,  Model%iopt_alb,         &
             Model%iopt_snf,   Model%iopt_tbot, Model%iopt_stc,         &
             grid%xlat, xcosz, Model%yearlen,   Model%julian, Model%imn,&
-            rainn_mp, rainc_mp, snow_mp, graupel_mp, ice_mp,           &
-
+            Sfcprop%drainncprv, Sfcprop%draincprv, Sfcprop%dsnowprv,   &
+            Sfcprop%dgraupelprv, Sfcprop%diceprv,                      &
 !  ---  in/outs:
             weasd3(:,1), snowd3(:,1), tsfc3(:,1), tprcp3(:,1),         &
             Sfcprop%srflag, smsoil, stsoil, slsoil, Sfcprop%canopy,    &
@@ -1945,14 +1911,16 @@ module module_physics_driver
 !    &,' stsoil=',stsoil(ipr,:)
 
 !  --- ...  surface energy balance over seaice
-!## CCPP ##* This section is not in the CCPP yet
+!## CCPP ##* sfc_sice.f/sfc_sice_run (local adjustment to avoid resetting islmsk after call to sfc_sice_run)
         if (Model%cplflx) then
           do i=1,im
             if (flag_cice(i)) then
                islmsk (i) = islmsk_cice(i)
             endif
           enddo
+!*## CCPP ##
 
+!## CCPP ##* sfc_cice.f/sfc_cice_run
 ! call sfc_cice for sea ice points in the coupled model (i.e. islmsk=4)
 !
           call sfc_cice                                                  &
@@ -1988,7 +1956,7 @@ module module_physics_driver
             snowd3(:,2), qss3(:,2), snowmt, gflx3(:,2), cmm3(:,2), chh3(:,2),    &
             evap3(:,2),  hflx3(:,2))
 !*## CCPP ##
-!## CCPP ##* This section is not in the CCPP yet.
+!## CCPP ##* This section is not needed for CCPP.
         if (Model%cplflx) then
           do i = 1, im
             if (flag_cice(i)) then
@@ -2839,7 +2807,7 @@ module module_physics_driver
       endif
 !*## CCPP ##
 
-!## CCPP ##* This block is not yet in CCPP
+!## CCPP ##* GFS_PBL_generic.F90/GFS_PBL_generic_post_run
       if (Model%cplchm) then
         do i = 1, im
           tem1 = max(Diag%q1(i), 1.e-8)
@@ -2848,7 +2816,6 @@ module module_physics_driver
         enddo
         Coupling%dkt     (:,:) = dkt (:,:)
       endif
-!*## CCPP ##
 
 !     if (lprnt) then
 !       write(0,*) ' dusfc1=',dusfc1(ipr),' kdt=',kdt,' lat=',lat
@@ -2861,8 +2828,6 @@ module module_physics_driver
 
 !  --- ...  coupling insertion
 
-!## CCPP ## This block is not in the CCPP yet. It should probably be put in 
-! GFS_PBL_generic.F90/GFS_PBL_generic_post_run.
       if (Model%cplflx) then
         do i=1,im
           if (Sfcprop%oceanfrac(i) > zero) then               ! Ocean only, NO LAKES
@@ -3216,7 +3181,7 @@ module module_physics_driver
       Stateout%gq0(1:im,:,:) = Statein%qgrs(1:im,:,:) + dqdt(1:im,:,:) * dtp
 !*## CCPP ##
 
-! DH* TODO - WHERE IS THIS IN CCPP?
+!## CCPP ##* This is not in the CCPP yet.
 !================================================================================
 !     above: updates of the state by UGWP oro-GWS and RF-damp
 !  Diag%tav_ugwp & Diag%uav_ugwp(i,k)-Updated U-T state before moist/micro !  physics
@@ -3231,7 +3196,7 @@ module module_physics_driver
           enddo
         enddo
       endif
-! *DH
+!*## CCPP ##
 
 !================================================================================
 ! It is not clear Do we need it, "ideaca_up", having stability check inside UGWP-module
@@ -3342,9 +3307,13 @@ module module_physics_driver
         dtdt(1:im,:) = Stateout%gt0(1:im,:)
       endif   ! end if_ldiag3d/cnvgwd
 
-      if (Model%ldiag3d) then
+      if (Model%ldiag3d .or. Model%cplchm) then
         dqdt(1:im,:,1) = Stateout%gq0(1:im,:,1)
-      endif   ! end if_ldiag3d
+      endif   ! end if_ldiag3d/cplchm
+
+      if (Model%cplchm) then
+        Coupling%dqdti(1:im,:) = zero
+      endif   ! end if_cplchm
 !*## CCPP ##
 
 !## CCPP ## Only get_prs_fv3.F90/get_phi_fv3_run is a scheme (GFS_HYDRO is assumed to be undefined)
@@ -5262,7 +5231,31 @@ module module_physics_driver
 !*## CCPP ##
 !## CCPP ##* GFS_MP_generic.F90/GFS_MP_generic_post_run
       Diag%rain(:) = Diag%rainc(:) + frain * rain1(:)
-
+      
+!  ---  get the amount of different precip type for Noah MP
+!  ---  convert from m/dtp to mm/s
+      if (Model%lsm==Model%lsm_noahmp) then
+        if (Model%imp_physics == Model%imp_physics_mg .or. &
+            Model%imp_physics == Model%imp_physics_gfdl) then
+          !GJF: Should all precipitation rates have the same denominator below? 
+          ! It appears that Diag%rain and Diag%rainc are on the dynamics time step,
+          ! but Diag%snow,graupel,ice are on the physics time step? This doesn't
+          ! matter as long as dtp=dtf (frain=1).
+          tem = 1.0 / (dtp*con_p001)
+          Sfcprop%draincprv(:)   = tem * Diag%rainc(:)
+          Sfcprop%drainncprv(:)  = tem * (frain * rain1(:))
+          Sfcprop%dsnowprv(:)    = tem * Diag%snow(:)
+          Sfcprop%dgraupelprv(:) = tem * Diag%graupel(:)
+          Sfcprop%diceprv(:)     = tem * Diag%ice(:)
+        else
+          Sfcprop%draincprv(:)   = 0.0
+          Sfcprop%drainncprv(:)  = 0.0
+          Sfcprop%dsnowprv(:)    = 0.0
+          Sfcprop%dgraupelprv(:) = 0.0
+          Sfcprop%diceprv(:)     = 0.0
+        endif
+      end if !  if (Model%lsm == Model%lsm_noahmp)
+      
       if (Model%cal_pre) then       ! hchuang: add dominant precipitation type algorithm
 !
         call calpreciptype (kdt, Model%nrcm, im, ix, levs, levs+1,           &

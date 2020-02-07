@@ -259,9 +259,17 @@ endif(MKL_DIR)
 
 #------------------------------------------------------------------------------
 # Set netCDF flags for preprocessor, compiler and linker (if defined)
+# Legacy settings for old make build
 if(NETCDF_DIR)
   set (NETCDF_INC "-I${NETCDF_DIR}/include")
   set (NETCDF_LIB "-L${NETCDF_DIR}/lib -lnetcdff -lnetcdf")
+  set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${NETCDF_INC} ${NETCDF_LIB}")
+  ADD_DEFINITIONS(-DNETCDF)
+  message (STATUS "Enable netCDF support")
+# Settings for new cmake build
+elseif (NETCDF_INC_DIR AND NETCDF_LIBDIR)
+  set (NETCDF_INC "-I${NETCDF_INC_DIR}")
+  set (NETCDF_LIB "-L${NETCDF_LIBDIR} -lnetcdff -lnetcdf")
   set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${NETCDF_INC} ${NETCDF_LIB}")
   ADD_DEFINITIONS(-DNETCDF)
   message (STATUS "Enable netCDF support")
