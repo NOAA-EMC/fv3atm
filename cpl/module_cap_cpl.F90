@@ -198,13 +198,13 @@ module module_cap_cpl
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
           ! -- save field
           fieldList(item) = field
-          call ESMF_LogWrite('realizeConnectedCplFields '//trim(tag)//' Field '//trim(fieldNames(item))  &
+          call ESMF_LogWrite('realizeConnectedCplFields '//trim(state_tag)//' Field '//trim(fieldNames(item))  &
                              // ' is connected ', ESMF_LOGMSG_INFO, line=__LINE__, file=__FILE__, rc=rc)
         else
           ! remove a not connected Field from State
           call ESMF_StateRemove(state, (/trim(fieldNames(item))/), rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-          call ESMF_LogWrite('realizeConnectedCplFields '//trim(tag)//' Field '//trim(fieldNames(item))  &
+          call ESMF_LogWrite('realizeConnectedCplFields '//trim(state_tag)//' Field '//trim(fieldNames(item))  &
                              // ' is not connected ', ESMF_LOGMSG_INFO, line=__LINE__, file=__FILE__, rc=rc)
         end if
       end do
