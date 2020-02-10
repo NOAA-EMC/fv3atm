@@ -28,7 +28,6 @@ add_library(
     ../../stochastic_physics/glats_stochy.f
     ../../stochastic_physics/sumfln_stochy.f
     ../../stochastic_physics/gozrineo_stochy.f
-    ../../stochastic_physics/num_parthds_stochy.f
     ../../stochastic_physics/get_ls_node_stochy.f
     ../../stochastic_physics/get_lats_node_a_stochy.f
     ../../stochastic_physics/setlats_a_stochy.f
