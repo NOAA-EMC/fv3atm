@@ -223,6 +223,7 @@ module module_cap_cpl
       integer                               :: timeslice
 !
       character(len=160) :: nuopcMsg
+      character(len=160) :: filename
       integer :: rc
 !
       call ESMF_ClockPrint(clock_fv3, options="currTime",                            &
@@ -243,13 +244,22 @@ module module_cap_cpl
         timeslice = timeslice + 1
         call ESMF_GridCompGet(gcomp, importState=importState, rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-        call ESMFPP_RegridWriteState(importState, "fv3_cap_import_", timeslice, rc=rc)
-        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-        call ESMF_GridCompGet(gcomp, exportState=exportState, rc=rc)
+        ! replace with tiled field dumps
+        !call ESMFPP_RegridWriteState(importState, "fv3_cap_import_", timeslice, rc=rc)
+        !if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+        write(filename,'(a,i6.6)') 'fv3_cap_import_',timeslice
+        call State_RWFields_tiles(importState,trim(filename), timeslice, rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-        call ESMFPP_RegridWriteState(exportState, "fv3_cap_export_", timeslice, rc=rc)
+        call ESMF_GridCompGet(gcomp, exportState=exportState, rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+        ! replace with tiled field dumps
+        !call ESMFPP_RegridWriteState(exportState, "fv3_cap_export_", timeslice, rc=rc)
+        !if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+        write(filename,'(a,i6.6)') 'fv3_cap_export_',timeslice
+        call State_RWFields_tiles(exportState,trim(filename), timeslice, rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
       endif
 !
     end subroutine Dump_cplFields
@@ -354,4 +364,83 @@ module module_cap_cpl
 
   !-----------------------------------------------------------------------------
 
+! This subroutine requires ESMFv8 - for coupled FV3
+  subroutine State_RWFields_tiles(state,filename,timeslice,rc)
+
+    type(ESMF_State), intent(in)          :: state
+    character(len=*), intent(in)          :: fileName
+    integer, intent(in)                   :: timeslice
+    integer, intent(out)                  :: rc
+
+    ! local
+    type(ESMF_Field)                       :: field
+    type(ESMF_Field),allocatable :: flds(:)
+    type(ESMF_GridComp) :: IOComp
+    type(ESMF_Grid) :: gridFv3
+
+    character(len=256) :: msgString
+    integer                                :: i, icount
+    integer                                :: fieldcount, firstfld
+    character(64), allocatable             :: itemNameList(:)
+    type(ESMF_StateItem_Flag), allocatable :: typeList(:)
+
+    character(len=*),parameter :: subname='(module_cap_cpl:State_RWFields_tiles)'
+
+    ! local variables
+
+    rc = ESMF_SUCCESS
+    !call ESMF_LogWrite(trim(subname)//trim(filename)//": called", ESMF_LOGMSG_INFO, rc=rc)
+
+    call ESMF_StateGet(state, itemCount=icount, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+    allocate(typeList(icount), itemNameList(icount))
+    call ESMF_StateGet(state, itemTypeList=typeList, itemNameList=itemNameList, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+    ! find first stateitem that is a field and the count of fields
+      firstfld = 0; fieldcount = 0
+    do i = icount,1,-1
+     if(typeList(i) == ESMF_STATEITEM_FIELD) firstfld = i
+     if(typeList(i) == ESMF_STATEITEM_FIELD) fieldcount = fieldcount + 1
+    enddo
+    !write(msgString,*) trim(subname)//' icount = ',icount," fieldcount = ",fieldcount," firstfld = ",firstfld
+    !call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_INFO, rc=rc)
+
+    allocate(flds(fieldCount))
+
+    call ESMF_LogWrite(trim(subname)//": write "//trim(filename)//    &
+     "tile1-tile6", ESMF_LOGMSG_INFO, rc=rc)
+    ! get first field
+    call ESMF_StateGet(state, itemName=itemNameList(firstfld), field=flds(firstfld), rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, file=__FILE__)) return  ! bail out
+
+    call ESMF_FieldGet(flds(firstfld), grid=gridFv3, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, file=__FILE__)) return  ! bail out
+
+    IOComp = ESMFIO_Create(gridFv3, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, file=__FILE__)) return  ! bail out
+    call ESMF_LogWrite(trim(subname)//": write "//trim(filename), ESMF_LOGMSG_INFO, rc=rc)
+
+    do i=2, fieldCount
+     if(typeList(i) == ESMF_STATEITEM_FIELD) then
+      call ESMF_StateGet(state, itemName=itemNameList(i), field=flds(i), rc=rc)
+     end if
+    enddo
+
+    call ESMFIO_Write(IOComp, filename, flds, filePath='./', rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, file=__FILE__)) return  ! bail out
+   
+! -- Finalize ESMFIO
+    deallocate(flds)
+    call ESMFIO_Destroy(IOComp, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+    line=__LINE__, file=__FILE__)) call ESMF_Finalize()
+
+    !call ESMF_LogWrite(trim(subname)//trim(filename)//": finished", ESMF_LOGMSG_INFO, rc=rc)
+
+  end subroutine State_RWFields_tiles
 end module module_cap_cpl
