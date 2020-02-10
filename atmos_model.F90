@@ -224,7 +224,7 @@ character(len=128) :: tagname = '$Name$'
 
   real(kind=IPD_kind_phys), parameter :: zero = 0.0_IPD_kind_phys, &
                                          one  = 1.0_IPD_kind_phys, &
-                                         puny = 1.0e-12_IPD_kind_phys
+                                         epsln = 1.0e-12_IPD_kind_phys
 
 contains
 
@@ -2544,7 +2544,7 @@ end subroutine atmos_data_type_chksum
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
 !         exportData(i,j,idx) = IPD_Data(nb)%coupling%slmsk_cpl(ix)
-          exportData(i,j,idx) =  floor(one + puny - IPD_Data(nb)%SfcProp%oceanfrac(ix))
+          exportData(i,j,idx) =  floor(one + epsln - IPD_Data(nb)%SfcProp%oceanfrac(ix))
         enddo
       enddo
     endif
@@ -2736,7 +2736,7 @@ end subroutine atmos_data_type_chksum
         nb = Atm_block%blkno(i,j)
         ix = Atm_block%ixp(i,j)
 ! use land sea mask: land:1, ocean:0
-        lsmask(i,j) = floor(one + puny - IPD_Data(nb)%SfcProp%oceanfrac(ix))
+        lsmask(i,j) = floor(one + epsln - IPD_Data(nb)%SfcProp%oceanfrac(ix))
       enddo
     enddo
 !
