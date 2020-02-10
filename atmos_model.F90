@@ -223,7 +223,8 @@ character(len=128) :: tagname = '$Name$'
 #endif
 
   real(kind=IPD_kind_phys), parameter :: zero = 0.0_IPD_kind_phys, &
-                                         one  = 1.0_IPD_kind_phys
+                                         one  = 1.0_IPD_kind_phys, &
+                                         puny = 1.0e-12_IPD_kind_phys
 
 contains
 
@@ -1666,7 +1667,7 @@ end subroutine atmos_data_type_chksum
 !        endif
 
 
-! get sea-state dependent surface roughness (if cplwav2atm=true) 
+! get sea-state dependent surface roughness (if cplwav2atm=true)
 !----------------------------
           fldname = 'wave_z0_roughness_length'
           if (trim(impfield_name) == trim(fldname)) then
@@ -1764,7 +1765,7 @@ end subroutine atmos_data_type_chksum
 
 ! get upward LW flux:  for sea ice covered area
 !----------------------------------------------
-          fldname = 'mean_up_lw_flx'
+          fldname = 'mean_up_lw_flx_ice'
           if (trim(impfield_name) == trim(fldname)) then
             findex  = QueryFieldList(ImportFieldsList,fldname)
             if (importFieldsValid(findex)) then
@@ -1791,7 +1792,7 @@ end subroutine atmos_data_type_chksum
 
 ! get latent heat flux:  for sea ice covered area
 !------------------------------------------------
-          fldname = 'mean_laten_heat_flx'
+          fldname = 'mean_laten_heat_flx_atm_into_ice'
           if (trim(impfield_name) == trim(fldname)) then
             findex  = QueryFieldList(ImportFieldsList,fldname)
             if (importFieldsValid(findex)) then
@@ -1811,7 +1812,7 @@ end subroutine atmos_data_type_chksum
 
 ! get sensible heat flux:  for sea ice covered area
 !--------------------------------------------------
-          fldname = 'mean_sensi_heat_flx'
+          fldname = 'mean_sensi_heat_flx_atm_into_ice'
           if (trim(impfield_name) == trim(fldname)) then
             findex  = QueryFieldList(ImportFieldsList,fldname)
             if (importFieldsValid(findex)) then
@@ -1831,7 +1832,7 @@ end subroutine atmos_data_type_chksum
 
 ! get zonal compt of momentum flux:  for sea ice covered area
 !------------------------------------------------------------
-          fldname = 'mean_zonal_moment_flx'
+          fldname = 'stress_on_air_ice_zonal'
           if (trim(impfield_name) == trim(fldname)) then
             findex  = QueryFieldList(ImportFieldsList,fldname)
             if (importFieldsValid(findex)) then
@@ -1851,7 +1852,7 @@ end subroutine atmos_data_type_chksum
 
 ! get meridional compt of momentum flux:  for sea ice covered area
 !-----------------------------------------------------------------
-          fldname = 'mean_merid_moment_flx'
+          fldname = 'stress_on_air_ice_merid'
           if (trim(impfield_name) == trim(fldname)) then
             findex  = QueryFieldList(ImportFieldsList,fldname)
             if (importFieldsValid(findex)) then
@@ -2542,7 +2543,8 @@ end subroutine atmos_data_type_chksum
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = IPD_Data(nb)%coupling%slmsk_cpl(ix)
+!         exportData(i,j,idx) = IPD_Data(nb)%coupling%slmsk_cpl(ix)
+          exportData(i,j,idx) =  floor(one + puny - IPD_Data(nb)%SfcProp%oceanfrac(ix))
         enddo
       enddo
     endif
@@ -2561,7 +2563,7 @@ end subroutine atmos_data_type_chksum
             exportData(i,j,idx) = DYCORE_Data(nb)%coupling%t_bot(ix)
           else 
             exportData(i,j,idx) = zero
-          endif 
+          endif
         enddo
       enddo
     endif
@@ -2579,7 +2581,7 @@ end subroutine atmos_data_type_chksum
             exportData(i,j,idx) = DYCORE_Data(nb)%coupling%tr_bot(ix,1)
           else 
             exportData(i,j,idx) = zero
-          endif 
+          endif
         enddo
       enddo
     endif
@@ -2630,7 +2632,7 @@ end subroutine atmos_data_type_chksum
             exportData(i,j,idx) = DYCORE_Data(nb)%coupling%p_bot(ix)
           else 
             exportData(i,j,idx) = zero
-          endif 
+          endif
         enddo
       enddo
     endif
@@ -2646,8 +2648,8 @@ end subroutine atmos_data_type_chksum
           if (associated(DYCORE_Data(nb)%coupling%z_bot)) then
             exportData(i,j,idx) = DYCORE_Data(nb)%coupling%z_bot(ix)
           else 
-            exportData(i,j,idx) = zero 
-          endif 
+            exportData(i,j,idx) = zero
+          endif
         enddo
       enddo
     endif
@@ -2666,14 +2668,14 @@ end subroutine atmos_data_type_chksum
         enddo
       enddo
     endif
-    endif !cplflx 
+    endif !cplflx
 
 !---
 ! Fill the export Fields for ESMF/NUOPC style coupling
     call fillExportFields(exportData)
 
 !---
-    if (IPD_Control%cplflx) then 
+    if (IPD_Control%cplflx) then
 ! zero out accumulated fields
 !$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
@@ -2706,12 +2708,12 @@ end subroutine atmos_data_type_chksum
 
   end subroutine setup_exportdata
 
-  subroutine addLsmask2grid(fcstgrid, rc)
+  subroutine addLsmask2grid(fcstGrid, rc)
 
     use ESMF
 !
     implicit none
-    type(ESMF_Grid)      :: fcstgrid
+    type(ESMF_Grid)      :: fcstGrid
     integer, optional, intent(out) :: rc
 !
 !  local vars
@@ -2719,7 +2721,7 @@ end subroutine atmos_data_type_chksum
     integer i, j, nb, ix
 !    integer CLbnd(2), CUbnd(2), CCount(2), TLbnd(2), TUbnd(2), TCount(2)
     type(ESMF_StaggerLoc) :: staggerloc
-    integer, allocatable :: lsmask(:,:)
+    integer, allocatable  :: lsmask(:,:)
     integer(kind=ESMF_KIND_I4), pointer  :: maskPtr(:,:)
 !
     isc = IPD_control%isc
@@ -2734,16 +2736,16 @@ end subroutine atmos_data_type_chksum
         nb = Atm_block%blkno(i,j)
         ix = Atm_block%ixp(i,j)
 ! use land sea mask: land:1, ocean:0
-        lsmask(i,j) = floor(IPD_Data(nb)%SfcProp%landfrac(ix))
+        lsmask(i,j) = floor(one + puny - IPD_Data(nb)%SfcProp%oceanfrac(ix))
       enddo
     enddo
 !
 ! Get mask
-    call ESMF_GridAddItem(fcstgrid, itemflag=ESMF_GRIDITEM_MASK,   &
+    call ESMF_GridAddItem(fcstGrid, itemflag=ESMF_GRIDITEM_MASK,   &
                           staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-!    call ESMF_GridGetItemBounds(fcstgrid, itemflag=ESMF_GRIDITEM_MASK,   &
+!    call ESMF_GridGetItemBounds(fcstGrid, itemflag=ESMF_GRIDITEM_MASK,   &
 !         staggerloc=ESMF_STAGGERLOC_CENTER, computationalLBound=ClBnd,  &
 !         computationalUBound=CUbnd, computationalCount=Ccount,  &
 !         totalLBound=TLbnd, totalUBound=TUbnd, totalCount=Tcount, rc=rc)
@@ -2752,7 +2754,7 @@ end subroutine atmos_data_type_chksum
 !     'TlBnd=',TlBnd,'TUbnd=',TUbnd,'Tcount=',Tcount
 !    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-    call ESMF_GridGetItem(fcstgrid, itemflag=ESMF_GRIDITEM_MASK,   &
+    call ESMF_GridGetItem(fcstGrid, itemflag=ESMF_GRIDITEM_MASK,   &
                           staggerloc=ESMF_STAGGERLOC_CENTER,farrayPtr=maskPtr, rc=rc)
 !    print *,'in set up grid, aft get maskptr, rc=',rc, 'size=',size(maskPtr,1),size(maskPtr,2), &
 !      'bound(maskPtr)=', LBOUND(maskPtr,1),LBOUND(maskPtr,2),UBOUND(maskPtr,1),UBOUND(maskPtr,2)

@@ -2216,8 +2216,8 @@ module module_physics_driver
           Coupling%nlwsfc_cpl  (i) = Coupling%nlwsfc_cpl(i) + Coupling%nlwsfci_cpl(i)*dtf
           Coupling%t2mi_cpl    (i) = Sfcprop%t2m(i)
           Coupling%q2mi_cpl    (i) = Sfcprop%q2m(i)
-!         Coupling%tsfci_cpl   (i) = Sfcprop%tsfc(i)
-          Coupling%tsfci_cpl   (i) = tsfc3(i,3)
+          Coupling%tsfci_cpl   (i) = Sfcprop%tsfc(i)
+!         Coupling%tsfci_cpl   (i) = tsfc3(i,3)
           Coupling%psurfi_cpl  (i) = Statein%pgr(i)
         enddo
 
@@ -2843,13 +2843,13 @@ module module_physics_driver
       if (Model%cplflx) then
         do i=1,im
           if (Sfcprop%oceanfrac(i) > zero) then               ! Ocean only, NO LAKES
-!           if (Sfcprop%fice(i) == Sfcprop%oceanfrac(i)) then ! use results from CICE
-!             Coupling%dusfci_cpl(i) = dusfc_cice(i)
-!             Coupling%dvsfci_cpl(i) = dvsfc_cice(i)
-!             Coupling%dtsfci_cpl(i) = dtsfc_cice(i)
-!             Coupling%dqsfci_cpl(i) = dqsfc_cice(i)
-!           elseif (dry(i) .or. icy(i)) then   ! use stress_ocean from sfc_diff for opw component at mixed point
-            if (wet(i)) then                   ! use stress_ocean from sfc_diff for opw component at mixed point
+            if (fice(i) == Sfcprop%oceanfrac(i)) then ! use results from CICE
+              Coupling%dusfci_cpl(i) = dusfc_cice(i)
+              Coupling%dvsfci_cpl(i) = dvsfc_cice(i)
+              Coupling%dtsfci_cpl(i) = dtsfc_cice(i)
+              Coupling%dqsfci_cpl(i) = dqsfc_cice(i)
+
+            elseif (wet(i)) then              ! use stress_ocean from sfc_diff for opw component at mixed point
               if (icy(i) .or. dry(i)) then
                 tem1 = max(Diag%q1(i), 1.e-8)
                 rho = Statein%prsl(i,1) / (con_rd*Diag%t1(i)*(one+con_fvirt*tem1))
@@ -2878,6 +2878,11 @@ module module_physics_driver
             Coupling%dtsfc_cpl (i) = Coupling%dtsfc_cpl(i) + Coupling%dtsfci_cpl(i) * dtf
             Coupling%dqsfc_cpl (i) = Coupling%dqsfc_cpl(i) + Coupling%dqsfci_cpl(i) * dtf
 !
+          else
+            Coupling%dusfc_cpl(i) = huge
+            Coupling%dvsfc_cpl(i) = huge
+            Coupling%dtsfc_cpl(i) = huge
+            Coupling%dqsfc_cpl(i) = huge
           endif ! Ocean only, NO LAKES
         enddo
       endif

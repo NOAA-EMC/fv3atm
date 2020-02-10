@@ -86,7 +86,7 @@ module module_cplfields
        "inst_merid_wind_height_lowest            ", &
        "inst_pres_height_lowest                  ", &
        "inst_height_lowest                       ", &
-       "mean_fprec_rate                          " &
+       "mean_fprec_rate                          "  &
 !      "northward_wind_neutral                   ", &
 !      "eastward_wind_neutral                    ", &
 !      "upward_wind_neutral                      ", &
@@ -152,12 +152,12 @@ module module_cplfields
 !      "inst_ice_ir_dir_albedo                 ", &
 !      "inst_ice_vis_dif_albedo                ", &
 !      "inst_ice_vis_dir_albedo                ", &
-       "mean_up_lw_flx                         ", &
-       "mean_laten_heat_flx                    ", &
-       "mean_sensi_heat_flx                    ", &
+       "mean_up_lw_flx_ice                     ", &
+       "mean_laten_heat_flx_atm_into_ice       ", &
+       "mean_sensi_heat_flx_atm_into_ice       ", &
 !      "mean_evap_rate                         ", &
-       "mean_zonal_moment_flx                  ", &
-       "mean_merid_moment_flx                  ", &
+       "stress_on_air_ice_zonal                ", &
+       "stress_on_air_ice_merid                ", &
        "mean_ice_volume                        ", &
        "mean_snow_volume                       ", &
        "inst_tracer_up_surface_flx             ", &
