@@ -1144,7 +1144,7 @@ module FV3GFS_io_mod
           else
             Sfcprop(nb)%landfrac(ix) = 0.0        ! water
             if (Sfcprop(nb)%lakefrac(ix) > 0.0 .or.                              &
-               (Sfcprop(nb)%oro_uf(ix) > 250.0 .and. .not. Model%ignore_lake) ) then
+               (Sfcprop(nb)%oro_uf(ix) > Model%min_lake_height .and. .not. Model%ignore_lake) ) then
               Sfcprop(nb)%lakefrac(ix) = 1.0        ! lake
             else
               Sfcprop(nb)%lakefrac(ix) = 0.0        ! ocean

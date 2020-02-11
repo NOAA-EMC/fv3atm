@@ -932,6 +932,7 @@ module GFS_typedefs
     logical              :: ignore_lake     !< flag for ignoring lakes 
     real(kind=kind_phys) :: min_lakeice     !< minimum lake ice value
     real(kind=kind_phys) :: min_seaice      !< minimum sea  ice value
+    real(kind=kind_phys) :: min_lake_height !< minimum lake height value
     real(kind=kind_phys) :: rho_h2o         !< density of fresh water
 
 !--- surface layer z0 scheme
@@ -3021,12 +3022,13 @@ module GFS_typedefs
                                                              !< nstf_name(4) : zsea1 in mm
                                                              !< nstf_name(5) : zsea2 in mm
 !--- fractional grid
-    logical              :: frac_grid      = .false.         !< flag for fractional grid
-    logical              :: frac_grid_off  = .true.          !< flag for using fractional grid
-    logical              :: ignore_lake    = .true.          !< flag for ignoring lakes
-    real(kind=kind_phys) :: min_lakeice    = 0.15d0          !< minimum lake ice value
-    real(kind=kind_phys) :: min_seaice     = 1.0d-11         !< minimum sea  ice value
-    real(kind=kind_phys) :: rho_h2o        = rhowater        !< fresh water density
+    logical              :: frac_grid       = .false.         !< flag for fractional grid
+    logical              :: frac_grid_off   = .true.          !< flag for using fractional grid
+    logical              :: ignore_lake     = .true.          !< flag for ignoring lakes
+    real(kind=kind_phys) :: min_lakeice     = 0.15d0          !< minimum lake ice value
+    real(kind=kind_phys) :: min_seaice      = 1.0d-11         !< minimum sea  ice value
+    real(kind=kind_phys) :: min_lake_height = 250.0           !< minimum lake height value
+    real(kind=kind_phys) :: rho_h2o         = rhowater        !< fresh water density
 
 !--- surface layer z0 scheme
     integer              :: sfc_z0_type    = 0               !< surface roughness options over ocean
@@ -3163,7 +3165,7 @@ module GFS_typedefs
                                clam_shal, c0s_shal, c1_shal, pgcon_shal, asolfac_shal,      &
                           !--- near surface sea temperature model
                                nst_anl, lsea, nstf_name,                                    &
-                               frac_grid, min_lakeice, min_seaice,                          &
+                               frac_grid, min_lakeice, min_seaice, min_lake_height,         &
                                frac_grid_off, ignore_lake,                                  &
                           !--- surface layer
                                sfc_z0_type,                                                 &
@@ -3602,6 +3604,7 @@ module GFS_typedefs
 #endif
     Model%min_lakeice      = min_lakeice
     Model%min_seaice       = min_seaice
+    Model%min_lake_height  = min_lake_height
     Model%rho_h2o          = rho_h2o
 
 !--- surface layer
@@ -3978,7 +3981,8 @@ module GFS_typedefs
 
       print *,' nst_anl=',Model%nst_anl,' use_ufo=',Model%use_ufo,' frac_grid=',Model%frac_grid,&
               ' frac_grid_off=',frac_grid_off,' ignore_lake=',ignore_lake
-      print *,' min_lakeice=',Model%min_lakeice,' min_seaice=',Model%min_seaice
+      print *,' min_lakeice=',Model%min_lakeice,' min_seaice=',Model%min_seaice,                &
+              'min_lake_height=',Model%min_lake_height
       if (Model%nstf_name(1) > 0 ) then
         print *,' NSSTM is active '
         print *,' nstf_name(1)=',Model%nstf_name(1)
