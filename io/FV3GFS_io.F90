@@ -285,7 +285,7 @@ module FV3GFS_io_mod
        temp2d(i,j,55) = IPD_Data(nb)%Coupling%visbmui(ix)
        temp2d(i,j,56) = IPD_Data(nb)%Coupling%visdfui(ix)
        temp2d(i,j,57) = IPD_Data(nb)%Coupling%sfcdsw(ix)
-       temp2d(i,j,59) = IPD_Data(nb)%Coupling%sfcnsw(ix)
+       temp2d(i,j,58) = IPD_Data(nb)%Coupling%sfcnsw(ix)
        temp2d(i,j,59) = IPD_Data(nb)%Coupling%sfcdlw(ix)
        temp2d(i,j,60) = IPD_Data(nb)%Grid%xlon(ix)
        temp2d(i,j,61) = IPD_Data(nb)%Grid%xlat(ix)
