@@ -3909,6 +3909,12 @@
   dimensions = ()
   type = real
   kind = kind_phys
+[icloud]
+  standard_name = cloud_effect_to_optical_depth_and_cloud_fraction
+  long_name = cloud effect to the optical depth and cloud fraction in radiation
+  units = flag
+  dimensions = ()
+  type = integer
 [gwd_opt]
   standard_name = gwd_opt
   long_name = flag to choose gwd scheme
