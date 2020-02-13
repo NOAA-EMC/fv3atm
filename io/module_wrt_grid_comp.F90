@@ -32,9 +32,10 @@
       use esmf
       use write_internal_state
       use module_fv3_io_def,   only : num_pes_fcst,lead_wrttask, last_wrttask,  &
-                                      n_group, num_files,                       &
+                                      n_group, num_files, app_domain,           &
                                       filename_base, output_grid, output_file,  &
-                                      imo, jmo, write_nemsioflip,               &
+                                      imo,jmo,ichunk2d,jchunk2d,write_nemsioflip,&
+                                      ichunk3d,jchunk3d,kchunk3d,               &
                                       nsout => nsout_io,                        &
                                       cen_lon, cen_lat,                         &
                                       lon1, lat1, lon2, lat2, dlon, dlat,       &
@@ -43,6 +44,7 @@
       use module_write_netcdf, only : write_netcdf
       use physcons,            only : pi => con_pi
       use post_gfs,            only : post_run_gfs, post_getattr_gfs
+      use module_write_netcdf_parallel, only : write_netcdf_parallel
 !
 !-----------------------------------------------------------------------
 !
@@ -71,6 +73,8 @@
       logical,save      :: first_init=.false.
       logical,save      :: first_run=.false.
       logical,save      :: first_getlatlon=.true.
+      logical,save      :: first_getmaskwrt=.true.                        !<-- for mask the output grid of the write comp
+      logical,save      :: change_wrtidate=.false.
 !
 !-----------------------------------------------------------------------
 !
@@ -146,10 +150,12 @@
 
       integer                                 :: ISTAT, tl, i, j, n, k
       integer,dimension(2,6)                  :: decomptile
+      integer,dimension(2)                    :: regDecomp !define delayout for the nest grid
       integer                                 :: fieldCount
       integer                                 :: vm_mpi_comm
       character(40)                           :: fieldName, axesname,longname
       type(ESMF_Config)                       :: cf
+      type(ESMF_DELayout)                     :: delayout
       type(ESMF_Grid)                         :: wrtGrid, fcstGrid
       type(ESMF_Array)                        :: array_work, array
       type(ESMF_FieldBundle)                  :: fieldbdl_work
@@ -162,6 +168,7 @@
       type(ESMF_TypeKind_Flag)                :: typekind
       character(len=80),         allocatable  :: fieldnamelist(:)
       integer                                 :: fieldDimCount, gridDimCount
+      integer,                   allocatable  :: petMap(:)
       integer,                   allocatable  :: gridToFieldMap(:)
       integer,                   allocatable  :: ungriddedLBound(:)
       integer,                   allocatable  :: ungriddedUBound(:)
@@ -173,17 +180,17 @@
       real(ESMF_KIND_R4)                      :: valueR4
       real(ESMF_KIND_R8)                      :: valueR8
 
-      integer :: attCount, axeslen, jidx, noutfile
+      integer :: attCount, axeslen, jidx, idx, noutfile
+      character(19)  :: newdate
       character(128) :: FBlist_outfilename(100), outfile_name
       character(128),dimension(:,:), allocatable    :: outfilename
       real(8), dimension(:),         allocatable    :: slat
-      real, dimension(:),            allocatable    :: lat, lon, axesdata
+      real(8), dimension(:),         allocatable    :: lat, lon
       real(ESMF_KIND_R8), dimension(:,:), pointer   :: lonPtr, latPtr
       real(ESMF_KIND_R8)                            :: rot_lon, rot_lat
       real(ESMF_KIND_R8)                            :: geo_lon, geo_lat
       real(ESMF_KIND_R8)                            :: lon1_r8, lat1_r8
       real(ESMF_KIND_R8)                            :: x1, y1, x, y
-      type(ESMF_Time)                               :: IO_BASETIME_IAU
       type(ESMF_TimeInterval)                       :: IAU_offsetTI
       type(ESMF_DataCopy_Flag) :: copyflag=ESMF_DATACOPY_REFERENCE
 !     real(8),parameter :: PI=3.14159265358979d0
@@ -195,6 +202,7 @@
       logical                                 :: lprnt
 !test
       integer myattCount
+      real(ESMF_KIND_R8),dimension(:,:), pointer :: glatPtr, glonPtr
 !
 !----------------------------------------------------------------------- 
 !*********************************************************************** 
@@ -255,6 +263,12 @@
         line=__LINE__, file=__FILE__)) return
 
       if( wrt_int_state%write_dopost ) then
+#ifdef NO_INLINE_POST
+        rc = ESMF_RC_NOT_IMPL
+        print *,'inline post not available on this machine'
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, file=__FILE__)) return
+#endif
         call esmf_configgetattribute(cf,wrt_int_state%post_nlunit,default=777,label='nlunit:',rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
           line=__LINE__, file=__FILE__)) return
@@ -272,24 +286,47 @@
       if ( trim(output_grid) == 'cubed_sphere_grid' ) then
 
         mytile = mod(wrt_int_state%mype,ntasks)+1
-        do tl=1,6
-          decomptile(1,tl) = 1
-          decomptile(2,tl) = jidx
-        enddo
-        
-      call ESMF_AttributeGet(imp_state_write, convention="NetCDF", purpose="FV3", &
-                             name="gridfile", value=gridfile, rc=rc)
+        if ( trim(app_domain) == 'global' ) then
+          do tl=1,6
+            decomptile(1,tl) = 1
+            decomptile(2,tl) = jidx
+          enddo
+          call ESMF_AttributeGet(imp_state_write, convention="NetCDF", purpose="FV3", &
+                                 name="gridfile", value=gridfile, rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-        
-      CALL ESMF_LogWrite("wrtComp: gridfile:"//trim(gridfile),ESMF_LOGMSG_INFO,rc=rc)
+          CALL ESMF_LogWrite("wrtComp: gridfile:"//trim(gridfile),ESMF_LOGMSG_INFO,rc=rc)
+          wrtgrid = ESMF_GridCreateMosaic(filename="INPUT/"//trim(gridfile),                                 &
+                                          regDecompPTile=decomptile,tileFilePath="INPUT/",                   &
+                                          staggerlocList=(/ESMF_STAGGERLOC_CENTER, ESMF_STAGGERLOC_CORNER/), &
+                                          name='wrt_grid', rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+        else
+          if(trim(app_domain) == 'nested') then
+            gridfile='grid.nest02.tile7.nc'
+          else if(trim(app_domain) == 'regional') then
+            gridfile='grid.tile7.halo0.nc'
+          endif
+          regDecomp(1) = 1
+          regDecomp(2) = ntasks
+          allocate(petMap(ntasks))
+          do i=1, ntasks
+            petMap(i) = i-1
+          enddo
+          delayout = ESMF_DELayoutCreate(petMap=petMap, rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-        wrtgrid = ESMF_GridCreateMosaic(filename="INPUT/"//trim(gridfile),                                 &
-                                        regDecompPTile=decomptile,tileFilePath="INPUT/",                   &
-                                        staggerlocList=(/ESMF_STAGGERLOC_CENTER, ESMF_STAGGERLOC_CORNER/), &
-                                        name='wrt_grid', rc=rc)
+          ! create the nest Grid by reading it from file but use DELayout
+          wrtGrid = ESMF_GridCreate(filename="INPUT/"//trim(gridfile),                                       &
+                                    fileformat=ESMF_FILEFORMAT_GRIDSPEC, regDecomp=regDecomp,                &
+                                    delayout=delayout, isSphere=.false., indexflag=ESMF_INDEX_DELOCAL,       &
+                                    rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+          print *,'in nested/regional cubed_sphere grid, regDecomp=',regDecomp,' PetMap=',petMap(1),petMap(ntasks), &
+            'gridfile=',trim(gridfile)
+          deallocate(petMap)
+        endif
       else if ( trim(output_grid) == 'gaussian_grid') then
         
         wrtgrid = ESMF_GridCreate1PeriDim(minIndex=(/1,1/),                             &
@@ -323,19 +360,20 @@
         wrt_int_state%latstart = lat(1)
         wrt_int_state%latlast  = lat(jmo)
         do j=1,imo
-          lon(j) = 360./real(imo) *real(j-1)
+          lon(j) = 360.d0/real(imo,8) *real(j-1,8)
         enddo
         wrt_int_state%lonstart = lon(1)
         wrt_int_state%lonlast  = lon(imo)
         do j=lbound(latPtr,2),ubound(latPtr,2)
           do i=lbound(lonPtr,1),ubound(lonPtr,1)
-            lonPtr(i,j) = 360./real(imo) * (i-1)
+            lonPtr(i,j) = 360.d0/real(imo,8) * real(i-1,8)
             latPtr(i,j) = lat(j)
           enddo
         enddo 
 !        print *,'aft wrtgrd, Gaussian, dimi,i=',lbound(lonPtr,1),ubound(lonPtr,1), &
 !         ' j=',lbound(lonPtr,2),ubound(lonPtr,2),'imo=',imo,'jmo=',jmo
-!        print *,'aft wrtgrd, lon=',lonPtr(lbound(lonPtr,1),lbound(lonPtr,2)), &
+!       if(wrt_int_state%mype==0) print *,'aft wrtgrd, lon=',lonPtr(1:5,1), &
+!        'lat=',latPtr(1,1:5),'imo,jmo=',imo,jmo
 !        lonPtr(lbound(lonPtr,1),ubound(lonPtr,2)),'lat=',latPtr(lbound(lonPtr,1),lbound(lonPtr,2)), &
 !        latPtr(lbound(lonPtr,1),ubound(lonPtr,2))
         wrt_int_state%lat_start = lbound(latPtr,2)
@@ -463,8 +501,32 @@
         call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
       endif
+!
+!-----------------------------------------------------------------------
+!***  get write grid component initial time from clock
+!-----------------------------------------------------------------------
+!
+      call ESMF_ClockGet(clock    =CLOCK                                &  !<-- The ESMF Clock
+                        ,startTime=wrt_int_state%IO_BASETIME            &  !<-- The Clock's starting time
+                        ,rc       =RC)
 
-
+      call ESMF_TimeGet(time=wrt_int_state%IO_BASETIME,yy=idate(1),mm=idate(2),dd=idate(3),h=idate(4), &
+                        m=idate(5),s=idate(6),rc=rc)
+!     if (lprnt) write(0,*) 'in wrt initial, io_baseline time=',idate,'rc=',rc
+      idate(7) = 1
+      wrt_int_state%idate = idate
+      wrt_int_state%fdate = idate
+! update IO-BASETIME and idate on write grid comp when IAU is enabled
+      if(iau_offset > 0 ) then
+        call ESMF_TimeIntervalSet(IAU_offsetTI, h=iau_offset, rc=rc)
+        wrt_int_state%IO_BASETIME = wrt_int_state%IO_BASETIME + IAU_offsetTI
+        call ESMF_TimeGet(time=wrt_int_state%IO_BASETIME,yy=idate(1),mm=idate(2),dd=idate(3),h=idate(4), &
+                          m=idate(5),s=idate(6),rc=rc)
+        wrt_int_state%idate = idate
+        change_wrtidate = .true.
+       if (lprnt) print *,'in wrt initial, with iau, io_baseline time=',idate,'rc=',rc
+      endif
+!
 ! Create field bundle
 !-------------------------------------------------------------------
 !
@@ -861,6 +923,17 @@
 
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
+! update the time:units when idate on write grid component is changed 
+        if ( index(trim(attNameList(i)),'time:units')>0) then
+          if ( change_wrtidate ) then
+            idx = index(trim(valueS),' since ')
+            if(lprnt) print *,'in write grid comp, time:unit=',trim(valueS)
+            write(newdate,'(I4.4,a,I2.2,a,I2.2,a,I2.2,a,I2.2,a,I2.2)') idate(1),'-',   &
+              idate(2),'-',idate(3),' ',idate(4),':',idate(5),':',idate(6)
+            valueS = valueS(1:idx+6)//newdate
+            if(lprnt) print *,'in write grid comp, new time:unit=',trim(valueS)
+          endif
+        endif
         call ESMF_AttributeSet(wrtgrid, convention="NetCDF", purpose="FV3", &
                                name=trim(attNameList(i)), value=valueS, rc=rc)
 
@@ -1030,28 +1103,6 @@
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 !
 !-----------------------------------------------------------------------
-!***  SET THE IO_BaseTime TO THE INITIAL CLOCK TIME.
-!-----------------------------------------------------------------------
-!
-      call ESMF_ClockGet(clock    =CLOCK                                &  !<-- The ESMF Clock
-                        ,startTime=wrt_int_state%IO_BASETIME            &  !<-- The Clock's starting time
-                        ,rc       =RC)
-
-      call ESMF_TimeGet(time=wrt_int_state%IO_BASETIME,yy=idate(1),mm=idate(2),dd=idate(3),h=idate(4), &
-                        m=idate(5),s=idate(6),rc=rc)
-!     if (lprnt) write(0,*) 'in wrt initial, io_baseline time=',idate,'rc=',rc
-      idate(7) = 1
-      wrt_int_state%idate = idate
-      wrt_int_state%fdate = idate
-      if(iau_offset > 0 ) then
-        call ESMF_TimeIntervalSet(IAU_offsetTI, h=iau_offset, rc=rc)
-        IO_BASETIME_IAU = wrt_int_state%IO_BASETIME + IAU_offsetTI
-        call ESMF_TimeGet(time=IO_BASETIME_IAU,yy=idate(1),mm=idate(2),dd=idate(3),h=idate(4), &
-                          m=idate(5),s=idate(6),rc=rc)
-!       if (lprnt) write(0,*) 'in wrt initial, with iau, io_baseline time=',idate,'rc=',rc
-      endif
-!
-!-----------------------------------------------------------------------
 !***  SET THE FIRST HISTORY FILE'S TIME INDEX.
 !-----------------------------------------------------------------------
 !
@@ -1073,14 +1124,14 @@
 !-----------------------------------------------------------------------
 !
       call ESMF_LogWrite("before initialize for nemsio file", ESMF_LOGMSG_INFO, rc=rc)
-      if (trim(output_grid) == 'gaussian_grid' .and. trim(output_file) == 'nemsio') then
-!     if (lprnt) write(0,*) 'in wrt initial, befnemsio_first_call wrt_int_state%FBcount=',wrt_int_state%FBcount
-        do i= 1, wrt_int_state%FBcount
-          call nemsio_first_call(wrt_int_state%wrtFB(i), imo, jmo,         &
-                                 wrt_int_state%mype, ntasks, wrt_mpi_comm, &
-                                 wrt_int_state%FBcount, i, idate, lat, lon, rc) 
-        enddo
-      endif
+      do i= 1, wrt_int_state%FBcount
+         if (trim(output_grid) == 'gaussian_grid' .and. trim(output_file(i)) == 'nemsio') then
+!           if (lprnt) write(0,*) 'in wrt initial, befnemsio_first_call wrt_int_state%FBcount=',wrt_int_state%FBcount
+             call nemsio_first_call(wrt_int_state%wrtFB(i), imo, jmo,         &
+                                   wrt_int_state%mype, ntasks, wrt_mpi_comm, &
+                                   wrt_int_state%FBcount, i, idate, lat, lon, rc) 
+         endif
+      enddo
       call ESMF_LogWrite("after initialize for nemsio file", ESMF_LOGMSG_INFO, rc=rc)
 !
 !-----------------------------------------------------------------------
@@ -1121,7 +1172,7 @@
       type(ESMF_Time)                       :: currtime
       type(ESMF_TypeKind_Flag)              :: datatype
       type(ESMF_Field)                      :: field_work
-      type(ESMF_Grid)                       :: grid_work, fbgrid
+      type(ESMF_Grid)                       :: grid_work, fbgrid, wrtgrid
       type(ESMF_Array)                      :: array_work
       type(ESMF_State),save                 :: stateGridFB
       type(optimizeT), save                 :: optimize(4)
@@ -1244,10 +1295,9 @@
 !         'nseconds_num=',nseconds_num,nseconds_den,'mype=',mype
 !
       nf_seconds = nf_hours*3600+nf_minuteS*60+nseconds+real(nseconds_num)/real(nseconds_den)
-      ! shift forecast hour by iau_offset if iau is on.
-      nf_seconds = nf_seconds - iau_offset*3600
       wrt_int_state%nfhour = nf_seconds/3600.
       nf_hours   = int(nf_seconds/3600.)
+      if(mype == lead_write_task) print *,'in write grid comp, nf_hours=',nf_hours
       ! if iau_offset > nf_hours, don't write out anything
       if (nf_hours < 0) return
 
@@ -1315,7 +1365,47 @@
             file_bundle = wrt_int_state%wrtFB(nbdl)
           endif
 
-          if ( trim(output_file) == 'nemsio' ) then
+          ! set default chunksizes for netcdf output
+          ! (use MPI decomposition size).
+          ! if chunksize parameter set to negative value,
+          ! netcdf library default is used.
+          if (output_file(nbdl)(1:6) == 'netcdf') then 
+             if (ichunk2d == 0) then
+                if( wrt_int_state%mype == 0 ) &
+                  ichunk2d = wrt_int_state%lon_end-wrt_int_state%lon_start+1
+                call mpi_bcast(ichunk2d,1,mpi_integer,0,wrt_mpi_comm,rc)
+             endif
+             if (jchunk2d == 0) then
+                if( wrt_int_state%mype == 0 ) &
+                  jchunk2d = wrt_int_state%lat_end-wrt_int_state%lat_start+1
+                call mpi_bcast(jchunk2d,1,mpi_integer,0,wrt_mpi_comm,rc)
+             endif
+             if (ichunk3d == 0) then
+                if( wrt_int_state%mype == 0 ) &
+                  ichunk3d = wrt_int_state%lon_end-wrt_int_state%lon_start+1
+                call mpi_bcast(ichunk3d,1,mpi_integer,0,wrt_mpi_comm,rc)
+             endif
+             if (jchunk3d == 0) then
+                if( wrt_int_state%mype == 0 ) &
+                  jchunk3d = wrt_int_state%lat_end-wrt_int_state%lat_start+1
+                call mpi_bcast(jchunk3d,1,mpi_integer,0,wrt_mpi_comm,rc)
+             endif
+             if (kchunk3d == 0 .and. nbdl == 1) then
+                if( wrt_int_state%mype == 0 )  then
+                  call ESMF_FieldBundleGet(wrt_int_state%wrtFB(nbdl), grid=wrtgrid)
+                  call ESMF_AttributeGet(wrtgrid, convention="NetCDF", purpose="FV3", &
+                          attnestflag=ESMF_ATTNEST_OFF, name='pfull', &
+                          itemCount=kchunk3d, rc=rc)
+                endif
+                call mpi_bcast(kchunk3d,1,mpi_integer,0,wrt_mpi_comm,rc)
+             endif
+             if (wrt_int_state%mype == 0) then
+                print *,'ichunk2d,jchunk2d',ichunk2d,jchunk2d
+                print *,'ichunk3d,jchunk3d,kchunk3d',ichunk3d,jchunk3d,kchunk3d
+             endif
+          endif
+
+          if ( trim(output_file(nbdl)) == 'nemsio' ) then
              filename = trim(wrt_int_state%wrtFB_names(nbdl))//'f'//trim(cfhour)//'.nemsio'
           else
              filename = trim(wrt_int_state%wrtFB_names(nbdl))//'f'//trim(cfhour)//'.nc'
@@ -1365,7 +1455,7 @@
 
           else if (trim(output_grid) == 'gaussian_grid') then
 
-            if (trim(output_file) == 'nemsio') then
+            if (trim(output_file(nbdl)) == 'nemsio') then
 
               wbeg = MPI_Wtime()
               call write_nemsio(file_bundle,trim(filename),nf_hours, nf_minutes, &
@@ -1376,18 +1466,37 @@
                       ,' at Fcst ',NF_HOURS,':',NF_MINUTES
               endif
 
-            else if (trim(output_file) == 'netcdf') then
+            else if (trim(output_file(nbdl)) == 'netcdf') then
 
               wbeg = MPI_Wtime()
               call write_netcdf(file_bundle,wrt_int_state%wrtFB(nbdl),trim(filename), &
-                               wrt_mpi_comm,wrt_int_state%mype,imo,jmo,rc)
+                               wrt_mpi_comm,wrt_int_state%mype,imo,jmo,&
+                               ichunk2d,jchunk2d,ichunk3d,jchunk3d,kchunk3d,rc)
               wend = MPI_Wtime()
               if (lprnt) then
                 write(*,'(A,F10.5,A,I4.2,A,I2.2)')' netcdf      Write Time is ',wend-wbeg  &
                         ,' at Fcst ',NF_HOURS,':',NF_MINUTES
               endif
 
-            else if (trim(output_file) == 'netcdf_esmf') then
+            else if (trim(output_file(nbdl)) == 'netcdf_parallel') then
+
+#ifdef NO_PARALLEL_NETCDF
+              rc = ESMF_RC_NOT_IMPL
+              print *,'netcdf_parallel not available on this machine'
+              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+              line=__LINE__, file=__FILE__)) return
+#endif
+              wbeg = MPI_Wtime()
+              call write_netcdf_parallel(file_bundle,wrt_int_state%wrtFB(nbdl),   &
+              trim(filename), wrt_mpi_comm,wrt_int_state%mype,imo,jmo,&
+              ichunk2d,jchunk2d,ichunk3d,jchunk3d,kchunk3d,rc)
+              wend = MPI_Wtime()
+              if (lprnt) then
+                write(*,'(A,F10.5,A,I4.2,A,I2.2)')' parallel netcdf      Write Time is ',wend-wbeg  &
+                        ,' at Fcst ',NF_HOURS,':',NF_MINUTES
+              endif
+
+            else if (trim(output_file(nbdl)) == 'netcdf_esmf') then
 
               wbeg = MPI_Wtime()
               call ESMFproto_FieldBundleWrite(gridFB, filename=trim(filename),    &
@@ -1421,11 +1530,25 @@
                    trim(output_grid) == 'rotated_latlon'  .or. &
                  trim(output_grid) == 'lambert_conformal') then
 
-            if (trim(output_file) == 'netcdf') then
+            !mask fields according to sfc pressure
+            !if (mype == lead_write_task) print *,'before mask_fields'
+            wbeg = MPI_Wtime()
+            call ESMF_LogWrite("before mask_fields for wrt field bundle", ESMF_LOGMSG_INFO, rc=rc)
+            !call mask_fields(wrt_int_state%wrtFB(nbdl),rc)
+            call mask_fields(file_bundle,rc)
+            !if (mype == lead_write_task) print *,'after mask_fields'
+            call ESMF_LogWrite("after mask_fields for wrt field bundle", ESMF_LOGMSG_INFO, rc=rc)
+            wend = MPI_Wtime()
+            if (mype == lead_write_task) then
+              write(*,'(A,F10.5,A,I4.2,A,I2.2)')' mask_fields time is ',wend-wbeg
+            endif
+
+            if (trim(output_file(nbdl)) == 'netcdf') then
 
               wbeg = MPI_Wtime()
               call write_netcdf(file_bundle,wrt_int_state%wrtFB(nbdl),trim(filename), &
-                                wrt_mpi_comm,wrt_int_state%mype,imo,jmo,rc)
+                                wrt_mpi_comm,wrt_int_state%mype,imo,jmo,&
+                                ichunk2d,jchunk2d,ichunk3d,jchunk3d,kchunk3d,rc)
               wend = MPI_Wtime()
               if (mype == lead_write_task) then
                 write(*,'(A,F10.5,A,I4.2,A,I2.2)')' netcdf      Write Time is ',wend-wbeg  &
@@ -1562,13 +1685,14 @@
      character(100) fieldName,uwindname,vwindname
      type(ESMF_Field),   allocatable  :: fcstField(:)
      real(ESMF_KIND_R8), dimension(:,:),     pointer  :: lon, lat
+     real(ESMF_KIND_R8), dimension(:,:),     pointer  :: lonloc, latloc
      real(ESMF_KIND_R4), dimension(:,:),     pointer  :: pressfc
      real(ESMF_KIND_R4), dimension(:,:),     pointer  :: uwind2dr4,vwind2dr4
      real(ESMF_KIND_R4), dimension(:,:,:),   pointer  :: uwind3dr4,vwind3dr4
      real(ESMF_KIND_R4), dimension(:,:,:),   pointer  :: cart3dPtr2dr4
      real(ESMF_KIND_R4), dimension(:,:,:,:), pointer  :: cart3dPtr3dr4
      real(ESMF_KIND_R8), dimension(:,:,:,:), pointer  :: cart3dPtr3dr8
-     save lon, lat
+     save lonloc, latloc
      real(ESMF_KIND_R8) :: coslon, sinlon, sinlat
 !
 ! get filed count
@@ -1588,9 +1712,18 @@
 
        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-       lon = lon * pi/180.
-!     print *,'in 3DCartesian2wind, lon dim=',lbound(lon,1),ubound(lon,1),lbound(lon,2),ubound(lon,2), &
-!       'lon=',lon(lbound(lon,1),lbound(lon,2)), lon(ubound(lon,1),ubound(lon,2))
+       allocate(lonloc(lbound(lon,1):ubound(lon,1),lbound(lon,2):ubound(lon,2)))
+       istart = lbound(lon,1)
+       iend   = ubound(lon,1)
+       jstart = lbound(lon,2)
+       jend   = ubound(lon,2)
+!$omp parallel do default(none) shared(lon,lonloc,jstart,jend,istart,iend) &
+!$omp             private(i,j)
+       do j=jstart,jend
+        do i=istart,iend
+          lonloc(i,j) = lon(i,j) * pi/180.
+        enddo
+       enddo
 
        CALL ESMF_LogWrite("call recover field get coord 2",ESMF_LOGMSG_INFO,rc=RC)
 
@@ -1598,9 +1731,18 @@
 
        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-       lat = lat * pi/180.
-!     print *,'in 3DCartesian2wind, lat dim=',lbound(lat,1),ubound(lat,1),lbound(lat,2),ubound(lat,2), &
-!       'lat=',lat(lbound(lon,1),lbound(lon,2)), lat(ubound(lon,1),ubound(lon,2))
+       allocate(latloc(lbound(lat,1):ubound(lat,1),lbound(lat,2):ubound(lat,2)))
+       istart = lbound(lat,1)
+       iend   = ubound(lat,1)
+       jstart = lbound(lat,2)
+       jend   = ubound(lat,2)
+!$omp parallel do default(none) shared(lat,latloc,jstart,jend,istart,iend) &
+!$omp             private(i,j)
+       do j=jstart,jend
+        do i=istart,iend
+          latloc(i,j) = lat(i,j) * pi/180.d0
+        enddo
+       enddo
        first_getlatlon = .false.
      endif
 !
@@ -1658,18 +1800,18 @@
 ! update u , v wind
 !$omp parallel do default(shared) private(i,j,k,coslon,sinlon,sinlat)
              do k=kstart,kend
-!!$omp parallel do default(none) shared(uwind3dr4,vwind3dr4,lon,lat,cart3dPtr3dr4,jstart,jend,istart,iend,k) &
-!!$omp             private(i,j,coslon,sinlon,sinlat)
+!$omp parallel do default(none) shared(uwind3dr4,vwind3dr4,lonloc,latloc,cart3dPtr3dr4,jstart,jend,istart,iend,k) &
+!$omp             private(i,j,coslon,sinlon,sinlat)
                do j=jstart, jend
                  do i=istart, iend
-                  coslon = cos(lon(i,j))
-                  sinlon = sin(lon(i,j))
-                  sinlat = sin(lat(i,j))
+                  coslon = cos(lonloc(i,j))
+                  sinlon = sin(lonloc(i,j))
+                  sinlat = sin(latloc(i,j))
                   uwind3dr4(i,j,k) = cart3dPtr3dr4(1,i,j,k) * coslon           &
                                    + cart3dPtr3dr4(2,i,j,k) * sinlon
                   vwind3dr4(i,j,k) =-cart3dPtr3dr4(1,i,j,k) * sinlat*sinlon    &
                                    + cart3dPtr3dr4(2,i,j,k) * sinlat*coslon    &
-                                   + cart3dPtr3dr4(3,i,j,k) * cos(lat(i,j))
+                                   + cart3dPtr3dr4(3,i,j,k) * cos(latloc(i,j))
                  enddo
                enddo
              enddo
@@ -1689,18 +1831,18 @@
              call ESMF_FieldGet(ufield, localDe=0, farrayPtr=uwind2dr4,rc=rc)
              call ESMF_FieldGet(vfield, localDe=0, farrayPtr=vwind2dr4,rc=rc)
               ! update u , v wind
-!$omp parallel do default(none) shared(uwind2dr4,vwind2dr4,lon,lat,cart3dPtr2dr4,jstart,jend,istart,iend) &
+!$omp parallel do default(none) shared(uwind2dr4,vwind2dr4,lonloc,latloc,cart3dPtr2dr4,jstart,jend,istart,iend) &
 !$omp             private(i,j,k,coslon,sinlon,sinlat)
              do j=jstart, jend
                do i=istart, iend
-                  coslon = cos(lon(i,j))
-                  sinlon = sin(lon(i,j))
-                  sinlat = sin(lat(i,j))
+                  coslon = cos(lonloc(i,j))
+                  sinlon = sin(lonloc(i,j))
+                  sinlat = sin(latloc(i,j))
                   uwind2dr4(i,j) = cart3dPtr2dr4(1,i,j) * coslon         &
                                  + cart3dPtr2dr4(2,i,j) * sinlon
                   vwind2dr4(i,j) =-cart3dPtr2dr4(1,i,j) * sinlat*sinlon  &
                                  + cart3dPtr2dr4(2,i,j) * sinlat*coslon  &
-                                 + cart3dPtr2dr4(3,i,j) * cos(lat(i,j))
+                                 + cart3dPtr2dr4(3,i,j) * cos(latloc(i,j))
                enddo
              enddo
            endif
@@ -1728,6 +1870,269 @@
      rc = 0
 
    end subroutine recover_fields
+!
+!-----------------------------------------------------------------------
+!
+   subroutine mask_fields(file_bundle,rc)
+
+     type(ESMF_FieldBundle), intent(in)              :: file_bundle
+     integer,                intent(out),   optional :: rc
+!
+     integer i,j,k,ifld,fieldCount,nstt,nend,fieldDimCount,gridDimCount
+     integer istart,iend,jstart,jend,kstart,kend,km
+     type(ESMF_Grid)  fieldGrid
+     type(ESMF_TypeKind_Flag) typekind
+     type(ESMF_TypeKind_Flag) attTypeKind
+     character(len=ESMF_MAXSTR) fieldName
+     type(ESMF_Field),   allocatable                  :: fcstField(:)
+     real(ESMF_KIND_R4), dimension(:,:),     pointer  :: var2dPtr2dr4
+     real(ESMF_KIND_R4), dimension(:,:,:),   pointer  :: var3dPtr3dr4
+     real(ESMF_KIND_R4), dimension(:,:,:),   pointer  :: vect3dPtr2dr4
+     real(ESMF_KIND_R4), dimension(:,:,:,:), pointer  :: vect4dPtr3dr4
+     real(ESMF_KIND_R4), dimension(:,:), allocatable  :: maskwrt
+
+     logical :: mvispresent=.false.
+     real(ESMF_KIND_R4) :: missing_value_r4=-1.e+10
+     real(ESMF_KIND_R8) :: missing_value_r8=9.99e20
+     character(len=ESMF_MAXSTR) :: msg
+
+     save maskwrt
+
+     call ESMF_LogWrite("call mask field on wrt comp",ESMF_LOGMSG_INFO,rc=RC)
+
+! get fieldCount
+     call ESMF_FieldBundleGet(file_bundle, fieldCount=fieldCount, &
+         grid=fieldGrid, rc=rc)
+     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, file=__FILE__)) return  ! bail out
+! get gridDimCount
+     call ESMF_GridGet(fieldgrid, dimCount=gridDimCount, rc=rc)
+     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, file=__FILE__)) return  ! bail out
+
+     allocate(fcstField(fieldCount))
+     call ESMF_LogWrite("call mask field get fcstField",ESMF_LOGMSG_INFO,rc=RC)
+     call ESMF_FieldBundleGet(file_bundle, fieldList=fcstField, itemorderflag=ESMF_ITEMORDER_ADDORDER, rc=rc)
+
+! generate the maskwrt according to surface pressure
+     if( first_getmaskwrt ) then
+
+     do ifld=1,fieldCount
+       !call ESMF_LogWrite("call mask field get fieldname, type dimcount",ESMF_LOGMSG_INFO,rc=RC)
+       call ESMF_FieldGet(fcstField(ifld),name=fieldName,typekind=typekind,dimCount=fieldDimCount, rc=rc)
+       !write(msg,*) 'fieldName,typekind,fieldDimCount=',trim(fieldName),typekind,fieldDimCount
+       !call ESMF_LogWrite("call mask field: "//trim(msg),ESMF_LOGMSG_INFO,rc=RC)
+       if (.not. allocated(maskwrt)) then
+         if ( typekind == ESMF_TYPEKIND_R4 .and. fieldDimCount == gridDimCount) then
+           call ESMF_FieldGet(fcstField(ifld),localDe=0, farrayPtr=var2dPtr2dr4, rc=rc)
+           istart = lbound(var2dPtr2dr4,1)
+           iend   = ubound(var2dPtr2dr4,1)
+           jstart = lbound(var2dPtr2dr4,2)
+           jend   = ubound(var2dPtr2dr4,2)
+           allocate(maskwrt(istart:iend,jstart:jend))
+           maskwrt(istart:iend,jstart:jend)=1.0
+         endif
+       endif
+       if(index(trim(fieldName),"pressfc")>0) then
+         call ESMF_FieldGet(fcstField(ifld),localDe=0, farrayPtr=var2dPtr2dr4, rc=rc)
+         istart = lbound(var2dPtr2dr4,1)
+         iend   = ubound(var2dPtr2dr4,1)
+         jstart = lbound(var2dPtr2dr4,2)
+         jend   = ubound(var2dPtr2dr4,2)
+         if (.not. allocated(maskwrt)) then
+           allocate(maskwrt(istart:iend,jstart:jend))
+           maskwrt(istart:iend,jstart:jend)=1.0
+         endif
+!$omp parallel do default(shared) private(i,j)
+         do j=jstart, jend
+           do i=istart, iend
+             if(abs(var2dPtr2dr4(i,j)-0.) < 1.0e-6) maskwrt(i,j)=0.
+           enddo
+         enddo
+         call ESMF_LogWrite("call mask field pressfc found, maskwrt generated",ESMF_LOGMSG_INFO,rc=RC)
+         exit
+       endif
+     enddo
+     first_getmaskwrt = .false.
+
+     endif !first_getmaskwrt
+
+! loop to mask all fields according to maskwrt
+     do ifld=1,fieldCount
+       !call ESMF_LogWrite("call mask field get fieldname, type dimcount",ESMF_LOGMSG_INFO,rc=RC)
+       call ESMF_FieldGet(fcstField(ifld),name=fieldName,typekind=typekind,dimCount=fieldDimCount, rc=rc)
+       !write(msg,*) 'fieldName,typekind,fieldDimCount=',trim(fieldName),typekind,fieldDimCount
+       !call ESMF_LogWrite("call mask field: "//trim(msg),ESMF_LOGMSG_INFO,rc=RC)
+       ! For vector fields
+       if(index(trim(fieldName),"vector")>0) then
+         ! Only work on ESMF_TYPEKIND_R4 fields for now
+         if ( typekind == ESMF_TYPEKIND_R4 ) then
+           ! 3-d vector fields with 4-d arrays
+           if( fieldDimCount > gridDimCount+1 ) then
+             !call ESMF_LogWrite("call mask field get vector 3d farray",ESMF_LOGMSG_INFO,rc=RC)
+             call ESMF_FieldGet(fcstField(ifld), localDe=0, farrayPtr=vect4dPtr3dr4, rc=rc)
+               if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+                 line=__LINE__, file=__FILE__)) return  ! bail out
+             if( ubound(vect4dPtr3dr4,1)-lbound(vect4dPtr3dr4,1)+1/=3 ) then
+               rc=991
+               print *,'ERROR, 3D the vector dimension /= 3, rc=',rc
+               exit
+             endif
+             ! Get the _FillValue from the field attribute if exists
+             call ESMF_AttributeGet(fcstField(ifld), convention="NetCDF", purpose="FV3", &
+                 name="_FillValue", typekind=attTypeKind, isPresent=mvispresent, rc=rc)
+             !write(msg,*) 'fieldName,attTypeKind,isPresent=',trim(fieldName),attTypeKind,mvispresent
+             !call ESMF_LogWrite("call mask field: "//trim(msg),ESMF_LOGMSG_INFO,rc=RC)
+             if ( mvispresent ) then
+               if (attTypeKind==ESMF_TYPEKIND_R4) then
+                 call ESMF_AttributeGet(fcstField(ifld), convention="NetCDF", purpose="FV3", &
+                        name="_FillValue", value=missing_value_r4, isPresent=mvispresent, rc=rc)
+                 !write(msg,*) 'fieldName,_FillValue,isPresent=',trim(fieldName),missing_value_r4,mvispresent
+                 !call ESMF_LogWrite("call mask field: "//trim(msg),ESMF_LOGMSG_INFO,rc=RC)
+               else if (attTypeKind==ESMF_TYPEKIND_R8) then
+                 call ESMF_AttributeGet(fcstField(ifld), convention="NetCDF", purpose="FV3", &
+                        name="_FillValue", value=missing_value_r8, isPresent=mvispresent, rc=rc)
+                 !write(msg,*) 'fieldName,_FillValue,isPresent=',trim(fieldName),missing_value_r8,mvispresent
+                 !call ESMF_LogWrite("call mask field: "//trim(msg),ESMF_LOGMSG_INFO,rc=RC)
+               endif
+               istart = lbound(vect4dPtr3dr4,2)
+               iend   = ubound(vect4dPtr3dr4,2)
+               jstart = lbound(vect4dPtr3dr4,3)
+               jend   = ubound(vect4dPtr3dr4,3)
+               kstart = lbound(vect4dPtr3dr4,4)
+               kend   = ubound(vect4dPtr3dr4,4)
+!$omp parallel do default(shared) private(i,j,k)
+               do k=kstart,kend
+                 do j=jstart, jend
+                   do i=istart, iend
+                     if (maskwrt(i,j)<1.0 .and. attTypeKind==ESMF_TYPEKIND_R4) vect4dPtr3dr4(:,i,j,k)=missing_value_r4
+                     if (maskwrt(i,j)<1.0 .and. attTypeKind==ESMF_TYPEKIND_R8) vect4dPtr3dr4(:,i,j,k)=missing_value_r8
+                   enddo
+                 enddo
+               enddo
+             endif !mvispresent
+           ! 2-d vector fields with 3-d arrays
+           else
+             call ESMF_FieldGet(fcstField(ifld), localDe=0, farrayPtr=vect3dPtr2dr4, rc=rc)
+               if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+                 line=__LINE__, file=__FILE__)) return  ! bail out
+             if( ubound(vect3dPtr2dr4,1)-lbound(vect3dPtr2dr4,1)+1 /= 3 ) then
+               rc=991
+               print *,'ERROR, 2D the vector dimension /= 3, rc=',rc
+               exit
+             endif
+             ! Get the _FillValue from the field attribute if exists
+             call ESMF_AttributeGet(fcstField(ifld), convention="NetCDF", purpose="FV3", &
+                 name="_FillValue", typekind=attTypeKind, isPresent=mvispresent, rc=rc)
+             !write(msg,*) 'fieldName,attTypeKind,isPresent=',trim(fieldName),attTypeKind,mvispresent
+             !call ESMF_LogWrite("call mask field: "//trim(msg),ESMF_LOGMSG_INFO,rc=RC)
+             if ( mvispresent ) then
+               if (attTypeKind==ESMF_TYPEKIND_R4) then
+                 call ESMF_AttributeGet(fcstField(ifld), convention="NetCDF", purpose="FV3", &
+                        name="_FillValue", value=missing_value_r4, isPresent=mvispresent, rc=rc)
+                 !write(msg,*) 'fieldName,_FillValue,isPresent=',trim(fieldName),missing_value_r4,mvispresent
+                 !call ESMF_LogWrite("call mask field: "//trim(msg),ESMF_LOGMSG_INFO,rc=RC)
+               else if (attTypeKind==ESMF_TYPEKIND_R8) then
+                 call ESMF_AttributeGet(fcstField(ifld), convention="NetCDF", purpose="FV3", &
+                        name="_FillValue", value=missing_value_r8, isPresent=mvispresent, rc=rc)
+                 !write(msg,*) 'fieldName,_FillValue,isPresent=',trim(fieldName),missing_value_r8,mvispresent
+                 !call ESMF_LogWrite("call mask field: "//trim(msg),ESMF_LOGMSG_INFO,rc=RC)
+               endif
+               istart = lbound(vect3dPtr2dr4,2)
+               iend   = ubound(vect3dPtr2dr4,2)
+               jstart = lbound(vect3dPtr2dr4,3)
+               jend   = ubound(vect3dPtr2dr4,3)
+!$omp parallel do default(shared) private(i,j)
+               do j=jstart, jend
+                 do i=istart, iend
+                   if (maskwrt(i,j)<1.0 .and. attTypeKind==ESMF_TYPEKIND_R4) vect3dPtr2dr4(:,i,j)=missing_value_r4
+                   if (maskwrt(i,j)<1.0 .and. attTypeKind==ESMF_TYPEKIND_R8) vect3dPtr2dr4(:,i,j)=missing_value_r8
+                 enddo
+               enddo
+             endif !mvispresent
+           endif
+         endif
+! For non-vector fields
+       else
+         ! Only work on ESMF_TYPEKIND_R4 fields for now
+         if ( typekind == ESMF_TYPEKIND_R4 ) then
+           ! 2-d fields
+           if(fieldDimCount == gridDimCount) then
+             call ESMF_FieldGet(fcstField(ifld),localDe=0, farrayPtr=var2dPtr2dr4, rc=rc)
+             ! Get the _FillValue from the field attribute if exists
+             call ESMF_AttributeGet(fcstField(ifld), convention="NetCDF", purpose="FV3", &
+                 name="_FillValue", typekind=attTypeKind, isPresent=mvispresent, rc=rc)
+             !write(msg,*) 'fieldName,attTypeKind,isPresent=',trim(fieldName),attTypeKind,mvispresent
+             !call ESMF_LogWrite("call mask field: "//trim(msg),ESMF_LOGMSG_INFO,rc=RC)
+             if ( mvispresent ) then
+               if (attTypeKind==ESMF_TYPEKIND_R4) then
+                 call ESMF_AttributeGet(fcstField(ifld), convention="NetCDF", purpose="FV3", &
+                        name="_FillValue", value=missing_value_r4, isPresent=mvispresent, rc=rc)
+                 !write(msg,*) 'fieldName,_FillValue,isPresent=',trim(fieldName),missing_value_r4,mvispresent
+                 !call ESMF_LogWrite("call mask field: "//trim(msg),ESMF_LOGMSG_INFO,rc=RC)
+               else if (attTypeKind==ESMF_TYPEKIND_R8) then
+                 call ESMF_AttributeGet(fcstField(ifld), convention="NetCDF", purpose="FV3", &
+                        name="_FillValue", value=missing_value_r8, isPresent=mvispresent, rc=rc)
+                 !write(msg,*) 'fieldName,_FillValue,isPresent=',trim(fieldName),missing_value_r8,mvispresent
+                 !call ESMF_LogWrite("call mask field: "//trim(msg),ESMF_LOGMSG_INFO,rc=RC)
+               endif
+               istart = lbound(var2dPtr2dr4,1)
+               iend   = ubound(var2dPtr2dr4,1)
+               jstart = lbound(var2dPtr2dr4,2)
+               jend   = ubound(var2dPtr2dr4,2)
+!$omp parallel do default(shared) private(i,j)
+               do j=jstart, jend
+                 do i=istart, iend
+                   if (maskwrt(i,j)<1.0 .and. attTypeKind==ESMF_TYPEKIND_R4) var2dPtr2dr4(i,j)=missing_value_r4
+                   if (maskwrt(i,j)<1.0 .and. attTypeKind==ESMF_TYPEKIND_R8) var2dPtr2dr4(i,j)=missing_value_r8
+                 enddo
+               enddo
+             endif !mvispresent
+           ! 3-d fields
+           else if(fieldDimCount == gridDimCount+1) then
+             call ESMF_FieldGet(fcstField(ifld),localDe=0, farrayPtr=var3dPtr3dr4, rc=rc)
+             ! Get the _FillValue from the field attribute if exists
+             call ESMF_AttributeGet(fcstField(ifld), convention="NetCDF", purpose="FV3", &
+                 name="_FillValue", typekind=attTypeKind, isPresent=mvispresent, rc=rc)
+             !write(msg,*) 'fieldName,attTypeKind,isPresent=',trim(fieldName),attTypeKind,mvispresent
+             !call ESMF_LogWrite("call mask field: "//trim(msg),ESMF_LOGMSG_INFO,rc=RC)
+             if ( mvispresent ) then
+               if (attTypeKind==ESMF_TYPEKIND_R4) then
+                 call ESMF_AttributeGet(fcstField(ifld), convention="NetCDF", purpose="FV3", &
+                        name="_FillValue", value=missing_value_r4, isPresent=mvispresent, rc=rc)
+                 !write(msg,*) 'fieldName,_FillValue,isPresent=',trim(fieldName),missing_value_r4,mvispresent
+                 !call ESMF_LogWrite("call mask field: "//trim(msg),ESMF_LOGMSG_INFO,rc=RC)
+               else if (attTypeKind==ESMF_TYPEKIND_R8) then
+                 call ESMF_AttributeGet(fcstField(ifld), convention="NetCDF", purpose="FV3", &
+                        name="_FillValue", value=missing_value_r8, isPresent=mvispresent, rc=rc)
+                 !write(msg,*) 'fieldName,_FillValue,isPresent=',trim(fieldName),missing_value_r8,mvispresent
+                 !call ESMF_LogWrite("call mask field: "//trim(msg),ESMF_LOGMSG_INFO,rc=RC)
+               endif
+               istart = lbound(var3dPtr3dr4,1)
+               iend   = ubound(var3dPtr3dr4,1)
+               jstart = lbound(var3dPtr3dr4,2)
+               jend   = ubound(var3dPtr3dr4,2)
+               kstart = lbound(var3dPtr3dr4,3)
+               kend   = ubound(var3dPtr3dr4,3)
+!$omp parallel do default(shared) private(i,j,k)
+               do k=kstart,kend
+                 do j=jstart, jend
+                   do i=istart, iend
+                     if (maskwrt(i,j)<1.0 .and. attTypeKind==ESMF_TYPEKIND_R4) var3dPtr3dr4(i,j,k)=missing_value_r4
+                     if (maskwrt(i,j)<1.0 .and. attTypeKind==ESMF_TYPEKIND_R8) var3dPtr3dr4(i,j,k)=missing_value_r8
+                   enddo
+                 enddo
+               enddo
+             endif !mvispresent
+           endif
+         endif
+       endif
+     enddo
+!
+     deallocate(fcstField)
+     rc = 0
+
+   end subroutine mask_fields
 !
 !-----------------------------------------------------------------------
 !

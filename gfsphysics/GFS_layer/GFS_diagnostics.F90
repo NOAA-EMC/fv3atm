@@ -2804,6 +2804,19 @@ module GFS_diagnostics
     enddo
 
 #ifdef CCPP
+  if (Model%rdlai) then
+    idx = idx + 1
+    ExtDiag(idx)%axes = 2
+    ExtDiag(idx)%name = 'xlaixy'
+    ExtDiag(idx)%desc = 'leaf area index'
+    ExtDiag(idx)%unit = 'number'
+    ExtDiag(idx)%mod_name = 'gfs_sfc'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var2 => sfcprop(nb)%xlaixy(:)
+    enddo
+  endif
+
   if (Model%lsm == Model%lsm_ruc) then
     do num = 1,Model%lsoil_lsm
       write (xtra,'(i1)') num

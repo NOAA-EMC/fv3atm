@@ -29,11 +29,14 @@ CPPDEFS += -DOVERLOAD_R4
 endif
 # Set CCPP static api for static build
 ifneq (,$(findstring STATIC,$(CPPDEFS)))
-    CCPP_STATIC_API = ./CCPP_layer/ccpp_static_api.F90
+    CCPP_STATIC_API = ../ccpp/physics/ccpp_static_api.F90
 else
     CCPP_STATIC_API = 
 endif
 # Set physics source files
+# DH* 20190916 - can remove namelist_soilveg and set_soilveg
+# once calculation of snocvr is moved from FV3GFS_io.F90/GFS_driver.F90
+# to CCPP (GFS_phys_time_vary.fv3.F90) *DH
 SRCS_f = \
 	   ./physics/mersenne_twister.f                                              \
 	   ./physics/namelist_soilveg.f                                              \
@@ -41,7 +44,8 @@ SRCS_f = \
 	   ./physics/radlw_param.f                                                   \
 	   ./physics/radsw_param.f                                                   \
 	   ./physics/set_soilveg.f
-SRCS_f90 =
+SRCS_f90 = \
+	     ./physics/noahmp_tables.f90
 SRCS_F = \
 	   ./physics/machine.F
 SRCS_F90 = \
@@ -249,34 +253,6 @@ FFLAGS_LOPT1=$(subst CORE-AVX512,CORE-AVX-I,\
 # Reduce optimization (add -O0) for GFS_diagnsostics.F90
 ./GFS_layer/GFS_diagnostics.o : ./GFS_layer/GFS_diagnostics.F90
 	$(FC) $(CPPDEFS) $(FFLAGS) $(OTHER_FFLAGS) -O0 -c $< -o $@
-
-# Force consistent results of math calculations for MG microphysics
-# in DEBUG or REPRO mode; without this flag, the results of the intrinsic
-# gamma function differ for the non-CCPP and CCPP version (Theia/Intel 18).
-# This is only required for the dynamic CCPP build, not for the static build.
-ifneq (,$(findstring TRANSITION,$(CPPDEFS)))
-FFLAGS_LOPT2=$(subst CORE-AVX2,CORE-AVX-I,\
-               $(subst no-prec-sqrt,prec-sqrt,\
-                 $(subst no-prec-div,prec-div,$(FFLAGS))))
-./physics/micro_mg2_0.o : ./physics/micro_mg2_0.F90
-	$(FC) $(CPPDEFS) $(FFLAGS_LOPT2) $(OTHER_FFLAGS) -c $< -o $@
-./physics/micro_mg3_0.o : ./physics/micro_mg3_0.F90
-	$(FC) $(CPPDEFS) $(FFLAGS_LOPT2) $(OTHER_FFLAGS) -c $< -o $@
-./physics/aer_cloud.o : ./physics/aer_cloud.F
-	$(FC) $(CPPDEFS) $(FFLAGS_LOPT2) $(OTHER_FFLAGS) -c $< -o $@
-./physics/cldmacro.o : ./physics/cldmacro.F
-	$(FC) $(CPPDEFS) $(FFLAGS_LOPT2) $(OTHER_FFLAGS) -c $< -o $@
-./physics/sflx.o : ./physics/sflx.f
-	$(FC) $(CPPDEFS) $(FFLAGS_LOPT2) $(OTHER_FFLAGS) -c $< -o $@
-./physics/gfdl_cloud_microphys.o: ./physics/gfdl_cloud_microphys.F90
-	$(FC) $(CPPDEFS) $(FFLAGS_LOPT2) $(OTHER_FFLAGS) -c $< -o $@
-./physics/satmedmfvdif.o : ./physics/satmedmfvdif.f
-	$(FC) $(CPPDEFS) $(FFLAGS_LOPT2) $(OTHER_FFLAGS) -c $< -o $@
-./physics/cs_conv.o : ./physics/cs_conv.F90
-	$(FC) $(CPPDEFS) $(FFLAGS_LOPT2) $(OTHER_FFLAGS) -c $< -o $@
-./physics/gcm_shoc.o : ./physics/gcm_shoc.f90
-	$(FC) $(CPPDEFS) $(FFLAGS_LOPT2) $(OTHER_FFLAGS) -c $< -o $@
-endif
 
 # Do preprocessing of the GFS drivers in two steps to be able
 # to look at the actual .f90 file that is compiled
