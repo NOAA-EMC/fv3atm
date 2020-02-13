@@ -94,6 +94,8 @@ SCHEME_FILES_DEPENDENCIES = [
     'FV3/ccpp/physics/physics/module_mp_thompson.F90',
     'FV3/ccpp/physics/physics/module_mp_thompson_make_number_concentrations.F90',
     'FV3/ccpp/physics/physics/module_MP_FER_HIRES.F90',
+    'FV3/ccpp/physics/physics/HWRF_mersenne_twister.F90',
+    'FV3/ccpp/physics/physics/HWRF_mcica_random_numbers.F90',
     'FV3/ccpp/physics/physics/module_bl_mynn.F90',
     'FV3/ccpp/physics/physics/module_sf_mynn.F90',
     'FV3/ccpp/physics/physics/module_SF_JSFC.F90',
