@@ -3268,8 +3268,8 @@ module GFS_typedefs
       write(0,*) 'NO FLAG: gwd is generic'
     endif
 
-    if(satmedmf) then
-      write(0,*) 'FLAG: satmedmf so pbl not generic'
+    if(satmedmf .and. isatmedmf==0) then
+      write(0,*) 'FLAG: satmedmf and isatedmf=0 so pbl not generic'
       Model%flag_for_pbl_generic_tend=.false.
     else if(do_mynnedmf) then
       write(0,*) 'FLAG: do_mynnedmf so pbl not generic'
@@ -3281,19 +3281,19 @@ module GFS_typedefs
     if(imfshalcnv == Model%imfshalcnv_gf) then
       write(0,*) 'FLAG: imfshalcnv_gf so scnv not generic'
       Model%flag_for_scnv_generic_tend=.false.
-    else if(imfshalcnv == Model%imfshalcnv_samf) then
-      write(0,*) 'FLAG: imfshalcnv_samf so scnv not generic'
-      Model%flag_for_scnv_generic_tend=.false.
+    ! else if(imfshalcnv == Model%imfshalcnv_samf) then
+    !   write(0,*) 'FLAG: imfshalcnv_samf so scnv not generic'
+    !   Model%flag_for_scnv_generic_tend=.false.
     else
       write(0,*) 'NO FLAG: scnv is generic'
     endif
 
     if(imfdeepcnv == Model%imfdeepcnv_gf) then
       write(0,*) 'FLAG: imfdeepcnv_gf so dcnv not generic'
-      Model%flag_for_scnv_generic_tend=.false.
-    else if(imfdeepcnv == Model%imfdeepcnv_samf) then
-      write(0,*) 'FLAG: imfdeepcnv_samf so dcnv not generic'
-      Model%flag_for_scnv_generic_tend=.false.
+      Model%flag_for_dcnv_generic_tend=.false.
+    ! else if(imfdeepcnv == Model%imfdeepcnv_samf) then
+    !   write(0,*) 'FLAG: imfdeepcnv_samf so dcnv not generic'
+    !   Model%flag_for_dcnv_generic_tend=.false.
     else
       write(0,*) 'NO FLAG: dcnv is generic'
     endif

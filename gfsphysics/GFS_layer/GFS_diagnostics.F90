@@ -2432,6 +2432,29 @@ module GFS_diagnostics
          ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%dv3dt(:,:,5)
       enddo
 
+
+      idx = idx + 1
+      ExtDiag(idx)%axes = 3
+      ExtDiag(idx)%name = 'du3dt_shlwcnv'
+      ExtDiag(idx)%desc = 'u momentum change due to shal conv.'
+      ExtDiag(idx)%unit = 'm/s'
+      ExtDiag(idx)%mod_name = 'gfs_phys'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+         ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%du3dt(:,:,6)
+      enddo
+
+      idx = idx + 1
+      ExtDiag(idx)%axes = 3
+      ExtDiag(idx)%name = 'dv3dt_shlwcnv'
+      ExtDiag(idx)%desc = 'v momentum change due to shal conv.'
+      ExtDiag(idx)%unit = 'm/s'
+      ExtDiag(idx)%mod_name = 'gfs_phys'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+         ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%dv3dt(:,:,6)
+      enddo
+
       idx = idx + 1
       ExtDiag(idx)%axes = 3
       ExtDiag(idx)%name = 'du3dt_ccpp'
@@ -2440,7 +2463,7 @@ module GFS_diagnostics
       ExtDiag(idx)%mod_name = 'gfs_phys'
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
-         ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%du3dt(:,:,6)
+         ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%du3dt(:,:,7)
       enddo
 
       idx = idx + 1
@@ -2451,7 +2474,7 @@ module GFS_diagnostics
       ExtDiag(idx)%mod_name = 'gfs_phys'
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
-         ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%dv3dt(:,:,6)
+         ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%dv3dt(:,:,7)
       enddo
 
       idx = idx + 1
@@ -2462,7 +2485,7 @@ module GFS_diagnostics
       ExtDiag(idx)%mod_name = 'gfs_phys'
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
-         ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%du3dt(:,:,7)
+         ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%du3dt(:,:,8)
       enddo
 
       idx = idx + 1
@@ -2473,7 +2496,7 @@ module GFS_diagnostics
       ExtDiag(idx)%mod_name = 'gfs_phys'
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
-         ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%dv3dt(:,:,7)
+         ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%dv3dt(:,:,8)
       enddo
 
       idx = idx + 1
@@ -2484,7 +2507,7 @@ module GFS_diagnostics
       ExtDiag(idx)%mod_name = 'gfs_phys'
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
-         ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%du3dt(:,:,8)
+         ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%du3dt(:,:,9)
       enddo
 
       idx = idx + 1
@@ -2495,7 +2518,7 @@ module GFS_diagnostics
       ExtDiag(idx)%mod_name = 'gfs_phys'
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
-         ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%dv3dt(:,:,8)
+         ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%dv3dt(:,:,9)
       enddo
 
       idx = idx + 1
