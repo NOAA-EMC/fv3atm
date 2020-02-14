@@ -165,8 +165,8 @@ module GFS_driver
     integer :: ntrac
     integer :: ix
 #ifndef CCPP
-    integer :: blocksize
-    real(kind=kind_phys), allocatable :: si(:)
+    integer :: blocksize,k
+    real(kind=kind_phys), allocatable :: si(:),sl(:)
     real(kind=kind_phys), parameter   :: p_ref = 101325.0d0
 #endif
 
@@ -469,6 +469,31 @@ module GFS_driver
     !--- this note is placed here to alert users to study
     !--- the FV3GFS_io.F90 module
 
+    if(Model%do_ca .and. Model%ca_global)then
+     allocate(sl(Model%levs+1))
+       do k=1,Model%levs
+          sl(k)= 0.5*(Init_parm%ak(k)/p_ref+Init_parm%bk(k)+Init_parm%ak(k+1)/p_ref+Init_parm%bk(k+1)) ! si are now sigmas                                                                                                                             
+       enddo
+
+       do nb = 1,nblks
+         do k=1,Model%levs
+          if (sl(k) .lt. 0.1 .and. sl(k) .gt. 0.025) then
+           Coupling(nb)%vfact_ca(k) = (sl(k)-0.025)/(0.1-0.025)
+          else if (sl(k) .lt. 0.025) then
+           Coupling(nb)%vfact_ca(k) = 0.0
+          else
+           Coupling(nb)%vfact_ca(k) = 1.0
+          endif
+        enddo
+       enddo
+
+       do nb = 1,nblks
+        Coupling(nb)%vfact_ca(2)=Coupling(nb)%vfact_ca(3)*0.5
+        Coupling(nb)%vfact_ca(1)=0.0
+       enddo
+      endif
+
+
   end subroutine GFS_initialize
 
 
@@ -731,8 +756,7 @@ module GFS_driver
     !--- local variables
     integer :: k, i
     real(kind=kind_phys) :: upert, vpert, tpert, qpert, qnew,sppt_vwt
-    !real(kind=kind_phys),dimension(size(Statein%tgrs,1),size(Statein%tgrs,2)) :: tconvtend, &
-    !                     qconvtend,uconvtend,vconvtend
+    real(kind=kind_phys),dimension(size(Statein%tgrs,1),size(Statein%tgrs,2)) :: ca1
 
      if (Model%do_sppt) then
        do k = 1,size(Statein%tgrs,2)
@@ -760,27 +784,11 @@ module GFS_driver
            Diag%sppt_wts(i,Model%levs-k+1)=Coupling%sppt_wts(i,k)
 
            
-          ! if(Model%isppt_deep)then
-
-           ! tconvtend(i,k)=Coupling%tconvtend(i,k)
-           ! qconvtend(i,k)=Coupling%qconvtend(i,k)
-           ! uconvtend(i,k)=Coupling%uconvtend(i,k)
-           ! vconvtend(i,k)=Coupling%vconvtend(i,k)           
-
-
-           ! upert = (Stateout%gu0(i,k)   - Statein%ugrs(i,k) - uconvtend(i,k)) + uconvtend(i,k) * Coupling%sppt_wts(i,k)
-           ! vpert = (Stateout%gv0(i,k)   - Statein%vgrs(i,k) - vconvtend(i,k)) + vconvtend(i,k) * Coupling%sppt_wts(i,k)
-           ! tpert = (Stateout%gt0(i,k)   - Statein%tgrs(i,k) - Tbd%dtdtr(i,k) - tconvtend(i,k)) + tconvtend(i,k) * Coupling%sppt_wts(i,k)
-           ! qpert = (Stateout%gq0(i,k,1) - Statein%qgrs(i,k,1) - qconvtend(i,k)) + qconvtend(i,k) * Coupling%sppt_wts(i,k)
-
-           !else
-           
             upert = (Stateout%gu0(i,k)   - Statein%ugrs(i,k))   * Coupling%sppt_wts(i,k)
             vpert = (Stateout%gv0(i,k)   - Statein%vgrs(i,k))   * Coupling%sppt_wts(i,k)
             tpert = (Stateout%gt0(i,k)   - Statein%tgrs(i,k) - Tbd%dtdtr(i,k)) * Coupling%sppt_wts(i,k)
             qpert = (Stateout%gq0(i,k,1) - Statein%qgrs(i,k,1)) * Coupling%sppt_wts(i,k)
  
-           !endif
 
            Stateout%gu0(i,k)  = Statein%ugrs(i,k)+upert
            Stateout%gv0(i,k)  = Statein%vgrs(i,k)+vpert
@@ -793,22 +801,6 @@ module GFS_driver
            endif
          enddo
        enddo
-
-       !if(Model%isppt_deep == .true.)then
-       !  Sfcprop%tprcp(:) = Sfcprop%tprcp(:) + (Coupling%sppt_wts(:,15) - 1 )*Diag%rainc(:)
-       !  Diag%totprcp(:)  = Diag%totprcp(:)  + (Coupling%sppt_wts(:,15) - 1 )*Diag%rainc(:) 
-       !  Diag%cnvprcp(:)  = Diag%cnvprcp(:)  + (Coupling%sppt_wts(:,15) - 1 )*Diag%rainc(:)
-       !!  ! bucket precipitation adjustment due to sppt                                                                                                                                                                     
-       !  Diag%totprcpb(:) = Diag%totprcpb(:)  + (Coupling%sppt_wts(:,15) - 1 )*Diag%rainc(:)
-       !  Diag%cnvprcpb(:) = Diag%cnvprcpb(:)  + (Coupling%sppt_wts(:,15) - 1 )*Diag%rainc(:)
-
-
-       !  if (Model%cplflx) then !Need to make proper adjustments for deep convection only perturbations
-       !    Coupling%rain_cpl(:) = Coupling%rain_cpl(:) + (Coupling%sppt_wts(:,15) - 1.0)*Tbd%drain_cpl(:)
-       !    Coupling%snow_cpl(:) = Coupling%snow_cpl(:) + (Coupling%sppt_wts(:,15) - 1.0)*Tbd%dsnow_cpl(:)
-       !  endif
-
-       !else
 
         ! instantaneous precip rate going into land model at the next time step
         Sfcprop%tprcp(:) = Coupling%sppt_wts(:,15)*Sfcprop%tprcp(:)
@@ -825,9 +817,67 @@ module GFS_driver
            Coupling%snow_cpl(:) = Coupling%snow_cpl(:) + (Coupling%sppt_wts(:,15) - 1.0)*Tbd%dsnow_cpl(:)
         endif
 
-       !endif 
+     endif
+
+     if (Model%do_ca .and. Model%ca_global) then
+       do k = 1,size(Statein%tgrs,2)
+         do i = 1,size(Statein%tgrs,1)
+           sppt_vwt=1.0
+           if (Diag%zmtnblck(i).EQ.0.0) then
+              sppt_vwt=1.0
+           else
+              if (k.GT.Diag%zmtnblck(i)+2) then
+                 sppt_vwt=1.0
+              endif
+              if (k.LE.Diag%zmtnblck(i)) then
+                 sppt_vwt=0.0
+              endif
+              if (k.EQ.Diag%zmtnblck(i)+1) then
+                 sppt_vwt=0.333333
+              endif
+              if (k.EQ.Diag%zmtnblck(i)+2) then
+                 sppt_vwt=0.666667
+              endif
+           endif
+           
+           ca1(i,k)=((Coupling%ca1(i)-1.)*sppt_vwt*Coupling%vfact_ca(k))+1.0
+
+           upert = (Stateout%gu0(i,k)   - Statein%ugrs(i,k))   * ca1(i,k)
+           vpert = (Stateout%gv0(i,k)   - Statein%vgrs(i,k))   * ca1(i,k)
+           tpert = (Stateout%gt0(i,k)   - Statein%tgrs(i,k) - Tbd%dtdtr(i,k)) * ca1(i,k)
+           qpert = (Stateout%gq0(i,k,1) - Statein%qgrs(i,k,1)) * ca1(i,k)
+
+
+           Stateout%gu0(i,k)  = Statein%ugrs(i,k)+upert
+           Stateout%gv0(i,k)  = Statein%vgrs(i,k)+vpert
+
+           !negative humidity check                                                                                                                                                                                                                     
+           qnew = Statein%qgrs(i,k,1)+qpert
+           if (qnew >= 1.0e-10) then
+              Stateout%gq0(i,k,1) = qnew
+              Stateout%gt0(i,k)   = Statein%tgrs(i,k) + tpert + Tbd%dtdtr(i,k)
+           endif
+         enddo
+       enddo
+
+        ! instantaneous precip rate going into land model at the next time step                                                                                                                                                                         
+        Sfcprop%tprcp(:) = ca1(:,15)*Sfcprop%tprcp(:)
+        Diag%totprcp(:)      = Diag%totprcp(:)      + (ca1(:,15) - 1 )*Diag%rain(:)
+        ! acccumulated total and convective preciptiation                                                                                                                                                                                               
+        Diag%cnvprcp(:)      = Diag%cnvprcp(:)      + (ca1(:,15) - 1 )*Diag%rainc(:)
+        ! bucket precipitation adjustment due to sppt                                                                                                                                                                                                   
+        Diag%totprcpb(:)      = Diag%totprcpb(:)      + (ca1(:,15) - 1 )*Diag%rain(:)
+        Diag%cnvprcpb(:)      = Diag%cnvprcpb(:)      + (ca1(:,15) - 1 )*Diag%rainc(:)
+       
+        if (Model%cplflx) then
+           Coupling%rain_cpl(:) = Coupling%rain_cpl(:) + (ca1(:,15) - 1.0)*Tbd%drain_cpl(:)
+           Coupling%snow_cpl(:) = Coupling%snow_cpl(:) + (ca1(:,15) - 1.0)*Tbd%dsnow_cpl(:)
+        endif
 
      endif
+
+
+
 
      if (Model%do_shum) then
        Stateout%gq0(:,:,1) = Stateout%gq0(:,:,1)*(1.0 + Coupling%shum_wts(:,:))

@@ -69,7 +69,6 @@
      &     prslp,psp,phil,qtr,q1,t1,u1,v1,fscav,
      &     rn,kbot,ktop,kcnv,islimsk,garea,
      &     dot,ncloud,hpbl,ud_mf,dt_mf,cnvw,cnvc,
-     &     do_ca,ca_shal,ca_trigger,ca_flux,ca_amplitude,
      &     clam,c0s,c1,pgcon,asolfac)
 !
       use machine , only : kind_phys
@@ -80,14 +79,13 @@
      &,             eps => con_eps, epsm1 => con_epsm1
       implicit none
 !
-      logical, intent(in)  :: do_ca, ca_trigger, ca_flux
       integer, intent(in)  :: im, ix,  km, itc, ntc, ntk, ntr, ncloud
       integer, intent(in)  :: islimsk(im)
-      real(kind=kind_phys), intent(in) ::  delt,ca_amplitude
+      real(kind=kind_phys), intent(in) ::  delt
       real(kind=kind_phys), intent(in) :: psp(im), delp(ix,km),
      &   prslp(ix,km), garea(im), hpbl(im), dot(ix,km), phil(ix,km)
 !
-      real(kind=kind_phys), intent(in) :: fscav(ntc), ca_shal(ix)
+      real(kind=kind_phys), intent(in) :: fscav(ntc)
       integer, intent(inout)  :: kcnv(im)
       real(kind=kind_phys), intent(inout) ::   qtr(ix,km,ntr+2),
      &   q1(ix,km), t1(ix,km), u1(ix,km), v1(ix,km)
@@ -1501,12 +1499,6 @@ c
           xmb(i) = min(xmb(i),xmbmax(i))
         endif
       enddo
-
-	 if(do_ca == .true. .and. ca_flux == .true.)then
-        do i=1,im
-         xmb(i) = xmb(i)*ca_shal(i) 
-        enddo
-      endif
 
 c
 c     transport aerosols if present

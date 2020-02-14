@@ -79,15 +79,15 @@
 !!
 !!  \section detailed Detailed Algorithm
 !!  @{
-      subroutine samfdeepcnv(im,ix,km,delt,itc,ntc,ntk,ntr,delp,
+      subroutine samfdeepcnv(im,ix,km,kdt,delt,itc,ntc,ntk,ntr,delp,
      &     prslp,psp,phil,qtr,q1,t1,u1,v1,fscav,
-     &     do_ca,ca_deep,ca_trigger,ca_flux,ca_amplitude,
      &     cldwrk,rn,kbot,ktop,kcnv,islimsk,garea,
      &     dot,ncloud,ud_mf,dd_mf,dt_mf,cnvw,cnvc,
      &     QLCN, QICN, w_upi, cf_upi, CNV_MFD,
 !    &     QLCN, QICN, w_upi, cf_upi, CNV_MFD, CNV_PRC3,
      &     CNV_DQLDT,CLCN,CNV_FICE,CNV_NDROP,CNV_NICE,mp_phys,
-     &     clam,c0s,c1,betal,betas,evfact,evfactl,pgcon,asolfac)
+     &     clam,c0s,c1,betal,betas,evfact,evfactl,pgcon,asolfac,
+     &     do_ca,ca_deep,rainevap)
 !
       use machine , only : kind_phys
       use funcphys , only : fpvs
@@ -98,13 +98,12 @@
       implicit none
 !
       integer, intent(in)  :: im, ix, km, itc, ntc, ntk, ntr, ncloud
+      integer, intent(in)  :: kdt
       integer, intent(in)  :: islimsk(im)
-      real(kind=kind_phys), intent(in) ::  delt,ca_amplitude
+      real(kind=kind_phys), intent(in) ::  delt
       real(kind=kind_phys), intent(in) :: psp(im), delp(ix,km), 
      &   prslp(ix,km),  garea(im), dot(ix,km), phil(ix,km) 
       real(kind=kind_phys), intent(in) :: fscav(ntc)
-      real(kind=kind_phys), intent(in) :: ca_deep(ix)
-      logical, intent(in)  :: do_ca,ca_trigger,ca_flux
       integer, intent(inout)  :: kcnv(im)        
       real(kind=kind_phys), intent(inout) ::   qtr(ix,km,ntr+2),
      &   q1(ix,km), t1(ix,km),   u1(ix,km), v1(ix,km)
@@ -117,6 +116,10 @@
       real(kind=kind_phys) clam,    c0s,     c1,
      &                     betal,   betas,   asolfac,
      &                     evfact,  evfactl, pgcon
+!    for CA stochastic physics:
+      logical, intent(in)  :: do_ca
+      real(kind=kind_phys), intent(in) :: ca_deep(im)
+      real(kind=kind_phys), intent(out) :: rainevap(im)
 !
 !------local variables
       integer              i, indx, jmn, k, kk, km1, n
@@ -153,7 +156,7 @@
      &                     xdby,    xpw,     xpwd,
 !    &                     xqrch,   mbdt,    tem,
      &                     xqrch,   tem,     tem1,    tem2,
-     &                     ptem,    ptem1,   ptem2
+     &                     ptem,    ptem1,   ptem2, nplumes
 !
       integer              kb(im), kbcon(im), kbcon1(im),
      &                     ktcon(im), ktcon1(im), ktconn(im),
@@ -219,6 +222,7 @@ c  physical parameters
       parameter(cinacrmx=-120.,cinacrmn=-80.)
       parameter(bet1=1.875,cd1=.506,f1=2.0,gam1=.5)
       parameter(betaw=.03,dxcrtas=8.e3,dxcrtuf=15.e3)
+      parameter(nplumes=4.)
 !
 !  local variables and arrays
       real(kind=kind_phys) pfld(im,km),    to(im,km),     qo(im,km),
@@ -749,11 +753,23 @@ c
 !
       else
 !
-        do i= 1, im
-          if(cnvflg(i)) then
-            clamt(i)  = clam
-          endif
-        enddo
+        if(do_ca == .true. .and. kdt > 1)then
+          do i=1,im
+           if(cnvflg(i)) then
+             if(ca_deep(i) > nplumes)then
+                clamt(i) = clam - clamd
+             else
+                clamt(i) = clam
+             endif
+           endif
+          enddo
+        else
+           do i=1,im
+            if(cnvflg(i))then
+             clamt(i)  = clam
+            endif
+           enddo
+        endif
 !
       endif
 !
@@ -2397,15 +2413,6 @@ c
           xmb(i) = min(xmb(i),xmbmax(i))
         endif
       enddo
-
-!If stochastic physics using cellular automata is .true. then perturb the mass-flux here:
-
-      if(do_ca == .true. .and. ca_flux == .true.)then
-        do i=1,im
-         xmb(i) = xmb(i)*ca_deep(i) 
-        enddo
-      endif
-
 c
 c     transport aerosols if present
 c
@@ -2584,6 +2591,13 @@ c             if(islimsk(i) == 1) evef = 0.
           endif
         enddo
       enddo
+
+!LB:                                                                                                                                                                                                                                                  
+      if(do_ca)then
+         do i = 1,im
+            rainevap(i)=delqev(i)
+         enddo
+      endif
 cj
 !     do i = 1, im
 !     if(me == 31 .and. cnvflg(i)) then

@@ -571,10 +571,13 @@ module module_physics_driver
 !         ud_mf, dd_mf, dt_mf, prnum, dkt, sigmatot, sigmafrac, txa
       real(kind=kind_phys), allocatable, dimension(:,:) :: sigmatot,    &
           gwdcu, gwdcv, rainp, sigmafrac, tke
-
-!--- for isppt_deep
+!--- for isppt
       real(kind=kind_phys), allocatable, dimension(:,:) ::              &
-                                           savet, saveq, saveu, savev
+          savet_cu,saveq_cu,saveu_cu,savev_cu,                          &
+          savet_sc,saveq_sc,saveu_sc,savev_sc
+
+
+
 
 !--- GFDL modification for FV3 
 
@@ -904,8 +907,8 @@ module module_physics_driver
 
 !## CCPP ##* GFS_surface_generic.F90/GFS_surface_generic_pre_run
 !  ---  set initial quantities for stochastic physics deltas
-      if (Model%do_sppt) then
-        Tbd%dtdtr = zero
+      if (Model%do_sppt .or. Model%isppt_deep .or. Model%isppt_pbl .or. Model%isppt_shal) then
+        Tbd%dtdtr = 0.0
         do i=1,im
           Tbd%drain_cpl(i) = Coupling%rain_cpl (i)
           Tbd%dsnow_cpl(i) = Coupling%snow_cpl (i)
@@ -2284,20 +2287,6 @@ module module_physics_driver
       endif
 !*## CCPP ##
 
-
-!!!!!!Cellular automata stochastic physics:
-      if(Model%do_ca .and. Model%pert_flux)then
-         do i=1,im
-            hflx(i)=hflx(i)*(((Coupling%ca1(i)-1.0)/Model%ca_amplitude)+1.0)
-            evap(i)=evap(i)*(2.0-(((Coupling%ca1(i)-1.0)/Model%ca_amplitude)+1.0))
-         enddo
-      endif
-
-
-
-
-
-
 !!!!!!!!!!!!!!!!!Commented by Moorthi on July 18, 2012 !!!!!!!!!!!!!!!!!!!
 !     do i=1,im
 !  --- ...  compute coefficient of evaporation in evapc
@@ -2402,9 +2391,7 @@ module module_physics_driver
                            Model%dspheat, dusfc1, dvsfc1, dtsfc1, dqsfc1, Diag%hpbl,&
                            gamt, gamq, dkt, kinver, Model%xkzm_m, Model%xkzm_h,     &
                            Model%xkzm_s, lprnt, ipr,                                &
-                           Model%xkzminv, Model%moninq_fac, Model%do_ca,            &
-                           Coupling%ca1, Coupling%ca1, Model%pert_trigger,          &
-                           Model%pert_flux, Model%ca_amplitude)
+                           Model%xkzminv, Model%moninq_fac)
             else
               call moninedmf_hafs(ix, im, levs, nvdiff, ntcw, dvdt, dudt, dtdt, dqdt,&
                            Statein%ugrs, Statein%vgrs, Statein%tgrs, Statein%qgrs,  &
@@ -2659,9 +2646,7 @@ module module_physics_driver
                            Model%dspheat, dusfc1, dvsfc1, dtsfc1, dqsfc1, Diag%hpbl,    &
                            gamt, gamq, dkt, kinver, Model%xkzm_m, Model%xkzm_h,         &
                            Model%xkzm_s, lprnt, ipr,                                    &
-                           Model%xkzminv, Model%moninq_fac, Model%do_ca,                &
-                           Coupling%ca1, Coupling%ca1, Model%pert_trigger,              &
-                           Model%pert_flux, Model%ca_amplitude)
+                           Model%xkzminv, Model%moninq_fac)
            else
             call moninedmf_hafs(ix, im, levs, nvdiff, ntcw, dvdt, dudt, dtdt, dvdftra,  &
                            Statein%ugrs, Statein%vgrs, Statein%tgrs, vdftra,            &
@@ -2947,6 +2932,18 @@ module module_physics_driver
           enddo
         enddo
       endif
+
+     if(Model%isppt_pbl)then
+         do k=1,levs
+          do i=1,im
+           Coupling%tpbltend(i,k) = (dtdt(i,k) - (Radtend%htrlw(i,k)+Radtend%htrsw(i,k)*xmu(i)))*dtf
+           Coupling%qpbltend(i,k) = dqdt(i,k,1)*dtf
+           Coupling%upbltend(i,k) = dudt(i,k)*dtf
+           Coupling%vpbltend(i,k) = dvdt(i,k)*dtf
+           enddo
+         enddo
+      endif
+
 
       if (Model%lssav) then
         if (Model%ldiag3d) then
@@ -3688,13 +3685,13 @@ module module_physics_driver
       if (Model%do_deep) then
  
         if (Model%isppt_deep) then
-          allocate(savet(im,levs), saveq(im,levs), saveu(im,levs), savev(im,levs))
+          allocate(savet_cu(im,levs), saveq_cu(im,levs), saveu_cu(im,levs), savev_cu(im,levs))
           do k=1,levs
             do i=1,im
-              savet(i,k) = Stateout%gt0(i,k)
-              saveq(i,k) = Stateout%gq0(i,k,1)
-              saveu(i,k) = Stateout%gu0(i,k)
-              savev(i,k) = Stateout%gv0(i,k)
+              savet_cu(i,k) = Stateout%gt0(i,k)
+              saveq_cu(i,k) = Stateout%gq0(i,k,1)
+              saveu_cu(i,k) = Stateout%gu0(i,k)
+              savev_cu(i,k) = Stateout%gv0(i,k)
             enddo
           enddo
         endif
@@ -3726,12 +3723,10 @@ module module_physics_driver
             endif
 !*## CCPP ##
 !## CCPP ##* samfdeepcnv.f/samfdeepcnv_run
-            call samfdeepcnv(im, ix, levs, dtp, itc, Model%ntchm, ntk, nsamftrac,  &
+            call samfdeepcnv(im, ix, levs, kdt, dtp, itc, Model%ntchm, ntk, nsamftrac,  &
                              del, Statein%prsl, Statein%pgr, Statein%phil, clw,    &
                              Stateout%gq0(:,:,1), Stateout%gt0,                    &
-                             Stateout%gu0, Stateout%gv0, Model%fscav, Model%do_ca, &
-                             Coupling%ca1,Model%pert_trigger,                      &
-                             Model%pert_flux, Model%ca_amplitude,                  &
+                             Stateout%gu0, Stateout%gv0, Model%fscav,              &
                              cld1d, rain1, kbot, ktop, kcnv,                       &
                              islmsk, garea,                                        &
                              Statein%vvl, ncld, ud_mf, dd_mf, dt_mf, cnvw, cnvc,   &
@@ -3742,7 +3737,8 @@ module module_physics_driver
                              Model%clam_deep,   Model%c0s_deep,                    &
                              Model%c1_deep,  Model%betal_deep, Model%betas_deep,   &
                              Model%evfact_deep, Model%evfactl_deep,                &
-                             Model%pgcon_deep,  Model%asolfac_deep)
+                             Model%pgcon_deep,  Model%asolfac_deep,                &
+                             Model%do_ca, Coupling%ca_deep, Coupling%condition)
 !*## CCPP ##
 !           if (lprnt) print *,' rain1=',rain1(ipr)
           !elseif (Model%imfdeepcnv == 3) then
@@ -3787,10 +3783,6 @@ module module_physics_driver
                 cnvw(i,k)             = zero
               enddo
             enddo
-          endif
-
-          if(Model%do_ca) then
-            Coupling%cape(:) = cld1d(:)
           endif
 !*## CCPP ##
 !
@@ -3963,13 +3955,13 @@ module module_physics_driver
         if(Model%isppt_deep)then
           do k=1,levs
             do i=1,im
-              Coupling%tconvtend(i,k) = Stateout%gt0(i,k)   - savet(i,k)
-              Coupling%qconvtend(i,k) = Stateout%gq0(i,k,1) - saveq(i,k)
-              Coupling%uconvtend(i,k) = Stateout%gu0(i,k)   - saveu(i,k)
-              Coupling%vconvtend(i,k) = Stateout%gv0(i,k)   - savev(i,k)
+              Coupling%tconvtend(i,k) = Stateout%gt0(i,k)   - savet_cu(i,k)
+              Coupling%qconvtend(i,k) = Stateout%gq0(i,k,1) - saveq_cu(i,k)
+              Coupling%uconvtend(i,k) = Stateout%gu0(i,k)   - saveu_cu(i,k)
+              Coupling%vconvtend(i,k) = Stateout%gv0(i,k)   - savev_cu(i,k)
             enddo
           enddo
-          deallocate(savet, saveq, saveu, savev)
+          deallocate(savet_cu, saveq_cu, saveu_cu, savev_cu)
         endif
 !*## CCPP ##
       else      ! no parameterized deep convection
@@ -4267,6 +4259,18 @@ module module_physics_driver
 
         if (Model%shal_cnv) then               ! Shallow convection parameterizations
 !                                               --------------------------------------
+          if (Model%isppt_shal) then
+             allocate(savet_sc(im,levs), saveq_sc(im,levs), saveu_sc(im,levs), savev_sc(im,levs))
+             do k=1,levs
+                do i=1,im
+                   savet_sc(i,k) = Stateout%gt0(i,k)
+                   saveq_sc(i,k) = Stateout%gq0(i,k,1)
+                   saveu_sc(i,k) = Stateout%gu0(i,k)
+                   savev_sc(i,k) = Stateout%gv0(i,k)
+                enddo
+             enddo
+          endif
+
           if (Model%imfshalcnv == 1) then      ! opr option now at 2014
                                                !-----------------------
 !## CCPP ##* shalcnv.F/shalcnv_run
@@ -4315,9 +4319,7 @@ module module_physics_driver
                               Stateout%gu0, Stateout%gv0, Model%fscav,             &
                               rain1, kbot, ktop, kcnv, islmsk, garea,              &
                               Statein%vvl, ncld, Diag%hpbl, ud_mf,                 &
-                              dt_mf, cnvw, cnvc,Model%do_ca,Coupling%ca1,          &
-                              Model%pert_trigger,                                  &
-                              Model%pert_flux, Model%ca_amplitude,                 &
+                              dt_mf, cnvw, cnvc,                                   &
                               Model%clam_shal,  Model%c0s_shal, Model%c1_shal,     &
                               Model%pgcon_shal, Model%asolfac_shal)
 !*## CCPP ##
@@ -4325,10 +4327,6 @@ module module_physics_driver
             do i=1,im
               Diag%rainc(i) = Diag%rainc(i) + frain * rain1(i)
             enddo
-
-            if(Model%do_ca) then
-               Coupling%ca_shal(:)=kcnv(:)
-            endif
 
 ! in  mfshalcnv,  'cnvw' and 'cnvc' are set to zero before computation starts:
             if (Model%shcnvcw .and. Model%num_p3d == 4 .and. Model%npdf3d == 3) then
@@ -4384,6 +4382,17 @@ module module_physics_driver
 !           if (lprnt) print *,' levshcm=',levshcm,' gt0sha=',gt0(ipr,:)
 
           endif   ! end if_imfshalcnv
+          if(Model%isppt_shal)then
+             do k=1,levs
+                do i=1,im
+                   Coupling%tshaltend(i,k) = Stateout%gt0(i,k)   - savet_sc(i,k)
+                   Coupling%qshaltend(i,k) = Stateout%gq0(i,k,1) - saveq_sc(i,k)
+                   Coupling%ushaltend(i,k) = Stateout%gu0(i,k)   - saveu_sc(i,k)
+                   Coupling%vshaltend(i,k) = Stateout%gv0(i,k)   - savev_sc(i,k)
+                enddo
+             enddo
+             deallocate(savet_sc, saveq_sc, saveu_sc, savev_sc)
+          endif
 !*## CCPP ##
         endif     ! end if_shal_cnv
 
@@ -5518,7 +5527,7 @@ module module_physics_driver
 !         write(0,*) ' endgw0=',gq0(ipr,:,3),' kdt=',kdt,' lat=',lat
 !       endif
 
-      if (Model%do_sppt) then
+      if (Model%do_sppt .or. Model%isppt_deep .or. Model%isppt_shal .or. Model%isppt_pbl) then
 !--- radiation heating rate
         Tbd%dtdtr(1:im,:) = Tbd%dtdtr(1:im,:) + dtdtc(1:im,:)*dtf
         do i = 1, im
