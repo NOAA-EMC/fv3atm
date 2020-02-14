@@ -1445,7 +1445,7 @@ module FV3GFS_io_mod
                   smc   = smc - dx
                   if ( abs (dx) < 1.e-6) exit
                 enddo                               ! iteration
-                Sfcprop(nb)%smoiseq(ix,ns) = min(max(smc,drythresh),smcmax*0.99)
+                Sfcprop(nb)%smoiseq(ix,ns) = min(max(smc,1.e-4),smcmax*0.99)
               enddo                                 ! ddz soil layer
             else                                    ! bexp <= 0.0 
               Sfcprop(nb)%smoiseq(ix,1:4) = smcmax
