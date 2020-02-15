@@ -935,6 +935,25 @@ module FV3GFS_io_mod
           Sfcprop(nb)%tsfcl(ix)  = sfc_var2(i,j,33) !--- sfcl  (temp on land portion of a cell)
           Sfcprop(nb)%zorll(ix)  = sfc_var2(i,j,34) !--- zorll (zorl on land portion of a cell)
         end if
+
+        if(Model%frac_grid) then ! obtain landfrac from slmsk
+          Sfcprop(nb)%slmsk(ix) = ceiling(Sfcprop(nb)%landfrac(ix))
+          if (Sfcprop(nb)%fice(ix) > 0. .and. Sfcprop(nb)%landfrac(ix)==0.) Sfcprop(nb)%slmsk(ix) = 2 ! land dominates ice if co-exist
+        else ! obtain slmsk from landfrac
+          if (Sfcprop(nb)%slmsk(ix) > 1.9) then
+            Sfcprop(nb)%landfrac(ix) = 0.0
+          else
+            Sfcprop(nb)%landfrac(ix) = Sfcprop(nb)%slmsk(ix)
+          endif
+        end if
+
+        if (Sfcprop(nb)%lakefrac(ix) > 0.0) then
+          Sfcprop(nb)%oceanfrac(ix) = 0.0 ! lake & ocean don't coexist in a cell
+          if (Sfcprop(nb)%fice(ix) < Model%min_lakeice) Sfcprop(nb)%fice(ix) = 0.
+        else
+          Sfcprop(nb)%oceanfrac(ix) = 1.0 - Sfcprop(nb)%landfrac(ix)
+          if (Sfcprop(nb)%fice(ix) < Model%min_seaice) Sfcprop(nb)%fice(ix) = 0.
+        endif
         !
         !--- NSSTM variables
         if ((Model%nstf_name(1) > 0) .and. (Model%nstf_name(2) == 1)) then
@@ -1117,57 +1136,29 @@ module FV3GFS_io_mod
       enddo
     endif
 
-  if(Model%cplflx .or. Model%frac_grid) then
-    if (nint(sfc_var2(1,1,33)) == -9999) then
-      if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing tsfcl')
-      do nb = 1, Atm_block%nblks
-        do ix = 1, Atm_block%blksz(nb)
-          Sfcprop(nb)%tsfcl(ix) = Sfcprop(nb)%tsfco(ix) !--- compute tsfcl from existing variables
+    if(Model%cplflx .or. Model%frac_grid) then
+      if (nint(sfc_var2(1,1,33)) == -9999) then
+        if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing tsfcl')
+        do nb = 1, Atm_block%nblks
+          do ix = 1, Atm_block%blksz(nb)
+            Sfcprop(nb)%tsfcl(ix) = Sfcprop(nb)%tsfco(ix) !--- compute tsfcl from existing variables
+          enddo
         enddo
-      enddo
-    endif
+      endif
 
-    if (nint(sfc_var2(1,1,34)) == -9999) then
-      if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing zorll')
-      do nb = 1, Atm_block%nblks
-        do ix = 1, Atm_block%blksz(nb)
-          Sfcprop(nb)%zorll(ix) = Sfcprop(nb)%zorlo(ix) !--- compute zorll from existing variables
+      if (nint(sfc_var2(1,1,34)) == -9999) then
+        if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing zorll')
+        do nb = 1, Atm_block%nblks
+          do ix = 1, Atm_block%blksz(nb)
+            Sfcprop(nb)%zorll(ix) = Sfcprop(nb)%zorlo(ix) !--- compute zorll from existing variables
+          enddo
         enddo
-      enddo
+      endif
     endif
-  endif
 
 !#endif
 
-  if(Model%frac_grid) then ! 3-way composite
-    do nb = 1, Atm_block%nblks
-      do ix = 1, Atm_block%blksz(nb)
-        if (Sfcprop(nb)%lakefrac(ix) > 0.0) then
-          Sfcprop(nb)%oceanfrac(ix) = 0.0 ! lake & ocean don't coexist in a cell
-          if (Sfcprop(nb)%fice(ix) < Model%min_lakeice) Sfcprop(nb)%fice(ix) = 0.
-        else
-          Sfcprop(nb)%oceanfrac(ix) = 1.0 - Sfcprop(nb)%landfrac(ix)  !LHS:ocean frac [0:1]
-          if (Sfcprop(nb)%fice(ix) < Model%min_seaice) Sfcprop(nb)%fice(ix) = 0.
-        endif
-        Sfcprop(nb)%slmsk(ix) = ceiling(Sfcprop(nb)%landfrac(ix))
-        if (Sfcprop(nb)%fice(ix) > 0. .and. Sfcprop(nb)%landfrac(ix)==0.) Sfcprop(nb)%slmsk(ix) = 2 ! land dominates over ice if co-exist
-      enddo
-    enddo
-  else !frac_grid=F
-    do nb = 1, Atm_block%nblks
-      do ix = 1, Atm_block%blksz(nb)
-        if (Sfcprop(nb)%lakefrac(ix) > 0.0) then
-          Sfcprop(nb)%oceanfrac(ix) = 0.0 ! lake & ocean don't coexist in a cell
-          if (Sfcprop(nb)%fice(ix) < Model%min_lakeice) Sfcprop(nb)%fice(ix) = 0.
-        else
-          Sfcprop(nb)%oceanfrac(ix) = 1.0 - Sfcprop(nb)%slmsk(ix)
-          if (Sfcprop(nb)%fice(ix) < Model%min_seaice) Sfcprop(nb)%fice(ix) = 0.
-        endif
-      enddo
-    enddo
-  end if
-
-  if(Model%frac_grid) then ! 3-way composite
+    if(Model%frac_grid) then ! 3-way composite
       do nb = 1, Atm_block%nblks
         do ix = 1, Atm_block%blksz(nb)
           Sfcprop(nb)%tsfco(ix) = max(con_tice, Sfcprop(nb)%tsfco(ix))
@@ -1180,7 +1171,7 @@ module FV3GFS_io_mod
                                + Sfcprop(nb)%tsfco(ix) * (1.-Sfcprop(nb)%landfrac(ix)-tem)
         enddo
       enddo
-    else     ! in this case ice fracion is fraction of water fraction
+    else
       do nb = 1, Atm_block%nblks
         do ix = 1, Atm_block%blksz(nb)
       !--- specify tsfcl/zorll from existing variable tsfco/zorlo
@@ -1188,12 +1179,6 @@ module FV3GFS_io_mod
           Sfcprop(nb)%zorll(ix) = Sfcprop(nb)%zorlo(ix)
           Sfcprop(nb)%zorl(ix)  = Sfcprop(nb)%zorlo(ix)
           Sfcprop(nb)%tsfc(ix)  = Sfcprop(nb)%tsfco(ix)
-          Sfcprop(nb)%tsfco(ix) = max(con_tice, Sfcprop(nb)%tsfco(ix))
-          if (Sfcprop(nb)%slmsk(ix) > 1.9) then
-            Sfcprop(nb)%landfrac(ix) = 0.0
-          else
-            Sfcprop(nb)%landfrac(ix) = Sfcprop(nb)%slmsk(ix)
-          endif
         enddo
       enddo
     endif ! if (Model%frac_grid)

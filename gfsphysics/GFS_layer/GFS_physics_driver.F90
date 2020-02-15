@@ -1063,9 +1063,8 @@ module module_physics_driver
 !*## CCPP ##
 !  --- ...  xw: transfer ice thickness & concentration from global to local variables
 !## CCPP ## global to local variable transfer not necessary for these two
-        Sfcprop%fice(i) = min(one,Sfcprop%fice(i)) ! sea/lake ice fraction wrt water portion, not whole cell
-        fice(i)    = Sfcprop%fice(i)
         zice(i)    = Sfcprop%hice(i)
+        fice(i)    = Sfcprop%fice(i)
 !*## CCPP ##* 
 !## CCPP ##* GFS_surface_composites.F90/GFS_surface_composites_pre_run
         tice(i)    = Sfcprop%tisfc(i)
@@ -1214,7 +1213,7 @@ module module_physics_driver
         enddo
       endif
       do i=1,im
-        if(wet(i) .or. icy(i)) then        ! open water or ice
+        if(wet(i)) then                    ! Water
             zorl3(i,3) = Sfcprop%zorlo(i)
             tsfc3(i,3) = Sfcprop%tsfco(i)
            tsurf3(i,3) = Sfcprop%tsfco(i)
