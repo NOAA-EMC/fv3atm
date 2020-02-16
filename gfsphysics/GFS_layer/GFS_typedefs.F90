@@ -4155,6 +4155,8 @@ module GFS_typedefs
       endif
       if (Model%iovr_lw == 0) then
         print *,' random cloud overlap for Longwave IOVR_LW=',Model%iovr_lw
+      elseif (Model%iovr_lw == 4) then
+        print *,'exponential cloud overlap for Longwave IOVR_LW=',Model%iovr_lw
       else
         print *,' max-random cloud overlap for Longwave IOVR_LW=',Model%iovr_lw
       endif
