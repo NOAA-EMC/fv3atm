@@ -936,10 +936,10 @@ module FV3GFS_io_mod
           Sfcprop(nb)%zorll(ix)  = sfc_var2(i,j,34) !--- zorll (zorl on land portion of a cell)
         end if
 
-        if(Model%frac_grid) then ! obtain landfrac from slmsk
+        if(Model%frac_grid) then ! obtain slmsk from landfrac and fice
           Sfcprop(nb)%slmsk(ix) = ceiling(Sfcprop(nb)%landfrac(ix))
           if (Sfcprop(nb)%fice(ix) > 0. .and. Sfcprop(nb)%landfrac(ix)==0.) Sfcprop(nb)%slmsk(ix) = 2 ! land dominates ice if co-exist
-        else ! obtain slmsk from landfrac
+        else ! obtain landfrac from slmsk
           if (Sfcprop(nb)%slmsk(ix) > 1.9) then
             Sfcprop(nb)%landfrac(ix) = 0.0
           else
