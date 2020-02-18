@@ -7661,6 +7661,13 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+[save_tcp]
+  standard_name = air_temperature_save_from_cumulus_paramterization
+  long_name = air temperature after cumulus parameterization
+  units = K
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
 [save_u]
   standard_name = x_wind_save
   long_name = x-wind before entering a physics scheme
