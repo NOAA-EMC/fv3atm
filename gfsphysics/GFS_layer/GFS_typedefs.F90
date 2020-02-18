@@ -495,10 +495,15 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: qshaltend(:,:) => null()
     real (kind=kind_phys), pointer :: ushaltend(:,:) => null()
     real (kind=kind_phys), pointer :: vshaltend(:,:) => null()
+    real (kind=kind_phys), pointer :: tmicrotend(:,:) => null()
+    real (kind=kind_phys), pointer :: qmicrotend(:,:) => null()
+    real (kind=kind_phys), pointer :: umicrotend(:,:) => null()
+    real (kind=kind_phys), pointer :: vmicrotend(:,:) => null()
+
     real (kind=kind_phys), pointer :: ca1      (:)   => null() !
     real (kind=kind_phys), pointer :: ca2      (:)   => null() !
     real (kind=kind_phys), pointer :: ca3      (:)   => null() !  
-    real (kind=kind_phys), pointer :: vfact_ca(:) => null()
+    real (kind=kind_phys), pointer :: vfact_ca(:)    => null()
     real (kind=kind_phys), pointer :: ca_deep  (:)   => null() !
     real (kind=kind_phys), pointer :: ca_turb  (:)   => null() !
     real (kind=kind_phys), pointer :: ca_shal  (:)   => null() !
@@ -964,8 +969,8 @@ module GFS_typedefs
     integer              :: nca             !< number of independent cellular automata 
     integer              :: nlives          !< cellular automata lifetime
     integer              :: ncells          !< cellular automata finer grid
-    integer              :: nca_g           !< number of independent cellular automata                                                                                                                                                                 
-    integer              :: nlives_g        !< cellular automata lifetime                                                                                                                                                                              
+    integer              :: nca_g           !< number of independent cellular automata                                                                                                                                                     
+    integer              :: nlives_g        !< cellular automata lifetime                                                                                                                                                             
     integer              :: ncells_g        !< cellular automata finer grid  
     real(kind=kind_phys) :: nfracseed       !< cellular automata seed probability 
     integer              :: nseed           !< cellular automata seed frequency
@@ -974,9 +979,10 @@ module GFS_typedefs
     logical              :: ca_sgs          !< switch for sgs ca
     logical              :: ca_global       !< switch for global ca
     logical              :: ca_smooth       !< switch for gaussian spatial filter
-    logical              :: isppt_deep      !< switch for combination with isppt_deep. OBS! Switches off SPPT on other tendencies!
-    logical              :: isppt_pbl
-    logical              :: isppt_shal      !
+    logical              :: isppt_deep      !< switch for deep convective isppt
+    logical              :: isppt_pbl       !< switch for PBL isppt
+    logical              :: isppt_shal      !< switch for shal isppt
+    logical              :: isppt_micro     !< swithc for micro isppt
     integer              :: iseed_ca        !< seed for random number generation in ca scheme
     integer              :: nspinup         !< number of iterations to spin up the ca
     real(kind=kind_phys) :: nthresh         !< threshold used for perturbed vertical velocity
@@ -2451,7 +2457,7 @@ module GFS_typedefs
     Coupling%sfcnsw = clear_val
     Coupling%sfcdlw = clear_val
 
-    if (Model%cplflx .or. Model%do_sppt .or. Model%cplchm .or. Model%isppt_deep .or. Model%isppt_shal .or. Model%isppt_pbl) then
+    if (Model%cplflx .or. Model%do_sppt .or. Model%cplchm .or. Model%ca_global) then
       allocate (Coupling%rain_cpl (IM))
       allocate (Coupling%snow_cpl (IM))
       Coupling%rain_cpl = clear_val
@@ -2593,6 +2599,11 @@ module GFS_typedefs
       allocate (Coupling%ushaltend (IM,Model%levs))
       allocate (Coupling%vshaltend (IM,Model%levs))
 
+      allocate (Coupling%tmicrotend (IM,Model%levs))
+      allocate (Coupling%qmicrotend (IM,Model%levs))
+      allocate (Coupling%umicrotend (IM,Model%levs))
+      allocate (Coupling%vmicrotend (IM,Model%levs))
+
       allocate (Coupling%vfact_ca (Model%levs))
       allocate (Coupling%condition(IM))
       allocate (Coupling%ca1      (IM))
@@ -2625,6 +2636,10 @@ module GFS_typedefs
       Coupling%qshaltend = clear_val
       Coupling%ushaltend = clear_val
       Coupling%vshaltend = clear_val
+      Coupling%tmicrotend = clear_val
+      Coupling%qmicrotend = clear_val
+      Coupling%umicrotend = clear_val
+      Coupling%vmicrotend = clear_val
     endif
 
     ! -- GSDCHEM coupling options
@@ -2643,7 +2658,7 @@ module GFS_typedefs
     endif
 
     !--- stochastic physics option
-    if (Model%do_sppt .or. Model%isppt_deep .or. Model%isppt_shal .or. Model%isppt_pbl) then
+    if (Model%do_sppt .or. Model%ca_global)then
       allocate (Coupling%sppt_wts  (IM,Model%levs))
       Coupling%sppt_wts = clear_val
     endif
@@ -3104,6 +3119,7 @@ module GFS_typedefs
     logical              :: isppt_deep     = .false.
     logical              :: isppt_pbl      = .false.
     logical              :: isppt_shal     = .false.
+    logical              :: isppt_micro    = .false.
     real(kind=kind_phys) :: nthresh        = 0.0
     logical              :: pert_flux      = .false.
     logical              :: pert_trigger   = .false.
@@ -3226,8 +3242,8 @@ module GFS_typedefs
                                nca, ncells, nlives, nca_g, ncells_g, nlives_g, nfracseed,   &
                                nseed, nseed_g, nthresh, do_ca,                              &
                                ca_sgs, ca_global,iseed_ca,ca_smooth,isppt_deep,isppt_shal,  &
-                               isppt_pbl, nspinup,pert_flux, pert_trigger, ca_amplitude,    &
-                               nsmooth,               &
+                               isppt_pbl, isppt_micro, nspinup,pert_flux, pert_trigger,     &
+                               ca_amplitude, nsmooth,                                       &
                           !--- IAU
                                iau_delthrs,iaufhrs,iau_inc_files,iau_filter_increments,     &
                           !--- debug options
@@ -3707,6 +3723,7 @@ module GFS_typedefs
     Model%isppt_deep       = isppt_deep
     Model%isppt_pbl        = isppt_pbl
     Model%isppt_shal       = isppt_shal
+    Model%isppt_micro      = isppt_micro
     Model%nspinup          = nspinup  
     Model%nthresh          = nthresh 
     Model%pert_trigger     = pert_trigger
@@ -4712,6 +4729,7 @@ module GFS_typedefs
       print *, ' isppt_deep        : ', Model%isppt_deep
       print *, ' isppt_pbl         : ', Model%isppt_pbl
       print *, ' isppt_shal        : ', Model%isppt_shal
+      print *, ' isppt_micro       : ', Model%isppt_micro
       print *, ' nspinup           : ', Model%nspinup
       print *, ' nthresh           : ', Model%nthresh
       print *, ' pert_trigger      : ', Model%pert_trigger
@@ -4927,7 +4945,7 @@ module GFS_typedefs
     Tbd%acvb = clear_val
     Tbd%acvt = clear_val
 
-    if (Model%do_sppt .or. Model%isppt_deep) then
+    if (Model%do_sppt .or. Model%ca_global) then
       allocate (Tbd%dtdtr     (IM,Model%levs))
       allocate (Tbd%dtotprcp  (IM))
       allocate (Tbd%dcnvprcp  (IM))
@@ -5225,8 +5243,6 @@ module GFS_typedefs
     allocate (Diag%sppt_wts(IM,Model%levs))
     allocate (Diag%shum_wts(IM,Model%levs))
     allocate (Diag%zmtnblck(IM))    
-
-
     allocate (Diag%ca1      (IM))
     allocate (Diag%ca2      (IM))
     allocate (Diag%ca3      (IM))

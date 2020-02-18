@@ -470,9 +470,10 @@ module GFS_driver
     !--- the FV3GFS_io.F90 module
 
     if(Model%do_ca .and. Model%ca_global)then
-     allocate(sl(Model%levs+1))
+       allocate(sl(Model%levs+1))
+       
        do k=1,Model%levs
-          sl(k)= 0.5*(Init_parm%ak(k)/p_ref+Init_parm%bk(k)+Init_parm%ak(k+1)/p_ref+Init_parm%bk(k+1)) ! si are now sigmas                                                                                                                             
+          sl(k)= 0.5*(Init_parm%ak(k)/p_ref+Init_parm%bk(k)+Init_parm%ak(k+1)/p_ref+Init_parm%bk(k+1)) ! si are now sigmas                                                                                                             
        enddo
 
        do nb = 1,nblks
@@ -491,7 +492,8 @@ module GFS_driver
         Coupling(nb)%vfact_ca(2)=Coupling(nb)%vfact_ca(3)*0.5
         Coupling(nb)%vfact_ca(1)=0.0
        enddo
-      endif
+     
+    endif
 
 
   end subroutine GFS_initialize
@@ -819,6 +821,7 @@ module GFS_driver
 
      endif
 
+
      if (Model%do_ca .and. Model%ca_global) then
        do k = 1,size(Statein%tgrs,2)
          do i = 1,size(Statein%tgrs,1)
@@ -839,14 +842,13 @@ module GFS_driver
                  sppt_vwt=0.666667
               endif
            endif
-           
+
            ca1(i,k)=((Coupling%ca1(i)-1.)*sppt_vwt*Coupling%vfact_ca(k))+1.0
 
            upert = (Stateout%gu0(i,k)   - Statein%ugrs(i,k))   * ca1(i,k)
            vpert = (Stateout%gv0(i,k)   - Statein%vgrs(i,k))   * ca1(i,k)
            tpert = (Stateout%gt0(i,k)   - Statein%tgrs(i,k) - Tbd%dtdtr(i,k)) * ca1(i,k)
            qpert = (Stateout%gq0(i,k,1) - Statein%qgrs(i,k,1)) * ca1(i,k)
-
 
            Stateout%gu0(i,k)  = Statein%ugrs(i,k)+upert
            Stateout%gv0(i,k)  = Statein%vgrs(i,k)+vpert
@@ -857,8 +859,11 @@ module GFS_driver
               Stateout%gq0(i,k,1) = qnew
               Stateout%gt0(i,k)   = Statein%tgrs(i,k) + tpert + Tbd%dtdtr(i,k)
            endif
+
          enddo
        enddo
+
+     
 
         ! instantaneous precip rate going into land model at the next time step                                                                                                                                                                         
         Sfcprop%tprcp(:) = ca1(:,15)*Sfcprop%tprcp(:)
@@ -876,7 +881,7 @@ module GFS_driver
 
      endif
 
-
+     
 
 
      if (Model%do_shum) then

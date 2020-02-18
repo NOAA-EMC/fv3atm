@@ -326,6 +326,7 @@ c
         xpwev(i)= 0.
         vshear(i) = 0.
         gdx(i) = sqrt(garea(i))
+        rainevap(i)=0.
       enddo
 !
 !>  - determine aerosol-aware rain conversion parameter over land

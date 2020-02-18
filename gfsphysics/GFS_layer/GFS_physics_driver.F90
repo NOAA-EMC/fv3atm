@@ -574,7 +574,8 @@ module module_physics_driver
 !--- for isppt
       real(kind=kind_phys), allocatable, dimension(:,:) ::              &
           savet_cu,saveq_cu,saveu_cu,savev_cu,                          &
-          savet_sc,saveq_sc,saveu_sc,savev_sc
+          savet_sc,saveq_sc,saveu_sc,savev_sc,                          &
+          savet_micro,saveq_micro,saveu_micro,savev_micro
 
 
 
@@ -907,7 +908,7 @@ module module_physics_driver
 
 !## CCPP ##* GFS_surface_generic.F90/GFS_surface_generic_pre_run
 !  ---  set initial quantities for stochastic physics deltas
-      if (Model%do_sppt .or. Model%isppt_deep .or. Model%isppt_pbl .or. Model%isppt_shal) then
+      if (Model%do_sppt .or. Model%ca_global)then
         Tbd%dtdtr = 0.0
         do i=1,im
           Tbd%drain_cpl(i) = Coupling%rain_cpl (i)
@@ -4676,12 +4677,25 @@ module module_physics_driver
 !     grid-scale condensation/precipitations and microphysics parameterization
 !     ------------------------------------------------------------------------
 !## CCPP ##* This is not in the CCPP yet.
+      if (Model%isppt_micro) then
+          allocate(savet_micro(im,levs), saveq_micro(im,levs), saveu_micro(im,levs), savev_micro(im,levs))
+          do k=1,levs
+            do i=1,im
+              savet_micro(i,k) = Stateout%gt0(i,k)
+              saveq_micro(i,k) = Stateout%gq0(i,k,1)
+              saveu_micro(i,k) = Stateout%gu0(i,k)
+              savev_micro(i,k) = Stateout%gv0(i,k)
+            enddo
+          enddo
+         endif
+
       if (ncld == 0) then                   ! no cloud microphysics
 
         call lrgscl (ix, im, levs, dtp, Stateout%gt0, Stateout%gq0, &
                      Statein%prsl, del, Statein%prslk, rain1, clw)
 !*## CCPP ##
       else                                  ! all microphysics
+
         if (imp_physics == Model%imp_physics_zhao_carr) then  ! call zhao/carr/sundqvist microphysics
                                                               ! ------------
 
@@ -5200,6 +5214,18 @@ module module_physics_driver
         endif  ! end of if(Model%imp_physics)
       endif    ! end if_ncld
 
+      if(Model%isppt_micro)then
+         do k=1,levs
+            do i=1,im
+               Coupling%tmicrotend(i,k) = Stateout%gt0(i,k)   - savet_micro(i,k)
+               Coupling%qmicrotend(i,k) = Stateout%gq0(i,k,1) - saveq_micro(i,k)
+               Coupling%umicrotend(i,k) = Stateout%gu0(i,k)   - saveu_micro(i,k)
+               Coupling%vmicrotend(i,k) = Stateout%gv0(i,k)   - savev_micro(i,k)
+            enddo
+         enddo
+         deallocate(savet_micro, saveq_micro, saveu_micro, savev_micro)
+      endif
+
 !     if (lprnt) write(0,*)' rain1 after ls=',rain1(ipr)
 !
       if (Model%cscnv .and. Model%do_aw) then
@@ -5527,7 +5553,7 @@ module module_physics_driver
 !         write(0,*) ' endgw0=',gq0(ipr,:,3),' kdt=',kdt,' lat=',lat
 !       endif
 
-      if (Model%do_sppt .or. Model%isppt_deep .or. Model%isppt_shal .or. Model%isppt_pbl) then
+      if (Model%do_sppt .or. Model%ca_global)then
 !--- radiation heating rate
         Tbd%dtdtr(1:im,:) = Tbd%dtdtr(1:im,:) + dtdtc(1:im,:)*dtf
         do i = 1, im
