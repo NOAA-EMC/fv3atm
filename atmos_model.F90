@@ -1740,7 +1740,7 @@ end subroutine atmos_data_type_chksum
 
 ! get upward LW flux:  for sea ice covered area
 !----------------------------------------------
-          fldname = 'mean_up_lw_flx'
+          fldname = 'mean_up_lw_flx_ice'
           if (trim(impfield_name) == trim(fldname)) then
             findex  = QueryFieldList(ImportFieldsList,fldname)
             if (importFieldsValid(findex)) then
@@ -1767,7 +1767,7 @@ end subroutine atmos_data_type_chksum
 
 ! get latent heat flux:  for sea ice covered area
 !------------------------------------------------
-          fldname = 'mean_laten_heat_flx'
+          fldname = 'mean_laten_heat_flx_atm_into_ice'
           if (trim(impfield_name) == trim(fldname)) then
             findex  = QueryFieldList(ImportFieldsList,fldname)
             if (importFieldsValid(findex)) then
@@ -1787,7 +1787,7 @@ end subroutine atmos_data_type_chksum
 
 ! get sensible heat flux:  for sea ice covered area
 !--------------------------------------------------
-          fldname = 'mean_sensi_heat_flx'
+          fldname = 'mean_sensi_heat_flx_atm_into_ice'
           if (trim(impfield_name) == trim(fldname)) then
             findex  = QueryFieldList(ImportFieldsList,fldname)
             if (importFieldsValid(findex)) then
@@ -1807,7 +1807,7 @@ end subroutine atmos_data_type_chksum
 
 ! get zonal compt of momentum flux:  for sea ice covered area
 !------------------------------------------------------------
-          fldname = 'mean_zonal_moment_flx'
+          fldname = 'stress_on_air_ice_zonal'
           if (trim(impfield_name) == trim(fldname)) then
             findex  = QueryFieldList(ImportFieldsList,fldname)
             if (importFieldsValid(findex)) then
@@ -1827,7 +1827,7 @@ end subroutine atmos_data_type_chksum
 
 ! get meridional compt of momentum flux:  for sea ice covered area
 !-----------------------------------------------------------------
-          fldname = 'mean_merid_moment_flx'
+          fldname = 'stress_on_air_ice_merid'
           if (trim(impfield_name) == trim(fldname)) then
             findex  = QueryFieldList(ImportFieldsList,fldname)
             if (importFieldsValid(findex)) then
