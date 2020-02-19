@@ -913,16 +913,17 @@ module fv3gfs_cap_mod
         call realizeConnectedCplFields(exportState, fcstGrid,                                                &
                                        numLevels, numSoilLayers, numTracers, num_diag_sfc_emis_flux,         &
                                        num_diag_down_flux, num_diag_type_down_flux, num_diag_burn_emis_flux, &
-                                       num_diag_cmass, exportFieldsList, exportFieldTypes, exportFields,     &
-                                       'FV3 Export',rc)
+                                       num_diag_cmass, exportFieldsList, exportFieldTypes, 'FV3 Export',     &
+                                       exportFields, rc)
+
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__,  file=__FILE__)) return
 
         ! -- realize connected fields in importState
         call realizeConnectedCplFields(importState, fcstGrid,                                                &
                                        numLevels, numSoilLayers, numTracers, num_diag_sfc_emis_flux,         &
                                        num_diag_down_flux, num_diag_type_down_flux, num_diag_burn_emis_flux, &
-                                       num_diag_cmass, importFieldsList, importFieldTypes, importFields,     &
-                                       'FV3 Import',rc)
+                                       num_diag_cmass, importFieldsList, importFieldTypes, 'FV3 Import',     &
+                                       importFields, rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__,  file=__FILE__)) return
       end if
     endif

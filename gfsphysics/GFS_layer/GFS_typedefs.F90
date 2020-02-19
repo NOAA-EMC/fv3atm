@@ -1076,7 +1076,7 @@ module GFS_typedefs
     real(kind=kind_phys) :: iau_delthrs     ! iau time interval (to scale increments) in hours
     character(len=240)   :: iau_inc_files(7)! list of increment files
     real(kind=kind_phys) :: iaufhrs(7)      ! forecast hours associated with increment files
-    logical :: iau_filter_increments
+    logical :: iau_filter_increments, iau_drymassfixer
 
 #ifdef CCPP
     ! From physcons.F90, updated/set in control_initialize
@@ -3068,7 +3068,8 @@ module GFS_typedefs
     real(kind=kind_phys)  :: iau_delthrs      = 0           !< iau time interval (to scale increments)
     character(len=240)    :: iau_inc_files(7) = ''          !< list of increment files
     real(kind=kind_phys)  :: iaufhrs(7)       = -1          !< forecast hours associated with increment files
-    logical               :: iau_filter_increments = .false.!< filter IAU increments
+    logical  :: iau_filter_increments         = .false.     !< filter IAU increments
+    logical  :: iau_drymassfixer              = .false.     !< IAU dry mass fixer
 
 !--- debug flag
     logical              :: debug          = .false.
@@ -3177,6 +3178,7 @@ module GFS_typedefs
                                ca_sgs, ca_global,iseed_ca,ca_smooth,isppt_deep,nspinup,     &
                           !--- IAU
                                iau_delthrs,iaufhrs,iau_inc_files,iau_filter_increments,     &
+                               iau_drymassfixer,                                            &
                           !--- debug options
                                debug, pre_rad,                                              &
                           !--- parameter range for critical relative humidity
@@ -3659,6 +3661,7 @@ module GFS_typedefs
     Model%iau_inc_files   = iau_inc_files
     Model%iau_delthrs     = iau_delthrs
     Model%iau_filter_increments = iau_filter_increments
+    Model%iau_drymassfixer = iau_drymassfixer
     if(Model%me==0) print *,' model init,iaufhrs=',Model%iaufhrs
 
 !--- tracer handling
