@@ -207,8 +207,6 @@ SCHEME_FILES = {
     'FV3/ccpp/physics/physics/ysuvdif.F90'                       : [ 'slow_physics' ],
     'FV3/ccpp/physics/physics/module_MYNNPBL_wrapper.F90'        : [ 'slow_physics' ],
     'FV3/ccpp/physics/physics/module_MYNNSFC_wrapper.F90'        : [ 'slow_physics' ],
-    'FV3/ccpp/physics/physics/module_MYNNrad_pre.F90'            : [ 'slow_physics' ],
-    'FV3/ccpp/physics/physics/module_MYNNrad_post.F90'           : [ 'slow_physics' ],
     'FV3/ccpp/physics/physics/module_SGSCloud_RadPre.F90'        : [ 'slow_physics' ],
     'FV3/ccpp/physics/physics/module_SGSCloud_RadPost.F90'       : [ 'slow_physics' ],
     'FV3/ccpp/physics/physics/module_MYJSFC_wrapper.F90'         : [ 'slow_physics' ],

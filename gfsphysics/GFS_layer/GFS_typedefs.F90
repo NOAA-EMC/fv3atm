@@ -2634,6 +2634,7 @@ module GFS_typedefs
       Coupling%nwfa2d   = clear_val
       Coupling%nifa2d   = clear_val
     endif
+
 #ifdef CCPP
     if (Model%imfdeepcnv == Model%imfdeepcnv_gf) then
       allocate (Coupling%qci_conv (IM,Model%levs))
@@ -6072,9 +6073,9 @@ module GFS_typedefs
 
     if (Model%imp_physics == Model%imp_physics_thompson) then
       if (Model%ltaerosol) then
-        Interstitial%nvdiff = 10
+        Interstitial%nvdiff = 12
       else
-        Interstitial%nvdiff = 7
+        Interstitial%nvdiff = 9
       endif
       if (Model%satmedmf) Interstitial%nvdiff = Interstitial%nvdiff + 1
       Interstitial%nncl = 5
