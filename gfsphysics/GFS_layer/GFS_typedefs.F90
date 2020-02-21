@@ -483,23 +483,6 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: slmsk_cpl  (:) => null()   !< Land/Sea/Ice mask  (slmsk from GFS_sfcprop_type)
 
     !--- cellular automata
-    real (kind=kind_phys), pointer :: tconvtend(:,:) => null()
-    real (kind=kind_phys), pointer :: qconvtend(:,:) => null()
-    real (kind=kind_phys), pointer :: uconvtend(:,:) => null()
-    real (kind=kind_phys), pointer :: vconvtend(:,:) => null()
-    real (kind=kind_phys), pointer :: tpbltend(:,:) => null()
-    real (kind=kind_phys), pointer :: qpbltend(:,:) => null()
-    real (kind=kind_phys), pointer :: upbltend(:,:) => null()
-    real (kind=kind_phys), pointer :: vpbltend(:,:) => null()
-    real (kind=kind_phys), pointer :: tshaltend(:,:) => null()
-    real (kind=kind_phys), pointer :: qshaltend(:,:) => null()
-    real (kind=kind_phys), pointer :: ushaltend(:,:) => null()
-    real (kind=kind_phys), pointer :: vshaltend(:,:) => null()
-    real (kind=kind_phys), pointer :: tmicrotend(:,:) => null()
-    real (kind=kind_phys), pointer :: qmicrotend(:,:) => null()
-    real (kind=kind_phys), pointer :: umicrotend(:,:) => null()
-    real (kind=kind_phys), pointer :: vmicrotend(:,:) => null()
-
     real (kind=kind_phys), pointer :: ca1      (:)   => null() !
     real (kind=kind_phys), pointer :: ca2      (:)   => null() !
     real (kind=kind_phys), pointer :: ca3      (:)   => null() !  
@@ -2584,26 +2567,6 @@ module GFS_typedefs
 
    !-- cellular automata
     if (Model%do_ca) then
-      allocate (Coupling%tconvtend (IM,Model%levs))
-      allocate (Coupling%qconvtend (IM,Model%levs))
-      allocate (Coupling%uconvtend (IM,Model%levs))
-      allocate (Coupling%vconvtend (IM,Model%levs))
-
-      allocate (Coupling%tpbltend (IM,Model%levs))
-      allocate (Coupling%qpbltend (IM,Model%levs))
-      allocate (Coupling%upbltend (IM,Model%levs))
-      allocate (Coupling%vpbltend (IM,Model%levs))
-
-      allocate (Coupling%tshaltend (IM,Model%levs))
-      allocate (Coupling%qshaltend (IM,Model%levs))
-      allocate (Coupling%ushaltend (IM,Model%levs))
-      allocate (Coupling%vshaltend (IM,Model%levs))
-
-      allocate (Coupling%tmicrotend (IM,Model%levs))
-      allocate (Coupling%qmicrotend (IM,Model%levs))
-      allocate (Coupling%umicrotend (IM,Model%levs))
-      allocate (Coupling%vmicrotend (IM,Model%levs))
-
       allocate (Coupling%vfact_ca (Model%levs))
       allocate (Coupling%condition(IM))
       allocate (Coupling%ca1      (IM))
@@ -2624,22 +2587,6 @@ module GFS_typedefs
       Coupling%ca_rad    = clear_val
       Coupling%ca_micro  = clear_val   
       Coupling%condition = clear_val
-      Coupling%tconvtend = clear_val
-      Coupling%qconvtend = clear_val
-      Coupling%uconvtend = clear_val
-      Coupling%vconvtend = clear_val
-      Coupling%tpbltend = clear_val
-      Coupling%qpbltend = clear_val
-      Coupling%upbltend = clear_val
-      Coupling%vpbltend = clear_val
-      Coupling%tshaltend = clear_val
-      Coupling%qshaltend = clear_val
-      Coupling%ushaltend = clear_val
-      Coupling%vshaltend = clear_val
-      Coupling%tmicrotend = clear_val
-      Coupling%qmicrotend = clear_val
-      Coupling%umicrotend = clear_val
-      Coupling%vmicrotend = clear_val
     endif
 
     ! -- GSDCHEM coupling options

@@ -571,13 +571,6 @@ module module_physics_driver
 !         ud_mf, dd_mf, dt_mf, prnum, dkt, sigmatot, sigmafrac, txa
       real(kind=kind_phys), allocatable, dimension(:,:) :: sigmatot,    &
           gwdcu, gwdcv, rainp, sigmafrac, tke
-!--- for isppt
-      real(kind=kind_phys), allocatable, dimension(:,:) ::              &
-          savet_cu,saveq_cu,saveu_cu,savev_cu,                          &
-          savet_sc,saveq_sc,saveu_sc,savev_sc,                          &
-          savet_micro,saveq_micro,saveu_micro,savev_micro
-
-
 
 
 !--- GFDL modification for FV3 
@@ -909,7 +902,7 @@ module module_physics_driver
 !## CCPP ##* GFS_surface_generic.F90/GFS_surface_generic_pre_run
 !  ---  set initial quantities for stochastic physics deltas
       if (Model%do_sppt .or. Model%ca_global)then
-        Tbd%dtdtr = 0.0
+        Tbd%dtdtr = zero
         do i=1,im
           Tbd%drain_cpl(i) = Coupling%rain_cpl (i)
           Tbd%dsnow_cpl(i) = Coupling%snow_cpl (i)
@@ -2649,6 +2642,8 @@ module module_physics_driver
                            Model%xkzm_s, lprnt, ipr,                                    &
                            Model%xkzminv, Model%moninq_fac)
            else
+!*## CCPP ##
+!## CCPP ##* The following schemes are not in the CCPP yet.
             call moninedmf_hafs(ix, im, levs, nvdiff, ntcw, dvdt, dudt, dtdt, dvdftra,  &
                            Statein%ugrs, Statein%vgrs, Statein%tgrs, vdftra,            &
                            Radtend%htrsw, Radtend%htrlw, xmu, Statein%prsik(1,1),       &
@@ -2933,18 +2928,6 @@ module module_physics_driver
           enddo
         enddo
       endif
-
-     if(Model%isppt_pbl)then
-         do k=1,levs
-          do i=1,im
-           Coupling%tpbltend(i,k) = (dtdt(i,k) - (Radtend%htrlw(i,k)+Radtend%htrsw(i,k)*xmu(i)))*dtf
-           Coupling%qpbltend(i,k) = dqdt(i,k,1)*dtf
-           Coupling%upbltend(i,k) = dudt(i,k)*dtf
-           Coupling%vpbltend(i,k) = dvdt(i,k)*dtf
-           enddo
-         enddo
-      endif
-
 
       if (Model%lssav) then
         if (Model%ldiag3d) then
@@ -3685,17 +3668,10 @@ module module_physics_driver
 !           -----------------------------------
       if (Model%do_deep) then
  
-        if (Model%isppt_deep) then
-          allocate(savet_cu(im,levs), saveq_cu(im,levs), saveu_cu(im,levs), savev_cu(im,levs))
-          do k=1,levs
-            do i=1,im
-              savet_cu(i,k) = Stateout%gt0(i,k)
-              saveq_cu(i,k) = Stateout%gq0(i,k,1)
-              saveu_cu(i,k) = Stateout%gu0(i,k)
-              savev_cu(i,k) = Stateout%gv0(i,k)
-            enddo
-          enddo
-        endif
+!## CCPP ## GFS_DCNV_generic.F90/GFS_DCNV_generic_pre_run Note: The conditional
+! above is not checked within the scheme, so the execution of the code below 
+! is controlled via its presence in the CCPP SDF.
+
 !*## CCPP ##
         if (.not. Model%ras .and. .not. Model%cscnv) then
 
@@ -3953,17 +3929,7 @@ module module_physics_driver
         endif   ! end if_not_ras
 
 !## CCPP ##* GFS_DCNV_generic.F90/GFS_DCNV_generic_post
-        if(Model%isppt_deep)then
-          do k=1,levs
-            do i=1,im
-              Coupling%tconvtend(i,k) = Stateout%gt0(i,k)   - savet_cu(i,k)
-              Coupling%qconvtend(i,k) = Stateout%gq0(i,k,1) - saveq_cu(i,k)
-              Coupling%uconvtend(i,k) = Stateout%gu0(i,k)   - saveu_cu(i,k)
-              Coupling%vconvtend(i,k) = Stateout%gv0(i,k)   - savev_cu(i,k)
-            enddo
-          enddo
-          deallocate(savet_cu, saveq_cu, saveu_cu, savev_cu)
-        endif
+
 !*## CCPP ##
       else      ! no parameterized deep convection
 !## CCPP ##* GFS_typedefs.F90/interstitial_phys_reset Note: These are only zeroed out 
@@ -4260,18 +4226,6 @@ module module_physics_driver
 
         if (Model%shal_cnv) then               ! Shallow convection parameterizations
 !                                               --------------------------------------
-          if (Model%isppt_shal) then
-             allocate(savet_sc(im,levs), saveq_sc(im,levs), saveu_sc(im,levs), savev_sc(im,levs))
-             do k=1,levs
-                do i=1,im
-                   savet_sc(i,k) = Stateout%gt0(i,k)
-                   saveq_sc(i,k) = Stateout%gq0(i,k,1)
-                   saveu_sc(i,k) = Stateout%gu0(i,k)
-                   savev_sc(i,k) = Stateout%gv0(i,k)
-                enddo
-             enddo
-          endif
-
           if (Model%imfshalcnv == 1) then      ! opr option now at 2014
                                                !-----------------------
 !## CCPP ##* shalcnv.F/shalcnv_run
@@ -4383,17 +4337,7 @@ module module_physics_driver
 !           if (lprnt) print *,' levshcm=',levshcm,' gt0sha=',gt0(ipr,:)
 
           endif   ! end if_imfshalcnv
-          if(Model%isppt_shal)then
-             do k=1,levs
-                do i=1,im
-                   Coupling%tshaltend(i,k) = Stateout%gt0(i,k)   - savet_sc(i,k)
-                   Coupling%qshaltend(i,k) = Stateout%gq0(i,k,1) - saveq_sc(i,k)
-                   Coupling%ushaltend(i,k) = Stateout%gu0(i,k)   - saveu_sc(i,k)
-                   Coupling%vshaltend(i,k) = Stateout%gv0(i,k)   - savev_sc(i,k)
-                enddo
-             enddo
-             deallocate(savet_sc, saveq_sc, saveu_sc, savev_sc)
-          endif
+
 !*## CCPP ##
         endif     ! end if_shal_cnv
 
@@ -4677,17 +4621,6 @@ module module_physics_driver
 !     grid-scale condensation/precipitations and microphysics parameterization
 !     ------------------------------------------------------------------------
 !## CCPP ##* This is not in the CCPP yet.
-      if (Model%isppt_micro) then
-          allocate(savet_micro(im,levs), saveq_micro(im,levs), saveu_micro(im,levs), savev_micro(im,levs))
-          do k=1,levs
-            do i=1,im
-              savet_micro(i,k) = Stateout%gt0(i,k)
-              saveq_micro(i,k) = Stateout%gq0(i,k,1)
-              saveu_micro(i,k) = Stateout%gu0(i,k)
-              savev_micro(i,k) = Stateout%gv0(i,k)
-            enddo
-          enddo
-         endif
 
       if (ncld == 0) then                   ! no cloud microphysics
 
@@ -5213,18 +5146,6 @@ module module_physics_driver
 
         endif  ! end of if(Model%imp_physics)
       endif    ! end if_ncld
-
-      if(Model%isppt_micro)then
-         do k=1,levs
-            do i=1,im
-               Coupling%tmicrotend(i,k) = Stateout%gt0(i,k)   - savet_micro(i,k)
-               Coupling%qmicrotend(i,k) = Stateout%gq0(i,k,1) - saveq_micro(i,k)
-               Coupling%umicrotend(i,k) = Stateout%gu0(i,k)   - saveu_micro(i,k)
-               Coupling%vmicrotend(i,k) = Stateout%gv0(i,k)   - savev_micro(i,k)
-            enddo
-         enddo
-         deallocate(savet_micro, saveq_micro, saveu_micro, savev_micro)
-      endif
 
 !     if (lprnt) write(0,*)' rain1 after ls=',rain1(ipr)
 !
