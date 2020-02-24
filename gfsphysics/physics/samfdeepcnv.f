@@ -87,7 +87,7 @@
 !    &     QLCN, QICN, w_upi, cf_upi, CNV_MFD, CNV_PRC3,
      &     CNV_DQLDT,CLCN,CNV_FICE,CNV_NDROP,CNV_NICE,mp_phys,
      &     clam,c0s,c1,betal,betas,evfact,evfactl,pgcon,asolfac,
-     &     do_ca,ca_deep,rainevap)
+     &     do_ca,ca_sgs,ca_deep,rainevap)
 !
       use machine , only : kind_phys
       use funcphys , only : fpvs
@@ -117,7 +117,7 @@
      &                     betal,   betas,   asolfac,
      &                     evfact,  evfactl, pgcon
 !    for CA stochastic physics:
-      logical, intent(in)  :: do_ca
+      logical, intent(in)  :: do_ca, ca_sgs
       real(kind=kind_phys), intent(in) :: ca_deep(im)
       real(kind=kind_phys), intent(out) :: rainevap(im)
 !
@@ -754,7 +754,7 @@ c
 !
       else
 !
-        if(do_ca == .true. .and. kdt > 1)then
+        if(do_ca .and. ca_sgs .and. kdt > 1)then
           do i=1,im
            if(cnvflg(i)) then
              if(ca_deep(i) > nplumes)then
@@ -2594,7 +2594,7 @@ c             if(islimsk(i) == 1) evef = 0.
       enddo
 
 !LB:                                                                                                                                                                                                                                                  
-      if(do_ca)then
+      if(do_ca .and. ca_sgs)then
          do i = 1,im
             rainevap(i)=delqev(i)
          enddo

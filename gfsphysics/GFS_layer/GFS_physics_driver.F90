@@ -3715,7 +3715,7 @@ module module_physics_driver
                              Model%c1_deep,  Model%betal_deep, Model%betas_deep,   &
                              Model%evfact_deep, Model%evfactl_deep,                &
                              Model%pgcon_deep,  Model%asolfac_deep,                &
-                             Model%do_ca, Coupling%ca_deep, Coupling%condition)
+                             Model%do_ca, Model%ca_sgs, Coupling%ca_deep, Coupling%condition)
 !*## CCPP ##
 !           if (lprnt) print *,' rain1=',rain1(ipr)
           !elseif (Model%imfdeepcnv == 3) then
