@@ -2566,9 +2566,9 @@ module GFS_typedefs
     endif
 
    !-- cellular automata
+    allocate (Coupling%condition(IM))
     if (Model%do_ca) then
       allocate (Coupling%vfact_ca (Model%levs))
-      allocate (Coupling%condition(IM))
       allocate (Coupling%ca1      (IM))
       allocate (Coupling%ca2      (IM))
       allocate (Coupling%ca3      (IM))
