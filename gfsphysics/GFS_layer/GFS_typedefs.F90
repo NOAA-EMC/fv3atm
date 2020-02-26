@@ -3545,7 +3545,7 @@ module GFS_typedefs
     Model%rbcr              = rbcr
     Model%do_gwd            = maxval(Model%cdmbgwd) > 0.0
       
-    Model%do_cnvgwd         = Model%cnvgwd .and. (maxval(Model%cdmbgwd(3:4)) == 0.0 .and. .not. Model%do_ugwp)
+    Model%do_cnvgwd         = Model%cnvgwd .and. maxval(Model%cdmbgwd(3:4)) == 0.0
 #ifdef CCPP
     Model%do_mynnedmf       = do_mynnedmf
     Model%do_mynnsfclay     = do_mynnsfclay
