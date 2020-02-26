@@ -199,9 +199,6 @@
              Sfcprop(nb)%tsfc(ix)  = TSFFCS  (len)
              Sfcprop(nb)%tsfco(ix) = TSFFCS  (len)
           endif
-          if (abs(slifcs(len) - 1.0) > 0.1) then
-            Sfcprop(nb)%tsfco(ix) = TSFFCS  (len)
-          endif
           Sfcprop(nb)%weasd  (ix) = SNOFCS  (len)
           Sfcprop(nb)%zorl   (ix) = ZORFCS  (len)
           Sfcprop(nb)%tg3    (ix) = TG3FCS  (len)
