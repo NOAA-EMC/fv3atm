@@ -123,7 +123,7 @@ module GFS_restart
 #ifdef CCPP
     ! GF
     if (Model%imfdeepcnv == 3) then
-      Restart%num3d = Restart%num3d + 2
+      Restart%num3d = Restart%num3d + 3
     endif
     ! MYNN PBL 
     if (Model%do_mynnedmf) then
