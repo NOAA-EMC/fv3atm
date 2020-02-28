@@ -5,6 +5,10 @@ else()
   add_definitions(-DNO_INLINE_POST)
 endif()
 
+if(NOT PARALLEL_NETCDF)
+  add_definitions(-DNO_PARALLEL_NETCDF)
+endif()
+
 add_library(
     io
 
@@ -12,6 +16,7 @@ add_library(
     FV3GFS_io.F90
     module_write_nemsio.F90
     module_write_netcdf.F90
+    module_write_netcdf_parallel.F90
     module_fv3_io_def.F90
     module_write_internal_state.F90
     module_wrt_grid_comp.F90

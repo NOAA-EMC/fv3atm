@@ -34,7 +34,8 @@
       use module_fv3_io_def,   only : num_pes_fcst,lead_wrttask, last_wrttask,  &
                                       n_group, num_files, app_domain,           &
                                       filename_base, output_grid, output_file,  &
-                                      imo, jmo, write_nemsioflip,               &
+                                      imo,jmo,ichunk2d,jchunk2d,write_nemsioflip,&
+                                      ichunk3d,jchunk3d,kchunk3d,               &
                                       nsout => nsout_io,                        &
                                       cen_lon, cen_lat,                         &
                                       lon1, lat1, lon2, lat2, dlon, dlat,       &
@@ -43,6 +44,7 @@
       use module_write_netcdf, only : write_netcdf
       use physcons,            only : pi => con_pi
       use post_gfs,            only : post_run_gfs, post_getattr_gfs
+      use module_write_netcdf_parallel, only : write_netcdf_parallel
 !
 !-----------------------------------------------------------------------
 !
@@ -1122,14 +1124,14 @@
 !-----------------------------------------------------------------------
 !
       call ESMF_LogWrite("before initialize for nemsio file", ESMF_LOGMSG_INFO, rc=rc)
-      if (trim(output_grid) == 'gaussian_grid' .and. trim(output_file) == 'nemsio') then
-!     if (lprnt) write(0,*) 'in wrt initial, befnemsio_first_call wrt_int_state%FBcount=',wrt_int_state%FBcount
-        do i= 1, wrt_int_state%FBcount
-          call nemsio_first_call(wrt_int_state%wrtFB(i), imo, jmo,         &
-                                 wrt_int_state%mype, ntasks, wrt_mpi_comm, &
-                                 wrt_int_state%FBcount, i, idate, lat, lon, rc) 
-        enddo
-      endif
+      do i= 1, wrt_int_state%FBcount
+         if (trim(output_grid) == 'gaussian_grid' .and. trim(output_file(i)) == 'nemsio') then
+!           if (lprnt) write(0,*) 'in wrt initial, befnemsio_first_call wrt_int_state%FBcount=',wrt_int_state%FBcount
+             call nemsio_first_call(wrt_int_state%wrtFB(i), imo, jmo,         &
+                                   wrt_int_state%mype, ntasks, wrt_mpi_comm, &
+                                   wrt_int_state%FBcount, i, idate, lat, lon, rc) 
+         endif
+      enddo
       call ESMF_LogWrite("after initialize for nemsio file", ESMF_LOGMSG_INFO, rc=rc)
 !
 !-----------------------------------------------------------------------
@@ -1170,7 +1172,7 @@
       type(ESMF_Time)                       :: currtime
       type(ESMF_TypeKind_Flag)              :: datatype
       type(ESMF_Field)                      :: field_work
-      type(ESMF_Grid)                       :: grid_work, fbgrid
+      type(ESMF_Grid)                       :: grid_work, fbgrid, wrtgrid
       type(ESMF_Array)                      :: array_work
       type(ESMF_State),save                 :: stateGridFB
       type(optimizeT), save                 :: optimize(4)
@@ -1363,7 +1365,47 @@
             file_bundle = wrt_int_state%wrtFB(nbdl)
           endif
 
-          if ( trim(output_file) == 'nemsio' ) then
+          ! set default chunksizes for netcdf output
+          ! (use MPI decomposition size).
+          ! if chunksize parameter set to negative value,
+          ! netcdf library default is used.
+          if (output_file(nbdl)(1:6) == 'netcdf') then 
+             if (ichunk2d == 0) then
+                if( wrt_int_state%mype == 0 ) &
+                  ichunk2d = wrt_int_state%lon_end-wrt_int_state%lon_start+1
+                call mpi_bcast(ichunk2d,1,mpi_integer,0,wrt_mpi_comm,rc)
+             endif
+             if (jchunk2d == 0) then
+                if( wrt_int_state%mype == 0 ) &
+                  jchunk2d = wrt_int_state%lat_end-wrt_int_state%lat_start+1
+                call mpi_bcast(jchunk2d,1,mpi_integer,0,wrt_mpi_comm,rc)
+             endif
+             if (ichunk3d == 0) then
+                if( wrt_int_state%mype == 0 ) &
+                  ichunk3d = wrt_int_state%lon_end-wrt_int_state%lon_start+1
+                call mpi_bcast(ichunk3d,1,mpi_integer,0,wrt_mpi_comm,rc)
+             endif
+             if (jchunk3d == 0) then
+                if( wrt_int_state%mype == 0 ) &
+                  jchunk3d = wrt_int_state%lat_end-wrt_int_state%lat_start+1
+                call mpi_bcast(jchunk3d,1,mpi_integer,0,wrt_mpi_comm,rc)
+             endif
+             if (kchunk3d == 0 .and. nbdl == 1) then
+                if( wrt_int_state%mype == 0 )  then
+                  call ESMF_FieldBundleGet(wrt_int_state%wrtFB(nbdl), grid=wrtgrid)
+                  call ESMF_AttributeGet(wrtgrid, convention="NetCDF", purpose="FV3", &
+                          attnestflag=ESMF_ATTNEST_OFF, name='pfull', &
+                          itemCount=kchunk3d, rc=rc)
+                endif
+                call mpi_bcast(kchunk3d,1,mpi_integer,0,wrt_mpi_comm,rc)
+             endif
+             if (wrt_int_state%mype == 0) then
+                print *,'ichunk2d,jchunk2d',ichunk2d,jchunk2d
+                print *,'ichunk3d,jchunk3d,kchunk3d',ichunk3d,jchunk3d,kchunk3d
+             endif
+          endif
+
+          if ( trim(output_file(nbdl)) == 'nemsio' ) then
              filename = trim(wrt_int_state%wrtFB_names(nbdl))//'f'//trim(cfhour)//'.nemsio'
           else
              filename = trim(wrt_int_state%wrtFB_names(nbdl))//'f'//trim(cfhour)//'.nc'
@@ -1413,7 +1455,7 @@
 
           else if (trim(output_grid) == 'gaussian_grid') then
 
-            if (trim(output_file) == 'nemsio') then
+            if (trim(output_file(nbdl)) == 'nemsio') then
 
               wbeg = MPI_Wtime()
               call write_nemsio(file_bundle,trim(filename),nf_hours, nf_minutes, &
@@ -1424,18 +1466,37 @@
                       ,' at Fcst ',NF_HOURS,':',NF_MINUTES
               endif
 
-            else if (trim(output_file) == 'netcdf') then
+            else if (trim(output_file(nbdl)) == 'netcdf') then
 
               wbeg = MPI_Wtime()
               call write_netcdf(file_bundle,wrt_int_state%wrtFB(nbdl),trim(filename), &
-                               wrt_mpi_comm,wrt_int_state%mype,imo,jmo,rc)
+                               wrt_mpi_comm,wrt_int_state%mype,imo,jmo,&
+                               ichunk2d,jchunk2d,ichunk3d,jchunk3d,kchunk3d,rc)
               wend = MPI_Wtime()
               if (lprnt) then
                 write(*,'(A,F10.5,A,I4.2,A,I2.2)')' netcdf      Write Time is ',wend-wbeg  &
                         ,' at Fcst ',NF_HOURS,':',NF_MINUTES
               endif
 
-            else if (trim(output_file) == 'netcdf_esmf') then
+            else if (trim(output_file(nbdl)) == 'netcdf_parallel') then
+
+#ifdef NO_PARALLEL_NETCDF
+              rc = ESMF_RC_NOT_IMPL
+              print *,'netcdf_parallel not available on this machine'
+              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+              line=__LINE__, file=__FILE__)) return
+#endif
+              wbeg = MPI_Wtime()
+              call write_netcdf_parallel(file_bundle,wrt_int_state%wrtFB(nbdl),   &
+              trim(filename), wrt_mpi_comm,wrt_int_state%mype,imo,jmo,&
+              ichunk2d,jchunk2d,ichunk3d,jchunk3d,kchunk3d,rc)
+              wend = MPI_Wtime()
+              if (lprnt) then
+                write(*,'(A,F10.5,A,I4.2,A,I2.2)')' parallel netcdf      Write Time is ',wend-wbeg  &
+                        ,' at Fcst ',NF_HOURS,':',NF_MINUTES
+              endif
+
+            else if (trim(output_file(nbdl)) == 'netcdf_esmf') then
 
               wbeg = MPI_Wtime()
               call ESMFproto_FieldBundleWrite(gridFB, filename=trim(filename),    &
@@ -1482,11 +1543,12 @@
               write(*,'(A,F10.5,A,I4.2,A,I2.2)')' mask_fields time is ',wend-wbeg
             endif
 
-            if (trim(output_file) == 'netcdf') then
+            if (trim(output_file(nbdl)) == 'netcdf') then
 
               wbeg = MPI_Wtime()
               call write_netcdf(file_bundle,wrt_int_state%wrtFB(nbdl),trim(filename), &
-                                wrt_mpi_comm,wrt_int_state%mype,imo,jmo,rc)
+                                wrt_mpi_comm,wrt_int_state%mype,imo,jmo,&
+                                ichunk2d,jchunk2d,ichunk3d,jchunk3d,kchunk3d,rc)
               wend = MPI_Wtime()
               if (mype == lead_write_task) then
                 write(*,'(A,F10.5,A,I4.2,A,I2.2)')' netcdf      Write Time is ',wend-wbeg  &
