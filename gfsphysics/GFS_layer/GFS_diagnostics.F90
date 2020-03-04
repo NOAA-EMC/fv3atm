@@ -1862,6 +1862,17 @@ module GFS_diagnostics
 
     idx = idx + 1
     ExtDiag(idx)%axes = 3
+    ExtDiag(idx)%name = 'dkudiagnostic'
+    ExtDiag(idx)%desc = 'Eddy Diffusivity'
+    ExtDiag(idx)%unit = 'm2s-1'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%dkudiagnostic(:,:)
+    enddo
+
+    idx = idx + 1
+    ExtDiag(idx)%axes = 3
     ExtDiag(idx)%name = 'cnvw'
     ExtDiag(idx)%desc = 'subgrid scale convective cloud water'
     ExtDiag(idx)%unit = 'kg/kg'
