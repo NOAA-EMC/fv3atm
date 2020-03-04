@@ -1,7 +1,9 @@
 [submodule "atmos_cubed_sphere"]
 	path = atmos_cubed_sphere
-	url = https://github.com/NCAR/GFDL_atmos_cubed_sphere
-	branch = dtc/develop
+	#url = https://github.com/NCAR/GFDL_atmos_cubed_sphere
+	#branch = dtc/develop
+	url = https://github.com/climbfuji/GFDL_atmos_cubed_sphere
+	branch = update_dtc_develop_from_emc
 [submodule "ccpp/framework"]
 	path = ccpp/framework
 	url = https://github.com/NCAR/ccpp-framework
