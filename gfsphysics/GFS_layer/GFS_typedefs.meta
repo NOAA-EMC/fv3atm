@@ -7866,6 +7866,13 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+[save_q(:,:,index_for_ozone)]
+  standard_name = ozone_mixing_ratio_save
+  long_name = ozone mixing ratio before entering a physics scheme
+  units = kg kg-1
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
 [save_q(:,:,index_for_liquid_cloud_condensate)]
   standard_name = cloud_condensed_water_mixing_ratio_save
   long_name = moist (dry+vapor, no condensates) mixing ratio of cloud water (condensate) before entering a physics scheme

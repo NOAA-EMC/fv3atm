@@ -49,7 +49,7 @@ module CCPP_driver
 !  number nthrdsX in case of non-uniform block sizes)    !
 !--------------------------------------------------------!
   logical :: non_uniform_blocks
-  integer :: nthrds, nthrdsX
+  integer :: nthrds, nthrdsX, ithread
 
 !----------------
 ! Public Entities
@@ -184,6 +184,68 @@ module CCPP_driver
         return
       end if
 
+!    else if (trim(step)=='timestep_init') then
+
+!      ! Threading is forbidden in timestep_init
+!       ierr=0
+!       print *,'received timestep_init'
+! !$OMP MASTER
+!       outerI: do nb = 1,nblks
+!         print *,'nb=',nb
+!         ! For non-uniform blocks, the last block has a different (shorter)
+!         ! length than the other blocks; use special CCPP_Interstitial(nthrdsX)
+!         if (non_uniform_blocks .and. nb==nblks) then
+!             ntX = nthrdsX
+!         else
+!             ntX = nt
+!         end if
+!         do ithread = 1,ntX
+! #ifdef STATIC
+!           call ccpp_physics_run(cdata_domain, suite_name=trim(ccpp_suite), group_name="timestep_init", ierr=ierr)
+! #else
+!           call ccpp_physics_run(cdata_domain, group_name="timestep_init", ierr=ierr)
+! #endif
+!           if (ierr/=0) exit outerI
+!         enddo
+!       enddo outerI
+! !$OMP END MASTER
+
+!       if (ierr/=0) then
+!         write(0,'(a)') "An error occurred in ccpp_physics_run for group timestep_init"
+!         write(0,'(a)') trim(cdata_domain%errmsg)
+!         return
+!       end if
+
+!    else if (trim(step)=='timestep_final') then
+
+!      ! Threading is forbidden in timestep_final
+!       ierr=0
+! !$OMP MASTER
+!       outerF: do nb = 1,nblks
+!         ! For non-uniform blocks, the last block has a different (shorter)
+!         ! length than the other blocks; use special CCPP_Interstitial(nthrdsX)
+!         if (non_uniform_blocks .and. nb==nblks) then
+!             ntX = nthrdsX
+!         else
+!             ntX = nt
+!         end if
+!         do ithread = 1,ntX
+! #ifdef STATIC
+!           call ccpp_physics_run(cdata_domain, suite_name=trim(ccpp_suite), group_name="timestep_final", ierr=ierr)
+! #else
+!           call ccpp_physics_run(cdata_domain, group_name="timestep_final", ierr=ierr)
+! #endif
+!           if (ierr/=0) exit outerF
+!         enddo
+!       enddo outerF
+! !$OMP END MASTER
+
+!       if (ierr/=0) then
+!         write(0,'(a)') "An error occurred in ccpp_physics_run for group timestep_final"
+!         write(0,'(a)') trim(cdata_domain%errmsg)
+!         return
+!       end if
+
    else if (trim(step)=="time_vary") then
 
       ! Since the time_vary steps only use data structures for all blocks (except the
@@ -205,7 +267,8 @@ module CCPP_driver
       end if
 
    ! Radiation and stochastic physics
-   else if (trim(step)=="radiation" .or. trim(step)=="physics" .or. trim(step)=="stochastics") then
+   else if (trim(step)=="radiation" .or. trim(step)=="physics" .or. trim(step)=="stochastics" &
+       .or. trim(step)=="timestep_init" .or. trim(step)=="timestep_final") then
 
       ! Set number of threads available to physics schemes to one,
       ! because threads are used on the outside for blocking
