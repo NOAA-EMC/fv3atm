@@ -2361,17 +2361,17 @@ module module_physics_driver
 !*## CCPP ##
              elseif (Model%isatmedmf == 1) then   ! updated version of satmedmfvdif (May 2019)
 !## CCPP ##* satmedmfvdifq.F/satmedmfvdifq_run Note: The conditional above is checked in satmedmfvdifq_init
-                call satmedmfvdifq(ix, im, levs, nvdiff, ntcw, ntiw, ntke,          &
-                       dvdt, dudt, dtdt, dqdt,                                      &
-                       Statein%ugrs, Statein%vgrs, Statein%tgrs, Statein%qgrs,      &
-                       Radtend%htrsw, Radtend%htrlw, xmu, garea,                    &
-                       Statein%prsik(1,1), rb, Sfcprop%zorl, Diag%u10m, Diag%v10m,  &
-                       Sfcprop%ffmm, Sfcprop%ffhh, Sfcprop%tsfc, hflx, evap,        &
-                       stress, wind, kpbl, Statein%prsi, del, Statein%prsl,         &
-                       Statein%prslk, Statein%phii, Statein%phil, dtp,              &
-                       Model%dspheat, dusfc1, dvsfc1, dtsfc1, dqsfc1, Diag%hpbl,    &
-                       kinver, Model%xkzm_m, Model%xkzm_h, Model%xkzm_s,            &
-                       Model%dspfac, Model%bl_upfr, Model%bl_dnfr)
+                call satmedmfvdifq(ix, im, levs, nvdiff, ntcw, ntiw, ntke,            &
+                       dvdt, dudt, dtdt, dqdt,                                        &
+                       Statein%ugrs, Statein%vgrs, Statein%tgrs, Statein%qgrs,        &
+                       Radtend%htrsw, Radtend%htrlw, xmu, garea,                      &
+                       Statein%prsik(1,1), rb, Sfcprop%zorl, Diag%u10m, Diag%v10m,    &
+                       Sfcprop%ffmm, Sfcprop%ffhh, Sfcprop%tsfc, hflx, evap,          &
+                       stress, wind, kpbl, Statein%prsi, del, Statein%prsl,           &
+                       Statein%prslk, Statein%phii, Statein%phil, dtp,                &
+                       Model%dspheat, dusfc1, dvsfc1, dtsfc1, dqsfc1, Diag%hpbl,      &
+                       kinver, Model%xkzm_m, Model%xkzm_h, Model%xkzm_s,              &
+                       Model%dspfac, Model%bl_upfr, Model%bl_dnfr, Diag%dkudiagnostic)
 !*## CCPP ##
              endif
           elseif (Model%hybedmf) then
@@ -2388,17 +2388,31 @@ module module_physics_driver
                            Model%xkzm_s, lprnt, ipr,                                &
                            Model%xkzminv, Model%moninq_fac)
             else
-              call moninedmf_hafs(ix, im, levs, nvdiff, ntcw, dvdt, dudt, dtdt, dqdt,&
-                           Statein%ugrs, Statein%vgrs, Statein%tgrs, Statein%qgrs,  &
-                           Radtend%htrsw, Radtend%htrlw, xmu, Statein%prsik(1,1),   &
-                           rb, Sfcprop%zorl, Diag%u10m, Diag%v10m, Sfcprop%ffmm,    &
-                           Sfcprop%ffhh, Sfcprop%tsfc, qss, hflx, evap, stress,     &
-                           wind, kpbl, Statein%prsi, del, Statein%prsl,             &
-                           Statein%prslk, Statein%phii, Statein%phil, dtp,          &
-                           Model%dspheat, dusfc1, dvsfc1, dtsfc1, dqsfc1, Diag%hpbl,&
-                           gamt, gamq, dkt, kinver, Model%xkzm_m, Model%xkzm_h,     &
-                           Model%xkzm_s, lprnt, ipr,                                &
-                           Model%xkzminv, Model%moninq_fac,islmsk)
+             if (Model%moninq_fac > -2) then
+              call moninedmf_hafs(ix, im, levs, nvdiff, ntcw, dvdt, dudt, dtdt, dqdt, &
+                           Statein%ugrs, Statein%vgrs, Statein%tgrs, Statein%qgrs,    &
+                           Radtend%htrsw, Radtend%htrlw, xmu, Statein%prsik(1,1),     &
+                           rb, Sfcprop%zorl, Diag%u10m, Diag%v10m, Sfcprop%ffmm,      &
+                           Sfcprop%ffhh, Sfcprop%tsfc, qss, hflx, evap, stress,       &
+                           wind, kpbl, Statein%prsi, del, Statein%prsl,               &
+                           Statein%prslk, Statein%phii, Statein%phil, dtp,            &
+                           Model%dspheat, dusfc1, dvsfc1, dtsfc1, dqsfc1, Diag%hpbl,  &
+                           gamt, gamq, dkt, kinver, Model%xkzm_m, Model%xkzm_h,       &
+                           Model%xkzm_s, lprnt, ipr,                                  & 
+                           Model%xkzminv, Model%moninq_fac,islmsk,Diag%dkudiagnostic)
+             else
+               call moninedmf_hafs_pzhu(ix, im, levs, nvdiff, ntcw, dvdt, dudt, dtdt,    &
+                           dqdt, Statein%ugrs, Statein%vgrs, Statein%tgrs, Statein%qgrs, &
+                           Radtend%htrsw, Radtend%htrlw, xmu, Statein%prsik(1,1),        &
+                           rb, Sfcprop%zorl, Diag%u10m, Diag%v10m, Sfcprop%ffmm,         &
+                           Sfcprop%ffhh, Sfcprop%tsfc, qss, hflx, evap, stress,          &
+                           wind, kpbl, Statein%prsi, del, Statein%prsl,                  &
+                           Statein%prslk, Statein%phii, Statein%phil, dtp,               &
+                           Model%dspheat, dusfc1, dvsfc1, dtsfc1, dqsfc1, Diag%hpbl,     &
+                           gamt, gamq, dkt, kinver, Model%xkzm_m, Model%xkzm_h,          &
+                           Model%xkzm_s, lprnt, ipr,                                     & 
+                           Model%xkzminv, Model%moninq_fac,islmsk,Diag%dkudiagnostic)
+             endif 
             endif
 !     if (lprnt)  write(0,*)' dtdtm=',(dtdt(ipr,k),k=1,15)
 !     if (lprnt)  write(0,*)' dqdtm=',(dqdt(ipr,k,1),k=1,15)
@@ -2614,17 +2628,17 @@ module module_physics_driver
 !*## CCPP ##
              elseif (Model%isatmedmf == 1) then   ! updated version of satmedmfvdif (May 2019)
 !## CCPP ##* satmedmfvdifq.F/satmedmfvdifq_run Note: The conditional above is checked in satmedmfvdifq_init
-                call satmedmfvdifq(ix, im, levs, nvdiff, ntcw, ntiwx, ntkev,          &
-                         dvdt, dudt, dtdt, dvdftra,                                   &
-                         Statein%ugrs, Statein%vgrs, Statein%tgrs, vdftra,            &
-                         Radtend%htrsw, Radtend%htrlw, xmu, garea,                    &
-                         Statein%prsik(1,1), rb, Sfcprop%zorl, Diag%u10m, Diag%v10m,  &
-                         Sfcprop%ffmm, Sfcprop%ffhh, Sfcprop%tsfc, hflx, evap,        &
-                         stress, wind, kpbl, Statein%prsi, del, Statein%prsl,         &
-                         Statein%prslk, Statein%phii, Statein%phil, dtp,              &
-                         Model%dspheat, dusfc1, dvsfc1, dtsfc1, dqsfc1, Diag%hpbl,    &
-                         kinver, Model%xkzm_m, Model%xkzm_h, Model%xkzm_s,            &
-                         Model%dspfac, Model%bl_upfr, Model%bl_dnfr)
+                call satmedmfvdifq(ix, im, levs, nvdiff, ntcw, ntiwx, ntkev,            &
+                         dvdt, dudt, dtdt, dvdftra,                                     &
+                         Statein%ugrs, Statein%vgrs, Statein%tgrs, vdftra,              &
+                         Radtend%htrsw, Radtend%htrlw, xmu, garea,                      &
+                         Statein%prsik(1,1), rb, Sfcprop%zorl, Diag%u10m, Diag%v10m,    &
+                         Sfcprop%ffmm, Sfcprop%ffhh, Sfcprop%tsfc, hflx, evap,          &
+                         stress, wind, kpbl, Statein%prsi, del, Statein%prsl,           &
+                         Statein%prslk, Statein%phii, Statein%phil, dtp,                &
+                         Model%dspheat, dusfc1, dvsfc1, dtsfc1, dqsfc1, Diag%hpbl,      &
+                         kinver, Model%xkzm_m, Model%xkzm_h, Model%xkzm_s,              &
+                         Model%dspfac, Model%bl_upfr, Model%bl_dnfr, Diag%dkudiagnostic)
 !*## CCPP ##
              endif
           elseif (Model%hybedmf) then
@@ -2645,6 +2659,7 @@ module module_physics_driver
 !*## CCPP ##
 !## CCPP ##* The following schemes are not in the CCPP yet.
            else
+            if ( Model%moninq_fac > -2 ) then
             call moninedmf_hafs(ix, im, levs, nvdiff, ntcw, dvdt, dudt, dtdt, dvdftra,  &
                            Statein%ugrs, Statein%vgrs, Statein%tgrs, vdftra,            &
                            Radtend%htrsw, Radtend%htrlw, xmu, Statein%prsik(1,1),       &
@@ -2655,7 +2670,19 @@ module module_physics_driver
                            Model%dspheat, dusfc1, dvsfc1, dtsfc1, dqsfc1, Diag%hpbl,    &
                            gamt, gamq, dkt, kinver, Model%xkzm_m, Model%xkzm_h,         &
                            Model%xkzm_s, lprnt, ipr,                                    &
-                           Model%xkzminv, Model%moninq_fac,islmsk)
+                           Model%xkzminv, Model%moninq_fac,islmsk, Diag%dkudiagnostic)
+            call moninedmf_hafs_pzhu(ix, im, levs, nvdiff, ntcw, dvdt, dudt, dtdt,      &
+                           dvdftra, Statein%ugrs, Statein%vgrs, Statein%tgrs, vdftra,   &
+                           Radtend%htrsw, Radtend%htrlw, xmu, Statein%prsik(1,1),       &
+                           rb, Sfcprop%zorl, Diag%u10m, Diag%v10m, Sfcprop%ffmm,        &
+                           Sfcprop%ffhh, Sfcprop%tsfc, qss, hflx, evap, stress,         &
+                           wind, kpbl, Statein%prsi, del, Statein%prsl,                 &
+                           Statein%prslk, Statein%phii, Statein%phil, dtp,              &
+                           Model%dspheat, dusfc1, dvsfc1, dtsfc1, dqsfc1, Diag%hpbl,    &
+                           gamt, gamq, dkt, kinver, Model%xkzm_m, Model%xkzm_h,         &
+                           Model%xkzm_s, lprnt, ipr,                                    &
+                           Model%xkzminv, Model%moninq_fac,islmsk, Diag%dkudiagnostic)
+            endif
            endif
           elseif (.not. Model%old_monin) then
             call moninq(ix, im, levs, nvdiff, ntcw, dvdt, dudt, dtdt, dvdftra,          &
