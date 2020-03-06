@@ -1046,6 +1046,12 @@ module fv3gfs_cap_mod
                             phase=1, userRc=urc, rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
+      if ( cpl ) then
+       ! assign import_data called during phase=1
+       call Dump_cplFields(gcomp, importState, exportstate, clock_fv3,    &
+                           cplprint_flag, 'import')
+      endif
+
       if (ESMF_LogFoundError(rcToCheck=urc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
       call ESMF_GridCompRun(fcstComp, exportState=fcstState, clock=clock_fv3, &
@@ -1164,7 +1170,7 @@ module fv3gfs_cap_mod
 !jw for coupled, check clock and dump import and export state
     if ( cpl ) then
        call Dump_cplFields(gcomp, importState, exportstate, clock_fv3,    &
-                           cplprint_flag, timeslice) 
+                           cplprint_flag, 'export')
     endif
 
     if (mype==0) print *,'fv3_cap,end integrate,na=',na,' time=',mpi_wtime()- timeri
