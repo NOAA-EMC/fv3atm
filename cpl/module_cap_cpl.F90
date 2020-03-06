@@ -383,7 +383,7 @@ module module_cap_cpl
       character(len=*),parameter :: subname='(module_cap_cpl:State_RWFields_tiles)'
 
       ! local variables
- 
+
       rc = ESMF_SUCCESS
       !call ESMF_LogWrite(trim(subname)//trim(filename)//": called",
       !ESMF_LOGMSG_INFO, rc=rc)

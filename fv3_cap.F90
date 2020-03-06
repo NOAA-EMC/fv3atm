@@ -982,7 +982,7 @@ module fv3gfs_cap_mod
 
     call ESMF_LogWrite(msgString, ESMF_LOGMSG_INFO, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-    
+
 !-----------------------------------------------------------------------
 !***  Use the internal Clock set by NUOPC layer for FV3 but update stopTime
 !-----------------------------------------------------------------------
@@ -1037,7 +1037,7 @@ module fv3gfs_cap_mod
     integrate: do while(.NOT.ESMF_ClockIsStopTime(clock_fv3, rc = RC))
 !
 !*** for forecast tasks
-     
+
       timewri = mpi_wtime()
       call ESMF_LogWrite('Model Advance: before fcstcomp run ', ESMF_LOGMSG_INFO, rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
@@ -1272,7 +1272,7 @@ module fv3gfs_cap_mod
     reconcileFlag = .true.
 
 !*** for forecast tasks
-     
+
     call ESMF_LogWrite('Model Advance phase1: before fcstcomp run ', ESMF_LOGMSG_INFO, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
@@ -1294,7 +1294,7 @@ module fv3gfs_cap_mod
   subroutine ModelAdvance_phase2(gcomp, rc)
     type(ESMF_GridComp)                    :: gcomp
     integer, intent(out)                   :: rc
-    
+
     ! local variables
     type(ESMF_State)                       :: importState, exportState
     type(ESMF_Clock)                       :: clock
@@ -1321,7 +1321,7 @@ module fv3gfs_cap_mod
     rc = ESMF_SUCCESS
     if(profile_memory) &
       call ESMF_VMLogMemInfo("Entering FV3 Model_ADVANCE phase2: ")
-!    
+!
     call ESMF_GridCompGet(gcomp, name=name, localpet=mype, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
@@ -1332,7 +1332,7 @@ module fv3gfs_cap_mod
 
 !
 !*** for forecast tasks
-     
+
       timewri = mpi_wtime()
       call ESMF_LogWrite('Model Advance phase2: before fcstcomp run ', ESMF_LOGMSG_INFO, rc=rc)
 

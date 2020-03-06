@@ -1601,7 +1601,7 @@ subroutine micro_mg_tend (                                       &
               tlat(i,k)       = tlat(i,k)       + dum1
               meltsdttot(i,k) = meltsdttot(i,k) + dum1
 
-!     if (lprnt .and. k >=100) write(0,*)' tlats=',tlat(i,k),' dum1=',dum1,&
+!     if (lprnt .and. k >=40) write(0,*)' tlats=',tlat(i,k),' dum1=',dum1,&
 !    ' minstsm=',minstsm(i,k),' qs=',qs(i,k),' xlf=',xlf,' oneodt=',oneodt, &
 !    ' snowmelt=',snowmelt,' t=',t(i,k),' dum=',dum,' k=',k
 
@@ -1643,7 +1643,7 @@ subroutine micro_mg_tend (                                       &
             tlat(i,k)       = dum1 + tlat(i,k)
             meltsdttot(i,k) = dum1 + meltsdttot(i,k)
 
-!     if (lprnt .and. k >=100) write(0,*)' tlatg=',tlat(i,k),' dum1=',dum1,&
+!     if (lprnt .and. k >=40) write(0,*)' tlatg=',tlat(i,k),' dum1=',dum1,&
 !    ' minstgm=',minstgm(i,k),' qg=',qg(i,k),' xlf=',xlf,' oneodt=',oneodt, &
 !    ' snowmelt=',snowmelt,' t=',t(i,k),' k=',k,' cpp=',cpp
 
@@ -2171,6 +2171,10 @@ subroutine micro_mg_tend (                                       &
      call bergeron_process_snow(t(:,k), rho(:,k), dv(:,k), mu(:,k), sc(:,k),       &
           qvl(:,k), qvi(:,k), asn(:,k), qcic(:,k), qsic(:,k), lams(:,k), n0s(:,k), &
           bergs(:,k), mgncol)
+!     if(lprnt) write(0,*)' bergs1=',bergs(1,k),' k=',k,' micro_mg_berg_eff_factor=',micro_mg_berg_eff_factor
+!     if(lprnt) write(0,*)' t=',t(1,k),' rho=',rho(1,k),' dv=',dv(1,k),' mu=',mu(1,k),&
+!        'qcic=',qcic(1,k),' qsic=',qsic(1,k),' qvl=',qvl(1,k),' qvi=',qvi(1,k),      &
+!        ' mu=',mu(1,k),' sc=',sc(1,k),' asn=',asn(1,k),' lams=',lams(1,k),' n0s=',n0s(1,k)
 
      bergs(:,k) = bergs(:,k) * micro_mg_berg_eff_factor
 
@@ -2181,6 +2185,11 @@ subroutine micro_mg_tend (                                       &
              icldm(:,k), rho(:,k), dv(:,k), qvl(:,k), qvi(:,k),           &
              berg(:,k), vap_dep(:,k), ice_sublim(:,k), mgncol)
 
+!     if(lprnt) write(0,*)' t=',t(1,k),' k=',k,' q=',q(1,k),' qi=',qi(1,k),&
+!       ' ni=',ni(1,k),' icldm=',icldm(1,k),' rho=',rho(1,k),' dv=',dv(1,k),&
+!       ' qvl=',qvl(1,k),' qvi=',qvi(1,k),' berg=',berg(1,k),' vap_dep=',&
+!       vap_dep(1,k),' ice_sublim=',ice_sublim(1,k)
+!     if(lprnt) write(0,*)' berg1=',berg(1,k),' k=',k,' micro_mg_berg_eff_factor=',micro_mg_berg_eff_factor
         do i=1,mgncol
 ! sublimation should not exceed available ice
           ice_sublim(i,k) = max(ice_sublim(i,k), -qi(i,k)*oneodt)
@@ -2355,6 +2364,8 @@ subroutine micro_mg_tend (                                       &
         else
            qcrat(i,k) = one
         end if
+
+!     if(lprnt) write(0,*)' bergs2=',bergs(1,k),' k=',k,' ratio=',ratio
 
         !PMC 12/3/12: ratio is also frac of step w/ liquid.
         !thus we apply berg for "ratio" of timestep and vapor
@@ -2827,11 +2838,11 @@ subroutine micro_mg_tend (                                       &
 !     if (lprnt)  write(0,*)' k=',k,' tlat=',tlat(i,k)
 !     if (lprnt .and. k >= 60) write(0,*)' k=',k,' tlat=',tlat(i,k)
 
-!       qctend(i,k) = qctend(i,k) + (-pra(i,k)-prc(i,k)-mnuccc(i,k)-mnucct(i,k)-msacwi(i,k)- &
-!                                     psacws(i,k)-bergs(i,k))*l!ldm(i,k)-berg(i,k)
+!      qctend(i,k) = qctend(i,k) + (-pra(i,k)-prc(i,k)-mnuccc(i,k)-mnucct(i,k)-msacwi(i,k)- &
+!                                    psacws(i,k)-bergs(i,k))*lcldm(i,k)-berg(i,k)
 
-       qctend(i,k) = qctend(i,k)+ &
-             (-pra(i,k)-prc(i,k)-mnuccc(i,k)-mnucct(i,k)-msacwi(i,k)- &
+       qctend(i,k) = qctend(i,k) +                                     &
+             (-pra(i,k)-prc(i,k)-mnuccc(i,k)-mnucct(i,k)-msacwi(i,k) - &
              psacws(i,k)-bergs(i,k)-qmultg(i,k)-psacwg(i,k)-pgsacw(i,k))*lcldm(i,k)-berg(i,k)
 
         if (do_cldice) then
@@ -3669,7 +3680,7 @@ subroutine micro_mg_tend (                                       &
      end do   !! nstep loop
 
 !    if (lprnt) write(0,*)' prectaftssno=',prect(i),' preci=',preci(i)
-!  if (lprnt) write(0,*)' qgtnd1=',qgtend(1,:)
+!    if (lprnt) write(0,*)' qgtnd1=',qgtend(1,:)
 
      if (do_graupel .or. do_hail) then
 !++ag Graupel Sedimentation
