@@ -250,21 +250,21 @@ module module_cap_cpl
 
       ! Dumping Fields out
       if (statewrite_flag) then
+        if(trim(state_tag) .eq. 'import')then
         call ESMF_GridCompGet(gcomp, importState=importState, rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
         ! replace with tiled field dumps
         !call ESMFPP_RegridWriteState(importState, "fv3_cap_import_", timeslice, rc=rc)
-        if(trim(state_tag) .eq. 'import')then
          write(filename,'(a,a,a)') 'fv3_cap_import_'//trim(import_timestr)//'_'
          call State_RWFields_tiles(importState,trim(filename), timeslice, rc=rc)
          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
         end if
 
+        if(trim(state_tag) .eq. 'export')then
         call ESMF_GridCompGet(gcomp, exportState=exportState, rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
         ! replace with tiled field dumps
         !call ESMFPP_RegridWriteState(exportState, "fv3_cap_export_", timeslice, rc=rc)
-        if(trim(state_tag) .eq. 'export')then
          write(filename,'(a,a,a)') 'fv3_cap_export_'//trim(export_timestr)//'_'
          call State_RWFields_tiles(exportState,trim(filename), timeslice, rc=rc)
          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
