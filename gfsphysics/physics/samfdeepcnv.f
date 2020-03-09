@@ -79,7 +79,7 @@
 !!
 !!  \section detailed Detailed Algorithm
 !!  @{
-      subroutine samfdeepcnv(im,ix,km,kdt,delt,itc,ntc,ntk,ntr,delp,
+      subroutine samfdeepcnv(im,ix,km,delt,itc,ntc,ntk,ntr,delp,
      &     prslp,psp,phil,qtr,q1,t1,u1,v1,fscav,
      &     cldwrk,rn,kbot,ktop,kcnv,islimsk,garea,
      &     dot,ncloud,ud_mf,dd_mf,dt_mf,cnvw,cnvc,
@@ -98,7 +98,6 @@
       implicit none
 !
       integer, intent(in)  :: im, ix, km, itc, ntc, ntk, ntr, ncloud
-      integer, intent(in)  :: kdt
       integer, intent(in)  :: islimsk(im)
       real(kind=kind_phys), intent(in) ::  delt
       real(kind=kind_phys), intent(in) :: psp(im), delp(ix,km), 
@@ -754,7 +753,7 @@ c
 !
       else
 !
-        if(do_ca .and. ca_sgs .and. kdt > 1)then
+        if(do_ca .and. ca_sgs)then
           do i=1,im
            if(cnvflg(i)) then
              if(ca_deep(i) > nplumes)then
