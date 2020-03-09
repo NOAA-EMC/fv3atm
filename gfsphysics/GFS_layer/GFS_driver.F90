@@ -166,7 +166,7 @@ module GFS_driver
     integer :: ix
 #ifndef CCPP
     integer :: blocksize,k
-    real(kind=kind_phys), allocatable :: si(:),sl(:)
+    real(kind=kind_phys), allocatable :: si(:)
     real(kind=kind_phys), parameter   :: p_ref = 101325.0d0
 #endif
 
@@ -194,10 +194,9 @@ module GFS_driver
                      Init_parm%iau_offset, Init_parm%bdat,         &
                      Init_parm%cdat, Init_parm%tracer_names,       &
                      Init_parm%input_nml_file, Init_parm%tile_num, &
-                     Init_parm%blksz                               &
+                     Init_parm%blksz,Init_parm%ak, Init_parm%bk   &
 #ifdef CCPP
-                    ,Init_parm%ak, Init_parm%bk,                   &
-                     Init_parm%restart, Init_parm%hydrostatic,     &
+                     ,Init_parm%restart, Init_parm%hydrostatic,     &
                      communicator, ntasks, nthrds                  &
 #endif
                      )
@@ -469,18 +468,14 @@ module GFS_driver
     !--- this note is placed here to alert users to study
     !--- the FV3GFS_io.F90 module
 
+#ifndef CCPP
     if(Model%do_ca .and. Model%ca_global)then
-       allocate(sl(Model%levs+1))
        
-       do k=1,Model%levs
-          sl(k)= 0.5*(Init_parm%ak(k)/p_ref+Init_parm%bk(k)+Init_parm%ak(k+1)/p_ref+Init_parm%bk(k+1)) ! si are now sigmas                                                                                                             
-       enddo
-
        do nb = 1,nblks
          do k=1,Model%levs
-          if (sl(k) .lt. 0.1 .and. sl(k) .gt. 0.025) then
-           Coupling(nb)%vfact_ca(k) = (sl(k)-0.025)/(0.1-0.025)
-          else if (sl(k) .lt. 0.025) then
+          if (Model%si(k) .lt. 0.1 .and. Model%si(k) .gt. 0.025) then
+           Coupling(nb)%vfact_ca(k) = (Model%si(k)-0.025)/(0.1-0.025)
+          else if (Model%si(k) .lt. 0.025) then
            Coupling(nb)%vfact_ca(k) = 0.0
           else
            Coupling(nb)%vfact_ca(k) = 1.0
@@ -494,7 +489,7 @@ module GFS_driver
        enddo
      
     endif
-
+#endif
 
   end subroutine GFS_initialize
 
