@@ -83,6 +83,13 @@
       if (ix < im) stop
 !
 !     if (lprnt) write(0,*)' in moninshoc tsea=',tsea(ipr)
+!    &,    ' grav=',grav, rd, cp, hvap, fv,' ipr=',ipr
+!    &,' ntke=',ntke,' ntcw=',ntcw
+!     if (lprnt) write(0,*)' in moninshoc tin=',t1(ipr,:)
+!     if (lprnt) write(0,*)' in moninshoc qin=',q1(ipr,:,1)
+!     if (lprnt) write(0,*)' in moninshoc qwin=',q1(ipr,:,2)
+!     if (lprnt) write(0,*)' in moninshoc qiin=',q1(ipr,:,3)
+
       dt2   = delt
       rdt   = 1. / dt2
       km1   = km - 1
@@ -125,8 +132,9 @@
         enddo
       enddo
 !     if (lprnt) then
-!       print *,' xkzo=',(xkzo(ipr,k),k=1,km1)
-!       print *,' xkzmo=',(xkzmo(ipr,k),k=1,km1)
+!       write(0,*)' tx1=',tx1(ipr),' kinver=',kinver(ipr)
+!       write(0,*)' xkzo=',xkzo(ipr,:)
+!       write(0,*)' xkzmo=',xkzmo(ipr,:)
 !     endif
 !
 !  diffusivity in the inversion layer is set to be xkzminv (m^2/s)
@@ -332,6 +340,8 @@
           dkt(i,k) = max(min(tkh(i,kp1)+xkzo(i,k), dkmax), xkzo(i,k))
         enddo
       enddo
+!     if (lprnt) write(0,*)' tkh=',tkh(ipr,:)
+!     if (lprnt) write(0,*)' dkt=',dkt(ipr,:)
 !
 !     compute tridiagonal matrix elements for heat and moisture
 !
@@ -504,6 +514,8 @@
         enddo
       endif
 !
+!     if (lprnt) write(0,*)' in moninshoc tau=',tau(ipr,:)*86400
+
       return
       end
       subroutine tridi1(l,n,cl,cm,cu,r1,au,a1)
