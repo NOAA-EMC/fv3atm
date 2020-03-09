@@ -1672,7 +1672,7 @@ end subroutine atmos_data_type_chksum
           if (trim(impfield_name) == trim(fldname)) then
             findex = QueryFieldList(ImportFieldsList,fldname)
             if (importFieldsValid(findex) .and. IPD_control%cplwav2atm) then
-!$omp parallel do default(shared) private(i,j,nb,ix)
+!$omp parallel do default(shared) private(i,j,nb,ix,tem)
               do j=jsc,jec
                 do i=isc,iec
                   nb = Atm_block%blkno(i,j)
