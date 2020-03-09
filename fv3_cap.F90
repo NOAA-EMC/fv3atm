@@ -37,7 +37,8 @@ module fv3gfs_cap_mod
                                     wrttasks_per_group, n_group,             &
                                     lead_wrttask, last_wrttask,              &
                                     output_grid, output_file,                &
-                                    imo, jmo, write_nemsioflip,              &
+                                    imo,jmo,ichunk2d,jchunk2d,write_nemsioflip,&
+                                    ichunk3d,jchunk3d,kchunk3d,              &
                                     write_fsyncflag, nsout_io,               &
                                     cen_lon, cen_lat, ideflate,              &
                                     lon1, lat1, lon2, lat2, dlon, dlat,      &
@@ -235,8 +236,9 @@ module fv3gfs_cap_mod
 
     integer,dimension(6)                   :: date, date_init
     integer                                :: mpi_comm_atm
-    integer                                :: i, j, k, io_unit, urc
+    integer                                :: i, j, k, io_unit, urc, ierr
     integer                                :: petcount, mype
+    integer                                :: num_output_file
     logical                                :: isPetLocal
     logical                                :: OPENED
     character(ESMF_MAXSTR)                 :: name
@@ -307,6 +309,14 @@ module fv3gfs_cap_mod
     call ESMF_ConfigGetAttribute(config=CF,value=iau_offset,default=0,label ='iau_offset:',rc=rc)
     if (iau_offset < 0) iau_offset=0
 
+    ! chunksizes for netcdf_parallel
+    call ESMF_ConfigGetAttribute(config=CF,value=ichunk2d,default=0,label ='ichunk2d:',rc=rc)
+    call ESMF_ConfigGetAttribute(config=CF,value=jchunk2d,default=0,label ='jchunk2d:',rc=rc)
+    call ESMF_ConfigGetAttribute(config=CF,value=ichunk3d,default=0,label ='ichunk3d:',rc=rc)
+    call ESMF_ConfigGetAttribute(config=CF,value=jchunk3d,default=0,label ='jchunk3d:',rc=rc)
+    call ESMF_ConfigGetAttribute(config=CF,value=kchunk3d,default=0,label ='kchunk3d:',rc=rc)
+    
+    ! zlib compression flag
     call ESMF_ConfigGetAttribute(config=CF,value=ideflate,default=0,label ='ideflate:',rc=rc)
     if (ideflate < 0) ideflate=0
 
@@ -346,8 +356,33 @@ module fv3gfs_cap_mod
         CALL ESMF_ConfigGetAttribute(config=CF,value=filename_base(i), rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
       enddo
-      if(mype == 0) print *,'af nems config,num_files=',num_files, &
-                            'filename_base=',filename_base
+
+      allocate(output_file(num_files))
+      num_output_file = ESMF_ConfigGetLen(config=CF, label ='output_file:',rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+      if (num_files == num_output_file) then
+        CALL ESMF_ConfigGetAttribute(CF,valueList=output_file,label='output_file:', &
+             count=num_files, rc=RC)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+        do i = 1, num_files
+          if(output_file(i) /= "netcdf" .and. output_file(i) /= "netcdf_parallel") then
+            write(0,*)"fv3_cap.F90: only netcdf and netcdf_parallel are allowed for multiple values of output_file"
+            call ESMF_Finalize(endflag=ESMF_END_ABORT)
+          endif
+        enddo
+      else if ( num_output_file == 1) then
+        CALL ESMF_ConfigGetAttribute(CF,valuelist=output_file,label='output_file:', count=1, rc=RC)
+        output_file(1:num_files) = output_file(1)
+      else
+        output_file(1:num_files) = 'netcdf'
+      endif
+      if(mype == 0) then
+        print *,'af nems config,num_files=',num_files
+        do i=1,num_files
+           print *,'num_file=',i,'filename_base= ',trim(filename_base(i)),&
+           ' output_file= ',trim(output_file(i))
+        enddo
+      endif
 !
 ! variables for alarms
       call ESMF_ConfigGetAttribute(config=CF, value=nfhout,   label ='nfhout:',   rc=rc)
@@ -359,10 +394,8 @@ module fv3gfs_cap_mod
 
 ! variables for I/O options
       call ESMF_ConfigGetAttribute(config=CF, value=output_grid, label ='output_grid:',rc=rc)
-      call ESMF_ConfigGetAttribute(config=CF, value=output_file, label ='output_file:',rc=rc)
       if (mype == 0) then
         print *,'output_grid=',trim(output_grid)
-        print *,'output_file=',trim(output_file)
       end if
       write_nemsioflip =.false.
       write_fsyncflag  =.false.
@@ -880,14 +913,17 @@ module fv3gfs_cap_mod
         call realizeConnectedCplFields(exportState, fcstGrid,                                                &
                                        numLevels, numSoilLayers, numTracers, num_diag_sfc_emis_flux,         &
                                        num_diag_down_flux, num_diag_type_down_flux, num_diag_burn_emis_flux, &
-                                       num_diag_cmass, exportFieldsList, exportFieldTypes, exportFields, rc)
+                                       num_diag_cmass, exportFieldsList, exportFieldTypes, 'FV3 Export',     &
+                                       exportFields, rc)
+
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__,  file=__FILE__)) return
 
         ! -- realize connected fields in importState
         call realizeConnectedCplFields(importState, fcstGrid,                                                &
                                        numLevels, numSoilLayers, numTracers, num_diag_sfc_emis_flux,         &
                                        num_diag_down_flux, num_diag_type_down_flux, num_diag_burn_emis_flux, &
-                                       num_diag_cmass, importFieldsList, importFieldTypes, importFields, rc)
+                                       num_diag_cmass, importFieldsList, importFieldTypes, 'FV3 Import',     &
+                                       importFields, rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__,  file=__FILE__)) return
       end if
     endif

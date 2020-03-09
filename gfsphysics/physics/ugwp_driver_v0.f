@@ -47,8 +47,8 @@
 
        real(kind=kind_phys), intent(in), dimension(im,levs) :: ugrs
      &,        vgrs, tgrs, qgrs, prsl, prslk, phil, del
-       real(kind=kind_phys), intent(in), dimension(im,levs+1) :: 
-     &         phii, prsi
+       real(kind=kind_phys), intent(in), dimension(im,levs+1) :: prsi
+     &,        phii
 
 !      real(kind=kind_phys), intent(in) :: oro_stat(im,nmtvr)
        real(kind=kind_phys), intent(in), dimension(im) :: hprime, oc
