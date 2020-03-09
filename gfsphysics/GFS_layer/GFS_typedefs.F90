@@ -12,7 +12,7 @@ module GFS_typedefs
        use module_radsw_parameters,  only: topfsw_type, sfcfsw_type, cmpfsw_type, NBDSW
        use module_radlw_parameters,  only: topflw_type, sfcflw_type, NBDLW
 #else
-       use physcons,                 only: rhowater
+       use physcons,                 only: rhowater, con_p0
        use module_radsw_parameters,  only: topfsw_type, sfcfsw_type
        use module_radlw_parameters,  only: topflw_type, sfcflw_type
        use ozne_def,                 only: levozp,      oz_coeff
@@ -486,14 +486,13 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: ca1      (:)   => null() !
     real (kind=kind_phys), pointer :: ca2      (:)   => null() !
     real (kind=kind_phys), pointer :: ca3      (:)   => null() !  
-    real (kind=kind_phys), pointer :: vfact_ca(:)    => null()
     real (kind=kind_phys), pointer :: ca_deep  (:)   => null() !
     real (kind=kind_phys), pointer :: ca_turb  (:)   => null() !
     real (kind=kind_phys), pointer :: ca_shal  (:)   => null() !
     real (kind=kind_phys), pointer :: ca_rad   (:)   => null() !
     real (kind=kind_phys), pointer :: ca_micro (:)   => null() !
     real (kind=kind_phys), pointer :: condition(:)   => null() !
-    
+    real (kind=kind_phys), pointer :: vfact_ca(:)    => null() !
     !--- stochastic physics
     real (kind=kind_phys), pointer :: shum_wts  (:,:) => null()  !
     real (kind=kind_phys), pointer :: sppt_wts  (:,:) => null()  !
@@ -555,12 +554,12 @@ module GFS_typedefs
     integer              :: nx              !< number of points in the i-dir for this MPI-domain
     integer              :: ny              !< number of points in the j-dir for this MPI-domain
     integer              :: levs            !< number of vertical levels
+    !--- ak/bk for pressure level calculations                                                                                                                                                                                             
+    real(kind=kind_phys), pointer :: ak(:)  !< from surface (k=1) to TOA (k=levs)                                                                                                                                                          
+    real(kind=kind_phys), pointer :: bk(:)  !< from surface (k=1) to TOA (k=levs)   
 #ifdef CCPP
     integer              :: levsp1          !< number of vertical levels plus one
     integer              :: levsm1          !< number of vertical levels minus one
-    !--- ak/bk for pressure level calculations
-    real(kind=kind_phys), pointer :: ak(:)  !< from surface (k=1) to TOA (k=levs)
-    real(kind=kind_phys), pointer :: bk(:)  !< from surface (k=1) to TOA (k=levs)
 #endif
     integer              :: cnx             !< number of points in the i-dir for this cubed-sphere face
     integer              :: cny             !< number of points in the j-dir for this cubed-sphere face
@@ -962,15 +961,9 @@ module GFS_typedefs
     logical              :: ca_sgs          !< switch for sgs ca
     logical              :: ca_global       !< switch for global ca
     logical              :: ca_smooth       !< switch for gaussian spatial filter
-    logical              :: isppt_deep      !< switch for deep convective isppt
-    logical              :: isppt_pbl       !< switch for PBL isppt
-    logical              :: isppt_shal      !< switch for shal isppt
-    logical              :: isppt_micro     !< swithc for micro isppt
     integer              :: iseed_ca        !< seed for random number generation in ca scheme
     integer              :: nspinup         !< number of iterations to spin up the ca
     real(kind=kind_phys) :: nthresh         !< threshold used for perturbed vertical velocity
-    logical              :: pert_flux       !< perturb mass-flux or counter gradient term
-    logical              :: pert_trigger    !< perturb trigger with ca
     real                 :: ca_amplitude    !< amplitude of ca trigger perturbation
     integer              :: nsmooth
 
@@ -1074,9 +1067,9 @@ module GFS_typedefs
     integer              :: yearlen         !< current length of the year
 !
     logical              :: iccn            !< using IN CCN forcing for MG2/3
+    real(kind=kind_phys), pointer :: si(:)  !< vertical sigma coordinate for model initialization
 #ifdef CCPP
     real(kind=kind_phys)          :: sec    !< seconds since model initialization
-    real(kind=kind_phys), pointer :: si(:)  !< vertical sigma coordinate for model initialization
 #endif
 
 !--- IAU
@@ -2567,8 +2560,8 @@ module GFS_typedefs
 
    !-- cellular automata
     allocate (Coupling%condition(IM))
+    allocate (Coupling%vfact_ca(Model%levs))
     if (Model%do_ca) then
-      allocate (Coupling%vfact_ca (Model%levs))
       allocate (Coupling%ca1      (IM))
       allocate (Coupling%ca2      (IM))
       allocate (Coupling%ca3      (IM))
@@ -2650,9 +2643,10 @@ module GFS_typedefs
                                  cnx, cny, gnx, gny, dt_dycore,     &
                                  dt_phys, iau_offset, idat, jdat,   &
                                  tracer_names,                      &
-                                 input_nml_file, tile_num, blksz    &
+                                 input_nml_file, tile_num, blksz,   &
+                                 ak,bk                              &
 #ifdef CCPP
-                                ,ak, bk, restart, hydrostatic,      &
+                                 ,restart, hydrostatic,      &
                                  communicator, ntasks, nthreads     &
 #endif
                                  )
@@ -2699,9 +2693,9 @@ module GFS_typedefs
     character(len=32),      intent(in) :: tracer_names(:)
     character(len=256),     intent(in), pointer :: input_nml_file(:)
     integer,                intent(in) :: blksz(:)
-#ifdef CCPP
     real(kind=kind_phys), dimension(:), intent(in) :: ak
     real(kind=kind_phys), dimension(:), intent(in) :: bk
+#ifdef CCPP
     logical,                intent(in) :: restart
     logical,                intent(in) :: hydrostatic
     integer,                intent(in) :: communicator
@@ -3063,13 +3057,7 @@ module GFS_typedefs
     logical              :: ca_sgs         = .false. 
     logical              :: ca_global      = .false.
     logical              :: ca_smooth      = .false.
-    logical              :: isppt_deep     = .false.
-    logical              :: isppt_pbl      = .false.
-    logical              :: isppt_shal     = .false.
-    logical              :: isppt_micro    = .false.
     real(kind=kind_phys) :: nthresh        = 0.0
-    logical              :: pert_flux      = .false.
-    logical              :: pert_trigger   = .false.
     real                 :: ca_amplitude   = 500.
     integer              :: nsmooth        = 100 
 
@@ -3188,9 +3176,8 @@ module GFS_typedefs
                           !--- cellular automata
                                nca, ncells, nlives, nca_g, ncells_g, nlives_g, nfracseed,   &
                                nseed, nseed_g, nthresh, do_ca,                              &
-                               ca_sgs, ca_global,iseed_ca,ca_smooth,isppt_deep,isppt_shal,  &
-                               isppt_pbl, isppt_micro, nspinup,pert_flux, pert_trigger,     &
-                               ca_amplitude, nsmooth,                                       &
+                               ca_sgs, ca_global,iseed_ca,ca_smooth,                        &
+                               nspinup,ca_amplitude, nsmooth,                               &
                           !--- IAU
                                iau_delthrs,iaufhrs,iau_inc_files,iau_filter_increments,     &
                           !--- debug options
@@ -3279,13 +3266,13 @@ module GFS_typedefs
     Model%nx               = nx
     Model%ny               = ny
     Model%levs             = levs
-#ifdef CCPP
-    Model%levsp1           = Model%levs + 1
-    Model%levsm1           = Model%levs - 1
     allocate(Model%ak(1:size(ak)))
     allocate(Model%bk(1:size(bk)))
     Model%ak               = ak
     Model%bk               = bk
+#ifdef CCPP
+    Model%levsp1           = Model%levs + 1
+    Model%levsm1           = Model%levs - 1
 #endif
     Model%cnx              = cnx
     Model%cny              = cny
@@ -3667,14 +3654,8 @@ module GFS_typedefs
     Model%ca_sgs           = ca_sgs
     Model%iseed_ca         = iseed_ca
     Model%ca_smooth        = ca_smooth
-    Model%isppt_deep       = isppt_deep
-    Model%isppt_pbl        = isppt_pbl
-    Model%isppt_shal       = isppt_shal
-    Model%isppt_micro      = isppt_micro
     Model%nspinup          = nspinup  
     Model%nthresh          = nthresh 
-    Model%pert_trigger     = pert_trigger
-    Model%pert_flux        = pert_flux
     Model%ca_amplitude     = ca_amplitude
     Model%nsmooth          = nsmooth
 
@@ -3832,6 +3813,12 @@ module GFS_typedefs
     Model%hydrostatic      = hydrostatic
 #endif
     Model%jdat(1:8)        = jdat(1:8)
+    allocate(Model%si(Model%levr+1))
+    !--- Define sigma level for radiation initialization
+    !--- The formula converting hybrid sigma pressure coefficients to sigma coefficients follows Eckermann (2009, MWR)
+    !--- ps is replaced with p0. The value of p0 uses that in http://www.emc.ncep.noaa.gov/officenotes/newernotes/on461.pdf
+    !--- ak/bk have been flipped from their original FV3 orientation and are defined sfc -> toa
+    Model%si = (ak + bk * con_p0 - ak(Model%levr+1)) / (con_p0 - ak(Model%levr+1))
 #ifdef CCPP
     Model%sec              = 0
     if (Model%lsm == Model%lsm_noahmp) then
@@ -3841,12 +3828,6 @@ module GFS_typedefs
     ! DH* what happens if LTP>0? Does this have to change? 
     ! A conversation with Yu-Tai suggests that we can probably
     ! eliminate LTP altogether *DH
-    allocate(Model%si(Model%levr+1))
-    !--- Define sigma level for radiation initialization
-    !--- The formula converting hybrid sigma pressure coefficients to sigma coefficients follows Eckermann (2009, MWR)
-    !--- ps is replaced with p0. The value of p0 uses that in http://www.emc.ncep.noaa.gov/officenotes/newernotes/on461.pdf
-    !--- ak/bk have been flipped from their original FV3 orientation and are defined sfc -> toa
-    Model%si = (ak + bk * con_p0 - ak(Model%levr+1)) / (con_p0 - ak(Model%levr+1))
 #endif
 
 #ifndef CCPP
@@ -4673,14 +4654,8 @@ module GFS_typedefs
       print *, ' do_ca             : ', Model%do_ca
       print *, ' iseed_ca          : ', Model%iseed_ca
       print *, ' ca_smooth         : ', Model%ca_smooth
-      print *, ' isppt_deep        : ', Model%isppt_deep
-      print *, ' isppt_pbl         : ', Model%isppt_pbl
-      print *, ' isppt_shal        : ', Model%isppt_shal
-      print *, ' isppt_micro       : ', Model%isppt_micro
       print *, ' nspinup           : ', Model%nspinup
       print *, ' nthresh           : ', Model%nthresh
-      print *, ' pert_trigger      : ', Model%pert_trigger
-      print *, ' pert_flux         : ', Model%pert_flux
       print *, ' ca_amplitude      : ', Model%ca_amplitude
       print *, ' nsmooth           : ', Model%nsmooth
       print *, ' '
@@ -4748,9 +4723,9 @@ module GFS_typedefs
       print *, ' zhour             : ', Model%zhour
       print *, ' kdt               : ', Model%kdt
       print *, ' jdat              : ', Model%jdat
+      print *, ' si                : ', Model%si
 #ifdef CCPP
       print *, ' sec               : ', Model%sec
-      print *, ' si                : ', Model%si
       print *, ' first_time_step   : ', Model%first_time_step
       print *, ' restart           : ', Model%restart
       print *, ' hydrostatic       : ', Model%hydrostatic
