@@ -2641,9 +2641,9 @@ module module_physics_driver
                            gamt, gamq, dkt, kinver, Model%xkzm_m, Model%xkzm_h,         &
                            Model%xkzm_s, lprnt, ipr,                                    &
                            Model%xkzminv, Model%moninq_fac)
-           else
-!*## CCPP ##
+!*## CCPP ##                                                                                                                                                                                                                               
 !## CCPP ##* The following schemes are not in the CCPP yet.
+           else
             call moninedmf_hafs(ix, im, levs, nvdiff, ntcw, dvdt, dudt, dtdt, dvdftra,  &
                            Statein%ugrs, Statein%vgrs, Statein%tgrs, vdftra,            &
                            Radtend%htrsw, Radtend%htrlw, xmu, Statein%prsik(1,1),       &
@@ -3700,7 +3700,7 @@ module module_physics_driver
             endif
 !*## CCPP ##
 !## CCPP ##* samfdeepcnv.f/samfdeepcnv_run
-            call samfdeepcnv(im, ix, levs, kdt, dtp, itc, Model%ntchm, ntk, nsamftrac,  &
+            call samfdeepcnv(im, ix, levs, dtp, itc, Model%ntchm, ntk, nsamftrac,  &
                              del, Statein%prsl, Statein%pgr, Statein%phil, clw,    &
                              Stateout%gq0(:,:,1), Stateout%gt0,                    &
                              Stateout%gu0, Stateout%gv0, Model%fscav,              &
