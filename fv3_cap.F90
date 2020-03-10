@@ -238,7 +238,7 @@ module fv3gfs_cap_mod
     integer                                :: mpi_comm_atm
     integer                                :: i, j, k, io_unit, urc, ierr
     integer                                :: petcount, mype
-    integer                                :: num_output_file
+    integer                                :: num_output_file, isrcTermProcessing
     logical                                :: isPetLocal
     logical                                :: OPENED
     character(ESMF_MAXSTR)                 :: name
@@ -247,7 +247,6 @@ module fv3gfs_cap_mod
     integer,dimension(:), allocatable      :: petList, originPetList, targetPetList
     character(20)                          :: cwrtcomp
     character(160)                         :: msg
-    integer                                :: isrctermprocessing
 
     character(len=*),parameter  :: subname='(fv3_cap:InitializeAdvertise)'
     integer nfmout, nfsout , nfmout_hf, nfsout_hf
@@ -341,6 +340,10 @@ module fv3gfs_cap_mod
 
       CALL ESMF_ConfigGetAttribute(config=CF,value=app_domain, default="global", &
                                    label ='app_domain:',rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+      CALL ESMF_ConfigGetAttribute(config=CF,value=isrcTermProcessing, default=0, &
+                                   label ='isrcTermProcessing:',rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
       if(mype == 0) print *,'af nems config,quilting=',quilting,'write_groups=', &
@@ -732,11 +735,10 @@ module fv3gfs_cap_mod
 ! this is a Store() for the first wrtComp -> must do the Store()
             timewri = mpi_wtime()
 
-            isrctermprocessing = 1
             call ESMF_FieldBundleRegridStore(fcstFB(j), wrtFB(j,i),                                    &
                                              regridMethod=regridmethod, routehandle=routehandle(j,i),  &
                                              unmappedaction=ESMF_UNMAPPEDACTION_IGNORE,                &
-                                             srcTermProcessing=isrctermprocessing, rc=rc)
+                                             srcTermProcessing=isrcTermProcessing, rc=rc)
 
 !           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
             if (rc /= ESMF_SUCCESS) then
@@ -1108,6 +1110,9 @@ module fv3gfs_cap_mod
 
          timerhi = mpi_wtime()
 !         if (mype == 0 .or. mype == lead_wrttask(1)) print *,' aft fcst run alarm is on, na=',na,'mype=',mype
+
+         call ESMF_VMEpochStart(epoch=ESMF_VMEpoch_Buffer, rc=rc)
+         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
          do i=1, FBCount
 !
 ! get fcst fieldbundle
@@ -1119,7 +1124,10 @@ module fv3gfs_cap_mod
            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 !
 !end FBcount
-          enddo
+         enddo
+         call ESMF_VMEpochEnd(rc=rc)
+         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
 !       if (mype == 0 .or. mype == lead_wrttask(n_group)) print *,'aft fieldbundleregrid,na=',na,  &
 !       ' time=', timerh- timerhi
 
