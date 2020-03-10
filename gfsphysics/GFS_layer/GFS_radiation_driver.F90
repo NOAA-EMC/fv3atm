@@ -441,7 +441,7 @@
 !                                                                       !
 ! attributes:                                                           !
 !   language:  fortran 90                                               !
-!   machine:   wcoss                                                   !
+!   machine:   wcoss                                                    !
 !                                                                       !
 !  ====================  definition of variables  ====================  !
 !                                                                       !
@@ -453,7 +453,7 @@
 !                                                                       !
 !  outputs: (none)                                                      !
 !                                                                       !
-!  external module variables:  (in module physparam)                     !
+!  external module variables:  (in module physparam)                    !
 !   isolar   : solar constant cntrol flag                               !
 !              = 0: use the old fixed solar constant in "physcon"       !
 !              =10: use the new fixed solar constant in "physcon"       !
@@ -501,13 +501,13 @@
 !   icldflg  : cloud optical property scheme control flag               !
 !              =0: use diagnostic cloud scheme (discontinued)           !
 !              =1: use prognostic cloud scheme (default)                !
-!   imp_physics  : cloud microphysics scheme control flag                   !
-!              =99 zhao/carr/sundqvist microphysics scheme               !
+!   imp_physics  : cloud microphysics scheme control flag               !
+!              =99 zhao/carr/sundqvist microphysics scheme              !
 !              =98 zhao/carr/sundqvist microphysics+pdf cloud & cnvc,cnvw!
-!              =11 GFDL cloud microphysics                               !
+!              =11 GFDL cloud microphysics                              !
 !              =8 Thompson microphysics scheme                          !
 !              =6 WSM6 microphysics scheme                              !
-!              =10 MG microphysics scheme                                !
+!              =10 MG microphysics scheme                               !
 !   iovrsw   : control flag for cloud overlap in sw radiation           !
 !   iovrlw   : control flag for cloud overlap in lw radiation           !
 !              =0: random overlapping clouds                            !
@@ -1243,7 +1243,6 @@
 
       !  mg, sfc perts
       real(kind=kind_phys), dimension(size(Grid%xlon,1)) :: alb1d
-      real(kind=kind_phys) :: cdfz
 
       real(kind=kind_phys), dimension(size(Grid%xlon,1),Model%levr+ltp) :: cldtausw
       real(kind=kind_phys), dimension(size(Grid%xlon,1),Model%levr+ltp) :: cldtaulw
@@ -1364,32 +1363,33 @@
       enddo
 !
       if (ivflip == 0) then                                ! input data from toa to sfc
-        do i = 1, IM
-          plvl(i,1+kd) = 0.01 * Statein%prsi(i,1)          ! pa to mb (hpa)
-        enddo
-        if (lsk /= 0) then
+        if (lsk > 0) then
+          k1 = 1 + kd
+          k2 = k1 + kb
           do i = 1, IM
-            plvl(i,1+kd)  = 0.5 * (plvl(i,2+kd) + plvl(i,1+kd))
+            plvl(i,k2)   = 0.01 * Statein%prsi(i,1+kb)          ! pa to mb (hpa)
+            plyr(i,k1)   = 0.5 * (plvl(i,k2+1) + plvl(i,k2))
+            prslk1(i,k1) = (plyr(i,k1)*0.001) ** rocp
           enddo
         endif
       else                                                 ! input data from sfc to top
-        do i = 1, IM
-          plvl(i,LP1+kd) = 0.01 * Statein%prsi(i,LP1+lsk)  ! pa to mb (hpa)
-        enddo
-        if (lsk /= 0) then
+        if (Model%levs > lm) then
+          k1 = lm + kd
           do i = 1, IM
-            plvl(i,LM+kd)  = 0.5 * (plvl(i,LP1+kd) + plvl(i,LM+kd))
+            plvl(i,k1+1) = 0.01 * Statein%prsi(i,Model%levs+1)  ! pa to mb (hpa)
+            plyr(i,k1)   = 0.5 * (plvl(i,k1+1) + plvl(i,k1))
+            prslk1(i,k1) = (plyr(i,k1)*0.001) ** rocp
           enddo
         endif
       endif
-
+!
       if ( lextop ) then                 ! values for extra top layer
         do i = 1, IM
           plvl(i,llb) = prsmin
           if ( plvl(i,lla) <= prsmin ) plvl(i,lla) = 2.0*prsmin
           plyr(i,lyb)   = 0.5 * plvl(i,lla)
           tlyr(i,lyb)   = tlyr(i,lya)
-          prslk1(i,lyb) = (plyr(i,lyb)*0.00001) ** rocp ! plyr in Pa
+          prslk1(i,lyb) = (plyr(i,lyb)*0.001) ** rocp ! plyr in Pa
           rhly(i,lyb)   = rhly(i,lya)
           qstl(i,lyb)   = qstl(i,lya)
         enddo
@@ -1628,11 +1628,11 @@
 
 ! rsun the  summation methods and order make the difference in calculation 
 
-!            clw(:,:) = clw(:,:) + tracer1(:,1:LMK,Model%ntcw)   &        
-!                                + tracer1(:,1:LMK,Model%ntiw)   & 
-!                                + tracer1(:,1:LMK,Model%ntrw)   & 
-!                                + tracer1(:,1:LMK,Model%ntsw)   & 
-!                                + tracer1(:,1:LMK,Model%ntgl) 
+!            clw(:,:) = clw(:,:) + tracer1(:,1:LMK,Model%ntcw)   &
+!                                + tracer1(:,1:LMK,Model%ntiw)   &
+!                                + tracer1(:,1:LMK,Model%ntrw)   &
+!                                + tracer1(:,1:LMK,Model%ntsw)   &
+!                                + tracer1(:,1:LMK,Model%ntgl)
             ccnd(:,:,1) =               tracer1(:,1:LMK,ntcw)
             ccnd(:,:,1) = ccnd(:,:,1) + tracer1(:,1:LMK,ntrw)
             ccnd(:,:,1) = ccnd(:,:,1) + tracer1(:,1:LMK,ntiw)
@@ -1687,7 +1687,7 @@
 !			       effrl(i,k1)
 !                  endif  
 !                  if(effrs(i,k1)==0.0) then
-!		    write(6,*) 'rad driver:snow mixing ratio:',Model%kdt, i,k1,        & 
+!		    write(6,*) 'rad driver:snow mixing ratio:',Model%kdt, i,k1, & 
 !			        tracer1(i,k,ntsw)
 !                  endif  
 !                endif 
@@ -1760,55 +1760,55 @@
                                                                           ! or unified cloud and/or with MG microphysics
 
           if (Model%uni_cld .and. ncld >= 2) then
-            call progclduni (plyr, plvl, tlyr, tvly, ccnd, ncndl,        &!  ---  inputs
+            call progclduni (plyr, plvl, tlyr, tvly, ccnd, ncndl,        &    !  ---  inputs
                              Grid%xlat, Grid%xlon, Sfcprop%slmsk,dz,delp,&
                              IM, LMK, LMP, cldcov,                       &
                              effrl, effri, effrr, effrs, Model%effr_in,  &
-                             clouds, cldsa, mtopa, mbota, de_lgth)        !  ---  outputs
+                             clouds, cldsa, mtopa, mbota, de_lgth)            !  ---  outputs
           else
-            call progcld1 (plyr ,plvl, tlyr, tvly, qlyr, qstl, rhly,    & !  ---  inputs
+            call progcld1 (plyr ,plvl, tlyr, tvly, qlyr, qstl, rhly,    &     !  ---  inputs
                            ccnd(1:IM,1:LMK,1), Grid%xlat,Grid%xlon,     &
                            Sfcprop%slmsk, dz, delp, IM, LMK, LMP,       &
                            Model%uni_cld, Model%lmfshal,                &
                            Model%lmfdeep2, cldcov,                      &
                            effrl, effri, effrr, effrs, Model%effr_in,   &
-                           clouds, cldsa, mtopa, mbota, de_lgth)          !  ---  outputs
+                           clouds, cldsa, mtopa, mbota, de_lgth)              !  ---  outputs
           endif
 
         elseif(Model%imp_physics == 98) then      ! zhao/moorthi's prognostic cloud+pdfcld
 
-          call progcld3 (plyr, plvl, tlyr, tvly, qlyr, qstl, rhly,      & !  ---  inputs
+          call progcld3 (plyr, plvl, tlyr, tvly, qlyr, qstl, rhly,      &     !  ---  inputs
                          ccnd(1:IM,1:LMK,1),                            &
                          cnvw, cnvc, Grid%xlat, Grid%xlon,              &
                          Sfcprop%slmsk, dz, delp, im, lmk, lmp, deltaq, &
                          Model%sup, Model%kdt, me,                      &
-                         clouds, cldsa, mtopa, mbota, de_lgth)            !  ---  outputs
+                         clouds, cldsa, mtopa, mbota, de_lgth)                !  ---  outputs
 
         elseif (Model%imp_physics == 11) then           ! GFDL cloud scheme
 
           if (.not.Model%lgfdlmprad) then
-            call progcld4 (plyr, plvl, tlyr, tvly, qlyr, qstl, rhly,     &!  ---  inputs
+            call progcld4 (plyr, plvl, tlyr, tvly, qlyr, qstl, rhly,     &    !  ---  inputs
                            ccnd(1:IM,1:LMK,1), cnvw, cnvc,               &
                            Grid%xlat, Grid%xlon, Sfcprop%slmsk,          &
                            cldcov, dz, delp, im, lmk, lmp,               &
-                           clouds, cldsa, mtopa, mbota, de_lgth)          !  ---  outputs
+                           clouds, cldsa, mtopa, mbota, de_lgth)              !  ---  outputs
           else
 
-            call progclduni (plyr, plvl, tlyr, tvly, ccnd, ncndl,        &!  ---  inputs
+            call progclduni (plyr, plvl, tlyr, tvly, ccnd, ncndl,        &    !  ---  inputs
                             Grid%xlat, Grid%xlon, Sfcprop%slmsk, dz,delp,&
                             IM, LMK, LMP, cldcov,                        &
                             effrl, effri, effrr, effrs, Model%effr_in,   &
-                            clouds, cldsa, mtopa, mbota, de_lgth)         !  ---  outputs
-!           call progcld4o (plyr, plvl, tlyr, tvly, qlyr, qstl, rhly,       &    !  ---  inputs
+                            clouds, cldsa, mtopa, mbota, de_lgth)             !  ---  outputs
+!           call progcld4o (plyr, plvl, tlyr, tvly, qlyr, qstl, rhly,       & !  ---  inputs
 !                           tracer1, Grid%xlat, Grid%xlon, Sfcprop%slmsk,   &
 !                           dz, delp,                                       &
 !                           ntrac-1, Model%ntcw-1,Model%ntiw-1,Model%ntrw-1,& 
 !                           Model%ntsw-1,Model%ntgl-1,Model%ntclamt-1,      &
 !                           im, lmk, lmp,                                   &
-!                           clouds, cldsa, mtopa, mbota, de_lgth)         !  ---  outputs
+!                           clouds, cldsa, mtopa, mbota, de_lgth)             !  ---  outputs
           endif 
 
-        elseif(Model%imp_physics == 8 .or. Model%imp_physics == 6) then   ! Thompson / WSM6 cloud micrphysics scheme 
+        elseif(Model%imp_physics == 8 .or. Model%imp_physics == 6) then   ! Thompson / WSM6 cloud micrphysics scheme
 
           if (Model%kdt == 1) then
             Tbd%phy_f3d(:,:,1) = 10.
@@ -1816,15 +1816,15 @@
             Tbd%phy_f3d(:,:,3) = 250.
           endif
 
-          call progcld5 (plyr,plvl,tlyr,qlyr,qstl,rhly,tracer1,   &    !  --- inputs 
+          call progcld5 (plyr,plvl,tlyr,qlyr,qstl,rhly,tracer1,     &  !  --- inputs
                          Grid%xlat,Grid%xlon,Sfcprop%slmsk,dz,delp, &
-                         ntrac-1, ntcw-1,ntiw-1,ntrw-1,           & 
-                         ntsw-1,ntgl-1,                           &
-                         im, lmk, lmp, Model%uni_cld,             &
-                         Model%lmfshal,Model%lmfdeep2,            &
-                         cldcov(:,1:LMK),Tbd%phy_f3d(:,:,1),      &
-                         Tbd%phy_f3d(:,:,2), Tbd%phy_f3d(:,:,3),  &
-                         clouds,cldsa,mtopa,mbota, de_lgth)            !  --- outputs  
+                         ntrac-1, ntcw-1,ntiw-1,ntrw-1,             &
+                         ntsw-1,ntgl-1,                             &
+                         im, lmk, lmp, Model%uni_cld,               &
+                         Model%lmfshal,Model%lmfdeep2,              &
+                         cldcov(:,1:LMK),Tbd%phy_f3d(:,:,1),        &
+                         Tbd%phy_f3d(:,:,2), Tbd%phy_f3d(:,:,3),    &
+                         clouds,cldsa,mtopa,mbota, de_lgth)            !  --- outputs
               
         endif                            ! end if_imp_physics
 
@@ -1842,8 +1842,7 @@
       if (Model%do_sfcperts) then
         if (Model%pertalb(1) > 0.) then
           do i=1,im
-            call cdfnor(Coupling%sfc_wts(i,5),cdfz)
-            alb1d(i) = cdfz
+            call cdfnor(Coupling%sfc_wts(i,5),alb1d(i))
           enddo
         endif
       endif
@@ -1870,7 +1869,7 @@
         Radtend%sfalb(:) = max(0.01, 0.5 * (sfcalb(:,2) + sfcalb(:,4)))
 !*## CCPP ##
 
-!## CCPP ##* radsw_main.f/rrtmg_sw_run; Note: The checks for nday and lsswr are included in the scheme (returns if 
+!## CCPP ##* radsw_main.f/rrtmg_sw_run; Note: The checks for nday and lsswr are included in the scheme (returns if
 ! nday <= 0 or lsswr == F). Optional arguments are used to handle the different calls below.
         if (nday > 0) then
 
@@ -1907,7 +1906,7 @@
 !     We are assuming that radiative tendencies are from bottom to top
 ! --- repopulate the points above levr i.e. LM
           if (lm < levs) then
-            do k = lm,levs
+            do k = lp1,levs
               Radtend%htrsw (1:im,k) = Radtend%htrsw (1:im,LM)
             enddo
           endif
@@ -1919,7 +1918,7 @@
              enddo
 ! --- repopulate the points above levr i.e. LM
              if (lm < levs) then
-               do k = lm,levs
+               do k = lp1,levs
                  Radtend%swhc(1:im,k) = Radtend%swhc(1:im,LM)
                enddo
              endif
@@ -1993,7 +1992,7 @@
 !!    fluxes.
 !     print *,' in grrad : calling lwrad'
 
-!## CCPP ##* radlw_main.f/rrtmg_lw_run; Note: The check lslwr is included in the scheme (returns if 
+!## CCPP ##* radlw_main.f/rrtmg_lw_run; Note: The check lslwr is included in the scheme (returns if
 ! lslwr == F). Optional arguments are used to handle the different calls below.
         if (Model%lwhtr) then
           call lwrad (plyr, plvl, tlyr, tlvl, qlyr, olyr, gasvmr,  &        !  ---  inputs
@@ -2022,7 +2021,7 @@
         enddo
 ! --- repopulate the points above levr
         if (lm < levs) then
-          do k = lm,levs
+          do k = lm+1,levs
             Radtend%htrlw (1:im,k) = Radtend%htrlw (1:im,LM)
           enddo
         endif
@@ -2034,8 +2033,8 @@
           enddo
 ! --- repopulate the points above levr
           if (lm < levs) then
-            do k = lm,levs
-              Radtend%lwhc(1:im,k) = Radtend%lwhc(1:im,LM) 
+            do k = lm+1,levs
+              Radtend%lwhc(1:im,k) = Radtend%lwhc(1:im,LM)
             enddo
           endif
         endif
