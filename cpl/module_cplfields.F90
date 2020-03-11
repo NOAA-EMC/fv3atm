@@ -86,7 +86,7 @@ module module_cplfields
        "inst_merid_wind_height_lowest            ", &
        "inst_pres_height_lowest                  ", &
        "inst_height_lowest                       ", &
-       "mean_fprec_rate                          " &
+       "mean_fprec_rate                          "  &
 !      "northward_wind_neutral                   ", &
 !      "eastward_wind_neutral                    ", &
 !      "upward_wind_neutral                      ", &
@@ -139,7 +139,7 @@ module module_cplfields
   real(kind=8), allocatable, public :: exportData(:,:,:)
 
 ! Import Fields ----------------------------------------
-  integer,          public, parameter :: NimportFields = 16
+  integer,          public, parameter :: NimportFields = 17
   logical,          public            :: importFieldsValid(NimportFields)
   type(ESMF_Field), target, public    :: importFields(NimportFields)
   character(len=*), public, parameter :: importFieldsList(NimportFields) = (/ &
@@ -163,13 +163,15 @@ module module_cplfields
        "inst_tracer_up_surface_flx             ", &
        "inst_tracer_down_surface_flx           ", &
        "inst_tracer_clmn_mass_dens             ", &
-       "inst_tracer_anth_biom_flx              "  &
+       "inst_tracer_anth_biom_flx              ", &
+       "wave_z0_roughness_length               "  &
   /)
   character(len=*), public, parameter :: importFieldTypes(NimportFields) = (/ &
        "t",                                 &
        "s","s","s","s","s",                 &
        "s","s","s","s","s",                 &
-       "s","u","d","c","b"                  &
+       "s","u","d","c","b",                 &
+       "s"                                  &
   /)
   ! Set importFieldShare to .true. if field is provided as memory reference
   ! from coupled components
@@ -177,7 +179,8 @@ module module_cplfields
        .true. ,                                 &
        .false.,.false.,.false.,.false.,.false., &
        .false.,.false.,.false.,.false.,.false., &
-       .false.,.true. ,.true. ,.true. ,.true.   &
+       .false.,.true. ,.true. ,.true. ,.true. , &
+       .false.                                  &
   /)
 
   ! Methods

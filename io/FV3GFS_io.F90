@@ -625,6 +625,8 @@ module FV3GFS_io_mod
     if (nint(oro_var2(1,1,18)) == -9999._kind_phys) then ! lakefrac doesn't exist in the restart, need to create it
       if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - will computing lakefrac') 
       Model%frac_grid = .false.
+    elseif (Model%frac_grid_off) then
+      Model%frac_grid = .false.
     else
       Model%frac_grid = .true.
     endif
@@ -1128,7 +1130,7 @@ module FV3GFS_io_mod
                                + Sfcprop(nb)%tsfco(ix) * tem
         enddo
       enddo
-    else     ! in this case ice fracion is fraction of water fraction
+    else     ! in this case ice fraction is fraction of water fraction
       do nb = 1, Atm_block%nblks
         do ix = 1, Atm_block%blksz(nb)
       !--- specify tsfcl/zorll from existing variable tsfco/zorlo
@@ -1136,10 +1138,17 @@ module FV3GFS_io_mod
           Sfcprop(nb)%zorll(ix) = Sfcprop(nb)%zorlo(ix)
           Sfcprop(nb)%zorl(ix)  = Sfcprop(nb)%zorlo(ix)
           Sfcprop(nb)%tsfc(ix)  = Sfcprop(nb)%tsfco(ix)
-          if (Sfcprop(nb)%slmsk(ix) > 1.9) then
-            Sfcprop(nb)%landfrac(ix) = 0.0
+          if (abs(1.0-Sfcprop(nb)%slmsk(ix)) < 0.1) then
+            Sfcprop(nb)%landfrac(ix) = 1.0        ! land
+            Sfcprop(nb)%lakefrac(ix) = 0.0
           else
-            Sfcprop(nb)%landfrac(ix) = Sfcprop(nb)%slmsk(ix)
+            Sfcprop(nb)%landfrac(ix) = 0.0        ! water
+            if (Sfcprop(nb)%lakefrac(ix) > 0.0 .or.                              &
+               (Sfcprop(nb)%oro_uf(ix) > Model%min_lake_height .and. .not. Model%ignore_lake) ) then
+              Sfcprop(nb)%lakefrac(ix) = 1.0        ! lake
+            else
+              Sfcprop(nb)%lakefrac(ix) = 0.0        ! ocean
+            endif
           endif
         enddo
       enddo

@@ -4,11 +4,11 @@
 ! specific to COORDE-2019 project OGW switches/sensitivity
 ! to diagnose SSO effects pgwd=1 (OGW is on) =0 (off)
 !                         pgd4=4 (4 timse taub, control pgwd=1)
-!     
+!
        use machine,      only: kind_phys
        real(kind=kind_phys),parameter :: pgwd  = 1._kind_phys
        real(kind=kind_phys),parameter :: pgwd4 = 1._kind_phys
-       end module sso_coorde 
+       end module sso_coorde
 !
 !
        subroutine cires_ugwp_driver_v0(me,  master,
@@ -16,7 +16,7 @@
      &    cdmbgwd,  xlat, xlatd, sinlat, coslat, spgrid,
      &    ugrs, vgrs, tgrs, qgrs, prsi, prsl, prslk,
      &    phii, phil, del, hprime, oc, oa4, clx, theta,
-     &    gamm, sigma, elvmax, sgh30, kpbl, 
+     &    gamm, sigma, elvmax, sgh30, kpbl,
      &    dusfcg, dvsfcg, gw_dudt, gw_dvdt, gw_dtdt, gw_kdis,
      &    tau_tofd, tau_mtb, tau_ogw, tau_ngw,
      &    zmtb, zlwb, zogw, du3dt_mtb,du3dt_ogw, du3dt_tms,rdxzb,
@@ -26,15 +26,15 @@
 ! Part 2  non-stationary multi-wave GWs FV3GFS-v0
 ! Part 3  Dissipative version of UGWP-tendency application
 !         (similar to WAM-2017)
-!----------------------------------------------------------- 
+!-----------------------------------------------------------
        use machine,          only : kind_phys
        use physcons,         only : con_cp, con_g, con_rd, con_rv
- 
+
        use ugwp_wmsdis_init, only : tamp_mpa, ilaunch
        use sso_coorde,       only : pgwd, pgwd4
        implicit none
 !input
- 
+
        integer, intent(in) :: me,  master
        integer, intent(in) :: im, levs, kdt, imx, nmtvr, ntke, ipr
 
@@ -48,7 +48,7 @@
        real(kind=kind_phys), intent(in), dimension(im,levs) :: ugrs
      &,        vgrs, tgrs, qgrs, prsl, prslk, phil, del
        real(kind=kind_phys), intent(in), dimension(im,levs+1) :: prsi
-     &,        phii
+     &,                                                          phii
 
 !      real(kind=kind_phys), intent(in) :: oro_stat(im,nmtvr)
        real(kind=kind_phys), intent(in), dimension(im) :: hprime, oc
@@ -81,7 +81,7 @@
 !      real(kind=kind_phys), dimension(im)     :: hprime,
 !    &       oc, theta, sigma, gamm, elvmax
 !      real(kind=kind_phys), dimension(im, 4)  :: clx, oa4
-!	
+!
 ! switches that activate impact of OGWs and NGWs along with eddy diffusion
 !
        real(kind=kind_phys), parameter :: pogw=1.0, pngw=1.0, pked=1.0
@@ -98,14 +98,14 @@
          write(6,*) ' COORDE EXPER pgwd4 = ', pgwd4
          print *
        endif
- 
+
        do i=1,im
          zlwb(i) = 0.
        enddo
 !
 ! 1) ORO stationary GWs
 !    ------------------
-       
+
        if (do_ugwp .and. nmtvr == 14) then   ! calling revised old GFS gravity wave drag
          CALL GWDPS_V0(IM,    levs,  imx,   do_tofd,
      &                 Pdvdt, Pdudt, Pdtdt, Pkdis,
@@ -122,7 +122,7 @@
            print *
            write(6,*) 'FV3GFS finished gwdps_v0 in ugwp_driver_v0 '
            print *
-         endif  
+         endif
        else                                  ! calling old GFS gravity wave drag as is
          do k=1,levs
            do i=1,im
@@ -149,11 +149,11 @@
        if (cdmbgwd(3) > 0.0) then
 ! 2) non-stationary GWs with GEOS-5/MERRA GW-forcing
 !    ----------------------------------------------
-!--------	
+!--------
 ! GMAO GEOS-5/MERRA GW-forcing	lat-dep
 !--------
          call slat_geos5_tamp(im, tamp_mpa, xlatd, tau_ngw)
- 
+
 !        call slat_geos5(im, xlatd, tau_ngw)
 !
          if (abs(1.0-cdmbgwd(3)) > 1.0e-6) then
@@ -186,7 +186,7 @@
 !
          call fv3_ugwp_solv2_v0(im,   levs,  dtp,
      &                          tgrs, ugrs,  vgrs,   qgrs, prsl, prsi,
-     &                          phil, xlatd, sinlat, coslat, 
+     &                          phil, xlatd, sinlat, coslat,
      &                          gw_dudt, gw_dvdt, gw_dTdt, gw_kdis,
      &                          tau_ngw, me, master, kdt)
 
@@ -252,11 +252,11 @@
       enddo
 
       end subroutine cires_ugwp_driver_v0
-!	
-!=====================================================================	
 !
-!ugwp-v0 subroutines: GWDPS_V0 and fv3_ugwp_solv2_v0	
-!  
+!=====================================================================
+!
+!ugwp-v0 subroutines: GWDPS_V0 and fv3_ugwp_solv2_v0
+!
 !=====================================================================
       SUBROUTINE GWDPS_V0(IM,  km,    imx, do_tofd,
      &    Pdvdt, Pdudt, Pdtdt, Pkdis, U1,V1,T1,Q1,KPBL,
@@ -302,7 +302,7 @@
       integer, intent(in)              :: KPBL(IM)    ! Index for the PBL top layer!
       real(kind=kind_phys), intent(in) :: dtp         !  time step
       real(kind=kind_phys), intent(in) :: cdmbgwd(2)
-          
+
       real(kind=kind_phys), intent(in), dimension(im,km) ::
      &                                   u1,  v1,   t1,    q1,
      &                                   del, prsl, prslk, phil
@@ -316,20 +316,20 @@
       real(kind=kind_phys), intent(in) :: ELVMAXD(IM), THETA(IM)
       real(kind=kind_phys), intent(in) :: vSIGMA(IM),  vGAMMA(IM)
       real(kind=kind_phys)             :: SIGMA(IM),   GAMMA(IM)
-      
+ 
 !output -phys-tend
       real(kind=kind_phys),dimension(im,km),intent(out) ::
      &                      Pdvdt,    Pdudt,    Pkdis, Pdtdt
 ! output - diag-coorde
      &,                     dudt_mtb, dudt_ogw, dudt_tms
-!                     
+!
       real(kind=kind_phys),dimension(im) :: RDXZB,   zmtb,    zogw
      &,                                     tau_ogw, tau_mtb, tau_tofd
      &,                                     dusfc,   dvsfc
 !
 !---------------------------------------------------------------------
 ! # of permissible sub-grid orography hills for "any" resolution  < 25
-!    correction for "elliptical" hills based on shilmin-area =sgrid/25 
+!    correction for "elliptical" hills based on shilmin-area =sgrid/25
 !     4.*gamma*b_ell*b_ell  >=  shilmin
 !     give us limits on [b_ell & gamma *b_ell] > 5 km =sso_min
 !     gamma_min = 1/4*shilmin/sso_min/sso_min
@@ -347,21 +347,21 @@
       real(kind=kind_phys)            :: belpmin, dsmin,  dsmax
 !     real(kind=kind_phys)            :: arhills(im)              ! not used why do we need?
       real(kind=kind_phys)            :: xlingfs
-         
-! 
-! locals       
+
+!
+! locals
 ! mean flow
       real(kind=kind_phys), dimension(im,km) :: RI_N, BNV2, RO
      &,                                         VTK, VTJ, VELCO
-!mtb     
+!mtb
       real(kind=kind_phys), dimension(im)    :: OA,  CLX , elvmax, wk
      &,                                         PE, EK, UP
-      
+
       real(kind=kind_phys), dimension(im,km) :: DB, ANG, UDS
 
       real(kind=kind_phys) :: ZLEN, DBTMP, R, PHIANG, DBIM, ZR
       real(kind=kind_phys) :: ENG0, ENG1, COSANG2, SINANG2
-      real(kind=kind_phys) :: bgam, cgam, gam2, rnom, rdem       
+      real(kind=kind_phys) :: bgam, cgam, gam2, rnom, rdem
 !
 ! TOFD
 !     Some constants now in "use ugwp_oro_init" +   "use ugwp_common"
@@ -372,7 +372,7 @@
      &,                                         epstofd1, krf_tofd1
      &,                                         up1, vp1, zpm
       real(kind=kind_phys),dimension(im, km) :: axtms, aytms
-! 
+!
 ! OGW
 !
       LOGICAL ICRILV(IM)
@@ -383,9 +383,9 @@
       real(kind=kind_phys) :: TAUP(IM,km+1), TAUD(IM,km)
       real(kind=kind_phys) :: taub(im), taulin(im), heff, hsat, hdis
 
-      integer, dimension(im) :: kref, idxzb, ipt, kreflm, 
+      integer, dimension(im) :: kref, idxzb, ipt, kreflm,
      &                          iwklm, iwk, izlow
-!      
+!
 !check what we need
 !
       real(kind=kind_phys) :: bnv,  fr, ri_gw
@@ -399,7 +399,7 @@
      &,                       cdmb4, mtbridge
      &,                       kxridge, inv_b2eff, zw1, zw2
      &,                       belps, aelps, nhills, selps
-     
+
       integer ::          kmm1, kmm2, lcap, lcapp1
      &,            npt,   kbps, kbpsp1,kbpsm1
      &,            kmps,  idir, nwd,  klcap, kp1, kmpbl, kmll
@@ -409,7 +409,7 @@
       grav2 = grav + grav
 !       
 ! mtb-blocking  sigma_min and dxres => cires_initialize
-!  
+!
       sgrmax = maxval(sparea) ; sgrmin = minval(sparea)
       dsmax  = sqrt(sgrmax)   ; dsmin  = sqrt(sgrmin)
 
@@ -444,9 +444,9 @@
         idxzb(i)    = 0
         zmtb(i)     = 0.0
         zogw(i)     = 0.0
-        rdxzb(i)    = 0.0      
+        rdxzb(i)    = 0.0
         tau_ogw(i)  = 0.0
-        tau_mtb(i)  = 0.0 
+        tau_mtb(i)  = 0.0
         dusfc(i)    = 0.0
         dvsfc(i)    = 0.0
         tau_tofd(i) = 0.0
@@ -467,13 +467,13 @@
           dudt_tms(i,k) = 0.0
         enddo
       enddo
- 
+
 ! ----  for lm and gwd calculation points
-      
+
       npt = 0
       do i = 1,im
         if ( elvmaxd(i) >= hminmt .and. hprime(i)  >= hpmin ) then
-          
+
           npt      = npt + 1
           ipt(npt) = i
 !         arhills(i) = 1.0
@@ -488,7 +488,7 @@
 ! small-scale "turbulent" oro-scales < sso_min
 !
           if( aelps < sso_min .and. do_adjoro) then
- 
+
 ! a, b > sso_min upscale ellipse  a/b > 0.1 a>sso_min & h/b=>new_sigm
 !
             aelps = sso_min 
@@ -506,38 +506,38 @@
           nhills     = min(nhilmax, sparea(i)/selps)
 !         arhills(i) = max(nhills, 1.0)
 
-!333   format( ' nhil: ', I6, 4(2x, F9.3), 2(2x, E9.3))	    
+!333   format( ' nhil: ', I6, 4(2x, F9.3), 2(2x, E9.3))
 !      if (kdt==1 )
 !     & write(6,333) nint(nhills)+1,xlatd(i), hprime(i),aelps*1.e-3,
 !     &   belps*1.e-3, sigma(i),gamma(i)
 
         endif
       enddo
-        
+
       IF (npt == 0) then
 !         print *,  'oro-npt = 0 elvmax ', maxval(elvmaxd), hminmt
-!         print *,  'oro-npt = 0 hprime ', maxval(hprime), hpmin	     	    
+!         print *,  'oro-npt = 0 hprime ', maxval(hprime), hpmin
         RETURN      ! No gwd/mb calculation done
       endif
 
 
       do i=1,npt
         iwklm(i)  = 2
-        IDXZB(i)  = 0 
+        IDXZB(i)  = 0
         kreflm(i) = 0
       enddo
- 
+
       do k=1,km
         do i=1,im
           db(i,k)  = 0.0
           ang(i,k) = 0.0
-          uds(i,k) = 0.0 
+          uds(i,k) = 0.0
         enddo
       enddo
 
       KMM1 = km - 1 ;  KMM2   = km - 2 ; KMLL   = kmm1
-      LCAP = km     ;  LCAPP1 = LCAP + 1 
- 
+      LCAP = km     ;  LCAPP1 = LCAP + 1
+
       DO I = 1, npt
         j = ipt(i)
         ELVMAX(J) = min (ELVMAXd(J)*0. + sigfac * hprime(j), hncrit)
@@ -548,11 +548,11 @@
         DO I = 1, npt
           j = ipt(i)
           ztopH   = sigfac * hprime(j)
-          zlowH   = sigfacs* hprime(j) 
+          zlowH   = sigfacs* hprime(j)
           pkp1log =  phil(j,k+1) * rgrav
           pklog   =  phil(j,k)   * rgrav
 !         if (( ELVMAX(j) <= pkp1log) .and. (ELVMAX(j).ge.pklog) )
-!     &      iwklm(I)  =  MAX(iwklm(I), k+1 ) 
+!     &      iwklm(I)  =  MAX(iwklm(I), k+1 )
           if (( ztopH <= pkp1log) .and. (zTOPH >= pklog) )
      &        iwklm(I)  =  MAX(iwklm(I), k+1 )
 !
@@ -588,18 +588,18 @@
           BVF2 = grav2 * RDZ * (VTK(I,K+1)-VTK(I,K))
      &                       / (VTK(I,K+1)+VTK(I,K))
           bnv2(i,k+1) = max( BVF2, bnv2min )
-          RI_N(I,K+1) = Bnv2(i,k)/SHR2        ! Richardson number consistent with BNV2	
+          RI_N(I,K+1) = Bnv2(i,k)/SHR2        ! Richardson number consistent with BNV2
 !
 ! add here computation for Ktur and OGW-dissipation fro VE-GFS
-!	    
+!
         ENDDO
       ENDDO
       K = 1
       DO I = 1, npt
         bnv2(i,k) = bnv2(i,k+1)
       ENDDO
-!		
-! level iwklm =>phil(j,k)/g < sigfac * hprime(j) < phil(j,k+1)/g 
+!
+! level iwklm =>phil(j,k)/g < sigfac * hprime(j) < phil(j,k+1)/g
 !
       DO I = 1, npt
         J   = ipt(i)
@@ -612,19 +612,19 @@
         ROLL (I)   = 0.0
         PE   (I)   = 0.0
         EK   (I)   = 0.0
-        BNV2bar(I) = 0.0   
+        BNV2bar(I) = 0.0
       ENDDO
 !
       DO I = 1, npt
         k_zlow = izlow(I)
         if (k_zlow == iwklm(i)) k_zlow = 1
-        DO K = k_zlow, iwklm(I)-1                        ! Kreflm(I)= iwklm(I)-1 
+        DO K = k_zlow, iwklm(I)-1                        ! Kreflm(I)= iwklm(I)-1
           J       = ipt(i)                               ! laye-aver Rho, U, V
           RDELKS  = DEL(J,K) * DELKS(I)
-          UBAR(I) = UBAR(I)  + RDELKS * U1(J,K)          ! trial Mean U below 
-          VBAR(I) = VBAR(I)  + RDELKS * V1(J,K)          ! trial Mean V below 
-          ROLL(I) = ROLL(I)  + RDELKS * RO(I,K)          ! trial Mean RO below 
-!   
+          UBAR(I) = UBAR(I)  + RDELKS * U1(J,K)          ! trial Mean U  below
+          VBAR(I) = VBAR(I)  + RDELKS * V1(J,K)          ! trial Mean V  below
+          ROLL(I) = ROLL(I)  + RDELKS * RO(I,K)          ! trial Mean RO below
+!
           BNV2bar(I) = BNV2bar(I) + .5*(BNV2(I,K)+BNV2(I,K+1))* RDELKS
         ENDDO
       ENDDO
@@ -634,24 +634,24 @@
 !
 ! integrate from Ztoph = sigfac*hprime  down to Zblk if exists
 ! find ph_blk, dz_blk like in LM-97 and IFS
-!	
-        ph_blk =0.  
+!
+        ph_blk = 0.
         DO K = iwklm(I), 1, -1
           PHIANG   =  atan2(V1(J,K),U1(J,K))*RAD_TO_DEG
           ANG(I,K) = ( THETA(J) - PHIANG )
           if ( ANG(I,K) >  90. ) ANG(I,K) = ANG(I,K) - 180.
           if ( ANG(I,K) < -90. ) ANG(I,K) = ANG(I,K) + 180.
           ANG(I,K) = ANG(I,K) * DEG_TO_RAD
-          UDS(I,K) = 
+          UDS(I,K) =
      &        MAX(SQRT(U1(J,K)*U1(J,K) + V1(J,K)*V1(J,K)), velmin)
 !
           IF (IDXZB(I) == 0 ) then
             dz_blk = ( PHII(J,K+1) - PHII(J,K) ) *rgrav
-            PE(I)  =  PE(I) + BNV2(I,K) * 
+            PE(I)  =  PE(I) + BNV2(I,K) *
      &         ( ELVMAX(J) - phil(J,K)*rgrav ) * dz_blk
 
-            UP(I)  =  max(UDS(I,K) * cos(ANG(I,K)), velmin)  
-            EK(I)  = 0.5 *  UP(I) * UP(I) 
+            UP(I)  =  max(UDS(I,K) * cos(ANG(I,K)), velmin)
+            EK(I)  = 0.5 *  UP(I) * UP(I)
 
             ph_blk = ph_blk + dz_blk*sqrt(BNV2(I,K))/UP(I)
 
@@ -667,7 +667,7 @@
         ENDDO
 !
 ! Alternative expression: ZMTB = max(Heff*(1. -Fcrit_gfs/Fr), 0)
-! fcrit_gfs/fr	 
+! fcrit_gfs/fr
 !
         goto 788
 
@@ -678,7 +678,7 @@
         Fr      = heff*bnv/Ulow(i)
         ZW1     = max(Heff*(1. -fcrit_gfs/fr), 0.0)
         zw2     = phil(j,2)*rgrav
-        if (Fr > fcrit_gfs .and. zw1 > zw2 ) then 
+        if (Fr > fcrit_gfs .and. zw1 > zw2 ) then
           do k=2, kmm1
             pkp1log =  phil(j,k+1) * rgrav
             pklog   =  phil(j,k)   * rgrav
@@ -695,54 +695,54 @@
 
 !
 ! --- The drag for mtn blocked flow
-! 
+!
       cdmb4 = 0.25*cdmb 
       DO I = 1, npt
         J = ipt(i)
 !
         IF ( IDXZB(I) > 0 ) then
-! (4.16)-IFS	  
+! (4.16)-IFS
           gam2 = gamma(j)*gamma(j)
           BGAM = 1.0 - 0.18*gamma(j) - 0.04*gam2
           CGAM =       0.48*gamma(j) + 0.30*gam2
           DO K = IDXZB(I)-1, 1, -1
 
-            ZLEN = SQRT( ( PHIL(J,IDXZB(I)) - PHIL(J,K) ) / 
+            ZLEN = SQRT( ( PHIL(J,IDXZB(I)) - PHIL(J,K) ) /
      &                   ( PHIL(J,K ) + Grav * hprime(J) ) )
 
             tem     = cos(ANG(I,K))
             COSANG2 = tem * tem
-            SINANG2 = 1.0 - COSANG2 
+            SINANG2 = 1.0 - COSANG2
 !	      
-!  cos =1 sin =0 =>   1/R= gam     ZR = 2.-gam 
+!  cos =1 sin =0 =>   1/R= gam     ZR = 2.- gam
 !  cos =0 sin =1 =>   1/R= 1/gam   ZR = 2.- 1/gam
 !
             rdem = COSANG2      +  GAM2 * SINANG2
             rnom = COSANG2*GAM2 +         SINANG2
-!	       
+!
 ! metOffice Dec 2010
 ! correction of H. Wells & A. Zadra for the
 ! aspect ratio  of the hill seen by MF
 ! (1/R , R-inverse below: 2-R)
 
-            rdem = max(rdem, 1.e-6)       
+            rdem = max(rdem, 1.e-6)
             R    = sqrt(rnom/rdem)
             ZR   =  MAX( 2. - R, 0. )
 
             sigres = max(sigmin, sigma(J))
             if (hprime(J)/sigres > dxres) sigres = hprime(J)/dxres
             mtbridge = ZR * sigres*ZLEN / hprime(J)
-! (4.15)-IFS 	   
+! (4.15)-IFS
 !           DBTMP = CDmb4 * mtbridge *
 !     &             MAX(cos(ANG(I,K)), gamma(J)*sin(ANG(I,K)))
 ! (4.16)-IFS
             DBTMP  = CDmb4*mtbridge*(bgam* COSANG2 +cgam* SINANG2)
             DB(I,K)= DBTMP * UDS(I,K)
           ENDDO
-!                  
+!
         endif
       ENDDO
-! 
+!
 !.............................
 !.............................
 ! end  mtn blocking section
@@ -750,7 +750,7 @@
 !.............................
 !
 !--- Orographic Gravity Wave Drag Section
-!     
+!
 !  Scale cleff between IM=384*2 and 192*2 for T126/T170 and T62
 !  inside "cires_ugwp_initialize.F90" now
 !
@@ -759,18 +759,18 @@
 !
 ! METO-scheme: 
 ! k_mtb = max(k_zmtb, k_n*hprime/2] to reduce diurnal variations taub_ogw 
-!     
+!
       DO K=3,KMPBL
         DO I=1,npt
           j   = ipt(i)
           tem = (prsi(j,1) - prsi(j,k))
           if (tem < dpmin) iwk(i) = k    ! dpmin=50 mb
   
-!===============================================================	  
+!===============================================================
 ! lev=111      t=311.749     hkm=0.430522     Ps-P(iwk)=52.8958 
 !           below "Hprime" - source of OGWs  and below Zblk !!!
 !           27           2  kpbl ~ 1-2 km   < Hprime
-!===============================================================	  
+!===============================================================
         enddo
       enddo
 !
@@ -847,7 +847,7 @@
 !
 !------------------
 ! v0: incorporates latest modifications for kxridge and heff/hsat
-!             and taulin for Fr <=fcrit_gfs 
+!             and taulin for Fr <=fcrit_gfs
 !             and concept of "clipped" hill if zmtb > 0. to make
 ! the integrated "tau_sso = tau_ogw +tau_mtb" close to reanalysis data
 !      it is still used the "single-OGWave"-approach along ULOW-upwind
@@ -986,10 +986,10 @@
             ENDIF
           ENDDO
         ENDDO
-!     
+!
 !  zero momentum deposition at the top model layer
-!      
-        taup(1:npt,km+1) = taup(1:npt,km)      
+!
+        taup(1:npt,km+1) = taup(1:npt,km)
 !
 !     Calculate wave acc-n: - (grav)*d(tau)/d(p) = taud
 !
@@ -1000,11 +1000,11 @@
         ENDDO
 !
 !------scale MOMENTUM DEPOSITION  AT TOP TO 1/2 VALUE
-! it is zero now      
+! it is zero now
 !       DO I = 1,npt
 !         TAUD(I, km) = TAUD(I,km) * FACTOP
 !       ENDDO
-    
+ 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !------IF THE GRAVITY WAVE DRAG WOULD FORCE A CRITICAL LINE IN THE
 !------LAYERS BELOW SIGMA=RLOLEV DURING THE NEXT DELTIM TIMESTEP,
@@ -1029,23 +1029,23 @@
 !
 !--------------------------- OROGW-solver of GFS PSS-1986
 !  
-      else 
+      else
 !
 !--------------------------- OROGW-solver of WAM2017
 !
 !       sigres = max(sigmin, sigma(J))
 !	if (heff/sigres.gt.dxres) sigres=heff/dxres
-!         inv_b2eff =  0.5*sigres/heff 	
-!       XLINV(I) = max(kxridge, inv_b2eff)           ! 0.5*sigma(j)/heff = 1./Lridge      
+!         inv_b2eff =  0.5*sigres/heff
+!       XLINV(I) = max(kxridge, inv_b2eff)           ! 0.5*sigma(j)/heff = 1./Lridge
         dtfac(:) =  1.0
-       
+ 
         call oro_wam_2017(im, km, npt, ipt, kref, kdt, me, master,
      &       dtp, dxres, taub, u1, v1, t1, xn, yn, bnv2, ro, prsi,prsL, 
      &       del, sigma, hprime, gamma, theta,
      &       sinlat, xlatd, taup, taud, pkdis)
-     
+
       endif            !  oro_wam_2017 - LINSATDIS-solver of WAM-2017
-!      
+!
 !--------------------------- OROGW-solver of WAM2017
 ! 
 ! TOFD as in BELJAARS-2004
@@ -1056,42 +1056,42 @@
         if ( kdt == 1 .and. me == 0) then
           print *, 'VAY do_tofd  from surface to ', ztop_tofd 
         endif
-        DO I = 1,npt          
+        DO I = 1,npt
           J = ipt(i)
           zpbl  =rgrav*phil( j, kpbl(j) )
- 
+
           sigflt = min(sgh30(j), 0.3*hprime(j)) ! cannot exceed 30% of LS-SSO
- 
+
           zsurf = phii(j,1)*rgrav
           do k=1,km
             zpm(k) = phiL(j,k)*rgrav
             up1(k) = u1(j,k)
             vp1(k) = v1(j,k)
           enddo
- 
-          call ugwp_tofd1d(km, sigflt, elvmaxd(j), zsurf, zpbl, 
+
+          call ugwp_tofd1d(km, sigflt, elvmaxd(j), zsurf, zpbl,
      &             up1, vp1, zpm,  utofd1, vtofd1, epstofd1, krf_tofd1)
-     
+
           do k=1,km
             axtms(j,k) = utofd1(k)
             aytms(j,k) = vtofd1(k)
-!	 
+! 
 ! add TOFD to GW-tendencies
-!	 
+! 
             pdvdt(J,k)  = pdvdt(J,k) + aytms(j,k)
             pdudt(J,k)  = pdudt(J,k) + axtms(j,k)
           enddo
 !2018-diag
           tau_tofd(J) = sum( utofd1(1:km)* del(j,1:km))
         enddo
-      ENDIF             ! do_tofd 
+      ENDIF             ! do_tofd
 
 !---------------------------
 ! combine oro-drag effects
-!---------------------------  
+!---------------------------
 ! +  diag-3d
 
-      dudt_tms = axtms 
+      dudt_tms = axtms
       tau_ogw  = 0.
       tau_mtb  = 0.
  
@@ -1236,8 +1236,8 @@
 !          next will be lsatdis for both fv3wam & fv3gfs-128l implementations
 !    with (a) stochastic-deterministic propagation solvers for wave packets/spectra
 !         (b) gw-sources: oro/convection/dyn-instability (fronts/jets/pv-anomalies)
-!         (c) guidance from high-res runs for GW sources and res-aware tune-ups  
-!23456 
+!         (c) guidance from high-res runs for GW sources and res-aware tune-ups
+!23456
 !
 !      call gwdrag_wam(1,  im,   ix,  km,   ksrc, dtp,
 !     & xlat, gw_dudt, gw_dvdt,  taux,  tauy)
@@ -1262,8 +1262,8 @@
 !      nov 2015 alternative gw-solver for nggps-wam
 !      nov 2017 nh/rotational gw-modes for nh-fv3gfs
 ! ---------------------------------------------------------------------------------
-!  
-  
+!
+
       use ugwp_common ,     only : rgrav,      grav,  cpd,    rd,  rv
      &,                            omega2,     rcpd2,  pi,    pi2, fv
      &,                            rad_to_deg, deg_to_rad
@@ -1277,15 +1277,15 @@
      &,                            zci,     zdci,    zci4, zci3, zci2
      &,                            zaz_fct, zcosang, zsinang
      &,                            nwav,    nazd,    zcimin, zcimax
-! 
+!
       implicit none
 !23456 
-       
+ 
       integer, intent(in) :: klev             ! vertical level
       integer, intent(in) :: klon             ! horiz tiles
 
-      real,    intent(in) :: dtime            ! model time step       
-      real,    intent(in) :: vm1(klon,klev)   ! meridional wind 
+      real,    intent(in) :: dtime            ! model time step
+      real,    intent(in) :: vm1(klon,klev)   ! meridional wind
       real,    intent(in) :: um1(klon,klev)   ! zonal wind
       real,    intent(in) :: qm1(klon,klev)   ! spec. humidity
       real,    intent(in) :: tm1(klon,klev)   ! kin temperature 
@@ -1306,19 +1306,19 @@
       real, intent(out) :: pdudt(klon,klev)     ! zonal momentum tendency
       real, intent(out) :: pdvdt(klon,klev)     ! meridional momentum tendency
       real, intent(out) :: pdtdt(klon,klev)     ! gw-heating (u*ax+v*ay)/cp
-      real, intent(out) :: dked(klon,klev)      ! gw-eddy diffusion	
-      real, parameter   :: minvel = 0.5         !      
-      real, parameter   :: epsln  = 1.0d-12     !      
-                 
+      real, intent(out) :: dked(klon,klev)      ! gw-eddy diffusion
+      real, parameter   :: minvel = 0.5         !
+      real, parameter   :: epsln  = 1.0d-12     !
+
 !vay-2018
    
       real              :: taux(klon,klev+1)    ! EW component of vertical momentum flux (pa)
       real              :: tauy(klon,klev+1)    ! NS component of vertical momentum flux (pa)
-      real              :: phil(klon,klev)      ! gphil/grav	
+      real              :: phil(klon,klev)      ! gphil/grav
 !
 ! local ===============================================================================================
 !
- 
+
 !      real  :: zthm1(klon,klev)                       ! temperature interface levels   	 
        real  :: zthm1                                  ! 1.0 / temperature interface levels   	 
        real  :: zbvfhm1(klon,ilaunch:klev)             ! interface BV-frequency 
@@ -1328,7 +1328,7 @@
        real  :: zvhm1(klon,ilaunch:klev)               ! meridional wind
        real  :: v_zmet(klon,ilaunch:klev)
        real  :: vueff(klon,ilaunch:klev)
-       real  :: zbvfl(klon)                            ! BV at launch level	 
+       real  :: zbvfl(klon)                            ! BV at launch level
        real  :: c2f2(klon)
 
 !23456
@@ -1359,7 +1359,7 @@
        real  :: zcin2, zbvfl2, zcin3, zbvfl3, zcinc
        real  :: zatmp, zfluxs, zdep, zfluxsq, zulm, zdft, ze1, ze2
 
-!  
+!
        real  :: zdelp,zrgpts
        real  :: zthstd,zrhostd,zbvfstd
        real  :: tvc1,  tvm1, tem1, tem2, tem3
@@ -1371,13 +1371,13 @@
        real, parameter ::  rcpdl    = cpd/grav     ! 1/[g/cp]  == cp/g
      &,                    grav2cpd = grav/rcpdl   ! g*(g/cp)= g^2/cp
      &,                    cpdi     = 1.0d0/cpd
-       
+
        real :: expdis, fdis
 !      real :: fmode, expdis, fdis
        real :: v_kzi, v_kzw, v_cdp, v_wdp, sc, tx1
 
        integer :: j, k, inc, jk, jl, iazi
-!       
+!
 !--------------------------------------------------------------------------
 !
         do k=1,klev
@@ -1389,16 +1389,16 @@
             phil(j,k)  = philg(j,k) * rgrav
           enddo
         enddo
-!-----------------------------------------------------------	
+!-----------------------------------------------------------
 ! also other options to alter tropical values
 ! tamp = 100.e-3*1.e3 = 100 mpa
-! vay-2017   zfluxglob=> lat-dep here from geos-5/merra-2 
+! vay-2017   zfluxglob=> lat-dep here from geos-5/merra-2
 !-----------------------------------------------------------
-!        call slat_geos5_tamp(klon, tamp_mpa, xlatd, tau_ngw)	
+!        call slat_geos5_tamp(klon, tamp_mpa, xlatd, tau_ngw)
 
-     
-!        phil = philg*rgrav
  
+!        phil = philg*rgrav
+
 !        rcpd     = 1.0/(grav/cpd)     ! 1/[g/cp]
 !        grav2cpd = grav*grav/cpd      ! g*(g/cp)= g^2/cp
 
@@ -1420,7 +1420,7 @@
          enddo
        enddo
 
-!   
+!
 ! set initial min Cxi for critical level absorption
        do iazi=1,nazd
          do jl=1,klon
@@ -1437,8 +1437,8 @@
            zthm1          = 2.0 / (tvc1+tvm1)
            zuhm1(jl,jk)   = 0.5 *(um1(jl,jk-1)+um1(jl,jk))
            zvhm1(jl,jk)   = 0.5 *(vm1(jl,jk-1)+vm1(jl,jk))
-!          zrhohm1(jl,jk) = prsi(jl,jk)*rdi/zthm1(jl,jk)   !  rho = p/(RTv) 
-           zrhohm1(jl,jk) = prsi(jl,jk)*rdi*zthm1          !  rho = p/(RTv) 
+!          zrhohm1(jl,jk) = prsi(jl,jk)*rdi/zthm1(jl,jk)   !  rho = p/(RTv)
+           zrhohm1(jl,jk) = prsi(jl,jk)*rdi*zthm1          !  rho = p/(RTv)
            zdelp          = phil(jl,jk)-phil(jl,jk-1)      !>0 ...... dz-meters
            v_zmet(jl,jk)  = zdelp + zdelp
            delpi(jl,jk)  = grav / (prsi(jl,jk-1) - prsi(jl,jk))
@@ -1449,7 +1449,7 @@
            zbn2(jl,jk)    =  grav2cpd*zthm1
      &                    * (1.0+rcpdl*(tm1(jl,jk)-tm1(jl,jk-1))/zdelp)
            zbn2(jl,jk)    = max(min(zbn2(jl,jk), gssec), bv2min)
-           zbvfhm1(jl,jk) = sqrt(zbn2(jl,jk))       ! bn = sqrt(bn2)          			
+           zbvfhm1(jl,jk) = sqrt(zbn2(jl,jk))       ! bn = sqrt(bn2)
          enddo
        enddo
 
@@ -1472,7 +1472,7 @@
        enddo
 !	
 !        define intrinsic velocity (relative to launch level velocity) u(z)-u(zo), and coefficinets
-!       ------------------------------------------------------------------------------------------        
+!        ------------------------------------------------------------------------------------------
         do iazi=1, nazd
           do jl=1,klon
             zul(jl,iazi) = zcosang(iazi) * zuhm1(jl,ilaunch)
@@ -1606,7 +1606,7 @@
         enddo
       enddo
 
-! -------------------------------------------------------------      
+! -------------------------------------------------------------
 !                                        azimuth do-loop
 ! --------------------
       do iazi=1, nazd
@@ -1673,8 +1673,8 @@
 !=======================================================================
 ! saturated limit    wfit = kzw*kzw*kt; wfdt = wfit/(kxw*cx)*betat
 ! & dissipative      kzi = 2.*kzw*(wfdm+wfdt)*dzpi(k)
-!           define   kxw = 
-!=======================================================================  
+!           define   kxw =
+!=======================================================================
               v_cdp =  abs(zcin-zui(jL,jk,iazi))
               v_wdp = v_kxw*v_cdp
               wdop2 = v_wdp* v_wdp
@@ -1702,7 +1702,7 @@
                 v_kzw  = 0.
                 v_cdp  = 0.   ! no effects of reflected waves
               endif
-       
+
 !             fmode =  zflux(jl,inc,iazi)
 !             fdis  =  fmode*expdis
               fdis  =  expdis * zflux(jl,inc,iazi)
@@ -1711,10 +1711,10 @@
 !  linsatdis = 1.0 , here:   u'^2 ~ linsatdis* [v_cdp*v_cdp]
 !
               zfluxs = zfct(jl,jk)*v_cdp*v_cdp*zcinc
-!                                     
+!
 !             zfluxs= zfct(jl,jk)*(zcin-zui(jl,jk,iazi))**2/zcin
 ! flux_tot - sat.flux
-! 
+!
               zdep = zact(jl,inc,iazi)* (fdis-zfluxs)
               if(zdep > 0.0 ) then
 ! subs on sat-limit
@@ -1737,7 +1737,7 @@
             do jl=1,klon
               vc_zflx_mode    = zact(jl,inc,iazi)*zflux(jl,inc,iazi)
               zpu(jl,jk,iazi) = zpu(jl,jk,iazi) + vc_zflx_mode*zcinc
-              
+
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ! check monotonic decrease
 !     (heat deposition integration over spectral mode for each azimuth
@@ -1756,25 +1756,25 @@
 !
 !
                endif
-            enddo                          !jl=1,klon             
+            enddo                          !jl=1,klon
           enddo                            !waves inc=1,nwav
 
 ! --------------
         enddo                              ! end jk do-loop vertical loop
 ! ---------------
       enddo                               ! end nazd do-loop
-! ----------------------------------------------------------------------------    
+! ----------------------------------------------------------------------------
 !       sum contribution for total zonal and meridional flux +
 !           energy dissipation
 !       ---------------------------------------------------
-!      
+!
        do jk=1,klev+1
          do jl=1,klon
-           taux(jl,jk) = 0.0 
-           tauy(jl,jk) = 0.0 
+           taux(jl,jk) = 0.0
+           tauy(jl,jk) = 0.0
          enddo
-       enddo     
-    
+       enddo
+
        tem3 = zaz_fct*cpdi
        do iazi=1,nazd
          tem1 = zaz_fct*zcosang(iazi)
@@ -1790,7 +1790,7 @@
        enddo
 !
 !    update du/dt and dv/dt tendencies   ..... no contribution to heating => keddy/tracer-mom-heat
-!    ----------------------------   
+!    ----------------------------
 !
 
        do jk=ilaunch,klev
@@ -1801,7 +1801,7 @@
            ze2   = (tauy(jl,jk)-tauy(jl,jk-1))*zdelp
            if (abs(ze1) >= maxdudt ) then
              ze1 = sign(maxdudt, ze1)
-           endif 
+           endif
            if (abs(ze2) >= maxdudt ) then
              ze2 = sign(maxdudt, ze2)
            endif
@@ -1816,9 +1816,9 @@
 !          if (dked(jl,jk) < 0)  dked(jl,jk) = dked_min
          enddo
        enddo
-!	
+!
 ! add limiters/efficiency for "unbalanced ics" if it is needed
-!       
+!
        do jk=ilaunch,klev
          do jl=1, klon
            pdudt(jl,jk) = gw_eff * pdudt(jl,jk)
@@ -1881,7 +1881,7 @@
 ! locals
 !
        integer :: i, j, k
-!------------------------------------------------------------------------       
+!------------------------------------------------------------------------
 !      solving 1D-vertical eddy diffusion to "smooth" 
 !      GW-related tendencies:   du/dt, dv/dt, d(PT)/dt
 !      we need to use sum of molecular + eddy terms including turb-part
@@ -1901,7 +1901,7 @@
 !  1-st trial w/o PBL interactions: add dU, dV dT tendencies
 !  compute BV, SHR2, Ri => Kturb, Kturb + Kwave => Apply it to "X_Tend +X "
 !  ed_X = X_ed - X => final eddy tendencies
-!--------------------------------------------------------------------------- 
+!---------------------------------------------------------------------------
 !    rzs=30m              dk       = rzs*rzs*sqrt(shr2(i,k))
 !                  Ktemp     = dk/(1+5.*ri)**2  Kmom = Pr*Ktemp
 !
@@ -1912,26 +1912,26 @@
       real(kind=kind_phys),dimension(levs) :: bn2,  shr2, ksum
       real(kind=kind_phys) ::  eps_shr, eps_bn2, eps_dis
       real(kind=kind_phys) ::  rdz , uz, vz, ptz
-! -------------------------------------------------------------------------     
+! -------------------------------------------------------------------------
 ! Prw*Lsat2 =1, for GW-eddy diffusion Pr_wave = Kv/Kt
 !  Pr_wave ~1/Lsat2 = 1/Frcit2 = 2. => Lsat2 = 1./2 (Frc ~0.7)
-!  m*u'/N = u'/{c-U) = h'N/(c-U) = Lsat = Fcrit 
+!  m*u'/N = u'/{c-U) = h'N/(c-U) = Lsat = Fcrit
 ! > PBL:  0.25 < prnum = 1.0 + 2.1*ri < 4
 !     monin-edmf parameter(rlam=30.0,vk=0.4,vk2=vk*vk) rlamun=150.0
 !
       real(kind=kind_phys), parameter :: iPr_pt = 0.5, dw2min = 1.e-4
-      real(kind=kind_phys), parameter :: lturb = 30., sc2 = lturb*lturb 
+      real(kind=kind_phys), parameter :: lturb = 30., sc2 = lturb*lturb
       real(kind=kind_phys), parameter :: ulturb=150.,sc2u=ulturb* ulturb
       real(kind=kind_phys), parameter :: ric =0.25
       real(kind=kind_phys), parameter :: rimin = -10., prmin = 0.25
       real(kind=kind_phys), parameter :: prmax = 4.0
       real(kind=kind_phys), parameter :: hps = 7000., h4 = 0.25/hps
       real(kind=kind_phys), parameter :: kedmin  = 0.01, kedmax = 250.
-      
-            
+
+
       real(kind=kind_phys) :: rdtp, rineg, kamp, zmet, zgrow
       real(kind=kind_phys) ::  stab, stab_dt, dtstab, ritur
-      integer              ::  nstab   
+      integer              ::  nstab
       real(kind=kind_phys) ::  w1, w2, w3
       rdtp  = 1./dtp
        nstab = 1
@@ -1983,7 +1983,7 @@
           stab = 2.*ksum(k)*rdz*rdz*dtp
           if ( stab >= 1.0 ) then
                stab_dt = max(stab_dt, stab)
-          endif 
+          endif
         enddo
         nstab = max(1, nint(stab_dt)+1)
         dtstab = dtp / float(nstab)
@@ -1991,7 +1991,7 @@
         Fw(1:levs) =  pdudt(i, 1:levs)
         Fw1(1:levs) = pdvdt(i, 1:levs)
         Km(1:levs) = ksum(1:levs) * rho(1:levs)* rho(1:levs)
- 
+
         do j=1, nstab
           call diff_1d_wtend(levs, dtstab, Fw, Fw1, Km,
      &                       rdp, rdpm, Sw, Sw1)
@@ -2001,7 +2001,7 @@
 
         ed_dudt(i,:) = Sw
         ed_dvdt(i,:) = Sw1
- 
+
         Pt(1:levs) = t1(i,1:levs)*Ptmap(1:levs)
         Kpt = Km*iPr_pt
         Fw(1:levs) =  pdTdt(i, 1:levs)*Ptmap(1:levs)
@@ -2023,10 +2023,10 @@
       real(kind=kind_phys) :: S(levs), S1(levs), F(levs), F1(levs)
       real(kind=kind_phys) :: Km(levs),  rdp(levs), rdpm(levs-1)
       integer              :: i, k
-      real(kind=kind_phys) ::      Kp1, ad, cd, bd 
-!     real(kind=kind_phys) :: km1, Kp1, ad, cd, bd 
+      real(kind=kind_phys) ::      Kp1, ad, cd, bd
+!     real(kind=kind_phys) :: km1, Kp1, ad, cd, bd
 !      S(:) = 0.0 ; S1(:) = 0.0
-!         
+!
 ! explicit diffusion solver
 !
       k = 1
