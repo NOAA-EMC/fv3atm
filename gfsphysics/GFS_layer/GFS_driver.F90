@@ -357,7 +357,7 @@ module GFS_driver
         call ini_micro (Model%mg_dcs, Model%mg_qcvar, Model%mg_ts_auto_ice(1))
       elseif (Model%fprcp == 1) then
         call micro_mg_init2_0(kind_phys, gravit, rair, rh2o, cpair,              &
-                              tmelt, latvap, latice, 1.01_kind_phys,             &
+                              tmelt, latvap, latice, Model%mg_rhmini,            &
                               Model%mg_dcs, Model%mg_ts_auto_ice,                &
                               Model%mg_qcvar,                                    &
                               Model%microp_uniform, Model%do_cldice,             &
@@ -370,7 +370,7 @@ module GFS_driver
                               Model%mg_ncnst,        Model%mg_ninst)
       elseif (Model%fprcp == 2) then
         call micro_mg_init3_0(kind_phys, gravit, rair, rh2o, cpair,              &
-                              tmelt, latvap, latice, 1.01_kind_phys,             &
+                              tmelt, latvap, latice, Model%mg_rhmini,            &
                               Model%mg_dcs, Model%mg_ts_auto_ice,                &
                               Model%mg_qcvar,                                    &
                               Model%mg_do_hail,       Model%mg_do_graupel,       &
@@ -483,7 +483,7 @@ module GFS_driver
 !      5) interpolates coefficients for prognostic ozone calculation
 !      6) performs surface data cycling via the GFS gcycle routine
 !-------------------------------------------------------------------------
-  subroutine GFS_time_vary_step (Model, Statein, Stateout, Sfcprop, Coupling, & 
+  subroutine GFS_time_vary_step (Model, Statein, Stateout, Sfcprop, Coupling, &
                                  Grid, Tbd, Cldprop, Radtend, Diag)
 
     implicit none

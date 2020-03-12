@@ -210,7 +210,7 @@
 !
       integer :: k,i
 !
-      real (kind=kind_phys), dimension(im) ::  q0, qss, rch, 
+      real (kind=kind_phys), dimension(im) ::  q0, qss, rch,
      &                     rho_a, theta1, tv1, wndmag
 
       real(kind=kind_phys) elocp,tem
@@ -218,7 +218,7 @@
 !    nstm related prognostic fields
 !
       logical flag(im)
-      real (kind=kind_phys), dimension(im) ::        
+      real (kind=kind_phys), dimension(im) ::
      &   xt_old, xs_old, xu_old, xv_old, xz_old,zm_old,xtts_old,
      &   xzts_old, ifd_old, tref_old, tskin_old, dt_cool_old,z_c_old
 
