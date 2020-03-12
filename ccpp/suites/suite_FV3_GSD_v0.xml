@@ -98,6 +98,7 @@
   <group name="timestep_final">
     <subcycle loop="1">
       <scheme>model_tend_post</scheme>
+      <scheme>total_tend</scheme>
     </subcycle>
   </group>
   <!-- <finalize></finalize> -->
