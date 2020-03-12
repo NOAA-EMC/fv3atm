@@ -627,6 +627,8 @@ module FV3GFS_io_mod
     if (nint(oro_var2(1,1,18)) == -9999._kind_phys) then ! lakefrac doesn't exist in the restart, need to create it
       if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - will computing lakefrac') 
       Model%frac_grid = .false.
+    elseif (Model%frac_grid_off) then
+      Model%frac_grid = .false.
     else
       Model%frac_grid = .true.
     endif
@@ -936,7 +938,13 @@ module FV3GFS_io_mod
           Sfcprop(nb)%zorll(ix)  = sfc_var2(i,j,34) !--- zorll (zorl on land portion of a cell)
         end if
 
-        if(Model%frac_grid) then ! obtain slmsk from landfrac and fice
+        if(Model%frac_grid) then ! obtain slmsk from landfrac
+!! next 5 lines are temporary till lake model is available
+          if (Sfcprop(nb)%lakefrac(ix) > 0.0) then
+            Sfcprop(nb)%lakefrac(ix) = nint(Sfcprop(nb)%lakefrac(ix))
+            Sfcprop(nb)%landfrac(ix) = 1.-Sfcprop(nb)%lakefrac(ix)
+            if (Sfcprop(nb)%lakefrac(ix) == 0) Sfcprop(nb)%fice(ix)=0.
+          end if 
           Sfcprop(nb)%slmsk(ix) = ceiling(Sfcprop(nb)%landfrac(ix))
           if (Sfcprop(nb)%fice(ix) > 0. .and. Sfcprop(nb)%landfrac(ix)==0.) Sfcprop(nb)%slmsk(ix) = 2 ! land dominates ice if co-exist
         else ! obtain landfrac from slmsk
