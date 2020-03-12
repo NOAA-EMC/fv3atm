@@ -10,5 +10,7 @@
 	branch = dtc/develop
 [submodule "ccpp/physics"]
 	path = ccpp/physics
-	url = https://github.com/NCAR/ccpp-physics
-	branch = dtc/develop
+	#url = https://github.com/NCAR/ccpp-physics
+	#branch = dtc/develop
+	url = https://github.com/climbfuji/ccpp-physics
+	branch = update_from_dev_emc_20200312_and_other_changes
