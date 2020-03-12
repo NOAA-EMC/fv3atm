@@ -1747,6 +1747,7 @@ end subroutine atmos_data_type_chksum
                   IPD_Data(nb)%Coupling%slimskin_cpl(ix) = IPD_Data(nb)%Sfcprop%slmsk(ix)
                   if (IPD_Data(nb)%Sfcprop%oceanfrac(ix) > zero) then
                     IPD_Data(nb)%Coupling%ficein_cpl(ix) = max(zero, min(one, datar8(i,j)/IPD_Data(nb)%Sfcprop%oceanfrac(ix))) !LHS: ice frac wrt water area
+                    if (IPD_Data(nb)%Coupling%ficein_cpl(ix) > one-epsln) IPD_Data(nb)%Coupling%ficein_cpl(ix)=one
                     if (IPD_Data(nb)%Coupling%ficein_cpl(ix) >= IPD_control%min_seaice) then
                       if (abs(one-IPD_Data(nb)%Sfcprop%oceanfrac(ix)) < epsln) IPD_Data(nb)%Sfcprop%slmsk(ix) = 2. !slmsk=2 crashes in gcycle on partial land points
                       IPD_Data(nb)%Coupling%slimskin_cpl(ix) = 4.

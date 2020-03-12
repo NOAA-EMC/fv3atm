@@ -2838,7 +2838,7 @@ module module_physics_driver
       if (Model%cplflx) then
         do i=1,im
           if (Sfcprop%oceanfrac(i) > zero) then               ! Ocean only, NO LAKES
-            if (Sfcprop%fice(i) >= one - epsln) then ! no open water, thus use results from CICE 
+            if (Sfcprop%fice(i) > one - epsln) then ! no open water, thus use results from CICE 
               Coupling%dusfci_cpl(i) = dusfc_cice(i)
               Coupling%dvsfci_cpl(i) = dvsfc_cice(i)
               Coupling%dtsfci_cpl(i) = dtsfc_cice(i)
