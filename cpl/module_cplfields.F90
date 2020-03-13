@@ -39,8 +39,8 @@ module module_cplfields
        "vegetation_type                          ", &
        "inst_vegetation_area_frac                ", &
        "inst_surface_roughness                   ", &
-       "mean_zonal_moment_flx                    ", &
-       "mean_merid_moment_flx                    ", &
+       "mean_zonal_moment_flx_atm                ", &
+       "mean_merid_moment_flx_atm                ", &
        "mean_sensi_heat_flx                      ", &
        "mean_laten_heat_flx                      ", &
        "mean_down_lw_flx                         ", &
