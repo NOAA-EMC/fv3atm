@@ -1111,7 +1111,7 @@ module fv3gfs_cap_mod
          timerhi = mpi_wtime()
 !         if (mype == 0 .or. mype == lead_wrttask(1)) print *,' aft fcst run alarm is on, na=',na,'mype=',mype
 
-         call ESMF_VMEpochStart(epoch=ESMF_VMEpoch_Buffer, rc=rc)
+         call ESMF_VMEpochEnter(epoch=ESMF_VMEpoch_Buffer, rc=rc)
          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
          do i=1, FBCount
 !
@@ -1125,7 +1125,7 @@ module fv3gfs_cap_mod
 !
 !end FBcount
          enddo
-         call ESMF_VMEpochEnd(rc=rc)
+         call ESMF_VMEpochExit(rc=rc)
          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
 !       if (mype == 0 .or. mype == lead_wrttask(n_group)) print *,'aft fieldbundleregrid,na=',na,  &
@@ -1406,6 +1406,8 @@ module fv3gfs_cap_mod
        output: IF(lalarm .or. na==first_kdt ) then
 
          timerhi = mpi_wtime()
+         call ESMF_VMEpochEnter(epoch=ESMF_VMEpoch_Buffer, rc=rc)
+         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
          do i=1, FBCount
 !
 ! get fcst fieldbundle
@@ -1417,6 +1419,8 @@ module fv3gfs_cap_mod
 !
 !end FBcount
          enddo
+         call ESMF_VMEpochExit(rc=rc)
+         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
          if (mype == 0 .or. mype == lead_wrttask(n_group)) print *,'aft fieldbundleregrid,na=',na,  &
                                                                    ' time=', timerh- timerhi
 
