@@ -6528,7 +6528,7 @@ module GFS_typedefs
     ! Set flag for resetting maximum hourly output fields
     Interstitial%reset = mod(Model%kdt-1, nint(Model%avg_max_length/Model%dtp)) == 0
     ! Set flag for resetting radar reflectivity calculation
-    if (Interstitial%radar_reset<0) then
+    if (Model%nsradar_reset<0) then
       Interstitial%radar_reset = .true.
     else
       Interstitial%radar_reset = mod(Model%kdt-1, nint(Model%nsradar_reset/Model%dtp)) == 0
