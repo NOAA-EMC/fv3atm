@@ -1724,7 +1724,6 @@ end subroutine atmos_data_type_chksum
                   if (IPD_Data(nb)%Sfcprop%oceanfrac(ix) > zero) then
                     IPD_Data(nb)%Coupling%tseain_cpl(ix) = datar8(i,j)
                     IPD_Data(nb)%Sfcprop%tsfco(ix)       = datar8(i,j)
-!                   IPD_Data(nb)%Sfcprop%tsfc(ix)        = datar8(i,j)
                   endif
                 enddo
               enddo
@@ -1747,13 +1746,17 @@ end subroutine atmos_data_type_chksum
                   IPD_Data(nb)%Coupling%ficein_cpl(ix)   = zero
                   IPD_Data(nb)%Coupling%slimskin_cpl(ix) = IPD_Data(nb)%Sfcprop%slmsk(ix)
                   if (IPD_Data(nb)%Sfcprop%oceanfrac(ix) > zero) then
-                    if (datar8(i,j) >= IPD_control%min_seaice*IPD_Data(nb)%Sfcprop%oceanfrac(ix)) then
-                      IPD_Data(nb)%Coupling%ficein_cpl(ix) = max(zero, min(datar8(i,j),one))
-                      IPD_Data(nb)%Sfcprop%slmsk(ix)         = 2.                                        !slmsk=2 crashes in gcycle on partial land points
+                    IPD_Data(nb)%Coupling%ficein_cpl(ix) = max(zero, min(one, datar8(i,j)/IPD_Data(nb)%Sfcprop%oceanfrac(ix))) !LHS: ice frac wrt water area
+                    if (IPD_Data(nb)%Coupling%ficein_cpl(ix) > one-epsln) IPD_Data(nb)%Coupling%ficein_cpl(ix)=one
+                    if (IPD_Data(nb)%Coupling%ficein_cpl(ix) >= IPD_control%min_seaice) then
+                      if (abs(one-IPD_Data(nb)%Sfcprop%oceanfrac(ix)) < epsln) IPD_Data(nb)%Sfcprop%slmsk(ix) = 2. !slmsk=2 crashes in gcycle on partial land points
                       IPD_Data(nb)%Coupling%slimskin_cpl(ix) = 4.
-                    elseif (abs(one-IPD_Data(nb)%Sfcprop%oceanfrac(ix)) < epsln) then
-                      IPD_Data(nb)%Sfcprop%slmsk(ix)         = zero
-                      IPD_Data(nb)%Coupling%slimskin_cpl(ix) = zero
+                    else
+                      IPD_Data(nb)%Coupling%ficein_cpl(ix)   = zero
+                      if (abs(one-IPD_Data(nb)%Sfcprop%oceanfrac(ix)) < epsln) then
+                        IPD_Data(nb)%Sfcprop%slmsk(ix)         = zero
+                        IPD_Data(nb)%Coupling%slimskin_cpl(ix) = zero
+                      end if
                     endif
                   endif
                 enddo
@@ -1924,7 +1927,7 @@ end subroutine atmos_data_type_chksum
           ix = Atm_block%ixp(i,j)
           if (IPD_Data(nb)%Sfcprop%oceanfrac(ix) > zero) then
 !if it is ocean or ice get surface temperature from mediator
-            if(IPD_Data(nb)%Coupling%ficein_cpl(ix) >= IPD_control%min_seaice*IPD_Data(nb)%Sfcprop%oceanfrac(ix)) then
+            if(IPD_Data(nb)%Coupling%ficein_cpl(ix) >= IPD_control%min_seaice) then
               IPD_Data(nb)%Sfcprop%tisfc(ix) = IPD_Data(nb)%Coupling%tisfcin_cpl(ix)
               IPD_Data(nb)%Sfcprop%fice(ix)  = IPD_Data(nb)%Coupling%ficein_cpl(ix)
               IPD_Data(nb)%Sfcprop%hice(ix)  = IPD_Data(nb)%Coupling%hicein_cpl(ix)

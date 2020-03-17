@@ -7565,6 +7565,12 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+[radar_reset]
+  standard_name = flag_for_resetting_radar_reflectivity_calculation
+  long_name = flag for resetting radar reflectivity calculation
+  units = flag
+  dimensions = ()
+  type = logical
 [raddt]
   standard_name = time_step_for_radiation
   long_name = radiation time step
