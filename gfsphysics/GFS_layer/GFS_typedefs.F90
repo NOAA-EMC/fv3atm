@@ -3258,6 +3258,8 @@ module GFS_typedefs
     Model%flag_for_scnv_generic_tend = .true.
     Model%flag_for_dcnv_generic_tend = .true.
 
+#ifdef CCPP
+
     write(0,*) 'GOT HERE (stderr)'
     print *,'GOT HERE (stdout)'
 
@@ -3300,7 +3302,7 @@ module GFS_typedefs
     else
       write(0,*) 'NO FLAG: dcnv is generic'
     endif
-
+#endif
 !
 !VAY-ugwp  --- set some GW-related switches
 !

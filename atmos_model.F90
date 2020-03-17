@@ -332,8 +332,10 @@ subroutine update_atmos_radiation_physics (Atmos)
 !        print *,'in atmos_model, after assign_importdata, rc=',rc
       endif
 
+#ifdef CCPP
       call CCPP_step (step="timestep_init", nblks=Atm_block%nblks, ierr=ierr)
       if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP timestep_init step failed')
+#endif
 
       call mpp_clock_end(setupClock)
 
