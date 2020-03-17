@@ -1269,6 +1269,146 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+[evap]
+  standard_name = kinematic_surface_upward_latent_heat_flux
+  long_name = kinematic surface upward latent heat flux
+  units = kg kg-1 m s-1
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+[hflx]
+  standard_name = kinematic_surface_upward_sensible_heat_flux
+  long_name = kinematic surface upward sensible heat flux
+  units = K m s-1
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+[tsfc_ocean]
+  standard_name = surface_skin_temperature_over_ocean_interstitial
+  long_name = surface skin temperature over ocean (temporary use as interstitial)
+  units = K
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+[tsfc_land]
+  standard_name = surface_skin_temperature_over_land_interstitial
+  long_name = surface skin temperature over land  (temporary use as interstitial)
+  units = K
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+[tsfc_ice]
+  standard_name = surface_skin_temperature_over_ice_interstitial
+  long_name = surface skin temperature over ice   (temporary use as interstitial)
+  units = K
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+[tsurf_ocean]
+  standard_name = surface_skin_temperature_after_iteration_over_ocean
+  long_name = surface skin temperature after iteration over ocean
+  units = K
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+[tsurf_land]
+  standard_name = surface_skin_temperature_after_iteration_over_land
+  long_name = surface skin temperature after iteration over land
+  units = K
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+[tsurf_ice]
+  standard_name = surface_skin_temperature_after_iteration_over_ice
+  long_name = surface skin temperature after iteration over ice
+  units = K
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+[uustar_ocean]
+  standard_name = surface_friction_velocity_over_ocean
+  long_name = surface friction velocity over ocean
+  units = m s-1
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+[uustar_land]
+  standard_name = surface_friction_velocity_over_land
+  long_name = surface friction velocity over land
+  units = m s-1
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+[uustar_ice]
+  standard_name = surface_friction_velocity_over_ice
+  long_name = surface friction velocity over ice
+  units = m s-1
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+[qss_ocean]
+  standard_name = surface_specific_humidity_over_ocean
+  long_name = surface air saturation specific humidity over ocean
+  units = kg kg-1
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+[qss_land]
+  standard_name = surface_specific_humidity_over_land
+  long_name = surface air saturation specific humidity over land
+  units = kg kg-1
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+[qss_ice]
+  standard_name = surface_specific_humidity_over_ice
+  long_name = surface air saturation specific humidity over ice
+  units = kg kg-1
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+[snowd_ocean]
+  standard_name = surface_snow_thickness_water_equivalent_over_ocean
+  long_name = water equivalent snow depth over ocean
+  units = mm
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+[snowd_land]
+  standard_name = surface_snow_thickness_water_equivalent_over_land
+  long_name = water equivalent snow depth over land
+  units = mm
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+[snowd_ice]
+  standard_name = surface_snow_thickness_water_equivalent_over_ice
+  long_name = water equivalent snow depth over ice
+  units = mm
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+[zorl_ocean]
+  standard_name = surface_roughness_length_over_ocean_interstitial
+  long_name = surface roughness length over ocean (temporary use as interstitial)
+  units = cm
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+[zorl_land]
+  standard_name = surface_roughness_length_over_land_interstitial
+  long_name = surface roughness length over land  (temporary use as interstitial)
+  units = cm
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+[zorl_ice]
+  standard_name = surface_roughness_length_over_ice_interstitial
+  long_name = surface roughness length over ice   (temporary use as interstitial)
+  units = cm
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
 [raincprv]
   standard_name = lwe_thickness_of_convective_precipitation_amount_from_previous_timestep
   long_name = convective_precipitation_amount from previous timestep
@@ -4097,6 +4237,13 @@
   dimensions = (horizontal_dimension,vertical_dimension_of_h2o_forcing_data,number_of_coefficients_in_h2o_forcing_data)
   type = real
   kind = kind_phys
+[hpbl]
+  standard_name = atmosphere_boundary_layer_thickness
+  long_name = pbl height
+  units = m
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
 [in_nm]
   standard_name = in_number_concentration
   long_name = IN number concentration
@@ -5124,13 +5271,6 @@
   standard_name = surface_air_pressure_diag
   long_name = surface air pressure diagnostic
   units = Pa
-  dimensions = (horizontal_dimension)
-  type = real
-  kind = kind_phys
-[hpbl]
-  standard_name = atmosphere_boundary_layer_thickness
-  long_name = pbl height
-  units = m
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
@@ -6640,13 +6780,6 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
-[evap]
-  standard_name = kinematic_surface_upward_latent_heat_flux
-  long_name = kinematic surface upward latent heat flux
-  units = kg kg-1 m s-1
-  dimensions = (horizontal_dimension)
-  type = real
-  kind = kind_phys
 [evap_ocean]
   standard_name = kinematic_surface_upward_latent_heat_flux_over_ocean
   long_name = kinematic surface upward latent heat flux over ocean
@@ -7061,13 +7194,6 @@
   long_name = natural log of h2o forcing data pressure levels
   units = log(Pa)
   dimensions = (vertical_dimension_of_h2o_forcing_data)
-  type = real
-  kind = kind_phys
-[hflx]
-  standard_name = kinematic_surface_upward_sensible_heat_flux
-  long_name = kinematic surface upward sensible heat flux
-  units = K m s-1
-  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [hflx_ocean]
@@ -7521,27 +7647,6 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
-[qss_ocean]
-  standard_name = surface_specific_humidity_over_ocean
-  long_name = surface air saturation specific humidity over ocean
-  units = kg kg-1
-  dimensions = (horizontal_dimension)
-  type = real
-  kind = kind_phys
-[qss_land]
-  standard_name = surface_specific_humidity_over_land
-  long_name = surface air saturation specific humidity over land
-  units = kg kg-1
-  dimensions = (horizontal_dimension)
-  type = real
-  kind = kind_phys
-[qss_ice]
-  standard_name = surface_specific_humidity_over_ice
-  long_name = surface air saturation specific humidity over ice
-  units = kg kg-1
-  dimensions = (horizontal_dimension)
-  type = real
-  kind = kind_phys
 [raddt]
   standard_name = time_step_for_radiation
   long_name = radiation time step
@@ -7776,27 +7881,6 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
-[snowd_ocean]
-  standard_name = surface_snow_thickness_water_equivalent_over_ocean
-  long_name = water equivalent snow depth over ocean
-  units = mm
-  dimensions = (horizontal_dimension)
-  type = real
-  kind = kind_phys
-[snowd_land]
-  standard_name = surface_snow_thickness_water_equivalent_over_land
-  long_name = water equivalent snow depth over land
-  units = mm
-  dimensions = (horizontal_dimension)
-  type = real
-  kind = kind_phys
-[snowd_ice]
-  standard_name = surface_snow_thickness_water_equivalent_over_ice
-  long_name = water equivalent snow depth over ice
-  units = mm
-  dimensions = (horizontal_dimension)
-  type = real
-  kind = kind_phys
 [snohf]
   standard_name = snow_freezing_rain_upward_latent_heat_flux
   long_name = latent heat flux due to snow and frz rain
@@ -7947,27 +8031,6 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
-[tsfc_ocean]
-  standard_name = surface_skin_temperature_over_ocean_interstitial
-  long_name = surface skin temperature over ocean (temporary use as interstitial)
-  units = K
-  dimensions = (horizontal_dimension)
-  type = real
-  kind = kind_phys
-[tsfc_land]
-  standard_name = surface_skin_temperature_over_land_interstitial
-  long_name = surface skin temperature over land  (temporary use as interstitial)
-  units = K
-  dimensions = (horizontal_dimension)
-  type = real
-  kind = kind_phys
-[tsfc_ice]
-  standard_name = surface_skin_temperature_over_ice_interstitial
-  long_name = surface skin temperature over ice   (temporary use as interstitial)
-  units = K
-  dimensions = (horizontal_dimension)
-  type = real
-  kind = kind_phys
 [tsfg]
   standard_name = surface_ground_temperature_for_radiation
   long_name = surface ground temperature for radiation
@@ -7978,27 +8041,6 @@
 [tsurf]
   standard_name = surface_skin_temperature_after_iteration
   long_name = surface skin temperature after iteration
-  units = K
-  dimensions = (horizontal_dimension)
-  type = real
-  kind = kind_phys
-[tsurf_ocean]
-  standard_name = surface_skin_temperature_after_iteration_over_ocean
-  long_name = surface skin temperature after iteration over ocean
-  units = K
-  dimensions = (horizontal_dimension)
-  type = real
-  kind = kind_phys
-[tsurf_land]
-  standard_name = surface_skin_temperature_after_iteration_over_land
-  long_name = surface skin temperature after iteration over land
-  units = K
-  dimensions = (horizontal_dimension)
-  type = real
-  kind = kind_phys
-[tsurf_ice]
-  standard_name = surface_skin_temperature_after_iteration_over_ice
-  long_name = surface skin temperature after iteration over ice
   units = K
   dimensions = (horizontal_dimension)
   type = real
@@ -8020,27 +8062,6 @@
   standard_name = surface_upwelling_longwave_flux_for_coupling_interstitial
   long_name = surface upwelling longwave flux for coupling_interstitial
   units = W m-2
-  dimensions = (horizontal_dimension)
-  type = real
-  kind = kind_phys
-[uustar_ocean]
-  standard_name = surface_friction_velocity_over_ocean
-  long_name = surface friction velocity over ocean
-  units = m s-1
-  dimensions = (horizontal_dimension)
-  type = real
-  kind = kind_phys
-[uustar_land]
-  standard_name = surface_friction_velocity_over_land
-  long_name = surface friction velocity over land
-  units = m s-1
-  dimensions = (horizontal_dimension)
-  type = real
-  kind = kind_phys
-[uustar_ice]
-  standard_name = surface_friction_velocity_over_ice
-  long_name = surface friction velocity over ice
-  units = m s-1
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
@@ -8152,27 +8173,6 @@
   standard_name = perturbation_of_momentum_roughness_length
   long_name = perturbation of momentum roughness length
   units = frac
-  dimensions = (horizontal_dimension)
-  type = real
-  kind = kind_phys
-[zorl_ocean]
-  standard_name = surface_roughness_length_over_ocean_interstitial
-  long_name = surface roughness length over ocean (temporary use as interstitial)
-  units = cm
-  dimensions = (horizontal_dimension)
-  type = real
-  kind = kind_phys
-[zorl_land]
-  standard_name = surface_roughness_length_over_land_interstitial
-  long_name = surface roughness length over land  (temporary use as interstitial)
-  units = cm
-  dimensions = (horizontal_dimension)
-  type = real
-  kind = kind_phys
-[zorl_ice]
-  standard_name = surface_roughness_length_over_ice_interstitial
-  long_name = surface roughness length over ice   (temporary use as interstitial)
-  units = cm
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
