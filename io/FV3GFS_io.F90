@@ -1165,7 +1165,6 @@ module FV3GFS_io_mod
     endif
 
 !#endif
-
     if(Model%frac_grid) then ! 3-way composite
       do nb = 1, Atm_block%nblks
         do ix = 1, Atm_block%blksz(nb)
