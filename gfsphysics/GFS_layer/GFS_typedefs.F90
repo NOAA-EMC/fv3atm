@@ -4150,6 +4150,8 @@ module GFS_typedefs
       print *,' Radiative heating calculated at',Model%levr, ' layers'
       if (Model%iovr_sw == 0) then
         print *,' random cloud overlap for Shortwave IOVR_SW=',Model%iovr_sw
+      elseif (Model%iovr_sw == 4) then
+        print *,'exponential cloud overlap for Shortwave IOVR_SW=',Model%iovr_lw
       else
         print *,' max-random cloud overlap for Shortwave IOVR_SW=',Model%iovr_sw
       endif

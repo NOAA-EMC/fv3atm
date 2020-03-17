@@ -3289,37 +3289,38 @@ module GFS_diagnostics
 
     !! Cloud effective radii from Microphysics
     !if (Model%imp_physics == Model%imp_physics_thompson .or. Model%imp_physics == Model%imp_physics_wsm6) then
-    !  idx = idx + 1
-    !  ExtDiag(idx)%axes = 3
-    !  ExtDiag(idx)%name = 'cleffr'
-    !  ExtDiag(idx)%desc = 'effective radius of cloud liquid water particle'
-    !  ExtDiag(idx)%unit = 'um'
-    !  ExtDiag(idx)%mod_name = 'gfs_phys'
-    !  allocate (ExtDiag(idx)%data(nblks))
-    !  do nb = 1,nblks
-    !    ExtDiag(idx)%data(nb)%var3 => Tbd(nb)%phy_f3d(:,:,Model%nleffr)
-    !  enddo
-    !  idx = idx + 1
-    !  ExtDiag(idx)%axes = 3
-    !  ExtDiag(idx)%name = 'cieffr'
-    !  ExtDiag(idx)%desc = 'effective radius of stratiform cloud ice particle in um'
-    !  ExtDiag(idx)%unit = 'um'
-    !  ExtDiag(idx)%mod_name = 'gfs_phys'
-    !  allocate (ExtDiag(idx)%data(nblks))
-    !  do nb = 1,nblks
-    !    ExtDiag(idx)%data(nb)%var3 => Tbd(nb)%phy_f3d(:,:,Model%nieffr)
-    !  enddo
-    !  idx = idx + 1
-    !  ExtDiag(idx)%axes = 3
-    !  ExtDiag(idx)%name = 'cseffr'
-    !  ExtDiag(idx)%desc = 'effective radius of stratiform cloud snow particle in um'
-    !  ExtDiag(idx)%unit = 'um'
-    !  ExtDiag(idx)%mod_name = 'gfs_phys'
-    !  allocate (ExtDiag(idx)%data(nblks))
-    !  do nb = 1,nblks
-    !    ExtDiag(idx)%data(nb)%var3 => Tbd(nb)%phy_f3d(:,:,Model%nseffr)
-    !  enddo
-    !endif
+     if (Model%imp_physics == Model%imp_physics_fer_hires) then
+      idx = idx + 1
+      ExtDiag(idx)%axes = 3
+      ExtDiag(idx)%name = 'cleffr'
+      ExtDiag(idx)%desc = 'effective radius of cloud liquid water particle'
+      ExtDiag(idx)%unit = 'um'
+      ExtDiag(idx)%mod_name = 'gfs_phys'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var3 => Tbd(nb)%phy_f3d(:,:,Model%nleffr)
+      enddo
+      idx = idx + 1
+      ExtDiag(idx)%axes = 3
+      ExtDiag(idx)%name = 'cieffr'
+      ExtDiag(idx)%desc = 'effective radius of stratiform cloud ice particle in um'
+      ExtDiag(idx)%unit = 'um'
+      ExtDiag(idx)%mod_name = 'gfs_phys'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var3 => Tbd(nb)%phy_f3d(:,:,Model%nieffr)
+      enddo
+      idx = idx + 1
+      ExtDiag(idx)%axes = 3
+      ExtDiag(idx)%name = 'cseffr'
+      ExtDiag(idx)%desc = 'effective radius of stratiform cloud snow particle in um'
+      ExtDiag(idx)%unit = 'um'
+      ExtDiag(idx)%mod_name = 'gfs_phys'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var3 => Tbd(nb)%phy_f3d(:,:,Model%nseffr)
+      enddo
+    endif
 
     !MYNN
     if (Model%do_mynnedmf) then
