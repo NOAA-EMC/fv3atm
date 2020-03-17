@@ -1120,7 +1120,6 @@ module fv3gfs_cap_mod
            call ESMF_FieldBundleRegrid(fcstFB(i), wrtFB(i,n_group),         &
                                        routehandle=routehandle(i, n_group), &
                                        termorderflag=(/ESMF_TERMORDER_SRCSEQ/), rc=rc)
-           timerh = mpi_wtime()
            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 !
 !end FBcount
@@ -1128,8 +1127,8 @@ module fv3gfs_cap_mod
          call ESMF_VMEpochExit(rc=rc)
          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-!       if (mype == 0 .or. mype == lead_wrttask(n_group)) print *,'aft fieldbundleregrid,na=',na,  &
-!       ' time=', timerh- timerhi
+         if (mype == 0 .or. mype == lead_wrttask(n_group).or.mype==last_wrttask(n_group)) print *,'aft fldbdlregrid,na=',na,  &
+       ' time=', mpi_wtime()- timerhi,mype
 
 !      if(mype==0 .or. mype==lead_wrttask(1))  print *,'on wrt bf wrt run, na=',na
           call ESMF_LogWrite('Model Advance: before wrtcomp run ', ESMF_LOGMSG_INFO, rc=rc)
@@ -1147,8 +1146,8 @@ module fv3gfs_cap_mod
           call ESMF_LogWrite('Model Advance: after wrtcomp run ', ESMF_LOGMSG_INFO, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-!       if (mype == 0 .or. mype == lead_wrttask(n_group)) print *,'fv3_cap,aft model advance,na=', &
-!       na,' time=', mpi_wtime()- timewri
+       if (mype == 0 .or. mype == lead_wrttask(n_group).or.mype == last_wrttask(n_group)) print *,'fv3_cap,aft mdladv,na=', &
+       na,' time=', mpi_wtime()- timewri
 
 
           if(n_group == write_groups) then
