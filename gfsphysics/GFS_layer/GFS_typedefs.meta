@@ -8944,6 +8944,7 @@
   dimensions =  (number_of_active_gases_used_by_RRTMGP)
   type = character
   kind = len=128
+
 ########################################################################
 [ccpp-arg-table]
   name = GFS_data_type

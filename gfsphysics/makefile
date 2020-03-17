@@ -23,11 +23,6 @@ CPPDEFS += -DNEW_TAUCTMAX -DSMALL_PE -DNEMS_GSM -DINTERNAL_FILE_NML
 
 # CCPP dynamic and static builds
 ifneq (,$(findstring CCPP,$(CPPDEFS)))
-
-# CCPP directory
-CCPP_DIR = /home/Dustin.Swales/Projects/UFS/ufs-weather-model/FV3/ccpp
-FFLAGS += -I$(CCPP_DIR)/build/physics
-
 # Set flags for 32-bit dynamics build
 ifeq ($(DYN32),Y)
 CPPDEFS += -DOVERLOAD_R4
@@ -63,33 +58,7 @@ SRCS_F90 = \
 	   ./GFS_layer/GFS_diagnostics.F90                                           \
 	   ./GFS_layer/GFS_driver.F90                                                \
 	   ./GFS_layer/GFS_restart.F90                                               \
-	   ./GFS_layer/GFS_typedefs.F90                                              \
-	   $(CCPP_DIR)/physics/physics/rte-rrtmgp/rrtmgp/mo_gas_concentrations.F90                   \
-	   $(CCPP_DIR)/physics/physics/rte-rrtmgp/rrtmgp/mo_gas_optics.F90                           \
-	   $(CCPP_DIR)/physics/physics/rte-rrtmgp/rrtmgp/mo_gas_optics_rrtmgp.F90                    \
-	   $(CCPP_DIR)/physics/physics/rte-rrtmgp/rrtmgp/mo_rrtmgp_constants.F90                     \
-	   $(CCPP_DIR)/physics/physics/rte-rrtmgp/rrtmgp/mo_rrtmgp_util_reorder.F90                  \
-	   $(CCPP_DIR)/physics/physics/rte-rrtmgp/rrtmgp/mo_rrtmgp_util_string.F90                   \
-	   $(CCPP_DIR)/physics/physics/rte-rrtmgp/rrtmgp/kernels/mo_gas_optics_kernels.F90           \
-	   $(CCPP_DIR)/physics/physics/rte-rrtmgp/rrtmgp/kernels/mo_rrtmgp_util_reorder_kernels.F90  \
-	   $(CCPP_DIR)/physics/physics/rte-rrtmgp/rte/mo_fluxes.F90                                  \
-	   $(CCPP_DIR)/physics/physics/rte-rrtmgp/rte/mo_rte_util_array.F90                          \
-	   $(CCPP_DIR)/physics/physics/rte-rrtmgp/rte/mo_optical_props.F90                           \
-	   $(CCPP_DIR)/physics/physics/rte-rrtmgp/rte/mo_rte_kind.F90                                \
-	   $(CCPP_DIR)/physics/physics/rte-rrtmgp/rte/mo_rte_lw.F90                                  \
-	   $(CCPP_DIR)/physics/physics/rte-rrtmgp/rte/mo_rte_sw.F90                                  \
-	   $(CCPP_DIR)/physics/physics/rte-rrtmgp/rte/mo_source_functions.F90                        \
-	   $(CCPP_DIR)/physics/physics/rte-rrtmgp/rte/kernels/mo_fluxes_broadband_kernels.F90        \
-	   $(CCPP_DIR)/physics/physics/rte-rrtmgp/rte/kernels/mo_optical_props_kernels.F90           \
-	   $(CCPP_DIR)/physics/physics/rte-rrtmgp/rte/kernels/mo_rte_solver_kernels.F90              \
-	   $(CCPP_DIR)/physics/physics/rte-rrtmgp/extensions/mo_compute_bc.F90                       \
-	   $(CCPP_DIR)/physics/physics/rte-rrtmgp/extensions/mo_fluxes_byband.F90                    \
-	   $(CCPP_DIR)/physics/physics/rte-rrtmgp/extensions/mo_fluxes_byband_kernels.F90            \
-	   $(CCPP_DIR)/physics/physics/rte-rrtmgp/extensions/mo_fluxes_bygpoint.F90                  \
-	   $(CCPP_DIR)/physics/physics/rte-rrtmgp/extensions/mo_heating_rates.F90                    \
-	   $(CCPP_DIR)/physics/physics/rte-rrtmgp/extensions/mo_rrtmgp_clr_all_sky.F90               \
-	   $(CCPP_DIR)/physics/physics/rte-rrtmgp/extensions/cloud_optics/mo_cloud_optics.F90        \
-	   $(CCPP_DIR)/physics/physics/rte-rrtmgp/extensions/cloud_optics/mo_cloud_sampling.F90
+	   ./GFS_layer/GFS_typedefs.F90
 # non-CCPP build
 else
 SRCS_f =  \
