@@ -9,8 +9,9 @@
 
 HOST_MODEL_IDENTIFIER = "FV3"
 
-# Add all files with metadata tables on the host model side,
-# relative to basedir = top-level directory of host model
+# Add all files with metadata tables on the host model side and in CCPP,
+# relative to basedir = top-level directory of host model. This includes
+# kind and type definitions used in CCPP physics.
 VARIABLE_DEFINITION_FILES = [
     'FV3/ccpp/physics/physics/machine.F',
     'FV3/ccpp/physics/physics/radsw_param.f',
@@ -319,6 +320,11 @@ SCHEME_FILES = {
 # Default build dir, relative to current working directory,
 # if not specified as command-line argument
 DEFAULT_BUILD_DIR = 'FV3'
+
+# Auto-generated makefile/cmakefile snippets that contain all type definitions
+TYPEDEFS_MAKEFILE   = '{build_dir}/ccpp/physics/CCPP_TYPEDEFS.mk'
+TYPEDEFS_CMAKEFILE  = '{build_dir}/ccpp/physics/CCPP_TYPEDEFS.cmake'
+TYPEDEFS_SOURCEFILE = '{build_dir}/ccpp/physics/CCPP_TYPEDEFS.sh'
 
 # Auto-generated makefile/cmakefile snippets that contain all schemes
 SCHEMES_MAKEFILE   = '{build_dir}/ccpp/physics/CCPP_SCHEMES.mk'
