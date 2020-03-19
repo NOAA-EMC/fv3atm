@@ -709,7 +709,8 @@ module GFS_typedefs
 
     !--- Thompson's microphysical parameters
     logical              :: ltaerosol       !< flag for aerosol version
-    logical              :: lradar          !< flag for radar reflectivity 
+    logical              :: lradar          !< flag for radar reflectivity
+    real(kind=kind_phys) :: nsradar_reset   !< seconds between resetting radar reflectivity calculation
     real(kind=kind_phys) :: ttendlim        !< temperature tendency limiter per time step in K/s
 
     !--- GFDL microphysical paramters
@@ -1785,6 +1786,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: qss_ice(:)         => null()  !<
     real (kind=kind_phys), pointer      :: qss_land(:)        => null()  !<
     real (kind=kind_phys), pointer      :: qss_ocean(:)       => null()  !<
+    logical                             :: radar_reset                   !<
     real (kind=kind_phys)               :: raddt                         !<
     real (kind=kind_phys), pointer      :: rainmp(:)          => null()  !<
     real (kind=kind_phys), pointer      :: raincd(:)          => null()  !<
@@ -2781,11 +2783,11 @@ module GFS_typedefs
     real(kind=kind_phys) :: evpco             = 2.0d-5             !< [in] coeff for evaporation of largescale rain
     real(kind=kind_phys) :: wminco(2)         = (/1.0d-5,1.0d-5/)  !< [in] water and ice minimum threshold for Zhao
 !---Max hourly
-    real(kind=kind_phys) :: avg_max_length = 3600.              !< reset value in seconds for max hourly.
+    real(kind=kind_phys) :: avg_max_length = 3600.                 !< reset value in seconds for max hourly
 !--- Ferrier-Aligo microphysical parameters
 #ifdef CCPP
-    real(kind=kind_phys) :: rhgrd             = 0.98               !< fer_hires microphysics only     
-    logical              :: spec_adv          = .true.            !< Individual cloud species advected
+    real(kind=kind_phys) :: rhgrd             = 0.98               !< fer_hires microphysics only
+    logical              :: spec_adv          = .true.             !< Individual cloud species advected
 #endif
 !--- M-G microphysical parameters
     integer              :: fprcp             =  0                 !< no prognostic rain and snow (MG)
@@ -2823,6 +2825,7 @@ module GFS_typedefs
     !--- Thompson microphysical parameters
     logical              :: ltaerosol      = .false.            !< flag for aerosol version
     logical              :: lradar         = .false.            !< flag for radar reflectivity 
+    real(kind=kind_phys) :: nsradar_reset  = -999.0             !< seconds between resetting radar reflectivity calculation, set to <0 for every time step
     real(kind=kind_phys) :: ttendlim       = -999.0             !< temperature tendency limiter, set to <0 to deactivate
 
     !--- GFDL microphysical parameters
@@ -3119,7 +3122,8 @@ module GFS_typedefs
                                mg_do_graupel, mg_do_hail, mg_nccons, mg_nicons, mg_ngcons,  &
                                mg_ncnst, mg_ninst, mg_ngnst, sed_supersat, do_sb_physics,   &
                                mg_alf,   mg_qcmin, mg_do_ice_gmao, mg_do_liq_liu,           &
-                               ltaerosol, lradar, lrefres, ttendlim, lgfdlmprad,            &
+                               ltaerosol, lradar, nsradar_reset, lrefres, ttendlim,         &
+                               lgfdlmprad,                                                  &
                           !--- max hourly
                                avg_max_length,                                              &
                           !--- land/surface model control
@@ -3408,6 +3412,7 @@ module GFS_typedefs
 !--- Thompson MP parameters
     Model%ltaerosol        = ltaerosol
     Model%lradar           = lradar
+    Model%nsradar_reset    = nsradar_reset
     Model%ttendlim         = ttendlim
 !--- F-A MP parameters
 #ifdef CCPP
@@ -4201,7 +4206,10 @@ module GFS_typedefs
       if (Model%me == Model%master) print *,' Using Thompson double moment', &
                                           ' microphysics',' ltaerosol = ',Model%ltaerosol, &
                                           ' ttendlim =',Model%ttendlim, &
-                                          ' lradar =',Model%lradar,Model%num_p3d,Model%num_p2d
+                                          ' lradar =',Model%lradar, &
+                                          ' nsradar_reset =',Model%nsradar_reset, &
+                                          ' num_p3d =',Model%num_p3d, &
+                                          ' num_p2d =',Model%num_p2d
 
     else if (Model%imp_physics == Model%imp_physics_mg) then        ! Morrison-Gettelman Microphysics
       Model%npdf3d  = 0
@@ -4473,6 +4481,7 @@ module GFS_typedefs
         print *, ' Thompson microphysical parameters'
         print *, ' ltaerosol         : ', Model%ltaerosol
         print *, ' lradar            : ', Model%lradar
+        print *, ' nsradar_reset     : ', Model%nsradar_reset
         print *, ' lrefres           : ', Model%lrefres
         print *, ' ttendlim          : ', Model%ttendlim
         print *, ' '
@@ -6518,6 +6527,12 @@ module GFS_typedefs
     !
     ! Set flag for resetting maximum hourly output fields
     Interstitial%reset = mod(Model%kdt-1, nint(Model%avg_max_length/Model%dtp)) == 0
+    ! Set flag for resetting radar reflectivity calculation
+    if (Model%nsradar_reset<0) then
+      Interstitial%radar_reset = .true.
+    else
+      Interstitial%radar_reset = mod(Model%kdt-1, nint(Model%nsradar_reset/Model%dtp)) == 0
+    end if
     !
   end subroutine interstitial_phys_reset
 
@@ -6705,6 +6720,7 @@ module GFS_typedefs
     write (0,*) 'sum(Interstitial%qss_ice         ) = ', sum(Interstitial%qss_ice         )
     write (0,*) 'sum(Interstitial%qss_land        ) = ', sum(Interstitial%qss_land        )
     write (0,*) 'sum(Interstitial%qss_ocean       ) = ', sum(Interstitial%qss_ocean       )
+    write (0,*) 'Interstitial%radar_reset           = ', Interstitial%radar_reset
     write (0,*) 'Interstitial%raddt                 = ', Interstitial%raddt
     write (0,*) 'sum(Interstitial%raincd          ) = ', sum(Interstitial%raincd          )
     write (0,*) 'sum(Interstitial%raincs          ) = ', sum(Interstitial%raincs          )

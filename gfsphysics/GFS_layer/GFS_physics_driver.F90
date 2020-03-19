@@ -1069,7 +1069,7 @@ module module_physics_driver
 !  --- ...  xw: transfer ice thickness & concentration from global to local variables
 !## CCPP ## global to local variable transfer not necessary for these two
         zice(i)    = Sfcprop%hice(i)
-        fice(i)    = Sfcprop%fice(i) ! ice fraction of lake/ocean wrt whole cell
+        fice(i)    = Sfcprop%fice(i)
 !*## CCPP ##* 
 !## CCPP ##* GFS_surface_composites.F90/GFS_surface_composites_pre_run
         tice(i)    = Sfcprop%tisfc(i)
@@ -1126,35 +1126,31 @@ module module_physics_driver
 !*## CCPP ##
 
 !## CCPP ##* GFS_surface_composites.F90/GFS_surface_composites_pre
-      if (Model%frac_grid) then  ! here Sfcprop%fice is fraction of the whole grid that is ice
+      if (Model%frac_grid) then
         do i = 1, IM
           frland(i) = Sfcprop%landfrac(i)
           if (frland(i) > zero) dry(i) = .true.
-          tem = one - frland(i)
-          if (tem > epsln) then
+          if (frland(i) < one) then
             if (flag_cice(i)) then
-              if (fice(i) >= Model%min_seaice*tem) then
+              if (fice(i) >= Model%min_seaice) then
                 icy(i)  = .true.
               else
                 fice(i) = zero
               endif
             else
-              if (fice(i) >= Model%min_lakeice*tem) then
+              if (fice(i) >= Model%min_lakeice) then
                 icy(i) = .true.
-                fice(i) = fice(i)/tem  ! fice is fraction of ocean/lake
               else
                 fice(i) = zero
               endif
             endif
+            if (fice(i) < one) then
+              wet(i)=.true. !some open ocean/lake water exists
+              if (.not. Model%cplflx) Sfcprop%tsfco(i) = max(Sfcprop%tsfco(i), Sfcprop%tisfc(i), tgice)
+            
+            end if
           else
             fice(i) = zero
-          endif
-                                        ! ocean/lake area that is not frozen
-          if (tem-fice(i) > epsln) then
-            wet(i) = .true.             ! there is some open water!
-            if (.not. Model%cplflx) Sfcprop%tsfco(i) = max(Sfcprop%tsfco(i), Sfcprop%tisfc(i), tgice)
-!           if (icy(i)) Sfcprop%tsfco(i) = max(Sfcprop%tsfco(i), tgice)
-!           if (icy(i)) Sfcprop%tsfco(i) = max(Sfcprop%tisfc(i), tgice)
           endif
         enddo
       else
@@ -1524,15 +1520,15 @@ module module_physics_driver
 
         if (Model%frac_grid) then
           do i=1,im
-            tem = one - Sfcprop%fice(i) - frland(i)
+            tem = (one - frland(i)) * fice(i) ! tem = ice fraction wrt whole cell
             if (flag_cice(i)) then
               adjsfculw(i) = adjsfculw3(i,1) * frland(i)                 &
-                           + Coupling%ulwsfcin_cpl(i) * Sfcprop%fice(i)  &
-                           + adjsfculw3(i,3) * tem
+                           + Coupling%ulwsfcin_cpl(i) * tem	         &
+                           + adjsfculw3(i,3) * (one - frland(i) - tem)
             else
               adjsfculw(i) = adjsfculw3(i,1) * frland(i)                 &
-                           + adjsfculw3(i,2) * Sfcprop%fice(i)           &
-                           + adjsfculw3(i,3) * tem
+                           + adjsfculw3(i,2) * tem                       &
+                           + adjsfculw3(i,3) * (one - frland(i) - tem)
             endif
           enddo
         else
@@ -1540,16 +1536,16 @@ module module_physics_driver
             if (dry(i)) then                     ! all land
               adjsfculw(i) = adjsfculw3(i,1)
             elseif (icy(i)) then                 ! ice (and water)
-              tem = one - Sfcprop%fice(i)
+              tem = one - fice(i)
               if (flag_cice(i)) then
                 if (wet(i) .and. adjsfculw3(i,3) /= huge) then
-                  adjsfculw(i) = Coupling%ulwsfcin_cpl(i)*Sfcprop%fice(i) + adjsfculw3(i,3)*tem
+                  adjsfculw(i) = Coupling%ulwsfcin_cpl(i)*fice(i) + adjsfculw3(i,3)*tem
                 else
                   adjsfculw(i) = Coupling%ulwsfcin_cpl(i)
                 endif
               else
                 if (wet(i) .and. adjsfculw3(i,3) /= huge) then
-                  adjsfculw(i) = adjsfculw3(i,2)*Sfcprop%fice(i) + adjsfculw3(i,3)*tem
+                  adjsfculw(i) = adjsfculw3(i,2)*fice(i) + adjsfculw3(i,3)*tem
                 else
                   adjsfculw(i) = adjsfculw3(i,2)
                 endif
@@ -2002,9 +1998,9 @@ module module_physics_driver
         do i=1, im
 !
 ! Three-way composites (fields from sfc_diff)
-          txl = Sfcprop%landfrac(i)
-          txi = Sfcprop%fice(i)                 ! here Sfcprop%fice is grid fraction that is ice
-          txo = one - txl - txi
+          txl = frland(i)
+          txi = fice(i)*(one - frland(i)) ! txi = ice fraction wrt whole cell
+          txo = max(zero, one - txl - txi)
           Sfcprop%zorl(i)   = txl*zorl3(i,1)   + txi*zorl3(i,2)   + txo*zorl3(i,3)
           cd(i)             = txl*cd3(i,1)     + txi*cd3(i,2)     + txo*cd3(i,3)
           cdq(i)            = txl*cdq3(i,1)    + txi*cdq3(i,2)    + txo*cdq3(i,3)
@@ -2062,8 +2058,7 @@ module module_physics_driver
           if (.not. flag_cice(i)) then
             if (islmsk(i) == 2) then                           ! return updated lake ice thickness & concentration to global array
               Sfcprop%hice(i)  = zice(i)
-!             Sfcprop%fice(i)  = fice(i) * Sfcprop%lakefrac(i) ! fice is fraction of lake area that is frozen
-              Sfcprop%fice(i)  = fice(i) * (one-Sfcprop%landfrac(i)) ! fice is fraction of wet area that is frozen
+              Sfcprop%fice(i)  = fice(i) 
               Sfcprop%tisfc(i) = tice(i)
             else                                               ! this would be over open ocean or land (no ice fraction)
               Sfcprop%hice(i)  = zero
@@ -2121,7 +2116,7 @@ module module_physics_driver
           Sfcprop%zorlo(i)  = zorl3(i,3)
 
           if (flag_cice(i) .and. wet(i)) then    ! this was already done for lake ice in sfc_sice
-            txi = Sfcprop%fice(i)
+            txi = fice(i)
             txo = one - txi
             evap(i)         = txi * evap3(i,2) + txo * evap3(i,3)
             hflx(i)         = txi * hflx3(i,2) + txo * hflx3(i,3)
@@ -2843,34 +2838,31 @@ module module_physics_driver
       if (Model%cplflx) then
         do i=1,im
           if (Sfcprop%oceanfrac(i) > zero) then               ! Ocean only, NO LAKES
-            if (fice(i) == Sfcprop%oceanfrac(i)) then ! use results from CICE
+            if (Sfcprop%fice(i) > one - epsln) then ! no open water, thus use results from CICE
               Coupling%dusfci_cpl(i) = dusfc_cice(i)
               Coupling%dvsfci_cpl(i) = dvsfc_cice(i)
               Coupling%dtsfci_cpl(i) = dtsfc_cice(i)
               Coupling%dqsfci_cpl(i) = dqsfc_cice(i)
-
-            elseif (wet(i)) then              ! use stress_ocean from sfc_diff for opw component at mixed point
-              if (icy(i) .or. dry(i)) then
-                tem1 = max(Diag%q1(i), 1.e-8)
-                rho = Statein%prsl(i,1) / (con_rd*Diag%t1(i)*(one+con_fvirt*tem1))
-                if (wind(i) > zero) then
-                  tem = - rho * stress3(i,3) / wind(i)
-                  Coupling%dusfci_cpl(i) = tem * Statein%ugrs(i,1)   ! U-momentum flux
-                  Coupling%dvsfci_cpl(i) = tem * Statein%vgrs(i,1)   ! V-momentum flux
-                else
-                  Coupling%dusfci_cpl(i) = zero
-                  Coupling%dvsfci_cpl(i) = zero
-                endif
-                Coupling%dtsfci_cpl(i) = con_cp   * rho * hflx3(i,3) ! sensible heat flux over open ocean
-                Coupling%dqsfci_cpl(i) = con_hvap * rho * evap3(i,3) ! latent heat flux over open ocean
+            elseif (icy(i) .or. dry(i)) then ! use stress_ocean from sfc_diff for opw component at mixed point
+              tem1 = max(Diag%q1(i), 1.e-8)
+              rho = Statein%prsl(i,1) / (con_rd*Diag%t1(i)*(one+con_fvirt*tem1))
+              if (wind(i) > zero) then
+                tem = - rho * stress3(i,3) / wind(i)
+                Coupling%dusfci_cpl(i) = tem * Statein%ugrs(i,1)   ! U-momentum flux
+                Coupling%dvsfci_cpl(i) = tem * Statein%vgrs(i,1)   ! V-momentum flux
+              else
+                Coupling%dusfci_cpl(i) = zero
+                Coupling%dvsfci_cpl(i) = zero
+              endif
+              Coupling%dtsfci_cpl(i) = con_cp   * rho * hflx3(i,3) ! sensible heat flux over open ocean
+              Coupling%dqsfci_cpl(i) = con_hvap * rho * evap3(i,3) ! latent heat flux over open ocean
 !     if (lprnt .and. i == ipr) write(0,*)' hflx33=',hflx3(i,3),' evap33=',evap3(i,3), &
 !    ' con_cp=',con_cp,' rho=',rho,' con_hvap=',con_hvap
-              else                                                   ! use results from PBL scheme for 100% open ocean
-                Coupling%dusfci_cpl(i) = dusfc1(i)
-                Coupling%dvsfci_cpl(i) = dvsfc1(i)
-                Coupling%dtsfci_cpl(i) = dtsfc1(i)
-                Coupling%dqsfci_cpl(i) = dqsfc1(i)
-              endif
+            else                                                   ! use results from PBL scheme for 100% open ocean
+              Coupling%dusfci_cpl(i) = dusfc1(i)
+              Coupling%dvsfci_cpl(i) = dvsfc1(i)
+              Coupling%dtsfci_cpl(i) = dtsfc1(i)
+              Coupling%dqsfci_cpl(i) = dqsfc1(i)
             endif
 
             Coupling%dusfc_cpl (i) = Coupling%dusfc_cpl(i) + Coupling%dusfci_cpl(i) * dtf
