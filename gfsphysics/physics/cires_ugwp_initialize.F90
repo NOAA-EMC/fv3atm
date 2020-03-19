@@ -30,11 +30,11 @@
 !      oro_stat(i,12)   = gamm(i)
 !      oro_stat(i,13)   = sigma(i)
 !      oro_stat(i,14)   = elvmax(i)
-!    enddo   
+!    enddo
 !   end   subroutine fill_oro_stat
 
 !   end module oro_state
-    
+ 
     module ugwp_common
 !
      use machine,  only: kind_phys
@@ -181,7 +181,7 @@
        real, parameter :: rlolev=50000.0
 !
        real,      parameter :: hncrit=9000.   ! max value in meters for elvmax
- 
+
 !  hncrit set to 8000m and sigfac added to enhance elvmax mtn hgt
 
        real,      parameter :: sigfac=4.0     ! mb3a expt test for elvmax factor
@@ -514,7 +514,7 @@
 !
 !
   module ugwp_wmsdis_init
- 
+
     use ugwp_common, only :   pi, pi2
     implicit none
 
@@ -528,7 +528,7 @@
       real,     parameter   :: gssec = (6.28/30.)**2        ! max-value for bn2
       real,     parameter   :: bv2min = (6.28/60./120.)**2  ! min-value for bn2  7.6(-7)  2 hrs
       real,     parameter   :: minvel = 0.5
- 
+
 !
 ! make parameter list that will be passed to SOLVER
 !
@@ -541,11 +541,11 @@
       real ,     parameter  :: nslope=1        ! the GW sprctral slope at small-m
 !     integer, parameter    :: klaunch=55      ! 32 - ~ 1km ;55 - 5.5 km ; 52 4.7km ; 60-7km index for selecting launch level
 !     integer, parameter    :: ilaunch=klaunch
- 
+
       integer  , parameter  :: iazidim=4       ! number of azimuths
       integer  , parameter  :: incdim=25       ! number of discrete cx - spectral elements in launch spectrum
       real ,     parameter  :: ucrit2=0.5
- 
+
       real ,     parameter  :: zcimin = ucrit2
       real ,     parameter  :: zcimax = 125.0
       real ,     parameter  :: zgam   =   0.25
@@ -553,18 +553,18 @@
 
       integer               :: ilaunch
       real                  :: gw_eff
- 
+
 !===========================================================================
       integer  :: nwav, nazd, nst
       real     :: eff
- 
+
       real                :: zaz_fct
       real, allocatable   :: zci(:), zci4(:), zci3(:),zci2(:), zdci(:)
       real, allocatable   :: zcosang(:), zsinang(:)
       contains
 !============================================================================
      subroutine initsolv_wmsdis(me, master,  nwaves, nazdir, nstoch, effac, do_physb, kxw)
- 
+
 !        call initsolv_wmsdis(me, master, knob_ugwp_wvspec(2), knob_ugwp_azdir(2), &
 !         knob_ugwp_stoch(2), knob_ugwp_effac(2), do_physb_gwsrcs, kxw)
 !

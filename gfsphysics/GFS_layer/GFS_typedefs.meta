@@ -148,42 +148,42 @@
   kind = kind_phys
 [qgrs(:,:,index_for_liquid_cloud_condensate)]
   standard_name = cloud_condensed_water_mixing_ratio
-  long_name = moist (dry+vapor, no condensates) mixing ratio of cloud water (condensate)
+  long_name = ratio of mass of cloud water to mass of dry air plus vapor (without condensates)
   units = kg kg-1
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
 [qgrs(:,1,index_for_liquid_cloud_condensate)]
   standard_name = cloud_condensed_water_mixing_ratio_at_lowest_model_layer
-  long_name = moist (dry+vapor, no condensates) mixing ratio of cloud water at lowest model layer
+  long_name = ratio of mass of cloud water to mass of dry air plus vapor (without condensates) at lowest model layer
   units = kg kg-1
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [qgrs(:,:,index_for_ice_cloud_condensate)]
   standard_name = ice_water_mixing_ratio
-  long_name = moist (dry+vapor, no condensates) mixing ratio of ice water
+  long_name = ratio of mass of ice water to mass of dry air plus vapor (without condensates)
   units = kg kg-1
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
 [qgrs(:,:,index_for_rain_water)]
   standard_name = rain_water_mixing_ratio
-  long_name = moist (dry+vapor, no condensates) mixing ratio of rain water
+  long_name = ratio of mass of rain water to mass of dry air plus vapor (without condensates)
   units = kg kg-1
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
 [qgrs(:,:,index_for_snow_water)]
   standard_name = snow_water_mixing_ratio
-  long_name = moist (dry+vapor, no condensates) mixing ratio of snow water
+  long_name = ratio of mass of snow water to mass of dry air plus vapor (without condensates)
   units = kg kg-1
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
 [qgrs(:,:,index_for_graupel)]
   standard_name = graupel_mixing_ratio
-  long_name = moist (dry+vapor, no condensates) mixing ratio of graupel
+  long_name = ratio of mass of graupel to mass of dry air plus vapor (without condensates)
   units = kg kg-1
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
@@ -335,35 +335,35 @@
   kind = kind_phys
 [gq0(:,:,index_for_liquid_cloud_condensate)]
   standard_name = cloud_condensed_water_mixing_ratio_updated_by_physics
-  long_name = moist (dry+vapor, no condensates) mixing ratio of cloud condensed water updated by physics
+  long_name = ratio of mass of cloud water to mass of dry air plus vapor (without condensates) updated by physics
   units = kg kg-1
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
 [gq0(:,:,index_for_ice_cloud_condensate)]
   standard_name = ice_water_mixing_ratio_updated_by_physics
-  long_name = moist (dry+vapor, no condensates) mixing ratio of ice water updated by physics
+  long_name = ratio of mass of ice water to mass of dry air plus vapor (without condensates) updated by physics
   units = kg kg-1
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
 [gq0(:,:,index_for_rain_water)]
   standard_name = rain_water_mixing_ratio_updated_by_physics
-  long_name = moist (dry+vapor, no condensates) mixing ratio of rain water updated by physics
+  long_name = ratio of mass of rain water to mass of dry air plus vapor (without condensates) updated by physics
   units = kg kg-1
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
 [gq0(:,:,index_for_snow_water)]
   standard_name = snow_water_mixing_ratio_updated_by_physics
-  long_name = moist (dry+vapor, no condensates) mixing ratio of snow water updated by physics
+  long_name = ratio of mass of snow water to mass of dry air plus vapor (without condensates) updated by physics
   units = kg kg-1
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
 [gq0(:,:,index_for_graupel)]
   standard_name = graupel_mixing_ratio_updated_by_physics
-  long_name = moist (dry+vapor, no condensates) mixing ratio of graupel updated by physics
+  long_name = ratio of mass of graupel to mass of dry air plus vapor (without condensates) updated by physics
   units = kg kg-1
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
@@ -2025,6 +2025,12 @@
   units = flag
   dimensions = ()
   type = logical
+[cplwav2atm]
+  standard_name = flag_for_wave_coupling_to_atm
+  long_name = flag controlling ocean wave coupling to the atmosphere (default off)
+  units = flag
+  dimensions = ()
+  type = logical
 [cplchm]
   standard_name = flag_for_chemistry_coupling
   long_name = flag controlling cplchm collection (default off)
@@ -2295,6 +2301,20 @@
   dimensions = (2)
   type = real
   kind = kind_phys
+[psauras]
+  standard_name = coefficient_from_cloud_ice_to_snow_ras
+  long_name = conversion coefficient from cloud ice to snow in ras
+  units = none
+  dimensions = (2)
+  type = real
+  kind = kind_phys
+[prauras]
+  standard_name = coefficient_from_cloud_water_to_rain_ras
+  long_name = conversion coefficient from cloud water to rain in ras
+  units = none
+  dimensions = (2)
+  type = real
+  kind = kind_phys
 [evpco]
   standard_name = coefficient_for_evaporation_of_rainfall
   long_name = coeff for evaporation of largescale rain
@@ -2305,6 +2325,20 @@
 [wminco]
   standard_name = cloud_condensed_water_conversion_threshold
   long_name = water and ice minimum threshold for Zhao
+  units = none
+  dimensions = (2)
+  type = real
+  kind = kind_phys
+[wminras]
+  standard_name = cloud_condensed_water_ice_conversion_threshold_ras
+  long_name = conversion coefficient from cloud liquid and ice to precipitation in ras
+  units = none
+  dimensions = (2)
+  type = real
+  kind = kind_phys
+[dlqf]
+  standard_name = condensate_fraction_detrained_in_updraft_layers
+  long_name = condensate fraction detrained with in a updraft layers
   units = none
   dimensions = (2)
   type = real
@@ -2729,12 +2763,6 @@
   units = index
   dimensions = ()
   type = integer
-[mom4ice]
-  standard_name = flag_for_mom4_coupling
-  long_name = flag controls mom4 sea ice
-  units = flag
-  dimensions = ()
-  type = logical
 [ras]
   standard_name = flag_for_ras_deep_convection
   long_name = flag for ras convection scheme
@@ -3017,6 +3045,13 @@
   long_name = multiplication factors for cdmb and gwd
   units = none
   dimensions = (4)
+  type = real
+  kind = kind_phys
+[ccwf]
+  standard_name = multiplication_factor_for_critical_cloud_workfunction
+  long_name = multiplication factor for tical_cloud_workfunction
+  units = none
+  dimensions = (2)
   type = real
   kind = kind_phys
 [sup]
@@ -6182,14 +6217,14 @@
   kind = kind_phys
 [clw(:,:,1)]
   standard_name = ice_water_mixing_ratio_convective_transport_tracer
-  long_name = moist (dry+vapor, no condensates) mixing ratio of ice water in the convectively transported tracer array
+  long_name = ratio of mass of ice water to mass of dry air plus vapor (without condensates) in the convectively transported tracer array
   units = kg kg-1
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
 [clw(:,:,2)]
   standard_name = cloud_condensed_water_mixing_ratio_convective_transport_tracer
-  long_name = moist (dry+vapor, no condensates) mixing ratio of cloud water (condensate) in the convectively transported tracer array
+  long_name = ratio of mass of cloud water to mass of dry air plus vapor (without condensates) in the convectively transported tracer array
   units = kg kg-1
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
@@ -6413,21 +6448,21 @@
   kind = kind_phys
 [dqdt(:,:,index_for_rain_water)]
   standard_name = tendency_of_rain_water_mixing_ratio_due_to_model_physics
-  long_name = moist (dry+vapor, no condensates) mixing ratio of rain water tendency due to model physics
+  long_name = ratio of mass of rain water tendency to mass of dry air plus vapor (without condensates) due to model physics
   units = kg kg-1 s-1
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
 [dqdt(:,:,index_for_snow_water)]
   standard_name = tendency_of_snow_water_mixing_ratio_due_to_model_physics
-  long_name = moist (dry+vapor, no condensates) mixing ratio of snow water tendency due to model physics
+  long_name = ratio of mass of snow water tendency to mass of dry air plus vapor (without condensates) due to model physics
   units = kg kg-1 s-1
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
 [dqdt(:,:,index_for_graupel)]
   standard_name = tendency_of_graupel_mixing_ratio_due_to_model_physics
-  long_name = moist (dry+vapor, no condensates) mixing ratio of graupel tendency due to model physics
+  long_name = ratio of mass of graupel tendency to mass of dry air plus vapor (without condensates) due to model physics
   units = kg kg-1 s-1
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
@@ -7455,7 +7490,7 @@
   kind = kind_phys
 [qgl]
   standard_name = local_graupel_mixing_ratio
-  long_name = moist (dry+vapor, no condensates) mixing ratio of graupel local to physics
+  long_name = ratio of mass of graupel to mass of dry air plus vapor (without condensates) local to physics
   units = kg kg-1
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
@@ -7483,14 +7518,14 @@
   kind = kind_phys
 [qrn]
   standard_name = local_rain_water_mixing_ratio
-  long_name = moist (dry+vapor, no condensates) mixing ratio of rain water local to physics
+  long_name = ratio of mass of rain water to mass of dry air plus vapor (without condensates) local to physics
   units = kg kg-1
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
 [qsnw]
   standard_name = local_snow_water_mixing_ratio
-  long_name = moist (dry+vapor, no condensates) mixing ratio of snow water local to physics
+  long_name = ratio of mass of snow water to mass of dry air plus vapor (without condensates) local to physics
   units = kg kg-1
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
@@ -7530,6 +7565,12 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+[radar_reset]
+  standard_name = flag_for_resetting_radar_reflectivity_calculation
+  long_name = flag for resetting radar reflectivity calculation
+  units = flag
+  dimensions = ()
+  type = logical
 [raddt]
   standard_name = time_step_for_radiation
   long_name = radiation time step
@@ -7622,7 +7663,7 @@
   kind = kind_phys
 [save_q(:,:,index_for_liquid_cloud_condensate)]
   standard_name = cloud_condensed_water_mixing_ratio_save
-  long_name = moist (dry+vapor, no condensates) mixing ratio of cloud water (condensate) before entering a physics scheme
+  long_name = ratio of mass of cloud water to mass of dry air plus vapor (without condensates) before entering a physics scheme
   units = kg kg-1
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
@@ -8572,3 +8613,12 @@
   dimensions = ()
   type = real
   kind = kind_phys
+[con_csol]
+  standard_name = specific_heat_of_ice_at_constant_pressure
+  long_name = specific heat of ice at constant pressure
+  units = J kg-1 K-1
+  dimensions = ()
+  type = real 
+  kind = kind_phys
+  intent = in 
+  optional = F
