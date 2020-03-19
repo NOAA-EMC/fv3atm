@@ -2351,7 +2351,7 @@
   units = count
   dimensions =  ()
   type = integer
-[doRRTMGP]
+[do_RRTMGP]
   standard_name = flag_for_rrtmgp_radiation_scheme
   long_name = flag for RRTMGP scheme
   units = flag

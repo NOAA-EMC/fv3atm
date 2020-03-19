@@ -659,7 +659,7 @@ module GFS_typedefs
     logical              :: swhtr           !< flag to output sw heating rate (Radtend%swhc)
 #ifdef CCPP
     ! RRTMGP
-    logical              :: doRRTMGP          !< Use RRTMGP
+    logical              :: do_RRTMGP         !< Use RRTMGP
     character(len=128)   :: active_gases      !< Character list of active gases used in RRTMGP
     integer              :: nGases            !< Number of active gases
     character(len=128)   :: rrtmgp_root       !< Directory of rte+rrtmgp source code
@@ -2869,7 +2869,7 @@ module GFS_typedefs
     logical              :: swhtr             = .true.       !< flag to output sw heating rate (Radtend%swhc)
     ! RRTMGP                                                                                                                                                                                                                                                                                                                                             
 #ifdef CCPP
-    logical              :: doRRTMGP        = .false.        !< Use RRTMGP?
+    logical              :: do_RRTMGP        = .false.       !< Use RRTMGP?
     character(len=128)   :: active_gases    = ''             !< Character list of active gases used in RRTMGP
     integer              :: nGases          = 0              !< Number of active gases
     character(len=128)   :: rrtmgp_root     = ''             !< Directory of rte+rrtmgp source code
@@ -3228,7 +3228,7 @@ module GFS_typedefs
                                isubc_lw, crick_proof, ccnorm, lwhtr, swhtr,                 &
 #ifdef CCPP
                           ! --- RRTMGP
-                               doRRTMGP, active_gases, nGases, rrtmgp_root, &
+                               do_RRTMGP, active_gases, nGases, rrtmgp_root,                &
                                lw_file_gas, lw_file_clouds, rrtmgp_nBandsLW, rrtmgp_nGptsLW,&
                                sw_file_gas, sw_file_clouds, rrtmgp_nBandsSW, rrtmgp_nGptsSW,&
                                rrtmgp_cld_optics, rrtmgp_nrghice, rrtmgp_nGauss_ang,        &
@@ -3480,7 +3480,7 @@ module GFS_typedefs
 #ifdef CCPP
     Model%rrtmgp_nrghice    = rrtmgp_nrghice
     Model%rrtmgp_nGauss_ang = rrtmgp_nGauss_ang
-    Model%doRRTMGP          = doRRTMGP
+    Model%do_RRTMGP         = do_RRTMGP
     Model%do_GPsw_Glw       = do_GPsw_Glw
     Model%active_gases      = active_gases
     Model%ngases            = nGases
@@ -4603,7 +4603,7 @@ module GFS_typedefs
       print *, ' lwhtr             : ', Model%lwhtr
       print *, ' swhtr             : ', Model%swhtr
 #ifdef CCPP
-      if (Model%doRRTMGP) then
+      if (Model%do_RRTMGP) then
         print *, ' rrtmgp_nrghice     : ', Model%rrtmgp_nrghice
         print *, ' rrtmgp_nrghice     : ', Model%rrtmgp_nrghice
         print *, ' do_GPsw_Glw        : ', Model%do_GPsw_Glw
@@ -6097,7 +6097,7 @@ module GFS_typedefs
     allocate (Interstitial%zorl_ocean      (IM))
     allocate (Interstitial%zt1d            (IM))
    ! RRTMGP
-    if (Model%doRRTMGP) then
+    if (Model%do_RRTMGP) then
       allocate (Interstitial%tracer            (IM, Model%levs,Model%ntrac))
       allocate (Interstitial%tv_lay            (IM, Model%levs))
       allocate (Interstitial%relhum            (IM, Model%levs))
@@ -6461,7 +6461,7 @@ module GFS_typedefs
       end if
     end if
 
-    if (Model%doRRTMGP) then
+    if (Model%do_RRTMGP) then
       Interstitial%tracer            = clear_val
       Interstitial%tv_lay            = clear_val
       Interstitial%relhum            = clear_val
