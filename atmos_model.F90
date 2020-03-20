@@ -306,7 +306,7 @@ subroutine update_atmos_radiation_physics (Atmos)
 #endif
 
 !--- call stochastic physics pattern generation / cellular automata
-    if (IPD_Control%do_sppt .OR. IPD_Control%do_shum .OR. IPD_Control%do_skeb .OR. IPD_Control%do_sfcperts) then
+    if (IPD_Control%do_sppt .OR. IPD_Control%do_shum .OR. IPD_Control%do_skeb .OR. (IPD_Control%lndp_type .NE. 0) ) then
        call run_stochastic_physics(IPD_Control, IPD_Data(:)%Grid, IPD_Data(:)%Coupling, nthrds)
     end if
 
@@ -622,7 +622,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    call IPD_initialize (IPD_Control, IPD_Data, IPD_Diag, IPD_Restart, Init_parm)
 #endif
 
-   if (IPD_Control%do_sppt .OR. IPD_Control%do_shum .OR. IPD_Control%do_skeb .OR. IPD_Control%do_sfcperts) then
+   if (IPD_Control%do_sppt .OR. IPD_Control%do_shum .OR. IPD_Control%do_skeb .OR. (IPD_Control%lndp_type .NE. 0)) then
       ! Initialize stochastic physics
       call init_stochastic_physics(IPD_Control, Init_parm, mpp_npes(), nthrds)
       if(IPD_Control%me == IPD_Control%master) print *,'do_skeb=',IPD_Control%do_skeb
@@ -641,7 +641,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
 
    Atmos%Diag => IPD_Diag
 
-   if (IPD_Control%do_sfcperts) then
+   if (IPD_Control%lndp_type .EQ. 1) then
       ! Get land surface perturbations here (move to GFS_time_vary
       ! step if wanting to update each time-step)
       call run_stochastic_physics_sfc(IPD_Control, IPD_Data(:)%Grid, IPD_Data(:)%Coupling)

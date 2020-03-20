@@ -1839,13 +1839,11 @@
 !  perturbation size
 !  ---  turn vegetation fraction pattern into percentile pattern
       alb1d(:) = 0.
-      if (Model%do_sfcperts) then
-        if (Model%pertalb(1) > 0.) then
+        if (Model%lndp_type ==1 .and. Model%lndp_ind_al .GT.  0.) then
           do i=1,im
-            call cdfnor(Coupling%sfc_wts(i,5),cdfz)
+            call cdfnor(Coupling%sfc_wts(i,Model%lndp_ind_al),cdfz)
             alb1d(i) = cdfz
           enddo
-        endif
       endif
 ! mg, sfc-perts
 !*## CCPP ##
@@ -1863,7 +1861,7 @@
                      Sfcprop%alnsf, Sfcprop%alvwf, Sfcprop%alnwf,    &
                      Sfcprop%facsf, Sfcprop%facwf, Sfcprop%fice,     &
                      Sfcprop%tisfc, IM,                              &
-                     alb1d, Model%pertalb,                           & !  mg, sfc-perts
+                     alb1d, Model%lndp_al,                           & !  mg, sfc-perts
                      sfcalb)                                           !  ---  outputs
 
 !> -# Approximate mean surface albedo from vis- and nir-  diffuse values.

@@ -501,7 +501,6 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: skebu_wts (:,:) => null()  !
     real (kind=kind_phys), pointer :: skebv_wts (:,:) => null()  !
     real (kind=kind_phys), pointer :: sfc_wts   (:,:) => null()  ! mg, sfc-perts
-    integer              :: nsfcpert=6                             !< number of sfc perturbations
 
     !--- aerosol surface emissions for Thompson microphysics
     real (kind=kind_phys), pointer :: nwfa2d  (:)     => null()  !< instantaneous water-friendly sfc aerosol source
@@ -970,14 +969,20 @@ module GFS_typedefs
     logical              :: do_shum
     logical              :: do_skeb
     integer              :: skeb_npass
-    logical              :: do_sfcperts
-    integer              :: nsfcpert=6
-    real(kind=kind_phys) :: pertz0(5)          ! mg, sfc-perts
-    real(kind=kind_phys) :: pertzt(5)          ! mg, sfc-perts
-    real(kind=kind_phys) :: pertshc(5)         ! mg, sfc-perts
-    real(kind=kind_phys) :: pertlai(5)         ! mg, sfc-perts
-    real(kind=kind_phys) :: pertalb(5)         ! mg, sfc-perts
-    real(kind=kind_phys) :: pertvegf(5)        ! mg, sfc-perts
+    integer              :: lndp_type
+    integer              :: n_var_lndp
+    real(kind=kind_phys) :: lndp_z0(5)          ! mg, sfc-perts
+    real(kind=kind_phys) :: lndp_zt(5)          ! mg, sfc-perts
+    real(kind=kind_phys) :: lndp_hc(5)         ! mg, sfc-perts
+    real(kind=kind_phys) :: lndp_la(5)         ! mg, sfc-perts
+    real(kind=kind_phys) :: lndp_al(5)         ! mg, sfc-perts
+    real(kind=kind_phys) :: lndp_vf(5)        ! mg, sfc-perts
+    integer              :: lndp_ind_z0 
+    integer              :: lndp_ind_zt
+    integer              :: lndp_ind_hc 
+    integer              :: lndp_ind_la 
+    integer              :: lndp_ind_al 
+    integer              :: lndp_ind_vf 
 !--- tracer handling
     character(len=32), pointer :: tracer_names(:) !< array of initialized tracers from dynamic core
     integer              :: ntrac           !< number of tracers
@@ -2615,9 +2620,9 @@ module GFS_typedefs
       Coupling%skebv_wts = clear_val
     endif
 
-    !--- stochastic physics option
-    if (Model%do_sfcperts) then
-      allocate (Coupling%sfc_wts  (IM,Model%nsfcpert))
+    !--- stochastic land perturbation option
+    if (Model%lndp_type .NE. 0) then
+      allocate (Coupling%sfc_wts  (IM,Model%n_var_lndp))
       Coupling%sfc_wts = clear_val
     endif
 
@@ -3073,15 +3078,23 @@ module GFS_typedefs
     logical :: use_zmtnblck = .false.
     logical :: do_shum      = .false.
     logical :: do_skeb      = .false.
-    integer :: skeb_npass = 11
-    logical :: do_sfcperts = .false.   ! mg, sfc-perts
-    integer :: nsfcpert    =  6        ! mg, sfc-perts
-    real(kind=kind_phys) :: pertz0   = -999.
-    real(kind=kind_phys) :: pertzt   = -999.
-    real(kind=kind_phys) :: pertshc  = -999.
-    real(kind=kind_phys) :: pertlai  = -999.
-    real(kind=kind_phys) :: pertalb  = -999.
-    real(kind=kind_phys) :: pertvegf = -999.
+    integer :: skeb_npass   = 11
+    integer :: lndp_type    = 0 
+    integer :: n_var_lndp   =  0 
+! --- these are not in the gfs_phyics namelist, will be read in by stochastic_physics module 
+! --- in the nam_sfcperts namelist.
+    real(kind=kind_phys) :: lndp_z0   = -999.
+    real(kind=kind_phys) :: lndp_zt   = -999.
+    real(kind=kind_phys) :: lndp_hc  = -999.
+    real(kind=kind_phys) :: lndp_la  = -999.
+    real(kind=kind_phys) :: lndp_al  = -999.
+    real(kind=kind_phys) :: lndp_vf = -999.
+    integer :: lndp_ind_z0 = 0 
+    integer :: lndp_ind_zt = 0 
+    integer :: lndp_ind_hc = 0 
+    integer :: lndp_ind_la = 0 
+    integer :: lndp_ind_al = 0 
+    integer :: lndp_ind_vf = 0 
 
 !--- aerosol scavenging factors
     character(len=20) :: fscav_aero(20) = 'default'
@@ -3144,7 +3157,7 @@ module GFS_typedefs
                                do_deep, jcap,                                               &
                                cs_parm, flgmin, cgwf, ccwf, cdmbgwd, sup, ctei_rm, crtrh,   &
                                dlqf, rbcr, shoc_parm, psauras, prauras, wminras,            &
-                               do_sppt, do_shum, do_skeb, do_sfcperts,                      &
+                               do_sppt, do_shum, do_skeb, lndp_type, n_var_lndp,            & 
                           !--- Rayleigh friction
                                prslrd0, ral_ts,  ldiag_ugwp, do_ugwp, do_tofd,              &
                           ! --- Ferrier-Aligo
@@ -3615,22 +3628,28 @@ module GFS_typedefs
     Model%bl_dnfr          = bl_dnfr
 
 !--- stochastic physics options
-    ! do_sppt, do_shum, do_skeb and do_sfcperts are namelist variables in group
+    ! do_sppt, do_shum, do_skeb and lndp_type are namelist variables in group
     ! physics that are parsed here and then compared in init_stochastic_physics
     ! to the stochastic physics namelist parametersto ensure consistency.
     Model%do_sppt          = do_sppt
     Model%use_zmtnblck     = use_zmtnblck
     Model%do_shum          = do_shum
     Model%do_skeb          = do_skeb
-    Model%do_sfcperts      = do_sfcperts ! mg, sfc-perts
-    Model%nsfcpert         = nsfcpert    ! mg, sfc-perts
-    Model%pertz0           = pertz0
-    Model%pertzt           = pertzt
-    Model%pertshc          = pertshc
-    Model%pertlai          = pertlai
-    Model%pertalb          = pertalb
-    Model%pertvegf         = pertvegf
-
+    Model%lndp_type        = lndp_type
+    Model%n_var_lndp       = n_var_lndp
+    Model%lndp_z0          = lndp_z0
+    Model%lndp_zt          = lndp_zt
+    Model%lndp_hc          = lndp_hc
+    Model%lndp_la          = lndp_la
+    Model%lndp_al          = lndp_al
+    Model%lndp_vf          = lndp_vf
+    Model%lndp_ind_z0          = lndp_ind_z0
+    Model%lndp_ind_zt          = lndp_ind_zt
+    Model%lndp_ind_hc          = lndp_ind_hc
+    Model%lndp_ind_la          = lndp_ind_la
+    Model%lndp_ind_al          = lndp_ind_al
+    Model%lndp_ind_vf          = lndp_ind_vf
+    
     !--- cellular automata options
     Model%nca              = nca
     Model%ncells           = ncells
@@ -4625,7 +4644,8 @@ module GFS_typedefs
       print *, ' do_sppt           : ', Model%do_sppt
       print *, ' do_shum           : ', Model%do_shum
       print *, ' do_skeb           : ', Model%do_skeb
-      print *, ' do_sfcperts       : ', Model%do_sfcperts
+      print *, ' lndp_type         : ', Model%lndp_type
+      print *, ' n_var_lndp         : ', Model%n_var_lndp
       print *, ' '
       print *, 'cellular automata'
       print *, ' nca               : ', Model%ncells

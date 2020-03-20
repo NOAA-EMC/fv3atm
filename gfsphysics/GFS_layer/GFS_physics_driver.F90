@@ -925,31 +925,24 @@ module module_physics_driver
 !        alb1d(i)  = zero
          vegf1d(i) = zero
       enddo
-      if (Model%do_sfcperts) then
-        if (Model%pertz0(1) > zero) then
-          z01d(:) = Model%pertz0(1) * Coupling%sfc_wts(:,1)
-!          if (me == 0) print*,'Coupling%sfc_wts(:,1) min and max',minval(Coupling%sfc_wts(:,1)),maxval(Coupling%sfc_wts(:,1))
-!          if (me == 0) print*,'z01d min and max ',minval(z01d),maxval(z01d)
+      if (Model%lndp_type==1) then
+        if (Model%lndp_ind_z0> 0) then
+          ! this really should be expanded for all 5 elements of the lndp. 
+          z01d(:) = Model%lndp_z0(1) * Coupling%sfc_wts(:,Model%lndp_ind_z0) 
         endif
-        if (Model%pertzt(1) > zero) then
-          zt1d(:) = Model%pertzt(1) * Coupling%sfc_wts(:,2)
+        if (Model%lndp_ind_zt > 0) then
+          zt1d(:) = Model%lndp_zt(1) * Coupling%sfc_wts(:,Model%lndp_ind_zt) 
         endif
-        if (Model%pertshc(1) > zero) then
-          bexp1d(:) = Model%pertshc(1) * Coupling%sfc_wts(:,3)
+        if (Model%lndp_ind_hc > 0) then
+          bexp1d(:) = Model%lndp_hc(1) * Coupling%sfc_wts(:,Model%lndp_ind_hc) 
         endif
-        if (Model%pertlai(1) > zero) then
-          xlai1d(:) = Model%pertlai(1) * Coupling%sfc_wts(:,4)
+        if (Model%lndp_ind_la > 0) then
+          xlai1d(:) = Model%lndp_la(1) * Coupling%sfc_wts(:,Model%lndp_ind_la) 
         endif
-! --- do the albedo percentile calculation in GFS_radiation_driver instead --- !
-!        if (Model%pertalb(1) > zero) then
-!          do i=1,im
-!            call cdfnor(Coupling%sfc_wts(i,5),cdfz)
-!            alb1d(i) = cdfz
-!          enddo
-!        endif
-        if (Model%pertvegf(1) > zero) then
+! note that the pertrubed vegfrac is being used in sfc_drv, but not sfc_diff
+        if (Model%lndp_ind_vf > 0) then
           do i=1,im
-            call cdfnor(Coupling%sfc_wts(i,6),cdfz)
+            call cdfnor(Coupling%sfc_wts(i,Model%lndp_ind_vf),cdfz)
             vegf1d(i) = cdfz
           enddo
         endif
@@ -1835,7 +1828,7 @@ module module_physics_driver
             Sfcprop%shdmin, Sfcprop%shdmax, Sfcprop%snoalb,              &
             Radtend%sfalb, flag_iter, flag_guess, Model%lheatstrg,       &
             Model%isot, Model%ivegsrc,                                   &
-            bexp1d, xlai1d, vegf1d, Model%pertvegf,                      &
+            bexp1d, xlai1d, vegf1d, Model%lndp_vf,                      &
 !  ---  input/output:
             weasd3(:,1), snowd3(:,1), tsfc3(:,1), tprcp3(:,1),           &
             Sfcprop%srflag, smsoil, stsoil, slsoil, Sfcprop%canopy,      &

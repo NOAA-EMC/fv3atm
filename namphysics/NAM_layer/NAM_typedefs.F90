@@ -397,7 +397,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: skebu_wts (:,:) => null()  !
     real (kind=kind_phys), pointer :: skebv_wts (:,:) => null()  !
     real (kind=kind_phys), pointer :: sfc_wts   (:,:) => null()  ! mg, sfc-perts
-    integer              :: nsfcpert=6                             !< number of sfc perturbations
+    integer              :: n_var_lndp=0                         !< number of land sfc perturbations
 
 !--- instantaneous quantities for GoCart and will be accumulated for 3D diagnostics
     real (kind=kind_phys), pointer :: dqdti   (:,:)   => null()  !< instantaneous total moisture tendency (kg/kg/s)
@@ -706,14 +706,20 @@ module GFS_typedefs
     logical              :: do_shum
     logical              :: do_skeb
     integer              :: skeb_npass 
-    logical              :: do_sfcperts
-    integer              :: nsfcpert=6
-    real(kind=kind_phys) :: pertz0(5)          ! mg, sfc-perts
-    real(kind=kind_phys) :: pertzt(5)          ! mg, sfc-perts
-    real(kind=kind_phys) :: pertshc(5)         ! mg, sfc-perts
-    real(kind=kind_phys) :: pertlai(5)         ! mg, sfc-perts
-    real(kind=kind_phys) :: pertalb(5)         ! mg, sfc-perts
-    real(kind=kind_phys) :: pertvegf(5)        ! mg, sfc-perts
+    integer              :: lndp_type
+    integer              :: n_var_lndp
+    integer              :: lndp_ind_z0
+    integer              :: lndp_ind_zt
+    integer              :: lndp_ind_hc
+    integer              :: lndp_ind_la
+    integer              :: lndp_ind_al
+    integer              :: lndp_ind_vf
+    real(kind=kind_phys) :: lndp_z0(5)          ! mg, sfc-perts
+    real(kind=kind_phys) :: lndp_zt(5)          ! mg, sfc-perts
+    real(kind=kind_phys) :: lndp_hc(5)         ! mg, sfc-perts
+    real(kind=kind_phys) :: lndp_la(5)         ! mg, sfc-perts
+    real(kind=kind_phys) :: lndp_al(5)         ! mg, sfc-perts
+    real(kind=kind_phys) :: lndp_vf(5)        ! mg, sfc-perts
     
 !--- tracer handling
     character(len=32), pointer :: tracer_names(:) !< array of initialized tracers from dynamic core
@@ -2151,14 +2157,20 @@ module GFS_typedefs
     logical :: do_shum      = .false.
     logical :: do_skeb      = .false.
     integer :: skeb_npass = 11
-    logical :: do_sfcperts = .false.   ! mg, sfc-perts
-    integer :: nsfcpert    =  6        ! mg, sfc-perts
-    real(kind=kind_phys) :: pertz0 = -999.
-    real(kind=kind_phys) :: pertzt = -999.
-    real(kind=kind_phys) :: pertshc = -999.
-    real(kind=kind_phys) :: pertlai = -999.
-    real(kind=kind_phys) :: pertalb = -999.
-    real(kind=kind_phys) :: pertvegf = -999.
+    integer :: lndp_type = 0 
+    integer :: n_var_lndp    =  0        ! mg, sfc-perts
+    integer :: lndp_ind_z0   =  0        ! mg, sfc-perts
+    integer :: lndp_ind_zt   =  0        ! mg, sfc-perts
+    integer :: lndp_ind_hc   =  0        ! mg, sfc-perts
+    integer :: lndp_ind_la   =  0        ! mg, sfc-perts
+    integer :: lndp_ind_al   =  0        ! mg, sfc-perts
+    integer :: lndp_ind_vf   =  0        ! mg, sfc-perts
+    real(kind=kind_phys) :: lndp_z0 = -999.
+    real(kind=kind_phys) :: lndp_zt = -999.
+    real(kind=kind_phys) :: lndp_hc = -999.
+    real(kind=kind_phys) :: lndp_la = -999.
+    real(kind=kind_phys) :: lndp_al = -999.
+    real(kind=kind_phys) :: lndp_vf = -999.
 !--- END NAMELIST VARIABLES
 
     NAMELIST /gfs_physics_nml/                                                              &
@@ -2532,14 +2544,14 @@ module GFS_typedefs
     Model%use_zmtnblck     = use_zmtnblck
     Model%do_shum          = do_shum
     Model%do_skeb          = do_skeb
-    Model%do_sfcperts      = do_sfcperts ! mg, sfc-perts
-    Model%nsfcpert         = nsfcpert    ! mg, sfc-perts
-    Model%pertz0           = pertz0
-    Model%pertzt           = pertzt
-    Model%pertshc          = pertshc
-    Model%pertlai          = pertlai
-    Model%pertalb          = pertalb
-    Model%pertvegf         = pertvegf
+    Model%lndp_type        = lndp_type ! mg, sfc-perts
+    Model%n_var_lndp       = n_var_lndp    ! mg, sfc-perts
+    Model%lndp_z0           = lndp_z0
+    Model%lndp_zt           = lndp_zt
+    Model%lndp_hc          = lndp_hc
+    Model%lndp_la          = lndp_la
+    Model%lndp_al          = lndp_al
+    Model%lndp_vf         = lndp_vf
 
 !--- cellular automata options
     Model%nca              = nca
@@ -3420,7 +3432,8 @@ module GFS_typedefs
       print *, ' do_sppt           : ', Model%do_sppt
       print *, ' do_shum           : ', Model%do_shum
       print *, ' do_skeb           : ', Model%do_skeb
-      print *, ' do_sfcperts       : ', Model%do_sfcperts
+      print *, ' lndp_type         : ', Model%lndp_type
+      print *, ' n_var_lndp      : ', Model%n_var_lndp
       print *, ' '
       print *, 'cellular automata'
       print *, ' nca               : ', Model%ncells

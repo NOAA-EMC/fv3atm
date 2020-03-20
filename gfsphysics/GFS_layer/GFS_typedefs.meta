@@ -3377,60 +3377,102 @@
   units = flag
   dimensions = ()
   type = logical
-[do_sfcperts]
-  standard_name = flag_for_stochastic_surface_perturbations
-  long_name = flag for stochastic surface perturbations option
-  units = flag
+[lndp_type]
+  standard_name = index_for_stochastic_land_surface_perturbation_type
+  long_name = index for stochastic land surface perturbations type
+  units = index
   dimensions = ()
-  type = logical
-[nsfcpert]
-  standard_name = number_of_surface_perturbations
-  long_name = number of surface perturbations
+  type = integer
+[n_var_lndp]
+  standard_name = number_of_land_surface_variables_perturbed
+  long_name = number of land surface variables perturbed
   units = count
   dimensions = ()
   type = integer
-[pertz0]
+[lndp_z0]
   standard_name = magnitude_of_perturbation_of_momentum_roughness_length
   long_name = magnitude of perturbation of momentum roughness length
   units = frac
   dimensions = (5)
   type = real
   kind = kind_phys
-[pertzt]
+[lndp_zt]
   standard_name = magnitude_of_perturbation_of_heat_to_momentum_roughness_length_ratio
   long_name = magnitude of perturbation of heat to momentum roughness length ratio
   units = frac
   dimensions = (5)
   type = real
   kind = kind_phys
-[pertshc]
+[lndp_hc]
   standard_name = magnitude_of_perturbation_of_soil_type_b_parameter
   long_name = magnitude of perturbation of soil type b parameter
   units = frac
   dimensions = (5)
   type = real
   kind = kind_phys
-[pertlai]
+[lndp_la]
   standard_name = magnitude_of_perturbation_of_leaf_area_index
   long_name = magnitude of perturbation of leaf area index
   units = frac
   dimensions = (5)
   type = real
   kind = kind_phys
-[pertalb]
+[lndp_al]
   standard_name = magnitude_of_surface_albedo_perturbation
   long_name = magnitude of surface albedo perturbation
   units = frac
   dimensions = (5)
   type = real
   kind = kind_phys
-[pertvegf]
+[lndp_vf]
   standard_name = magnitude_of_perturbation_of_vegetation_fraction
   long_name = magnitude of perturbation of vegetation fraction
   units = frac
   dimensions = (5)
   type = real
   kind = kind_phys
+[lndp_ind_z0]
+  standard_name = sfc_wts_index_for_perturbation_of_momentum_roughness_length
+  long_name = sfc_wts index for perturbation of momentum roughness length
+  units = index
+  dimensions = ()
+  type = index
+  kind = integer
+[lndp_ind_zt]
+  standard_name = sfc_wts_index_for_perturbation_of_momentum_roughness_length_ratio
+  long_name = sfc_wts index for perturbation of momentum roughness length ratio
+  units = index
+  dimensions = ()
+  type = index
+  kind = integer
+[lndp_ind_hc]
+  standard_name = sfc_wts_index_for_perturbation_of_soil_type_b_parameter
+  long_name = sfc_wts index for perturbation of soil type b parameter
+  units = index
+  dimensions = ()
+  type = index
+  kind = integer
+[lndp_ind_la]
+  standard_name = sfc_wts_index_for_perturbation_of_leaf_area_index
+  long_name = sfc_wts index for perturbation of leaf area index
+  units = index
+  dimensions = ()
+  type = index
+  kind = integer
+[lndp_ind_al]
+  standard_name = sfc_wts_index_for_perturbation_of_surface_albedo
+  long_name = sfc_wts index for perturbation of surface albedo
+  units = index
+  dimensions = ()
+  type = index
+  kind = integer
+[lndp_ind_vf]
+  standard_name = sfc_wts_index_for_perturbation_of_vegetation_fraction
+  long_name = sfc_wts index for perturbation of vegetation fraction
+  units = index
+  dimensions = ()
+  type = index
+  kind = integer
 [ntrac]
   standard_name = number_of_tracers
   long_name = number of tracers
