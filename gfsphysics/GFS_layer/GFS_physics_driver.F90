@@ -5459,10 +5459,10 @@ module module_physics_driver
 
       if (Model%cplflx .or. Model%cplchm) then
         do i = 1, im
-          Coupling%drain_cpl(i)= Diag%rain(i) * (one-Sfcprop%srflag(i))
-          Coupling%dsnow_cpl(i)= Diag%rain(i) * Sfcprop%srflag(i)
-          Coupling%rain_cpl(i) = Coupling%rain_cpl(i) + Coupling%drain_cpl(i)
-          Coupling%snow_cpl(i) = Coupling%snow_cpl(i) + Coupling%dsnow_cpl(i)
+          Tbd%drain_cpl(i)= Diag%rain(i) * (one-Sfcprop%srflag(i))
+          Tbd%dsnow_cpl(i)= Diag%rain(i) * Sfcprop%srflag(i)
+          Coupling%rain_cpl(i) = Coupling%rain_cpl(i) + Tbd%drain_cpl(i)
+          Coupling%snow_cpl(i) = Coupling%snow_cpl(i) + Tbd%dsnow_cpl(i)
         enddo
       endif
 
