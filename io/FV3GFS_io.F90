@@ -29,6 +29,7 @@ module FV3GFS_io_mod
   use diag_data_mod,      only: output_fields, max_output_fields
   use diag_util_mod,      only: find_input_field
   use constants_mod,      only: grav, rdgas
+  use physcons,           only: con_tice          !saltwater freezing temp (K)
 !
 !--- GFS physics modules
 !#ifndef CCPP
@@ -104,6 +105,7 @@ module FV3GFS_io_mod
   real, parameter :: missing_value = 9.99e20
   real, parameter:: stndrd_atmos_ps = 101325.
   real, parameter:: stndrd_atmos_lapse = 0.0065
+  real, parameter:: drythresh = 1.e-4
  
 !--- miscellaneous other variables
   logical :: use_wrtgridcomp_output = .FALSE.
@@ -285,7 +287,7 @@ module FV3GFS_io_mod
        temp2d(i,j,55) = IPD_Data(nb)%Coupling%visbmui(ix)
        temp2d(i,j,56) = IPD_Data(nb)%Coupling%visdfui(ix)
        temp2d(i,j,57) = IPD_Data(nb)%Coupling%sfcdsw(ix)
-       temp2d(i,j,59) = IPD_Data(nb)%Coupling%sfcnsw(ix)
+       temp2d(i,j,58) = IPD_Data(nb)%Coupling%sfcnsw(ix)
        temp2d(i,j,59) = IPD_Data(nb)%Coupling%sfcdlw(ix)
        temp2d(i,j,60) = IPD_Data(nb)%Grid%xlon(ix)
        temp2d(i,j,61) = IPD_Data(nb)%Grid%xlat(ix)
@@ -512,10 +514,18 @@ module FV3GFS_io_mod
     nvar_s2o = 18
 #ifdef CCPP
     if (Model%lsm == Model%lsm_ruc .and. warm_start) then
-      nvar_s2r = 6
+      if(Model%rdlai) then
+        nvar_s2r = 7
+      else
+        nvar_s2r = 6
+      end if
       nvar_s3  = 5
     else
-      nvar_s2r = 0
+      if(Model%rdlai) then
+       nvar_s2r = 1
+      else
+       nvar_s2r = 0
+      endif
       nvar_s3  = 3
     endif
 #else
@@ -616,6 +626,8 @@ module FV3GFS_io_mod
  
     if (nint(oro_var2(1,1,18)) == -9999._kind_phys) then ! lakefrac doesn't exist in the restart, need to create it
       if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - will computing lakefrac') 
+      Model%frac_grid = .false.
+    elseif (Model%frac_grid_off) then
       Model%frac_grid = .false.
     else
       Model%frac_grid = .true.
@@ -758,6 +770,11 @@ module FV3GFS_io_mod
         sfc_name2(nvar_s2m+22) = 'tsnow'
         sfc_name2(nvar_s2m+23) = 'snowfall_acc'
         sfc_name2(nvar_s2m+24) = 'swe_snowfall_acc'
+        if (Model%rdlai) then
+          sfc_name2(nvar_s2m+25) = 'lai'
+        endif
+      else if (Model%lsm == Model%lsm_ruc .and. Model%rdlai) then
+        sfc_name2(nvar_s2m+19) = 'lai'
 #endif
       endif
 
@@ -920,6 +937,31 @@ module FV3GFS_io_mod
           Sfcprop(nb)%tsfcl(ix)  = sfc_var2(i,j,33) !--- sfcl  (temp on land portion of a cell)
           Sfcprop(nb)%zorll(ix)  = sfc_var2(i,j,34) !--- zorll (zorl on land portion of a cell)
         end if
+
+        if(Model%frac_grid) then ! obtain slmsk from landfrac
+!! next 5 lines are temporary till lake model is available
+          if (Sfcprop(nb)%lakefrac(ix) > 0.0) then
+            Sfcprop(nb)%lakefrac(ix) = nint(Sfcprop(nb)%lakefrac(ix))
+            Sfcprop(nb)%landfrac(ix) = 1.-Sfcprop(nb)%lakefrac(ix)
+            if (Sfcprop(nb)%lakefrac(ix) == 0) Sfcprop(nb)%fice(ix)=0.
+          end if 
+          Sfcprop(nb)%slmsk(ix) = ceiling(Sfcprop(nb)%landfrac(ix))
+          if (Sfcprop(nb)%fice(ix) > 0. .and. Sfcprop(nb)%landfrac(ix)==0.) Sfcprop(nb)%slmsk(ix) = 2 ! land dominates ice if co-exist
+        else ! obtain landfrac from slmsk
+          if (Sfcprop(nb)%slmsk(ix) > 1.9) then
+            Sfcprop(nb)%landfrac(ix) = 0.0
+          else
+            Sfcprop(nb)%landfrac(ix) = Sfcprop(nb)%slmsk(ix)
+          endif
+        end if
+
+        if (Sfcprop(nb)%lakefrac(ix) > 0.0) then
+          Sfcprop(nb)%oceanfrac(ix) = 0.0 ! lake & ocean don't coexist in a cell
+          if (Sfcprop(nb)%fice(ix) < Model%min_lakeice) Sfcprop(nb)%fice(ix) = 0.
+        else
+          Sfcprop(nb)%oceanfrac(ix) = 1.0 - Sfcprop(nb)%landfrac(ix)
+          if (Sfcprop(nb)%fice(ix) < Model%min_seaice) Sfcprop(nb)%fice(ix) = 0.
+        endif
         !
         !--- NSSTM variables
         if ((Model%nstf_name(1) > 0) .and. (Model%nstf_name(2) == 1)) then
@@ -956,6 +998,11 @@ module FV3GFS_io_mod
           Sfcprop(nb)%tsnow(ix)      = sfc_var2(i,j,nvar_s2m+22)
           Sfcprop(nb)%snowfallac(ix) = sfc_var2(i,j,nvar_s2m+23)
           Sfcprop(nb)%acsnow(ix)     = sfc_var2(i,j,nvar_s2m+24)
+          if (Model%rdlai) then
+            Sfcprop(nb)%xlaixy(ix)   = sfc_var2(i,j,nvar_s2m+25)
+          endif
+        else if (Model%lsm == Model%lsm_ruc .and. Model%rdlai) then
+          Sfcprop(nb)%xlaixy(ix)     = sfc_var2(i,j,nvar_s2m+19)
         elseif (Model%lsm == Model%lsm_noahmp) then
           !--- Extra Noah MP variables
 #else
@@ -1083,7 +1130,7 @@ module FV3GFS_io_mod
       do nb = 1, Atm_block%nblks
         do ix = 1, Atm_block%blksz(nb)
           Sfcprop(nb)%sncovr(ix) = 0.0
-          if (Sfcprop(nb)%slmsk(ix) > 0.001) then
+          if (Sfcprop(nb)%landfrac(ix) >= drythresh .or. Sfcprop(nb)%fice(ix) >= Model%min_seaice) then
             vegtyp = Sfcprop(nb)%vtype(ix)
             if (vegtyp == 0) vegtyp = 7
             rsnow  = 0.001*Sfcprop(nb)%weasd(ix)/snupx(vegtyp)
@@ -1096,21 +1143,43 @@ module FV3GFS_io_mod
         enddo
       enddo
     endif
+
+    if(Model%cplflx .or. Model%frac_grid) then
+      if (nint(sfc_var2(1,1,33)) == -9999) then
+        if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing tsfcl')
+        do nb = 1, Atm_block%nblks
+          do ix = 1, Atm_block%blksz(nb)
+            Sfcprop(nb)%tsfcl(ix) = Sfcprop(nb)%tsfco(ix) !--- compute tsfcl from existing variables
+          enddo
+        enddo
+      endif
+
+      if (nint(sfc_var2(1,1,34)) == -9999) then
+        if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing zorll')
+        do nb = 1, Atm_block%nblks
+          do ix = 1, Atm_block%blksz(nb)
+            Sfcprop(nb)%zorll(ix) = Sfcprop(nb)%zorlo(ix) !--- compute zorll from existing variables
+          enddo
+        enddo
+      endif
+    endif
+
 !#endif
 
     if(Model%frac_grid) then ! 3-way composite
       do nb = 1, Atm_block%nblks
         do ix = 1, Atm_block%blksz(nb)
-          tem = 1.0 - Sfcprop(nb)%landfrac(ix) - Sfcprop(nb)%fice(ix)
+          Sfcprop(nb)%tsfco(ix) = max(con_tice, Sfcprop(nb)%tsfco(ix))
+          tem = (1.-Sfcprop(nb)%landfrac(ix)) * Sfcprop(nb)%fice(ix) ! tem = ice fraction wrt whole cell
           Sfcprop(nb)%zorl(ix) = Sfcprop(nb)%zorll(ix) * Sfcprop(nb)%landfrac(ix) &
-                               + Sfcprop(nb)%zorll(ix) * Sfcprop(nb)%fice(ix)     & !zorl ice = zorl land
-                               + Sfcprop(nb)%zorlo(ix) * tem
+                               + Sfcprop(nb)%zorll(ix) * tem &     !zorl ice = zorl land
+                               + Sfcprop(nb)%zorlo(ix) * (1.-Sfcprop(nb)%landfrac(ix)-tem)
           Sfcprop(nb)%tsfc(ix) = Sfcprop(nb)%tsfcl(ix) * Sfcprop(nb)%landfrac(ix) &
-                               + Sfcprop(nb)%tisfc(ix) * Sfcprop(nb)%fice(ix)     &
-                               + Sfcprop(nb)%tsfco(ix) * tem
+                               + Sfcprop(nb)%tisfc(ix) * tem &
+                               + Sfcprop(nb)%tsfco(ix) * (1.-Sfcprop(nb)%landfrac(ix)-tem)
         enddo
       enddo
-    else     ! in this case ice fracion is fraction of water fraction
+    else
       do nb = 1, Atm_block%nblks
         do ix = 1, Atm_block%blksz(nb)
       !--- specify tsfcl/zorll from existing variable tsfco/zorlo
@@ -1118,25 +1187,9 @@ module FV3GFS_io_mod
           Sfcprop(nb)%zorll(ix) = Sfcprop(nb)%zorlo(ix)
           Sfcprop(nb)%zorl(ix)  = Sfcprop(nb)%zorlo(ix)
           Sfcprop(nb)%tsfc(ix)  = Sfcprop(nb)%tsfco(ix)
-          if (Sfcprop(nb)%slmsk(ix) > 1.9) then
-            Sfcprop(nb)%landfrac(ix) = 0.0
-          else
-            Sfcprop(nb)%landfrac(ix) = Sfcprop(nb)%slmsk(ix)
-          endif
         enddo
       enddo
     endif ! if (Model%frac_grid)
-
-    do nb = 1, Atm_block%nblks
-      do ix = 1, Atm_block%blksz(nb)
-        if (Sfcprop(nb)%lakefrac(ix) > 0.0) then
-          Sfcprop(nb)%oceanfrac(ix) = 0.0 ! lake & ocean don't coexist in a cell
-        else
-          Sfcprop(nb)%oceanfrac(ix) = 1.0 - Sfcprop(nb)%landfrac(ix)  !LHS:ocean frac [0:1]
-        endif
-
-      enddo
-    enddo
 
     if (Model%lsm == Model%lsm_noahmp) then 
       if (nint(sfc_var2(1,1,nvar_s2m+19)) == -66666) then
@@ -1182,7 +1235,7 @@ module FV3GFS_io_mod
             Sfcprop(nb)%smoiseq(ix,  1:4) = missing_value
             Sfcprop(nb)%zsnsoxy(ix, -2:4) = missing_value
 
-            if (Sfcprop(nb)%slmsk(ix) > 0.01) then
+            if (Sfcprop(nb)%landfrac(ix) >= drythresh) then
 
               Sfcprop(nb)%tvxy(ix)     = Sfcprop(nb)%tsfcl(ix)
               Sfcprop(nb)%tgxy(ix)     = Sfcprop(nb)%tsfcl(ix)
@@ -1447,7 +1500,11 @@ module FV3GFS_io_mod
     nvar2o = 18
 #ifdef CCPP
     if (Model%lsm == Model%lsm_ruc) then
-      nvar2r = 6
+      if (Model%rdlai) then
+        nvar2r = 7
+      else
+        nvar2r = 6
+      endif
       nvar3  = 5
     else
       nvar2r = 0
@@ -1474,7 +1531,10 @@ module FV3GFS_io_mod
 #ifdef CCPP
     if (Model%lsm == Model%lsm_ruc) then
       if (allocated(sfc_name2)) then
-        if (size(sfc_var3,dim=3).ne.Model%lsoil_lsm) then
+        ! Re-allocate if one or more of the dimensions don't match
+        if (size(sfc_name2).ne.nvar2m+nvar2o+nvar2mp+nvar2r .or. &
+            size(sfc_name3).ne.nvar3+nvar3mp .or.                &
+            size(sfc_var3,dim=3).ne.Model%lsoil_lsm) then
           !--- deallocate containers and free restart container
           deallocate(sfc_name2)
           deallocate(sfc_name3)
@@ -1581,6 +1641,9 @@ module FV3GFS_io_mod
         sfc_name2(nvar2m+22) = 'tsnow'
         sfc_name2(nvar2m+23) = 'snowfall_acc'
         sfc_name2(nvar2m+24) = 'swe_snowfall_acc'
+        if (Model%rdlai) then
+          sfc_name2(nvar2m+25) = 'lai'
+        endif
       else if(Model%lsm == Model%lsm_noahmp) then
 #else
 ! Only needed when Noah MP LSM is used - 29 2D
@@ -1654,17 +1717,19 @@ module FV3GFS_io_mod
 
 #ifdef CCPP
       if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp) then
-        !--- names of the 2D variables to save
+        !--- names of the 3D variables to save
         sfc_name3(1) = 'stc'
         sfc_name3(2) = 'smc'
         sfc_name3(3) = 'slc'
-        sfc_name3(4) = 'snicexy'
-        sfc_name3(5) = 'snliqxy'
-        sfc_name3(6) = 'tsnoxy'
-        sfc_name3(7) = 'smoiseq'
-        sfc_name3(8) = 'zsnsoxy'
+        if (Model%lsm == Model%lsm_noahmp) then
+          sfc_name3(4) = 'snicexy'
+          sfc_name3(5) = 'snliqxy'
+          sfc_name3(6) = 'tsnoxy'
+          sfc_name3(7) = 'smoiseq'
+          sfc_name3(8) = 'zsnsoxy'
+        endif
       else if (Model%lsm == Model%lsm_ruc) then
-        !--- names of the 2D variables to save
+        !--- names of the 3D variables to save
         sfc_name3(1) = 'tslb'
         sfc_name3(2) = 'smois'
         sfc_name3(3) = 'sh2o'
@@ -1783,6 +1848,9 @@ module FV3GFS_io_mod
           sfc_var2(i,j,nvar2m+22) = Sfcprop(nb)%tsnow(ix)
           sfc_var2(i,j,nvar2m+23) = Sfcprop(nb)%snowfallac(ix)
           sfc_var2(i,j,nvar2m+24) = Sfcprop(nb)%acsnow(ix)
+          if (Model%rdlai) then
+            sfc_var2(i,j,nvar2m+25) = Sfcprop(nb)%xlaixy(ix)
+          endif
         else if (Model%lsm == Model%lsm_noahmp) then
 
 #else
