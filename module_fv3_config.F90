@@ -30,4 +30,6 @@
   character(17)            :: calendar='                 '
   integer                  :: calendar_type = -99
 !
+  integer                  :: diagnostic = 0
+!
   end module module_fv3_config

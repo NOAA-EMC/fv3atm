@@ -70,7 +70,9 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
                                 iau_offset
   use module_fv3_config, only:  dt_atmos, calendar, restart_interval,             &
                                 quilting, calendar_type, cpl,                     &
-                                cplprint_flag, force_date_from_configure
+                                cplprint_flag, force_date_from_configure,         &
+                                diagnostic
+  use module_write_netcdf, only: write_grid_netcdf
 !
 !-----------------------------------------------------------------------
 !
@@ -491,6 +493,12 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
           endif
 
         endif
+!
+!test to write out netcdf file:
+      if (btest(diagnostic,16)) then
+        call write_grid_netcdf(fcstGrid, "diag_fv3_grid.nc", rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+      endif
 !
 !test to write out vtk file:
         if( cpl ) then
