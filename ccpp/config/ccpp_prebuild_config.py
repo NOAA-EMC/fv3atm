@@ -357,7 +357,6 @@ SUITES_DIR = 'FV3/ccpp/suites'
 OPTIONAL_ARGUMENTS = {
     'rrtmgp_sw_rte' : {
          'rrtmgp_sw_rte_run' : [
-             'RRTMGP_sw_heating_rate_clear_sky',
              'components_of_surface_downward_shortwave_fluxes',
              'sw_fluxes_sfc',
              'sw_fluxes_toa',
@@ -365,7 +364,6 @@ OPTIONAL_ARGUMENTS = {
          },
     'GFS_rrtmgp_sw_post' : {
          'GFS_rrtmgp_sw_post_run' : [
-             'RRTMGP_sw_heating_rate_clear_sky',
              'components_of_surface_downward_shortwave_fluxes',
              'sw_fluxes_sfc',
              'sw_fluxes_toa',
@@ -373,14 +371,12 @@ OPTIONAL_ARGUMENTS = {
          },
     'rrtmgp_lw_rte' : {
          'rrtmgp_lw_rte_run' : [
-             'RRTMGP_lw_heating_rate_clear_sky',
              'lw_fluxes_sfc',
              'lw_fluxes_toa',
              ],
         },
     'GFS_rrtmgp_lw_post' : {
          'GFS_rrtmgp_lw_post_run' : [
-             'RRTMGP_lw_heating_rate_clear_sky',
              'lw_fluxes_sfc',
              'lw_fluxes_toa',
              ],
