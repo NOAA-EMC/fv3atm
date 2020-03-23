@@ -703,7 +703,7 @@ module fv3gfs_cap_mod
           call ESMF_StateGet(wrtState(i),                                   &
                              itemName="mirror_"//trim(fcstItemNameList(j)), &
                              fieldbundle=wrtFB(j,i), rc=rc)
-          if(mype == 0) print *,'af get wrtfb=',"mirror_"//trim(fcstItemNameList(j)),'rc=',rc
+          if(mype == 0) print *,'af get wrtfb=',"mirror_"//trim(fcstItemNameList(j)),' rc=',rc
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
 ! determine regridmethod
