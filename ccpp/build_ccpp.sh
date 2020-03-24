@@ -5,7 +5,7 @@ set -eu
 
 # List of valid/tested machines
 VALID_MACHINES=( wcoss_cray wcoss_dell_p3 gaea.intel jet.intel \
-                 hera.intel \
+                 hera.intel hera.gnu \
                  cheyenne.intel cheyenne.intel-impi cheyenne.gnu cheyenne.pgi endeavor.intel \
                  stampede.intel supermuc_phase2.intel macosx.gnu \
                  linux.intel linux.gnu linux.pgi )
@@ -128,6 +128,12 @@ fi
 if [[ "${MAKE_OPT}" == *"STATIC=Y"* ]]; then
   CCPP_CMAKE_FLAGS="${CCPP_CMAKE_FLAGS} -DSTATIC=ON"
 else
+  # hera.gnu uses the NCEPLIBS-external/NCEPLIBS umbrella build libraries,
+  # which cannot be linked dynamically at this point (missing -fPIC flag)
+  if [[ "${MACHINE_ID}" == "hera.gnu" ]]; then
+    echo "Dynamic CCPP build not supported on hera.gnu at this time."
+    exit 1
+  fi
   # Dynamic builds require linking the NCEPlibs, provide path to them
   CCPP_CMAKE_FLAGS="${CCPP_CMAKE_FLAGS} -DSTATIC=OFF -DBACIO_LIB4=${BACIO_LIB4} -DSP_LIBd=${SP_LIBd} -DW3NCO_LIBd=${W3NCO_LIBd}"
 fi
