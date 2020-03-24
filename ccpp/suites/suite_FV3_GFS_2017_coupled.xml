@@ -48,7 +48,6 @@
     <!-- End of surface iteration loop -->
     <subcycle loop="1">
       <scheme>GFS_surface_composites_post</scheme>
-      <scheme>dcyc2t3_post</scheme>
       <scheme>sfc_diag</scheme>
       <scheme>sfc_diag_post</scheme>
       <scheme>GFS_surface_generic_post</scheme>
@@ -58,7 +57,7 @@
       <scheme>GFS_GWD_generic_pre</scheme>
       <scheme>cires_ugwp</scheme>
       <scheme>cires_ugwp_post</scheme>
-       <scheme>GFS_GWD_generic_post</scheme>
+      <scheme>GFS_GWD_generic_post</scheme>
       <scheme>rayleigh_damp</scheme>
       <scheme>GFS_suite_stateout_update</scheme>
       <scheme>ozphys</scheme>

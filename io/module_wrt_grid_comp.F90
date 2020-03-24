@@ -34,7 +34,8 @@
       use module_fv3_io_def,   only : num_pes_fcst,lead_wrttask, last_wrttask,  &
                                       n_group, num_files, app_domain,           &
                                       filename_base, output_grid, output_file,  &
-                                      imo, jmo, write_nemsioflip,               &
+                                      imo,jmo,ichunk2d,jchunk2d,write_nemsioflip,&
+                                      ichunk3d,jchunk3d,kchunk3d,               &
                                       nsout => nsout_io,                        &
                                       cen_lon, cen_lat,                         &
                                       lon1, lat1, lon2, lat2, dlon, dlat,       &
@@ -43,6 +44,7 @@
       use module_write_netcdf, only : write_netcdf
       use physcons,            only : pi => con_pi
       use post_gfs,            only : post_run_gfs, post_getattr_gfs
+      use module_write_netcdf_parallel, only : write_netcdf_parallel
 !
 !-----------------------------------------------------------------------
 !
@@ -183,7 +185,7 @@
       character(128) :: FBlist_outfilename(100), outfile_name
       character(128),dimension(:,:), allocatable    :: outfilename
       real(8), dimension(:),         allocatable    :: slat
-      real, dimension(:),            allocatable    :: lat, lon, axesdata
+      real(8), dimension(:),         allocatable    :: lat, lon
       real(ESMF_KIND_R8), dimension(:,:), pointer   :: lonPtr, latPtr
       real(ESMF_KIND_R8)                            :: rot_lon, rot_lat
       real(ESMF_KIND_R8)                            :: geo_lon, geo_lat
@@ -358,19 +360,20 @@
         wrt_int_state%latstart = lat(1)
         wrt_int_state%latlast  = lat(jmo)
         do j=1,imo
-          lon(j) = 360./real(imo) *real(j-1)
+          lon(j) = 360.d0/real(imo,8) *real(j-1,8)
         enddo
         wrt_int_state%lonstart = lon(1)
         wrt_int_state%lonlast  = lon(imo)
         do j=lbound(latPtr,2),ubound(latPtr,2)
           do i=lbound(lonPtr,1),ubound(lonPtr,1)
-            lonPtr(i,j) = 360./real(imo) * (i-1)
+            lonPtr(i,j) = 360.d0/real(imo,8) * real(i-1,8)
             latPtr(i,j) = lat(j)
           enddo
         enddo 
 !        print *,'aft wrtgrd, Gaussian, dimi,i=',lbound(lonPtr,1),ubound(lonPtr,1), &
 !         ' j=',lbound(lonPtr,2),ubound(lonPtr,2),'imo=',imo,'jmo=',jmo
-!        print *,'aft wrtgrd, lon=',lonPtr(lbound(lonPtr,1),lbound(lonPtr,2)), &
+!       if(wrt_int_state%mype==0) print *,'aft wrtgrd, lon=',lonPtr(1:5,1), &
+!        'lat=',latPtr(1,1:5),'imo,jmo=',imo,jmo
 !        lonPtr(lbound(lonPtr,1),ubound(lonPtr,2)),'lat=',latPtr(lbound(lonPtr,1),lbound(lonPtr,2)), &
 !        latPtr(lbound(lonPtr,1),ubound(lonPtr,2))
         wrt_int_state%lat_start = lbound(latPtr,2)
@@ -1121,14 +1124,14 @@
 !-----------------------------------------------------------------------
 !
       call ESMF_LogWrite("before initialize for nemsio file", ESMF_LOGMSG_INFO, rc=rc)
-      if (trim(output_grid) == 'gaussian_grid' .and. trim(output_file) == 'nemsio') then
-!     if (lprnt) write(0,*) 'in wrt initial, befnemsio_first_call wrt_int_state%FBcount=',wrt_int_state%FBcount
-        do i= 1, wrt_int_state%FBcount
-          call nemsio_first_call(wrt_int_state%wrtFB(i), imo, jmo,         &
-                                 wrt_int_state%mype, ntasks, wrt_mpi_comm, &
-                                 wrt_int_state%FBcount, i, idate, lat, lon, rc) 
-        enddo
-      endif
+      do i= 1, wrt_int_state%FBcount
+         if (trim(output_grid) == 'gaussian_grid' .and. trim(output_file(i)) == 'nemsio') then
+!           if (lprnt) write(0,*) 'in wrt initial, befnemsio_first_call wrt_int_state%FBcount=',wrt_int_state%FBcount
+             call nemsio_first_call(wrt_int_state%wrtFB(i), imo, jmo,         &
+                                   wrt_int_state%mype, ntasks, wrt_mpi_comm, &
+                                   wrt_int_state%FBcount, i, idate, lat, lon, rc) 
+         endif
+      enddo
       call ESMF_LogWrite("after initialize for nemsio file", ESMF_LOGMSG_INFO, rc=rc)
 !
 !-----------------------------------------------------------------------
@@ -1169,7 +1172,7 @@
       type(ESMF_Time)                       :: currtime
       type(ESMF_TypeKind_Flag)              :: datatype
       type(ESMF_Field)                      :: field_work
-      type(ESMF_Grid)                       :: grid_work, fbgrid
+      type(ESMF_Grid)                       :: grid_work, fbgrid, wrtgrid
       type(ESMF_Array)                      :: array_work
       type(ESMF_State),save                 :: stateGridFB
       type(optimizeT), save                 :: optimize(4)
@@ -1362,7 +1365,47 @@
             file_bundle = wrt_int_state%wrtFB(nbdl)
           endif
 
-          if ( trim(output_file) == 'nemsio' ) then
+          ! set default chunksizes for netcdf output
+          ! (use MPI decomposition size).
+          ! if chunksize parameter set to negative value,
+          ! netcdf library default is used.
+          if (output_file(nbdl)(1:6) == 'netcdf') then 
+             if (ichunk2d == 0) then
+                if( wrt_int_state%mype == 0 ) &
+                  ichunk2d = wrt_int_state%lon_end-wrt_int_state%lon_start+1
+                call mpi_bcast(ichunk2d,1,mpi_integer,0,wrt_mpi_comm,rc)
+             endif
+             if (jchunk2d == 0) then
+                if( wrt_int_state%mype == 0 ) &
+                  jchunk2d = wrt_int_state%lat_end-wrt_int_state%lat_start+1
+                call mpi_bcast(jchunk2d,1,mpi_integer,0,wrt_mpi_comm,rc)
+             endif
+             if (ichunk3d == 0) then
+                if( wrt_int_state%mype == 0 ) &
+                  ichunk3d = wrt_int_state%lon_end-wrt_int_state%lon_start+1
+                call mpi_bcast(ichunk3d,1,mpi_integer,0,wrt_mpi_comm,rc)
+             endif
+             if (jchunk3d == 0) then
+                if( wrt_int_state%mype == 0 ) &
+                  jchunk3d = wrt_int_state%lat_end-wrt_int_state%lat_start+1
+                call mpi_bcast(jchunk3d,1,mpi_integer,0,wrt_mpi_comm,rc)
+             endif
+             if (kchunk3d == 0 .and. nbdl == 1) then
+                if( wrt_int_state%mype == 0 )  then
+                  call ESMF_FieldBundleGet(wrt_int_state%wrtFB(nbdl), grid=wrtgrid)
+                  call ESMF_AttributeGet(wrtgrid, convention="NetCDF", purpose="FV3", &
+                          attnestflag=ESMF_ATTNEST_OFF, name='pfull', &
+                          itemCount=kchunk3d, rc=rc)
+                endif
+                call mpi_bcast(kchunk3d,1,mpi_integer,0,wrt_mpi_comm,rc)
+             endif
+             if (wrt_int_state%mype == 0) then
+                print *,'ichunk2d,jchunk2d',ichunk2d,jchunk2d
+                print *,'ichunk3d,jchunk3d,kchunk3d',ichunk3d,jchunk3d,kchunk3d
+             endif
+          endif
+
+          if ( trim(output_file(nbdl)) == 'nemsio' ) then
              filename = trim(wrt_int_state%wrtFB_names(nbdl))//'f'//trim(cfhour)//'.nemsio'
           else
              filename = trim(wrt_int_state%wrtFB_names(nbdl))//'f'//trim(cfhour)//'.nc'
@@ -1412,7 +1455,7 @@
 
           else if (trim(output_grid) == 'gaussian_grid') then
 
-            if (trim(output_file) == 'nemsio') then
+            if (trim(output_file(nbdl)) == 'nemsio') then
 
               wbeg = MPI_Wtime()
               call write_nemsio(file_bundle,trim(filename),nf_hours, nf_minutes, &
@@ -1423,18 +1466,37 @@
                       ,' at Fcst ',NF_HOURS,':',NF_MINUTES
               endif
 
-            else if (trim(output_file) == 'netcdf') then
+            else if (trim(output_file(nbdl)) == 'netcdf') then
 
               wbeg = MPI_Wtime()
               call write_netcdf(file_bundle,wrt_int_state%wrtFB(nbdl),trim(filename), &
-                               wrt_mpi_comm,wrt_int_state%mype,imo,jmo,rc)
+                               wrt_mpi_comm,wrt_int_state%mype,imo,jmo,&
+                               ichunk2d,jchunk2d,ichunk3d,jchunk3d,kchunk3d,rc)
               wend = MPI_Wtime()
               if (lprnt) then
                 write(*,'(A,F10.5,A,I4.2,A,I2.2)')' netcdf      Write Time is ',wend-wbeg  &
                         ,' at Fcst ',NF_HOURS,':',NF_MINUTES
               endif
 
-            else if (trim(output_file) == 'netcdf_esmf') then
+            else if (trim(output_file(nbdl)) == 'netcdf_parallel') then
+
+#ifdef NO_PARALLEL_NETCDF
+              rc = ESMF_RC_NOT_IMPL
+              print *,'netcdf_parallel not available on this machine'
+              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+              line=__LINE__, file=__FILE__)) return
+#endif
+              wbeg = MPI_Wtime()
+              call write_netcdf_parallel(file_bundle,wrt_int_state%wrtFB(nbdl),   &
+              trim(filename), wrt_mpi_comm,wrt_int_state%mype,imo,jmo,&
+              ichunk2d,jchunk2d,ichunk3d,jchunk3d,kchunk3d,rc)
+              wend = MPI_Wtime()
+              if (lprnt) then
+                write(*,'(A,F10.5,A,I4.2,A,I2.2)')' parallel netcdf      Write Time is ',wend-wbeg  &
+                        ,' at Fcst ',NF_HOURS,':',NF_MINUTES
+              endif
+
+            else if (trim(output_file(nbdl)) == 'netcdf_esmf') then
 
               wbeg = MPI_Wtime()
               call ESMFproto_FieldBundleWrite(gridFB, filename=trim(filename),    &
@@ -1481,11 +1543,12 @@
               write(*,'(A,F10.5,A,I4.2,A,I2.2)')' mask_fields time is ',wend-wbeg
             endif
 
-            if (trim(output_file) == 'netcdf') then
+            if (trim(output_file(nbdl)) == 'netcdf') then
 
               wbeg = MPI_Wtime()
               call write_netcdf(file_bundle,wrt_int_state%wrtFB(nbdl),trim(filename), &
-                                wrt_mpi_comm,wrt_int_state%mype,imo,jmo,rc)
+                                wrt_mpi_comm,wrt_int_state%mype,imo,jmo,&
+                                ichunk2d,jchunk2d,ichunk3d,jchunk3d,kchunk3d,rc)
               wend = MPI_Wtime()
               if (mype == lead_write_task) then
                 write(*,'(A,F10.5,A,I4.2,A,I2.2)')' netcdf      Write Time is ',wend-wbeg  &
@@ -1622,13 +1685,14 @@
      character(100) fieldName,uwindname,vwindname
      type(ESMF_Field),   allocatable  :: fcstField(:)
      real(ESMF_KIND_R8), dimension(:,:),     pointer  :: lon, lat
+     real(ESMF_KIND_R8), dimension(:,:),     pointer  :: lonloc, latloc
      real(ESMF_KIND_R4), dimension(:,:),     pointer  :: pressfc
      real(ESMF_KIND_R4), dimension(:,:),     pointer  :: uwind2dr4,vwind2dr4
      real(ESMF_KIND_R4), dimension(:,:,:),   pointer  :: uwind3dr4,vwind3dr4
      real(ESMF_KIND_R4), dimension(:,:,:),   pointer  :: cart3dPtr2dr4
      real(ESMF_KIND_R4), dimension(:,:,:,:), pointer  :: cart3dPtr3dr4
      real(ESMF_KIND_R8), dimension(:,:,:,:), pointer  :: cart3dPtr3dr8
-     save lon, lat
+     save lonloc, latloc
      real(ESMF_KIND_R8) :: coslon, sinlon, sinlat
 !
 ! get filed count
@@ -1648,9 +1712,18 @@
 
        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-       lon = lon * pi/180.
-!     print *,'in 3DCartesian2wind, lon dim=',lbound(lon,1),ubound(lon,1),lbound(lon,2),ubound(lon,2), &
-!       'lon=',lon(lbound(lon,1),lbound(lon,2)), lon(ubound(lon,1),ubound(lon,2))
+       allocate(lonloc(lbound(lon,1):ubound(lon,1),lbound(lon,2):ubound(lon,2)))
+       istart = lbound(lon,1)
+       iend   = ubound(lon,1)
+       jstart = lbound(lon,2)
+       jend   = ubound(lon,2)
+!$omp parallel do default(none) shared(lon,lonloc,jstart,jend,istart,iend) &
+!$omp             private(i,j)
+       do j=jstart,jend
+        do i=istart,iend
+          lonloc(i,j) = lon(i,j) * pi/180.
+        enddo
+       enddo
 
        CALL ESMF_LogWrite("call recover field get coord 2",ESMF_LOGMSG_INFO,rc=RC)
 
@@ -1658,9 +1731,18 @@
 
        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-       lat = lat * pi/180.
-!     print *,'in 3DCartesian2wind, lat dim=',lbound(lat,1),ubound(lat,1),lbound(lat,2),ubound(lat,2), &
-!       'lat=',lat(lbound(lon,1),lbound(lon,2)), lat(ubound(lon,1),ubound(lon,2))
+       allocate(latloc(lbound(lat,1):ubound(lat,1),lbound(lat,2):ubound(lat,2)))
+       istart = lbound(lat,1)
+       iend   = ubound(lat,1)
+       jstart = lbound(lat,2)
+       jend   = ubound(lat,2)
+!$omp parallel do default(none) shared(lat,latloc,jstart,jend,istart,iend) &
+!$omp             private(i,j)
+       do j=jstart,jend
+        do i=istart,iend
+          latloc(i,j) = lat(i,j) * pi/180.d0
+        enddo
+       enddo
        first_getlatlon = .false.
      endif
 !
@@ -1718,18 +1800,18 @@
 ! update u , v wind
 !$omp parallel do default(shared) private(i,j,k,coslon,sinlon,sinlat)
              do k=kstart,kend
-!!$omp parallel do default(none) shared(uwind3dr4,vwind3dr4,lon,lat,cart3dPtr3dr4,jstart,jend,istart,iend,k) &
-!!$omp             private(i,j,coslon,sinlon,sinlat)
+!$omp parallel do default(none) shared(uwind3dr4,vwind3dr4,lonloc,latloc,cart3dPtr3dr4,jstart,jend,istart,iend,k) &
+!$omp             private(i,j,coslon,sinlon,sinlat)
                do j=jstart, jend
                  do i=istart, iend
-                  coslon = cos(lon(i,j))
-                  sinlon = sin(lon(i,j))
-                  sinlat = sin(lat(i,j))
+                  coslon = cos(lonloc(i,j))
+                  sinlon = sin(lonloc(i,j))
+                  sinlat = sin(latloc(i,j))
                   uwind3dr4(i,j,k) = cart3dPtr3dr4(1,i,j,k) * coslon           &
                                    + cart3dPtr3dr4(2,i,j,k) * sinlon
                   vwind3dr4(i,j,k) =-cart3dPtr3dr4(1,i,j,k) * sinlat*sinlon    &
                                    + cart3dPtr3dr4(2,i,j,k) * sinlat*coslon    &
-                                   + cart3dPtr3dr4(3,i,j,k) * cos(lat(i,j))
+                                   + cart3dPtr3dr4(3,i,j,k) * cos(latloc(i,j))
                  enddo
                enddo
              enddo
@@ -1749,18 +1831,18 @@
              call ESMF_FieldGet(ufield, localDe=0, farrayPtr=uwind2dr4,rc=rc)
              call ESMF_FieldGet(vfield, localDe=0, farrayPtr=vwind2dr4,rc=rc)
               ! update u , v wind
-!$omp parallel do default(none) shared(uwind2dr4,vwind2dr4,lon,lat,cart3dPtr2dr4,jstart,jend,istart,iend) &
+!$omp parallel do default(none) shared(uwind2dr4,vwind2dr4,lonloc,latloc,cart3dPtr2dr4,jstart,jend,istart,iend) &
 !$omp             private(i,j,k,coslon,sinlon,sinlat)
              do j=jstart, jend
                do i=istart, iend
-                  coslon = cos(lon(i,j))
-                  sinlon = sin(lon(i,j))
-                  sinlat = sin(lat(i,j))
+                  coslon = cos(lonloc(i,j))
+                  sinlon = sin(lonloc(i,j))
+                  sinlat = sin(latloc(i,j))
                   uwind2dr4(i,j) = cart3dPtr2dr4(1,i,j) * coslon         &
                                  + cart3dPtr2dr4(2,i,j) * sinlon
                   vwind2dr4(i,j) =-cart3dPtr2dr4(1,i,j) * sinlat*sinlon  &
                                  + cart3dPtr2dr4(2,i,j) * sinlat*coslon  &
-                                 + cart3dPtr2dr4(3,i,j) * cos(lat(i,j))
+                                 + cart3dPtr2dr4(3,i,j) * cos(latloc(i,j))
                enddo
              enddo
            endif

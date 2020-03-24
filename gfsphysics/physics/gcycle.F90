@@ -57,7 +57,7 @@
 
     character(len=6) :: tile_num_ch
     real(kind=kind_phys), parameter :: pifac=180.0/pi
-    real(kind=kind_phys)            :: sig1t
+    real(kind=kind_phys)            :: sig1t, dt_warm
     integer :: npts, len, nb, ix, jx, ls, ios
     logical :: exists
 !
@@ -184,15 +184,22 @@
       close (Model%nlunit)
 #endif
 
-      len = 0 
+      len = 0
       do nb = 1,nblks
         do ix = 1,size(Grid(nb)%xlat,1)
           len = len + 1
           Sfcprop(nb)%slmsk  (ix) = SLIFCS  (len)
           if ( Model%nstf_name(1) > 0 ) then
-             Sfcprop(nb)%tref(ix) = TSFFCS  (len)
+            Sfcprop(nb)%tref(ix) = TSFFCS  (len)
+!           if (Model%nstf_name(2) == 0) then
+!             dt_warm = (Sfcprop(nb)%xt(ix) + Sfcprop(nb)%xt(ix) ) &
+!                     / Sfcprop(nb)%xz(ix)
+!             Sfcprop(nb)%tsfco(ix) = Sfcprop(nb)%tref(ix)         &
+!                                   + dt_warm - Sfcprop(nb)%dt_cool(ix)
+!           endif
           else
-             Sfcprop(nb)%tsfc(ix) = TSFFCS  (len)
+             Sfcprop(nb)%tsfc(ix)  = TSFFCS  (len)
+             Sfcprop(nb)%tsfco(ix) = TSFFCS  (len)
           endif
           Sfcprop(nb)%weasd  (ix) = SNOFCS  (len)
           Sfcprop(nb)%zorl   (ix) = ZORFCS  (len)
@@ -233,6 +240,6 @@
 !     call mymaxmin(slifcs,len,len,1,'slifcs')
 !
 !     if (Model%me .eq. 0) print*,'executed gcycle during hour=',fhour
-      
+
       RETURN
       END
