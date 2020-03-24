@@ -915,10 +915,6 @@ module module_physics_driver
 !  ---  set initial quantities for stochastic physics deltas
       if (Model%do_sppt) then
         Tbd%dtdtr = zero
-        do i=1,im
-          Tbd%drain_cpl(i) = Coupling%rain_cpl (i)
-          Tbd%dsnow_cpl(i) = Coupling%snow_cpl (i)
-        enddo
       endif
 
 ! mg, sfc-perts
@@ -5484,10 +5480,10 @@ module module_physics_driver
 
       if (Model%cplflx .or. Model%cplchm) then
         do i = 1, im
-          Coupling%rain_cpl(i) = Coupling%rain_cpl(i) &
-                               + Diag%rain(i) * (one-Sfcprop%srflag(i))
-          Coupling%snow_cpl(i) = Coupling%snow_cpl(i) &
-                               + Diag%rain(i) * Sfcprop%srflag(i)
+          Tbd%drain_cpl(i)= Diag%rain(i) * (one-Sfcprop%srflag(i))
+          Tbd%dsnow_cpl(i)= Diag%rain(i) * Sfcprop%srflag(i)
+          Coupling%rain_cpl(i) = Coupling%rain_cpl(i) + Tbd%drain_cpl(i)
+          Coupling%snow_cpl(i) = Coupling%snow_cpl(i) + Tbd%dsnow_cpl(i)
         enddo
       endif
 
@@ -5578,15 +5574,6 @@ module module_physics_driver
       if (Model%do_sppt) then
 !--- radiation heating rate
         Tbd%dtdtr(1:im,:) = Tbd%dtdtr(1:im,:) + dtdtc(1:im,:)*dtf
-        do i = 1, im
-          if (t850(i) > 273.16) then
-!--- change in change in rain precip
-             Tbd%drain_cpl(i) = Diag%rain(i) - Tbd%drain_cpl(i)
-          else
-!--- change in change in snow precip
-             Tbd%dsnow_cpl(i) = Diag%rain(i) - Tbd%dsnow_cpl(i)
-          endif
-        enddo
       endif
 !*## CCPP ##
 !## CCPP ##* This block is not in the CCPP since it is not needed in the CCPP.
