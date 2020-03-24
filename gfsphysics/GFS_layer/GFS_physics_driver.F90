@@ -678,20 +678,20 @@ module module_physics_driver
       real    :: pshltr,QCQ,rh02
       real(kind=kind_phys), allocatable, dimension(:,:) :: den
 
-      !! Initialize local variables (mainly for debugging purposes, because the
-      !! corresponding variables Interstitial(nt)%... are reset to zero every time);
-      !! these variables are only modified over parts of the entire domain (related
-      !! to land surface mask etc.)
-      !snowmt = 0.
-      !gamq   = 0.
-      !gamt   = 0.
-      !gflx   = 0.
-      !hflx   = 0.
-      !dusfc_cice = 0.
-      !dvsfc_cice = 0.
-      !dtsfc_cice = 0.
-      !dqsfc_cice = 0.
-      !
+      ! Initialize local variables. Some of these are mainly for debugging
+      ! purposes, because the corresponding variables Interstitial(nt)%...
+      ! are reset to zero every time. For some, however, it is required
+      ! because they may be used uninitialized otherwise!
+      snowmt = 0.
+      gamq   = 0.
+      gamt   = 0.
+      gflx   = 0.
+      hflx   = 0.
+      dusfc_cice = 0.
+      dvsfc_cice = 0.
+      dtsfc_cice = 0.
+      dqsfc_cice = 0.
+
       !! Strictly speaking, this is not required. But when
       !! hunting for bit-for-bit differences, doing the same as
       !! in GFS_suite_stateout_reset makes life a lot easier.
