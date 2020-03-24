@@ -4879,18 +4879,20 @@ module GFS_typedefs
     Tbd%acvb = clear_val
     Tbd%acvt = clear_val
 
+    if (Model%cplflx .or. Model%cplchm) then
+      allocate (Tbd%drain_cpl (IM))
+      allocate (Tbd%dsnow_cpl (IM))
+      Tbd%drain_cpl = clear_val
+      Tbd%dsnow_cpl = clear_val
+    endif
+
     if (Model%do_sppt) then
       allocate (Tbd%dtdtr     (IM,Model%levs))
       allocate (Tbd%dtotprcp  (IM))
       allocate (Tbd%dcnvprcp  (IM))
-      allocate (Tbd%drain_cpl (IM))
-      allocate (Tbd%dsnow_cpl (IM))
-
       Tbd%dtdtr     = clear_val
       Tbd%dtotprcp  = clear_val
       Tbd%dcnvprcp  = clear_val
-      Tbd%drain_cpl = clear_val
-      Tbd%dsnow_cpl = clear_val
     endif
 
     allocate (Tbd%phy_f2d  (IM,Model%ntot2d))
