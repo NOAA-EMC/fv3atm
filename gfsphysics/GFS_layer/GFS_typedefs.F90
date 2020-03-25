@@ -5585,8 +5585,8 @@ module GFS_typedefs
     Diag%u10max     = zero
     Diag%v10max     = zero
     Diag%spd10max   = zero
-!   Diag%rain       = zero
-!   Diag%rainc      = zero
+    Diag%rain       = zero
+    Diag%rainc      = zero
     Diag%ice        = zero
     Diag%snow       = zero
     Diag%graupel    = zero
