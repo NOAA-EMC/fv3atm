@@ -677,6 +677,7 @@ module module_physics_driver
       real    :: pshltr,QCQ,rh02
       real(kind=kind_phys), allocatable, dimension(:,:) :: den
 
+      real(kind=kind_phys) :: lndp_vgf  
       !! Initialize local variables (mainly for debugging purposes, because the
       !! corresponding variables Interstitial(nt)%... are reset to zero every time);
       !! these variables are only modified over parts of the entire domain (related
@@ -925,27 +926,28 @@ module module_physics_driver
 !        alb1d(i)  = zero
          vegf1d(i) = zero
       enddo
+      lndp_vgf=-999.
+
       if (Model%lndp_type==1) then
-        if (Model%lndp_ind_z0> 0) then
-          ! this really should be expanded for all 5 elements of the lndp. 
-          z01d(:) = Model%lndp_z0(1) * Coupling%sfc_wts(:,Model%lndp_ind_z0) 
-        endif
-        if (Model%lndp_ind_zt > 0) then
-          zt1d(:) = Model%lndp_zt(1) * Coupling%sfc_wts(:,Model%lndp_ind_zt) 
-        endif
-        if (Model%lndp_ind_hc > 0) then
-          bexp1d(:) = Model%lndp_hc(1) * Coupling%sfc_wts(:,Model%lndp_ind_hc) 
-        endif
-        if (Model%lndp_ind_la > 0) then
-          xlai1d(:) = Model%lndp_la(1) * Coupling%sfc_wts(:,Model%lndp_ind_la) 
-        endif
+        do k =1,Model%n_var_lndp 
+           select case(Model%lndp_var_list(k)) 
+           case ('rz0') 
+                z01d(:) = Model%lndp_prt_list(k)* Coupling%sfc_wts(:,k) 
+           case ('rzt') 
+                zt1d(:) = Model%lndp_prt_list(k)* Coupling%sfc_wts(:,k) 
+           case ('shc') 
+                bexp1d(:) = Model%lndp_prt_list(k) * Coupling%sfc_wts(:,k) 
+           case ('lai') 
+                xlai1d(:) = Model%lndp_prt_list(k)* Coupling%sfc_wts(:,k) 
+           case ('vgf') 
 ! note that the pertrubed vegfrac is being used in sfc_drv, but not sfc_diff
-        if (Model%lndp_ind_vf > 0) then
-          do i=1,im
-            call cdfnor(Coupling%sfc_wts(i,Model%lndp_ind_vf),cdfz)
-            vegf1d(i) = cdfz
-          enddo
-        endif
+              do i=1,im
+                call cdfnor(Coupling%sfc_wts(i,k),cdfz)
+                vegf1d(i) = cdfz
+              enddo
+              lndp_vgf = Model%lndp_prt_list(k)
+           end select
+        enddo
       endif
 !*## CCPP ##
 !
@@ -1828,7 +1830,8 @@ module module_physics_driver
             Sfcprop%shdmin, Sfcprop%shdmax, Sfcprop%snoalb,              &
             Radtend%sfalb, flag_iter, flag_guess, Model%lheatstrg,       &
             Model%isot, Model%ivegsrc,                                   &
-            bexp1d, xlai1d, vegf1d, Model%lndp_vf,                      &
+            bexp1d, xlai1d, vegf1d,lndp_vgf,                              &
+
 !  ---  input/output:
             weasd3(:,1), snowd3(:,1), tsfc3(:,1), tprcp3(:,1),           &
             Sfcprop%srflag, smsoil, stsoil, slsoil, Sfcprop%canopy,      &

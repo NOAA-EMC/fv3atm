@@ -708,19 +708,8 @@ module GFS_typedefs
     integer              :: skeb_npass 
     integer              :: lndp_type
     integer              :: n_var_lndp
-    integer              :: lndp_ind_z0
-    integer              :: lndp_ind_zt
-    integer              :: lndp_ind_hc
-    integer              :: lndp_ind_la
-    integer              :: lndp_ind_al
-    integer              :: lndp_ind_vf
-    real(kind=kind_phys) :: lndp_z0(5)          ! mg, sfc-perts
-    real(kind=kind_phys) :: lndp_zt(5)          ! mg, sfc-perts
-    real(kind=kind_phys) :: lndp_hc(5)         ! mg, sfc-perts
-    real(kind=kind_phys) :: lndp_la(5)         ! mg, sfc-perts
-    real(kind=kind_phys) :: lndp_al(5)         ! mg, sfc-perts
-    real(kind=kind_phys) :: lndp_vf(5)        ! mg, sfc-perts
-    
+    character(len=3)     :: lndp_var_list(6)  ! dimension here must match  n_var_max_lndp in  stochy_nml_def
+    real(kind=kind_phys) :: lndp_prt_list(6)
 !--- tracer handling
     character(len=32), pointer :: tracer_names(:) !< array of initialized tracers from dynamic core
     integer              :: ntrac           !< number of tracers
@@ -2159,18 +2148,8 @@ module GFS_typedefs
     integer :: skeb_npass = 11
     integer :: lndp_type = 0 
     integer :: n_var_lndp    =  0        ! mg, sfc-perts
-    integer :: lndp_ind_z0   =  0        ! mg, sfc-perts
-    integer :: lndp_ind_zt   =  0        ! mg, sfc-perts
-    integer :: lndp_ind_hc   =  0        ! mg, sfc-perts
-    integer :: lndp_ind_la   =  0        ! mg, sfc-perts
-    integer :: lndp_ind_al   =  0        ! mg, sfc-perts
-    integer :: lndp_ind_vf   =  0        ! mg, sfc-perts
-    real(kind=kind_phys) :: lndp_z0 = -999.
-    real(kind=kind_phys) :: lndp_zt = -999.
-    real(kind=kind_phys) :: lndp_hc = -999.
-    real(kind=kind_phys) :: lndp_la = -999.
-    real(kind=kind_phys) :: lndp_al = -999.
-    real(kind=kind_phys) :: lndp_vf = -999.
+    character(len=3) :: lndp_var_list(6) = 'XXX'
+    real(kind=kind_phys) :: lndp_prt_list(6) = -999.
 !--- END NAMELIST VARIABLES
 
     NAMELIST /gfs_physics_nml/                                                              &
@@ -2546,12 +2525,6 @@ module GFS_typedefs
     Model%do_skeb          = do_skeb
     Model%lndp_type        = lndp_type ! mg, sfc-perts
     Model%n_var_lndp       = n_var_lndp    ! mg, sfc-perts
-    Model%lndp_z0           = lndp_z0
-    Model%lndp_zt           = lndp_zt
-    Model%lndp_hc          = lndp_hc
-    Model%lndp_la          = lndp_la
-    Model%lndp_al          = lndp_al
-    Model%lndp_vf         = lndp_vf
 
 !--- cellular automata options
     Model%nca              = nca

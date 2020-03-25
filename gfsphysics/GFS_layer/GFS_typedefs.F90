@@ -146,7 +146,7 @@ module GFS_typedefs
 
     character(len=32), pointer :: tracer_names(:) !< tracers names to dereference tracer id
                                                   !< based on name location in array
-    character(len=65) :: fn_nml                   !< namelist filename
+    character(len=64) :: fn_nml                   !< namelist filename
     character(len=256), pointer :: input_nml_file(:) !< character string containing full namelist
                                                      !< for use with internal file reads
   end type GFS_init_type
@@ -971,18 +971,12 @@ module GFS_typedefs
     integer              :: skeb_npass
     integer              :: lndp_type
     integer              :: n_var_lndp
-    real(kind=kind_phys) :: lndp_z0(5)          ! mg, sfc-perts
-    real(kind=kind_phys) :: lndp_zt(5)          ! mg, sfc-perts
-    real(kind=kind_phys) :: lndp_hc(5)         ! mg, sfc-perts
-    real(kind=kind_phys) :: lndp_la(5)         ! mg, sfc-perts
-    real(kind=kind_phys) :: lndp_al(5)         ! mg, sfc-perts
-    real(kind=kind_phys) :: lndp_vf(5)        ! mg, sfc-perts
-    integer              :: lndp_ind_z0 
-    integer              :: lndp_ind_zt
-    integer              :: lndp_ind_hc 
-    integer              :: lndp_ind_la 
-    integer              :: lndp_ind_al 
-    integer              :: lndp_ind_vf 
+    character(len=3)     :: lndp_var_list(6)  ! dimension here must match  n_var_max_lndp in  stochy_nml_def
+    real(kind=kind_phys) :: lndp_prt_list(6)  ! dimension here must match  n_var_max_lndp in  stochy_nml_def 
+                                              ! also previous code had dimension 5 for each pert, to allow 
+                                              ! multiple patterns. It wasn't fully coded (and wouldn't have worked 
+                                              ! with nlndp>1, so I just dropped it). If we want to code it properly, 
+                                              ! we'd need to make this dim(6,5).
 !--- tracer handling
     character(len=32), pointer :: tracer_names(:) !< array of initialized tracers from dynamic core
     integer              :: ntrac           !< number of tracers
@@ -3081,20 +3075,8 @@ module GFS_typedefs
     integer :: skeb_npass   = 11
     integer :: lndp_type    = 0 
     integer :: n_var_lndp   =  0 
-! --- these are not in the gfs_phyics namelist, will be read in by stochastic_physics module 
-! --- in the nam_sfcperts namelist.
-    real(kind=kind_phys) :: lndp_z0   = -999.
-    real(kind=kind_phys) :: lndp_zt   = -999.
-    real(kind=kind_phys) :: lndp_hc  = -999.
-    real(kind=kind_phys) :: lndp_la  = -999.
-    real(kind=kind_phys) :: lndp_al  = -999.
-    real(kind=kind_phys) :: lndp_vf = -999.
-    integer :: lndp_ind_z0 = 0 
-    integer :: lndp_ind_zt = 0 
-    integer :: lndp_ind_hc = 0 
-    integer :: lndp_ind_la = 0 
-    integer :: lndp_ind_al = 0 
-    integer :: lndp_ind_vf = 0 
+    character(len=3) :: lndp_var_list(6) = 'XXX' 
+    real(kind=kind_phys) :: lndp_prt_list(6) = -999.
 
 !--- aerosol scavenging factors
     character(len=20) :: fscav_aero(20) = 'default'
@@ -3157,7 +3139,7 @@ module GFS_typedefs
                                do_deep, jcap,                                               &
                                cs_parm, flgmin, cgwf, ccwf, cdmbgwd, sup, ctei_rm, crtrh,   &
                                dlqf, rbcr, shoc_parm, psauras, prauras, wminras,            &
-                               do_sppt, do_shum, do_skeb, lndp_type, n_var_lndp,            & 
+                               do_sppt, do_shum, do_skeb, lndp_type,  n_var_lndp,           & 
                           !--- Rayleigh friction
                                prslrd0, ral_ts,  ldiag_ugwp, do_ugwp, do_tofd,              &
                           ! --- Ferrier-Aligo
@@ -3637,19 +3619,7 @@ module GFS_typedefs
     Model%do_skeb          = do_skeb
     Model%lndp_type        = lndp_type
     Model%n_var_lndp       = n_var_lndp
-    Model%lndp_z0          = lndp_z0
-    Model%lndp_zt          = lndp_zt
-    Model%lndp_hc          = lndp_hc
-    Model%lndp_la          = lndp_la
-    Model%lndp_al          = lndp_al
-    Model%lndp_vf          = lndp_vf
-    Model%lndp_ind_z0          = lndp_ind_z0
-    Model%lndp_ind_zt          = lndp_ind_zt
-    Model%lndp_ind_hc          = lndp_ind_hc
-    Model%lndp_ind_la          = lndp_ind_la
-    Model%lndp_ind_al          = lndp_ind_al
-    Model%lndp_ind_vf          = lndp_ind_vf
-    
+
     !--- cellular automata options
     Model%nca              = nca
     Model%ncells           = ncells
