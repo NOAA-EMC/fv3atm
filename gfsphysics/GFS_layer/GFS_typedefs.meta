@@ -5586,51 +5586,6 @@
   kind = kind_phys
   intent = out
   optional = F
-[dktdiagnostic]
-  standard_name = atmosphere_heat_diffusivity_diagnostic
-  long_name = diffusivity for heat
-  units = m2 s-1
-  dimensions = (horizontal_dimension,vertical_dimension_minus_one)
-  type = real
-  kind = kind_phys
-  intent = out
-  optional = F
-[elediagnostic]
-  standard_name = asymptotic_turbulent_mixing_length_dissipation
-  long_name = asymptotic turbulent dissipation mixing length from the EMDF-TKE PBL scheme
-  units = m
-  dimensions = (horizontal_dimension,vertical_dimension)
-  type = real
-  kind = kind_phys
-  intent = out
-  optional = F
-[elmdiagnostic]
-  standard_name = asymptotic_turbulent_mixing_length
-  long_name = asymptotic turbulent mixing length from the EMDF-TKE PBL scheme
-  units = m
-  dimensions = (horizontal_dimension,vertical_dimension)
-  type = real
-  kind = kind_phys
-  intent = out
-  optional = F
-[rlmnzdiagnostic]
-  standard_name = minimum_turbulent_mixing_length
-  long_name = minimum turbulent mixing length from the EDMF-TKE PBL scheme
-  units = m
-  dimensions = (horizontal_dimension,vertical_dimension)
-  type = real
-  kind = kind_phys
-  intent = out
-  optional = F
-[tkediagnostic]
-  standard_name = turbulent_kinetic_energy_diagnostic
-  long_name = Turbulent Kinetic Energy from the EDMF-TKE PBL scheme
-  units = m2 s-2
-  dimensions = (horizontal_dimension,vertical_dimension)
-  type = real
-  kind = kind_phys
-  intent = out
-  optional = F
 [ndust]
   standard_name = number_of_dust_bins_for_diagnostics
   long_name = number of dust bins for diagnostics
