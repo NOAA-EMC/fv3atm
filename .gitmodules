@@ -4,8 +4,10 @@
 	branch = ufs-release/public-v1
 [submodule "ccpp/framework"]
 	path = ccpp/framework
-	url = https://github.com/NCAR/ccpp-framework
-	branch = release/public-v4
+	#url = https://github.com/NCAR/ccpp-framework
+	#branch = release/public-v4
+	url = https://github.com/climbfuji/ccpp-framework
+	branch = ccpp_prebuild_python3
 [submodule "ccpp/physics"]
 	path = ccpp/physics
 	url = https://github.com/NCAR/ccpp-physics
