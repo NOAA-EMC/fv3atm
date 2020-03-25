@@ -544,9 +544,6 @@ module module_physics_driver
            doms, psautco_l, prautco_l, ocalnirbm_cpl, ocalnirdf_cpl,    &
            ocalvisbm_cpl, ocalvisdf_cpl, dtzm, temrain1, t2mmp, q2mp,   &
            psaur_l, praur_l,                                            &
-!--- coupling inputs for physics
-           dtsfc_cice, dqsfc_cice, dusfc_cice, dvsfc_cice,              &
-!          dtsfc_cice, dqsfc_cice, dusfc_cice, dvsfc_cice, ulwsfc_cice, &
 !--- for CS-convection
            wcbmax
 
@@ -678,19 +675,14 @@ module module_physics_driver
       real    :: pshltr,QCQ,rh02
       real(kind=kind_phys), allocatable, dimension(:,:) :: den
 
-      ! Initialize local variables. Some of these are mainly for debugging
-      ! purposes, because the corresponding variables Interstitial(nt)%...
-      ! are reset to zero every time. For some, however, it is required
-      ! because they may be used uninitialized otherwise!
-      snowmt = 0.
-      gamq   = 0.
-      gamt   = 0.
-      gflx   = 0.
-      hflx   = 0.
-      dusfc_cice = 0.
-      dvsfc_cice = 0.
-      dtsfc_cice = 0.
-      dqsfc_cice = 0.
+      !! Initialize local variables (for debugging purposes only,
+      !! because the corresponding variables Interstitial(nt)%...
+      !! are reset to zero every time).
+      !snowmt = 0.
+      !gamq   = 0.
+      !gamt   = 0.
+      !gflx   = 0.
+      !hflx   = 0.
 
       !! Strictly speaking, this is not required. But when
       !! hunting for bit-for-bit differences, doing the same as
@@ -1113,14 +1105,6 @@ module module_physics_driver
         do i=1,im
           islmsk_cice(i) = nint(Coupling%slimskin_cpl(i))
           flag_cice(i)   = (islmsk_cice(i) == 4)
-
-          if (flag_cice(i)) then
-!           ulwsfc_cice(i) = Coupling%ulwsfcin_cpl(i)
-            dusfc_cice(i)  = Coupling%dusfcin_cpl(i)
-            dvsfc_cice(i)  = Coupling%dvsfcin_cpl(i)
-            dtsfc_cice(i)  = Coupling%dtsfcin_cpl(i)
-            dqsfc_cice(i)  = Coupling%dqsfcin_cpl(i)
-          endif
         enddo
       endif
 !*## CCPP ##
@@ -1955,8 +1939,9 @@ module module_physics_driver
            (im, Statein%tgrs(:,1),                                       &
             Statein%qgrs(:,1,1),  cd3(:,2), cdq3(:,2),                   &
             Statein%prsl(:,1),    wind,                                  &
-            flag_cice, flag_iter, dqsfc_cice, dtsfc_cice,                &
-            dusfc_cice, dvsfc_cice,                                      &
+            flag_cice, flag_iter,                                        &
+            Coupling%dqsfcin_cpl, Coupling%dtsfcin_cpl,                  &
+            Coupling%dusfcin_cpl, Coupling%dvsfcin_cpl,                  &
 !  ---  outputs:
             qss3(:,2), cmm3(:,2), chh3(:,2), evap3(:,2), hflx3(:,2),     &
             stress3(:,2))
@@ -2858,10 +2843,10 @@ module module_physics_driver
         do i=1,im
           if (Sfcprop%oceanfrac(i) > zero) then               ! Ocean only, NO LAKES
             if (Sfcprop%fice(i) > one - epsln) then ! no open water, thus use results from CICE
-              Coupling%dusfci_cpl(i) = dusfc_cice(i)
-              Coupling%dvsfci_cpl(i) = dvsfc_cice(i)
-              Coupling%dtsfci_cpl(i) = dtsfc_cice(i)
-              Coupling%dqsfci_cpl(i) = dqsfc_cice(i)
+              Coupling%dusfci_cpl(i) = Coupling%dusfcin_cpl(i)
+              Coupling%dvsfci_cpl(i) = Coupling%dvsfcin_cpl(i)
+              Coupling%dtsfci_cpl(i) = Coupling%dtsfcin_cpl(i)
+              Coupling%dqsfci_cpl(i) = Coupling%dqsfcin_cpl(i)
             elseif (icy(i) .or. dry(i)) then ! use stress_ocean from sfc_diff for opw component at mixed point
               tem1 = max(Diag%q1(i), 1.e-8)
               rho = Statein%prsl(i,1) / (con_rd*Diag%t1(i)*(one+con_fvirt*tem1))
