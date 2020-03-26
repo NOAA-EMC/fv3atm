@@ -3396,7 +3396,7 @@
   dimensions = (max_n_var_lndp)
   type = real
   kind = kind_phys
-[lndp_prt_list]
+[lndp_var_list]
   standard_name = variables_to_be_perturbed_for_landperts
   long_name = variables to be perturbed for landperts
   units = none
