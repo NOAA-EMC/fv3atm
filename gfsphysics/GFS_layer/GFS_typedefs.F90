@@ -3478,9 +3478,10 @@ module GFS_typedefs
     Model%lwhtr            = lwhtr
     Model%swhtr            = swhtr
 #ifdef CCPP
+    ! RRTMGP
+    Model%do_RRTMGP         = do_RRTMGP
     Model%rrtmgp_nrghice    = rrtmgp_nrghice
     Model%rrtmgp_nGauss_ang = rrtmgp_nGauss_ang
-    Model%do_RRTMGP         = do_RRTMGP
     Model%do_GPsw_Glw       = do_GPsw_Glw
     Model%active_gases      = active_gases
     Model%ngases            = nGases
@@ -3494,6 +3495,11 @@ module GFS_typedefs
     Model%rrtmgp_nBandsSW   = rrtmgp_nBandsSW
     Model%rrtmgp_nGptsSW    = rrtmgp_nGptsSW
     Model%rrtmgp_cld_optics = RRTMGP_CLD_OPTICS
+    ! RRTMGP incompatible with levr /= levs
+    if (Model%do_RRTMGP .and. Model%levr /= Model%levs) then
+      write(0,*) "Logic error, RRTMGP only works with levr = levs"
+      stop
+    end if
 
     ! The CCPP versions of the RRTMG lw/sw schemes are configured
     ! such that lw and sw heating rate are output, i.e. they rely
