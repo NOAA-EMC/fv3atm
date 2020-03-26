@@ -192,7 +192,7 @@ ENDDO
 ! check to see if it is time to write out random patterns
 if (fhstoch.GE. 0 .AND. MOD(Model%phour,fhstoch) .EQ. 0) then
    write(STRFH,FMT='(I6.6)') nint(Model%phour)
-   sfile='stoch_out.F'//trim(STRFH)
+   sfile='RESTART/stoch_out.F'//trim(STRFH)
    call dump_patterns(sfile)
 endif
 allocate(tmp_wts(nblks,maxlen))
