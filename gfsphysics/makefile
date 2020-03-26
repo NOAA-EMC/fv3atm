@@ -41,24 +41,19 @@ SRCS_f = \
 	   ./physics/mersenne_twister.f                                              \
 	   ./physics/namelist_soilveg.f                                              \
 	   ./physics/physparam.f                                                     \
-	   ./physics/radlw_param.f                                                   \
-	   ./physics/radsw_param.f                                                   \
 	   ./physics/set_soilveg.f
 SRCS_f90 = \
 	     ./physics/noahmp_tables.f90
-SRCS_F = \
-	   ./physics/machine.F
+SRCS_F =
 SRCS_F90 = \
 	   ./physics/GFDL_parse_tracers.F90                                          \
 	   ./physics/physcons.F90                                                    \
-	   ./CCPP_layer/CCPP_typedefs.F90                                            \
 	   ./CCPP_layer/CCPP_data.F90                                                \
 	   $(CCPP_STATIC_API)                                                        \
 	   ./GFS_layer/GFS_abstraction_layer.F90                                     \
 	   ./GFS_layer/GFS_diagnostics.F90                                           \
 	   ./GFS_layer/GFS_driver.F90                                                \
-	   ./GFS_layer/GFS_restart.F90                                               \
-	   ./GFS_layer/GFS_typedefs.F90
+	   ./GFS_layer/GFS_restart.F90
 # non-CCPP build
 else
 SRCS_f =  \
@@ -95,9 +90,9 @@ SRCS_f =  \
 	   ./physics/mersenne_twister.f                                              \
 	   ./physics/mfpbl.f                                                         \
 	   ./physics/mfpblt.f                                                        \
-           ./physics/mfpbltq.f                                                       \
+	   ./physics/mfpbltq.f                                                       \
 	   ./physics/mfscu.f                                                         \
-           ./physics/mfscuq.f                                                        \
+	   ./physics/mfscuq.f                                                        \
 	   ./physics/module_bfmicrophysics.f                                         \
 	   ./physics/moninedmf.f                                                     \
 	   ./physics/moninedmf_hafs.f                                                \
