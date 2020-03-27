@@ -8,7 +8,5 @@
 	branch = master
 [submodule "ccpp/physics"]
 	path = ccpp/physics
-	#url = https://github.com/NCAR/ccpp-physics
-	#branch = master
-	url = https://github.com/climbfuji/ccpp-physics
-	branch = coupled_model_ipd_ccpp_b4b
+	url = https://github.com/NCAR/ccpp-physics
+	branch = master
