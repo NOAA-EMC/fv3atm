@@ -939,7 +939,7 @@ module GFS_typedefs
                                             !< 6=areodynamical roughness over water with input 10-m wind
                                             !< 7=slightly decrease Cd for higher wind speed compare to 6
 
-!--- background vertical diffusion
+!--- vertical diffusion
     real(kind=kind_phys) :: xkzm_m          !< [in] bkgd_vdif_m  background vertical diffusion for momentum
     real(kind=kind_phys) :: xkzm_h          !< [in] bkgd_vdif_h  background vertical diffusion for heat q
     real(kind=kind_phys) :: xkzm_s          !< [in] bkgd_vdif_s  sigma threshold for background mom. diffusion
@@ -949,7 +949,13 @@ module GFS_typedefs
     real(kind=kind_phys) :: bl_upfr         !< updraft fraction in boundary layer mass flux scheme
     real(kind=kind_phys) :: bl_dnfr         !< downdraft fraction in boundary layer mass flux scheme
 
- !---cellular automata control parameters
+!--- parameters for canopy heat storage (CHS) parameterization
+    real(kind=kind_phys) :: z0fac           !< surface roughness fraction factor
+    real(kind=kind_phys) :: e0fac           !< latent heat flux fraction factor relative to sensible heat flux
+                                            !< e.g., e0fac=0.5 indicates that CHS for latent heat flux is 50% of that for
+                                            !< sensible heat flux
+
+!---cellular automata control parameters
     integer              :: nca             !< number of independent cellular automata
     integer              :: nlives          !< cellular automata lifetime
     integer              :: ncells          !< cellular automata finer grid
@@ -3026,7 +3032,7 @@ module GFS_typedefs
                                                              !< 6=areodynamical roughness over water with input 10-m wind
                                                              !< 7=slightly decrease Cd for higher wind speed compare to 6
 
-!--- background vertical diffusion
+!--- vertical diffusion
     real(kind=kind_phys) :: xkzm_m         = 1.0d0           !< [in] bkgd_vdif_m  background vertical diffusion for momentum  
     real(kind=kind_phys) :: xkzm_h         = 1.0d0           !< [in] bkgd_vdif_h  background vertical diffusion for heat q  
     real(kind=kind_phys) :: xkzm_s         = 1.0d0           !< [in] bkgd_vdif_s  sigma threshold for background mom. diffusion  
@@ -3036,6 +3042,9 @@ module GFS_typedefs
     real(kind=kind_phys) :: bl_upfr        = 0.13            !< updraft fraction in boundary layer mass flux scheme
     real(kind=kind_phys) :: bl_dnfr        = 0.1             !< downdraft fraction in boundary layer mass flux scheme
 
+!--- parameters for canopy heat storage (CHS) parameterization
+    real(kind=kind_phys) :: z0fac          = 0.3
+    real(kind=kind_phys) :: e0fac          = 0.5
  
 !---Cellular automaton options
     integer              :: nca            = 1
@@ -3163,9 +3172,11 @@ module GFS_typedefs
                                frac_grid,                                                   &
                           !--- surface layer
                                sfc_z0_type,                                                 &
-                          !    background vertical diffusion
+                          !--- vertical diffusion
                                xkzm_m, xkzm_h, xkzm_s, xkzminv, moninq_fac, dspfac,         &
                                bl_upfr, bl_dnfr,                                            &
+                          !--- canopy heat storage parameterization
+                               z0fac, e0fac,                                                &
                           !--- cellular automata
                                nca, ncells, nlives, nfracseed,nseed, nthresh, do_ca,        &
                                ca_sgs, ca_global,iseed_ca,ca_smooth,isppt_deep,nspinup,     &
@@ -3604,7 +3615,7 @@ module GFS_typedefs
 !--- surface layer
     Model%sfc_z0_type      = sfc_z0_type
 
-!--- backgroud vertical diffusion
+!--- vertical diffusion
     Model%xkzm_m           = xkzm_m
     Model%xkzm_h           = xkzm_h
     Model%xkzm_s           = xkzm_s
@@ -3613,6 +3624,10 @@ module GFS_typedefs
     Model%dspfac           = dspfac
     Model%bl_upfr          = bl_upfr
     Model%bl_dnfr          = bl_dnfr
+
+!--- canopy heat storage parametrization
+    Model%z0fac            = z0fac
+    Model%e0fac            = e0fac
 
 !--- stochastic physics options
     ! do_sppt, do_shum, do_skeb and do_sfcperts are namelist variables in group
@@ -4611,7 +4626,7 @@ module GFS_typedefs
       print *, 'surface layer options'
       print *, ' sfc_z0_type       : ', Model%sfc_z0_type
       print *, ' '
-      print *, 'background vertical diffusion coefficients'
+      print *, 'vertical diffusion coefficients'
       print *, ' xkzm_m            : ', Model%xkzm_m
       print *, ' xkzm_h            : ', Model%xkzm_h
       print *, ' xkzm_s            : ', Model%xkzm_s
@@ -4620,6 +4635,10 @@ module GFS_typedefs
       print *, ' dspfac            : ', Model%dspfac
       print *, ' bl_upfr           : ', Model%bl_upfr
       print *, ' bl_dnfr           : ', Model%bl_dnfr
+      print *, ' '
+      print *, 'parameters for canopy heat storage parametrization'
+      print *, ' z0fac             : ', Model%z0fac
+      print *, ' e0fac             : ', Model%e0fac
       print *, ' '
       print *, 'stochastic physics'
       print *, ' do_sppt           : ', Model%do_sppt
