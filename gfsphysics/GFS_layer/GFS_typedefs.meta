@@ -1283,6 +1283,13 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+[qss]
+  standard_name = surface_specific_humidity
+  long_name = surface air saturation specific humidity
+  units = kg kg-1
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
 [raincprv]
   standard_name = lwe_thickness_of_convective_precipitation_amount_from_previous_timestep
   long_name = convective_precipitation_amount from previous timestep
@@ -7511,13 +7518,6 @@
   standard_name = lwe_thickness_of_explicit_precipitation_amount
   long_name = explicit precipitation (rain, ice, snow, graupel, ...) on physics timestep
   units = m
-  dimensions = (horizontal_dimension)
-  type = real
-  kind = kind_phys
-[qss]
-  standard_name = surface_specific_humidity
-  long_name = surface air saturation specific humidity
-  units = kg kg-1
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys

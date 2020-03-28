@@ -260,6 +260,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: oro_uf (:)   => null()  !< unfiltered orography
     real (kind=kind_phys), pointer :: evap   (:)   => null()  !<
     real (kind=kind_phys), pointer :: hflx   (:)   => null()  !<
+    real (kind=kind_phys), pointer :: qss    (:)   => null()  !<
 
 !-- In/Out
 #ifdef CCPP
@@ -1786,7 +1787,6 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: qlyr(:,:)          => null()  !<
     real (kind=kind_phys), pointer      :: qrn(:,:)           => null()  !<
     real (kind=kind_phys), pointer      :: qsnw(:,:)          => null()  !<
-    real (kind=kind_phys), pointer      :: qss(:)             => null()  !<
     real (kind=kind_phys), pointer      :: qss_ice(:)         => null()  !<
     real (kind=kind_phys), pointer      :: qss_land(:)        => null()  !<
     real (kind=kind_phys), pointer      :: qss_ocean(:)       => null()  !<
@@ -2125,6 +2125,7 @@ module GFS_typedefs
     allocate (Sfcprop%oro_uf  (IM))
     allocate (Sfcprop%evap    (IM))
     allocate (Sfcprop%hflx    (IM))
+    allocate (Sfcprop%qss     (IM))
 
     Sfcprop%slope   = clear_val
     Sfcprop%shdmin  = clear_val
@@ -2139,6 +2140,7 @@ module GFS_typedefs
     Sfcprop%oro_uf  = clear_val
     Sfcprop%evap    = clear_val
     Sfcprop%hflx    = clear_val
+    Sfcprop%qss     = clear_val
 
 !--- In/Out
     allocate (Sfcprop%hice   (IM))
@@ -5860,7 +5862,6 @@ module GFS_typedefs
     allocate (Interstitial%prnum           (IM,Model%levs))
     allocate (Interstitial%qlyr            (IM,Model%levr+LTP))
     allocate (Interstitial%prcpmp          (IM))
-    allocate (Interstitial%qss             (IM))
     allocate (Interstitial%qss_ice         (IM))
     allocate (Interstitial%qss_land        (IM))
     allocate (Interstitial%qss_ocean       (IM))
@@ -6390,7 +6391,6 @@ module GFS_typedefs
     Interstitial%oc              = clear_val
     Interstitial%prcpmp          = clear_val
     Interstitial%prnum           = clear_val
-    Interstitial%qss             = clear_val
     Interstitial%qss_ice         = huge
     Interstitial%qss_land        = huge
     Interstitial%qss_ocean       = huge
@@ -6714,7 +6714,6 @@ module GFS_typedefs
     write (0,*) 'sum(Interstitial%prcpmp          ) = ', sum(Interstitial%prcpmp          )
     write (0,*) 'sum(Interstitial%prnum           ) = ', sum(Interstitial%prnum           )
     write (0,*) 'sum(Interstitial%qlyr            ) = ', sum(Interstitial%qlyr            )
-    write (0,*) 'sum(Interstitial%qss             ) = ', sum(Interstitial%qss             )
     write (0,*) 'sum(Interstitial%qss_ice         ) = ', sum(Interstitial%qss_ice         )
     write (0,*) 'sum(Interstitial%qss_land        ) = ', sum(Interstitial%qss_land        )
     write (0,*) 'sum(Interstitial%qss_ocean       ) = ', sum(Interstitial%qss_ocean       )
