@@ -14,7 +14,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !***  Forecast gridded component.
 !-----------------------------------------------------------------------
 !***
-!***  HISTORY   
+!***  HISTORY
 !***
 !       Apr 2017:  J. Wang  - initial code for forecast grid component
 !
@@ -61,7 +61,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
   use data_override_mod,  only: data_override_init
   use fv_nggps_diags_mod, only: fv_dyn_bundle_setup
   use fv3gfs_io_mod,      only: fv_phys_bundle_setup
-  
+
   use fms_io_mod,         only: field_exist, read_data
 
   use atmosphere_mod,     only: atmosphere_control_data
@@ -530,9 +530,9 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
         if( cpl ) then
           call addLsmask2grid(fcstGrid, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-!         print *,'call addLsmask2grid after fcstgrid, rc=',rc
+!         print *,'call addLsmask2grid after fcstGrid, rc=',rc
           if( cplprint_flag ) then
-            call ESMF_GridWriteVTK(fcstgrid, staggerloc=ESMF_STAGGERLOC_CENTER,  &
+            call ESMF_GridWriteVTK(fcstGrid, staggerloc=ESMF_STAGGERLOC_CENTER,  &
                                    filename='fv3cap_fv3Grid', rc=rc)
             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
           endif
@@ -548,7 +548,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
 ! Add dimension Attributes to Grid
-        call ESMF_AttributeAdd(fcstgrid, convention="NetCDF", purpose="FV3",  &
+        call ESMF_AttributeAdd(fcstGrid, convention="NetCDF", purpose="FV3",  &
                                attrList=(/"ESMF:gridded_dim_labels"/), rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
@@ -616,7 +616,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
            call fv_dyn_bundle_setup(atm_int_state%Atm%axes,          &
-                                    fieldbundle, fcstgrid, quilting, rc=rc)
+                                    fieldbundle, fcstGrid, quilting, rc=rc)
            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
            ! Add the field to the importState so parent can connect to it
@@ -639,7 +639,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
            enddo
 !
            call fv_phys_bundle_setup(atm_int_state%Atm%diag, atm_int_state%Atm%axes, &
-                                     fieldbundlephys, fcstgrid, quilting, nbdlphys)
+                                     fieldbundlephys, fcstGrid, quilting, nbdlphys)
 !
            ! Add the field to the importState so parent can connect to it
            do j=1,nbdlphys
@@ -857,7 +857,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !
       integer :: unit
       integer,dimension(6)           :: date
-      
+
       real(8) mpi_wtime, tfs, tfe
 !
 !-----------------------------------------------------------------------
