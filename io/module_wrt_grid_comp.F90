@@ -424,25 +424,27 @@
 !
         allocate(lat(jmo), lon(imo))
         if (mod(jmo,2) == 0) then
+          ! if jmo even, lats do not include poles and equator
           delat = 180.d0/real(jmo,8)
           if(write_nemsioflip) then
             do j=1,jmo
-              lat(j) = 90. - 0.5*delat - real(j-1,8)*delat
+              lat(j) = 90.d0 - 0.5*delat - real(j-1,8)*delat
             enddo
           else
             do j=1,jmo
-              lat(j) = -90. + 0.5*delat + real(j-1,8)*delat
+              lat(j) = -90.d0 + 0.5*delat + real(j-1,8)*delat
             enddo
           endif
         else
+          ! if jmo odd, lats include poles and equator
           delat = 180.d0/real(jmo-1,8)
           if(write_nemsioflip) then
             do j=1,jmo
-              lat(j) = 90. - real(j-1,8)*delat
+              lat(j) = 90.d0 - real(j-1,8)*delat
             enddo
           else
             do j=1,jmo
-              lat(j) = -90. + real(j-1,8)*delat
+              lat(j) = -90.d0 + real(j-1,8)*delat
             enddo
           endif
         endif
