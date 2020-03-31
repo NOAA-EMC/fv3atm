@@ -493,41 +493,6 @@
         wrt_int_state%jm = jmo
         wrt_int_state%post_maptype = 4
 
-      else if ( trim(output_grid) == 'latlon_grid') then
-        wrtgrid = ESMF_GridCreate1PeriDimUfrm(maxIndex=(/imo, jmo/),                                  &
-                                              minCornerCoord=(/0._ESMF_KIND_R8, -80._ESMF_KIND_R8/),  &
-                                              maxCornerCoord=(/360._ESMF_KIND_R8, 80._ESMF_KIND_R8/), &
-                                              staggerLocList=(/ESMF_STAGGERLOC_CENTER, ESMF_STAGGERLOC_CORNER/), rc=rc)
-
-        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-!        if(wrt_int_state%mype == lead_write_task) print *,'af wrtgrd, latlon,rc=',rc, &
-!         'imo=',imo,' jmo=',jmo
-        call ESMF_GridGetCoord(wrtgrid, coordDim=1, farrayPtr=lonPtr, rc=rc)
-        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-            line=__LINE__, file=__FILE__)) return  ! bail out
-
-        call ESMF_GridGetCoord(wrtgrid, coordDim=2, farrayPtr=latPtr, rc=rc)
-        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-            line=__LINE__, file=__FILE__)) return  ! bail out
-
-        wrt_int_state%im = imo
-        wrt_int_state%jm = jmo
-        wrt_int_state%lat_start = lbound(latPtr,2)
-        wrt_int_state%lat_end   = ubound(latPtr,2)
-        wrt_int_state%lon_start = lbound(lonPtr,2)
-        wrt_int_state%lon_end   = ubound(lonPtr,2)
-        allocate( wrt_int_state%latPtr(wrt_int_state%lon_start:wrt_int_state%lon_end, &
-                  wrt_int_state%lat_start:wrt_int_state%lat_end))
-        allocate( wrt_int_state%lonPtr(wrt_int_state%lon_start:wrt_int_state%lon_end, &
-                  wrt_int_state%lat_start:wrt_int_state%lat_end))
-        do j=wrt_int_state%lat_start,wrt_int_state%lat_end
-          do i=wrt_int_state%lon_start,wrt_int_state%lon_end
-            wrt_int_state%latPtr(i,j) = latPtr(i,j)
-            wrt_int_state%lonPtr(i,j) = lonPtr(i,j)
-          enddo
-        enddo
-        wrt_int_state%post_maptype = 0
-
       else if ( trim(output_grid) == 'regional_latlon' .or. &
                 trim(output_grid) == 'rotated_latlon'  .or. &
                 trim(output_grid) == 'lambert_conformal' ) then
@@ -853,25 +818,6 @@
                                      name="im", value=imo, rc=rc)
               call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
                                      name="jm", value=jmo, rc=rc)
-
-            else if (trim(output_grid) == 'latlon_grid') then
-
-              call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                                     name="grid", value="latlon", rc=rc)
-              call ESMF_AttributeAdd(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                                     attrList=(/"lon1","lat1","lon2","lat2","dlon","dlat"/), rc=rc)
-              call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                                     name="lon1", value=0, rc=rc)
-              call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                                     name="lat1", value=-80, rc=rc)
-              call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                                     name="lon2", value=360, rc=rc)
-              call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                                     name="lat2", value=80, rc=rc)
-              call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                                     name="dlon", value=360.0/(imo-1), rc=rc)
-              call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                                     name="dlat", value=160.0/(jmo-1), rc=rc)
 
             else if (trim(output_grid) == 'regional_latlon') then
 
