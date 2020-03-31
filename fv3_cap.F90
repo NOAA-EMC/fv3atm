@@ -409,6 +409,15 @@ module fv3gfs_cap_mod
           print *,'imo=',imo,'jmo=',jmo
           print *,'write_nemsioflip=',write_nemsioflip,'write_fsyncflag=',write_fsyncflag
         end if
+      else if(trim(output_grid) == 'global_latlon') then
+        call ESMF_ConfigGetAttribute(config=CF, value=imo, label ='imo:',rc=rc)
+        call ESMF_ConfigGetAttribute(config=CF, value=jmo, label ='jmo:',rc=rc)
+        call ESMF_ConfigGetAttribute(config=CF, value=write_nemsioflip, label ='write_nemsioflip:',rc=rc)
+        call ESMF_ConfigGetAttribute(config=CF, value=write_fsyncflag,  label ='write_fsyncflag:',rc=rc)
+        if (mype == 0) then
+          print *,'imo=',imo,'jmo=',jmo
+          print *,'write_nemsioflip=',write_nemsioflip,'write_fsyncflag=',write_fsyncflag
+        end if
       else if(trim(output_grid) == 'regional_latlon') then
         call ESMF_ConfigGetAttribute(config=CF, value=lon1, label ='lon1:',rc=rc)
         call ESMF_ConfigGetAttribute(config=CF, value=lat1, label ='lat1:',rc=rc)
