@@ -1879,23 +1879,23 @@
 !     print *,' in grrad : calling swrad'
 
           if (Model%swhtr) then
-            call swrad (plyr, plvl, tlyr, tlvl, qlyr, olyr,     &      !  ---  inputs
+            call swrad (plyr, plvl, tlyr, tlvl, qlyr, olyr,     &      !  --- inputs
                         gasvmr, clouds, Tbd%icsdsw, faersw,     &
                         sfcalb, dz, delp, de_lgth,              &
                                 Radtend%coszen, Model%solcon,   &
                         nday, idxday, im, lmk, lmp, Model%lprnt,&
-                        htswc, Diag%topfsw, Radtend%sfcfsw,     &      !  ---  outputs
+                        htswc, Diag%topfsw, Radtend%sfcfsw,     &      !  --- outputs
                         cldtausw,                               &
                         hsw0=htsw0, fdncmp=scmpsw)                     ! ---  optional
           else
-            call swrad (plyr, plvl, tlyr, tlvl, qlyr, olyr,     &      !  ---  inputs 
+            call swrad (plyr, plvl, tlyr, tlvl, qlyr, olyr,     &      !  --- inputs
                         gasvmr, clouds, Tbd%icsdsw, faersw,     &
                         sfcalb, dz, delp, de_lgth,              &
                                 Radtend%coszen, Model%solcon,   &
                         nday, idxday, IM, LMK, LMP, Model%lprnt,&
-                        htswc, Diag%topfsw, Radtend%sfcfsw,     &      !  ---  outputs 
+                        htswc, Diag%topfsw, Radtend%sfcfsw,     &      !  --- outputs
                         cldtausw,                               &
-                        FDNCMP=scmpsw)                                 ! ---  optional 
+                        FDNCMP=scmpsw)                                 ! ---  optional
           endif
 !*## CCPP ##
 
@@ -1904,7 +1904,7 @@
             k1 = k + kd
             Radtend%htrsw(1:im,k) = htswc(1:im,k1)
           enddo
-!     We are assuming that radiative tendencies are from bottom to top 
+!     We are assuming that radiative tendencies are from bottom to top
 ! --- repopulate the points above levr i.e. LM
           if (lm < levs) then
             do k = lm,levs
@@ -1920,7 +1920,7 @@
 ! --- repopulate the points above levr i.e. LM
              if (lm < levs) then
                do k = lm,levs
-                 Radtend%swhc(1:im,k) = Radtend%swhc(1:im,LM) 
+                 Radtend%swhc(1:im,k) = Radtend%swhc(1:im,LM)
                enddo
              endif
           endif
@@ -1985,7 +1985,7 @@
 
         call setemis (Grid%xlon, Grid%xlat, Sfcprop%slmsk,         &        !  ---  inputs
                       Sfcprop%snowd, Sfcprop%sncovr, Sfcprop%zorl, &
-                      tsfg, tsfa, Sfcprop%hprime(:,1), IM,         & 
+                      tsfg, tsfa, Sfcprop%hprime(:,1), IM,         &
                       Radtend%semis)                                              !  ---  outputs
 !*## CCPP ##
 

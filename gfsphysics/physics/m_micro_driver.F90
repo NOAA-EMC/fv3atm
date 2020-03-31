@@ -3,7 +3,6 @@
      &,                         omega_i,  QLLS_i, QLCN_i, QILS_i, QICN_i&
      &,                         lwheat_i, swheat_i, w_upi, cf_upi       &
      &,                         FRLAND,   ZPBL, CNV_MFD_i               &
-!    &,                         FRLAND,   ZPBL, CNV_MFD_i, CNV_PRC3_i   &
      &,                         CNV_DQLDT_i, CLCN_i, u_i, v_i           &
      &,                         TAUGWX,   TAUGWY,  TAUX, TAUY           &
      &,                         TAUOROX,  TAUOROY, CNV_FICE_i           &
@@ -16,7 +15,6 @@
      &,                         CLDREFFG, aerfld_i                      &
      &,                         aero_in,  naai_i, npccn_i, iccn         &
      &,                         skip_macro                              &
-!    &,                         skip_macro, cn_prc2, cn_snr             &
      &,                         lprnt, alf_fac, qc_min, pdfflag         &
      &,                         ipr, kdt, xlat, xlon, rhc_i)
 
@@ -73,19 +71,19 @@
        real (kind=kind_phys), dimension(im,lm),intent(in)  ::           &
      &       CNV_DQLDT_i, CLCN_i,     QLCN_i, QICN_i,                   &
      &       CNV_MFD_i,               cf_upi, CNV_FICE_i, CNV_NDROP_i,  &
-!    &       CNV_MFD_i,   CNV_PRC3_i, cf_upi, CNV_FICE_i, CNV_NDROP_i,  &
      &       CNV_NICE_i,  w_upi, rhc_i, naai_i, npccn_i
        real (kind=kind_phys), dimension(im,lm,ntrcaer),intent(in) ::    &
      &       aerfld_i
        real (kind=kind_phys),dimension(im),intent(in):: TAUGWX,         &
      &       TAUGWY, TAUX, TAUY, TAUOROX, TAUOROY, FRLAND,ZPBL,xlat,xlon
-!    &       TAUGWY, TAUX, TAUY, TAUOROX, TAUOROY,ps_i,FRLAND,ZPBL
-!    &       CNVPRCP
 
 !   output
        real (kind=kind_phys),dimension(ix,lm) :: lwm_o, qi_o,           &
                         cldreffl, cldreffi, cldreffr, cldreffs, cldreffg
        real (kind=kind_phys),dimension(im)    :: rn_o,  sr_o
+
+!      Anning Cheng 10/24/2016 twat for total water, diagnostic purpose
+       integer, dimension(IM)                   :: KCBL
 
 !   input and output
        real (kind=kind_phys),dimension(ix,lm),intent(inout):: q_io, t_io,   &
@@ -170,8 +168,6 @@
 !    &                                             LS_SNR, LS_PRC2, TPREC
        real(kind=kind_phys), dimension(IM)      :: LS_SNR, LS_PRC2
 !    &                                             VMIP, twat
-!      Anning Cheng 10/24/2016 twat for total water, diagnostic purpose
-       integer, dimension(IM)                   :: KCBL
 
        real(kind=kind_phys), dimension (LM) :: uwind_gw,vwind_gw,       &
      &   tm_gw, pm_gw, nm_gw, h_gw, rho_gw, khaux, qcaux,               &
@@ -393,6 +389,13 @@
            enddo
          endif
        endif
+
+!      if (lprnt) then
+!        write(0,*)' inmic qlcn=',qlcn(ipr,:)
+!        write(0,*)' inmic qlls=',qlls(ipr,:)
+!        write(0,*)' inmic qicn=',qicn(ipr,:)
+!        write(0,*)' inmic qils=',qils(ipr,:)
+!      endif
 !
        DT_MOIST = dt_i
        dt_r8    = dt_i
@@ -405,12 +408,12 @@
      &                            QICN(I,K), CLCN(I,K), NCPL(I,K),      &
      &                            NCPI(I,K), qc_min)
              if (rnw(i,k) <= qc_min(1)) then
-               ncpl(i,k) = 0.0
-             elseif (ncpl(i,k) <= nmin) then ! make sure NL > 0 if Q >0
-               ncpl(i,k) = max(rnw(i,k) / (fourb3 * PI *RL_cub*997.0), nmin)
+               ncpr(i,k) = 0.0
+             elseif (ncpr(i,k) <= nmin) then ! make sure NL > 0 if Q >0
+               ncpr(i,k) = max(rnw(i,k) / (fourb3 * PI *RL_cub*997.0), nmin)
              endif
              if (snw(i,k) <= qc_min(2)) then
-               ncpl(i,k) = 0.0
+               ncps(i,k) = 0.0
              elseif (ncps(i,k) <= nmin) then
                ncps(i,k) = max(snw(i,k) / (fourb3 * PI *RL_cub*500.0), nmin)
              endif
@@ -1399,7 +1402,9 @@
 !           if(lprint) then
 !             write(0,*)' calling micro_mg_tend3_0 qcvar3=',qcvar3,' i=',i
 !             write(0,*)' qcr8=',qcr8(:)
+!             write(0,*)' qir8=',qir8(:)
 !             write(0,*)' ncr8=',ncr8(:)
+!             write(0,*)' nir8=',nir8(:)
 !             write(0,*)' npccninr8=',npccninr8(:)
 !             write(0,*)' plevr8=',plevr8(:)
 !             write(0,*)' ter8=',ter8(:)
@@ -1535,10 +1540,18 @@
       if (skip_macro) then
         do k=1,lm
           do i=1,im
+            QLCN(i,k) = QL_TOT(i,k) * FQA(i,k)
+            QLLS(i,k) = QL_TOT(i,k) - QLCN(i,k)
+            QICN(i,k) = QI_TOT(i,k) * FQA(i,k)
+            QILS(i,k) = QI_TOT(i,k) - QICN(i,k)
+
             CALL fix_up_clouds_2M(Q1(I,K),   TEMP(i,k), QLLS(I,K),      &
      &                            QILS(I,K), CLLS(I,K), QLCN(I,K),      &
      &                            QICN(I,K), CLCN(I,K), NCPL(I,K),      &
      &                            NCPI(I,K), qc_min)
+
+            QL_TOT(I,K) = QLLS(I,K) + QLCN(I,K)
+            QI_TOT(I,K) = QILS(I,K) + QICN(I,K)
             if (rnw(i,k) <= qc_min(1)) then
               ncpl(i,k) = 0.0
             elseif (ncpl(i,k) <= nmin) then ! make sure NL > 0 if Q >0
@@ -1695,7 +1708,7 @@
        if (allocated(ALPHT_X)) deallocate (ALPHT_X)
 
 !     if (lprnt) then
-!       write(0,*)' rn_o=',rn_o(ipr),' ls_prc2=',ls_prc2(ipr),' ls_snr=',ls_snr(ipr)
+!       write(0,*)' rn_o=',rn_o(ipr),' ls_prc2=',ls_prc2(ipr),' ls_snr=',ls_snr(ipr),' kdt=',kdt
 !       write(0,*)' end micro_mg_tend t_io= ', t_io(ipr,:)
 !       write(0,*)' end micro_mg_tend clls_io= ', clls_io(ipr,:)
 !     endif
