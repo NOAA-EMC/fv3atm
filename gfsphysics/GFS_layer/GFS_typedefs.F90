@@ -2584,17 +2584,8 @@ module GFS_typedefs
       Coupling%ca_turb   = clear_val
       Coupling%ca_shal   = clear_val
       Coupling%ca_rad    = clear_val
-<<<<<<< HEAD
       Coupling%ca_micro  = clear_val   
       Coupling%condition = clear_val
-=======
-      Coupling%ca_micro  = clear_val
-      Coupling%cape      = clear_val
-      Coupling%tconvtend = clear_val
-      Coupling%qconvtend = clear_val
-      Coupling%uconvtend = clear_val
-      Coupling%vconvtend = clear_val
->>>>>>> EMC/develop
     endif
 
     ! -- GSDCHEM coupling options
@@ -4900,9 +4891,7 @@ module GFS_typedefs
     Tbd%acvb = clear_val
     Tbd%acvt = clear_val
 
-<<<<<<< HEAD
-    if (Model%do_sppt .or. Model%ca_global) then
-=======
+
     if (Model%cplflx .or. Model%cplchm) then
       allocate (Tbd%drain_cpl (IM))
       allocate (Tbd%dsnow_cpl (IM))
@@ -4911,7 +4900,6 @@ module GFS_typedefs
     endif
 
     if (Model%do_sppt) then
->>>>>>> EMC/develop
       allocate (Tbd%dtdtr     (IM,Model%levs))
       allocate (Tbd%dtotprcp  (IM))
       allocate (Tbd%dcnvprcp  (IM))
