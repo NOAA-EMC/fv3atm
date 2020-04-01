@@ -491,7 +491,7 @@
         enddo
         wrt_int_state%im = imo
         wrt_int_state%jm = jmo
-        wrt_int_state%post_maptype = 4
+        wrt_int_state%post_maptype = 0
 
       else if ( trim(output_grid) == 'regional_latlon' .or. &
                 trim(output_grid) == 'rotated_latlon'  .or. &
