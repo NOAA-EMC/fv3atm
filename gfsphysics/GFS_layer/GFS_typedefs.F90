@@ -1225,12 +1225,6 @@ module GFS_typedefs
 #endif
 
 #ifdef CCPP
-    !--- radiation variables that need to be carried over from radiation to physics
-    real (kind=kind_phys), pointer :: htlwc(:,:)       => null()  !<
-    real (kind=kind_phys), pointer :: htlw0(:,:)       => null()  !<
-    real (kind=kind_phys), pointer :: htswc(:,:)       => null()  !<
-    real (kind=kind_phys), pointer :: htsw0(:,:)       => null()  !<
-
     !--- dynamical forcing variables for Grell-Freitas convection
     real (kind=kind_phys), pointer :: forcet (:,:)     => null()  !<
     real (kind=kind_phys), pointer :: forceq (:,:)     => null()  !<
@@ -1743,6 +1737,12 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: hflx_ice(:)        => null()  !<
     real (kind=kind_phys), pointer      :: hflx_land(:)       => null()  !<
     real (kind=kind_phys), pointer      :: hflx_ocean(:)      => null()  !<
+    !--- radiation variables that need to be carried over from radiation to physics
+    real (kind=kind_phys), pointer      :: htlwc(:,:)         => null()  !<
+    real (kind=kind_phys), pointer      :: htlw0(:,:)         => null()  !<
+    real (kind=kind_phys), pointer      :: htswc(:,:)         => null()  !<
+    real (kind=kind_phys), pointer      :: htsw0(:,:)         => null()  !<
+    !
     real (kind=kind_phys), pointer      :: icemp(:)           => null()  !<
     logical,               pointer      :: dry(:)             => null()  !<
     integer,               pointer      :: idxday(:)          => null()  !<
@@ -5073,16 +5073,6 @@ module GFS_typedefs
 #endif
 
 #ifdef CCPP
-    allocate (Tbd%htlwc (IM,Model%levr+LTP))
-    allocate (Tbd%htlw0 (IM,Model%levr+LTP))
-    allocate (Tbd%htswc (IM,Model%levr+LTP))
-    allocate (Tbd%htsw0 (IM,Model%levr+LTP))
-
-    Tbd%htlwc = clear_val
-    Tbd%htlw0 = clear_val
-    Tbd%htswc = clear_val
-    Tbd%htsw0 = clear_val
-
     if (Model%imfdeepcnv == Model%imfdeepcnv_gf .or. Model%imfdeepcnv == Model%imfdeepcnv_ntiedtke) then
        allocate(Tbd%forcet(IM, Model%levs))
        allocate(Tbd%forceq(IM, Model%levs))
@@ -5992,13 +5982,17 @@ module GFS_typedefs
     allocate (Interstitial%hflx_ice        (IM))
     allocate (Interstitial%hflx_land       (IM))
     allocate (Interstitial%hflx_ocean      (IM))
+    allocate (Interstitial%htlwc           (IM,Model%levr+LTP))
+    allocate (Interstitial%htlw0           (IM,Model%levr+LTP))
+    allocate (Interstitial%htswc           (IM,Model%levr+LTP))
+    allocate (Interstitial%htsw0           (IM,Model%levr+LTP))
     allocate (Interstitial%dry             (IM))
     allocate (Interstitial%idxday          (IM))
     allocate (Interstitial%icy             (IM))
     allocate (Interstitial%lake            (IM))
     allocate (Interstitial%ocean           (IM))
     allocate (Interstitial%islmsk          (IM))
-    allocate (Interstitial%islmsk_cice      (IM))
+    allocate (Interstitial%islmsk_cice     (IM))
     allocate (Interstitial%wet             (IM))
     allocate (Interstitial%kbot            (IM))
     allocate (Interstitial%kcnv            (IM))
@@ -6427,6 +6421,10 @@ module GFS_typedefs
     Interstitial%faerlw       = clear_val
     Interstitial%faersw       = clear_val
     Interstitial%gasvmr       = clear_val
+    Interstitial%htlwc        = clear_val
+    Interstitial%htlw0        = clear_val
+    Interstitial%htswc        = clear_val
+    Interstitial%htsw0        = clear_val
     Interstitial%idxday       = 0
     Interstitial%kb           = 0
     Interstitial%kd           = 0
@@ -6945,6 +6943,10 @@ module GFS_typedefs
     write (0,*) 'sum(Interstitial%hflx_ice        ) = ', sum(Interstitial%hflx_ice        )
     write (0,*) 'sum(Interstitial%hflx_land       ) = ', sum(Interstitial%hflx_land       )
     write (0,*) 'sum(Interstitial%hflx_ocean      ) = ', sum(Interstitial%hflx_ocean      )
+    write (0,*) 'sum(Interstitial%htlwc           ) = ', sum(Interstitial%htlwc           )
+    write (0,*) 'sum(Interstitial%htlw0           ) = ', sum(Interstitial%htlw0           )
+    write (0,*) 'sum(Interstitial%htswc           ) = ', sum(Interstitial%htswc           )
+    write (0,*) 'sum(Interstitial%htsw0           ) = ', sum(Interstitial%htsw0           )
     write (0,*) 'Interstitial%dry(:)==.true.        = ', count(Interstitial%dry(:)        )
     write (0,*) 'sum(Interstitial%idxday          ) = ', sum(Interstitial%idxday          )
     write (0,*) 'Interstitial%icy(:)==.true.        = ', count(Interstitial%icy(:)        )

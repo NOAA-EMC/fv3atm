@@ -388,7 +388,7 @@ OPTIONAL_ARGUMENTS = {
          },
     'rrtmg_sw' : {
         'rrtmg_sw_run' : [
-            'tendency_of_air_temperature_due_to_shortwave_heating_assuming_clear_sky_on_radiation_time_step',
+            'tendency_of_air_temperature_due_to_shortwave_heating_assuming_clear_sky_on_radiation_time_step_and_radiation_levels',
             'components_of_surface_downward_shortwave_fluxes',
             'cloud_liquid_water_path',
             'mean_effective_radius_for_liquid_cloud',
@@ -402,7 +402,7 @@ OPTIONAL_ARGUMENTS = {
         },
     'rrtmg_lw' : {
         'rrtmg_lw_run' : [
-            'tendency_of_air_temperature_due_to_longwave_heating_assuming_clear_sky_on_radiation_time_step',
+            'tendency_of_air_temperature_due_to_longwave_heating_assuming_clear_sky_on_radiation_time_step_and_radiation_levels',
             'cloud_liquid_water_path',
             'mean_effective_radius_for_liquid_cloud',
             'cloud_ice_water_path',
