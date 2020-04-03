@@ -1535,7 +1535,7 @@ module GFS_diagnostics
     ExtDiag(idx)%intpl_method = 'bilinear'
     allocate (ExtDiag(idx)%data(nblks))
     do nb = 1,nblks
-      ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%hpbl(:)
+      ExtDiag(idx)%data(nb)%var2 => Tbd(nb)%hpbl(:)
     enddo
 
     idx = idx + 1
