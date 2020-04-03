@@ -90,13 +90,13 @@
 ! switches for GW-effects: pogw=1 (OGWs)  pngw=1 (NGWs) pked=1 (eddy mixing)
 !
        if (me == master .and. kdt < 2) then
-         print *
-         write(6,*) 'FV3GFS execute ugwp_driver_v0 '
+!         print *
+!         write(6,*) 'FV3GFS execute ugwp_driver_v0 '
 !        write(6,*) 'FV3GFS execute ugwp_driver_v0 nmtvr=', nmtvr
-         write(6,*) ' COORDE EXPER pogw = ' , pogw
-         write(6,*) ' COORDE EXPER pgwd = ' , pgwd
-         write(6,*) ' COORDE EXPER pgwd4 = ', pgwd4
-         print *
+!         write(6,*) ' COORDE EXPER pogw = ' , pogw
+!         write(6,*) ' COORDE EXPER pgwd = ' , pgwd
+!         write(6,*) ' COORDE EXPER pgwd4 = ', pgwd4
+!         print *
        endif
 
        do i=1,im
@@ -119,10 +119,10 @@
      &                 du3dt_mtb, du3dt_ogw, du3dt_tms)
 !
          if (me == master .and. kdt < 2) then
-           print *
-           write(6,*) 'FV3GFS finished gwdps_v0 in ugwp_driver_v0 '
-           print *
-         endif
+           !print *
+           !write(6,*) 'FV3GFS finished gwdps_v0 in ugwp_driver_v0 '
+           !print *
+         endif  
        else                                  ! calling old GFS gravity wave drag as is
          do k=1,levs
            do i=1,im
@@ -191,10 +191,10 @@
      &                          tau_ngw, me, master, kdt)
 
          if (me == master .and. kdt < 2) then
-           print *
-           write(6,*)'FV3GFS finished fv3_ugwp_v0 in ugwp_driver_v0 '
-           write(6,*) ' non-stationary GWs with GMAO/MERRA GW-forcing '
-           print *
+           !print *
+           !write(6,*)'FV3GFS finished fv3_ugwp_v0 in ugwp_driver_v0 '
+           !write(6,*) ' non-stationary GWs with GMAO/MERRA GW-forcing '
+           !print *
          endif
          do k=1,levs
            do i=1,im
@@ -1831,12 +1831,12 @@
 !--------------------------------------------------------------------------- 
 !
        if (kdt == 1 .and. mpi_id == master) then
-         print *, 'vgw done  '
+         !print *, 'vgw done  '
 !
-         print *, maxval(pdudt)*86400.,  minval(pdudt)*86400, 'vgw ax'
-         print *, maxval(pdvdt)*86400.,  minval(pdvdt)*86400, 'vgw ay'
-         print *, maxval(dked)*1.,  minval(dked)*1,  'vgw keddy m2/sec'
-         print *, maxval(pdtdt)*86400.,  minval(pdtdt)*86400,'vgw eps'
+         !print *, maxval(pdudt)*86400.,  minval(pdudt)*86400, 'vgw ax'
+         !print *, maxval(pdvdt)*86400.,  minval(pdvdt)*86400, 'vgw ay'
+         !print *, maxval(dked)*1.,  minval(dked)*1,  'vgw keddy m2/sec'
+         !print *, maxval(pdtdt)*86400.,  minval(pdtdt)*86400,'vgw eps'
 !
 !        print *, ' ugwp -heating rates '
        endif
