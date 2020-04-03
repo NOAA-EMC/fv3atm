@@ -8,5 +8,5 @@
 	branch = master
 [submodule "ccpp/physics"]
 	path = ccpp/physics
-	url = https://github.com/hafs-community/ccpp-physics
-	branch = support/HAFS
+	url = https://github.com/NCAR/ccpp-physics
+	branch = dtc/hwrf-physics
