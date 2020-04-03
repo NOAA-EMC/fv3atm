@@ -1443,7 +1443,7 @@ subroutine update_atmos_chemistry(state, rc)
           ib = i + Atm_block%isc - 1
           nb = Atm_block%blkno(ib,jb)
           ix = Atm_block%ixp(ib,jb)
-          hpbl(i,j)   = IPD_Data(nb)%IntDiag%hpbl(ix)
+          hpbl(i,j)   = IPD_Data(nb)%Tbd%hpbl(ix)
           area(i,j)   = IPD_Data(nb)%Grid%area(ix)
           stype(i,j)  = IPD_Data(nb)%Sfcprop%stype(ix)
           rainc(i,j)  = IPD_Data(nb)%Coupling%rainc_cpl(ix)

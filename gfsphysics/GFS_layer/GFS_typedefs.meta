@@ -1269,6 +1269,27 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+[evap]
+  standard_name = kinematic_surface_upward_latent_heat_flux
+  long_name = kinematic surface upward latent heat flux
+  units = kg kg-1 m s-1
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+[hflx]
+  standard_name = kinematic_surface_upward_sensible_heat_flux
+  long_name = kinematic surface upward sensible heat flux
+  units = K m s-1
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+[qss]
+  standard_name = surface_specific_humidity
+  long_name = surface air saturation specific humidity
+  units = kg kg-1
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
 [raincprv]
   standard_name = lwe_thickness_of_convective_precipitation_amount_from_previous_timestep
   long_name = convective_precipitation_amount from previous timestep
@@ -4097,6 +4118,13 @@
   dimensions = (horizontal_dimension,vertical_dimension_of_h2o_forcing_data,number_of_coefficients_in_h2o_forcing_data)
   type = real
   kind = kind_phys
+[hpbl]
+  standard_name = atmosphere_boundary_layer_thickness
+  long_name = pbl height
+  units = m
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
 [in_nm]
   standard_name = in_number_concentration
   long_name = IN number concentration
@@ -5124,13 +5152,6 @@
   standard_name = surface_air_pressure_diag
   long_name = surface air pressure diagnostic
   units = Pa
-  dimensions = (horizontal_dimension)
-  type = real
-  kind = kind_phys
-[hpbl]
-  standard_name = atmosphere_boundary_layer_thickness
-  long_name = pbl height
-  units = m
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
@@ -6640,13 +6661,6 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
-[evap]
-  standard_name = kinematic_surface_upward_latent_heat_flux
-  long_name = kinematic surface upward latent heat flux
-  units = kg kg-1 m s-1
-  dimensions = (horizontal_dimension)
-  type = real
-  kind = kind_phys
 [evap_ocean]
   standard_name = kinematic_surface_upward_latent_heat_flux_over_ocean
   long_name = kinematic surface upward latent heat flux over ocean
@@ -7061,13 +7075,6 @@
   long_name = natural log of h2o forcing data pressure levels
   units = log(Pa)
   dimensions = (vertical_dimension_of_h2o_forcing_data)
-  type = real
-  kind = kind_phys
-[hflx]
-  standard_name = kinematic_surface_upward_sensible_heat_flux
-  long_name = kinematic surface upward sensible heat flux
-  units = K m s-1
-  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [hflx_ocean]
@@ -7511,13 +7518,6 @@
   standard_name = lwe_thickness_of_explicit_precipitation_amount
   long_name = explicit precipitation (rain, ice, snow, graupel, ...) on physics timestep
   units = m
-  dimensions = (horizontal_dimension)
-  type = real
-  kind = kind_phys
-[qss]
-  standard_name = surface_specific_humidity
-  long_name = surface air saturation specific humidity
-  units = kg kg-1
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
