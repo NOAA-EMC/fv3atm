@@ -954,8 +954,8 @@ module GFS_typedefs
     integer              :: nca             !< number of independent cellular automata 
     integer              :: nlives          !< cellular automata lifetime
     integer              :: ncells          !< cellular automata finer grid
-    integer              :: nca_g           !< number of independent cellular automata                                                                                                                                                     
-    integer              :: nlives_g        !< cellular automata lifetime                                                                                                                                                             
+    integer              :: nca_g           !< number of independent cellular automata
+    integer              :: nlives_g        !< cellular automata lifetime
     integer              :: ncells_g        !< cellular automata finer grid  
     real(kind=kind_phys) :: nfracseed       !< cellular automata seed probability 
     integer              :: nseed           !< cellular automata seed frequency
@@ -968,7 +968,10 @@ module GFS_typedefs
     integer              :: nspinup         !< number of iterations to spin up the ca
     real(kind=kind_phys) :: nthresh         !< threshold used for perturbed vertical velocity
     real                 :: ca_amplitude    !< amplitude of ca trigger perturbation
-    integer              :: nsmooth
+    integer              :: nsmooth         !< number of passes through smoother
+    logical              :: ca_closure      !< logical switch for ca on closure
+    logical              :: ca_entr         !< logical switch for ca on entrainment
+    logical              :: ca_trigger      !< logical switch for ca on trigger
 
 !--- stochastic physics control parameters
     logical              :: do_sppt
@@ -3070,6 +3073,9 @@ module GFS_typedefs
     real(kind=kind_phys) :: nthresh        = 0.0
     real                 :: ca_amplitude   = 500.
     integer              :: nsmooth        = 100 
+    logical              :: ca_closure     = .false.
+    logical              :: ca_entr        = .false.
+    logical              :: ca_trigger     = .false.
 
 !--- IAU options
     real(kind=kind_phys)  :: iau_delthrs      = 0           !< iau time interval (to scale increments)
@@ -3185,7 +3191,7 @@ module GFS_typedefs
                                nca, ncells, nlives, nca_g, ncells_g, nlives_g, nfracseed,   &
                                nseed, nseed_g, nthresh, do_ca,                              &
                                ca_sgs, ca_global,iseed_ca,ca_smooth,                        &
-                               nspinup,ca_amplitude, nsmooth,                               &
+                               nspinup,ca_amplitude,nsmooth,ca_closure,ca_entr,ca_trigger,  & 
                           !--- IAU
                                iau_delthrs,iaufhrs,iau_inc_files,iau_filter_increments,     &
                                iau_drymassfixer,                                            &
@@ -3670,6 +3676,9 @@ module GFS_typedefs
     Model%nthresh          = nthresh 
     Model%ca_amplitude     = ca_amplitude
     Model%nsmooth          = nsmooth
+    Model%ca_closure       = ca_closure
+    Model%ca_entr          = ca_entr
+    Model%ca_trigger       = ca_trigger
 
     ! IAU flags
     !--- iau parameters
@@ -4680,6 +4689,9 @@ module GFS_typedefs
       print *, ' nthresh           : ', Model%nthresh
       print *, ' ca_amplitude      : ', Model%ca_amplitude
       print *, ' nsmooth           : ', Model%nsmooth
+      print *, ' ca_closure        : ', Model%ca_closure
+      print *, ' ca_entr           : ', Model%ca_entr
+      print *, ' ca_trigger        : ', Model%ca_trigger
       print *, ' '
       print *, 'tracers'
       print *, ' tracer_names      : ', Model%tracer_names
@@ -4899,7 +4911,7 @@ module GFS_typedefs
       Tbd%dsnow_cpl = clear_val
     endif
 
-    if (Model%do_sppt) then
+    if (Model%do_sppt .or. Model%ca_global) then
       allocate (Tbd%dtdtr     (IM,Model%levs))
       allocate (Tbd%dtotprcp  (IM))
       allocate (Tbd%dcnvprcp  (IM))
