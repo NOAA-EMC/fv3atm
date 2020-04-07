@@ -795,6 +795,9 @@ module GFS_typedefs
     logical              :: shinhong        !< flag for scale-aware Shinhong vertical turbulent mixing scheme
     logical              :: do_ysu          !< flag for YSU turbulent mixing scheme
     logical              :: dspheat         !< flag for tke dissipative heating
+#ifdef CCPP
+    logical              :: hurr_pbl        !< flag for hurricane-specific options in PBL scheme
+#endif
     logical              :: lheatstrg       !< flag for canopy heat storage parameterization
     logical              :: cnvcld        
     logical              :: random_clds     !< flag controls whether clouds are random
@@ -874,6 +877,9 @@ module GFS_typedefs
     integer              :: bl_mynn_cloudmix   !< flag to activate mixing of cloud species
     integer              :: bl_mynn_mixqt      !< flag to mix total water or individual species
     integer              :: icloud_bl          !< flag for coupling sgs clouds to radiation
+    real(kind=kind_phys) :: var_ric
+    real(kind=kind_phys) :: coef_ric_l
+    real(kind=kind_phys) :: coef_ric_s
     ! *DH
     ! MYJ switches
     logical              :: do_myjsfc          !< flag for MYJ surface layer scheme
@@ -2912,6 +2918,9 @@ module GFS_typedefs
     logical              :: shinhong       = .false.                  !< flag for scale-aware Shinhong vertical turbulent mixing scheme
     logical              :: do_ysu         = .false.                  !< flag for YSU vertical turbulent mixing scheme
     logical              :: dspheat        = .false.                  !< flag for tke dissipative heating
+#ifdef CCPP
+    logical              :: hurr_pbl       = .false.                  !< flag for hurricane-specific options in PBL scheme
+#endif
     logical              :: lheatstrg      = .false.                  !< flag for canopy heat storage parameterization
     logical              :: cnvcld         = .false.
     logical              :: random_clds    = .false.                  !< flag controls whether clouds are random
@@ -2950,6 +2959,9 @@ module GFS_typedefs
     integer              :: bl_mynn_cloudmix  = 1
     integer              :: bl_mynn_mixqt     = 0
     integer              :: icloud_bl         = 1
+    real(kind=kind_phys) :: var_ric           = 1.0
+    real(kind=kind_phys) :: coef_ric_l        = 0.16
+    real(kind=kind_phys) :: coef_ric_s        = 0.25
     ! *DH
     logical              :: do_myjsfc         = .false.               !< flag for MYJ surface layer scheme
     logical              :: do_myjpbl         = .false.               !< flag for MYJ PBL scheme
@@ -3150,6 +3162,7 @@ module GFS_typedefs
                                bl_mynn_cloudpdf, bl_mynn_edmf, bl_mynn_edmf_mom,            &
                                bl_mynn_edmf_tke, bl_mynn_edmf_part, bl_mynn_cloudmix,       &
                                bl_mynn_mixqt, icloud_bl, bl_mynn_tkeadvect, gwd_opt,        &
+                               var_ric, coef_ric_l, coef_ric_s, hurr_pbl,                   &
                                ! *DH
                                do_myjsfc, do_myjpbl,                                        &
 #endif
@@ -3530,6 +3543,9 @@ module GFS_typedefs
     Model%shinhong          = shinhong
     Model%do_ysu            = do_ysu
     Model%dspheat           = dspheat
+#ifdef CCPP
+    Model%hurr_pbl          = hurr_pbl
+#endif
     Model%lheatstrg         = lheatstrg
     Model%cnvcld            = cnvcld
     Model%random_clds       = random_clds
@@ -3570,6 +3586,9 @@ module GFS_typedefs
     Model%bl_mynn_tkeadvect = bl_mynn_tkeadvect
     Model%grav_settling     = grav_settling
     Model%icloud_bl         = icloud_bl
+    Model%var_ric           = var_ric
+    Model%coef_ric_l        = coef_ric_l
+    Model%coef_ric_s        = coef_ric_s
     ! *DH
     Model%gwd_opt           = gwd_opt
     Model%do_myjsfc         = do_myjsfc
@@ -4606,6 +4625,10 @@ module GFS_typedefs
       print *, ' do_myjsfc         : ', Model%do_myjsfc
       print *, ' do_myjpbl         : ', Model%do_myjpbl
       print *, ' gwd_opt           : ', Model%gwd_opt
+      print *, ' hurr_pbl          : ', Model%hurr_pbl
+      print *, ' var_ric           : ', Model%var_ric
+      print *, ' coef_ric_l        : ', Model%coef_ric_l
+      print *, ' coef_ric_s        : ', Model%coef_ric_s
 #endif
       print *, ' '
       print *, 'Rayleigh friction'

@@ -2896,6 +2896,12 @@
   units = flag
   dimensions = ()
   type = logical
+[hurr_pbl]
+  standard_name = flag_hurricane_PBL
+  long_name = flag for hurricane-specific options in PBL scheme
+  units = flag
+  dimensions = ()
+  type = logical
 [lheatstrg]
   standard_name = flag_for_canopy_heat_storage
   long_name = flag for canopy heat storage parameterization
@@ -3282,7 +3288,7 @@
   kind = kind_phys
 [moninq_fac]
   standard_name = atmosphere_diffusivity_coefficient_factor
-  long_name = multiplicative constant for atmospheric diffusivities
+  long_name = multiplicative constant for atmospheric diffusivities (AKA alpha)
   units = none
   dimensions = ()
   type = real
@@ -4005,6 +4011,27 @@
   units = flag
   dimensions = ()
   type = integer
+[var_ric]
+  standard_name = flag_variable_bulk_richardson_number
+  long_name = flag for calculating variable bulk richardson number for hurricane PBL
+  units = flag
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[coef_ric_l]
+  standard_name = coefficient_for_variable_bulk_richardson_number_over_land
+  long_name = coefficient for calculating variable bulk richardson number for hurricane PBL over land
+  units = none
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[coef_ric_s]
+  standard_name = coefficient_for_variable_bulk_richardson_number_over_ocean
+  long_name = coefficient for calculating variable bulk richardson number for hurricane PBL over ocean
+  units = none
+  dimensions = ()
+  type = real
+  kind = kind_phys
 [do_ugwp]
   standard_name = do_ugwp
   long_name = flag to activate CIRES UGWP
