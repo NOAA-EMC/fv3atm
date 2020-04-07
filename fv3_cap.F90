@@ -347,7 +347,8 @@ module fv3gfs_cap_mod
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
       if(mype == 0) print *,'af nems config,quilting=',quilting,'write_groups=', &
-        write_groups,wrttasks_per_group,'calendar=',trim(calendar),'calendar_type=',calendar_type
+        write_groups,wrttasks_per_group,'calendar=',trim(calendar),'calendar_type=',calendar_type, &
+        'isrcTermProcessing=',isrcTermProcessing
 !
       CALL ESMF_ConfigGetAttribute(config=CF,value=num_files, &
                                    label ='num_files:',rc=rc)
@@ -798,8 +799,11 @@ module fv3gfs_cap_mod
         if (currtime <= starttime+output_hfmax) then
           nhf = (currtime-starttime)/output_interval_hf
           alarm_output_hf_ring = startTime + (nhf+1_ESMF_KIND_I4)*output_interval_hf
-          if(iau_offset > 0) then
+          if( iau_offset > 0 ) then
             alarm_output_hf_ring = startTime + IAU_offsetTI
+            if( currtime > alarm_output_hf_ring ) then
+               alarm_output_hf_ring = startTime + (nhf+1_ESMF_KIND_I4)*output_interval_hf
+            endif
           endif
           alarm_output_hf = ESMF_AlarmCreate(clock_fv3,name='ALARM_OUTPUT_HF',  &
                                              ringTime =alarm_output_hf_ring,    &
@@ -820,6 +824,9 @@ module fv3gfs_cap_mod
         alarm_output_ring = startTime + (nrg+1_ESMF_KIND_I4) * output_interval
         if(iau_offset > 0) then
           alarm_output_ring = startTime + IAU_offsetTI
+          if( currtime > alarm_output_ring ) then
+            alarm_output_ring = startTime + (nrg+1_ESMF_KIND_I4) * output_interval
+          endif
         endif
       endif
 
