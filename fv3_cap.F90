@@ -238,7 +238,7 @@ module fv3gfs_cap_mod
     integer                                :: mpi_comm_atm
     integer                                :: i, j, k, io_unit, urc, ierr
     integer                                :: petcount, mype
-    integer                                :: num_output_file
+    integer                                :: num_output_file, isrcTermProcessing
     logical                                :: isPetLocal
     logical                                :: OPENED
     character(ESMF_MAXSTR)                 :: name
@@ -247,7 +247,6 @@ module fv3gfs_cap_mod
     integer,dimension(:), allocatable      :: petList, originPetList, targetPetList
     character(20)                          :: cwrtcomp
     character(160)                         :: msg
-    integer                                :: isrctermprocessing
 
     character(len=*),parameter  :: subname='(fv3_cap:InitializeAdvertise)'
     integer nfmout, nfsout , nfmout_hf, nfsout_hf
@@ -343,8 +342,13 @@ module fv3gfs_cap_mod
                                    label ='app_domain:',rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
+      CALL ESMF_ConfigGetAttribute(config=CF,value=isrcTermProcessing, default=0, &
+                                   label ='isrcTermProcessing:',rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
       if(mype == 0) print *,'af nems config,quilting=',quilting,'write_groups=', &
-        write_groups,wrttasks_per_group,'calendar=',trim(calendar),'calendar_type=',calendar_type
+        write_groups,wrttasks_per_group,'calendar=',trim(calendar),'calendar_type=',calendar_type, &
+        'isrcTermProcessing=',isrcTermProcessing
 !
       CALL ESMF_ConfigGetAttribute(config=CF,value=num_files, &
                                    label ='num_files:',rc=rc)
@@ -732,11 +736,10 @@ module fv3gfs_cap_mod
 ! this is a Store() for the first wrtComp -> must do the Store()
             timewri = mpi_wtime()
 
-            isrctermprocessing = 1
             call ESMF_FieldBundleRegridStore(fcstFB(j), wrtFB(j,i),                                    &
                                              regridMethod=regridmethod, routehandle=routehandle(j,i),  &
                                              unmappedaction=ESMF_UNMAPPEDACTION_IGNORE,                &
-                                             srcTermProcessing=isrctermprocessing, rc=rc)
+                                             srcTermProcessing=isrcTermProcessing, rc=rc)
 
 !           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
             if (rc /= ESMF_SUCCESS) then
@@ -796,8 +799,11 @@ module fv3gfs_cap_mod
         if (currtime <= starttime+output_hfmax) then
           nhf = (currtime-starttime)/output_interval_hf
           alarm_output_hf_ring = startTime + (nhf+1_ESMF_KIND_I4)*output_interval_hf
-          if(iau_offset > 0) then
+          if( iau_offset > 0 ) then
             alarm_output_hf_ring = startTime + IAU_offsetTI
+            if( currtime > alarm_output_hf_ring ) then
+               alarm_output_hf_ring = startTime + (nhf+1_ESMF_KIND_I4)*output_interval_hf
+            endif
           endif
           alarm_output_hf = ESMF_AlarmCreate(clock_fv3,name='ALARM_OUTPUT_HF',  &
                                              ringTime =alarm_output_hf_ring,    &
@@ -818,6 +824,9 @@ module fv3gfs_cap_mod
         alarm_output_ring = startTime + (nrg+1_ESMF_KIND_I4) * output_interval
         if(iau_offset > 0) then
           alarm_output_ring = startTime + IAU_offsetTI
+          if( currtime > alarm_output_ring ) then
+            alarm_output_ring = startTime + (nrg+1_ESMF_KIND_I4) * output_interval
+          endif
         endif
       endif
 
@@ -1108,6 +1117,9 @@ module fv3gfs_cap_mod
 
          timerhi = mpi_wtime()
 !         if (mype == 0 .or. mype == lead_wrttask(1)) print *,' aft fcst run alarm is on, na=',na,'mype=',mype
+
+         call ESMF_VMEpochEnter(epoch=ESMF_VMEpoch_Buffer, rc=rc)
+         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
          do i=1, FBCount
 !
 ! get fcst fieldbundle
@@ -1115,13 +1127,15 @@ module fv3gfs_cap_mod
            call ESMF_FieldBundleRegrid(fcstFB(i), wrtFB(i,n_group),         &
                                        routehandle=routehandle(i, n_group), &
                                        termorderflag=(/ESMF_TERMORDER_SRCSEQ/), rc=rc)
-           timerh = mpi_wtime()
            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 !
 !end FBcount
-          enddo
-!       if (mype == 0 .or. mype == lead_wrttask(n_group)) print *,'aft fieldbundleregrid,na=',na,  &
-!       ' time=', timerh- timerhi
+         enddo
+         call ESMF_VMEpochExit(rc=rc)
+         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+         if (mype == 0 .or. mype == lead_wrttask(n_group).or.mype==last_wrttask(n_group)) print *,'aft fldbdlregrid,na=',na,  &
+       ' time=', mpi_wtime()- timerhi,mype
 
 !      if(mype==0 .or. mype==lead_wrttask(1))  print *,'on wrt bf wrt run, na=',na
           call ESMF_LogWrite('Model Advance: before wrtcomp run ', ESMF_LOGMSG_INFO, rc=rc)
@@ -1139,8 +1153,8 @@ module fv3gfs_cap_mod
           call ESMF_LogWrite('Model Advance: after wrtcomp run ', ESMF_LOGMSG_INFO, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-!       if (mype == 0 .or. mype == lead_wrttask(n_group)) print *,'fv3_cap,aft model advance,na=', &
-!       na,' time=', mpi_wtime()- timewri
+       if (mype == 0 .or. mype == lead_wrttask(n_group).or.mype == last_wrttask(n_group)) print *,'fv3_cap,aft mdladv,na=', &
+       na,' time=', mpi_wtime()- timewri
 
 
           if(n_group == write_groups) then
@@ -1398,6 +1412,8 @@ module fv3gfs_cap_mod
        output: IF(lalarm .or. na==first_kdt ) then
 
          timerhi = mpi_wtime()
+         call ESMF_VMEpochEnter(epoch=ESMF_VMEpoch_Buffer, rc=rc)
+         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
          do i=1, FBCount
 !
 ! get fcst fieldbundle
@@ -1409,6 +1425,8 @@ module fv3gfs_cap_mod
 !
 !end FBcount
          enddo
+         call ESMF_VMEpochExit(rc=rc)
+         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
          if (mype == 0 .or. mype == lead_wrttask(n_group)) print *,'aft fieldbundleregrid,na=',na,  &
                                                                    ' time=', timerh- timerhi
 
