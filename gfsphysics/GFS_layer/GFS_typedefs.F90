@@ -1858,6 +1858,8 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: uustar_ocean(:)    => null()  !<
     real (kind=kind_phys), pointer      :: vdftra(:,:,:)      => null()  !<
     real (kind=kind_phys), pointer      :: vegf1d(:)          => null()  !<
+    real (kind=kind_phys)               :: lndp_vgf                      !<
+  
     integer, pointer                    :: vegtype(:)         => null()  !<
     real (kind=kind_phys), pointer      :: w_upi(:,:)         => null()  !<
     real (kind=kind_phys), pointer      :: wcbmax(:)          => null()  !<
@@ -3075,8 +3077,6 @@ module GFS_typedefs
     integer :: skeb_npass   = 11
     integer :: lndp_type    = 0 
     integer :: n_var_lndp   =  0 
-    character(len=3) :: lndp_var_list(6) = 'XXX' 
-    real(kind=kind_phys) :: lndp_prt_list(6) = -999.
 
 !--- aerosol scavenging factors
     character(len=20) :: fscav_aero(20) = 'default'
@@ -6409,6 +6409,7 @@ module GFS_typedefs
     Interstitial%uustar_ocean    = huge
     Interstitial%vdftra          = clear_val
     Interstitial%vegf1d          = clear_val
+    Interstitial%lndp_vgf        = clear_val
     Interstitial%vegtype         = 0
     Interstitial%wcbmax          = clear_val
     Interstitial%weasd_ice       = huge

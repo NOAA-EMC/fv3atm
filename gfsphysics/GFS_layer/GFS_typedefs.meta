@@ -8004,6 +8004,13 @@
   dimensions = (horizontal_dimension,vertical_dimension,number_of_vertical_diffusion_tracers)
   type = real
   kind = kind_phys
+[lndp_vgf]
+  standard_name = magnitude_of_perturbation_of_vegetation_fraction
+  long_name = magnitude of perturbation of vegetation fraction
+  units = frac
+  dimensions = ()
+  type = real
+  kind = kind_phys
 [vegf1d]
   standard_name = perturbation_of_vegetation_fraction
   long_name = perturbation of vegetation fraction
