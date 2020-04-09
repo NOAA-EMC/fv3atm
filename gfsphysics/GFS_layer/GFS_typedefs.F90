@@ -773,6 +773,8 @@ module GFS_typedefs
 #ifdef CCPP
     real(kind=kind_phys) :: rhgrd           !< fer_hires microphysics only
     logical              :: spec_adv        !< flag for individual cloud species advected
+    integer              :: icloud          !< cloud effect to the optical depth in radiation; this also controls the cloud fraction options
+                                            !<  3: with cloud effect, and use cloud fraction option 3, based on Sundqvist et al. (1989)
 #endif
     logical              :: do_aw           !< AW scale-aware option in cs convection
     logical              :: do_awdd         !< AW scale-aware option in cs convection
@@ -2798,6 +2800,8 @@ module GFS_typedefs
 #ifdef CCPP
     real(kind=kind_phys) :: rhgrd             = 0.98               !< fer_hires microphysics only
     logical              :: spec_adv          = .true.             !< Individual cloud species advected
+    integer              :: icloud            = 0                  !< cloud effect to the optical depth in radiation; this also controls the cloud fraction options
+                                                                   !<  3: with cloud effect from FA, and use cloud fraction option 3, based on Sundqvist et al. (1989)
 #endif
 !--- M-G microphysical parameters
     integer              :: fprcp             =  0                 !< no prognostic rain and snow (MG)
@@ -3177,7 +3181,7 @@ module GFS_typedefs
                                prslrd0, ral_ts,  ldiag_ugwp, do_ugwp, do_tofd,              &
                           ! --- Ferrier-Aligo
 #ifdef CCPP
-                               spec_adv, rhgrd,                                             &
+                               spec_adv, rhgrd, icloud,                                     &
 #endif
                           !--- mass flux deep convection
                                clam_deep, c0s_deep, c1_deep, betal_deep,                    &
@@ -3435,6 +3439,7 @@ module GFS_typedefs
 #ifdef CCPP
     Model%rhgrd            = rhgrd
     Model%spec_adv         = spec_adv
+    Model%icloud           = icloud
 #endif 
 
 !--- gfdl  MP parameters
@@ -4145,11 +4150,15 @@ module GFS_typedefs
       print *,' Radiative heating calculated at',Model%levr, ' layers'
       if (Model%iovr_sw == 0) then
         print *,' random cloud overlap for Shortwave IOVR_SW=',Model%iovr_sw
+      elseif (Model%iovr_sw == 4) then
+        print *,'exponential cloud overlap for Shortwave IOVR_SW=',Model%iovr_lw
       else
         print *,' max-random cloud overlap for Shortwave IOVR_SW=',Model%iovr_sw
       endif
       if (Model%iovr_lw == 0) then
         print *,' random cloud overlap for Longwave IOVR_LW=',Model%iovr_lw
+      elseif (Model%iovr_lw == 4) then
+        print *,'exponential cloud overlap for Longwave IOVR_LW=',Model%iovr_lw
       else
         print *,' max-random cloud overlap for Longwave IOVR_LW=',Model%iovr_lw
       endif
@@ -4532,6 +4541,7 @@ module GFS_typedefs
         print *, ' Ferrier-Aligo microphysical parameters'
         print *, ' spec_adv          : ', Model%spec_adv
         print *, ' rhgrd             : ', Model%rhgrd
+        print *, ' icloud            : ', Model%icloud
         print *, ' '
       endif
 #endif

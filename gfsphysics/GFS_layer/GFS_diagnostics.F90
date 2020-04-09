@@ -3288,7 +3288,7 @@ module GFS_diagnostics
     endif
 
     !! Cloud effective radii from Microphysics
-    !if (Model%imp_physics == Model%imp_physics_thompson .or. Model%imp_physics == Model%imp_physics_wsm6) then
+    !if (Model%imp_physics == Model%imp_physics_thompson .or. Model%imp_physics == Model%imp_physics_wsm6 .or. Model%imp_physics == Model%imp_physics_fer_hires) then
     !  idx = idx + 1
     !  ExtDiag(idx)%axes = 3
     !  ExtDiag(idx)%name = 'cleffr'
