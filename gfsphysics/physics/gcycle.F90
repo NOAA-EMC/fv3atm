@@ -8,7 +8,7 @@
                             GFS_sfcprop_type, GFS_cldprop_type
     implicit none
 
-    integer :: nblks
+    integer,                  intent(in)    :: nblks
     type(GFS_control_type),   intent(in)    :: Model
     type(GFS_grid_type),      intent(in)    :: Grid(nblks)
     type(GFS_sfcprop_type),   intent(inout) :: Sfcprop(nblks)
@@ -34,7 +34,7 @@
         TG3FCS (Model%nx*Model%ny),             &
         CNPFCS (Model%nx*Model%ny),             &
         AISFCS (Model%nx*Model%ny),             &
-        F10MFCS(Model%nx*Model%ny),             &
+!       F10MFCS(Model%nx*Model%ny),             &
         VEGFCS (Model%nx*Model%ny),             &
         VETFCS (Model%nx*Model%ny),             &
         SOTFCS (Model%nx*Model%ny),             &
@@ -103,7 +103,7 @@
           ZORFCS  (len)          = Sfcprop(nb)%zorl   (ix)
           TG3FCS  (len)          = Sfcprop(nb)%tg3    (ix)
           CNPFCS  (len)          = Sfcprop(nb)%canopy (ix)
-          F10MFCS (len)          = Sfcprop(nb)%f10m   (ix)
+!         F10MFCS (len)          = Sfcprop(nb)%f10m   (ix)
           VEGFCS  (len)          = Sfcprop(nb)%vfrac  (ix)
           VETFCS  (len)          = Sfcprop(nb)%vtype  (ix)
           SOTFCS  (len)          = Sfcprop(nb)%stype  (ix)
@@ -190,8 +190,8 @@
           len = len + 1
           Sfcprop(nb)%slmsk  (ix) = SLIFCS  (len)
           if ( Model%nstf_name(1) > 0 ) then
-            Sfcprop(nb)%tref(ix) = TSFFCS  (len)
-!           if (Model%nstf_name(2) == 0) then
+             Sfcprop(nb)%tref(ix) = TSFFCS  (len)
+!           if ( Model%nstf_name(2) == 0 ) then
 !             dt_warm = (Sfcprop(nb)%xt(ix) + Sfcprop(nb)%xt(ix) ) &
 !                     / Sfcprop(nb)%xz(ix)
 !             Sfcprop(nb)%tsfco(ix) = Sfcprop(nb)%tref(ix)         &
@@ -205,7 +205,7 @@
           Sfcprop(nb)%zorl   (ix) = ZORFCS  (len)
           Sfcprop(nb)%tg3    (ix) = TG3FCS  (len)
           Sfcprop(nb)%canopy (ix) = CNPFCS  (len)
-          Sfcprop(nb)%f10m   (ix) = F10MFCS (len)
+!         Sfcprop(nb)%f10m   (ix) = F10MFCS (len)
           Sfcprop(nb)%vfrac  (ix) = VEGFCS  (len)
           Sfcprop(nb)%vtype  (ix) = VETFCS  (len)
           Sfcprop(nb)%stype  (ix) = SOTFCS  (len)
