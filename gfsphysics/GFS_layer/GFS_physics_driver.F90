@@ -44,7 +44,7 @@ module module_physics_driver
   !--- CONSTANT PARAMETERS
   real(kind=kind_phys), parameter :: hocp    = con_hvap/con_cp
   real(kind=kind_phys), parameter :: epsln   = 1.0d-10
-  real(kind=kind_phys), parameter :: qmin    = 1.0d-10
+  real(kind=kind_phys), parameter :: qmin    = 1.0d-8
   real(kind=kind_phys), parameter :: qsmall  = 1.0d-20
   real(kind=kind_phys), parameter :: rainmin = 1.0d-13
   real(kind=kind_phys), parameter :: p850    = 85000.0d0
@@ -56,7 +56,6 @@ module module_physics_driver
   real(kind=kind_phys), parameter :: albdf   = 0.06d0
   real(kind=kind_phys), parameter :: tf=258.16d0, tcr=273.16d0, tcrf=1.0/(tcr-tf)
   real(kind=kind_phys), parameter :: con_p001= 0.001d0
-  real(kind=kind_phys), parameter :: con_d00 = 0.0d0
   real(kind=kind_phys), parameter :: con_day = 86400.0d0
   real(kind=kind_phys), parameter :: rad2dg  = 180.0d0/con_pi
   real(kind=kind_phys), parameter :: omz1    = 10.0d0
@@ -485,7 +484,7 @@ module module_physics_driver
 !  ---  local variables
 
 !--- INTEGER VARIABLES
-      integer :: me, lprint, ipr, ix, im, levs, ntrac, nvdiff, kdt,     &
+      integer :: me,   ipr,  ix,   im, levs, ntrac, nvdiff, kdt,        &
                  ntoz, ntcw, ntiw, ncld,ntke,ntkev, ntlnc, ntinc, lsoil,&
                  ntrw, ntsw, ntrnc, ntsnc, ntot3d, ntgl, ntgnc, ntclamt,&
                  ims, ime, kms, kme, its, ite, kts, kte, imp_physics,   &
@@ -544,9 +543,6 @@ module module_physics_driver
            doms, psautco_l, prautco_l, ocalnirbm_cpl, ocalnirdf_cpl,    &
            ocalvisbm_cpl, ocalvisdf_cpl, dtzm, temrain1, t2mmp, q2mp,   &
            psaur_l, praur_l,                                            &
-!--- coupling inputs for physics
-           dtsfc_cice, dqsfc_cice, dusfc_cice, dvsfc_cice,              &
-!          dtsfc_cice, dqsfc_cice, dusfc_cice, dvsfc_cice, ulwsfc_cice, &
 !--- for CS-convection
            wcbmax
 
@@ -678,16 +674,15 @@ module module_physics_driver
       real    :: pshltr,QCQ,rh02
       real(kind=kind_phys), allocatable, dimension(:,:) :: den
 
-      !! Initialize local variables (mainly for debugging purposes, because the
-      !! corresponding variables Interstitial(nt)%... are reset to zero every time);
-      !! these variables are only modified over parts of the entire domain (related
-      !! to land surface mask etc.)
+      !! Initialize local variables (for debugging purposes only,
+      !! because the corresponding variables Interstitial(nt)%...
+      !! are reset to zero every time).
       !snowmt = 0.
       !gamq   = 0.
       !gamt   = 0.
       !gflx   = 0.
       !hflx   = 0.
-      !
+
       !! Strictly speaking, this is not required. But when
       !! hunting for bit-for-bit differences, doing the same as
       !! in GFS_suite_stateout_reset makes life a lot easier.
@@ -830,8 +825,8 @@ module module_physics_driver
 !     lprnt   = .false.
 
 !     do i=1,im
-!       lprnt = kdt >=   1 .and. abs(grid%xlon(i)*rad2dg-97.50) < 0.101  &
-!                          .and. abs(grid%xlat(i)*rad2dg-24.48) < 0.101
+!       lprnt = kdt >=  24 .and. abs(grid%xlon(i)*rad2dg-239.50) < 0.151  &
+!                          .and. abs(grid%xlat(i)*rad2dg-75.05) < 0.201
 !       lprnt = kdt >=   1 .and. abs(grid%xlon(i)*rad2dg-293.91) < 0.101  &
 !                          .and. abs(grid%xlat(i)*rad2dg+72.02) < 0.101
 !       lprnt = kdt >=   1 .and. abs(grid%xlon(i)*rad2dg-113.48) < 0.101  &
@@ -847,9 +842,16 @@ module module_physics_driver
 !         exit
 !       endif
 !     enddo
-!     if (lprnt) write(0,*)' sfcprop%tisfc=',Sfcprop%tisfc(ipr),' kdt=',kdt, &
-!    ' fice=',Sfcprop%fice(ipr),' ulw=',Coupling%ulwsfcin_cpl(ipr),          &
+!     if (lprnt) then
+!       if (MOdel%cplflx) then
+!         write(0,*)' sfcprop%tisfc=',Sfcprop%tisfc(ipr),' kdt=',kdt,   &
+!    ' fice=',Sfcprop%fice(ipr),' ulw=',Coupling%ulwsfcin_cpl(ipr),     &
 !    ' tsfc=',Sfcprop%tsfc(ipr)
+!        else
+!          write(0,*)' sfcprop%tisfc=',Sfcprop%tisfc(ipr),' kdt=',kdt,  &
+!    ' fice=',Sfcprop%fice(ipr), ' tsfc=',Sfcprop%tsfc(ipr)
+!        endif
+!      endif
 !-------------------------------------------------------------------------------------------
 !
 !     if (lprnt) then
@@ -911,10 +913,6 @@ module module_physics_driver
 !  ---  set initial quantities for stochastic physics deltas
       if (Model%do_sppt) then
         Tbd%dtdtr = zero
-        do i=1,im
-          Tbd%drain_cpl(i) = Coupling%rain_cpl (i)
-          Tbd%dsnow_cpl(i) = Coupling%snow_cpl (i)
-        enddo
       endif
 
 ! mg, sfc-perts
@@ -1069,7 +1067,7 @@ module module_physics_driver
 !  --- ...  xw: transfer ice thickness & concentration from global to local variables
 !## CCPP ## global to local variable transfer not necessary for these two
         zice(i)    = Sfcprop%hice(i)
-        fice(i)    = Sfcprop%fice(i) ! ice fraction of lake/ocean wrt whole cell
+        fice(i)    = Sfcprop%fice(i)
 !*## CCPP ##* 
 !## CCPP ##* GFS_surface_composites.F90/GFS_surface_composites_pre_run
         tice(i)    = Sfcprop%tisfc(i)
@@ -1113,48 +1111,35 @@ module module_physics_driver
         do i=1,im
           islmsk_cice(i) = nint(Coupling%slimskin_cpl(i))
           flag_cice(i)   = (islmsk_cice(i) == 4)
-
-          if (flag_cice(i)) then
-!           ulwsfc_cice(i) = Coupling%ulwsfcin_cpl(i)
-            dusfc_cice(i)  = Coupling%dusfcin_cpl(i)
-            dvsfc_cice(i)  = Coupling%dvsfcin_cpl(i)
-            dtsfc_cice(i)  = Coupling%dtsfcin_cpl(i)
-            dqsfc_cice(i)  = Coupling%dqsfcin_cpl(i)
-          endif
         enddo
       endif
 !*## CCPP ##
 
 !## CCPP ##* GFS_surface_composites.F90/GFS_surface_composites_pre
-      if (Model%frac_grid) then  ! here Sfcprop%fice is fraction of the whole grid that is ice
+      if (Model%frac_grid) then
         do i = 1, IM
           frland(i) = Sfcprop%landfrac(i)
           if (frland(i) > zero) dry(i) = .true.
-          tem = one - frland(i)
-          if (tem > epsln) then
+          if (frland(i) < one) then
             if (flag_cice(i)) then
-              if (fice(i) >= Model%min_seaice*tem) then
+              if (fice(i) >= Model%min_seaice) then
                 icy(i)  = .true.
               else
                 fice(i) = zero
               endif
             else
-              if (fice(i) >= Model%min_lakeice*tem) then
+              if (fice(i) >= Model%min_lakeice) then
                 icy(i) = .true.
-                fice(i) = fice(i)/tem  ! fice is fraction of ocean/lake
               else
                 fice(i) = zero
               endif
             endif
+            if (fice(i) < one) then
+              wet(i)=.true. ! some open ocean/lake water exists
+              if (.not. Model%cplflx) Sfcprop%tsfco(i) = max(Sfcprop%tsfco(i), Sfcprop%tisfc(i), tgice)
+            end if
           else
             fice(i) = zero
-          endif
-                                        ! ocean/lake area that is not frozen
-          if (tem-fice(i) > epsln) then
-            wet(i) = .true.             ! there is some open water!
-            if (.not. Model%cplflx) Sfcprop%tsfco(i) = max(Sfcprop%tsfco(i), Sfcprop%tisfc(i), tgice)
-!           if (icy(i)) Sfcprop%tsfco(i) = max(Sfcprop%tsfco(i), tgice)
-!           if (icy(i)) Sfcprop%tsfco(i) = max(Sfcprop%tisfc(i), tgice)
           endif
         enddo
       else
@@ -1524,15 +1509,15 @@ module module_physics_driver
 
         if (Model%frac_grid) then
           do i=1,im
-            tem = one - Sfcprop%fice(i) - frland(i)
+            tem = (one - frland(i)) * fice(i) ! tem = ice fraction wrt whole cell
             if (flag_cice(i)) then
               adjsfculw(i) = adjsfculw3(i,1) * frland(i)                 &
-                           + Coupling%ulwsfcin_cpl(i) * Sfcprop%fice(i)  &
-                           + adjsfculw3(i,3) * tem
+                           + Coupling%ulwsfcin_cpl(i) * tem              &
+                           + adjsfculw3(i,3) * (one - frland(i) - tem)
             else
               adjsfculw(i) = adjsfculw3(i,1) * frland(i)                 &
-                           + adjsfculw3(i,2) * Sfcprop%fice(i)           &
-                           + adjsfculw3(i,3) * tem
+                           + adjsfculw3(i,2) * tem                       &
+                           + adjsfculw3(i,3) * (one - frland(i) - tem)
             endif
           enddo
         else
@@ -1540,16 +1525,16 @@ module module_physics_driver
             if (dry(i)) then                     ! all land
               adjsfculw(i) = adjsfculw3(i,1)
             elseif (icy(i)) then                 ! ice (and water)
-              tem = one - Sfcprop%fice(i)
+              tem = one - fice(i)
               if (flag_cice(i)) then
                 if (wet(i) .and. adjsfculw3(i,3) /= huge) then
-                  adjsfculw(i) = Coupling%ulwsfcin_cpl(i)*Sfcprop%fice(i) + adjsfculw3(i,3)*tem
+                  adjsfculw(i) = Coupling%ulwsfcin_cpl(i)*fice(i) + adjsfculw3(i,3)*tem
                 else
                   adjsfculw(i) = Coupling%ulwsfcin_cpl(i)
                 endif
               else
                 if (wet(i) .and. adjsfculw3(i,3) /= huge) then
-                  adjsfculw(i) = adjsfculw3(i,2)*Sfcprop%fice(i) + adjsfculw3(i,3)*tem
+                  adjsfculw(i) = adjsfculw3(i,2)*fice(i) + adjsfculw3(i,3)*tem
                 else
                   adjsfculw(i) = adjsfculw3(i,2)
                 endif
@@ -1663,13 +1648,14 @@ module module_physics_driver
         sbsno(i)        = zero
         snowc(i)        = zero
         snohf(i)        = zero
+        !## CCPP ##* GFS_surface_generic.F90/GFS_surface_generic_pre_run
         Diag%zlvl(i)    = Statein%phil(i,1) * onebg
         Diag%smcwlt2(i) = zero
         Diag%smcref2(i) = zero
-
         wind(i)         = max(sqrt(Statein%ugrs(i,1)*Statein%ugrs(i,1) + &
                                    Statein%vgrs(i,1)*Statein%vgrs(i,1))  &
                         + max(zero, min(Tbd%phy_f2d(i,Model%num_p2d), 30.0)), one)
+        !*## CCPP ##
       enddo
 !*## CCPP ##
 
@@ -1913,6 +1899,30 @@ module module_physics_driver
 
         endif !lsm
 
+        !! Strictly speaking, this is not required. But when
+        !! hunting for bit-for-bit differences, updating the
+        !! subsurface variables in the Sfcprop DDT makes
+        !! life a lot easier
+        !if (Model%frac_grid) then
+        !  do k=1,lsoil
+        !    do i=1,im
+        !      if (dry(i)) then
+        !        Sfcprop%smc(i,k) = smsoil(i,k)
+        !        Sfcprop%stc(i,k) = stsoil(i,k)
+        !        Sfcprop%slc(i,k) = slsoil(i,k)
+        !      endif
+        !    enddo
+        !  enddo
+        !else
+        !  do k=1,lsoil
+        !    do i=1,im
+        !      Sfcprop%smc(i,k) = smsoil(i,k)
+        !      Sfcprop%stc(i,k) = stsoil(i,k)
+        !      Sfcprop%slc(i,k) = slsoil(i,k)
+        !    enddo
+        !  enddo
+        !endif
+
 !       if (lprnt) write(0,*)' tseabeficemodel =',Sfcprop%tsfc(ipr),' me=',me   &
 !    &,   ' kdt=',kdt,' tsfc32=',tsfc3(ipr,2),' fice=',fice(ipr)                &
 !    &,' stsoil=',stsoil(ipr,:)
@@ -1935,8 +1945,9 @@ module module_physics_driver
            (im, Statein%tgrs(:,1),                                       &
             Statein%qgrs(:,1,1),  cd3(:,2), cdq3(:,2),                   &
             Statein%prsl(:,1),    wind,                                  &
-            flag_cice, flag_iter, dqsfc_cice, dtsfc_cice,                &
-            dusfc_cice, dvsfc_cice,                                      &
+            flag_cice, flag_iter,                                        &
+            Coupling%dqsfcin_cpl, Coupling%dtsfcin_cpl,                  &
+            Coupling%dusfcin_cpl, Coupling%dvsfcin_cpl,                  &
 !  ---  outputs:
             qss3(:,2), cmm3(:,2), chh3(:,2), evap3(:,2), hflx3(:,2),     &
             stress3(:,2))
@@ -2002,9 +2013,9 @@ module module_physics_driver
         do i=1, im
 !
 ! Three-way composites (fields from sfc_diff)
-          txl = Sfcprop%landfrac(i)
-          txi = Sfcprop%fice(i)                 ! here Sfcprop%fice is grid fraction that is ice
-          txo = one - txl - txi
+          txl = frland(i)
+          txi = fice(i)*(one - frland(i)) ! txi = ice fraction wrt whole cell
+          txo = max(zero, one - txl - txi)
           Sfcprop%zorl(i)   = txl*zorl3(i,1)   + txi*zorl3(i,2)   + txo*zorl3(i,3)
           cd(i)             = txl*cd3(i,1)     + txi*cd3(i,2)     + txo*cd3(i,3)
           cdq(i)            = txl*cdq3(i,1)    + txi*cdq3(i,2)    + txo*cdq3(i,3)
@@ -2062,8 +2073,7 @@ module module_physics_driver
           if (.not. flag_cice(i)) then
             if (islmsk(i) == 2) then                           ! return updated lake ice thickness & concentration to global array
               Sfcprop%hice(i)  = zice(i)
-!             Sfcprop%fice(i)  = fice(i) * Sfcprop%lakefrac(i) ! fice is fraction of lake area that is frozen
-              Sfcprop%fice(i)  = fice(i) * (one-Sfcprop%landfrac(i)) ! fice is fraction of wet area that is frozen
+              Sfcprop%fice(i)  = fice(i) 
               Sfcprop%tisfc(i) = tice(i)
             else                                               ! this would be over open ocean or land (no ice fraction)
               Sfcprop%hice(i)  = zero
@@ -2108,24 +2118,19 @@ module module_physics_driver
           ep1d(i)           = ep1d3(i,k)
           Sfcprop%weasd(i)  = weasd3(i,k)
           Sfcprop%snowd(i)  = snowd3(i,k)
-
           evap(i)           = evap3(i,k)
           hflx(i)           = hflx3(i,k)
           qss(i)            = qss3(i,k)
           Sfcprop%tsfc(i)   = tsfc3(i,k)
 
-          Diag%cmm(i)       = cmm3(i,k)
-          Diag%chh(i)       = chh3(i,k)
-
           Sfcprop%zorll(i)  = zorl3(i,1)
           Sfcprop%zorlo(i)  = zorl3(i,3)
 
           if (flag_cice(i) .and. wet(i)) then    ! this was already done for lake ice in sfc_sice
-            txi = Sfcprop%fice(i)
+            txi = fice(i)
             txo = one - txi
             evap(i)         = txi * evap3(i,2) + txo * evap3(i,3)
             hflx(i)         = txi * hflx3(i,2) + txo * hflx3(i,3)
-!           Sfcprop%tsfc(i) = txi * tice(i)    + txo * tsfc3(i,3)
             Sfcprop%tsfc(i) = txi * tsfc3(i,2) + txo * tsfc3(i,3)
           else                            ! return updated lake ice thickness & concentration to global array
             if (islmsk(i) == 2) then
@@ -2284,7 +2289,7 @@ module module_physics_driver
            endif
 
 ! Compute dew point, first using vapor pressure
-           tem = max(Statein%pgr(i) * Sfcprop%q2m(i) / ( con_eps - con_epsm1 * Sfcprop%q2m(i)), 1.e-8)
+           tem = max(Statein%pgr(i) * Sfcprop%q2m(i) / ( con_eps - con_epsm1 * Sfcprop%q2m(i)), qmin)
            Diag%dpt2m(i) = 243.5 / ( ( 17.67 / log(tem/611.2) ) - one) + 273.14
         enddo
 
@@ -2821,7 +2826,7 @@ module module_physics_driver
 !## CCPP ##* GFS_PBL_generic.F90/GFS_PBL_generic_post_run
       if (Model%cplchm) then
         do i = 1, im
-          tem1 = max(Diag%q1(i), 1.e-8)
+          tem1 = max(Diag%q1(i), qmin)
           tem  = Statein%prsl(i,1) / (con_rd*Diag%t1(i)*(one+con_fvirt*tem1))
           Coupling%ushfsfci(i) = -con_cp * tem * hflx(i) ! upward sensible heat flux
         enddo
@@ -2843,34 +2848,29 @@ module module_physics_driver
       if (Model%cplflx) then
         do i=1,im
           if (Sfcprop%oceanfrac(i) > zero) then               ! Ocean only, NO LAKES
-            if (fice(i) == Sfcprop%oceanfrac(i)) then ! use results from CICE
-              Coupling%dusfci_cpl(i) = dusfc_cice(i)
-              Coupling%dvsfci_cpl(i) = dvsfc_cice(i)
-              Coupling%dtsfci_cpl(i) = dtsfc_cice(i)
-              Coupling%dqsfci_cpl(i) = dqsfc_cice(i)
-
-            elseif (wet(i)) then              ! use stress_ocean from sfc_diff for opw component at mixed point
-              if (icy(i) .or. dry(i)) then
-                tem1 = max(Diag%q1(i), 1.e-8)
-                rho = Statein%prsl(i,1) / (con_rd*Diag%t1(i)*(one+con_fvirt*tem1))
-                if (wind(i) > zero) then
-                  tem = - rho * stress3(i,3) / wind(i)
-                  Coupling%dusfci_cpl(i) = tem * Statein%ugrs(i,1)   ! U-momentum flux
-                  Coupling%dvsfci_cpl(i) = tem * Statein%vgrs(i,1)   ! V-momentum flux
-                else
-                  Coupling%dusfci_cpl(i) = zero
-                  Coupling%dvsfci_cpl(i) = zero
-                endif
-                Coupling%dtsfci_cpl(i) = con_cp   * rho * hflx3(i,3) ! sensible heat flux over open ocean
-                Coupling%dqsfci_cpl(i) = con_hvap * rho * evap3(i,3) ! latent heat flux over open ocean
-!     if (lprnt .and. i == ipr) write(0,*)' hflx33=',hflx3(i,3),' evap33=',evap3(i,3), &
-!    ' con_cp=',con_cp,' rho=',rho,' con_hvap=',con_hvap
-              else                                                   ! use results from PBL scheme for 100% open ocean
-                Coupling%dusfci_cpl(i) = dusfc1(i)
-                Coupling%dvsfci_cpl(i) = dvsfc1(i)
-                Coupling%dtsfci_cpl(i) = dtsfc1(i)
-                Coupling%dqsfci_cpl(i) = dqsfc1(i)
+            if (Sfcprop%fice(i) > one - epsln) then ! no open water, thus use results from CICE
+              Coupling%dusfci_cpl(i) = Coupling%dusfcin_cpl(i)
+              Coupling%dvsfci_cpl(i) = Coupling%dvsfcin_cpl(i)
+              Coupling%dtsfci_cpl(i) = Coupling%dtsfcin_cpl(i)
+              Coupling%dqsfci_cpl(i) = Coupling%dqsfcin_cpl(i)
+            elseif (icy(i) .or. dry(i)) then ! use stress_ocean from sfc_diff for opw component at mixed point
+              tem1 = max(Diag%q1(i), qmin)
+              rho = Statein%prsl(i,1) / (con_rd*Diag%t1(i)*(one+con_fvirt*tem1))
+              if (wind(i) > zero) then
+                tem = - rho * stress3(i,3) / wind(i)
+                Coupling%dusfci_cpl(i) = tem * Statein%ugrs(i,1)   ! U-momentum flux
+                Coupling%dvsfci_cpl(i) = tem * Statein%vgrs(i,1)   ! V-momentum flux
+              else
+                Coupling%dusfci_cpl(i) = zero
+                Coupling%dvsfci_cpl(i) = zero
               endif
+              Coupling%dtsfci_cpl(i) = con_cp   * rho * hflx3(i,3) ! sensible heat flux over open ocean
+              Coupling%dqsfci_cpl(i) = con_hvap * rho * evap3(i,3) ! latent heat flux over open ocean
+            else                                                   ! use results from PBL scheme for 100% open ocean
+              Coupling%dusfci_cpl(i) = dusfc1(i)
+              Coupling%dvsfci_cpl(i) = dvsfc1(i)
+              Coupling%dtsfci_cpl(i) = dtsfc1(i)
+              Coupling%dqsfci_cpl(i) = dqsfc1(i)
             endif
 
             Coupling%dusfc_cpl (i) = Coupling%dusfc_cpl(i) + Coupling%dusfci_cpl(i) * dtf
@@ -3431,20 +3431,20 @@ module module_physics_driver
           do k = 1, levs
             do i = 1, im
               tem  = Statein%prsl(i,k) * tx1(i)
-              tem1 = min(max((tem-tx3(i))*slope_mg, -20.0), 20.0)
+              tem1 = min(max((tem-tx3(i))*slope_mg, -20.0d0), 20.0d0)
 !
 !     Using crtrh(2) and crtrh(3) from the namelist instead of 0.3 and 0.2
 !     and crtrh(1) represents pbl top critical relative humidity
-              tem2 = min(max((tx4(i)-tem)*slope_upmg, -20.0), 20.0)
+              tem2 = min(max((tx4(i)-tem)*slope_upmg, -20.0d0), 20.0d0)
 
               if (islmsk(i) > 0) then
                 tem1 = one / (one+exp(tem1+tem1))
               else
-                tem1 = 2.0 / (one+exp(tem1+tem1))
+                tem1 = 2.0d0 / (one+exp(tem1+tem1))
               endif
               tem2 = one / (one+exp(tem2))
 
-              rhc(i,k) = min(rhc_max, max(0.7, one-tx2(i)*tem1*tem2))
+              rhc(i,k) = min(rhc_max, max(0.7d0, one-tx2(i)*tem1*tem2))
             enddo
           enddo
         else
@@ -3458,7 +3458,7 @@ module module_physics_driver
                 tem    = Model%crtrh(2) - (Model%crtrh(2)-Model%crtrh(3))     &
                                         * (Statein%prslk(i,kk)-Statein%prslk(i,k)) / Statein%prslk(i,kk)
               endif
-              tem      = rhc_max * work1(i) + tem * work2(i)
+              if (rhc_max > tem) tem = rhc_max * work1(i) + tem * work2(i)
               rhc(i,k) = max(zero, min(one, tem))
             enddo
           enddo
@@ -3873,7 +3873,7 @@ module module_physics_driver
 !    &,              '   cs_conv', grid%xlon(1:im), grid%xlat(1:im))
 
 !## CCPP ##* Not in the CCPP. TODO: Does this need to be in cs_conv_post_run?
-            rain1(:) = rain1(:) * (dtp*0.001)
+            rain1(:) = rain1(:) * (dtp*con_p001)
 !## CCPP ##* cs_conv.F90/cs_conv_post_run
             if (Model%do_aw) then
               do k=1,levs
@@ -5117,10 +5117,10 @@ module module_physics_driver
                                            reset)
           tem = dtp * con_p001 / con_day
           do i = 1, im
-!           rain0(i,1) = max(con_d00, rain0(i,1))
-!           snow0(i,1) = max(con_d00, snow0(i,1))
-!           ice0(i,1)  = max(con_d00, ice0(i,1))
-!           graupel0(i,1)  = max(con_d00, graupel0(i,1))
+!           rain0(i,1)     = max(zero, rain0(i,1))
+!           snow0(i,1)     = max(zero, snow0(i,1))
+!           ice0(i,1)      = max(zero, ice0(i,1))
+!           graupel0(i,1)  = max(zero, graupel0(i,1))
             if (rain0(i,1)*tem < rainmin) then
                rain0(i,1) = zero
             endif
@@ -5284,14 +5284,14 @@ module module_physics_driver
         enddo
 !     write(1000+me,*)' rain1=',rain1(4),' temrain1=',temrain1(i)*0.001
         do i = 1,im
-          rain1(i) = max(rain1(i) - temrain1(i)*0.001, 0.0_kind_phys)
+          rain1(i) = max(rain1(i) - temrain1(i)*con_p001, zero)
         enddo
       endif
 
 !*## CCPP ##
 !## CCPP ##* GFS_MP_generic.F90/GFS_MP_generic_post_run
       Diag%rain(:) = Diag%rainc(:) + frain * rain1(:)  ! total rain per timestep
-      
+
 !  ---  get the amount of different precip type for Noah MP
 !  ---  convert from m/dtp to mm/s
       if (Model%lsm==Model%lsm_noahmp) then
@@ -5301,18 +5301,18 @@ module module_physics_driver
           ! It appears that Diag%rain and Diag%rainc are on the dynamics time step,
           ! but Diag%snow,graupel,ice are on the physics time step? This doesn't
           ! matter as long as dtp=dtf (frain=1).
-          tem = 1.0 / (dtp*con_p001)
+          tem = one / (dtp*con_p001)
           Sfcprop%draincprv(:)   = tem * Diag%rainc(:)
           Sfcprop%drainncprv(:)  = tem * (frain * rain1(:))
           Sfcprop%dsnowprv(:)    = tem * Diag%snow(:)
           Sfcprop%dgraupelprv(:) = tem * Diag%graupel(:)
           Sfcprop%diceprv(:)     = tem * Diag%ice(:)
         else
-          Sfcprop%draincprv(:)   = 0.0
-          Sfcprop%drainncprv(:)  = 0.0
-          Sfcprop%dsnowprv(:)    = 0.0
-          Sfcprop%dgraupelprv(:) = 0.0
-          Sfcprop%diceprv(:)     = 0.0
+          Sfcprop%draincprv(:)   = zero
+          Sfcprop%drainncprv(:)  = zero
+          Sfcprop%dsnowprv(:)    = zero
+          Sfcprop%dgraupelprv(:) = zero
+          Sfcprop%diceprv(:)     = zero
         endif
       end if !  if (Model%lsm == Model%lsm_noahmp)
       
@@ -5417,7 +5417,7 @@ module module_physics_driver
         do i = 1, im
           Sfcprop%tprcp(i)  = max(zero, Diag%rain(i) )! clu: rain -> tprcp
           Sfcprop%srflag(i) = zero                    ! clu: default srflag as 'rain' (i.e. 0)
-          if (Sfcprop%tsfc(i) >= 273.15) then
+          if (Sfcprop%tsfc(i) >= 273.15d0) then
             crain = Diag%rainc(i)
             csnow = zero
           else
@@ -5459,7 +5459,7 @@ module module_physics_driver
           do i = 1, im
             Sfcprop%tprcp(i)  = max(zero, Diag%rain(i) ) ! clu: rain -> tprcp
             Sfcprop%srflag(i) = zero                     ! clu: default srflag as 'rain' (i.e. 0)
-            if (t850(i) <= 273.16) then
+            if (t850(i) <= 273.16d0) then
               Sfcprop%srflag(i) = one                    ! clu: set srflag to 'snow' (i.e. 1)
             endif
           enddo
@@ -5471,10 +5471,10 @@ module module_physics_driver
 
       if (Model%cplflx .or. Model%cplchm) then
         do i = 1, im
-          Coupling%rain_cpl(i) = Coupling%rain_cpl(i) &
-                               + Diag%rain(i) * (one-Sfcprop%srflag(i))
-          Coupling%snow_cpl(i) = Coupling%snow_cpl(i) &
-                               + Diag%rain(i) * Sfcprop%srflag(i)
+          Tbd%dsnow_cpl(i)= Diag%rain(i) * Sfcprop%srflag(i)
+          Tbd%drain_cpl(i)= Diag%rain(i) - Tbd%dsnow_cpl(i)
+          Coupling%rain_cpl(i) = Coupling%rain_cpl(i) + Tbd%drain_cpl(i)
+          Coupling%snow_cpl(i) = Coupling%snow_cpl(i) + Tbd%dsnow_cpl(i)
         enddo
       endif
 
@@ -5565,15 +5565,6 @@ module module_physics_driver
       if (Model%do_sppt) then
 !--- radiation heating rate
         Tbd%dtdtr(1:im,:) = Tbd%dtdtr(1:im,:) + dtdtc(1:im,:)*dtf
-        do i = 1, im
-          if (t850(i) > 273.16) then
-!--- change in change in rain precip
-             Tbd%drain_cpl(i) = Diag%rain(i) - Tbd%drain_cpl(i)
-          else
-!--- change in change in snow precip
-             Tbd%dsnow_cpl(i) = Diag%rain(i) - Tbd%dsnow_cpl(i)
-          endif
-        enddo
       endif
 !*## CCPP ##
 !## CCPP ##* This block is not in the CCPP since it is not needed in the CCPP.

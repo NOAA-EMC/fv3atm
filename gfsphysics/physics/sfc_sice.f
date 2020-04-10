@@ -135,6 +135,7 @@
       real(kind=kind_phys), parameter :: timin = 173.0d0    ! minimum temperature allowed for snow/ice
       real(kind=kind_phys), parameter :: albfw = 0.06d0     ! albedo for lead
       real(kind=kind_phys), parameter :: dsi   = one/0.33d0
+      real(kind=kind_phys), parameter :: qmin  = 1.0d-8
 
 !  ---  inputs:
       integer, intent(in) :: im, km, ipr
@@ -219,12 +220,12 @@
 !         dlwflx has been given a negative sign for downward longwave
 !         sfcnsw is the net shortwave flux (direction: dn-up)
 
-          q0        = max(q1(i), 1.0e-8)
+          q0        = max(q1(i), qmin)
 !         tsurf(i)  = tskin(i)
           theta1(i) = t1(i) * prslki(i)
           rho(i)    = prsl1(i) / (rd*t1(i)*(one+rvrdm1*q0))
           qs1       = fpvs(t1(i))
-          qs1       = max(eps*qs1 / (prsl1(i) + epsm1*qs1), 1.e-8)
+          qs1       = max(eps*qs1 / (prsl1(i) + epsm1*qs1), qmin)
           q0        = min(qs1, q0)
 
           if (fice(i) < cimin) then
@@ -234,7 +235,7 @@
             tskin(i)= tgice
             print *,'fix ice fraction: reset it to:', fice(i)
           endif
-          ffw(i)    = 1.0 - fice(i)
+          ffw(i)    = one - fice(i)
 
           qssi = fpvs(tice(i))
           qssi = eps*qssi / (ps(i) + epsm1*qssi)
@@ -264,7 +265,7 @@
 !         evap(i)  = fice(i)*evapi(i) + ffw(i)*evapw(i)
 
           snetw(i) = sfcdsw(i) * (one - albfw)
-          snetw(i) = min(3.0*sfcnsw(i)/(one+2.0d0*ffw(i)), snetw(i))
+          snetw(i) = min(3.0d0*sfcnsw(i)/(one+2.0d0*ffw(i)), snetw(i))
           sneti(i) = (sfcnsw(i) - ffw(i)*snetw(i)) / fice(i)
 
           t12 = tice(i) * tice(i)
@@ -356,10 +357,10 @@
 
 !  --- ...  convert snow depth back to mm of water equivalent
 
-          weasd(i)  = snowd(i) * 1000.0
+          weasd(i)  = snowd(i) * 1000.0d0
           snwdph(i) = weasd(i) * dsi             ! snow depth in mm
 
-          tem     = 1.0 / rho(i)
+          tem     = one / rho(i)
           hflx(i) = hflx(i) * tem * cpinv
           evap(i) = evap(i) * tem * hvapi
         endif
@@ -458,7 +459,7 @@
       real (kind=kind_phys), parameter :: dili = di*li
       real (kind=kind_phys), parameter :: dsli = ds*li
       real (kind=kind_phys), parameter :: ki4  = ki*4.0d0
-      real (kind=kind_phys), parameter :: zero = 0.0d0, one  = 1.0d0
+      real (kind=kind_phys), parameter :: zero = 0.0d0, one = 1.0d0
 
 !  ---  inputs:
       integer, intent(in) :: im, kmi, ipr

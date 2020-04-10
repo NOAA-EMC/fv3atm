@@ -1961,7 +1961,7 @@
           enddo
 
           if (Model%swhtr) then
-            Radtend%swhc(:,:) = 0
+            Radtend%swhc(:,:) = 0.0
           endif
 
         endif                  ! end_if_nday
@@ -1985,7 +1985,7 @@
         call setemis (Grid%xlon, Grid%xlat, Sfcprop%slmsk,         &        !  ---  inputs
                       Sfcprop%snowd, Sfcprop%sncovr, Sfcprop%zorl, &
                       tsfg, tsfa, Sfcprop%hprime(:,1), IM,         &
-                      Radtend%semis)                                              !  ---  outputs
+                      Radtend%semis)                                        !  ---  outputs
 !*## CCPP ##
 
 !>  - Call module_radlw_main::lwrad(), to compute LW heating rates and

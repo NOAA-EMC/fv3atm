@@ -74,9 +74,10 @@
       implicit none
 !
 !  ---  constant parameters:
-      real (kind=kind_phys), parameter :: cpinv  = 1.0/cp               &
-     &,                                   hvapi  = 1.0/hvap             &
-     &,                                   elocp  = hvap/cp
+      real (kind=kind_phys), parameter :: one   = 1.0d0, zero = 0.0d0   &
+     &,                                   cpinv = one/cp                &
+     &,                                   hvapi = one/hvap              &
+     &,                                   elocp = hvap/cp, qmin = 1.0d-8
 
 !  ---  inputs:
       integer, intent(in) :: im
@@ -92,7 +93,7 @@
 
 !  ---  locals:
 
-      real (kind=kind_phys) :: q0, qss, rch, rho, tem
+      real (kind=kind_phys) :: q0, qss, rho, tem
 
       integer :: i
 
@@ -109,33 +110,27 @@
 !           rho is density, qss is sat. hum. at surface
 
         if ( flag(i) ) then
-          q0       = max( q1(i), 1.0e-8 )
-          rho      = prsl1(i) / (rd*t1(i)*(1.0 + rvrdm1*q0))
+          q0       = max(q1(i), qmin)
+          rho      = prsl1(i) / (rd*t1(i)*(one + rvrdm1*q0))
 
           qss      = fpvs( tskin(i) )
           qss      = eps*qss / (ps(i) + epsm1*qss)
 
-          evap(i)  = 0.0
-          hflx(i)  = 0.0
-          ep(i)    = 0.0
-          gflux(i) = 0.0
-
 !  --- ...    rcp  = rho cp ch v
 
-          rch      = rho * cp * ch(i) * wind(i)
+          tem      = ch(i) * wind(i)
           cmm(i)   = cm(i) * wind(i)
-          chh(i)   = rho * ch(i) * wind(i)
+          chh(i)   = rho * tem
 
 !  --- ...  sensible and latent heat flux over open water
 
-          hflx(i)  = rch * (tskin(i) - t1(i) * prslki(i))
+          hflx(i)  = tem * (tskin(i) - t1(i) * prslki(i))
 
-          evap(i)  = elocp*rch * (qss - q0)
+          evap(i)  = tem * (qss - q0)
+
+          ep(i)    = evap(i)
           qsurf(i) = qss
-
-          tem      = 1.0 / rho
-          hflx(i)  = hflx(i) * tem * cpinv
-          evap(i)  = evap(i) * tem * hvapi
+          gflux(i) = zero
         endif
       enddo
 !

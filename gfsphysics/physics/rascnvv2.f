@@ -199,7 +199,8 @@
      &,       CUMFRC
 
       real(kind=kind_phys), parameter :: frac=0.5,    crtmsf=0.0        &
-     &,                                  rhfacs=0.70, rhfacl=0.70       &
+     &,                                  rhfacs=0.75, rhfacl=0.75       &
+!    &,                                  rhfacs=0.70, rhfacl=0.70       &
      &,                                  face=5.0,    delx=10000.0      &
      &,                                  ddfac=face*delx*0.001          &
      &,                                  max_neg_bouy=0.15
@@ -870,7 +871,7 @@
 !           qli_l(ib:k) = qli(ib:k)
 !           qii_l(ib:k) = qii(ib:k)
 !         endif
-!         rainp = rain
+          rainp = rain
 
           CALL CLOUD(K,  KP1, IB, ntrc, kblmx, kblmn                    &
      &,              FRAC,  MAX_NEG_BOUY, vsmooth, do_aw                &
@@ -1312,7 +1313,7 @@
 !    &,                    almin1, almin2
 
       INTEGER I, L,  N,  KD1, II, idh, lcon                             &
-     &,       IT, KM1, KTEM, KK, KK1, LM1, LL, LP1, kbls, kmxh
+     &,       IT, KM1, KTEM, KK, KK1, LM1, LL, LP1, kmxh
      &,       kblh, kblm, kblpmn, kmax, kmaxm1, kmaxp1, klcl, kmin, kmxb
 !
 !***********************************************************************
@@ -1343,18 +1344,18 @@
       PRL(KP1) = PRS(KP1)
 !
       DO L=KD,K
-        RNN(L) = zero
-        ZET(L) = zero
-        XI(L)  = zero
+        RNN(L)   = zero
+        ZET(L)   = zero
+        XI(L)    = zero
 !
-        TOL(L) = TOI(L)
-        QOL(L) = QOI(L)
-        PRL(L) = PRS(L)
-        CLL(L) = QLI(L)
-        CIL(L) = QII(L)
-        BUY(L) = zero
+        TOL(L)   = TOI(L)
+        QOL(L)   = QOI(L)
+        PRL(L)   = PRS(L)
+        CLL(L)   = QLI(L)
+        CIL(L)   = QII(L)
+        BUY(L)   = zero
 
-        wvl(l) = zero
+        wvl(l)   = zero
       ENDDO
       wvl(kp1) = zero
 !
@@ -1463,8 +1464,14 @@
 !
 !     if (lprnt) write(0,*) ' calkbl=',calkbl
 
-      hcrit = hcritd
-      if (sgcs(kd) > 0.65) hcrit = hcrits
+      if (sgcs(kd) < 0.5d0) then
+         hcrit = hcritd
+      elseif (sgcs(kd) > 0.65d0) then
+         hcrit = hcrits
+      else
+         hcrit = (hcrits*(sgcs(kd)-0.5d0) + hcritd*(0.65d0-sgcs(kd)))
+     &         * (1.0d0/0.15d0)
+      endif
       IF (CALKBL) THEN
          KTEM = MAX(KD+1, KBLMX)
          hmin = hol(k)
@@ -1522,7 +1529,7 @@
            enddo
          endif
        
-!     if(lprnt) write(0,*)' kbl=',kbl,' kbls=',kbls,' kmax=',kmax
+!     if(lprnt) write(0,*)' kbl=',kbl,' kmax=',kmax
 !
          klcl = kd1
          if (kmax > kd1) then
@@ -1533,7 +1540,7 @@
              endif
            enddo
          endif
-!        if(lprnt) write(0,*)' klcl=',klcl,' ii=',ii
+!        if(lprnt) write(0,*)' klcl=',klcl
 !        if (klcl == kd .or. klcl < ktem) return
 
 !        This is to handle mid-level convection from quasi-uniform h
@@ -1588,17 +1595,17 @@
 
 !     if(lprnt)write(0,*)' 1st kbl=',kbl,' kblmx=',kblmx,' kd=',kd
 !     if(lprnt)write(0,*)' tx3=',tx3,' tx1=',tx1,' tem=',tem
-!    1,               ' hcrit=',hcrit
+!    &,               ' hcrit=',hcrit,' kblmn=',kblmn
 
       ELSE
          KBL = KPBL
-!     if(lprnt)write(0,*)' 2nd kbl=',kbl
+!      if(lprnt)write(0,*)' 2nd kbl=',kbl
       ENDIF
 
 !     if(lprnt)write(0,*)' after CALKBL l=',l,' hol=',hol(l)
-!    1,               ' hst=',hst(l)
+!    &,                  ' hst=',hst(l)
 !
-      KBL = min(kmax,MAX(KBL,KD+2))
+      KBL = min(kmax, MAX(KBL,KD+2))
       KB1 = KBL - 1
 !!
 !     if (lprnt) write(0,*)' kbl=',kbl,' prlkbl=',prl(kbl),prl(kp1)
@@ -2186,8 +2193,8 @@
           qw00 = zero
           qi00 = zero
 
-!     if (lprnt) write(0,*)' returning to 777 : ii=',ii,' qw00=',qw00,qi00
-!    &,' clp=',clp,' hst(kd)=',hst(kd)
+!     if (lprnt) write(0,*)' returning to 777 : ii=',ii,' qw00=',qw00
+!    &, qi00, ' clp=',clp,' hst(kd)=',hst(kd)
 
           go to 777
         else
@@ -2664,6 +2671,7 @@
         else
           sigf(kd:k) = one
         endif
+
 !     if(lprnt) write(0,*)' for kd=',kd,'sigf=',sigf(kd:k)
 !
         avt = zero
@@ -2801,6 +2809,7 @@
 !        clfrac = max(ZERO, min(ONE,  rknob*clf(tem)*tem1))
 !        clfrac = max(ZERO, min(0.25, rknob*clf(tem)*tem1))
          clfrac = max(ZERO, min(half, rknob*clf(tem)*tem1))
+         cldfrd = clfrac
 
 !        if (lprnt) then
 !          write(0,*) ' cldfrd=',cldfrd,' amb=',amb,' clfrac=',clfrac
@@ -2854,20 +2863,17 @@
                tem4    = zero
                if (tx1 > zero)                                          &
      &         TEM4    = POTEVAP * (one - EXP( tx4*TX1**0.57777778 ) )
-!    &         TEM4    = POTEVAP * (1. - EXP( AFC*tx4*SQRT(TX1) ) )
                ACTEVAP = MIN(TX1, TEM4*CLFRAC)
 
 !     if(lprnt) write(0,*)' L=',L,' actevap=',actevap,' tem4=',tem4,
-!    &' clfrac='
-!    &,clfrac,' potevap=',potevap,'efac=',AFC*SQRT(TX1*TEM3)
-!    &,' tx1=',tx1
+!    &' clfrac=',clfrac,' potevap=',potevap,'tem4=',tem4
+!    &,' tx1=',tx1,' rhc_ls=',rhc_ls(l)
 
                if (tx1 < rainmin*dt) actevap = min(tx1, potevap)
 !
                tem4    = zero
                if (tx2 > zero)                                          &
      &         TEM4    = POTEVAP * (one - EXP( tx4*TX2**0.57777778 ) )
-!    &        TEM4    = POTEVAP * (1. - EXP( AFC*tx4*SQRT(TX2) ) )
                TEM4    = min(MIN(TX2, TEM4*CLDFRD), potevap-actevap)
                if (tx2 < rainmin*dt) tem4 = min(tx2, potevap-actevap)
 !
@@ -2894,7 +2900,7 @@
         ENDIF
 
 !     if (lprnt) write(0,*)' tx1=',tx1,' tx2=',tx2,' dof=',dof
-!    &,' cup=',cup*86400/dt,' amb=',amb
+!!   &,' cup=',cup*86400/dt,' amb=',amb
 !    &,' amb=',amb,' cup=',cup,' clfrac=',clfrac,' cldfrd=',cldfrd
 !    &,' ddft=',ddft,' kd=',kd,' kbl=',kbl,' k=',k
 !

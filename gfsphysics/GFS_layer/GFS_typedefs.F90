@@ -284,8 +284,8 @@ module GFS_typedefs
 #endif
     real (kind=kind_phys), pointer :: q2m    (:)   => null()  !< 2 meter humidity
 
-! -- In/Out for Noah MP 
-    real (kind=kind_phys), pointer  :: snowxy (:)  => null() !
+! -- In/Out for Noah MP
+    real (kind=kind_phys), pointer :: snowxy  (:)  => null()  !<
     real (kind=kind_phys), pointer :: tvxy    (:)  => null()  !< veg temp
     real (kind=kind_phys), pointer :: tgxy    (:)  => null()  !< ground temp
     real (kind=kind_phys), pointer :: canicexy(:)  => null()  !<
@@ -312,7 +312,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: xlaixy  (:)  => null()  !<
     real (kind=kind_phys), pointer :: taussxy (:)  => null()  !<
     real (kind=kind_phys), pointer :: smcwtdxy(:)  => null()  !<
-    real (kind=kind_phys), pointer :: deeprechxy(:)  => null()  !<
+    real (kind=kind_phys), pointer :: deeprechxy(:)=> null()  !<
     real (kind=kind_phys), pointer :: rechxy  (:)  => null()  !<
 
     real (kind=kind_phys), pointer :: snicexy   (:,:) => null()  !<
@@ -709,7 +709,8 @@ module GFS_typedefs
 
     !--- Thompson's microphysical parameters
     logical              :: ltaerosol       !< flag for aerosol version
-    logical              :: lradar          !< flag for radar reflectivity 
+    logical              :: lradar          !< flag for radar reflectivity
+    real(kind=kind_phys) :: nsradar_reset   !< seconds between resetting radar reflectivity calculation
     real(kind=kind_phys) :: ttendlim        !< temperature tendency limiter per time step in K/s
 
     !--- GFDL microphysical paramters
@@ -1785,6 +1786,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: qss_ice(:)         => null()  !<
     real (kind=kind_phys), pointer      :: qss_land(:)        => null()  !<
     real (kind=kind_phys), pointer      :: qss_ocean(:)       => null()  !<
+    logical                             :: radar_reset                   !<
     real (kind=kind_phys)               :: raddt                         !<
     real (kind=kind_phys), pointer      :: rainmp(:)          => null()  !<
     real (kind=kind_phys), pointer      :: raincd(:)          => null()  !<
@@ -1851,11 +1853,6 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: tsurf_land(:)      => null()  !<
     real (kind=kind_phys), pointer      :: tsurf_ocean(:)     => null()  !<
     real (kind=kind_phys), pointer      :: ud_mf(:,:)         => null()  !<
-    real (kind=kind_phys), pointer      :: ulwsfc_cice(:)     => null()  !<
-    real (kind=kind_phys), pointer      :: dusfc_cice(:)      => null()  !<
-    real (kind=kind_phys), pointer      :: dvsfc_cice(:)      => null()  !<
-    real (kind=kind_phys), pointer      :: dqsfc_cice(:)      => null()  !<
-    real (kind=kind_phys), pointer      :: dtsfc_cice(:)      => null()  !<
     real (kind=kind_phys), pointer      :: uustar_ice(:)      => null()  !<
     real (kind=kind_phys), pointer      :: uustar_land(:)     => null()  !<
     real (kind=kind_phys), pointer      :: uustar_ocean(:)    => null()  !<
@@ -2580,7 +2577,7 @@ module GFS_typedefs
       Coupling%ca_turb   = clear_val
       Coupling%ca_shal   = clear_val
       Coupling%ca_rad    = clear_val
-      Coupling%ca_micro  = clear_val   
+      Coupling%ca_micro  = clear_val
       Coupling%cape      = clear_val
       Coupling%tconvtend = clear_val
       Coupling%qconvtend = clear_val
@@ -2781,11 +2778,11 @@ module GFS_typedefs
     real(kind=kind_phys) :: evpco             = 2.0d-5             !< [in] coeff for evaporation of largescale rain
     real(kind=kind_phys) :: wminco(2)         = (/1.0d-5,1.0d-5/)  !< [in] water and ice minimum threshold for Zhao
 !---Max hourly
-    real(kind=kind_phys) :: avg_max_length = 3600.              !< reset value in seconds for max hourly.
+    real(kind=kind_phys) :: avg_max_length = 3600.                 !< reset value in seconds for max hourly
 !--- Ferrier-Aligo microphysical parameters
 #ifdef CCPP
-    real(kind=kind_phys) :: rhgrd             = 0.98               !< fer_hires microphysics only     
-    logical              :: spec_adv          = .true.            !< Individual cloud species advected
+    real(kind=kind_phys) :: rhgrd             = 0.98               !< fer_hires microphysics only
+    logical              :: spec_adv          = .true.             !< Individual cloud species advected
 #endif
 !--- M-G microphysical parameters
     integer              :: fprcp             =  0                 !< no prognostic rain and snow (MG)
@@ -2823,6 +2820,7 @@ module GFS_typedefs
     !--- Thompson microphysical parameters
     logical              :: ltaerosol      = .false.            !< flag for aerosol version
     logical              :: lradar         = .false.            !< flag for radar reflectivity 
+    real(kind=kind_phys) :: nsradar_reset  = -999.0             !< seconds between resetting radar reflectivity calculation, set to <0 for every time step
     real(kind=kind_phys) :: ttendlim       = -999.0             !< temperature tendency limiter, set to <0 to deactivate
 
     !--- GFDL microphysical parameters
@@ -3119,7 +3117,8 @@ module GFS_typedefs
                                mg_do_graupel, mg_do_hail, mg_nccons, mg_nicons, mg_ngcons,  &
                                mg_ncnst, mg_ninst, mg_ngnst, sed_supersat, do_sb_physics,   &
                                mg_alf,   mg_qcmin, mg_do_ice_gmao, mg_do_liq_liu,           &
-                               ltaerosol, lradar, lrefres, ttendlim, lgfdlmprad,            &
+                               ltaerosol, lradar, nsradar_reset, lrefres, ttendlim,         &
+                               lgfdlmprad,                                                  &
                           !--- max hourly
                                avg_max_length,                                              &
                           !--- land/surface model control
@@ -3408,6 +3407,7 @@ module GFS_typedefs
 !--- Thompson MP parameters
     Model%ltaerosol        = ltaerosol
     Model%lradar           = lradar
+    Model%nsradar_reset    = nsradar_reset
     Model%ttendlim         = ttendlim
 !--- F-A MP parameters
 #ifdef CCPP
@@ -4201,7 +4201,10 @@ module GFS_typedefs
       if (Model%me == Model%master) print *,' Using Thompson double moment', &
                                           ' microphysics',' ltaerosol = ',Model%ltaerosol, &
                                           ' ttendlim =',Model%ttendlim, &
-                                          ' lradar =',Model%lradar,Model%num_p3d,Model%num_p2d
+                                          ' lradar =',Model%lradar, &
+                                          ' nsradar_reset =',Model%nsradar_reset, &
+                                          ' num_p3d =',Model%num_p3d, &
+                                          ' num_p2d =',Model%num_p2d
 
     else if (Model%imp_physics == Model%imp_physics_mg) then        ! Morrison-Gettelman Microphysics
       Model%npdf3d  = 0
@@ -4473,6 +4476,7 @@ module GFS_typedefs
         print *, ' Thompson microphysical parameters'
         print *, ' ltaerosol         : ', Model%ltaerosol
         print *, ' lradar            : ', Model%lradar
+        print *, ' nsradar_reset     : ', Model%nsradar_reset
         print *, ' lrefres           : ', Model%lrefres
         print *, ' ttendlim          : ', Model%ttendlim
         print *, ' '
@@ -4824,6 +4828,8 @@ module GFS_typedefs
     if ( Model%isubc_lw == 2 .or. Model%isubc_sw == 2 ) then
       allocate (Tbd%icsdsw (IM))
       allocate (Tbd%icsdlw (IM))
+      Tbd%icsdsw = zero
+      Tbd%icsdlw = zero
     endif
 
 !--- ozone and stratosphere h2o needs
@@ -4868,18 +4874,20 @@ module GFS_typedefs
     Tbd%acvb = clear_val
     Tbd%acvt = clear_val
 
+    if (Model%cplflx .or. Model%cplchm) then
+      allocate (Tbd%drain_cpl (IM))
+      allocate (Tbd%dsnow_cpl (IM))
+      Tbd%drain_cpl = clear_val
+      Tbd%dsnow_cpl = clear_val
+    endif
+
     if (Model%do_sppt) then
       allocate (Tbd%dtdtr     (IM,Model%levs))
       allocate (Tbd%dtotprcp  (IM))
       allocate (Tbd%dcnvprcp  (IM))
-      allocate (Tbd%drain_cpl (IM))
-      allocate (Tbd%dsnow_cpl (IM))
-
       Tbd%dtdtr     = clear_val
       Tbd%dtotprcp  = clear_val
       Tbd%dcnvprcp  = clear_val
-      Tbd%drain_cpl = clear_val
-      Tbd%dsnow_cpl = clear_val
     endif
 
     allocate (Tbd%phy_f2d  (IM,Model%ntot2d))
@@ -5418,8 +5426,8 @@ module GFS_typedefs
     Diag%u10max     = zero
     Diag%v10max     = zero
     Diag%spd10max   = zero
-!   Diag%rain       = zero
-!   Diag%rainc      = zero
+    Diag%rain       = zero
+    Diag%rainc      = zero
     Diag%ice        = zero
     Diag%snow       = zero
     Diag%graupel    = zero
@@ -5902,11 +5910,6 @@ module GFS_typedefs
     allocate (Interstitial%tsurf_land      (IM))
     allocate (Interstitial%tsurf_ocean     (IM))
     allocate (Interstitial%ud_mf           (IM,Model%levs))
-    allocate (Interstitial%ulwsfc_cice     (IM))
-    allocate (Interstitial%dusfc_cice      (IM))
-    allocate (Interstitial%dvsfc_cice      (IM))
-    allocate (Interstitial%dtsfc_cice      (IM))
-    allocate (Interstitial%dqsfc_cice      (IM))
     allocate (Interstitial%uustar_ice      (IM))
     allocate (Interstitial%uustar_land     (IM))
     allocate (Interstitial%uustar_ocean    (IM))
@@ -6429,11 +6432,6 @@ module GFS_typedefs
     Interstitial%tsurf_land      = huge
     Interstitial%tsurf_ocean     = huge
     Interstitial%ud_mf           = clear_val
-    Interstitial%ulwsfc_cice     = clear_val
-    Interstitial%dusfc_cice      = clear_val
-    Interstitial%dvsfc_cice      = clear_val
-    Interstitial%dtsfc_cice      = clear_val
-    Interstitial%dqsfc_cice      = clear_val
     Interstitial%uustar_ice      = huge
     Interstitial%uustar_land     = huge
     Interstitial%uustar_ocean    = huge
@@ -6518,6 +6516,12 @@ module GFS_typedefs
     !
     ! Set flag for resetting maximum hourly output fields
     Interstitial%reset = mod(Model%kdt-1, nint(Model%avg_max_length/Model%dtp)) == 0
+    ! Set flag for resetting radar reflectivity calculation
+    if (Model%nsradar_reset<0) then
+      Interstitial%radar_reset = .true.
+    else
+      Interstitial%radar_reset = mod(Model%kdt-1, nint(Model%nsradar_reset/Model%dtp)) == 0
+    end if
     !
   end subroutine interstitial_phys_reset
 
@@ -6705,6 +6709,7 @@ module GFS_typedefs
     write (0,*) 'sum(Interstitial%qss_ice         ) = ', sum(Interstitial%qss_ice         )
     write (0,*) 'sum(Interstitial%qss_land        ) = ', sum(Interstitial%qss_land        )
     write (0,*) 'sum(Interstitial%qss_ocean       ) = ', sum(Interstitial%qss_ocean       )
+    write (0,*) 'Interstitial%radar_reset           = ', Interstitial%radar_reset
     write (0,*) 'Interstitial%raddt                 = ', Interstitial%raddt
     write (0,*) 'sum(Interstitial%raincd          ) = ', sum(Interstitial%raincd          )
     write (0,*) 'sum(Interstitial%raincs          ) = ', sum(Interstitial%raincs          )
@@ -6767,11 +6772,6 @@ module GFS_typedefs
     write (0,*) 'sum(Interstitial%tsurf_land      ) = ', sum(Interstitial%tsurf_land      )
     write (0,*) 'sum(Interstitial%tsurf_ocean     ) = ', sum(Interstitial%tsurf_ocean     )
     write (0,*) 'sum(Interstitial%ud_mf           ) = ', sum(Interstitial%ud_mf           )
-    write (0,*) 'sum(Interstitial%ulwsfc_cice     ) = ', sum(Interstitial%ulwsfc_cice     )
-    write (0,*) 'sum(Interstitial%dusfc_cice      ) = ', sum(Interstitial%dusfc_cice      )
-    write (0,*) 'sum(Interstitial%dvsfc_cice      ) = ', sum(Interstitial%dvsfc_cice      )
-    write (0,*) 'sum(Interstitial%dtsfc_cice      ) = ', sum(Interstitial%dtsfc_cice      )
-    write (0,*) 'sum(Interstitial%dqsfc_cice      ) = ', sum(Interstitial%dqsfc_cice      )
     write (0,*) 'sum(Interstitial%uustar_ice      ) = ', sum(Interstitial%uustar_ice      )
     write (0,*) 'sum(Interstitial%uustar_land     ) = ', sum(Interstitial%uustar_land     )
     write (0,*) 'sum(Interstitial%uustar_ocean    ) = ', sum(Interstitial%uustar_ocean    )

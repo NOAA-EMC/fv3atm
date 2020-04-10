@@ -75,8 +75,9 @@
 !
 !
 !  ---  constant parameters:
-      real(kind=kind_phys), parameter :: cpinv = 1.0/cp
-      real(kind=kind_phys), parameter :: hvapi = 1.0/hvap
+      real(kind=kind_phys), parameter :: one   = 1.0d0
+      real(kind=kind_phys), parameter :: cpinv = one/cp
+      real(kind=kind_phys), parameter :: hvapi = one/hvap
 
 !  ---  inputs:
       integer, intent(in) :: im
@@ -94,26 +95,19 @@
 !  ---  locals:
 
       real (kind=kind_phys) :: rho, tem
-
-      integer :: i
- 
-      logical :: flag(im)
+      integer               :: i
 !
       do i = 1, im
-        flag(i) = flag_cice(i) .and. flag_iter(i)
-      enddo
-!
-      do i = 1, im
-        if (flag(i)) then
+        if (flag_cice(i) .and. flag_iter(i)) then
 
           rho    = prsl1(i)                                             &
-     &           / (rd * t1(i) * (1.0 + rvrdm1*max(q1(i), 1.0e-8)))
+     &           / (rd * t1(i) * (one + rvrdm1*max(q1(i), 1.0d-8)))
 
           cmm(i) = wind(i) * cm(i)
           chh(i) = wind(i) * ch(i) * rho
 
           qsurf(i)  = q1(i) + dqsfc(i) / (hvap*chh(i))
-          tem       = 1.0 / rho
+          tem       = one / rho
           hflx(i)   = dtsfc(i) * tem * cpinv
           evap(i)   = dqsfc(i) * tem * hvapi
           stress(i) = sqrt(dusfc(i)*dusfc(i) + dvsfc(i)*dvsfc(i)) * tem
