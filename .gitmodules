@@ -1,18 +1,12 @@
 [submodule "atmos_cubed_sphere"]
 	path = atmos_cubed_sphere
-	#url = https://github.com/NCAR/GFDL_atmos_cubed_sphere
-	#branch = dtc/develop
-	url = https://github.com/climbfuji/GFDL_atmos_cubed_sphere
-	branch = update_dtc_develop_from_dev_emc_20200409
+	url = https://github.com/NCAR/GFDL_atmos_cubed_sphere
+	branch = dtc/develop
 [submodule "ccpp/framework"]
 	path = ccpp/framework
-	#url = https://github.com/NCAR/ccpp-framework
-	#branch = dtc/develop
-	url = https://github.com/climbfuji/ccpp-framework
-	branch = dtc_develop_noah_lsm_unit_conversion
+	url = https://github.com/NCAR/ccpp-framework
+	branch = dtc/develop
 [submodule "ccpp/physics"]
 	path = ccpp/physics
-	#url = https://github.com/NCAR/ccpp-physics
-	#branch = dtc/develop
-	url = https://github.com/climbfuji/ccpp-physics
-	branch = update_dtc_develop_from_master_and_add_thompson_noaero_bugfix_20200409
+	url = https://github.com/NCAR/ccpp-physics
+	branch = dtc/develop
