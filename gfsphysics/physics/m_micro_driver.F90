@@ -13,7 +13,7 @@
      &,                         CLLS_io,  KCBL                          &
      &,                         CLDREFFL, CLDREFFI, CLDREFFR, CLDREFFS  &
      &,                         CLDREFFG, aerfld_i                      &
-     &,                         aero_in,  naai_i, npccn_i, iccn         &
+     &,                         naai_i, npccn_i, iccn                   &
      &,                         skip_macro                              &
      &,                         lprnt, alf_fac, qc_min, pdfflag         &
      &,                         ipr, kdt, xlat, xlon, rhc_i)
@@ -60,7 +60,8 @@
 
        integer, parameter :: ncolmicro = 1
        integer,intent(in) :: im, ix,lm, ipr, kdt, fprcp, pdfflag
-       logical,intent(in) :: flipv, aero_in, skip_macro, lprnt, iccn
+       logical,intent(in) :: flipv, skip_macro, lprnt
+       integer,intent(in) :: iccn
        real (kind=kind_phys), intent(in):: dt_i, alf_fac, qc_min(2)
 
        real (kind=kind_phys), dimension(ix,lm),intent(in)  ::           &
@@ -300,7 +301,7 @@
              temp(i,k)      = t_io(i,ll)
              radheat(i,k)   = lwheat_i(i,ll) + swheat_i(i,ll)
              rhc(i,k)       = rhc_i(i,ll)
-             if (iccn) then
+             if (iccn == 1) then
                CDNC_NUC(i,k) = npccn_i(i,ll)
                INC_NUC(i,k)  = naai_i (i,ll)
              endif
@@ -361,7 +362,7 @@
              temp(i,k)      = t_io(i,k)
              radheat(i,k)   = lwheat_i(i,k) + swheat_i(i,k)
              rhc(i,k)       = rhc_i(i,k)
-             if (iccn) then
+             if (iccn == 1) then
                CDNC_NUC(i,k) = npccn_i(i,k)
                INC_NUC(i,k)  = naai_i (i,k)
              endif
@@ -531,7 +532,7 @@
            NCPL(i,l)   = MAX( NCPL(i,l), 0.)
            NCPI(i,l)   = MAX( NCPI(i,l), 0.)
            RAD_CF(i,l) = max(0.0, min(CLLS(i,l)+CLCN(i,l), 1.0))
-           if (.not. iccn) then
+           if (iccn.ne.1) then
              CDNC_NUC(i,l) = 0.0
              INC_NUC(i,l)  = 0.0
            endif
@@ -586,7 +587,7 @@
 !
 
        allocate(AERMASSMIX(IM,LM,15))
-       if ( aero_in ) then
+       if (iccn == 2) then
          AERMASSMIX(:,:,1:ntrcaer) = aerfld_i(:,:,1:ntrcaer)
        else
          AERMASSMIX(:,:,1:5) = 1.e-6
@@ -769,12 +770,7 @@
                tauxr8 = ter8(K)
              endif
 
-!            if(aero_in) then
                AeroAux = AeroProps(I, K)
-!            else
-!              call init_Aer(AeroAux)
-!              call init_Aer(AeroAux_b)
-!            endif
 
              pfrz_inc_r8(k) = 0.0 
              rh1_r8         = 0.0 !related to cnv_dql_dt, needed to changed soon
@@ -837,19 +833,21 @@
 !          if(temp(i,k) > T_ICE_ALL) SC_ICE(i,k) = 1.0
 !          if(temp(i,k) > TICE)      SC_ICE(i,k) = rhc(i,k)
 !
-           if(temp(i,k) < T_ICE_ALL) then
-!            SC_ICE(i,k) = max(SC_ICE(I,k), 1.2)
-             SC_ICE(i,k) = max(SC_ICE(I,k), 1.5)
-           elseif(temp(i,k) > TICE) then
-             SC_ICE(i,k) = rhc(i,k)
-           else
-!            SC_ICE(i,k) = 1.0
-!            tx1 = max(SC_ICE(I,k), 1.2)
-             tx1 = max(SC_ICE(I,k), 1.5)
-             SC_ICE(i,k) = ((tice-temp(i,k))*tx1 + (temp(i,k)-t_ice_all)*rhc(i,k)) &
-                         * t_ice_denom
+           if(iccn == 0) then
+             if(temp(i,k) < T_ICE_ALL) then
+!              SC_ICE(i,k) = max(SC_ICE(I,k), 1.2)
+               SC_ICE(i,k) = max(SC_ICE(I,k), 1.5)
+             elseif(temp(i,k) > TICE) then
+               SC_ICE(i,k) = rhc(i,k)
+             else
+!              SC_ICE(i,k) = 1.0
+!              tx1 = max(SC_ICE(I,k), 1.2)
+               tx1 = max(SC_ICE(I,k), 1.5)
+               SC_ICE(i,k) = ((tice-temp(i,k))*tx1 +                    &
+                           (temp(i,k)-t_ice_all)*rhc(i,k))* t_ice_denom
+             endif
            endif
-           if (.not. iccn) then
+           if (iccn.ne.1) then
              CDNC_NUC(I,k) = npccninr8(k)
              INC_NUC (I,k) = naair8(k)
            endif
@@ -984,7 +982,7 @@
 !           temp(i,k)   = th1(i,k) * PK(i,k)
             RAD_CF(i,k) = min(CLLS(i,k)+CLCN(i,k), 1.0)
 !
-            if (.not. iccn) then
+            if (iccn.ne.1) then
               if (PFRZ(i,k) > 0.0) then
                 INC_NUC(i,k)  = INC_NUC(i,k)  * PFRZ(i,k)
                 NHET_NUC(i,k) = NHET_NUC(i,k) * PFRZ(i,k)
@@ -1133,11 +1131,7 @@
           endif
 
 
-!         if(aero_in) then
-            AeroAux = AeroProps(I, K)
-!         else
-!           call init_Aer(AeroAux)
-!         end if
+          AeroAux = AeroProps(I, K)
           call getINsubset(1, AeroAux, AeroAux_b)
           naux = AeroAux_b%nmods
           if (nbincontactdust < naux) then
@@ -1351,7 +1345,7 @@
      &         drout2,                       dsout2,                    &
      &         freqs,                        freqr,                     &
      &         nfice,                        qcrat,                     &
-     &         prer_evap, xlat(i), xlon(i), lprint, iccn, aero_in,      &
+     &         prer_evap, xlat(i), xlon(i), lprint, iccn,               &
      &         lev_sed_strt)
 !
             LS_PRC2(I) = max(1000.*(prectr8(1)-precir8(1)), 0.0)
@@ -1487,7 +1481,7 @@
      &         qgout2,             ngout2,   dgout2, freqg,             &
      &         freqs,                        freqr,                     &
      &         nfice,                        qcrat,                     &
-     &         prer_evap, xlat(i), xlon(i), lprint, iccn, aero_in,      &
+     &         prer_evap, xlat(i), xlon(i), lprint, iccn,               &
      &         lev_sed_strt)
 
             LS_PRC2(I) = max(1000.*(prectr8(1)-precir8(1)), 0.0)
