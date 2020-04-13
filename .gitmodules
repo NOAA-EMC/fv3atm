@@ -8,7 +8,5 @@
 	branch = master
 [submodule "ccpp/physics"]
 	path = ccpp/physics
-	#url = https://github.com/NCAR/ccpp-physics
-	#branch = dtc/hwrf-physics
-	url = https://github.com/climbfuji/ccpp-physics
-	branch = merge_hwrf-sasas_into_dtc_hwrf-physics
+	url = https://github.com/NCAR/ccpp-physics
+	branch = dtc/hwrf-physics
