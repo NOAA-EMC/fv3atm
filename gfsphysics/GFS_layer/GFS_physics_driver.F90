@@ -4950,30 +4950,30 @@ module module_physics_driver
 !       enddo
 
 !## CCPP ##* m_micro.F90/m_micro_run
-          call m_micro_driver (im, ix, levs, Model%flipv, dtp,  Statein%prsl,      &
-                               Statein%prsi, Statein%phil, Statein%phii,           &
-                               Statein%vvl, clw(1,1,2), QLCN, clw(1,1,1), QICN,    &
-                               Radtend%htrlw, Radtend%htrsw, w_upi, cf_upi,        &
-                               FRLAND, Diag%HPBL, CNV_MFD,           CNV_DQLDT,    &
-!                              FRLAND, Diag%HPBL, CNV_MFD, CNV_PRC3, CNV_DQLDT,    &
-                               CLCN, Stateout%gu0, Stateout%gv0, Diag%dusfc,       &
-                               Diag%dvsfc, dusfc1, dvsfc1, dusfc1, dvsfc1,         &
-                               CNV_FICE, CNV_NDROP, CNV_NICE, Stateout%gq0(1,1,1), &
-                               Stateout%gq0(1,1,ntcw),                             &
-                               Stateout%gq0(1,1,ntiw), Stateout%gt0, rain1,        &
-                               Diag%sr, Stateout%gq0(1,1,ntlnc),                   &
-                               Stateout%gq0(1,1,ntinc), Model%fprcp, qrn,          &
-                               qsnw, qgl, ncpr, ncps, ncgl,                        &
-                               Tbd%phy_f3d(1,1,1),  kbot,                          &
-                               Tbd%phy_f3d(1,1,2),  Tbd%phy_f3d(1,1,3),            &
-                               Tbd%phy_f3d(1,1,4),  Tbd%phy_f3d(1,1,5),            &
-                               Tbd%phy_f3d(1,1,kk), Tbd%aer_nm,                    &
-                               Model%aero_in, Tbd%in_nm, Tbd%ccn_nm, Model%iccn,   &
-                               skip_macro,                 lprnt,                  &
-!                              skip_macro, cn_prc, cn_snr, lprnt,                  &
-!                              ipr, kdt, Grid%xlat, Grid%xlon)
-                               Model%mg_alf, Model%mg_qcmin, Model%pdfflag,        &
-                               ipr, kdt, Grid%xlat, Grid%xlon, rhc)
+        call m_micro_driver (im, ix, levs, Model%flipv, dtp,  Statein%prsl,      &
+                             Statein%prsi, Statein%phil, Statein%phii,           &
+                             Statein%vvl, clw(1,1,2), QLCN, clw(1,1,1), QICN,    &
+                             Radtend%htrlw, Radtend%htrsw, w_upi, cf_upi,        &
+                             FRLAND, Diag%HPBL, CNV_MFD,           CNV_DQLDT,    &
+!                            FRLAND, Diag%HPBL, CNV_MFD, CNV_PRC3, CNV_DQLDT,    &
+                             CLCN, Stateout%gu0, Stateout%gv0, Diag%dusfc,       &
+                             Diag%dvsfc, dusfc1, dvsfc1, dusfc1, dvsfc1,         &
+                             CNV_FICE, CNV_NDROP, CNV_NICE, Stateout%gq0(1,1,1), &
+                             Stateout%gq0(1,1,ntcw),                             &
+                             Stateout%gq0(1,1,ntiw), Stateout%gt0, rain1,        &
+                             Diag%sr, Stateout%gq0(1,1,ntlnc),                   &
+                             Stateout%gq0(1,1,ntinc), Model%fprcp, qrn,          &
+                             qsnw, qgl, ncpr, ncps, ncgl,                        &
+                             Tbd%phy_f3d(1,1,1),  kbot,                          &
+                             Tbd%phy_f3d(1,1,2),  Tbd%phy_f3d(1,1,3),            &
+                             Tbd%phy_f3d(1,1,4),  Tbd%phy_f3d(1,1,5),            &
+                             Tbd%phy_f3d(1,1,kk), Tbd%aer_nm,                    &
+                             Tbd%in_nm, Tbd%ccn_nm, Model%iccn,                  &
+                             skip_macro,                 lprnt,                  &
+!                            skip_macro, cn_prc, cn_snr, lprnt,                  &
+!                            ipr, kdt, Grid%xlat, Grid%xlon)
+                             Model%mg_alf, Model%mg_qcmin, Model%pdfflag,        &
+                             ipr, kdt, Grid%xlat, Grid%xlon, rhc)
 !*## CCPP ##
 !     do k=1,levs
 !     write(1000+me,*)' maxwatnca=',maxval(Stateout%gq0(1:im,k,ntlnc)),' k=',k,' kdt=',kdt
