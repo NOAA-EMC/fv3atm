@@ -1,20 +1,14 @@
-cmake_minimum_required(VERSION 2.8.11)
+cmake_minimum_required(VERSION 3.0)
 
 # Use rpaths on MacOSX
 set(CMAKE_MACOSX_RPATH 1)
-
-if(POLICY CMP0048)
-    cmake_policy(SET CMP0048 NEW)
-endif(POLICY CMP0048)
-
 if(POLICY CMP0042)
     cmake_policy(SET CMP0042 NEW)
 endif(POLICY CMP0042)
 
-PROJECT(CCPP-FV3)
+project(CCPP-FV3
+        LANGUAGES C CXX Fortran)
 set(PROJECT "CCPP-FV3")
-
-ENABLE_LANGUAGE(Fortran)
 
 include(CMakeForceCompiler)
 
