@@ -377,11 +377,11 @@
 !> EPSQ=1.0e-12
       real (kind=kind_phys) :: EPSQ
 !     parameter (QMIN=1.0e-10, QME5=1.0e-5,  QME6=1.0e-6,  EPSQ=1.0e-12)
-      parameter (QMIN=1.0e-10, QME5=1.0e-7,  QME6=1.0e-7,  EPSQ=1.0e-12)
+      parameter (QMIN=1.0d-10, QME5=1.0d-7,  QME6=1.0d-7,  EPSQ=1.0d-12)
 !     parameter (QMIN=1.0e-10, QME5=1.0e-20, QME6=1.0e-20, EPSQ=1.0e-12)
 
 !> lower limit of toa pressure value in mb
-      real, parameter :: prsmin = 1.0e-6
+      real, parameter :: prsmin = 1.0d-6
 
 !> control flag for LW surface temperature at air/ground interface
 !! (default=0, the value will be set in subroutine radinit)
@@ -1247,6 +1247,8 @@
       real(kind=kind_phys), dimension(size(Grid%xlon,1),Model%levr+ltp) :: cldtausw
       real(kind=kind_phys), dimension(size(Grid%xlon,1),Model%levr+ltp) :: cldtaulw
 
+      real(kind=kind_phys), parameter :: zero=0.0d0, one=1.0d0
+
       !--- TYPED VARIABLES
       type (cmpfsw_type),    dimension(size(Grid%xlon,1)) :: scmpsw
 
@@ -1340,15 +1342,15 @@
         k1 = k + kd
         k2 = k + lsk
         do i = 1, IM
-          plvl(i,k1+kb) = Statein%prsi(i,k2+kb) * 0.01   ! pa to mb (hpa)
-          plyr(i,k1)    = Statein%prsl(i,k2)    * 0.01   ! pa to mb (hpa)
+          plvl(i,k1+kb) = Statein%prsi(i,k2+kb) * 0.01d0   ! pa to mb (hpa)
+          plyr(i,k1)    = Statein%prsl(i,k2)    * 0.01d0   ! pa to mb (hpa)
           tlyr(i,k1)    = Statein%tgrs(i,k2)
           prslk1(i,k1)  = Statein%prslk(i,k2)
 
 !>  - Compute relative humidity.
           es  = min( Statein%prsl(i,k2),  fpvs( Statein%tgrs(i,k2) ) )  ! fpvs and prsl in pa
           qs  = max( QMIN, eps * es / (Statein%prsl(i,k2) + epsm1*es) )
-          rhly(i,k1) = max( 0.0, min( 1.0, max(QMIN, Statein%qgrs(i,k2,1))/qs ) )
+          rhly(i,k1) = max( zero, min( one, max(QMIN, Statein%qgrs(i,k2,1))/qs ) )
           qstl(i,k1) = qs
         enddo
       enddo
@@ -1358,7 +1360,7 @@
         do k = 1, LM
           k1 = k + kd
           k2 = k + lsk
-          tracer1(:,k1,j) = max(0.0, Statein%qgrs(:,k2,j))
+          tracer1(:,k1,j) = max(zero, Statein%qgrs(:,k2,j))
         enddo
       enddo
 !
@@ -1367,18 +1369,18 @@
           k1 = 1 + kd
           k2 = k1 + kb
           do i = 1, IM
-            plvl(i,k2)   = 0.01 * Statein%prsi(i,1+kb)          ! pa to mb (hpa)
-            plyr(i,k1)   = 0.5 * (plvl(i,k2+1) + plvl(i,k2))
-            prslk1(i,k1) = (plyr(i,k1)*0.001) ** rocp
+            plvl(i,k2)   = 0.01d0 * Statein%prsi(i,1+kb)          ! pa to mb (hpa)
+            plyr(i,k1)   = 0.5d0 * (plvl(i,k2+1) + plvl(i,k2))
+            prslk1(i,k1) = (plyr(i,k1)*0.001d0) ** rocp
           enddo
         endif
       else                                                 ! input data from sfc to top
         if (Model%levs > lm) then
           k1 = lm + kd
           do i = 1, IM
-            plvl(i,k1+1) = 0.01 * Statein%prsi(i,Model%levs+1)  ! pa to mb (hpa)
-            plyr(i,k1)   = 0.5 * (plvl(i,k1+1) + plvl(i,k1))
-            prslk1(i,k1) = (plyr(i,k1)*0.001) ** rocp
+            plvl(i,k1+1) = 0.01d0 * Statein%prsi(i,Model%levs+1)  ! pa to mb (hpa)
+            plyr(i,k1)   = 0.5d0 * (plvl(i,k1+1) + plvl(i,k1))
+            prslk1(i,k1) = (plyr(i,k1)*0.001d0) ** rocp
           enddo
         endif
       endif
@@ -1386,10 +1388,10 @@
       if ( lextop ) then                 ! values for extra top layer
         do i = 1, IM
           plvl(i,llb) = prsmin
-          if ( plvl(i,lla) <= prsmin ) plvl(i,lla) = 2.0*prsmin
-          plyr(i,lyb)   = 0.5 * plvl(i,lla)
+          if ( plvl(i,lla) <= prsmin ) plvl(i,lla) = 2.0d0*prsmin
+          plyr(i,lyb)   = 0.5d0 * plvl(i,lla)
           tlyr(i,lyb)   = tlyr(i,lya)
-          prslk1(i,lyb) = (plyr(i,lyb)*0.001) ** rocp ! plyr in Pa
+          prslk1(i,lyb) = (plyr(i,lyb)*0.001d0) ** rocp ! plyr in Pa
           rhly(i,lyb)   = rhly(i,lya)
           qstl(i,lyb)   = qstl(i,lya)
         enddo
@@ -1461,7 +1463,7 @@
           do i = 1, IM
             qlyr(i,k1) = max( tem1d(i), Statein%qgrs(i,k,1) )
             tem1d(i)   = min( QME5, qlyr(i,k1) )
-            tvly(i,k1) = Statein%tgrs(i,k) * (1.0 + fvirt*qlyr(i,k1)) ! virtual T (K)
+            tvly(i,k1) = Statein%tgrs(i,k) * (one + fvirt*qlyr(i,k1)) ! virtual T (K)
             delp(i,k1) = plvl(i,k1+1) - plvl(i,k1)
           enddo
         enddo
@@ -1484,7 +1486,7 @@
 
 !  ---  ...  level height and layer thickness (km)
 
-        tem0d = 0.001 * rog
+        tem0d = 0.001d0 * rog
         do i = 1, IM
           do k = 1, LMK
             dz(i,k) = tem0d * (tem2db(i,k+1) - tem2db(i,k)) * tvly(i,k)
@@ -1512,7 +1514,7 @@
           do i = 1, IM
             qlyr(i,k) = max( tem1d(i), Statein%qgrs(i,k,1) )
             tem1d(i)  = min( QME5, qlyr(i,k) )
-            tvly(i,k) = Statein%tgrs(i,k) * (1.0 + fvirt*qlyr(i,k)) ! virtual T (K)
+            tvly(i,k) = Statein%tgrs(i,k) * (one + fvirt*qlyr(i,k)) ! virtual T (K)
             delp(i,k) = plvl(i,k) - plvl(i,k+1)
           enddo
         enddo
@@ -1535,7 +1537,7 @@
 
 !  ---  ...  level height and layer thickness (km)
 
-        tem0d = 0.001 * rog
+        tem0d = 0.001d0 * rog
         do i = 1, IM
           do k = LMK, 1, -1
             dz(i,k) = tem0d * (tem2db(i,k) - tem2db(i,k+1)) * tvly(i,k)
@@ -1553,7 +1555,7 @@
 !## CCPP ##* rrtmg_sw_pre.F90/rrtmg_sw_pre_run
       nday = 0
       do i = 1, IM
-        if (Radtend%coszen(i) >= 0.0001) then
+        if (Radtend%coszen(i) >= 0.0001d0) then
           nday = nday + 1
           idxday(nday) = i
         endif
@@ -1582,7 +1584,7 @@
 !  --- ...  obtain cloud information for radiation calculations
 
 !     if (ntcw > 0) then                                          ! prognostic cloud schemes
-        ccnd = 0.0_kind_phys
+        ccnd = zero
         if (Model%ncnd == 1) then                                 ! Zhao_Carr_Sundqvist
           do k=1,LMK
             do i=1,IM
@@ -1618,7 +1620,7 @@
         do n=1,ncndl
           do k=1,LMK
             do i=1,IM
-              if (ccnd(i,k,n) < epsq) ccnd(i,k,n) = 0.0
+              if (ccnd(i,k,n) < epsq) ccnd(i,k,n) = zero
             enddo
           enddo
         enddo
@@ -1646,7 +1648,7 @@
           endif 
           do k=1,LMK
             do i=1,IM
-              if (ccnd(i,k,1) < EPSQ ) ccnd(i,k,1) = 0.0
+              if (ccnd(i,k,1) < EPSQ ) ccnd(i,k,1) = zero
             enddo
           enddo
         endif 
@@ -1696,7 +1698,7 @@
 
           endif
         else                                                           ! neither of the other two cases
-          cldcov = 0.0
+          cldcov = zero
         endif
 
 !
@@ -1719,17 +1721,17 @@
           do k=1,lm
             k1 = k + kd
             do i=1,im
-              deltaq(i,k1) = 0.0
+              deltaq(i,k1) = zero
               cnvw  (i,k1) = Tbd%phy_f3d(i,k,Model%num_p3d+1)
-              cnvc  (i,k1) = 0.0
+              cnvc  (i,k1) = zero
             enddo
           enddo
         else                                                           ! all the rest
           do k=1,lmk
             do i=1,im
-              deltaq(i,k) = 0.0
-              cnvw  (i,k) = 0.0
-              cnvc  (i,k) = 0.0
+              deltaq(i,k) = zero
+              cnvw  (i,k) = zero
+              cnvc  (i,k) = zero
             enddo
           enddo
         endif
@@ -1811,9 +1813,9 @@
         elseif(Model%imp_physics == 8 .or. Model%imp_physics == 6) then   ! Thompson / WSM6 cloud micrphysics scheme
 
           if (Model%kdt == 1) then
-            Tbd%phy_f3d(:,:,1) = 10.
-            Tbd%phy_f3d(:,:,2) = 50.
-            Tbd%phy_f3d(:,:,3) = 250.
+            Tbd%phy_f3d(:,:,1) = 10.0d0
+            Tbd%phy_f3d(:,:,2) = 50.0d0
+            Tbd%phy_f3d(:,:,3) = 250.0d0
           endif
 
           call progcld5 (plyr,plvl,tlyr,qlyr,qstl,rhly,tracer1,     &  !  --- inputs
@@ -1838,9 +1840,9 @@
 !  ---  scale random patterns for surface perturbations with
 !  perturbation size
 !  ---  turn vegetation fraction pattern into percentile pattern
-      alb1d(:) = 0.
+      alb1d(:) = zero
       if (Model%do_sfcperts) then
-        if (Model%pertalb(1) > 0.) then
+        if (Model%pertalb(1) > zero) then
           do i=1,im
             call cdfnor(Coupling%sfc_wts(i,5),alb1d(i))
           enddo
@@ -1866,7 +1868,7 @@
                      sfcalb)                                           !  ---  outputs
 
 !> -# Approximate mean surface albedo from vis- and nir-  diffuse values.
-        Radtend%sfalb(:) = max(0.01, 0.5 * (sfcalb(:,2) + sfcalb(:,4)))
+        Radtend%sfalb(:) = max(0.01d0, 0.5d0 * (sfcalb(:,2) + sfcalb(:,4)))
 !*## CCPP ##
 
 !## CCPP ##* radsw_main.f/rrtmg_sw_run; Note: The checks for nday and lsswr are included in the scheme (returns if
@@ -1942,26 +1944,26 @@
 
         else                   ! if_nday_block
 
-          Radtend%htrsw(:,:) = 0.0
+          Radtend%htrsw(:,:) = zero
 
           Radtend%sfcfsw = sfcfsw_type( 0.0, 0.0, 0.0, 0.0 )
           Diag%topfsw    = topfsw_type( 0.0, 0.0, 0.0 )
           scmpsw         = cmpfsw_type( 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 )
 
           do i=1,im
-            Coupling%nirbmdi(i) = 0.0
-            Coupling%nirdfdi(i) = 0.0
-            Coupling%visbmdi(i) = 0.0
-            Coupling%visdfdi(i) = 0.0
+            Coupling%nirbmdi(i) = zero
+            Coupling%nirdfdi(i) = zero
+            Coupling%visbmdi(i) = zero
+            Coupling%visdfdi(i) = zero
 
-            Coupling%nirbmui(i) = 0.0
-            Coupling%nirdfui(i) = 0.0
-            Coupling%visbmui(i) = 0.0
-            Coupling%visdfui(i) = 0.0
+            Coupling%nirbmui(i) = zero
+            Coupling%nirdfui(i) = zero
+            Coupling%visbmui(i) = zero
+            Coupling%visdfui(i) = zero
           enddo
 
           if (Model%swhtr) then
-            Radtend%swhc(:,:) = 0.0
+            Radtend%swhc(:,:) = zero
           endif
 
         endif                  ! end_if_nday
@@ -2084,7 +2086,7 @@
 !       part of sw calling interval, while coszdg= mean cosz over entire interval
         if (Model%lsswr) then
           do i = 1, IM
-            if (Radtend%coszen(i) > 0.) then
+            if (Radtend%coszen(i) > zero) then
 !  ---                                  sw total-sky fluxes
 !                                       -------------------
               tem0d = Model%fhswr * Radtend%coszdg(i) / Radtend%coszen(i)
@@ -2144,7 +2146,7 @@
                 tem0d = raddt * cldsa(i,j)
                 itop  = mtopa(i,j) - kd
                 ibtc  = mbota(i,j) - kd
-                tem1 = 0.
+                tem1 = zero
                 do k=ibtc,itop
                   tem1 = tem1 + cldtausw(i,k)      ! approx .55 um channel
                 enddo
@@ -2159,11 +2161,11 @@
                 tem0d = raddt * cldsa(i,j)
                 itop  = mtopa(i,j) - kd
                 ibtc  = mbota(i,j) - kd
-                tem2 = 0.
+                tem2 = zero
                 do k=ibtc,itop
                   tem2 = tem2 + cldtaulw(i,k)      ! approx 10. um channel
                 enddo
-                Diag%fluxr(i,46-j) = Diag%fluxr(i,46-j) + tem0d * (1.0-exp(-tem2))
+                Diag%fluxr(i,46-j) = Diag%fluxr(i,46-j) + tem0d * (one-exp(-tem2))
               enddo
             enddo
           endif

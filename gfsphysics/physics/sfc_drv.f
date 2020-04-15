@@ -170,15 +170,15 @@
       real(kind=kind_phys), parameter :: cpinv   = one/cp
       real(kind=kind_phys), parameter :: hvapi   = one/hvap
       real(kind=kind_phys), parameter :: elocp   = hvap/cp
-      real(kind=kind_phys), parameter :: rhoh2o  = 1000.0
-      real(kind=kind_phys), parameter :: a2      = 17.2693882
-      real(kind=kind_phys), parameter :: a3      = 273.16
-      real(kind=kind_phys), parameter :: a4      = 35.86
+      real(kind=kind_phys), parameter :: rhoh2o  = 1000.0d0
+      real(kind=kind_phys), parameter :: a2      = 17.2693882d0
+      real(kind=kind_phys), parameter :: a3      = 273.16d0
+      real(kind=kind_phys), parameter :: a4      = 35.86d0
       real(kind=kind_phys), parameter :: a23m4   = a2*(a3-a4)
       real(kind=kind_phys), parameter :: qmin   = 1.0d-8
 
       real(kind=kind_phys), save         :: zsoil_noah(4)
-      data zsoil_noah / -0.1, -0.4, -1.0, -2.0 /
+      data zsoil_noah / -0.1d0, -0.4d0, -1.0d0, -2.0d0 /
 
 !  ---  input:
       integer, intent(in) :: im, km, isot, ivegsrc

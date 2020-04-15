@@ -67,17 +67,14 @@
 !
       use machine , only : kind_phys
       use funcphys, only : fpvs
-      use physcons, only : cp => con_cp, rd => con_rd, eps => con_eps,  &
-     &                     epsm1 => con_epsm1, hvap => con_hvap,        &
-     &                     rvrdm1 => con_fvirt
+      use physcons, only : rd    => con_rd,    eps    => con_eps,       &
+     &                     epsm1 => con_epsm1, rvrdm1 => con_fvirt
 !
       implicit none
 !
 !  ---  constant parameters:
-      real (kind=kind_phys), parameter :: one   = 1.0d0, zero = 0.0d0   &
-     &,                                   cpinv = one/cp                &
-     &,                                   hvapi = one/hvap              &
-     &,                                   elocp = hvap/cp, qmin = 1.0d-8
+      real (kind=kind_phys), parameter :: one  = 1.0d0, zero = 0.0d0    &
+     &,                                   qmin = 1.0d-8
 
 !  ---  inputs:
       integer, intent(in) :: im
@@ -94,22 +91,18 @@
 !  ---  locals:
 
       real (kind=kind_phys) :: q0, qss, rho, tem
-
-      integer :: i
-
-      logical :: flag(im)
+      integer               :: i
 !
 !===> ...  begin here
 !
-!  --- ...  flag for open water
       do i = 1, im
-        flag(i) = (wet(i) .and. flag_iter(i))
 
 !  --- ...  initialize variables. all units are supposedly m.k.s. unless specified
 !           ps is in pascals, wind is wind speed,
 !           rho is density, qss is sat. hum. at surface
 
-        if ( flag(i) ) then
+        if (wet(i) .and. flag_iter(i)) then
+
           q0       = max(q1(i), qmin)
           rho      = prsl1(i) / (rd*t1(i)*(one + rvrdm1*q0))
 
