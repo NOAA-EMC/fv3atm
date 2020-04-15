@@ -3663,7 +3663,11 @@ module GFS_typedefs
     Model%iau_filter_increments = iau_filter_increments
     Model%iau_drymassfixer = iau_drymassfixer
     if(Model%me==0) print *,' model init,iaufhrs=',Model%iaufhrs
-
+    
+    !--- debug flag
+    Model%debug            = debug
+    Model%pre_rad          = pre_rad
+    
 !--- tracer handling
     Model%ntrac            = size(tracer_names)
 #ifdef CCPP
@@ -3783,10 +3787,6 @@ module GFS_typedefs
     Model%ncnvcld3d        = ncnvcld3d
     Model%nctp             = nctp
 
-!--- debug flag
-    Model%debug            = debug
-    Model%pre_rad          = pre_rad
-
 !--- set initial values for time varying properties
     Model%ipt              = 1
     Model%lprnt            = .false.
@@ -3825,11 +3825,6 @@ module GFS_typedefs
     !--- ps is replaced with p0. The value of p0 uses that in http://www.emc.ncep.noaa.gov/officenotes/newernotes/on461.pdf
     !--- ak/bk have been flipped from their original FV3 orientation and are defined sfc -> toa
     Model%si = (ak + bk * con_p0 - ak(Model%levr+1)) / (con_p0 - ak(Model%levr+1))
-
-    if (Model%lsm == Model%lsm_noahmp) then
-      Model%yearlen        = 365
-      Model%julian         = -9999.
-    endif
 #endif
 
 #ifndef CCPP
