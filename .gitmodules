@@ -4,9 +4,9 @@
 	branch = dev/emc
 [submodule "ccpp/framework"]
 	path = ccpp/framework
-	url = https://github.com/NCAR/ccpp-framework
-	branch = master
+	url = https://github.com/ClaraDraper-NOAA/ccpp-framework
+	branch = csd-cpf-sfcpert
 [submodule "ccpp/physics"]
 	path = ccpp/physics
 	url = https://github.com/ClaraDraper-NOAA/ccpp-physics
-	branch = csd-ccp-sfcert
+	branch = csd-ccp-sfcert-fix
