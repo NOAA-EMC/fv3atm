@@ -49,7 +49,7 @@ module CCPP_driver
 !  number nthrdsX in case of non-uniform block sizes)    !
 !--------------------------------------------------------!
   logical :: non_uniform_blocks
-  integer :: nthrds, nthrdsX, ithread
+  integer :: nthrds, nthrdsX
 
 !----------------
 ! Public Entities
@@ -205,8 +205,7 @@ module CCPP_driver
       end if
 
    ! Radiation and stochastic physics
-   else if (trim(step)=="radiation" .or. trim(step)=="physics" .or. trim(step)=="stochastics" &
-       .or. trim(step)=="timestep_init" .or. trim(step)=="timestep_final") then
+   else if (trim(step)=="radiation" .or. trim(step)=="physics" .or. trim(step)=="stochastics") then
 
       ! Set number of threads available to physics schemes to one,
       ! because threads are used on the outside for blocking

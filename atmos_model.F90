@@ -297,7 +297,6 @@ subroutine update_atmos_radiation_physics (Atmos)
 
 !--- execute the IPD atmospheric setup step
       call mpp_clock_begin(setupClock)
-
 #ifdef CCPP
       call CCPP_step (step="time_vary", nblks=Atm_block%nblks, ierr=ierr)
       if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP time_vary step failed')
@@ -331,11 +330,6 @@ subroutine update_atmos_radiation_physics (Atmos)
         call assign_importdata(rc)
 !        print *,'in atmos_model, after assign_importdata, rc=',rc
       endif
-
-#ifdef CCPP
-      call CCPP_step (step="timestep_init", nblks=Atm_block%nblks, ierr=ierr)
-      if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP timestep_init step failed')
-#endif
 
       call mpp_clock_end(setupClock)
 
@@ -400,9 +394,6 @@ subroutine update_atmos_radiation_physics (Atmos)
 #ifdef CCPP
       call CCPP_step (step="stochastics", nblks=Atm_block%nblks, ierr=ierr)
       if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP stochastics step failed')
-
-      call CCPP_step (step="timestep_final", nblks=Atm_block%nblks, ierr=ierr)
-      if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP timestep_final step failed')
 #else
       Func0d => physics_step2
 !$OMP parallel do default (none) &
@@ -413,16 +404,13 @@ subroutine update_atmos_radiation_physics (Atmos)
         call IPD_step (IPD_Control, IPD_Data(nb:nb), IPD_Diag, IPD_Restart, IPD_func0d=Func0d)
       enddo
 #endif
-
       call mpp_clock_end(physClock)
 
       if (chksum_debug) then
         if (mpp_pe() == mpp_root_pe()) print *,'PHYSICS STEP2   ', IPD_Control%kdt, IPD_Control%fhour
         call FV3GFS_IPD_checksum(IPD_Control, IPD_Data, Atm_block)
       endif
-
       call getiauforcing(IPD_Control,IAU_data)
-
       if (mpp_pe() == mpp_root_pe() .and. debug) write(6,*) "end of radiation and physics step"
     endif
 

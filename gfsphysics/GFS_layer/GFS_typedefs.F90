@@ -550,10 +550,10 @@ module GFS_typedefs
     real(kind=kind_phys) :: fhzero          !< hours between clearing of diagnostic buckets
     logical              :: ldiag3d         !< flag for 3d diagnostic fields
     logical              :: qdiag3d         !< flag for 3d tracer diagnostic fields
-    logical              :: flag_for_gwd_generic_tend!< true if GFS_GWD_generic should calculate tendencies
-    logical              :: flag_for_pbl_generic_tend!< true if GFS_PBL_generic should calculate tendencies
-    logical              :: flag_for_scnv_generic_tend!< true if GFS_DCNV_generic should calculate tendencies
-    logical              :: flag_for_dcnv_generic_tend!< true if GFS_DCNV_generic should calculate tendencies
+    logical              :: flag_for_gwd_generic_tend  !< true if GFS_GWD_generic should calculate tendencies
+    logical              :: flag_for_pbl_generic_tend  !< true if GFS_PBL_generic should calculate tendencies
+    logical              :: flag_for_scnv_generic_tend !< true if GFS_DCNV_generic should calculate tendencies
+    logical              :: flag_for_dcnv_generic_tend !< true if GFS_DCNV_generic should calculate tendencies
     logical              :: lssav           !< logical flag for storing diagnostics
     real(kind=kind_phys) :: fhcyc           !< frequency for surface data cycling (hours)
     integer              :: thermodyn_id    !< valid for GFS only for get_prs/phi
@@ -1473,7 +1473,6 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: dv3dt (:,:,:)  => null()   !< v momentum change due to physics
     real (kind=kind_phys), pointer :: dt3dt (:,:,:)  => null()   !< temperature change due to physics
     real (kind=kind_phys), pointer :: dq3dt (:,:,:)  => null()   !< moisture change due to physics
-    real (kind=kind_phys), pointer :: tend_book(:,:,:)=>null()   !< CCPP tendency storage
     real (kind=kind_phys), pointer :: refdmax (:)    => null()   !< max hourly 1-km agl reflectivity
     real (kind=kind_phys), pointer :: refdmax263k(:) => null()   !< max hourly -10C reflectivity
     real (kind=kind_phys), pointer :: t02max  (:)    => null()   !< max hourly 2m T
@@ -3277,9 +3276,6 @@ module GFS_typedefs
     Model%flag_for_dcnv_generic_tend = .true.
 
 #ifdef CCPP
-
-    write(0,*) 'GOT HERE (stderr)'
-    print *,'GOT HERE (stdout)'
 
     if(gwd_opt==1) then
       write(0,*) 'FLAG: gwd_opt==1 so gwd not generic'
@@ -5269,9 +5265,6 @@ module GFS_typedefs
       allocate (Diag%dt3dt  (IM,Model%levs,12))
       if (Model%qdiag3d) then
         allocate (Diag%dq3dt  (IM,Model%levs,12))
-        allocate (Diag%tend_book(IM,Model%levs,12))
-      else
-        allocate (Diag%tend_book(IM,Model%levs,9))
       endif
       Diag%tend_book=0
 !      allocate (Diag%dq3dt  (IM,Model%levs,oz_coeff+5))
@@ -5578,7 +5571,6 @@ module GFS_typedefs
       Diag%du3dt    = zero
       Diag%dv3dt    = zero
       Diag%dt3dt    = zero
-      
       if (Model%qdiag3d) then
          Diag%dq3dt    = zero
       endif
