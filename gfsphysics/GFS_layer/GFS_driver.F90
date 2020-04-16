@@ -210,10 +210,10 @@ module GFS_driver
 #ifndef CCPP
     call read_o3data  (Model%ntoz, Model%me, Model%master)
     call read_h2odata (Model%h2o_phys, Model%me, Model%master)
-    if (Model%aero_in) then
+    if (Model%iaerclm) then
       call read_aerdata (Model%me,Model%master,Model%iflip,Model%idate)
     endif
-    if (Model%iccn) then
+    if (Model%iccn == 1) then
       call read_cidata  ( Model%me, Model%master)
     endif
 #endif
@@ -286,7 +286,7 @@ module GFS_driver
     endif
 
     !--- read in and initialize IN and CCN
-    if (Model%iccn) then
+    if (Model%iccn == 1) then
       do nb = 1, nblks
         call setindxci (Init_parm%blksz(nb), Grid(nb)%xlat_d, Grid(nb)%jindx1_ci, &
                         Grid(nb)%jindx2_ci, Grid(nb)%ddy_ci, Grid(nb)%xlon_d,     &
@@ -295,7 +295,7 @@ module GFS_driver
     endif
 
     !--- read in and initialize aerosols
-    if (Model%aero_in) then
+    if (Model%iaerclm) then
       do nb = 1, nblks
         call setindxaer (Init_parm%blksz(nb),Grid(nb)%xlat_d,Grid(nb)%jindx1_aer, &
                         Grid(nb)%jindx2_aer, Grid(nb)%ddy_aer, Grid(nb)%xlon_d,   &
@@ -357,7 +357,7 @@ module GFS_driver
         call ini_micro (Model%mg_dcs, Model%mg_qcvar, Model%mg_ts_auto_ice(1))
       elseif (Model%fprcp == 1) then
         call micro_mg_init2_0(kind_phys, gravit, rair, rh2o, cpair,              &
-                              tmelt, latvap, latice, 1.01_kind_phys,             &
+                              tmelt, latvap, latice, Model%mg_rhmini,            &
                               Model%mg_dcs, Model%mg_ts_auto_ice,                &
                               Model%mg_qcvar,                                    &
                               Model%microp_uniform, Model%do_cldice,             &
@@ -370,7 +370,7 @@ module GFS_driver
                               Model%mg_ncnst,        Model%mg_ninst)
       elseif (Model%fprcp == 2) then
         call micro_mg_init3_0(kind_phys, gravit, rair, rh2o, cpair,              &
-                              tmelt, latvap, latice, 1.01_kind_phys,             &
+                              tmelt, latvap, latice, Model%mg_rhmini,            &
                               Model%mg_dcs, Model%mg_ts_auto_ice,                &
                               Model%mg_qcvar,                                    &
                               Model%mg_do_hail,       Model%mg_do_graupel,       &
@@ -483,7 +483,7 @@ module GFS_driver
 !      5) interpolates coefficients for prognostic ozone calculation
 !      6) performs surface data cycling via the GFS gcycle routine
 !-------------------------------------------------------------------------
-  subroutine GFS_time_vary_step (Model, Statein, Stateout, Sfcprop, Coupling, & 
+  subroutine GFS_time_vary_step (Model, Statein, Stateout, Sfcprop, Coupling, &
                                  Grid, Tbd, Cldprop, Radtend, Diag)
 
     implicit none
@@ -1009,7 +1009,7 @@ module GFS_driver
      endif
 
     !--- ICCN interpolation
-    if (Model%ICCN ) then
+    if (Model%ICCN == 1) then
       do nb = 1, nblks
         call ciinterpol (Model%me, blksz(nb), Model%idate, Model%fhour, &
                          Grid(nb)%jindx1_ci, Grid(nb)%jindx2_ci,        &
@@ -1021,7 +1021,7 @@ module GFS_driver
     endif
 
     !--- aerosol interpolation
-     if (Model%aero_in ) then
+     if (Model%iaerclm ) then
       do nb = 1, nblks
         call aerinterpol (Model%me, Model%master, blksz(nb),            &
                          Model%idate, Model%fhour,                      &

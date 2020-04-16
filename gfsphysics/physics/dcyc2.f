@@ -218,7 +218,7 @@
         enddo
       else
         rstl = one / float(nstl)
-        solang = pid12 * (solhr - hour12)         
+        solang = pid12 * (solhr - hour12)
         anginc = pid12 * deltim * f3600 * rstl
         do i = 1, im
           xcosz(i)  = zero

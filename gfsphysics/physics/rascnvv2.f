@@ -315,7 +315,7 @@
      &,                    wfnc,tla,pl,qiid,qlid, c0, c0i, dlq_fac, sumq&
      &,                    rainp
 !
-      Integer              KCR,  KFX, NCMX, NC,  KTEM, I,   L, lm1      &
+      Integer              KCR,  KFX, NCMX, NC,  KTEM, I,   ii, Lm1, l  &
      &,                    ntrc, ia,  ll,   km1, kp1,  ipt, lv, KBL, n  &
      &,                    KRMIN, KRMAX, KFMAX, kblmx, irnd,ib          &
      &,                    kblmn, ksfc
@@ -339,6 +339,7 @@
 !     if (lprnt) write(0,*)' in RAS fscav=',fscav_,' ccwfac=',
 !    &                      ccwfac(ipr),' mp_phys=',mp_phys
 !    &,                    ' fscav=',fscav,' trac=',trac
+!    &,                    ' rannum=',rannum(1,:)
 !
       km1 = k - 1
       kp1 = k + 1
@@ -396,6 +397,9 @@
       enddo
       DO IPT=1,IM
 
+        lprint = lprnt .and. ipt == ipr
+        ia     = ipr
+
         ccwf = half
         if (ccwfac(ipt) >= zero) ccwf = ccwfac(ipt)
 
@@ -403,6 +407,9 @@
         tem     = one  + dlq_fac
         c0      = c00(IPT)  * tem
         c0i     = c00i(IPT) * tem
+
+!      if (lprint) write(0,*)' c0=',c0,' c0i=',c0i,' dlq_fac=',dlq_fac, &
+!    &                       ' ccwf=',ccwf
 !
 !       ctei = .false.
 !       if (ctei_r(ipt) > ctei_rm) ctei = .true.
@@ -437,7 +444,7 @@
         krmin = max(krmin,2)
 
 !     if (kdt == 1 .and. ipt == 1) write(0,*)' kblmn=',kblmn,kblmx
-!     if (lprnt .and. ipt == ipr) write(0,*)' krmin=',krmin,' krmax=',
+!     if (lprint) write(0,*)' krmin=',krmin,' krmax=',
 !    &krmax,' kfmax=',kfmax,' tem=',tem
 !
         if (fix_ncld_hr) then
@@ -460,8 +467,9 @@
         KTEM    = MIN(K,KFMAX)
         KFX     = KTEM - KCR
 
-!     if(lprnt)write(0,*)' enter RASCNV k=',k,' ktem=',ktem 
+!     if(lprint)write(0,*)' enter RASCNV k=',k,' ktem=',ktem 
 !    &,               ' krmax=',krmax,' kfmax=',kfmax
+!    &,               ' krmin=',krmin,' ncrnd=',ncrnd                   &
 !    &,               ' kcr=',kcr, ' cdrag=',cdrag(ipr)
  
         IF (KFX > 0) THEN
@@ -479,22 +487,24 @@
         NCMX  = KFX + NCRND
         IF (NCRND > 0) THEN
           DO I=1,NCRND
-            IRND = (RANNUM(ipt,I)-0.0005)*(KCR-KRMIN+1)
+            II = mod(i-1,nrcm) + 1
+            IRND = (RANNUM(ipt,II)-0.0005)*(KCR-KRMIN+1)
             IC(KFX+I) = IRND + KRMIN
           ENDDO
         ENDIF
 !
-!     ia = 1
-!
 !     write(0,*)' in rascnv: k=',k,'lat=',lat,' lprnt=',lprnt
-!     if (lprnt) then
+!     if (lprint) then
 !        if (me == 0) then
+!        write(0,*)' ic=',ic(1:kfx+ncrnd)
 !        write(0,*)' tin',(tin(ia,l),l=k,1,-1)
-!        write(0,*)' qin',(qin(ia,l),l=k,1,-1)
+!        write(0,*)' qin',(qin(ia,l),l=k,1,-1),' kdt=',kdt,' me=',me
+!        write(0,*)' qwin',(ccin(ia,l,2),l=k,1,-1)
+!        write(0,*)' qiin',(ccin(ia,l,1),l=k,1,-1)
 !     endif
 !
 !
-        lprint = lprnt .and. ipt == ipr
+!       lprint = lprnt .and. ipt == ipr
 
         do l=1,k
           CLW(l)     = zero
@@ -1110,17 +1120,22 @@
               ccin(ipt,l,2) = ccin(ipt,l,2) + clw(l)
             enddo
           endif
-!
-!         if (lprint) then
-!           write(0,*) ' tin',(tin(ia,l),l=k,1,-1)
-!           write(0,*) ' qin',(qin(ia,l),l=k,1,-1)
-!         endif
-!
         endif
+!
+!
+!       if (lprint) then
+!         write(0,*) ' endtin',(tin(ia,l),l=k,1,-1)
+!         write(0,*) ' endqin',(qin(ia,l),l=k,1,-1)
+!         write(0,*) ' endqwin',(ccin(ia,l,2),l=k,1,-1)
+!         write(0,*) ' endqiin',(ccin(ia,l,1),l=k,1,-1)
+!       endif
+!
 !
 !     Velocity scale from the downdraft!
 !
         DDVEL(ipt) = DDVEL(ipt) * DDFAC * GRAV / (prs(KP1)-prs(K))
+
+!       if (lprint) write(0,*)' ddvel=',ddvel(ipt),' ddfac=',ddfac
 !
       ENDDO                            ! End of the IPT Loop!
 
@@ -1319,8 +1334,8 @@
 !       write(0,*) ' phil=',phil(KD:K)
 !!      write(0,*) ' phih=',phih(kd:KP1),' kdt=',kdt
 !       write(0,*) ' phih=',phih(KD:KP1)
-!       write(0,*) ' toi=',toi
-!       write(0,*) ' qoi=',qoi
+!       write(0,*) ' toi=',toi(kd:k)
+!       write(0,*) ' qoi=',qoi(kd:k)
 !     endif
 !
       CLDFRD   = zero
@@ -1702,8 +1717,10 @@
 !
 !       if (ntk > 0 .and. do_aw) then
         if (ntk > 0) then
-          wcbase = min(2.0, max(wcbase, sqrt(twoo3*rbl(ntk))))
-!         wcbase = min(1.0, max(wcbase, sqrt(twoo3*rbl(ntk))))
+          if (rbl(ntk) > 0.0) then
+            wcbase = min(2.0, max(wcbase, sqrt(twoo3*rbl(ntk))))
+!           wcbase = min(1.0, max(wcbase, sqrt(twoo3*rbl(ntk))))
+          endif
         endif
 
 !       if (lprnt) write(0,*)' wcbase=',wcbase,' rbl=',
@@ -2778,7 +2795,8 @@
 !!       tem1 = sqrt(max(1.0, min(100.0,(4.0E10/max(garea,one))))) ! 20100902
          tem1 = sqrt(max(one, min(100.0,(6.25E10/max(garea,one))))) ! 20110530
 
-!        if (lprnt) write(0,*)' clfr0=',clf(tem),' tem=',tem,' tem1=',tem1
+!        if (lprnt) write(0,*)' clfr0=',clf(tem),' tem=',tem,' tem1=',  &
+!    &                         tem1
 
 !        clfrac = max(ZERO, min(ONE,  rknob*clf(tem)*tem1))
 !        clfrac = max(ZERO, min(0.25, rknob*clf(tem)*tem1))
@@ -4410,8 +4428,9 @@
       real(kind=kind_phys) es, d, hlorv, W
 !
 !     es    = 10.0 * fpvs(tt)                ! fpvs is in centibars!
-      es    = 0.01 * fpvs(tt)                ! fpvs is in Pascals!
-      D     = one / max(p+epsm1*es,ONE_M10)
+      es = min(p, 0.01 * fpvs(tt))        ! fpvs is in Pascals!
+!     D  = one / max(p+epsm1*es,ONE_M10)
+      D  = one / (p+epsm1*es)
 !
       q     = MIN(eps*es*D, ONE)
 !
