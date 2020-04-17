@@ -202,6 +202,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     type(ESMF_DELayout) :: delayout
     type(ESMF_DistGrid) :: distgrid
     real(ESMF_KIND_R8),dimension(:,:), pointer :: glatPtr, glonPtr
+    integer :: tlb(2), tub(2)
     real(ESMF_KIND_R8),parameter :: dtor = 180.0_ESMF_KIND_R8 / 3.1415926535897931_ESMF_KIND_R8
     integer :: jsc, jec, isc, iec, nlev
     type(domain2D) :: domain
@@ -415,9 +416,18 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
           enddo
 
           ! add and define "corner" coordinate values
-          !call ESMF_GridAddCoord(fcstGrid, staggerLoc=ESMF_STAGGERLOC_CORNER, staggerAlign=(/1,1/), rc=rc); ESMF_ERR_ABORT(rc)
-          !call ESMF_GridGetCoord(fcstGrid, coordDim=1, staggerLoc=ESMF_STAGGERLOC_CORNER,           farrayPtr=glonPtr, rc=rc); ESMF_ERR_ABORT(rc)
-          !call ESMF_GridGetCoord(fcstGrid, coordDim=2, staggerLoc=ESMF_STAGGERLOC_CORNER,           farrayPtr=glatPtr, rc=rc); ESMF_ERR_ABORT(rc)
+          call ESMF_GridAddCoord(fcstGrid, staggerLoc=ESMF_STAGGERLOC_CORNER, &
+                                 staggerAlign=(/1,1/), rc=rc); ESMF_ERR_ABORT(rc)
+          call ESMF_GridGetCoord(fcstGrid, coordDim=1, staggerLoc=ESMF_STAGGERLOC_CORNER, &
+                                 totalLBound=tlb, totalUBound=tub, &
+                                 farrayPtr=glonPtr, rc=rc); ESMF_ERR_ABORT(rc)
+          glonPtr(tlb(1):tub(1),tlb(2):tub(2)) = &
+             atm_int_state%Atm%lon_bnd(tlb(1):tub(1),tlb(2):tub(2)) * dtor
+          call ESMF_GridGetCoord(fcstGrid, coordDim=2, staggerLoc=ESMF_STAGGERLOC_CORNER, &
+                                 totalLBound=tlb, totalUBound=tub, &
+                                 farrayPtr=glatPtr, rc=rc); ESMF_ERR_ABORT(rc)
+          glatPtr(tlb(1):tub(1),tlb(2):tub(2)) = &
+            atm_int_state%Atm%lat_bnd(tlb(1):tub(1),tlb(2):tub(2)) * dtor
 
           !do j = jsc, jec
           !do i = isc, iec
@@ -494,12 +504,6 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 
         endif
 !
-!test to write out netcdf file:
-      if (btest(diagnostic,16)) then
-        call write_grid_netcdf(fcstGrid, "diag_fv3_grid.nc", rc=rc)
-        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-      endif
-!
 !test to write out vtk file:
         if( cpl ) then
           call addLsmask2grid(fcstGrid, rc=rc)
@@ -511,6 +515,12 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
           endif
         endif
+!
+!test to write out netcdf file:
+      if (btest(diagnostic,16)) then
+        call write_grid_netcdf(fcstGrid, "diagnostic_FV3_fcst_initialize_grid.nc", rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+      endif
 !
 ! Add gridfile Attribute to the exportState
         call ESMF_AttributeAdd(exportState, convention="NetCDF", purpose="FV3", &
