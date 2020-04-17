@@ -1161,7 +1161,6 @@ module post_gfs
                   endif
                 enddo
               enddo
-!              print *,'in gfs_post, get tisfc=',maxval(ti), minval(ti)
             endif
 
             ! sea ice skin temperature
@@ -1177,7 +1176,6 @@ module post_gfs
                   endif
                 enddo
               enddo
-!              print *,'in gfs_post, get tisfc=',maxval(ti), minval(ti)
             endif
 
             ! vegetation fraction
