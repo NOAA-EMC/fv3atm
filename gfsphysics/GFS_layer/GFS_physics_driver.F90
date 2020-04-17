@@ -4949,6 +4949,7 @@ module module_physics_driver
 !       write(1000+me,*)' maxwatncb=',maxval(Stateout%gq0(1:im,k,ntlnc)),' k=',k,' kdt',kdt
 !       enddo
 
+!## CCPP ##* m_micro.F90/m_micro_run
         call m_micro_driver (im, ix, levs, Model%flipv, dtp,  Statein%prsl,      &
                              Statein%prsi, Statein%phil, Statein%phii,           &
                              Statein%vvl, clw(1,1,2), QLCN, clw(1,1,1), QICN,    &
@@ -4973,6 +4974,7 @@ module module_physics_driver
 !                            ipr, kdt, Grid%xlat, Grid%xlon)
                              Model%mg_alf, Model%mg_qcmin, Model%pdfflag,        &
                              ipr, kdt, Grid%xlat, Grid%xlon, rhc)
+!*## CCPP ##
 !     do k=1,levs
 !     write(1000+me,*)' maxwatnca=',maxval(Stateout%gq0(1:im,k,ntlnc)),' k=',k,' kdt=',kdt
 !     enddo
