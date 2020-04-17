@@ -400,7 +400,7 @@ module fv3gfs_cap_mod
       write_nemsioflip =.false.
       write_fsyncflag  =.false.
 
-      if(trim(output_grid) == 'gaussian_grid') then
+      if(trim(output_grid) == 'gaussian_grid' .or. trim(output_grid) == 'global_latlon') then
         call ESMF_ConfigGetAttribute(config=CF, value=imo, label ='imo:',rc=rc)
         call ESMF_ConfigGetAttribute(config=CF, value=jmo, label ='jmo:',rc=rc)
         call ESMF_ConfigGetAttribute(config=CF, value=write_nemsioflip, label ='write_nemsioflip:',rc=rc)
