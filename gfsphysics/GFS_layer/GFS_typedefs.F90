@@ -3270,6 +3270,10 @@ module GFS_typedefs
     Model%fhzero           = fhzero
     Model%ldiag3d          = ldiag3d
     Model%qdiag3d          = qdiag3d
+    if (Model%qdiag3d .and. .not. Model%ldiag3d) then
+      write(0,*) 'Logic error in GFS_typedefs.F90: qdiag3d requires ldiag3d'
+      stop
+    endif
     Model%flag_for_gwd_generic_tend = .true.
     Model%flag_for_pbl_generic_tend = .true.
     Model%flag_for_scnv_generic_tend = .true.
