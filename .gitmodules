@@ -1,18 +1,12 @@
 [submodule "atmos_cubed_sphere"]
 	path = atmos_cubed_sphere
-	#url = https://github.com/NOAA-EMC/GFDL_atmos_cubed_sphere
-	#branch = dev/emc
-	url = https://github.com/climbfuji/GFDL_atmos_cubed_sphere
-	branch = update_dev_emc_from_dtc_develop_20200414
+	url = https://github.com/NOAA-EMC/GFDL_atmos_cubed_sphere
+	branch = dev/emc
 [submodule "ccpp/framework"]
 	path = ccpp/framework
-	#url = https://github.com/NCAR/ccpp-framework
-	#branch = master
-	url = https://github.com/climbfuji/ccpp-framework
-	branch = update_master_from_dtc_develop_20200414
+	url = https://github.com/NCAR/ccpp-framework
+	branch = master
 [submodule "ccpp/physics"]
 	path = ccpp/physics
-	#url = https://github.com/NCAR/ccpp-physics
-	#branch = master
-	url = https://github.com/climbfuji/ccpp-physics
-	branch = update_master_from_dtc_develop_20200414
+	url = https://github.com/NCAR/ccpp-physics
+	branch = master
