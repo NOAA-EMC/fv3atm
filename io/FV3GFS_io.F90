@@ -401,9 +401,9 @@ module FV3GFS_io_mod
          temp2d(i,j,nsfcprop2d+Model%ntot2d+l) = IPD_Data(nb)%Tbd%phy_fctd(ix,l)
        enddo
 
-       temp3d(i,j,:, 1) = IPD_Data(nb)%Statein%phii(ix,:)
-       temp3d(i,j,:, 2) = IPD_Data(nb)%Statein%prsi(ix,:)
-       temp3d(i,j,:, 3) = IPD_Data(nb)%Statein%prsik(ix,:)
+       temp3d(i,j,:, 1) = IPD_Data(nb)%Statein%phii(ix,1:lev)
+       temp3d(i,j,:, 2) = IPD_Data(nb)%Statein%prsi(ix,1:lev)
+       temp3d(i,j,:, 3) = IPD_Data(nb)%Statein%prsik(ix,1:lev)
        temp3d(i,j,:, 4) = IPD_Data(nb)%Statein%phil(ix,:)
        temp3d(i,j,:, 5) = IPD_Data(nb)%Statein%prsl(ix,:)
        temp3d(i,j,:, 6) = IPD_Data(nb)%Statein%prslk(ix,:)
