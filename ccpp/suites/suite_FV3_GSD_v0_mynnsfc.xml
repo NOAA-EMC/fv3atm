@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<suite name="FV3_GSD_v0_drag_suite" lib="ccppphys" ver="3">
+<suite name="FV3_GSD_v0_mynnsfc" lib="ccppphys" ver="3">
   <!-- <init></init> -->
   <group name="time_vary">
     <subcycle loop="1">
@@ -20,7 +20,7 @@
       <scheme>rrtmg_sw_post</scheme>
       <scheme>rrtmg_lw_pre</scheme>
       <scheme>rrtmg_lw</scheme>
-      <scheme>sgscloud_radpre</scheme>
+      <scheme>sgscloud_radpost</scheme>
       <scheme>rrtmg_lw_post</scheme>
       <scheme>GFS_rrtmg_post</scheme>
     </subcycle>
@@ -39,7 +39,7 @@
     </subcycle>
     <!-- Surface iteration loop -->
     <subcycle loop="2">
-      <scheme>sfc_diff</scheme>
+      <scheme>mynnsfc_wrapper</scheme>
       <scheme>GFS_surface_loop_control_part1</scheme>
       <scheme>sfc_nst_pre</scheme>
       <scheme>sfc_nst</scheme>
@@ -59,7 +59,8 @@
       <scheme>GFS_surface_generic_post</scheme>
       <scheme>mynnedmf_wrapper</scheme>
       <scheme>GFS_GWD_generic_pre</scheme>
-      <scheme>drag_suite</scheme>
+      <scheme>cires_ugwp</scheme>
+      <scheme>cires_ugwp_post</scheme>
       <scheme>GFS_GWD_generic_post</scheme>
       <scheme>rayleigh_damp</scheme>
       <scheme>GFS_suite_stateout_update</scheme>
