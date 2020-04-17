@@ -130,6 +130,7 @@ module GFS_typedefs
 #ifdef CCPP
 !--- restart information
     logical :: restart                           !< flag whether this is a coldstart (.false.) or a warmstart/restart (.true.)
+    logical :: cycling                           !< flag whether this is a coldstart (.false.) or a cycled run (.true.)
 !--- hydrostatic/non-hydrostatic flag
     logical :: hydrostatic                       !< flag whether this is a hydrostatic or non-hydrostatic run
 #endif
@@ -881,6 +882,7 @@ module GFS_typedefs
     integer              :: bl_mynn_edmf_part  !< flag to partitioning og the MF and ED areas
     integer              :: bl_mynn_cloudmix   !< flag to activate mixing of cloud species
     integer              :: bl_mynn_mixqt      !< flag to mix total water or individual species
+    integer              :: bl_mynn_output      !< flag to initialize and write out extra 3D arrays
     integer              :: icloud_bl          !< flag for coupling sgs clouds to radiation
     ! *DH
     ! MYJ switches
@@ -1063,6 +1065,7 @@ module GFS_typedefs
 #ifdef CCPP
     logical              :: first_time_step !< flag signaling first time step for time integration routine
     logical              :: restart         !< flag whether this is a coldstart (.false.) or a warmstart/restart (.true.)
+    logical              :: cycling         !< flag whether this is a coldstart (.false.) or a cycled run (.true.)
     logical              :: hydrostatic     !< flag whether this is a hydrostatic or non-hydrostatic run
 #endif
     integer              :: jdat(1:8)       !< current forecast date and time
@@ -1221,6 +1224,7 @@ module GFS_typedefs
     !--- MYNN prognostic variables that can't be in the Intdiag or Interstitial DDTs
     real (kind=kind_phys), pointer :: CLDFRA_BL  (:,:)   => null()  !
     real (kind=kind_phys), pointer :: QC_BL      (:,:)   => null()  !
+    real (kind=kind_phys), pointer :: QI_BL      (:,:)   => null()  !
     real (kind=kind_phys), pointer :: el_pbl     (:,:)   => null()  !
     real (kind=kind_phys), pointer :: Sh3D       (:,:)   => null()  !
     real (kind=kind_phys), pointer :: qke        (:,:)   => null()  !
@@ -1385,16 +1389,20 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: totgrpb(:)     => null()   !< accumulated graupel precipitation in bucket (kg/m2)
 
 #ifdef CCPP
-    !--- MYNN variables                                              
+    !--- MYNN variables
     real (kind=kind_phys), pointer :: edmf_a     (:,:)   => null()  !
     real (kind=kind_phys), pointer :: edmf_w     (:,:)   => null()  !
     real (kind=kind_phys), pointer :: edmf_qt    (:,:)   => null()  !
     real (kind=kind_phys), pointer :: edmf_thl   (:,:)   => null()  !
     real (kind=kind_phys), pointer :: edmf_ent   (:,:)   => null()  !
     real (kind=kind_phys), pointer :: edmf_qc    (:,:)   => null()  !
+    real (kind=kind_phys), pointer :: sub_thl    (:,:)   => null()  !
+    real (kind=kind_phys), pointer :: sub_sqv    (:,:)   => null()  !
+    real (kind=kind_phys), pointer :: det_thl    (:,:)   => null()  !
+    real (kind=kind_phys), pointer :: det_sqv    (:,:)   => null()  !
     real (kind=kind_phys), pointer :: maxMF       (:)    => null()  !
     integer, pointer               :: nupdraft    (:)    => null()  !
-    integer, pointer               :: ktop_shallow (:)   => null()  !
+    integer, pointer               :: ktop_plume  (:)    => null()  !
     real (kind=kind_phys), pointer :: exch_h     (:,:)   => null()  !
     real (kind=kind_phys), pointer :: exch_m     (:,:)   => null()  !
 
@@ -2734,6 +2742,7 @@ module GFS_typedefs
     logical              :: ldiag3d        = .false.         !< flag for 3d diagnostic fields
     logical              :: lssav          = .false.         !< logical flag for storing diagnostics
 
+    logical              :: cycling        = .false.         !< flag to activate extra cycling procedures
     real(kind=kind_phys) :: fhcyc          = 0.              !< frequency for surface data cycling (hours)
     integer              :: thermodyn_id   =  1              !< valid for GFS only for get_prs/phi
     integer              :: sfcpress_id    =  1              !< valid for GFS only for get_prs/phi
@@ -2962,6 +2971,7 @@ module GFS_typedefs
     integer              :: bl_mynn_edmf_part = 0
     integer              :: bl_mynn_cloudmix  = 1
     integer              :: bl_mynn_mixqt     = 0
+    integer              :: bl_mynn_output    = 0
     integer              :: icloud_bl         = 1
     ! *DH
     logical              :: do_myjsfc         = .false.               !< flag for MYJ surface layer scheme
@@ -3160,7 +3170,8 @@ module GFS_typedefs
                                ! DH* TODO - move to MYNN namelist section
                                bl_mynn_cloudpdf, bl_mynn_edmf, bl_mynn_edmf_mom,            &
                                bl_mynn_edmf_tke, bl_mynn_edmf_part, bl_mynn_cloudmix,       &
-                               bl_mynn_mixqt, icloud_bl, bl_mynn_tkeadvect, gwd_opt,        &
+                               bl_mynn_mixqt, bl_mynn_output, icloud_bl, bl_mynn_tkeadvect, &
+                               gwd_opt,                                                     &
                                ! *DH
                                do_myjsfc, do_myjpbl,                                        &
 #endif
@@ -3588,6 +3599,7 @@ module GFS_typedefs
     Model%bl_mynn_edmf_tke  = bl_mynn_edmf_tke
     Model%bl_mynn_cloudmix  = bl_mynn_cloudmix
     Model%bl_mynn_mixqt     = bl_mynn_mixqt
+    Model%bl_mynn_output    = bl_mynn_output
     Model%bl_mynn_edmf_part = bl_mynn_edmf_part
     Model%bl_mynn_tkeadvect = bl_mynn_tkeadvect
     Model%grav_settling     = grav_settling
@@ -3833,6 +3845,7 @@ module GFS_typedefs
 #ifdef CCPP
     Model%first_time_step  = .true.
     Model%restart          = restart
+    Model%cycling          = cycling
     Model%hydrostatic      = hydrostatic
 #endif
     Model%jdat(1:8)        = jdat(1:8)
@@ -3941,7 +3954,8 @@ module GFS_typedefs
                                             ' boundary layer turbulence and shallow convection', &
                                             ' bl_mynn_cloudpdf=',Model%bl_mynn_cloudpdf,         &
                                             ' bl_mynn_mixlength=',Model%bl_mynn_mixlength,       &
-                                            ' bl_mynn_edmf=',Model%bl_mynn_edmf
+                                            ' bl_mynn_edmf=',Model%bl_mynn_edmf,                 &
+                                            ' bl_mynn_output=',Model%bl_mynn_output
     endif
 #endif
 
@@ -4749,6 +4763,7 @@ module GFS_typedefs
       print *, ' si                : ', Model%si
       print *, ' first_time_step   : ', Model%first_time_step
       print *, ' restart           : ', Model%restart
+      print *, ' cycling           : ', Model%cycling
       print *, ' hydrostatic       : ', Model%hydrostatic
 #endif
     endif
@@ -4954,6 +4969,7 @@ module GFS_typedefs
        !print*,"Allocating all MYNN-EDMF variables:"
        allocate (Tbd%cldfra_bl (IM,Model%levs))
        allocate (Tbd%qc_bl     (IM,Model%levs))
+       allocate (Tbd%qi_bl     (IM,Model%levs))
        allocate (Tbd%el_pbl    (IM,Model%levs))
        allocate (Tbd%sh3d      (IM,Model%levs))
        allocate (Tbd%qke       (IM,Model%levs))
@@ -4963,6 +4979,7 @@ module GFS_typedefs
        !print*,"Allocating all MYNN-EDMF variables:"
        Tbd%cldfra_bl     = clear_val
        Tbd%qc_bl         = clear_val
+       Tbd%qi_bl         = clear_val
        Tbd%el_pbl        = clear_val
        Tbd%sh3d          = clear_val
        Tbd%qke           = zero
@@ -5302,28 +5319,40 @@ module GFS_typedefs
 #ifdef CCPP
     !--- MYNN variables:
     if (Model%do_mynnedmf) then
-      !print*,"Allocating all MYNN-EDMF variables:"
-      allocate (Diag%edmf_a    (IM,Model%levs))
-      allocate (Diag%edmf_w    (IM,Model%levs))
-      allocate (Diag%edmf_qt   (IM,Model%levs))
-      allocate (Diag%edmf_thl  (IM,Model%levs))
-      allocate (Diag%edmf_ent  (IM,Model%levs))
-      allocate (Diag%edmf_qc   (IM,Model%levs))
+      if (Model%bl_mynn_output .ne. 0) then
+        !print*,"Allocating all MYNN-EDMF variables:"
+        allocate (Diag%edmf_a    (IM,Model%levs))
+        allocate (Diag%edmf_w    (IM,Model%levs))
+        allocate (Diag%edmf_qt   (IM,Model%levs))
+        allocate (Diag%edmf_thl  (IM,Model%levs))
+        allocate (Diag%edmf_ent  (IM,Model%levs))
+        allocate (Diag%edmf_qc   (IM,Model%levs))
+        allocate (Diag%sub_thl   (IM,Model%levs))
+        allocate (Diag%sub_sqv   (IM,Model%levs))
+        allocate (Diag%det_thl   (IM,Model%levs))
+        allocate (Diag%det_sqv   (IM,Model%levs))
+      endif
       allocate (Diag%nupdraft  (IM))
       allocate (Diag%maxmf     (IM))
-      allocate (Diag%ktop_shallow(IM))
+      allocate (Diag%ktop_plume(IM))
       allocate (Diag%exch_h    (IM,Model%levs))
       allocate (Diag%exch_m    (IM,Model%levs))
-      !print*,"Initializing all MYNN-EDMF variables with ",clear_val
-      Diag%edmf_a        = clear_val
-      Diag%edmf_w        = clear_val
-      Diag%edmf_qt       = clear_val
-      Diag%edmf_thl      = clear_val
-      Diag%edmf_ent      = clear_val
-      Diag%edmf_qc       = clear_val
+      if (Model%bl_mynn_output .ne. 0) then
+        !print*,"Initializing all MYNN-EDMF variables with ",clear_val
+        Diag%edmf_a        = clear_val
+        Diag%edmf_w        = clear_val
+        Diag%edmf_qt       = clear_val
+        Diag%edmf_thl      = clear_val
+        Diag%edmf_ent      = clear_val
+        Diag%edmf_qc       = clear_val
+        Diag%sub_thl       = clear_val
+        Diag%sub_sqv       = clear_val
+        Diag%det_thl       = clear_val
+        Diag%det_sqv       = clear_val
+      endif
       Diag%nupdraft      = 0
       Diag%maxmf         = clear_val
-      Diag%ktop_shallow  = 0
+      Diag%ktop_plume    = 0
       Diag%exch_h        = clear_val
       Diag%exch_m        = clear_val
     endif

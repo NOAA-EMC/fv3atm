@@ -3822,6 +3822,12 @@
   units = flag
   dimensions = ()
   type = logical
+[cycling]
+  standard_name = flag_for_cycling
+  long_name = flag for cycling or coldstart
+  units = flag
+  dimensions = ()
+  type = logical
 [hydrostatic]
   standard_name = flag_for_hydrostatic_solver
   long_name = flag for hydrostatic solver from dynamics
@@ -3994,6 +4000,12 @@
 [bl_mynn_mixqt]
   standard_name = mix_total_water_flag
   long_name = flag to mix total water or individual species
+  units = flag
+  dimensions = ()
+  type = integer
+[bl_mynn_output]
+  standard_name = mynn_output_flag
+  long_name = flag initialize and output extra 3D variables
   units = flag
   dimensions = ()
   type = integer
@@ -4410,8 +4422,15 @@
   type = real
   kind = kind_phys
 [QC_BL]
-  standard_name = subgrid_cloud_mixing_ratio_pbl
-  long_name = subgrid cloud cloud mixing ratio from PBL scheme
+  standard_name = subgrid_cloud_water_mixing_ratio_pbl
+  long_name = subgrid cloud water mixing ratio from PBL scheme
+  units = kg kg-1
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+[QI_BL]
+  standard_name = subgrid_cloud_ice_mixing_ratio_pbl
+  long_name = subgrid cloud ice mixing ratio from PBL scheme
   units = kg kg-1
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
@@ -5726,6 +5745,34 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+[sub_thl]
+  standard_name = theta_subsidence_tendency
+  long_name = updraft theta subsidence tendency
+  units = K s-1
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+[sub_sqv]
+  standard_name = water_vapor_subsidence_tendency
+  long_name = updraft water vapor subsidence tendency
+  units = kg kg-1 s-1
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+[det_thl]
+  standard_name = theta_detrainment_tendency
+  long_name = updraft theta detrainment tendency
+  units = K s-1
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+[det_sqv]
+  standard_name = water_vapor_detrainment_tendency
+  long_name = updraft water vapor detrainment tendency
+  units = kg kg-1 s-1
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
 [nupdraft]
   standard_name = number_of_plumes
   long_name = number of plumes per grid column
@@ -5742,6 +5789,12 @@
 [ktop_shallow]
   standard_name = k_level_of_highest_reaching_plume
   long_name = k-level of highest reaching plume
+  units = count
+  dimensions = (horizontal_dimension)
+  type = integer
+[ktop_plume]
+  standard_name = k_level_of_highest_plume
+  long_name = k-level of highest plume
   units = count
   dimensions = (horizontal_dimension)
   type = integer
