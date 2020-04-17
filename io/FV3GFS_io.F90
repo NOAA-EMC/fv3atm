@@ -89,7 +89,7 @@ module FV3GFS_io_mod
   integer :: tot_diag_idx = 0
   integer :: total_outputlevel = 0
   integer :: isco,ieco,jsco,jeco,levo,num_axes_phys
-  integer :: fhzero, ncld, nsoil, imp_physics
+  integer :: fhzero, ncld, nsoil, imp_physics, landsfcmdl
   real(4) :: dtp
   logical :: lprecip_accu
   character(len=64)  :: Sprecip_accu
@@ -2188,8 +2188,9 @@ module FV3GFS_io_mod
     nsoil  = Model%lsoil
     dtp    = Model%dtp
     imp_physics  = Model%imp_physics
+    landsfcmdl  = Model%lsm
 !    print *,'in fv3gfs_diag_register,ncld=',Model%ncld,Model%lsoil,Model%imp_physics, &
-!      ' dtp=',dtp
+!      ' dtp=',dtp,' landsfcmdl=',Model%lsm
 !
 !save lon/lat for vector interpolation
     allocate(lon(isco:ieco,jsco:jeco))
@@ -2803,7 +2804,7 @@ module FV3GFS_io_mod
 
      call ESMF_AttributeAdd(phys_bundle(ibdl), convention="NetCDF", purpose="FV3", &
                             attrList=(/"fhzero     ", "ncld       ", "nsoil      ",&
-                                       "imp_physics", "dtp        "/), rc=rc)
+                                       "imp_physics", "dtp        ", "landsfcmdl "/), rc=rc)
 
      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
@@ -2826,6 +2827,10 @@ module FV3GFS_io_mod
      call ESMF_AttributeSet(phys_bundle(ibdl), convention="NetCDF", purpose="FV3", &
                             name="dtp", value=dtp, rc=rc)
 !     print *,'in fcst gfdl diag, dtp=',dtp,' ibdl=',ibdl
+     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+     call ESMF_AttributeSet(phys_bundle(ibdl), convention="NetCDF", purpose="FV3", &
+                            name="landsfcmdl", value=landsfcmdl, rc=rc)
      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
 !end ibdl
