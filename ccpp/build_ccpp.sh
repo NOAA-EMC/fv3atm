@@ -144,9 +144,6 @@ else
 fi
 if [[ "${MAKE_OPT}" == *"INTEL16=Y"* ]]; then
   CCPP_CMAKE_FLAGS="${CCPP_CMAKE_FLAGS} -DLEGACY_INTEL=ON"
-elif [[ "${MACHINE_ID}" == "wcoss_cray" ]]; then
-  echo "In ccpp_build.sh: flag to cmake that wcoss_cray uses Intel 16"
-  CCPP_CMAKE_FLAGS="${CCPP_CMAKE_FLAGS} -DLEGACY_INTEL=ON"
 else
   CCPP_CMAKE_FLAGS="${CCPP_CMAKE_FLAGS} -DLEGACY_INTEL=OFF"
 fi
