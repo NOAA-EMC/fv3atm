@@ -5452,15 +5452,8 @@
   type = real
   kind = kind_phys
 [du3dt(:,:,8)]
-  standard_name = cumulative_change_in_x_wind_due_to_model_without_physics
-  long_name = cumulative change in x wind due to model without physics
-  units = m s-1
-  dimensions = (horizontal_dimension,vertical_dimension)
-  type = real
-  kind = kind_phys
-[du3dt(:,:,9)]
-  standard_name = cumulative_change_in_x_wind
-  long_name = cumulative change in x wind
+  standard_name = cumulative_change_in_x_wind_due_to_non_physics_processes
+  long_name = cumulative change in x wind due to non-physics processes
   units = m s-1
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
@@ -5515,15 +5508,8 @@
   type = real
   kind = kind_phys
 [dv3dt(:,:,8)]
-  standard_name = cumulative_change_in_y_wind_due_to_model_without_physics
-  long_name = cumulative change in y wind due to model without physics
-  units = m s-1
-  dimensions = (horizontal_dimension,vertical_dimension)
-  type = real
-  kind = kind_phys
-[dv3dt(:,:,9)]
-  standard_name = cumulative_change_in_y_wind
-  long_name = cumulative change in y wind
+  standard_name = cumulative_change_in_y_wind_due_to_non_physics_processes
+  long_name = cumulative change in y wind due to non-physics processes
   units = m s-1
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
@@ -5599,15 +5585,8 @@
   type = real
   kind = kind_phys
 [dt3dt(:,:,11)]
-  standard_name = cumulative_change_in_temperature_due_to_model_without_physics
-  long_name = cumulative change in temperature due to model without physics
-  units = K
-  dimensions = (horizontal_dimension,vertical_dimension)
-  type = real
-  kind = kind_phys
-[dt3dt(:,:,12)]
-  standard_name = cumulative_change_in_temperature
-  long_name = cumulative change in temperature
+  standard_name = cumulative_change_in_temperature_due_to_non_physics_processes
+  long_name = cumulative change in temperature due to non-physics processed
   units = K
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
@@ -5683,15 +5662,22 @@
   type = real
   kind = kind_phys
 [dq3dt(:,:,11)]
-  standard_name = cumulative_change_in_water_vapor_specific_humidity_due_to_model_without_physics
-  long_name = cumulative change in water vapor specific humidity due to model without physics
+  standard_name = cumulative_change_in_ozone_concentration_due_to_physics
+  long_name = cumulative change in ozone concentration due to physics
   units = kg kg-1
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
 [dq3dt(:,:,12)]
-  standard_name = cumulative_change_in_water_vapor_specific_humidity
-  long_name = cumulative change in water vapor specific humidity
+  standard_name = cumulative_change_in_water_vapor_specific_humidity_due_to_non_physics_processes
+  long_name = cumulative change in water vapor specific humidity due to non-physics processes
+  units = kg kg-1
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+[dq3dt(:,:,13)]
+  standard_name = cumulative_change_in_ozone_concentration_due_to_non_physics_processes
+  long_name = cumulative change in ozone_concentration due to non-physics processes
   units = kg kg-1
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real

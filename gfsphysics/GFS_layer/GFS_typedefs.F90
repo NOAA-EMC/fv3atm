@@ -5260,13 +5260,12 @@ module GFS_typedefs
     
     !--- 3D diagnostics
     if (Model%ldiag3d) then
-      allocate (Diag%du3dt  (IM,Model%levs,9))
-      allocate (Diag%dv3dt  (IM,Model%levs,9))
-      allocate (Diag%dt3dt  (IM,Model%levs,12))
+      allocate (Diag%du3dt  (IM,Model%levs,8))
+      allocate (Diag%dv3dt  (IM,Model%levs,8))
+      allocate (Diag%dt3dt  (IM,Model%levs,11))
       if (Model%qdiag3d) then
-        allocate (Diag%dq3dt  (IM,Model%levs,12))
+        allocate (Diag%dq3dt  (IM,Model%levs,13))
       endif
-      Diag%tend_book=0
 !      allocate (Diag%dq3dt  (IM,Model%levs,oz_coeff+5))
 !--- needed to allocate GoCart coupling fields
 !      allocate (Diag%upd_mf (IM,Model%levs))
