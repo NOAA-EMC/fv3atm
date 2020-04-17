@@ -51,6 +51,10 @@ add_library(
     ../../stochastic_physics/initialize_spectral_mod.F90
 )
 
+if(CCPP)
+  target_include_directories(stochastic_physics PRIVATE ${CMAKE_BINARY_DIR}/FV3/ccpp/framework/src)
+  target_include_directories(stochastic_physics PRIVATE ${CMAKE_BINARY_DIR}/FV3/ccpp/physics)
+endif()
 target_link_libraries(stochastic_physics fms)
 target_link_libraries(stochastic_physics ${PHYS}physics)
 target_link_libraries(stochastic_physics fv3core)
