@@ -968,7 +968,7 @@ contains
 
       do i=1,nx
 
-        wrk = 0.1*adzl(i,k)
+        wrk = 0.1d0*adzl(i,k)
                                                             ! Minimum 0.1 of local dz
         smixt(i,k) = max(wrk, min(max_eddy_length_scale,smixt(i,k)))
 
@@ -1249,7 +1249,7 @@ contains
         ELSE
 !<aab
 ! Clip w3
-          cond_w = 1.2*sqrt2*max(w3_tol, sqrtw2*sqrtw2*sqrtw2)
+          cond_w = 1.2d0*sqrt2*max(w3_tol, sqrtw2*sqrtw2*sqrtw2)
           w3var  = max(-cond_w, min(cond_w, w3var))
 !>aab
                 
@@ -1574,7 +1574,6 @@ contains
 !    ,' hl=',hl(i,k),' gamaz=',gamaz(i,k),' diag_ql=',diag_ql,' qpl=',qpl(i,k)&
 !    ,' diag_qi=',diag_qi,' qpi=',qpi(i,k),' diag_qn =',diag_qn ,' aterm=',aterm,' onema=',onema&
 !    ,' qn1=',qn1 ,' qn2=',qn2,' ql1=',ql1,' ql2=',ql2
-! Update moisture fields
 
 ! Update ncpl and ncpi Anning Cheng 03/11/2016
 !       ncpl(i,k)    = diag_ql/max(qc(i,k),1.e-10)*ncpl(i,k)
@@ -1593,6 +1592,7 @@ contains
           endif
         endif
 
+! Update moisture fields
         qc(i,k)      = diag_ql
         qi(i,k)      = diag_qi
         qwv(i,k)     = max(zero, total_water(i,k) - diag_qn)

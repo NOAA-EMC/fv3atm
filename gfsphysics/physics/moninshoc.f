@@ -347,7 +347,7 @@
 !     compute tridiagonal matrix elements for heat and moisture
 !
       do i=1,im
-         ad(i,1) = 1.
+         ad(i,1) = one
          a1(i,1) = t1(i,1)   + beta(i) * heat(i)
          a2(i,1) = q1(i,1,1) + beta(i) * evap(i)
       enddo
@@ -381,7 +381,7 @@
           al(i,k)   = -dtodsu*dsdz2
 !
           ad(i,k)   = ad(i,k)-au(i,k)
-          ad(i,kp1) = 1.-al(i,k)
+          ad(i,kp1) = one - al(i,k)
           dsdzt     = tem1 * gocp
           a1(i,k)   = a1(i,k)   + dtodsd*dsdzt
           a1(i,kp1) = t1(i,kp1) - dtodsu*dsdzt

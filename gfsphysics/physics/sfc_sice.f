@@ -191,7 +191,7 @@
         if (flag(i)) then
           if (srflag(i) > zero) then
             ep(i)    = ep(i)*(one-srflag(i))
-            weasd(i) = weasd(i) + 1.e3*tprcp(i)*srflag(i)
+            weasd(i) = weasd(i) + 1.0d3*tprcp(i)*srflag(i)
             tprcp(i) = tprcp(i)*(one-srflag(i))
           endif
         endif
@@ -449,7 +449,7 @@
       real (kind=kind_phys), parameter :: didw = di/dw
       real (kind=kind_phys), parameter :: dsdi = ds/di
       real (kind=kind_phys), parameter :: ci   = 2054.0d0   ! heat capacity of fresh ice (j/kg/k)
-      real (kind=kind_phys), parameter :: li   = 3.34e5     ! latent heat of fusion (j/kg-ice)
+      real (kind=kind_phys), parameter :: li   = 3.34d5     ! latent heat of fusion (j/kg-ice)
       real (kind=kind_phys), parameter :: si   = 1.0d0      ! salinity of sea ice
       real (kind=kind_phys), parameter :: mu   = 0.054d0    ! relates freezing temp to salinity
       real (kind=kind_phys), parameter :: tfi  = -mu*si     ! sea ice freezing temp = -mu*salinity
@@ -492,9 +492,9 @@
 !
 !===> ...  begin here
 !
-      dt2  = 2.0d0 * delt
-      dt4  = 4.0d0 * delt
-      dt6  = 6.0d0 * delt
+      dt2  =  delt + delt
+      dt4  =  dt2  + dt2
+      dt6  =  dt2  + dt4
       dt2i = one / dt2
 
       do i = 1, im

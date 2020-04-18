@@ -312,7 +312,7 @@
          DO K=0, LM
            ll = lm-k
            DO I = 1,IM
-             PLE(i,k)   = prsi_i(i,ll) *0.01d0      ! interface pressure in hPa
+             PLE(i,k)   = prsi_i(i,ll) * 0.01d0      ! interface pressure in hPa
              zet(i,k+1) = phii(i,ll) * onebg
            END DO
          END DO
@@ -526,11 +526,11 @@
        do L=LM,1,-1
          do i=1,im
            blk_l(i,l)  = one / (one/max(0.15d0*ZPBL(i),0.4d0*zlo(i,lm-1))&
-     &                 + one/(zlo(i,l)*.4d0) )
+     &                 + one/(zlo(i,l)*0.4d0) )
 
            SC_ICE(i,l) = one
-           NCPL(i,l)   = MAX( NCPL(i,l), 0.0d0)
-           NCPI(i,l)   = MAX( NCPI(i,l), 0.0d0)
+           NCPL(i,l)   = MAX( NCPL(i,l), zero)
+           NCPI(i,l)   = MAX( NCPI(i,l), zero)
            RAD_CF(i,l) = max(zero, min(CLLS(i,l)+CLCN(i,l), one))
            if (.not. iccn) then
              CDNC_NUC(i,l) = zero
@@ -647,7 +647,7 @@
 !          rad_cooling(k) = RADheat(I,k)
 
            if (npre8(k) > zero .and. qir8(k) > zero) then
-             dpre8(k) = ( qir8(k)/(6.0*npre8(k)*900.0d0*PI))**(one/3.0d0)
+             dpre8(k) = ( qir8(k)/(6.0d0*npre8(k)*900.0d0*PI))**(one/3.0d0)
            else
              dpre8(k) = 1.0d-9
            endif
@@ -813,7 +813,7 @@
              smaxicer8(K)   = zero
              nheticer8(K)   = zero
              sc_icer8(K)    = 2.0d0
-!            sc_icer8(K)    = 1.0
+!            sc_icer8(K)    = 1.0d0
              naair8(K)      = zero
              npccninr8(K)   = zero
              nlimicer8(K)   = zero
@@ -840,13 +840,13 @@
 !
            if(temp(i,k) < T_ICE_ALL) then
 !            SC_ICE(i,k) = max(SC_ICE(I,k), 1.2)
-             SC_ICE(i,k) = max(SC_ICE(I,k), 1.5)
+             SC_ICE(i,k) = max(SC_ICE(I,k), 1.5d0)
            elseif(temp(i,k) > TICE) then
              SC_ICE(i,k) = rhc(i,k)
            else
 !            SC_ICE(i,k) = 1.0
 !            tx1 = max(SC_ICE(I,k), 1.2)
-             tx1 = max(SC_ICE(I,k), 1.5)
+             tx1 = max(SC_ICE(I,k), 1.5d0)
              SC_ICE(i,k) = ((tice-temp(i,k))*tx1 + (temp(i,k)-t_ice_all)*rhc(i,k)) &
                          * t_ice_denom
            endif
@@ -1272,7 +1272,7 @@
 
             CLDREFFL(I,k) = min(max(effcr8(k), 10.0d0), 150.0d0)
             CLDREFFI(I,k) = min(max(effir8(k), 20.0d0), 150.0d0)
-            CLDREFFR(I,k) = max(droutr8(k)*0.5*1.0d6, 150.0d0)
+            CLDREFFR(I,k) = max(droutr8(k)*0.5d0*1.0d6, 150.0d0)
             CLDREFFS(I,k) = max(0.192d0*dsoutr8(k)*0.5d0*1.0d6, 250.0d0)
 
           enddo       ! K loop
@@ -1355,8 +1355,8 @@
      &         prer_evap, xlat(i), xlon(i), lprint, iccn, aero_in,      &
      &         lev_sed_strt)
 !
-            LS_PRC2(I) = max(1000.d0*(prectr8(1)-precir8(1)), zero)
-            LS_SNR(I)  = max(1000.d0*precir8(1), zero)
+            LS_PRC2(I) = max(1000.0d0*(prectr8(1)-precir8(1)), zero)
+            LS_SNR(I)  = max(1000.0d0*precir8(1), zero)
             do k=1,lm
               QL_TOT(I,k)   = QL_TOT(I,k) + qctendr8(k)*DT_R8
               QI_TOT(I,k)   = QI_TOT(I,k) + qitendr8(k)*DT_R8
@@ -1371,7 +1371,7 @@
               NCPS(I,k)     = max(NCPS(I,k) + nstend(k)*dt_r8,   zero)
 
               CLDREFFL(I,k) = min(max(effcr8(k), 10.0d0),150.0d0)
-              CLDREFFI(I,k) = min(max(effir8(k), 20.0d0),1500.0d0)
+              CLDREFFI(I,k) = min(max(effir8(k), 20.0d0),150.0d0)
               CLDREFFR(I,k) = max(reff_rain(k),150.0d0)
               CLDREFFS(I,k) = max(reff_snow(k),250.0d0)
             enddo       ! K loop
@@ -1491,8 +1491,8 @@
      &         prer_evap, xlat(i), xlon(i), lprint, iccn, aero_in,      &
      &         lev_sed_strt)
 
-            LS_PRC2(I) = max(1000.d0*(prectr8(1)-precir8(1)), zero)
-            LS_SNR(I)  = max(1000.d0*precir8(1), zero)
+            LS_PRC2(I) = max(1000.0d0*(prectr8(1)-precir8(1)), zero)
+            LS_SNR(I)  = max(1000.0d0*precir8(1), zero)
             do k=1,lm
               QL_TOT(I,k)   = QL_TOT(I,k) + qctendr8(k)*DT_R8
               QI_TOT(I,k)   = QI_TOT(I,k) + qitendr8(k)*DT_R8
@@ -1523,8 +1523,8 @@
             LS_PRC2(I) = zero
             LS_SNR(I)  = zero
             do k=1,lm
-              CLDREFFL(I,k) = 100.0d0
-              CLDREFFI(I,k) = 500.0d0
+              CLDREFFL(I,k) = 10.0d0
+              CLDREFFI(I,k) = 50.0d0
               CLDREFFR(I,k) = 1000.0d0
               CLDREFFS(I,k) = 250.0d0
               CLDREFFG(I,k) = 250.0d0
@@ -1766,7 +1766,7 @@
        real(kind=kind_phys), intent(out) :: nm(pcols,pver)
 
        real(kind=kind_phys), parameter :: r=rgas, cpair=cp, g=grav, &
-                                          oneocp=1.0/cp, n2min=1.e-8
+                                          oneocp=1.0d0/cp, n2min=1.0d-8
 
 !---------------------------Local storage-------------------------------
        integer :: ix,kx
@@ -1782,15 +1782,15 @@
        kx = 0
        do ix = 1, ncol
          ti(ix,kx)   = t(ix,kx+1)
-         rhoi(ix,kx) = pi(ix,kx) / (r*(ti(ix,kx)*(1.0+fv*sph(ix,kx+1))))
+         rhoi(ix,kx) = pi(ix,kx) / (r*(ti(ix,kx)*(1.0d0+fv*sph(ix,kx+1))))
          ni(ix,kx)   = sqrt (g*g / (cpair*ti(ix,kx)))
        end do
 
 ! Interior points use centered differences
        do kx = 1, pver-1
          do ix = 1, ncol
-           ti(ix,kx)   = 0.5 * (t(ix,kx) + t(ix,kx+1))
-           rhoi(ix,kx) = pi(ix,kx) / (r*ti(ix,kx)*(1.0+0.5*fv*(sph(ix,kx)+sph(ix,kx+1))))
+           ti(ix,kx)   = 0.5d0 * (t(ix,kx) + t(ix,kx+1))
+           rhoi(ix,kx) = pi(ix,kx) / (r*ti(ix,kx)*(1.0d0+0.5d0*fv*(sph(ix,kx)+sph(ix,kx+1))))
            dtdp = (t(ix,kx+1)-t(ix,kx)) / (pm(ix,kx+1)-pm(ix,kx))
            n2   = g*g/ti(ix,kx) * (oneocp - rhoi(ix,kx)*dtdp)
            ni(ix,kx) = sqrt (max (n2min, n2))
@@ -1802,7 +1802,7 @@
        kx = pver
        do ix = 1, ncol
          ti(ix,kx)   = t(ix,kx)
-         rhoi(ix,kx) = pi(ix,kx) / (r*ti(ix,kx)*(1.0+fv*sph(ix,kx)))
+         rhoi(ix,kx) = pi(ix,kx) / (r*ti(ix,kx)*(1.0d0+fv*sph(ix,kx)))
          ni(ix,kx)   = ni(ix,kx-1)
        end do
 
@@ -1811,7 +1811,7 @@
 !-----------------------------------------------------------------------------
        do kx=1,pver
          do ix=1,ncol
-           nm(ix,kx) = 0.5 * (ni(ix,kx-1) + ni(ix,kx))
+           nm(ix,kx) = 0.5d0 * (ni(ix,kx-1) + ni(ix,kx))
          end do
        end do
 

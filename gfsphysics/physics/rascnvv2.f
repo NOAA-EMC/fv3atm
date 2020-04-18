@@ -1725,7 +1725,7 @@
 !       if (ntk > 0 .and. do_aw) then
         if (ntk > 0) then
           if (rbl(ntk) > zero) then
-            wcbase = min(2.0d0, max(wcbase, sqrt(twoo3*rbl(ntk))))
+            wcbase = min(two, max(wcbase, sqrt(twoo3*rbl(ntk))))
 !           wcbase = min(one, max(wcbase, sqrt(twoo3*rbl(ntk))))
           endif
         endif

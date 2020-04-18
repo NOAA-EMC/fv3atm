@@ -175,7 +175,7 @@
       real(kind=kind_phys), parameter :: a3      = 273.16d0
       real(kind=kind_phys), parameter :: a4      = 35.86d0
       real(kind=kind_phys), parameter :: a23m4   = a2*(a3-a4)
-      real(kind=kind_phys), parameter :: qmin   = 1.0d-8
+      real(kind=kind_phys), parameter :: qmin    = 1.0d-8
 
       real(kind=kind_phys), save         :: zsoil_noah(4)
       data zsoil_noah / -0.1d0, -0.4d0, -1.0d0, -2.0d0 /
@@ -510,7 +510,7 @@
           sncovr1(i) = sncovr
 !  ---- ... outside sflx, roughness uses cm as unit (update after snow's
 !  effect)
-          zorl(i) = z0*100.d0
+          zorl(i) = z0*100.0d0
 
 !  --- ...  do not return the following output fields to parent model
 !    ec      - canopy water evaporation (m s-1)

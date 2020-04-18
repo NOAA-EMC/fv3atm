@@ -2,7 +2,7 @@
 
       use machine , only : kind_phys
       use physcons, grav => con_g
-      real (kind=kind_phys), parameter :: ca=.4  ! ca - von karman constant
+      real (kind=kind_phys), parameter :: ca=0.4d0  ! ca - von karman constant
 
       contains
       subroutine sfc_diff(im,ps,t1,q1,z1, wind,                 !intent(in)
@@ -86,7 +86,7 @@
 
       do i=1,im
         if(flag_iter(i)) then
-          virtfac = 1.0 + rvrdm1 * max(q1(i),qmin)
+          virtfac = one + rvrdm1 * max(q1(i),qmin)
           thv1    = t1(i) * prslki(i) * virtfac
 
 !  compute stability dependent exchange coefficients
@@ -150,7 +150,7 @@
 
 ! mg, sfc-perts: add surface perturbations to ztmax/z0max ratio over land
             if (ztpert(i) /= zero) then
-              ztmax = ztmax * (10.d0**ztpert(i))
+              ztmax = ztmax * (10.0d0**ztpert(i))
             endif
             ztmax = max(ztmax, zmin)
 !
@@ -297,7 +297,7 @@
 
 !  ---  locals:
       real(kind=kind_phys), parameter :: alpha=5.0d0, a0=-3.975d0       &
-     &,             a1=12.32d0, alpha4=4.0d0*alpha
+     &,             a1=12.32d0, alpha4=4.0d0*alpha                      &
      &,             b1=-7.755d0,  b2=6.041d0,  alpha2=alpha+alpha       &
      &,             beta=1.0d0                                          &
      &,             a0p=-7.941d0, a1p=24.75d0, b1p=-8.705d0, b2p=7.899d0&

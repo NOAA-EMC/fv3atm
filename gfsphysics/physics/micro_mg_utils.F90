@@ -488,7 +488,7 @@ elemental subroutine size_dist_param_liq_line(props, qcic, ncic, rho, pgam, lamc
 
         xs = max(min(xs, 1.7_r8), 1.1_r8)
         xs = xs*xs*xs
-        xs = (xs + sqrt(xs+8.0_r8)*sqrt(xs) - 4.)/8.0_r8
+        xs = (xs + sqrt(xs+8.0_r8)*sqrt(xs) - 4.0_r8)/8.0_r8
         pgam = sqrt(xs)
      else
 
@@ -705,8 +705,8 @@ elemental subroutine size_dist_param_ice_line(props, qic, nic, lam, n0)
      lam = (props%shape_coef * nic/qic)**(1._r8/props%eff_dim)
      if (ice_sep) then
        miu_ice = max(min(0.008_r8*(lam*0.01)**0.87_r8, 10.0_r8), 0.1_r8)
-       tx1 = 1. + miu_ice
-       tx2 = 1. / gamma(tx1)
+       tx1 = 1.0_r8 + miu_ice
+       tx2 = 1.0_r8 / gamma(tx1)
        aux = (gamma(tx1+3.0_r8)*tx2) ** (1.0_r8/3.0_r8)
        lam = lam*aux
      else
@@ -1101,7 +1101,7 @@ subroutine sb2001v2_liq_autoconversion(pgam,qc,nc,qr,rho,relvar,au,nprc,nprc1,mg
            beta6 = (one+three*xs)*(one+four*xs)*(one+five*xs)  &
                  / ((one+xs)*(one+xs+xs))
            LW    = 1.0e-3_r8 * qc(i) * rho(i)
-           NW    = nc(i) * rho(i)  * 1.e-6_r8
+           NW    = nc(i) * rho(i) * 1.e-6_r8
 
            xs    = min(20.0_r8, 1.03e16_r8*(LW*LW)/(NW*SQRT(NW)))
            au(i) = 1.1e10_r8*beta6*LW*LW*LW                &
