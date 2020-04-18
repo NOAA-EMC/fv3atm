@@ -278,28 +278,6 @@ subroutine update_atmos_radiation_physics (Atmos)
     call atmos_phys_driver_statein (IPD_data, Atm_block, flip_vc)
     call mpp_clock_end(getClock)
 
-    ! Calculate total non-physics tendencies by substracting old IPD Stateout
-    ! variables from new/updated IPD Statein variables (gives the tendencies
-    ! due to anything else than physics)
-    if (IPD_Control%ldiag3d) then
-      do nb = 1,Atm_block%nblks
-        IPD_Data(nb)%Intdiag%du3dt(:,:,8)  = IPD_Data(nb)%Intdiag%du3dt(:,:,8)  &
-                                            + (IPD_Data(nb)%Statein%ugrs - IPD_Data(nb)%Stateout%gu0)
-        IPD_Data(nb)%Intdiag%dv3dt(:,:,8)  = IPD_Data(nb)%Intdiag%dv3dt(:,:,8)  &
-                                            + (IPD_Data(nb)%Statein%vgrs - IPD_Data(nb)%Stateout%gv0)
-        IPD_Data(nb)%Intdiag%dt3dt(:,:,11) = IPD_Data(nb)%Intdiag%dt3dt(:,:,11) &
-                                            + (IPD_Data(nb)%Statein%tgrs - IPD_Data(nb)%Stateout%gt0)
-      enddo
-      if (IPD_Control%qdiag3d) then
-        do nb = 1,Atm_block%nblks
-          IPD_Data(nb)%Intdiag%dq3dt(:,:,12) = IPD_Data(nb)%Intdiag%dq3dt(:,:,12) &
-                + (IPD_Data(nb)%Statein%qgrs(:,:,IPD_Control%ntqv) - IPD_Data(nb)%Stateout%gq0(:,:,IPD_Control%ntqv))
-          IPD_Data(nb)%Intdiag%dq3dt(:,:,13) = IPD_Data(nb)%Intdiag%dq3dt(:,:,13) &
-                + (IPD_Data(nb)%Statein%qgrs(:,:,IPD_Control%ntoz) - IPD_Data(nb)%Stateout%gq0(:,:,IPD_Control%ntoz))
-        enddo
-      endif
-    endif
-
 !--- if dycore only run, set up the dummy physics output state as the input state
     if (dycore_only) then
       do nb = 1,Atm_block%nblks
@@ -351,6 +329,28 @@ subroutine update_atmos_radiation_physics (Atmos)
 !        print *,'in atmos_model, tsfc size=',size(IPD_Data(1)%sfcprop%tsfc)
         call assign_importdata(rc)
 !        print *,'in atmos_model, after assign_importdata, rc=',rc
+      endif
+
+      ! Calculate total non-physics tendencies by substracting old IPD Stateout
+      ! variables from new/updated IPD Statein variables (gives the tendencies
+      ! due to anything else than physics)
+      if (IPD_Control%ldiag3d) then
+        do nb = 1,Atm_block%nblks
+          IPD_Data(nb)%Intdiag%du3dt(:,:,8)  = IPD_Data(nb)%Intdiag%du3dt(:,:,8)  &
+                                              + (IPD_Data(nb)%Statein%ugrs - IPD_Data(nb)%Stateout%gu0)
+          IPD_Data(nb)%Intdiag%dv3dt(:,:,8)  = IPD_Data(nb)%Intdiag%dv3dt(:,:,8)  &
+                                              + (IPD_Data(nb)%Statein%vgrs - IPD_Data(nb)%Stateout%gv0)
+          IPD_Data(nb)%Intdiag%dt3dt(:,:,11) = IPD_Data(nb)%Intdiag%dt3dt(:,:,11) &
+                                              + (IPD_Data(nb)%Statein%tgrs - IPD_Data(nb)%Stateout%gt0)
+        enddo
+        if (IPD_Control%qdiag3d) then
+          do nb = 1,Atm_block%nblks
+            IPD_Data(nb)%Intdiag%dq3dt(:,:,12) = IPD_Data(nb)%Intdiag%dq3dt(:,:,12) &
+                  + (IPD_Data(nb)%Statein%qgrs(:,:,IPD_Control%ntqv) - IPD_Data(nb)%Stateout%gq0(:,:,IPD_Control%ntqv))
+            IPD_Data(nb)%Intdiag%dq3dt(:,:,13) = IPD_Data(nb)%Intdiag%dq3dt(:,:,13) &
+                  + (IPD_Data(nb)%Statein%qgrs(:,:,IPD_Control%ntoz) - IPD_Data(nb)%Stateout%gq0(:,:,IPD_Control%ntoz))
+          enddo
+        endif
       endif
 
       call mpp_clock_end(setupClock)
