@@ -983,8 +983,7 @@ module GFS_typedefs
 !--- parameters for canopy heat storage (CHS) parameterization
     real(kind=kind_phys) :: z0fac           !< surface roughness fraction factor
     real(kind=kind_phys) :: e0fac           !< latent heat flux fraction factor relative to sensible heat flux
-                                            !< e.g., e0fac=0.5 indicates that CHS for latent heat flux is 50% of that f
-or
+                                            !< e.g., e0fac=0.5 indicates that CHS for latent heat flux is 50% of that for
                                             !< sensible heat flux
 
 !---cellular automata control parameters
