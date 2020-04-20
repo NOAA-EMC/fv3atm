@@ -211,21 +211,21 @@ make ${CCPP_MAKE_FLAGS} install
 
 # Generate ESMF makefile fragment
 
-# Explicitly append libxml2, with or without path
-CCPP_XML2_LIB="${LIBXML2_LIB_DIR:+-L${LIBXML2_LIB_DIR} }-lxml2"
 set -u
 if ( echo "${MAKE_OPT}" | grep STATIC=Y ) ; then
   # Set linker flags for static build
-  CCPP_LINK_OBJS="-L${PATH_CCPP_LIB} -lccpp -lccppphys ${CCPP_XML2_LIB}"
+  CCPP_LINK_OBJS="-L${PATH_CCPP_LIB} -lccpp -lccppphys"
 else
+  # Explicitly append libxml2, with or without path
+  CCPP_XML2_LIB="${LIBXML2_LIB_DIR:+-L${LIBXML2_LIB_DIR} }-lxml2"
   # Set link objects
   if ( echo "$MACHINE_ID" | grep gaea ) ; then
-    CCPP_LINK_OBJS="-dynamic -L${PATH_CCPP_LIB} -lccpp ${CCPP_XML2_LIB} ${CRAY_PMI_POST_LINK_OPTS} -lpmi"
+    CCPP_LINK_OBJS="-dynamic -L${PATH_CCPP_LIB} -lccpp -lccppphys ${CCPP_XML2_LIB} ${CRAY_PMI_POST_LINK_OPTS} -lpmi"
   else
-    CCPP_LINK_OBJS="-L${PATH_CCPP_LIB} -lccpp ${CCPP_XML2_LIB}"
+    CCPP_LINK_OBJS="-L${PATH_CCPP_LIB} -lccpp -lccppphys ${CCPP_XML2_LIB}"
   fi
 fi
-echo "ESMF_DEP_INCPATH=${PATH_CCPP_INC}" > ${CCPP_MK}
+echo "ESMF_DEP_INCPATH=${PATH_CCPP_INC} ${PATH_CCPP_BUILD}/physics" > ${CCPP_MK}
 echo "ESMF_DEP_LINK_OBJS=${CCPP_LINK_OBJS}" >> ${CCPP_MK}
 
 if [ $clean_after = YES ]; then

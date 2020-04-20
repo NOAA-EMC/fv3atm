@@ -951,7 +951,7 @@
 !             CNV_DQLDT(ipt,ib) = CNV_DQLDT(ipt,ib)
 !    &                          + max(0.,(QLI(ib)+QII(ib)-qiid-qlid))/dt
               CNV_DQLDT(ipt,ib) = CNV_DQLDT(ipt,ib) + flx(ib)*
-     &                            max(0.,(QLI(ib)+QII(ib)-qiid-qlid))/dt
+     &                          max(zero,(QLI(ib)+QII(ib)-qiid-qlid))/dt
 !    &                                max(0.,(QLI(ib)+QII(ib)))/dt/3.
               if(flx(ib)<0) write(*,*)"AAA666", flx(ib),QLI(ib),QII(ib)
      &                                       ,ipt,ib

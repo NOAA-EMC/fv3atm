@@ -1127,7 +1127,6 @@ module module_physics_driver
               if (fice(i) >= Model%min_seaice) then
                 icy(i)  = .true.
               else
-                wet(i)         = .true.
                 fice(i)        = zero
                 flag_cice(i)   = .false.
                 islmsk_cice(i) = 0
@@ -1137,7 +1136,6 @@ module module_physics_driver
               if (fice(i) >= Model%min_lakeice) then
                 icy(i) = .true.
               else
-                wet(i)    = .true.
                 fice(i)   = zero
                 islmsk(i) = 0
               endif
@@ -1164,7 +1162,6 @@ module module_physics_driver
               if (fice(i) > Model%min_seaice) then
                 icy(i) = .true.
               else
-                wet(i)         = .true.
                 fice(i)        = zero
                 flag_cice(i)   = .false.
                 islmsk_cice(i) = 0
@@ -1174,14 +1171,13 @@ module module_physics_driver
               if (fice(i) > Model%min_lakeice) then
                 icy(i) = .true.
               else
-                wet(i)    = .true.
                 fice(i)   = zero
                 islmsk(i) = 0
               endif
             endif
             if (fice(i) < one) then
               wet(i)=.true. ! some open ocean/lake water exists
-              if (.not. Model%cplflx .or. Sfcprop%oceanfrac(i) == zero)  &
+              if (.not. Model%cplflx)                                   &
                  Sfcprop%tsfco(i) = max(Sfcprop%tsfco(i), Sfcprop%tisfc(i), tgice)
             endif
           endif
@@ -2116,10 +2112,7 @@ module module_physics_driver
 !           Sfcprop%tprcp(i) = tprcp3(i,3)
           else
             k = 2
-            if (.not. flag_cice(i)) then
-              Sfcprop%tisfc(i) = tice(i)   ! over lake ice (and sea ice when uncoupled)
-            endif
-            stress(i)        = fice(i)*stress3(i,2) + (one-fice(i))*stress3(i,3)
+            stress(i)        = stress3(i,2)
 !           Sfcprop%tprcp(i) = fice(i)*tprcp3(i,2)  + (one-fice(i))*tprcp3(i,3)
           endif
           Sfcprop%zorl(i)   = zorl3(i,k)
@@ -2147,17 +2140,18 @@ module module_physics_driver
           Sfcprop%zorlo(i)  = zorl3(i,3)
 
           if (flag_cice(i)) then
-            if (wet(i)) then            ! this was already done for lake ice in sfc_sice
+            if (wet(i) .and. fice(i) > min_seaice) then  ! this was already done for lake ice in sfc_sice
               txi = fice(i)
               txo = one - txi
-              evap(i)         = txi * evap3(i,2) + txo * evap3(i,3)
-              hflx(i)         = txi * hflx3(i,2) + txo * hflx3(i,3)
-              Sfcprop%tsfc(i) = txi * tsfc3(i,2) + txo * tsfc3(i,3)
+              evap(i)         = txi * evap3(i,2)   + txo * evap3(i,3)
+              hflx(i)         = txi * hflx3(i,2)   + txo * hflx3(i,3)
+              Sfcprop%tsfc(i) = txi * tsfc3(i,2)   + txo * tsfc3(i,3)
+              stress(i)       = txi  *stress3(i,2) + txo * stress3(i,3)
             endif
           elseif (islmsk(i) == 2) then  ! return updated lake ice thickness & concentration to global array
+            Sfcprop%tisfc(i) = tice(i)   ! over lake ice (and sea ice when uncoupled)
             Sfcprop%hice(i)  = zice(i)
             Sfcprop%fice(i)  = fice(i)  ! fice is fraction of lake area that is frozen
-            Sfcprop%tisfc(i) = tice(i)
           else                          ! this would be over open ocean or land (no ice fraction)
             Sfcprop%hice(i)  = zero
             Sfcprop%fice(i)  = zero
@@ -4977,30 +4971,30 @@ module module_physics_driver
 !       enddo
 
 !## CCPP ##* m_micro.F90/m_micro_run
-          call m_micro_driver (im, ix, levs, Model%flipv, dtp,  Statein%prsl,      &
-                               Statein%prsi, Statein%phil, Statein%phii,           &
-                               Statein%vvl, clw(1,1,2), QLCN, clw(1,1,1), QICN,    &
-                               Radtend%htrlw, Radtend%htrsw, w_upi, cf_upi,        &
-                               FRLAND, Diag%HPBL, CNV_MFD,           CNV_DQLDT,    &
-!                              FRLAND, Diag%HPBL, CNV_MFD, CNV_PRC3, CNV_DQLDT,    &
-                               CLCN, Stateout%gu0, Stateout%gv0, Diag%dusfc,       &
-                               Diag%dvsfc, dusfc1, dvsfc1, dusfc1, dvsfc1,         &
-                               CNV_FICE, CNV_NDROP, CNV_NICE, Stateout%gq0(1,1,1), &
-                               Stateout%gq0(1,1,ntcw),                             &
-                               Stateout%gq0(1,1,ntiw), Stateout%gt0, rain1,        &
-                               Diag%sr, Stateout%gq0(1,1,ntlnc),                   &
-                               Stateout%gq0(1,1,ntinc), Model%fprcp, qrn,          &
-                               qsnw, qgl, ncpr, ncps, ncgl,                        &
-                               Tbd%phy_f3d(1,1,1),  kbot,                          &
-                               Tbd%phy_f3d(1,1,2),  Tbd%phy_f3d(1,1,3),            &
-                               Tbd%phy_f3d(1,1,4),  Tbd%phy_f3d(1,1,5),            &
-                               Tbd%phy_f3d(1,1,kk), Tbd%aer_nm,                    &
-                               Model%aero_in, Tbd%in_nm, Tbd%ccn_nm, Model%iccn,   &
-                               skip_macro,                 lprnt,                  &
-!                              skip_macro, cn_prc, cn_snr, lprnt,                  &
-!                              ipr, kdt, Grid%xlat, Grid%xlon)
-                               Model%mg_alf, Model%mg_qcmin, Model%pdfflag,        &
-                               ipr, kdt, Grid%xlat, Grid%xlon, rhc)
+        call m_micro_driver (im, ix, levs, Model%flipv, dtp,  Statein%prsl,      &
+                             Statein%prsi, Statein%phil, Statein%phii,           &
+                             Statein%vvl, clw(1,1,2), QLCN, clw(1,1,1), QICN,    &
+                             Radtend%htrlw, Radtend%htrsw, w_upi, cf_upi,        &
+                             FRLAND, Diag%HPBL, CNV_MFD,           CNV_DQLDT,    &
+!                            FRLAND, Diag%HPBL, CNV_MFD, CNV_PRC3, CNV_DQLDT,    &
+                             CLCN, Stateout%gu0, Stateout%gv0, Diag%dusfc,       &
+                             Diag%dvsfc, dusfc1, dvsfc1, dusfc1, dvsfc1,         &
+                             CNV_FICE, CNV_NDROP, CNV_NICE, Stateout%gq0(1,1,1), &
+                             Stateout%gq0(1,1,ntcw),                             &
+                             Stateout%gq0(1,1,ntiw), Stateout%gt0, rain1,        &
+                             Diag%sr, Stateout%gq0(1,1,ntlnc),                   &
+                             Stateout%gq0(1,1,ntinc), Model%fprcp, qrn,          &
+                             qsnw, qgl, ncpr, ncps, ncgl,                        &
+                             Tbd%phy_f3d(1,1,1),  kbot,                          &
+                             Tbd%phy_f3d(1,1,2),  Tbd%phy_f3d(1,1,3),            &
+                             Tbd%phy_f3d(1,1,4),  Tbd%phy_f3d(1,1,5),            &
+                             Tbd%phy_f3d(1,1,kk), Tbd%aer_nm,                    &
+                             Tbd%in_nm, Tbd%ccn_nm, Model%iccn,                  &
+                             skip_macro,                 lprnt,                  &
+!                            skip_macro, cn_prc, cn_snr, lprnt,                  &
+!                            ipr, kdt, Grid%xlat, Grid%xlon)
+                             Model%mg_alf, Model%mg_qcmin, Model%pdfflag,        &
+                             ipr, kdt, Grid%xlat, Grid%xlon, rhc)
 !*## CCPP ##
 !     do k=1,levs
 !     write(1000+me,*)' maxwatnca=',maxval(Stateout%gq0(1:im,k,ntlnc)),' k=',k,' kdt=',kdt

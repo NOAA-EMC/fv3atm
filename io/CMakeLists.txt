@@ -31,6 +31,10 @@ target_link_libraries(io fms)
 target_link_libraries(io ${PHYS}physics)
 target_link_libraries(io ipd)
 
+if(CCPP)
+  target_include_directories(io PRIVATE ${CMAKE_BINARY_DIR}/FV3/ccpp/framework/src)
+  target_include_directories(io PRIVATE ${CMAKE_BINARY_DIR}/FV3/ccpp/physics)
+endif()
 target_include_directories(io PRIVATE ${ESMF_MOD})
 target_include_directories(io PRIVATE ${NEMSIO_INC})
 
