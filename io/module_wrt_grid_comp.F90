@@ -1561,6 +1561,7 @@
                 write(*,'(A,F10.5,A,I4.2,A,I2.2)')' netcdf_esmf Write Time is ',wend-wbeg &
                         ,' at Fcst ',NF_HOURS,':',NF_MINUTES
               endif
+            endif
 
           else if (trim(output_grid) == 'global_latlon') then
 
