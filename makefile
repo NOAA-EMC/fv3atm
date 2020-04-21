@@ -47,7 +47,7 @@ libs:
 	$(MAKE) -C atmos_cubed_sphere  $(MAKE_OPTS) FMS_DIR=$(FMS_DIR)
 	$(MAKE) -C ../stochastic_physics  $(MAKE_OPTS) FMS_DIR=$(FMS_DIR) 32BIT=N  # force gfs physics to 64bit
 
-$(FV3_EXE): atmos_model.o coupler_main.o ccpp/driver/libccppdriver.a atmos_cubed_sphere/libfv3core.a io/libfv3io.a ipd/libipd.a $(PHYSP)physics/lib$(PHYSP)phys.a ../stochastic_physics/libstochastic_physics.a cpl/libfv3cpl.a fms/libfms.a
+$(FV3_EXE): atmos_model.o coupler_main.o ccpp/driver/libccppdriver.a atmos_cubed_sphere/libfv3core.a io/libfv3io.a ipd/libipd.a $(PHYSP)physics/lib$(PHYSP)phys.a ../stochastic_physics/libstochastic_physics.a cpl/libfv3cpl.a
 	$(LD) -o $@ $^ $(NCEPLIBS) $(LDFLAGS)
 
 else
@@ -59,7 +59,7 @@ libs:
 	$(MAKE) -C atmos_cubed_sphere  $(MAKE_OPTS) FMS_DIR=$(FMS_DIR)
 	$(MAKE) -C ../stochastic_physics  $(MAKE_OPTS) FMS_DIR=$(FMS_DIR) 32BIT=N  # force gfs physics to 64bit
 
-$(FV3_EXE): atmos_model.o coupler_main.o atmos_cubed_sphere/libfv3core.a io/libfv3io.a ipd/libipd.a $(PHYSP)physics/lib$(PHYSP)phys.a ../stochastic_physics/libstochastic_physics.a cpl/libfv3cpl.a fms/libfms.a 
+$(FV3_EXE): atmos_model.o coupler_main.o atmos_cubed_sphere/libfv3core.a io/libfv3io.a ipd/libipd.a $(PHYSP)physics/lib$(PHYSP)phys.a ../stochastic_physics/libstochastic_physics.a cpl/libfv3cpl.a
 	$(LD) -o $@ $^ $(NCEPLIBS) $(LDFLAGS)
 endif
 
@@ -100,7 +100,7 @@ esmf_make_fragment:
 	@echo "ESMF_DEP_FRONT     = fv3gfs_cap_mod"  >> fv3.mk
 	# additional include files needed for PGI
 	#@echo "ESMF_DEP_INCPATH   = $(PWD)/nems_dir" >> fv3.mk
-	@echo "ESMF_DEP_INCPATH   = $(PWD) $(addprefix $(PWD)/, nems_dir ccpp/driver atmos_cubed_sphere io fms gfsphysics cpl ipd ../stochastic_physics)" >> fv3.mk
+	@echo "ESMF_DEP_INCPATH   = $(PWD) $(addprefix $(PWD)/, nems_dir ccpp/driver atmos_cubed_sphere io gfsphysics cpl ipd ../stochastic_physics)" >> fv3.mk
 	@echo "ESMF_DEP_CMPL_OBJS ="                 >> fv3.mk
 	@echo "ESMF_DEP_LINK_OBJS = $(addprefix $(PWD)/nems_dir/, libfv3cap.a libccppdriver.a libfv3core.a libfv3io.a libipd.a lib$(PHYSP)phys.a libfv3cpl.a libstochastic_physics.a) $(SIONLIB_LINK_FLAGS)" >> fv3.mk
 	@echo "ESMF_DEP_SHRD_PATH ="                 >> fv3.mk
@@ -119,7 +119,7 @@ esmf_make_fragment:
 	@echo "ESMF_DEP_FRONT     = fv3gfs_cap_mod"  >> fv3.mk
 	# additional include files needed for PGI
 	#@echo "ESMF_DEP_INCPATH   = $(PWD)/nems_dir" >> fv3.mk
-	@echo "ESMF_DEP_INCPATH   = $(PWD) $(addprefix $(PWD)/, nems_dir atmos_cubed_sphere io fms gfsphysics cpl ipd ../stochastic_physics)" >> fv3.mk
+	@echo "ESMF_DEP_INCPATH   = $(PWD) $(addprefix $(PWD)/, nems_dir atmos_cubed_sphere io gfsphysics cpl ipd ../stochastic_physics)" >> fv3.mk
 	@echo "ESMF_DEP_CMPL_OBJS ="                 >> fv3.mk
 	@echo "ESMF_DEP_LINK_OBJS = $(addprefix $(PWD)/nems_dir/, libfv3cap.a libfv3core.a libfv3io.a libipd.a lib$(PHYSP)phys.a libfv3cpl.a libstochastic_physics.a)" >> fv3.mk
 	@echo "ESMF_DEP_SHRD_PATH ="                 >> fv3.mk
