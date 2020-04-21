@@ -14,5 +14,5 @@
 	path = ccpp/physics
 	#url = https://github.com/NCAR/ccpp-physics
 	#branch = master
-	url = https://github.com/climbfuji/ccpp-framework
+	url = https://github.com/climbfuji/ccpp-physics
 	branch = remove_ccpp_dynamic_build
