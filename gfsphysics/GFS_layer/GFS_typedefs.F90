@@ -153,7 +153,7 @@ module GFS_typedefs
 
     character(len=32), pointer :: tracer_names(:) !< tracers names to dereference tracer id
                                                   !< based on name location in array
-    character(len=65) :: fn_nml                   !< namelist filename
+    character(len=64) :: fn_nml                   !< namelist filename
     character(len=256), pointer :: input_nml_file(:) !< character string containing full namelist
                                                      !< for use with internal file reads
   end type GFS_init_type
@@ -3463,6 +3463,7 @@ module GFS_typedefs
     Model%ialb             = ialb
     Model%iems             = iems
     Model%iaer             = iaer
+    Model%iaerclm          = iaerclm
     if (iaer/1000 == 1 .or. Model%iccn == 2) then
       Model%iaerclm = .true.
       ntrcaer = ntrcaerm
@@ -3823,6 +3824,10 @@ module GFS_typedefs
     Model%iau_drymassfixer = iau_drymassfixer
     if(Model%me==0) print *,' model init,iaufhrs=',Model%iaufhrs
 
+!--- debug flag
+    Model%debug            = debug
+    Model%pre_rad          = pre_rad
+
 !--- tracer handling
     Model%ntrac            = size(tracer_names)
 #ifdef CCPP
@@ -3942,10 +3947,6 @@ module GFS_typedefs
     Model%ncnvcld3d        = ncnvcld3d
     Model%nctp             = nctp
 
-!--- debug flag
-    Model%debug            = debug
-    Model%pre_rad          = pre_rad
-
 !--- set initial values for time varying properties
     Model%ipt              = 1
     Model%lprnt            = .false.
@@ -3984,11 +3985,6 @@ module GFS_typedefs
     !--- ps is replaced with p0. The value of p0 uses that in http://www.emc.ncep.noaa.gov/officenotes/newernotes/on461.pdf
     !--- ak/bk have been flipped from their original FV3 orientation and are defined sfc -> toa
     Model%si = (ak + bk * con_p0 - ak(Model%levr+1)) / (con_p0 - ak(Model%levr+1))
-
-    if (Model%lsm == Model%lsm_noahmp) then
-      Model%yearlen        = 365
-      Model%julian         = -9999.
-    endif
 #endif
 
 #ifndef CCPP
