@@ -191,7 +191,7 @@
 !
             czilc = 10.0 ** (- 4. * z0max) ! Trier et al. (2011, WAF)
             ztmax = z0max * exp( - czilc * ca
-     &            * 258.2 * sqrt(ustar(i,1)*z0max) )
+     &            * 258.2 * sqrt(ustar(i,2)*z0max) )
 !
             ztmax = max(ztmax, 1.0e-6)
 !

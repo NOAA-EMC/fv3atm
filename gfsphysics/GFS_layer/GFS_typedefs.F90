@@ -1694,6 +1694,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: ep1d_land(:)       => null()  !<
     real (kind=kind_phys), pointer      :: ep1d_ocean(:)      => null()  !<
     real (kind=kind_phys), pointer      :: evap(:)            => null()  !<
+    real (kind=kind_phys), pointer      :: evapq(:)           => null()  !<
     real (kind=kind_phys), pointer      :: evap_ice(:)        => null()  !<
     real (kind=kind_phys), pointer      :: evap_land(:)       => null()  !<
     real (kind=kind_phys), pointer      :: evap_ocean(:)      => null()  !<
@@ -1739,7 +1740,10 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: gwdcv(:,:)         => null()  !<
     integer                             :: h2o_coeff                     !<
     real (kind=kind_phys), pointer      :: h2o_pres(:)        => null()  !<
+    real (kind=kind_phys), pointer      :: hefac(:)           => null()  !<
+    real (kind=kind_phys), pointer      :: hffac(:)           => null()  !<
     real (kind=kind_phys), pointer      :: hflx(:)            => null()  !<
+    real (kind=kind_phys), pointer      :: hflxq(:)           => null()  !<
     real (kind=kind_phys), pointer      :: hflx_ice(:)        => null()  !<
     real (kind=kind_phys), pointer      :: hflx_land(:)       => null()  !<
     real (kind=kind_phys), pointer      :: hflx_ocean(:)      => null()  !<
@@ -5948,6 +5952,7 @@ module GFS_typedefs
     allocate (Interstitial%ep1d_land       (IM))
     allocate (Interstitial%ep1d_ocean      (IM))
     allocate (Interstitial%evap            (IM))
+    allocate (Interstitial%evapq           (IM))
     allocate (Interstitial%evap_ice        (IM))
     allocate (Interstitial%evap_land       (IM))
     allocate (Interstitial%evap_ocean      (IM))
@@ -5990,7 +5995,10 @@ module GFS_typedefs
     allocate (Interstitial%gwdcu           (IM,Model%levs))
     allocate (Interstitial%gwdcv           (IM,Model%levs))
     allocate (Interstitial%h2o_pres        (levh2o))
+    allocate (Interstitial%hefac           (IM))
+    allocate (Interstitial%hffac           (IM))
     allocate (Interstitial%hflx            (IM))
+    allocate (Interstitial%hflxq           (IM))
     allocate (Interstitial%hflx_ice        (IM))
     allocate (Interstitial%hflx_land       (IM))
     allocate (Interstitial%hflx_ocean      (IM))
@@ -6588,6 +6596,7 @@ module GFS_typedefs
     Interstitial%ep1d_land       = huge
     Interstitial%ep1d_ocean      = huge
     Interstitial%evap            = clear_val
+    Interstitial%evapq           = clear_val
     Interstitial%evap_ice        = huge
     Interstitial%evap_land       = huge
     Interstitial%evap_ocean      = huge
@@ -6626,7 +6635,10 @@ module GFS_typedefs
     Interstitial%gflx_ocean      = clear_val
     Interstitial%gwdcu           = clear_val
     Interstitial%gwdcv           = clear_val
+    Interstitial%hefac           = clear_val
+    Interstitial%hffac           = clear_val
     Interstitial%hflx            = clear_val
+    Interstitial%hflxq           = clear_val
     Interstitial%hflx_ice        = huge
     Interstitial%hflx_land       = huge
     Interstitial%hflx_ocean      = huge
@@ -6899,6 +6911,7 @@ module GFS_typedefs
     write (0,*) 'sum(Interstitial%ep1d_land       ) = ', sum(Interstitial%ep1d_land       )
     write (0,*) 'sum(Interstitial%ep1d_ocean      ) = ', sum(Interstitial%ep1d_ocean      )
     write (0,*) 'sum(Interstitial%evap            ) = ', sum(Interstitial%evap            )
+    write (0,*) 'sum(Interstitial%evapq           ) = ', sum(Interstitial%evapq           )
     write (0,*) 'sum(Interstitial%evap_ice        ) = ', sum(Interstitial%evap_ice        )
     write (0,*) 'sum(Interstitial%evap_land       ) = ', sum(Interstitial%evap_land       )
     write (0,*) 'sum(Interstitial%evap_ocean      ) = ', sum(Interstitial%evap_ocean      )
@@ -6941,7 +6954,10 @@ module GFS_typedefs
     write (0,*) 'sum(Interstitial%gflx_ocean      ) = ', sum(Interstitial%gflx_ocean      )
     write (0,*) 'sum(Interstitial%gwdcu           ) = ', sum(Interstitial%gwdcu           )
     write (0,*) 'sum(Interstitial%gwdcv           ) = ', sum(Interstitial%gwdcv           )
+    write (0,*) 'sum(Interstitial%hefac           ) = ', sum(Interstitial%hefac           )
+    write (0,*) 'sum(Interstitial%hffac           ) = ', sum(Interstitial%hffac           )
     write (0,*) 'sum(Interstitial%hflx            ) = ', sum(Interstitial%hflx            )
+    write (0,*) 'sum(Interstitial%hflxq           ) = ', sum(Interstitial%hflxq           )
     write (0,*) 'sum(Interstitial%hflx_ice        ) = ', sum(Interstitial%hflx_ice        )
     write (0,*) 'sum(Interstitial%hflx_land       ) = ', sum(Interstitial%hflx_land       )
     write (0,*) 'sum(Interstitial%hflx_ocean      ) = ', sum(Interstitial%hflx_ocean      )

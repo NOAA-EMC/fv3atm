@@ -809,7 +809,7 @@
               call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
                                      name="grid", value="latlon", rc=rc)
               call ESMF_AttributeAdd(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                                     attrList=(/"lonstart","latstart","lonlast","latlast"/), rc=rc)
+                                     attrList=(/"lonstart","latstart","lonlast ","latlast "/), rc=rc)
               call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
                                      name="lonstart", value=wrt_int_state%lonstart, rc=rc)
               call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
