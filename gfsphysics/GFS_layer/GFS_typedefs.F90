@@ -996,9 +996,9 @@ module GFS_typedefs
     integer              :: ntrac           !< number of tracers
 #ifdef CCPP
     integer              :: ntracp1         !< number of tracers plus one
-    integer              :: ntqv            !< tracer index for water vapor (specific humidity)
     integer              :: nqrimef         !< tracer index for mass weighted rime factor
 #endif
+    integer              :: ntqv            !< tracer index for water vapor (specific humidity)
     integer              :: ntoz            !< tracer index for ozone mixing ratio
     integer              :: ntcw            !< tracer index for cloud condensate (or liquid water)
     integer              :: ntiw            !< tracer index for ice water
@@ -3755,9 +3755,7 @@ module GFS_typedefs
 #endif
     allocate (Model%tracer_names(Model%ntrac))
     Model%tracer_names(:)  = tracer_names(:)
-#ifdef CCPP
     Model%ntqv             = 1
-#endif
 #ifdef MULTI_GASES
     Model%nto              = get_tracer_index(Model%tracer_names, 'spfo',        Model%me, Model%master, Model%debug)
     Model%nto2             = get_tracer_index(Model%tracer_names, 'spfo2',       Model%me, Model%master, Model%debug)
@@ -4743,9 +4741,9 @@ module GFS_typedefs
       print *, ' tracer_names      : ', Model%tracer_names
       print *, ' ntrac             : ', Model%ntrac
 #ifdef CCPP
-      print *, ' ntqv              : ', Model%ntqv
       print *, ' nqrimef           : ', Model%nqrimef
 #endif
+      print *, ' ntqv              : ', Model%ntqv
       print *, ' ntoz              : ', Model%ntoz
       print *, ' ntcw              : ', Model%ntcw
       print *, ' ntiw              : ', Model%ntiw
