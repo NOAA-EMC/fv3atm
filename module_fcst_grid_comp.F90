@@ -518,7 +518,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !
 !test to write out netcdf file:
       if (btest(diagnostic,16)) then
-        call write_grid_netcdf(fcstGrid, "diagnostic_FV3_fcst_initialize_grid.nc", rc=rc)
+        call write_grid_netcdf(fcstGrid, "diagnostic_FV3_fcst_initialize_grid.nc", regridArea=.TRUE., rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
       endif
 !

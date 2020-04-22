@@ -380,7 +380,7 @@ module module_write_netcdf
 !
 !----------------------------------------------------------------------------------------
   subroutine write_grid_netcdf(grid, fileName, overwrite, status, &
-    timeslice, iofmt, relaxedflag, rc)
+    timeslice, iofmt, relaxedflag, regridArea, rc)
 !
     type(ESMF_Grid),            intent(in)            :: grid
     character(len=*),           intent(in),  optional :: fileName
@@ -389,6 +389,7 @@ module module_write_netcdf
     integer,                    intent(in),  optional :: timeslice
     type(ESMF_IOFmt_Flag),      intent(in),  optional :: iofmt
     logical,                    intent(in),  optional :: relaxedflag
+    logical,                    intent(in),  optional :: regridArea
     integer,                    intent(out)           :: rc
 !
 !** local vars
@@ -406,6 +407,9 @@ module module_write_netcdf
     integer                 :: stat
     logical                 :: lnclScript
     logical                 :: hasCorners
+    logical                     :: lRegridArea
+    type(ESMF_Field)            :: areaField
+    type(ESMF_FieldStatus_Flag) :: areaFieldStatus
 !
 !!
 !
@@ -424,6 +428,12 @@ module module_write_netcdf
       else
         call ESMF_GridGet(grid, name=gridName, rc=rc); ESMF_ERR_RETURN(rc)
         lfileName = trim(gridName)//".nc"
+      endif
+
+      if (present(regridArea)) then
+        lRegridArea = regridArea
+      else
+        lRegridArea = .FALSE.
       endif
 
       arraybundle = ESMF_ArrayBundleCreate(rc=rc); ESMF_ERR_RETURN(rc)
@@ -468,6 +478,18 @@ module module_write_netcdf
           call ESMF_ArrayBundleAdd(arraybundle,(/array/), &
             rc=rc); ESMF_ERR_RETURN(rc)
         endif
+        if (lRegridArea) then
+          areaField = ESMF_FieldCreate(grid=grid, typekind=ESMF_TYPEKIND_R8, &
+            rc=rc); ESMF_ERR_RETURN(rc)
+          call ESMF_FieldRegridGetArea(areaField, rc=rc); ESMF_ERR_RETURN(rc)
+          call ESMF_FieldGet(areaField, array=array, rc=rc)
+          if (.not. ESMF_LogFoundError(rc, line=__LINE__, file=__FILE__)) then
+            call ESMF_ArraySet(array, name="regrid_area", &
+              rc=rc); ESMF_ERR_RETURN(rc)
+            call ESMF_ArrayBundleAdd(arraybundle,(/array/), &
+              rc=rc); ESMF_ERR_RETURN(rc)
+          endif
+        endif
       endif
 
       ! -- mask --
@@ -498,6 +520,14 @@ module module_write_netcdf
 
       call ESMF_ArrayBundleWrite(arraybundle, &
         fileName=trim(lfileName),rc=rc); ESMF_ERR_RETURN(rc)
+
+      if (lRegridArea) then
+        call ESMF_FieldGet(areaField, status=areaFieldStatus, &
+          rc=rc); ESMF_ERR_RETURN(rc)
+        if (areaFieldStatus.eq.ESMF_FIELDSTATUS_COMPLETE) then
+          call ESMF_FieldDestroy(areaField, rc=rc); ESMF_ERR_RETURN(rc)
+        endif
+      endif
 
       call ESMF_ArrayBundleDestroy(arraybundle,rc=rc); ESMF_ERR_RETURN(rc)
     endif
