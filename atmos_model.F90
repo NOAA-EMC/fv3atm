@@ -331,6 +331,28 @@ subroutine update_atmos_radiation_physics (Atmos)
 !        print *,'in atmos_model, after assign_importdata, rc=',rc
       endif
 
+      ! Calculate total non-physics tendencies by substracting old IPD Stateout
+      ! variables from new/updated IPD Statein variables (gives the tendencies
+      ! due to anything else than physics)
+      if (IPD_Control%ldiag3d) then
+        do nb = 1,Atm_block%nblks
+          IPD_Data(nb)%Intdiag%du3dt(:,:,8)  = IPD_Data(nb)%Intdiag%du3dt(:,:,8)  &
+                                              + (IPD_Data(nb)%Statein%ugrs - IPD_Data(nb)%Stateout%gu0)
+          IPD_Data(nb)%Intdiag%dv3dt(:,:,8)  = IPD_Data(nb)%Intdiag%dv3dt(:,:,8)  &
+                                              + (IPD_Data(nb)%Statein%vgrs - IPD_Data(nb)%Stateout%gv0)
+          IPD_Data(nb)%Intdiag%dt3dt(:,:,11) = IPD_Data(nb)%Intdiag%dt3dt(:,:,11) &
+                                              + (IPD_Data(nb)%Statein%tgrs - IPD_Data(nb)%Stateout%gt0)
+        enddo
+        if (IPD_Control%qdiag3d) then
+          do nb = 1,Atm_block%nblks
+            IPD_Data(nb)%Intdiag%dq3dt(:,:,12) = IPD_Data(nb)%Intdiag%dq3dt(:,:,12) &
+                  + (IPD_Data(nb)%Statein%qgrs(:,:,IPD_Control%ntqv) - IPD_Data(nb)%Stateout%gq0(:,:,IPD_Control%ntqv))
+            IPD_Data(nb)%Intdiag%dq3dt(:,:,13) = IPD_Data(nb)%Intdiag%dq3dt(:,:,13) &
+                  + (IPD_Data(nb)%Statein%qgrs(:,:,IPD_Control%ntoz) - IPD_Data(nb)%Stateout%gq0(:,:,IPD_Control%ntoz))
+          enddo
+        endif
+      endif
+
       call mpp_clock_end(setupClock)
 
       if (mpp_pe() == mpp_root_pe() .and. debug) write(6,*) "radiation driver"
@@ -461,7 +483,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
   integer              :: bdat(8), cdat(8)
   integer              :: ntracers, maxhf, maxh
   character(len=32), allocatable, target :: tracer_names(:)
-  integer :: nthrds
+  integer :: nthrds, nb
 
 !-----------------------------------------------------------------------
 
@@ -678,10 +700,22 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    call FV3GFS_restart_read (IPD_Data, IPD_Restart, Atm_block, IPD_Control, Atmos%domain)
 #endif
 
-#ifdef CCPP
    ! Populate the IPD_Data%Statein container with the prognostic state
    ! in Atm_block, which contains the initial conditions/restart data.
    call atmos_phys_driver_statein (IPD_data, Atm_block, flip_vc)
+
+   ! When asked to calculate 3-dim. tendencies, set Stateout variables to
+   ! Statein variables here in order to capture the first call to dycore
+    if (IPD_Control%ldiag3d) then
+      do nb = 1,Atm_block%nblks
+        IPD_Data(nb)%Stateout%gu0 = IPD_Data(nb)%Statein%ugrs
+        IPD_Data(nb)%Stateout%gv0 = IPD_Data(nb)%Statein%vgrs
+        IPD_Data(nb)%Stateout%gt0 = IPD_Data(nb)%Statein%tgrs
+        IPD_Data(nb)%Stateout%gq0 = IPD_Data(nb)%Statein%qgrs
+      enddo
+    endif
+
+#ifdef CCPP
    ! Initialize the CCPP framework
    call CCPP_step (step="init", nblks=Atm_block%nblks, ierr=ierr)
    if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP init step failed')
