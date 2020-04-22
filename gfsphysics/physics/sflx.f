@@ -1186,6 +1186,8 @@
 !     quartz   - real, soil quartz content                         1    !
 !     fxexp    - real, bare soil evaporation exponent              1    !
 !     csoil    - real, soil heat capacity                          1    !
+!     lheatstrg- logical, flag for canopy heat storage             1    !
+!                         parameterization                              !
 !                                                                       !
 !  input/outputs from and to the calling program:                       !
 !     cmc      - real, canopy moisture content                     1    !
@@ -2214,6 +2216,8 @@
 !     csoil    - real, soil heat capacity                          1    !
 !     flx2     - real, freezing rain latent heat flux              1    !
 !     snowng   - logical, snow flag                                1    !
+!     lheatstrg- logical, flag for canopy heat storage             1    !
+!                         parameterization                              !
 !                                                                       !
 !  input/outputs from and to the calling program:                       !
 !     prcp1    - real, effective precip                            1    !
@@ -3120,6 +3124,9 @@
 !     quartz   - real, soil quartz content                         1    !
 !     csoil    - real, soil heat capacity                          1    !
 !     vegtyp   - integer, vegtation type                           1    !
+!     shdfac   - real, aeral coverage of green vegetation          1    !
+!     lheatstrg- logical, flag for canopy heat storage             1    ! 
+!                         parameterization                              !
 !                                                                       !
 !  input/outputs:                                                       !
 !     stc      - real, soil temp                                 nsoil  !
@@ -3875,6 +3882,9 @@
 !     quartz   - real, soil quartz content                         1    !
 !     csoil    - real, soil heat capacity                          1    !
 !     vegtyp   - integer, vegetation type                          1    !
+!     shdfac   - real, aeral coverage of green vegetation          1    !
+!     lheatstrg- logical, flag for canopy heat storage             1    !
+!                         parameterization                              !
 !                                                                       !
 !  input/outputs:                                                       !
 !     sh2o     - real, unfrozen soil moisture                    nsoil  !
