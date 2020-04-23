@@ -895,7 +895,7 @@ subroutine update_atmos_model_state (Atmos)
       if (mpp_pe() == mpp_root_pe()) write(6,*) ' gfs diags time since last bucket empty: ',time_int/3600.,'hrs'
       call atmosphere_nggps_diag(Atmos%Time)
       call FV3GFS_diag_output(Atmos%Time, IPD_DIag, Atm_block, IPD_Control%nx, IPD_Control%ny, &
-                            IPD_Control%levs, 1, 1, 1.0_kind_phys, time_int, time_intfull,              &
+                            IPD_Control%levs, 1, 1, 1.0_IPD_kind_phys, time_int, time_intfull,              &
                             IPD_Control%fhswr, IPD_Control%fhlwr)
       if (nint(IPD_Control%fhzero) > 0) then 
         if (mod(isec,3600*nint(IPD_Control%fhzero)) == 0) diag_time = Atmos%Time
@@ -1686,7 +1686,7 @@ end subroutine atmos_data_type_chksum
                   nb = Atm_block%blkno(i,j)
                   ix = Atm_block%ixp(i,j)
                   if (IPD_Data(nb)%Sfcprop%oceanfrac(ix) > zero) then
-                    tem = 100.0_kind_phys * max(zero, min(0.1_kind_phys, datar8(i,j)))
+                    tem = 100.0_IPD_kind_phys * max(zero, min(0.1_IPD_kind_phys, datar8(i,j)))
                     IPD_Data(nb)%Coupling%zorlwav_cpl(ix) = tem
                     IPD_Data(nb)%Sfcprop%zorlo(ix)        = tem
 
