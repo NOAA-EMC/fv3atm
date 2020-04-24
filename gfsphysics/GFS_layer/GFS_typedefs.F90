@@ -5533,10 +5533,10 @@ module GFS_typedefs
     endif
 
     do i=1,Model%naux2d
-      if (Model%aux2d_rad_reset(i)) Diag%aux2d(:,i) = clear_val
+      if (Model%aux2d_rad_reset(i)) Diag%aux2d(:,i) = zero
     enddo
     do i=1,Model%naux3d
-      if (Model%aux3d_rad_reset(i)) Diag%aux3d(:,:,i) = clear_val
+      if (Model%aux3d_rad_reset(i)) Diag%aux3d(:,:,i) = zero
     enddo
 
   end subroutine diag_rad_zero
@@ -5752,10 +5752,10 @@ module GFS_typedefs
     endif
 
     do i=1,Model%naux2d
-      if (Model%aux2d_phys_reset(i)) Diag%aux2d(:,i) = clear_val
+      if (Model%aux2d_phys_reset(i)) Diag%aux2d(:,i) = zero
     enddo
     do i=1,Model%naux3d
-      if (Model%aux3d_phys_reset(i)) Diag%aux3d(:,:,i) = clear_val
+      if (Model%aux3d_phys_reset(i)) Diag%aux3d(:,:,i) = zero
     enddo
 
   end subroutine diag_phys_zero
