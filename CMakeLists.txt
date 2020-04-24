@@ -8,9 +8,6 @@ endif()
 
 if(CCPP)
   add_definitions(-DCCPP)
-  if(STATIC)
-    add_definitions(-DSTATIC)
-  endif()
 endif()
 
 add_subdirectory(cpl)
