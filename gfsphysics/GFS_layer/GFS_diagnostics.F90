@@ -3910,6 +3910,40 @@ module GFS_diagnostics
 !rab    ExtDiag(idx)%unit = 'kg/kg/s'
 !rab    ExtDiag(idx)%mod_name = 'gfs_phys'
 
+  ! Auxiliary 2d arrays to output (for debugging)
+  do num=1,Model%naux2d
+    write (xtra,'(I2.2)') num
+    idx = idx + 1
+    ExtDiag(idx)%axes = 2
+    ExtDiag(idx)%name = 'aux2d_'//trim(xtra)
+    ExtDiag(idx)%desc = 'auxiliary 2d array '//trim(xtra)
+    ExtDiag(idx)%unit = 'unknown'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    ExtDiag(idx)%intpl_method = 'bilinear'
+    ExtDiag(idx)%time_avg = Model%aux2d_time_avg(num)
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%aux2d(:,num)
+    enddo
+  enddo
+
+  ! Auxiliary 3d arrays to output (for debugging)
+  do num=1,Model%naux3d
+    write (xtra,'(I2.2)') num
+    idx = idx + 1
+    ExtDiag(idx)%axes = 3
+    ExtDiag(idx)%name = 'aux3d_'//trim(xtra)
+    ExtDiag(idx)%desc = 'auxiliary 3d array '//trim(xtra)
+    ExtDiag(idx)%unit = 'unknown'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    ExtDiag(idx)%intpl_method = 'bilinear'
+    ExtDiag(idx)%time_avg = Model%aux3d_time_avg(num)
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%aux3d(:,:,num)
+    enddo
+  enddo
+
   end subroutine GFS_externaldiag_populate
 
 #ifdef CCPP
