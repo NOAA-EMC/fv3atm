@@ -21,18 +21,14 @@ FFLAGS   += -I$(FMS_DIR) -I../cpl
 
 CPPDEFS += -DNEW_TAUCTMAX -DSMALL_PE -DNEMS_GSM -DINTERNAL_FILE_NML
 
-# CCPP dynamic and static builds
+# CCPP build
 ifneq (,$(findstring CCPP,$(CPPDEFS)))
 # Set flags for 32-bit dynamics build
 ifeq ($(DYN32),Y)
 CPPDEFS += -DOVERLOAD_R4
 endif
-# Set CCPP static api for static build
-ifneq (,$(findstring STATIC,$(CPPDEFS)))
-    CCPP_STATIC_API = ../ccpp/physics/ccpp_static_api.F90
-else
-    CCPP_STATIC_API = 
-endif
+CCPP_STATIC_API = ../ccpp/physics/ccpp_static_api.F90
+
 # Set physics source files
 # DH* 20190916 - can remove namelist_soilveg and set_soilveg
 # once calculation of snocvr is moved from FV3GFS_io.F90/GFS_driver.F90
