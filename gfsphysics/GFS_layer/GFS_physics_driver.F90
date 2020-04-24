@@ -2073,6 +2073,7 @@ module module_physics_driver
             Sfcprop%tsfco(i) = tsfc3(i,3)  ! over lake (and ocean when uncoupled)
             stress(i)        = stress3(i,3)
 !           Sfcprop%tprcp(i) = tprcp3(i,3)
+            if(Model%cplflx)Sfcprop%tsfcl(i) = tsfc3(i,3)  ! for restart repro comparisons
           else
             k = 2
             if (.not. flag_cice(i)) then
@@ -2080,6 +2081,7 @@ module module_physics_driver
             endif
             stress(i)        = fice(i)*stress3(i,2) + (one-fice(i))*stress3(i,3)
 !           Sfcprop%tprcp(i) = fice(i)*tprcp3(i,2)  + (one-fice(i))*tprcp3(i,3)
+            if(Model%cplflx)Sfcprop%tsfcl(i) = tsfc3(i,2)  ! for restart repro comparisons
           endif
           Sfcprop%zorl(i)   = zorl3(i,k)
           cd(i)             = cd3(i,k)
