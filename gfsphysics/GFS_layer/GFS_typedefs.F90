@@ -560,12 +560,8 @@ module GFS_typedefs
     logical              :: lssav           !< logical flag for storing diagnostics
     integer              :: naux2d          !< number of auxiliary 2d arrays to output (for debugging)
     integer              :: naux3d          !< number of auxiliary 3d arrays to output (for debugging)
-    logical, pointer     :: aux2d_time_avg(:)   !< flags for time averaging of auxiliary 2d arrays
-    logical, pointer     :: aux3d_time_avg(:)   !< flags for time averaging of auxiliary 3d arrays
-    logical, pointer     :: aux2d_rad_reset(:)  !< flags for resettig auxiliary 2d arrays when radiation diags are reset
-    logical, pointer     :: aux3d_rad_reset(:)  !< flags for resettig auxiliary 3d arrays when radiation diags are reset
-    logical, pointer     :: aux2d_phys_reset(:) !< flags for resettig auxiliary 2d arrays when physics diags are reset
-    logical, pointer     :: aux3d_phys_reset(:) !< flags for resettig auxiliary 3d arrays when physics diags are reset
+    logical, pointer     :: aux2d_time_avg(:) !< flags for time averaging of auxiliary 2d arrays
+    logical, pointer     :: aux3d_time_avg(:) !< flags for time averaging of auxiliary 3d arrays
 
     real(kind=kind_phys) :: fhcyc           !< frequency for surface data cycling (hours)
     integer              :: thermodyn_id    !< valid for GFS only for get_prs/phi
@@ -2758,12 +2754,8 @@ module GFS_typedefs
     logical              :: lssav          = .false.         !< logical flag for storing diagnostics
     integer              :: naux2d         = 0               !< number of auxiliary 2d arrays to output (for debugging)
     integer              :: naux3d         = 0               !< number of auxiliary 3d arrays to output (for debugging)
-    logical              :: aux2d_time_avg(1:naux2dmax) = .false.   !< flags for time averaging of auxiliary 2d arrays
-    logical              :: aux3d_time_avg(1:naux3dmax) = .false.   !< flags for time averaging of auxiliary 3d arrays
-    logical              :: aux2d_rad_reset(1:naux2dmax) = .false.  !< flags for resettig auxiliary 2d arrays when radiation diags are reset
-    logical              :: aux3d_rad_reset(1:naux3dmax) = .false.  !< flags for resettig auxiliary 3d arrays when radiation diags are reset
-    logical              :: aux2d_phys_reset(1:naux2dmax) = .false. !< flags for resettig auxiliary 2d arrays when physics diags are reset
-    logical              :: aux3d_phys_reset(1:naux3dmax) = .false. !< flags for resettig auxiliary 3d arrays when physics diags are reset
+    logical              :: aux2d_time_avg(1:naux2dmax) = .false. !< flags for time averaging of auxiliary 2d arrays
+    logical              :: aux3d_time_avg(1:naux3dmax) = .false. !< flags for time averaging of auxiliary 3d arrays
 
     real(kind=kind_phys) :: fhcyc          = 0.              !< frequency for surface data cycling (hours)
     integer              :: thermodyn_id   =  1              !< valid for GFS only for get_prs/phi
@@ -3145,8 +3137,7 @@ module GFS_typedefs
     NAMELIST /gfs_physics_nml/                                                              &
                           !--- general parameters
                                fhzero, ldiag3d, qdiag3d, lssav, naux2d, naux3d,             &
-                               aux2d_time_avg, aux3d_time_avg, aux2d_rad_reset,             &
-                               aux3d_rad_reset, aux2d_phys_reset, aux3d_phys_reset, fhcyc,  &
+                               aux2d_time_avg, aux3d_time_avg, fhcyc,                       &
                                thermodyn_id, sfcpress_id,                                   &
                           !--- coupling parameters
                                cplflx, cplwav, cplchm, lsidea,                              &
@@ -3368,20 +3359,12 @@ module GFS_typedefs
     Model%naux2d           = naux2d
     Model%naux3d           = naux3d
     if (Model%naux2d>0) then
-        allocate(Model%aux2d_time_avg   (1:naux2d))
-        allocate(Model%aux2d_rad_reset  (1:naux2d))
-        allocate(Model%aux2d_phys_reset (1:naux2d))
-        Model%aux2d_time_avg(1:naux2d)   = aux2d_time_avg(1:naux2d)
-        Model%aux2d_rad_reset(1:naux2d)  = aux2d_rad_reset(1:naux2d)
-        Model%aux2d_phys_reset(1:naux2d) = aux2d_phys_reset(1:naux2d)
+        allocate(Model%aux2d_time_avg(1:naux2d))
+        Model%aux2d_time_avg(1:naux2d) = aux2d_time_avg(1:naux2d)
     end if
     if (Model%naux3d>0) then
-        allocate(Model%aux3d_time_avg   (1:naux3d))
-        allocate(Model%aux3d_rad_reset  (1:naux3d))
-        allocate(Model%aux3d_phys_reset (1:naux3d))
-        Model%aux3d_time_avg(1:naux3d)   = aux3d_time_avg(1:naux3d)
-        Model%aux3d_rad_reset(1:naux3d)  = aux3d_rad_reset(1:naux3d)
-        Model%aux3d_phys_reset(1:naux3d) = aux3d_phys_reset(1:naux3d)
+        allocate(Model%aux3d_time_avg(1:naux3d))
+        Model%aux3d_time_avg(1:naux3d) = aux3d_time_avg(1:naux3d)
     end if
     !
     Model%fhcyc            = fhcyc
@@ -4524,13 +4507,9 @@ module GFS_typedefs
       print *, ' naux3d            : ', Model%naux3d
       if (Model%naux2d>0) then
         print *, ' aux2d_time_avg    : ', Model%aux2d_time_avg
-        print *, ' aux2d_rad_reset   : ', Model%aux2d_rad_reset
-        print *, ' aux2d_phys_reset  : ', Model%aux2d_phys_reset
       endif
       if (Model%naux3d>0) then
         print *, ' aux3d_time_avg    : ', Model%aux3d_time_avg
-        print *, ' aux3d_rad_reset   : ', Model%aux3d_rad_reset
-        print *, ' aux3d_phys_reset  : ', Model%aux3d_phys_reset
       endif
       print *, ' fhcyc             : ', Model%fhcyc
       print *, ' thermodyn_id      : ', Model%thermodyn_id
@@ -5532,13 +5511,6 @@ module GFS_typedefs
       Diag%cldcov     = zero
     endif
 
-    do i=1,Model%naux2d
-      if (Model%aux2d_rad_reset(i)) Diag%aux2d(:,i) = zero
-    enddo
-    do i=1,Model%naux3d
-      if (Model%aux3d_rad_reset(i)) Diag%aux3d(:,:,i) = zero
-    enddo
-
   end subroutine diag_rad_zero
 
 !------------------------
@@ -5750,13 +5722,6 @@ module GFS_typedefs
       Diag%totsnw  = zero
       Diag%totgrp  = zero
     endif
-
-    do i=1,Model%naux2d
-      if (Model%aux2d_phys_reset(i)) Diag%aux2d(:,i) = zero
-    enddo
-    do i=1,Model%naux3d
-      if (Model%aux3d_phys_reset(i)) Diag%aux3d(:,:,i) = zero
-    enddo
 
   end subroutine diag_phys_zero
 
