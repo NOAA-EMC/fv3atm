@@ -236,6 +236,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: tsfco  (:)   => null()  !< sst in K
     real (kind=kind_phys), pointer :: tsfcl  (:)   => null()  !< surface land temperature in K
     real (kind=kind_phys), pointer :: tisfc  (:)   => null()  !< surface temperature over ice fraction
+    real (kind=kind_phys), pointer :: tiice(:,:)   => null()  !< internal ice temperature
     real (kind=kind_phys), pointer :: snowd  (:)   => null()  !< snow depth water equivalent in mm ; same as snwdph
     real (kind=kind_phys), pointer :: zorl   (:)   => null()  !< composite surface roughness in cm
     real (kind=kind_phys), pointer :: zorlo  (:)   => null()  !< ocean surface roughness in cm
@@ -753,6 +754,7 @@ module GFS_typedefs
     integer              :: lsm_noahmp=2    !< flag for NOAH land surface model
     integer              :: lsm_ruc=3       !< flag for RUC land surface model
     integer              :: lsoil           !< number of soil layers
+    integer              :: kice=2          !< number of layers in sice
 #ifdef CCPP
     integer              :: lsoil_lsm       !< number of soil layers internal to land surface model
     integer              :: lsnow_lsm       !< maximum number of snow layers internal to land surface model
@@ -2151,6 +2153,7 @@ module GFS_typedefs
     allocate (Sfcprop%tsfco    (IM))
     allocate (Sfcprop%tsfcl    (IM))
     allocate (Sfcprop%tisfc    (IM))
+    allocate (Sfcprop%tiice    (IM,Model%kice))
     allocate (Sfcprop%snowd    (IM))
     allocate (Sfcprop%zorl     (IM))
     allocate (Sfcprop%zorlo    (IM))
@@ -2167,6 +2170,7 @@ module GFS_typedefs
     Sfcprop%tsfco     = clear_val
     Sfcprop%tsfcl     = clear_val
     Sfcprop%tisfc     = clear_val
+    Sfcprop%tiice     = clear_val
     Sfcprop%snowd     = clear_val
     Sfcprop%zorl      = clear_val
     Sfcprop%zorlo     = clear_val
