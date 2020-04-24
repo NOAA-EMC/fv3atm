@@ -172,25 +172,11 @@ if (MPI)
 endif (MPI)
 
 #------------------------------------------------------------------------------
-# Set flags for static building/linking of CCPP
-if (STATIC)
-  ADD_DEFINITIONS(-DSTATIC)
-endif (STATIC)
-
-#------------------------------------------------------------------------------
 # Set flag for 32bit dynamics build
 if (DYN32)
   message(STATUS "Dynamics compiled with 32-bit option, adjust fv_sat_adj types")
   ADD_DEFINITIONS(-DOVERLOAD_R4)
 endif (DYN32)
-
-#------------------------------------------------------------------------------
-# If a dynamic build is requested, set TARGET_SUPPORTS_SHARED_LIBS to TRUE; on
-# some systems, cmake doesn't set this even though the system supports shared
-# libraries (e.g. Cray systems)
-if(NOT STATIC)
-SET_PROPERTY(GLOBAL PROPERTY TARGET_SUPPORTS_SHARED_LIBS TRUE)
-endif(NOT STATIC)
 
 #------------------------------------------------------------------------------
 # Add model-specific flags for C/C++/Fortran preprocessor
