@@ -214,7 +214,7 @@ module module_cap_cpl
   !-----------------------------------------------------------------------------
 
     subroutine Dump_cplFields(gcomp, importState, exportstate, clock_fv3,    &
-         statewrite_flag, state_tag, timeslice)
+         statewrite_flag, state_tag, timestr)
 
       type(ESMF_GridComp), intent(in)       :: gcomp
       type(ESMF_State)                      :: importState, exportstate
