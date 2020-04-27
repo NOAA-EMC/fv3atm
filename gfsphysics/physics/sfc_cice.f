@@ -67,7 +67,7 @@
 !     dusfc    - real, zonal momentum stress
 !     dvsfc    - real, meridional momentum stress
 !     dvsfc    - real, sensible heat flux
-!     showd    - real, snow depth from cice
+!     snowd    - real, snow depth from cice
 !  input/outputs:
 !  outputs:
 !     qsurf    - real, specific humidity at sfc
