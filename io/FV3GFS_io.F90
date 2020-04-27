@@ -593,7 +593,6 @@ module FV3GFS_io_mod
     call mpp_error(NOTE,'reading topographic/orographic information from INPUT/oro_data.tile*.nc')
     call restore_state(Oro_restart)
 
-    Model%frac_grid = .false.
     !--- copy data into GFS containers
     do nb = 1, Atm_block%nblks
       !--- 2D variables
@@ -631,8 +630,6 @@ module FV3GFS_io_mod
       Model%frac_grid = .false.
     elseif (Model%frac_grid_off) then
       Model%frac_grid = .false.
-    else
-      Model%frac_grid = .true.
     endif
 
     if (Model%me == Model%master ) write(0,*)' resetting Model%frac_grid=',Model%frac_grid

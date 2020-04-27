@@ -3746,12 +3746,6 @@ module GFS_typedefs
     Model%frac_grid        = frac_grid
     Model%frac_grid_off    = frac_grid_off
     Model%ignore_lake      = ignore_lake
-#ifdef CCPP
-    if (Model%frac_grid) then
-      write(0,*) "ERROR: CCPP has not been tested with fractional landmask turned on"
-!     stop
-    end if
-#endif
     Model%min_lakeice      = min_lakeice
     Model%min_seaice       = min_seaice
     Model%min_lake_height  = min_lake_height
