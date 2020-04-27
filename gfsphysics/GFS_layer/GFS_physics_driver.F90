@@ -2152,6 +2152,8 @@ module module_physics_driver
               hflx(i)         = txi * hflx3(i,2)   + txo * hflx3(i,3)
               Sfcprop%tsfc(i) = txi * tsfc3(i,2)   + txo * tsfc3(i,3)
               stress(i)       = txi  *stress3(i,2) + txo * stress3(i,3)
+              qss(i)          = txi * qss3(i,2)    + txo * qss3(i,3)
+              ep1d(i)         = txi * ep1d3(i,2)   + txo * ep1d(i,3)
             endif
           elseif (islmsk(i) == 2) then  ! return updated lake ice thickness & concentration to global array
             Sfcprop%tisfc(i) = tice(i)   ! over lake ice (and sea ice when uncoupled)
