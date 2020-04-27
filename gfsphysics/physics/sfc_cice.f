@@ -44,10 +44,9 @@
 !       inputs:                                                         !
 !          ( im, t1, q1, cm, ch, prsl1,                                 !
 !            wind, flag_cice, flag_iter, dqsfc, dtsfc,                  !
-!  ---  input/output:                                                   !
-!           weasd, ep, trpcp,                                           !
+!            dusfc, dvsfc, snowd,                                       !
 !       outputs:                                                        !
-!            qsurf, cmm, chh, evap, hflx)                               !
+!            qsurf, cmm, chh, evap, hflx, stress, weasd, snwdph, ep)    !
 !                                                                       !
 !  ====================  defination of variables  ====================  !
 !                                                                       !
@@ -68,7 +67,6 @@
 !     dvsfc    - real, meridional momentum stress
 !     dvsfc    - real, sensible heat flux
 !     snowd    - real, snow depth from cice
-!  input/outputs:
 !  outputs:
 !     qsurf    - real, specific humidity at sfc
 !     cmm      - real, ?
