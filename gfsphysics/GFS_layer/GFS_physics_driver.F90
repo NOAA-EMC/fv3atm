@@ -1964,9 +1964,10 @@ module module_physics_driver
             flag_cice, flag_iter,                                        &
             Coupling%dqsfcin_cpl, Coupling%dtsfcin_cpl,                  &
             Coupling%dusfcin_cpl, Coupling%dvsfcin_cpl,                  &
+            Coupling%hsnoin_cpl,                                         &
 !  ---  outputs:
             qss3(:,2), cmm3(:,2), chh3(:,2), evap3(:,2), hflx3(:,2),     &
-            stress3(:,2))
+            stress3(:,2), weasd3(:,2), snowd3(:,2), ep1d3(:,2))
         endif
 !*## CCPP ##
 
@@ -2105,11 +2106,15 @@ module module_physics_driver
             Sfcprop%tsfcl(i) = tsfc3(i,1)  ! over land
             stress(i)        = stress3(i,1)
 !           Sfcprop%tprcp(i) = tprcp3(i,1)
+            Sfcprop%tsfco(i) = tsfc3(i,1)
+            Sfcprop%tisfc(i) = tsfc3(i,1)
           elseif (islmsk(i) == 0) then
             k = 3
             Sfcprop%tsfco(i) = tsfc3(i,3)  ! over lake (and ocean when uncoupled)
             stress(i)        = stress3(i,3)
 !           Sfcprop%tprcp(i) = tprcp3(i,3)
+            Sfcprop%tisfc(i) = tsfc3(i,3)
+            Sfcprop%tsfcl(i) = tsfc3(i,3)
           else
             k = 2
             stress(i)        = stress3(i,2)
@@ -2140,7 +2145,7 @@ module module_physics_driver
           Sfcprop%zorlo(i)  = zorl3(i,3)
 
           if (flag_cice(i)) then
-            if (wet(i) .and. fice(i) > min_seaice) then  ! this was already done for lake ice in sfc_sice
+            if (wet(i) .and. fice(i) > Model%min_seaice) then  ! this was already done for lake ice in sfc_sice
               txi = fice(i)
               txo = one - txi
               evap(i)         = txi * evap3(i,2)   + txo * evap3(i,3)
@@ -2157,6 +2162,12 @@ module module_physics_driver
             Sfcprop%fice(i)  = zero
             Sfcprop%tisfc(i) = Sfcprop%tsfc(i)
             icy(i)           = .false.
+          endif
+          Sfcprop%tsfcl(i) = Sfcprop%tsfc(i)
+          if (wet(i)) then
+            Sfcprop%tsfco(i) = tsfc3(i,3)
+          else
+            Sfcprop%tsfco(i) =Sfcprop%tsfc(i)
           endif
         enddo
       endif       ! if (Model%frac_grid)

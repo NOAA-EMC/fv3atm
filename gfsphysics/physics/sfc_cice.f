@@ -29,9 +29,10 @@
 !  ---  inputs:
      &     ( im, t1, q1, cm, ch, prsl1,                                 &
      &       wind, flag_cice, flag_iter, dqsfc, dtsfc,                  &
-     &       dusfc, dvsfc,                                              &
+     &       dusfc, dvsfc, snowd,                                       &
+!  ---  input/output:
 !  ---  outputs:
-     &       qsurf, cmm, chh, evap, hflx, stress )
+     &       qsurf, cmm, chh, evap, hflx, stress, weasd, snwdph, ep)
 
 ! ===================================================================== !
 !  description:                                                         !
@@ -43,6 +44,8 @@
 !       inputs:                                                         !
 !          ( im, t1, q1, cm, ch, prsl1,                                 !
 !            wind, flag_cice, flag_iter, dqsfc, dtsfc,                  !
+!  ---  input/output:                                                   !
+!           weasd, ep, trpcp,                                           !
 !       outputs:                                                        !
 !            qsurf, cmm, chh, evap, hflx)                               !
 !                                                                       !
@@ -64,6 +67,8 @@
 !     dusfc    - real, zonal momentum stress
 !     dvsfc    - real, meridional momentum stress
 !     dvsfc    - real, sensible heat flux
+!     showd    - real, snow depth from cice
+!  input/outputs:
 !  outputs:
 !     qsurf    - real, specific humidity at sfc
 !     cmm      - real, ?
@@ -71,26 +76,33 @@
 !     evap     - real, evaperation from latent heat
 !     hflx     - real, sensible heat
 !     stress   - real, surface stress
+!     weasd    - real, water equivalent accumulated snow depth (mm)
+!     snwdph   - real, water equivalent snow depth (mm)
+!     ep       - real, potential evaporation 
+
 !  ====================    end of description    =====================  !
 !
 !
 !  ---  constant parameters:
-      real(kind=kind_phys), parameter :: one   = 1.0d0
+      real(kind=kind_phys), parameter :: one   = 1.0_kind_phys
       real(kind=kind_phys), parameter :: cpinv = one/cp
       real(kind=kind_phys), parameter :: hvapi = one/hvap
+      real(kind=kind_phys), parameter :: dsi   = one/0.33_kind_phys
 
 !  ---  inputs:
       integer, intent(in) :: im
 
 !     real (kind=kind_phys), dimension(im), intent(in) :: u1, v1,       &
       real (kind=kind_phys), dimension(im), intent(in) ::               &
-     &       t1, q1, cm, ch, prsl1, wind, dqsfc, dtsfc, dusfc, dvsfc
+     &       t1, q1, cm, ch, prsl1, wind, dqsfc, dtsfc, dusfc, dvsfc,   &
+     &       snowd
 
       logical,                intent(in) :: flag_cice(im), flag_iter(im)
 
 !  ---  outputs:
-      real (kind=kind_phys), dimension(im), intent(out) :: qsurf,       &
-     &                                  cmm, chh, evap, hflx, stress
+      real (kind=kind_phys), dimension(im), intent(inout) :: qsurf,     &
+     &                                  cmm, chh, evap, hflx, stress,   &
+     &                                  weasd, snwdph, ep
 
 !  ---  locals:
 
@@ -111,6 +123,9 @@
           hflx(i)   = dtsfc(i) * tem * cpinv
           evap(i)   = dqsfc(i) * tem * hvapi
           stress(i) = sqrt(dusfc(i)*dusfc(i) + dvsfc(i)*dvsfc(i)) * tem
+          weasd(i)  = snowd(i) * 1000.0_kind_phys
+          snwdph(i) = weasd(i) * dsi           ! snow depth in mm
+          ep(i)     = evap(i)
         endif
       enddo
 

@@ -533,7 +533,6 @@
            NCPL(i,l)   = MAX( NCPL(i,l), zero)
            NCPI(i,l)   = MAX( NCPI(i,l), zero)
            RAD_CF(i,l) = max(zero, min(CLLS(i,l)+CLCN(i,l), one))
-           if (.not. iccn) then
            if (iccn /= 1) then
              CDNC_NUC(i,l) = zero
              INC_NUC(i,l)  = zero
@@ -594,7 +593,7 @@
        else
          AERMASSMIX(:,:,1:5) = 1.0d-6
          AERMASSMIX(:,:,6:15) = 2.0d-14
-       end if
+       endif
        call AerConversion1 (AERMASSMIX,  AeroProps)
        deallocate(AERMASSMIX)
 
