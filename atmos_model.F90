@@ -1936,15 +1936,18 @@ end subroutine atmos_data_type_chksum
           if (IPD_Data(nb)%Sfcprop%oceanfrac(ix) > zero) then
 !if it is ocean or ice get surface temperature from mediator
             if(IPD_Data(nb)%Coupling%ficein_cpl(ix) >= IPD_control%min_seaice) then
-              IPD_Data(nb)%Sfcprop%tisfc(ix) = IPD_Data(nb)%Coupling%tisfcin_cpl(ix)
-              IPD_Data(nb)%Sfcprop%fice(ix)  = IPD_Data(nb)%Coupling%ficein_cpl(ix)
-              IPD_Data(nb)%Sfcprop%hice(ix)  = IPD_Data(nb)%Coupling%hicein_cpl(ix)
-              IPD_Data(nb)%Sfcprop%snowd(ix) = IPD_Data(nb)%Coupling%hsnoin_cpl(ix)
+              IPD_Data(nb)%Sfcprop%tisfc(ix)       = IPD_Data(nb)%Coupling%tisfcin_cpl(ix)
+              IPD_Data(nb)%Sfcprop%fice(ix)        = IPD_Data(nb)%Coupling%ficein_cpl(ix)
+              IPD_Data(nb)%Sfcprop%hice(ix)        = IPD_Data(nb)%Coupling%hicein_cpl(ix)
+!             IPD_Data(nb)%Sfcprop%snowd(ix)       = IPD_Data(nb)%Coupling%hsnoin_cpl(ix)
+              IPD_Data(nb)%Coupling%hsnoin_cpl(ix) = IPD_Data(nb)%Coupling%hsnoin_cpl(ix) &
+                                                   / max(0.01, IPD_Data(nb)%Coupling%ficein_cpl(ix))
             else 
-              IPD_Data(nb)%Sfcprop%tisfc(ix) = IPD_Data(nb)%Coupling%tseain_cpl(ix)
-              IPD_Data(nb)%Sfcprop%fice(ix)  = zero
-              IPD_Data(nb)%Sfcprop%hice(ix)  = zero
-              IPD_Data(nb)%Sfcprop%snowd(ix) = zero
+              IPD_Data(nb)%Sfcprop%tisfc(ix)       = IPD_Data(nb)%Coupling%tseain_cpl(ix)
+              IPD_Data(nb)%Sfcprop%fice(ix)        = zero
+              IPD_Data(nb)%Sfcprop%hice(ix)        = zero
+!             IPD_Data(nb)%Sfcprop%snowd(ix)       = zero
+              IPD_Data(nb)%Coupling%hsnoin_cpl(ix) = zero
 !
               IPD_Data(nb)%Coupling%dtsfcin_cpl(ix)  = -99999.0 ! over open water - should not be used in ATM
               IPD_Data(nb)%Coupling%dqsfcin_cpl(ix)  = -99999.0 !                 ,,
