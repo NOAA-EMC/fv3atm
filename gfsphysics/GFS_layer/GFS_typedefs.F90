@@ -45,6 +45,9 @@ module GFS_typedefs
       private :: levozp, oz_coeff, levh2o, h2o_coeff, ntrcaer
       integer :: levozp, oz_coeff, levh2o, h2o_coeff, ntrcaer
 #endif
+      ! If these are changed to >99, need to adjust formatting string in GFS_diagnostics.F90 (and names in diag_tables)
+      integer, parameter :: naux2dmax = 20 !< maximum number of auxiliary 2d arrays in output (for debugging)
+      integer, parameter :: naux3dmax = 20 !< maximum number of auxiliary 3d arrays in output (for debugging)
 
 !> \section arg_table_GFS_typedefs
 !! \htmlinclude GFS_typedefs.html
@@ -550,7 +553,17 @@ module GFS_typedefs
 #endif
     real(kind=kind_phys) :: fhzero          !< hours between clearing of diagnostic buckets
     logical              :: ldiag3d         !< flag for 3d diagnostic fields
+    logical              :: qdiag3d         !< flag for 3d tracer diagnostic fields
+    logical              :: flag_for_gwd_generic_tend  !< true if GFS_GWD_generic should calculate tendencies
+    logical              :: flag_for_pbl_generic_tend  !< true if GFS_PBL_generic should calculate tendencies
+    logical              :: flag_for_scnv_generic_tend !< true if GFS_DCNV_generic should calculate tendencies
+    logical              :: flag_for_dcnv_generic_tend !< true if GFS_DCNV_generic should calculate tendencies
     logical              :: lssav           !< logical flag for storing diagnostics
+    integer              :: naux2d          !< number of auxiliary 2d arrays to output (for debugging)
+    integer              :: naux3d          !< number of auxiliary 3d arrays to output (for debugging)
+    logical, pointer     :: aux2d_time_avg(:) !< flags for time averaging of auxiliary 2d arrays
+    logical, pointer     :: aux3d_time_avg(:) !< flags for time averaging of auxiliary 3d arrays
+
     real(kind=kind_phys) :: fhcyc           !< frequency for surface data cycling (hours)
     integer              :: thermodyn_id    !< valid for GFS only for get_prs/phi
     integer              :: sfcpress_id     !< valid for GFS only for get_prs/phi
@@ -993,9 +1006,9 @@ module GFS_typedefs
     integer              :: ntrac           !< number of tracers
 #ifdef CCPP
     integer              :: ntracp1         !< number of tracers plus one
-    integer              :: ntqv            !< tracer index for water vapor (specific humidity)
     integer              :: nqrimef         !< tracer index for mass weighted rime factor
 #endif
+    integer              :: ntqv            !< tracer index for water vapor (specific humidity)
     integer              :: ntoz            !< tracer index for ozone mixing ratio
     integer              :: ntcw            !< tracer index for cloud condensate (or liquid water)
     integer              :: ntiw            !< tracer index for ice water
@@ -1584,6 +1597,11 @@ module GFS_typedefs
                                                                !< for black carbon, organic carbon, and sulfur dioxide         ( ug/m**2/s )
     real (kind=kind_phys), pointer :: aecm  (:,:) => null()    !< instantaneous aerosol column mass densities for
                                                                !< pm2.5, black carbon, organic carbon, sulfate, dust, sea salt ( g/m**2 )
+
+    ! Auxiliary output arrays for debugging
+    real (kind=kind_phys), pointer :: aux2d(:,:)  => null()    !< auxiliary 2d arrays in output (for debugging)
+    real (kind=kind_phys), pointer :: aux3d(:,:,:)=> null()    !< auxiliary 2d arrays in output (for debugging)
+
     contains
       procedure :: create    => diag_create
       procedure :: rad_zero  => diag_rad_zero
@@ -2740,7 +2758,12 @@ module GFS_typedefs
 !--- BEGIN NAMELIST VARIABLES
     real(kind=kind_phys) :: fhzero         = 0.0             !< hours between clearing of diagnostic buckets
     logical              :: ldiag3d        = .false.         !< flag for 3d diagnostic fields
+    logical              :: qdiag3d        = .false.         !< flag for 3d tracer diagnostic fields
     logical              :: lssav          = .false.         !< logical flag for storing diagnostics
+    integer              :: naux2d         = 0               !< number of auxiliary 2d arrays to output (for debugging)
+    integer              :: naux3d         = 0               !< number of auxiliary 3d arrays to output (for debugging)
+    logical              :: aux2d_time_avg(1:naux2dmax) = .false. !< flags for time averaging of auxiliary 2d arrays
+    logical              :: aux3d_time_avg(1:naux3dmax) = .false. !< flags for time averaging of auxiliary 3d arrays
 
     logical              :: cycling        = .false.         !< flag to activate extra cycling procedures
     real(kind=kind_phys) :: fhcyc          = 0.              !< frequency for surface data cycling (hours)
@@ -3123,7 +3146,8 @@ module GFS_typedefs
 
     NAMELIST /gfs_physics_nml/                                                              &
                           !--- general parameters
-                               fhzero, ldiag3d, lssav, fhcyc,                               &
+                               fhzero, ldiag3d, qdiag3d, lssav, naux2d, naux3d,             &
+                               aux2d_time_avg, aux3d_time_avg, fhcyc,                       &
                                thermodyn_id, sfcpress_id,                                   &
                           !--- coupling parameters
                                cplflx, cplwav, cplchm, lsidea,                              &
@@ -3274,6 +3298,58 @@ module GFS_typedefs
 #endif
     Model%fhzero           = fhzero
     Model%ldiag3d          = ldiag3d
+    Model%qdiag3d          = qdiag3d
+    if (Model%qdiag3d .and. .not. Model%ldiag3d) then
+      write(0,*) 'Logic error in GFS_typedefs.F90: qdiag3d requires ldiag3d'
+      stop
+    endif
+    Model%flag_for_gwd_generic_tend = .true.
+    Model%flag_for_pbl_generic_tend = .true.
+    Model%flag_for_scnv_generic_tend = .true.
+    Model%flag_for_dcnv_generic_tend = .true.
+
+#ifdef CCPP
+
+    if(gwd_opt==1) then
+      write(0,*) 'FLAG: gwd_opt==1 so gwd not generic'
+      Model%flag_for_gwd_generic_tend=.false.
+    else
+      write(0,*) 'NO FLAG: gwd is generic'
+    endif
+
+    if(satmedmf .and. isatmedmf==0) then
+      write(0,*) 'FLAG: satmedmf and isatedmf=0 so pbl not generic'
+      Model%flag_for_pbl_generic_tend=.false.
+    else if(hybedmf) then
+      write(0,*) 'FLAG: hybedmf so pbl not generic'
+      Model%flag_for_pbl_generic_tend=.false.
+    else if(do_mynnedmf) then
+      write(0,*) 'FLAG: do_mynnedmf so pbl not generic'
+      Model%flag_for_pbl_generic_tend=.false.
+    else
+      write(0,*) 'NO FLAG: pbl is generic'
+    endif
+
+    if(imfshalcnv == Model%imfshalcnv_gf) then
+      write(0,*) 'FLAG: imfshalcnv_gf so scnv not generic'
+      Model%flag_for_scnv_generic_tend=.false.
+    ! else if(imfshalcnv == Model%imfshalcnv_samf) then
+    !   write(0,*) 'FLAG: imfshalcnv_samf so scnv not generic'
+    !   Model%flag_for_scnv_generic_tend=.false.
+    else
+      write(0,*) 'NO FLAG: scnv is generic'
+    endif
+
+    if(imfdeepcnv == Model%imfdeepcnv_gf) then
+      write(0,*) 'FLAG: imfdeepcnv_gf so dcnv not generic'
+      Model%flag_for_dcnv_generic_tend=.false.
+    ! else if(imfdeepcnv == Model%imfdeepcnv_samf) then
+    !   write(0,*) 'FLAG: imfdeepcnv_samf so dcnv not generic'
+    !   Model%flag_for_dcnv_generic_tend=.false.
+    else
+      write(0,*) 'NO FLAG: dcnv is generic'
+    endif
+#endif
 !
 !VAY-ugwp  --- set some GW-related switches
 !
@@ -3282,6 +3358,26 @@ module GFS_typedefs
     Model%do_tofd          = do_tofd
 
     Model%lssav            = lssav
+    !
+    if (naux2d>naux2dmax) then
+      write(0,*) "Error, number of requested auxiliary 2d arrays exceeds the maximum defined in GFS_typedefs.F90"
+      stop
+    endif
+    if (naux3d>naux3dmax) then
+      write(0,*) "Error, number of requested auxiliary 3d arrays exceeds the maximum defined in GFS_typedefs.F90"
+      stop
+    endif
+    Model%naux2d           = naux2d
+    Model%naux3d           = naux3d
+    if (Model%naux2d>0) then
+        allocate(Model%aux2d_time_avg(1:naux2d))
+        Model%aux2d_time_avg(1:naux2d) = aux2d_time_avg(1:naux2d)
+    end if
+    if (Model%naux3d>0) then
+        allocate(Model%aux3d_time_avg(1:naux3d))
+        Model%aux3d_time_avg(1:naux3d) = aux3d_time_avg(1:naux3d)
+    end if
+    !
     Model%fhcyc            = fhcyc
     Model%thermodyn_id     = thermodyn_id
     Model%sfcpress_id      = sfcpress_id
@@ -3709,9 +3805,7 @@ module GFS_typedefs
 #endif
     allocate (Model%tracer_names(Model%ntrac))
     Model%tracer_names(:)  = tracer_names(:)
-#ifdef CCPP
     Model%ntqv             = 1
-#endif
 #ifdef MULTI_GASES
     Model%nto              = get_tracer_index(Model%tracer_names, 'spfo',        Model%me, Model%master, Model%debug)
     Model%nto2             = get_tracer_index(Model%tracer_names, 'spfo2',       Model%me, Model%master, Model%debug)
@@ -4421,7 +4515,16 @@ module GFS_typedefs
       print *, ' fn_nml            : ', trim(Model%fn_nml)
       print *, ' fhzero            : ', Model%fhzero
       print *, ' ldiag3d           : ', Model%ldiag3d
+      print *, ' qdiag3d           : ', Model%qdiag3d
       print *, ' lssav             : ', Model%lssav
+      print *, ' naux2d            : ', Model%naux2d
+      print *, ' naux3d            : ', Model%naux3d
+      if (Model%naux2d>0) then
+        print *, ' aux2d_time_avg    : ', Model%aux2d_time_avg
+      endif
+      if (Model%naux3d>0) then
+        print *, ' aux3d_time_avg    : ', Model%aux3d_time_avg
+      endif
       print *, ' fhcyc             : ', Model%fhcyc
       print *, ' thermodyn_id      : ', Model%thermodyn_id
       print *, ' sfcpress_id       : ', Model%sfcpress_id
@@ -4698,9 +4801,9 @@ module GFS_typedefs
       print *, ' tracer_names      : ', Model%tracer_names
       print *, ' ntrac             : ', Model%ntrac
 #ifdef CCPP
-      print *, ' ntqv              : ', Model%ntqv
       print *, ' nqrimef           : ', Model%nqrimef
 #endif
+      print *, ' ntqv              : ', Model%ntqv
       print *, ' ntoz              : ', Model%ntoz
       print *, ' ntcw              : ', Model%ntcw
       print *, ' ntiw              : ', Model%ntiw
@@ -5222,10 +5325,12 @@ module GFS_typedefs
     
     !--- 3D diagnostics
     if (Model%ldiag3d) then
-      allocate (Diag%du3dt  (IM,Model%levs,4))
-      allocate (Diag%dv3dt  (IM,Model%levs,4))
-      allocate (Diag%dt3dt  (IM,Model%levs,7))
-      allocate (Diag%dq3dt  (IM,Model%levs,9))
+      allocate (Diag%du3dt  (IM,Model%levs,8))
+      allocate (Diag%dv3dt  (IM,Model%levs,8))
+      allocate (Diag%dt3dt  (IM,Model%levs,11))
+      if (Model%qdiag3d) then
+        allocate (Diag%dq3dt  (IM,Model%levs,13))
+      endif
 !      allocate (Diag%dq3dt  (IM,Model%levs,oz_coeff+5))
 !--- needed to allocate GoCart coupling fields
 !      allocate (Diag%upd_mf (IM,Model%levs))
@@ -5395,6 +5500,16 @@ module GFS_typedefs
     endif
 #endif
 
+    ! Auxiliary arrays in output for debugging
+    if (Model%naux2d>0) then
+      allocate (Diag%aux2d(IM,Model%naux2d))
+      Diag%aux2d = clear_val
+    endif
+    if (Model%naux3d>0) then
+      allocate (Diag%aux3d(IM,Model%levs,Model%naux3d))
+      Diag%aux3d = clear_val
+    endif
+
     !--- diagnostics for coupled chemistry
     if (Model%cplchm) call Diag%chem_init(IM,Model)
 
@@ -5413,6 +5528,7 @@ module GFS_typedefs
   subroutine diag_rad_zero(Diag, Model)
     class(GFS_diag_type)               :: Diag
     type(GFS_control_type), intent(in) :: Model
+    integer :: i
 
     Diag%fluxr        = zero
     Diag%topfsw%upfxc = zero
@@ -5435,6 +5551,7 @@ module GFS_typedefs
     logical,optional, intent(in)       :: linit, iauwindow_center
 
     logical set_totprcp
+    integer :: i
 
     !--- In/Out
     Diag%srunoff    = zero
@@ -5542,7 +5659,9 @@ module GFS_typedefs
       Diag%du3dt    = zero
       Diag%dv3dt    = zero
       Diag%dt3dt    = zero
-!     Diag%dq3dt    = zero
+      if (Model%qdiag3d) then
+         Diag%dq3dt    = zero
+      endif
 !     Diag%upd_mf   = zero
 !     Diag%dwn_mf   = zero
 !     Diag%det_mf   = zero
@@ -5632,6 +5751,7 @@ module GFS_typedefs
       Diag%totsnw  = zero
       Diag%totgrp  = zero
     endif
+
   end subroutine diag_phys_zero
 
 !-----------------------
