@@ -1106,9 +1106,8 @@ module GFS_typedefs
     real(kind=kind_phys) :: julian          !< julian day using midnight of January 1 of forecast year as initial epoch
     integer              :: yearlen         !< length of the current forecast year in days
 !
-
+    integer              :: iccn            !< using IN CCN forcing for MG2/3
     real(kind=kind_phys), pointer :: si(:)  !< vertical sigma coordinate for model initialization
-
 #ifdef CCPP
     real(kind=kind_phys)          :: sec    !< seconds since model initialization
 #endif
