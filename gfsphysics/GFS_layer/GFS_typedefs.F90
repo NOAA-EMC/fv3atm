@@ -45,6 +45,9 @@ module GFS_typedefs
       private :: levozp, oz_coeff, levh2o, h2o_coeff, ntrcaer
       integer :: levozp, oz_coeff, levh2o, h2o_coeff, ntrcaer
 #endif
+      ! If these are changed to >99, need to adjust formatting string in GFS_diagnostics.F90 (and names in diag_tables)
+      integer, parameter :: naux2dmax = 20 !< maximum number of auxiliary 2d arrays in output (for debugging)
+      integer, parameter :: naux3dmax = 20 !< maximum number of auxiliary 3d arrays in output (for debugging)
 
 !> \section arg_table_GFS_typedefs
 !! \htmlinclude GFS_typedefs.html
@@ -130,6 +133,7 @@ module GFS_typedefs
 #ifdef CCPP
 !--- restart information
     logical :: restart                           !< flag whether this is a coldstart (.false.) or a warmstart/restart (.true.)
+    logical :: cycling                           !< flag whether this is a coldstart (.false.) or a cycled run (.true.)
 !--- hydrostatic/non-hydrostatic flag
     logical :: hydrostatic                       !< flag whether this is a hydrostatic or non-hydrostatic run
 #endif
@@ -555,6 +559,11 @@ module GFS_typedefs
     logical              :: flag_for_scnv_generic_tend !< true if GFS_DCNV_generic should calculate tendencies
     logical              :: flag_for_dcnv_generic_tend !< true if GFS_DCNV_generic should calculate tendencies
     logical              :: lssav           !< logical flag for storing diagnostics
+    integer              :: naux2d          !< number of auxiliary 2d arrays to output (for debugging)
+    integer              :: naux3d          !< number of auxiliary 3d arrays to output (for debugging)
+    logical, pointer     :: aux2d_time_avg(:) !< flags for time averaging of auxiliary 2d arrays
+    logical, pointer     :: aux3d_time_avg(:) !< flags for time averaging of auxiliary 3d arrays
+
     real(kind=kind_phys) :: fhcyc           !< frequency for surface data cycling (hours)
     integer              :: thermodyn_id    !< valid for GFS only for get_prs/phi
     integer              :: sfcpress_id     !< valid for GFS only for get_prs/phi
@@ -886,6 +895,7 @@ module GFS_typedefs
     integer              :: bl_mynn_edmf_part  !< flag to partitioning og the MF and ED areas
     integer              :: bl_mynn_cloudmix   !< flag to activate mixing of cloud species
     integer              :: bl_mynn_mixqt      !< flag to mix total water or individual species
+    integer              :: bl_mynn_output      !< flag to initialize and write out extra 3D arrays
     integer              :: icloud_bl          !< flag for coupling sgs clouds to radiation
     ! *DH
     ! MYJ switches
@@ -1068,6 +1078,7 @@ module GFS_typedefs
 #ifdef CCPP
     logical              :: first_time_step !< flag signaling first time step for time integration routine
     logical              :: restart         !< flag whether this is a coldstart (.false.) or a warmstart/restart (.true.)
+    logical              :: cycling         !< flag whether this is a coldstart (.false.) or a cycled run (.true.)
     logical              :: hydrostatic     !< flag whether this is a hydrostatic or non-hydrostatic run
 #endif
     integer              :: jdat(1:8)       !< current forecast date and time
@@ -1226,6 +1237,7 @@ module GFS_typedefs
     !--- MYNN prognostic variables that can't be in the Intdiag or Interstitial DDTs
     real (kind=kind_phys), pointer :: CLDFRA_BL  (:,:)   => null()  !
     real (kind=kind_phys), pointer :: QC_BL      (:,:)   => null()  !
+    real (kind=kind_phys), pointer :: QI_BL      (:,:)   => null()  !
     real (kind=kind_phys), pointer :: el_pbl     (:,:)   => null()  !
     real (kind=kind_phys), pointer :: Sh3D       (:,:)   => null()  !
     real (kind=kind_phys), pointer :: qke        (:,:)   => null()  !
@@ -1390,16 +1402,20 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: totgrpb(:)     => null()   !< accumulated graupel precipitation in bucket (kg/m2)
 
 #ifdef CCPP
-    !--- MYNN variables                                              
+    !--- MYNN variables
     real (kind=kind_phys), pointer :: edmf_a     (:,:)   => null()  !
     real (kind=kind_phys), pointer :: edmf_w     (:,:)   => null()  !
     real (kind=kind_phys), pointer :: edmf_qt    (:,:)   => null()  !
     real (kind=kind_phys), pointer :: edmf_thl   (:,:)   => null()  !
     real (kind=kind_phys), pointer :: edmf_ent   (:,:)   => null()  !
     real (kind=kind_phys), pointer :: edmf_qc    (:,:)   => null()  !
+    real (kind=kind_phys), pointer :: sub_thl    (:,:)   => null()  !
+    real (kind=kind_phys), pointer :: sub_sqv    (:,:)   => null()  !
+    real (kind=kind_phys), pointer :: det_thl    (:,:)   => null()  !
+    real (kind=kind_phys), pointer :: det_sqv    (:,:)   => null()  !
     real (kind=kind_phys), pointer :: maxMF       (:)    => null()  !
     integer, pointer               :: nupdraft    (:)    => null()  !
-    integer, pointer               :: ktop_shallow (:)   => null()  !
+    integer, pointer               :: ktop_plume  (:)    => null()  !
     real (kind=kind_phys), pointer :: exch_h     (:,:)   => null()  !
     real (kind=kind_phys), pointer :: exch_m     (:,:)   => null()  !
 
@@ -1581,6 +1597,11 @@ module GFS_typedefs
                                                                !< for black carbon, organic carbon, and sulfur dioxide         ( ug/m**2/s )
     real (kind=kind_phys), pointer :: aecm  (:,:) => null()    !< instantaneous aerosol column mass densities for
                                                                !< pm2.5, black carbon, organic carbon, sulfate, dust, sea salt ( g/m**2 )
+
+    ! Auxiliary output arrays for debugging
+    real (kind=kind_phys), pointer :: aux2d(:,:)  => null()    !< auxiliary 2d arrays in output (for debugging)
+    real (kind=kind_phys), pointer :: aux3d(:,:,:)=> null()    !< auxiliary 2d arrays in output (for debugging)
+
     contains
       procedure :: create    => diag_create
       procedure :: rad_zero  => diag_rad_zero
@@ -2739,7 +2760,12 @@ module GFS_typedefs
     logical              :: ldiag3d        = .false.         !< flag for 3d diagnostic fields
     logical              :: qdiag3d        = .false.         !< flag for 3d tracer diagnostic fields
     logical              :: lssav          = .false.         !< logical flag for storing diagnostics
+    integer              :: naux2d         = 0               !< number of auxiliary 2d arrays to output (for debugging)
+    integer              :: naux3d         = 0               !< number of auxiliary 3d arrays to output (for debugging)
+    logical              :: aux2d_time_avg(1:naux2dmax) = .false. !< flags for time averaging of auxiliary 2d arrays
+    logical              :: aux3d_time_avg(1:naux3dmax) = .false. !< flags for time averaging of auxiliary 3d arrays
 
+    logical              :: cycling        = .false.         !< flag to activate extra cycling procedures
     real(kind=kind_phys) :: fhcyc          = 0.              !< frequency for surface data cycling (hours)
     integer              :: thermodyn_id   =  1              !< valid for GFS only for get_prs/phi
     integer              :: sfcpress_id    =  1              !< valid for GFS only for get_prs/phi
@@ -2968,6 +2994,7 @@ module GFS_typedefs
     integer              :: bl_mynn_edmf_part = 0
     integer              :: bl_mynn_cloudmix  = 1
     integer              :: bl_mynn_mixqt     = 0
+    integer              :: bl_mynn_output    = 0
     integer              :: icloud_bl         = 1
     ! *DH
     logical              :: do_myjsfc         = .false.               !< flag for MYJ surface layer scheme
@@ -3119,7 +3146,8 @@ module GFS_typedefs
 
     NAMELIST /gfs_physics_nml/                                                              &
                           !--- general parameters
-                               fhzero, ldiag3d, qdiag3d, lssav, fhcyc,                      &
+                               fhzero, ldiag3d, qdiag3d, lssav, naux2d, naux3d,             &
+                               aux2d_time_avg, aux3d_time_avg, fhcyc,                       &
                                thermodyn_id, sfcpress_id,                                   &
                           !--- coupling parameters
                                cplflx, cplwav, cplchm, lsidea,                              &
@@ -3166,7 +3194,8 @@ module GFS_typedefs
                                ! DH* TODO - move to MYNN namelist section
                                bl_mynn_cloudpdf, bl_mynn_edmf, bl_mynn_edmf_mom,            &
                                bl_mynn_edmf_tke, bl_mynn_edmf_part, bl_mynn_cloudmix,       &
-                               bl_mynn_mixqt, icloud_bl, bl_mynn_tkeadvect, gwd_opt,        &
+                               bl_mynn_mixqt, bl_mynn_output, icloud_bl, bl_mynn_tkeadvect, &
+                               gwd_opt,                                                     &
                                ! *DH
                                do_myjsfc, do_myjpbl,                                        &
 #endif
@@ -3329,6 +3358,26 @@ module GFS_typedefs
     Model%do_tofd          = do_tofd
 
     Model%lssav            = lssav
+    !
+    if (naux2d>naux2dmax) then
+      write(0,*) "Error, number of requested auxiliary 2d arrays exceeds the maximum defined in GFS_typedefs.F90"
+      stop
+    endif
+    if (naux3d>naux3dmax) then
+      write(0,*) "Error, number of requested auxiliary 3d arrays exceeds the maximum defined in GFS_typedefs.F90"
+      stop
+    endif
+    Model%naux2d           = naux2d
+    Model%naux3d           = naux3d
+    if (Model%naux2d>0) then
+        allocate(Model%aux2d_time_avg(1:naux2d))
+        Model%aux2d_time_avg(1:naux2d) = aux2d_time_avg(1:naux2d)
+    end if
+    if (Model%naux3d>0) then
+        allocate(Model%aux3d_time_avg(1:naux3d))
+        Model%aux3d_time_avg(1:naux3d) = aux3d_time_avg(1:naux3d)
+    end if
+    !
     Model%fhcyc            = fhcyc
     Model%thermodyn_id     = thermodyn_id
     Model%sfcpress_id      = sfcpress_id
@@ -3646,6 +3695,7 @@ module GFS_typedefs
     Model%bl_mynn_edmf_tke  = bl_mynn_edmf_tke
     Model%bl_mynn_cloudmix  = bl_mynn_cloudmix
     Model%bl_mynn_mixqt     = bl_mynn_mixqt
+    Model%bl_mynn_output    = bl_mynn_output
     Model%bl_mynn_edmf_part = bl_mynn_edmf_part
     Model%bl_mynn_tkeadvect = bl_mynn_tkeadvect
     Model%grav_settling     = grav_settling
@@ -3889,6 +3939,7 @@ module GFS_typedefs
 #ifdef CCPP
     Model%first_time_step  = .true.
     Model%restart          = restart
+    Model%cycling          = cycling
     Model%hydrostatic      = hydrostatic
 #endif
     Model%jdat(1:8)        = jdat(1:8)
@@ -3997,7 +4048,8 @@ module GFS_typedefs
                                             ' boundary layer turbulence and shallow convection', &
                                             ' bl_mynn_cloudpdf=',Model%bl_mynn_cloudpdf,         &
                                             ' bl_mynn_mixlength=',Model%bl_mynn_mixlength,       &
-                                            ' bl_mynn_edmf=',Model%bl_mynn_edmf
+                                            ' bl_mynn_edmf=',Model%bl_mynn_edmf,                 &
+                                            ' bl_mynn_output=',Model%bl_mynn_output
     endif
 #endif
 
@@ -4465,6 +4517,14 @@ module GFS_typedefs
       print *, ' ldiag3d           : ', Model%ldiag3d
       print *, ' qdiag3d           : ', Model%qdiag3d
       print *, ' lssav             : ', Model%lssav
+      print *, ' naux2d            : ', Model%naux2d
+      print *, ' naux3d            : ', Model%naux3d
+      if (Model%naux2d>0) then
+        print *, ' aux2d_time_avg    : ', Model%aux2d_time_avg
+      endif
+      if (Model%naux3d>0) then
+        print *, ' aux3d_time_avg    : ', Model%aux3d_time_avg
+      endif
       print *, ' fhcyc             : ', Model%fhcyc
       print *, ' thermodyn_id      : ', Model%thermodyn_id
       print *, ' sfcpress_id       : ', Model%sfcpress_id
@@ -4806,6 +4866,7 @@ module GFS_typedefs
       print *, ' si                : ', Model%si
       print *, ' first_time_step   : ', Model%first_time_step
       print *, ' restart           : ', Model%restart
+      print *, ' cycling           : ', Model%cycling
       print *, ' hydrostatic       : ', Model%hydrostatic
 #endif
     endif
@@ -5011,6 +5072,7 @@ module GFS_typedefs
        !print*,"Allocating all MYNN-EDMF variables:"
        allocate (Tbd%cldfra_bl (IM,Model%levs))
        allocate (Tbd%qc_bl     (IM,Model%levs))
+       allocate (Tbd%qi_bl     (IM,Model%levs))
        allocate (Tbd%el_pbl    (IM,Model%levs))
        allocate (Tbd%sh3d      (IM,Model%levs))
        allocate (Tbd%qke       (IM,Model%levs))
@@ -5020,6 +5082,7 @@ module GFS_typedefs
        !print*,"Allocating all MYNN-EDMF variables:"
        Tbd%cldfra_bl     = clear_val
        Tbd%qc_bl         = clear_val
+       Tbd%qi_bl         = clear_val
        Tbd%el_pbl        = clear_val
        Tbd%sh3d          = clear_val
        Tbd%qke           = zero
@@ -5361,28 +5424,40 @@ module GFS_typedefs
 #ifdef CCPP
     !--- MYNN variables:
     if (Model%do_mynnedmf) then
-      !print*,"Allocating all MYNN-EDMF variables:"
-      allocate (Diag%edmf_a    (IM,Model%levs))
-      allocate (Diag%edmf_w    (IM,Model%levs))
-      allocate (Diag%edmf_qt   (IM,Model%levs))
-      allocate (Diag%edmf_thl  (IM,Model%levs))
-      allocate (Diag%edmf_ent  (IM,Model%levs))
-      allocate (Diag%edmf_qc   (IM,Model%levs))
+      if (Model%bl_mynn_output .ne. 0) then
+        !print*,"Allocating all MYNN-EDMF variables:"
+        allocate (Diag%edmf_a    (IM,Model%levs))
+        allocate (Diag%edmf_w    (IM,Model%levs))
+        allocate (Diag%edmf_qt   (IM,Model%levs))
+        allocate (Diag%edmf_thl  (IM,Model%levs))
+        allocate (Diag%edmf_ent  (IM,Model%levs))
+        allocate (Diag%edmf_qc   (IM,Model%levs))
+        allocate (Diag%sub_thl   (IM,Model%levs))
+        allocate (Diag%sub_sqv   (IM,Model%levs))
+        allocate (Diag%det_thl   (IM,Model%levs))
+        allocate (Diag%det_sqv   (IM,Model%levs))
+      endif
       allocate (Diag%nupdraft  (IM))
       allocate (Diag%maxmf     (IM))
-      allocate (Diag%ktop_shallow(IM))
+      allocate (Diag%ktop_plume(IM))
       allocate (Diag%exch_h    (IM,Model%levs))
       allocate (Diag%exch_m    (IM,Model%levs))
-      !print*,"Initializing all MYNN-EDMF variables with ",clear_val
-      Diag%edmf_a        = clear_val
-      Diag%edmf_w        = clear_val
-      Diag%edmf_qt       = clear_val
-      Diag%edmf_thl      = clear_val
-      Diag%edmf_ent      = clear_val
-      Diag%edmf_qc       = clear_val
+      if (Model%bl_mynn_output .ne. 0) then
+        !print*,"Initializing all MYNN-EDMF variables with ",clear_val
+        Diag%edmf_a        = clear_val
+        Diag%edmf_w        = clear_val
+        Diag%edmf_qt       = clear_val
+        Diag%edmf_thl      = clear_val
+        Diag%edmf_ent      = clear_val
+        Diag%edmf_qc       = clear_val
+        Diag%sub_thl       = clear_val
+        Diag%sub_sqv       = clear_val
+        Diag%det_thl       = clear_val
+        Diag%det_sqv       = clear_val
+      endif
       Diag%nupdraft      = 0
       Diag%maxmf         = clear_val
-      Diag%ktop_shallow  = 0
+      Diag%ktop_plume    = 0
       Diag%exch_h        = clear_val
       Diag%exch_m        = clear_val
     endif
@@ -5425,6 +5500,16 @@ module GFS_typedefs
     endif
 #endif
 
+    ! Auxiliary arrays in output for debugging
+    if (Model%naux2d>0) then
+      allocate (Diag%aux2d(IM,Model%naux2d))
+      Diag%aux2d = clear_val
+    endif
+    if (Model%naux3d>0) then
+      allocate (Diag%aux3d(IM,Model%levs,Model%naux3d))
+      Diag%aux3d = clear_val
+    endif
+
     !--- diagnostics for coupled chemistry
     if (Model%cplchm) call Diag%chem_init(IM,Model)
 
@@ -5443,6 +5528,7 @@ module GFS_typedefs
   subroutine diag_rad_zero(Diag, Model)
     class(GFS_diag_type)               :: Diag
     type(GFS_control_type), intent(in) :: Model
+    integer :: i
 
     Diag%fluxr        = zero
     Diag%topfsw%upfxc = zero
@@ -5465,6 +5551,7 @@ module GFS_typedefs
     logical,optional, intent(in)       :: linit, iauwindow_center
 
     logical set_totprcp
+    integer :: i
 
     !--- In/Out
     Diag%srunoff    = zero
@@ -5664,6 +5751,7 @@ module GFS_typedefs
       Diag%totsnw  = zero
       Diag%totgrp  = zero
     endif
+
   end subroutine diag_phys_zero
 
 !-----------------------

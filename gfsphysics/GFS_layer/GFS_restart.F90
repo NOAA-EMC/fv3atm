@@ -127,7 +127,7 @@ module GFS_restart
     endif
     ! MYNN PBL 
     if (Model%do_mynnedmf) then
-      Restart%num3d = Restart%num3d + 8
+      Restart%num3d = Restart%num3d + 9
     endif
 #endif
 
@@ -295,6 +295,11 @@ module GFS_restart
       Restart%name3d(num) = 'mynn_3d_qc_bl'
       do nb = 1,nblks
         Restart%data(nb,num)%var3p => Tbd(nb)%qc_bl(:,:)
+      enddo
+      num = num + 1
+      Restart%name3d(num) = 'mynn_3d_qi_bl'
+      do nb = 1,nblks
+        Restart%data(nb,num)%var3p => Tbd(nb)%qi_bl(:,:)
       enddo
       num = num + 1
       Restart%name3d(num) = 'mynn_3d_el_pbl'

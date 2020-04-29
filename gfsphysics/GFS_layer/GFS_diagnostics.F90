@@ -3596,13 +3596,13 @@ module GFS_diagnostics
 
       !idx = idx + 1
       !ExtDiag(idx)%axes = 2
-      !ExtDiag(idx)%name = 'ktop_shallow'
+      !ExtDiag(idx)%name = 'ktop_plume'
       !ExtDiag(idx)%desc = 'k-level of plume top'
       !ExtDiag(idx)%unit = 'n/a'
       !ExtDiag(idx)%mod_name = 'gfs_sfc'
       !allocate (ExtDiag(idx)%data(nblks))
       !do nb = 1,nblks
-      !  ExtDiag(idx)%data(nb)%var2 => real(IntDiag(nb)%ktop_shallow(:),kind=kind_phys)
+      !  ExtDiag(idx)%data(nb)%var2 => real(IntDiag(nb)%ktop_plume(:),kind=kind_phys)
       !enddo
 
       idx = idx + 1
@@ -3707,6 +3707,120 @@ module GFS_diagnostics
       do nb = 1,nblks
         ExtDiag(idx)%data(nb)%var3 => Tbd(nb)%QKE(:,:)
       enddo
+
+      if (Model%bl_mynn_output > 0) then
+
+        idx = idx + 1
+        ExtDiag(idx)%axes = 3
+        ExtDiag(idx)%name = 'edmf_a'
+        ExtDiag(idx)%desc = 'updraft area fraction (from mynn)'
+        ExtDiag(idx)%unit = '-'
+        ExtDiag(idx)%mod_name = 'gfs_phys'
+        allocate (ExtDiag(idx)%data(nblks))
+        do nb = 1,nblks
+          ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%edmf_a(:,:)
+        enddo
+
+        idx = idx + 1
+        ExtDiag(idx)%axes = 3
+        ExtDiag(idx)%name = 'edmf_w'
+        ExtDiag(idx)%desc = 'mean updraft vertical veloctity (mynn)'
+        ExtDiag(idx)%unit = 'm s-1'
+        ExtDiag(idx)%mod_name = 'gfs_phys'
+        allocate (ExtDiag(idx)%data(nblks))
+        do nb = 1,nblks
+          ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%edmf_w(:,:)
+        enddo
+
+        idx = idx + 1
+        ExtDiag(idx)%axes = 3
+        ExtDiag(idx)%name = 'edmf_qt'
+        ExtDiag(idx)%desc = 'updraft total water (from mynn)'
+        ExtDiag(idx)%unit = 'kg kg-1'
+        ExtDiag(idx)%mod_name = 'gfs_phys'
+        allocate (ExtDiag(idx)%data(nblks))
+        do nb = 1,nblks
+          ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%edmf_qt(:,:)
+        enddo
+
+        idx = idx + 1
+        ExtDiag(idx)%axes = 3
+        ExtDiag(idx)%name = 'edmf_thl'
+        ExtDiag(idx)%desc = 'mean liquid potential temperature (mynn)'
+        ExtDiag(idx)%unit = 'K'
+        ExtDiag(idx)%mod_name = 'gfs_phys'
+        allocate (ExtDiag(idx)%data(nblks))
+        do nb = 1,nblks
+          ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%edmf_thl(:,:)
+        enddo
+
+        idx = idx + 1
+        ExtDiag(idx)%axes = 3
+        ExtDiag(idx)%name = 'edmf_ent'
+        ExtDiag(idx)%desc = 'updraft entrainment rate (from mynn)'
+        ExtDiag(idx)%unit = 'm-1'
+        ExtDiag(idx)%mod_name = 'gfs_phys'
+        allocate (ExtDiag(idx)%data(nblks))
+        do nb = 1,nblks
+          ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%edmf_ent(:,:)
+        enddo
+
+        idx = idx + 1
+        ExtDiag(idx)%axes = 3
+        ExtDiag(idx)%name = 'edmf_qc'
+        ExtDiag(idx)%desc = 'mean updraft liquid water (mynn)'
+        ExtDiag(idx)%unit = 'kg kg-1'
+        ExtDiag(idx)%mod_name = 'gfs_phys'
+        allocate (ExtDiag(idx)%data(nblks))
+        do nb = 1,nblks
+          ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%edmf_qc(:,:)
+        enddo
+
+        idx = idx + 1
+        ExtDiag(idx)%axes = 3
+        ExtDiag(idx)%name = 'sub_thl'
+        ExtDiag(idx)%desc = 'subsidence temperature tendency (from mynn)'
+        ExtDiag(idx)%unit = 'K s-1'
+        ExtDiag(idx)%mod_name = 'gfs_phys'
+        allocate (ExtDiag(idx)%data(nblks))
+        do nb = 1,nblks
+          ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%sub_thl(:,:)
+        enddo
+
+        idx = idx + 1
+        ExtDiag(idx)%axes = 3
+        ExtDiag(idx)%name = 'sub_sqv'
+        ExtDiag(idx)%desc = 'subsidence water vapor tendency (mynn)'
+        ExtDiag(idx)%unit = 'kg kg-1 s-1'
+        ExtDiag(idx)%mod_name = 'gfs_phys'
+        allocate (ExtDiag(idx)%data(nblks))
+        do nb = 1,nblks
+          ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%sub_sqv(:,:)
+        enddo
+
+        idx = idx + 1
+        ExtDiag(idx)%axes = 3
+        ExtDiag(idx)%name = 'det_thl'
+        ExtDiag(idx)%desc = 'detrainment temperature tendency (from mynn)'
+        ExtDiag(idx)%unit = 'K s-1'
+        ExtDiag(idx)%mod_name = 'gfs_phys'
+        allocate (ExtDiag(idx)%data(nblks))
+        do nb = 1,nblks
+          ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%det_thl(:,:)
+        enddo
+
+        idx = idx + 1
+        ExtDiag(idx)%axes = 3
+        ExtDiag(idx)%name = 'det_sqv'
+        ExtDiag(idx)%desc = 'detrainment water vapor tendency (mynn)'
+        ExtDiag(idx)%unit = 'kg kg-1 s-1'
+        ExtDiag(idx)%mod_name = 'gfs_phys'
+        allocate (ExtDiag(idx)%data(nblks))
+        do nb = 1,nblks
+          ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%det_sqv(:,:)
+        enddo
+
+      endif
     endif
 #endif
 
@@ -3909,6 +4023,40 @@ module GFS_diagnostics
 !rab    ExtDiag(idx)%desc = 'gfs radiation/radiation ozone mixing ratio tendency'
 !rab    ExtDiag(idx)%unit = 'kg/kg/s'
 !rab    ExtDiag(idx)%mod_name = 'gfs_phys'
+
+  ! Auxiliary 2d arrays to output (for debugging)
+  do num=1,Model%naux2d
+    write (xtra,'(I2.2)') num
+    idx = idx + 1
+    ExtDiag(idx)%axes = 2
+    ExtDiag(idx)%name = 'aux2d_'//trim(xtra)
+    ExtDiag(idx)%desc = 'auxiliary 2d array '//trim(xtra)
+    ExtDiag(idx)%unit = 'unknown'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    ExtDiag(idx)%intpl_method = 'bilinear'
+    ExtDiag(idx)%time_avg = Model%aux2d_time_avg(num)
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%aux2d(:,num)
+    enddo
+  enddo
+
+  ! Auxiliary 3d arrays to output (for debugging)
+  do num=1,Model%naux3d
+    write (xtra,'(I2.2)') num
+    idx = idx + 1
+    ExtDiag(idx)%axes = 3
+    ExtDiag(idx)%name = 'aux3d_'//trim(xtra)
+    ExtDiag(idx)%desc = 'auxiliary 3d array '//trim(xtra)
+    ExtDiag(idx)%unit = 'unknown'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    ExtDiag(idx)%intpl_method = 'bilinear'
+    ExtDiag(idx)%time_avg = Model%aux3d_time_avg(num)
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%aux3d(:,:,num)
+    enddo
+  enddo
 
   end subroutine GFS_externaldiag_populate
 
