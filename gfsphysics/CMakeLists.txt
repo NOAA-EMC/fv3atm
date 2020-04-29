@@ -18,18 +18,13 @@ set(CCPP_SOURCES
     physics/mersenne_twister.f
     physics/namelist_soilveg.f
     physics/physparam.f
-    physics/radlw_param.f
-    physics/radsw_param.f
     physics/set_soilveg.f
 
     physics/noahmp_tables.f90
 
-    physics/machine.F
-
     physics/GFDL_parse_tracers.F90
     physics/physcons.F90
 
-    CCPP_layer/CCPP_typedefs.F90
     CCPP_layer/CCPP_data.F90
     ${CMAKE_BINARY_DIR}/FV3/ccpp/physics/ccpp_static_api.F90
 
@@ -37,7 +32,6 @@ set(CCPP_SOURCES
     GFS_layer/GFS_diagnostics.F90
     GFS_layer/GFS_driver.F90
     GFS_layer/GFS_restart.F90
-    GFS_layer/GFS_typedefs.F90
 )
 
 set(IPD_SOURCES
