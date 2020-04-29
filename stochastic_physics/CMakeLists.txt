@@ -17,6 +17,8 @@ endif()
 add_library(
     stochastic_physics
 
+    ../../stochastic_physics/plumes.f90
+
     ../../stochastic_physics/stochy_gg_def.f
     ../../stochastic_physics/stochy_resol_def.f
     ../../stochastic_physics/stochy_layout_lag.f
