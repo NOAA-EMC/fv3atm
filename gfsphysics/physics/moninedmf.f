@@ -563,7 +563,6 @@ c
            hgamq(i)  = max(hgamq(i),0.0)
          endif
       enddo
-
 !
 !  enhance the pbl height by considering the thermal excess
 !>  The PBL height calculation follows the same procedure as the predictor step, except that it uses an updated virtual potential temperature for the thermal.
@@ -875,7 +874,6 @@ c
      &       zl,zi,thvx,q1,t1,u1,v1,hpbl,kpbl,
      &       sflux,ustar,wstar,xmf,tcko,qcko,ucko,vcko)
 !
-
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !  compute diffusion coefficients for cloud-top driven diffusion
 !  if the condition for cloud-top instability is met,
