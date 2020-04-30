@@ -364,6 +364,7 @@ OPTIONAL_ARGUMENTS = {
          },
     'GFS_rrtmgp_sw_post' : {
          'GFS_rrtmgp_sw_post_run' : [
+             'tendency_of_air_temperature_due_to_shortwave_heating_assuming_clear_sky_on_radiation_time_step_and_radiation_levels',
              'components_of_surface_downward_shortwave_fluxes',
              'sw_fluxes_sfc',
              'sw_fluxes_toa',
@@ -377,6 +378,7 @@ OPTIONAL_ARGUMENTS = {
         },
     'GFS_rrtmgp_lw_post' : {
          'GFS_rrtmgp_lw_post_run' : [
+             'tendency_of_air_temperature_due_to_longwave_heating_assuming_clear_sky_on_radiation_time_step_and_radiation_levels',
              'lw_fluxes_sfc',
              'lw_fluxes_toa',
              ],
