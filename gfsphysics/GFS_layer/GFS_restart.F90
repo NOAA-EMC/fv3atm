@@ -117,6 +117,9 @@ module GFS_restart
 #endif
 
     Restart%num3d = Model%ntot3d
+    if(Model%lrefres) then
+       Restart%num3d = Model%ntot3d+1
+    endif
 #ifdef CCPP
     ! GF
     if (Model%imfdeepcnv == 3) then
@@ -197,27 +200,27 @@ module GFS_restart
       num = num + 1
       Restart%name2d(num) = 'ruc_2d_raincprv'
       do nb = 1,nblks
-        Restart%data(nb,num)%var2p => Tbd(nb)%raincprv(:)
+        Restart%data(nb,num)%var2p => Sfcprop(nb)%raincprv(:)
       enddo
       num = num + 1
       Restart%name2d(num) = 'ruc_2d_rainncprv'
       do nb = 1,nblks
-        Restart%data(nb,num)%var2p => Tbd(nb)%rainncprv(:)
+        Restart%data(nb,num)%var2p => Sfcprop(nb)%rainncprv(:)
       enddo
       num = num + 1
       Restart%name2d(num) = 'ruc_2d_iceprv'
       do nb = 1,nblks
-        Restart%data(nb,num)%var2p => Tbd(nb)%iceprv(:)
+        Restart%data(nb,num)%var2p => Sfcprop(nb)%iceprv(:)
       enddo
       num = num + 1
       Restart%name2d(num) = 'ruc_2d_snowprv'
       do nb = 1,nblks
-        Restart%data(nb,num)%var2p => Tbd(nb)%snowprv(:)
+        Restart%data(nb,num)%var2p => Sfcprop(nb)%snowprv(:)
       enddo
       num = num + 1
       Restart%name2d(num) = 'ruc_2d_graupelprv'
       do nb = 1,nblks
-        Restart%data(nb,num)%var2p => Tbd(nb)%graupelprv(:)
+        Restart%data(nb,num)%var2p => Sfcprop(nb)%graupelprv(:)
       enddo
     endif
     ! MYNN SFC
@@ -252,7 +255,13 @@ module GFS_restart
         Restart%data(nb,num)%var3p => Tbd(nb)%phy_f3d(:,:,num)
       enddo
     enddo
-
+    if (Model%lrefres) then
+      num = Model%ntot3d+1
+      restart%name3d(num) = 'ref_f3d'
+      do nb = 1,nblks
+        Restart%data(nb,num)%var3p => IntDiag(nb)%refl_10cm(:,:)
+      enddo
+    endif
 #ifdef CCPP
     !--- RAP/HRRR-specific variables, 3D
     num = Model%ntot3d
