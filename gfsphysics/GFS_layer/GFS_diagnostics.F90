@@ -700,8 +700,85 @@ module GFS_diagnostics
       ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%fluxr(:,16)
       ExtDiag(idx)%data(nb)%var21 => IntDiag(nb)%fluxr(:,7)
     enddo
-!    if(mpp_pe()==mpp_root_pe())print *,'in gfdl_diag_register,af TEMP_avelct,idx=',idx
+!--- aerosol diagnostics ---
+    idx = idx + 1
+    ExtDiag(idx)%axes = 2
+    ExtDiag(idx)%name = 'AOD_550'
+    ExtDiag(idx)%desc = 'total aerosol optical depth at 550 nm'
+    ExtDiag(idx)%unit = 'numerical'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    ExtDiag(idx)%intpl_method = 'bilinear'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%fluxr(:,34)
+    enddo
 
+!--- aerosol diagnostics ---
+    idx = idx + 1
+    ExtDiag(idx)%axes = 2
+    ExtDiag(idx)%name = 'DU_AOD_550'
+    ExtDiag(idx)%desc = 'dust aerosol optical depth at 550 nm'
+    ExtDiag(idx)%unit = 'numerical'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    ExtDiag(idx)%intpl_method = 'bilinear'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%fluxr(:,35)
+    enddo
+
+!--- aerosol diagnostics ---
+    idx = idx + 1
+    ExtDiag(idx)%axes = 2
+    ExtDiag(idx)%name = 'BC_AOD_550'
+    ExtDiag(idx)%desc = 'soot aerosol optical depth at 550 nm'
+    ExtDiag(idx)%unit = 'numerical'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    ExtDiag(idx)%intpl_method = 'bilinear'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%fluxr(:,36)
+    enddo
+
+!--- aerosol diagnostics ---
+    idx = idx + 1
+    ExtDiag(idx)%axes = 2
+    ExtDiag(idx)%name = 'OC_AOD_550'
+    ExtDiag(idx)%desc = 'waso aerosol optical depth at 550 nm'
+    ExtDiag(idx)%unit = 'numerical'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    ExtDiag(idx)%intpl_method = 'bilinear'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%fluxr(:,37)
+    enddo
+
+!--- aerosol diagnostics ---
+    idx = idx + 1
+    ExtDiag(idx)%axes = 2
+    ExtDiag(idx)%name = 'SU_AOD_550'
+    ExtDiag(idx)%desc = 'suso aerosol optical depth at 550 nm'
+    ExtDiag(idx)%unit = 'numerical'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    ExtDiag(idx)%intpl_method = 'bilinear'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%fluxr(:,38)
+    enddo
+
+!--- aerosol diagnostics ---
+    idx = idx + 1
+    ExtDiag(idx)%axes = 2
+    ExtDiag(idx)%name = 'SS_AOD_550'
+    ExtDiag(idx)%desc = 'salt aerosol optical depth at 550 nm'
+    ExtDiag(idx)%unit = 'numerical'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    ExtDiag(idx)%intpl_method = 'bilinear'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%fluxr(:,39)
+    enddo
+
+!
 !
 !--- accumulated diagnostics ---
     do num = 1,NFXR
