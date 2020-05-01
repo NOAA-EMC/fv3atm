@@ -1785,6 +1785,13 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+[vfact_ca]
+  standard_name = vertical_weight_for_ca
+  long_name = vertical weight for ca
+  units = frac
+  dimensions = (vertical_dimension)
+  type = real
+  kind = kind_phys
 [ca1]
   standard_name = cellular_automata_global_pattern
   long_name = cellular automata global pattern
