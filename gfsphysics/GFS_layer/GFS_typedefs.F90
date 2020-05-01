@@ -857,7 +857,8 @@ module GFS_typedefs
     integer              :: isatmedmf_vdifq = 1 !< flag for updated version of satmedmf (as of May 2019)
 #endif
     integer              :: nmtvr           !< number of topographic variables such as variance etc
-                                            !< used in the GWD parameterization
+                                            !< used in the GWD parameterization - 10 more added for
+                                            !< small-scale GSD orographic drag schemes
     integer              :: jcap            !< number of spectral wave trancation used only by sascnv shalcnv
     real(kind=kind_phys) :: cs_parm(10)     !< tunable parameters for Chikira-Sugiyama convection
     real(kind=kind_phys) :: flgmin(2)       !< [in] ice fraction bounds
@@ -1934,6 +1935,11 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: qs_r(:,:)               => null()  !<
     real (kind=kind_phys), pointer :: qg_r(:,:)               => null()  !<
 
+    !-- GSD drag suite
+    real (kind=kind_phys), pointer      :: varss(:)           => null()  !<
+    real (kind=kind_phys), pointer      :: ocss(:)            => null()  !<
+    real (kind=kind_phys), pointer      :: oa4ss(:,:)         => null()  !<
+    real (kind=kind_phys), pointer      :: clxss(:,:)         => null()  !<
 
     !-- Ferrier-Aligo MP scheme
     real (kind=kind_phys), pointer :: f_rain     (:,:)   => null()  !<
@@ -3000,7 +3006,7 @@ module GFS_typedefs
     logical              :: do_myjsfc         = .false.               !< flag for MYJ surface layer scheme
     logical              :: do_myjpbl         = .false.               !< flag for MYJ PBL scheme
 #endif
-    integer              :: nmtvr          = 14                       !< number of topographic variables such as variance etc
+    integer              :: nmtvr          = 24                       !< number of topographic variables such as variance etc
                                                                       !< used in the GWD parameterization
     integer              :: jcap           =  1              !< number of spectral wave trancation used only by sascnv shalcnv
 !   real(kind=kind_phys) :: cs_parm(10) = (/5.0,2.5,1.0e3,3.0e3,20.0,-999.,-999.,0.,0.,0./)
@@ -6112,6 +6118,11 @@ module GFS_typedefs
     allocate (Interstitial%dudt_mtb        (IM,Model%levs))
     allocate (Interstitial%dudt_ogw        (IM,Model%levs))
     allocate (Interstitial%dudt_tms        (IM,Model%levs))
+!-- GSD drag suite
+    allocate (Interstitial%varss           (IM))
+    allocate (Interstitial%ocss            (IM))
+    allocate (Interstitial%oa4ss           (IM,4))
+    allocate (Interstitial%clxss           (IM,4))
 !
     ! Allocate arrays that are conditional on physics choices
     if (Model%imp_physics == Model%imp_physics_gfdl .or. Model%imp_physics == Model%imp_physics_thompson) then
@@ -6635,6 +6646,11 @@ module GFS_typedefs
     Interstitial%dudt_mtb        = clear_val
     Interstitial%dudt_ogw        = clear_val
     Interstitial%dudt_tms        = clear_val
+!-- GSD drag suite
+    Interstitial%varss           = clear_val
+    Interstitial%ocss            = clear_val
+    Interstitial%oa4ss           = clear_val
+    Interstitial%clxss           = clear_val
 !
     ! Reset fields that are conditional on physics choices
     if (Model%imp_physics == Model%imp_physics_gfdl .or. Model%imp_physics == Model%imp_physics_thompson) then
@@ -6971,6 +6987,11 @@ module GFS_typedefs
     write (0,*) 'sum(Interstitial%dudt_mtb        ) = ', sum(Interstitial%dudt_mtb        )
     write (0,*) 'sum(Interstitial%dudt_ogw        ) = ', sum(Interstitial%dudt_ogw        )
     write (0,*) 'sum(Interstitial%dudt_tms        ) = ', sum(Interstitial%dudt_tms        )
+!-- GSD drag suite
+    write (0,*) 'sum(Interstitial%varss           ) = ', sum(Interstitial%varss)
+    write (0,*) 'sum(Interstitial%ocss            ) = ', sum(Interstitial%ocss)
+    write (0,*) 'sum(Interstitial%oa4ss           ) = ', sum(Interstitial%oa4ss)
+    write (0,*) 'sum(Interstitial%clxss           ) = ', sum(Interstitial%clxss)
 !
     ! Print arrays that are conditional on physics choices
     if (Model%imp_physics == Model%imp_physics_gfdl .or. Model%imp_physics == Model%imp_physics_thompson) then
