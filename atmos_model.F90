@@ -1605,7 +1605,7 @@ end subroutine atmos_data_type_chksum
     real(kind=ESMF_KIND_R4),  dimension(:,:), pointer  :: datar42d
     real(kind=ESMF_KIND_R8),  dimension(:,:), pointer  :: datar82d
     real(kind=IPD_kind_phys), dimension(:,:), pointer  :: datar8
-    real(kind=IPD_kind_phys)                           :: tem
+    real(kind=IPD_kind_phys)                           :: tem, ofrac
     logical found, isFieldCreated, lcpl_fice
 !
 !------------------------------------------------------------------------------
@@ -1746,22 +1746,24 @@ end subroutine atmos_data_type_chksum
             findex  = QueryFieldList(ImportFieldsList,fldname)
             if (importFieldsValid(findex)) then
               lcpl_fice = .true.
-!$omp parallel do default(shared) private(i,j,nb,ix)
+!$omp parallel do default(shared) private(i,j,nb,ix,ofrac)
               do j=jsc,jec
                 do i=isc,iec
                   nb = Atm_block%blkno(i,j)
                   ix = Atm_block%ixp(i,j)
                   IPD_Data(nb)%Coupling%ficein_cpl(ix)   = zero
                   IPD_Data(nb)%Coupling%slimskin_cpl(ix) = IPD_Data(nb)%Sfcprop%slmsk(ix)
-                  if (IPD_Data(nb)%Sfcprop%oceanfrac(ix) > zero) then
-                    IPD_Data(nb)%Coupling%ficein_cpl(ix) = max(zero, min(one, datar8(i,j)/IPD_Data(nb)%Sfcprop%oceanfrac(ix))) !LHS: ice frac wrt water area
+                  ofrac = IPD_Data(nb)%Sfcprop%oceanfrac(ix)
+                  if (ofrac > zero) then
+                    IPD_Data(nb)%Coupling%ficein_cpl(ix) = max(zero, min(one, datar8(i,j)/ofrac)) !LHS: ice frac wrt water area
                     if (IPD_Data(nb)%Coupling%ficein_cpl(ix) >= IPD_control%min_seaice) then
                       if (IPD_Data(nb)%Coupling%ficein_cpl(ix) > one-epsln) IPD_Data(nb)%Coupling%ficein_cpl(ix) = one
-                      if (abs(one-IPD_Data(nb)%Sfcprop%oceanfrac(ix)) < epsln) IPD_Data(nb)%Sfcprop%slmsk(ix) = 2. !slmsk=2 crashes in gcycle on partial land points
-                      IPD_Data(nb)%Coupling%slimskin_cpl(ix) = 4.
+!                     if (abs(one-ofrac) < epsln) IPD_Data(nb)%Sfcprop%slmsk(ix) = 2. !slmsk=2 crashes in gcycle on partial land points
+                      IPD_Data(nb)%Sfcprop%slmsk(ix)         = 2.0_IPD_kind_phys
+                      IPD_Data(nb)%Coupling%slimskin_cpl(ix) = 4.0_IPD_kind_phys
                     else
                       IPD_Data(nb)%Coupling%ficein_cpl(ix)   = zero
-                      if (abs(one-IPD_Data(nb)%Sfcprop%oceanfrac(ix)) < epsln) then
+                      if (abs(one-ofrac) < epsln) then
                         IPD_Data(nb)%Sfcprop%slmsk(ix)         = zero
                         IPD_Data(nb)%Coupling%slimskin_cpl(ix) = zero
                       end if
@@ -1941,7 +1943,7 @@ end subroutine atmos_data_type_chksum
               IPD_Data(nb)%Sfcprop%hice(ix)        = IPD_Data(nb)%Coupling%hicein_cpl(ix)
 !             IPD_Data(nb)%Sfcprop%snowd(ix)       = IPD_Data(nb)%Coupling%hsnoin_cpl(ix)
               IPD_Data(nb)%Coupling%hsnoin_cpl(ix) = IPD_Data(nb)%Coupling%hsnoin_cpl(ix) &
-                                                   / max(0.01, IPD_Data(nb)%Coupling%ficein_cpl(ix))
+                                                   / max(0.01_IPD_kind_phys, IPD_Data(nb)%Coupling%ficein_cpl(ix))
             else 
               IPD_Data(nb)%Sfcprop%tisfc(ix)       = IPD_Data(nb)%Coupling%tseain_cpl(ix)
               IPD_Data(nb)%Sfcprop%fice(ix)        = zero
@@ -1955,8 +1957,10 @@ end subroutine atmos_data_type_chksum
               IPD_Data(nb)%Coupling%dvsfcin_cpl(ix)  = -99999.0 !                 ,,
               IPD_Data(nb)%Coupling%dtsfcin_cpl(ix)  = -99999.0 !                 ,,
               IPD_Data(nb)%Coupling%ulwsfcin_cpl(ix) = -99999.0 !                 ,,
-              if (abs(one-IPD_Data(nb)%Sfcprop%oceanfrac(ix)) < epsln) &
-                          IPD_Data(nb)%Coupling%slimskin_cpl(ix) = zero ! 100% open water
+              if (abs(one-IPD_Data(nb)%Sfcprop%oceanfrac(ix)) < epsln) then !  100% open water
+                IPD_Data(nb)%Coupling%slimskin_cpl(ix) = zero
+                IPD_Data(nb)%Sfcprop%slmsk(ix)         = zero
+              endif
             endif
           endif
         enddo

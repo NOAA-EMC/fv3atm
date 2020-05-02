@@ -44,22 +44,22 @@ module module_physics_driver
 
   !--- CONSTANT PARAMETERS
   real(kind=kind_phys), parameter :: hocp    = con_hvap/con_cp
-  real(kind=kind_phys), parameter :: epsln   = 1.0d-10
-  real(kind=kind_phys), parameter :: qmin    = 1.0d-8
-  real(kind=kind_phys), parameter :: qsmall  = 1.0d-20
-  real(kind=kind_phys), parameter :: rainmin = 1.0d-13
-  real(kind=kind_phys), parameter :: p850    = 85000.0d0
-  real(kind=kind_phys), parameter :: epsq    = 1.0d-20
+  real(kind=kind_phys), parameter :: epsln   = 1.0e-10_kind_phys
+  real(kind=kind_phys), parameter :: qmin    = 1.0e-8_kind_phys
+  real(kind=kind_phys), parameter :: qsmall  = 1.0e-20_kind_phys
+  real(kind=kind_phys), parameter :: rainmin = 1.0e-13_kind_phys
+  real(kind=kind_phys), parameter :: p850    = 85000.0_kind_phys
+  real(kind=kind_phys), parameter :: epsq    = 1.0e-20_kind_phys
   real(kind=kind_phys), parameter :: hsub    = con_hvap+con_hfus
-  real(kind=kind_phys), parameter :: czmin   = 0.0001      ! cos(89.994)
-  real(kind=kind_phys), parameter :: zero    = 0.0d0, one   = 1.0d0,  &
-                                     half    = 0.5d0, onebg = one/con_g
-  real(kind=kind_phys), parameter :: albdf   = 0.06d0
-  real(kind=kind_phys), parameter :: tf=258.16d0, tcr=273.16d0, tcrf=one/(tcr-tf)
-  real(kind=kind_phys), parameter :: con_p001= 0.001d0
-  real(kind=kind_phys), parameter :: con_day = 86400.0d0
-  real(kind=kind_phys), parameter :: rad2dg  = 180.0d0/con_pi
-  real(kind=kind_phys), parameter :: omz1    = 10.0d0
+  real(kind=kind_phys), parameter :: czmin   = 0.0001_kind_phys      ! cos(89.994)
+  real(kind=kind_phys), parameter :: zero    = 0.0_kind_phys, one   = 1.0_kind_phys,  &
+                                     half    = 0.5_kind_phys, onebg = one/con_g
+  real(kind=kind_phys), parameter :: albdf   = 0.06_kind_phys
+  real(kind=kind_phys), parameter :: tf=258.16_kind_phys, tcr=273.16_kind_phys, tcrf=one/(tcr-tf)
+  real(kind=kind_phys), parameter :: con_p001= 0.001_kind_phys
+  real(kind=kind_phys), parameter :: con_day = 86400.0_kind_phys
+  real(kind=kind_phys), parameter :: rad2dg  = 180.0_kind_phys/con_pi
+  real(kind=kind_phys), parameter :: omz1    = 10.0_kind_phys
   real(kind=kind_phys), parameter :: huge    = zero
 
 !> GFS Physics Implementation Layer
@@ -1020,7 +1020,7 @@ module module_physics_driver
 
 !## CCPP ##* GFS_surface_generic.F90/GFS_surface_generic_pre_run
       do i = 1, IM
-        sigmaf(i) = max( Sfcprop%vfrac(i),0.01d0 )
+        sigmaf(i) = max( Sfcprop%vfrac(i),0.01_kind_phys )
         islmsk(i) = nint(Sfcprop%slmsk(i))
 
         if (islmsk(i) == 2) then
@@ -1036,9 +1036,9 @@ module module_physics_driver
           endif
           slopetyp(i) = 9
         else
-          soiltyp(i)  = int( Sfcprop%stype(i)+0.5 )
-          vegtype(i)  = int( Sfcprop%vtype(i)+0.5 )
-          slopetyp(i) = int( Sfcprop%slope(i)+0.5 )    !! clu: slope -> slopetyp
+          soiltyp(i)  = int( Sfcprop%stype(i)+half )
+          vegtype(i)  = int( Sfcprop%vtype(i)+half )
+          slopetyp(i) = int( Sfcprop%slope(i)+half )    !! clu: slope -> slopetyp
           if (soiltyp(i)  < 1) soiltyp(i)  = 14
           if (vegtype(i)  < 1) vegtype(i)  = 17
           if (slopetyp(i) < 1) slopetyp(i) = 1
@@ -1120,8 +1120,8 @@ module module_physics_driver
             endif
             if (fice(i) < one) then
               wet(i) = .true. ! some open ocean/lake water exists
-              if (.not. Model%cplflx .or. Sfcprop%oceanfrac(i) == zero)  &
-                 Sfcprop%tsfco(i) = max(Sfcprop%tsfco(i), Sfcprop%tisfc(i), tgice)
+              if ((.not. Model%cplflx .or. Sfcprop%oceanfrac(i) == zero) .and. icy(i)) &
+                 Sfcprop%tsfco(i) = max(Sfcprop%tisfc(i), tgice)
             endif
           else
             fice(i) = zero
@@ -1155,8 +1155,8 @@ module module_physics_driver
             endif
             if (fice(i) < one) then
               wet(i)=.true. ! some open ocean/lake water exists
-              if (.not. Model%cplflx)                                   &
-                 Sfcprop%tsfco(i) = max(Sfcprop%tsfco(i), Sfcprop%tisfc(i), tgice)
+              if (.not. Model%cplflx .and. icy(i))                                   &
+                 Sfcprop%tsfco(i) = max(Sfcprop%tisfc(i), tgice)
             endif
           endif
         enddo
@@ -1215,7 +1215,7 @@ module module_physics_driver
 !          snowd3(i,3) = Sfcprop%snowd(i)
            snowd3(i,3) = zero
            weasd3(i,3) = zero
-           semis3(i,3) = 0.984d0
+           semis3(i,3) = 0.984_kind_phys
         endif
 !
         if (dry(i)) then                   ! Land
@@ -1237,7 +1237,7 @@ module module_physics_driver
            snowd3(i,2) = Sfcprop%snowd(i)
             ep1d3(i,2) = zero
             gflx3(i,2) = zero
-           semis3(i,2) = 0.95d0
+           semis3(i,2) = 0.95_kind_phys
         endif
       enddo
 !*## CCPP ##
@@ -1493,7 +1493,7 @@ module module_physics_driver
         do i=1,im
           if ( xcosz(i) >= czmin ) then   ! zenth angle > 89.994 deg
             tem1 = adjsfcdsw(i) / xcosz(i)
-            if ( tem1 >= 120.0d0 ) then
+            if ( tem1 >= 120.0_kind_phys) then
               Diag%suntim(i) = Diag%suntim(i) + dtf
             endif
           endif
@@ -1575,8 +1575,8 @@ module module_physics_driver
         kinver(i) = levs  !## CCPP ## GFS_typedefs.F90/interstitial_phys_reset
         invrsn(i) = .false.
         tx1(i)    = zero
-        tx2(i)    = 10.0d0
-        ctei_r(i) = 10.0d0
+        tx2(i)    = 10.0_kind_phys
+        ctei_r(i) = 10.0_kind_phys
       enddo
 
 !    Only used for old shallow convection with mstrat=.true.
@@ -1586,12 +1586,12 @@ module module_physics_driver
         ctei_rml(:) = Model%ctei_rm(1)*work1(:) + Model%ctei_rm(2)*work2(:)
         do k=1,levs/2
           do i=1,im
-            if (Statein%prsi(i,1)-Statein%prsi(i,k+1) < 0.35d0*Statein%prsi(i,1)       &
+            if (Statein%prsi(i,1)-Statein%prsi(i,k+1) < 0.35_kind_phys*Statein%prsi(i,1)       &
                 .and. (.not. invrsn(i))) then
               tem = (Statein%tgrs(i,k+1) - Statein%tgrs(i,k))  &
                   / (Statein%prsl(i,k)   - Statein%prsl(i,k+1))
 
-              if (((tem > 0.00010d0) .and. (tx1(i) < zero)) .or.  &
+              if (((tem > 0.00010_kind_phys) .and. (tx1(i) < zero)) .or.  &
                   ((tem-abs(tx1(i)) > zero) .and. (tx2(i) < zero))) then
                 invrsn(i) = .true.
 
@@ -1605,7 +1605,7 @@ module module_physics_driver
                   ctei_r(i) = (one/hocp)*tem1/(Statein%qgrs(i,k+1,1)-Statein%qgrs(i,k,1)  &
                             + Statein%qgrs(i,k+1,ntcw)-Statein%qgrs(i,k,ntcw))
                 else
-                  ctei_r(i) = 10.0d0
+                  ctei_r(i) = 10.0_kind_phys
                 endif
 
                 if ( ctei_rml(i) > ctei_r(i) ) then
@@ -1648,7 +1648,7 @@ module module_physics_driver
         Diag%smcref2(i) = zero
         wind(i)         = max(sqrt(Statein%ugrs(i,1)*Statein%ugrs(i,1) + &
                                    Statein%vgrs(i,1)*Statein%vgrs(i,1))  &
-                        + max(zero, min(Tbd%phy_f2d(i,Model%num_p2d), 30.0d0)), one)
+                        + max(zero, min(Tbd%phy_f2d(i,Model%num_p2d), 30.0_kind_phys)), one)
         !*## CCPP ##
       enddo
 !*## CCPP ##
@@ -1684,7 +1684,7 @@ module module_physics_driver
 !*## CCPP ##
 !## CCPP ##* GFS_surface_loop_control/GFS_surface_loop_control_part1_run
         do i=1,im
-          if (iter == 1 .and. wind(i) < 2.0d0) then
+          if (iter == 1 .and. wind(i) < 2.0_kind_phys) then
             flag_guess(i) = .true.
           endif
         enddo
@@ -1758,8 +1758,8 @@ module module_physics_driver
 !  --- ...  run nsst model  ... ---
 
           if (Model%nstf_name(1) > 1) then
-            zsea1 = 0.001d0*real(Model%nstf_name(4))
-            zsea2 = 0.001d0*real(Model%nstf_name(5))
+            zsea1 = 0.001_kind_phys*real(Model%nstf_name(4))
+            zsea2 = 0.001_kind_phys*real(Model%nstf_name(5))
             call get_dtzm_2d (Sfcprop%xt,  Sfcprop%xz, Sfcprop%dt_cool, &
                               Sfcprop%z_c, wet, zsea1, zsea2, im, 1, dtzm)
             do i=1,im
@@ -1988,7 +1988,7 @@ module module_physics_driver
           flag_iter(i)  = .false.
           flag_guess(i) = .false.
 
-          if (iter == 1 .and. wind(i) < 2.0d0) then
+          if (iter == 1 .and. wind(i) < 2.0_kind_phys) then
 !           if (dry(i) .or. (wet(i) .and. .not.icy(i)                   &
             if (dry(i) .or. (wet(i) .and. Model%nstf_name(1) > 0)) then
               flag_iter(i) = .true.
@@ -2066,11 +2066,11 @@ module module_physics_driver
 !         endif
 
           if (.not. flag_cice(i)) then
-            if (islmsk(i) == 2) then                           ! return updated lake ice thickness & concentration to global array
+            if (islmsk(i) == 2) then                     ! return updated lake ice thickness & concentration to global array
               Sfcprop%hice(i)  = zice(i)
               Sfcprop%fice(i)  = fice(i) 
               Sfcprop%tisfc(i) = tice(i)
-            else                                               ! this would be over open ocean or land (no ice fraction)
+            else                                         ! this would be over open ocean or land (no ice fraction)
               Sfcprop%hice(i)  = zero
               Sfcprop%fice(i)  = zero
               Sfcprop%tisfc(i) = Sfcprop%tsfc(i)
@@ -2131,10 +2131,10 @@ module module_physics_driver
               Sfcprop%tsfc(i) = txi * tsfc3(i,2)   + txo * tsfc3(i,3)
               stress(i)       = txi  *stress3(i,2) + txo * stress3(i,3)
               qss(i)          = txi * qss3(i,2)    + txo * qss3(i,3)
-              ep1d(i)         = txi * ep1d3(i,2)   + txo * ep1d(i,3)
+              ep1d(i)         = txi * ep1d3(i,2)   + txo * ep1d3(i,3)
             endif
           elseif (islmsk(i) == 2) then  ! return updated lake ice thickness & concentration to global array
-            Sfcprop%tisfc(i) = tice(i)   ! over lake ice (and sea ice when uncoupled)
+            Sfcprop%tisfc(i) = tice(i)  ! over lake ice (and sea ice when uncoupled)
             Sfcprop%hice(i)  = zice(i)
             Sfcprop%fice(i)  = fice(i)  ! fice is fraction of lake area that is frozen
           else                          ! this would be over open ocean or land (no ice fraction)
@@ -2240,11 +2240,11 @@ module module_physics_driver
            if (wet(i)) then                    ! some open water
 !  ---  compute open water albedo
             xcosz_loc = max( zero, min( one, xcosz(i) ))
-            ocalnirdf_cpl(i) = 0.06d0
-            ocalnirbm_cpl(i) = max(albdf, 0.026d0/(xcosz_loc**1.7d0+0.065d0)  &
-     &                       + 0.15d0 * (xcosz_loc-0.1d0) * (xcosz_loc-0.5d0) &
+            ocalnirdf_cpl(i) = 0.06_kind_phys
+            ocalnirbm_cpl(i) = max(albdf, 0.026_kind_phys/(xcosz_loc**1.7_kind_phys+0.065_kind_phys)  &
+     &                       + 0.15_kind_phys * (xcosz_loc-0.1_kind_phys) * (xcosz_loc-0.5_kind_phys) &
      &                       * (xcosz_loc-one))
-            ocalvisdf_cpl(i) = 0.06d0
+            ocalvisdf_cpl(i) = 0.06
             ocalvisbm_cpl(i) = ocalnirbm_cpl(i)
 
             Coupling%nnirbmi_cpl(i) = adjnirbmd(i) * (one-ocalnirbm_cpl(i))
@@ -3080,7 +3080,7 @@ module module_physics_driver
           if (ntke > 0) then
             tke(1:im,:) = Statein%qgrs(1:im,:,ntke) + dqdt(1:im,:,ntke) * dtp
           else
-            tke(:,:) = -9999.0d0
+            tke(:,:) = -9999.0_kind_phys
           endif
 !
 ! tendency without PBL-accumulations
@@ -3357,7 +3357,7 @@ module module_physics_driver
       do k=1,levs
         do i=1,im
           clw(i,k,1) = zero
-          clw(i,k,2) = -999.9d0
+          clw(i,k,2) = -999.9_kind_phys
         enddo
       enddo
 
@@ -3426,7 +3426,7 @@ module module_physics_driver
 !## CCPP ## GFS_suite_interstitial.F90/GFS_suite_interstitial_3_run
       if (ntcw > 0) then
 !       if (imp_physics == Model%imp_physics_mg .and. .not. Model%do_shoc) then ! compute rhc for GMAO macro physics cloud pdf
-        if (imp_physics == Model%imp_physics_mg .and. Model%crtrh(2) < 0.5d0) then ! compute rhc for GMAO macro physics cloud pdf
+        if (imp_physics == Model%imp_physics_mg .and. Model%crtrh(2) < half) then ! compute rhc for GMAO macro physics cloud pdf
           do i=1,im
             tx1(i) = one / Statein%prsi(i,1)
             tx2(i) = one - rhc_max*work1(i) - Model%crtrh(1)*work2(i)
@@ -3437,20 +3437,20 @@ module module_physics_driver
           do k = 1, levs
             do i = 1, im
               tem  = Statein%prsl(i,k) * tx1(i)
-              tem1 = min(max((tem-tx3(i))*slope_mg, -20.0d0), 20.0d0)
+              tem1 = min(max((tem-tx3(i))*slope_mg, -20.0_kind_phys), 20.0_kind_phys)
 !
 !     Using crtrh(2) and crtrh(3) from the namelist instead of 0.3 and 0.2
 !     and crtrh(1) represents pbl top critical relative humidity
-              tem2 = min(max((tx4(i)-tem)*slope_upmg, -20.0d0), 20.0d0)
+              tem2 = min(max((tx4(i)-tem)*slope_upmg, -20.0_kind_phys), 20.0_kind_phys)
 
               if (islmsk(i) > 0) then
                 tem1 = one / (one+exp(tem1+tem1))
               else
-                tem1 = 2.0d0 / (one+exp(tem1+tem1))
+                tem1 = 2.0_kind_phys / (one+exp(tem1+tem1))
               endif
               tem2 = one / (one+exp(tem2))
 
-              rhc(i,k) = min(rhc_max, max(0.7d0, one-tx2(i)*tem1*tem2))
+              rhc(i,k) = min(rhc_max, max(0.7_kind_phys, one-tx2(i)*tem1*tem2))
             enddo
           enddo
         else
@@ -3885,7 +3885,7 @@ module module_physics_driver
               do k=1,levs
                 kk = min(k+1,levs)  ! assuming no cloud top reaches the model top
                 do i=1,im                                               !DD
-                  sigmafrac(i,k) = 0.5d0 * (sigmatot(i,k)+sigmatot(i,kk))
+                  sigmafrac(i,k) = half * (sigmatot(i,k)+sigmatot(i,kk))
                 enddo
               enddo
             endif
@@ -3911,7 +3911,7 @@ module module_physics_driver
               enddo
             else
               do i=1,im
-                ccwfac(i)  = -999.0d0
+                ccwfac(i)  = -999.0_kind_phys
                 dlqfac(i)  = zero
                 psaur_l(i) = Model%psauras(1)*work1(i) + Model%psauras(2)*work2(i)
                 praur_l(i) = Model%prauras(1)*work1(i) + Model%prauras(2)*work2(i)
@@ -3931,8 +3931,8 @@ module module_physics_driver
 
             revap = .true.
 !           if (ncld ==2) revap = .false.
-            trcmin(:)     = -999999.0d0
-            if (ntk-2 > 0) trcmin(ntk-2) = 1.0d-4
+            trcmin(:)     = -999999.0_kind_phys
+            if (ntk-2 > 0) trcmin(ntk-2) = 1.0e-4_kind_phys
 !*## CCPP ##
 !           if (lprnt) write(0,*)' gt04bras=',Stateout%gt0(ipr,:)
 !           if (lprnt) write(0,*)' gq04bras=',Stateout%gq0(ipr,:,1)
@@ -4243,10 +4243,10 @@ module module_physics_driver
 
         do k=1,levs
           do i=1,im
-            eng0               = 0.5d0*(Stateout%gu0(i,k)*Stateout%gu0(i,k)+Stateout%gv0(i,k)*Stateout%gv0(i,k))
+            eng0               = half*(Stateout%gu0(i,k)*Stateout%gu0(i,k)+Stateout%gv0(i,k)*Stateout%gv0(i,k))
             Stateout%gu0(i,k)  = Stateout%gu0(i,k) + gwdcu(i,k) * dtp
             Stateout%gv0(i,k)  = Stateout%gv0(i,k) + gwdcv(i,k) * dtp
-            eng1               = 0.5d0*(Stateout%gu0(i,k)*Stateout%gu0(i,k)+Stateout%gv0(i,k)*Stateout%gv0(i,k))
+            eng1               = half*(Stateout%gu0(i,k)*Stateout%gu0(i,k)+Stateout%gv0(i,k)*Stateout%gv0(i,k))
             Stateout%gt0(i,k)  = Stateout%gt0(i,k) + (eng0-eng1)/(dtp*con_cp)
           enddo
 !         if (lprnt) write(7000,*)' gu0=',gu0(ipr,k),' gwdcu=',
@@ -4391,7 +4391,7 @@ module module_physics_driver
             levshc(:) = 0
             do k=2,levs
               do i=1,im
-                dpshc = 0.3d0 * Statein%prsi(i,1)
+                dpshc = 0.3_kind_phys * Statein%prsi(i,1)
                 if (Statein%prsi(i,1)-Statein%prsi(i,k) <= dpshc) levshc(i) = k
               enddo
             enddo
@@ -4442,7 +4442,7 @@ module module_physics_driver
 !
         do k=1,levs
           do i=1,im
-            if (clw(i,k,2) <= -999.0d0) clw(i,k,2) = zero
+            if (clw(i,k,2) <= -999.0_kind_phys) clw(i,k,2) = zero
           enddo
         enddo
 !*## CCPP ##
@@ -5178,8 +5178,8 @@ module module_physics_driver
 
             if (Model%effr_in) then
               do i =1, im
-                den(i,k) = 0.622d0*Statein%prsl(i,k) / &
-                          (con_rd*Stateout%gt0(i,k)*(Stateout%gq0(i,k,1)+0.622d0))
+                den(i,k) = 0.622_kind_phys*Statein%prsl(i,k) / &
+                          (con_rd*Stateout%gt0(i,k)*(Stateout%gq0(i,k,1)+0.622_kind_phys))
               enddo
             endif
           enddo
@@ -5194,8 +5194,8 @@ module module_physics_driver
             call max_fields(Statein%phil,Diag%refl_10cm,con_g,im,levs,refd,Stateout%gt0,refd263k)
             if (reset) then
               do i=1,im
-                Diag%refdmax(I)     = -35.0d0
-                Diag%refdmax263k(I) = -35.0d0
+                Diag%refdmax(I)     = -35.0_kind_phys
+                Diag%refdmax263k(I) = -35.0_kind_phys
               enddo
             endif
             do i=1,im
@@ -5389,14 +5389,15 @@ module module_physics_driver
         enddo
       enddo
 
-      if (Model%imp_physics == Model%imp_physics_gfdl) then
+      if (Model%imp_physics == Model%imp_physics_gfdl) then         ! GFDL microphysics
+                                                                    ! -----------------
 ! determine convective rain/snow by surface temperature
 ! determine large-scale rain/snow by rain/snow coming out directly from MP
         tem = dtp * con_p001 / con_day
         do i = 1, im
           Sfcprop%tprcp(i)  = max(zero, Diag%rain(i) )! clu: rain -> tprcp
           Sfcprop%srflag(i) = zero                    ! clu: default srflag as 'rain' (i.e. 0)
-          if (Sfcprop%tsfc(i) >= 273.15d0) then
+          if (Sfcprop%tsfc(i) >= 273.15_kind_phys) then
             crain = Diag%rainc(i)
             csnow = zero
           else
@@ -5424,12 +5425,13 @@ module module_physics_driver
 #endif
         enddo
       elseif( .not. Model%cal_pre) then
-        if (Model%imp_physics == Model%imp_physics_mg) then              ! MG microphysics
+        if (Model%imp_physics == Model%imp_physics_mg) then         ! MG microphysics
+                                                                    ! ---------------
           do i=1,im
             if (Diag%rain(i) > rainmin) then
               tem1 = max(zero, (Diag%rain(i)-Diag%rainc(i))) * Diag%sr(i)
               tem2 = one / Diag%rain(i)
-              if (t850(i) > 273.16d0) then
+              if (t850(i) > 273.16_kind_phys) then
                 Sfcprop%srflag(i) = max(zero, min(one, tem1*tem2))
               else
                 Sfcprop%srflag(i) = max(zero, min(one, (tem1+Diag%rainc(i))*tem2))
@@ -5439,15 +5441,13 @@ module module_physics_driver
               Diag%rain(i)      = zero
               Diag%rainc(i)     = zero
             endif
-            Sfcprop%tprcp(i)  = max(zero, Diag%rain(i) ) ! clu: rain -> tprcp
+            Sfcprop%tprcp(i)  = max(zero, Diag%rain(i))
           enddo
-        else
+        else                                                        ! not GFDL or MG microphysics
+                                                                    ! ---------------------------
           do i = 1, im
-            Sfcprop%tprcp(i)  = max(zero, Diag%rain(i) ) ! clu: rain -> tprcp
-            Sfcprop%srflag(i) = zero                     ! clu: default srflag as 'rain' (i.e. 0)
-            if (t850(i) <= 273.16d0) then
-              Sfcprop%srflag(i) = one                    ! clu: set srflag to 'snow' (i.e. 1)
-            endif
+            Sfcprop%tprcp(i)  = max(zero, Diag%rain(i))
+            Sfcprop%srflag(i) = Diag%sr(i)
           enddo
         endif
       endif
@@ -5640,13 +5640,13 @@ module module_physics_driver
       if (reset) then
         do i=1, im
 ! find max hourly wind speed then decompose
-          Diag%spd10max(i) = -999.
-          Diag%u10max(i)   = -999.
-          Diag%v10max(i)   = -999.
-          Diag%t02max(i)   = -999.
-          Diag%t02min(i)   =  999.
-          Diag%rh02max(i)  = -999.
-          Diag%rh02min(i)  =  999.
+          Diag%spd10max(i) = -999.0_kind_phys
+          Diag%u10max(i)   = -999.0_kind_phys
+          Diag%v10max(i)   = -999.0_kind_phys
+          Diag%t02max(i)   = -999.0_kind_phys
+          Diag%t02min(i)   =  999.0_kind_phys
+          Diag%rh02max(i)  = -999.0_kind_phys
+          Diag%rh02min(i)  =  999.0_kind_phys
         enddo
       endif
       do i=1, im
@@ -5657,7 +5657,7 @@ module module_physics_driver
           Diag%u10max(i)   = Diag%u10m(i)
           Diag%v10max(i)   = Diag%v10m(i)
         endif
-        pshltr = Statein%pgr(i)*exp(-0.068283d0/Stateout%gt0(i,1))
+        pshltr = Statein%pgr(i)*exp(-0.068283_kind_phys/Stateout%gt0(i,1))
         QCQ    = PQ0/pshltr*EXP(A2A*(Sfcprop%t2m(i)-A3)/(Sfcprop%t2m(i)-A4))
         rh02   = Sfcprop%q2m(i) / QCQ
         IF (rh02 > one) THEN
@@ -5777,10 +5777,10 @@ module module_physics_driver
       integer               :: i, k
 !
       do i=1,im
-        sumqv(i) = 0.0
-        sumql(i) = 0.0
-        sumqi(i) = 0.0
-        sumq (i) = 0.0
+        sumqv(i) = 0.0_kind_phys
+        sumql(i) = 0.0_kind_phys
+        sumqi(i) = 0.0_kind_phys
+        sumq (i) = 0.0_kind_phys
       enddo
       do k=1,levs
         do i=1,im
@@ -5790,9 +5790,9 @@ module module_physics_driver
         enddo
       enddo
       do i=1,im
-        sumqv(i) = - sumqv(i) * (1.0/grav)
-        sumql(i) = - sumql(i) * (1.0/grav)
-        sumqi(i) = - sumqi(i) * (1.0/grav)
+        sumqv(i) = - sumqv(i) * (1.0_kind_phys/grav)
+        sumql(i) = - sumql(i) * (1.0_kind_phys/grav)
+        sumqi(i) = - sumqi(i) * (1.0_kind_phys/grav)
         sumq (i) =  sumqv(i) + sumql(i) + sumqi(i)
       enddo
       do i=1,im
@@ -5825,13 +5825,13 @@ module module_physics_driver
       integer               :: i, k
 !
       do i=1,im
-        sumqv(i) = 0.0
-        sumql(i) = 0.0
-        sumqi(i) = 0.0
-        sumqr(i) = 0.0
-        sumqs(i) = 0.0
-        sumqg(i) = 0.0
-        sumq (i) = 0.0
+        sumqv(i) = 0.0_kind_phys
+        sumql(i) = 0.0_kind_phys
+        sumqi(i) = 0.0_kind_phys
+        sumqr(i) = 0.0_kind_phys
+        sumqs(i) = 0.0_kind_phys
+        sumqg(i) = 0.0_kind_phys
+        sumq (i) = 0.0_kind_phys
       enddo
       do k=1,levs
         do i=1,im
@@ -5843,7 +5843,7 @@ module module_physics_driver
           sumqg(i) = sumqg(i) + (qg1(i,k) - qg0(i,k)) * delp(i,k)
         enddo
       enddo
-      oneog = 1.0 / grav
+      oneog = 1.0_kind_phys / grav
       do i=1,im
         sumqv(i) = - sumqv(i) * oneog
         sumql(i) = - sumql(i) * oneog
