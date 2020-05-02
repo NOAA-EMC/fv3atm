@@ -1142,8 +1142,8 @@ module module_physics_driver
             endif
             if (fice(i) < one) then
               wet(i) = .true. ! some open ocean/lake water exists
-              if (.not. Model%cplflx .or. Sfcprop%oceanfrac(i) == zero)  &
-                 Sfcprop%tsfco(i) = max(Sfcprop%tsfco(i), Sfcprop%tisfc(i), tgice)
+              if ((.not. Model%cplflx .or. Sfcprop%oceanfrac(i) == zero) .and. icy(i)) &
+                 Sfcprop%tsfco(i) = max(Sfcprop%tisfc(i), tgice)
             endif
           else
             fice(i) = zero
@@ -1177,8 +1177,8 @@ module module_physics_driver
             endif
             if (fice(i) < one) then
               wet(i)=.true. ! some open ocean/lake water exists
-              if (.not. Model%cplflx)                                   &
-                 Sfcprop%tsfco(i) = max(Sfcprop%tsfco(i), Sfcprop%tisfc(i), tgice)
+              if (.not. Model%cplflx .and. icy(i))                                   &
+                 Sfcprop%tsfco(i) = max(Sfcprop%tisfc(i), tgice)
             endif
           endif
         enddo
@@ -2153,7 +2153,7 @@ module module_physics_driver
               Sfcprop%tsfc(i) = txi * tsfc3(i,2)   + txo * tsfc3(i,3)
               stress(i)       = txi  *stress3(i,2) + txo * stress3(i,3)
               qss(i)          = txi * qss3(i,2)    + txo * qss3(i,3)
-              ep1d(i)         = txi * ep1d3(i,2)   + txo * ep1d(i,3)
+              ep1d(i)         = txi * ep1d3(i,2)   + txo * ep1d3(i,3)
             endif
           elseif (islmsk(i) == 2) then  ! return updated lake ice thickness & concentration to global array
             Sfcprop%tisfc(i) = tice(i)  ! over lake ice (and sea ice when uncoupled)
