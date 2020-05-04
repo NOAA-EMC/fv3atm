@@ -1708,7 +1708,8 @@ end subroutine atmos_data_type_chksum
                   nb = Atm_block%blkno(i,j)
                   ix = Atm_block%ixp(i,j)
                   if (IPD_Data(nb)%Sfcprop%oceanfrac(ix) > zero) then
-                    IPD_Data(nb)%Coupling%tisfcin_cpl(ix) = datar8(i,j)
+!                   IPD_Data(nb)%Coupling%tisfcin_cpl(ix) = datar8(i,j)
+                    IPD_Data(nb)%Sfcprop%tisfc(ix)       = datar8(i,j)
                   endif
                 enddo
               enddo
@@ -1730,7 +1731,7 @@ end subroutine atmos_data_type_chksum
                   nb = Atm_block%blkno(i,j)
                   ix = Atm_block%ixp(i,j)
                   if (IPD_Data(nb)%Sfcprop%oceanfrac(ix) > zero) then
-                    IPD_Data(nb)%Coupling%tseain_cpl(ix) = datar8(i,j)
+!                   IPD_Data(nb)%Coupling%tseain_cpl(ix) = datar8(i,j)
                     IPD_Data(nb)%Sfcprop%tsfco(ix)       = datar8(i,j)
                   endif
                 enddo
@@ -1938,14 +1939,15 @@ end subroutine atmos_data_type_chksum
           if (IPD_Data(nb)%Sfcprop%oceanfrac(ix) > zero) then
 !if it is ocean or ice get surface temperature from mediator
             if(IPD_Data(nb)%Coupling%ficein_cpl(ix) >= IPD_control%min_seaice) then
-              IPD_Data(nb)%Sfcprop%tisfc(ix)       = IPD_Data(nb)%Coupling%tisfcin_cpl(ix)
+!             IPD_Data(nb)%Sfcprop%tisfc(ix)       = IPD_Data(nb)%Coupling%tisfcin_cpl(ix)
               IPD_Data(nb)%Sfcprop%fice(ix)        = IPD_Data(nb)%Coupling%ficein_cpl(ix)
               IPD_Data(nb)%Sfcprop%hice(ix)        = IPD_Data(nb)%Coupling%hicein_cpl(ix)
 !             IPD_Data(nb)%Sfcprop%snowd(ix)       = IPD_Data(nb)%Coupling%hsnoin_cpl(ix)
               IPD_Data(nb)%Coupling%hsnoin_cpl(ix) = IPD_Data(nb)%Coupling%hsnoin_cpl(ix) &
                                                    / max(0.01_IPD_kind_phys, IPD_Data(nb)%Coupling%ficein_cpl(ix))
             else 
-              IPD_Data(nb)%Sfcprop%tisfc(ix)       = IPD_Data(nb)%Coupling%tseain_cpl(ix)
+!             IPD_Data(nb)%Sfcprop%tisfc(ix)       = IPD_Data(nb)%Coupling%tseain_cpl(ix)
+              IPD_Data(nb)%Sfcprop%tisfc(ix)       = IPD_Data(nb)%Sfcprop%tsfco(ix)
               IPD_Data(nb)%Sfcprop%fice(ix)        = zero
               IPD_Data(nb)%Sfcprop%hice(ix)        = zero
 !             IPD_Data(nb)%Sfcprop%snowd(ix)       = zero
@@ -1976,7 +1978,8 @@ end subroutine atmos_data_type_chksum
 !           abs(IPD_Data(nb)%Grid%xlat_d(ix)+58.99) < 0.1) then
 !         write(0,*)' in assign tisfc=',IPD_Data(nb)%Sfcprop%tisfc(ix),     &
 !          ' oceanfrac=',IPD_Data(nb)%Sfcprop%oceanfrac(ix),' i=',i,' j=',j,&
-!          ' tisfcin=',IPD_Data(nb)%Coupling%tisfcin_cpl(ix),               &
+!!         ' tisfcin=',IPD_Data(nb)%Coupling%tisfcin_cpl(ix),               &
+!          ' tisfcin=',IPD_Data(nb)%Sfcprop%tisfc(ix),                      &
 !          ' fice=',IPD_Data(nb)%Sfcprop%fice(ix)
 !       endif
 !     enddo

@@ -431,8 +431,8 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: dtsfcin_cpl(:) => null()   !< aoi_fld%dtsfcin(item,lan)
     real (kind=kind_phys), pointer :: dqsfcin_cpl(:) => null()   !< aoi_fld%dqsfcin(item,lan)
     real (kind=kind_phys), pointer :: ulwsfcin_cpl(:)=> null()   !< aoi_fld%ulwsfcin(item,lan)
-    real (kind=kind_phys), pointer :: tseain_cpl(:)  => null()   !< aoi_fld%tseain(item,lan)
-    real (kind=kind_phys), pointer :: tisfcin_cpl(:) => null()   !< aoi_fld%tisfcin(item,lan)
+!   real (kind=kind_phys), pointer :: tseain_cpl(:)  => null()   !< aoi_fld%tseain(item,lan)
+!   real (kind=kind_phys), pointer :: tisfcin_cpl(:) => null()   !< aoi_fld%tisfcin(item,lan)
     real (kind=kind_phys), pointer :: ficein_cpl(:)  => null()   !< aoi_fld%ficein(item,lan)
     real (kind=kind_phys), pointer :: hicein_cpl(:)  => null()   !< aoi_fld%hicein(item,lan)
     real (kind=kind_phys), pointer :: hsnoin_cpl(:)  => null()   !< aoi_fld%hsnoin(item,lan)
@@ -2561,8 +2561,8 @@ module GFS_typedefs
       allocate (Coupling%dtsfcin_cpl  (IM))
       allocate (Coupling%dqsfcin_cpl  (IM))
       allocate (Coupling%ulwsfcin_cpl (IM))
-      allocate (Coupling%tseain_cpl   (IM))
-      allocate (Coupling%tisfcin_cpl  (IM))
+!     allocate (Coupling%tseain_cpl   (IM))
+!     allocate (Coupling%tisfcin_cpl  (IM))
       allocate (Coupling%ficein_cpl   (IM))
       allocate (Coupling%hicein_cpl   (IM))
       allocate (Coupling%hsnoin_cpl   (IM))
@@ -2573,8 +2573,8 @@ module GFS_typedefs
       Coupling%dtsfcin_cpl  = clear_val
       Coupling%dqsfcin_cpl  = clear_val
       Coupling%ulwsfcin_cpl = clear_val
-      Coupling%tseain_cpl   = clear_val
-      Coupling%tisfcin_cpl  = clear_val
+!     Coupling%tseain_cpl   = clear_val
+!     Coupling%tisfcin_cpl  = clear_val
       Coupling%ficein_cpl   = clear_val
       Coupling%hicein_cpl   = clear_val
       Coupling%hsnoin_cpl   = clear_val
