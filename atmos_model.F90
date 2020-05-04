@@ -2044,7 +2044,7 @@ end subroutine atmos_data_type_chksum
 
     if (IPD_Control%cplflx) then
     ! MEAN Zonal compt of momentum flux (N/m**2)
-    idx = queryfieldlist(exportFieldsList,'mean_zonal_moment_flx')
+    idx = queryfieldlist(exportFieldsList,'mean_zonal_moment_flx_atm')
     if (idx > 0 ) then
 !$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
@@ -2057,7 +2057,7 @@ end subroutine atmos_data_type_chksum
     endif
 
     ! MEAN Merid compt of momentum flux (N/m**2)
-    idx = queryfieldlist(exportFieldsList,'mean_merid_moment_flx')
+    idx = queryfieldlist(exportFieldsList,'mean_merid_moment_flx_atm')
     if (idx > 0 ) then
 !$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec

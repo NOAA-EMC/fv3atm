@@ -400,7 +400,7 @@ module fv3gfs_cap_mod
       write_nemsioflip =.false.
       write_fsyncflag  =.false.
 
-      if(trim(output_grid) == 'gaussian_grid') then
+      if(trim(output_grid) == 'gaussian_grid' .or. trim(output_grid) == 'global_latlon') then
         call ESMF_ConfigGetAttribute(config=CF, value=imo, label ='imo:',rc=rc)
         call ESMF_ConfigGetAttribute(config=CF, value=jmo, label ='jmo:',rc=rc)
         call ESMF_ConfigGetAttribute(config=CF, value=write_nemsioflip, label ='write_nemsioflip:',rc=rc)
@@ -703,7 +703,7 @@ module fv3gfs_cap_mod
           call ESMF_StateGet(wrtState(i),                                   &
                              itemName="mirror_"//trim(fcstItemNameList(j)), &
                              fieldbundle=wrtFB(j,i), rc=rc)
-          if(mype == 0) print *,'af get wrtfb=',"mirror_"//trim(fcstItemNameList(j)),'rc=',rc
+          if(mype == 0) print *,'af get wrtfb=',"mirror_"//trim(fcstItemNameList(j)),' rc=',rc
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
 ! determine regridmethod
@@ -949,6 +949,7 @@ module fv3gfs_cap_mod
     logical :: isAlarmEnabled, isAlarmRinging, lalarm, reconcileFlag
     character(len=*),parameter  :: subname='(fv3_cap:ModelAdvance)'
     character(240)              :: msgString
+    character(240)              :: import_timestr, export_timestr
 !jw debug
     character(ESMF_MAXSTR)      :: name
     integer :: mype,date(6), fieldcount, fcst_nfld
@@ -1027,6 +1028,10 @@ module fv3gfs_cap_mod
 !     if(mype==0) print *,'af clock,timestep date=',date
 !     if(mype==lead_wrttask(1)) print *,'on wrt lead,af clock,timestep date=',date
 !
+      call ESMF_ClockGet(clock_fv3, currTime=currTime, timeStep=timeStep, rc=rc)
+      call ESMF_TimeGet(currTime,          timestring=import_timestr, rc=rc)
+      call ESMF_TimeGet(currTime+timestep, timestring=export_timestr, rc=rc)
+!
 !-----------------------------------------------------------------------------
 !*** integration loop
 
@@ -1047,6 +1052,12 @@ module fv3gfs_cap_mod
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
       if (ESMF_LogFoundError(rcToCheck=urc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+
+      if ( cpl ) then
+       ! assign import_data called during phase=1
+       call Dump_cplFields(gcomp, importState, exportstate, clock_fv3,    &
+                           cplprint_flag, 'import', import_timestr)
+      endif
 
       call ESMF_GridCompRun(fcstComp, exportState=fcstState, clock=clock_fv3, &
                             phase=2, userRc=urc, rc=rc)
@@ -1164,7 +1175,7 @@ module fv3gfs_cap_mod
 !jw for coupled, check clock and dump import and export state
     if ( cpl ) then
        call Dump_cplFields(gcomp, importState, exportstate, clock_fv3,    &
-                           cplprint_flag, timeslice) 
+                           cplprint_flag, 'export', export_timestr) 
     endif
 
     if (mype==0) print *,'fv3_cap,end integrate,na=',na,' time=',mpi_wtime()- timeri

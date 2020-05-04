@@ -1339,6 +1339,34 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+[alvsf]
+  standard_name = mean_vis_albedo_with_strong_cosz_dependency
+  long_name = mean vis albedo with strong cosz dependency
+  units = frac
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+[alnsf]
+  standard_name = mean_nir_albedo_with_strong_cosz_dependency
+  long_name = mean nir albedo with strong cosz dependency
+  units = frac
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+[facsf]
+  standard_name =fractional_coverage_with_strong_cosz_dependency
+  long_name = fractional coverage with strong cosz dependency
+  units = frac
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+[facwf]
+  standard_name = fractional_coverage_with_weak_cosz_dependency
+  long_name = fractional coverage with weak cosz dependency
+  units = frac
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
 
 ########################################################################
 [ccpp-arg-table]
@@ -2113,9 +2141,9 @@
   units = count
   dimensions = ()
   type = integer
-[aero_in]
-  standard_name = flag_for_aerosol_input_MG
-  long_name = flag for using aerosols in Morrison-Gettelman MP
+[iaerclm]
+  standard_name = flag_for_aerosol_input_MG_radiation
+  long_name = flag for using aerosols in Morrison-Gettelman MP_radiation
   units = flag
   dimensions = ()
   type = logical
@@ -2232,6 +2260,108 @@
   long_name = flag to output sw heating rate (Radtend%swhc)
   units = flag
   dimensions = ()
+  type = logical
+[active_gases]
+  standard_name = active_gases_used_by_RRTMGP
+  long_name = active gases used by RRTMGP
+  units = none
+  dimensions =  ()
+  type = character
+  kind = len=128 
+[nGases]
+  standard_name = number_of_active_gases_used_by_RRTMGP
+  long_name = number of gases available used by RRTMGP (Model%nGases)
+  units = count
+  dimensions =  ()
+  type = integer
+[rrtmgp_root]
+  standard_name = directory_for_rte_rrtmgp_source_code
+  long_name = directory for rte+rrtmgp source code (Model%rrtmgp_root)
+  units = none
+  dimensions =  ()
+  type = character
+  kind = len=128
+[lw_file_gas]
+  standard_name = rrtmgp_kdistribution_lw
+  long_name = file containing RRTMGP LW k-distribution (Model%lw_file_gas)
+  units = none
+  dimensions =  ()
+  type = character
+  kind = len=128
+[lw_file_clouds]
+  standard_name = rrtmgp_coeff_lw_cloud_optics 
+  long_name = file containing coefficients for RRTMGP LW cloud optics (Model%lw_file_clouds)
+  units = none
+  dimensions =  ()
+  type = character
+  kind = len=128
+[rrtmgp_nBandsLW]
+  standard_name = number_of_lw_bands_rrtmgp
+  long_name = number of lw bands used in RRTMGP (Model%rrtmgp_nBandsLW)
+  units = count
+  dimensions =  ()
+  type = integer
+[rrtmgp_nGptsLW]
+  standard_name = number_of_lw_spectral_points_rrtmgp
+  long_name = number of spectral points in RRTMGP LW calculation (model%rrtmgp_nGptsLW)
+  units = count
+  dimensions =  ()
+  type = integer
+[sw_file_gas] 
+  standard_name = rrtmgp_kdistribution_sw
+  long_name = file containing RRTMGP SW k-distribution (Model%sw_file_gas)
+  units = none
+  dimensions =  ()
+  type = character
+  kind = len=128
+[sw_file_clouds]
+  standard_name = rrtmgp_coeff_sw_cloud_optics 
+  long_name = file containing coefficients for RRTMGP SW cloud optics (Model%sw_file_clouds)
+  units = none 
+  dimensions =  ()
+  type = character
+  kind = len=128
+[rrtmgp_nBandsSW]
+  standard_name = number_of_sw_bands_rrtmgp
+  long_name = number of sw bands used in RRTMGP (Model%rrtmgp_nBandsSW)
+  units = count
+  dimensions =  ()
+  type = integer
+[rrtmgp_nGptsSW]
+  standard_name = number_of_sw_spectral_points_rrtmgp
+  long_name = number of spectral points in RRTMGP SW calculation (model%rrtmgp_nGptsSW)
+  units = count
+  dimensions =  ()
+  type = integer
+[rrtmgp_cld_optics]
+  standard_name = rrtmgp_cloud_optics_flag
+  long_name = Flag to control which RRTMGP cloud-optics scheme (Model%rrtmgp_cld_optics)
+  units = flag
+  dimensions =  ()
+  type = integer
+[rrtmgp_nrghice]
+  standard_name = number_of_rrtmgp_ice_roughness
+  long_name = number of ice-roughness categories in RRTMGP calculation (Model%rrtmgp_nrghice)
+  units = count
+  dimensions =  ()
+  type = integer
+[rrtmgp_nGauss_ang]
+  standard_name = number_of_angles_used_in_gaussian_quadrature
+  long_name = Number of angles used in Gaussian quadrature
+  units = count
+  dimensions =  ()
+  type = integer
+[do_RRTMGP]
+  standard_name = flag_for_rrtmgp_radiation_scheme
+  long_name = flag for RRTMGP scheme
+  units = flag
+  dimensions =  ()
+  type = logical
+[do_GPsw_Glw]
+  standard_name = scheme_flag
+  long_name = When true GP is used for SW calculation and G is used for LW calculation
+  units = flag
+  dimensions =  ()
   type = logical
 [ncld]
   standard_name = number_of_hydrometeors
@@ -3308,6 +3438,20 @@
   dimensions = ()
   type = real
   kind = kind_phys
+[z0fac]
+  standard_name = surface_roughness_fraction_factor
+  long_name = surface roughness fraction for canopy heat storage parameterization
+  units = none
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[e0fac]
+  standard_name = latent_heat_flux_fraction_factor_relative_to_sensible_heat_flux
+  long_name = latent heat flux fraction relative to sensible heat flux for canopy heat storage parameterization
+  units = none
+  dimensions = ()
+  type = real
+  kind = kind_phys
 [nca]
   standard_name = number_of_independent_cellular_automata
   long_name = number of independent cellular automata
@@ -3858,9 +4002,9 @@
 [iccn]
   standard_name = flag_for_in_ccn_forcing_for_morrison_gettelman_microphysics
   long_name = flag for IN and CCN forcing for morrison gettelman microphysics
-  units = flag
+  units = none
   dimensions = ()
-  type = logical
+  type = integer
 [sec]
   standard_name = seconds_elapsed_since_model_initialization
   long_name = seconds elapsed since model initialization
@@ -4335,34 +4479,6 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
-[htlwc]
-  standard_name = tendency_of_air_temperature_due_to_longwave_heating_on_radiation_time_step
-  long_name = total sky heating rate due to longwave radiation
-  units = K s-1
-  dimensions = (horizontal_dimension,adjusted_vertical_layer_dimension_for_radiation)
-  type = real
-  kind = kind_phys
-[htlw0]
-  standard_name = tendency_of_air_temperature_due_to_longwave_heating_assuming_clear_sky_on_radiation_time_step
-  long_name = clear sky heating rate due to longwave radiation
-  units = K s-1
-  dimensions = (horizontal_dimension,adjusted_vertical_layer_dimension_for_radiation)
-  type = real
-  kind = kind_phys
-[htswc]
-  standard_name = tendency_of_air_temperature_due_to_shortwave_heating_on_radiation_time_step
-  long_name = total sky heating rate due to shortwave radiation
-  units = K s-1
-  dimensions = (horizontal_dimension,adjusted_vertical_layer_dimension_for_radiation)
-  type = real
-  kind = kind_phys
-[htsw0]
-  standard_name = tendency_of_air_temperature_due_to_shortwave_heating_assuming_clear_sky_on_radiation_time_step
-  long_name = clear sky heating rates due to shortwave radiation
-  units = K s-1
-  dimensions = (horizontal_dimension,adjusted_vertical_layer_dimension_for_radiation)
-  type = real
-  kind = kind_phys
 [forcet]
   standard_name = temperature_tendency_due_to_dynamics
   long_name = temperature tendency due to dynamics only
@@ -4588,14 +4704,14 @@
   dimensions = (horizontal_dimension)
   type = sfcflw_type
 [htrsw]
-  standard_name = tendency_of_air_temperature_due_to_shortwave_heating_on_radiation_timestep
+  standard_name = tendency_of_air_temperature_due_to_shortwave_heating_on_radiation_time_step
   long_name = total sky sw heating rate
   units = K s-1
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
 [htrlw]
-  standard_name = tendency_of_air_temperature_due_to_longwave_heating_on_radiation_timestep
+  standard_name = tendency_of_air_temperature_due_to_longwave_heating_on_radiation_time_step
   long_name = total sky lw heating rate
   units = K s-1
   dimensions = (horizontal_dimension,vertical_dimension)
@@ -4615,6 +4731,13 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+[coszdg]
+  standard_name = daytime_mean_cosz_over_rad_call_period
+  long_name = daytime mean cosz over rad call period
+  units = none
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
 [tsflw]
   standard_name = surface_midlayer_air_temperature_in_longwave_radiation
   long_name = surface air temp during lw calculation
@@ -4630,14 +4753,14 @@
   type = real
   kind = kind_phys
 [swhc]
-  standard_name = tendency_of_air_temperature_due_to_shortwave_heating_assuming_clear_sky_on_radiation_timestep
+  standard_name = tendency_of_air_temperature_due_to_shortwave_heating_assuming_clear_sky_on_radiation_time_step
   long_name = clear sky sw heating rates
   units = K s-1
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
 [lwhc]
-  standard_name = tendency_of_air_temperature_due_to_longwave_heating_assuming_clear_sky_on_radiation_timestep
+  standard_name = tendency_of_air_temperature_due_to_longwave_heating_assuming_clear_sky_on_radiation_time_step
   long_name = clear sky lw heating rates
   units = K s-1
   dimensions = (horizontal_dimension,vertical_dimension)
@@ -6642,6 +6765,13 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+[evapq]
+  standard_name = kinematic_surface_upward_latent_heat_flux_reduced_by_surface_roughness
+  long_name = kinematic surface upward latent heat flux reduced by surface roughness
+  units = kg kg-1 m s-1
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
 [evap_ocean]
   standard_name = kinematic_surface_upward_latent_heat_flux_over_ocean
   long_name = kinematic surface upward latent heat flux over ocean
@@ -7058,9 +7188,30 @@
   dimensions = (vertical_dimension_of_h2o_forcing_data)
   type = real
   kind = kind_phys
+[hefac]
+  standard_name = surface_upward_latent_heat_flux_reduction_factor
+  long_name = surface upward latent heat flux reduction factor from canopy heat storage
+  units = none
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+[hffac]
+  standard_name = surface_upward_sensible_heat_flux_reduction_factor
+  long_name = surface upward sensible heat flux reduction factor from canopy heat storage
+  units = none
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
 [hflx]
   standard_name = kinematic_surface_upward_sensible_heat_flux
   long_name = kinematic surface upward sensible heat flux
+  units = K m s-1
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+[hflxq]
+  standard_name = kinematic_surface_upward_sensible_heat_flux_reduced_by_surface_roughness
+  long_name = kinematic surface upward sensible heat flux reduced by surface roughness
   units = K m s-1
   dimensions = (horizontal_dimension)
   type = real
@@ -7084,6 +7235,34 @@
   long_name = kinematic surface upward sensible heat flux over ice
   units = K m s-1
   dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+[htlwc]
+  standard_name = tendency_of_air_temperature_due_to_longwave_heating_on_radiation_time_step_and_radiation_levels
+  long_name = total sky heating rate due to longwave radiation
+  units = K s-1
+  dimensions = (horizontal_dimension,adjusted_vertical_layer_dimension_for_radiation)
+  type = real
+  kind = kind_phys
+[htlw0]
+  standard_name = tendency_of_air_temperature_due_to_longwave_heating_assuming_clear_sky_on_radiation_time_step_and_radiation_levels
+  long_name = clear sky heating rate due to longwave radiation
+  units = K s-1
+  dimensions = (horizontal_dimension,adjusted_vertical_layer_dimension_for_radiation)
+  type = real
+  kind = kind_phys
+[htswc]
+  standard_name = tendency_of_air_temperature_due_to_shortwave_heating_on_radiation_time_step_and_radiation_levels
+  long_name = total sky heating rate due to shortwave radiation
+  units = K s-1
+  dimensions = (horizontal_dimension,adjusted_vertical_layer_dimension_for_radiation)
+  type = real
+  kind = kind_phys
+[htsw0]
+  standard_name = tendency_of_air_temperature_due_to_shortwave_heating_assuming_clear_sky_on_radiation_time_step_and_radiation_levels
+  long_name = clear sky heating rates due to shortwave radiation
+  units = K s-1
+  dimensions = (horizontal_dimension,adjusted_vertical_layer_dimension_for_radiation)
   type = real
   kind = kind_phys
 [icemp]
@@ -8268,6 +8447,510 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+[p_lay]
+  standard_name = air_pressure_at_layer_for_RRTMGP_in_hPa
+  long_name = air pressure layer
+  units = hPa
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+  optional = F
+[p_lev]
+  standard_name = air_pressure_at_interface_for_RRTMGP_in_hPa
+  long_name = air pressure level
+  units = hPa
+  dimensions = (horizontal_dimension,vertical_dimension_plus_one)
+  type = real
+  kind = kind_phys
+  optional = F
+[t_lay]
+  standard_name = air_temperature_at_layer_for_RRTMGP
+  long_name = air temperature layer
+  units = K
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+  optional = F
+[t_lev]
+  standard_name = air_temperature_at_interface_for_RRTMGP
+  long_name = air temperature layer
+  units = K
+  dimensions = (horizontal_dimension,vertical_dimension_plus_one)
+  type = real
+  kind = kind_phys
+  optional = F
+[tv_lay]
+  standard_name = virtual_temperature
+  long_name = layer virtual temperature
+  units = K
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+  optional = F
+[relhum]
+  standard_name = relative_humidity
+  long_name = layer relative humidity
+  units = frac
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+  optional = F
+[tracer]
+  standard_name = chemical_tracers
+  long_name = chemical tracers
+  units = g g-1
+  dimensions = (horizontal_dimension,vertical_dimension,number_of_tracers)
+  type = real
+  kind = kind_phys
+  optional = F
+[hsw0]
+  standard_name = RRTMGP_sw_heating_rate_clear_sky
+  long_name = RRTMGP shortwave clear sky heating rate
+  units = K s-1
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+  optional = T
+[hswc]
+  standard_name = RRTMGP_sw_heating_rate_all_sky
+  long_name = RRTMGP shortwave all sky heating rate
+  units = K s-1
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+  optional = F
+[hswb]
+  standard_name = RRTMGP_sw_heating_rate_spectral
+  long_name = RRTMGP shortwave total sky heating rate (spectral)
+  units = K s-1
+  dimensions = (horizontal_dimension,vertical_dimension,number_of_sw_spectral_points_rrtmgp)
+  type = real
+  kind = kind_phys
+  optional = T
+[hlw0]
+  standard_name = RRTMGP_lw_heating_rate_clear_sky
+  long_name = RRTMGP longwave clear sky heating rate
+  units = K s-1
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+  optional = T
+[hlwc]
+  standard_name = RRTMGP_lw_heating_rate_all_sky
+  long_name = RRTMGP longwave all sky heating rate
+  units = K s-1
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+  optional = F
+[hlwb]
+  standard_name = RRTMGP_lw_heating_rate_spectral
+  long_name = RRTMGP longwave total sky heating rate (spectral)
+  units = K s-1
+  dimensions = (horizontal_dimension,vertical_dimension,number_of_lw_spectral_points_rrtmgp)
+  type = real
+  kind = kind_phys
+  optional = T
+[ipsdsw0]
+  standard_name = initial_permutation_seed_sw
+  long_name = initial seed for McICA SW 
+  units = none
+  dimensions = ()
+  type = integer
+  optional = F
+[ipsdlw0]
+  standard_name = initial_permutation_seed_lw
+  long_name = initial seed for McICA LW 
+  units = none
+  dimensions = ()
+  type = integer
+  optional = F
+[cld_frac]
+  standard_name = RRTMGP_total_cloud_fraction
+  long_name = layer total cloud fraction
+  units = frac
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+[cld_lwp]
+  standard_name = RRTMGP_cloud_liquid_water_path
+  long_name = layer cloud liquid water path
+  units = g m-2
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+[cld_reliq]
+  standard_name = RRTMGP_mean_effective_radius_for_liquid_cloud
+  long_name = mean effective radius for liquid cloud
+  units = micron
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+[cld_iwp]
+  standard_name = RRTMGP_cloud_ice_water_path
+  long_name = layer cloud ice water path
+  units = g m-2
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+[cld_reice]
+  standard_name = RRTMGP_mean_effective_radius_for_ice_cloud
+  long_name = mean effective radius for ice cloud
+  units = micron
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+[cld_rwp]
+  standard_name = RRTMGP_cloud_rain_water_path
+  long_name = cloud rain water path
+  units = g m-2
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+[cld_rerain]
+  standard_name = RRTMGP_mean_effective_radius_for_rain_drop
+  long_name = mean effective radius for rain drop
+  units = micron
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+[cld_swp]
+  standard_name = RRTMGP_cloud_snow_water_path
+  long_name = cloud snow water path
+  units = g m-2
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+[cld_resnow]
+  standard_name = RRTMGP_mean_effective_radius_for_snow_flake
+  long_name = mean effective radius for snow flake
+  units = micron
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+[cldtausw]
+  standard_name = RRTMGP_cloud_optical_depth_layers_at_0_55mu_band
+  long_name = approx .55mu band layer cloud optical depth
+  units = none
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+  optional = F
+[cldtaulw]
+  standard_name = RRTMGP_cloud_optical_depth_layers_at_10mu_band
+  long_name = approx 10mu band layer cloud optical depth
+  units = none
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+[fluxlwUP_allsky]
+  standard_name = RRTMGP_lw_flux_profile_upward_allsky
+  long_name = RRTMGP upward longwave all-sky flux profile
+  units = W m-2
+  dimensions = (horizontal_dimension,vertical_dimension_plus_one)
+  type = real
+  kind = kind_phys
+  optional = F
+[fluxlwDOWN_allsky]
+  standard_name = RRTMGP_lw_flux_profile_downward_allsky
+  long_name = RRTMGP downward longwave all-sky flux profile
+  units = W m-2
+  dimensions = (horizontal_dimension,vertical_dimension_plus_one)
+  type = real
+  kind = kind_phys
+  optional = F
+[fluxlwUP_clrsky]
+  standard_name = RRTMGP_lw_flux_profile_upward_clrsky
+  long_name = RRTMGP upward longwave clr-sky flux profile
+  units = W m-2
+  dimensions = (horizontal_dimension,vertical_dimension_plus_one)
+  type = real
+  kind = kind_phys
+  optional = F
+[fluxlwDOWN_clrsky]
+  standard_name = RRTMGP_lw_flux_profile_downward_clrsky
+  long_name = RRTMGP downward longwave clr-sky flux profile
+  units = W m-2
+  dimensions = (horizontal_dimension,vertical_dimension_plus_one)
+  type = real
+  kind = kind_phys
+  optional = F
+[fluxswUP_allsky]
+  standard_name = RRTMGP_sw_flux_profile_upward_allsky
+  long_name = RRTMGP upward shortwave all-sky flux profile
+  units = W m-2
+  dimensions = (horizontal_dimension,vertical_dimension_plus_one)
+  type = real
+  kind = kind_phys
+  optional = F
+[fluxswDOWN_allsky]
+  standard_name = RRTMGP_sw_flux_profile_downward_allsky
+  long_name = RRTMGP downward shortwave all-sky flux profile
+  units = W m-2
+  dimensions = (horizontal_dimension,vertical_dimension_plus_one)
+  type = real
+  kind = kind_phys
+  optional = F
+[fluxswUP_clrsky]
+  standard_name = RRTMGP_sw_flux_profile_upward_clrsky
+  long_name = RRTMGP upward shortwave clr-sky flux profile
+  units = W m-2
+  dimensions = (horizontal_dimension,vertical_dimension_plus_one)
+  type = real
+  kind = kind_phys
+  optional = F
+[fluxswDOWN_clrsky]
+  standard_name = RRTMGP_sw_flux_profile_downward_clrsky
+  long_name = RRTMGP downward shortwave clr-sky flux profile
+  units = W m-2
+  dimensions = (horizontal_dimension,vertical_dimension_plus_one)
+  type = real
+  kind = kind_phys
+  optional = F
+[flxprf_lw]
+  standard_name = RRTMGP_lw_fluxes
+  long_name = lw fluxes total sky / csk and up / down at levels
+  units = W m-2
+  dimensions = (horizontal_dimension,vertical_dimension_plus_one)
+  type = proflw_type
+  optional = T
+[flxprf_sw]
+  standard_name = RRTMGP_sw_fluxes
+  long_name = sw fluxes total sky / csk and up / down at levels
+  units = W m-2
+  dimensions = (horizontal_dimension,vertical_dimension_plus_one)
+  type = profsw_type
+  optional = T
+[aerosolslw]
+  standard_name = RRTMGP_aerosol_optical_properties_for_longwave_bands_01_16
+  long_name = aerosol optical properties for longwave bands 01-16
+  units = various
+  dimensions = (horizontal_dimension,vertical_dimension, number_of_lw_bands_rrtmgp,number_of_aerosol_output_fields_for_longwave_radiation)
+  type = real
+  kind = kind_phys
+  optional = F
+[aerosolslw(:,:,:,1)]
+  standard_name = RRTMGP_aerosol_optical_depth_for_longwave_bands_01_16
+  long_name = aerosol optical depth for longwave bands 01-16
+  units = none
+  dimensions = (horizontal_dimension,vertical_dimension, number_of_lw_bands_rrtmgp)
+  type = real
+  kind = kind_phys
+[aerosolslw(:,:,:,2)]
+  standard_name = RRTMGP_aerosol_single_scattering_albedo_for_longwave_bands_01_16
+  long_name = aerosol single scattering albedo for longwave bands 01-16
+  units = frac
+  dimensions = (horizontal_dimension,vertical_dimension, number_of_lw_bands_rrtmgp)
+  type = real
+  kind = kind_phys
+[aerosolslw(:,:,:,3)]
+  standard_name = RRTMGP_aerosol_asymmetry_parameter_for_longwave_bands_01_16
+  long_name = aerosol asymmetry parameter for longwave bands 01-16
+  units = none
+  dimensions = (horizontal_dimension,vertical_dimension, number_of_lw_bands_rrtmgp)
+  type = real
+  kind = kind_phys
+[aerosolssw]
+  standard_name = RRTMGP_aerosol_optical_properties_for_shortwave_bands_01_16
+  long_name = aerosol optical properties for shortwave bands 01-16
+  units = various
+  dimensions = (horizontal_dimension,vertical_dimension, number_of_sw_bands_rrtmgp, number_of_aerosol_output_fields_for_shortwave_radiation)
+  type = real
+  kind = kind_phys
+[aerosolssw(:,:,:,1)]
+  standard_name = RRTMGP_aerosol_optical_depth_for_shortwave_bands_01_16
+  long_name = aerosol optical depth for shortwave bands 01-16
+  units = none
+  dimensions = (horizontal_dimension,vertical_dimension, number_of_sw_bands_rrtmgp)
+  type = real
+  kind = kind_phys
+[aerosolssw(:,:,:,2)]
+  standard_name = RRTMGP_aerosol_single_scattering_albedo_for_shortwave_bands_01_16
+  long_name = aerosol single scattering albedo for shortwave bands 01-16
+  units = frac
+  dimensions = (horizontal_dimension,vertical_dimension, number_of_sw_bands_rrtmgp)
+  type = real
+  kind = kind_phys
+[aerosolssw(:,:,:,3)]
+  standard_name = RRTMGP_aerosol_asymmetry_parameter_for_shortwave_bands_01_16
+  long_name = aerosol asymmetry parameter for shortwave bands 01-16
+  units = none
+  dimensions = (horizontal_dimension,vertical_dimension, number_of_sw_bands_rrtmgp)
+  type = real
+  kind = kind_phys
+[icseed_lw]
+  standard_name = seed_random_numbers_lw_for_RRTMGP
+  long_name = seed for random number generation for longwave radiation
+  units = none
+  dimensions = (horizontal_dimension)
+  type = integer
+  optional = F
+[icseed_sw]
+  standard_name = seed_random_numbers_sw_for_RRTMGP
+  long_name = seed for random number generation for shortwave radiation
+  units = none
+  dimensions = (horizontal_dimension)
+  type = integer
+  optional = F
+[sw_gas_props]
+  standard_name = coefficients_for_sw_gas_optics
+  long_name = DDT containing spectral information for RRTMGP SW radiation scheme
+  units = DDT
+  dimensions = ()
+  type = ty_gas_optics_rrtmgp
+  optional = F
+[sw_cloud_props]
+  standard_name = coefficients_for_sw_cloud_optics
+  long_name = DDT containing spectral information for RRTMGP SW radiation scheme
+  units = DDT
+  dimensions = ()
+  type = ty_cloud_optics
+  optional = F
+[sw_optical_props_clrsky]
+  standard_name = shortwave_optical_properties_for_clear_sky
+  long_name = Fortran DDT containing RRTMGP optical properties
+  units = DDT
+  dimensions = ()
+  type = ty_optical_props_2str
+  optional = F
+[sw_optical_props_cloudsByBand]
+  standard_name = shortwave_optical_properties_for_cloudy_atmosphere_by_band
+  long_name = Fortran DDT containing RRTMGP optical properties
+  units = DDT
+  dimensions = ()
+  type = ty_optical_props_2str
+[sw_optical_props_clouds]
+  standard_name = shortwave_optical_properties_for_cloudy_atmosphere
+  long_name = Fortran DDT containing RRTMGP optical properties
+  units = DDT
+  dimensions = ()
+  type = ty_optical_props_2str
+  optional = F
+[sw_optical_props_aerosol]
+  standard_name = shortwave_optical_properties_for_aerosols
+  long_name = Fortran DDT containing RRTMGP optical properties
+  units = DDT
+  dimensions = ()
+  type = ty_optical_props_2str
+  optional = F
+[gas_concentrations]
+  standard_name = Gas_concentrations_for_RRTMGP_suite
+  long_name = DDT containing gas concentrations for RRTMGP radiation scheme
+  units = DDT
+  dimensions = ()
+  type = ty_gas_concs
+  optional = F
+[sources]
+  standard_name = longwave_source_function
+  long_name = Fortran DDT containing RRTMGP source functions
+  units = DDT
+  dimensions = ()
+  type = ty_source_func_lw
+  optional = F
+[lw_gas_props]
+  standard_name = coefficients_for_lw_gas_optics
+  long_name = DDT containing spectral information for RRTMGP LW radiation scheme
+  units = DDT
+  dimensions = ()
+  type = ty_gas_optics_rrtmgp
+  optional = F
+[lw_cloud_props]
+  standard_name = coefficients_for_lw_cloud_optics
+  long_name = DDT containing spectral information for RRTMGP LW radiation scheme
+  units = DDT
+  dimensions = ()
+  type = ty_cloud_optics
+  optional = F
+[lw_optical_props_clrsky]
+  standard_name = longwave_optical_properties_for_clear_sky
+  long_name = Fortran DDT containing RRTMGP optical properties
+  units = DDT
+  dimensions = ()
+  type = ty_optical_props_1scl
+  optional = F
+[lw_optical_props_clouds]
+  standard_name = longwave_optical_properties_for_cloudy_atmosphere
+  long_name = Fortran DDT containing RRTMGP optical properties
+  units = DDT
+  dimensions = ()
+  type = ty_optical_props_1scl
+  optional = F
+[lw_optical_props_cloudsByBand]
+  standard_name = longwave_optical_properties_for_cloudy_atmosphere_by_band
+  long_name = Fortran DDT containing RRTMGP optical properties
+  units = DDT
+  dimensions = ()
+  type = ty_optical_props_1scl
+[lw_optical_props_aerosol]
+  standard_name = longwave_optical_properties_for_aerosols
+  long_name = Fortran DDT containing RRTMGP optical properties
+  units = DDT
+  dimensions = ()
+  type = ty_optical_props_1scl
+  optional = F
+[sfc_emiss_byband]
+  standard_name = surface_emissivity_in_each_RRTMGP_LW_band
+  long_name = surface emissivity in each RRTMGP LW band
+  units = none
+  dimensions = (number_of_lw_bands_rrtmgp,horizontal_dimension)
+  type = real
+  kind = kind_phys
+[sec_diff_byband]
+  standard_name = secant_of_diffusivity_angle_each_RRTMGP_LW_band
+  long_name = secant of diffusivity angle in each RRTMGP LW band
+  units = none
+  dimensions = (number_of_lw_bands_rrtmgp,horizontal_dimension)
+  type = real
+  kind = kind_phys
+[sfc_alb_nir_dir]
+  standard_name = surface_albedo_nearIR_direct
+  long_name = near-IR (direct) surface albedo (sfc_alb_nir_dir)
+  units = none
+  dimensions = (number_of_sw_bands_rrtmgp,horizontal_dimension)
+  type = real
+  kind = kind_phys
+[sfc_alb_nir_dif]
+  standard_name = surface_albedo_nearIR_diffuse
+  long_name = near-IR (diffuse) surface albedo (sfc_alb_nir_dif)
+  units = none
+  dimensions = (number_of_sw_bands_rrtmgp,horizontal_dimension)
+  type = real
+  kind = kind_phys
+[sfc_alb_uvvis_dir]
+  standard_name =  surface_albedo_uvvis_dir
+  long_name = UVVIS (direct) surface albedo (sfc_alb_uvvis_dir)
+  units = none
+  dimensions = (number_of_sw_bands_rrtmgp,horizontal_dimension)
+  type = real
+  kind = kind_phys
+[sfc_alb_uvvis_dif]
+  standard_name =  surface_albedo_uvvis_dif
+  long_name = UVVIS (diffuse) surface albedo (sfc_alb_uvvis_dif)
+  units = none
+  dimensions = (number_of_sw_bands_rrtmgp,horizontal_dimension)
+  type = real
+  kind = kind_phys
+[toa_src_lw]
+  standard_name = toa_incident_lw_flux_by_spectral_point
+  long_name = TOA longwave incident flux at each spectral points
+  units = W m-2
+  dimensions = (horizontal_dimension,number_of_lw_spectral_points_rrtmgp)
+  type = real
+  kind = kind_phys
+[toa_src_sw]
+  standard_name = toa_incident_sw_flux_by_spectral_point
+  long_name = TOA shortwave incident flux at each spectral points
+  units = W m-2
+  dimensions = (horizontal_dimension,number_of_sw_spectral_points_rrtmgp)
+  type = real
+  kind = kind_phys
+[active_gases_array]
+  standard_name = list_of_active_gases_used_by_RRTMGP
+  long_name = list of active gases used by RRTMGP
+  units = none
+  dimensions =  (number_of_active_gases_used_by_RRTMGP)
+  type = character
+  kind = len=128
 
 ########################################################################
 [ccpp-arg-table]
