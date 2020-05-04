@@ -1941,12 +1941,6 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: cld_resnow(:,:)        => null()  !< Cloud snow effective radius
     real (kind=kind_phys), pointer      :: cld_rwp(:,:)           => null()  !< Cloud rain water path
     real (kind=kind_phys), pointer      :: cld_rerain(:,:)        => null()  !< Cloud rain effective radius
-    real (kind=kind_phys), pointer      :: hsw0(:,:)              => null()  !< RRTMGP shortwave heating-rate (clear-sky)
-    real (kind=kind_phys), pointer      :: hswc(:,:)              => null()  !< RRTMGP shortwave heating-rate (all-sky)
-    real (kind=kind_phys), pointer      :: hswb(:,:,:)            => null()  !< RRTMGP shortwave heating-rate (all-sky), by band
-    real (kind=kind_phys), pointer      :: hlw0(:,:)              => null()  !< RRTMGP longwave heating-rate (clear-sky)
-    real (kind=kind_phys), pointer      :: hlwc(:,:)              => null()  !< RRTMGP longwave heating-rate (all-sky)
-    real (kind=kind_phys), pointer      :: hlwb(:,:,:)            => null()  !< RRTMGP longwave heating-rate (all-sky), by band
     real (kind=kind_phys), pointer      :: fluxlwUP_allsky(:,:)   => null()  !< RRTMGP upward   longwave  all-sky flux profile
     real (kind=kind_phys), pointer      :: fluxlwDOWN_allsky(:,:) => null()  !< RRTMGP downward longwave  all-sky flux profile
     real (kind=kind_phys), pointer      :: fluxlwUP_clrsky(:,:)   => null()  !< RRTMGP upward   longwave  clr-sky flux profile
@@ -6116,12 +6110,6 @@ module GFS_typedefs
       allocate (Interstitial%cld_resnow        (IM, Model%levs))
       allocate (Interstitial%cld_rwp           (IM, Model%levs))
       allocate (Interstitial%cld_rerain        (IM, Model%levs))
-      allocate (Interstitial%hsw0              (IM, Model%levs))
-      allocate (Interstitial%hswc              (IM, Model%levs))
-      allocate (Interstitial%hswb              (IM, Model%levs, Model%rrtmgp_nGptsSW))
-      allocate (Interstitial%hlw0              (IM, Model%levs))
-      allocate (Interstitial%hlwc              (IM, Model%levs))
-      allocate (Interstitial%hlwb              (IM, Model%levs, Model%rrtmgp_nGptsLW))
       allocate (Interstitial%icseed_lw         (IM))
       allocate (Interstitial%icseed_sw         (IM))
       allocate (Interstitial%flxprf_lw         (IM, Model%levs+1))
@@ -6484,12 +6472,6 @@ module GFS_typedefs
       Interstitial%cld_resnow        = clear_val
       Interstitial%cld_rwp           = clear_val
       Interstitial%cld_rerain        = clear_val
-      Interstitial%hsw0              = clear_val
-      Interstitial%hswc              = clear_val
-      Interstitial%hswb              = clear_val
-      Interstitial%hlw0              = clear_val
-      Interstitial%hlwc              = clear_val
-      Interstitial%hlwb              = clear_val
       Interstitial%icseed_lw         = clear_val
       Interstitial%icseed_sw         = clear_val
       Interstitial%sfc_emiss_byband  = clear_val

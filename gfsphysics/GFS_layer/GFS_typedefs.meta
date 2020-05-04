@@ -8461,54 +8461,6 @@
   type = real
   kind = kind_phys
   optional = F
-[hsw0]
-  standard_name = RRTMGP_sw_heating_rate_clear_sky
-  long_name = RRTMGP shortwave clear sky heating rate
-  units = K s-1
-  dimensions = (horizontal_dimension,vertical_dimension)
-  type = real
-  kind = kind_phys
-  optional = T
-[hswc]
-  standard_name = RRTMGP_sw_heating_rate_all_sky
-  long_name = RRTMGP shortwave all sky heating rate
-  units = K s-1
-  dimensions = (horizontal_dimension,vertical_dimension)
-  type = real
-  kind = kind_phys
-  optional = F
-[hswb]
-  standard_name = RRTMGP_sw_heating_rate_spectral
-  long_name = RRTMGP shortwave total sky heating rate (spectral)
-  units = K s-1
-  dimensions = (horizontal_dimension,vertical_dimension,number_of_sw_spectral_points_rrtmgp)
-  type = real
-  kind = kind_phys
-  optional = T
-[hlw0]
-  standard_name = RRTMGP_lw_heating_rate_clear_sky
-  long_name = RRTMGP longwave clear sky heating rate
-  units = K s-1
-  dimensions = (horizontal_dimension,vertical_dimension)
-  type = real
-  kind = kind_phys
-  optional = T
-[hlwc]
-  standard_name = RRTMGP_lw_heating_rate_all_sky
-  long_name = RRTMGP longwave all sky heating rate
-  units = K s-1
-  dimensions = (horizontal_dimension,vertical_dimension)
-  type = real
-  kind = kind_phys
-  optional = F
-[hlwb]
-  standard_name = RRTMGP_lw_heating_rate_spectral
-  long_name = RRTMGP longwave total sky heating rate (spectral)
-  units = K s-1
-  dimensions = (horizontal_dimension,vertical_dimension,number_of_lw_spectral_points_rrtmgp)
-  type = real
-  kind = kind_phys
-  optional = T
 [ipsdsw0]
   standard_name = initial_permutation_seed_sw
   long_name = initial seed for McICA SW 
