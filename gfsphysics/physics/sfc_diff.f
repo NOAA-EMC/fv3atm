@@ -141,11 +141,15 @@
             z0max = max(z0max, zmin)
 
 !           czilc = 10.0 ** (- (0.40/0.07) * z0) ! fei's canopy height dependance of czil
-            czilc = 0.8d0
+!           czilc = 0.8d0
 
-            tem1  = one - sigmaf(i)
-            ztmax = z0max*exp( - tem1*tem1
-     &                     * czilc*ca*sqrt(ustar(i,1)*(0.01d0/1.5d-05)))
+!           tem1  = one - sigmaf(i)
+!           ztmax = z0max*exp( - tem1*tem1
+!    &                     * czilc*ca*sqrt(ustar(i,1)*(0.01d0/1.5d-05)))
+!
+            czilc = 10.0d0 ** (- 4. * z0max) ! Trier et al. (2011, WAF)
+            ztmax = z0max * exp( - czilc * ca
+     &            * 258.2d0 * sqrt(ustar(i,1)*z0max) )
 
 
 ! mg, sfc-perts: add surface perturbations to ztmax/z0max ratio over land
@@ -181,11 +185,16 @@
 
 !           czilc = 10.0 ** (- (0.40/0.07) * z0) ! fei's canopy height
 !           dependance of czil
-            czilc = 0.8d0
+!           czilc = 0.8d0
 
-            tem1 = one - sigmaf(i)
-            ztmax = z0max*exp( - tem1*tem1
-     &                     * czilc*ca*sqrt(ustar(i,2)*(0.01d0/1.5d-05)))
+!           tem1 = one - sigmaf(i)
+!           ztmax = z0max*exp( - tem1*tem1
+!    &                     * czilc*ca*sqrt(ustar(i,2)*(0.01d0/1.5d-05)))
+!
+            czilc = 10.0d0 ** (- 4.0d0 * z0max) ! Trier et al. (2011, WAF)
+            ztmax = z0max * exp( - czilc * ca
+     &            * 258.2d0 * sqrt(ustar(i,2)*z0max) )
+!
             ztmax = max(ztmax, zmin)
 !
             call stability
