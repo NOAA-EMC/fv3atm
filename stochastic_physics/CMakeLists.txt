@@ -17,8 +17,6 @@ endif()
 add_library(
     stochastic_physics
 
-    ../../stochastic_physics/cellular_automata.f90
-    ../../stochastic_physics/update_ca.f90
     ../../stochastic_physics/plumes.f90
 
     ../../stochastic_physics/stochy_gg_def.f
@@ -49,6 +47,9 @@ add_library(
     ../../stochastic_physics/stochy_data_mod.F90
     ../../stochastic_physics/get_stochy_pattern.F90
     ../../stochastic_physics/initialize_spectral_mod.F90
+    ../../stochastic_physics/cellular_automata_global.F90
+    ../../stochastic_physics/cellular_automata_sgs.F90
+    ../../stochastic_physics/update_ca.F90
 )
 
 if(CCPP)
