@@ -1430,11 +1430,21 @@ module module_physics_driver
              adjnirbmd, adjnirdfd, adjvisbmd, adjvisdfd                     &
            )
 
-!
-! save temp change due to radiation - need for sttp stochastic physics
-!---------------------------------------------------------------------
       endif
 !
+! save temp change due to radiation - need for sppt stochastic physics
+!---------------------------------------------------------------------
+!
+
+      if (Model%do_sppt) then
+         if (Model%pert_radtend) then
+!--- cloudy radiation heating rate
+             Tbd%dtdtr(1:im,:) = dtdtc(1:im,:)*dtf
+         else
+             Tbd%dtdtr(1:im,:) = dtdt(1:im,:)*dtf
+         endif
+      endif
+
       if (Model%lsidea) then                       !idea jw
         dtdt(:,:) = zero
       endif
@@ -5234,8 +5244,6 @@ module module_physics_driver
 !       endif
 
       if (Model%do_sppt) then
-!--- radiation heating rate
-        Tbd%dtdtr(1:im,:) = Tbd%dtdtr(1:im,:) + dtdtc(1:im,:)*dtf
         do i = 1, im
           if (t850(i) > 273.16) then
 !--- change in change in rain precip

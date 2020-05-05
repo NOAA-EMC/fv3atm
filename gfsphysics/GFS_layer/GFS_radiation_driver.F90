@@ -329,7 +329,7 @@
      &                                     aer_init, aer_update,        &
      &                                     NSPC1
       use module_radiation_surface,  only: NF_ALBD, sfc_init, setalb,   &
-     &                                     setemis
+     &                                     setemis,ppfbet
       use module_radiation_clouds,   only: NF_CLDS, cld_init,           &
      &                                     progcld1, progcld2,          &
      &                                     progcld3, progcld4,          &
@@ -1240,11 +1240,15 @@
       real(kind=kind_phys), dimension(size(Grid%xlon,1),Model%levr+ltp,min(4,Model%ncnd)) :: ccnd
 
       !  mg, sfc perts
-      real(kind=kind_phys), dimension(size(Grid%xlon,1)) :: alb1d
+      real(kind=kind_phys), dimension(size(Grid%xlon,1)) :: alb1d,cldp1d
       real(kind=kind_phys) :: cdfz
 
       real(kind=kind_phys), dimension(size(Grid%xlon,1),Model%levr+ltp) :: cldtausw
       real(kind=kind_phys), dimension(size(Grid%xlon,1),Model%levr+ltp) :: cldtaulw
+
+      real (kind=kind_phys) :: alpha,beta,m,s,cldtmp,tmp_wt
+      real(kind=kind_phys), dimension(size(Grid%xlon,1),Model%levr+ltp) :: cldcovp
+      integer :: iflag
 
       !--- TYPED VARIABLES
       type (cmpfsw_type),    dimension(size(Grid%xlon,1)) :: scmpsw
@@ -1788,10 +1792,42 @@
                            cldcov, dz, delp, im, lmk, lmp,               &
                            clouds, cldsa, mtopa, mbota, de_lgth)          !  ---  outputs
           else
+           if (Model%pert_clds) then
+               cldp1d(:) = 0.
+               do i=1,im
+                  tmp_wt= -1*log( ( 2.0 / ( Coupling%sppt_wts(i,38) ) ) - 1 )
+                  call cdfnor(tmp_wt,cdfz)
+                  cldp1d(i) = cdfz
+                  !Diag%shum_wts(i,1)=cldp1d(i) ! debug diagnostic
+               enddo
+               do i = 1, IM
+                  do k = 1, LM
+                     ! compute beta distribution parameters
+                     m = cldcov(i,k+kd)
+                     if (m<0.99) then
+                        s = Model%sppt_amp*m*(1.-m)
+                        alpha = m*m*(1.-m)/(s*s)-m
+                        beta  = alpha*(1.-m)/m
+            ! compute beta distribution value corresponding
+            ! to the given percentile albPpert to use as new albedo
+                        call ppfbet(cldp1d(i),alpha,beta,iflag,cldtmp)
+                        cldcovp(i,k+kd) = cldtmp
+                        !Diag%skebu_wts(i,k)=cldtmp        !debug diagnostic
+                        !Diag%skebv_wts(i,k)=cldcov(i,k+kd) !debug diagnostic
+                     else
+                        cldcovp(i,k+kd) = m
+                        !Diag%skebu_wts(i,k)=m
+                        !Coupling%skebv_wts(i,k)=cldcov(i,k+kd) !debug diagnostic
+                     endif
+                  enddo     ! end_do_i_loop
+               enddo     ! end_do_k_loop
+            else
+               cldcovp=cldcov
+            endif
 
             call progclduni (plyr, plvl, tlyr, tvly, ccnd, ncndl,        &!  ---  inputs
                             Grid%xlat, Grid%xlon, Sfcprop%slmsk, dz,delp,&
-                            IM, LMK, LMP, cldcov,                        &
+                            IM, LMK, LMP, cldcovp,                       &
                             effrl, effri, effrr, effrs, Model%effr_in,   &
                             clouds, cldsa, mtopa, mbota, de_lgth)         !  ---  outputs
 !           call progcld4o (plyr, plvl, tlyr, tvly, qlyr, qstl, rhly,       &    !  ---  inputs

@@ -120,7 +120,7 @@
 !> global surface emissivity contrl flag set up in 'sfc_init'
       integer :: iemslw = 0
 !
-      public  sfc_init, setalb, setemis
+      public  sfc_init, setalb, setemis, ppfbet
 
 ! =================
       contains

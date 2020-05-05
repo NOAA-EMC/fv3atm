@@ -305,7 +305,8 @@ subroutine update_atmos_radiation_physics (Atmos)
 
 !--- call stochastic physics pattern generation / cellular automata
     if (IPD_Control%do_sppt .OR. IPD_Control%do_shum .OR. IPD_Control%do_skeb .OR. IPD_Control%do_sfcperts) then
-       call run_stochastic_physics(IPD_Control, IPD_Data(:)%Grid, IPD_Data(:)%Coupling, nthrds)
+       print*,'in atmos_model=',SIZE(IPD_Data(1)%Grid%xlat)
+       call run_stochastic_physics(IPD_Control, IPD_Data(:)%Grid, IPD_Data(:)%Coupling)
     end if
 
     if(IPD_Control%do_ca)then
@@ -622,8 +623,10 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
 
    if (IPD_Control%do_sppt .OR. IPD_Control%do_shum .OR. IPD_Control%do_skeb .OR. IPD_Control%do_sfcperts) then
       ! Initialize stochastic physics
-      call init_stochastic_physics(IPD_Control, Init_parm, mpp_npes(), nthrds)
+      call init_stochastic_physics(IPD_Control, Init_parm, IPD_Data(:)%Grid)
       if(IPD_Control%me == IPD_Control%master) print *,'do_skeb=',IPD_Control%do_skeb
+      if(IPD_Control%me == IPD_Control%master) print *,'do_sppt=',IPD_Control%do_sppt
+      if(IPD_Control%me == IPD_Control%master) print *,'do_shum=',IPD_Control%do_shum
    end if
 
 #ifdef CCPP

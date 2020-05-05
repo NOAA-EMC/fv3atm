@@ -607,14 +607,14 @@ module GFS_driver
     endif
 
 ! kludge for output
-    if (Model%do_skeb) then
-      do nb = 1,nblks
-        do k=1,Model%levs
-          Diag(nb)%skebu_wts(:,k) = Coupling(nb)%skebu_wts(:,Model%levs-k+1)
-          Diag(nb)%skebv_wts(:,k) = Coupling(nb)%skebv_wts(:,Model%levs-k+1)
-        enddo
-      enddo
-    endif
+    !if (Model%do_skeb) then
+    !  do nb = 1,nblks
+    !    do k=1,Model%levs
+    !      !Diag(nb)%skebu_wts(:,k) = Coupling(nb)%skebu_wts(:,Model%levs-k+1)
+    !      !Diag(nb)%skebv_wts(:,k) = Coupling(nb)%skebv_wts(:,Model%levs-k+1)
+    !    enddo
+    !  enddo
+    !endif
     !if (Model%do_sppt) then
     !  do nb = 1,nblks
     !    do k=1,Model%levs
@@ -622,13 +622,13 @@ module GFS_driver
     !    enddo
     !  enddo
     !endif
-    if (Model%do_shum) then
-      do nb = 1,nblks
-        do k=1,Model%levs
-          Diag(nb)%shum_wts(:,k)=Coupling(nb)%shum_wts(:,Model%levs-k+1)
-        enddo
-      enddo
-    endif
+    !if (Model%do_shum) then
+    !  do nb = 1,nblks
+    !    do k=1,Model%levs
+    !      Diag(nb)%shum_wts(:,k)=Coupling(nb)%shum_wts(:,Model%levs-k+1)
+    !    enddo
+    !  enddo
+    !endif
 
   end subroutine GFS_time_vary_step
 
@@ -682,7 +682,7 @@ module GFS_driver
     type(GFS_diag_type),      intent(inout) :: Diag
 #endif
     !--- local variables
-    integer :: k, i
+    integer :: k, i, l
     real(kind=kind_phys) :: upert, vpert, tpert, qpert, qnew,sppt_vwt
     !real(kind=kind_phys),dimension(size(Statein%tgrs,1),size(Statein%tgrs,2)) :: tconvtend, &
     !                     qconvtend,uconvtend,vconvtend
@@ -710,7 +710,7 @@ module GFS_driver
            if (Model%use_zmtnblck)then
               Coupling%sppt_wts(i,k)=(Coupling%sppt_wts(i,k)-1)*sppt_vwt+1.0
            endif
-           Diag%sppt_wts(i,Model%levs-k+1)=Coupling%sppt_wts(i,k)
+           Diag%sppt_wts(i,k)=Coupling%sppt_wts(i,k)
 
            
           ! if(Model%isppt_deep)then
@@ -744,6 +744,16 @@ module GFS_driver
               Stateout%gq0(i,k,1) = qnew
               Stateout%gt0(i,k)   = Statein%tgrs(i,k) + tpert + Tbd%dtdtr(i,k)
            endif
+           if (Model%pert_mp) then
+              do l=1,Model%ncld
+                 qpert = (Stateout%gq0(i,k,l+1) - Statein%qgrs(i,k,l+1)) * Coupling%sppt_wts(i,k)
+                 qnew = Statein%qgrs(i,k,l+1)+qpert
+                 Stateout%gq0(i,k,l+1) = qnew
+                 if (qnew < 0.0) then
+                     Stateout%gq0(i,k,l+1) = 0.0
+                 endif
+              enddo
+           endif
          enddo
        enddo
 
@@ -776,6 +786,10 @@ module GFS_driver
         if (Model%cplflx) then
            Coupling%rain_cpl(:) = Coupling%rain_cpl(:) + (Coupling%sppt_wts(:,15) - 1.0)*Tbd%drain_cpl(:)
            Coupling%snow_cpl(:) = Coupling%snow_cpl(:) + (Coupling%sppt_wts(:,15) - 1.0)*Tbd%dsnow_cpl(:)
+           do i = 1,size(Statein%tgrs,1)
+              if (Coupling%rain_cpl(i) .LT. 0.0) Coupling%rain_cpl(i)=0.0
+              if (Coupling%snow_cpl(i) .LT. 0.0) Coupling%snow_cpl(i)=0.0
+           enddo
         endif
 
        !endif 
@@ -783,11 +797,17 @@ module GFS_driver
      endif
 
      if (Model%do_shum) then
+       Diag%shum_wts(:,:)=Coupling%shum_wts(:,:)
+       Stateout%gq0(:,:,1) = Stateout%gq0(:,:,1)*(1.0 + Coupling%shum_wts(:,:))
        Stateout%gq0(:,:,1) = Stateout%gq0(:,:,1)*(1.0 + Coupling%shum_wts(:,:))
      endif
 
      if (Model%do_skeb) then
        do k = 1,size(Statein%tgrs,2)
+          do i = 1,size(Statein%tgrs,1)
+             Diag%skebu_wts(i,k)=Coupling%skebu_wts(i,k)
+             Diag%skebv_wts(i,k)=Coupling%skebv_wts(i,k)
+          enddo
            Stateout%gu0(:,k) = Stateout%gu0(:,k)+Coupling%skebu_wts(:,k)*(Statein%diss_est(:,k))
            Stateout%gv0(:,k) = Stateout%gv0(:,k)+Coupling%skebv_wts(:,k)*(Statein%diss_est(:,k))
        !    print*,'in do skeb',Coupling%skebu_wts(1,k),Statein%diss_est(1,k)

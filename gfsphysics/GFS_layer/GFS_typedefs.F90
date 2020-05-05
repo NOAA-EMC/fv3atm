@@ -929,6 +929,9 @@ module GFS_typedefs
     logical              :: use_zmtnblck
     logical              :: do_shum
     logical              :: do_skeb
+    logical              :: pert_clds
+    logical              :: pert_mp  
+    logical              :: pert_radtend
     integer              :: skeb_npass
     logical              :: do_sfcperts
     integer              :: nsfcpert=6
@@ -938,6 +941,7 @@ module GFS_typedefs
     real(kind=kind_phys) :: pertlai(5)         ! mg, sfc-perts
     real(kind=kind_phys) :: pertalb(5)         ! mg, sfc-perts
     real(kind=kind_phys) :: pertvegf(5)        ! mg, sfc-perts
+    real(kind=kind_phys) :: sppt_amp           ! pjp cloud perturbations
 !--- tracer handling
     character(len=32), pointer :: tracer_names(:) !< array of initialized tracers from dynamic core
     integer              :: ntrac           !< number of tracers
@@ -2524,6 +2528,7 @@ module GFS_typedefs
     endif
 
     !--- stochastic shum option
+    if (Model%me.EQ.0) print*,'allocating shum_wts',Model%do_shum
     if (Model%do_shum) then
       allocate (Coupling%shum_wts  (IM,Model%levs))
       Coupling%shum_wts = clear_val
@@ -5025,6 +5030,7 @@ module GFS_typedefs
     allocate (Diag%skebv_wts(IM,Model%levs))
     allocate (Diag%sppt_wts(IM,Model%levs))
     allocate (Diag%shum_wts(IM,Model%levs))
+    if (Model%me.EQ.0) print*,'diag allocating shum_wts'
     allocate (Diag%zmtnblck(IM))    
 
     allocate (Diag%ca_out  (IM))
