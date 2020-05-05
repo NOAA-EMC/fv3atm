@@ -8,9 +8,6 @@ endif()
 
 if(CCPP)
   add_definitions(-DCCPP)
-  if(STATIC)
-    add_definitions(-DSTATIC)
-  endif()
 endif()
 
 add_subdirectory(cpl)
@@ -113,6 +110,7 @@ add_library(
 
 if(CCPP)
 target_include_directories(fv3cap PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/ccpp/driver/mod)
+add_dependencies(fv3cap ccppdriver ccppphys)
 endif()
 target_include_directories(fv3cap PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/stochastic_physics)
 target_compile_definitions(fv3cap PRIVATE -DESMF_VERSION_MAJOR=${ESMF_VERSION_MAJOR})
