@@ -4,9 +4,13 @@
 	branch = dev/emc
 [submodule "ccpp/framework"]
 	path = ccpp/framework
-	url = https://github.com/NCAR/ccpp-framework
-	branch = master
+	#url = https://github.com/NCAR/ccpp-framework
+	#branch = master
+	url = https://github.com/climbfuji/ccpp-framework
+	branch = bugfixes_from_public_release
 [submodule "ccpp/physics"]
 	path = ccpp/physics
-	url = https://github.com/NCAR/ccpp-physics
-	branch = master
+	#url = https://github.com/NCAR/ccpp-physics
+	#branch = master
+	url = https://github.com/climbfuji/ccpp-physics
+	branch = bugfixes_from_public_release
