@@ -412,6 +412,7 @@
       contains
 ! =================
 
+!## CCPP ## This is now a private subroutine in GFS_rrtmg_setup.F90/radinit.
 !> This subroutine initialize a model's radiation process through
 !! calling of specific initialization subprograms that directly
 !! related to radiation calculations. This subroutine needs to be
@@ -652,6 +653,7 @@
 !-----------------------------------
 !> @}
 
+!## CCPP ## This is now a private subroutine in GFS_rrtmg_setup.F90/radupdate.
 !> This subroutine checks and updates time sensitive data used by
 !! radiation computations. This subroutine needs to be placed inside
 !! the time advancement loop but outside of the horizontal grid loop.
@@ -1022,16 +1024,6 @@
 
       implicit none
 
-! DH* gfortran correctly throws an error if the intent() declarations
-! for arguments differ between the actual routine (here) and the dummy
-! interface routine (IPD_func0d_proc in IPD_typedefs.F90):
-!
-! Error: Interface mismatch in procedure pointer assignment at (1): INTENT mismatch in argument 'control'
-!
-! Since IPD_func0d_proc declares all arguments as intent(inout), we
-! need to do the same here - however, this way we are loosing the
-! valuable information on the actual intent to this routine. *DH
-#ifdef __GFORTRAN__
       type(GFS_control_type),         intent(inout) :: Model
       type(GFS_statein_type),         intent(inout) :: Statein
       type(GFS_stateout_type),        intent(inout) :: Stateout
@@ -1042,18 +1034,6 @@
       type(GFS_cldprop_type),         intent(inout) :: Cldprop
       type(GFS_radtend_type),         intent(inout) :: Radtend
       type(GFS_diag_type),            intent(inout) :: Diag
-#else
-      type(GFS_control_type),         intent(in)    :: Model
-      type(GFS_statein_type),         intent(in)    :: Statein
-      type(GFS_stateout_type),        intent(inout) :: Stateout
-      type(GFS_sfcprop_type),         intent(in)    :: Sfcprop
-      type(GFS_coupling_type),        intent(inout) :: Coupling
-      type(GFS_grid_type),            intent(in)    :: Grid
-      type(GFS_tbd_type),             intent(in)    :: Tbd
-      type(GFS_cldprop_type),         intent(in)    :: Cldprop
-      type(GFS_radtend_type),         intent(inout) :: Radtend
-      type(GFS_diag_type),            intent(inout) :: Diag
-#endif
 
 ! =================   subprogram documentation block   ================ !
 !                                                                       !
@@ -1260,7 +1240,8 @@
 !
 
 !--- only call GFS_radiation_driver at radiation time step
-
+!## CCPP ##* GFS_rrtmg_pre.F90/GFS_rrtmg_pre_run for code required to run before 
+! SW and LW.
       if (.not. (Model%lsswr .or. Model%lslwr )) return
 
 !--- set commonly used integers
@@ -1548,9 +1529,10 @@
 !         enddo
         enddo
       endif                              ! end_if_ivflip
+!*## CCPP ##
 
 !>  - Check for daytime points for SW radiation.
-
+!## CCPP ##* rrtmg_sw_pre.F90/rrtmg_sw_pre_run
       nday = 0
       do i = 1, IM
         if (Radtend%coszen(i) >= 0.0001) then
@@ -1558,14 +1540,16 @@
           idxday(nday) = i
         endif
       enddo
+!*## CCPP ##
 
 !>  - Call module_radiation_aerosols::setaer(),to setup aerosols
 !! property profile for radiation.
 
 !check  print *,' in grrad : calling setaer '
-
+!## CCPP ##* GFS_rrtmg_pre.F90/GFS_rrtmg_pre_run
       call setaer (plvl, plyr, prslk1, tvly, rhly, Sfcprop%slmsk,  &  !  ---  inputs
-                   tracer1, Grid%xlon, Grid%xlat, IM, LMK, LMP,    &
+                   tracer1, Tbd%aer_nm,                               &
+                   Grid%xlon, Grid%xlat, IM, LMK, LMP,             &
                    Model%lsswr,Model%lslwr,                        &
                    faersw,faerlw,aerodp)                              !  ---  outputs
 
@@ -1879,9 +1863,9 @@
         endif
       endif
 ! mg, sfc-perts
+!*## CCPP ##
 
-
-
+!## CCPP ##* rrtmg_sw_pre.F90/rrtmg_sw_pre_run; Note: includes check for lsswr in scheme
 !> -# Start SW radiation calculations
       if (Model%lsswr) then
 
@@ -1899,7 +1883,10 @@
 
 !> -# Approximate mean surface albedo from vis- and nir-  diffuse values.
         Radtend%sfalb(:) = max(0.01, 0.5 * (sfcalb(:,2) + sfcalb(:,4)))
+!*## CCPP ##
 
+!## CCPP ##* radsw_main.f/rrtmg_sw_run; Note: The checks for nday and lsswr are included in the scheme (returns if 
+! nday <= 0 or lsswr == F). Optional arguments are used to handle the different calls below.
         if (nday > 0) then
 
 !>  - Call module_radsw_main::swrad(), to compute SW heating rates and
@@ -1907,30 +1894,32 @@
 !     print *,' in grrad : calling swrad'
 
           if (Model%swhtr) then
-            call swrad (plyr, plvl, tlyr, tlvl, qlyr, olyr,     &      !  ---  inputs
+            call swrad (plyr, plvl, tlyr, tlvl, qlyr, olyr,     &      !  --- inputs
                         gasvmr, clouds, Tbd%icsdsw, faersw,     &
                         sfcalb, dz, delp, de_lgth,              &
                                 Radtend%coszen, Model%solcon,   &
                         nday, idxday, im, lmk, lmp, Model%lprnt,&
-                        htswc, Diag%topfsw, Radtend%sfcfsw,     &      !  ---  outputs
+                        htswc, Diag%topfsw, Radtend%sfcfsw,     &      !  --- outputs
                         cldtausw,                               &
                         hsw0=htsw0, fdncmp=scmpsw)                     ! ---  optional
           else
-            call swrad (plyr, plvl, tlyr, tlvl, qlyr, olyr,     &      !  ---  inputs 
+            call swrad (plyr, plvl, tlyr, tlvl, qlyr, olyr,     &      !  --- inputs
                         gasvmr, clouds, Tbd%icsdsw, faersw,     &
                         sfcalb, dz, delp, de_lgth,              &
                                 Radtend%coszen, Model%solcon,   &
                         nday, idxday, IM, LMK, LMP, Model%lprnt,&
-                        htswc, Diag%topfsw, Radtend%sfcfsw,     &      !  ---  outputs 
+                        htswc, Diag%topfsw, Radtend%sfcfsw,     &      !  --- outputs
                         cldtausw,                               &
-                        FDNCMP=scmpsw)                                 ! ---  optional 
+                        FDNCMP=scmpsw)                                 ! ---  optional
           endif
+!*## CCPP ##
 
+!## CCPP ##* rrtmg_sw_post.F90/rrtmg_sw_post_run
           do k = 1, LM
             k1 = k + kd
             Radtend%htrsw(1:im,k) = htswc(1:im,k1)
           enddo
-!     We are assuming that radiative tendencies are from bottom to top 
+!     We are assuming that radiative tendencies are from bottom to top
 ! --- repopulate the points above levr i.e. LM
           if (lm < levs) then
             do k = lm,levs
@@ -1946,7 +1935,7 @@
 ! --- repopulate the points above levr i.e. LM
              if (lm < levs) then
                do k = lm,levs
-                 Radtend%swhc(1:im,k) = Radtend%swhc(1:im,LM) 
+                 Radtend%swhc(1:im,k) = Radtend%swhc(1:im,LM)
                enddo
              endif
           endif
@@ -2000,7 +1989,9 @@
         enddo
 
       endif                                ! end_if_lsswr
+!*## CCPP ##
 
+!## CCPP ## rrtmg_lw_pre.F90/rrtmg_lw_pre_run; Note: scheme includes check for lslwr.
 !> -# Start LW radiation calculations
       if (Model%lslwr) then
 
@@ -2009,13 +2000,16 @@
 
         call setemis (Grid%xlon, Grid%xlat, Sfcprop%slmsk,         &        !  ---  inputs
                       Sfcprop%snowd, Sfcprop%sncovr, Sfcprop%zorl, &
-                      tsfg, tsfa, Sfcprop%hprime(:,1), IM,         & 
+                      tsfg, tsfa, Sfcprop%hprime(:,1), IM,         &
                       Radtend%semis)                                              !  ---  outputs
+!*## CCPP ##
 
 !>  - Call module_radlw_main::lwrad(), to compute LW heating rates and
 !!    fluxes.
 !     print *,' in grrad : calling lwrad'
 
+!## CCPP ##* radlw_main.f/rrtmg_lw_run; Note: The check lslwr is included in the scheme (returns if 
+! lslwr == F). Optional arguments are used to handle the different calls below.
         if (Model%lwhtr) then
           call lwrad (plyr, plvl, tlyr, tlvl, qlyr, olyr, gasvmr,  &        !  ---  inputs
                       clouds, Tbd%icsdlw, faerlw, Radtend%semis,   &
@@ -2030,7 +2024,9 @@
                             IM, LMK, LMP, Model%lprnt,             &
                       htlwc, Diag%topflw, Radtend%sfcflw, cldtaulw)         !  ---  outputs
         endif
+!*## CCPP ##
 
+!## CCPP ## rrtmg_lw_post.F90/rrtmg_lw_post_run; Note: includes check for lslwr.
 !> -# Save calculation results
 !>  - Save surface air temp for diurnal adjustment at model t-steps
         Radtend%tsflw (:) = tsfa(:)
@@ -2063,7 +2059,9 @@
         Coupling%sfcdlw(:) = Radtend%sfcflw(:)%dnfxc
 
       endif                                ! end_if_lslwr
+!*## CCPP ##
 
+!## CCPP ## GFS_rrtmg_post.F90/GFS_rrtmg_post_run
 !>  - For time averaged output quantities (including total-sky and
 !!    clear-sky SW and LW fluxes at TOA and surface; conventional
 !!    3-domain cloud amount, cloud top and base pressure, and cloud top
@@ -2075,12 +2073,18 @@
       if (Model%lssav) then
         if (Model%lsswr) then
           do i=1,im
-            Diag%fluxr(i,34) = Diag%fluxr(i,34) + Model%fhswr*aerodp(i,1)  ! total aod at 550nm
-            Diag%fluxr(i,35) = Diag%fluxr(i,35) + Model%fhswr*aerodp(i,2)  ! DU aod at 550nm
-            Diag%fluxr(i,36) = Diag%fluxr(i,36) + Model%fhswr*aerodp(i,3)  ! BC aod at 550nm
-            Diag%fluxr(i,37) = Diag%fluxr(i,37) + Model%fhswr*aerodp(i,4)  ! OC aod at 550nm
-            Diag%fluxr(i,38) = Diag%fluxr(i,38) + Model%fhswr*aerodp(i,5)  ! SU aod at 550nm
-            Diag%fluxr(i,39) = Diag%fluxr(i,39) + Model%fhswr*aerodp(i,6)  ! SS aod at 550nm
+!            Diag%fluxr(i,34) = Diag%fluxr(i,34) + Model%fhswr*aerodp(i,1)  ! total aod at 550nm
+!            Diag%fluxr(i,35) = Diag%fluxr(i,35) + Model%fhswr*aerodp(i,2)  ! DU aod at 550nm
+!            Diag%fluxr(i,36) = Diag%fluxr(i,36) + Model%fhswr*aerodp(i,3)  ! BC aod at 550nm
+!            Diag%fluxr(i,37) = Diag%fluxr(i,37) + Model%fhswr*aerodp(i,4)  ! OC aod at 550nm
+!            Diag%fluxr(i,38) = Diag%fluxr(i,38) + Model%fhswr*aerodp(i,5)  ! SU aod at 550nm
+!            Diag%fluxr(i,39) = Diag%fluxr(i,39) + Model%fhswr*aerodp(i,6)  ! SS aod at 550nm
+            Diag%fluxr(i,34) = aerodp(i,1)  ! total aod at 550nm
+            Diag%fluxr(i,35) = aerodp(i,2)  ! DU aod at 550nm
+            Diag%fluxr(i,36) = aerodp(i,3)  ! BC aod at 550nm
+            Diag%fluxr(i,37) = aerodp(i,4)  ! OC aod at 550nm
+            Diag%fluxr(i,38) = aerodp(i,5)  ! SU aod at 550nm
+            Diag%fluxr(i,39) = aerodp(i,6)  ! SS aod at 550nm
           enddo
         endif
 
@@ -2152,22 +2156,44 @@
               Diag%fluxr(i,11-j) = Diag%fluxr(i,11-j) + tem0d * Statein%prsi(i,itop+kt)
               Diag%fluxr(i,14-j) = Diag%fluxr(i,14-j) + tem0d * Statein%prsi(i,ibtc+kb)
               Diag%fluxr(i,17-j) = Diag%fluxr(i,17-j) + tem0d * Statein%tgrs(i,itop)
-
-!       Anning adds optical depth and emissivity output
-              tem1 = 0.
-              tem2 = 0.
-              do k=ibtc,itop
-                tem1 = tem1 + cldtausw(i,k)      ! approx .55 mu channel
-                tem2 = tem2 + cldtaulw(i,k)      ! approx 10. mu channel
-              enddo
-              Diag%fluxr(i,43-j) = Diag%fluxr(i,43-j) + tem0d * tem1
-              Diag%fluxr(i,46-j) = Diag%fluxr(i,46-j) + tem0d * (1.0-exp(-tem2))
             enddo
           enddo
+
+!       Anning adds optical depth and emissivity output
+          if (Model%lsswr .and. (nday > 0)) then
+            do j = 1, 3
+              do i = 1, IM
+                tem0d = raddt * cldsa(i,j)
+                itop  = mtopa(i,j) - kd
+                ibtc  = mbota(i,j) - kd
+                tem1 = 0.
+                do k=ibtc,itop
+                  tem1 = tem1 + cldtausw(i,k)      ! approx .55 um channel
+                enddo
+                Diag%fluxr(i,43-j) = Diag%fluxr(i,43-j) + tem0d * tem1
+              enddo
+            enddo
+          endif
+
+          if (Model%lslwr) then
+            do j = 1, 3
+              do i = 1, IM
+                tem0d = raddt * cldsa(i,j)
+                itop  = mtopa(i,j) - kd
+                ibtc  = mbota(i,j) - kd
+                tem2 = 0.
+                do k=ibtc,itop
+                  tem2 = tem2 + cldtaulw(i,k)      ! approx 10. um channel
+                enddo
+                Diag%fluxr(i,46-j) = Diag%fluxr(i,46-j) + tem0d * (1.0-exp(-tem2))
+              enddo
+            enddo
+          endif
+
         endif
 
       endif                                ! end_if_lssav
-!
+!*## CCPP ##
       return
 !........................................
       end subroutine GFS_radiation_driver

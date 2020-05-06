@@ -10,8 +10,8 @@
       implicit none
        integer :: nx, ny
        real    :: lon(nx), lat(ny)
-       real    :: rlon(nx), rlat(ny) , cosv(ny), tanlat(ny)  
-       real    :: rlatc(ny-1), brcos(ny), brcos2(ny)              
+       real    :: rlon(nx), rlat(ny) , cosv(ny), tanlat(ny)
+       real    :: rlatc(ny-1), brcos(ny), brcos2(ny)
        real    :: earth_r, ra1, ra2, dx, dy, dlat
        real    :: dlam1(ny), dlam2(ny),  divJp(ny), divJm(ny)
        integer :: j
@@ -27,7 +27,7 @@
       rlat   = lat*deg_to_rad
       rlon   = lon*deg_to_rad
       tanlat = atan(rlat)
-      cosv   =  cos(rlat)     
+      cosv   =  cos(rlat)
       dy     = rlat(2)-rlat(1)
       dx     = rlon(2)-rlon(1)
 !
@@ -37,17 +37,17 @@
 !
       do j=2, ny-1
         brcos(j) = 1.0 / cos(rlat(j))*ra1
-      enddo       
-       
+      enddo
+
       brcos(1)  = brcos(2)
       brcos(ny) = brcos(ny-1)
       brcos2    = brcos*brcos
 !
       dlam1 = brcos  / (dx+dx)
       dlam2 = brcos2 / (dx*dx)
-  
+
       dlat = ra1 / (dy+dy)
-  
+
       divJp = dlat*cosv
       divJM = dlat*cosv
 !
@@ -62,12 +62,12 @@
 !
       return
       end SUBROUTINE  subs_diag_geo
-!      
+!
       subroutine get_xy_pt(V, Vx, Vy, nx, ny, dlam1, dlat)
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ! compute for each Vert-column: grad(V)
 ! periodic in X and central diff ...
-!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
       implicit none
       integer :: nx, ny
       real    :: V(nx, ny), dlam1(ny), dlat
@@ -438,7 +438,7 @@
       print *, '   get_spectra_tau_okwgw '   
       do i=1, im
         k = klow
-        klev(i) = k	     
+        klev(i) = k
         dmax = abs(trig_okw(i,k))
         kex = 0
         if (dmax >= tlim_okw) kex = kex+1 
@@ -448,16 +448,16 @@
           if ( dtot >  dmax) then
             klev(i) = k
             dmax =  dtot
-          endif  
+          endif
         enddo
-!	  
+!
         if (dmax >= tlim_okw) then
           nf_src = nf_src + 1
           if_src(i) = 1          
           taub(i) = tau_min*float(kex)          !* precip(i)/precip_max*coslat(i)
         endif 
 
-      enddo 
+      enddo
       print *, '   get_spectra_tau_okwgw '           
       end subroutine get_spectra_tau_okw   
 !
@@ -468,16 +468,16 @@
 ! GEOS-5 & MERRA-2 lat-dependent GW-source function  tau(z=Zlaunch) =rho*<u'w'>
 !=================
       implicit none
-      integer :: im     
+      integer :: im
       real    :: tau_amp, xlatdeg(im), tau_gw(im)
       real    :: latdeg, flat_gw, tem
       integer :: i
-      
+
 !
 ! if-lat
 !
       do i=1, im
-        latdeg = abs(xlatdeg(i))    
+        latdeg = abs(xlatdeg(i))
         if (latdeg < 15.3) then
           tem = (latdeg-3.0) / 8.0
           flat_gw = 0.75 * exp(-tem * tem)
@@ -491,22 +491,22 @@
           tem = (latdeg-60.0) / 70.0
           flat_gw =  0.50 * exp(- tem * tem)
         endif
-        tau_gw(i) = tau_amp*flat_gw 
+        tau_gw(i) = tau_amp*flat_gw
       enddo
-!      
+!
       end subroutine slat_geos5_tamp
-      
+ 
       subroutine slat_geos5(im, xlatdeg, tau_gw)
 !=================
 ! GEOS-5 & MERRA-2 lat-dependent GW-source function  tau(z=Zlaunch) =rho*<u'w'>
 !=================
       implicit none
-      integer :: im     
-      real  :: xlatdeg(im)          
+      integer :: im
+      real  :: xlatdeg(im)
       real  :: tau_gw(im)
       real  :: latdeg
       real, parameter  :: tau_amp = 100.e-3
-      real             :: trop_gw,  flat_gw 
+      real             :: trop_gw,  flat_gw
       integer :: i
 !
 ! if-lat
@@ -532,7 +532,7 @@
       end if
       tau_gw(i) = tau_amp*flat_gw 
       enddo
-!      
+!
       end subroutine slat_geos5
       subroutine init_nazdir(naz,  xaz,  yaz)
       use ugwp_common , only : pi2
@@ -542,7 +542,7 @@
       integer :: idir
       real    :: phic, drad
       drad  = pi2/float(naz)
-      if (naz.ne.4) then     
+      if (naz.ne.4) then
         do idir =1, naz
          Phic = drad*(float(idir)-1.0)
          xaz(idir) = cos(Phic)
@@ -552,11 +552,11 @@
 !                         if (naz.eq.4) then
           xaz(1) = 1.0     !E
           yaz(1) = 0.0
-          xaz(2) = 0.0     
+          xaz(2) = 0.0
           yaz(2) = 1.0     !N
           xaz(3) =-1.0     !W
           yaz(3) = 0.0
           xaz(4) = 0.0
           yaz(4) =-1.0     !S
-      endif      
+      endif
       end  subroutine init_nazdir
