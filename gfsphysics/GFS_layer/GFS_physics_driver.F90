@@ -2135,7 +2135,7 @@ module module_physics_driver
 !*## CCPP ##
         Diag%dlwsfci(i) = adjsfcdlw(i)
         Diag%ulwsfci(i) = adjsfculw(i)
-!## CCPP ##* GFS_surface_composites.F90/GFS_surface_composites_inter_run
+!## CCPP ##* dcyc2.f/dcyc2t3_post_run
         Diag%uswsfci(i) = adjsfcdsw(i) - adjsfcnsw(i)
 !*## CCPP ##
         Diag%dswsfci(i) = adjsfcdsw(i)
