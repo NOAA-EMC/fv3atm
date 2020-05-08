@@ -254,6 +254,7 @@ module module_write_netcdf
 
     ! write grid_xt, grid_yt attributes
     if (trim(output_grid) == 'gaussian_grid' .or. &
+        trim(output_grid) == 'global_latlon' .or. &
         trim(output_grid) == 'regional_latlon') then
        ncerr = nf90_put_att(ncid, im_varid, "long_name", "T-cell longitude"); NC_ERR_STOP(ncerr)
        ncerr = nf90_put_att(ncid, im_varid, "units", "degrees_E"); NC_ERR_STOP(ncerr)
@@ -281,6 +282,7 @@ module module_write_netcdf
     call ESMF_ArrayGather(array, arrayr8, rootPet=0, rc=rc); ESMF_ERR_RETURN(rc)
     if (mype==0) then
        if (trim(output_grid) == 'gaussian_grid' .or. &
+           trim(output_grid) == 'global_latlon' .or. &
            trim(output_grid) == 'regional_latlon') then
           ncerr = nf90_put_var(ncid, im_varid, values=arrayr8(:,1)  ); NC_ERR_STOP(ncerr)
        else if (trim(output_grid) == 'rotated_latlon') then
@@ -301,6 +303,7 @@ module module_write_netcdf
     call ESMF_ArrayGather(array, arrayr8, rootPet=0, rc=rc); ESMF_ERR_RETURN(rc)
     if (mype==0) then
        if (trim(output_grid) == 'gaussian_grid' .or. &
+           trim(output_grid) == 'global_latlon' .or. &
            trim(output_grid) == 'regional_latlon') then
           ncerr = nf90_put_var(ncid, jm_varid, values=arrayr8(1,:)  ); NC_ERR_STOP(ncerr)
        else if (trim(output_grid) == 'rotated_latlon') then

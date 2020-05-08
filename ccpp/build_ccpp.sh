@@ -28,7 +28,6 @@ function usage   {
   echo "                                   SUITES=ABC,XYZ  (comma-separated list of CCPP suites; "
   echo "                                                    corresponding filenames: suite_ABC.xml. ...)"
   echo "                                   MULTI_GASES=Y/N (default N)"
-  echo "                                   INTEL16=Y/N     (default N)"
   echo "           clean_before [optional] can be 'YES' (default) or 'NO'"
   echo "           clean_after  [optional] can be 'YES' (default) or 'NO'"
   exit 1
@@ -129,14 +128,9 @@ if [[ "${MAKE_OPT}" == *"MULTI_GASES=Y"* ]]; then
 else
   CCPP_CMAKE_FLAGS="${CCPP_CMAKE_FLAGS} -DMULTI_GASES=OFF"
 fi
-if [[ "${MAKE_OPT}" == *"INTEL16=Y"* ]]; then
-  CCPP_CMAKE_FLAGS="${CCPP_CMAKE_FLAGS} -DLEGACY_INTEL=ON"
-elif [[ "${MACHINE_ID}" == "wcoss_cray" ]]; then
-  echo "In ccpp_build.sh: flag to cmake that wcoss_cray uses Intel 16"
-  CCPP_CMAKE_FLAGS="${CCPP_CMAKE_FLAGS} -DLEGACY_INTEL=ON"
-else
-  CCPP_CMAKE_FLAGS="${CCPP_CMAKE_FLAGS} -DLEGACY_INTEL=OFF"
-fi
+
+# Flag to cmake that modern Intel compilers are used
+CCPP_CMAKE_FLAGS="${CCPP_CMAKE_FLAGS} -DLEGACY_INTEL=OFF"
 
 # Generate additional CCPP cmake flags depending on machine / compiler
 if [[ "${MACHINE_ID}" == "macosx.gnu" ]]; then

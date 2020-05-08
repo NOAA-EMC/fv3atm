@@ -2028,13 +2028,13 @@ module GFS_diagnostics
 
     idx = idx + 1
     ExtDiag(idx)%axes = 2
-    ExtDiag(idx)%name = 'ca_out'
+    ExtDiag(idx)%name = 'ca1'
     ExtDiag(idx)%desc = 'Cellular Automata'
     ExtDiag(idx)%unit = '%'
     ExtDiag(idx)%mod_name = 'gfs_phys'
     allocate (ExtDiag(idx)%data(nblks))
     do nb = 1,nblks
-      ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%ca_out(:)
+      ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%ca1(:)
     enddo
 
     idx = idx + 1

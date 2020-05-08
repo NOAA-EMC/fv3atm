@@ -1778,34 +1778,6 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
-[tconvtend]
-  standard_name = tendency_of_air_temperature_due_to_deep_convection_for_coupling_on_physics_timestep
-  long_name = tendency of air temperature due to deep convection
-  units = K
-  dimensions = (horizontal_dimension,vertical_dimension)
-  type = real
-  kind = kind_phys
-[qconvtend]
-  standard_name = tendency_of_water_vapor_specific_humidity_due_to_deep_convection_for_coupling_on_physics_timestep
-  long_name = tendency of specific humidity due to deep convection
-  units = kg kg-1
-  dimensions = (horizontal_dimension,vertical_dimension)
-  type = real
-  kind = kind_phys
-[uconvtend]
-  standard_name = tendency_of_x_wind_due_to_deep_convection_for_coupling_on_physics_timestep
-  long_name = tendency_of_x_wind_due_to_deep_convection
-  units = m s-1
-  dimensions = (horizontal_dimension,vertical_dimension)
-  type = real
-  kind = kind_phys
-[vconvtend]
-  standard_name = tendency_of_y_wind_due_to_deep_convection_for_coupling_on_physics_timestep
-  long_name = tendency_of_y_wind_due_to_deep_convection
-  units = m s-1
-  dimensions = (horizontal_dimension,vertical_dimension)
-  type = real
-  kind = kind_phys
 [ca_deep]
   standard_name = fraction_of_cellular_automata_for_deep_convection
   long_name = fraction of cellular automata for deep convection
@@ -1813,9 +1785,23 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
-[cape]
-  standard_name = convective_available_potential_energy_for_coupling
-  long_name = convective available potential energy for coupling
+[vfact_ca]
+  standard_name = vertical_weight_for_ca
+  long_name = vertical weight for ca
+  units = frac
+  dimensions = (vertical_dimension)
+  type = real
+  kind = kind_phys
+[ca1]
+  standard_name = cellular_automata_global_pattern
+  long_name = cellular automata global pattern
+  units = flag
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+[condition]
+  standard_name = physics_field_for_coupling
+  long_name = physics_field_for_coupling
   units = m2 s-2
   dimensions = (horizontal_dimension)
   type = real
@@ -3438,6 +3424,20 @@
   dimensions = ()
   type = real
   kind = kind_phys
+[z0fac]
+  standard_name = surface_roughness_fraction_factor
+  long_name = surface roughness fraction for canopy heat storage parameterization
+  units = none
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[e0fac]
+  standard_name = latent_heat_flux_fraction_factor_relative_to_sensible_heat_flux
+  long_name = latent heat flux fraction relative to sensible heat flux for canopy heat storage parameterization
+  units = none
+  dimensions = ()
+  type = real
+  kind = kind_phys
 [nca]
   standard_name = number_of_independent_cellular_automata
   long_name = number of independent cellular automata
@@ -3487,15 +3487,27 @@
   units = flag
   dimensions = ()
   type = logical
-[ca_smooth]
-  standard_name = flag_for_gaussian_spatial_filter
-  long_name = switch for gaussian spatial filter
+[ca_closure]
+  standard_name = flag_for_global_cellular_automata_closure
+  long_name = switch for ca on closure
   units = flag
   dimensions = ()
   type = logical
-[isppt_deep]
-  standard_name = flag_for_combination_of_sppt_with_isppt_deep
-  long_name = switch for combination with isppt_deep.
+[ca_entr]
+  standard_name = flag_for_global_cellular_automata_entr
+  long_name = switch for ca on entr
+  units = flag
+  dimensions = ()
+  type = logical
+[ca_trigger]
+  standard_name = flag_for_global_cellular_automata_trigger
+  long_name = switch for ca on trigger
+  units = flag
+  dimensions = ()
+  type = logical
+[ca_smooth]
+  standard_name = flag_for_gaussian_spatial_filter
+  long_name = switch for gaussian spatial filter
   units = flag
   dimensions = ()
   type = logical
@@ -6751,6 +6763,13 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+[evapq]
+  standard_name = kinematic_surface_upward_latent_heat_flux_reduced_by_surface_roughness
+  long_name = kinematic surface upward latent heat flux reduced by surface roughness
+  units = kg kg-1 m s-1
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
 [evap_ocean]
   standard_name = kinematic_surface_upward_latent_heat_flux_over_ocean
   long_name = kinematic surface upward latent heat flux over ocean
@@ -7167,9 +7186,30 @@
   dimensions = (vertical_dimension_of_h2o_forcing_data)
   type = real
   kind = kind_phys
+[hefac]
+  standard_name = surface_upward_latent_heat_flux_reduction_factor
+  long_name = surface upward latent heat flux reduction factor from canopy heat storage
+  units = none
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+[hffac]
+  standard_name = surface_upward_sensible_heat_flux_reduction_factor
+  long_name = surface upward sensible heat flux reduction factor from canopy heat storage
+  units = none
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
 [hflx]
   standard_name = kinematic_surface_upward_sensible_heat_flux
   long_name = kinematic surface upward sensible heat flux
+  units = K m s-1
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+[hflxq]
+  standard_name = kinematic_surface_upward_sensible_heat_flux_reduced_by_surface_roughness
+  long_name = kinematic surface upward sensible heat flux reduced by surface roughness
   units = K m s-1
   dimensions = (horizontal_dimension)
   type = real
