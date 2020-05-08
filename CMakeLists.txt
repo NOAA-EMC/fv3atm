@@ -1,17 +1,9 @@
-if( NOT DEFINED PHYS)
-  set(PHYS gfs)
-endif()
-
-if (PHYS MATCHES "nam")
-  add_definitions(-DNAM_phys)
-endif()
-
 if(CCPP)
   add_definitions(-DCCPP)
 endif()
 
 add_subdirectory(cpl)
-add_subdirectory(${PHYS}physics)
+add_subdirectory(gfsphysics)
 add_subdirectory(ipd)
 add_subdirectory(io)
 
@@ -70,7 +62,7 @@ set_property(SOURCE atmos_cubed_sphere/model/nh_utils.F90 APPEND_STRING PROPERTY
 set_property(SOURCE atmos_cubed_sphere/model/fv_mapz.F90  APPEND_STRING PROPERTY COMPILE_FLAGS "${FAST}")
 
 target_link_libraries(fv3core PRIVATE fms)
-target_link_libraries(fv3core PRIVATE ${PHYS}physics)
+target_link_libraries(fv3core PRIVATE gfsphysics)
 target_link_libraries(fv3core PRIVATE ipd)
 
 target_include_directories(fv3core PRIVATE ${ESMF_MOD})
@@ -83,7 +75,7 @@ target_include_directories(fv3core PRIVATE ${ESMF_MOD})
 if(CCPP)
   add_subdirectory(ccpp)
   add_subdirectory(ccpp/driver)
-  add_dependencies(${PHYS}physics ccpp ccppphys)
+  add_dependencies(gfsphysics ccpp ccppphys)
   add_dependencies(ccppdriver ccpp ccppphys)
   add_dependencies(ccppphys ccpp)
 
@@ -118,7 +110,7 @@ target_include_directories(fv3cap PRIVATE ${ESMF_MOD})
 
 target_link_libraries(fv3cap PRIVATE fms)
 target_link_libraries(fv3cap PRIVATE fv3cpl)
-target_link_libraries(fv3cap PRIVATE ${PHYS}physics)
+target_link_libraries(fv3cap PRIVATE gfsphysics)
 target_link_libraries(fv3cap PRIVATE ipd)
 target_link_libraries(fv3cap PRIVATE io)
 target_link_libraries(fv3cap PRIVATE fv3core)
