@@ -2104,7 +2104,6 @@ module module_physics_driver
             k = 2
             stress(i)        = stress3(i,2)
 !           Sfcprop%tprcp(i) = fice(i)*tprcp3(i,2)  + (one-fice(i))*tprcp3(i,3)
-            if(Model%cplflx)Sfcprop%tsfcl(i) = tsfc3(i,2)  ! for restart repro comparisons
           endif
           Sfcprop%zorl(i)   = zorl3(i,k)
           cd(i)             = cd3(i,k)
