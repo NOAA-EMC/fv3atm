@@ -1929,6 +1929,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: t_lay(:,:)             => null()  !<
     real (kind=kind_phys), pointer      :: relhum(:,:)            => null()  !<
     real (kind=kind_phys), pointer      :: tv_lay(:,:)            => null()  !<
+    real (kind=kind_phys), pointer      :: overlap_param(:,:)     => null()  !<
     real (kind=kind_phys), pointer      :: tracer(:,:,:)          => null()  !<
     real (kind=kind_phys), pointer      :: aerosolslw(:,:,:,:)    => null()  !< Aerosol radiative properties in each LW band.
     real (kind=kind_phys), pointer      :: aerosolssw(:,:,:,:)    => null()  !< Aerosol radiative properties in each SW band.
@@ -6086,6 +6087,7 @@ module GFS_typedefs
     if (Model%do_RRTMGP) then
       allocate (Interstitial%tracer            (IM, Model%levs,Model%ntrac))
       allocate (Interstitial%tv_lay            (IM, Model%levs))
+      allocate (Interstitial%overlap_param     (IM, Model%levs))
       allocate (Interstitial%relhum            (IM, Model%levs))
       allocate (Interstitial%p_lev             (IM, Model%levs+1))
       allocate (Interstitial%p_lay             (IM, Model%levs))
@@ -6448,6 +6450,7 @@ module GFS_typedefs
     if (Model%do_RRTMGP) then
       Interstitial%tracer            = clear_val
       Interstitial%tv_lay            = clear_val
+      Interstitial%overlap_param     = clear_val
       Interstitial%relhum            = clear_val
       Interstitial%p_lev             = clear_val
       Interstitial%p_lay             = clear_val

@@ -197,7 +197,6 @@ SCHEME_FILES_DEPENDENCIES = [
     'FV3/ccpp/physics/physics/rte-rrtmgp/extensions/mo_heating_rates.F90',
     'FV3/ccpp/physics/physics/rte-rrtmgp/extensions/mo_rrtmgp_clr_all_sky.F90',
     'FV3/ccpp/physics/physics/rte-rrtmgp/extensions/cloud_optics/mo_cloud_optics.F90',
-    'FV3/ccpp/physics/physics/rte-rrtmgp/extensions/cloud_optics/mo_cloud_sampling.F90',
     # derived data type definitions
     'FV3/gfsphysics/GFS_layer/GFS_typedefs.F90',
     'FV3/gfsphysics/CCPP_layer/CCPP_typedefs.F90',
@@ -298,6 +297,7 @@ SCHEME_FILES = {
     # RRTMGP
     'FV3/ccpp/physics/physics/rrtmg_lw_cloud_optics.F90'         : [ 'slow_physics' ],
     'FV3/ccpp/physics/physics/rrtmg_sw_cloud_optics.F90'         : [ 'slow_physics' ],
+    'FV3/ccpp/physics/physics/mo_cloud_sampling.F90'             : [ 'slow_physics' ],
     'FV3/ccpp/physics/physics/rrtmgp_aux.F90'                    : [ 'slow_physics' ],
     'FV3/ccpp/physics/physics/rrtmgp_lw_gas_optics.F90'          : [ 'slow_physics' ],
     'FV3/ccpp/physics/physics/rrtmgp_lw_cloud_optics.F90'        : [ 'slow_physics' ],

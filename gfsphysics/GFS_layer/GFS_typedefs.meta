@@ -8461,6 +8461,14 @@
   type = real
   kind = kind_phys
   optional = F
+[overlap_param]
+  standard_name = cloud_overlap_param
+  long_name = cloud overlap parameter
+  units = km
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+  optional = F
 [ipsdsw0]
   standard_name = initial_permutation_seed_sw
   long_name = initial seed for McICA SW 
