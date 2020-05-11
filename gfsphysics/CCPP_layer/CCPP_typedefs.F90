@@ -85,7 +85,8 @@ contains
 ! CCPP_interstitial_type
 !-----------------------------
   subroutine interstitial_create (Interstitial, is, ie, isd, ied, js, je, jsd, jed, npz, ng, &
-                                  dt_atmos, p_split, k_split, zvir, p_ref, ak, bk, do_qa,    &
+                                  dt_atmos, p_split, k_split, zvir, p_ref, ak, bk,           &
+                                  do_ql, do_qi, do_qr, do_qs, do_qg, do_qa,                  &
                                   kappa, hydrostatic, do_sat_adj,                            &
                                   delp, delz, area, peln, phis, pkz, pt,                     &
                                   qvi, qv, ql, qi, qr, qs, qg, qc, q_con,                    &
@@ -111,6 +112,11 @@ contains
     real(kind_dyn),    intent(in) :: p_ref
     real(kind_dyn),    intent(in) :: ak(:)
     real(kind_dyn),    intent(in) :: bk(:)
+    logical, intent(in) :: do_ql
+    logical, intent(in) :: do_qi
+    logical, intent(in) :: do_qr
+    logical, intent(in) :: do_qs
+    logical, intent(in) :: do_qg
     logical, intent(in) :: do_qa
     real(kind_dyn),    intent(in) :: kappa
     logical, intent(in) :: hydrostatic
@@ -194,14 +200,12 @@ contains
     Interstitial%pt         => pt
     Interstitial%qvi        => qvi
     Interstitial%qv         => qv
-    Interstitial%ql         => ql
-    Interstitial%qi         => qi
-    Interstitial%qr         => qr
-    Interstitial%qs         => qs
-    Interstitial%qg         => qg
-    if (do_qa) then
-       Interstitial%qc      => qc
-    end if
+    if (do_ql) Interstitial%ql => ql
+    if (do_qi) Interstitial%qi => qi
+    if (do_qr) Interstitial%qr => qr
+    if (do_qs) Interstitial%qs => qs
+    if (do_qg) Interstitial%qg => qg
+    if (do_qa) Interstitial%qc => qc
 #ifdef USE_COND
     Interstitial%npzq_con = npz
 #else
@@ -338,14 +342,12 @@ contains
     write (0,*) 'sum(Interstitial%pt)           = ', Interstitial%pt
     write (0,*) 'sum(Interstitial%qvi)          = ', Interstitial%qvi
     write (0,*) 'sum(Interstitial%qv)           = ', Interstitial%qv
-    write (0,*) 'sum(Interstitial%ql)           = ', Interstitial%ql
-    write (0,*) 'sum(Interstitial%qi)           = ', Interstitial%qi
-    write (0,*) 'sum(Interstitial%qr)           = ', Interstitial%qr
-    write (0,*) 'sum(Interstitial%qs)           = ', Interstitial%qs
-    write (0,*) 'sum(Interstitial%qg)           = ', Interstitial%qg
-    if (associated(Interstitial%qc)) then
-       write (0,*) 'sum(Interstitial%qc)           = ', Interstitial%qc
-    end if
+    if (associated(Interstitial%ql)) write (0,*) 'sum(Interstitial%ql)           = ', Interstitial%ql
+    if (associated(Interstitial%qi)) write (0,*) 'sum(Interstitial%qi)           = ', Interstitial%qi
+    if (associated(Interstitial%qr)) write (0,*) 'sum(Interstitial%qr)           = ', Interstitial%qr
+    if (associated(Interstitial%qs)) write (0,*) 'sum(Interstitial%qs)           = ', Interstitial%qs
+    if (associated(Interstitial%qg)) write (0,*) 'sum(Interstitial%qg)           = ', Interstitial%qg
+    if (associated(Interstitial%qc)) write (0,*) 'sum(Interstitial%qc)           = ', Interstitial%qc
     write (0,*) 'sum(Interstitial%q_con)        = ', Interstitial%q_con
     write (0,*) 'Interstitial%hydrostatic       = ', Interstitial%hydrostatic
     write (0,*) 'Interstitial%nwat              = ', Interstitial%nwat
