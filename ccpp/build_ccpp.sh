@@ -97,7 +97,7 @@ fi
 # Generate CCPP cmake flags from MAKE_OPT
 CCPP_CMAKE_FLAGS="-DCMAKE_INSTALL_PREFIX=${CCPP_DIR} -DNETCDF_DIR=${NETCDF} -DMPI=ON"
 CCPP_MAKE_FLAGS=""
-if [[ "${MAKE_OPT}" == *"SION=Y"* ]]; then
+if [[ "${MAKE_OPT}" == *" SION=Y"* ]]; then
   CCPP_CMAKE_FLAGS="${CCPP_CMAKE_FLAGS} -DSIONLIB=${SIONLIB}"
 fi
 if [[ "${MAKE_OPT}" == *"DEBUG=Y"* ]]; then
