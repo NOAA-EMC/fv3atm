@@ -274,7 +274,7 @@ CC
 
 c***********************************************************************
 
-      subroutine g1rtxz(kus,tus0,pus,rus0,lmr,lmt,gamav,                 &
+      subroutine g1rtxz(kus,tus0,pus,rus0,lmr,lmt,gamav,                 
      &  me,mpi_ior,mpi_comm)
 !hmhj subroutine g1rtxz(kus,tus0,pus,rus0,lmr,lmt,gamav,dirin)
 
@@ -399,7 +399,7 @@ c - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 c***********************************************************************
 
-      subroutine g1vbxz(kus,tus0,pus,rus0,lmr,lmt,gamav,                 &
+      subroutine g1vbxz(kus,tus0,pus,rus0,lmr,lmt,gamav,                 
      &   me,mpi_ior,mpi_comm)
 
 c Sept, 2007: made by Rashid Akmaev from Xun Zhu's code for H2O cooling
@@ -837,9 +837,9 @@ c Determine the first model layer from the top below or about 100 km
       wvmy(:)=0.
       tmy(:)=0.
       call splin1(x0(kz0:1:-1),mmr0(kz0:1:-1),
-     $     xmy(lh2o:),wvmy(lh2o:),kz0,lmy+1-lh2o)
+     $     xmy(lh2o),wvmy(lh2o),kz0,lmy+1-lh2o)
       call splin1(x0(kz0:1:-1),tem0(kz0:1:-1),
-     $     xmy(lh2o:),tmy(lh2o:),kz0,lmy+1-lh2o)
+     $     xmy(lh2o),tmy(lh2o),kz0,lmy+1-lh2o)
 
 c For linear extrapolation of cooling rates upward of xmy(lh2o), count
 c how many model layers are between xmy(lh2o) and xmu(lh2o)+1 and 

@@ -1,7 +1,6 @@
-      subroutine idea_co2(im,ix,levs,nlev,ntrac,grav,cp,adr,adt,        &
+      subroutine idea_co2(im,ix,levs,nlev,ntrac,grav,cp,adr,adt,        
      &dtdt,cosz,dtdth)
-!hmhj subroutine idea_co2(im,ix,levs,nlev,ntrac,grav,cp,adr,adt,dir,    &
-!hmhj&dtdt,cosz,dtdth)
+!
 !
 ! Apr 06 2012   Henry Juang, initial implement for nems
 ! Dec 13 2012   Jun Wang     move init step out of column physics
@@ -10,10 +9,9 @@
       use co2pro_mod, only: co2my
 !     use co2c_mod
 !     use qnir_mod
-      use physcons,  amo2=>con_amo2, amo3=>con_amo3,                    &
-     &               amh2o=>con_amw
-      use idea_composition 
-!
+      use physcons, only : amo2=>con_amo2, amo3=>con_amo3,                    
+     &                     amh2o=>con_amw
+      use idea_composition, only : amo, amn2, prlog, k43
       implicit none
 ! Argument
       integer, intent(in) :: im  ! number of data points in adt (first dim)
@@ -30,19 +28,19 @@
       real, intent(out)   :: dtdt(ix,levs)    ! cooling rate k/s
       real, intent(out)   :: dtdth(ix,levs)    ! heating rate k/s
 !
-      real pmod(levs),q_n2(ix,nlev),ma(ix,nlev)                         &
+      real pmod(levs),q_n2(ix,nlev),ma(ix,nlev)                         
      &,q_o(ix,nlev),q_o2(ix,nlev),hold(levs)
       integer i,k,kk
 !
 ! precalling
-      dtdth=0.
-      dtdt=0.
+      dtdth(:,:)=0.
+      dtdt(:,:) =0.
 !
       do i=1,im
         do k=k43,levs
           kk=k-k43+1
           q_n2(i,kk)=1.-adr(i,k,4)-adr(i,k,5)-adr(i,k,1)-adr(i,k,2)
-          ma(i,kk)=1./(adr(i,k,4)/amo+adr(i,k,5)/amo2+adr(i,k,1)/amh2o+ &
+          ma(i,kk)=1./(adr(i,k,4)/amo+adr(i,k,5)/amo2+adr(i,k,1)/amh2o+ 
      &             adr(i,k,2)/amo3+q_n2(i,kk)/amn2)
           q_o(i,kk)=adr(i,k,4)*ma(i,kk)/amo
           q_o2(i,kk)=adr(i,k,5)*ma(i,kk)/amo2
@@ -51,14 +49,14 @@
       enddo
 !     print*,'www2',im,ix,q_o(1:im1,nlev)
 ! CO2 cooling
-      call co2cc(ix,im,prlog,adt,levs,prlog(k43),                       &
+      call co2cc(ix,im,prlog,adt,levs,prlog(k43),                       
      &           dtdt(1,k43),nlev,ma,q_o,q_o2,q_n2)
 ! J/kg/s to k/s
       do i=1,im
         do k=k43,levs
           dtdt(i,k)=dtdt(i,k)/cp(i,k)
         enddo
-          dtdt(i,1:k43-1)=0.
+!vay-16          dtdt(i,1:k43-1)=0.
       enddo
 ! CO2 heating
       do i=1,im
@@ -67,7 +65,7 @@
 !       dtdth(i,k)=hold(k-k43+1)
         dtdth(i,k)=hold(k)
         enddo
-        dtdth(i,1:k43-1)=0.
+!vay-16        dtdth(i,1:k43-1)=0.
       enddo
       return
       end

@@ -129,8 +129,8 @@
      &                        / (PRSI(i,k) + PRSI(i,k+1))
                   phil(i,k)   = phii(i,k) + DPHI
                   phii(i,k+1) = phil(i,k) + DPHI
-!     if (k == 1 .and. phil(i,k) < 0.0) write(0,*)' phil=',phil(i,k)
-!    &,' dphi=',dphi,' prsi=',prsi(i,k),prsi(i,k+1),' tem=',tem
+      if (k == 1 .and. phil(i,k) < 0.0) write(0,*)' phil=',phil(i,k)
+     &,' dphi=',dphi,' prsi=',prsi(i,k),prsi(i,k+1),' tem=',tem
                 ENDDO
               ENDDO
           endif

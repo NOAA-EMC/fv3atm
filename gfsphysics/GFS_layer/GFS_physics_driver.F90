@@ -37,6 +37,21 @@ module module_physics_driver
 !
   use cires_ugwp_module,     only:  cires_ugwp_driver, knob_ugwp_version
 !
+!SK-2020
+!
+#ifdef IDEA_PHYS
+  use wam_f107_kp_mod,   only: f107_kp_skip_size, f107_kp_data_size,        &
+                               f107_kp_read_in_size,f107_kp_read_in_start,  &
+                               f107_kp_size, read_wam_f107_kp_txt,          &
+                               f107_wy, kp_wy, f107d_wy,                    &
+                               kpa_wy, nhp_wy, nhpi_wy,                     &
+                               shp_wy, shpi_wy, swbt_wy,                    &
+                               swang_wy, swvel_wy, swbz_wy
+  use IDEA_WAM_CONTROL,  only: SPW_DRIVERS
+#endif
+! use module_IPE_to_WAM, only: lowst_ipe_level, ipe_to_wam_coupling,        &
+!                                  ZMT, MMT, JHR, SHR, O2DR
+
 
   implicit none
 
@@ -748,6 +763,51 @@ module module_physics_driver
 
       imp_physics = Model%imp_physics
 
+#ifndef CCPP
+#ifdef IDEA_PHYS
+!SK IDEA-physics initialization ..
+      if (kdt == 1) then
+!-------------------------------------------------------------------------------
+      lprnt = .true.
+!     if (lprnt) print*,' in GFS_physics_driver, kdt, ipe_to_wam_coupling=', &
+      if (lprnt) print*,' in GFS_physics_driver, kdt=', Model%kdt
+      if (lprnt) write(0,*)'VAY WAM SPW_DRIVERS:', trim(SPW_DRIVERS)
+      if (trim(SPW_DRIVERS)=='swpc_fst') then
+! read the f10.7 and kp multi-time input data.
+         if (lprnt) write(6,*)' in GFS_physics_driver:f107_kp_size=',f107_kp_size
+         IF(.NOT.ALLOCATED(f107_wy )) ALLOCATE(f107_wy (f107_kp_size))
+         IF(.NOT.ALLOCATED(kp_wy   )) ALLOCATE(kp_wy   (f107_kp_size))
+         IF(.NOT.ALLOCATED(f107d_wy)) ALLOCATE(f107d_wy(f107_kp_size))
+         IF(.NOT.ALLOCATED(kpa_wy  )) ALLOCATE(kpa_wy  (f107_kp_size))
+         IF(.NOT.ALLOCATED(nhp_wy  )) ALLOCATE(nhp_wy  (f107_kp_size))
+         IF(.NOT.ALLOCATED(nhpi_wy )) ALLOCATE(nhpi_wy (f107_kp_size))
+         IF(.NOT.ALLOCATED(shp_wy  )) ALLOCATE(shp_wy  (f107_kp_size))
+         IF(.NOT.ALLOCATED(shpi_wy )) ALLOCATE(shpi_wy (f107_kp_size))
+         IF(.NOT.ALLOCATED(swbt_wy )) ALLOCATE(swbt_wy (f107_kp_size))
+         IF(.NOT.ALLOCATED(swang_wy)) ALLOCATE(swang_wy(f107_kp_size))
+         IF(.NOT.ALLOCATED(swvel_wy)) ALLOCATE(swvel_wy(f107_kp_size))
+         IF(.NOT.ALLOCATED(swbz_wy )) ALLOCATE(swbz_wy (f107_kp_size))
+         call read_wam_f107_kp_txt
+         if (lprnt) write(6,*)' SPW_DRIVERS=>swpc_fst, 3-day forecasts:',&
+                                    trim(SPW_DRIVERS)
+         endif
+!
+         if (trim(SPW_DRIVERS)=='cires_wam'.or.trim(SPW_DRIVERS)=='sair_wam') then
+           if (lprnt) write(6,*)' SPW_DRIVERS => with YYYYMMDD REAL DATA:',&
+                                      trim(SPW_DRIVERS)
+         endif
+!
+         if (trim(SPW_DRIVERS)=='climate_wam') then
+          if (lprnt) write(6,*)'climate_wam with fixed F107/Kp '
+         endif
+      lprnt = .false.
+!-------------------------------------------------------------------------------
+      print *,' LSIDEA not ready for FV3 - shutting down in GFS_physics_driver'
+      stop
+      endif
+#endif
+#endif
+
       nncl = ncld
 
       ! perform aerosol convective transport and PBL diffusion
@@ -1435,9 +1495,11 @@ module module_physics_driver
 !---------------------------------------------------------------------
       endif
 !
-      if (Model%lsidea) then                       !idea jw
+#ifdef IDEA_PHYS
+!     if (Model%lsidea) then                       !idea jw
         dtdt(:,:) = zero
-      endif
+!     endif
+#endif
 
 !  ---  convert lw fluxes for land/ocean/sea-ice models
 !  note: for sw: adjsfcdsw and adjsfcnsw are zenith angle adjusted downward/net fluxes.
@@ -1527,7 +1589,8 @@ module module_physics_driver
         enddo
 
         if (Model%ldiag3d) then
-          if (Model%lsidea) then
+#ifdef IDEA_PHYS
+!         if (Model%lsidea) then
             do k=1,levs
               do i=1,im
                 Diag%dt3dt(i,k,1) = Diag%dt3dt(i,k,1) + Radtend%lwhd(i,k,1)*dtf
@@ -1538,14 +1601,16 @@ module module_physics_driver
                 Diag%dt3dt(i,k,6) = Diag%dt3dt(i,k,6) + Radtend%lwhd(i,k,6)*dtf
               enddo
             enddo
-          else
+#else
+!         else
             do k=1,levs
               do i=1,im
                 Diag%dt3dt(i,k,1) = Diag%dt3dt(i,k,1) + Radtend%htrlw(i,k)*dtf
                 Diag%dt3dt(i,k,2) = Diag%dt3dt(i,k,2) + Radtend%htrsw(i,k)*dtf*xmu(i)
               enddo
             enddo
-          endif
+!         endif
+#endif
         endif
       endif    ! end if_lssav_block
 
@@ -2788,16 +2853,19 @@ module module_physics_driver
 !       endif
 
         if (Model%ldiag3d) then
-          if (Model%lsidea) then
+#ifdef IDEA_PHYS
+!         if (Model%lsidea) then
             Diag%dt3dt(1:im,:,3) = Diag%dt3dt(1:im,:,3) + dtdt(1:im,:)*dtf
-          else
+!         else
+#else
             do k=1,levs
               do i=1,im
                 tem  = dtdt(i,k) - (Radtend%htrlw(i,k)+Radtend%htrsw(i,k)*xmu(i))
                 Diag%dt3dt(i,k,3) = Diag%dt3dt(i,k,3) + tem*dtf
               enddo
             enddo
-          endif
+!         endif
+#endif
           do k=1,levs
             do i=1,im
               Diag%du3dt(i,k,1) = Diag%du3dt(i,k,1) + dudt(i,k) * dtf
@@ -3044,12 +3112,15 @@ module module_physics_driver
 !!    endif
 
 !    Rayleigh damping  near the model top
-      if( .not. Model%lsidea .and. Model%ral_ts > zero) then
+#ifndef IDEA_PHYS
+!     if( .not. Model%lsidea .and. Model%ral_ts > zero) then
+      if( Model%ral_ts > zero) then
         call rayleigh_damp(im, ix, im, levs, dvdt, dudt, dtdt,      &
                            Statein%ugrs, Statein%vgrs, dtp, con_cp, &
                            Model%levr, Statein%pgr, Statein%prsl,   &
                            Model%prslrd0, Model%ral_ts)
       endif
+#endif
 
 !     if (lprnt) then
 !       write(0,*)' tgrs1=',(Statein%tgrs(ipr,k),k=1,10)
@@ -3089,9 +3160,11 @@ module module_physics_driver
 !================================================================================
 ! It is not clear Do we need it, "ideaca_up", having stability check inside UGWP-module
 
-      if (Model%lsidea) then            ! idea convective adjustment
+#ifdef IDEA_PHYS
+!     if (Model%lsidea) then            ! idea convective adjustment
         call ideaca_up(Statein%prsi,Stateout%gt0,ix,im,levs+1)
-      endif
+!     endif
+#endif
 
 !  --- ...  ozone physics
 

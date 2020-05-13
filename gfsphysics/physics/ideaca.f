@@ -117,7 +117,7 @@
 
       r(1)=1.
       do l=2,nlay
-         r(l)=r(l-1)*(p(loff+l)/pm(l))**rdcp*                           &
+         r(l)=r(l-1)*(p(loff+l)/pm(l))**rdcp*                           
      &        (pm(l-1)/p(loff+l))**rdcp
       enddo
       q(:)=dp(:)/r(:)

@@ -405,12 +405,17 @@ module GFS_driver
     !--- initialize soil vegetation
     call set_soilveg(Model%me, Model%isot, Model%ivegsrc, Model%nlunit)
 
+#ifndef CCPP
+#ifdef IDEA_PHYS
     !--- lsidea initialization
-    if (Model%lsidea) then
-      print *,' LSIDEA is active but needs to be reworked for FV3 - shutting down'
-      stop
+!!  if (Model%lsidea) then
+!     print *,' LSIDEA is active but needs to be reworked for FV3 - shutting down'
+!     stop
       !--- NEED TO get the logic from the old phys/gloopb.f initialization area
-    endif
+      print *,' LSIDEA is active; initialized in GFS_physics_driver'
+!!  endif
+#endif
+#endif
 
 #ifndef CCPP
 !----  initialization of cires_ugwp .

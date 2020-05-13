@@ -2581,9 +2581,12 @@ module GFS_typedefs
     use module_ras,       only: nrcmax
 #endif
     use parse_tracers,    only: get_tracer_index
-#ifndef CCPP
-    use wam_f107_kp_mod,  only: f107_kp_size, f107_kp_interval,     &
-                                f107_kp_skip_size, f107_kp_data_size
+#ifdef IDEA_PHYS
+    use wam_f107_kp_mod,  only: f107_kp_size, f107_kp_interval,      &
+                                f107_kp_skip_size, f107_kp_data_size,&
+                                f107_kp_read_in_start
+    use module_IPE_to_WAM, only: ipe_to_wam_coupling
+    use namelist_wamphysics_def
 #endif
     implicit none
 
@@ -3011,6 +3014,11 @@ module GFS_typedefs
                                thermodyn_id, sfcpress_id,                                   &
                           !--- coupling parameters
                                cplflx, cplwav, cplchm, lsidea,                              &
+#ifdef IDEA_PHYS
+                               f107_kp_size, f107_kp_interval, f107_kp_skip_size,           &
+                               f107_kp_data_size, f107_kp_read_in_start,                    &
+                               ipe_to_wam_coupling,                                         &
+#endif
                           !--- radiation parameters
                                fhswr, fhlwr, levr, nfxr, aero_in, iflip, isol, ico2, ialb,  &
                                isot, iems, iaer, icliq_sw, iovr_sw, iovr_lw, ictm, isubc_sw,&
@@ -3713,7 +3721,7 @@ module GFS_typedefs
     Model%si = (ak + bk * con_p0 - ak(Model%levr+1)) / (con_p0 - ak(Model%levr+1))
 #endif
 
-#ifndef CCPP
+#ifdef IDEA_PHYS
     ! Beware! The values set here reside in wam_f107_kp_mod and determine sizes of arrays
     ! inside that module. These arrays get used later in modules idea_tracer.f, idea_ion.f,
     ! idea_solar_heating.f, efield.f, and idea_composition.f.
@@ -3767,6 +3775,10 @@ module GFS_typedefs
 
 
 !--- BEGIN CODE FROM COMPNS_PHYSICS
+#ifdef IDEA_PHYS
+      call wam_control_default
+      call idea_wamcontrol_init(Model%me)
+#endif
 !--- shoc scheme
     if (do_shoc) then
       Model%nshoc_3d   = 3
