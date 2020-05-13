@@ -39,4 +39,4 @@ target_include_directories(io PRIVATE ${ESMF_MOD})
 target_include_directories(io PRIVATE ${NEMSIO_INC})
 
 set_target_properties(io PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mod)
-target_include_directories(io PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/mod)
+target_include_directories(io PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/mod>)
