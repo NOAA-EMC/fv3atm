@@ -1024,16 +1024,6 @@
 
       implicit none
 
-! DH* gfortran correctly throws an error if the intent() declarations
-! for arguments differ between the actual routine (here) and the dummy
-! interface routine (IPD_func0d_proc in IPD_typedefs.F90):
-!
-! Error: Interface mismatch in procedure pointer assignment at (1): INTENT mismatch in argument 'control'
-!
-! Since IPD_func0d_proc declares all arguments as intent(inout), we
-! need to do the same here - however, this way we are loosing the
-! valuable information on the actual intent to this routine. *DH
-#ifdef __GFORTRAN__
       type(GFS_control_type),         intent(inout) :: Model
       type(GFS_statein_type),         intent(inout) :: Statein
       type(GFS_stateout_type),        intent(inout) :: Stateout
@@ -1044,18 +1034,6 @@
       type(GFS_cldprop_type),         intent(inout) :: Cldprop
       type(GFS_radtend_type),         intent(inout) :: Radtend
       type(GFS_diag_type),            intent(inout) :: Diag
-#else
-      type(GFS_control_type),         intent(in)    :: Model
-      type(GFS_statein_type),         intent(in)    :: Statein
-      type(GFS_stateout_type),        intent(inout) :: Stateout
-      type(GFS_sfcprop_type),         intent(in)    :: Sfcprop
-      type(GFS_coupling_type),        intent(inout) :: Coupling
-      type(GFS_grid_type),            intent(in)    :: Grid
-      type(GFS_tbd_type),             intent(in)    :: Tbd
-      type(GFS_cldprop_type),         intent(in)    :: Cldprop
-      type(GFS_radtend_type),         intent(inout) :: Radtend
-      type(GFS_diag_type),            intent(inout) :: Diag
-#endif
 
 ! =================   subprogram documentation block   ================ !
 !                                                                       !
@@ -1566,7 +1544,8 @@
 !check  print *,' in grrad : calling setaer '
 !## CCPP ##* GFS_rrtmg_pre.F90/GFS_rrtmg_pre_run
       call setaer (plvl, plyr, prslk1, tvly, rhly, Sfcprop%slmsk,  &  !  ---  inputs
-                   tracer1, Grid%xlon, Grid%xlat, IM, LMK, LMP,    &
+                   tracer1, Tbd%aer_nm,                               &
+                   Grid%xlon, Grid%xlat, IM, LMK, LMP,             &
                    Model%lsswr,Model%lslwr,                        &
                    faersw,faerlw,aerodp)                              !  ---  outputs
 
@@ -1879,23 +1858,23 @@
 !     print *,' in grrad : calling swrad'
 
           if (Model%swhtr) then
-            call swrad (plyr, plvl, tlyr, tlvl, qlyr, olyr,     &      !  ---  inputs
+            call swrad (plyr, plvl, tlyr, tlvl, qlyr, olyr,     &      !  --- inputs
                         gasvmr, clouds, Tbd%icsdsw, faersw,     &
                         sfcalb, dz, delp, de_lgth,              &
                                 Radtend%coszen, Model%solcon,   &
                         nday, idxday, im, lmk, lmp, Model%lprnt,&
-                        htswc, Diag%topfsw, Radtend%sfcfsw,     &      !  ---  outputs
+                        htswc, Diag%topfsw, Radtend%sfcfsw,     &      !  --- outputs
                         cldtausw,                               &
                         hsw0=htsw0, fdncmp=scmpsw)                     ! ---  optional
           else
-            call swrad (plyr, plvl, tlyr, tlvl, qlyr, olyr,     &      !  ---  inputs 
+            call swrad (plyr, plvl, tlyr, tlvl, qlyr, olyr,     &      !  --- inputs
                         gasvmr, clouds, Tbd%icsdsw, faersw,     &
                         sfcalb, dz, delp, de_lgth,              &
                                 Radtend%coszen, Model%solcon,   &
                         nday, idxday, IM, LMK, LMP, Model%lprnt,&
-                        htswc, Diag%topfsw, Radtend%sfcfsw,     &      !  ---  outputs 
+                        htswc, Diag%topfsw, Radtend%sfcfsw,     &      !  --- outputs
                         cldtausw,                               &
-                        FDNCMP=scmpsw)                                 ! ---  optional 
+                        FDNCMP=scmpsw)                                 ! ---  optional
           endif
 !*## CCPP ##
 
@@ -1904,7 +1883,7 @@
             k1 = k + kd
             Radtend%htrsw(1:im,k) = htswc(1:im,k1)
           enddo
-!     We are assuming that radiative tendencies are from bottom to top 
+!     We are assuming that radiative tendencies are from bottom to top
 ! --- repopulate the points above levr i.e. LM
           if (lm < levs) then
             do k = lm,levs
@@ -1920,7 +1899,7 @@
 ! --- repopulate the points above levr i.e. LM
              if (lm < levs) then
                do k = lm,levs
-                 Radtend%swhc(1:im,k) = Radtend%swhc(1:im,LM) 
+                 Radtend%swhc(1:im,k) = Radtend%swhc(1:im,LM)
                enddo
              endif
           endif
@@ -1985,7 +1964,7 @@
 
         call setemis (Grid%xlon, Grid%xlat, Sfcprop%slmsk,         &        !  ---  inputs
                       Sfcprop%snowd, Sfcprop%sncovr, Sfcprop%zorl, &
-                      tsfg, tsfa, Sfcprop%hprime(:,1), IM,         & 
+                      tsfg, tsfa, Sfcprop%hprime(:,1), IM,         &
                       Radtend%semis)                                              !  ---  outputs
 !*## CCPP ##
 
@@ -2058,12 +2037,18 @@
       if (Model%lssav) then
         if (Model%lsswr) then
           do i=1,im
-            Diag%fluxr(i,34) = Diag%fluxr(i,34) + Model%fhswr*aerodp(i,1)  ! total aod at 550nm
-            Diag%fluxr(i,35) = Diag%fluxr(i,35) + Model%fhswr*aerodp(i,2)  ! DU aod at 550nm
-            Diag%fluxr(i,36) = Diag%fluxr(i,36) + Model%fhswr*aerodp(i,3)  ! BC aod at 550nm
-            Diag%fluxr(i,37) = Diag%fluxr(i,37) + Model%fhswr*aerodp(i,4)  ! OC aod at 550nm
-            Diag%fluxr(i,38) = Diag%fluxr(i,38) + Model%fhswr*aerodp(i,5)  ! SU aod at 550nm
-            Diag%fluxr(i,39) = Diag%fluxr(i,39) + Model%fhswr*aerodp(i,6)  ! SS aod at 550nm
+!            Diag%fluxr(i,34) = Diag%fluxr(i,34) + Model%fhswr*aerodp(i,1)  ! total aod at 550nm
+!            Diag%fluxr(i,35) = Diag%fluxr(i,35) + Model%fhswr*aerodp(i,2)  ! DU aod at 550nm
+!            Diag%fluxr(i,36) = Diag%fluxr(i,36) + Model%fhswr*aerodp(i,3)  ! BC aod at 550nm
+!            Diag%fluxr(i,37) = Diag%fluxr(i,37) + Model%fhswr*aerodp(i,4)  ! OC aod at 550nm
+!            Diag%fluxr(i,38) = Diag%fluxr(i,38) + Model%fhswr*aerodp(i,5)  ! SU aod at 550nm
+!            Diag%fluxr(i,39) = Diag%fluxr(i,39) + Model%fhswr*aerodp(i,6)  ! SS aod at 550nm
+            Diag%fluxr(i,34) = aerodp(i,1)  ! total aod at 550nm
+            Diag%fluxr(i,35) = aerodp(i,2)  ! DU aod at 550nm
+            Diag%fluxr(i,36) = aerodp(i,3)  ! BC aod at 550nm
+            Diag%fluxr(i,37) = aerodp(i,4)  ! OC aod at 550nm
+            Diag%fluxr(i,38) = aerodp(i,5)  ! SU aod at 550nm
+            Diag%fluxr(i,39) = aerodp(i,6)  ! SS aod at 550nm
           enddo
         endif
 

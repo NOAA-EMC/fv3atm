@@ -14,7 +14,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !***  Forecast gridded component.
 !-----------------------------------------------------------------------
 !***
-!***  HISTORY   
+!***  HISTORY
 !***
 !       Apr 2017:  J. Wang  - initial code for forecast grid component
 !
@@ -25,9 +25,9 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
                                 operator(+), operator(-), operator (<),    &
                                 operator (>), operator (/=), operator (/), &
                                 operator (==), operator (*),               &
-                                THIRTY_DAY_MONTHS, JULIAN, NOLEAP,         &
-                                NO_CALENDAR, date_to_string, get_date,     &
-                                get_time
+                                THIRTY_DAY_MONTHS, JULIAN, GREGORIAN,      &
+                                NOLEAP, NO_CALENDAR,                       &
+                                date_to_string, get_date, get_time
 
   use  atmos_model_mod,   only: atmos_model_init, atmos_model_end,         &
                                 get_atmos_model_ungridded_dim,             &
@@ -61,7 +61,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
   use data_override_mod,  only: data_override_init
   use fv_nggps_diags_mod, only: fv_dyn_bundle_setup
   use fv3gfs_io_mod,      only: fv_phys_bundle_setup
-  
+
   use fms_io_mod,         only: field_exist, read_data
 
   use atmosphere_mod,     only: atmosphere_control_data
@@ -191,7 +191,8 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     character(3) cfhour
     character(4) dateSY
     character(2) dateSM,dateSD,dateSH,dateSN,dateSS
-    character(128) name_FB, name_FB1, dateS
+    character(len=esmf_maxstr) name_FB, name_FB1
+    character(len=80) :: dateS
     real,    allocatable, dimension(:,:) :: glon_bnd, glat_bnd
     
     character(256)                         :: gridfile
@@ -254,6 +255,8 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
       select case( uppercase(trim(calendar)) )
       case( 'JULIAN' )
           calendar_type = JULIAN
+      case( 'GREGORIAN' )
+          calendar_type = GREGORIAN
       case( 'NOLEAP' )
           calendar_type = NOLEAP
       case( 'THIRTY_DAY' )
@@ -261,8 +264,8 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
       case( 'NO_CALENDAR' )
           calendar_type = NO_CALENDAR
       case default
-          call mpp_error ( FATAL, 'COUPLER_MAIN: coupler_nml entry calendar must '// &
-                                  'be one of JULIAN|NOLEAP|THIRTY_DAY|NO_CALENDAR.' )
+          call mpp_error ( FATAL, 'fcst_initialize: calendar must be one of '// &
+                                  'JULIAN|GREGORIAN|NOLEAP|THIRTY_DAY|NO_CALENDAR.' )
       end select
 
     endif
@@ -530,12 +533,12 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
         if( cpl ) then
           call addLsmask2grid(fcstGrid, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-!         print *,'call addLsmask2grid after fcstgrid, rc=',rc
-          if( cplprint_flag ) then
-            call ESMF_GridWriteVTK(fcstgrid, staggerloc=ESMF_STAGGERLOC_CENTER,  &
-                                   filename='fv3cap_fv3Grid', rc=rc)
-            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-          endif
+!         print *,'call addLsmask2grid after fcstGrid, rc=',rc
+!          if( cplprint_flag ) then
+!            call ESMF_GridWriteVTK(fcstGrid, staggerloc=ESMF_STAGGERLOC_CENTER,  &
+!                                   filename='fv3cap_fv3Grid', rc=rc)
+!            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+!          endif
         endif
 !
 ! Add gridfile Attribute to the exportState
@@ -548,7 +551,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
 ! Add dimension Attributes to Grid
-        call ESMF_AttributeAdd(fcstgrid, convention="NetCDF", purpose="FV3",  &
+        call ESMF_AttributeAdd(fcstGrid, convention="NetCDF", purpose="FV3",  &
                                attrList=(/"ESMF:gridded_dim_labels"/), rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
@@ -595,11 +598,11 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
         call ESMF_AttributeSet(exportState, convention="NetCDF", purpose="FV3", &
-                               name="time:calendar_type", value="JULIAN", rc=rc)
+                               name="time:calendar_type", value=uppercase(trim(calendar)), rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
         call ESMF_AttributeSet(exportState, convention="NetCDF", purpose="FV3", &
-                               name="time:calendar", value="JULIAN", rc=rc)
+                               name="time:calendar", value=uppercase(trim(calendar)), rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 !
 ! Create FieldBundle for Fields that need to be regridded bilinear
@@ -616,7 +619,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
            call fv_dyn_bundle_setup(atm_int_state%Atm%axes,          &
-                                    fieldbundle, fcstgrid, quilting, rc=rc)
+                                    fieldbundle, fcstGrid, quilting, rc=rc)
            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
            ! Add the field to the importState so parent can connect to it
@@ -639,7 +642,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
            enddo
 !
            call fv_phys_bundle_setup(atm_int_state%Atm%diag, atm_int_state%Atm%axes, &
-                                     fieldbundlephys, fcstgrid, quilting, nbdlphys)
+                                     fieldbundlephys, fcstGrid, quilting, nbdlphys)
 !
            ! Add the field to the importState so parent can connect to it
            do j=1,nbdlphys
@@ -857,7 +860,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !
       integer :: unit
       integer,dimension(6)           :: date
-      
+
       real(8) mpi_wtime, tfs, tfe
 !
 !-----------------------------------------------------------------------

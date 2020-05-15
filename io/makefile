@@ -18,7 +18,7 @@ $(info $$ESMF_INC is [${ESMF_INC}])
 
 LIBRARY  = libfv3io.a
 
-FFLAGS   += -I$(FMS_DIR) -I../gfsphysics -I../ipd -I../namphysics
+FFLAGS   += -I$(FMS_DIR) -I../gfsphysics -I../ipd
 
 ifneq (,$(findstring NO_INLINE_POST,$(CPPDEFS)))
 POST_SRC = \
@@ -41,6 +41,7 @@ SRCS_F90 = \
 		   $(POST_SRC)                         \
 		   ./module_write_nemsio.F90           \
 		   ./module_write_netcdf.F90           \
+		   ./module_write_netcdf_parallel.F90  \
 		   ./module_fv3_io_def.F90             \
 		   ./module_write_internal_state.F90   \
 		   ./module_wrt_grid_comp.F90
@@ -69,7 +70,11 @@ post_nems_routines.o: post_nems_routines.F90
 module_write_nemsio.o: module_write_nemsio.F90
 	$(FC) $(CPPDEFS) $(CPPFLAGS) $(FPPFLAGS) $(FFLAGS) $(OTHERFLAGS) $(OTHER_FFLAGS) $(ESMF_INC) $(NEMSIOINC) -c module_write_nemsio.F90
 module_write_netcdf.o: module_write_netcdf.F90
-	$(FC) $(CPPDEFS) $(CPPFLAGS) $(FPPFLAGS) $(FFLAGS) $(OTHERFLAGS) $(OTHER_FFLAGS) $(ESMF_INC) $(NEMSIOINC) -c module_write_netcdf.F90
+	$(FC) $(CPPDEFS) $(CPPFLAGS) $(FPPFLAGS) $(FFLAGS) $(OTHERFLAGS) $(OTHER_FFLAGS) $(ESMF_INC) -c module_write_netcdf.F90
+module_write_netcdf_parallel.o: module_write_netcdf_parallel.F90
+	$(FC) $(CPPDEFS) $(CPPFLAGS) $(FPPFLAGS) $(FFLAGS) $(OTHERFLAGS) $(OTHER_FFLAGS) $(ESMF_INC) -c module_write_netcdf_parallel.F90
+module_fv3_io_def.o: module_fv3_io_def.F90
+	$(FC) $(CPPDEFS) $(CPPFLAGS) $(FPPFLAGS) $(FFLAGS) $(OTHERFLAGS) $(OTHER_FFLAGS) $(ESMF_INC) -c module_fv3_io_def.F90
 module_write_internal_state.o: module_write_internal_state.F90
 	$(FC) $(CPPDEFS) $(CPPFLAGS) $(FPPFLAGS) $(FFLAGS) $(OTHERFLAGS) $(OTHER_FFLAGS) $(ESMF_INC) -c module_write_internal_state.F90
 module_wrt_grid_comp.o: module_wrt_grid_comp.F90
