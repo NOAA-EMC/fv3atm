@@ -2284,6 +2284,7 @@ module module_physics_driver
 !     enddo
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+!## CCPP ##* GFS_surface_generic.F90/GFS_surface_generic_post_run
 !  --- ...  Boundary Layer and Free atmospheic turbulence parameterization
 !
 !  in order to achieve heat storage within canopy layer, in the canopy heat
@@ -2312,6 +2313,7 @@ module module_physics_driver
           evapq(i) = evap(i) / hefac(i)
         enddo
       endif
+!*## CCPP ##
 !
 !     if (lprnt) write(0,*)' tsea3=',Sfcprop%tsfc(ipr),' slmsk=',Sfcprop%slmsk(ipr)     &
 !    &, ' kdt=',kdt,' evap=',evapq(ipr)
