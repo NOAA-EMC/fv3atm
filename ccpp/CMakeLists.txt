@@ -1,20 +1,14 @@
-cmake_minimum_required(VERSION 2.8.11)
+cmake_minimum_required(VERSION 3.0)
 
 # Use rpaths on MacOSX
 set(CMAKE_MACOSX_RPATH 1)
-
-if(POLICY CMP0048)
-    cmake_policy(SET CMP0048 NEW)
-endif(POLICY CMP0048)
-
 if(POLICY CMP0042)
     cmake_policy(SET CMP0042 NEW)
 endif(POLICY CMP0042)
 
-PROJECT(CCPP-FV3)
+project(CCPP-FV3
+        LANGUAGES C CXX Fortran)
 set(PROJECT "CCPP-FV3")
-
-ENABLE_LANGUAGE(Fortran)
 
 include(CMakeForceCompiler)
 
@@ -89,8 +83,10 @@ if (${CMAKE_Fortran_COMPILER_ID} MATCHES "GNU")
   set (CMAKE_Fortran_FLAGS  "${CMAKE_Fortran_FLAGS} -fcray-pointer -ffree-line-length-none -fno-range-check")
   set (CMAKE_Fortran_FLAGS  "${CMAKE_Fortran_FLAGS} -fbacktrace -cpp")
   if (${CMAKE_BUILD_TYPE} MATCHES "Debug")
+    set (CMAKE_C_FLAGS        "${CMAKE_C_FLAGS} -Wall")
+    set (CMAKE_CXX_FLAGS      "${CMAKE_CXX_FLAGS} -Wall")
     set (CMAKE_Fortran_FLAGS  "${CMAKE_Fortran_FLAGS} -fno-unsafe-math-optimizations -frounding-math -fsignaling-nans")
-    set (CMAKE_Fortran_FLAGS  "${CMAKE_Fortran_FLAGS} -ffpe-trap=invalid,zero,overflow -fcheck=bounds -fbacktrace -fno-range-check")
+    set (CMAKE_Fortran_FLAGS  "${CMAKE_Fortran_FLAGS} -ffpe-trap=invalid,zero,overflow -fcheck=bounds -fbacktrace -fno-range-check -Wall")
   elseif (${CMAKE_BUILD_TYPE} MATCHES "Bitforbit")
     set (CMAKE_Fortran_FLAGS  "${CMAKE_Fortran_FLAGS}")
   endif (${CMAKE_BUILD_TYPE} MATCHES "Debug")
@@ -257,9 +253,17 @@ endif(MKL_DIR)
 
 #------------------------------------------------------------------------------
 # Set netCDF flags for preprocessor, compiler and linker (if defined)
+# Legacy settings for old make build
 if(NETCDF_DIR)
   set (NETCDF_INC "-I${NETCDF_DIR}/include")
   set (NETCDF_LIB "-L${NETCDF_DIR}/lib -lnetcdff -lnetcdf")
+  set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${NETCDF_INC} ${NETCDF_LIB}")
+  ADD_DEFINITIONS(-DNETCDF)
+  message (STATUS "Enable netCDF support")
+# Settings for new cmake build
+elseif (NETCDF_INC_DIR AND NETCDF_LIBDIR)
+  set (NETCDF_INC "-I${NETCDF_INC_DIR}")
+  set (NETCDF_LIB "-L${NETCDF_LIBDIR} -lnetcdff -lnetcdf")
   set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${NETCDF_INC} ${NETCDF_LIB}")
   ADD_DEFINITIONS(-DNETCDF)
   message (STATUS "Enable netCDF support")
