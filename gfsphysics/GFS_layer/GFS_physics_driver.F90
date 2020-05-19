@@ -59,7 +59,7 @@ module module_physics_driver
   real(kind=kind_phys), parameter :: con_p001= 0.001_kind_phys
   real(kind=kind_phys), parameter :: con_day = 86400.0_kind_phys
   real(kind=kind_phys), parameter :: rad2dg  = 180.0_kind_phys/con_pi
-  real(kind=kind_phys), parameter :: omz1    = 10.0_kind_phys
+  real(kind=kind_phys), parameter :: omz1    = 2.0_kind_phys
   real(kind=kind_phys), parameter :: huge    = zero
 
 !> GFS Physics Implementation Layer
@@ -515,6 +515,7 @@ module module_physics_driver
            stress, t850, ep1d, gamt, gamq, sigmaf,                      &
            wind, work1, work2, work3, work4, runof, xmu, fm10, fh2,     &
                    tx1, tx2, tx3, tx4, ctei_r, evbs, evcw, trans, sbsno,&
+!          dnsst,  tx1, tx2, tx3, tx4, ctei_r, evbs, evcw, trans, sbsno,&
            snowc, frland, adjsfcdsw, adjsfcnsw, adjsfcdlw, adjsfculw,   &
            adjnirbmu, adjnirdfu, adjvisbmu, adjvisdfu, adjnirbmd,       &
            adjnirdfd, adjvisbmd, adjvisdfd,           xcosz, tseal,     &
@@ -1709,24 +1710,26 @@ module module_physics_driver
             endif
           enddo
           if (Model%cplflx) then       ! apply only at ocean points
-            tem1 = half / omz1
+            call get_dtzm_2d (Sfcprop%xt,  Sfcprop%xz, Sfcprop%dt_cool,  &
+                              Sfcprop%z_c, wet, zero, omz1, im, 1, dtzm)
             do i=1,im
               if (wet(i) .and. Sfcprop%oceanfrac(i) > zero) then
-                tem2 = one / Sfcprop%xz(i)
-                dt_warm = (Sfcprop%xt(i)+Sfcprop%xt(i)) * tem2
-                if ( Sfcprop%xz(i) > omz1) then
-                  Sfcprop%tref(i) = tseal(i) - (one-half*omz1*tem2) * dt_warm &
-                                  + Sfcprop%z_c(i)*Sfcprop%dt_cool(i)*tem1
+!               dnsst = tsfc3(i,3) - Sfcprop%tref(i)            ! retrive/get difference of Ts and Tf
+                Sfcprop%tref(i) = Sfcprop%tsfco(i) - dtzm(i)    ! update Tf with T1 and NSST T-Profile
+!               tsfc3(i,3)  = max(271.2,Sfcprop%tref(i) + dnsst ! get Ts updated due to Tf update
+!               tseal(i)    = tsfc3(i,3)
+                if (abs(Sfcprop%xz(i)) > zero) then
+                  tem2 = one / Sfcprop%xz(i)
                 else
-                  Sfcprop%tref(i) = tseal(i) - (Sfcprop%xz(i)*dt_warm &
-                                  -  Sfcprop%z_c(i)*Sfcprop%dt_cool(i))*tem1
+                  tem2 = zero
                 endif
-                TSEAl(i) = Sfcprop%tref(i) + dt_warm - Sfcprop%dt_cool(i)
-!                        - (Sfcprop%oro(i)-Sfcprop%oro_uf(i))*rlapse
-                tsurf3(i,3) = TSEAl(i)
+                tseal(i)    = Sfcprop%tref(i) + (Sfcprop%xt(i)+Sfcprop%xt(i)) * tem2 &
+                                              - Sfcprop%dt_cool(i)
+                tsurf3(i,3) = tseal(i)
               endif
             enddo
           endif
+
 !     if (lprnt) write(0,*)' bef nst tseal=',tseal(ipr) &
 !     ,' tsfc3=',tsfc3(ipr,3),' tsurf3=',tsurf3(ipr,3),' tem=',tem
 !*## CCPP ##
