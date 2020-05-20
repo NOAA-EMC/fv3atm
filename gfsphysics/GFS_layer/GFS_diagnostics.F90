@@ -2789,7 +2789,7 @@ module GFS_diagnostics
         ExtDiag(idx)%mod_name = 'gfs_sfc'
         allocate (ExtDiag(idx)%data(nblks))
         do nb = 1,nblks
-          ExtDiag(idx)%data(nb)%var2 => sfcprop(nb)%tiice(:,num)
+          ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%tiice(:,num)
         enddo
       enddo
     end if
