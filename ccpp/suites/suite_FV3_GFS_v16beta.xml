@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<suite name="FV3_GFS_v16beta" lib="ccppphys" ver="3">
+<suite name="FV3_GFS_v16beta" lib="ccppphys" ver="4">
   <!-- <init></init> -->
   <group name="fast_physics">
     <subcycle loop="1">
@@ -54,7 +54,6 @@
     <!-- End of surface iteration loop -->
     <subcycle loop="1">
       <scheme>GFS_surface_composites_post</scheme>
-      <scheme>dcyc2t3_post</scheme>
       <scheme>sfc_diag</scheme>
       <scheme>sfc_diag_post</scheme>
       <scheme>GFS_surface_generic_post</scheme>

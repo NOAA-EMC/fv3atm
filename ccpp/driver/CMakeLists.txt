@@ -17,7 +17,7 @@ add_library(
     CCPP_driver.F90
 )
 
-target_link_libraries(ccppdriver ${PHYS}physics)
+target_link_libraries(ccppdriver gfsphysics)
 target_link_libraries(ccppdriver ccpp)
 target_link_libraries(ccppdriver ccppphys)
 
