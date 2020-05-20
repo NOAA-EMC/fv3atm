@@ -217,7 +217,7 @@ endif()
 set_property(SOURCE GFS_layer/GFS_diagnostics.F90 APPEND_STRING PROPERTY COMPILE_FLAGS "-O0")
 
 target_compile_definitions(gfsphysics PRIVATE -DNEMS_GSM)
-target_include_directories(gfsphysics PRIVATE ${NETCDF_INC_DIR})
+target_link_libraries(gfsphysics NetCDF::NetCDF_Fortran)
 
 set_target_properties(gfsphysics PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mod)
 target_include_directories(gfsphysics PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/mod>)
