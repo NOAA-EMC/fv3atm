@@ -26,7 +26,7 @@ add_library(
 
 set_source_files_properties(post_gfs.F90 post_nems_routines.F90
                             PROPERTIES
-                            COMPILE_FLAGS "-I${POST_INC}")
+                            COMPILE_FLAGS "-I$ENV{POST_INC}")
 
 target_link_libraries(io fms)
 target_link_libraries(io gfsphysics)
