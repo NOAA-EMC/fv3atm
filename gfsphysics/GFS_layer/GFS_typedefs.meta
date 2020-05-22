@@ -188,6 +188,13 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+[qgrs(:,:,index_for_hail)]
+  standard_name = hail_mixing_ratio
+  long_name = ratio of mass of hail to mass of dry air plus vapor (without condensates)
+  units = kg kg-1
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
 [qgrs(:,:,index_for_ozone)]
   standard_name = ozone_mixing_ratio
   long_name = ozone mixing ratio
@@ -240,6 +247,27 @@
 [qgrs(:,:,index_for_graupel_number_concentration)]
   standard_name = graupel_number_concentration
   long_name = number concentration of graupel
+  units = kg-1
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+[qgrs(:,:,index_for_hail_number_concentration)]
+  standard_name = hail_number_concentration
+  long_name = number concentration of hail
+  units = kg-1
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+[qgrs(:,:,index_for_graupel_particle_volume)]
+  standard_name = graupel_particle_volume
+  long_name = volume of graupel particles
+  units = kg-1
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+[qgrs(:,:,index_for_hail_particle_volume)]
+  standard_name = hail_particle_volume
+  long_name = volume of hail particles
   units = kg-1
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
@@ -368,6 +396,13 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+[gq0(:,:,index_for_hail)]
+  standard_name = hail_mixing_ratio_updated_by_physics
+  long_name = ratio of mass of hail to mass of dry air plus vapor (without condensates) updated by physics
+  units = kg kg-1
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
 [gq0(:,:,index_for_mass_weighted_rime_factor)]
   standard_name = mass_weighted_rime_factor_updated_by_physics
   long_name = mass weighted rime factor updated by physics
@@ -420,6 +455,27 @@
 [gq0(:,:,index_for_graupel_number_concentration)]
   standard_name = graupel_number_concentration_updated_by_physics
   long_name = number concentration of graupel updated by physics
+  units = kg-1
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+[gq0(:,:,index_for_hail_number_concentration)]
+  standard_name = hail_number_concentration_updated_by_physics
+  long_name = number concentration of hail updated by physics
+  units = kg-1
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+[gq0(:,:,index_for_graupel_particle_volume)]
+  standard_name = graupel_particle_volume_updated_by_physics
+  long_name = volume of graupel particles updated by physics
+  units = kg-1
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+[gq0(:,:,index_for_hail_particle_volume)]
+  standard_name = hail_particle_volume_updated_by_physics
+  long_name = hail particle volume updated by physics
   units = kg-1
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
@@ -2379,6 +2435,12 @@
   units = flag
   dimensions = ()
   type = integer
+[imp_physics_nssl]
+  standard_name = flag_for_nssl_microphysics_scheme
+  long_name = choice of NSSL microphysics scheme
+  units = flag
+  dimensions = ()
+  type = integer
 [imp_physics_wsm6]
   standard_name = flag_for_wsm6_microphysics_scheme
   long_name = choice of WSM6 microphysics scheme
@@ -3662,6 +3724,12 @@
   units = index
   dimensions = ()
   type = integer
+[nthl]
+  standard_name = index_for_hail
+  long_name = tracer index for hail
+  units = index
+  dimensions = ()
+  type = integer
 [ntclamt]
   standard_name = index_for_cloud_amount
   long_name = tracer index for cloud amount integer
@@ -3695,6 +3763,24 @@
 [ntgnc]
   standard_name = index_for_graupel_number_concentration
   long_name = tracer index for graupel number concentration
+  units = index
+  dimensions = ()
+  type = integer
+[nthnc]
+  standard_name = index_for_hail_number_concentration
+  long_name = tracer index for hail number concentration
+  units = index
+  dimensions = ()
+  type = integer
+[nqvolg]
+  standard_name = index_for_graupel_particle_volume
+  long_name = tracer index for graupel particle volume
+  units = index
+  dimensions = ()
+  type = integer
+[nqvolh]
+  standard_name = index_for_hail_particle_volume
+  long_name = tracer index for hail particle volume
   units = index
   dimensions = ()
   type = integer
