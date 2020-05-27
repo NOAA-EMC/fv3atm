@@ -2860,7 +2860,7 @@ module module_physics_driver
               Coupling%dvsfci_cpl(i) = Coupling%dvsfcin_cpl(i)
               Coupling%dtsfci_cpl(i) = Coupling%dtsfcin_cpl(i)
               Coupling%dqsfci_cpl(i) = Coupling%dqsfcin_cpl(i)
-            elseif (icy(i) .or. dry(i)) then ! use stress_wat from sfc_diff for opw component at mixed point
+            elseif (icy(i) .or. dry(i)) then ! use stress_ocean from sfc_diff for opw component at mixed point
               tem1 = max(Diag%q1(i), 1.e-8)
               rho = Statein%prsl(i,1) / (con_rd*Diag%t1(i)*(one+con_fvirt*tem1))
               if (wind(i) > zero) then
