@@ -200,6 +200,7 @@
   long_name = number concentration of water-friendly aerosols
   units = kg-1
   dimensions = (horizontal_dimension,vertical_dimension)
+  active = (index_for_water_friendly_aerosols > 0)
   type = real
   kind = kind_phys
 [qgrs(:,:,index_for_ice_friendly_aerosols)]
@@ -207,6 +208,7 @@
   long_name = number concentration of ice-friendly aerosols
   units = kg-1
   dimensions = (horizontal_dimension,vertical_dimension)
+  active = (index_for_ice_friendly_aerosols > 0)
   type = real
   kind = kind_phys
 [qgrs(:,:,index_for_liquid_cloud_number_concentration)]
@@ -216,6 +218,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (index_for_liquid_cloud_number_concentration > 0)
 [qgrs(:,:,index_for_ice_cloud_number_concentration)]
   standard_name = ice_number_concentration
   long_name = number concentration of ice
@@ -382,6 +385,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (index_for_water_friendly_aerosols > 0)
 [gq0(:,:,index_for_ice_friendly_aerosols)]
   standard_name = ice_friendly_aerosol_number_concentration_updated_by_physics
   long_name = number concentration of ice-friendly aerosols updated by physics
@@ -389,6 +393,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (index_for_ice_friendly_aerosols > 0)
 [gq0(:,:,index_for_liquid_cloud_number_concentration)]
   standard_name = cloud_droplet_number_concentration_updated_by_physics
   long_name = number concentration of cloud droplets updated by physics
@@ -396,6 +401,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (index_for_liquid_cloud_number_concentration > 0)
 [gq0(:,:,index_for_ice_cloud_number_concentration)]
   standard_name = ice_number_concentration_updated_by_physics
   long_name = number concentration of ice updated by physics
@@ -6802,6 +6808,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (index_for_liquid_cloud_number_concentration > 0)
 [dqdt(:,:,index_for_ice_cloud_number_concentration)]
   standard_name = tendency_of_ice_number_concentration_due_to_model_physics
   long_name = number concentration of ice tendency due to model physics
@@ -6816,6 +6823,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (index_for_water_friendly_aerosols > 0)
 [dqdt(:,:,index_for_ice_friendly_aerosols)]
   standard_name = tendency_of_ice_friendly_aerosol_number_concentration_due_to_model_physics
   long_name = number concentration of ice-friendly aerosols tendency due to model physics
@@ -6823,6 +6831,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (index_for_ice_friendly_aerosols > 0)
 [dqdt(:,:,index_for_rain_water)]
   standard_name = tendency_of_rain_water_mixing_ratio_due_to_model_physics
   long_name = ratio of mass of rain water tendency to mass of dry air plus vapor (without condensates) due to model physics
