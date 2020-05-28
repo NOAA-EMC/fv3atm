@@ -1,20 +1,14 @@
-cmake_minimum_required(VERSION 2.8.11)
+cmake_minimum_required(VERSION 3.0)
 
 # Use rpaths on MacOSX
 set(CMAKE_MACOSX_RPATH 1)
-
-if(POLICY CMP0048)
-    cmake_policy(SET CMP0048 NEW)
-endif(POLICY CMP0048)
-
 if(POLICY CMP0042)
     cmake_policy(SET CMP0042 NEW)
 endif(POLICY CMP0042)
 
-PROJECT(CCPP-FV3)
+project(CCPP-FV3
+        LANGUAGES C CXX Fortran)
 set(PROJECT "CCPP-FV3")
-
-ENABLE_LANGUAGE(Fortran)
 
 include(CMakeForceCompiler)
 
@@ -178,25 +172,11 @@ if (MPI)
 endif (MPI)
 
 #------------------------------------------------------------------------------
-# Set flags for static building/linking of CCPP
-if (STATIC)
-  ADD_DEFINITIONS(-DSTATIC)
-endif (STATIC)
-
-#------------------------------------------------------------------------------
 # Set flag for 32bit dynamics build
 if (DYN32)
   message(STATUS "Dynamics compiled with 32-bit option, adjust fv_sat_adj types")
   ADD_DEFINITIONS(-DOVERLOAD_R4)
 endif (DYN32)
-
-#------------------------------------------------------------------------------
-# If a dynamic build is requested, set TARGET_SUPPORTS_SHARED_LIBS to TRUE; on
-# some systems, cmake doesn't set this even though the system supports shared
-# libraries (e.g. Cray systems)
-if(NOT STATIC)
-SET_PROPERTY(GLOBAL PROPERTY TARGET_SUPPORTS_SHARED_LIBS TRUE)
-endif(NOT STATIC)
 
 #------------------------------------------------------------------------------
 # Add model-specific flags for C/C++/Fortran preprocessor

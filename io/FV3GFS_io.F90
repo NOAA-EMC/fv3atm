@@ -89,7 +89,7 @@ module FV3GFS_io_mod
   integer :: tot_diag_idx = 0
   integer :: total_outputlevel = 0
   integer :: isco,ieco,jsco,jeco,levo,num_axes_phys
-  integer :: fhzero, ncld, nsoil, imp_physics
+  integer :: fhzero, ncld, nsoil, imp_physics, landsfcmdl
   real(4) :: dtp
   logical :: lprecip_accu
   character(len=64)  :: Sprecip_accu
@@ -181,6 +181,7 @@ module FV3GFS_io_mod
    integer :: nsfcprop2d, idx_opt
    real(kind=kind_phys), allocatable :: temp2d(:,:,:)
    real(kind=kind_phys), allocatable :: temp3d(:,:,:,:)
+   real(kind=kind_phys), allocatable :: temp3dlevsp1(:,:,:,:)
    character(len=32) :: name
 
    isc = Model%isc
@@ -198,10 +199,12 @@ module FV3GFS_io_mod
    endif
 
    allocate (temp2d(isc:iec,jsc:jec,nsfcprop2d+Model%ntot3d+Model%nctp))
-   allocate (temp3d(isc:iec,jsc:jec,1:lev,17+Model%ntot3d+2*ntr))
+   allocate (temp3d(isc:iec,jsc:jec,1:lev,14+Model%ntot3d+2*ntr))
+   allocate (temp3dlevsp1(isc:iec,jsc:jec,1:lev+1,3))
 
    temp2d = 0.
    temp3d = 0.
+   temp3dlevsp1 = 0.
 
    do j=jsc,jec
      do i=isc,iec
@@ -401,29 +404,30 @@ module FV3GFS_io_mod
          temp2d(i,j,nsfcprop2d+Model%ntot2d+l) = IPD_Data(nb)%Tbd%phy_fctd(ix,l)
        enddo
 
-       temp3d(i,j,:, 1) = IPD_Data(nb)%Statein%phii(ix,:)
-       temp3d(i,j,:, 2) = IPD_Data(nb)%Statein%prsi(ix,:)
-       temp3d(i,j,:, 3) = IPD_Data(nb)%Statein%prsik(ix,:)
-       temp3d(i,j,:, 4) = IPD_Data(nb)%Statein%phil(ix,:)
-       temp3d(i,j,:, 5) = IPD_Data(nb)%Statein%prsl(ix,:)
-       temp3d(i,j,:, 6) = IPD_Data(nb)%Statein%prslk(ix,:)
-       temp3d(i,j,:, 7) = IPD_Data(nb)%Statein%ugrs(ix,:)
-       temp3d(i,j,:, 8) = IPD_Data(nb)%Statein%vgrs(ix,:)
-       temp3d(i,j,:, 9) = IPD_Data(nb)%Statein%vvl(ix,:)
-       temp3d(i,j,:,10) = IPD_Data(nb)%Statein%tgrs(ix,:)
-       temp3d(i,j,:,11) = IPD_Data(nb)%Stateout%gu0(ix,:)
-       temp3d(i,j,:,12) = IPD_Data(nb)%Stateout%gv0(ix,:)
-       temp3d(i,j,:,13) = IPD_Data(nb)%Stateout%gt0(ix,:)
-       temp3d(i,j,:,14) = IPD_Data(nb)%Radtend%htrsw(ix,:)
-       temp3d(i,j,:,15) = IPD_Data(nb)%Radtend%htrlw(ix,:)
-       temp3d(i,j,:,16) = IPD_Data(nb)%Radtend%swhc(ix,:)
-       temp3d(i,j,:,17) = IPD_Data(nb)%Radtend%lwhc(ix,:)
+       temp3dlevsp1(i,j,:, 1) = IPD_Data(nb)%Statein%phii(ix,:)
+       temp3dlevsp1(i,j,:, 2) = IPD_Data(nb)%Statein%prsi(ix,:)
+       temp3dlevsp1(i,j,:, 3) = IPD_Data(nb)%Statein%prsik(ix,:)
+
+       temp3d(i,j,:, 1) = IPD_Data(nb)%Statein%phil(ix,:)
+       temp3d(i,j,:, 2) = IPD_Data(nb)%Statein%prsl(ix,:)
+       temp3d(i,j,:, 3) = IPD_Data(nb)%Statein%prslk(ix,:)
+       temp3d(i,j,:, 4) = IPD_Data(nb)%Statein%ugrs(ix,:)
+       temp3d(i,j,:, 5) = IPD_Data(nb)%Statein%vgrs(ix,:)
+       temp3d(i,j,:, 6) = IPD_Data(nb)%Statein%vvl(ix,:)
+       temp3d(i,j,:, 7) = IPD_Data(nb)%Statein%tgrs(ix,:)
+       temp3d(i,j,:, 8) = IPD_Data(nb)%Stateout%gu0(ix,:)
+       temp3d(i,j,:, 9) = IPD_Data(nb)%Stateout%gv0(ix,:)
+       temp3d(i,j,:,10) = IPD_Data(nb)%Stateout%gt0(ix,:)
+       temp3d(i,j,:,11) = IPD_Data(nb)%Radtend%htrsw(ix,:)
+       temp3d(i,j,:,12) = IPD_Data(nb)%Radtend%htrlw(ix,:)
+       temp3d(i,j,:,13) = IPD_Data(nb)%Radtend%swhc(ix,:)
+       temp3d(i,j,:,14) = IPD_Data(nb)%Radtend%lwhc(ix,:)
        do l = 1,Model%ntot3d
-         temp3d(i,j,:,17+l) = IPD_Data(nb)%Tbd%phy_f3d(ix,:,l)
+         temp3d(i,j,:,14+l) = IPD_Data(nb)%Tbd%phy_f3d(ix,:,l)
        enddo
        do l = 1,ntr
-         temp3d(i,j,:,17+Model%ntot3d+l)     = IPD_Data(nb)%Statein%qgrs(ix,:,l)
-         temp3d(i,j,:,17+Model%ntot3d+ntr+l) = IPD_Data(nb)%Stateout%gq0(ix,:,l)
+         temp3d(i,j,:,14+Model%ntot3d+l)     = IPD_Data(nb)%Statein%qgrs(ix,:,l)
+         temp3d(i,j,:,14+Model%ntot3d+ntr+l) = IPD_Data(nb)%Stateout%gq0(ix,:,l)
        enddo
      enddo
    enddo
@@ -433,12 +437,19 @@ module FV3GFS_io_mod
      write (name, '(i3.3,3x,4a)') i, ' 2d '
      write(outunit,100) name, mpp_chksum(temp2d(:,:,i:i))
    enddo
-   do i = 1,17+Model%ntot3d+2*ntr
-     write (name, '(i2.2,3x,4a)') i, ' 3d '
+   do i = 1,3
+     write (name, '(i2.2,3x,4a)') i, ' 3d levsp1'
+     write(outunit,100) name, mpp_chksum(temp3dlevsp1(:,:,:,i:i))
+   enddo
+   do i = 1,14+Model%ntot3d+2*ntr
+     write (name, '(i2.2,3x,4a)') i, ' 3d levs'
      write(outunit,100) name, mpp_chksum(temp3d(:,:,:,i:i))
    enddo
 100 format("CHECKSUM::",A32," = ",Z20)
 
+   deallocate(temp2d)
+   deallocate(temp3d)
+   deallocate(temp3dlevsp1)
    end subroutine FV3GFS_IPD_checksum
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -2188,8 +2199,9 @@ module FV3GFS_io_mod
     nsoil  = Model%lsoil
     dtp    = Model%dtp
     imp_physics  = Model%imp_physics
+    landsfcmdl  = Model%lsm
 !    print *,'in fv3gfs_diag_register,ncld=',Model%ncld,Model%lsoil,Model%imp_physics, &
-!      ' dtp=',dtp
+!      ' dtp=',dtp,' landsfcmdl=',Model%lsm
 !
 !save lon/lat for vector interpolation
     allocate(lon(isco:ieco,jsco:jeco))
@@ -2803,7 +2815,7 @@ module FV3GFS_io_mod
 
      call ESMF_AttributeAdd(phys_bundle(ibdl), convention="NetCDF", purpose="FV3", &
                             attrList=(/"fhzero     ", "ncld       ", "nsoil      ",&
-                                       "imp_physics", "dtp        "/), rc=rc)
+                                       "imp_physics", "dtp        ", "landsfcmdl "/), rc=rc)
 
      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
@@ -2826,6 +2838,10 @@ module FV3GFS_io_mod
      call ESMF_AttributeSet(phys_bundle(ibdl), convention="NetCDF", purpose="FV3", &
                             name="dtp", value=dtp, rc=rc)
 !     print *,'in fcst gfdl diag, dtp=',dtp,' ibdl=',ibdl
+     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+     call ESMF_AttributeSet(phys_bundle(ibdl), convention="NetCDF", purpose="FV3", &
+                            name="landsfcmdl", value=landsfcmdl, rc=rc)
      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
 !end ibdl
