@@ -19,6 +19,8 @@
     <subcycle loop="1">
       <scheme>GFS_suite_interstitial_rad_reset</scheme>
       <scheme>GFS_rrtmgp_pre</scheme>
+      <scheme>GFS_rrtmgp_gfdlmp_pre</scheme>
+      <scheme>GFS_cloud_diagnostics</scheme>
       <scheme>GFS_rrtmgp_sw_pre</scheme>
       <scheme>rrtmgp_sw_gas_optics</scheme>
       <scheme>rrtmgp_sw_aerosol_optics</scheme>

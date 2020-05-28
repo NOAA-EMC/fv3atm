@@ -671,10 +671,9 @@ module GFS_typedefs
     character(len=128)   :: sw_file_clouds    !< RRTMGP file containing coefficients used to compute clouds optical properties
     integer              :: rrtmgp_nBandsSW   !< Number of RRTMGP SW bands.
     integer              :: rrtmgp_nGptsSW    !< Number of RRTMGP SW spectral points.
-    integer              :: rrtmgp_cld_optics !< Flag to control which RRTMGP routine to compute cloud-optics.
-                                                 !< = 0 ; Use RRTMG implementation
-                                                 !< = 1 ; Use RRTMGP (pade)
-                                                 !< = 2 ; USE RRTMGP (LUT)
+    logical              :: doG_cldoptics       !< Use legacy RRTMG cloud-optics?                                             
+    logical              :: doGP_cldoptics_PADE !< Use RRTMGP cloud-optics: PADE approximation?                                             
+    logical              :: doGP_cldoptics_LUT  !< Use RRTMGP cloud-optics: LUTs?  
     integer              :: rrtmgp_nrghice    !< Number of ice-roughness categories
     integer              :: rrtmgp_nGauss_ang !< Number of angles used in Gaussian quadrature
     logical              :: do_GPsw_Glw       ! If set to true use rrtmgp for SW calculation, rrtmg for LW.
@@ -1929,7 +1928,9 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: t_lay(:,:)             => null()  !<
     real (kind=kind_phys), pointer      :: relhum(:,:)            => null()  !<
     real (kind=kind_phys), pointer      :: tv_lay(:,:)            => null()  !<
-    real (kind=kind_phys), pointer      :: overlap_param(:,:)     => null()  !<
+    real (kind=kind_phys), pointer      :: deltaZ(:,:)               => null()  !<
+    real (kind=kind_phys), pointer      :: cloud_overlap_param(:,:)  => null()  !< Cloud overlap parameter
+    real (kind=kind_phys), pointer      :: precip_overlap_param(:,:) => null()  !< Precipitation overlap parameter
     real (kind=kind_phys), pointer      :: tracer(:,:,:)          => null()  !<
     real (kind=kind_phys), pointer      :: aerosolslw(:,:,:,:)    => null()  !< Aerosol radiative properties in each LW band.
     real (kind=kind_phys), pointer      :: aerosolssw(:,:,:,:)    => null()  !< Aerosol radiative properties in each SW band.
@@ -1942,6 +1943,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: cld_resnow(:,:)        => null()  !< Cloud snow effective radius
     real (kind=kind_phys), pointer      :: cld_rwp(:,:)           => null()  !< Cloud rain water path
     real (kind=kind_phys), pointer      :: cld_rerain(:,:)        => null()  !< Cloud rain effective radius
+    real (kind=kind_phys), pointer      :: precip_frac(:,:)       => null()  !< Precipitation fraction
     real (kind=kind_phys), pointer      :: fluxlwUP_allsky(:,:)   => null()  !< RRTMGP upward   longwave  all-sky flux profile
     real (kind=kind_phys), pointer      :: fluxlwDOWN_allsky(:,:) => null()  !< RRTMGP downward longwave  all-sky flux profile
     real (kind=kind_phys), pointer      :: fluxlwUP_clrsky(:,:)   => null()  !< RRTMGP upward   longwave  clr-sky flux profile
@@ -1967,10 +1969,14 @@ module GFS_typedefs
     type(ty_gas_optics_rrtmgp)          :: sw_gas_props                      !< RRTMGP DDT
     type(ty_cloud_optics)               :: lw_cloud_props                    !< RRTMGP DDT
     type(ty_cloud_optics)               :: sw_cloud_props                    !< RRTMGP DDT
+    type(ty_optical_props_1scl)         :: lw_optical_props_precipByBand     !< RRTMGP DDT
+    type(ty_optical_props_1scl)         :: lw_optical_props_precip           !< RRTMGP DDT
     type(ty_optical_props_1scl)         :: lw_optical_props_cloudsByBand     !< RRTMGP DDT
     type(ty_optical_props_1scl)         :: lw_optical_props_clouds           !< RRTMGP DDT
     type(ty_optical_props_1scl)         :: lw_optical_props_clrsky           !< RRTMGP DDT
     type(ty_optical_props_1scl)         :: lw_optical_props_aerosol          !< RRTMGP DDT
+    type(ty_optical_props_2str)         :: sw_optical_props_precipByBand     !< RRTMGP DDT
+    type(ty_optical_props_2str)         :: sw_optical_props_precip           !< RRTMGP DDT 
     type(ty_optical_props_2str)         :: sw_optical_props_cloudsByBand     !< RRTMGP DDT
     type(ty_optical_props_2str)         :: sw_optical_props_clouds           !< RRTMGP DDT
     type(ty_optical_props_2str)         :: sw_optical_props_clrsky           !< RRTMGP DDT
@@ -2871,10 +2877,9 @@ module GFS_typedefs
     character(len=128)   :: sw_file_clouds  = ''             !< RRTMGP file containing coefficients used to compute clouds optical properties
     integer              :: rrtmgp_nBandsSW = 14             !< Number of RRTMGP SW bands.
     integer              :: rrtmgp_nGptsSW  = 224            !< Number of RRTMGP SW spectral points.
-    integer              :: rrtmgp_cld_optics = 0            !<  Flag to control which RRTMGP routine to compute cloud-optics.
-                                                             !< = 0 ; Use RRTMGP implementation
-                                                             !< = 1 ; Use RRTMGP (pade)
-                                                             !< = 2 ; USE RRTMGP (LUT)
+    logical              :: doG_cldoptics       = .false.     !< Use legacy RRTMG cloud-optics?                                             
+    logical              :: doGP_cldoptics_PADE = .false.    !< Use RRTMGP cloud-optics: PADE approximation?                                             
+    logical              :: doGP_cldoptics_LUT  = .false.    !< Use RRTMGP cloud-optics: LUTs?     
     integer              :: rrtmgp_nrghice = 0               !< Number of ice-roughness categories
     integer              :: rrtmgp_nGauss_ang=1              !< Number of angles used in Gaussian quadrature
     logical              :: do_GPsw_Glw    = .false.         
@@ -3221,8 +3226,8 @@ module GFS_typedefs
                                do_RRTMGP, active_gases, nGases, rrtmgp_root,                &
                                lw_file_gas, lw_file_clouds, rrtmgp_nBandsLW, rrtmgp_nGptsLW,&
                                sw_file_gas, sw_file_clouds, rrtmgp_nBandsSW, rrtmgp_nGptsSW,&
-                               rrtmgp_cld_optics, rrtmgp_nrghice, rrtmgp_nGauss_ang,        &
-                               do_GPsw_Glw,                                                 &
+                               doG_cldoptics, doGP_cldoptics_PADE, doGP_cldoptics_LUT,      &
+                               rrtmgp_nrghice, rrtmgp_nGauss_ang, do_GPsw_Glw,              &
 #endif
                           ! IN CCN forcing
                                iccn,                                                        &
@@ -3483,7 +3488,9 @@ module GFS_typedefs
     Model%sw_file_clouds    = sw_file_clouds
     Model%rrtmgp_nBandsSW   = rrtmgp_nBandsSW
     Model%rrtmgp_nGptsSW    = rrtmgp_nGptsSW
-    Model%rrtmgp_cld_optics = RRTMGP_CLD_OPTICS
+    Model%doG_cldoptics       = doG_cldoptics
+    Model%doGP_cldoptics_PADE = doGP_cldoptics_PADE
+    Model%doGP_cldoptics_LUT  = doGP_cldoptics_LUT
     ! RRTMGP incompatible with levr /= levs
     if (Model%do_RRTMGP .and. Model%levr /= Model%levs) then
       write(0,*) "Logic error, RRTMGP only works with levr = levs"
@@ -4612,7 +4619,9 @@ module GFS_typedefs
         print *, ' sw_file_clouds     : ', Model%sw_file_clouds
         print *, ' rrtmgp_nBandsSW    : ', Model%rrtmgp_nBandsSW
         print *, ' rrtmgp_nGptsSW     : ', Model%rrtmgp_nGptsSW
-        print *, ' rrtmgp_cld_optics  : ', Model%rrtmgp_cld_optics
+        print *, ' doG_cldoptics      : ', Model%doG_cldoptics
+        print *, ' doGP_cldoptics_PADE: ', Model%doGP_cldoptics_PADE
+        print *, ' doGP_cldoptics_LUT : ', Model%doGP_cldoptics_LUT
       endif
 #endif
       print *, ' '
@@ -6087,7 +6096,9 @@ module GFS_typedefs
     if (Model%do_RRTMGP) then
       allocate (Interstitial%tracer            (IM, Model%levs,Model%ntrac))
       allocate (Interstitial%tv_lay            (IM, Model%levs))
-      allocate (Interstitial%overlap_param     (IM, Model%levs))
+      allocate (Interstitial%deltaZ               (IM, Model%levs))
+      allocate (Interstitial%cloud_overlap_param  (IM, Model%levs))
+      allocate (Interstitial%precip_overlap_param (IM, Model%levs))
       allocate (Interstitial%relhum            (IM, Model%levs))
       allocate (Interstitial%p_lev             (IM, Model%levs+1))
       allocate (Interstitial%p_lay             (IM, Model%levs))
@@ -6112,6 +6123,7 @@ module GFS_typedefs
       allocate (Interstitial%cld_resnow        (IM, Model%levs))
       allocate (Interstitial%cld_rwp           (IM, Model%levs))
       allocate (Interstitial%cld_rerain        (IM, Model%levs))
+      allocate (Interstitial%precip_frac       (IM, Model%levs))
       allocate (Interstitial%icseed_lw         (IM))
       allocate (Interstitial%icseed_sw         (IM))
       allocate (Interstitial%flxprf_lw         (IM, Model%levs+1))
@@ -6450,7 +6462,9 @@ module GFS_typedefs
     if (Model%do_RRTMGP) then
       Interstitial%tracer            = clear_val
       Interstitial%tv_lay            = clear_val
-      Interstitial%overlap_param     = clear_val
+      Interstitial%deltaZ               = clear_val
+      Interstitial%cloud_overlap_param  = clear_val
+      Interstitial%precip_overlap_param = clear_val
       Interstitial%relhum            = clear_val
       Interstitial%p_lev             = clear_val
       Interstitial%p_lay             = clear_val
@@ -6475,6 +6489,7 @@ module GFS_typedefs
       Interstitial%cld_resnow        = clear_val
       Interstitial%cld_rwp           = clear_val
       Interstitial%cld_rerain        = clear_val
+      Interstitial%precip_frac       = clear_val
       Interstitial%icseed_lw         = clear_val
       Interstitial%icseed_sw         = clear_val
       Interstitial%sfc_emiss_byband  = clear_val

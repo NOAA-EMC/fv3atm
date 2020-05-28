@@ -2333,12 +2333,24 @@
   units = count
   dimensions =  ()
   type = integer
-[rrtmgp_cld_optics]
-  standard_name = rrtmgp_cloud_optics_flag
-  long_name = Flag to control which RRTMGP cloud-optics scheme (Model%rrtmgp_cld_optics)
+[doG_cldoptics]
+  standard_name = flag_to_calc_lw_cld_optics_using_RRTMG
+  long_name = logical flag to control cloud optics scheme.
   units = flag
-  dimensions =  ()
-  type = integer
+  dimensions = ()
+  type = logical  
+[doGP_cldoptics_PADE]
+  standard_name = flag_to_calc_lw_cld_optics_using_RRTMGP_PADE
+  long_name = logical flag to control cloud optics scheme.
+  units = flag
+  dimensions = ()
+  type = logical
+[doGP_cldoptics_LUT]
+  standard_name = flag_to_calc_lw_cld_optics_using_RRTMGP_LUT
+  long_name = logical flag to control cloud optics scheme.
+  units = flag
+  dimensions = ()
+  type = logical
 [rrtmgp_nrghice]
   standard_name = number_of_rrtmgp_ice_roughness
   long_name = number of ice-roughness categories in RRTMGP calculation (Model%rrtmgp_nrghice)
@@ -8453,6 +8465,14 @@
   type = real
   kind = kind_phys
   optional = F
+[deltaZ]
+  standard_name = layer_thickness
+  long_name = layer_thickness
+  units = m
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+  optional = F
 [tracer]
   standard_name = chemical_tracers
   long_name = chemical tracers
@@ -8461,9 +8481,17 @@
   type = real
   kind = kind_phys
   optional = F
-[overlap_param]
+[cloud_overlap_param]
   standard_name = cloud_overlap_param
   long_name = cloud overlap parameter
+  units = km
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+  optional = F
+[precip_overlap_param]
+  standard_name = precip_overlap_param
+  long_name = precipitation overlap parameter
   units = km
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
@@ -8483,69 +8511,6 @@
   dimensions = ()
   type = integer
   optional = F
-[cld_frac]
-  standard_name = RRTMGP_total_cloud_fraction
-  long_name = layer total cloud fraction
-  units = frac
-  dimensions = (horizontal_dimension,vertical_dimension)
-  type = real
-  kind = kind_phys
-[cld_lwp]
-  standard_name = RRTMGP_cloud_liquid_water_path
-  long_name = layer cloud liquid water path
-  units = g m-2
-  dimensions = (horizontal_dimension,vertical_dimension)
-  type = real
-  kind = kind_phys
-[cld_reliq]
-  standard_name = RRTMGP_mean_effective_radius_for_liquid_cloud
-  long_name = mean effective radius for liquid cloud
-  units = micron
-  dimensions = (horizontal_dimension,vertical_dimension)
-  type = real
-  kind = kind_phys
-[cld_iwp]
-  standard_name = RRTMGP_cloud_ice_water_path
-  long_name = layer cloud ice water path
-  units = g m-2
-  dimensions = (horizontal_dimension,vertical_dimension)
-  type = real
-  kind = kind_phys
-[cld_reice]
-  standard_name = RRTMGP_mean_effective_radius_for_ice_cloud
-  long_name = mean effective radius for ice cloud
-  units = micron
-  dimensions = (horizontal_dimension,vertical_dimension)
-  type = real
-  kind = kind_phys
-[cld_rwp]
-  standard_name = RRTMGP_cloud_rain_water_path
-  long_name = cloud rain water path
-  units = g m-2
-  dimensions = (horizontal_dimension,vertical_dimension)
-  type = real
-  kind = kind_phys
-[cld_rerain]
-  standard_name = RRTMGP_mean_effective_radius_for_rain_drop
-  long_name = mean effective radius for rain drop
-  units = micron
-  dimensions = (horizontal_dimension,vertical_dimension)
-  type = real
-  kind = kind_phys
-[cld_swp]
-  standard_name = RRTMGP_cloud_snow_water_path
-  long_name = cloud snow water path
-  units = g m-2
-  dimensions = (horizontal_dimension,vertical_dimension)
-  type = real
-  kind = kind_phys
-[cld_resnow]
-  standard_name = RRTMGP_mean_effective_radius_for_snow_flake
-  long_name = mean effective radius for snow flake
-  units = micron
-  dimensions = (horizontal_dimension,vertical_dimension)
-  type = real
-  kind = kind_phys
 [cldtausw]
   standard_name = RRTMGP_cloud_optical_depth_layers_at_0_55mu_band
   long_name = approx .55mu band layer cloud optical depth
@@ -8561,6 +8526,14 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+[precip_frac]
+  standard_name = precipitation_fraction_by_layer
+  long_name = precipitation fraction in each layer
+  units = frac
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+  optional = F 
 [fluxlwUP_allsky]
   standard_name = RRTMGP_lw_flux_profile_upward_allsky
   long_name = RRTMGP upward longwave all-sky flux profile
@@ -8806,6 +8779,31 @@
   dimensions = ()
   type = ty_optical_props_1scl
   optional = F
+[lw_optical_props_precip]
+  standard_name = longwave_optical_properties_for_precipitation
+  long_name = Fortran DDT containing RRTMGP optical properties
+  units = DDT
+  dimensions = ()
+  type = ty_optical_props_1scl
+  optional = F
+[lw_optical_props_precipByBand]
+  standard_name = longwave_optical_properties_for_precipitation_by_band
+  long_name = Fortran DDT containing RRTMGP optical properties
+  units = DDT
+  dimensions = ()
+  type = ty_optical_props_1scl
+[sw_optical_props_precipByBand]
+  standard_name = shortwave_optical_properties_for_precipitation_by_band
+  long_name = Fortran DDT containing RRTMGP optical properties
+  units = DDT
+  dimensions = ()
+  type = ty_optical_props_2str  
+[sw_optical_props_precip]
+  standard_name = shortwave_optical_properties_for_precipitation
+  long_name = Fortran DDT containing RRTMGP optical properties
+  units = DDT
+  dimensions = ()
+  type = ty_optical_props_2str  
 [sfc_emiss_byband]
   standard_name = surface_emissivity_in_each_RRTMGP_LW_band
   long_name = surface emissivity in each RRTMGP LW band
