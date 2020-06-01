@@ -295,26 +295,28 @@ SCHEME_FILES = {
     # for testing the <init> and <finalize> sections
     'FV3/ccpp/physics/physics/GFS_suite_init_finalize_test.F90'  : [ 'slow_physics' ],
     # RRTMGP
-    'FV3/ccpp/physics/physics/rrtmg_lw_cloud_optics.F90'         : [ 'slow_physics' ],
-    'FV3/ccpp/physics/physics/rrtmg_sw_cloud_optics.F90'         : [ 'slow_physics' ],
-    'FV3/ccpp/physics/physics/mo_cloud_sampling.F90'             : [ 'slow_physics' ],
-    'FV3/ccpp/physics/physics/rrtmgp_aux.F90'                    : [ 'slow_physics' ],
-    'FV3/ccpp/physics/physics/rrtmgp_lw_gas_optics.F90'          : [ 'slow_physics' ],
-    'FV3/ccpp/physics/physics/rrtmgp_lw_cloud_optics.F90'        : [ 'slow_physics' ],
-    'FV3/ccpp/physics/physics/rrtmgp_sw_gas_optics.F90'          : [ 'slow_physics' ],
-    'FV3/ccpp/physics/physics/rrtmgp_sw_cloud_optics.F90'        : [ 'slow_physics' ],
-    'FV3/ccpp/physics/physics/rrtmgp_sw_aerosol_optics.F90'      : [ 'slow_physics' ],
-    'FV3/ccpp/physics/physics/rrtmgp_lw_rte.F90'                 : [ 'slow_physics' ],
-    'FV3/ccpp/physics/physics/rrtmgp_lw_cloud_sampling.F90'      : [ 'slow_physics' ],
-    'FV3/ccpp/physics/physics/rrtmgp_sw_rte.F90'                 : [ 'slow_physics' ],
-    'FV3/ccpp/physics/physics/rrtmgp_sw_cloud_sampling.F90'      : [ 'slow_physics' ],
-    'FV3/ccpp/physics/physics/rrtmgp_lw_aerosol_optics.F90'      : [ 'slow_physics' ],
-    'FV3/ccpp/physics/physics/GFS_rrtmgp_setup.F90'              : [ 'slow_physics' ],
-    'FV3/ccpp/physics/physics/GFS_rrtmgp_pre.F90'                : [ 'slow_physics' ],
-    'FV3/ccpp/physics/physics/rrtmgp_lw_pre.F90'                 : [ 'slow_physics' ],
-    'FV3/ccpp/physics/physics/GFS_rrtmgp_sw_pre.F90'             : [ 'slow_physics' ],
-    'FV3/ccpp/physics/physics/GFS_rrtmgp_lw_post.F90'            : [ 'slow_physics' ],
-    'FV3/ccpp/physics/physics/GFS_rrtmgp_sw_post.F90'            : [ 'slow_physics' ],
+    'FV3/ccpp/physics/physics/rrtmg_lw_cloud_optics.F90'           : [ 'slow_physics' ],
+    'FV3/ccpp/physics/physics/rrtmg_sw_cloud_optics.F90'           : [ 'slow_physics' ],
+    'FV3/ccpp/physics/physics/mo_cloud_sampling.F90'               : [ 'slow_physics' ],
+    'FV3/ccpp/physics/physics/rrtmgp_aux.F90'                      : [ 'slow_physics' ],
+    'FV3/ccpp/physics/physics/rrtmgp_lw_gas_optics.F90'            : [ 'slow_physics' ],
+    'FV3/ccpp/physics/physics/rrtmgp_lw_cloud_optics.F90'          : [ 'slow_physics' ],
+    'FV3/ccpp/physics/physics/rrtmgp_sw_gas_optics.F90'            : [ 'slow_physics' ],
+    'FV3/ccpp/physics/physics/rrtmgp_sw_cloud_optics.F90'          : [ 'slow_physics' ],
+    'FV3/ccpp/physics/physics/rrtmgp_sw_aerosol_optics.F90'        : [ 'slow_physics' ],
+    'FV3/ccpp/physics/physics/rrtmgp_lw_rte.F90'                   : [ 'slow_physics' ],
+    'FV3/ccpp/physics/physics/rrtmgp_gfdlmp_lw_cloud_sampling.F90' : [ 'slow_physics' ],
+    'FV3/ccpp/physics/physics/rrtmgp_sw_rte.F90'                   : [ 'slow_physics' ],
+    'FV3/ccpp/physics/physics/rrtmgp_gfdlmp_sw_cloud_sampling.F90' : [ 'slow_physics' ],
+    'FV3/ccpp/physics/physics/rrtmgp_lw_aerosol_optics.F90'        : [ 'slow_physics' ],
+    'FV3/ccpp/physics/physics/GFS_rrtmgp_setup.F90'                : [ 'slow_physics' ],
+    'FV3/ccpp/physics/physics/GFS_rrtmgp_pre.F90'                  : [ 'slow_physics' ],
+    'FV3/ccpp/physics/physics/GFS_rrtmgp_gfdlmp_pre.F90'           : [ 'slow_physics' ],
+    'FV3/ccpp/physics/physics/GFS_cloud_diagnostics.F90'           : [ 'slow_physics' ],
+    'FV3/ccpp/physics/physics/rrtmgp_lw_pre.F90'                   : [ 'slow_physics' ],
+    'FV3/ccpp/physics/physics/GFS_rrtmgp_sw_pre.F90'               : [ 'slow_physics' ],
+    'FV3/ccpp/physics/physics/GFS_rrtmgp_lw_post.F90'              : [ 'slow_physics' ],
+    'FV3/ccpp/physics/physics/GFS_rrtmgp_sw_post.F90'              : [ 'slow_physics' ],
     }
 
 # Default build dir, relative to current working directory,
@@ -358,29 +360,17 @@ OPTIONAL_ARGUMENTS = {
     'rrtmgp_sw_rte' : {
          'rrtmgp_sw_rte_run' : [
              'components_of_surface_downward_shortwave_fluxes',
-             'sw_fluxes_sfc',
-             'sw_fluxes_toa',
              ],
          },
     'GFS_rrtmgp_sw_post' : {
          'GFS_rrtmgp_sw_post_run' : [
              'tendency_of_air_temperature_due_to_shortwave_heating_assuming_clear_sky_on_radiation_time_step_and_radiation_levels',
              'components_of_surface_downward_shortwave_fluxes',
-             'sw_fluxes_sfc',
-             'sw_fluxes_toa',
              ],
          },
-    'rrtmgp_lw_rte' : {
-         'rrtmgp_lw_rte_run' : [
-             'lw_fluxes_sfc',
-             'lw_fluxes_toa',
-             ],
-        },
     'GFS_rrtmgp_lw_post' : {
          'GFS_rrtmgp_lw_post_run' : [
              'tendency_of_air_temperature_due_to_longwave_heating_assuming_clear_sky_on_radiation_time_step_and_radiation_levels',
-             'lw_fluxes_sfc',
-             'lw_fluxes_toa',
              ],
          },
     'GFS_rrtmgp_post' : {
