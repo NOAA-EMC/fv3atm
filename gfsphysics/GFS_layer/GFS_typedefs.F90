@@ -596,7 +596,7 @@ module GFS_typedefs
     integer              :: nblks           !< for explicit data blocking: number of blocks
     integer,     pointer :: blksz(:)        !< for explicit data blocking: block sizes of all blocks
 #ifdef CCPP
-    integer,     pointer :: blksz2(:)       !< for explicit data blocking: block sizes of all blocks (duplicate)
+    integer              :: ncols           !< total number of columns for all blocks
 #endif
 
 !--- coupling parameters
@@ -3576,8 +3576,7 @@ module GFS_typedefs
     allocate(Model%blksz(1:Model%nblks))
     Model%blksz            = blksz
 #ifdef CCPP
-    allocate(Model%blksz2(1:Model%nblks))
-    Model%blksz2           = blksz
+    Model%ncols            = sum(Model%blksz)
 #endif
 
 !--- coupling parameters
@@ -4740,6 +4739,9 @@ module GFS_typedefs
       print *, ' latr              : ', Model%latr
       print *, ' blksz(1)          : ', Model%blksz(1)
       print *, ' blksz(nblks)      : ', Model%blksz(Model%nblks)
+#ifdef CCPP
+      print *, ' Model%ncols       : ', Model%ncols
+#endif
       print *, ' '
       print *, 'coupling parameters'
       print *, ' cplflx            : ', Model%cplflx
@@ -5651,7 +5653,6 @@ module GFS_typedefs
     !--- MYNN variables:
     if (Model%do_mynnedmf) then
       if (Model%bl_mynn_output .ne. 0) then
-        !print*,"Allocating all MYNN-EDMF variables:"
         allocate (Diag%edmf_a    (IM,Model%levs))
         allocate (Diag%edmf_w    (IM,Model%levs))
         allocate (Diag%edmf_qt   (IM,Model%levs))
@@ -5669,7 +5670,6 @@ module GFS_typedefs
       allocate (Diag%exch_h    (IM,Model%levs))
       allocate (Diag%exch_m    (IM,Model%levs))
       if (Model%bl_mynn_output .ne. 0) then
-        !print*,"Initializing all MYNN-EDMF variables with ",clear_val
         Diag%edmf_a        = clear_val
         Diag%edmf_w        = clear_val
         Diag%edmf_qt       = clear_val
