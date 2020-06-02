@@ -402,9 +402,11 @@ OPTIONAL_ARGUMENTS = {
             'ice_friendly_aerosol_number_concentration',
             'tendency_of_water_friendly_aerosols_at_surface',
             'tendency_of_ice_friendly_aerosols_at_surface',
-            'effective_radius_of_stratiform_cloud_liquid_water_particle_in_um',
-            'effective_radius_of_stratiform_cloud_ice_particle_in_um',
-            'effective_radius_of_stratiform_cloud_snow_particle_in_um',
+            # DH* 2020-06-01: turn off calculation of effective radii, now done in GFS_rrtmg_pre
+            #'effective_radius_of_stratiform_cloud_liquid_water_particle_in_um',
+            #'effective_radius_of_stratiform_cloud_ice_particle_in_um',
+            #'effective_radius_of_stratiform_cloud_snow_particle_in_um',
+            # *DH 2020-06-01
             ],
         'mp_thompson_run' : [
             'cloud_droplet_number_concentration_updated_by_physics',
@@ -412,9 +414,11 @@ OPTIONAL_ARGUMENTS = {
             'ice_friendly_aerosol_number_concentration_updated_by_physics',
             'tendency_of_water_friendly_aerosols_at_surface',
             'tendency_of_ice_friendly_aerosols_at_surface',
-            'effective_radius_of_stratiform_cloud_liquid_water_particle_in_um',
-            'effective_radius_of_stratiform_cloud_ice_particle_in_um',
-            'effective_radius_of_stratiform_cloud_snow_particle_in_um',
+            # DH* 2020-06-01: turn off calculation of effective radii, now done in GFS_rrtmg_pre
+            #'effective_radius_of_stratiform_cloud_liquid_water_particle_in_um',
+            #'effective_radius_of_stratiform_cloud_ice_particle_in_um',
+            #'effective_radius_of_stratiform_cloud_snow_particle_in_um',
+            # *DH 2020-06-01
             ],
         },
     'mp_fer_hires' : {
