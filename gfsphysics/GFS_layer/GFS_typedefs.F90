@@ -883,7 +883,8 @@ module GFS_typedefs
     integer              :: isatmedmf_vdifq = 1 !< flag for updated version of satmedmf (as of May 2019)
 #endif
     integer              :: nmtvr           !< number of topographic variables such as variance etc
-                                            !< used in the GWD parameterization
+                                            !< used in the GWD parameterization - 10 more added if
+                                            !< GSD orographic drag scheme is used
     integer              :: jcap            !< number of spectral wave trancation used only by sascnv shalcnv
     real(kind=kind_phys) :: cs_parm(10)     !< tunable parameters for Chikira-Sugiyama convection
     real(kind=kind_phys) :: flgmin(2)       !< [in] ice fraction bounds
@@ -2044,6 +2045,11 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: qs_r(:,:)               => null()  !<
     real (kind=kind_phys), pointer :: qg_r(:,:)               => null()  !<
 
+    !-- GSD drag suite
+    real (kind=kind_phys), pointer      :: varss(:)           => null()  !<
+    real (kind=kind_phys), pointer      :: ocss(:)            => null()  !<
+    real (kind=kind_phys), pointer      :: oa4ss(:,:)         => null()  !<
+    real (kind=kind_phys), pointer      :: clxss(:,:)         => null()  !<
 
     !-- Ferrier-Aligo MP scheme
     real (kind=kind_phys), pointer :: f_rain     (:,:)   => null()  !<
@@ -3887,6 +3893,10 @@ module GFS_typedefs
     Model%icloud_bl         = icloud_bl
     ! *DH
     Model%gwd_opt           = gwd_opt
+    if (Model%gwd_opt==3 .or. Model%gwd_opt==33) then
+      ! Add 10 more orographic static fields for GSD drag scheme
+      Model%nmtvr = 24
+    end if
     Model%do_myjsfc         = do_myjsfc
     Model%do_myjpbl         = do_myjpbl
 #endif
@@ -6391,6 +6401,13 @@ module GFS_typedefs
     allocate (Interstitial%dudt_mtb        (IM,Model%levs))
     allocate (Interstitial%dudt_ogw        (IM,Model%levs))
     allocate (Interstitial%dudt_tms        (IM,Model%levs))
+!-- GSD drag suite
+    if (Model%gwd_opt==3 .or. Model%gwd_opt==33) then
+       allocate (Interstitial%varss           (IM))
+       allocate (Interstitial%ocss            (IM))
+       allocate (Interstitial%oa4ss           (IM,4))
+       allocate (Interstitial%clxss           (IM,4))
+    end if
 !
     ! Allocate arrays that are conditional on physics choices
     if (Model%imp_physics == Model%imp_physics_gfdl .or. Model%imp_physics == Model%imp_physics_thompson) then
@@ -6962,6 +6979,13 @@ module GFS_typedefs
     Interstitial%dudt_mtb        = clear_val
     Interstitial%dudt_ogw        = clear_val
     Interstitial%dudt_tms        = clear_val
+!-- GSD drag suite
+    if (Model%gwd_opt==3 .or. Model%gwd_opt==33) then
+       Interstitial%varss           = clear_val
+       Interstitial%ocss            = clear_val
+       Interstitial%oa4ss           = clear_val
+       Interstitial%clxss           = clear_val
+    end if
 !
     ! Reset fields that are conditional on physics choices
     if (Model%imp_physics == Model%imp_physics_gfdl .or. Model%imp_physics == Model%imp_physics_thompson) then
@@ -7308,6 +7332,13 @@ module GFS_typedefs
     write (0,*) 'sum(Interstitial%dudt_mtb        ) = ', sum(Interstitial%dudt_mtb        )
     write (0,*) 'sum(Interstitial%dudt_ogw        ) = ', sum(Interstitial%dudt_ogw        )
     write (0,*) 'sum(Interstitial%dudt_tms        ) = ', sum(Interstitial%dudt_tms        )
+!-- GSD drag suite
+    if (Model%gwd_opt==3 .or. Model%gwd_opt==33) then
+       write (0,*) 'sum(Interstitial%varss           ) = ', sum(Interstitial%varss)
+       write (0,*) 'sum(Interstitial%ocss            ) = ', sum(Interstitial%ocss)
+       write (0,*) 'sum(Interstitial%oa4ss           ) = ', sum(Interstitial%oa4ss)
+       write (0,*) 'sum(Interstitial%clxss           ) = ', sum(Interstitial%clxss)
+    end if
 !
     ! Print arrays that are conditional on physics choices
     if (Model%imp_physics == Model%imp_physics_gfdl .or. Model%imp_physics == Model%imp_physics_thompson) then

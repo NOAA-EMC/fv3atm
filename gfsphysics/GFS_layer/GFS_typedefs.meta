@@ -6626,6 +6626,13 @@
   dimensions = (horizontal_dimension,4)
   type = real
   kind = kind_phys
+[clxss]
+  standard_name = fraction_of_grid_box_with_subgrid_orography_higher_than_critical_height_small_scale
+  long_name = frac. of grid box with by subgrid orography higher than critical height small scale
+  units = frac
+  dimensions = (horizontal_dimension,4)
+  type = real
+  kind = kind_phys
 [cmm_ocean]
   standard_name = surface_drag_wind_speed_for_momentum_in_air_over_ocean
   long_name = momentum exchange coefficient over ocean
@@ -7815,9 +7822,30 @@
   dimensions = (horizontal_dimension,4)
   type = real
   kind = kind_phys
+[varss]
+  standard_name = standard_deviation_of_subgrid_orography_small_scale
+  long_name = standard deviation of subgrid orography small scale
+  units = m
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+[oa4ss]
+  standard_name = asymmetry_of_subgrid_orography_small_scale
+  long_name = asymmetry of subgrid orography small scale
+  units = none
+  dimensions = (horizontal_dimension,4)
+  type = real
+  kind = kind_phys
 [oc]
   standard_name = convexity_of_subgrid_orography
   long_name = convexity of subgrid orography
+  units = none
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+[ocss]
+  standard_name = convexity_of_subgrid_orography_small_scale
+  long_name = convexity of subgrid orography small scale
   units = none
   dimensions = (horizontal_dimension)
   type = real
