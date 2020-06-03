@@ -28,9 +28,13 @@ set_source_files_properties(post_gfs.F90 post_nems_routines.F90
                             COMPILE_FLAGS "-I${POST_INC}")
 
 target_link_libraries(io fms)
-target_link_libraries(io ${PHYS}physics)
+target_link_libraries(io gfsphysics)
 target_link_libraries(io ipd)
 
+if(CCPP)
+  target_include_directories(io PRIVATE ${CMAKE_BINARY_DIR}/FV3/ccpp/framework/src)
+  target_include_directories(io PRIVATE ${CMAKE_BINARY_DIR}/FV3/ccpp/physics)
+endif()
 target_include_directories(io PRIVATE ${ESMF_MOD})
 target_include_directories(io PRIVATE ${NEMSIO_INC})
 

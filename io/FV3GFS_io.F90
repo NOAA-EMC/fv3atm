@@ -79,7 +79,7 @@ module FV3GFS_io_mod
  
   !--- GFDL FMS restart containers
   character(len=32),    allocatable,         dimension(:)       :: oro_name2, sfc_name2, sfc_name3
-  real(kind=kind_phys), allocatable, target, dimension(:,:,:)   :: oro_var2, sfc_var2, phy_var2
+  real(kind=kind_phys), allocatable, target, dimension(:,:,:)   :: oro_var2, sfc_var2, phy_var2, sfc_var3ice
   real(kind=kind_phys), allocatable, target, dimension(:,:,:,:) :: sfc_var3, phy_var3
   !--- Noah MP restart containers
   real(kind=kind_phys), allocatable, target, dimension(:,:,:,:) :: sfc_var3sn,sfc_var3eq,sfc_var3zn
@@ -89,7 +89,7 @@ module FV3GFS_io_mod
   integer :: tot_diag_idx = 0
   integer :: total_outputlevel = 0
   integer :: isco,ieco,jsco,jeco,levo,num_axes_phys
-  integer :: fhzero, ncld, nsoil, imp_physics
+  integer :: fhzero, ncld, nsoil, imp_physics, landsfcmdl, k
   real(4) :: dtp
   logical :: lprecip_accu
   character(len=64)  :: Sprecip_accu
@@ -181,6 +181,7 @@ module FV3GFS_io_mod
    integer :: nsfcprop2d, idx_opt
    real(kind=kind_phys), allocatable :: temp2d(:,:,:)
    real(kind=kind_phys), allocatable :: temp3d(:,:,:,:)
+   real(kind=kind_phys), allocatable :: temp3dlevsp1(:,:,:,:)
    character(len=32) :: name
 
    isc = Model%isc
@@ -192,16 +193,18 @@ module FV3GFS_io_mod
    ntr = size(IPD_Data(1)%Statein%qgrs,3)
 
    if(Model%lsm == Model%lsm_noahmp) then
-     nsfcprop2d = 149  
+     nsfcprop2d = 151  
    else
-     nsfcprop2d = 100
+     nsfcprop2d = 102
    endif
 
    allocate (temp2d(isc:iec,jsc:jec,nsfcprop2d+Model%ntot3d+Model%nctp))
-   allocate (temp3d(isc:iec,jsc:jec,1:lev,17+Model%ntot3d+2*ntr))
+   allocate (temp3d(isc:iec,jsc:jec,1:lev,14+Model%ntot3d+2*ntr))
+   allocate (temp3dlevsp1(isc:iec,jsc:jec,1:lev+1,3))
 
    temp2d = 0.
    temp3d = 0.
+   temp3dlevsp1 = 0.
 
    do j=jsc,jec
      do i=isc,iec
@@ -318,8 +321,10 @@ module FV3GFS_io_mod
        temp2d(i,j,82) = IPD_Data(nb)%Radtend%sfcflw(ix)%upfx0
        temp2d(i,j,83) = IPD_Data(nb)%Radtend%sfcflw(ix)%dnfxc
        temp2d(i,j,84) = IPD_Data(nb)%Radtend%sfcflw(ix)%dnfx0
+       temp2d(i,j,85) = IPD_Data(nb)%Sfcprop%tiice(ix,1)
+       temp2d(i,j,86) = IPD_Data(nb)%Sfcprop%tiice(ix,2)
 
-        idx_opt = 85 
+       idx_opt = 87 
        if (Model%lsm == Model%lsm_noahmp) then
         temp2d(i,j,idx_opt) = IPD_Data(nb)%Sfcprop%snowxy(ix)
         temp2d(i,j,idx_opt+1) = IPD_Data(nb)%Sfcprop%tvxy(ix)
@@ -371,7 +376,7 @@ module FV3GFS_io_mod
         temp2d(i,j,idx_opt+46) = IPD_Data(nb)%Sfcprop%zsnsoxy(ix,2)
         temp2d(i,j,idx_opt+47) = IPD_Data(nb)%Sfcprop%zsnsoxy(ix,3)
         temp2d(i,j,idx_opt+48) = IPD_Data(nb)%Sfcprop%zsnsoxy(ix,4)
-        idx_opt = 134
+        idx_opt = 136
        endif
 
        if (Model%nstf_name(1) > 0) then
@@ -401,29 +406,30 @@ module FV3GFS_io_mod
          temp2d(i,j,nsfcprop2d+Model%ntot2d+l) = IPD_Data(nb)%Tbd%phy_fctd(ix,l)
        enddo
 
-       temp3d(i,j,:, 1) = IPD_Data(nb)%Statein%phii(ix,:)
-       temp3d(i,j,:, 2) = IPD_Data(nb)%Statein%prsi(ix,:)
-       temp3d(i,j,:, 3) = IPD_Data(nb)%Statein%prsik(ix,:)
-       temp3d(i,j,:, 4) = IPD_Data(nb)%Statein%phil(ix,:)
-       temp3d(i,j,:, 5) = IPD_Data(nb)%Statein%prsl(ix,:)
-       temp3d(i,j,:, 6) = IPD_Data(nb)%Statein%prslk(ix,:)
-       temp3d(i,j,:, 7) = IPD_Data(nb)%Statein%ugrs(ix,:)
-       temp3d(i,j,:, 8) = IPD_Data(nb)%Statein%vgrs(ix,:)
-       temp3d(i,j,:, 9) = IPD_Data(nb)%Statein%vvl(ix,:)
-       temp3d(i,j,:,10) = IPD_Data(nb)%Statein%tgrs(ix,:)
-       temp3d(i,j,:,11) = IPD_Data(nb)%Stateout%gu0(ix,:)
-       temp3d(i,j,:,12) = IPD_Data(nb)%Stateout%gv0(ix,:)
-       temp3d(i,j,:,13) = IPD_Data(nb)%Stateout%gt0(ix,:)
-       temp3d(i,j,:,14) = IPD_Data(nb)%Radtend%htrsw(ix,:)
-       temp3d(i,j,:,15) = IPD_Data(nb)%Radtend%htrlw(ix,:)
-       temp3d(i,j,:,16) = IPD_Data(nb)%Radtend%swhc(ix,:)
-       temp3d(i,j,:,17) = IPD_Data(nb)%Radtend%lwhc(ix,:)
+       temp3dlevsp1(i,j,:, 1) = IPD_Data(nb)%Statein%phii(ix,:)
+       temp3dlevsp1(i,j,:, 2) = IPD_Data(nb)%Statein%prsi(ix,:)
+       temp3dlevsp1(i,j,:, 3) = IPD_Data(nb)%Statein%prsik(ix,:)
+
+       temp3d(i,j,:, 1) = IPD_Data(nb)%Statein%phil(ix,:)
+       temp3d(i,j,:, 2) = IPD_Data(nb)%Statein%prsl(ix,:)
+       temp3d(i,j,:, 3) = IPD_Data(nb)%Statein%prslk(ix,:)
+       temp3d(i,j,:, 4) = IPD_Data(nb)%Statein%ugrs(ix,:)
+       temp3d(i,j,:, 5) = IPD_Data(nb)%Statein%vgrs(ix,:)
+       temp3d(i,j,:, 6) = IPD_Data(nb)%Statein%vvl(ix,:)
+       temp3d(i,j,:, 7) = IPD_Data(nb)%Statein%tgrs(ix,:)
+       temp3d(i,j,:, 8) = IPD_Data(nb)%Stateout%gu0(ix,:)
+       temp3d(i,j,:, 9) = IPD_Data(nb)%Stateout%gv0(ix,:)
+       temp3d(i,j,:,10) = IPD_Data(nb)%Stateout%gt0(ix,:)
+       temp3d(i,j,:,11) = IPD_Data(nb)%Radtend%htrsw(ix,:)
+       temp3d(i,j,:,12) = IPD_Data(nb)%Radtend%htrlw(ix,:)
+       temp3d(i,j,:,13) = IPD_Data(nb)%Radtend%swhc(ix,:)
+       temp3d(i,j,:,14) = IPD_Data(nb)%Radtend%lwhc(ix,:)
        do l = 1,Model%ntot3d
-         temp3d(i,j,:,17+l) = IPD_Data(nb)%Tbd%phy_f3d(ix,:,l)
+         temp3d(i,j,:,14+l) = IPD_Data(nb)%Tbd%phy_f3d(ix,:,l)
        enddo
        do l = 1,ntr
-         temp3d(i,j,:,17+Model%ntot3d+l)     = IPD_Data(nb)%Statein%qgrs(ix,:,l)
-         temp3d(i,j,:,17+Model%ntot3d+ntr+l) = IPD_Data(nb)%Stateout%gq0(ix,:,l)
+         temp3d(i,j,:,14+Model%ntot3d+l)     = IPD_Data(nb)%Statein%qgrs(ix,:,l)
+         temp3d(i,j,:,14+Model%ntot3d+ntr+l) = IPD_Data(nb)%Stateout%gq0(ix,:,l)
        enddo
      enddo
    enddo
@@ -433,12 +439,19 @@ module FV3GFS_io_mod
      write (name, '(i3.3,3x,4a)') i, ' 2d '
      write(outunit,100) name, mpp_chksum(temp2d(:,:,i:i))
    enddo
-   do i = 1,17+Model%ntot3d+2*ntr
-     write (name, '(i2.2,3x,4a)') i, ' 3d '
+   do i = 1,3
+     write (name, '(i2.2,3x,4a)') i, ' 3d levsp1'
+     write(outunit,100) name, mpp_chksum(temp3dlevsp1(:,:,:,i:i))
+   enddo
+   do i = 1,14+Model%ntot3d+2*ntr
+     write (name, '(i2.2,3x,4a)') i, ' 3d levs'
      write(outunit,100) name, mpp_chksum(temp3d(:,:,:,i:i))
    enddo
 100 format("CHECKSUM::",A32," = ",Z20)
 
+   deallocate(temp2d)
+   deallocate(temp3d)
+   deallocate(temp3dlevsp1)
    end subroutine FV3GFS_IPD_checksum
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -591,7 +604,6 @@ module FV3GFS_io_mod
     call mpp_error(NOTE,'reading topographic/orographic information from INPUT/oro_data.tile*.nc')
     call restore_state(Oro_restart)
 
-    Model%frac_grid = .false.
     !--- copy data into GFS containers
     do nb = 1, Atm_block%nblks
       !--- 2D variables
@@ -624,17 +636,6 @@ module FV3GFS_io_mod
       enddo
     enddo
  
-    if (nint(oro_var2(1,1,18)) == -9999._kind_phys) then ! lakefrac doesn't exist in the restart, need to create it
-      if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - will computing lakefrac') 
-      Model%frac_grid = .false.
-    elseif (Model%frac_grid_off) then
-      Model%frac_grid = .false.
-    else
-      Model%frac_grid = .true.
-    endif
-
-    if (Model%me == Model%master ) write(0,*)' resetting Model%frac_grid=',Model%frac_grid
-
     !--- deallocate containers and free restart container
     deallocate(oro_name2, oro_var2)
     call free_restart_type(Oro_restart)
@@ -644,9 +645,9 @@ module FV3GFS_io_mod
       !--- allocate the various containers needed for restarts
 #ifdef CCPP
       allocate(sfc_name2(nvar_s2m+nvar_s2o+nvar_s2mp+nvar_s2r))
-      allocate(sfc_name3(nvar_s3+nvar_s3mp))
+      allocate(sfc_name3(0:nvar_s3+nvar_s3mp))
 
-      allocate(sfc_var2(nx,ny,nvar_s2m+nvar_s2o+nvar_s2mp+nvar_s2r))
+      allocate(sfc_var2(nx,ny,nvar_s2m+nvar_s2o+nvar_s2mp+nvar_s2r),sfc_var3ice(nx,ny,Model%kice))
       if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp .or. (.not.warm_start)) then
         allocate(sfc_var3(nx,ny,Model%lsoil,nvar_s3))
       else if (Model%lsm == Model%lsm_ruc) then
@@ -654,13 +655,14 @@ module FV3GFS_io_mod
       end if
 #else
       allocate(sfc_name2(nvar_s2m+nvar_s2o+nvar_s2mp))
-      allocate(sfc_name3(nvar_s3+nvar_s3mp))
+      allocate(sfc_name3(0:nvar_s3+nvar_s3mp))
 
       allocate(sfc_var2(nx,ny,nvar_s2m+nvar_s2o+nvar_s2mp))
       allocate(sfc_var3(nx,ny,Model%lsoil,nvar_s3))
 #endif
       sfc_var2   = -9999._kind_phys
       sfc_var3   = -9999._kind_phys
+      sfc_var3ice= -9999._kind_phys
 !
       if (Model%lsm == Model%lsm_noahmp) then
         allocate(sfc_var3sn(nx,ny,-2:0,4:6))
@@ -706,8 +708,8 @@ module FV3GFS_io_mod
       !--- variables below here are optional
       sfc_name2(32) = 'sncovr'
       if(Model%cplflx) then
-        sfc_name2(33) = 'tsfcl'   !temp on land portion of a cell
-        sfc_name2(34) = 'zorll'   !zorl on land portion of a cell
+        sfc_name2(33) = 'tsfcl' !temp on land portion of a cell
+        sfc_name2(34) = 'zorll' !zorl on land portion of a cell
       end if
 
       !--- NSSTM inputs only needed when (nstf_name(1) > 0) .and. (nstf_name(2)) == 0) 
@@ -854,6 +856,12 @@ module FV3GFS_io_mod
     endif
 #endif
       !--- register the 3D fields
+    if (Model%frac_grid) then
+      sfc_name3(0) = 'tiice'
+      var3_p => sfc_var3ice(:,:,:)
+      id_restart = register_restart_field(Sfc_restart, fn_srf, sfc_name3(0), var3_p, domain=fv_domain, mandatory=.false.)
+    end if
+ 
     do num = 1,nvar_s3
       var3_p => sfc_var3(:,:,:,num)
       id_restart = register_restart_field(Sfc_restart, fn_srf, sfc_name3(num), var3_p, domain=fv_domain)
@@ -1076,6 +1084,10 @@ module FV3GFS_io_mod
             Sfcprop(nb)%flag_frsoil(ix,lsoil) = sfc_var3(i,j,lsoil,5) !--- flag_frsoil
           enddo
         end if
+
+        do k = 1,Model%kice
+          Sfcprop(nb)%tiice(ix,k)= sfc_var3ice(i,j,k)   !--- internal ice temp
+        enddo
 #else
         !--- 3D variables
         do lsoil = 1,Model%lsoil
@@ -1144,7 +1156,7 @@ module FV3GFS_io_mod
       enddo
     endif
 
-    if(Model%cplflx .or. Model%frac_grid) then
+    if (Model%cplflx .or. Model%frac_grid) then
       if (nint(sfc_var2(1,1,33)) == -9999) then
         if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing tsfcl')
         do nb = 1, Atm_block%nblks
@@ -1162,6 +1174,16 @@ module FV3GFS_io_mod
           enddo
         enddo
       endif
+    endif
+
+    if (nint(sfc_var3ice(1,1,1)) == -9999) then
+      if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing tiice')
+      do nb = 1, Atm_block%nblks
+        do ix = 1, Atm_block%blksz(nb)
+          Sfcprop(nb)%tiice(ix,1) = Sfcprop(nb)%stc(ix,1) !--- initialize internal ice temp from soil temp at layer 1
+          Sfcprop(nb)%tiice(ix,2) = Sfcprop(nb)%stc(ix,2) !--- initialize internal ice temp from soil temp at layer 2
+        enddo
+      enddo
     endif
 
 !#endif
@@ -1550,7 +1572,7 @@ module FV3GFS_io_mod
       !--- allocate the various containers needed for restarts
 #ifdef CCPP
       allocate(sfc_name2(nvar2m+nvar2o+nvar2mp+nvar2r))
-      allocate(sfc_name3(nvar3+nvar3mp))
+      allocate(sfc_name3(0:nvar3+nvar3mp))
       allocate(sfc_var2(nx,ny,nvar2m+nvar2o+nvar2mp+nvar2r))
       if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp) then
         allocate(sfc_var3(nx,ny,Model%lsoil,nvar3))
@@ -1559,7 +1581,7 @@ module FV3GFS_io_mod
       endif
 #else
       allocate(sfc_name2(nvar2m+nvar2o+nvar2mp))
-      allocate(sfc_name3(nvar3+nvar3mp))
+      allocate(sfc_name3(0:nvar3+nvar3mp))
       allocate(sfc_var2(nx,ny,nvar2m+nvar2o+nvar2mp))
       allocate(sfc_var3(nx,ny,Model%lsoil,nvar3))
 #endif
@@ -1751,6 +1773,12 @@ module FV3GFS_io_mod
 #endif
 
       !--- register the 3D fields
+      if (Model%frac_grid) then
+        sfc_name3(0) = 'tiice'
+        var3_p => sfc_var3ice(:,:,:)
+        id_restart = register_restart_field(Sfc_restart, fn_srf, sfc_name3(0), var3_p, domain=fv_domain)
+      end if
+
       do num = 1,nvar3
         var3_p => sfc_var3(:,:,:,num)
         id_restart = register_restart_field(Sfc_restart, fn_srf, sfc_name3(num), var3_p, domain=fv_domain)
@@ -1890,6 +1918,10 @@ module FV3GFS_io_mod
         endif
 
 #ifdef CCPP
+        do k = 1,Model%kice
+          sfc_var3ice(i,j,k) = Sfcprop(nb)%tiice(ix,k) !--- internal ice temperature
+        end do
+
         if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp) then
           !--- 3D variables
           do lsoil = 1,Model%lsoil
@@ -2188,8 +2220,9 @@ module FV3GFS_io_mod
     nsoil  = Model%lsoil
     dtp    = Model%dtp
     imp_physics  = Model%imp_physics
+    landsfcmdl  = Model%lsm
 !    print *,'in fv3gfs_diag_register,ncld=',Model%ncld,Model%lsoil,Model%imp_physics, &
-!      ' dtp=',dtp
+!      ' dtp=',dtp,' landsfcmdl=',Model%lsm
 !
 !save lon/lat for vector interpolation
     allocate(lon(isco:ieco,jsco:jeco))
@@ -2803,7 +2836,7 @@ module FV3GFS_io_mod
 
      call ESMF_AttributeAdd(phys_bundle(ibdl), convention="NetCDF", purpose="FV3", &
                             attrList=(/"fhzero     ", "ncld       ", "nsoil      ",&
-                                       "imp_physics", "dtp        "/), rc=rc)
+                                       "imp_physics", "dtp        ", "landsfcmdl "/), rc=rc)
 
      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
@@ -2826,6 +2859,10 @@ module FV3GFS_io_mod
      call ESMF_AttributeSet(phys_bundle(ibdl), convention="NetCDF", purpose="FV3", &
                             name="dtp", value=dtp, rc=rc)
 !     print *,'in fcst gfdl diag, dtp=',dtp,' ibdl=',ibdl
+     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+     call ESMF_AttributeSet(phys_bundle(ibdl), convention="NetCDF", purpose="FV3", &
+                            name="landsfcmdl", value=landsfcmdl, rc=rc)
      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
 !end ibdl

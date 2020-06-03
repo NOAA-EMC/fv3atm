@@ -7,6 +7,7 @@
 !
 !------------------------------------------------------------------------
 !
+  use esmf, only     : esmf_maxstr
   implicit none
 !
   integer           :: num_pes_fcst
@@ -15,16 +16,16 @@
   logical           :: write_nemsioflip
   logical           :: write_fsyncflag
   integer           :: num_files
-  character(255)    :: app_domain
-  character(255)    :: output_grid
+  character(len=esmf_maxstr)    :: app_domain
+  character(len=esmf_maxstr)    :: output_grid
   integer           :: imo,jmo
   integer           :: ichunk2d,jchunk2d,ichunk3d,jchunk3d,kchunk3d
   integer           :: nbdlphys
   integer           :: nsout_io, iau_offset, ideflate, nbits
   real              :: cen_lon, cen_lat, lon1, lat1, lon2, lat2, dlon, dlat
   real              :: stdlat1, stdlat2, dx, dy
-  character(255),dimension(:),allocatable :: filename_base
-  character(255),dimension(:),allocatable :: output_file
+  character(len=esmf_maxstr),dimension(:),allocatable :: filename_base
+  character(len=esmf_maxstr),dimension(:),allocatable :: output_file
 !
   integer,dimension(:),allocatable     :: lead_wrttask, last_wrttask
 !
