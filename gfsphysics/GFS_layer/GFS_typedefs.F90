@@ -3677,12 +3677,12 @@ module GFS_typedefs
     Model%shoc_cld         = shoc_cld
 #ifdef CCPP
 !HWRF physics suite
-    if (hwrf_samfdeep .and. imfdeepcnv .ne. 2) then
-       write(*,*) 'Logic error: hwrf_samfdeep has to be used along with imfdeepcnv=2'
+    if (hwrf_samfdeep .and. imfdeepcnv/=2) then
+       write(*,*) 'Logic error: hwrf_samfdeep requires imfdeepcnv=2'
        stop
     end if
-    if (hwrf_samfshal .and. imfshalcnv .ne. 2) then
-       write(*,*) 'Logic error: hwrf_samfshal has to be used along with imfshalcnv=2'
+    if (hwrf_samfshal .and. imfshalcnv/=2) then
+       write(*,*) 'Logic error: hwrf_samfshal requires imfshalcnv=2'
        stop
     end if
     Model%hwrf_samfdeep = hwrf_samfdeep
