@@ -8,7 +8,5 @@
 	branch = gsd/develop
 [submodule "ccpp/physics"]
 	path = ccpp/physics
-	#url = https://github.com/NOAA-GSD/ccpp-physics
-	#branch = gsd/develop
-	url = https://github.com/climbfuji/ccpp-physics
-	branch = radcloud_cleanup
+	url = https://github.com/NOAA-GSD/ccpp-physics
+	branch = gsd/develop
