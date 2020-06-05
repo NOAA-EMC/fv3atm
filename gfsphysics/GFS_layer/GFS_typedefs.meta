@@ -3159,6 +3159,18 @@
   units = flag
   dimensions = ()
   type = integer
+[hwrf_samfdeep]
+  standard_name = flag_for_hwrf_samfdeepcnv_scheme
+  long_name = flag for hwrf samfdeepcnv scheme
+  units = flag
+  dimensions = ()
+  type = logical
+[hwrf_samfshal]
+  standard_name = flag_for_hwrf_samfshalcnv_scheme
+  long_name = flag for hwrf samfshalcnv scheme
+  units = flag
+  dimensions = ()
+  type = logical
 [isatmedmf]
   standard_name = choice_of_scale_aware_TKE_moist_EDMF_PBL
   long_name = choice of scale-aware TKE moist EDMF PBL scheme

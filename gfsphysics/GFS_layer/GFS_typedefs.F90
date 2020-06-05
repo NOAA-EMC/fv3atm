@@ -842,6 +842,7 @@ module GFS_typedefs
     integer              :: imfshalcnv_samf     = 2 !< flag for SAMF scale- & aerosol-aware mass-flux shallow convection scheme
     integer              :: imfshalcnv_gf       = 3 !< flag for scale- & aerosol-aware Grell-Freitas scheme (GSD)
     integer              :: imfshalcnv_ntiedtke = 4 !< flag for new Tiedtke scheme (CAPS)
+    logical              :: hwrf_samfdeep           !< flag for HWRF SAMF deepcnv scheme (HWRF)
 #endif
     integer              :: imfdeepcnv      !< flag for mass-flux deep convection scheme
                                             !<     1: July 2010 version of SAS conv scheme
@@ -855,6 +856,7 @@ module GFS_typedefs
     integer              :: imfdeepcnv_samf     = 2 !< flag for SAMF scale- & aerosol-aware mass-flux deep convection scheme
     integer              :: imfdeepcnv_gf       = 3 !< flag for scale- & aerosol-aware Grell-Freitas scheme (GSD)
     integer              :: imfdeepcnv_ntiedtke = 4 !< flag for new Tiedtke scheme (CAPS)
+    logical              :: hwrf_samfshal           !< flag for HWRF SAMF shalcnv scheme (HWRF)
 #endif
     integer              :: isatmedmf       !< flag for scale-aware TKE-based moist edmf scheme
                                             !<     0: initial version of satmedmf (Nov. 2018)
@@ -3065,6 +3067,8 @@ module GFS_typedefs
                                                                       !<     1: updated version of satmedmf (as of May 2019)
     logical              :: do_deep        = .true.                   !< whether to do deep convection
 #ifdef CCPP
+    logical              :: hwrf_samfdeep     = .false.               !< flag for HWRF SAMF deepcnv scheme 
+    logical              :: hwrf_samfshal     = .false.               !< flag for HWRF SAMF shalcnv scheme 
     logical              :: do_mynnedmf       = .false.               !< flag for MYNN-EDMF
     logical              :: do_mynnsfclay     = .false.               !< flag for MYNN Surface Layer Scheme
     ! DH* TODO - move to MYNN namelist section
@@ -3300,6 +3304,7 @@ module GFS_typedefs
                                bl_mynn_mixqt, icloud_bl, bl_mynn_tkeadvect, gwd_opt,        &
                                ! *DH
                                do_myjsfc, do_myjpbl,                                        &
+                               hwrf_samfdeep, hwrf_samfshal,                                &
 #endif
                                h2o_phys, pdfcld, shcnvcw, redrag, hybedmf, satmedmf,        &
                                shinhong, do_ysu, dspheat, lheatstrg, cnvcld,                &
@@ -3675,6 +3680,19 @@ module GFS_typedefs
     Model%shoc_parm        = shoc_parm
     Model%shocaftcnv       = shocaftcnv
     Model%shoc_cld         = shoc_cld
+#ifdef CCPP
+!HWRF physics suite
+    if (hwrf_samfdeep .and. imfdeepcnv/=2) then
+       write(*,*) 'Logic error: hwrf_samfdeep requires imfdeepcnv=2'
+       stop
+    end if
+    if (hwrf_samfshal .and. imfshalcnv/=2) then
+       write(*,*) 'Logic error: hwrf_samfshal requires imfshalcnv=2'
+       stop
+    end if
+    Model%hwrf_samfdeep = hwrf_samfdeep
+    Model%hwrf_samfshal = hwrf_samfshal
+#endif
 #ifdef CCPP
     if (oz_phys .and. oz_phys_2015) then
        write(*,*) 'Logic error: can only use one ozone physics option (oz_phys or oz_phys_2015), not both. Exiting.'
