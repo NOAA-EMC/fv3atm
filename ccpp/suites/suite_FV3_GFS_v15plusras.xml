@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<suite name="FV3_GFS_v15plusras" lib="ccppphys" ver="3">
+<suite name="FV3_GFS_v15plusras" lib="ccppphys" ver="4">
   <!-- <init></init> -->
   <group name="fast_physics">
     <subcycle loop="1">
@@ -75,7 +75,6 @@
       <scheme>GFS_DCNV_generic_post</scheme>
       <scheme>GFS_SCNV_generic_pre</scheme>
       <scheme>samfshalcnv</scheme>
-      <scheme>samfshalcnv_post</scheme>
       <scheme>GFS_SCNV_generic_post</scheme>
       <scheme>GFS_suite_interstitial_4</scheme>
       <scheme>cnvc90</scheme>

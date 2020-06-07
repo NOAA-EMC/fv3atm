@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<suite name="FV3_GFS_2017_csawmg" lib="ccppphys" ver="3">
+<suite name="FV3_GFS_2017_csawmg" lib="ccppphys" ver="4">
   <!-- <init></init> -->
   <group name="time_vary">
     <subcycle loop="1">
