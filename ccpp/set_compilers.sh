@@ -46,6 +46,13 @@ case "$MACHINE_ID" in
             export F77=mpif77
             export F90=mpif90
             ;;
+        orion.intel)
+            export CC=mpiicc
+            export CXX=mpiicpc
+            export FC=mpiifort
+            export F77=mpiifort
+            export F90=mpiifort
+            ;;
         cheyenne.intel)
             export CC=mpicc
             export CXX=mpicxx
@@ -61,14 +68,6 @@ case "$MACHINE_ID" in
             export F90=mpiifort
             ;;
         cheyenne.gnu)
-            export CC=mpicc
-            export CXX=mpicxx
-            export FC=mpif90
-            export F77=mpif77
-            export F90=mpif90
-            ;;
-        cheyenne.pgi)
-            export CPP="mpicc -E"
             export CC=mpicc
             export CXX=mpicxx
             export FC=mpif90
