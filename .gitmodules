@@ -8,7 +8,5 @@
 	branch = master
 [submodule "ccpp/physics"]
 	path = ccpp/physics
-	#url = https://github.com/NCAR/ccpp-physics
-	#branch = master
-	url = https://github.com/climbfuji/ccpp-physics
-	branch = add_guard_mp_generic_pre
+	url = https://github.com/NCAR/ccpp-physics
+	branch = master
