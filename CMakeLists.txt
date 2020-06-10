@@ -66,6 +66,8 @@ target_link_libraries(fv3core PRIVATE gfsphysics)
 target_link_libraries(fv3core PRIVATE ipd)
 target_link_libraries(fv3core PUBLIC esmf)
 
+target_include_directories(fv3core PRIVATE atmos_cubed_sphere ${ESMF_MOD})
+
 # end of fv3core
 
 ###############################################################################

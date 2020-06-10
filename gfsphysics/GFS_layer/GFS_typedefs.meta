@@ -492,6 +492,13 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+[tiice]
+  standard_name = internal_ice_temperature
+  long_name = sea ice internal temperature
+  units = K
+  dimensions = (horizontal_dimension,ice_vertical_dimension)
+  type = real
+  kind = kind_phys
 [snowd]
   standard_name = surface_snow_thickness_water_equivalent
   long_name = water equivalent snow depth
@@ -2752,6 +2759,12 @@
   units = flag
   dimensions = ()
   type = integer
+[kice]
+  standard_name = ice_vertical_dimension
+  long_name = vertical loop extent for ice levels, start at 1
+  units = count
+  dimensions = ()
+  type = integer
 [lsoil]
   standard_name = soil_vertical_dimension
   long_name = number of soil layers
@@ -3084,6 +3097,18 @@
   units = flag
   dimensions = ()
   type = integer
+[hwrf_samfdeep]
+  standard_name = flag_for_hwrf_samfdeepcnv_scheme
+  long_name = flag for hwrf samfdeepcnv scheme
+  units = flag
+  dimensions = ()
+  type = logical
+[hwrf_samfshal]
+  standard_name = flag_for_hwrf_samfshalcnv_scheme
+  long_name = flag for hwrf samfshalcnv scheme
+  units = flag
+  dimensions = ()
+  type = logical
 [isatmedmf]
   standard_name = choice_of_scale_aware_TKE_moist_EDMF_PBL
   long_name = choice of scale-aware TKE moist EDMF PBL scheme
