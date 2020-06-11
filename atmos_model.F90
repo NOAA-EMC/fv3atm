@@ -168,14 +168,16 @@ logical :: chksum_debug = .false.
 logical :: dycore_only  = .false.
 logical :: debug        = .false.
 !logical :: debug        = .true.
+logical :: merge_import = .true.
+logical :: debug_merge  = .false.
 logical :: sync         = .false.
 integer, parameter     :: maxhr = 4096
 real, dimension(maxhr) :: fdiag = 0.
 real                   :: fhmax=384.0, fhmaxhf=120.0, fhout=3.0, fhouthf=1.0,avg_max_length=3600.
 #ifdef CCPP
-namelist /atmos_model_nml/ blocksize, chksum_debug, dycore_only, debug, sync, fdiag, fhmax, fhmaxhf, fhout, fhouthf, ccpp_suite, avg_max_length
+namelist /atmos_model_nml/ blocksize, chksum_debug, dycore_only, debug, sync, fdiag, fhmax, fhmaxhf, fhout, fhouthf, ccpp_suite, avg_max_length, merge_import, debug_merge
 #else
-namelist /atmos_model_nml/ blocksize, chksum_debug, dycore_only, debug, sync, fdiag, fhmax, fhmaxhf, fhout, fhouthf, avg_max_length
+namelist /atmos_model_nml/ blocksize, chksum_debug, dycore_only, debug, sync, fdiag, fhmax, fhmaxhf, fhout, fhouthf, avg_max_length, merge_import, debug_merge
 #endif
 
 type (time_type) :: diag_time, diag_time_fhzero
@@ -328,7 +330,7 @@ subroutine update_atmos_radiation_physics (Atmos)
 !        print *,'in atmos_model,IPD_Data size=',size(IPD_Data)
 !        print *,'in atmos_model,tsfc(1)=',IPD_Data(1)%sfcprop%tsfc(1)
 !        print *,'in atmos_model, tsfc size=',size(IPD_Data(1)%sfcprop%tsfc)
-        call assign_importdata(rc)
+        call assign_importdata(jdat(:),rc)
 !        print *,'in atmos_model, after assign_importdata, rc=',rc
       endif
 
@@ -1581,13 +1583,14 @@ end subroutine atmos_data_type_chksum
                 Atmos%lat      )
   end subroutine dealloc_atmos_data_type
 
-  subroutine assign_importdata(rc)
+  subroutine assign_importdata(jdat, rc)
 
     use module_cplfields,  only: importFields, nImportFields, QueryFieldList, &
                                  ImportFieldsList, importFieldsValid
     use ESMF
 !
     implicit none
+    integer, intent(in)  :: jdat(8)
     integer, intent(out) :: rc
 
     !--- local variables
@@ -1597,8 +1600,14 @@ end subroutine atmos_data_type_chksum
     real(kind=ESMF_KIND_R4),  dimension(:,:), pointer  :: datar42d
     real(kind=ESMF_KIND_R8),  dimension(:,:), pointer  :: datar82d
     real(kind=IPD_kind_phys), dimension(:,:), pointer  :: datar8
+    logical,                  dimension(:,:), pointer  :: mergeflg
     real(kind=IPD_kind_phys)                           :: tem
     logical found, isFieldCreated, lcpl_fice
+    real(ESMF_KIND_R8), parameter :: missing_value = 9.99e20_ESMF_KIND_R8
+    type(ESMF_Grid)  :: grid
+    type(ESMF_Field) :: dbgField
+    character(19)    :: currtimestring
+
 !
 !------------------------------------------------------------------------------
 !
@@ -1611,6 +1620,7 @@ end subroutine atmos_data_type_chksum
     lcpl_fice = .false.
 
     allocate(datar8(isc:iec,jsc:jec))
+    allocate(mergeflg(isc:iec,jsc:jec))
 
 !   if (mpp_pe() == mpp_root_pe() .and. debug) print *,'in cplImp,dim=',isc,iec,jsc,jec
 !   if (mpp_pe() == mpp_root_pe() .and. debug) print *,'in cplImp,IPD_Data, size', size(IPD_Data)
@@ -1627,6 +1637,7 @@ end subroutine atmos_data_type_chksum
       if (isFieldCreated) then ! put the data from local cubed sphere grid to column grid for phys
 
         datar8 = -99999.0
+        mergeflg = .false.
         call ESMF_FieldGet(importFields(n), dimCount=dimCount ,typekind=datatype, &
                            name=impfield_name, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
@@ -1636,6 +1647,9 @@ end subroutine atmos_data_type_chksum
             call ESMF_FieldGet(importFields(n),farrayPtr=datar82d,localDE=0, rc=rc)
             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
             datar8 = datar82d
+            if (merge_import) then
+              mergeflg(:,:) = datar82d(:,:).eq.missing_value
+            endif
             if (mpp_pe() == mpp_root_pe() .and. debug) print *,'in cplIMP,atmos gets ',trim(impfield_name),' datar8=', &
                                                                datar8(isc,jsc), maxval(datar8), minval(datar8)
             found = .true.
@@ -1722,8 +1736,16 @@ end subroutine atmos_data_type_chksum
                   nb = Atm_block%blkno(i,j)
                   ix = Atm_block%ixp(i,j)
                   if (IPD_Data(nb)%Sfcprop%oceanfrac(ix) > zero) then
-                    IPD_Data(nb)%Coupling%tseain_cpl(ix) = datar8(i,j)
-                    IPD_Data(nb)%Sfcprop%tsfco(ix)       = datar8(i,j)
+                    if(mergeflg(i,j)) then
+                      IPD_Data(nb)%Coupling%tseain_cpl(ix) = &
+                        IPD_Data(nb)%Sfcprop%tsfc(ix)
+                      IPD_Data(nb)%Sfcprop%tsfco(ix)       = &
+                        IPD_Data(nb)%Sfcprop%tsfc(ix)
+                      datar8(i,j) = IPD_Data(nb)%Sfcprop%tsfc(ix)
+                    else
+                      IPD_Data(nb)%Coupling%tseain_cpl(ix) = datar8(i,j)
+                      IPD_Data(nb)%Sfcprop%tsfco(ix)       = datar8(i,j)
+                    endif
                   endif
                 enddo
               enddo
@@ -1912,10 +1934,29 @@ end subroutine atmos_data_type_chksum
             endif
           endif
 
+          ! write post merge import data to NetCDF file.
+          if (debug_merge) then
+            call ESMF_FieldGet(importFields(n), grid=grid, rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+            dbgField = ESMF_FieldCreate(grid=grid, farrayPtr=datar8, name=impfield_name, rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+            write (currtimestring, "(I4.4,'-',I2.2,'-',I2.2,'T',I2.2,':',I2.2,':',I2.2)") &
+              jdat(1), jdat(2), jdat(3), jdat(5), jdat(6), jdat(7)
+            call ESMF_FieldWrite(dbgField, fileName='fv3_merge_'//trim(impfield_name)//'_'// &
+              trim(currtimestring)//'.nc', rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+            call ESMF_FieldDestroy(dbgField, rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+          endif
+
         endif ! if (datar8(isc,jsc) > -99999.0) then
       endif   ! if (isFieldCreated) then
     enddo
 !
+    deallocate(mergeflg)
     deallocate(datar8)
 
 ! update sea ice related fields:

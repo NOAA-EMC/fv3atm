@@ -103,7 +103,7 @@ module module_cap_cpl
                                          num_diag_sfc_emis_flux, num_diag_down_flux,       &
                                          num_diag_type_down_flux, num_diag_burn_emis_flux, &
                                          num_diag_cmass, fieldNames, fieldTypes, state_tag,&
-                                         fieldList, rc)
+                                         fieldList, fill_value, rc)
 
       type(ESMF_State),            intent(inout)  :: state
       type(ESMF_Grid),                intent(in)  :: grid
@@ -119,15 +119,24 @@ module module_cap_cpl
       character(len=*), dimension(:), intent(in)  :: fieldTypes
       character(len=*),               intent(in)  :: state_tag                              !< Import or export.
       type(ESMF_Field), dimension(:), intent(out) :: fieldList
+      real(ESMF_KIND_R8), optional  , intent(in)  :: fill_value
       integer,                        intent(out) :: rc
 
       ! local variables
-      integer          :: item
-      logical          :: isConnected
-      type(ESMF_Field) :: field
+      integer            :: item
+      logical            :: isConnected
+      type(ESMF_Field)   :: field
+      real(ESMF_KIND_R8) :: l_fill_value
+      real(ESMF_KIND_R8), parameter :: d_fill_value = 0._ESMF_KIND_R8
 
       ! begin
       rc = ESMF_SUCCESS
+
+      if (present(fill_value)) then
+        l_fill_value = fill_value
+      else
+        l_fill_value = d_fill_value
+      end if
 
       if (size(fieldNames) /= size(fieldTypes)) then
         call ESMF_LogSetError(rcToCheck=ESMF_RC_ARG_SIZE, &
@@ -194,7 +203,7 @@ module module_cap_cpl
           call NUOPC_Realize(state, field=field, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
           ! -- zero out field 
-          call ESMF_FieldFill(field, dataFillScheme="const", const1=0._ESMF_KIND_R8, rc=rc)
+          call ESMF_FieldFill(field, dataFillScheme="const", const1=l_fill_value, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
           ! -- save field
           fieldList(item) = field

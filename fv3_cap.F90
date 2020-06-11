@@ -924,7 +924,7 @@ module fv3gfs_cap_mod
                                        numLevels, numSoilLayers, numTracers, num_diag_sfc_emis_flux,         &
                                        num_diag_down_flux, num_diag_type_down_flux, num_diag_burn_emis_flux, &
                                        num_diag_cmass, exportFieldsList, exportFieldTypes, 'FV3 Export',     &
-                                       exportFields, rc)
+                                       exportFields, 0.0_ESMF_KIND_R8, rc)
 
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__,  file=__FILE__)) return
 
@@ -933,7 +933,7 @@ module fv3gfs_cap_mod
                                        numLevels, numSoilLayers, numTracers, num_diag_sfc_emis_flux,         &
                                        num_diag_down_flux, num_diag_type_down_flux, num_diag_burn_emis_flux, &
                                        num_diag_cmass, importFieldsList, importFieldTypes, 'FV3 Import',     &
-                                       importFields, rc)
+                                       importFields, 9.99e20_ESMF_KIND_R8, rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__,  file=__FILE__)) return
       end if
     endif
