@@ -2640,7 +2640,7 @@ module module_physics_driver
                 call satmedmfvdifq(ix, im, levs, nvdiff, ntcw, ntiwx, ntkev,          &
                          dvdt, dudt, dtdt, dvdftra,                                   &
                          Statein%ugrs, Statein%vgrs, Statein%tgrs, vdftra,            &
-                         Radtend%htrsw, Radtend%htrlw, xmu, garea, slmsk, snowd3,     &
+                         Radtend%htrsw, Radtend%htrlw, xmu, garea, islmsk, snowd3,    &
                          Statein%prsik(1,1), rb, Sfcprop%zorl, Diag%u10m, Diag%v10m,  &
                          Sfcprop%ffmm, Sfcprop%ffhh, Sfcprop%tsfc, hflxq, evapq,      &
                          stress, wind, kpbl, Statein%prsi, del, Statein%prsl,         &
