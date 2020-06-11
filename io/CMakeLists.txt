@@ -40,7 +40,7 @@ if(CCPP)
   target_include_directories(io PRIVATE ${CMAKE_BINARY_DIR}/FV3/ccpp/framework/src)
   target_include_directories(io PRIVATE ${CMAKE_BINARY_DIR}/FV3/ccpp/physics)
 endif()
-target_link_libraries(io nemsio)
+target_link_libraries(io nemsio::nemsio)
 target_link_libraries(io esmf)
 
 set_target_properties(io PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mod)
