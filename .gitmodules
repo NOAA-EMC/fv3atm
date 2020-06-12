@@ -8,5 +8,5 @@
 	branch = master
 [submodule "ccpp/physics"]
 	path = ccpp/physics
-	url = https://github.com/junwang-noaa/ccpp-physics
-	branch = gfsv16_phys
+	url = https://github.com/NCAR/ccpp-physics
+	branch = master
