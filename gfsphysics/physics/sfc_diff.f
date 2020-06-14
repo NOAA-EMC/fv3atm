@@ -264,18 +264,28 @@
                 if (redrag) then
                   z0rl(i,3) = 100.0d0 * max(min(z0, z0s_max), 1.0d-7)
                 else
-                  z0rl(i,3) = 100.0d0 * max(min(z0,0.1d0), 1.0d-7)
+                  z0rl(i,3) = 100.0d0 * max(min(z0, 0.1d0), 1.0d-7)
                 endif
 
               elseif (sfc_z0_type == 6) then   ! wang
-                 call znot_m_v6(wind10m, z0)  ! wind, m/s, z0, m
-                 z0rl(i,3) = 100.0d0 * z0          ! cm
+                 call znot_m_v6(wind10m, z0)   ! wind, m/s, z0, m
+                 z0rl(i,3) = 100.0d0 * z0      ! cm
               elseif (sfc_z0_type == 7) then   ! wang
-                 call znot_m_v7(wind10m, z0)  ! wind, m/s, z0, m
-                 z0rl(i,3) = 100.0d0 * z0          ! cm
+                 call znot_m_v7(wind10m, z0)   ! wind, m/s, z0, m
+                 z0rl(i,3) = 100.0d0 * z0      ! cm
               else
                  z0rl(i,3) = 1.0d-4
               endif
+
+            elseif (z0rl(i,3) <= 0.0d0) then
+              z0 = (charnock / grav) * ustar(i,3) * ustar(i,3)
+
+              if (redrag) then
+                z0rl(i,3) = 100.0d0 * max(min(z0, z0s_max), 1.0d-7)
+              else
+                z0rl(i,3) = 100.0d0 * max(min(z0, 0.1d0), 1.0d-70)
+              endif
+
             endif
 
           endif              ! end of if(open ocean)

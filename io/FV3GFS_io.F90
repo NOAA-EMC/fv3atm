@@ -513,15 +513,9 @@ module FV3GFS_io_mod
     real(kind=kind_phys), dimension(-2:4) :: dzsnso
 
     real(kind=kind_phys), dimension(4), save :: zsoil,dzs
-    data dzs   /0.1_r8,0.3_r8,0.6_r8,1.0_r8/
+    data dzs   / 0.1_r8, 0.3_r8, 0.6_r8, 1.0_r8/
     data zsoil /-0.1_r8,-0.4_r8,-1.0_r8,-2.0_r8/
 
-    
-    if (Model%cplflx) then ! needs more variables
-      nvar_s2m = 34
-    else
-      nvar_s2m = 32
-    endif
     nvar_o2  = 19
     nvar_s2o = 18
 #ifdef CCPP
@@ -605,6 +599,8 @@ module FV3GFS_io_mod
 
     Model%frac_grid = .false.
     !--- copy data into GFS containers
+
+!$omp parallel do default(shared) private(i, j, nb, ix)
     do nb = 1, Atm_block%nblks
       !--- 2D variables
       do ix = 1, Atm_block%blksz(nb)
@@ -645,6 +641,12 @@ module FV3GFS_io_mod
       Model%frac_grid = .true.
     endif
 
+    if (Model%cplflx .or. Model%frac_grid) then ! needs more variables
+      nvar_s2m = 34
+    else
+      nvar_s2m = 32
+    endif
+
     if (Model%me == Model%master ) write(0,*)' resetting Model%frac_grid=',Model%frac_grid
 
     !--- deallocate containers and free restart container
@@ -671,8 +673,8 @@ module FV3GFS_io_mod
       allocate(sfc_var2(nx,ny,nvar_s2m+nvar_s2o+nvar_s2mp))
       allocate(sfc_var3(nx,ny,Model%lsoil,nvar_s3))
 #endif
-      sfc_var2   = -9999.0_r8
-      sfc_var3   = -9999.0_r8
+      sfc_var2 = -9999.0_r8
+      sfc_var3 = -9999.0_r8
 !
       if (Model%lsm == Model%lsm_noahmp) then
         allocate(sfc_var3sn(nx,ny,-2:0,4:6))
@@ -906,6 +908,8 @@ module FV3GFS_io_mod
 !   write(0,*)' sfc_var2=',sfc_var2(:,:,12)
 
     !--- place the data into the block GFS containers
+
+!$omp parallel do default(shared) private(i, j, nb, ix, lsoil)
     do nb = 1, Atm_block%nblks
       do ix = 1, Atm_block%blksz(nb)
         i = Atm_block%index(nb)%ii(ix) - isc + 1
@@ -945,7 +949,7 @@ module FV3GFS_io_mod
         Sfcprop(nb)%slope(ix)  = sfc_var2(i,j,30)   !--- slope
         Sfcprop(nb)%snoalb(ix) = sfc_var2(i,j,31)   !--- snoalb
         Sfcprop(nb)%sncovr(ix) = sfc_var2(i,j,32)   !--- sncovr
-        if(Model%cplflx) then
+        if(Model%cplflx .or. Model%frac_grid) then
           Sfcprop(nb)%tsfcl(ix)  = sfc_var2(i,j,33) !--- sfcl  (temp on land portion of a cell)
           Sfcprop(nb)%zorll(ix)  = sfc_var2(i,j,34) !--- zorll (zorl on land portion of a cell)
         end if
@@ -1151,11 +1155,16 @@ module FV3GFS_io_mod
     ! in the FV3/non-CCPP physics when the CCPP-enabled executable is built.
 #endif
 !#ifndef CCPP
+
+    i = Atm_block%index(1)%ii(1) - isc + 1
+    j = Atm_block%index(1)%jj(1) - jsc + 1
+
     !--- if sncovr does not exist in the restart, need to create it
-    if (nint(sfc_var2(1,1,32)) == -9999) then
+    if (sfc_var2(i,j,32) < -9990.0_r8) then
       if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing sncovr') 
       !--- compute sncovr from existing variables
       !--- code taken directly from read_fix.f
+!$omp parallel do default(shared) private(nb, ix, vegtyp, rsnow)
       do nb = 1, Atm_block%nblks
         do ix = 1, Atm_block%blksz(nb)
           Sfcprop(nb)%sncovr(ix) = zero
@@ -1173,9 +1182,11 @@ module FV3GFS_io_mod
       enddo
     endif
 
-    if(Model%cplflx .or. Model%frac_grid) then
-      if (nint(sfc_var2(1,1,33)) == -9999) then
+    if (Model%cplflx .or. Model%frac_grid) then
+
+      if (sfc_var2(i,j,33) < -9990.0_r8) then
         if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing tsfcl')
+!$omp parallel do default(shared) private(nb, ix)
         do nb = 1, Atm_block%nblks
           do ix = 1, Atm_block%blksz(nb)
             Sfcprop(nb)%tsfcl(ix) = Sfcprop(nb)%tsfco(ix) !--- compute tsfcl from existing variables
@@ -1183,8 +1194,9 @@ module FV3GFS_io_mod
         enddo
       endif
 
-      if (nint(sfc_var2(1,1,34)) == -9999) then
+      if (sfc_var2(i,j,34) < -9990.0_r8) then
         if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing zorll')
+!$omp parallel do default(shared) private(nb, ix)
         do nb = 1, Atm_block%nblks
           do ix = 1, Atm_block%blksz(nb)
             Sfcprop(nb)%zorll(ix) = Sfcprop(nb)%zorlo(ix) !--- compute zorll from existing variables
@@ -1196,19 +1208,21 @@ module FV3GFS_io_mod
 !#endif
 
     if(Model%frac_grid) then ! 3-way composite
+!$omp parallel do default(shared) private(nb, ix, tem)
       do nb = 1, Atm_block%nblks
         do ix = 1, Atm_block%blksz(nb)
           Sfcprop(nb)%tsfco(ix) = max(con_tice, Sfcprop(nb)%tsfco(ix))
-          tem = (1.-Sfcprop(nb)%landfrac(ix)) * Sfcprop(nb)%fice(ix) ! tem = ice fraction wrt whole cell
+          tem = (one-Sfcprop(nb)%landfrac(ix)) * Sfcprop(nb)%fice(ix) ! tem = ice fraction wrt whole cell
           Sfcprop(nb)%zorl(ix) = Sfcprop(nb)%zorll(ix) * Sfcprop(nb)%landfrac(ix) &
-                               + Sfcprop(nb)%zorll(ix) * tem &     !zorl ice = zorl land
+                               + Sfcprop(nb)%zorll(ix) * tem                      &     !zorl ice = zorl land
                                + Sfcprop(nb)%zorlo(ix) * (one-Sfcprop(nb)%landfrac(ix)-tem)
           Sfcprop(nb)%tsfc(ix) = Sfcprop(nb)%tsfcl(ix) * Sfcprop(nb)%landfrac(ix) &
-                               + Sfcprop(nb)%tisfc(ix) * tem &
+                               + Sfcprop(nb)%tisfc(ix) * tem                      &
                                + Sfcprop(nb)%tsfco(ix) * (one-Sfcprop(nb)%landfrac(ix)-tem)
         enddo
       enddo
     else
+!$omp parallel do default(shared) private(nb, ix, tem)
       do nb = 1, Atm_block%nblks
         do ix = 1, Atm_block%blksz(nb)
       !--- specify tsfcl/zorll from existing variable tsfco/zorlo
@@ -1806,6 +1820,7 @@ module FV3GFS_io_mod
     endif
 
    
+!$omp parallel do default(shared) private(i, j, nb, ix, lsoil)
     do nb = 1, Atm_block%nblks
       do ix = 1, Atm_block%blksz(nb)
         !--- 2D variables
@@ -2062,6 +2077,7 @@ module FV3GFS_io_mod
  
     !--- place the data into the block GFS containers
     !--- phy_var* variables
+!$omp parallel do default(shared) private(i, j, nb, ix)
     do num = 1,nvar2d
       do nb = 1,Atm_block%nblks
         do ix = 1, Atm_block%blksz(nb)            
@@ -2074,6 +2090,7 @@ module FV3GFS_io_mod
     !-- if restart from init time, reset accumulated diag fields
     if( Model%phour < 1.e-7) then
       do num = fdiag,ldiag
+!$omp parallel do default(shared) private(i, j, nb, ix)
         do nb = 1,Atm_block%nblks
           do ix = 1, Atm_block%blksz(nb)
             i = Atm_block%index(nb)%ii(ix) - isc + 1
@@ -2084,6 +2101,7 @@ module FV3GFS_io_mod
       enddo
     endif
     do num = 1,nvar3d
+!$omp parallel do default(shared) private(i, j, k, nb, ix)
       do nb = 1,Atm_block%nblks
         do k=1,npz
           do ix = 1, Atm_block%blksz(nb)            
@@ -2156,6 +2174,7 @@ module FV3GFS_io_mod
     endif
 
     !--- 2D variables
+!$omp parallel do default(shared) private(i, j, num, nb, ix)
     do num = 1,nvar2d
       do nb = 1,Atm_block%nblks
         do ix = 1, Atm_block%blksz(nb)            
@@ -2166,6 +2185,7 @@ module FV3GFS_io_mod
       enddo
     enddo
     !--- 3D variables
+!$omp parallel do default(shared) private(i, j, k, num, nb, ix)
     do num = 1,nvar3d
       do nb = 1,Atm_block%nblks
         do k=1,npz
