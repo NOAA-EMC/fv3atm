@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<suite name="FV3_CPT_v0" lib="ccppphys" ver="4">
+<suite name="FV3_GFS_v16beta_no_nsst" lib="ccppphys" ver="4">
   <!-- <init></init> -->
   <group name="fast_physics">
     <subcycle loop="1">
@@ -44,9 +44,7 @@
     <subcycle loop="2">
       <scheme>sfc_diff</scheme>
       <scheme>GFS_surface_loop_control_part1</scheme>
-      <scheme>sfc_nst_pre</scheme>
-      <scheme>sfc_nst</scheme>
-      <scheme>sfc_nst_post</scheme>
+      <scheme>sfc_ocean</scheme>
       <scheme>lsm_noah</scheme>
       <scheme>sfc_sice</scheme>
       <scheme>GFS_surface_loop_control_part2</scheme>
@@ -58,7 +56,7 @@
       <scheme>sfc_diag_post</scheme>
       <scheme>GFS_surface_generic_post</scheme>
       <scheme>GFS_PBL_generic_pre</scheme>
-      <scheme>hedmf</scheme>
+      <scheme>satmedmfvdifq</scheme>
       <scheme>GFS_PBL_generic_post</scheme>
       <scheme>GFS_GWD_generic_pre</scheme>
       <scheme>cires_ugwp</scheme>
@@ -71,9 +69,7 @@
       <scheme>GFS_DCNV_generic_pre</scheme>
       <scheme>get_phi_fv3</scheme>
       <scheme>GFS_suite_interstitial_3</scheme>
-      <scheme>cs_conv_pre</scheme>
-      <scheme>cs_conv</scheme>
-      <scheme>cs_conv_post</scheme>
+      <scheme>samfdeepcnv</scheme>
       <scheme>GFS_DCNV_generic_post</scheme>
       <scheme>GFS_SCNV_generic_pre</scheme>
       <scheme>samfshalcnv</scheme>
@@ -81,10 +77,7 @@
       <scheme>GFS_suite_interstitial_4</scheme>
       <scheme>cnvc90</scheme>
       <scheme>GFS_MP_generic_pre</scheme>
-      <scheme>m_micro_pre</scheme>
-      <scheme>m_micro</scheme>
-      <scheme>m_micro_post</scheme>
-      <scheme>cs_conv_aw_adj</scheme>
+      <scheme>gfdl_cloud_microphys</scheme>
       <scheme>GFS_MP_generic_post</scheme>
       <scheme>maximum_hourly_diagnostics</scheme>
     </subcycle>
