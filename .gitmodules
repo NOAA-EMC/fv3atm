@@ -9,4 +9,4 @@
 [submodule "ccpp/physics"]
 	path = ccpp/physics
 	url = https://github.com/SMoorthi-EMC/ccpp-physics
-	branch = SM_May202020
+	branch = SM_Jun142020
