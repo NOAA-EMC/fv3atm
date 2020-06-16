@@ -33,7 +33,7 @@ target_link_libraries(io gfsphysics)
 target_link_libraries(io ipd)
 
 if(INLINE_POST)
-  target_link_libraries(io crtm)
+  target_link_libraries(io crtm::crtm)
 endif()
 
 if(CCPP)
