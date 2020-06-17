@@ -1,6 +1,5 @@
 if(INLINE_POST)
   set(POST_SRC post_gfs.F90 post_nems_routines.F90)
-  find_package(crtm REQUIRED)
 else()
   set(POST_SRC post_gfs_stub.F90)
   add_definitions(-DNO_INLINE_POST)
@@ -24,16 +23,13 @@ add_library(
     ${POST_SRC}
 )
 
-set_source_files_properties(post_gfs.F90 post_nems_routines.F90
-                            PROPERTIES
-                            COMPILE_FLAGS "-I$ENV{POST_INC}")
-
 target_link_libraries(io fms)
 target_link_libraries(io gfsphysics)
 target_link_libraries(io ipd)
 
 if(INLINE_POST)
-  target_link_libraries(io crtm::crtm)
+  find_package(nceppost REQUIRED)
+  target_link_libraries(io nceppost::nceppost)
 endif()
 
 if(CCPP)
