@@ -492,6 +492,13 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+[tiice]
+  standard_name = internal_ice_temperature
+  long_name = sea ice internal temperature
+  units = K
+  dimensions = (horizontal_dimension,ice_vertical_dimension)
+  type = real
+  kind = kind_phys
 [snowd]
   standard_name = surface_snow_thickness_water_equivalent
   long_name = water equivalent snow depth
@@ -1799,34 +1806,6 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
-[tconvtend]
-  standard_name = tendency_of_air_temperature_due_to_deep_convection_for_coupling_on_physics_timestep
-  long_name = tendency of air temperature due to deep convection
-  units = K
-  dimensions = (horizontal_dimension,vertical_dimension)
-  type = real
-  kind = kind_phys
-[qconvtend]
-  standard_name = tendency_of_water_vapor_specific_humidity_due_to_deep_convection_for_coupling_on_physics_timestep
-  long_name = tendency of specific humidity due to deep convection
-  units = kg kg-1
-  dimensions = (horizontal_dimension,vertical_dimension)
-  type = real
-  kind = kind_phys
-[uconvtend]
-  standard_name = tendency_of_x_wind_due_to_deep_convection_for_coupling_on_physics_timestep
-  long_name = tendency_of_x_wind_due_to_deep_convection
-  units = m s-1
-  dimensions = (horizontal_dimension,vertical_dimension)
-  type = real
-  kind = kind_phys
-[vconvtend]
-  standard_name = tendency_of_y_wind_due_to_deep_convection_for_coupling_on_physics_timestep
-  long_name = tendency_of_y_wind_due_to_deep_convection
-  units = m s-1
-  dimensions = (horizontal_dimension,vertical_dimension)
-  type = real
-  kind = kind_phys
 [ca_deep]
   standard_name = fraction_of_cellular_automata_for_deep_convection
   long_name = fraction of cellular automata for deep convection
@@ -1834,9 +1813,23 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
-[cape]
-  standard_name = convective_available_potential_energy_for_coupling
-  long_name = convective available potential energy for coupling
+[vfact_ca]
+  standard_name = vertical_weight_for_ca
+  long_name = vertical weight for ca
+  units = frac
+  dimensions = (vertical_dimension)
+  type = real
+  kind = kind_phys
+[ca1]
+  standard_name = cellular_automata_global_pattern
+  long_name = cellular automata global pattern
+  units = flag
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+[condition]
+  standard_name = physics_field_for_coupling
+  long_name = physics_field_for_coupling
   units = m2 s-2
   dimensions = (horizontal_dimension)
   type = real
@@ -2793,6 +2786,12 @@
   units = flag
   dimensions = ()
   type = integer
+[kice]
+  standard_name = ice_vertical_dimension
+  long_name = vertical loop extent for ice levels, start at 1
+  units = count
+  dimensions = ()
+  type = integer
 [lsoil]
   standard_name = soil_vertical_dimension
   long_name = number of soil layers
@@ -3620,15 +3619,27 @@
   units = flag
   dimensions = ()
   type = logical
-[ca_smooth]
-  standard_name = flag_for_gaussian_spatial_filter
-  long_name = switch for gaussian spatial filter
+[ca_closure]
+  standard_name = flag_for_global_cellular_automata_closure
+  long_name = switch for ca on closure
   units = flag
   dimensions = ()
   type = logical
-[isppt_deep]
-  standard_name = flag_for_combination_of_sppt_with_isppt_deep
-  long_name = switch for combination with isppt_deep.
+[ca_entr]
+  standard_name = flag_for_global_cellular_automata_entr
+  long_name = switch for ca on entr
+  units = flag
+  dimensions = ()
+  type = logical
+[ca_trigger]
+  standard_name = flag_for_global_cellular_automata_trigger
+  long_name = switch for ca on trigger
+  units = flag
+  dimensions = ()
+  type = logical
+[ca_smooth]
+  standard_name = flag_for_gaussian_spatial_filter
+  long_name = switch for gaussian spatial filter
   units = flag
   dimensions = ()
   type = logical

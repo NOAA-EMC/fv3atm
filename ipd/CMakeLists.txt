@@ -20,7 +20,7 @@ add_library(
     IPD_driver.F90
     IPD_typedefs.F90
 )
-target_link_libraries(ipd ${PHYS}physics)
+target_link_libraries(ipd gfsphysics)
 
 if(CCPP)
   target_include_directories(ipd PRIVATE ${CMAKE_BINARY_DIR}/FV3/ccpp/framework/src)

@@ -548,9 +548,6 @@ module module_physics_driver
       real(kind=kind_phys), allocatable, dimension(:,:) :: sigmatot,    &
           gwdcu, gwdcv, rainp, sigmafrac, tke
 
-!--- for isppt_deep
-      real(kind=kind_phys), allocatable, dimension(:,:) ::              &
-                                           savet, saveq, saveu, savev
 
 !--- GFDL modification for FV3 
 
@@ -891,7 +888,7 @@ module module_physics_driver
 
 !## CCPP ##* GFS_surface_generic.F90/GFS_surface_generic_pre_run
 !  ---  set initial quantities for stochastic physics deltas
-      if (Model%do_sppt) then
+      if (Model%do_sppt .or. Model%ca_global)then
         Tbd%dtdtr = zero
       endif
 
@@ -2138,7 +2135,7 @@ module module_physics_driver
 !*## CCPP ##
         Diag%dlwsfci(i) = adjsfcdlw(i)
         Diag%ulwsfci(i) = adjsfculw(i)
-!## CCPP ##* dcyc2.f/dcyc2t3_post_run
+!## CCPP ##* GFS_surface_composites.F90/GFS_surface_composites_inter_run
         Diag%uswsfci(i) = adjsfcdsw(i) - adjsfcnsw(i)
 !*## CCPP ##
         Diag%dswsfci(i) = adjsfcdsw(i)
@@ -2341,8 +2338,10 @@ module module_physics_driver
 
 !     write(0,*)' before monsho hflx=',hflxq,' me=',me
 !     write(0,*)' before monsho evap=',evapq,' me=',me
+
 !## CCPP ##* Note: In the CCPP, the vdftra array is prepared in GFS_PBL_generic.F90/GFS_PBL_generic_pre_run
 ! regardless of the following conditions. Therefore, this block is redundant in the CCPP and is not included.
+
       if (nvdiff == ntrac .or. Model%do_ysu .or. Model%shinhong) then
 !
         ntiwx = 0
@@ -2666,7 +2665,7 @@ module module_physics_driver
                            gamt, gamq, dkt, kinver, Model%xkzm_m, Model%xkzm_h,         &
                            Model%xkzm_s, lprnt, ipr,                                    &
                            Model%xkzminv, Model%moninq_fac)
-!*## CCPP ##
+!*## CCPP ##                                                                                                                                                                                                                               
 !## CCPP ##* The following schemes are not in the CCPP yet.
            else
             call moninedmf_hafs(ix, im, levs, nvdiff, ntcw, dvdt, dudt, dtdt, dvdftra,  &
@@ -3706,25 +3705,7 @@ module module_physics_driver
 !## CCPP ## GFS_DCNV_generic.F90/GFS_DCNV_generic_pre_run Note: The conditional
 ! above is not checked within the scheme, so the execution of the code below 
 ! is controlled via its presence in the CCPP SDF.
-        if (Model%do_ca) then
-          do k=1,levs
-            do i=1,im
-              Stateout%gq0(i,k,1) = Stateout%gq0(i,k,1)*(one + Coupling%ca_deep(i)/500.)
-            enddo
-          enddo
-        endif
 
-        if (Model%isppt_deep) then
-          allocate(savet(im,levs), saveq(im,levs), saveu(im,levs), savev(im,levs))
-          do k=1,levs
-            do i=1,im
-              savet(i,k) = Stateout%gt0(i,k)
-              saveq(i,k) = Stateout%gq0(i,k,1)
-              saveu(i,k) = Stateout%gu0(i,k)
-              savev(i,k) = Stateout%gv0(i,k)
-            enddo
-          enddo
-        endif
 !*## CCPP ##
         if (.not. Model%ras .and. .not. Model%cscnv) then
 
@@ -3756,8 +3737,8 @@ module module_physics_driver
             call samfdeepcnv(im, ix, levs, dtp, itc, Model%ntchm, ntk, nsamftrac,  &
                              del, Statein%prsl, Statein%pgr, Statein%phil, clw,    &
                              Stateout%gq0(:,:,1), Stateout%gt0,                    &
-                             Stateout%gu0, Stateout%gv0, Model%fscav, Model%do_ca, &
-                             Coupling%ca_deep, cld1d, rain1, kbot, ktop, kcnv,     &
+                             Stateout%gu0, Stateout%gv0, Model%fscav,              &
+                             cld1d, rain1, kbot, ktop, kcnv,                       &
                              islmsk, garea,                                        &
                              Statein%vvl, ncld, ud_mf, dd_mf, dt_mf, cnvw, cnvc,   &
                              QLCN, QICN, w_upi,cf_upi, CNV_MFD,                    &
@@ -3767,7 +3748,10 @@ module module_physics_driver
                              Model%clam_deep,   Model%c0s_deep,                    &
                              Model%c1_deep,  Model%betal_deep, Model%betas_deep,   &
                              Model%evfact_deep, Model%evfactl_deep,                &
-                             Model%pgcon_deep,  Model%asolfac_deep)
+                             Model%pgcon_deep,  Model%asolfac_deep,                &
+                             Model%do_ca, Model%ca_closure, Model%ca_entr,         & 
+                             Model%ca_trigger, Model%nthresh, Coupling%ca_deep,    &
+                             Coupling%condition)
 !*## CCPP ##
 !           if (lprnt) print *,' rain1=',rain1(ipr)
           !elseif (Model%imfdeepcnv == 3) then
@@ -3812,10 +3796,6 @@ module module_physics_driver
                 cnvw(i,k)             = zero
               enddo
             enddo
-          endif
-
-          if(Model%do_ca) then
-            Coupling%cape(:) = cld1d(:)
           endif
 !*## CCPP ##
 !
@@ -3985,17 +3965,7 @@ module module_physics_driver
         endif   ! end if_not_ras
 
 !## CCPP ##* GFS_DCNV_generic.F90/GFS_DCNV_generic_post
-        if(Model%isppt_deep)then
-          do k=1,levs
-            do i=1,im
-              Coupling%tconvtend(i,k) = Stateout%gt0(i,k)   - savet(i,k)
-              Coupling%qconvtend(i,k) = Stateout%gq0(i,k,1) - saveq(i,k)
-              Coupling%uconvtend(i,k) = Stateout%gu0(i,k)   - saveu(i,k)
-              Coupling%vconvtend(i,k) = Stateout%gv0(i,k)   - savev(i,k)
-            enddo
-          enddo
-          deallocate(savet, saveq, saveu, savev)
-        endif
+
 !*## CCPP ##
       else      ! no parameterized deep convection
 !## CCPP ##* GFS_typedefs.F90/interstitial_phys_reset Note: These are only zeroed out 
@@ -4364,6 +4334,7 @@ module module_physics_driver
             do i=1,im
               Diag%rainc(i) = Diag%rainc(i) + frain * rain1(i)
             enddo
+
 ! in  mfshalcnv,  'cnvw' and 'cnvc' are set to zero before computation starts:
             if (Model%shcnvcw .and. Model%num_p3d == 4 .and. Model%npdf3d == 3) then
               do k=1,levs
@@ -4418,6 +4389,7 @@ module module_physics_driver
 !           if (lprnt) print *,' levshcm=',levshcm,' gt0sha=',gt0(ipr,:)
 
           endif   ! end if_imfshalcnv
+
 !*## CCPP ##
         endif     ! end if_shal_cnv
 
@@ -4712,12 +4684,14 @@ module module_physics_driver
 !     grid-scale condensation/precipitations and microphysics parameterization
 !     ------------------------------------------------------------------------
 !## CCPP ##* This is not in the CCPP yet.
+
       if (ncld == 0) then                   ! no cloud microphysics
 
         call lrgscl (ix, im, levs, dtp, Stateout%gt0, Stateout%gq0, &
                      Statein%prsl, del, Statein%prslk, rain1, clw)
 !*## CCPP ##
       else                                  ! all microphysics
+
         if (imp_physics == Model%imp_physics_zhao_carr) then  ! call zhao/carr/sundqvist microphysics
                                                               ! ------------
 
@@ -5570,7 +5544,7 @@ module module_physics_driver
 !         write(0,*) ' endgw0=',gq0(ipr,:,3),' kdt=',kdt,' lat=',lat
 !       endif
 
-      if (Model%do_sppt) then
+      if (Model%do_sppt .or. Model%ca_global)then
 !--- radiation heating rate
         Tbd%dtdtr(1:im,:) = Tbd%dtdtr(1:im,:) + dtdtc(1:im,:)*dtf
       endif

@@ -312,14 +312,18 @@ subroutine update_atmos_radiation_physics (Atmos)
     end if
 
     if(IPD_Control%do_ca)then
-       ! DH* The current implementation of cellular_automata assumes that all blocksizes are the
-       ! same, this is tested in the initialization call to cellular_automata, no need to redo *DH
-       call cellular_automata(IPD_Control%kdt, IPD_Data(:)%Statein, IPD_Data(:)%Coupling, IPD_Data(:)%Intdiag, &
-                              Atm_block%nblks, IPD_Control%levs, IPD_Control%nca, IPD_Control%ncells,          &
-                              IPD_Control%nlives, IPD_Control%nfracseed, IPD_Control%nseed,                    &
-                              IPD_Control%nthresh, IPD_Control%ca_global, IPD_Control%ca_sgs,                  &
-                              IPD_Control%iseed_ca, IPD_Control%ca_smooth, IPD_Control%nspinup,                &
-                              Atm_block%blksz(1))
+       if(IPD_Control%ca_sgs)then
+          call cellular_automata_sgs(IPD_Control%kdt,IPD_Data(:)%Statein,IPD_Data(:)%Coupling,IPD_Data(:)%Intdiag,Atm_block%nblks,IPD_Control%levs, &
+            IPD_Control%nca,IPD_Control%ncells,IPD_Control%nlives,IPD_Control%nfracseed,&
+            IPD_Control%nseed,IPD_Control%nthresh,IPD_Control%ca_global,IPD_Control%ca_sgs,IPD_Control%iseed_ca,&
+            IPD_Control%ca_smooth,IPD_Control%nspinup,Atm_block%blksz(1))
+       endif
+       if(IPD_Control%ca_global)then
+          call cellular_automata_global(IPD_Control%kdt,IPD_Data(:)%Statein,IPD_Data(:)%Coupling,IPD_Data(:)%Intdiag,Atm_block%nblks,IPD_Control%levs, &
+            IPD_Control%nca_g,IPD_Control%ncells_g,IPD_Control%nlives_g,IPD_Control%nfracseed,&
+            IPD_Control%nseed_g,IPD_Control%nthresh,IPD_Control%ca_global,IPD_Control%ca_sgs,IPD_Control%iseed_ca,&
+            IPD_Control%ca_smooth,IPD_Control%nspinup,Atm_block%blksz(1),IPD_Control%nsmooth,IPD_Control%ca_amplitude)
+      endif
     endif
 
 !--- if coupled, assign coupled fields
@@ -656,12 +660,21 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
          call mpp_error(FATAL, 'Logic errror: cellular_automata not compatible with non-uniform blocksizes')
       end if
       ! *DH
-      call cellular_automata(IPD_Control%kdt, IPD_Data(:)%Statein, IPD_Data(:)%Coupling, IPD_Data(:)%Intdiag, &
-                             Atm_block%nblks, IPD_Control%levs, IPD_Control%nca, IPD_Control%ncells,          &
-                             IPD_Control%nlives, IPD_Control%nfracseed, IPD_Control%nseed,                    &
-                             IPD_Control%nthresh, IPD_Control%ca_global, IPD_Control%ca_sgs,                  &
-                             IPD_Control%iseed_ca, IPD_Control%ca_smooth, IPD_Control%nspinup,                &
-                             Atm_block%blksz(1))
+      if(IPD_Control%do_ca)then
+       if(IPD_Control%ca_sgs)then
+          call cellular_automata_sgs(IPD_Control%kdt,IPD_Data(:)%Statein,IPD_Data(:)%Coupling,IPD_Data(:)%Intdiag,Atm_block%nblks,IPD_Control%levs, &
+            IPD_Control%nca,IPD_Control%ncells,IPD_Control%nlives,IPD_Control%nfracseed,&
+            IPD_Control%nseed,IPD_Control%nthresh,IPD_Control%ca_global,IPD_Control%ca_sgs,IPD_Control%iseed_ca,&
+            IPD_Control%ca_smooth,IPD_Control%nspinup,Atm_block%blksz(1))
+       endif
+       if(IPD_Control%ca_global)then
+          call cellular_automata_global(IPD_Control%kdt,IPD_Data(:)%Statein,IPD_Data(:)%Coupling,IPD_Data(:)%Intdiag,Atm_block%nblks,IPD_Control%levs, &
+            IPD_Control%nca_g,IPD_Control%ncells_g,IPD_Control%nlives_g,IPD_Control%nfracseed,&
+            IPD_Control%nseed_g,IPD_Control%nthresh,IPD_Control%ca_global,IPD_Control%ca_sgs,IPD_Control%iseed_ca,&
+            IPD_Control%ca_smooth,IPD_Control%nspinup,Atm_block%blksz(1),IPD_Control%nsmooth,IPD_Control%ca_amplitude)
+       endif
+
+    endif
    endif
 
    Atm(mytile)%flagstruct%do_skeb = IPD_Control%do_skeb
