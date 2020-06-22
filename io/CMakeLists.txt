@@ -28,7 +28,7 @@ set_source_files_properties(post_gfs.F90 post_nems_routines.F90
                             COMPILE_FLAGS "-I${POST_INC}")
 
 target_link_libraries(io fms)
-target_link_libraries(io ${PHYS}physics)
+target_link_libraries(io gfsphysics)
 target_link_libraries(io ipd)
 
 if(CCPP)
