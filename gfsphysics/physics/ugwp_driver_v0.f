@@ -8,6 +8,7 @@
        use machine,      only: kind_phys
        real(kind=kind_phys),parameter :: pgwd  = 1._kind_phys
        real(kind=kind_phys),parameter :: pgwd4 = 1._kind_phys
+       logical,parameter              :: debugprint = .false.
        end module sso_coorde
 !
 !
@@ -31,7 +32,7 @@
        use physcons,         only : con_cp, con_g, con_rd, con_rv
 
        use ugwp_wmsdis_init, only : tamp_mpa, ilaunch
-       use sso_coorde,       only : pgwd, pgwd4
+       use sso_coorde,       only : pgwd, pgwd4, debugprint
        implicit none
 !input
 
@@ -89,7 +90,7 @@
 !
 ! switches for GW-effects: pogw=1 (OGWs)  pngw=1 (NGWs) pked=1 (eddy mixing)
 !
-       if (me == master .and. kdt < 2) then
+       if (me == master .and. kdt < 2 .and. debugprint ) then
          print *
          write(6,*) 'FV3GFS execute ugwp_driver_v0 '
 !        write(6,*) 'FV3GFS execute ugwp_driver_v0 nmtvr=', nmtvr
@@ -118,7 +119,7 @@
      &                 zmtb, zogw, tau_mtb, tau_ogw, tau_tofd,
      &                 du3dt_mtb, du3dt_ogw, du3dt_tms)
 !
-         if (me == master .and. kdt < 2) then
+         if (me == master .and. kdt < 2 .and. debugprint) then
            print *
            write(6,*) 'FV3GFS finished gwdps_v0 in ugwp_driver_v0 '
            print *
@@ -190,7 +191,7 @@
      &                          gw_dudt, gw_dvdt, gw_dTdt, gw_kdis,
      &                          tau_ngw, me, master, kdt)
 
-         if (me == master .and. kdt < 2) then
+         if (me == master .and. kdt < 2 .and. debugprint ) then
            print *
            write(6,*)'FV3GFS finished fv3_ugwp_v0 in ugwp_driver_v0 '
            write(6,*) ' non-stationary GWs with GMAO/MERRA GW-forcing '
@@ -290,7 +291,7 @@
      &,                         n_tofd, ze_tofd, ztop_tofd
 
       use cires_ugwp_module, only : kxw,  max_kdis, max_axyz
-      use sso_coorde,        only : pgwd, pgwd4
+      use sso_coorde,        only : pgwd, pgwd4, debugprint
 !----------------------------------------
       implicit none
       character(len=8)    :: strsolver='PSS-1986'  ! current operational solver or  'WAM-2017'
@@ -432,7 +433,7 @@
 
       kxridge = float(IMX)/arad * cdmbgwd(2)
 
-      if (me == master .and. kdt == 1) then
+      if (me == master .and. kdt == 1 .and. debugprint) then
         print *, ' gwdps_v0 kxridge ', kxridge
         print *, ' gwdps_v0 scale2 ', cdmbgwd(2)
         print *, ' gwdps_v0 IMX ', imx
@@ -514,7 +515,7 @@
         endif
       enddo
 
-      IF (npt == 0) then
+      IF (npt == 0 .and. debugprint) then
 !         print *,  'oro-npt = 0 elvmax ', maxval(elvmaxd), hminmt
 !         print *,  'oro-npt = 0 hprime ', maxval(hprime), hpmin
         RETURN      ! No gwd/mb calculation done
@@ -1053,7 +1054,7 @@
 ! ---------------------------    
       IF( do_tofd ) then
         axtms(:,:) = 0.0 ; aytms(:,:) = 0.0 
-        if ( kdt == 1 .and. me == 0) then
+        if ( kdt == 1 .and. me == 0 .and. debugprint) then
           print *, 'VAY do_tofd  from surface to ', ztop_tofd 
         endif
         DO I = 1,npt
@@ -1157,7 +1158,7 @@
 
 
 !============ debug ------------------------------------------------
-       if (kdt <= 2 .and. me == 0) then
+       if (kdt <= 2 .and. me == 0 .and. debugprint) then
         print *, 'vgw-oro done gwdps_v0 in ugwp-v0 step-proc ', kdt, me
 !
         print *, maxval(pdudt)*86400.,  minval(pdudt)*86400, 'vgw_axoro'
@@ -1277,6 +1278,8 @@
      &,                            zci,     zdci,    zci4, zci3, zci2
      &,                            zaz_fct, zcosang, zsinang
      &,                            nwav,    nazd,    zcimin, zcimax
+ 
+      use sso_coorde,       only : debugprint
 !
       implicit none
 !23456 
@@ -1402,7 +1405,7 @@
 !        rcpd     = 1.0/(grav/cpd)     ! 1/[g/cp]
 !        grav2cpd = grav*grav/cpd      ! g*(g/cp)= g^2/cp
 
-        if (kdt ==1 .and. mpi_id == master) then
+        if (kdt ==1 .and. mpi_id == master .and. debugprint) then
           print *,  maxval(tm1), minval(tm1), 'vgw: temp-res '
           print *,  'ugwp-v0: zcimin=' , zcimin
           print *,  'ugwp-v0: zcimax=' , zcimax 
@@ -1830,7 +1833,7 @@
 !  
 !--------------------------------------------------------------------------- 
 !
-       if (kdt == 1 .and. mpi_id == master) then
+       if (kdt == 1 .and. mpi_id == master .and. debugprint) then
          print *, 'vgw done  '
 !
          print *, maxval(pdudt)*86400.,  minval(pdudt)*86400, 'vgw ax'
@@ -1963,7 +1966,7 @@
 ! adjust PT-profile to bn2(k) = bnv2min	-- neutral atmosphere
 !  adapt "pdtdt = (Ptadj-Ptdyn)/Ptmap" 
 !
-             print *,' UGWP-V0 unstab PT(z) via gwdTdt ', bn2(k), k
+!            print *,' UGWP-V0 unstab PT(z) via gwdTdt ', bn2(k), k
     
              rineg = bn2(k)/shr2(k)
              bn2(k) = max(bn2(k), bnv2min)
