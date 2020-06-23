@@ -678,6 +678,7 @@ module GFS_typedefs
     integer              :: rrtmgp_nGauss_ang !< Number of angles used in Gaussian quadrature
     logical              :: do_GPsw_Glw       ! If set to true use rrtmgp for SW calculation, rrtmg for LW.
     character(len=128)   :: active_gases_array(100)          !< character array for each trace gas name 
+    logical              :: use_LW_jacobian   !< If true, use Jacobian of LW to update radiation tendency.
 #endif
 !--- microphysical switch
     integer              :: ncld            !< choice of cloud scheme
@@ -1952,6 +1953,8 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: fluxswDOWN_allsky(:,:) => null()  !< RRTMGP downward shortwave all-sky flux profile
     real (kind=kind_phys), pointer      :: fluxswUP_clrsky(:,:)   => null()  !< RRTMGP upward   shortwave clr-sky flux profile
     real (kind=kind_phys), pointer      :: fluxswDOWN_clrsky(:,:) => null()  !< RRTMGP downward shortwave clr-sky flux profile
+    real (kind=kind_phys), pointer      :: fluxlwUP_jac(:,:)      => null()  !< RRTMGP upward Jacobian of longwave flux
+    real (kind=kind_phys), pointer      :: fluxlwDOWN_jac(:,:)    => null()  !< RRTMGP downward Jacobian of longwave flux 
     real (kind=kind_phys), pointer      :: sfc_emiss_byband(:,:)  => null()  !<
     real (kind=kind_phys), pointer      :: sec_diff_byband(:,:)   => null()  !<
     real (kind=kind_phys), pointer      :: sfc_alb_nir_dir(:,:)   => null()  !<
@@ -2883,6 +2886,8 @@ module GFS_typedefs
     integer              :: rrtmgp_nrghice = 0               !< Number of ice-roughness categories
     integer              :: rrtmgp_nGauss_ang=1              !< Number of angles used in Gaussian quadrature
     logical              :: do_GPsw_Glw    = .false.         
+    logical              :: use_LW_jacobian = .false.        !< Use Jacobian of LW to update LW radiation tendencies.  
+
 #endif
 !--- Z-C microphysical parameters
     integer              :: ncld              =  1                 !< choice of cloud scheme
@@ -3228,6 +3233,7 @@ module GFS_typedefs
                                sw_file_gas, sw_file_clouds, rrtmgp_nBandsSW, rrtmgp_nGptsSW,&
                                doG_cldoptics, doGP_cldoptics_PADE, doGP_cldoptics_LUT,      &
                                rrtmgp_nrghice, rrtmgp_nGauss_ang, do_GPsw_Glw,              &
+                               use_LW_jacobian,                                             &
 #endif
                           ! IN CCN forcing
                                iccn,                                                        &
@@ -3491,6 +3497,7 @@ module GFS_typedefs
     Model%doG_cldoptics       = doG_cldoptics
     Model%doGP_cldoptics_PADE = doGP_cldoptics_PADE
     Model%doGP_cldoptics_LUT  = doGP_cldoptics_LUT
+    Model%use_LW_jacobian     = use_LW_jacobian
     ! RRTMGP incompatible with levr /= levs
     if (Model%do_RRTMGP .and. Model%levr /= Model%levs) then
       write(0,*) "Logic error, RRTMGP only works with levr = levs"
@@ -4622,6 +4629,7 @@ module GFS_typedefs
         print *, ' doG_cldoptics      : ', Model%doG_cldoptics
         print *, ' doGP_cldoptics_PADE: ', Model%doGP_cldoptics_PADE
         print *, ' doGP_cldoptics_LUT : ', Model%doGP_cldoptics_LUT
+        print *, ' use_LW_jacobian    : ', Model%use_LW_jacobian
       endif
 #endif
       print *, ' '
@@ -6112,6 +6120,8 @@ module GFS_typedefs
       allocate (Interstitial%fluxswDOWN_allsky (IM, Model%levs+1))
       allocate (Interstitial%fluxswUP_clrsky   (IM, Model%levs+1))
       allocate (Interstitial%fluxswDOWN_clrsky (IM, Model%levs+1))
+      allocate (Interstitial%fluxlwDOWN_jac    (IM, Model%levs+1))
+      allocate (Interstitial%fluxlwUP_jac      (IM, Model%levs+1)) 
       allocate (Interstitial%aerosolslw        (IM, Model%levs, Model%rrtmgp_nBandsLW, NF_AELW))
       allocate (Interstitial%aerosolssw        (IM, Model%levs, Model%rrtmgp_nBandsSW, NF_AESW))
       allocate (Interstitial%cld_frac          (IM, Model%levs))

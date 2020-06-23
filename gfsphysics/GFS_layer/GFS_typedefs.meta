@@ -2351,6 +2351,12 @@
   units = flag
   dimensions = ()
   type = logical
+[use_LW_jacobian]
+  standard_name = flag_to_calc_RRTMGP_LW_jacobian
+  long_name = logical flag to control RRTMGP LW calculation
+  units = flag
+  dimensions = ()
+  type = logical 
 [rrtmgp_nrghice]
   standard_name = number_of_rrtmgp_ice_roughness
   long_name = number of ice-roughness categories in RRTMGP calculation (Model%rrtmgp_nrghice)
@@ -8550,6 +8556,27 @@
   type = real
   kind = kind_phys
   optional = F
+[sktp1r]
+  standard_name = surface_skin_temperature_at_previous_time_step
+  long_name = surface skin temperature at previous time step
+  units = K
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+[fluxlwUP_jac]
+  standard_name = RRTMGP_jacobian_of_lw_flux_profile_upward
+  long_name = RRTMGP Jacobian upward longwave flux profile
+  units = W m-2 K-1
+  dimensions = (horizontal_dimension,vertical_dimension_plus_one)
+  type = real
+  kind = kind_phys
+[fluxlwDOWN_jac]
+  standard_name = RRTMGP_jacobian_of_lw_flux_profile_downward
+  long_name = RRTMGP Jacobian downward of longwave flux profile
+  units = W m-2 K-1
+  dimensions = (horizontal_dimension,vertical_dimension_plus_one)
+  type = real
+  kind = kind_phys
 [fluxlwUP_clrsky]
   standard_name = RRTMGP_lw_flux_profile_upward_clrsky
   long_name = RRTMGP upward longwave clr-sky flux profile

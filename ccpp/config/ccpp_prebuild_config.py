@@ -368,6 +368,12 @@ OPTIONAL_ARGUMENTS = {
              'components_of_surface_downward_shortwave_fluxes',
              ],
          },
+    'rrtmgp_lw_rte' : {
+         'rrtmgp_lw_rte_run' : [
+             'RRTMGP_jacobian_of_lw_flux_profile_upward',
+             'RRTMGP_jacobian_of_lw_flux_profile_downward',
+             ],
+         }, 
     'GFS_rrtmgp_lw_post' : {
          'GFS_rrtmgp_lw_post_run' : [
              'tendency_of_air_temperature_due_to_longwave_heating_assuming_clear_sky_on_radiation_time_step_and_radiation_levels',
@@ -378,6 +384,12 @@ OPTIONAL_ARGUMENTS = {
              'components_of_surface_downward_shortwave_fluxes',
              ],
          },
+    'GFS_suite_interstitial_2' : {
+         'GFS_suite_interstitial_2_run' : [
+             'RRTMGP_jacobian_of_lw_flux_profile_upward',
+             'RRTMGP_lw_flux_profile_upward_allsky',
+             ],
+         },   
     'rrtmg_sw' : {
         'rrtmg_sw_run' : [
             'tendency_of_air_temperature_due_to_shortwave_heating_assuming_clear_sky_on_radiation_time_step_and_radiation_levels',
