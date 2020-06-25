@@ -12,5 +12,5 @@
 	path = ccpp/physics
 	url = https://github.com/NOAA-GSD/ccpp-physics
 	#branch = gsd/develop
-	url = https://github.com/benwgreen/ccpp-physics
-	branch = bwg_mod_for_frac
+	url = https://github.com/climbfuji/ccpp-physics
+	branch = ben_bwg_mod_for_frac
