@@ -8,5 +8,7 @@
 	branch = master
 [submodule "ccpp/physics"]
 	path = ccpp/physics
-	url = https://github.com/hafs-community/ccpp-physics
-	branch = feature/merge_hwrf_physics
+	#url = https://github.com/hafs-community/ccpp-physics
+	#branch = feature/merge_hwrf_physics
+	url = https://github.com/climbfuji/ccpp-physics
+	branch = update_dtc-hwrf-physics_from_hafs_support_20200618
