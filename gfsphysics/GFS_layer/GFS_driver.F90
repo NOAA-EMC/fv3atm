@@ -503,7 +503,7 @@ module GFS_driver
 
     !--- local variables
     integer :: nb, nblks, k, kdt_rad, kdt_iau, blocksize
-    logical :: iauwindow_center
+    logical :: iauwindow_center, new_sfc_params
     real(kind=kind_phys) :: rinc(5)
     real(kind=kind_phys) :: sec, sec_zero, fjd
     integer              :: iyear, imon, iday, ihr, imin, jd0, jd1
@@ -607,12 +607,17 @@ module GFS_driver
     call GFS_phys_time_vary (Model, Grid, Tbd, Statein)
 
     !--- repopulate specific time-varying sfc properties for AMIP/forecast runs
+    new_sfc_params = .false.
     if (Model%nscyc >  0) then
       if (mod(Model%kdt,Model%nscyc) == 1) THEN
         call gcycle (nblks, Model, Grid(:), Sfcprop(:), Cldprop(:))
+        new_sfc_params=.true.
       endif
+    elseif (  (Model%nscyc == 0)  .and. (Model%kdt==1)  ) then 
+        ! if not updating surface params through fcast, perturb params once at start of fcast
+        new_sfc_params=.true.
     endif
-
+     
     !--- determine if diagnostics buckets need to be cleared
     sec_zero = nint(Model%fhzero*con_hr)
     if (sec_zero >= nint(max(Model%fhswr,Model%fhlwr))) then
@@ -734,6 +739,7 @@ module GFS_driver
     !real(kind=kind_phys),dimension(size(Statein%tgrs,1),size(Statein%tgrs,2)) :: tconvtend, &
     !                     qconvtend,uconvtend,vconvtend
 
+
      if (Model%do_sppt) then
        do k = 1,size(Statein%tgrs,2)
          do i = 1,size(Statein%tgrs,1)
@@ -775,6 +781,7 @@ module GFS_driver
 
            !else
            
+             
             upert = (Stateout%gu0(i,k)   - Statein%ugrs(i,k))   * Coupling%sppt_wts(i,k)
             vpert = (Stateout%gv0(i,k)   - Statein%vgrs(i,k))   * Coupling%sppt_wts(i,k)
             tpert = (Stateout%gt0(i,k)   - Statein%tgrs(i,k) - Tbd%dtdtr(i,k)) * Coupling%sppt_wts(i,k)

@@ -106,7 +106,7 @@ use physics_abstraction_layer, only: time_vary_step, radiation_step1, physics_st
 
 use stochastic_physics, only: init_stochastic_physics,         &
                               run_stochastic_physics
-use stochastic_physics_sfc, only: run_stochastic_physics_sfc
+use GFS_land_perts,     only: GFS_apply_lndp
 
 use FV3GFS_io_mod,      only: FV3GFS_restart_read, FV3GFS_restart_write, &
                               FV3GFS_IPD_checksum,                       &
@@ -261,9 +261,9 @@ subroutine update_atmos_radiation_physics (Atmos)
     procedure(IPD_func0d_proc), pointer :: Func0d => NULL()
     procedure(IPD_func1d_proc), pointer :: Func1d => NULL()
     integer :: nthrds
-#ifdef CCPP
+!#ifdef CCPP
     integer :: ierr
-#endif
+!#endif
 
 #ifdef OPENMP
     nthrds = omp_get_max_threads()
@@ -298,6 +298,7 @@ subroutine update_atmos_radiation_physics (Atmos)
 
 !--- execute the IPD atmospheric setup step
       call mpp_clock_begin(setupClock)
+
 #ifdef CCPP
       call CCPP_step (step="time_vary", nblks=Atm_block%nblks, ierr=ierr)
       if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP time_vary step failed')
@@ -306,10 +307,23 @@ subroutine update_atmos_radiation_physics (Atmos)
       call IPD_step (IPD_Control, IPD_Data(:), IPD_Diag, IPD_Restart, IPD_func1d=Func1d)
 #endif
 
-!--- call stochastic physics pattern generation / cellular automata
-    if (IPD_Control%do_sppt .OR. IPD_Control%do_shum .OR. IPD_Control%do_skeb .OR. (IPD_Control%lndp_type .NE. 0) ) then
-       call run_stochastic_physics(IPD_Control, IPD_Data(:)%Grid, IPD_Data(:)%Coupling, nthrds)
-    end if
+!--- call stochastic physics pattern generation
+      if (IPD_Control%do_sppt .OR. IPD_Control%do_shum .OR. IPD_Control%do_skeb .OR. (IPD_Control%lndp_type .NE. 0) ) then
+         call run_stochastic_physics(IPD_Control, IPD_Data(:)%Grid, IPD_Data(:)%Coupling, nthrds)
+      end if
+
+!--- call the surface perturbations
+!    note: this needs to be called after time_vary (since gcycle call updates land parameters, and before radiation (uses land albedoes) 
+      if (IPD_Control%lndp_type .EQ. 2) then 
+
+        if (mod(IPD_Control%kdt,IPD_Control%nscyc) == 1)  then 
+              call GFS_apply_lndp(IPD_Control, IPD_Data(:)%Coupling,IPD_Data(:)%Grid,.true., IPD_Data(:)%Sfcprop, ierr)  
+              if (ierr .NE. 0) call mpp_error(FATAL,'error in GFS_apply_lndp') 
+        else
+              call GFS_apply_lndp(IPD_Control, IPD_Data(:)%Coupling,IPD_Data(:)%Grid,.false., IPD_Data(:)%Sfcprop, ierr) 
+              if (ierr .NE. 0) call mpp_error(FATAL,'error in GFS_apply_lndp') 
+        endif 
+      endif
 
     if(IPD_Control%do_ca)then
        ! DH* The current implementation of cellular_automata assumes that all blocksizes are the
@@ -391,6 +405,7 @@ subroutine update_atmos_radiation_physics (Atmos)
 
 !--- execute the IPD atmospheric physics step2 subcomponent (stochastic physics driver)
 
+
       call mpp_clock_begin(physClock)
 #ifdef CCPP
       call CCPP_step (step="stochastics", nblks=Atm_block%nblks, ierr=ierr)
@@ -406,6 +421,7 @@ subroutine update_atmos_radiation_physics (Atmos)
       enddo
 #endif
       call mpp_clock_end(physClock)
+
 
       if (chksum_debug) then
         if (mpp_pe() == mpp_root_pe()) print *,'PHYSICS STEP2   ', IPD_Control%kdt, IPD_Control%fhour
@@ -642,11 +658,11 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
 
    Atmos%Diag => IPD_Diag
 
-   if (IPD_Control%lndp_type .EQ. 1) then
-      ! Get land surface perturbations here (move to GFS_time_vary
-      ! step if wanting to update each time-step)
-      call run_stochastic_physics_sfc(IPD_Control, IPD_Data(:)%Grid, IPD_Data(:)%Coupling)
-   end if
+
+   ! moved into run_stochastic_physics_call
+   !if (IPD_Control%lndp_type .EQ. 1) then
+   !   call run_stochastic_physics_sfc(IPD_Control, IPD_Data(:)%Grid, IPD_Data(:)%Coupling)
+   !end if
 
    ! Initialize cellular automata
    if(IPD_Control%do_ca)then

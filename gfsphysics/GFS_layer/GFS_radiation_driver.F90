@@ -1842,6 +1842,7 @@
 !  perturbation size
 !  ---  turn vegetation fraction pattern into percentile pattern
       alb1d(:) = 0.
+      lndp_alb = -999.
         if (Model%lndp_type ==1) then
           do k =1,Model%n_var_lndp
             if (Model%lndp_var_list(k) == 'alb') then 
