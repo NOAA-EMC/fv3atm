@@ -1,9 +1,7 @@
 [submodule "atmos_cubed_sphere"]
 	path = atmos_cubed_sphere
-	#url = https://github.com/NOAA-GSD/GFDL_atmos_cubed_sphere
-	#branch = gsd/develop
-	url = https://github.com/climbfuji/GFDL_atmos_cubed_sphere
-	branch = update_gsd_develop_from_dev_emc_20200625
+	url = https://github.com/NOAA-GSD/GFDL_atmos_cubed_sphere
+	branch = gsd/develop
 [submodule "ccpp/framework"]
 	path = ccpp/framework
 	url = https://github.com/NOAA-GSD/ccpp-framework
@@ -11,6 +9,4 @@
 [submodule "ccpp/physics"]
 	path = ccpp/physics
 	url = https://github.com/NOAA-GSD/ccpp-physics
-	#branch = gsd/develop
-	url = https://github.com/climbfuji/ccpp-physics
-	branch = ben_bwg_mod_for_frac
+	branch = gsd/develop
