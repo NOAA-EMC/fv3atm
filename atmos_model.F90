@@ -78,7 +78,7 @@ use atmosphere_mod,     only: atmosphere_diss_est, atmosphere_nggps_diag
 use atmosphere_mod,     only: atmosphere_scalar_field_halo
 use atmosphere_mod,     only: atmosphere_get_bottom_layer
 use atmosphere_mod,     only: set_atmosphere_pelist
-use atmosphere_mod,     only: Atm, mytile
+use atmosphere_mod,     only: Atm, mygrid
 use block_control_mod,  only: block_control_type, define_blocks_packed
 use DYCORE_typedefs,    only: DYCORE_data_type, DYCORE_diag_type
 #ifdef CCPP
@@ -312,14 +312,18 @@ subroutine update_atmos_radiation_physics (Atmos)
     end if
 
     if(IPD_Control%do_ca)then
-       ! DH* The current implementation of cellular_automata assumes that all blocksizes are the
-       ! same, this is tested in the initialization call to cellular_automata, no need to redo *DH
-       call cellular_automata(IPD_Control%kdt, IPD_Data(:)%Statein, IPD_Data(:)%Coupling, IPD_Data(:)%Intdiag, &
-                              Atm_block%nblks, IPD_Control%levs, IPD_Control%nca, IPD_Control%ncells,          &
-                              IPD_Control%nlives, IPD_Control%nfracseed, IPD_Control%nseed,                    &
-                              IPD_Control%nthresh, IPD_Control%ca_global, IPD_Control%ca_sgs,                  &
-                              IPD_Control%iseed_ca, IPD_Control%ca_smooth, IPD_Control%nspinup,                &
-                              Atm_block%blksz(1))
+       if(IPD_Control%ca_sgs)then
+          call cellular_automata_sgs(IPD_Control%kdt,IPD_Data(:)%Statein,IPD_Data(:)%Coupling,IPD_Data(:)%Intdiag,Atm_block%nblks,IPD_Control%levs, &
+            IPD_Control%nca,IPD_Control%ncells,IPD_Control%nlives,IPD_Control%nfracseed,&
+            IPD_Control%nseed,IPD_Control%nthresh,IPD_Control%ca_global,IPD_Control%ca_sgs,IPD_Control%iseed_ca,&
+            IPD_Control%ca_smooth,IPD_Control%nspinup,Atm_block%blksz(1))
+       endif
+       if(IPD_Control%ca_global)then
+          call cellular_automata_global(IPD_Control%kdt,IPD_Data(:)%Statein,IPD_Data(:)%Coupling,IPD_Data(:)%Intdiag,Atm_block%nblks,IPD_Control%levs, &
+            IPD_Control%nca_g,IPD_Control%ncells_g,IPD_Control%nlives_g,IPD_Control%nfracseed,&
+            IPD_Control%nseed_g,IPD_Control%nthresh,IPD_Control%ca_global,IPD_Control%ca_sgs,IPD_Control%iseed_ca,&
+            IPD_Control%ca_smooth,IPD_Control%nspinup,Atm_block%blksz(1),IPD_Control%nsmooth,IPD_Control%ca_amplitude)
+      endif
     endif
 
 !--- if coupled, assign coupled fields
@@ -600,8 +604,8 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    Init_parm%area            => Atmos%area
    Init_parm%tracer_names    => tracer_names
 #ifdef CCPP
-   Init_parm%restart         = Atm(mytile)%flagstruct%warm_start
-   Init_parm%hydrostatic     = Atm(mytile)%flagstruct%hydrostatic
+   Init_parm%restart         = Atm(mygrid)%flagstruct%warm_start
+   Init_parm%hydrostatic     = Atm(mygrid)%flagstruct%hydrostatic
 #endif
 
 #ifdef INTERNAL_FILE_NML
@@ -656,15 +660,24 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
          call mpp_error(FATAL, 'Logic errror: cellular_automata not compatible with non-uniform blocksizes')
       end if
       ! *DH
-      call cellular_automata(IPD_Control%kdt, IPD_Data(:)%Statein, IPD_Data(:)%Coupling, IPD_Data(:)%Intdiag, &
-                             Atm_block%nblks, IPD_Control%levs, IPD_Control%nca, IPD_Control%ncells,          &
-                             IPD_Control%nlives, IPD_Control%nfracseed, IPD_Control%nseed,                    &
-                             IPD_Control%nthresh, IPD_Control%ca_global, IPD_Control%ca_sgs,                  &
-                             IPD_Control%iseed_ca, IPD_Control%ca_smooth, IPD_Control%nspinup,                &
-                             Atm_block%blksz(1))
+      if(IPD_Control%do_ca)then
+       if(IPD_Control%ca_sgs)then
+          call cellular_automata_sgs(IPD_Control%kdt,IPD_Data(:)%Statein,IPD_Data(:)%Coupling,IPD_Data(:)%Intdiag,Atm_block%nblks,IPD_Control%levs, &
+            IPD_Control%nca,IPD_Control%ncells,IPD_Control%nlives,IPD_Control%nfracseed,&
+            IPD_Control%nseed,IPD_Control%nthresh,IPD_Control%ca_global,IPD_Control%ca_sgs,IPD_Control%iseed_ca,&
+            IPD_Control%ca_smooth,IPD_Control%nspinup,Atm_block%blksz(1))
+       endif
+       if(IPD_Control%ca_global)then
+          call cellular_automata_global(IPD_Control%kdt,IPD_Data(:)%Statein,IPD_Data(:)%Coupling,IPD_Data(:)%Intdiag,Atm_block%nblks,IPD_Control%levs, &
+            IPD_Control%nca_g,IPD_Control%ncells_g,IPD_Control%nlives_g,IPD_Control%nfracseed,&
+            IPD_Control%nseed_g,IPD_Control%nthresh,IPD_Control%ca_global,IPD_Control%ca_sgs,IPD_Control%iseed_ca,&
+            IPD_Control%ca_smooth,IPD_Control%nspinup,Atm_block%blksz(1),IPD_Control%nsmooth,IPD_Control%ca_amplitude)
+       endif
+
+    endif
    endif
 
-   Atm(mytile)%flagstruct%do_skeb = IPD_Control%do_skeb
+   Atm(mygrid)%flagstruct%do_skeb = IPD_Control%do_skeb
 
 !  initialize the IAU module
    call iau_initialize (IPD_Control,IAU_data,Init_parm)
@@ -685,7 +698,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    call FV3GFS_diag_register (IPD_Diag, Time, Atm_block, IPD_Control, Atmos%lon, Atmos%lat, Atmos%axes)
    call IPD_initialize_rst (IPD_Control, IPD_Data, IPD_Diag, IPD_Restart, Init_parm)
 #ifdef CCPP
-   call FV3GFS_restart_read (IPD_Data, IPD_Restart, Atm_block, IPD_Control, Atmos%domain, Atm(mytile)%flagstruct%warm_start)
+   call FV3GFS_restart_read (IPD_Data, IPD_Restart, Atm_block, IPD_Control, Atmos%domain, Atm(mygrid)%flagstruct%warm_start)
 #else
    call FV3GFS_restart_read (IPD_Data, IPD_Restart, Atm_block, IPD_Control, Atmos%domain)
 #endif
@@ -2044,7 +2057,7 @@ end subroutine atmos_data_type_chksum
 
     if (IPD_Control%cplflx) then
     ! MEAN Zonal compt of momentum flux (N/m**2)
-    idx = queryfieldlist(exportFieldsList,'mean_zonal_moment_flx')
+    idx = queryfieldlist(exportFieldsList,'mean_zonal_moment_flx_atm')
     if (idx > 0 ) then
 !$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
@@ -2057,7 +2070,7 @@ end subroutine atmos_data_type_chksum
     endif
 
     ! MEAN Merid compt of momentum flux (N/m**2)
-    idx = queryfieldlist(exportFieldsList,'mean_merid_moment_flx')
+    idx = queryfieldlist(exportFieldsList,'mean_merid_moment_flx_atm')
     if (idx > 0 ) then
 !$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
