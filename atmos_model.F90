@@ -78,7 +78,7 @@ use atmosphere_mod,     only: atmosphere_diss_est, atmosphere_nggps_diag
 use atmosphere_mod,     only: atmosphere_scalar_field_halo
 use atmosphere_mod,     only: atmosphere_get_bottom_layer
 use atmosphere_mod,     only: set_atmosphere_pelist
-use atmosphere_mod,     only: Atm, mytile
+use atmosphere_mod,     only: Atm, mygrid
 use block_control_mod,  only: block_control_type, define_blocks_packed
 use DYCORE_typedefs,    only: DYCORE_data_type, DYCORE_diag_type
 #ifdef CCPP
@@ -604,8 +604,8 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    Init_parm%area            => Atmos%area
    Init_parm%tracer_names    => tracer_names
 #ifdef CCPP
-   Init_parm%restart         = Atm(mytile)%flagstruct%warm_start
-   Init_parm%hydrostatic     = Atm(mytile)%flagstruct%hydrostatic
+   Init_parm%restart         = Atm(mygrid)%flagstruct%warm_start
+   Init_parm%hydrostatic     = Atm(mygrid)%flagstruct%hydrostatic
 #endif
 
 #ifdef INTERNAL_FILE_NML
@@ -677,7 +677,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
     endif
    endif
 
-   Atm(mytile)%flagstruct%do_skeb = IPD_Control%do_skeb
+   Atm(mygrid)%flagstruct%do_skeb = IPD_Control%do_skeb
 
 !  initialize the IAU module
    call iau_initialize (IPD_Control,IAU_data,Init_parm)
@@ -698,7 +698,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    call FV3GFS_diag_register (IPD_Diag, Time, Atm_block, IPD_Control, Atmos%lon, Atmos%lat, Atmos%axes)
    call IPD_initialize_rst (IPD_Control, IPD_Data, IPD_Diag, IPD_Restart, Init_parm)
 #ifdef CCPP
-   call FV3GFS_restart_read (IPD_Data, IPD_Restart, Atm_block, IPD_Control, Atmos%domain, Atm(mytile)%flagstruct%warm_start)
+   call FV3GFS_restart_read (IPD_Data, IPD_Restart, Atm_block, IPD_Control, Atmos%domain, Atm(mygrid)%flagstruct%warm_start)
 #else
    call FV3GFS_restart_read (IPD_Data, IPD_Restart, Atm_block, IPD_Control, Atmos%domain)
 #endif
