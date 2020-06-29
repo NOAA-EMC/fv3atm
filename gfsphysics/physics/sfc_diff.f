@@ -269,13 +269,13 @@
                  z0rl(i,3) = 1.0d-4
               endif
 
-            elseif (z0rl(i,3) <= 0.0d0) then
+            elseif (z0rl(i,3) < 1.0d-7) then
               z0 = (charnock / grav) * ustar(i,3) * ustar(i,3)
 
               if (redrag) then
                 z0rl(i,3) = 100.0d0 * max(min(z0, z0s_max), 1.0d-7)
               else
-                z0rl(i,3) = 100.0d0 * max(min(z0, 0.1d0), 1.0d-70)
+                z0rl(i,3) = 100.0d0 * max(min(z0, 0.1d0), 1.0d-7)
               endif
 
             endif
