@@ -19,7 +19,8 @@
 !
 !----------------------------------------------------------------------
       subroutine satmedmfvdifq(ix,im,km,ntrac,ntcw,ntiw,ntke,
-     &     dv,du,tdt,rtg,u1,v1,t1,q1,swh,hlw,xmu,garea,
+!wz  &     dv,du,tdt,rtg,u1,v1,t1,q1,swh,hlw,xmu,garea,
+     &     dv,du,tdt,rtg,u1,v1,t1,q1,swh,hlw,xmu,garea,islimsk,snwdph,
      &     psk,rbsoil,zorl,u10m,v10m,fm,fh,
      &     tsea,heat,evap,stress,spd1,kpbl,
      &     prsi,del,prsl,prslk,phii,phil,delt,
@@ -38,6 +39,10 @@
 !----------------------------------------------------------------------
       integer ix, im, km, ntrac, ntcw, ntiw, ntke
       integer kpbl(im), kinver(im)
+!
+!wz
+      integer islimsk(im)
+      real(kind=kind_phys), dimension(im,3), intent(in)    ::  snwdph
 !
       real(kind=kind_phys) delt, xkzm_m, xkzm_h, xkzm_s, dspfac,
      &                     bl_upfr, bl_dnfr
@@ -156,6 +161,8 @@
      &                     zlup,    zldn,   bsum,
      &                     tem,     tem1,   tem2,
      &                     ptem,    ptem0,  ptem1,  ptem2
+!wz
+      real(kind=kind_phys)       xkzm_mp, xkzm_hp
 !
       real(kind=kind_phys) ck0, ck1, ch0, ch1, ce0, rchck
 !
@@ -254,17 +261,37 @@
 !  xkzm_hx = 0.01 + (xkzm_h - 0.01)/(xkgdx-5.) * (gdx-5.)
 !  xkzm_mx = 0.01 + (xkzm_h - 0.01)/(xkgdx-5.) * (gdx-5.)
 !
+!wz
       do i=1,im
+              xkzm_mp = xkzm_m
+              xkzm_hp = xkzm_h
+!
+         if( islimsk(i) == 1 .and. snwdph(i,1) > 10.0 ) then    ! over land 
+            if (rbsoil(i) > 0. .and. rbsoil(i) <= 0.25) then
+              xkzm_mp = xkzm_m * (1.0 - rbsoil(i)/0.25)**2 +
+     &                     0.1 * (1.0 - (1.0-rbsoil(i)/0.25)**2)
+              xkzm_hp = xkzm_h * (1.0 - rbsoil(i)/0.25)**2 +
+     &                     0.1 * (1.0 - (1.0-rbsoil(i)/0.25)**2)
+            else if (rbsoil(i) > 0.25) then
+              xkzm_mp = 0.1
+              xkzm_hp = 0.1
+            endif
+         endif
+!#
         kx1(i) = 1
         tx1(i) = 1.0 / prsi(i,1)
         tx2(i) = tx1(i)
         if(gdx(i) >= xkgdx) then
-          xkzm_hx(i) = xkzm_h
-          xkzm_mx(i) = xkzm_m
+!wz       xkzm_hx(i) = xkzm_h
+!wz       xkzm_mx(i) = xkzm_m
+          xkzm_hx(i) = xkzm_hp
+          xkzm_mx(i) = xkzm_mp
         else
           tem  = 1. / (xkgdx - 5.)
-          tem1 = (xkzm_h - 0.01) * tem
-          tem2 = (xkzm_m - 0.01) * tem
+!wz       tem1 = (xkzm_h - 0.01) * tem
+!wz       tem2 = (xkzm_m - 0.01) * tem
+          tem1 = (xkzm_hp - 0.01) * tem
+          tem2 = (xkzm_mp - 0.01) * tem
           ptem = gdx(i) - 5.
           xkzm_hx(i) = 0.01 + tem1 * ptem
           xkzm_mx(i) = 0.01 + tem2 * ptem
@@ -699,7 +726,7 @@
 !         tem1 = (tvx(i,k+1)-tvx(i,k)) * rdzt(i,k)
 !         if(tem1 > 1.e-5) then
           tem1 = tvx(i,k+1)-tvx(i,k)
-          if(tem1 > 0.) then
+          if(tem1 > 0. .and. islimsk(i) /= 1 ) then
              xkzo(i,k)  = min(xkzo(i,k), xkzinv)
              xkzmo(i,k) = min(xkzmo(i,k), xkzinv)
              rlmnz(i,k) = min(rlmnz(i,k), rlmn2)

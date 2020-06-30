@@ -277,6 +277,7 @@ module module_write_netcdf_parallel
 
     ! write grid_xt, grid_yt attributes
     if (trim(output_grid) == 'gaussian_grid' .or. &
+        trim(output_grid) == 'global_latlon' .or. &
         trim(output_grid) == 'regional_latlon') then
        ncerr = nf90_put_att(ncid, im_varid, "long_name", "T-cell longitude"); NC_ERR_STOP(ncerr)
        ncerr = nf90_put_att(ncid, im_varid, "units", "degrees_E"); NC_ERR_STOP(ncerr)
@@ -304,7 +305,9 @@ module module_write_netcdf_parallel
     jstart = lbound(arrayr8,2); jend   = ubound(arrayr8,2)
     !print *,'in write netcdf mpi dim 1',istart,iend,jstart,jend,shape(arrayr8),minval(arrayr8(:,jstart)),maxval(arrayr8(:,jstart))
 
-    if (trim(output_grid) == 'gaussian_grid' .or. trim(output_grid) == 'regional_latlon') then
+    if (trim(output_grid) == 'gaussian_grid' .or. &
+        trim(output_grid) == 'global_latlon' .or. &
+        trim(output_grid) == 'regional_latlon') then
       ncerr = nf90_put_var(ncid, im_varid, values=arrayr8(:,jstart),start=(/istart/), count=(/iend-istart+1/)); NC_ERR_STOP(ncerr)
     else if (trim(output_grid) == 'rotated_latlon') then
       do i=1,im
@@ -321,7 +324,9 @@ module module_write_netcdf_parallel
 
     call ESMF_GridGetCoord(wrtGrid, coordDim=2, farrayPtr=arrayr8, rc=rc); ESMF_ERR_RETURN(rc)
     !print *,'in write netcdf mpi dim 2',istart,iend,jstart,jend,shape(arrayr8),minval(arrayr8(istart,:)),maxval(arrayr8(istart,:))
-    if (trim(output_grid) == 'gaussian_grid' .or. trim(output_grid) == 'regional_latlon') then
+    if (trim(output_grid) == 'gaussian_grid' .or. &
+        trim(output_grid) == 'global_latlon' .or. &
+        trim(output_grid) == 'regional_latlon') then
           ncerr = nf90_put_var(ncid, jm_varid, values=arrayr8(istart,:),start=(/jstart/),count=(/jend-jstart+1/)); NC_ERR_STOP(ncerr)
     else if (trim(output_grid) == 'rotated_latlon') then
           do j=1,jm
