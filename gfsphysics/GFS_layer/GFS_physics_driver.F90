@@ -17,8 +17,7 @@ module module_physics_driver
                                    GFS_sfcprop_type, GFS_coupling_type, &
                                    GFS_control_type, GFS_grid_type,     &
                                    GFS_tbd_type,     GFS_cldprop_type,  &
-                                   GFS_radtend_type, GFS_diag_type
-!                                  GFS_radtend_type, GFS_diag_type, huge
+                                   GFS_radtend_type, GFS_diag_type, huge
   use gfdl_cloud_microphys_mod, only: gfdl_cloud_microphys_driver,      &
                                       cloud_diagnosis
   use module_mp_thompson,    only: mp_gt_driver
@@ -60,7 +59,6 @@ module module_physics_driver
   real(kind=kind_phys), parameter :: con_day = 86400.0_kind_phys
   real(kind=kind_phys), parameter :: rad2dg  = 180.0_kind_phys/con_pi
   real(kind=kind_phys), parameter :: omz1    = 2.0_kind_phys
-  real(kind=kind_phys), parameter :: huge    = zero
 
 !> GFS Physics Implementation Layer
 !> @brief Layer that invokes individual GFS physics routines
@@ -515,7 +513,6 @@ module module_physics_driver
            stress, t850, ep1d, gamt, gamq, sigmaf,                      &
            wind, work1, work2, work3, work4, runof, xmu, fm10, fh2,     &
                    tx1, tx2, tx3, tx4, ctei_r, evbs, evcw, trans, sbsno,&
-!          dnsst,  tx1, tx2, tx3, tx4, ctei_r, evbs, evcw, trans, sbsno,&
            snowc, frland, adjsfcdsw, adjsfcnsw, adjsfcdlw, adjsfculw,   &
            adjnirbmu, adjnirdfu, adjvisbmu, adjvisdfu, adjnirbmd,       &
            adjnirdfd, adjvisbmd, adjvisdfd,           xcosz, tseal,     &
@@ -811,8 +808,8 @@ module module_physics_driver
 !     lprnt   = .false.
 
 !     do i=1,im
-!       lprnt = kdt >=  24 .and. abs(grid%xlon(i)*rad2dg-239.50) < 0.151  &
-!                          .and. abs(grid%xlat(i)*rad2dg-75.05) < 0.201
+!       lprnt = kdt >=   1 .and. abs(grid%xlon(i)*rad2dg-97.50) < 0.101  &
+!                          .and. abs(grid%xlat(i)*rad2dg-24.48) < 0.101
 !       lprnt = kdt >=   1 .and. abs(grid%xlon(i)*rad2dg-293.91) < 0.101  &
 !                          .and. abs(grid%xlat(i)*rad2dg+72.02) < 0.101
 !       lprnt = kdt >=   1 .and. abs(grid%xlon(i)*rad2dg-113.48) < 0.101  &
@@ -829,7 +826,7 @@ module module_physics_driver
 !       endif
 !     enddo
 !     if (lprnt) then
-!       if (MOdel%cplflx) then
+!       if (Model%cplflx) then
 !         write(0,*)' sfcprop%tisfc=',Sfcprop%tisfc(ipr),' kdt=',kdt,   &
 !    ' fice=',Sfcprop%fice(ipr),' ulw=',Coupling%ulwsfcin_cpl(ipr),     &
 !    ' tsfc=',Sfcprop%tsfc(ipr)
@@ -1711,10 +1708,7 @@ module module_physics_driver
                               Sfcprop%z_c, wet, zero, omz1, im, 1, dtzm)
             do i=1,im
               if (wet(i) .and. Sfcprop%oceanfrac(i) > zero) then
-!               dnsst = tsfc3(i,3) - Sfcprop%tref(i)            ! retrive/get difference of Ts and Tf
                 Sfcprop%tref(i) = Sfcprop%tsfco(i) - dtzm(i)    ! update Tf with T1 and NSST T-Profile
-!               tsfc3(i,3)  = max(271.2,Sfcprop%tref(i) + dnsst ! get Ts updated due to Tf update
-!               tseal(i)    = tsfc3(i,3)
                 if (abs(Sfcprop%xz(i)) > zero) then
                   tem2 = one / Sfcprop%xz(i)
                 else

@@ -339,7 +339,6 @@ subroutine update_atmos_radiation_physics (Atmos)
 
         call assign_importdata(rc)
 
-!        if (mpp_pe() == mpp_root_pe() .and. debug) print *,'in atmos_model, after assign_importdata, rc=',rc
       endif
 
       call mpp_clock_end(setupClock)
@@ -1658,8 +1657,6 @@ end subroutine atmos_data_type_chksum
         call ESMF_FieldGet(importFields(n), dimCount=dimCount ,typekind=datatype, &
                            name=impfield_name, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-!     if (mpp_pe() == mpp_root_pe() .and. debug) print *,'in cplIMP,atmos gets ',' n=',n,trim(impfield_name)
 
         if ( dimCount == 2) then
           if ( datatype == ESMF_TYPEKIND_R8) then
