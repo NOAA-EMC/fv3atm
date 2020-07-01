@@ -186,6 +186,7 @@ SCHEME_FILES_DEPENDENCIES = [
     'FV3/ccpp/physics/physics/rte-rrtmgp/rte/mo_rte_kind.F90',
     'FV3/ccpp/physics/physics/rte-rrtmgp/rte/mo_rte_lw.F90',
     'FV3/ccpp/physics/physics/rte-rrtmgp/rte/mo_rte_sw.F90',
+    'FV3/ccpp/physics/physics/rte-rrtmgp/rte/mo_rte_config.F90',
     'FV3/ccpp/physics/physics/rte-rrtmgp/rte/mo_source_functions.F90',
     'FV3/ccpp/physics/physics/rte-rrtmgp/rte/kernels/mo_fluxes_broadband_kernels.F90',
     'FV3/ccpp/physics/physics/rte-rrtmgp/rte/kernels/mo_optical_props_kernels.F90',

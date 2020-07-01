@@ -1896,6 +1896,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: tsfc_land(:)       => null()  !<
     real (kind=kind_phys), pointer      :: tsfc_ocean(:)      => null()  !<
     real (kind=kind_phys), pointer      :: tsfg(:)            => null()  !<
+    real (kind=kind_phys), pointer      :: sktp1r(:)          => null()  !<
     real (kind=kind_phys), pointer      :: tsnow(:)           => null()  !<
     real (kind=kind_phys), pointer      :: tsurf(:)           => null()  !<
     real (kind=kind_phys), pointer      :: tsurf_ice(:)       => null()  !<
@@ -6147,6 +6148,7 @@ module GFS_typedefs
     allocate (Interstitial%tsfc_land       (IM))
     allocate (Interstitial%tsfc_ocean      (IM))
     allocate (Interstitial%tsfg            (IM))
+    allocate (Interstitial%sktp1r          (IM))
     allocate (Interstitial%tsurf           (IM))
     allocate (Interstitial%tsurf_ice       (IM))
     allocate (Interstitial%tsurf_land      (IM))
