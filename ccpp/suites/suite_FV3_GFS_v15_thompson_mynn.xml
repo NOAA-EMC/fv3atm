@@ -13,14 +13,14 @@
   <group name="radiation">
     <subcycle loop="1">
       <scheme>GFS_suite_interstitial_rad_reset</scheme>
+      <scheme>sgscloud_radpre</scheme>
       <scheme>GFS_rrtmg_pre</scheme>
       <scheme>rrtmg_sw_pre</scheme>
-      <scheme>mynnrad_pre</scheme>
       <scheme>rrtmg_sw</scheme>
       <scheme>rrtmg_sw_post</scheme>
       <scheme>rrtmg_lw_pre</scheme>
       <scheme>rrtmg_lw</scheme>
-      <scheme>mynnrad_post</scheme>
+      <scheme>sgscloud_radpost</scheme>
       <scheme>rrtmg_lw_post</scheme>
       <scheme>GFS_rrtmg_post</scheme>
     </subcycle>
@@ -63,9 +63,9 @@
       <scheme>GFS_suite_stateout_update</scheme>
       <scheme>ozphys_2015</scheme>
       <scheme>h2ophys</scheme>
-      <scheme>GFS_DCNV_generic_pre</scheme>
       <scheme>get_phi_fv3</scheme>
       <scheme>GFS_suite_interstitial_3</scheme>
+      <scheme>GFS_DCNV_generic_pre</scheme>
       <scheme>samfdeepcnv</scheme>
       <scheme>GFS_DCNV_generic_post</scheme>
       <scheme>GFS_SCNV_generic_pre</scheme>

@@ -123,11 +123,11 @@ module GFS_restart
 #ifdef CCPP
     ! GF
     if (Model%imfdeepcnv == 3) then
-      Restart%num3d = Restart%num3d + 2
+      Restart%num3d = Restart%num3d + 3
     endif
     ! MYNN PBL 
     if (Model%do_mynnedmf) then
-      Restart%num3d = Restart%num3d + 8
+      Restart%num3d = Restart%num3d + 9
     endif
 #endif
 
@@ -188,7 +188,7 @@ module GFS_restart
     !--- RAP/HRRR-specific variables, 2D
     num = offset + ndiag_rst
     ! GF
-    if (Model%imfdeepcnv == 3) then
+    if (Model%imfdeepcnv == Model%imfdeepcnv_gf) then
       num = num + 1
       Restart%name2d(num) = 'gf_2d_conv_act'
       do nb = 1,nblks
@@ -267,7 +267,7 @@ module GFS_restart
     num = Model%ntot3d
 
     ! GF
-    if (Model%imfdeepcnv == 3) then
+    if (Model%imfdeepcnv == Model%imfdeepcnv_gf) then
       num = num + 1
       Restart%name3d(num) = 'gf_3d_prevst'
       do nb = 1,nblks
@@ -277,6 +277,11 @@ module GFS_restart
       Restart%name3d(num) = 'gf_3d_prevsq'
       do nb = 1,nblks
         Restart%data(nb,num)%var3p => Tbd(nb)%prevsq(:,:)
+      enddo
+      num = num + 1
+      Restart%name3d(num) = 'gf_3d_qci_conv'
+      do nb = 1,nblks
+        Restart%data(nb,num)%var3p => Coupling(nb)%qci_conv(:,:)
       enddo
     endif
     ! MYNN PBL
@@ -290,6 +295,11 @@ module GFS_restart
       Restart%name3d(num) = 'mynn_3d_qc_bl'
       do nb = 1,nblks
         Restart%data(nb,num)%var3p => Tbd(nb)%qc_bl(:,:)
+      enddo
+      num = num + 1
+      Restart%name3d(num) = 'mynn_3d_qi_bl'
+      do nb = 1,nblks
+        Restart%data(nb,num)%var3p => Tbd(nb)%qi_bl(:,:)
       enddo
       num = num + 1
       Restart%name3d(num) = 'mynn_3d_el_pbl'
