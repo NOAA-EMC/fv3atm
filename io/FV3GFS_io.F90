@@ -1176,6 +1176,7 @@ module FV3GFS_io_mod
       endif
     endif
 
+#ifdef CCPP
     if (nint(sfc_var3ice(1,1,1)) == -9999) then
       if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing tiice')
       do nb = 1, Atm_block%nblks
@@ -1186,6 +1187,7 @@ module FV3GFS_io_mod
       enddo
     endif
 
+#endif
 !#endif
 
     if(Model%frac_grid) then ! 3-way composite
