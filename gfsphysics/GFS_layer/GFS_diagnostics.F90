@@ -2312,9 +2312,10 @@ module GFS_diagnostics
       idx = idx + 1
       ExtDiag(idx)%axes = 3
       ExtDiag(idx)%name = 'dt3dt_lw'
-      ExtDiag(idx)%desc = 'cumulative change in temperature due to long wave radiation'
-      ExtDiag(idx)%unit = 'K'
+      ExtDiag(idx)%desc = 'temperature tendency due to long wave radiation'
+      ExtDiag(idx)%unit = 'K s-1'
       ExtDiag(idx)%mod_name = 'gfs_phys'
+      ExtDiag(idx)%time_avg = .TRUE.
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
         ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%dt3dt(:,:,1)
@@ -2323,9 +2324,10 @@ module GFS_diagnostics
       idx = idx + 1
       ExtDiag(idx)%axes = 3
       ExtDiag(idx)%name = 'dt3dt_sw'
-      ExtDiag(idx)%desc = 'cumulative change in temperature due to short wave radiation'
-      ExtDiag(idx)%unit = 'K'
+      ExtDiag(idx)%desc = 'temperature tendency due to short wave radiation'
+      ExtDiag(idx)%unit = 'K s-1'
       ExtDiag(idx)%mod_name = 'gfs_phys'
+      ExtDiag(idx)%time_avg = .TRUE.
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
         ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%dt3dt(:,:,2)
@@ -2334,9 +2336,10 @@ module GFS_diagnostics
       idx = idx + 1
       ExtDiag(idx)%axes = 3
       ExtDiag(idx)%name = 'dt3dt_pbl'
-      ExtDiag(idx)%desc = 'cumulative change in temperature due to PBL'
-      ExtDiag(idx)%unit = 'K'
+      ExtDiag(idx)%desc = 'temperature tendency due to PBL'
+      ExtDiag(idx)%unit = 'K s-1'
       ExtDiag(idx)%mod_name = 'gfs_phys'
+      ExtDiag(idx)%time_avg = .TRUE.
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
         ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%dt3dt(:,:,3)
@@ -2345,9 +2348,10 @@ module GFS_diagnostics
       idx = idx + 1
       ExtDiag(idx)%axes = 3
       ExtDiag(idx)%name = 'dt3dt_deepcnv'
-      ExtDiag(idx)%desc = 'cumulative change in temperature due to deep convection'
-      ExtDiag(idx)%unit = 'K'
+      ExtDiag(idx)%desc = 'temperature tendency due to deep convection'
+      ExtDiag(idx)%unit = 'K s-1'
       ExtDiag(idx)%mod_name = 'gfs_phys'
+      ExtDiag(idx)%time_avg = .TRUE.
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
         ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%dt3dt(:,:,4)
@@ -2356,9 +2360,10 @@ module GFS_diagnostics
       idx = idx + 1
       ExtDiag(idx)%axes = 3
       ExtDiag(idx)%name = 'dt3dt_shalcnv'
-      ExtDiag(idx)%desc = 'cumulative change in temperature due to shallow convection'
-      ExtDiag(idx)%unit = 'K'
+      ExtDiag(idx)%desc = 'temperature tendency due to shallow convection'
+      ExtDiag(idx)%unit = 'K s-1'
       ExtDiag(idx)%mod_name = 'gfs_phys'
+      ExtDiag(idx)%time_avg = .TRUE.
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
         ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%dt3dt(:,:,5)
@@ -2367,9 +2372,10 @@ module GFS_diagnostics
       idx = idx + 1
       ExtDiag(idx)%axes = 3
       ExtDiag(idx)%name = 'dt3dt_mp'
-      ExtDiag(idx)%desc = 'cumulative change in temperature due to microphysics'
-      ExtDiag(idx)%unit = 'K'
+      ExtDiag(idx)%desc = 'temperature tendency due to microphysics'
+      ExtDiag(idx)%unit = 'K s-1'
       ExtDiag(idx)%mod_name = 'gfs_phys'
+      ExtDiag(idx)%time_avg = .TRUE.
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
         ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%dt3dt(:,:,6)
@@ -2378,9 +2384,10 @@ module GFS_diagnostics
       idx = idx + 1
       ExtDiag(idx)%axes = 3
       ExtDiag(idx)%name = 'dt3dt_orogwd'
-      ExtDiag(idx)%desc = 'cumulative change in temperature due to orographic gravity wave drag'
-      ExtDiag(idx)%unit = 'K'
+      ExtDiag(idx)%desc = 'temperature tendency due to orographic gravity wave drag'
+      ExtDiag(idx)%unit = 'K s-1'
       ExtDiag(idx)%mod_name = 'gfs_phys'
+      ExtDiag(idx)%time_avg = .TRUE.
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
         ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%dt3dt(:,:,7)
@@ -2389,9 +2396,10 @@ module GFS_diagnostics
       idx = idx + 1
       ExtDiag(idx)%axes = 3
       ExtDiag(idx)%name = 'dt3dt_rdamp'
-      ExtDiag(idx)%desc = 'cumulative change in temperature due to Rayleigh damping'
-      ExtDiag(idx)%unit = 'K'
+      ExtDiag(idx)%desc = 'temperature tendency due to Rayleigh damping'
+      ExtDiag(idx)%unit = 'K s-1'
       ExtDiag(idx)%mod_name = 'gfs_phys'
+      ExtDiag(idx)%time_avg = .TRUE.
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
          ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%dt3dt(:,:,8)
@@ -2400,9 +2408,10 @@ module GFS_diagnostics
       idx = idx + 1
       ExtDiag(idx)%axes = 3
       ExtDiag(idx)%name = 'dt3dt_cnvgwd'
-      ExtDiag(idx)%desc = 'cumulative change in temperature due to convective gravity wave drag'
-      ExtDiag(idx)%unit = 'K'
+      ExtDiag(idx)%desc = 'temperature tendency due to convective gravity wave drag'
+      ExtDiag(idx)%unit = 'K s-1'
       ExtDiag(idx)%mod_name = 'gfs_phys'
+      ExtDiag(idx)%time_avg = .TRUE.
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
          ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%dt3dt(:,:,9)
@@ -2411,9 +2420,10 @@ module GFS_diagnostics
       idx = idx + 1
       ExtDiag(idx)%axes = 3
       ExtDiag(idx)%name = 'dt3dt_phys'
-      ExtDiag(idx)%desc = 'cumulative change in temperature due to physics'
-      ExtDiag(idx)%unit = 'K'
+      ExtDiag(idx)%desc = 'temperature tendency due to physics'
+      ExtDiag(idx)%unit = 'K s-1'
       ExtDiag(idx)%mod_name = 'gfs_phys'
+      ExtDiag(idx)%time_avg = .TRUE.
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
          ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%dt3dt(:,:,10)
@@ -2422,9 +2432,10 @@ module GFS_diagnostics
       idx = idx + 1
       ExtDiag(idx)%axes = 3
       ExtDiag(idx)%name = 'dt3dt_nophys'
-      ExtDiag(idx)%desc = 'cumulative change in temperature due to non-physics processes'
-      ExtDiag(idx)%unit = 'K'
+      ExtDiag(idx)%desc = 'temperature tendency due to non-physics processes'
+      ExtDiag(idx)%unit = 'K s-1'
       ExtDiag(idx)%mod_name = 'gfs_phys'
+      ExtDiag(idx)%time_avg = .TRUE.
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
          ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%dt3dt(:,:,11)
@@ -2433,9 +2444,10 @@ module GFS_diagnostics
       idx = idx + 1
       ExtDiag(idx)%axes = 3
       ExtDiag(idx)%name = 'du3dt_pbl'
-      ExtDiag(idx)%desc = 'cumulative change in u momentum due to PBL'
-      ExtDiag(idx)%unit = 'm/s'
+      ExtDiag(idx)%desc = 'u momentum tendency due to PBL'
+      ExtDiag(idx)%unit = 'm s-2'
       ExtDiag(idx)%mod_name = 'gfs_phys'
+      ExtDiag(idx)%time_avg = .TRUE.
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
         ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%du3dt(:,:,1)
@@ -2444,9 +2456,10 @@ module GFS_diagnostics
       idx = idx + 1
       ExtDiag(idx)%axes = 3
       ExtDiag(idx)%name = 'dv3dt_pbl'
-      ExtDiag(idx)%desc = 'cumulative change in v momentum due to PBL'
-      ExtDiag(idx)%unit = 'm/s'
+      ExtDiag(idx)%desc = 'v momentum tendency due to PBL'
+      ExtDiag(idx)%unit = 'm s-2'
       ExtDiag(idx)%mod_name = 'gfs_phys'
+      ExtDiag(idx)%time_avg = .TRUE.
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
         ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%dv3dt(:,:,1)
@@ -2455,9 +2468,10 @@ module GFS_diagnostics
       idx = idx + 1
       ExtDiag(idx)%axes = 3
       ExtDiag(idx)%name = 'du3dt_orogwd'
-      ExtDiag(idx)%desc = 'cumulative change in u momentum due to orographic gravity wave drag'
-      ExtDiag(idx)%unit = 'm/s'
+      ExtDiag(idx)%desc = 'u momentum tendency due to orographic gravity wave drag'
+      ExtDiag(idx)%unit = 'm s-2'
       ExtDiag(idx)%mod_name = 'gfs_phys'
+      ExtDiag(idx)%time_avg = .TRUE.
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
         ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%du3dt(:,:,2)
@@ -2466,9 +2480,10 @@ module GFS_diagnostics
       idx = idx + 1
       ExtDiag(idx)%axes = 3
       ExtDiag(idx)%name = 'dv3dt_orogwd'
-      ExtDiag(idx)%desc = 'cumulative change in v momentum due to orographic gravity wave drag'
-      ExtDiag(idx)%unit = 'm/s'
+      ExtDiag(idx)%desc = 'v momentum tendency due to orographic gravity wave drag'
+      ExtDiag(idx)%unit = 'm s-2'
       ExtDiag(idx)%mod_name = 'gfs_phys'
+      ExtDiag(idx)%time_avg = .TRUE.
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
         ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%dv3dt(:,:,2)
@@ -2477,9 +2492,10 @@ module GFS_diagnostics
       idx = idx + 1
       ExtDiag(idx)%axes = 3
       ExtDiag(idx)%name = 'du3dt_deepcnv'
-      ExtDiag(idx)%desc = 'cumulative change in u momentum due to deep convection'
-      ExtDiag(idx)%unit = 'm/s'
+      ExtDiag(idx)%desc = 'u momentum tendency due to deep convection'
+      ExtDiag(idx)%unit = 'm s-2'
       ExtDiag(idx)%mod_name = 'gfs_phys'
+      ExtDiag(idx)%time_avg = .TRUE.
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
         ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%du3dt(:,:,3)
@@ -2488,9 +2504,10 @@ module GFS_diagnostics
       idx = idx + 1
       ExtDiag(idx)%axes = 3
       ExtDiag(idx)%name = 'dv3dt_deepcnv'
-      ExtDiag(idx)%desc = 'cumulative change in v momentum due to deep convection'
-      ExtDiag(idx)%unit = 'm/s'
+      ExtDiag(idx)%desc = 'v momentum tendency due to deep convection'
+      ExtDiag(idx)%unit = 'm s-2'
       ExtDiag(idx)%mod_name = 'gfs_phys'
+      ExtDiag(idx)%time_avg = .TRUE.
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
         ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%dv3dt(:,:,3)
@@ -2499,9 +2516,10 @@ module GFS_diagnostics
       idx = idx + 1
       ExtDiag(idx)%axes = 3
       ExtDiag(idx)%name = 'du3dt_cnvgwd'
-      ExtDiag(idx)%desc = 'cumulative change in u momentum due to convective gravity wave drag'
-      ExtDiag(idx)%unit = 'm/s'
+      ExtDiag(idx)%desc = 'u momentum tendency due to convective gravity wave drag'
+      ExtDiag(idx)%unit = 'm s-2'
       ExtDiag(idx)%mod_name = 'gfs_phys'
+      ExtDiag(idx)%time_avg = .TRUE.
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
         ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%du3dt(:,:,4)
@@ -2510,9 +2528,10 @@ module GFS_diagnostics
       idx = idx + 1
       ExtDiag(idx)%axes = 3
       ExtDiag(idx)%name = 'dv3dt_cnvgwd'
-      ExtDiag(idx)%desc = 'cumulative change in v momentum due to convective gravity wave drag'
-      ExtDiag(idx)%unit = 'm/s'
+      ExtDiag(idx)%desc = 'v momentum tendency due to convective gravity wave drag'
+      ExtDiag(idx)%unit = 'm s-2'
       ExtDiag(idx)%mod_name = 'gfs_phys'
+      ExtDiag(idx)%time_avg = .TRUE.
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
         ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%dv3dt(:,:,4)
@@ -2521,9 +2540,10 @@ module GFS_diagnostics
       idx = idx + 1
       ExtDiag(idx)%axes = 3
       ExtDiag(idx)%name = 'du3dt_rdamp'
-      ExtDiag(idx)%desc = 'cumulative change in u momentum due to Rayleigh damping'
-      ExtDiag(idx)%unit = 'm/s'
+      ExtDiag(idx)%desc = 'u momentum tendency due to Rayleigh damping'
+      ExtDiag(idx)%unit = 'm s-2'
       ExtDiag(idx)%mod_name = 'gfs_phys'
+      ExtDiag(idx)%time_avg = .TRUE.
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
          ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%du3dt(:,:,5)
@@ -2532,9 +2552,10 @@ module GFS_diagnostics
       idx = idx + 1
       ExtDiag(idx)%axes = 3
       ExtDiag(idx)%name = 'dv3dt_damp'
-      ExtDiag(idx)%desc = 'cumulative change in v momentum due to Rayleigh damping'
-      ExtDiag(idx)%unit = 'm/s'
+      ExtDiag(idx)%desc = 'v momentum tendency due to Rayleigh damping'
+      ExtDiag(idx)%unit = 'm s-2'
       ExtDiag(idx)%mod_name = 'gfs_phys'
+      ExtDiag(idx)%time_avg = .TRUE.
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
          ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%dv3dt(:,:,5)
@@ -2544,9 +2565,10 @@ module GFS_diagnostics
       idx = idx + 1
       ExtDiag(idx)%axes = 3
       ExtDiag(idx)%name = 'du3dt_shalcnv'
-      ExtDiag(idx)%desc = 'cumulative change in u momentum due to shallow convection'
-      ExtDiag(idx)%unit = 'm/s'
+      ExtDiag(idx)%desc = 'u momentum tendency due to shallow convection'
+      ExtDiag(idx)%unit = 'm s-2'
       ExtDiag(idx)%mod_name = 'gfs_phys'
+      ExtDiag(idx)%time_avg = .TRUE.
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
          ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%du3dt(:,:,6)
@@ -2555,9 +2577,10 @@ module GFS_diagnostics
       idx = idx + 1
       ExtDiag(idx)%axes = 3
       ExtDiag(idx)%name = 'dv3dt_shalcnv'
-      ExtDiag(idx)%desc = 'cumulative change in v momentum due to shallow convection'
-      ExtDiag(idx)%unit = 'm/s'
+      ExtDiag(idx)%desc = 'v momentum tendency due to shallow convection'
+      ExtDiag(idx)%unit = 'm s-2'
       ExtDiag(idx)%mod_name = 'gfs_phys'
+      ExtDiag(idx)%time_avg = .TRUE.
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
          ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%dv3dt(:,:,6)
@@ -2566,9 +2589,10 @@ module GFS_diagnostics
       idx = idx + 1
       ExtDiag(idx)%axes = 3
       ExtDiag(idx)%name = 'du3dt_phys'
-      ExtDiag(idx)%desc = 'cumulative change in u momentum due to physics'
-      ExtDiag(idx)%unit = 'm/s'
+      ExtDiag(idx)%desc = 'u momentum tendency due to physics'
+      ExtDiag(idx)%unit = 'm s-2'
       ExtDiag(idx)%mod_name = 'gfs_phys'
+      ExtDiag(idx)%time_avg = .TRUE.
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
          ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%du3dt(:,:,7)
@@ -2577,9 +2601,10 @@ module GFS_diagnostics
       idx = idx + 1
       ExtDiag(idx)%axes = 3
       ExtDiag(idx)%name = 'dv3dt_phys'
-      ExtDiag(idx)%desc = 'cumulative change in v momentum due to physics'
-      ExtDiag(idx)%unit = 'm/s'
+      ExtDiag(idx)%desc = 'v momentum tendency due to physics'
+      ExtDiag(idx)%unit = 'm s-2'
       ExtDiag(idx)%mod_name = 'gfs_phys'
+      ExtDiag(idx)%time_avg = .TRUE.
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
          ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%dv3dt(:,:,7)
@@ -2588,9 +2613,10 @@ module GFS_diagnostics
       idx = idx + 1
       ExtDiag(idx)%axes = 3
       ExtDiag(idx)%name = 'du3dt_nophys'
-      ExtDiag(idx)%desc = 'cumulative change in u momentum due to non-physics processes'
-      ExtDiag(idx)%unit = 'm/s'
+      ExtDiag(idx)%desc = 'u momentum tendency due to non-physics processes'
+      ExtDiag(idx)%unit = 'm s-2'
       ExtDiag(idx)%mod_name = 'gfs_phys'
+      ExtDiag(idx)%time_avg = .TRUE.
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
          ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%du3dt(:,:,8)
@@ -2599,9 +2625,10 @@ module GFS_diagnostics
       idx = idx + 1
       ExtDiag(idx)%axes = 3
       ExtDiag(idx)%name = 'dv3dt_nophys'
-      ExtDiag(idx)%desc = 'cumulative change in v momentum due to non-physics processes'
-      ExtDiag(idx)%unit = 'm/s'
+      ExtDiag(idx)%desc = 'v momentum tendency due to non-physics processes'
+      ExtDiag(idx)%unit = 'm s-2'
       ExtDiag(idx)%mod_name = 'gfs_phys'
+      ExtDiag(idx)%time_avg = .TRUE.
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
          ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%dv3dt(:,:,8)
@@ -2612,9 +2639,10 @@ module GFS_diagnostics
         idx = idx + 1
         ExtDiag(idx)%axes = 3
         ExtDiag(idx)%name = 'dq3dt_pbl'
-        ExtDiag(idx)%desc = 'cumulative change in water vapor specific humidity due to PBL'
-        ExtDiag(idx)%unit = 'kg kg-1'
+        ExtDiag(idx)%desc = 'water vapor specific humidity tendency due to PBL'
+        ExtDiag(idx)%unit = 'kg kg-1 s-1'
         ExtDiag(idx)%mod_name = 'gfs_phys'
+        ExtDiag(idx)%time_avg = .TRUE.
         allocate (ExtDiag(idx)%data(nblks))
         do nb = 1,nblks
            ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%dq3dt(:,:,1)
@@ -2623,9 +2651,10 @@ module GFS_diagnostics
         idx = idx + 1
         ExtDiag(idx)%axes = 3
         ExtDiag(idx)%name = 'dq3dt_deepcnv'
-        ExtDiag(idx)%desc = 'cumulative change in water vapor specific humidity due to deep convection'
-        ExtDiag(idx)%unit = 'kg kg-1'
+        ExtDiag(idx)%desc = 'water vapor specific humidity tendency due to deep convection'
+        ExtDiag(idx)%unit = 'kg kg-1 s-1'
         ExtDiag(idx)%mod_name = 'gfs_phys'
+        ExtDiag(idx)%time_avg = .TRUE.
         allocate (ExtDiag(idx)%data(nblks))
         do nb = 1,nblks
            ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%dq3dt(:,:,2)
@@ -2634,9 +2663,10 @@ module GFS_diagnostics
         idx = idx + 1
         ExtDiag(idx)%axes = 3
         ExtDiag(idx)%name = 'dq3dt_shalcnv'
-        ExtDiag(idx)%desc = 'cumulative change in water vapor specific humidity due to shallow convection'
-        ExtDiag(idx)%unit = 'kg kg-1'
+        ExtDiag(idx)%desc = 'water vapor specific humidity tendency due to shallow convection'
+        ExtDiag(idx)%unit = 'kg kg-1 s-1'
         ExtDiag(idx)%mod_name = 'gfs_phys'
+        ExtDiag(idx)%time_avg = .TRUE.
         allocate (ExtDiag(idx)%data(nblks))
         do nb = 1,nblks
            ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%dq3dt(:,:,3)
@@ -2645,9 +2675,10 @@ module GFS_diagnostics
         idx = idx + 1
         ExtDiag(idx)%axes = 3
         ExtDiag(idx)%name = 'dq3dt_mp'
-        ExtDiag(idx)%desc = 'cumulative change in water vapor specific humidity due to microphysics'
-        ExtDiag(idx)%unit = 'kg kg-1'
+        ExtDiag(idx)%desc = 'water vapor specific humidity tendency due to microphysics'
+        ExtDiag(idx)%unit = 'kg kg-1 s-1'
         ExtDiag(idx)%mod_name = 'gfs_phys'
+        ExtDiag(idx)%time_avg = .TRUE.
         allocate (ExtDiag(idx)%data(nblks))
         do nb = 1,nblks
            ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%dq3dt(:,:,4)
@@ -2656,9 +2687,10 @@ module GFS_diagnostics
         idx = idx + 1
         ExtDiag(idx)%axes = 3
         ExtDiag(idx)%name = 'dq3dt_o3pbl'
-        ExtDiag(idx)%desc = 'cumulative change in ozone mixing ratio due to PBL'
-        ExtDiag(idx)%unit = 'kg kg-1'
+        ExtDiag(idx)%desc = 'ozone mixing ratio tendency due to PBL'
+        ExtDiag(idx)%unit = 'kg kg-1 s-1'
         ExtDiag(idx)%mod_name = 'gfs_phys'
+        ExtDiag(idx)%time_avg = .TRUE.
         allocate (ExtDiag(idx)%data(nblks))
         do nb = 1,nblks
            ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%dq3dt(:,:,5)
@@ -2667,9 +2699,10 @@ module GFS_diagnostics
         idx = idx + 1
         ExtDiag(idx)%axes = 3
         ExtDiag(idx)%name = 'dq3dt_o3prodloss'
-        ExtDiag(idx)%desc = 'cumulative change in ozone concentration due to production and loss rate'
-        ExtDiag(idx)%unit = 'kg kg-1'
+        ExtDiag(idx)%desc = 'ozone concentration tendency due to production and loss rate'
+        ExtDiag(idx)%unit = 'kg kg-1 s-1'
         ExtDiag(idx)%mod_name = 'gfs_phys'
+        ExtDiag(idx)%time_avg = .TRUE.
         allocate (ExtDiag(idx)%data(nblks))
         do nb = 1,nblks
            ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%dq3dt(:,:,6)
@@ -2678,9 +2711,10 @@ module GFS_diagnostics
         idx = idx + 1
         ExtDiag(idx)%axes = 3
         ExtDiag(idx)%name = 'dq3dt_o3mix'
-        ExtDiag(idx)%desc = 'cumulative change in ozone concentration due to ozone mixing ratio'
-        ExtDiag(idx)%unit = 'kg kg-1'
+        ExtDiag(idx)%desc = 'ozone concentration tendency due to ozone mixing ratio'
+        ExtDiag(idx)%unit = 'kg kg-1 s-1'
         ExtDiag(idx)%mod_name = 'gfs_phys'
+        ExtDiag(idx)%time_avg = .TRUE.
         allocate (ExtDiag(idx)%data(nblks))
         do nb = 1,nblks
            ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%dq3dt(:,:,7)
@@ -2689,9 +2723,10 @@ module GFS_diagnostics
         idx = idx + 1
         ExtDiag(idx)%axes = 3
         ExtDiag(idx)%name = 'dq3dt_o3temp'
-        ExtDiag(idx)%desc = 'cumulative change in ozone concentration due to temperature'
-        ExtDiag(idx)%unit = 'kg kg-1'
+        ExtDiag(idx)%desc = 'ozone concentration tendency due to temperature'
+        ExtDiag(idx)%unit = 'kg kg-1 s-1'
         ExtDiag(idx)%mod_name = 'gfs_phys'
+        ExtDiag(idx)%time_avg = .TRUE.
         allocate (ExtDiag(idx)%data(nblks))
         do nb = 1,nblks
            ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%dq3dt(:,:,8)
@@ -2700,9 +2735,10 @@ module GFS_diagnostics
         idx = idx + 1
         ExtDiag(idx)%axes = 3
         ExtDiag(idx)%name = 'dq3dt_o3column'
-        ExtDiag(idx)%desc = 'cumulative change in ozone concentration due to overhead ozone column'
-        ExtDiag(idx)%unit = 'kg kg-1'
+        ExtDiag(idx)%desc = 'ozone concentration tendency due to overhead ozone column'
+        ExtDiag(idx)%unit = 'kg kg-1 s-1'
         ExtDiag(idx)%mod_name = 'gfs_phys'
+        ExtDiag(idx)%time_avg = .TRUE.
         allocate (ExtDiag(idx)%data(nblks))
         do nb = 1,nblks
            ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%dq3dt(:,:,9)
@@ -2712,9 +2748,10 @@ module GFS_diagnostics
       idx = idx + 1
       ExtDiag(idx)%axes = 3
       ExtDiag(idx)%name = 'dq3dt_phys'
-      ExtDiag(idx)%desc = 'cumulative change in water vapor specific humidity due to physics'
-      ExtDiag(idx)%unit = 'kg kg-1'
+      ExtDiag(idx)%desc = 'water vapor specific humidity tendency due to physics'
+      ExtDiag(idx)%unit = 'kg kg-1 s-1'
       ExtDiag(idx)%mod_name = 'gfs_phys'
+      ExtDiag(idx)%time_avg = .TRUE.
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
         ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%dq3dt(:,:,10)
@@ -2723,9 +2760,10 @@ module GFS_diagnostics
       idx = idx + 1
       ExtDiag(idx)%axes = 3
       ExtDiag(idx)%name = 'dq3dt_o3phys'
-      ExtDiag(idx)%desc = 'cumulative change in ozone concentration due to physics'
-      ExtDiag(idx)%unit = 'kg kg-1'
+      ExtDiag(idx)%desc = 'ozone concentration tendency due to physics'
+      ExtDiag(idx)%unit = 'kg kg-1 s-1'
       ExtDiag(idx)%mod_name = 'gfs_phys'
+      ExtDiag(idx)%time_avg = .TRUE.
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
         ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%dq3dt(:,:,11)
@@ -2734,9 +2772,10 @@ module GFS_diagnostics
       idx = idx + 1
       ExtDiag(idx)%axes = 3
       ExtDiag(idx)%name = 'dq3dt_nophys'
-      ExtDiag(idx)%desc = 'cumulative change in water vapor specific humidity due to non-physics processes'
-      ExtDiag(idx)%unit = 'kg kg-1'
+      ExtDiag(idx)%desc = 'water vapor specific humidity tendency due to non-physics processes'
+      ExtDiag(idx)%unit = 'kg kg-1 s-1'
       ExtDiag(idx)%mod_name = 'gfs_phys'
+      ExtDiag(idx)%time_avg = .TRUE.
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
         ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%dq3dt(:,:,12)
@@ -2745,9 +2784,10 @@ module GFS_diagnostics
       idx = idx + 1
       ExtDiag(idx)%axes = 3
       ExtDiag(idx)%name = 'dq3dt_o3nophys'
-      ExtDiag(idx)%desc = 'cumulative change in ozone concentration due to non-physics processes'
-      ExtDiag(idx)%unit = 'kg kg-1'
+      ExtDiag(idx)%desc = 'ozone concentration tendency due to non-physics processes'
+      ExtDiag(idx)%unit = 'kg kg-1 s-1'
       ExtDiag(idx)%mod_name = 'gfs_phys'
+      ExtDiag(idx)%time_avg = .TRUE.
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
         ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%dq3dt(:,:,13)
