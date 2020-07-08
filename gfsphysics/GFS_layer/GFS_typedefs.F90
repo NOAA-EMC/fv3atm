@@ -235,6 +235,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: oceanfrac(:) => null()  !< ocean fraction [0:1]
     real (kind=kind_phys), pointer :: landfrac(:)  => null()  !< land  fraction [0:1]
     real (kind=kind_phys), pointer :: lakefrac(:)  => null()  !< lake  fraction [0:1]
+    real (kind=kind_phys), pointer :: lakedepth(:) => null()  !< lake  depth [ m ]    
     real (kind=kind_phys), pointer :: tsfc   (:)   => null()  !< surface air temperature in K
                                                               !< [tsea in gbphys.f]
     real (kind=kind_phys), pointer :: tsfco  (:)   => null()  !< sst in K
@@ -802,6 +803,9 @@ module GFS_typedefs
     integer              :: iopt_stc  !snow/soil temperature time scheme (only layer 1)
 
     logical              :: use_ufo         !< flag for gcycle surface option
+
+!--- flake model parameters
+    integer              :: lkm             !< flag for flake model
 
 !--- tuning parameters for physical parameterizations
     logical              :: ras             !< flag for ras convection scheme
@@ -2208,6 +2212,7 @@ module GFS_typedefs
     allocate (Sfcprop%oceanfrac(IM))
     allocate (Sfcprop%landfrac (IM))
     allocate (Sfcprop%lakefrac (IM))
+    allocate (Sfcprop%lakedepth(IM))
     allocate (Sfcprop%tsfc     (IM))
     allocate (Sfcprop%tsfco    (IM))
     allocate (Sfcprop%tsfcl    (IM))
@@ -2225,6 +2230,7 @@ module GFS_typedefs
     Sfcprop%oceanfrac = clear_val
     Sfcprop%landfrac  = clear_val
     Sfcprop%lakefrac  = clear_val
+    Sfcprop%lakedepth = clear_val
     Sfcprop%tsfc      = clear_val
     Sfcprop%tsfco     = clear_val
     Sfcprop%tsfcl     = clear_val
@@ -3059,6 +3065,9 @@ module GFS_typedefs
 
     logical              :: use_ufo        = .false.         !< flag for gcycle surface option
 
+!--- flake model parameters
+    integer              :: lkm            =  1  !< flag for flake model
+
 !--- tuning parameters for physical parameterizations
     logical              :: ras            = .false.                  !< flag for ras convection scheme
     logical              :: flipv          = .true.                   !< flag for vertical direction flip (ras)
@@ -3352,6 +3361,10 @@ module GFS_typedefs
                           !    Noah MP options
                                iopt_dveg,iopt_crs,iopt_btr,iopt_run,iopt_sfc, iopt_frz,     &
                                iopt_inf, iopt_rad,iopt_alb,iopt_snf,iopt_tbot,iopt_stc,     &
+
+                          !--- lake model control
+                               lkm,                                                         &     
+
                           !--- physical parameterizations
                                ras, trans_trac, old_monin, cnvgwd, mstrat, moist_adj,       &
                                cscnv, cal_pre, do_aw, do_shoc, shocaftcnv, shoc_cld,        &
@@ -3795,6 +3808,9 @@ module GFS_typedefs
     Model%ivegsrc          = ivegsrc
     Model%isot             = isot
     Model%use_ufo          = use_ufo
+
+!--- flake  model parameters
+    Model%lkm              = lkm
 
 ! Noah MP options from namelist
 !
@@ -4336,6 +4352,10 @@ module GFS_typedefs
               ' ignore_lake=',ignore_lake
       print *,' min_lakeice=',Model%min_lakeice,' min_seaice=',Model%min_seaice,                &
               'min_lake_height=',Model%min_lake_height
+
+      print *, 'flake model parameters'
+      print *, 'lkm                : ', Model%lkm
+
       if (Model%nstf_name(1) > 0 ) then
         print *,' NSSTM is active '
         print *,' nstf_name(1)=',Model%nstf_name(1)
@@ -4919,6 +4939,9 @@ module GFS_typedefs
      endif
 
       print *, ' use_ufo           : ', Model%use_ufo
+      print *, ' '
+      print *, 'flake model parameters'
+      print *, 'lkm                : ', Model%lkm
       print *, ' '
       print *, 'tuning parameters for physical parameterizations'
       print *, ' ras               : ', Model%ras
