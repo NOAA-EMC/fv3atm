@@ -1776,8 +1776,8 @@ end subroutine atmos_data_type_chksum
                     IPD_Data(nb)%Sfcprop%fice(ix) = max(zero, min(one, datar8(i,j)/ofrac)) !LHS: ice frac wrt water area
                     if (IPD_Data(nb)%Sfcprop%fice(ix) >= IPD_control%min_seaice) then
                       if (IPD_Data(nb)%Sfcprop%fice(ix) > one-epsln) IPD_Data(nb)%Sfcprop%fice(ix) = one
-!                     if (abs(one-ofrac) < epsln) IPD_Data(nb)%Sfcprop%slmsk(ix) = 2. !slmsk=2 crashes in gcycle on partial land points
-                      IPD_Data(nb)%Sfcprop%slmsk(ix)         = 2.0_IPD_kind_phys
+                      if (abs(one-ofrac) < epsln) IPD_Data(nb)%Sfcprop%slmsk(ix) = 2.0_IPD_kind_phys !slmsk=2 crashes in gcycle on partial land points
+!                     IPD_Data(nb)%Sfcprop%slmsk(ix)         = 2.0_IPD_kind_phys
                       IPD_Data(nb)%Coupling%slimskin_cpl(ix) = 4.0_IPD_kind_phys
                     else
                       IPD_Data(nb)%Sfcprop%fice(ix) = zero

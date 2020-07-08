@@ -527,6 +527,13 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+[zorli]
+  standard_name = surface_roughness_length_over_ice
+  long_name = surface roughness length over ice
+  units = cm
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
 [fice]
   standard_name = sea_ice_concentration
   long_name = ice fraction over open water
@@ -3397,14 +3404,14 @@
 [min_lakeice]
   standard_name = lake_ice_minimum
   long_name = minimum lake ice value
-  units = ???
+  units = frac
   dimensions = ()
   type = real
   kind = kind_phys
 [min_seaice]
   standard_name = sea_ice_minimum
   long_name = minimum sea ice value
-  units = ???
+  units = frac
   dimensions = ()
   type = real
   kind = kind_phys

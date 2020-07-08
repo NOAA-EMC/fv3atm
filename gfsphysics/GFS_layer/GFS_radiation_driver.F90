@@ -319,7 +319,7 @@
      &                                     epsm1 => con_epsm1,          &
      &                                     fvirt => con_fvirt           &
      &,                                    rog   => con_rog             &
-     &,                                    rocp  => con_rocp
+     &,                                    rocp  => con_rocp, pi => con_pi
       use funcphys,                  only: fpvs
 
       use module_radiation_astronomy,only: sol_init, sol_update, coszmn
@@ -1230,6 +1230,9 @@
       !--- TYPED VARIABLES
       type (cmpfsw_type),    dimension(size(Grid%xlon,1)) :: scmpsw
 
+      real(kind=kind_phys), parameter :: rad2dg  = 180.0_kind_phys/pi
+!     logical :: lprnt
+!     integer :: ipt
 !     logical effr_in
 !     data effr_in/.false./
 !
@@ -1294,6 +1297,25 @@
 
       raddt = min(Model%fhswr, Model%fhlwr)
 !     print *,' in grrad : raddt=',raddt
+
+
+!     lprnt   = .false.
+
+!     do i=1,im
+!       lprnt = Model%kdt >=  20 .and. abs(grid%xlon(i)*rad2dg-102.65) < 0.101 &
+!                          .and. abs(grid%xlat(i)*rad2dg-0.12) < 0.201
+!       lprnt = Model%kdt >=  20 .and. abs(grid%xlon(i)*rad2dg-184.00) < 0.301 &
+!                          .and. abs(grid%xlat(i)*rad2dg-83.23) < 0.301
+!       if (kdt == 1) &
+!         write(2000+me,*)' i=',i,' xlon=',grid%xlon(i)*rad2dg,
+!         &
+!                       ' xlat=',grid%xlat(i)*rad2dg,' me=',me
+!       if (lprnt) then
+!         ipt = i
+!         write(0,*)' ipt=',ipt,'xlon=',grid%xlon(i)*rad2dg,' xlat=',grid%xlat(i)*rad2dg,' me=',me
+!         exit
+!       endif
+!     enddo
 
 !> -# Setup surface ground temperature and ground/air skin temperature
 !! if required.
@@ -1857,7 +1879,7 @@
 !>  - Call module_radsw_main::swrad(), to compute SW heating rates and
 !!   fluxes.
 !     print *,' in grrad : calling swrad'
-
+        
           if (Model%swhtr) then
             call swrad (plyr, plvl, tlyr, tlvl, qlyr, olyr,     &      !  --- inputs
                         gasvmr, clouds, Tbd%icsdsw, faersw,     &

@@ -23,7 +23,6 @@
 ! --------  -------- ---------
       integer, intent(in) :: im, ivegsrc
       integer, intent(in) :: sfc_z0_type ! option for calculating surface roughness length over ocean
-
       integer, dimension(im), intent(in) :: vegtype
 
       logical, intent(in) :: redrag ! reduced drag coeff. flag for high wind over sea (j.han)
@@ -187,7 +186,6 @@
             ztmax = z0max*exp( - tem1*tem1
      &              * czilc*ca*sqrt(ustar(i,2)*(0.01/1.5e-05)))
             ztmax = max(ztmax, 1.0e-6)
->>>>>>> upstream/develop
 !
             call stability
 !  ---  inputs:
