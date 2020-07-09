@@ -4010,7 +4010,7 @@
 [slag]
   standard_name = equation_of_time
   long_name = equation of time (radian)
-  units = radians
+  units = radian
   dimensions = ()
   type = real
   kind = kind_phys
@@ -4319,14 +4319,14 @@
 [xlat]
   standard_name = latitude
   long_name = latitude
-  units = radians
+  units = radian
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [xlon]
   standard_name = longitude
   long_name = longitude
-  units = radians
+  units = radian
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
@@ -4346,8 +4346,8 @@
   kind = kind_phys
 [xlat_d]
   standard_name = latitude_degree
-  long_name = latitude in degrees
-  units = degree
+  long_name = latitude in degrees north
+  units = degrees_north
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
@@ -9482,7 +9482,7 @@
 [con_pi]
   standard_name = pi
   long_name = ratio of a circle's circumference to its diameter
-  units = radians
+  units = none
   dimensions = ()
   type = real
   kind = kind_phys
@@ -9502,7 +9502,7 @@
   kind = kind_phys
 [con_t0c]
   standard_name = temperature_at_zero_celsius
-  long_name = temperature at 0 degrees Celsius
+  long_name = temperature at 0 degree Celsius
   units = K
   dimensions = ()
   type = real
