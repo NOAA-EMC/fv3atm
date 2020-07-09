@@ -5783,7 +5783,6 @@ module GFS_typedefs
   subroutine diag_rad_zero(Diag, Model)
     class(GFS_diag_type)               :: Diag
     type(GFS_control_type), intent(in) :: Model
-    integer :: i
 
     Diag%fluxr        = zero
     Diag%topfsw%upfxc = zero
@@ -5806,7 +5805,6 @@ module GFS_typedefs
     logical,optional, intent(in)       :: linit, iauwindow_center
 
     logical set_totprcp
-    integer :: i
 
     !--- In/Out
     Diag%srunoff    = zero
