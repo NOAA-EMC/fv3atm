@@ -4074,12 +4074,6 @@
   units = flag
   dimensions = ()
   type = logical
-[cycling]
-  standard_name = flag_for_cycling
-  long_name = flag for cycling or coldstart
-  units = flag
-  dimensions = ()
-  type = logical
 [hydrostatic]
   standard_name = flag_for_hydrostatic_solver
   long_name = flag for hydrostatic solver from dynamics
@@ -8150,7 +8144,7 @@
   type = real
   kind = kind_phys
 [save_tcp]
-  standard_name = air_temperature_save_from_cumulus_paramterization
+  standard_name = air_temperature_save_from_convective_parameterization
   long_name = air temperature after cumulus parameterization
   units = K
   dimensions = (horizontal_dimension,vertical_dimension)
