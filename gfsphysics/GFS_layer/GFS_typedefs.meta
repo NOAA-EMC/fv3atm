@@ -470,6 +470,13 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+[lakedepth]
+  standard_name = lake_depth
+  long_name = lake depth
+  units = m
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
 [tsfc]
   standard_name = surface_skin_temperature
   long_name = surface skin temperature
@@ -2973,6 +2980,12 @@
   standard_name = flag_for_soil_and_snow_temperature_time_stepping_option
   long_name = choice for soil and snow temperature time stepping option (see noahmp module for definition)
   units = index
+  dimensions = ()
+  type = integer
+[lkm]
+  standard_name = flag_for_lake_surface_scheme
+  long_name = flag for lake surface model
+  units = flag
   dimensions = ()
   type = integer
 [ras]
