@@ -2627,10 +2627,10 @@ module GFS_typedefs
       allocate (Coupling%hsnoin_cpl   (IM))
 
       Coupling%slimskin_cpl = clear_val
-      Coupling%dusfcin_cpl  = clear_val
-      Coupling%dvsfcin_cpl  = clear_val
-      Coupling%dtsfcin_cpl  = clear_val
-      Coupling%dqsfcin_cpl  = clear_val
+      Coupling%dusfcin_cpl  = huge
+      Coupling%dvsfcin_cpl  = huge
+      Coupling%dtsfcin_cpl  = huge
+      Coupling%dqsfcin_cpl  = huge
       Coupling%ulwsfcin_cpl = clear_val
       Coupling%tseain_cpl   = clear_val
       Coupling%tisfcin_cpl  = clear_val
