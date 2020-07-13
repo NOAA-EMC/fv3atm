@@ -643,11 +643,6 @@ module FV3GFS_io_mod
 
         Sfcprop(nb)%lakedepth(ix) = oro_var2(i,j,19) !lake depth [m]    !YWu
 
-        if(Model%lkm.ne.1) then   !to avoid program crash when flake not called
-           Sfcprop(nb)%lakefrac(ix)  = 0.0
-           Sfcprop(nb)%lakedepth(ix) = 0.0
-        endif
-
       enddo
     enddo
  
