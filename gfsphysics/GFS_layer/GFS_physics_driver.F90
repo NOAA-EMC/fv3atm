@@ -2419,6 +2419,7 @@ module module_physics_driver
 !     enddo
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+!## CCPP ##* GFS_surface_generic.F90/GFS_surface_generic_post_run
 !  --- ...  Boundary Layer and Free atmospheic turbulence parameterization
 !
 !  in order to achieve heat storage within canopy layer, in the canopy heat
@@ -2447,6 +2448,7 @@ module module_physics_driver
           evapq(i) = evap(i) / hefac(i)
         enddo
       endif
+!*## CCPP ##
 !
 !     if (lprnt) write(0,*)' tsea3=',Sfcprop%tsfc(ipr),' slmsk=',Sfcprop%slmsk(ipr)     &
 !    &, ' kdt=',kdt,' evap=',evapq(ipr)
@@ -2490,7 +2492,7 @@ module module_physics_driver
                          Diag%v10m, Sfcprop%ffmm, Sfcprop%ffhh, Sfcprop%tsfc,hflxq,&
                          evapq,stress, wind, kpbl, Statein%prsi, del, Statein%prsl,&
                          Statein%prslk, Statein%phii, Statein%phil, dtp, dusfc1,   &
-                         dvsfc1, dtsfc1, dqsfc1, dkt, Diag%hpbl, kinver,           &
+                         dvsfc1, dtsfc1, dqsfc1, dkt, Tbd%hpbl, kinver,           &
                          Model%xkzm_m, Model%xkzm_h, Model%xkzm_s, Model%xkzminv,  &
                          lprnt, ipr, me)
 !         if (lprnt) then
@@ -2517,7 +2519,7 @@ module module_physics_driver
                        Sfcprop%ffmm, Sfcprop%ffhh, Sfcprop%tsfc, hflxq, evapq,      &
                        stress, wind, kpbl, Statein%prsi, del, Statein%prsl,         &
                        Statein%prslk, Statein%phii, Statein%phil, dtp,              &
-                       Model%dspheat, dusfc1, dvsfc1, dtsfc1, dqsfc1, Diag%hpbl,    &
+                       Model%dspheat, dusfc1, dvsfc1, dtsfc1, dqsfc1, Tbd%hpbl,    &
                        kinver, Model%xkzm_m, Model%xkzm_h, Model%xkzm_s)
 !*## CCPP ##
              elseif (Model%isatmedmf == 1) then   ! updated version of satmedmfvdif (May 2019)
@@ -2530,7 +2532,7 @@ module module_physics_driver
                        Sfcprop%ffmm, Sfcprop%ffhh, Sfcprop%tsfc, hflxq, evapq,      &
                        stress, wind, kpbl, Statein%prsi, del, Statein%prsl,         &
                        Statein%prslk, Statein%phii, Statein%phil, dtp,              &
-                       Model%dspheat, dusfc1, dvsfc1, dtsfc1, dqsfc1, Diag%hpbl,    &
+                       Model%dspheat, dusfc1, dvsfc1, dtsfc1, dqsfc1, Tbd%hpbl,    &
                        kinver, Model%xkzm_m, Model%xkzm_h, Model%xkzm_s,            &
                        Model%dspfac, Model%bl_upfr, Model%bl_dnfr)
 !*## CCPP ##
@@ -2544,7 +2546,7 @@ module module_physics_driver
                            Sfcprop%ffhh, Sfcprop%tsfc, qss, hflxq, evapq, stress,   &
                            wind, kpbl, Statein%prsi, del, Statein%prsl,             &
                            Statein%prslk, Statein%phii, Statein%phil, dtp,          &
-                           Model%dspheat, dusfc1, dvsfc1, dtsfc1, dqsfc1, Diag%hpbl,&
+                           Model%dspheat, dusfc1, dvsfc1, dtsfc1, dqsfc1, Tbd%hpbl,&
                            gamt, gamq, dkt, kinver, Model%xkzm_m, Model%xkzm_h,     &
                            Model%xkzm_s, lprnt, ipr,                                &
                            Model%xkzminv, Model%moninq_fac)
@@ -2556,7 +2558,7 @@ module module_physics_driver
                            Sfcprop%ffhh, Sfcprop%tsfc, qss, hflxq, evapq, stress,   &
                            wind, kpbl, Statein%prsi, del, Statein%prsl,             &
                            Statein%prslk, Statein%phii, Statein%phil, dtp,          &
-                           Model%dspheat, dusfc1, dvsfc1, dtsfc1, dqsfc1, Diag%hpbl,&
+                           Model%dspheat, dusfc1, dvsfc1, dtsfc1, dqsfc1, Tbd%hpbl,&
                            gamt, gamq, dkt, kinver, Model%xkzm_m, Model%xkzm_h,     &
                            Model%xkzm_s, lprnt, ipr,                                &
                            Model%xkzminv, Model%moninq_fac,islmsk)
@@ -2580,7 +2582,7 @@ module module_physics_driver
                         Sfcprop%ffmm, Sfcprop%ffhh, Sfcprop%tsfc, qss, hflxq, evapq,&
                         stress, wind, kpbl, Statein%prsi, del, Statein%prsl,        &
                         Statein%prslk, Statein%phii, Statein%phil, dtp,             &
-                        Model%dspheat, dusfc1, dvsfc1, dtsfc1, dqsfc1, Diag%hpbl,   &
+                        Model%dspheat, dusfc1, dvsfc1, dtsfc1, dqsfc1, Tbd%hpbl,   &
                         gamt, gamq, dkt, kinver, Model%xkzm_m, Model%xkzm_h,        &
                         Model%xkzm_s, lprnt, ipr,                                   &
                         Model%xkzminv, Model%moninq_fac, Model%rbcr)
@@ -2592,7 +2594,7 @@ module module_physics_driver
                            Sfcprop%tsfc, qss, hflxq, evapq, stress, wind, kpbl,     &
                            Statein%prsi, del, Statein%prsl, Statein%prslk,          &
                            Statein%phii, Statein%phil, dtp, dusfc1, dvsfc1,         &
-                           dtsfc1, dqsfc1, Diag%hpbl, gamt, gamq, dkt, kinver,      &
+                           dtsfc1, dqsfc1, Tbd%hpbl, gamt, gamq, dkt, kinver,      &
                            Model%xkzm_m, Model%xkzm_h)
             else
               call moninp(ix, im, levs, nvdiff, dvdt, dudt, dtdt, dqdt,             &
@@ -2601,7 +2603,7 @@ module module_physics_driver
                            Sfcprop%tsfc, qss, hflxq, evapq, stress, wind, kpbl,     &
                            Statein%prsi, del, Statein%prsl, Statein%phii,           &
                            Statein%phil, dtp, dusfc1, dvsfc1, dtsfc1, dqsfc1,       &
-                           Diag%hpbl, gamt, gamq, dkt, Model%xkzm_m, Model%xkzm_h)
+                           Tbd%hpbl, gamt, gamq, dkt, Model%xkzm_m, Model%xkzm_h)
             endif
 
           endif   ! end if_hybedmf
@@ -2754,7 +2756,7 @@ module module_physics_driver
                            Diag%v10m, Sfcprop%ffmm, Sfcprop%ffhh, Sfcprop%tsfc, hflxq,  &
                            evapq, stress, wind, kpbl, Statein%prsi, del, Statein%prsl,  &
                            Statein%prslk, Statein%phii, Statein%phil, dtp, dusfc1,      &
-                           dvsfc1, dtsfc1, dqsfc1, dkt, Diag%hpbl, kinver,              &
+                           dvsfc1, dtsfc1, dqsfc1, dkt, Tbd%hpbl, kinver,              &
                            Model%xkzm_m, Model%xkzm_h, Model%xkzm_s, Model%xkzminv,     &
                            lprnt, ipr, me)
 !*## CCPP ##
@@ -2770,7 +2772,7 @@ module module_physics_driver
                          Sfcprop%ffmm, Sfcprop%ffhh, Sfcprop%tsfc, hflxq, evapq,      &
                          stress, wind, kpbl, Statein%prsi, del, Statein%prsl,         &
                          Statein%prslk, Statein%phii, Statein%phil, dtp,              &
-                         Model%dspheat, dusfc1, dvsfc1, dtsfc1, dqsfc1, Diag%hpbl,    &
+                         Model%dspheat, dusfc1, dvsfc1, dtsfc1, dqsfc1, Tbd%hpbl,    &
                          kinver, Model%xkzm_m, Model%xkzm_h, Model%xkzm_s)
 !*## CCPP ##
              elseif (Model%isatmedmf == 1) then   ! updated version of satmedmfvdif (May 2019)
@@ -2783,7 +2785,7 @@ module module_physics_driver
                          Sfcprop%ffmm, Sfcprop%ffhh, Sfcprop%tsfc, hflxq, evapq,      &
                          stress, wind, kpbl, Statein%prsi, del, Statein%prsl,         &
                          Statein%prslk, Statein%phii, Statein%phil, dtp,              &
-                         Model%dspheat, dusfc1, dvsfc1, dtsfc1, dqsfc1, Diag%hpbl,    &
+                         Model%dspheat, dusfc1, dvsfc1, dtsfc1, dqsfc1, Tbd%hpbl,    &
                          kinver, Model%xkzm_m, Model%xkzm_h, Model%xkzm_s,            &
                          Model%dspfac, Model%bl_upfr, Model%bl_dnfr)
 !*## CCPP ##
@@ -2799,7 +2801,7 @@ module module_physics_driver
                            Sfcprop%ffhh, Sfcprop%tsfc, qss, hflxq, evapq, stress,       &
                            wind, kpbl, Statein%prsi, del, Statein%prsl,                 &
                            Statein%prslk, Statein%phii, Statein%phil, dtp,              &
-                           Model%dspheat, dusfc1, dvsfc1, dtsfc1, dqsfc1, Diag%hpbl,    &
+                           Model%dspheat, dusfc1, dvsfc1, dtsfc1, dqsfc1, Tbd%hpbl,    &
                            gamt, gamq, dkt, kinver, Model%xkzm_m, Model%xkzm_h,         &
                            Model%xkzm_s, lprnt, ipr,                                    &
                            Model%xkzminv, Model%moninq_fac)
@@ -2813,7 +2815,7 @@ module module_physics_driver
                            Sfcprop%ffhh, Sfcprop%tsfc, qss, hflxq, evapq, stress,       &
                            wind, kpbl, Statein%prsi, del, Statein%prsl,                 &
                            Statein%prslk, Statein%phii, Statein%phil, dtp,              &
-                           Model%dspheat, dusfc1, dvsfc1, dtsfc1, dqsfc1, Diag%hpbl,    &
+                           Model%dspheat, dusfc1, dvsfc1, dtsfc1, dqsfc1, Tbd%hpbl,    &
                            gamt, gamq, dkt, kinver, Model%xkzm_m, Model%xkzm_h,         &
                            Model%xkzm_s, lprnt, ipr,                                    &
                            Model%xkzminv, Model%moninq_fac,islmsk)
@@ -2825,7 +2827,7 @@ module module_physics_driver
                         Sfcprop%ffmm, Sfcprop%ffhh, Sfcprop%tsfc, qss, hflxq, evapq,    &
                         stress, wind, kpbl, Statein%prsi, del, Statein%prsl,            &
                         Statein%prslk, Statein%phii, Statein%phil, dtp,                 &
-                        Model%dspheat, dusfc1, dvsfc1, dtsfc1, dqsfc1, Diag%hpbl,       &
+                        Model%dspheat, dusfc1, dvsfc1, dtsfc1, dqsfc1, Tbd%hpbl,       &
                         gamt, gamq, dkt, kinver, Model%xkzm_m, Model%xkzm_h,            &
                         Model%xkzm_s, lprnt, ipr,                                       &
                         Model%xkzminv, Model%moninq_fac, Model%rbcr)
@@ -2837,7 +2839,7 @@ module module_physics_driver
                            Sfcprop%tsfc, qss, hflxq, evapq, stress, wind, kpbl,         &
                            Statein%prsi, del, Statein%prsl, Statein%prslk,              &
                            Statein%phii, Statein%phil, dtp, dusfc1, dvsfc1,             &
-                           dtsfc1, dqsfc1, Diag%hpbl, gamt, gamq, dkt, kinver,          &
+                           dtsfc1, dqsfc1, Tbd%hpbl, gamt, gamq, dkt, kinver,          &
                            Model%xkzm_m, Model%xkzm_h)
             else
               call moninp(ix, im, levs, nvdiff, dvdt, dudt, dtdt, dvdftra,              &
@@ -2846,7 +2848,7 @@ module module_physics_driver
                           Sfcprop%tsfc, qss, hflxq, evapq, stress, wind, kpbl,          &
                           Statein%prsi, del, Statein%prsl, Statein%phii,                &
                           Statein%phil, dtp, dusfc1, dvsfc1, dtsfc1, dqsfc1,            &
-                          Diag%hpbl, gamt, gamq, dkt, Model%xkzm_m, Model%xkzm_h)
+                          Tbd%hpbl, gamt, gamq, dkt, Model%xkzm_m, Model%xkzm_h)
             endif
 
           endif   ! end if_satmedmf
@@ -3793,7 +3795,7 @@ module module_physics_driver
 !     if (lprnt) write(0,*)'aftshocgq0=',Stateout%gq0(ipr,:,1)
 !     if (lprnt) write(0,*)' aft shoc tke=',clw(ipr,1:25,ntk), &
 !    &' kdt=',kdt,'xlon=',grid%xlon(ipr),' xlat=',grid%xlat(ipr)
-!     if (lprnt) write(0,*)' aftshoccld=',tbd%phy_f3d(ipr,:,ntot3d-2)*100
+!     if (lprnt) write(0,*)' aftshoccld=',Tbd%phy_f3d(ipr,:,ntot3d-2)*100
 !     if (lprnt) write(0,*)' aftshocice=',clw(ipr,:,1)
 !     if (lprnt) write(0,*)' aftshocwat=',clw(ipr,:,2)
 !     write(1000+me,*)' at latitude = ',lat
@@ -4426,7 +4428,7 @@ module module_physics_driver
                           Statein%pgr, Statein%phil, clw, Stateout%gq0,     &
                           Stateout%gt0, Stateout%gu0, Stateout%gv0, rain1,  &
                           kbot, ktop, kcnv, islmsk, Statein%vvl, ncld,      &
-                          Diag%hpbl, hflxq, evapq, ud_mf, dt_mf, cnvw, cnvc,&
+                          Tbd%hpbl, hflxq, evapq, ud_mf, dt_mf, cnvw, cnvc, &
                           Model%clam_shal, Model%c0s_shal, Model%c1_shal,   &
                           Model%pgcon_shal)
 !*## CCPP ##
@@ -4470,7 +4472,7 @@ module module_physics_driver
                               Stateout%gq0(:,:,1), Stateout%gt0,                   &
                               Stateout%gu0, Stateout%gv0, Model%fscav,             &
                               rain1, kbot, ktop, kcnv, islmsk, garea,              &
-                              Statein%vvl, ncld, Diag%hpbl, ud_mf,                 &
+                              Statein%vvl, ncld, Tbd%hpbl, ud_mf,                 &
                               dt_mf, cnvw, cnvc,                                   &
                               Model%clam_shal,  Model%c0s_shal, Model%c1_shal,     &
                               Model%pgcon_shal, Model%asolfac_shal)
@@ -5074,7 +5076,7 @@ module module_physics_driver
 !       if (lprnt) write(0,*)' qsnwb=',qsnw(ipr,:),' kdt=',kdt
 !       if (lprnt) write(0,*)' qglb=',qgl(ipr,:),' kdt=',kdt
 !       if (lprnt) write(0,*)' rhc=',rhc(ipr,:),' kdt=',kdt,' kk=',kk
-!       if (lprnt) write(0,*)' cloudsb=',tbd%phy_f3d(ipr,:,1)*100,' kdt=',kdt
+!       if (lprnt) write(0,*)' cloudsb=',Tbd%phy_f3d(ipr,:,1)*100,' kdt=',kdt
 !       if (lprnt) write(0,*)' cloudsb=',Tbd%phy_f3d(ipr,:,1)*100,' kdt=',kdt
 !       if (lprnt) write(0,*)' clcn=',clcn(ipr,:)*100,' kdt=',kdt
 !       txa(:,:) = Stateout%gq0(:,:,1)
@@ -5087,8 +5089,8 @@ module module_physics_driver
                              Statein%prsi, Statein%phil, Statein%phii,           &
                              Statein%vvl, clw(1,1,2), QLCN, clw(1,1,1), QICN,    &
                              Radtend%htrlw, Radtend%htrsw, w_upi, cf_upi,        &
-                             FRLAND, Diag%HPBL, CNV_MFD,           CNV_DQLDT,    &
-!                            FRLAND, Diag%HPBL, CNV_MFD, CNV_PRC3, CNV_DQLDT,    &
+                             FRLAND, Tbd%Hpbl, CNV_MFD,           CNV_DQLDT,    &
+!                            FRLAND, Tbd%Hpbl, CNV_MFD, CNV_PRC3, CNV_DQLDT,    &
                              CLCN, Stateout%gu0, Stateout%gv0, Diag%dusfc,       &
                              Diag%dvsfc, dusfc1, dvsfc1, dusfc1, dvsfc1,         &
                              CNV_FICE, CNV_NDROP, CNV_NICE, Stateout%gq0(1,1,1), &
@@ -5130,7 +5132,7 @@ module module_physics_driver
 !       if (lprnt) write(0,*)' cli1aft=',stateout%gq0(ipr,:,ntiw),' kdt=',kdt
 !       if (ntgl > 0 .and. lprnt)  &
 !                  write(0,*)' cgw1aft=',stateout%gq0(ipr,:,ntgl),' kdt=',kdt
-!       if (lprnt) write(0,*)' cloudsm=',tbd%phy_f3d(ipr,:,1)*100,' kdt=',kdt
+!       if (lprnt) write(0,*)' cloudsm=',Tbd%phy_f3d(ipr,:,1)*100,' kdt=',kdt
 !       if (lprnt) write(0,*)' clw2aft=',stateout%gq0(ipr,:,ntcw),' kdt=',kdt
 !       if (lprnt) write(0,*)' qrna=',qrn(ipr,:),' kdt=',kdt
 !       if (lprnt) write(0,*)' qsnwa=',qsnw(ipr,:),' kdt=',kdt
@@ -5177,7 +5179,7 @@ module module_physics_driver
           endif
 !*## CCPP ##
 
-!       if (lprnt) write(0,*)' cloudsm=',tbd%phy_f3d(ipr,:,1)*100,' kdt=',kdt
+!       if (lprnt) write(0,*)' cloudsm=',Tbd%phy_f3d(ipr,:,1)*100,' kdt=',kdt
 !       if (lprnt) write(0,*)' clw2aft=',stateout%gq0(ipr,:,ntcw),' kdt=',kdt
 !       if (lprnt) write(0,*)' qrna=',qrn(ipr,:),' kdt=',kdt
 !       if (lprnt) write(0,*)' qsnwa=',qsnw(ipr,:),' kdt=',kdt
