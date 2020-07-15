@@ -140,7 +140,6 @@ module GFS_typedefs
 #ifdef CCPP
 !--- restart information
     logical :: restart                           !< flag whether this is a coldstart (.false.) or a warmstart/restart (.true.)
-    logical :: cycling                           !< flag whether this is a coldstart (.false.) or a cycled run (.true.)
 !--- hydrostatic/non-hydrostatic flag
     logical :: hydrostatic                       !< flag whether this is a hydrostatic or non-hydrostatic run
 #endif
@@ -1125,7 +1124,6 @@ module GFS_typedefs
 #ifdef CCPP
     logical              :: first_time_step !< flag signaling first time step for time integration routine
     logical              :: restart         !< flag whether this is a coldstart (.false.) or a warmstart/restart (.true.)
-    logical              :: cycling         !< flag whether this is a coldstart (.false.) or a cycled run (.true.)
     logical              :: hydrostatic     !< flag whether this is a hydrostatic or non-hydrostatic run
 #endif
     integer              :: jdat(1:8)       !< current forecast date and time
@@ -2890,7 +2888,6 @@ module GFS_typedefs
     logical              :: aux2d_time_avg(1:naux2dmax) = .false. !< flags for time averaging of auxiliary 2d arrays
     logical              :: aux3d_time_avg(1:naux3dmax) = .false. !< flags for time averaging of auxiliary 3d arrays
 
-    logical              :: cycling        = .false.         !< flag to activate extra cycling procedures
     real(kind=kind_phys) :: fhcyc          = 0.              !< frequency for surface data cycling (hours)
     integer              :: thermodyn_id   =  1              !< valid for GFS only for get_prs/phi
     integer              :: sfcpress_id    =  1              !< valid for GFS only for get_prs/phi
@@ -4164,7 +4161,6 @@ module GFS_typedefs
 #ifdef CCPP
     Model%first_time_step  = .true.
     Model%restart          = restart
-    Model%cycling          = cycling
     Model%hydrostatic      = hydrostatic
 #endif
     Model%jdat(1:8)        = jdat(1:8)
@@ -5128,7 +5124,6 @@ module GFS_typedefs
       print *, ' sec               : ', Model%sec
       print *, ' first_time_step   : ', Model%first_time_step
       print *, ' restart           : ', Model%restart
-      print *, ' cycling           : ', Model%cycling
       print *, ' hydrostatic       : ', Model%hydrostatic
 #endif
     endif
@@ -5783,7 +5778,6 @@ module GFS_typedefs
   subroutine diag_rad_zero(Diag, Model)
     class(GFS_diag_type)               :: Diag
     type(GFS_control_type), intent(in) :: Model
-    integer :: i
 
     Diag%fluxr        = zero
     Diag%topfsw%upfxc = zero
@@ -5806,7 +5800,6 @@ module GFS_typedefs
     logical,optional, intent(in)       :: linit, iauwindow_center
 
     logical set_totprcp
-    integer :: i
 
     !--- In/Out
     Diag%srunoff    = zero
