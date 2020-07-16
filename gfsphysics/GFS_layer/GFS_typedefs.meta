@@ -4010,7 +4010,7 @@
 [slag]
   standard_name = equation_of_time
   long_name = equation of time (radian)
-  units = radians
+  units = radian
   dimensions = ()
   type = real
   kind = kind_phys
@@ -4071,12 +4071,6 @@
 [restart]
   standard_name = flag_for_restart
   long_name = flag for restart (warmstart) or coldstart
-  units = flag
-  dimensions = ()
-  type = logical
-[cycling]
-  standard_name = flag_for_cycling
-  long_name = flag for cycling or coldstart
   units = flag
   dimensions = ()
   type = logical
@@ -4319,14 +4313,14 @@
 [xlat]
   standard_name = latitude
   long_name = latitude
-  units = radians
+  units = radian
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
 [xlon]
   standard_name = longitude
   long_name = longitude
-  units = radians
+  units = radian
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
@@ -4345,9 +4339,9 @@
   type = real
   kind = kind_phys
 [xlat_d]
-  standard_name = latitude_degree
-  long_name = latitude in degrees
-  units = degree
+  standard_name = latitude_in_degree
+  long_name = latitude in degree north
+  units = degree_north
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
@@ -8150,7 +8144,7 @@
   type = real
   kind = kind_phys
 [save_tcp]
-  standard_name = air_temperature_save_from_cumulus_paramterization
+  standard_name = air_temperature_save_from_convective_parameterization
   long_name = air temperature after cumulus parameterization
   units = K
   dimensions = (horizontal_dimension,vertical_dimension)
@@ -8344,7 +8338,7 @@
 [theta]
   standard_name = angle_from_east_of_maximum_subgrid_orographic_variations
   long_name = angle with_respect to east of maximum subgrid orographic variations
-  units = degrees
+  units = degree
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
@@ -9482,7 +9476,7 @@
 [con_pi]
   standard_name = pi
   long_name = ratio of a circle's circumference to its diameter
-  units = radians
+  units = none
   dimensions = ()
   type = real
   kind = kind_phys
@@ -9502,7 +9496,7 @@
   kind = kind_phys
 [con_t0c]
   standard_name = temperature_at_zero_celsius
-  long_name = temperature at 0 degrees Celsius
+  long_name = temperature at 0 degree Celsius
   units = K
   dimensions = ()
   type = real
