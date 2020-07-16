@@ -3063,7 +3063,7 @@ module GFS_typedefs
     logical              :: use_ufo        = .false.         !< flag for gcycle surface option
 
 !--- flake model parameters
-    integer              :: lkm            =  1  !< flag for flake model
+    integer              :: lkm            =  0  !< flag for flake model
 
 !--- tuning parameters for physical parameterizations
     logical              :: ras            = .false.                  !< flag for ras convection scheme
