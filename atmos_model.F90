@@ -634,7 +634,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    Init_parm%input_nml_file  => input_nml_file
    Init_parm%fn_nml='using internal file'
 #else
-   pelist_name=mpp_get_current_pelist_name()
+   pelist_name=mpp_get_current_pelist_name(
    Init_parm%fn_nml='input_'//trim(pelist_name)//'.nml'
    inquire(FILE=Init_parm%fn_nml, EXIST=fexist)
    if (.not. fexist ) then
@@ -651,11 +651,11 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
 
    if (IPD_Control%do_sppt .OR. IPD_Control%do_shum .OR. IPD_Control%do_skeb .OR. IPD_Control%do_sfcperts) then
       ! Initialize stochastic physics
-      call init_stochastic_physics(IPD_Control%levs, IPD_Control%blksz, IPD_Control%me, IPD_Control%master, IPD_Control%dtp,           &
+      call init_stochastic_physics(IPD_Control%levs, IPD_Control%blksz, IPD_Control%dtp,                                               &
           IPD_Control%input_nml_file, IPD_Control%fn_nml, IPD_Control%nlunit, IPD_Control%do_sppt, IPD_Control%do_shum,                &
           IPD_Control%do_skeb, IPD_Control%do_sfcperts, IPD_Control%use_zmtnblck, IPD_Control%skeb_npass, IPD_Control%nsfcpert,        &
           IPD_Control%pertz0, IPD_Control%pertzt, IPD_Control%pertshc, IPD_Control%pertlai, IPD_Control%pertalb, IPD_Control%pertvegf, &
-          IPD_Control%ak, IPD_Control%bk, mpp_npes(), nthrds)
+          IPD_Control%ak, IPD_Control%bk, nthrds,  mpp_root_pe(), commglobal)
    end if
 
    Atmos%Diag => IPD_Diag
