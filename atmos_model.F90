@@ -308,7 +308,7 @@ subroutine update_atmos_radiation_physics (Atmos)
 
 !--- call stochastic physics pattern generation / cellular automata
     if (IPD_Control%do_sppt .OR. IPD_Control%do_shum .OR. IPD_Control%do_skeb .OR. IPD_Control%do_sfcperts) then
-       call run_stochastic_physics(IPD_Control, IPD_Data(:)%Grid, IPD_Data(:)%Coupling, nthrds)
+       call run_stochastic_physics(IPD_Control%levs, IPD_Control%kdt, IPD_Control%phour, IPD_Control%blksz, IPD_Data(:)%Grid, IPD_Data(:)%Coupling, nthrds)
     end if
 
     if(IPD_Control%do_ca)then
@@ -651,8 +651,11 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
 
    if (IPD_Control%do_sppt .OR. IPD_Control%do_shum .OR. IPD_Control%do_skeb .OR. IPD_Control%do_sfcperts) then
       ! Initialize stochastic physics
-      call init_stochastic_physics(IPD_Control, Init_parm, mpp_npes(), nthrds)
-      if(IPD_Control%me == IPD_Control%master) print *,'do_skeb=',IPD_Control%do_skeb
+      call init_stochastic_physics(IPD_Control%levs, IPD_Control%blksz, IPD_Control%me, IPD_Control%master, IPD_Control%dtp,           &
+          IPD_Control%input_nml_file, IPD_Control%fn_nml, IPD_Control%nlunit, IPD_Control%do_sppt, IPD_Control%do_shum,                &
+          IPD_Control%do_skeb, IPD_Control%do_sfcperts, IPD_Control%use_zmtnblck, IPD_Control%skeb_npass, IPD_Control%nsfcpert,        &
+          IPD_Control%pertz0, IPD_Control%pertzt, IPD_Control%pertshc, IPD_Control%pertlai, IPD_Control%pertalb, IPD_Control%pertvegf, &
+          IPD_Control%ak, IPD_Control%bk, mpp_npes(), nthrds)
    end if
 
    Atmos%Diag => IPD_Diag
@@ -660,7 +663,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    if (IPD_Control%do_sfcperts) then
       ! Get land surface perturbations here (move to GFS_time_vary
       ! step if wanting to update each time-step)
-      call run_stochastic_physics_sfc(IPD_Control, IPD_Data(:)%Grid, IPD_Data(:)%Coupling)
+      call run_stochastic_physics_sfc(IPD_Control%blksz, IPD_Data(:)%Grid, IPD_Data(:)%Coupling)
    end if
 
    ! Initialize cellular automata
