@@ -316,13 +316,13 @@ subroutine update_atmos_radiation_physics (Atmos)
           call cellular_automata_sgs(IPD_Control%kdt,IPD_Data(:)%Statein,IPD_Data(:)%Coupling,IPD_Data(:)%Intdiag,Atm_block%nblks,IPD_Control%levs, &
             IPD_Control%nca,IPD_Control%ncells,IPD_Control%nlives,IPD_Control%nfracseed,&
             IPD_Control%nseed,IPD_Control%nthresh,IPD_Control%ca_global,IPD_Control%ca_sgs,IPD_Control%iseed_ca,&
-            IPD_Control%ca_smooth,IPD_Control%nspinup,Atm_block%blksz(1))
+            IPD_Control%ca_smooth,IPD_Control%nspinup,Atm_block%blksz(1),IPD_Control%master,IPD_Control%communicator)
        endif
        if(IPD_Control%ca_global)then
           call cellular_automata_global(IPD_Control%kdt,IPD_Data(:)%Statein,IPD_Data(:)%Coupling,IPD_Data(:)%Intdiag,Atm_block%nblks,IPD_Control%levs, &
             IPD_Control%nca_g,IPD_Control%ncells_g,IPD_Control%nlives_g,IPD_Control%nfracseed,&
             IPD_Control%nseed_g,IPD_Control%nthresh,IPD_Control%ca_global,IPD_Control%ca_sgs,IPD_Control%iseed_ca,&
-            IPD_Control%ca_smooth,IPD_Control%nspinup,Atm_block%blksz(1),IPD_Control%nsmooth,IPD_Control%ca_amplitude)
+            IPD_Control%ca_smooth,IPD_Control%nspinup,Atm_block%blksz(1),IPD_Control%nsmooth,IPD_Control%ca_amplitude,IPD_Control%master,IPD_Control%communicator)
       endif
     endif
 
@@ -655,7 +655,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
           IPD_Control%input_nml_file, IPD_Control%fn_nml, IPD_Control%nlunit, IPD_Control%do_sppt, IPD_Control%do_shum,                &
           IPD_Control%do_skeb, IPD_Control%do_sfcperts, IPD_Control%use_zmtnblck, IPD_Control%skeb_npass, IPD_Control%nsfcpert,        &
           IPD_Control%pertz0, IPD_Control%pertzt, IPD_Control%pertshc, IPD_Control%pertlai, IPD_Control%pertalb, IPD_Control%pertvegf, &
-          IPD_Control%ak, IPD_Control%bk, nthrds,  mpp_root_pe(), commglobal)
+          IPD_Control%ak, IPD_Control%bk, nthrds, IPD_Control%master, IPD_Control%communicator)
    end if
 
    Atmos%Diag => IPD_Diag
@@ -679,13 +679,13 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
           call cellular_automata_sgs(IPD_Control%kdt,IPD_Data(:)%Statein,IPD_Data(:)%Coupling,IPD_Data(:)%Intdiag,Atm_block%nblks,IPD_Control%levs, &
             IPD_Control%nca,IPD_Control%ncells,IPD_Control%nlives,IPD_Control%nfracseed,&
             IPD_Control%nseed,IPD_Control%nthresh,IPD_Control%ca_global,IPD_Control%ca_sgs,IPD_Control%iseed_ca,&
-            IPD_Control%ca_smooth,IPD_Control%nspinup,Atm_block%blksz(1))
+            IPD_Control%ca_smooth,IPD_Control%nspinup,Atm_block%blksz(1),IPD_Control%master,IPD_Control%communicator)
        endif
        if(IPD_Control%ca_global)then
           call cellular_automata_global(IPD_Control%kdt,IPD_Data(:)%Statein,IPD_Data(:)%Coupling,IPD_Data(:)%Intdiag,Atm_block%nblks,IPD_Control%levs, &
             IPD_Control%nca_g,IPD_Control%ncells_g,IPD_Control%nlives_g,IPD_Control%nfracseed,&
             IPD_Control%nseed_g,IPD_Control%nthresh,IPD_Control%ca_global,IPD_Control%ca_sgs,IPD_Control%iseed_ca,&
-            IPD_Control%ca_smooth,IPD_Control%nspinup,Atm_block%blksz(1),IPD_Control%nsmooth,IPD_Control%ca_amplitude)
+            IPD_Control%ca_smooth,IPD_Control%nspinup,Atm_block%blksz(1),IPD_Control%nsmooth,IPD_Control%ca_amplitude,IPD_Control%master,IPD_Control%communicator)
        endif
 
     endif
