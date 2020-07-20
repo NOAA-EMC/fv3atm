@@ -32,6 +32,7 @@ set(CCPP_SOURCES
     GFS_layer/GFS_diagnostics.F90
     GFS_layer/GFS_driver.F90
     GFS_layer/GFS_restart.F90
+    GFS_layer/GFS_land_perts.F90
 )
 
 set(IPD_SOURCES

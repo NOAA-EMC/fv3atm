@@ -313,7 +313,7 @@ subroutine update_atmos_radiation_physics (Atmos)
       end if
 
 !--- call the surface perturbations
-!    note: this needs to be called after time_vary (since gcycle call updates land parameters, and before radiation (uses land albedoes) 
+!    note: this needs to be called after time_vary (since gcycle call updates land parameters, and before radiation (uses land albedo) 
       if (IPD_Control%lndp_type .EQ. 2) then 
 
         if (mod(IPD_Control%kdt,IPD_Control%nscyc) == 1)  then 
@@ -348,6 +348,28 @@ subroutine update_atmos_radiation_physics (Atmos)
 !        print *,'in atmos_model, tsfc size=',size(IPD_Data(1)%sfcprop%tsfc)
         call assign_importdata(rc)
 !        print *,'in atmos_model, after assign_importdata, rc=',rc
+      endif
+
+      ! Calculate total non-physics tendencies by substracting old IPD Stateout
+      ! variables from new/updated IPD Statein variables (gives the tendencies
+      ! due to anything else than physics)
+      if (IPD_Control%ldiag3d) then
+        do nb = 1,Atm_block%nblks
+          IPD_Data(nb)%Intdiag%du3dt(:,:,8)  = IPD_Data(nb)%Intdiag%du3dt(:,:,8)  &
+                                              + (IPD_Data(nb)%Statein%ugrs - IPD_Data(nb)%Stateout%gu0)
+          IPD_Data(nb)%Intdiag%dv3dt(:,:,8)  = IPD_Data(nb)%Intdiag%dv3dt(:,:,8)  &
+                                              + (IPD_Data(nb)%Statein%vgrs - IPD_Data(nb)%Stateout%gv0)
+          IPD_Data(nb)%Intdiag%dt3dt(:,:,11) = IPD_Data(nb)%Intdiag%dt3dt(:,:,11) &
+                                              + (IPD_Data(nb)%Statein%tgrs - IPD_Data(nb)%Stateout%gt0)
+        enddo
+        if (IPD_Control%qdiag3d) then
+          do nb = 1,Atm_block%nblks
+            IPD_Data(nb)%Intdiag%dq3dt(:,:,12) = IPD_Data(nb)%Intdiag%dq3dt(:,:,12) &
+                  + (IPD_Data(nb)%Statein%qgrs(:,:,IPD_Control%ntqv) - IPD_Data(nb)%Stateout%gq0(:,:,IPD_Control%ntqv))
+            IPD_Data(nb)%Intdiag%dq3dt(:,:,13) = IPD_Data(nb)%Intdiag%dq3dt(:,:,13) &
+                  + (IPD_Data(nb)%Statein%qgrs(:,:,IPD_Control%ntoz) - IPD_Data(nb)%Stateout%gq0(:,:,IPD_Control%ntoz))
+          enddo
+        endif
       endif
 
       call mpp_clock_end(setupClock)
@@ -482,7 +504,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
   integer              :: bdat(8), cdat(8)
   integer              :: ntracers, maxhf, maxh
   character(len=32), allocatable, target :: tracer_names(:)
-  integer :: nthrds
+  integer :: nthrds, nb
 
 !-----------------------------------------------------------------------
 
@@ -645,20 +667,10 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
 
    if (IPD_Control%do_sppt .OR. IPD_Control%do_shum .OR. IPD_Control%do_skeb .OR. (IPD_Control%lndp_type .NE. 0)) then
       ! Initialize stochastic physics
-      call init_stochastic_physics(IPD_Control, Init_parm, mpp_npes(), nthrds)
+      call init_stochastic_physics(IPD_Control, Init_parm, mpp_npes(), nthrds, ierr) 
+      if (ierr/=0)  call mpp_error(FATAL, 'Call to init_stochastic_physics failed')
       if(IPD_Control%me == IPD_Control%master) print *,'do_skeb=',IPD_Control%do_skeb
    end if
-
-#ifdef CCPP
-   ! Initialize the CCPP framework
-   call CCPP_step (step="init", nblks=Atm_block%nblks, ierr=ierr)
-   if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP init step failed')
-   ! Doing the init here requires logic in thompson aerosol init if no aerosol
-   ! profiles are specified and internal profiles are calculated, because these
-   ! require temperature/geopotential etc which are not yet set. Sim. for RUC LSM.
-   call CCPP_step (step="physics_init", nblks=Atm_block%nblks, ierr=ierr)
-   if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP physics_init step failed')
-#endif
 
    Atmos%Diag => IPD_Diag
 
@@ -717,6 +729,30 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    call FV3GFS_restart_read (IPD_Data, IPD_Restart, Atm_block, IPD_Control, Atmos%domain, Atm(mygrid)%flagstruct%warm_start)
 #else
    call FV3GFS_restart_read (IPD_Data, IPD_Restart, Atm_block, IPD_Control, Atmos%domain)
+#endif
+
+   ! Populate the IPD_Data%Statein container with the prognostic state
+   ! in Atm_block, which contains the initial conditions/restart data.
+   call atmos_phys_driver_statein (IPD_data, Atm_block, flip_vc)
+
+   ! When asked to calculate 3-dim. tendencies, set Stateout variables to
+   ! Statein variables here in order to capture the first call to dycore
+    if (IPD_Control%ldiag3d) then
+      do nb = 1,Atm_block%nblks
+        IPD_Data(nb)%Stateout%gu0 = IPD_Data(nb)%Statein%ugrs
+        IPD_Data(nb)%Stateout%gv0 = IPD_Data(nb)%Statein%vgrs
+        IPD_Data(nb)%Stateout%gt0 = IPD_Data(nb)%Statein%tgrs
+        IPD_Data(nb)%Stateout%gq0 = IPD_Data(nb)%Statein%qgrs
+      enddo
+    endif
+
+#ifdef CCPP
+   ! Initialize the CCPP framework
+   call CCPP_step (step="init", nblks=Atm_block%nblks, ierr=ierr)
+   if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP init step failed')
+   ! Initialize the CCPP physics
+   call CCPP_step (step="physics_init", nblks=Atm_block%nblks, ierr=ierr)
+   if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP physics_init step failed')
 #endif
 
    !--- set the initial diagnostic timestamp
@@ -1472,7 +1508,7 @@ subroutine update_atmos_chemistry(state, rc)
           ib = i + Atm_block%isc - 1
           nb = Atm_block%blkno(ib,jb)
           ix = Atm_block%ixp(ib,jb)
-          hpbl(i,j)   = IPD_Data(nb)%IntDiag%hpbl(ix)
+          hpbl(i,j)   = IPD_Data(nb)%Tbd%hpbl(ix)
           area(i,j)   = IPD_Data(nb)%Grid%area(ix)
           stype(i,j)  = IPD_Data(nb)%Sfcprop%stype(ix)
           rainc(i,j)  = IPD_Data(nb)%Coupling%rainc_cpl(ix)
