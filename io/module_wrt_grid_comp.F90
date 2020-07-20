@@ -58,7 +58,7 @@
 !
 !-----------------------------------------------------------------------
 !
-      integer,parameter :: filename_maxstr=255
+
       real, parameter   :: rdgas=287.04, grav=9.80
       real, parameter   :: stndrd_atmos_ps = 101325.
       real, parameter   :: stndrd_atmos_lapse = 0.0065
@@ -81,7 +81,7 @@
       type(wrt_internal_state),pointer :: wrt_int_state                 ! The internal state pointer.
       type(ESMF_FieldBundle)           :: gridFB
       integer                          :: FBcount
-      character(len=80),allocatable    :: fcstItemNameList(:)
+      character(len=esmf_maxstr),allocatable    :: fcstItemNameList(:)
 !
 !-----------------------------------------------------------------------
       REAL(KIND=8)             :: btim,btim0
@@ -190,7 +190,7 @@
       real(ESMF_KIND_R8)                            :: rot_lon, rot_lat
       real(ESMF_KIND_R8)                            :: geo_lon, geo_lat
       real(ESMF_KIND_R8)                            :: lon1_r8, lat1_r8
-      real(ESMF_KIND_R8)                            :: x1, y1, x, y
+      real(ESMF_KIND_R8)                            :: x1, y1, x, y, delat
       type(ESMF_TimeInterval)                       :: IAU_offsetTI
       type(ESMF_DataCopy_Flag) :: copyflag=ESMF_DATACOPY_REFERENCE
 !     real(8),parameter :: PI=3.14159265358979d0
@@ -403,29 +403,73 @@
         wrt_int_state%post_maptype = 4
 
         deallocate(slat)
-      else if ( trim(output_grid) == 'latlon_grid') then
-        wrtgrid = ESMF_GridCreate1PeriDimUfrm(maxIndex=(/imo, jmo/),                                  &
-                                              minCornerCoord=(/0._ESMF_KIND_R8, -80._ESMF_KIND_R8/),  &
-                                              maxCornerCoord=(/360._ESMF_KIND_R8, 80._ESMF_KIND_R8/), &
-                                              staggerLocList=(/ESMF_STAGGERLOC_CENTER, ESMF_STAGGERLOC_CORNER/), rc=rc)
+      else if ( trim(output_grid) == 'global_latlon') then
+        wrtgrid = ESMF_GridCreate1PeriDim(minIndex=(/1,1/),                             &
+                                          maxIndex=(/imo,jmo/), regDecomp=(/1,ntasks/), &
+                                          indexflag=ESMF_INDEX_GLOBAL, name='wrt_grid',rc=rc)
 
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-!        if(wrt_int_state%mype == lead_write_task) print *,'af wrtgrd, latlon,rc=',rc, &
-!         'imo=',imo,' jmo=',jmo
+
+        call ESMF_GridAddCoord(wrtgrid, staggerLoc=ESMF_STAGGERLOC_CENTER, rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
         call ESMF_GridGetCoord(wrtgrid, coordDim=1, farrayPtr=lonPtr, rc=rc)
-        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-            line=__LINE__, file=__FILE__)) return  ! bail out
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
         call ESMF_GridGetCoord(wrtgrid, coordDim=2, farrayPtr=latPtr, rc=rc)
-        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-            line=__LINE__, file=__FILE__)) return  ! bail out
-
-        wrt_int_state%im = imo
-        wrt_int_state%jm = jmo
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+!
+        allocate(lat(jmo), lon(imo))
+        if (mod(jmo,2) == 0) then
+          ! if jmo even, lats do not include poles and equator
+          delat = 180.d0/real(jmo,8)
+          if(write_nemsioflip) then
+            do j=1,jmo
+              lat(j) = 90.d0 - 0.5*delat - real(j-1,8)*delat
+            enddo
+          else
+            do j=1,jmo
+              lat(j) = -90.d0 + 0.5*delat + real(j-1,8)*delat
+            enddo
+          endif
+        else
+          ! if jmo odd, lats include poles and equator
+          delat = 180.d0/real(jmo-1,8)
+          if(write_nemsioflip) then
+            do j=1,jmo
+              lat(j) = 90.d0 - real(j-1,8)*delat
+            enddo
+          else
+            do j=1,jmo
+              lat(j) = -90.d0 + real(j-1,8)*delat
+            enddo
+          endif
+        endif
+        wrt_int_state%latstart = lat(1)
+        wrt_int_state%latlast  = lat(jmo)
+        do j=1,imo
+          lon(j) = 360.d0/real(imo,8) *real(j-1,8)
+        enddo
+        wrt_int_state%lonstart = lon(1)
+        wrt_int_state%lonlast  = lon(imo)
+        do j=lbound(latPtr,2),ubound(latPtr,2)
+          do i=lbound(lonPtr,1),ubound(lonPtr,1)
+            lonPtr(i,j) = 360.d0/real(imo,8) * real(i-1,8)
+            latPtr(i,j) = lat(j)
+          enddo
+        enddo
         wrt_int_state%lat_start = lbound(latPtr,2)
         wrt_int_state%lat_end   = ubound(latPtr,2)
-        wrt_int_state%lon_start = lbound(lonPtr,2)
-        wrt_int_state%lon_end   = ubound(lonPtr,2)
+        wrt_int_state%lon_start = lbound(lonPtr,1)
+        wrt_int_state%lon_end   = ubound(lonPtr,1)
+        allocate( wrt_int_state%lat_start_wrtgrp(wrt_int_state%petcount))
+        allocate( wrt_int_state%lat_end_wrtgrp  (wrt_int_state%petcount))
+        call mpi_allgather(wrt_int_state%lat_start,1,MPI_INTEGER,    &
+                           wrt_int_state%lat_start_wrtgrp, 1, MPI_INTEGER, wrt_mpi_comm, rc)
+        call mpi_allgather(wrt_int_state%lat_end,  1,MPI_INTEGER,    &
+                           wrt_int_state%lat_end_wrtgrp,   1, MPI_INTEGER, wrt_mpi_comm, rc)
+        if( lprnt ) print *,'aft wrtgrd, global_latlon, dimj_start=',wrt_int_state%lat_start_wrtgrp, &
+          'dimj_end=',wrt_int_state%lat_end_wrtgrp, 'wrt_group=',n_group
         allocate( wrt_int_state%latPtr(wrt_int_state%lon_start:wrt_int_state%lon_end, &
                   wrt_int_state%lat_start:wrt_int_state%lat_end))
         allocate( wrt_int_state%lonPtr(wrt_int_state%lon_start:wrt_int_state%lon_end, &
@@ -436,6 +480,8 @@
             wrt_int_state%lonPtr(i,j) = lonPtr(i,j)
           enddo
         enddo
+        wrt_int_state%im = imo
+        wrt_int_state%jm = jmo
         wrt_int_state%post_maptype = 0
 
       else if ( trim(output_grid) == 'regional_latlon' .or. &
@@ -758,24 +804,20 @@
               call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
                                      name="jm", value=jmo, rc=rc)
 
-            else if (trim(output_grid) == 'latlon_grid') then
+            else if (trim(output_grid) == 'global_latlon') then
 
               call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
                                      name="grid", value="latlon", rc=rc)
               call ESMF_AttributeAdd(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                                     attrList=(/"lon1","lat1","lon2","lat2","dlon","dlat"/), rc=rc)
+                                     attrList=(/"lonstart","latstart","lonlast ","latlast "/), rc=rc)
               call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                                     name="lon1", value=0, rc=rc)
+                                     name="lonstart", value=wrt_int_state%lonstart, rc=rc)
               call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                                     name="lat1", value=-80, rc=rc)
+                                     name="latstart", value=wrt_int_state%latstart, rc=rc)
               call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                                     name="lon2", value=360, rc=rc)
+                                     name="lonlast", value=wrt_int_state%lonlast, rc=rc)
               call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                                     name="lat2", value=80, rc=rc)
-              call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                                     name="dlon", value=360.0/(imo-1), rc=rc)
-              call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                                     name="dlat", value=160.0/(jmo-1), rc=rc)
+                                     name="latlast", value=wrt_int_state%latlast, rc=rc)
 
             else if (trim(output_grid) == 'regional_latlon') then
 
@@ -1113,7 +1155,8 @@
 !-----------------------------------------------------------------------
 !
       call ESMF_LogWrite("before initialize for POST", ESMF_LOGMSG_INFO, rc=rc)
-      if(trim(output_grid) == 'gaussian_grid' .and. wrt_int_state%write_dopost) then
+      if((trim(output_grid) == 'gaussian_grid' .or.  &
+          trim(output_grid) == 'global_latlon') .and. wrt_int_state%write_dopost) then
         do i= 1, wrt_int_state%FBcount
           call post_getattr_gfs(wrt_int_state,wrt_int_state%wrtFB(i))
         enddo
@@ -1200,7 +1243,7 @@
       logical,save                          :: first=.true.
       logical,save                          :: file_first=.true.
 !
-      character(filename_maxstr)            :: filename,compname,bundle_name
+      character(esmf_maxstr)            :: filename,compname,bundle_name
       character(40)                         :: cfhour, cform
       character(10)                         :: stepString
       character(80)                         :: attrValueS
@@ -1488,8 +1531,8 @@
 #endif
               wbeg = MPI_Wtime()
               call write_netcdf_parallel(file_bundle,wrt_int_state%wrtFB(nbdl),   &
-              trim(filename), wrt_mpi_comm,wrt_int_state%mype,imo,jmo,&
-              ichunk2d,jchunk2d,ichunk3d,jchunk3d,kchunk3d,rc)
+                                         trim(filename), wrt_mpi_comm,wrt_int_state%mype,imo,jmo,&
+                                         ichunk2d,jchunk2d,ichunk3d,jchunk3d,kchunk3d,rc)
               wend = MPI_Wtime()
               if (lprnt) then
                 write(*,'(A,F10.5,A,I4.2,A,I2.2)')' parallel netcdf      Write Time is ',wend-wbeg  &
@@ -1516,6 +1559,39 @@
               wend = MPI_Wtime()
               if (lprnt) then
                 write(*,'(A,F10.5,A,I4.2,A,I2.2)')' netcdf_esmf Write Time is ',wend-wbeg &
+                        ,' at Fcst ',NF_HOURS,':',NF_MINUTES
+              endif
+            endif
+
+          else if (trim(output_grid) == 'global_latlon') then
+
+            if (trim(output_file(nbdl)) == 'netcdf') then
+
+              wbeg = MPI_Wtime()
+              call write_netcdf(file_bundle,wrt_int_state%wrtFB(nbdl),trim(filename), &
+                               wrt_mpi_comm,wrt_int_state%mype,imo,jmo,&
+                               ichunk2d,jchunk2d,ichunk3d,jchunk3d,kchunk3d,rc)
+              wend = MPI_Wtime()
+              if (lprnt) then
+                write(*,'(A,F10.5,A,I4.2,A,I2.2)')' netcdf      Write Time is ',wend-wbeg  &
+                        ,' at Fcst ',NF_HOURS,':',NF_MINUTES
+              endif
+
+            else if (trim(output_file(nbdl)) == 'netcdf_parallel') then
+
+#ifdef NO_PARALLEL_NETCDF
+              rc = ESMF_RC_NOT_IMPL
+              print *,'netcdf_parallel not available on this machine'
+              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+              line=__LINE__, file=__FILE__)) return
+#endif
+              wbeg = MPI_Wtime()
+              call write_netcdf_parallel(file_bundle,wrt_int_state%wrtFB(nbdl), &
+                                         trim(filename), wrt_mpi_comm,wrt_int_state%mype,imo,jmo,&
+                                         ichunk2d,jchunk2d,ichunk3d,jchunk3d,kchunk3d,rc)
+              wend = MPI_Wtime()
+              if (lprnt) then
+                write(*,'(A,F10.5,A,I4.2,A,I2.2)')' parallel netcdf      Write Time is ',wend-wbeg  &
                         ,' at Fcst ',NF_HOURS,':',NF_MINUTES
               endif
 

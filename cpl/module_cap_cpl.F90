@@ -214,13 +214,15 @@ module module_cap_cpl
   !-----------------------------------------------------------------------------
 
     subroutine Dump_cplFields(gcomp, importState, exportstate, clock_fv3,    &
-         statewrite_flag, timeslice)
+         statewrite_flag, state_tag, timestr)
 
       type(ESMF_GridComp), intent(in)       :: gcomp
       type(ESMF_State)                      :: importState, exportstate
       type(ESMF_Clock),intent(in)           :: clock_fv3
       logical, intent(in)                   :: statewrite_flag
-      integer                               :: timeslice
+      character(len=*),         intent(in)  :: state_tag                        !< Import or export.
+      character(len=*),         intent(in)  :: timestr                          !< Import or export.
+      integer                               :: timeslice = 1 
 !
       character(len=160) :: nuopcMsg
       character(len=160) :: filename
@@ -229,34 +231,39 @@ module module_cap_cpl
       call ESMF_ClockPrint(clock_fv3, options="currTime",                            &
                            preString="leaving FV3_ADVANCE with clock_fv3 current: ", &
                            unit=nuopcMsg)
-      call ESMF_LogWrite(nuopcMsg, ESMF_LOGMSG_INFO)
+!      call ESMF_LogWrite(nuopcMsg, ESMF_LOGMSG_INFO)
       call ESMF_ClockPrint(clock_fv3, options="startTime",                           &
                            preString="leaving FV3_ADVANCE with clock_fv3 start:   ", &
                            unit=nuopcMsg)
-      call ESMF_LogWrite(nuopcMsg, ESMF_LOGMSG_INFO)
+!      call ESMF_LogWrite(nuopcMsg, ESMF_LOGMSG_INFO)
       call ESMF_ClockPrint(clock_fv3, options="stopTime",                            &
                            preString="leaving FV3_ADVANCE with clock_fv3 stop:    ", &
                            unit=nuopcMsg)
-      call ESMF_LogWrite(nuopcMsg, ESMF_LOGMSG_INFO)
+!      call ESMF_LogWrite(nuopcMsg, ESMF_LOGMSG_INFO)
 
       ! Dumping Fields out
       if (statewrite_flag) then
-        timeslice = timeslice + 1
-        call ESMF_GridCompGet(gcomp, importState=importState, rc=rc)
-        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-        ! replace with tiled field dumps
-        !call ESMFPP_RegridWriteState(importState, "fv3_cap_import_", timeslice, rc=rc)
-        write(filename,'(a,i6.6)') 'fv3_cap_import_',timeslice
-        call State_RWFields_tiles(importState,trim(filename), timeslice, rc=rc)
-        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-        call ESMF_GridCompGet(gcomp, exportState=exportState, rc=rc)
-        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-        ! replace with tiled field dumps
-        !call ESMFPP_RegridWriteState(exportState, "fv3_cap_export_", timeslice, rc=rc)
-        write(filename,'(a,i6.6)') 'fv3_cap_export_',timeslice
-        call State_RWFields_tiles(exportState,trim(filename), timeslice, rc=rc)
-        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+        if(trim(state_tag) .eq. 'import')then 
+          call ESMF_GridCompGet(gcomp, importState=importState, rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+          ! replace with tiled field dumps
+          !call ESMFPP_RegridWriteState(importState, "fv3_cap_import_", timeslice, rc=rc)
+          write(filename,'(a,a,a)') 'fv3_cap_import_'//trim(timestr)//'_'
+          call State_RWFields_tiles(importState,trim(filename), timeslice, rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+        end if
+
+        if(trim(state_tag) .eq. 'export')then
+          call ESMF_GridCompGet(gcomp, exportState=exportState, rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+          ! replace with tiled field dumps
+          !call ESMFPP_RegridWriteState(exportState, "fv3_cap_export_", timeslice, rc=rc)
+          write(filename,'(a,a,a)') 'fv3_cap_export_'//trim(timestr)//'_'
+          call State_RWFields_tiles(exportState,trim(filename), timeslice, rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+        end if
+
       endif
 !
     end subroutine Dump_cplFields
