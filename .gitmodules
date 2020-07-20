@@ -1,6 +1,6 @@
 [submodule "atmos_cubed_sphere"]
 	path = atmos_cubed_sphere
-	url = https://github.com/NOAA-EMC/SMoorthi-emc/GFDL_atmos_cubed_sphere
+	url = https://github.com/SMoorthi-emc/GFDL_atmos_cubed_sphere
 	branch = SM_Jul092020
 [submodule "ccpp/framework"]
 	path = ccpp/framework
