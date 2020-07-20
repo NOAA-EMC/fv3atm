@@ -203,7 +203,7 @@ module fv3gfs_cap_mod
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
     profile_memory = (trim(value)/="false")
 
-    call ESMF_AttributeGet(gcomp, name="DumpFields_ATM", value=value, defaultValue="false", &
+    call ESMF_AttributeGet(gcomp, name="DumpFields", value=value, defaultValue="false", &
                            convention="NUOPC", purpose="Instance", rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 

@@ -1382,6 +1382,11 @@
             plyr(i,k1)   = 0.5d0 * (plvl(i,k1+1) + plvl(i,k1))
             prslk1(i,k1) = (plyr(i,k1)*0.001d0) ** rocp
           enddo
+        else
+          k1 = lm + kd
+          do i = 1, IM
+            plvl(i,k1+1) = 0.01d0 * Statein%prsi(i,Model%levs+1)  ! pa to mb (hpa)
+          enddo
         endif
       endif
 !

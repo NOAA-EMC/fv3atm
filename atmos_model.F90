@@ -1761,7 +1761,7 @@ end subroutine atmos_data_type_chksum
                 do i=isc,iec
                   nb = Atm_block%blkno(i,j)
                   ix = Atm_block%ixp(i,j)
-                  if (IPD_Data(nb)%Sfcprop%oceanfrac(ix) > zero) then
+                  if (IPD_Data(nb)%Sfcprop%oceanfrac(ix) > zero .and.  datar8(i,j) > 150.0) then
 !                   IPD_Data(nb)%Coupling%tisfcin_cpl(ix) = datar8(i,j)
                     IPD_Data(nb)%Sfcprop%tisfc(ix)       = datar8(i,j)
                   endif
@@ -1781,7 +1781,7 @@ end subroutine atmos_data_type_chksum
                 do i=isc,iec
                   nb = Atm_block%blkno(i,j)
                   ix = Atm_block%ixp(i,j)
-                  if (IPD_Data(nb)%Sfcprop%oceanfrac(ix) > zero) then
+                  if (IPD_Data(nb)%Sfcprop%oceanfrac(ix) > zero .and. datar8(i,j) > 150.0) then
 !                   IPD_Data(nb)%Coupling%tseain_cpl(ix) = datar8(i,j)
                     IPD_Data(nb)%Sfcprop%tsfco(ix)       = datar8(i,j)
                   endif
