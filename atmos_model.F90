@@ -316,7 +316,7 @@ subroutine update_atmos_radiation_physics (Atmos)
 
 !--- call stochastic physics pattern generation / cellular automata
     if (IPD_Control%do_sppt .OR. IPD_Control%do_shum .OR. IPD_Control%do_skeb .OR. IPD_Control%do_sfcperts) then
-       ! Copy blocked data into contiguous arrays
+       ! Copy blocked data into contiguous arrays; no need to copy weights in (intent(out))
        allocate(xlat_local(1:Atm_block%nblks,maxval(IPD_Control%blksz)))
        allocate(xlon_local(1:Atm_block%nblks,maxval(IPD_Control%blksz)))
        do nb=1,Atm_block%nblks
@@ -325,23 +325,13 @@ subroutine update_atmos_radiation_physics (Atmos)
        end do
        if (IPD_Control%do_sppt) then
           allocate(sppt_wts_local(1:Atm_block%nblks,maxval(IPD_Control%blksz),1:IPD_Control%levs))
-          do nb=1,Atm_block%nblks
-             sppt_wts_local(nb,1:IPD_Control%blksz(nb),:) = IPD_Data(nb)%Coupling%sppt_wts(:,:)
-          end do
        end if
        if (IPD_Control%do_shum) then
           allocate(shum_wts_local(1:Atm_block%nblks,maxval(IPD_Control%blksz),1:IPD_Control%levs))
-          do nb=1,Atm_block%nblks
-             shum_wts_local(nb,1:IPD_Control%blksz(nb),:) = IPD_Data(nb)%Coupling%shum_wts(:,:)
-          end do
        end if
        if (IPD_Control%do_skeb) then
           allocate(skebu_wts_local(1:Atm_block%nblks,maxval(IPD_Control%blksz),1:IPD_Control%levs))
           allocate(skebv_wts_local(1:Atm_block%nblks,maxval(IPD_Control%blksz),1:IPD_Control%levs))
-          do nb=1,Atm_block%nblks
-             skebu_wts_local(nb,1:IPD_Control%blksz(nb),:) = IPD_Data(nb)%Coupling%skebu_wts(:,:)
-             skebv_wts_local(nb,1:IPD_Control%blksz(nb),:) = IPD_Data(nb)%Coupling%skebv_wts(:,:)
-          end do
        end if
        call run_stochastic_physics(IPD_Control%levs, IPD_Control%kdt, IPD_Control%phour, IPD_Control%blksz, xlat=xlat_local, xlon=xlon_local, &
                                    sppt_wts=sppt_wts_local, shum_wts=shum_wts_local, skebu_wts=skebu_wts_local, skebv_wts=skebv_wts_local, nthreads=nthrds)
@@ -379,7 +369,7 @@ subroutine update_atmos_radiation_physics (Atmos)
             IPD_Control%ca_smooth,IPD_Control%nspinup,Atm_block%blksz(1),IPD_Control%master,IPD_Control%communicator)
        endif
        if(IPD_Control%ca_global)then
-          call cellular_automata_global(IPD_Control%kdt,IPD_Data(:)%Statein,IPD_Data(:)%Coupling,IPD_Data(:)%Intdiag,Atm(mygrid)%domain_for_coupler,Atm_block%nblks, &
+          call cellular_automata_global(IPD_Control%kdt,IPD_Data(:)%Coupling,IPD_Data(:)%Intdiag,Atm(mygrid)%domain_for_coupler,Atm_block%nblks, &
             Atm_block%isc,Atm_block%iec,Atm_block%jsc,Atm_block%jec,Atm(mygrid)%npx,Atm(mygrid)%npy,IPD_Control%levs, &
             IPD_Control%nca_g,IPD_Control%ncells_g,IPD_Control%nlives_g,IPD_Control%nfracseed,&
             IPD_Control%nseed_g,IPD_Control%nthresh,IPD_Control%ca_global,IPD_Control%ca_sgs,IPD_Control%iseed_ca,&
@@ -727,14 +717,13 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
 
    if (IPD_Control%do_sfcperts) then
       ! Get land surface perturbations here (move to GFS_time_vary step if wanting to update each time-step)
-      ! Copy blocked data into contiguous arrays
+      ! Copy blocked data into contiguous arrays; no need to copy sfc_wts in (intent out)
       allocate(xlat_local(1:Atm_block%nblks,maxval(IPD_Control%blksz)))
       allocate(xlon_local(1:Atm_block%nblks,maxval(IPD_Control%blksz)))
       allocate(sfc_wts_local(1:Atm_block%nblks,maxval(IPD_Control%blksz),1:IPD_Control%levs))
       do nb=1,Atm_block%nblks
          xlat_local(nb,1:IPD_Control%blksz(nb)) = IPD_Data(nb)%Grid%xlat(:)
          xlon_local(nb,1:IPD_Control%blksz(nb)) = IPD_Data(nb)%Grid%xlon(:)
-         sfc_wts_local(nb,1:IPD_Control%blksz(nb),:) = IPD_Data(nb)%Coupling%sfc_wts(:,:)
       end do
       call run_stochastic_physics_sfc(IPD_Control%blksz, xlat=xlat_local, xlon=xlon_local, sfc_wts=sfc_wts_local)
        ! Copy contiguous data back; no need to copy xlat/xlon, these are intent(in) - just deallocate
@@ -763,8 +752,8 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
             IPD_Control%ca_smooth,IPD_Control%nspinup,Atm_block%blksz(1),IPD_Control%master,IPD_Control%communicator)
        endif
        if(IPD_Control%ca_global)then
-          call cellular_automata_global(IPD_Control%kdt,IPD_Data(:)%Statein,IPD_Data(:)%Coupling,IPD_Data(:)%Intdiag,Atm(mygrid)%domain_for_coupler,Atm_block%nblks, &
-            Atm_block%isc,Atm_block%iec,Atm_block%jsc,Atm_block%jec,Atm(mygrid)%npx,Atm(mygrid)%npy, IPD_Control%levs, &
+          call cellular_automata_global(IPD_Control%kdt,IPD_Data(:)%Coupling,IPD_Data(:)%Intdiag,Atm(mygrid)%domain_for_coupler,Atm_block%nblks, &
+            Atm_block%isc,Atm_block%iec,Atm_block%jsc,Atm_block%jec,Atm(mygrid)%npx,Atm(mygrid)%npy,IPD_Control%levs, &
             IPD_Control%nca_g,IPD_Control%ncells_g,IPD_Control%nlives_g,IPD_Control%nfracseed,&
             IPD_Control%nseed_g,IPD_Control%nthresh,IPD_Control%ca_global,IPD_Control%ca_sgs,IPD_Control%iseed_ca,&
             IPD_Control%ca_smooth,IPD_Control%nspinup,Atm_block%blksz(1),IPD_Control%nsmooth,IPD_Control%ca_amplitude,IPD_Control%master,IPD_Control%communicator)
