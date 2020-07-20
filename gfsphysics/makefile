@@ -50,7 +50,6 @@ SRCS_F90 = \
 	   ./GFS_layer/GFS_diagnostics.F90                                           \
 	   ./GFS_layer/GFS_driver.F90                                                \
 	   ./GFS_layer/GFS_restart.F90                                               \
-	   ./GFS_layer/GFS_typedefs.F90                                              \
 	   ./GFS_layer/GFS_land_perts.F90
 # non-CCPP build
 else

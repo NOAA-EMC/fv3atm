@@ -192,6 +192,7 @@ set(IPD_SOURCES
     GFS_layer/GFS_radiation_driver.F90
     GFS_layer/GFS_restart.F90
     GFS_layer/GFS_typedefs.F90
+    GFS_layer/GFS_land_perts.F90
 )
 
 if(CCPP)
