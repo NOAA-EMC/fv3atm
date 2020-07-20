@@ -52,6 +52,8 @@ add_library(
     ../../stochastic_physics/cellular_automata_global.F90
     ../../stochastic_physics/cellular_automata_sgs.F90
     ../../stochastic_physics/update_ca.F90
+
+    ./stochastic_physics_driver.F90
 )
 
 if(CCPP)

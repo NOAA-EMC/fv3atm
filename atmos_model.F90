@@ -104,9 +104,7 @@ use IPD_driver,         only: IPD_initialize, IPD_initialize_rst, IPD_step
 use physics_abstraction_layer, only: time_vary_step, radiation_step1, physics_step1, physics_step2
 #endif
 
-use stochastic_physics, only: init_stochastic_physics,         &
-                              run_stochastic_physics
-use stochastic_physics_sfc, only: run_stochastic_physics_sfc
+use stochastic_physics_wrapper_mod, only: stochastic_physics_wrapper
 
 use FV3GFS_io_mod,      only: FV3GFS_restart_read, FV3GFS_restart_write, &
                               FV3GFS_IPD_checksum,                       &
@@ -251,32 +249,15 @@ contains
 ! </INOUT>
 
 subroutine update_atmos_radiation_physics (Atmos)
-#ifdef OPENMP
-    use omp_lib
-#endif
 !-----------------------------------------------------------------------
   type (atmos_data_type), intent(in) :: Atmos
 !--- local variables---
     integer :: nb, jdat(8), rc
     procedure(IPD_func0d_proc), pointer :: Func0d => NULL()
     procedure(IPD_func1d_proc), pointer :: Func1d => NULL()
-    integer :: nthrds
-    ! For stochastic physics
-    real(kind=IPD_kind_phys), dimension(:,:),   allocatable :: xlat_local
-    real(kind=IPD_kind_phys), dimension(:,:),   allocatable :: xlon_local
-    real(kind=IPD_kind_phys), dimension(:,:,:), allocatable :: sppt_wts_local
-    real(kind=IPD_kind_phys), dimension(:,:,:), allocatable :: shum_wts_local
-    real(kind=IPD_kind_phys), dimension(:,:,:), allocatable :: skebu_wts_local
-    real(kind=IPD_kind_phys), dimension(:,:,:), allocatable :: skebv_wts_local
     !
 #ifdef CCPP
     integer :: ierr
-#endif
-
-#ifdef OPENMP
-    nthrds = omp_get_max_threads()
-#else
-    nthrds = 1
 #endif
 
     if (mpp_pe() == mpp_root_pe() .and. debug) write(6,*) "statein driver"
@@ -315,67 +296,7 @@ subroutine update_atmos_radiation_physics (Atmos)
 #endif
 
 !--- call stochastic physics pattern generation / cellular automata
-    if (IPD_Control%do_sppt .OR. IPD_Control%do_shum .OR. IPD_Control%do_skeb .OR. IPD_Control%do_sfcperts) then
-       ! Copy blocked data into contiguous arrays; no need to copy weights in (intent(out))
-       allocate(xlat_local(1:Atm_block%nblks,maxval(IPD_Control%blksz)))
-       allocate(xlon_local(1:Atm_block%nblks,maxval(IPD_Control%blksz)))
-       do nb=1,Atm_block%nblks
-          xlat_local(nb,1:IPD_Control%blksz(nb)) = IPD_Data(nb)%Grid%xlat(:)
-          xlon_local(nb,1:IPD_Control%blksz(nb)) = IPD_Data(nb)%Grid%xlon(:)
-       end do
-       if (IPD_Control%do_sppt) then
-          allocate(sppt_wts_local(1:Atm_block%nblks,maxval(IPD_Control%blksz),1:IPD_Control%levs))
-       end if
-       if (IPD_Control%do_shum) then
-          allocate(shum_wts_local(1:Atm_block%nblks,maxval(IPD_Control%blksz),1:IPD_Control%levs))
-       end if
-       if (IPD_Control%do_skeb) then
-          allocate(skebu_wts_local(1:Atm_block%nblks,maxval(IPD_Control%blksz),1:IPD_Control%levs))
-          allocate(skebv_wts_local(1:Atm_block%nblks,maxval(IPD_Control%blksz),1:IPD_Control%levs))
-       end if
-       call run_stochastic_physics(IPD_Control%levs, IPD_Control%kdt, IPD_Control%phour, IPD_Control%blksz, xlat=xlat_local, xlon=xlon_local, &
-                                   sppt_wts=sppt_wts_local, shum_wts=shum_wts_local, skebu_wts=skebu_wts_local, skebv_wts=skebv_wts_local, nthreads=nthrds)
-       ! Copy contiguous data back; no need to copy xlat/xlon, these are intent(in) - just deallocate
-       deallocate(xlat_local)
-       deallocate(xlon_local)
-       if (IPD_Control%do_sppt) then
-          do nb=1,Atm_block%nblks
-              IPD_Data(nb)%Coupling%sppt_wts(:,:) = sppt_wts_local(nb,1:IPD_Control%blksz(nb),:)
-          end do
-          deallocate(sppt_wts_local)
-       end if
-       if (IPD_Control%do_shum) then
-          do nb=1,Atm_block%nblks
-              IPD_Data(nb)%Coupling%shum_wts(:,:) = shum_wts_local(nb,1:IPD_Control%blksz(nb),:)
-          end do
-          deallocate(shum_wts_local)
-       end if
-       if (IPD_Control%do_skeb) then
-          do nb=1,Atm_block%nblks
-              IPD_Data(nb)%Coupling%skebu_wts(:,:) = skebu_wts_local(nb,1:IPD_Control%blksz(nb),:)
-              IPD_Data(nb)%Coupling%skebv_wts(:,:) = skebv_wts_local(nb,1:IPD_Control%blksz(nb),:)
-          end do
-          deallocate(skebu_wts_local)
-          deallocate(skebv_wts_local)
-       end if
-    end if
-    !
-    if(IPD_Control%do_ca)then
-       if(IPD_Control%ca_sgs)then
-          call cellular_automata_sgs(IPD_Control%kdt,IPD_Data(:)%Statein,IPD_Data(:)%Coupling,IPD_Data(:)%Intdiag,Atm(mygrid)%domain_for_coupler,Atm_block%nblks, &
-            Atm_block%isc,Atm_block%iec,Atm_block%jsc,Atm_block%jec,Atm(mygrid)%npx,Atm(mygrid)%npy, IPD_Control%levs, &
-            IPD_Control%nca,IPD_Control%ncells,IPD_Control%nlives,IPD_Control%nfracseed,&
-            IPD_Control%nseed,IPD_Control%nthresh,IPD_Control%ca_global,IPD_Control%ca_sgs,IPD_Control%iseed_ca,&
-            IPD_Control%ca_smooth,IPD_Control%nspinup,Atm_block%blksz(1),IPD_Control%master,IPD_Control%communicator)
-       endif
-       if(IPD_Control%ca_global)then
-          call cellular_automata_global(IPD_Control%kdt,IPD_Data(:)%Coupling,IPD_Data(:)%Intdiag,Atm(mygrid)%domain_for_coupler,Atm_block%nblks, &
-            Atm_block%isc,Atm_block%iec,Atm_block%jsc,Atm_block%jec,Atm(mygrid)%npx,Atm(mygrid)%npy,IPD_Control%levs, &
-            IPD_Control%nca_g,IPD_Control%ncells_g,IPD_Control%nlives_g,IPD_Control%nfracseed,&
-            IPD_Control%nseed_g,IPD_Control%nthresh,IPD_Control%ca_global,IPD_Control%ca_sgs,IPD_Control%iseed_ca,&
-            IPD_Control%ca_smooth,IPD_Control%nspinup,Atm_block%blksz(1),IPD_Control%nsmooth,IPD_Control%ca_amplitude,IPD_Control%master,IPD_Control%communicator)
-      endif
-    endif
+    call stochastic_physics_wrapper(IPD_Control, IPD_Data, Atm_block)
 
 !--- if coupled, assign coupled fields
       if( IPD_Control%cplflx .or. IPD_Control%cplwav ) then
@@ -540,10 +461,6 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
   integer              :: ntracers, maxhf, maxh
   character(len=32), allocatable, target :: tracer_names(:)
   integer :: nthrds, nb
-  ! For stochastic physics
-  real(kind=IPD_kind_phys), dimension(:,:),   allocatable :: xlat_local
-  real(kind=IPD_kind_phys), dimension(:,:),   allocatable :: xlon_local
-  real(kind=IPD_kind_phys), dimension(:,:,:), allocatable :: sfc_wts_local
 
 !-----------------------------------------------------------------------
 
@@ -704,63 +621,10 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    call IPD_initialize (IPD_Control, IPD_Data, IPD_Diag, IPD_Restart, Init_parm)
 #endif
 
-   if (IPD_Control%do_sppt .OR. IPD_Control%do_shum .OR. IPD_Control%do_skeb .OR. IPD_Control%do_sfcperts) then
-      ! Initialize stochastic physics
-      call init_stochastic_physics(IPD_Control%levs, IPD_Control%blksz, IPD_Control%dtp,                                               &
-          IPD_Control%input_nml_file, IPD_Control%fn_nml, IPD_Control%nlunit, IPD_Control%do_sppt, IPD_Control%do_shum,                &
-          IPD_Control%do_skeb, IPD_Control%do_sfcperts, IPD_Control%use_zmtnblck, IPD_Control%skeb_npass, IPD_Control%nsfcpert,        &
-          IPD_Control%pertz0, IPD_Control%pertzt, IPD_Control%pertshc, IPD_Control%pertlai, IPD_Control%pertalb, IPD_Control%pertvegf, &
-          IPD_Control%ak, IPD_Control%bk, nthrds, IPD_Control%master, IPD_Control%communicator)
-   end if
+!--- Initialize stochastic physics pattern generation / cellular automata for first time step
+   call stochastic_physics_wrapper(IPD_Control, IPD_Data, Atm_block)
 
    Atmos%Diag => IPD_Diag
-
-   if (IPD_Control%do_sfcperts) then
-      ! Get land surface perturbations here (move to GFS_time_vary step if wanting to update each time-step)
-      ! Copy blocked data into contiguous arrays; no need to copy sfc_wts in (intent out)
-      allocate(xlat_local(1:Atm_block%nblks,maxval(IPD_Control%blksz)))
-      allocate(xlon_local(1:Atm_block%nblks,maxval(IPD_Control%blksz)))
-      allocate(sfc_wts_local(1:Atm_block%nblks,maxval(IPD_Control%blksz),1:IPD_Control%levs))
-      do nb=1,Atm_block%nblks
-         xlat_local(nb,1:IPD_Control%blksz(nb)) = IPD_Data(nb)%Grid%xlat(:)
-         xlon_local(nb,1:IPD_Control%blksz(nb)) = IPD_Data(nb)%Grid%xlon(:)
-      end do
-      call run_stochastic_physics_sfc(IPD_Control%blksz, xlat=xlat_local, xlon=xlon_local, sfc_wts=sfc_wts_local)
-       ! Copy contiguous data back; no need to copy xlat/xlon, these are intent(in) - just deallocate
-      do nb=1,Atm_block%nblks
-         IPD_Data(nb)%Coupling%sfc_wts(:,:) = sfc_wts_local(nb,1:IPD_Control%blksz(nb),:)
-      end do
-      deallocate(xlat_local)
-      deallocate(xlon_local)
-      deallocate(sfc_wts_local)
-   end if
-
-   ! Initialize cellular automata
-   if(IPD_Control%do_ca)then
-      ! DH* The current implementation of cellular_automata assumes that all blocksizes are the
-      ! same - abort if this is not the case, otherwise proceed with Atm_block%blksz(1) below
-      if (.not. minval(Atm_block%blksz)==maxval(Atm_block%blksz)) then
-         call mpp_error(FATAL, 'Logic errror: cellular_automata not compatible with non-uniform blocksizes')
-      end if
-      ! *DH
-      if(IPD_Control%do_ca)then
-       if(IPD_Control%ca_sgs)then
-          call cellular_automata_sgs(IPD_Control%kdt,IPD_Data(:)%Statein,IPD_Data(:)%Coupling,IPD_Data(:)%Intdiag,Atm(mygrid)%domain_for_coupler,Atm_block%nblks, &
-            Atm_block%isc,Atm_block%iec,Atm_block%jsc,Atm_block%jec,Atm(mygrid)%npx,Atm(mygrid)%npy, IPD_Control%levs, &
-            IPD_Control%nca,IPD_Control%ncells,IPD_Control%nlives,IPD_Control%nfracseed,&
-            IPD_Control%nseed,IPD_Control%nthresh,IPD_Control%ca_global,IPD_Control%ca_sgs,IPD_Control%iseed_ca,&
-            IPD_Control%ca_smooth,IPD_Control%nspinup,Atm_block%blksz(1),IPD_Control%master,IPD_Control%communicator)
-       endif
-       if(IPD_Control%ca_global)then
-          call cellular_automata_global(IPD_Control%kdt,IPD_Data(:)%Coupling,IPD_Data(:)%Intdiag,Atm(mygrid)%domain_for_coupler,Atm_block%nblks, &
-            Atm_block%isc,Atm_block%iec,Atm_block%jsc,Atm_block%jec,Atm(mygrid)%npx,Atm(mygrid)%npy,IPD_Control%levs, &
-            IPD_Control%nca_g,IPD_Control%ncells_g,IPD_Control%nlives_g,IPD_Control%nfracseed,&
-            IPD_Control%nseed_g,IPD_Control%nthresh,IPD_Control%ca_global,IPD_Control%ca_sgs,IPD_Control%iseed_ca,&
-            IPD_Control%ca_smooth,IPD_Control%nspinup,Atm_block%blksz(1),IPD_Control%nsmooth,IPD_Control%ca_amplitude,IPD_Control%master,IPD_Control%communicator)
-       endif
-
-    endif
-   endif
 
    Atm(mygrid)%flagstruct%do_skeb = IPD_Control%do_skeb
 
