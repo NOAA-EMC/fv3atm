@@ -4,6 +4,7 @@ module stochastic_physics_wrapper_mod
 
   implicit none
 
+  ! For stochastic physics pattern generation
   real(kind=kind_phys), dimension(:,:),   allocatable, save :: xlat_local
   real(kind=kind_phys), dimension(:,:),   allocatable, save :: xlon_local
   real(kind=kind_phys), dimension(:,:,:), allocatable, save :: sppt_wts_local
@@ -11,8 +12,19 @@ module stochastic_physics_wrapper_mod
   real(kind=kind_phys), dimension(:,:,:), allocatable, save :: skebu_wts_local
   real(kind=kind_phys), dimension(:,:,:), allocatable, save :: skebv_wts_local
   real(kind=kind_phys), dimension(:,:,:), allocatable, save :: sfc_wts_local
+
+  ! For cellular automata
+  real(kind=kind_phys), dimension(:,:,:), allocatable, save :: ugrs_local
+  real(kind=kind_phys), dimension(:,:,:), allocatable, save :: qgrs_local
+  real(kind=kind_phys), dimension(:,:),   allocatable, save :: pgr_local
+  real(kind=kind_phys), dimension(:,:,:), allocatable, save :: vvl_local
+  real(kind=kind_phys), dimension(:,:,:), allocatable, save :: prsl_local
+  real(kind=kind_phys), dimension(:,:),   allocatable, save :: condition_cpl
+  real(kind=kind_phys), dimension(:,:),   allocatable, save :: ca_deep_cpl,ca_turb_cpl,ca_shal_cpl
+  real(kind=kind_phys), dimension(:,:),   allocatable, save :: ca_deep_diag,ca_turb_diag,ca_shal_diag
   real(kind=kind_phys), dimension(:,:),   allocatable, save :: ca1_cpl,ca2_cpl,ca3_cpl
   real(kind=kind_phys), dimension(:,:),   allocatable, save :: ca1_diag,ca2_diag,ca3_diag
+
 
 !----------------
 ! Public Entities
@@ -148,11 +160,58 @@ module stochastic_physics_wrapper_mod
 
     if(GFS_Control%do_ca)then
        if(GFS_Control%ca_sgs)then
-         call cellular_automata_sgs(GFS_Control%kdt,GFS_Data(:)%Statein,GFS_Data(:)%Coupling,GFS_Data(:)%Intdiag,Atm(mygrid)%domain_for_coupler,Atm_block%nblks, &
+         ! Allocate contiguous arrays; copy in as needed
+         allocate(ugrs_local    (1:Atm_block%nblks,maxval(GFS_Control%blksz),1:GFS_Control%levs))
+         allocate(qgrs_local    (1:Atm_block%nblks,maxval(GFS_Control%blksz),1:GFS_Control%levs))
+         allocate(pgr_local     (1:Atm_block%nblks,maxval(GFS_Control%blksz)                   ))
+         allocate(vvl_local     (1:Atm_block%nblks,maxval(GFS_Control%blksz),1:GFS_Control%levs))
+         allocate(prsl_local    (1:Atm_block%nblks,maxval(GFS_Control%blksz),1:GFS_Control%levs))
+         allocate(ca_deep_diag  (1:Atm_block%nblks,maxval(GFS_Control%blksz)                   ))
+         allocate(ca_turb_diag  (1:Atm_block%nblks,maxval(GFS_Control%blksz)                   ))
+         allocate(ca_shal_diag  (1:Atm_block%nblks,maxval(GFS_Control%blksz)                   ))
+         allocate(condition_cpl (1:Atm_block%nblks,maxval(GFS_Control%blksz)                   ))
+         allocate(ca_deep_cpl   (1:Atm_block%nblks,maxval(GFS_Control%blksz)                   ))
+         allocate(ca_turb_cpl   (1:Atm_block%nblks,maxval(GFS_Control%blksz)                   ))
+         allocate(ca_shal_cpl   (1:Atm_block%nblks,maxval(GFS_Control%blksz)                   ))
+         do nb=1,Atm_block%nblks
+             ugrs_local   (nb,1:GFS_Control%blksz(nb),:) = GFS_Data(nb)%Statein%ugrs(:,:)
+             qgrs_local   (nb,1:GFS_Control%blksz(nb),:) = GFS_Data(nb)%Statein%qgrs(:,:,1)
+             pgr_local    (nb,1:GFS_Control%blksz(nb))   = GFS_Data(nb)%Statein%pgr(:)
+             vvl_local    (nb,1:GFS_Control%blksz(nb),:) = GFS_Data(nb)%Statein%vvl(:,:)
+             prsl_local   (nb,1:GFS_Control%blksz(nb),:) = GFS_Data(nb)%Statein%prsl(:,:)
+             condition_cpl(nb,1:GFS_Control%blksz(nb))   = GFS_Data(nb)%Coupling%condition(:)
+             ca_deep_cpl  (nb,1:GFS_Control%blksz(nb))   = GFS_Data(nb)%Coupling%ca_deep(:)
+             ca_turb_cpl  (nb,1:GFS_Control%blksz(nb))   = GFS_Data(nb)%Coupling%ca_turb(:)
+             ca_shal_cpl  (nb,1:GFS_Control%blksz(nb))   = GFS_Data(nb)%Coupling%ca_shal(:)
+         enddo
+         call cellular_automata_sgs(GFS_Control%kdt,ugrs_local,qgrs_local,pgr_local,vvl_local,prsl_local, &
+            condition_cpl,ca_deep_cpl,ca_turb_cpl,ca_shal_cpl, &
+            ca_deep_diag,ca_turb_diag,ca_shal_diag,Atm(mygrid)%domain_for_coupler,Atm_block%nblks, &
             Atm_block%isc,Atm_block%iec,Atm_block%jsc,Atm_block%jec,Atm(mygrid)%npx,Atm(mygrid)%npy, GFS_Control%levs, &
             GFS_Control%nca,GFS_Control%ncells,GFS_Control%nlives,GFS_Control%nfracseed,&
-        GFS_Control%nseed,GFS_Control%nthresh,GFS_Control%ca_global,GFS_Control%ca_sgs,GFS_Control%iseed_ca,&
+            GFS_Control%nseed,GFS_Control%nthresh,GFS_Control%ca_global,GFS_Control%ca_sgs,GFS_Control%iseed_ca,&
             GFS_Control%ca_smooth,GFS_Control%nspinup,Atm_block%blksz(1),GFS_Control%master,GFS_Control%communicator)
+         ! Copy contiguous data back as needed
+         do nb=1,Atm_block%nblks
+             GFS_Data(nb)%Intdiag%ca_deep(:)  = ca_deep_diag(nb,1:GFS_Control%blksz(nb))
+             GFS_Data(nb)%Intdiag%ca_turb(:)  = ca_turb_diag(nb,1:GFS_Control%blksz(nb))
+             GFS_Data(nb)%Intdiag%ca_shal(:)  = ca_shal_diag(nb,1:GFS_Control%blksz(nb))
+             GFS_Data(nb)%Coupling%ca_deep(:) = ca_deep_cpl (nb,1:GFS_Control%blksz(nb))
+             GFS_Data(nb)%Coupling%ca_turb(:) = ca_turb_cpl (nb,1:GFS_Control%blksz(nb))
+             GFS_Data(nb)%Coupling%ca_shal(:) = ca_shal_cpl (nb,1:GFS_Control%blksz(nb))
+         enddo
+         deallocate(ugrs_local   )
+         deallocate(qgrs_local   )
+         deallocate(pgr_local    )
+         deallocate(vvl_local    )
+         deallocate(prsl_local   )
+         deallocate(condition_cpl)
+         deallocate(ca_deep_cpl  )
+         deallocate(ca_turb_cpl  )
+         deallocate(ca_shal_cpl  )
+         deallocate(ca_deep_diag )
+         deallocate(ca_turb_diag )
+         deallocate(ca_shal_diag )
        endif
        if(GFS_Control%ca_global)then
           ! Allocate contiguous arrays; no need to copy in (intent out)
