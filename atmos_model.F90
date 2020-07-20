@@ -261,6 +261,12 @@ subroutine update_atmos_radiation_physics (Atmos)
     procedure(IPD_func0d_proc), pointer :: Func0d => NULL()
     procedure(IPD_func1d_proc), pointer :: Func1d => NULL()
     integer :: nthrds
+    ! For stochastic physics
+    real(kind=IPD_kind_phys), dimension(:,:,:), allocatable :: sppt_wts_local
+    real(kind=IPD_kind_phys), dimension(:,:,:), allocatable :: shum_wts_local
+    real(kind=IPD_kind_phys), dimension(:,:,:), allocatable :: skebu_wts_local
+    real(kind=IPD_kind_phys), dimension(:,:,:), allocatable :: skebv_wts_local
+    !
 #ifdef CCPP
     integer :: ierr
 #endif
@@ -308,9 +314,52 @@ subroutine update_atmos_radiation_physics (Atmos)
 
 !--- call stochastic physics pattern generation / cellular automata
     if (IPD_Control%do_sppt .OR. IPD_Control%do_shum .OR. IPD_Control%do_skeb .OR. IPD_Control%do_sfcperts) then
-       call run_stochastic_physics(IPD_Control%levs, IPD_Control%kdt, IPD_Control%phour, IPD_Control%blksz, IPD_Data(:)%Grid, IPD_Data(:)%Coupling, nthrds)
+       ! Copy blocked data into contiguous arrays
+       if (IPD_Control%do_sppt) then
+          allocate(sppt_wts_local(1:Atm_block%nblks,maxval(IPD_Control%blksz),1:IPD_Control%levs))
+          do nb=1,Atm_block%nblks
+             sppt_wts_local(nb,1:IPD_Control%blksz(nb),:) = IPD_Data(nb)%Coupling%sppt_wts(:,:)
+          end do
+       end if
+       if (IPD_Control%do_shum) then
+          allocate(shum_wts_local(1:Atm_block%nblks,maxval(IPD_Control%blksz),1:IPD_Control%levs))
+          do nb=1,Atm_block%nblks
+             shum_wts_local(nb,1:IPD_Control%blksz(nb),:) = IPD_Data(nb)%Coupling%shum_wts(:,:)
+          end do
+       end if
+       if (IPD_Control%do_skeb) then
+          allocate(skebu_wts_local(1:Atm_block%nblks,maxval(IPD_Control%blksz),1:IPD_Control%levs))
+          allocate(skebv_wts_local(1:Atm_block%nblks,maxval(IPD_Control%blksz),1:IPD_Control%levs))
+          do nb=1,Atm_block%nblks
+             skebu_wts_local(nb,1:IPD_Control%blksz(nb),:) = IPD_Data(nb)%Coupling%skebu_wts(:,:)
+             skebv_wts_local(nb,1:IPD_Control%blksz(nb),:) = IPD_Data(nb)%Coupling%skebv_wts(:,:)
+          end do
+       end if
+       call run_stochastic_physics(IPD_Control%levs, IPD_Control%kdt, IPD_Control%phour, IPD_Control%blksz, IPD_Data(:)%Grid, &
+                                   sppt_wts=sppt_wts_local, shum_wts=shum_wts_local, skebu_wts=skebu_wts_local, skebv_wts=skebv_wts_local, nthreads=nthrds)
+       ! Copy contiguous data back
+       if (IPD_Control%do_sppt) then
+          do nb=1,Atm_block%nblks
+              IPD_Data(nb)%Coupling%sppt_wts(:,:) = sppt_wts_local(nb,1:IPD_Control%blksz(nb),:)
+          end do
+          deallocate(sppt_wts_local)
+       end if
+       if (IPD_Control%do_shum) then
+          do nb=1,Atm_block%nblks
+              IPD_Data(nb)%Coupling%shum_wts(:,:) = shum_wts_local(nb,1:IPD_Control%blksz(nb),:)
+          end do
+          deallocate(shum_wts_local)
+       end if
+       if (IPD_Control%do_skeb) then
+          do nb=1,Atm_block%nblks
+              IPD_Data(nb)%Coupling%skebu_wts(:,:) = skebu_wts_local(nb,1:IPD_Control%blksz(nb),:)
+              IPD_Data(nb)%Coupling%skebv_wts(:,:) = skebv_wts_local(nb,1:IPD_Control%blksz(nb),:)
+          end do
+          deallocate(skebu_wts_local)
+          deallocate(skebv_wts_local)
+       end if
     end if
-
+    !
     if(IPD_Control%do_ca)then
        if(IPD_Control%ca_sgs)then
           call cellular_automata_sgs(IPD_Control%kdt,IPD_Data(:)%Statein,IPD_Data(:)%Coupling,IPD_Data(:)%Intdiag,Atm(mygrid)%domain_for_coupler,Atm_block%nblks, &
@@ -491,6 +540,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
   integer              :: ntracers, maxhf, maxh
   character(len=32), allocatable, target :: tracer_names(:)
   integer :: nthrds, nb
+  real(kind=IPD_kind_phys), allocatable :: sfc_wts_local(:,:,:)
 
 !-----------------------------------------------------------------------
 
@@ -665,7 +715,17 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    if (IPD_Control%do_sfcperts) then
       ! Get land surface perturbations here (move to GFS_time_vary
       ! step if wanting to update each time-step)
-      call run_stochastic_physics_sfc(IPD_Control%blksz, IPD_Data(:)%Grid, IPD_Data(:)%Coupling)
+      ! Copy blocked data into contiguous arrays
+      allocate(sfc_wts_local(1:Atm_block%nblks,maxval(IPD_Control%blksz),1:IPD_Control%levs))
+      do nb=1,Atm_block%nblks
+         sfc_wts_local(nb,1:IPD_Control%blksz(nb),:) = IPD_Data(nb)%Coupling%sfc_wts(:,:)
+      end do
+      call run_stochastic_physics_sfc(IPD_Control%blksz, IPD_Data(:)%Grid, sfc_wts=sfc_wts_local)
+      ! Copy contiguous data back
+      do nb=1,Atm_block%nblks
+         IPD_Data(nb)%Coupling%sfc_wts(:,:) = sfc_wts_local(nb,1:IPD_Control%blksz(nb),:)
+      end do
+      deallocate(sfc_wts_local)
    end if
 
    ! Initialize cellular automata
