@@ -222,9 +222,10 @@ character(len=128) :: tagname = '$Name$'
   logical,parameter :: flip_vc = .true.
 #endif
 
-  real(kind=IPD_kind_phys), parameter :: zero = 0.0_IPD_kind_phys, &
-                                         one  = 1.0_IPD_kind_phys, &
-                                         epsln = 1.0e-10_IPD_kind_phys
+  real(kind=IPD_kind_phys), parameter :: zero    = 0.0_IPD_kind_phys,     &
+                                         one     = 1.0_IPD_kind_phys,     &
+                                         epsln   = 1.0e-10_IPD_kind_phys, &
+                                         zorlmin = 1.0e-7_IPD_kind_phys
 
 contains
 
@@ -1739,8 +1740,8 @@ end subroutine atmos_data_type_chksum
                 do i=isc,iec
                   nb = Atm_block%blkno(i,j)
                   ix = Atm_block%ixp(i,j)
-                  if (IPD_Data(nb)%Sfcprop%oceanfrac(ix) > zero) then
-                    tem = 100.0_IPD_kind_phys * max(zero, min(0.1_IPD_kind_phys, datar8(i,j)))
+                  if (IPD_Data(nb)%Sfcprop%oceanfrac(ix) > zero .and.  datar8(i,j) > zorlmin) then
+                    tem = 100.0_IPD_kind_phys * min(0.1_IPD_kind_phys, datar8(i,j))
 !                   IPD_Data(nb)%Coupling%zorlwav_cpl(ix) = tem
                     IPD_Data(nb)%Sfcprop%zorlo(ix)        = tem
 
