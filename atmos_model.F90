@@ -606,7 +606,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    Init_parm%input_nml_file  => input_nml_file
    Init_parm%fn_nml='using internal file'
 #else
-   pelist_name=mpp_get_current_pelist_name(
+   pelist_name=mpp_get_current_pelist_name()
    Init_parm%fn_nml='input_'//trim(pelist_name)//'.nml'
    inquire(FILE=Init_parm%fn_nml, EXIST=fexist)
    if (.not. fexist ) then
