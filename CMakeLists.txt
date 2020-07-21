@@ -115,6 +115,7 @@ target_link_libraries(fv3cap PRIVATE ipd)
 target_link_libraries(fv3cap PRIVATE io)
 target_link_libraries(fv3cap PRIVATE fv3core)
 target_link_libraries(fv3cap PRIVATE stochastic_physics)
+target_link_libraries(fv3cap PRIVATE stochastic_physics_wrapper)
 
 set_target_properties(fv3cap PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mod)
 target_include_directories(fv3cap PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/mod)
