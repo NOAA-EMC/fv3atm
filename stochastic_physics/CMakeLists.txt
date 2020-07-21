@@ -17,6 +17,7 @@ endif()
 add_library(
     stochastic_physics
 
+    ../../stochastic_physics/kinddef.F90
     ../../stochastic_physics/mpi_wrapper.F90
     ../../stochastic_physics/halo_exchange.fv3.F90
     ../../stochastic_physics/plumes.f90
