@@ -4340,9 +4340,9 @@ module GFS_typedefs
         stop
       endif
 
-      if (Model%lsm == Model%lsm_noahmp .and. Model%iopt_snf == 4) then
-        if (Model%imp_physics /= Model%imp_physics_gfdl) stop 'iopt_snf == 4 must use GFDL MP'
-      endif
+!      if (Model%lsm == Model%lsm_noahmp .and. Model%iopt_snf == 4) then
+!        if (Model%imp_physics /= Model%imp_physics_gfdl) stop 'iopt_snf == 4 must use GFDL MP'
+!      endif
 
       print *,' nst_anl=',Model%nst_anl,' use_ufo=',Model%use_ufo,' frac_grid=',Model%frac_grid,&
               ' ignore_lake=',ignore_lake
