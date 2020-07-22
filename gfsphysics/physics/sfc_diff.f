@@ -12,9 +12,9 @@
      &                    flag_iter,redrag,                     !intent(in)
      &                    u10m,v10m,sfc_z0_type,  !hafs,z0 type !intent(in)
      &                    wet,dry,icy,                          !intent(in)
-     &                    tskin, tsurf, snwdph, z0rl, ustar,
+     &                    tskin, tsurf, snwdph, z0rl, z0rlw, ustar
 !
-     &                    cm, ch, rb, stress, fm, fh, fm10, fh2)
+     &,                   cm, ch, rb, stress, fm, fh, fm10, fh2)
 !
       use physcons, rvrdm1 => con_fvirt
       implicit none
@@ -36,6 +36,7 @@
       real(kind=kind_phys), dimension(im,3), intent(in)    ::
      &                    tskin, tsurf, snwdph
 
+      real(kind=kind_phys), dimension(im), intent(in) :: z0rlw
       real(kind=kind_phys), dimension(im,3), intent(inout) ::
      &                       z0rl, ustar
 
@@ -267,7 +268,7 @@
                  z0rl(i,3) = 1.0d-4
               endif
 
-            elseif (z0rl(i,3) < 1.0d-7) then
+            elseif (z0rlw(i) < 1.0d-7) then
               z0 = (charnock / grav) * ustar(i,3) * ustar(i,3)
 
               if (redrag) then

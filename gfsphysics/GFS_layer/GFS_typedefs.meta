@@ -547,6 +547,13 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+[zorlw]
+  standard_name = surface_roughness_length_from_wave_model
+  long_name = surface roughness length from wave model
+  units = cm
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
 [fice]
   standard_name = sea_ice_concentration
   long_name = ice fraction over open water

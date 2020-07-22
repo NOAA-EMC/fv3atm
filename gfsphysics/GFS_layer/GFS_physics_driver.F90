@@ -1709,7 +1709,7 @@ module module_physics_driver
            Diag%u10m,    Diag%v10m,  Model%sfc_z0_type,                 &
            wet, dry, icy, tsfc3, tsurf3, snowd3,                        &
 !  ---  input/output:
-           zorl3, uustar3,                                              &
+           zorl3, Sfcprop%zorlw, uustar3,                               &
 !  ---  outputs:
            cd3, cdq3, rb3, stress3, ffmm3, ffhh3, fm103, fh23)
 !          cd3, cdq3, rb3, stress3, ffmm3, ffhh3, fm103, fh23, wind, lprnt, ipr)

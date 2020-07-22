@@ -1744,6 +1744,9 @@ end subroutine atmos_data_type_chksum
                     tem = 100.0_IPD_kind_phys * min(0.1_IPD_kind_phys, datar8(i,j))
 !                   IPD_Data(nb)%Coupling%zorlwav_cpl(ix) = tem
                     IPD_Data(nb)%Sfcprop%zorlo(ix)        = tem
+                    IPD_Data(nb)%Sfcprop%zorlw(ix)        = tem
+                  else
+                    IPD_Data(nb)%Sfcprop%zorlw(ix) = -999.0_IPD_kind_phys
 
                   endif
                 enddo
