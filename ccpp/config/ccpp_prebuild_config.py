@@ -115,7 +115,6 @@ SCHEME_FILES_DEPENDENCIES = [
     'FV3/ccpp/physics/physics/multi_gases.F90',
     'FV3/ccpp/physics/physics/module_gfdl_cloud_microphys.F90',
     'FV3/ccpp/physics/physics/module_mp_nssl_2mom.F90',
-    'FV3/ccpp/physics/physics/mp_nssl_2mom.F90',
     'FV3/ccpp/physics/physics/module_nst_model.f90',
     'FV3/ccpp/physics/physics/module_nst_parameters.f90',
     'FV3/ccpp/physics/physics/module_nst_water_prop.f90',
