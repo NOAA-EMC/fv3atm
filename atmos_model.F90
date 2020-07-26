@@ -313,7 +313,7 @@ subroutine update_atmos_radiation_physics (Atmos)
       end if
 
 !--- call the surface perturbations
-!    note: this needs to be called after time_vary (since gcycle call updates land parameters, and before radiation (uses land albedoes) 
+!    note: this needs to be called after time_vary (since gcycle call updates land parameters, and before radiation (uses land albedo) 
       if (IPD_Control%lndp_type .EQ. 2) then 
 
         if (mod(IPD_Control%kdt,IPD_Control%nscyc) == 1)  then 
@@ -667,7 +667,8 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
 
    if (IPD_Control%do_sppt .OR. IPD_Control%do_shum .OR. IPD_Control%do_skeb .OR. (IPD_Control%lndp_type .NE. 0)) then
       ! Initialize stochastic physics
-      call init_stochastic_physics(IPD_Control, Init_parm, mpp_npes(), nthrds)
+      call init_stochastic_physics(IPD_Control, Init_parm, mpp_npes(), nthrds, ierr) 
+      if (ierr/=0)  call mpp_error(FATAL, 'Call to init_stochastic_physics failed')
       if(IPD_Control%me == IPD_Control%master) print *,'do_skeb=',IPD_Control%do_skeb
    end if
 

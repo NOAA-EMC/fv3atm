@@ -1,4 +1,3 @@
-!! routines for land perturbations
 module GFS_land_perts
 
     use machine,                  only: kind_phys
@@ -15,6 +14,8 @@ module GFS_land_perts
 ! GFS_apply_lndp
 !====================================================================
 ! Driver for applying perturbations to sprecified land states or parameters
+! Draper, July 2020. 
+! Note on location: requires access to namelist_soilveg
 
     subroutine GFS_apply_lndp(Model, Coupling, Grid,param_update_flag, Sfcprop, ierr) 
 
@@ -92,6 +93,8 @@ module GFS_land_perts
                          ! perturb total soil moisture 
                          ! factor of sldepth*1000 converts from mm to m3/m3
                          pert = Coupling(nb)%sfc_wts(i,v)*smc_vertscale(k)*Model%lndp_prt_list(v)/(zs_noah(k)*1000.)                    
+                         pert = pert*Model%dtf/3600. ! lndp_prt_list input is per hour, convert to per timestep 
+                                                     ! (necessary for state vars only)
                          call apply_pert('smc',pert,print_flag, Sfcprop(nb)%smc(i,k),ierr,p,min_bound, max_bound)
 
                          ! assign all of applied pert to the liquid soil moisture 
@@ -102,6 +105,8 @@ module GFS_land_perts
 
                     do k=1,Model%lsoil
                          pert = Coupling(nb)%sfc_wts(i,v)*stc_vertscale(k)*Model%lndp_prt_list(v)
+                         pert = pert*Model%dtf/3600. ! lndp_prt_list input is per hour, convert to per timestep
+                                                     ! (necessary for state vars only)
                          call apply_pert('stc',pert,print_flag, Sfcprop(nb)%stc(i,k),ierr)
                     enddo
                 !=================================================================
@@ -156,7 +161,7 @@ module GFS_land_perts
     real(kind=kind_phys) :: z
 
        if ( print_flag ) then
-              write(*,*) 'CSDp - applying lndp to ',vname, ', initial value', state
+              write(*,*) 'LNDP - applying lndp to ',vname, ', initial value', state
        endif
 
        ! apply perturbation
@@ -177,7 +182,7 @@ module GFS_land_perts
        !state = max( min( state , vmax ), vmin )
 
        if ( print_flag ) then
-              write(*,*) 'CSDp - applying lndp to ',vname, ', final value', state
+              write(*,*) 'LNDP - applying lndp to ',vname, ', final value', state
        endif
 
   end subroutine apply_pert
@@ -216,7 +221,7 @@ module GFS_land_perts
            (Grid(nb)%xlat(i)*57.29578 >  plat_trunc ) .and.  (Grid(nb)%xlat(i)*57.29578 < plat_trunc+delta ) ) then
                       print_i=i
                       print_nb=nb
-                      write(*,*) 'CSD -print flag is on', Grid(nb)%xlon(i)*57.29578, Grid(nb)%xlat(i)*57.29578, nb, i
+                      write(*,*) 'LNDP -print flag is on', Grid(nb)%xlon(i)*57.29578, Grid(nb)%xlat(i)*57.29578, nb, i
                       return  
          endif
          enddo

@@ -1872,7 +1872,7 @@
   standard_name = weights_for_stochastic_surface_physics_perturbation
   long_name = weights for stochastic surface physics perturbation
   units = none
-  dimensions = (horizontal_dimension,number_of_surface_perturbations)
+  dimensions = (horizontal_dimension,number_of_land_surface_variables_perturbed)
   type = real
   kind = kind_phys
 [dqdti]
@@ -3678,14 +3678,14 @@
   standard_name =magnitude_of_perturbations_for_landperts
   long_name = magnitude of perturbations for landperts
   units = variable
-  dimensions = (max_n_var_lndp)
+  dimensions = (number_of_land_surface_variables_perturbed) 
   type = real
   kind = kind_phys
 [lndp_var_list]
   standard_name = variables_to_be_perturbed_for_landperts
   long_name = variables to be perturbed for landperts
   units = none
-  dimensions =  (max_n_var_lndp) 
+  dimensions =  (number_of_land_surface_variables_perturbed) 
   type = character
   kind = len=3
 [ntrac]
