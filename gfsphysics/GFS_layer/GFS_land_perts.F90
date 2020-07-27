@@ -112,7 +112,7 @@ module GFS_land_perts
                 !=================================================================
                 ! Parameter updates - only if param_update_flag = TRUE
                 !=================================================================
-                case('vfr')  ! vegetation fraction
+                case('vgf')  ! vegetation fraction
                      if (param_update_flag) then 
                          p =5. 
                          min_bound=0.
