@@ -23,20 +23,21 @@ add_library(
     ${POST_SRC}
 )
 
-set_source_files_properties(post_gfs.F90 post_nems_routines.F90
-                            PROPERTIES
-                            COMPILE_FLAGS "-I${POST_INC}")
+target_link_libraries(io PRIVATE fms)
+target_link_libraries(io PRIVATE gfsphysics)
+target_link_libraries(io PRIVATE ipd)
 
-target_link_libraries(io fms)
-target_link_libraries(io gfsphysics)
-target_link_libraries(io ipd)
+if(INLINE_POST)
+  target_link_libraries(io PRIVATE nceppost::nceppost)
+endif()
 
 if(CCPP)
   target_include_directories(io PRIVATE ${CMAKE_BINARY_DIR}/FV3/ccpp/framework/src)
   target_include_directories(io PRIVATE ${CMAKE_BINARY_DIR}/FV3/ccpp/physics)
 endif()
-target_include_directories(io PRIVATE ${ESMF_MOD})
-target_include_directories(io PRIVATE ${NEMSIO_INC})
+
+target_link_libraries(io PRIVATE nemsio::nemsio)
+target_link_libraries(io PRIVATE esmf)
 
 set_target_properties(io PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mod)
-target_include_directories(io PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/mod)
+target_include_directories(io PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/mod>)
