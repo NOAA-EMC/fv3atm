@@ -801,7 +801,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
     !if in coupled mode, set up coupled fields
     if (IPD_Control%cplflx .or. IPD_Control%cplwav) then
       if (mpp_pe() == mpp_root_pe()) print *,'COUPLING: IPD layer'
-      call setup_exportdata(rc)
+      call setup_exportdata(ierr)
     endif
 
 #ifdef CCPP
@@ -2763,7 +2763,7 @@ end subroutine atmos_data_type_chksum
           IPD_Data(nb)%coupling%snow_cpl(ix)   = zero
         enddo
       enddo
-      if (mpp_pe() == mpp_root_pe()) print *,'zeroing coupling fields at kdt= ',IPD_Control%kdt
+      if (mpp_pe() == mpp_root_pe()) print *,'zeroing coupling accumulated fields at kdt= ',IPD_Control%kdt
     endif !cplflx
 !   if (mpp_pe() == mpp_root_pe()) print *,'end of setup_exportdata'
 
