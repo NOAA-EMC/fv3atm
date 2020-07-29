@@ -201,6 +201,7 @@ module module_cplfields
     integer                                     :: n,dimCount
     logical                                     :: isCreated
     type(ESMF_TypeKind_Flag)                    :: datatype
+    character(len=ESMF_MAXSTR)                  :: fieldName
     real(kind=ESMF_KIND_R4), dimension(:,:), pointer   :: datar42d
     real(kind=ESMF_KIND_R8), dimension(:,:), pointer   :: datar82d
     
@@ -212,8 +213,9 @@ module module_cplfields
       if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
       if (isCreated) then
 ! set data 
-        call ESMF_FieldGet(exportFields(n), dimCount=dimCount, typekind=datatype, rc=localrc)
+        call ESMF_FieldGet(exportFields(n), name=fieldname, dimCount=dimCount, typekind=datatype, rc=localrc)
         if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+        print *,'in fillExportFields, field created n=',n,size(exportFields),'name=', trim(fieldname)
         if ( datatype == ESMF_TYPEKIND_R8) then
            if ( dimCount == 2) then
              call ESMF_FieldGet(exportFields(n),farrayPtr=datar82d,localDE=0, rc=localrc)

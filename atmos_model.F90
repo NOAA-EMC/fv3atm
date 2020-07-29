@@ -2627,6 +2627,7 @@ end subroutine atmos_data_type_chksum
           endif
         enddo
       enddo
+    if (mpp_pe() == mpp_root_pe()) print *,'cpl, in get inst_temp_height_lowest=',exportData(isc,jsc,idx)
     endif
 
     ! bottom layer specific humidity (q)

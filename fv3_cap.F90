@@ -60,7 +60,8 @@ module fv3gfs_cap_mod
                                     nImportFields,    importFields,          &
                                     importFieldsList, importFieldTypes,      &
                                     importFieldShare, importFieldsValid,     &
-                                    queryFieldList
+                                    queryFieldList,   fillExportFields,      &
+                                    exportData
   use module_cap_cpl,         only: realizeConnectedCplFields,               &
                                     clock_cplIntval, Dump_cplFields
 
@@ -927,6 +928,8 @@ module fv3gfs_cap_mod
                                        importFields, rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__,  file=__FILE__)) return
       end if
+!jw
+      call fillExportFields(exportData)
     endif
 
   end subroutine InitializeRealize

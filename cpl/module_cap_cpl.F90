@@ -193,9 +193,11 @@ module module_cap_cpl
           end select
           call NUOPC_Realize(state, field=field, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
           ! -- zero out field 
           call ESMF_FieldFill(field, dataFillScheme="const", const1=0._ESMF_KIND_R8, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
           ! -- save field
           fieldList(item) = field
           call ESMF_LogWrite('realizeConnectedCplFields '//trim(state_tag)//' Field '//trim(fieldNames(item))  &
