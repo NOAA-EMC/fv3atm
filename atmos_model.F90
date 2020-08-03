@@ -1661,6 +1661,7 @@ end subroutine atmos_data_type_chksum
     real(kind=IPD_kind_phys), dimension(:,:), pointer  :: datar8
     real(kind=IPD_kind_phys)                           :: tem, ofrac
     logical found, isFieldCreated, lcpl_fice
+    real (kind=IPD_kind_phys), parameter :: z0ice=0.011
 !
 !------------------------------------------------------------------------------
 !
@@ -2006,6 +2007,7 @@ end subroutine atmos_data_type_chksum
               IPD_Data(nb)%Coupling%hsnoin_cpl(ix) = IPD_Data(nb)%Coupling%hsnoin_cpl(ix) &
                                                    / max(0.01_IPD_kind_phys, IPD_Data(nb)%Sfcprop%fice(ix))
 !                                                  / max(0.01_IPD_kind_phys, IPD_Data(nb)%Coupling%ficein_cpl(ix))
+              IPD_Data(nb)%Sfcprop%zorli(ix)       = z0ice
             else 
 !             IPD_Data(nb)%Sfcprop%tisfc(ix)       = IPD_Data(nb)%Coupling%tseain_cpl(ix)
               IPD_Data(nb)%Sfcprop%tisfc(ix)       = IPD_Data(nb)%Sfcprop%tsfco(ix)

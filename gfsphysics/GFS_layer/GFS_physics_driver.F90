@@ -649,6 +649,7 @@ module module_physics_driver
                                  hflxq, evapq, hffac, hefac
       real (kind=kind_phys), parameter :: z0min=0.2, z0max=1.0
       real (kind=kind_phys), parameter :: u10min=2.5, u10max=7.5
+      real (kind=kind_phys), parameter :: z0ice=0.011
 !
 !===============================================================================
 
@@ -1224,19 +1225,20 @@ module module_physics_driver
       gabsbdlw3(i,k)  = zero
         enddo
       enddo
+      zorl3(:,2) = z0ice
 
-      if (.not. Model%cplflx .or. .not. Model%frac_grid) then
-        if (Model%cplwav2atm) then
-          do i=1,im
-            Sfcprop%zorll(i) = Sfcprop%zorl(i)
-          enddo
-        else
-          do i=1,im
-            Sfcprop%zorll(i) = Sfcprop%zorl(i)
-            Sfcprop%zorlo(i) = Sfcprop%zorl(i)
-          enddo
-        endif
-      endif
+!     if (.not. Model%cplflx .or. .not. Model%frac_grid) then
+!       if (Model%cplwav2atm) then
+!         do i=1,im
+!           Sfcprop%zorll(i) = Sfcprop%zorl(i)
+!         enddo
+!       else
+!         do i=1,im
+!           Sfcprop%zorll(i) = Sfcprop%zorl(i)
+!           Sfcprop%zorlo(i) = Sfcprop%zorl(i)
+!         enddo
+!       endif
+!     endif
 !     if (lprnt) write(0,*)' dry=',dry(ipr),' wet=',wet(ipr),' icy=',icy(ipr) ,&
 !       ' tsfco=',Sfcprop%tsfco(ipr)
       do i=1,im
@@ -2236,11 +2238,13 @@ module module_physics_driver
               stress(i)       = txi  *stress3(i,2) + txo * stress3(i,3)
               qss(i)          = txi * qss3(i,2)    + txo * qss3(i,3)
               ep1d(i)         = txi * ep1d3(i,2)   + txo * ep1d3(i,3)
+              Sfcprop%zorl(i) = txi*zorl3(i,2)     + txo*zorl3(i,3)
             endif
           elseif (islmsk(i) == 2) then  ! return updated lake ice thickness & concentration to global array
             Sfcprop%tisfc(i) = tice(i)  ! over lake ice (and sea ice when uncoupled)
             Sfcprop%hice(i)  = zice(i)
             Sfcprop%fice(i)  = fice(i)  ! fice is fraction of lake area that is frozen
+            Sfcprop%zorl(i)  = fice(i)*zorl3(i,2) + (one-fice(i))*zorl3(i,3)
           else                          ! this would be over open ocean or land (no ice fraction)
             Sfcprop%hice(i)  = zero
             Sfcprop%fice(i)  = zero
