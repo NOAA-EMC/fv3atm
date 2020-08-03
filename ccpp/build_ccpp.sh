@@ -6,8 +6,9 @@ set -eu
 # List of valid/tested machines
 VALID_MACHINES=( wcoss_cray wcoss_dell_p3 gaea.intel jet.intel \
                  hera.intel hera.gnu orion.intel \
-                 cheyenne.intel cheyenne.intel-impi cheyenne.gnu endeavor.intel \
-                 stampede.intel supermuc_phase2.intel macosx.gnu \
+                 cheyenne.intel cheyenne.gnu \
+                 endeavor.intel stampede.intel \
+                 macosx.gnu \
                  linux.intel linux.gnu linux.pgi )
 
 ###################################################################################################
