@@ -1661,7 +1661,7 @@ end subroutine atmos_data_type_chksum
     real(kind=IPD_kind_phys), dimension(:,:), pointer  :: datar8
     real(kind=IPD_kind_phys)                           :: tem, ofrac
     logical found, isFieldCreated, lcpl_fice
-    real (kind=IPD_kind_phys), parameter :: z0ice=0.011
+    real (kind=IPD_kind_phys), parameter :: z0ice=1.1    !  (in cm)
 !
 !------------------------------------------------------------------------------
 !

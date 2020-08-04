@@ -649,7 +649,7 @@ module module_physics_driver
                                  hflxq, evapq, hffac, hefac
       real (kind=kind_phys), parameter :: z0min=0.2, z0max=1.0
       real (kind=kind_phys), parameter :: u10min=2.5, u10max=7.5
-      real (kind=kind_phys), parameter :: z0ice=0.011
+      real (kind=kind_phys), parameter :: z0ice=1.1
 !
 !===============================================================================
 
