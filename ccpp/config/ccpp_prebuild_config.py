@@ -118,8 +118,8 @@ SCHEME_FILES_DEPENDENCIES = [
     'FV3/ccpp/physics/physics/module_nst_parameters.f90',
     'FV3/ccpp/physics/physics/module_nst_water_prop.f90',
     'FV3/ccpp/physics/physics/module_mp_radar.F90',
-    'FV3/ccpp/physics/physics/module_mp_thompson.F90',
-    'FV3/ccpp/physics/physics/module_mp_thompson_make_number_concentrations.F90',
+    #'FV3/ccpp/physics/physics/module_mp_thompson.F90',
+    #'FV3/ccpp/physics/physics/module_mp_thompson_make_number_concentrations.F90',
     'FV3/ccpp/physics/physics/module_MP_FER_HIRES.F90',
     'FV3/ccpp/physics/physics/module_bl_mynn.F90',
     'FV3/ccpp/physics/physics/module_sf_mynn.F90',
@@ -199,6 +199,9 @@ SCHEME_FILES_DEPENDENCIES = [
     'FV3/ccpp/physics/physics/rte-rrtmgp/extensions/mo_rrtmgp_clr_all_sky.F90',
     'FV3/ccpp/physics/physics/rte-rrtmgp/extensions/cloud_optics/mo_cloud_optics.F90',
     'FV3/ccpp/physics/physics/rte-rrtmgp/extensions/cloud_optics/mo_cloud_sampling.F90',
+    'FV3/ccpp/physics/physics/rrtmgp_aux.F90',
+    'FV3/ccpp/physics/physics/rrtmg_lw_cloud_optics.F90',
+    'FV3/ccpp/physics/physics/rrtmg_sw_cloud_optics.F90',
     # derived data type definitions
     'FV3/gfsphysics/GFS_layer/GFS_typedefs.F90',
     'FV3/gfsphysics/CCPP_layer/CCPP_typedefs.F90',
@@ -297,9 +300,6 @@ SCHEME_FILES = [
     # HAFSFER_HIRES
     'FV3/ccpp/physics/physics/mp_fer_hires.F90',
     # RRTMGP
-    'FV3/ccpp/physics/physics/rrtmg_lw_cloud_optics.F90',
-    'FV3/ccpp/physics/physics/rrtmg_sw_cloud_optics.F90',
-    'FV3/ccpp/physics/physics/rrtmgp_aux.F90',
     'FV3/ccpp/physics/physics/rrtmgp_lw_gas_optics.F90',
     'FV3/ccpp/physics/physics/rrtmgp_lw_cloud_optics.F90',
     'FV3/ccpp/physics/physics/rrtmgp_sw_gas_optics.F90',
