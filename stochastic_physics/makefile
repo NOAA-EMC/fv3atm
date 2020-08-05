@@ -18,7 +18,7 @@ $(info $$ESMF_INC is [${ESMF_INC}])
 
 LIBRARY  = libstochastic_physics_wrapper.a
 
-FFLAGS   += -I$(FMS_DIR) -I ../../stochastic_physics -I../ccpp/physics -I../atmos_cubed_sphere # -I../gfsphysics -I../ipd
+FFLAGS   += -I$(FMS_DIR) -I ../../stochastic_physics -I../ccpp/physics -I../atmos_cubed_sphere
 
 SRCS_f   =
 
@@ -45,39 +45,10 @@ all default: depend $(LIBRARY)
 $(LIBRARY): $(OBJS)
 	$(AR) $(ARFLAGS) $@ $?
 
-# FV3GFS_io.o: FV3GFS_io.F90
-# 	$(FC) $(CPPDEFS) $(CPPFLAGS) $(FPPFLAGS) $(FFLAGS) $(OTHERFLAGS) $(OTHER_FFLAGS) $(ESMF_INC) -c FV3GFS_io.F90
-# post_nems_routines.o: post_nems_routines.F90
-# 	$(FC) $(CPPDEFS) $(CPPFLAGS) $(FPPFLAGS) $(FFLAGS) $(OTHERFLAGS) $(OTHER_FFLAGS) -I$(POST_INC) -c post_nems_routines.F90
-# module_write_nemsio.o: module_write_nemsio.F90
-# 	$(FC) $(CPPDEFS) $(CPPFLAGS) $(FPPFLAGS) $(FFLAGS) $(OTHERFLAGS) $(OTHER_FFLAGS) $(ESMF_INC) $(NEMSIOINC) -c module_write_nemsio.F90
-# module_write_netcdf.o: module_write_netcdf.F90
-# 	$(FC) $(CPPDEFS) $(CPPFLAGS) $(FPPFLAGS) $(FFLAGS) $(OTHERFLAGS) $(OTHER_FFLAGS) $(ESMF_INC) -c module_write_netcdf.F90
-# module_write_netcdf_parallel.o: module_write_netcdf_parallel.F90
-# 	$(FC) $(CPPDEFS) $(CPPFLAGS) $(FPPFLAGS) $(FFLAGS) $(OTHERFLAGS) $(OTHER_FFLAGS) $(ESMF_INC) -c module_write_netcdf_parallel.F90
-# module_fv3_io_def.o: module_fv3_io_def.F90
-# 	$(FC) $(CPPDEFS) $(CPPFLAGS) $(FPPFLAGS) $(FFLAGS) $(OTHERFLAGS) $(OTHER_FFLAGS) $(ESMF_INC) -c module_fv3_io_def.F90
-# module_write_internal_state.o: module_write_internal_state.F90
-# 	$(FC) $(CPPDEFS) $(CPPFLAGS) $(FPPFLAGS) $(FFLAGS) $(OTHERFLAGS) $(OTHER_FFLAGS) $(ESMF_INC) -c module_write_internal_state.F90
-# module_wrt_grid_comp.o: module_wrt_grid_comp.F90
-# 	$(FC) $(CPPDEFS) $(CPPFLAGS) $(FPPFLAGS) $(FFLAGS) $(OTHERFLAGS) $(OTHER_FFLAGS) $(ESMF_INC) -c module_wrt_grid_comp.F90
-# post_gfs.o: post_gfs.F90
-# 	$(FC) $(CPPDEFS) $(CPPFLAGS) $(FPPFLAGS) $(FFLAGS) $(OTHERFLAGS) $(OTHER_FFLAGS) $(ESMF_INC) -I$(POST_INC) -c post_gfs.F90
-# post_gfs_stub.o: post_gfs_stub.F90
-# 	$(FC) $(CPPDEFS) $(CPPFLAGS) $(FPPFLAGS) $(FFLAGS) $(OTHERFLAGS) $(OTHER_FFLAGS) $(ESMF_INC) -c post_gfs_stub.F90
-# 
-
 .PHONY: clean
 clean:
 	@echo "Cleaning io ... "
 	@echo
-	$(RM) -f $(LIBRARY) *__genmod.f90 *.o *.mod *.i90 *.lst *.i # depend
+	$(RM) -f $(LIBRARY) *__genmod.f90 *.o *.mod *.i90 *.lst *.i
 
-#MKDEPENDS = ../mkDepends.pl
 include ../conf/make.rules
-
-## do not include 'depend' file if the target contains string 'clean'
-#ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))
-#    -include depend
-#endif
-
