@@ -12,7 +12,7 @@ ifeq ($(strip $(exist)),)
 endif
 
 
-FFLAGS   += -I$(FMS_DIR) -Igfsphysics -Iipd -Icpl -Iio -Iatmos_cubed_sphere -Iccpp/driver -I../stochastic_physics
+FFLAGS   += -I$(FMS_DIR) -Igfsphysics -Iipd -Icpl -Iio -Iatmos_cubed_sphere -Iccpp/driver -Istochastic_physics
 CPPDEFS  += -DESMF_VERSION_MAJOR=$(ESMF_VERSION_MAJOR)
 
 # Flag to CCPP build for 32bit dynamics
@@ -41,8 +41,9 @@ libs:
 	$(MAKE) -C io                  $(MAKE_OPTS) FMS_DIR=$(FMS_DIR)
 	$(MAKE) -C atmos_cubed_sphere  $(MAKE_OPTS) FMS_DIR=$(FMS_DIR)
 	$(MAKE) -C ../stochastic_physics  $(MAKE_OPTS) FMS_DIR=$(FMS_DIR) 32BIT=N  # force gfs physics to 64bit
+	$(MAKE) -C stochastic_physics  $(MAKE_OPTS) FMS_DIR=$(FMS_DIR) 32BIT=N  # force gfs physics to 64bit
 
-$(FV3_EXE): atmos_model.o coupler_main.o ccpp/driver/libccppdriver.a atmos_cubed_sphere/libfv3core.a io/libfv3io.a ipd/libipd.a gfsphysics/libgfsphys.a ../stochastic_physics/libstochastic_physics.a cpl/libfv3cpl.a
+$(FV3_EXE): atmos_model.o coupler_main.o ccpp/driver/libccppdriver.a atmos_cubed_sphere/libfv3core.a io/libfv3io.a ipd/libipd.a gfsphysics/libgfsphys.a stochastic_physics/libstochastic_physics_wrapper.a ../stochastic_physics/libstochastic_physics.a cpl/libfv3cpl.a
 	$(LD) -o $@ $^ $(NCEPLIBS) $(LDFLAGS)
 
 else
@@ -87,7 +88,7 @@ endif
 ifneq (,$(findstring CCPP,$(CPPDEFS)))
 esmf_make_fragment:
 	@rm -rf nems_dir; mkdir nems_dir
-	@cp $(FV3CAP_LIB) ccpp/driver/libccppdriver.a atmos_cubed_sphere/libfv3core.a io/libfv3io.a ipd/libipd.a gfsphysics/libgfsphys.a cpl/libfv3cpl.a ../stochastic_physics/libstochastic_physics.a nems_dir
+	@cp $(FV3CAP_LIB) ccpp/driver/libccppdriver.a atmos_cubed_sphere/libfv3core.a io/libfv3io.a ipd/libipd.a gfsphysics/libgfsphys.a cpl/libfv3cpl.a stochastic_physics/libstochastic_physics_wrapper.a ../stochastic_physics/libstochastic_physics.a nems_dir
 	@cp fv3gfs_cap_mod.mod nems_dir
 	@echo "# ESMF self-describing build dependency makefile fragment" > fv3.mk
 	@echo "# src location $(PWD)" >> fv3.mk
@@ -97,7 +98,7 @@ esmf_make_fragment:
 	#@echo "ESMF_DEP_INCPATH   = $(PWD)/nems_dir" >> fv3.mk
 	@echo "ESMF_DEP_INCPATH   = $(PWD) $(addprefix $(PWD)/, nems_dir ccpp/driver atmos_cubed_sphere io gfsphysics cpl ipd ../stochastic_physics)" >> fv3.mk
 	@echo "ESMF_DEP_CMPL_OBJS ="                 >> fv3.mk
-	@echo "ESMF_DEP_LINK_OBJS = $(addprefix $(PWD)/nems_dir/, libfv3cap.a libccppdriver.a libfv3core.a libfv3io.a libipd.a libgfsphys.a libfv3cpl.a libstochastic_physics.a) $(SIONLIB_LINK_FLAGS)" >> fv3.mk
+	@echo "ESMF_DEP_LINK_OBJS = $(addprefix $(PWD)/nems_dir/, libfv3cap.a libccppdriver.a libfv3core.a libfv3io.a libipd.a libgfsphys.a libfv3cpl.a libstochastic_physics_wrapper.a libstochastic_physics.a) $(SIONLIB_LINK_FLAGS)" >> fv3.mk
 	@echo "ESMF_DEP_SHRD_PATH ="                 >> fv3.mk
 	@echo "ESMF_DEP_SHRD_LIBS ="                 >> fv3.mk
 	@echo
@@ -143,6 +144,7 @@ clean:
 	(cd ccpp/driver         && make clean)
 	(cd ipd                 && make clean)
 	(cd ../stochastic_physics  && make clean)
+	(cd stochastic_physics  && make clean)
 	(cd io                  && make clean)
 	(cd atmos_cubed_sphere  && make clean)
 	(cd cpl                 && make clean)
