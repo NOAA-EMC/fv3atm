@@ -199,6 +199,9 @@ SCHEME_FILES_DEPENDENCIES = [
     'FV3/ccpp/physics/physics/rte-rrtmgp/extensions/mo_heating_rates.F90',
     'FV3/ccpp/physics/physics/rte-rrtmgp/extensions/mo_rrtmgp_clr_all_sky.F90',
     'FV3/ccpp/physics/physics/rte-rrtmgp/extensions/cloud_optics/mo_cloud_optics.F90',
+    'FV3/ccpp/physics/physics/rrtmg_lw_cloud_optics.F90'        ,
+    'FV3/ccpp/physics/physics/rrtmg_sw_cloud_optics.F90'        ,
+    'FV3/ccpp/physics/physics/rrtmgp_aux.F90'                   ,
     # derived data type definitions
     'FV3/gfsphysics/GFS_layer/GFS_typedefs.F90',
     'FV3/gfsphysics/CCPP_layer/CCPP_typedefs.F90',
@@ -297,9 +300,6 @@ SCHEME_FILES = [
     # HAFSFER_HIRES
     'FV3/ccpp/physics/physics/mp_fer_hires.F90',
     # RRTMGP
-    'FV3/ccpp/physics/physics/rrtmg_lw_cloud_optics.F90'        ,
-    'FV3/ccpp/physics/physics/rrtmg_sw_cloud_optics.F90'        ,
-    'FV3/ccpp/physics/physics/rrtmgp_aux.F90'                   ,
     'FV3/ccpp/physics/physics/rrtmgp_lw_gas_optics.F90'         ,
     'FV3/ccpp/physics/physics/rrtmgp_lw_cloud_optics.F90'       ,
     'FV3/ccpp/physics/physics/rrtmgp_sw_gas_optics.F90'         ,
@@ -313,11 +313,12 @@ SCHEME_FILES = [
     'FV3/ccpp/physics/physics/rrtmgp_lw_pre.F90'                ,
     'FV3/ccpp/physics/physics/GFS_rrtmgp_sw_pre.F90'            ,
     'FV3/ccpp/physics/physics/GFS_rrtmgp_lw_post.F90'           ,
-    'FV3/ccpp/physics/physics/rrtmgp_gfdlmp_lw_cloud_sampling.F90' ,
-    'FV3/ccpp/physics/physics/rrtmgp_gfdlmp_sw_cloud_sampling.F90' ,
+    'FV3/ccpp/physics/physics/rrtmgp_lw_cloud_sampling.F90' ,
+    'FV3/ccpp/physics/physics/rrtmgp_sw_cloud_sampling.F90' ,
     'FV3/ccpp/physics/physics/GFS_cloud_diagnostics.F90'           ,
     'FV3/ccpp/physics/physics/mo_cloud_sampling.F90'               ,
     'FV3/ccpp/physics/physics/GFS_rrtmgp_gfdlmp_pre.F90'           ,
+    'FV3/ccpp/physics/physics/GFS_rrtmgp_zhaocarr_pre.F90'         ,
     'FV3/ccpp/physics/physics/GFS_rrtmgp_sw_post.F90'
     ]
 
@@ -432,13 +433,13 @@ OPTIONAL_ARGUMENTS = {
          },        
     'GFS_rrtmgp_sw_post' : {
          'GFS_rrtmgp_sw_post_run' : [
-             'tendency_of_air_temperature_due_to_shortwave_heating_assuming_clear_sky_on_radiation_time_step_and_radiation_levels',
+             'tendency_of_air_temperature_due_to_shortwave_heating_assuming_clear_sky_on_radiation_time_step',
              'components_of_surface_downward_shortwave_fluxes',
              ],
          },
     'GFS_rrtmgp_lw_post' : {
          'GFS_rrtmgp_lw_post_run' : [
-             'tendency_of_air_temperature_due_to_longwave_heating_assuming_clear_sky_on_radiation_time_step_and_radiation_levels',
+             'tendency_of_air_temperature_due_to_longwave_heating_assuming_clear_sky_on_radiation_time_step',
              ],
          },
     'GFS_suite_interstitial_2' : {
