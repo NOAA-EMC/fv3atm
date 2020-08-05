@@ -1,9 +1,9 @@
 ## Description
 
 (Instructions: this, and all subsequent sections of text should be removed and filled in as appropriate.)
-Provide a detailed description of what this PR does.
-What bug does it fix, or what feature does it add?
-Is a change of answers expected from this PR?
+Provide a detailed description of what this PR does.  
+What bug does it fix, or what feature does it add?  
+Is a change of answers expected from this PR?  
 
 
 
@@ -18,10 +18,10 @@ Link the issues to be closed with this PR, whether in this repository, or in ano
 
 ## Testing
 
-How were these changes tested?
-What compilers / HPCs was it tested with?
-Are the changes covered by regression tests? (If not, why? Do new tests need to be added?)
-Have the ufs-weather-model regression test been run? On what platform?
+How were these changes tested?  
+What compilers / HPCs was it tested with?  
+Are the changes covered by regression tests? (If not, why? Do new tests need to be added?)  
+Have the ufs-weather-model regression test been run? On what platform?  
 - Will the code updates change regression test baseline? If yes, why? Please show the baseline directory below.
 - Please commit the regression test log files in your ufs-weather-model branch
 
