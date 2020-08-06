@@ -640,6 +640,9 @@ module FV3GFS_io_mod
         Sfcprop(nb)%oro_uf(ix)    = oro_var2(i,j,16)
         Sfcprop(nb)%landfrac(ix)  = oro_var2(i,j,17) !land frac [0:1]
         Sfcprop(nb)%lakefrac(ix)  = oro_var2(i,j,18) !lake frac [0:1]
+
+        Sfcprop(nb)%lakedepth(ix) = oro_var2(i,j,19) !lake depth [m]    !YWu
+
       enddo
     enddo
  
