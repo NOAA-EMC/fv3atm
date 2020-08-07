@@ -26,18 +26,6 @@ VARIABLE_DEFINITION_FILES = [
     'FV3/ccpp/physics/physics/rte-rrtmgp/rte/mo_optical_props.F90',
     'FV3/ccpp/physics/physics/rte-rrtmgp/extensions/cloud_optics/mo_cloud_optics.F90',
     'FV3/ccpp/physics/physics/rte-rrtmgp/rte/mo_source_functions.F90',
-    # dependencies for GFS_typedefs.F90
-    'FV3/ccpp/physics/physics/GFDL_parse_tracers.F90',
-    # dependencies for RRTMGP type/kind definitions
-    'FV3/ccpp/physics/physics/rte-rrtmgp/rte/mo_rte_kind.F90',
-    'FV3/ccpp/physics/physics/rte-rrtmgp/rte/mo_rte_util_array.F90',
-    'FV3/ccpp/physics/physics/rte-rrtmgp/rrtmgp/mo_rrtmgp_util_string.F90',
-    'FV3/ccpp/physics/physics/rte-rrtmgp/rte/kernels/mo_optical_props_kernels.F90',
-    'FV3/ccpp/physics/physics/rte-rrtmgp/rrtmgp/mo_rrtmgp_constants.F90',
-    'FV3/ccpp/physics/physics/rte-rrtmgp/rrtmgp/kernels/mo_gas_optics_kernels.F90',
-    'FV3/ccpp/physics/physics/rte-rrtmgp/rrtmgp/mo_gas_optics.F90',
-    'FV3/ccpp/physics/physics/rte-rrtmgp/rrtmgp/mo_rrtmgp_util_reorder.F90',
-    'FV3/ccpp/physics/physics/rte-rrtmgp/rrtmgp/kernels/mo_rrtmgp_util_reorder_kernels.F90',
     ]
 
 TYPEDEFS_NEW_METADATA = {
