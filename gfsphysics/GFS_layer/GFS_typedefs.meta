@@ -1,8 +1,8 @@
-[ccpp-arg-table]
-  name = GFS_init_type
+[ccpp-table-properties]
+  name = GFS_statein_type
   type = ddt
+  dependencies = 
 
-########################################################################
 [ccpp-arg-table]
   name = GFS_statein_type
   type = ddt
@@ -263,6 +263,11 @@
   kind = kind_phys
 
 ########################################################################
+[ccpp-table-properties]
+  name = GFS_stateout_type
+  type = ddt
+  dependencies = 
+
 [ccpp-arg-table]
   name = GFS_stateout_type
   type = ddt
@@ -439,6 +444,11 @@
   kind = kind_phys
 
 ########################################################################
+[ccpp-table-properties]
+  name = GFS_sfcprop_type
+  type = ddt
+  dependencies = 
+
 [ccpp-arg-table]
   name = GFS_sfcprop_type
   type = ddt
@@ -1410,6 +1420,11 @@
   kind = kind_phys
 
 ########################################################################
+[ccpp-table-properties]
+  name = GFS_coupling_type
+  type = ddt
+  dependencies = 
+
 [ccpp-arg-table]
   name = GFS_coupling_type
   type = ddt
@@ -1927,6 +1942,11 @@
   type = real
   kind = kind_phys
 ########################################################################
+[ccpp-table-properties]
+  name = GFS_control_type
+  type = ddt
+  dependencies = 
+
 [ccpp-arg-table]
   name = GFS_control_type
   type = ddt
@@ -4306,6 +4326,11 @@
   type = logical
 
 ########################################################################
+[ccpp-table-properties]
+  name = GFS_grid_type
+  type = ddt
+  dependencies = 
+
 [ccpp-arg-table]
   name = GFS_grid_type
   type = ddt
@@ -4360,6 +4385,11 @@
   kind = kind_phys
 
 ########################################################################
+[ccpp-table-properties]
+  name = GFS_tbd_type
+  type = ddt
+  dependencies = 
+
 [ccpp-arg-table]
   name = GFS_tbd_type
   type = ddt
@@ -4801,6 +4831,11 @@
   kind = kind_phys
 
 ########################################################################
+[ccpp-table-properties]
+  name = GFS_cldprop_type
+  type = ddt
+  dependencies = 
+
 [ccpp-arg-table]
   name = GFS_cldprop_type
   type = ddt
@@ -4827,6 +4862,11 @@
   kind = kind_phys
 
 ########################################################################
+[ccpp-table-properties]
+  name = GFS_radtend_type
+  type = ddt
+  dependencies = 
+
 [ccpp-arg-table]
   name = GFS_radtend_type
   type = ddt
@@ -4914,6 +4954,11 @@
   kind = kind_phys
 
 ########################################################################
+[ccpp-table-properties]
+  name = GFS_diag_type
+  type = ddt
+  dependencies = 
+
 [ccpp-arg-table]
   name = GFS_diag_type
   type = ddt
@@ -6263,6 +6308,11 @@
 
 
 ########################################################################
+[ccpp-table-properties]
+  name = GFS_interstitial_type
+  type = ddt
+  dependencies = 
+
 [ccpp-arg-table]
   name = GFS_interstitial_type
   type = ddt
@@ -9269,6 +9319,11 @@
   kind = len=128
 
 ########################################################################
+[ccpp-table-properties]
+  name = GFS_data_type
+  type = ddt
+  dependencies = 
+
 [ccpp-arg-table]
   name = GFS_data_type
   type = ddt
@@ -9328,6 +9383,14 @@
   type = GFS_diag_type
 
 ########################################################################
+[ccpp-table-properties]
+  name = GFS_typedefs
+  type = module
+  relative_path = ../../ccpp/physics/physics
+  dependencies = machine.F,physcons.F90,radlw_param.f,radsw_param.f,GFDL_parse_tracers.F90
+  dependencies = rte-rrtmgp/rrtmgp/mo_gas_optics_rrtmgp.F90,rte-rrtmgp/rte/mo_optical_props.F90
+  dependencies = rte-rrtmgp/extensions/cloud_optics/mo_cloud_optics.F90,rte-rrtmgp/rrtmgp/mo_gas_concentrations.F90,rte-rrtmgp/rte/mo_source_functions.F90
+
 [ccpp-arg-table]
   name = GFS_typedefs
   type = module
