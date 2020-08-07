@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<suite name="FV3_GSD_v0_mynnsfc" lib="ccppphys" ver="4">
+<suite name="FV3_RRFS_v1beta" lib="ccppphys" ver="4">
   <!-- <init></init> -->
   <group name="time_vary">
     <subcycle loop="1">
@@ -44,10 +44,8 @@
       <scheme>sfc_nst_pre</scheme>
       <scheme>sfc_nst</scheme>
       <scheme>sfc_nst_post</scheme>
-      <scheme>lsm_ruc</scheme>
-      <scheme>lsm_ruc_sfc_sice_pre</scheme>
+      <scheme>noahmpdrv</scheme>
       <scheme>sfc_sice</scheme>
-      <scheme>lsm_ruc_sfc_sice_post</scheme>
       <scheme>GFS_surface_loop_control_part2</scheme>
     </subcycle>
     <!-- End of surface iteration loop -->
@@ -58,8 +56,7 @@
       <scheme>GFS_surface_generic_post</scheme>
       <scheme>mynnedmf_wrapper</scheme>
       <scheme>GFS_GWD_generic_pre</scheme>
-      <scheme>cires_ugwp</scheme>
-      <scheme>cires_ugwp_post</scheme>
+      <scheme>drag_suite</scheme>
       <scheme>GFS_GWD_generic_post</scheme>
       <scheme>rayleigh_damp</scheme>
       <scheme>GFS_suite_stateout_update</scheme>
@@ -67,20 +64,12 @@
       <scheme>h2ophys</scheme>
       <scheme>get_phi_fv3</scheme>
       <scheme>GFS_suite_interstitial_3</scheme>
-      <scheme>GFS_DCNV_generic_pre</scheme>
-      <scheme>cu_gf_driver_pre</scheme>
-      <scheme>cu_gf_driver</scheme>
-      <scheme>GFS_DCNV_generic_post</scheme>
-      <scheme>GFS_SCNV_generic_pre</scheme>
-      <scheme>GFS_SCNV_generic_post</scheme>
       <scheme>GFS_suite_interstitial_4</scheme>
-      <scheme>cnvc90</scheme>
       <scheme>GFS_MP_generic_pre</scheme>
       <scheme>mp_thompson_pre</scheme>
       <scheme>mp_thompson</scheme>
       <scheme>mp_thompson_post</scheme>
       <scheme>GFS_MP_generic_post</scheme>
-      <scheme>cu_gf_driver_post</scheme>
       <scheme>maximum_hourly_diagnostics</scheme>
     </subcycle>
   </group>
