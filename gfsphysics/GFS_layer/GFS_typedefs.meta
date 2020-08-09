@@ -666,6 +666,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_mass_flux_deep_convection_scheme == flag_for_gf_deep_convection_scheme)
 [hice]
   standard_name = sea_ice_thickness
   long_name = sea ice thickness
@@ -771,6 +772,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_nsstm_run > 0)
 [z_c]
   standard_name = sub_layer_cooling_thickness
   long_name = sub-layer cooling thickness
@@ -778,6 +780,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_nsstm_run > 0)
 [c_0]
   standard_name = coefficient_c_0
   long_name = coefficient 1 to calculate d(Tz)/d(Ts)
@@ -785,6 +788,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_nsstm_run > 0)
 [c_d]
   standard_name = coefficient_c_d
   long_name = coefficient 2 to calculate d(Tz)/d(Ts)
@@ -792,6 +796,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_nsstm_run > 0)
 [w_0]
   standard_name = coefficient_w_0
   long_name = coefficient 3 to calculate d(Tz)/d(Ts)
@@ -799,6 +804,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_nsstm_run > 0)
 [w_d]
   standard_name = coefficient_w_d
   long_name = coefficient 4 to calculate d(Tz)/d(Ts)
@@ -806,6 +812,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_nsstm_run > 0)
 [xt]
   standard_name = diurnal_thermocline_layer_heat_content
   long_name = heat content in diurnal thermocline layer
@@ -813,6 +820,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_nsstm_run > 0)
 [xs]
   standard_name = sea_water_salinity
   long_name = salinity  content in diurnal thermocline layer
@@ -820,6 +828,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_nsstm_run > 0)
 [xu]
   standard_name = diurnal_thermocline_layer_x_current
   long_name = u-current content in diurnal thermocline layer
@@ -827,6 +836,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_nsstm_run > 0)
 [xv]
   standard_name = diurnal_thermocline_layer_y_current
   long_name = v-current content in diurnal thermocline layer
@@ -834,6 +844,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_nsstm_run > 0)
 [xz]
   standard_name = diurnal_thermocline_layer_thickness
   long_name = diurnal thermocline layer thickness
@@ -841,6 +852,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_nsstm_run > 0)
 [zm]
   standard_name = ocean_mixed_layer_thickness
   long_name = mixed layer thickness
@@ -848,6 +860,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_nsstm_run > 0)
 [xtts]
   standard_name = sensitivity_of_dtl_heat_content_to_surface_temperature
   long_name = d(xt)/d(ts)
@@ -855,6 +868,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_nsstm_run > 0)
 [xzts]
   standard_name = sensitivity_of_dtl_thickness_to_surface_temperature
   long_name = d(xz)/d(ts)
@@ -862,6 +876,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_nsstm_run > 0)
 [d_conv]
   standard_name = free_convection_layer_thickness
   long_name = thickness of free convection layer (FCL)
@@ -869,6 +884,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_nsstm_run > 0)
 [ifd]
   standard_name = index_of_dtlm_start
   long_name = index to start dtlm run or not
@@ -876,6 +892,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_nsstm_run > 0)
 [dt_cool]
   standard_name = sub_layer_cooling_amount
   long_name = sub-layer cooling amount
@@ -883,6 +900,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_nsstm_run > 0)
 [qrain]
   standard_name = sensible_heat_flux_due_to_rainfall
   long_name = sensible heat flux due to rainfall
@@ -890,6 +908,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_nsstm_run > 0)
 [snowxy]
   standard_name = number_of_snow_layers
   long_name = number of snow layers
@@ -897,6 +916,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
 [tvxy]
   standard_name = vegetation_temperature
   long_name = vegetation temperature
@@ -904,6 +924,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
 [tgxy]
   standard_name = ground_temperature_for_noahmp
   long_name = ground temperature for noahmp
@@ -911,6 +932,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
 [canicexy]
   standard_name = canopy_intercepted_ice_mass
   long_name = canopy intercepted ice mass
@@ -918,6 +940,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
 [canliqxy]
   standard_name = canopy_intercepted_liquid_water
   long_name = canopy intercepted liquid water
@@ -925,6 +948,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
 [eahxy]
   standard_name = canopy_air_vapor_pressure
   long_name = canopy air vapor pressure
@@ -932,6 +956,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
 [tahxy]
   standard_name = canopy_air_temperature
   long_name = canopy air temperature
@@ -939,6 +964,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
 [cmxy]
   standard_name = surface_drag_coefficient_for_momentum_for_noahmp
   long_name = surface drag coefficient for momentum for noahmp
@@ -946,6 +972,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
 [chxy]
   standard_name = surface_drag_coefficient_for_heat_and_moisture_for_noahmp
   long_name = surface exchange coeff heat & moisture for noahmp
@@ -953,6 +980,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
 [fwetxy]
   standard_name = area_fraction_of_wet_canopy
   long_name = area fraction of canopy that is wetted/snowed
@@ -960,6 +988,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
 [sneqvoxy]
   standard_name = snow_mass_at_previous_time_step
   long_name = snow mass at previous time step
@@ -967,6 +996,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
 [alboldxy]
   standard_name = snow_albedo_at_previous_time_step
   long_name = snow albedo at previous time step
@@ -974,6 +1004,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
 [qsnowxy]
   standard_name = snow_precipitation_rate_at_surface
   long_name = snow precipitation rate at surface
@@ -981,6 +1012,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
 [wslakexy]
   standard_name = lake_water_storage
   long_name = lake water storage
@@ -988,6 +1020,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
 [zwtxy]
   standard_name = water_table_depth
   long_name = water table depth
@@ -995,6 +1028,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
 [waxy]
   standard_name = water_storage_in_aquifer
   long_name = water storage in aquifer
@@ -1002,6 +1036,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
 [wtxy]
   standard_name = water_storage_in_aquifer_and_saturated_soil
   long_name = water storage in aquifer and saturated soil
@@ -1009,6 +1044,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
 [tsnoxy]
   standard_name = snow_temperature
   long_name = snow_temperature
@@ -1016,6 +1052,7 @@
   dimensions = (horizontal_dimension, lower_bound_of_snow_vertical_dimension_for_land_surface_model:0)
   type = real
   kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
 [zsnsoxy]
   standard_name = layer_bottom_depth_from_snow_surface
   long_name = depth from the top of the snow surface at the bottom of the layer
@@ -1023,6 +1060,7 @@
   dimensions = (horizontal_dimension, lower_bound_of_snow_vertical_dimension_for_land_surface_model:soil_vertical_dimension_for_land_surface_model)
   type = real
   kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
 [snicexy]
   standard_name = snow_layer_ice
   long_name = snow layer ice
@@ -1030,6 +1068,7 @@
   dimensions = (horizontal_dimension, lower_bound_of_snow_vertical_dimension_for_land_surface_model:0)
   type = real
   kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
 [snliqxy]
   standard_name = snow_layer_liquid_water
   long_name = snow layer liquid water
@@ -1037,6 +1076,7 @@
   dimensions = (horizontal_dimension, lower_bound_of_snow_vertical_dimension_for_land_surface_model:0)
   type = real
   kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
 [lfmassxy]
   standard_name = leaf_mass
   long_name = leaf mass
@@ -1044,6 +1084,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
 [rtmassxy]
   standard_name = fine_root_mass
   long_name = fine root mass
@@ -1051,6 +1092,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
 [stmassxy]
   standard_name = stem_mass
   long_name = stem mass
@@ -1058,6 +1100,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
 [woodxy]
   standard_name = wood_mass
   long_name = wood mass including woody roots
@@ -1065,6 +1108,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
 [stblcpxy]
   standard_name = slow_soil_pool_mass_content_of_carbon
   long_name = stable carbon in deep soil
@@ -1072,6 +1116,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
 [fastcpxy]
   standard_name = fast_soil_pool_mass_content_of_carbon
   long_name = short-lived carbon in shallow soil
@@ -1079,6 +1124,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
 [xlaixy]
   standard_name = leaf_area_index
   long_name = leaf area index 
@@ -1086,6 +1132,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme .or. (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme .and. flag_for_reading_leaf_area_index_from_input))
 [xsaixy]
   standard_name = stem_area_index
   long_name = stem area index 
@@ -1093,6 +1140,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
 [taussxy]
   standard_name = nondimensional_snow_age
   long_name = non-dimensional snow age
@@ -1100,6 +1148,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
 [smoiseq]
   standard_name = equilibrium_soil_water_content
   long_name = equilibrium soil water content
@@ -1107,6 +1156,7 @@
   dimensions = (horizontal_dimension,soil_vertical_dimension_for_land_surface_model)
   type = real
   kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
 [smcwtdxy]
   standard_name = soil_water_content_between_soil_bottom_and_water_table
   long_name = soil water content between the bottom of the soil and the water table
@@ -1114,6 +1164,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
 [deeprechxy]
   standard_name = water_table_recharge_when_deep
   long_name = recharge to or from the water table when deep
@@ -1121,6 +1172,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
 [rechxy]
   standard_name = water_table_recharge_when_shallow
   long_name = recharge to or from the water table when shallow
@@ -1128,6 +1180,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
 [wetness]
   standard_name = normalized_soil_wetness_for_land_surface_model
   long_name = normalized soil wetness for lsm
@@ -1135,6 +1188,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme) 
 [sh2o]
   standard_name = volume_fraction_of_unfrozen_soil_moisture_for_land_surface_model
   long_name = volume fraction of unfrozen soil moisture for lsm
@@ -1142,6 +1196,7 @@
   dimensions = (horizontal_dimension,soil_vertical_dimension_for_land_surface_model)
   type = real
   kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme) 
 [keepsmfr]
   standard_name = volume_fraction_of_frozen_soil_moisture_for_land_surface_model
   long_name = volume fraction of frozen soil moisture for lsm
@@ -1149,6 +1204,7 @@
   dimensions = (horizontal_dimension,soil_vertical_dimension_for_land_surface_model)
   type = real
   kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme) 
 [smois]
   standard_name = volume_fraction_of_soil_moisture_for_land_surface_model
   long_name = volumetric fraction of soil moisture for lsm
@@ -1156,6 +1212,7 @@
   dimensions = (horizontal_dimension,soil_vertical_dimension_for_land_surface_model)
   type = real
   kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme) 
 [tslb]
   standard_name = soil_temperature_for_land_surface_model
   long_name = soil temperature for land surface model
@@ -1163,6 +1220,7 @@
   dimensions = (horizontal_dimension,soil_vertical_dimension_for_land_surface_model)
   type = real
   kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme) 
 [zs]
   standard_name = depth_of_soil_levels_for_land_surface_model
   long_name = depth of soil levels for land surface model
@@ -1170,6 +1228,7 @@
   dimensions = (soil_vertical_dimension_for_land_surface_model)
   type = real
   kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme) 
 [clw_surf]
   standard_name = cloud_condensed_water_mixing_ratio_at_surface
   long_name = moist cloud water mixing ratio at surface
@@ -1177,6 +1236,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme) 
 [qwv_surf]
   standard_name = water_vapor_mixing_ratio_at_surface
   long_name = water vapor mixing ratio at surface
@@ -1184,6 +1244,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme) 
 [cndm_surf]
   standard_name = surface_condensation_mass
   long_name = surface condensation mass
@@ -1191,6 +1252,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme) 
 [flag_frsoil]
   standard_name = flag_for_frozen_soil_physics
   long_name = flag for frozen soil physics (RUC)
@@ -1198,6 +1260,7 @@
   dimensions = (horizontal_dimension,soil_vertical_dimension_for_land_surface_model)
   type = real
   kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme) 
 [rhofr]
   standard_name = density_of_frozen_precipitation
   long_name = density of frozen precipitation
@@ -1205,6 +1268,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme) 
 [tsnow]
   standard_name = snow_temperature_bottom_first_layer
   long_name = snow temperature at the bottom of the first snow layer
@@ -1212,6 +1276,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme) 
 [snowfallac]
   standard_name = total_accumulated_snowfall
   long_name = run-total snow accumulation on the ground
@@ -1219,6 +1284,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme) 
 [acsnow]
   standard_name = accumulated_water_equivalent_of_frozen_precip
   long_name = snow water equivalent of run-total frozen precip
@@ -1226,6 +1292,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme) 
 [ustm]
   standard_name = surface_friction_velocity_drag
   long_name = friction velocity isolated for momentum only
@@ -1233,6 +1300,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (do_mynnsfclay)
 [zol]
   standard_name = surface_stability_parameter
   long_name = monin obukhov surface stability parameter
@@ -1240,6 +1308,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (do_mynnsfclay)
 [mol]
   standard_name = theta_star
   long_name = temperature flux divided by ustar (temperature scale)
@@ -1247,6 +1316,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (do_mynnsfclay)
 [rmol]
   standard_name = reciprocal_of_obukhov_length
   long_name = one over obukhov length
@@ -1254,6 +1324,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (do_mynnsfclay)
 [flhc]
   standard_name = surface_exchange_coefficient_for_heat
   long_name = surface exchange coefficient for heat
@@ -1261,6 +1332,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (do_mynnsfclay)
 [flqc]
   standard_name = surface_exchange_coefficient_for_moisture
   long_name = surface exchange coefficient for moisture
@@ -1268,6 +1340,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (do_mynnsfclay)
 [chs2]
   standard_name = surface_exchange_coefficient_for_heat_at_2m
   long_name = exchange coefficient for heat at 2 meters
@@ -1275,6 +1348,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (do_mynnsfclay)
 [cqs2]
   standard_name = surface_exchange_coefficient_for_moisture_at_2m
   long_name = exchange coefficient for moisture at 2 meters
@@ -1282,6 +1356,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (do_mynnsfclay)
 [lh]
   standard_name = surface_latent_heat
   long_name = latent heating at the surface (pos = up)
@@ -1289,6 +1364,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (do_mynnsfclay)
 [evap]
   standard_name = kinematic_surface_upward_latent_heat_flux
   long_name = kinematic surface upward latent heat flux
@@ -1317,6 +1393,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme .or. flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)
 [rainncprv]
   standard_name = lwe_thickness_of_explicit_rainfall_amount_from_previous_timestep
   long_name = explicit rainfall from previous timestep
@@ -1324,6 +1401,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme .or. flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)
 [iceprv]
   standard_name = lwe_thickness_of_ice_amount_from_previous_timestep
   long_name = ice amount from previous timestep
@@ -1331,6 +1409,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme .or. flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)
 [snowprv]
   standard_name = lwe_thickness_of_snow_amount_from_previous_timestep
   long_name = snow amount from previous timestep
@@ -1338,6 +1417,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme .or. flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)
 [graupelprv]
   standard_name = lwe_thickness_of_graupel_amount_from_previous_timestep
   long_name = graupel amount from previous timestep
@@ -1345,6 +1425,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme .or. flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)
 [draincprv]
   standard_name = convective_precipitation_rate_from_previous_timestep
   long_name = convective precipitation rate from previous timestep
@@ -1352,6 +1433,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
 [drainncprv]
   standard_name = explicit_rainfall_rate_from_previous_timestep
   long_name = explicit rainfall rate previous timestep
@@ -1359,6 +1441,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
 [diceprv]
   standard_name = ice_precipitation_rate_from_previous_timestep
   long_name = ice precipitation rate from previous timestep
@@ -1366,6 +1449,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
 [dsnowprv]
   standard_name = snow_precipitation_rate_from_previous_timestep
   long_name = snow precipitation rate from previous timestep
@@ -1373,6 +1457,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
 [dgraupelprv]
   standard_name = graupel_precipitation_rate_from_previous_timestep
   long_name = graupel precipitation rate from previous timestep
@@ -1380,6 +1465,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
 [alvsf]
   standard_name = mean_vis_albedo_with_strong_cosz_dependency
   long_name = mean vis albedo with strong cosz dependency
@@ -1497,6 +1583,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_flux_coupling .or. flag_for_stochastic_surface_physics_perturbations .or. flag_for_chemistry_coupling .or. flag_for_global_cellular_automata)
 [rainc_cpl]
   standard_name = lwe_thickness_of_convective_precipitation_amount_for_coupling
   long_name = total convective precipitation
@@ -1511,6 +1598,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_flux_coupling .or. flag_for_stochastic_surface_physics_perturbations .or. flag_for_chemistry_coupling .or. flag_for_global_cellular_automata)
 [dusfc_cpl]
   standard_name = cumulative_surface_x_momentum_flux_for_coupling_multiplied_by_timestep
   long_name = cumulative sfc x momentum flux multiplied by timestep
@@ -1518,6 +1606,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_flux_coupling)
 [dvsfc_cpl]
   standard_name = cumulative_surface_y_momentum_flux_for_coupling_multiplied_by_timestep
   long_name = cumulative sfc y momentum flux multiplied by timestep
@@ -1525,6 +1614,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_flux_coupling)
 [dtsfc_cpl]
   standard_name = cumulative_surface_upward_sensible_heat_flux_for_coupling_multiplied_by_timestep
   long_name = cumulative sfc sensible heat flux multiplied by timestep
@@ -1532,6 +1622,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_flux_coupling)
 [dqsfc_cpl]
   standard_name = cumulative_surface_upward_latent_heat_flux_for_coupling_multiplied_by_timestep
   long_name = cumulative sfc latent heat flux multiplied by timestep
@@ -1539,6 +1630,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_flux_coupling)
 [dlwsfc_cpl]
   standard_name = cumulative_surface_downwelling_longwave_flux_for_coupling_multiplied_by_timestep
   long_name = cumulative sfc downward lw flux mulitplied by timestep
@@ -1546,6 +1638,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_flux_coupling)
 [dswsfc_cpl]
   standard_name = cumulative_surface_downwelling_shortwave_flux_for_coupling_multiplied_by_timestep
   long_name = cumulative sfc downward sw flux multiplied by timestep
@@ -1553,6 +1646,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_flux_coupling)
 [dnirbm_cpl]
   standard_name = cumulative_surface_downwelling_direct_near_infrared_shortwave_flux_for_coupling_multiplied_by_timestep
   long_name = cumulative sfc nir beam downward sw flux multiplied by timestep
@@ -1560,6 +1654,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_flux_coupling)
 [dnirdf_cpl]
   standard_name = cumulative_surface_downwelling_diffuse_near_infrared_shortwave_flux_for_coupling_multiplied_by_timestep
   long_name = cumulative sfc nir diff downward sw flux multiplied by timestep
@@ -1567,6 +1662,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_flux_coupling)
 [dvisbm_cpl]
   standard_name = cumulative_surface_downwelling_direct_ultraviolet_and_visible_shortwave_flux_for_coupling_multiplied_by_timestep
   long_name = cumulative sfc uv+vis beam dnwd sw flux multiplied by timestep
@@ -1574,6 +1670,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_flux_coupling)
 [dvisdf_cpl]
   standard_name = cumulative_surface_downwelling_diffuse_ultraviolet_and_visible_shortwave_flux_for_coupling_multiplied_by_timestep
   long_name = cumulative sfc uv+vis diff dnwd sw flux multiplied by timestep
@@ -1581,6 +1678,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_flux_coupling)
 [nlwsfc_cpl]
   standard_name = cumulative_surface_net_downward_longwave_flux_for_coupling_multiplied_by_timestep
   long_name = cumulative net downward lw flux multiplied by timestep
@@ -1588,6 +1686,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_flux_coupling)
 [nswsfc_cpl]
   standard_name = cumulative_surface_net_downward_shortwave_flux_for_coupling_multiplied_by_timestep
   long_name = cumulative net downward sw flux multiplied by timestep
@@ -1595,6 +1694,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_flux_coupling)
 [nnirbm_cpl]
   standard_name = cumulative_surface_net_downward_direct_near_infrared_shortwave_flux_for_coupling_multiplied_by_timestep
   long_name = cumulative net nir beam downward sw flux multiplied by timestep
@@ -1602,6 +1702,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_flux_coupling)
 [nnirdf_cpl]
   standard_name = cumulative_surface_net_downward_diffuse_near_infrared_shortwave_flux_for_coupling_multiplied_by_timestep
   long_name = cumulative net nir diff downward sw flux multiplied by timestep
@@ -1609,6 +1710,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_flux_coupling)
 [nvisbm_cpl]
   standard_name = cumulative_surface_net_downward_direct_ultraviolet_and_visible_shortwave_flux_for_coupling_multiplied_by_timestep
   long_name = cumulative net uv+vis beam downward sw rad flux multiplied by timestep
@@ -1616,6 +1718,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_flux_coupling)
 [nvisdf_cpl]
   standard_name = cumulative_surface_net_downward_diffuse_ultraviolet_and_visible_shortwave_flux_for_coupling_multiplied_by_timestep
   long_name = cumulative net uv+vis diff downward sw rad flux multiplied by timestep
@@ -1623,6 +1726,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_flux_coupling)
 [dusfci_cpl]
   standard_name = instantaneous_surface_x_momentum_flux_for_coupling
   long_name = instantaneous sfc x momentum flux
@@ -1630,6 +1734,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_flux_coupling)
 [dvsfci_cpl]
   standard_name = instantaneous_surface_y_momentum_flux_for_coupling
   long_name = instantaneous sfc y momentum flux
@@ -1637,6 +1742,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_flux_coupling)
 [dtsfci_cpl]
   standard_name = instantaneous_surface_upward_sensible_heat_flux_for_coupling
   long_name = instantaneous sfc sensible heat flux
@@ -1644,6 +1750,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_flux_coupling)
 [dqsfci_cpl]
   standard_name = instantaneous_surface_upward_latent_heat_flux_for_coupling
   long_name = instantaneous sfc latent heat flux
@@ -1651,6 +1758,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_flux_coupling)
 [dlwsfci_cpl]
   standard_name = instantaneous_surface_downwelling_longwave_flux_for_coupling
   long_name = instantaneous sfc downward lw flux
@@ -1658,6 +1766,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_flux_coupling)
 [dswsfci_cpl]
   standard_name = instantaneous_surface_downwelling_shortwave_flux_for_coupling
   long_name = instantaneous sfc downward sw flux
@@ -1665,6 +1774,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_flux_coupling)
 [dnirbmi_cpl]
   standard_name = instantaneous_surface_downwelling_direct_near_infrared_shortwave_flux_for_coupling
   long_name = instantaneous sfc nir beam downward sw flux
@@ -1672,6 +1782,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_flux_coupling)
 [dnirdfi_cpl]
   standard_name = instantaneous_surface_downwelling_diffuse_near_infrared_shortwave_flux_for_coupling
   long_name = instantaneous sfc nir diff downward sw flux
@@ -1679,6 +1790,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_flux_coupling)
 [dvisbmi_cpl]
   standard_name = instantaneous_surface_downwelling_direct_ultraviolet_and_visible_shortwave_flux_for_coupling
   long_name = instantaneous sfc uv+vis beam downward sw flux
@@ -1686,6 +1798,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_flux_coupling)
 [dvisdfi_cpl]
   standard_name = instantaneous_surface_downwelling_diffuse_ultraviolet_and_visible_shortwave_flux_for_coupling
   long_name = instantaneous sfc uv+vis diff downward sw flux
@@ -1693,6 +1806,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_flux_coupling)
 [nlwsfci_cpl]
   standard_name = instantaneous_surface_net_downward_longwave_flux_for_coupling
   long_name = instantaneous net sfc downward lw flux
@@ -1700,6 +1814,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_flux_coupling)
 [nswsfci_cpl]
   standard_name = instantaneous_surface_net_downward_shortwave_flux_for_coupling
   long_name = instantaneous net sfc downward sw flux
@@ -1707,6 +1822,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_flux_coupling)
 [nnirbmi_cpl]
   standard_name = instantaneous_surface_net_downward_direct_near_infrared_shortwave_flux_for_coupling
   long_name = instantaneous net nir beam sfc downward sw flux
@@ -1714,6 +1830,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_flux_coupling)
 [nnirdfi_cpl]
   standard_name = instantaneous_surface_net_downward_diffuse_near_infrared_shortwave_flux_for_coupling
   long_name = instantaneous net nir diff sfc downward sw flux
@@ -1721,6 +1838,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_flux_coupling)
 [nvisbmi_cpl]
   standard_name = instantaneous_surface_net_downward_direct_ultraviolet_and_visible_shortwave_flux_for_coupling
   long_name = instantaneous net uv+vis beam downward sw flux
@@ -1728,6 +1846,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_flux_coupling)
 [nvisdfi_cpl]
   standard_name = instantaneous_surface_net_downward_diffuse_ultraviolet_and_visible_shortwave_flux_for_coupling
   long_name = instantaneous net uv+vis diff downward sw flux
@@ -1735,6 +1854,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_flux_coupling)
 [t2mi_cpl]
   standard_name = instantaneous_temperature_at_2m_for_coupling
   long_name = instantaneous T2m
@@ -1742,6 +1862,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_flux_coupling)
 [q2mi_cpl]
   standard_name = instantaneous_specific_humidity_at_2m_for_coupling
   long_name = instantaneous Q2m
@@ -1749,6 +1870,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_flux_coupling)
 [u10mi_cpl]
   standard_name = instantaneous_x_wind_at_10m_for_coupling
   long_name = instantaneous U10m
@@ -1756,6 +1878,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_flux_coupling .or. flag_for_wave_coupling)
 [v10mi_cpl]
   standard_name = instantaneous_y_wind_at_10m_for_coupling
   long_name = instantaneous V10m
@@ -1763,6 +1886,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_flux_coupling .or. flag_for_wave_coupling)
 [tsfci_cpl]
   standard_name = instantaneous_surface_skin_temperature_for_coupling
   long_name = instantaneous sfc temperature
@@ -1770,6 +1894,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_flux_coupling)
 [psurfi_cpl]
   standard_name = instantaneous_surface_air_pressure_for_coupling
   long_name = instantaneous sfc pressure
@@ -1777,6 +1902,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_flux_coupling)
 [ulwsfcin_cpl]
   standard_name = surface_upwelling_longwave_flux_for_coupling
   long_name = surface upwelling LW flux for coupling
@@ -1784,6 +1910,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_flux_coupling)
 [dusfcin_cpl]
   standard_name = surface_x_momentum_flux_for_coupling
   long_name = sfc x momentum flux for coupling
@@ -1791,6 +1918,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_flux_coupling)
 [dvsfcin_cpl]
   standard_name = surface_y_momentum_flux_for_coupling
   long_name = sfc y momentum flux for coupling
@@ -1798,6 +1926,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_flux_coupling)
 [dtsfcin_cpl]
   standard_name = surface_upward_sensible_heat_flux_for_coupling
   long_name = sfc sensible heat flux input
@@ -1805,6 +1934,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_flux_coupling)
 [dqsfcin_cpl]
   standard_name = surface_upward_latent_heat_flux_for_coupling
   long_name = sfc latent heat flux input for coupling
@@ -1812,6 +1942,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_flux_coupling)
 [slimskin_cpl]
   standard_name = sea_land_ice_mask_in	
   long_name = sea/land/ice mask input (=0/1/2)
@@ -1819,6 +1950,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_flux_coupling)
 [ca_deep]
   standard_name = fraction_of_cellular_automata_for_deep_convection
   long_name = fraction of cellular automata for deep convection
@@ -1826,6 +1958,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_cellular_automata)
 [vfact_ca]
   standard_name = vertical_weight_for_ca
   long_name = vertical weight for ca
@@ -1840,6 +1973,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_cellular_automata)
 [condition]
   standard_name = physics_field_for_coupling
   long_name = physics_field_for_coupling
@@ -1854,6 +1988,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_stochastic_shum_option)
 [sppt_wts]
   standard_name = weights_for_stochastic_sppt_perturbation
   long_name = weights for stochastic sppt perturbation
@@ -1861,6 +1996,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_stochastic_surface_physics_perturbations .or. flag_for_global_cellular_automata)
 [skebu_wts]
   standard_name = weights_for_stochastic_skeb_perturbation_of_x_wind
   long_name = weights for stochastic skeb perturbation of x wind
@@ -1868,6 +2004,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_stochastic_skeb_option)
 [skebv_wts]
   standard_name = weights_for_stochastic_skeb_perturbation_of_y_wind
   long_name = weights for stochastic skeb perturbation of y wind
@@ -1875,6 +2012,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_stochastic_skeb_option)
 [sfc_wts]
   standard_name = weights_for_stochastic_surface_physics_perturbation
   long_name = weights for stochastic surface physics perturbation
@@ -1882,6 +2020,7 @@
   dimensions = (horizontal_dimension,number_of_surface_perturbations)
   type = real
   kind = kind_phys
+  active = (flag_for_stochastic_surface_perturbations)
 [dqdti]
   standard_name = instantaneous_water_vapor_specific_humidity_tendency_due_to_convection
   long_name = instantaneous moisture tendency due to convection
@@ -1889,6 +2028,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_chemistry_coupling)
 [nwfa2d]
   standard_name = tendency_of_water_friendly_aerosols_at_surface
   long_name = instantaneous water-friendly sfc aerosol source
@@ -1912,6 +2052,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_chemistry_coupling)
 [dkt]
   standard_name = instantaneous_atmosphere_heat_diffusivity
   long_name = instantaneous atmospheric heat diffusivity
@@ -1919,6 +2060,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_chemistry_coupling)
 [qci_conv]
   standard_name = convective_cloud_condesate_after_rainout
   long_name = convective cloud condesate after rainout
@@ -1926,6 +2068,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_mass_flux_deep_convection_scheme == flag_for_gf_deep_convection_scheme)
 ########################################################################
 [ccpp-arg-table]
   name = GFS_control_type
@@ -4369,12 +4512,14 @@
   units = none
   dimensions = (horizontal_dimension)
   type = integer
+  active = (flag_for_lw_clouds_without_sub_grid_approximation == 2 .or. flag_for_sw_clouds_without_sub_grid_approximation == 2)
 [icsdlw]
   standard_name = seed_random_numbers_lw
   long_name = random seeds for sub-column cloud generators lw
   units = none
   dimensions = (horizontal_dimension)
   type = integer
+  active = (flag_for_lw_clouds_without_sub_grid_approximation == 2 .or. flag_for_sw_clouds_without_sub_grid_approximation == 2)
 [ozpl]
   standard_name = ozone_forcing
   long_name = ozone forcing data
@@ -4464,6 +4609,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_stochastic_surface_physics_perturbations .or. flag_for_global_cellular_automata)
 [drain_cpl]
   standard_name = tendency_of_lwe_thickness_of_precipitation_amount_for_coupling
   long_name = change in rain_cpl (coupling_type)
@@ -4471,6 +4617,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_flux_coupling .or. flag_for_chemistry_coupling)
 [dsnow_cpl]
   standard_name = tendency_of_lwe_thickness_of_snow_amount_for_coupling
   long_name = change in show_cpl (coupling_type)
@@ -4478,6 +4625,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_flux_coupling .or. flag_for_chemistry_coupling)
 [phy_fctd]
   standard_name = cloud_base_mass_flux
   long_name = cloud base mass flux for CS convection
@@ -4618,6 +4766,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_mass_flux_deep_convection_scheme == flag_for_gf_deep_convection_scheme .or. flag_for_mass_flux_deep_convection_scheme == flag_for_ntiedtke_deep_convection_scheme)
 [forceq]
   standard_name = moisture_tendency_due_to_dynamics
   long_name = moisture tendency due to dynamics only
@@ -4625,6 +4774,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_mass_flux_deep_convection_scheme == flag_for_gf_deep_convection_scheme .or. flag_for_mass_flux_deep_convection_scheme == flag_for_ntiedtke_deep_convection_scheme)
 [prevst]
   standard_name = temperature_from_previous_timestep
   long_name = temperature from previous time step
@@ -4632,6 +4782,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_mass_flux_deep_convection_scheme == flag_for_gf_deep_convection_scheme .or. flag_for_mass_flux_deep_convection_scheme == flag_for_ntiedtke_deep_convection_scheme)
 [prevsq]
   standard_name = moisture_from_previous_timestep
   long_name = moisture from previous time step
@@ -4639,12 +4790,14 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_mass_flux_deep_convection_scheme == flag_for_gf_deep_convection_scheme .or. flag_for_mass_flux_deep_convection_scheme == flag_for_ntiedtke_deep_convection_scheme)
 [cactiv]
   standard_name = conv_activity_counter
   long_name = convective activity memory
   units = none
   dimensions = (horizontal_dimension)
   type = integer
+  active = (flag_for_mass_flux_deep_convection_scheme == flag_for_gf_deep_convection_scheme)
 [CLDFRA_BL]
   standard_name = subgrid_cloud_fraction_pbl
   long_name = subgrid cloud fraction from PBL scheme
@@ -4652,6 +4805,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (do_mynnedmf)
 [QC_BL]
   standard_name = subgrid_cloud_water_mixing_ratio_pbl
   long_name = subgrid cloud water mixing ratio from PBL scheme
@@ -4659,6 +4813,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (do_mynnedmf)
 [QI_BL]
   standard_name = subgrid_cloud_ice_mixing_ratio_pbl
   long_name = subgrid cloud ice mixing ratio from PBL scheme
@@ -4666,6 +4821,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (do_mynnedmf)
 [el_pbl]
   standard_name = mixing_length
   long_name = mixing length in meters
@@ -4673,6 +4829,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (do_mynnedmf)
 [Sh3D]
   standard_name = stability_function_for_heat
   long_name = stability function for heat
@@ -4680,6 +4837,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (do_mynnedmf)
 [qke]
   standard_name = tke_at_mass_points
   long_name = 2 x tke at mass points
@@ -4687,6 +4845,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (do_mynnedmf)
 [tsq]
   standard_name = t_prime_squared
   long_name = temperature fluctuation squared
@@ -4694,6 +4853,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (do_mynnedmf)
 [qsq]
   standard_name = q_prime_squared
   long_name = water vapor fluctuation squared
@@ -4701,6 +4861,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (do_mynnedmf)
 [cov]
   standard_name = t_prime_q_prime
   long_name = covariance of temperature and moisture
@@ -4708,6 +4869,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (do_mynnedmf)
 [phy_myj_qsfc]
   standard_name = surface_specific_humidity_for_MYJ_schemes
   long_name = surface air saturation specific humidity for MYJ schemes
@@ -4715,6 +4877,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (do_myjsfc .or. do_myjpbl)
 [phy_myj_thz0]
   standard_name = potential_temperature_at_viscous_sublayer_top
   long_name = potential temperature at viscous sublayer top over water
@@ -4722,6 +4885,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (do_myjsfc .or. do_myjpbl)
 [phy_myj_qz0]
   standard_name = specific_humidity_at_viscous_sublayer_top
   long_name = specific humidity at_viscous sublayer top over water
@@ -4729,6 +4893,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (do_myjsfc .or. do_myjpbl)
 [phy_myj_uz0]
   standard_name = u_wind_component_at_viscous_sublayer_top
   long_name = u wind component at viscous sublayer top over water
@@ -4736,6 +4901,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (do_myjsfc .or. do_myjpbl)
 [phy_myj_vz0]
   standard_name = v_wind_component_at_viscous_sublayer_top
   long_name = v wind component at viscous sublayer top over water
@@ -4743,6 +4909,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (do_myjsfc .or. do_myjpbl)
 [phy_myj_z0base]
   standard_name = baseline_surface_roughness_length
   long_name = baseline surface roughness length for momentum in meter
@@ -4750,6 +4917,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (do_myjsfc .or. do_myjpbl)
 [phy_myj_akhs]
   standard_name = heat_exchange_coefficient_for_MYJ_schemes
   long_name = surface heat exchange_coefficient for MYJ schemes
@@ -4757,6 +4925,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (do_myjsfc .or. do_myjpbl)
 [phy_myj_akms]
   standard_name = momentum_exchange_coefficient_for_MYJ_schemes
   long_name = surface momentum exchange_coefficient for MYJ schemes
@@ -4764,6 +4933,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (do_myjsfc .or. do_myjpbl)
 [phy_myj_chkqlm]
   standard_name = surface_layer_evaporation_switch
   long_name = surface layer evaporation switch
@@ -4771,6 +4941,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (do_myjsfc .or. do_myjpbl)
 [phy_myj_elflx]
   standard_name = kinematic_surface_latent_heat_flux
   long_name = kinematic surface latent heat flux
@@ -4778,6 +4949,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (do_myjsfc .or. do_myjpbl)
 [phy_myj_a1u]
   standard_name = weight_for_momentum_at_viscous_sublayer_top
   long_name = weight for momentum at viscous layer top
@@ -4785,6 +4957,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (do_myjsfc .or. do_myjpbl)
 [phy_myj_a1t]
   standard_name = weight_for_potental_temperature_at_viscous_sublayer_top
   long_name = weight for potental temperature at viscous layer top
@@ -4792,6 +4965,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (do_myjsfc .or. do_myjpbl)
 [phy_myj_a1q]
   standard_name = weight_for_specific_humidity_at_viscous_sublayer_top
   long_name = weight for Specfic Humidity at viscous layer top
@@ -4799,6 +4973,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (do_myjsfc .or. do_myjpbl)
 
 ########################################################################
 [ccpp-arg-table]
@@ -5034,6 +5209,7 @@
   dimensions = (horizontal_dimension)
   type = real 
   kind = kind_phys
+  active = (gwd_opt == 33)
 [dvsfc_ls]
   standard_name = integrated_y_momentum_flux_from_large_scale_gwd
   long_name = integrated y momentum flux from large scale gwd
@@ -5041,6 +5217,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (gwd_opt == 33)
 [dusfc_bl]
   standard_name = integrated_x_momentum_flux_from_blocking_drag
   long_name = integrated x momentum flux from blocking drag
@@ -5048,6 +5225,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (gwd_opt == 33)
 [dvsfc_bl]
   standard_name = integrated_y_momentum_flux_from_blocking_drag
   long_name = integrated y momentum flux from blocking drag
@@ -5055,6 +5233,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (gwd_opt == 33)
 [dusfc_ss]
   standard_name = integrated_x_momentum_flux_from_small_scale_gwd
   long_name = integrated x momentum flux from small scale gwd
@@ -5062,6 +5241,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (gwd_opt == 33)
 [dvsfc_ss]
   standard_name = integrated_y_momentum_flux_from_small_scale_gwd
   long_name = integrated y momentum flux from small scale gwd
@@ -5069,6 +5249,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (gwd_opt == 33)
 [dusfc_fd]
   standard_name = integrated_x_momentum_flux_from_form_drag
   long_name = integrated x momentum flux from form drag
@@ -5076,6 +5257,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (gwd_opt == 33)
 [dvsfc_fd]
   standard_name = integrated_y_momentum_flux_from_form_drag
   long_name = integrated y momentum flux from form drag
@@ -5083,6 +5265,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (gwd_opt == 33)
 [dtaux2d_ls]
   standard_name = x_momentum_tendency_from_large_scale_gwd
   long_name = x momentum tendency from large scale gwd
@@ -5090,6 +5273,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (gwd_opt == 33)
 [dtauy2d_ls]
   standard_name = y_momentum_tendency_from_large_scale_gwd
   long_name = y momentum tendency from large scale gwd
@@ -5097,6 +5281,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (gwd_opt == 33)
 [dtaux2d_bl]
   standard_name = x_momentum_tendency_from_blocking_drag
   long_name = x momentum tendency from blocking drag
@@ -5104,6 +5289,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (gwd_opt == 33)
 [dtauy2d_bl]
   standard_name = y_momentum_tendency_from_blocking_drag
   long_name = y momentum tendency from blocking drag
@@ -5111,6 +5297,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (gwd_opt == 33)
 [dtaux2d_ss]
   standard_name = x_momentum_tendency_from_small_scale_gwd
   long_name = x momentum tendency from small scale gwd
@@ -5118,12 +5305,14 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (gwd_opt == 33)
 [dtauy2d_ss]
   standard_name = y_momentum_tendency_from_small_scale_gwd
   long_name = y momentum tendency from small scale gwd
   units = m s-2
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
+  active = (gwd_opt == 33)
   kind = kind_phys
 [dtaux2d_fd]
   standard_name = x_momentum_tendency_from_form_drag
@@ -5132,6 +5321,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (gwd_opt == 33)
 [dtauy2d_fd]
   standard_name = y_momentum_tendency_from_form_drag
   long_name = y momentum tendency from form drag
@@ -5139,6 +5329,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (gwd_opt == 33)
 [totprcp]
   standard_name = accumulated_lwe_thickness_of_precipitation_amount
   long_name = accumulated total precipitation
@@ -5202,6 +5393,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_microphysics_scheme == flag_for_fer_hires_microphysics_scheme)
 [gflux]
   standard_name = cumulative_surface_ground_heat_flux_multiplied_by_timestep
   long_name = cumulative groud conductive heat flux multiplied by timestep
@@ -5566,6 +5758,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (.not. flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme)
 [tdomr]
   standard_name = dominant_rain_type
   long_name = dominant rain type
@@ -5685,6 +5878,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_diagnostics_3D)
 [dv3dt(:,:,1)]
   standard_name = cumulative_change_in_y_wind_due_to_PBL
   long_name = cumulative change in y wind due to PBL
@@ -5741,6 +5935,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_diagnostics_3D)
 [dt3dt(:,:,1)]
   standard_name = cumulative_change_in_temperature_due_to_longwave_radiation
   long_name = cumulative change in temperature due to longwave radiation
@@ -5818,6 +6013,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_diagnostics_3D)
 [dq3dt(:,:,1)]
   standard_name = cumulative_change_in_water_vapor_specific_humidity_due_to_PBL
   long_name = cumulative change in water vapor specific humidity due to PBL
@@ -5909,6 +6105,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_diagnostics_3D .and. flag_tracer_diagnostics_3D)
 [refdmax]
   standard_name = maximum_reflectivity_at_1km_agl_over_maximum_hourly_time_interval
   long_name = maximum reflectivity at 1km agl over maximum hourly time interval
@@ -6004,6 +6201,7 @@
   dimensions = (horizonal_dimension,number_of_dust_bins_for_diagnostics)
   type = real
   kind = kind_phys
+  active = (number_of_chemical_tracers > 0)
 [ssem]
   standard_name = instantaneous_seasalt_emission_flux
   long_name = instantaneous sea salt emission flux
@@ -6011,6 +6209,7 @@
   dimensions = (horizonal_dimension,number_of_seasalt_bins_for_diagnostics)
   type = real
   kind = kind_phys
+  active = (number_of_chemical_tracers > 0)
 [sedim]
   standard_name = instantaneous_sedimentation
   long_name = instantaneous sedimentation
@@ -6018,6 +6217,7 @@
   dimensions = (horizonal_dimension,number_of_chemical_tracers_for_diagnostics)
   type = real
   kind = kind_phys
+  active = (index_for_first_chemical_tracer > 0 .and. number_of_chemical_tracers > 0)
 [drydep]
   standard_name = instantaneous_dry_deposition
   long_name = instantaneous dry deposition
@@ -6025,6 +6225,7 @@
   dimensions = (horizonal_dimension,number_of_chemical_tracers_for_diagnostics)
   type = real
   kind = kind_phys
+  active = (index_for_first_chemical_tracer > 0 .and. number_of_chemical_tracers > 0)
 [wetdpl]
   standard_name = instantaneous_large_scale_wet_deposition
   long_name = instantaneous large-scale wet deposition
@@ -6032,6 +6233,7 @@
   dimensions = (horizonal_dimension,number_of_chemical_tracers_for_diagnostics)
   type = real
   kind = kind_phys
+  active = (index_for_first_chemical_tracer > 0 .and. number_of_chemical_tracers > 0)
 [wetdpc]
   standard_name = instantaneous_convective_scale_wet_deposition
   long_name = instantaneous convective-scale wet deposition
@@ -6039,6 +6241,7 @@
   dimensions = (horizonal_dimension,number_of_chemical_tracers_for_diagnostics)
   type = real
   kind = kind_phys
+  active = (index_for_first_chemical_tracer > 0 .and. number_of_chemical_tracers > 0)
 [abem]
   standard_name = instantaneous_anthopogenic_and_biomass_burning_emissions
   long_name = instantaneous anthopogenic and biomass burning emissions for black carbon, organic carbon, and sulfur dioxide
@@ -6060,6 +6263,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (do_mynnedmf .and. (mynn_output_flag .ne. 0))
 [edmf_w]
   standard_name = emdf_updraft_vertical_velocity
   long_name = updraft vertical velocity from mass flux scheme
@@ -6067,6 +6271,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (do_mynnedmf .and. (mynn_output_flag .ne. 0))
 [edmf_qt]
   standard_name = emdf_updraft_total_water
   long_name = updraft total water from mass flux scheme
@@ -6074,6 +6279,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (do_mynnedmf .and. (mynn_output_flag .ne. 0))
 [edmf_thl]
   standard_name = emdf_updraft_theta_l
   long_name = updraft theta-l from mass flux scheme
@@ -6081,6 +6287,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (do_mynnedmf .and. (mynn_output_flag .ne. 0))
 [edmf_ent]
   standard_name = emdf_updraft_entrainment_rate
   long_name = updraft entranment rate from mass flux scheme
@@ -6088,6 +6295,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (do_mynnedmf .and. (mynn_output_flag .ne. 0))
 [edmf_qc]
   standard_name = emdf_updraft_cloud_water
   long_name = updraft cloud water from mass flux scheme
@@ -6095,6 +6303,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (do_mynnedmf .and. (mynn_output_flag .ne. 0))
 [sub_thl]
   standard_name = theta_subsidence_tendency
   long_name = updraft theta subsidence tendency
@@ -6102,6 +6311,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (do_mynnedmf .and. (mynn_output_flag .ne. 0))
 [sub_sqv]
   standard_name = water_vapor_subsidence_tendency
   long_name = updraft water vapor subsidence tendency
@@ -6109,6 +6319,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (do_mynnedmf .and. (mynn_output_flag .ne. 0))
 [det_thl]
   standard_name = theta_detrainment_tendency
   long_name = updraft theta detrainment tendency
@@ -6116,6 +6327,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (do_mynnedmf .and. (mynn_output_flag .ne. 0))
 [det_sqv]
   standard_name = water_vapor_detrainment_tendency
   long_name = updraft water vapor detrainment tendency
@@ -6123,12 +6335,14 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (do_mynnedmf .and. (mynn_output_flag .ne. 0))
 [nupdraft]
   standard_name = number_of_plumes
   long_name = number of plumes per grid column
   units = count
   dimensions = (horizontal_dimension)
   type = integer
+  active = (do_mynnedmf)
 [maxMF]
   standard_name = maximum_mass_flux
   long_name = maximum mass flux within a column
@@ -6136,6 +6350,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (do_mynnedmf)
 [ktop_shallow]
   standard_name = k_level_of_highest_reaching_plume
   long_name = k-level of highest reaching plume
@@ -6148,6 +6363,7 @@
   units = count
   dimensions = (horizontal_dimension)
   type = integer
+  active = (do_mynnedmf)
 [exch_h]
   standard_name = atmosphere_heat_diffusivity_for_mynnpbl
   long_name = diffusivity for heat for MYNN PBL (defined for all mass levels)
@@ -6155,6 +6371,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (do_mynnedmf)
 [exch_m]
   standard_name = atmosphere_momentum_diffusivity_for_mynnpbl
   long_name = diffusivity for momentum for MYNN PBL (defined for all mass levels)
@@ -6162,6 +6379,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (do_mynnedmf)
 [zmtb]
   standard_name = time_integral_of_height_of_mountain_blocking
   long_name = time integral of height of mountain blocking drag
@@ -6218,6 +6436,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (diag_ugwp_flag)
 [du3dt_ogw]
   standard_name = time_integral_of_change_in_x_wind_due_to_orographic_gravity_wave_drag
   long_name = time integral of change in x wind due to orographic gw drag
@@ -6225,6 +6444,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (diag_ugwp_flag)
 [du3dt_tms]
   standard_name = time_integral_of_change_in_x_wind_due_to_turbulent_orographic_form_drag
   long_name = time integral of change in x wind due to TOFD
@@ -6232,6 +6452,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (diag_ugwp_flag)
 [du3dt_ngw]
   standard_name = time_integral_of_change_in_x_wind_due_to_nonstationary_gravity_wave
   long_name = time integral of change in x wind due to NGW
@@ -6239,6 +6460,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (diag_ugwp_flag)
 [dv3dt_ngw]
   standard_name = time_integral_of_change_in_y_wind_due_to_nonstationary_gravity_wave
   long_name = time integral of change in y wind due to NGW
@@ -6246,6 +6468,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (diag_ugwp_flag)
 [aux2d]
   standard_name = auxiliary_2d_arrays
   long_name = auxiliary 2d arrays to output (for debugging)
@@ -6253,6 +6476,7 @@
   dimensions = (horizontal_dimension,number_of_3d_auxiliary_arrays)
   type = real
   kind = kind_phys
+  active = (number_of_2d_auxiliary_arrays > 0)
 [aux3d]
   standard_name = auxiliary_3d_arrays
   long_name = auxiliary 3d arrays to output (for debugging)
@@ -6260,6 +6484,7 @@
   dimensions = (horizontal_dimension,vertical_dimension,number_of_3d_auxiliary_arrays)
   type = real
   kind = kind_phys
+  active = (number_of_2d_auxiliary_arrays > 0)
 
 
 ########################################################################
@@ -6273,6 +6498,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_microphysics_scheme == flag_for_fer_hires_microphysics_scheme)
 [qc_r]
   standard_name = cloud_liquid_water_mixing_ratio
   long_name = the ratio of the mass of liquid water to the mass of dry air
@@ -6280,6 +6506,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_microphysics_scheme == flag_for_fer_hires_microphysics_scheme)
 [qr_r]
   standard_name = cloud_rain_water_mixing_ratio
   long_name = the ratio of the mass rain water to the mass of dry air
@@ -6287,6 +6514,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_microphysics_scheme == flag_for_fer_hires_microphysics_scheme)
 [qi_r]
   standard_name = cloud_ice_mixing_ratio
   long_name = the ratio of the mass of ice to the mass of dry air
@@ -6294,6 +6522,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_microphysics_scheme == flag_for_fer_hires_microphysics_scheme)
 [qs_r]
   standard_name = cloud_snow_mixing_ratio
   long_name = the ratio of the mass of snow to mass of dry air
@@ -6301,6 +6530,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_microphysics_scheme == flag_for_fer_hires_microphysics_scheme)
 [qg_r]
   standard_name = mass_weighted_rime_factor_mixing_ratio
   long_name = the ratio of the mass of rime factor to mass of dry air
@@ -6308,6 +6538,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_microphysics_scheme == flag_for_fer_hires_microphysics_scheme)
 [f_ice]
   standard_name = fraction_of_ice_water_cloud
   long_name = fraction of ice water cloud
@@ -6315,6 +6546,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_microphysics_scheme == flag_for_fer_hires_microphysics_scheme)
 [f_rain]
   standard_name = fraction_of_rain_water_cloud
   long_name = fraction of rain water cloud
@@ -6322,6 +6554,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_microphysics_scheme == flag_for_fer_hires_microphysics_scheme)
 [f_rimef]
   standard_name = rime_factor
   long_name = rime factor
@@ -6329,6 +6562,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_microphysics_scheme == flag_for_fer_hires_microphysics_scheme)
 [cwm]
   standard_name = total_cloud_condensate_mixing_ratio_updated_by_physics
   long_name = total cloud condensate mixing ratio (except water vapor) updated by physics
@@ -6336,6 +6570,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_microphysics_scheme == flag_for_fer_hires_microphysics_scheme)
 [adjsfculw_ocean]
   standard_name = surface_upwelling_longwave_flux_over_ocean_interstitial
   long_name = surface upwelling longwave flux at current time over ocean (temporary use as interstitial)
@@ -6518,6 +6753,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_microphysics_scheme == flag_for_morrison_gettelman_microphysics_scheme)
 [clcn]
   standard_name = convective_cloud_volume_fraction
   long_name = convective cloud volume fraction
@@ -6525,6 +6761,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_microphysics_scheme == flag_for_morrison_gettelman_microphysics_scheme)
 [cldf]
   standard_name = cloud_area_fraction
   long_name = fraction of grid box area in which updrafts occur
@@ -6665,6 +6902,7 @@
   dimensions = (horizontal_dimension,4)
   type = real
   kind = kind_phys
+  active = (gwd_opt == 3 .or. gwd_opt == 33)
 [cmm_ocean]
   standard_name = surface_drag_wind_speed_for_momentum_in_air_over_ocean
   long_name = momentum exchange coefficient over ocean
@@ -6693,6 +6931,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_microphysics_scheme == flag_for_morrison_gettelman_microphysics_scheme)
 [cnv_fice]
   standard_name = ice_fraction_in_convective_tower
   long_name = ice fraction in convective tower
@@ -6700,6 +6939,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_microphysics_scheme == flag_for_morrison_gettelman_microphysics_scheme)
 [cnv_mfd]
   standard_name = detrained_mass_flux
   long_name = detrained mass flux
@@ -6707,6 +6947,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_microphysics_scheme == flag_for_morrison_gettelman_microphysics_scheme)
 [cnv_ndrop]
   standard_name = number_concentration_of_cloud_liquid_water_particles_for_detrainment
   long_name = droplet number concentration in convective detrainment
@@ -6714,6 +6955,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_microphysics_scheme == flag_for_morrison_gettelman_microphysics_scheme)
 [cnv_nice]
   standard_name = number_concentration_of_ice_crystals_for_detrainment
   long_name = crystal number concentration in convective detrainment
@@ -6721,6 +6963,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_microphysics_scheme == flag_for_morrison_gettelman_microphysics_scheme)
 [cnvc]
   standard_name = convective_cloud_cover
   long_name = convective cloud cover
@@ -7456,6 +7699,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_microphysics_scheme == flag_for_gfdl_microphysics_scheme .or. flag_for_microphysics_scheme == flag_for_thompson_microphysics_scheme)
 [gwdcu]
   standard_name = tendency_of_x_wind_due_to_convective_gravity_wave_drag
   long_name = zonal wind tendency due to convective gravity wave drag
@@ -7560,6 +7804,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_microphysics_scheme == flag_for_gfdl_microphysics_scheme .or. flag_for_microphysics_scheme == flag_for_thompson_microphysics_scheme)
 [dry]
   standard_name = flag_nonzero_land_surface_fraction
   long_name = flag indicating presence of some land surface area fraction
@@ -7741,6 +7986,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_microphysics_scheme == flag_for_morrison_gettelman_microphysics_scheme)
 [ncpi]
   standard_name = local_ice_number_concentration
   long_name = number concentration of ice local to physics
@@ -7748,6 +7994,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_shoc)
 [ncpl]
   standard_name = local_condesed_water_number_concentration
   long_name = number concentration of condensed water local to physics
@@ -7755,6 +8002,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_shoc)
 [ncpr]
   standard_name = local_rain_number_concentration
   long_name = number concentration of rain local to physics
@@ -7762,6 +8010,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_microphysics_scheme == flag_for_morrison_gettelman_microphysics_scheme)
 [ncps]
   standard_name = local_snow_number_concentration
   long_name = number concentration of snow local to physics
@@ -7769,6 +8018,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_microphysics_scheme == flag_for_morrison_gettelman_microphysics_scheme)
 [ncstrac]
   standard_name = number_of_tracers_for_CS
   long_name = number of convectively transported tracers in Chikira-Sugiyama deep convection scheme
@@ -7861,6 +8111,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (gwd_opt == 3 .or. gwd_opt == 33)
 [oa4ss]
   standard_name = asymmetry_of_subgrid_orography_small_scale
   long_name = asymmetry of subgrid orography small scale
@@ -7868,6 +8119,7 @@
   dimensions = (horizontal_dimension,4)
   type = real
   kind = kind_phys
+  active = (gwd_opt == 3 .or. gwd_opt == 33)
 [oc]
   standard_name = convexity_of_subgrid_orography
   long_name = convexity of subgrid orography
@@ -7882,6 +8134,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (gwd_opt == 3 .or. gwd_opt == 33)
 [olyr]
   standard_name = ozone_concentration_at_layer_for_radiation
   long_name = ozone concentration layer
@@ -7948,6 +8201,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)
 [qgl]
   standard_name = local_graupel_mixing_ratio
   long_name = ratio of mass of graupel to mass of dry air plus vapor (without condensates) local to physics
@@ -7955,6 +8209,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_microphysics_scheme == flag_for_morrison_gettelman_microphysics_scheme .or. flag_for_shoc)
 [qicn]
   standard_name = mass_fraction_of_convective_cloud_ice
   long_name = mass fraction of convective cloud ice water
@@ -7962,6 +8217,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_microphysics_scheme == flag_for_morrison_gettelman_microphysics_scheme)
 [qlcn]
   standard_name = mass_fraction_of_convective_cloud_liquid_water
   long_name = mass fraction of convective cloud liquid water
@@ -7969,6 +8225,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_microphysics_scheme == flag_for_morrison_gettelman_microphysics_scheme)
 [qlyr]
   standard_name = water_vapor_specific_humidity_at_layer_for_radiation
   long_name = specific humidity layer
@@ -7983,6 +8240,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_microphysics_scheme == flag_for_morrison_gettelman_microphysics_scheme .or. flag_for_shoc)
 [qsnw]
   standard_name = local_snow_water_mixing_ratio
   long_name = ratio of mass of snow water to mass of dry air plus vapor (without condensates) local to physics
@@ -7990,6 +8248,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_microphysics_scheme == flag_for_morrison_gettelman_microphysics_scheme .or. flag_for_shoc)
 [prcpmp]
   standard_name = lwe_thickness_of_explicit_precipitation_amount
   long_name = explicit precipitation (rain, ice, snow, graupel, ...) on physics timestep
@@ -8059,6 +8318,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_microphysics_scheme == flag_for_gfdl_microphysics_scheme .or. flag_for_microphysics_scheme == flag_for_thompson_microphysics_scheme)
 [rainp]
   standard_name = tendency_of_rain_water_mixing_ratio_due_to_microphysics
   long_name = tendency of rain water mixing ratio due to microphysics
@@ -8300,6 +8560,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_microphysics_scheme == flag_for_gfdl_microphysics_scheme .or. flag_for_microphysics_scheme == flag_for_thompson_microphysics_scheme)
 [snowmt]
   standard_name = surface_snow_melt
   long_name = snow melt during timestep
@@ -8348,6 +8609,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)
 [theta]
   standard_name = angle_from_east_of_maximum_subgrid_orographic_variations
   long_name = angle with_respect to east of maximum subgrid orographic variations
@@ -8553,6 +8815,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_microphysics_scheme == flag_for_morrison_gettelman_microphysics_scheme)
 [wcbmax]
   standard_name = maximum_updraft_velocity_at_cloud_base
   long_name = maximum updraft velocity at cloud base
@@ -8771,6 +9034,7 @@
   type = real
   kind = kind_phys
   optional = F
+  active = (flag_for_rrtmgp_radiation_scheme)
 [p_lev]
   standard_name = air_pressure_at_interface_for_RRTMGP_in_hPa
   long_name = air pressure level
@@ -8779,6 +9043,7 @@
   type = real
   kind = kind_phys
   optional = F
+  active = (flag_for_rrtmgp_radiation_scheme)
 [t_lay]
   standard_name = air_temperature_at_layer_for_RRTMGP
   long_name = air temperature layer
@@ -8787,6 +9052,7 @@
   type = real
   kind = kind_phys
   optional = F
+  active = (flag_for_rrtmgp_radiation_scheme)
 [t_lev]
   standard_name = air_temperature_at_interface_for_RRTMGP
   long_name = air temperature layer
@@ -8795,6 +9061,7 @@
   type = real
   kind = kind_phys
   optional = F
+  active = (flag_for_rrtmgp_radiation_scheme)
 [tv_lay]
   standard_name = virtual_temperature
   long_name = layer virtual temperature
@@ -8803,6 +9070,7 @@
   type = real
   kind = kind_phys
   optional = F
+  active = (flag_for_rrtmgp_radiation_scheme)
 [relhum]
   standard_name = relative_humidity
   long_name = layer relative humidity
@@ -8811,6 +9079,7 @@
   type = real
   kind = kind_phys
   optional = F
+  active = (flag_for_rrtmgp_radiation_scheme)
 [tracer]
   standard_name = chemical_tracers
   long_name = chemical tracers
@@ -8819,6 +9088,7 @@
   type = real
   kind = kind_phys
   optional = F
+  active = (flag_for_rrtmgp_radiation_scheme)
 [hsw0]
   standard_name = RRTMGP_sw_heating_rate_clear_sky
   long_name = RRTMGP shortwave clear sky heating rate
@@ -8827,6 +9097,7 @@
   type = real
   kind = kind_phys
   optional = T
+  active = (flag_for_rrtmgp_radiation_scheme)
 [hswc]
   standard_name = RRTMGP_sw_heating_rate_all_sky
   long_name = RRTMGP shortwave all sky heating rate
@@ -8835,6 +9106,7 @@
   type = real
   kind = kind_phys
   optional = F
+  active = (flag_for_rrtmgp_radiation_scheme)
 [hswb]
   standard_name = RRTMGP_sw_heating_rate_spectral
   long_name = RRTMGP shortwave total sky heating rate (spectral)
@@ -8843,6 +9115,7 @@
   type = real
   kind = kind_phys
   optional = T
+  active = (flag_for_rrtmgp_radiation_scheme)
 [hlw0]
   standard_name = RRTMGP_lw_heating_rate_clear_sky
   long_name = RRTMGP longwave clear sky heating rate
@@ -8851,6 +9124,7 @@
   type = real
   kind = kind_phys
   optional = T
+  active = (flag_for_rrtmgp_radiation_scheme)
 [hlwc]
   standard_name = RRTMGP_lw_heating_rate_all_sky
   long_name = RRTMGP longwave all sky heating rate
@@ -8859,6 +9133,7 @@
   type = real
   kind = kind_phys
   optional = F
+  active = (flag_for_rrtmgp_radiation_scheme)
 [hlwb]
   standard_name = RRTMGP_lw_heating_rate_spectral
   long_name = RRTMGP longwave total sky heating rate (spectral)
@@ -8867,6 +9142,7 @@
   type = real
   kind = kind_phys
   optional = T
+  active = (flag_for_rrtmgp_radiation_scheme)
 [ipsdsw0]
   standard_name = initial_permutation_seed_sw
   long_name = initial seed for McICA SW 
@@ -8888,6 +9164,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_rrtmgp_radiation_scheme)
 [cld_lwp]
   standard_name = RRTMGP_cloud_liquid_water_path
   long_name = layer cloud liquid water path
@@ -8895,6 +9172,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_rrtmgp_radiation_scheme)
 [cld_reliq]
   standard_name = RRTMGP_mean_effective_radius_for_liquid_cloud
   long_name = mean effective radius for liquid cloud
@@ -8902,6 +9180,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_rrtmgp_radiation_scheme)
 [cld_iwp]
   standard_name = RRTMGP_cloud_ice_water_path
   long_name = layer cloud ice water path
@@ -8909,6 +9188,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_rrtmgp_radiation_scheme)
 [cld_reice]
   standard_name = RRTMGP_mean_effective_radius_for_ice_cloud
   long_name = mean effective radius for ice cloud
@@ -8916,6 +9196,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_rrtmgp_radiation_scheme)
 [cld_rwp]
   standard_name = RRTMGP_cloud_rain_water_path
   long_name = cloud rain water path
@@ -8923,6 +9204,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_rrtmgp_radiation_scheme)
 [cld_rerain]
   standard_name = RRTMGP_mean_effective_radius_for_rain_drop
   long_name = mean effective radius for rain drop
@@ -8930,6 +9212,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_rrtmgp_radiation_scheme)
 [cld_swp]
   standard_name = RRTMGP_cloud_snow_water_path
   long_name = cloud snow water path
@@ -8937,6 +9220,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_rrtmgp_radiation_scheme)
 [cld_resnow]
   standard_name = RRTMGP_mean_effective_radius_for_snow_flake
   long_name = mean effective radius for snow flake
@@ -8944,6 +9228,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_rrtmgp_radiation_scheme)
 [cldtausw]
   standard_name = RRTMGP_cloud_optical_depth_layers_at_0_55mu_band
   long_name = approx .55mu band layer cloud optical depth
@@ -8967,6 +9252,7 @@
   type = real
   kind = kind_phys
   optional = F
+  active = (flag_for_rrtmgp_radiation_scheme)
 [fluxlwDOWN_allsky]
   standard_name = RRTMGP_lw_flux_profile_downward_allsky
   long_name = RRTMGP downward longwave all-sky flux profile
@@ -8975,6 +9261,7 @@
   type = real
   kind = kind_phys
   optional = F
+  active = (flag_for_rrtmgp_radiation_scheme)
 [fluxlwUP_clrsky]
   standard_name = RRTMGP_lw_flux_profile_upward_clrsky
   long_name = RRTMGP upward longwave clr-sky flux profile
@@ -8983,6 +9270,7 @@
   type = real
   kind = kind_phys
   optional = F
+  active = (flag_for_rrtmgp_radiation_scheme)
 [fluxlwDOWN_clrsky]
   standard_name = RRTMGP_lw_flux_profile_downward_clrsky
   long_name = RRTMGP downward longwave clr-sky flux profile
@@ -8991,6 +9279,7 @@
   type = real
   kind = kind_phys
   optional = F
+  active = (flag_for_rrtmgp_radiation_scheme)
 [fluxswUP_allsky]
   standard_name = RRTMGP_sw_flux_profile_upward_allsky
   long_name = RRTMGP upward shortwave all-sky flux profile
@@ -8999,6 +9288,7 @@
   type = real
   kind = kind_phys
   optional = F
+  active = (flag_for_rrtmgp_radiation_scheme)
 [fluxswDOWN_allsky]
   standard_name = RRTMGP_sw_flux_profile_downward_allsky
   long_name = RRTMGP downward shortwave all-sky flux profile
@@ -9007,6 +9297,7 @@
   type = real
   kind = kind_phys
   optional = F
+  active = (flag_for_rrtmgp_radiation_scheme)
 [fluxswUP_clrsky]
   standard_name = RRTMGP_sw_flux_profile_upward_clrsky
   long_name = RRTMGP upward shortwave clr-sky flux profile
@@ -9015,6 +9306,7 @@
   type = real
   kind = kind_phys
   optional = F
+  active = (flag_for_rrtmgp_radiation_scheme)
 [fluxswDOWN_clrsky]
   standard_name = RRTMGP_sw_flux_profile_downward_clrsky
   long_name = RRTMGP downward shortwave clr-sky flux profile
@@ -9023,6 +9315,7 @@
   type = real
   kind = kind_phys
   optional = F
+  active = (flag_for_rrtmgp_radiation_scheme)
 [flxprf_lw]
   standard_name = RRTMGP_lw_fluxes
   long_name = lw fluxes total sky / csk and up / down at levels
@@ -9030,6 +9323,7 @@
   dimensions = (horizontal_dimension,vertical_dimension_plus_one)
   type = proflw_type
   optional = T
+  active = (flag_for_rrtmgp_radiation_scheme)
 [flxprf_sw]
   standard_name = RRTMGP_sw_fluxes
   long_name = sw fluxes total sky / csk and up / down at levels
@@ -9037,6 +9331,7 @@
   dimensions = (horizontal_dimension,vertical_dimension_plus_one)
   type = profsw_type
   optional = T
+  active = (flag_for_rrtmgp_radiation_scheme)
 [aerosolslw]
   standard_name = RRTMGP_aerosol_optical_properties_for_longwave_bands_01_16
   long_name = aerosol optical properties for longwave bands 01-16
@@ -9045,6 +9340,7 @@
   type = real
   kind = kind_phys
   optional = F
+  active = (flag_for_rrtmgp_radiation_scheme)
 [aerosolslw(:,:,:,1)]
   standard_name = RRTMGP_aerosol_optical_depth_for_longwave_bands_01_16
   long_name = aerosol optical depth for longwave bands 01-16
@@ -9073,6 +9369,7 @@
   dimensions = (horizontal_dimension,vertical_dimension, number_of_sw_bands_rrtmgp, number_of_aerosol_output_fields_for_shortwave_radiation)
   type = real
   kind = kind_phys
+  active = (flag_for_rrtmgp_radiation_scheme)
 [aerosolssw(:,:,:,1)]
   standard_name = RRTMGP_aerosol_optical_depth_for_shortwave_bands_01_16
   long_name = aerosol optical depth for shortwave bands 01-16
@@ -9101,6 +9398,7 @@
   dimensions = (horizontal_dimension)
   type = integer
   optional = F
+  active = (flag_for_rrtmgp_radiation_scheme)
 [icseed_sw]
   standard_name = seed_random_numbers_sw_for_RRTMGP
   long_name = seed for random number generation for shortwave radiation
@@ -9108,6 +9406,7 @@
   dimensions = (horizontal_dimension)
   type = integer
   optional = F
+  active = (flag_for_rrtmgp_radiation_scheme)
 [sw_gas_props]
   standard_name = coefficients_for_sw_gas_optics
   long_name = DDT containing spectral information for RRTMGP SW radiation scheme
@@ -9211,6 +9510,7 @@
   dimensions = (number_of_lw_bands_rrtmgp,horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_rrtmgp_radiation_scheme)
 [sec_diff_byband]
   standard_name = secant_of_diffusivity_angle_each_RRTMGP_LW_band
   long_name = secant of diffusivity angle in each RRTMGP LW band
@@ -9218,6 +9518,7 @@
   dimensions = (number_of_lw_bands_rrtmgp,horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_rrtmgp_radiation_scheme)
 [sfc_alb_nir_dir]
   standard_name = surface_albedo_nearIR_direct
   long_name = near-IR (direct) surface albedo (sfc_alb_nir_dir)
@@ -9225,6 +9526,7 @@
   dimensions = (number_of_sw_bands_rrtmgp,horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_rrtmgp_radiation_scheme)
 [sfc_alb_nir_dif]
   standard_name = surface_albedo_nearIR_diffuse
   long_name = near-IR (diffuse) surface albedo (sfc_alb_nir_dif)
@@ -9232,6 +9534,7 @@
   dimensions = (number_of_sw_bands_rrtmgp,horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_rrtmgp_radiation_scheme)
 [sfc_alb_uvvis_dir]
   standard_name =  surface_albedo_uvvis_dir
   long_name = UVVIS (direct) surface albedo (sfc_alb_uvvis_dir)
@@ -9239,6 +9542,7 @@
   dimensions = (number_of_sw_bands_rrtmgp,horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_rrtmgp_radiation_scheme)
 [sfc_alb_uvvis_dif]
   standard_name =  surface_albedo_uvvis_dif
   long_name = UVVIS (diffuse) surface albedo (sfc_alb_uvvis_dif)
@@ -9246,6 +9550,7 @@
   dimensions = (number_of_sw_bands_rrtmgp,horizontal_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_rrtmgp_radiation_scheme)
 [toa_src_lw]
   standard_name = toa_incident_lw_flux_by_spectral_point
   long_name = TOA longwave incident flux at each spectral points
@@ -9253,6 +9558,7 @@
   dimensions = (horizontal_dimension,number_of_lw_spectral_points_rrtmgp)
   type = real
   kind = kind_phys
+  active = (flag_for_rrtmgp_radiation_scheme)
 [toa_src_sw]
   standard_name = toa_incident_sw_flux_by_spectral_point
   long_name = TOA shortwave incident flux at each spectral points
@@ -9260,6 +9566,7 @@
   dimensions = (horizontal_dimension,number_of_sw_spectral_points_rrtmgp)
   type = real
   kind = kind_phys
+  active = (flag_for_rrtmgp_radiation_scheme)
 [active_gases_array]
   standard_name = list_of_active_gases_used_by_RRTMGP
   long_name = list of active gases used by RRTMGP
@@ -9267,6 +9574,7 @@
   dimensions =  (number_of_active_gases_used_by_RRTMGP)
   type = character
   kind = len=128
+  active = (flag_for_rrtmgp_radiation_scheme)
 
 ########################################################################
 [ccpp-arg-table]
