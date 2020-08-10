@@ -186,16 +186,20 @@ SCHEME_FILES = [
     'FV3/ccpp/physics/physics/rrtmgp_sw_cloud_optics.F90',
     'FV3/ccpp/physics/physics/rrtmgp_sw_aerosol_optics.F90',
     'FV3/ccpp/physics/physics/rrtmgp_lw_rte.F90',
-    'FV3/ccpp/physics/physics/rrtmgp_lw_cloud_sampling.F90',
     'FV3/ccpp/physics/physics/rrtmgp_sw_rte.F90',
-    'FV3/ccpp/physics/physics/rrtmgp_sw_cloud_sampling.F90',
     'FV3/ccpp/physics/physics/rrtmgp_lw_aerosol_optics.F90',
     'FV3/ccpp/physics/physics/GFS_rrtmgp_setup.F90',
     'FV3/ccpp/physics/physics/GFS_rrtmgp_pre.F90',
     'FV3/ccpp/physics/physics/rrtmgp_lw_pre.F90',
     'FV3/ccpp/physics/physics/GFS_rrtmgp_sw_pre.F90',
     'FV3/ccpp/physics/physics/GFS_rrtmgp_lw_post.F90',
-    'FV3/ccpp/physics/physics/GFS_rrtmgp_sw_post.F90',
+    'FV3/ccpp/physics/physics/rrtmgp_lw_cloud_sampling.F90',
+    'FV3/ccpp/physics/physics/rrtmgp_sw_cloud_sampling.F90',
+    'FV3/ccpp/physics/physics/GFS_cloud_diagnostics.F90',
+    'FV3/ccpp/physics/physics/mo_cloud_sampling.F90',
+    'FV3/ccpp/physics/physics/GFS_rrtmgp_gfdlmp_pre.F90',
+    'FV3/ccpp/physics/physics/GFS_rrtmgp_zhaocarr_pre.F90',
+    'FV3/ccpp/physics/physics/GFS_rrtmgp_sw_post.F90'
     ]
 
 # Default build dir, relative to current working directory,
@@ -229,20 +233,6 @@ SUITES_DIR = 'FV3/ccpp/suites'
 # if no entry is made here. Possible values are: 'all', 'none',
 # or a list of standard_names: [ 'var1', 'var3' ].
 OPTIONAL_ARGUMENTS = {
-    'rrtmgp_sw_rte' : {
-         'rrtmgp_sw_rte_run' : [
-             'components_of_surface_downward_shortwave_fluxes',
-             ],
-         },
-    'GFS_rrtmgp_sw_post' : {
-         'GFS_rrtmgp_sw_post_run' : 'none',
-         },
-    'rrtmgp_lw_rte' : {
-         'rrtmgp_lw_rte_run' : 'none',
-        },
-    'GFS_rrtmgp_lw_post' : {
-         'GFS_rrtmgp_lw_post_run' : 'none',
-         },
     'rrtmg_sw' : {
         'rrtmg_sw_run' : [
             'tendency_of_air_temperature_due_to_shortwave_heating_assuming_clear_sky_on_radiation_time_step_and_radiation_levels',
@@ -303,7 +293,34 @@ OPTIONAL_ARGUMENTS = {
             'rime_factor',
             ],
         },
-
+    'rrtmgp_lw_rte' : {
+         'rrtmgp_lw_rte_run' : [
+             'RRTMGP_jacobian_of_lw_flux_profile_upward',
+             'RRTMGP_jacobian_of_lw_flux_profile_downward',
+             ],
+         },          
+    'rrtmgp_sw_rte' : {
+         'rrtmgp_sw_rte_run' : [
+             'components_of_surface_downward_shortwave_fluxes',
+             ],
+         },        
+    'GFS_rrtmgp_sw_post' : {
+         'GFS_rrtmgp_sw_post_run' : [
+             'tendency_of_air_temperature_due_to_shortwave_heating_assuming_clear_sky_on_radiation_time_step',
+             'components_of_surface_downward_shortwave_fluxes',
+             ],
+         },
+    'GFS_rrtmgp_lw_post' : {
+         'GFS_rrtmgp_lw_post_run' : [
+             'tendency_of_air_temperature_due_to_longwave_heating_assuming_clear_sky_on_radiation_time_step',
+             ],
+         },
+    'GFS_suite_interstitial_2' : {
+         'GFS_suite_interstitial_2_run' : [
+             'RRTMGP_jacobian_of_lw_flux_profile_upward',
+             'RRTMGP_lw_flux_profile_upward_allsky',
+             ],
+         },  
     #'subroutine_name_1' : 'all',
     #'subroutine_name_2' : 'none',
     #'subroutine_name_2' : [ 'var1', 'var3'],
