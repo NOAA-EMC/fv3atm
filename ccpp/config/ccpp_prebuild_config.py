@@ -294,6 +294,7 @@ SCHEME_FILES = [
     'FV3/ccpp/physics/physics/sfc_nst.f',
     'FV3/ccpp/physics/physics/sfc_ocean.F',
     'FV3/ccpp/physics/physics/sfc_sice.f',
+    'FV3/ccpp/physics/physics/tracer_sanitizer.F90',
     # HAFSFER_HIRES
     'FV3/ccpp/physics/physics/mp_fer_hires.F90',
     # RRTMGP
