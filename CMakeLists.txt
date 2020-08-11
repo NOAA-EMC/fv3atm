@@ -129,6 +129,7 @@ target_link_libraries(fv3atm PUBLIC ipd)
 target_link_libraries(fv3atm PUBLIC io)
 target_link_libraries(fv3atm PUBLIC fv3dycore)
 target_link_libraries(fv3atm PUBLIC stochastic_physics)
+target_link_libraries(fv3atm PUBLIC stochastic_physics_wrapper)
 
 target_link_libraries(fv3atm PUBLIC
                       nemsio::nemsio w3emc::w3emc_d w3nco::w3nco_d sp::sp_d bacio::bacio_4)
@@ -142,7 +143,7 @@ target_link_libraries(fv3atm PUBLIC esmf)
 ### Install
 ###############################################################################
 install(
-  TARGETS fv3atm fv3dycore io ipd gfsphysics ${CCPP_LIBRARIES} cpl stochastic_physics
+  TARGETS fv3atm fv3dycore io ipd gfsphysics ${CCPP_LIBRARIES} cpl stochastic_physics stochastic_physics_wrapper
   EXPORT fv3atm-config
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib)
