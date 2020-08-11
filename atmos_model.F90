@@ -104,9 +104,7 @@ use IPD_driver,         only: IPD_initialize, IPD_initialize_rst, IPD_step
 use physics_abstraction_layer, only: time_vary_step, radiation_step1, physics_step1, physics_step2
 #endif
 
-use stochastic_physics, only: init_stochastic_physics,         &
-                              run_stochastic_physics
-use GFS_land_perts,     only: GFS_apply_lndp
+use stochastic_physics_wrapper_mod, only: stochastic_physics_wrapper
 
 use FV3GFS_io_mod,      only: FV3GFS_restart_read, FV3GFS_restart_write, &
                               FV3GFS_IPD_checksum,                       &
@@ -251,24 +249,15 @@ contains
 ! </INOUT>
 
 subroutine update_atmos_radiation_physics (Atmos)
-#ifdef OPENMP
-    use omp_lib
-#endif
 !-----------------------------------------------------------------------
   type (atmos_data_type), intent(in) :: Atmos
 !--- local variables---
     integer :: nb, jdat(8), rc
     procedure(IPD_func0d_proc), pointer :: Func0d => NULL()
     procedure(IPD_func1d_proc), pointer :: Func1d => NULL()
-    integer :: nthrds
-!#ifdef CCPP
+    !
+#ifdef CCPP
     integer :: ierr
-!#endif
-
-#ifdef OPENMP
-    nthrds = omp_get_max_threads()
-#else
-    nthrds = 1
 #endif
 
     if (mpp_pe() == mpp_root_pe() .and. debug) write(6,*) "statein driver"
@@ -298,7 +287,6 @@ subroutine update_atmos_radiation_physics (Atmos)
 
 !--- execute the IPD atmospheric setup step
       call mpp_clock_begin(setupClock)
-
 #ifdef CCPP
       call CCPP_step (step="time_vary", nblks=Atm_block%nblks, ierr=ierr)
       if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP time_vary step failed')
@@ -307,38 +295,10 @@ subroutine update_atmos_radiation_physics (Atmos)
       call IPD_step (IPD_Control, IPD_Data(:), IPD_Diag, IPD_Restart, IPD_func1d=Func1d)
 #endif
 
-!--- call stochastic physics pattern generation
-      if (IPD_Control%do_sppt .OR. IPD_Control%do_shum .OR. IPD_Control%do_skeb .OR. (IPD_Control%lndp_type .NE. 0) ) then
-         call run_stochastic_physics(IPD_Control, IPD_Data(:)%Grid, IPD_Data(:)%Coupling, nthrds)
-      end if
-
-!--- call the surface perturbations
-!    note: this needs to be called after time_vary (since gcycle call updates land parameters, and before radiation (uses land albedo) 
-      if (IPD_Control%lndp_type .EQ. 2) then 
-
-        if (mod(IPD_Control%kdt,IPD_Control%nscyc) == 1)  then 
-              call GFS_apply_lndp(IPD_Control, IPD_Data(:)%Coupling,IPD_Data(:)%Grid,.true., IPD_Data(:)%Sfcprop, ierr)  
-              if (ierr .NE. 0) call mpp_error(FATAL,'error in GFS_apply_lndp') 
-        else
-              call GFS_apply_lndp(IPD_Control, IPD_Data(:)%Coupling,IPD_Data(:)%Grid,.false., IPD_Data(:)%Sfcprop, ierr) 
-              if (ierr .NE. 0) call mpp_error(FATAL,'error in GFS_apply_lndp') 
-        endif 
-      endif
-
-    if(IPD_Control%do_ca)then
-       if(IPD_Control%ca_sgs)then
-          call cellular_automata_sgs(IPD_Control%kdt,IPD_Data(:)%Statein,IPD_Data(:)%Coupling,IPD_Data(:)%Intdiag,Atm_block%nblks,IPD_Control%levs, &
-            IPD_Control%nca,IPD_Control%ncells,IPD_Control%nlives,IPD_Control%nfracseed,&
-            IPD_Control%nseed,IPD_Control%nthresh,IPD_Control%ca_global,IPD_Control%ca_sgs,IPD_Control%iseed_ca,&
-            IPD_Control%ca_smooth,IPD_Control%nspinup,Atm_block%blksz(1))
-       endif
-       if(IPD_Control%ca_global)then
-          call cellular_automata_global(IPD_Control%kdt,IPD_Data(:)%Statein,IPD_Data(:)%Coupling,IPD_Data(:)%Intdiag,Atm_block%nblks,IPD_Control%levs, &
-            IPD_Control%nca_g,IPD_Control%ncells_g,IPD_Control%nlives_g,IPD_Control%nfracseed,&
-            IPD_Control%nseed_g,IPD_Control%nthresh,IPD_Control%ca_global,IPD_Control%ca_sgs,IPD_Control%iseed_ca,&
-            IPD_Control%ca_smooth,IPD_Control%nspinup,Atm_block%blksz(1),IPD_Control%nsmooth,IPD_Control%ca_amplitude)
-      endif
-    endif
+!--- call stochastic physics pattern generation / cellular automata
+    call stochastic_physics_wrapper(IPD_Control, IPD_Data, Atm_block, ierr) 
+    if (ierr/=0)  call mpp_error(FATAL, 'Call to stochastic_physics_wrapper failed')
+   
 
 !--- if coupled, assign coupled fields
       if( IPD_Control%cplflx .or. IPD_Control%cplwav ) then
@@ -431,7 +391,6 @@ subroutine update_atmos_radiation_physics (Atmos)
 
 !--- execute the IPD atmospheric physics step2 subcomponent (stochastic physics driver)
 
-
       call mpp_clock_begin(physClock)
 #ifdef CCPP
       call CCPP_step (step="stochastics", nblks=Atm_block%nblks, ierr=ierr)
@@ -447,7 +406,6 @@ subroutine update_atmos_radiation_physics (Atmos)
       enddo
 #endif
       call mpp_clock_end(physClock)
-
 
       if (chksum_debug) then
         if (mpp_pe() == mpp_root_pe()) print *,'PHYSICS STEP2   ', IPD_Control%kdt, IPD_Control%fhour
@@ -665,45 +623,11 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    call IPD_initialize (IPD_Control, IPD_Data, IPD_Diag, IPD_Restart, Init_parm)
 #endif
 
-   if (IPD_Control%do_sppt .OR. IPD_Control%do_shum .OR. IPD_Control%do_skeb .OR. (IPD_Control%lndp_type .NE. 0)) then
-      ! Initialize stochastic physics
-      call init_stochastic_physics(IPD_Control, Init_parm, mpp_npes(), nthrds, ierr) 
-      if (ierr/=0)  call mpp_error(FATAL, 'Call to init_stochastic_physics failed')
-      if(IPD_Control%me == IPD_Control%master) print *,'do_skeb=',IPD_Control%do_skeb
-   end if
+!--- Initialize stochastic physics pattern generation / cellular automata for first time step
+   call stochastic_physics_wrapper(IPD_Control, IPD_Data, Atm_block, ierr)
+   if (ierr/=0)  call mpp_error(FATAL, 'Call to stochastic_physics_wrapper failed')
 
    Atmos%Diag => IPD_Diag
-
-
-   ! moved into run_stochastic_physics_call
-   !if (IPD_Control%lndp_type .EQ. 1) then
-   !   call run_stochastic_physics_sfc(IPD_Control, IPD_Data(:)%Grid, IPD_Data(:)%Coupling)
-   !end if
-
-   ! Initialize cellular automata
-   if(IPD_Control%do_ca)then
-      ! DH* The current implementation of cellular_automata assumes that all blocksizes are the
-      ! same - abort if this is not the case, otherwise proceed with Atm_block%blksz(1) below
-      if (.not. minval(Atm_block%blksz)==maxval(Atm_block%blksz)) then
-         call mpp_error(FATAL, 'Logic errror: cellular_automata not compatible with non-uniform blocksizes')
-      end if
-      ! *DH
-      if(IPD_Control%do_ca)then
-       if(IPD_Control%ca_sgs)then
-          call cellular_automata_sgs(IPD_Control%kdt,IPD_Data(:)%Statein,IPD_Data(:)%Coupling,IPD_Data(:)%Intdiag,Atm_block%nblks,IPD_Control%levs, &
-            IPD_Control%nca,IPD_Control%ncells,IPD_Control%nlives,IPD_Control%nfracseed,&
-            IPD_Control%nseed,IPD_Control%nthresh,IPD_Control%ca_global,IPD_Control%ca_sgs,IPD_Control%iseed_ca,&
-            IPD_Control%ca_smooth,IPD_Control%nspinup,Atm_block%blksz(1))
-       endif
-       if(IPD_Control%ca_global)then
-          call cellular_automata_global(IPD_Control%kdt,IPD_Data(:)%Statein,IPD_Data(:)%Coupling,IPD_Data(:)%Intdiag,Atm_block%nblks,IPD_Control%levs, &
-            IPD_Control%nca_g,IPD_Control%ncells_g,IPD_Control%nlives_g,IPD_Control%nfracseed,&
-            IPD_Control%nseed_g,IPD_Control%nthresh,IPD_Control%ca_global,IPD_Control%ca_sgs,IPD_Control%iseed_ca,&
-            IPD_Control%ca_smooth,IPD_Control%nspinup,Atm_block%blksz(1),IPD_Control%nsmooth,IPD_Control%ca_amplitude)
-       endif
-
-    endif
-   endif
 
    Atm(mygrid)%flagstruct%do_skeb = IPD_Control%do_skeb
 

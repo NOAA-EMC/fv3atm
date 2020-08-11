@@ -525,7 +525,7 @@ module GFS_driver
 
     !--- local variables
     integer :: nb, nblks, k, kdt_rad, kdt_iau, blocksize
-    logical :: iauwindow_center, new_sfc_params
+    logical :: iauwindow_center
     real(kind=kind_phys) :: rinc(5)
     real(kind=kind_phys) :: sec, sec_zero, fjd
     integer              :: iyear, imon, iday, ihr, imin, jd0, jd1
@@ -629,15 +629,11 @@ module GFS_driver
     call GFS_phys_time_vary (Model, Grid, Tbd, Statein)
 
     !--- repopulate specific time-varying sfc properties for AMIP/forecast runs
-    new_sfc_params = .false.
     if (Model%nscyc >  0) then
       if (mod(Model%kdt,Model%nscyc) == 1) THEN
         call gcycle (nblks, Model, Grid(:), Sfcprop(:), Cldprop(:))
-        new_sfc_params=.true.
       endif
-    elseif (  (Model%nscyc == 0)  .and. (Model%kdt==1)  ) then 
         ! if not updating surface params through fcast, perturb params once at start of fcast
-        new_sfc_params=.true.
     endif
 
     !--- determine if diagnostics buckets need to be cleared

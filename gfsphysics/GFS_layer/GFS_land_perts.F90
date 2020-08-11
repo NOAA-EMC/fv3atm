@@ -17,23 +17,32 @@ module GFS_land_perts
 ! Draper, July 2020. 
 ! Note on location: requires access to namelist_soilveg
 
-    subroutine GFS_apply_lndp(Model, Coupling, Grid,param_update_flag, Sfcprop, ierr) 
-
-        use GFS_typedefs,       only: GFS_control_type, GFS_grid_type, & 
-                                      GFS_coupling_type, GFS_sfcprop_type
+    subroutine GFS_apply_lndp(blksz,lsm, lsoil,dtf, n_var_lndp, lndp_var_list, & 
+                lndp_prt_list, sfc_wts, xlon, xlat, stype, param_update_flag,  & 
+                smc, slc, stc, vfrac, ierr) 
 
         use namelist_soilveg ! needed for maxsmc
 
         implicit none
 
         ! intent(in) 
-        type(GFS_control_type),         intent(in) :: Model
-        type(GFS_coupling_type),        intent(in) :: Coupling(:)
-        type(GFS_grid_type),            intent(in) :: Grid(:)
-        logical,                        intent(in) ::  param_update_flag    
+        integer,                  intent(in) :: blksz(:)
+        integer,                  intent(in) :: n_var_lndp, lsoil, lsm
+        character(len=3),         intent(in) :: lndp_var_list(:)
+        real(kind=kind_phys),     intent(in) :: lndp_prt_list(:)
+        real(kind=kind_phys),     intent(in) :: dtf
+        real(kind=kind_phys),     intent(in) :: sfc_wts(:,:,:)
+        real(kind=kind_phys),     intent(in) :: xlon(:,:) 
+        real(kind=kind_phys),     intent(in) :: xlat(:,:) 
+        logical,                  intent(in) ::  param_update_flag    
                                         ! true =  parameters have been updated, apply perts
+        real(kind=kind_phys),     intent(in) :: stype(:,:)
+
         ! intent(inout) 
-        type(GFS_sfcprop_type),         intent(inout) :: Sfcprop(:)
+        real(kind=kind_phys),     intent(inout) :: smc(:,:,:)
+        real(kind=kind_phys),     intent(inout) :: slc(:,:,:)
+        real(kind=kind_phys),     intent(inout) :: stc(:,:,:)
+        real(kind=kind_phys),     intent(inout) :: vfrac(:,:)
 
         ! intent(out) 
         integer,                        intent(out) :: ierr
@@ -55,20 +64,26 @@ module GFS_land_perts
 
         ierr = 0 
 
-        nblks = size(Model%blksz)
+        if (lsm .NE. 1 ) then 
+                write(6,*) 'ERROR: GFS_land_pert assumes LSM is noah, ', & 
+                            ' may need to adapt variable names for a different LSM'
+                ierr=10 
+                return 
+        endif
 
-        call  set_printing_nb_i(nblks,Grid,print_i,print_nb)
+        nblks = size(blksz)
+
+        call  set_printing_nb_i(blksz,xlon,xlat,print_i,print_nb)
 
         do nb =1,nblks
-           this_im = size(Sfcprop(nb)%smc(:,1))
-           do i = 1, this_im
+           do i = 1, blksz(nb)
 
-             if ( nint(Sfcprop(nb)%slmsk(i)) .NE. 1) cycle ! skip if not land
-             soiltyp  = int( Sfcprop(nb)%stype(i)+0.5 )  ! also need for maxsmc
+             !if ( nint(Sfcprop(nb)%slmsk(i)) .NE. 1) cycle ! skip if not land
 
-             if ( ((Model%isot == 1) .and. (soiltyp == 16)) &
-               .or.( (Model%isot == 0) .and. (soiltyp  == 9 )) ) cycle ! skip if land-ice
+             !if ( ((isot == 1) .and. (soiltyp == 16)) &
+             !  .or.( (isot == 0) .and. (soiltyp  == 9 )) ) cycle ! skip if land-ice
 
+             if ( smc(nb,i,1) .EQ. 1.) cycle ! skip  non-soil (land-ice and non-land)
              ! set printing
              if ( (i==print_i)  .and. (nb==print_nb) ) then 
                 print_flag = .true.
@@ -76,38 +91,39 @@ module GFS_land_perts
                 print_flag=.false. 
              endif
 
-             do v = 1,Model%n_var_lndp 
-                select case (trim(Model%lndp_var_list(v)))
+             do v = 1,n_var_lndp 
+                select case (trim(lndp_var_list(v)))
                 !=================================================================
                 ! State updates - performed every cycle
                 !=================================================================
                 case('smc') 
                     p=5. 
+                    soiltyp  = int( stype(nb,i)+0.5 )  ! also need for maxsmc
                     min_bound = minsmc
                     max_bound = maxsmc(soiltyp)
 
-                    do k=1,Model%lsoil
+                    do k=1,lsoil
                          !store frozen soil moisture
-                         tmp_sic= Sfcprop(nb)%smc(i,k)  - Sfcprop(nb)%slc(i,k)
+                         tmp_sic= smc(nb,i,k)  - slc(nb,i,k)
 
                          ! perturb total soil moisture 
                          ! factor of sldepth*1000 converts from mm to m3/m3
-                         pert = Coupling(nb)%sfc_wts(i,v)*smc_vertscale(k)*Model%lndp_prt_list(v)/(zs_noah(k)*1000.)                    
-                         pert = pert*Model%dtf/3600. ! lndp_prt_list input is per hour, convert to per timestep 
+                         pert = sfc_wts(nb,i,v)*smc_vertscale(k)*lndp_prt_list(v)/(zs_noah(k)*1000.)                    
+                         pert = pert*dtf/3600. ! lndp_prt_list input is per hour, convert to per timestep 
                                                      ! (necessary for state vars only)
-                         call apply_pert('smc',pert,print_flag, Sfcprop(nb)%smc(i,k),ierr,p,min_bound, max_bound)
+                         call apply_pert('smc',pert,print_flag, smc(nb,i,k),ierr,p,min_bound, max_bound)
 
                          ! assign all of applied pert to the liquid soil moisture 
-                         Sfcprop(nb)%slc(i,k)  =  Sfcprop(nb)%smc(i,k) -  tmp_sic
+                         slc(nb,i,k)  =  smc(nb,i,k) -  tmp_sic
                     enddo
 
                 case('stc') 
 
-                    do k=1,Model%lsoil
-                         pert = Coupling(nb)%sfc_wts(i,v)*stc_vertscale(k)*Model%lndp_prt_list(v)
-                         pert = pert*Model%dtf/3600. ! lndp_prt_list input is per hour, convert to per timestep
+                    do k=1,lsoil
+                         pert = sfc_wts(nb,i,v)*stc_vertscale(k)*lndp_prt_list(v)
+                         pert = pert*dtf/3600. ! lndp_prt_list input is per hour, convert to per timestep
                                                      ! (necessary for state vars only)
-                         call apply_pert('stc',pert,print_flag, Sfcprop(nb)%stc(i,k),ierr)
+                         call apply_pert('stc',pert,print_flag, stc(nb,i,k),ierr)
                     enddo
                 !=================================================================
                 ! Parameter updates - only if param_update_flag = TRUE
@@ -118,17 +134,15 @@ module GFS_land_perts
                          min_bound=0.
                          max_bound=1.
 
-                         pert = Coupling(nb)%sfc_wts(i,v)*Model%lndp_prt_list(v)
-                         call apply_pert ('vfrac',pert,print_flag, Sfcprop(nb)%vfrac(i), ierr,p,min_bound, max_bound)
+                         pert = sfc_wts(nb,i,v)*lndp_prt_list(v)
+                         call apply_pert ('vfrac',pert,print_flag, vfrac(nb,i), ierr,p,min_bound, max_bound)
                      endif
                 case default 
                     print*, &
-                     'unrecognised lndp_prt_list option in GFS_apply_lndp, exiting', trim(Model%lndp_var_list(v)) 
+                     'ERROR: unrecognised lndp_prt_list option in GFS_apply_lndp, exiting', trim(lndp_var_list(v)) 
                     ierr = 10 
                     return 
                 end select 
-                !if (param_update_flag) then 
-                !endif
              enddo 
            enddo 
         enddo
@@ -193,35 +207,36 @@ module GFS_land_perts
 !====================================================================
 ! routine to turn on print flag for selected location
 ! 
-    subroutine set_printing_nb_i(nblks,Grid,print_i,print_nb)
-
-        use GFS_typedefs,       only: GFS_grid_type
+    subroutine set_printing_nb_i(blksz,xlon,xlat,print_i,print_nb)
 
         implicit none 
 
         ! intent (in)
-        integer, intent(in) :: nblks
-        type(GFS_grid_type),      intent(in) :: Grid(nblks) 
+        integer,                  intent(in) :: blksz(:)
+        real(kind=kind_phys),     intent(in) :: xlon(:,:) 
+        real(kind=kind_phys),     intent(in) :: xlat(:,:) 
+
 
         ! intent (out)
         integer, intent(out) :: print_i, print_nb
 
         ! local
-        integer :: nb,i,this_im
+        integer :: nblks,nb,i
         real, parameter :: plon_trunc =  114.9
         real, parameter :: plat_trunc =  -26.6
         real, parameter  :: delta  = 1.
 
+        nblks = size(blksz)
+
         print_i = -9
         print_nb = -9
         do nb = 1,nblks
-         this_im = size(Grid(nb)%xlon(:)) 
-         do i = 1,this_im
-        if ( (Grid(nb)%xlon(i)*57.29578 > plon_trunc) .and.  (Grid(nb)%xlon(i)*57.29578 < plon_trunc+delta ) .and. &
-           (Grid(nb)%xlat(i)*57.29578 >  plat_trunc ) .and.  (Grid(nb)%xlat(i)*57.29578 < plat_trunc+delta ) ) then
+         do i = 1,blksz(nb)
+        if ( (xlon(nb,i)*57.29578 > plon_trunc) .and.  (xlon(nb,i)*57.29578 < plon_trunc+delta ) .and. &
+           (xlat(nb,i)*57.29578 >  plat_trunc ) .and.  (xlat(nb,i)*57.29578 < plat_trunc+delta ) ) then
                       print_i=i
                       print_nb=nb
-                      write(*,*) 'LNDP -print flag is on', Grid(nb)%xlon(i)*57.29578, Grid(nb)%xlat(i)*57.29578, nb, i
+                      write(*,*) 'LNDP -print flag is on', xlon(nb,i)*57.29578, xlat(nb,i)*57.29578, nb, i
                       return  
          endif
          enddo

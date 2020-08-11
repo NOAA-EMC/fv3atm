@@ -20,11 +20,12 @@ add_library(
     IPD_driver.F90
     IPD_typedefs.F90
 )
-target_link_libraries(ipd gfsphysics)
+target_link_libraries(ipd PRIVATE gfsphysics)
 
 if(CCPP)
   target_include_directories(ipd PRIVATE ${CMAKE_BINARY_DIR}/FV3/ccpp/framework/src)
   target_include_directories(ipd PRIVATE ${CMAKE_BINARY_DIR}/FV3/ccpp/physics)
 endif()
+
 set_target_properties(ipd PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mod)
-target_include_directories(ipd PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/mod)
+target_include_directories(ipd PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/mod>)

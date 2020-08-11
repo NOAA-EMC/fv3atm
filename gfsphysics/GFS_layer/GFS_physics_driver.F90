@@ -1789,6 +1789,7 @@ module module_physics_driver
 !    &,' pgr=',pgr(ipr),' sfcemis=',sfcemis(ipr)
 
 !## CCPP ##* sfc_drv.f/lsm_noah_run
+
           call sfc_drv                                                   &
 !  ---  inputs:
            (im, lsoil, Statein%pgr,                                      &
