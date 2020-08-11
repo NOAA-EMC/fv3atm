@@ -6201,7 +6201,7 @@
   dimensions = (horizonal_dimension,number_of_dust_bins_for_diagnostics)
   type = real
   kind = kind_phys
-  active = (number_of_chemical_tracers > 0)
+  active = (number_of_dust_bins_for_diagnostics > 0)
 [ssem]
   standard_name = instantaneous_seasalt_emission_flux
   long_name = instantaneous sea salt emission flux
@@ -6209,7 +6209,7 @@
   dimensions = (horizonal_dimension,number_of_seasalt_bins_for_diagnostics)
   type = real
   kind = kind_phys
-  active = (number_of_chemical_tracers > 0)
+  active = (number_of_seasalt_bins_for_diagnostics > 0)
 [sedim]
   standard_name = instantaneous_sedimentation
   long_name = instantaneous sedimentation
@@ -6217,7 +6217,7 @@
   dimensions = (horizonal_dimension,number_of_chemical_tracers_for_diagnostics)
   type = real
   kind = kind_phys
-  active = (index_for_first_chemical_tracer > 0 .and. number_of_chemical_tracers > 0)
+  active = (number_of_chemical_tracers_for_diagnostics > 0)
 [drydep]
   standard_name = instantaneous_dry_deposition
   long_name = instantaneous dry deposition
@@ -6225,7 +6225,7 @@
   dimensions = (horizonal_dimension,number_of_chemical_tracers_for_diagnostics)
   type = real
   kind = kind_phys
-  active = (index_for_first_chemical_tracer > 0 .and. number_of_chemical_tracers > 0)
+  active = (number_of_chemical_tracers_for_diagnostics > 0)
 [wetdpl]
   standard_name = instantaneous_large_scale_wet_deposition
   long_name = instantaneous large-scale wet deposition
@@ -6233,7 +6233,7 @@
   dimensions = (horizonal_dimension,number_of_chemical_tracers_for_diagnostics)
   type = real
   kind = kind_phys
-  active = (index_for_first_chemical_tracer > 0 .and. number_of_chemical_tracers > 0)
+  active = (number_of_chemical_tracers_for_diagnostics > 0)
 [wetdpc]
   standard_name = instantaneous_convective_scale_wet_deposition
   long_name = instantaneous convective-scale wet deposition
@@ -6241,7 +6241,7 @@
   dimensions = (horizonal_dimension,number_of_chemical_tracers_for_diagnostics)
   type = real
   kind = kind_phys
-  active = (index_for_first_chemical_tracer > 0 .and. number_of_chemical_tracers > 0)
+  active = (number_of_chemical_tracers_for_diagnostics > 0)
 [abem]
   standard_name = instantaneous_anthopogenic_and_biomass_burning_emissions
   long_name = instantaneous anthopogenic and biomass burning emissions for black carbon, organic carbon, and sulfur dioxide
