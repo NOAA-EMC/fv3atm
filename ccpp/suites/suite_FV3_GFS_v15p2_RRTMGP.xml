@@ -1,7 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<suite name="FV3_GFS_2017_RRTMGP" lib="ccppphys" ver="4">
+<suite name="FV3_GFS_v15p2_RRTMGP" lib="ccppphys" ver="4">
   <!-- <init></init> -->
+  <group name="fast_physics">
+    <subcycle loop="1">
+      <scheme>fv_sat_adj</scheme>
+    </subcycle>
+  </group>
   <group name="time_vary">
     <subcycle loop="1">
       <scheme>GFS_time_vary_pre</scheme>
@@ -14,6 +19,8 @@
     <subcycle loop="1">
       <scheme>GFS_suite_interstitial_rad_reset</scheme>
       <scheme>GFS_rrtmgp_pre</scheme>
+      <scheme>GFS_rrtmgp_gfdlmp_pre</scheme>
+      <scheme>GFS_cloud_diagnostics</scheme>
       <scheme>GFS_rrtmgp_sw_pre</scheme>
       <scheme>rrtmgp_sw_gas_optics</scheme>
       <scheme>rrtmgp_sw_aerosol_optics</scheme>
@@ -68,7 +75,8 @@
       <scheme>GFS_GWD_generic_post</scheme>
       <scheme>rayleigh_damp</scheme>
       <scheme>GFS_suite_stateout_update</scheme>
-      <scheme>ozphys</scheme>
+      <scheme>ozphys_2015</scheme>
+      <scheme>h2ophys</scheme>
       <scheme>get_phi_fv3</scheme>
       <scheme>GFS_suite_interstitial_3</scheme>
       <scheme>GFS_DCNV_generic_pre</scheme>
@@ -80,8 +88,7 @@
       <scheme>GFS_suite_interstitial_4</scheme>
       <scheme>cnvc90</scheme>
       <scheme>GFS_MP_generic_pre</scheme>
-      <scheme>zhaocarr_gscond</scheme>
-      <scheme>zhaocarr_precpd</scheme>
+      <scheme>gfdl_cloud_microphys</scheme>
       <scheme>GFS_MP_generic_post</scheme>
       <scheme>maximum_hourly_diagnostics</scheme>
     </subcycle>
@@ -89,6 +96,7 @@
   <group name="stochastics">
     <subcycle loop="1">
       <scheme>GFS_stochastics</scheme>
+      <scheme>phys_tend</scheme>
     </subcycle>
   </group>
   <!-- <finalize></finalize> -->
