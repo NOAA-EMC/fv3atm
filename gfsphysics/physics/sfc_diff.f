@@ -2,7 +2,7 @@
 
       use machine , only : kind_phys
       use physcons, grav => con_g
-      real (kind=kind_phys), parameter :: ca=.4  ! ca - von karman constant
+      real (kind=kind_phys), parameter :: ca=0.4d0  ! ca - von karman constant
 
       contains
       subroutine sfc_diff(im,ps,t1,q1,z1, wind,                 !intent(in)
@@ -12,9 +12,9 @@
      &                    flag_iter,redrag,                     !intent(in)
      &                    u10m,v10m,sfc_z0_type,  !hafs,z0 type !intent(in)
      &                    wet,dry,icy,                          !intent(in)
-     &                    tskin, tsurf, snwdph, z0rl, ustar,
+     &                    tskin, tsurf, snwdph, z0rl, z0rlw, ustar
 !
-     &                    cm, ch, rb, stress, fm, fh, fm10, fh2)
+     &,                   cm, ch, rb, stress, fm, fh, fm10, fh2)
 !
       use physcons, rvrdm1 => con_fvirt
       implicit none
@@ -23,7 +23,6 @@
 ! --------  -------- ---------
       integer, intent(in) :: im, ivegsrc
       integer, intent(in) :: sfc_z0_type ! option for calculating surface roughness length over ocean
-
       integer, dimension(im), intent(in) :: vegtype
 
       logical, intent(in) :: redrag ! reduced drag coeff. flag for high wind over sea (j.han)
@@ -37,6 +36,7 @@
       real(kind=kind_phys), dimension(im,3), intent(in)    ::
      &                    tskin, tsurf, snwdph
 
+      real(kind=kind_phys), dimension(im), intent(in) :: z0rlw
       real(kind=kind_phys), dimension(im,3), intent(inout) ::
      &                       z0rl, ustar
 
@@ -55,8 +55,10 @@
       real(kind=kind_phys) :: tvs, z0, z0max, ztmax
 !
       real(kind=kind_phys), parameter ::
-     &              charnock=.014, z0s_max=.317e-2       ! a limiting value at high winds over sea
-     &,             vis=1.4e-5, rnu=1.51e-5, visi=1.0/vis
+     &              one=1.0d0, zero=0.0d0, half=0.5d0, qmin=1.0d-8
+     &,             charnock=.014d0, z0s_max=.317d-2       ! a limiting value at high winds over sea
+     &,             zmin=1.0d-6
+     &,             vis=1.4d-5, rnu=1.51d-5, visi=one/vis
      &,             log01=log(0.01), log05=log(0.05), log07=log(0.07)
 
 !     parameter (charnock=.014,ca=.4)!c ca is the von karman constant
@@ -84,19 +86,19 @@
 
       do i=1,im
         if(flag_iter(i)) then
-          virtfac = 1.0 + rvrdm1 * max(q1(i),1.e-8)
+          virtfac = one + rvrdm1 * max(q1(i),qmin)
           thv1    = t1(i) * prslki(i) * virtfac
 
 !  compute stability dependent exchange coefficients
 !  this portion of the code is presently suppressed
 !
           if (dry(i)) then ! Some land
-            tvs   = 0.5 * (tsurf(i,1)+tskin(i,1)) * virtfac
-            z0max = max(1.0e-6, min(0.01 * z0rl(i,1), z1(i)))
+            tvs   = half * (tsurf(i,1)+tskin(i,1)) * virtfac
+            z0max = max(zmin, min(0.01d0 * z0rl(i,1), z1(i)))
 !** xubin's new z0  over land
-            tem1 = 1.0 - shdmax(i)
+            tem1 = one  - shdmax(i)
             tem2 = tem1 * tem1
-            tem1 = 1.0  - tem2
+            tem1 = one  - tem2
 
             if( ivegsrc == 1 ) then
 
@@ -106,10 +108,10 @@
                 z0max = exp( tem2*log01 + tem1*log05 )
               elseif (vegtype(i) == 7) then
 !               z0max = exp( tem2*log01 + tem1*log01 )
-                z0max = 0.01
+                z0max = 0.01d0
               elseif (vegtype(i) == 16) then
 !               z0max = exp( tem2*log01 + tem1*log01 )
-                z0max = 0.01
+                z0max = 0.01d0
               else
                 z0max = exp( tem2*log01 + tem1*log(z0max) )
               endif
@@ -122,34 +124,34 @@
                 z0max = exp( tem2*log01 + tem1*log05 )
               elseif (vegtype(i) == 9) then
 !               z0max = exp( tem2*log01 + tem1*log01 )
-                z0max = 0.01
+                z0max = 0.01d0
               elseif (vegtype(i) == 11) then
 !               z0max = exp( tem2*log01 + tem1*log01 )
-                z0max = 0.01
+                z0max = 0.01d0
               else
                 z0max = exp( tem2*log01 + tem1*log(z0max) )
               endif
 
             endif
 ! mg, sfc-perts: add surface perturbations to z0max over land
-            if (z0pert(i) /= 0.0 ) then
-              z0max = z0max * (10.**z0pert(i))
+            if (z0pert(i) /= zero ) then
+              z0max = z0max * (10.0d0**z0pert(i))
             endif
 
-            z0max = max(z0max, 1.0e-6)
+            z0max = max(z0max, zmin)
 
 !           czilc = 10.0 ** (- (0.40/0.07) * z0) ! fei's canopy height dependance of czil
-            czilc = 0.8
+            czilc = 0.8d0
 
-            tem1  = 1.0 - sigmaf(i)
+            tem1  = 1.0d0 - sigmaf(i)
             ztmax = z0max*exp( - tem1*tem1
      &              * czilc*ca*sqrt(ustar(i,1)*(0.01/1.5e-05)))
  
 ! mg, sfc-perts: add surface perturbations to ztmax/z0max ratio over land
-            if (ztpert(i) /= 0.0) then
-              ztmax = ztmax * (10.**ztpert(i))
+            if (ztpert(i) /= zero) then
+              ztmax = ztmax * (10.0d0**ztpert(i))
             endif
-            ztmax = max(ztmax, 1.0e-6)
+            ztmax = max(ztmax, zmin)
 !
             call stability
 !  ---  inputs:
@@ -160,12 +162,12 @@
           endif ! Dry points
 
           if (icy(i)) then ! Some ice
-            tvs   = 0.5 * (tsurf(i,2)+tskin(i,2)) * virtfac
-            z0max = max(1.0e-6, min(0.01 * z0rl(i,2), z1(i)))
+            tvs   = half * (tsurf(i,2)+tskin(i,2)) * virtfac
+            z0max = max(zmin, min(0.01d0 * z0rl(i,2), z1(i)))
 !** xubin's new z0  over land and sea ice
-            tem1 = 1.0 - shdmax(i)
+            tem1 = one  - shdmax(i)
             tem2 = tem1 * tem1
-            tem1 = 1.0  - tem2
+            tem1 = one  - tem2
 
             if( ivegsrc == 1 ) then
 
@@ -174,13 +176,14 @@
               z0max = exp( tem2*log01 + tem1*log(z0max) )
             endif
 
-            z0max = max(z0max, 1.0e-6)
+            z0max = max(z0max, zmin)
 
 !           czilc = 10.0 ** (- (0.40/0.07) * z0) ! fei's canopy height
 !           dependance of czil
-            czilc = 0.8
 
-            tem1 = 1.0 - sigmaf(i)
+            czilc = 0.8d0
+
+            tem1 = 1.0d0 - sigmaf(i)
             ztmax = z0max*exp( - tem1*tem1
      &              * czilc*ca*sqrt(ustar(i,2)*(0.01/1.5e-05)))
             ztmax = max(ztmax, 1.0e-6)
@@ -197,9 +200,9 @@
 !      the stuff now put into "stability"
 
           if (wet(i)) then ! Some open ocean
-            tvs        = 0.5 * (tsurf(i,3)+tskin(i,3)) * virtfac
-            z0         = 0.01 * z0rl(i,3)
-            z0max      = max(1.0e-6, min(z0,z1(i)))
+            tvs        = half * (tsurf(i,3)+tskin(i,3)) * virtfac
+            z0         = 0.01d0 * z0rl(i,3)
+            z0max      = max(zmin, min(z0,z1(i)))
             ustar(i,3) = sqrt(grav * z0 / charnock)
             wind10m    = sqrt(u10m(i)*u10m(i)+v10m(i)*v10m(i))
 
@@ -207,7 +210,7 @@
 
 !           ztmax  = z0max
 
-            restar = max(ustar(i,3)*z0max*visi, 0.000001)
+            restar = max(ustar(i,3)*z0max*visi, 0.000001d0)
 
 !           restar = log(restar)
 !           restar = min(restar,5.)
@@ -216,8 +219,8 @@
 !           rat    = rat    / (1. + (bb2 + cc2*restar) * restar))
 !  rat taken from zeng, zhao and dickinson 1997
 
-            rat   = min(7.0, 2.67 * sqrt(sqrt(restar)) - 2.57)
-            ztmax = max(z0max * exp(-rat), 1.0e-6)
+            rat   = min(7.0d0, 2.67d0 * sqrt(sqrt(restar)) - 2.57d0)
+            ztmax = max(z0max * exp(-rat), zmin)
 !
             if (sfc_z0_type == 6) then
               call znot_t_v6(wind10m, ztmax)   ! 10-m wind,m/s, ztmax(m)
@@ -250,20 +253,30 @@
 !               z0 = arnu / (ustar(i) * ff ** pp)
 
                 if (redrag) then
-                  z0rl(i,3) = 100.0 * max(min(z0, z0s_max), 1.e-7)
+                  z0rl(i,3) = 100.0d0 * max(min(z0, z0s_max), 1.0d-7)
                 else
-                  z0rl(i,3) = 100.0 * max(min(z0,.1), 1.e-7)
+                  z0rl(i,3) = 100.0d0 * max(min(z0, 0.1d0), 1.0d-7)
                 endif
 
               elseif (sfc_z0_type == 6) then   ! wang
-                 call znot_m_v6(wind10m, z0)  ! wind, m/s, z0, m
-                 z0rl(i,3) = 100.0 * z0          ! cm
+                 call znot_m_v6(wind10m, z0)   ! wind, m/s, z0, m
+                 z0rl(i,3) = 100.0d0 * z0      ! cm
               elseif (sfc_z0_type == 7) then   ! wang
-                 call znot_m_v7(wind10m, z0)  ! wind, m/s, z0, m
-                 z0rl(i,3) = 100.0 * z0          ! cm
+                 call znot_m_v7(wind10m, z0)   ! wind, m/s, z0, m
+                 z0rl(i,3) = 100.0d0 * z0      ! cm
               else
-                 z0rl(i,3) = 1.0e-4
+                 z0rl(i,3) = 1.0d-4
               endif
+
+            elseif (z0rlw(i) < 1.0d-7) then
+              z0 = (charnock / grav) * ustar(i,3) * ustar(i,3)
+
+              if (redrag) then
+                z0rl(i,3) = 100.0d0 * max(min(z0, z0s_max), 1.0d-7)
+              else
+                z0rl(i,3) = 100.0d0 * max(min(z0, 0.1d0), 1.0d-7)
+              endif
+
             endif
 
           endif              ! end of if(open ocean)
@@ -293,11 +306,12 @@
      &       rb, fm, fh, fm10, fh2, cm, ch, stress, ustar
 
 !  ---  locals:
-      real(kind=kind_phys), parameter :: alpha=5., a0=-3.975            &
-     &,             a1=12.32, alpha4=4.0*alpha
-     &,             b1=-7.755,  b2=6.041,  alpha2=alpha+alpha, beta=1.0
-     &,             a0p=-7.941, a1p=24.75, b1p=-8.705, b2p=7.899
-     &,             ztmin1=-999.0
+      real(kind=kind_phys), parameter :: alpha=5.0d0, a0=-3.975d0       &
+     &,             a1=12.32d0, alpha4=4.0d0*alpha                      &
+     &,             b1=-7.755d0,  b2=6.041d0,  alpha2=alpha+alpha       &
+     &,             beta=1.0d0                                          &
+     &,             a0p=-7.941d0, a1p=24.75d0, b1p=-8.705d0, b2p=7.899d0&
+     &,             ztmin1=-999.0d0, zero=0.0d0, one=1.0d0
 
       real(kind=kind_phys) aa,     aa0,    bb,     bb0, dtv,   adtv,
      &                     hl1,    hl12,   pm,     ph,  pm10,  ph2,
@@ -306,46 +320,46 @@
      &                     hl110,  hlt,    hltinf, olinf,
      &                     tem1,   tem2, ztmax1
 
-          z1i = 1.0 / z1
+          z1i = one / z1
 
           tem1   = z0max/z1
-          if (abs(1.0-tem1) > 1.0e-6) then
-            ztmax1 = - beta*log(tem1)/(alpha2*(1.-tem1))
+          if (abs(one-tem1) > 1.0d-6) then
+            ztmax1 = - beta*log(tem1)/(alpha2*(one-tem1))
           else
-            ztmax1 = 99.0
+            ztmax1 = 99.0d0
           endif
-          if( z0max < 0.05 .and. snwdph < 10.0 ) ztmax1 = 99.0
+          if( z0max < 0.05d0 .and. snwdph < 10.0d0 ) ztmax1 = 99.0d0
 
 !  compute stability indices (rb and hlinf)
 
           dtv     = thv1 - tvs
-          adtv    = max(abs(dtv),0.001)
+          adtv    = max(abs(dtv),0.001d0)
           dtv     = sign(1.,dtv) * adtv
-          rb      = max(-5000.0, (grav+grav) * dtv * z1
+          rb      = max(-5000.0d0, (grav+grav) * dtv * z1
      &            / ((thv1 + tvs) * wind * wind))
-          tem1    = 1.0 / z0max
-          tem2    = 1.0 / ztmax
+          tem1    = one / z0max
+          tem2    = one / ztmax
           fm      = log((z0max+z1)  * tem1)
           fh      = log((ztmax+z1)  * tem2)
-          fm10    = log((z0max+10.) * tem1)
-          fh2     = log((ztmax+2.)  * tem2)
+          fm10    = log((z0max+10.0d0) * tem1)
+          fh2     = log((ztmax+2.0d0)  * tem2)
           hlinf   = rb * fm * fm / fh
           hlinf   = min(max(hlinf,ztmin1),ztmax1)
 !
 !  stable case
 !
-          if (dtv >= 0.0) then
+          if (dtv >= zero) then
             hl1 = hlinf
-            if(hlinf > .25) then
+            if(hlinf > 0.25d0) then
               tem1   = hlinf * z1i
               hl0inf = z0max * tem1
               hltinf = ztmax * tem1
-              aa     = sqrt(1. + alpha4 * hlinf)
-              aa0    = sqrt(1. + alpha4 * hl0inf)
+              aa     = sqrt(one + alpha4 * hlinf)
+              aa0    = sqrt(one + alpha4 * hl0inf)
               bb     = aa
-              bb0    = sqrt(1. + alpha4 * hltinf)
-              pm     = aa0 - aa + log( (aa + 1.)/(aa0 + 1.) )
-              ph     = bb0 - bb + log( (bb + 1.)/(bb0 + 1.) )
+              bb0    = sqrt(one + alpha4 * hltinf)
+              pm     = aa0 - aa + log( (aa + one)/(aa0 + one) )
+              ph     = bb0 - bb + log( (bb + one)/(bb0 + one) )
               fms    = fm - pm
               fhs    = fh - ph
               hl1    = fms * fms * rb / fhs
@@ -357,27 +371,27 @@
             tem1  = hl1 * z1i
             hl0   = z0max * tem1
             hlt   = ztmax * tem1
-            aa    = sqrt(1. + alpha4 * hl1)
-            aa0   = sqrt(1. + alpha4 * hl0)
+            aa    = sqrt(one + alpha4 * hl1)
+            aa0   = sqrt(one + alpha4 * hl0)
             bb    = aa
-            bb0   = sqrt(1. + alpha4 * hlt)
-            pm    = aa0 - aa + log( (1.0+aa)/(1.0+aa0) )
-            ph    = bb0 - bb + log( (1.0+bb)/(1.0+bb0) )
-            hl110 = hl1 * 10. * z1i
+            bb0   = sqrt(one + alpha4 * hlt)
+            pm    = aa0 - aa + log( (one+aa)/(one+aa0) )
+            ph    = bb0 - bb + log( (one+bb)/(one+bb0) )
+            hl110 = hl1 * 10.0d0 * z1i
             hl110 = min(max(hl110, ztmin1), ztmax1)
-            aa    = sqrt(1. + alpha4 * hl110)
-            pm10  = aa0 - aa + log( (1.0+aa)/(1.0+aa0) )
+            aa    = sqrt(one + alpha4 * hl110)
+            pm10  = aa0 - aa + log( (one+aa)/(one+aa0) )
             hl12  = (hl1+hl1) * z1i
             hl12  = min(max(hl12,ztmin1),ztmax1)
-!           aa    = sqrt(1. + alpha4 * hl12)
-            bb    = sqrt(1. + alpha4 * hl12)
-            ph2   = bb0 - bb + log( (1.0+bb)/(1.0+bb0) )
+!           aa    = sqrt(one + alpha4 * hl12)
+            bb    = sqrt(one + alpha4 * hl12)
+            ph2   = bb0 - bb + log( (one+bb)/(one+bb0) )
 !
 !  unstable case - check for unphysical obukhov length
 !
           else                          ! dtv < 0 case
             olinf = z1 / hlinf
-            tem1  = 50.0 * z0max
+            tem1  = 50.0d0 * z0max
             if(abs(olinf) <= tem1) then
               hlinf = -z1 / tem1
               hlinf = min(max(hlinf,ztmin1),ztmax1)
@@ -385,30 +399,30 @@
 !
 !  get pm and ph
 !
-            if (hlinf >= -0.5) then
+            if (hlinf >= -0.5d0) then
               hl1   = hlinf
-              pm    = (a0  + a1*hl1)  * hl1   / (1.+ (b1+b2*hl1)  *hl1)
-              ph    = (a0p + a1p*hl1) * hl1   / (1.+ (b1p+b2p*hl1)*hl1)
-              hl110 = hl1 * 10. * z1i
+              pm    = (a0  + a1*hl1)  * hl1  / (one+ (b1+b2*hl1)  *hl1)
+              ph    = (a0p + a1p*hl1) * hl1  / (one+ (b1p+b2p*hl1)*hl1)
+              hl110 = hl1 * 10.0d0 * z1i
               hl110 = min(max(hl110, ztmin1), ztmax1)
-              pm10  = (a0 + a1*hl110) * hl110 / (1.+(b1+b2*hl110)*hl110)
+              pm10  = (a0 + a1*hl110) * hl110/(one+(b1+b2*hl110)*hl110)
               hl12  = (hl1+hl1) * z1i
               hl12  = min(max(hl12, ztmin1), ztmax1)
-              ph2   = (a0p + a1p*hl12) * hl12 / (1.+(b1p+b2p*hl12)*hl12)
+              ph2   = (a0p + a1p*hl12) * hl12/(one+(b1p+b2p*hl12)*hl12)
             else                       ! hlinf < 0.05
               hl1   = -hlinf
-              tem1  = 1.0 / sqrt(hl1)
-              pm    = log(hl1) + 2. * sqrt(tem1) - .8776
-              ph    = log(hl1) + .5 * tem1 + 1.386
+              tem1  = one / sqrt(hl1)
+              pm    = log(hl1) + 2.0d0 * sqrt(tem1) - .8776d0
+              ph    = log(hl1) + 0.5d0 * tem1 + 1.386d0
 !             pm    = log(hl1) + 2.0 * hl1 ** (-.25) - .8776
 !             ph    = log(hl1) + 0.5 * hl1 ** (-.5) + 1.386
-              hl110 = hl1 * 10. * z1i
+              hl110 = hl1 * 10.0d0 * z1i
               hl110 = min(max(hl110, ztmin1), ztmax1)
-              pm10  = log(hl110) + 2.0 / sqrt(sqrt(hl110)) - .8776
+              pm10  = log(hl110) + 2.0d0 / sqrt(sqrt(hl110)) - 0.8776d0
 !             pm10  = log(hl110) + 2. * hl110 ** (-.25) - .8776
               hl12  = (hl1+hl1) * z1i
               hl12  = min(max(hl12, ztmin1), ztmax1)
-              ph2   = log(hl12) + 0.5 / sqrt(hl12) + 1.386
+              ph2   = log(hl12) + 0.5d0 / sqrt(hl12) + 1.386d0
 !             ph2   = log(hl12) + .5 * hl12 ** (-.5) + 1.386
             endif
 
@@ -422,7 +436,7 @@
           fh2       = fh2 - ph2
           cm        = ca * ca / (fm * fm)
           ch        = ca * ca / (fm * fh)
-          tem1      = 0.00001/z1
+          tem1      = 0.00001d0 / z1
           cm        = max(cm, tem1)
           ch        = max(ch, tem1)
           stress    = cm * wind * wind
