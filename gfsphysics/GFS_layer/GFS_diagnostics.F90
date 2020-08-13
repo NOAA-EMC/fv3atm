@@ -2434,7 +2434,7 @@ module GFS_diagnostics
       ExtDiag(idx)%name = 'dt3dt_nophys'
       ExtDiag(idx)%desc = 'temperature tendency due to non-physics processes'
       ExtDiag(idx)%unit = 'K s-1'
-      ExtDiag(idx)%mod_name = 'gfs_phys'
+      ExtDiag(idx)%mod_name = 'gfs_dyn'
       ExtDiag(idx)%time_avg = .TRUE.
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
@@ -2615,7 +2615,7 @@ module GFS_diagnostics
       ExtDiag(idx)%name = 'du3dt_nophys'
       ExtDiag(idx)%desc = 'u momentum tendency due to non-physics processes'
       ExtDiag(idx)%unit = 'm s-2'
-      ExtDiag(idx)%mod_name = 'gfs_phys'
+      ExtDiag(idx)%mod_name = 'gfs_dyn'
       ExtDiag(idx)%time_avg = .TRUE.
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
@@ -2627,7 +2627,7 @@ module GFS_diagnostics
       ExtDiag(idx)%name = 'dv3dt_nophys'
       ExtDiag(idx)%desc = 'v momentum tendency due to non-physics processes'
       ExtDiag(idx)%unit = 'm s-2'
-      ExtDiag(idx)%mod_name = 'gfs_phys'
+      ExtDiag(idx)%mod_name = 'gfs_dyn'
       ExtDiag(idx)%time_avg = .TRUE.
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
@@ -2774,7 +2774,7 @@ module GFS_diagnostics
       ExtDiag(idx)%name = 'dq3dt_nophys'
       ExtDiag(idx)%desc = 'water vapor specific humidity tendency due to non-physics processes'
       ExtDiag(idx)%unit = 'kg kg-1 s-1'
-      ExtDiag(idx)%mod_name = 'gfs_phys'
+      ExtDiag(idx)%mod_name = 'gfs_dyn'
       ExtDiag(idx)%time_avg = .TRUE.
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
@@ -2786,7 +2786,7 @@ module GFS_diagnostics
       ExtDiag(idx)%name = 'dq3dt_o3nophys'
       ExtDiag(idx)%desc = 'ozone concentration tendency due to non-physics processes'
       ExtDiag(idx)%unit = 'kg kg-1 s-1'
-      ExtDiag(idx)%mod_name = 'gfs_phys'
+      ExtDiag(idx)%mod_name = 'gfs_dyn'
       ExtDiag(idx)%time_avg = .TRUE.
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
