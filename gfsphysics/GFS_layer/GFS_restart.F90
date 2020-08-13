@@ -264,7 +264,6 @@ module GFS_restart
     endif
 #ifdef CCPP
     !--- RAP/HRRR-specific variables, 3D
-    num = Model%ntot3d
 
     ! GF
     if (Model%imfdeepcnv == Model%imfdeepcnv_gf) then
