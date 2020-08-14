@@ -276,6 +276,8 @@
         else
           xmu(i) = 0.0
         endif
+!     if (lprnt .and. i == ipr) write(0,*)' in dcyc3: sfcnsw=',sfcnsw(i)
+!    &,' sfcdsw=',sfcdsw(i),' xmu=',xmu(i)
 
 !  --- ...  adjust sfc net and downward sw fluxes for zenith angle changes
 !      note: sfc emiss effect will not be appied here
