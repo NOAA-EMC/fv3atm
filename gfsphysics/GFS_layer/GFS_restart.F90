@@ -117,7 +117,6 @@ module GFS_restart
 #endif
 
     Restart%num3d = Model%ntot3d
-    print *,'aligo1 Restart%num3d,Model%ntot3d',Restart%num3d,Model%ntot3d
     if(Model%lrefres) then
        Restart%num3d = Model%ntot3d+1
     endif
