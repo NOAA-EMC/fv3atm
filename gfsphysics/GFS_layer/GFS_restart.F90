@@ -117,6 +117,7 @@ module GFS_restart
 #endif
 
     Restart%num3d = Model%ntot3d
+    print *,'aligo1 Restart%num3d,Model%ntot3d',Restart%num3d,Model%ntot3d
     if(Model%lrefres) then
        Restart%num3d = Model%ntot3d+1
     endif
@@ -263,8 +264,12 @@ module GFS_restart
       enddo
     endif
 #ifdef CCPP
+    if (Model%lrefres) then
+       num = Model%ntot3d+1
+    else
+       num = Model%ntot3d
+    endif
     !--- RAP/HRRR-specific variables, 3D
-
     ! GF
     if (Model%imfdeepcnv == Model%imfdeepcnv_gf) then
       num = num + 1
