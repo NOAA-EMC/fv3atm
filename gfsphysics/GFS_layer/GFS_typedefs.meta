@@ -540,6 +540,20 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+[zorli]
+  standard_name = surface_roughness_length_over_ice
+  long_name = surface roughness length over ice
+  units = cm
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+[zorlw]
+  standard_name = surface_roughness_length_from_wave_model
+  long_name = surface roughness length from wave model
+  units = cm
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
 [fice]
   standard_name = sea_ice_concentration
   long_name = ice fraction over open water
@@ -1809,6 +1823,13 @@
   standard_name = surface_upward_latent_heat_flux_for_coupling
   long_name = sfc latent heat flux input for coupling
   units = W m-2
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+[hsnoin_cpl]
+  standard_name = surface_snow_thickness_for_coupling
+  long_name = sfc snow depth in meters over sea ice for coupling
+  units = m
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
@@ -3504,14 +3525,14 @@
 [min_lakeice]
   standard_name = lake_ice_minimum
   long_name = minimum lake ice value
-  units = ???
+  units = frac
   dimensions = ()
   type = real
   kind = kind_phys
 [min_seaice]
   standard_name = sea_ice_minimum
   long_name = minimum sea ice value
-  units = ???
+  units = frac
   dimensions = ()
   type = real
   kind = kind_phys
