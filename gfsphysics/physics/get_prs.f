@@ -22,8 +22,10 @@
      &,                    q(ix,levs,ntrac)
       real(kind=kind_phys) xcp(ix,levs), xr(ix,levs), kappa(ix,levs)
       real(kind=kind_phys) tem, dphib, dphit, dphi
-      real (kind=kind_phys), parameter :: zero=0.0, p00i=1.0e-5
-     &,                                rkapi=1.0/rkap, rkapp1=1.0+rkap
+      real (kind=kind_phys), parameter :: zero=0.0d0, one=1.0d0
+     &,                                   half=0.5d0, p00i=1.0d-5
+     &,                                   rkapi=one/rkap
+     &,                                   rkapp1=one+rkap
       integer i, k, n
 !
       do k=1,levs
@@ -33,7 +35,7 @@
       enddo
 !
       if( gen_coord_hybrid ) then                                       ! hmhj
-        if( thermodyn_id.eq.3 ) then      ! Enthalpy case
+        if( thermodyn_id == 3 ) then      ! Enthalpy case
 !
 ! hmhj : This is for generalized hybrid (Henry) with finite difference
 !        in the vertical and enthalpy as the prognostic (thermodynamic)
@@ -47,13 +49,13 @@
             do k=1,levs
               do i=1,im
                 kappa(i,k) = xr(i,k)/xcp(i,k)
-                prsl(i,k)  = (PRSI(i,k) + PRSI(i,k+1))*0.5
+                prsl(i,k)  = (PRSI(i,k) + PRSI(i,k+1))*half
                 prkl(i,k)  = (prsl(i,k)*p00i) ** kappa(i,k)
               enddo
             enddo
             do k=2,levs
               do i=1,im
-                tem = 0.5 * (kappa(i,k) + kappa(i,k-1))
+                tem = half * (kappa(i,k) + kappa(i,k-1))
                 prki(i,k-1) = (prsi(i,k)*p00i) ** tem
               enddo
             enddo
@@ -61,14 +63,14 @@
               prki(i,1) = (prsi(i,1)*p00i) ** kappa(i,1)
             enddo
             k = levs + 1
-            if (prsi(1,k) .gt. 0.0) then
+            if (prsi(1,k) > zero) then
               do i=1,im
                 prki(i,k) = (prsi(i,k)*p00i) ** kappa(i,levs)
               enddo
             endif
 !
             do i=1,im
-              phii(i,1)   = 0.0           ! Ignoring topography height here
+              phii(i,1)   = zero           ! Ignoring topography height here
             enddo
             DO k=1,levs
               do i=1,im
@@ -82,16 +84,16 @@
               ENDDO
             ENDDO
           endif
-          if (prsl(1,1) <= 0.0) then
+          if (prsl(1,1) <= zero) then
             do k=1,levs
               do i=1,im
-                prsl(i,k)  = (PRSI(i,k) + PRSI(i,k+1))*0.5
+                prsl(i,k)  = (PRSI(i,k) + PRSI(i,k+1))*half
               enddo
             enddo
           endif
-          if (phil(1,levs) <= 0.0) then ! If geopotential is not given, calculate
+          if (phil(1,levs) <= zero) then ! If geopotential is not given, calculate
             do i=1,im
-              phii(i,1)   = 0.0           ! Ignoring topography height here
+              phii(i,1)   = zero           ! Ignoring topography height here
             enddo
             call GET_R(im,ix,levs,ntrac,q,xr)
             DO k=1,levs
@@ -110,44 +112,44 @@
           if (prki(1,1) <= zero .or. prkl(1,1) <= zero) then
             do k=1,levs
               do i=1,im
-                prsl(i,k) = (PRSI(i,k) + PRSI(i,k+1))*0.5
+                prsl(i,k) = (PRSI(i,k) + PRSI(i,k+1))*half
                 prkl(i,k) = (prsl(i,k)*p00i) ** rkap
-                enddo
-              enddo
-              do k=1,levs+1
-                do i=1,im
-                  prki(i,k) = (prsi(i,k)*p00i) ** rkap
-                enddo
-              enddo
-              do i=1,im
-                phii(i,1)   = 0.0           ! Ignoring topography height here
-              enddo
-              DO k=1,levs
-                do i=1,im
-                  TEM         = rd * T(i,k)*(1.0+NU*max(Q(i,k,1),zero))
-                  DPHI        = (PRSI(i,k) - PRSI(i,k+1)) * TEM
-     &                        / (PRSI(i,k) + PRSI(i,k+1))
-                  phil(i,k)   = phii(i,k) + DPHI
-                  phii(i,k+1) = phil(i,k) + DPHI
-!     if (k == 1 .and. phil(i,k) < 0.0) write(0,*)' phil=',phil(i,k)
-!    &,' dphi=',dphi,' prsi=',prsi(i,k),prsi(i,k+1),' tem=',tem
-                ENDDO
-              ENDDO
-          endif
-          if (prsl(1,1) <= 0.0) then
-            do k=1,levs
-              do i=1,im
-                prsl(i,k)  = (PRSI(i,k) + PRSI(i,k+1))*0.5
               enddo
             enddo
-          endif
-          if (phil(1,levs) <= 0.0) then ! If geopotential is not given, calculate
+            do k=1,levs+1
+              do i=1,im
+                prki(i,k) = (prsi(i,k)*p00i) ** rkap
+              enddo
+            enddo
             do i=1,im
-              phii(i,1)   = 0.0         ! Ignoring topography height here
+              phii(i,1)   = zero           ! Ignoring topography height here
             enddo
             DO k=1,levs
               do i=1,im
-                TEM         = rd * T(i,k)*(1.0+NU*max(Q(i,k,1),zero))
+                TEM         = rd * T(i,k) * (one+NU*max(Q(i,k,1),zero))
+                DPHI        = (PRSI(i,k) - PRSI(i,k+1)) * TEM
+     &                      / (PRSI(i,k) + PRSI(i,k+1))
+                phil(i,k)   = phii(i,k) + DPHI
+                phii(i,k+1) = phil(i,k) + DPHI
+!     if (k == 1 .and. phil(i,k) < 0.0) write(0,*)' phil=',phil(i,k)
+!    &,' dphi=',dphi,' prsi=',prsi(i,k),prsi(i,k+1),' tem=',tem
+              ENDDO
+            ENDDO
+          endif
+          if (prsl(1,1) <= zero) then
+            do k=1,levs
+              do i=1,im
+                prsl(i,k)  = (PRSI(i,k) + PRSI(i,k+1))*half
+              enddo
+            enddo
+          endif
+          if (phil(1,levs) <= zero) then ! If geopotential is not given, calculate
+            do i=1,im
+              phii(i,1)   = zero         ! Ignoring topography height here
+            enddo
+            DO k=1,levs
+              do i=1,im
+                TEM         = rd * T(i,k)*(one+NU*max(Q(i,k,1),zero))
                 DPHI        = (PRSI(i,k) - PRSI(i,k+1)) * TEM
      &                      / (PRSI(i,k) + PRSI(i,k+1))
                 phil(i,k)   = phii(i,k) + DPHI
@@ -183,20 +185,20 @@
             enddo
           enddo
         endif
-        if (prsl(1,1) <= 0.0) then
+        if (prsl(1,1) <= zero) then
           do k=1,levs
             do i=1,im
-              PRSL(i,k)   = 100.0 * PRKL(i,k) ** rkapi
+              PRSL(i,k)   = 100.0d0 * PRKL(i,k) ** rkapi
             enddo
           enddo
         endif
-        if (phil(1,levs) <= 0.0) then ! If geopotential is not given, calculate
+        if (phil(1,levs) <= zero) then ! If geopotential is not given, calculate
           do i=1,im
-            phii(i,1)   = 0.0         ! Ignoring topography height here
+            phii(i,1)   = zero         ! Ignoring topography height here
           enddo
           DO k=1,levs
             do i=1,im
-              TEM         = CP * T(i,k) * (1.0 + NU*max(Q(i,k,1),zero))
+              TEM         = CP * T(i,k) * (one + NU*max(Q(i,k,1),zero))
      &                    / PRKL(i,k)
               DPHIB       = (PRKI(i,k) - PRKL(i,k)) * TEM
               DPHIT       = (PRKL(i,k  ) - PRKI(i,k+1)) * TEM
@@ -232,14 +234,14 @@
      &,                    T(ix,levs),      q(ix,levs,ntrac)
       real(kind=kind_phys) xr(ix,levs)
       real(kind=kind_phys) tem, dphib, dphit, dphi
-      real (kind=kind_phys), parameter :: zero=0.0
+      real (kind=kind_phys), parameter :: zero=0.0d0, one=1.0d0
       integer i, k, n
 !
       do i=1,im
         phii(i,1)   = zero                     ! Ignoring topography height here
       enddo
       if( gen_coord_hybrid ) then              ! hmhj
-        if( thermodyn_id.eq.3 ) then           ! Enthalpy case
+        if( thermodyn_id == 3 ) then           ! Enthalpy case
           call GET_R(im,ix,levs,ntrac,q,xr)
           DO k=1,levs
             do i=1,im
@@ -256,7 +258,7 @@
         else                                 ! gc Virtual Temp
           DO k=1,levs
             do i=1,im
-              TEM         = RD * T(i,k) * (1.0 + NU*max(Q(i,k,1),zero))
+              TEM         = RD * T(i,k) * (one + NU*max(Q(i,k,1),zero))
               DPHI        = (PRSI(i,k) - PRSI(i,k+1)) * TEM
      &                     /(PRSI(i,k) + PRSI(i,k+1))
               phil(i,k)   = phii(i,k) + DPHI
@@ -267,7 +269,7 @@
       else                                   ! Not gc Virt Temp (Orig Joe)
         DO k=1,levs
           do i=1,im
-            TEM         = CP * T(i,k) * (1.0 + NU*max(Q(i,k,1),zero))
+            TEM         = CP * T(i,k) * (one + NU*max(Q(i,k,1),zero))
      &                  / PRKL(i,k)
             DPHIB       = (PRKI(i,k) - PRKL(i,k)) * TEM
             DPHIT       = (PRKL(i,k  ) - PRKI(i,k+1)) * TEM
@@ -285,7 +287,7 @@
       USE tracer_const
       implicit none
 !
-      real (kind=kind_phys), parameter :: zero=0.0
+      real (kind=kind_phys), parameter :: zero=0.0d0, one=1.0d0
       integer im, ix, levs, ntrac
       real(kind=kind_phys) q(ix,levs,ntrac)
       real(kind=kind_phys) xcp(ix,levs),xr(ix,levs),sumq(ix,levs)
@@ -307,8 +309,8 @@
       enddo
       do k=1,levs
         do i=1,im
-          xr(i,k)    = (1.-sumq(i,k))*ri(0)  + xr(i,k)
-          xcp(i,k)   = (1.-sumq(i,k))*cpi(0) + xcp(i,k)
+          xr(i,k)  = (one-sumq(i,k))*ri(0)  + xr(i,k)
+          xcp(i,k) = (one-sumq(i,k))*cpi(0) + xcp(i,k)
         enddo
       enddo
 !
@@ -320,7 +322,7 @@
       USE tracer_const
       implicit none
 !
-      real (kind=kind_phys), parameter :: zero=0.0
+      real (kind=kind_phys), parameter :: zero=0.0d0, one=1.0d0
       integer im, ix, levs, ntrac
       real(kind=kind_phys) q(ix,levs,ntrac)
       real(kind=kind_phys) xr(ix,levs),sumq(ix,levs)
@@ -329,7 +331,7 @@
       sumq = zero
       xr   = zero
       do n=1,ntrac
-        if( ri(n) > 0.0 ) then
+        if( ri(n) > zero ) then
           do k=1,levs
             do i=1,im
               xr(i,k)   = xr(i,k)   + q(i,k,n) * ri(n)
@@ -340,7 +342,7 @@
       enddo
       do k=1,levs
         do i=1,im
-          xr(i,k)    = (1.-sumq(i,k))*ri(0)  + xr(i,k)
+          xr(i,k) = (one-sumq(i,k))*ri(0)  + xr(i,k)
         enddo
       enddo
 !
@@ -352,7 +354,7 @@
       USE tracer_const
       implicit none
 !
-      real (kind=kind_phys), parameter :: zero=0.0
+      real (kind=kind_phys), parameter :: zero=0.0d0, one=1.0d0
       integer im, ix, levs, ntrac
       real(kind=kind_phys) q(ix,levs,ntrac)
       real(kind=kind_phys) xcp(ix,levs),sumq(ix,levs)
@@ -361,7 +363,7 @@
       sumq = zero
       xcp  = zero
       do n=1,ntrac
-        if( cpi(n) > 0.0 ) then
+        if( cpi(n) > zero ) then
           do k=1,levs
             do i=1,im
               xcp(i,k)  = xcp(i,k)  + q(i,k,n) * cpi(n)
@@ -372,7 +374,7 @@
       enddo
       do k=1,levs
         do i=1,im
-          xcp(i,k)   = (1.-sumq(i,k))*cpi(0) + xcp(i,k)
+          xcp(i,k)   = (one-sumq(i,k))*cpi(0) + xcp(i,k)
         enddo
       enddo
 !
