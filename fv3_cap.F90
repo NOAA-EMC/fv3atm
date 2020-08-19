@@ -1147,7 +1147,7 @@ module fv3gfs_cap_mod
          enddo
          call ESMF_VMEpochExit(rc=rc)
          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
+         timerh = mpi_wtime()
          if (mype == 0 .or. mype == lead_wrttask(n_group)) print *,'aft fieldbundleregrid,na=',na,  &
            ' time=', timerh- timerhi
 
