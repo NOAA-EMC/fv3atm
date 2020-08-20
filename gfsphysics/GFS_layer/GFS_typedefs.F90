@@ -1551,7 +1551,9 @@ module GFS_typedefs
 #ifdef CCPP
     real (kind=kind_phys), pointer :: TRAIN  (:,:)   => null()  !< accumulated stratiform T tendency (K s-1)
 #endif
-
+#ifdef CCPP
+    real (kind=kind_phys), pointer :: cldfra  (:,:)   => null()  !< instantaneous 3D cloud fraction
+#endif
     !--- MP quantities for 3D diagnositics 
     real (kind=kind_phys), pointer :: refl_10cm(:,:) => null()  !< instantaneous refl_10cm 
 !
@@ -5613,6 +5615,10 @@ module GFS_typedefs
     end if
 #endif
 
+#ifdef CCPP
+    allocate (Diag%cldfra     (IM,Model%levs))
+#endif
+
     allocate (Diag%ca_deep  (IM))
     allocate (Diag%ca_turb  (IM))
     allocate (Diag%ca_shal  (IM))
@@ -5930,6 +5936,10 @@ module GFS_typedefs
        Diag%TRAIN      = zero
     end if
 #endif
+#ifdef CCPP
+    Diag%cldfra      = zero
+#endif
+
     Diag%totprcpb   = zero
     Diag%cnvprcpb   = zero
     Diag%toticeb    = zero
