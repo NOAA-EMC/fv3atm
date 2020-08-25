@@ -49,7 +49,7 @@ SRCS_F90 = \
 	   ./GFS_layer/GFS_abstraction_layer.F90                                     \
 	   ./GFS_layer/GFS_diagnostics.F90                                           \
 	   ./GFS_layer/GFS_driver.F90                                                \
-	   ./GFS_layer/GFS_restart.F90                                               
+	   ./GFS_layer/GFS_restart.F90
 # non-CCPP build
 else
 SRCS_f =  \
@@ -211,7 +211,7 @@ SRCS_F90 = \
 	   ./GFS_layer/GFS_physics_driver.F90                                        \
 	   ./GFS_layer/GFS_radiation_driver.F90                                      \
 	   ./GFS_layer/GFS_restart.F90                                               \
-	   ./GFS_layer/GFS_typedefs.F90                                              
+	   ./GFS_layer/GFS_typedefs.F90
 endif
 
 SRCS_c   =
