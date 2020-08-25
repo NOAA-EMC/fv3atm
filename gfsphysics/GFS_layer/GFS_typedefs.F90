@@ -245,6 +245,8 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: zorl   (:)   => null()  !< composite surface roughness in cm
     real (kind=kind_phys), pointer :: zorlo  (:)   => null()  !< ocean surface roughness in cm
     real (kind=kind_phys), pointer :: zorll  (:)   => null()  !< land surface roughness in cm
+    real (kind=kind_phys), pointer :: zorli  (:)   => null()  !< ice  surface roughness in cm
+    real (kind=kind_phys), pointer :: zorlw  (:)   => null()  !< wave surface roughness in cm
     real (kind=kind_phys), pointer :: fice   (:)   => null()  !< ice fraction over open water grid
 !   real (kind=kind_phys), pointer :: hprim  (:)   => null()  !< topographic standard deviation in m
     real (kind=kind_phys), pointer :: hprime (:,:) => null()  !< orographic metrics
@@ -439,13 +441,13 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: dtsfcin_cpl(:) => null()   !< aoi_fld%dtsfcin(item,lan)
     real (kind=kind_phys), pointer :: dqsfcin_cpl(:) => null()   !< aoi_fld%dqsfcin(item,lan)
     real (kind=kind_phys), pointer :: ulwsfcin_cpl(:)=> null()   !< aoi_fld%ulwsfcin(item,lan)
-    real (kind=kind_phys), pointer :: tseain_cpl(:)  => null()   !< aoi_fld%tseain(item,lan)
-    real (kind=kind_phys), pointer :: tisfcin_cpl(:) => null()   !< aoi_fld%tisfcin(item,lan)
-    real (kind=kind_phys), pointer :: ficein_cpl(:)  => null()   !< aoi_fld%ficein(item,lan)
-    real (kind=kind_phys), pointer :: hicein_cpl(:)  => null()   !< aoi_fld%hicein(item,lan)
+!   real (kind=kind_phys), pointer :: tseain_cpl(:)  => null()   !< aoi_fld%tseain(item,lan)
+!   real (kind=kind_phys), pointer :: tisfcin_cpl(:) => null()   !< aoi_fld%tisfcin(item,lan)
+!   real (kind=kind_phys), pointer :: ficein_cpl(:)  => null()   !< aoi_fld%ficein(item,lan)
+!   real (kind=kind_phys), pointer :: hicein_cpl(:)  => null()   !< aoi_fld%hicein(item,lan)
     real (kind=kind_phys), pointer :: hsnoin_cpl(:)  => null()   !< aoi_fld%hsnoin(item,lan)
     !--- only variable needed for cplwav2atm=.TRUE.
-    real (kind=kind_phys), pointer :: zorlwav_cpl(:) => null()   !< roughness length from wave model
+!   real (kind=kind_phys), pointer :: zorlwav_cpl(:) => null()   !< roughness length from wave model
     !--- also needed for ice/ocn coupling - Xingren
     real (kind=kind_phys), pointer :: slimskin_cpl(:)=> null()   !< aoi_fld%slimskin(item,lan)
 
@@ -1548,7 +1550,9 @@ module GFS_typedefs
 #ifdef CCPP
     real (kind=kind_phys), pointer :: TRAIN  (:,:)   => null()  !< accumulated stratiform T tendency (K s-1)
 #endif
-
+#ifdef CCPP
+    real (kind=kind_phys), pointer :: cldfra  (:,:)   => null()  !< instantaneous 3D cloud fraction
+#endif
     !--- MP quantities for 3D diagnositics 
     real (kind=kind_phys), pointer :: refl_10cm(:,:) => null()  !< instantaneous refl_10cm 
 !
@@ -2228,6 +2232,8 @@ module GFS_typedefs
     allocate (Sfcprop%zorl     (IM))
     allocate (Sfcprop%zorlo    (IM))
     allocate (Sfcprop%zorll    (IM))
+    allocate (Sfcprop%zorli    (IM))
+    allocate (Sfcprop%zorlw    (IM))
     allocate (Sfcprop%fice     (IM))
 !   allocate (Sfcprop%hprim    (IM))
     allocate (Sfcprop%hprime   (IM,Model%nmtvr))
@@ -2246,6 +2252,8 @@ module GFS_typedefs
     Sfcprop%zorl      = clear_val
     Sfcprop%zorlo     = clear_val
     Sfcprop%zorll     = clear_val
+    Sfcprop%zorli     = clear_val
+    Sfcprop%zorlw     = clear_val
     Sfcprop%fice      = clear_val
 !   Sfcprop%hprim     = clear_val
     Sfcprop%hprime    = clear_val
@@ -2617,12 +2625,12 @@ module GFS_typedefs
       Coupling%v10mi_cpl = clear_val
     endif 
 
-    if (Model%cplwav2atm) then
+!   if (Model%cplwav2atm) then
       !--- incoming quantities
-      allocate (Coupling%zorlwav_cpl (IM))
+!     allocate (Coupling%zorlwav_cpl (IM))
 
-      Coupling%zorlwav_cpl  = clear_val
-    end if
+!     Coupling%zorlwav_cpl  = clear_val
+!   end if
 
     if (Model%cplflx) then
       !--- incoming quantities
@@ -2632,10 +2640,10 @@ module GFS_typedefs
       allocate (Coupling%dtsfcin_cpl  (IM))
       allocate (Coupling%dqsfcin_cpl  (IM))
       allocate (Coupling%ulwsfcin_cpl (IM))
-      allocate (Coupling%tseain_cpl   (IM))
-      allocate (Coupling%tisfcin_cpl  (IM))
-      allocate (Coupling%ficein_cpl   (IM))
-      allocate (Coupling%hicein_cpl   (IM))
+!     allocate (Coupling%tseain_cpl   (IM))
+!     allocate (Coupling%tisfcin_cpl  (IM))
+!     allocate (Coupling%ficein_cpl   (IM))
+!     allocate (Coupling%hicein_cpl   (IM))
       allocate (Coupling%hsnoin_cpl   (IM))
 
       Coupling%slimskin_cpl = clear_val
@@ -2644,10 +2652,10 @@ module GFS_typedefs
       Coupling%dtsfcin_cpl  = clear_val
       Coupling%dqsfcin_cpl  = clear_val
       Coupling%ulwsfcin_cpl = clear_val
-      Coupling%tseain_cpl   = clear_val
-      Coupling%tisfcin_cpl  = clear_val
-      Coupling%ficein_cpl   = clear_val
-      Coupling%hicein_cpl   = clear_val
+!     Coupling%tseain_cpl   = clear_val
+!     Coupling%tisfcin_cpl  = clear_val
+!     Coupling%ficein_cpl   = clear_val
+!     Coupling%hicein_cpl   = clear_val
       Coupling%hsnoin_cpl   = clear_val
 
       !--- accumulated quantities
@@ -5597,6 +5605,10 @@ module GFS_typedefs
     end if
 #endif
 
+#ifdef CCPP
+    allocate (Diag%cldfra     (IM,Model%levs))
+#endif
+
     allocate (Diag%ca_deep  (IM))
     allocate (Diag%ca_turb  (IM))
     allocate (Diag%ca_shal  (IM))
@@ -5914,6 +5926,10 @@ module GFS_typedefs
        Diag%TRAIN      = zero
     end if
 #endif
+#ifdef CCPP
+    Diag%cldfra      = zero
+#endif
+
     Diag%totprcpb   = zero
     Diag%cnvprcpb   = zero
     Diag%toticeb    = zero
