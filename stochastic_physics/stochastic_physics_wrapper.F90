@@ -50,7 +50,6 @@ module stochastic_physics_wrapper_mod
 #endif
 
     use GFS_typedefs,       only: GFS_control_type, GFS_data_type
-    use lndp_apply_perts_mod, only: lndp_apply_perts
     use mpp_mod,            only: FATAL, mpp_error
     use block_control_mod,  only: block_control_type
     use atmosphere_mod,     only: Atm, mygrid
@@ -58,6 +57,8 @@ module stochastic_physics_wrapper_mod
     use stochastic_physics,           only: init_stochastic_physics, run_stochastic_physics
     use cellular_automata_global_mod, only: cellular_automata_global
     use cellular_automata_sgs_mod,    only: cellular_automata_sgs
+    use lndp_apply_perts_mod, only: lndp_apply_perts
+    use namelist_soilveg, only: maxsmc
 
     implicit none
 
@@ -196,7 +197,7 @@ module stochastic_physics_wrapper_mod
              endif 
              call lndp_apply_perts( GFS_Control%blksz, GFS_Control%lsm,  GFS_Control%lsoil, GFS_Control%dtf, & 
                              GFS_Control%n_var_lndp, GFS_Control%lndp_var_list, GFS_Control%lndp_prt_list, & 
-                             sfc_wts, xlon, xlat, stype, param_update_flag, smc, slc,stc, vfrac, ierr) 
+                             sfc_wts, xlon, xlat, stype, maxsmc,param_update_flag, smc, slc,stc, vfrac, ierr) 
              if (ierr/=0)  then 
                     write(6,*) 'call to GFS_apply_lndp failed'
                     return
