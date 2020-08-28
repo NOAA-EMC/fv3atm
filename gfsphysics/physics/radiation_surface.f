@@ -609,7 +609,7 @@
          ab1bm = min(0.99, alnsf(i)*rfcs)
          ab2bm = min(0.99, alvsf(i)*rfcs)
          sfcalb(i,1) = ab1bm   *flnd + asenb*fsea + asnnb*fsno
-         sfcalb(i,2) = alnwf(i)     *flnd + asend*fsea + asnnd*fsno
+         sfcalb(i,2) = alnwf(i)*flnd + asend*fsea + asnnd*fsno
          sfcalb(i,3) = ab2bm   *flnd + asevb*fsea + asnvb*fsno
          sfcalb(i,4) = alvwf(i)     *flnd + asevd*fsea + asnvd*fsno
 
@@ -620,7 +620,7 @@
 
 ! sfc-perts, mgehne ***
 ! perturb all 4 kinds of surface albedo, sfcalb(:,1:4)
-      if (pertalb(1)>0.0) then
+      if (pertalb(1) > 0.0) then
         do i = 1, imax
           do kk=1, 4
             ! compute beta distribution parameters for all 4 albedos
