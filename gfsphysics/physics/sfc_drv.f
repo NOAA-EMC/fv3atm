@@ -182,7 +182,7 @@
 
 !  ---  input:
       integer, intent(in) :: im, km, isot, ivegsrc
-      real (kind=kind_phys), dimension(5), intent(in) :: pertvegf
+      real (kind=kind_phys), intent(in) :: pertvegf
 
       integer, dimension(im), intent(in) :: soiltyp, vegtype, slopetyp
 
@@ -383,10 +383,10 @@
 !  perturb vegetation fraction that goes into sflx, use the same
 !  perturbation strategy as for albedo (percentile matching)
           vegfp  = vegfpert(i)                    ! sfc-perts, mgehne
-          if (pertvegf(1) > zero) then
+          if (pertvegf > zero) then
                 ! compute beta distribution parameters for vegetation fraction
                 mv = shdfac
-                sv = pertvegf(1)*mv*(1.-mv)
+                sv = pertvegf*mv*(one-mv)
                 alphav = mv*mv*(one-mv)/(sv*sv)-mv
                 betav  = alphav*(one-mv)/mv
 ! compute beta distribution value corresponding
