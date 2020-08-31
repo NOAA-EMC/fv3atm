@@ -1956,9 +1956,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
-<<<<<<< HEAD
   active = (flag_for_flux_coupling)
-=======
 [hsnoin_cpl]
   standard_name = surface_snow_thickness_for_coupling
   long_name = sfc snow depth in meters over sea ice for coupling
@@ -1966,7 +1964,6 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
->>>>>>> upstream/develop
 [slimskin_cpl]
   standard_name = sea_land_ice_mask_in	
   long_name = sea/land/ice mask input (=0/1/2)
@@ -9139,10 +9136,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
-<<<<<<< HEAD
-  optional = F
   active = (flag_for_rrtmgp_radiation_scheme)
-=======
 [deltaZ]
   standard_name = layer_thickness
   long_name = layer_thickness
@@ -9150,7 +9144,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
->>>>>>> upstream/develop
+  active = (flag_for_rrtmgp_radiation_scheme)
 [tracer]
   standard_name = chemical_tracers
   long_name = chemical tracers
@@ -9158,64 +9152,7 @@
   dimensions = (horizontal_dimension,vertical_dimension,number_of_tracers)
   type = real
   kind = kind_phys
-<<<<<<< HEAD
-  optional = F
   active = (flag_for_rrtmgp_radiation_scheme)
-[hsw0]
-  standard_name = RRTMGP_sw_heating_rate_clear_sky
-  long_name = RRTMGP shortwave clear sky heating rate
-  units = K s-1
-  dimensions = (horizontal_dimension,vertical_dimension)
-  type = real
-  kind = kind_phys
-  optional = T
-  active = (flag_for_rrtmgp_radiation_scheme)
-[hswc]
-  standard_name = RRTMGP_sw_heating_rate_all_sky
-  long_name = RRTMGP shortwave all sky heating rate
-  units = K s-1
-  dimensions = (horizontal_dimension,vertical_dimension)
-  type = real
-  kind = kind_phys
-  optional = F
-  active = (flag_for_rrtmgp_radiation_scheme)
-[hswb]
-  standard_name = RRTMGP_sw_heating_rate_spectral
-  long_name = RRTMGP shortwave total sky heating rate (spectral)
-  units = K s-1
-  dimensions = (horizontal_dimension,vertical_dimension,number_of_sw_spectral_points_rrtmgp)
-  type = real
-  kind = kind_phys
-  optional = T
-  active = (flag_for_rrtmgp_radiation_scheme)
-[hlw0]
-  standard_name = RRTMGP_lw_heating_rate_clear_sky
-  long_name = RRTMGP longwave clear sky heating rate
-  units = K s-1
-  dimensions = (horizontal_dimension,vertical_dimension)
-  type = real
-  kind = kind_phys
-  optional = T
-  active = (flag_for_rrtmgp_radiation_scheme)
-[hlwc]
-  standard_name = RRTMGP_lw_heating_rate_all_sky
-  long_name = RRTMGP longwave all sky heating rate
-  units = K s-1
-  dimensions = (horizontal_dimension,vertical_dimension)
-  type = real
-  kind = kind_phys
-  optional = F
-  active = (flag_for_rrtmgp_radiation_scheme)
-[hlwb]
-  standard_name = RRTMGP_lw_heating_rate_spectral
-  long_name = RRTMGP longwave total sky heating rate (spectral)
-  units = K s-1
-  dimensions = (horizontal_dimension,vertical_dimension,number_of_lw_spectral_points_rrtmgp)
-  type = real
-  kind = kind_phys
-  optional = T
-  active = (flag_for_rrtmgp_radiation_scheme)
-=======
 [cloud_overlap_param]
   standard_name = cloud_overlap_param
   long_name = cloud overlap parameter
@@ -9223,6 +9160,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_for_rrtmgp_radiation_scheme)
 [precip_overlap_param]
   standard_name = precip_overlap_param
   long_name = precipitation overlap parameter
@@ -9230,7 +9168,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
->>>>>>> upstream/develop
+  active = (flag_for_rrtmgp_radiation_scheme)
 [ipsdsw0]
   standard_name = initial_permutation_seed_sw
   long_name = initial seed for McICA SW 
@@ -9243,82 +9181,6 @@
   units = none
   dimensions = ()
   type = integer
-<<<<<<< HEAD
-  optional = F
-[cld_frac]
-  standard_name = RRTMGP_total_cloud_fraction
-  long_name = layer total cloud fraction
-  units = frac
-  dimensions = (horizontal_dimension,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (flag_for_rrtmgp_radiation_scheme)
-[cld_lwp]
-  standard_name = RRTMGP_cloud_liquid_water_path
-  long_name = layer cloud liquid water path
-  units = g m-2
-  dimensions = (horizontal_dimension,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (flag_for_rrtmgp_radiation_scheme)
-[cld_reliq]
-  standard_name = RRTMGP_mean_effective_radius_for_liquid_cloud
-  long_name = mean effective radius for liquid cloud
-  units = micron
-  dimensions = (horizontal_dimension,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (flag_for_rrtmgp_radiation_scheme)
-[cld_iwp]
-  standard_name = RRTMGP_cloud_ice_water_path
-  long_name = layer cloud ice water path
-  units = g m-2
-  dimensions = (horizontal_dimension,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (flag_for_rrtmgp_radiation_scheme)
-[cld_reice]
-  standard_name = RRTMGP_mean_effective_radius_for_ice_cloud
-  long_name = mean effective radius for ice cloud
-  units = micron
-  dimensions = (horizontal_dimension,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (flag_for_rrtmgp_radiation_scheme)
-[cld_rwp]
-  standard_name = RRTMGP_cloud_rain_water_path
-  long_name = cloud rain water path
-  units = g m-2
-  dimensions = (horizontal_dimension,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (flag_for_rrtmgp_radiation_scheme)
-[cld_rerain]
-  standard_name = RRTMGP_mean_effective_radius_for_rain_drop
-  long_name = mean effective radius for rain drop
-  units = micron
-  dimensions = (horizontal_dimension,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (flag_for_rrtmgp_radiation_scheme)
-[cld_swp]
-  standard_name = RRTMGP_cloud_snow_water_path
-  long_name = cloud snow water path
-  units = g m-2
-  dimensions = (horizontal_dimension,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (flag_for_rrtmgp_radiation_scheme)
-[cld_resnow]
-  standard_name = RRTMGP_mean_effective_radius_for_snow_flake
-  long_name = mean effective radius for snow flake
-  units = micron
-  dimensions = (horizontal_dimension,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (flag_for_rrtmgp_radiation_scheme)
-=======
->>>>>>> upstream/develop
 [cldtausw]
   standard_name = RRTMGP_cloud_optical_depth_layers_at_0_55mu_band
   long_name = approx .55mu band layer cloud optical depth
@@ -9368,10 +9230,7 @@
   dimensions = (horizontal_dimension,vertical_dimension_plus_one)
   type = real
   kind = kind_phys
-<<<<<<< HEAD
-  optional = F
   active = (flag_for_rrtmgp_radiation_scheme)
-=======
 [sktp1r]
   standard_name = surface_skin_temperature_at_previous_time_step
   long_name = surface skin temperature at previous time step
@@ -9393,7 +9252,6 @@
   dimensions = (horizontal_dimension,vertical_dimension_plus_one)
   type = real
   kind = kind_phys
->>>>>>> upstream/develop
 [fluxswUP_allsky]
   standard_name = RRTMGP_sw_flux_profile_upward_allsky
   long_name = RRTMGP upward shortwave all-sky flux profile
@@ -9511,21 +9369,14 @@
   units = none
   dimensions = (horizontal_dimension)
   type = integer
-<<<<<<< HEAD
-  optional = F
   active = (flag_for_rrtmgp_radiation_scheme)
-=======
->>>>>>> upstream/develop
 [icseed_sw]
   standard_name = seed_random_numbers_sw_for_RRTMGP
   long_name = seed for random number generation for shortwave radiation
   units = none
   dimensions = (horizontal_dimension)
   type = integer
-<<<<<<< HEAD
-  optional = F
   active = (flag_for_rrtmgp_radiation_scheme)
-=======
 [precip_frac]
   standard_name = precipitation_fraction_by_layer
   long_name = precipitation fraction in each layer
@@ -9533,7 +9384,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
->>>>>>> upstream/develop
+  active = (flag_for_rrtmgp_radiation_scheme)
 [sw_gas_props]
   standard_name = coefficients_for_sw_gas_optics
   long_name = DDT containing spectral information for RRTMGP SW radiation scheme
