@@ -60,13 +60,6 @@ case "$MACHINE_ID" in
             export F77=mpif77
             export F90=mpif90
             ;;
-        cheyenne.intel-impi)
-            export CC=mpiicc
-            export CXX=mpiicpc
-            export FC=mpiifort
-            export F77=mpiifort
-            export F90=mpiifort
-            ;;
         cheyenne.gnu)
             export CC=mpicc
             export CXX=mpicxx
@@ -87,13 +80,6 @@ case "$MACHINE_ID" in
             export FC=mpif90
             export F77=mpif77
             export F90=mpif90
-            ;;
-        supermuc_phase2.intel)
-            export CC=mpiicc
-            export CXX=mpiicpc
-            export FC=mpiifort
-            export F77=mpiifort
-            export F90=mpiifort
             ;;
         macosx.gnu)
             # set in generic modulefile

@@ -9,7 +9,7 @@ module GFS_typedefs
                                            con_t0c, con_cvap, con_cliq, con_eps, con_epsq, &
                                            con_epsm1, con_ttp, rlapse, con_jcal, con_rhw0, &
                                            con_sbc, con_tice, cimin, con_p0, rhowater,     &
-                                           con_csol
+                                           con_csol, con_epsqs
 
        use module_radsw_parameters,  only: topfsw_type, sfcfsw_type, profsw_type, cmpfsw_type, NBDSW
        use module_radlw_parameters,  only: topflw_type, sfcflw_type, proflw_type, NBDLW
@@ -245,6 +245,8 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: zorl   (:)   => null()  !< composite surface roughness in cm
     real (kind=kind_phys), pointer :: zorlo  (:)   => null()  !< ocean surface roughness in cm
     real (kind=kind_phys), pointer :: zorll  (:)   => null()  !< land surface roughness in cm
+    real (kind=kind_phys), pointer :: zorli  (:)   => null()  !< ice  surface roughness in cm
+    real (kind=kind_phys), pointer :: zorlw  (:)   => null()  !< wave surface roughness in cm
     real (kind=kind_phys), pointer :: fice   (:)   => null()  !< ice fraction over open water grid
 !   real (kind=kind_phys), pointer :: hprim  (:)   => null()  !< topographic standard deviation in m
     real (kind=kind_phys), pointer :: hprime (:,:) => null()  !< orographic metrics
@@ -439,13 +441,13 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: dtsfcin_cpl(:) => null()   !< aoi_fld%dtsfcin(item,lan)
     real (kind=kind_phys), pointer :: dqsfcin_cpl(:) => null()   !< aoi_fld%dqsfcin(item,lan)
     real (kind=kind_phys), pointer :: ulwsfcin_cpl(:)=> null()   !< aoi_fld%ulwsfcin(item,lan)
-    real (kind=kind_phys), pointer :: tseain_cpl(:)  => null()   !< aoi_fld%tseain(item,lan)
-    real (kind=kind_phys), pointer :: tisfcin_cpl(:) => null()   !< aoi_fld%tisfcin(item,lan)
-    real (kind=kind_phys), pointer :: ficein_cpl(:)  => null()   !< aoi_fld%ficein(item,lan)
-    real (kind=kind_phys), pointer :: hicein_cpl(:)  => null()   !< aoi_fld%hicein(item,lan)
+!   real (kind=kind_phys), pointer :: tseain_cpl(:)  => null()   !< aoi_fld%tseain(item,lan)
+!   real (kind=kind_phys), pointer :: tisfcin_cpl(:) => null()   !< aoi_fld%tisfcin(item,lan)
+!   real (kind=kind_phys), pointer :: ficein_cpl(:)  => null()   !< aoi_fld%ficein(item,lan)
+!   real (kind=kind_phys), pointer :: hicein_cpl(:)  => null()   !< aoi_fld%hicein(item,lan)
     real (kind=kind_phys), pointer :: hsnoin_cpl(:)  => null()   !< aoi_fld%hsnoin(item,lan)
     !--- only variable needed for cplwav2atm=.TRUE.
-    real (kind=kind_phys), pointer :: zorlwav_cpl(:) => null()   !< roughness length from wave model
+!   real (kind=kind_phys), pointer :: zorlwav_cpl(:) => null()   !< roughness length from wave model
     !--- also needed for ice/ocn coupling - Xingren
     real (kind=kind_phys), pointer :: slimskin_cpl(:)=> null()   !< aoi_fld%slimskin(item,lan)
 
@@ -515,7 +517,6 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: skebu_wts (:,:) => null()  !
     real (kind=kind_phys), pointer :: skebv_wts (:,:) => null()  !
     real (kind=kind_phys), pointer :: sfc_wts   (:,:) => null()  ! mg, sfc-perts
-    integer              :: nsfcpert=6                             !< number of sfc perturbations
 
     !--- aerosol surface emissions for Thompson microphysics
     real (kind=kind_phys), pointer :: nwfa2d  (:)     => null()  !< instantaneous water-friendly sfc aerosol source
@@ -680,26 +681,26 @@ module GFS_typedefs
     logical              :: swhtr           !< flag to output sw heating rate (Radtend%swhc)
 #ifdef CCPP
     ! RRTMGP
-    logical              :: do_RRTMGP         !< Use RRTMGP
-    character(len=128)   :: active_gases      !< Character list of active gases used in RRTMGP
-    integer              :: nGases            !< Number of active gases
-    character(len=128)   :: rrtmgp_root       !< Directory of rte+rrtmgp source code
-    character(len=128)   :: lw_file_gas       !< RRTMGP K-distribution file, coefficients to compute optics for gaseous atmosphere
-    character(len=128)   :: lw_file_clouds    !< RRTMGP file containing coefficients used to compute clouds optical properties
-    integer              :: rrtmgp_nBandsLW   !< Number of RRTMGP LW bands.
-    integer              :: rrtmgp_nGptsLW    !< Number of RRTMGP LW spectral points.
-    character(len=128)   :: sw_file_gas       !< RRTMGP K-distribution file, coefficients to compute optics for gaseous atmosphere
-    character(len=128)   :: sw_file_clouds    !< RRTMGP file containing coefficients used to compute clouds optical properties
-    integer              :: rrtmgp_nBandsSW   !< Number of RRTMGP SW bands.
-    integer              :: rrtmgp_nGptsSW    !< Number of RRTMGP SW spectral points.
-    integer              :: rrtmgp_cld_optics !< Flag to control which RRTMGP routine to compute cloud-optics.
-                                                 !< = 0 ; Use RRTMG implementation
-                                                 !< = 1 ; Use RRTMGP (pade)
-                                                 !< = 2 ; USE RRTMGP (LUT)
-    integer              :: rrtmgp_nrghice    !< Number of ice-roughness categories
-    integer              :: rrtmgp_nGauss_ang !< Number of angles used in Gaussian quadrature
-    logical              :: do_GPsw_Glw       ! If set to true use rrtmgp for SW calculation, rrtmg for LW.
-    character(len=128)   :: active_gases_array(100)          !< character array for each trace gas name 
+    logical              :: do_RRTMGP               !< Use RRTMGP
+    character(len=128)   :: active_gases            !< Character list of active gases used in RRTMGP
+    integer              :: nGases                  !< Number of active gases
+    character(len=128)   :: rrtmgp_root             !< Directory of rte+rrtmgp source code
+    character(len=128)   :: lw_file_gas             !< RRTMGP K-distribution file, coefficients to compute optics for gaseous atmosphere
+    character(len=128)   :: lw_file_clouds          !< RRTMGP file containing coefficients used to compute clouds optical properties
+    integer              :: rrtmgp_nBandsLW         !< Number of RRTMGP LW bands.
+    integer              :: rrtmgp_nGptsLW          !< Number of RRTMGP LW spectral points.
+    character(len=128)   :: sw_file_gas             !< RRTMGP K-distribution file, coefficients to compute optics for gaseous atmosphere
+    character(len=128)   :: sw_file_clouds          !< RRTMGP file containing coefficients used to compute clouds optical properties
+    integer              :: rrtmgp_nBandsSW         !< Number of RRTMGP SW bands.
+    integer              :: rrtmgp_nGptsSW          !< Number of RRTMGP SW spectral points.
+    logical              :: doG_cldoptics           !< Use legacy RRTMG cloud-optics?                                             
+    logical              :: doGP_cldoptics_PADE     !< Use RRTMGP cloud-optics: PADE approximation?                                             
+    logical              :: doGP_cldoptics_LUT      !< Use RRTMGP cloud-optics: LUTs?                                             
+    integer              :: rrtmgp_nrghice          !< Number of ice-roughness categories
+    integer              :: rrtmgp_nGauss_ang       !< Number of angles used in Gaussian quadrature
+    logical              :: do_GPsw_Glw             !< If set to true use rrtmgp for SW calculation, rrtmg for LW.
+    character(len=128)   :: active_gases_array(100) !< character array for each trace gas name
+    logical              :: use_LW_jacobian         !< If true, use Jacobian of LW to update radiation tendency.
 #endif
 !--- microphysical switch
     integer              :: ncld            !< choice of cloud scheme
@@ -1043,14 +1044,14 @@ module GFS_typedefs
     logical              :: do_shum
     logical              :: do_skeb
     integer              :: skeb_npass
-    logical              :: do_sfcperts
-    integer              :: nsfcpert=6
-    real(kind=kind_phys) :: pertz0(5)          ! mg, sfc-perts
-    real(kind=kind_phys) :: pertzt(5)          ! mg, sfc-perts
-    real(kind=kind_phys) :: pertshc(5)         ! mg, sfc-perts
-    real(kind=kind_phys) :: pertlai(5)         ! mg, sfc-perts
-    real(kind=kind_phys) :: pertalb(5)         ! mg, sfc-perts
-    real(kind=kind_phys) :: pertvegf(5)        ! mg, sfc-perts
+    integer              :: lndp_type
+    integer              :: n_var_lndp
+    character(len=3)     :: lndp_var_list(6)  ! dimension here must match  n_var_max_lndp in  stochy_nml_def
+    real(kind=kind_phys) :: lndp_prt_list(6)  ! dimension here must match  n_var_max_lndp in  stochy_nml_def 
+                                              ! also previous code had dimension 5 for each pert, to allow 
+                                              ! multiple patterns. It wasn't fully coded (and wouldn't have worked 
+                                              ! with nlndp>1, so I just dropped it). If we want to code it properly, 
+                                              ! we'd need to make this dim(6,5).
 !--- tracer handling
     character(len=32), pointer :: tracer_names(:) !< array of initialized tracers from dynamic core
     integer              :: ntrac           !< number of tracers
@@ -1549,7 +1550,9 @@ module GFS_typedefs
 #ifdef CCPP
     real (kind=kind_phys), pointer :: TRAIN  (:,:)   => null()  !< accumulated stratiform T tendency (K s-1)
 #endif
-
+#ifdef CCPP
+    real (kind=kind_phys), pointer :: cldfra  (:,:)   => null()  !< instantaneous 3D cloud fraction
+#endif
     !--- MP quantities for 3D diagnositics 
     real (kind=kind_phys), pointer :: refl_10cm(:,:) => null()  !< instantaneous refl_10cm 
 !
@@ -1944,6 +1947,8 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: uustar_ocean(:)    => null()  !<
     real (kind=kind_phys), pointer      :: vdftra(:,:,:)      => null()  !<
     real (kind=kind_phys), pointer      :: vegf1d(:)          => null()  !<
+    real (kind=kind_phys)               :: lndp_vgf                      !<
+  
     integer, pointer                    :: vegtype(:)         => null()  !<
     real (kind=kind_phys), pointer      :: w_upi(:,:)         => null()  !<
     real (kind=kind_phys), pointer      :: wcbmax(:)          => null()  !<
@@ -1979,67 +1984,74 @@ module GFS_typedefs
 
 #ifdef CCPP
     ! RRTMGP
-    integer                             :: ipsdlw0                           !<
-    integer                             :: ipsdsw0                           !<
-    real (kind=kind_phys), pointer      :: p_lay(:,:)             => null()  !<
-    real (kind=kind_phys), pointer      :: p_lev(:,:)             => null()  !<
-    real (kind=kind_phys), pointer      :: t_lev(:,:)             => null()  !<
-    real (kind=kind_phys), pointer      :: t_lay(:,:)             => null()  !<
-    real (kind=kind_phys), pointer      :: relhum(:,:)            => null()  !<
-    real (kind=kind_phys), pointer      :: tv_lay(:,:)            => null()  !<
-    real (kind=kind_phys), pointer      :: tracer(:,:,:)          => null()  !<
-    real (kind=kind_phys), pointer      :: aerosolslw(:,:,:,:)    => null()  !< Aerosol radiative properties in each LW band.
-    real (kind=kind_phys), pointer      :: aerosolssw(:,:,:,:)    => null()  !< Aerosol radiative properties in each SW band.
-    real (kind=kind_phys), pointer      :: cld_frac(:,:)          => null()  !< Total cloud fraction
-    real (kind=kind_phys), pointer      :: cld_lwp(:,:)           => null()  !< Cloud liquid water path
-    real (kind=kind_phys), pointer      :: cld_reliq(:,:)         => null()  !< Cloud liquid effective radius
-    real (kind=kind_phys), pointer      :: cld_iwp(:,:)           => null()  !< Cloud ice water path
-    real (kind=kind_phys), pointer      :: cld_reice(:,:)         => null()  !< Cloud ice effecive radius
-    real (kind=kind_phys), pointer      :: cld_swp(:,:)           => null()  !< Cloud snow water path
-    real (kind=kind_phys), pointer      :: cld_resnow(:,:)        => null()  !< Cloud snow effective radius
-    real (kind=kind_phys), pointer      :: cld_rwp(:,:)           => null()  !< Cloud rain water path
-    real (kind=kind_phys), pointer      :: cld_rerain(:,:)        => null()  !< Cloud rain effective radius
-    real (kind=kind_phys), pointer      :: hsw0(:,:)              => null()  !< RRTMGP shortwave heating-rate (clear-sky)
-    real (kind=kind_phys), pointer      :: hswc(:,:)              => null()  !< RRTMGP shortwave heating-rate (all-sky)
-    real (kind=kind_phys), pointer      :: hswb(:,:,:)            => null()  !< RRTMGP shortwave heating-rate (all-sky), by band
-    real (kind=kind_phys), pointer      :: hlw0(:,:)              => null()  !< RRTMGP longwave heating-rate (clear-sky)
-    real (kind=kind_phys), pointer      :: hlwc(:,:)              => null()  !< RRTMGP longwave heating-rate (all-sky)
-    real (kind=kind_phys), pointer      :: hlwb(:,:,:)            => null()  !< RRTMGP longwave heating-rate (all-sky), by band
-    real (kind=kind_phys), pointer      :: fluxlwUP_allsky(:,:)   => null()  !< RRTMGP upward   longwave  all-sky flux profile
-    real (kind=kind_phys), pointer      :: fluxlwDOWN_allsky(:,:) => null()  !< RRTMGP downward longwave  all-sky flux profile
-    real (kind=kind_phys), pointer      :: fluxlwUP_clrsky(:,:)   => null()  !< RRTMGP upward   longwave  clr-sky flux profile
-    real (kind=kind_phys), pointer      :: fluxlwDOWN_clrsky(:,:) => null()  !< RRTMGP downward longwave  clr-sky flux profile
-    real (kind=kind_phys), pointer      :: fluxswUP_allsky(:,:)   => null()  !< RRTMGP upward   shortwave all-sky flux profile
-    real (kind=kind_phys), pointer      :: fluxswDOWN_allsky(:,:) => null()  !< RRTMGP downward shortwave all-sky flux profile
-    real (kind=kind_phys), pointer      :: fluxswUP_clrsky(:,:)   => null()  !< RRTMGP upward   shortwave clr-sky flux profile
-    real (kind=kind_phys), pointer      :: fluxswDOWN_clrsky(:,:) => null()  !< RRTMGP downward shortwave clr-sky flux profile
-    real (kind=kind_phys), pointer      :: sfc_emiss_byband(:,:)  => null()  !<
-    real (kind=kind_phys), pointer      :: sec_diff_byband(:,:)   => null()  !<
-    real (kind=kind_phys), pointer      :: sfc_alb_nir_dir(:,:)   => null()  !<
-    real (kind=kind_phys), pointer      :: sfc_alb_nir_dif(:,:)   => null()  !<
-    real (kind=kind_phys), pointer      :: sfc_alb_uvvis_dir(:,:) => null()  !<
-    real (kind=kind_phys), pointer      :: sfc_alb_uvvis_dif(:,:) => null()  !<
-    real (kind=kind_phys), pointer      :: toa_src_lw(:,:)        => null()  !<
-    real (kind=kind_phys), pointer      :: toa_src_sw(:,:)        => null()  !<
-    character(len=128),    pointer      :: active_gases_array(:)  => null()  !< Character array for each trace gas name
-    integer, pointer                    :: icseed_lw(:)           => null()  !< RRTMGP seed for RNG for longwave radiation
-    integer, pointer                    :: icseed_sw(:)           => null()  !< RRTMGP seed for RNG for shortwave radiation
-    type(proflw_type), pointer          :: flxprf_lw(:,:)         => null()  !< DDT containing RRTMGP longwave fluxes
-    type(profsw_type), pointer          :: flxprf_sw(:,:)         => null()  !< DDT containing RRTMGP shortwave fluxes
-    type(ty_gas_optics_rrtmgp)          :: lw_gas_props                      !< RRTMGP DDT
-    type(ty_gas_optics_rrtmgp)          :: sw_gas_props                      !< RRTMGP DDT
-    type(ty_cloud_optics)               :: lw_cloud_props                    !< RRTMGP DDT
-    type(ty_cloud_optics)               :: sw_cloud_props                    !< RRTMGP DDT
-    type(ty_optical_props_1scl)         :: lw_optical_props_cloudsByBand     !< RRTMGP DDT
-    type(ty_optical_props_1scl)         :: lw_optical_props_clouds           !< RRTMGP DDT
-    type(ty_optical_props_1scl)         :: lw_optical_props_clrsky           !< RRTMGP DDT
-    type(ty_optical_props_1scl)         :: lw_optical_props_aerosol          !< RRTMGP DDT
-    type(ty_optical_props_2str)         :: sw_optical_props_cloudsByBand     !< RRTMGP DDT
-    type(ty_optical_props_2str)         :: sw_optical_props_clouds           !< RRTMGP DDT
-    type(ty_optical_props_2str)         :: sw_optical_props_clrsky           !< RRTMGP DDT
-    type(ty_optical_props_2str)         :: sw_optical_props_aerosol          !< RRTMGP DDT
-    type(ty_gas_concs)                  :: gas_concentrations                !< RRTMGP DDT
-    type(ty_source_func_lw)             :: sources                           !< RRTMGP DDT
+    integer                             :: ipsdlw0                              !<
+    integer                             :: ipsdsw0                              !<
+    real (kind=kind_phys), pointer      :: sktp1r(:)                 => null()  !<
+    real (kind=kind_phys), pointer      :: p_lay(:,:)                => null()  !<
+    real (kind=kind_phys), pointer      :: p_lev(:,:)                => null()  !<
+    real (kind=kind_phys), pointer      :: t_lev(:,:)                => null()  !<
+    real (kind=kind_phys), pointer      :: t_lay(:,:)                => null()  !<
+    real (kind=kind_phys), pointer      :: relhum(:,:)               => null()  !<
+    real (kind=kind_phys), pointer      :: tv_lay(:,:)               => null()  !<
+    real (kind=kind_phys), pointer      :: qs_lay(:,:)               => null()  !<
+    real (kind=kind_phys), pointer      :: q_lay(:,:)                => null()  !<
+    real (kind=kind_phys), pointer      :: deltaZ(:,:)               => null()  !<
+    real (kind=kind_phys), pointer      :: cloud_overlap_param(:,:)  => null()  !< Cloud overlap parameter
+    real (kind=kind_phys), pointer      :: precip_overlap_param(:,:) => null()  !< Precipitation overlap parameter
+    real (kind=kind_phys), pointer      :: tracer(:,:,:)             => null()  !<
+    real (kind=kind_phys), pointer      :: aerosolslw(:,:,:,:)       => null()  !< Aerosol radiative properties in each LW band.
+    real (kind=kind_phys), pointer      :: aerosolssw(:,:,:,:)       => null()  !< Aerosol radiative properties in each SW band.
+    real (kind=kind_phys), pointer      :: cld_frac(:,:)             => null()  !< Total cloud fraction
+    real (kind=kind_phys), pointer      :: cld_lwp(:,:)              => null()  !< Cloud liquid water path
+    real (kind=kind_phys), pointer      :: cld_reliq(:,:)            => null()  !< Cloud liquid effective radius
+    real (kind=kind_phys), pointer      :: cld_iwp(:,:)              => null()  !< Cloud ice water path
+    real (kind=kind_phys), pointer      :: cld_reice(:,:)            => null()  !< Cloud ice effecive radius
+    real (kind=kind_phys), pointer      :: cld_swp(:,:)              => null()  !< Cloud snow water path
+    real (kind=kind_phys), pointer      :: cld_resnow(:,:)           => null()  !< Cloud snow effective radius
+    real (kind=kind_phys), pointer      :: cld_rwp(:,:)              => null()  !< Cloud rain water path
+    real (kind=kind_phys), pointer      :: cld_rerain(:,:)           => null()  !< Cloud rain effective radius
+    real (kind=kind_phys), pointer      :: precip_frac(:,:)          => null()  !< Precipitation fraction
+    real (kind=kind_phys), pointer      :: fluxlwUP_allsky(:,:)      => null()  !< RRTMGP upward   longwave  all-sky flux profile
+    real (kind=kind_phys), pointer      :: fluxlwDOWN_allsky(:,:)    => null()  !< RRTMGP downward longwave  all-sky flux profile
+    real (kind=kind_phys), pointer      :: fluxlwUP_clrsky(:,:)      => null()  !< RRTMGP upward   longwave  clr-sky flux profile
+    real (kind=kind_phys), pointer      :: fluxlwDOWN_clrsky(:,:)    => null()  !< RRTMGP downward longwave  clr-sky flux profile
+    real (kind=kind_phys), pointer      :: fluxswUP_allsky(:,:)      => null()  !< RRTMGP upward   shortwave all-sky flux profile
+    real (kind=kind_phys), pointer      :: fluxswDOWN_allsky(:,:)    => null()  !< RRTMGP downward shortwave all-sky flux profile
+    real (kind=kind_phys), pointer      :: fluxswUP_clrsky(:,:)      => null()  !< RRTMGP upward   shortwave clr-sky flux profile
+    real (kind=kind_phys), pointer      :: fluxswDOWN_clrsky(:,:)    => null()  !< RRTMGP downward shortwave clr-sky flux profile
+    real (kind=kind_phys), pointer      :: fluxlwUP_jac(:,:)         => null()  !< RRTMGP upward Jacobian of longwave flux
+    real (kind=kind_phys), pointer      :: fluxlwDOWN_jac(:,:)       => null()  !< RRTMGP downward Jacobian of longwave flux 
+    real (kind=kind_phys), pointer      :: sfc_emiss_byband(:,:)     => null()  !<
+    real (kind=kind_phys), pointer      :: sec_diff_byband(:,:)      => null()  !<
+    real (kind=kind_phys), pointer      :: sfc_alb_nir_dir(:,:)      => null()  !<
+    real (kind=kind_phys), pointer      :: sfc_alb_nir_dif(:,:)      => null()  !<
+    real (kind=kind_phys), pointer      :: sfc_alb_uvvis_dir(:,:)    => null()  !<
+    real (kind=kind_phys), pointer      :: sfc_alb_uvvis_dif(:,:)    => null()  !<
+    real (kind=kind_phys), pointer      :: toa_src_lw(:,:)           => null()  !<
+    real (kind=kind_phys), pointer      :: toa_src_sw(:,:)           => null()  !<
+    character(len=128),    pointer      :: active_gases_array(:)     => null()  !< Character array for each trace gas name
+    integer, pointer                    :: icseed_lw(:)              => null()  !< RRTMGP seed for RNG for longwave radiation
+    integer, pointer                    :: icseed_sw(:)              => null()  !< RRTMGP seed for RNG for shortwave radiation
+    type(proflw_type), pointer          :: flxprf_lw(:,:)            => null()  !< DDT containing RRTMGP longwave fluxes
+    type(profsw_type), pointer          :: flxprf_sw(:,:)            => null()  !< DDT containing RRTMGP shortwave fluxes
+    type(ty_gas_optics_rrtmgp)          :: lw_gas_props                         !< RRTMGP DDT
+    type(ty_gas_optics_rrtmgp)          :: sw_gas_props                         !< RRTMGP DDT
+    type(ty_cloud_optics)               :: lw_cloud_props                       !< RRTMGP DDT
+    type(ty_cloud_optics)               :: sw_cloud_props                       !< RRTMGP DDT
+    type(ty_optical_props_1scl)         :: lw_optical_props_cloudsByBand        !< RRTMGP DDT
+    type(ty_optical_props_1scl)         :: lw_optical_props_clouds              !< RRTMGP DDT
+    type(ty_optical_props_1scl)         :: lw_optical_props_precipByBand        !< RRTMGP DDT
+    type(ty_optical_props_1scl)         :: lw_optical_props_precip              !< RRTMGP DDT
+    type(ty_optical_props_1scl)         :: lw_optical_props_clrsky              !< RRTMGP DDT
+    type(ty_optical_props_1scl)         :: lw_optical_props_aerosol             !< RRTMGP DDT
+    type(ty_optical_props_2str)         :: sw_optical_props_cloudsByBand        !< RRTMGP DDT
+    type(ty_optical_props_2str)         :: sw_optical_props_clouds              !< RRTMGP DDT
+    type(ty_optical_props_2str)         :: sw_optical_props_precipByBand        !< RRTMGP DDT
+    type(ty_optical_props_2str)         :: sw_optical_props_precip              !< RRTMGP DDT
+    type(ty_optical_props_2str)         :: sw_optical_props_clrsky              !< RRTMGP DDT
+    type(ty_optical_props_2str)         :: sw_optical_props_aerosol             !< RRTMGP DDT
+    type(ty_gas_concs)                  :: gas_concentrations                   !< RRTMGP DDT
+    type(ty_source_func_lw)             :: sources                              !< RRTMGP DDT
 #endif
 
     !-- HWRF physics: dry mixing ratios
@@ -2220,6 +2232,8 @@ module GFS_typedefs
     allocate (Sfcprop%zorl     (IM))
     allocate (Sfcprop%zorlo    (IM))
     allocate (Sfcprop%zorll    (IM))
+    allocate (Sfcprop%zorli    (IM))
+    allocate (Sfcprop%zorlw    (IM))
     allocate (Sfcprop%fice     (IM))
 !   allocate (Sfcprop%hprim    (IM))
     allocate (Sfcprop%hprime   (IM,Model%nmtvr))
@@ -2238,6 +2252,8 @@ module GFS_typedefs
     Sfcprop%zorl      = clear_val
     Sfcprop%zorlo     = clear_val
     Sfcprop%zorll     = clear_val
+    Sfcprop%zorli     = clear_val
+    Sfcprop%zorlw     = clear_val
     Sfcprop%fice      = clear_val
 !   Sfcprop%hprim     = clear_val
     Sfcprop%hprime    = clear_val
@@ -2609,12 +2625,12 @@ module GFS_typedefs
       Coupling%v10mi_cpl = clear_val
     endif 
 
-    if (Model%cplwav2atm) then
+!   if (Model%cplwav2atm) then
       !--- incoming quantities
-      allocate (Coupling%zorlwav_cpl (IM))
+!     allocate (Coupling%zorlwav_cpl (IM))
 
-      Coupling%zorlwav_cpl  = clear_val
-    end if
+!     Coupling%zorlwav_cpl  = clear_val
+!   end if
 
     if (Model%cplflx) then
       !--- incoming quantities
@@ -2624,10 +2640,10 @@ module GFS_typedefs
       allocate (Coupling%dtsfcin_cpl  (IM))
       allocate (Coupling%dqsfcin_cpl  (IM))
       allocate (Coupling%ulwsfcin_cpl (IM))
-      allocate (Coupling%tseain_cpl   (IM))
-      allocate (Coupling%tisfcin_cpl  (IM))
-      allocate (Coupling%ficein_cpl   (IM))
-      allocate (Coupling%hicein_cpl   (IM))
+!     allocate (Coupling%tseain_cpl   (IM))
+!     allocate (Coupling%tisfcin_cpl  (IM))
+!     allocate (Coupling%ficein_cpl   (IM))
+!     allocate (Coupling%hicein_cpl   (IM))
       allocate (Coupling%hsnoin_cpl   (IM))
 
       Coupling%slimskin_cpl = clear_val
@@ -2636,10 +2652,10 @@ module GFS_typedefs
       Coupling%dtsfcin_cpl  = clear_val
       Coupling%dqsfcin_cpl  = clear_val
       Coupling%ulwsfcin_cpl = clear_val
-      Coupling%tseain_cpl   = clear_val
-      Coupling%tisfcin_cpl  = clear_val
-      Coupling%ficein_cpl   = clear_val
-      Coupling%hicein_cpl   = clear_val
+!     Coupling%tseain_cpl   = clear_val
+!     Coupling%tisfcin_cpl  = clear_val
+!     Coupling%ficein_cpl   = clear_val
+!     Coupling%hicein_cpl   = clear_val
       Coupling%hsnoin_cpl   = clear_val
 
       !--- accumulated quantities
@@ -2785,9 +2801,9 @@ module GFS_typedefs
       Coupling%skebv_wts = clear_val
     endif
 
-    !--- stochastic physics option
-    if (Model%do_sfcperts) then
-      allocate (Coupling%sfc_wts  (IM,Model%nsfcpert))
+    !--- stochastic land perturbation option
+    if (Model%lndp_type .NE. 0) then
+      allocate (Coupling%sfc_wts  (IM,Model%n_var_lndp))
       Coupling%sfc_wts = clear_val
     endif
 
@@ -2963,13 +2979,13 @@ module GFS_typedefs
     character(len=128)   :: sw_file_clouds  = ''             !< RRTMGP file containing coefficients used to compute clouds optical properties
     integer              :: rrtmgp_nBandsSW = 14             !< Number of RRTMGP SW bands.
     integer              :: rrtmgp_nGptsSW  = 224            !< Number of RRTMGP SW spectral points.
-    integer              :: rrtmgp_cld_optics = 0            !<  Flag to control which RRTMGP routine to compute cloud-optics.
-                                                             !< = 0 ; Use RRTMGP implementation
-                                                             !< = 1 ; Use RRTMGP (pade)
-                                                             !< = 2 ; USE RRTMGP (LUT)
+    logical              :: doG_cldoptics       = .false.    !< Use legacy RRTMG cloud-optics?                                             
+    logical              :: doGP_cldoptics_PADE = .false.    !< Use RRTMGP cloud-optics: PADE approximation?
+    logical              :: doGP_cldoptics_LUT  = .false.    !< Use RRTMGP cloud-optics: LUTs?     
     integer              :: rrtmgp_nrghice = 0               !< Number of ice-roughness categories
     integer              :: rrtmgp_nGauss_ang=1              !< Number of angles used in Gaussian quadrature
-    logical              :: do_GPsw_Glw    = .false.         
+    logical              :: do_GPsw_Glw    = .false.     
+    logical              :: use_LW_jacobian = .false.        !< Use Jacobian of LW to update LW radiation tendencies. 
 #endif
 !--- Z-C microphysical parameters
     integer              :: ncld              =  1                 !< choice of cloud scheme
@@ -3299,15 +3315,9 @@ module GFS_typedefs
     logical :: use_zmtnblck = .false.
     logical :: do_shum      = .false.
     logical :: do_skeb      = .false.
-    integer :: skeb_npass = 11
-    logical :: do_sfcperts = .false.   ! mg, sfc-perts
-    integer :: nsfcpert    =  6        ! mg, sfc-perts
-    real(kind=kind_phys) :: pertz0   = -999.
-    real(kind=kind_phys) :: pertzt   = -999.
-    real(kind=kind_phys) :: pertshc  = -999.
-    real(kind=kind_phys) :: pertlai  = -999.
-    real(kind=kind_phys) :: pertalb  = -999.
-    real(kind=kind_phys) :: pertvegf = -999.
+    integer :: skeb_npass   = 11
+    integer :: lndp_type    = 0 
+    integer :: n_var_lndp   =  0 
 
 !--- aerosol scavenging factors
     character(len=20) :: fscav_aero(20) = 'default'
@@ -3331,8 +3341,9 @@ module GFS_typedefs
                                do_RRTMGP, active_gases, nGases, rrtmgp_root,                &
                                lw_file_gas, lw_file_clouds, rrtmgp_nBandsLW, rrtmgp_nGptsLW,&
                                sw_file_gas, sw_file_clouds, rrtmgp_nBandsSW, rrtmgp_nGptsSW,&
-                               rrtmgp_cld_optics, rrtmgp_nrghice, rrtmgp_nGauss_ang,        &
-                               do_GPsw_Glw,                                                 &
+                               doG_cldoptics, doGP_cldoptics_PADE, doGP_cldoptics_LUT,      &
+                               rrtmgp_nrghice, rrtmgp_nGauss_ang, do_GPsw_Glw,              &
+                               use_LW_jacobian,                                             &
 #endif
                           ! IN CCN forcing
                                iccn,                                                        &
@@ -3383,7 +3394,7 @@ module GFS_typedefs
                                do_deep, jcap,                                               &
                                cs_parm, flgmin, cgwf, ccwf, cdmbgwd, sup, ctei_rm, crtrh,   &
                                dlqf, rbcr, shoc_parm, psauras, prauras, wminras,            &
-                               do_sppt, do_shum, do_skeb, do_sfcperts,                      &
+                               do_sppt, do_shum, do_skeb, lndp_type,  n_var_lndp,           & 
                           !--- Rayleigh friction
                                prslrd0, ral_ts,  ldiag_ugwp, do_ugwp, do_tofd,              &
                           ! --- Ferrier-Aligo
@@ -3696,7 +3707,10 @@ module GFS_typedefs
     Model%sw_file_clouds    = sw_file_clouds
     Model%rrtmgp_nBandsSW   = rrtmgp_nBandsSW
     Model%rrtmgp_nGptsSW    = rrtmgp_nGptsSW
-    Model%rrtmgp_cld_optics = RRTMGP_CLD_OPTICS
+    Model%doG_cldoptics       = doG_cldoptics
+    Model%doGP_cldoptics_PADE = doGP_cldoptics_PADE
+    Model%doGP_cldoptics_LUT  = doGP_cldoptics_LUT
+    Model%use_LW_jacobian     = use_LW_jacobian
     ! RRTMGP incompatible with levr /= levs
     if (Model%do_RRTMGP .and. Model%levr /= Model%levs) then
       write(0,*) "Logic error, RRTMGP only works with levr = levs"
@@ -3988,21 +4002,15 @@ module GFS_typedefs
     Model%e0fac            = e0fac
 
 !--- stochastic physics options
-    ! do_sppt, do_shum, do_skeb and do_sfcperts are namelist variables in group
+    ! do_sppt, do_shum, do_skeb and lndp_type are namelist variables in group
     ! physics that are parsed here and then compared in init_stochastic_physics
     ! to the stochastic physics namelist parametersto ensure consistency.
     Model%do_sppt          = do_sppt
     Model%use_zmtnblck     = use_zmtnblck
     Model%do_shum          = do_shum
     Model%do_skeb          = do_skeb
-    Model%do_sfcperts      = do_sfcperts ! mg, sfc-perts
-    Model%nsfcpert         = nsfcpert    ! mg, sfc-perts
-    Model%pertz0           = pertz0
-    Model%pertzt           = pertzt
-    Model%pertshc          = pertshc
-    Model%pertlai          = pertlai
-    Model%pertalb          = pertalb
-    Model%pertvegf         = pertvegf
+    Model%lndp_type        = lndp_type
+    Model%n_var_lndp       = n_var_lndp
 
     !--- cellular automata options
     Model%nca              = nca
@@ -4854,7 +4862,10 @@ module GFS_typedefs
         print *, ' sw_file_clouds     : ', Model%sw_file_clouds
         print *, ' rrtmgp_nBandsSW    : ', Model%rrtmgp_nBandsSW
         print *, ' rrtmgp_nGptsSW     : ', Model%rrtmgp_nGptsSW
-        print *, ' rrtmgp_cld_optics  : ', Model%rrtmgp_cld_optics
+        print *, ' doG_cldoptics      : ', Model%doG_cldoptics
+        print *, ' doGP_cldoptics_PADE: ', Model%doGP_cldoptics_PADE
+        print *, ' doGP_cldoptics_LUT : ', Model%doGP_cldoptics_LUT
+        print *, ' use_LW_jacobian    : ', Model%use_LW_jacobian
       endif
 #endif
       print *, ' '
@@ -5053,7 +5064,8 @@ module GFS_typedefs
       print *, ' do_sppt           : ', Model%do_sppt
       print *, ' do_shum           : ', Model%do_shum
       print *, ' do_skeb           : ', Model%do_skeb
-      print *, ' do_sfcperts       : ', Model%do_sfcperts
+      print *, ' lndp_type         : ', Model%lndp_type
+      print *, ' n_var_lndp         : ', Model%n_var_lndp
       print *, ' '
       print *, 'cellular automata'
       print *, ' nca               : ', Model%nca
@@ -5593,6 +5605,10 @@ module GFS_typedefs
     end if
 #endif
 
+#ifdef CCPP
+    allocate (Diag%cldfra     (IM,Model%levs))
+#endif
+
     allocate (Diag%ca_deep  (IM))
     allocate (Diag%ca_turb  (IM))
     allocate (Diag%ca_shal  (IM))
@@ -5910,6 +5926,10 @@ module GFS_typedefs
        Diag%TRAIN      = zero
     end if
 #endif
+#ifdef CCPP
+    Diag%cldfra      = zero
+#endif
+
     Diag%totprcpb   = zero
     Diag%cnvprcpb   = zero
     Diag%toticeb    = zero
@@ -6373,53 +6393,57 @@ module GFS_typedefs
     allocate (Interstitial%zorl_land       (IM))
     allocate (Interstitial%zorl_ocean      (IM))
     allocate (Interstitial%zt1d            (IM))
-   ! RRTMGP
+
+    ! RRTMGP
+    allocate (Interstitial%fluxlwDOWN_jac       (IM, Model%levs+1))
+    allocate (Interstitial%fluxlwUP_jac         (IM, Model%levs+1))
+    allocate (Interstitial%sktp1r               (IM))
+    allocate (Interstitial%fluxlwUP_allsky      (IM, Model%levs+1))
     if (Model%do_RRTMGP) then
-      allocate (Interstitial%tracer            (IM, Model%levs,Model%ntrac))
-      allocate (Interstitial%tv_lay            (IM, Model%levs))
-      allocate (Interstitial%relhum            (IM, Model%levs))
-      allocate (Interstitial%p_lev             (IM, Model%levs+1))
-      allocate (Interstitial%p_lay             (IM, Model%levs))
-      allocate (Interstitial%t_lev             (IM, Model%levs+1))
-      allocate (Interstitial%t_lay             (IM, Model%levs))
-      allocate (Interstitial%fluxlwUP_allsky   (IM, Model%levs+1))
-      allocate (Interstitial%fluxlwDOWN_allsky (IM, Model%levs+1))
-      allocate (Interstitial%fluxlwUP_clrsky   (IM, Model%levs+1))
-      allocate (Interstitial%fluxlwDOWN_clrsky (IM, Model%levs+1))
-      allocate (Interstitial%fluxswUP_allsky   (IM, Model%levs+1))
-      allocate (Interstitial%fluxswDOWN_allsky (IM, Model%levs+1))
-      allocate (Interstitial%fluxswUP_clrsky   (IM, Model%levs+1))
-      allocate (Interstitial%fluxswDOWN_clrsky (IM, Model%levs+1))
-      allocate (Interstitial%aerosolslw        (IM, Model%levs, Model%rrtmgp_nBandsLW, NF_AELW))
-      allocate (Interstitial%aerosolssw        (IM, Model%levs, Model%rrtmgp_nBandsSW, NF_AESW))
-      allocate (Interstitial%cld_frac          (IM, Model%levs))
-      allocate (Interstitial%cld_lwp           (IM, Model%levs))
-      allocate (Interstitial%cld_reliq         (IM, Model%levs))
-      allocate (Interstitial%cld_iwp           (IM, Model%levs))
-      allocate (Interstitial%cld_reice         (IM, Model%levs))
-      allocate (Interstitial%cld_swp           (IM, Model%levs))
-      allocate (Interstitial%cld_resnow        (IM, Model%levs))
-      allocate (Interstitial%cld_rwp           (IM, Model%levs))
-      allocate (Interstitial%cld_rerain        (IM, Model%levs))
-      allocate (Interstitial%hsw0              (IM, Model%levs))
-      allocate (Interstitial%hswc              (IM, Model%levs))
-      allocate (Interstitial%hswb              (IM, Model%levs, Model%rrtmgp_nGptsSW))
-      allocate (Interstitial%hlw0              (IM, Model%levs))
-      allocate (Interstitial%hlwc              (IM, Model%levs))
-      allocate (Interstitial%hlwb              (IM, Model%levs, Model%rrtmgp_nGptsLW))
-      allocate (Interstitial%icseed_lw         (IM))
-      allocate (Interstitial%icseed_sw         (IM))
-      allocate (Interstitial%flxprf_lw         (IM, Model%levs+1))
-      allocate (Interstitial%flxprf_sw         (IM, Model%levs+1))    
-      allocate (Interstitial%sfc_emiss_byband  (Model%rrtmgp_nBandsLW,IM))
-      allocate (Interstitial%sec_diff_byband   (Model%rrtmgp_nBandsLW,IM))
-      allocate (Interstitial%sfc_alb_nir_dir   (Model%rrtmgp_nBandsSW,IM))
-      allocate (Interstitial%sfc_alb_nir_dif   (Model%rrtmgp_nBandsSW,IM))
-      allocate (Interstitial%sfc_alb_uvvis_dir (Model%rrtmgp_nBandsSW,IM))
-      allocate (Interstitial%sfc_alb_uvvis_dif (Model%rrtmgp_nBandsSW,IM))
-      allocate (Interstitial%toa_src_sw        (IM,Model%rrtmgp_nGptsSW))
-      allocate (Interstitial%toa_src_lw        (IM,Model%rrtmgp_nGptsLW))
-      allocate (Interstitial%active_gases_array(Model%nGases))
+       allocate (Interstitial%tracer               (IM, Model%levs,Model%ntrac))
+       allocate (Interstitial%tv_lay               (IM, Model%levs))
+       allocate (Interstitial%relhum               (IM, Model%levs))
+       allocate (Interstitial%qs_lay               (IM, Model%levs))
+       allocate (Interstitial%q_lay                (IM, Model%levs))
+       allocate (Interstitial%deltaZ               (IM, Model%levs))
+       allocate (Interstitial%p_lev                (IM, Model%levs+1))
+       allocate (Interstitial%p_lay                (IM, Model%levs))
+       allocate (Interstitial%t_lev                (IM, Model%levs+1))
+       allocate (Interstitial%t_lay                (IM, Model%levs))
+       allocate (Interstitial%cloud_overlap_param  (IM, Model%levs))
+       allocate (Interstitial%precip_overlap_param (IM, Model%levs))
+       allocate (Interstitial%fluxlwDOWN_allsky    (IM, Model%levs+1))
+       allocate (Interstitial%fluxlwUP_clrsky      (IM, Model%levs+1))
+       allocate (Interstitial%fluxlwDOWN_clrsky    (IM, Model%levs+1))
+       allocate (Interstitial%fluxswUP_allsky      (IM, Model%levs+1))
+       allocate (Interstitial%fluxswDOWN_allsky    (IM, Model%levs+1))
+       allocate (Interstitial%fluxswUP_clrsky      (IM, Model%levs+1))
+       allocate (Interstitial%fluxswDOWN_clrsky    (IM, Model%levs+1))      
+       allocate (Interstitial%aerosolslw           (IM, Model%levs, Model%rrtmgp_nBandsLW, NF_AELW))
+       allocate (Interstitial%aerosolssw           (IM, Model%levs, Model%rrtmgp_nBandsSW, NF_AESW))
+       allocate (Interstitial%cld_frac             (IM, Model%levs))
+       allocate (Interstitial%cld_lwp              (IM, Model%levs))
+       allocate (Interstitial%cld_reliq            (IM, Model%levs))
+       allocate (Interstitial%cld_iwp              (IM, Model%levs))
+       allocate (Interstitial%cld_reice            (IM, Model%levs))
+       allocate (Interstitial%cld_swp              (IM, Model%levs))
+       allocate (Interstitial%cld_resnow           (IM, Model%levs))
+       allocate (Interstitial%cld_rwp              (IM, Model%levs))
+       allocate (Interstitial%cld_rerain           (IM, Model%levs))
+       allocate (Interstitial%precip_frac          (IM, Model%levs))
+       allocate (Interstitial%icseed_lw            (IM))
+       allocate (Interstitial%icseed_sw            (IM))      
+       allocate (Interstitial%flxprf_lw            (IM, Model%levs+1))
+       allocate (Interstitial%flxprf_sw            (IM, Model%levs+1))
+       allocate (Interstitial%sfc_emiss_byband     (Model%rrtmgp_nBandsLW,IM))
+       allocate (Interstitial%sec_diff_byband      (Model%rrtmgp_nBandsLW,IM))
+       allocate (Interstitial%sfc_alb_nir_dir      (Model%rrtmgp_nBandsSW,IM))
+       allocate (Interstitial%sfc_alb_nir_dif      (Model%rrtmgp_nBandsSW,IM))
+       allocate (Interstitial%sfc_alb_uvvis_dir    (Model%rrtmgp_nBandsSW,IM))
+       allocate (Interstitial%sfc_alb_uvvis_dif    (Model%rrtmgp_nBandsSW,IM))
+       allocate (Interstitial%toa_src_sw           (IM,Model%rrtmgp_nGptsSW))
+       allocate (Interstitial%toa_src_lw           (IM,Model%rrtmgp_nGptsLW))
+       allocate (Interstitial%active_gases_array   (Model%nGases))
     end if
 ! CIRES UGWP v0
     allocate (Interstitial%gw_dudt         (IM,Model%levs))
@@ -6749,48 +6773,47 @@ module GFS_typedefs
     end if
 
     if (Model%do_RRTMGP) then
-      Interstitial%tracer            = clear_val
-      Interstitial%tv_lay            = clear_val
-      Interstitial%relhum            = clear_val
-      Interstitial%p_lev             = clear_val
-      Interstitial%p_lay             = clear_val
-      Interstitial%t_lev             = clear_val
-      Interstitial%t_lay             = clear_val
-      Interstitial%fluxlwUP_allsky   = clear_val
-      Interstitial%fluxlwDOWN_allsky = clear_val
-      Interstitial%fluxlwUP_clrsky   = clear_val
-      Interstitial%fluxlwDOWN_clrsky = clear_val
-      Interstitial%fluxswUP_allsky   = clear_val
-      Interstitial%fluxswDOWN_allsky = clear_val
-      Interstitial%fluxswUP_clrsky   = clear_val
-      Interstitial%fluxswDOWN_clrsky = clear_val
-      Interstitial%aerosolslw        = clear_val
-      Interstitial%aerosolssw        = clear_val
-      Interstitial%cld_frac          = clear_val
-      Interstitial%cld_lwp           = clear_val
-      Interstitial%cld_reliq         = clear_val
-      Interstitial%cld_iwp           = clear_val
-      Interstitial%cld_reice         = clear_val
-      Interstitial%cld_swp           = clear_val
-      Interstitial%cld_resnow        = clear_val
-      Interstitial%cld_rwp           = clear_val
-      Interstitial%cld_rerain        = clear_val
-      Interstitial%hsw0              = clear_val
-      Interstitial%hswc              = clear_val
-      Interstitial%hswb              = clear_val
-      Interstitial%hlw0              = clear_val
-      Interstitial%hlwc              = clear_val
-      Interstitial%hlwb              = clear_val
-      Interstitial%icseed_lw         = clear_val
-      Interstitial%icseed_sw         = clear_val
-      Interstitial%sfc_emiss_byband  = clear_val
-      Interstitial%sec_diff_byband   = clear_val
-      Interstitial%sfc_alb_nir_dir   = clear_val
-      Interstitial%sfc_alb_nir_dif   = clear_val
-      Interstitial%sfc_alb_uvvis_dir = clear_val
-      Interstitial%sfc_alb_uvvis_dif = clear_val
-      Interstitial%toa_src_sw        = clear_val
-      Interstitial%toa_src_lw        = clear_val
+      Interstitial%tracer               = clear_val
+      Interstitial%tv_lay               = clear_val
+      Interstitial%relhum               = clear_val
+      Interstitial%qs_lay               = clear_val
+      Interstitial%q_lay                = clear_val
+      Interstitial%deltaZ               = clear_val
+      Interstitial%p_lev                = clear_val
+      Interstitial%p_lay                = clear_val
+      Interstitial%t_lev                = clear_val
+      Interstitial%t_lay                = clear_val
+      Interstitial%cloud_overlap_param  = clear_val
+      Interstitial%precip_overlap_param = clear_val
+      Interstitial%fluxlwDOWN_allsky    = clear_val
+      Interstitial%fluxlwUP_clrsky      = clear_val
+      Interstitial%fluxlwDOWN_clrsky    = clear_val                
+      Interstitial%fluxswUP_allsky      = clear_val
+      Interstitial%fluxswDOWN_allsky    = clear_val
+      Interstitial%fluxswUP_clrsky      = clear_val
+      Interstitial%fluxswDOWN_clrsky    = clear_val
+      Interstitial%aerosolslw           = clear_val
+      Interstitial%aerosolssw           = clear_val
+      Interstitial%cld_frac             = clear_val
+      Interstitial%cld_lwp              = clear_val
+      Interstitial%cld_reliq            = clear_val
+      Interstitial%cld_iwp              = clear_val
+      Interstitial%cld_reice            = clear_val
+      Interstitial%cld_swp              = clear_val
+      Interstitial%cld_resnow           = clear_val
+      Interstitial%cld_rwp              = clear_val
+      Interstitial%cld_rerain           = clear_val
+      Interstitial%precip_frac          = clear_val
+      Interstitial%icseed_lw            = clear_val
+      Interstitial%icseed_sw            = clear_val
+      Interstitial%sfc_emiss_byband     = clear_val
+      Interstitial%sec_diff_byband      = clear_val
+      Interstitial%sfc_alb_nir_dir      = clear_val
+      Interstitial%sfc_alb_nir_dif      = clear_val
+      Interstitial%sfc_alb_uvvis_dir    = clear_val
+      Interstitial%sfc_alb_uvvis_dif    = clear_val
+      Interstitial%toa_src_sw           = clear_val
+      Interstitial%toa_src_lw           = clear_val
     end if
     !
   end subroutine interstitial_rad_reset
@@ -6982,6 +7005,7 @@ module GFS_typedefs
     Interstitial%uustar_ocean    = huge
     Interstitial%vdftra          = clear_val
     Interstitial%vegf1d          = clear_val
+    Interstitial%lndp_vgf        = clear_val
     Interstitial%vegtype         = 0
     Interstitial%wcbmax          = clear_val
     Interstitial%weasd_ice       = huge
@@ -7421,6 +7445,43 @@ module GFS_typedefs
        write (0,*) 'sum(Interstitial%t2mmp        ) = ', sum(Interstitial%t2mmp           )
        write (0,*) 'sum(Interstitial%q2mp         ) = ', sum(Interstitial%q2mp            )
     end if
+    ! RRTMGP
+    if (Model%do_RRTMGP) then
+       write (0,*) 'sum(Interstitial%aerosolslw           ) = ', sum(Interstitial%aerosolslw  )
+       write (0,*) 'sum(Interstitial%aerosolssw           ) = ', sum(Interstitial%aerosolssw  )
+       write (0,*) 'sum(Interstitial%cld_frac             ) = ', sum(Interstitial%cld_frac    )
+       write (0,*) 'sum(Interstitial%cld_lwp              ) = ', sum(Interstitial%cld_lwp     )
+       write (0,*) 'sum(Interstitial%cld_reliq            ) = ', sum(Interstitial%cld_reliq   )
+       write (0,*) 'sum(Interstitial%cld_iwp              ) = ', sum(Interstitial%cld_iwp     )
+       write (0,*) 'sum(Interstitial%cld_reice            ) = ', sum(Interstitial%cld_reice   )
+       write (0,*) 'sum(Interstitial%cld_swp              ) = ', sum(Interstitial%cld_swp     )
+       write (0,*) 'sum(Interstitial%cld_resnow           ) = ', sum(Interstitial%cld_resnow  )
+       write (0,*) 'sum(Interstitial%cld_rwp              ) = ', sum(Interstitial%cld_rwp     )
+       write (0,*) 'sum(Interstitial%cld_rerain           ) = ', sum(Interstitial%cld_rerain  )
+       write (0,*) 'sum(Interstitial%precip_frac          ) = ', sum(Interstitial%precip_frac )
+       write (0,*) 'sum(Interstitial%icseed_lw            ) = ', sum(Interstitial%icseed_lw   )
+       write (0,*) 'sum(Interstitial%icseed_sw            ) = ', sum(Interstitial%icseed_sw   )
+       write (0,*) 'sum(Interstitial%fluxlwUP_allsky      ) = ', sum(Interstitial%fluxlwUP_allsky  )
+       write (0,*) 'sum(Interstitial%fluxlwDOWN_allsky    ) = ', sum(Interstitial%fluxlwDOWN_allsky)
+       write (0,*) 'sum(Interstitial%fluxlwUP_clrsky      ) = ', sum(Interstitial%fluxlwUP_clrsky  )
+       write (0,*) 'sum(Interstitial%fluxlwDOWN_clrsky    ) = ', sum(Interstitial%fluxlwDOWN_clrsky)
+       write (0,*) 'sum(Interstitial%fluxswUP_allsky      ) = ', sum(Interstitial%fluxswUP_allsky  )
+       write (0,*) 'sum(Interstitial%fluxswDOWN_allsky    ) = ', sum(Interstitial%fluxswDOWN_allsky)
+       write (0,*) 'sum(Interstitial%fluxswUP_clrsky      ) = ', sum(Interstitial%fluxswUP_clrsky  )
+       write (0,*) 'sum(Interstitial%fluxswDOWN_clrsky    ) = ', sum(Interstitial%fluxswDOWN_clrsky)
+       write (0,*) 'sum(Interstitial%relhum               ) = ', sum(Interstitial%relhum      )
+       write (0,*) 'sum(Interstitial%q_lay                ) = ', sum(Interstitial%q_lay       )
+       write (0,*) 'sum(Interstitial%qs_lay               ) = ', sum(Interstitial%qs_lay      )
+       write (0,*) 'sum(Interstitial%deltaZ               ) = ', sum(Interstitial%deltaZ      )
+       write (0,*) 'sum(Interstitial%p_lay                ) = ', sum(Interstitial%p_lay       )
+       write (0,*) 'sum(Interstitial%p_lev                ) = ', sum(Interstitial%p_lev       )
+       write (0,*) 'sum(Interstitial%t_lay                ) = ', sum(Interstitial%t_lay       )
+       write (0,*) 'sum(Interstitial%t_lev                ) = ', sum(Interstitial%t_lev       )
+       write (0,*) 'sum(Interstitial%tv_lay               ) = ', sum(Interstitial%tv_lay      )
+       write (0,*) 'sum(Interstitial%cloud_overlap_param  ) = ', sum(Interstitial%cloud_overlap_param)
+       write (0,*) 'sum(Interstitial%precip_overlap_param ) = ', sum(Interstitial%precip_overlap_param)
+    end if
+
     write (0,*) 'Interstitial_print: end'
     !
   end subroutine interstitial_print
