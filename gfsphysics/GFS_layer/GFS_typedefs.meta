@@ -4693,6 +4693,7 @@
   dimensions = (horizontal_dimension,number_of_cloud_types_CS)
   type = real
   kind = kind_phys
+  active = (number_of_cloud_types_CS > 0 .and. flag_for_Chikira_Sugiyama_deep_convection)
 [phy_f2d(:,1)]
   standard_name = surface_air_pressure_two_time_steps_back
   long_name = surface air pressure two time steps back
