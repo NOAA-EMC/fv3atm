@@ -660,6 +660,7 @@ module module_physics_driver
       real    :: pshltr,QCQ,rh02
       real(kind=kind_phys), allocatable, dimension(:,:) :: den
 
+      real(kind=kind_phys) :: lndp_vgf  
       !! Initialize local variables (for debugging purposes only,
       !! because the corresponding variables Interstitial(nt)%...
       !! are reset to zero every time).
@@ -928,34 +929,28 @@ module module_physics_driver
 !        alb1d(i)  = zero
          vegf1d(i) = zero
       enddo
-      if (Model%do_sfcperts) then
-        if (Model%pertz0(1) > zero) then
-          z01d(:) = Model%pertz0(1) * Coupling%sfc_wts(:,1)
-!          if (me == 0) print*,'Coupling%sfc_wts(:,1) min and max',minval(Coupling%sfc_wts(:,1)),maxval(Coupling%sfc_wts(:,1))
-!          if (me == 0) print*,'z01d min and max ',minval(z01d),maxval(z01d)
-        endif
-        if (Model%pertzt(1) > zero) then
-          zt1d(:) = Model%pertzt(1) * Coupling%sfc_wts(:,2)
-        endif
-        if (Model%pertshc(1) > zero) then
-          bexp1d(:) = Model%pertshc(1) * Coupling%sfc_wts(:,3)
-        endif
-        if (Model%pertlai(1) > zero) then
-          xlai1d(:) = Model%pertlai(1) * Coupling%sfc_wts(:,4)
-        endif
-! --- do the albedo percentile calculation in GFS_radiation_driver instead --- !
-!        if (Model%pertalb(1) > zero) then
-!          do i=1,im
-!            call cdfnor(Coupling%sfc_wts(i,5),cdfz)
-!            alb1d(i) = cdfz
-!          enddo
-!        endif
-        if (Model%pertvegf(1) > zero) then
-          do i=1,im
-            call cdfnor(Coupling%sfc_wts(i,6),cdfz)
-            vegf1d(i) = cdfz
-          enddo
-        endif
+      lndp_vgf=-999.
+
+      if (Model%lndp_type==1) then
+        do k =1,Model%n_var_lndp 
+           select case(Model%lndp_var_list(k)) 
+           case ('rz0') 
+                z01d(:) = Model%lndp_prt_list(k)* Coupling%sfc_wts(:,k) 
+           case ('rzt') 
+                zt1d(:) = Model%lndp_prt_list(k)* Coupling%sfc_wts(:,k) 
+           case ('shc') 
+                bexp1d(:) = Model%lndp_prt_list(k) * Coupling%sfc_wts(:,k) 
+           case ('lai') 
+                xlai1d(:) = Model%lndp_prt_list(k)* Coupling%sfc_wts(:,k) 
+           case ('vgf') 
+! note that the pertrubed vegfrac is being used in sfc_drv, but not sfc_diff
+              do i=1,im
+                call cdfnor(Coupling%sfc_wts(i,k),cdfz)
+                vegf1d(i) = cdfz
+              enddo
+              lndp_vgf = Model%lndp_prt_list(k)
+           end select
+        enddo
       endif
 !*## CCPP ##
 !
@@ -1856,6 +1851,7 @@ module module_physics_driver
 !    &,' pgr=',pgr(ipr),' sfcemis=',sfcemis(ipr)
 
 !## CCPP ##* sfc_drv.f/lsm_noah_run
+
           call sfc_drv                                                   &
 !  ---  inputs:
            (im, lsoil, Statein%pgr,                                      &
@@ -1867,7 +1863,8 @@ module module_physics_driver
             Sfcprop%shdmin, Sfcprop%shdmax, Sfcprop%snoalb,              &
             Radtend%sfalb, flag_iter, flag_guess, Model%lheatstrg,       &
             Model%isot, Model%ivegsrc,                                   &
-            bexp1d, xlai1d, vegf1d, Model%pertvegf,                      &
+            bexp1d, xlai1d, vegf1d,lndp_vgf,                              &
+
 !  ---  input/output:
             weasd3(:,1), snowd3(:,1), tsfc3(:,1), tprcp3(:,1),           &
             Sfcprop%srflag, smsoil, stsoil, slsoil, Sfcprop%canopy,      &
