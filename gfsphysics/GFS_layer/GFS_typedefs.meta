@@ -1597,7 +1597,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
-  active = (flag_for_flux_coupling .or. flag_for_stochastic_surface_physics_perturbations .or. flag_for_chemistry_coupling .or. flag_for_global_cellular_automata)
+  active = (flag_for_flux_coupling .or. flag_for_stochastic_physics_perturbations .or. flag_for_chemistry_coupling .or. flag_for_global_cellular_automata)
 [rainc_cpl]
   standard_name = lwe_thickness_of_convective_precipitation_amount_for_coupling
   long_name = total convective precipitation
@@ -1612,7 +1612,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
-  active = (flag_for_flux_coupling .or. flag_for_stochastic_surface_physics_perturbations .or. flag_for_chemistry_coupling .or. flag_for_global_cellular_automata)
+  active = (flag_for_flux_coupling .or. flag_for_stochastic_physics_perturbations .or. flag_for_chemistry_coupling .or. flag_for_global_cellular_automata)
 [dusfc_cpl]
   standard_name = cumulative_surface_x_momentum_flux_for_coupling_multiplied_by_timestep
   long_name = cumulative sfc x momentum flux multiplied by timestep
@@ -2017,7 +2017,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
-  active = (flag_for_stochastic_surface_physics_perturbations .or. flag_for_global_cellular_automata)
+  active = (flag_for_stochastic_physics_perturbations .or. flag_for_global_cellular_automata)
 [skebu_wts]
   standard_name = weights_for_stochastic_skeb_perturbation_of_x_wind
   long_name = weights for stochastic skeb perturbation of x wind
@@ -2041,7 +2041,7 @@
   dimensions = (horizontal_dimension,number_of_land_surface_variables_perturbed)
   type = real
   kind = kind_phys
-  active = (flag_for_stochastic_surface_perturbations)
+  active = (index_for_stochastic_land_surface_perturbation_type .ne. 0)
 [dqdti]
   standard_name = instantaneous_water_vapor_specific_humidity_tendency_due_to_convection
   long_name = instantaneous moisture tendency due to convection
@@ -4632,7 +4632,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
-  active = (flag_for_stochastic_surface_physics_perturbations .or. flag_for_global_cellular_automata)
+  active = (flag_for_stochastic_physics_perturbations .or. flag_for_global_cellular_automata)
 [drain_cpl]
   standard_name = tendency_of_lwe_thickness_of_precipitation_amount_for_coupling
   long_name = change in rain_cpl (coupling_type)
