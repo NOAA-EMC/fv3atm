@@ -2191,6 +2191,7 @@ module module_physics_driver
 !           Sfcprop%tprcp(i) = tprcp3(i,1)
             Sfcprop%tsfco(i) = tsfc3(i,1)
             Sfcprop%tisfc(i) = tsfc3(i,1)
+            Sfcprop%tsfc(i)  = tsfc3(i,1)
           elseif (islmsk(i) == 0) then
             k = 3
             Sfcprop%tsfco(i) = tsfc3(i,3)  ! over lake (and ocean when uncoupled)
@@ -2198,6 +2199,7 @@ module module_physics_driver
 !           Sfcprop%tprcp(i) = tprcp3(i,3)
             Sfcprop%tisfc(i) = tsfc3(i,3)
             Sfcprop%tsfcl(i) = tsfc3(i,3)
+            Sfcprop%tsfc(i)  = tsfc3(i,3)
           else
             k = 2
             stress(i)        = stress3(i,2)
@@ -2222,7 +2224,7 @@ module module_physics_driver
           evap(i)           = evap3(i,k)
           hflx(i)           = hflx3(i,k)
           qss(i)            = qss3(i,k)
-          Sfcprop%tsfc(i)   = tsfc3(i,k)
+!         Sfcprop%tsfc(i)   = tsfc3(i,k)
 
           Sfcprop%zorll(i)  = zorl3(i,1)
           Sfcprop%zorli(i)  = zorl3(i,2)
@@ -2238,7 +2240,7 @@ module module_physics_driver
               stress(i)       = txi  *stress3(i,2) + txo * stress3(i,3)
               qss(i)          = txi * qss3(i,2)    + txo * qss3(i,3)
               ep1d(i)         = txi * ep1d3(i,2)   + txo * ep1d3(i,3)
-              Sfcprop%zorl(i) = txi*zorl3(i,2)     + txo*zorl3(i,3)
+              Sfcprop%zorl(i) = txi * zorl3(i,2)   + txo * zorl3(i,3)
             endif
           elseif (islmsk(i) == 2) then  ! return updated lake ice thickness & concentration to global array
             Sfcprop%tisfc(i) = tice(i)  ! over lake ice (and sea ice when uncoupled)
