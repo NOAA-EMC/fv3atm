@@ -815,9 +815,17 @@ module GFS_typedefs
     logical              :: cnvgwd          !< flag for conv gravity wave drag
 #ifdef CCPP
     integer              :: gwd_opt         !< gwd_opt = 1  => original GFS gwd (gwdps.f)
-                                            !< gwd_opt = 2  => unified GWD (placeholder)
-                                            !< gwd_opt = 3  => GSD drag suite
-                                            !< gwd_opt = 33 => GSD drag suite with extra output
+                                            !< gwd_opt = 2  => unified ugwp GWD
+                                            !< gwd_opt = 22 => unified ugwp GWD with extra output
+                                            !< gwd_opt = 3  => GSL drag suite
+                                            !< gwd_opt = 33 => GSL drag suite with extra output
+    logical              :: do_ugwp_v0           !< flag for version 0 ugwp GWD
+    logical              :: do_ugwp_v0_orog_only !< flag for version 0 ugwp GWD (orographic drag only)
+    logical              :: do_gsl_drag_ls_bl    !< flag for GSL drag (large-scale GWD and blocking only)
+    logical              :: do_gsl_drag_ss       !< flag for GSL drag (small-scale GWD only)
+    logical              :: do_gsl_drag_tofd     !< flag for GSL drag (turbulent orog form drag only)
+    logical              :: do_ugwp_v1           !< flag for version 1 ugwp GWD
+    logical              :: do_ugwp_v1_orog_only !< flag for version 1 ugwp GWD (orographic drag only)
 #endif
     logical              :: mstrat          !< flag for moorthi approach for stratus
     logical              :: moist_adj       !< flag for moist convective adjustment
@@ -891,7 +899,7 @@ module GFS_typedefs
 #endif
     integer              :: nmtvr           !< number of topographic variables such as variance etc
                                             !< used in the GWD parameterization - 10 more added if
-                                            !< GSD orographic drag scheme is used
+                                            !< GSL orographic drag scheme is used
     integer              :: jcap            !< number of spectral wave trancation used only by sascnv shalcnv
     real(kind=kind_phys) :: cs_parm(10)     !< tunable parameters for Chikira-Sugiyama convection
     real(kind=kind_phys) :: flgmin(2)       !< [in] ice fraction bounds
@@ -2057,7 +2065,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: qs_r(:,:)               => null()  !<
     real (kind=kind_phys), pointer :: qg_r(:,:)               => null()  !<
 
-    !-- GSD drag suite
+    !-- GSL drag suite
     real (kind=kind_phys), pointer      :: varss(:)           => null()  !<
     real (kind=kind_phys), pointer      :: ocss(:)            => null()  !<
     real (kind=kind_phys), pointer      :: oa4ss(:,:)         => null()  !<
@@ -3080,8 +3088,17 @@ module GFS_typedefs
     logical              :: old_monin      = .false.                  !< flag for diff monin schemes
     logical              :: cnvgwd         = .false.                  !< flag for conv gravity wave drag
     integer              :: gwd_opt        =  1                       !< flag for configuring gwd scheme
-                                                                      !< gwd_opt = 3 : GSDdrag suite
-                                                                      !< gwd_opt = 33: GSDdrag suite with extra output
+                                                                      !< gwd_opt = 2  => unified ugwp GWD
+                                                                      !< gwd_opt = 22 => unified ugwp GWD with extra output
+                                                                      !< gwd_opt = 3 : GSLdrag suite
+                                                                      !< gwd_opt = 33: GSLdrag suite with extra output
+    logical              :: do_ugwp_v0           = .true.       !< flag for version 0 ugwp GWD
+    logical              :: do_ugwp_v0_orog_only = .false.      !< flag for version 0 ugwp GWD (orographic drag only)
+    logical              :: do_gsl_drag_ls_bl    = .false.      !< flag for GSL drag (large-scale GWD and blocking only)
+    logical              :: do_gsl_drag_ss       = .false.      !< flag for GSL drag (small-scale GWD only)
+    logical              :: do_gsl_drag_tofd     = .false.      !< flag for GSL drag (turbulent orog form drag only)
+    logical              :: do_ugwp_v1           = .false.      !< flag for version 1 ugwp GWD
+    logical              :: do_ugwp_v1_orog_only = .false.      !< flag for version 1 ugwp GWD (orographic drag only)
 !--- vay-2018
     logical              :: ldiag_ugwp     = .false.                  !< flag for UGWP diag fields
     logical              :: do_ugwp        = .false.                  !< flag do UGWP+RF
@@ -3380,7 +3397,9 @@ module GFS_typedefs
                                bl_mynn_cloudpdf, bl_mynn_edmf, bl_mynn_edmf_mom,            &
                                bl_mynn_edmf_tke, bl_mynn_edmf_part, bl_mynn_cloudmix,       &
                                bl_mynn_mixqt, bl_mynn_output, icloud_bl, bl_mynn_tkeadvect, &
-                               gwd_opt,                                                     &
+                               gwd_opt, do_ugwp_v0, do_ugwp_v0_orog_only,                   &
+                               do_gsl_drag_ls_bl, do_gsl_drag_ss, do_gsl_drag_tofd,         &
+                               do_ugwp_v1, do_ugwp_v1_orog_only,                            &
                                ! *DH
                                do_myjsfc, do_myjpbl,                                        &
                                hwrf_samfdeep, hwrf_samfshal,                                &
@@ -3937,8 +3956,9 @@ module GFS_typedefs
     Model%icloud_bl         = icloud_bl
     ! *DH
     Model%gwd_opt           = gwd_opt
-    if (Model%gwd_opt==3 .or. Model%gwd_opt==33) then
-      ! Add 10 more orographic static fields for GSD drag scheme
+    if (Model%gwd_opt==3 .or. Model%gwd_opt==33 .or.  &
+        Model%gwd_opt==2 .or. Model%gwd_opt==22) then
+      ! Add 10 more orographic static fields for GSL drag scheme
       Model%nmtvr = 24
     end if
     Model%do_myjsfc         = do_myjsfc
@@ -5013,6 +5033,13 @@ module GFS_typedefs
       print *, ' do_myjsfc         : ', Model%do_myjsfc
       print *, ' do_myjpbl         : ', Model%do_myjpbl
       print *, ' gwd_opt           : ', Model%gwd_opt
+      print *, ' do_ugwp_v0           : ', Model%do_ugwp_v0
+      print *, ' do_ugwp_v0_orog_only : ', Model%do_ugwp_v0_orog_only
+      print *, ' do_gsl_drag_ls_bl    : ', Model%do_gsl_drag_ls_bl
+      print *, ' do_gsl_drag_ss       : ', Model%do_gsl_drag_ss
+      print *, ' do_gsl_drag_tofd     : ', Model%do_gsl_drag_tofd
+      print *, ' do_ugwp_v1           : ', Model%do_ugwp_v1
+      print *, ' do_ugwp_v1_orog_only : ', Model%do_ugwp_v1_orog_only
 #endif
       print *, ' '
       print *, 'Rayleigh friction'
@@ -5750,7 +5777,7 @@ module GFS_typedefs
     endif
 
     !--- Drag Suite variables:
-    if (Model%gwd_opt == 33) then
+    if (Model%gwd_opt == 33 .or. Model%gwd_opt == 22) then
       !print*,"Allocating all Drag Suite variables:"
       allocate (Diag%dtaux2d_ls  (IM,Model%levs))
       allocate (Diag%dtauy2d_ls  (IM,Model%levs))
@@ -6454,8 +6481,9 @@ module GFS_typedefs
     allocate (Interstitial%dudt_mtb        (IM,Model%levs))
     allocate (Interstitial%dudt_ogw        (IM,Model%levs))
     allocate (Interstitial%dudt_tms        (IM,Model%levs))
-!-- GSD drag suite
-    if (Model%gwd_opt==3 .or. Model%gwd_opt==33) then
+!-- GSL drag suite
+    if (Model%gwd_opt==3 .or. Model%gwd_opt==33 .or.            &
+        Model%gwd_opt==2 .or. Model%gwd_opt==22 ) then
        allocate (Interstitial%varss           (IM))
        allocate (Interstitial%ocss            (IM))
        allocate (Interstitial%oa4ss           (IM,4))
@@ -7031,8 +7059,9 @@ module GFS_typedefs
     Interstitial%dudt_mtb        = clear_val
     Interstitial%dudt_ogw        = clear_val
     Interstitial%dudt_tms        = clear_val
-!-- GSD drag suite
-    if (Model%gwd_opt==3 .or. Model%gwd_opt==33) then
+!-- GSL drag suite
+    if (Model%gwd_opt==3 .or. Model%gwd_opt==33 .or.     &
+        Model%gwd_opt==2 .or. Model%gwd_opt==22) then
        Interstitial%varss           = clear_val
        Interstitial%ocss            = clear_val
        Interstitial%oa4ss           = clear_val
@@ -7384,8 +7413,9 @@ module GFS_typedefs
     write (0,*) 'sum(Interstitial%dudt_mtb        ) = ', sum(Interstitial%dudt_mtb        )
     write (0,*) 'sum(Interstitial%dudt_ogw        ) = ', sum(Interstitial%dudt_ogw        )
     write (0,*) 'sum(Interstitial%dudt_tms        ) = ', sum(Interstitial%dudt_tms        )
-!-- GSD drag suite
-    if (Model%gwd_opt==3 .or. Model%gwd_opt==33) then
+!-- GSL drag suite
+    if (Model%gwd_opt==3 .or. Model%gwd_opt==33 .or.       &
+        Model%gwd_opt==2 .or. Model%gwd_opt==22) then
        write (0,*) 'sum(Interstitial%varss           ) = ', sum(Interstitial%varss)
        write (0,*) 'sum(Interstitial%ocss            ) = ', sum(Interstitial%ocss)
        write (0,*) 'sum(Interstitial%oa4ss           ) = ', sum(Interstitial%oa4ss)
