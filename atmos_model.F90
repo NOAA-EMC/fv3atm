@@ -297,7 +297,9 @@ subroutine update_atmos_radiation_physics (Atmos)
 #endif
 
 !--- call stochastic physics pattern generation / cellular automata
-    call stochastic_physics_wrapper(IPD_Control, IPD_Data, Atm_block)
+    call stochastic_physics_wrapper(IPD_Control, IPD_Data, Atm_block, ierr) 
+    if (ierr/=0)  call mpp_error(FATAL, 'Call to stochastic_physics_wrapper failed')
+   
 
 !--- if coupled, assign coupled fields
 
@@ -628,7 +630,8 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
 #endif
 
 !--- Initialize stochastic physics pattern generation / cellular automata for first time step
-   call stochastic_physics_wrapper(IPD_Control, IPD_Data, Atm_block)
+   call stochastic_physics_wrapper(IPD_Control, IPD_Data, Atm_block, ierr)
+   if (ierr/=0)  call mpp_error(FATAL, 'Call to stochastic_physics_wrapper failed')
 
    Atmos%Diag => IPD_Diag
 
