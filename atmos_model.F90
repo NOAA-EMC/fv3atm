@@ -297,7 +297,9 @@ subroutine update_atmos_radiation_physics (Atmos)
 #endif
 
 !--- call stochastic physics pattern generation / cellular automata
-    call stochastic_physics_wrapper(IPD_Control, IPD_Data, Atm_block)
+    call stochastic_physics_wrapper(IPD_Control, IPD_Data, Atm_block, ierr) 
+    if (ierr/=0)  call mpp_error(FATAL, 'Call to stochastic_physics_wrapper failed')
+   
 
 !--- if coupled, assign coupled fields
 
@@ -628,7 +630,8 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
 #endif
 
 !--- Initialize stochastic physics pattern generation / cellular automata for first time step
-   call stochastic_physics_wrapper(IPD_Control, IPD_Data, Atm_block)
+   call stochastic_physics_wrapper(IPD_Control, IPD_Data, Atm_block, ierr)
+   if (ierr/=0)  call mpp_error(FATAL, 'Call to stochastic_physics_wrapper failed')
 
    Atmos%Diag => IPD_Diag
 
@@ -688,8 +691,11 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
      diag_time = Time - real_to_time_type(mod(int((first_kdt - 1)*dt_phys/3600.),6)*3600.0)
    endif
    if (Atmos%iau_offset > zero) then
-     diag_time = Atmos%Time_init
-     diag_time_fhzero = Atmos%Time
+     call get_time (Atmos%Time - Atmos%Time_init, sec)
+     if (sec < Atmos%iau_offset*3600) then
+       diag_time = Atmos%Time_init
+       diag_time_fhzero = Atmos%Time
+     endif
    endif
 
    !---- print version number to logfile ----
