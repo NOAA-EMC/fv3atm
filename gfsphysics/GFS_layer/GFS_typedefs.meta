@@ -6147,6 +6147,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_diagnostics_3D)
 [du3dt(:,:,2)]
   standard_name = cumulative_change_in_x_wind_due_to_orographic_gravity_wave_drag
   long_name = cumulative change in x wind due to orographic gravity wave drag
@@ -6154,6 +6155,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_diagnostics_3D)
 [du3dt(:,:,3)]
   standard_name = cumulative_change_in_x_wind_due_to_deep_convection
   long_name = cumulative change in x wind due to deep convection
@@ -6161,6 +6163,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_diagnostics_3D)
 [du3dt(:,:,4)]
   standard_name = cumulative_change_in_x_wind_due_to_convective_gravity_wave_drag
   long_name = cumulative change in x wind due to convective gravity wave drag
@@ -6168,6 +6171,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_diagnostics_3D)
 [du3dt(:,:,5)]
   standard_name = cumulative_change_in_x_wind_due_to_rayleigh_damping
   long_name = cumulative change in x wind due to Rayleigh damping
@@ -6175,6 +6179,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_diagnostics_3D)
 [du3dt(:,:,6)]
   standard_name = cumulative_change_in_x_wind_due_to_shallow_convection
   long_name = cumulative change in x wind due to shallow convection
@@ -6182,6 +6187,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_diagnostics_3D)
 [du3dt(:,:,7)]
   standard_name = cumulative_change_in_x_wind_due_to_physics
   long_name = cumulative change in x wind due to physics
@@ -6189,6 +6195,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_diagnostics_3D)
 [du3dt(:,:,8)]
   standard_name = cumulative_change_in_x_wind_due_to_non_physics_processes
   long_name = cumulative change in x wind due to non-physics processes
@@ -6204,6 +6211,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_diagnostics_3D)
 [dv3dt(:,:,2)]
   standard_name = cumulative_change_in_y_wind_due_to_orographic_gravity_wave_drag
   long_name = cumulative change in y wind due to orographic gravity wave drag
@@ -6211,6 +6219,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_diagnostics_3D)
 [dv3dt(:,:,3)]
   standard_name = cumulative_change_in_y_wind_due_to_deep_convection
   long_name = cumulative change in y wind due to deep convection
@@ -6218,6 +6227,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_diagnostics_3D)
 [dv3dt(:,:,4)]
   standard_name = cumulative_change_in_y_wind_due_to_convective_gravity_wave_drag
   long_name = cumulative change in y wind due to convective gravity wave drag
@@ -6232,6 +6242,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_diagnostics_3D)
 [dv3dt(:,:,6)]
   standard_name = cumulative_change_in_y_wind_due_to_shallow_convection
   long_name = cumulative change in y wind due to shallow convection
@@ -6239,6 +6250,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_diagnostics_3D)
 [dv3dt(:,:,7)]
   standard_name = cumulative_change_in_y_wind_due_to_physics
   long_name = cumulative change in y wind due to physics
@@ -6246,6 +6258,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_diagnostics_3D)
 [dv3dt(:,:,8)]
   standard_name = cumulative_change_in_y_wind_due_to_non_physics_processes
   long_name = cumulative change in y wind due to non-physics processes
@@ -6261,6 +6274,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_diagnostics_3D)
 [dt3dt(:,:,2)]
   standard_name = cumulative_change_in_temperature_due_to_shortwave_radiation
   long_name = cumulative change in temperature due to shortwave radiation
@@ -6268,6 +6282,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_diagnostics_3D)
 [dt3dt(:,:,3)]
   standard_name = cumulative_change_in_temperature_due_to_PBL
   long_name = cumulative change in temperature due to PBL
@@ -6275,6 +6290,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_diagnostics_3D)
 [dt3dt(:,:,4)]
   standard_name = cumulative_change_in_temperature_due_to_deep_convection
   long_name = cumulative change in temperature due to deep convection
@@ -6282,6 +6298,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_diagnostics_3D)
 [dt3dt(:,:,5)]
   standard_name = cumulative_change_in_temperature_due_to_shallow_convection
   long_name = cumulative change in temperature due to shallow convection
@@ -6289,6 +6306,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_diagnostics_3D)
 [dt3dt(:,:,6)]
   standard_name = cumulative_change_in_temperature_due_to_microphysics
   long_name = cumulative change in temperature due to microphysics
@@ -6296,6 +6314,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_diagnostics_3D)
 [dt3dt(:,:,7)]
   standard_name = cumulative_change_in_temperature_due_to_orographic_gravity_wave_drag
   long_name = cumulative change in temperature due to orographic gravity wave drag
@@ -6303,6 +6322,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_diagnostics_3D)
 [dt3dt(:,:,8)]
   standard_name = cumulative_change_in_temperature_due_to_rayleigh_damping
   long_name = cumulative change in temperature due to Rayleigh damping
@@ -6310,6 +6330,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_diagnostics_3D)
 [dt3dt(:,:,9)]
   standard_name = cumulative_change_in_temperature_due_to_convective_gravity_wave_drag
   long_name = cumulative change in temperature due to convective gravity wave drag
@@ -6317,6 +6338,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_diagnostics_3D)
 [dt3dt(:,:,10)]
   standard_name = cumulative_change_in_temperature_due_to_physics
   long_name = cumulative change in temperature due to physics
@@ -6324,6 +6346,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_diagnostics_3D)
 [dt3dt(:,:,11)]
   standard_name = cumulative_change_in_temperature_due_to_non_physics_processes
   long_name = cumulative change in temperature due to non-physics processed
@@ -6339,6 +6362,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_diagnostics_3D .and. flag_tracer_diagnostics_3D)
 [dq3dt(:,:,2)]
   standard_name = cumulative_change_in_water_vapor_specific_humidity_due_to_deep_convection
   long_name = cumulative change in water vapor specific humidity due to deep convection
@@ -6346,6 +6370,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_diagnostics_3D .and. flag_tracer_diagnostics_3D)
 [dq3dt(:,:,3)]
   standard_name = cumulative_change_in_water_vapor_specific_humidity_due_to_shallow_convection
   long_name = cumulative change in water vapor specific humidity due to shallow convection
@@ -6353,6 +6378,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_diagnostics_3D .and. flag_tracer_diagnostics_3D)
 [dq3dt(:,:,4)]
   standard_name = cumulative_change_in_water_vapor_specific_humidity_due_to_microphysics
   long_name = cumulative change in water vapor specific humidity due to microphysics
@@ -6360,6 +6386,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_diagnostics_3D .and. flag_tracer_diagnostics_3D)
 [dq3dt(:,:,5)]
   standard_name = cumulative_change_in_ozone_mixing_ratio_due_to_PBL
   long_name = cumulative change in ozone mixing ratio due to PBL
@@ -6367,6 +6394,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_diagnostics_3D .and. flag_tracer_diagnostics_3D)
 [dq3dt(:,:,6)]
   standard_name = cumulative_change_in_ozone_concentration_due_to_production_and_loss_rate
   long_name = cumulative change in ozone concentration due to production and loss rate
@@ -6374,6 +6402,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_diagnostics_3D .and. flag_tracer_diagnostics_3D)
 [dq3dt(:,:,7)]
   standard_name = cumulative_change_in_ozone_concentration_due_to_ozone_mixing_ratio
   long_name = cumulative change in ozone concentration due to ozone mixing ratio
@@ -6381,6 +6410,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_diagnostics_3D .and. flag_tracer_diagnostics_3D)
 [dq3dt(:,:,8)]
   standard_name = cumulative_change_in_ozone_concentration_due_to_temperature
   long_name = cumulative change in ozone concentration due to temperature
@@ -6388,6 +6418,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_diagnostics_3D .and. flag_tracer_diagnostics_3D)
 [dq3dt(:,:,9)]
   standard_name = cumulative_change_in_ozone_concentration_due_to_overhead_ozone_column
   long_name = cumulative change in ozone concentration due to overhead ozone column
@@ -6395,6 +6426,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_diagnostics_3D .and. flag_tracer_diagnostics_3D)
 [dq3dt(:,:,10)]
   standard_name = cumulative_change_in_water_vapor_specific_humidity_due_to_physics
   long_name = cumulative change in water vapor specific humidity due to physics
@@ -6402,6 +6434,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_diagnostics_3D .and. flag_tracer_diagnostics_3D)
 [dq3dt(:,:,11)]
   standard_name = cumulative_change_in_ozone_concentration_due_to_physics
   long_name = cumulative change in ozone concentration due to physics
@@ -6409,6 +6442,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_diagnostics_3D .and. flag_tracer_diagnostics_3D)
 [dq3dt(:,:,12)]
   standard_name = cumulative_change_in_water_vapor_specific_humidity_due_to_non_physics_processes
   long_name = cumulative change in water vapor specific humidity due to non-physics processes
@@ -6416,6 +6450,7 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (flag_diagnostics_3D .and. flag_tracer_diagnostics_3D)
 [dq3dt(:,:,13)]
   standard_name = cumulative_change_in_ozone_concentration_due_to_non_physics_processes
   long_name = cumulative change in ozone_concentration due to non-physics processes
