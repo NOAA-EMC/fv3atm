@@ -215,7 +215,7 @@ module module_cplfields
 ! set data 
         call ESMF_FieldGet(exportFields(n), name=fieldname, dimCount=dimCount, typekind=datatype, rc=localrc)
         if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
-        print *,'in fillExportFields, field created n=',n,size(exportFields),'name=', trim(fieldname)
+        !print *,'in fillExportFields, field created n=',n,size(exportFields),'name=', trim(fieldname)
         if ( datatype == ESMF_TYPEKIND_R8) then
            if ( dimCount == 2) then
              call ESMF_FieldGet(exportFields(n),farrayPtr=datar82d,localDE=0, rc=localrc)
