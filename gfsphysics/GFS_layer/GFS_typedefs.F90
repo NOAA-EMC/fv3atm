@@ -7101,6 +7101,9 @@ module GFS_typedefs
     !
   end subroutine interstitial_phys_reset
 
+  ! DH* 20200901: this routine is no longer used by CCPP's GFS_debug.F90. When new variables are
+  ! added to the GFS_interstitial_type, it is best to add the variable to both interstitial_print
+  ! below and to GFS_interstitialtoscreen in ccpp/physics/physics/GFS_debug.F90
   subroutine interstitial_print(Interstitial, Model, mpirank, omprank, blkno)
     !
     implicit none
