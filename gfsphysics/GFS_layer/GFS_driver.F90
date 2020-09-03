@@ -633,6 +633,7 @@ module GFS_driver
       if (mod(Model%kdt,Model%nscyc) == 1) THEN
         call gcycle (nblks, Model, Grid(:), Sfcprop(:), Cldprop(:))
       endif
+        ! if not updating surface params through fcast, perturb params once at start of fcast
     endif
 
     !--- determine if diagnostics buckets need to be cleared

@@ -1221,6 +1221,7 @@
 
       !  mg, sfc perts
       real(kind=kind_phys), dimension(size(Grid%xlon,1)) :: alb1d
+      real(kind=kind_phys) :: lndp_alb
 
       real(kind=kind_phys), dimension(size(Grid%xlon,1),Model%levr+ltp) :: cldtausw
       real(kind=kind_phys), dimension(size(Grid%xlon,1),Model%levr+ltp) :: cldtaulw
@@ -1846,14 +1847,18 @@
 !  ---  scale random patterns for surface perturbations with
 !  perturbation size
 !  ---  turn vegetation fraction pattern into percentile pattern
-      alb1d(:) = zero
-      if (Model%do_sfcperts) then
-        if (Model%pertalb(1) > zero) then
-          do i=1,im
-            call cdfnor(Coupling%sfc_wts(i,5),alb1d(i))
-          enddo
+      alb1d(:) = 0.
+      lndp_alb = -999.
+        if (Model%lndp_type ==1) then
+          do k =1,Model%n_var_lndp
+            if (Model%lndp_var_list(k) == 'alb') then 
+              do i=1,im
+                call cdfnor(Coupling%sfc_wts(i,k),alb1d(i)) 
+                lndp_alb = Model%lndp_prt_list(k) 
+              enddo
+            endif
+          enddo 
         endif
-      endif
 ! mg, sfc-perts
 !*## CCPP ##
 
@@ -1870,7 +1875,7 @@
                      Sfcprop%alnsf, Sfcprop%alvwf, Sfcprop%alnwf,    &
                      Sfcprop%facsf, Sfcprop%facwf, Sfcprop%fice,     &
                      Sfcprop%tisfc, IM,                              &
-                     alb1d, Model%pertalb,                           & !  mg, sfc-perts
+                     alb1d, lndp_alb,                                & !  mg, sfc-perts
                      sfcalb)                                           !  ---  outputs
 
 !> -# Approximate mean surface albedo from vis- and nir-  diffuse values.

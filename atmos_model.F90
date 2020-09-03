@@ -294,6 +294,7 @@ subroutine update_atmos_radiation_physics (Atmos)
 
 !--- call stochastic physics pattern generation / cellular automata
     call stochastic_physics_wrapper(IPD_Control, IPD_Data, Atm_block)
+    if (ierr/=0)  call mpp_error(FATAL, 'Call to stochastic_physics_wrapper failed')
 
 #else
       Func1d => time_vary_step
@@ -626,7 +627,8 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
                         IPD_Interstitial, commglobal, mpp_npes(), Init_parm)
 
 !--- Initialize stochastic physics pattern generation / cellular automata for first time step
-   call stochastic_physics_wrapper(IPD_Control, IPD_Data, Atm_block)
+   call stochastic_physics_wrapper(IPD_Control, IPD_Data, Atm_block, ierr)
+   if (ierr/=0)  call mpp_error(FATAL, 'Call to stochastic_physics_wrapper failed')
 
 #else
    call IPD_initialize (IPD_Control, IPD_Data, IPD_Diag, IPD_Restart, Init_parm)
