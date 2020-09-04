@@ -220,9 +220,10 @@ character(len=128) :: tagname = '$Name$'
   logical,parameter :: flip_vc = .true.
 #endif
 
-  real(kind=IPD_kind_phys), parameter :: zero = 0.0_IPD_kind_phys, &
-                                         one  = 1.0_IPD_kind_phys, &
-                                         epsln = 1.0e-10_IPD_kind_phys
+  real(kind=IPD_kind_phys), parameter :: zero    = 0.0_IPD_kind_phys,     &
+                                         one     = 1.0_IPD_kind_phys,     &
+                                         epsln   = 1.0e-10_IPD_kind_phys, &
+                                         zorlmin = 1.0e-7_IPD_kind_phys
 
 contains
 
@@ -296,16 +297,23 @@ subroutine update_atmos_radiation_physics (Atmos)
 #endif
 
 !--- call stochastic physics pattern generation / cellular automata
-    call stochastic_physics_wrapper(IPD_Control, IPD_Data, Atm_block)
+    call stochastic_physics_wrapper(IPD_Control, IPD_Data, Atm_block, ierr) 
+    if (ierr/=0)  call mpp_error(FATAL, 'Call to stochastic_physics_wrapper failed')
+   
 
 !--- if coupled, assign coupled fields
+
       if( IPD_Control%cplflx .or. IPD_Control%cplwav ) then
-!        print *,'in atmos_model,nblks=',Atm_block%nblks
-!        print *,'in atmos_model,IPD_Data size=',size(IPD_Data)
-!        print *,'in atmos_model,tsfc(1)=',IPD_Data(1)%sfcprop%tsfc(1)
-!        print *,'in atmos_model, tsfc size=',size(IPD_Data(1)%sfcprop%tsfc)
+
+!       if (mpp_pe() == mpp_root_pe() .and. debug) then
+!          print *,'in atmos_model,nblks=',Atm_block%nblks
+!         print *,'in atmos_model,IPD_Data size=',size(IPD_Data)
+!         print *,'in atmos_model,tsfc(1)=',IPD_Data(1)%sfcprop%tsfc(1)
+!         print *,'in atmos_model, tsfc size=',size(IPD_Data(1)%sfcprop%tsfc)
+!       endif
+
         call assign_importdata(rc)
-!        print *,'in atmos_model, after assign_importdata, rc=',rc
+
       endif
 
       ! Calculate total non-physics tendencies by substracting old IPD Stateout
@@ -622,7 +630,8 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
 #endif
 
 !--- Initialize stochastic physics pattern generation / cellular automata for first time step
-   call stochastic_physics_wrapper(IPD_Control, IPD_Data, Atm_block)
+   call stochastic_physics_wrapper(IPD_Control, IPD_Data, Atm_block, ierr)
+   if (ierr/=0)  call mpp_error(FATAL, 'Call to stochastic_physics_wrapper failed')
 
    Atmos%Diag => IPD_Diag
 
@@ -682,8 +691,11 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
      diag_time = Time - real_to_time_type(mod(int((first_kdt - 1)*dt_phys/3600.),6)*3600.0)
    endif
    if (Atmos%iau_offset > zero) then
-     diag_time = Atmos%Time_init
-     diag_time_fhzero = Atmos%Time
+     call get_time (Atmos%Time - Atmos%Time_init, sec)
+     if (sec < Atmos%iau_offset*3600) then
+       diag_time = Atmos%Time_init
+       diag_time_fhzero = Atmos%Time
+     endif
    endif
 
    !---- print version number to logfile ----
@@ -881,7 +893,7 @@ subroutine update_atmos_model_state (Atmos)
       if (mpp_pe() == mpp_root_pe()) write(6,*) ' gfs diags time since last bucket empty: ',time_int/3600.,'hrs'
       call atmosphere_nggps_diag(Atmos%Time)
       call FV3GFS_diag_output(Atmos%Time, IPD_DIag, Atm_block, IPD_Control%nx, IPD_Control%ny, &
-                            IPD_Control%levs, 1, 1, 1.d0, time_int, time_intfull,              &
+                            IPD_Control%levs, 1, 1, 1.0_IPD_kind_phys, time_int, time_intfull,              &
                             IPD_Control%fhswr, IPD_Control%fhlwr)
       if (nint(IPD_Control%fhzero) > 0) then 
         if (mod(isec,3600*nint(IPD_Control%fhzero)) == 0) diag_time = Atmos%Time
@@ -1177,6 +1189,9 @@ subroutine update_atmos_chemistry(state, rc)
       ntb = size(IPD_Data(1)%IntDiag%duem, dim=2)
       nte = size(qu, dim=3)
       do it = 1, min(ntb, nte)
+!$OMP parallel do default (none) &
+!$OMP             shared  (it, nj, ni, Atm_block, IPD_Data, qu)  &
+!$OMP             private (j, jb, i, ib, nb, ix)
         do j = 1, nj
           jb = j + Atm_block%jsc - 1
           do i = 1, ni
@@ -1189,17 +1204,22 @@ subroutine update_atmos_chemistry(state, rc)
       enddo
 
       nte = nte - ntb
-      do it = 1, min(size(IPD_Data(1)%IntDiag%ssem, dim=2), nte)
-        do j = 1, nj
-          jb = j + Atm_block%jsc - 1
-          do i = 1, ni
-            ib = i + Atm_block%isc - 1
-            nb = Atm_block%blkno(ib,jb)
-            ix = Atm_block%ixp(ib,jb)
-            IPD_Data(nb)%IntDiag%ssem(ix,it) = qu(i,j,it+ntb)
+      if (nte > 0) then
+        do it = 1, min(size(IPD_Data(1)%IntDiag%ssem, dim=2), nte)
+!$OMP parallel do default (none) &
+!$OMP             shared  (it, nj, ni, ntb, Atm_block, IPD_Data, qu)  &
+!$OMP             private (j, jb, i, ib, nb, ix)
+          do j = 1, nj
+            jb = j + Atm_block%jsc - 1
+            do i = 1, ni
+              ib = i + Atm_block%isc - 1
+              nb = Atm_block%blkno(ib,jb)
+              ix = Atm_block%ixp(ib,jb)
+              IPD_Data(nb)%IntDiag%ssem(ix,it) = qu(i,j,it+ntb)
+            enddo
           enddo
         enddo
-      enddo
+      endif
 
       !--- (c) sedimentation and dry/wet deposition
       do it = 1, size(qd, dim=3)
@@ -1583,8 +1603,9 @@ end subroutine atmos_data_type_chksum
     real(kind=ESMF_KIND_R4),  dimension(:,:), pointer  :: datar42d
     real(kind=ESMF_KIND_R8),  dimension(:,:), pointer  :: datar82d
     real(kind=IPD_kind_phys), dimension(:,:), pointer  :: datar8
-    real(kind=IPD_kind_phys)                           :: tem
+    real(kind=IPD_kind_phys)                           :: tem, ofrac
     logical found, isFieldCreated, lcpl_fice
+    real (kind=IPD_kind_phys), parameter :: z0ice=1.1    !  (in cm)
 !
 !------------------------------------------------------------------------------
 !
@@ -1606,6 +1627,7 @@ end subroutine atmos_data_type_chksum
     do n=1,nImportFields ! Each import field is only available if it was connected in the import state.
 
       found = .false.
+
 
       isFieldCreated = ESMF_FieldIsCreated(importFields(n), rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
@@ -1663,10 +1685,13 @@ end subroutine atmos_data_type_chksum
                 do i=isc,iec
                   nb = Atm_block%blkno(i,j)
                   ix = Atm_block%ixp(i,j)
-                  if (IPD_Data(nb)%Sfcprop%oceanfrac(ix) > zero) then
-                    tem = 100.0 * max(zero, min(0.1, datar8(i,j)))
-                    IPD_Data(nb)%Coupling%zorlwav_cpl(ix) = tem
+                  if (IPD_Data(nb)%Sfcprop%oceanfrac(ix) > zero .and.  datar8(i,j) > zorlmin) then
+                    tem = 100.0_IPD_kind_phys * min(0.1_IPD_kind_phys, datar8(i,j))
+!                   IPD_Data(nb)%Coupling%zorlwav_cpl(ix) = tem
                     IPD_Data(nb)%Sfcprop%zorlo(ix)        = tem
+                    IPD_Data(nb)%Sfcprop%zorlw(ix)        = tem
+                  else
+                    IPD_Data(nb)%Sfcprop%zorlw(ix) = -999.0_IPD_kind_phys
 
                   endif
                 enddo
@@ -1685,8 +1710,9 @@ end subroutine atmos_data_type_chksum
                 do i=isc,iec
                   nb = Atm_block%blkno(i,j)
                   ix = Atm_block%ixp(i,j)
-                  if (IPD_Data(nb)%Sfcprop%oceanfrac(ix) > zero) then
-                    IPD_Data(nb)%Coupling%tisfcin_cpl(ix) = datar8(i,j)
+                  if (IPD_Data(nb)%Sfcprop%oceanfrac(ix) > zero .and.  datar8(i,j) > 150.0) then
+!                   IPD_Data(nb)%Coupling%tisfcin_cpl(ix) = datar8(i,j)
+                    IPD_Data(nb)%Sfcprop%tisfc(ix)       = datar8(i,j)
                   endif
                 enddo
               enddo
@@ -1698,17 +1724,14 @@ end subroutine atmos_data_type_chksum
           fldname = 'sea_surface_temperature'
           if (trim(impfield_name) == trim(fldname)) then
             findex  = QueryFieldList(ImportFieldsList,fldname)
-!       if (mpp_pe() == mpp_root_pe() .and. debug)  print *,' for sst', &
-!    ' fldname=',fldname,' findex=',findex,' importFieldsValid=',importFieldsValid(findex)
-
             if (importFieldsValid(findex)) then
 !$omp parallel do default(shared) private(i,j,nb,ix)
               do j=jsc,jec
                 do i=isc,iec
                   nb = Atm_block%blkno(i,j)
                   ix = Atm_block%ixp(i,j)
-                  if (IPD_Data(nb)%Sfcprop%oceanfrac(ix) > zero) then
-                    IPD_Data(nb)%Coupling%tseain_cpl(ix) = datar8(i,j)
+                  if (IPD_Data(nb)%Sfcprop%oceanfrac(ix) > zero .and. datar8(i,j) > 150.0) then
+!                   IPD_Data(nb)%Coupling%tseain_cpl(ix) = datar8(i,j)
                     IPD_Data(nb)%Sfcprop%tsfco(ix)       = datar8(i,j)
                   endif
                 enddo
@@ -1723,23 +1746,26 @@ end subroutine atmos_data_type_chksum
           if (trim(impfield_name) == trim(fldname)) then
             findex  = QueryFieldList(ImportFieldsList,fldname)
             if (importFieldsValid(findex)) then
-            lcpl_fice = .true.
-!$omp parallel do default(shared) private(i,j,nb,ix)
+              lcpl_fice = .true.
+!$omp parallel do default(shared) private(i,j,nb,ix,ofrac)
               do j=jsc,jec
                 do i=isc,iec
                   nb = Atm_block%blkno(i,j)
                   ix = Atm_block%ixp(i,j)
-                  IPD_Data(nb)%Coupling%ficein_cpl(ix)   = zero
+
+                  IPD_Data(nb)%Sfcprop%fice(ix)          = zero
                   IPD_Data(nb)%Coupling%slimskin_cpl(ix) = IPD_Data(nb)%Sfcprop%slmsk(ix)
-                  if (IPD_Data(nb)%Sfcprop%oceanfrac(ix) > zero) then
-                    IPD_Data(nb)%Coupling%ficein_cpl(ix) = max(zero, min(one, datar8(i,j)/IPD_Data(nb)%Sfcprop%oceanfrac(ix))) !LHS: ice frac wrt water area
-                    if (IPD_Data(nb)%Coupling%ficein_cpl(ix) > one-epsln) IPD_Data(nb)%Coupling%ficein_cpl(ix)=one
-                    if (IPD_Data(nb)%Coupling%ficein_cpl(ix) >= IPD_control%min_seaice) then
-                      if (abs(one-IPD_Data(nb)%Sfcprop%oceanfrac(ix)) < epsln) IPD_Data(nb)%Sfcprop%slmsk(ix) = 2. !slmsk=2 crashes in gcycle on partial land points
-                      IPD_Data(nb)%Coupling%slimskin_cpl(ix) = 4.
+                  ofrac = IPD_Data(nb)%Sfcprop%oceanfrac(ix)
+                  if (ofrac > zero) then
+                    IPD_Data(nb)%Sfcprop%fice(ix) = max(zero, min(one, datar8(i,j)/ofrac)) !LHS: ice frac wrt water area
+                    if (IPD_Data(nb)%Sfcprop%fice(ix) >= IPD_control%min_seaice) then
+                      if (IPD_Data(nb)%Sfcprop%fice(ix) > one-epsln) IPD_Data(nb)%Sfcprop%fice(ix) = one
+                      if (abs(one-ofrac) < epsln) IPD_Data(nb)%Sfcprop%slmsk(ix) = 2.0_IPD_kind_phys !slmsk=2 crashes in gcycle on partial land points
+!                     IPD_Data(nb)%Sfcprop%slmsk(ix)         = 2.0_IPD_kind_phys
+                      IPD_Data(nb)%Coupling%slimskin_cpl(ix) = 4.0_IPD_kind_phys
                     else
-                      IPD_Data(nb)%Coupling%ficein_cpl(ix)   = zero
-                      if (abs(one-IPD_Data(nb)%Sfcprop%oceanfrac(ix)) < epsln) then
+                      IPD_Data(nb)%Sfcprop%fice(ix) = zero
+                      if (abs(one-ofrac) < epsln) then
                         IPD_Data(nb)%Sfcprop%slmsk(ix)         = zero
                         IPD_Data(nb)%Coupling%slimskin_cpl(ix) = zero
                       end if
@@ -1870,7 +1896,8 @@ end subroutine atmos_data_type_chksum
                   nb = Atm_block%blkno(i,j)
                   ix = Atm_block%ixp(i,j)
                   if (IPD_Data(nb)%Sfcprop%oceanfrac(ix) > zero) then
-                    IPD_Data(nb)%Coupling%hicein_cpl(ix) = datar8(i,j)
+!                   IPD_Data(nb)%Coupling%hicein_cpl(ix) = datar8(i,j)
+                    IPD_Data(nb)%Sfcprop%hice(ix)        = datar8(i,j)
                   endif
                 enddo
               enddo
@@ -1913,16 +1940,25 @@ end subroutine atmos_data_type_chksum
           ix = Atm_block%ixp(i,j)
           if (IPD_Data(nb)%Sfcprop%oceanfrac(ix) > zero) then
 !if it is ocean or ice get surface temperature from mediator
-            if(IPD_Data(nb)%Coupling%ficein_cpl(ix) >= IPD_control%min_seaice) then
-              IPD_Data(nb)%Sfcprop%tisfc(ix) = IPD_Data(nb)%Coupling%tisfcin_cpl(ix)
-              IPD_Data(nb)%Sfcprop%fice(ix)  = IPD_Data(nb)%Coupling%ficein_cpl(ix)
-              IPD_Data(nb)%Sfcprop%hice(ix)  = IPD_Data(nb)%Coupling%hicein_cpl(ix)
-              IPD_Data(nb)%Sfcprop%snowd(ix) = IPD_Data(nb)%Coupling%hsnoin_cpl(ix)
+            if (IPD_Data(nb)%Sfcprop%fice(ix) >= IPD_control%min_seaice) then
+
+!           if(IPD_Data(nb)%Coupling%ficein_cpl(ix) >= IPD_control%min_seaice) then
+!             IPD_Data(nb)%Sfcprop%tisfc(ix)       = IPD_Data(nb)%Coupling%tisfcin_cpl(ix)
+!             IPD_Data(nb)%Sfcprop%fice(ix)        = IPD_Data(nb)%Coupling%ficein_cpl(ix)
+!             IPD_Data(nb)%Sfcprop%hice(ix)        = IPD_Data(nb)%Coupling%hicein_cpl(ix)
+!             IPD_Data(nb)%Sfcprop%snowd(ix)       = IPD_Data(nb)%Coupling%hsnoin_cpl(ix)
+
+              IPD_Data(nb)%Coupling%hsnoin_cpl(ix) = IPD_Data(nb)%Coupling%hsnoin_cpl(ix) &
+                                                   / max(0.01_IPD_kind_phys, IPD_Data(nb)%Sfcprop%fice(ix))
+!                                                  / max(0.01_IPD_kind_phys, IPD_Data(nb)%Coupling%ficein_cpl(ix))
+              IPD_Data(nb)%Sfcprop%zorli(ix)       = z0ice
             else 
-              IPD_Data(nb)%Sfcprop%tisfc(ix) = IPD_Data(nb)%Coupling%tseain_cpl(ix)
-              IPD_Data(nb)%Sfcprop%fice(ix)  = zero
-              IPD_Data(nb)%Sfcprop%hice(ix)  = zero
-              IPD_Data(nb)%Sfcprop%snowd(ix) = zero
+!             IPD_Data(nb)%Sfcprop%tisfc(ix)       = IPD_Data(nb)%Coupling%tseain_cpl(ix)
+              IPD_Data(nb)%Sfcprop%tisfc(ix)       = IPD_Data(nb)%Sfcprop%tsfco(ix)
+              IPD_Data(nb)%Sfcprop%fice(ix)        = zero
+              IPD_Data(nb)%Sfcprop%hice(ix)        = zero
+!             IPD_Data(nb)%Sfcprop%snowd(ix)       = zero
+              IPD_Data(nb)%Coupling%hsnoin_cpl(ix) = zero
 !
               IPD_Data(nb)%Coupling%dtsfcin_cpl(ix)  = -99999.0 ! over open water - should not be used in ATM
               IPD_Data(nb)%Coupling%dqsfcin_cpl(ix)  = -99999.0 !                 ,,
@@ -1930,8 +1966,10 @@ end subroutine atmos_data_type_chksum
               IPD_Data(nb)%Coupling%dvsfcin_cpl(ix)  = -99999.0 !                 ,,
               IPD_Data(nb)%Coupling%dtsfcin_cpl(ix)  = -99999.0 !                 ,,
               IPD_Data(nb)%Coupling%ulwsfcin_cpl(ix) = -99999.0 !                 ,,
-              if (abs(one-IPD_Data(nb)%Sfcprop%oceanfrac(ix)) < epsln) &
-                          IPD_Data(nb)%Coupling%slimskin_cpl(ix) = zero ! 100% open water
+              if (abs(one-IPD_Data(nb)%Sfcprop%oceanfrac(ix)) < epsln) then !  100% open water
+                IPD_Data(nb)%Coupling%slimskin_cpl(ix) = zero
+                IPD_Data(nb)%Sfcprop%slmsk(ix)         = zero
+              endif
             endif
           endif
         enddo
@@ -1947,7 +1985,8 @@ end subroutine atmos_data_type_chksum
 !           abs(IPD_Data(nb)%Grid%xlat_d(ix)+58.99) < 0.1) then
 !         write(0,*)' in assign tisfc=',IPD_Data(nb)%Sfcprop%tisfc(ix),     &
 !          ' oceanfrac=',IPD_Data(nb)%Sfcprop%oceanfrac(ix),' i=',i,' j=',j,&
-!          ' tisfcin=',IPD_Data(nb)%Coupling%tisfcin_cpl(ix),               &
+!!         ' tisfcin=',IPD_Data(nb)%Coupling%tisfcin_cpl(ix),               &
+!          ' tisfcin=',IPD_Data(nb)%Sfcprop%tisfc(ix),                      &
 !          ' fice=',IPD_Data(nb)%Sfcprop%fice(ix)
 !       endif
 !     enddo

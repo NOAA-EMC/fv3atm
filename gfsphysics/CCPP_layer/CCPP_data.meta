@@ -1,3 +1,8 @@
+[ccpp-table-properties]
+  name = CCPP_data
+  type = module
+  dependencies = ../../ccpp/framework/src/ccpp_types.F90,CCPP_typedefs.F90,../GFS_layer/GFS_typedefs.F90
+
 [ccpp-arg-table]
   name = CCPP_data
   type = module
