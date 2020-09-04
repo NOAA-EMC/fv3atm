@@ -572,7 +572,11 @@ module fv3gfs_cap_mod
 ! create fcst grid component
 
     fcstpe = .false.
-    num_pes_fcst = petcount - write_groups * wrttasks_per_group
+    if( quilting ) then
+      num_pes_fcst = petcount - write_groups * wrttasks_per_group
+    else
+      num_pes_fcst = petcount
+    endif
     allocate(fcstPetList(num_pes_fcst))
     do j=1, num_pes_fcst
       fcstPetList(j) = j - 1
@@ -1082,8 +1086,10 @@ module fv3gfs_cap_mod
       if ( cpl ) then
        ! assign import_data called during phase=1
        if( dbug > 0 .or. cplprint_flag ) then
-        call diagnose_cplFields(gcomp, importState, exportstate, clock_fv3,    &
+         if( mype < num_pes_fcst ) then
+           call diagnose_cplFields(gcomp, importState, exportstate, clock_fv3,    &
                               cplprint_flag, dbug, 'import', import_timestr)
+         endif
        endif
       endif
 
@@ -1209,8 +1215,10 @@ module fv3gfs_cap_mod
 !jw for coupled, check clock and dump import and export state
     if ( cpl ) then
       if( dbug > 0 .or. cplprint_flag ) then
-       call diagnose_cplFields(gcomp, importState, exportstate, clock_fv3,    &
-                              cplprint_flag, dbug, 'export', export_timestr) 
+        if( mype < num_pes_fcst ) then
+          call diagnose_cplFields(gcomp, importState, exportstate, clock_fv3,    &
+                                  cplprint_flag, dbug, 'export', export_timestr) 
+        endif
      end if
     endif
 
