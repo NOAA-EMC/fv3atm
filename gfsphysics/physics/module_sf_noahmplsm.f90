@@ -940,7 +940,11 @@ contains
 
      if(parameters%hvt> 0. .and. parameters%hvt <= 1.0) then          !mb: change to 1.0 and 0.2 to reflect
        snowhc = parameters%hvt*exp(-snowh/0.2)             !      changes to hvt in mptable
-       fb     = min(snowh,snowhc)/snowhc
+       if (snowh < snowhc) then
+         fb = snowh/snowhc
+       else
+         fb = 1.0
+       end if
      endif
 
      elai =  lai*(1.-fb)
