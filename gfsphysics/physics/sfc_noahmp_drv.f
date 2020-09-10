@@ -681,6 +681,13 @@
 
       endif          ! glacial split ends
 
+! Snow check to prevent possible precision problems
+
+      if(snowh <= 1.e-6_kind_phys .or. swe <= 1.e-3_kind_phys) then
+        snowh = 0.0_kind_phys
+        swe   = 0.0_kind_phys
+      end if
+
 !
 ! mp in/out
 !
