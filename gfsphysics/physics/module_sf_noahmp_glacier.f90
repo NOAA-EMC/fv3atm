@@ -1261,7 +1261,7 @@ contains
     tmpch2 = log((2.0 + z0h) / z0h)
 
     if(iter == 1) then
-       fv   = 0.0
+       fv   = 0.1
        moz  = 0.0
        mol  = 0.0
        moz2 = 0.0
