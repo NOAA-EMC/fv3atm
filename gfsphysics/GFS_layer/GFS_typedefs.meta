@@ -2469,14 +2469,14 @@
   dimensions = ()
   type = integer
 [iovr_sw]
-  standard_name = flag_for_max_random_overlap_clouds_for_shortwave_radiation
-  long_name = sw: max-random overlap clouds
+  standard_name = flag_for_cloud_overlapping_method_for_shortwave_radiation
+  long_name = control flag for cloud overlapping method for SW
   units = flag
   dimensions = ()
   type = integer
 [iovr_lw]
-  standard_name = flag_for_max_random_overlap_clouds_for_longwave_radiation
-  long_name = lw: max-random overlap clouds
+  standard_name = flag_for_cloud_overlapping_method_for_longwave_radiation
+  long_name = control flag for cloud overlapping method for LW
   units = flag
   dimensions = ()
   type = integer
@@ -2487,14 +2487,14 @@
   dimensions = ()
   type = integer
 [isubc_sw]
-  standard_name = flag_for_sw_clouds_without_sub_grid_approximation
-  long_name = flag for sw clouds without sub-grid approximation
+  standard_name = flag_for_subcolumn_cloud_approximation_for_shortwave_radiation
+  long_name = flag for subcolumn cloud approximation for shortwave radiation
   units = flag
   dimensions = ()
   type = integer
 [isubc_lw]
-  standard_name = flag_for_lw_clouds_without_sub_grid_approximation
-  long_name = flag for lw clouds without sub-grid approximation
+  standard_name = flag_for_subcolumn_cloud_approximation_for_longwave_radiation
+  long_name = flag for subcolumn cloud approximation for longwave radiation
   units = flag
   dimensions = ()
   type = integer
@@ -4572,14 +4572,14 @@
   units = none
   dimensions = (horizontal_dimension)
   type = integer
-  active = (flag_for_lw_clouds_without_sub_grid_approximation == 2 .or. flag_for_sw_clouds_without_sub_grid_approximation == 2)
+  active = (flag_for_subcolumn_cloud_approximation_for_longwave_radiation == 2 .or. flag_for_subcolumn_cloud_approximation_for_shortwave_radiation == 2)
 [icsdlw]
   standard_name = seed_random_numbers_lw
   long_name = random seeds for sub-column cloud generators lw
   units = none
   dimensions = (horizontal_dimension)
   type = integer
-  active = (flag_for_lw_clouds_without_sub_grid_approximation == 2 .or. flag_for_sw_clouds_without_sub_grid_approximation == 2)
+  active = (flag_for_subcolumn_cloud_approximation_for_longwave_radiation == 2 .or. flag_for_subcolumn_cloud_approximation_for_shortwave_radiation == 2)
 [ozpl]
   standard_name = ozone_forcing
   long_name = ozone forcing data
@@ -6227,21 +6227,21 @@
 [upd_mf]
   standard_name = cumulative_atmosphere_updraft_convective_mass_flux
   long_name = cumulative updraft mass flux
-  units = Pa
+  units = kg m-1 s-2
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
 [dwn_mf]
   standard_name = cumulative_atmosphere_downdraft_convective_mass_flux
   long_name = cumulative downdraft mass flux
-  units = Pa
+  units = kg m-1 s-2
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
 [det_mf]
   standard_name = cumulative_atmosphere_detrainment_convective_mass_flux
   long_name = cumulative detrainment mass flux
-  units = Pa
+  units = kg m-1 s-2
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
@@ -6256,7 +6256,7 @@
   standard_name = instantaneous_3d_cloud_fraction
   long_name = instantaneous 3D cloud fraction for all MPs
   units = frac
-  dimensions = (horizontal_dimension,vertical_dimension)
+  dimensions = (horizontal_dimension,adjusted_vertical_layer_dimension_for_radiation)
   type = real
   kind = kind_phys
 [ndust]
@@ -6889,63 +6889,63 @@
   standard_name = total_cloud_fraction
   long_name = layer total cloud fraction
   units = frac
-  dimensions = (horizontal_dimension,vertical_dimension)
+  dimensions = (horizontal_dimension,adjusted_vertical_layer_dimension_for_radiation)
   type = real
   kind = kind_phys
 [clouds(:,:,2)]
   standard_name = cloud_liquid_water_path
   long_name = layer cloud liquid water path
   units = g m-2
-  dimensions = (horizontal_dimension,vertical_dimension)
+  dimensions = (horizontal_dimension,adjusted_vertical_layer_dimension_for_radiation)
   type = real
   kind = kind_phys
 [clouds(:,:,3)]
   standard_name = mean_effective_radius_for_liquid_cloud
   long_name = mean effective radius for liquid cloud
   units = micron
-  dimensions = (horizontal_dimension,vertical_dimension)
+  dimensions = (horizontal_dimension,adjusted_vertical_layer_dimension_for_radiation)
   type = real
   kind = kind_phys
 [clouds(:,:,4)]
   standard_name = cloud_ice_water_path
   long_name = layer cloud ice water path
   units = g m-2
-  dimensions = (horizontal_dimension,vertical_dimension)
+  dimensions = (horizontal_dimension,adjusted_vertical_layer_dimension_for_radiation)
   type = real
   kind = kind_phys
 [clouds(:,:,5)]
   standard_name = mean_effective_radius_for_ice_cloud
   long_name = mean effective radius for ice cloud
   units = micron
-  dimensions = (horizontal_dimension,vertical_dimension)
+  dimensions = (horizontal_dimension,adjusted_vertical_layer_dimension_for_radiation)
   type = real
   kind = kind_phys
 [clouds(:,:,6)]
   standard_name = cloud_rain_water_path
   long_name = cloud rain water path
   units = g m-2
-  dimensions = (horizontal_dimension,vertical_dimension)
+  dimensions = (horizontal_dimension,adjusted_vertical_layer_dimension_for_radiation)
   type = real
   kind = kind_phys
 [clouds(:,:,7)]
   standard_name = mean_effective_radius_for_rain_drop
   long_name = mean effective radius for rain drop
   units = micron
-  dimensions = (horizontal_dimension,vertical_dimension)
+  dimensions = (horizontal_dimension,adjusted_vertical_layer_dimension_for_radiation)
   type = real
   kind = kind_phys
 [clouds(:,:,8)]
   standard_name = cloud_snow_water_path
   long_name = cloud snow water path
   units = g m-2
-  dimensions = (horizontal_dimension,vertical_dimension)
+  dimensions = (horizontal_dimension,adjusted_vertical_layer_dimension_for_radiation)
   type = real
   kind = kind_phys
 [clouds(:,:,9)]
   standard_name = mean_effective_radius_for_snow_flake
   long_name = mean effective radius for snow flake
   units = micron
-  dimensions = (horizontal_dimension,vertical_dimension)
+  dimensions = (horizontal_dimension,adjusted_vertical_layer_dimension_for_radiation)
   type = real
   kind = kind_phys
 [clw]
@@ -9218,7 +9218,7 @@
   units = none
   dimensions = ()
   type = integer
-[cldtausw]
+[pcldtausw]
   standard_name = RRTMGP_cloud_optical_depth_layers_at_0_55mu_band
   long_name = approx .55mu band layer cloud optical depth
   units = none
@@ -9226,7 +9226,7 @@
   type = real
   kind = kind_phys
   optional = F
-[cldtaulw]
+[pcldtaulw]
   standard_name = RRTMGP_cloud_optical_depth_layers_at_10mu_band
   long_name = approx 10mu band layer cloud optical depth
   units = none

@@ -1986,6 +1986,8 @@ module GFS_typedefs
     ! RRTMGP
     integer                             :: ipsdlw0                              !<
     integer                             :: ipsdsw0                              !<
+    real (kind=kind_phys), pointer      :: pcldtaulw(:,:)            => null()  !<
+    real (kind=kind_phys), pointer      :: pcldtausw(:,:)            => null()  !<
     real (kind=kind_phys), pointer      :: sktp1r(:)                 => null()  !<
     real (kind=kind_phys), pointer      :: p_lay(:,:)                => null()  !<
     real (kind=kind_phys), pointer      :: p_lev(:,:)                => null()  !<
@@ -6400,6 +6402,8 @@ module GFS_typedefs
     allocate (Interstitial%sktp1r               (IM))
     allocate (Interstitial%fluxlwUP_allsky      (IM, Model%levs+1))
     if (Model%do_RRTMGP) then
+       allocate (Interstitial%pcldtaulw            (IM, Model%levs))
+       allocate (Interstitial%pcldtausw            (IM, Model%levs))
        allocate (Interstitial%tracer               (IM, Model%levs,Model%ntrac))
        allocate (Interstitial%tv_lay               (IM, Model%levs))
        allocate (Interstitial%relhum               (IM, Model%levs))
@@ -6773,6 +6777,8 @@ module GFS_typedefs
     end if
 
     if (Model%do_RRTMGP) then
+      Interstitial%pcldtaulw            = clear_val
+      Interstitial%pcldtausw            = clear_val
       Interstitial%tracer               = clear_val
       Interstitial%tv_lay               = clear_val
       Interstitial%relhum               = clear_val
@@ -7450,6 +7456,8 @@ module GFS_typedefs
     end if
     ! RRTMGP
     if (Model%do_RRTMGP) then
+       write (0,*) 'sum(Interstitial%pcldtaulw            ) = ', sum(Interstitial%pcldtaulw   )
+       write (0,*) 'sum(Interstitial%pcldtausw            ) = ', sum(Interstitial%pcldtausw   )
        write (0,*) 'sum(Interstitial%aerosolslw           ) = ', sum(Interstitial%aerosolslw  )
        write (0,*) 'sum(Interstitial%aerosolssw           ) = ', sum(Interstitial%aerosolssw  )
        write (0,*) 'sum(Interstitial%cld_frac             ) = ', sum(Interstitial%cld_frac    )
