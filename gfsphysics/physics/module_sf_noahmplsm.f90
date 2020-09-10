@@ -940,7 +940,11 @@ contains
 
      if(parameters%hvt> 0. .and. parameters%hvt <= 1.0) then          !mb: change to 1.0 and 0.2 to reflect
        snowhc = parameters%hvt*exp(-snowh/0.2)             !      changes to hvt in mptable
-       fb     = min(snowh,snowhc)/snowhc
+       if (snowh < snowhc) then
+         fb = snowh/snowhc
+       else
+         fb = 1.0
+       end if
      endif
 
      elai =  lai*(1.-fb)
@@ -4136,7 +4140,7 @@ contains
     tmpch2 = log((2.0 + z0h) / z0h)
 
     if(iter == 1) then
-       fv   = 0.0
+       fv   = 0.1
        moz  = 0.0
        mol  = 0.0
        moz2 = 0.0
@@ -4145,6 +4149,7 @@ contains
        tmp1 = vkc * (grav/tvir) * h/(rhoair*cpair)
        if (abs(tmp1) .le. mpe) tmp1 = mpe
        mol  = -1. * fv**3 / tmp1
+       if (abs(mol) .le. mpe) mol = mpe
        moz  = min( (zlvl-zpd)/mol, 1.)
        moz2  = min( (2.0 + z0h)/mol, 1.)
     endif
