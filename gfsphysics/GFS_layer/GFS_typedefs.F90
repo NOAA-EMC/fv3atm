@@ -3961,6 +3961,13 @@ module GFS_typedefs
       ! Add 10 more orographic static fields for GSL drag scheme
       Model%nmtvr = 24
     end if
+    Model%do_ugwp_v0           = do_ugwp_v0
+    Model%do_ugwp_v0_orog_only = do_ugwp_v0_orog_only
+    Model%do_gsl_drag_ls_bl    = do_gsl_drag_ls_bl
+    Model%do_gsl_drag_ss       = do_gsl_drag_ss
+    Model%do_gsl_drag_tofd     = do_gsl_drag_tofd
+    Model%do_ugwp_v1           = do_ugwp_v1
+    Model%do_ugwp_v1_orog_only = do_ugwp_v1_orog_only
     Model%do_myjsfc         = do_myjsfc
     Model%do_myjpbl         = do_myjpbl
 #endif
