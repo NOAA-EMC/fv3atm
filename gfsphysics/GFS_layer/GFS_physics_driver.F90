@@ -814,8 +814,8 @@ module module_physics_driver
 !     do i=1,im
 !       lprnt = Model%me == 23 .and. i == 25
 !       lprnt = Model%me == 127 .and. i == 11
-!       lprnt = kdt >=  20 .and. abs(grid%xlon(i)*rad2dg-102.65) < 0.101  &
-!                          .and. abs(grid%xlat(i)*rad2dg-0.12) < 0.201
+!       lprnt = kdt >=  20 .and. abs(grid%xlon(i)*rad2dg-295.40) < 0.101  &
+!                          .and. abs(grid%xlat(i)*rad2dg-47.0) < 0.101
 !       lprnt = kdt >=  20 .and. abs(grid%xlon(i)*rad2dg-184.00) < 0.301  &
 !                          .and. abs(grid%xlat(i)*rad2dg-83.23) < 0.301
 !       lprnt = kdt >=   7 .and. abs(grid%xlon(i)*rad2dg-216.20) < 0.101  &
@@ -2183,17 +2183,17 @@ module module_physics_driver
            endif
           if (islmsk(i) == 1) then
             k = 1
-            Sfcprop%tsfcl(i) = tsfc3(i,1)  ! over land
             stress(i)        = stress3(i,1)
 !           Sfcprop%tprcp(i) = tprcp3(i,1)
+            Sfcprop%tsfcl(i) = tsfc3(i,1)  ! over land
             Sfcprop%tsfco(i) = tsfc3(i,1)
             Sfcprop%tisfc(i) = tsfc3(i,1)
             Sfcprop%tsfc(i)  = tsfc3(i,1)
           elseif (islmsk(i) == 0) then
             k = 3
-            Sfcprop%tsfco(i) = tsfc3(i,3)  ! over lake (and ocean when uncoupled)
             stress(i)        = stress3(i,3)
 !           Sfcprop%tprcp(i) = tprcp3(i,3)
+            Sfcprop%tsfco(i) = tsfc3(i,3)  ! over lake (and ocean when uncoupled)
             Sfcprop%tisfc(i) = tsfc3(i,3)
             Sfcprop%tsfcl(i) = tsfc3(i,3)
             Sfcprop%tsfc(i)  = tsfc3(i,3)
@@ -2201,6 +2201,7 @@ module module_physics_driver
             k = 2
             stress(i)        = stress3(i,2)
 !           Sfcprop%tprcp(i) = fice(i)*tprcp3(i,2)  + (one-fice(i))*tprcp3(i,3)
+            Sfcprop%tsfc(i)  = tsfc3(i,2)
           endif
           Sfcprop%zorl(i)   = zorl3(i,k)
           cd(i)             = cd3(i,k)
@@ -2227,37 +2228,43 @@ module module_physics_driver
           Sfcprop%zorli(i)  = zorl3(i,2)
           Sfcprop%zorlo(i)  = zorl3(i,3)
 
-          if (flag_cice(i)) then
-            if (wet(i) .and. fice(i) > Model%min_seaice) then  ! this was already done for lake ice in sfc_sice
-              txi = fice(i)
-              txo = one - txi
-              evap(i)         = txi * evap3(i,2)   + txo * evap3(i,3)
-              hflx(i)         = txi * hflx3(i,2)   + txo * hflx3(i,3)
-              Sfcprop%tsfc(i) = txi * tsfc3(i,2)   + txo * tsfc3(i,3)
-              stress(i)       = txi  *stress3(i,2) + txo * stress3(i,3)
-              qss(i)          = txi * qss3(i,2)    + txo * qss3(i,3)
-              ep1d(i)         = txi * ep1d3(i,2)   + txo * ep1d3(i,3)
-              Sfcprop%zorl(i) = txi * zorl3(i,2)   + txo * zorl3(i,3)
+          if (k == 2) then
+            if (wet(i)) then
+              Sfcprop%tsfco(i) = tsfc3(i,3)
             endif
-          elseif (islmsk(i) == 2) then  ! return updated lake ice thickness & concentration to global array
-            Sfcprop%tisfc(i) = tice(i)  ! over lake ice (and sea ice when uncoupled)
-            Sfcprop%hice(i)  = zice(i)
-            Sfcprop%fice(i)  = fice(i)  ! fice is fraction of lake area that is frozen
-            Sfcprop%zorl(i)  = fice(i)*zorl3(i,2) + (one-fice(i))*zorl3(i,3)
-          else                          ! this would be over open ocean or land (no ice fraction)
-            Sfcprop%hice(i)  = zero
-            Sfcprop%fice(i)  = zero
-            Sfcprop%tisfc(i) = Sfcprop%tsfc(i)
-            icy(i)           = .false.
-          endif
-          Sfcprop%tsfcl(i) = Sfcprop%tsfc(i)
-          if (wet(i)) then
-            Sfcprop%tsfco(i) = tsfc3(i,3)
-          else
-            Sfcprop%tsfco(i) =Sfcprop%tsfc(i)
+            if (flag_cice(i)) then
+              if (wet(i) .and. fice(i) > Model%min_seaice) then  ! this was already done for lake ice in sfc_sice
+                txi = fice(i)
+                txo = one - txi
+                evap(i)         = txi * evap3(i,2)   + txo * evap3(i,3)
+                hflx(i)         = txi * hflx3(i,2)   + txo * hflx3(i,3)
+                Sfcprop%tsfc(i) = txi * tsfc3(i,2)   + txo * tsfc3(i,3)
+                stress(i)       = txi  *stress3(i,2) + txo * stress3(i,3)
+                qss(i)          = txi * qss3(i,2)    + txo * qss3(i,3)
+                ep1d(i)         = txi * ep1d3(i,2)   + txo * ep1d3(i,3)
+                Sfcprop%zorl(i) = txi * zorl3(i,2)   + txo * zorl3(i,3)
+              endif
+            elseif (islmsk(i) == 2) then  ! return updated lake ice thickness & concentration to global array
+              Sfcprop%tisfc(i) = tice(i)  ! over lake ice (and sea ice when uncoupled)
+              Sfcprop%tsfc(i)  = tsfc3(i,2)
+              Sfcprop%hice(i)  = zice(i)
+              Sfcprop%fice(i)  = fice(i)  ! fice is fraction of lake area that is frozen
+              Sfcprop%zorl(i)  = fice(i)*zorl3(i,2) + (one-fice(i))*zorl3(i,3)
+            else                          ! this would be over open ocean or land (no ice fraction)
+              Sfcprop%hice(i)  = zero
+              Sfcprop%fice(i)  = zero
+              Sfcprop%tsfc(i)  = Sfcprop%tsfco(i)
+              Sfcprop%tisfc(i) = Sfcprop%tsfc(i)
+              icy(i)           = .false.
+            endif
+            Sfcprop%tsfcl(i) = Sfcprop%tsfc(i)
+            if (.not. wet(i)) then
+              Sfcprop%tsfco(i) =Sfcprop%tsfc(i)
+            endif
           endif
           do k=1,Model%kice ! store tiice in stc to reduce output in the nonfrac grid case
-            Sfcprop%stc(i,k) = Sfcprop%tiice(i,k)
+!           Sfcprop%stc(i,k) = Sfcprop%tiice(i,k)
+            Sfcprop%stc(i,k) = stsoil(i,k)
           enddo
         enddo
       endif       ! if (Model%frac_grid)
@@ -5808,6 +5815,7 @@ module module_physics_driver
 !          if (lprnt) write(0,*)' end driver sfcprop%tsfcl=',Sfcprop%tsfcl(ipr),' kdt=',kdt
 !          if (lprnt) write(0,*)' end driver sfcprop%tsfco=',Sfcprop%tsfco(ipr),' kdt=',kdt
 !          if (lprnt) write(0,*)' end driver sfcprop%tisfc=',Sfcprop%tisfc(ipr),' kdt=',kdt
+!          if (lprnt) write(0,*)' end driver sfcprop%tsfc=',Sfcprop%tsfc(ipr),' kdt=',kdt,wet(ipr),icy(ipr),dry(ipr)
 !       endif
 
       return
