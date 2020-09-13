@@ -5039,6 +5039,7 @@ module GFS_typedefs
       print *, ' do_mynnsfclay     : ', Model%do_mynnsfclay
       print *, ' do_myjsfc         : ', Model%do_myjsfc
       print *, ' do_myjpbl         : ', Model%do_myjpbl
+      print *, ' do_ugwp           : ', Model%do_ugwp
       print *, ' gwd_opt           : ', Model%gwd_opt
       print *, ' do_ugwp_v0           : ', Model%do_ugwp_v0
       print *, ' do_ugwp_v0_orog_only : ', Model%do_ugwp_v0_orog_only
