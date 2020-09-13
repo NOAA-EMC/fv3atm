@@ -701,8 +701,9 @@ module FV3GFS_io_mod
           ! Replace hprime(1:10) with GSL oro stat data only when using GSL
           ! drag suite with large scale GWD and blocking as part of unified drag
           ! suite.   Otherwise, original oro stat data is used.
-          if ( (Model%gwd_opt==2 .or. Model%gwd_opt==22) .and.       &
-                Model%do_gsl_drag_ls_bl ) then
+          if ( (Model%gwd_opt==3 .or. Model%gwd_opt==33) .or.        &
+               ( (Model%gwd_opt==2 .or. Model%gwd_opt==22) .and.     &
+                  Model%do_gsl_drag_ls_bl ) ) then
              !--- assign hprime(1:10) and hprime(15:24) with new oro stat data
              Sfcprop(nb)%hprime(ix,1)  = oro_ls_var(i,j,1)
              Sfcprop(nb)%hprime(ix,2)  = oro_ls_var(i,j,2)
