@@ -744,6 +744,17 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
      fv3Clock = mpp_clock_id( 'FV3 Dycore            ', flags=clock_flag_default, grain=CLOCK_COMPONENT )
    endif
 
+!--- get bottom layer data from dynamical core for coupling
+   print *,'bf set up dycore fields'
+   call atmosphere_get_bottom_layer (Atm_block, DYCORE_Data)
+   print *,'aft set up dycore fields'
+
+    !if in coupled mode, set up coupled fields
+    if (IPD_Control%cplflx .or. IPD_Control%cplwav) then
+      if (mpp_pe() == mpp_root_pe()) print *,'COUPLING: IPD layer'
+      call setup_exportdata(ierr)
+    endif
+
 #ifdef CCPP
    ! Set flag for first time step of time integration
    IPD_Control%first_time_step = .true.
@@ -2017,7 +2028,7 @@ end subroutine atmos_data_type_chksum
     integer                :: j, i, ix, nb, isc, iec, jsc, jec, idx
     real(IPD_kind_phys)    :: rtime, rtimek
 !
-!   if (mpp_pe() == mpp_root_pe()) print *,'enter setup_exportdata'
+    if (mpp_pe() == mpp_root_pe()) print *,'enter setup_exportdata'
 
     isc = IPD_control%isc
     iec = IPD_control%isc+IPD_control%nx-1
@@ -2580,6 +2591,7 @@ end subroutine atmos_data_type_chksum
 
     ! bottom layer temperature (t)
     idx = queryfieldlist(exportFieldsList,'inst_temp_height_lowest')
+    if (mpp_pe() == mpp_root_pe()) print *,'cpl, in get inst_temp_height_lowest'
     if (idx > 0 ) then
 !$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
@@ -2593,6 +2605,7 @@ end subroutine atmos_data_type_chksum
           endif
         enddo
       enddo
+    if (mpp_pe() == mpp_root_pe()) print *,'cpl, in get inst_temp_height_lowest=',exportData(isc,jsc,idx)
     endif
 
     ! bottom layer specific humidity (q)
@@ -2729,7 +2742,7 @@ end subroutine atmos_data_type_chksum
           IPD_Data(nb)%coupling%snow_cpl(ix)   = zero
         enddo
       enddo
-      if (mpp_pe() == mpp_root_pe()) print *,'zeroing coupling fields at kdt= ',IPD_Control%kdt
+      if (mpp_pe() == mpp_root_pe()) print *,'zeroing coupling accumulated fields at kdt= ',IPD_Control%kdt
     endif !cplflx
 !   if (mpp_pe() == mpp_root_pe()) print *,'end of setup_exportdata'
 
