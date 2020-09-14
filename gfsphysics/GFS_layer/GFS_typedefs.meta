@@ -2892,7 +2892,7 @@
 [effr_in]
   standard_name = flag_for_cloud_effective_radii
   long_name = flag for cloud effective radii calculations in GFDL microphysics
-  units = 
+  units = flag
   dimensions = ()
   type = logical
 [microp_uniform]
@@ -4111,43 +4111,43 @@
 [ncnvw]
   standard_name = index_for_convective_cloud_water_mixing_ratio_in_phy_f3d
   long_name = the index of convective cloud water mixing ratio in phy f3d
-  units = 
+  units = index
   dimensions = ()
   type = integer
 [ncnvc]
   standard_name = index_for_convective_cloud_cover_in_phy_f3d
   long_name = the index of convective cloud cover in phy f3d
-  units = 
+  units = index
   dimensions = ()
   type = integer
 [nleffr]
   standard_name = index_for_cloud_liquid_water_effective_radius
   long_name = the index of cloud liquid water effective radius in phy_f3d
-  units = 
+  units = index
   dimensions = ()
   type = integer
 [nieffr]
   standard_name = index_for_ice_effective_radius
   long_name = the index of ice effective radius in phy_f3d
-  units = 
+  units = index
   dimensions = ()
   type = integer
 [nreffr]
   standard_name = index_for_rain_effective_radius
   long_name = the index of rain effective radius in phy_f3d
-  units = 
+  units = index
   dimensions = ()
   type = integer
 [nseffr]
   standard_name = index_for_snow_effective_radius
   long_name = the index of snow effective radius in phy_f3d
-  units = 
+  units = index
   dimensions = ()
   type = integer
 [ngeffr]
   standard_name = index_for_graupel_effective_radius
   long_name = the index of graupel effective radius in phy_f3d
-  units = 
+  units = index
   dimensions = ()
   type = integer
 [debug]
@@ -4159,7 +4159,7 @@
 [ipt]
   standard_name = index_for_diagnostic_printout
   long_name = horizontal index for point used for diagnostic printout
-  units = 
+  units = index
   dimensions = ()
   type = integer
 [lprnt]
@@ -6579,54 +6579,6 @@
 [ccpp-arg-table]
   name = GFS_interstitial_type
   type = ddt
-[qv_r]
-  standard_name = humidity_mixing_ratio
-  long_name = the ratio of the mass of water vapor to the mass of dry air
-  units = kg kg-1
-  dimensions = (horizontal_dimension,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (flag_for_microphysics_scheme == flag_for_fer_hires_microphysics_scheme)
-[qc_r]
-  standard_name = cloud_liquid_water_mixing_ratio
-  long_name = the ratio of the mass of liquid water to the mass of dry air
-  units = kg kg-1
-  dimensions = (horizontal_dimension,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (flag_for_microphysics_scheme == flag_for_fer_hires_microphysics_scheme)
-[qr_r]
-  standard_name = cloud_rain_water_mixing_ratio
-  long_name = the ratio of the mass rain water to the mass of dry air
-  units = kg kg-1
-  dimensions = (horizontal_dimension,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (flag_for_microphysics_scheme == flag_for_fer_hires_microphysics_scheme)
-[qi_r]
-  standard_name = cloud_ice_mixing_ratio
-  long_name = the ratio of the mass of ice to the mass of dry air
-  units = kg kg-1
-  dimensions = (horizontal_dimension,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (flag_for_microphysics_scheme == flag_for_fer_hires_microphysics_scheme)
-[qs_r]
-  standard_name = cloud_snow_mixing_ratio
-  long_name = the ratio of the mass of snow to mass of dry air
-  units = kg kg-1
-  dimensions = (horizontal_dimension,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (flag_for_microphysics_scheme == flag_for_fer_hires_microphysics_scheme)
-[qg_r]
-  standard_name = mass_weighted_rime_factor_mixing_ratio
-  long_name = the ratio of the mass of rime factor to mass of dry air
-  units = kg kg-1
-  dimensions = (horizontal_dimension,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (flag_for_microphysics_scheme == flag_for_fer_hires_microphysics_scheme)
 [f_ice]
   standard_name = fraction_of_ice_water_cloud
   long_name = fraction of ice water cloud
@@ -6647,14 +6599,6 @@
   standard_name = rime_factor
   long_name = rime factor
   units = frac
-  dimensions = (horizontal_dimension,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (flag_for_microphysics_scheme == flag_for_fer_hires_microphysics_scheme)
-[cwm]
-  standard_name = total_cloud_condensate_mixing_ratio_updated_by_physics
-  long_name = total cloud condensate mixing ratio (except water vapor) updated by physics
-  units = kg kg-1
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
@@ -6902,7 +6846,7 @@
 [clouds(:,:,3)]
   standard_name = mean_effective_radius_for_liquid_cloud
   long_name = mean effective radius for liquid cloud
-  units = micron
+  units = um
   dimensions = (horizontal_dimension,adjusted_vertical_layer_dimension_for_radiation)
   type = real
   kind = kind_phys
@@ -6916,7 +6860,7 @@
 [clouds(:,:,5)]
   standard_name = mean_effective_radius_for_ice_cloud
   long_name = mean effective radius for ice cloud
-  units = micron
+  units = um
   dimensions = (horizontal_dimension,adjusted_vertical_layer_dimension_for_radiation)
   type = real
   kind = kind_phys
@@ -6930,7 +6874,7 @@
 [clouds(:,:,7)]
   standard_name = mean_effective_radius_for_rain_drop
   long_name = mean effective radius for rain drop
-  units = micron
+  units = um
   dimensions = (horizontal_dimension,adjusted_vertical_layer_dimension_for_radiation)
   type = real
   kind = kind_phys
@@ -6944,7 +6888,7 @@
 [clouds(:,:,9)]
   standard_name = mean_effective_radius_for_snow_flake
   long_name = mean effective radius for snow flake
-  units = micron
+  units = um
   dimensions = (horizontal_dimension,adjusted_vertical_layer_dimension_for_radiation)
   type = real
   kind = kind_phys

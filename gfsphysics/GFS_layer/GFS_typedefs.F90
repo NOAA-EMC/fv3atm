@@ -2056,14 +2056,6 @@ module GFS_typedefs
     type(ty_source_func_lw)             :: sources                              !< RRTMGP DDT
 #endif
 
-    !-- HWRF physics: dry mixing ratios
-    real (kind=kind_phys), pointer :: qv_r(:,:)               => null()  !<
-    real (kind=kind_phys), pointer :: qc_r(:,:)               => null()  !<
-    real (kind=kind_phys), pointer :: qi_r(:,:)               => null()  !<
-    real (kind=kind_phys), pointer :: qr_r(:,:)               => null()  !<
-    real (kind=kind_phys), pointer :: qs_r(:,:)               => null()  !<
-    real (kind=kind_phys), pointer :: qg_r(:,:)               => null()  !<
-
     !-- GSD drag suite
     real (kind=kind_phys), pointer      :: varss(:)           => null()  !<
     real (kind=kind_phys), pointer      :: ocss(:)            => null()  !<
@@ -2074,7 +2066,6 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: f_rain     (:,:)   => null()  !<
     real (kind=kind_phys), pointer :: f_ice      (:,:)   => null()  !<
     real (kind=kind_phys), pointer :: f_rimef    (:,:)   => null()  !<
-    real (kind=kind_phys), pointer :: cwm        (:,:)   => null()  !<
 
 
     contains
@@ -6497,19 +6488,10 @@ module GFS_typedefs
        allocate (Interstitial%cnv_nice   (IM,Model%levs))
     end if
     if (Model%imp_physics == Model%imp_physics_fer_hires) then
-    !--- if HWRF physics?
-       allocate (Interstitial%qv_r        (IM,Model%levs))
-       allocate (Interstitial%qc_r        (IM,Model%levs))
-       allocate (Interstitial%qi_r        (IM,Model%levs))
-       allocate (Interstitial%qr_r        (IM,Model%levs))
-       allocate (Interstitial%qs_r        (IM,Model%levs))
-       allocate (Interstitial%qg_r        (IM,Model%levs))
-
     !--- Ferrier-Aligo MP scheme
        allocate (Interstitial%f_ice       (IM,Model%levs))
        allocate (Interstitial%f_rain      (IM,Model%levs))
        allocate (Interstitial%f_rimef     (IM,Model%levs))
-       allocate (Interstitial%cwm         (IM,Model%levs))
     end if
     if (Model%do_shoc) then
        if (.not. associated(Interstitial%qrn))  allocate (Interstitial%qrn  (IM,Model%levs))
@@ -6762,17 +6744,10 @@ module GFS_typedefs
 
 ! F-A scheme
     if (Model%imp_physics == Model%imp_physics_fer_hires) then
-        Interstitial%qv_r       = clear_val
-        Interstitial%qc_r       = clear_val
-        Interstitial%qi_r       = clear_val
-        Interstitial%qr_r       = clear_val
-        Interstitial%qs_r       = clear_val
-        Interstitial%qg_r       = clear_val
       if(Model%spec_adv) then
         Interstitial%f_ice     = clear_val
         Interstitial%f_rain    = clear_val
         Interstitial%f_rimef   = clear_val
-        Interstitial%cwm       = clear_val
       end if
     end if
 
@@ -7080,7 +7055,6 @@ module GFS_typedefs
        Interstitial%f_ice     = clear_val
        Interstitial%f_rain    = clear_val
        Interstitial%f_rimef   = clear_val
-       Interstitial%cwm       = clear_val
     end if
     if (Model%do_shoc) then
        Interstitial%qrn       = clear_val
@@ -7421,7 +7395,6 @@ module GFS_typedefs
        write (0,*) 'sum(Interstitial%f_ice        ) = ', sum(Interstitial%f_ice           )
        write (0,*) 'sum(Interstitial%f_rain       ) = ', sum(Interstitial%f_rain          )
        write (0,*) 'sum(Interstitial%f_rimef      ) = ', sum(Interstitial%f_rimef         )
-       write (0,*) 'sum(Interstitial%cwm          ) = ', sum(Interstitial%cwm             )
     else if (Model%imp_physics == Model%imp_physics_mg) then
        write (0,*) 'Interstitial_print: values specific to MG microphysics'
        write (0,*) 'sum(Interstitial%ncgl         ) = ', sum(Interstitial%ncgl            )
