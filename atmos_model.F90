@@ -744,9 +744,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    endif
 
 !--- get bottom layer data from dynamical core for coupling
-   print *,'bf set up dycore fields'
    call atmosphere_get_bottom_layer (Atm_block, DYCORE_Data)
-   print *,'aft set up dycore fields'
 
     !if in coupled mode, set up coupled fields
     if (IPD_Control%cplflx .or. IPD_Control%cplwav) then
@@ -922,8 +920,6 @@ subroutine update_atmos_model_state (Atmos)
 
     !if in coupled mode, set up coupled fields
     if (IPD_Control%cplflx .or. IPD_Control%cplwav) then
-!     if (mpp_pe() == mpp_root_pe()) print *,'COUPLING: IPD layer'
-!jw       call setup_exportdata(IPD_Control, IPD_Data, Atm_block)
       call setup_exportdata(rc)
     endif
 
