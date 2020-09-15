@@ -1357,7 +1357,7 @@ module FV3GFS_io_mod
         enddo
       enddo
     else
-      if (Model%kdt <= 0) then
+      if( Model%phour < 1.e-7) then
 !$omp parallel do default(shared) private(nb, ix, tem)
         do nb = 1, Atm_block%nblks
           do ix = 1, Atm_block%blksz(nb)
