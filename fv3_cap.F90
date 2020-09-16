@@ -60,9 +60,10 @@ module fv3gfs_cap_mod
                                     nImportFields,    importFields,          &
                                     importFieldsList, importFieldTypes,      &
                                     importFieldShare, importFieldsValid,     &
-                                    queryFieldList
+                                    queryFieldList,   fillExportFields,      &
+                                    exportData
   use module_cap_cpl,         only: realizeConnectedCplFields,               &
-                                    clock_cplIntval, Dump_cplFields
+                                    clock_cplIntval, diagnose_cplFields      
 
 
   implicit none
@@ -92,6 +93,7 @@ module fv3gfs_cap_mod
   character(len=160) :: nuopcMsg
   integer            :: timeslice = 0
   integer            :: fcstmype
+  integer            :: dbug = 0
 
 !-----------------------------------------------------------------------
 
@@ -188,7 +190,7 @@ module fv3gfs_cap_mod
 
     character(len=10)     :: value
     character(240)        :: msgString
-
+    logical               :: isPresent, isSet
     character(len=*),parameter  :: subname='(fv3gfs_cap:InitializeP0)'
 
     rc = ESMF_SUCCESS
@@ -209,6 +211,15 @@ module fv3gfs_cap_mod
 
     cplprint_flag = (trim(value)=="true")
     write(msgString,'(A,l6)') trim(subname)//' cplprint_flag = ',cplprint_flag
+    call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_INFO, rc=rc)
+
+    ! Read in cap debug flag
+    call NUOPC_CompAttributeGet(gcomp, name='dbug_flag', value=value, isPresent=isPresent, isSet=isSet, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+    if (isPresent .and. isSet) then
+     read(value,*) dbug
+    end if
+    write(msgString,'(A,i6)') trim(subname)//' dbug = ',dbug
     call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_INFO, rc=rc)
 
   end subroutine
@@ -549,6 +560,7 @@ module fv3gfs_cap_mod
       rsthour   = CurrTime - StartTime
       first_kdt = nint(rsthour/timeStep) + 1
     endif
+
 !
 !#######################################################################
 ! set up fcst grid component
@@ -560,7 +572,11 @@ module fv3gfs_cap_mod
 ! create fcst grid component
 
     fcstpe = .false.
-    num_pes_fcst = petcount - write_groups * wrttasks_per_group
+    if( quilting ) then
+      num_pes_fcst = petcount - write_groups * wrttasks_per_group
+    else
+      num_pes_fcst = petcount
+    endif
     allocate(fcstPetList(num_pes_fcst))
     do j=1, num_pes_fcst
       fcstPetList(j) = j - 1
@@ -937,6 +953,8 @@ module fv3gfs_cap_mod
                                        importFields, rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__,  file=__FILE__)) return
       end if
+!jw
+      call fillExportFields(exportData)
     endif
 
   end subroutine InitializeRealize
@@ -1042,6 +1060,7 @@ module fv3gfs_cap_mod
       call ESMF_ClockGet(clock_fv3, currTime=currTime, timeStep=timeStep, rc=rc)
       call ESMF_TimeGet(currTime,          timestring=import_timestr, rc=rc)
       call ESMF_TimeGet(currTime+timestep, timestring=export_timestr, rc=rc)
+
 !
 !-----------------------------------------------------------------------------
 !*** integration loop
@@ -1066,8 +1085,12 @@ module fv3gfs_cap_mod
 
       if ( cpl ) then
        ! assign import_data called during phase=1
-       call Dump_cplFields(gcomp, importState, exportstate, clock_fv3,    &
-                           cplprint_flag, 'import', import_timestr)
+       if( dbug > 0 .or. cplprint_flag ) then
+         if( mype < num_pes_fcst ) then
+           call diagnose_cplFields(gcomp, importState, exportstate, clock_fv3,    &
+                              cplprint_flag, dbug, 'import', import_timestr)
+         endif
+       endif
       endif
 
       call ESMF_GridCompRun(fcstComp, exportState=fcstState, clock=clock_fv3, &
@@ -1191,8 +1214,12 @@ module fv3gfs_cap_mod
 !
 !jw for coupled, check clock and dump import and export state
     if ( cpl ) then
-       call Dump_cplFields(gcomp, importState, exportstate, clock_fv3,    &
-                           cplprint_flag, 'export', export_timestr) 
+      if( dbug > 0 .or. cplprint_flag ) then
+        if( mype < num_pes_fcst ) then
+          call diagnose_cplFields(gcomp, importState, exportstate, clock_fv3,    &
+                                  cplprint_flag, dbug, 'export', export_timestr) 
+        endif
+     end if
     endif
 
     if (mype==0) print *,'fv3_cap,end integrate,na=',na,' time=',mpi_wtime()- timeri
@@ -1660,7 +1687,6 @@ module fv3gfs_cap_mod
 
 
   end subroutine atmos_model_finalize
-
 !#######################################################################
 !
 !
