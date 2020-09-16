@@ -561,6 +561,41 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+[dust_in]
+  standard_name = fengsha_dust_input
+  long_name = fengsha dust input
+  units = various
+  dimensions = (horizontal_dimension,5)
+  type = real
+  kind = kind_phys
+[emi_in]
+  standard_name = anthropogenic_background_input
+  long_name = anthropogenic background input
+  units = various
+  dimensions = (horizontal_dimension,10)
+  type = real
+  kind = kind_phys
+[emi2_in]
+  standard_name = anthropogenic_background_3d_input
+  long_name = anthropogenic background 3d input
+  units = various
+  dimensions = (horizontal_dimension,vertical_dimension,3)
+  type = real
+  kind = kind_phys
+[fire_GBBEPx]
+  standard_name = emission_fire_GBBEPx
+  long_name = emission fire GBBEPx
+  units = various
+  dimensions = (horizontal_dimension,5)
+  type = real
+  kind = kind_phys
+[fire_MODIS]
+  standard_name = emission_fire_MODIS
+  long_name = emission fire MODIS
+  units = various
+  dimensions = (horizontal_dimension,13)
+  type = real
+  kind = kind_phys
 [sncovr]
   standard_name = surface_snow_area_fraction_over_land
   long_name = surface snow area fraction
@@ -1889,6 +1924,20 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+[buffer_ebu]
+  standard_name = chem_buffer_ebu
+  long_name = chemistry buffer of ebu
+  units = various
+  dimensions = (horizontal_dimension,vertical_dimension_plus_one,1,7)
+  type = real
+  kind = kind_phys
+[faersw_cpl]
+  standard_name = gsdchem_aerosol_optical_properties_for_shortwave_bands_01_14
+  long_name = gsdchem aerosol optical properties for shortwave bands 01-14
+  units = various
+  dimensions = (horizontal_dimension,adjusted_vertical_layer_dimension_for_radiation,14,3)
+  type = real
+  kind = kind_phys
 [nwfa2d]
   standard_name = tendency_of_water_friendly_aerosols_at_surface
   long_name = instantaneous water-friendly sfc aerosol source
@@ -2139,6 +2188,12 @@
 [cplchm]
   standard_name = flag_for_chemistry_coupling
   long_name = flag controlling cplchm collection (default off)
+  units = flag
+  dimensions = ()
+  type = logical
+[cplchm_rad_opt]
+  standard_name = flag_for_chemistry_coupling_radiation_feedback
+  long_name = flag controlling cplchm radiation feedback (default off)
   units = flag
   dimensions = ()
   type = logical
@@ -3861,6 +3916,126 @@
   units = index
   dimensions = ()
   type = integer
+[ntso2]
+  standard_name = index_for_so2
+  long_name = tracer index for so2
+  units = index
+  dimensions = ()
+  type = integer
+[ntsulf]
+  standard_name = index_for_sulf
+  long_name = tracer index for sulf
+  units = index
+  dimensions = ()
+  type = integer
+[ntDMS]
+  standard_name = index_for_DMS
+  long_name = tracer index for DMS
+  units = index
+  dimensions = ()
+  type = integer
+[ntmsa]
+  standard_name = index_for_msa
+  long_name = tracer index for msa
+  units = index
+  dimensions = ()
+  type = integer
+[ntpp25]
+  standard_name = index_for_pp25
+  long_name = tracer index for pp25
+  units = index
+  dimensions = ()
+  type = integer
+[ntbc1]
+  standard_name = index_for_bc1
+  long_name = tracer index for bc1
+  units = index
+  dimensions = ()
+  type = integer
+[ntbc2]
+  standard_name = index_for_bc2
+  long_name = tracer index for bc2
+  units = index
+  dimensions = ()
+  type = integer
+[ntoc1]
+  standard_name = index_for_oc1
+  long_name = tracer index for oc1
+  units = index
+  dimensions = ()
+  type = integer
+[ntoc2]
+  standard_name = index_for_oc2
+  long_name = tracer index for oc2
+  units = index
+  dimensions = ()
+  type = integer
+[ntdust1]
+  standard_name = index_for_dust_1
+  long_name = tracer index for dust 1
+  units = index
+  dimensions = ()
+  type = integer
+[ntdust2]
+  standard_name = index_for_dust_2
+  long_name = tracer index for dust 2
+  units = index
+  dimensions = ()
+  type = integer
+[ntdust3]
+  standard_name = index_for_dust_3
+  long_name = tracer index for dust 3
+  units = index
+  dimensions = ()
+  type = integer
+[ntdust4]
+  standard_name = index_for_dust_4
+  long_name = tracer index for dust 4
+  units = index
+  dimensions = ()
+  type = integer
+[ntdust5]
+  standard_name = index_for_dust_5
+  long_name = tracer index for dust 5
+  units = index
+  dimensions = ()
+  type = integer
+[ntss1]
+  standard_name = index_for_sea_salt_1
+  long_name = tracer index for sea salt 1
+  units = index
+  dimensions = ()
+  type = integer
+[ntss2]
+  standard_name = index_for_sea_salt_2
+  long_name = tracer index for sea salt 2
+  units = index
+  dimensions = ()
+  type = integer
+[ntss3]
+  standard_name = index_for_sea_salt_3
+  long_name = tracer index for sea salt 3
+  units = index
+  dimensions = ()
+  type = integer
+[ntss4]
+  standard_name = index_for_sea_salt_4
+  long_name = tracer index for sea salt 4
+  units = index
+  dimensions = ()
+  type = integer
+[ntss5]
+  standard_name = index_for_sea_salt_5
+  long_name = tracer index for sea salt 5
+  units = index
+  dimensions = ()
+  type = integer
+[ntpp10]
+  standard_name = index_for_pp10
+  long_name = tracer index for pp10
+  units = index
+  dimensions = ()
+  type = integer
 [ntchm]
   standard_name = number_of_chemical_tracers
   long_name = number of chemical tracers
@@ -3934,6 +4109,228 @@
   units = index
   dimensions = ()
   type = integer
+[aer_bc_opt]
+  standard_name = gsd_chem_aer_bc_opt
+  long_name = gsd chem aer bc option not used
+  units = index
+  dimensions = ()
+  type = integer
+[aer_ic_opt]
+  standard_name = gsd_chem_aer_ic_opt
+  long_name = gsd chem aer ic option not used
+  units = index
+  dimensions = ()
+  type = integer
+[aer_ra_feedback]
+  standard_name = gsd_chem_aer_ra_feedback
+  long_name = gsd chem aer radiation feedback option
+  units = index
+  dimensions = ()
+  type = integer
+[aerchem_onoff]
+  standard_name = gsd_chem_aerchem_onoff
+  long_name = gsd chem aerchem onoff option not used
+  units = index
+  dimensions = ()
+  type = integer
+[bio_emiss_opt]
+  standard_name = gsd_chem_bio_emiss_opt
+  long_name = gsd chem bio emiss option not used
+  units = index
+  dimensions = ()
+  type = integer
+[biomass_burn_opt]
+  standard_name = gsd_chem_biomass_burn_opt
+  long_name = gsd chem biomass burning option
+  units = index
+  dimensions = ()
+  type = integer
+[chem_conv_tr]
+  standard_name = gsd_chem_conv_tr
+  long_name = gsd chem convective transport option
+  units = index
+  dimensions = ()
+  type = integer
+[chem_in_opt]
+  standard_name = gsd_chem_in_opt
+  long_name = gsd chem coldstart or restart option
+  units = index
+  dimensions = ()
+  type = integer
+[chem_opt]
+  standard_name = gsd_chem_option
+  long_name = gsd chem option
+  units = index
+  dimensions = ()
+  type = integer
+[chemdt]
+  standard_name = gsd_chem_dt
+  long_name = gsd chem dt
+  units = index
+  dimensions = ()
+  type = integer
+[cldchem_onoff]
+  standard_name = gsd_chem_cldchem_onoff
+  long_name = gsd chem cldchem onoff option not used
+  units = index
+  dimensions = ()
+  type = integer
+[dmsemis_opt]
+  standard_name = gsd_chem_dms_emis_opt
+  long_name = gsd chem dms emission option
+  units = index
+  dimensions = ()
+  type = integer
+[dust_opt]
+  standard_name = gsd_chem_dust_opt
+  long_name = gsd chem dust chem option
+  units = index
+  dimensions = ()
+  type = integer
+[dust_alpha]
+  standard_name = gsd_chem_dust_alpha
+  long_name = fengsha dust alpha
+  units = none
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[dust_gamma]
+  standard_name = gsd_chem_dust_gamma
+  long_name = fengsha dust gamma
+  units = none
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[dust_calcdrag]
+  standard_name = gsd_chem_dust_calcdrag
+  long_name = gsd chem dust calcdrag
+  units = index
+  dimensions = ()
+  type = integer
+[dust_uthres]
+  standard_name = gsd_chem_dust_uthres
+  long_name = fengsha dust velocity threshold
+  units = none
+  dimensions = (13)
+  type = real
+  kind = kind_phys
+[emiss_inpt_opt]
+  standard_name = gsd_chem_emiss_inpt_opt
+  long_name = gsd chem emiss inpt opt
+  units = index
+  dimensions = ()
+  type = integer
+[emiss_opt]
+  standard_name = gsd_chem_emiss_opt
+  long_name = gsd chem emiss option not used
+  units = index
+  dimensions = ()
+  type = integer
+[gas_bc_opt]
+  standard_name = gsd_chem_gas_bc_opt
+  long_name = gsd chem gas bc option not used
+  units = index
+  dimensions = ()
+  type = integer
+[gas_ic_opt]
+  standard_name = gsd_chem_gas_ic_opt
+  long_name = gsd chem gas ic option not used
+  units = index
+  dimensions = ()
+  type = integer
+[gaschem_onoff]
+  standard_name = gsd_chem_gaschem_onoff
+  long_name = gsd chem gsdchem onoff option not used
+  units = index
+  dimensions = ()
+  type = integer
+[kemit]
+  standard_name = k_emit_dry_dep
+  long_name = gsd chem k emit dimention for dry deoposition
+  units = index
+  dimensions = ()
+  type = integer
+[phot_opt]
+  standard_name = gsd_chem_phot_opt
+  long_name = gsd chem phot option not used
+  units = index
+  dimensions = ()
+  type = integer
+[photdt]
+  standard_name = gsd_chem_photdt
+  long_name = gsd chem photdt
+  units = index
+  dimensions = ()
+  type = integer
+[plumerisefire_frq]
+  standard_name = gsd_chem_plumerisefire_frq
+  long_name = gsd chem plumerise fire frequency
+  units = index
+  dimensions = ()
+  type = integer
+[plumerise_flag]
+  standard_name = gsd_chem_plumerise_flag
+  long_name = gsd chem plumerise flag
+  units = index
+  dimensions = ()
+  type = integer
+[seas_opt]
+  standard_name = gsd_chem_sea_salt_opt
+  long_name = gsd chem sea salt emission option
+  units = index
+  dimensions = ()
+  type = integer
+[seas_emis_scheme]
+  standard_name = gsd_chem_seas_emis_scheme
+  long_name = gsd chem seas emis scheme not used
+  units = index
+  dimensions = ()
+  type = integer
+[seas_emis_scale]
+  standard_name = gsd_chem_seas_emis_scale
+  long_name = gsd chem seas emis scale
+  units = none
+  dimensions = (5)
+  type = real
+  kind = kind_phys
+[vertmix_onoff]
+  standard_name = gsd_chem_vertmix_onoff
+  long_name = gsd chem vertmix onoff option not used
+  units = index
+  dimensions = ()
+  type = integer
+[gfdlmp_onoff]
+  standard_name = gsd_chem_gfdlmp_onoff
+  long_name = gsd chem gfdlmp onoff option not used
+  units = index
+  dimensions = ()
+  type = integer
+[aer_ra_frq]
+  standard_name = gsd_chem_aer_ra_frq
+  long_name = gsd chem aer radiation frequency
+  units = index
+  dimensions = ()
+  type = integer
+[wetdep_ls_opt]
+  standard_name = gsd_chem_wetdep_ls_opt
+  long_name = gsd chem large scale wet deposition option
+  units = index
+  dimensions = ()
+  type = integer
+[restart_inname]
+  standard_name = gsd_chem_restart_input_name
+  long_name = gsd chem restart input directory name
+  units = none
+  dimensions = ()
+  type = character
+  kind = len=512
+[restart_outname]
+  standard_name = gsd_chem_restart_output_name
+  long_name = gsd chem restart output directory name
+  units = none
+  dimensions = ()
+  type = character
+  kind = len=512
 [ncnvcld3d]
   standard_name = number_of_convective_3d_cloud_fields
   long_name = number of convective 3d clouds fields
