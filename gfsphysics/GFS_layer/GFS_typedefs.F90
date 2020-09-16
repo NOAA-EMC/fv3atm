@@ -1055,6 +1055,7 @@ module GFS_typedefs
 !--- tracer handling
     character(len=32), pointer :: tracer_names(:) !< array of initialized tracers from dynamic core
     integer              :: ntrac           !< number of tracers
+    character(len=20), pointer :: fscav_aero(:)   !< aerosol scavenging factors
 #ifdef CCPP
     integer              :: ntracp1         !< number of tracers plus one
     integer              :: nqrimef         !< tracer index for mass weighted rime factor
@@ -1080,7 +1081,7 @@ module GFS_typedefs
     integer              :: ntchm           !< number of chemical tracers
     integer              :: ntchs           !< tracer index for first chemical tracer
     logical, pointer     :: ntdiag(:) => null() !< array to control diagnostics for chemical tracers
-    real(kind=kind_phys), pointer :: fscav(:)  => null() !< array of aerosol scavenging coefficients
+    real(kind=kind_phys), pointer :: fscav_sas(:)  => null() !< coefficients for aerosol scavenging in samfdeep/samfshal
 
     !--- derived totals for phy_f*d
     integer              :: ntot2d          !< total number of variables for phyf2d
@@ -1773,7 +1774,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: fm10_ocean(:)      => null()  !<
     real (kind=kind_phys)               :: frain                         !<
     real (kind=kind_phys), pointer      :: frland(:)          => null()  !<
-    real (kind=kind_phys), pointer      :: fscav(:)           => null()  !<
+    real (kind=kind_phys), pointer      :: fscav_cs(:)        => null()  !< fraction of tracer scavenged in cs_conv
     real (kind=kind_phys), pointer      :: fswtr(:)           => null()  !<
     real (kind=kind_phys), pointer      :: gabsbdlw(:)        => null()  !<
     real (kind=kind_phys), pointer      :: gabsbdlw_ice(:)    => null()  !<
@@ -4093,20 +4094,20 @@ module GFS_typedefs
     endif
 
     ! -- setup aerosol scavenging factors
-    allocate(Model%fscav(Model%ntchm))
+    allocate(Model%fscav_sas(Model%ntchm))
     if (Model%ntchm > 0) then
       ! -- initialize to default
-      Model%fscav = 0.6_kind_phys
+      Model%fscav_sas = 0.6_kind_phys
       n = get_tracer_index(Model%tracer_names, 'seas1', Model%me, Model%master, Model%debug) - Model%ntchs + 1
-      if (n > 0) Model%fscav(n) = 1.0_kind_phys
+      if (n > 0) Model%fscav_sas(n) = 1.0_kind_phys
       n = get_tracer_index(Model%tracer_names, 'seas2', Model%me, Model%master, Model%debug) - Model%ntchs + 1
-      if (n > 0) Model%fscav(n) = 1.0_kind_phys
+      if (n > 0) Model%fscav_sas(n) = 1.0_kind_phys
       n = get_tracer_index(Model%tracer_names, 'seas3', Model%me, Model%master, Model%debug) - Model%ntchs + 1
-      if (n > 0) Model%fscav(n) = 1.0_kind_phys
+      if (n > 0) Model%fscav_sas(n) = 1.0_kind_phys
       n = get_tracer_index(Model%tracer_names, 'seas4', Model%me, Model%master, Model%debug) - Model%ntchs + 1
-      if (n > 0) Model%fscav(n) = 1.0_kind_phys
+      if (n > 0) Model%fscav_sas(n) = 1.0_kind_phys
       n = get_tracer_index(Model%tracer_names, 'seas5', Model%me, Model%master, Model%debug) - Model%ntchs + 1
-      if (n > 0) Model%fscav(n) = 1.0_kind_phys
+      if (n > 0) Model%fscav_sas(n) = 1.0_kind_phys
       ! -- read factors from namelist
       do i = 1, size(fscav_aero)
         j = index(fscav_aero(i),":")
@@ -4114,12 +4115,12 @@ module GFS_typedefs
           read(fscav_aero(i)(j+1:), *, iostat=ios) tem
           if (ios /= 0) cycle
           if (adjustl(fscav_aero(i)(:j-1)) == "*") then
-            Model%fscav = tem
+            Model%fscav_sas = tem
             exit
           else
             n = get_tracer_index(Model%tracer_names, adjustl(fscav_aero(i)(:j-1)), Model%me, Model%master, Model%debug) &
                 - Model%ntchs + 1
-            if (n > 0) Model%fscav(n) = tem
+            if (n > 0) Model%fscav_sas(n) = tem
           endif
         endif
       enddo
@@ -5109,7 +5110,8 @@ module GFS_typedefs
       print *, ' ntia              : ', Model%ntia
       print *, ' ntchm             : ', Model%ntchm
       print *, ' ntchs             : ', Model%ntchs
-      print *, ' fscav             : ', Model%fscav
+      print *, ' fscav_aero        : ', Model%fscav_aero
+      print *, ' fscav_sas         : ', Model%fscav_sas
       print *, ' '
       print *, 'derived totals for phy_f*d'
       print *, ' ntot2d            : ', Model%ntot2d
@@ -6254,7 +6256,7 @@ module GFS_typedefs
     allocate (Interstitial%fm10_land       (IM))
     allocate (Interstitial%fm10_ocean      (IM))
     allocate (Interstitial%frland          (IM))
-    allocate (Interstitial%fscav           (Interstitial%nscav))
+    allocate (Interstitial%fscav_cs        (Interstitial%nscav))
     allocate (Interstitial%fswtr           (Interstitial%nscav))
     allocate (Interstitial%gabsbdlw        (IM))
     allocate (Interstitial%gabsbdlw_ice    (IM))
@@ -6891,7 +6893,7 @@ module GFS_typedefs
     Interstitial%fm10_land       = huge
     Interstitial%fm10_ocean      = huge
     Interstitial%frland          = clear_val
-    Interstitial%fscav           = clear_val
+    Interstitial%fscav_cs        = clear_val
     Interstitial%fswtr           = clear_val
     Interstitial%gabsbdlw        = clear_val
     Interstitial%gabsbdlw_ice    = clear_val
@@ -7217,7 +7219,7 @@ module GFS_typedefs
     write (0,*) 'sum(Interstitial%fm10_ocean      ) = ', sum(Interstitial%fm10_ocean      )
     write (0,*) 'Interstitial%frain                 = ', Interstitial%frain
     write (0,*) 'sum(Interstitial%frland          ) = ', sum(Interstitial%frland          )
-    write (0,*) 'sum(Interstitial%fscav           ) = ', sum(Interstitial%fscav           )
+    write (0,*) 'sum(Interstitial%fscav_cs        ) = ', sum(Interstitial%fscav_cs        )
     write (0,*) 'sum(Interstitial%fswtr           ) = ', sum(Interstitial%fswtr           )
     write (0,*) 'sum(Interstitial%gabsbdlw        ) = ', sum(Interstitial%gabsbdlw        )
     write (0,*) 'sum(Interstitial%gabsbdlw_ice    ) = ', sum(Interstitial%gabsbdlw_ice    )

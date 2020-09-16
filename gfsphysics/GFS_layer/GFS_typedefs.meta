@@ -3702,7 +3702,7 @@
 [rho_h2o]
   standard_name = density_of_fresh_water
   long_name = density of fresh water
-  units = ???
+  units = kg m-3
   dimensions = ()
   type = real
   kind = kind_phys
@@ -4035,7 +4035,7 @@
   units = flag
   dimensions = (number_of_chemical_tracers)
   type = logical
-[fscav]
+[fscav_sas]
   standard_name = coefficients_for_aerosol_scavenging
   long_name = array of aerosol scavenging coefficients
   units = none
@@ -4602,23 +4602,23 @@
   type = real
   kind = kind_phys
 [in_nm]
-  standard_name = in_number_concentration
-  long_name = IN number concentration
-  units = kg-1?
+  standard_name = ice_nucleation_number
+  long_name = ice nucleation number in MG MP
+  units = kg-1
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
 [ccn_nm]
-  standard_name = ccn_number_concentration
-  long_name = CCN number concentration
-  units = kg-1?
+  standard_name = tendency_of_ccn_activated_number
+  long_name = tendency of ccn activated number
+  units = kg-1 s-1
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
 [aer_nm]
   standard_name = aerosol_number_concentration_from_gocart_aerosol_climatology
   long_name = GOCART aerosol climatology number concentration
-  units = kg-1?
+  units = kg-1
   dimensions = (horizontal_dimension,vertical_dimension,number_of_aerosol_tracers_MG)
   type = real
   kind = kind_phys
@@ -7563,7 +7563,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
-[fscav]
+[fscav_cs]
   standard_name = fraction_of_tracer_scavenged
   long_name = fraction of the tracer (aerosols) that is scavenged by convection
   units = km-1
