@@ -10,3 +10,5 @@
 	path = ccpp/physics
 	url = https://github.com/NCAR/ccpp-physics
 	branch = release/public-v4
+	url = https://github.com/climbfuji/ccpp-physics
+	branch = fix_unicode_errors
