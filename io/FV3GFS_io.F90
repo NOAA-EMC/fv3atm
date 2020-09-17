@@ -650,6 +650,16 @@ module FV3GFS_io_mod
     deallocate(oro_name2, oro_var2)
     call free_restart_type(Oro_restart)
 
+
+    ! Temporary line
+    if (Model%me==0) then
+       do nb = 1, ATM_block%nblks
+          write (71,*) Sfcprop(nb)%hprime(:,14)
+          write (73,*) Sfcprop(nb)%hprime(:,13)
+       end do
+    end if
+
+
 #ifdef CCPP
     !--- Modify/read-in additional orographic static fields for GSL drag suite 
     if (Model%gwd_opt==3 .or. Model%gwd_opt==33 .or.                 &
@@ -733,6 +743,16 @@ module FV3GFS_io_mod
       call free_restart_type(Oro_ss_restart)
     end if
 #endif
+
+    ! Temporary line
+    if (Model%me==0) then
+       do nb = 1, ATM_block%nblks
+          write (72,*) Sfcprop(nb)%hprime(:,14)
+          write (74,*) Sfcprop(nb)%hprime(:,13)
+       end do
+    end if
+
+
 
     !--- SURFACE FILE
     if (.not. allocated(sfc_name2)) then
