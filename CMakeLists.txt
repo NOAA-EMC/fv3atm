@@ -1,5 +1,5 @@
 if(CCPP)
-  add_definitions(-DCCPP)
+    add_definitions(-DCCPP)
 endif()
 
 add_subdirectory(cpl)
@@ -7,14 +7,15 @@ add_subdirectory(gfsphysics)
 add_subdirectory(ipd)
 add_subdirectory(io)
 
-# fv3core library
-
+###############################################################################
+### fv3dycore
+###############################################################################
 if(NOT CCPP)
-set(FAST_PHYSICS_SRCS_F90 atmos_cubed_sphere/model/fv_cmp.F90)
+    set(FAST_PHYSICS_SRCS_F90 atmos_cubed_sphere/model/fv_cmp.F90)
 endif()
 
 add_library(
-    fv3core
+    fv3dycore
 
     atmos_cubed_sphere/model/a2b_edge.F90
     atmos_cubed_sphere/model/multi_gases.F90
@@ -61,37 +62,46 @@ add_library(
 set_property(SOURCE atmos_cubed_sphere/model/nh_utils.F90 APPEND_STRING PROPERTY COMPILE_FLAGS "${FAST}")
 set_property(SOURCE atmos_cubed_sphere/model/fv_mapz.F90  APPEND_STRING PROPERTY COMPILE_FLAGS "${FAST}")
 
-target_link_libraries(fv3core PRIVATE fms)
-target_link_libraries(fv3core PRIVATE gfsphysics)
-target_link_libraries(fv3core PRIVATE ipd)
+set_target_properties(fv3dycore PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mod)
+target_include_directories(fv3dycore PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/mod>)
 
-target_include_directories(fv3core PRIVATE ${ESMF_MOD})
+target_link_libraries(fv3dycore PRIVATE fms)
+target_link_libraries(fv3dycore PRIVATE gfsphysics)
+target_link_libraries(fv3dycore PRIVATE ipd)
+target_link_libraries(fv3dycore PRIVATE esmf)
 
-# end of fv3core
+target_include_directories(fv3dycore PRIVATE atmos_cubed_sphere ${ESMF_MOD})
 
 ###############################################################################
 ### ccpp
 ###############################################################################
 if(CCPP)
-  add_subdirectory(ccpp)
-  add_subdirectory(ccpp/driver)
-  add_dependencies(gfsphysics ccpp ccppphys)
-  add_dependencies(ccppdriver ccpp ccppphys)
-  add_dependencies(ccppphys ccpp)
+    add_subdirectory(ccpp)
+    add_subdirectory(ccpp/driver)
 
-  target_include_directories(fv3core PRIVATE ${CMAKE_BINARY_DIR}/FV3/ccpp/framework/src)
-  target_include_directories(fv3core PRIVATE ${CMAKE_BINARY_DIR}/FV3/ccpp/driver)
+    add_dependencies(gfsphysics ccpp ccppphys)
+    add_dependencies(ccppdriver ccpp ccppphys)
+    add_dependencies(ccppphys ccpp)
+
+    target_include_directories(fv3dycore PRIVATE ${CMAKE_BINARY_DIR}/FV3/ccpp/framework/src)
+    target_include_directories(fv3dycore PRIVATE ${CMAKE_BINARY_DIR}/FV3/ccpp/driver)
+
+    target_link_libraries(ccppphys PRIVATE sp::sp_d)
+    target_link_libraries(ccppphys PRIVATE w3nco::w3nco_d)
 endif()
 
-set_target_properties(fv3core PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mod)
-target_include_directories(fv3core PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/mod)
-
+###############################################################################
+### stochastic_physics
+###############################################################################
 # When specifying an out-of-tree source a binary directory must be explicitly specified.
 #add_subdirectory(../stochastic_physics stochastic_physics)
 add_subdirectory(stochastic_physics)
 
+###############################################################################
+### fv3atm
+###############################################################################
 add_library(
-    fv3cap
+    fv3atm
 
     atmos_model.F90
     fv3_cap.F90
@@ -100,21 +110,46 @@ add_library(
     time_utils.F90
 )
 
+set_target_properties(fv3atm PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mod)
+target_include_directories(fv3atm PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/mod>)
+
 if(CCPP)
-target_include_directories(fv3cap PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/ccpp/driver/mod)
-add_dependencies(fv3cap ccppdriver ccppphys)
+    target_include_directories(fv3atm PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/ccpp/driver/mod)
+    set(CCPP_LIBRARIES ccppdriver ccppphys ccpp)
+    add_dependencies(fv3atm ccppdriver ccppphys ccpp)
+    target_link_libraries(fv3atm PUBLIC ccppdriver ccppphys ccpp)
 endif()
-target_include_directories(fv3cap PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/stochastic_physics)
-target_compile_definitions(fv3cap PRIVATE -DESMF_VERSION_MAJOR=${ESMF_VERSION_MAJOR})
-target_include_directories(fv3cap PRIVATE ${ESMF_MOD})
+target_include_directories(fv3atm PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/stochastic_physics)
+target_compile_definitions(fv3atm PRIVATE -DESMF_VERSION_MAJOR=${ESMF_VERSION_MAJOR})
 
-target_link_libraries(fv3cap PRIVATE fms)
-target_link_libraries(fv3cap PRIVATE fv3cpl)
-target_link_libraries(fv3cap PRIVATE gfsphysics)
-target_link_libraries(fv3cap PRIVATE ipd)
-target_link_libraries(fv3cap PRIVATE io)
-target_link_libraries(fv3cap PRIVATE fv3core)
-target_link_libraries(fv3cap PRIVATE stochastic_physics)
+target_link_libraries(fv3atm PUBLIC fms)
+target_link_libraries(fv3atm PUBLIC cpl)
+target_link_libraries(fv3atm PUBLIC gfsphysics)
+target_link_libraries(fv3atm PUBLIC ipd)
+target_link_libraries(fv3atm PUBLIC io)
+target_link_libraries(fv3atm PUBLIC fv3dycore)
+target_link_libraries(fv3atm PUBLIC stochastic_physics)
+target_link_libraries(fv3atm PUBLIC stochastic_physics_wrapper)
 
-set_target_properties(fv3cap PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mod)
-target_include_directories(fv3cap PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/mod)
+target_link_libraries(fv3atm PUBLIC
+                      nemsio::nemsio w3emc::w3emc_d w3nco::w3nco_d sp::sp_d bacio::bacio_4)
+if(INLINE_POST)
+  target_link_libraries(fv3atm PUBLIC nceppost::nceppost)
+endif()
+
+target_link_libraries(fv3atm PUBLIC esmf)
+
+###############################################################################
+### Install
+###############################################################################
+install(
+  TARGETS fv3atm fv3dycore io ipd gfsphysics ${CCPP_LIBRARIES} cpl stochastic_physics stochastic_physics_wrapper
+  EXPORT fv3atm-config
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib)
+install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mod DESTINATION ${CMAKE_INSTALL_PREFIX})
+
+install(EXPORT fv3atm-config
+  DESTINATION lib/cmake
+)
+

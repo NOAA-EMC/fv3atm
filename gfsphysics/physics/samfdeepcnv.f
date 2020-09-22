@@ -217,7 +217,7 @@ c  physical parameters
       parameter(clamd=0.03,tkemx=0.65,tkemn=0.05)
       parameter(dtke=tkemx-tkemn)
       parameter(dbeta=0.1)
-      parameter(cthk=200.,dthk=25.)
+      parameter(cthk=150.,dthk=25.)
       parameter(cinpcrmx=180.,cinpcrmn=120.)
 !     parameter(cinacrmx=-120.,cinacrmn=-120.)
       parameter(cinacrmx=-120.,cinacrmn=-80.)
@@ -1191,9 +1191,7 @@ c
 !
           k = kbcon(i)
           dp = 1000. * del(i,k)
-          xmbmax(i) = dp / (2. * g * dt2)
-!
-!         xmbmax(i) = dp / (g * dt2)
+          xmbmax(i) = dp / (g * dt2)
 !
 !         mbdt(i) = 0.1 * dp / g
 !
