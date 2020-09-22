@@ -5,7 +5,7 @@ module module_nst_water_prop
   private
   public :: rhocoef,density,sw_rad,sw_rad_aw,sw_rad_sum,sw_rad_upper,sw_rad_upper_aw,sw_rad_skin,grv,solar_time_from_julian,compjd, &
             sw_ps_9b,sw_ps_9b_aw,get_dtzm_point,get_dtzm_2d
-      
+
   !
   interface sw_ps_9b
      module procedure sw_ps_9b
@@ -37,7 +37,7 @@ contains
   subroutine rhocoef(t, s, rhoref, alpha, beta)
     ! ------------------------------------------------------
 
-    !  compute thermal expansion coefficient (alpha) 
+    !  compute thermal expansion coefficient (alpha)
     !  and saline contraction coefficient (beta) using 
     !  the international equation of state of sea water 
     !  (1980). ref: pond and pickard, introduction to 
@@ -45,26 +45,26 @@ contains
     !  note: compression effects are not included
 
     implicit none
-    real(kind=kind_phys), intent(in)  :: t, s, rhoref 
-    real(kind=kind_phys), intent(out) :: alpha, beta  
+    real(kind=kind_phys), intent(in)  :: t, s, rhoref
+    real(kind=kind_phys), intent(out) :: alpha, beta
     real(kind=kind_phys) :: tc
 
     tc = t - t0k
 
-    alpha =                                                        & 
-         6.793952e-2                                              & 
-         - 2.0 * 9.095290e-3 * tc     +  3.0 * 1.001685e-4 * tc**2  & 
-         - 4.0 * 1.120083e-6 * tc**3  +  5.0 * 6.536332e-9 * tc**4  & 
-         - 4.0899e-3 * s                                            & 
-         + 2.0 * 7.6438e-5 * tc * s  -  3.0 * 8.2467e-7 * tc**2 * s & 
-         + 4.0 * 5.3875e-9 * tc**3 * s                              & 
+    alpha =                                                         &
+         6.793952e-2                                                &
+         - 2.0 * 9.095290e-3 * tc     +  3.0 * 1.001685e-4 * tc**2  &
+         - 4.0 * 1.120083e-6 * tc**3  +  5.0 * 6.536332e-9 * tc**4  &
+         - 4.0899e-3 * s                                            &
+         + 2.0 * 7.6438e-5 * tc * s  -  3.0 * 8.2467e-7 * tc**2 * s &
+         + 4.0 * 5.3875e-9 * tc**3 * s                              &
          + 1.0227e-4 * s**1.5 -  2.0 * 1.6546e-6 * tc * s**1.5
 
     ! note: rhoref - specify 
     !
     alpha =  -alpha/rhoref
 
-    beta  =                                             &
+    beta  =                                              &
          8.24493e-1          -  4.0899e-3 * tc           &
          + 7.6438e-5 * tc**2 -  8.2467e-7 * tc**3        &
          + 5.3875e-9 * tc**4 -  1.5 * 5.72466e-3 * s**.5 &
@@ -84,13 +84,13 @@ contains
     real(kind=kind_phys), intent(in)  :: t     !unit, k
     real(kind=kind_phys), intent(in)  :: s     !unit, 1/1000
     ! output
-    real(kind=kind_phys), intent(out) :: rho   !unit, kg/m^3 
+    real(kind=kind_phys), intent(out) :: rho   !unit, kg/m^3
     ! local
     real(kind=kind_phys) :: tc
 
-    ! compute density using the international equation 
-    ! of state of sea water 1980, (pond and pickard, 
-    ! introduction to dynamical oceanography, pp310). 
+    ! compute density using the international equation
+    ! of state of sea water 1980, (pond and pickard,
+    ! introduction to dynamical oceanography, pp310).
     ! compression effects are not included
 
     rho = 0.0
@@ -114,7 +114,7 @@ contains
   !
   elemental subroutine sw_ps_9b(z,fxp)
     !
-    ! fraction of the solar radiation absorbed by the ocean at the depth z 
+    ! fraction of the solar radiation absorbed by the ocean at the depth z
     ! following paulson and simpson, 1981
     !
     ! input:
@@ -146,7 +146,7 @@ contains
   !
   elemental subroutine sw_ps_9b_aw(z,aw)
     !
-    ! d(fw)/d(z) for 9-band 
+    ! d(fw)/d(z) for 9-band
     !
     ! input:
     ! z:       depth (m)
@@ -297,8 +297,8 @@ contains
   elemental subroutine sw_wick_v1(f_sol_0,z,df_sol_z)
     !
     ! solar radiation absorbed by the ocean at the depth z (zeng and beljaars, 2005, p.5)
-    ! 
-    ! input: 
+    !
+    ! input:
     ! f_sol_0: solar radiation at the ocean surface (w/m^2)
     ! z:       depth (m)
     !
@@ -324,7 +324,7 @@ contains
     ! solar radiation absorbed by the ocean at the depth z (fairall et all, 1996, p. 1301)
     ! following soloviev, 1982
     ! 
-    ! input: 
+    ! input:
     ! f_sol_0: solar radiation at the ocean surface (w/m^2)
     ! z:       depth (m)
     !
@@ -353,8 +353,8 @@ contains
     !
     ! solar radiation absorbed by the ocean at the depth z (fairall et all, 1996, p. 1301)
     ! following soloviev, 1982
-    ! 
-    ! input: 
+    !
+    ! input:
     ! f_sol_0: solar radiation at the ocean surface (w/m^2)
     ! z:       depth (m)
     !
@@ -367,8 +367,8 @@ contains
     !
     if(z>0) then
        df_sol_z=f_sol_0*(1.0 &
-            -(0.28*0.014*(1.-exp(-z/0.014)) &
-            +0.27*0.357*(1.-exp(-z/0.357)) &        
+            -(0.28*0.014*(1.-exp(-z/0.014))  &
+            +0.27*0.357*(1.-exp(-z/0.357))   &
             +.45*12.82*(1.-exp(-z/12.82)))/z &
             )
     else
@@ -440,7 +440,7 @@ function grv(lat)
   c3=0.0000001262
   c4=0.0000000007
   pi=3.141593
-                                                                                                                                                             
+
   phi=lat*pi/180
   x=sin(phi)
   grv=gamma*(1+(c1*x**2)+(c2*x**4)+(c3*x**6)+(c4*x**8))
@@ -490,7 +490,7 @@ end subroutine solar_time_from_julian
 !     jmnth    - month
 !     jday     - day
 !     jhr      - hour
-!     jmn      - minutes 
+!     jmn      - minutes
 !   output argument list:
 !     jd       - julian day.
 !     fjd      - fraction of the julian day.
@@ -642,66 +642,56 @@ end subroutine solar_time_from_julian
   real (kind=kind_phys), dimension(nx,ny), intent(out) :: dtm
 ! Local variables
   integer :: i,j
-  real (kind=kind_phys), dimension(nx,ny) :: dtw,dtc
-  real (kind=kind_phys) :: dt_warm
+  real (kind=kind_phys) :: dt_warm, dtw, dtc, xzi
+  real (kind=kind_phys), parameter :: zero=0.0, half=0.5, one=1.0
 
 
-!$omp parallel do private(j,i)
+!$omp parallel do private(j,i,dtw,dtc,xzi)
   do j = 1, ny
     do i= 1, nx
-!
-!     initialize dtw & dtc as zeros
-!
-      dtw(i,j) = 0.0
-      dtc(i,j) = 0.0
-!     if ( wet(i,j) .and. .not.icy(i,j) ) then
+
+      dtm(i,j) = zero      ! initialize dtm
+
       if ( wet(i,j) ) then
 !
 !       get the mean warming in the range of z=z1 to z=z2
 !
-        if ( xt(i,j) > 0.0 ) then
-          dt_warm = (xt(i,j)+xt(i,j))/xz(i,j)      ! Tw(0)
-          if ( z1 < z2) then
+        dtw = zero
+        if ( xt(i,j) > zero ) then
+          xzi = one / xz(i,j)
+          dt_warm = (xt(i,j)+xt(i,j)) * xzi      ! Tw(0)
+          if (z1 < z2) then
             if ( z2 < xz(i,j) ) then
-              dtw(i,j) = dt_warm*(1.0-(z1+z2)/(xz(i,j)+xz(i,j)))
-            elseif ( z1 < xz(i,j) .and. z2 >= xz(i,j) ) then
-              dtw(i,j) = 0.5*(1.0-z1/xz(i,j))*dt_warm*(xz(i,j)-z1)/(z2-z1)
+              dtw = dt_warm * (one-half*(z1+z2)*xzi)
+            elseif (z1 < xz(i,j) .and. z2 >= xz(i,j) ) then
+              dtw = half*(one-z1*xzi)*dt_warm*(xz(i,j)-z1)/(z2-z1)
             endif
-          elseif ( z1 == z2 ) then
-            if ( z1 < xz(i,j) ) then
-              dtw(i,j) = dt_warm*(1.0-z1/xz(i,j))
+          elseif (z1 == z2 ) then
+            if (z1 < xz(i,j) ) then
+              dtw = dt_warm * (one-z1*xzi)
             endif
           endif
         endif
 !
 !       get the mean cooling in the range of z=0 to z=zsea
 !
-        if ( zc(i,j) > 0.0 ) then
+        dtc = zero
+        if ( zc(i,j) > zero ) then
           if ( z1 < z2) then
             if ( z2 < zc(i,j) ) then
-              dtc(i,j) = dt_cool(i,j)*(1.0-(z1+z2)/(zc(i,j)+zc(i,j)))
+              dtc = dt_cool(i,j) * (one-(z1+z2)/(zc(i,j)+zc(i,j)))
             elseif ( z1 < zc(i,j) .and. z2 >= zc(i,j) ) then
-              dtc(i,j) = 0.5*(1.0-z1/zc(i,j))*dt_cool(i,j)*(zc(i,j)-z1)/(z2-z1)
+              dtc = half*(one-z1/zc(i,j))*dt_cool(i,j)*(zc(i,j)-z1)/(z2-z1)
             endif
           elseif ( z1 == z2 ) then
             if ( z1 < zc(i,j) ) then
-              dtc(i,j) = dt_cool(i,j)*(1.0-z1/zc(i,j))
+              dtc = dt_cool(i,j) * (one-z1/zc(i,j))
             endif
           endif
         endif
-      endif        ! if ( wet(i,j) .and. .not.icy(i,j) ) then
-    enddo
-  enddo
-!
 ! get the mean T departure from Tf in the range of z=z1 to z=z2
-
-!$omp parallel do private(j,i)
-  do j = 1, ny
-    do i= 1, nx
-!     if ( wet(i,j) .and. .not.icy(i,j)) then
-      if ( wet(i,j) ) then
-        dtm(i,j) = dtw(i,j) - dtc(i,j)
-      endif
+        dtm(i,j) = dtw - dtc
+      endif        ! if ( wet(i,j)) then
     enddo
   enddo
 
