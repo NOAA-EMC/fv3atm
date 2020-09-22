@@ -11,21 +11,24 @@ else
         $(error "../conf/configure.fv3 file is missing. Run ./configure")
     endif
     $(info )
-    $(info Build standalone FV3 gfsphysics ...)
+    $(info Build standalone FV3 io ...)
     $(info )
 endif
+$(info $$ESMF_INC is [${ESMF_INC}])
 
-LIBRARY  = libipd.a
+LIBRARY  = libstochastic_physics_wrapper.a
 
-FFLAGS   += -I$(FMS_DIR) -I../gfsphysics
+FFLAGS   += -I$(FMS_DIR) -I ../../stochastic_physics -I../ccpp/physics -I../ccpp/build/physics -I../atmos_cubed_sphere
 
-CPPDEFS += -DNEW_TAUCTMAX -DSMALL_PE -DNEMS_GSM -DINTERNAL_FILE_NML
+SRCS_f   =
 
-SRCS_F90 = \
-	   ./IPD_driver.F90 \
-	   ./IPD_typedefs.F90
+SRCS_f90 = 
 
-SRCS_c   =
+SRCS_F   =
+
+SRCS_F90 = stochastic_physics_wrapper.F90
+
+SRCS_c   = 
 
 DEPEND_FILES = $(SRCS_f) $(SRCS_f90) $(SRCS_F) $(SRCS_F90)
 
@@ -44,15 +47,8 @@ $(LIBRARY): $(OBJS)
 
 .PHONY: clean
 clean:
-	@echo "Cleaning ipd  ... "
+	@echo "Cleaning io ... "
 	@echo
-	$(RM) -f $(LIBRARY) *__genmod.f90 *.o */*.o *.mod *.i90 *.lst *.i depend
+	$(RM) -f $(LIBRARY) *__genmod.f90 *.o *.mod *.i90 *.lst *.i
 
-MKDEPENDS = ../mkDepends.pl
 include ../conf/make.rules
-
-# do not include 'depend' file if the target contains string 'clean'
-ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))
-   -include depend
-endif
-
