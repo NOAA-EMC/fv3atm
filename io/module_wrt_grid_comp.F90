@@ -1631,6 +1631,23 @@
                         ,' at Fcst ',NF_HOURS,':',NF_MINUTES
               endif
 
+            else if (trim(output_file(nbdl)) == 'netcdf_parallel') then
+
+#ifdef NO_PARALLEL_NETCDF
+              rc = ESMF_RC_NOT_IMPL
+              print *,'netcdf_parallel not available on this machine'
+              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+              line=__LINE__, file=__FILE__)) return
+#endif
+              wbeg = MPI_Wtime()
+              call write_netcdf_parallel(file_bundle,wrt_int_state%wrtFB(nbdl), &
+                                         trim(filename), wrt_mpi_comm,wrt_int_state%mype,imo,jmo,&
+                                         ichunk2d,jchunk2d,ichunk3d,jchunk3d,kchunk3d,rc)
+              wend = MPI_Wtime()
+              if (lprnt) then
+                write(*,'(A,F10.5,A,I4.2,A,I2.2)')' parallel netcdf      Write Time is ',wend-wbeg  &
+                        ,' at Fcst ',NF_HOURS,':',NF_MINUTES
+              endif
             else ! unknown output_file
 
               call ESMF_LogWrite("wrt_run: Unknown output_file",ESMF_LOGMSG_ERROR,rc=RC)
