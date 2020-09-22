@@ -173,7 +173,6 @@ SCHEME_FILES_DEPENDENCIES = [
     'FV3/ccpp/physics/physics/set_soilveg_ruc.F90',
     'FV3/ccpp/physics/physics/module_soil_pre.F90',
     # GSD chemistry subroutines 
-    'FV3/ccpp/physics/gsdchem/gsd_chem_prep.F90',
     'FV3/ccpp/physics/gsdchem/gsd_chem_config.F90',
     'FV3/ccpp/physics/gsdchem/seas_data_mod.F90',
     'FV3/ccpp/physics/gsdchem/seas_ngac_mod.F90',
@@ -332,7 +331,17 @@ SCHEME_FILES = [
     'FV3/ccpp/physics/physics/sfc_ocean.F',
     'FV3/ccpp/physics/physics/sfc_sice.f',
     'FV3/ccpp/physics/physics/tracer_sanitizer.F90',
-    'FV3/ccpp/physics/gsdchem/gsd_chem_driver.F90',
+    'FV3/ccpp/physics/gsdchem/gsd_chem_seas_wrapper.F90',
+    'FV3/ccpp/physics/gsdchem/gsd_chem_dust_wrapper.F90',
+    'FV3/ccpp/physics/gsdchem/gsd_chem_anthropogenic_wrapper.F90',
+    'FV3/ccpp/physics/gsdchem/gsd_chem_plume_wrapper.F90',
+    'FV3/ccpp/physics/gsdchem/gsd_chem_dmsemis_wrapper.F90',
+    'FV3/ccpp/physics/gsdchem/gsd_chem_gocart_wrapper.F90',
+    'FV3/ccpp/physics/gsdchem/gsd_chem_rad_wrapper.F90',
+    'FV3/ccpp/physics/gsdchem/gsd_chem_drydep_wrapper.F90',
+    'FV3/ccpp/physics/gsdchem/gsd_chem_lsdep_wrapper.F90',
+    'FV3/ccpp/physics/gsdchem/gsd_chem_settling_wrapper.F90',
+    'FV3/ccpp/physics/gsdchem/gsd_chem_diag_wrapper.F90',
     # HAFSFER_HIRES
     'FV3/ccpp/physics/physics/mp_fer_hires.F90',
     # RRTMGP
