@@ -139,50 +139,45 @@ module module_cap_cpl
         isConnected = NUOPC_IsConnected(state, fieldName=trim(fieldNames(item)), rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
         if (isConnected) then
+          call ESMF_StateGet(state, field=field, itemName=trim(fieldNames(item)), rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+          call ESMF_FieldEmptySet(field, grid=grid, rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
           select case (fieldTypes(item))
             case ('l','layer')
-              field = ESMF_FieldCreate(grid, typekind=ESMF_TYPEKIND_R8, &
-                                       name=trim(fieldNames(item)),     &
+              call ESMF_FieldEmptyComplete(field, typekind=ESMF_TYPEKIND_R8, &
                                        ungriddedLBound=(/1/), ungriddedUBound=(/numLevels/), rc=rc)
               if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
             case ('i','interface')
-              field = ESMF_FieldCreate(grid, typekind=ESMF_TYPEKIND_R8, &
-                                       name=trim(fieldNames(item)),     &
+              call ESMF_FieldEmptyComplete(field, typekind=ESMF_TYPEKIND_R8, &
                                        ungriddedLBound=(/1/), ungriddedUBound=(/numLevels+1/), rc=rc)
               if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
             case ('t','tracer')
-              field = ESMF_FieldCreate(grid, typekind=ESMF_TYPEKIND_R8, &
-                                       name=trim(fieldNames(item)),     &
+              call ESMF_FieldEmptyComplete(field, typekind=ESMF_TYPEKIND_R8, &
                                        ungriddedLBound=(/1, 1/), ungriddedUBound=(/numLevels, numTracers/), rc=rc)
               if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
             case ('u','tracer_up_flux')
-              field = ESMF_FieldCreate(grid, typekind=ESMF_TYPEKIND_R8, &
-                                       name=trim(fieldNames(item)),     &
+              call ESMF_FieldEmptyComplete(field, typekind=ESMF_TYPEKIND_R8, &
                                        ungriddedLBound=(/1/), ungriddedUBound=(/num_diag_sfc_emis_flux/), rc=rc)
               if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
             case ('d','tracer_down_flx')
-              field = ESMF_FieldCreate(grid, typekind=ESMF_TYPEKIND_R8, &
-                                       name=trim(fieldNames(item)),     &
+              call ESMF_FieldEmptyComplete(field, typekind=ESMF_TYPEKIND_R8, &
                                        ungriddedLBound=(/1, 1/),        &
                                        ungriddedUBound=(/num_diag_down_flux, num_diag_type_down_flux/), rc=rc)
               if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
             case ('b','tracer_anth_biom_emission')
-              field = ESMF_FieldCreate(grid, typekind=ESMF_TYPEKIND_R8, &
-                                       name=trim(fieldNames(item)),     &
+              call ESMF_FieldEmptyComplete(field, typekind=ESMF_TYPEKIND_R8, &
                                        ungriddedLBound=(/1/), ungriddedUBound=(/num_diag_burn_emis_flux/), rc=rc)
               if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
             case ('c','tracer_column_mass_density')
-              field = ESMF_FieldCreate(grid, typekind=ESMF_TYPEKIND_R8, &
-                                       name=trim(fieldNames(item)),     &
+              call ESMF_FieldEmptyComplete(field, typekind=ESMF_TYPEKIND_R8, &
                                        ungriddedLBound=(/1/), ungriddedUBound=(/num_diag_cmass/), rc=rc)
               if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
             case ('s','surface')
-              field = ESMF_FieldCreate(grid, typekind=ESMF_TYPEKIND_R8, &
-                                       name=trim(fieldNames(item)), rc=rc)
+              call ESMF_FieldEmptyComplete(field, typekind=ESMF_TYPEKIND_R8, rc=rc)
               if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
             case ('g','soil')
-              field = ESMF_FieldCreate(grid, typekind=ESMF_TYPEKIND_R8, &
-                                       name=trim(fieldNames(item)),     &
+              call ESMF_FieldEmptyComplete(field, typekind=ESMF_TYPEKIND_R8, &
                                        ungriddedLBound=(/1/), ungriddedUBound=(/numSoilLayers/), rc=rc)
               if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
             case default
