@@ -4,13 +4,9 @@
 	branch = ufs-release/public-v2
 [submodule "ccpp/framework"]
 	path = ccpp/framework
-	#url = https://github.com/NCAR/ccpp-framework
-	#branch = release/public-v5
-	url = https://github.com/climbfuji/ccpp-framework
-	branch = remove_empty_gitmodules
+	url = https://github.com/NCAR/ccpp-framework
+	branch = release/public-v5
 [submodule "ccpp/physics"]
 	path = ccpp/physics
-	#url =  https://github.com/NCAR/ccpp-physics
-	#branch = release/public-v5
-	url =  https://github.com/climbfuji/ccpp-physics
-	branch = update_gitmodules
+	url =  https://github.com/NCAR/ccpp-physics
+	branch = release/public-v5
