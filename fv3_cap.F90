@@ -60,10 +60,9 @@ module fv3gfs_cap_mod
                                     nImportFields,    importFields,          &
                                     importFieldsList, importFieldTypes,      &
                                     importFieldShare, importFieldsValid,     &
-                                    queryFieldList,   fillExportFields,      &
-                                    exportData
+                                    queryFieldList
   use module_cap_cpl,         only: realizeConnectedCplFields,               &
-                                    clock_cplIntval, diagnose_cplFields      
+                                    clock_cplIntval, Dump_cplFields
 
 
   implicit none
@@ -93,7 +92,6 @@ module fv3gfs_cap_mod
   character(len=160) :: nuopcMsg
   integer            :: timeslice = 0
   integer            :: fcstmype
-  integer            :: dbug = 0
 
 !-----------------------------------------------------------------------
 
@@ -190,7 +188,7 @@ module fv3gfs_cap_mod
 
     character(len=10)     :: value
     character(240)        :: msgString
-    logical               :: isPresent, isSet
+
     character(len=*),parameter  :: subname='(fv3gfs_cap:InitializeP0)'
 
     rc = ESMF_SUCCESS
@@ -213,15 +211,6 @@ module fv3gfs_cap_mod
     write(msgString,'(A,l6)') trim(subname)//' cplprint_flag = ',cplprint_flag
     call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_INFO, rc=rc)
 
-    ! Read in cap debug flag
-    call NUOPC_CompAttributeGet(gcomp, name='dbug_flag', value=value, isPresent=isPresent, isSet=isSet, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-    if (isPresent .and. isSet) then
-     read(value,*) dbug
-    end if
-    write(msgString,'(A,i6)') trim(subname)//' dbug = ',dbug
-    call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_INFO, rc=rc)
-
   end subroutine
 
   !-----------------------------------------------------------------------------
@@ -235,7 +224,7 @@ module fv3gfs_cap_mod
 
 !
 ! local variables
-    type(ESMF_VM)                          :: vm
+    type(ESMF_VM)                          :: vm, fcstVM
     type(ESMF_Time)                        :: CurrTime, starttime, StopTime
     type(ESMF_Time)                        :: alarm_output_hf_ring, alarm_output_ring
     type(ESMF_Time)                        :: alarm_output_hf_stop, alarm_output_stop
@@ -250,7 +239,6 @@ module fv3gfs_cap_mod
     integer                                :: i, j, k, io_unit, urc, ierr
     integer                                :: petcount, mype
     integer                                :: num_output_file
-    logical                                :: isPetLocal
     logical                                :: OPENED
     character(ESMF_MAXSTR)                 :: name
     logical                                :: fcstpe
@@ -560,7 +548,6 @@ module fv3gfs_cap_mod
       rsthour   = CurrTime - StartTime
       first_kdt = nint(rsthour/timeStep) + 1
     endif
-
 !
 !#######################################################################
 ! set up fcst grid component
@@ -572,11 +559,7 @@ module fv3gfs_cap_mod
 ! create fcst grid component
 
     fcstpe = .false.
-    if( quilting ) then
-      num_pes_fcst = petcount - write_groups * wrttasks_per_group
-    else
-      num_pes_fcst = petcount
-    endif
+    num_pes_fcst = petcount - write_groups * wrttasks_per_group
     allocate(fcstPetList(num_pes_fcst))
     do j=1, num_pes_fcst
       fcstPetList(j) = j - 1
@@ -588,7 +571,9 @@ module fv3gfs_cap_mod
     call ESMF_GridCompSetServices(fcstComp, fcstSS, userRc=urc, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc,  msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
     if (ESMF_LogFoundError(rcToCheck=urc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
-
+! obtain fcst VM
+    call ESMF_GridCompGet(fcstComp, vm=fcstVM, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 ! create fcst state
     fcstState = ESMF_StateCreate(rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
@@ -601,7 +586,7 @@ module fv3gfs_cap_mod
     if (ESMF_LogFoundError(rcToCheck=urc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 !
 ! reconcile the fcstComp's import state
-    call ESMF_StateReconcile(fcstState, attreconflag= ESMF_ATTRECONCILE_ON, rc=rc)
+    call ESMF_StateReconcile(fcstState, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 !
 ! determine number elements in fcstState
@@ -871,21 +856,16 @@ module fv3gfs_cap_mod
 
     if( cpl ) then
 
-      isPetLocal = ESMF_GridCompIsPetLocal(fcstComp, rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-      if (isPetLocal) then
-    
         ! importable fields:
         do i = 1, size(ImportFieldsList)
           if (importFieldShare(i)) then
             call NUOPC_Advertise(importState,         &
                                  StandardName=trim(ImportFieldsList(i)), &
-                                 SharePolicyField="share", rc=rc)
+                                 SharePolicyField="share", vm=fcstVM, rc=rc)
             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
           else
             call NUOPC_Advertise(importState,         &
-                                 StandardName=trim(ImportFieldsList(i)), rc=rc)
+                                 StandardName=trim(ImportFieldsList(i)), vm=fcstVM, rc=rc)
             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
           end if
         end do
@@ -895,16 +875,15 @@ module fv3gfs_cap_mod
           if (exportFieldShare(i)) then
             call NUOPC_Advertise(exportState,                            &
                                  StandardName=trim(exportFieldsList(i)), &
-                                 SharePolicyField="share", rc=rc)
+                                 SharePolicyField="share", vm=fcstVM, rc=rc)
             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
           else
             call NUOPC_Advertise(exportState,         &
-                                 StandardName=trim(exportFieldsList(i)), rc=rc)
+                                 StandardName=trim(exportFieldsList(i)), vm=fcstVM, rc=rc)
             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
           end if
         end do
       
-      endif
       if(mype==0) print *,'in fv3_cap, aft import, export fields in atmos'
     endif
 
@@ -953,8 +932,6 @@ module fv3gfs_cap_mod
                                        importFields, rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__,  file=__FILE__)) return
       end if
-!jw
-      call fillExportFields(exportData)
     endif
 
   end subroutine InitializeRealize
@@ -1060,7 +1037,6 @@ module fv3gfs_cap_mod
       call ESMF_ClockGet(clock_fv3, currTime=currTime, timeStep=timeStep, rc=rc)
       call ESMF_TimeGet(currTime,          timestring=import_timestr, rc=rc)
       call ESMF_TimeGet(currTime+timestep, timestring=export_timestr, rc=rc)
-
 !
 !-----------------------------------------------------------------------------
 !*** integration loop
@@ -1085,12 +1061,8 @@ module fv3gfs_cap_mod
 
       if ( cpl ) then
        ! assign import_data called during phase=1
-       if( dbug > 0 .or. cplprint_flag ) then
-         if( mype < num_pes_fcst ) then
-           call diagnose_cplFields(gcomp, importState, exportstate, clock_fv3,    &
-                              cplprint_flag, dbug, 'import', import_timestr)
-         endif
-       endif
+       call Dump_cplFields(gcomp, importState, exportstate, clock_fv3,    &
+                           cplprint_flag, 'import', import_timestr)
       endif
 
       call ESMF_GridCompRun(fcstComp, exportState=fcstState, clock=clock_fv3, &
@@ -1214,12 +1186,8 @@ module fv3gfs_cap_mod
 !
 !jw for coupled, check clock and dump import and export state
     if ( cpl ) then
-      if( dbug > 0 .or. cplprint_flag ) then
-        if( mype < num_pes_fcst ) then
-          call diagnose_cplFields(gcomp, importState, exportstate, clock_fv3,    &
-                                  cplprint_flag, dbug, 'export', export_timestr) 
-        endif
-     end if
+       call Dump_cplFields(gcomp, importState, exportstate, clock_fv3,    &
+                           cplprint_flag, 'export', export_timestr) 
     endif
 
     if (mype==0) print *,'fv3_cap,end integrate,na=',na,' time=',mpi_wtime()- timeri
@@ -1687,6 +1655,7 @@ module fv3gfs_cap_mod
 
 
   end subroutine atmos_model_finalize
+
 !#######################################################################
 !
 !
