@@ -2468,14 +2468,20 @@
   units = flag
   dimensions = ()
   type = integer
+[iovr]
+  standard_name = flag_for_cloud_overlap_method_for_radiation
+  long_name = max-random overlap clouds
+  units = flag
+  dimensions = ()
+  type = integer
 [iovr_sw]
-  standard_name = flag_for_max_random_overlap_clouds_for_shortwave_radiation
+  standard_name = flag_for_cloud_overlap_method_for_shortwave_radiation
   long_name = sw: max-random overlap clouds
   units = flag
   dimensions = ()
   type = integer
 [iovr_lw]
-  standard_name = flag_for_max_random_overlap_clouds_for_longwave_radiation
+  standard_name = flag_for_cloud_overlap_method_for_longwave_radiation
   long_name = lw: max-random overlap clouds
   units = flag
   dimensions = ()
@@ -6750,6 +6756,13 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+[alpha]
+  standard_name = cloud_overlap_decorrelation_parameter
+  long_name = cloud overlap decorrelation parameter for RRTMG (but not for RRTMGP)
+  units = frac
+  dimensions = (horizontal_dimension,adjusted_vertical_layer_dimension_for_radiation)
+  type = real
+  kind = kind_phys
 [bexp1d]
   standard_name = perturbation_of_soil_type_b_parameter
   long_name = perturbation of soil type "b" parameter
@@ -9128,7 +9141,6 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
-  optional = F
   active = (flag_for_rrtmgp_radiation_scheme)
 [p_lev]
   standard_name = air_pressure_at_interface_for_RRTMGP_in_hPa
@@ -9137,7 +9149,6 @@
   dimensions = (horizontal_dimension,vertical_dimension_plus_one)
   type = real
   kind = kind_phys
-  optional = F
   active = (flag_for_rrtmgp_radiation_scheme)
 [t_lay]
   standard_name = air_temperature_at_layer_for_RRTMGP
@@ -9146,7 +9157,6 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
-  optional = F
   active = (flag_for_rrtmgp_radiation_scheme)
 [t_lev]
   standard_name = air_temperature_at_interface_for_RRTMGP
@@ -9155,7 +9165,6 @@
   dimensions = (horizontal_dimension,vertical_dimension_plus_one)
   type = real
   kind = kind_phys
-  optional = F
   active = (flag_for_rrtmgp_radiation_scheme)
 [tv_lay]
   standard_name = virtual_temperature
@@ -9164,7 +9173,6 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
-  optional = F
   active = (flag_for_rrtmgp_radiation_scheme)
 [relhum]
   standard_name = relative_humidity
@@ -9192,7 +9200,7 @@
   active = (flag_for_rrtmgp_radiation_scheme)
 [cloud_overlap_param]
   standard_name = cloud_overlap_param
-  long_name = cloud overlap parameter
+  long_name = cloud overlap parameter for RRTMGP (but not for RRTMG)
   units = km
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
@@ -9225,7 +9233,6 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
-  optional = F
 [cldtaulw]
   standard_name = RRTMGP_cloud_optical_depth_layers_at_10mu_band
   long_name = approx 10mu band layer cloud optical depth
@@ -9240,7 +9247,6 @@
   dimensions = (horizontal_dimension,vertical_dimension_plus_one)
   type = real
   kind = kind_phys
-  optional = F
   active = (flag_for_rrtmgp_radiation_scheme)
 [fluxlwDOWN_allsky]
   standard_name = RRTMGP_lw_flux_profile_downward_allsky
@@ -9249,7 +9255,6 @@
   dimensions = (horizontal_dimension,vertical_dimension_plus_one)
   type = real
   kind = kind_phys
-  optional = F
   active = (flag_for_rrtmgp_radiation_scheme)
 [fluxlwUP_clrsky]
   standard_name = RRTMGP_lw_flux_profile_upward_clrsky
@@ -9258,7 +9263,6 @@
   dimensions = (horizontal_dimension,vertical_dimension_plus_one)
   type = real
   kind = kind_phys
-  optional = F
   active = (flag_for_rrtmgp_radiation_scheme)
 [fluxlwDOWN_clrsky]
   standard_name = RRTMGP_lw_flux_profile_downward_clrsky
@@ -9296,7 +9300,6 @@
   dimensions = (horizontal_dimension,vertical_dimension_plus_one)
   type = real
   kind = kind_phys
-  optional = F
   active = (flag_for_rrtmgp_radiation_scheme)
 [fluxswDOWN_allsky]
   standard_name = RRTMGP_sw_flux_profile_downward_allsky
@@ -9305,7 +9308,6 @@
   dimensions = (horizontal_dimension,vertical_dimension_plus_one)
   type = real
   kind = kind_phys
-  optional = F
   active = (flag_for_rrtmgp_radiation_scheme)
 [fluxswUP_clrsky]
   standard_name = RRTMGP_sw_flux_profile_upward_clrsky
@@ -9314,7 +9316,6 @@
   dimensions = (horizontal_dimension,vertical_dimension_plus_one)
   type = real
   kind = kind_phys
-  optional = F
   active = (flag_for_rrtmgp_radiation_scheme)
 [fluxswDOWN_clrsky]
   standard_name = RRTMGP_sw_flux_profile_downward_clrsky
@@ -9323,7 +9324,6 @@
   dimensions = (horizontal_dimension,vertical_dimension_plus_one)
   type = real
   kind = kind_phys
-  optional = F
   active = (flag_for_rrtmgp_radiation_scheme)
 [flxprf_lw]
   standard_name = RRTMGP_lw_fluxes
@@ -9331,7 +9331,6 @@
   units = W m-2
   dimensions = (horizontal_dimension,vertical_dimension_plus_one)
   type = proflw_type
-  optional = T
   active = (flag_for_rrtmgp_radiation_scheme)
 [flxprf_sw]
   standard_name = RRTMGP_sw_fluxes
@@ -9339,7 +9338,6 @@
   units = W m-2
   dimensions = (horizontal_dimension,vertical_dimension_plus_one)
   type = profsw_type
-  optional = T
   active = (flag_for_rrtmgp_radiation_scheme)
 [aerosolslw]
   standard_name = RRTMGP_aerosol_optical_properties_for_longwave_bands_01_16
@@ -9348,7 +9346,6 @@
   dimensions = (horizontal_dimension,vertical_dimension, number_of_lw_bands_rrtmgp,number_of_aerosol_output_fields_for_longwave_radiation)
   type = real
   kind = kind_phys
-  optional = F
   active = (flag_for_rrtmgp_radiation_scheme)
 [aerosolslw(:,:,:,1)]
   standard_name = RRTMGP_aerosol_optical_depth_for_longwave_bands_01_16
@@ -9939,5 +9936,3 @@
   dimensions = ()
   type = real 
   kind = kind_phys
-  intent = in 
-  optional = F
