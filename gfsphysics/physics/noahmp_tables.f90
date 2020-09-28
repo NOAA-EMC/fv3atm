@@ -1,5 +1,6 @@
 module noahmp_tables
 
+    use machine ,   only : kind_phys
     implicit none
 
     integer :: i
@@ -8,7 +9,7 @@ module noahmp_tables
     integer, private, parameter :: msc   = 8
     integer, private, parameter :: max_soiltyp = 30
     integer, private, parameter :: slcats = 30
-    real :: slope_table(9)                     !slope factor for soil drainage
+    real (kind=kind_phys) :: slope_table(9)                     !slope factor for soil drainage
 
 ! crops
 
@@ -25,7 +26,7 @@ module noahmp_tables
     integer :: eblforest_table = 2
 
 !
-    real :: ch2op_table(mvt)       !maximum intercepted h2o per unit lai+sai (mm)
+    real (kind=kind_phys) :: ch2op_table(mvt)       !maximum intercepted h2o per unit lai+sai (mm)
 
       data   ( ch2op_table(i),i=1,mvt) / 0.1, 0.1, 0.1, 0.1, 0.1, 0.1,       &
      &                              0.1, 0.1, 0.1, 0.1, 0.1, 0.1,            & 
@@ -33,14 +34,14 @@ module noahmp_tables
      &                              0.1, 0.1, 0.0, 0.0, 0.0, 0.0,            &
      &                              0.0, 0.0, 0.0, 0.0, 0.0, 0.0 /
 
-    real :: dleaf_table(mvt)       !characteristic leaf dimension (m)
+    real (kind=kind_phys) :: dleaf_table(mvt)       !characteristic leaf dimension (m)
       data   ( dleaf_table(i),i=1,mvt) / 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, &
      &                               0.04, 0.04, 0.04, 0.04, 0.04, 0.04,     &
      &                               0.04, 0.04, 0.04, 0.04, 0.04, 0.04,     &
      &                               0.04, 0.04, 0.00, 0.00, 0.00, 0.00,     &
      &                               0.00, 0.00, 0.00, 0.00, 0.00, 0.00 /
 
-    real :: z0mvt_table(mvt)       !momentum roughness length (m)
+    real (kind=kind_phys) :: z0mvt_table(mvt)       !momentum roughness length (m)
       data   ( z0mvt_table(i),i=1,mvt) / 1.09, 1.10, 0.85, 0.80, 0.80, 0.20, &
      &                               0.06, 0.60, 0.50, 0.12, 0.30, 0.15,     &
      &                               1.00, 0.14, 0.00, 0.00, 0.00, 0.30,     &
@@ -49,28 +50,28 @@ module noahmp_tables
 
 !
 
-    real :: hvt_table(mvt)         !top of canopy (m)
+    real (kind=kind_phys) :: hvt_table(mvt)         !top of canopy (m)
       data   ( hvt_table(i),i=1,mvt)   / 20.0, 20.0, 18.0, 16.0, 16.0, 1.10, &
      &                               1.10, 13.0, 10.0, 1.00, 5.00, 2.00,     &
      &                               15.0, 1.50, 0.00, 0.00, 0.00, 4.00,     &
      &                               2.00, 0.50, 0.00, 0.00, 0.00, 0.00,     &
      &                               0.00, 0.00, 0.00, 0.00, 0.00, 0.00 /
 
-    real :: hvb_table(mvt)         !bottom of canopy (m)
+    real (kind=kind_phys) :: hvb_table(mvt)         !bottom of canopy (m)
       data   ( hvb_table(i),i=1,mvt)  /  8.50, 8.00, 7.00, 11.5, 10.0, 0.10, &
      &                               0.10, 0.10, 0.10, 0.05, 0.10, 0.10,     &
      &                               1.00, 0.10, 0.00, 0.00, 0.00, 0.30,     &
      &                               0.20, 0.10, 0.00, 0.00, 0.00, 0.00,     &
      &                               0.00, 0.00, 0.00, 0.00, 0.00, 0.00 /
 
-    real :: den_table(mvt)         !tree density (no. of trunks per m2)
+    real (kind=kind_phys) :: den_table(mvt)         !tree density (no. of trunks per m2)
       data ( den_table (i),i=1,mvt)   /  0.28, 0.02, 0.28, 0.10, 0.10, 10.0, &
      &                               10.0, 10.0, 0.02, 100., 5.05, 25.0,     &
      &                               0.01, 25.0, 0.00, 0.01, 0.01, 1.00,     &
      &                               1.00, 1.00, 0.00, 0.00, 0.00, 0.00,     &
      &                               0.00, 0.00, 0.00, 0.00, 0.00, 0.00 /
 !
-    real :: rc_table(mvt)          !tree crown radius (m)
+    real (kind=kind_phys) :: rc_table(mvt)          !tree crown radius (m)
 
       data ( rc_table (i),i=1,mvt)    /  1.20, 3.60, 1.20, 1.40, 1.40, 0.12, &
      &                               0.12, 0.12, 3.00, 0.03, 0.75, 0.08,     &
@@ -78,7 +79,7 @@ module noahmp_tables
      &                               0.30, 0.30, 0.00, 0.00, 0.00, 0.00,     &
      &                               0.00, 0.00, 0.00, 0.00, 0.00, 0.00 /
 
-    real :: mfsno_table(mvt)       !snowmelt curve parameter ()
+    real (kind=kind_phys) :: mfsno_table(mvt)       !snowmelt curve parameter ()
       data  ( mfsno_table(i),i=1,mvt) /  2.50, 2.50, 2.50, 2.50, 2.50, 2.50, &
      &                               2.50, 2.50, 2.50, 2.50, 2.50, 2.50,     &
      &                               2.50, 2.50, 2.50, 2.50, 2.50, 2.50,     &
@@ -87,7 +88,7 @@ module noahmp_tables
 
 !
 
-    real :: saim_table(mvt,12)     !monthly stem area index, one-sided
+    real (kind=kind_phys) :: saim_table(mvt,12)     !monthly stem area index, one-sided
 
       data (saim_table (i,1),i=1,mvt) / 0.4,  0.5, 0.3, 0.4, 0.4, 0.3,       &
      &                             0.2,  0.4, 0.3, 0.3, 0.3, 0.3,            &
@@ -171,7 +172,7 @@ module noahmp_tables
      &                             0.0, 0.0, 0.0, 0.0, 0.0, 0.0 /
 
 !! lai
-    real :: laim_table(mvt,12)     !monthly leaf area index, one-sided
+    real (kind=kind_phys) :: laim_table(mvt,12)     !monthly leaf area index, one-sided
 
       data (laim_table (i,1),i=1,mvt) / 4.0, 4.5, 0.0, 0.0, 2.0, 0.0,        &
      &                             0.0, 0.2, 0.3, 0.4, 0.2, 0.0,             &
@@ -253,35 +254,35 @@ module noahmp_tables
      &                             0.6, 0.0, 0.0, 0.0, 0.0, 0.0,             &
      &                             0.0, 0.0, 0.0, 0.0, 0.0, 0.0 /
 
-    real :: sla_table(mvt)         !single-side leaf area per kg [m2/kg]
+    real (kind=kind_phys) :: sla_table(mvt)         !single-side leaf area per kg [m2/kg]
       data ( sla_table  (i),i=1,mvt)  / 80,  80,  80,  80,  80,  60,         &
      &                            60,  60,  50,  60,  80,  80,               &
      &                            60,  80,   0,   0,   0,  80,               &
      &                            80,  80,   0,   0,   0,   0,               &
      &                             0,   0,   0,   0,   0,   0 /
 
-    real :: dilefc_table(mvt)      !coeficient for leaf stress death [1/s]
+    real (kind=kind_phys) :: dilefc_table(mvt)      !coeficient for leaf stress death [1/s]
       data (dilefc_table (i),i=1,mvt) / 1.20, 0.50, 1.80, 0.60, 0.80, 0.20,  &
      &                            0.20, 0.20, 0.50, 0.20,  0.4, 0.50,        &
      &                            0.00, 0.35, 0.00, 0.00, 0.00, 0.30,        &
      &                            0.40, 0.30, 0.00, 0.00, 0.00, 0.00,        &
      &                            0.00, 0.00, 0.00, 0.00, 0.00, 0.00 /
 
-    real :: dilefw_table(mvt)      !coeficient for leaf stress death [1/s]
+    real (kind=kind_phys) :: dilefw_table(mvt)      !coeficient for leaf stress death [1/s]
       data (dilefw_table(i),i=1,mvt) / 0.20, 4.00, 0.20, 0.20, 0.20, 0.20,   &
      &                            0.20, 0.20, 0.50, 0.10,  0.2, 0.20,        &
      &                            0.00, 0.20, 0.00, 0.00, 0.00, 0.20,        &
      &                            0.20, 0.20, 0.00, 0.00, 0.00, 0.00,        &
      &                            0.00, 0.00, 0.00, 0.00, 0.00, 0.00 /
 
-    real :: fragr_table(mvt)       !fraction of growth respiration  !original was 0.3 
+    real (kind=kind_phys) :: fragr_table(mvt)       !fraction of growth respiration  !original was 0.3 
       data ( fragr_table(i),i=1,mvt) / 0.10, 0.20, 0.10, 0.20, 0.10, 0.20,   &
      &                            0.20, 0.20, 0.20, 0.20,  0.1, 0.20,        &
      &                            0.00, 0.20, 0.00, 0.10, 0.00, 0.10,        &
      &                            0.10, 0.10, 0.00, 0.00, 0.00, 0.00,        &
      &                            0.00, 0.00, 0.00, 0.00, 0.00, 0.00 /
 
-    real :: ltovrc_table(mvt)      !leaf turnover [1/s]
+    real (kind=kind_phys) :: ltovrc_table(mvt)      !leaf turnover [1/s]
       data ( ltovrc_table(i),i=1,mvt) / 0.5, 0.55, 0.2, 0.55, 0.5, 0.65,     &
      &                            0.65, 0.65, 0.65, 0.50, 1.4, 1.6,          &
      &                            0.0, 1.2,  0.0, 0.0,  0.0, 1.3,            &
@@ -289,21 +290,21 @@ module noahmp_tables
      &                            0.0, 0.0, 0.0, 0.0, 0.0, 0.0 /
 
 !
-    real :: c3psn_table(mvt)       !photosynthetic pathway: 0. = c4, 1. = c3
+    real (kind=kind_phys) :: c3psn_table(mvt)       !photosynthetic pathway: 0. = c4, 1. = c3
       data ( c3psn_table (i),i=1,mvt) / 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,        &
      &                            1.0, 1.0, 1.0, 1.0, 1.0, 1.0,              &
      &                            1.0, 1.0, 1.0, 1.0, 1.0, 1.0,              &
      &                            1.0, 1.0, 0.0, 0.0, 0.0, 0.0,              &
      &                            0.0, 0.0, 0.0, 0.0, 0.0, 0.0 /
 
-    real :: kc25_table(mvt)        !co2 michaelis-menten constant at 25c (pa)
+    real (kind=kind_phys) :: kc25_table(mvt)        !co2 michaelis-menten constant at 25c (pa)
       data ( kc25_table (i),i=1,mvt)  / 30.0, 30.0, 30.0, 30.0, 30.0, 30.0,  &
      &                            30.0, 30.0, 30.0, 30.0, 30.0, 30.0,        &
      &                            30.0, 30.0, 30.0, 30.0, 30.0, 30.0,        &
      &                            30.0, 30.0, 0.00, 0.00, 0.00, 0.00,        &
      &                            0.00, 0.00, 0.00, 0.00, 0.00, 0.00 /
 
-    real :: akc_table(mvt)         !q10 for kc25
+    real (kind=kind_phys) :: akc_table(mvt)         !q10 for kc25
       data ( akc_table (i),i=1,mvt)   / 2.1, 2.1, 2.1, 2.1, 2.1, 2.1,        &
      &                            2.1, 2.1, 2.1, 2.1, 2.1, 2.1,              &
      &                            2.1, 2.1, 2.1, 2.1, 2.1, 2.1,              &
@@ -311,7 +312,7 @@ module noahmp_tables
      &                            0.0, 0.0, 0.0, 0.0, 0.0, 0.0 /
 
 
-    real :: ko25_table(mvt)        !o2 michaelis-menten constant at 25c (pa)
+    real (kind=kind_phys) :: ko25_table(mvt)        !o2 michaelis-menten constant at 25c (pa)
       data ( ko25_table (i),i=1,mvt)  / 3.e4, 3.e4, 3.e4, 3.e4, 3.e4, 3.e4,  &
      &                            3.e4, 3.e4, 3.e4, 3.e4, 3.e4, 3.e4,        &
      &                            3.e4, 3.e4, 3.e4, 3.e4, 3.e4, 3.e4,        &
@@ -319,14 +320,14 @@ module noahmp_tables
      &                            0.00, 0.00, 0.00, 0.00, 0.00, 0.00 /
 
 
-    real :: ako_table(mvt)         !q10 for ko25
+    real (kind=kind_phys) :: ako_table(mvt)         !q10 for ko25
       data ( ako_table (i),i=1,mvt)   / 1.2, 1.2, 1.2, 1.2, 1.2, 1.2,        &
      &                            1.2, 1.2, 1.2, 1.2, 1.2, 1.2,              &
      &                            1.2, 1.2, 1.2, 1.2, 1.2, 1.2,              &
      &                            1.2, 1.2, 0.0, 0.0, 0.0, 0.0,              &
      &                            0.0, 0.0, 0.0, 0.0, 0.0, 0.0 /
 
-    real :: vcmx25_table(mvt)      !maximum rate of carboxylation at 25c (umol co2/m**2/s)
+    real (kind=kind_phys) :: vcmx25_table(mvt)      !maximum rate of carboxylation at 25c (umol co2/m**2/s)
       data ( vcmx25_table(i),i=1,mvt) / 50.0, 60.0, 60.0, 60.0, 55.0, 40.0,  &
      &                            40.0, 40.0, 40.0, 40.0, 50.0, 80.0,        &
      &                            0.00, 60.0, 0.00, 0.00, 0.00, 50.0,        &
@@ -334,7 +335,7 @@ module noahmp_tables
      &                            0.00, 0.00, 0.00, 0.00, 0.00, 0.00 /
 
 
-    real :: avcmx_table(mvt)       !q10 for vcmx25
+    real (kind=kind_phys) :: avcmx_table(mvt)       !q10 for vcmx25
       data ( avcmx_table (i),i=1,mvt) / 2.4, 2.4, 2.4, 2.4, 2.4, 2.4,        &
      &                            2.4, 2.4, 2.4, 2.4, 2.4, 2.4,              &
      &                            2.4, 2.4, 2.4, 2.4, 2.4, 2.4,              &
@@ -343,70 +344,70 @@ module noahmp_tables
 
 
 
-    real :: bp_table(mvt)          !minimum leaf conductance (umol/m**2/s)
+    real (kind=kind_phys) :: bp_table(mvt)          !minimum leaf conductance (umol/m**2/s)
       data ( bp_table (i),i=1,mvt)    / 2.e3, 2.e3, 2.e3, 2.e3, 2.e3, 2.e3,  &
      &                            2.e3, 2.e3, 2.e3, 2.e3, 2.e3, 2.e3,        &
      &                            1.e15, 2.e3,1.e15, 2.e3,1.e15, 2.e3,       &
      &                            2.e3, 2.e3, 0.00, 0.00, 0.00, 0.00,        &
      &                            0.00, 0.00, 0.00, 0.00, 0.00, 0.00 /
 
-    real :: mp_table(mvt)          !slope of conductance-to-photosynthesis relationship
+    real (kind=kind_phys) :: mp_table(mvt)          !slope of conductance-to-photosynthesis relationship
       data ( mp_table (i),i=1,mvt)    / 6.,  9.,  6.,  9.,  9.,  9.,         &
      &                            9.,  9.,  9.,  9.,  9.,  9.,               &
      &                            9.,  9.,  9.,  9.,  9.,  9.,               &
      &                            9.,  9.,  0.0, 0.0, 0.0, 0.0,              &
      &                            0.0, 0.0, 0.0, 0.0, 0.0, 0.0 /
 
-    real :: qe25_table(mvt)        !quantum efficiency at 25c (umol co2 / umo photon)
+    real (kind=kind_phys) :: qe25_table(mvt)        !quantum efficiency at 25c (umol co2 / umo photon)
       data ( qe25_table (i),i=1,mvt)  / 0.06, 0.06, 0.06, 0.06, 0.06, 0.06,  &
      &                            0.06, 0.06, 0.06, 0.06, 0.06, 0.06,        &
      &                            0.00, 0.06, 0.00, 0.06, 0.00, 0.06,        &
      &                            0.06, 0.06, 0.00, 0.00, 0.00, 0.00,        &
      &                            0.00, 0.00, 0.00, 0.00, 0.00, 0.00 /
 
-    real :: aqe_table(mvt)         !q10 for qe25
+    real (kind=kind_phys) :: aqe_table(mvt)         !q10 for qe25
       data ( aqe_table (i),i=1,mvt)   / 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,        &
      &                            1.0, 1.0, 1.0, 1.0, 1.0, 1.0,              &
      &                            1.0, 1.0, 1.0, 1.0, 1.0, 1.0,              &
      &                            1.0, 1.0, 0.0, 0.0, 0.0, 0.0,              &
      &                            0.0, 0.0, 0.0, 0.0, 0.0, 0.0 /
 
-    real :: rmf25_table(mvt)       !leaf maintenance respiration at 25c (umol co2/m**2/s)
+    real (kind=kind_phys) :: rmf25_table(mvt)       !leaf maintenance respiration at 25c (umol co2/m**2/s)
       data ( rmf25_table (i),i=1,mvt) / 3.00, 0.65, 4.00, 3.00, 3.00, 0.26,  &
      &                            0.26, 0.26, 0.80, 1.80,  3.2, 1.00,        &
      &                            0.00, 1.45, 0.00, 0.00, 0.00, 3.00,        &
      &                            3.00, 3.00, 0.00, 0.00, 0.00, 0.00,        &
      &                            0.00, 0.00, 0.00, 0.00, 0.00, 0.00 /
 
-    real :: rms25_table(mvt)       !stem maintenance respiration at 25c (umol co2/kg bio/s)
+    real (kind=kind_phys) :: rms25_table(mvt)       !stem maintenance respiration at 25c (umol co2/kg bio/s)
       data ( rms25_table (i),i=1,mvt) / 0.90, 0.30, 0.64, 0.10, 0.80, 0.10,        &
      &                            0.10, 0.10, 0.32, 0.10, 0.10, 0.10,        &
      &                            0.00, 0.10, 0.00, 0.00, 0.00, 0.10,        &
      &                            0.10, 0.00, 0.00, 0.00, 0.00, 0.00,        &
      &                            0.00, 0.00, 0.00, 0.00, 0.00, 0.00 /
 
-    real :: rmr25_table(mvt)       !root maintenance respiration at 25c (umol co2/kg bio/s)
+    real (kind=kind_phys) :: rmr25_table(mvt)       !root maintenance respiration at 25c (umol co2/kg bio/s)
       data ( rmr25_table (i),i=1,mvt) / 0.36, 0.05, 0.05, 0.01, 0.03, 0.00,        &
      &                            0.00, 0.00, 0.01, 1.20,  0.0, 0.00,        &
      &                            0.00, 0.00, 0.00, 0.00, 0.00, 2.11,       &
      &                            2.11, 0.00, 0.00, 0.00, 0.00, 0.00,        &
      &                            0.00, 0.00, 0.00, 0.00, 0.00, 0.00 /
 
-    real :: arm_table(mvt)         !q10 for maintenance respiration
+    real (kind=kind_phys) :: arm_table(mvt)         !q10 for maintenance respiration
       data ( arm_table (i),i=1,mvt)   / 2.0,  2.0,  2.0,  2.0,  2.0,  2.0,   &
      &                            2.0,  2.0,  2.0,  2.0,  2.0,  2.0,         &
      &                            2.0,  2.0,  2.0,  2.0,  2.0,  2.0,         &
      &                            2.0,  2.0,  0.0,  0.0,  0.0,  0.0,         &
      &                            0.0,  0.0,  0.0,  0.0,  0.0,  0.0 /
 
-    real :: folnmx_table(mvt)      !foliage nitrogen concentration when f(n)=1 (%)
+    real (kind=kind_phys) :: folnmx_table(mvt)      !foliage nitrogen concentration when f(n)=1 (%)
       data (folnmx_table (i),i=1,mvt) / 1.5,  1.5,  1.5,  1.5,  1.5,  1.5,   &
      &                            1.5,  1.5,  1.5,  1.5,  1.5,  1.5,         &
      &                           0.00,  1.5, 0.00,  1.5, 0.00,  1.5,         &
      &                            1.5,  1.5,  0.0,  0.0,  0.0,  0.0,         &
      &                            0.0,  0.0,  0.0,  0.0,  0.0,  0.0 /
 
-    real :: tmin_table(mvt)        !minimum temperature for photosynthesis (k)
+    real (kind=kind_phys) :: tmin_table(mvt)        !minimum temperature for photosynthesis (k)
       data ( tmin_table (i),i=1,mvt)  / 265, 273, 268, 273, 268, 273,        &
      &                            273, 273, 273, 273, 268, 273,              &
      &                              0, 273,   0,   0,   0, 268,              &
@@ -415,14 +416,14 @@ module noahmp_tables
 
 
 !
-    real :: xl_table(mvt)          !leaf/stem orientation index
+    real (kind=kind_phys) :: xl_table(mvt)          !leaf/stem orientation index
       data ( xl_table  (i),i=1,mvt)   / 0.010,0.010,0.010,0.250,0.250,0.010, &
      &                            0.010, 0.010, 0.010, -0.30, -0.025, -0.30, &
      &                            0.000,  -0.30, 0.000, 0.000, 0.000, 0.250, &
      &                            0.250, 0.250, 0.000, 0.000, 0.000, 0.000,  &
      &                             0.001, 0.001, 0.000, 0.000, 0.000, 0.000 /
 !
-    real :: rhol_table(mvt,mband)  !leaf reflectance: 1=vis, 2=nir
+    real (kind=kind_phys) :: rhol_table(mvt,mband)  !leaf reflectance: 1=vis, 2=nir
 
       data ( rhol_table (i,1),i=1,mvt) / 0.07, 0.10, 0.07, 0.10, 0.10, 0.07, &
      &                               0.07, 0.07, 0.10, 0.11, 0.105, 0.11,    &
@@ -438,7 +439,7 @@ module noahmp_tables
      &                               0.45, 0.45, 0.00, 0.00, 0.00, 0.00,     &
      &                               0.00, 0.00, 0.00, 0.00, 0.00, 0.00 /
 
-    real :: rhos_table(mvt,mband)  !stem reflectance: 1=vis, 2=nir
+    real (kind=kind_phys) :: rhos_table(mvt,mband)  !stem reflectance: 1=vis, 2=nir
 
       data ( rhos_table (i,1),i=1,mvt) / 0.16, 0.16, 0.16, 0.16, 0.16, 0.16, &
      &                               0.16, 0.16, 0.16, 0.36, 0.26, 0.36,     &
@@ -454,7 +455,7 @@ module noahmp_tables
 
 !    &_______________________________________________________________________&
 
-    real :: taul_table(mvt,mband)  !leaf transmittance: 1=vis, 2=nir
+    real (kind=kind_phys) :: taul_table(mvt,mband)  !leaf transmittance: 1=vis, 2=nir
 !
       data ( taul_table (i,1),i=1,mvt) / 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, &
      &                               0.05, 0.05, 0.05, 0.07, 0.06, 0.07,     &
@@ -468,7 +469,7 @@ module noahmp_tables
      &                               0.25, 0.25, 0.00, 0.00, 0.00, 0.00,     &
      &                               0.00, 0.00, 0.00, 0.00, 0.00, 0.00 /
 
-    real :: taus_table(mvt,mband)  !stem transmittance: 1=vis, 2=nir
+    real (kind=kind_phys) :: taus_table(mvt,mband)  !stem transmittance: 1=vis, 2=nir
       data(taus_table (i,1),i=1,mvt) / 0.001,0.001,0.001,0.001,0.001, 0.001, &
      &                             0.001, 0.001, 0.001, 0.220, 0.1105,0.220, &
      &                             0.000, 0.220, 0.000, 0.000, 0.000, 0.001, &
@@ -483,7 +484,7 @@ module noahmp_tables
      &                             0.001, 0.001, 0.000, 0.000, 0.000, 0.000 /
 
 
-    real :: mrp_table(mvt)         !microbial respiration parameter (umol co2 /kg c/ s)
+    real (kind=kind_phys) :: mrp_table(mvt)         !microbial respiration parameter (umol co2 /kg c/ s)
       data ( mrp_table (i),i=1,mvt)   / 0.37, 0.23, 0.37, 0.40, 0.30, 0.19,  &
      &                            0.19, 0.19, 0.40, 0.17,0.285, 0.23,        &
      &                            0.00, 0.23, 0.00, 0.00, 0.00, 0.23,        &
@@ -491,7 +492,7 @@ module noahmp_tables
      &                            0.00, 0.00, 0.00, 0.00, 0.00, 0.00 /
 
 !
-    real :: cwpvt_table(mvt)       !empirical canopy wind parameter
+    real (kind=kind_phys) :: cwpvt_table(mvt)       !empirical canopy wind parameter
       data ( cwpvt_table (i),i=1,mvt) / 0.18, 0.18, 0.18, 0.18, 0.18, 0.18,  &
      &                            0.18, 0.18, 0.18, 0.18, 0.18, 0.18,        &
      &                            0.18, 0.18, 0.18, 0.18, 0.18, 0.18,        &
@@ -499,21 +500,21 @@ module noahmp_tables
      &                            0.00, 0.00, 0.00, 0.00, 0.00, 0.00 /
 
 
-    real :: wrrat_table(mvt)       !wood to non-wood ratio
+    real (kind=kind_phys) :: wrrat_table(mvt)       !wood to non-wood ratio
       data ( wrrat_table (i),i=1,mvt) / 30.0, 30.0, 30.0, 30.0, 30.0, 3.00,  &
      &                            3.00, 3.00, 3.00, 0.00, 15.0, 0.00,        &
      &                            0.00, 0.00, 0.00, 0.00, 0.00, 3.00,        &
      &                            3.00, 0.00, 0.00, 0.00, 0.00, 0.00,        &
      &                            0.00, 0.00, 0.00, 0.00, 0.00, 0.00 /
 
-    real :: wdpool_table(mvt)      !wood pool (switch 1 or 0) depending on woody or not [-]
+    real (kind=kind_phys) :: wdpool_table(mvt)      !wood pool (switch 1 or 0) depending on woody or not [-]
      data ( wdpool_table(i),i=1,mvt) / 1.00, 1.00, 1.00, 1.00, 1.00, 1.00,   &
      &                            1.00, 1.00, 1.00, 0.00,  0.5, 0.00,        &
      &                            0.00, 0.00, 0.00, 0.00, 0.00, 1.00,        &
      &                            1.00, 0.00, 0.00, 0.00, 0.00, 0.00,        &
      &                            0.00, 0.00, 0.00, 0.00, 0.00, 0.00 /
 
-    real :: tdlef_table(mvt)       !characteristic t for leaf freezing [k]
+    real (kind=kind_phys) :: tdlef_table(mvt)       !characteristic t for leaf freezing [k]
       data ( tdlef_table (i),i=1,mvt) / 278, 278, 268, 278, 268, 278,        &
      &                            278, 278, 278, 278, 268, 278,              &
      &                            278, 278,   0,   0,   0, 268,              &
@@ -521,28 +522,28 @@ module noahmp_tables
      &                              0,   0,   0,   0,   0,   0 /
 
 
-    real :: nroot_table(mvt)       !number of soil layers with root present
+    real (kind=kind_phys) :: nroot_table(mvt)       !number of soil layers with root present
       data ( nroot_table (i),i=1,mvt) / 4,  4,  4,  4,  4,  3,               &
      &                            3,  3,  3,  3,  2,  3,                     &
      &                            1,  3,  1,  1,  0,  3,                     &
      &                            3,  2,  0,  0,  0,  0,                     &
      &                            0,  0,  0,  0,  0,  0 /
 
-    real :: rgl_table(mvt)         !parameter used in radiation stress function
+    real (kind=kind_phys) :: rgl_table(mvt)         !parameter used in radiation stress function
       data ( rgl_table (i),i=1,mvt)   / 30.0,  30.0, 30.0, 30.0, 30.0, 100.0,&
      &                           100.0, 100.0, 65.0, 100.0, 65.0, 100.0,     &
      &                           999.0, 100.0, 999.0, 999.0, 30.0, 100.0,    &
      &                           100.0, 100.0, 0.00,  0.00,  0.00, 0.00,     &
      &                            0.00, 0.00, 0.00, 0.00, 0.00, 0.00 /
 
-    real :: rs_table(mvt)          !minimum stomatal resistance [s m-1]
+    real (kind=kind_phys) :: rs_table(mvt)          !minimum stomatal resistance [s m-1]
       data ( rs_table (i),i=1,mvt)    / 125.0, 150.0,150.0,100.0,125.0,300.0,&
      &                            170.0,300.0, 70.0, 40.0, 70.0, 40.0,       &
      &                            200.0, 40.0, 999.0,999.0,100.0,150.0,      &
      &                            150.0, 200.0,0.00, 0.00, 0.00, 0.00,       &
      &                            0.00, 0.00, 0.00, 0.00, 0.00, 0.00 /
 
-    real :: hs_table(mvt)          !parameter used in vapor pressure deficit function
+    real (kind=kind_phys) :: hs_table(mvt)          !parameter used in vapor pressure deficit function
       data ( hs_table (i),i=1,mvt)    / 47.35,41.69,47.35,54.53,51.93,42.00, &
      &                            39.18, 42.00, 54.53, 36.35, 55.97, 36.25,  &
      &                            999.0, 36.25, 999.0, 999.0, 51.75, 42.00,  &
@@ -550,14 +551,14 @@ module noahmp_tables
      &                            0.00, 0.00, 0.00, 0.00, 0.00, 0.00 /
 
 
-    real :: topt_table(mvt)        !optimum transpiration air temperature [k]
+    real (kind=kind_phys) :: topt_table(mvt)        !optimum transpiration air temperature [k]
       data ( topt_table (i),i=1,mvt)  / 298.0,298.0,298.0,298.0,298.0,298.0, &
     &                             298.0, 298.0, 298.0, 298.0, 298.0, 298.0,  &
     &                             298.0, 298.0, 298.0, 298.0, 298.0, 298.0,  &
     &                             298.0, 298.0,  0.00,   0.00, 0.00,  0.00,  &
     &                             0.00, 0.00, 0.00, 0.00, 0.00, 0.00 /
 
-    real :: rsmax_table(mvt)       !maximal stomatal resistance [s m-1]
+    real (kind=kind_phys) :: rsmax_table(mvt)       !maximal stomatal resistance [s m-1]
       data ( rsmax_table (i),i=1,mvt) / 5000., 5000.,5000.,5000.,5000.,5000.,&
      &                            5000., 5000., 5000., 5000., 5000., 5000.,  &
      &                            5000., 5000., 5000., 5000., 5000., 5000.,  &
@@ -566,7 +567,7 @@ module noahmp_tables
 
 !!!!!!!!!!!!!! Wield not defined but read !!!!!!!!!!!!!!!!1
 
-      real :: slarea_table(mvt)
+      real (kind=kind_phys) :: slarea_table(mvt)
 
       data (slarea_table (i),i=1,mvt) / 0.0090,0.0200,0.0200,0.0258,0.0223,  &
      &                            0.0227, 0.0188, 0.0227, 0.0236, 0.0060,    &
@@ -577,7 +578,7 @@ module noahmp_tables
 
 !    &_______________________________________________________________________&
 
-      real :: esp1_table(mvt)
+      real (kind=kind_phys) :: esp1_table(mvt)
 
       data (esp1_table (i),i=1,mvt)  / 0.46, 0.00, 0.00,46.86,30.98, 21.62,  &
      &                            0.11, 21.62, 22.80, 0.02,  0.815,   0.00,  &
@@ -585,7 +586,7 @@ module noahmp_tables
      &                            0.0,   0.0,0.0, 0.0, 0.0, 0.0,             &
      &                             0.0, 0.0, 0.0, 0.0, 0.0, 0.0 /
 
-      real :: esp2_table(mvt)
+      real (kind=kind_phys) :: esp2_table(mvt)
 
       data (esp2_table (i),i=1,mvt)  / 3.34, 0.00, 0.00, 0.38, 0.96, 0.92,   &
      &                            0.22,   0.92,   0.59, 0.05,  0.535, 0.00,  &
@@ -594,7 +595,7 @@ module noahmp_tables
      &                             0.0, 0.0, 0.0, 0.0, 0.0, 0.0 /
 
 
-      real :: esp3_table(mvt)
+      real (kind=kind_phys) :: esp3_table(mvt)
 
       data (esp3_table (i),i=1,mvt)  / 1.85, 0.00, 0.00, 1.84, 1.84, 1.73,   &
      &                            1.26, 1.73, 1.37,   0.03,  0.605,   0.00,  &
@@ -605,14 +606,14 @@ module noahmp_tables
 
 !    &_______________________________________________________________________&
 
-      real :: esp4_table(mvt)
+      real (kind=kind_phys) :: esp4_table(mvt)
 
       data (esp4_table (i),i=1,mvt)  / 0.0,  0.0,  0.0,    0.0,  0.0, 0.0,   &
      &                            0.0,  0.0,  0.0,    0.0,    0.0,    0.0,   &
      &                            0.0,  0.0,  0.0,    0.0,    0.0,    0.0,   &
      &                            0.0,  0.0,  0.0,    0.0,    0.0,    0.0,   &
      &                            0.0,  0.0,  0.0,    0.0,    0.0,    0.0 /
-      real :: esp5_table(mvt)
+      real (kind=kind_phys) :: esp5_table(mvt)
 
      data (esp5_table (i),i=1,mvt)  / 0.0,  0.0,  0.0, 0.0,  0.0,    0.0,    &
      &                            0.0,  0.0,  0.0,    0.0,    0.0,    0.0,   &
@@ -624,7 +625,7 @@ module noahmp_tables
 
 ! soilparm.tbl parameters
 
-    real :: bexp_table(max_soiltyp)   
+    real (kind=kind_phys) :: bexp_table(max_soiltyp)   
 
       data (bexp_table(i), i=1,slcats) /2.79,  4.26, 4.74, 5.33, 5.33,  5.25,&
      &    6.77,  8.72,  8.17, 10.73,  10.39, 11.55,                          &
@@ -632,14 +633,14 @@ module noahmp_tables
      &    2.79,  0.00,  0.00, 0.00,  0.00,  0.00,                            &
      &    0.00,  0.00,  0.00, 0.00,  0.00,  0.00 /
 
-    real :: smcdry_table(max_soiltyp)  
+    real (kind=kind_phys) :: smcdry_table(max_soiltyp)  
        data (smcdry_table(i), i=1,slcats) /0.010, 0.028, 0.047, 0.084, 0.084,&
      &   0.066,  0.067, 0.120, 0.103, 0.100, 0.126, 0.138,                   &
      &   0.066, 0.0, 0.006, 0.028, 0.030, 0.006,                             &
      &   0.010, 0.000, 0.000, 0.000, 0.000, 0.000,                           &
      &   0.000, 0.000, 0.000, 0.000, 0.000, 0.000 / 
 
-    real :: f1_table(max_soiltyp)     
+    real (kind=kind_phys) :: f1_table(max_soiltyp)     
 
        data (f1_table(i), i=1,slcats) /-0.472, -1.044, -0.569, 0.162, 0.162, &
      &  -0.327, -1.491, -1.118, -1.297,  -3.209,  -1.916,  -2.138,           &
@@ -647,7 +648,7 @@ module noahmp_tables
      &   -0.472,  0.000,  0.000,  0.000,  0.000,  0.000,                     &
      &   0.000,  0.000,  0.000,  0.000,  0.000,  0.000 / 
 
-    real :: smcmax_table(max_soiltyp)
+    real (kind=kind_phys) :: smcmax_table(max_soiltyp)
 
        data (smcmax_table(i), i=1,slcats) /0.339, 0.421, 0.434, 0.476, 0.476,&
      &   0.439, 0.404, 0.464, 0.465, 0.406, 0.468, 0.468,                    &
@@ -655,7 +656,7 @@ module noahmp_tables
      &   0.339, 0.339, 0.000, 0.000, 0.000, 0.000,                           &
      &  0.000, 0.000, 0.000, 0.000, 0.000, 0.000 /
 
-    real :: smcref_table(max_soiltyp)  
+    real (kind=kind_phys) :: smcref_table(max_soiltyp)  
 
       data (smcref_table(i), i=1,slcats) /0.236, 0.383, 0.383, 0.360, 0.383, &
      &   0.329,  0.314, 0.387, 0.382, 0.338, 0.404, 0.412,                   &
@@ -663,7 +664,7 @@ module noahmp_tables
      &   0.236, 0.000, 0.000, 0.000, 0.000, 0.000,                           &
      &   0.000, 0.000, 0.000, 0.000, 0.000, 0.000 /
 
-    real :: psisat_table(max_soiltyp) 
+    real (kind=kind_phys) :: psisat_table(max_soiltyp) 
      
       data (psisat_table(i), i=1,slcats) /0.069, 0.036, 0.141, 0.759, 0.759, &
      &   0.355, 0.135, 0.617, 0.263, 0.098, 0.324, 0.468,                    &
@@ -671,7 +672,7 @@ module noahmp_tables
      &   0.069, 0.00, 0.00, 0.00, 0.00, 0.00,                                &
      &   0.00, 0.00, 0.00, 0.00, 0.00, 0.00 /
 
-    real :: dksat_table(max_soiltyp) 
+    real (kind=kind_phys) :: dksat_table(max_soiltyp) 
 
        data (dksat_table(i), i=1,slcats) /4.66e-5, 1.41e-5, 5.23e-6, 2.81e-6, &
      &   2.81e-6, 3.38e-6, 4.45e-6, 2.03e-6, 2.45e-6,7.22e-6,                &
@@ -680,7 +681,7 @@ module noahmp_tables
      &   0.00, 0.00, 0.00, 0.00, 0.00,                                       &
      &   0.00, 0.00, 0.00, 0.00, 0.00 /
 
-    real :: dwsat_table(max_soiltyp)
+    real (kind=kind_phys) :: dwsat_table(max_soiltyp)
 
        data (dwsat_table(i), i=1,slcats)  /0.608e-6, 0.514e-5, 0.805e-5,     &
      &   0.239e-4, 0.239e-4,0.143e-4, 0.99e-5, 0.237e-4, 0.113e-4, 0.187e-4, &
@@ -689,7 +690,7 @@ module noahmp_tables
      &   0.00, 0.00, 0.00, 0.00,                                             &
      &   0.00, 0.00, 0.00, 0.00, 0.00 /
 
-    real :: smcwlt_table(max_soiltyp)   
+    real (kind=kind_phys) :: smcwlt_table(max_soiltyp)   
 
        data (smcwlt_table(i), i=1,slcats) /0.010, 0.028, 0.047, 0.084, 0.084,&
      &   0.066, 0.067, 0.120, 0.103, 0.100, 0.126, 0.138,                    &
@@ -697,7 +698,7 @@ module noahmp_tables
      &   0.010, 0.000, 0.000, 0.000, 0.000, 0.000,                           &
      &   0.000, 0.000, 0.000, 0.000, 0.000, 0.000 /
 
-    real :: quartz_table(max_soiltyp)  
+    real (kind=kind_phys) :: quartz_table(max_soiltyp)  
 
       data (quartz_table(i), i=1,slcats) /0.92, 0.82, 0.60, 0.25, 0.10,      &
      &   0.40, 0.60, 0.10, 0.35, 0.52, 0.10,                                 &
@@ -711,53 +712,53 @@ module noahmp_tables
      data (slope_table(i), i=1,9) /0.1, 0.6, 1.0, 0.35, 0.55, 0.8,     &
      &     0.63, 0.0, 0.0 /
     
-    real :: csoil_table   = 2.00e+6    !soil heat capacity [j m-3 k-1]
-    real :: refdk_table  = 2.0e-6      !parameter in the surface runoff parameterization
-    real :: refkdt_table = 3.0         !parameter in the surface runoff parameterization
-    real :: frzk_table  =0.15          !frozen ground parameter
-    real :: zbot_table  =  -8.0        !depth [m] of lower boundary soil temperature
-    real :: czil_table = 0.075         !parameter used in the calculation of the roughness length for heat
+    real (kind=kind_phys) :: csoil_table   = 2.00e+6    !soil heat capacity [j m-3 k-1]
+    real (kind=kind_phys) :: refdk_table  = 2.0e-6      !parameter in the surface runoff parameterization
+    real (kind=kind_phys) :: refkdt_table = 3.0         !parameter in the surface runoff parameterization
+    real (kind=kind_phys) :: frzk_table  =0.15          !frozen ground parameter
+    real (kind=kind_phys) :: zbot_table  =  -8.0        !depth [m] of lower boundary soil temperature
+    real (kind=kind_phys) :: czil_table = 0.075         !parameter used in the calculation of the roughness length for heat
 
 ! mptable.tbl radiation parameters
 
 !    &_______________________________________________________________________&
-    real :: albsat_table(msc,mband)   !saturated soil albedos: 1=vis, 2=nir
+    real (kind=kind_phys) :: albsat_table(msc,mband)   !saturated soil albedos: 1=vis, 2=nir
     data(albsat_table(i,1),i=1,8)/0.15,0.11,0.10,0.09,0.08,0.07,0.06,0.05/
     data(albsat_table(i,2),i=1,8)/0.30,0.22,0.20,0.18,0.16,0.14,0.12,0.10/
 
-    real :: albdry_table(msc,mband)   !dry soil albedos: 1=vis, 2=nir
+    real (kind=kind_phys) :: albdry_table(msc,mband)   !dry soil albedos: 1=vis, 2=nir
     data(albdry_table(i,1),i=1,8)/0.27,0.22,0.20,0.18,0.16,0.14,0.12,0.10/
     data(albdry_table(i,2),i=1,8)/0.54,0.44,0.40,0.36,0.32,0.28,0.24,0.20/
 
-    real :: albice_table(mband)       !albedo land ice: 1=vis, 2=nir
+    real (kind=kind_phys) :: albice_table(mband)       !albedo land ice: 1=vis, 2=nir
     data (albice_table(i),i=1,mband) /0.80, 0.55/
 
-    real :: alblak_table(mband)       !albedo frozen lakes: 1=vis, 2=nir
+    real (kind=kind_phys) :: alblak_table(mband)       !albedo frozen lakes: 1=vis, 2=nir
     data (alblak_table(i),i=1,mband) /0.60, 0.40/
 
-    real :: omegas_table(mband)       !two-stream parameter omega for snow
+    real (kind=kind_phys) :: omegas_table(mband)       !two-stream parameter omega for snow
     data (omegas_table(i),i=1,mband) /0.8, 0.4/
 
-    real :: betads_table  = 0.5            !two-stream parameter betad for snow
-    real :: betais_table  = 0.5            !two-stream parameter betad for snow
+    real (kind=kind_phys) :: betads_table  = 0.5            !two-stream parameter betad for snow
+    real (kind=kind_phys) :: betais_table  = 0.5            !two-stream parameter betad for snow
 
-    real :: eg_table(2)                    !emissivity
+    real (kind=kind_phys) :: eg_table(2)                    !emissivity
     data eg_table /0.97, 0.98 /
 
-    real :: betads, betais
+    real (kind=kind_phys) :: betads, betais
     data betads, betais /0.5, 0.5/
 
 
 ! mptable.tbl global parameters
  
-    real :: co2_table    = 395.e-06  !co2 partial pressure
-    real :: o2_table     = 0.209     !o2 partial pressure
-    real :: timean_table = 10.5      !gridcell mean topgraphic index (global mean)
-    real :: fsatmx_table = 0.38      !maximum surface saturated fraction (global mean)
-    real :: z0sno_table = 0.002     !snow surface roughness length (m) (0.002)
-    real :: ssi_table = 0.03         !liquid water holding capacity for snowpack (m3/m3) (0.03)
-    real :: swemx_table = 1.00       !new snow mass to fully cover old snow (mm)
-    real :: rsurf_snow_table = 50.0   !surface resistance for snow(s/m)
+    real (kind=kind_phys) :: co2_table    = 395.e-06  !co2 partial pressure
+    real (kind=kind_phys) :: o2_table     = 0.209     !o2 partial pressure
+    real (kind=kind_phys) :: timean_table = 10.5      !gridcell mean topgraphic index (global mean)
+    real (kind=kind_phys) :: fsatmx_table = 0.38      !maximum surface saturated fraction (global mean)
+    real (kind=kind_phys) :: z0sno_table = 0.002     !snow surface roughness length (m) (0.002)
+    real (kind=kind_phys) :: ssi_table = 0.03         !liquid water holding capacity for snowpack (m3/m3) (0.03)
+    real (kind=kind_phys) :: swemx_table = 1.00       !new snow mass to fully cover old snow (mm)
+    real (kind=kind_phys) :: rsurf_snow_table = 50.0   !surface resistance for snow(s/m)
 
 
 ! Noah mp crops
@@ -777,71 +778,71 @@ module noahmp_tables
     integer :: hsday_table(ncrop)          ! harvest date
     data (hsday_table(i),i=1,5) /280,300,300,300,300/
 
-    real :: plantpop_table(ncrop)       ! plant density [per ha] - used?
+    real (kind=kind_phys) :: plantpop_table(ncrop)       ! plant density [per ha] - used?
     data (plantpop_table(i),i=1,5) /78.0,78.0,78.0,78.0,78.0/
 
-    real :: irri_table(ncrop)           ! irrigation strategy 0= non-irrigation 1=irrigation (no water-stress)
+    real (kind=kind_phys) :: irri_table(ncrop)           ! irrigation strategy 0= non-irrigation 1=irrigation (no water-stress)
     data (irri_table(i),i=1,5) /0.0,0.0,0.0,0.0,0.0/
 
-    real :: gddtbase_table(ncrop)       ! base temperature for gdd accumulation [c]
+    real (kind=kind_phys) :: gddtbase_table(ncrop)       ! base temperature for gdd accumulation [c]
     data (gddtbase_table(i),i=1,5) /10.0,10.0,10.0,10.0,10.0/
 
-    real :: gddtcut_table(ncrop)        ! upper temperature for gdd accumulation [c]
+    real (kind=kind_phys) :: gddtcut_table(ncrop)        ! upper temperature for gdd accumulation [c]
     data (gddtcut_table(i),i=1,5) /30.0,30.0,30.0,30.0,30.0/
 
-    real :: gdds1_table(ncrop)          ! gdd from seeding to emergence
+    real (kind=kind_phys) :: gdds1_table(ncrop)          ! gdd from seeding to emergence
     data (gdds1_table(i),i=1,5) /60.0,50.0,50.0,50.0,50.0/
 
-    real :: gdds2_table(ncrop)          ! gdd from seeding to initial vegetative 
+    real (kind=kind_phys) :: gdds2_table(ncrop)          ! gdd from seeding to initial vegetative 
     data (gdds2_table(i),i=1,5) /675.0,718.0,718.0,718.0,718.0/
 
-    real :: gdds3_table(ncrop)          ! gdd from seeding to  post vegetative
+    real (kind=kind_phys) :: gdds3_table(ncrop)          ! gdd from seeding to  post vegetative
     data (gdds3_table(i),i=1,5) /1183.0,933.0,933.0,933.0,933.0/
 
-    real :: gdds4_table(ncrop)          ! gdd from seeding to  intial reproductive
+    real (kind=kind_phys) :: gdds4_table(ncrop)          ! gdd from seeding to  intial reproductive
     data (gdds4_table(i),i=1,5) /1253.0,1103.0,1103.0,1103.0,1103.0/
 
-    real :: gdds5_table(ncrop)          ! gdd from seeding to pysical maturity 
+    real (kind=kind_phys) :: gdds5_table(ncrop)          ! gdd from seeding to pysical maturity 
     data (gdds5_table(i),i=1,5) /1605.0,1555.0,1555.0,1555.0,1555.0/
 
     integer :: c3c4_table(ncrop)           ! photosynthetic pathway:  1. = c3 2. = c4
     data (c3c4_table(i),i=1,5) /2.0,1.0,2.0,2.0,2.0/
 
-    real :: aref_table(ncrop)           ! reference maximum co2 assimulation rate 
+    real (kind=kind_phys) :: aref_table(ncrop)           ! reference maximum co2 assimulation rate 
     data (aref_table(i),i=1,5) /7.0,7.0,7.0,7.0,7.0/
 
-    real :: psnrf_table(ncrop)          ! co2 assimulation reduction factor(0-1) (caused by non-modeling part,e.g.pest,weeds)
+    real (kind=kind_phys) :: psnrf_table(ncrop)          ! co2 assimulation reduction factor(0-1) (caused by non-modeling part,e.g.pest,weeds)
     data (psnrf_table(i),i=1,5) /0.85,0.85,0.85,0.85,0.85/
 
-    real :: i2par_table(ncrop)          ! fraction of incoming solar radiation to photosynthetically active radiation
+    real (kind=kind_phys) :: i2par_table(ncrop)          ! fraction of incoming solar radiation to photosynthetically active radiation
     data (i2par_table(i),i=1,5) / 0.5,0.5,0.5,0.5,0.5/
 
-    real :: tassim0_table(ncrop)        ! minimum temperature for co2 assimulation [c]
+    real (kind=kind_phys) :: tassim0_table(ncrop)        ! minimum temperature for co2 assimulation [c]
     data (tassim0_table(i),i=1,5) /8.0,8.0,8.0,8.0,8.0/
 
-    real :: tassim1_table(ncrop)        ! co2 assimulation linearly increasing until temperature reaches t1 [c]
+    real (kind=kind_phys) :: tassim1_table(ncrop)        ! co2 assimulation linearly increasing until temperature reaches t1 [c]
     data (tassim1_table(i),i=1,5) /18.0,18.0,18.0,18.0,18.0/
 
-    real :: tassim2_table(ncrop)        ! co2 assmilation rate remain at aref until temperature reaches t2 [c]
+    real (kind=kind_phys) :: tassim2_table(ncrop)        ! co2 assmilation rate remain at aref until temperature reaches t2 [c]
     data (tassim2_table(i),i=1,5) /30.0,30.0,30.0,30.0,30.0/
 
-    real :: k_table(ncrop)              ! light extinction coefficient
+    real (kind=kind_phys) :: k_table(ncrop)              ! light extinction coefficient
     data ( k_table(i),i=1,5) /0.55,0.55,0.55,0.55,0.55/
 
-    real :: epsi_table(ncrop)           ! initial light use efficiency
+    real (kind=kind_phys) :: epsi_table(ncrop)           ! initial light use efficiency
     data (epsi_table(i),i=1,5) /12.5,12.5,12.5,12.5,12.5/
 
-    real :: q10mr_table(ncrop)          ! q10 for maintainance respiration
+    real (kind=kind_phys) :: q10mr_table(ncrop)          ! q10 for maintainance respiration
     data (q10mr_table(i),i=1,5) /2.0,2.0,2.0,2.0,2.0/
 
-    real :: foln_mx_table(ncrop)        ! foliage nitrogen concentration when f(n)=1 (%)
+    real (kind=kind_phys) :: foln_mx_table(ncrop)        ! foliage nitrogen concentration when f(n)=1 (%)
     data (foln_mx_table(i),i=1,5) /1.5,1.5,1.5,1.5,1.5/
 
-    real :: lefreez_table(ncrop)        ! characteristic t for leaf freezing [k]
+    real (kind=kind_phys) :: lefreez_table(ncrop)        ! characteristic t for leaf freezing [k]
     data (lefreez_table(i),i=1,5) /268,268,268,268,268/
 
 
-    real :: dile_fc_table(ncrop,nstage) ! coeficient for temperature leaf stress death [1/s]
+    real (kind=kind_phys) :: dile_fc_table(ncrop,nstage) ! coeficient for temperature leaf stress death [1/s]
     data (dile_fc_table(i,1),i=1,5) /0.0,0.0,0.0,0.0,0.0/
     data (dile_fc_table(i,2),i=1,5) /0.0,0.0,0.0,0.0,0.0/
     data (dile_fc_table(i,3),i=1,5) /0.0,0.0,0.0,0.0,0.0/
@@ -851,7 +852,7 @@ module noahmp_tables
     data (dile_fc_table(i,7),i=1,5) /0.0,0.0,0.0,0.0,0.0/
     data (dile_fc_table(i,8),i=1,5) /0.0,0.0,0.0,0.0,0.0/
 
-    real :: dile_fw_table(ncrop,nstage) ! coeficient for water leaf stress death [1/s]
+    real (kind=kind_phys) :: dile_fw_table(ncrop,nstage) ! coeficient for water leaf stress death [1/s]
     data (dile_fw_table(i,1),i=1,5) /0.0,0.0,0.0,0.0,0.0/
     data (dile_fw_table(i,2),i=1,5) /0.0,0.0,0.0,0.0,0.0/
     data (dile_fw_table(i,3),i=1,5) /0.0,0.0,0.0,0.0,0.0/
@@ -861,10 +862,10 @@ module noahmp_tables
     data (dile_fw_table(i,7),i=1,5) /0.0,0.0,0.0,0.0,0.0/
     data (dile_fw_table(i,8),i=1,5) /0.0,0.0,0.0,0.0,0.0/
 
-    real :: fra_gr_table(ncrop)         ! fraction of growth respiration
+    real (kind=kind_phys) :: fra_gr_table(ncrop)         ! fraction of growth respiration
     data (fra_gr_table(i),i=1,5) /0.2,0.2,0.2,0.2,0.2/
 
-    real :: lf_ovrc_table(ncrop,nstage) ! fraction of leaf turnover  [1/s]
+    real (kind=kind_phys) :: lf_ovrc_table(ncrop,nstage) ! fraction of leaf turnover  [1/s]
     data (lf_ovrc_table(i,1),i=1,5) /0.0,0.0,0.0,0.0,0.0/
     data (lf_ovrc_table(i,2),i=1,5) /0.0,0.0,0.0,0.0,0.0/
     data (lf_ovrc_table(i,3),i=1,5) /0.0,0.0,0.0,0.0,0.0/
@@ -874,7 +875,7 @@ module noahmp_tables
     data (lf_ovrc_table(i,7),i=1,5) /0.0,0.0,0.0,0.0,0.0/
     data (lf_ovrc_table(i,8),i=1,5) /0.0,0.0,0.0,0.0,0.0/
 
-    real :: st_ovrc_table(ncrop,nstage) ! fraction of stem turnover  [1/s]
+    real (kind=kind_phys) :: st_ovrc_table(ncrop,nstage) ! fraction of stem turnover  [1/s]
     data (st_ovrc_table(i,1),i=1,5) /0.0,0.0,0.0,0.0,0.0/
     data (st_ovrc_table(i,2),i=1,5) /0.0,0.0,0.0,0.0,0.0/
     data (st_ovrc_table(i,3),i=1,5) /0.0,0.0,0.0,0.0,0.0/
@@ -884,7 +885,7 @@ module noahmp_tables
     data (st_ovrc_table(i,7),i=1,5) /0.0,0.0,0.0,0.0,0.0/
     data (st_ovrc_table(i,8),i=1,5) /0.0,0.0,0.0,0.0,0.0/
 
-    real :: rt_ovrc_table(ncrop,nstage) ! fraction of root tunrover  [1/s]
+    real (kind=kind_phys) :: rt_ovrc_table(ncrop,nstage) ! fraction of root tunrover  [1/s]
     data (rt_ovrc_table(i,1),i=1,5) /0.0,0.0,0.0,0.0,0.0/
     data (rt_ovrc_table(i,2),i=1,5) /0.0,0.0,0.0,0.0,0.0/
     data (rt_ovrc_table(i,3),i=1,5) /0.0,0.0,0.0,0.0,0.0/
@@ -894,19 +895,19 @@ module noahmp_tables
     data (rt_ovrc_table(i,7),i=1,5) /0.0,0.0,0.0,0.0,0.0/
     data (rt_ovrc_table(i,8),i=1,5) /0.0,0.0,0.0,0.0,0.0/
 
-    real :: lfmr25_table(ncrop)         !  leaf maintenance respiration at 25c [umol co2/m**2  /s]
+    real (kind=kind_phys) :: lfmr25_table(ncrop)         !  leaf maintenance respiration at 25c [umol co2/m**2  /s]
     data (lfmr25_table(i),i=1,5) /1.0,1.0,1.0,1.0,1.0/
 
-    real :: stmr25_table(ncrop)         !  stem maintenance respiration at 25c [umol co2/kg bio/s]
+    real (kind=kind_phys) :: stmr25_table(ncrop)         !  stem maintenance respiration at 25c [umol co2/kg bio/s]
     data (stmr25_table(i),i=1,5) /0.05,0.1,0.1,0.1,0.1/
 
-    real :: rtmr25_table(ncrop)         !  root maintenance respiration at 25c [umol co2/kg bio/s]
+    real (kind=kind_phys) :: rtmr25_table(ncrop)         !  root maintenance respiration at 25c [umol co2/kg bio/s]
     data (rtmr25_table(i),i=1,5) /0.05,0.0,0.0,0.0,0.0/
 
-    real :: grainmr25_table(ncrop)      ! grain maintenance respiration at 25c [umol co2/kg bio/s]
+    real (kind=kind_phys) :: grainmr25_table(ncrop)      ! grain maintenance respiration at 25c [umol co2/kg bio/s]
     data (grainmr25_table(i),i=1,5) /0.0,0.1,0.1,0.1,0.1/
 
-    real :: lfpt_table(ncrop,nstage)    ! fraction of carbohydrate flux to leaf
+    real (kind=kind_phys) :: lfpt_table(ncrop,nstage)    ! fraction of carbohydrate flux to leaf
     data (lfpt_table(i,1),i=1,5) /0.0,0.0,0.0,0.0,0.0/
     data (lfpt_table(i,2),i=1,5) /0.0,0.0,0.0,0.0,0.0/
     data (lfpt_table(i,3),i=1,5) /0.4,0.4,0.4,0.4,0.4/
@@ -917,7 +918,7 @@ module noahmp_tables
     data (lfpt_table(i,8),i=1,5) /0.0,0.0,0.0,0.0,0.0/
 
 
-    real :: stpt_table(ncrop,nstage)    ! fraction of carbohydrate flux to stem
+    real (kind=kind_phys) :: stpt_table(ncrop,nstage)    ! fraction of carbohydrate flux to stem
     data (stpt_table(i,1),i=1,5) /0.0,0.0,0.0,0.0,0.0/
     data (stpt_table(i,2),i=1,5) /0.0,0.0,0.0,0.0,0.0/
     data (stpt_table(i,3),i=1,5) /0.2,0.2,0.2,0.2,0.2/
@@ -928,7 +929,7 @@ module noahmp_tables
     data (stpt_table(i,8),i=1,5) /0.0,0.0,0.0,0.0,0.0/
 
 
-    real :: rtpt_table(ncrop,nstage)    ! fraction of carbohydrate flux to root
+    real (kind=kind_phys) :: rtpt_table(ncrop,nstage)    ! fraction of carbohydrate flux to root
     data (rtpt_table(i,1),i=1,5) /0.0,0.0,0.0,0.0,0.0/
     data (rtpt_table(i,2),i=1,5) /0.0,0.0,0.0,0.0,0.0/
     data (rtpt_table(i,3),i=1,5) /0.34,0.4,0.4,0.4,0.4/
@@ -938,7 +939,7 @@ module noahmp_tables
     data (rtpt_table(i,7),i=1,5) /0.0,0.0,0.0,0.0,0.0/
     data (rtpt_table(i,8),i=1,5) /0.0,0.0,0.0,0.0,0.0/
 
-    real :: grainpt_table(ncrop,nstage) ! fraction of carbohydrate flux to grain
+    real (kind=kind_phys) :: grainpt_table(ncrop,nstage) ! fraction of carbohydrate flux to grain
     data (grainpt_table(i,1),i=1,5) /0.0,0.0,0.0,0.0,0.0/
     data (grainpt_table(i,2),i=1,5) /0.0,0.0,0.0,0.0,0.0/
     data (grainpt_table(i,3),i=1,5) /0.0,0.0,0.0,0.0,0.0/
@@ -948,7 +949,7 @@ module noahmp_tables
     data (grainpt_table(i,7),i=1,5) /0.0,0.0,0.0,0.0,0.0/
     data (grainpt_table(i,8),i=1,5) /0.0,0.0,0.0,0.0,0.0/
 
-    real :: bio2lai_table(ncrop)        ! leaf are per living leaf biomass [m^2/kg]
+    real (kind=kind_phys) :: bio2lai_table(ncrop)        ! leaf are per living leaf biomass [m^2/kg]
     data (bio2lai_table(i),i=1,5) /0.035,0.015,0.015,0.015,0.015/
 
 end module noahmp_tables
