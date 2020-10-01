@@ -6,14 +6,17 @@ add_library(
 
 target_include_directories(stochastic_physics_wrapper PRIVATE ${CMAKE_BINARY_DIR}/stochastic_physics)
 if(CCPP)
-  target_include_directories(stochastic_physics_wrapper PRIVATE ${CMAKE_BINARY_DIR}/FV3/ccpp/framework/src)
-  target_include_directories(stochastic_physics_wrapper PRIVATE ${CMAKE_BINARY_DIR}/FV3/ccpp/physics)
+  target_include_directories(stochastic_physics_wrapper PRIVATE ${CMAKE_BINARY_DIR}/FV3/ccpp/framework/src
+                                                                ${CMAKE_BINARY_DIR}/FV3/ccpp/physics)
 endif()
 # DH* is there a better way to do this?
 target_include_directories(stochastic_physics_wrapper PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/../mod>)
 # *DH
-target_link_libraries(stochastic_physics_wrapper fms)
-target_link_libraries(stochastic_physics_wrapper stochastic_physics)
-target_link_libraries(stochastic_physics_wrapper gfsphysics)
-target_link_libraries(stochastic_physics_wrapper fv3dycore)
+target_link_libraries(stochastic_physics_wrapper PUBLIC fms
+                                                        stochastic_physics
+                                                        gfsphysics
+                                                        fv3dycore)
 
+if(OpenMP_Fortran_FOUND)
+  target_link_libraries(gfsphysic PUBLIC OpenMP::OpenMP_Fortran)
+endif()
