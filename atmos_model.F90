@@ -99,12 +99,12 @@ use CCPP_data,          only: ccpp_suite,                      &
                               IPD_interstitial => GFS_interstitial
 use IPD_driver,         only: IPD_initialize, IPD_initialize_rst
 use CCPP_driver,        only: CCPP_step, non_uniform_blocks
+
+use stochastic_physics_wrapper_mod, only: stochastic_physics_wrapper
 #else
 use IPD_driver,         only: IPD_initialize, IPD_initialize_rst, IPD_step
 use physics_abstraction_layer, only: time_vary_step, radiation_step1, physics_step1, physics_step2
 #endif
-
-use stochastic_physics_wrapper_mod, only: stochastic_physics_wrapper
 
 use FV3GFS_io_mod,      only: FV3GFS_restart_read, FV3GFS_restart_write, &
                               FV3GFS_IPD_checksum,                       &
@@ -291,15 +291,15 @@ subroutine update_atmos_radiation_physics (Atmos)
 #ifdef CCPP
       call CCPP_step (step="time_vary", nblks=Atm_block%nblks, ierr=ierr)
       if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP time_vary step failed')
+
+!--- call stochastic physics pattern generation / cellular automata
+      call stochastic_physics_wrapper(IPD_Control, IPD_Data, Atm_block, ierr)
+      if (ierr/=0)  call mpp_error(FATAL, 'Call to stochastic_physics_wrapper failed')
+
 #else
       Func1d => time_vary_step
       call IPD_step (IPD_Control, IPD_Data(:), IPD_Diag, IPD_Restart, IPD_func1d=Func1d)
 #endif
-
-!--- call stochastic physics pattern generation / cellular automata
-    call stochastic_physics_wrapper(IPD_Control, IPD_Data, Atm_block, ierr) 
-    if (ierr/=0)  call mpp_error(FATAL, 'Call to stochastic_physics_wrapper failed')
-   
 
 !--- if coupled, assign coupled fields
 
@@ -625,13 +625,14 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
 #ifdef CCPP
    call IPD_initialize (IPD_Control, IPD_Data, IPD_Diag, IPD_Restart, &
                         IPD_Interstitial, commglobal, mpp_npes(), Init_parm)
-#else
-   call IPD_initialize (IPD_Control, IPD_Data, IPD_Diag, IPD_Restart, Init_parm)
-#endif
 
 !--- Initialize stochastic physics pattern generation / cellular automata for first time step
    call stochastic_physics_wrapper(IPD_Control, IPD_Data, Atm_block, ierr)
    if (ierr/=0)  call mpp_error(FATAL, 'Call to stochastic_physics_wrapper failed')
+
+#else
+   call IPD_initialize (IPD_Control, IPD_Data, IPD_Diag, IPD_Restart, Init_parm)
+#endif
 
    Atmos%Diag => IPD_Diag
 
@@ -742,6 +743,15 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    else
      fv3Clock = mpp_clock_id( 'FV3 Dycore            ', flags=clock_flag_default, grain=CLOCK_COMPONENT )
    endif
+
+!--- get bottom layer data from dynamical core for coupling
+   call atmosphere_get_bottom_layer (Atm_block, DYCORE_Data)
+
+    !if in coupled mode, set up coupled fields
+    if (IPD_Control%cplflx .or. IPD_Control%cplwav) then
+      if (mpp_pe() == mpp_root_pe()) print *,'COUPLING: IPD layer'
+      call setup_exportdata(ierr)
+    endif
 
 #ifdef CCPP
    ! Set flag for first time step of time integration
@@ -911,8 +921,6 @@ subroutine update_atmos_model_state (Atmos)
 
     !if in coupled mode, set up coupled fields
     if (IPD_Control%cplflx .or. IPD_Control%cplwav) then
-!     if (mpp_pe() == mpp_root_pe()) print *,'COUPLING: IPD layer'
-!jw       call setup_exportdata(IPD_Control, IPD_Data, Atm_block)
       call setup_exportdata(rc)
     endif
 
@@ -2016,7 +2024,7 @@ end subroutine atmos_data_type_chksum
     integer                :: j, i, ix, nb, isc, iec, jsc, jec, idx
     real(IPD_kind_phys)    :: rtime, rtimek
 !
-!   if (mpp_pe() == mpp_root_pe()) print *,'enter setup_exportdata'
+    if (mpp_pe() == mpp_root_pe()) print *,'enter setup_exportdata'
 
     isc = IPD_control%isc
     iec = IPD_control%isc+IPD_control%nx-1
@@ -2579,6 +2587,7 @@ end subroutine atmos_data_type_chksum
 
     ! bottom layer temperature (t)
     idx = queryfieldlist(exportFieldsList,'inst_temp_height_lowest')
+    if (mpp_pe() == mpp_root_pe()) print *,'cpl, in get inst_temp_height_lowest'
     if (idx > 0 ) then
 !$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
@@ -2592,6 +2601,7 @@ end subroutine atmos_data_type_chksum
           endif
         enddo
       enddo
+    if (mpp_pe() == mpp_root_pe()) print *,'cpl, in get inst_temp_height_lowest=',exportData(isc,jsc,idx)
     endif
 
     ! bottom layer specific humidity (q)
@@ -2728,7 +2738,7 @@ end subroutine atmos_data_type_chksum
           IPD_Data(nb)%coupling%snow_cpl(ix)   = zero
         enddo
       enddo
-      if (mpp_pe() == mpp_root_pe()) print *,'zeroing coupling fields at kdt= ',IPD_Control%kdt
+      if (mpp_pe() == mpp_root_pe()) print *,'zeroing coupling accumulated fields at kdt= ',IPD_Control%kdt
     endif !cplflx
 !   if (mpp_pe() == mpp_root_pe()) print *,'end of setup_exportdata'
 
