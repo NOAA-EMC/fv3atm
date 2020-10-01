@@ -1055,7 +1055,6 @@ module GFS_typedefs
 !--- tracer handling
     character(len=32), pointer :: tracer_names(:) !< array of initialized tracers from dynamic core
     integer              :: ntrac           !< number of tracers
-    character(len=20), pointer :: fscav_aero(:)   !< aerosol scavenging factors
 #ifdef CCPP
     integer              :: ntracp1         !< number of tracers plus one
     integer              :: nqrimef         !< tracer index for mass weighted rime factor
@@ -1081,7 +1080,7 @@ module GFS_typedefs
     integer              :: ntchm           !< number of chemical tracers
     integer              :: ntchs           !< tracer index for first chemical tracer
     logical, pointer     :: ntdiag(:) => null() !< array to control diagnostics for chemical tracers
-    real(kind=kind_phys), pointer :: fscav_sas(:)  => null() !< coefficients for aerosol scavenging in samfdeep/samfshal
+    real(kind=kind_phys), pointer :: fscav(:)  => null() !< array of aerosol scavenging coefficients
 
     !--- derived totals for phy_f*d
     integer              :: ntot2d          !< total number of variables for phyf2d
@@ -1774,7 +1773,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: fm10_ocean(:)      => null()  !<
     real (kind=kind_phys)               :: frain                         !<
     real (kind=kind_phys), pointer      :: frland(:)          => null()  !<
-    real (kind=kind_phys), pointer      :: fscav_cs(:)        => null()  !< fraction of tracer scavenged in cs_conv
+    real (kind=kind_phys), pointer      :: fscav(:)           => null()  !<
     real (kind=kind_phys), pointer      :: fswtr(:)           => null()  !<
     real (kind=kind_phys), pointer      :: gabsbdlw(:)        => null()  !<
     real (kind=kind_phys), pointer      :: gabsbdlw_ice(:)    => null()  !<
@@ -1987,8 +1986,6 @@ module GFS_typedefs
     ! RRTMGP
     integer                             :: ipsdlw0                              !<
     integer                             :: ipsdsw0                              !<
-    real (kind=kind_phys), pointer      :: pcldtaulw(:,:)            => null()  !<
-    real (kind=kind_phys), pointer      :: pcldtausw(:,:)            => null()  !<
     real (kind=kind_phys), pointer      :: sktp1r(:)                 => null()  !<
     real (kind=kind_phys), pointer      :: p_lay(:,:)                => null()  !<
     real (kind=kind_phys), pointer      :: p_lev(:,:)                => null()  !<
@@ -2057,6 +2054,14 @@ module GFS_typedefs
     type(ty_source_func_lw)             :: sources                              !< RRTMGP DDT
 #endif
 
+    !-- HWRF physics: dry mixing ratios
+    real (kind=kind_phys), pointer :: qv_r(:,:)               => null()  !<
+    real (kind=kind_phys), pointer :: qc_r(:,:)               => null()  !<
+    real (kind=kind_phys), pointer :: qi_r(:,:)               => null()  !<
+    real (kind=kind_phys), pointer :: qr_r(:,:)               => null()  !<
+    real (kind=kind_phys), pointer :: qs_r(:,:)               => null()  !<
+    real (kind=kind_phys), pointer :: qg_r(:,:)               => null()  !<
+
     !-- GSD drag suite
     real (kind=kind_phys), pointer      :: varss(:)           => null()  !<
     real (kind=kind_phys), pointer      :: ocss(:)            => null()  !<
@@ -2067,6 +2072,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: f_rain     (:,:)   => null()  !<
     real (kind=kind_phys), pointer :: f_ice      (:,:)   => null()  !<
     real (kind=kind_phys), pointer :: f_rimef    (:,:)   => null()  !<
+    real (kind=kind_phys), pointer :: cwm        (:,:)   => null()  !<
 
 
     contains
@@ -4094,20 +4100,20 @@ module GFS_typedefs
     endif
 
     ! -- setup aerosol scavenging factors
-    allocate(Model%fscav_sas(Model%ntchm))
+    allocate(Model%fscav(Model%ntchm))
     if (Model%ntchm > 0) then
       ! -- initialize to default
-      Model%fscav_sas = 0.6_kind_phys
+      Model%fscav = 0.6_kind_phys
       n = get_tracer_index(Model%tracer_names, 'seas1', Model%me, Model%master, Model%debug) - Model%ntchs + 1
-      if (n > 0) Model%fscav_sas(n) = 1.0_kind_phys
+      if (n > 0) Model%fscav(n) = 1.0_kind_phys
       n = get_tracer_index(Model%tracer_names, 'seas2', Model%me, Model%master, Model%debug) - Model%ntchs + 1
-      if (n > 0) Model%fscav_sas(n) = 1.0_kind_phys
+      if (n > 0) Model%fscav(n) = 1.0_kind_phys
       n = get_tracer_index(Model%tracer_names, 'seas3', Model%me, Model%master, Model%debug) - Model%ntchs + 1
-      if (n > 0) Model%fscav_sas(n) = 1.0_kind_phys
+      if (n > 0) Model%fscav(n) = 1.0_kind_phys
       n = get_tracer_index(Model%tracer_names, 'seas4', Model%me, Model%master, Model%debug) - Model%ntchs + 1
-      if (n > 0) Model%fscav_sas(n) = 1.0_kind_phys
+      if (n > 0) Model%fscav(n) = 1.0_kind_phys
       n = get_tracer_index(Model%tracer_names, 'seas5', Model%me, Model%master, Model%debug) - Model%ntchs + 1
-      if (n > 0) Model%fscav_sas(n) = 1.0_kind_phys
+      if (n > 0) Model%fscav(n) = 1.0_kind_phys
       ! -- read factors from namelist
       do i = 1, size(fscav_aero)
         j = index(fscav_aero(i),":")
@@ -4115,12 +4121,12 @@ module GFS_typedefs
           read(fscav_aero(i)(j+1:), *, iostat=ios) tem
           if (ios /= 0) cycle
           if (adjustl(fscav_aero(i)(:j-1)) == "*") then
-            Model%fscav_sas = tem
+            Model%fscav = tem
             exit
           else
             n = get_tracer_index(Model%tracer_names, adjustl(fscav_aero(i)(:j-1)), Model%me, Model%master, Model%debug) &
                 - Model%ntchs + 1
-            if (n > 0) Model%fscav_sas(n) = tem
+            if (n > 0) Model%fscav(n) = tem
           endif
         endif
       enddo
@@ -5110,8 +5116,7 @@ module GFS_typedefs
       print *, ' ntia              : ', Model%ntia
       print *, ' ntchm             : ', Model%ntchm
       print *, ' ntchs             : ', Model%ntchs
-      print *, ' fscav_aero        : ', Model%fscav_aero
-      print *, ' fscav_sas         : ', Model%fscav_sas
+      print *, ' fscav             : ', Model%fscav
       print *, ' '
       print *, 'derived totals for phy_f*d'
       print *, ' ntot2d            : ', Model%ntot2d
@@ -6256,7 +6261,7 @@ module GFS_typedefs
     allocate (Interstitial%fm10_land       (IM))
     allocate (Interstitial%fm10_ocean      (IM))
     allocate (Interstitial%frland          (IM))
-    allocate (Interstitial%fscav_cs        (Interstitial%nscav))
+    allocate (Interstitial%fscav           (Interstitial%nscav))
     allocate (Interstitial%fswtr           (Interstitial%nscav))
     allocate (Interstitial%gabsbdlw        (IM))
     allocate (Interstitial%gabsbdlw_ice    (IM))
@@ -6395,8 +6400,6 @@ module GFS_typedefs
     allocate (Interstitial%sktp1r               (IM))
     allocate (Interstitial%fluxlwUP_allsky      (IM, Model%levs+1))
     if (Model%do_RRTMGP) then
-       allocate (Interstitial%pcldtaulw            (IM, Model%levs))
-       allocate (Interstitial%pcldtausw            (IM, Model%levs))
        allocate (Interstitial%tracer               (IM, Model%levs,Model%ntrac))
        allocate (Interstitial%tv_lay               (IM, Model%levs))
        allocate (Interstitial%relhum               (IM, Model%levs))
@@ -6490,10 +6493,19 @@ module GFS_typedefs
        allocate (Interstitial%cnv_nice   (IM,Model%levs))
     end if
     if (Model%imp_physics == Model%imp_physics_fer_hires) then
+    !--- if HWRF physics?
+       allocate (Interstitial%qv_r        (IM,Model%levs))
+       allocate (Interstitial%qc_r        (IM,Model%levs))
+       allocate (Interstitial%qi_r        (IM,Model%levs))
+       allocate (Interstitial%qr_r        (IM,Model%levs))
+       allocate (Interstitial%qs_r        (IM,Model%levs))
+       allocate (Interstitial%qg_r        (IM,Model%levs))
+
     !--- Ferrier-Aligo MP scheme
        allocate (Interstitial%f_ice       (IM,Model%levs))
        allocate (Interstitial%f_rain      (IM,Model%levs))
        allocate (Interstitial%f_rimef     (IM,Model%levs))
+       allocate (Interstitial%cwm         (IM,Model%levs))
     end if
     if (Model%do_shoc) then
        if (.not. associated(Interstitial%qrn))  allocate (Interstitial%qrn  (IM,Model%levs))
@@ -6746,16 +6758,21 @@ module GFS_typedefs
 
 ! F-A scheme
     if (Model%imp_physics == Model%imp_physics_fer_hires) then
+        Interstitial%qv_r       = clear_val
+        Interstitial%qc_r       = clear_val
+        Interstitial%qi_r       = clear_val
+        Interstitial%qr_r       = clear_val
+        Interstitial%qs_r       = clear_val
+        Interstitial%qg_r       = clear_val
       if(Model%spec_adv) then
         Interstitial%f_ice     = clear_val
         Interstitial%f_rain    = clear_val
         Interstitial%f_rimef   = clear_val
+        Interstitial%cwm       = clear_val
       end if
     end if
 
     if (Model%do_RRTMGP) then
-      Interstitial%pcldtaulw            = clear_val
-      Interstitial%pcldtausw            = clear_val
       Interstitial%tracer               = clear_val
       Interstitial%tv_lay               = clear_val
       Interstitial%relhum               = clear_val
@@ -6893,7 +6910,7 @@ module GFS_typedefs
     Interstitial%fm10_land       = huge
     Interstitial%fm10_ocean      = huge
     Interstitial%frland          = clear_val
-    Interstitial%fscav_cs        = clear_val
+    Interstitial%fscav           = clear_val
     Interstitial%fswtr           = clear_val
     Interstitial%gabsbdlw        = clear_val
     Interstitial%gabsbdlw_ice    = clear_val
@@ -7057,6 +7074,7 @@ module GFS_typedefs
        Interstitial%f_ice     = clear_val
        Interstitial%f_rain    = clear_val
        Interstitial%f_rimef   = clear_val
+       Interstitial%cwm       = clear_val
     end if
     if (Model%do_shoc) then
        Interstitial%qrn       = clear_val
@@ -7219,7 +7237,7 @@ module GFS_typedefs
     write (0,*) 'sum(Interstitial%fm10_ocean      ) = ', sum(Interstitial%fm10_ocean      )
     write (0,*) 'Interstitial%frain                 = ', Interstitial%frain
     write (0,*) 'sum(Interstitial%frland          ) = ', sum(Interstitial%frland          )
-    write (0,*) 'sum(Interstitial%fscav_cs        ) = ', sum(Interstitial%fscav_cs        )
+    write (0,*) 'sum(Interstitial%fscav           ) = ', sum(Interstitial%fscav           )
     write (0,*) 'sum(Interstitial%fswtr           ) = ', sum(Interstitial%fswtr           )
     write (0,*) 'sum(Interstitial%gabsbdlw        ) = ', sum(Interstitial%gabsbdlw        )
     write (0,*) 'sum(Interstitial%gabsbdlw_ice    ) = ', sum(Interstitial%gabsbdlw_ice    )
@@ -7397,6 +7415,7 @@ module GFS_typedefs
        write (0,*) 'sum(Interstitial%f_ice        ) = ', sum(Interstitial%f_ice           )
        write (0,*) 'sum(Interstitial%f_rain       ) = ', sum(Interstitial%f_rain          )
        write (0,*) 'sum(Interstitial%f_rimef      ) = ', sum(Interstitial%f_rimef         )
+       write (0,*) 'sum(Interstitial%cwm          ) = ', sum(Interstitial%cwm             )
     else if (Model%imp_physics == Model%imp_physics_mg) then
        write (0,*) 'Interstitial_print: values specific to MG microphysics'
        write (0,*) 'sum(Interstitial%ncgl         ) = ', sum(Interstitial%ncgl            )
@@ -7431,8 +7450,6 @@ module GFS_typedefs
     end if
     ! RRTMGP
     if (Model%do_RRTMGP) then
-       write (0,*) 'sum(Interstitial%pcldtaulw            ) = ', sum(Interstitial%pcldtaulw   )
-       write (0,*) 'sum(Interstitial%pcldtausw            ) = ', sum(Interstitial%pcldtausw   )
        write (0,*) 'sum(Interstitial%aerosolslw           ) = ', sum(Interstitial%aerosolslw  )
        write (0,*) 'sum(Interstitial%aerosolssw           ) = ', sum(Interstitial%aerosolssw  )
        write (0,*) 'sum(Interstitial%cld_frac             ) = ', sum(Interstitial%cld_frac    )

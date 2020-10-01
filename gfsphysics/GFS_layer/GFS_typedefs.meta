@@ -2469,14 +2469,14 @@
   dimensions = ()
   type = integer
 [iovr_sw]
-  standard_name = flag_for_cloud_overlapping_method_for_shortwave_radiation
-  long_name = control flag for cloud overlapping method for SW
+  standard_name = flag_for_max_random_overlap_clouds_for_shortwave_radiation
+  long_name = sw: max-random overlap clouds
   units = flag
   dimensions = ()
   type = integer
 [iovr_lw]
-  standard_name = flag_for_cloud_overlapping_method_for_longwave_radiation
-  long_name = control flag for cloud overlapping method for LW
+  standard_name = flag_for_max_random_overlap_clouds_for_longwave_radiation
+  long_name = lw: max-random overlap clouds
   units = flag
   dimensions = ()
   type = integer
@@ -2487,14 +2487,14 @@
   dimensions = ()
   type = integer
 [isubc_sw]
-  standard_name = flag_for_subcolumn_cloud_approximation_for_shortwave_radiation
-  long_name = flag for subcolumn cloud approximation for shortwave radiation
+  standard_name = flag_for_sw_clouds_without_sub_grid_approximation
+  long_name = flag for sw clouds without sub-grid approximation
   units = flag
   dimensions = ()
   type = integer
 [isubc_lw]
-  standard_name = flag_for_subcolumn_cloud_approximation_for_longwave_radiation
-  long_name = flag for subcolumn cloud approximation for longwave radiation
+  standard_name = flag_for_lw_clouds_without_sub_grid_approximation
+  long_name = flag for lw clouds without sub-grid approximation
   units = flag
   dimensions = ()
   type = integer
@@ -4035,7 +4035,7 @@
   units = flag
   dimensions = (number_of_chemical_tracers)
   type = logical
-[fscav_sas]
+[fscav]
   standard_name = coefficients_for_aerosol_scavenging
   long_name = array of aerosol scavenging coefficients
   units = none
@@ -4572,14 +4572,14 @@
   units = none
   dimensions = (horizontal_dimension)
   type = integer
-  active = (flag_for_subcolumn_cloud_approximation_for_longwave_radiation == 2 .or. flag_for_subcolumn_cloud_approximation_for_shortwave_radiation == 2)
+  active = (flag_for_lw_clouds_without_sub_grid_approximation == 2 .or. flag_for_sw_clouds_without_sub_grid_approximation == 2)
 [icsdlw]
   standard_name = seed_random_numbers_lw
   long_name = random seeds for sub-column cloud generators lw
   units = none
   dimensions = (horizontal_dimension)
   type = integer
-  active = (flag_for_subcolumn_cloud_approximation_for_longwave_radiation == 2 .or. flag_for_subcolumn_cloud_approximation_for_shortwave_radiation == 2)
+  active = (flag_for_lw_clouds_without_sub_grid_approximation == 2 .or. flag_for_sw_clouds_without_sub_grid_approximation == 2)
 [ozpl]
   standard_name = ozone_forcing
   long_name = ozone forcing data
@@ -6579,6 +6579,54 @@
 [ccpp-arg-table]
   name = GFS_interstitial_type
   type = ddt
+[qv_r]
+  standard_name = humidity_mixing_ratio
+  long_name = the ratio of the mass of water vapor to the mass of dry air
+  units = kg kg-1
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+  active = (flag_for_microphysics_scheme == flag_for_fer_hires_microphysics_scheme)
+[qc_r]
+  standard_name = cloud_liquid_water_mixing_ratio
+  long_name = the ratio of the mass of liquid water to the mass of dry air
+  units = kg kg-1
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+  active = (flag_for_microphysics_scheme == flag_for_fer_hires_microphysics_scheme)
+[qr_r]
+  standard_name = cloud_rain_water_mixing_ratio
+  long_name = the ratio of the mass rain water to the mass of dry air
+  units = kg kg-1
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+  active = (flag_for_microphysics_scheme == flag_for_fer_hires_microphysics_scheme)
+[qi_r]
+  standard_name = cloud_ice_mixing_ratio
+  long_name = the ratio of the mass of ice to the mass of dry air
+  units = kg kg-1
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+  active = (flag_for_microphysics_scheme == flag_for_fer_hires_microphysics_scheme)
+[qs_r]
+  standard_name = cloud_snow_mixing_ratio
+  long_name = the ratio of the mass of snow to mass of dry air
+  units = kg kg-1
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+  active = (flag_for_microphysics_scheme == flag_for_fer_hires_microphysics_scheme)
+[qg_r]
+  standard_name = mass_weighted_rime_factor_mixing_ratio
+  long_name = the ratio of the mass of rime factor to mass of dry air
+  units = kg kg-1
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+  active = (flag_for_microphysics_scheme == flag_for_fer_hires_microphysics_scheme)
 [f_ice]
   standard_name = fraction_of_ice_water_cloud
   long_name = fraction of ice water cloud
@@ -6599,6 +6647,14 @@
   standard_name = rime_factor
   long_name = rime factor
   units = frac
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+  active = (flag_for_microphysics_scheme == flag_for_fer_hires_microphysics_scheme)
+[cwm]
+  standard_name = total_cloud_condensate_mixing_ratio_updated_by_physics
+  long_name = total cloud condensate mixing ratio (except water vapor) updated by physics
+  units = kg kg-1
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
@@ -7563,7 +7619,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
-[fscav_cs]
+[fscav]
   standard_name = fraction_of_tracer_scavenged
   long_name = fraction of the tracer (aerosols) that is scavenged by convection
   units = km-1
@@ -9162,7 +9218,7 @@
   units = none
   dimensions = ()
   type = integer
-[pcldtausw]
+[cldtausw]
   standard_name = RRTMGP_cloud_optical_depth_layers_at_0_55mu_band
   long_name = approx .55mu band layer cloud optical depth
   units = none
@@ -9170,7 +9226,7 @@
   type = real
   kind = kind_phys
   optional = F
-[pcldtaulw]
+[cldtaulw]
   standard_name = RRTMGP_cloud_optical_depth_layers_at_10mu_band
   long_name = approx 10mu band layer cloud optical depth
   units = none
