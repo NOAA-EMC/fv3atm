@@ -1,7 +1,4 @@
-
 if(32BIT)
-  remove_definitions(-DOVERLOAD_R4)
-  remove_definitions(-DOVERLOAD_R8)
   message ("Force 64 bits in gfsphysics")
   if(CMAKE_Fortran_COMPILER_ID MATCHES "Intel")
       if(REPRO)
@@ -193,21 +190,22 @@ set(IPD_SOURCES
     GFS_layer/GFS_typedefs.F90
 )
 
+list(APPEND _gfsphysics_defs_private NEMS_GSM
+                                     MOIST_CAPPA
+                                     USE_COND
+                                     INTERNAL_FILE_NML)
+
 if(CCPP)
-  add_definitions(-DCCPP)
+  list(APPEND _gfsphysics_defs_private CCPP)
   if(DYN32)
-    add_definitions(-DOVERLOAD_R4)
+    list(APPEND _gfsphysics_defs_private OVERLOAD_R4)
   endif()
   add_library(gfsphysics ${CCPP_SOURCES})
-  target_include_directories(gfsphysics PRIVATE ${CMAKE_BINARY_DIR}/FV3/ccpp/framework/src)
-  target_include_directories(gfsphysics PRIVATE ${CMAKE_BINARY_DIR}/FV3/ccpp/physics)
+  target_include_directories(gfsphysics PRIVATE ${CMAKE_BINARY_DIR}/FV3/ccpp/framework/src
+                                                ${CMAKE_BINARY_DIR}/FV3/ccpp/physics)
   target_link_libraries(gfsphysics PRIVATE ccppphys ccpp)
 else()
   add_library(gfsphysics ${IPD_SOURCES})
-endif()
-
-if(OpenMP_Fortran_FOUND)
-  target_link_libraries(gfsphysics PUBLIC OpenMP::OpenMP_Fortran)
 endif()
 
 if(CMAKE_Fortran_COMPILER_ID MATCHES "Intel")
@@ -219,8 +217,10 @@ if(CMAKE_Fortran_COMPILER_ID MATCHES "Intel")
 endif()
 set_property(SOURCE GFS_layer/GFS_diagnostics.F90 APPEND_STRING PROPERTY COMPILE_FLAGS "-O0")
 
-target_compile_definitions(gfsphysics PRIVATE -DNEMS_GSM)
-target_link_libraries(gfsphysics PRIVATE NetCDF::NetCDF_Fortran)
-
 set_target_properties(gfsphysics PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mod)
+target_compile_definitions(gfsphysics PRIVATE "${_gfsphysics_defs_private}")
 target_include_directories(gfsphysics PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/mod>)
+target_link_libraries(gfsphysics PRIVATE NetCDF::NetCDF_Fortran)
+if(OpenMP_Fortran_FOUND)
+  target_link_libraries(gfsphysics PUBLIC OpenMP::OpenMP_Fortran)
+endif()

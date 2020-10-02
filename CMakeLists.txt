@@ -1,7 +1,3 @@
-if(CCPP)
-    add_definitions(-DCCPP)
-endif()
-
 add_subdirectory(cpl)
 add_subdirectory(gfsphysics)
 add_subdirectory(ipd)
@@ -59,14 +55,32 @@ add_library(
     atmos_cubed_sphere/driver/fvGFS/atmosphere.F90
 )
 
+list(APPEND _fv3dycore_defs_private SPMD
+                                    use_WRTCOMP
+                                    GFS_PHYS
+                                    USE_GFSL63
+                                    MOIST_CAPPA
+                                    USE_COND)
+
+if(32BIT)
+  list(APPEND _fv3dycore_defs_private OVERLOAD_R4
+                                      OVERLOAD_R8)
+endif()
+
+if(CCPP)
+  list(APPEND _fv3dycore_defs_private CCPP)
+endif()
+
+if(OpenMP_Fortran_FOUND)
+  list(APPEND _fv3dycore_defs_private OPENMP)
+endif()
+
 set_property(SOURCE atmos_cubed_sphere/model/nh_utils.F90 APPEND_STRING PROPERTY COMPILE_FLAGS "${FAST}")
 set_property(SOURCE atmos_cubed_sphere/model/fv_mapz.F90  APPEND_STRING PROPERTY COMPILE_FLAGS "${FAST}")
 
-if(OpenMP_Fortran_FOUND)
-  target_compile_definitions(fv3dycore PRIVATE OPENMP)
-endif()
-
 set_target_properties(fv3dycore PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mod)
+
+target_compile_definitions(fv3dycore PRIVATE "${_fv3dycore_defs_private}")
 target_include_directories(fv3dycore PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/atmos_cubed_sphere)
 target_include_directories(fv3dycore PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/mod>)
 
@@ -116,16 +130,22 @@ add_library(
     time_utils.F90
 )
 
+list(APPEND _fv3atm_defs_private GFS_PHYS
+                                 INTERNAL_FILE_NML)
+
+
 set_target_properties(fv3atm PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mod)
 target_include_directories(fv3atm PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/mod>)
 
 if(CCPP)
+    list(APPEND _fv3atm_defs_private CCPP)
     target_include_directories(fv3atm PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/ccpp/driver/mod)
     set(CCPP_LIBRARIES ccppdriver ccppphys ccpp)
     add_dependencies(fv3atm ccppdriver ccppphys ccpp)
     target_link_libraries(fv3atm PUBLIC ccppdriver ccppphys ccpp)
 endif()
 target_include_directories(fv3atm PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/stochastic_physics)
+target_compile_definitions(fv3atm PRIVATE "${_fv3atm_defs_private}")
 target_compile_definitions(fv3atm PRIVATE -DESMF_VERSION_MAJOR=${ESMF_VERSION_MAJOR})
 
 target_link_libraries(fv3atm PUBLIC fv3dycore

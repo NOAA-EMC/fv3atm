@@ -1,7 +1,4 @@
-
 if(32BIT)
-  remove_definitions(-DOVERLOAD_R4)
-  remove_definitions(-DOVERLOAD_R8)
   message ("Force 64 bits in ipd")
   if(CMAKE_Fortran_COMPILER_ID MATCHES "Intel")
       if(REPRO)
@@ -14,18 +11,23 @@ if(32BIT)
   endif()
 endif()
 
+if(CCPP)
+  list(APPEND _ipd_defs_private CCPP)
+endif()
+
 add_library(
     ipd
 
     IPD_driver.F90
     IPD_typedefs.F90
 )
-target_link_libraries(ipd PRIVATE gfsphysics)
+set_target_properties(ipd PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mod)
+target_compile_definitions(ipd PRIVATE "${_ipd_defs_private}")
+target_include_directories(ipd PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/mod>)
 
 if(CCPP)
   target_include_directories(ipd PRIVATE ${CMAKE_BINARY_DIR}/FV3/ccpp/framework/src
                                          ${CMAKE_BINARY_DIR}/FV3/ccpp/physics)
 endif()
 
-set_target_properties(ipd PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mod)
-target_include_directories(ipd PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/mod>)
+target_link_libraries(ipd PRIVATE gfsphysics)
