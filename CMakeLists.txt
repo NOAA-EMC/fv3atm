@@ -67,6 +67,7 @@ if(OpenMP_Fortran_FOUND)
 endif()
 
 set_target_properties(fv3dycore PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mod)
+target_include_directories(fv3dycore PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/atmos_cubed_sphere)
 target_include_directories(fv3dycore PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/mod>)
 
 target_link_libraries(fv3dycore PUBLIC fms

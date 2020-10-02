@@ -207,7 +207,7 @@ else()
 endif()
 
 if(OpenMP_Fortran_FOUND)
-  target_link_libraries(gfsphysic PUBLIC OpenMP::OpenMP_Fortran)
+  target_link_libraries(gfsphysics PUBLIC OpenMP::OpenMP_Fortran)
 endif()
 
 if(CMAKE_Fortran_COMPILER_ID MATCHES "Intel")
