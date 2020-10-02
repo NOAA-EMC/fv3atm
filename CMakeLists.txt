@@ -1,3 +1,39 @@
+if(CCPP)
+
+    if(DEFINED CCPP_SUITES)
+        set(_ccpp_suites_arg "--suites=${CCPP_SUITES}")
+    endif()
+
+    message("Calling CCPP code generator (ccpp_prebuild.py) ... ${_ccpp_suites_arg}")
+    execute_process(COMMAND ${Python_EXECUTABLE}
+                            "ccpp/framework/scripts/ccpp_prebuild.py"
+                            "--config=ccpp/config/ccpp_prebuild_config.py"
+                            "--builddir=${CMAKE_CURRENT_BINARY_DIR}" ${_ccpp_suites_arg}
+                    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+                    OUTPUT_FILE ${CMAKE_CURRENT_BINARY_DIR}/ccpp_prebuild.out
+                    ERROR_FILE  ${CMAKE_CURRENT_BINARY_DIR}/ccpp_prebuild.err
+                    RESULT_VARIABLE RC
+                   )
+
+    # Check return code from ccpp_prebuild.py
+    if(NOT RC EQUAL 0)
+        message(FATAL_ERROR "An error occured while running ccpp_prebuild.py, check ${CMAKE_CURRENT_BINARY_DIR}/ccpp_prebuild.{out,err}")
+    endif()
+
+    # this should not be necessary; including CCPP_*.cmake here and passing
+    # SCHEMES, CAPS and TYPEDEFS via environment variables to CCPP build.
+    # CCPP should be able to directly include those three .cmake files.
+
+    include(${CMAKE_CURRENT_BINARY_DIR}/ccpp/physics/CCPP_SCHEMES.cmake)
+    include(${CMAKE_CURRENT_BINARY_DIR}/ccpp/physics/CCPP_CAPS.cmake)
+    include(${CMAKE_CURRENT_BINARY_DIR}/ccpp/physics/CCPP_TYPEDEFS.cmake)
+
+    set(ENV{CCPP_SCHEMES} "${SCHEMES}")
+    set(ENV{CCPP_CAPS} "${CAPS}")
+    set(ENV{CCPP_TYPEDEFS} "${TYPEDEFS}")
+
+endif()
+
 add_subdirectory(cpl)
 add_subdirectory(gfsphysics)
 add_subdirectory(ipd)
