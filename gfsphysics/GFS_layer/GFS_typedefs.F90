@@ -245,6 +245,8 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: zorl   (:)   => null()  !< composite surface roughness in cm
     real (kind=kind_phys), pointer :: zorlo  (:)   => null()  !< ocean surface roughness in cm
     real (kind=kind_phys), pointer :: zorll  (:)   => null()  !< land surface roughness in cm
+    real (kind=kind_phys), pointer :: zorli  (:)   => null()  !< ice  surface roughness in cm
+    real (kind=kind_phys), pointer :: zorlw  (:)   => null()  !< wave surface roughness in cm
     real (kind=kind_phys), pointer :: fice   (:)   => null()  !< ice fraction over open water grid
 !   real (kind=kind_phys), pointer :: hprim  (:)   => null()  !< topographic standard deviation in m
     real (kind=kind_phys), pointer :: hprime (:,:) => null()  !< orographic metrics
@@ -439,13 +441,13 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: dtsfcin_cpl(:) => null()   !< aoi_fld%dtsfcin(item,lan)
     real (kind=kind_phys), pointer :: dqsfcin_cpl(:) => null()   !< aoi_fld%dqsfcin(item,lan)
     real (kind=kind_phys), pointer :: ulwsfcin_cpl(:)=> null()   !< aoi_fld%ulwsfcin(item,lan)
-    real (kind=kind_phys), pointer :: tseain_cpl(:)  => null()   !< aoi_fld%tseain(item,lan)
-    real (kind=kind_phys), pointer :: tisfcin_cpl(:) => null()   !< aoi_fld%tisfcin(item,lan)
-    real (kind=kind_phys), pointer :: ficein_cpl(:)  => null()   !< aoi_fld%ficein(item,lan)
-    real (kind=kind_phys), pointer :: hicein_cpl(:)  => null()   !< aoi_fld%hicein(item,lan)
+!   real (kind=kind_phys), pointer :: tseain_cpl(:)  => null()   !< aoi_fld%tseain(item,lan)
+!   real (kind=kind_phys), pointer :: tisfcin_cpl(:) => null()   !< aoi_fld%tisfcin(item,lan)
+!   real (kind=kind_phys), pointer :: ficein_cpl(:)  => null()   !< aoi_fld%ficein(item,lan)
+!   real (kind=kind_phys), pointer :: hicein_cpl(:)  => null()   !< aoi_fld%hicein(item,lan)
     real (kind=kind_phys), pointer :: hsnoin_cpl(:)  => null()   !< aoi_fld%hsnoin(item,lan)
     !--- only variable needed for cplwav2atm=.TRUE.
-    real (kind=kind_phys), pointer :: zorlwav_cpl(:) => null()   !< roughness length from wave model
+!   real (kind=kind_phys), pointer :: zorlwav_cpl(:) => null()   !< roughness length from wave model
     !--- also needed for ice/ocn coupling - Xingren
     real (kind=kind_phys), pointer :: slimskin_cpl(:)=> null()   !< aoi_fld%slimskin(item,lan)
 
@@ -515,7 +517,6 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: skebu_wts (:,:) => null()  !
     real (kind=kind_phys), pointer :: skebv_wts (:,:) => null()  !
     real (kind=kind_phys), pointer :: sfc_wts   (:,:) => null()  ! mg, sfc-perts
-    integer              :: nsfcpert=6                             !< number of sfc perturbations
 
     !--- aerosol surface emissions for Thompson microphysics
     real (kind=kind_phys), pointer :: nwfa2d  (:)     => null()  !< instantaneous water-friendly sfc aerosol source
@@ -656,6 +657,7 @@ module GFS_typedefs
     integer              :: icliq_sw        !< sw optical property for liquid clouds
     integer              :: iovr_sw         !< sw: max-random overlap clouds
     integer              :: iovr_lw         !< lw: max-random overlap clouds
+    integer              :: iovr            !< max-random overlap clouds for sw & lw (maximum of both)
     integer              :: ictm            !< ictm=0 => use data at initial cond time, if not
                                             !<           available; use latest; no extrapolation.
                                             !< ictm=1 => use data at the forecast time, if not
@@ -1051,14 +1053,14 @@ module GFS_typedefs
     logical              :: do_shum
     logical              :: do_skeb
     integer              :: skeb_npass
-    logical              :: do_sfcperts
-    integer              :: nsfcpert=6
-    real(kind=kind_phys) :: pertz0(5)          ! mg, sfc-perts
-    real(kind=kind_phys) :: pertzt(5)          ! mg, sfc-perts
-    real(kind=kind_phys) :: pertshc(5)         ! mg, sfc-perts
-    real(kind=kind_phys) :: pertlai(5)         ! mg, sfc-perts
-    real(kind=kind_phys) :: pertalb(5)         ! mg, sfc-perts
-    real(kind=kind_phys) :: pertvegf(5)        ! mg, sfc-perts
+    integer              :: lndp_type
+    integer              :: n_var_lndp
+    character(len=3)     :: lndp_var_list(6)  ! dimension here must match  n_var_max_lndp in  stochy_nml_def
+    real(kind=kind_phys) :: lndp_prt_list(6)  ! dimension here must match  n_var_max_lndp in  stochy_nml_def 
+                                              ! also previous code had dimension 5 for each pert, to allow 
+                                              ! multiple patterns. It wasn't fully coded (and wouldn't have worked 
+                                              ! with nlndp>1, so I just dropped it). If we want to code it properly, 
+                                              ! we'd need to make this dim(6,5).
 !--- tracer handling
     character(len=32), pointer :: tracer_names(:) !< array of initialized tracers from dynamic core
     integer              :: ntrac           !< number of tracers
@@ -1557,7 +1559,9 @@ module GFS_typedefs
 #ifdef CCPP
     real (kind=kind_phys), pointer :: TRAIN  (:,:)   => null()  !< accumulated stratiform T tendency (K s-1)
 #endif
-
+!#ifdef CCPP
+    real (kind=kind_phys), pointer :: cldfra  (:,:)   => null()  !< instantaneous 3D cloud fraction
+!#endif
     !--- MP quantities for 3D diagnositics 
     real (kind=kind_phys), pointer :: refl_10cm(:,:) => null()  !< instantaneous refl_10cm 
 !
@@ -1686,6 +1690,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: adjvisdfd(:)       => null()  !<
     real (kind=kind_phys), pointer      :: aerodp(:,:)        => null()  !<
     real (kind=kind_phys), pointer      :: alb1d(:)           => null()  !<
+    real (kind=kind_phys), pointer      :: alpha(:,:)         => null()  !<
     real (kind=kind_phys), pointer      :: bexp1d(:)          => null()  !<
     real (kind=kind_phys), pointer      :: cd(:)              => null()  !<
     real (kind=kind_phys), pointer      :: cd_ice(:)          => null()  !<
@@ -1952,6 +1957,8 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: uustar_ocean(:)    => null()  !<
     real (kind=kind_phys), pointer      :: vdftra(:,:,:)      => null()  !<
     real (kind=kind_phys), pointer      :: vegf1d(:)          => null()  !<
+    real (kind=kind_phys)               :: lndp_vgf                      !<
+  
     integer, pointer                    :: vegtype(:)         => null()  !<
     real (kind=kind_phys), pointer      :: w_upi(:,:)         => null()  !<
     real (kind=kind_phys), pointer      :: wcbmax(:)          => null()  !<
@@ -2235,6 +2242,8 @@ module GFS_typedefs
     allocate (Sfcprop%zorl     (IM))
     allocate (Sfcprop%zorlo    (IM))
     allocate (Sfcprop%zorll    (IM))
+    allocate (Sfcprop%zorli    (IM))
+    allocate (Sfcprop%zorlw    (IM))
     allocate (Sfcprop%fice     (IM))
 !   allocate (Sfcprop%hprim    (IM))
     allocate (Sfcprop%hprime   (IM,Model%nmtvr))
@@ -2253,6 +2262,8 @@ module GFS_typedefs
     Sfcprop%zorl      = clear_val
     Sfcprop%zorlo     = clear_val
     Sfcprop%zorll     = clear_val
+    Sfcprop%zorli     = clear_val
+    Sfcprop%zorlw     = clear_val
     Sfcprop%fice      = clear_val
 !   Sfcprop%hprim     = clear_val
     Sfcprop%hprime    = clear_val
@@ -2624,12 +2635,12 @@ module GFS_typedefs
       Coupling%v10mi_cpl = clear_val
     endif 
 
-    if (Model%cplwav2atm) then
+!   if (Model%cplwav2atm) then
       !--- incoming quantities
-      allocate (Coupling%zorlwav_cpl (IM))
+!     allocate (Coupling%zorlwav_cpl (IM))
 
-      Coupling%zorlwav_cpl  = clear_val
-    end if
+!     Coupling%zorlwav_cpl  = clear_val
+!   end if
 
     if (Model%cplflx) then
       !--- incoming quantities
@@ -2639,10 +2650,10 @@ module GFS_typedefs
       allocate (Coupling%dtsfcin_cpl  (IM))
       allocate (Coupling%dqsfcin_cpl  (IM))
       allocate (Coupling%ulwsfcin_cpl (IM))
-      allocate (Coupling%tseain_cpl   (IM))
-      allocate (Coupling%tisfcin_cpl  (IM))
-      allocate (Coupling%ficein_cpl   (IM))
-      allocate (Coupling%hicein_cpl   (IM))
+!     allocate (Coupling%tseain_cpl   (IM))
+!     allocate (Coupling%tisfcin_cpl  (IM))
+!     allocate (Coupling%ficein_cpl   (IM))
+!     allocate (Coupling%hicein_cpl   (IM))
       allocate (Coupling%hsnoin_cpl   (IM))
 
       Coupling%slimskin_cpl = clear_val
@@ -2651,10 +2662,10 @@ module GFS_typedefs
       Coupling%dtsfcin_cpl  = clear_val
       Coupling%dqsfcin_cpl  = clear_val
       Coupling%ulwsfcin_cpl = clear_val
-      Coupling%tseain_cpl   = clear_val
-      Coupling%tisfcin_cpl  = clear_val
-      Coupling%ficein_cpl   = clear_val
-      Coupling%hicein_cpl   = clear_val
+!     Coupling%tseain_cpl   = clear_val
+!     Coupling%tisfcin_cpl  = clear_val
+!     Coupling%ficein_cpl   = clear_val
+!     Coupling%hicein_cpl   = clear_val
       Coupling%hsnoin_cpl   = clear_val
 
       !--- accumulated quantities
@@ -2800,9 +2811,9 @@ module GFS_typedefs
       Coupling%skebv_wts = clear_val
     endif
 
-    !--- stochastic physics option
-    if (Model%do_sfcperts) then
-      allocate (Coupling%sfc_wts  (IM,Model%nsfcpert))
+    !--- stochastic land perturbation option
+    if (Model%lndp_type .NE. 0) then
+      allocate (Coupling%sfc_wts  (IM,Model%n_var_lndp))
       Coupling%sfc_wts = clear_val
     endif
 
@@ -3323,15 +3334,9 @@ module GFS_typedefs
     logical :: use_zmtnblck = .false.
     logical :: do_shum      = .false.
     logical :: do_skeb      = .false.
-    integer :: skeb_npass = 11
-    logical :: do_sfcperts = .false.   ! mg, sfc-perts
-    integer :: nsfcpert    =  6        ! mg, sfc-perts
-    real(kind=kind_phys) :: pertz0   = -999.
-    real(kind=kind_phys) :: pertzt   = -999.
-    real(kind=kind_phys) :: pertshc  = -999.
-    real(kind=kind_phys) :: pertlai  = -999.
-    real(kind=kind_phys) :: pertalb  = -999.
-    real(kind=kind_phys) :: pertvegf = -999.
+    integer :: skeb_npass   = 11
+    integer :: lndp_type    = 0 
+    integer :: n_var_lndp   =  0 
 
 !--- aerosol scavenging factors
     character(len=20) :: fscav_aero(20) = 'default'
@@ -3410,7 +3415,7 @@ module GFS_typedefs
                                do_deep, jcap,                                               &
                                cs_parm, flgmin, cgwf, ccwf, cdmbgwd, sup, ctei_rm, crtrh,   &
                                dlqf, rbcr, shoc_parm, psauras, prauras, wminras,            &
-                               do_sppt, do_shum, do_skeb, do_sfcperts,                      &
+                               do_sppt, do_shum, do_skeb, lndp_type,  n_var_lndp,           & 
                           !--- Rayleigh friction
                                prslrd0, ral_ts,  ldiag_ugwp, do_ugwp, do_tofd,              &
                           ! --- Ferrier-Aligo
@@ -3699,6 +3704,7 @@ module GFS_typedefs
     Model%icliq_sw         = icliq_sw
     Model%iovr_sw          = iovr_sw
     Model%iovr_lw          = iovr_lw
+    Model%iovr             = max(Model%iovr_sw,Model%iovr_lw)
     Model%ictm             = ictm
     Model%isubc_sw         = isubc_sw
     Model%isubc_lw         = isubc_lw
@@ -3806,11 +3812,6 @@ module GFS_typedefs
     Model%lsm              = lsm
     Model%lsoil            = lsoil
 #ifdef CCPP
-    ! Consistency check for RUC LSM
-    if (Model%lsm == Model%lsm_ruc .and. Model%nscyc>0) then
-      write(0,*) 'Logic error: RUC LSM cannot be used with surface data cycling at this point (fhcyc>0)'
-      stop
-    end if
     ! Flag to read leaf area index from input files (initial conditions)
     Model%rdlai = rdlai
     if (Model%rdlai .and. .not. Model%lsm == Model%lsm_ruc) then
@@ -4026,21 +4027,15 @@ module GFS_typedefs
     Model%e0fac            = e0fac
 
 !--- stochastic physics options
-    ! do_sppt, do_shum, do_skeb and do_sfcperts are namelist variables in group
+    ! do_sppt, do_shum, do_skeb and lndp_type are namelist variables in group
     ! physics that are parsed here and then compared in init_stochastic_physics
     ! to the stochastic physics namelist parametersto ensure consistency.
     Model%do_sppt          = do_sppt
     Model%use_zmtnblck     = use_zmtnblck
     Model%do_shum          = do_shum
     Model%do_skeb          = do_skeb
-    Model%do_sfcperts      = do_sfcperts ! mg, sfc-perts
-    Model%nsfcpert         = nsfcpert    ! mg, sfc-perts
-    Model%pertz0           = pertz0
-    Model%pertzt           = pertzt
-    Model%pertshc          = pertshc
-    Model%pertlai          = pertlai
-    Model%pertalb          = pertalb
-    Model%pertvegf         = pertvegf
+    Model%lndp_type        = lndp_type
+    Model%n_var_lndp       = n_var_lndp
 
     !--- cellular automata options
     Model%nca              = nca
@@ -4868,6 +4863,7 @@ module GFS_typedefs
       print *, ' icliq_sw          : ', Model%icliq_sw
       print *, ' iovr_sw           : ', Model%iovr_sw
       print *, ' iovr_lw           : ', Model%iovr_lw
+      print *, ' iovr              : ', Model%iovr
       print *, ' ictm              : ', Model%ictm
       print *, ' isubc_sw          : ', Model%isubc_sw
       print *, ' isubc_lw          : ', Model%isubc_lw
@@ -5102,7 +5098,8 @@ module GFS_typedefs
       print *, ' do_sppt           : ', Model%do_sppt
       print *, ' do_shum           : ', Model%do_shum
       print *, ' do_skeb           : ', Model%do_skeb
-      print *, ' do_sfcperts       : ', Model%do_sfcperts
+      print *, ' lndp_type         : ', Model%lndp_type
+      print *, ' n_var_lndp         : ', Model%n_var_lndp
       print *, ' '
       print *, 'cellular automata'
       print *, ' nca               : ', Model%nca
@@ -5642,6 +5639,10 @@ module GFS_typedefs
     end if
 #endif
 
+#ifdef CCPP
+    allocate (Diag%cldfra     (IM,Model%levs))
+#endif
+
     allocate (Diag%ca_deep  (IM))
     allocate (Diag%ca_turb  (IM))
     allocate (Diag%ca_shal  (IM))
@@ -5959,6 +5960,10 @@ module GFS_typedefs
        Diag%TRAIN      = zero
     end if
 #endif
+#ifdef CCPP
+    Diag%cldfra      = zero
+#endif
+
     Diag%totprcpb   = zero
     Diag%cnvprcpb   = zero
     Diag%toticeb    = zero
@@ -6208,6 +6213,10 @@ module GFS_typedefs
     allocate (Interstitial%adjvisdfd       (IM))
     allocate (Interstitial%aerodp          (IM,NSPC1))
     allocate (Interstitial%alb1d           (IM))
+    if (.not. Model%do_RRTMGP) then
+      ! RRTMGP uses its own cloud_overlap_param
+      allocate (Interstitial%alpha         (IM,Model%levr+LTP))
+    end if
     allocate (Interstitial%bexp1d          (IM))
     allocate (Interstitial%cd              (IM))
     allocate (Interstitial%cd_ice          (IM))
@@ -6748,6 +6757,9 @@ module GFS_typedefs
     !
     Interstitial%aerodp       = clear_val
     Interstitial%alb1d        = clear_val
+    if (.not. Model%do_RRTMGP) then
+      Interstitial%alpha      = clear_val
+    end if
     Interstitial%cldsa        = clear_val
     Interstitial%cldtaulw     = clear_val
     Interstitial%cldtausw     = clear_val
@@ -7035,6 +7047,7 @@ module GFS_typedefs
     Interstitial%uustar_ocean    = huge
     Interstitial%vdftra          = clear_val
     Interstitial%vegf1d          = clear_val
+    Interstitial%lndp_vgf        = clear_val
     Interstitial%vegtype         = 0
     Interstitial%wcbmax          = clear_val
     Interstitial%weasd_ice       = huge
@@ -7131,6 +7144,9 @@ module GFS_typedefs
     !
   end subroutine interstitial_phys_reset
 
+  ! DH* 20200901: this routine is no longer used by CCPP's GFS_debug.F90. When new variables are
+  ! added to the GFS_interstitial_type, it is best to add the variable to both interstitial_print
+  ! below and to GFS_interstitialtoscreen in ccpp/physics/physics/GFS_debug.F90
   subroutine interstitial_print(Interstitial, Model, mpirank, omprank, blkno)
     !
     implicit none
@@ -7181,6 +7197,9 @@ module GFS_typedefs
     write (0,*) 'sum(Interstitial%adjvisdfd       ) = ', sum(Interstitial%adjvisdfd       )
     write (0,*) 'sum(Interstitial%aerodp          ) = ', sum(Interstitial%aerodp          )
     write (0,*) 'sum(Interstitial%alb1d           ) = ', sum(Interstitial%alb1d           )
+    if (.not. Model%do_RRTMGP) then
+      write (0,*) 'sum(Interstitial%alpha           ) = ', sum(Interstitial%alpha         )
+    end if
     write (0,*) 'sum(Interstitial%bexp1d          ) = ', sum(Interstitial%bexp1d          )
     write (0,*) 'sum(Interstitial%cd              ) = ', sum(Interstitial%cd              )
     write (0,*) 'sum(Interstitial%cd_ice          ) = ', sum(Interstitial%cd_ice          )

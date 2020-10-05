@@ -65,16 +65,17 @@
      &,                    ttend,  utend, vtend,  qtend
      &,                    spdk2,  rbint, ri,     zol1, robn, bvf2
 !
-      real(kind=kind_phys), parameter ::  gravi=1.0/grav, zolcr=0.2,
-     &                      zolcru=-0.5,  rimin=-100.,    sfcfrac=0.1,
-     &                      crbcon=0.25,  crbmin=0.15,    crbmax=0.35,
-     &                      qmin=1.e-8,   zfmin=1.e-8,    qlmin=1.e-12,
-     &                      aphi5=5.,     aphi16=16.,     f0=1.e-4
-     &,                     cont=cp/grav, conq=hvap/grav, conw=1.0/grav
-     &,                     dkmin=0.0,    dkmax=1000.
-!    &,                     dkmin=0.0,    dkmax=1000.,    xkzminv=0.3
-     &,                     gocp=grav/cp, prmin=0.25,     prmax=4.0
-     &,                     vk=0.4, cfac=6.5
+      real(kind=kind_phys), parameter ::  one=1.0d0, zero=0.0d0
+     &,                   gravi=one/grav, zolcr=0.2d0
+     &,                   zolcru=-0.5d0,  rimin=-100.0d0, sfcfrac=0.1d0
+     &,                   crbcon=0.25d0,  crbmin=0.15d0,  crbmax=0.35d0
+     &,                   qmin=1.0d-8,    zfmin=1.0d-8,   qlmin=1.0d-12
+     &,                   aphi5=5.0d0,    aphi16=16.0d0,  f0=1.0d-4
+     &,                   cont=cp/grav,   conq=hvap/grav, conw=one/grav
+     &,                   dkmin=zero,     dkmax=1000.0d0
+!    &,                   dkmin=0.0,      dkmax=1000.,    xkzminv=0.3
+     &,                   gocp=grav/cp,   prmin=0.25d0,   prmax=4.0d0
+     &,                   vk=0.4d0,       cfac=6.5d0
 !
 !-----------------------------------------------------------------------
 !
@@ -108,24 +109,24 @@
 !
       do k = 1,km1
         do i=1,im
-          rdzt(i,k)  = 1.0 / (zl(i,k+1) - zl(i,k))
-          prnum(i,k) = 1.0
+          rdzt(i,k)  = one / (zl(i,k+1) - zl(i,k))
+          prnum(i,k) = one
         enddo
       enddo
 !               Setup backgrond diffision
       do i=1,im
-        prnum(i,km) = 1.0
-        tx1(i) = 1.0 / prsi(i,1)
+        prnum(i,km) = one
+        tx1(i) = one / prsi(i,1)
       enddo
       do k = 1,km1
         do i=1,im
-          xkzo(i,k)  = 0.0
-          xkzmo(i,k) = 0.0
+          xkzo(i,k)  = zero
+          xkzmo(i,k) = zero
 !         if (k < kinver(i)) then
           if (k <= kinver(i)) then
 !    vertical background diffusivity for heat and momentum
-            tem1       = 1.0 - prsi(i,k+1) * tx1(i)
-            tem1       = min(1.0, exp(-tem1 * tem1 * 10.0))
+            tem1       = one - prsi(i,k+1) * tx1(i)
+            tem1       = min(one, exp(-tem1 * tem1 * 10.0d0))
             xkzo(i,k)  = xkzm_h * tem1
             xkzmo(i,k) = xkzm_m * tem1
           endif
@@ -141,9 +142,9 @@
 !
       do k = 1,kmpbl
         do i=1,im
-          if(zi(i,k+1) > 250.) then
+          if(zi(i,k+1) > 250.0d0) then
             tem1 = (t1(i,k+1)-t1(i,k)) * rdzt(i,k)
-            if(tem1 > 1.e-5) then
+            if(tem1 > 1.0d-5) then
                xkzo(i,k)  = min(xkzo(i,k),xkzminv)
             endif
           endif
@@ -152,21 +153,21 @@
 !
 !
       do i = 1,im
-         z0(i)     = 0.01 * zorl(i)
+         z0(i)     = 0.01d0 * zorl(i)
          kpbl(i)   = 1
          hpbl(i)   = zi(i,1)
          pblflg(i) = .true.
          sfcflg(i) = .true.
-         if(rbsoil(i) > 0.) sfcflg(i) = .false.
-         dusfc(i)  = 0.
-         dvsfc(i)  = 0.
-         dtsfc(i)  = 0.
-         dqsfc(i)  = 0.
+         if(rbsoil(i) > zero) sfcflg(i) = .false.
+         dusfc(i)  = zero
+         dvsfc(i)  = zero
+         dtsfc(i)  = zero
+         dqsfc(i)  = zero
       enddo
 !
       do k = 1,km
         do i=1,im
-          tx1(i) = 0.0
+          tx1(i) = zero
         enddo
         do kk=1,ncnd
           do i=1,im
@@ -182,7 +183,7 @@
 !     if (lprnt) write(0,*)' heat=',heat(ipr),' evap=',evap(ipr)
       do i = 1,im
          sflux(i)  = heat(i) + evap(i)*fv*theta(i,1)
-         if(.not.sfcflg(i) .or. sflux(i) <= 0.) pblflg(i)=.false.
+         if(.not.sfcflg(i) .or. sflux(i) <= zero) pblflg(i)=.false.
          beta(i)  = dt2 / (zi(i,2)-zi(i,1))
       enddo
 !
@@ -197,11 +198,11 @@
            thermal(i) = thvx(i,1)
            crb(i) = crbcon
          else
-           thermal(i) = tsea(i)*(1.+fv*max(q1(i,1,1),qmin))
-           tem   = max(1.0, sqrt(u10m(i)*u10m(i) + v10m(i)*v10m(i)))
+           thermal(i) = tsea(i)*(one+fv*max(q1(i,1,1),qmin))
+           tem   = max(one, sqrt(u10m(i)*u10m(i) + v10m(i)*v10m(i)))
            robn   = tem / (f0 * z0(i))
-           tem1   = 1.e-7 * robn
-           crb(i) = max(min(0.16 * (tem1 ** (-0.18)), crbmax), crbmin)
+           tem1   = 1.0d-7 * robn
+           crb(i) = max(min(0.16d0 * (tem1**(-0.18d0)), crbmax), crbmin)
          endif
       enddo
       do k = 1, kmpbl
@@ -220,9 +221,9 @@
         if(kpbl(i) > 1) then
           k = kpbl(i)
           if(rbdn(i) >= crb(i)) then
-            rbint = 0.
+            rbint = zero
           elseif(rbup(i) <= crb(i)) then
-            rbint = 1.
+            rbint = one
           else
             rbint = (crb(i)-rbdn(i)) / (rbup(i)-rbdn(i))
           endif
@@ -245,13 +246,13 @@
          endif
          zol1 = zol(i)*sfcfrac*hpbl(i)/zl(i,1)
          if(sfcflg(i)) then
-!          phim(i) = (1.-aphi16*zol1)**(-1./4.)
-!          phih(i) = (1.-aphi16*zol1)**(-1./2.)
-           tem     = 1.0 / max(1. - aphi16*zol1, 1.0e-8)
+!          phim(i) = (1.-aphi16*zol1)**(-one/4.0d0)
+!          phih(i) = (1.-aphi16*zol1)**(-one/2.0d0)
+           tem     = one / max(one - aphi16*zol1, 1.0d-8)
            phih(i) = sqrt(tem)
            phim(i) = sqrt(phih(i))
          else
-           phim(i) = 1. + aphi5*zol1
+           phim(i) = one + aphi5*zol1
            phih(i) = phim(i)
          endif
       enddo
@@ -269,7 +270,7 @@
         do i = 1, im
           if(.not.flg(i)) then
             rbdn(i) = rbup(i)
-            spdk2   = max((u1(i,k)*u1(i,k)+v1(i,k)*v1(i,k)), 1.)
+            spdk2   = max((u1(i,k)*u1(i,k)+v1(i,k)*v1(i,k)), one)
             rbup(i) = (thvx(i,k)-thermal(i)) * phil(i,k)
      &              / (thvx(i,1)*spdk2)
             kpbl(i) = k
@@ -281,9 +282,9 @@
         if (pblflg(i)) then
           k = kpbl(i)
           if(rbdn(i) >= crb(i)) then
-            rbint = 0.
+            rbint = zero
           elseif(rbup(i) <= crb(i)) then
-            rbint = 1.
+            rbint = one
           else
             rbint = (crb(i)-rbdn(i)) / (rbup(i)-rbdn(i))
           endif
@@ -321,13 +322,13 @@
             tem  = u1(i,k) - u1(i,kp1)
             tem1 = v1(i,k) - v1(i,kp1)
             tem  = (tem*tem + tem1*tem1) * rdz * rdz
-            bvf2 = (0.5*grav)*(thvx(i,kp1)-thvx(i,k))*rdz
+            bvf2 = (0.5d0*grav)*(thvx(i,kp1)-thvx(i,k))*rdz
      &           / (t1(i,k)+t1(i,kp1))
             ri   = max(bvf2/tem,rimin)
-            if(ri < 0.) then ! unstable regime
-              prnum(i,kp1) = 1.0
+            if(ri < zero) then ! unstable regime
+              prnum(i,kp1) = one
             else
-              prnum(i,kp1) = min(1.0 + 2.1*ri, prmax)
+              prnum(i,kp1) = min(one + 2.1d0*ri, prmax)
             endif
           elseif (k > 1) then
             prnum(i,kp1) = prnum(i,1)
@@ -346,7 +347,7 @@
 !     compute tridiagonal matrix elements for heat and moisture
 !
       do i=1,im
-         ad(i,1) = 1.
+         ad(i,1) = one
          a1(i,1) = t1(i,1)   + beta(i) * heat(i)
          a2(i,1) = q1(i,1,1) + beta(i) * evap(i)
       enddo
@@ -380,7 +381,7 @@
           al(i,k)   = -dtodsu*dsdz2
 !
           ad(i,k)   = ad(i,k)-au(i,k)
-          ad(i,kp1) = 1.-al(i,k)
+          ad(i,kp1) = one - al(i,k)
           dsdzt     = tem1 * gocp
           a1(i,k)   = a1(i,k)   + dtodsd*dsdzt
           a1(i,kp1) = t1(i,kp1) - dtodsu*dsdzt
@@ -437,7 +438,7 @@
 !     compute tridiagonal matrix elements for momentum
 !
       do i=1,im
-         ad(i,1) = 1.0 + beta(i) * stress(i) / spd1(i)
+         ad(i,1) = one + beta(i) * stress(i) / spd1(i)
          a1(i,1) = u1(i,1)
          a2(i,1) = v1(i,1)
       enddo
@@ -455,7 +456,7 @@
           al(i,k)   = -dtodsu*dsdz2
 !
           ad(i,k)   = ad(i,k) - au(i,k)
-          ad(i,kp1) = 1.0 - al(i,k)
+          ad(i,kp1) = one - al(i,k)
           a1(i,kp1) = u1(i,kp1)
           a2(i,kp1) = v1(i,kp1)
 !
@@ -482,7 +483,7 @@
 !     compute tridiagonal matrix elements for tke
 !
         do i=1,im
-           ad(i,1) = 1.0
+           ad(i,1) = one
            a1(i,1) = q1(i,1,ntke)
         enddo
 !
@@ -499,7 +500,7 @@
             al(i,k)   = -dtodsu*dsdz2
 !
             ad(i,k)   = ad(i,k) - au(i,k)
-            ad(i,kp1) = 1.0 - al(i,k)
+            ad(i,kp1) = one - al(i,k)
             a1(i,kp1) = q1(i,kp1,ntke)
           enddo
         enddo
@@ -522,26 +523,28 @@
 !
       use machine     , only : kind_phys
       implicit none
-      integer             k,n,l,i
-      real(kind=kind_phys) fk
+      real(kind=kind_phys), parameter :: one=1.0d0
 !
       real(kind=kind_phys) cl(l,2:n),cm(l,n),cu(l,n-1),r1(l,n),         &
      &                     au(l,n-1),a1(l,n)
 !
+      real(kind=kind_phys) fk
+      integer              k,n,l,i
+!
       do i=1,l
-        fk      = 1./cm(i,1)
+        fk      = one / cm(i,1)
         au(i,1) = fk*cu(i,1)
         a1(i,1) = fk*r1(i,1)
       enddo
       do k=2,n-1
         do i=1,l
-          fk      = 1./(cm(i,k)-cl(i,k)*au(i,k-1))
+          fk      = one / (cm(i,k)-cl(i,k)*au(i,k-1))
           au(i,k) = fk*cu(i,k)
           a1(i,k) = fk*(r1(i,k)-cl(i,k)*a1(i,k-1))
         enddo
       enddo
       do i=1,l
-        fk      = 1./(cm(i,n)-cl(i,n)*au(i,n-1))
+        fk      = one / (cm(i,n)-cl(i,n)*au(i,n-1))
         a1(i,n) = fk*(r1(i,n)-cl(i,n)*a1(i,n-1))
       enddo
       do k=n-1,1,-1

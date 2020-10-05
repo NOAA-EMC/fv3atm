@@ -18,7 +18,7 @@ $(info $$ESMF_INC is [${ESMF_INC}])
 
 LIBRARY  = libstochastic_physics_wrapper.a
 
-FFLAGS   += -I$(FMS_DIR) -I ../../stochastic_physics -I../ccpp/physics -I../atmos_cubed_sphere
+FFLAGS   += -I$(FMS_DIR) -I ../../stochastic_physics -I../ccpp/physics -I../ccpp/build/physics -I../atmos_cubed_sphere
 
 SRCS_f   =
 
