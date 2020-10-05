@@ -4,13 +4,9 @@
 	branch = dev/emc
 [submodule "ccpp/framework"]
 	path = ccpp/framework
-	#url = https://github.com/NCAR/ccpp-framework
-	#branch = feature/transition-to-capgen-1
-	url = https://github.com/climbfuji/ccpp-framework
-	branch = update_from_master_20201002_and_more
+	url = https://github.com/NCAR/ccpp-framework
+	branch = feature/transition-to-capgen-1
 [submodule "ccpp/physics"]
 	path = ccpp/physics
-	#url = https://github.com/NCAR/ccpp-physics
-	#branch = feature/transition-to-capgen-1
-	url = https://github.com/climbfuji/ccpp-physics
-	branch = update_from_master_20201002_and_more
+	url = https://github.com/NCAR/ccpp-physics
+	branch = feature/transition-to-capgen-1
