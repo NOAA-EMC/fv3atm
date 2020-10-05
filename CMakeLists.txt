@@ -1,7 +1,7 @@
 if(CCPP)
 
   if(DEFINED CCPP_SUITES)
-      set(_ccpp_suites_arg "--suites=${CCPP_SUITES}")
+    set(_ccpp_suites_arg "--suites=${CCPP_SUITES}")
   endif()
   message("Calling CCPP code generator (ccpp_prebuild.py) ... ${_ccpp_suites_arg}")
   execute_process(COMMAND ${Python_EXECUTABLE}
@@ -14,7 +14,7 @@ if(CCPP)
                   RESULT_VARIABLE RC)
   # Check return code from ccpp_prebuild.py
   if(NOT RC EQUAL 0)
-      message(FATAL_ERROR "An error occured while running ccpp_prebuild.py, check ${CMAKE_CURRENT_BINARY_DIR}/ccpp_prebuild.{out,err}")
+    message(FATAL_ERROR "An error occured while running ccpp_prebuild.py, check ${CMAKE_CURRENT_BINARY_DIR}/ccpp_prebuild.{out,err}")
   endif()
   # this should not be necessary; including CCPP_*.cmake here and passing
   # SCHEMES, CAPS and TYPEDEFS via environment variables to CCPP build.
@@ -150,14 +150,12 @@ add_subdirectory(stochastic_physics)
 ###############################################################################
 ### fv3atm
 ###############################################################################
-list(APPEND _fv3atm_srcs
+add_library(fv3atm
   atmos_model.F90
   fv3_cap.F90
   module_fv3_config.F90
   module_fcst_grid_comp.F90
   time_utils.F90)
-
-add_library(fv3atm ${_fv3atm_srcs})
 
 list(APPEND _fv3atm_defs_private GFS_PHYS
                                  INTERNAL_FILE_NML

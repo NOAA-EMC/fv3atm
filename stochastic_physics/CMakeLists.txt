@@ -1,8 +1,4 @@
-add_library(
-    stochastic_physics_wrapper
-
-    ./stochastic_physics_wrapper.F90
-)
+add_library(stochastic_physics_wrapper stochastic_physics_wrapper.F90)
 
 target_include_directories(stochastic_physics_wrapper PRIVATE ${CMAKE_BINARY_DIR}/stochastic_physics)
 if(CCPP)
