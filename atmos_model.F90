@@ -99,12 +99,12 @@ use CCPP_data,          only: ccpp_suite,                      &
                               IPD_interstitial => GFS_interstitial
 use IPD_driver,         only: IPD_initialize, IPD_initialize_rst
 use CCPP_driver,        only: CCPP_step, non_uniform_blocks
+
+use stochastic_physics_wrapper_mod, only: stochastic_physics_wrapper
 #else
 use IPD_driver,         only: IPD_initialize, IPD_initialize_rst, IPD_step
 use physics_abstraction_layer, only: time_vary_step, radiation_step1, physics_step1, physics_step2
 #endif
-
-use stochastic_physics_wrapper_mod, only: stochastic_physics_wrapper
 
 use FV3GFS_io_mod,      only: FV3GFS_restart_read, FV3GFS_restart_write, &
                               FV3GFS_IPD_checksum,                       &
@@ -291,15 +291,15 @@ subroutine update_atmos_radiation_physics (Atmos)
 #ifdef CCPP
       call CCPP_step (step="time_vary", nblks=Atm_block%nblks, ierr=ierr)
       if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP time_vary step failed')
+
+!--- call stochastic physics pattern generation / cellular automata
+      call stochastic_physics_wrapper(IPD_Control, IPD_Data, Atm_block, ierr)
+      if (ierr/=0)  call mpp_error(FATAL, 'Call to stochastic_physics_wrapper failed')
+
 #else
       Func1d => time_vary_step
       call IPD_step (IPD_Control, IPD_Data(:), IPD_Diag, IPD_Restart, IPD_func1d=Func1d)
 #endif
-
-!--- call stochastic physics pattern generation / cellular automata
-    call stochastic_physics_wrapper(IPD_Control, IPD_Data, Atm_block, ierr) 
-    if (ierr/=0)  call mpp_error(FATAL, 'Call to stochastic_physics_wrapper failed')
-   
 
 !--- if coupled, assign coupled fields
 
@@ -625,13 +625,14 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
 #ifdef CCPP
    call IPD_initialize (IPD_Control, IPD_Data, IPD_Diag, IPD_Restart, &
                         IPD_Interstitial, commglobal, mpp_npes(), Init_parm)
-#else
-   call IPD_initialize (IPD_Control, IPD_Data, IPD_Diag, IPD_Restart, Init_parm)
-#endif
 
 !--- Initialize stochastic physics pattern generation / cellular automata for first time step
    call stochastic_physics_wrapper(IPD_Control, IPD_Data, Atm_block, ierr)
    if (ierr/=0)  call mpp_error(FATAL, 'Call to stochastic_physics_wrapper failed')
+
+#else
+   call IPD_initialize (IPD_Control, IPD_Data, IPD_Diag, IPD_Restart, Init_parm)
+#endif
 
    Atmos%Diag => IPD_Diag
 
