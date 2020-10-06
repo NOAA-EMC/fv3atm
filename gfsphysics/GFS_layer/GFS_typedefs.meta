@@ -2959,7 +2959,7 @@
 [effr_in]
   standard_name = flag_for_cloud_effective_radii
   long_name = flag for cloud effective radii calculations in GFDL microphysics
-  units = 
+  units = flag
   dimensions = ()
   type = logical
 [microp_uniform]
@@ -4196,43 +4196,43 @@
 [ncnvw]
   standard_name = index_for_convective_cloud_water_mixing_ratio_in_phy_f3d
   long_name = the index of convective cloud water mixing ratio in phy f3d
-  units = 
+  units = index
   dimensions = ()
   type = integer
 [ncnvc]
   standard_name = index_for_convective_cloud_cover_in_phy_f3d
   long_name = the index of convective cloud cover in phy f3d
-  units = 
+  units = index
   dimensions = ()
   type = integer
 [nleffr]
   standard_name = index_for_cloud_liquid_water_effective_radius
   long_name = the index of cloud liquid water effective radius in phy_f3d
-  units = 
+  units = index
   dimensions = ()
   type = integer
 [nieffr]
   standard_name = index_for_ice_effective_radius
   long_name = the index of ice effective radius in phy_f3d
-  units = 
+  units = index
   dimensions = ()
   type = integer
 [nreffr]
   standard_name = index_for_rain_effective_radius
   long_name = the index of rain effective radius in phy_f3d
-  units = 
+  units = index
   dimensions = ()
   type = integer
 [nseffr]
   standard_name = index_for_snow_effective_radius
   long_name = the index of snow effective radius in phy_f3d
-  units = 
+  units = index
   dimensions = ()
   type = integer
 [ngeffr]
   standard_name = index_for_graupel_effective_radius
   long_name = the index of graupel effective radius in phy_f3d
-  units = 
+  units = index
   dimensions = ()
   type = integer
 [nT2delt]
@@ -4280,7 +4280,7 @@
 [ipt]
   standard_name = index_for_diagnostic_printout
   long_name = horizontal index for point used for diagnostic printout
-  units = 
+  units = index
   dimensions = ()
   type = integer
 [lprnt]
@@ -4687,114 +4687,114 @@
   standard_name = lower_ozone_interpolation_index
   long_name = interpolation low index for ozone
   units = index
-  dimensions = (horizontal_dimension)
+  dimensions = (horizontal_loop_extent)
   type = integer
 [jindx2_o3]
   standard_name = upper_ozone_interpolation_index
   long_name = interpolation high index for ozone
   units = index
-  dimensions = (horizontal_dimension)
+  dimensions = (horizontal_loop_extent)
   type = integer
 [ddy_o3]
   standard_name = ozone_interpolation_weight
   long_name = interpolation high index for ozone
   units = none
-  dimensions = (horizontal_dimension)
+  dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
 [jindx1_h]
   standard_name = lower_water_vapor_interpolation_index
   long_name = interpolation low index for stratospheric water vapor
   units = index
-  dimensions = (horizontal_dimension)
+  dimensions = (horizontal_loop_extent)
   type = integer
 [jindx2_h]
   standard_name = upper_water_vapor_interpolation_index
   long_name = interpolation high index for stratospheric water vapor
   units = index
-  dimensions = (horizontal_dimension)
+  dimensions = (horizontal_loop_extent)
   type = integer
 [ddy_h]
   standard_name = water_vapor_interpolation_weight
   long_name = interpolation high index for stratospheric water vapor
   units = none
-  dimensions = (horizontal_dimension)
+  dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
 [jindx1_aer]
   standard_name = lower_aerosol_y_interpolation_index
   long_name = interpolation low index for prescribed aerosols in the y direction
   units = index
-  dimensions = (horizontal_dimension)
+  dimensions = (horizontal_loop_extent)
   type = integer
 [jindx2_aer]
   standard_name = upper_aerosol_y_interpolation_index
   long_name = interpolation high index for prescribed aerosols in the y direction
   units = index
-  dimensions = (horizontal_dimension)
+  dimensions = (horizontal_loop_extent)
   type = integer
 [ddy_aer]
   standard_name = aerosol_y_interpolation_weight
   long_name = interpolation high index for prescribed aerosols in the y direction
   units = none
-  dimensions = (horizontal_dimension)
+  dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
 [iindx1_aer]
   standard_name = lower_aerosol_x_interpolation_index
   long_name = interpolation low index for prescribed aerosols in the x direction
   units = index
-  dimensions = (horizontal_dimension)
+  dimensions = (horizontal_loop_extent)
   type = integer
 [iindx2_aer]
   standard_name = upper_aerosol_x_interpolation_index
   long_name = interpolation high index for prescribed aerosols in the x direction
   units = index
-  dimensions = (horizontal_dimension)
+  dimensions = (horizontal_loop_extent)
   type = integer
 [ddx_aer]
   standard_name = aerosol_x_interpolation_weight
   long_name = interpolation high index for prescribed aerosols in the x direction
   units = none
-  dimensions = (horizontal_dimension)
+  dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
 [jindx1_ci]
   standard_name = lower_cloud_nuclei_y_interpolation_index
   long_name = interpolation low index for ice and cloud condensation nuclei in the y direction
   units = index
-  dimensions = (horizontal_dimension)
+  dimensions = (horizontal_loop_extent)
   type = integer
 [jindx2_ci]
   standard_name = upper_cloud_nuclei_y_interpolation_index
   long_name = interpolation high index for ice and cloud condensation nuclei in the y direction
   units = index
-  dimensions = (horizontal_dimension)
+  dimensions = (horizontal_loop_extent)
   type = integer
 [ddy_ci]
   standard_name = cloud_nuclei_y_interpolation_weight
   long_name = interpolation high index for ice and cloud condensation nuclei in the y direction
   units = none
-  dimensions = (horizontal_dimension)
+  dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
 [iindx1_ci]
   standard_name = lower_cloud_nuclei_x_interpolation_index
   long_name = interpolation low index for ice and cloud condensation nuclei in the x direction
   units = index
-  dimensions = (horizontal_dimension)
+  dimensions = (horizontal_loop_extent)
   type = integer
 [iindx2_ci]
   standard_name = upper_cloud_nuclei_x_interpolation_index
   long_name = interpolation high index for ice and cloud condensation nuclei in the x direction
   units = index
-  dimensions = (horizontal_dimension)
+  dimensions = (horizontal_loop_extent)
   type = integer
 [ddx_ci]
   standard_name = cloud_nuclei_x_interpolation_weight
   long_name = interpolation high index for ice and cloud condensation nuclei in the x direction
   units = none
-  dimensions = (horizontal_dimension)
+  dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
 
@@ -4843,23 +4843,23 @@
   type = real
   kind = kind_phys
 [in_nm]
-  standard_name = in_number_concentration
-  long_name = IN number concentration
-  units = kg-1?
+  standard_name = ice_nucleation_number
+  long_name = ice nucleation number in MG MP
+  units = kg-1
   dimensions = (horizontal_loop_extent,vertical_dimension)
   type = real
   kind = kind_phys
 [ccn_nm]
-  standard_name = ccn_number_concentration
-  long_name = CCN number concentration
-  units = kg-1?
+  standard_name = tendency_of_ccn_activated_number
+  long_name = tendency of ccn activated number
+  units = kg-1 s-1
   dimensions = (horizontal_loop_extent,vertical_dimension)
   type = real
   kind = kind_phys
 [aer_nm]
   standard_name = aerosol_number_concentration_from_gocart_aerosol_climatology
   long_name = GOCART aerosol climatology number concentration
-  units = kg-1?
+  units = kg-1
   dimensions = (horizontal_loop_extent,vertical_dimension,number_of_aerosol_tracers_MG)
   type = real
   kind = kind_phys
@@ -5413,7 +5413,7 @@
   standard_name = cumulative_radiation_diagnostic
   long_name = time-accumulated 2D radiation-related diagnostic fields
   units = various
-  dimensions = (horizontal_dimension,number_of_radiation_diagnostic_variables)
+  dimensions = (horizontal_loop_extent,number_of_radiation_diagnostic_variables)
   type = real
   kind = kind_phys
 [topfsw]
@@ -6510,21 +6510,21 @@
 [upd_mf]
   standard_name = cumulative_atmosphere_updraft_convective_mass_flux
   long_name = cumulative updraft mass flux
-  units = Pa
+  units = kg m-1 s-2
   dimensions = (horizontal_loop_extent,vertical_dimension)
   type = real
   kind = kind_phys
 [dwn_mf]
   standard_name = cumulative_atmosphere_downdraft_convective_mass_flux
   long_name = cumulative downdraft mass flux
-  units = Pa
+  units = kg m-1 s-2
   dimensions = (horizontal_loop_extent,vertical_dimension)
   type = real
   kind = kind_phys
 [det_mf]
   standard_name = cumulative_atmosphere_detrainment_convective_mass_flux
   long_name = cumulative detrainment mass flux
-  units = Pa
+  units = kg m-1 s-2
   dimensions = (horizontal_loop_extent,vertical_dimension)
   type = real
   kind = kind_phys
@@ -6539,7 +6539,7 @@
   standard_name = instantaneous_3d_cloud_fraction
   long_name = instantaneous 3D cloud fraction for all MPs
   units = frac
-  dimensions = (horizontal_loop_extent,vertical_dimension)
+  dimensions = (horizontal_loop_extent,adjusted_vertical_layer_dimension_for_radiation)
   type = real
   kind = kind_phys
 [ndust]
@@ -7179,63 +7179,63 @@
   standard_name = total_cloud_fraction
   long_name = layer total cloud fraction
   units = frac
-  dimensions = (horizontal_loop_extent,vertical_dimension)
+  dimensions = (horizontal_loop_extent,adjusted_vertical_layer_dimension_for_radiation)
   type = real
   kind = kind_phys
 [clouds(:,:,2)]
   standard_name = cloud_liquid_water_path
   long_name = layer cloud liquid water path
   units = g m-2
-  dimensions = (horizontal_loop_extent,vertical_dimension)
+  dimensions = (horizontal_loop_extent,adjusted_vertical_layer_dimension_for_radiation)
   type = real
   kind = kind_phys
 [clouds(:,:,3)]
   standard_name = mean_effective_radius_for_liquid_cloud
   long_name = mean effective radius for liquid cloud
-  units = micron
-  dimensions = (horizontal_loop_extent,vertical_dimension)
+  units = um
+  dimensions = (horizontal_loop_extent,adjusted_vertical_layer_dimension_for_radiation)
   type = real
   kind = kind_phys
 [clouds(:,:,4)]
   standard_name = cloud_ice_water_path
   long_name = layer cloud ice water path
   units = g m-2
-  dimensions = (horizontal_loop_extent,vertical_dimension)
+  dimensions = (horizontal_loop_extent,adjusted_vertical_layer_dimension_for_radiation)
   type = real
   kind = kind_phys
 [clouds(:,:,5)]
   standard_name = mean_effective_radius_for_ice_cloud
   long_name = mean effective radius for ice cloud
-  units = micron
-  dimensions = (horizontal_loop_extent,vertical_dimension)
+  units = um
+  dimensions = (horizontal_loop_extent,adjusted_vertical_layer_dimension_for_radiation)
   type = real
   kind = kind_phys
 [clouds(:,:,6)]
   standard_name = cloud_rain_water_path
   long_name = cloud rain water path
   units = g m-2
-  dimensions = (horizontal_loop_extent,vertical_dimension)
+  dimensions = (horizontal_loop_extent,adjusted_vertical_layer_dimension_for_radiation)
   type = real
   kind = kind_phys
 [clouds(:,:,7)]
   standard_name = mean_effective_radius_for_rain_drop
   long_name = mean effective radius for rain drop
-  units = micron
-  dimensions = (horizontal_loop_extent,vertical_dimension)
+  units = um
+  dimensions = (horizontal_loop_extent,adjusted_vertical_layer_dimension_for_radiation)
   type = real
   kind = kind_phys
 [clouds(:,:,8)]
   standard_name = cloud_snow_water_path
   long_name = cloud snow water path
   units = g m-2
-  dimensions = (horizontal_loop_extent,vertical_dimension)
+  dimensions = (horizontal_loop_extent,adjusted_vertical_layer_dimension_for_radiation)
   type = real
   kind = kind_phys
 [clouds(:,:,9)]
   standard_name = mean_effective_radius_for_snow_flake
   long_name = mean effective radius for snow flake
-  units = micron
-  dimensions = (horizontal_loop_extent,vertical_dimension)
+  units = um
+  dimensions = (horizontal_loop_extent,adjusted_vertical_layer_dimension_for_radiation)
   type = real
   kind = kind_phys
 [clw]
