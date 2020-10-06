@@ -8,7 +8,5 @@
 	branch = release/public-v5
 [submodule "ccpp/physics"]
 	path = ccpp/physics
-	#url =  https://github.com/NCAR/ccpp-physics
-	#branch = release/public-v5
-	url =  https://github.com/climbfuji/ccpp-physics
-	branch = release_public_v5_update_gfs_debug
+	url =  https://github.com/NCAR/ccpp-physics
+	branch = release/public-v5
