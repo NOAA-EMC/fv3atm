@@ -4707,14 +4707,14 @@
   units = none
   dimensions = (horizontal_dimension)
   type = integer
-  active = (flag_for_lw_clouds_without_sub_grid_approximation == 2 .or. flag_for_sw_clouds_without_sub_grid_approximation == 2)
+  active = (flag_for_lw_clouds_sub_grid_approximation == 2 .or. flag_for_sw_clouds_grid_approximation == 2)
 [icsdlw]
   standard_name = seed_random_numbers_lw
   long_name = random seeds for sub-column cloud generators lw
   units = none
   dimensions = (horizontal_dimension)
   type = integer
-  active = (flag_for_lw_clouds_without_sub_grid_approximation == 2 .or. flag_for_sw_clouds_without_sub_grid_approximation == 2)
+  active = (flag_for_lw_clouds_sub_grid_approximation == 2 .or. flag_for_sw_clouds_grid_approximation == 2)
 [ozpl]
   standard_name = ozone_forcing
   long_name = ozone forcing data
