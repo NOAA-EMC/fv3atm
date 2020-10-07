@@ -131,7 +131,7 @@ public addLsmask2grid
 
 !<PUBLICTYPE >
  type atmos_data_type
-     integer                       :: axes(4)            ! axis indices (returned by diag_manager) for the atmospheric grid 
+     integer                       :: axes(4)            ! axis indices (returned by diag_manager) for the atmospheric grid
                                                          ! (they correspond to the x, y, pfull, phalf axes)
      integer, pointer              :: pelist(:) =>null() ! pelist where atmosphere is running.
      integer                       :: layout(2)          ! computer task laytout
@@ -152,7 +152,7 @@ public addLsmask2grid
      type(time_type)               :: Time               ! current time
      type(time_type)               :: Time_step          ! atmospheric time step.
      type(time_type)               :: Time_init          ! reference time.
-     type(grid_box_type)           :: grid               ! hold grid information needed for 2nd order conservative flux exchange 
+     type(grid_box_type)           :: grid               ! hold grid information needed for 2nd order conservative flux exchange
      type(IPD_diag_type), pointer, dimension(:) :: Diag
  end type atmos_data_type
                                                          ! to calculate gradient on cubic sphere grid.
@@ -235,7 +235,7 @@ contains
 !   atmospheric tendencies for dynamics, radiation, vertical diffusion of
 !   momentum, tracers, and heat/moisture.  For heat/moisture only the
 !   downward sweep of the tridiagonal elimination is performed, hence
-!   the name "_down". 
+!   the name "_down".
 !</DESCRIPTION>
 
 !   <TEMPLATE>
@@ -439,7 +439,7 @@ subroutine update_atmos_radiation_physics (Atmos)
 
 subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
 
-#ifdef OPENMP
+#ifdef _OPENMP
   use omp_lib
 #endif
 #ifdef CCPP
@@ -533,11 +533,11 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    call atmosphere_control_data (isc, iec, jsc, jec, nlev, p_hydro, hydro, tile_num)
    call define_blocks_packed ('atmos_model', Atm_block, isc, iec, jsc, jec, nlev, &
                               blocksize, block_message)
-   
+
    allocate(DYCORE_Data(Atm_block%nblks))
    allocate(IPD_Data(Atm_block%nblks))
 
-#ifdef OPENMP
+#ifdef _OPENMP
    nthrds = omp_get_max_threads()
 #else
    nthrds = 1
@@ -687,7 +687,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
 #endif
 
    !--- set the initial diagnostic timestamp
-   diag_time = Time 
+   diag_time = Time
    if (output_1st_tstep_rst) then
      diag_time = Time - real_to_time_type(mod(int((first_kdt - 1)*dt_phys/3600.),6)*3600.0)
    endif
@@ -905,7 +905,7 @@ subroutine update_atmos_model_state (Atmos)
       call FV3GFS_diag_output(Atmos%Time, IPD_DIag, Atm_block, IPD_Control%nx, IPD_Control%ny, &
                             IPD_Control%levs, 1, 1, 1.0_IPD_kind_phys, time_int, time_intfull,              &
                             IPD_Control%fhswr, IPD_Control%fhlwr)
-      if (nint(IPD_Control%fhzero) > 0) then 
+      if (nint(IPD_Control%fhzero) > 0) then
         if (mod(isec,3600*nint(IPD_Control%fhzero)) == 0) diag_time = Atmos%Time
       else
         if (mod(isec,nint(3600*IPD_Control%fhzero)) == 0) diag_time = Atmos%Time
@@ -917,7 +917,7 @@ subroutine update_atmos_model_state (Atmos)
     !!!call diag_send_complete_extra (Atmos%Time)
 
     !--- get bottom layer data from dynamical core for coupling
-    call atmosphere_get_bottom_layer (Atm_block, DYCORE_Data) 
+    call atmosphere_get_bottom_layer (Atm_block, DYCORE_Data)
 
     !if in coupled mode, set up coupled fields
     if (IPD_Control%cplflx .or. IPD_Control%cplwav) then
@@ -960,7 +960,7 @@ subroutine atmos_model_end (Atmos)
 
 !-----------------------------------------------------------------------
 !---- termination routine for atmospheric model ----
-                                              
+
     call atmosphere_end (Atmos % Time, Atmos%grid, restart_endfcst)
     if(restart_endfcst) then
       call FV3GFS_restart_write (IPD_Data, IPD_Restart, Atm_block, &
@@ -1558,7 +1558,7 @@ end subroutine update_atmos_chemistry
 ! </IN>
 !
 subroutine atmos_data_type_chksum(id, timestep, atm)
-type(atmos_data_type), intent(in) :: atm 
+type(atmos_data_type), intent(in) :: atm
     character(len=*),  intent(in) :: id
     integer         ,  intent(in) :: timestep
     integer :: n, outunit
@@ -1960,7 +1960,7 @@ end subroutine atmos_data_type_chksum
                                                    / max(0.01_IPD_kind_phys, IPD_Data(nb)%Sfcprop%fice(ix))
 !                                                  / max(0.01_IPD_kind_phys, IPD_Data(nb)%Coupling%ficein_cpl(ix))
               IPD_Data(nb)%Sfcprop%zorli(ix)       = z0ice
-            else 
+            else
 !             IPD_Data(nb)%Sfcprop%tisfc(ix)       = IPD_Data(nb)%Coupling%tseain_cpl(ix)
               IPD_Data(nb)%Sfcprop%tisfc(ix)       = IPD_Data(nb)%Sfcprop%tsfco(ix)
               IPD_Data(nb)%Sfcprop%fice(ix)        = zero
@@ -2043,7 +2043,7 @@ end subroutine atmos_data_type_chksum
 
     ! set cpl fields to export Data
 
-    if (IPD_Control%cplflx .or. IPD_Control%cplwav) then 
+    if (IPD_Control%cplflx .or. IPD_Control%cplwav) then
     ! Instantaneous u wind (m/s) 10 m above ground
     idx = queryfieldlist(exportFieldsList,'inst_zonal_wind_height10m')
     if (idx > 0 ) then
@@ -2073,7 +2073,7 @@ end subroutine atmos_data_type_chksum
       if (mpp_pe() == mpp_root_pe() .and. debug) print *,'cpl, get v10mi_cpl, exportData=',exportData(isc,jsc,idx),'idx=',idx
     endif
 
-    endif !if cplflx or cplwav 
+    endif !if cplflx or cplwav
 
     if (IPD_Control%cplflx) then
     ! MEAN Zonal compt of momentum flux (N/m**2)
@@ -2594,9 +2594,9 @@ end subroutine atmos_data_type_chksum
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          if (associated(DYCORE_Data(nb)%coupling%t_bot)) then 
+          if (associated(DYCORE_Data(nb)%coupling%t_bot)) then
             exportData(i,j,idx) = DYCORE_Data(nb)%coupling%t_bot(ix)
-          else 
+          else
             exportData(i,j,idx) = zero
           endif
         enddo
@@ -2615,7 +2615,7 @@ end subroutine atmos_data_type_chksum
           ix = Atm_block%ixp(i,j)
           if (associated(DYCORE_Data(nb)%coupling%tr_bot)) then
             exportData(i,j,idx) = DYCORE_Data(nb)%coupling%tr_bot(ix,1)
-          else 
+          else
             exportData(i,j,idx) = zero
           endif
         enddo
@@ -2634,7 +2634,7 @@ end subroutine atmos_data_type_chksum
             exportData(i,j,idx) = DYCORE_Data(nb)%coupling%u_bot(ix)
           else
             exportData(i,j,idx) = zero
-          endif 
+          endif
         enddo
       enddo
     endif
@@ -2649,9 +2649,9 @@ end subroutine atmos_data_type_chksum
           ix = Atm_block%ixp(i,j)
           if (associated(DYCORE_Data(nb)%coupling%v_bot)) then
             exportData(i,j,idx) = DYCORE_Data(nb)%coupling%v_bot(ix)
-          else 
-            exportData(i,j,idx) = zero 
-          endif 
+          else
+            exportData(i,j,idx) = zero
+          endif
         enddo
       enddo
     endif
@@ -2666,7 +2666,7 @@ end subroutine atmos_data_type_chksum
           ix = Atm_block%ixp(i,j)
           if (associated(DYCORE_Data(nb)%coupling%p_bot)) then
             exportData(i,j,idx) = DYCORE_Data(nb)%coupling%p_bot(ix)
-          else 
+          else
             exportData(i,j,idx) = zero
           endif
         enddo
@@ -2683,7 +2683,7 @@ end subroutine atmos_data_type_chksum
           ix = Atm_block%ixp(i,j)
           if (associated(DYCORE_Data(nb)%coupling%z_bot)) then
             exportData(i,j,idx) = DYCORE_Data(nb)%coupling%z_bot(ix)
-          else 
+          else
             exportData(i,j,idx) = zero
           endif
         enddo
@@ -2795,7 +2795,7 @@ end subroutine atmos_data_type_chksum
 !    print *,'in set up grid, aft get maskptr, rc=',rc, 'size=',size(maskPtr,1),size(maskPtr,2), &
 !      'bound(maskPtr)=', LBOUND(maskPtr,1),LBOUND(maskPtr,2),UBOUND(maskPtr,1),UBOUND(maskPtr,2)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-!    
+!
 !$omp parallel do default(shared) private(i,j)
     do j=jsc,jec
       do i=isc,iec
@@ -2804,7 +2804,7 @@ end subroutine atmos_data_type_chksum
     enddo
 !      print *,'in set set lsmask, maskPtr=', maxval(maskPtr), minval(maskPtr)
 !
-    deallocate(lsmask)  
+    deallocate(lsmask)
 
   end subroutine addLsmask2grid
 !------------------------------------------------------------------------------
