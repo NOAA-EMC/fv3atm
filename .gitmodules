@@ -5,8 +5,8 @@
 [submodule "ccpp/framework"]
 	path = ccpp/framework
 	url = https://github.com/NCAR/ccpp-framework
-	branch = feature/transition-to-capgen-1
+	branch = master
 [submodule "ccpp/physics"]
 	path = ccpp/physics
-	url = https://github.com/climbfuji/ccpp-physics
-	branch = feature_transition_to_capgen_1_for_master
+	url = https://github.com/NCAR/ccpp-physics
+	branch = master
