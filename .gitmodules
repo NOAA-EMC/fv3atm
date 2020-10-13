@@ -1,14 +1,12 @@
 [submodule "atmos_cubed_sphere"]
 	path = atmos_cubed_sphere
-	url = https://github.com/NOAA-EMC/GFDL_atmos_cubed_sphere
-	branch = dev/emc
+	url = https://github.com/NCAR/GFDL_atmos_cubed_sphere
+	branch = dtc/hwrf-physics
 [submodule "ccpp/framework"]
 	path = ccpp/framework
 	url = https://github.com/NCAR/ccpp-framework
 	branch = master
 [submodule "ccpp/physics"]
 	path = ccpp/physics
-	#url = https://github.com/hafs-community/ccpp-physics
-	#branch = feature/hwrf_physics
-	url = https://github.com/climbfuji/ccpp-physics
-	branch = update_hafs_feature_hwrf_physics_from_master_20200922
+	url = https://github.com/NCAR/ccpp-physics
+	branch = dtc/hwrf-physics
