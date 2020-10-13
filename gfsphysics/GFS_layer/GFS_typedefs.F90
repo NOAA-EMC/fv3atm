@@ -9,7 +9,7 @@ module GFS_typedefs
                                            con_t0c, con_cvap, con_cliq, con_eps, con_epsq, &
                                            con_epsm1, con_ttp, rlapse, con_jcal, con_rhw0, &
                                            con_sbc, con_tice, cimin, con_p0, rhowater,     &
-                                           con_csol, con_epsqs
+                                           con_csol, con_epsqs, con_rocp, con_rog
 
        use module_radsw_parameters,  only: topfsw_type, sfcfsw_type, profsw_type, cmpfsw_type, NBDSW
        use module_radlw_parameters,  only: topflw_type, sfcflw_type, proflw_type, NBDLW
@@ -660,6 +660,7 @@ module GFS_typedefs
     integer              :: icliq_sw        !< sw optical property for liquid clouds
     integer              :: iovr_sw         !< sw: max-random overlap clouds
     integer              :: iovr_lw         !< lw: max-random overlap clouds
+    integer              :: iovr            !< max-random overlap clouds for sw & lw (maximum of both)
     integer              :: ictm            !< ictm=0 => use data at initial cond time, if not
                                             !<           available; use latest; no extrapolation.
                                             !< ictm=1 => use data at the forecast time, if not
@@ -1138,6 +1139,12 @@ module GFS_typedefs
     integer              :: nkbfshoc        !< the index of upward kinematic buoyancy flux from SHOC in phy_f3d
     integer              :: nahdshoc        !< the index of diffusivity for heat from from SHOC in phy_f3d
     integer              :: nscfshoc        !< the index of subgrid-scale cloud fraction from from SHOC in phy_f3d
+    integer              :: nT2delt         !< the index of air temperature 2 timesteps back for Z-C MP in phy_f3d
+    integer              :: nTdelt          !< the index of air temperature at the previous timestep for Z-C MP in phy_f3d
+    integer              :: nqv2delt        !< the index of specific humidity 2 timesteps back for Z-C MP in phy_f3d
+    integer              :: nqvdelt         !< the index of specific humidity at the previous timestep for Z-C MP in phy_f3d
+    integer              :: nps2delt        !< the index of surface air pressure 2 timesteps back for Z-C MP in phy_f2d
+    integer              :: npsdelt         !< the index of surface air pressure at the previous timestep for Z-C MP in phy_f2d
 #endif
 
 !--- debug flag
@@ -1583,9 +1590,9 @@ module GFS_typedefs
 #ifdef CCPP
     real (kind=kind_phys), pointer :: TRAIN  (:,:)   => null()  !< accumulated stratiform T tendency (K s-1)
 #endif
-#ifdef CCPP
+!#ifdef CCPP
     real (kind=kind_phys), pointer :: cldfra  (:,:)   => null()  !< instantaneous 3D cloud fraction
-#endif
+!#endif
     !--- MP quantities for 3D diagnositics 
     real (kind=kind_phys), pointer :: refl_10cm(:,:) => null()  !< instantaneous refl_10cm
 
@@ -1718,6 +1725,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: adjvisdfd(:)       => null()  !<
     real (kind=kind_phys), pointer      :: aerodp(:,:)        => null()  !<
     real (kind=kind_phys), pointer      :: alb1d(:)           => null()  !<
+    real (kind=kind_phys), pointer      :: alpha(:,:)         => null()  !<
     real (kind=kind_phys), pointer      :: bexp1d(:)          => null()  !<
     real (kind=kind_phys), pointer      :: canopy_save(:)     => null()  !<
     real (kind=kind_phys), pointer      :: cd(:)              => null()  !<
@@ -3789,6 +3797,7 @@ module GFS_typedefs
     Model%icliq_sw         = icliq_sw
     Model%iovr_sw          = iovr_sw
     Model%iovr_lw          = iovr_lw
+    Model%iovr             = max(Model%iovr_sw,Model%iovr_lw)
     Model%ictm             = ictm
     Model%isubc_sw         = isubc_sw
     Model%isubc_lw         = isubc_lw
@@ -4647,17 +4656,29 @@ module GFS_typedefs
     endif
 
 !--- set up cloud schemes and tracer elements
-    Model%nleffr = -999
-    Model%nieffr = -999
-    Model%nreffr = -999
-    Model%nseffr = -999
-    Model%ngeffr = -999
+    Model%nleffr   = -999
+    Model%nieffr   = -999
+    Model%nreffr   = -999
+    Model%nseffr   = -999
+    Model%ngeffr   = -999
+    Model%nT2delt  = -999
+    Model%nTdelt   = -999
+    Model%nqv2delt = -999
+    Model%nqvdelt  = -999
+    Model%nps2delt = -999
+    Model%npsdelt  = -999
     if (Model%imp_physics == Model%imp_physics_zhao_carr) then
-      Model%npdf3d  = 0
-      Model%num_p3d = 4
-      Model%num_p2d = 3
-      Model%shcnvcw = .false.
-      Model%ncnd    = 1                   ! ncnd is the number of cloud condensate types
+      Model%npdf3d   = 0
+      Model%num_p3d  = 4
+      Model%num_p2d  = 3
+      Model%shcnvcw  = .false.
+      Model%ncnd     = 1                   ! ncnd is the number of cloud condensate types
+      Model%nT2delt  = 1
+      Model%nqv2delt = 2
+      Model%nTdelt   = 3
+      Model%nqvdelt  = 4
+      Model%nps2delt = 1
+      Model%npsdelt  = 2
       if (Model%me == Model%master) print *,' Using Zhao/Carr/Sundqvist Microphysics'
 
     elseif (Model%imp_physics == Model%imp_physics_zhao_carr_pdf) then !Zhao Microphysics with PDF cloud
@@ -4677,9 +4698,9 @@ module GFS_typedefs
       Model%pdfcld  = .false.
       Model%shcnvcw = .false.
       Model%ncnd    = 5
-      Model%nleffr = 1
-      Model%nieffr = 2
-      Model%nseffr = 3
+      Model%nleffr  = 1
+      Model%nieffr  = 2
+      Model%nseffr  = 3
       if (Model%me == Model%master) print *,' Using Ferrier-Aligo MP scheme', &
                                           ' microphysics', &
                                           ' lradar =',Model%lradar
@@ -4847,7 +4868,7 @@ module GFS_typedefs
 
 
 !--- BEGIN CODE FROM GLOOPR
-!--- set up parameters for Xu & Randell's cloudiness computation (Radiation)
+!--- set up parameters for Xu & Randall's cloudiness computation (Radiation)
 
     Model%lmfshal  = (Model%shal_cnv .and. Model%imfshalcnv > 0)
 #ifdef CCPP
@@ -4973,6 +4994,7 @@ module GFS_typedefs
       print *, ' icliq_sw          : ', Model%icliq_sw
       print *, ' iovr_sw           : ', Model%iovr_sw
       print *, ' iovr_lw           : ', Model%iovr_lw
+      print *, ' iovr              : ', Model%iovr
       print *, ' ictm              : ', Model%ictm
       print *, ' isubc_sw          : ', Model%isubc_sw
       print *, ' isubc_lw          : ', Model%isubc_lw
@@ -6332,6 +6354,10 @@ module GFS_typedefs
     allocate (Interstitial%adjvisdfd       (IM))
     allocate (Interstitial%aerodp          (IM,NSPC1))
     allocate (Interstitial%alb1d           (IM))
+    if (.not. Model%do_RRTMGP) then
+      ! RRTMGP uses its own cloud_overlap_param
+      allocate (Interstitial%alpha         (IM,Model%levr+LTP))
+    end if
     allocate (Interstitial%bexp1d          (IM))
     allocate (Interstitial%cd              (IM))
     allocate (Interstitial%cd_ice          (IM))
@@ -6899,6 +6925,9 @@ module GFS_typedefs
     
     Interstitial%aerodp       = clear_val
     Interstitial%alb1d        = clear_val
+    if (.not. Model%do_RRTMGP) then
+      Interstitial%alpha      = clear_val
+    end if
     Interstitial%cldsa        = clear_val
     Interstitial%cldtaulw     = clear_val
     Interstitial%cldtausw     = clear_val
@@ -7363,6 +7392,9 @@ module GFS_typedefs
     write (0,*) 'sum(Interstitial%adjvisdfd       ) = ', sum(Interstitial%adjvisdfd       )
     write (0,*) 'sum(Interstitial%aerodp          ) = ', sum(Interstitial%aerodp          )
     write (0,*) 'sum(Interstitial%alb1d           ) = ', sum(Interstitial%alb1d           )
+    if (.not. Model%do_RRTMGP) then
+      write (0,*) 'sum(Interstitial%alpha           ) = ', sum(Interstitial%alpha         )
+    end if
     write (0,*) 'sum(Interstitial%bexp1d          ) = ', sum(Interstitial%bexp1d          )
     write (0,*) 'sum(Interstitial%cd              ) = ', sum(Interstitial%cd              )
     write (0,*) 'sum(Interstitial%cd_ice          ) = ', sum(Interstitial%cd_ice          )

@@ -1,5 +1,4 @@
 #define MPI
-#define OPENMP
 !> \file GFS_debug.F90
 
     module GFS_diagtoscreen
@@ -49,7 +48,7 @@
 #ifdef MPI
          use mpi
 #endif
-#ifdef OPENMP
+#ifdef _OPENMP
          use omp_lib
 #endif
          use machine,               only: kind_phys
@@ -89,7 +88,7 @@
          mpisize = 1
          mpicomm = 0
 #endif
-#ifdef OPENMP
+#ifdef _OPENMP
          omprank = OMP_GET_THREAD_NUM()
          ompsize = OMP_GET_NUM_THREADS()
 #else
@@ -97,7 +96,7 @@
          ompsize = 1
 #endif
 
-#ifdef OPENMP
+#ifdef _OPENMP
 !$OMP BARRIER
 #endif
 #ifdef MPI
@@ -504,7 +503,7 @@
                      ! Model/Control
                      ! not yet
                  end if
-#ifdef OPENMP
+#ifdef _OPENMP
 !$OMP BARRIER
 #endif
              end do
@@ -513,7 +512,7 @@
 #endif
          end do
 
-#ifdef OPENMP
+#ifdef _OPENMP
 !$OMP BARRIER
 #endif
 #ifdef MPI
@@ -737,7 +736,7 @@
 #ifdef MPI
          use mpi
 #endif
-#ifdef OPENMP
+#ifdef _OPENMP
          use omp_lib
 #endif
          implicit none
@@ -749,7 +748,7 @@
 #else
          mpirank = 0
 #endif
-#ifdef OPENMP
+#ifdef _OPENMP
          ompthread = OMP_GET_THREAD_NUM()
 #else
          ompthread = 0

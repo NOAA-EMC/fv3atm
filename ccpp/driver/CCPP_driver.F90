@@ -43,7 +43,7 @@ module CCPP_driver
 !-------------------------------
   subroutine CCPP_step (step, nblks, ierr)
 
-#ifdef OPENMP
+#ifdef _OPENMP
     use omp_lib
 #endif
 
@@ -62,7 +62,7 @@ module CCPP_driver
 
       ! Get and set number of OpenMP threads (module
       ! variable) that are available to run physics
-#ifdef OPENMP
+#ifdef _OPENMP
       nthrds = omp_get_max_threads()
 #else
       nthrds = 1
@@ -93,7 +93,7 @@ module CCPP_driver
         end do
       end do
 
-   else if (trim(step)=="physics_init") then
+    else if (trim(step)=="physics_init") then
 
       ! Since the physics init steps are independent of the blocking structure,
       ! we can use cdata_domain here. Since we don't use threading on the outside,
@@ -107,7 +107,7 @@ module CCPP_driver
         return
       end if
 
-   else if (trim(step)=="time_vary") then
+    else if (trim(step)=="time_vary") then
 
       ! Since the time_vary steps only use data structures for all blocks (except the
       ! CCPP-internal variables ccpp_error_flag and ccpp_error_message, which are defined
@@ -123,8 +123,8 @@ module CCPP_driver
         return
       end if
 
-   ! Radiation and stochastic physics
-   else if (trim(step)=="radiation" .or. trim(step)=="physics" .or. trim(step)=="stochastics") then
+    ! Radiation and stochastic physics
+    else if (trim(step)=="radiation" .or. trim(step)=="physics" .or. trim(step)=="stochastics") then
 
       ! Set number of threads available to physics schemes to one,
       ! because threads are used on the outside for blocking
@@ -134,7 +134,7 @@ module CCPP_driver
 !$OMP          default (shared)          &
 !$OMP          private (nb,nt,ntX,ierr2) &
 !$OMP          reduction (+:ierr)
-#ifdef OPENMP
+#ifdef _OPENMP
       nt = omp_get_thread_num()+1
 #else
       nt = 1
@@ -162,8 +162,8 @@ module CCPP_driver
 !$OMP end parallel
       if (ierr/=0) return
 
-   ! Finalize
-   else if (trim(step)=="finalize") then
+    ! Finalize
+    else if (trim(step)=="finalize") then
 
       ! Loop over blocks, don't use threading on the outside but allowing threading
       ! inside the finalization, similar to what is done for the initialization
