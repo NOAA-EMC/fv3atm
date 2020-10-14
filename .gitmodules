@@ -4,9 +4,11 @@
 	branch = gsd/develop
 [submodule "ccpp/framework"]
 	path = ccpp/framework
-	url = https://github.com/NOAA-GSD/ccpp-framework
-	branch = gsd/develop
+	#url = https://github.com/NOAA-GSD/ccpp-framework
+	#branch = gsd/develop
+	url = https://github.com/climbfuji/ccpp-framework
+	branch = support_unblocked_variables-in_init_and_finalize
 [submodule "ccpp/physics"]
 	path = ccpp/physics
-	url = https://github.com/tanyasmirnova/ccpp-physics
-	branch = ruclsm_rucinit_in_lsm_ruc_init
+	url = https://github.com/climbfuji/ccpp-physics
+	branch = tanya_ruc_init_updated
