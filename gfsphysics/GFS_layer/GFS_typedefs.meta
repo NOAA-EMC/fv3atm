@@ -1245,14 +1245,6 @@
   type = real
   kind = kind_phys
   active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme) 
-[zs]
-  standard_name = depth_of_soil_levels_for_land_surface_model
-  long_name = depth of soil levels for land surface model
-  units = m
-  dimensions = (soil_vertical_dimension_for_land_surface_model)
-  type = real
-  kind = kind_phys
-  active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme) 
 [clw_surf]
   standard_name = cloud_condensed_water_mixing_ratio_at_surface
   long_name = moist cloud water mixing ratio at surface
@@ -3087,6 +3079,14 @@
   units = count
   dimensions = ()
   type = integer
+[zs]
+  standard_name = depth_of_soil_levels_for_land_surface_model
+  long_name = depth of soil levels for land surface model
+  units = m
+  dimensions = (soil_vertical_dimension_for_land_surface_model)
+  type = real
+  kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme) 
 [rdlai]
   standard_name = flag_for_reading_leaf_area_index_from_input
   long_name = flag for reading leaf area index from initial conditions for RUC LSM
