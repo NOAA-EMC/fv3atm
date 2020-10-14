@@ -5935,6 +5935,29 @@ module GFS_typedefs
     Diag%totsnwb    = zero
     Diag%totgrpb    = zero
 !
+#ifdef CCPP
+    !--- MYNN variables:
+    if (Model%do_mynnedmf) then
+      if (Model%bl_mynn_output .ne. 0) then
+        Diag%edmf_a        = clear_val
+        Diag%edmf_w        = clear_val
+        Diag%edmf_qt       = clear_val
+        Diag%edmf_thl      = clear_val
+        Diag%edmf_ent      = clear_val
+        Diag%edmf_qc       = clear_val
+        Diag%sub_thl       = clear_val
+        Diag%sub_sqv       = clear_val
+        Diag%det_thl       = clear_val
+        Diag%det_sqv       = clear_val
+      endif
+      Diag%nupdraft      = 0
+      Diag%maxmf         = clear_val
+      Diag%ktop_plume    = 0
+      Diag%exch_h        = clear_val
+      Diag%exch_m        = clear_val
+    endif
+#endif
+!
     if (Model%do_ca) then
       Diag%ca1      = zero
       Diag%ca2      = zero
