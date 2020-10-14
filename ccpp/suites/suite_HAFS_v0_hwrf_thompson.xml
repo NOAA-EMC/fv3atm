@@ -13,8 +13,7 @@
   <group name="radiation">
     <subcycle loop="1">
       <scheme>GFS_suite_interstitial_rad_reset</scheme>
-      <!-- DH added - needed ? -->
-      <scheme>sgscloud_radpre</scheme>
+      <!-- <scheme>sgscloud_radpre</scheme> -->
       <scheme>GFS_rrtmg_pre</scheme>
       <scheme>rrtmg_lw_pre</scheme>
       <scheme>rrtmg_lw</scheme>
@@ -23,8 +22,7 @@
       <scheme>rrtmg_sw</scheme>
       <scheme>rrtmg_sw_post</scheme>
       <scheme>GFS_rrtmg_post</scheme>
-      <!-- DH added - needed ?-->
-      <scheme>sgscloud_radpost</scheme>
+      <!-- <scheme>sgscloud_radpost</scheme> -->
     </subcycle>
   </group>
   <group name="physics">
