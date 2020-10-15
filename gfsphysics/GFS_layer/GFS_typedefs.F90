@@ -368,7 +368,6 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: tslb(:,:)        => null()  !< soil temperature for land surface model
     real (kind=kind_phys), pointer :: flag_frsoil(:,:) => null()  !< RUC LSM: flag for frozen soil physics
     !
-    real (kind=kind_phys), pointer :: zs(:)            => null()  !< depth of soil levels for land surface model
     real (kind=kind_phys), pointer :: clw_surf(:)      => null()  !< RUC LSM: moist cloud water mixing ratio at surface
     real (kind=kind_phys), pointer :: qwv_surf(:)      => null()  !< RUC LSM: water vapor mixing ratio at surface
     real (kind=kind_phys), pointer :: cndm_surf(:)     => null()  !< RUC LSM: surface condensation mass
@@ -781,6 +780,7 @@ module GFS_typedefs
     integer              :: lsoil_lsm       !< number of soil layers internal to land surface model
     integer              :: lsnow_lsm       !< maximum number of snow layers internal to land surface model
     integer              :: lsnow_lsm_lbound!< lower bound for snow arrays, depending on lsnow_lsm
+    real(kind=kind_phys), pointer :: zs(:) => null() !< depth of soil levels for land surface model
     logical              :: rdlai
 #endif
     integer              :: ivegsrc         !< ivegsrc = 0   => USGS, 
@@ -2508,7 +2508,6 @@ module GFS_typedefs
        allocate (Sfcprop%smois       (IM,Model%lsoil_lsm))
        allocate (Sfcprop%tslb        (IM,Model%lsoil_lsm))
        allocate (Sfcprop%flag_frsoil (IM,Model%lsoil_lsm))
-       allocate (Sfcprop%zs          (Model%lsoil_lsm))
        allocate (Sfcprop%clw_surf    (IM))
        allocate (Sfcprop%qwv_surf    (IM))
        allocate (Sfcprop%cndm_surf   (IM))
@@ -2522,7 +2521,6 @@ module GFS_typedefs
        Sfcprop%keepsmfr    = clear_val
        Sfcprop%smois       = clear_val
        Sfcprop%tslb        = clear_val
-       Sfcprop%zs          = clear_val
        Sfcprop%clw_surf    = clear_val
        Sfcprop%qwv_surf    = clear_val
        Sfcprop%cndm_surf   = clear_val
@@ -3805,6 +3803,12 @@ module GFS_typedefs
     else
       Model%lsoil_lsm      = lsoil_lsm
     end if
+    ! Allocate variable to store depth of soil layers
+    if (Model%lsm==Model%lsm_ruc) then
+       allocate (Model%zs(Model%lsoil_lsm))
+       Model%zs = clear_val
+    end if
+    !
     if (lsnow_lsm /= 3) then
       write(0,*) 'Logic error: NoahMP expects the maximum number of snow layers to be exactly 3 (see sfc_noahmp_drv.f)'
       stop
@@ -5934,6 +5938,29 @@ module GFS_typedefs
     Diag%toticeb    = zero
     Diag%totsnwb    = zero
     Diag%totgrpb    = zero
+!
+#ifdef CCPP
+    !--- MYNN variables:
+    if (Model%do_mynnedmf) then
+      if (Model%bl_mynn_output .ne. 0) then
+        Diag%edmf_a        = clear_val
+        Diag%edmf_w        = clear_val
+        Diag%edmf_qt       = clear_val
+        Diag%edmf_thl      = clear_val
+        Diag%edmf_ent      = clear_val
+        Diag%edmf_qc       = clear_val
+        Diag%sub_thl       = clear_val
+        Diag%sub_sqv       = clear_val
+        Diag%det_thl       = clear_val
+        Diag%det_sqv       = clear_val
+      endif
+      Diag%nupdraft      = 0
+      Diag%maxmf         = clear_val
+      Diag%ktop_plume    = 0
+      Diag%exch_h        = clear_val
+      Diag%exch_m        = clear_val
+    endif
+#endif
 !
     if (Model%do_ca) then
       Diag%ca1      = zero
