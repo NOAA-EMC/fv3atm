@@ -91,7 +91,6 @@
       <scheme>gsd_chem_gocart_wrapper</scheme>
       <scheme>gsd_chem_rad_wrapper</scheme>
       <scheme>maximum_hourly_diagnostics</scheme>
-      <scheme>gsd_chem_driver</scheme>
       <scheme>gsd_chem_diag_wrapper</scheme>
     </subcycle>
   </group>

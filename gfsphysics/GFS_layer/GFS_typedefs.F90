@@ -1154,7 +1154,6 @@ module GFS_typedefs
     real(kind=kind_phys) :: dust_alpha
     real(kind=kind_phys) :: dust_gamma
     integer :: dust_calcdrag
-    real(kind=kind_phys) :: dust_uthres(13)
     integer :: emiss_inpt_opt
     integer :: emiss_opt
     integer :: gas_bc_opt
@@ -1713,6 +1712,9 @@ module GFS_typedefs
                                                                !< for black carbon, organic carbon, and sulfur dioxide         ( ug/m**2/s )
     real (kind=kind_phys), pointer :: aecm  (:,:) => null()    !< instantaneous aerosol column mass densities for
                                                                !< pm2.5, black carbon, organic carbon, sulfate, dust, sea salt ( g/m**2 )
+    real (kind=kind_phys), pointer :: wetdpc_deep(:,:) => null()    !< instantaneous deep convective wet deposition                ( kg/m**2/s )
+    real (kind=kind_phys), pointer :: wetdpc_mid (:,:) => null()    !< instantaneous mid convective wet deposition                ( kg/m**2/s )
+    real (kind=kind_phys), pointer :: wetdpc_shal(:,:) => null()    !< instantaneous shallow convective wet deposition                ( kg/m**2/s )
 
     ! Auxiliary output arrays for debugging
     real (kind=kind_phys), pointer :: aux2d(:,:)  => null()    !< auxiliary 2d arrays in output (for debugging)
@@ -3424,7 +3426,6 @@ module GFS_typedefs
     real(kind=kind_phys) :: dust_alpha = 2.0
     real(kind=kind_phys) :: dust_gamma = 1.8
     integer :: dust_calcdrag = 1
-    real(kind=kind_phys), dimension(13) :: dust_uthres=(/0.065,0.15,0.27,0.30,0.35,0.38,0.35,0.30,0.30,0.45,0.50,0.45,9.999/)
     integer :: emiss_inpt_opt = 1
     integer :: emiss_opt = 5
     integer :: gas_bc_opt = 1
@@ -3567,7 +3568,7 @@ module GFS_typedefs
                                bio_emiss_opt, biomass_burn_opt, chem_conv_tr,               &
                                chem_in_opt, chem_opt, chemdt, cldchem_onoff,                &
                                dmsemis_opt, dust_opt, dust_alpha, dust_gamma,               &
-                               dust_calcdrag, dust_uthres, emiss_inpt_opt, emiss_opt,       &
+                               dust_calcdrag, emiss_inpt_opt, emiss_opt,                    &
                                gas_bc_opt, gas_ic_opt, gaschem_onoff, kemit, phot_opt,      &
                                photdt, plumerisefire_frq, plumerise_flag, seas_opt,         &
                                seas_emis_scheme, seas_emis_scale, vertmix_onoff,            &
@@ -4312,7 +4313,6 @@ module GFS_typedefs
     Model%dust_alpha        = dust_alpha
     Model%dust_gamma        = dust_gamma
     Model%dust_calcdrag     = dust_calcdrag
-    Model%dust_uthres       = dust_uthres
     Model%emiss_inpt_opt    = emiss_inpt_opt
     Model%emiss_opt         = emiss_opt
     Model%gas_bc_opt        = gas_bc_opt
@@ -5356,7 +5356,6 @@ module GFS_typedefs
       print *, ' dust_alpha        : ', Model%dust_alpha
       print *, ' dust_gamma        : ', Model%dust_gamma
       print *, ' dust_calcdrag     : ', Model%dust_calcdrag
-      print *, ' dust_uthres       : ', Model%dust_uthres
       print *, ' emiss_inpt_opt    : ', Model%emiss_inpt_opt
       print *, ' emiss_opt         : ', Model%emiss_opt
       print *, ' gas_bc_opt        : ', Model%gas_bc_opt
@@ -6337,6 +6336,15 @@ module GFS_typedefs
       end if
     end if
 
+#ifdef CCPP
+      allocate(Diag%wetdpc_deep(IM,Model%ntchm))
+      Diag%wetdpc_deep = zero
+      allocate(Diag%wetdpc_mid (IM,Model%ntchm))
+      Diag%wetdpc_mid = zero
+      allocate(Diag%wetdpc_shal(IM,Model%ntchm))
+      Diag%wetdpc_shal = zero
+#endif
+
     ! -- sedimentation and dry/wet deposition diagnostics
     if (associated(Model%ntdiag)) then
       ! -- get number of tracers with enabled diagnostics
@@ -6365,7 +6373,7 @@ module GFS_typedefs
     ! -- burning emission diagnostics for
     ! -- (in order): black carbon,
     ! -- organic carbon, and sulfur dioxide
-    allocate (Diag%abem(IM,6))
+    allocate (Diag%abem(IM,7)) ! MIE AOD as 7th
     Diag%abem = zero
 
     ! -- initialize column burden diagnostics
