@@ -1590,9 +1590,7 @@ module GFS_typedefs
 #ifdef CCPP
     real (kind=kind_phys), pointer :: TRAIN  (:,:)   => null()  !< accumulated stratiform T tendency (K s-1)
 #endif
-!#ifdef CCPP
     real (kind=kind_phys), pointer :: cldfra  (:,:)   => null()  !< instantaneous 3D cloud fraction
-!#endif
     !--- MP quantities for 3D diagnositics 
     real (kind=kind_phys), pointer :: refl_10cm(:,:) => null()  !< instantaneous refl_10cm
 
@@ -4334,13 +4332,8 @@ module GFS_typedefs
     Model%si = (ak + bk * con_p0 - ak(Model%levr+1)) / (con_p0 - ak(Model%levr+1))
 #ifdef CCPP
     Model%sec              = 0
-    if (Model%lsm == Model%lsm_noahmp) then
-      Model%yearlen          = 365
-      Model%julian           = -9999.
-    endif
-    ! DH* what happens if LTP>0? Does this have to change? 
-    ! A conversation with Yu-Tai suggests that we can probably
-    ! eliminate LTP altogether *DH
+    Model%yearlen          = 365
+    Model%julian           = -9999.
 #endif
 
 #ifndef CCPP
@@ -4697,6 +4690,7 @@ module GFS_typedefs
       Model%num_p2d = 1
       Model%pdfcld  = .false.
       Model%shcnvcw = .false.
+      ! DH* REALLY ?
       Model%ncnd    = 5
       Model%nleffr  = 1
       Model%nieffr  = 2
