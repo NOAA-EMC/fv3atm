@@ -6662,13 +6662,6 @@
   dimensions = (horizontal_loop_extent,vertical_dimension)
   type = real
   kind = kind_phys
-[dkudiagnostic]
-  standard_name = atmosphere_momentum_diffusivity
-  long_name = diffusivity for momentum
-  units = m2 s-1
-  dimensions = (horizontal_loop_extent,vertical_dimension_minus_one)
-  type = real
-  kind = kind_phys
 [cldfra]
   standard_name = instantaneous_3d_cloud_fraction
   long_name = instantaneous 3D cloud fraction for all MPs

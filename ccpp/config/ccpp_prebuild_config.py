@@ -139,7 +139,6 @@ SCHEME_FILES = [
     'ccpp/physics/physics/cu_gf_driver.F90',
     'ccpp/physics/physics/cu_gf_driver_post.F90',
     'ccpp/physics/physics/moninedmf.f',
-    'ccpp/physics/physics/moninedmf_hafs.f',
     'ccpp/physics/physics/moninshoc.f',
     'ccpp/physics/physics/satmedmfvdif.F',
     'ccpp/physics/physics/satmedmfvdifq.F',

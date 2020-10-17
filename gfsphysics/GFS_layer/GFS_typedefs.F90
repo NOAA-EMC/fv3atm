@@ -1594,9 +1594,6 @@ module GFS_typedefs
     !--- MP quantities for 3D diagnositics 
     real (kind=kind_phys), pointer :: refl_10cm(:,:) => null()  !< instantaneous refl_10cm
 
-    !--- Extra PBL diagnostics
-    real (kind=kind_phys), pointer :: dkudiagnostic(:,:) => null() !< Eddy diffusitivity from the EDMF and EDMF-TKE
-
 !
 !---vay-2018 UGWP-diagnostics daily mean
 !
@@ -5867,9 +5864,6 @@ module GFS_typedefs
     !--- 3D diagnostics for Thompson MP / GFDL MP
     allocate (Diag%refl_10cm(IM,Model%levs))
 
-    !--- New PBL Diagnostics
-    allocate (Diag%dkudiagnostic(IM,Model%levs))
-
     !--  New max hourly diag.
     allocate (Diag%refdmax(IM))
     allocate (Diag%refdmax263k(IM))
@@ -6191,9 +6185,6 @@ module GFS_typedefs
       Diag%gwp_okw    = zero
     endif
 !-----------------------------
-
-! Extra PBL diagnostics
-    Diag%dkudiagnostic  = zero
 
 ! max hourly diagnostics
     Diag%refl_10cm   = zero
