@@ -2535,7 +2535,7 @@ module module_physics_driver
                        Statein%prslk, Statein%phii, Statein%phil, dtp,              &
                        Model%dspheat, dusfc1, dvsfc1, dtsfc1, dqsfc1, Tbd%hpbl,    &
                        kinver, Model%xkzm_m, Model%xkzm_h, Model%xkzm_s,            &
-                       Model%dspfac, Model%bl_upfr, Model%bl_dnfr, Diag%dkudiagnostic)
+                       Model%dspfac, Model%bl_upfr, Model%bl_dnfr)
 !*## CCPP ##
              endif
           elseif (Model%hybedmf) then
@@ -2562,7 +2562,7 @@ module module_physics_driver
                            Model%dspheat, dusfc1, dvsfc1, dtsfc1, dqsfc1, Tbd%hpbl,&
                            gamt, gamq, dkt, kinver, Model%xkzm_m, Model%xkzm_h,     &
                            Model%xkzm_s, lprnt, ipr,                                &
-                           Model%xkzminv, Model%moninq_fac,islmsk, Diag%dkudiagnostic)
+                           Model%xkzminv, Model%moninq_fac,islmsk)
             endif
 !     if (lprnt)  write(0,*)' dtdtm=',(dtdt(ipr,k),k=1,15)
 !     if (lprnt)  write(0,*)' dqdtm=',(dqdt(ipr,k,1),k=1,15)
@@ -2788,7 +2788,7 @@ module module_physics_driver
                          Statein%prslk, Statein%phii, Statein%phil, dtp,              &
                          Model%dspheat, dusfc1, dvsfc1, dtsfc1, dqsfc1, Tbd%hpbl,    &
                          kinver, Model%xkzm_m, Model%xkzm_h, Model%xkzm_s,            &
-                         Model%dspfac, Model%bl_upfr, Model%bl_dnfr, Diag%dkudiagnostic)
+                         Model%dspfac, Model%bl_upfr, Model%bl_dnfr)
 !*## CCPP ##
              endif
           elseif (Model%hybedmf) then
@@ -2819,7 +2819,7 @@ module module_physics_driver
                            Model%dspheat, dusfc1, dvsfc1, dtsfc1, dqsfc1, Tbd%hpbl,    &
                            gamt, gamq, dkt, kinver, Model%xkzm_m, Model%xkzm_h,         &
                            Model%xkzm_s, lprnt, ipr,                                    &
-                           Model%xkzminv, Model%moninq_fac,islmsk, Diag%dkudiagnostic)
+                           Model%xkzminv, Model%moninq_fac,islmsk)
            endif
           elseif (.not. Model%old_monin) then
             call moninq(ix, im, levs, nvdiff, ntcw, dvdt, dudt, dtdt, dvdftra,          &
