@@ -954,7 +954,7 @@ module fv3gfs_cap_mod
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__,  file=__FILE__)) return
       end if
 !jw
-      call fillExportFields(exportData)
+!     call fillExportFields(exportData)
     endif
 
   end subroutine InitializeRealize
