@@ -88,6 +88,22 @@
           nn(k)=o(k)+o2(k)+o3(k)+n2(k)
           amm(k)=am(i,k)*vay_avgd 
         enddo
+!sk
+!sk2020sep12
+!       do k=1,levs
+!          if (ho(k).lt.0.) then
+!           print*,'#-1 sk2020sep12 i=',i,' ho(',k,')=',ho(k) 
+!           print*,'#-1 sk2020sep12 i=',i,'te(',i,k,')=',te(i,k)
+!           print*,'#-1 sk2020sep12 i=',i,'grav(',i,k,')=',grav(i,k)
+!          endif
+!          if (ht(k).lt.0.) then
+!           print*,'#-1 sk2020sep12 i=',i,' ht(',k,')=',ht(k)
+!          endif
+!       enddo
+!sk2020sep12
+!         print*,'sk2020sep12 debug-return from idea_sheat'
+!         goto 2222
+!sk
 !                  
 ! get heating
 
@@ -99,8 +115,12 @@
        ELSE
          print *, ' OLD-SOLAR_EUV_SRC-2014'
 !        call solar_heat(levs,nps,o,o2,n2,ho,ho2,hn2,effeuv,effuv,       
-!     &   f107, cospass(i),sheat,sh1,sh2)
+!    &   f107, cospass(i),sheat,sh1,sh2)
        ENDIF
+!sk2020sep12
+!         print*,'sk2020sep12 debug-return from idea_sheat'
+!         goto 2222
+!sk
 
 !        print *, 'dissociation_rate=', dissociation_rate
 !        print *, 'Jo3=', Jo3
@@ -111,6 +131,10 @@
 
        call getno1d(levs,f107,kpa,maglat(i),dayno,
      &      alt,prr,nn,amm,no_new)
+!sk2020sep12
+!         print*,'sk2020sep12 debug-return from idea_sheat'
+!         goto 2222
+!sk
 !!     
 !        print *, 'after call getno1d'
 !        print *, 'f107', f107
@@ -119,13 +143,20 @@
 !!        call COOLNO1(levs,nps,t,o,no_new,qno)   
 
        call WAM_COOLNO1(levs, nps, t, o, no_new, qno)                  
+!sk2020sep12
+!         print*,'sk2020sep12 debug-return from idea_sheat'
+!         goto 2222
+!sk
 ! 
+!sk2020sep12
+2222    continue
+ 
         do k=nps,levs
 !    
           rcpro = 1./(cp(i,k)*ro(i,k))
-          dt6dt(i,k,1)=qno(k)*rcpro
-          dt6dt(i,k,3)=sh1(k)*rcpro
-          dt6dt(i,k,4)=sh2(k)*rcpro
+!         dt6dt(i,k,1)= qno(k)*rcpro
+!         dt6dt(i,k,3)= sh1(k)*rcpro
+!         dt6dt(i,k,4)= sh2(k)*rcpro
 !net Q
           dt(i,k)=(sheat(k)-qno(k))*rcpro
 ! 
@@ -139,6 +170,9 @@
         enddo ! k
 
       enddo !i
+!sk2020sep12
+!      print*,'sk2020sep12 debug-return from idea_sheat'
+       return
 ! 
       return
       end
@@ -284,7 +318,6 @@
       real, intent(out)   :: O3dissociation_rate(np)
 
 ! locals 
-
       real sPAEUV              ! VAY scalar instead of 2D-array PAEUV
       real Z, coschi
       real seco,seco2, seco3, secn2
@@ -313,7 +346,7 @@
 
 ! vay-2015
 
-      real :: vay1, vay2, vay3, vay4, rnight
+      real :: vay1, vay2, vay3, vay4, vay5, rnight
 !   
       real :: vay_fmxfmn, vay_srband_fac, vay_srb3
       real Zrnight_o2(np)
@@ -321,9 +354,13 @@
       real :: temp1, sco3t
 !
       integer i,j,jinv
-
 ! RAA: solar 10-cm flux normalized to 1 AU
       real f107_1au, f107d_1au
+
+
+!     print*,'#0 sk2020sep12: min(HO2)= ', minval(HO2)
+!     print*,'#0 sk2020sep12: min(HO)= ', minval(HO)
+!     print*,'#0 sk2020sep12: min(HN2)= ', minval(HN2)
 
         nightfac=1.e-9         ! Ratio of nightime ionisation to sec=1.
 
@@ -393,6 +430,9 @@
 !
 ! add extra: (seco, rnight_o)-arrays to avoid 2-nd calls of SUB_CHAPMAN
 !    
+!     print*,'#0 sk2020sep12: min(HO2)= ', minval(HO2)
+!     print*,'#0 sk2020sep12: min(HO)= ', minval(HO)
+!     print*,'#0 sk2020sep12: min(HN2)= ', minval(HN2)
       do i=nps,np
 !                                   Set total height in m Rad+Zmeters
        z = R0 + height(i)
@@ -424,6 +464,14 @@
 ! For tau convert column abundance from m^-2 to cm^-2 (10^-4)
         WO= O(i) *HO(i) *SECO*1.e-4
         WO2=O2(i)*HO2(i)*SECO2*1.e-4
+!sk2020sep12
+!        if (WO2 < 0.) then
+!         print*,'#1 sk2020sep12: WO2(',i,')= ', WO2
+!         print*,'#1 sk2020sep12: O2(',i,')= ', O2(i)
+!         print*,'#1 sk2020sep12: HO2(',i,')= ', HO2(i)
+!         stop '#1 sk2020sep12 Warning about WO2 <0 !!!'
+!        endif
+!sk
         WN2=N2(i)*HN2(i)*SECN2*1.e-4
         WO3 =sco3(i)
 
@@ -523,6 +571,12 @@
 
 ! RAA: add SED factor
 !     JSRB_loc = vay_fmxfmn*1.1E-7*EXP(-1.97E-10*(WO2**0.522))  
+!sk2020sep12
+!        if (WO2 < 0.) then
+!         print*,'#2 sk2020sep12: WO2 = ', WO2
+!         stop '#2 sk2020sep12 Warning!!'
+!        endif
+!sk
          JSRB_loc = vay_fmxfmn*1.1E-7*EXP(-1.97E-10*(WO2**0.522))*sfeps
          
       ELSE
@@ -659,8 +713,6 @@
           ho2(k)=.5*ho(k) 
           hn2(k)= rodn2*ho(k)  
 !          ho(k)=1.e3*rgas*t(k)/(amo*grav(i,k))     !m
-!
-!         
         enddo
 ! 
         call solar_heat_dissociation_TIEGCM(levs,nps,o,o2,o3,n2,
@@ -818,10 +870,10 @@
          vco3(k) = vco3(k+1) + (xo3(k+1)+xo3(k))*dzm 
          ho3 =HO(k)*0.3333
          z = R0 +Zgi(k)
-      CALL SUB_CHAPMAN(cospass, HO(k), z,  nightfac,  seco, rnight_o ) 
-      CALL SUB_CHAPMAN(cospass, HO2(k), z, nightfac, seco2, rnight_o2)
-      CALL SUB_CHAPMAN(cospass, HO3,    z, nightfac, seco3, rnight_o3)
-      CALL SUB_CHAPMAN(cospass, HN2(k), z, nightfac, secN2, rnight_n2) 
+        CALL SUB_CHAPMAN(cospass, HO(k), z,  nightfac,  seco, rnight_o ) 
+        CALL SUB_CHAPMAN(cospass, HO2(k), z, nightfac, seco2, rnight_o2)
+        CALL SUB_CHAPMAN(cospass, HO3,    z, nightfac, seco3, rnight_o3)
+        CALL SUB_CHAPMAN(cospass, HN2(k), z, nightfac, secN2, rnight_n2) 
 !
 !  transform Vcol  => Scol
 !       rodfac=35./sqrt(1224.*cospass(i)*cospass(i)+1.)

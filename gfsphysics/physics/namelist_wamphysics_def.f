@@ -36,6 +36,10 @@
       logical wam_gwphys
       logical wam_solar_in
       logical wam_ion_in
+
+      real JH0, JH_tanh, JH_semiann, JH_ann
+      real skeddy0, skeddy_semiann, skeddy_ann
+      real tkeddy0, tkeddy_semiann, tkeddy_ann
 !
 ! DAS & Nudging on the fly
 !
@@ -76,7 +80,17 @@
                                  !  .true.  run like wam_cires_rdata with YMD-files
       wam_ion_in=.false.         ! no specific data files for aurora and ion-physics
                                  ! .true.   run with data files (imf, aurora etc...)
-!
+      JH0  = 1.75
+      JH_tanh = 0.5
+      JH_semiann = 0.5
+      JH_ann  = 0.
+      skeddy0 = 140.
+      skeddy_semiann = 60.
+      skeddy_ann     = 0.
+      tkeddy0 = 280.
+      tkeddy_semiann = 0.
+      tkeddy_ann     = 0.
+
 ! WAM with "DAS & Nudging" on the fly the LA-drivers w/o GDAS/NOAA
 !
       wam_das_in=.false.         ! UFO for SABER & MLS with EKF corrections
@@ -111,23 +125,27 @@
 
       subroutine idea_wamcontrol_init(mpi_id)
 !
+!SK   use module_physics_driver, only: is_master
 !     use idea_wam_control, only : SPW_DRIVERS, nlun_con, nml_control
-!sk   use idea_wam_control, only : SPW_DRIVERS, swin_drivers, nlun_con, nml_control
-      use idea_wam_control, only : SPW_DRIVERS, swin_drivers, nlun_con, &
+      use idea_wam_control, only : SPW_DRIVERS, swin_drivers, nlun_con,
      & nml_control
-      use namelist_wamphysics_def                                       ! ./gsmphys/namelist_wamphysics_def.f
+      use namelist_wamphysics_def                            ! ./gsmphys/namelist_wamphysics_def.f
 !
-      use idea_mpi_def,    only :   mpi_WAM_quit                        !(iret, message)
+!SK   use idea_mpi_def,    only :   mpi_WAM_quit             !(iret, message)
       implicit NONE
       integer, intent(in) :: mpi_id
       integer :: ierr
       namelist /nam_wam_control/ 
      & wam_climate, wam_swpc_3day, wam_cires_rdata,wam_sair2012,
-     & wam_swin,
+     & wam_swin, 
      & wam_smin, wam_smax,
      & wam_saver, wam_geostorm,
      & wam_gwphys, wam_solar_in, wam_ion_in, wam_das_in, wam_smet_in,
-     & wam_netcdf_inout, wam_tides_diag, wam_pws_diag, wam_gws_diag
+     & wam_netcdf_inout, wam_tides_diag, wam_pws_diag, wam_gws_diag,
+     & JH0, JH_tanh, JH_semiann, JH_ann,
+     & skeddy0, skeddy_semiann, skeddy_ann,
+     & tkeddy0, tkeddy_semiann, tkeddy_ann
+     
 
       open(nlun_con, file=trim(nml_control), status='old' )
       read(nlun_con, nam_wam_control, iostat=ierr)   
@@ -136,7 +154,7 @@
         print *, ' error in nam_wam_control '
         print *, ' file of nam_wam_control ', trim(nml_control)
         write(6, nam_wam_control)
-      call mpi_WAM_quit(23999, 'wam_control namelist_wamphysics_def.f')
+!SK   call mpi_WAM_quit(23999, 'wam_control namelist_wamphysics_def.f')
       endif
        if (wam_climate)   SPW_DRIVERS = 'climate_wam'
        if (wam_swpc_3day) SPW_DRIVERS = 'swpc_fst'
@@ -145,6 +163,7 @@
    
        if(wam_swin)   swin_drivers = 'swin_wam'
 
+!SK    if (is_master) then
        if (mpi_id == 0) then
        print *, ' VAY idea_wamcontrol_init '
        print *, ' VAY SPW_DRIVERS ', SPW_DRIVERS

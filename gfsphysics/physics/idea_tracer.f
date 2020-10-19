@@ -4,6 +4,8 @@
 ! Nov    2016    Correction of JO2 and oxygen chemistry
 ! September 2017 Weiyu Yang, add IPE back coipling WAM code.
 ! October 2017   Rashid Akmaev, eddy mixing, corrections and clean-up
+! July 2020      Sajal Kar, split idea_tracer_init into (init & pre)
+! .._pre
 !-----------------------------------------------------------------------
 
       module idea_tracer_mod
@@ -18,9 +20,10 @@
       subroutine idea_tracer_init(levs)
 
       use idea_tracer_mod,    only :   jj, oh, ho2, vmr_glob
-      use idea_tracers_input, only :
-     &    jprofile, hprofile, init_tracer_constants,  WAM_GLOBAL_TRACERS
-      use IDEA_MPI_def,       only : mpi_WAM_quit
+      use idea_tracers_input, only : init_tracer_constants,
+     &                               WAM_GLOBAL_TRACERS
+      use idea_composition,   only : mpi_me, mpi_master
+!SK   use IDEA_MPI_def,       only : mpi_WAM_quit
 
       implicit none
       real, parameter :: f107=100.  ! any value of f107 to init 1D-JJs
@@ -32,15 +35,46 @@
       allocate (oh(levs), ho2(levs))
       allocate (vmr_glob(levs, nvmr))
 
-      call jprofile(levs,f107,jj)    ! old 1D-Jo2 profile
-      call hprofile(levs,oh,ho2)     ! 1D [oh-ho2]  profiles 
+!SK   call jprofile(levs,f107,jj)    ! old 1D-Jo2 profile
+!SK   call hprofile(levs,oh,ho2)     ! 1D [oh-ho2]  profiles 
       call init_tracer_constants     
+      if (mpi_me.eq.mpi_master)
+     & print *, ' idea_tracer_init --> init_tracer_constants'
 
       call WAM_GLOBAL_TRACERS(levs, nvmr, vmr_glob)
-      print *, ' VAY WAM_GLOBAL_TRACERS INIT'
-      return
+!SK   print *, ' VAY WAM_GLOBAL_TRACERS INIT'
+      if (mpi_me.eq.mpi_master)
+     & print *, ' idea_tracer_init --> WAM_GLOBAL_TRACERS'
+!SK   return
       end subroutine idea_tracer_init
-!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+!
+      subroutine idea_tracer_pre(levs)
+
+      use idea_tracer_mod,    only :   jj, oh, ho2, vmr_glob
+      use idea_tracers_input, only :
+     &    jprofile, hprofile
+!SK  &   ,init_tracer_constants,  WAM_GLOBAL_TRACERS
+!SK   use IDEA_MPI_def,       only : mpi_WAM_quit
+
+      implicit none
+      real, parameter :: f107=100.  ! any value of f107 to init 1D-JJs
+                                    ! now updated with time...JO2-3D
+      integer, parameter :: nvmr=15 !  15-global vertical arrays returned by WAM_GLOBAL_TRACERS
+      integer, intent(in):: levs    !number of pres levels
+
+!SK   allocate (jj(levs))
+!SK   allocate (oh(levs), ho2(levs))
+!SK   allocate (vmr_glob(levs, nvmr))
+
+      call jprofile(levs,f107,jj)    ! old 1D-Jo2 profile
+      call hprofile(levs,oh,ho2)     ! 1D [oh-ho2]  profiles 
+!SK   call init_tracer_constants     
+
+!SK   call WAM_GLOBAL_TRACERS(levs, nvmr, vmr_glob)
+!SK   print *, ' VAY WAM_GLOBAL_TRACERS INIT'
+!SK   return
+      end subroutine idea_tracer_pre
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       subroutine idea_tracer(im,ix,levs,ntrac,ntrac_i,grav,prsi,prsl,   
      &  adt,q,dtp,n1,n2,ozn, n3,n,rho,am, am29, 
      &  cospass,dayno,zg,f107,f107d,me, go2dr, plow, phigh, xpk_low,
@@ -434,6 +468,8 @@
 !     (indirectly) N2
 ! October 2017 Rashid Akmaev
 
+      use namelist_wamphysics_def, only : skeddy0, skeddy_semiann,    
+     &                                    skeddy_ann
       implicit none
 ! Arguments
       integer, intent(in) :: im    ! number of long data points in fields
@@ -459,10 +495,7 @@
 ! Keddy parameters: mean, width in scale heights, height of max
 
       real, parameter:: pi = 3.141592653
-!     real, parameter:: kmax = 120.
-      real, parameter:: kmax = 140.
 ! semiannual amp
-      real, parameter:: kampsa = 60.
 !      real, parameter:: dkeddy = 2.
       real, parameter:: dkeddy = 0.
       real, parameter:: xmax = 15.
@@ -470,17 +503,17 @@
 
 
       if(dkeddy <= 1e-10) then
-!         keddy(:) = kmax
+!         keddy(:) = skeddy0 
 ! Add semiannual variation
-         keddy(:) = kmax + kampsa*(cos(4.*pi*(dayno+9.)/365.))
+          keddy(:) = skeddy0 + 
+     &               skeddy_semiann*(cos(4.*pi*(dayno+9.)/365.))
       else
          do k=1,levs+1
 ! height in scale heights
             x = alog(1e5/prsi(1,k))
-            keddy(k)= kmax*exp(-((x-xmax)/dkeddy)**2)
+            keddy(k)= skeddy0*exp(-((x-xmax)/dkeddy)**2)
          enddo
       endif
-!      print *, 'kampsa=',kampsa,'keddy=', keddy(135)
 !-----------------------------------------------------------------------
 ! Boundary conditions
       a(1) = 0.

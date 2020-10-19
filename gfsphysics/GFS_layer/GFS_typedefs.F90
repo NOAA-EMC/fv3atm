@@ -565,8 +565,11 @@ module GFS_typedefs
     logical              :: cplwav          !< default no cplwav collection
     logical              :: cplchm          !< default no cplchm collection
 
+#ifdef IDEA_PHYS
 !--- integrated dynamics through earth's atmosphere
     logical              :: lsidea         
+    character(len=4)     :: weimer_model
+#endif
 
 !vay 2018  GW physics switches
 
@@ -2585,6 +2588,7 @@ module GFS_typedefs
     use wam_f107_kp_mod,  only: f107_kp_size, f107_kp_interval,      &
                                 f107_kp_skip_size, f107_kp_data_size,&
                                 f107_kp_read_in_start
+!                               f107_kp_read_in_start, kdt_interval
     use module_IPE_to_WAM, only: ipe_to_wam_coupling
     use namelist_wamphysics_def
 #endif
@@ -2648,8 +2652,11 @@ module GFS_typedefs
     logical              :: cplwav         = .false.         !< default no cplwav collection
     logical              :: cplchm         = .false.         !< default no cplchm collection
 
+#ifdef IDEA_PHYS
 !--- integrated dynamics through earth's atmosphere
-    logical              :: lsidea         = .false.
+    logical              :: lsidea         = .true.
+    character(len=4)     :: weimer_model   = 'epot'
+#endif
 
 !--- radiation parameters
     real(kind=kind_phys) :: fhswr          = 3600.           !< frequency for shortwave radiation (secs)
@@ -3013,10 +3020,10 @@ module GFS_typedefs
                                fhzero, ldiag3d, lssav, fhcyc,                               &
                                thermodyn_id, sfcpress_id,                                   &
                           !--- coupling parameters
-                               cplflx, cplwav, cplchm, lsidea,                              &
+                               cplflx, cplwav, cplchm,                                      &
 #ifdef IDEA_PHYS
-                               f107_kp_size, f107_kp_interval, f107_kp_skip_size,           &
-                               f107_kp_data_size, f107_kp_read_in_start,                    &
+                               lsidea, weimer_model, f107_kp_size, f107_kp_interval,        &
+                               f107_kp_skip_size, f107_kp_data_size, f107_kp_read_in_start, &
                                ipe_to_wam_coupling,                                         &
 #endif
                           !--- radiation parameters
@@ -3202,8 +3209,11 @@ module GFS_typedefs
     Model%cplwav           = cplwav
     Model%cplchm           = cplchm
 
+#ifdef IDEA_PHYS
 !--- integrated dynamics through earth's atmosphere
     Model%lsidea           = lsidea
+    Model%weimer_model     = weimer_model
+#endif
 
 !--- calendars and time parameters and activation triggers
     Model%dtp              = dt_phys
@@ -3728,10 +3738,20 @@ module GFS_typedefs
     ! Since in wam_f107_kp_mod no default values are assigned to the four integers below, not
     ! setting them here can lead to memory corruption that is hard to detect.
 !--- stored in wam_f107_kp module
+    
+    lsidea            = .false.
+    weimer_model      = 'epot'
     f107_kp_size      = 56
     f107_kp_skip_size = 0
+    f107_kp_read_in_start=0
     f107_kp_data_size = 56
     f107_kp_interval  = 10800
+!SK2020Aug20:
+!/home/skar/GSMWAM-IPE/WAM/src/gsm/phys/gfs_physics_grid_comp_mod.f
+!   interpolate_weight = 1-real(mod((int_state%kdt-1)*timestep_sec,f107_kp_interval))/f107_kp_interval
+!   kdt_interval=((int_state%kdt-1)*timestep_sec/f107_kp_interval)+1
+!   kdt_interval      = 1    !Do not set it here!!
+    ipe_to_wam_coupling = .false.
 #endif
 
 !--- BEGIN CODE FROM GFS_PHYSICS_INITIALIZE
@@ -4270,8 +4290,11 @@ module GFS_typedefs
       print *, ' cplwav            : ', Model%cplwav
       print *, ' cplchm            : ', Model%cplchm
       print *, ' '
+#ifdef IDEA_PHYS
       print *, 'integrated dynamics through earth atmosphere'
       print *, ' lsidea            : ', Model%lsidea
+      print *, ' weimer_model      : ', Model%weimer_model
+#endif
       print *, ' '
       print *, 'calendars and time parameters and activation triggers'
       print *, ' dtp               : ', Model%dtp

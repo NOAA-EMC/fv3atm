@@ -103,8 +103,8 @@
       real ::         
      &  ylatm(0:nmlat),      ! magnetic latitudes (deg)
      &  ylonm(0:nmlon),      ! magnetic longitudes (deg)
-     &  dlonm,	             ! delon lon grid spacing
-     &  dlatm		     ! delat lat grid spacing
+     &  dlonm,               ! delon lon grid spacing
+     &  dlatm	     ! delat lat grid spacing
 
 !---------------------------------------------------------------------- 
 ! array on magnetic grid:    
@@ -297,18 +297,27 @@
 !-----------------------------------------------------------------------
 ! ajust S_a
 !-----------------------------------------------------------------------
+!SK   print*,' in get_efield: --> adj_S_a'
       call adj_S_a
+!SK   print*,' in get_efield: <-- adj_S_a'
 !-----------------------------------------------------------------------
 ! calculate global electric potential    
 !-----------------------------------------------------------------------
+!SK   print*,' in get_efield: --> GlobalElPotential'
       call GlobalElPotential
 !     print*,'pot_efield',potent(149,66),potent(149,64)
+!SK   print*,' in get_efield: pot_efield',potent(149,66),potent(149,64)
+!SK   print*,' in get_efield: <-- GlobalElPotential'
 
 !-----------------------------------------------------------------------
 ! calculate derivative of global electric potential 
 !-----------------------------------------------------------------------
+!SK   print*,' in get_efield: --> DerivPotential'
       call DerivPotential
 !     print*,'ed2_efield',ed2(149,65),potent(149,66),potent(149,64)
+!SK   print*,' in get_efield: ed2_efield',ed2(149,65),potent(149,66),
+!    &       potent(149,64)
+!SK   print*,' in get_efield: <-- DerivPotential'
 
       end subroutine get_efield
 
@@ -358,6 +367,7 @@
         end do
       end do
 !     print*,'www1','midlat',pot_midlat(149,66)
+!SK   print*,'in GlobalElPotential:www1','midlat',pot_midlat(149,66)
 
 !-----------------------------------------------------------------------
 ! hight latitude potential from Weimer model
@@ -383,6 +393,8 @@
         end do
       end do     
 !     print*,'www2','highlat',ut,by,bz,pot_highlat(0:180,68),nmlat_wei
+!SK   print*,'in GlobalElPotential:www2','highlat',ut,by,bz,
+!    &  pot_highlat(0:180,68),nmlat_wei
 
 !-----------------------------------------------------------------------
 ! weighted smoothing of high latitude potential
@@ -390,6 +402,8 @@
       idlat = 2              ! smooth over -2:2 = 5 grid points
       call pot_latsmo( pot_highlats, idlat )
 !     print*,'www2','highlat',ut,pot_highlat(0:180,45)
+!SK   print*,'in GlobalElPotential:www2','highlat',ut,
+!SK  &   pot_highlat(0:180,45)
 !-----------------------------------------------------------------------
 ! calculate the height latitude bounday ihl_bnd
 ! 1. calculate E field from weimar model
@@ -408,10 +422,15 @@
 ! 4. ajust high latitude potential to low latitude potential      
 !-----------------------------------------------------------------------
 !     print*,'www30',ihlat_bnd
+!SK   print*,'in GlobalElPotential:www30',ihlat_bnd
       call highlat_adjust( pot_highlats, pot_highlat, pot_midlat, 
      &ihlat_bnd )
 !     print*,'www3','highlat',ut,pot_highlat(145:153,68)
 !     print*,'www3','midlat',ut,pot_midlat(145:153,68)
+!SK   print*,'in GlobalElPotential:www3','highlat',ut,
+!    &   pot_highlat(145:153,68)
+!SK   print*,'in GlobalElPotential:www3','midlat',ut,
+!    &   pot_midlat(145:153,68)
 !-----------------------------------------------------------------------
 ! interpolation of high and low/midlatitude potential in the
 ! transition zone and put it into global potent array
@@ -419,18 +438,23 @@
       call interp_poten( pot_highlats, pot_highlat, pot_midlat, 
      &ihlat_bnd, itrans_width) 
 !     print*,'www4','potent',ut,by,bz,potent(0:181,68)
+!SK   print*,'in GlobalElPotential:www4','potent',ut,by,bz,
+!    &  potent(0:180,68)
 !-----------------------------------------------------------------------
 ! potential weighted smoothing in latitude
 !-----------------------------------------------------------------------
       idlat = 2                 ! smooth over -2:2 = 5 grid points
       call pot_latsmo2( potent, idlat )
 !     print*,'www5','pot_efield',potent(149,68)
+!SK   print*,'in GlobalElPotential:www5','pot_efield',potent(149,68)
 !-----------------------------------------------------------------------
 ! potential smoothing in longitude
 !-----------------------------------------------------------------------
       idlat = nmlon/48          ! smooth over -idlat:idlat grid points
       call pot_lonsmo( potent, idlat )
 !     print*,'www6','pot_efield',ut,by,bz,potent(0:180,68)
+!SK   print*,'in GlobalElPotential:www6','pot_efield',ut,by,bz,
+!    &    potent(0:180,68)
 !-----------------------------------------------------------------------
 ! output
 !-----------------------------------------------------------------------
@@ -447,7 +471,7 @@
 
       end subroutine GlobalElPotential
 
-      subroutine ff( ph, mt, f )                                                    
+      subroutine ff( ph, mt, f )
 !-----------------------------------------------------------------------
 !Purpose: calculate F for normalized associated Legendre polynomial P_n^m
 !          Ref.: Richmond J.Atm.Ter.Phys. 1974
@@ -479,14 +503,14 @@
       f(0) = 1.e0
                                                                 
       f(-1) = sqr2*cp
-      f(1)  = sqr2*sp      								 
+      f(1)  = sqr2*sp
       do m = 2,mt
         mmo   = m - 1  
         f(m)  = f(-mmo)*sp + cp*f(mmo)
         f(-m) = f(-mmo)*cp - sp*f(mmo)
       end do      
 
-      end subroutine ff                                                                      
+      end subroutine ff
 
       subroutine pnm( ct, p )
 !----------------------------------------------------------------      
@@ -532,7 +556,7 @@
         end do
       end do
 
-      end subroutine pnm                                                                         
+      end subroutine pnm   
 
       subroutine prep_pnm
 !-----------------------------------------------------------------      
@@ -1024,7 +1048,7 @@
       use wam_f107_kp_mod,  only : kdt_interval,interpolate_weight,  
      &                    swbz_wy, swvel_wy, swbt_wy, swang_wy, swden_wy
 
-      real:: swbz_curdt,swvel_curdt,swbt_curdt, swang_curdt, swden_curdt
+      real :: swbz_curdt,swvel_curdt,swbt_curdt,swang_curdt, swden_curdt
 
 !-----------------------------------------------------------------
 !  local variables
@@ -1073,18 +1097,18 @@
 !    &iday,imo,iday_m,ut
       tilt = get_tilt( iyear, imo, iday_m, ut )
 
-      if (trim(SPW_DRIVERS)=='swpc_fst' .and. trim(SWIN_DRIVERS)==
-     &    'swin_wam' ) then
-          swbt_curdt  = swbt_wy (kdt_interval) * interpolate_weight
-     &  + swbt_wy (kdt_interval+1) * (1-interpolate_weight)
-          swang_curdt = swang_wy(kdt_interval) * interpolate_weight
-     &  + swang_wy(kdt_interval+1) * (1-interpolate_weight)
-          swvel_curdt = swvel_wy(kdt_interval) * interpolate_weight
-     &  + swvel_wy(kdt_interval+1) * (1-interpolate_weight)
-          swbz_curdt  = swbz_wy (kdt_interval) * interpolate_weight
-     &  + swbz_wy (kdt_interval+1) * (1-interpolate_weight)
-          swden_curdt = swden_wy(kdt_interval) * interpolate_weight
-     &  + swden_wy(kdt_interval+1) * (1-interpolate_weight)
+      if (trim(SPW_DRIVERS)=='swpc_fst' .and. 
+     & trim(SWIN_DRIVERS)=='swin_wam' ) then
+          swbt_curdt  = swbt_wy (kdt_interval) * interpolate_weight  +
+     & swbt_wy (kdt_interval+1) * (1-interpolate_weight)
+          swang_curdt = swang_wy(kdt_interval) * interpolate_weight  + 
+     & swang_wy(kdt_interval+1) * (1-interpolate_weight)
+          swvel_curdt = swvel_wy(kdt_interval) * interpolate_weight  + 
+     & swvel_wy(kdt_interval+1) * (1-interpolate_weight)
+          swbz_curdt  = swbz_wy (kdt_interval) * interpolate_weight  + 
+     & swbz_wy (kdt_interval+1) * (1-interpolate_weight)
+          swden_curdt = swden_wy(kdt_interval) * interpolate_weight  + 
+     & swden_wy(kdt_interval+1) * (1-interpolate_weight)
 
         bt    = swbt_curdt
         angle = swang_curdt
@@ -2121,6 +2145,7 @@
 
 !CC NCAR MODIFICATION (3/96) CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 !  The next line was added to return the dipole tilt from this function call.  C
+
       GET_TILT = CX(6)
 !CC NCAR MODIFICATION (3/96) CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 
@@ -2128,168 +2153,6 @@
       END FUNCTION GET_TILT
 
 !======================================================================
-
-      SUBROUTINE ROTATE (X,Y,Z,I)       
-!
-!-----------------------------------------------------------------------
-!     THIS SUBROUTINE APPLIES TO THE VECTOR (X,Y,Z) THE ITH ROTATION  
-!     MATRIX AM(N,M,I) GENERATED BY SUBROUTINE TRANS
-!     IF I IS NEGATIVE, THEN THE INVERSE ROTATION IS APPLIED
-!-----------------------------------------------------------------------
-!
-!     use shr_kind_mod, only: r8 => shr_kind_r8
-      implicit none 
-!
-!------------------------------Arguments--------------------------------
-!
-      integer i
-      REAL X,Y,Z
-!
-!---------------------------Local variables-----------------------------
-!
-      REAL A(3)
-!
-!-----------------------------------------------------------------------
-!
-      A(1)=X
-      A(2)=Y
-      A(3)=Z
-      CALL ROTATEV(A,A,I)
-      X=A(1)
-      Y=A(2)
-      Z=A(3)
-    
-      RETURN        
-      END SUBROUTINE ROTATE
-
-!======================================================================
-
-      SUBROUTINE ROTATEV (A,B,I)       
-!         
-!-----------------------------------------------------------------------
-!     THIS SUBROUTINE APPLIES TO THE VECTOR A(3) THE ITH ROTATION  
-!     MATRIX AM(N,M,I) GENERATED BY SUBROUTINE TRANS
-!     AND OUTPUTS THE CONVERTED VECTOR B(3), WITH NO CHANGE TO A.
-!     IF I IS NEGATIVE, THEN THE INVERSE ROTATION IS APPLIED
-!-----------------------------------------------------------------------
-!
-!     use shr_kind_mod, only: r8 => shr_kind_r8
-!     use cam_logfile,  only : iulog
-!     use abortutils,   only : endrun
-      use efield_wam, only:CX=>CX,ST=>ST,CT=>CT,AM=>AM
-
-      implicit none 
-!
-!-------------------------------Commons---------------------------------
-!
-!     real cx, st, ct, am
-!     COMMON/TRANSDAT/CX(9),ST(6),CT(6),AM(3,3,11)
-!
-!------------------------------Arguments--------------------------------
-!
-      integer i
-      REAL A(3),B(3)
-!
-!---------------------------Local variables-----------------------------
-!
-!      integer id, j, iulog
-      integer id, j
-      real xa, ya, za
-!     iulog=14
-!
-!-----------------------------------------------------------------------
-!
-!     IF(I.EQ.0 .OR. IABS(I).GT.11)THEN
-!     WRITE(IULOG,*)'ROTATEV CALLED WITH UNDEFINED TRANSFORMATION'
-!     CALL ENDRUN
-!     ENDIF
-
-      XA = A(1)
-      YA = A(2)
-      ZA = A(3)
-      IF(I.GT.0)THEN
-	ID=I
-        DO J=1,3
-          B(J) = XA*AM(J,1,ID) + YA*AM(J,2,ID) + ZA*AM(J,3,ID)
-        ENDDO
-      ELSE
-	ID=-I
-        DO J=1,3
-          B(J) = XA*AM(1,J,ID) + YA*AM(2,J,ID) + ZA*AM(3,J,ID)
-        ENDDO
-      ENDIF
-      RETURN        
-      END SUBROUTINE ROTATEV
-
-!================================================================================================
-
-	SUBROUTINE FROMCART(R,LAT,LONG,POS)
-!
-!-----------------------------------------------------------------------
-! CONVERT CARTESIAN COORDINATES POS(3)
-! TO SPHERICAL COORDINATES R, LATITUDE, AND LONGITUDE (DEGREES)
-!-----------------------------------------------------------------------
-!
-!       use shr_kind_mod, only: r8 => shr_kind_r8
-        implicit none 
-!
-!------------------------------Arguments--------------------------------
-!
-	REAL R, LAT, LONG, POS(3)
-!
-!---------------------------Local variables-----------------------------
-!
-        real pi
-!
-!-----------------------------------------------------------------------
-!
-!       pi=2.*ASIN(1.)
-        pi=3.141592653
-	R=SQRT(POS(1)*POS(1) + POS(2)*POS(2) + POS(3)*POS(3))
-	IF(R.EQ.0.)THEN
-	  LAT=0.
-	  LONG=0.
-	ELSE
-	  LAT=ASIN(POS(3)*pi/180./R)
-	  LONG=ATAN2(POS(2),POS(1))
-	  LONG=LONG*180./pi
-	ENDIF
-	RETURN
-	END SUBROUTINE FROMCART
-
-!================================================================================================
-
-	SUBROUTINE TOCART(R,LAT,LONG,POS)
-!
-!-----------------------------------------------------------------------
-! CONVERT SPHERICAL COORDINATES R, LATITUDE, AND LONGITUDE (DEGREES)
-! TO CARTESIAN COORDINATES POS(3)
-!-----------------------------------------------------------------------
-!
-!       use shr_kind_mod, only: r8 => shr_kind_r8
-        implicit none 
-!
-!------------------------------Arguments--------------------------------
-!
-	REAL R, LAT, LONG, POS(3)
-!
-!---------------------------Local variables-----------------------------
-!
-        real pi, stc, ctc, sf, cf
-!
-!-----------------------------------------------------------------------
-!
-!       pi=2.*ASIN(1.)
-        pi=3.141592653
-        STC = SIN(LAT*pi/180.)    
-        CTC = COS(LAT*pi/180.)    
-        SF = SIN(LONG*pi/180.)     
-        CF = COS(LONG*pi/180.)     
-        POS(1) = R*CTC*CF        
-        POS(2) = R*CTC*SF        
-        POS(3) = R*STC
-	RETURN
-	END SUBROUTINE TOCART
 
 !================================================================================================
 
@@ -2364,96 +2227,7 @@
       END FUNCTION JULDAY_WAM
 
 !================================================================================================
-
-	FUNCTION MLT(MagLong)
-!
-!-----------------------------------------------------------------------
-! given magnetic longitude in degrees, return Magnetic Local Time
-! assuming that TRANS has been called with the date & time to calculate
-! the rotation matrices.
-!
-! btf 11/06/03:
-! Call sub adjust instead of referencing it as a function
-!-----------------------------------------------------------------------
-!
-!       use shr_kind_mod, only: r8 => shr_kind_r8
-      use efield_wam, only: CX=>CX,ST=>ST,CT=>CT,AM=>AM
-        implicit none 
-!
-!-----------------------------Return Value------------------------------
-!
-        real mlt
-!
-!-------------------------------Commons---------------------------------
-!
-!       real cx, st, ct, am
-!       COMMON/TRANSDAT/CX(9),ST(6),CT(6),AM(3,3,11)
-
-!
-!------------------------------Arguments--------------------------------
-!
-	REAL MagLong
-!
-!---------------------------Local variables-----------------------------
-!
-	REAL angle, rotangle
-!
-!-----------------------------------------------------------------------
-!
-	RotAngle=CX(7)
-!       MLT=ADJUST(Maglong+RotAngle+180.)/15.
-        angle = Maglong+RotAngle+180.
-        call adjust(angle)
-        mlt = angle/15.
-	RETURN
-	END FUNCTION MLT
-
 !================================================================================================
-
-	FUNCTION MagLong(MLT)
-!
-!-----------------------------------------------------------------------
-! return magnetic longitude in degrees, given Magnetic Local Time
-! assuming that TRANS has been called with the date & time to calculate
-! the rotation matrices.
-!
-! btf 11/06/03:
-! Call sub adjust instead of referencing it as a function
-!-----------------------------------------------------------------------
-!
-!       use shr_kind_mod, only: r8 => shr_kind_r8
-      use efield_wam, only:CX=>CX,ST=>ST,CT=>CT,AM=>AM
-        implicit none 
-!
-!-----------------------------Return Value------------------------------
-!
-        real MagLong
-!
-!-------------------------------Commons---------------------------------
-!
-!       real cx, st, ct, am
-!       COMMON/TRANSDAT/CX(9),ST(6),CT(6),AM(3,3,11)
-!
-!------------------------------Arguments--------------------------------
-!
-	REAL MLT
-!
-!---------------------------Local variables-----------------------------
-!
-	REAL angle, rotangle
-!
-!-----------------------------------------------------------------------
-!
-	RotAngle=CX(7)
-	angle=MLT*15.-RotAngle-180.
-!       MagLong=ADJUST(angle)
-        call adjust(angle)
-        MagLong = angle
-	RETURN
-	END FUNCTION MagLong
-
-!================================================================================================
-
 	SUBROUTINE SunLoc(SunLat,SunLong)
 !
 !-----------------------------------------------------------------------
@@ -2554,7 +2328,7 @@
       ENDIF
       call EpotVal_new(AMLA1    , XMLT1, P1 )
       call EpotVal_new(AMLA-STPD, XMLT,  P2 )
-!      print *, "GECMP ", P1, P2, AMLA1, XMLT1, AMLA-STPD, XMLT
+!!SK  print *, "GECMP ", P1, P2, AMLA1, XMLT1, AMLA-STPD, XMLT
       IF (KPOL .EQ. 1) GO TO 20
       ET = (P1 - P2) / STP2
 

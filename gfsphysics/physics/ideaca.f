@@ -57,12 +57,12 @@
       integer loff,nlay
       real,dimension(:),allocatable:: r,q
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-      interface
-         subroutine ideaca_init(p,nl)
-         integer,intent(in):: nl
-         real,dimension(nl),intent(in):: p
-         end subroutine ideaca_init
-      end interface
+!SK   interface
+!        subroutine ideaca_init(p,nl)
+!        integer,intent(in):: nl
+!        real,dimension(nl),intent(in):: p
+!        end subroutine ideaca_init
+!     end interface
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
       end module ideaca_mod
@@ -73,7 +73,8 @@
 
 ! Initialize dry convective adjusment for IDEA
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-      use ideaca_mod, except => ideaca_init
+!SK   use ideaca_mod, except => ideaca_init
+      use ideaca_mod
       implicit none
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ! INPUT
@@ -103,7 +104,10 @@
 
 ! Allocate permanent and temporary arrays
 
-      allocate(r(nlay),q(nlay))
+!SK   allocate(r(nlay),q(nlay))
+!SK   allocate(pm(nlay),dp(nlay))
+      if (.not.allocated(r)) allocate(r(nlay))
+      if (.not.allocated(q)) allocate(q(nlay))
       allocate(pm(nlay),dp(nlay))
 
       do l=1,nlay
@@ -124,7 +128,6 @@
 !
       deallocate(pm,dp)
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
       end subroutine ideaca_init
 
 !***********************************************************************

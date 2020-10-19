@@ -239,7 +239,7 @@
 !     &      GW, eden_aurora(i,:) )  
 !
       subroutine tiros_ionize_data
-     & (pres, lev1,levs,z,emaps,cmaps,djspectra,
+     & (mpi_id, pres, lev1,levs,z,emaps,cmaps,djspectra,
      & grav,on,o2n, n2n,tn,gm_lat,essa1,tiros_activity_level,GW,
      & eden_aurora1D)
 !    &   ,eflux,ch)     
@@ -249,7 +249,7 @@
 !
 !         output: of tiros_ionize_data
 !
-      use idea_mpi_def,      only : mpi_id
+!SK   use idea_mpi_def,      only : mpi_id
       use idea_composition,  only :  DTR, ELCH, R_2_d, PI
 !     use tirosdata
       implicit none
@@ -258,6 +258,7 @@
       INTEGER :: levs, lev1
       INTEGER, parameter :: jmaxwell = 6
 
+      INTEGER, intent(in) :: mpi_id
       real, intent(in) :: pres(levs)
       real :: pres1(levs)
 
@@ -541,7 +542,7 @@ c
       RETURN
       END subroutine tiros_ionize_data
 !
-      subroutine tiros_ionize(lev1,levs, pres, den,
+      subroutine tiros_ionize(mpi_id, lev1,levs, pres, den,
      &  z, grav,on,o2n,n2n,tn,
      &  gm_lat,essa1,tiros_activity_level,GW, eden_aurora1D)
 !
@@ -564,9 +565,10 @@ c
 !
 !
       use idea_composition, only : PI, PI2, Pid2, DTR, R_2_D
-      use idea_mpi_def,     only : mpi_id
+!SK   use idea_mpi_def,     only : mpi_id
       IMPLICIT NONE
 !
+      INTEGER, intent(in) ::  mpi_id
       INTEGER, intent(in) ::  levs, lev1
       INTEGER, intent(in) ::  tiros_activity_level
       real ::  essa1 
@@ -840,4 +842,3 @@ c
 !
       RETURN
       END subroutine tiros_ionize
-!

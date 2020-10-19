@@ -2,6 +2,7 @@
      &                      thermodyn_id,gen_coord_hybrid)
 !
       use tracer_const              ! NENS/gsmphys: see tracer_const_h.f:      module tracer_const
+!     USE multi_gases_mod, only: rilist=>ri, cpilist=>cpi
 !
       implicit none
       integer, intent(in) :: im     ! number of data points in adr (first dim)
@@ -288,6 +289,7 @@
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
       use tracer_const, only : ri
+!     USE multi_gases_mod, only: rilist=>ri
       implicit none
 
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

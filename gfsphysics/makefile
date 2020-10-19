@@ -93,6 +93,7 @@ SRCS_IDEA_PHYS_f   =  \
            ./physics/idea_o2_o3.f                                                    \
            ./physics/idea_dissipation.f                                              \
            ./physics/idea_merge_ipe_to_wam.f                                         \
+           ./physics/idea_getcoef.f                                                  \
            ./physics/idea_phys.f
 
 SRCS_f =  \

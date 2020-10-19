@@ -110,11 +110,11 @@
 ! check the energy influx is normalized to 1 erg/cm2/s
       do m=1,15
        TE15(iband)=TE15(iband)+djspectra(m,iband)*en(m)*width(m)*1.6E-06
-      enddo                                                                         !normalize with the energy influx 300eV to 20keV
+      enddo                !normalize with the energy influx 300eV to 20keV
       do  m=1,11
       TE11(iband)=TE11(iband)+djspectra(m,iband)*en(m)*width(m)*1.6E-06
-      enddo   
-                                                                       !print *, iband, TE11(iband), TE15(iband)
+      enddo 
+                           !print *, iband, TE11(iband), TE15(iband)
       enddo ! iband=1,21
 !   
       do j = 1,jmaxwell
@@ -218,7 +218,7 @@
 ! called from idea_ion.f:CALL tiros_read_wam_init(nctiros_fpath, mpi_id)   
 !
        use netcdf      
-       use idea_mpi_def, ONLY:  info, mpi_comm_all
+!SK    use idea_mpi_def, ONLY:  info, mpi_comm_all
      
        implicit none
        include 'mpif.h'
@@ -290,9 +290,9 @@
 !       call mpi_bcast(SWDEN  ,ntimes_imf,MPI_REAL8,0,MPI_COMM_ALL,info)
 !       call mpi_bcast(SWVEL  ,ntimes_imf,MPI_REAL8,0,MPI_COMM_ALL,info)
 !       call mpi_barrier(mpi_comm_all,info)         
-       if(mpi_id.eq.0) then
-          write(iulog,*)  ' completed IMF_read_wam_init'
-       endif
+!      if(mpi_id.eq.0) then
+!         write(iulog,*)  ' completed IMF_read_wam_init'
+!      endif
 !
 !
        end  subroutine tiros_read_wam_init
@@ -304,7 +304,7 @@
 ! called from idea_ion.f:CALL tiros_read_wam_init(nctiros_fpath, mpi_id)   
 !
        use netcdf      
-       use idea_mpi_def, ONLY:  info, mpi_comm_all
+!SK    use idea_mpi_def, ONLY:  info, mpi_comm_all
      
        implicit none
        include 'mpif.h'

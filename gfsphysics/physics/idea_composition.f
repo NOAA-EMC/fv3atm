@@ -6,10 +6,14 @@
 ! Oct 20 2015   Weiyu Yang,  move f107 and kp to atmos/phys/wam_f107_kp_mod.
 ! Oct    2016   VAY          Add parameters & lev_wam for WAM-physics
 !                            like WAM-constants list should be here
+! May    2020   Sajal Kar    Update idea_composition_init for 149-layer FV3-WAM
 !-------------------------------------------------------------------------
       implicit none
 !
-      integer , parameter::lev_wam = 150                  ! # of wam vertical layers
+      integer :: mpi_me, mpi_master
+!
+!SK   integer , parameter::lev_wam = 150                  ! # of wam vertical layers
+      integer , parameter::lev_wam = 149                  ! # of wam vertical layers
 !
       real , parameter:: amo =15.9994                     ! molecular wght of O   ! (g/mol) 
       real , parameter:: amn2=28.013                      ! molecular wght of N2 
@@ -45,18 +49,24 @@
       real, parameter :: fac_lst = R_2_D/15.                   !lon_rad => lon_hrs
       real, parameter :: pi_24hr = pi2/24.
 !
-      real            ::  prlog150(lev_wam)
-      real            ::  amgm(lev_wam),amgms(lev_wam)        ! global mean wght of mix (g/mol)
-      real            ::  h2ora150(80),o3ra150(80)              
+!SK   real            ::  prlog150(lev_wam)
+      real            ::  prlog149(lev_wam)
+      real            ::  amgm(lev_wam),amgms(lev_wam)  ! global mean wght of mix (g/mol)
+!SK   real            ::  h2ora150(80),o3ra150(80)              
+      real            ::  h2ora149(79),o3ra149(79)              
 !
       real, allocatable::  pr_idea(:), prlog(:), ef(:)
       real, allocatable::  h2ora(:),o3ra(:)
       real, allocatable::  gg(:), prsilvl(:)
-!
+!SK2020Aug13
+      real, allocatable, dimension(:):: gh2ort,gh2ovb,dg1rt,dg2rt,
+     $     dg1vb,dg2vb,gdp,xx,wvmmrc,coeff
+!SK
       integer nlev_h2o,nlevc_h2o,nlev_co2,k41,k71,k110,k105,k100,k43
       integer k91,k47,k64,k81,k87
 !
-      data prlog150/-.010495013621173093,-.0047796645053569788,         
+!SK   data prlog150/-.010495013621173093,-.0047796645053569788,         
+      data prlog149/-.010495013621173093,-.0047796645053569788,
      &.0017317939011674947,                                             
      &.0091445549523354423,.017575964483718530,.027156409259219756,     
      &.038029776798164390,.050354098813263921,.064301975566456532,      
@@ -106,9 +116,12 @@
      &23.906016513141179,24.156016519666711,24.406016497318937,         
      &24.656016492779738,24.906016503952380,25.156016485200560,         
      &25.406016484453687,25.656016491410533,25.906016498929535,         
-     &26.156016525642059,26.406016533196180,27.231955945328760/
+     &26.156016525642059,26.406016533196180/
+!SK  &26.156016525642059,26.406016533196180,27.231955945328760/
 ! 71-150 in levs=150
-      data h2ora150/4.15074772E-06,4.13699000E-06,4.11797890E-06,       
+! 71-149 in levs=149
+!SK   data h2ora150/4.15074772E-06,4.13699000E-06,4.11797890E-06,       
+      data h2ora149/4.15074772E-06,4.13699000E-06,4.11797890E-06,
      &4.09487986E-06,                                                   
      &4.06858733E-06, 4.03597828E-06, 3.99688515E-06, 3.95067808E-06,   
      &3.89717454E-06, 3.83486354E-06, 3.76154928E-06, 3.67776509E-06,   
@@ -128,10 +141,13 @@
      &1.51979607E-08, 1.56946171E-08, 1.61178886E-08, 1.64601425E-08,   
      &1.67159770E-08, 1.68822374E-08, 1.69577319E-08,1.69426375E-08,    
      &1.68375826E-08, 1.66423366E-08, 1.63538713E-08, 1.59631314E-08,   
-     &1.54486221E-08, 1.47606491E-08, 1.37697900E-08, 6.83803988E-09/  
+     &1.54486221E-08, 1.47606491E-08, 1.37697900E-08/
+!SK  &1.54486221E-08, 1.47606491E-08, 1.37697900E-08, 6.83803988E-09/  
 !
 ! o3(71-150)
-      data o3ra150/4.10541952E-06,3.47100766E-06,2.87068966E-06,        
+! o3(71-149)
+!SK   data o3ra150/4.10541952E-06,3.47100766E-06,2.87068966E-06,        
+      data o3ra149/4.10541952E-06,3.47100766E-06,2.87068966E-06,        
      &2.35683753E-06,                                                   
      &1.96476323E-06,1.68001584E-06,1.46059012E-06,1.28086944E-06,      
      & 1.12287103E-06,9.73440677E-07,8.31057093E-07,6.96823493E-07,
@@ -151,7 +167,8 @@
      & 7.93434889E-12,5.49657616E-12,3.75284443E-12,2.52454277E-12,
      & 1.67265129E-12,1.09096239E-12,6.99914181E-13,4.41092526E-13,
      & 2.72463151E-13,1.64366989E-13,9.62680762E-14,5.41996795E-14,
-     & 2.88221148E-14,1.39894852E-14,5.72118432E-15,4.70438733E-16/
+     & 2.88221148E-14,1.39894852E-14,5.72118432E-15/
+!SK  & 2.88221148E-14,1.39894852E-14,5.72118432E-15,4.70438733E-16/
 !
 !
       end module idea_composition
@@ -163,6 +180,7 @@
 ! get O O2 N2 composition in idea_composition
 !-------------------------------------------------------------------------
       use idea_composition
+!     use module_physics_driver, only : is_master      !SK
       implicit none
 ! Argument
       integer, intent(in) :: levs             ! number of pressure levels
@@ -170,42 +188,62 @@
 !hmhj real, intent(in)    :: ak(levs+1),bk(levs+1) ! hyb levels
 ! local
       integer k
+!     logical, parameter :: is_master = .true.
+      logical :: is_master
 !
-      if (.not.allocated(pr_idea)) then
-!        print *,' plyr idea_composition_init ',(plyr(k),k=1,levs)
-        allocate (pr_idea(levs))
+      is_master = mpi_me == mpi_master
+!SK   if (.not.allocated(pr_idea)) allocate (pr_idea(levs))
+!SK   if (.not.allocated(pr_idea)) then
+!SK     allocate (pr_idea(levs))
+!       if (is_master) print *,' plyr idea_composition_init ',
+!    &                (plyr(k),k=1,levs)
         do k=1,levs
           pr_idea(k) = plyr(k)/100.    ! mb
         enddo
-      endif
+!SK   endif
+!       if (is_master) print *,' pr_idea idea_composition_init ',
+!    &                (pr_idea(k),k=1,levs)
 !
-      allocate (prlog(levs))
+!SK   allocate (prlog(levs))
+!SK   if (.not.allocated(prlog)) allocate (prlog(levs))
 !
       do k=1,levs
-        prlog  (k) = log(1000./pr_idea(k))    ! replaces "-" log to '+log"
+!       prlog  (k) = log(1000./pr_idea(k))    ! replaces "-" log to '+log"
+!SK     prlog  (k) = log(1013./pr_idea(k))    ! replaces "-" log to '+log"
+        prlog  (k) = log(pr_idea(1)/pr_idea(k))    !SK2020Sep24
+!       if (is_master) then
 !        print *,' idea_composition_init: k pr_idea prlog ',k,
-!     &               pr_idea(k),prlog(k)
+!    &               pr_idea(k),prlog(k)
+!       endif
       enddo
+      if (is_master) then
+       write(*,1001) (k, prlog(k),k=1,levs)
+1001   format(1x,'idea_composition_init: k prlog(k)'/
+     &       (1x,i3,1x,e14.7))
+      endif
 !
-      allocate (h2ora(levs))
-      allocate (o3ra(levs))
+!SK   allocate (h2ora(levs))
+!SK   allocate (o3ra(levs))
+!SK   if (.not.allocated(h2ora)) allocate (h2ora(levs))
+!SK   if (.not.allocated(o3ra))  allocate (o3ra(levs))
 !
 ! init h2o rad 
-        if(levs.eq.150) then
-          k41=41
-          k110=110
-          k71=71
-          k105=105
-          k100=100
+!SK     if(levs.eq.150) then
+        if(levs.eq.149) then
+          k41=40     !41
+          k110=109   !110
+          k71=70     !71
+          k105=104   !105
+          k100=99    !100
 ! co2
-          k43=43
+          k43=42     !43
 ! ion
-          k91=91
+          k91=90     !91
 ! merge
-          k47=47
-          k64=64
-          k81=81
-          k87=87
+          k47=46     !47
+          k64=63     !64
+          k81=80     !81
+          k87=86     !87
         else
           k71=levs
           k81=levs
@@ -215,41 +253,57 @@
           k105=levs
           k110=levs
           do k=3,levs-2
-          if(prlog(k).ge.prlog150(41).and.prlog(k-1).lt.prlog150(41))   
+!         if(prlog(k).ge.prlog150(41).and.prlog(k-1).lt.prlog150(41))   
+          if(prlog(k).ge.prlog149(41).and.prlog(k-1).lt.prlog149(41))   
      &       k41=k
-          if(prlog(k).ge.prlog150(71).and.prlog(k-1).lt.prlog150(71))   
+!         if(prlog(k).ge.prlog150(71).and.prlog(k-1).lt.prlog150(71))   
+          if(prlog(k).ge.prlog149(71).and.prlog(k-1).lt.prlog149(71))   
      &       k71=k
-          if(prlog(k).le.prlog150(110).and.prlog(k+1).gt.prlog150(110)) 
+!         if(prlog(k).le.prlog150(110).and.prlog(k+1).gt.prlog150(110)) 
+          if(prlog(k).le.prlog149(110).and.prlog(k+1).gt.prlog149(110)) 
      &       k110=k
-          if(prlog(k).ge.prlog150(100).and.prlog(k-1).lt.prlog150(100)) 
+!         if(prlog(k).ge.prlog150(100).and.prlog(k-1).lt.prlog150(100)) 
+          if(prlog(k).ge.prlog149(100).and.prlog(k-1).lt.prlog149(100)) 
      &       k100=k
-          if(prlog(k).le.prlog150(105).and.prlog(k+1).gt.prlog150(105)) 
+!         if(prlog(k).le.prlog150(105).and.prlog(k+1).gt.prlog150(105)) 
+          if(prlog(k).le.prlog149(105).and.prlog(k+1).gt.prlog149(105)) 
      &       k105=k
-          if(prlog(k).ge.prlog150(43).and.prlog(k-1).lt.prlog150(43))   
+!         if(prlog(k).ge.prlog150(43).and.prlog(k-1).lt.prlog150(43))   
+          if(prlog(k).ge.prlog149(43).and.prlog(k-1).lt.prlog149(43))   
      &       k43=k
-          if(prlog(k).ge.prlog150(91).and.prlog(k-1).lt.prlog150(91))   
+!         if(prlog(k).ge.prlog150(91).and.prlog(k-1).lt.prlog150(91))   
+          if(prlog(k).ge.prlog149(91).and.prlog(k-1).lt.prlog149(91))   
      &       k91=k
-          if(prlog(k).ge.prlog150(47).and.prlog(k-1).lt.prlog150(47))   
+!         if(prlog(k).ge.prlog150(47).and.prlog(k-1).lt.prlog150(47))   
+          if(prlog(k).ge.prlog149(47).and.prlog(k-1).lt.prlog149(47))   
      &       k47=k
-          if(prlog(k).ge.prlog150(64).and.prlog(k-1).lt.prlog150(64))   
+!         if(prlog(k).ge.prlog150(64).and.prlog(k-1).lt.prlog150(64))   
+          if(prlog(k).ge.prlog149(64).and.prlog(k-1).lt.prlog149(64))   
      &       k64=k
-          if(prlog(k).ge.prlog150(81).and.prlog(k-1).lt.prlog150(81))   
+!         if(prlog(k).ge.prlog150(81).and.prlog(k-1).lt.prlog150(81))   
+          if(prlog(k).ge.prlog149(81).and.prlog(k-1).lt.prlog149(81))   
      &       k81=k
-          if(prlog(k).ge.prlog150(87).and.prlog(k-1).lt.prlog150(87))   
+!         if(prlog(k).ge.prlog150(87).and.prlog(k-1).lt.prlog150(87))   
+          if(prlog(k).ge.prlog149(87).and.prlog(k-1).lt.prlog149(87))   
      &       k87=k
           enddo
         endif
           nlev_h2o=k110-k41+1
           nlevc_h2o=levs-k71+1
           nlev_co2=levs-k43+1
-      if(levs.eq.150) then
-          h2ora(k71:levs)=h2ora150
+!SK   if(levs.eq.150) then
+      if(levs.eq.149) then
+!SK       h2ora(k71:levs)=h2ora150
+          h2ora(k71:levs)=h2ora149
           h2ora(1:k71-1)=0.
-          o3ra(k71:levs)=o3ra150
+!SK       o3ra(k71:levs)=o3ra150
+          o3ra(k71:levs)=o3ra149
           o3ra(1:k71-1)=0.
       else
-          call idea_interp(h2ora150,71,150,80,h2ora,levs)
-          call idea_interp(o3ra150,71,150,80,o3ra,levs)
+!SK       call idea_interp(h2ora150,71,150,80,h2ora,levs)
+          call idea_interp(h2ora149,71,149,80,h2ora,levs)
+!SK       call idea_interp(o3ra150,71,150,80,o3ra,levs)
+          call idea_interp(o3ra149,71,149,80,o3ra,levs)
       endif
       return
       end subroutine idea_composition_init
@@ -259,7 +313,8 @@
       implicit none
       real ain(np),aout(levs),z(np),z1(levs),dz
       integer nps,npn,np,levs,kref,k,i
-      z(1:np)=prlog150(nps:npn)
+!SK   z(1:np)=prlog150(nps:npn)
+      z(1:np)=prlog149(nps:npn)
       z1=prlog
       do k=1,levs
       kref=0

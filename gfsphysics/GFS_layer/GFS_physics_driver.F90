@@ -40,21 +40,30 @@ module module_physics_driver
 !SK-2020
 !
 #ifdef IDEA_PHYS
+! use multi_gases_mod, only: rilist=>ri, cpilist=>cpi
+  use tracer_const, only: ri, cpi
   use wam_f107_kp_mod,   only: f107_kp_skip_size, f107_kp_data_size,        &
                                f107_kp_read_in_size,f107_kp_read_in_start,  &
-                               f107_kp_size, read_wam_f107_kp_txt,          &
+                               f107_kp_size, f107_kp_interval,              &
+                               kdt_interval, interpolate_weight,            &
+                               read_wam_f107_kp_txt,                        &
                                f107_wy, kp_wy, f107d_wy,                    &
                                kpa_wy, nhp_wy, nhpi_wy,                     &
                                shp_wy, shpi_wy, swbt_wy,                    &
-                               swang_wy, swvel_wy, swbz_wy
+                               swang_wy, swvel_wy, swbz_wy, swden_wy
+  use idea_composition,  only: prlog, pr_idea, amgm, amgms, nlev_co2, k43,  &
+                               nlevc_h2o, k71, gg, prsilvl, h2ora, o3ra,    &
+                               mpi_me, mpi_master
+! use h2ocm,             only: gh2ort,gh2ovb,dg1rt,dg2rt,dg1vb,dg2vb,gdp,   &
+!                              xx,wvmmrc,coeff
+! use efield_wam,        only: efield_init
   use IDEA_WAM_CONTROL,  only: SPW_DRIVERS
+  use namelist_wamphysics_def, only : wam_control_default
+  use module_IPE_to_WAM, only: lowst_ipe_level, ZMT, MMT, JHR, SHR, O2DR,   &
+                               ipe_to_wam_coupling
 #endif
-! use module_IPE_to_WAM, only: lowst_ipe_level, ipe_to_wam_coupling,        &
-!                                  ZMT, MMT, JHR, SHR, O2DR
-
 
   implicit none
-
 
   !--- CONSTANT PARAMETERS
   real(kind=kind_phys), parameter :: hocp    = con_hvap/con_cp
@@ -74,6 +83,13 @@ module module_physics_driver
   real(kind=kind_phys), parameter :: con_day = 86400.0d0
   real(kind=kind_phys), parameter :: rad2dg  = 180.0d0/con_pi
   real(kind=kind_phys), parameter :: omz1    = 10.0d0
+
+#ifdef IDEA_PHYS
+ logical :: is_master, ichk
+ integer :: lx, imhf
+ character(len=240) :: skchar
+ logical :: sklogi
+#endif
 
 !> GFS Physics Implementation Layer
 !> @brief Layer that invokes individual GFS physics routines
@@ -507,6 +523,19 @@ module module_physics_driver
            levshc, islmsk,                                              &
 !--- coupling inputs for physics
            islmsk_cice
+#ifdef IDEA_PHYS
+      integer :: itrac
+      integer, dimension(4) :: idate
+      real(kind=kind_phys), allocatable :: pm(:),visc(:),cond(:),diff(:),dp(:)
+      real(kind=kind_phys), allocatable :: prpa(:),cvd00(:,:,:)
+      real(kind=kind_phys), dimension(Model%levs) :: pmod
+!sk   real(kind=kind_phys), dimension(Model%levs) :: gg1,pmod
+      real(kind=kind_phys), dimension(size(Grid%xlon,1),Model%levs) ::  &
+      htrsw_save, htrlw_save
+      real (kind=kind_phys) :: sk1
+      real(kind=kind_phys), dimension(size(Grid%xlon,1),Model%levs) :: skqjrs
+      real(kind=kind_phys), dimension(Model%levs) :: Km
+#endif
 
 !--- LOGICAL VARIABLES
       logical :: lprnt, revap, mg3_as_mg2, skip_macro, trans_aero
@@ -712,8 +741,18 @@ module module_physics_driver
 !
 !===>
       master = Model%master
-
       me     = Model%me
+
+#ifdef IDEA_PHYS
+!     print*,' in GFS_physics_driver, kdt=', Model%kdt
+      mpi_master = Model%master
+      mpi_me = Model%me
+      is_master = me == master
+      ri= (/295.3892, 461.50, 0.0, 173.2247, 519.674, 259.8370/)
+      cpi=(/1031.1083, 1846.00, 0.0, 820.2391, 1299.185, 918.0969/)
+      imhf = max(size(Grid%xlon,1)/2,1)
+!     imhf = 1
+#endif
       ix     = size(Grid%xlon,1)
       im     = size(Grid%xlon,1)
       ipr    = min(im,10)
@@ -767,44 +806,196 @@ module module_physics_driver
 #ifdef IDEA_PHYS
 !SK IDEA-physics initialization ..
       if (kdt == 1) then
+!SK   if (kdt == -1) then
+      lprnt = me == master
+!     lprnt = .true.
+!Y    do i = 1,im
+!Z       call idea_composition_init(levs, Statein%prsl(im/2,:))
+      if (lprnt) write(6,*)' in GFS_physics_driver: --> idea_composition_init, me=',me
+         call idea_composition_init(levs, Statein%prsl(imhf,:))
+      if (lprnt) write(6,*)' in GFS_physics_driver: <-- idea_composition_init, me=',me
+!Y       call idea_composition_init(levs, Statein%prsl(i,:))
+      if (lprnt) write(6,*)' in GFS_physics_driver: --> idea_solar_pre, me=',me
+         call idea_solar_pre(me,  master, levs)
+      if (lprnt) write(6,*)' in GFS_physics_driver: <-- idea_solar_pre, me=',me
+!Y      if (i==im) call idea_solar_pre(me,  master, levs)
+!Y    enddo
 !-------------------------------------------------------------------------------
-      lprnt = .true.
-!     if (lprnt) print*,' in GFS_physics_driver, kdt, ipe_to_wam_coupling=', &
-      if (lprnt) print*,' in GFS_physics_driver, kdt=', Model%kdt
-      if (lprnt) write(0,*)'VAY WAM SPW_DRIVERS:', trim(SPW_DRIVERS)
-      if (trim(SPW_DRIVERS)=='swpc_fst') then
-! read the f10.7 and kp multi-time input data.
-         if (lprnt) write(6,*)' in GFS_physics_driver:f107_kp_size=',f107_kp_size
-         IF(.NOT.ALLOCATED(f107_wy )) ALLOCATE(f107_wy (f107_kp_size))
-         IF(.NOT.ALLOCATED(kp_wy   )) ALLOCATE(kp_wy   (f107_kp_size))
-         IF(.NOT.ALLOCATED(f107d_wy)) ALLOCATE(f107d_wy(f107_kp_size))
-         IF(.NOT.ALLOCATED(kpa_wy  )) ALLOCATE(kpa_wy  (f107_kp_size))
-         IF(.NOT.ALLOCATED(nhp_wy  )) ALLOCATE(nhp_wy  (f107_kp_size))
-         IF(.NOT.ALLOCATED(nhpi_wy )) ALLOCATE(nhpi_wy (f107_kp_size))
-         IF(.NOT.ALLOCATED(shp_wy  )) ALLOCATE(shp_wy  (f107_kp_size))
-         IF(.NOT.ALLOCATED(shpi_wy )) ALLOCATE(shpi_wy (f107_kp_size))
-         IF(.NOT.ALLOCATED(swbt_wy )) ALLOCATE(swbt_wy (f107_kp_size))
-         IF(.NOT.ALLOCATED(swang_wy)) ALLOCATE(swang_wy(f107_kp_size))
-         IF(.NOT.ALLOCATED(swvel_wy)) ALLOCATE(swvel_wy(f107_kp_size))
-         IF(.NOT.ALLOCATED(swbz_wy )) ALLOCATE(swbz_wy (f107_kp_size))
-         call read_wam_f107_kp_txt
-         if (lprnt) write(6,*)' SPW_DRIVERS=>swpc_fst, 3-day forecasts:',&
-                                    trim(SPW_DRIVERS)
-         endif
-!
-         if (trim(SPW_DRIVERS)=='cires_wam'.or.trim(SPW_DRIVERS)=='sair_wam') then
-           if (lprnt) write(6,*)' SPW_DRIVERS => with YYYYMMDD REAL DATA:',&
-                                      trim(SPW_DRIVERS)
-         endif
-!
-         if (trim(SPW_DRIVERS)=='climate_wam') then
-          if (lprnt) write(6,*)'climate_wam with fixed F107/Kp '
-         endif
-      lprnt = .false.
+! Does not have analogs in GSMWAM-IPE/gloop.f
+!        idate(1) = Model%idate(1)
+!        idate(2) = Model%idate(2)
+!        idate(3) = Model%idate(3)
+!        idate(4) = Model%idate(4)
+!     if (lprnt) write(6,*),' in GFS_physics_driver, idate=',idate
 !-------------------------------------------------------------------------------
-      print *,' LSIDEA not ready for FV3 - shutting down in GFS_physics_driver'
-      stop
+!     ichk = .true.
+!     if (ichk) then
+      if (lprnt) write(6,*)' in GFS_physics_driver: --> idea_tracer_pre, me=',me
+         call idea_tracer_pre(Model%levs)
+      if (lprnt) write(6,*)' in GFS_physics_driver: <-- idea_tracer_pre, me=',me
+!     endif
+!
+!h2ocin
+!     ichk = .true. 
+!     if (ichk) then
+      if (lprnt) write(6,*)' in GFS_physics_driver, nlevc_h2o=',nlevc_h2o,&
+                 ' k71=',k71,' levs=',levs,levs-k71+1,' me=',me
+      allocate (prpa(nlevc_h2o))
+      prpa(1:nlevc_h2o) = 100.*pr_idea(k71:levs)
+      if (lprnt) write(6,*)' in GFS_physics_driver: --> h2ocin, me=',me
+      call h2ocin(prpa,nlevc_h2o,me)
+      if (lprnt) write(6,*)' in GFS_physics_driver: <-- h2ocin, me=',me
+      deallocate(prpa)
+!     endif
+!o3
+!     ichk = .true.
+!     if (ichk) then
+      if (lprnt) write(6,*)' in GFS_physics_driver: --> o3ini, me=',me
+      call o3ini(levs)
+      if (lprnt) write(6,*)' in GFS_physics_driver: <-- o3ini, me=',me
+!     endif
+!-------------------------------------------------------------------------------
+!co2
+!compute phil    !SK2020Sep1 Do not compute phii and phil  !!!
+      ichk = .false.
+      if (ichk) then
+       if (lprnt) write(6,*)' in GFS_physics_driver: --> get_phi_fv3, me=',me
+!SK2020Sep1  call get_phi_fv3 (ix, levs, ntrac, Stateout%gt0, Stateout%gq0, &
+       call get_phi_fv3 (ix, levs, ntrac, Statein%tgrs, Statein%qgrs, &
+                         del_gz, Statein%phii, Statein%phil)
+       if (lprnt) write(6,*)' in GFS_physics_driver: <-- get_phi_fv3, me=',me
+!SK2020Sep29
+       if (lprnt) then
+        print*,' idea_phys: min phil=',minval(Statein%phil(1:ix,1:levs)), &
+               ' max phil=',maxval(Statein%phil(1:ix,1:levs))
+        print*,' idea_phys: min phii=',minval(Statein%phii(1:ix,1:levs+1)), &
+               ' max phii=',maxval(Statein%phii(1:ix,1:levs+1))
+       endif
+      endif  !endif ichk
+!-------------------------------------------------------------------------------
+!!compute gravity
+!     ichk = .true.
+!     if (ichk) then
+      if (lprnt) write(6,*)  &
+         ' in GFS_physics_driver: --> gravco2; co2cin; ideaca_init, me=',me
+       pmod = pr_idea*100.
+!SK2020Oct1 : moved next line to GFS_driver.F90
+!      if(.not. allocated(prsilvl)) allocate(prsilvl(levs+1), gg(levs))
+       if (.not.allocated(pm)) then
+          allocate (pm(levs))
+          allocate (visc(levs))
+          allocate (cond(levs))
+          allocate (diff(levs))
+          allocate (cvd00(im,levs,0:ntrac))
+       endif
+!      if (.not. allocated(ri)) then
+!        allocate( ri(0:ntrac))
+!        allocate(cpi(0:ntrac))
+!        ri  = (/ 296.8034, 461.50, 173.2247, 0.0,  519.674, 259.837 /)
+!        cpi = (/1039.645, 1846.0,  820.2391, 0.0, 1299.185, 918.0969/)
+!      endif
+       visc = 0.
+       cond = 0.
+       diff = 0.
+!--
+!sk   do i=1,im
+!Z      i = im/2
+        i = imhf
+!sk     call gravco2(Model%levs,Statein%phil(i,:),Sfcprop%oro(i),gg1)
+        call gravco2(Model%levs,Statein%phil(i,:),Sfcprop%oro(i),gg)
+      if (lprnt) write(6,*)  &
+         ' in GFS_physics_driver: <-- gravco2, me=',me
+!-------------------------------------------------------------------------------
+      i = imhf
+        do k=1,levs
+          cvd00(i,k,0) = con_cp*Statein%tgrs(i,k) 
+          cvd00(i,k,1:ntrac) = Statein%qgrs(i,k,1:ntrac)
+        enddo
+        do k=1,levs
+!SK       pm(i) = 0.5*(Statein%prsi(i,k) + Statein%prsi(i,k+1))
+          pm(i) = Statein%prsl(imhf,k)
+        enddo
+!-------------------------------------------------------------------------------
+      if (lprnt) write(6,*)  &
+         ' in GFS_physics_driver: --> idea_getcoef, me=',me
+!SK     call idea_getcoef(levs,ntrac,cvd00(i,:,:),pm,visc,cond,diff)
+        call idea_getcoef(levs,ntrac,cvd00(imhf,:,:), &
+                     Statein%prsl(imhf,:),visc,cond,diff)
+      if (lprnt) write(6,*)  &
+         ' in GFS_physics_driver: <-- idea_getcoef, me=',me
+!
+        i = imhf
+        do k=1,levs
+          prsilvl(k) = Statein%prsi(i,k)
+!sk       gg(k)      = gg1(k)
+          amgms(k)   = amgm(k) 
+        enddo
+        prsilvl(levs+1) = Statein%prsi(i,levs+1)
+
+      if (lprnt) write(6,*)  &
+         ' in GFS_physics_driver: --> co2cin, me=',me
+        call co2cin(prlog(k43), pmod(k43), amgms(k43), gg(k43), nlev_co2, me)
+      if (lprnt) write(6,*)  &
+         ' in GFS_physics_driver: <-- co2cin, me=',me
+!-------------------------------------------------------------------------------
+!!!!!   call ideaca_init(prsilvl, levs+1)
+!!!!!   call ideaca_init(Statein%prsi(i,:),levs+1)
+        call ideaca_init(Statein%prsi(imhf,:),levs+1)
+!sk   enddo
+      if (lprnt) write(6,*)  &
+         ' in GFS_physics_driver: <-- gravco2; co2cin; ideaca_init, me=',me
       endif
+
+!     endif   !endif ichk
+!-------------------------------------------------------------------------------
+!     lprnt = .true.
+      if (lprnt) &
+      print *, &
+      'IDEA_PHYS initialization completed in GFS_physics_driver, me=',me
+!     'IDEA_PHYS not ready - shutting down in GFS_physics_driver, me=',me
+!     stop
+!2020Aug28: 10 runs submitted with same executable, shut down correctly.
+!2020Aug29: Works upto here, see Keep/2020July16a_.o324904
+!-------------------------------------------------------------------------------
+!Compute kdt_interval and interpolate weights (gfs_physics_grid_comp_mod.f)
+      kdt_interval = ((Model%kdt-1)*Model%dtp/f107_kp_interval) + 1
+      interpolate_weight = 1.0 - real(mod((Model%kdt-1)*Model%dtp,    &
+                                 real(f107_kp_interval)))/f107_kp_interval
+!
+!Use htrsw_save and htrlw_save to save htrsw and htrlw
+      do k=1,levs
+        do i=1,im
+          htrsw_save(i,k) = Radtend%htrsw(i,k)
+          htrlw_save(i,k) = Radtend%htrlw(i,k)
+        enddo
+      enddo
+      if (lprnt) write(6,*)' in GFS_physics_driver: --> idea_phys'
+!sk2020sep21
+      do itrac = 1,ntrac
+       skqjrs(:,:) = Statein%qgrs(:,:,itrac)
+       sk1 = minval(skqjrs)
+       if (sk1 .lt. 0.) then
+        print*,'sep21:GFS_physics_driver>idea_phys:input qgrs(',itrac,')min=',sk1,' me= ',me
+       endif
+      enddo
+!sk
+      call idea_phys(im, ix, levs, Statein%prsi, Statein%prsl, Statein%ugrs, Statein%vgrs,   &
+                     Statein%tgrs, Statein%qgrs, ntrac, dtp, 1, Model%solhr, Model%slag,     &
+                     Model%sdec, Model%cdec, Grid%sinlat, Grid%coslat, Grid%xlon, Grid%xlat, &
+                     Sfcprop%oro, Radtend%coszen, Radtend%htrsw, Radtend%htrlw, Radtend%lwhd,&
+                     Model%thermodyn_id, Model%sfcpress_id, Model%gen_coord_hybrid, me,      &
+                     Model%fhour, kdt)
+      if (lprnt) write(6,*)' in GFS_physics_driver: <-- idea_phys'
+!-------------------------------------------------------------------------------
+!     lprnt = .true.
+      if (lprnt) &
+      print *, &
+      'IDEA_PHYS: call idea_phys completed in GFS_physics_driver, me=',me
+!     'IDEA_PHYS not ready - shutting down in GFS_physics_driver, me=',me
+!     stop
+!2020Aug28: 5 runs submitted with same executable, shut down correctly.
+! (Ref: /dad/Aug28.323170)
+!-------------------------------------------------------------------------------
 #endif
 #endif
 
@@ -1088,6 +1279,13 @@ module module_physics_driver
       call get_prs_fv3 (ix, levs, ntrac, Statein%phii, Statein%prsi,    &
                         Statein%tgrs, Statein%qgrs, del, del_gz)
 #endif
+!-------------------------------------------------------------------------------
+!     lprnt = .true.
+!     if (lprnt) &
+!     print *, &
+!     ' SKLSIDEA not ready for FV3 - shutting down in GFS_physics_driver'
+!     stop
+!-------------------------------------------------------------------------------
 
       do i = 1, IM
         sigmaf(i) = max( Sfcprop%vfrac(i),0.01 )
@@ -1440,6 +1638,13 @@ module module_physics_driver
           endif
         endif
       endif
+!-------------------------------------------------------------------------------
+!     lprnt = .true.
+!     if (lprnt) &
+!     print *, &
+!     ' SKLSIDEA not ready for FV3 - shutting down in GFS_physics_driver'
+!     stop
+!-------------------------------------------------------------------------------
 !===========================Above Phys-tend Diag for COORDE ======================
 
 !  --- ...  initialize dtdt with heating rate from dcyc2
@@ -1497,10 +1702,23 @@ module module_physics_driver
 !
 #ifdef IDEA_PHYS
 !     if (Model%lsidea) then                       !idea jw
-        dtdt(:,:) = zero
+       dtdt(:,:) = zero
 !     endif
 #endif
-
+!-------------------------------------------------------------------------------
+#ifdef IDEA_PHYS
+!     if (lprnt) &
+!     print *,' LSIDEA not ready for FV3 - shutting down in GFS_physics_driver'
+!     stop
+#endif
+!-------------------------------------------------------------------------------
+!     lprnt = .true.
+      if (lprnt) &
+      print *, &
+      ' IDEA_PHYS debug: Continued after call dcyc2t3 in GFS_physics_driver'
+!     ' IDEA_PHYS debug: Stop after call dcyc2t3 in GFS_physics_driver'
+!     stop
+!-------------------------------------------------------------------------------
 !  ---  convert lw fluxes for land/ocean/sea-ice models
 !  note: for sw: adjsfcdsw and adjsfcnsw are zenith angle adjusted downward/net fluxes.
 !        for lw: adjsfcdlw is (sfc temp adjusted) downward fluxe with no emiss effect.
@@ -1587,7 +1805,12 @@ module module_physics_driver
           Diag%ulwsfc(i) = Diag%ulwsfc(i) +   adjsfculw(i)*dtf
           Diag%psmean(i) = Diag%psmean(i) + Statein%pgr(i)*dtf        ! mean surface pressure
         enddo
-
+!-------------------------------------------------------------------------------
+!     lprnt = .false.
+!     if (lprnt) &
+!     print *,' SKLSIDEA not ready for FV3 - shutting down in GFS_physics_driver'
+!     stop
+!-------------------------------------------------------------------------------
         if (Model%ldiag3d) then
 #ifdef IDEA_PHYS
 !         if (Model%lsidea) then
@@ -1611,8 +1834,24 @@ module module_physics_driver
             enddo
 !         endif
 #endif
+!-------------------------------------------------------------------------------
+!-------------------------------------------------------------------------------
+!     lprnt = .true.
+!     if (lprnt) &
+!     print *, &
+!     ' SKLSIDEA not ready for FV3 - shutting down in GFS_physics_driver'
+!     stop
+!-------------------------------------------------------------------------------
         endif
       endif    ! end if_lssav_block
+!-------------------------------------------------------------------------------
+!     lprnt = .true.
+      if (lprnt) &
+      print *, &
+      ' IDEA_PHYS debug: Continued after if_lssav_block in GFS_physics_driver'
+!     ' IDEA_PHYS debug: Stop after if_lssav_block in GFS_physics_driver'
+!     stop
+!-------------------------------------------------------------------------------
 
       do i=1,im
         kcnv(i)   = 0
@@ -1624,7 +1863,15 @@ module module_physics_driver
       enddo
 
 !    Only used for old shallow convection with mstrat=.true.
-
+!-------------------------------------------------------------------------------
+!    lprnt = .false.
+!    if (lprnt) then
+!      skchar='(((imfshalcnv==0.and.shal_cnv).or.old_monin).and.mstrat).or.do_shoc ='
+!      sklogi=(((Model%imfshalcnv==0.and.Model%shal_cnv).or.Model%old_monin)        &
+!              .and.Model%mstrat).or.Model%do_shoc
+!      print*,skchar, sklogi
+!    endif
+!-------------------------------------------------------------------------------
       if ((((Model%imfshalcnv == 0 .and. Model%shal_cnv) .or. Model%old_monin)        &
                                    .and. Model%mstrat)   .or. Model%do_shoc) then
         ctei_rml(:) = Model%ctei_rm(1)*work1(:) + Model%ctei_rm(2)*work2(:)
@@ -1696,6 +1943,7 @@ module module_physics_driver
 
 !  --- ...  lu: iter-loop over (sfc_diff,sfc_drv,sfc_ocean,sfc_sice)
 
+!SK2 BEGIN
       do iter=1,2
 
 !  --- ...  surface exchange coefficients
@@ -1991,6 +2239,15 @@ module module_physics_driver
         enddo
 
       enddo   ! end iter_loop
+!SK2 END
+!-------------------------------------------------------------------------------
+!     lprnt = .true.
+      if (lprnt) &
+      print *, &
+!     ' IDEA_PHYS debug: Stop after, end iter_loop, in GFS_physics_driver'
+      ' IDEA_PHYS debug: continue after, end iter_loop, in GFS_physics_driver'
+!     stop
+!-------------------------------------------------------------------------------
 
 
 ! --- generate ocean/land/ice composites
@@ -3271,6 +3528,14 @@ module module_physics_driver
       call get_phi_fv3 (ix, levs, ntrac, Stateout%gt0, Stateout%gq0, &
                         del_gz, Statein%phii, Statein%phil)
 #endif
+!SK2020Sep1
+!   lprnt = .true.
+    if (lprnt) then
+     print*,' fv3: min phil=',minval(Statein%phil(1:ix,1:levs)), &
+                 ' max phil=',maxval(Statein%phil(1:ix,1:levs))
+     print*,' fv3: min phii=',minval(Statein%phii(1:ix,1:levs+1)), &
+               ' max phii=',maxval(Statein%phii(1:ix,1:levs+1))
+    endif
 
       do k=1,levs
         do i=1,im
@@ -5336,6 +5601,28 @@ module module_physics_driver
       if (allocated(ice00)) deallocate(ice00)
 
 
+#ifdef IDEA_PHYS 
+!Put back htrsw_save and htrlw_save to htrsw and htrlw
+      do k = 1, levs
+        do i = 1, im
+          Radtend%htrsw(i,k) = htrsw_save(i,k)
+          Radtend%htrlw(i,k) = htrlw_save(i,k)
+        enddo
+      enddo
+#endif
+!-------------------------------------------------------------------------------
+!     lprnt = .true.
+!     if (lprnt) &
+!     print *,' LSIDEA not ready for FV3 - shutting down in GFS_physics_driver'
+!     stop
+!-------------------------------------------------------------------------------
+!     lprnt = .true.
+      if (lprnt) &
+      print *, &
+      ' IDEA_PHYS debug: Done in GFS_physics_driver'
+!     stop
+!-------------------------------------------------------------------------------
+
 !     deallocate (fscav, fswtr)
 !
 !     if (lprnt) write(0,*)' end of gbphys maxu=',
@@ -5601,4 +5888,3 @@ module module_physics_driver
 !> @}
 
 end module module_physics_driver
-

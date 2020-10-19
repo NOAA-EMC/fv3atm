@@ -168,7 +168,7 @@
       integer, dimension(ndi) :: jdat1, jdat2, jdatc
       real :: hr1, hr2, hrc
       real :: w1, w2
-      call weights_time_interp(ndi,jdat1,hr1,jdat2,hr2,jdatc,hrc,w1, w2)
+      call weights_time_interp(ndi,jdat1,hr1,jdat2,hr2,jdatc,hrc,w1,w2)
 
       write(iulog, *)  jdat1(1),jdat1(2),jdat1(3), ' ymd_1 '
       write(iulog, *)  jdatc(1),jdatc(2),jdatc(3), ' ymd_c '
@@ -179,12 +179,13 @@
       end subroutine wam_calendar
 !
       SUBROUTINE weights_time_interp(ndi, Jdat1, hr1, Jdat2, hr2, Jdatc,
-     &                               hrc, w1, w2)
+     &           hrc, w1, w2)
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ! Current & Input data "DATE" representations
 !   idate_ymd(3): (yyyy, mm, dd) + fraction of day = ncsec/86400.
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
       use idea_io_units, only : iulog
-      use idea_mpi_def, only  : mpi_WAM_quit
+!SK   use idea_mpi_def, only  : mpi_WAM_quit
       implicit NONE
       integer :: ndi
       integer, dimension(ndi) :: Jdat1, Jdat2     ! two consecutive data records in YMDH-format
@@ -220,7 +221,7 @@
       write(iulog, *)  Jdat2(1),Jdat2(2),Jdat2(3), ' ymd_2 '
       write(iulog, *) hr1, hrc, hr2,  ' hr1 < hrc < hr2  '
       write(iulog, *) jd1, jdc, jd2,  ' Julians-VAY 1-C-2 ' 
-      CALL mpi_WAM_quit(iret,'weights_time_interp in <idea_cal_adv.f> ')
+!SK   CALL mpi_WAM_quit(iret,'weights_time_interp in <idea_cal_adv.f>' )
       endif
       if(ydh2.ne.ydh1) w1 = (ydh2-ydhc)/(ydh2-ydh1)
       if(ydh2.eq.ydh1) w1 =0.5

@@ -41,7 +41,8 @@
 !
        SUBROUTINE     WAM_GLOBAL_TRACERS(levs, nvmr, vmr_glob)
        use netcdf      
-       use idea_mpi_def, ONLY:  info, mpi_comm_all
+       use idea_composition,  only: mpi_me, mpi_master
+!SK    use idea_mpi_def, ONLY:  info, mpi_comm_all
      
        implicit none
 !       include 'mpif.h'
@@ -74,11 +75,13 @@
          iernc = nf90_inquire_dimension(ncid, dimidT(2), len=nvars)
          iernc = nf90_inquire_dimension(ncid, dimidT(1), len=nlevs)
 
+        if (mpi_me.eq.mpi_master) then
          if (nvars.ne.nvmr.or.nlevs.ne.levs) then
            print *,  nvmr, ' nvmr ',  nvars, ' nvars '
            print *,  levs, ' levs ',  nlevs, ' nlevs '
            print *, ' VAY-incorrect dimensions in WAM_GLOBAL_TRACERS'
          endif
+        endif
         iernc = nf90_inq_varid( ncid, 'vmr_wam', vid )
         iernc = nf90_get_var( ncid, vid, vmr_glob)
         iernc=nf90_close(ncid) 

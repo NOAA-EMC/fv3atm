@@ -26,9 +26,10 @@
 !
       subroutine solar_readno_snoewx(file, mpi_id)
        use netcdf      
-       use idea_mpi_def, ONLY:  info, mpi_comm_all
+       use module_physics_driver, only : is_master
+!SK    use idea_mpi_def, ONLY:  info, mpi_comm_all
        implicit none
-       include 'mpif.h'
+!SK    include 'mpif.h'
        character(len=*), intent(in) :: file
        integer, intent(in) :: mpi_id   
 !locals
@@ -41,12 +42,16 @@
 !----------------------------------------------------------------------
 !	... open the netcdf file
 !----------------------------------------------------------------------
-       if(mpi_id.eq.0) then
-           write(iulog,*)file        
-      write(iulog,*)'idea_solar_input:opening filefor readno',trim(file)
+       if(is_master) then
+!SK    if(mpi_id.eq.0) then
+         write(iulog,*)file        
+         write(iulog,*) ' solar_readno_snoewx: opening file for readno',
+     &  trim(file)
         endif
        ierNC=NF90_OPEN(trim(File), nf90_nowrite, ncid)   
        if (iernc /=0) write(iulog,*) ncid, 'ncid ', iernc, ' iernc '
+!SK    if (is_master.and.iernc /=0) 
+!SK  &    write(iulog,*) ncid, 'ncid ', iernc, ' iernc '
 !----------------------------------------------------------------------
 !	... read the snoe dimensions
 !----------------------------------------------------------------------
@@ -55,12 +60,14 @@
          iernc = nf90_inquire_dimension(ncid, dimidT(3), len=neofs)
          iernc = nf90_inquire_dimension(ncid, dimidT(2), len=nz)
          iernc = nf90_inquire_dimension(ncid, dimidT(1), len=ny)
-         if(mpi_id.eq.0) then
+         if(is_master) then
+!SK      if(mpi_id.eq.0) then
           write(iulog,*) neofs, nz, ny, ' ne-nz-ny of NO-EOFs VAY'
-      write(iulog,*) no_neofs,no_nz16,no_ny33,' ne-nz-ny of NO-EOFs VAY'
-          if (nz.ne.no_nz16.or.ny.ne.no_ny33 .or.neofs.ne.no_neofs) then
+          write(iulog,*) no_neofs, no_nz16, no_ny33,
+     &                 ' ne-nz-ny of NO-EOFs VAY'
+          if (nz.ne.no_nz16.or.ny.ne.no_ny33.or.neofs.ne.no_neofs) then
          write(iulog,*)'snoe_rdeof: failed to read expected neofs=nz=ny'
-           call mpi_quit(23901)
+!SK        call mpi_quit(23901)
           endif
          endif
          
@@ -71,9 +78,11 @@
        allocate( no_mlat(ny),  no_zkm(nz),stat=astat )  
        allocate( no_m(ny, nz),stat=astat )
        allocate( no_eof(ny, nz, neofs),stat=astat )
+!SK    if( is_master .and. astat /= 0 ) then
        if( astat /= 0 ) then
        write(iulog,*) ' alloc_err in read_no_snoe no_eof ' 
-       write(iulog,*)'snoe_rdeof:failed to allocate eofs;error = ',astat
+       write(iulog,*) 'snoe_rdeof: failed to allocate eofs; error = ',
+     &                astat
        end if 
 
 !----------------------------------------------------------------------
@@ -94,7 +103,8 @@
 !	... close the netcdf file
 !----------------------------------------------------------------------
         iernc=nf90_close(ncid)     
-        if(mpi_id.eq.0) then
+        if(is_master) then
+!SK     if(mpi_id.eq.0) then
          write(iulog,*) ' VAYsnoe ZKM:', no_zkm(1), ': ', no_zkm(nz)
          write(iulog,*) ' VAYsnoe MLT:', no_mlat(1), ': ', no_mlat(ny)
          write(iulog,*) ' VAYsnoe NO:', maxval(no_m), minval(no_m)
@@ -142,9 +152,9 @@
                             ! decreased because cm3/s = 10(-11)
                             !                       m3/s    10(-17)                                       
        HV=3.726E-20         ! in Joules   1 erg is equal to 1.0E-7 joule.
-       HVBZ = HV/BZ
-       G=1.0    
-!                
+       HVBZ = HV/BZ                           
+       G=1.0                                 
+!                                                     
        A2=5.4E-6*(1./(EXP(HVBZ/5800.)-1.))    
        A3=0.5*EXP(-HVBZ/247.5)
        A23 = A2+A3
@@ -188,11 +198,11 @@
 !       use idea_solar_input, only : F107 => wf107_s
 !       use idea_solar_input, only : kp => wkp_s
 !       use idea_solar, only       : amno
-       use idea_solarno_input, only : eof => no_eof, nom => no_m, 
-     &                                z16 => no_zkm , lat33 => no_mlat
+       use idea_solarno_input, only : eof => no_eof, nom => no_m, z16 =>
+     &                                no_zkm , lat33 => no_mlat
        use idea_solarno_input, only : no_ny33, no_nz16
-       use idea_composition, only : r2d => R_2_D, d2r => dtr, 
-     &                              twopi => pi2    !180/!pi & !pi/180.
+       use idea_composition, only : r2d => R_2_D, d2r => dtr, twopi =>
+     &                              pi2    !180/!pi & !pi/180.
        use idea_composition, only : con_nzero, amno
 !
       implicit none
@@ -392,8 +402,8 @@
         else
          do i = 1, nin-1
          if ((xout(j) .gt. xin(i)) .and. (xout(j) .lt. xin(i+1) ))
-     & yout(j) = yin(i) + (yin(i+1) - yin(i)) * (xout(j) - xin(i)) /
-     &   (xin(i+1) - xin(i))
+     & yout(j) = yin(i) + (yin(i+1) - yin(i)) * (xout(j) - xin(i)) / 
+     & (xin(i+1) - xin(i))
        
          end do
         end if
@@ -434,7 +444,7 @@
        else
          do i = 1, nin-1
          if ((xout(j) >= xin(i+1)) .and. (xout(j) <= xin(i)) )
-     &   yout(j) =  yin(i) + (yin(i+1) - yin(i)) * (xout(j) - xin(i)) /
+     &   yout(j) =  yin(i) + (yin(i+1) - yin(i)) * (xout(j) - xin(i)) / 
      &   (xin(i+1) - xin(i))
          end do
        end if
@@ -453,7 +463,7 @@
          do i = 1, nin-1
          if ((xout(j) .ge. xin(i)) .and. (xout(j) .le. xin(i+1) ))
      & yout(j) = yin(i) + (yin(i+1) - yin(i)) * (xout(j) - xin(i)) /
-     &  (xin(i+1) - xin(i))
+     & (xin(i+1) - xin(i))
        
          end do
         end if

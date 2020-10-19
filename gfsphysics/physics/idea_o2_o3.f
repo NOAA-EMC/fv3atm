@@ -32,6 +32,7 @@
       real  :: fo2_vay, fo3_vay
       real  :: fc_dc, fha_dha
       real  :: hu_exp1, hu_exp2, rm, i2_i1
+      real  :: sk1,sk2
       integer i,k
 !
 ! very ....."dangerous" games with constants !!!!
@@ -92,13 +93,31 @@
 !
             hc=fc_dc*exp(-dc*clmo3(k))
 ! Hartley
+            clmo2(k) = max(clmo2(k),1.e-32)
+            clmo3(k) = max(clmo3(k),1.e-32)
+!           hha=max(dha*clmo3(k),1.e-32)
+!           hha=fha_dha*exp(-hha)
             hha=fha_dha*exp(-dha*clmo3(k))
+!           sk1 = -dha*clmo3(k)
+!           print*,'sk2020:-dha*clmo3(',k,')=',sk1
+!           sk2 = dexp(sk1)
+!           hha = fha_dha*sk2
+!           hha=0.
 ! Huggins
+!           sk1=max(clmo3(k)*hu_exp1,1.e-32)
+!           sk2=max(clmo3(k)*hu_exp2,1.e-32)
+!           hhu=rm*(i1+i2_i1*exp(-sk1)
+!    &      -i2*exp(-sk2))/clmo3(k)
             hhu=rm*(i1+i2_i1*exp(-clmo3(k)*hu_exp1)       
      &      -i2*exp(-clmo3(k)*hu_exp2)) /clmo3(k)
+!           hhu=0.
 ! Herzberg
+!           hhz=max(dhzo2*clmo2(k)+dhzo3*clmo3(k),1.e-32)
+!           hhz=fhz*(dhzo2*o2_n(i,k)+dhzo3*o3_n(i,k))*
+!    &        exp(-hhz)
             hhz=fhz*(dhzo2*o2_n(i,k)+dhzo3*o3_n(i,k))*         
      &        exp(-dhzo2*clmo2(k)-dhzo3*clmo3(k))
+!           hhz=0.
 !
 ! VAY-2016: hsrb 2 times above P > 0.02 orchetrating with SOLAR in idea_solar_heating
 !           moved to idea_solar_heating.f
@@ -168,7 +187,8 @@
       data c2/0.033093,-0.076863/
       data c3/0.017938,0.005075/
 !
-      allocate (ef(levs))
+!SK2020Aug28 Allocation moved to subroutine GFS_initialize
+!     allocate (ef(levs))  Done in GFS_initialize
 !
       do i=1,levs
         logp=log10(pr_idea(i))

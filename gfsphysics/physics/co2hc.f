@@ -176,6 +176,9 @@
 !
 !hmhj real,dimension(43,57),save:: vamat,vbmat
       real,dimension(43,57)::      vamat,vbmat
+      real a150(43,57),b150(43,57), a360(43,57),b360(43,57),
+     &     a540(43,57),b540(43,57), a720(43,57),b720(43,57)
+
 !
 ! -Escape functions for recurrence formula on Victor grid needed for 
 !       x > 12.5 (index=1-itm50)
@@ -184,21 +187,22 @@
       real        alvic(itm50)
 
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-      interface
-         subroutine splin1(x1,y1,x2,y2,n1,n2)
-         implicit none
-         integer,intent(in):: n1,n2
-         real,intent(in):: x1(n1),y1(n1),x2(n2)
-         real,intent(out):: y2(n2)
-         end subroutine splin1
+!SK2020Aug12
+!     interface
+!        subroutine splin1(x1,y1,x2,y2,n1,n2)
+!        implicit none
+!        integer,intent(in):: n1,n2
+!        real,intent(in):: x1(n1),y1(n1),x2(n2)
+!        real,intent(out):: y2(n2)
+!        end subroutine splin1
 !
-         subroutine splin2(x1,y1,x2,y2,n1,n2,jm,km)
-         implicit none
-         integer,intent(in):: jm,km,n1,n2
-         real,intent(in):: x1(n1),y1(jm,n1),x2(n2)
-         real,intent(out):: y2(jm,n2)
-         end subroutine splin2
-      end interface
+!        subroutine splin2(x1,y1,x2,y2,n1,n2,jm,km)
+!        implicit none
+!        integer,intent(in):: jm,km,n1,n2
+!        real,intent(in):: x1(n1),y1(jm,n1),x2(n2)
+!        real,intent(out):: y2(jm,n2)
+!        end subroutine splin2
+!     end interface
 
       end module co2c_mod
 
@@ -513,9 +517,19 @@
 !
       integer:: l,lradif
       real:: vicmu(ivic0)
+      real :: a, b
+!     real :: rmumod(lmodel)
 
+!SK2020Aug14
+      logical, parameter :: skprnt = .false.
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ! Check parameter consistency
+!
+!SK2020Aug14
+!     if (skprnt) then
+!      print*,' SK/co2pro_pre/ivic0= ',ivic0,' xvic0(ivic0)= ',
+!    &        xvic0(ivic0)
+!     endif
 !
       if(xvic0(ivic0)<12.5) then
          write(6,*)                                                     
@@ -527,7 +541,8 @@
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ! Allocate model profile kept in co2pro_mod
 !
-      allocate(co2my(lmodel))
+!SK   allocate(co2my(lmodel))
+!SK2020Sep30   if (.not.allocated(co2my)) allocate(co2my(lmodel))
 
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ! Correct Victor's CO2 model for diffusive equilibrium above
@@ -545,8 +560,29 @@
 ! Prepare auxiliary array of mu on Vick's grid above interface
 !     level of x=12.5 (index=50)
 !
+!SK2020Aug14
+!     if (skprnt) then
+!      print*,' SK/co2pro_pre/splin1:lmodel,ivic0=',lmodel,ivic0
+!      print*,' SK/co2pro_pre/splin1:xmodel(lmodel)/min:max ',
+!    &  minval(xmodel),maxval(xmodel)
+!      print*,' SK/co2pro_pre/splin1:mumod(lmodel)/min:max ',
+!    &  minval(mumod),maxval(mumod)
+!      print*,' SK/co2pro_pre/splin1:xvic0(ivic0)/min:max ',
+!    &  minval(xvic0),maxval(xvic0)
+!      stop
+!     endif
       call splin1(xmodel,mumod,xvic0,vicmu,lmodel,ivic0)
 
+!SK2020Aug14
+!     if (skprnt) then
+!      do l=idiff-1,ivic0
+!        if (vicmu(l).eq.0.) then
+!        print*,' ***Warning:skprnt/co2pro_pre: vicmu(',l,')= ',vicmu(l)
+!        endif
+!      enddo
+!      print*,' skprnt/co2pro_pre: ivic0 = ',ivic0,' vicmu=',vicmu
+!      stop
+!     endif
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ! Initialize CO2 on Vick's grid and normalize it by surface VMR
 !
@@ -575,9 +611,35 @@
 ! Above xdiff use diffusive equilibrium if necessary (if lradif>lmodel,
 !       the loop is not executed)
 !
+!HJ2020Sep3
+!     if (skprnt) then
+!      print*,' SK/co2pro_pre/lradif=',lradif,' lmodel=',lmodel
+!      print*,' SK/co2pro_pre/:mumod(lradif-1:lmodel)/min:max ',
+!    &  minval(mumod(lradif-1:lmodel)),maxval(mumod(lradif-1:lmodel))
+!      print*,' SK/co2pro_pre/:mumod(lradif-1:lmodel)=',
+!    &        mumod(lradif-1:lmodel)
+!     endif
+!     rmumod(:) = 1.0
+!     do l=lradif-1,lmodel
+!       if (mumod(l).ne.0.) then
+!         rmumod(l) = 1./mumod(l)
+!       else
+!         rmumod(l) = 0.03     !HJ2020Sep2
+!       endif
+!     enddo
       do l=lradif,lmodel
-         co2my(l)=exp(alog(co2my(l-1))+(xmodel(l)-xmodel(l-1))*(1.-     
-     &        23.*(1./mumod(l)+1./mumod(l-1))))
+!        if (mumod(l).ne.0. .and. mumod(l-1).ne. 0.) then
+           a = 1./mumod(l)+1./mumod(l-1)
+!        else
+!          print*,' SK/co2pro_pre: l=',l,' mumod(l-1:l)= ',
+!    &     mumod(l-1),mumod(l) 
+!          stop
+!        endif
+         b = xmodel(l)-xmodel(l-1)
+         co2my(l)=co2my(l-1)*exp(b*(1.-23.*a))
+!        co2my(l)=exp(alog(co2my(l-1))+(xmodel(l)-xmodel(l-1))*(1.-     
+!    &        23.*(1./mumod(l)+1./mumod(l-1))))
+!HJ  &        23.*(rmumod(l)+rmumod(l-1))))
       enddo
 
       end subroutine co2pro_pre
@@ -635,7 +697,8 @@
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ! Allocate model profile kept in co2pro_mod
 !
-      allocate(co2my(lmodel))
+!SK   allocate(co2my(lmodel))
+!SK2020Sep30     if (.not.allocated(co2my)) allocate(co2my(lmodel))
 
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ! Correct Victor's CO2 model for diffusive equilibrium above
@@ -742,6 +805,7 @@
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
       use co2c_mod
       use co2pro_mod, only:xvic0,pvic,co2vic,co2my
+      use idea_composition,  only: me => mpi_me
 
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
       implicit none
@@ -836,19 +900,57 @@
 !      data const/2.55521e11/, constb/8.82325e9/
 !
       real,parameter:: conmy=2.55521e7
+!sk2020sep12
+      logical, parameter :: skprnt = .false.
 
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ! Calculate composition on Victor grid above x=12.5 (index 50) for 
 !       recurrent formula
 !
+!sk2020sep23
+!     if (skprnt) then
+!      print*,'sk2020/co2cc/co2hc.f: lhr =',lhr
+!      print*,'sk2020/co2cc/co2hc.f: itm50 =',itm50
+!      print*,'sk2020/co2cc/co2hc.f: im =',im
+!      print*,'sk2020/co2cc/co2hc.f: jm =',jm
+!     endif
+      if (skprnt) then
+      write(1000+me,100) me 
+100   format(1x,'............... me= ',i5)
+      write(1000+me,101) lhr, itm50, im, jm
+101   format(
+     &1x,'co2cc #1 --> splin2(xhr,mu,xvic0(51),vicmu,lhr,itm50,im,jm)'/
+     &1x,'co2cc #2 --> splin2(xhr,rn2,xvic0(51),vicn2,lhr,itm50,im,jm)'/
+     &1x,'co2cc #3 --> splin2(xhr,ro2,xvic0(51),vico2,lhr,itm50,im,jm)'/
+     &1x,'lhr, itm50, im, jm= ', 4i4)
+      write(1000+me,102) (xhr(i),i=1,lhr)
+102   format(1x,'xhr(1:lhr)='/(1x,5e15.7))
+      write(1000+me,103) (xvic0(i),i=51,51+itm50-1)
+103   format(1x,'xvic0(51:67)='/(1x,5e15.7))
+      endif
+!
       call splin2(xhr,mu,xvic0(51),vicmu,lhr,itm50,im,jm)
       call splin2(xhr,rn2,xvic0(51),vicn2,lhr,itm50,im,jm)
       call splin2(xhr,ro2,xvic0(51),vico2,lhr,itm50,im,jm)
 !
+      if (skprnt) then
+        if (minval(vicmu(1:im,1:itm50)).lt.0.)
+     &  write(1000+me,104) minval(vicmu(1:im,1:itm50)),
+     &                     maxval(vicmu(1:im,1:itm50))
+104   format(1x,'vicmu(1:17): min & max = ',e15.7,1x,e15.7)
+        if (minval(vicn2(1:im,1:itm50)).lt.0.) 
+     &  write(1000+me,105) minval(vicn2(1:im,1:itm50)),
+     &                     maxval(vicn2(1:im,1:itm50))
+105   format(1x,'vicn2(1:17): min & max = ',e15.7,1x,e15.7)
+        if (minval(vico2(1:im,1:itm50)).lt.0.)
+     &  write(1000+me,106) minval(vico2(1:im,1:itm50)),
+     &                     maxval(vico2(1:im,1:itm50))
+106   format(1x,'vico2(1:17): min & max = ',e15.7,1x,e15.7)
+      endif
 ! Feb 28, 2008
 ! idea change: the following portion of the code commented out and 
 !     replaced by RAA
-!c For O interpolation find first model layer with [O]>.0
+!c For kO interpolation find first model layer with [O]>.0
 !c
 !      iwork=0
 !      do j=1,jm
@@ -872,6 +974,7 @@
 !     &     lhr-iwork+1,itm50,im,jm)
 !
       call splin2(xhr,ro1,xvic0(51),vico1,lhr,itm50,im,jm)
+!     call splin2(xhr,ro1,xvic0(50),vico1,lhr,itm50,im,jm)
 !
 ! idea add: make sure O is non-negative
 !
@@ -882,9 +985,48 @@
 ! parameterization grid at x=0-xinter and calculate "source function" 
 ! using spline for T interpolation
 !
+!SK2020Sep22
+      if (skprnt) then
+      print*,'922:co2cc->splin2/{n1=}ltemp=',ltemp,' me=',me
+      print*,'922:co2cc->splin2/{n2=}ivict=',ivict,' me=',me
+      print*,'922:co2cc->splin2/{jm=}im=',im,' me=',me
+      print*,'922:co2cc->splin2/{km=}km=',jm,' me=',me
+      print*,'922:co2cc->splin2/xtemp(1:ltemp)=',xtemp,' me=',me
+      print*,'922:co2cc->splin2/temp(1:ltemp)=',temp(1,:),' me=',me
+      print*,'922:co2cc->splin2/xvic0(1:ivict)=',xvic0(1:ivict),'me=',me
+!     else
+!     print*,'922:co2cc->splin2/ltemp=',ltemp,' ivict=',ivict,' me=',me
+!     print*,'922:co2cc->splin2/temp_min =',minval(temp),' me=',me
+!     print*,'922:co2cc->splin2/temp_max =',maxval(temp),' me=',me
+      endif
       call splin2(xtemp,temp,xvic0,vict,ltemp,ivict,im,jm)
+      if (skprnt) then
+      print*,'922:co2cc-<splin2/vict(1:ivict)=',vict(1,1:ivict),'me=',me
+      print*,'922:co2cc-<splin2/temp(1:ltemp)=',temp(1,:),' me=',me
+      print*,'922:co2cc<-splin2/vict_min =',minval(vict(1,1:ivict))
+     &  ,' me=',me
+      print*,'922:co2cc<-splin2/vict_max =',maxval(vict(1,1:ivict))
+     &  ,' me=',me
+      endif
+!     write(1000+mpi_me,99) im, ltemp
+!     do j=1,im,im/2
+!      write(1000+mpi_me,100) (temp(j,i),i=1,ltemp)
+!     enddo
+!     write(1000+mpi_me,98) im, ivict
+!     do j=1,im,im/2
+!      write(1000+mpi_me,100) (vict(j,i),i=1,ivict)
+!     enddo
+!locate the negative vict values, spotted via vict_min above
+!SK
       do i=1,ivict
          do j=1,jm
+!sk
+      if (abs(vict(j,i)).lt.1.0) then
+      write(1000+me,500) jm,ivict,j,i,vict(j,i),xvic0(i),xtemp(i)
+500   format(1x,'jm=',i4,' ivict=',i4,' j=',i4,
+     & ' i=',i4,' vict(j,i)=',e15.7/1x,' xvic0(i)=',e15.7,
+     & ' xtemp(i)=',e15.7)
+      endif
             vics(j,i)=exp(-ak/vict(j,i))
          enddo
       enddo
@@ -998,7 +1140,8 @@
 
 !***********************************************************************
 
-      subroutine co2cin(xmod,pmod,mu,gr,lmod,me,mpi_ior,mpi_comm)
+      subroutine co2cin(xmod,pmod,mu,gr,lmod,me)
+!SK   subroutine co2cin(xmod,pmod,mu,gr,lmod,me,mpi_ior,mpi_comm)
 
 ! Routine to prepare matrices and other parameters for implementation
 ! of full CO2 cooling scheme by Fomichev et al. (1998) modified later 
@@ -1022,7 +1165,7 @@
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
       implicit none
 
-      include 'mpif.h'
+!SK   include 'mpif.h'
 !
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ! Subroutine arguments
@@ -1039,8 +1182,8 @@
       integer,intent(in)::lmod
       real,intent(in),dimension(lmod)::xmod,pmod,mu,gr
       integer, intent(in) :: me     ! my pe
-      integer, intent(in) :: mpi_ior      ! mpi real for io
-      integer, intent(in) :: mpi_comm     ! mpi communicator
+!SK   integer, intent(in) :: mpi_ior      ! mpi real for io
+!SK   integer, intent(in) :: mpi_comm     ! mpi communicator
 !
 ! -directory where matrix files are located
 !
@@ -1069,9 +1212,6 @@
 ! matrix coefficients for basic CO2 vmr of 150,360,540 and 720 ppm
 ! (basically these arrays give log(coeficient/vmr)
 !
-      real a150(43,57),b150(43,57), a360(43,57),b360(43,57),            
-     &     a540(43,57),b540(43,57), a720(43,57),b720(43,57)
-!
 ! CO2 column amount and corresponding escape functions (eventually, 
 ! their log)
 !
@@ -1097,6 +1237,8 @@
 !
       real uref(4), co2int(4), uco2(ivict)
 
+!SK2020Aug14
+      logical, parameter :: skprnt = .false.
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ! This section also adopted from Victor's parcof (new version  - arrays
 ! cor* certainly changed)
@@ -1187,7 +1329,9 @@
 ! Prepare CO2 profile
 !
 ! F98 model profile
+!     if (skprnt) print*,' con2cin --> co2pro_pre;me= ',me
       call co2pro_pre(xmod,lmod,mu)
+!     if (skprnt) print*,' con2cin <-- co2pro_pre;me= ',me
       write(6,*) 'F98 CO2 model'
 !     call mymaxmin(xmod,ivict,ivict,1,' co2cin: xmod ')
 ! CRISTA based model profile
@@ -1263,70 +1407,7 @@
 
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ! Read in Victor's reference matrices (this part is adopted from parcof)
-!
-  100 format((/))
-  101 format((1x,5E15.6))
-!hmhj open(10,file=dir//'/coeff_lte.150',status = 'OLD')
-!hmhj open(11,file=dir//'/coeff_lte.360',status = 'OLD')
-!hmhj open(12,file=dir//'/coeff_lte.540',status = 'OLD')
-!hmhj open(13,file=dir//'/coeff_lte.720',status = 'OLD')
-!
-!jw: only pe0 will read the data
-      if(me==0) then
-
-        open(30,file='global_idea_coeff_lte.150',status = 'OLD')
-        open(31,file='global_idea_coeff_lte.360',status = 'OLD')
-        open(32,file='global_idea_coeff_lte.540',status = 'OLD')
-        open(33,file='global_idea_coeff_lte.720',status = 'OLD')
-        rewind(30)
-        rewind(31)
-        rewind(32)
-        rewind(33)
-        read(30,100)
-        read(31,100)
-        read(32,100)
-        read(33,100)
-        do i=1,43
-          read(30,101) (a150(i,j), j=1,57)
-          read(31,101) (a360(i,j), j=1,57)
-          read(32,101) (a540(i,j), j=1,57)
-          read(33,101) (a720(i,j), j=1,57)
-        enddo
-!     call mymaxmin(a150,43*57,43*57,1,' co2cin a150 ')
-!     call mymaxmin(a360,43*57,43*57,1,' co2cin a360 ')
-!     call mymaxmin(a540,43*57,43*57,1,' co2cin a540 ')
-!     call mymaxmin(a720,43*57,43*57,1,' co2cin a720 ')
-        read(30,100)
-        read(31,100)
-        read(32,100)
-        read(33,100)
-        do i=1,43
-          read(30,101) (b150(i,j), j=1,57)
-          read(31,101) (b360(i,j), j=1,57)
-          read(32,101) (b540(i,j), j=1,57)
-          read(33,101) (b720(i,j), j=1,57)
-        enddo
-!     call mymaxmin(b150,43*57,43*57,1,' co2cin b150 ')
-!     call mymaxmin(b360,43*57,43*57,1,' co2cin b360 ')
-!     call mymaxmin(b540,43*57,43*57,1,' co2cin b540 ')
-!     call mymaxmin(b720,43*57,43*57,1,' co2cin b720 ')
-        close(30)
-        close(31)
-        close(32)
-        close(33)
-!
-!jw pe 0 finish reading
-      endif
-
-      call mpi_bcast(a150,size(a150),mpi_ior,0,mpi_comm,info)
-      call mpi_bcast(a360,size(a360),mpi_ior,0,mpi_comm,info)
-      call mpi_bcast(a540,size(a540),mpi_ior,0,mpi_comm,info)
-      call mpi_bcast(a720,size(a720),mpi_ior,0,mpi_comm,info)
-      call mpi_bcast(b150,size(b150),mpi_ior,0,mpi_comm,info)
-      call mpi_bcast(b360,size(b360),mpi_ior,0,mpi_comm,info)
-      call mpi_bcast(b540,size(b540),mpi_ior,0,mpi_comm,info)
-      call mpi_bcast(b720,size(b720),mpi_ior,0,mpi_comm,info)
-
+! 2020 SK: Moved into subroutine co2cin_init called by GFS_initialize!
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ! This is again from parcof with modifications: Linear interpolation
 ! is replaced by spline interpolation.
@@ -1421,7 +1502,67 @@
       end subroutine co2cin
 
 !***********************************************************************
+      subroutine co2cin_init(me)
+! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+      use co2c_mod, only: a150,b150,a360,b360,a540,b540,a720,b720
+! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+      implicit none
+      integer, intent(in) :: me     ! my pe
+      integer:: i,j
+! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+! Read in Victor's reference matrices (this part is adopted from parcof)
+!
+  100 format((/))
+  101 format((1x,5E15.6))
+!hmhj open(10,file=dir//'/coeff_lte.150',status = 'OLD')
+!hmhj open(11,file=dir//'/coeff_lte.360',status = 'OLD')
+!hmhj open(12,file=dir//'/coeff_lte.540',status = 'OLD')
+!hmhj open(13,file=dir//'/coeff_lte.720',status = 'OLD')
+!
+        open(30,file='global_idea_coeff_lte.150',status = 'OLD')
+        open(31,file='global_idea_coeff_lte.360',status = 'OLD')
+        open(32,file='global_idea_coeff_lte.540',status = 'OLD')
+        open(33,file='global_idea_coeff_lte.720',status = 'OLD')
+        rewind(30)
+        rewind(31)
+        rewind(32)
+        rewind(33)
+        read(30,100)
+        read(31,100)
+        read(32,100)
+        read(33,100)
+        do i=1,43
+          read(30,101) (a150(i,j), j=1,57)
+          read(31,101) (a360(i,j), j=1,57)
+          read(32,101) (a540(i,j), j=1,57)
+          read(33,101) (a720(i,j), j=1,57)
+        enddo
+!     call mymaxmin(a150,43*57,43*57,1,' co2cin a150 ')
+!     call mymaxmin(a360,43*57,43*57,1,' co2cin a360 ')
+!     call mymaxmin(a540,43*57,43*57,1,' co2cin a540 ')
+!     call mymaxmin(a720,43*57,43*57,1,' co2cin a720 ')
+        read(30,100)
+        read(31,100)
+        read(32,100)
+        read(33,100)
+        do i=1,43
+          read(30,101) (b150(i,j), j=1,57)
+          read(31,101) (b360(i,j), j=1,57)
+          read(32,101) (b540(i,j), j=1,57)
+          read(33,101) (b720(i,j), j=1,57)
+        enddo
+!     call mymaxmin(b150,43*57,43*57,1,' co2cin b150 ')
+!     call mymaxmin(b360,43*57,43*57,1,' co2cin b360 ')
+!     call mymaxmin(b540,43*57,43*57,1,' co2cin b540 ')
+!     call mymaxmin(b720,43*57,43*57,1,' co2cin b720 ')
+        close(30)
+        close(31)
+        close(32)
+        close(33)
+      return
+      end subroutine co2cin_init
 
+!***********************************************************************
       subroutine qnirc(ct,x,co2mr,qnirh,lx)
 
 ! Subroutine to calcuate NIR heating rate in a vertical column after
@@ -1581,6 +1722,7 @@
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ! Initialize output
 !
+!SK 2020/July/30 
       y2(:)=0.
 !
 ! Simple check of argument order

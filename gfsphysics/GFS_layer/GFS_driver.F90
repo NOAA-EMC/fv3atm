@@ -128,6 +128,28 @@ module GFS_driver
     use module_mp_thompson,  only: thompson_init
     use module_mp_wsm6,      only: wsm6init
     use cires_ugwp_module,   only: cires_ugwp_init
+#ifdef IDEA_PHYS
+  use date_def, only: idate, fhour
+  use wam_f107_kp_mod,   only: f107_kp_skip_size, f107_kp_data_size,        &
+                               f107_kp_read_in_size,f107_kp_read_in_start,  &
+                               f107_kp_size, read_wam_f107_kp_txt,          &
+                               f107_wy, kp_wy, f107d_wy,                    &
+                               kpa_wy, nhp_wy, nhpi_wy,                     &
+                               shp_wy, shpi_wy, swbt_wy,                    &
+                               swang_wy, swvel_wy, swbz_wy, swden_wy
+  use idea_composition,  only: prlog,pr_idea,amgm,amgms,nlev_co2, k43,      &
+                               nlevc_h2o, k71, gg, prsilvl, h2ora, o3ra, ef,&
+                               gh2ort,gh2ovb,dg1rt,dg2rt,dg1vb,dg2vb,gdp,   &
+                               xx,wvmmrc,coeff
+  use idea_composition,  only: mpi_me, mpi_master
+! use h2ocm,             only: gh2ort,gh2ovb,dg1rt,dg2rt,dg1vb,dg2vb,gdp,   &
+!                              xx,wvmmrc,coeff
+  use co2pro_mod,        only: co2my
+  use efield_wam,        only: efield_init
+  use IDEA_WAM_CONTROL,  only: SPW_DRIVERS
+  use namelist_wamphysics_def, only : wam_control_default
+  use module_IPE_to_WAM, only: ipe_to_wam_coupling
+#endif
 #endif
 
     !--- interface variables
@@ -152,6 +174,11 @@ module GFS_driver
     !--- local variables
     integer :: nb
     integer :: nblks
+#ifdef IDEA_PHYS
+!   integer, dimension(4) :: idate
+!   integer, parameter :: lx = 79    !=nlevc_h2o
+    integer :: lx
+#endif
 #ifdef CCPP
     integer :: nt
     integer :: nthrds
@@ -406,13 +433,125 @@ module GFS_driver
     call set_soilveg(Model%me, Model%isot, Model%ivegsrc, Model%nlunit)
 
 #ifndef CCPP
+
 #ifdef IDEA_PHYS
     !--- lsidea initialization
 !!  if (Model%lsidea) then
 !     print *,' LSIDEA is active but needs to be reworked for FV3 - shutting down'
 !     stop
       !--- NEED TO get the logic from the old phys/gloopb.f initialization area
+!
+      mpi_me     = Model%me
+      mpi_master = Model%master
+      Model%lprnt  = Model%me == Model%master
+!     Model%lprnt  = .false.
+      if ( Model%lprnt)  &
       print *,' LSIDEA is active; initialized in GFS_physics_driver'
+!-------------------------------------------------------------------------------
+      if (.not.allocated(pr_idea)) allocate (pr_idea(Model%levs))
+      if (.not.allocated(prlog))   allocate (prlog(Model%levs))
+      if (.not.allocated(h2ora))   allocate (h2ora(Model%levs))
+      if (.not.allocated(o3ra))    allocate (o3ra(Model%levs))
+      if (.not.allocated(ef))      allocate (ef(Model%levs))
+!SK2020Oct1
+      if (.not.allocated(gg))      allocate(gg(Model%levs))
+      if (.not.allocated(prsilvl)) allocate(prsilvl(Model%levs+1))
+!SK2020Aug13
+!SK2020Aug24     lx = Model%levs - 71+1             != levs-k71+1=nlevc_h2o
+      lx = Model%levs - 70+1             != levs-k71+1=nlevc_h2o
+      if ( Model%lprnt) print *,' lx = nlevc_h2o =', lx
+!SK2020Sep30
+      if (.not.allocated(gh2ort)) allocate(gh2ort(lx))
+      if (.not.allocated(gh2ovb)) allocate(gh2ovb(lx))
+      if (.not.allocated(dg1rt)) allocate(dg1rt(lx))
+      if (.not.allocated(dg1vb)) allocate(dg1vb(lx))
+      if (.not.allocated(dg2rt)) allocate(dg2rt(lx))
+      if (.not.allocated(dg2vb)) allocate(dg2vb(lx))
+      if (.not.allocated(gdp)) allocate(gdp(lx))
+      if (.not.allocated(xx)) allocate(xx(lx))
+      if (.not.allocated(wvmmrc)) allocate(wvmmrc(lx))
+      if (.not.allocated(coeff)) allocate(coeff(lx))
+!SK2020Sep30
+      lx = Model%levs -k43 + 1
+      if (.not.allocated(co2my)) allocate(co2my(lx))
+!-------------------------------------------------------------------------------
+      idate(1) = Model%idate(1)
+      idate(2) = Model%idate(2)
+      idate(3) = Model%idate(3)
+      idate(4) = Model%idate(4)
+      fhour    = Model%fhour
+      if ( Model%lprnt) then
+       write(6,*),' in GFS_initialize, idate=',idate
+       write(6,*),' in GFS_initialize, fhour=',fhour
+      endif
+!-------------------------------------------------------------------------------
+      if (Model%lprnt) print*,' in GFS_initialize, kdt, ipe_to_wam_coupling=', &
+                              Model%kdt, ipe_to_wam_coupling
+      if (Model%lprnt) write(0,*)'VAY WAM SPW_DRIVERS:', trim(SPW_DRIVERS)
+      if (trim(SPW_DRIVERS)=='swpc_fst') then
+! read the f10.7 and kp multi-time input data.
+      if (Model%lprnt) write(6,*)' in GFS_initialize:f107_kp_size=',f107_kp_size
+         IF(.NOT.ALLOCATED(f107_wy )) ALLOCATE(f107_wy (f107_kp_size))
+         IF(.NOT.ALLOCATED(kp_wy   )) ALLOCATE(kp_wy   (f107_kp_size))
+         IF(.NOT.ALLOCATED(f107d_wy)) ALLOCATE(f107d_wy(f107_kp_size))
+         IF(.NOT.ALLOCATED(kpa_wy  )) ALLOCATE(kpa_wy  (f107_kp_size))
+         IF(.NOT.ALLOCATED(nhp_wy  )) ALLOCATE(nhp_wy  (f107_kp_size))
+         IF(.NOT.ALLOCATED(nhpi_wy )) ALLOCATE(nhpi_wy (f107_kp_size))
+         IF(.NOT.ALLOCATED(shp_wy  )) ALLOCATE(shp_wy  (f107_kp_size))
+         IF(.NOT.ALLOCATED(shpi_wy )) ALLOCATE(shpi_wy (f107_kp_size))
+         IF(.NOT.ALLOCATED(swbt_wy )) ALLOCATE(swbt_wy (f107_kp_size))
+         IF(.NOT.ALLOCATED(swang_wy)) ALLOCATE(swang_wy(f107_kp_size))
+         IF(.NOT.ALLOCATED(swvel_wy)) ALLOCATE(swvel_wy(f107_kp_size))
+         IF(.NOT.ALLOCATED(swbz_wy )) ALLOCATE(swbz_wy (f107_kp_size))
+         IF(.NOT.ALLOCATED(swden_wy)) ALLOCATE(swden_wy(f107_kp_size))
+         call read_wam_f107_kp_txt
+         if (Model%lprnt) write(6,*)' SPW_DRIVERS=>swpc_fst, 3-day forecasts:',&
+                                    trim(SPW_DRIVERS)
+         endif
+         if (trim(SPW_DRIVERS)=='cires_wam'.or.trim(SPW_DRIVERS)=='sair_wam') then
+           if (Model%lprnt) write(6,*)' SPW_DRIVERS => with YYYYMMDD REAL DATA:',&
+                                      trim(SPW_DRIVERS)
+         endif
+         if (trim(SPW_DRIVERS)=='climate_wam') then
+          if (Model%lprnt) write(6,*)'climate_wam with fixed F107/Kp '
+         endif
+!-------------------------------------------------------------------------------
+      if (Model%lprnt)     &
+      write(6,*)' in GFS_initialize: --> idea_solar_init, me=',Model%me
+      call idea_solar_init(Model%me, Model%master, Model%levs)
+      if (Model%lprnt)     &
+      write(6,*)' in GFS_initialize: <-- idea_solar_init, me=',Model%me
+!-------------------------------------------------------------------------------
+      if (Model%lprnt)     &
+      write(6,*)' in GFS_initialize: --> idea_tracer_init, me=',Model%me
+      call idea_tracer_init(Model%levs)
+      if (Model%lprnt)     &
+      write(6,*)' in GFS_initialize: <-- idea_tracer_init, me=',Model%me
+!-------------------------------------------------------------------------------
+      if (Model%lprnt)     &
+      write(6,*)' in GFS_initialize: --> idea_ion_init, me=',Model%me
+!SK2020Aug21 Bug-fix below:     call idea_ion_init(Model%levs)
+      call idea_ion_init(Model%me, Model%master, Model%levs)
+      if (Model%lprnt)     &
+      write(6,*)' in GFS_initialize: <-- idea_ion_init, me=',Model%me
+!-------------------------------------------------------------------------------
+      if (Model%lprnt)     &
+      write(6,*)' in GFS_initialize: --> h2ocin_init, me=',Model%me
+      call h2ocin_init(Model%me)
+      if (Model%lprnt)     &
+      write(6,*)' in GFS_initialize: <-- h2ocin_init, me=',Model%me
+!-------------------------------------------------------------------------------
+      if (Model%lprnt)     &
+      write(6,*)' in GFS_initialize: --> co2cin_init, me=',Model%me
+      call co2cin_init(Model%me)
+      if (Model%lprnt)     &
+      write(6,*)' in GFS_initialize: <-- co2cin_init, me=',Model%me
+!-------------------------------------------------------------------------------
+      if (Model%lprnt)     &
+      write(6,*)' in GFS_initialize: --> efield_init, me=',Model%me
+      call efield_init(Model%weimer_model)
+      if (Model%lprnt)     &
+      write(6,*)' in GFS_initialize: <-- efield_init, me=',Model%me
 !!  endif
 #endif
 #endif

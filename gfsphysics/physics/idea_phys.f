@@ -5,10 +5,15 @@
      &                     adu,adv,adt,adr,ntrac,dtp,lat,               
      &                     solhr,slag,sdec,cdec,sinlat,coslat,          
      &                     xlon,xlat,oro,cozen,swh,hlw,dt6dt,           
-     &                     thermodyn_id,sfcpress_id,gen_coord_hybrid,me,
-     &                     mpi_ior,mpi_comm, fhour, kstep,
-     &                     gzmt, gmmt, gjhr, gshr, go2dr)
-
+     &                 thermodyn_id,sfcpress_id,gen_coord_hybrid,mpi_id,
+     &                     fhour, kstep)
+!    &                     mpi_ior,mpi_comm, fhour, kstep,
+!    &                     gzmt, gmmt, gjhr, gshr, go2dr)
+!-----------------------------------------------------------------------
+!SK 2019Mar08
+! -- Unused arguments mpi_ior, mpi_comm, gzmt, gmmt, gjhr, gshr, go2dr
+! -- are released from the argument list. Arrays gzmt, gmmt, gjhr, gshr,
+! -- and go2dr continue to be local arrays (Original code).
 !-----------------------------------------------------------------------
 ! add temp, wind changes due to viscosity and thermal conductivity
 ! also solar heating
@@ -55,11 +60,11 @@
       use idea_composition, only : nlev_h2o,nlevc_h2o, nlev_co2
       use idea_composition, only : mmr_min, amo, amo2, amo3, amn2
       use wam_ion,          only : idea_ion
-      use wam_f107_kp_mod,  only : f107_wy, kp_wy, kdt_interval, 
-     &                             interpolate_weight, kpa_wy, f107d_wy,
-     &                             nhp_wy, shpi_wy, shp_wy, nhpi_wy, 
-     &                             swbz_wy, swvel_wy, swbt_wy, swang_wy,
-     &                             swden_wy 
+!     use wam_f107_kp_mod,  only : f107_wy, kp_wy, kdt_interval, interpolate_weight, kpa_wy, f107d_wy, hp_wy, hpi_wy 
+      use wam_f107_kp_mod,  only : f107_wy, kp_wy, kdt_interval,
+     &                     interpolate_weight, kpa_wy, f107d_wy, nhp_wy,
+     &                             shpi_wy, shp_wy, nhpi_wy, 
+     &                   swbz_wy, swvel_wy, swbt_wy, swang_wy, swden_wy 
 
 !     Changed by Zhuxiao.Li(05/2017) for back to the path to read in F10.7 and Kp
 !     from solar_in namelist instead of from wam_f107_kp_mod.f
@@ -70,8 +75,8 @@
 !     use  wam_f107_kp_mod, only : swpcf107_fix, swpcf107d_fix, swpckp_fix
 !
 !
-      use IDEA_MPI_def,      only : mpi_WAM_quit, mpi_id
-      use IDEA_MPI_def,      only : mpi_err, MPI_COMM_ALL, info      ! or use "me mpi_or mpi_comm
+!SK   use IDEA_MPI_def,      only : mpi_WAM_quit, mpi_id
+!SK   use IDEA_MPI_def,      only : mpi_err, MPI_COMM_ALL, info      ! or use "me mpi_or mpi_comm
 
       use wam_date_calendar, only : idat_wam, irhour_wam
       use wam_date_calendar, only : CURRENT_NCEP_JDAT, ndwam
@@ -102,9 +107,11 @@
       integer, intent(in) :: levs            ! number of pressure levels
       integer, intent(in) :: lat             ! latitude index
       integer, intent(in) :: ntrac           ! number of tracer
-      integer, intent(in) :: me              ! my pe
-      integer, intent(in) :: mpi_ior         ! mpi real for io
-      integer, intent(in) :: mpi_comm        ! mpi communicator
+      integer, intent(in) :: mpi_id          ! my pe
+!sk2019Mar08_B2
+!     integer, intent(in) :: mpi_ior         ! mpi real for io
+!     integer, intent(in) :: mpi_comm        ! mpi communicator
+!sk2019Mar08_E2
 !
       integer, intent(in) :: kstep           ! # of model steps from gloopb.f 
       real   , intent(in) :: fhour           ! # model time in hours since fhini in...gloopb.f 
@@ -112,8 +119,11 @@
 !
       real, intent(in)    :: prsi(ix,levs+1) ! pressure
       real, intent(in)    :: prsl(ix,levs)   ! pressure
-      real, intent(in)    :: hlw(ix,levs)    ! long wave rad (K/s)
-      real, intent(in)    :: swh(ix,levs)    ! short wave rad (K/s)
+!SK2020Oct10
+!     real, intent(in)    :: hlw(ix,levs)    ! long wave rad (K/s)
+!     real, intent(in)    :: swh(ix,levs)    ! short wave rad (K/s)
+      real, intent(inout) :: hlw(ix,levs)    ! long wave rad (K/s)
+      real, intent(inout) :: swh(ix,levs)    ! short wave rad (K/s)
 !
       real, intent(in)    :: solhr,slag,sdec,cdec ! for solar zenith angle
       real, intent(in)    :: cozen(im)       ! daytime avg cos zenith angle see radiation_astronomy.f
@@ -141,10 +151,10 @@
       integer, parameter  :: ntrac_i=2                  ! number of 2 WAM chem. tracers (O-O2)
 !
 !     real    :: f107_curdt, f107d_curdt, kp_curdt, f107a_fix    
-      real :: f107_curdt,f107d_curdt,kp_curdt,kpa_curdt,nhp_curdt,
-     &        nhpi_curdt
+      real    :: f107_curdt, f107d_curdt, kp_curdt, kpa_curdt, 
+     &           nhp_curdt, nhpi_curdt
       real    :: swbz_curdt, swvel_curdt, swbt_curdt, swang_curdt, 
-     &        shp_curdt, shpi_curdt
+     &           shp_curdt, shpi_curdt
       real    :: swden_curdt
       integer :: Mjdat(ndwam)                           ! IDAT_WAM + FHOUR
       real    :: Hcur                                   !  current hour+min+sec real 
@@ -180,12 +190,14 @@
       real  :: dudt(ix,levs),dvdt(ix,levs),dtdt(ix,levs)
       real, dimension(ix,lowst_ipe_level:levs)  ::
      &                            gzmt, gmmt, gjhr, gshr, go2dr
-
+!SK2020Sep6
+!     real  :: adu_(ix,levs),adv_(ix,levs),adt_(ix,levs),
+!    &         adr_(ix,levs,ntrac)
 !
 !================================================
 ! Radiance-related locals
 !
-      real  :: dtRAD(ix,levs), dtco2c(ix,levs),dtco2h(ix,levs),                                  
+      real  :: dtRAD(ix,levs), dtco2c(ix,levs),dtco2h(ix,levs), 
      &         dth2oh(ix,levs),dth2oc(ix,levs),
      &         dto3(ix,levs),  wtot(ix, levs)  
 !================================================
@@ -205,10 +217,64 @@
      &          dipang(im),essa(im)
 !
        integer  :: dayno                           ! ddd of year
-       integer i,k, j1,j2
+       integer i,k,l, j1,j2
 
        real, dimension(ix)    :: xpk_low, xpk_high
        integer, dimension(ix) :: plow, phigh
+!================================================
+!sk2019Mar08_B1
+!      logical, parameter :: return_from_here = .true.
+!      logical, parameter :: skprnt = .true.
+       logical, save :: skprnt
+       real :: sk1,sk2,sk3
+!
+       skprnt = mpi_id.eq.0
+!     if (return_from_here) goto 1111
+!sk2019Mar08_E1
+!================================================
+! SK2020Sep2 Zero out dudt, dvdt, and dtdt to zero at start
+! SK2020Sep6 Save adu, adv, adt to debug IDEA_PHYS
+      dudt(:,:) = 0.0
+      dvdt(:,:) = 0.0
+      dtdt(:,:) = 0.0
+!     dtRAD(:,:) = 0.0
+!     dtco2c(:,:) = 0.0
+!     dtco2h(:,:) = 0.0
+!     dth2oh(:,:) = 0.0
+!     dth2oc(:,:) = 0.0
+!     dto3(:,:) = 0.0
+!     wtot(:,:) = 0.0
+!     do k=1,levs
+!       do i=1,im
+!         adu_(i,k) = adu(i,k)
+!         adv_(i,k) = adv(i,k)
+!         adt_(i,k) = adt(i,k)
+!       enddo
+!     enddo
+!     do l=1,ntrac
+!     do k=1,levs
+!       do i=1,im
+!         adr_(i,k,l) = adr(i,k,l)
+!       enddo
+!     enddo
+!     enddo
+!
+!SK2020Sep21
+! Reset incoming adr negative values to mmr_min
+!
+      do l = 1,ntrac
+        do k = 1,levs
+          do i = 1,im
+            adr(i,k,l) = max(adr(i,k,l),mmr_min)
+          enddo
+        enddo
+      enddo
+!sk2020sep20
+      sk1 = minval(adr)
+      if (sk1 .lt. 0)
+     &print*,'sep21:idea_phys:input/min_adr='
+     &  ,sk1,' me= ',mpi_id
+!sk
 !================================================
 !
 ! Start with Space Wea /Climate Drivers
@@ -217,32 +283,32 @@
 ! option 1:  SPW_DRIVERS ='swpc_fst'
 !
        if (trim(SPW_DRIVERS)=='swpc_fst') then
-          f107_curdt  = f107_wy (kdt_interval) * interpolate_weight  +
-     &    f107_wy (kdt_interval+1) * (1-interpolate_weight)
-          kp_curdt    = kp_wy   (kdt_interval) * interpolate_weight  +
-     &    kp_wy   (kdt_interval+1) * (1-interpolate_weight)
-          f107d_curdt = f107d_wy(kdt_interval) * interpolate_weight  +
-     &    f107d_wy(kdt_interval+1) * (1-interpolate_weight)
-          kpa_curdt   = kpa_wy  (kdt_interval) * interpolate_weight  +
-     &    kpa_wy  (kdt_interval+1) * (1-interpolate_weight)
-          nhp_curdt   = nhp_wy  (kdt_interval) * interpolate_weight  +
-     &    nhp_wy  (kdt_interval+1) * (1-interpolate_weight)
-          nhpi_curdt  = nhpi_wy (kdt_interval) * interpolate_weight  +
-     &    nhpi_wy (kdt_interval+1) * (1-interpolate_weight)
-          shp_curdt   = shp_wy  (kdt_interval) * interpolate_weight  +
-     &    shp_wy  (kdt_interval+1) * (1-interpolate_weight)
-          shpi_curdt  = shpi_wy (kdt_interval) * interpolate_weight  +
-     &    shpi_wy (kdt_interval+1) * (1-interpolate_weight)
-          swbt_curdt  = swbt_wy (kdt_interval) * interpolate_weight  +
-     &    swbt_wy (kdt_interval+1) * (1-interpolate_weight)
-          swang_curdt = swang_wy(kdt_interval) * interpolate_weight  +
-     &    swang_wy(kdt_interval+1) * (1-interpolate_weight)
-          swvel_curdt = swvel_wy(kdt_interval) * interpolate_weight  +
-     &    swvel_wy(kdt_interval+1) * (1-interpolate_weight)
-          swbz_curdt  = swbz_wy (kdt_interval) * interpolate_weight  +
-     &    swbz_wy (kdt_interval+1) * (1-interpolate_weight)
+          f107_curdt  = f107_wy (kdt_interval) * interpolate_weight  + 
+     &              f107_wy (kdt_interval+1) * (1-interpolate_weight)
+          kp_curdt    = kp_wy   (kdt_interval) * interpolate_weight  + 
+     &              kp_wy   (kdt_interval+1) * (1-interpolate_weight)
+          f107d_curdt = f107d_wy(kdt_interval) * interpolate_weight  + 
+     &              f107d_wy(kdt_interval+1) * (1-interpolate_weight)
+          kpa_curdt   = kpa_wy  (kdt_interval) * interpolate_weight  + 
+     &              kpa_wy  (kdt_interval+1) * (1-interpolate_weight)
+          nhp_curdt   = nhp_wy  (kdt_interval) * interpolate_weight  + 
+     &              nhp_wy  (kdt_interval+1) * (1-interpolate_weight)
+          nhpi_curdt  = nhpi_wy (kdt_interval) * interpolate_weight  + 
+     &              nhpi_wy (kdt_interval+1) * (1-interpolate_weight)
+          shp_curdt   = shp_wy  (kdt_interval) * interpolate_weight  + 
+     &              shp_wy  (kdt_interval+1) * (1-interpolate_weight)
+          shpi_curdt  = shpi_wy (kdt_interval) * interpolate_weight  + 
+     &              shpi_wy (kdt_interval+1) * (1-interpolate_weight)
+          swbt_curdt  = swbt_wy (kdt_interval) * interpolate_weight  + 
+     &              swbt_wy (kdt_interval+1) * (1-interpolate_weight)
+          swang_curdt = swang_wy(kdt_interval) * interpolate_weight  + 
+     &              swang_wy(kdt_interval+1) * (1-interpolate_weight)
+          swvel_curdt = swvel_wy(kdt_interval) * interpolate_weight  + 
+     &              swvel_wy(kdt_interval+1) * (1-interpolate_weight)
+          swbz_curdt  = swbz_wy (kdt_interval) * interpolate_weight  + 
+     &              swbz_wy (kdt_interval+1) * (1-interpolate_weight)
           swden_curdt = swden_wy(kdt_interval) * interpolate_weight  +
-     &    swden_wy(kdt_interval+1) * (1-interpolate_weight)
+     &                 swden_wy(kdt_interval+1) * (1-interpolate_weight)
        else
           kpa_curdt   = 0.0
           shp_curdt   = 0.0
@@ -255,11 +321,11 @@
           swbz_curdt  = 0.0
           swden_curdt = 0.0
        endif
-!===============================================
+       if (skprnt) print*,' idea_phys: ok001'
+!================================================
 ! option 2:  SPW_DRIVERS ='sair_wam', only year of 2012
 !
-         if (trim(SPW_DRIVERS)=='sair_wam') then
- 
+       if (trim(SPW_DRIVERS)=='sair_wam') then
 !--------------------------------------------------------------------
 ! Optional Call of WAM solar-geo inputs
 !--------------------------------------------------------------------
@@ -271,11 +337,13 @@
 !----------------------------------------------------------------------  
 !       if (idea_imf_fix.eq.0) then
 !           CALL IMF_wamstep_advance(mpi_id, Mjdat, Hcur)
-!         if (me == 0 .and. kstep .le. 1) print *, Bz_s, By_s, ' Bz_s .... By_s, me= ', me     
+!         if (me == 0 .and. kstep .le. 1) print *, Bz_s, By_s,' Bz_s .... By_s, me= ',me
 !       endif
 !----------------------------------------------------------------------  
           if (idea_solar_fix.le.1) then
           CALL solar_wamstep_advance(mpi_id, Mjdat, Hcur)
+      if (skprnt) print*,
+     &           ' in idea_phys: <-- solar_wamstep_advance, me= ',mpi_id
 !      
 !          if (idea_solar_fix.le.1.and.itheia.eq.0) then 
 !           call mpi_bcast(wap_s  , 1,    MPI_REAL8,0, MPI_COMM_ALL,info)
@@ -284,8 +352,7 @@
 !           call mpi_bcast(wf107a_s, 1,   MPI_REAL8,0, MPI_COMM_ALL,info)
 !          endif
 !          if (idea_solar_fix.eq.0) call mpi_bcast(wEUV_s, nwafix,MPI_REAL8,0, MPI_COMM_ALL,info) 
-          ENDIF 
-
+       ENDIF 
 !
        ENDIF    ! idat_wam(1) == 2012 . +  "sair_wam":"f107_s, f107a_s, ap_s, kp_s, euv_s(37)"
 !for now fixed
@@ -295,6 +362,7 @@
             f107d_curdt = f107a_fix
 !
       ENDIF     !'sair_wam'
+      if (skprnt) print*,' idea_phys: ok002'
 !===============================================
 ! option 3:  SPW_DRIVERS ='wam_climate': fixed values
 !
@@ -327,21 +395,25 @@
           kpa_curdt   = kp_fix
           f107d_curdt = f107a_fix
         endif
-!
-
-!       if (me == 0 .and. kstep <= 1) then
-!           print *
-!           print *, kdt_interval, interpolate_weight
-!           print *, f107_curdt, f107d_curdt, kp_curdt, kpa_curdt, nhp_curdt, nhpi_curdt
-!           print *
-!           print *, swbt_curdt, swang_curdt, swvel_curdt, swbz_curdt, shp_curdt, shpi_curdt, 'f107-kp data'
-!           print *, 'idea_phys'
+      if (skprnt) print*,' idea_phys: ok003'
+! 
+        if (mpi_id == 0 .and. kstep <= 1) then
+            print *
+            print *, kdt_interval, interpolate_weight
+            print *, f107_curdt, f107d_curdt, kp_curdt, kpa_curdt, 
+     &               nhp_curdt, nhpi_curdt
+            print *
+            print *, swbt_curdt, swang_curdt, swvel_curdt, swbz_curdt,
+     &               shp_curdt, shpi_curdt, 'f107-kp data'
+            print *, 'idea_phys'
 !           print *, 'VAY-GW:',trim(IMPL_UNIF_GW)
-!           print *
-!           print *, 'ID-phys SPW-drivers option: ', trim(SPW_DRIVERS)
-!           print *, 'prsl(10,150) = ', prsl(10,150)
-!           print *
-!        endif
+            print *
+            print *, 'ID-phys SPW-drivers option: ', trim(SPW_DRIVERS)
+            print *
+         endif
+      if (skprnt) print*,' idea_phys: ok004'
+!SK2020Aug31
+!     if (return_from_here) goto 1111
 !==================================================
 ! in all WAM-subs pass: f107_curdt, f107d_curdt, kp_curdt
 !    defined above  from 4-cases (CLIM-SWPC-SAIR-CIRES)
@@ -372,11 +444,19 @@
 !
 !VAY, Nov 2016: single call for: phii,phil, zg, grav, exner, delpa
 !
+      if (skprnt) print*,
+     &           ' in idea_phys: --> get_exner_phi_zgrav, me= ',mpi_id
       CALL get_exner_phi_zgrav(ix, im, levs, ntrac,
      & adr, adt,
      & prsl,  prsi, rdelp, prsik, prslk,phii,phil, 
-     & thermodyn_id, sfcpress_id, gen_coord_hybrid,
+     & thermodyn_id, sfcpress_id, gen_coord_hybrid, 
      & oro, zg, grav, exner, delpa) 
+      if (skprnt) print*,
+     &           ' in idea_phys: <-- get_exner_phi_zgrav, me= ',mpi_id
+
+      if (skprnt) print*,' idea_phys: ok005'
+!SK2020Aug31
+!     if (return_from_here) goto 1111
 !
 !      print *,'VAY:Grav-g81',maxval(prsi),maxval(zg),maxval(nint(grav))   
 !      call mpi_WAM_quit(me, 'after get_exner_phi_zgrav in idea_phys.f ')
@@ -384,10 +464,18 @@
 !    get presolar-related: cos solar zenith angle (instant)
 !
 !
+      if (skprnt) print*,
+     &           ' in idea_phys: --> presolar, me= ',mpi_id
       call presolar(im,ix,solhr,slag,                                   
      &              sinlat,coslat,sdec,cdec,xlon,xlat                   
      &              ,cospass,dayno,utsec,sda                            
      &              ,maglat,maglon,btot,dipang,essa)
+      if (skprnt) print*,
+     &           ' in idea_phys: <-- presolar, me= ',mpi_id
+
+      if (skprnt) print*,' idea_phys: ok006'
+!SK2020Aug31
+!     if (return_from_here) goto 1111
 ! ===============================================================
 !     Initialize WAM major tracers by MSIS-00
 ! Disable for WAM-IPE as rquested by NM & TFR Fen 22/2017 
@@ -429,25 +517,51 @@
      &    im, ix, lowst_ipe_level, levs, plow, phigh, 
      &    xpk_low, xpk_high, prsl)
       END IF
-
 !=================================================================
 !=> compute rho
 !=> mid-layers: [o_n, o2_n, o3_n, n2_n, nair]
 !=================================================================
-
+      if (skprnt) print*,
+     &           ' in idea_phys: --> idea_tracer, me= ',mpi_id
+!sk2020sep20
+      sk1 = minval(adr)
+      if (sk1 .lt. 0)
+     &print*,'sep21:idea_phys>idea_tracer:input/min_adr='
+     &  ,sk1,' me= ',mpi_id
+!sk
       call idea_tracer(im,ix,levs,ntrac,2,grav,prsi,prsl,adt,adr,       
      &                 dtp,o_n,o2_n,o3_n, n2_n,nair,rho,am, am29,
-     & cospass, dayno, zg, f107_curdt, f107d_curdt, me, go2dr, plow,
+     & cospass, dayno, zg, f107_curdt, f107d_curdt, mpi_id, go2dr, plow,
      & phigh, xpk_low, xpk_high)
-!        if ( me == 0) print *, maxval(am29), minval(am29), 'VAY-am29C
+!sk2020sep20
+      sk1 = minval(adr)
+      if (sk1 .lt. 0)
+     &print*,'sep21:idea_phys<idea_tracer:input/min_adr='
+     &  ,sk1,' me= ',mpi_id
+!sk
+      if (skprnt) print*,
+     &           ' in idea_phys: <-- idea_tracer, me= ',mpi_id
+      if (skprnt) print*,' idea_phys: ok007'
+!SK2020Aug31
+!     if (return_from_here) goto 1111
+!     if ( me == 0) print *, maxval(am29), minval(am29), 'VAY-am29C
 !
 !
 ! calculate cp and precompute [1/cp/rho =array] for dT/dt = Q/cp/rho
 !=================================================================
-      call getcp_idea(im,ix,levs,ntrac,adr,cp,                          
-     &                thermodyn_id,gen_coord_hybrid)
-
-!============================================
+      if (skprnt) print*,
+     &           ' in idea_phys: --> getcp, me= ',mpi_id
+!SK  &           ' in idea_phys: --> getcp_idea, me= ',mpi_id
+!SK   call getcp_idea(im,ix,levs,ntrac,adr,cp,                          
+!SK  &                thermodyn_id,gen_coord_hybrid)
+      call get_cp(im,ix,levs,ntrac,adr,cp)
+      if (skprnt) print*,
+     &           ' in idea_phys: <-- getcp, me= ',mpi_id
+!SK  &           ' in idea_phys: <-- getcp_idea, me= ',mpi_id
+      if (skprnt) print*,' idea_phys: ok008'
+!SK2020Aug31
+!     if (return_from_here) goto 1111
+!=================================================================
 ! dissipation +GW physics/turbulent eddies
 ! VAY-2016/11  version will be available
 !   after additional validation and submission
@@ -466,8 +580,28 @@
 !  dissipation of 2013-idea: 
 !  only molecular diss. (viscosity + conductivity) no eddy diff. for tracers
 !  dissipation of 2013-idea:
+      if (skprnt) print*,
+     &           ' in idea_phys: --> idea_phys_dissipation, me= ',mpi_id
+!sk2020sep10
+      sk1 = minval(adt)
+      if (sk1 .lt. 0) 
+     &print*,'sep21:idea_phys>idea_phys_dissip-on:input/min_te='
+     &  ,minval(adt),' me= ',mpi_id
+!sk
       call idea_phys_dissipation(im,ix,levs,grav,prsi,prsl,             
-     &      adu,adv,adt,o_n,o2_n,n2_n,dtp,cp, rho,dt6dt)
+     &      adu,adv,adt,o_n,o2_n,n2_n,dtp,cp,dt6dt)
+!sk2020sep10
+      sk1 = minval(adt)
+      if (sk1 .lt. 0)
+     &print*,'sep21:idea_phys<idea_phys_dissip-on:output/min_te='
+     &  ,minval(adt),' me= ',mpi_id
+!sk
+      if (skprnt) print*,
+     &           ' in idea_phys: <-- idea_phys_dissipation, me= ',mpi_id
+
+      if (skprnt) print*,' idea_phys: ok009'
+!SK2020Sep2
+!     if (return_from_here) goto 1111
 !
 !--------------------------------------------------------------------------
 !      endif
@@ -484,14 +618,40 @@
 !
 !  Start WAM radiation...o3_n ...compilation of global O3 + O3_gsm[1:k71]
 !
+      if (skprnt) print*,
+     &           ' in idea_phys: --> o3pro, me= ',mpi_id
       call o3pro(im,ix,levs,ntrac,adr,am,nair,o3_ng)
+      if (skprnt) print*,
+     &           ' in idea_phys: <-- o3pro, me= ',mpi_id
+
+      if (skprnt) print*,' idea_phys: ok010'
+!SK2020Sep8
+!     if (return_from_here) goto 1111
 !
 ! get solar heating (EUV, UV-SRC-SRV-Lya) and NO cooling
 ! 
-      call idea_sheat(im,ix,levs,adt,dtRad,cospass,o_n,o2_n,o3_n,n2_n,      
+      if (skprnt) print*,
+     &           ' in idea_phys: --> idea_sheat, me= ',mpi_id
+!sk2020sep10
+!     sk1 = minval(adt)
+!     if (sk1 .lt. 0) 
+!    &print*,'sk2020sep10:idea_phys>idea_sheat:input/min_te='
+!    &  ,minval(adt),' me= ',mpi_id
+!sk
+      call idea_sheat(im,ix,levs,adt,dtRad,cospass,o_n,o2_n,o3_n,n2_n, 
      &                rho, cp,lat,dayno,prsl,zg,grav,am,maglat,dt6dt,
      &                f107_curdt, f107d_curdt, kpa_curdt)
+!sk2020sep10
+!     sk1 = minval(adt)
+!     if (sk1 .lt. 0) 
+!    &print*,'sk2020sep10:idea_phys<idea_sheat:output/min_te='
+!    &  ,minval(adt),' me= ',mpi_id
+!sk
+      if (skprnt) print*,
+     &           ' in idea_phys: <-- idea_sheat, me= ',mpi_id
 
+      if (skprnt) print*,' idea_phys: ok011'
+!
 ! Merge the  IPE back coupling WAM dtrad array into WAM.
 !-------------------------------------------------------
       IF(ipe_to_wam_coupling) THEN
@@ -506,31 +666,61 @@
      &    im, ix, levs, lowst_ipe_level, prsl, plow, phigh,
      &    xpk_low, xpk_high)
       END IF
-!  
+!-------------------------------------------------------
+!     if (return_from_here) goto 1110
 ! 
 ! radiation
 ! co2 cooling, heating
-
-      call idea_co2(im,ix,levs,nlev_co2,ntrac,grav,cp,adr,adt,          
+      if (skprnt) print*,
+     &           ' in idea_phys: --> idea_co2, me= ',mpi_id
+      call idea_co2(im,ix,levs,nlev_co2,ntrac,cp,adr,adt,          
      &              dtco2c,cospass,dtco2h)
+!SK   call idea_co2(im,ix,levs,nlev_co2,ntrac,grav,cp,adr,adt,          
+!SK  &              dtco2c,cospass,dtco2h)
+      if (skprnt) print*,
+     &           ' in idea_phys: <-- idea_co2, me= ',mpi_id
+      if (skprnt) print*,' idea_phys: ok012'
 
+!SK2020Sep16
+!     if (return_from_here) goto 1110
 ! h2o cooling heating 110-41 down ward
-
+      if (skprnt) print*,
+     &           ' in idea_phys: --> idea_h2o, me= ',mpi_id
       call idea_h2o(im,ix,levs,nlev_h2o,nlevc_h2o,ntrac,grav,cp,        
      &              adr,adt,dth2oh,cospass,dth2oc)
+      if (skprnt) print*,
+     &           ' in idea_phys: <-- idea_h2o, me= ',mpi_id
+      if (skprnt) print*,' idea_phys: ok013'
+
+!SK2020Sep16
+!     if (return_from_here) goto 1110
 ! 
 ! o2 o3 heating
 !
+      if (skprnt) print*,
+     &           ' in idea_phys: --> o3pro, me= ',mpi_id
       call o3pro(im,ix,levs,ntrac,adr,am,nair,o3_n)
+      if (skprnt) print*,
+     &           ' in idea_phys: <-- o3pro, me= ',mpi_id
+      if (skprnt) print*,' idea_phys: ok014'
+!SK2020Sep16
+!     if (return_from_here) goto 1110
 !======================================================================
 ! here 2 options: 1) o3_n (24-hr MLT O3) or 2) o3_ng (global prof > k71)
 !
 ! for O3RAD =[o3_n, o3_ng] for Q in Hartley-Huggins-Herzberg-Chappius
 !
 !======================================================================
-      call idea_o2_o3(im,ix,levs,cospass,adt,o2_n,o3_ng,rho,cp,          
+      if (skprnt) print*,
+     &           ' in idea_phys: --> idea_o2_o3, me= ',mpi_id
+      call idea_o2_o3(im,ix,levs,cospass,adt,o2_n,o3_ng,rho,cp,
      &                zg,grav,dto3)
+      if (skprnt) print*,
+     &           ' in idea_phys: <-- idea_o2_o3, me= ',mpi_id
+      if (skprnt) print*,' idea_phys: ok015'
+!SK2020Sep16
 !
+1110  continue
 ! get xmu as in "dcyc2.f"
 !
       do i=1,im
@@ -546,6 +736,10 @@
           xmu(i) = 0.
         endif
       enddo
+
+      if (skprnt) print*,' idea_phys: ok016'
+!SK2020Sep1
+!     if (return_from_here) goto 1111
 !====================================================================== 
 ! merge "ALL" heating rates dtdt-JouleHR ... dtRad (SRB+EUV-CNO)
 !  here someone can put 1/cp/rho - factor don't divide inside heat-subs
@@ -553,25 +747,44 @@
 ! VAY-2017: new add thermospheric/MLT dtrad to merge take-out dt6dt
 !
 !====================================================================== 
+      if (skprnt) print*,
+     &           ' in idea_phys: --> rad_merge, me= ',mpi_id
       call rad_merge(im,ix,levs,hlw,swh,prsi,prsl,wtot,
      &               xmu,dtrad,dtco2c,dtco2h,dth2oh,dth2oc,dto3)
+      if (skprnt) print*,
+     &           ' in idea_phys: <-- rad_merge, me= ',mpi_id
+
+      if (skprnt) print*,' idea_phys: ok017'
+!SK2020Sep1
+!     if (return_from_here) goto 1111
+
       do k=1,levs
         do i=1,im
           adt(i,k)     = adt(i,k) + dtp*wtot(i,k)
+!sk06072018  Rashid's approach
+          hlw(i,k) = wtot(i,k)
+          swh(i,k) = 0.0
 ! dt6dt
           dt6dt(i,k,2) = wtot(i,k)
 ! 
         enddo
       enddo
+
+      if (skprnt) print*,' idea_phys: b4 ok018'
+!     if (return_from_here) goto 1111
 !=========================================================================
 ! the last piece "simple" ionospheric block with empirical ION-RE moddels
 !=========================================================================
-      call idea_ion(prsl, solhr,cospass,zg, grav, o_n,o2_n,n2_n,cp,
+      if (skprnt) print*,
+     &           ' in idea_phys: --> idea_ion, me= ',mpi_id
+      call idea_ion(mpi_id,prsl,solhr,cospass,zg, grav,o_n,o2_n,n2_n,cp,
      &              adu,adv,adt,dudt,dvdt,dtdt,rho,xlat,xlon,ix,im,levs,
      &              dayno,utsec,sda,maglon,maglat,btot,dipang,essa,
      &              f107_curdt, f107d_curdt, kp_curdt, nhp_curdt, 
      &              nhpi_curdt, shp_curdt, shpi_curdt, SPW_DRIVERS,
      &              swbz_curdt, swvel_curdt)
+      if (skprnt) print*,
+     &           ' in idea_phys: <-- idea_ion, me= ',mpi_id
 ! Merge the  IPE back coupling WAM dudt, dvdt and dtdt arrays into WAM.
 !----------------------------------------------------------------------
       IF(ipe_to_wam_coupling) THEN
@@ -585,7 +798,12 @@
      &    im, ix, levs, lowst_ipe_level, prsl, plow, phigh,
      &    xpk_low, xpk_high)
       END IF
+
+      if (skprnt) print*,' idea_phys: ok018'
+!SK2020Sep1
+!     if (return_from_here) goto 1111
 !
+1111  continue
       do k=1,levs
         do i=1,im
           adu(i,k) = adu(i,k) + dtp*dudt(i,k)
@@ -594,17 +812,34 @@
         enddo
       enddo
 !======================= WAM-IPE physics is completed ========
-      return
+!     return
 !=============================================================
 !
 !   debug print-outs
 !
 !================================================================
-!       if (me == 0) then
-!        print *, 'i_phys.f-T: ', maxval(adT), minval(adT)
-!         print *, 'i_phys.f-U: ', maxval(adU), minval(adu)
-!         print *, 'i_phys.f-U: ', maxval(adV), minval(adV)
-!       endif
+!1111  continue
+!SK2020Sep6 to debug IDEA_PHYS
+!     do k=1,levs
+!       do i=1,im
+!         adu(i,k) = adu_(i,k)
+!         adv(i,k) = adv_(i,k)
+!         adt(i,k) = adt_(i,k)
+!       enddo
+!     enddo
+!     do l=1,ntrac
+!     do k=1,levs
+!       do i=1,im
+!         adr(i,k,l) = adr_(i,k,l)
+!       enddo
+!     enddo
+!     enddo
+
+!1111  continue
+      if (skprnt) then
+       print *, 'idea_phys-T: ', maxval(adT), minval(adT),' me= ',mpi_id
+       print *, 'idea_phys-U: ', maxval(adU), minval(adu),' me= ',mpi_id
+       print *, 'idea_phys-V: ', maxval(adV), minval(adV),' me= ',mpi_id
+      endif
       return
       end subroutine idea_phys
-

@@ -124,6 +124,7 @@
 !
 !        integer :: idatc(4)
         use wam_date_calendar, only : wam_split_ymd, curddd_wam
+        use module_physics_driver, only: is_master
         implicit none
         integer :: mpi_id
         integer :: wrk_date_ymd,  wrk_date_yddd 
@@ -140,7 +141,8 @@
         wrk_date_yddd = 1000*Jdatc(1)+curddd_wam
         wrk_time = float(wrk_date_yddd) + hrc/24.                !wrk_time = flt_date( wrk_date, 0 )
 
-       if (mpi_id.eq.0) then      
+       if (is_master) then     !SK 2020      
+!SK    if (mpi_id.eq.0) then      
         write(iulog,*) 
      & ' vay wrk_time:',wrk_time, hrc, ' hour ', wrk_date_yddd, ' yddd '
 
@@ -214,7 +216,8 @@
 ! called from idea_solar_heating.f:CALL imf_read_wam_init(ncIMF_fpath, mpi_id)   
 !
        use netcdf      
-       use idea_mpi_def, ONLY:  info, mpi_comm_all
+       use module_physics_driver, only: is_master
+!SK    use idea_mpi_def, ONLY:  info, mpi_comm_all
      
        implicit none
        include 'mpif.h'
@@ -235,7 +238,8 @@
         integer :: n
         integer :: masterproc
 
-        if(mpi_id.eq.0) then
+        if(is_master) then      !SK 2020
+!SK     if(mpi_id.eq.0) then
            write(iulog,*)file        
            write(iulog,*) 'IMF_PARMS: opening file ', trim(file) 
         endif
@@ -265,7 +269,8 @@
          iernc = nf90_inquire_dimension(ncid, dimidT(1), len=ntimes_imf)
          
 
-         if(mpi_id.eq.0) then
+         if(is_master) then      !SK 2020
+!SK      if(mpi_id.eq.0) then
               write(iulog,*) ntimes_imf, ' nt-nw  idea_imf_input'
          endif
          
@@ -279,7 +284,8 @@
         iernc=nf90_inq_varid( ncid, 'ydh', vid )
         iernc= nf90_get_var( ncid, vid, times_imf)
 
-          if(mpi_id.eq.0) then
+          if(is_master) then      !SK 2020
+!SK       if(mpi_id.eq.0) then
             write(iulog,*) times_imf(1), times_imf(ntimes_imf), 
      &                    ' ydh-imf ' 
           endif
@@ -321,7 +327,8 @@
 !
      
 !
-          if(mpi_id.eq.0) then
+          if(is_master) then      !SK 2020
+!SK       if(mpi_id.eq.0) then
           write(iulog,*) '  read_wam_IMF: ntimes  ', ntimes_imf   
           write(iulog,*) maxval(bz_imf),   minval(bz_imf), ' BZ_imf '
           write(iulog,*) maxval(bz_imf),   minval(bz_imf), ' BY_IMF ' 
@@ -339,24 +346,24 @@
 ! result of solar_read_wam_init(ncfile_fpath): ALLOCATE, READ and BROADCAST
 ! call MPI_BCAST (data_to_be_sent, send_count, send_type, broadcasting_process_ID, comm, ierr)
 
-       call mpi_bcast(ntimes_imf,1,mpi_integer,0,mpi_comm_all,info)
+!SK    call mpi_bcast(ntimes_imf,1,mpi_integer,0,mpi_comm_all,info)
 
 !       call mpi_bcast(dates,ntimes,mpi_integer,0,mpi_comm_all,info)
 !       call mpi_bcast(dfhours,ntimes,MPI_REAL8,0,MPI_COMM_ALL,info)
-       call mpi_bcast(times_imf,ntimes_imf,
-     &                MPI_REAL8,0,MPI_COMM_ALL,info)
+!SK    call mpi_bcast(times_imf,ntimes_imf,
+!SK  &                MPI_REAL8,0,MPI_COMM_ALL,info)
 
-       call mpi_bcast(bz_imf  ,ntimes_imf,MPI_REAL8,0,MPI_COMM_ALL,info)
-       call mpi_bcast(by_imf  ,ntimes_imf,MPI_REAL8,0,MPI_COMM_ALL,info)
+!SK    call mpi_bcast(bz_imf  ,ntimes_imf,MPI_REAL8,0,MPI_COMM_ALL,info)
+!SK    call mpi_bcast(by_imf  ,ntimes_imf,MPI_REAL8,0,MPI_COMM_ALL,info)
 
-       call mpi_bcast(SWDEN  ,ntimes_imf,MPI_REAL8,0,MPI_COMM_ALL,info)
-       call mpi_bcast(SWVEL  ,ntimes_imf,MPI_REAL8,0,MPI_COMM_ALL,info)
+!SK    call mpi_bcast(SWDEN  ,ntimes_imf,MPI_REAL8,0,MPI_COMM_ALL,info)
+!SK    call mpi_bcast(SWVEL  ,ntimes_imf,MPI_REAL8,0,MPI_COMM_ALL,info)
 
 
 !       call mpi_barrier(mpi_comm_all,info)         
-       if(mpi_id.eq.0) then
-          write(iulog,*)  ' completed IMF_read_wam_init'
-       endif
+!SK    if(mpi_id.eq.0) then
+!SK       write(iulog,*)  ' completed IMF_read_wam_init'
+!SK    endif
 !
 !
        end  subroutine IMF_read_wam_init

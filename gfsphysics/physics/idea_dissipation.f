@@ -196,7 +196,7 @@
         do kk=1,3
           kk1=kk/3+1
           do k=2,levs
-           partb_i(k)=coef_i(k,kk1)*prsi(i,k)*hs_i(k)/                         
+           partb_i(k)=coef_i(k,kk1)*prsi(i,k)*hs_i(k)/
      &      (prsl(i,k-1)-prsl(i,k))
            ac(k)=parta(k,kk1)*partb_i(k)
 
@@ -247,6 +247,8 @@
 
       use machine, only : kind_phys
       use physcons,  rgas=>con_rgas    ! amo2=>con_amo2   con_rgas   =8.314472  J/mol/K
+      use namelist_wamphysics_def, only : tkeddy0, tkeddy_semiann,
+     &                                    tkeddy_ann
 
       implicit none  
 !
@@ -273,7 +275,7 @@
 
 
 !     real, parameter:: kmax = 1000.                     !   Shmazaki's paper value
-      real (kind=kind_phys), parameter:: kmax = 280.     !   Rashid's value is 140
+!      real (kind=kind_phys), parameter:: kmax = 280.     !   Rashid's value is 140
       real (kind=kind_phys), parameter:: k0   = 28.      !   200, k0 = kmax*0.2
       real (kind=kind_phys), parameter:: dkeddy = 2.     !  (100)**(0.5)= 10, 10/8=1.25, 10/6= 1.6  about 2??
       real (kind=kind_phys), parameter:: dkeddy3= 2.3    !  0.07, 14/6 = 2.3 
@@ -354,13 +356,13 @@
 
 !    based on Shimazaki's paper
 !            if(x.lt.xmax) then
-!              keddy(k)= (kmax-k0)*exp(-((x-xmax)/dkeddy)**2) + 
+!              keddy(k)= (tkeddy0-k0)*exp(-((x-xmax)/dkeddy)**2) + 
 !     &                  k0*exp((x-xmax)/dkeddy3)
 !            else
-!              keddy(k)= kmax*exp(-((x-xmax)/dkeddy)**2)
+!              keddy(k)= tkeddy0*exp(-((x-xmax)/dkeddy)**2)
 !            endif
            
-           keddy(k)= kmax*exp(-((x-xmax)/dkeddy)**2)     ! Rashid's simplified symmetric fomular
+           keddy(k)= tkeddy0*exp(-((x-xmax)/dkeddy)**2)     ! Rashid's simplified symmetric fomular
            ktemp(k) = rho(i,k)*cp(i,k)*keddy(k)      ! Tim's Thesis, P54  
 
          enddo

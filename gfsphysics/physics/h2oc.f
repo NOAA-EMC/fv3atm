@@ -34,22 +34,106 @@ c Integers precalculated in h2ocin:
 c -number of model starting layer (counted from the top)
 c -number of model layers in a 1 scale height above the top
 C       parameterization layer
-      integer        lh2oc,ltop1
+      integer ::  lh2oc,ltop1
+
+c SK 2020 July
+c Internal parameters and work space for g1rtxz_read and g1vbxz_read
+      integer, parameter :: NQUS=17,KFS=20,KM=40,MM4=7,NQ=17
+      integer, parameter :: NQUS_=14,KFS_=20,KM_=30,MM4_=7,NQ_=14
+      real :: GGrt(KM),WWrt(KM),XK2rt(KFS,NQ,KM,MM4)
+      real :: GGvb(KM_),WWvb(KM_),XK2vb(KFS_,NQ_,KM_,MM4_)
 
 c Parameterization arrays precalculated for model grid from band data
 c in h2ocin:
 c -optical band parameters
 c -reference H2O MMR
 c -interpolation coefficients
-      real     ,allocatable,dimension(:):: gh2ort,gh2ovb,dg1rt,dg2rt,
-     $     dg1vb,dg2vb,gdp,xx,wvmmrc,coeff
+!     real, allocatable, dimension(:):: gh2ort,gh2ovb,dg1rt,dg2rt,
+!    $     dg1vb,dg2vb,gdp,xx,wvmmrc,coeff
 
       end module h2ocm
 
 c***********************************************************************
+!SK 2020 July
+      subroutine h2ocin_init(me)
+c Subroutine to read data via g1rtxz_read and g1vbxz_read
+      implicit none
+      integer,intent(in):: me
+c - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+!     print*,' h2ocin_init --> g1rtxz_read, me= ',me
+      call g1xz_read(me)
+!     call g1rtxz_read(me)
+!     print*,' h2ocin_init <-- g1rtxz_read, me= ',me
+!     print*,' h2ocin_init --> g1vbxz_read, me= ',me
+!     call g1vbxz_read(me)
+!     print*,' h2ocin_init <-- g1vbxz_read, me= ',me
+      end subroutine h2ocin_init
 c***********************************************************************
+!SK 2020July
+      subroutine g1xz_read(me)
+!     subroutine g1rtxz_read(me)
+      use h2ocm, only: KFS,  NQ,  KM,  MM4,  GGrt, WWrt, XK2rt
+      use h2ocm, only: KFS_, NQ_, KM_, MM4_, GGvb, WWvb, XK2vb
+      implicit none
+!
+      integer,intent(in):: me
+c - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+      integer :: K1, N1, K2, ICON
+c - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+! open first pe to read the file
+!     if(me==0) then       !SK2020July7
 
-      subroutine h2ocin(p0,lx,me,mpi_ior,mpi_comm)
+        OPEN(11,FILE='global_idea_ggww_in4.par',STATUS='OLD')
+!     print*,
+!    &' h2ocin_init/g1rtxz_read opens global_idea_ggww_in4.par,me=',me
+        DO 5 K2=1,KM
+          READ(11,*) GGrt(K2),WWrt(K2)
+5       CONTINUE
+        CLOSE(UNIT=11)
+!     print*,
+!    &' h2ocin_init/g1rtxz_read closes global_idea_ggww_in4.par,me=',me
+
+        OPEN(71,FILE='global_idea_h2ort_kg7t.par',STATUS='OLD')
+!     print*,
+!    &' h2ocin_init/g1rtxz_read opens global_idea_h2ort_kg7t.par,me=',me
+        DO 7 ICON=1,MM4
+        DO 7 N1=1,NQ
+        DO 7 K1=1,KFS       !  read in the k-coefficient in m*m/kg
+          READ(71,*) (XK2rt(K1,N1,K2,ICON),K2=1,KM)
+7       CONTINUE
+        CLOSE(UNIT=71)
+!     print*,
+!    &' h2ocin_init/g1rtxz_read closes global_idea_h2ort_kg7t.par,me='
+!    &  ,me
+
+        OPEN(11,FILE='global_idea_ggww_in1.par',STATUS='OLD')
+!     print*,
+!    &' h2ocin_init/g1vbxz_read opens global_idea_ggww_in1.par,me=',me
+        DO 9 K2=1,KM_
+          READ(11,*) GGvb(K2),WWvb(K2)
+9       CONTINUE
+        CLOSE(UNIT=11)
+!     print*,
+!    &' h2ocin_init/g1vbxz_read closes global_idea_ggww_in1.par,me=',me
+
+        OPEN(71,FILE='global_idea_h2ovb_kg7t.par',STATUS='OLD')
+!     print*,' h2ocin/g1vbxz opens global_idea_h2ovb_kg7t.par,me=',me
+        DO 11 ICON=1,MM4_
+        DO 11 N1=1,NQ_
+        DO 11 K1=1,KFS_         !  read in the k-coefficient in m*m/kg
+          READ(71,*) (XK2vb(K1,N1,K2,ICON),K2=1,KM_)
+11      CONTINUE
+        CLOSE(UNIT=71)
+!     print*,
+!    &' h2ocin_init/g1vbxz_read closes global_idea_h2ovb_kg7t.par,me='
+!    & ,me
+
+!     endif                !SK2020July7
+      END subroutine g1xz_read
+!     END subroutine g1rtxz_read
+c***********************************************************************
+      subroutine h2ocin(p0,lx,me)
+!SK   subroutine h2ocin(p0,lx,me,mpi_ior,mpi_comm)
 !hmhj subroutine h2ocin(p0,lx,dir)
 
 c Subroutine to initialize calculations of H2O IR cooling rates done 
@@ -58,13 +142,17 @@ c - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 c Nov 12, 2008: corrected errors in calculation of gdp
 c Sep 24, 2007: made from h2ocin for upward model grid
 c - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-      use h2ocm
+C     use h2ocm
+      use h2ocm, only:lh2oc,ltop1
+      use idea_composition, only: gh2ort,gh2ovb,dg1rt,dg2rt,
+     $     dg1vb,dg2vb,gdp,xx,wvmmrc,coeff
       implicit none
 c - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 c Arguments
 c INPUT
 c -mid-layer model pressure (Pa) grid levels going up
-      integer,intent(in):: lx,me,mpi_ior,mpi_comm
+!SK   integer,intent(in):: lx,me,mpi_ior,mpi_comm
+      integer,intent(in):: lx,me
       real,intent(in),dimension(lx):: p0
 
 c -directory where input files are located
@@ -76,15 +164,30 @@ c Internal parameters
       real,parameter:: delr0=.5,refpre=1./3e3
       real,dimension(lx)::tref
       integer,parameter:: lmr=3,lmt=1
-
 c Work space
       integer:: l,lu
       real:: workx
       real,dimension(lx,lmr,lmt):: gamyrt,gamyvb
+!SK2020Oct3
+      logical, parameter :: skprnt = .false.
 c - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 c Allocate 10 module arrays
-      allocate(gh2ort(lx),gh2ovb(lx),dg1rt(lx),dg2rt(lx),
-     $     dg1vb(lx),dg2vb(lx),gdp(lx),xx(lx),wvmmrc(lx),coeff(lx))
+!     real, allocatable, dimension(:):: gh2ort,gh2ovb,dg1rt,dg2rt,
+!    $     dg1vb,dg2vb,gdp,xx,wvmmrc,coeff
+!          allocate(gh2ort(lx),gh2ovb(lx),
+!    &     dg1rt(lx),dg2rt(lx),
+!    $     dg1vb(lx),dg2vb(lx),gdp(lx),xx(lx),wvmmrc(lx),coeff(lx))
+!SK2020Sep30
+!     if (.not.allocated(gh2ort)) allocate(gh2ort(lx))
+!     if (.not.allocated(gh2ovb)) allocate(gh2ovb(lx))
+!     if (.not.allocated(dg1rt)) allocate(dg1rt(lx))
+!     if (.not.allocated(dg1vb)) allocate(dg1vb(lx))
+!     if (.not.allocated(dg2rt)) allocate(dg2rt(lx))
+!     if (.not.allocated(dg2vb)) allocate(dg2vb(lx))
+!     if (.not.allocated(gdp)) allocate(gdp(lx))
+!     if (.not.allocated(xx)) allocate(xx(lx))
+!     if (.not.allocated(wvmmrc)) allocate(wvmmrc(lx))
+!     if (.not.allocated(coeff)) allocate(coeff(lx))
 
 c Initialize module parameters (1 integer and 9 real arrays). These 
 c internal arrays go down for convenient calculation in the 
@@ -94,18 +197,22 @@ c that level the cooling rates are extrapolated to 0 within one scale
 c height (within ltop1 model layers). If the model top does not reach
 c 100 km, lh2oc=1, ltop1=0; if the model bottom is above 100 km, 
 c lh2oc > lx and cooling rates are set to 0 in the model domain.
-      lh2oc=lx+1
-      ltop1=0
+
+!SK   2020/July/30  
+!SK   Note: wvmmrc, tref, coeff, lh2oc, and ltop1 are attributed with
+!SK   intent(out) in subroutine wvrefm; why initialize them?
+!SK2020Aug20      lh2oc=lx+1
+!SK2020Aug20      ltop1=0
       gh2ort(:)=0.
       gh2ovb(:)=0.
       dg1rt(:)=0.
       dg2rt(:)=0.
       dg1vb(:)=0.
       dg2vb(:)=0.
-      wvmmrc(:)=0.
+!SK2020Aug20      wvmmrc(:)=0.
       gdp(:)=0.
       xx(:)=0.
-      coeff(:)=0.
+!SK2020Aug20      coeff(:)=0.
 
 c Precalculate parameters for matrix interpolation
 
@@ -113,10 +220,23 @@ c Prepare reference atmosphere on model grid and other grid params. In
 c the call to wvrefm, the model grid is inversed (goes down from the 
 c top) for compatibility with Xun's original code and to simplify 
 c calculations in the cooling-to-space approximation
-      tref(:)=0.
+!SK2020Aug20      tref(:)=0.
 
+!     if (skprnt) print*,' 01:h2ocin-->wvrefm;me= ',me,
+!    $ ' lx=',lx,' p0=',(p0(l),l=lx,1,-1)
       call wvrefm(p0(lx:1:-1),wvmmrc,tref,coeff,lx,lh2oc,ltop1)
+!SK   call wvrefm(p0(lx:1:-1),wvmmrc(lx:1:-1),tref(lx:1:-1),coeff,
+!     if (skprnt) print*,' 01:h2ocin<--wvrefm;me= ',me
 c     print*,'www1',lx,lh2oc,ltop1
+!     print*,'SK:h2ocin->wvrefm',' lx=',lx,'lh2oc=',lh2oc,'ltop1=',ltop1
+!SK2020Aug11
+      if (skprnt) then
+      print*,'skprnt/h2ocin: lx=',lx,' tref(lx:1:-1)=',tref(lx:1:-1)
+!     do l=1,lx
+!      if(tref(l).eq.0.) print*,
+!    & 'skprnt/h2ocin: tref(',l,')=',tref(l)
+!     enddo
+      endif
 
       if(lh2oc > lx) return
 
@@ -128,22 +248,37 @@ c     print*,'www1',lx,lh2oc,ltop1
          gdp(l)=.5*(1.+refpre*p0(lu))*(p0(lu-1)-p0(lu+1))
       enddo
 
+!SK
+!     print*,'SKK: wvmmrc(',lh2oc,':',lx,')=',wvmmrc(lh2oc:lx)
+!     print*,'SKK: gdp(',lh2oc,':',lx,')=',gdp(lh2oc:lx)
       workx=0.
       do l=lh2oc,lx
          workx=workx+delr0*wvmmrc(l)*gdp(l)
-         xx(l)=1./workx
+!        print*,'SKK: l=',l,' workx=',workx
+!        xx(l)=1./workx
+         if (workx .ne. 0.) xx(l)=1./workx
+!        print*,'SKK: l=',l,' xx=',xx(l)
       enddo
 
       l=lx-lh2oc+1
 
+!     if (skprnt) print*,' 02:h2ocin-->g1rtxz;me= ',me
+!     if (skprnt) print*,'SK:h2ocin: l=', l,' lh2oc=', lh2oc,' me=',me
       call g1rtxz(l,tref(lh2oc:),p0(l:1:-1),wvmmrc(lh2oc:),
-     $     lmr,lmt,gamyrt(lh2oc:,:,:),me,mpi_ior,mpi_comm)
+     $     lmr,lmt,gamyrt(lh2oc:,:,:),me)
+!SK  $     lmr,lmt,gamyrt(lh2oc:,:,:),me,mpi_ior,mpi_comm)
 !hmhj$     lmr,lmt,gamyrt(lh2oc:,:,:),dir)
+!     if (skprnt) print*,' 02:h2ocin<--g1rtxz;me= ',me
+!     if (skprnt) print*,' 03:h2ocin-->g1vbxz;me= ',me
       call g1vbxz(l,tref(lh2oc:),p0(l:1:-1),wvmmrc(lh2oc:),
-     $     lmr,lmt,gamyvb(lh2oc:,:,:),me,mpi_ior,mpi_comm)
+     $     lmr,lmt,gamyvb(lh2oc:,:,:),me)
+!SK  $     lmr,lmt,gamyvb(lh2oc:,:,:),me,mpi_ior,mpi_comm)
 !hmhj$     lmr,lmt,gamyvb(lh2oc:,:,:),dir)
+!     if (skprnt) print*,' 03:h2ocin<--g1vbxz;me= ',me
+!     if (skprnt) print*,' 04:h2ocin-->gtoaxz;me= ',me
       call gtoaxz(l,lmr,gamyrt(lh2oc:,:,:),gamyvb(lh2oc:,:,:),
      $     dg1rt(lh2oc:),dg2rt(lh2oc:),dg1vb(lh2oc:),dg2vb(lh2oc:))
+!     if (skprnt) print*,' 04:h2ocin<--gtoaxz;me= ',me
 
       do l=lh2oc,lx
          gh2ort(l)=gamyrt(l,2,1)
@@ -153,7 +288,6 @@ c     print*,'www1',lx,lh2oc,ltop1
       end subroutine h2ocin
 
 c***********************************************************************
-c***********************************************************************
 
       subroutine h2occ(t,p0,wvmmr,qr,qv,lx)
 c Subroutine to calculate H2O IR cooling rates after Zhu (1994).  Made
@@ -161,16 +295,18 @@ c using his code, substantially rewritten.
 c - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 c Sep 24, 2007: Made from h2oc_calc for upward pressure grid
 c October 1, 2003
+!SK   use h2ocm
 c - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-      use h2ocm
+      use h2ocm, only: lh2oc,ltop1, r_daysec
+      use idea_composition, only: gh2ort,gh2ovb,dg1rt,dg2rt,
+     $     dg1vb,dg2vb,gdp,xx,wvmmrc,coeff
       implicit none
 c - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 c Arguments
 c - IN: temperature (K), pressure (Pa), and H2O MMR (relative units)
 C       on the same model grid going up as in h2ocin
-      integer:: lx
+      integer,intent(in):: lx
       real,intent(in),dimension(lx):: t,p0,wvmmr
-
 c - OUT: heating rates (K/s) in the rotational and vibrational bands, 
 c respectively
       real,dimension(lx),intent(out):: qr,qv
@@ -182,6 +318,8 @@ c - inverse of reference H2O MMR
 c Work space (most of it kept for historic compatibility reasons)
       integer:: l,lu,lw
       real:: phiv,thr,thv,gr2,gv2,wk1,wk2,yy
+!SK2020Oct3
+      logical, parameter :: skprnt = .false.
 c - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
       qr(:)=0.
       qv(:)=0.
@@ -192,6 +330,13 @@ c Calculate cooling rates up to layer lh2oc. Index l goes down, lu goes
 c up
       yy=0.
       lw=lx+1
+      if (skprnt) then
+      print*, ' in h2oc.f/sub:h2occ, lh2oc=',lh2oc,' lx=',lx
+      endif
+      if (lh2oc.eq.0) then
+         lh2oc = 1
+         print*, ' in h2oc.f/sub:h2occ hard-reset to ',lh2oc
+      endif
       do l=lh2oc,lx
          lu=lw-l
          yy=yy+(wvmmr(lu)-wvmmrc(l))*gdp(l)
@@ -240,8 +385,12 @@ C  Planck black-body function J/m/s at the wavenumber v and
 C  temperature T.  B = [2hv**3*c**2]/[exp(hcv/kT)-1] with
 C  h=6.6262E-34 Js, c=2.998E8 m/s, k=1.381E-23 J/K, v~6.75E4 m^-1.
 C  f1=2hc*c=1.19109E-16 Jm*m/s, f2=hc/k=0.0143847 mK.
-      BLAC=1.19109E-16*V**3/(EXP(0.0143847*V/T)-1.0)
 
+      IF (T.EQ.0.) THEN
+        print *,'Warning: Error in BLAC, Division by zero!'
+!       STOP
+      ENDIF
+        BLAC=1.19109E-16*V**3/(EXP(0.0143847*V/T)-1.0)
       END function blac
 
 c***********************************************************************
@@ -271,69 +420,68 @@ CC
       ENZ2=EXP(-Z)*(1.0-ENZ)
 
       END function enz2
-
 c***********************************************************************
 
-      subroutine g1rtxz(kus,tus0,pus,rus0,lmr,lmt,gamav,                 
-     &  me,mpi_ior,mpi_comm)
+      subroutine g1rtxz(kus,tus0,pus,rus0,lmr,lmt,gamav,                
+     &  me)
+!SK  &  me,mpi_ior,mpi_comm)
 !hmhj subroutine g1rtxz(kus,tus0,pus,rus0,lmr,lmt,gamav,dirin)
 
 c Sept, 2007: made by Rashid Akmaev from Xun Zhu's code for H2O cooling
 !
-      include 'mpif.h'
+!SK   include 'mpif.h'
+!     use h2ocm, only: NQUS, KFS, KM, MM4, NQ
+!     use h2ocm, only: GG=>GGrt, WW=>WWrt, XK2=>XK2rt
+!     use h2ocm, only: GGrt, WWrt, XK2rt
+C     use h2ocm
+      use h2ocm, only: NQUS,KFS,KM,MM4,NQ,
+     &                 GG=>GGrt, WW=>WWrt, XK2=>XK2rt
+C    &                 GGvb, WWvb, XK2vb 
 
-      integer,intent(in):: kus,lmr,lmt,me,mpi_ior,mpi_comm
+      integer,intent(in):: kus,lmr,lmt,me
+!SK   integer,intent(in):: kus,lmr,lmt,me,mpi_ior,mpi_comm
       real,intent(in):: pus(kus),TUS0(KUS),RUS0(KUS)
 !hmhj character(len=*),intent(in) :: dirin
 
       real,intent(out):: gamav(kus,lmr,lmt)
 c - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 c Internal parameters and work space
-      PARAMETER (NQUS=17,KFS=20,KM=40,MM4=7,NQ=17)
-
-      real,dimension(km) :: GG,WW
-      real :: XK2(KFS,NQ,KM,MM4)
+!     integer, PARAMETER :: NQUS=17,KFS=20,KM=40,MM4=7,NQ=17
+C     real,dimension(KM) :: GG,WW
+C     real,dimension(KFS,NQ,KM,MM4) :: XK2
       real :: PRE(KFS),TEM4(MM4),T77(MM4)
       real :: XKUS(KUS,NQ,KM,MM4)
-      integer info
-
-      dimension TUS(KUS),RUS(KUS)
+!SK   integer info
+      real :: TUS(KUS),RUS(KUS)
 
       dimension VNQ(NQ),VNQS(NQUS),STRB(KUS,NQUS),GAMSP(KUS,NQUS)
      & ,QB1(KUS,NQUS),QB2(KUS,NQUS),QBT(KUS,NQUS)
      & ,QAL1(KUS,LMR,LMT),QAL2(KUS,LMR,LMT),QALT(KUS,LMR,LMT)
 
       DIMENSION WK1(KUS),WK2(KUS),WK3(KUS),WK4(KUS)
+!SK2020Oct3
+      logical, parameter :: skprnt = .false.
+c - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+C     DO K2=1,KM
+C       GG(K2) = GGrt(K2)
+C       WW(K2) = WWrt(K2)
+C     ENDDO
+C     DO ICON=1,MM4
+C       DO K2=1,KM
+C         DO N1=1,NQ
+C           DO K1=1,KFS 
+C             XK2(K1,N1,K2,ICON) = XK2rt(K1,N1,K2,ICON)
+C           ENDDO
+C         ENDDO
+C       ENDDO
+C     ENDDO
+!     print*,' SK01: g1rtxz OK, me= ', me
 c - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
       DDV=25.0E2             ! unit of bandwidth: m^-1
       V00=50.0E2             ! [nu]0 for H2O in m^-1
 
       DO 2 N1=1,NQ
    2  VNQ(N1)=V00+DDV*(FLOAT(N1)-0.5)
-!
-! open first pe to read the file
-      if(me==0) then
-
-        OPEN(11,FILE='global_idea_ggww_in4.par',STATUS='OLD')
-        DO 5 K2=1,KM
-   5      READ(11,*) GG(K2),WW(K2)
-        CLOSE(UNIT=11)
-
-        OPEN(71,FILE='global_idea_h2ort_kg7t.par',STATUS='OLD')
-        DO 7 ICON=1,MM4
-        DO 7 N1=1,NQ
-        DO 7 K1=1,KFS       !  read in the k-coefficient in m*m/kg
-          READ(71,*) (XK2(K1,N1,K2,ICON),K2=1,KM)
-   7    CONTINUE
-        CLOSE(UNIT=71)
-
-      endif
-!
-!      print *,'bf mpi_bcast, km=',km,'MPI_IOR=',MPI_IOR,mpi_comm,
-!     &   size(gg),mpi_real4
-      call mpi_bcast(GG,KM,MPI_REAL8,0,mpi_comm,info)
-      call mpi_bcast(WW,KM,MPI_REAL8,0,mpi_comm,info)
-      call mpi_bcast(XK2,MM4*NQ*KFS*KM,MPI_REAL8,0,mpi_comm,info)
 
       DO 9 M=1,MM4
         TEM4(M)=150.0+FLOAT(M-1)*25.0     !  7 reference temperatures
@@ -351,7 +499,16 @@ c - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
       PRE(KFS)=1.1E5             ! 20 reference pressures
 
       DELTR=0.5
-    
+!     print*,' SK02: g1rtxz OK, me= ', me
+!SK2020Aug13
+      if (skprnt) then
+       print*,'skprnt/g1rtxz: KUS=',KUS,' me=',me
+       do k=1,kus
+        if(tus0(k).eq.0.) print*,'skprnt/g1rtxz: TUS0(',k,')=',TUS0(k),
+     &                           ' me=',me
+       enddo
+      endif
+            
       DO 500 LLR=1,LMR
       DO 500 LLT=1,LMT
       
@@ -359,7 +516,7 @@ c - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
          TUS(K)=TUS0(K)
          RUS(K)=RUS0(K)*(1.0+DELTR*FLOAT(LLR-2))
   33    CONTINUE
-      
+              
         CALL INTERK(kus,kfs,km,mm4,nq,pre,xk2,pus,xkus)
 
         DO 80 N=1,NQUS
@@ -392,31 +549,40 @@ c - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   90      CONTINUE
           GAMAV(K,LLR,LLT)=GAMAV(K,LLR,LLT)/SUMX1
  100    CONTINUE
-  
+          
  500  CONTINUE
+!     print*,' SK03: g1rtxz OK, me= ', me
 
       END subroutine g1rtxz
 
 c***********************************************************************
-
-      subroutine g1vbxz(kus,tus0,pus,rus0,lmr,lmt,gamav,                 
-     &   me,mpi_ior,mpi_comm)
+      subroutine g1vbxz(kus,tus0,pus,rus0,lmr,lmt,gamav,
+     &   me)
+!SK  &   me,mpi_ior,mpi_comm)
 
 c Sept, 2007: made by Rashid Akmaev from Xun Zhu's code for H2O cooling
 !
-       include 'mpif.h'
+!SK    include 'mpif.h'
+!     use h2ocm, only: NQUS, KFS, KM, MM4, NQ
+!     use h2ocm, only: GG=>GGvb, WW=>WWvb, XK2=>XK2vb
+      use h2ocm, only: NQUS=>NQUS_,KFS=>KFS_,KM=>KM_,MM4=>MM4_,NQ=>NQ_,
+     &                 GG=>GGvb, WW=>WWvb, XK2=>XK2vb 
+C    &                 GGvb, WWvb, XK2vb 
 
-       integer,intent(in):: kus,lmr,lmt
-       real,intent(in):: pus(kus),TUS0(KUS),RUS0(KUS)
-
-       real,intent(out):: gamav(kus,lmr,lmt)
+      integer,intent(in):: kus,lmr,lmt, me
+      real,intent(in):: pus(kus),TUS0(KUS),RUS0(KUS)
+      real,intent(out):: gamav(kus,lmr,lmt)
 c - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 c Internal parameters and work space
-       PARAMETER (NQUS=14,KFS=20,KM=30,MM4=7,NQ=14)
+!      integer, PARAMETER ::NQUS=14,KFS=20,KM=30,MM4=7,NQ=14
+C     real,dimension(KM) :: GG,WW
+C     real,dimension(KFS,NQ,KM,MM4) :: XK2
 
-      dimension PRE(KFS),TEM4(MM4),GG(KM),WW(KM),XK2(KFS,NQ,KM,MM4)
+!     real :: PRE(KFS),TEM4(MM4),T77(MM4)
+!     real :: XKUS(KUS,NQ,KM,MM4)
+!     real :: TUS(KUS),RUS(KUS)
+      dimension PRE(KFS),TEM4(MM4)
       dimension T77(MM4),XKUS(KUS,NQ,KM,MM4)
-
       dimension TUS(KUS),RUS(KUS)
 
       dimension VNQ(NQ),VNQS(NQUS),STRB(KUS,NQUS),GAMSP(KUS,NQUS)
@@ -424,35 +590,28 @@ c Internal parameters and work space
      & ,QAL1(KUS,LMR,LMT),QAL2(KUS,LMR,LMT),QALT(KUS,LMR,LMT)
 
       DIMENSION WK1(KUS),WK2(KUS),WK3(KUS),WK4(KUS)
+      logical, parameter :: skprnt = .false.
+c - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+C     DO K2=1,KM
+C        GG(K2) = GGvb(K2)
+C        WW(K2) = WWvb(K2)
+C     ENDDO
+C     DO ICON=1,MM4
+C       DO K2=1,KM
+C         DO N1=1,NQ
+C           DO K1=1,KFS
+C             XK2(K1,N1,K2,ICON) = XK2vb(K1,N1,K2,ICON)
+C           ENDDO
+C         ENDDO
+C       ENDDO
+C     ENDDO
+!     print*,' SK01: g1vbxz OK, me= ', me
 c - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
       DDV=50.0E2             ! unit of bandwidth: m^-1
       V00=1300.0E2             ! [nu]0 for H2O in m^-1
 
       DO 2 N1=1,NQ
    2  VNQ(N1)=V00+DDV*(FLOAT(N1)-0.5)
-!
-! only pe 0 read the file
-      if(me==0) then
-
-        OPEN(11,FILE='global_idea_ggww_in1.par',STATUS='OLD')
-        DO 5 K2=1,KM
-   5      READ(11,*) GG(K2),WW(K2)
-        CLOSE(UNIT=11)
-
-        OPEN(71,FILE='global_idea_h2ovb_kg7t.par',STATUS='OLD')
-        DO 7 ICON=1,MM4
-        DO 7 N1=1,NQ
-        DO 7 K1=1,KFS         !  read in the k-coefficient in m*m/kg
-          READ(71,*) (XK2(K1,N1,K2,ICON),K2=1,KM)
-   7    CONTINUE
-        CLOSE(UNIT=71)
-
-      endif
-!
-      call mpi_bcast(GG,KM,MPI_IOR,0,mpi_comm,info)
-      call mpi_bcast(WW,KM,MPI_IOR,0,mpi_comm,info)
-      call mpi_bcast(XK2,MM4*NQ*KFS*KM,MPI_IOR,0,mpi_comm,info)
-
 
       DO 9 M=1,MM4
         TEM4(M)=150.0+FLOAT(M-1)*25.0     !  7 reference temperatures
@@ -470,15 +629,25 @@ c - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
       PRE(KFS)=1.1E5             ! 20 reference pressures
 
       DELTR=0.5
-      
+!     print*,' SK02: g1vbxz OK, me= ', me
+              
+!SK2020Aug11
+      if (skprnt) then
+      print*,'skprnt/g1vbxz: KUS=',KUS,' TUS0(1:KUS)=',TUS0
+      do k=1,kus
+       if(tus0(k).eq.0.) print*,
+     & 'skprnt/g1vbxz: TUS0(',k,')=',TUS0(k)
+      enddo
+      endif
+!
       DO 500 LLR=1,LMR
       DO 500 LLT=1,LMT
-      
+              
         DO 33 K=1,KUS
           TUS(K)=TUS0(K)
           RUS(K)=RUS0(K)*(1.0+DELTR*FLOAT(LLR-2))
   33    CONTINUE
-      
+              
         CALL INTERK(kus,kfs,km,mm4,nq,pre,xk2,pus,xkus)
 
         DO 80 N=1,NQUS
@@ -511,13 +680,13 @@ c - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   90      CONTINUE
           GAMAV(K,LLR,LLT)=GAMAV(K,LLR,LLT)/SUMX1
  100    CONTINUE
-  
+          
  500  CONTINUE
+!     print*,' SK03: g1vbxz OK, me= ', me
 
       END subroutine g1vbxz
 
 c***********************************************************************
-
       subroutine gtoaxz(kus,lmr,gamrt,gamvb,c1rt,c2rt,c1vb,c2vb)
 
 c Sept, 2007: made by Rashid Akmaev from Xun Zhu's code for H2O cooling
@@ -529,7 +698,7 @@ c Sept, 2007: made by Rashid Akmaev from Xun Zhu's code for H2O cooling
       real,intent(out)::  c1rt(kus),c2rt(kus),c1vb(kus),c2vb(kus)
 
       integer:: k
-      
+              
       DO K=1,KUS
       C1RT(K)=(GAMRT(K,3)-GAMRT(K,1))/2.0
       C1VB(K)=(GAMVB(K,3)-GAMVB(K,1))/2.0
@@ -637,8 +806,17 @@ C    Q1 & Q2 = cool-to-space & heat exchange cooling rate in K/day,
 C    ITOP=0 ==> PRE(KM)->0;   ITOP=1 ==> PRE(1)->0.
 CCCCC
       PARAMETER (KMAX=150)
+!SK2020Aug24      PARAMETER (KMAX=149)
       DIMENSION Q1(KM),Q2(KM),RX(KM),PRE(KM),TEM(KM),GAMS(KM)
      & ,STR(KM),WI(IM),GI(IM),GAM1(KMAX,KMAX),BJX(KMAX),H00(KMAX)
+!SK2020Oct3
+      logical, parameter :: skprnt = .false.
+      if (skprnt) then
+      DO K=1,KM
+        IF(TEM(K).EQ.0.) print*,'skprnt/QSINGL:TEM(',K,')=',TEM(K)
+      ENDDO
+      endif
+!   
       KMM=KM-1
       PI=3.14159265
       GRAV1=9.8             ! gravitational constant in m s**(-2)
@@ -811,31 +989,58 @@ c Empirical model of H2O MMR and T at 0-115 km based on Xun's models
      $  2.0576000E+02,  2.0929000E+02,  2.1335000E+02,  2.1808000E+02,
      $  2.2374000E+02,  2.3078000E+02,  2.4045000E+02,  2.5245000E+02,
      $  2.6445000E+02,  2.7645000E+02,  2.8845000E+02,  3.0045000E+02/)
+
+!SK2020Oct3
+      logical, parameter :: skprnt = .false.
 c - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 c Note, in the call from uh2oci the model grid is inversed (going down)
       do l=1,lmy
          xmy(l)=alog(1.e5/pmy(l))
       enddo
 c     print*,'www1',pmy
+!     if (skprnt) print*,'SK:wvrefm: lmy = ',lmy
+!     if (skprnt) print*,'SK:wvrefm: xmy = ',xmy
+!     if(skprnt)print*,'SK:wvrefm: xmy min max ',minval(xmy),maxval(xmy)
+!     if(skprnt)print*,'SK:wvrefm: pmy min max ',minval(pmy),maxval(pmy)
 
 c Determine the first model layer from the top below or about 100 km
-      lh2o=lmy+1
+!SK   lh2o=lmy+1
+      lh2o=lmy
       do l=1,lmy
          if(xmy(l) <= xtop) then
             lh2o=l
             exit
          endif
       enddo
+!SK 2020Aug13  Hard-fix!!
+!     lh2o = 47
+!     print*,' lmy=',lmy, ' lh2o=',lh2o    !SK_2020Aug6
+!     if(skprnt) print*,' lmy=',lmy, ' lh2o=',lh2o
+
+!SK2020Oct3
+      if (skprnt) then
+         write(6,*) 'skprnt1/wvrefm: lh2o > lmy = ',lh2o.gt.lmy
+         write(6,*) 'skprnt1/wvrefm:lh2o,lmy'
+         write(6,'(2i9)') lh2o,lmy
+      endif
 
       if(lh2o > lmy) then
+         write(6,*) 'skprnt2/wvrefm: lh2o > lmy = ',lh2o.gt.lmy
+         write(6,'(2i9)') lh2o,lmy
          write(6,*) '***Warning: Model bottom above H2O cooling region'
          write(6,'(2f8.2)') xmy(lmy),xtop
          write(6,*) '***Cooling rates will be set to 0'
-         return
+           return
       endif
-
+!     if(lh2o <= lmy) then
+!       print*,'SKK:wvrefm:kz0=',kz0,' lh20=',lh2o,' lmy=',lmy
+!     endif
+!SK   2020/July/30  
+!SK   Note: wvmy and tmy corresponds to the intent(out) argument of the
+!SK   subroutine splin1 in co2hc.f. Why initialize wvmy and tmy here? 
       wvmy(:)=0.
       tmy(:)=0.
+
       call splin1(x0(kz0:1:-1),mmr0(kz0:1:-1),
      $     xmy(lh2o),wvmy(lh2o),kz0,lmy+1-lh2o)
       call splin1(x0(kz0:1:-1),tem0(kz0:1:-1),
