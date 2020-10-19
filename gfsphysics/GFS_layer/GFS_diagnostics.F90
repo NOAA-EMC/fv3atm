@@ -4062,6 +4062,7 @@ module GFS_diagnostics
     num = size(IntDiag(1)%abem, dim=2)
     do num = 1, size(IntDiag(1)%abem, dim=2)
       idx = idx + 1
+     if (num < 7) then
       select case (mod(num,3))
         case (0)
           ExtDiag(idx)%name = 'bcem'
@@ -4083,8 +4084,16 @@ module GFS_diagnostics
       end if
 
       ExtDiag(idx)%axes = 2
-      ExtDiag(idx)%unit = 'ug/m2/s'
+      ExtDiag(idx)%unit = 'kg/m2/s'
       ExtDiag(idx)%mod_name = 'gfs_phys'
+     else ! num == 7
+      ExtDiag(idx)%name = 'maod'
+      ExtDiag(idx)%desc = 'MIE AOD'
+      ExtDiag(idx)%axes = 2
+      ExtDiag(idx)%unit = ' '
+      ExtDiag(idx)%mod_name = 'gfs_phys'
+     endif !num < 7
+
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
         ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%abem(:,num)
@@ -4115,7 +4124,7 @@ module GFS_diagnostics
       end select
 
       ExtDiag(idx)%axes = 2
-      ExtDiag(idx)%unit = 'g/m2'
+      ExtDiag(idx)%unit = 'kg/m2'
       ExtDiag(idx)%mod_name = 'gfs_phys'
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks

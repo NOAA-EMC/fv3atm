@@ -178,6 +178,17 @@ SCHEME_FILES = [
     'FV3/ccpp/physics/physics/sfc_ocean.F',
     'FV3/ccpp/physics/physics/sfc_sice.f',
     'FV3/ccpp/physics/physics/tracer_sanitizer.F90',
+    'FV3/ccpp/physics/gsdchem/gsd_chem_seas_wrapper.F90',
+    'FV3/ccpp/physics/gsdchem/gsd_chem_dust_wrapper.F90',
+    'FV3/ccpp/physics/gsdchem/gsd_chem_anthropogenic_wrapper.F90',
+    'FV3/ccpp/physics/gsdchem/gsd_chem_plume_wrapper.F90',
+    'FV3/ccpp/physics/gsdchem/gsd_chem_dmsemis_wrapper.F90',
+    'FV3/ccpp/physics/gsdchem/gsd_chem_gocart_wrapper.F90',
+    'FV3/ccpp/physics/gsdchem/gsd_chem_rad_wrapper.F90',
+    'FV3/ccpp/physics/gsdchem/gsd_chem_drydep_wrapper.F90',
+    'FV3/ccpp/physics/gsdchem/gsd_chem_lsdep_wrapper.F90',
+    'FV3/ccpp/physics/gsdchem/gsd_chem_settling_wrapper.F90',
+    'FV3/ccpp/physics/gsdchem/gsd_chem_diag_wrapper.F90',
     # HAFSFER_HIRES
     'FV3/ccpp/physics/physics/mp_fer_hires.F90',
     # RRTMGP
