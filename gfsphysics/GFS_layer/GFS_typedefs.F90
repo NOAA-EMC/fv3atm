@@ -3840,6 +3840,8 @@ module GFS_typedefs
 !--- microphysical switch
     Model%ncld             = ncld
     Model%imp_physics      = imp_physics
+!--- use effective radii in radiation, used by several microphysics options
+    Model%effr_in          = effr_in
     ! turn off ICCN interpolation when MG2/3 are not used
     if (.not. Model%imp_physics==Model%imp_physics_mg) Model%iccn = 0
 !--- Zhao-Carr MP parameters
@@ -3858,7 +3860,6 @@ module GFS_typedefs
     Model%mg_rhmini        = mg_rhmini
     Model%mg_alf           = mg_alf
     Model%mg_qcmin         = mg_qcmin
-    Model%effr_in          = effr_in
     Model%microp_uniform   = microp_uniform
     Model%do_cldice        = do_cldice
     Model%hetfrz_classnuc  = hetfrz_classnuc
@@ -4719,9 +4720,14 @@ module GFS_typedefs
       Model%nleffr  = 1
       Model%nieffr  = 2
       Model%nseffr  = 3
-      if (Model%me == Model%master) print *,' Using Thompson double moment', &
-                                          ' microphysics',' ltaerosol = ',Model%ltaerosol, &
+      if (.not. Model%effr_in) then
+          print *,' Thompson MP requires effr_in to be set to .true. - job aborted'
+          stop
+      end if
+      if (Model%me == Model%master) print *,' Using Thompson double moment microphysics', &
+                                          ' ltaerosol = ',Model%ltaerosol, &
                                           ' ttendlim =',Model%ttendlim, &
+                                          ' effr_in =',Model%effr_in, &
                                           ' lradar =',Model%lradar, &
                                           ' nsradar_reset =',Model%nsradar_reset, &
                                           ' num_p3d =',Model%num_p3d, &
