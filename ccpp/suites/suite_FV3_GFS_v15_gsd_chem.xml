@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<suite name="FV3_GFS_v15" lib="ccppphys" ver="4">
+<suite name="FV3_GFS_v15_gsd_chem" lib="ccppphys" ver="4">
   <!-- <init></init> -->
   <group name="fast_physics">
     <subcycle loop="1">
@@ -57,6 +57,13 @@
       <scheme>sfc_diag</scheme>
       <scheme>sfc_diag_post</scheme>
       <scheme>GFS_surface_generic_post</scheme>
+      <scheme>gsd_chem_seas_wrapper</scheme>
+      <scheme>gsd_chem_dmsemis_wrapper</scheme>
+      <scheme>gsd_chem_dust_wrapper</scheme>
+      <scheme>gsd_chem_anthropogenic_wrapper</scheme>
+      <scheme>gsd_chem_plume_wrapper</scheme>
+      <scheme>gsd_chem_settling_wrapper</scheme>
+      <scheme>gsd_chem_drydep_wrapper</scheme>
       <scheme>GFS_PBL_generic_pre</scheme>
       <scheme>hedmf</scheme>
       <scheme>GFS_PBL_generic_post</scheme>
@@ -81,7 +88,11 @@
       <scheme>GFS_MP_generic_pre</scheme>
       <scheme>gfdl_cloud_microphys</scheme>
       <scheme>GFS_MP_generic_post</scheme>
+      <scheme>gsd_chem_lsdep_wrapper</scheme>
+      <scheme>gsd_chem_gocart_wrapper</scheme>
+      <scheme>gsd_chem_rad_wrapper</scheme>
       <scheme>maximum_hourly_diagnostics</scheme>
+      <scheme>gsd_chem_diag_wrapper</scheme>
     </subcycle>
   </group>
   <group name="stochastics">
