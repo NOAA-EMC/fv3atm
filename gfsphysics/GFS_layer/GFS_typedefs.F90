@@ -3007,8 +3007,7 @@ module GFS_typedefs
     logical              :: cplflx         = .false.         !< default no cplflx collection
     logical              :: cplwav         = .false.         !< default no cplwav collection
     logical              :: cplwav2atm     = .false.         !< default no cplwav2atm coupling
-    logical              :: cplchm         = .true.          !< default no cplchm collection
-!   logical              :: cplchm         = .false.         !< default no cplchm collection
+    logical              :: cplchm         = .false.         !< default no cplchm collection
     logical              :: cplchm_rad_opt = .false.         !< default no cplchm radiation feedback
 
 !--- integrated dynamics through earth's atmosphere
@@ -3176,8 +3175,7 @@ module GFS_typedefs
     logical              :: ras            = .false.                  !< flag for ras convection scheme
     logical              :: flipv          = .true.                   !< flag for vertical direction flip (ras)
                                                                       !< .true. implies surface at k=1
-    logical              :: trans_trac     = .true.                   !< flag for convective transport of tracers (RAS, CS, or SAMF)
-!   logical              :: trans_trac     = .false.                  !< flag for convective transport of tracers (RAS, CS, or SAMF)
+    logical              :: trans_trac     = .false.                  !< flag for convective transport of tracers (RAS, CS, or SAMF)
     logical              :: old_monin      = .false.                  !< flag for diff monin schemes
     logical              :: cnvgwd         = .false.                  !< flag for conv gravity wave drag
     integer              :: gwd_opt        =  1                       !< flag for configuring gwd scheme
@@ -3763,7 +3761,7 @@ module GFS_typedefs
     Model%cplwav           = cplwav
     Model%cplwav2atm       = cplwav2atm
     Model%cplchm           = cplchm
-    Model%cplchm_rad_opt   = cplchm_rad_opt
+    Model%cplchm_rad_opt   = cplchm_rad_opt .and. cplchm
 
 !--- integrated dynamics through earth's atmosphere
     Model%lsidea           = lsidea
@@ -4230,6 +4228,7 @@ module GFS_typedefs
     Model%ntia             = get_tracer_index(Model%tracer_names, 'ice_aero',   Model%me, Model%master, Model%debug)
     Model%ntchm            = 0
     Model%ntchs            = get_tracer_index(Model%tracer_names, 'so2',        Model%me, Model%master, Model%debug)
+    if(Model%cplchm) then
     Model%ntso2            = get_tracer_index(Model%tracer_names, 'so2',        Model%me, Model%master, Model%debug)
     Model%ntsulf           = get_tracer_index(Model%tracer_names, 'sulf',       Model%me, Model%master, Model%debug)
     Model%ntdms            = get_tracer_index(Model%tracer_names, 'dms',        Model%me, Model%master, Model%debug)
@@ -4250,6 +4249,7 @@ module GFS_typedefs
     Model%ntss4            = get_tracer_index(Model%tracer_names, 'seas4',      Model%me, Model%master, Model%debug)
     Model%ntss5            = get_tracer_index(Model%tracer_names, 'seas5',      Model%me, Model%master, Model%debug)
     Model%ntpp10           = get_tracer_index(Model%tracer_names, 'pp10',       Model%me, Model%master, Model%debug)
+    endif ! cplchm tracers
     if (Model%ntchs > 0) then
       Model%ntchm          = get_tracer_index(Model%tracer_names, 'pp10',       Model%me, Model%master, Model%debug)
       if (Model%ntchm > 0) then
@@ -5324,6 +5324,7 @@ module GFS_typedefs
       print *, ' ntia              : ', Model%ntia
       print *, ' ntchm             : ', Model%ntchm
       print *, ' ntchs             : ', Model%ntchs
+      if(Model%cplchm) then
       print *, ' ntso2             : ', Model%ntso2
       print *, ' ntsulf            : ', Model%ntsulf
       print *, ' ntdms             : ', Model%ntdms
@@ -5344,6 +5345,7 @@ module GFS_typedefs
       print *, ' ntss4             : ', Model%ntss4
       print *, ' ntss5             : ', Model%ntss5
       print *, ' ntpp10            : ', Model%ntpp10
+      endif
       print *, ' fscav             : ', Model%fscav
 #ifdef CCPP
       print *, ' aer_bc_opt        : ', Model%aer_bc_opt
