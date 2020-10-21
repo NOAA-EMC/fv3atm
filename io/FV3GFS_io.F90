@@ -1,3 +1,9 @@
+#define EMI_DATA
+#define EMI2_DATA
+#define FENGSHA_DUST_DATA
+#define FENGSHA_DUST_DATA_INFO
+#define FIRE_OPT_GBBEPx
+#undef  FIRE_OPT_MODIS
 module FV3GFS_io_mod
 
 !-----------------------------------------------------------------------
@@ -75,9 +81,14 @@ module FV3GFS_io_mod
   character(len=32)  :: fn_oro_ss = 'oro_data_ss.nc'
   character(len=32)  :: fn_srf = 'sfc_data.nc'
   character(len=32)  :: fn_phy = 'phy_data.nc'
+  character(len=32)  :: fn_dust= 'dust_data.nc'
+  character(len=32)  :: fn_emi = 'emi_data.nc'
+  character(len=32)  :: fn_emi2= 'emi2_data.nc'
+  character(len=32)  :: fn_gbbepx = 'FIRE_GBBEPx_data.nc'
+  character(len=32)  :: fn_modis  = 'FIRE_MODIS_data.nc'
 
   !--- GFDL FMS netcdf restart data types
-  type(restart_file_type) :: Oro_restart, Sfc_restart, Phy_restart
+  type(restart_file_type) :: Oro_restart, Sfc_restart, Phy_restart, dust_restart, emi_restart, emi2_restart,gbbepx_restart, modis_restart
   type(restart_file_type) :: Oro_ls_restart, Oro_ss_restart
  
   !--- GFDL FMS restart containers
@@ -85,6 +96,9 @@ module FV3GFS_io_mod
   real(kind=kind_phys), allocatable, target, dimension(:,:,:)   :: oro_var2, sfc_var2, phy_var2, sfc_var3ice
   character(len=32),    allocatable,         dimension(:)       :: oro_ls_ss_name
   real(kind=kind_phys), allocatable, target, dimension(:,:,:)   :: oro_ls_var, oro_ss_var
+  character(len=32),    allocatable,         dimension(:)       :: dust_name, emi_name, emi2_name, gbbepx_name, modis_name
+  real(kind=kind_phys), allocatable, target, dimension(:,:,:)   :: dust_var, emi_var, gbbepx_var, modis_var
+  real(kind=kind_phys), allocatable, target, dimension(:,:,:,:) :: emi2_var
   real(kind=kind_phys), allocatable, target, dimension(:,:,:,:) :: sfc_var3, phy_var3
   !--- Noah MP restart containers
   real(kind=kind_phys), allocatable, target, dimension(:,:,:,:) :: sfc_var3sn,sfc_var3eq,sfc_var3zn
@@ -499,6 +513,7 @@ module FV3GFS_io_mod
     integer :: nvar_o2, nvar_s2m, nvar_s2o, nvar_s3
     integer :: nvar_oro_ls_ss
     integer :: nvar_s2mp, nvar_s3mp,isnow
+    integer :: nvar_dust, nvar_emi,nvar_emi2, nvar_gbbepx, nvar_modis
 #ifdef CCPP
     integer :: nvar_s2r
 #endif
@@ -527,6 +542,19 @@ module FV3GFS_io_mod
     nvar_o2  = 19
     nvar_oro_ls_ss = 10
     nvar_s2o = 18
+    if(Model%cplchm) then
+      nvar_dust   = 5
+      nvar_emi    = 10
+      nvar_emi2   = 3
+      nvar_gbbepx = 5
+      nvar_modis  = 13
+    else
+      nvar_dust   = 0
+      nvar_emi    = 0
+      nvar_emi2   = 0
+      nvar_gbbepx = 0
+      nvar_modis  = 0
+    endif
 #ifdef CCPP
     if (Model%lsm == Model%lsm_ruc .and. warm_start) then
       if(Model%rdlai) then
@@ -655,7 +683,255 @@ module FV3GFS_io_mod
     !--- deallocate containers and free restart container
     deallocate(oro_name2, oro_var2)
     call free_restart_type(Oro_restart)
+    if_cplchm: if(Model%cplchm) then
+#ifdef FENGSHA_DUST_DATA
+    if (.not. allocated(dust_name)) then
+    !--- allocate the various containers needed for orography data
+      allocate(dust_name(nvar_dust))
+      allocate(dust_var(nx,ny,nvar_dust))
 
+      dust_name(1)  = 'clay'
+      dust_name(2)  = 'rdrag'
+      dust_name(3)  = 'sand'
+      dust_name(4)  = 'ssm'
+      dust_name(5)  = 'uthr'
+      !--- register the 2D fields
+      do num = 1,nvar_dust
+        var2_p => dust_var(:,:,num)
+        id_restart = register_restart_field(dust_restart, fn_dust, dust_name(num), var2_p, domain=fv_domain)
+      enddo
+      nullify(var2_p)
+    endif
+
+    !--- read new GSD created dust restart/data
+    call mpp_error(NOTE,'reading fengsha dust information from INPUT/dust_data.tile*.nc')
+    call restore_state(dust_restart)
+
+    !nvar_o2 = 14
+    do nb = 1, Atm_block%nblks
+      !--- 2D variables
+      do ix = 1, Atm_block%blksz(nb)
+        i = Atm_block%index(nb)%ii(ix) - isc + 1
+        j = Atm_block%index(nb)%jj(ix) - jsc + 1
+        !--- assign hprime(1:10) and hprime(15:24) with new oro stat data
+        Sfcprop(nb)%dust_in(ix,1)  = dust_var(i,j,1)
+        Sfcprop(nb)%dust_in(ix,2)  = dust_var(i,j,2)
+        Sfcprop(nb)%dust_in(ix,3)  = dust_var(i,j,3)
+        Sfcprop(nb)%dust_in(ix,4)  = dust_var(i,j,4)
+        Sfcprop(nb)%dust_in(ix,5)  = dust_var(i,j,5)
+      enddo
+    enddo
+
+    call free_restart_type(dust_restart)
+#endif
+
+#ifdef FENGSHA_DUST_DATA_INFO
+! print diag info
+    if (Model%me == Model%master ) then
+      print*, 'isc, iec, jsc, jec =', isc, iec, jsc, jec
+      nb = 1
+      print*, 'Atm_block%blksz(1) =', Atm_block%blksz(nb)
+      i_start=Atm_block%index(nb)%ii(1) - isc + 1; j_start=Atm_block%index(nb)%jj(1) - jsc + 1
+      print*, 'i,j start=',i_start, j_start
+      num = Atm_block%blksz(nb)
+      i_end=Atm_block%index(nb)%ii(num) - isc + 1; j_end=Atm_block%index(nb)%jj(num) - jsc + 1
+      print*, 'i,j end=', i_end, j_end
+      do i = 1, 5
+        print*, 'min/max dust_in(:,i) = ',minval(Sfcprop(nb)%dust_in(:,i)),maxval(Sfcprop(nb)%dust_in(:,i)),i
+        print*, 'min/max dust_var(:,:,i)=',minval(dust_var(i_start:i_end,j_start:j_end,i)),&
+                 maxval(dust_var(i_start:i_end,j_start:j_end,i)),i
+      enddo
+    endif
+
+    deallocate(dust_name, dust_var)
+#endif
+
+#ifdef EMI_DATA
+    if (.not. allocated(emi_name)) then
+    !--- allocate the various containers needed for orography data
+      allocate(emi_name(nvar_emi))
+      allocate(emi_var(nx,ny,nvar_emi))
+
+      emi_name(1)  = 'e_bc'
+      emi_name(2)  = 'e_oc'
+      emi_name(3)  = 'e_sulf'
+      emi_name(4)  = 'e_pm_25'
+      emi_name(5)  = 'e_so2'
+      emi_name(6)  = 'e_pm_10'
+      emi_name(7)  = 'dm0'
+      emi_name(8)  = 'ero1'
+      emi_name(9)  = 'ero2'
+      emi_name(10) = 'ero3'
+      !--- register the 2D fields
+      do num = 1,nvar_emi
+        var2_p => emi_var(:,:,num)
+        id_restart = register_restart_field(emi_restart, fn_emi, emi_name(num), var2_p, domain=fv_domain)
+      enddo
+      nullify(var2_p)
+    endif
+
+    !--- read new GSD created emi restart/data
+    call mpp_error(NOTE,'reading emi information from INPUT/emi_data.tile*.nc')
+    call restore_state(emi_restart)
+
+    !nvar_o2 = 14
+    do nb = 1, Atm_block%nblks
+      !--- 2D variables
+      do ix = 1, Atm_block%blksz(nb)
+        i = Atm_block%index(nb)%ii(ix) - isc + 1
+        j = Atm_block%index(nb)%jj(ix) - jsc + 1
+        !--- assign hprime(1:10) and hprime(15:24) with new oro stat data
+        Sfcprop(nb)%emi_in(ix,1)  = emi_var(i,j,1)
+        Sfcprop(nb)%emi_in(ix,2)  = emi_var(i,j,2)
+        Sfcprop(nb)%emi_in(ix,3)  = emi_var(i,j,3)
+        Sfcprop(nb)%emi_in(ix,4)  = emi_var(i,j,4)
+        Sfcprop(nb)%emi_in(ix,5)  = emi_var(i,j,5)
+        Sfcprop(nb)%emi_in(ix,6)  = emi_var(i,j,6)
+        Sfcprop(nb)%emi_in(ix,7)  = emi_var(i,j,7)
+        Sfcprop(nb)%emi_in(ix,8)  = emi_var(i,j,8)
+        Sfcprop(nb)%emi_in(ix,9)  = emi_var(i,j,9)
+        Sfcprop(nb)%emi_in(ix,10) = emi_var(i,j,10)
+      enddo
+    enddo
+
+    call free_restart_type(emi_restart)
+#endif
+
+#ifdef EMI2_DATA
+    if (.not. allocated(emi2_name)) then
+    !--- allocate the various containers needed for orography data
+      allocate(emi2_name(nvar_emi2))
+      allocate(emi2_var(nx,ny,64,nvar_emi2))
+
+      emi2_name(1)  = 'h2o2'
+      emi2_name(2)  = 'no3'
+      emi2_name(3)  = 'oh'
+      !--- register the 3D fields
+      mand = .false.
+      do num = 1,nvar_emi2
+        var3_p2 => emi2_var(:,:,:,num)
+        id_restart = register_restart_field(emi2_restart, fn_emi2, emi2_name(num), var3_p2, domain=fv_domain,mandatory=mand)
+      enddo
+      nullify(var3_p2)
+    endif
+
+    !--- read new GSD created emi2 restart/data
+    call mpp_error(NOTE,'reading emi2 information from INPUT/emi2_data.tile*.nc')
+    call restore_state(emi2_restart)
+
+    do nb = 1, Atm_block%nblks
+      !--- 3D variables
+      do ix = 1, Atm_block%blksz(nb)
+        i = Atm_block%index(nb)%ii(ix) - isc + 1
+        j = Atm_block%index(nb)%jj(ix) - jsc + 1
+        !--- assign hprime(1:10) and hprime(15:24) with new oro stat data
+        do k = 1, 64
+          Sfcprop(nb)%emi2_in(ix,k,1)  = emi2_var(i,j,k,1)
+          Sfcprop(nb)%emi2_in(ix,k,2)  = emi2_var(i,j,k,2)
+          Sfcprop(nb)%emi2_in(ix,k,3)  = emi2_var(i,j,k,3)
+        enddo
+      enddo
+    enddo
+
+    call free_restart_type(emi2_restart)
+#endif 
+
+#ifdef FIRE_OPT_GBBEPx
+    if (.not. allocated(gbbepx_name)) then
+    !--- allocate the various containers needed for orography data
+      allocate(gbbepx_name(nvar_gbbepx))
+      allocate(gbbepx_var(nx,ny,nvar_gbbepx))
+
+      gbbepx_name(1)  = 'ebu_bc'
+      gbbepx_name(2)  = 'ebu_oc'
+      gbbepx_name(3)  = 'ebu_pm_25'
+      gbbepx_name(4)  = 'ebu_so2'
+      gbbepx_name(5)  = 'ebu_frp'
+      !--- register the 2D fields
+      do num = 1,nvar_gbbepx
+        var2_p => gbbepx_var(:,:,num)
+        id_restart = register_restart_field(gbbepx_restart, fn_gbbepx, gbbepx_name(num), var2_p, domain=fv_domain)
+      enddo
+      nullify(var2_p)
+    endif
+
+    !--- read new GSD created gbbepx restart/data
+    call mpp_error(NOTE,'reading gbbepx information from INPUT/FIRE_GBBEPx_data.tile*.nc')
+    call restore_state(gbbepx_restart)
+
+    !nvar_o2 = 14
+    do nb = 1, Atm_block%nblks
+      !--- 2D variables
+      do ix = 1, Atm_block%blksz(nb)
+        i = Atm_block%index(nb)%ii(ix) - isc + 1
+        j = Atm_block%index(nb)%jj(ix) - jsc + 1
+        !--- assign hprime(1:10) and hprime(15:24) with new oro stat data
+        Sfcprop(nb)%fire_GBBEPx(ix,1)  = gbbepx_var(i,j,1)
+        Sfcprop(nb)%fire_GBBEPx(ix,2)  = gbbepx_var(i,j,2)
+        Sfcprop(nb)%fire_GBBEPx(ix,3)  = gbbepx_var(i,j,3)
+        Sfcprop(nb)%fire_GBBEPx(ix,4)  = gbbepx_var(i,j,4)
+        Sfcprop(nb)%fire_GBBEPx(ix,5)  = gbbepx_var(i,j,5)
+      enddo
+    enddo
+
+    call free_restart_type(gbbepx_restart)
+#endif
+
+#ifdef FIRE_OPT_MODIS
+    if (.not. allocated(modis_name)) then
+    !--- allocate the various containers needed for orography data
+      allocate(modis_name(nvar_modis))
+      allocate(modis_var(nx,ny,nvar_modis))
+
+      modis_name(1)  = 'ebu_bc'
+      modis_name(2)  = 'ebu_oc'
+      modis_name(3)  = 'ebu_pm_25'
+      modis_name(4)  = 'ebu_so2'
+      modis_name(5)  = 'ebu_pm_10'
+      modis_name(6)  = 'ebu_plume1'
+      modis_name(7)  = 'ebu_plume2'
+      modis_name(8)  = 'ebu_plume3'
+      modis_name(9)  = 'ebu_plume4'
+      modis_name(10) = 'ebu_plume5'
+      modis_name(11) = 'ebu_plume6'
+      modis_name(12) = 'ebu_plume7'
+      modis_name(13) = 'ebu_plume8'
+      !--- register the 2D fields
+      do num = 1,nvar_modis
+        var2_p => modis_var(:,:,num)
+        id_restart = register_restart_field(modis_restart, fn_modis, modis_name(num), var2_p, domain=fv_domain)
+      enddo
+      nullify(var2_p)
+    endif
+
+    !--- read new GSD created modis restart/data
+    call mpp_error(NOTE,'reading modis information from INPUT/FIRE_GBBEPx_data.tile*.nc')
+    call restore_state(modis_restart)
+
+    do nb = 1, Atm_block%nblks
+      !--- 2D variables
+      do ix = 1, Atm_block%blksz(nb)
+        i = Atm_block%index(nb)%ii(ix) - isc + 1
+        j = Atm_block%index(nb)%jj(ix) - jsc + 1
+        !--- assign hprime(1:10) and hprime(15:24) with new oro stat data
+        Sfcprop(nb)%fire_MODIS(ix,1)  = modis_var(i,j,1)
+        Sfcprop(nb)%fire_MODIS(ix,2)  = modis_var(i,j,2)
+        Sfcprop(nb)%fire_MODIS(ix,3)  = modis_var(i,j,3)
+        Sfcprop(nb)%fire_MODIS(ix,4)  = modis_var(i,j,4)
+        Sfcprop(nb)%fire_MODIS(ix,5)  = modis_var(i,j,5)
+        Sfcprop(nb)%fire_MODIS(ix,6)  = modis_var(i,j,6)
+        Sfcprop(nb)%fire_MODIS(ix,7)  = modis_var(i,j,7)
+        Sfcprop(nb)%fire_MODIS(ix,8)  = modis_var(i,j,8)
+        Sfcprop(nb)%fire_MODIS(ix,9)  = modis_var(i,j,9)
+        Sfcprop(nb)%fire_MODIS(ix,10) = modis_var(i,j,10)
+        Sfcprop(nb)%fire_MODIS(ix,11) = modis_var(i,j,11)
+        Sfcprop(nb)%fire_MODIS(ix,12) = modis_var(i,j,12)
+        Sfcprop(nb)%fire_MODIS(ix,13) = modis_var(i,j,13)
+      enddo
+    enddo
+    call free_restart_type(modis_restart)
+#endif
+    endif if_cplchm
 #ifdef CCPP
     !--- Modify/read-in additional orographic static fields for GSL drag suite 
     if (Model%gwd_opt==3 .or. Model%gwd_opt==33) then
