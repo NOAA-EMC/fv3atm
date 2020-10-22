@@ -940,7 +940,7 @@ module module_physics_driver
 !-------------------------------------------------------------------------------
 !!!!!   call ideaca_init(prsilvl, levs+1)
 !!!!!   call ideaca_init(Statein%prsi(i,:),levs+1)
-        call ideaca_init(Statein%prsi(imhf,:),levs+1)
+!       call ideaca_init(Statein%prsi(imhf,:),levs+1)
 !sk   enddo
       if (lprnt) write(6,*)  &
          ' in GFS_physics_driver: <-- gravco2; co2cin; ideaca_init, me=',me
@@ -3419,7 +3419,7 @@ module module_physics_driver
 
 #ifdef IDEA_PHYS
 !     if (Model%lsidea) then            ! idea convective adjustment
-        call ideaca_up(Statein%prsi,Stateout%gt0,ix,im,levs+1)
+!       call ideaca_up(Statein%prsi,Stateout%gt0,ix,im,levs+1)
 !     endif
 #endif
 
