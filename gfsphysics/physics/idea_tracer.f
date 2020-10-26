@@ -1,128 +1,226 @@
+! Apr 06 2012    Henry Juang, initial implement for nems
+! Oct 20 2015    Weiyu Yang,  add f10.7 inputted data.
+! Oct 15 2016    VAY, put f10.7 as a parameter
+! Nov    2016    Correction of JO2 and oxygen chemistry
+! September 2017 Weiyu Yang, add IPE back coipling WAM code.
+! October 2017   Rashid Akmaev, eddy mixing, corrections and clean-up
+! July 2020      Sajal Kar, split idea_tracer_init into (init & pre)
+! .._pre
+!-----------------------------------------------------------------------
+
       module idea_tracer_mod
-!-----------------------------------------------------------------------
-! hold jprofile
-! Apr 06 2012   Henry Juang, initial implement for nems
-! Oct 20 2015   Weiyu Yang,  add f10.7 inputted data.
-!-----------------------------------------------------------------------
+! hold jprofile-old; oh-ho2 global profiles
+
       implicit none
-!hmhj save
-      real, allocatable::  jj(:) 
+      real, allocatable::  jj(:)
+      real, allocatable::  oh(:), ho2(:)
+      real, allocatable:: vmr_glob(:,:)     !(levs, nvmr)
       end module idea_tracer_mod
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       subroutine idea_tracer_init(levs)
-      use idea_tracer_mod
+
+      use idea_tracer_mod,    only :   jj, oh, ho2, vmr_glob
+      use idea_tracers_input, only : init_tracer_constants,
+     &                               WAM_GLOBAL_TRACERS
+      use idea_composition,   only : mpi_me, mpi_master
+!SK   use IDEA_MPI_def,       only : mpi_WAM_quit
+
       implicit none
-      integer, intent(in):: levs !number of pres levels
+      real, parameter :: f107=100.  ! any value of f107 to init 1D-JJs
+                                    ! now updated with time...JO2-3D
+      integer, parameter :: nvmr=15 !  15-global vertical arrays returned by WAM_GLOBAL_TRACERS
+      integer, intent(in):: levs    !number of pres levels
+
       allocate (jj(levs))
-      call jprofile(levs,jj)
-      return
-      end subroutine
-!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-      subroutine idea_tracer(im,ix,levs,ntrac,ntrac_i,grav,prsi,prsl,   &
-     &adt,q,dtp,n1,n2,n3,n,rho,am)
+      allocate (oh(levs), ho2(levs))
+      allocate (vmr_glob(levs, nvmr))
+
+!SK   call jprofile(levs,f107,jj)    ! old 1D-Jo2 profile
+!SK   call hprofile(levs,oh,ho2)     ! 1D [oh-ho2]  profiles 
+      call init_tracer_constants     
+      if (mpi_me.eq.mpi_master)
+     & print *, ' idea_tracer_init --> init_tracer_constants'
+
+      call WAM_GLOBAL_TRACERS(levs, nvmr, vmr_glob)
+!SK   print *, ' VAY WAM_GLOBAL_TRACERS INIT'
+      if (mpi_me.eq.mpi_master)
+     & print *, ' idea_tracer_init --> WAM_GLOBAL_TRACERS'
+!SK   return
+      end subroutine idea_tracer_init
 !
-      use physcons, only : amo2=>con_amo2,avgd => con_avgd,             &
-     &                     amo3 => con_amo3,amh2o => con_amw
-      use idea_composition, only : bz,amo,amn2
-      use idea_tracer_mod
+      subroutine idea_tracer_pre(levs)
+
+      use idea_tracer_mod,    only :   jj, oh, ho2, vmr_glob
+      use idea_tracers_input, only :
+     &    jprofile, hprofile
+!SK  &   ,init_tracer_constants,  WAM_GLOBAL_TRACERS
+!SK   use IDEA_MPI_def,       only : mpi_WAM_quit
+
+      implicit none
+      real, parameter :: f107=100.  ! any value of f107 to init 1D-JJs
+                                    ! now updated with time...JO2-3D
+      integer, parameter :: nvmr=15 !  15-global vertical arrays returned by WAM_GLOBAL_TRACERS
+      integer, intent(in):: levs    !number of pres levels
+
+!SK   allocate (jj(levs))
+!SK   allocate (oh(levs), ho2(levs))
+!SK   allocate (vmr_glob(levs, nvmr))
+
+      call jprofile(levs,f107,jj)    ! old 1D-Jo2 profile
+      call hprofile(levs,oh,ho2)     ! 1D [oh-ho2]  profiles 
+!SK   call init_tracer_constants     
+
+!SK   call WAM_GLOBAL_TRACERS(levs, nvmr, vmr_glob)
+!SK   print *, ' VAY WAM_GLOBAL_TRACERS INIT'
+!SK   return
+      end subroutine idea_tracer_pre
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+      subroutine idea_tracer(im,ix,levs,ntrac,ntrac_i,grav,prsi,prsl,   
+     &  adt,q,dtp,n1,n2,ozn, n3,n,rho,am, am29, 
+     &  cospass,dayno,zg,f107,f107d,me, go2dr, plow, phigh, xpk_low,
+     &  xpk_high)
+
+      use physcons, only          : avgd => con_avgd             
+      use idea_composition, only  : bz,amo,amn2, amo2, amo3, amh2o
+      use idea_composition, only  : rbz, rmo, rmo2, rmn2, rmh2o,rmo3
+      use idea_tracer_mod,   only : jj
+
+      use module_IPE_to_WAM, only: lowst_ipe_level, ipe_to_wam_coupling
+
       implicit none
 ! Argument
-      integer, intent(in) :: im    ! number of data points in up,dudt(first dim)
-      integer, intent(in) :: ix    ! max data points in fields
-      integer, intent(in) :: levs  ! number of pressure levels
-      integer, intent(in) :: ntrac ! number of tracer (total)
-      integer, intent(in) :: ntrac_i ! number of tracer add by IDEA
-      real, intent(in)    :: prsi(ix,levs+1) ! interface pressure in KPa
-      real, intent(in)    :: prsl(ix,levs)   ! layer pressure in KPa
+      integer, intent(in) :: me              ! current PE
+      integer, intent(in) :: im              ! number of long data points
+      integer, intent(in) :: ix              ! max data points in fields
+      integer, intent(in) :: levs            ! number of pressure levels
+      integer, intent(in) :: ntrac           ! number of tracer (total)
+      integer, intent(in) :: ntrac_i         ! number of tracer add by IDEA
+      integer, intent(in) :: dayno           ! calendar day
+      real, intent(in)    :: cospass(im)     ! cos zenith angle
+      real, intent(in)    :: zg(ix,levs)     !layer height (m)
+      real, intent(in)    :: f107, f107d     ! variable F107 to recomput JJ
+      real, intent(in)    :: prsi(ix,levs+1) ! interface pressure in Pa
+      real, intent(in)    :: prsl(ix,levs)   ! layer pressure in Pa
       real, intent(in)    :: grav(ix,levs)   ! (m/s2)
-      real, intent(in)    :: adt(ix,levs)   ! input  temp at dt=0
-      real, intent(in)    :: dtp   ! time step in second
+      real, intent(in)    :: adt(ix,levs)    ! input  temp 
+      real, intent(in)    :: dtp             ! time step in second
+      real, intent(in), dimension(ix)    :: xpk_low, xpk_high
+      integer,intent(in), dimension(ix) :: plow, phigh
+      real, intent(in)    :: go2dr(ix, lowst_ipe_level:levs)
       real, intent(inout) :: q(ix,levs,ntrac)   ! input output tracer
-      real, intent(out)   :: n1(ix,levs)   ! number density of o (/cm3)
-      real, intent(out)   :: n2(ix,levs)   ! number density of o2 (/cm3)
-      real, intent(out)   :: n3(ix,levs)   ! number density of n2 (/cm3)
-      real, intent(out)   :: n(ix,levs)   ! total number density (/cm3)
-      real, intent(out)   :: rho(ix,levs)   ! density of  (kg/m3)
-      real, intent(out)   :: am(ix,levs)   ! avg mass of mix  (kg)
+      real, intent(out)   :: n1(ix,levs)     ! number density of o (/m3)
+      real, intent(out)   :: n2(ix,levs)     ! number density of o2 (/m3)
+      real, intent(out)   :: ozn(ix,levs)    ! number density of o2 (/m3)
+      real, intent(out)   :: n3(ix,levs)     ! number density of n2 (/m3)
+      real, intent(out)   :: n(ix,levs)      ! total number density (/m3)
+      real, intent(out)   :: rho(ix,levs)    ! density of  (kg/m3)
+      real, intent(out)   :: am(ix,levs)     ! avg mass of mix  (kg)
+      real, intent(out)   :: am29(ix,levs)   ! avg mass of air 28.84 => 16.
 ! local argument
-      real dq1(ix,levs,ntrac_i),dq2(ix,levs,ntrac_i),mh2o,mo3,          &
-     &qin(ix,levs,ntrac_i), mo,mo2,mn2,qsumo(ix,levs)
+      real ::  dq1(ix,levs,ntrac_i),dq2(ix,levs,ntrac_i),
+     &         dq3(ix,levs,ntrac_i)
+      real ::  mh2o,mo3, mo,mo2,mn2        
+      real ::  qin(ix,levs,ntrac_i)
+      real ::  qn2
       integer i,k,in
-!
+       real :: Jrates_O2(ix, levs)            ! O2 dissociation rate
+
+!     Two tracers added by IDEA, O and O2
       do in=1,ntrac_i
         do i=1,im
           do k=1,levs
-            qin(i,k,in)=max(q(i,k,ntrac-ntrac_i+in),0.)
+            qin(i,k,in)=q(i,k,ntrac-ntrac_i+in)
           enddo
         enddo
       enddo
+
+! mean mass, mass and number densities
+!     here n,n1,n2 in /m3 , rho in kg/m3
       do i=1,im
         do k=1,levs
-          qsumo(i,k)=q(i,k,1)+q(i,k,2)
-        enddo
-      enddo
-! change unit from g/mol to kg
-      mo=amo*1.e-3/avgd
-      mo2=amo2*1.e-3/avgd
-      mn2=amn2*1.e-3/avgd
-      mh2o=amh2o*1.e-3/avgd
-      mo3=amo3*1.e-3/avgd
-! at layer , here n,n1,n2 unit is /m3 , rho is in kg/m3
-      do i=1,im
-        do k=1,levs
-          am(i,k)=1./(qin(i,k,1)/mo+qin(i,k,2)/mo2+q(i,k,1)/mh2o+       &
-     & q(i,k,2)/mo3+(1.-qin(i,k,1)-qin(i,k,2)-qsumo(i,k))/mn2)
-!         am(i,k)=1./(qin(i,k,1)/mo+qin(i,k,2)/mo2+                     &
-!    &              (1.-qin(i,k,1)-qin(i,k,2))/mn2)
-          n(i,k)=prsl(i,k)*1000./(bz*adt(i,k))
-          n1(i,k)=qin(i,k,1)*am(i,k)*n(i,k)/mo
-          n2(i,k)=qin(i,k,2)*am(i,k)*n(i,k)/mo2
-!         rho(i,k)=n1(i,k)*mo+n2(i,k)*mo2+(n(i,k)-n1(i,k)-n2(i,k))*mn2
+           qn2=1.-q(i,k,1)-q(i,k,2)-q(i,k,4)-q(i,k,5)
+
+! mean molecular mass of gaseous tracers
+           am(i,k)=1./(qin(i,k,1)*rmo+qin(i,k,2)*rmo2+q(i,k,1)*rmh2o+       
+     &          q(i,k,2)*rmo3+qn2*rmn2)
+
+! total number density and mass density
+          n(i,k)=rbz*prsl(i,k)/adt(i,k)
           rho(i,k)=am(i,k)*n(i,k)
+
+! partial number densities for radiation and chemistry,
+!     make sure non-negative
+          n1(i,k)=max(qin(i,k,1)*rho(i,k)*rmo,0.)
+          n2(i,k)=max(qin(i,k,2)*rho(i,k)*rmo2,0.)
+          n3(i,k) =max(qn2*rho(i,k)*rmn2,0.)
+          ozn(i,k)= max(q(i,k,2)*rho(i,k)*rmo3,0.)
         enddo
       enddo
-!
-      call idea_tracer_m(im,ix,levs,ntrac_i,grav,prsi,prsl,adt,dtp,     &
-     &qin,am,dq1)
-      call idea_tracer_c(im,ix,levs,ntrac_i,adt,dtp,jj,n1,n2,n,rho,     &
-     &qin,dq2)
-!     print*,'www5',q(1:im,levs,4),dq1(1:im,levs,1),dq2(1:im,levs,1)
-!     print*,'www5',dq1(1:im,levs,1),adt(1:im,levs)
+
+! Eddy mixing
+      call idea_tracer_eddy(im,ix,levs,ntrac_i,grav,prsi,prsl,rho,dtp,
+     &     qin,dayno,dq3)
+
+! Mutual molecular diffusion of major thermospheric species O, O2, N2
+      call idea_tracer_m(im,ix,levs,ntrac_i,grav,prsi,prsl,adt,dtp,     
+     &     qin,am,dq1)
+
+! O2 dissociation rate
+      call idea_dissociation_jo2(im,ix,levs,adt,cospass,n1,n2, ozn, n3,
+     &          dayno,zg,grav, f107, f107d, Jrates_O2)
+
+! Merge the  IPE back coupling WAM variable arrays into WAM.
+      IF (ipe_to_wam_coupling) THEN
+        call idea_merge_ipe_to_wam(GO2DR, jrates_O2,
+     &    im, ix, levs, lowst_ipe_level, prsl, plow, phigh,
+     &    xpk_low, xpk_high)
+      END IF
+
+! Oxygen chemistry + ad hoc HOx sinks of O
+      call idea_tracer_c(im,ix,levs,ntrac_i,adt,dtp,Jrates_O2,
+     &     n1,n2,n,rho, qin,dq2)
+
+! Update mmr of O and O2 due to mixing, diffusion, and chemistry
       do in=1,ntrac_i
         do i=1,im
           do k=1,levs
-            q(i,k,in+ntrac-ntrac_i)=q(i,k,in+ntrac-ntrac_i)+            &
-     &        dq1(i,k,in)+dq2(i,k,in)
-            q(i,k,in+ntrac-ntrac_i)=max(q(i,k,in+ntrac-ntrac_i),0.)
+            q(i,k,in+ntrac-ntrac_i)=q(i,k,in+ntrac-ntrac_i)+            
+     &        dq1(i,k,in)  +dq2(i,k,in) + dq3(i,k,in)
           enddo
         enddo
       enddo
-! change n unit from /m3 to /cm3 to use in dissipation and solar_heating
+
+! Update number densities (mass density is conserved) and mean mass
       do i=1,im
-        do k=1,levs
-          n1(i,k)=n1(i,k)*1.e-6
-          n2(i,k)=n2(i,k)*1.e-6
-          n(i,k)=n(i,k)*1.e-6
-          n3(i,k)=n(i,k)-n1(i,k)-n2(i,k)
-        enddo
+         do k=1,levs
+            qn2=1.-q(i,k,1)-q(i,k,2)-q(i,k,4)-q(i,k,5)
+            am(i,k)=1./(qin(i,k,1)*rmo+qin(i,k,2)*rmo2+q(i,k,1)*rmh2o+       
+     &           q(i,k,2)*rmo3+qn2*rmn2)
+            n1(i,k)=max(qin(i,k,1)*rho(i,k)*rmo,0.)
+            n2(i,k)=max(qin(i,k,2)*rho(i,k)*rmo2,0.)
+            n3(i,k) =max(qn2*rho(i,k)*rmn2,0.)
+            ozn(i,k)= max(q(i,k,2)*rho(i,k)*rmo3,0.)
+         enddo
       enddo
+         am29 = am * 1.e3 * avgd
+
       return
       end
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc     
-      subroutine idea_tracer_m(im,ix,levs,ntrac_i,grav,prsi,prsl,adt,   &
+
+      subroutine idea_tracer_m(im,ix,levs,ntrac_i,grav,prsi,prsl,adt,   
      &dtp,qin,am,dq)
+
+! Calculate tracer changes by mutual molecular diffusion of
+!     major thermospheric species O, O2, N2
+! 2006 Rashid Akmaev and Fei Wu
 !-----------------------------------------------------------------------
-!
-! calaulate tracer changes caused by molecular diffusion
-!
-!-----------------------------------------------------------------------
-      use physcons, only :rgas=>con_rgas, amo2=>con_amo2,               &
+      use physcons,  only :rgas=>con_rgas,            
      &               avgd => con_avgd
       use machine, only : kind_phys
-      use idea_composition
+      use idea_composition, only:  amo, amo2, amn2, bz, rbz
       implicit none
 ! Argument
-      integer, intent(in) :: im    ! number of data points in up,dudt(first dim)
+      integer, intent(in) :: im    ! number of long data points in fields
       integer, intent(in) :: ix    ! max data points in fields
       integer, intent(in) :: levs  ! number of pressure levels
       integer, intent(in) :: ntrac_i ! number of tracer add by IDEA
@@ -138,8 +236,8 @@
       real n1_i(levs+1),n2_i(levs+1),n3_i(levs+1),n_i(levs+1)
       real t_i(levs+1),am_i(levs+1),qout(ix,levs,ntrac_i)
       real beta(2,2,levs+1),a(2,2,levs),b(2,2,levs),c(2,2,levs)
-      real ggg(2,2),ee(2,2,levs+1),f(2,levs+1),                         &
-     &     d12,d13,d23,a12,a13,a23,s12,s13,s23,mo,mo2,mn2,              &
+      real ggg(2,2),ee(2,2,levs+1),f(2,levs+1),                         
+     &     d12,d13,d23,a12,a13,a23,s12,s13,s23,mo,mo2,mn2,              
      &     dp1(levs),dp1_i(levs+1)
       real partb_i(levs+1),parta(levs),hold1,dtp1,hold2
       integer k,i,kk,kk1,in
@@ -151,7 +249,7 @@
       a12=9.69e18
       a13=9.69e18
       a23=8.3e18
-c
+
       s12=0.774
       s13=0.774
       s23=0.724
@@ -179,44 +277,32 @@ c
         do k=2,levs
           t_i(k)=(adt(i,k-1)+adt(i,k))*.5
           am_i(k)=.5*(am(i,k-1)+am(i,k))
-          n_i(k)=prsi(i,k)*1000./bz/t_i(k)
-          n1_i(k)=.5*(qin(i,k,1)+qin(i,k-1,1))*am_i(k)*n_i(k)/mo
-          n2_i(k)=.5*(qin(i,k,2)+qin(i,k-1,2))*am_i(k)*n_i(k)/mo2
-          n3_i(k)=n_i(k)-n1_i(k)-n2_i(k)
+          n_i(k)=prsi(i,k)/bz/t_i(k) 
+          n1_i(k)=max(0.,
+     &         .5*(qin(i,k,1)+qin(i,k-1,1))*am_i(k)*n_i(k)/mo)
+          n2_i(k)=max(0.,
+     &         .5*(qin(i,k,2)+qin(i,k-1,2))*am_i(k)*n_i(k)/mo2)
+          n3_i(k)=max(0.,n_i(k)-n1_i(k)-n2_i(k))
         enddo
-       if(i.eq.6) then
-!      print*,'www6-n1_i',i,n1_i(2:levs)
-!      print*,'www6-n_i',i,n_i(2:levs)
-!      print*,'www6-t_i',i,t_i(2:levs)
-!      print*,'www6-am_i',i,am_i(2:levs)
-       endif
-!printout
-!       if(i.eq.1) then
-!         do k=1,levs
-!           print'(i3,6e11.4,2f5.0)',k,prsi(1,k),prsl(1,k),coef_i(k,1), &
-!    &coef_i(k,2),cp(k),hs_i(k),t_i(k),up(i,k,3)
-!         enddo
-!        endif
+
 ! calculate beta at interface pressure
         do k=2,levs
           d12=a12*t_i(k)**(s12)
           d13=a13*t_i(k)**(s13)
           d23=a23*t_i(k)**(s23)
           hold1=1./(n1_i(k)*d23+n2_i(k)*d13+n3_i(k)*d12)
-          beta(1,1,k)=hold1*d13*mo*(n1_i(k)*mn2*d23+                    &
+          beta(1,1,k)=hold1*d13*mo*(n1_i(k)*mn2*d23+                    
      &            (n2_i(k)*mo2+n3_i(k)*mn2)*d12)
-          beta(2,2,k)=hold1*d23*mo2*(n2_i(k)*mn2*d13+                   &
+          beta(2,2,k)=hold1*d23*mo2*(n2_i(k)*mn2*d13+                   
      &            (n1_i(k)*mo+n3_i(k)*mn2)*d12)
           beta(1,2,k)=hold1*d23*mo*n1_i(k)*(mn2*d13-mo2*d12)
           beta(2,1,k)=hold1*d13*mo2*n2_i(k)*(mn2*d23-mo*d12)
-!      if(i.eq.6) print*,'www6-beta',i,k,beta(1,1,k),hold1,n1_i(k),     &
-!    & n2_i(k),n3_i(k),d12,d13,d23,t_i(k),mo2,mn2
         enddo
-!      if(i.eq.6) print*,'www6-beta',i,beta(1,1,2:levs)
+
 ! solve tridiagonal problem
         do k=1,levs
           dp1(k)=1./(prsi(i,k)-prsi(i,k+1))
-          parta(k)=dtp*grav(i,k)*.001*dp1(k)/bz
+          parta(k)=dtp*grav(i,k)*dp1(k)/bz
         enddo
         do k=2,levs
           dp1_i(k)=1./(prsl(i,k-1)-prsl(i,k))
@@ -230,7 +316,6 @@ c
           a(2,1,k)=hold1*beta(2,1,k)*(hold2/mo-.5)
           a(2,2,k)=hold1*beta(2,2,k)*(hold2/mo2-.5)
          enddo
-!      print*,'www6-a',i,a(1:2,1:2,levs-3:levs)
         do k=1,levs-1
           hold1=parta(k)*partb_i(k+1)
           hold2=am(i,k+1)*prsl(i,k+1)*dp1_i(k+1)
@@ -242,13 +327,13 @@ c
         do k=2,levs-1
           hold1=am(i,k)*prsl(i,k)*dp1_i(k+1)
           hold2=am(i,k)*prsl(i,k)*dp1_i(k)
-      b(1,1,k)=1.+parta(k)*(partb_i(k+1)*beta(1,1,k+1)*(hold1/mo-.5)    &
+      b(1,1,k)=1.+parta(k)*(partb_i(k+1)*beta(1,1,k+1)*(hold1/mo-.5)    
      &                    +partb_i(k)*beta(1,1,k)*(hold2/mo+.5))
-      b(2,2,k)=1.+parta(k)*(partb_i(k+1)*beta(2,2,k+1)*(hold1/mo2-.5)   &
+      b(2,2,k)=1.+parta(k)*(partb_i(k+1)*beta(2,2,k+1)*(hold1/mo2-.5)   
      &                    +partb_i(k)*beta(2,2,k)*(hold2/mo2+.5))
-      b(1,2,k)=parta(k)*(partb_i(k+1)*beta(1,2,k+1)*(hold1/mo2-.5)      &
+      b(1,2,k)=parta(k)*(partb_i(k+1)*beta(1,2,k+1)*(hold1/mo2-.5)      
      &                    +partb_i(k)*beta(1,2,k)*(hold2/mo2+.5))
-      b(2,1,k)=parta(k)*(partb_i(k+1)*beta(2,1,k+1)*(hold1/mo-.5)       &
+      b(2,1,k)=parta(k)*(partb_i(k+1)*beta(2,1,k+1)*(hold1/mo-.5)       
      &                    +partb_i(k)*beta(2,1,k)*(hold2/mo+.5))
         enddo
           hold1=am(i,1)*prsl(i,1)*dp1_i(2)
@@ -257,13 +342,13 @@ c
       b(1,2,1)=parta(1)*partb_i(2)*beta(1,2,2)*(hold1/mo2-.5)
       b(2,1,1)=parta(1)*partb_i(2)*beta(2,1,2)*(hold1/mo-.5)
           hold2=am(i,levs)*prsl(i,levs)*dp1_i(levs)
-      b(1,1,levs)=1.+parta(levs)*partb_i(levs)*beta(1,1,levs)*          &
+      b(1,1,levs)=1.+parta(levs)*partb_i(levs)*beta(1,1,levs)*          
      &(hold2/mo+.5)
-      b(2,2,levs)=1.+parta(levs)*partb_i(levs)*beta(2,2,levs)*          &
+      b(2,2,levs)=1.+parta(levs)*partb_i(levs)*beta(2,2,levs)*          
      &(hold2/mo2+.5)
-      b(1,2,levs)=parta(levs)*partb_i(levs)*beta(1,2,levs)*             &
+      b(1,2,levs)=parta(levs)*partb_i(levs)*beta(1,2,levs)*             
      &(hold2/mo2+.5)
-      b(2,1,levs)=parta(levs)*partb_i(levs)*beta(2,1,levs)*             &
+      b(2,1,levs)=parta(levs)*partb_i(levs)*beta(2,1,levs)*             
      &(hold2/mo+.5)
        do k=levs,1,-1
          ggg(1,1)=b(2,2,k)-c(2,1,k)*ee(1,2,k+1)-c(2,2,k)*ee(2,2,k+1)
@@ -276,11 +361,11 @@ c
          ee(1,2,k)=ggg(1,1)*a(1,2,k)+ggg(1,2)*a(2,2,k)       
          ee(2,1,k)=ggg(2,1)*a(1,1,k)+ggg(2,2)*a(2,1,k)       
          ee(2,2,k)=ggg(2,1)*a(1,2,k)+ggg(2,2)*a(2,2,k)       
-      f(1,k)=ggg(1,1)*(qin(i,k,1)+c(1,1,k)*f(1,k+1)                      &
-     &+c(1,2,k)*f(2,k+1))+ggg(1,2)*(qin(i,k,2)+c(2,1,k)*f(1,k+1)         &
+      f(1,k)=ggg(1,1)*(qin(i,k,1)+c(1,1,k)*f(1,k+1)                      
+     &+c(1,2,k)*f(2,k+1))+ggg(1,2)*(qin(i,k,2)+c(2,1,k)*f(1,k+1)         
      &+c(2,2,k)*f(2,k+1))
-      f(2,k)=ggg(2,1)*(qin(i,k,1)+c(1,1,k)*f(1,k+1)                      &
-     &+c(1,2,k)*f(2,k+1))+ggg(2,2)*(qin(i,k,2)+c(2,1,k)*f(1,k+1)         &
+      f(2,k)=ggg(2,1)*(qin(i,k,1)+c(1,1,k)*f(1,k+1)                      
+     &+c(1,2,k)*f(2,k+1))+ggg(2,2)*(qin(i,k,2)+c(2,1,k)*f(1,k+1)         
      &+c(2,2,k)*f(2,k+1))
         enddo
         do in=1,ntrac_i
@@ -288,9 +373,9 @@ c
           dq(i,1,in)=qout(i,1,in)-qin(i,1,in)
         enddo
         do k=2,levs
-          qout(i,k,1)=ee(1,1,k)*qout(i,k-1,1)+ee(1,2,k)*qout(i,k-1,2)+  &
+          qout(i,k,1)=ee(1,1,k)*qout(i,k-1,1)+ee(1,2,k)*qout(i,k-1,2)+  
      &              f(1,k)
-          qout(i,k,2)=ee(2,1,k)*qout(i,k-1,1)+ee(2,2,k)*qout(i,k-1,2)+  &
+          qout(i,k,2)=ee(2,1,k)*qout(i,k-1,1)+ee(2,2,k)*qout(i,k-1,2)+  
      &              f(2,k)
           do in=1,ntrac_i
             dq(i,k,in)=qout(i,k,in)-qin(i,k,in)
@@ -298,122 +383,187 @@ c
         enddo
       enddo !i
       return
-      end subroutine
+      end subroutine idea_tracer_m
+
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc!   
-      subroutine idea_tracer_c(im,ix,levs,ntrac_i,adt,dtp,jj,n1,n2,     &
-     &n,rho,qin,dq)
+      subroutine idea_tracer_c(im,ix,levs,ntrac_i,adt,dtp,jo2,n1,n2,     
+     &        n,rho,qin,dq)
 !-----------------------------------------------------------------------
-!
-! calaulate tracer changes caused by chemistry reaction
-!
+! calculate tracer changes caused by chemistry reaction
+! 2006 Rashid Akmaev and Fei Wu
+!      Tim Fuller-Rowell HOx oxygen sinks
 !-----------------------------------------------------------------------
-      use physcons, only : rgas=>con_rgas, amo2=>con_amo2
+      use physcons, only : rgas=>con_rgas
       use physcons, only : avgd => con_avgd
-      use machine, only : kind_phys
-      use idea_composition
+      use machine,  only : kind_phys
+      use idea_composition, only : amo, amn2, amo2
+      use idea_tracer_mod,  only : oh, ho2, vmr_glob
+
       implicit none
-!
+
 ! Argument
-      integer, intent(in) :: im    ! number of data points in up,dudt(first dim)
-      integer, intent(in) :: ix    ! max data points in fields
-      integer, intent(in) :: levs  ! number of pressure levels
-      integer, intent(in) :: ntrac_i ! number of tracer add by IDEA
-      real,    intent(in) :: dtp   ! time step in second
+      integer, intent(in) :: im          ! number of long data points
+      integer, intent(in) :: ix          ! max data points in fields
+      integer, intent(in) :: levs        ! number of pressure levels
+      integer, intent(in) :: ntrac_i     ! number of tracer add by IDEA
+      real,    intent(in) :: dtp         ! time step in second
       real, intent(in) :: adt(ix,levs)   ! input  temp at dt=0
+
       real, intent(in) :: qin(ix,levs,ntrac_i)   ! input tracer
-      real, intent(in) :: jj(levs)   ! input photo diss rate
-      real, intent(in) :: n1(ix,levs)! number density of o
-      real, intent(in) :: n2(ix,levs)! number density of o2
-      real, intent(in) :: n(ix,levs)! number density of mixture
-      real, intent(in) :: rho(ix,levs)! density of mixture
+
+      real, intent(in) :: jo2(ix, levs)   ! input photo diss rate
+      real, intent(in) :: n1(ix,levs)     ! number density of o
+      real, intent(in) :: n2(ix,levs)     ! number density of o2
+      real, intent(in) :: n(ix,levs)      ! number density of mixture
+      real, intent(in) :: rho(ix,levs)    ! density of mixture
       real, intent(out):: dq(ix,levs,ntrac_i) ! output
 ! Local variables
-      real k1,k2,p1,p2,L1,L2,mo,mo2,mn2,qout(ix,levs,ntrac_i)
+      real, dimension(levs) :: noh, nh, nho2, natom, ndens
+      real k1,k2,p1,p2,L1,L2
+      real :: k3, k4, k5
+      real :: mo,mo2,mn2
       integer k,i
-!
+      real :: q1new, q2new
+
       mo=amo*1.e-3/avgd
       mo2=amo2*1.e-3/avgd
       mn2=amn2*1.e-3/avgd
-!
+
+! O2 +hv =JJ => O + O
+! O + O+ M  =k1 => O2+M 
+! O + O2    =k2=>  O3
+! O +OH  =k3=> O2 +H 
+! O + O     =k4=>  O2 ?
+! O +HO2  =k5=> O2 +OH 
+! coefficents
+        k3=4.2e-17
+        k4=1.0e-26
+        k5=3.5e-17
+
       do k=1,levs
-      do i=1,im
-! get coefficent array o o2 n2
-        k1=4.7e-45*(300./adt(i,k))**2
-        k2=6.e-46*(300./adt(i,k))**(2.3)
-        p1=2.*jj(k)*n2(i,k)*mo/rho(i,k)
-        p2=k1*n1(i,k)**2*n(i,k)*mo2/rho(i,k)
-        L1=2.*k1*n1(i,k)*n(i,k)+k2*n2(i,k)*n(i,k)
-        L2=k2*n1(i,k)*n(i,k)+jj(k)
-        qout(i,k,1)=(qin(i,k,1)+p1*dtp)/(1.+L1*dtp)
-        qout(i,k,2)=(qin(i,k,2)+p2*dtp)/(1.+L2*dtp)
-        dq(i,k,1)=qout(i,k,1)-qin(i,k,1)
-        dq(i,k,2)=qout(i,k,2)-qin(i,k,2)
-      enddo
-      enddo
-      return
-      end subroutine
-!-------------------------------------------------------------------------
-      SUBROUTINE jprofile(levs,J)
-! get photo dissociation rate
-      use wam_f107_kp_mod, only: f107, kdt_3h
-      implicit none
-      integer, parameter :: np=17  !number of pressure levels of orig
-      integer, intent(in) :: levs  !number of pressure levels of output 
-      real,    intent(out):: J(levs)
-! local variables
-      real JI(np),FHT(np),C(np),J17(np)
-      integer k
-!
-      DATA C/8*0.900,0.680,0.43,0.18,6*-0.066/
-      DATA JI/.4e-8,.78e-8,1.5e-8,3.e-8,6.8e-8,.15e-6,.34e-6,.77e-6,    &
-     &1.07e-6,1.35e-6,1.6e-6,1.81e-6,2.05e-6,2.23e-6,2.36e-6,2.5e-6,    &
-     &2.57e-6/
-      DATA FHT/8*1.2,1.85,2.50,3.150,6*3.8/
-! calculate photo dissociation rate (/s) in Tims 17 pressure grid
-      do k=1,17                                                   
-        J17(k)=JI(k)*((FHT(k)-1.0)*f107(kdt_3h)/176.+C(k))
-      enddo
-! interplate to GFS pressure grid
-      call z17toz(levs,J17,J,0.)
-      return
-      end
-!-------------------------------------------------------------------------
-      subroutine z17toz(levs,ain,aout,down)
-! interpolate 17 pressure levels (from Tim's grid) to
-! idea pressure grid pr(levs)
-      use idea_composition, only : pr=> pr_idea
-      implicit none
-      integer, parameter :: np=17  !number of pressure levels of input
-      integer, intent(in) :: levs  !number of pressure levels of output 
-      real,    intent(in) :: ain(np)  !input field in 17 pressure grid
-      real,    intent(in) :: down     !field value under 5.2285Pa
-      real,    intent(out):: aout(levs)!output in levs pressure grid
-!local variable
-      real p17(np),z17(np),z(levs),dz
-      integer kref,k,i
-!
-      do k=1,np
-        p17(k)=5.2285*exp(1.-k)
-        z17(k)=-1.*log(p17(k))
-      enddo
-      do k=1,levs
-        z(k)=-1.*log(pr(k)*100.)
-      enddo
-      do k=1,levs
-        kref=0
-        do i=1,np-1
-          if(z(k).ge.z17(i).and.z(k).le.z17(i+1)) then
-            kref=i
-            dz=(z(k)-z17(i))/(z17(i+1)-z17(i))
-          endif
+         do i=1,im
+            k1=4.7e-45*(300./adt(i,k))**2
+            k2=6.e-46*(300./adt(i,k))**(2.4)
+
+            p1=2.*Jo2(i,k)*n2(i,k) * mo/rho(i,k) !O-production mmr
+            L1=2.*k1*n1(i,k)*n(i,k)+k2*n2(i,k)*n(i,k) ! O-loss
+     &           +k3*oh(k)+k5*ho2(k)+2.*k4*n1(i,k)
+            q1new=(qin(i,k,1)+p1*dtp)/(1.+L1*dtp)
+
+            dq(i,k,1)=q1new-qin(i,k,1)
+! conserve oxygen
+            dq(i,k,2)= -dq(i,k,1)
+
         enddo
-        if(kref.ne.0) then
-          aout(k)=dz*ain(kref+1)+(1.-dz)*ain(kref)
-        elseif(z(k).lt.z17(1)) then
-          aout(k)=down
-        elseif(z(k).gt.z17(17)) then
-          aout(k)=ain(17)
-        endif
       enddo
+
       return
-      end
+      end subroutine idea_tracer_c
+
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc!   
+      subroutine idea_tracer_eddy(im,ix,levs,ntrac_i,grav,prsi,prsl,
+     &     rho,dtp,qin,dayno,dq)
+
+! Calculate major species changes by eddy mixing O, O2, and
+!     (indirectly) N2
+! October 2017 Rashid Akmaev
+
+      use namelist_wamphysics_def, only : skeddy0, skeddy_semiann,    
+     &                                    skeddy_ann
+      implicit none
+! Arguments
+      integer, intent(in) :: im    ! number of long data points in fields
+      integer, intent(in) :: ix    ! max data points in fields
+      integer, intent(in) :: levs  ! number of pressure levels
+      integer, intent(in) :: ntrac_i ! number of addtl tracers in IDEA
+      integer, intent(in) :: dayno ! for semiannual variation
+      real, intent(in) :: dtp      ! time step in second
+      real, intent(in) :: prsi(ix,levs+1) ! interface pressure in Pa
+      real, intent(in) :: prsl(ix,levs)   ! layer pressure in Pa
+      real, intent(in) :: grav(ix,levs)   ! (m/s**2)
+      real, intent(in) :: rho(ix,levs)   ! mass density (kg/m**3)
+      real, intent(in) :: qin(ix,levs,ntrac_i)   ! input tracers
+      real, intent(out):: dq(ix,levs,ntrac_i) ! output tracer changes
+! Locals
+      real alpha(levs+1),beta(levs),qout(ntrac_i)
+      real a(levs),b(levs),c(levs)
+      real e(levs),d(levs,ntrac_i)
+      integer i,k
+
+!-----------------------------------------------------------------------
+! Calculate Keddy (m**2/s) (move this to init subroutine/module later)
+! Keddy parameters: mean, width in scale heights, height of max
+
+      real, parameter:: pi = 3.141592653
+! semiannual amp
+!      real, parameter:: dkeddy = 2.
+      real, parameter:: dkeddy = 0.
+      real, parameter:: xmax = 15.
+      real keddy(levs+1),x
+
+
+      if(dkeddy <= 1e-10) then
+!         keddy(:) = skeddy0 
+! Add semiannual variation
+          keddy(:) = skeddy0 + 
+     &               skeddy_semiann*(cos(4.*pi*(dayno+9.)/365.))
+      else
+         do k=1,levs+1
+! height in scale heights
+            x = alog(1e5/prsi(1,k))
+            keddy(k)= skeddy0*exp(-((x-xmax)/dkeddy)**2)
+         enddo
+      endif
+!-----------------------------------------------------------------------
+! Boundary conditions
+      a(1) = 0.
+      c(levs) = 0.
+
+      do i = 1,im
+! Auxiliary arrays
+! at interfaces
+         do k = 2,levs
+            alpha(k) = keddy(k)*(.5*(rho(i,k-1)+rho(i,k)))**2*
+     &           (.5*(grav(i,k-1)+grav(i,k)))/(prsl(i,k-1) -
+     &           prsl(i,k))
+         enddo
+
+! in layers
+         do k = 1,levs
+            beta(k) = dtp*grav(i,k)/(prsi(i,k) - prsi(i,k+1))
+         enddo
+
+! Coefficients a(k), c(k) and b(k)
+         do k = 2,levs
+            a(k) = beta(k)*alpha(k)
+         enddo
+         do k = 1,levs-1
+            c(k) = beta(k)*alpha(k+1)
+         enddo
+         do k = 1,levs
+            b(k) = 1. + a(k) + c(k)
+         enddo
+
+! Solve tridiagonal problem for each tracer
+! boundary conditions
+         e(levs) = a(levs)/b(levs)
+         d(levs,:) = qin(i,levs,:)/b(levs)
+
+! go down, find e(k) and d(k)
+         do k = levs-1,1,-1
+            e(k) = a(k)/(b(k) - c(k)*e(k+1))
+            d(k,:) = (c(k)*d(k+1,:) + qin(i,k,:))/(b(k) - c(k)*e(k+1))
+         enddo
+         
+! go up, find solution
+         qout(:) = d(1,:)
+         dq(i,1,:) = qout(:) - qin(i,1,:)
+         do k = 2,levs
+            qout(:) = e(k)*qout(:) + d(k,:)
+            dq(i,k,:) = qout(:) - qin(i,k,:)
+         enddo
+
+      enddo
+      end subroutine idea_tracer_eddy
+
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc!   

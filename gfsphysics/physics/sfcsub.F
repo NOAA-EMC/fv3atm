@@ -3567,10 +3567,9 @@
           endif
         enddo
 !
-!      write(6,100) k,fmax,iimax,fmin,iimin
-!  100 format(2x,'level=',i2,' max=',e11.4,' at i=',i7,
-!     &                      ' min=',e11.4,' at i=',i7)
-!
+!     write(6,100) k,fmax,iimax,fmin,iimin
+! 100 format(2x,'level=',i2,' max=',e11.4,' at i=',i7,
+!    &                      ' min=',e11.4,' at i=',i7)
       enddo
 !
       return

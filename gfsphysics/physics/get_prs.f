@@ -10,6 +10,7 @@
       use physcons ,             only : cp => con_cp, nu => con_fvirt
      &,                                 rd => con_rd, rkap => con_rocp
       USE tracer_const
+!     USE multi_gases_mod, only: rilist=>ri, cpilist=>cpi
       implicit none
 !
       integer im, ix, levs, ntrac, thermodyn_id, sfcpress_id
@@ -129,8 +130,8 @@
      &                        / (PRSI(i,k) + PRSI(i,k+1))
                   phil(i,k)   = phii(i,k) + DPHI
                   phii(i,k+1) = phil(i,k) + DPHI
-!     if (k == 1 .and. phil(i,k) < 0.0) write(0,*)' phil=',phil(i,k)
-!    &,' dphi=',dphi,' prsi=',prsi(i,k),prsi(i,k+1),' tem=',tem
+      if (k == 1 .and. phil(i,k) < 0.0) write(0,*)' phil=',phil(i,k)
+     &,' dphi=',dphi,' prsi=',prsi(i,k),prsi(i,k+1),' tem=',tem
                 ENDDO
               ENDDO
           endif
@@ -222,6 +223,7 @@
       use physcons ,             only : cp => con_cp, nu => con_fvirt
      &,                                 rd => con_rd, rkap => con_rocp
       USE tracer_const
+!     USE multi_gases_mod, only: rilist=>ri, cpilist=>cpi
       implicit none
 !
       integer im, ix, levs, ntrac, thermodyn_id, sfcpress_id
@@ -283,6 +285,7 @@
 !
       USE MACHINE ,      ONLY : kind_phys
       USE tracer_const
+!     USE multi_gases_mod, only: rilist=>ri, cpilist=>cpi
       implicit none
 !
       real (kind=kind_phys), parameter :: zero=0.0
@@ -290,7 +293,15 @@
       real(kind=kind_phys) q(ix,levs,ntrac)
       real(kind=kind_phys) xcp(ix,levs),xr(ix,levs),sumq(ix,levs)
       integer i, k, n
-!
+      logical, save :: first = .true.
+!SK
+      if (first) then
+         print*,' get_prs.f/subroutine GET_CPR: ntrac = ', ntrac
+         print*,' get_prs.f/subroutine GET_CPR: ri = ', ri
+         print*,' get_prs.f/subroutine GET_CPR: cpi = ', cpi
+         first = .false.
+      endif
+!SK
       sumq = zero
       xr   = zero
       xcp  = zero
@@ -318,6 +329,7 @@
 !
       USE MACHINE ,      ONLY : kind_phys
       USE tracer_const
+!     USE multi_gases_mod, only: rilist=>ri, cpilist=>cpi
       implicit none
 !
       real (kind=kind_phys), parameter :: zero=0.0
@@ -350,6 +362,7 @@
 !
       USE MACHINE ,      ONLY : kind_phys
       USE tracer_const
+!     USE multi_gases_mod, only: rilist=>ri, cpilist=>cpi
       implicit none
 !
       real (kind=kind_phys), parameter :: zero=0.0

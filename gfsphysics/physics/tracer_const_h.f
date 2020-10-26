@@ -8,8 +8,12 @@
 
 
 !     real(kind=kind_phys) ri(0:20),cpi(0:20)
-      real(kind=kind_phys), allocatable ::  ri(:),cpi(:)
+!SK   real(kind=kind_phys), allocatable ::  ri(:),cpi(:)
 !hmhj integer, parameter :: num_tracer=3
+!SK   real(kind=kind_phys) ri(0:5),cpi(0:5)
+      real(kind=kind_phys) ri(0:5),cpi(0:5)
+!     data ri /295.3892, 461.50, 0.0, 173.2247, 519.674, 259.8370/
+!     data cpi /1031.1083, 1846.00, 0.0, 820.2391, 1299.185, 918.0969/
 
       contains
 ! -------------------------------------------------------------------   
@@ -40,12 +44,12 @@
 !! This routine is now called by NMMB only                   (Sarah Lu)
 !! For GFS core, CPI/RI is passed in from DYN export state
 !! The allocation below is to support NMMB+GFS_physics package
-      if (.not. allocated(ri)) then
-        allocate( ri(0:ntrac))
-        allocate(cpi(0:ntrac))
+!SK   if (.not. allocated(ri)) then
+!SK     allocate( ri(0:ntrac))
+!SK     allocate(cpi(0:ntrac))
 !hmhj   allocate( ri(0:num_tracer))
 !hmhj   allocate(cpi(0:num_tracer))
-      endif
+!SK   endif
 !
       ri=0.0
       cpi=0.0

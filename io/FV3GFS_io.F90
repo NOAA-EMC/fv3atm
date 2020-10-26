@@ -101,8 +101,7 @@ module FV3GFS_io_mod
   logical                    :: uwork_set = .false.
   character(128)             :: uwindname
   integer, parameter, public :: DIAG_SIZE = 500
-! real(kind=kind_phys), parameter :: missing_value = 1.d30
-  real(kind=kind_phys), parameter :: missing_value = 9.99e20
+  real, parameter :: missing_value = 9.99e20
   real, parameter:: stndrd_atmos_ps = 101325.
   real, parameter:: stndrd_atmos_lapse = 0.0065
  

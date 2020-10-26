@@ -1,11 +1,10 @@
-      subroutine idea_h2o(im,ix,levs,nlev,nlevc,ntrac,grav,cp,adr,      &
+      subroutine idea_h2o(im,ix,levs,nlev,nlevc,ntrac,grav,cp,adr,      
      &adt,dth,cosz,dtc)
 !
 ! Apr 06 2012  Henry Juang, initial implement for nems
 ! Dec    2012    Jun Wang,  move init step out of column physics
 !
-      use physcons,  amo2=>con_amo2, amo3=>con_amo3,                    &
-     &               amh2o=>con_amw
+!      use physcons,  only : amo3=>con_amo3, amh2o=>con_amw
       use idea_composition 
 !
       implicit none
@@ -24,8 +23,8 @@
       real, intent(out)   :: dtc(ix,levs)    ! cooling rate k/s
       real, intent(out)   :: dth(ix,levs)    ! heating rate k/s
 !
-      real pmodi(nlev),ggg(nlev),                                        &
-     &h2ommr(nlev),mu(nlev),rcp(nlev),dthi(nlev),                       &
+      real pmodi(nlev),ggg(nlev),                                        
+     &h2ommr(nlev),mu(nlev),rcp(nlev),dthi(nlev),                       
      &adrn2,rate,dx
       real h2ommrc(nlevc),temp(nlevc),qr(nlevc),qv(nlevc),prpa(nlevc)
       integer i,k,k1
@@ -36,13 +35,19 @@
 !     print*,'www1',nlev_h2o,nlevc_h2o,k41,k110,k71,k100,k105
 !     print*,'www1',h2ora(71),h2ora(150)
 !
-      dtc=0.
-      dth=0.
+      dtc(:,:)=0.
+      dth(:,:)=0.
+!
+! VAY-2016: don't need to zero "dtc" and "dth" by "special" loops below
 ! precalling heating
 !     gg=g
       do k=1,nlev
         pmodi(k)=pr_idea(k41-1+k)*100.
       enddo
+!
+! VAY-2016 with NRL H2O-phys no needs to scale H2O > k71
+!          check it later
+!
       do i=1,im
         rate=adr(i,k71,1)/h2ora(k71)
           do k=1,nlev
@@ -50,12 +55,12 @@
               if(k1.le.k71-1) then
                 h2ommr(k)=adr(i,k1,1)
               else
-                h2ommr(k)=rate*h2ora(k1)
+                h2ommr(k)=rate*h2ora(k1)     ! h2ora .... global Profile of H2O ???
               endif
-            adrn2=1.-adr(i,k1,4)-adr(i,k1,5)-adr(i,k1,1)                &
+            adrn2=1.-adr(i,k1,4)-adr(i,k1,5)-adr(i,k1,1)                
      &           -adr(i,k1,2)
             ggg(k)=grav(i,k1)
-            mu(k)=1./(adr(i,k1,4)/amo+adr(i,k1,5)/amo2+                 &
+            mu(k)=1./(adr(i,k1,4)/amo+adr(i,k1,5)/amo2+                 
      &            adr(i,k1,1)/amh2o+adr(i,k1,2)/amo3+adrn2/amn2)
             rcp(k)=1./cp(i,k1)
             h2ommr(k)=max(h2ommr(k),0.)
@@ -67,17 +72,19 @@
         do k=k41,k110
           dth(i,k)=rcp(k-k41+1)*dthi(k-k41+1)
         enddo
-          dth(i,1:k41-1)=0.
+!vay don't need          dth(i,1:k41-1)=0.
       enddo
-! merge to 0. on top
+!
+! merge to 0. on top in 5-layers by LINEAR ????
+!
       dx=prlog(k105)-prlog(k100)
       do i=1,im
         do k=k100+1,k105-1
            dth(i,k)=dth(i,k)*(prlog(k105)-prlog(k))/dx
         enddo
-        do k=k105,levs
-           dth(i,k)=0.
-        enddo
+!  vay      do k=k105,levs
+!           dth(i,k)=0.
+!           enddo
       enddo
 ! cooling
       do i=1,im
@@ -89,7 +96,7 @@
           enddo
         call h2occ(temp,prpa,h2ommrc,qr,qv,nlevc)
         dtc(i,k71:levs)=qr(1:nlevc)+qv(1:nlevc)
-        dtc(i,1:k71-1)=0.
+!vay        dtc(i,1:k71-1)=0.
       enddo
       return
       end
