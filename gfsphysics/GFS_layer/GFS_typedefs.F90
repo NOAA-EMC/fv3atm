@@ -1101,7 +1101,7 @@ module GFS_typedefs
     integer              :: nreffr          !< the index of rain effective radius in phy_f3d
     integer              :: nseffr          !< the index of snow effective radius in phy_f3d
     integer              :: ngeffr          !< the index of graupel effective radius in phy_f3d
-#ifdef CCPP
+!#ifdef CCPP
     integer              :: nkbfshoc        !< the index of upward kinematic buoyancy flux from SHOC in phy_f3d
     integer              :: nahdshoc        !< the index of diffusivity for heat from from SHOC in phy_f3d
     integer              :: nscfshoc        !< the index of subgrid-scale cloud fraction from from SHOC in phy_f3d
@@ -1111,7 +1111,7 @@ module GFS_typedefs
     integer              :: nqvdelt         !< the index of specific humidity at the previous timestep for Z-C MP in phy_f3d
     integer              :: nps2delt        !< the index of surface air pressure 2 timesteps back for Z-C MP in phy_f2d
     integer              :: npsdelt         !< the index of surface air pressure at the previous timestep for Z-C MP in phy_f2d
-#endif
+!#endif
 
 !--- debug flag
     logical              :: debug         

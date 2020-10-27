@@ -1761,7 +1761,6 @@ end subroutine atmos_data_type_chksum
                   nb = Atm_block%blkno(i,j)
                   ix = Atm_block%ixp(i,j)
 
-                  IPD_Data(nb)%Sfcprop%fice(ix)          = zero
                   IPD_Data(nb)%Coupling%slimskin_cpl(ix) = IPD_Data(nb)%Sfcprop%slmsk(ix)
                   ofrac = IPD_Data(nb)%Sfcprop%oceanfrac(ix)
                   if (ofrac > zero) then
@@ -1776,7 +1775,7 @@ end subroutine atmos_data_type_chksum
                       if (abs(one-ofrac) < epsln) then
                         IPD_Data(nb)%Sfcprop%slmsk(ix)         = zero
                         IPD_Data(nb)%Coupling%slimskin_cpl(ix) = zero
-                      end if
+                      endif
                     endif
                   endif
                 enddo

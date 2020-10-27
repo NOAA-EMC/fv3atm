@@ -1121,33 +1121,38 @@ module module_physics_driver
           frland(i) = Sfcprop%landfrac(i)
           if (frland(i) > zero) dry(i) = .true.
           if (frland(i) < one) then
-            if (flag_cice(i)) then
+            if (Sfcprop%oceanfrac(i) > zero) then
               if (fice(i) >= Model%min_seaice) then
                 icy(i)  = .true.
-                if (fice(i) < one) wet(i) = .true. ! some open ocean/lake water exists
+                tice(i) = min(Sfcprop%tisfc(i), tgice)
+                if (Model%cplflx)  then
+                  islmsk_cice(i) = 4
+                  flag_cice(i)   = .true.
+                endif
+                islmsk(i) = 2
               else
                 fice(i)        = zero
                 flag_cice(i)   = .false.
                 islmsk_cice(i) = 0
-!               islmsk(i)      = 0
-                wet(i) = .true. ! some open ocean/lake water exists
+                islmsk(i)      = 0
+              endif
+              if (fice(i) < one) then
+                wet(i) = .true. ! some open ocean
+                if (.not. Model%cplflx .and. icy(i)) Sfcprop%tsfco(i) = max(Sfcprop%tisfc(i), tgice)
               endif
             else
               if (fice(i) >= Model%min_lakeice) then
                 icy(i) = .true.
-                if (fice(i) < one) wet(i) = .true. ! some open ocean/lake water exists
                 islmsk(i) = 2
+                tice(i) = min(Sfcprop%tisfc(i), tgice)
               else
                 fice(i)   = zero
-!               islmsk(i) = 0
-                wet(i) = .true. ! some open ocean/lake water exists
+                islmsk(i) = 0
               endif
-            endif
-            if (wet(i) .and. .not. Model%cplflx) then
-              if (Sfcprop%oceanfrac(i) > zero) then
-                Sfcprop%tsfco(i) = max(Sfcprop%tsfco(i), Sfcprop%tisfc(i), tgice)
-              elseif (icy(i)) then
-                 Sfcprop%tsfco(i) = max(Sfcprop%tisfc(i), tgice)
+!             islmsk_cice(i) = islmsk(i)
+              if (fice(i) < one) then
+                wet(i) = .true. ! some open lake
+                if (icy(i)) Sfcprop%tsfco(i) = max(Sfcprop%tisfc(i), tgice)
               endif
             endif
           else
@@ -1163,7 +1168,7 @@ module module_physics_driver
             fice(i)   = zero
           else
             frland(i) = zero
-            if (flag_cice(i)) then
+            if (Sfcprop%oceanfrac(i) > zero) then
               if (fice(i) > Model%min_seaice) then
                 icy(i) = .true.
               else
@@ -1172,6 +1177,10 @@ module module_physics_driver
                 islmsk_cice(i) = 0
                 islmsk(i)      = 0
               endif
+              if (fice(i) < one) then
+                wet(i) = .true. ! some open ocean
+                if (.not. Model%cplflx .and. icy(i)) Sfcprop%tsfco(i) = max(Sfcprop%tisfc(i), tgice)
+              endif
             else
               if (fice(i) > Model%min_lakeice) then
                 icy(i) = .true.
@@ -1179,11 +1188,10 @@ module module_physics_driver
                 fice(i)   = zero
                 islmsk(i) = 0
               endif
-            endif
-            if (fice(i) < one) then
-              wet(i)=.true. ! some open ocean/lake water exists
-              if (.not. Model%cplflx .and. icy(i))                                   &
-                 Sfcprop%tsfco(i) = max(Sfcprop%tisfc(i), tgice)
+              if (fice(i) < one) then
+                wet(i) = .true. ! some open lake
+                if (icy(i)) Sfcprop%tsfco(i) = max(Sfcprop%tisfc(i), tgice)
+              endif
             endif
           endif
         enddo
@@ -1269,6 +1277,7 @@ module module_physics_driver
             gflx3(i,2) = zero
            semis3(i,2) = 0.95_kind_phys
         endif
+        if (nint(Sfcprop%slmsk(i)) /= 1) Sfcprop%slmsk(i) = islmsk(i)
       enddo
 !*## CCPP ##
 
@@ -1993,21 +2002,23 @@ module module_physics_driver
 !
 ! call sfc_sice for lake ice and for the uncoupled case, sea ice (i.e. islmsk=2)
 !
-        if (Model%frac_grid) then
-          do i=1,im
-            if (icy(i) .and. islmsk(i) < 2) then
-              if (Sfcprop%oceanfrac(i) > zero) then
-                tem = Model%min_seaice
-              else
-                tem = Model%min_lakeice
-              endif
-              if (fice(i) > tem) then
-                islmsk(i) = 2
-                tsfc3(i,2) = Sfcprop%tisfc(i)
-              endif
-            endif
-          enddo
-        endif
+!       if (Model%frac_grid) then
+!         do i=1,im
+!           if (icy(i) .and. islmsk(i) < 2) then
+!             if (Sfcprop%oceanfrac(i) > zero) then
+!               if (fice(i) >= Model%min_seaice) then
+!                 islmsk(i) = 4
+!                 tice(i) = min(Sfcprop%tisfc(i), tgice)
+!               endif
+!             else
+!               if (fice(i) >= Model%min_lakeice) then
+!                 islmsk(i) = 2
+!                 tice(i) = min(Sfcprop%tisfc(i), tgice)
+!               endif
+!             endif
+!           endif
+!         enddo
+!       endif
 !## CCPP ##* sfc_sice.f/sfc_sice_run
         call sfc_sice                                                            &
 !  ---  inputs:
@@ -2017,7 +2028,8 @@ module module_physics_driver
             gabsbdlw3(:,2), adjsfcnsw, adjsfcdsw, Sfcprop%srflag,                &
             cd3(:,2), cdq3(:,2),                                                 &
             Statein%prsl(:,1), work3, islmsk, wind,                              &
-            flag_iter, lprnt, ipr, Model%min_lakeice,                            &
+            flag_iter, lprnt, ipr, Model%min_lakeice, Model%min_seaice,          &
+            Sfcprop%oceanfrac,                                                   &
 !  ---  input/output:
             zice, fice, tice, weasd3(:,2), tsfc3(:,2), tprcp3(:,2),              &
             stsoil, ep1d3(:,2),                                                  &

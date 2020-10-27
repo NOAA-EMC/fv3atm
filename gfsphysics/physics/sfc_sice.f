@@ -35,7 +35,7 @@
 !    &     ( im, km, ps, u1, v1, t1, q1, delt,                          &
      &       sfcemis, dlwflx, sfcnsw, sfcdsw, srflag,                   &
      &       cm, ch, prsl1, prslki, islimsk, wind,                      &
-     &       flag_iter, lprnt, ipr, cimin,                              &
+     &       flag_iter, lprnt, ipr, min_lakeice, min_seaice, oceanfrac, &
 !  ---  input/outputs:
      &       hice, fice, tice, weasd, tskin, tprcp, stc, ep,            &
 !  ---  outputs:
@@ -144,10 +144,11 @@
 
       real (kind=kind_phys), dimension(im), intent(in) :: ps,           &
      &       t1, q1, sfcemis, dlwflx, sfcnsw, sfcdsw, srflag, cm, ch,   &
-     &       prsl1, prslki, wind
+     &       prsl1, prslki, wind, oceanfrac
 
       integer, dimension(im), intent(in) :: islimsk
-      real (kind=kind_phys),  intent(in) :: delt, cimin
+      real (kind=kind_phys),  intent(in) :: delt, min_lakeice,          &
+     &                                      min_seaice 
 
       logical, intent(in) :: flag_iter(im)
 
@@ -169,7 +170,7 @@
      &       snowd, theta1
 
       real (kind=kind_phys) :: t12, t14, tem, stsice(im,kmi)
-     &,                        hflxi, hflxw, q0, qs1, qssi, qssw
+     &,                        hflxi, hflxw, q0, qs1, qssi, qssw, cimin
 
 
       integer :: i, k
@@ -215,6 +216,11 @@
 
       do i = 1, im
         if (flag(i)) then
+          if (oceanfrac(i) > zero) then
+            cimin = min_seaice
+          else
+            cimin = min_lakeice
+          endif
 !         psurf(i) = 1000.0 * ps(i)
 !         ps1(i)   = 1000.0 * prsl1(i)
 
