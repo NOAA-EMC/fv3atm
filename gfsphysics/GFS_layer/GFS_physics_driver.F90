@@ -1070,7 +1070,8 @@ module module_physics_driver
         fice(i)    = Sfcprop%fice(i)
 !*## CCPP ##* 
 !## CCPP ##* GFS_surface_composites.F90/GFS_surface_composites_pre_run
-        tice(i)    = Sfcprop%tisfc(i)
+!       tice(i)    = Sfcprop%tisfc(i)
+        tice(i)    = zero
 !
 !GFDL   work1(i)   = (log(coslat(i) / (nlons(i)*latr)) - dxmin) * dxinv
 !GFS         Moorthi thinks this should be area and not dx
@@ -1124,7 +1125,7 @@ module module_physics_driver
             if (Sfcprop%oceanfrac(i) > zero) then
               if (fice(i) >= Model%min_seaice) then
                 icy(i)  = .true.
-                tice(i) = min(Sfcprop%tisfc(i), tgice)
+                Sfcprop%tisfc(i) = min(Sfcprop%tisfc(i), tgice)
                 if (Model%cplflx)  then
                   islmsk_cice(i) = 4
                   flag_cice(i)   = .true.
@@ -1144,7 +1145,7 @@ module module_physics_driver
               if (fice(i) >= Model%min_lakeice) then
                 icy(i) = .true.
                 islmsk(i) = 2
-                tice(i) = min(Sfcprop%tisfc(i), tgice)
+                Sfcprop%tisfc(i) = min(Sfcprop%tisfc(i), tgice)
               else
                 fice(i)   = zero
                 islmsk(i) = 0
@@ -1169,7 +1170,7 @@ module module_physics_driver
           else
             frland(i) = zero
             if (Sfcprop%oceanfrac(i) > zero) then
-              if (fice(i) > Model%min_seaice) then
+              if (fice(i) >= Model%min_seaice) then
                 icy(i) = .true.
               else
                 fice(i)        = zero
@@ -1182,7 +1183,7 @@ module module_physics_driver
                 if (.not. Model%cplflx .and. icy(i)) Sfcprop%tsfco(i) = max(Sfcprop%tisfc(i), tgice)
               endif
             else
-              if (fice(i) > Model%min_lakeice) then
+              if (fice(i) >= Model%min_lakeice) then
                 icy(i) = .true.
               else
                 fice(i)   = zero
@@ -1272,6 +1273,7 @@ module module_physics_driver
             zorl3(i,2) = Sfcprop%zorli(i)
             tsfc3(i,2) = Sfcprop%tisfc(i)
            tsurf3(i,2) = Sfcprop%tisfc(i)
+               tice(i) = Sfcprop%tisfc(i)
            snowd3(i,2) = Sfcprop%snowd(i)
             ep1d3(i,2) = zero
             gflx3(i,2) = zero
