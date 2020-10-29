@@ -1063,7 +1063,7 @@ subroutine micro_mg_tend (                                       &
   integer i, k, n
 
   ! number of sub-steps for loops over "n" (for sedimentation)
-  integer nstep, mdust, nlb, nstep_def
+  integer nstep, mdust, nlb, nstep_def, kmin, kminp1
 
   ! Varaibles to scale fall velocity between small and regular ice regimes.
 ! real(r8) :: irad, ifrac, tsfac
@@ -1075,6 +1075,11 @@ subroutine micro_mg_tend (                                       &
 ! real(r8), parameter :: qimax=0.010, qimin=0.001, qiinv=one/(qimax-qimin), &
   real(r8), parameter :: qimax=0.010_r8, qimin=0.005_r8, qiinv=one/(qimax-qimin)
 !                        ts_au_min=180.0
+  real(r8), parameter :: pmin_sed = 5000.0     ! layer pressure in Pa below which
+                                               ! sedimentation calcuation is
+                                               ! done
+! integer,  parameter :: nstep_fac=10          ! factor for definng nstep_def
+  integer,  parameter :: nstep_fac=5           ! factor for definng nstep_def
 
   !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
@@ -1084,8 +1089,7 @@ subroutine micro_mg_tend (                                       &
   ! assign variable deltat to deltatin
   deltat    = deltatin
   oneodt    = one / deltat
-! nstep_def = max(1, nint(deltat/20))
-  nstep_def = max(1, nint(deltat/5))
+  nstep_def = max(1, nint(deltat/nstep_fac))
 ! tsfac     = log(ts_au/ts_au_min) * qiinv
 
   ! Copies of input concentrations that may be changed internally.
@@ -2176,7 +2180,7 @@ subroutine micro_mg_tend (                                       &
 !     if(lprnt) write(0,*)' bergs1=',bergs(1,k),' k=',k,' micro_mg_berg_eff_factor=',micro_mg_berg_eff_factor
 !     if(lprnt) write(0,*)' t=',t(1,k),' rho=',rho(1,k),' dv=',dv(1,k),' mu=',mu(1,k),&
 !        'qcic=',qcic(1,k),' qsic=',qsic(1,k),' qvl=',qvl(1,k),' qvi=',qvi(1,k),      &
-!        ' mu=',mu(1,k),' sc=',sc(1,k),' asn=',asn(1,k),' lams=',lams(1,k),' n0s=',n0s(1,k)
+!        ' mu=',mu(1,k),' sc=',sc(1,k),' asn=',asn(1,k),' lams=',lams(1,k),' n0s=',n0s(1,k),' ni=',ni(1,k)
 
      bergs(:,k) = bergs(:,k) * micro_mg_berg_eff_factor
 
@@ -3394,11 +3398,19 @@ subroutine micro_mg_tend (                                       &
        tx1 = tx2 * deltat
        tx3 = tx2 / g
 
+       kmin = 1
+       do k=2,nlev-1
+         if (p(i,k) < pmin_sed) then
+           kmin = k
+         endif
+       enddo
+       kminp1 = kmin + 1
+
        do n = 1,nstep
 
         ! top of model
 
-          k = 1
+          k = kmin
 
         ! add fallout terms to microphysical tendencies
 
@@ -3419,7 +3431,7 @@ subroutine micro_mg_tend (                                       &
 
           iflx(i,k+1)   = iflx(i,k+1) + falouti(k) * tx3   ! Ice flux
 
-          do k = 2,nlev
+          do k = kminp1,nlev
 
           ! for cloud liquid and ice, if cloud fraction increases with height
           ! then add flux from above to both vapor and cloud water of current level
@@ -3488,7 +3500,7 @@ subroutine micro_mg_tend (                                       &
      do n = 1,nstep
 
         ! top of model
-        k = 1
+        k = kmin
 
         tx5           = dumc(i,k)
         tx7           = pdel_inv(i,k) * tx1
@@ -3507,7 +3519,7 @@ subroutine micro_mg_tend (                                       &
         faloutnc(k)   = fnc(i,k) * dumnc(i,k)
 
         lflx(i,k+1)   = lflx(i,k+1) + faloutc(k) * tx3
-        do k = 2,nlev
+        do k = kminp1,nlev
 
           if (lcldm(i,k-1) > mincld) then
             dum1 = max(zero, min(one, lcldm(i,k)/lcldm(i,k-1)))
@@ -3571,7 +3583,7 @@ subroutine micro_mg_tend (                                       &
      do n = 1,nstep
 
         ! top of model
-        k = 1
+        k = kmin
 
         ! add fallout terms to microphysical tendencies
 
@@ -3592,7 +3604,7 @@ subroutine micro_mg_tend (                                       &
 
         rflx(i,k+1)   = rflx(i,k+1) + faloutr(k) * tx3
 
-        do k = 2,nlev
+        do k = kminp1,nlev
 
           tx5           = dumr(i,k)
           tx7           = pdel_inv(i,k) * tx1
@@ -3633,7 +3645,7 @@ subroutine micro_mg_tend (                                       &
      do n = 1,nstep
 
         ! top of model
-        k = 1
+        k = kmin
 
         ! add fallout terms to microphysical tendencies
 
@@ -3654,7 +3666,7 @@ subroutine micro_mg_tend (                                       &
 
         sflx(i,k+1)   = sflx(i,k+1) + falouts(k) * tx3
 
-        do k = 2,nlev
+        do k = kminp1,nlev
 
 
            tx5           = dums(i,k)
@@ -3700,7 +3712,7 @@ subroutine micro_mg_tend (                                       &
        do n = 1,nstep
 
         ! top of model
-          k = 1
+          k = kmin
 
         ! add fallout terms to microphysical tendencies
 
@@ -3721,7 +3733,7 @@ subroutine micro_mg_tend (                                       &
 
           gflx(i,k+1)   = gflx(i,k+1) + faloutg(k) * tx3   ! Ice flux
 
-          do k = 2,nlev
+          do k = kminp1,nlev
 
              tx5         = dumg(i,k)
              tx7         = pdel_inv(i,k) * tx1
@@ -4463,8 +4475,9 @@ end subroutine micro_mg_tend
 !OUTPUT CALCULATIONS
 !========================================================================
 
+!! This subroutine calculates effective radii for rain and cloud.
 subroutine calc_rercld(lamr, n0r, lamc, pgam, qric, qcic, ncic, rercld, mgncol,nlev)
-  integer, intent(in) :: mgncol, nlev
+  integer, intent(in) :: mgncol, nlev                           ! horizontal and vertical dimension
   real(r8), dimension(mgncol,nlev), intent(in) :: lamr          ! rain size parameter (slope)
   real(r8), dimension(mgncol,nlev), intent(in) :: n0r           ! rain size parameter (intercept)
   real(r8), dimension(mgncol,nlev), intent(in) :: lamc          ! size distribution parameter (slope)

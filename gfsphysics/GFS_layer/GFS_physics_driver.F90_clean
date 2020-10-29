@@ -489,7 +489,7 @@ module module_physics_driver
       real(kind=kind_phys) ::                                           &
            dtf, dtp,  frain, tem,   tem1, tem2,                         &
            xcosz_loc, zsea1, zsea2, eng0, eng1, dpshc,                  &
-           txl, txi, txo, dt_warm,                                      &
+           txl, txi, txo, wfrac, dt_warm,                               &
 !--- experimental for shoc sub-stepping
            dtshoc,                                                      &
 !--- GFDL Cloud microphysics
@@ -1899,7 +1899,6 @@ module module_physics_driver
 !         do i=1,im
 !           if (icy(i) .and. islmsk(i) < 2) then
 !             if (Sfcprop%oceanfrac(i) > zero) then
-!               tem = Model%min_seaice
 !               if (fice(i) >= Model%min_seaice) then
 !                 islmsk(i) = 4
 !                 tice(i) = min(Sfcprop%tisfc(i), tgice)
@@ -1972,9 +1971,10 @@ module module_physics_driver
         do i=1, im
 !
 ! Three-way composites (fields from sfc_diff)
-          txl = frland(i)
-          txi = fice(i)*(one - frland(i)) ! txi = ice fraction wrt whole cell
-          txo = max(zero, one - txl - txi)
+          txl   = frland(i)              ! land fraction
+          wfrac = one -txl               ! water fraction (ocean/lake)
+          txi   = fice(i)*wfrac          ! txi = ice fraction wrt whole cell
+          txo   = max(zero, wfrac - txi) ! txo = open water fraction
 
 !      if (i == ipr .and. lprnt) write(0,*)' txl=',txl,' fice=',fice(i),' txi=',txi,&
 !         ' txo=',txo,' dry=',dry(i),' wet=',wet(i),' icy=',icy(i),' oceanfrac=',&
@@ -2003,11 +2003,10 @@ module module_physics_driver
 !         Sfcprop%tprcp(i)  = txl*tprcp3(i,1)  + txi*tprcp3(i,2)  + txo*tprcp3(i,3)
 
           if (.not. flag_cice(i) .and. islmsk(i) == 2) then
-            tem             = one - txl
-            evap(i)         = txl*evap3(i,1)   + tem*evap3(i,2)
-            hflx(i)         = txl*hflx3(i,1)   + tem*hflx3(i,2)
-            qss(i)          = txl*qss3(i,1)    + tem*qss3(i,2)
-            gflx(i)         = txl*gflx3(i,1)   + tem*gflx3(i,2)
+            evap(i)         = txl*evap3(i,1)   + wfrac*evap3(i,2)
+            hflx(i)         = txl*hflx3(i,1)   + wfrac*hflx3(i,2)
+            qss(i)          = txl*qss3(i,1)    + wfrac*qss3(i,2)
+            gflx(i)         = txl*gflx3(i,1)   + wfrac*gflx3(i,2)
           else
             evap(i)         = txl*evap3(i,1)   + txi*evap3(i,2)   + txo*evap3(i,3)
             hflx(i)         = txl*hflx3(i,1)   + txi*hflx3(i,2)   + txo*hflx3(i,3)
