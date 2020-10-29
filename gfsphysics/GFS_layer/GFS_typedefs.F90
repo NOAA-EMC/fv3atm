@@ -655,8 +655,9 @@ module GFS_typedefs
     integer              :: iems            !< use fixed value of 1.0
     integer              :: iaer            !< default aerosol effect in sw only
     integer              :: icliq_sw        !< sw optical property for liquid clouds
-    integer              :: iovr_sw         !< sw: max-random overlap clouds
-    integer              :: iovr_lw         !< lw: max-random overlap clouds
+    integer              :: icice_sw        !< sw optical property for ice clouds
+    integer              :: icliq_lw        !< lw optical property for liquid clouds
+    integer              :: icice_lw        !< lw optical property for ice clouds 
     integer              :: iovr            !< max-random overlap clouds for sw & lw (maximum of both)
     integer              :: ictm            !< ictm=0 => use data at initial cond time, if not
                                             !<           available; use latest; no extrapolation.
@@ -675,6 +676,11 @@ module GFS_typedefs
                                             !< =1 => sub-grid cloud with prescribed seeds
                                             !< =2 => sub-grid cloud with randomly generated
                                             !< seeds
+    integer              :: idcor           !< Decorrelation length type for overlap assumption                                                                                               
+                                            !< =0 => Use constant decorrelation length, decorr_con                                                                                            
+                                            !< =1 => Use spatially varying decorrelation length (Hogan et al. 2010)                                                                           
+                                            !< =2 => Use spatially and temporally varyint decorrelation length (Oreopoulos et al. 2012)                                                       
+    real(kind_phys)      :: dcorr_con       !< Decorrelation length constant (km) (if idcor = 0) 
     logical              :: crick_proof     !< CRICK-Proof cloud water
     logical              :: ccnorm          !< Cloud condensate normalized by cloud cover 
     logical              :: norad_precip    !< radiation precip flag for Ferrier/Moorthi
@@ -714,6 +720,15 @@ module GFS_typedefs
     integer              :: imp_physics_zhao_carr_pdf = 98 !< choice of Zhao-Carr microphysics scheme with PDF clouds
     integer              :: imp_physics_mg = 10            !< choice of Morrison-Gettelman microphysics scheme
     integer              :: imp_physics_fer_hires = 15     !< choice of Ferrier-Aligo microphysics scheme
+    integer :: iovr_rand        = 0 !< choice of cloud-overlap: random
+    integer :: iovr_maxrand     = 1 !< choice of cloud-overlap: maximum random
+    integer :: iovr_max         = 2 !< choice of cloud-overlap: maximum
+    integer :: iovr_dcorr       = 3 !< choice of cloud-overlap: decorrelation length
+    integer :: iovr_exp         = 4 !< choice of cloud-overlap: exponential
+    integer :: iovr_exprand     = 5 !< choice of cloud-overlap: exponential random
+    integer :: idcor_con        = 0 !< choice for decorrelation-length: Use constant value
+    integer :: idcor_hogan      = 1 !< choice for decorrelation-length: (https://rmets.onlinelibrary.wiley.com/doi/full/10.1002/qj.647)
+    integer :: idcor_oreopoulos = 2 !< choice for decorrelation-length: (10.5194/acp-12-9097-2012)
     !--- Z-C microphysical parameters
     real(kind=kind_phys) :: psautco(2)         !< [in] auto conversion coeff from ice to snow
     real(kind=kind_phys) :: prautco(2)         !< [in] auto conversion coeff from cloud to rain
@@ -2949,8 +2964,10 @@ module GFS_typedefs
     integer              :: iems           =  0              !< use fixed value of 1.0
     integer              :: iaer           =  1              !< default aerosol effect in sw only
     integer              :: icliq_sw       =  1              !< sw optical property for liquid clouds
-    integer              :: iovr_sw        =  1              !< sw: max-random overlap clouds
-    integer              :: iovr_lw        =  1              !< lw: max-random overlap clouds
+    integer              :: icice_sw       =  3              !< sw optical property for ice clouds 
+    integer              :: icliq_lw       =  1              !< lw optical property for liquid clouds 
+    integer              :: icice_lw       =  3              !< lw optical property for ice clouds 
+    integer              :: iovr           =  1              !< cloud-overlap: max-random overlap clouds
     integer              :: ictm           =  1              !< ictm=0 => use data at initial cond time, if not
                                                              !<           available; use latest; no extrapolation.
                                                              !< ictm=1 => use data at the forecast time, if not
@@ -2968,6 +2985,11 @@ module GFS_typedefs
                                                              !< =1 => sub-grid cloud with prescribed seeds
                                                              !< =2 => sub-grid cloud with randomly generated
                                                              !< seeds
+    integer              :: idcor = 1                        !< Decorrelation length type for overlap assumption
+                                                             !< =0 => Use constant decorrelation length, decorr_con
+                                                             !< =1 => Use spatially varying decorrelation length (Hogan et al. 2010)
+                                                             !< =2 => Use spatially and temporally varyint decorrelation length (Oreopoulos et al. 2012)
+    real(kind_phys)      :: dcorr_con         = 2.5          !< Decorrelation length constant (km) (if idcor = 0)
     logical              :: crick_proof       = .false.      !< CRICK-Proof cloud water
     logical              :: ccnorm            = .false.      !< Cloud condensate normalized by cloud cover 
     logical              :: norad_precip      = .false.      !< radiation precip flag for Ferrier/Moorthi
@@ -3341,10 +3363,10 @@ module GFS_typedefs
                                cplflx, cplwav, cplwav2atm, cplchm, lsidea,                  &
                           !--- radiation parameters
                                fhswr, fhlwr, levr, nfxr, iaerclm, iflip, isol, ico2, ialb,  &
-                               isot, iems, iaer, icliq_sw, iovr_sw, iovr_lw, ictm, isubc_sw,&
+                               isot, iems, iaer, icliq_sw, iovr, ictm, isubc_sw,            &
                                isubc_lw, crick_proof, ccnorm, lwhtr, swhtr,                 &
 #ifdef CCPP
-                               nhfrad,                                                      &
+                               nhfrad, idcor, dcorr_con,                                    &
                           ! --- RRTMGP
                                do_RRTMGP, active_gases, nGases, rrtmgp_root,                &
                                lw_file_gas, lw_file_clouds, rrtmgp_nBandsLW, rrtmgp_nGptsLW,&
@@ -3687,11 +3709,14 @@ module GFS_typedefs
     endif
 #ifdef CCPP
     Model%ntrcaer          = ntrcaer
+    Model%idcor            = idcor
+    Model%dcorr_con        = dcorr_con
 #endif
     Model%icliq_sw         = icliq_sw
-    Model%iovr_sw          = iovr_sw
-    Model%iovr_lw          = iovr_lw
-    Model%iovr             = max(Model%iovr_sw,Model%iovr_lw)
+    Model%icice_sw         = icice_sw
+    Model%icliq_lw         = icliq_lw
+    Model%icice_lw         = icice_lw
+    Model%iovr             = iovr
     Model%ictm             = ictm
     Model%isubc_sw         = isubc_sw
     Model%isubc_lw         = isubc_lw
@@ -4496,17 +4521,16 @@ module GFS_typedefs
       endif
       if (Model%crick_proof) print *,' CRICK-Proof cloud water used in radiation '
       if (Model%ccnorm)      print *,' Cloud condensate normalized by cloud cover for radiation'
-
-      print *,' Radiative heating calculated at',Model%levr, ' layers'
-      if (Model%iovr_sw == 0) then
-        print *,' random cloud overlap for Shortwave IOVR_SW=',Model%iovr_sw
+      if (Model%iovr == Model%iovr_rand) then
+         print *,' random cloud overlap for Radiation IOVR=',            Model%iovr
+      elseif (Model%iovr == Model%iovr_dcorr) then
+         print *,' exponential-decorr cloud overlap for Radiation IOVR=',Model%iovr
+      elseif (Model%iovr == Model%iovr_exp) then
+         print *,' exponential cloud overlap for Radiation IOVR=',       Model%iovr
+      elseif (Model%iovr == Model%iovr_exprand) then
+         print *,' exponential-random cloud overlap for Radiation IOVR=',Model%iovr
       else
-        print *,' max-random cloud overlap for Shortwave IOVR_SW=',Model%iovr_sw
-      endif
-      if (Model%iovr_lw == 0) then
-        print *,' random cloud overlap for Longwave IOVR_LW=',Model%iovr_lw
-      else
-        print *,' max-random cloud overlap for Longwave IOVR_LW=',Model%iovr_lw
+         print *,' max-random cloud overlap for Radiation IOVR=',        Model%iovr
       endif
       if (Model%isubc_sw == 0) then
         print *,' no sub-grid cloud for Shortwave ISUBC_SW=',Model%isubc_sw
@@ -4518,6 +4542,11 @@ module GFS_typedefs
       else
         print *,' sub-grid cloud for Longwave ISUBC_LW=',Model%isubc_lw
       endif
+    endif
+
+    ! get_alpha routines for exponential and exponential-random overlap need this(!?!)
+    if (Model%iovr == Model%iovr_exprand .or. Model%iovr == Model%iovr_exp) then
+       Model%yearlen = 365
     endif
 
 !--- set up cloud schemes and tracer elements
@@ -4857,9 +4886,12 @@ module GFS_typedefs
       print *, ' iems              : ', Model%iems
       print *, ' iaer              : ', Model%iaer
       print *, ' icliq_sw          : ', Model%icliq_sw
-      print *, ' iovr_sw           : ', Model%iovr_sw
-      print *, ' iovr_lw           : ', Model%iovr_lw
+      print *, ' icice_sw          : ', Model%icice_sw
+      print *, ' icliq_lw          : ', Model%icliq_lw
+      print *, ' icice_lw          : ', Model%icice_lw
       print *, ' iovr              : ', Model%iovr
+      print *, ' idcor             : ', Model%idcor
+      print *, ' dcorr_con         : ', Model%dcorr_con
       print *, ' ictm              : ', Model%ictm
       print *, ' isubc_sw          : ', Model%isubc_sw
       print *, ' isubc_lw          : ', Model%isubc_lw
