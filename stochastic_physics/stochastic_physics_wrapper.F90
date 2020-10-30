@@ -13,9 +13,9 @@ module stochastic_physics_wrapper_mod
   real(kind=kind_phys), dimension(:,:,:), allocatable, save :: skebv_wts
   real(kind=kind_phys), dimension(:,:,:), allocatable, save :: sfc_wts
 
-  real(kind=kind_phys), dimension(:,:,:), allocatable, save :: smc 
-  real(kind=kind_phys), dimension(:,:,:), allocatable, save :: stc 
-  real(kind=kind_phys), dimension(:,:,:), allocatable, save :: slc 
+  real(kind=kind_phys), dimension(:,:,:), allocatable, save :: smc
+  real(kind=kind_phys), dimension(:,:,:), allocatable, save :: stc
+  real(kind=kind_phys), dimension(:,:,:), allocatable, save :: slc
   real(kind=kind_phys), dimension(:,:), allocatable, save :: vfrac
   real(kind=kind_phys), dimension(:,:), allocatable, save :: stype
 
@@ -45,7 +45,7 @@ module stochastic_physics_wrapper_mod
 !-------------------------------
   subroutine stochastic_physics_wrapper (GFS_Control, GFS_Data, Atm_block, ierr)
 
-#ifdef OPENMP
+#ifdef _OPENMP
     use omp_lib
 #endif
 
@@ -70,12 +70,12 @@ module stochastic_physics_wrapper_mod
     integer :: nthreads, nb
     logical :: param_update_flag
 
-#ifdef OPENMP
+#ifdef _OPENMP
     nthreads = omp_get_max_threads()
 #else
     nthreads = 1
 #endif
-    ierr = 0 
+    ierr = 0
 
     ! Initialize
     initalize_stochastic_physics: if (GFS_Control%kdt==0) then
@@ -84,10 +84,10 @@ module stochastic_physics_wrapper_mod
         ! Initialize stochastic physics
         call init_stochastic_physics(GFS_Control%levs, GFS_Control%blksz, GFS_Control%dtp,                                               &
             GFS_Control%input_nml_file, GFS_Control%fn_nml, GFS_Control%nlunit, GFS_Control%do_sppt, GFS_Control%do_shum,                &
-            GFS_Control%do_skeb, GFS_Control%lndp_type, GFS_Control%n_var_lndp, GFS_Control%use_zmtnblck, GFS_Control%skeb_npass, & 
+            GFS_Control%do_skeb, GFS_Control%lndp_type, GFS_Control%n_var_lndp, GFS_Control%use_zmtnblck, GFS_Control%skeb_npass, &
             GFS_Control%lndp_var_list, GFS_Control%lndp_prt_list,    &
             GFS_Control%ak, GFS_Control%bk, nthreads, GFS_Control%master, GFS_Control%communicator, ierr)
-            if (ierr/=0)  then 
+            if (ierr/=0)  then
                     write(6,*) 'call to init_stochastic_physics failed'
                     return
             endif
@@ -112,7 +112,7 @@ module stochastic_physics_wrapper_mod
          deallocate(xlat)
          deallocate(xlon)
          deallocate(sfc_wts)
-      end if 
+      end if
       ! Consistency check for cellular automata
       if(GFS_Control%do_ca)then
         ! DH* The current implementation of cellular_automata assumes that all blocksizes are the
@@ -145,7 +145,7 @@ module stochastic_physics_wrapper_mod
          end if
          if ( GFS_Control%lndp_type .EQ. 2 ) then ! this scheme updates through forecast
             allocate(sfc_wts(1:Atm_block%nblks,maxval(GFS_Control%blksz),1:GFS_Control%n_var_lndp))
-         end if 
+         end if
 
          call run_stochastic_physics(GFS_Control%levs, GFS_Control%kdt, GFS_Control%phour, GFS_Control%blksz, xlat=xlat, xlon=xlon, &
                                  sppt_wts=sppt_wts, shum_wts=shum_wts, skebu_wts=skebu_wts, skebv_wts=skebv_wts, sfc_wts=sfc_wts, &
@@ -171,7 +171,7 @@ module stochastic_physics_wrapper_mod
             deallocate(skebu_wts)
             deallocate(skebv_wts)
          end if
-         if (GFS_Control%lndp_type .EQ. 2) then ! save wts, and apply lndp scheme 
+         if (GFS_Control%lndp_type .EQ. 2) then ! save wts, and apply lndp scheme
              do nb=1,Atm_block%nblks
                 GFS_Data(nb)%Coupling%sfc_wts(:,:) = sfc_wts(nb,1:GFS_Control%blksz(nb),:)
              end do
@@ -183,37 +183,37 @@ module stochastic_physics_wrapper_mod
              allocate(vfrac(1:Atm_block%nblks,maxval(GFS_Control%blksz)))
              do nb=1,Atm_block%nblks
                 stype(nb,1:GFS_Control%blksz(nb))  = GFS_Data(nb)%Sfcprop%stype(:)
-                smc(nb,1:GFS_Control%blksz(nb),:)  = GFS_Data(nb)%Sfcprop%smc(:,:) 
-                slc(nb,1:GFS_Control%blksz(nb),:)  = GFS_Data(nb)%Sfcprop%slc(:,:) 
-                stc(nb,1:GFS_Control%blksz(nb),:)  = GFS_Data(nb)%Sfcprop%stc(:,:) 
-                vfrac(nb,1:GFS_Control%blksz(nb))  = GFS_Data(nb)%Sfcprop%vfrac(:) 
+                smc(nb,1:GFS_Control%blksz(nb),:)  = GFS_Data(nb)%Sfcprop%smc(:,:)
+                slc(nb,1:GFS_Control%blksz(nb),:)  = GFS_Data(nb)%Sfcprop%slc(:,:)
+                stc(nb,1:GFS_Control%blksz(nb),:)  = GFS_Data(nb)%Sfcprop%stc(:,:)
+                vfrac(nb,1:GFS_Control%blksz(nb))  = GFS_Data(nb)%Sfcprop%vfrac(:)
              end do
 
-             ! determine whether land paramaters have been over-written 
+             ! determine whether land paramaters have been over-written
              if (mod(GFS_Control%kdt,GFS_Control%nscyc) == 1)  then ! logic copied from GFS_driver
-                    param_update_flag = .true. 
+                    param_update_flag = .true.
              else
                     param_update_flag = .false.
-             endif 
-             call lndp_apply_perts( GFS_Control%blksz, GFS_Control%lsm,  GFS_Control%lsoil, GFS_Control%dtf, & 
-                             GFS_Control%n_var_lndp, GFS_Control%lndp_var_list, GFS_Control%lndp_prt_list, & 
-                             sfc_wts, xlon, xlat, stype, maxsmc,param_update_flag, smc, slc,stc, vfrac, ierr) 
-             if (ierr/=0)  then 
+             endif
+             call lndp_apply_perts( GFS_Control%blksz, GFS_Control%lsm,  GFS_Control%lsoil, GFS_Control%dtf, &
+                             GFS_Control%n_var_lndp, GFS_Control%lndp_var_list, GFS_Control%lndp_prt_list, &
+                             sfc_wts, xlon, xlat, stype, maxsmc,param_update_flag, smc, slc,stc, vfrac, ierr)
+             if (ierr/=0)  then
                     write(6,*) 'call to GFS_apply_lndp failed'
                     return
              endif
-             deallocate(stype) 
-             deallocate(sfc_wts) 
+             deallocate(stype)
+             deallocate(sfc_wts)
              do nb=1,Atm_block%nblks
                  GFS_Data(nb)%Sfcprop%smc(:,:) =  smc(nb,1:GFS_Control%blksz(nb),:)
                  GFS_Data(nb)%Sfcprop%slc(:,:) =  slc(nb,1:GFS_Control%blksz(nb),:)
                  GFS_Data(nb)%Sfcprop%stc(:,:) =  stc(nb,1:GFS_Control%blksz(nb),:)
                  GFS_Data(nb)%Sfcprop%vfrac(:) =  vfrac(nb,1:GFS_Control%blksz(nb))
              enddo
-             deallocate(smc) 
-             deallocate(slc) 
-             deallocate(stc) 
-             deallocate(vfrac) 
+             deallocate(smc)
+             deallocate(slc)
+             deallocate(stc)
+             deallocate(vfrac)
          endif ! lndp block
          deallocate(xlat)
          deallocate(xlon)
