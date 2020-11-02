@@ -119,7 +119,7 @@ module GFS_driver
                              Diag, Init_parm)
 #endif
 
-#ifdef OPENMP
+#ifdef _OPENMP
     use omp_lib
 #endif
 
@@ -176,7 +176,7 @@ module GFS_driver
     blksz(:) = Init_parm%blksz(:)
 
 #ifdef CCPP
-#ifdef OPENMP
+#ifdef _OPENMP
     nthrds = omp_get_max_threads()
 #else
     nthrds = 1
