@@ -160,9 +160,7 @@
       type(ESMF_Array)                        :: array_work, array
       type(ESMF_FieldBundle)                  :: fieldbdl_work
       type(ESMF_Field)                        :: field_work, field
-! CHJ --- Gerhard's update: quilting with non-factors for layout --- s ---
       type(ESMF_Decomp_Flag)                  :: decompflagPTile(2,6)
-! CHJ --- Gerhard's update --- e ----------
 
       character(len=80)                       :: attrValueSList(2)
       type(ESMF_StateItem_Flag), allocatable  :: fcstItemTypeList(:)
@@ -293,9 +291,7 @@
           do tl=1,6
             decomptile(1,tl) = 1
             decomptile(2,tl) = jidx
-! CHJ --- Gerhard's update: quilting with non-factors for layout --- s ---
             decompflagPTile(:,tl) = (/ESMF_DECOMP_SYMMEDGEMAX,ESMF_DECOMP_SYMMEDGEMAX/)
-! CHJ --- Gerhard's update --- e ----------
           enddo
           call ESMF_AttributeGet(imp_state_write, convention="NetCDF", purpose="FV3", &
                                  name="gridfile", value=gridfile, rc=rc)
@@ -304,9 +300,7 @@
           CALL ESMF_LogWrite("wrtComp: gridfile:"//trim(gridfile),ESMF_LOGMSG_INFO,rc=rc)
           wrtgrid = ESMF_GridCreateMosaic(filename="INPUT/"//trim(gridfile),                                 &
                                           regDecompPTile=decomptile,tileFilePath="INPUT/",                   &
-! CHJ --- Gerhard's update: quilting with non-factors for layout --- s ---
                                           decompflagPTile=decompflagPTile,                                   &
-! CHJ --- Gerhard's update --- e ----------
                                           staggerlocList=(/ESMF_STAGGERLOC_CENTER, ESMF_STAGGERLOC_CORNER/), &
                                           name='wrt_grid', rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
@@ -328,9 +322,7 @@
           ! create the nest Grid by reading it from file but use DELayout
           wrtGrid = ESMF_GridCreate(filename="INPUT/"//trim(gridfile),                                       &
                                     fileformat=ESMF_FILEFORMAT_GRIDSPEC, regDecomp=regDecomp,                &
-! CHJ --- Gerhard's update: quilting with non-factors for layout --- s ---
                                     decompflag=(/ESMF_DECOMP_SYMMEDGEMAX,ESMF_DECOMP_SYMMEDGEMAX/),          &
-! CHJ --- Gerhard's update --- e ----------
                                     delayout=delayout, isSphere=.false., indexflag=ESMF_INDEX_DELOCAL,       &
                                     rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
@@ -695,11 +687,7 @@
               if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 !
 ! get output file name
-! CHJ --- Gerhard's update: quilting with non-factors for layout --- s ---
-!              call ESMF_AttributeGet(fcstField(i), convention="NetCDF", purpose="FV3", &
               call ESMF_AttributeGet(fcstField(j), convention="NetCDF", purpose="FV3", &
-! CHJ --- Gerhard's update --- e ----------
-
                                      name="output_file", value=outfile_name, rc=rc)
 
               if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return

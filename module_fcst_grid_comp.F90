@@ -211,9 +211,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     integer, allocatable, dimension(:) :: isl, iel, jsl, jel
     integer, allocatable, dimension(:,:,:) :: deBlockList
 
-! CHJ --- Gerhard's update: quilting with non-factors for layout --- s ---
     type(ESMF_Decomp_Flag)  :: decompflagPTile(2,6)
-! CHJ --- Gerhard's update --- e ----------
 
     integer               :: globalTileLayout(2)
     integer               :: nestRootPet, peListSize(1)
@@ -435,9 +433,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
                                               maxIndex=(/atm_int_state%Atm%mlon,atm_int_state%Atm%mlat/), &
                                               gridEdgeLWidth=(/0,0/), &
                                               gridEdgeUWidth=(/0,0/), &
-! CHJ --- Gerhard's update: quilting with non-factors for layout --- s ---
                                               decompflag=(/ESMF_DECOMP_SYMMEDGEMAX,ESMF_DECOMP_SYMMEDGEMAX/), &
-! CHJ --- Gerhard's update --- e ----------
                                               name="fcst_grid", &
                                               indexflag=ESMF_INDEX_DELOCAL, &
                                               rc=rc); ESMF_ERR_ABORT(rc)
@@ -475,15 +471,11 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
             do tl=1,6
               decomptile(1,tl) = atm_int_state%Atm%layout(1)
               decomptile(2,tl) = atm_int_state%Atm%layout(2)
-! CHJ --- Gerhard's update: quilting with non-factors for layout --- s ---
               decompflagPTile(:,tl) = (/ESMF_DECOMP_SYMMEDGEMAX,ESMF_DECOMP_SYMMEDGEMAX/)
-! CHJ --- Gerhard's update --- e ----------
             enddo
             fcstGrid = ESMF_GridCreateMosaic(filename="INPUT/"//trim(gridfile),                                 &
                                              regDecompPTile=decomptile,tileFilePath="INPUT/",                   &
-! CHJ --- Gerhard's update: quilting with non-factors for layout --- s ---
                                              decompflagPTile=decompflagPTile,                                   &
-! CHJ --- Gerhard's update --- e ----------
                                              staggerlocList=(/ESMF_STAGGERLOC_CENTER, ESMF_STAGGERLOC_CORNER/), &
                                              name='fcst_grid', rc=rc)
             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
@@ -531,9 +523,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
             ! create the nest Grid by reading it from file but use DELayout
             fcstGrid = ESMF_GridCreate(filename='INPUT/grid.nest02.tile7.nc',                             &
                                        fileformat=ESMF_FILEFORMAT_GRIDSPEC, regDecomp=regDecomp,          &
-! CHJ --- Gerhard's update: quilting with non-factors for layout --- s ---
                                        decompflag=(/ESMF_DECOMP_SYMMEDGEMAX,ESMF_DECOMP_SYMMEDGEMAX/),    &
-! CHJ --- Gerhard's update --- e ----------
                                        delayout=delayout, isSphere=.false., indexflag=ESMF_INDEX_DELOCAL, &
               rc=rc)
             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
