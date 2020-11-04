@@ -160,6 +160,7 @@
       type(ESMF_Array)                        :: array_work, array
       type(ESMF_FieldBundle)                  :: fieldbdl_work
       type(ESMF_Field)                        :: field_work, field
+      type(ESMF_Decomp_Flag)                  :: decompflagPTile(2,6)
 
       character(len=80)                       :: attrValueSList(2)
       type(ESMF_StateItem_Flag), allocatable  :: fcstItemTypeList(:)
@@ -290,6 +291,7 @@
           do tl=1,6
             decomptile(1,tl) = 1
             decomptile(2,tl) = jidx
+            decompflagPTile(:,tl) = (/ESMF_DECOMP_SYMMEDGEMAX,ESMF_DECOMP_SYMMEDGEMAX/)
           enddo
           call ESMF_AttributeGet(imp_state_write, convention="NetCDF", purpose="FV3", &
                                  name="gridfile", value=gridfile, rc=rc)
@@ -298,6 +300,7 @@
           CALL ESMF_LogWrite("wrtComp: gridfile:"//trim(gridfile),ESMF_LOGMSG_INFO,rc=rc)
           wrtgrid = ESMF_GridCreateMosaic(filename="INPUT/"//trim(gridfile),                                 &
                                           regDecompPTile=decomptile,tileFilePath="INPUT/",                   &
+                                          decompflagPTile=decompflagPTile,                                   &
                                           staggerlocList=(/ESMF_STAGGERLOC_CENTER, ESMF_STAGGERLOC_CORNER/), &
                                           name='wrt_grid', rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
@@ -319,6 +322,7 @@
           ! create the nest Grid by reading it from file but use DELayout
           wrtGrid = ESMF_GridCreate(filename="INPUT/"//trim(gridfile),                                       &
                                     fileformat=ESMF_FILEFORMAT_GRIDSPEC, regDecomp=regDecomp,                &
+                                    decompflag=(/ESMF_DECOMP_SYMMEDGEMAX,ESMF_DECOMP_SYMMEDGEMAX/),          &
                                     delayout=delayout, isSphere=.false., indexflag=ESMF_INDEX_DELOCAL,       &
                                     rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
@@ -683,7 +687,7 @@
               if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 !
 ! get output file name
-              call ESMF_AttributeGet(fcstField(i), convention="NetCDF", purpose="FV3", &
+              call ESMF_AttributeGet(fcstField(j), convention="NetCDF", purpose="FV3", &
                                      name="output_file", value=outfile_name, rc=rc)
 
               if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
