@@ -105,6 +105,11 @@ module GFS_driver
 !--------------
 ! GFS initialze
 !--------------
+!## CCPP ## For the CCPP, much (*but not all*) of the code in this routine has been 
+! put into CCPP interstitial schemes, especially their init stages. Where this has been 
+! done, the code is wrapped in both preprocessor directives and comments describing the 
+! location of the code for CCPP execution. Lines in this routine that are not wrapped in 
+! a CCPP comment are still executed through this subroutine.
   subroutine GFS_initialize (Model, Statein, Stateout, Sfcprop,     &
                              Coupling, Grid, Tbd, Cldprop, Radtend, & 
 #ifdef CCPP
@@ -114,7 +119,7 @@ module GFS_driver
                              Diag, Init_parm)
 #endif
 
-#ifdef OPENMP
+#ifdef _OPENMP
     use omp_lib
 #endif
 
@@ -187,7 +192,7 @@ module GFS_driver
     integer :: ntrac
     integer :: ix
 #ifndef CCPP
-    integer :: blocksize
+    integer :: blocksize,k
     real(kind=kind_phys), allocatable :: si(:)
     real(kind=kind_phys), parameter   :: p_ref = 101325.0d0
 #endif
@@ -198,7 +203,7 @@ module GFS_driver
     blksz(:) = Init_parm%blksz(:)
 
 #ifdef CCPP
-#ifdef OPENMP
+#ifdef _OPENMP
     nthrds = omp_get_max_threads()
 #else
     nthrds = 1
@@ -216,24 +221,29 @@ module GFS_driver
                      Init_parm%iau_offset, Init_parm%bdat,         &
                      Init_parm%cdat, Init_parm%tracer_names,       &
                      Init_parm%input_nml_file, Init_parm%tile_num, &
-                     Init_parm%blksz                               &
+                     Init_parm%blksz,Init_parm%ak, Init_parm%bk   &
 #ifdef CCPP
-                    ,Init_parm%ak, Init_parm%bk,                   &
-                     Init_parm%restart, Init_parm%hydrostatic,     &
+                     ,Init_parm%restart, Init_parm%hydrostatic,     &
                      communicator, ntasks, nthrds                  &
 #endif
                      )
 
+!## CCPP ##* These are called automatically in GFS_phys_time_vary.fv3.F90/GFS_phys_time_vary_init 
+! as part of CCPP physics init stage. The reason why these are in GFS_phys_time_vary_init and not 
+! in ozphys/h2ophys is that the ozone and h2o interpolation of the data read here is done in 
+! GFS_phys_time_vary_run, i.e. all work related to the ozone/h2o input data is in GFS_phys_time_vary, 
+! while ozphys/h2ophys are applying ozone/h2o forcing to the model state.
 #ifndef CCPP
     call read_o3data  (Model%ntoz, Model%me, Model%master)
     call read_h2odata (Model%h2o_phys, Model%me, Model%master)
-    if (Model%aero_in) then
+    if (Model%iaerclm) then
       call read_aerdata (Model%me,Model%master,Model%iflip,Model%idate)
     endif
-    if (Model%iccn) then
+    if (Model%iccn == 1) then
       call read_cidata  ( Model%me, Model%master)
     endif
 #endif
+!*## CCPP ##
 
     do nb = 1,nblks
       ix = Init_parm%blksz(nb)
@@ -254,12 +264,12 @@ module GFS_driver
       call Diag     (nb)%create (ix, Model)
     enddo
 
-#ifdef CCPP
-! This logic deals with non-uniform block sizes for CCPP. When non-uniform block sizes
+!## CCPP ##* This logic deals with non-uniform block sizes for CCPP. When non-uniform block sizes
 ! are used, it is required that only the last block has a different (smaller) size than
 ! all other blocks. This is the standard in FV3. If this is the case, set non_uniform_blocks
 ! to .true. and initialize nthreads+1 elements of the interstitial array. The extra element
 ! will be used by the thread that runs over the last, smaller block.
+#ifdef CCPP
 
     if (minval(Init_parm%blksz)==maxval(Init_parm%blksz)) then
        non_uniform_blocks = .false.
@@ -285,10 +295,13 @@ module GFS_driver
       call Interstitial (nthrds+1)%create (Init_parm%blksz(nblks), Model)
     end if
 #endif
+!*## CCPP ##
 
     !--- populate the grid components
     call GFS_grid_populate (Grid, Init_parm%xlon, Init_parm%xlat, Init_parm%area)
 
+!## CCPP ##* GFS_phys_time_vary.fv3.F90/GFS_phys_time_vary_init; Note: this is run
+! automatically during the CCPP physics initialization stage.
 #ifndef CCPP
     !--- read in and initialize ozone and water
     if (Model%ntoz > 0) then
@@ -299,7 +312,7 @@ module GFS_driver
     endif
 
     !--- read in and initialize IN and CCN
-    if (Model%iccn) then
+    if (Model%iccn == 1) then
       do nb = 1, nblks
         call setindxci (Init_parm%blksz(nb), Grid(nb)%xlat_d, Grid(nb)%jindx1_ci, &
                         Grid(nb)%jindx2_ci, Grid(nb)%ddy_ci, Grid(nb)%xlon_d,     &
@@ -308,7 +321,7 @@ module GFS_driver
     endif
 
     !--- read in and initialize aerosols
-    if (Model%aero_in) then
+    if (Model%iaerclm) then
       do nb = 1, nblks
         call setindxaer (Init_parm%blksz(nb),Grid(nb)%xlat_d,Grid(nb)%jindx1_aer, &
                         Grid(nb)%jindx2_aer, Grid(nb)%ddy_aer, Grid(nb)%xlon_d,   &
@@ -324,15 +337,20 @@ module GFS_driver
       enddo
     endif
 #endif
+!*## CCPP ##
 
+!## CCPP ##* GFS_time_vary_pre.fv3.F90/GFS_time_vary_pre_init; Note: This is called 
+! during the CCPP physics initialization stage.
 #ifndef CCPP
     !--- Call gfuncphys (funcphys.f) to compute all physics function tables.
     call gfuncphys ()
 #endif
+!*## CCPP ##
 
 !   call gsmconst (Model%dtp, Model%me, .TRUE.) ! This is for Ferrier microphysics - notused - moorthi
 
 #ifndef CCPP
+!## CCPP ##* GFS_typedefs.F90/control_initialize
     !--- define sigma level for radiation initialization 
     !--- The formula converting hybrid sigma pressure coefficients to sigma coefficients follows Eckermann (2009, MWR)
     !--- ps is replaced with p0. The value of p0 uses that in http://www.emc.ncep.noaa.gov/officenotes/newernotes/on461.pdf
@@ -340,13 +358,17 @@ module GFS_driver
     allocate(si(Model%levr+1))
     si = (Init_parm%ak + Init_parm%bk * p_ref - Init_parm%ak(Model%levr+1)) &
              / (p_ref - Init_parm%ak(Model%levr+1))
+!*## CCPP ##
 
+!## CCPP ##* This functionality is now in GFS_rrtmg_setup.F90/GFS_rrtmg_setup_init; Note: it is automatically 
+! called during the CCPP physics initialization stage.
     call rad_initialize (si,  Model%levr,         Model%ictm,    Model%isol,      &
            Model%ico2,        Model%iaer,         Model%ialb,    Model%iems,      &
            Model%ntcw,        Model%num_p2d,      Model%num_p3d, Model%npdf3d,    &
            Model%ntoz,        Model%iovr_sw,      Model%iovr_lw, Model%isubc_sw,  &
            Model%isubc_lw,    Model%icliq_sw,     Model%crick_proof, Model%ccnorm,&
            Model%imp_physics, Model%norad_precip, Model%idate,   Model%iflip,  Model%me)
+!*## CCPP ##
     deallocate (si)
 #endif
 
@@ -355,11 +377,13 @@ module GFS_driver
 
     if (Model%imp_physics == Model%imp_physics_mg) then          !--- initialize Morrison-Gettelman microphysics
 #ifndef CCPP
+!## CCPP ##* m_micro.F90/m_micro_init; Note: This is automatically called during the 
+! CCPP physics initialization stage.
       if (Model%fprcp <= 0) then
         call ini_micro (Model%mg_dcs, Model%mg_qcvar, Model%mg_ts_auto_ice(1))
       elseif (Model%fprcp == 1) then
         call micro_mg_init2_0(kind_phys, gravit, rair, rh2o, cpair,              &
-                              tmelt, latvap, latice, 1.01_kind_phys,             &
+                              tmelt, latvap, latice, Model%mg_rhmini,            &
                               Model%mg_dcs, Model%mg_ts_auto_ice,                &
                               Model%mg_qcvar,                                    &
                               Model%microp_uniform, Model%do_cldice,             &
@@ -372,7 +396,7 @@ module GFS_driver
                               Model%mg_ncnst,        Model%mg_ninst)
       elseif (Model%fprcp == 2) then
         call micro_mg_init3_0(kind_phys, gravit, rair, rh2o, cpair,              &
-                              tmelt, latvap, latice, 1.01_kind_phys,             &
+                              tmelt, latvap, latice, Model%mg_rhmini,            &
                               Model%mg_dcs, Model%mg_ts_auto_ice,                &
                               Model%mg_qcvar,                                    &
                               Model%mg_do_hail,       Model%mg_do_graupel,       &
@@ -391,6 +415,7 @@ module GFS_driver
       
       endif
       call aer_cloud_init ()
+!*## CCPP ##
 #endif
 !
     elseif (Model%imp_physics == Model%imp_physics_thompson) then       !--- initialize Thompson Cloud microphysics
@@ -398,13 +423,16 @@ module GFS_driver
         print *,'SHOC is not currently compatible with Thompson MP -- shutting down'
         stop 
       endif 
+!## CCPP ##* mp_thompson.F90/mp_thompson_init; Note: This is automatically called during the 
+! CCPP physics initialization stage. The check for SHOC is not included in the initialization
+! (it is only performed above as part of the current routine).
 #ifndef CCPP
       call thompson_init()                     !--- add aerosol version later
       if(Model%ltaerosol) then 
         print *,'Aerosol awareness is not included in this version of Thompson MP -- shutting down'
         stop 
       endif 
-!
+!*## CCPP ##
     elseif(Model%imp_physics == Model%imp_physics_wsm6) then        !--- initialize WSM6 Cloud microphysics
       if(Model%do_shoc) then 
         print *,'SHOC is not currently compatible with WSM6 -- shutting down'
@@ -414,6 +442,8 @@ module GFS_driver
 #endif
 !
     else if(Model%imp_physics == Model%imp_physics_gfdl) then      !--- initialize GFDL Cloud microphysics
+!## CCPP ##* gfdl_cloud_microphys.F90/gfdl_cloud_microphys_init; Note: This is automatically called during the 
+! CCPP physics initialization stage. The check for SHOC is included in the GFDL microphysics initialization routine.
 #ifndef CCPP
       if(Model%do_shoc) then 
          print *,'SHOC is not currently compatible with GFDL MP -- shutting down'
@@ -422,6 +452,7 @@ module GFS_driver
        call gfdl_cloud_microphys_init (Model%me, Model%master, Model%nlunit, Model%input_nml_file, &
                                        Init_parm%logunit, Model%fn_nml)
 #endif
+!*## CCPP ##
     endif 
 
 #ifndef CCPP
@@ -429,8 +460,14 @@ module GFS_driver
     if (Model%ras) call ras_init (Model%levs, Model%me)
 #endif
 
+!## CCPP ##* sfc_drv.f/lsm_noah_init and sfc_noahmp_drv.f/noahmpdrv_init; Note: This is
+! automatically called during the CCPP physics initialization stage.
+#if 1
+!ifndef CCPP
     !--- initialize soil vegetation
     call set_soilveg(Model%me, Model%isot, Model%ivegsrc, Model%nlunit)
+#endif
+!*## CCPP ##
 
 #ifndef CCPP
 
@@ -566,7 +603,7 @@ module GFS_driver
       call cires_ugwp_init(Model%me,      Model%master, Model%nlunit,  Init_parm%logunit, &
                            Model%fn_nml,  Model%lonr,   Model%latr,    Model%levs,        &
                            Init_parm%ak,  Init_parm%bk, p_ref,         Model%dtp,         &
-                           Model%cdmbgwd, Model%cgwf,   Model%prslrd0, Model%ral_ts)
+                           Model%cdmbgwd(1:2), Model%cgwf,   Model%prslrd0, Model%ral_ts)
     endif
 #endif
 
@@ -574,6 +611,29 @@ module GFS_driver
     !--- FV3GFS handles this as part of the IC ingest
     !--- this note is placed here to alert users to study
     !--- the FV3GFS_io.F90 module
+
+#ifndef CCPP
+    if(Model%do_ca .and. Model%ca_global)then
+       
+       do nb = 1,nblks
+         do k=1,Model%levs
+          if (Model%si(k) .lt. 0.1 .and. Model%si(k) .gt. 0.025) then
+           Coupling(nb)%vfact_ca(k) = (Model%si(k)-0.025)/(0.1-0.025)
+          else if (Model%si(k) .lt. 0.025) then
+           Coupling(nb)%vfact_ca(k) = 0.0
+          else
+           Coupling(nb)%vfact_ca(k) = 1.0
+          endif
+        enddo
+       enddo
+
+       do nb = 1,nblks
+        Coupling(nb)%vfact_ca(2)=Coupling(nb)%vfact_ca(3)*0.5
+        Coupling(nb)%vfact_ca(1)=0.0
+       enddo
+     
+    endif
+#endif
 
   end subroutine GFS_initialize
 
@@ -589,7 +649,7 @@ module GFS_driver
 !      5) interpolates coefficients for prognostic ozone calculation
 !      6) performs surface data cycling via the GFS gcycle routine
 !-------------------------------------------------------------------------
-  subroutine GFS_time_vary_step (Model, Statein, Stateout, Sfcprop, Coupling, & 
+  subroutine GFS_time_vary_step (Model, Statein, Stateout, Sfcprop, Coupling, &
                                  Grid, Tbd, Cldprop, Radtend, Diag)
 
     implicit none
@@ -616,6 +676,7 @@ module GFS_driver
     integer              :: iw3jdn
     real(kind=kind_phys), parameter :: cn_hr     = 3600._kind_phys
 
+!## CCPP ##* GFS_time_vary_pre.fv3.F90/GFS_time_vary_pre_run
     nblks = size(blksz)
     !--- Model%jdat is being updated directly inside of FV3GFS_cap.F90
     !--- update calendars and triggers
@@ -696,12 +757,18 @@ module GFS_driver
       print *,' phour ', Model%phour
       print *,' solhr ', Model%solhr
     endif
+!*## CCPP ##
 
+!## CCPP ##* All functionality except for the call to radupdate is now in 
+! GFS_rad_time_vary.fv3.F90/GFS_rad_time_vary_run. The call to radupdate is now
+! in GFS_rrtmg_setup.F90/GFS_rrtmg_setup_run.
     !--- radiation time varying routine
     if (Model%lsswr .or. Model%lslwr) then
       call GFS_rad_time_vary (Model, Statein, Tbd, sec)
     endif
+!*## CCPP ##
 
+!## CCPP ##* All functionality is now in GFS_phys_time_vary.fv3.F90/GFS_phys_time_vary_run
     !--- physics time varying routine
     call GFS_phys_time_vary (Model, Grid, Tbd, Statein)
 
@@ -710,6 +777,7 @@ module GFS_driver
       if (mod(Model%kdt,Model%nscyc) == 1) THEN
         call gcycle (nblks, Model, Grid(:), Sfcprop(:), Cldprop(:))
       endif
+        ! if not updating surface params through fcast, perturb params once at start of fcast
     endif
 
     !--- determine if diagnostics buckets need to be cleared
@@ -737,7 +805,8 @@ module GFS_driver
         enddo
       endif
     endif
-!
+!*## CCPP ##
+!## CCPP ## This is not yet in the CCPP
     if (Model%iau_offset > 0) then
       kdt_iau = nint(Model%iau_offset*con_hr/Model%dtp)
       if (Model%kdt == kdt_iau+1) then
@@ -749,6 +818,7 @@ module GFS_driver
         if(Model%me == Model%master) print *,'in gfs_driver, at iau_center, zero out rad/phys accumulated diag fields, kdt=',Model%kdt,'kdt_iau=',kdt_iau,'iau_offset=',Model%iau_offset
       endif
     endif
+!*## CCPP ##
 
 ! kludge for output
     if (Model%do_skeb) then
@@ -773,10 +843,10 @@ module GFS_driver
         enddo
       enddo
     endif
-
+!*## CCPP ##
   end subroutine GFS_time_vary_step
 
-
+!## CCPP ##* GFS_stochastics.F90/GFS_stochastics_run
 !-------------------------------------------------------------------------
 ! GFS stochastic_driver
 !-------------------------------------------------------------------------
@@ -793,16 +863,6 @@ module GFS_driver
     implicit none
 
     !--- interface variables
-! DH* gfortran correctly throws an error if the intent() declarations
-! for arguments differ between the actual routine (here) and the dummy
-! interface routine (IPD_func0d_proc in IPD_typedefs.F90):
-!
-! Error: Interface mismatch in procedure pointer assignment at (1): INTENT mismatch in argument 'control'
-!
-! Since IPD_func0d_proc declares all arguments as intent(inout), we
-! need to do the same here - however, this way we are loosing the
-! valuable information on the actual intent to this routine. *DH
-#ifdef __GFORTRAN__
     type(GFS_control_type),         intent(inout) :: Model
     type(GFS_statein_type),         intent(inout) :: Statein
     type(GFS_stateout_type),        intent(inout) :: Stateout
@@ -813,23 +873,11 @@ module GFS_driver
     type(GFS_cldprop_type),         intent(inout) :: Cldprop
     type(GFS_radtend_type),         intent(inout) :: Radtend
     type(GFS_diag_type),            intent(inout) :: Diag
-#else
-    type(GFS_control_type),   intent(in   ) :: Model
-    type(GFS_statein_type),   intent(in   ) :: Statein
-    type(GFS_stateout_type),  intent(in   ) :: Stateout
-    type(GFS_sfcprop_type),   intent(in   ) :: Sfcprop
-    type(GFS_coupling_type),  intent(inout) :: Coupling
-    type(GFS_grid_type),      intent(in   ) :: Grid
-    type(GFS_tbd_type),       intent(in   ) :: Tbd
-    type(GFS_cldprop_type),   intent(in   ) :: Cldprop
-    type(GFS_radtend_type),   intent(in   ) :: Radtend
-    type(GFS_diag_type),      intent(inout) :: Diag
-#endif
+
     !--- local variables
     integer :: k, i
     real(kind=kind_phys) :: upert, vpert, tpert, qpert, qnew,sppt_vwt
-    !real(kind=kind_phys),dimension(size(Statein%tgrs,1),size(Statein%tgrs,2)) :: tconvtend, &
-    !                     qconvtend,uconvtend,vconvtend
+    real(kind=kind_phys),dimension(size(Statein%tgrs,1),size(Statein%tgrs,2)) :: ca1
 
      if (Model%do_sppt) then
        do k = 1,size(Statein%tgrs,2)
@@ -857,27 +905,11 @@ module GFS_driver
            Diag%sppt_wts(i,Model%levs-k+1)=Coupling%sppt_wts(i,k)
 
            
-          ! if(Model%isppt_deep)then
-
-           ! tconvtend(i,k)=Coupling%tconvtend(i,k)
-           ! qconvtend(i,k)=Coupling%qconvtend(i,k)
-           ! uconvtend(i,k)=Coupling%uconvtend(i,k)
-           ! vconvtend(i,k)=Coupling%vconvtend(i,k)           
-
-
-           ! upert = (Stateout%gu0(i,k)   - Statein%ugrs(i,k) - uconvtend(i,k)) + uconvtend(i,k) * Coupling%sppt_wts(i,k)
-           ! vpert = (Stateout%gv0(i,k)   - Statein%vgrs(i,k) - vconvtend(i,k)) + vconvtend(i,k) * Coupling%sppt_wts(i,k)
-           ! tpert = (Stateout%gt0(i,k)   - Statein%tgrs(i,k) - Tbd%dtdtr(i,k) - tconvtend(i,k)) + tconvtend(i,k) * Coupling%sppt_wts(i,k)
-           ! qpert = (Stateout%gq0(i,k,1) - Statein%qgrs(i,k,1) - qconvtend(i,k)) + qconvtend(i,k) * Coupling%sppt_wts(i,k)
-
-           !else
-           
             upert = (Stateout%gu0(i,k)   - Statein%ugrs(i,k))   * Coupling%sppt_wts(i,k)
             vpert = (Stateout%gv0(i,k)   - Statein%vgrs(i,k))   * Coupling%sppt_wts(i,k)
             tpert = (Stateout%gt0(i,k)   - Statein%tgrs(i,k) - Tbd%dtdtr(i,k)) * Coupling%sppt_wts(i,k)
             qpert = (Stateout%gq0(i,k,1) - Statein%qgrs(i,k,1)) * Coupling%sppt_wts(i,k)
  
-           !endif
 
            Stateout%gu0(i,k)  = Statein%ugrs(i,k)+upert
            Stateout%gv0(i,k)  = Statein%vgrs(i,k)+vpert
@@ -890,22 +922,6 @@ module GFS_driver
            endif
          enddo
        enddo
-
-       !if(Model%isppt_deep == .true.)then
-       !  Sfcprop%tprcp(:) = Sfcprop%tprcp(:) + (Coupling%sppt_wts(:,15) - 1 )*Diag%rainc(:)
-       !  Diag%totprcp(:)  = Diag%totprcp(:)  + (Coupling%sppt_wts(:,15) - 1 )*Diag%rainc(:) 
-       !  Diag%cnvprcp(:)  = Diag%cnvprcp(:)  + (Coupling%sppt_wts(:,15) - 1 )*Diag%rainc(:)
-       !!  ! bucket precipitation adjustment due to sppt                                                                                                                                                                     
-       !  Diag%totprcpb(:) = Diag%totprcpb(:)  + (Coupling%sppt_wts(:,15) - 1 )*Diag%rainc(:)
-       !  Diag%cnvprcpb(:) = Diag%cnvprcpb(:)  + (Coupling%sppt_wts(:,15) - 1 )*Diag%rainc(:)
-
-
-       !  if (Model%cplflx) then !Need to make proper adjustments for deep convection only perturbations
-       !    Coupling%rain_cpl(:) = Coupling%rain_cpl(:) + (Coupling%sppt_wts(:,15) - 1.0)*Tbd%drain_cpl(:)
-       !    Coupling%snow_cpl(:) = Coupling%snow_cpl(:) + (Coupling%sppt_wts(:,15) - 1.0)*Tbd%dsnow_cpl(:)
-       !  endif
-
-       !else
 
         ! instantaneous precip rate going into land model at the next time step
         Sfcprop%tprcp(:) = Coupling%sppt_wts(:,15)*Sfcprop%tprcp(:)
@@ -922,9 +938,70 @@ module GFS_driver
            Coupling%snow_cpl(:) = Coupling%snow_cpl(:) + (Coupling%sppt_wts(:,15) - 1.0)*Tbd%dsnow_cpl(:)
         endif
 
-       !endif 
+     endif
+
+
+     if (Model%do_ca .and. Model%ca_global) then
+       do k = 1,size(Statein%tgrs,2)
+         do i = 1,size(Statein%tgrs,1)
+           sppt_vwt=1.0
+           if (Diag%zmtnblck(i).EQ.0.0) then
+              sppt_vwt=1.0
+           else
+              if (k.GT.Diag%zmtnblck(i)+2) then
+                 sppt_vwt=1.0
+              endif
+              if (k.LE.Diag%zmtnblck(i)) then
+                 sppt_vwt=0.0
+              endif
+              if (k.EQ.Diag%zmtnblck(i)+1) then
+                 sppt_vwt=0.333333
+              endif
+              if (k.EQ.Diag%zmtnblck(i)+2) then
+                 sppt_vwt=0.666667
+              endif
+           endif
+
+           ca1(i,k)=((Coupling%ca1(i)-1.)*sppt_vwt*Coupling%vfact_ca(k))+1.0
+
+           upert = (Stateout%gu0(i,k)   - Statein%ugrs(i,k))   * ca1(i,k)
+           vpert = (Stateout%gv0(i,k)   - Statein%vgrs(i,k))   * ca1(i,k)
+           tpert = (Stateout%gt0(i,k)   - Statein%tgrs(i,k) - Tbd%dtdtr(i,k)) * ca1(i,k)
+           qpert = (Stateout%gq0(i,k,1) - Statein%qgrs(i,k,1)) * ca1(i,k)
+
+           Stateout%gu0(i,k)  = Statein%ugrs(i,k)+upert
+           Stateout%gv0(i,k)  = Statein%vgrs(i,k)+vpert
+
+           !negative humidity check                                                                                                                                                                                                                     
+           qnew = Statein%qgrs(i,k,1)+qpert
+           if (qnew >= 1.0e-10) then
+              Stateout%gq0(i,k,1) = qnew
+              Stateout%gt0(i,k)   = Statein%tgrs(i,k) + tpert + Tbd%dtdtr(i,k)
+           endif
+
+         enddo
+       enddo
+
+     
+
+        ! instantaneous precip rate going into land model at the next time step                                                                                                                                                                         
+        Sfcprop%tprcp(:) = ca1(:,15)*Sfcprop%tprcp(:)
+        Diag%totprcp(:)      = Diag%totprcp(:)      + (ca1(:,15) - 1 )*Diag%rain(:)
+        ! acccumulated total and convective preciptiation                                                                                                                                                                                               
+        Diag%cnvprcp(:)      = Diag%cnvprcp(:)      + (ca1(:,15) - 1 )*Diag%rainc(:)
+        ! bucket precipitation adjustment due to sppt                                                                                                                                                                                                   
+        Diag%totprcpb(:)      = Diag%totprcpb(:)      + (ca1(:,15) - 1 )*Diag%rain(:)
+        Diag%cnvprcpb(:)      = Diag%cnvprcpb(:)      + (ca1(:,15) - 1 )*Diag%rainc(:)
+       
+        if (Model%cplflx) then
+           Coupling%rain_cpl(:) = Coupling%rain_cpl(:) + (ca1(:,15) - 1.0)*Tbd%drain_cpl(:)
+           Coupling%snow_cpl(:) = Coupling%snow_cpl(:) + (ca1(:,15) - 1.0)*Tbd%dsnow_cpl(:)
+        endif
 
      endif
+
+     
+
 
      if (Model%do_shum) then
        Stateout%gq0(:,:,1) = Stateout%gq0(:,:,1)*(1.0 + Coupling%shum_wts(:,:))
@@ -939,7 +1016,7 @@ module GFS_driver
      endif
 
   end subroutine GFS_stochastic_driver
-
+!*## CCPP ##
 
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -948,6 +1025,8 @@ module GFS_driver
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+!## CCPP ##* GFS_rad_time_vary.fv3.F90/GFS_rad_time_vary_run except for the call to 
+! radupdate, which is in GFS_rrtmg_setup.F90/GFS_rrtmg_setup_run
 !-----------------------------------------------------------------------
 ! GFS_rad_time_vary
 !-----------------------------------------------------------------------
@@ -1013,8 +1092,9 @@ module GFS_driver
     endif
 
   end subroutine GFS_rad_time_vary
+!*## CCPP ##
 
-
+!## CCPP ## GFS_phys_time_vary.fv3.F90/GFS_phys_time_vary_run
 !-----------------------------------------------------------------------
 ! GFS_phys_time_vary
 !-----------------------------------------------------------------------
@@ -1103,7 +1183,7 @@ module GFS_driver
      endif
 
     !--- ICCN interpolation
-    if (Model%ICCN ) then
+    if (Model%ICCN == 1) then
       do nb = 1, nblks
         call ciinterpol (Model%me, blksz(nb), Model%idate, Model%fhour, &
                          Grid(nb)%jindx1_ci, Grid(nb)%jindx2_ci,        &
@@ -1115,7 +1195,7 @@ module GFS_driver
     endif
 
     !--- aerosol interpolation
-     if (Model%aero_in ) then
+     if (Model%iaerclm ) then
       do nb = 1, nblks
         call aerinterpol (Model%me, Model%master, blksz(nb),            &
                          Model%idate, Model%fhour,                      &
@@ -1129,8 +1209,9 @@ module GFS_driver
 
   end subroutine GFS_phys_time_vary
 #endif
+!*## CCPP ##
 
-
+!## CCPP ##* This is not in the CCPP
 !------------------
 ! GFS_grid_populate
 !------------------
@@ -1171,6 +1252,7 @@ module GFS_driver
     enddo
 
   end subroutine GFS_grid_populate
+!*## CCPP ##
 
 end module GFS_driver
 

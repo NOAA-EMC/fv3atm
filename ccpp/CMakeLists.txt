@@ -1,20 +1,14 @@
-cmake_minimum_required(VERSION 2.8.11)
+cmake_minimum_required(VERSION 3.0)
 
 # Use rpaths on MacOSX
 set(CMAKE_MACOSX_RPATH 1)
-
-if(POLICY CMP0048)
-    cmake_policy(SET CMP0048 NEW)
-endif(POLICY CMP0048)
-
 if(POLICY CMP0042)
     cmake_policy(SET CMP0042 NEW)
 endif(POLICY CMP0042)
 
-PROJECT(CCPP-FV3)
+project(CCPP-FV3
+        LANGUAGES C CXX Fortran)
 set(PROJECT "CCPP-FV3")
-
-ENABLE_LANGUAGE(Fortran)
 
 include(CMakeForceCompiler)
 
@@ -62,17 +56,22 @@ elseif (${CMAKE_BUILD_TYPE} MATCHES "Release")
   set (CMAKE_Fortran_FLAGS  "${CMAKE_Fortran_FLAGS_RELEASE}")
 elseif (${CMAKE_BUILD_TYPE} MATCHES "Bitforbit")
   if (${CMAKE_Fortran_COMPILER_ID} MATCHES "PGI")
-    set (CMAKE_C_FLAGS_RELEASE       "-O1 -fPIC" CACHE STRING "" FORCE)
-    set (CMAKE_CXX_FLAGS_RELEASE     "-O1 -fPIC" CACHE STRING "" FORCE)
-    set (CMAKE_Fortran_FLAGS_RELEASE "-O1 -fPIC" CACHE STRING "" FORCE)
+    set (CMAKE_C_FLAGS_BITFORBIT       "-O1 -g -fPIC" CACHE STRING "" FORCE)
+    set (CMAKE_CXX_FLAGS_BITFORBIT     "-O1 -g -fPIC" CACHE STRING "" FORCE)
+    set (CMAKE_Fortran_FLAGS_BITFORBIT "-O1 -g -fPIC" CACHE STRING "" FORCE)
+  elseif (APPLE AND ${CMAKE_Fortran_COMPILER_ID} MATCHES "GNU")
+    set (CMAKE_C_FLAGS_BITFORBIT       "-O0 -g -fPIC" CACHE STRING "" FORCE)
+    set (CMAKE_CXX_FLAGS_BITFORBIT     "-O0 -g -fPIC" CACHE STRING "" FORCE)
+    set (CMAKE_Fortran_FLAGS_BITFORBIT "-O0 -g -fPIC" CACHE STRING "" FORCE)
+  # For Intel on all platforms and for GNU on all platforms except macOS
   else (${CMAKE_Fortran_COMPILER_ID} MATCHES "PGI")
-    set (CMAKE_C_FLAGS_RELEASE       "-O2 -fPIC" CACHE STRING "" FORCE)
-    set (CMAKE_CXX_FLAGS_RELEASE     "-O2 -fPIC" CACHE STRING "" FORCE)
-    set (CMAKE_Fortran_FLAGS_RELEASE "-O2 -fPIC" CACHE STRING "" FORCE)
+    set (CMAKE_C_FLAGS_BITFORBIT       "-O2 -g -fPIC" CACHE STRING "" FORCE)
+    set (CMAKE_CXX_FLAGS_BITFORBIT     "-O2 -g -fPIC" CACHE STRING "" FORCE)
+    set (CMAKE_Fortran_FLAGS_BITFORBIT "-O2 -g -fPIC" CACHE STRING "" FORCE)
   endif (${CMAKE_Fortran_COMPILER_ID} MATCHES "PGI")
-  set (CMAKE_C_FLAGS        "${CMAKE_C_FLAGS_RELEASE}")
-  set (CMAKE_CXX_FLAGS      "${CMAKE_CXX_FLAGS_RELEASE}")
-  set (CMAKE_Fortran_FLAGS  "${CMAKE_Fortran_FLAGS_RELEASE}")
+  set (CMAKE_C_FLAGS        "${CMAKE_C_FLAGS_BITFORBIT}")
+  set (CMAKE_CXX_FLAGS      "${CMAKE_CXX_FLAGS_BITFORBIT}")
+  set (CMAKE_Fortran_FLAGS  "${CMAKE_Fortran_FLAGS_BITFORBIT}")
 endif (${CMAKE_BUILD_TYPE} MATCHES "Debug")
 
 # Set compiler-specific options, depending on build type; some optimization flags may only be used
@@ -83,13 +82,14 @@ set (CMAKE_Fortran_FLAGS_OPT "")
 if (${CMAKE_Fortran_COMPILER_ID} MATCHES "GNU")
   set (CMAKE_Fortran_FLAGS  "${CMAKE_Fortran_FLAGS} -fcray-pointer -ffree-line-length-none -fno-range-check")
   set (CMAKE_Fortran_FLAGS  "${CMAKE_Fortran_FLAGS} -fbacktrace -cpp")
+  if(${CMAKE_Fortran_COMPILER_VERSION} VERSION_GREATER_EQUAL 10)
+    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fallow-argument-mismatch")
+  endif()
   if (${CMAKE_BUILD_TYPE} MATCHES "Debug")
     set (CMAKE_Fortran_FLAGS  "${CMAKE_Fortran_FLAGS} -fno-unsafe-math-optimizations -frounding-math -fsignaling-nans")
     set (CMAKE_Fortran_FLAGS  "${CMAKE_Fortran_FLAGS} -ffpe-trap=invalid,zero,overflow -fcheck=bounds -fbacktrace -fno-range-check")
   elseif (${CMAKE_BUILD_TYPE} MATCHES "Bitforbit")
-    set (CMAKE_C_FLAGS        "${CMAKE_C_FLAGS} -g")
-    set (CMAKE_CXX_FLAGS      "${CMAKE_CXX_FLAGS} -g")
-    set (CMAKE_Fortran_FLAGS  "${CMAKE_Fortran_FLAGS} -g")
+    set (CMAKE_Fortran_FLAGS  "${CMAKE_Fortran_FLAGS}")
   endif (${CMAKE_BUILD_TYPE} MATCHES "Debug")
   set (CMAKE_Fortran_FLAGS_DEFAULT_PREC "-fdefault-real-8 -fdefault-double-8")
 elseif (${CMAKE_Fortran_COMPILER_ID} MATCHES "PGI")
@@ -114,17 +114,19 @@ elseif (${CMAKE_Fortran_COMPILER_ID} MATCHES "Intel")
     set (CMAKE_Fortran_FLAGS  "${CMAKE_Fortran_FLAGS} -fstack-protector-all -fpe0 -traceback -debug -ftrapuv")
   elseif (${CMAKE_BUILD_TYPE} MATCHES "Bitforbit")
     if(LEGACY_INTEL)
-      set (CMAKE_Fortran_FLAGS  "${CMAKE_Fortran_FLAGS} -debug minimal -fp-model strict -qoverride-limits -g -traceback")
+      set (CMAKE_Fortran_FLAGS  "${CMAKE_Fortran_FLAGS} -debug minimal -fp-model strict -qoverride-limits -traceback")
     else(LEGACY_INTEL)
-    set (CMAKE_Fortran_FLAGS  "${CMAKE_Fortran_FLAGS} -debug minimal -fp-model consistent -qoverride-limits -g -traceback")
+    set (CMAKE_Fortran_FLAGS  "${CMAKE_Fortran_FLAGS} -debug minimal -fp-model consistent -qoverride-limits -traceback")
     endif (LEGACY_INTEL)
   elseif (${CMAKE_BUILD_TYPE} MATCHES "Release")
     # Specify aggressive optimization flags (to be overwritten for individual files in ccpp-physics' CMakeLists.txt)
-    if (SIMDMULTIARCH)
-      set (CMAKE_Fortran_FLAGS_OPT "-no-prec-div -no-prec-sqrt -axSSE4.2,AVX,CORE-AVX2,CORE-AVX512")
-    else (SIMDMULTIARCH)
-      set (CMAKE_Fortran_FLAGS_OPT "-no-prec-div -no-prec-sqrt -xCORE-AVX2")
-    endif (SIMDMULTIARCH)
+    if (AVX2)
+      if (SIMDMULTIARCH)
+        set (CMAKE_Fortran_FLAGS_OPT "-no-prec-div -no-prec-sqrt -axSSE4.2,AVX,CORE-AVX2,CORE-AVX512")
+      else (SIMDMULTIARCH)
+        set (CMAKE_Fortran_FLAGS_OPT "-no-prec-div -no-prec-sqrt -xCORE-AVX2")
+      endif (SIMDMULTIARCH)
+    endif (AVX2)
     set (CMAKE_Fortran_FLAGS  "${CMAKE_Fortran_FLAGS} -debug minimal -fp-model source -qoverride-limits -qopt-prefetch=3")
   endif (${CMAKE_BUILD_TYPE} MATCHES "Debug")
   set (CMAKE_Fortran_FLAGS_DEFAULT_PREC "-i4 -real-size 64")
@@ -173,25 +175,11 @@ if (MPI)
 endif (MPI)
 
 #------------------------------------------------------------------------------
-# Set flags for static building/linking of CCPP
-if (STATIC)
-  ADD_DEFINITIONS(-DSTATIC)
-endif (STATIC)
-
-#------------------------------------------------------------------------------
 # Set flag for 32bit dynamics build
 if (DYN32)
   message(STATUS "Dynamics compiled with 32-bit option, adjust fv_sat_adj types")
   ADD_DEFINITIONS(-DOVERLOAD_R4)
 endif (DYN32)
-
-#------------------------------------------------------------------------------
-# If a dynamic build is requested, set TARGET_SUPPORTS_SHARED_LIBS to TRUE; on
-# some systems, cmake doesn't set this even though the system supports shared
-# libraries (e.g. Cray systems)
-if(NOT STATIC)
-SET_PROPERTY(GLOBAL PROPERTY TARGET_SUPPORTS_SHARED_LIBS TRUE)
-endif(NOT STATIC)
 
 #------------------------------------------------------------------------------
 # Add model-specific flags for C/C++/Fortran preprocessor
@@ -254,9 +242,17 @@ endif(MKL_DIR)
 
 #------------------------------------------------------------------------------
 # Set netCDF flags for preprocessor, compiler and linker (if defined)
+# Legacy settings for old make build
 if(NETCDF_DIR)
   set (NETCDF_INC "-I${NETCDF_DIR}/include")
   set (NETCDF_LIB "-L${NETCDF_DIR}/lib -lnetcdff -lnetcdf")
+  set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${NETCDF_INC} ${NETCDF_LIB}")
+  ADD_DEFINITIONS(-DNETCDF)
+  message (STATUS "Enable netCDF support")
+# Settings for new cmake build
+elseif (NETCDF_INC_DIR AND NETCDF_LIBDIR)
+  set (NETCDF_INC "-I${NETCDF_INC_DIR}")
+  set (NETCDF_LIB "-L${NETCDF_LIBDIR} -lnetcdff -lnetcdf")
   set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${NETCDF_INC} ${NETCDF_LIB}")
   ADD_DEFINITIONS(-DNETCDF)
   message (STATUS "Enable netCDF support")

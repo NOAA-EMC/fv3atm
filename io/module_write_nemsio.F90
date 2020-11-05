@@ -51,7 +51,7 @@ module module_write_nemsio
     integer, intent(in)                    :: wrt_mype, wrt_ntasks, wrt_mpi_comm
     integer, intent(in)                    :: wrt_nbdl, mybdl
     integer, intent(in)                    :: inidate(7)
-    real, intent(in)                       :: lat(:), lon(:)
+    real(8), intent(in)                    :: lat(:), lon(:)
     integer, optional,intent(out)          :: rc
 
 !** local vars

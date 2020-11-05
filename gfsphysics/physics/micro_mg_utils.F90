@@ -1,24 +1,30 @@
+!>\file micro_mg_utils.F90
+!! This file contains process rates and utility functions used by the
+!! MG microphysics.
+
+!>\ingroup mg2mg3
+!>\defgroup micro_mg_utils_mod Morrison-Gettelman MP utils Module
+!! This module contains process rates and utility functions used by the MG 
+!! microphysics.
+!!
+!! Original MG authors: Andrew Gettelman, Hugh Morrison
+!! Contributions from: Peter Caldwell, Xiaohong Liu and Steve Ghan
+!!
+!! Separated from MG 1.5 by B. Eaton.
+!!
+!! Separated module switched to MG 2.0 and further changes by S. Santos.
+!!
+!! Anning Cheng changed for FV3GFS 9/29/2017
+!!              added ac_time as an input
+!!
+!! S. Moorthi - Feb 2018 : code optimization
+!!
+!! This version: https://svn-ccsm-models.cgd.ucar.edu/cam1/branch_tags/mg3_tags/mg3_33_cam5_4_153/
+!!
+!! for questions contact Hugh Morrison, Andrew Gettelman
+!! e-mail: morrison@ucar.edu, andrew@ucar.edu
 module micro_mg_utils
 
-!--------------------------------------------------------------------------
-!
-! This module contains process rates and utility functions used by the MG
-! microphysics.
-!
-! Original MG authors: Andrew Gettelman, Hugh Morrison
-! Contributions from: Peter Caldwell, Xiaohong Liu and Steve Ghan
-!
-! Separated from MG 1.5 by B. Eaton.
-! Separated module switched to MG 2.0 and further changes by S. Santos.
-! Anning Cheng changed for FV3GFS 9/29/2017
-!              added ac_time as an input
-! S. Moorthi - Feb 2018 : code optimization
-!
-! This version: https://svn-ccsm-models.cgd.ucar.edu/cam1/branch_tags/mg3_tags/mg3_33_cam5_4_153/
-!
-! for questions contact Hugh Morrison, Andrew Gettelman
-! e-mail: morrison@ucar.edu, andrew@ucar.edu
-!
 !--------------------------------------------------------------------------
 !
 ! List of required external functions that must be supplied:
@@ -132,25 +138,25 @@ end interface
 ! Public module parameters (mostly for MG itself)
 !=================================================
 
-! Pi to 20 digits; more than enough to reach the limit of double precision.
+!> Pi to 20 digits; more than enough to reach the limit of double precision.
 real(r8), parameter, public :: pi = 3.14159265358979323846_r8
 
-! "One minus small number": number near unity for round-off issues.
+!> "One minus small number": number near unity for round-off issues.
 !real(r8), parameter, public :: omsm   = 1._r8 - 1.e-5_r8
 real(r8), parameter, public :: omsm   = 1._r8 - 1.e-6_r8
 
-! Smallest mixing ratio considered in microphysics.
+!> Smallest mixing ratio considered in microphysics.
 real(r8), parameter, public :: qsmall = 1.e-18_r8
 
-! minimum allowed cloud fraction
+!> minimum allowed cloud fraction
  real(r8), parameter, public :: mincld = 0.000001_r8
 !real(r8), parameter, public :: mincld = 0.0001_r8
 !real(r8), parameter, public :: mincld = 0.0_r8
 
-real(r8), parameter, public :: rhosn = 250._r8  ! bulk density snow
-real(r8), parameter, public :: rhoi  = 500._r8  ! bulk density ice
-real(r8), parameter, public :: rhow  = 1000._r8 ! bulk density liquid
-real(r8), parameter, public :: rhows = 917._r8  ! bulk density water solid
+real(r8), parameter, public :: rhosn = 250._r8  !< bulk density snow
+real(r8), parameter, public :: rhoi  = 500._r8  !< bulk density ice
+real(r8), parameter, public :: rhow  = 1000._r8 !< bulk density liquid
+real(r8), parameter, public :: rhows = 917._r8  !< bulk density water solid
 
 !++ag
 !Hail and Graupel (set in MG3)
@@ -183,9 +189,9 @@ real(r8), parameter, public :: ah = 114.5_r8
 real(r8), parameter, public :: bh = 0.5_r8
 !--ag
 
-! mass of new crystal due to aerosol freezing and growth (kg)
-! Make this consistent with the lower bound, to support UTLS and
-! stratospheric ice, and the smaller ice size limit.
+!> mass of new crystal due to aerosol freezing and growth (kg)
+!! Make this consistent with the lower bound, to support UTLS and
+!! stratospheric ice, and the smaller ice size limit.
 real(r8), parameter, public :: mi0 = 4._r8/3._r8*pi*rhoi*(1.e-6_r8)**3
 
 !++ag
@@ -284,11 +290,13 @@ real(r8), parameter :: zero = 0._r8, one = 1._r8,  two = 2._r8,  three = 3._r8, 
 ! some argument is an integer.
 !=========================================================
 
+!>\ingroup micro_mg_utils_mod
 interface rising_factorial
    module procedure rising_factorial_r8
    module procedure rising_factorial_integer
 end interface rising_factorial
 
+!>\ingroup micro_mg_utils_mod
 interface var_coef
    module procedure var_coef_r8
    module procedure var_coef_integer
@@ -298,7 +306,8 @@ end interface var_coef
 contains
 !==========================================================================
 
-! Initialize module variables.
+!>\ingroup micro_mg_utils_mod 
+!! Initialize module variables.
 !
 ! "kind" serves no purpose here except to check for unlikely linking
 ! issues; always pass in the kind for a double precision real.
@@ -372,7 +381,8 @@ subroutine micro_mg_utils_init( kind, rair, rh2o, cpair, tmelt_in, latvap, &
 
 end subroutine micro_mg_utils_init
 
-! Constructor for a constituent property object.
+!>\ingroup micro_mg_utils_mod
+!! Constructor for a constituent property object.
 function NewMGHydrometeorProps(rho, eff_dim, lambda_bounds, min_mean_mass) &
      result(res)
   real(r8), intent(in) :: rho, eff_dim
@@ -443,7 +453,8 @@ elemental function calc_ab(t, qv, xxl) result(ab)
 
 end function calc_ab
 
-! get cloud droplet size distribution parameters
+!>\ingroup micro_mg_utils_mod
+!! get cloud droplet size distribution parameters
 elemental subroutine size_dist_param_liq_line(props, qcic, ncic, rho, pgam, lamc)
   type(MGHydrometeorProps), intent(in) :: props
   real(r8), intent(in)     :: qcic
@@ -469,15 +480,15 @@ elemental subroutine size_dist_param_liq_line(props, qcic, ncic, rho, pgam, lamc
      if (liq_gmao) then
        pgam = 0.0005714_r8*1.e-6_r8*ncic*rho + 0.2714_r8
        ! Anning modified lamc
-       if ((ncic > 1.0e-3) .and. (qcic > 1.0e-11)) then
+       if ((ncic > 1.0e-3_r8) .and. (qcic > 1.0e-11_r8)) then
          xs = 0.07_r8*(1000._r8*qcic/ncic) ** (-0.14_r8)
        else
-         xs = 1.2
+         xs = 1.2_r8
        end if
 
         xs = max(min(xs, 1.7_r8), 1.1_r8)
         xs = xs*xs*xs
-        xs = (xs + sqrt(xs+8.0_r8)*sqrt(xs) - 4.)/8.0_r8
+        xs = (xs + sqrt(xs+8.0_r8)*sqrt(xs) - 4.0_r8)/8.0_r8
         pgam = sqrt(xs)
      else
 
@@ -512,8 +523,8 @@ elemental subroutine size_dist_param_liq_line(props, qcic, ncic, rho, pgam, lamc
 
 end subroutine size_dist_param_liq_line
 
-! get cloud droplet size distribution parameters
-
+!>\ingroup micro_mg_utils_mod
+!! This subroutine gets cloud droplet size distribution parameters
 subroutine size_dist_param_liq_vect(props, qcic, ncic, rho, pgam, lamc, mgncol)
 
   type(mghydrometeorprops),    intent(in)    :: props
@@ -538,15 +549,15 @@ subroutine size_dist_param_liq_vect(props, qcic, ncic, rho, pgam, lamc, mgncol)
 
         if (liq_gmao) then
           pgam(i) = 0.0005714_r8*1.e-6_r8*ncic(i)*rho(i) + 0.2714_r8
-          if ((ncic(i) > 1.0e-3) .and. (qcic(i) > 1.0e-11)) then
+          if ((ncic(i) > 1.0e-3_r8) .and. (qcic(i) > 1.0e-11_r8)) then
             xs = 0.07_r8*(1000._r8*qcic(i)/ncic(i)) **(-0.14_r8)
           else
-            xs = 1.2
+            xs = 1.2_r8
           end if
 
           xs = max(min(xs, 1.7_r8), 1.1_r8)
           xs = xs*xs*xs
-          xs = (xs + sqrt(xs+8.0_r8)*sqrt(xs) - 4.)/8.0_r8
+          xs = (xs + sqrt(xs+8.0_r8)*sqrt(xs) - 4.0_r8)/8.0_r8
           pgam(i) = sqrt(xs)
         else
           pgam(i) = one - 0.7_r8 * exp(-0.008_r8*1.e-6_r8*ncic(i)*rho(i))
@@ -587,7 +598,8 @@ subroutine size_dist_param_liq_vect(props, qcic, ncic, rho, pgam, lamc, mgncol)
 
 end subroutine size_dist_param_liq_vect
 
-! Basic routine for getting size distribution parameters.
+!>\ingroup micro_mg_utils_mod
+!! Basic routine for getting size distribution parameters.
 elemental subroutine size_dist_param_basic_line(props, qic, nic, lam, n0)
   type(MGHydrometeorProps), intent(in) :: props
   real(r8), intent(in)    :: qic
@@ -625,6 +637,8 @@ elemental subroutine size_dist_param_basic_line(props, qic, nic, lam, n0)
 
 end subroutine size_dist_param_basic_line
 
+!>\ingroup micro_mg_utils_mod
+!! This subroutine calculates
 subroutine size_dist_param_basic_vect(props, qic, nic, lam, mgncol, n0)
 
   type (mghydrometeorprops),   intent(in)    :: props
@@ -667,7 +681,8 @@ subroutine size_dist_param_basic_vect(props, qic, nic, lam, mgncol, n0)
 
 end subroutine size_dist_param_basic_vect
 
-! ice routine for getting size distribution parameters.
+!>\ingroup micro_mg_utils_mod
+!! ice routine for getting size distribution parameters.
 elemental subroutine size_dist_param_ice_line(props, qic, nic, lam, n0)
   type(MGHydrometeorProps), intent(in) :: props
   real(r8), intent(in) :: qic
@@ -690,14 +705,14 @@ elemental subroutine size_dist_param_ice_line(props, qic, nic, lam, n0)
      lam = (props%shape_coef * nic/qic)**(1._r8/props%eff_dim)
      if (ice_sep) then
        miu_ice = max(min(0.008_r8*(lam*0.01)**0.87_r8, 10.0_r8), 0.1_r8)
-       tx1 = 1. + miu_ice
-       tx2 = 1. / gamma(tx1)
-       aux = (gamma(tx1+3.)*tx2) ** (1./3.)
+       tx1 = 1.0_r8 + miu_ice
+       tx2 = 1.0_r8 / gamma(tx1)
+       aux = (gamma(tx1+3.0_r8)*tx2) ** (1.0_r8/3.0_r8)
        lam = lam*aux
      else
-       aux = 1.
-       tx1 = 1.0
-       tx2 = 1.0
+       aux = 1.0_r8
+       tx1 = 1.0_r8
+       tx2 = 1.0_r8
      end if
      if (present(n0)) n0 = nic * lam**tx1*tx2
 
@@ -714,12 +729,14 @@ elemental subroutine size_dist_param_ice_line(props, qic, nic, lam, n0)
      end if
 
   else
-     lam = 0._r8
+     lam = 0.0_r8
   end if
 
 
 end subroutine size_dist_param_ice_line
 
+!>\ingroup micro_mg_utils_mod
+!! This subroutine
 subroutine size_dist_param_ice_vect(props, qic, nic, lam, mgncol, n0)
 
   type (mghydrometeorprops), intent(in) :: props
@@ -745,14 +762,14 @@ subroutine size_dist_param_ice_vect(props, qic, nic, lam, mgncol, n0)
         lam(i) = (props%shape_coef * nic(i)/qic(i))**(1._r8/props%eff_dim)
         if (ice_sep) then
            miu_ice = max(min(0.008_r8*(lam(i)*0.01)**0.87_r8, 10.0_r8), 0.1_r8)
-           tx1    = 1. + miu_ice
-           tx2    = 1. / gamma(tx1)
-           aux    = (gamma(tx1+3.)*tx2) ** (1./3.)
+           tx1    = 1.0_r8 + miu_ice
+           tx2    = 1.0_r8 / gamma(tx1)
+           aux    = (gamma(tx1+3.0_r8)*tx2) ** (1.0_r8/3.0_r8)
            lam(i) = lam(i)*aux
         else
-           aux = 1.
-           tx1 = 1.0
-           tx2 = 1.0
+           aux = 1.0_r8
+           tx1 = 1.0_r8
+           tx2 = 1.0_r8
         end if
         if (present(n0)) n0(i) = nic(i) * lam(i)**tx1*tx2
 
@@ -769,30 +786,31 @@ subroutine size_dist_param_ice_vect(props, qic, nic, lam, mgncol, n0)
         end if
 
      else
-        lam(i) = 0._r8
+        lam(i) = 0.0_r8
      end if
 
   enddo
 
 end subroutine size_dist_param_ice_vect
 
-
+!>\ingroup micro_mg_utils_mod
+!> Finds the average diameter of particles given their density, and
+!! mass/number concentrations in the air.
+!! Assumes that diameter follows an exponential distribution.
 real(r8) elemental function avg_diameter(q, n, rho_air, rho_sub)
-  ! Finds the average diameter of particles given their density, and
-  ! mass/number concentrations in the air.
-  ! Assumes that diameter follows an exponential distribution.
-  real(r8), intent(in) :: q         ! mass mixing ratio
-  real(r8), intent(in) :: n         ! number concentration (per volume)
-  real(r8), intent(in) :: rho_air   ! local density of the air
-  real(r8), intent(in) :: rho_sub   ! density of the particle substance
+  real(r8), intent(in) :: q         !< mass mixing ratio
+  real(r8), intent(in) :: n         !< number concentration (per volume)
+  real(r8), intent(in) :: rho_air   !< local density of the air
+  real(r8), intent(in) :: rho_sub   !< density of the particle substance
 
   avg_diameter = (pi * rho_sub * n/(q*rho_air))**(-oneo3)
 
 end function avg_diameter
 
+!>\ingroup mg2mg3
+!> Finds a coefficient for process rates based on the relative variance
+!! of cloud water.
 elemental function var_coef_r8(relvar, a) result(res)
-  ! Finds a coefficient for process rates based on the relative variance
-  ! of cloud water.
   real(r8), intent(in) :: relvar
   real(r8), intent(in) :: a
   real(r8) :: res
@@ -801,9 +819,10 @@ elemental function var_coef_r8(relvar, a) result(res)
 
 end function var_coef_r8
 
+!>\ingroup mg2mg3
+!> Finds a coefficient for process rates based on the relative variance
+!! of cloud water.
 elemental function var_coef_integer(relvar, a) result(res)
-  ! Finds a coefficient for process rates based on the relative variance
-  ! of cloud water.
   real(r8), intent(in) :: relvar
   integer, intent(in) :: a
   real(r8) :: res
@@ -816,16 +835,17 @@ end function var_coef_integer
 !MICROPHYSICAL PROCESS CALCULATIONS
 !========================================================================
 !========================================================================
-! Initial ice deposition and sublimation loop.
-! Run before the main loop
-! This subroutine written by Peter Caldwell
-
-subroutine ice_deposition_sublimation(t, qv, qi, ni, &
+!>\ingroup micro_mg_utils_mod
+!! Initial ice deposition and sublimation loop.
+!! Run before the main loop
+!! This subroutine written by Peter Caldwell
+subroutine ice_deposition_sublimation(t, qv, qi, ni,           &
                                       icldm, rho, dv,qvl, qvi, &
                                       berg, vap_dep, ice_sublim, mgncol)
 
   !INPUT VARS:
   !===============================================
+! logical,  intent(in) :: lprnt
   integer,  intent(in) :: mgncol
   real(r8), dimension(mgncol), intent(in) :: t
   real(r8), dimension(mgncol), intent(in) :: qv
@@ -869,6 +889,9 @@ subroutine ice_deposition_sublimation(t, qv, qi, ni, &
 !       call size_dist_param_basic(mg_ice_props, qiic, niic, lami, n0i)
         call size_dist_param_ice(mg_ice_props, qiic, niic, lami, n0i)
         !Get depletion timescale=1/eps
+!     if(lprnt) write(0,*)' twopi=',twopi,' n0i=',n0i,' rho=',rho(1),&
+!       ' dv=',dv(1),' lami=',lami,' mg_ice_props=',mg_ice_props,&
+!       ' qiic=',qiic,'niic=',niic
         epsi = twopi*n0i*rho(i)*Dv(i)/(lami*lami)
 
         !Compute deposition/sublimation
@@ -885,6 +908,9 @@ subroutine ice_deposition_sublimation(t, qv, qi, ni, &
            ice_sublim(i) = min(vap_dep(i), zero)
            vap_dep(i) = zero
         end if
+
+!       if (lprnt) write(0,*)' t=',t(1),' tmelt=',tmelt,' epsi=',epsi,' ab=',ab,&
+!        ' ice_sublim=',ice_sublim(1),' vap_dep=',vap_dep(1),' qvl=',qvl(1),qvi(1)
 
         !sublimation occurs @ any T. Not so for berg.
         if (t(i) < tmelt) then
@@ -904,10 +930,10 @@ subroutine ice_deposition_sublimation(t, qv, qi, ni, &
 end subroutine ice_deposition_sublimation
 
 !========================================================================
-! autoconversion of cloud liquid water to rain
-! formula from Khrouditnov and Kogan (2000), modified for sub-grid distribution of qc
-! minimum qc of 1 x 10^-8 prevents floating point error
-
+!>\ingroup micro_mg_utils_mod
+!! autoconversion of cloud liquid water to rain
+!! formula from Khrouditnov and Kogan (2000), modified for sub-grid distribution of qc
+!! minimum qc of 1 x 10^-8 prevents floating point error
 subroutine kk2000_liq_autoconversion(microp_uniform, qcic, &
                             ncic, rho, relvar, prc, nprc, nprc1, mgncol)
 
@@ -958,6 +984,8 @@ subroutine kk2000_liq_autoconversion(microp_uniform, qcic, &
 end subroutine kk2000_liq_autoconversion
   
   !========================================================================
+!>\ingroup micro_mg_utils_mod
+!! This subroutine
 subroutine sb2001v2_liq_autoconversion(pgam,qc,nc,qr,rho,relvar,au,nprc,nprc1,mgncol)
   !
   ! ---------------------------------------------------------------------
@@ -1041,7 +1069,8 @@ subroutine sb2001v2_liq_autoconversion(pgam,qc,nc,qr,rho,relvar,au,nprc,nprc1,mg
   end subroutine sb2001v2_liq_autoconversion 
   
 !========================================================================
-!  Anning Cheng 10/5/2017 add Liu et al. autoconversion
+!>\ingroup micro_mg_utils_mod
+!!  Anning Cheng 10/5/2017 add Liu et al. autoconversion
   subroutine liu_liq_autoconversion(pgam,qc,nc,qr,rho,relvar,  &
                                     au,nprc,nprc1,mgncol)
 
@@ -1072,12 +1101,12 @@ subroutine sb2001v2_liq_autoconversion(pgam,qc,nc,qr,rho,relvar,au,nprc,nprc1,mg
            beta6 = (one+three*xs)*(one+four*xs)*(one+five*xs)  &
                  / ((one+xs)*(one+xs+xs))
            LW    = 1.0e-3_r8 * qc(i) * rho(i)
-           NW    = nc(i) * rho(i)  * 1.e-6_r8
+           NW    = nc(i) * rho(i) * 1.e-6_r8
 
-           xs    = min(20.0, 1.03e16*(LW*LW)/(NW*SQRT(NW)))
-           au(i) = 1.1e10*beta6*LW*LW*LW                &
+           xs    = min(20.0_r8, 1.03e16_r8*(LW*LW)/(NW*SQRT(NW)))
+           au(i) = 1.1e10_r8*beta6*LW*LW*LW                &
                  * (one-exp(-(xs**miu_disp))) / NW
-           au(i) = au(i)*1.0e3/rho(i)
+           au(i) = au(i)*1.0e3_r8/rho(i)
            au(i) = au(i) * gamma(two+relvar(i))          &
                  / (gamma(relvar(i))*(relvar(i)*relvar(i)))
 
@@ -1098,7 +1127,7 @@ subroutine sb2001v2_liq_autoconversion(pgam,qc,nc,qr,rho,relvar,au,nprc,nprc1,mg
 
 !========================================================================
 !SB2001 Accretion V2
-
+!>\ingroup micro_mg_utils_mod
 subroutine sb2001v2_accre_cld_water_rain(qc,nc,qr,rho,relvar,pra,npra,mgncol)
   !
   ! ---------------------------------------------------------------------
@@ -1152,7 +1181,9 @@ subroutine sb2001v2_accre_cld_water_rain(qc,nc,qr,rho,relvar,pra,npra,mgncol)
 !========================================================================
 ! Autoconversion of cloud ice to snow
 ! similar to Ferrier (1994)
-
+!>\ingroup micro_mg_utils_mod
+!! Autoconversion of cloud ice to snow
+!! similar to Ferrier (1994)
 subroutine ice_autoconversion(t, qiic, lami, n0i, dcs, ac_time, prci, nprci, mgncol)
 
   integer, intent(in) :: mgncol
@@ -1199,6 +1230,8 @@ subroutine ice_autoconversion(t, qiic, lami, n0i, dcs, ac_time, prci, nprci, mgn
 end subroutine ice_autoconversion
 !===================================
 ! Anning Cheng 10/5/2017 added GMAO ice autoconversion
+!>\ingroup micro_mg_utils_mod
+!! GMAO ice autoconversion
 subroutine gmao_ice_autoconversion(t, qiic, niic, lami, n0i,        &
                                    dcs, ac_time, prci, nprci, mgncol)
 
@@ -1234,7 +1267,8 @@ end subroutine gmao_ice_autoconversion
 !===================================
 ! immersion freezing (Bigg, 1953)
 !===================================
-
+!>\ingroup micro_mg_utils_mod
+!! immersion freezing (Bigg, 1953)
 subroutine immersion_freezing(microp_uniform, t, pgam, lamc, &
                               qcic, ncic, relvar, mnuccc, nnuccc, mgncol)
 
@@ -1288,10 +1322,9 @@ subroutine immersion_freezing(microp_uniform, t, pgam, lamc, &
 
 end subroutine immersion_freezing
 
-! contact freezing (-40<T<-3 C) (Young, 1974) with hooks into simulated dust
-!===================================================================
-! dust size and number in multiple bins are read in from companion routine
-
+!>\ingroup micro_mg_utils_mod
+!! contact freezing (-40<T<-3 C) (Young, 1974) with hooks into simulated dust
+!! dust size and number in multiple bins are read in from companion routine
 subroutine contact_freezing (microp_uniform, t, p, rndst, nacon, &
      pgam, lamc, qcic, ncic, relvar, mnucct, nnucct, mgncol, mdust)
 
@@ -1377,11 +1410,11 @@ subroutine contact_freezing (microp_uniform, t, p, rndst, nacon, &
 
 end subroutine contact_freezing
 
-! snow self-aggregation from passarelli, 1978, used by reisner, 1998
+!>\ingroup micro_mg_utils_mod
+!! snow self-aggregation from passarelli, 1978, used by reisner, 1998
 !===================================================================
 ! this is hard-wired for bs = 0.4 for now
 ! ignore self-collection of cloud ice
-
 subroutine snow_self_aggregation(t, rho, asn, rhosn, qsic, nsic, nsagg, mgncol)
 
   integer,                          intent(in) :: mgncol
@@ -1410,13 +1443,13 @@ subroutine snow_self_aggregation(t, rho, asn, rhosn, qsic, nsic, nsagg, mgncol)
   enddo
 end subroutine snow_self_aggregation
 
-! accretion of cloud droplets onto snow/graupel
+!>\ingroup micro_mg_utils_mod
+!! accretion of cloud droplets onto snow/graupel
 !===================================================================
 ! here use continuous collection equation with
 ! simple gravitational collection kernel
 ! ignore collisions between droplets/cloud ice
 ! since minimum size ice particle for accretion is 50 - 150 micron
-
 subroutine accrete_cloud_water_snow(t, rho, asn, uns, mu, qcic, ncic, qsic, &
      pgam, lamc, lams, n0s, psacws, npsacws, mgncol)
 
@@ -1483,10 +1516,10 @@ subroutine accrete_cloud_water_snow(t, rho, asn, uns, mu, qcic, ncic, qsic, &
   enddo
 end subroutine accrete_cloud_water_snow
 
-! add secondary ice production due to accretion of droplets by snow
+!>\ingroup micro_mg_utils_mod
+!! add secondary ice production due to accretion of droplets by snow
 !===================================================================
 ! (Hallet-Mossop process) (from Cotton et al., 1986)
-
 subroutine secondary_ice_production(t, psacws, msacwi, nsacwi, mgncol)
 
   integer, intent(in) :: mgncol
@@ -1516,10 +1549,10 @@ subroutine secondary_ice_production(t, psacws, msacwi, nsacwi, mgncol)
   enddo
 end subroutine secondary_ice_production
 
-! accretion of rain water by snow
+!>\ingroup micro_mg_utils_mod
+!! accretion of rain water by snow
 !===================================================================
 ! formula from ikawa and saito, 1991, used by reisner et al., 1998
-
 subroutine accrete_rain_snow(t, rho, umr, ums, unr, uns, qric, qsic, &
      lamr, n0r, lams, n0s, pracs, npracs, mgncol)
 
@@ -1588,10 +1621,10 @@ subroutine accrete_rain_snow(t, rho, umr, ums, unr, uns, qric, qsic, &
   enddo
 end subroutine accrete_rain_snow
 
-! heterogeneous freezing of rain drops
+!>\ingroup micro_mg_utils_mod
+!! heterogeneous freezing of rain drops
 !===================================================================
 ! follows from Bigg (1953)
-
 subroutine heterogeneous_rain_freezing(t, qric, nric, lamr, mnuccr, nnuccr, mgncol)
 
   integer,                          intent(in) :: mgncol
@@ -1623,11 +1656,10 @@ subroutine heterogeneous_rain_freezing(t, qric, nric, lamr, mnuccr, nnuccr, mgnc
   enddo
 end subroutine heterogeneous_rain_freezing
 
-! accretion of cloud liquid water by rain
-!===================================================================
-! formula from Khrouditnov and Kogan (2000)
+!>\ingroup micro_mg_utils_mod
+!! accretion of cloud liquid water by rain
+!! formula from Khrouditnov and Kogan (2000)
 ! gravitational collection kernel, droplet fall speed neglected
-
 subroutine accrete_cloud_water_rain(microp_uniform, qric, qcic, &
      ncic, relvar, accre_enhan, pra, npra, mgncol)
 
@@ -1675,10 +1707,9 @@ subroutine accrete_cloud_water_rain(microp_uniform, qric, qcic, &
   end do
 end subroutine accrete_cloud_water_rain
 
-! Self-collection of rain drops
-!===================================================================
-! from Beheng(1994)
-
+!>\ingroup micro_mg_utils_mod
+!! Self-collection of rain drops
+!! from Beheng(1994)
 subroutine self_collection_rain(rho, qric, nric, nragg, mgncol)
 
   integer,                          intent(in) :: mgncol
@@ -1702,12 +1733,11 @@ subroutine self_collection_rain(rho, qric, nric, nragg, mgncol)
   enddo
 end subroutine self_collection_rain
 
-
-! Accretion of cloud ice by snow
+!>\ingroup micro_mg_utils_mod
+!! Accretion of cloud ice by snow
 !===================================================================
 ! For this calculation, it is assumed that the Vs >> Vi
 ! and Ds >> Di for continuous collection
-
 subroutine accrete_cloud_ice_snow(t, rho, asn, qiic, niic, qsic, &
      lams, n0s, prai, nprai, mgncol)
 
@@ -1752,12 +1782,12 @@ subroutine accrete_cloud_ice_snow(t, rho, asn, qiic, niic, qsic, &
   enddo
 end subroutine accrete_cloud_ice_snow
 
-! calculate evaporation/sublimation of rain and snow
+!>\ingroup micro_mg_utils_mod
+!! calculate evaporation/sublimation of rain and snow
 !===================================================================
 ! note: evaporation/sublimation occurs only in cloud-free portion of grid cell
 ! in-cloud condensation/deposition of rain and snow is neglected
 ! except for transfer of cloud water to snow through bergeron process
-
 subroutine evaporate_sublimate_precip(t, rho, dv, mu, sc, q, qvl, qvi, &
      lcldm, precip_frac, arn, asn, qcic, qiic, qric, qsic, lamr, n0r, lams, n0s, &
      pre, prds, am_evp_st, mgncol)
@@ -1875,12 +1905,12 @@ subroutine evaporate_sublimate_precip(t, rho, dv, mu, sc, q, qvl, qvi, &
 
 end subroutine evaporate_sublimate_precip
 
-! evaporation/sublimation of rain, snow and graupel
+!>\ingroup micro_mg_utils_mod
+!! evaporation/sublimation of rain, snow and graupel
 !===================================================================
 ! note: evaporation/sublimation occurs only in cloud-free portion of grid cell
 ! in-cloud condensation/deposition of rain and snow is neglected
 ! except for transfer of cloud water to snow through bergeron process
-
 subroutine evaporate_sublimate_precip_graupel(t, rho, dv, mu, sc, q, qvl, qvi, &
      lcldm, precip_frac, arn, asn, agn, bg, qcic, qiic, qric, qsic, qgic, lamr, n0r, lams, n0s, lamg, n0g, &
      pre, prds, prdg, am_evp_st, mgncol)
@@ -2032,10 +2062,8 @@ subroutine evaporate_sublimate_precip_graupel(t, rho, dv, mu, sc, q, qvl, qvi, &
 
 end subroutine evaporate_sublimate_precip_graupel
 
-
-! bergeron process - evaporation of droplets and deposition onto snow
-!===================================================================
-
+!>\ingroup micro_mg_utils_mod
+!! bergeron process - evaporation of droplets and deposition onto snow
 subroutine bergeron_process_snow(t, rho, dv, mu, sc, qvl, qvi, asn, &
                                  qcic, qsic, lams, n0s, bergs, mgncol)
 
@@ -2084,9 +2112,8 @@ subroutine bergeron_process_snow(t, rho, dv, mu, sc, qvl, qvi, asn, &
 end subroutine bergeron_process_snow
 
 !========================================================================
-! Collection of snow by rain to form graupel
-!========================================================================
-
+!>\ingroup micro_mg_utils_mod
+!! Collection of snow by rain to form graupel
 subroutine graupel_collecting_snow(qsic,qric,umr,ums,rho,lamr,n0r,lams,n0s, &
                                    psacr, mgncol)
 
@@ -2129,7 +2156,7 @@ subroutine graupel_collecting_snow(qsic,qric,umr,ums,rho,lamr,n0r,lams,n0s, &
         tx5 = tx4 * tx4 * tx3
 
         psacr(i) = cons31 * tx1 * rho(i) * n0r(i) * n0s(i) * tx5    &
-                                * (5.0*tx4+tx3*(tx2+tx2+0.5*tx3))
+                                * (5.0_r8*tx4+tx3*(tx2+tx2+0.5_r8*tx3))
 
 !       psacr(i) = cons31*(((1.2_r8*umr(i)-0.95_r8*ums(i))**2+      &
 !            0.08_r8*ums(i)*umr(i))**0.5_r8*rho(i)*                 &
@@ -2146,9 +2173,8 @@ subroutine graupel_collecting_snow(qsic,qric,umr,ums,rho,lamr,n0r,lams,n0s, &
 end subroutine graupel_collecting_snow
 
 !========================================================================
-! Collection of cloud water by graupel
-!========================================================================
-
+!>\ingroup micro_mg_utils_mod
+!! Collection of cloud water by graupel
 subroutine graupel_collecting_cld_water(qgic,qcic,ncic,rho,n0g,lamg,bg,agn, &
                                         psacwg, npsacwg, mgncol)
 
@@ -2182,7 +2208,7 @@ subroutine graupel_collecting_cld_water(qgic,qcic,ncic,rho,n0g,lamg,bg,agn, &
 
   do i=1,mgncol
 
-        if (qgic(i) >= 1.e-8 .and. qcic(i) >= qsmall) then
+        if (qgic(i) >= 1.e-8_r8 .and. qcic(i) >= qsmall) then
 
            tx1 = cons*agn(i)*rho(i)*n0g(i) / lamg(i)**(bg+three)
 
@@ -2196,9 +2222,8 @@ subroutine graupel_collecting_cld_water(qgic,qcic,ncic,rho,n0g,lamg,bg,agn, &
 end subroutine graupel_collecting_cld_water
 
 !========================================================================
-! Conversion of rimed cloud water onto snow to graupel/hail
-!========================================================================
-
+!>\ingroup micro_mg_utils_mod
+!! Conversion of rimed cloud water onto snow to graupel/hail
 subroutine graupel_riming_liquid_snow(psacws,qsic,qcic,nsic,rho,rhosn,rhog,asn,lams,n0s,dtime, &
                                       pgsacw,nscng,mgncol)
 
@@ -2275,9 +2300,8 @@ subroutine graupel_riming_liquid_snow(psacws,qsic,qcic,nsic,rho,rhosn,rhog,asn,l
 end subroutine graupel_riming_liquid_snow
 
 !========================================================================
-!CHANGE IN Q,N COLLECTION RAIN BY GRAUPEL
-!========================================================================
-
+!>\ingroup micro_mg_utils_mod
+!!CHANGE IN Q,N COLLECTION RAIN BY GRAUPEL
 subroutine graupel_collecting_rain(qric,qgic,umg,umr,ung,unr,rho,n0r,lamr,n0g,lamg,&
                                    pracg,npracg,mgncol)
 
@@ -2329,8 +2353,8 @@ subroutine graupel_collecting_rain(qric,qgic,umg,umr,ung,unr,rho,n0r,lamr,n0g,la
 ! pracg is mixing ratio of rain per sec collected by graupel/hail
         tx1 = 1.2_r8*umr(i) - 0.95_r8*umg(i)
         tx1 = sqrt(tx1*tx1+0.08_r8*umg(i)*umr(i))
-        tx2 = 1.0 / lamr(i)
-        tx3 = 1.0 / lamg(i)
+        tx2 = 1.0_r8 / lamr(i)
+        tx3 = 1.0_r8 / lamg(i)
         tx4 = tx2 * tx2
         tx5 = tx4 * tx4 * tx3
         tx6 = rho(i) * n0r(i) * n0g(i)
@@ -2376,10 +2400,10 @@ subroutine graupel_collecting_rain(qric,qgic,umg,umr,ung,unr,rho,n0r,lamr,n0g,la
 end subroutine graupel_collecting_rain
 
 !========================================================================
-! Rain riming snow to graupel
+!>\ingroup micro_mg_utils_mod
+!! Rain riming snow to graupel
 !========================================================================
 ! Conversion of rimed rainwater onto snow converted to graupel
-
 subroutine graupel_rain_riming_snow(pracs,npracs,psacr,qsic,qric,nric,nsic,n0s, &
                                     lams,n0r,lamr,dtime,pgracs,ngracs,mgncol)
 
@@ -2470,6 +2494,8 @@ end subroutine graupel_rain_riming_snow
 !========================================================================
 ! Rime Splintering
 !========================================================================
+!>\ingroup micro_mg_utils_mod
+!! Rime splintering
 subroutine graupel_rime_splintering(t,qcic,qric,qgic,psacwg,pracg,&
                                     qmultg,nmultg,qmultrg,nmultrg,mgncol)
 
@@ -2668,6 +2694,7 @@ end subroutine graupel_rime_splintering
 !UTILITIES
 !========================================================================
 
+!>\ingroup micro_mg_utils_mod
 pure function no_limiter()
   real(r8) :: no_limiter
 
@@ -2675,6 +2702,7 @@ pure function no_limiter()
 
 end function no_limiter
 
+!>\ingroup micro_mg_utils_mod
 pure function limiter_is_on(lim)
   real(r8), intent(in) :: lim
   logical :: limiter_is_on
@@ -2683,15 +2711,16 @@ pure function limiter_is_on(lim)
 
 end function limiter_is_on
 
+!>\ingroup micro_mg_utils_mod
 FUNCTION gamma_incomp(muice, x)
 
   real(r8) :: gamma_incomp
   REAL(r8), intent(in) :: muice, x
   REAL(r8) :: xog, kg, alfa, auxx
-  alfa = min(max(muice+1., 1.), 20._r8)
+  alfa = min(max(muice+1._r8, 1._r8), 20._r8)
 
   xog  = log(alfa -0.3068_r8)
-  kg   = 1.44818*(alfa**0.5357_r8)
+  kg   = 1.44818_r8*(alfa**0.5357_r8)
   auxx = max(min(kg*(log(x)-xog), 30._r8), -30._r8)
   gamma_incomp = max(one/(one+exp(-auxx)), 1.0e-20) 
 

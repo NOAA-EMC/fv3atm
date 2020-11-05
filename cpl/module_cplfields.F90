@@ -39,8 +39,8 @@ module module_cplfields
        "vegetation_type                          ", &
        "inst_vegetation_area_frac                ", &
        "inst_surface_roughness                   ", &
-       "mean_zonal_moment_flx                    ", &
-       "mean_merid_moment_flx                    ", &
+       "mean_zonal_moment_flx_atm                ", &
+       "mean_merid_moment_flx_atm                ", &
        "mean_sensi_heat_flx                      ", &
        "mean_laten_heat_flx                      ", &
        "mean_down_lw_flx                         ", &
@@ -86,7 +86,7 @@ module module_cplfields
        "inst_merid_wind_height_lowest            ", &
        "inst_pres_height_lowest                  ", &
        "inst_height_lowest                       ", &
-       "mean_fprec_rate                          " &
+       "mean_fprec_rate                          "  &
 !      "northward_wind_neutral                   ", &
 !      "eastward_wind_neutral                    ", &
 !      "upward_wind_neutral                      ", &
@@ -139,7 +139,7 @@ module module_cplfields
   real(kind=8), allocatable, public :: exportData(:,:,:)
 
 ! Import Fields ----------------------------------------
-  integer,          public, parameter :: NimportFields = 16
+  integer,          public, parameter :: NimportFields = 17
   logical,          public            :: importFieldsValid(NimportFields)
   type(ESMF_Field), target, public    :: importFields(NimportFields)
   character(len=*), public, parameter :: importFieldsList(NimportFields) = (/ &
@@ -152,24 +152,26 @@ module module_cplfields
 !      "inst_ice_ir_dir_albedo                 ", &
 !      "inst_ice_vis_dif_albedo                ", &
 !      "inst_ice_vis_dir_albedo                ", &
-       "mean_up_lw_flx                         ", &
-       "mean_laten_heat_flx                    ", &
-       "mean_sensi_heat_flx                    ", &
+       "mean_up_lw_flx_ice                     ", &
+       "mean_laten_heat_flx_atm_into_ice       ", &
+       "mean_sensi_heat_flx_atm_into_ice       ", &
 !      "mean_evap_rate                         ", &
-       "mean_zonal_moment_flx                  ", &
-       "mean_merid_moment_flx                  ", &
+       "stress_on_air_ice_zonal                ", &
+       "stress_on_air_ice_merid                ", &
        "mean_ice_volume                        ", &
        "mean_snow_volume                       ", &
        "inst_tracer_up_surface_flx             ", &
        "inst_tracer_down_surface_flx           ", &
        "inst_tracer_clmn_mass_dens             ", &
-       "inst_tracer_anth_biom_flx              "  &
+       "inst_tracer_anth_biom_flx              ", &
+       "wave_z0_roughness_length               "  &
   /)
   character(len=*), public, parameter :: importFieldTypes(NimportFields) = (/ &
        "t",                                 &
        "s","s","s","s","s",                 &
        "s","s","s","s","s",                 &
-       "s","u","d","c","b"                  &
+       "s","u","d","c","b",                 &
+       "s"                                  &
   /)
   ! Set importFieldShare to .true. if field is provided as memory reference
   ! from coupled components
@@ -177,7 +179,8 @@ module module_cplfields
        .true. ,                                 &
        .false.,.false.,.false.,.false.,.false., &
        .false.,.false.,.false.,.false.,.false., &
-       .false.,.true. ,.true. ,.true. ,.true.   &
+       .false.,.true. ,.true. ,.true. ,.true. , &
+       .false.                                  &
   /)
 
   ! Methods
@@ -198,6 +201,7 @@ module module_cplfields
     integer                                     :: n,dimCount
     logical                                     :: isCreated
     type(ESMF_TypeKind_Flag)                    :: datatype
+    character(len=ESMF_MAXSTR)                  :: fieldName
     real(kind=ESMF_KIND_R4), dimension(:,:), pointer   :: datar42d
     real(kind=ESMF_KIND_R8), dimension(:,:), pointer   :: datar82d
     
@@ -209,8 +213,9 @@ module module_cplfields
       if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
       if (isCreated) then
 ! set data 
-        call ESMF_FieldGet(exportFields(n), dimCount=dimCount, typekind=datatype, rc=localrc)
+        call ESMF_FieldGet(exportFields(n), name=fieldname, dimCount=dimCount, typekind=datatype, rc=localrc)
         if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+        !print *,'in fillExportFields, field created n=',n,size(exportFields),'name=', trim(fieldname)
         if ( datatype == ESMF_TYPEKIND_R8) then
            if ( dimCount == 2) then
              call ESMF_FieldGet(exportFields(n),farrayPtr=datar82d,localDE=0, rc=localrc)

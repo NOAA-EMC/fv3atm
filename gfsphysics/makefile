@@ -21,18 +21,14 @@ FFLAGS   += -I$(FMS_DIR) -I../cpl
 
 CPPDEFS += -DNEW_TAUCTMAX -DSMALL_PE -DNEMS_GSM -DINTERNAL_FILE_NML
 
-# CCPP dynamic and static builds
+# CCPP build
 ifneq (,$(findstring CCPP,$(CPPDEFS)))
 # Set flags for 32-bit dynamics build
 ifeq ($(DYN32),Y)
 CPPDEFS += -DOVERLOAD_R4
 endif
-# Set CCPP static api for static build
-ifneq (,$(findstring STATIC,$(CPPDEFS)))
-    CCPP_STATIC_API = ../ccpp/physics/ccpp_static_api.F90
-else
-    CCPP_STATIC_API = 
-endif
+CCPP_STATIC_API = ../ccpp/physics/ccpp_static_api.F90
+
 # Set physics source files
 # DH* 20190916 - can remove namelist_soilveg and set_soilveg
 # once calculation of snocvr is moved from FV3GFS_io.F90/GFS_driver.F90
@@ -41,24 +37,19 @@ SRCS_f = \
 	   ./physics/mersenne_twister.f                                              \
 	   ./physics/namelist_soilveg.f                                              \
 	   ./physics/physparam.f                                                     \
-	   ./physics/radlw_param.f                                                   \
-	   ./physics/radsw_param.f                                                   \
 	   ./physics/set_soilveg.f
 SRCS_f90 = \
 	     ./physics/noahmp_tables.f90
-SRCS_F = \
-	   ./physics/machine.F
+SRCS_F =
 SRCS_F90 = \
 	   ./physics/GFDL_parse_tracers.F90                                          \
 	   ./physics/physcons.F90                                                    \
-	   ./CCPP_layer/CCPP_typedefs.F90                                            \
 	   ./CCPP_layer/CCPP_data.F90                                                \
 	   $(CCPP_STATIC_API)                                                        \
 	   ./GFS_layer/GFS_abstraction_layer.F90                                     \
 	   ./GFS_layer/GFS_diagnostics.F90                                           \
 	   ./GFS_layer/GFS_driver.F90                                                \
-	   ./GFS_layer/GFS_restart.F90                                               \
-	   ./GFS_layer/GFS_typedefs.F90
+	   ./GFS_layer/GFS_restart.F90
 # non-CCPP build
 else
 SRCS_IDEA_PHYS_f   =  \
@@ -115,9 +106,9 @@ SRCS_f =  \
 	   ./physics/mersenne_twister.f                                              \
 	   ./physics/mfpbl.f                                                         \
 	   ./physics/mfpblt.f                                                        \
-           ./physics/mfpbltq.f                                                       \
+	   ./physics/mfpbltq.f                                                       \
 	   ./physics/mfscu.f                                                         \
-           ./physics/mfscuq.f                                                        \
+	   ./physics/mfscuq.f                                                        \
 	   ./physics/module_bfmicrophysics.f                                         \
 	   ./physics/moninedmf.f                                                     \
 	   ./physics/moninedmf_hafs.f                                                \
@@ -304,8 +295,6 @@ clean:
 
 MKDEPENDS = ../mkDepends.pl
 include ../conf/make.rules
-
-include ./depend
 
 # do not include 'depend' file if the target contains string 'clean'
 ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))

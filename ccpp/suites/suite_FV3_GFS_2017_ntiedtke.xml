@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<suite name="FV3_GFS_2017_ntiedtke" lib="ccppphys" ver="3">
+<suite name="FV3_GFS_2017_ntiedtke" version="1">
   <!-- <init></init> -->
   <group name="fast_physics">
     <subcycle loop="1">
@@ -54,7 +54,6 @@
     <!-- End of surface iteration loop -->
     <subcycle loop="1">
       <scheme>GFS_surface_composites_post</scheme>
-      <scheme>dcyc2t3_post</scheme>
       <scheme>sfc_diag</scheme>
       <scheme>sfc_diag_post</scheme>
       <scheme>GFS_surface_generic_post</scheme>
@@ -64,12 +63,13 @@
       <scheme>GFS_GWD_generic_pre</scheme>
       <scheme>cires_ugwp</scheme>
       <scheme>cires_ugwp_post</scheme>
+      <scheme>GFS_GWD_generic_post</scheme>
       <scheme>rayleigh_damp</scheme>
       <scheme>GFS_suite_stateout_update</scheme>
       <scheme>ozphys</scheme>
-      <scheme>GFS_DCNV_generic_pre</scheme>
       <scheme>get_phi_fv3</scheme>
       <scheme>GFS_suite_interstitial_3</scheme>
+      <scheme>GFS_DCNV_generic_pre</scheme>
       <scheme>cu_ntiedtke_pre</scheme>
       <scheme>cu_ntiedtke</scheme>
       <scheme>GFS_DCNV_generic_post</scheme>

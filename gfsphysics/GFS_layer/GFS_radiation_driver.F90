@@ -319,7 +319,7 @@
      &                                     epsm1 => con_epsm1,          &
      &                                     fvirt => con_fvirt           &
      &,                                    rog   => con_rog             &
-     &,                                    rocp  => con_rocp
+     &,                                    rocp  => con_rocp, pi => con_pi
       use funcphys,                  only: fpvs
 
       use module_radiation_astronomy,only: sol_init, sol_update, coszmn
@@ -377,11 +377,11 @@
 !> EPSQ=1.0e-12
       real (kind=kind_phys) :: EPSQ
 !     parameter (QMIN=1.0e-10, QME5=1.0e-5,  QME6=1.0e-6,  EPSQ=1.0e-12)
-      parameter (QMIN=1.0e-10, QME5=1.0e-7,  QME6=1.0e-7,  EPSQ=1.0e-12)
+      parameter (QMIN=1.0d-10, QME5=1.0d-7,  QME6=1.0d-7,  EPSQ=1.0d-12)
 !     parameter (QMIN=1.0e-10, QME5=1.0e-20, QME6=1.0e-20, EPSQ=1.0e-12)
 
 !> lower limit of toa pressure value in mb
-      real, parameter :: prsmin = 1.0e-6
+      real, parameter :: prsmin = 1.0d-6
 
 !> control flag for LW surface temperature at air/ground interface
 !! (default=0, the value will be set in subroutine radinit)
@@ -412,6 +412,7 @@
       contains
 ! =================
 
+!## CCPP ## This is now a private subroutine in GFS_rrtmg_setup.F90/radinit.
 !> This subroutine initialize a model's radiation process through
 !! calling of specific initialization subprograms that directly
 !! related to radiation calculations. This subroutine needs to be
@@ -440,7 +441,7 @@
 !                                                                       !
 ! attributes:                                                           !
 !   language:  fortran 90                                               !
-!   machine:   wcoss                                                   !
+!   machine:   wcoss                                                    !
 !                                                                       !
 !  ====================  definition of variables  ====================  !
 !                                                                       !
@@ -452,7 +453,7 @@
 !                                                                       !
 !  outputs: (none)                                                      !
 !                                                                       !
-!  external module variables:  (in module physparam)                     !
+!  external module variables:  (in module physparam)                    !
 !   isolar   : solar constant cntrol flag                               !
 !              = 0: use the old fixed solar constant in "physcon"       !
 !              =10: use the new fixed solar constant in "physcon"       !
@@ -500,13 +501,13 @@
 !   icldflg  : cloud optical property scheme control flag               !
 !              =0: use diagnostic cloud scheme (discontinued)           !
 !              =1: use prognostic cloud scheme (default)                !
-!   imp_physics  : cloud microphysics scheme control flag                   !
-!              =99 zhao/carr/sundqvist microphysics scheme               !
+!   imp_physics  : cloud microphysics scheme control flag               !
+!              =99 zhao/carr/sundqvist microphysics scheme              !
 !              =98 zhao/carr/sundqvist microphysics+pdf cloud & cnvc,cnvw!
-!              =11 GFDL cloud microphysics                               !
+!              =11 GFDL cloud microphysics                              !
 !              =8 Thompson microphysics scheme                          !
 !              =6 WSM6 microphysics scheme                              !
-!              =10 MG microphysics scheme                                !
+!              =10 MG microphysics scheme                               !
 !   iovrsw   : control flag for cloud overlap in sw radiation           !
 !   iovrlw   : control flag for cloud overlap in lw radiation           !
 !              =0: random overlapping clouds                            !
@@ -652,6 +653,7 @@
 !-----------------------------------
 !> @}
 
+!## CCPP ## This is now a private subroutine in GFS_rrtmg_setup.F90/radupdate.
 !> This subroutine checks and updates time sensitive data used by
 !! radiation computations. This subroutine needs to be placed inside
 !! the time advancement loop but outside of the horizontal grid loop.
@@ -1022,16 +1024,6 @@
 
       implicit none
 
-! DH* gfortran correctly throws an error if the intent() declarations
-! for arguments differ between the actual routine (here) and the dummy
-! interface routine (IPD_func0d_proc in IPD_typedefs.F90):
-!
-! Error: Interface mismatch in procedure pointer assignment at (1): INTENT mismatch in argument 'control'
-!
-! Since IPD_func0d_proc declares all arguments as intent(inout), we
-! need to do the same here - however, this way we are loosing the
-! valuable information on the actual intent to this routine. *DH
-#ifdef __GFORTRAN__
       type(GFS_control_type),         intent(inout) :: Model
       type(GFS_statein_type),         intent(inout) :: Statein
       type(GFS_stateout_type),        intent(inout) :: Stateout
@@ -1042,18 +1034,6 @@
       type(GFS_cldprop_type),         intent(inout) :: Cldprop
       type(GFS_radtend_type),         intent(inout) :: Radtend
       type(GFS_diag_type),            intent(inout) :: Diag
-#else
-      type(GFS_control_type),         intent(in)    :: Model
-      type(GFS_statein_type),         intent(in)    :: Statein
-      type(GFS_stateout_type),        intent(inout) :: Stateout
-      type(GFS_sfcprop_type),         intent(in)    :: Sfcprop
-      type(GFS_coupling_type),        intent(inout) :: Coupling
-      type(GFS_grid_type),            intent(in)    :: Grid
-      type(GFS_tbd_type),             intent(in)    :: Tbd
-      type(GFS_cldprop_type),         intent(in)    :: Cldprop
-      type(GFS_radtend_type),         intent(inout) :: Radtend
-      type(GFS_diag_type),            intent(inout) :: Diag
-#endif
 
 ! =================   subprogram documentation block   ================ !
 !                                                                       !
@@ -1241,14 +1221,19 @@
 
       !  mg, sfc perts
       real(kind=kind_phys), dimension(size(Grid%xlon,1)) :: alb1d
-      real(kind=kind_phys) :: cdfz
+      real(kind=kind_phys) :: lndp_alb
 
       real(kind=kind_phys), dimension(size(Grid%xlon,1),Model%levr+ltp) :: cldtausw
       real(kind=kind_phys), dimension(size(Grid%xlon,1),Model%levr+ltp) :: cldtaulw
 
+      real(kind=kind_phys), parameter :: zero=0.0d0, one=1.0d0
+
       !--- TYPED VARIABLES
       type (cmpfsw_type),    dimension(size(Grid%xlon,1)) :: scmpsw
 
+      real(kind=kind_phys), parameter :: rad2dg  = 180.0_kind_phys/pi
+!     logical :: lprnt
+!     integer :: ipt
 !     logical effr_in
 !     data effr_in/.false./
 !
@@ -1256,7 +1241,8 @@
 !
 
 !--- only call GFS_radiation_driver at radiation time step
-
+!## CCPP ##* GFS_rrtmg_pre.F90/GFS_rrtmg_pre_run for code required to run before 
+! SW and LW.
       if (.not. (Model%lsswr .or. Model%lslwr )) return
 
 !--- set commonly used integers
@@ -1313,6 +1299,25 @@
       raddt = min(Model%fhswr, Model%fhlwr)
 !     print *,' in grrad : raddt=',raddt
 
+
+!     lprnt   = .false.
+
+!     do i=1,im
+!       lprnt = Model%kdt >=  20 .and. abs(grid%xlon(i)*rad2dg-102.65) < 0.101 &
+!                          .and. abs(grid%xlat(i)*rad2dg-0.12) < 0.201
+!       lprnt = Model%kdt >=  20 .and. abs(grid%xlon(i)*rad2dg-184.00) < 0.301 &
+!                          .and. abs(grid%xlat(i)*rad2dg-83.23) < 0.301
+!       if (kdt == 1) &
+!         write(2000+me,*)' i=',i,' xlon=',grid%xlon(i)*rad2dg,
+!         &
+!                       ' xlat=',grid%xlat(i)*rad2dg,' me=',me
+!       if (lprnt) then
+!         ipt = i
+!         write(0,*)' ipt=',ipt,'xlon=',grid%xlon(i)*rad2dg,' xlat=',grid%xlat(i)*rad2dg,' me=',me
+!         exit
+!       endif
+!     enddo
+
 !> -# Setup surface ground temperature and ground/air skin temperature
 !! if required.
 
@@ -1338,15 +1343,15 @@
         k1 = k + kd
         k2 = k + lsk
         do i = 1, IM
-          plvl(i,k1+kb) = Statein%prsi(i,k2+kb) * 0.01   ! pa to mb (hpa)
-          plyr(i,k1)    = Statein%prsl(i,k2)    * 0.01   ! pa to mb (hpa)
+          plvl(i,k1+kb) = Statein%prsi(i,k2+kb) * 0.01d0   ! pa to mb (hpa)
+          plyr(i,k1)    = Statein%prsl(i,k2)    * 0.01d0   ! pa to mb (hpa)
           tlyr(i,k1)    = Statein%tgrs(i,k2)
           prslk1(i,k1)  = Statein%prslk(i,k2)
 
 !>  - Compute relative humidity.
           es  = min( Statein%prsl(i,k2),  fpvs( Statein%tgrs(i,k2) ) )  ! fpvs and prsl in pa
           qs  = max( QMIN, eps * es / (Statein%prsl(i,k2) + epsm1*es) )
-          rhly(i,k1) = max( 0.0, min( 1.0, max(QMIN, Statein%qgrs(i,k2,1))/qs ) )
+          rhly(i,k1) = max( zero, min( one, max(QMIN, Statein%qgrs(i,k2,1))/qs ) )
           qstl(i,k1) = qs
         enddo
       enddo
@@ -1356,37 +1361,43 @@
         do k = 1, LM
           k1 = k + kd
           k2 = k + lsk
-          tracer1(:,k1,j) = max(0.0, Statein%qgrs(:,k2,j))
+          tracer1(:,k1,j) = max(zero, Statein%qgrs(:,k2,j))
         enddo
       enddo
 !
       if (ivflip == 0) then                                ! input data from toa to sfc
-        do i = 1, IM
-          plvl(i,1+kd) = 0.01 * Statein%prsi(i,1)          ! pa to mb (hpa)
-        enddo
-        if (lsk /= 0) then
+        if (lsk > 0) then
+          k1 = 1 + kd
+          k2 = k1 + kb
           do i = 1, IM
-            plvl(i,1+kd)  = 0.5 * (plvl(i,2+kd) + plvl(i,1+kd))
+            plvl(i,k2)   = 0.01d0 * Statein%prsi(i,1+kb)          ! pa to mb (hpa)
+            plyr(i,k1)   = 0.5d0 * (plvl(i,k2+1) + plvl(i,k2))
+            prslk1(i,k1) = (plyr(i,k1)*0.001d0) ** rocp
           enddo
         endif
       else                                                 ! input data from sfc to top
-        do i = 1, IM
-          plvl(i,LP1+kd) = 0.01 * Statein%prsi(i,LP1+lsk)  ! pa to mb (hpa)
-        enddo
-        if (lsk /= 0) then
+        if (Model%levs > lm) then
+          k1 = lm + kd
           do i = 1, IM
-            plvl(i,LM+kd)  = 0.5 * (plvl(i,LP1+kd) + plvl(i,LM+kd))
+            plvl(i,k1+1) = 0.01d0 * Statein%prsi(i,Model%levs+1)  ! pa to mb (hpa)
+            plyr(i,k1)   = 0.5d0 * (plvl(i,k1+1) + plvl(i,k1))
+            prslk1(i,k1) = (plyr(i,k1)*0.001d0) ** rocp
+          enddo
+        else
+          k1 = lm + kd
+          do i = 1, IM
+            plvl(i,k1+1) = 0.01d0 * Statein%prsi(i,Model%levs+1)  ! pa to mb (hpa)
           enddo
         endif
       endif
-
+!
       if ( lextop ) then                 ! values for extra top layer
         do i = 1, IM
           plvl(i,llb) = prsmin
-          if ( plvl(i,lla) <= prsmin ) plvl(i,lla) = 2.0*prsmin
-          plyr(i,lyb)   = 0.5 * plvl(i,lla)
+          if ( plvl(i,lla) <= prsmin ) plvl(i,lla) = 2.0d0*prsmin
+          plyr(i,lyb)   = 0.5d0 * plvl(i,lla)
           tlyr(i,lyb)   = tlyr(i,lya)
-          prslk1(i,lyb) = (plyr(i,lyb)*0.00001) ** rocp ! plyr in Pa
+          prslk1(i,lyb) = (plyr(i,lyb)*0.001d0) ** rocp ! plyr in Pa
           rhly(i,lyb)   = rhly(i,lya)
           qstl(i,lyb)   = qstl(i,lya)
         enddo
@@ -1458,7 +1469,7 @@
           do i = 1, IM
             qlyr(i,k1) = max( tem1d(i), Statein%qgrs(i,k,1) )
             tem1d(i)   = min( QME5, qlyr(i,k1) )
-            tvly(i,k1) = Statein%tgrs(i,k) * (1.0 + fvirt*qlyr(i,k1)) ! virtual T (K)
+            tvly(i,k1) = Statein%tgrs(i,k) * (one + fvirt*qlyr(i,k1)) ! virtual T (K)
             delp(i,k1) = plvl(i,k1+1) - plvl(i,k1)
           enddo
         enddo
@@ -1481,7 +1492,7 @@
 
 !  ---  ...  level height and layer thickness (km)
 
-        tem0d = 0.001 * rog
+        tem0d = 0.001d0 * rog
         do i = 1, IM
           do k = 1, LMK
             dz(i,k) = tem0d * (tem2db(i,k+1) - tem2db(i,k)) * tvly(i,k)
@@ -1509,7 +1520,7 @@
           do i = 1, IM
             qlyr(i,k) = max( tem1d(i), Statein%qgrs(i,k,1) )
             tem1d(i)  = min( QME5, qlyr(i,k) )
-            tvly(i,k) = Statein%tgrs(i,k) * (1.0 + fvirt*qlyr(i,k)) ! virtual T (K)
+            tvly(i,k) = Statein%tgrs(i,k) * (one + fvirt*qlyr(i,k)) ! virtual T (K)
             delp(i,k) = plvl(i,k) - plvl(i,k+1)
           enddo
         enddo
@@ -1532,7 +1543,7 @@
 
 !  ---  ...  level height and layer thickness (km)
 
-        tem0d = 0.001 * rog
+        tem0d = 0.001d0 * rog
         do i = 1, IM
           do k = LMK, 1, -1
             dz(i,k) = tem0d * (tem2db(i,k) - tem2db(i,k+1)) * tvly(i,k)
@@ -1544,24 +1555,27 @@
 !         enddo
         enddo
       endif                              ! end_if_ivflip
+!*## CCPP ##
 
 !>  - Check for daytime points for SW radiation.
-
+!## CCPP ##* rrtmg_sw_pre.F90/rrtmg_sw_pre_run
       nday = 0
       do i = 1, IM
-        if (Radtend%coszen(i) >= 0.0001) then
+        if (Radtend%coszen(i) >= 0.0001d0) then
           nday = nday + 1
           idxday(nday) = i
         endif
       enddo
+!*## CCPP ##
 
 !>  - Call module_radiation_aerosols::setaer(),to setup aerosols
 !! property profile for radiation.
 
 !check  print *,' in grrad : calling setaer '
-
+!## CCPP ##* GFS_rrtmg_pre.F90/GFS_rrtmg_pre_run
       call setaer (plvl, plyr, prslk1, tvly, rhly, Sfcprop%slmsk,  &  !  ---  inputs
-                   tracer1, Grid%xlon, Grid%xlat, IM, LMK, LMP,    &
+                   tracer1, Tbd%aer_nm,                               &
+                   Grid%xlon, Grid%xlat, IM, LMK, LMP,             &
                    Model%lsswr,Model%lslwr,                        &
                    faersw,faerlw,aerodp)                              !  ---  outputs
 
@@ -1577,7 +1591,7 @@
 !  --- ...  obtain cloud information for radiation calculations
 
 !     if (ntcw > 0) then                                          ! prognostic cloud schemes
-        ccnd = 0.0_kind_phys
+        ccnd = zero
         if (Model%ncnd == 1) then                                 ! Zhao_Carr_Sundqvist
           do k=1,LMK
             do i=1,IM
@@ -1613,7 +1627,7 @@
         do n=1,ncndl
           do k=1,LMK
             do i=1,IM
-              if (ccnd(i,k,n) < epsq) ccnd(i,k,n) = 0.0
+              if (ccnd(i,k,n) < epsq) ccnd(i,k,n) = zero
             enddo
           enddo
         enddo
@@ -1623,11 +1637,11 @@
 
 ! rsun the  summation methods and order make the difference in calculation 
 
-!            clw(:,:) = clw(:,:) + tracer1(:,1:LMK,Model%ntcw)   &        
-!                                + tracer1(:,1:LMK,Model%ntiw)   & 
-!                                + tracer1(:,1:LMK,Model%ntrw)   & 
-!                                + tracer1(:,1:LMK,Model%ntsw)   & 
-!                                + tracer1(:,1:LMK,Model%ntgl) 
+!            clw(:,:) = clw(:,:) + tracer1(:,1:LMK,Model%ntcw)   &
+!                                + tracer1(:,1:LMK,Model%ntiw)   &
+!                                + tracer1(:,1:LMK,Model%ntrw)   &
+!                                + tracer1(:,1:LMK,Model%ntsw)   &
+!                                + tracer1(:,1:LMK,Model%ntgl)
             ccnd(:,:,1) =               tracer1(:,1:LMK,ntcw)
             ccnd(:,:,1) = ccnd(:,:,1) + tracer1(:,1:LMK,ntrw)
             ccnd(:,:,1) = ccnd(:,:,1) + tracer1(:,1:LMK,ntiw)
@@ -1641,7 +1655,7 @@
           endif 
           do k=1,LMK
             do i=1,IM
-              if (ccnd(i,k,1) < EPSQ ) ccnd(i,k,1) = 0.0
+              if (ccnd(i,k,1) < EPSQ ) ccnd(i,k,1) = zero
             enddo
           enddo
         endif 
@@ -1682,7 +1696,7 @@
 !			       effrl(i,k1)
 !                  endif  
 !                  if(effrs(i,k1)==0.0) then
-!		    write(6,*) 'rad driver:snow mixing ratio:',Model%kdt, i,k1,        & 
+!		    write(6,*) 'rad driver:snow mixing ratio:',Model%kdt, i,k1, & 
 !			        tracer1(i,k,ntsw)
 !                  endif  
 !                endif 
@@ -1691,7 +1705,7 @@
 
           endif
         else                                                           ! neither of the other two cases
-          cldcov = 0.0
+          cldcov = zero
         endif
 
 !
@@ -1714,17 +1728,17 @@
           do k=1,lm
             k1 = k + kd
             do i=1,im
-              deltaq(i,k1) = 0.0
+              deltaq(i,k1) = zero
               cnvw  (i,k1) = Tbd%phy_f3d(i,k,Model%num_p3d+1)
-              cnvc  (i,k1) = 0.0
+              cnvc  (i,k1) = zero
             enddo
           enddo
         else                                                           ! all the rest
           do k=1,lmk
             do i=1,im
-              deltaq(i,k) = 0.0
-              cnvw  (i,k) = 0.0
-              cnvc  (i,k) = 0.0
+              deltaq(i,k) = zero
+              cnvw  (i,k) = zero
+              cnvc  (i,k) = zero
             enddo
           enddo
         endif
@@ -1755,71 +1769,71 @@
                                                                           ! or unified cloud and/or with MG microphysics
 
           if (Model%uni_cld .and. ncld >= 2) then
-            call progclduni (plyr, plvl, tlyr, tvly, ccnd, ncndl,        &!  ---  inputs
+            call progclduni (plyr, plvl, tlyr, tvly, ccnd, ncndl,        &    !  ---  inputs
                              Grid%xlat, Grid%xlon, Sfcprop%slmsk,dz,delp,&
                              IM, LMK, LMP, cldcov,                       &
                              effrl, effri, effrr, effrs, Model%effr_in,  &
-                             clouds, cldsa, mtopa, mbota, de_lgth)        !  ---  outputs
+                             clouds, cldsa, mtopa, mbota, de_lgth)            !  ---  outputs
           else
-            call progcld1 (plyr ,plvl, tlyr, tvly, qlyr, qstl, rhly,    & !  ---  inputs
+            call progcld1 (plyr ,plvl, tlyr, tvly, qlyr, qstl, rhly,    &     !  ---  inputs
                            ccnd(1:IM,1:LMK,1), Grid%xlat,Grid%xlon,     &
                            Sfcprop%slmsk, dz, delp, IM, LMK, LMP,       &
                            Model%uni_cld, Model%lmfshal,                &
                            Model%lmfdeep2, cldcov,                      &
                            effrl, effri, effrr, effrs, Model%effr_in,   &
-                           clouds, cldsa, mtopa, mbota, de_lgth)          !  ---  outputs
+                           clouds, cldsa, mtopa, mbota, de_lgth)              !  ---  outputs
           endif
 
         elseif(Model%imp_physics == 98) then      ! zhao/moorthi's prognostic cloud+pdfcld
 
-          call progcld3 (plyr, plvl, tlyr, tvly, qlyr, qstl, rhly,      & !  ---  inputs
+          call progcld3 (plyr, plvl, tlyr, tvly, qlyr, qstl, rhly,      &     !  ---  inputs
                          ccnd(1:IM,1:LMK,1),                            &
                          cnvw, cnvc, Grid%xlat, Grid%xlon,              &
                          Sfcprop%slmsk, dz, delp, im, lmk, lmp, deltaq, &
                          Model%sup, Model%kdt, me,                      &
-                         clouds, cldsa, mtopa, mbota, de_lgth)            !  ---  outputs
+                         clouds, cldsa, mtopa, mbota, de_lgth)                !  ---  outputs
 
         elseif (Model%imp_physics == 11) then           ! GFDL cloud scheme
 
           if (.not.Model%lgfdlmprad) then
-            call progcld4 (plyr, plvl, tlyr, tvly, qlyr, qstl, rhly,     &!  ---  inputs
+            call progcld4 (plyr, plvl, tlyr, tvly, qlyr, qstl, rhly,     &    !  ---  inputs
                            ccnd(1:IM,1:LMK,1), cnvw, cnvc,               &
                            Grid%xlat, Grid%xlon, Sfcprop%slmsk,          &
                            cldcov, dz, delp, im, lmk, lmp,               &
-                           clouds, cldsa, mtopa, mbota, de_lgth)          !  ---  outputs
+                           clouds, cldsa, mtopa, mbota, de_lgth)              !  ---  outputs
           else
 
-            call progclduni (plyr, plvl, tlyr, tvly, ccnd, ncndl,        &!  ---  inputs
+            call progclduni (plyr, plvl, tlyr, tvly, ccnd, ncndl,        &    !  ---  inputs
                             Grid%xlat, Grid%xlon, Sfcprop%slmsk, dz,delp,&
                             IM, LMK, LMP, cldcov,                        &
                             effrl, effri, effrr, effrs, Model%effr_in,   &
-                            clouds, cldsa, mtopa, mbota, de_lgth)         !  ---  outputs
-!           call progcld4o (plyr, plvl, tlyr, tvly, qlyr, qstl, rhly,       &    !  ---  inputs
+                            clouds, cldsa, mtopa, mbota, de_lgth)             !  ---  outputs
+!           call progcld4o (plyr, plvl, tlyr, tvly, qlyr, qstl, rhly,       & !  ---  inputs
 !                           tracer1, Grid%xlat, Grid%xlon, Sfcprop%slmsk,   &
 !                           dz, delp,                                       &
 !                           ntrac-1, Model%ntcw-1,Model%ntiw-1,Model%ntrw-1,& 
 !                           Model%ntsw-1,Model%ntgl-1,Model%ntclamt-1,      &
 !                           im, lmk, lmp,                                   &
-!                           clouds, cldsa, mtopa, mbota, de_lgth)         !  ---  outputs
+!                           clouds, cldsa, mtopa, mbota, de_lgth)             !  ---  outputs
           endif 
 
-        elseif(Model%imp_physics == 8 .or. Model%imp_physics == 6) then   ! Thompson / WSM6 cloud micrphysics scheme 
+        elseif(Model%imp_physics == 8 .or. Model%imp_physics == 6) then   ! Thompson / WSM6 cloud micrphysics scheme
 
           if (Model%kdt == 1) then
-            Tbd%phy_f3d(:,:,1) = 10.
-            Tbd%phy_f3d(:,:,2) = 50.
-            Tbd%phy_f3d(:,:,3) = 250.
+            Tbd%phy_f3d(:,:,1) = 10.0d0
+            Tbd%phy_f3d(:,:,2) = 50.0d0
+            Tbd%phy_f3d(:,:,3) = 250.0d0
           endif
 
-          call progcld5 (plyr,plvl,tlyr,qlyr,qstl,rhly,tracer1,   &    !  --- inputs 
+          call progcld5 (plyr,plvl,tlyr,qlyr,qstl,rhly,tracer1,     &  !  --- inputs
                          Grid%xlat,Grid%xlon,Sfcprop%slmsk,dz,delp, &
-                         ntrac-1, ntcw-1,ntiw-1,ntrw-1,           & 
-                         ntsw-1,ntgl-1,                           &
-                         im, lmk, lmp, Model%uni_cld,             &
-                         Model%lmfshal,Model%lmfdeep2,            &
-                         cldcov(:,1:LMK),Tbd%phy_f3d(:,:,1),      &
-                         Tbd%phy_f3d(:,:,2), Tbd%phy_f3d(:,:,3),  &
-                         clouds,cldsa,mtopa,mbota, de_lgth)            !  --- outputs  
+                         ntrac-1, ntcw-1,ntiw-1,ntrw-1,             &
+                         ntsw-1,ntgl-1,                             &
+                         im, lmk, lmp, Model%uni_cld,               &
+                         Model%lmfshal,Model%lmfdeep2,              &
+                         cldcov(:,1:LMK),Tbd%phy_f3d(:,:,1),        &
+                         Tbd%phy_f3d(:,:,2), Tbd%phy_f3d(:,:,3),    &
+                         clouds,cldsa,mtopa,mbota, de_lgth)            !  --- outputs
               
         endif                            ! end if_imp_physics
 
@@ -1834,18 +1848,21 @@
 !  perturbation size
 !  ---  turn vegetation fraction pattern into percentile pattern
       alb1d(:) = 0.
-      if (Model%do_sfcperts) then
-        if (Model%pertalb(1) > 0.) then
-          do i=1,im
-            call cdfnor(Coupling%sfc_wts(i,5),cdfz)
-            alb1d(i) = cdfz
-          enddo
+      lndp_alb = -999.
+        if (Model%lndp_type ==1) then
+          do k =1,Model%n_var_lndp
+            if (Model%lndp_var_list(k) == 'alb') then 
+              do i=1,im
+                call cdfnor(Coupling%sfc_wts(i,k),alb1d(i)) 
+                lndp_alb = Model%lndp_prt_list(k) 
+              enddo
+            endif
+          enddo 
         endif
-      endif
 ! mg, sfc-perts
+!*## CCPP ##
 
-
-
+!## CCPP ##* rrtmg_sw_pre.F90/rrtmg_sw_pre_run; Note: includes check for lsswr in scheme
 !> -# Start SW radiation calculations
       if (Model%lsswr) then
 
@@ -1858,46 +1875,51 @@
                      Sfcprop%alnsf, Sfcprop%alvwf, Sfcprop%alnwf,    &
                      Sfcprop%facsf, Sfcprop%facwf, Sfcprop%fice,     &
                      Sfcprop%tisfc, IM,                              &
-                     alb1d, Model%pertalb,                           & !  mg, sfc-perts
+                     alb1d, lndp_alb,                                & !  mg, sfc-perts
                      sfcalb)                                           !  ---  outputs
 
 !> -# Approximate mean surface albedo from vis- and nir-  diffuse values.
-        Radtend%sfalb(:) = max(0.01, 0.5 * (sfcalb(:,2) + sfcalb(:,4)))
+        Radtend%sfalb(:) = max(0.01d0, 0.5d0 * (sfcalb(:,2) + sfcalb(:,4)))
+!*## CCPP ##
 
+!## CCPP ##* radsw_main.f/rrtmg_sw_run; Note: The checks for nday and lsswr are included in the scheme (returns if
+! nday <= 0 or lsswr == F). Optional arguments are used to handle the different calls below.
         if (nday > 0) then
 
 !>  - Call module_radsw_main::swrad(), to compute SW heating rates and
 !!   fluxes.
 !     print *,' in grrad : calling swrad'
-
+        
           if (Model%swhtr) then
-            call swrad (plyr, plvl, tlyr, tlvl, qlyr, olyr,     &      !  ---  inputs
+            call swrad (plyr, plvl, tlyr, tlvl, qlyr, olyr,     &      !  --- inputs
                         gasvmr, clouds, Tbd%icsdsw, faersw,     &
                         sfcalb, dz, delp, de_lgth,              &
                                 Radtend%coszen, Model%solcon,   &
                         nday, idxday, im, lmk, lmp, Model%lprnt,&
-                        htswc, Diag%topfsw, Radtend%sfcfsw,     &      !  ---  outputs
+                        htswc, Diag%topfsw, Radtend%sfcfsw,     &      !  --- outputs
                         cldtausw,                               &
                         hsw0=htsw0, fdncmp=scmpsw)                     ! ---  optional
           else
-            call swrad (plyr, plvl, tlyr, tlvl, qlyr, olyr,     &      !  ---  inputs 
+            call swrad (plyr, plvl, tlyr, tlvl, qlyr, olyr,     &      !  --- inputs
                         gasvmr, clouds, Tbd%icsdsw, faersw,     &
                         sfcalb, dz, delp, de_lgth,              &
                                 Radtend%coszen, Model%solcon,   &
                         nday, idxday, IM, LMK, LMP, Model%lprnt,&
-                        htswc, Diag%topfsw, Radtend%sfcfsw,     &      !  ---  outputs 
+                        htswc, Diag%topfsw, Radtend%sfcfsw,     &      !  --- outputs
                         cldtausw,                               &
-                        FDNCMP=scmpsw)                                 ! ---  optional 
+                        FDNCMP=scmpsw)                                 ! ---  optional
           endif
+!*## CCPP ##
 
+!## CCPP ##* rrtmg_sw_post.F90/rrtmg_sw_post_run
           do k = 1, LM
             k1 = k + kd
             Radtend%htrsw(1:im,k) = htswc(1:im,k1)
           enddo
-!     We are assuming that radiative tendencies are from bottom to top 
+!     We are assuming that radiative tendencies are from bottom to top
 ! --- repopulate the points above levr i.e. LM
           if (lm < levs) then
-            do k = lm,levs
+            do k = lp1,levs
               Radtend%htrsw (1:im,k) = Radtend%htrsw (1:im,LM)
             enddo
           endif
@@ -1909,8 +1931,8 @@
              enddo
 ! --- repopulate the points above levr i.e. LM
              if (lm < levs) then
-               do k = lm,levs
-                 Radtend%swhc(1:im,k) = Radtend%swhc(1:im,LM) 
+               do k = lp1,levs
+                 Radtend%swhc(1:im,k) = Radtend%swhc(1:im,LM)
                enddo
              endif
           endif
@@ -1933,26 +1955,26 @@
 
         else                   ! if_nday_block
 
-          Radtend%htrsw(:,:) = 0.0
+          Radtend%htrsw(:,:) = zero
 
           Radtend%sfcfsw = sfcfsw_type( 0.0, 0.0, 0.0, 0.0 )
           Diag%topfsw    = topfsw_type( 0.0, 0.0, 0.0 )
           scmpsw         = cmpfsw_type( 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 )
 
           do i=1,im
-            Coupling%nirbmdi(i) = 0.0
-            Coupling%nirdfdi(i) = 0.0
-            Coupling%visbmdi(i) = 0.0
-            Coupling%visdfdi(i) = 0.0
+            Coupling%nirbmdi(i) = zero
+            Coupling%nirdfdi(i) = zero
+            Coupling%visbmdi(i) = zero
+            Coupling%visdfdi(i) = zero
 
-            Coupling%nirbmui(i) = 0.0
-            Coupling%nirdfui(i) = 0.0
-            Coupling%visbmui(i) = 0.0
-            Coupling%visdfui(i) = 0.0
+            Coupling%nirbmui(i) = zero
+            Coupling%nirdfui(i) = zero
+            Coupling%visbmui(i) = zero
+            Coupling%visdfui(i) = zero
           enddo
 
           if (Model%swhtr) then
-            Radtend%swhc(:,:) = 0
+            Radtend%swhc(:,:) = zero
           endif
 
         endif                  ! end_if_nday
@@ -1964,7 +1986,9 @@
         enddo
 
       endif                                ! end_if_lsswr
+!*## CCPP ##
 
+!## CCPP ## rrtmg_lw_pre.F90/rrtmg_lw_pre_run; Note: scheme includes check for lslwr.
 !> -# Start LW radiation calculations
       if (Model%lslwr) then
 
@@ -1973,13 +1997,16 @@
 
         call setemis (Grid%xlon, Grid%xlat, Sfcprop%slmsk,         &        !  ---  inputs
                       Sfcprop%snowd, Sfcprop%sncovr, Sfcprop%zorl, &
-                      tsfg, tsfa, Sfcprop%hprime(:,1), IM,         & 
-                      Radtend%semis)                                              !  ---  outputs
+                      tsfg, tsfa, Sfcprop%hprime(:,1), IM,         &
+                      Radtend%semis)                                        !  ---  outputs
+!*## CCPP ##
 
 !>  - Call module_radlw_main::lwrad(), to compute LW heating rates and
 !!    fluxes.
 !     print *,' in grrad : calling lwrad'
 
+!## CCPP ##* radlw_main.f/rrtmg_lw_run; Note: The check lslwr is included in the scheme (returns if
+! lslwr == F). Optional arguments are used to handle the different calls below.
         if (Model%lwhtr) then
           call lwrad (plyr, plvl, tlyr, tlvl, qlyr, olyr, gasvmr,  &        !  ---  inputs
                       clouds, Tbd%icsdlw, faerlw, Radtend%semis,   &
@@ -1994,7 +2021,9 @@
                             IM, LMK, LMP, Model%lprnt,             &
                       htlwc, Diag%topflw, Radtend%sfcflw, cldtaulw)         !  ---  outputs
         endif
+!*## CCPP ##
 
+!## CCPP ## rrtmg_lw_post.F90/rrtmg_lw_post_run; Note: includes check for lslwr.
 !> -# Save calculation results
 !>  - Save surface air temp for diurnal adjustment at model t-steps
         Radtend%tsflw (:) = tsfa(:)
@@ -2005,7 +2034,7 @@
         enddo
 ! --- repopulate the points above levr
         if (lm < levs) then
-          do k = lm,levs
+          do k = lm+1,levs
             Radtend%htrlw (1:im,k) = Radtend%htrlw (1:im,LM)
           enddo
         endif
@@ -2017,8 +2046,8 @@
           enddo
 ! --- repopulate the points above levr
           if (lm < levs) then
-            do k = lm,levs
-              Radtend%lwhc(1:im,k) = Radtend%lwhc(1:im,LM) 
+            do k = lm+1,levs
+              Radtend%lwhc(1:im,k) = Radtend%lwhc(1:im,LM)
             enddo
           endif
         endif
@@ -2027,7 +2056,9 @@
         Coupling%sfcdlw(:) = Radtend%sfcflw(:)%dnfxc
 
       endif                                ! end_if_lslwr
+!*## CCPP ##
 
+!## CCPP ## GFS_rrtmg_post.F90/GFS_rrtmg_post_run
 !>  - For time averaged output quantities (including total-sky and
 !!    clear-sky SW and LW fluxes at TOA and surface; conventional
 !!    3-domain cloud amount, cloud top and base pressure, and cloud top
@@ -2039,12 +2070,18 @@
       if (Model%lssav) then
         if (Model%lsswr) then
           do i=1,im
-            Diag%fluxr(i,34) = Diag%fluxr(i,34) + Model%fhswr*aerodp(i,1)  ! total aod at 550nm
-            Diag%fluxr(i,35) = Diag%fluxr(i,35) + Model%fhswr*aerodp(i,2)  ! DU aod at 550nm
-            Diag%fluxr(i,36) = Diag%fluxr(i,36) + Model%fhswr*aerodp(i,3)  ! BC aod at 550nm
-            Diag%fluxr(i,37) = Diag%fluxr(i,37) + Model%fhswr*aerodp(i,4)  ! OC aod at 550nm
-            Diag%fluxr(i,38) = Diag%fluxr(i,38) + Model%fhswr*aerodp(i,5)  ! SU aod at 550nm
-            Diag%fluxr(i,39) = Diag%fluxr(i,39) + Model%fhswr*aerodp(i,6)  ! SS aod at 550nm
+!            Diag%fluxr(i,34) = Diag%fluxr(i,34) + Model%fhswr*aerodp(i,1)  ! total aod at 550nm
+!            Diag%fluxr(i,35) = Diag%fluxr(i,35) + Model%fhswr*aerodp(i,2)  ! DU aod at 550nm
+!            Diag%fluxr(i,36) = Diag%fluxr(i,36) + Model%fhswr*aerodp(i,3)  ! BC aod at 550nm
+!            Diag%fluxr(i,37) = Diag%fluxr(i,37) + Model%fhswr*aerodp(i,4)  ! OC aod at 550nm
+!            Diag%fluxr(i,38) = Diag%fluxr(i,38) + Model%fhswr*aerodp(i,5)  ! SU aod at 550nm
+!            Diag%fluxr(i,39) = Diag%fluxr(i,39) + Model%fhswr*aerodp(i,6)  ! SS aod at 550nm
+            Diag%fluxr(i,34) = aerodp(i,1)  ! total aod at 550nm
+            Diag%fluxr(i,35) = aerodp(i,2)  ! DU aod at 550nm
+            Diag%fluxr(i,36) = aerodp(i,3)  ! BC aod at 550nm
+            Diag%fluxr(i,37) = aerodp(i,4)  ! OC aod at 550nm
+            Diag%fluxr(i,38) = aerodp(i,5)  ! SU aod at 550nm
+            Diag%fluxr(i,39) = aerodp(i,6)  ! SS aod at 550nm
           enddo
         endif
 
@@ -2066,7 +2103,7 @@
 !       part of sw calling interval, while coszdg= mean cosz over entire interval
         if (Model%lsswr) then
           do i = 1, IM
-            if (Radtend%coszen(i) > 0.) then
+            if (Radtend%coszen(i) > zero) then
 !  ---                                  sw total-sky fluxes
 !                                       -------------------
               tem0d = Model%fhswr * Radtend%coszdg(i) / Radtend%coszen(i)
@@ -2116,22 +2153,44 @@
               Diag%fluxr(i,11-j) = Diag%fluxr(i,11-j) + tem0d * Statein%prsi(i,itop+kt)
               Diag%fluxr(i,14-j) = Diag%fluxr(i,14-j) + tem0d * Statein%prsi(i,ibtc+kb)
               Diag%fluxr(i,17-j) = Diag%fluxr(i,17-j) + tem0d * Statein%tgrs(i,itop)
-
-!       Anning adds optical depth and emissivity output
-              tem1 = 0.
-              tem2 = 0.
-              do k=ibtc,itop
-                tem1 = tem1 + cldtausw(i,k)      ! approx .55 mu channel
-                tem2 = tem2 + cldtaulw(i,k)      ! approx 10. mu channel
-              enddo
-              Diag%fluxr(i,43-j) = Diag%fluxr(i,43-j) + tem0d * tem1
-              Diag%fluxr(i,46-j) = Diag%fluxr(i,46-j) + tem0d * (1.0-exp(-tem2))
             enddo
           enddo
+
+!       Anning adds optical depth and emissivity output
+          if (Model%lsswr .and. (nday > 0)) then
+            do j = 1, 3
+              do i = 1, IM
+                tem0d = raddt * cldsa(i,j)
+                itop  = mtopa(i,j) - kd
+                ibtc  = mbota(i,j) - kd
+                tem1 = zero
+                do k=ibtc,itop
+                  tem1 = tem1 + cldtausw(i,k)      ! approx .55 um channel
+                enddo
+                Diag%fluxr(i,43-j) = Diag%fluxr(i,43-j) + tem0d * tem1
+              enddo
+            enddo
+          endif
+
+          if (Model%lslwr) then
+            do j = 1, 3
+              do i = 1, IM
+                tem0d = raddt * cldsa(i,j)
+                itop  = mtopa(i,j) - kd
+                ibtc  = mbota(i,j) - kd
+                tem2 = zero
+                do k=ibtc,itop
+                  tem2 = tem2 + cldtaulw(i,k)      ! approx 10. um channel
+                enddo
+                Diag%fluxr(i,46-j) = Diag%fluxr(i,46-j) + tem0d * (one-exp(-tem2))
+              enddo
+            enddo
+          endif
+
         endif
 
       endif                                ! end_if_lssav
-!
+!*## CCPP ##
       return
 !........................................
       end subroutine GFS_radiation_driver
