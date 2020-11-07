@@ -1221,7 +1221,7 @@ module FV3GFS_io_mod
         end if
 
         do k = 1,Model%kice
-          Sfcprop(nb)%tiice(ix,k)= sfc_var3ice(i,j,k)   !--- internal ice temp
+          Sfcprop(nb)%tiice(ix,k) = sfc_var3ice(i,j,k)   !--- internal ice temp
         enddo
 #else
         !--- 3D variables
@@ -2133,10 +2133,11 @@ module FV3GFS_io_mod
           sfc_var2(i,j,nvar2m+47) = Sfcprop(nb)%rechxy(ix)
         endif
 
-#ifdef CCPP
         do k = 1,Model%kice
           sfc_var3ice(i,j,k) = Sfcprop(nb)%tiice(ix,k) !--- internal ice temperature
         end do
+
+#ifdef CCPP
 
         if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp) then
           !--- 3D variables

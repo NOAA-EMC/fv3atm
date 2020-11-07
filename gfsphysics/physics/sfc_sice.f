@@ -10,7 +10,7 @@
 !> \brief Brief description of the subroutine
 !!
 !! \section arg_table_sice_run Arguments
-!! | local var name | longname                                              | description                        | units   | rank | type    |    kind   | intent | optional |
+!! | local var name | longname                                              | description
 !! |----------------|-------------------------------------------------------|------------------------------------|---------|------|---------|-----------|--------|----------|
 !! | im             | horizontal_loop_extent                                | horizontal loop extent, start at 1 | index   |    0 | integer |           | in     | F        |
 !!
@@ -31,13 +31,14 @@
       subroutine sfc_sice                                               &
 !...................................
 !  ---  inputs:
-     &     ( im, km, ps, t1, q1, delt,                                  &
+     &     ( im, kice, ps, t1, q1, delt,                                &
 !    &     ( im, km, ps, u1, v1, t1, q1, delt,                          &
      &       sfcemis, dlwflx, sfcnsw, sfcdsw, srflag,                   &
      &       cm, ch, prsl1, prslki, islimsk, wind,                      &
-     &       flag_iter, lprnt, ipr, min_lakeice, min_seaice, oceanfrac, &
+     &       flag_iter, lprnt, ipr,                                     &
+!    &       flag_iter, lprnt, ipr, min_lakeice, min_seaice, oceanfrac, &
 !  ---  input/outputs:
-     &       hice, fice, tice, weasd, tskin, tprcp, stc, ep,            &
+     &       hice, fice, tice, weasd, tskin, tprcp, tiice, ep,          &
 !  ---  outputs:
      &       snwdph, qsurf, snowmt, gflux, cmm, chh, evap, hflx         &
      &     )
@@ -49,13 +50,13 @@
 !                                                                       !
 !    call sfc_sice                                                      !
 !       inputs:                                                         !
-!          ( im, km, ps, t1, q1, delt,                                  !
+!          ( im, kice, ps, t1, q1, delt,                                !
 !!         ( im, km, ps, u1, v1, t1, q1, delt,                          !
 !            sfcemis, dlwflx, sfcnsw, sfcdsw, srflag,                   !
 !            cm, ch, prsl1, prslki, islimsk, wind,                      !
 !            flag_iter,                                                 !
 !       input/outputs:                                                  !
-!            hice, fice, tice, weasd, tskin, tprcp, stc, ep,            !
+!            hice, fice, tice, weasd, tskin, tprcp, tiice, ep,          !
 !       outputs:                                                        !
 !            snwdph, qsurf, snowmt, gflux, cmm, chh, evap, hflx )       !
 !                                                                       !
@@ -82,7 +83,7 @@
 !  ====================  defination of variables  ====================  !
 !                                                                       !
 !  inputs:                                                       size   !
-!     im, km   - integer, horiz dimension and num of soil layers   1    !
+!     im, kice - integer, horiz dimension and num of ice layers    1    !
 !     ps       - real, surface pressure                            im   !
 !     t1       - real, surface layer mean temperature ( k )        im   !
 !     q1       - real, surface layer mean specific humidity        im   !
@@ -107,7 +108,7 @@
 !     weasd    - real, water equivalent accumulated snow depth (mm)im   !
 !     tskin    - real, ground surface skin temperature ( k )       im   !
 !     tprcp    - real, total precipitation                         im   !
-!     stc      - real, soil temp (k)                              im,km !
+!     tiice    - real, internal ice temperature (k)             im,kice !
 !     ep       - real, potential evaporation                       im   !
 !                                                                       !
 !  outputs:                                                             !
@@ -124,7 +125,6 @@
 !
 !
 !  ---  constant parameters:
-      integer,              parameter :: kmi   = 2                  ! 2-layer of ice
       real(kind=kind_phys), parameter :: zero  = 0.0_kind_phys
       real(kind=kind_phys), parameter :: one   = 1.0_kind_phys
       real(kind=kind_phys), parameter :: cpinv = one/cp
@@ -139,16 +139,18 @@
       real(kind=kind_phys), parameter :: qmin  = 1.0e-8_kind_phys
 
 !  ---  inputs:
-      integer, intent(in) :: im, km, ipr
+      integer, intent(in) :: im, kice, ipr
       logical, intent(in) :: lprnt
 
       real (kind=kind_phys), dimension(im), intent(in) :: ps,           &
      &       t1, q1, sfcemis, dlwflx, sfcnsw, sfcdsw, srflag, cm, ch,   &
-     &       prsl1, prslki, wind, oceanfrac
+     &       prsl1, prslki, wind
+!    &       prsl1, prslki, wind, oceanfrac
 
       integer, dimension(im), intent(in) :: islimsk
-      real (kind=kind_phys),  intent(in) :: delt, min_lakeice,          &
-     &                                      min_seaice 
+      real (kind=kind_phys),  intent(in) :: delt
+!     real (kind=kind_phys),  intent(in) :: delt, min_lakeice,          &
+!    &                                      min_seaice 
 
       logical, intent(in) :: flag_iter(im)
 
@@ -156,7 +158,7 @@
       real (kind=kind_phys), dimension(im), intent(inout) :: hice,      &
      &       fice, tice, weasd, tskin, tprcp, ep
 
-      real (kind=kind_phys), dimension(im,km), intent(inout) :: stc
+      real (kind=kind_phys), dimension(im,kice), intent(inout) :: tiice
 
 !  ---  outputs:
       real (kind=kind_phys), dimension(im), intent(inout) :: snwdph,      &
@@ -169,8 +171,8 @@
      &       focn, snof,                                   rch, rho,    &
      &       snowd, theta1
 
-      real (kind=kind_phys) :: t12, t14, tem, stsice(im,kmi)
-     &,                        hflxi, hflxw, q0, qs1, qssi, qssw, cimin
+      real (kind=kind_phys) :: t12, t14, tem, stsice(im,kice)
+     &,                        hflxi, hflxw, q0, qs1, qssi, qssw
 
 
       integer :: i, k
@@ -183,10 +185,10 @@
 
       do i = 1, im
         flag(i) = (islimsk(i) == 2) .and. flag_iter(i)
-        if (flag_iter(i) .and. islimsk(i) < 2) then
-          hice(i) = zero
-          fice(i) = zero
-        endif
+!       if (flag_iter(i) .and. islimsk(i) < 2) then
+!         hice(i) = zero
+!         fice(i) = zero
+!       endif
       enddo
 !
       do i = 1, im
@@ -200,10 +202,10 @@
       enddo
 !  --- ...  update sea ice temperature
 
-      do k = 1, kmi
+      do k = 1, kice
         do i = 1, im
           if (flag(i)) then
-            stsice(i,k) = stc(i,k)
+            stsice(i,k) = tiice(i,k)
           endif
         enddo
       enddo
@@ -216,11 +218,11 @@
 
       do i = 1, im
         if (flag(i)) then
-          if (oceanfrac(i) > zero) then
-            cimin = min_seaice
-          else
-            cimin = min_lakeice
-          endif
+!         if (oceanfrac(i) > zero) then
+!           cimin = min_seaice
+!         else
+!           cimin = min_lakeice
+!         endif
 !         psurf(i) = 1000.0 * ps(i)
 !         ps1(i)   = 1000.0 * prsl1(i)
 
@@ -235,13 +237,14 @@
           qs1       = max(eps*qs1 / (prsl1(i) + epsm1*qs1), qmin)
           q0        = min(qs1, q0)
 
-          if (fice(i) < cimin) then
-            print *,'warning: ice fraction is low:', fice(i)
-            fice(i) = cimin
-            tice(i) = tgice
-            tskin(i)= tgice
-            print *,'fix ice fraction: reset it to:', fice(i)
-          endif
+!         if (fice(i) < cimin) then
+!           print *,'warning: ice fraction is low:', fice(i)
+!           fice(i) = cimin
+!           tice(i) = tgice
+!           tskin(i)= tgice
+!           print *,'fix ice fraction: reset it to:', fice(i)
+!         endif
+
           ffw(i)    = one - fice(i)
 
           qssi = fpvs(tice(i))
@@ -311,7 +314,7 @@
 
       call ice3lay
 !  ---  inputs:                                                         !
-     &     ( im, kmi, fice, flag, hfi, hfd, sneti, focn, delt,          !
+     &     ( im, kice, fice, flag, hfi, hfd, sneti, focn, delt,         !
      &       lprnt, ipr,
 !  ---  outputs:                                                        !
      &       snowd, hice, stsice, tice, snof, snowmt, gflux )           !
@@ -320,14 +323,12 @@
         if (flag(i)) then
           if (tice(i) < timin) then
             print *,'warning: snow/ice temperature is too low:',tice(i)
-     &,             ' i=',i
             tice(i) = timin
             print *,'fix snow/ice temperature: reset it to:',tice(i)
           endif
 
           if (stsice(i,1) < timin) then
             print *,'warning: layer 1 ice temp is too low:',stsice(i,1)
-     &,             ' i=',i
             stsice(i,1) = timin
             print *,'fix layer 1 ice temp: reset it to:',stsice(i,1)
           endif
@@ -342,10 +343,10 @@
         endif
       enddo
 
-      do k = 1, kmi
+      do k = 1, kice
         do i = 1, im
           if (flag(i)) then
-            stc(i,k) = min(stsice(i,k), t0c)
+            tiice(i,k) = min(stsice(i,k), t0c)
           endif
         enddo
       enddo
@@ -430,7 +431,7 @@
 !  input/outputs:                                                         !
 !     snowd    - real, surface pressure                              im   !
 !     hice     - real, sea-ice thickness                             im   !
-!     stsice   - real, temp @ midpt of ice levels  (deg c)          im,kmi!     
+!     stsice   - real, temp @ midpt of ice levels  (deg c)          im,kmi!
 !     tice     - real, surface temperature     (deg c)               im   !
 !     snof     - real, snowfall rate           (m/sec)               im   !
 !                                                                         !
