@@ -1220,9 +1220,6 @@ module FV3GFS_io_mod
           enddo
         end if
 
-        do k = 1,Model%kice
-          Sfcprop(nb)%tiice(ix,k) = sfc_var3ice(i,j,k)   !--- internal ice temp
-        enddo
 #else
         !--- 3D variables
         do lsoil = 1,Model%lsoil
@@ -1247,6 +1244,11 @@ module FV3GFS_io_mod
           enddo 
         endif
 #endif
+
+!   internal ice temperature
+        do k = 1,Model%kice
+          Sfcprop(nb)%tiice(ix,k) = sfc_var3ice(i,j,k)   !--- internal ice temp
+        enddo
 
       enddo   !ix
     enddo    !nb
