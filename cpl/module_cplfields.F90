@@ -13,7 +13,7 @@ module module_cplfields
   private
 
 ! Export Fields ----------------------------------------
-  integer,          public, parameter :: NexportFields = 72
+  integer,          public, parameter :: NexportFields = 75
   type(ESMF_Field), target, public    :: exportFields(NexportFields)
   character(len=*), public, parameter :: exportFieldsList(NexportFields) = (/ &
        "inst_pres_interface                      ", &
@@ -87,7 +87,10 @@ module module_cplfields
        "inst_pres_height_lowest                  ", &
        "inst_height_lowest                       ", &
        "mean_fprec_rate                          ", &
-       "openwater_frac_in_atm                    "  &
+       "openwater_frac_in_atm                    ", &
+       "ice_fraction                             ", &
+       "lake_fraction                            ", &
+       "ocean_fraction                           "  &
 !      "northward_wind_neutral                   ", &
 !      "eastward_wind_neutral                    ", &
 !      "upward_wind_neutral                      ", &
@@ -105,15 +108,14 @@ module module_cplfields
   !  s : surface (2D)
   !  t : tracers (4D)
   character(len=*), public, parameter :: exportFieldTypes(NexportFields) = (/ &
-       "i","l","i","l","l","l","l","l","t", &
-       "s","s","s","s","l","l","s","s","g", &
-       "s","s","s","s","s","s","s","s",     &
-       "s","s","s","s","s","s","s","s",     &
-       "s","s","s","s","s","s","s","s",     &
-       "s","s","s","s","s","s","s","s",     &
-       "s","s","s","s","s","s","s","s",     &
-       "s","s","s","s","s","s","s","s",     &
-       "s","s","s","s","s","s"              &
+       "i","l","i","l","l","l","l","l","t","s", &
+       "s","s","s","l","l","s","s","g","s","s", &
+       "s","s","s","s","s","s","s","s","s","s", &
+       "s","s","s","s","s","s","s","s","s","s", &
+       "s","s","s","s","s","s","s","s","s","s", &
+       "s","s","s","s","s","s","s","s","s","s", &
+       "s","s","s","s","s","s","s","s","s","s", &
+       "s","s","s","s","s"  &
 !      "l","l","l","l","l","l","l","s",     &
   /)
   ! Set exportFieldShare to .true. for all exported fields
