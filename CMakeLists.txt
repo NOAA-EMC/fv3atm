@@ -39,6 +39,7 @@ add_subdirectory(io)
 list(APPEND _fv3dycore_srcs
   atmos_cubed_sphere/model/a2b_edge.F90
   atmos_cubed_sphere/model/multi_gases.F90
+  atmos_cubed_sphere/model/molecular_diffusion.F90
   atmos_cubed_sphere/model/boundary.F90
   atmos_cubed_sphere/model/dyn_core.F90
   atmos_cubed_sphere/model/fv_arrays.F90
@@ -92,6 +93,10 @@ list(APPEND _fv3dycore_defs_private SPMD
 
 if(MULTI_GASES)
   list(APPEND _fv3dycore_defs_private MULTI_GASES)
+endif()
+
+if(MOLECULAR_DIFFUSION)
+  list(APPEND _fv3dycore_defs_private MOLECULAR_DIFFUSION)
 endif()
 
 if(32BIT)

@@ -614,6 +614,8 @@ module GFS_typedefs
 !--- integrated dynamics through earth's atmosphere
     logical              :: lsidea         
     character(len=4)     :: weimer_model
+#else
+    logical              :: lsidea
 #endif
 
 !vay 2018  GW physics switches
@@ -2934,7 +2936,7 @@ module GFS_typedefs
     use physcons,         only: dxmax, dxmin, dxinv, con_rerth, con_pi, rhc_max
     use module_ras,       only: nrcmax
 #endif
-    use parse_tracers,    only: get_tracer_index
+
 #ifdef IDEA_PHYS
     use wam_f107_kp_mod,  only: f107_kp_size, f107_kp_interval,      &
                                 f107_kp_skip_size, f107_kp_data_size,&
@@ -2942,6 +2944,9 @@ module GFS_typedefs
 !                               f107_kp_read_in_start, kdt_interval
     use module_IPE_to_WAM, only: ipe_to_wam_coupling
     use namelist_wamphysics_def
+#else
+    use wam_f107_kp_mod,  only: f107_kp_size, f107_kp_interval,     &
+                                f107_kp_skip_size, f107_kp_data_size
 #endif
     use mersenne_twister, only: random_setseed, random_number
     use parse_tracers,    only: get_tracer_index
@@ -3016,6 +3021,8 @@ module GFS_typedefs
 !--- integrated dynamics through earth's atmosphere
     logical              :: lsidea         = .true.
     character(len=4)     :: weimer_model   = 'epot'
+#else
+    logical              :: lsidea         = .false.
 #endif
 
 !--- radiation parameters
@@ -3452,6 +3459,8 @@ module GFS_typedefs
                                lsidea, weimer_model, f107_kp_size, f107_kp_interval,        &
                                f107_kp_skip_size, f107_kp_data_size, f107_kp_read_in_start, &
                                ipe_to_wam_coupling,                                         &
+#else
+                                lsidea,                                                     &
 #endif
                           !--- radiation parameters
                                fhswr, fhlwr, levr, nfxr, iaerclm, iflip, isol, ico2, ialb,  &
@@ -3750,6 +3759,8 @@ module GFS_typedefs
 !--- integrated dynamics through earth's atmosphere
     Model%lsidea           = lsidea
     Model%weimer_model     = weimer_model
+#else
+    Model%lsidea           = lsidea
 #endif
 
 !--- calendars and time parameters and activation triggers
@@ -4376,6 +4387,8 @@ module GFS_typedefs
 !   kdt_interval=((int_state%kdt-1)*timestep_sec/f107_kp_interval)+1
 !   kdt_interval      = 1    !Do not set it here!!
     ipe_to_wam_coupling = .false.
+#else
+    lsidea            = .false.
 #endif
 
 !--- BEGIN CODE FROM GFS_PHYSICS_INITIALIZE
@@ -4994,6 +5007,8 @@ module GFS_typedefs
       print *, 'integrated dynamics through earth atmosphere'
       print *, ' lsidea            : ', Model%lsidea
       print *, ' weimer_model      : ', Model%weimer_model
+#else
+      print *, ' lsidea            : ', Model%lsidea
 #endif
       print *, ' '
       print *, 'calendars and time parameters and activation triggers'

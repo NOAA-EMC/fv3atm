@@ -30,15 +30,11 @@ set(CCPP_SOURCES
     GFS_layer/GFS_restart.F90
 )
 
-set(IPD_SOURCES
-
+set(IPD_SOURCES_f
     physics/cnvc90.f
-    physics/co2hc.f
     physics/date_def.f
     physics/dcyc2.f
     physics/dcyc2.pre.rad.f
-    physics/efield.f
-    physics/get_prs.f
     physics/gocart_tracer_config_stub.f
     physics/gscond.f
     physics/gscondp.f
@@ -47,19 +43,7 @@ set(IPD_SOURCES
     physics/ugwp_driver_v0.f
     physics/cires_orowam2017.f
     physics/h2o_def.f
-    physics/h2oc.f
-    physics/h2ohdc.f
     physics/h2ophys.f
-    physics/ideaca.f
-    physics/idea_co2.f
-    physics/idea_composition.f
-    physics/idea_dissipation.f
-    physics/idea_h2o.f
-    physics/idea_ion.f
-    physics/idea_o2_o3.f
-    physics/idea_phys.f
-    physics/idea_solar_heating.f
-    physics/idea_tracer.f
     physics/iounitdef.f
     physics/lrgsclr.f
     physics/mersenne_twister.f
@@ -132,7 +116,45 @@ set(IPD_SOURCES
     physics/shalcv_opr.f
     physics/tracer_const_h.f
     physics/tridi2t3.f
+)
 
+set(IDEA_PHYS_SRCS_f
+    physics/get_prs.f
+    physics/idea_composition.f
+    physics/idea_io_units.f
+    physics/idea_mpi_def.f
+    physics/module_IPE_to_WAM.f
+    physics/namelist_wamphysics_def.f
+    physics/idea_getno_snoe.f
+    physics/idea_cal_advance.f
+    physics/idea_solar_input.f
+    physics/idea_ion_input.f
+    physics/idea_solar_init.f
+    physics/idea_tracers_input.f
+    physics/idea_imf_input.f
+    physics/idea_interpol_datab.f
+    physics/idea_ion_empirmodels.f
+    physics/idea_trad_geopgrav.f
+    physics/idea_solar_heating.f
+    physics/idea_solar_2014.f
+    physics/idea_tracer.f
+    physics/co2hc.f
+    physics/h2oc.f
+    physics/h2ohdc.f
+    physics/w05sc_efield_merge.f
+    physics/efield.f
+    physics/ideaca.f
+    physics/idea_co2.f
+    physics/idea_h2o.f
+    physics/idea_ion.f
+    physics/idea_o2_o3.f
+    physics/idea_dissipation.f
+    physics/idea_merge_ipe_to_wam.f
+    physics/idea_getcoef.f
+    physics/idea_phys.f
+)
+
+set(IPD_SOURCES_f90
     physics/calpreciptype.f90
     physics/funcphys.f90
     physics/gcm_shoc.f90
@@ -148,8 +170,13 @@ set(IPD_SOURCES
     physics/module_sf_noahmp_glacier.f90
     physics/iccninterp.f90
     physics/aerinterp.f90
-    physics/wam_f107_kp_mod.f90
+)
 
+set(IDEA_PHYS_SRCS_f90
+    physics/wam_f107_kp_mod.f90
+)
+
+set(IPD_SOURCES_F
     physics/aer_cloud.F
     physics/cldmacro.F
     physics/cldwat2m_micro.F
@@ -190,6 +217,7 @@ set(IPD_SOURCES
     GFS_layer/GFS_typedefs.F90
 )
 
+
 list(APPEND _gfsphysics_defs_private NEMS_GSM
                                      MOIST_CAPPA
                                      USE_COND
@@ -199,6 +227,10 @@ if(MULTI_GASES)
   list(APPEND _gfsphysics_defs_private MULTI_GASES)
 endif()
 
+if(IDEA_PHYS)
+  list(APPEND _gfsphysics_defs_private IDEA_PHYS)
+endif()
+
 if(CCPP)
   list(APPEND _gfsphysics_srcs ${CCPP_SOURCES})
   list(APPEND _gfsphysics_defs_private CCPP)
@@ -206,7 +238,15 @@ if(CCPP)
     list(APPEND _gfsphysics_defs_private OVERLOAD_R4)
   endif()
 else()
-  list(APPEND _gfsphysics_srcs ${IPD_SOURCES})
+  list(APPEND _gfsphysics_srcs ${IPD_SOURCES_f})
+  if(IDEA_PHYS)
+    list(APPEND _gfsphysics_srcs ${IDEA_PHYS_SRCS_f})
+  endif()
+  list(APPEND _gfsphysics_srcs ${IPD_SOURCES_f90})
+  if(IDEA_PHYS)
+    list(APPEND _gfsphysics_srcs ${IDEA_PHYS_SRCS_f90})
+  endif()
+  list(APPEND _gfsphysics_srcs ${IPD_SOURCES_F})
 endif()
 
 add_library(gfsphysics ${_gfsphysics_srcs})

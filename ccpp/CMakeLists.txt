@@ -279,6 +279,15 @@ else(MULTI_GASES)
 endif(MULTI_GASES)
 
 #------------------------------------------------------------------------------
+# Set idea_phys flags for preprocessor (if defined)
+if(IDEA_PHYS)
+  message (STATUS "Enable idea-phys")
+  ADD_DEFINITIONS(-DIDEA_PHYS)
+else(IDEA_PHYS)
+  message (STATUS "Disable idea-phys")
+endif(IDEA_PHYS)
+
+#------------------------------------------------------------------------------
 # Build CCPP framework and physics
 
 SET(CCPP_FRAMEWORK_SRC ${PROJECT_SOURCE_DIR}/framework)
