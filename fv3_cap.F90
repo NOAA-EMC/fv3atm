@@ -1086,10 +1086,10 @@ module fv3gfs_cap_mod
       if ( cpl ) then
        ! assign import_data called during phase=1
        if( dbug > 0 .or. cplprint_flag ) then
-         if( mype < num_pes_fcst ) then
+         !if( mype < num_pes_fcst ) then
            call diagnose_cplFields(gcomp, importState, exportstate, clock_fv3,    &
                               cplprint_flag, dbug, 'import', import_timestr)
-         endif
+         !endif
        endif
       endif
 
@@ -1215,10 +1215,10 @@ module fv3gfs_cap_mod
 !jw for coupled, check clock and dump import and export state
     if ( cpl ) then
       if( dbug > 0 .or. cplprint_flag ) then
-        if( mype < num_pes_fcst ) then
+        !if( mype < num_pes_fcst ) then
           call diagnose_cplFields(gcomp, importState, exportstate, clock_fv3,    &
                                   cplprint_flag, dbug, 'export', export_timestr) 
-        endif
+        !endif
      end if
     endif
 
