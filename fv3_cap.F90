@@ -30,7 +30,7 @@ module fv3gfs_cap_mod
                                     calendar, calendar_type, cpl,            &
                                     force_date_from_configure,               &
                                     cplprint_flag,output_1st_tstep_rst,      &
-                                    first_kdt,num_restart_interval       
+                                    first_kdt,num_restart_interval
 
   use module_fv3_io_def,      only: num_pes_fcst,write_groups,app_domain,    &
                                     num_files, filename_base,                &
@@ -63,7 +63,7 @@ module fv3gfs_cap_mod
                                     queryFieldList,   fillExportFields,      &
                                     exportData
   use module_cap_cpl,         only: realizeConnectedCplFields,               &
-                                    clock_cplIntval, diagnose_cplFields      
+                                    clock_cplIntval, diagnose_cplFields
 
 
   implicit none
@@ -649,7 +649,7 @@ module fv3gfs_cap_mod
       allocate(petList(wrttasks_per_group))
       if(mype == 0) print *,'af allco wrtComp,write_groups=',write_groups
 
-! set up ESMF time interval at center of iau window 
+! set up ESMF time interval at center of iau window
       call ESMF_TimeIntervalSet(IAU_offsetTI, h=iau_offset, rc=rc)
 !
       allocate(originPetList(num_pes_fcst+wrttasks_per_group))
@@ -813,7 +813,7 @@ module fv3gfs_cap_mod
         call ESMF_TimeIntervalSet(output_interval_hf, h=nfhout_hf, m=nfmout_hf, &
                                   s=nfsout_hf, rc=rc)
         call ESMF_TimeIntervalSet(output_hfmax, h=nfhmax_hf, m=0, s=0, rc=rc)
-        alarm_output_hf_stop = starttime + output_hfmax + output_interval_hf 
+        alarm_output_hf_stop = starttime + output_hfmax + output_interval_hf
         if (currtime <= starttime+output_hfmax) then
           nhf = (currtime-starttime)/output_interval_hf
           alarm_output_hf_ring = startTime + (nhf+1_ESMF_KIND_I4)*output_interval_hf
@@ -975,6 +975,7 @@ module fv3gfs_cap_mod
     integer(ESMF_KIND_I8)                  :: n_interval, time_elapsed_sec
 !
     integer :: na, i, urc
+    logical :: fcstpe
     logical :: isAlarmEnabled, isAlarmRinging, lalarm, reconcileFlag
     character(len=*),parameter  :: subname='(fv3_cap:ModelAdvance)'
     character(240)              :: msgString
@@ -995,13 +996,16 @@ module fv3gfs_cap_mod
     if (profile_memory) call ESMF_VMLogMemInfo("Entering FV3 Model_ADVANCE: ")
 
     timeri = mpi_wtime()
-!    
+!
     call ESMF_GridCompGet(gcomp, name=name, localpet=mype, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
+    fcstpe = .false.
+    if( mype < num_pes_fcst ) fcstpe = .true.
+
     ! Because of the way that the internal Clock was set in SetClock(),
     ! its timeStep is likely smaller than the parent timeStep. As a consequence
-    ! the time interval covered by a single parent timeStep will result in 
+    ! the time interval covered by a single parent timeStep will result in
     ! multiple calls to the ModelAdvance() routine. Every time the currTime
     ! will come in by one internal timeStep advanced. This goes until the
     ! stopTime of the internal Clock has been reached.
@@ -1086,10 +1090,8 @@ module fv3gfs_cap_mod
       if ( cpl ) then
        ! assign import_data called during phase=1
        if( dbug > 0 .or. cplprint_flag ) then
-         !if( mype < num_pes_fcst ) then
            call diagnose_cplFields(gcomp, importState, exportstate, clock_fv3,    &
-                              cplprint_flag, dbug, 'import', import_timestr)
-         !endif
+                                   fcstpe, cplprint_flag, dbug, 'import', import_timestr)
        endif
       endif
 
@@ -1215,10 +1217,8 @@ module fv3gfs_cap_mod
 !jw for coupled, check clock and dump import and export state
     if ( cpl ) then
       if( dbug > 0 .or. cplprint_flag ) then
-        !if( mype < num_pes_fcst ) then
           call diagnose_cplFields(gcomp, importState, exportstate, clock_fv3,    &
-                                  cplprint_flag, dbug, 'export', export_timestr) 
-        !endif
+                                  fcstpe, cplprint_flag, dbug, 'export', export_timestr)
      end if
     endif
 
@@ -1260,13 +1260,13 @@ module fv3gfs_cap_mod
     rc = ESMF_SUCCESS
 
     if(profile_memory) call ESMF_VMLogMemInfo("Entering FV3 Model_ADVANCE phase1: ")
-!    
+!
     call ESMF_GridCompGet(gcomp, name=name, localpet=mype, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
     ! Expecting to be called by NUOPC run method exactly once for every coupling
     ! step.
-    ! Also expecting the coupling step to be identical to the timeStep for 
+    ! Also expecting the coupling step to be identical to the timeStep for
     ! clock_fv3.
     
     call ESMF_ClockPrint(clock_fv3, options="currTime", &
