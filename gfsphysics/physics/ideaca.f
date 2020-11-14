@@ -19,9 +19,13 @@
 !     2. Reset the offset pressure from .1 (apparently cb?) to 100. (Pa)
 !     3. Reset the critical lapse rate to 9.5 K/km typical at ~100 km
 !
+! Oct 2020 Henry Juang + Sajal Kar
+!     Change ideaca_init by using ak, bk, and pref for p
+!     If check for allocations.
+!
 ! Contains
 !      module ideaca_mod
-!      subroutine ideaca_init(p,nl)
+!      subroutine ideaca_init(ak,bk,pref,nl)
 !      subroutine ideaca_up(p,t,ix,im,nlev)
 !     
 !***********************************************************************
@@ -56,24 +60,16 @@
 
       integer loff,nlay
       real,dimension(:),allocatable:: r,q
-! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-!SK   interface
-!        subroutine ideaca_init(p,nl)
-!        integer,intent(in):: nl
-!        real,dimension(nl),intent(in):: p
-!        end subroutine ideaca_init
-!     end interface
-! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
       end module ideaca_mod
 
 !***********************************************************************
 
-      subroutine ideaca_init(p,nl)
+      subroutine ideaca_init(ak,bk,pref,nl)
 
 ! Initialize dry convective adjusment for IDEA
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-!SK   use ideaca_mod, except => ideaca_init
+!     use ideaca_mod, except => ideaca_init
       use ideaca_mod
       implicit none
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -84,12 +80,21 @@
 
 ! Interface pressure levels
 
-      real,dimension(nl),intent(in):: p
+      real,dimension(nl+1),intent(in):: ak, bk
+      real,intent(in):: pref
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ! Internal variables
 
       integer:: l
       real,dimension(:),allocatable:: pm,dp
+      real,dimension(:),allocatable:: p
+
+
+!SK   allocate(p(nl+1))
+      if (.not.allocated(p)) allocate(p(nl+1))
+      do l=1,nl+1
+         p(l) = ak(l) + bk(l) * pref
+      enddo
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ! Find index offset, assuming pressure index goes up (in decreasing
 !     pressure), calculate the number of layers to adjust
@@ -100,12 +105,11 @@
             exit
          endif
       enddo
-      nlay=(nl-1)-loff
+      nlay= nl   -loff
 
 ! Allocate permanent and temporary arrays
 
 !SK   allocate(r(nlay),q(nlay))
-!SK   allocate(pm(nlay),dp(nlay))
       if (.not.allocated(r)) allocate(r(nlay))
       if (.not.allocated(q)) allocate(q(nlay))
       allocate(pm(nlay),dp(nlay))
@@ -121,13 +125,15 @@
 
       r(1)=1.
       do l=2,nlay
-         r(l)=r(l-1)*(p(loff+l)/pm(l))**rdcp*                           
+         r(l)=r(l-1)*(p(loff+l)/pm(l))**rdcp*                           &
      &        (pm(l-1)/p(loff+l))**rdcp
       enddo
       q(:)=dp(:)/r(:)
 !
       deallocate(pm,dp)
+      deallocate(p)
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
       end subroutine ideaca_init
 
 !***********************************************************************

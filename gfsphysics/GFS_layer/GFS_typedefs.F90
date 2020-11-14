@@ -549,11 +549,11 @@ module GFS_typedefs
 
     integer              :: me              !< MPI rank designator
     integer              :: master          !< MPI rank of master atmosphere processor
-#ifdef CCPP
+!hmhj #ifdef CCPP
     integer              :: communicator    !< MPI communicator
     integer              :: ntasks          !< MPI size in communicator
     integer              :: nthreads        !< OpenMP threads available for physics
-#endif
+!hmhj #endif
     integer              :: nlunit          !< unit for namelist
     character(len=64)    :: fn_nml          !< namelist filename for surface data cycling
     character(len=256), pointer :: input_nml_file(:) !< character string containing full namelist
@@ -2158,7 +2158,7 @@ module GFS_typedefs
 !-------------------------
 ! GFS sub-containers
 !-------------------------
-#ifdef CCPP
+!hmhj #ifdef CCPP
 !------------------------------------------------------------------------------------
 ! combined type of all of the above except GFS_control_type and GFS_interstitial_type
 !------------------------------------------------------------------------------------
@@ -2176,7 +2176,7 @@ module GFS_typedefs
      type(GFS_radtend_type)  :: Radtend
      type(GFS_diag_type)     :: Intdiag
   end type GFS_data_type
-#endif
+!hmhj #endif
 
 !----------------
 ! PUBLIC ENTITIES
@@ -4700,24 +4700,28 @@ module GFS_typedefs
     Model%nreffr   = -999
     Model%nseffr   = -999
     Model%ngeffr   = -999
+#ifdef CCPP
     Model%nT2delt  = -999
     Model%nTdelt   = -999
     Model%nqv2delt = -999
     Model%nqvdelt  = -999
     Model%nps2delt = -999
     Model%npsdelt  = -999
+#endif
     if (Model%imp_physics == Model%imp_physics_zhao_carr) then
       Model%npdf3d   = 0
       Model%num_p3d  = 4
       Model%num_p2d  = 3
       Model%shcnvcw  = .false.
       Model%ncnd     = 1                   ! ncnd is the number of cloud condensate types
+#ifdef CCPP
       Model%nT2delt  = 1
       Model%nqv2delt = 2
       Model%nTdelt   = 3
       Model%nqvdelt  = 4
       Model%nps2delt = 1
       Model%npsdelt  = 2
+#endif
       if (Model%me == Model%master) print *,' Using Zhao/Carr/Sundqvist Microphysics'
 
     elseif (Model%imp_physics == Model%imp_physics_zhao_carr_pdf) then !Zhao Microphysics with PDF cloud

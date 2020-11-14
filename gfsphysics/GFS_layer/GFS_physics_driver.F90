@@ -3689,9 +3689,7 @@ module module_physics_driver
 ! It is not clear Do we need it, "ideaca_up", having stability check inside UGWP-module
 
 #ifdef IDEA_PHYS
-!     if (Model%lsidea) then            ! idea convective adjustment
-!       call ideaca_up(Statein%prsi,Stateout%gt0,ix,im,levs+1)
-!     endif
+        call ideaca_up(Statein%prsi,Stateout%gt0,ix,im,levs+1)
 #endif
 
 !  --- ...  ozone physics

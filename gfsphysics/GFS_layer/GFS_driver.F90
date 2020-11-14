@@ -605,6 +605,9 @@ module GFS_driver
                            Init_parm%ak,  Init_parm%bk, p_ref,         Model%dtp,         &
                            Model%cdmbgwd(1:2), Model%cgwf,   Model%prslrd0, Model%ral_ts)
     endif
+#ifdef IDEA_PHYS
+    call ideaca_init( Init_parm%ak, Init_parm%bk, p_ref, Model%levs)
+#endif
 #endif
 
     !--- sncovr may not exist in ICs from chgres.
