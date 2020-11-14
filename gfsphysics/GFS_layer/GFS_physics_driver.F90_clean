@@ -61,6 +61,7 @@ module module_physics_driver
   real(kind=kind_phys), parameter :: rad2dg  = 180.0_kind_phys/con_pi
   real(kind=kind_phys), parameter :: omz1    = 2.0_kind_phys
 ! real(kind=kind_phys), parameter :: huge    = 0.0_kind_phys
+  real(kind=kind_phys), parameter :: timin = 173.0_kind_phys  ! minimum temperature allowed for snow/ice
 
 !> GFS Physics Implementation Layer
 !> @brief Layer that invokes individual GFS physics routines
@@ -906,15 +907,15 @@ module module_physics_driver
       if (Model%lndp_type==1) then
         do k =1,Model%n_var_lndp
            select case(Model%lndp_var_list(k))
-           case ('rz0') 
+           case ('rz0')
                 z01d(:) = Model%lndp_prt_list(k)* Coupling%sfc_wts(:,k)
-           case ('rzt') 
+           case ('rzt')
                 zt1d(:) = Model%lndp_prt_list(k)* Coupling%sfc_wts(:,k)
-           case ('shc') 
+           case ('shc')
                 bexp1d(:) = Model%lndp_prt_list(k) * Coupling%sfc_wts(:,k)
-           case ('lai') 
+           case ('lai')
                 xlai1d(:) = Model%lndp_prt_list(k)* Coupling%sfc_wts(:,k)
-           case ('vgf') 
+           case ('vgf')
 ! note that the pertrubed vegfrac is being used in sfc_drv, but not sfc_diff
               do i=1,im
                 call cdfnor(Coupling%sfc_wts(i,k),cdfz)
@@ -1066,7 +1067,7 @@ module module_physics_driver
             if (Sfcprop%oceanfrac(i) > zero) then
               if (fice(i) >= Model%min_seaice) then
                 icy(i)  = .true.
-                 Sfcprop%tisfc(i) = max(timin, min(Sfcprop%tisfc(i), tgice))
+                Sfcprop%tisfc(i) = max(timin, min(Sfcprop%tisfc(i), tgice))
                 if (Model%cplflx)  then
                   islmsk_cice(i) = 4
                   flag_cice(i)   = .true.
@@ -4725,7 +4726,7 @@ module module_physics_driver
                 do i=1,im
                   clw(i,k,1) = Stateout%gq0(i,k,ntiw)             ! ice
                   clw(i,k,2) = Stateout%gq0(i,k,ntcw)             ! water
-                  Tbd%phy_f3d(i,k,1) = Tbd%phy_f3d(i,k,ntot3d-2) ! clouds from shoc
+                  Tbd%phy_f3d(i,k,1) = Tbd%phy_f3d(i,k,ntot3d-2)  ! clouds from shoc
                 enddo
               enddo
             elseif (abs(Model%fprcp) == 1 .or. mg3_as_mg2) then

@@ -661,7 +661,7 @@ module module_physics_driver
       real    :: pshltr,QCQ,rh02
       real(kind=kind_phys), allocatable, dimension(:,:) :: den
 
-      real(kind=kind_phys) :: lndp_vgf  
+      real(kind=kind_phys) :: lndp_vgf
       !! Initialize local variables (for debugging purposes only,
       !! because the corresponding variables Interstitial(nt)%...
       !! are reset to zero every time).
@@ -933,17 +933,17 @@ module module_physics_driver
       lndp_vgf=-999.
 
       if (Model%lndp_type==1) then
-        do k =1,Model%n_var_lndp 
-           select case(Model%lndp_var_list(k)) 
-           case ('rz0') 
-                z01d(:) = Model%lndp_prt_list(k)* Coupling%sfc_wts(:,k) 
-           case ('rzt') 
-                zt1d(:) = Model%lndp_prt_list(k)* Coupling%sfc_wts(:,k) 
-           case ('shc') 
-                bexp1d(:) = Model%lndp_prt_list(k) * Coupling%sfc_wts(:,k) 
-           case ('lai') 
-                xlai1d(:) = Model%lndp_prt_list(k)* Coupling%sfc_wts(:,k) 
-           case ('vgf') 
+        do k =1,Model%n_var_lndp
+           select case(Model%lndp_var_list(k))
+           case ('rz0')
+                z01d(:) = Model%lndp_prt_list(k)* Coupling%sfc_wts(:,k)
+           case ('rzt')
+                zt1d(:) = Model%lndp_prt_list(k)* Coupling%sfc_wts(:,k)
+           case ('shc')
+                bexp1d(:) = Model%lndp_prt_list(k) * Coupling%sfc_wts(:,k)
+           case ('lai')
+                xlai1d(:) = Model%lndp_prt_list(k)* Coupling%sfc_wts(:,k)
+           case ('vgf')
 ! note that the pertrubed vegfrac is being used in sfc_drv, but not sfc_diff
               do i=1,im
                 call cdfnor(Coupling%sfc_wts(i,k),cdfz)
@@ -2055,7 +2055,7 @@ module module_physics_driver
 !           Sfcprop%oceanfrac,                                                   &
 !  ---  input/output:
             zice, fice, tice, weasd3(:,2), tsfc3(:,2), tprcp3(:,2),              &
-            stice, ep1d3(:,2),                                                  &
+            stice, ep1d3(:,2),                                                   &
 !  ---  outputs:
             snowd3(:,2), qss3(:,2), snowmt, gflx3(:,2), cmm3(:,2), chh3(:,2),    &
             evap3(:,2),  hflx3(:,2))
@@ -2202,7 +2202,7 @@ module module_physics_driver
 !           if (islmsk(i) == 2) then                     ! return updated lake ice thickness & concentration to global array
             if (icy(i)) then                             ! return updated lake ice thickness & concentration to global array
               Sfcprop%hice(i)  = zice(i)
-              Sfcprop%fice(i)  = fice(i) 
+              Sfcprop%fice(i)  = fice(i)
               Sfcprop%tisfc(i) = tice(i)
             else                                         ! this would be over open ocean or land (no ice fraction)
               Sfcprop%hice(i)  = zero
@@ -2218,7 +2218,7 @@ module module_physics_driver
         enddo
       else
         do i=1,im
-          if (flag_cice(i) .and. wet(i) .and. fice(i) < Model%min_seaice) then 
+          if (flag_cice(i) .and. wet(i) .and. fice(i) < Model%min_seaice) then
               islmsk(i) = 0
               fice(i) = zero
            endif
@@ -2544,7 +2544,7 @@ module module_physics_driver
                          Diag%v10m, Sfcprop%ffmm, Sfcprop%ffhh, Sfcprop%tsfc,hflxq,&
                          evapq,stress, wind, kpbl, Statein%prsi, del, Statein%prsl,&
                          Statein%prslk, Statein%phii, Statein%phil, dtp, dusfc1,   &
-                         dvsfc1, dtsfc1, dqsfc1, dkt, Tbd%hpbl, kinver,           &
+                         dvsfc1, dtsfc1, dqsfc1, dkt, Tbd%hpbl, kinver,            &
                          Model%xkzm_m, Model%xkzm_h, Model%xkzm_s, Model%xkzminv,  &
                          lprnt, ipr, me)
 !         if (lprnt) then
@@ -2571,7 +2571,7 @@ module module_physics_driver
                        Sfcprop%ffmm, Sfcprop%ffhh, Sfcprop%tsfc, hflxq, evapq,      &
                        stress, wind, kpbl, Statein%prsi, del, Statein%prsl,         &
                        Statein%prslk, Statein%phii, Statein%phil, dtp,              &
-                       Model%dspheat, dusfc1, dvsfc1, dtsfc1, dqsfc1, Tbd%hpbl,    &
+                       Model%dspheat, dusfc1, dvsfc1, dtsfc1, dqsfc1, Tbd%hpbl,     &
                        kinver, Model%xkzm_m, Model%xkzm_h, Model%xkzm_s)
 !*## CCPP ##
              elseif (Model%isatmedmf == 1) then   ! updated version of satmedmfvdif (May 2019)
@@ -4018,7 +4018,7 @@ module module_physics_driver
 
 !
 ! JLS NOTE:  The convective mass fluxes (dt_mf, dd_mf and ud_mf) passed in and out of cs_conv have not been multiplied by
-!            the timestep (i.e, the are in kg/m2/sec) as they are in all other convective schemes.  EMC is aware of this problem, 
+!            the timestep (i.e, the are in kg/m2/sec) as they are in all other convective schemes.  EMC is aware of this problem,
 !            and in the future will be fixing this discrepancy.  In the meantime, CCPP will use the same mass flux standard_name
 !            and long_name as the other convective schemes, where the units are in kg/m2. (Aug 2018)
 !
@@ -5014,7 +5014,7 @@ module module_physics_driver
                                 Stateout%gq0(1:im,1:levs,Model%ntgl),                           &
                                 Statein%prsl, del, dtp, rain1,                                  &
                                 Diag%sr,                                                        &
-                                islmsk,                                                         & 
+                                islmsk,                                                         &
                                 Tbd%phy_f3d(:,:,1),Tbd%phy_f3d(:,:,2),Tbd%phy_f3d(:,:,3),       &
                                 ims,ime, kms,kme,                                               &
                                 its,ite, kts,kte)
@@ -5377,7 +5377,7 @@ module module_physics_driver
               Diag%refdmax(i)     = max(Diag%refdmax(i),refd(i))
               Diag%refdmax263k(i) = max(Diag%refdmax263k(i),refd263k(i))
             enddo
-            deallocate (refd) 
+            deallocate (refd)
             deallocate (refd263k)
           endif
 !*## CCPP ##

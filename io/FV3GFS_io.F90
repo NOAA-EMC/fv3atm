@@ -70,11 +70,11 @@ module FV3GFS_io_mod
 #endif
 
   !--- GFDL filenames
-  character(len=32)  :: fn_oro = 'oro_data.nc'
+  character(len=32)  :: fn_oro    = 'oro_data.nc'
   character(len=32)  :: fn_oro_ls = 'oro_data_ls.nc'
   character(len=32)  :: fn_oro_ss = 'oro_data_ss.nc'
-  character(len=32)  :: fn_srf = 'sfc_data.nc'
-  character(len=32)  :: fn_phy = 'phy_data.nc'
+  character(len=32)  :: fn_srf    = 'sfc_data.nc'
+  character(len=32)  :: fn_phy    = 'phy_data.nc'
 
   !--- GFDL FMS netcdf restart data types
   type(restart_file_type) :: Oro_restart, Sfc_restart, Phy_restart
@@ -112,6 +112,7 @@ module FV3GFS_io_mod
   real, parameter:: stndrd_atmos_ps = 101325.0_r8
   real, parameter:: stndrd_atmos_lapse = 0.0065_r8
   real, parameter:: drythresh = 1.e-4_r8, zero = 0.0_r8, one = 1.0_r8
+  real(kind=kind_phys), parameter :: timin = 173.0_r8  ! minimum temperature allowed for snow/ice
  
 !--- miscellaneous other variables
   logical :: use_wrtgridcomp_output = .FALSE.
@@ -1403,12 +1404,12 @@ module FV3GFS_io_mod
     endif ! if (Model%frac_grid)
 
 !#ifdef CCPP
-    if (nint(sfc_var3ice(1,1,1)) == -9999) then
+    if (nint(sfc_var3ice(1,1,1)) == -9999) then    !--- initialize internal ice temp from layer 1 and 2 soil temp
       if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing tiice')
       do nb = 1, Atm_block%nblks
         do ix = 1, Atm_block%blksz(nb)
-          Sfcprop(nb)%tiice(ix,1) = Sfcprop(nb)%stc(ix,1) !--- initialize internal ice temp from soil temp at layer 1
-          Sfcprop(nb)%tiice(ix,2) = Sfcprop(nb)%stc(ix,2) !--- initialize internal ice temp from soil temp at layer 2
+          Sfcprop(nb)%tiice(ix,1) = max(timin, min(con_tice, Sfcprop(nb)%stc(ix,1)))
+          Sfcprop(nb)%tiice(ix,2) = max(timin, min(con_tice, Sfcprop(nb)%stc(ix,2)))
         enddo
       enddo
     endif
@@ -2137,7 +2138,7 @@ module FV3GFS_io_mod
 
         do k = 1,Model%kice
           sfc_var3ice(i,j,k) = Sfcprop(nb)%tiice(ix,k) !--- internal ice temperature
-        end do
+        enddo
 
 #ifdef CCPP
 
