@@ -2944,9 +2944,9 @@ module GFS_typedefs
 !                               f107_kp_read_in_start, kdt_interval
     use module_IPE_to_WAM, only: ipe_to_wam_coupling
     use namelist_wamphysics_def
-#else
-    use wam_f107_kp_mod,  only: f107_kp_size, f107_kp_interval,     &
-                                f107_kp_skip_size, f107_kp_data_size
+!x #else
+!x     use wam_f107_kp_mod,  only: f107_kp_size, f107_kp_interval,     &
+!x                                 f107_kp_skip_size, f107_kp_data_size
 #endif
     use mersenne_twister, only: random_setseed, random_number
     use parse_tracers,    only: get_tracer_index
