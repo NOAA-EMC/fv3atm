@@ -291,4 +291,43 @@ module stochastic_physics_wrapper_mod
 
   end subroutine stochastic_physics_wrapper
 
+
+  subroutine stochastic_physics_wrapper_end (GFS_Control)
+
+  use GFS_typedefs,       only: GFS_control_type, GFS_data_type
+  use stochastic_physics, only: finalize_stochastic_physics
+
+  implicit none
+
+  type(GFS_control_type),   intent(inout) :: GFS_Control
+
+  if (GFS_Control%do_sppt .OR. GFS_Control%do_shum .OR. GFS_Control%do_skeb .OR. (GFS_Control%lndp_type .GT. 0) ) then
+      print*,'in stochastic_physics_wrapper_end'
+      deallocate(xlat)
+      deallocate(xlon)
+      ! Copy blocked data into contiguous arrays; no need to copy weights in (intent(out))
+      if (GFS_Control%do_sppt) then
+         deallocate(sppt_wts)
+      end if
+      if (GFS_Control%do_shum) then
+         deallocate(shum_wts)
+      end if
+      if (GFS_Control%do_skeb) then
+         deallocate(skebu_wts)
+         deallocate(skebv_wts)
+      end if
+      if ( GFS_Control%lndp_type .EQ. 2 ) then ! this scheme updates through forecast
+         deallocate(sfc_wts)
+      end if
+      if (GFS_Control%lndp_type .EQ. 2) then ! save wts, and apply lndp scheme
+          deallocate(smc)
+          deallocate(slc)
+          deallocate(stc)
+          deallocate(stype)
+          deallocate(vfrac)
+      endif
+   endif
+   call finalize_stochastic_physics()
+  end subroutine stochastic_physics_wrapper_end
+
 end module stochastic_physics_wrapper_mod
