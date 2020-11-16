@@ -3,7 +3,7 @@
 !
 !
     USE MACHINE,      only: kind_phys
-    USE PHYSCONS,     only: PI => con_PI
+    USE PHYSCONS,     only: PI => con_PI, con_tice
     USE GFS_typedefs, only: GFS_control_type, GFS_grid_type, &
                             GFS_sfcprop_type, GFS_cldprop_type
     implicit none
@@ -213,6 +213,9 @@
           else
              Sfcprop(nb)%tsfc(ix)  = TSFFCS  (len)
              Sfcprop(nb)%tsfco(ix) = TSFFCS  (len)
+            if (slifcs(len) > 1.9_kind_phys) then
+              Sfcprop(nb)%tsfco(ix) = con_tice
+            endif
           endif
           Sfcprop(nb)%weasd  (ix) = SNOFCS  (len)
           Sfcprop(nb)%zorll  (ix) = ZORFCS  (len)
