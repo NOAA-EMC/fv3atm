@@ -302,7 +302,6 @@ module stochastic_physics_wrapper_mod
   type(GFS_control_type),   intent(inout) :: GFS_Control
 
   if (GFS_Control%do_sppt .OR. GFS_Control%do_shum .OR. GFS_Control%do_skeb .OR. (GFS_Control%lndp_type .GT. 0) ) then
-      print*,'in stochastic_physics_wrapper_end'
       deallocate(xlat)
       deallocate(xlon)
       ! Copy blocked data into contiguous arrays; no need to copy weights in (intent(out))
@@ -326,8 +325,8 @@ module stochastic_physics_wrapper_mod
           deallocate(stype)
           deallocate(vfrac)
       endif
+      call finalize_stochastic_physics()
    endif
-   call finalize_stochastic_physics()
   end subroutine stochastic_physics_wrapper_end
 
 end module stochastic_physics_wrapper_mod
