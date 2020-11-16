@@ -8,5 +8,7 @@
 	branch = gsd/develop
 [submodule "ccpp/physics"]
 	path = ccpp/physics
-	url = https://github.com/mdtoy/ccpp-physics
-	branch = unified_ugwp
+	#url = https://github.com/mdtoy/ccpp-physics
+	#branch = unified_ugwp
+	url = https://github.com/climbfuji/ccpp-physics
+	branch = mike_unified_ugwp_with_dom_mods
