@@ -92,16 +92,38 @@ module stochastic_physics_wrapper_mod
                     return
             endif
       end if
+      allocate(xlat(1:Atm_block%nblks,maxval(GFS_Control%blksz)))
+      allocate(xlon(1:Atm_block%nblks,maxval(GFS_Control%blksz)))
+      ! Copy blocked data into contiguous arrays; no need to copy weights in (intent(out))
+      if (GFS_Control%do_sppt) then
+         allocate(sppt_wts(1:Atm_block%nblks,maxval(GFS_Control%blksz),1:GFS_Control%levs))
+      end if
+      if (GFS_Control%do_shum) then
+         allocate(shum_wts(1:Atm_block%nblks,maxval(GFS_Control%blksz),1:GFS_Control%levs))
+      end if
+      if (GFS_Control%do_skeb) then
+         allocate(skebu_wts(1:Atm_block%nblks,maxval(GFS_Control%blksz),1:GFS_Control%levs))
+         allocate(skebv_wts(1:Atm_block%nblks,maxval(GFS_Control%blksz),1:GFS_Control%levs))
+      end if
+      if ( GFS_Control%lndp_type .EQ. 2 ) then ! this scheme updates through forecast
+         allocate(sfc_wts(1:Atm_block%nblks,maxval(GFS_Control%blksz),1:GFS_Control%n_var_lndp))
+      end if
+      if (GFS_Control%lndp_type .EQ. 2) then ! save wts, and apply lndp scheme
+          allocate(smc(1:Atm_block%nblks,maxval(GFS_Control%blksz),GFS_Control%lsoil))
+          allocate(slc(1:Atm_block%nblks,maxval(GFS_Control%blksz),GFS_Control%lsoil))
+          allocate(stc(1:Atm_block%nblks,maxval(GFS_Control%blksz),GFS_Control%lsoil))
+          allocate(stype(1:Atm_block%nblks,maxval(GFS_Control%blksz)))
+          allocate(vfrac(1:Atm_block%nblks,maxval(GFS_Control%blksz)))
+      endif
+
+      do nb=1,Atm_block%nblks
+         xlat(nb,1:GFS_Control%blksz(nb)) = GFS_Data(nb)%Grid%xlat(:)
+         xlon(nb,1:GFS_Control%blksz(nb)) = GFS_Data(nb)%Grid%xlon(:)
+      end do
 
       if ( GFS_Control%lndp_type .EQ. 1 ) then ! this scheme sets perts once
          ! Copy blocked data into contiguous arrays; no need to copy sfc_wts in (intent out)
-         allocate(xlat(1:Atm_block%nblks,maxval(GFS_Control%blksz)))
-         allocate(xlon(1:Atm_block%nblks,maxval(GFS_Control%blksz)))
          allocate(sfc_wts(1:Atm_block%nblks,maxval(GFS_Control%blksz),GFS_Control%n_var_lndp))
-         do nb=1,Atm_block%nblks
-            xlat(nb,1:GFS_Control%blksz(nb)) = GFS_Data(nb)%Grid%xlat(:)
-            xlon(nb,1:GFS_Control%blksz(nb)) = GFS_Data(nb)%Grid%xlon(:)
-         end do
          call run_stochastic_physics(GFS_Control%levs, GFS_Control%kdt, GFS_Control%phour, GFS_Control%blksz, xlat=xlat, xlon=xlon, &
                                  sppt_wts=sppt_wts, shum_wts=shum_wts, skebu_wts=skebu_wts, skebv_wts=skebv_wts, sfc_wts=sfc_wts, &
                                  nthreads=nthreads)
@@ -109,8 +131,6 @@ module stochastic_physics_wrapper_mod
          do nb=1,Atm_block%nblks
             GFS_Data(nb)%Coupling%sfc_wts(:,:) = sfc_wts(nb,1:GFS_Control%blksz(nb),:)
          end do
-         deallocate(xlat)
-         deallocate(xlon)
          deallocate(sfc_wts)
       end if
       ! Consistency check for cellular automata
@@ -126,27 +146,6 @@ module stochastic_physics_wrapper_mod
     else initalize_stochastic_physics
 
       if (GFS_Control%do_sppt .OR. GFS_Control%do_shum .OR. GFS_Control%do_skeb .OR. (GFS_Control%lndp_type .EQ. 2) ) then
-         ! Copy blocked data into contiguous arrays; no need to copy weights in (intent(out))
-         allocate(xlat(1:Atm_block%nblks,maxval(GFS_Control%blksz)))
-         allocate(xlon(1:Atm_block%nblks,maxval(GFS_Control%blksz)))
-         do nb=1,Atm_block%nblks
-            xlat(nb,1:GFS_Control%blksz(nb)) = GFS_Data(nb)%Grid%xlat(:)
-            xlon(nb,1:GFS_Control%blksz(nb)) = GFS_Data(nb)%Grid%xlon(:)
-         end do
-         if (GFS_Control%do_sppt) then
-            allocate(sppt_wts(1:Atm_block%nblks,maxval(GFS_Control%blksz),1:GFS_Control%levs))
-         end if
-         if (GFS_Control%do_shum) then
-            allocate(shum_wts(1:Atm_block%nblks,maxval(GFS_Control%blksz),1:GFS_Control%levs))
-         end if
-         if (GFS_Control%do_skeb) then
-            allocate(skebu_wts(1:Atm_block%nblks,maxval(GFS_Control%blksz),1:GFS_Control%levs))
-            allocate(skebv_wts(1:Atm_block%nblks,maxval(GFS_Control%blksz),1:GFS_Control%levs))
-         end if
-         if ( GFS_Control%lndp_type .EQ. 2 ) then ! this scheme updates through forecast
-            allocate(sfc_wts(1:Atm_block%nblks,maxval(GFS_Control%blksz),1:GFS_Control%n_var_lndp))
-         end if
-
          call run_stochastic_physics(GFS_Control%levs, GFS_Control%kdt, GFS_Control%phour, GFS_Control%blksz, xlat=xlat, xlon=xlon, &
                                  sppt_wts=sppt_wts, shum_wts=shum_wts, skebu_wts=skebu_wts, skebv_wts=skebv_wts, sfc_wts=sfc_wts, &
                                  nthreads=nthreads)
@@ -155,32 +154,23 @@ module stochastic_physics_wrapper_mod
             do nb=1,Atm_block%nblks
                 GFS_Data(nb)%Coupling%sppt_wts(:,:) = sppt_wts(nb,1:GFS_Control%blksz(nb),:)
             end do
-            deallocate(sppt_wts)
          end if
          if (GFS_Control%do_shum) then
             do nb=1,Atm_block%nblks
                 GFS_Data(nb)%Coupling%shum_wts(:,:) = shum_wts(nb,1:GFS_Control%blksz(nb),:)
             end do
-            deallocate(shum_wts)
          end if
          if (GFS_Control%do_skeb) then
             do nb=1,Atm_block%nblks
                 GFS_Data(nb)%Coupling%skebu_wts(:,:) = skebu_wts(nb,1:GFS_Control%blksz(nb),:)
                 GFS_Data(nb)%Coupling%skebv_wts(:,:) = skebv_wts(nb,1:GFS_Control%blksz(nb),:)
             end do
-            deallocate(skebu_wts)
-            deallocate(skebv_wts)
          end if
          if (GFS_Control%lndp_type .EQ. 2) then ! save wts, and apply lndp scheme
              do nb=1,Atm_block%nblks
                 GFS_Data(nb)%Coupling%sfc_wts(:,:) = sfc_wts(nb,1:GFS_Control%blksz(nb),:)
              end do
 
-             allocate(smc(1:Atm_block%nblks,maxval(GFS_Control%blksz),GFS_Control%lsoil))
-             allocate(slc(1:Atm_block%nblks,maxval(GFS_Control%blksz),GFS_Control%lsoil))
-             allocate(stc(1:Atm_block%nblks,maxval(GFS_Control%blksz),GFS_Control%lsoil))
-             allocate(stype(1:Atm_block%nblks,maxval(GFS_Control%blksz)))
-             allocate(vfrac(1:Atm_block%nblks,maxval(GFS_Control%blksz)))
              do nb=1,Atm_block%nblks
                 stype(nb,1:GFS_Control%blksz(nb))  = GFS_Data(nb)%Sfcprop%stype(:)
                 smc(nb,1:GFS_Control%blksz(nb),:)  = GFS_Data(nb)%Sfcprop%smc(:,:)
@@ -202,21 +192,13 @@ module stochastic_physics_wrapper_mod
                     write(6,*) 'call to GFS_apply_lndp failed'
                     return
              endif
-             deallocate(stype)
-             deallocate(sfc_wts)
              do nb=1,Atm_block%nblks
                  GFS_Data(nb)%Sfcprop%smc(:,:) =  smc(nb,1:GFS_Control%blksz(nb),:)
                  GFS_Data(nb)%Sfcprop%slc(:,:) =  slc(nb,1:GFS_Control%blksz(nb),:)
                  GFS_Data(nb)%Sfcprop%stc(:,:) =  stc(nb,1:GFS_Control%blksz(nb),:)
                  GFS_Data(nb)%Sfcprop%vfrac(:) =  vfrac(nb,1:GFS_Control%blksz(nb))
              enddo
-             deallocate(smc)
-             deallocate(slc)
-             deallocate(stc)
-             deallocate(vfrac)
          endif ! lndp block
-         deallocate(xlat)
-         deallocate(xlon)
       end if
 
     endif initalize_stochastic_physics
