@@ -252,7 +252,7 @@ module stochastic_physics_wrapper_mod
             ca_deep_diag,ca_turb_diag,ca_shal_diag,Atm(mygrid)%domain_for_coupler,Atm_block%nblks,                        &
             Atm_block%isc,Atm_block%iec,Atm_block%jsc,Atm_block%jec,Atm(mygrid)%npx,Atm(mygrid)%npy, GFS_Control%levs,    &
             GFS_Control%nca,GFS_Control%ncells,GFS_Control%nlives,GFS_Control%nfracseed,                                  &
-            GFS_Control%nseed,GFS_Control%nthresh,GFS_Control%ca_global,GFS_Control%ca_sgs,GFS_Control%iseed_ca,          &
+            GFS_Control%nseed,GFS_Control%nthresh,GFS_Control%ca_global_any,GFS_Control%ca_sgs,GFS_Control%iseed_ca,          &
             GFS_Control%ca_smooth,GFS_Control%nspinup,Atm_block%blksz(1),GFS_Control%master,GFS_Control%communicator)
          ! Copy contiguous data back as needed
          do nb=1,Atm_block%nblks
@@ -276,7 +276,7 @@ module stochastic_physics_wrapper_mod
          deallocate(ca_turb_diag)
          deallocate(ca_shal_diag)
        endif
-       if(GFS_Control%ca_global)then
+       if(GFS_Control%ca_global_any)then
           ! Allocate contiguous arrays; no need to copy in (intent out)
           allocate(ca1_cpl (1:Atm_block%nblks,maxval(GFS_Control%blksz)))
           allocate(ca2_cpl (1:Atm_block%nblks,maxval(GFS_Control%blksz)))
@@ -287,7 +287,7 @@ module stochastic_physics_wrapper_mod
           call cellular_automata_global(GFS_Control%kdt,ca1_cpl,ca2_cpl,ca3_cpl,ca1_diag,ca2_diag,ca3_diag,Atm(mygrid)%domain_for_coupler, &
             Atm_block%nblks,Atm_block%isc,Atm_block%iec,Atm_block%jsc,Atm_block%jec,Atm(mygrid)%npx,Atm(mygrid)%npy,GFS_Control%levs,      &
             GFS_Control%nca_g,GFS_Control%ncells_g,GFS_Control%nlives_g,GFS_Control%nfracseed,GFS_Control%nseed_g,GFS_Control%nthresh,     &
-            GFS_Control%ca_global,GFS_Control%ca_sgs,GFS_Control%iseed_ca,GFS_Control%ca_smooth,GFS_Control%nspinup,Atm_block%blksz(1),    &
+            GFS_Control%ca_global_any,GFS_Control%ca_sgs,GFS_Control%iseed_ca,GFS_Control%ca_smooth,GFS_Control%nspinup,Atm_block%blksz(1),    &
             GFS_Control%nsmooth,GFS_Control%ca_amplitude,GFS_Control%master,GFS_Control%communicator)
           ! Copy contiguous data back
           do nb=1,Atm_block%nblks

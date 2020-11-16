@@ -2037,6 +2037,13 @@
   type = real
   kind = kind_phys
   active = (flag_for_cellular_automata)
+[emis_multiplier]
+  standard_name = gsd_chem_ca_global_emis_multiplier
+  long_name = fraction of emissions to generate based on cellular automata
+  units = frac
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
 [condition]
   standard_name = physics_field_for_coupling
   long_name = physics_field_for_coupling
@@ -3868,6 +3875,12 @@
 [ca_global]
   standard_name = flag_for_global_cellular_automata
   long_name = switch for global ca
+  units = flag
+  dimensions = ()
+  type = logical
+[ca_global_emis]
+  standard_name = flag_for_tracer_emissions_global_cellular_automata
+  long_name = switch for global ca applied to chemical tracer emissions
   units = flag
   dimensions = ()
   type = logical
