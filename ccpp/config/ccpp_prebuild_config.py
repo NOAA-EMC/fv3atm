@@ -111,6 +111,8 @@ SCHEME_FILES = [
     'FV3/ccpp/physics/physics/GFS_time_vary_pre.fv3.F90',
     'FV3/ccpp/physics/physics/cires_ugwp.F90',
     'FV3/ccpp/physics/physics/cires_ugwp_post.F90',
+    'FV3/ccpp/physics/physics/unified_ugwp.F90',
+    'FV3/ccpp/physics/physics/unified_ugwp_post.F90',
     'FV3/ccpp/physics/physics/cnvc90.f',
     'FV3/ccpp/physics/physics/cs_conv.F90',
     'FV3/ccpp/physics/physics/cs_conv_aw_adj.F90',
