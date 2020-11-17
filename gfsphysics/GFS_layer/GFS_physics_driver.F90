@@ -912,7 +912,7 @@ module module_physics_driver
 
 !## CCPP ##* GFS_surface_generic.F90/GFS_surface_generic_pre_run
 !  ---  set initial quantities for stochastic physics deltas
-      if (Model%do_sppt .or. Model%ca_global)then
+      if (Model%do_sppt_any .or. Model%ca_global)then
         Tbd%dtdtr = zero
       endif
 

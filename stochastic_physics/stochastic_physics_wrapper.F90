@@ -80,10 +80,10 @@ module stochastic_physics_wrapper_mod
     ! Initialize
     initalize_stochastic_physics: if (GFS_Control%kdt==0) then
 
-      if (GFS_Control%do_sppt .OR. GFS_Control%do_shum .OR. GFS_Control%do_skeb .OR. (GFS_Control%lndp_type .GT. 0) ) then
+      if (GFS_Control%do_sppt_any .OR. GFS_Control%do_shum .OR. GFS_Control%do_skeb .OR. (GFS_Control%lndp_type .GT. 0) ) then
         ! Initialize stochastic physics
         call init_stochastic_physics(GFS_Control%levs, GFS_Control%blksz, GFS_Control%dtp,                                               &
-            GFS_Control%input_nml_file, GFS_Control%fn_nml, GFS_Control%nlunit, GFS_Control%do_sppt, GFS_Control%do_shum,                &
+            GFS_Control%input_nml_file, GFS_Control%fn_nml, GFS_Control%nlunit, GFS_Control%do_sppt_any, GFS_Control%do_shum,                &
             GFS_Control%do_skeb, GFS_Control%lndp_type, GFS_Control%n_var_lndp, GFS_Control%use_zmtnblck, GFS_Control%skeb_npass, & 
             GFS_Control%lndp_var_list, GFS_Control%lndp_prt_list,    &
             GFS_Control%ak, GFS_Control%bk, nthreads, GFS_Control%master, GFS_Control%communicator, ierr)
@@ -125,7 +125,7 @@ module stochastic_physics_wrapper_mod
 
     else initalize_stochastic_physics
 
-      if (GFS_Control%do_sppt .OR. GFS_Control%do_shum .OR. GFS_Control%do_skeb .OR. (GFS_Control%lndp_type .EQ. 2) ) then
+      if (GFS_Control%do_sppt_any .OR. GFS_Control%do_shum .OR. GFS_Control%do_skeb .OR. (GFS_Control%lndp_type .EQ. 2) ) then
          ! Copy blocked data into contiguous arrays; no need to copy weights in (intent(out))
          allocate(xlat(1:Atm_block%nblks,maxval(GFS_Control%blksz)))
          allocate(xlon(1:Atm_block%nblks,maxval(GFS_Control%blksz)))
@@ -133,7 +133,7 @@ module stochastic_physics_wrapper_mod
             xlat(nb,1:GFS_Control%blksz(nb)) = GFS_Data(nb)%Grid%xlat(:)
             xlon(nb,1:GFS_Control%blksz(nb)) = GFS_Data(nb)%Grid%xlon(:)
          end do
-         if (GFS_Control%do_sppt) then
+         if (GFS_Control%do_sppt_any) then
             allocate(sppt_wts(1:Atm_block%nblks,maxval(GFS_Control%blksz),1:GFS_Control%levs))
          end if
          if (GFS_Control%do_shum) then
@@ -151,7 +151,7 @@ module stochastic_physics_wrapper_mod
                                  sppt_wts=sppt_wts, shum_wts=shum_wts, skebu_wts=skebu_wts, skebv_wts=skebv_wts, sfc_wts=sfc_wts, &
                                  nthreads=nthreads)
          ! Copy contiguous data back; no need to copy xlat/xlon, these are intent(in) - just deallocate
-         if (GFS_Control%do_sppt) then
+         if (GFS_Control%do_sppt_any) then
             do nb=1,Atm_block%nblks
                 GFS_Data(nb)%Coupling%sppt_wts(:,:) = sppt_wts(nb,1:GFS_Control%blksz(nb),:)
             end do

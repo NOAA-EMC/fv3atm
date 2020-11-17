@@ -3933,6 +3933,12 @@
   units = flag
   dimensions = ()
   type = logical
+[do_sppt_emis]
+  standard_name = flag_for_stochastic_emissions_perturbations
+  long_name = flag for stochastic emissions perturbations
+  units = flag
+  dimensions = ()
+  type = logical
 [use_zmtnblck]
   standard_name = flag_for_mountain_blocking
   long_name = flag for mountain blocking
