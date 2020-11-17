@@ -198,6 +198,7 @@ SCHEME_FILES = [
     'ccpp/physics/physics/rrtmgp_lw_cloud_sampling.F90',
     'ccpp/physics/physics/rrtmgp_sw_cloud_sampling.F90',
     'ccpp/physics/physics/GFS_cloud_diagnostics.F90',
+    'ccpp/physics/physics/GFS_rrtmgp_thompsonmp_pre.F90',
     'ccpp/physics/physics/GFS_rrtmgp_gfdlmp_pre.F90',
     'ccpp/physics/physics/GFS_rrtmgp_zhaocarr_pre.F90',
     'ccpp/physics/physics/GFS_rrtmgp_sw_post.F90'
