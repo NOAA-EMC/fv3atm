@@ -1059,7 +1059,7 @@ module FV3GFS_io_mod
         endif
 
         if(Model%frac_grid) then ! obtain slmsk from landfrac
-!         Sfcprop(nb)%slmsk(ix) = floor(Sfcprop(nb)%landfrac(ix)) ! floor is default; nint/ceiling are options
+          Sfcprop(nb)%slmsk(ix) = ceiling(Sfcprop(nb)%landfrac(ix))
         else ! obtain landfrac from slmsk
           if (Sfcprop(nb)%slmsk(ix) > 1.9_r8) then
             Sfcprop(nb)%landfrac(ix) = zero
