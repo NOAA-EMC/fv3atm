@@ -711,6 +711,7 @@ module GFS_typedefs
     logical              :: do_GPsw_Glw             !< If set to true use rrtmgp for SW calculation, rrtmg for LW.
     character(len=128)   :: active_gases_array(100) !< character array for each trace gas name
     logical              :: use_LW_jacobian         !< If true, use Jacobian of LW to update radiation tendency.
+    logical              :: doGP_lwscat             !< If true, include scattering in longwave cloud-optics, only compatible w/ GP cloud-optics
 #endif
 !--- microphysical switch
     integer              :: ncld            !< choice of cloud scheme
@@ -2119,10 +2120,10 @@ module GFS_typedefs
     type(ty_gas_optics_rrtmgp)          :: sw_gas_props                         !< RRTMGP DDT
     type(ty_cloud_optics)               :: lw_cloud_props                       !< RRTMGP DDT
     type(ty_cloud_optics)               :: sw_cloud_props                       !< RRTMGP DDT
-    type(ty_optical_props_1scl)         :: lw_optical_props_cloudsByBand        !< RRTMGP DDT
-    type(ty_optical_props_1scl)         :: lw_optical_props_clouds              !< RRTMGP DDT
-    type(ty_optical_props_1scl)         :: lw_optical_props_precipByBand        !< RRTMGP DDT
-    type(ty_optical_props_1scl)         :: lw_optical_props_precip              !< RRTMGP DDT
+    type(ty_optical_props_2str)         :: lw_optical_props_cloudsByBand        !< RRTMGP DDT
+    type(ty_optical_props_2str)         :: lw_optical_props_clouds              !< RRTMGP DDT
+    type(ty_optical_props_2str)         :: lw_optical_props_precipByBand        !< RRTMGP DDT
+    type(ty_optical_props_2str)         :: lw_optical_props_precip              !< RRTMGP DDT
     type(ty_optical_props_1scl)         :: lw_optical_props_clrsky              !< RRTMGP DDT
     type(ty_optical_props_1scl)         :: lw_optical_props_aerosol             !< RRTMGP DDT
     type(ty_optical_props_2str)         :: sw_optical_props_cloudsByBand        !< RRTMGP DDT
@@ -3071,25 +3072,26 @@ module GFS_typedefs
     logical              :: swhtr             = .true.       !< flag to output sw heating rate (Radtend%swhc)
     ! RRTMGP                                                                                                                                                                                                                                                                                                                                             
 #ifdef CCPP
-    logical              :: do_RRTMGP        = .false.       !< Use RRTMGP?
-    character(len=128)   :: active_gases    = ''             !< Character list of active gases used in RRTMGP
-    integer              :: nGases          = 0              !< Number of active gases
-    character(len=128)   :: rrtmgp_root     = ''             !< Directory of rte+rrtmgp source code
-    character(len=128)   :: lw_file_gas     = ''             !< RRTMGP K-distribution file, coefficients to compute optics for gaseous atmosphere
-    character(len=128)   :: lw_file_clouds  = ''             !< RRTMGP file containing coefficients used to compute clouds optical properties
-    integer              :: rrtmgp_nBandsLW = 16             !< Number of RRTMGP LW bands.
-    integer              :: rrtmgp_nGptsLW  = 256            !< Number of RRTMGP LW spectral points.
-    character(len=128)   :: sw_file_gas     = ''             !< RRTMGP K-distribution file, coefficients to compute optics for gaseous atmosphere
-    character(len=128)   :: sw_file_clouds  = ''             !< RRTMGP file containing coefficients used to compute clouds optical properties
-    integer              :: rrtmgp_nBandsSW = 14             !< Number of RRTMGP SW bands.
-    integer              :: rrtmgp_nGptsSW  = 224            !< Number of RRTMGP SW spectral points.
+    logical              :: do_RRTMGP           = .false.    !< Use RRTMGP?
+    character(len=128)   :: active_gases        = ''         !< Character list of active gases used in RRTMGP
+    integer              :: nGases              = 0          !< Number of active gases
+    character(len=128)   :: rrtmgp_root         = ''         !< Directory of rte+rrtmgp source code
+    character(len=128)   :: lw_file_gas         = ''         !< RRTMGP K-distribution file, coefficients to compute optics for gaseous atmosphere
+    character(len=128)   :: lw_file_clouds      = ''         !< RRTMGP file containing coefficients used to compute clouds optical properties
+    integer              :: rrtmgp_nBandsLW     = 16         !< Number of RRTMGP LW bands.
+    integer              :: rrtmgp_nGptsLW      = 256        !< Number of RRTMGP LW spectral points.
+    character(len=128)   :: sw_file_gas         = ''         !< RRTMGP K-distribution file, coefficients to compute optics for gaseous atmosphere
+    character(len=128)   :: sw_file_clouds      = ''         !< RRTMGP file containing coefficients used to compute clouds optical properties
+    integer              :: rrtmgp_nBandsSW     = 14         !< Number of RRTMGP SW bands.
+    integer              :: rrtmgp_nGptsSW      = 224        !< Number of RRTMGP SW spectral points.
     logical              :: doG_cldoptics       = .false.    !< Use legacy RRTMG cloud-optics?                                             
     logical              :: doGP_cldoptics_PADE = .false.    !< Use RRTMGP cloud-optics: PADE approximation?
     logical              :: doGP_cldoptics_LUT  = .false.    !< Use RRTMGP cloud-optics: LUTs?     
-    integer              :: rrtmgp_nrghice = 0               !< Number of ice-roughness categories
-    integer              :: rrtmgp_nGauss_ang=1              !< Number of angles used in Gaussian quadrature
-    logical              :: do_GPsw_Glw    = .false.     
-    logical              :: use_LW_jacobian = .false.        !< Use Jacobian of LW to update LW radiation tendencies. 
+    integer              :: rrtmgp_nrghice      = 0          !< Number of ice-roughness categories
+    integer              :: rrtmgp_nGauss_ang   = 1          !< Number of angles used in Gaussian quadrature
+    logical              :: do_GPsw_Glw         = .false.     
+    logical              :: use_LW_jacobian     = .false.    !< Use Jacobian of LW to update LW radiation tendencies. 
+    logical              :: doGP_lwscat         = .false.    !< If true, include scattering in longwave cloud-optics, only compatible w/ GP cloud-optics
 #endif
 !--- Z-C microphysical parameters
     integer              :: ncld              =  1                 !< choice of cloud scheme
@@ -3469,7 +3471,7 @@ module GFS_typedefs
                                sw_file_gas, sw_file_clouds, rrtmgp_nBandsSW, rrtmgp_nGptsSW,&
                                doG_cldoptics, doGP_cldoptics_PADE, doGP_cldoptics_LUT,      &
                                rrtmgp_nrghice, rrtmgp_nGauss_ang, do_GPsw_Glw,              &
-                               use_LW_jacobian,                                             &
+                               use_LW_jacobian, doGP_lwscat,                                &
 #endif
                           ! IN CCN forcing
                                iccn,                                                        &
@@ -3846,10 +3848,16 @@ module GFS_typedefs
     Model%doGP_cldoptics_PADE = doGP_cldoptics_PADE
     Model%doGP_cldoptics_LUT  = doGP_cldoptics_LUT
     Model%use_LW_jacobian     = use_LW_jacobian
+    Model%doGP_lwscat         = doGP_lwscat
     ! RRTMGP incompatible with levr /= levs
     if (Model%do_RRTMGP .and. Model%levr /= Model%levs) then
       write(0,*) "Logic error, RRTMGP only works with levr = levs"
       stop
+    end if
+    ! RRTMGP LW scattering calculation not supported w/ RRTMG cloud-optics
+    if (Model%doGP_lwscat .and. Model%doG_cldoptics) then
+      write(0,*) "Logic error, RRTMGP Longwave cloud-scattering not supported with RRTMG cloud-optics."
+      stop       
     end if
 
     ! The CCPP versions of the RRTMG lw/sw schemes are configured
@@ -5048,6 +5056,7 @@ module GFS_typedefs
         print *, ' doGP_cldoptics_PADE: ', Model%doGP_cldoptics_PADE
         print *, ' doGP_cldoptics_LUT : ', Model%doGP_cldoptics_LUT
         print *, ' use_LW_jacobian    : ', Model%use_LW_jacobian
+        print *, ' doGP_lwscat        : ', Model%doGP_lwscat
       endif
 #endif
       print *, ' '
