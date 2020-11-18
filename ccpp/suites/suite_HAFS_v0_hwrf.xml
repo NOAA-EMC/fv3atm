@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<suite name="FV3_HAFS_ferhires_update_moist" lib="ccppphys" ver="4">
+<suite name="HAFS_v0_hwrf" version="1">
   <!-- <init></init> -->
   <group name="time_vary">
     <subcycle loop="1">
@@ -14,12 +14,12 @@
     <subcycle loop="1">
       <scheme>GFS_suite_interstitial_rad_reset</scheme>
       <scheme>GFS_rrtmg_pre</scheme>
-      <scheme>rrtmg_sw_pre</scheme>
-      <scheme>rrtmg_sw</scheme>
-      <scheme>rrtmg_sw_post</scheme>
       <scheme>rrtmg_lw_pre</scheme>
       <scheme>rrtmg_lw</scheme>
       <scheme>rrtmg_lw_post</scheme>
+      <scheme>rrtmg_sw_pre</scheme>
+      <scheme>rrtmg_sw</scheme>
+      <scheme>rrtmg_sw_post</scheme>
       <scheme>GFS_rrtmg_post</scheme>
     </subcycle>
   </group>
@@ -37,12 +37,14 @@
     </subcycle>
     <!-- Surface iteration loop -->
     <subcycle loop="2">
-      <scheme>sfc_diff</scheme>
+      <scheme>gfdl_sfc_layer</scheme>
       <scheme>GFS_surface_loop_control_part1</scheme>
       <scheme>sfc_nst_pre</scheme>
       <scheme>sfc_nst</scheme>
       <scheme>sfc_nst_post</scheme>
-      <scheme>lsm_noah</scheme>
+      <scheme>sfc_noah_wrfv4_pre</scheme>
+      <scheme>sfc_noah_wrfv4</scheme>
+      <scheme>sfc_noah_wrfv4_post</scheme>
       <scheme>sfc_sice</scheme>
       <scheme>GFS_surface_loop_control_part2</scheme>
     </subcycle>
@@ -61,13 +63,15 @@
       <scheme>GFS_GWD_generic_post</scheme>
       <scheme>rayleigh_damp</scheme>
       <scheme>GFS_suite_stateout_update</scheme>
-      <scheme>ozphys</scheme>
+      <scheme>ozphys_2015</scheme>
+      <scheme>h2ophys</scheme>
+      <scheme>GFS_DCNV_generic_pre</scheme>
       <scheme>get_phi_fv3</scheme>
       <scheme>GFS_suite_interstitial_3</scheme>
-      <scheme>GFS_DCNV_generic_pre</scheme>
-<!--      <scheme>samfdeepcnv</scheme> -->
+      <scheme>samfdeepcnv</scheme>
       <scheme>GFS_DCNV_generic_post</scheme>
       <scheme>GFS_SCNV_generic_pre</scheme>
+      <scheme>samfshalcnv</scheme>
       <scheme>GFS_SCNV_generic_post</scheme>
       <scheme>GFS_suite_interstitial_4</scheme>
       <scheme>cnvc90</scheme>
