@@ -9821,6 +9821,24 @@
   dimensions = (horizontal_loop_extent,vertical_dimension)
   type = real
   kind = kind_phys
+[qs_lay]
+  standard_name = saturation_vapor_pressure
+  long_name = saturation vapor pressure
+  units = Pa
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+  optional = F
+  active = (flag_for_rrtmgp_radiation_scheme)
+[q_lay]
+  standard_name = water_vapor_mixing_ratio
+  long_name = water vaport mixing ratio
+  units = kg/kg
+  dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+  optional = F
+  active = (flag_for_rrtmgp_radiation_scheme)
 [p_lay]
   standard_name = air_pressure_at_layer_for_RRTMGP_in_hPa
   long_name = air pressure layer
@@ -10183,7 +10201,7 @@
   long_name = Fortran DDT containing RRTMGP optical properties
   units = DDT
   dimensions = ()
-  type = ty_optical_props_2str
+  type = ty_optical_props_1scl
 [lw_optical_props_clouds]
   standard_name = longwave_optical_properties_for_cloudy_atmosphere
   long_name = Fortran DDT containing RRTMGP optical properties
@@ -10207,7 +10225,7 @@
   long_name = Fortran DDT containing RRTMGP optical properties
   units = DDT
   dimensions = ()
-  type = ty_optical_props_1scl
+  type = ty_optical_props_2str
 [lw_optical_props_aerosol]
   standard_name = longwave_optical_properties_for_aerosols
   long_name = Fortran DDT containing RRTMGP optical properties

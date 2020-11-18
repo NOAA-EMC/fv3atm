@@ -201,6 +201,7 @@ SCHEME_FILES = [
     'ccpp/physics/physics/GFS_rrtmgp_thompsonmp_pre.F90',
     'ccpp/physics/physics/GFS_rrtmgp_gfdlmp_pre.F90',
     'ccpp/physics/physics/GFS_rrtmgp_zhaocarr_pre.F90',
+    'ccpp/physics/physics/GFS_rrtmgp_cloud_overlap_pre.F90',
     'ccpp/physics/physics/GFS_rrtmgp_sw_post.F90'
     ]
 
