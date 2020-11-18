@@ -99,6 +99,10 @@ if(MOLECULAR_DIFFUSION)
   list(APPEND _fv3dycore_defs_private MOLECULAR_DIFFUSION)
 endif()
 
+if(DEEP_ATMOS_DYNAMICS)
+  list(APPEND _fv3dycore_defs_private DEEP_ATMOS_DYNAMICS)
+endif()
+
 if(32BIT)
   list(APPEND _fv3dycore_defs_private OVERLOAD_R4
                                       OVERLOAD_R8)
