@@ -1097,7 +1097,9 @@ subroutine update_atmos_chemistry(state, rc)
 
       !--- tracer diagnostics
       !--- (a) column mass densities
-      do it = 1, size(qm, dim=3)
+      nte = 0
+      if (associated(qm)) nte = size(qm, dim=3)
+      do it = 1, nte
 !$OMP parallel do default (none) &
 !$OMP             shared  (it, nj, ni, Atm_block, GFS_data, qm)  &
 !$OMP             private (j, jb, i, ib, nb, ix)
@@ -1114,7 +1116,8 @@ subroutine update_atmos_chemistry(state, rc)
 
       !--- (b) dust and sea salt emissions
       ntb = size(GFS_data(1)%IntDiag%duem, dim=2)
-      nte = size(qu, dim=3)
+      nte = 0
+      if (associated(qu)) nte = size(qu, dim=3)
       do it = 1, min(ntb, nte)
 !$OMP parallel do default (none) &
 !$OMP             shared  (it, nj, ni, Atm_block, GFS_data, qu)  &
@@ -1149,7 +1152,9 @@ subroutine update_atmos_chemistry(state, rc)
       endif
 
       !--- (c) sedimentation and dry/wet deposition
-      do it = 1, size(qd, dim=3)
+      nte = 0
+      if (associated(qd)) nte = size(qd, dim=3)
+      do it = 1, nte
 !$OMP parallel do default (none) &
 !$OMP             shared  (it, nj, ni, Atm_block, GFS_data, qd)  &
 !$OMP             private (j, jb, i, ib, nb, ix)
@@ -1168,7 +1173,9 @@ subroutine update_atmos_chemistry(state, rc)
       enddo
 
       !--- (d) anthropogenic and biomass burning emissions
-      do it = 1, size(qb, dim=3)
+      nte = 0
+      if (associated(qb)) nte = size(qb, dim=3)
+      do it = 1, nte
 !$OMP parallel do default (none) &
 !$OMP             shared  (it, nj, ni, Atm_block, GFS_data, qb)  &
 !$OMP             private (j, jb, i, ib, nb, ix)
