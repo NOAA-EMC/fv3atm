@@ -160,6 +160,7 @@ SCHEME_FILES = [
     'ccpp/physics/physics/ozphys_2015.f',
     'ccpp/physics/physics/precpd.f',
     'ccpp/physics/physics/phys_tend.F90',
+    'ccpp/physics/physics/tracer_sanitizer.F90',
     'ccpp/physics/physics/radlw_main.F90',
     'ccpp/physics/physics/radsw_main.F90',
     'ccpp/physics/physics/rascnv.F90',
