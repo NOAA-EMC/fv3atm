@@ -250,6 +250,8 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: fice   (:)   => null()  !< ice fraction over open water grid
 !   real (kind=kind_phys), pointer :: hprim  (:)   => null()  !< topographic standard deviation in m
     real (kind=kind_phys), pointer :: hprime (:,:) => null()  !< orographic metrics
+    real (kind=kind_phys), pointer :: z0base (:)   => null()  !< background or baseline surface roughness length in m
+    real (kind=kind_phys), pointer :: semisbase(:) => null()  !< background surface emissivity
 
 !--- In (radiation only)
     real (kind=kind_phys), pointer :: sncovr (:)   => null()  !< snow cover in fraction
@@ -337,7 +339,8 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: smoiseq   (:,:) => null()  !<
     real (kind=kind_phys), pointer :: zsnsoxy   (:,:) => null()  !<
 
-
+! -- In/Out for HWRF NOAH LSM
+    real (kind=kind_phys), pointer :: snotime (:) => null()
 
 !--- NSSTM variables  (only allocated when [Model%nstf_name(1) > 0])
     real (kind=kind_phys), pointer :: tref   (:)   => null()  !< nst_fld%Tref - Reference Temperature
@@ -775,6 +778,7 @@ module GFS_typedefs
     integer              :: lsm_noah=1      !< flag for NOAH land surface model
     integer              :: lsm_noahmp=2    !< flag for NOAH land surface model
     integer              :: lsm_ruc=3       !< flag for RUC land surface model
+    integer              :: lsm_noah_wrfv4 = 4 !< flag for NOAH land surface from WRF v4.0
     integer              :: lsoil           !< number of soil layers
     integer              :: kice=2          !< number of layers in sice
 #ifdef CCPP
@@ -1690,6 +1694,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: alb1d(:)           => null()  !<
     real (kind=kind_phys), pointer      :: alpha(:,:)         => null()  !<
     real (kind=kind_phys), pointer      :: bexp1d(:)          => null()  !<
+    real (kind=kind_phys), pointer      :: canopy_save(:)     => null()  !<
     real (kind=kind_phys), pointer      :: cd(:)              => null()  !<
     real (kind=kind_phys), pointer      :: cd_ice(:)          => null()  !<
     real (kind=kind_phys), pointer      :: cd_land(:)         => null()  !<
@@ -1702,6 +1707,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: chh_ice(:)         => null()  !<
     real (kind=kind_phys), pointer      :: chh_land(:)        => null()  !<
     real (kind=kind_phys), pointer      :: chh_ocean(:)       => null()  !<
+    real (kind=kind_phys), pointer      :: chk_land(:)        => null()  !<
     real (kind=kind_phys), pointer      :: clcn(:,:)          => null()  !<
     real (kind=kind_phys), pointer      :: cldf(:)            => null()  !<
     real (kind=kind_phys), pointer      :: cldsa(:,:)         => null()  !<
@@ -1712,6 +1718,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: clw(:,:,:)         => null()  !<
     real (kind=kind_phys), pointer      :: clw_surf(:)        => null()  !<
     real (kind=kind_phys), pointer      :: clx(:,:)           => null()  !<
+    real (kind=kind_phys), pointer      :: cmc(:)             => null()  !<
     real (kind=kind_phys), pointer      :: cmm_ice(:)         => null()  !<
     real (kind=kind_phys), pointer      :: cmm_land(:)        => null()  !<
     real (kind=kind_phys), pointer      :: cmm_ocean(:)       => null()  !<
@@ -1734,8 +1741,10 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: dkt(:,:)           => null()  !<
     real (kind=kind_phys), pointer      :: dlength(:)         => null()  !<
     real (kind=kind_phys), pointer      :: dqdt(:,:,:)        => null()  !<
+    real (kind=kind_phys), pointer      :: dqsdt2(:)          => null()  !<
     real (kind=kind_phys), pointer      :: dqsfc1(:)          => null()  !<
     real (kind=kind_phys), pointer      :: drain(:)           => null()  !<
+    real (kind=kind_phys), pointer      :: drain_in_m_sm1(:)  => null()  !<
     real (kind=kind_phys), pointer      :: dtdt(:,:)          => null()  !<
     real (kind=kind_phys), pointer      :: dtdtc(:,:)         => null()  !<
     real (kind=kind_phys), pointer      :: dtsfc1(:)          => null()  !<
@@ -1772,6 +1781,8 @@ module GFS_typedefs
     logical,               pointer      :: flag_cice(:)       => null()  !<
     logical,               pointer      :: flag_guess(:)      => null()  !<
     logical,               pointer      :: flag_iter(:)       => null()  !<
+    logical,               pointer      :: flag_lsm(:)        => null()  !<
+    logical,               pointer      :: flag_lsm_glacier(:)=> null()  !<
     real (kind=kind_phys), pointer      :: ffmm_ice(:)        => null()  !<
     real (kind=kind_phys), pointer      :: ffmm_land(:)       => null()  !<
     real (kind=kind_phys), pointer      :: ffmm_ocean(:)      => null()  !<
@@ -1882,6 +1893,8 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: qss_ice(:)         => null()  !<
     real (kind=kind_phys), pointer      :: qss_land(:)        => null()  !<
     real (kind=kind_phys), pointer      :: qss_ocean(:)       => null()  !<
+    real (kind=kind_phys), pointer      :: qs1(:)             => null()  !<
+    real (kind=kind_phys), pointer      :: qv1(:)             => null()  !<
     logical                             :: radar_reset                   !<
     real (kind=kind_phys)               :: raddt                         !<
     real (kind=kind_phys), pointer      :: rainmp(:)          => null()  !<
@@ -1895,7 +1908,9 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: rb_ocean(:)        => null()  !<
     logical                             :: reset                         !<
     real (kind=kind_phys), pointer      :: rhc(:,:)           => null()  !<
+    real (kind=kind_phys), pointer      :: rho1(:)            => null()  !<
     real (kind=kind_phys), pointer      :: runoff(:)          => null()  !<
+    real (kind=kind_phys), pointer      :: runoff_in_m_sm1(:) => null()  !<
     real (kind=kind_phys), pointer      :: save_q(:,:,:)      => null()  !<
     real (kind=kind_phys), pointer      :: save_t(:,:)        => null()  !<
     real (kind=kind_phys), pointer      :: save_tcp(:,:)      => null()  !<
@@ -1912,15 +1927,26 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: sigmafrac(:,:)     => null()  !<
     real (kind=kind_phys), pointer      :: sigmatot(:,:)      => null()  !<
     logical                             :: skip_macro                    !<
+    real (kind=kind_phys), pointer      :: slc_save(:,:)      => null()  !<
     integer, pointer                    :: slopetype(:)       => null()  !<
+    real (kind=kind_phys), pointer      :: smcmax(:)          => null()  !<
+    real (kind=kind_phys), pointer      :: smc_save(:,:)      => null()  !<
     real (kind=kind_phys), pointer      :: snowc(:)           => null()  !<
     real (kind=kind_phys), pointer      :: snowd_ice(:)       => null()  !<
     real (kind=kind_phys), pointer      :: snowd_land(:)      => null()  !<
+    real (kind=kind_phys), pointer      :: snowd_land_save(:) => null()  !<
     real (kind=kind_phys), pointer      :: snowd_ocean(:)     => null()  !<
+    real (kind=kind_phys), pointer      :: snow_depth(:)      => null()  !<
     real (kind=kind_phys), pointer      :: snohf(:)           => null()  !<
+    real (kind=kind_phys), pointer      :: snohf_snow(:)      => null()  !<
+    real (kind=kind_phys), pointer      :: snohf_frzgra(:)    => null()  !<
+    real (kind=kind_phys), pointer      :: snohf_snowmelt(:)  => null()  !<
     real (kind=kind_phys), pointer      :: snowmp(:)          => null()  !<
     real (kind=kind_phys), pointer      :: snowmt(:)          => null()  !<
+    real (kind=kind_phys), pointer      :: soilm_in_m(:)      => null()  !<
     integer, pointer                    :: soiltype(:)        => null()  !<
+    real (kind=kind_phys), pointer      :: stc_save(:,:)      => null()  !<
+    real (kind=kind_phys), pointer      :: sthick (:)         => null()  !<
     real (kind=kind_phys), pointer      :: stress(:)          => null()  !<
     real (kind=kind_phys), pointer      :: stress_ice(:)      => null()  !<
     real (kind=kind_phys), pointer      :: stress_land(:)     => null()  !<
@@ -1928,11 +1954,13 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: t2mmp(:)           => null()  !<
     real (kind=kind_phys), pointer      :: theta(:)           => null()  !<
     real (kind=kind_phys), pointer      :: tice(:)            => null()  !<
+    real (kind=kind_phys), pointer      :: th1(:)             => null()  !<
     real (kind=kind_phys), pointer      :: tlvl(:,:)          => null()  !<
     real (kind=kind_phys), pointer      :: tlyr(:,:)          => null()  !<
     real (kind=kind_phys), pointer      :: tprcp_ice(:)       => null()  !<
     real (kind=kind_phys), pointer      :: tprcp_land(:)      => null()  !<
     real (kind=kind_phys), pointer      :: tprcp_ocean(:)     => null()  !<
+    real (kind=kind_phys), pointer      :: tprcp_rate_land(:) => null()  !<
     integer                             :: tracers_start_index           !<
     integer                             :: tracers_total                 !<
     integer                             :: tracers_water                 !<
@@ -1942,6 +1970,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: tsfa(:)            => null()  !<
     real (kind=kind_phys), pointer      :: tsfc_ice(:)        => null()  !<
     real (kind=kind_phys), pointer      :: tsfc_land(:)       => null()  !<
+    real (kind=kind_phys), pointer      :: tsfc_land_save(:)  => null()  !<
     real (kind=kind_phys), pointer      :: tsfc_ocean(:)      => null()  !<
     real (kind=kind_phys), pointer      :: tsfg(:)            => null()  !<
     real (kind=kind_phys), pointer      :: tsnow(:)           => null()  !<
@@ -1962,6 +1991,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: wcbmax(:)          => null()  !<
     real (kind=kind_phys), pointer      :: weasd_ocean(:)     => null()  !<
     real (kind=kind_phys), pointer      :: weasd_land(:)      => null()  !<
+    real (kind=kind_phys), pointer      :: weasd_land_save(:) => null()  !<
     real (kind=kind_phys), pointer      :: weasd_ice(:)       => null()  !<
     real (kind=kind_phys), pointer      :: wind(:)            => null()  !<
     real (kind=kind_phys), pointer      :: work1(:)           => null()  !<
@@ -2506,6 +2536,22 @@ module GFS_typedefs
    endif
 
 #ifdef CCPP
+    ! HWRF NOAH LSM allocate and init when used
+    !
+    if (Model%lsm == Model%lsm_noah_wrfv4 ) then
+      allocate(Sfcprop%snotime(IM))
+      Sfcprop%snotime = clear_val
+    end if
+    
+    if (Model%do_myjsfc.or.Model%do_myjpbl.or.(Model%lsm == Model%lsm_noah_wrfv4)) then
+      allocate(Sfcprop%z0base(IM))
+      Sfcprop%z0base = clear_val
+    end if
+    if (Model%lsm == Model%lsm_noah_wrfv4) then
+      allocate(Sfcprop%semisbase(IM))
+      Sfcprop%semisbase = clear_val
+    end if
+ 
     if (Model%lsm == Model%lsm_ruc) then
        ! For land surface models with different numbers of levels than the four NOAH levels
        allocate (Sfcprop%wetness     (IM))
@@ -3800,8 +3846,8 @@ module GFS_typedefs
     Model%lsoil            = lsoil
 #ifdef CCPP
     ! Consistency check for RUC LSM
-    if (Model%lsm == Model%lsm_ruc .and. Model%nscyc>0) then
-      write(0,*) 'Logic error: RUC LSM cannot be used with surface data cycling at this point (fhcyc>0)'
+    if ((Model%lsm == Model%lsm_ruc .or. Model%lsm == Model%lsm_noah_wrfv4) .and. Model%nscyc>0) then
+      write(0,*) 'Logic error: RUC LSM and NOAH WRFv4 LSM cannot be used with surface data cycling at this point (fhcyc>0)'
       stop
     end if
     ! Flag to read leaf area index from input files (initial conditions)
@@ -4347,6 +4393,8 @@ module GFS_typedefs
 #ifdef CCPP
       elseif (Model%lsm == Model%lsm_ruc) then
         print *,' RUC Land Surface Model used'
+      elseif (Model%lsm == Model%lsm_noah_wrfv4) then
+        print *,' NOAH WRFv4 Land Surface Model used'
 #else
       elseif (Model%lsm == Model%lsm_ruc) then
         print *,' RUC Land Surface Model only available through CCPP - job aborted'
@@ -6546,6 +6594,34 @@ module GFS_typedefs
        allocate (Interstitial%t2mmp (IM))
        allocate (Interstitial%q2mp  (IM))
     end if
+    if (Model%lsm == Model%lsm_noah_wrfv4) then
+       allocate (Interstitial%canopy_save     (IM))
+       allocate (Interstitial%chk_land        (IM))
+       allocate (Interstitial%cmc             (IM))
+       allocate (Interstitial%dqsdt2          (IM))
+       allocate (Interstitial%drain_in_m_sm1  (IM))
+       allocate (Interstitial%flag_lsm        (IM))
+       allocate (Interstitial%flag_lsm_glacier(IM))
+       allocate (Interstitial%qs1             (IM))
+       allocate (Interstitial%qv1             (IM))
+       allocate (Interstitial%rho1            (IM))
+       allocate (Interstitial%runoff_in_m_sm1 (IM))
+       allocate (Interstitial%slc_save        (IM,Model%lsoil))
+       allocate (Interstitial%smcmax          (IM))
+       allocate (Interstitial%smc_save        (IM,Model%lsoil))
+       allocate (Interstitial%snowd_land_save (IM))
+       allocate (Interstitial%snow_depth      (IM))
+       allocate (Interstitial%snohf_snow      (IM))
+       allocate (Interstitial%snohf_frzgra    (IM))
+       allocate (Interstitial%snohf_snowmelt  (IM))
+       allocate (Interstitial%soilm_in_m      (IM))
+       allocate (Interstitial%stc_save        (IM,Model%lsoil))
+       allocate (Interstitial%sthick          (Model%lsoil))
+       allocate (Interstitial%th1             (IM))
+       allocate (Interstitial%tprcp_rate_land (IM))
+       allocate (Interstitial%tsfc_land_save  (IM))
+       allocate (Interstitial%weasd_land_save (IM))
+    end if
     !
     ! Set components that do not change
     Interstitial%frain            = Model%dtf/Model%dtp
@@ -7118,6 +7194,34 @@ module GFS_typedefs
        Interstitial%t2mmp     = clear_val
        Interstitial%q2mp      = clear_val
     end if
+    if (Model%lsm == Model%lsm_noah_wrfv4) then
+       Interstitial%canopy_save     = clear_val
+       Interstitial%chk_land        = huge
+       Interstitial%cmc             = clear_val
+       Interstitial%dqsdt2          = clear_val
+       Interstitial%drain_in_m_sm1  = clear_val
+       Interstitial%flag_lsm        = .false.
+       Interstitial%flag_lsm_glacier= .false.
+       Interstitial%qs1             = huge
+       Interstitial%qv1             = huge
+       Interstitial%rho1            = clear_val
+       Interstitial%runoff_in_m_sm1 = clear_val
+       Interstitial%slc_save        = clear_val
+       Interstitial%smcmax          = clear_val
+       Interstitial%smc_save        = clear_val
+       Interstitial%snowd_land_save = huge
+       Interstitial%snow_depth      = clear_val
+       Interstitial%snohf_snow      = clear_val
+       Interstitial%snohf_frzgra    = clear_val
+       Interstitial%snohf_snowmelt  = clear_val
+       Interstitial%soilm_in_m      = clear_val
+       Interstitial%stc_save        = clear_val
+       Interstitial%sthick          = clear_val
+       Interstitial%th1             = clear_val
+       Interstitial%tprcp_rate_land = huge
+       Interstitial%tsfc_land_save  = huge
+       Interstitial%weasd_land_save = huge
+    end if
     !
     ! Set flag for resetting maximum hourly output fields
     Interstitial%reset = mod(Model%kdt-1, nint(Model%avg_max_length/Model%dtp)) == 0
@@ -7479,6 +7583,31 @@ module GFS_typedefs
     if (Model%lsm == Model%lsm_noahmp) then
        write (0,*) 'sum(Interstitial%t2mmp        ) = ', sum(Interstitial%t2mmp           )
        write (0,*) 'sum(Interstitial%q2mp         ) = ', sum(Interstitial%q2mp            )
+    end if
+    if (Model%lsm == Model%lsm_noah_wrfv4) then
+       write (0,*) 'sum(Interstitial%canopy_save     ) = ', sum(Interstitial%canopy_save     )
+       write (0,*) 'sum(Interstitial%chk_land        ) = ', sum(Interstitial%chk_land        )
+       write (0,*) 'sum(Interstitial%cmc             ) = ', sum(Interstitial%cmc             )
+       write (0,*) 'sum(Interstitial%dqsdt2          ) = ', sum(Interstitial%dqsdt2          )
+       write (0,*) 'sum(Interstitial%drain_in_m_sm1  ) = ', sum(Interstitial%drain_in_m_sm1  )
+       write (0,*) 'Interstitial%flag_lsm(1)           = ', Interstitial%flag_lsm(1)
+       write (0,*) 'Interstitial%flag_lsm_glacier(1)   = ', Interstitial%flag_lsm_glacier(1)
+       write (0,*) 'sum(Interstitial%qs1             ) = ', sum(Interstitial%qs1             )
+       write (0,*) 'sum(Interstitial%qv1             ) = ', sum(Interstitial%qv1             )
+       write (0,*) 'sum(Interstitial%rho1            ) = ', sum(Interstitial%rho1            )
+       write (0,*) 'sum(Interstitial%runoff_in_m_sm1 ) = ', sum(Interstitial%runoff_in_m_sm1 )
+       write (0,*) 'sum(Interstitial%smcmax          ) = ', sum(Interstitial%smcmax          )
+       write (0,*) 'sum(Interstitial%snowd_land_save ) = ', sum(Interstitial%snowd_land_save )
+       write (0,*) 'sum(Interstitial%snow_depth      ) = ', sum(Interstitial%snow_depth      )
+       write (0,*) 'sum(Interstitial%snohf_snow      ) = ', sum(Interstitial%snohf_snow      )
+       write (0,*) 'sum(Interstitial%snohf_frzgra    ) = ', sum(Interstitial%snohf_frzgra    )
+       write (0,*) 'sum(Interstitial%snohf_snowmelt  ) = ', sum(Interstitial%snohf_snowmelt  )
+       write (0,*) 'sum(Interstitial%soilm_in_m      ) = ', sum(Interstitial%soilm_in_m      )
+       write (0,*) 'sum(Interstitial%sthick          ) = ', sum(Interstitial%sthick          )
+       write (0,*) 'sum(Interstitial%th1             ) = ', sum(Interstitial%th1             )
+       write (0,*) 'sum(Interstitial%tprcp_rate_land ) = ', sum(Interstitial%tprcp_rate_land )
+       write (0,*) 'sum(Interstitial%tsfc_land_save  ) = ', sum(Interstitial%tsfc_land_save  )
+       write (0,*) 'sum(Interstitial%weasd_land_save ) = ', sum(Interstitial%weasd_land_save )
     end if
     ! RRTMGP
     if (Model%do_RRTMGP) then

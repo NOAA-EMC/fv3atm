@@ -1161,6 +1161,8 @@ module module_physics_driver
           else                ! all land
             fice(i) = zero
             zice(i) = zero
+            islmsk(i) = 1
+            islmsk_cice(i) = 1
           endif
         enddo
       else
