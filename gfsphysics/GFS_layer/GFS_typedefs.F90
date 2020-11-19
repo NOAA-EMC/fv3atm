@@ -3946,9 +3946,9 @@ module GFS_typedefs
     Model%lsm              = lsm
     Model%lsoil            = lsoil
 #ifdef CCPP
-    ! Consistency check for RUC LSM
-    if ((Model%lsm == Model%lsm_ruc .or. Model%lsm == Model%lsm_noah_wrfv4) .and. Model%nscyc>0) then
-      write(0,*) 'Logic error: RUC LSM and NOAH WRFv4 LSM cannot be used with surface data cycling at this point (fhcyc>0)'
+    ! Consistency check for HWRF Noah LSM
+    if (Model%lsm == Model%lsm_noah_wrfv4 .and. Model%nscyc>0) then
+      write(0,*) 'Logic error: NOAH WRFv4 LSM cannot be used with surface data cycling at this point (fhcyc>0)'
       stop
     end if
     ! Flag to read leaf area index from input files (initial conditions)
