@@ -338,7 +338,7 @@ module GFS_driver
     call rad_initialize (si,  Model%levr,         Model%ictm,    Model%isol,      &
            Model%ico2,        Model%iaer,         Model%ialb,    Model%iems,      &
            Model%ntcw,        Model%num_p2d,      Model%num_p3d, Model%npdf3d,    &
-           Model%ntoz,        Model%iovr_sw,      Model%iovr_lw, Model%isubc_sw,  &
+           Model%ntoz,        Model%iovr,                        Model%isubc_sw,  &
            Model%isubc_lw,    Model%icliq_sw,     Model%crick_proof, Model%ccnorm,&
            Model%imp_physics, Model%norad_precip, Model%idate,   Model%iflip,  Model%me)
 !*## CCPP ##

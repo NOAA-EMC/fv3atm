@@ -3,7 +3,8 @@
 !...................................
 !  ---  inputs:
      &     ( si,levr,ictm,isol,ico2,iaer,ialb,iems,ntcw, num_p2d,       &
-     &       num_p3d,npdf3d,ntoz,iovr_sw,iovr_lw,isubc_sw,isubc_lw,     &
+     &       num_p3d,npdf3d,ntoz,iovr            isubc_sw,isubc_lw,     &
+!    &       num_p3d,npdf3d,ntoz,iovr_sw,iovr_lw,isubc_sw,isubc_lw,     &
      &       icliq_sw,crick_proof,ccnorm,                               &
      &       imp_physics,norad_precip,idate,iflip,me )
 !  ---  outputs: ( none )
@@ -88,7 +89,7 @@
 !                        Stamnes(1993) \cite hu_and_stamnes_1993 method !
 !                     =2:cloud optical property scheme based on Hu and  !
 !                        Stamnes(1993) -updated                         !
-!   iovr_sw/iovr_lw  : control flag for cloud overlap (sw/lw rad)       !
+!   iovr             : control flag for cloud overlap (sw/lw rad)       !
 !                     =0: random overlapping clouds                     !
 !                     =1: max/ran overlapping clouds                    !
 !                     =2: maximum overlap clouds       (mcica only)     !
@@ -114,7 +115,7 @@
       use physparam, only : isolar , ictmflg, ico2flg, ioznflg, iaerflg,&
 !    &             iaermdl, laswflg, lalwflg, lavoflg, icldflg,         &
      &             iaermdl,                            icldflg,         &
-     &             iovrsw , iovrlw , lcrick , lcnorm , lnoprec,         &
+     &             iovr   ,          lcrick , lcnorm , lnoprec,         &
      &             ialbflg, iemsflg, isubcsw, isubclw, ivflip , ipsd0,  &
      &             iswcliq,                                             &
      &             kind_phys
@@ -125,7 +126,7 @@
 
 !  ---  input:
       integer,  intent(in) :: levr, ictm, isol, ico2, iaer, num_p2d,    &
-     &       ntcw, ialb, iems, num_p3d, npdf3d, ntoz, iovr_sw, iovr_lw, &
+     &       ntcw, ialb, iems, num_p3d, npdf3d, ntoz, iovr   ,          &
      &       isubc_sw, isubc_lw, icliq_sw, iflip, me, idate(4)
 
       real (kind=kind_phys), intent(in) :: si(levr+1)
@@ -166,8 +167,8 @@
 
       iswcliq = icliq_sw                ! optical property for liquid clouds for sw
 
-      iovrsw = iovr_sw                  ! cloud overlapping control flag for sw
-      iovrlw = iovr_lw                  ! cloud overlapping control flag for lw
+      iovrsw = iovr                     ! cloud overlapping control flag for sw
+      iovrlw = iovr                     ! cloud overlapping control flag for lw
 
       lcrick  = crick_proof             ! control flag for eliminating CRICK 
       lcnorm  = ccnorm                  ! control flag for in-cld condensate 
@@ -191,8 +192,9 @@
         print *,' si =',si
         print *,' levr=',levr,' ictm=',ictm,' isol=',isol,' ico2=',ico2,&
      &          ' iaer=',iaer,' ialb=',ialb,' iems=',iems,' ntcw=',ntcw
-        print *,' np3d=',num_p3d,' ntoz=',ntoz,' iovr_sw=',iovr_sw,     &
-     &          ' iovr_lw=',iovr_lw,' isubc_sw=',isubc_sw,              &
+        print *,' np3d=',num_p3d,' ntoz=',ntoz,' iovr=',iovr,           &
+     &          ' iovrsw=',iovrsw,' iovrlw=',iovrlw,                    &
+                ' isubc_sw=', isubc_sw,                                 &
      &          ' isubc_lw=',isubc_lw,' icliq_sw=',icliq_sw,            &
      &          ' iflip=',iflip,'  me=',me
         print *,' crick_proof=',crick_proof,                            &

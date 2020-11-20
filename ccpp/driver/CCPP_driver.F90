@@ -50,7 +50,7 @@ module CCPP_driver
     implicit none
 
     character(len=*),         intent(in)  :: step
-    integer,          target, intent(in)  :: nblks
+    integer,                  intent(in)  :: nblks
     integer,                  intent(out) :: ierr
     ! Local variables
     integer :: nb, nt, ntX
