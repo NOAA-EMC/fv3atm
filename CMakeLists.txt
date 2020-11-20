@@ -136,7 +136,7 @@ if(CCPP)
   add_dependencies(ccppphys ccpp)
   target_include_directories(fv3dycore PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/ccpp/framework/src
                                                ${CMAKE_CURRENT_BINARY_DIR}/ccpp/driver)
-  target_link_libraries(ccppphys PRIVATE sp::sp_d
+  target_link_libraries(ccppphys PUBLIC sp::sp_d
                                          w3nco::w3nco_d)
 endif()
 
