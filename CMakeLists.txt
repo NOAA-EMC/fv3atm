@@ -189,7 +189,7 @@ target_link_libraries(fv3atm PUBLIC nemsio::nemsio
                                     esmf)
 
 if(INLINE_POST)
-  target_link_libraries(fv3atm PUBLIC nceppost::nceppost)
+  target_link_libraries(fv3atm PUBLIC upp::upp)
 endif()
 
 if(OpenMP_Fortran_FOUND)
