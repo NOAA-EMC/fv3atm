@@ -43,14 +43,14 @@ module CCPP_driver
 !-------------------------------
   subroutine CCPP_step (step, nblks, ierr)
 
-#ifdef OPENMP
+#ifdef _OPENMP
     use omp_lib
 #endif
 
     implicit none
 
     character(len=*),         intent(in)  :: step
-    integer,          target, intent(in)  :: nblks
+    integer,                  intent(in)  :: nblks
     integer,                  intent(out) :: ierr
     ! Local variables
     integer :: nb, nt, ntX
@@ -62,7 +62,7 @@ module CCPP_driver
 
       ! Get and set number of OpenMP threads (module
       ! variable) that are available to run physics
-#ifdef OPENMP
+#ifdef _OPENMP
       nthrds = omp_get_max_threads()
 #else
       nthrds = 1
@@ -134,7 +134,7 @@ module CCPP_driver
 !$OMP          default (shared)          &
 !$OMP          private (nb,nt,ntX,ierr2) &
 !$OMP          reduction (+:ierr)
-#ifdef OPENMP
+#ifdef _OPENMP
       nt = omp_get_thread_num()+1
 #else
       nt = 1

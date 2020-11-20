@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<suite name="FV3_GFS_v16beta_flake" lib="ccppphys" ver="3">
+<suite name="FV3_GFS_v16beta_flake" version="1">
   <!-- <init></init> -->
   <group name="fast_physics">
     <subcycle loop="1">
