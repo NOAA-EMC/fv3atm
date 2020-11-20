@@ -302,28 +302,28 @@ module stochastic_physics_wrapper_mod
   type(GFS_control_type),   intent(inout) :: GFS_Control
 
   if (GFS_Control%do_sppt .OR. GFS_Control%do_shum .OR. GFS_Control%do_skeb .OR. (GFS_Control%lndp_type .GT. 0) ) then
-      deallocate(xlat)
-      deallocate(xlon)
+      if (allocated(xlat)) deallocate(xlat)
+      if (allocated(xlon)) deallocate(xlon)
       ! Copy blocked data into contiguous arrays; no need to copy weights in (intent(out))
       if (GFS_Control%do_sppt) then
-         deallocate(sppt_wts)
+         if (allocated(sppt_wts)) deallocate(sppt_wts)
       end if
       if (GFS_Control%do_shum) then
-         deallocate(shum_wts)
+         if (allocated(shum_wts)) deallocate(shum_wts)
       end if
       if (GFS_Control%do_skeb) then
-         deallocate(skebu_wts)
-         deallocate(skebv_wts)
+         if (allocated(skebu_wts)) deallocate(skebu_wts)
+         if (allocated(skebv_wts)) deallocate(skebv_wts)
       end if
       if ( GFS_Control%lndp_type .EQ. 2 ) then ! this scheme updates through forecast
-         deallocate(sfc_wts)
+         if (allocated(sfc_wts)) deallocate(sfc_wts)
       end if
       if (GFS_Control%lndp_type .EQ. 2) then ! save wts, and apply lndp scheme
-          deallocate(smc)
-          deallocate(slc)
-          deallocate(stc)
-          deallocate(stype)
-          deallocate(vfrac)
+          if (allocated(smc)) deallocate(smc)
+          if (allocated(slc)) deallocate(slc)
+          if (allocated(stc)) deallocate(stc)
+          if (allocated(stype)) deallocate(stype)
+          if (allocated(vfrac)) deallocate(vfrac)
       endif
       call finalize_stochastic_physics()
    endif
