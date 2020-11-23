@@ -12,7 +12,7 @@ if(CCPP)
   execute_process(COMMAND ${Python_EXECUTABLE}
                           "ccpp/framework/scripts/ccpp_prebuild.py"
                           "--config=ccpp/config/ccpp_prebuild_config.py"
-                          "--builddir=${CMAKE_CURRENT_BINARY_DIR}" ${_ccpp_suites_arg}
+                          "--builddir=${CMAKE_CURRENT_BINARY_DIR}" ${_ccpp_suites_arg} ${_ccpp_debug_arg}
                   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
                   OUTPUT_FILE ${CMAKE_CURRENT_BINARY_DIR}/ccpp_prebuild.out
                   ERROR_FILE  ${CMAKE_CURRENT_BINARY_DIR}/ccpp_prebuild.err
