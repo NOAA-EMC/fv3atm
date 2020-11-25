@@ -1,5 +1,4 @@
 #define MPI
-#define OPENMP
 !> \file GFS_debug.F90
 
     module GFS_diagtoscreen
@@ -49,7 +48,7 @@
 #ifdef MPI
          use mpi
 #endif
-#ifdef OPENMP
+#ifdef _OPENMP
          use omp_lib
 #endif
          use machine,               only: kind_phys
@@ -89,7 +88,7 @@
          mpisize = 1
          mpicomm = 0
 #endif
-#ifdef OPENMP
+#ifdef _OPENMP
          omprank = OMP_GET_THREAD_NUM()
          ompsize = OMP_GET_NUM_THREADS()
 #else
@@ -97,7 +96,7 @@
          ompsize = 1
 #endif
 
-#ifdef OPENMP
+#ifdef _OPENMP
 !$OMP BARRIER
 #endif
 #ifdef MPI
@@ -396,9 +395,9 @@
                         call print_var(mpirank,omprank, blkno, 'Coupling%rain_cpl', Coupling%rain_cpl)
                         call print_var(mpirank,omprank, blkno, 'Coupling%snow_cpl', Coupling%snow_cpl)
                      end if
-                     if (Model%cplwav2atm) then
-                        call print_var(mpirank,omprank, blkno, 'Coupling%zorlwav_cpl' , Coupling%zorlwav_cpl  )
-                     end if
+!                    if (Model%cplwav2atm) then
+!                       call print_var(mpirank,omprank, blkno, 'Coupling%zorlwav_cpl' , Coupling%zorlwav_cpl  )
+!                    end if
                      if (Model%cplflx) then
                         call print_var(mpirank,omprank, blkno, 'Coupling%oro_cpl'     , Coupling%oro_cpl      )
                         call print_var(mpirank,omprank, blkno, 'Coupling%slmsk_cpl'   , Coupling%slmsk_cpl    )
@@ -408,10 +407,10 @@
                         call print_var(mpirank,omprank, blkno, 'Coupling%dtsfcin_cpl ', Coupling%dtsfcin_cpl  )
                         call print_var(mpirank,omprank, blkno, 'Coupling%dqsfcin_cpl ', Coupling%dqsfcin_cpl  )
                         call print_var(mpirank,omprank, blkno, 'Coupling%ulwsfcin_cpl', Coupling%ulwsfcin_cpl )
-                        call print_var(mpirank,omprank, blkno, 'Coupling%tseain_cpl  ', Coupling%tseain_cpl   )
-                        call print_var(mpirank,omprank, blkno, 'Coupling%tisfcin_cpl ', Coupling%tisfcin_cpl  )
-                        call print_var(mpirank,omprank, blkno, 'Coupling%ficein_cpl  ', Coupling%ficein_cpl   )
-                        call print_var(mpirank,omprank, blkno, 'Coupling%hicein_cpl  ', Coupling%hicein_cpl   )
+!                       call print_var(mpirank,omprank, blkno, 'Coupling%tseain_cpl  ', Coupling%tseain_cpl   )
+!                       call print_var(mpirank,omprank, blkno, 'Coupling%tisfcin_cpl ', Coupling%tisfcin_cpl  )
+!                       call print_var(mpirank,omprank, blkno, 'Coupling%ficein_cpl  ', Coupling%ficein_cpl   )
+!                       call print_var(mpirank,omprank, blkno, 'Coupling%hicein_cpl  ', Coupling%hicein_cpl   )
                         call print_var(mpirank,omprank, blkno, 'Coupling%hsnoin_cpl  ', Coupling%hsnoin_cpl   )
                         call print_var(mpirank,omprank, blkno, 'Coupling%dusfc_cpl   ', Coupling%dusfc_cpl    )
                         call print_var(mpirank,omprank, blkno, 'Coupling%dvsfc_cpl   ', Coupling%dvsfc_cpl    )
@@ -468,7 +467,7 @@
                         call print_var(mpirank,omprank, blkno, 'Coupling%skebu_wts', Coupling%skebu_wts )
                         call print_var(mpirank,omprank, blkno, 'Coupling%skebv_wts', Coupling%skebv_wts )
                      end if
-                     if (Model%do_sfcperts) then
+                     if (Model%lndp_type .NE. 0) then
                         call print_var(mpirank,omprank, blkno, 'Coupling%sfc_wts'  , Coupling%sfc_wts   )
                      end if
                      if (Model%do_ca) then
@@ -504,7 +503,7 @@
                      ! Model/Control
                      ! not yet
                  end if
-#ifdef OPENMP
+#ifdef _OPENMP
 !$OMP BARRIER
 #endif
              end do
@@ -513,7 +512,7 @@
 #endif
          end do
 
-#ifdef OPENMP
+#ifdef _OPENMP
 !$OMP BARRIER
 #endif
 #ifdef MPI
@@ -737,7 +736,7 @@
 #ifdef MPI
          use mpi
 #endif
-#ifdef OPENMP
+#ifdef _OPENMP
          use omp_lib
 #endif
          implicit none
@@ -749,7 +748,7 @@
 #else
          mpirank = 0
 #endif
-#ifdef OPENMP
+#ifdef _OPENMP
          ompthread = OMP_GET_THREAD_NUM()
 #else
          ompthread = 0

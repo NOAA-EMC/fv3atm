@@ -35,7 +35,7 @@
                                       n_group, num_files, app_domain,           &
                                       filename_base, output_grid, output_file,  &
                                       imo,jmo,ichunk2d,jchunk2d,write_nemsioflip,&
-                                      ichunk3d,jchunk3d,kchunk3d,               &
+                                      ichunk3d,jchunk3d,kchunk3d,nbits,         &
                                       nsout => nsout_io,                        &
                                       cen_lon, cen_lat,                         &
                                       lon1, lat1, lon2, lat2, dlon, dlat,       &
@@ -160,6 +160,7 @@
       type(ESMF_Array)                        :: array_work, array
       type(ESMF_FieldBundle)                  :: fieldbdl_work
       type(ESMF_Field)                        :: field_work, field
+      type(ESMF_Decomp_Flag)                  :: decompflagPTile(2,6)
 
       character(len=80)                       :: attrValueSList(2)
       type(ESMF_StateItem_Flag), allocatable  :: fcstItemTypeList(:)
@@ -290,6 +291,7 @@
           do tl=1,6
             decomptile(1,tl) = 1
             decomptile(2,tl) = jidx
+            decompflagPTile(:,tl) = (/ESMF_DECOMP_SYMMEDGEMAX,ESMF_DECOMP_SYMMEDGEMAX/)
           enddo
           call ESMF_AttributeGet(imp_state_write, convention="NetCDF", purpose="FV3", &
                                  name="gridfile", value=gridfile, rc=rc)
@@ -298,6 +300,7 @@
           CALL ESMF_LogWrite("wrtComp: gridfile:"//trim(gridfile),ESMF_LOGMSG_INFO,rc=rc)
           wrtgrid = ESMF_GridCreateMosaic(filename="INPUT/"//trim(gridfile),                                 &
                                           regDecompPTile=decomptile,tileFilePath="INPUT/",                   &
+                                          decompflagPTile=decompflagPTile,                                   &
                                           staggerlocList=(/ESMF_STAGGERLOC_CENTER, ESMF_STAGGERLOC_CORNER/), &
                                           name='wrt_grid', rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
@@ -319,6 +322,7 @@
           ! create the nest Grid by reading it from file but use DELayout
           wrtGrid = ESMF_GridCreate(filename="INPUT/"//trim(gridfile),                                       &
                                     fileformat=ESMF_FILEFORMAT_GRIDSPEC, regDecomp=regDecomp,                &
+                                    decompflag=(/ESMF_DECOMP_SYMMEDGEMAX,ESMF_DECOMP_SYMMEDGEMAX/),          &
                                     delayout=delayout, isSphere=.false., indexflag=ESMF_INDEX_DELOCAL,       &
                                     rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
@@ -683,7 +687,7 @@
               if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 !
 ! get output file name
-              call ESMF_AttributeGet(fcstField(i), convention="NetCDF", purpose="FV3", &
+              call ESMF_AttributeGet(fcstField(j), convention="NetCDF", purpose="FV3", &
                                      name="output_file", value=outfile_name, rc=rc)
 
               if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
@@ -1619,7 +1623,7 @@
               write(*,'(A,F10.5,A,I4.2,A,I2.2)')' mask_fields time is ',wend-wbeg
             endif
 
-            if (trim(output_file(nbdl)) == 'netcdf') then
+            if (trim(output_file(nbdl)) == 'netcdf' .and. nbits==0) then
 
               wbeg = MPI_Wtime()
               call write_netcdf(file_bundle,wrt_int_state%wrtFB(nbdl),trim(filename), &
@@ -1631,10 +1635,32 @@
                         ,' at Fcst ',NF_HOURS,':',NF_MINUTES
               endif
 
+            else if (trim(output_file(nbdl)) == 'netcdf_parallel' .and. nbits==0) then
+
+#ifdef NO_PARALLEL_NETCDF
+              rc = ESMF_RC_NOT_IMPL
+              print *,'netcdf_parallel not available on this machine'
+              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+              line=__LINE__, file=__FILE__)) return
+#endif
+              wbeg = MPI_Wtime()
+              call write_netcdf_parallel(file_bundle,wrt_int_state%wrtFB(nbdl), &
+                                         trim(filename), wrt_mpi_comm,wrt_int_state%mype,imo,jmo,&
+                                         ichunk2d,jchunk2d,ichunk3d,jchunk3d,kchunk3d,rc)
+              wend = MPI_Wtime()
+              if (lprnt) then
+                write(*,'(A,F10.5,A,I4.2,A,I2.2)')' parallel netcdf      Write Time is ',wend-wbeg  &
+                        ,' at Fcst ',NF_HOURS,':',NF_MINUTES
+              endif
             else ! unknown output_file
 
-              call ESMF_LogWrite("wrt_run: Unknown output_file",ESMF_LOGMSG_ERROR,rc=RC)
-              call ESMF_Finalize(endflag=ESMF_END_ABORT)
+              if( nbits /= 0) then
+                call ESMF_LogWrite("wrt_run: lossy compression is not supported for regional grids",ESMF_LOGMSG_ERROR,rc=RC)
+                call ESMF_Finalize(endflag=ESMF_END_ABORT)
+              else 
+                call ESMF_LogWrite("wrt_run: Unknown output_file",ESMF_LOGMSG_ERROR,rc=RC)
+                call ESMF_Finalize(endflag=ESMF_END_ABORT)
+              endif
 
             endif
 
