@@ -1,13 +1,18 @@
 if(CCPP)
 
+  if(DEBUG)
+    set(_ccpp_debug_arg "--debug")
+  endif()
   if(DEFINED CCPP_SUITES)
     set(_ccpp_suites_arg "--suites=${CCPP_SUITES}")
+    message("Calling CCPP code generator (ccpp_prebuild.py) for suites ${_ccpp_suites_arg} ...")
+  else()
+    message("Calling CCPP code generator (ccpp_prebuild.py) for all available suites ...")
   endif()
-  message("Calling CCPP code generator (ccpp_prebuild.py) ... ${_ccpp_suites_arg}")
   execute_process(COMMAND ${Python_EXECUTABLE}
                           "ccpp/framework/scripts/ccpp_prebuild.py"
                           "--config=ccpp/config/ccpp_prebuild_config.py"
-                          "--builddir=${CMAKE_CURRENT_BINARY_DIR}" ${_ccpp_suites_arg}
+                          "--builddir=${CMAKE_CURRENT_BINARY_DIR}" ${_ccpp_suites_arg} ${_ccpp_debug_arg}
                   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
                   OUTPUT_FILE ${CMAKE_CURRENT_BINARY_DIR}/ccpp_prebuild.out
                   ERROR_FILE  ${CMAKE_CURRENT_BINARY_DIR}/ccpp_prebuild.err
@@ -189,7 +194,7 @@ target_link_libraries(fv3atm PUBLIC nemsio::nemsio
                                     esmf)
 
 if(INLINE_POST)
-  target_link_libraries(fv3atm PUBLIC nceppost::nceppost)
+  target_link_libraries(fv3atm PUBLIC upp::upp)
 endif()
 
 if(OpenMP_Fortran_FOUND)

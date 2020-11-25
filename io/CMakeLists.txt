@@ -38,7 +38,7 @@ target_link_libraries(io PRIVATE fms
                                  ipd)
 
 if(INLINE_POST)
-  target_link_libraries(io PRIVATE nceppost::nceppost)
+  target_link_libraries(io PRIVATE upp::upp)
 endif()
 
 if(CCPP)
