@@ -6,7 +6,7 @@
     <subcycle loop="1">
       <scheme>fv_sat_adj</scheme>
     </subcycle>
-  </group>/
+  </group>
   <group name="time_vary">
     <subcycle loop="1">
       <scheme>GFS_time_vary_pre</scheme>
@@ -72,7 +72,6 @@
       <scheme>get_phi_fv3</scheme>
       <scheme>GFS_suite_interstitial_3</scheme>
       <scheme>GFS_DCNV_generic_pre</scheme>
-      <scheme>GFS_suite_interstitial_5</scheme>
       <scheme>rascnv</scheme>
       <scheme>GFS_DCNV_generic_post</scheme>
       <scheme>GFS_suite_interstitial_4</scheme>
@@ -86,6 +85,7 @@
   <group name="stochastics">
     <subcycle loop="1">
       <scheme>GFS_stochastics</scheme>
+      <scheme>phys_tend</scheme>
     </subcycle>
   </group>
   <!-- <finalize></finalize> -->
