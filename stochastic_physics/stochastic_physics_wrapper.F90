@@ -94,7 +94,6 @@ module stochastic_physics_wrapper_mod
       end if
       allocate(xlat(1:Atm_block%nblks,maxval(GFS_Control%blksz)))
       allocate(xlon(1:Atm_block%nblks,maxval(GFS_Control%blksz)))
-      ! Copy blocked data into contiguous arrays; no need to copy weights in (intent(out))
       if (GFS_Control%do_sppt) then
          allocate(sppt_wts(1:Atm_block%nblks,maxval(GFS_Control%blksz),1:GFS_Control%levs))
       end if
@@ -122,7 +121,6 @@ module stochastic_physics_wrapper_mod
       end do
 
       if ( GFS_Control%lndp_type .EQ. 1 ) then ! this scheme sets perts once
-         ! Copy blocked data into contiguous arrays; no need to copy sfc_wts in (intent out)
          allocate(sfc_wts(1:Atm_block%nblks,maxval(GFS_Control%blksz),GFS_Control%n_var_lndp))
          call run_stochastic_physics(GFS_Control%levs, GFS_Control%kdt, GFS_Control%phour, GFS_Control%blksz, xlat=xlat, xlon=xlon, &
                                  sppt_wts=sppt_wts, shum_wts=shum_wts, skebu_wts=skebu_wts, skebv_wts=skebv_wts, sfc_wts=sfc_wts, &
@@ -304,7 +302,6 @@ module stochastic_physics_wrapper_mod
   if (GFS_Control%do_sppt .OR. GFS_Control%do_shum .OR. GFS_Control%do_skeb .OR. (GFS_Control%lndp_type .GT. 0) ) then
       if (allocated(xlat)) deallocate(xlat)
       if (allocated(xlon)) deallocate(xlon)
-      ! Copy blocked data into contiguous arrays; no need to copy weights in (intent(out))
       if (GFS_Control%do_sppt) then
          if (allocated(sppt_wts)) deallocate(sppt_wts)
       end if
