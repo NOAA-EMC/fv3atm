@@ -606,6 +606,14 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
+[sncovr_ice]
+  standard_name = surface_snow_area_fraction_over_ice
+  long_name = surface snow area fraction over ice
+  units = frac
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme)
 [snoalb]
   standard_name = upper_bound_on_max_albedo_over_deep_snow
   long_name = maximum snow albedo
@@ -1266,27 +1274,35 @@
   dimensions = (horizontal_loop_extent,soil_vertical_dimension_for_land_surface_model)
   type = real
   kind = kind_phys
-  active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme) 
-[clw_surf]
-  standard_name = cloud_condensed_water_mixing_ratio_at_surface
-  long_name = moist cloud water mixing ratio at surface
+  active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme)
+[clw_surf_land]
+  standard_name = cloud_condensed_water_mixing_ratio_at_surface_over_land
+  long_name = moist cloud water mixing ratio at surface over land
+  units = kg kg-1
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme)
+[clw_surf_ice]
+  standard_name = cloud_condensed_water_mixing_ratio_at_surface_over_ice
+  long_name = moist cloud water mixing ratio at surface over ice
   units = kg kg-1
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
   active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme) 
-[qwv_surf]
-  standard_name = water_vapor_mixing_ratio_at_surface
-  long_name = water vapor mixing ratio at surface
+[qwv_surf_land]
+  standard_name = water_vapor_mixing_ratio_at_surface_over_land
+  long_name = water vapor mixing ratio at surface over land
   units = kg kg-1
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme) 
-[cndm_surf]
-  standard_name = surface_condensation_mass
-  long_name = surface condensation mass
-  units = kg m-2
+  active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme)
+[qwv_surf_ice]
+  standard_name = water_vapor_mixing_ratio_at_surface_over_ice
+  long_name = water vapor mixing ratio at surface over ice
+  units = kg kg-1
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
@@ -1307,25 +1323,33 @@
   type = real
   kind = kind_phys
   active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme) 
-[tsnow]
-  standard_name = snow_temperature_bottom_first_layer
-  long_name = snow temperature at the bottom of the first snow layer
+[tsnow_land]
+  standard_name = snow_temperature_bottom_first_layer_over_land
+  long_name = snow temperature at the bottom of the first snow layer over land
+  units = K
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme)
+[tsnow_ice]
+  standard_name = snow_temperature_bottom_first_layer_over_ice
+  long_name = snow temperature at the bottom of the first snow layer over ice
   units = K
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
   active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme) 
-[snowfallac]
-  standard_name = total_accumulated_snowfall
+[snowfallac_land]
+  standard_name = total_accumulated_snowfall_over_land
   long_name = run-total snow accumulation on the ground
   units = kg m-2
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme) 
-[acsnow]
-  standard_name = accumulated_water_equivalent_of_frozen_precip
-  long_name = snow water equivalent of run-total frozen precip
+  active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme)
+[snowfallac_ice]
+  standard_name = total_accumulated_snowfall_over_ice
+  long_name = run-total snow accumulation on the ice
   units = kg m-2
   dimensions = (horizontal_loop_extent)
   type = real
