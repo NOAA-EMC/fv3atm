@@ -1,5 +1,4 @@
 #define MPI
-#define OPENMP
 !> \file GFS_debug.F90
 
     module GFS_diagtoscreen
@@ -20,6 +19,7 @@
 
       interface print_var
         module procedure print_logic_0d
+        module procedure print_logic_1d
         module procedure print_int_0d
         module procedure print_int_1d
         module procedure print_real_0d
@@ -48,7 +48,7 @@
 #ifdef MPI
          use mpi
 #endif
-#ifdef OPENMP
+#ifdef _OPENMP
          use omp_lib
 #endif
          use machine,               only: kind_phys
@@ -88,7 +88,7 @@
          mpisize = 1
          mpicomm = 0
 #endif
-#ifdef OPENMP
+#ifdef _OPENMP
          omprank = OMP_GET_THREAD_NUM()
          ompsize = OMP_GET_NUM_THREADS()
 #else
@@ -96,7 +96,7 @@
          ompsize = 1
 #endif
 
-#ifdef OPENMP
+#ifdef _OPENMP
 !$OMP BARRIER
 #endif
 #ifdef MPI
@@ -106,6 +106,7 @@
          do impi=0,mpisize-1
              do iomp=0,ompsize-1
                  if (mpirank==impi .and. omprank==iomp) then
+                     call print_var(mpirank,omprank, blkno, 'Model%kdt'        , Model%kdt)
                      ! Sfcprop
                      call print_var(mpirank,omprank, blkno, 'Sfcprop%slmsk'    , Sfcprop%slmsk)
                      call print_var(mpirank,omprank, blkno, 'Sfcprop%oceanfrac', Sfcprop%oceanfrac)
@@ -172,7 +173,7 @@
                         call print_var(mpirank,omprank, blkno, 'Sfcprop%dt_cool ', Sfcprop%dt_cool)
                         call print_var(mpirank,omprank, blkno, 'Sfcprop%qrain   ', Sfcprop%qrain)
                      end if
-                     ! CCPP only
+                     ! CCPP/RUC only
                      !if (Model%lsm == Model%lsm_ruc) then
                      !   call print_var(mpirank,omprank, blkno, 'Sfcprop%sh2o',        Sfcprop%sh2o)
                      !   call print_var(mpirank,omprank, blkno, 'Sfcprop%smois',       Sfcprop%smois)
@@ -215,6 +216,7 @@
                      call print_var(mpirank,omprank, blkno, 'Tbd%acv'             , Tbd%acv)
                      call print_var(mpirank,omprank, blkno, 'Tbd%acvb'            , Tbd%acvb)
                      call print_var(mpirank,omprank, blkno, 'Tbd%acvt'            , Tbd%acvt)
+                     call print_var(mpirank,omprank, blkno, 'Tbd%hpbl'            , Tbd%hpbl)
                      if (Model%do_sppt) then
                        call print_var(mpirank,omprank, blkno, 'Tbd%dtdtr'         , Tbd%dtdtr)
                        call print_var(mpirank,omprank, blkno, 'Tbd%dtotprcp'      , Tbd%dtotprcp)
@@ -284,7 +286,6 @@
                      call print_var(mpirank,omprank, blkno, 'Diag%dpt2m       ',    Diag%dpt2m)
                      call print_var(mpirank,omprank, blkno, 'Diag%zlvl        ',    Diag%zlvl)
                      call print_var(mpirank,omprank, blkno, 'Diag%psurf       ',    Diag%psurf)
-                     call print_var(mpirank,omprank, blkno, 'Diag%hpbl        ',    Diag%hpbl)
                      call print_var(mpirank,omprank, blkno, 'Diag%pwat        ',    Diag%pwat)
                      call print_var(mpirank,omprank, blkno, 'Diag%t1          ',    Diag%t1)
                      call print_var(mpirank,omprank, blkno, 'Diag%q1          ',    Diag%q1)
@@ -300,7 +301,7 @@
                      call print_var(mpirank,omprank, blkno, 'Diag%tdomzr      ',    Diag%tdomzr)
                      call print_var(mpirank,omprank, blkno, 'Diag%tdomip      ',    Diag%tdomip)
                      call print_var(mpirank,omprank, blkno, 'Diag%tdoms       ',    Diag%tdoms)
-                     ! CCPP only
+                     ! CCPP/RUC only
                      !if (Model%lsm == Model%lsm_ruc) then
                      !  call print_var(mpirank,omprank, blkno, 'Diag%wet1        ',  Sfcprop%wetness)
                      !else
@@ -336,7 +337,7 @@
                      if(Model%lradar) then
                        call print_var(mpirank,omprank, blkno, 'Diag%refl_10cm   ',  Diag%refl_10cm)
                      end if
-                     ! CCPP only
+                     ! CCPP/MYNNPBL only
                      !if (Model%do_mynnedmf) then
                      !  call print_var(mpirank,omprank, blkno, 'Diag%edmf_a      ',  Diag%edmf_a)
                      !  call print_var(mpirank,omprank, blkno, 'Diag%edmf_w      ',  Diag%edmf_w)
@@ -346,7 +347,7 @@
                      !  call print_var(mpirank,omprank, blkno, 'Diag%edmf_qc     ',  Diag%edmf_qc)
                      !  call print_var(mpirank,omprank, blkno, 'Diag%nupdraft    ',  Diag%nupdraft)
                      !  call print_var(mpirank,omprank, blkno, 'Diag%maxMF       ',  Diag%maxMF)
-                     !  call print_var(mpirank,omprank, blkno, 'Diag%ktop_shallow',  Diag%ktop_shallow)
+                     !  call print_var(mpirank,omprank, blkno, 'Diag%ktop_plume  ',  Diag%ktop_plume)
                      !  call print_var(mpirank,omprank, blkno, 'Diag%exch_h      ',  Diag%exch_h)
                      !  call print_var(mpirank,omprank, blkno, 'Diag%exch_m      ',  Diag%exch_m)
                      !end if
@@ -394,9 +395,9 @@
                         call print_var(mpirank,omprank, blkno, 'Coupling%rain_cpl', Coupling%rain_cpl)
                         call print_var(mpirank,omprank, blkno, 'Coupling%snow_cpl', Coupling%snow_cpl)
                      end if
-                     if (Model%cplwav2atm) then
-                        call print_var(mpirank,omprank, blkno, 'Coupling%zorlwav_cpl' , Coupling%zorlwav_cpl  )
-                     end if
+!                    if (Model%cplwav2atm) then
+!                       call print_var(mpirank,omprank, blkno, 'Coupling%zorlwav_cpl' , Coupling%zorlwav_cpl  )
+!                    end if
                      if (Model%cplflx) then
                         call print_var(mpirank,omprank, blkno, 'Coupling%oro_cpl'     , Coupling%oro_cpl      )
                         call print_var(mpirank,omprank, blkno, 'Coupling%slmsk_cpl'   , Coupling%slmsk_cpl    )
@@ -406,10 +407,10 @@
                         call print_var(mpirank,omprank, blkno, 'Coupling%dtsfcin_cpl ', Coupling%dtsfcin_cpl  )
                         call print_var(mpirank,omprank, blkno, 'Coupling%dqsfcin_cpl ', Coupling%dqsfcin_cpl  )
                         call print_var(mpirank,omprank, blkno, 'Coupling%ulwsfcin_cpl', Coupling%ulwsfcin_cpl )
-                        call print_var(mpirank,omprank, blkno, 'Coupling%tseain_cpl  ', Coupling%tseain_cpl   )
-                        call print_var(mpirank,omprank, blkno, 'Coupling%tisfcin_cpl ', Coupling%tisfcin_cpl  )
-                        call print_var(mpirank,omprank, blkno, 'Coupling%ficein_cpl  ', Coupling%ficein_cpl   )
-                        call print_var(mpirank,omprank, blkno, 'Coupling%hicein_cpl  ', Coupling%hicein_cpl   )
+!                       call print_var(mpirank,omprank, blkno, 'Coupling%tseain_cpl  ', Coupling%tseain_cpl   )
+!                       call print_var(mpirank,omprank, blkno, 'Coupling%tisfcin_cpl ', Coupling%tisfcin_cpl  )
+!                       call print_var(mpirank,omprank, blkno, 'Coupling%ficein_cpl  ', Coupling%ficein_cpl   )
+!                       call print_var(mpirank,omprank, blkno, 'Coupling%hicein_cpl  ', Coupling%hicein_cpl   )
                         call print_var(mpirank,omprank, blkno, 'Coupling%hsnoin_cpl  ', Coupling%hsnoin_cpl   )
                         call print_var(mpirank,omprank, blkno, 'Coupling%dusfc_cpl   ', Coupling%dusfc_cpl    )
                         call print_var(mpirank,omprank, blkno, 'Coupling%dvsfc_cpl   ', Coupling%dvsfc_cpl    )
@@ -466,7 +467,7 @@
                         call print_var(mpirank,omprank, blkno, 'Coupling%skebu_wts', Coupling%skebu_wts )
                         call print_var(mpirank,omprank, blkno, 'Coupling%skebv_wts', Coupling%skebv_wts )
                      end if
-                     if (Model%do_sfcperts) then
+                     if (Model%lndp_type .NE. 0) then
                         call print_var(mpirank,omprank, blkno, 'Coupling%sfc_wts'  , Coupling%sfc_wts   )
                      end if
                      if (Model%do_ca) then
@@ -502,7 +503,7 @@
                      ! Model/Control
                      ! not yet
                  end if
-#ifdef OPENMP
+#ifdef _OPENMP
 !$OMP BARRIER
 #endif
              end do
@@ -511,7 +512,7 @@
 #endif
          end do
 
-#ifdef OPENMP
+#ifdef _OPENMP
 !$OMP BARRIER
 #endif
 #ifdef MPI
@@ -543,6 +544,30 @@
           write(0,'(2a,3i6,i15)') 'XXX: ', trim(name), mpirank, omprank, blkno, var
 
       end subroutine print_int_0d
+
+      subroutine print_logic_1d(mpirank,omprank,blkno,name,var)
+
+          use machine,               only: kind_phys
+
+          implicit none
+
+          integer, intent(in) :: mpirank, omprank, blkno
+          character(len=*), intent(in) :: name
+          logical, intent(in) :: var(:)
+
+          integer :: i
+
+#ifdef PRINT_SUM
+          write(0,'(2a,3i6,2i8)') 'XXX: ', trim(name), mpirank, omprank, blkno, size(var), count(var)
+#elif defined(PRINT_CHKSUM)
+          write(0,'(2a,3i6,2i8)') 'XXX: ', trim(name), mpirank, omprank, blkno, size(var), count(var)
+#else
+          do i=ISTART,min(IEND,size(var(:)))
+              write(0,'(2a,3i6,i6,1x,l)') 'XXX: ', trim(name), mpirank, omprank, blkno, i, var(i)
+          end do
+#endif
+
+      end subroutine print_logic_1d
 
       subroutine print_int_1d(mpirank,omprank,blkno,name,var)
 
@@ -711,7 +736,7 @@
 #ifdef MPI
          use mpi
 #endif
-#ifdef OPENMP
+#ifdef _OPENMP
          use omp_lib
 #endif
          implicit none
@@ -723,7 +748,7 @@
 #else
          mpirank = 0
 #endif
-#ifdef OPENMP
+#ifdef _OPENMP
          ompthread = OMP_GET_THREAD_NUM()
 #else
          ompthread = 0

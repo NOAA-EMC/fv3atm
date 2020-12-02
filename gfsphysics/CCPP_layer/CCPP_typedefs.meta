@@ -1,3 +1,8 @@
+[ccpp-table-properties]
+  name = CCPP_interstitial_type
+  type = ddt
+  dependencies =
+
 [ccpp-arg-table]
   name = CCPP_interstitial_type
   type = ddt
@@ -334,6 +339,11 @@
   type = integer
 
 ########################################################################
+[ccpp-table-properties]
+  name = CCPP_typedefs
+  type = module
+  dependencies = ../../ccpp/physics/physics/machine.F
+
 [ccpp-arg-table]
   name = CCPP_typedefs
   type = module

@@ -4,7 +4,7 @@
 !  ---  inputs:
      &     ( si,levr,ictm,isol,ico2,iaer,ialb,iems,ntcw, num_p2d,       &
      &       num_p3d,npdf3d,ntoz,iovr_sw,iovr_lw,isubc_sw,isubc_lw,     &
-     &       icliq_sw,crick_proof,ccnorm,                               &                  
+     &       icliq_sw,crick_proof,ccnorm,                               &
      &       imp_physics,norad_precip,idate,iflip,me )
 !  ---  outputs: ( none )
 
@@ -23,7 +23,7 @@
 !                 subroutine is called at the start of model run.       !
 !   nov 2012  - yu-tai hou   modified control parameter through         !
 !                 module 'physparam'.                                   !
-!   mar 2014  - sarah lu  iaermdl is determined from iaer               !        
+!   mar 2014  - sarah lu  iaermdl is determined from iaer               !
 !   jul 2014  - s moorthi add npdf3d for pdf clouds                     !
 !                                                                       !
 !  ====================  defination of variables  ====================  !
@@ -54,9 +54,9 @@
 !                     =1: use observed co2 annual mean value only       !
 !                     =2: use obs co2 monthly data with 2-d variation   !
 !   iaer             : 4-digit aerosol flag (dabc for aermdl,volc,lw,sw)!
-!                     d: =0 or none, opac-climatology aerosol scheme    !                
-!                        =1 use gocart climatology aerosol scheme       !  
-!                        =2 use gocart progostic aerosol scheme         !  
+!                     d: =0 or none, opac-climatology aerosol scheme    !
+!                        =1 use gocart climatology aerosol scheme       !
+!                        =2 use gocart progostic aerosol scheme         !
 !                     a: =0 use background stratospheric aerosol        !
 !                        =1 incl stratospheric vocanic aeros            !
 !                     b: =0 no topospheric aerosol in lw radiation      !
@@ -152,7 +152,7 @@
       else
         iaerflg = mod(iaer, 1000)   
       endif
-      iaermdl = iaer/1000               ! control flag for aerosol scheme selection                              
+      iaermdl = iaer/1000               ! control flag for aerosol scheme selection
       if ( iaermdl < 0 .or.  (iaermdl>2 .and. iaermdl/=5) ) then
          print *, ' Error -- IAER flag is incorrect, Abort'
          stop 7777

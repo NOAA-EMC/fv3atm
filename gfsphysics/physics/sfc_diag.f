@@ -12,14 +12,15 @@
 !
       integer, intent(IN) :: im
       real, dimension(im), intent(IN)  ::
-     &      ps,   u1,   v1,   t1,  q1,  tskin,  qsurf, 
+     &      ps,   u1,   v1,   t1,  q1,  tskin,  qsurf,
      &      fm, fm10, fh, fh2, prslki, evap
       real, dimension(im), intent(OUT) ::
      &      f10m, u10m, v10m, t2m, q2m
 !
 !     locals
 !
-      real (kind=kind_phys), parameter :: qmin=1.0e-8
+      real (kind=kind_phys), parameter :: one=1.0d0, zero=0.0d0
+     &,                                   qmin=1.0d-8
       integer              k,i
 !
       real(kind=kind_phys)        fhi, qss, wrk
@@ -44,11 +45,11 @@
 !       t2m(i)  = tskin(i)*(1. - fhi) + t1(i) * prslki(i) * fhi
 !       sig2k   = 1. - (grav+grav) / (cp * t2m(i))
 !       t2m(i)  = t2m(i) * sig2k
-        wrk     = 1.0 - fhi
+        wrk     = one - fhi
 
         t2m(i)  = tskin(i)*wrk + t1(i)*prslki(i)*fhi - (grav+grav)/cp
 
-        if(evap(i) >= 0.) then !  for evaporation>0, use inferred qsurf to deduce q2m
+        if(evap(i) >= zero) then !  for evaporation>0, use inferred qsurf to deduce q2m
           q2m(i) = qsurf(i)*wrk + max(qmin,q1(i))*fhi
         else                   !  for dew formation, use saturated q at tskin
           qss    = fpvs(tskin(i))

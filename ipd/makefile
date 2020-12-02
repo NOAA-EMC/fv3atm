@@ -17,7 +17,7 @@ endif
 
 LIBRARY  = libipd.a
 
-FFLAGS   += -I$(FMS_DIR) -I../gfsphysics -I../namphysics
+FFLAGS   += -I$(FMS_DIR) -I../gfsphysics
 
 CPPDEFS += -DNEW_TAUCTMAX -DSMALL_PE -DNEMS_GSM -DINTERNAL_FILE_NML
 
@@ -50,8 +50,6 @@ clean:
 
 MKDEPENDS = ../mkDepends.pl
 include ../conf/make.rules
-
-include ./depend
 
 # do not include 'depend' file if the target contains string 'clean'
 ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))

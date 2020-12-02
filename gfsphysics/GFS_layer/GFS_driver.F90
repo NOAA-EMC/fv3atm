@@ -119,7 +119,7 @@ module GFS_driver
                              Diag, Init_parm)
 #endif
 
-#ifdef OPENMP
+#ifdef _OPENMP
     use omp_lib
 #endif
 
@@ -176,7 +176,7 @@ module GFS_driver
     blksz(:) = Init_parm%blksz(:)
 
 #ifdef CCPP
-#ifdef OPENMP
+#ifdef _OPENMP
     nthrds = omp_get_max_threads()
 #else
     nthrds = 1
@@ -633,6 +633,7 @@ module GFS_driver
       if (mod(Model%kdt,Model%nscyc) == 1) THEN
         call gcycle (nblks, Model, Grid(:), Sfcprop(:), Cldprop(:))
       endif
+        ! if not updating surface params through fcast, perturb params once at start of fcast
     endif
 
     !--- determine if diagnostics buckets need to be cleared
