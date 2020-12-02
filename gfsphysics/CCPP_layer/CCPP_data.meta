@@ -1,3 +1,8 @@
+[ccpp-table-properties]
+  name = CCPP_data
+  type = module
+  dependencies = ../../ccpp/framework/src/ccpp_types.F90,CCPP_typedefs.F90,../GFS_layer/GFS_typedefs.F90
+
 [ccpp-arg-table]
   name = CCPP_data
   type = module
@@ -35,11 +40,11 @@
   standard_name = GFS_data_type_instance_all_blocks
   long_name = instance of derived type GFS_data_type
   units = DDT
-  dimensions = (ccpp_block_number)
+  dimensions = (ccpp_block_count)
   type = GFS_data_type
 [GFS_Interstitial]
   standard_name = GFS_interstitial_type_instance_all_threads
   long_name = instance of derived type GFS_interstitial_type
   units = DDT
-  dimensions = (ccpp_thread_number)
+  dimensions = (omp_threads)
   type = GFS_interstitial_type

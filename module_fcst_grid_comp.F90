@@ -25,9 +25,9 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
                                 operator(+), operator(-), operator (<),    &
                                 operator (>), operator (/=), operator (/), &
                                 operator (==), operator (*),               &
-                                THIRTY_DAY_MONTHS, JULIAN, NOLEAP,         &
-                                NO_CALENDAR, date_to_string, get_date,     &
-                                get_time
+                                THIRTY_DAY_MONTHS, JULIAN, GREGORIAN,      &
+                                NOLEAP, NO_CALENDAR,                       &
+                                date_to_string, get_date, get_time
 
   use  atmos_model_mod,   only: atmos_model_init, atmos_model_end,         &
                                 get_atmos_model_ungridded_dim,             &
@@ -191,7 +191,8 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     character(3) cfhour
     character(4) dateSY
     character(2) dateSM,dateSD,dateSH,dateSN,dateSS
-    character(128) name_FB, name_FB1, dateS
+    character(len=esmf_maxstr) name_FB, name_FB1
+    character(len=80) :: dateS
     real,    allocatable, dimension(:,:) :: glon_bnd, glat_bnd
     
     character(256)                         :: gridfile
@@ -209,6 +210,8 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     logical :: single_restart
     integer, allocatable, dimension(:) :: isl, iel, jsl, jel
     integer, allocatable, dimension(:,:,:) :: deBlockList
+
+    type(ESMF_Decomp_Flag)  :: decompflagPTile(2,6)
 
     integer               :: globalTileLayout(2)
     integer               :: nestRootPet, peListSize(1)
@@ -254,6 +257,8 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
       select case( uppercase(trim(calendar)) )
       case( 'JULIAN' )
           calendar_type = JULIAN
+      case( 'GREGORIAN' )
+          calendar_type = GREGORIAN
       case( 'NOLEAP' )
           calendar_type = NOLEAP
       case( 'THIRTY_DAY' )
@@ -261,8 +266,8 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
       case( 'NO_CALENDAR' )
           calendar_type = NO_CALENDAR
       case default
-          call mpp_error ( FATAL, 'COUPLER_MAIN: coupler_nml entry calendar must '// &
-                                  'be one of JULIAN|NOLEAP|THIRTY_DAY|NO_CALENDAR.' )
+          call mpp_error ( FATAL, 'fcst_initialize: calendar must be one of '// &
+                                  'JULIAN|GREGORIAN|NOLEAP|THIRTY_DAY|NO_CALENDAR.' )
       end select
 
     endif
@@ -428,6 +433,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
                                               maxIndex=(/atm_int_state%Atm%mlon,atm_int_state%Atm%mlat/), &
                                               gridEdgeLWidth=(/0,0/), &
                                               gridEdgeUWidth=(/0,0/), &
+                                              decompflag=(/ESMF_DECOMP_SYMMEDGEMAX,ESMF_DECOMP_SYMMEDGEMAX/), &
                                               name="fcst_grid", &
                                               indexflag=ESMF_INDEX_DELOCAL, &
                                               rc=rc); ESMF_ERR_ABORT(rc)
@@ -465,9 +471,11 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
             do tl=1,6
               decomptile(1,tl) = atm_int_state%Atm%layout(1)
               decomptile(2,tl) = atm_int_state%Atm%layout(2)
+              decompflagPTile(:,tl) = (/ESMF_DECOMP_SYMMEDGEMAX,ESMF_DECOMP_SYMMEDGEMAX/)
             enddo
             fcstGrid = ESMF_GridCreateMosaic(filename="INPUT/"//trim(gridfile),                                 &
                                              regDecompPTile=decomptile,tileFilePath="INPUT/",                   &
+                                             decompflagPTile=decompflagPTile,                                   &
                                              staggerlocList=(/ESMF_STAGGERLOC_CENTER, ESMF_STAGGERLOC_CORNER/), &
                                              name='fcst_grid', rc=rc)
             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
@@ -515,6 +523,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
             ! create the nest Grid by reading it from file but use DELayout
             fcstGrid = ESMF_GridCreate(filename='INPUT/grid.nest02.tile7.nc',                             &
                                        fileformat=ESMF_FILEFORMAT_GRIDSPEC, regDecomp=regDecomp,          &
+                                       decompflag=(/ESMF_DECOMP_SYMMEDGEMAX,ESMF_DECOMP_SYMMEDGEMAX/),    &
                                        delayout=delayout, isSphere=.false., indexflag=ESMF_INDEX_DELOCAL, &
               rc=rc)
             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
@@ -595,11 +604,11 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
         call ESMF_AttributeSet(exportState, convention="NetCDF", purpose="FV3", &
-                               name="time:calendar_type", value="JULIAN", rc=rc)
+                               name="time:calendar_type", value=uppercase(trim(calendar)), rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
         call ESMF_AttributeSet(exportState, convention="NetCDF", purpose="FV3", &
-                               name="time:calendar", value="JULIAN", rc=rc)
+                               name="time:calendar", value=uppercase(trim(calendar)), rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 !
 ! Create FieldBundle for Fields that need to be regridded bilinear
