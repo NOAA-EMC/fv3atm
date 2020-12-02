@@ -1778,7 +1778,7 @@ end subroutine atmos_data_type_chksum
                       if (abs(one-ofrac) < epsln) then
                         IPD_Data(nb)%Sfcprop%slmsk(ix)         = zero
                         IPD_Data(nb)%Coupling%slimskin_cpl(ix) = zero
-                      end if
+                      endif
                     endif
                   endif
                 enddo
