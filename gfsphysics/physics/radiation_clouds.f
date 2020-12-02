@@ -244,7 +244,7 @@
       module module_radiation_clouds     !
 !........................................!
 !
-      use physparam,           only : icldflg, iovrsw, iovrlw,          &
+      use physparam,           only : icldflg, iovr,                    &
      &                                lcrick, lcnorm, lnoprec,          &
      &                                ivflip, kind_phys, kind_io4
       use physcons,            only : con_fvirt, con_ttp, con_rocp,     &
@@ -297,7 +297,7 @@
 !> upper limit of boundary layer clouds
       integer  :: llyr   = 2          
 !> maximum-random cloud overlapping method
-      integer  :: iovr   = 1           
+!     integer  :: iovr   = 1           
 
       public progcld1, progcld2, progcld3, progcld4, progclduni,        &
      &                 cld_init, progcld5, progcld4o
@@ -347,7 +347,7 @@
 !                     =8: Thompson microphysics                         !
 !                     =6: WSM6 microphysics                             !
 !                     =10: MG microphysics                              !
-!   iovrsw/iovrlw   : sw/lw control flag for cloud overlapping scheme   !
+!   iovr            : sw/lw control flag for cloud overlapping scheme   !
 !                     =0: random overlapping clouds                     !
 !                     =1: max/ran overlapping clouds                    !
 !                     =2: maximum overlap clouds       (mcica only)     !
@@ -378,7 +378,7 @@
 !
 !  ---  set up module variables
 
-      iovr    = max( iovrsw, iovrlw )    !cld ovlp used for diag HML cld output
+!     iovr    = max( iovrsw, iovrlw )    !cld ovlp used for diag HML cld output
 
       if (me == 0) print *, VTAGCLD      !print out version tag
 

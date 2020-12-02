@@ -220,7 +220,7 @@
 !                    icsdsw/icsdlw (if isubcsw/isubclw =2, it will be  !
 !                    the user provided permutation seeds) to the sw/lw !
 !                    radiation calculation programs. also moved cloud  !
-!                    overlapping control flags iovrsw/iovrlw from main !
+!                    overlapping control flags iovr          from main !
 !                    radiation routines to the initialization routines.!
 !     04-02-09    yu-tai hou   - modified surface control flag iems to !
 !                    have additional function of if the surface-air    !
@@ -508,8 +508,7 @@
 !              =8 Thompson microphysics scheme                          !
 !              =6 WSM6 microphysics scheme                              !
 !              =10 MG microphysics scheme                               !
-!   iovrsw   : control flag for cloud overlap in sw radiation           !
-!   iovrlw   : control flag for cloud overlap in lw radiation           !
+!   iovr     : control flag for cloud overlap in sw/lw radiation        !
 !              =0: random overlapping clouds                            !
 !              =1: max/ran overlapping clouds                           !
 !   isubcsw  : sub-column cloud approx control flag in sw radiation     !
@@ -568,7 +567,7 @@
      &    ' ISOLar =',isolar, ' ICO2flg=',ico2flg,' IAERflg=',iaerflg,  &
      &    ' IALBflg=',ialbflg,' IEMSflg=',iemsflg,' ICLDflg=',icldflg,  &
      &    ' IMP_PHYSICS=',imp_physics,' IOZNflg=',ioznflg
-        print *,' IVFLIP=',ivflip,' IOVRSW=',iovrsw,' IOVRLW=',iovrlw,  &
+        print *,' IVFLIP=',ivflip,' IOVR=',iovr,                        &
      &    ' ISUBCSW=',isubcsw,' ISUBCLW=',isubclw
 !       write(0,*)' IVFLIP=',ivflip,' IOVRSW=',iovrsw,' IOVRLW=',iovrlw,&
 !    &    ' ISUBCSW=',isubcsw,' ISUBCLW=',isubclw

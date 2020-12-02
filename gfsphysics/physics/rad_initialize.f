@@ -3,7 +3,7 @@
 !...................................
 !  ---  inputs:
      &     ( si,levr,ictm,isol,ico2,iaer,ialb,iems,ntcw, num_p2d,       &
-     &       num_p3d,npdf3d,ntoz,iovr            isubc_sw,isubc_lw,     &
+     &       num_p3d,npdf3d,ntoz,iovr,           isubc_sw,isubc_lw,     &
 !    &       num_p3d,npdf3d,ntoz,iovr_sw,iovr_lw,isubc_sw,isubc_lw,     &
      &       icliq_sw,crick_proof,ccnorm,                               &
      &       imp_physics,norad_precip,idate,iflip,me )
@@ -115,7 +115,8 @@
       use physparam, only : isolar , ictmflg, ico2flg, ioznflg, iaerflg,&
 !    &             iaermdl, laswflg, lalwflg, lavoflg, icldflg,         &
      &             iaermdl,                            icldflg,         &
-     &             iovr   ,          lcrick , lcnorm , lnoprec,         &
+     &                               lcrick , lcnorm , lnoprec,         &
+!    &             iovr,             lcrick , lcnorm , lnoprec,         &
      &             ialbflg, iemsflg, isubcsw, isubclw, ivflip , ipsd0,  &
      &             iswcliq,                                             &
      &             kind_phys
@@ -126,7 +127,7 @@
 
 !  ---  input:
       integer,  intent(in) :: levr, ictm, isol, ico2, iaer, num_p2d,    &
-     &       ntcw, ialb, iems, num_p3d, npdf3d, ntoz, iovr   ,          &
+     &       ntcw, ialb, iems, num_p3d, npdf3d, ntoz, iovr,             &
      &       isubc_sw, isubc_lw, icliq_sw, iflip, me, idate(4)
 
       real (kind=kind_phys), intent(in) :: si(levr+1)
@@ -167,8 +168,8 @@
 
       iswcliq = icliq_sw                ! optical property for liquid clouds for sw
 
-      iovrsw = iovr                     ! cloud overlapping control flag for sw
-      iovrlw = iovr                     ! cloud overlapping control flag for lw
+!     iovrsw = iovr                     ! cloud overlapping control flag for sw
+!     iovrlw = iovr                     ! cloud overlapping control flag for lw
 
       lcrick  = crick_proof             ! control flag for eliminating CRICK 
       lcnorm  = ccnorm                  ! control flag for in-cld condensate 
@@ -193,8 +194,8 @@
         print *,' levr=',levr,' ictm=',ictm,' isol=',isol,' ico2=',ico2,&
      &          ' iaer=',iaer,' ialb=',ialb,' iems=',iems,' ntcw=',ntcw
         print *,' np3d=',num_p3d,' ntoz=',ntoz,' iovr=',iovr,           &
-     &          ' iovrsw=',iovrsw,' iovrlw=',iovrlw,                    &
-                ' isubc_sw=', isubc_sw,                                 &
+!    &          ' iovrsw=',iovrsw,' iovrlw=',iovrlw,                    &
+     &          ' isubc_sw=', isubc_sw,                                 &
      &          ' isubc_lw=',isubc_lw,' icliq_sw=',icliq_sw,            &
      &          ' iflip=',iflip,'  me=',me
         print *,' crick_proof=',crick_proof,                            &

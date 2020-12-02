@@ -283,7 +283,7 @@
 !........................................!
 !
       use physparam,        only : ilwrate, ilwrgas, ilwcliq, ilwcice,  &
-     &                             isubclw, icldflg, iovrlw,  ivflip,   &
+     &                             isubclw, icldflg, iovr,    ivflip,   &
      &                             kind_phys
       use physcons,         only : con_g, con_cp, con_avgd, con_amd,    &
      &                             con_amw, con_amo3
@@ -557,7 +557,7 @@
 !           =0: no sub-col cld treatment, use grid-mean cld quantities  !
 !           =1: mcica sub-col, prescribed seeds to get random numbers   !
 !           =2: mcica sub-col, providing array icseed for random numbers!
-!   iovrlw  - cloud overlapping control flag                            !
+!   iovr    - cloud overlapping control flag                            !
 !           =0: random overlapping clouds                               !
 !           =1: maximum/random overlapping clouds                       !
 !           =2: maximum overlap cloud (used for isubclw>0 only)         !
@@ -762,7 +762,7 @@
         endif
 
         stemp = sfgtmp(iplon)          ! surface ground temp
-        if (iovrlw == 3) delgth= de_lgth(iplon)    ! clouds decorr-length
+        if (iovr == 3) delgth= de_lgth(iplon)    ! clouds decorr-length
 
 !> -# Prepare atmospheric profile for use in rrtm.
 !           the vertical index of internal array is from surface to top
@@ -1155,7 +1155,7 @@
 
         if (isubclw <= 0) then
 
-          if (iovrlw <= 0) then
+          if (iovr <= 0) then
 
             call rtrn                                                   &
 !  ---  inputs:
@@ -1175,7 +1175,7 @@
      &       totuflux,totdflux,htr, totuclfl,totdclfl,htrcl, htrb       &
      &     )
 
-          endif   ! end if_iovrlw_block
+          endif   ! end if_iovr_block
 
         else
 
@@ -1319,7 +1319,7 @@
 !   icldflg - cloud scheme control flag                                 !
 !           =0: diagnostic scheme gives cloud tau, omiga, and g.        !
 !           =1: prognostic scheme gives cloud liq/ice path, etc.        !
-!   iovrlw  - clouds vertical overlapping control flag                  !
+!   iovr    - clouds vertical overlapping control flag                  !
 !           =0: random overlapping clouds                               !
 !           =1: maximum/random overlapping clouds                       !
 !           =2: maximum overlap cloud (isubcol>0 only)                  !
@@ -1367,19 +1367,19 @@
 !
 !===> ... begin here
 !
-      if ( iovrlw<0 .or. iovrlw>3 ) then
+      if ( iovr<0 .or. iovr>3 ) then
         print *,'  *** Error in specification of cloud overlap flag',   &
-     &          ' IOVRLW=',iovrlw,' in RLWINIT !!'
+     &          ' IOVR=',iovr,' in RLWINIT !!'
         stop
-      elseif ( iovrlw>=2 .and. isubclw==0 ) then
+      elseif ( iovr>=2 .and. isubclw==0 ) then
         if (me == 0) then
-          print *,'  *** IOVRLW=',iovrlw,' is not available for',       &
+          print *,'  *** IOVR=',iovr,' is not available for',           &
      &          ' ISUBCLW=0 setting!!'
           print *,'      The program uses maximum/random overlap',      &
      &          ' instead.'
         endif
 
-        iovrlw = 1
+        iovr = 1
       endif
 
       if (me == 0) then
@@ -1842,7 +1842,7 @@
 !   lcloudy - logical, sub-colum cloud profile flag array    ngptlw*nlay!
 !                                                                       !
 !  other control flags from module variables:                           !
-!     iovrlw    : control flag for cloud overlapping method             !
+!     iovr      : control flag for cloud overlapping method             !
 !                 =0:random; =1:maximum/random: =2:maximum; =3:decorr   !
 !                                                                       !
 !  =====================    end of definitions    ====================  !
@@ -1880,7 +1880,7 @@
 
 !  --- ...  sub-column set up according to overlapping assumption
 
-      select case ( iovrlw )
+      select case ( iovr )
 
         case( 0 )        ! random overlap, pick a random value at every level
 
