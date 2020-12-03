@@ -663,8 +663,9 @@ module FV3GFS_io_mod
     call free_restart_type(Oro_restart)
 
 #ifdef CCPP
-    !--- Modify/read-in additional orographic static fields for GSL drag suite
-    if (Model%gwd_opt==3 .or. Model%gwd_opt==33) then
+    !--- Modify/read-in additional orographic static fields for GSL drag suite 
+    if (Model%gwd_opt==3 .or. Model%gwd_opt==33 .or. &
+        Model%gwd_opt==2 .or. Model%gwd_opt==22 ) then
       if (.not. allocated(oro_ls_ss_name)) then
       !--- allocate the various containers needed for orography data
         allocate(oro_ls_ss_name(nvar_oro_ls_ss))
@@ -709,17 +710,24 @@ module FV3GFS_io_mod
         do ix = 1, Atm_block%blksz(nb)
           i = Atm_block%index(nb)%ii(ix) - isc + 1
           j = Atm_block%index(nb)%jj(ix) - jsc + 1
-          !--- assign hprime(1:10) and hprime(15:24) with new oro stat data
-          Sfcprop(nb)%hprime(ix,1)  = oro_ls_var(i,j,1)
-          Sfcprop(nb)%hprime(ix,2)  = oro_ls_var(i,j,2)
-          Sfcprop(nb)%hprime(ix,3)  = oro_ls_var(i,j,3)
-          Sfcprop(nb)%hprime(ix,4)  = oro_ls_var(i,j,4)
-          Sfcprop(nb)%hprime(ix,5)  = oro_ls_var(i,j,5)
-          Sfcprop(nb)%hprime(ix,6)  = oro_ls_var(i,j,6)
-          Sfcprop(nb)%hprime(ix,7)  = oro_ls_var(i,j,7)
-          Sfcprop(nb)%hprime(ix,8)  = oro_ls_var(i,j,8)
-          Sfcprop(nb)%hprime(ix,9)  = oro_ls_var(i,j,9)
-          Sfcprop(nb)%hprime(ix,10)  = oro_ls_var(i,j,10)
+          ! Replace hprime(1:10) with GSL oro stat data only when using GSL
+          ! drag suite with large scale GWD and blocking as part of unified drag
+          ! suite. Otherwise, original oro stat data is used.
+          if ( (Model%gwd_opt==3 .or. Model%gwd_opt==33) .or.    &
+               ( (Model%gwd_opt==2 .or. Model%gwd_opt==22) .and. &
+                  Model%do_gsl_drag_ls_bl ) ) then
+            !--- assign hprime(1:10) and hprime(15:24) with new oro stat data
+            Sfcprop(nb)%hprime(ix,1)  = oro_ls_var(i,j,1)
+            Sfcprop(nb)%hprime(ix,2)  = oro_ls_var(i,j,2)
+            Sfcprop(nb)%hprime(ix,3)  = oro_ls_var(i,j,3)
+            Sfcprop(nb)%hprime(ix,4)  = oro_ls_var(i,j,4)
+            Sfcprop(nb)%hprime(ix,5)  = oro_ls_var(i,j,5)
+            Sfcprop(nb)%hprime(ix,6)  = oro_ls_var(i,j,6)
+            Sfcprop(nb)%hprime(ix,7)  = oro_ls_var(i,j,7)
+            Sfcprop(nb)%hprime(ix,8)  = oro_ls_var(i,j,8)
+            Sfcprop(nb)%hprime(ix,9)  = oro_ls_var(i,j,9)
+            Sfcprop(nb)%hprime(ix,10)  = oro_ls_var(i,j,10)
+          endif
           Sfcprop(nb)%hprime(ix,15)  = oro_ss_var(i,j,1)
           Sfcprop(nb)%hprime(ix,16)  = oro_ss_var(i,j,2)
           Sfcprop(nb)%hprime(ix,17)  = oro_ss_var(i,j,3)
@@ -730,7 +738,6 @@ module FV3GFS_io_mod
           Sfcprop(nb)%hprime(ix,22)  = oro_ss_var(i,j,8)
           Sfcprop(nb)%hprime(ix,23)  = oro_ss_var(i,j,9)
           Sfcprop(nb)%hprime(ix,24)  = oro_ss_var(i,j,10)
-
         enddo
       enddo
 
@@ -1166,6 +1173,35 @@ module FV3GFS_io_mod
           endif
         endif
 
+!       if (Sfcprop(nb)%lakefrac(ix) > zero) then
+!         Sfcprop(nb)%oceanfrac(ix) = zero ! lake & ocean don't coexist in a cell
+!         if (Sfcprop(nb)%slmsk(ix) /= one) then
+!           if (Sfcprop(nb)%fice(ix) >= Model%min_lakeice) then
+!             if (Sfcprop(nb)%slmsk(ix) < 1.9_r8)      &
+!               write(*,'(a,2i3,3f6.2)') 'reset lake slmsk=2 at nb,ix=' &
+!              ,nb,ix,Sfcprop(nb)%fice(ix),Sfcprop(nb)%slmsk(ix),Sfcprop(nb)%lakefrac(ix)
+!               Sfcprop(nb)%slmsk(ix) = 2.
+!           else if (Sfcprop(nb)%slmsk(ix) > 1.e-7) then
+!               write(*,'(a,2i3,3f6.2)') 'reset lake slmsk=0 at nb,ix=' &
+!              ,nb,ix,Sfcprop(nb)%fice(ix),Sfcprop(nb)%slmsk(ix),Sfcprop(nb)%lakefrac(ix)
+!               Sfcprop(nb)%slmsk(ix) = zero
+!           end if
+!         end if
+!       else
+!         Sfcprop(nb)%oceanfrac(ix) = one - Sfcprop(nb)%landfrac(ix)
+!         if (Sfcprop(nb)%slmsk(ix) /= one) then
+!           if (Sfcprop(nb)%fice(ix) >= Model%min_seaice) then
+!             if (Sfcprop(nb)%slmsk(ix) < 1.9_r8)      &
+!               write(*,'(a,2i3,3f6.2)') 'reset sea slmsk=2 at nb,ix=' &
+!              ,nb,ix,Sfcprop(nb)%fice(ix),Sfcprop(nb)%slmsk(ix),Sfcprop(nb)%landfrac(ix)
+!               Sfcprop(nb)%slmsk(ix) = 2.
+!           else if (Sfcprop(nb)%slmsk(ix) > 1.e-7) then
+!               write(*,'(a,2i3,4f6.2)') 'reset sea slmsk=0 at nb,ix=' &
+!              ,nb,ix,Sfcprop(nb)%fice(ix),Sfcprop(nb)%slmsk(ix),Sfcprop(nb)%landfrac(ix)
+!               Sfcprop(nb)%slmsk(ix) = zero
+!           end if
+!         end if
+!       endif
         !
         !--- NSSTM variables
         if (Model%nstf_name(1) > 0) then
