@@ -963,7 +963,9 @@ subroutine atmos_model_end (Atmos)
 
     call atmosphere_end (Atmos % Time, Atmos%grid, restart_endfcst)
 
+#ifdef CCPP
     call stochastic_physics_wrapper_end(IPD_Control)
+#endif
 
     if(restart_endfcst) then
       call FV3GFS_restart_write (IPD_Data, IPD_Restart, Atm_block, &
@@ -1958,8 +1960,8 @@ end subroutine atmos_data_type_chksum
 !             IPD_Data(nb)%Sfcprop%hice(ix)        = IPD_Data(nb)%Coupling%hicein_cpl(ix)
 !             IPD_Data(nb)%Sfcprop%snowd(ix)       = IPD_Data(nb)%Coupling%hsnoin_cpl(ix)
 
-              IPD_Data(nb)%Coupling%hsnoin_cpl(ix) = IPD_Data(nb)%Coupling%hsnoin_cpl(ix) &
-                                                   / max(0.01_IPD_kind_phys, IPD_Data(nb)%Sfcprop%fice(ix))
+!             IPD_Data(nb)%Coupling%hsnoin_cpl(ix) = IPD_Data(nb)%Coupling%hsnoin_cpl(ix) &
+!                                                  / max(0.01_IPD_kind_phys, IPD_Data(nb)%Sfcprop%fice(ix))
 !                                                  / max(0.01_IPD_kind_phys, IPD_Data(nb)%Coupling%ficein_cpl(ix))
               IPD_Data(nb)%Sfcprop%zorli(ix)       = z0ice
             else

@@ -1103,6 +1103,8 @@ module module_physics_driver
           else                ! all land
             fice(i) = zero
             zice(i) = zero
+            islmsk(i) = 1
+            islmsk_cice(i) = 1
           endif
         enddo
       else
@@ -1213,7 +1215,7 @@ module module_physics_driver
             zorl3(i,1) = Sfcprop%zorll(i)
             tsfc3(i,1) = Sfcprop%tsfcl(i)
            tsurf3(i,1) = Sfcprop%tsfcl(i)
-           snowd3(i,1) = Sfcprop%snowd(i)
+           snowd3(i,1) = Sfcprop%snowd(i) / frland(i)
            semis3(i,1) = Radtend%semis(i)
         endif
 !
@@ -1224,7 +1226,7 @@ module module_physics_driver
             tsfc3(i,2) = Sfcprop%tisfc(i)
            tsurf3(i,2) = Sfcprop%tisfc(i)
                tice(i) = Sfcprop%tisfc(i)
-           snowd3(i,2) = Sfcprop%snowd(i)
+           snowd3(i,2) = Sfcprop%snowd(i) / fice(i)
             ep1d3(i,2) = zero
             gflx3(i,2) = zero
            semis3(i,2) = 0.95_kind_phys
@@ -2112,6 +2114,7 @@ module module_physics_driver
             Sfcprop%tsfco(i) = tsfc3(i,1)
             Sfcprop%tisfc(i) = tsfc3(i,1)
             Sfcprop%tsfc(i)  = tsfc3(i,1)
+            Sfcprop%snowd(i) = snowd3(i,1)
           elseif (islmsk(i) == 0) then
             k = 3
             stress(i)        = stress3(i,3)
@@ -2120,6 +2123,7 @@ module module_physics_driver
             Sfcprop%tisfc(i) = tsfc3(i,3)
             Sfcprop%tsfcl(i) = tsfc3(i,3)
             Sfcprop%tsfc(i)  = tsfc3(i,3)
+            Sfcprop%snowd(i) = zero
           else
             k = 2
             stress(i)        = stress3(i,2)
@@ -2159,13 +2163,14 @@ module module_physics_driver
               if (wet(i) .and. fice(i) > Model%min_seaice) then  ! this was already done for lake ice in sfc_sice
                 txi = fice(i)
                 txo = one - txi
-                evap(i)         = txi * evap3(i,2)   + txo * evap3(i,3)
-                hflx(i)         = txi * hflx3(i,2)   + txo * hflx3(i,3)
-                Sfcprop%tsfc(i) = txi * tsfc3(i,2)   + txo * tsfc3(i,3)
-                stress(i)       = txi  *stress3(i,2) + txo * stress3(i,3)
-                qss(i)          = txi * qss3(i,2)    + txo * qss3(i,3)
-                ep1d(i)         = txi * ep1d3(i,2)   + txo * ep1d3(i,3)
-                Sfcprop%zorl(i) = txi * zorl3(i,2)   + txo * zorl3(i,3)
+                evap(i)          = txi * evap3(i,2)   + txo * evap3(i,3)
+                hflx(i)          = txi * hflx3(i,2)   + txo * hflx3(i,3)
+                Sfcprop%tsfc(i)  = txi * tsfc3(i,2)   + txo * tsfc3(i,3)
+                stress(i)        = txi  *stress3(i,2) + txo * stress3(i,3)
+                qss(i)           = txi * qss3(i,2)    + txo * qss3(i,3)
+                ep1d(i)          = txi * ep1d3(i,2)   + txo * ep1d3(i,3)
+                Sfcprop%zorl(i)  = txi * zorl3(i,2)   + txo * zorl3(i,3)
+                Sfcprop%snowd(i) = txi * snowd3(i,2)
               endif
             elseif (islmsk(i) == 2) then  ! return updated lake ice thickness & concentration to global array
               Sfcprop%tisfc(i) = tice(i)  ! over lake ice (and sea ice when uncoupled)
