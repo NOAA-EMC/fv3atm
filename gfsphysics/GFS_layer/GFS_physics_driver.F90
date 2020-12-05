@@ -1273,7 +1273,7 @@ module module_physics_driver
             zorl3(i,1) = Sfcprop%zorll(i)
             tsfc3(i,1) = Sfcprop%tsfcl(i)
            tsurf3(i,1) = Sfcprop%tsfcl(i)
-           snowd3(i,1) = Sfcprop%snowd(i) / frland(i)
+!          snowd3(i,1) = Sfcprop%snowd(i) / frland(i)
            semis3(i,1) = Radtend%semis(i)
         endif
 !
@@ -1284,13 +1284,40 @@ module module_physics_driver
             tsfc3(i,2) = Sfcprop%tisfc(i)
            tsurf3(i,2) = Sfcprop%tisfc(i)
                tice(i) = Sfcprop%tisfc(i)
-           snowd3(i,2) = Sfcprop%snowd(i) / fice(i)
+!          snowd3(i,2) = Sfcprop%snowd(i) / fice(i)
             ep1d3(i,2) = zero
             gflx3(i,2) = zero
            semis3(i,2) = 0.95_kind_phys
         endif
         if (nint(Sfcprop%slmsk(i)) /= 1) Sfcprop%slmsk(i) = islmsk(i)
       enddo
+!
+      if (Model%frac_grid) then
+        do i=1,im
+          if (dry(i)) then
+            if (icy(i)) then
+              snowd3(i,1) = Sfcprop%snowd(i) / (frland(i) + fice(i))
+              snowd3(i,2) = snowd3(i,2)
+            else
+              snowd3(i,1) = Sfcprop%snowd(i) / frland(i)
+              snowd3(i,2) = zero
+            endif
+          elseif (icy(i)) then
+            snowd3(i,1) = zero
+            snowd3(i,2) = Sfcprop%snowd(i) / fice(i)
+          endif
+        enddo
+      else
+        do i=1,im
+          if (dry(i)) then
+            snowd3(i,1) = Sfcprop%snowd(i)
+            snowd3(i,2) = zero
+          elseif (icy(i)) then
+            snowd3(i,1) = zero
+            snowd3(i,2) = Sfcprop%snowd(i) / fice(i)
+          endif
+        enddo
+      endif
 !*## CCPP ##
 
 !## CCPP ## global to local variable transfer not necessary for these variables
