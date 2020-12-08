@@ -437,7 +437,8 @@ module GFS_typedefs
                                                                  !< difference of dnfxc & upfxc from GFS_radtend_type%sfcfsw
     real (kind=kind_phys), pointer :: sfcdlw(:)      => null()   !< total sky sfc downward lw flux ( w/m**2 )
                                                                  !< GFS_radtend_type%sfclsw%dnfxc
-
+    real (kind=kind_phys), pointer :: sfculw(:)      => null()   !< total sky sfc upward lw flux ( w/m**2 ) 
+    real (kind=kind_phys), pointer :: sfculw_jac(:)  => null()   !< Jacobian of total sky sfc upward lw flux ( w/m**2/K ) 
 !--- incoming quantities
     real (kind=kind_phys), pointer :: dusfcin_cpl(:) => null()   !< aoi_fld%dusfcin(item,lan)
     real (kind=kind_phys), pointer :: dvsfcin_cpl(:) => null()   !< aoi_fld%dvsfcin(item,lan)
@@ -2068,7 +2069,6 @@ module GFS_typedefs
     ! RRTMGP
     integer                             :: ipsdlw0                              !<
     integer                             :: ipsdsw0                              !<
-    real (kind=kind_phys), pointer      :: sktp1r(:)                 => null()  !<
     real (kind=kind_phys), pointer      :: p_lay(:,:)                => null()  !<
     real (kind=kind_phys), pointer      :: p_lev(:,:)                => null()  !<
     real (kind=kind_phys), pointer      :: t_lev(:,:)                => null()  !<
@@ -2702,10 +2702,14 @@ module GFS_typedefs
     allocate (Coupling%sfcdsw (IM))
     allocate (Coupling%sfcnsw (IM))
     allocate (Coupling%sfcdlw (IM))
+    allocate (Coupling%sfculw (IM))
+    allocate (Coupling%sfculw_jac (IM))
 
     Coupling%sfcdsw = clear_val
     Coupling%sfcnsw = clear_val
     Coupling%sfcdlw = clear_val
+    Coupling%sfculw = clear_val
+    Coupling%sfculw_jac = clear_val
 
     if (Model%cplflx .or. Model%do_sppt .or. Model%cplchm .or. Model%ca_global) then
       allocate (Coupling%rain_cpl (IM))
@@ -6602,10 +6606,6 @@ module GFS_typedefs
     allocate (Interstitial%zt1d            (IM))
 
     ! RRTMGP
-    allocate (Interstitial%fluxlwDOWN_jac       (IM, Model%levs+1))
-    allocate (Interstitial%fluxlwUP_jac         (IM, Model%levs+1))
-    allocate (Interstitial%sktp1r               (IM))
-    allocate (Interstitial%fluxlwUP_allsky      (IM, Model%levs+1))
     if (Model%do_RRTMGP) then
        allocate (Interstitial%tracer               (IM, Model%levs,Model%ntrac))
        allocate (Interstitial%tv_lay               (IM, Model%levs))
@@ -6621,6 +6621,7 @@ module GFS_typedefs
        allocate (Interstitial%precip_overlap_param (IM, Model%levs))
        allocate (Interstitial%fluxlwDOWN_allsky    (IM, Model%levs+1))
        allocate (Interstitial%fluxlwUP_clrsky      (IM, Model%levs+1))
+       allocate (Interstitial%fluxlwUP_allsky      (IM, Model%levs+1))
        allocate (Interstitial%fluxlwDOWN_clrsky    (IM, Model%levs+1))
        allocate (Interstitial%fluxswUP_allsky      (IM, Model%levs+1))
        allocate (Interstitial%fluxswDOWN_allsky    (IM, Model%levs+1))
@@ -7009,8 +7010,9 @@ module GFS_typedefs
         Interstitial%cwm       = clear_val
       end if
     end if
-
+    
     if (Model%do_RRTMGP) then
+      Interstitial%fluxlwUP_allsky      = clear_val
       Interstitial%tracer               = clear_val
       Interstitial%tv_lay               = clear_val
       Interstitial%relhum               = clear_val
@@ -7232,7 +7234,7 @@ module GFS_typedefs
     Interstitial%tseal           = clear_val
     Interstitial%tsfc_ice        = huge
     Interstitial%tsfc_land       = huge
-    Interstitial%tsfc_ocean      = huge
+    Interstitial%tsfc_ocean      = huge  
     Interstitial%tsurf           = clear_val
     Interstitial%tsurf_ice       = huge
     Interstitial%tsurf_land      = huge
@@ -7619,7 +7621,7 @@ module GFS_typedefs
     write (0,*) 'sum(Interstitial%tsfa            ) = ', sum(Interstitial%tsfa            )
     write (0,*) 'sum(Interstitial%tsfc_ice        ) = ', sum(Interstitial%tsfc_ice        )
     write (0,*) 'sum(Interstitial%tsfc_land       ) = ', sum(Interstitial%tsfc_land       )
-    write (0,*) 'sum(Interstitial%tsfc_ocean      ) = ', sum(Interstitial%tsfc_ocean      )
+    write (0,*) 'sum(Interstitial%tsfc_ocean      ) = ', sum(Interstitial%tsfc_ocean      ) 
     write (0,*) 'sum(Interstitial%tsfg            ) = ', sum(Interstitial%tsfg            )
     write (0,*) 'sum(Interstitial%tsurf           ) = ', sum(Interstitial%tsurf           )
     write (0,*) 'sum(Interstitial%tsurf_ice       ) = ', sum(Interstitial%tsurf_ice       )
