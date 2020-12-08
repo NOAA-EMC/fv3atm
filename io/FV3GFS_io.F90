@@ -1070,14 +1070,7 @@ module FV3GFS_io_mod
         endif
 
         if(Model%frac_grid) then ! obtain slmsk from landfrac
-!! next 5 lines are temporary till lake model is available
-          if (Sfcprop(nb)%lakefrac(ix) > zero) then
-!           Sfcprop(nb)%lakefrac(ix) = nint(Sfcprop(nb)%lakefrac(ix))
-            Sfcprop(nb)%landfrac(ix) = one - Sfcprop(nb)%lakefrac(ix)
-            if (Sfcprop(nb)%lakefrac(ix) == zero) Sfcprop(nb)%fice(ix) = zero
-          endif 
-          Sfcprop(nb)%slmsk(ix) = ceiling(Sfcprop(nb)%landfrac(ix))
-          if (Sfcprop(nb)%fice(ix) > Model%min_lakeice .and. Sfcprop(nb)%landfrac(ix) == zero) Sfcprop(nb)%slmsk(ix) = 2 ! land dominates ice if co-exist
+          Sfcprop(nb)%slmsk(ix) = ceiling(Sfcprop(nb)%landfrac(ix)) !nint/floor are options
         else ! obtain landfrac from slmsk
           if (Sfcprop(nb)%slmsk(ix) > 1.9_r8) then
             Sfcprop(nb)%landfrac(ix) = zero
@@ -1088,16 +1081,32 @@ module FV3GFS_io_mod
 
         if (Sfcprop(nb)%lakefrac(ix) > zero) then
           Sfcprop(nb)%oceanfrac(ix) = zero ! lake & ocean don't coexist in a cell
-!         if (Sfcprop(nb)%fice(ix) < Model%min_lakeice) then
-!            Sfcprop(nb)%fice(ix) = zero
-!            if (Sfcprop(nb)%slmsk(ix) == 2) Sfcprop(nb)%slmsk(ix) = 0
-!         endif
+          if (Sfcprop(nb)%slmsk(ix) /= one) then
+            if (Sfcprop(nb)%fice(ix) >= Model%min_lakeice) then
+              if (Sfcprop(nb)%slmsk(ix) < 1.9_r8)      &
+                write(*,'(a,2i3,3f6.2)') 'reset lake slmsk=2 at nb,ix=' &
+               ,nb,ix,Sfcprop(nb)%fice(ix),Sfcprop(nb)%slmsk(ix),Sfcprop(nb)%lakefrac(ix)
+                Sfcprop(nb)%slmsk(ix) = 2.
+            else if (Sfcprop(nb)%slmsk(ix) > 1.e-7) then
+                write(*,'(a,2i3,3f6.2)') 'reset lake slmsk=0 at nb,ix=' &
+               ,nb,ix,Sfcprop(nb)%fice(ix),Sfcprop(nb)%slmsk(ix),Sfcprop(nb)%lakefrac(ix)
+                Sfcprop(nb)%slmsk(ix) = zero
+            end if
+          end if
         else
           Sfcprop(nb)%oceanfrac(ix) = one - Sfcprop(nb)%landfrac(ix)
-!         if (Sfcprop(nb)%fice(ix) < Model%min_seaice) then
-!            Sfcprop(nb)%fice(ix) = zero
-!            if (Sfcprop(nb)%slmsk(ix) == 2) Sfcprop(nb)%slmsk(ix) = 0
-!         endif
+          if (Sfcprop(nb)%slmsk(ix) /= one) then
+            if (Sfcprop(nb)%fice(ix) >= Model%min_seaice) then
+              if (Sfcprop(nb)%slmsk(ix) < 1.9_r8)      &
+                write(*,'(a,2i3,3f6.2)') 'reset sea slmsk=2 at nb,ix=' &
+               ,nb,ix,Sfcprop(nb)%fice(ix),Sfcprop(nb)%slmsk(ix),Sfcprop(nb)%landfrac(ix)
+                Sfcprop(nb)%slmsk(ix) = 2.
+            else if (Sfcprop(nb)%slmsk(ix) > 1.e-7) then
+                write(*,'(a,2i3,4f6.2)') 'reset sea slmsk=0 at nb,ix=' &
+               ,nb,ix,Sfcprop(nb)%fice(ix),Sfcprop(nb)%slmsk(ix),Sfcprop(nb)%landfrac(ix)
+                Sfcprop(nb)%slmsk(ix) = zero
+            end if
+          end if
         endif
         !
         !--- NSSTM variables
@@ -1351,7 +1360,7 @@ module FV3GFS_io_mod
       endif
 
       if (sfc_var2(i,j,nvar_s2m) < -9990.0_r8) then
-        if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing zorli')
+        if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing zorlw')
 !$omp parallel do default(shared) private(nb, ix)
         do nb = 1, Atm_block%nblks
           do ix = 1, Atm_block%blksz(nb)
@@ -1366,7 +1375,7 @@ module FV3GFS_io_mod
 !$omp parallel do default(shared) private(nb, ix, tem, tem1)
       do nb = 1, Atm_block%nblks
         do ix = 1, Atm_block%blksz(nb)
-          Sfcprop(nb)%tsfco(ix) = max(con_tice, Sfcprop(nb)%tsfco(ix))
+          if( Model%phour < 1.e-7) Sfcprop(nb)%tsfco(ix) = max(con_tice, Sfcprop(nb)%tsfco(ix)) ! this may break restart reproducibility 
           tem1 = one - Sfcprop(nb)%landfrac(ix)
           tem  = tem1 * Sfcprop(nb)%fice(ix) ! tem = ice fraction wrt whole cell
           Sfcprop(nb)%zorl(ix) = Sfcprop(nb)%zorll(ix) * Sfcprop(nb)%landfrac(ix) &
