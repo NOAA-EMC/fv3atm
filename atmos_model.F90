@@ -100,7 +100,7 @@ use CCPP_data,          only: ccpp_suite,                      &
 use IPD_driver,         only: IPD_initialize, IPD_initialize_rst
 use CCPP_driver,        only: CCPP_step, non_uniform_blocks
 
-use stochastic_physics_wrapper_mod, only: stochastic_physics_wrapper
+use stochastic_physics_wrapper_mod, only: stochastic_physics_wrapper,stochastic_physics_wrapper_end
 #else
 use IPD_driver,         only: IPD_initialize, IPD_initialize_rst, IPD_step
 use physics_abstraction_layer, only: time_vary_step, radiation_step1, physics_step1, physics_step2
@@ -962,6 +962,9 @@ subroutine atmos_model_end (Atmos)
 !---- termination routine for atmospheric model ----
 
     call atmosphere_end (Atmos % Time, Atmos%grid, restart_endfcst)
+
+    call stochastic_physics_wrapper_end(IPD_Control)
+
     if(restart_endfcst) then
       call FV3GFS_restart_write (IPD_Data, IPD_Restart, Atm_block, &
                                  IPD_Control, Atmos%domain)
@@ -1761,7 +1764,6 @@ end subroutine atmos_data_type_chksum
                   nb = Atm_block%blkno(i,j)
                   ix = Atm_block%ixp(i,j)
 
-                  IPD_Data(nb)%Sfcprop%fice(ix)          = zero
                   IPD_Data(nb)%Coupling%slimskin_cpl(ix) = IPD_Data(nb)%Sfcprop%slmsk(ix)
                   ofrac = IPD_Data(nb)%Sfcprop%oceanfrac(ix)
                   if (ofrac > zero) then
@@ -1776,7 +1778,7 @@ end subroutine atmos_data_type_chksum
                       if (abs(one-ofrac) < epsln) then
                         IPD_Data(nb)%Sfcprop%slmsk(ix)         = zero
                         IPD_Data(nb)%Coupling%slimskin_cpl(ix) = zero
-                      end if
+                      endif
                     endif
                   endif
                 enddo

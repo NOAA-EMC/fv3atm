@@ -66,7 +66,7 @@ $(LIBRARY): $(OBJS)
 FV3GFS_io.o: FV3GFS_io.F90
 	$(FC) $(CPPDEFS) $(CPPFLAGS) $(FPPFLAGS) $(FFLAGS) $(OTHERFLAGS) $(OTHER_FFLAGS) $(ESMF_INC) -c FV3GFS_io.F90
 post_nems_routines.o: post_nems_routines.F90
-	$(FC) $(CPPDEFS) $(CPPFLAGS) $(FPPFLAGS) $(FFLAGS) $(OTHERFLAGS) $(OTHER_FFLAGS) -I$(POST_INC) -c post_nems_routines.F90
+	$(FC) $(CPPDEFS) $(CPPFLAGS) $(FPPFLAGS) $(FFLAGS) $(OTHERFLAGS) $(OTHER_FFLAGS) -I$(UPP_INC) -c post_nems_routines.F90
 module_write_nemsio.o: module_write_nemsio.F90
 	$(FC) $(CPPDEFS) $(CPPFLAGS) $(FPPFLAGS) $(FFLAGS) $(OTHERFLAGS) $(OTHER_FFLAGS) $(ESMF_INC) $(NEMSIOINC) -c module_write_nemsio.F90
 module_write_netcdf.o: module_write_netcdf.F90
@@ -80,7 +80,7 @@ module_write_internal_state.o: module_write_internal_state.F90
 module_wrt_grid_comp.o: module_wrt_grid_comp.F90
 	$(FC) $(CPPDEFS) $(CPPFLAGS) $(FPPFLAGS) $(FFLAGS) $(OTHERFLAGS) $(OTHER_FFLAGS) $(ESMF_INC) -c module_wrt_grid_comp.F90
 post_gfs.o: post_gfs.F90
-	$(FC) $(CPPDEFS) $(CPPFLAGS) $(FPPFLAGS) $(FFLAGS) $(OTHERFLAGS) $(OTHER_FFLAGS) $(ESMF_INC) -I$(POST_INC) -c post_gfs.F90
+	$(FC) $(CPPDEFS) $(CPPFLAGS) $(FPPFLAGS) $(FFLAGS) $(OTHERFLAGS) $(OTHER_FFLAGS) $(ESMF_INC) -I$(UPP_INC) -c post_gfs.F90
 post_gfs_stub.o: post_gfs_stub.F90
 	$(FC) $(CPPDEFS) $(CPPFLAGS) $(FPPFLAGS) $(FFLAGS) $(OTHERFLAGS) $(OTHER_FFLAGS) $(ESMF_INC) -c post_gfs_stub.F90
 

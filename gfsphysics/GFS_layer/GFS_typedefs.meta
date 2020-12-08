@@ -1267,14 +1267,6 @@
   type = real
   kind = kind_phys
   active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme) 
-[zs]
-  standard_name = depth_of_soil_levels_for_land_surface_model
-  long_name = depth of soil levels for land surface model
-  units = m
-  dimensions = (soil_vertical_dimension_for_land_surface_model)
-  type = real
-  kind = kind_phys
-  active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme) 
 [clw_surf]
   standard_name = cloud_condensed_water_mixing_ratio_at_surface
   long_name = moist cloud water mixing ratio at surface
@@ -2186,6 +2178,13 @@
   units = none
   dimensions = ()
   type = integer
+[fhzero]
+  standard_name = hours_between_clearing_of_diagnostic_buckets
+  long_name = hours between clearing of diagnostic buckets
+  units = h
+  dimensions = ()
+  type = real
+  kind = kind_phys
 [fn_nml]
   standard_name = namelist_filename
   long_name = namelist filename
@@ -3274,6 +3273,14 @@
   units = count
   dimensions = ()
   type = integer
+[zs]
+  standard_name = depth_of_soil_levels_for_land_surface_model
+  long_name = depth of soil levels for land surface model
+  units = m
+  dimensions = (soil_vertical_dimension_for_land_surface_model)
+  type = real
+  kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme) 
 [rdlai]
   standard_name = flag_for_reading_leaf_area_index_from_input
   long_name = flag for reading leaf area index from initial conditions
@@ -4838,6 +4845,62 @@
   units = flag
   dimensions = ()
   type = logical
+[do_ugwp_v0]
+  standard_name = do_ugwp_v0
+  long_name = flag to activate ver 0 CIRES UGWP
+  units = flag
+  dimensions = ()
+  type = logical
+  intent = in
+  optional = F
+[do_ugwp_v0_orog_only]
+  standard_name = do_ugwp_v0_orog_only
+  long_name = flag to activate ver 0 CIRES UGWP - orographic GWD only
+  units = flag
+  dimensions = ()
+  type = logical
+  intent = in
+  optional = F
+[do_gsl_drag_ls_bl]
+  standard_name = do_gsl_drag_ls_bl
+  long_name = flag to activate GSL drag suite - large-scale GWD and blocking
+  units = flag
+  dimensions = ()
+  type = logical
+  intent = in
+  optional = F
+[do_gsl_drag_ss]
+  standard_name = do_gsl_drag_ss
+  long_name = flag to activate GSL drag suite - small-scale GWD
+  units = flag
+  dimensions = ()
+  type = logical
+  intent = in
+  optional = F
+[do_gsl_drag_tofd]
+  standard_name = do_gsl_drag_tofd
+  long_name = flag to activate GSL drag suite - turb orog form drag
+  units = flag
+  dimensions = ()
+  type = logical
+  intent = in
+  optional = F
+[do_ugwp_v1]
+  standard_name = do_ugwp_v1
+  long_name = flag to activate ver 1 CIRES UGWP
+  units = flag
+  dimensions = ()
+  type = logical
+  intent = in
+  optional = F
+[do_ugwp_v1_orog_only]
+  standard_name = do_ugwp_v1_orog_only
+  long_name = flag to activate ver 1 CIRES UGWP - orographic GWD only
+  units = flag
+  dimensions = ()
+  type = logical
+  intent = in
+  optional = F
 [lmfdeep2]
   standard_name = flag_for_scale_aware_mass_flux_convection
   long_name = flag for some scale-aware mass-flux convection scheme active
@@ -10501,6 +10564,20 @@
   dimensions = ()
   type = real
   kind = kind_phys  
+[con_omega]
+  standard_name = angular_velocity_of_earth
+  long_name = angular velocity of earth
+  units = s-1
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[con_rerth]
+  standard_name = radius_of_earth
+  long_name = radius of earth
+  units = m
+  dimensions = ()
+  type = real
+  kind = kind_phys
 [con_epsm1]
   standard_name = ratio_of_dry_air_to_water_vapor_gas_constants_minus_one
   long_name = (rd/rv) - 1
