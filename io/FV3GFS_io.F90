@@ -962,11 +962,11 @@ module FV3GFS_io_mod
     endif
 #endif
       !--- register the 3D fields
-    if (Model%frac_grid) then
+!   if (Model%frac_grid) then
       sfc_name3(0) = 'tiice'
       var3_p => sfc_var3ice(:,:,:)
       id_restart = register_restart_field(Sfc_restart, fn_srf, sfc_name3(0), var3_p, domain=fv_domain, mandatory=.false.)
-    end if
+!   end if
  
     do num = 1,nvar_s3
       var3_p => sfc_var3(:,:,:,num)
@@ -1994,11 +1994,11 @@ module FV3GFS_io_mod
 #endif
 
       !--- register the 3D fields
-      if (Model%frac_grid) then
+!     if (Model%frac_grid) then
         sfc_name3(0) = 'tiice'
         var3_p => sfc_var3ice(:,:,:)
         id_restart = register_restart_field(Sfc_restart, fn_srf, sfc_name3(0), var3_p, domain=fv_domain)
-      endif
+!     endif
 
       do num = 1,nvar3
         var3_p => sfc_var3(:,:,:,num)
