@@ -178,6 +178,7 @@ if(CCPP)
   target_link_libraries(fv3atm PUBLIC ccppdriver ccppphys ccpp)
 endif()
 target_include_directories(fv3atm PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/stochastic_physics)
+target_include_directories(fv3atm PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/../stochastic_physics)
 target_compile_definitions(fv3atm PRIVATE "${_fv3atm_defs_private}")
 
 target_link_libraries(fv3atm PUBLIC fv3dycore

@@ -12,7 +12,7 @@ ifeq ($(strip $(exist)),)
 endif
 
 
-FFLAGS   += -I$(FMS_DIR) -Igfsphysics -Iipd -Icpl -Iio -Iatmos_cubed_sphere -Iccpp/driver -Istochastic_physics
+FFLAGS   += -I$(FMS_DIR) -Igfsphysics -Iipd -Icpl -Iio -Iatmos_cubed_sphere -Iccpp/driver -Istochastic_physics -I../stochastic_physics
 CPPDEFS  += -DESMF_VERSION_MAJOR=$(ESMF_VERSION_MAJOR)
 
 # Flag to CCPP build for 32bit dynamics

@@ -951,6 +951,7 @@ subroutine update_atmos_model_state (Atmos)
 ! </INOUT>
 
 subroutine atmos_model_end (Atmos)
+  use get_stochy_pattern_mod, only: write_stoch_restart_atm
   type (atmos_data_type), intent(inout) :: Atmos
 !---local variables
   integer :: idx, seconds
@@ -963,12 +964,13 @@ subroutine atmos_model_end (Atmos)
 
     call atmosphere_end (Atmos % Time, Atmos%grid, restart_endfcst)
 
-    call stochastic_physics_wrapper_end(IPD_Control)
 
     if(restart_endfcst) then
       call FV3GFS_restart_write (IPD_Data, IPD_Restart, Atm_block, &
                                  IPD_Control, Atmos%domain)
+      call write_stoch_restart_atm('RESTART/atm_stoch.res.nc')
     endif
+    call stochastic_physics_wrapper_end(IPD_Control)
 
 #ifdef CCPP
 !   Fast physics (from dynamics) are finalized in atmosphere_end above;

@@ -66,6 +66,7 @@ use  diag_manager_mod, only: diag_manager_init, diag_manager_end, &
                              get_base_date, diag_manager_set_time_end
 
 use data_override_mod, only: data_override_init
+use get_stochy_pattern_mod, only: write_stoch_restart_atm
 
 
 implicit none
@@ -158,6 +159,7 @@ character(len=128) :: tag = '$Name: ulm_201505 $'
       if ((nc /= num_cpld_calls) .and. (Time_atmos == Time_restart)) then
         timestamp = date_to_string (Time_restart)
         call atmos_model_restart(Atm, timestamp)
+        call write_stoch_restart_atm('RESTART/'//trim(timestamp)//'.atm_stoch.res.nc')
         call coupler_res(timestamp)
         Time_restart = Time_restart + Time_step_restart
       endif
