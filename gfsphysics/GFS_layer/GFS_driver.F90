@@ -133,8 +133,6 @@ module GFS_driver
     use module_mp_thompson,  only: thompson_init
     use module_mp_wsm6,      only: wsm6init
     use cires_ugwp_module,   only: cires_ugwp_init
-#else
-    use set_soilveg_mod,     only: set_soilveg
 #endif
 
     !--- interface variables

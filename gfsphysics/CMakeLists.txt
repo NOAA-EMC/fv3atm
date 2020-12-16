@@ -12,6 +12,8 @@ if(32BIT)
 endif()
 
 set(CCPP_SOURCES
+    physics/namelist_soilveg.f
+    physics/set_soilveg.f
     physics/noahmp_tables.f90
 
     CCPP_layer/CCPP_data.F90
