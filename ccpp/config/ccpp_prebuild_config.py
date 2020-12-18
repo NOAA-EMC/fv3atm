@@ -113,6 +113,8 @@ SCHEME_FILES = [
     'ccpp/physics/physics/GFS_time_vary_pre.fv3.F90',
     'ccpp/physics/physics/cires_ugwp.F90',
     'ccpp/physics/physics/cires_ugwp_post.F90',
+    'ccpp/physics/physics/unified_ugwp.F90',
+    'ccpp/physics/physics/unified_ugwp_post.F90',
     'ccpp/physics/physics/cnvc90.f',
     'ccpp/physics/physics/cs_conv.F90',
     'ccpp/physics/physics/cs_conv_aw_adj.F90',
@@ -159,6 +161,7 @@ SCHEME_FILES = [
     'ccpp/physics/physics/ozphys_2015.f',
     'ccpp/physics/physics/precpd.f',
     'ccpp/physics/physics/phys_tend.F90',
+    'ccpp/physics/physics/tracer_sanitizer.F90',
     'ccpp/physics/physics/radlw_main.F90',
     'ccpp/physics/physics/radsw_main.F90',
     'ccpp/physics/physics/rascnv.F90',
@@ -200,8 +203,10 @@ SCHEME_FILES = [
     'ccpp/physics/physics/rrtmgp_lw_cloud_sampling.F90',
     'ccpp/physics/physics/rrtmgp_sw_cloud_sampling.F90',
     'ccpp/physics/physics/GFS_cloud_diagnostics.F90',
+    'ccpp/physics/physics/GFS_rrtmgp_thompsonmp_pre.F90',
     'ccpp/physics/physics/GFS_rrtmgp_gfdlmp_pre.F90',
     'ccpp/physics/physics/GFS_rrtmgp_zhaocarr_pre.F90',
+    'ccpp/physics/physics/GFS_rrtmgp_cloud_overlap_pre.F90',
     'ccpp/physics/physics/GFS_rrtmgp_sw_post.F90'
     ]
 
@@ -296,12 +301,6 @@ OPTIONAL_ARGUMENTS = {
             'rime_factor',
             ],
         },
-    'rrtmgp_lw_rte' : {
-         'rrtmgp_lw_rte_run' : [
-             'RRTMGP_jacobian_of_lw_flux_profile_upward',
-             'RRTMGP_jacobian_of_lw_flux_profile_downward',
-             ],
-         },
     'rrtmgp_sw_rte' : {
          'rrtmgp_sw_rte_run' : [
              'components_of_surface_downward_shortwave_fluxes',
@@ -316,12 +315,6 @@ OPTIONAL_ARGUMENTS = {
     'GFS_rrtmgp_lw_post' : {
          'GFS_rrtmgp_lw_post_run' : [
              'tendency_of_air_temperature_due_to_longwave_heating_assuming_clear_sky_on_radiation_time_step',
-             ],
-         },
-    'GFS_suite_interstitial_2' : {
-         'GFS_suite_interstitial_2_run' : [
-             'RRTMGP_jacobian_of_lw_flux_profile_upward',
-             'RRTMGP_lw_flux_profile_upward_allsky',
              ],
          },
     #'subroutine_name_1' : 'all',
