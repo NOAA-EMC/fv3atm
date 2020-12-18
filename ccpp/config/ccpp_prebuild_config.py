@@ -178,7 +178,6 @@ SCHEME_FILES = [
     'FV3/ccpp/physics/physics/sfc_ocean.F',
     'FV3/ccpp/physics/physics/sfc_sice.f',
     'FV3/ccpp/physics/physics/tracer_sanitizer.F90',
-    'FV3/ccpp/physics/gsdchem/gsd_chem_stochastic.F90',
     'FV3/ccpp/physics/gsdchem/gsd_chem_seas_wrapper.F90',
     'FV3/ccpp/physics/gsdchem/gsd_chem_dust_wrapper.F90',
     'FV3/ccpp/physics/gsdchem/gsd_chem_anthropogenic_wrapper.F90',

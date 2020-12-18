@@ -2853,12 +2853,13 @@ module GFS_typedefs
       Coupling%condition = clear_val
     endif
 
+    !if (Model%ca_global_emis .or. Model%do_sppt_emis) then
+      allocate (Coupling%emis_multiplier (IM))
+      Coupling%emis_multiplier = 1.0
+    !endif
+
     ! -- GSDCHEM coupling options
     if (Model%cplchm) then
-      !--- stochastic perturbations of emissions:
-      allocate (Coupling%emis_multiplier (IM))
-      Coupling%emis_multiplier = clear_val
-
       !--- outgoing instantaneous quantities
       allocate (Coupling%ushfsfci  (IM))
       allocate (Coupling%dkt       (IM,Model%levs))
