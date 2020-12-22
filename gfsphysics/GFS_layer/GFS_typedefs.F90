@@ -1069,6 +1069,10 @@ module GFS_typedefs
                                               ! multiple patterns. It wasn't fully coded (and wouldn't have worked 
                                               ! with nlndp>1, so I just dropped it). If we want to code it properly, 
                                               ! we'd need to make this dim(6,5).
+    real(kind=kind_phys) :: emis_amp_anthro   ! Amplitude of random multiplier for anthropogenic emissions
+    real(kind=kind_phys) :: emis_amp_dust     ! Amplitude of random multiplier for dust emissions
+    real(kind=kind_phys) :: emis_amp_plume    ! Amplitude of random multiplier for plume rising
+    real(kind=kind_phys) :: emis_amp_seas     ! Amplitude of random multiplier for sea spray
 !--- tracer handling
     character(len=32), pointer :: tracer_names(:) !< array of initialized tracers from dynamic core
     integer              :: ntrac           !< number of tracers
@@ -3421,6 +3425,11 @@ module GFS_typedefs
     integer :: lndp_type    = 0 
     integer :: n_var_lndp   =  0 
 
+    real(kind=kind_phys) :: emis_amp_anthro = 1.0
+    real(kind=kind_phys) :: emis_amp_dust = 1.0
+    real(kind=kind_phys) :: emis_amp_plume = 1.0
+    real(kind=kind_phys) :: emis_amp_seas = 1.0
+
 #ifdef CCPP
 !-- chem nml variables for FV3/CCPP-Chem
     integer :: aer_bc_opt = 1
@@ -3536,7 +3545,9 @@ module GFS_typedefs
                                cs_parm, flgmin, cgwf, ccwf, cdmbgwd, sup, ctei_rm, crtrh,   &
                                dlqf, rbcr, shoc_parm, psauras, prauras, wminras,            &
                                do_sppt, do_shum, do_skeb, lndp_type,  n_var_lndp,           &
-                               do_sppt_emis,                                                &
+                               do_sppt_emis, emis_amp_anthro, emis_amp_dust,                &
+                               emis_amp_plume, emis_amp_seas,                               &
+
                           !--- Rayleigh friction
                                prslrd0, ral_ts,  ldiag_ugwp, do_ugwp, do_tofd,              &
                           ! --- Ferrier-Aligo
@@ -4172,6 +4183,11 @@ module GFS_typedefs
     Model%do_skeb          = do_skeb
     Model%lndp_type        = lndp_type
     Model%n_var_lndp       = n_var_lndp
+
+    Model%emis_amp_anthro  = emis_amp_anthro
+    Model%emis_amp_dust    = emis_amp_dust
+    Model%emis_amp_plume   = emis_amp_plume
+    Model%emis_amp_seas    = emis_amp_seas
 
     !--- cellular automata options
     Model%nca              = nca

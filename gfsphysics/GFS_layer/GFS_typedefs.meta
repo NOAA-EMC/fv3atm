@@ -3983,6 +3983,34 @@
   dimensions =  (number_of_land_surface_variables_perturbed) 
   type = character
   kind = len=3
+[emis_amp_anthro]
+  standard_name = anthropogenic_emissions_perturbation_amplitude
+  long_name = multiplier of emissions random perturbation of anthropogenic emissions
+  units = none
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[emis_amp_dust]
+  standard_name = dust_emissions_perturbation_amplitude
+  long_name = multiplier of emissions random perturbation of dust emissions
+  units = none
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[emis_amp_plume]
+  standard_name = plume_emissions_perturbation_amplitude
+  long_name = multiplier of emissions random perturbation of plume rise emissions
+  units = none
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[emis_amp_seas]
+  standard_name = sea_spray_emissions_perturbation_amplitude
+  long_name = multiplier of emissions random perturbation of sea salt emissions
+  units = none
+  dimensions = ()
+  type = real
+  kind = kind_phys
 [ntrac]
   standard_name = number_of_tracers
   long_name = number of tracers
