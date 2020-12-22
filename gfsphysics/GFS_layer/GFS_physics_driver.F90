@@ -1179,6 +1179,14 @@ module module_physics_driver
               if (fice(i) >= Model%min_seaice) then
                 icy(i) = .true.
                 Sfcprop%tisfc(i) = max(timin, min(Sfcprop%tisfc(i), tgice))
+                if (Model%cplflx)  then
+                  islmsk_cice(i) = 4
+                  flag_cice(i)   = .true.
+                else
+                  islmsk_cice(i) = 2
+                  flag_cice(i)   = .false.
+                endif
+                islmsk(i) = 2
               else
                 fice(i)        = zero
                 zice(i)        = zero
@@ -1194,11 +1202,14 @@ module module_physics_driver
               if (fice(i) >= Model%min_lakeice) then
                 icy(i) = .true.
                 Sfcprop%tisfc(i) = max(timin, min(Sfcprop%tisfc(i), tgice))
+                islmsk(i) = 2
               else
                 fice(i)   = zero
                 zice(i)   = zero
                 islmsk(i) = 0
               endif
+              islmsk_cice(i) = islmsk(i)
+              flag_cice(i)   = .false.
               if (fice(i) < one) then
                 wet(i) = .true. ! some open lake
                 if (icy(i)) Sfcprop%tsfco(i) = max(Sfcprop%tisfc(i), tgice)
@@ -1264,7 +1275,8 @@ module module_physics_driver
 !          snowd3(i,3) = Sfcprop%snowd(i)
            snowd3(i,3) = zero
            weasd3(i,3) = zero
-           semis3(i,3) = 0.984_kind_phys
+           semis3(i,3) = 0.97_kind_phys
+!          semis3(i,3) = 0.984_kind_phys
         endif
 !
         if (dry(i)) then                   ! Land
@@ -1287,7 +1299,8 @@ module module_physics_driver
 !          snowd3(i,2) = Sfcprop%snowd(i) / fice(i)
             ep1d3(i,2) = zero
             gflx3(i,2) = zero
-           semis3(i,2) = 0.95_kind_phys
+           semis3(i,2) = 0.96_kind_phys
+!          semis3(i,2) = 0.95_kind_phys
         endif
         if (nint(Sfcprop%slmsk(i)) /= 1) Sfcprop%slmsk(i) = islmsk(i)
       enddo

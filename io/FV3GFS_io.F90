@@ -1134,7 +1134,7 @@ module FV3GFS_io_mod
           endif
         else                                             ! not a fractional grid
           if (Sfcprop(nb)%landfrac(ix) > -999.0_r8) then
-            Sfcprop(nb)%slmsk(ix) = ceiling(Sfcprop(nb)%landfrac(ix))
+!           Sfcprop(nb)%slmsk(ix) = ceiling(Sfcprop(nb)%landfrac(ix))
             if (Sfcprop(nb)%lakefrac(ix) > zero) then
               Sfcprop(nb)%oceanfrac(ix) = zero
               Sfcprop(nb)%landfrac(ix)  = zero
@@ -1150,7 +1150,7 @@ module FV3GFS_io_mod
               Sfcprop(nb)%landfrac(ix)  = zero
               Sfcprop(nb)%lakefrac(ix)  = zero
               Sfcprop(nb)%slmsk(ix)     = zero
-              if (Sfcprop(nb)%fice(ix) >= Model%min_seaice) Sfcprop(nb)%slmsk(ix) = 2
+              if (Sfcprop(nb)%fice(ix) >= Model%min_seaice) Sfcprop(nb)%slmsk(ix) = 2.0
             endif
           else
             if (nint(Sfcprop(nb)%slmsk(ix)) == 1) then
