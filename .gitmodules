@@ -9,4 +9,4 @@
 [submodule "ccpp/physics"]
 	path = ccpp/physics
 	url = https://github.com/SamuelTrahanNOAA/ccpp-physics
-	branch = feature/perturb-everything
+	branch = feature/pert-scale

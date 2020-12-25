@@ -3983,6 +3983,34 @@
   dimensions =  (number_of_land_surface_variables_perturbed) 
   type = character
   kind = len=3
+[pert_scale_anthro]
+  standard_name = anthropogenic_scaling_factor
+  long_name = Scaling factor for emissions of anthropogenic emissions
+  units = none
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[pert_scale_dust]
+  standard_name = dust_emissions_scaling_factor
+  long_name = Scaling factor for emissions of dust emissions
+  units = none
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[pert_scale_plume]
+  standard_name = plume_emissions_scaling_factor
+  long_name = Scaling factor for emissions of plume rising
+  units = none
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[pert_scale_seas]
+  standard_name = sea_spray_emissions_scaling_factor
+  long_name = Scaling factor for emissions of sea spray
+  units = none
+  dimensions = ()
+  type = real
+  kind = kind_phys
 [emis_amp_anthro]
   standard_name = anthropogenic_emissions_perturbation_amplitude
   long_name = multiplier of emissions random perturbation of anthropogenic emissions
