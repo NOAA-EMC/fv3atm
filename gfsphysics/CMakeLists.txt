@@ -12,14 +12,9 @@ if(32BIT)
 endif()
 
 set(CCPP_SOURCES
-    physics/mersenne_twister.f
     physics/namelist_soilveg.f
     physics/set_soilveg.f
-
     physics/noahmp_tables.f90
-
-    physics/GFDL_parse_tracers.F90
-    physics/physcons.F90
 
     CCPP_layer/CCPP_data.F90
     ${CMAKE_BINARY_DIR}/FV3/ccpp/physics/ccpp_static_api.F90
