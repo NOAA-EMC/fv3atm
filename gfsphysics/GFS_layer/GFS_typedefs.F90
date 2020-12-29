@@ -1173,10 +1173,11 @@ module GFS_typedefs
     integer              :: nqvdelt         !< the index of specific humidity at the previous timestep for Z-C MP in phy_f3d
     integer              :: nps2delt        !< the index of surface air pressure 2 timesteps back for Z-C MP in phy_f2d
     integer              :: npsdelt         !< the index of surface air pressure at the previous timestep for Z-C MP in phy_f2d
+    integer              :: ncnvwind        !< the index of surface wind enhancement due to convection for MYNN SFC and RAS CNV in phy f2d
 #endif
 
 !--- debug flag
-    logical              :: debug         
+    logical              :: debug
     logical              :: pre_rad         !< flag for testing purpose
 
 !--- variables modified at each time step
@@ -4872,6 +4873,9 @@ module GFS_typedefs
     if(Model%do_shoc .or. Model%pdfcld) Model%cnvcld = .false.
 #endif
     if(Model%cnvcld) Model%ncnvcld3d = 1
+
+!--- get cnvwind index in phy_f2d; last entry in phy_f2d array
+    Model%ncnvwind = Model%num_p2d
 
 !--- get cnvw and cnvc indices in phy_f3d
     Model%ncnvw = -999

@@ -4504,6 +4504,12 @@
   units = 
   dimensions = ()
   type = integer
+[ncnvwind]
+  standard_name = index_for_surface_wind_enhancement_due_to_convection
+  long_name = the index of surface wind enhancement due to convection in phy f2d
+  units = 
+  dimensions = ()
+  type = integer
 [debug]
   standard_name = flag_debug
   long_name = control flag for debug
@@ -5285,14 +5291,14 @@
   type = real
   kind = kind_phys
   active = (index_for_surface_air_pressure_at_previous_timestep > 0)
-[phy_f2d(:,array_dimension_of_2d_arrays_for_microphysics)]
+[phy_f2d(:,index_for_surface_wind_enhancement_due_to_convection)]
   standard_name = surface_wind_enhancement_due_to_convection
   long_name = surface wind enhancement due to convection
   units = m s-1
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (array_dimension_of_2d_arrays_for_microphysics > 0)
+  active = (index_for_surface_wind_enhancement_due_to_convection > 0)
 [phy_f3d(:,:,index_for_air_temperature_two_timesteps_back)]
   standard_name = air_temperature_two_timesteps_back
   long_name = air temperature two timesteps back
