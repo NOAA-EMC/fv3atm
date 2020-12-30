@@ -253,7 +253,7 @@ subroutine update_atmos_radiation_physics (Atmos)
 !-----------------------------------------------------------------------
   type (atmos_data_type), intent(in) :: Atmos
 !--- local variables---
-    integer :: nb, jdat(8), rc
+    integer :: nb, jdat(8), rc, kdt_rad
     procedure(IPD_func0d_proc), pointer :: Func0d => NULL()
     procedure(IPD_func1d_proc), pointer :: Func1d => NULL()
     !
@@ -299,6 +299,29 @@ subroutine update_atmos_radiation_physics (Atmos)
       Func1d => time_vary_step
       call IPD_step (IPD_Control, IPD_Data(:), IPD_Diag, IPD_Restart, IPD_func1d=Func1d)
 #endif
+
+      !--- determine if radiation diagnostics buckets need to be cleared
+      if (nint(IPD_Control%fhzero*3600) >= nint(max(IPD_Control%fhswr,IPD_Control%fhlwr))) then
+        if (mod(IPD_Control%kdt,IPD_Control%nszero) == 1) then
+          do nb = 1,Atm_block%nblks
+            call IPD_Data(nb)%Intdiag%rad_zero(IPD_Control)
+          end do
+        endif
+      else
+        kdt_rad = nint(min(IPD_Control%fhswr,IPD_Control%fhlwr)/IPD_Control%dtp)
+        if (mod(IPD_Control%kdt,kdt_rad) == 1) then
+          do nb = 1,Atm_block%nblks
+            call IPD_Data(nb)%Intdiag%rad_zero(IPD_Control)
+          enddo
+        endif
+      endif
+
+      !--- determine if physics diagnostics buckets need to be cleared
+      if (mod(IPD_Control%kdt,IPD_Control%nszero) == 1) then
+        do nb = 1,Atm_block%nblks
+          call IPD_Data(nb)%Intdiag%phys_zero(IPD_Control)
+        end do
+      endif
 
 !--- if coupled, assign coupled fields
 
