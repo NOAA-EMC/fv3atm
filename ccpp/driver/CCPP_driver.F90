@@ -12,7 +12,8 @@ module CCPP_driver
                                 cdata_domain,                        &
                                 cdata_block,                         &
                                 ccpp_suite,                          &
-                                GFS_control
+                                GFS_control,                         &
+                                GFS_data
 
   implicit none
 
@@ -57,6 +58,8 @@ module CCPP_driver
     ! Local variables
     integer :: nb, nt, ntX
     integer :: ierr2
+    ! DH* 20210104 - remove kdt_rad when code to clear diagnostic buckets is removed
+    integer :: kdt_rad
 
     ierr = 0
 
@@ -123,6 +126,38 @@ module CCPP_driver
         write(0,'(a)') trim(cdata_domain%errmsg)
         return
       end if
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      ! DH* 20210104 - this block of code will be removed once the CCPP framework    !
+      ! fully supports handling diagnostics through its metadata, work in progress   !
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      !--- determine if radiation diagnostics buckets need to be cleared
+      if (nint(GFS_control%fhzero*3600) >= nint(max(GFS_control%fhswr,GFS_control%fhlwr))) then
+        if (mod(GFS_control%kdt,GFS_control%nszero) == 1) then
+          do nb = 1,nblks
+            call GFS_data(nb)%Intdiag%rad_zero(GFS_control)
+          end do
+        endif
+      else
+        kdt_rad = nint(min(GFS_control%fhswr,GFS_control%fhlwr)/GFS_control%dtp)
+        if (mod(GFS_control%kdt,kdt_rad) == 1) then
+          do nb = 1,nblks
+            call GFS_data(nb)%Intdiag%rad_zero(GFS_control)
+          enddo
+        endif
+      endif
+
+      !--- determine if physics diagnostics buckets need to be cleared
+      if (mod(GFS_control%kdt,GFS_control%nszero) == 1) then
+        do nb = 1,nblks
+          call GFS_data(nb)%Intdiag%phys_zero(GFS_control)
+        end do
+      endif
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      ! *DH 20210104                                                                 !
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     ! Radiation and stochastic physics
     else if (trim(step)=="radiation" .or. trim(step)=="physics" .or. trim(step)=="stochastics") then
