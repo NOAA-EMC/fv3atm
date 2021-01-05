@@ -43,7 +43,7 @@
       use module_write_nemsio, only : nemsio_first_call, write_nemsio
       use module_write_netcdf, only : write_netcdf
       use physcons,            only : pi => con_pi
-      use post_gfs,            only : post_run_gfs, post_getattr_gfs
+      use inline_post,         only : inline_post_run, inline_post_getattr
       use module_write_netcdf_parallel, only : write_netcdf_parallel
 !
 !-----------------------------------------------------------------------
@@ -82,6 +82,7 @@
       type(ESMF_FieldBundle)           :: gridFB
       integer                          :: FBcount
       character(len=esmf_maxstr),allocatable    :: fcstItemNameList(:)
+      real(ESMF_KIND_R4), dimension(:,:), allocatable  :: maskwrt
 !
 !-----------------------------------------------------------------------
       REAL(KIND=8)             :: btim,btim0
@@ -1159,11 +1160,8 @@
 !-----------------------------------------------------------------------
 !
       call ESMF_LogWrite("before initialize for POST", ESMF_LOGMSG_INFO, rc=rc)
-      if((trim(output_grid) == 'gaussian_grid' .or.  &
-          trim(output_grid) == 'global_latlon') .and. wrt_int_state%write_dopost) then
-        do i= 1, wrt_int_state%FBcount
-          call post_getattr_gfs(wrt_int_state,wrt_int_state%wrtFB(i))
-        enddo
+      if( wrt_int_state%write_dopost ) then
+        call inline_post_getattr(wrt_int_state, output_grid)
       endif
 !
 !-----------------------------------------------------------------------
@@ -1244,6 +1242,7 @@
       REAL                                  :: DEGRAD
 !
       logical                               :: opened
+      logical                               :: lmask_fields
       logical,save                          :: first=.true.
       logical,save                          :: file_first=.true.
 !
@@ -1395,9 +1394,24 @@
 !-----------------------------------------------------------------------
 !*** do post
 !-----------------------------------------------------------------------
+      lmask_fields = .false.
       if( wrt_int_state%write_dopost ) then
-        call post_run_gfs(wrt_int_state, mype, wrt_mpi_comm, lead_write_task, &
-                          nf_hours, nf_minutes,nseconds)
+!
+        if (trim(output_grid) == 'regional_latlon' .or. &
+            trim(output_grid) == 'rotated_latlon'  .or. &
+            trim(output_grid) == 'lambert_conformal') then
+
+            !mask fields according to sfc pressure
+            do nbdl=1, wrt_int_state%FBCount
+              call ESMF_LogWrite("before mask_fields for wrt field bundle", ESMF_LOGMSG_INFO, rc=rc)
+              call mask_fields(wrt_int_state%wrtFB(nbdl),rc)
+              call ESMF_LogWrite("after mask_fields for wrt field bundle", ESMF_LOGMSG_INFO, rc=rc)
+            enddo
+            lmask_fields = .true.
+        endif
+
+        call inline_post_run(wrt_int_state, mype, wrt_mpi_comm, lead_write_task, &
+                          nf_hours, nf_minutes,nseconds, output_grid)
       endif
 !
 !-----------------------------------------------------------------------
@@ -1612,15 +1626,17 @@
 
             !mask fields according to sfc pressure
             !if (mype == lead_write_task) print *,'before mask_fields'
-            wbeg = MPI_Wtime()
-            call ESMF_LogWrite("before mask_fields for wrt field bundle", ESMF_LOGMSG_INFO, rc=rc)
-            !call mask_fields(wrt_int_state%wrtFB(nbdl),rc)
-            call mask_fields(file_bundle,rc)
-            !if (mype == lead_write_task) print *,'after mask_fields'
-            call ESMF_LogWrite("after mask_fields for wrt field bundle", ESMF_LOGMSG_INFO, rc=rc)
-            wend = MPI_Wtime()
-            if (mype == lead_write_task) then
-              write(*,'(A,F10.5,A,I4.2,A,I2.2)')' mask_fields time is ',wend-wbeg
+            if( .not. lmask_fields ) then
+              wbeg = MPI_Wtime()
+              call ESMF_LogWrite("before mask_fields for wrt field bundle", ESMF_LOGMSG_INFO, rc=rc)
+              !call mask_fields(wrt_int_state%wrtFB(nbdl),rc)
+              call mask_fields(file_bundle,rc)
+              !if (mype == lead_write_task) print *,'after mask_fields'
+              call ESMF_LogWrite("after mask_fields for wrt field bundle", ESMF_LOGMSG_INFO, rc=rc)
+              wend = MPI_Wtime()
+              if (mype == lead_write_task) then
+                write(*,'(A,F10.5,A,I4.2,A,I2.2)')' mask_fields time is ',wend-wbeg
+              endif
             endif
 
             if (trim(output_file(nbdl)) == 'netcdf' .and. nbits==0) then
@@ -1991,7 +2007,6 @@
      real(ESMF_KIND_R4), dimension(:,:,:),   pointer  :: var3dPtr3dr4
      real(ESMF_KIND_R4), dimension(:,:,:),   pointer  :: vect3dPtr2dr4
      real(ESMF_KIND_R4), dimension(:,:,:,:), pointer  :: vect4dPtr3dr4
-     real(ESMF_KIND_R4), dimension(:,:), allocatable  :: maskwrt
 
      logical :: mvispresent=.false.
      real(ESMF_KIND_R4) :: missing_value_r4=-1.e+10

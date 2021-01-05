@@ -22,10 +22,12 @@ FFLAGS   += -I$(FMS_DIR) -I../gfsphysics -I../ipd
 
 ifneq (,$(findstring NO_INLINE_POST,$(CPPDEFS)))
 POST_SRC = \
-		   ./post_gfs_stub.F90
+		   ./inline_post_stub.F90
 else
 POST_SRC = \
 		   ./post_gfs.F90                      \
+		   ./post_regional.F90                 \
+		   ./inline_post.F90                   \
 		   ./post_nems_routines.F90
 endif
 
