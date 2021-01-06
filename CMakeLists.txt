@@ -1,36 +1,24 @@
-if(CCPP)
-
-  if(DEBUG)
-    set(_ccpp_debug_arg "--debug")
-  endif()
-  if(DEFINED CCPP_SUITES)
-    set(_ccpp_suites_arg "--suites=${CCPP_SUITES}")
-    message("Calling CCPP code generator (ccpp_prebuild.py) for suites ${_ccpp_suites_arg} ...")
-  else()
-    message("Calling CCPP code generator (ccpp_prebuild.py) for all available suites ...")
-  endif()
-  execute_process(COMMAND ${Python_EXECUTABLE}
-                          "ccpp/framework/scripts/ccpp_prebuild.py"
-                          "--config=ccpp/config/ccpp_prebuild_config.py"
-                          "--builddir=${CMAKE_CURRENT_BINARY_DIR}" ${_ccpp_suites_arg} ${_ccpp_debug_arg}
-                  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-                  OUTPUT_FILE ${CMAKE_CURRENT_BINARY_DIR}/ccpp_prebuild.out
-                  ERROR_FILE  ${CMAKE_CURRENT_BINARY_DIR}/ccpp_prebuild.err
-                  RESULT_VARIABLE RC)
-  # Check return code from ccpp_prebuild.py
-  if(NOT RC EQUAL 0)
-    message(FATAL_ERROR "An error occured while running ccpp_prebuild.py, check ${CMAKE_CURRENT_BINARY_DIR}/ccpp_prebuild.{out,err}")
-  endif()
-  # this should not be necessary; including CCPP_*.cmake here and passing
-  # SCHEMES, CAPS and TYPEDEFS via environment variables to CCPP build.
-  # CCPP should be able to directly include those three .cmake files.
-  include(${CMAKE_CURRENT_BINARY_DIR}/ccpp/physics/CCPP_SCHEMES.cmake)
-  include(${CMAKE_CURRENT_BINARY_DIR}/ccpp/physics/CCPP_CAPS.cmake)
-  include(${CMAKE_CURRENT_BINARY_DIR}/ccpp/physics/CCPP_TYPEDEFS.cmake)
-  set(ENV{CCPP_SCHEMES} "${SCHEMES}")
-  set(ENV{CCPP_CAPS} "${CAPS}")
-  set(ENV{CCPP_TYPEDEFS} "${TYPEDEFS}")
-
+# Call to CCPP code generator
+if(DEBUG)
+  set(_ccpp_debug_arg "--debug")
+endif()
+if(DEFINED CCPP_SUITES)
+  set(_ccpp_suites_arg "--suites=${CCPP_SUITES}")
+  message("Calling CCPP code generator (ccpp_prebuild.py) for suites ${_ccpp_suites_arg} ...")
+else()
+  message("Calling CCPP code generator (ccpp_prebuild.py) for all available suites ...")
+endif()
+execute_process(COMMAND ${Python_EXECUTABLE}
+                        "ccpp/framework/scripts/ccpp_prebuild.py"
+                        "--config=ccpp/config/ccpp_prebuild_config.py"
+                        "--builddir=${CMAKE_CURRENT_BINARY_DIR}" ${_ccpp_suites_arg} ${_ccpp_debug_arg}
+                WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+                OUTPUT_FILE ${CMAKE_CURRENT_BINARY_DIR}/ccpp_prebuild.out
+                ERROR_FILE  ${CMAKE_CURRENT_BINARY_DIR}/ccpp_prebuild.err
+                RESULT_VARIABLE RC)
+# Check return code from ccpp_prebuild.py
+if(NOT RC EQUAL 0)
+  message(FATAL_ERROR "An error occured while running ccpp_prebuild.py, check ${CMAKE_CURRENT_BINARY_DIR}/ccpp_prebuild.{out,err}")
 endif()
 
 add_subdirectory(cpl)
@@ -82,10 +70,6 @@ list(APPEND _fv3dycore_srcs
   atmos_cubed_sphere/driver/fvGFS/fv_nggps_diag.F90
   atmos_cubed_sphere/driver/fvGFS/atmosphere.F90)
 
-if(NOT CCPP)
-  list(APPEND _fv3dycore_srcs atmos_cubed_sphere/model/fv_cmp.F90)
-endif()
-
 add_library(fv3dycore ${_fv3dycore_srcs})
 
 list(APPEND _fv3dycore_defs_private SPMD
@@ -104,9 +88,7 @@ if(32BIT)
                                       OVERLOAD_R8)
 endif()
 
-if(CCPP)
-  list(APPEND _fv3dycore_defs_private CCPP)
-endif()
+list(APPEND _fv3dycore_defs_private CCPP)
 
 if(OpenMP_Fortran_FOUND)
   list(APPEND _fv3dycore_defs_private OPENMP)
@@ -131,19 +113,18 @@ if(OpenMP_Fortran_FOUND)
 endif()
 
 ###############################################################################
-### ccpp
+### CCPP
 ###############################################################################
-if(CCPP)
-  add_subdirectory(ccpp)
-  add_subdirectory(ccpp/driver)
-  add_dependencies(gfsphysics ccpp ccppphys)
-  add_dependencies(ccppdriver ccpp ccppphys)
-  add_dependencies(ccppphys ccpp)
-  target_include_directories(fv3dycore PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/ccpp/framework/src
-                                               ${CMAKE_CURRENT_BINARY_DIR}/ccpp/driver)
-  target_link_libraries(ccppphys PUBLIC sp::sp_d
-                                        w3nco::w3nco_d)
-endif()
+
+add_subdirectory(ccpp)
+add_subdirectory(ccpp/driver)
+add_dependencies(gfsphysics ccpp ccppphys)
+add_dependencies(ccppdriver ccpp ccppphys)
+add_dependencies(ccppphys ccpp)
+target_include_directories(fv3dycore PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/ccpp/framework/src
+                                             ${CMAKE_CURRENT_BINARY_DIR}/ccpp/driver)
+target_link_libraries(ccppphys PUBLIC sp::sp_d
+                                      w3nco::w3nco_d)
 
 ###############################################################################
 ### stochastic_physics
@@ -170,13 +151,12 @@ set_target_properties(fv3atm PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT
 target_include_directories(fv3atm INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/mod>
                                             $<INSTALL_INTERFACE:mod>)
 
-if(CCPP)
-  list(APPEND _fv3atm_defs_private CCPP)
-  target_include_directories(fv3atm PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/ccpp/driver/mod)
-  set(CCPP_LIBRARIES ccppdriver ccppphys ccpp)
-  add_dependencies(fv3atm ccppdriver ccppphys ccpp)
-  target_link_libraries(fv3atm PUBLIC ccppdriver ccppphys ccpp)
-endif()
+list(APPEND _fv3atm_defs_private CCPP)
+target_include_directories(fv3atm PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/ccpp/driver/mod)
+set(CCPP_LIBRARIES ccppdriver ccppphys ccpp)
+add_dependencies(fv3atm ccppdriver ccppphys ccpp)
+target_link_libraries(fv3atm PUBLIC ccppdriver ccppphys ccpp)
+
 target_include_directories(fv3atm PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/stochastic_physics)
 target_compile_definitions(fv3atm PRIVATE "${_fv3atm_defs_private}")
 

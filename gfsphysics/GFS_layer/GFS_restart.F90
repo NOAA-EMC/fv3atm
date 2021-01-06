@@ -97,7 +97,6 @@ module GFS_restart
     Restart%ldiag = 3 + Model%ntot2d + Model%nctp + ndiag_rst
     Restart%num2d = 3 + Model%ntot2d + Model%nctp + ndiag_rst
 
-#ifdef CCPP
     ! GF
     if (Model%imfdeepcnv == 3) then
       Restart%num2d = Restart%num2d + 1
@@ -114,13 +113,11 @@ module GFS_restart
     if (Model%imp_physics == Model%imp_physics_thompson .and. Model%ltaerosol) then
       Restart%num2d = Restart%num2d + 2
     endif
-#endif
 
     Restart%num3d = Model%ntot3d
     if(Model%lrefres) then
        Restart%num3d = Model%ntot3d+1
     endif
-#ifdef CCPP
     ! GF
     if (Model%imfdeepcnv == 3) then
       Restart%num3d = Restart%num3d + 3
@@ -129,7 +126,6 @@ module GFS_restart
     if (Model%do_mynnedmf) then
       Restart%num3d = Restart%num3d + 9
     endif
-#endif
 
     allocate (Restart%name2d(Restart%num2d))
     allocate (Restart%name3d(Restart%num3d))
@@ -184,7 +180,6 @@ module GFS_restart
 !      print *,'in restart 2d field, Restart%name2d(',offset+idx,')=',trim(Restart%name2d(offset+idx))
     enddo
 
-#ifdef CCPP
     !--- RAP/HRRR-specific variables, 2D
     num = offset + ndiag_rst
     ! GF
@@ -244,7 +239,6 @@ module GFS_restart
         Restart%data(nb,num)%var2p => Coupling(nb)%nifa2d(:)
       enddo
     endif
-#endif
 
     !--- phy_f3d variables
     do num = 1,Model%ntot3d
@@ -262,7 +256,7 @@ module GFS_restart
         Restart%data(nb,num)%var3p => IntDiag(nb)%refl_10cm(:,:)
       enddo
     endif
-#ifdef CCPP
+
     if (Model%lrefres) then
        num = Model%ntot3d+1
     else
@@ -335,7 +329,6 @@ module GFS_restart
         Restart%data(nb,num)%var3p => Tbd(nb)%cov(:,:)
       enddo
     endif
-#endif
 
   end subroutine GFS_restart_populate
 

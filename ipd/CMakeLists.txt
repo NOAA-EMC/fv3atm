@@ -11,9 +11,7 @@ if(32BIT)
   endif()
 endif()
 
-if(CCPP)
-  list(APPEND _ipd_defs_private CCPP)
-endif()
+list(APPEND _ipd_defs_private CCPP)
 
 add_library(
     ipd
@@ -25,9 +23,7 @@ set_target_properties(ipd PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BI
 target_compile_definitions(ipd PRIVATE "${_ipd_defs_private}")
 target_include_directories(ipd PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/mod>)
 
-if(CCPP)
-  target_include_directories(ipd PRIVATE ${CMAKE_BINARY_DIR}/FV3/ccpp/framework/src
-                                         ${CMAKE_BINARY_DIR}/FV3/ccpp/physics)
-endif()
+target_include_directories(ipd PRIVATE ${CMAKE_BINARY_DIR}/FV3/ccpp/framework/src
+                                       ${CMAKE_BINARY_DIR}/FV3/ccpp/physics)
 
 target_link_libraries(ipd PRIVATE gfsphysics)
