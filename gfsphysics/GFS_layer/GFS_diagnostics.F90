@@ -3018,7 +3018,7 @@ module GFS_diagnostics
     ExtDiag(idx)%axes = 2
     ExtDiag(idx)%name = 'snowd'
     ExtDiag(idx)%desc = 'surface snow depth'
-    ExtDiag(idx)%unit = 'mm'
+    ExtDiag(idx)%unit = 'm'
     ExtDiag(idx)%mod_name = 'gfs_sfc'
     ExtDiag(idx)%cnvfac = cn_one/cn_th
     allocate (ExtDiag(idx)%data(nblks))
