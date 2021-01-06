@@ -543,7 +543,7 @@ module module_physics_driver
           smsoil, stsoil, slsoil
 
       real(kind=kind_phys), dimension(size(Grid%xlon,1),Model%levs) ::  &
-          del, rhc, dtdt, dudt, dvdt, dtdtc,                            &
+          del, rhc, dtdt, dudt, dvdt, dtdtnp,                           &
           ud_mf, dd_mf, dt_mf, prnum, dkt
 !         ud_mf, dd_mf, dt_mf, prnum, dkt, sigmatot, sigmafrac, txa
       real(kind=kind_phys), allocatable, dimension(:,:) :: sigmatot,    &
@@ -1285,10 +1285,10 @@ module module_physics_driver
 
       do k=1,levs
         do i=1,im
-          dudt(i,k)  = zero
-          dvdt(i,k)  = zero
-          dtdt(i,k)  = zero
-          dtdtc(i,k) = zero
+          dudt(i,k)   = zero
+          dvdt(i,k)   = zero
+          dtdt(i,k)   = zero
+          dtdtnp(i,k) = zero
 
 !## CCPP ##* GFS_typedefs.F90/interstitial_phys_reset
 !vay-2018
@@ -1469,7 +1469,7 @@ module module_physics_driver
              Model%fhswr, dry, icy, wet,                                    &
 !            lprnt, ipr,                                                    &
 !  ---  input/output:
-             dtdt, dtdtc,                                                   &
+             dtdt, dtdtnp,                                                  &
 !  ---  outputs:
              adjsfcdsw, adjsfcnsw, adjsfcdlw, adjsfculw3, xmu, xcosz,       &
              adjnirbmu, adjnirdfu, adjvisbmu, adjvisdfu,                    &
@@ -1484,7 +1484,7 @@ module module_physics_driver
       if (Model%do_sppt .or. Model%ca_global)then
          if (Model%pert_radtend) then
 !--- cloudy radiation heating rate
-             Tbd%dtdtr(1:im,:) = dtdtc(1:im,:)*dtf
+             Tbd%dtdtr(1:im,:) = dtdtnp(1:im,:)*dtf
          else
              Tbd%dtdtr(1:im,:) = dtdt(1:im,:)*dtf
          endif
@@ -2994,7 +2994,7 @@ module module_physics_driver
 !       write(0,*) ' dvsfc1=',dvsfc1(ipr),' kdt=',kdt
 !       write(0,*)' dtsfc1=',dtsfc1(ipr)*hffac(ipr)
 !       write(0,*)' dqsfc1=',dqsfc1(ipr)*hefac(ipr)
-!       write(0,*)' dtdtc=',(dtdt(ipr,k),k=1,15)
+!       write(0,*)' dtdtnp=',(dtdt(ipr,k),k=1,15)
 !       write(0,*)' dqdtc=',(dqdt(ipr,k,1),k=1,15)
 !       print *,' dudtm=',dudt(ipr,:)
 !     endif

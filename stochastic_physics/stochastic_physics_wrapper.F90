@@ -88,7 +88,7 @@ module stochastic_physics_wrapper_mod
             xlon(nb,1:GFS_Control%blksz(nb)) = GFS_Data(nb)%Grid%xlon(:)
          end do
         ! Initialize stochastic physics
-        call init_stochastic_physics(GFS_Control%levs, GFS_Control%blksz, GFS_Control%dtp,                                               &
+        call init_stochastic_physics(GFS_Control%levs, GFS_Control%blksz, GFS_Control%dtp, GFS_Control%sppt_amp,                         &
             GFS_Control%input_nml_file, GFS_Control%fn_nml, GFS_Control%nlunit, xlon, xlat, GFS_Control%do_sppt, GFS_Control%do_shum,                &
             GFS_Control%do_skeb, GFS_Control%lndp_type, GFS_Control%n_var_lndp, GFS_Control%use_zmtnblck, GFS_Control%skeb_npass, &
             GFS_Control%lndp_var_list, GFS_Control%lndp_prt_list,    &
@@ -122,7 +122,7 @@ module stochastic_physics_wrapper_mod
 
       if ( GFS_Control%lndp_type .EQ. 1 ) then ! this scheme sets perts once
          allocate(sfc_wts(1:Atm_block%nblks,maxval(GFS_Control%blksz),GFS_Control%n_var_lndp))
-         call run_stochastic_physics(GFS_Control%levs, GFS_Control%kdt, GFS_Control%fhour, GFS_Control%blksz, &
+         call run_stochastic_physics(GFS_Control%levs, GFS_Control%kdt, GFS_Control%fhour, GFS_Control%blksz,                     &
                                  sppt_wts=sppt_wts, shum_wts=shum_wts, skebu_wts=skebu_wts, skebv_wts=skebv_wts, sfc_wts=sfc_wts, &
                                  nthreads=nthreads)
          ! Copy contiguous data back 
