@@ -32,8 +32,7 @@ target_compile_definitions(io PRIVATE "${_io_defs_private}")
 target_include_directories(io PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/mod>)
 
 target_link_libraries(io PRIVATE fms
-                                 gfsphysics
-                                 ipd)
+                                 gfsphysics)
 
 if(INLINE_POST)
   target_link_libraries(io PRIVATE upp::upp)

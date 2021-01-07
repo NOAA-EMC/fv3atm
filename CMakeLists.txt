@@ -23,7 +23,6 @@ endif()
 
 add_subdirectory(cpl)
 add_subdirectory(gfsphysics)
-add_subdirectory(ipd)
 add_subdirectory(io)
 
 ###############################################################################
@@ -106,7 +105,6 @@ target_include_directories(fv3dycore INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT
 
 target_link_libraries(fv3dycore PUBLIC fms
                                        gfsphysics
-                                       ipd
                                        esmf)
 if(OpenMP_Fortran_FOUND)
   target_link_libraries(fv3dycore PUBLIC OpenMP::OpenMP_Fortran)
@@ -122,6 +120,7 @@ add_dependencies(gfsphysics ccpp ccppphys)
 add_dependencies(ccppdriver ccpp ccppphys)
 add_dependencies(ccppphys ccpp)
 target_include_directories(fv3dycore PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/ccpp/framework/src
+                                             ${CMAKE_CURRENT_BINARY_DIR}/ccpp/physics
                                              ${CMAKE_CURRENT_BINARY_DIR}/ccpp/driver)
 target_link_libraries(ccppphys PUBLIC sp::sp_d
                                       w3nco::w3nco_d)
@@ -152,7 +151,8 @@ target_include_directories(fv3atm INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_BI
                                             $<INSTALL_INTERFACE:mod>)
 
 list(APPEND _fv3atm_defs_private CCPP)
-target_include_directories(fv3atm PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/ccpp/driver/mod)
+target_include_directories(fv3atm PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/ccpp/physics
+                                          ${CMAKE_CURRENT_BINARY_DIR}/ccpp/driver/mod)
 set(CCPP_LIBRARIES ccppdriver ccppphys ccpp)
 add_dependencies(fv3atm ccppdriver ccppphys ccpp)
 target_link_libraries(fv3atm PUBLIC ccppdriver ccppphys ccpp)
@@ -185,7 +185,7 @@ endif()
 ### Install
 ###############################################################################
 install(
-  TARGETS fv3atm fv3dycore io ipd gfsphysics ${CCPP_LIBRARIES} cpl stochastic_physics stochastic_physics_wrapper
+  TARGETS fv3atm fv3dycore io gfsphysics ${CCPP_LIBRARIES} cpl stochastic_physics stochastic_physics_wrapper
   EXPORT fv3atm-config
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib)

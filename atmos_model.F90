@@ -82,17 +82,18 @@ use atmosphere_mod,     only: Atm, mygrid
 use block_control_mod,  only: block_control_type, define_blocks_packed
 use DYCORE_typedefs,    only: DYCORE_data_type, DYCORE_diag_type
 
-use IPD_typedefs,       only: IPD_init_type, IPD_diag_type,    &
-                              IPD_restart_type, IPD_kind_phys
-use CCPP_data,          only: ccpp_suite, GFS_control,         &
+use GFS_typedefs,       only: GFS_init_type, GFS_kind_phys => kind_phys
+use GFS_restart,        only: GFS_restart_type, GFS_restart_populate
+use GFS_diagnostics,    only: GFS_externaldiag_type
+use CCPP_data,          only: ccpp_suite, GFS_control, &
                               GFS_data, GFS_interstitial
-use IPD_driver,         only: IPD_initialize, IPD_initialize_rst
+use GFS_driver,         only: GFS_initialize
 use CCPP_driver,        only: CCPP_step, non_uniform_blocks
 
 use stochastic_physics_wrapper_mod, only: stochastic_physics_wrapper,stochastic_physics_wrapper_end
 
 use FV3GFS_io_mod,      only: FV3GFS_restart_read, FV3GFS_restart_write, &
-                              FV3GFS_IPD_checksum,                       &
+                              FV3GFS_GFS_checksum,                       &
                               FV3GFS_diag_register, FV3GFS_diag_output,  &
                               DIAG_SIZE
 use fv_iau_mod,         only: iau_external_data_type,getiauforcing,iau_initialize
@@ -128,9 +129,9 @@ public addLsmask2grid
      real(kind=8),             pointer, dimension(:)     :: ak, bk
      real,                     pointer, dimension(:,:)   :: lon_bnd  => null() ! local longitude axis grid box corners in radians.
      real,                     pointer, dimension(:,:)   :: lat_bnd  => null() ! local latitude axis grid box corners in radians.
-     real(kind=IPD_kind_phys), pointer, dimension(:,:)   :: lon      => null() ! local longitude axis grid box centers in radians.
-     real(kind=IPD_kind_phys), pointer, dimension(:,:)   :: lat      => null() ! local latitude axis grid box centers in radians.
-     real(kind=IPD_kind_phys), pointer, dimension(:,:)   :: dx, dy
+     real(kind=GFS_kind_phys), pointer, dimension(:,:)   :: lon      => null() ! local longitude axis grid box centers in radians.
+     real(kind=GFS_kind_phys), pointer, dimension(:,:)   :: lat      => null() ! local latitude axis grid box centers in radians.
+     real(kind=GFS_kind_phys), pointer, dimension(:,:)   :: dx, dy
      real(kind=8),             pointer, dimension(:,:)   :: area
      real(kind=8),             pointer, dimension(:,:,:) :: layer_hgt, level_hgt
      type(domain2d)                :: domain             ! domain decomposition
@@ -138,7 +139,7 @@ public addLsmask2grid
      type(time_type)               :: Time_step          ! atmospheric time step.
      type(time_type)               :: Time_init          ! reference time.
      type(grid_box_type)           :: grid               ! hold grid information needed for 2nd order conservative flux exchange
-     type(IPD_diag_type), pointer, dimension(:) :: Diag
+     type(GFS_externaldiag_type), pointer, dimension(:) :: Diag
  end type atmos_data_type
                                                          ! to calculate gradient on cubic sphere grid.
 !</PUBLICTYPE >
@@ -170,8 +171,8 @@ type(DYCORE_diag_type)                 :: DYCORE_Diag(25)
 !  IPD containers
 !----------------
 ! GFS_control and GFS_data are coming from CCPP_data
-type(IPD_diag_type),    target      :: IPD_Diag(DIAG_SIZE)
-type(IPD_restart_type)              :: IPD_Restart
+type(GFS_externaldiag_type), target :: GFS_Diag(DIAG_SIZE)
+type(GFS_restart_type)              :: GFS_restart_var
 
 !--------------
 ! IAU container
@@ -194,10 +195,10 @@ character(len=128) :: tagname = '$Name$'
   logical,parameter :: flip_vc = .true.
 #endif
 
-  real(kind=IPD_kind_phys), parameter :: zero    = 0.0_IPD_kind_phys,     &
-                                         one     = 1.0_IPD_kind_phys,     &
-                                         epsln   = 1.0e-10_IPD_kind_phys, &
-                                         zorlmin = 1.0e-7_IPD_kind_phys
+  real(kind=GFS_kind_phys), parameter :: zero    = 0.0_GFS_kind_phys,     &
+                                         one     = 1.0_GFS_kind_phys,     &
+                                         epsln   = 1.0e-10_GFS_kind_phys, &
+                                         zorlmin = 1.0e-7_GFS_kind_phys
 
 contains
 
@@ -316,7 +317,7 @@ subroutine update_atmos_radiation_physics (Atmos)
 
       if (chksum_debug) then
         if (mpp_pe() == mpp_root_pe()) print *,'RADIATION STEP  ', GFS_control%kdt, GFS_control%fhour
-        call FV3GFS_IPD_checksum(GFS_control, GFS_data, Atm_block)
+        call FV3GFS_GFS_checksum(GFS_control, GFS_data, Atm_block)
       endif
 
       if (mpp_pe() == mpp_root_pe() .and. debug) write(6,*) "physics driver"
@@ -330,7 +331,7 @@ subroutine update_atmos_radiation_physics (Atmos)
 
       if (chksum_debug) then
         if (mpp_pe() == mpp_root_pe()) print *,'PHYSICS STEP1   ', GFS_control%kdt, GFS_control%fhour
-        call FV3GFS_IPD_checksum(GFS_control, GFS_data, Atm_block)
+        call FV3GFS_GFS_checksum(GFS_control, GFS_data, Atm_block)
       endif
 
       if (mpp_pe() == mpp_root_pe() .and. debug) write(6,*) "stochastic physics driver"
@@ -344,7 +345,7 @@ subroutine update_atmos_radiation_physics (Atmos)
 
       if (chksum_debug) then
         if (mpp_pe() == mpp_root_pe()) print *,'PHYSICS STEP2   ', GFS_control%kdt, GFS_control%fhour
-        call FV3GFS_IPD_checksum(GFS_control, GFS_data, Atm_block)
+        call FV3GFS_GFS_checksum(GFS_control, GFS_data, Atm_block)
       endif
       call getiauforcing(GFS_control,IAU_data)
       if (mpp_pe() == mpp_root_pe() .and. debug) write(6,*) "end of radiation and physics step"
@@ -390,14 +391,14 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
   integer :: isc, iec, jsc, jec
   integer :: isd, ied, jsd, jed
   integer :: blk, ibs, ibe, jbs, jbe
-  real(kind=IPD_kind_phys) :: dt_phys
+  real(kind=GFS_kind_phys) :: dt_phys
   real, allocatable    :: q(:,:,:,:), p_half(:,:,:)
   character(len=80)    :: control
   character(len=64)    :: filename, filename2, pelist_name
   character(len=132)   :: text
   logical              :: p_hydro, hydro, fexist
   logical, save        :: block_message = .true.
-  type(IPD_init_type)  :: Init_parm
+  type(GFS_init_type)  :: Init_parm
   integer              :: bdat(8), cdat(8)
   integer              :: ntracers, maxhf, maxh
   character(len=32), allocatable, target :: tracer_names(:)
@@ -542,14 +543,15 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    endif
 #endif
 
-   call IPD_initialize (GFS_control, GFS_data, IPD_Diag, IPD_Restart, &
-                        GFS_interstitial, commglobal, mpp_npes(), Init_parm)
+   call GFS_initialize (GFS_control, GFS_data%Statein, GFS_data%Stateout, GFS_data%Sfcprop,     &
+                        GFS_data%Coupling, GFS_data%Grid, GFS_data%Tbd, GFS_data%Cldprop, GFS_data%Radtend, & 
+                        GFS_data%Intdiag, GFS_interstitial, commglobal, mpp_npes(), Init_parm)
 
 !--- Initialize stochastic physics pattern generation / cellular automata for first time step
    call stochastic_physics_wrapper(GFS_control, GFS_data, Atm_block, ierr)
    if (ierr/=0)  call mpp_error(FATAL, 'Call to stochastic_physics_wrapper failed')
 
-   Atmos%Diag => IPD_Diag
+   Atmos%Diag => GFS_Diag
 
    Atm(mygrid)%flagstruct%do_skeb = GFS_control%do_skeb
 
@@ -569,9 +571,11 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
 !rab   call atmosphere_tracer_postinit (GFS_data, Atm_block)
 
    call atmosphere_nggps_diag (Time, init=.true.)
-   call FV3GFS_diag_register (IPD_Diag, Time, Atm_block, GFS_control, Atmos%lon, Atmos%lat, Atmos%axes)
-   call IPD_initialize_rst (GFS_control, GFS_data, IPD_Diag, IPD_Restart, Init_parm)
-   call FV3GFS_restart_read (GFS_data, IPD_Restart, Atm_block, GFS_control, Atmos%domain, Atm(mygrid)%flagstruct%warm_start)
+   call FV3GFS_diag_register (GFS_Diag, Time, Atm_block, GFS_control, Atmos%lon, Atmos%lat, Atmos%axes)
+   call GFS_restart_populate (GFS_restart_var, GFS_control, GFS_data%Statein, GFS_data%Stateout, GFS_data%Sfcprop, &
+                              GFS_data%Coupling, GFS_data%Grid, GFS_data%Tbd, GFS_data%Cldprop, GFS_data%Radtend, &
+                              GFS_data%IntDiag, Init_parm, GFS_Diag)
+   call FV3GFS_restart_read (GFS_data, GFS_restart_var, Atm_block, GFS_control, Atmos%domain, Atm(mygrid)%flagstruct%warm_start)
 
    ! Populate the GFS_data%Statein container with the prognostic state
    ! in Atm_block, which contains the initial conditions/restart data.
@@ -769,7 +773,7 @@ subroutine update_atmos_model_state (Atmos)
 !--- local variables
   integer :: isec, seconds, isec_fhzero
   integer :: rc
-  real(kind=IPD_kind_phys) :: time_int, time_intfull
+  real(kind=GFS_kind_phys) :: time_int, time_intfull
 !
     call set_atmosphere_pelist()
     call mpp_clock_begin(fv3Clock)
@@ -781,7 +785,7 @@ subroutine update_atmos_model_state (Atmos)
     if (chksum_debug) then
       if (mpp_pe() == mpp_root_pe()) print *,'UPDATE STATE    ', GFS_control%kdt, GFS_control%fhour
       if (mpp_pe() == mpp_root_pe()) print *,'in UPDATE STATE    ', size(GFS_data(1)%SfcProp%tsfc),'nblks=',Atm_block%nblks
-      call FV3GFS_IPD_checksum(GFS_control, GFS_data, Atm_block)
+      call FV3GFS_GFS_checksum(GFS_control, GFS_data, Atm_block)
     endif
 
     !--- advance time ---
@@ -810,8 +814,8 @@ subroutine update_atmos_model_state (Atmos)
       endif
       if (mpp_pe() == mpp_root_pe()) write(6,*) ' gfs diags time since last bucket empty: ',time_int/3600.,'hrs'
       call atmosphere_nggps_diag(Atmos%Time)
-      call FV3GFS_diag_output(Atmos%Time, IPD_DIag, Atm_block, GFS_control%nx, GFS_control%ny, &
-                            GFS_control%levs, 1, 1, 1.0_IPD_kind_phys, time_int, time_intfull,              &
+      call FV3GFS_diag_output(Atmos%Time, GFS_Diag, Atm_block, GFS_control%nx, GFS_control%ny, &
+                            GFS_control%levs, 1, 1, 1.0_GFS_kind_phys, time_int, time_intfull,              &
                             GFS_control%fhswr, GFS_control%fhlwr)
       if (nint(GFS_control%fhzero) > 0) then
         if (mod(isec,3600*nint(GFS_control%fhzero)) == 0) diag_time = Atmos%Time
@@ -871,7 +875,7 @@ subroutine atmos_model_end (Atmos)
     call stochastic_physics_wrapper_end(GFS_control)
 
     if(restart_endfcst) then
-      call FV3GFS_restart_write (GFS_data, IPD_Restart, Atm_block, &
+      call FV3GFS_restart_write (GFS_data, GFS_restart_var, Atm_block, &
                                  GFS_control, Atmos%domain)
     endif
 
@@ -894,7 +898,7 @@ subroutine atmos_model_restart(Atmos, timestamp)
   character(len=*),  intent(in)           :: timestamp
 
     call atmosphere_restart(timestamp)
-    call FV3GFS_restart_write (GFS_data, IPD_Restart, Atm_block, &
+    call FV3GFS_restart_write (GFS_data, GFS_restart_var, Atm_block, &
                                GFS_control, Atmos%domain, timestamp)
 
 end subroutine atmos_model_restart
@@ -1516,10 +1520,10 @@ end subroutine atmos_data_type_chksum
     type(ESMF_TypeKind_Flag)                           :: datatype
     real(kind=ESMF_KIND_R4),  dimension(:,:), pointer  :: datar42d
     real(kind=ESMF_KIND_R8),  dimension(:,:), pointer  :: datar82d
-    real(kind=IPD_kind_phys), dimension(:,:), pointer  :: datar8
-    real(kind=IPD_kind_phys)                           :: tem, ofrac
+    real(kind=GFS_kind_phys), dimension(:,:), pointer  :: datar8
+    real(kind=GFS_kind_phys)                           :: tem, ofrac
     logical found, isFieldCreated, lcpl_fice
-    real (kind=IPD_kind_phys), parameter :: z0ice=1.1    !  (in cm)
+    real (kind=GFS_kind_phys), parameter :: z0ice=1.1    !  (in cm)
 !
 !------------------------------------------------------------------------------
 !
@@ -1600,12 +1604,12 @@ end subroutine atmos_data_type_chksum
                   nb = Atm_block%blkno(i,j)
                   ix = Atm_block%ixp(i,j)
                   if (GFS_data(nb)%Sfcprop%oceanfrac(ix) > zero .and.  datar8(i,j) > zorlmin) then
-                    tem = 100.0_IPD_kind_phys * min(0.1_IPD_kind_phys, datar8(i,j))
+                    tem = 100.0_GFS_kind_phys * min(0.1_GFS_kind_phys, datar8(i,j))
 !                   GFS_data(nb)%Coupling%zorlwav_cpl(ix) = tem
                     GFS_data(nb)%Sfcprop%zorlo(ix)        = tem
                     GFS_data(nb)%Sfcprop%zorlw(ix)        = tem
                   else
-                    GFS_data(nb)%Sfcprop%zorlw(ix) = -999.0_IPD_kind_phys
+                    GFS_data(nb)%Sfcprop%zorlw(ix) = -999.0_GFS_kind_phys
 
                   endif
                 enddo
@@ -1673,9 +1677,9 @@ end subroutine atmos_data_type_chksum
                     GFS_data(nb)%Sfcprop%fice(ix) = max(zero, min(one, datar8(i,j)/ofrac)) !LHS: ice frac wrt water area
                     if (GFS_data(nb)%Sfcprop%fice(ix) >= GFS_control%min_seaice) then
                       if (GFS_data(nb)%Sfcprop%fice(ix) > one-epsln) GFS_data(nb)%Sfcprop%fice(ix) = one
-                      if (abs(one-ofrac) < epsln) GFS_data(nb)%Sfcprop%slmsk(ix) = 2.0_IPD_kind_phys !slmsk=2 crashes in gcycle on partial land points
-!                     GFS_data(nb)%Sfcprop%slmsk(ix)         = 2.0_IPD_kind_phys
-                      GFS_data(nb)%Coupling%slimskin_cpl(ix) = 4.0_IPD_kind_phys
+                      if (abs(one-ofrac) < epsln) GFS_data(nb)%Sfcprop%slmsk(ix) = 2.0_GFS_kind_phys !slmsk=2 crashes in gcycle on partial land points
+!                     GFS_data(nb)%Sfcprop%slmsk(ix)         = 2.0_GFS_kind_phys
+                      GFS_data(nb)%Coupling%slimskin_cpl(ix) = 4.0_GFS_kind_phys
                     else
                       GFS_data(nb)%Sfcprop%fice(ix) = zero
                       if (abs(one-ofrac) < epsln) then
@@ -1862,8 +1866,8 @@ end subroutine atmos_data_type_chksum
 !             GFS_data(nb)%Sfcprop%snowd(ix)       = GFS_data(nb)%Coupling%hsnoin_cpl(ix)
 
               GFS_data(nb)%Coupling%hsnoin_cpl(ix) = GFS_data(nb)%Coupling%hsnoin_cpl(ix) &
-                                                   / max(0.01_IPD_kind_phys, GFS_data(nb)%Sfcprop%fice(ix))
-!                                                  / max(0.01_IPD_kind_phys, GFS_data(nb)%Coupling%ficein_cpl(ix))
+                                                   / max(0.01_GFS_kind_phys, GFS_data(nb)%Sfcprop%fice(ix))
+!                                                  / max(0.01_GFS_kind_phys, GFS_data(nb)%Coupling%ficein_cpl(ix))
               GFS_data(nb)%Sfcprop%zorli(ix)       = z0ice
             else
 !             GFS_data(nb)%Sfcprop%tisfc(ix)       = GFS_data(nb)%Coupling%tseain_cpl(ix)
@@ -1927,7 +1931,7 @@ end subroutine atmos_data_type_chksum
 
     !--- local variables
     integer                :: j, i, ix, nb, isc, iec, jsc, jec, idx
-    real(IPD_kind_phys)    :: rtime, rtimek
+    real(GFS_kind_phys)    :: rtime, rtimek
 !
     if (mpp_pe() == mpp_root_pe()) print *,'enter setup_exportdata'
 

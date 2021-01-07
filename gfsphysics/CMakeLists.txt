@@ -19,7 +19,6 @@ set(CCPP_SOURCES
     CCPP_layer/CCPP_data.F90
     ${CMAKE_BINARY_DIR}/FV3/ccpp/physics/ccpp_static_api.F90
 
-    GFS_layer/GFS_abstraction_layer.F90
     GFS_layer/GFS_diagnostics.F90
     GFS_layer/GFS_driver.F90
     GFS_layer/GFS_restart.F90

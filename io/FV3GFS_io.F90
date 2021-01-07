@@ -48,14 +48,11 @@ module FV3GFS_io_mod
 
 !
 !--- GFS_typedefs
-!rab  use GFS_typedefs,       only: GFS_sfcprop_type, GFS_diag_type, &
-!rab                                GFS_cldprop_type, GFS_grid_type
-  use GFS_typedefs,       only: GFS_sfcprop_type
-!
-!--- IPD typdefs
-  use IPD_typedefs,       only: IPD_control_type, IPD_data_type, &
-                                IPD_restart_type, IPD_diag_type, &
-                                kind_phys => IPD_kind_phys
+  use GFS_typedefs,       only: GFS_sfcprop_type, GFS_control_type, &
+                                GFS_data_type, kind_phys
+  use GFS_restart,        only: GFS_restart_type
+  use GFS_diagnostics,    only: GFS_externaldiag_type
+
 !
 !-----------------------------------------------------------------------
   implicit none
@@ -63,7 +60,7 @@ module FV3GFS_io_mod
  
   !--- public interfaces ---
   public  FV3GFS_restart_read, FV3GFS_restart_write
-  public  FV3GFS_IPD_checksum
+  public  FV3GFS_GFS_checksum
   public  fv3gfs_diag_register, fv3gfs_diag_output
 #ifdef use_WRTCOMP
   public  fv_phys_bundle_setup
@@ -128,49 +125,49 @@ module FV3GFS_io_mod
 !--------------------
 ! FV3GFS_restart_read
 !--------------------
-  subroutine FV3GFS_restart_read (IPD_Data, IPD_Restart, Atm_block, Model, fv_domain, warm_start)
-    type(IPD_data_type),      intent(inout) :: IPD_Data(:)
-    type(IPD_restart_type),   intent(inout) :: IPD_Restart
+  subroutine FV3GFS_restart_read (GFS_Data, GFS_Restart, Atm_block, Model, fv_domain, warm_start)
+    type(GFS_data_type),      intent(inout) :: GFS_Data(:)
+    type(GFS_restart_type),   intent(inout) :: GFS_Restart
     type(block_control_type), intent(in)    :: Atm_block
-    type(IPD_control_type),   intent(inout) :: Model
+    type(GFS_control_type),   intent(inout) :: Model
     type(domain2d),           intent(in)    :: fv_domain
     logical,                  intent(in)    :: warm_start
  
     !--- read in surface data from chgres 
-    call sfc_prop_restart_read (IPD_Data%Sfcprop, Atm_block, Model, fv_domain, warm_start)
+    call sfc_prop_restart_read (GFS_Data%Sfcprop, Atm_block, Model, fv_domain, warm_start)
 
     !--- read in physics restart data
-    call phys_restart_read (IPD_Restart, Atm_block, Model, fv_domain)
+    call phys_restart_read (GFS_Restart, Atm_block, Model, fv_domain)
 
   end subroutine FV3GFS_restart_read
 
 !---------------------
 ! FV3GFS_restart_write
 !---------------------
-  subroutine FV3GFS_restart_write (IPD_Data, IPD_Restart, Atm_block, Model, fv_domain, timestamp)
-    type(IPD_data_type),         intent(inout) :: IPD_Data(:)
-    type(IPD_restart_type),      intent(inout) :: IPD_Restart
+  subroutine FV3GFS_restart_write (GFS_Data, GFS_Restart, Atm_block, Model, fv_domain, timestamp)
+    type(GFS_data_type),         intent(inout) :: GFS_Data(:)
+    type(GFS_restart_type),      intent(inout) :: GFS_Restart
     type(block_control_type),    intent(in)    :: Atm_block
-    type(IPD_control_type),      intent(in)    :: Model
+    type(GFS_control_type),      intent(in)    :: Model
     type(domain2d),              intent(in)    :: fv_domain
     character(len=32), optional, intent(in)    :: timestamp
  
     !--- write surface data from chgres 
-    call sfc_prop_restart_write (IPD_Data%Sfcprop, Atm_block, Model, fv_domain, timestamp)
+    call sfc_prop_restart_write (GFS_Data%Sfcprop, Atm_block, Model, fv_domain, timestamp)
  
     !--- write physics restart data
-    call phys_restart_write (IPD_Restart, Atm_block, Model, fv_domain, timestamp)
+    call phys_restart_write (GFS_Restart, Atm_block, Model, fv_domain, timestamp)
 
   end subroutine FV3GFS_restart_write
 
 
 !--------------------
-! FV3GFS_IPD_checksum
+! FV3GFS_GFS_checksum
 !--------------------
- subroutine FV3GFS_IPD_checksum (Model, IPD_Data, Atm_block)
+ subroutine FV3GFS_GFS_checksum (Model, GFS_Data, Atm_block)
    !--- interface variables
-   type(IPD_control_type),    intent(in) :: Model
-   type(IPD_data_type),       intent(in) :: IPD_Data(:)
+   type(GFS_control_type),    intent(in) :: Model
+   type(GFS_data_type),       intent(in) :: GFS_Data(:)
    type (block_control_type), intent(in) :: Atm_block
    !--- local variables
    integer :: outunit, j, i, ix, nb, isc, iec, jsc, jec, lev, ct, l, ntr
@@ -186,7 +183,7 @@ module FV3GFS_io_mod
    jec = Model%jsc+Model%ny-1
    lev = Model%levs
 
-   ntr = size(IPD_Data(1)%Statein%qgrs,3)
+   ntr = size(GFS_Data(1)%Statein%qgrs,3)
 
    if(Model%lsm == Model%lsm_noahmp) then
      nsfcprop2d = 151  
@@ -207,222 +204,222 @@ module FV3GFS_io_mod
        nb = Atm_block%blkno(i,j) 
        ix = Atm_block%ixp(i,j) 
        !--- statein pressure
-       temp2d(i,j, 1) = IPD_Data(nb)%Statein%pgr(ix)
-       temp2d(i,j, 2) = IPD_Data(nb)%Sfcprop%slmsk(ix)
-       temp2d(i,j, 3) = IPD_Data(nb)%Sfcprop%tsfc(ix)
-       temp2d(i,j, 4) = IPD_Data(nb)%Sfcprop%tisfc(ix)
-       temp2d(i,j, 5) = IPD_Data(nb)%Sfcprop%snowd(ix)
-       temp2d(i,j, 6) = IPD_Data(nb)%Sfcprop%zorl(ix)
-       temp2d(i,j, 7) = IPD_Data(nb)%Sfcprop%fice(ix)
-       temp2d(i,j, 8) = IPD_Data(nb)%Sfcprop%hprime(ix,1)
-       temp2d(i,j, 9) = IPD_Data(nb)%Sfcprop%sncovr(ix)
-       temp2d(i,j,10) = IPD_Data(nb)%Sfcprop%snoalb(ix)
-       temp2d(i,j,11) = IPD_Data(nb)%Sfcprop%alvsf(ix)
-       temp2d(i,j,12) = IPD_Data(nb)%Sfcprop%alnsf(ix)
-       temp2d(i,j,13) = IPD_Data(nb)%Sfcprop%alvwf(ix)
-       temp2d(i,j,14) = IPD_Data(nb)%Sfcprop%alnwf(ix)
-       temp2d(i,j,15) = IPD_Data(nb)%Sfcprop%facsf(ix)
-       temp2d(i,j,16) = IPD_Data(nb)%Sfcprop%facwf(ix)
-       temp2d(i,j,17) = IPD_Data(nb)%Sfcprop%slope(ix)
-       temp2d(i,j,18) = IPD_Data(nb)%Sfcprop%shdmin(ix)
-       temp2d(i,j,19) = IPD_Data(nb)%Sfcprop%shdmax(ix)
-       temp2d(i,j,20) = IPD_Data(nb)%Sfcprop%tg3(ix)
-       temp2d(i,j,21) = IPD_Data(nb)%Sfcprop%vfrac(ix)
-       temp2d(i,j,22) = IPD_Data(nb)%Sfcprop%vtype(ix)
-       temp2d(i,j,23) = IPD_Data(nb)%Sfcprop%stype(ix)
-       temp2d(i,j,24) = IPD_Data(nb)%Sfcprop%uustar(ix)
-       temp2d(i,j,25) = IPD_Data(nb)%Sfcprop%oro(ix)
-       temp2d(i,j,26) = IPD_Data(nb)%Sfcprop%oro_uf(ix)
-       temp2d(i,j,27) = IPD_Data(nb)%Sfcprop%hice(ix)
-       temp2d(i,j,28) = IPD_Data(nb)%Sfcprop%weasd(ix)
-       temp2d(i,j,29) = IPD_Data(nb)%Sfcprop%canopy(ix)
-       temp2d(i,j,30) = IPD_Data(nb)%Sfcprop%ffmm(ix)
-       temp2d(i,j,31) = IPD_Data(nb)%Sfcprop%ffhh(ix)
-       temp2d(i,j,32) = IPD_Data(nb)%Sfcprop%f10m(ix)
-       temp2d(i,j,33) = IPD_Data(nb)%Sfcprop%tprcp(ix)
-       temp2d(i,j,34) = IPD_Data(nb)%Sfcprop%srflag(ix)
+       temp2d(i,j, 1) = GFS_Data(nb)%Statein%pgr(ix)
+       temp2d(i,j, 2) = GFS_Data(nb)%Sfcprop%slmsk(ix)
+       temp2d(i,j, 3) = GFS_Data(nb)%Sfcprop%tsfc(ix)
+       temp2d(i,j, 4) = GFS_Data(nb)%Sfcprop%tisfc(ix)
+       temp2d(i,j, 5) = GFS_Data(nb)%Sfcprop%snowd(ix)
+       temp2d(i,j, 6) = GFS_Data(nb)%Sfcprop%zorl(ix)
+       temp2d(i,j, 7) = GFS_Data(nb)%Sfcprop%fice(ix)
+       temp2d(i,j, 8) = GFS_Data(nb)%Sfcprop%hprime(ix,1)
+       temp2d(i,j, 9) = GFS_Data(nb)%Sfcprop%sncovr(ix)
+       temp2d(i,j,10) = GFS_Data(nb)%Sfcprop%snoalb(ix)
+       temp2d(i,j,11) = GFS_Data(nb)%Sfcprop%alvsf(ix)
+       temp2d(i,j,12) = GFS_Data(nb)%Sfcprop%alnsf(ix)
+       temp2d(i,j,13) = GFS_Data(nb)%Sfcprop%alvwf(ix)
+       temp2d(i,j,14) = GFS_Data(nb)%Sfcprop%alnwf(ix)
+       temp2d(i,j,15) = GFS_Data(nb)%Sfcprop%facsf(ix)
+       temp2d(i,j,16) = GFS_Data(nb)%Sfcprop%facwf(ix)
+       temp2d(i,j,17) = GFS_Data(nb)%Sfcprop%slope(ix)
+       temp2d(i,j,18) = GFS_Data(nb)%Sfcprop%shdmin(ix)
+       temp2d(i,j,19) = GFS_Data(nb)%Sfcprop%shdmax(ix)
+       temp2d(i,j,20) = GFS_Data(nb)%Sfcprop%tg3(ix)
+       temp2d(i,j,21) = GFS_Data(nb)%Sfcprop%vfrac(ix)
+       temp2d(i,j,22) = GFS_Data(nb)%Sfcprop%vtype(ix)
+       temp2d(i,j,23) = GFS_Data(nb)%Sfcprop%stype(ix)
+       temp2d(i,j,24) = GFS_Data(nb)%Sfcprop%uustar(ix)
+       temp2d(i,j,25) = GFS_Data(nb)%Sfcprop%oro(ix)
+       temp2d(i,j,26) = GFS_Data(nb)%Sfcprop%oro_uf(ix)
+       temp2d(i,j,27) = GFS_Data(nb)%Sfcprop%hice(ix)
+       temp2d(i,j,28) = GFS_Data(nb)%Sfcprop%weasd(ix)
+       temp2d(i,j,29) = GFS_Data(nb)%Sfcprop%canopy(ix)
+       temp2d(i,j,30) = GFS_Data(nb)%Sfcprop%ffmm(ix)
+       temp2d(i,j,31) = GFS_Data(nb)%Sfcprop%ffhh(ix)
+       temp2d(i,j,32) = GFS_Data(nb)%Sfcprop%f10m(ix)
+       temp2d(i,j,33) = GFS_Data(nb)%Sfcprop%tprcp(ix)
+       temp2d(i,j,34) = GFS_Data(nb)%Sfcprop%srflag(ix)
        if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp .or. Model%lsm == Model%lsm_noah_wrfv4) then
-         temp2d(i,j,35) = IPD_Data(nb)%Sfcprop%slc(ix,1)
-         temp2d(i,j,36) = IPD_Data(nb)%Sfcprop%slc(ix,2)
-         temp2d(i,j,37) = IPD_Data(nb)%Sfcprop%slc(ix,3)
-         temp2d(i,j,38) = IPD_Data(nb)%Sfcprop%slc(ix,4)
-         temp2d(i,j,39) = IPD_Data(nb)%Sfcprop%smc(ix,1)
-         temp2d(i,j,40) = IPD_Data(nb)%Sfcprop%smc(ix,2)
-         temp2d(i,j,41) = IPD_Data(nb)%Sfcprop%smc(ix,3)
-         temp2d(i,j,42) = IPD_Data(nb)%Sfcprop%smc(ix,4)
-         temp2d(i,j,43) = IPD_Data(nb)%Sfcprop%stc(ix,1)
-         temp2d(i,j,44) = IPD_Data(nb)%Sfcprop%stc(ix,2)
-         temp2d(i,j,45) = IPD_Data(nb)%Sfcprop%stc(ix,3)
-         temp2d(i,j,46) = IPD_Data(nb)%Sfcprop%stc(ix,4)
+         temp2d(i,j,35) = GFS_Data(nb)%Sfcprop%slc(ix,1)
+         temp2d(i,j,36) = GFS_Data(nb)%Sfcprop%slc(ix,2)
+         temp2d(i,j,37) = GFS_Data(nb)%Sfcprop%slc(ix,3)
+         temp2d(i,j,38) = GFS_Data(nb)%Sfcprop%slc(ix,4)
+         temp2d(i,j,39) = GFS_Data(nb)%Sfcprop%smc(ix,1)
+         temp2d(i,j,40) = GFS_Data(nb)%Sfcprop%smc(ix,2)
+         temp2d(i,j,41) = GFS_Data(nb)%Sfcprop%smc(ix,3)
+         temp2d(i,j,42) = GFS_Data(nb)%Sfcprop%smc(ix,4)
+         temp2d(i,j,43) = GFS_Data(nb)%Sfcprop%stc(ix,1)
+         temp2d(i,j,44) = GFS_Data(nb)%Sfcprop%stc(ix,2)
+         temp2d(i,j,45) = GFS_Data(nb)%Sfcprop%stc(ix,3)
+         temp2d(i,j,46) = GFS_Data(nb)%Sfcprop%stc(ix,4)
        elseif (Model%lsm == Model%lsm_ruc) then
-         temp2d(i,j,35) = IPD_Data(nb)%Sfcprop%sh2o(ix,1)
-         temp2d(i,j,36) = IPD_Data(nb)%Sfcprop%sh2o(ix,2)
-         temp2d(i,j,37) = IPD_Data(nb)%Sfcprop%sh2o(ix,3)
+         temp2d(i,j,35) = GFS_Data(nb)%Sfcprop%sh2o(ix,1)
+         temp2d(i,j,36) = GFS_Data(nb)%Sfcprop%sh2o(ix,2)
+         temp2d(i,j,37) = GFS_Data(nb)%Sfcprop%sh2o(ix,3)
          ! Combine levels 4 to lsoil_lsm (9 for RUC) into one
-         temp2d(i,j,38) = sum(IPD_Data(nb)%Sfcprop%sh2o(ix,4:Model%lsoil_lsm))
-         temp2d(i,j,39) = IPD_Data(nb)%Sfcprop%smois(ix,1)
-         temp2d(i,j,40) = IPD_Data(nb)%Sfcprop%smois(ix,2)
-         temp2d(i,j,41) = IPD_Data(nb)%Sfcprop%smois(ix,3)
+         temp2d(i,j,38) = sum(GFS_Data(nb)%Sfcprop%sh2o(ix,4:Model%lsoil_lsm))
+         temp2d(i,j,39) = GFS_Data(nb)%Sfcprop%smois(ix,1)
+         temp2d(i,j,40) = GFS_Data(nb)%Sfcprop%smois(ix,2)
+         temp2d(i,j,41) = GFS_Data(nb)%Sfcprop%smois(ix,3)
          ! Combine levels 4 to lsoil_lsm (9 for RUC) into one
-         temp2d(i,j,42) = sum(IPD_Data(nb)%Sfcprop%smois(ix,4:Model%lsoil_lsm))
-         temp2d(i,j,43) = IPD_Data(nb)%Sfcprop%tslb(ix,1)
-         temp2d(i,j,44) = IPD_Data(nb)%Sfcprop%tslb(ix,2)
-         temp2d(i,j,45) = IPD_Data(nb)%Sfcprop%tslb(ix,3)
+         temp2d(i,j,42) = sum(GFS_Data(nb)%Sfcprop%smois(ix,4:Model%lsoil_lsm))
+         temp2d(i,j,43) = GFS_Data(nb)%Sfcprop%tslb(ix,1)
+         temp2d(i,j,44) = GFS_Data(nb)%Sfcprop%tslb(ix,2)
+         temp2d(i,j,45) = GFS_Data(nb)%Sfcprop%tslb(ix,3)
          ! Combine levels 4 to lsoil_lsm (9 for RUC) into one
-         temp2d(i,j,46) = sum(IPD_Data(nb)%Sfcprop%tslb(ix,4:Model%lsoil_lsm))
+         temp2d(i,j,46) = sum(GFS_Data(nb)%Sfcprop%tslb(ix,4:Model%lsoil_lsm))
        endif ! LSM choice
 
-       temp2d(i,j,47) = IPD_Data(nb)%Sfcprop%t2m(ix)
-       temp2d(i,j,48) = IPD_Data(nb)%Sfcprop%q2m(ix)
-       temp2d(i,j,49) = IPD_Data(nb)%Coupling%nirbmdi(ix)
-       temp2d(i,j,50) = IPD_Data(nb)%Coupling%nirdfdi(ix)
-       temp2d(i,j,51) = IPD_Data(nb)%Coupling%visbmdi(ix)
-       temp2d(i,j,52) = IPD_Data(nb)%Coupling%visdfdi(ix)
-       temp2d(i,j,53) = IPD_Data(nb)%Coupling%nirbmui(ix)
-       temp2d(i,j,54) = IPD_Data(nb)%Coupling%nirdfui(ix)
-       temp2d(i,j,55) = IPD_Data(nb)%Coupling%visbmui(ix)
-       temp2d(i,j,56) = IPD_Data(nb)%Coupling%visdfui(ix)
-       temp2d(i,j,57) = IPD_Data(nb)%Coupling%sfcdsw(ix)
-       temp2d(i,j,58) = IPD_Data(nb)%Coupling%sfcnsw(ix)
-       temp2d(i,j,59) = IPD_Data(nb)%Coupling%sfcdlw(ix)
-       temp2d(i,j,60) = IPD_Data(nb)%Grid%xlon(ix)
-       temp2d(i,j,61) = IPD_Data(nb)%Grid%xlat(ix)
-       temp2d(i,j,62) = IPD_Data(nb)%Grid%xlat_d(ix)
-       temp2d(i,j,63) = IPD_Data(nb)%Grid%sinlat(ix)
-       temp2d(i,j,64) = IPD_Data(nb)%Grid%coslat(ix)
-       temp2d(i,j,65) = IPD_Data(nb)%Grid%area(ix)
-       temp2d(i,j,66) = IPD_Data(nb)%Grid%dx(ix)
+       temp2d(i,j,47) = GFS_Data(nb)%Sfcprop%t2m(ix)
+       temp2d(i,j,48) = GFS_Data(nb)%Sfcprop%q2m(ix)
+       temp2d(i,j,49) = GFS_Data(nb)%Coupling%nirbmdi(ix)
+       temp2d(i,j,50) = GFS_Data(nb)%Coupling%nirdfdi(ix)
+       temp2d(i,j,51) = GFS_Data(nb)%Coupling%visbmdi(ix)
+       temp2d(i,j,52) = GFS_Data(nb)%Coupling%visdfdi(ix)
+       temp2d(i,j,53) = GFS_Data(nb)%Coupling%nirbmui(ix)
+       temp2d(i,j,54) = GFS_Data(nb)%Coupling%nirdfui(ix)
+       temp2d(i,j,55) = GFS_Data(nb)%Coupling%visbmui(ix)
+       temp2d(i,j,56) = GFS_Data(nb)%Coupling%visdfui(ix)
+       temp2d(i,j,57) = GFS_Data(nb)%Coupling%sfcdsw(ix)
+       temp2d(i,j,58) = GFS_Data(nb)%Coupling%sfcnsw(ix)
+       temp2d(i,j,59) = GFS_Data(nb)%Coupling%sfcdlw(ix)
+       temp2d(i,j,60) = GFS_Data(nb)%Grid%xlon(ix)
+       temp2d(i,j,61) = GFS_Data(nb)%Grid%xlat(ix)
+       temp2d(i,j,62) = GFS_Data(nb)%Grid%xlat_d(ix)
+       temp2d(i,j,63) = GFS_Data(nb)%Grid%sinlat(ix)
+       temp2d(i,j,64) = GFS_Data(nb)%Grid%coslat(ix)
+       temp2d(i,j,65) = GFS_Data(nb)%Grid%area(ix)
+       temp2d(i,j,66) = GFS_Data(nb)%Grid%dx(ix)
        if (Model%ntoz > 0) then
-         temp2d(i,j,67) = IPD_Data(nb)%Grid%ddy_o3(ix)
+         temp2d(i,j,67) = GFS_Data(nb)%Grid%ddy_o3(ix)
        endif
        if (Model%h2o_phys) then
-         temp2d(i,j,68) = IPD_Data(nb)%Grid%ddy_h(ix)
+         temp2d(i,j,68) = GFS_Data(nb)%Grid%ddy_h(ix)
        endif
-       temp2d(i,j,69) = IPD_Data(nb)%Cldprop%cv(ix)
-       temp2d(i,j,70) = IPD_Data(nb)%Cldprop%cvt(ix)
-       temp2d(i,j,71) = IPD_Data(nb)%Cldprop%cvb(ix)
-       temp2d(i,j,72) = IPD_Data(nb)%Radtend%sfalb(ix)
-       temp2d(i,j,73) = IPD_Data(nb)%Radtend%coszen(ix)
-       temp2d(i,j,74) = IPD_Data(nb)%Radtend%tsflw(ix)
-       temp2d(i,j,75) = IPD_Data(nb)%Radtend%semis(ix)
-       temp2d(i,j,76) = IPD_Data(nb)%Radtend%coszdg(ix)
-       temp2d(i,j,77) = IPD_Data(nb)%Radtend%sfcfsw(ix)%upfxc
-       temp2d(i,j,78) = IPD_Data(nb)%Radtend%sfcfsw(ix)%upfx0
-       temp2d(i,j,79) = IPD_Data(nb)%Radtend%sfcfsw(ix)%dnfxc
-       temp2d(i,j,80) = IPD_Data(nb)%Radtend%sfcfsw(ix)%dnfx0
-       temp2d(i,j,81) = IPD_Data(nb)%Radtend%sfcflw(ix)%upfxc
-       temp2d(i,j,82) = IPD_Data(nb)%Radtend%sfcflw(ix)%upfx0
-       temp2d(i,j,83) = IPD_Data(nb)%Radtend%sfcflw(ix)%dnfxc
-       temp2d(i,j,84) = IPD_Data(nb)%Radtend%sfcflw(ix)%dnfx0
-       temp2d(i,j,85) = IPD_Data(nb)%Sfcprop%tiice(ix,1)
-       temp2d(i,j,86) = IPD_Data(nb)%Sfcprop%tiice(ix,2)
+       temp2d(i,j,69) = GFS_Data(nb)%Cldprop%cv(ix)
+       temp2d(i,j,70) = GFS_Data(nb)%Cldprop%cvt(ix)
+       temp2d(i,j,71) = GFS_Data(nb)%Cldprop%cvb(ix)
+       temp2d(i,j,72) = GFS_Data(nb)%Radtend%sfalb(ix)
+       temp2d(i,j,73) = GFS_Data(nb)%Radtend%coszen(ix)
+       temp2d(i,j,74) = GFS_Data(nb)%Radtend%tsflw(ix)
+       temp2d(i,j,75) = GFS_Data(nb)%Radtend%semis(ix)
+       temp2d(i,j,76) = GFS_Data(nb)%Radtend%coszdg(ix)
+       temp2d(i,j,77) = GFS_Data(nb)%Radtend%sfcfsw(ix)%upfxc
+       temp2d(i,j,78) = GFS_Data(nb)%Radtend%sfcfsw(ix)%upfx0
+       temp2d(i,j,79) = GFS_Data(nb)%Radtend%sfcfsw(ix)%dnfxc
+       temp2d(i,j,80) = GFS_Data(nb)%Radtend%sfcfsw(ix)%dnfx0
+       temp2d(i,j,81) = GFS_Data(nb)%Radtend%sfcflw(ix)%upfxc
+       temp2d(i,j,82) = GFS_Data(nb)%Radtend%sfcflw(ix)%upfx0
+       temp2d(i,j,83) = GFS_Data(nb)%Radtend%sfcflw(ix)%dnfxc
+       temp2d(i,j,84) = GFS_Data(nb)%Radtend%sfcflw(ix)%dnfx0
+       temp2d(i,j,85) = GFS_Data(nb)%Sfcprop%tiice(ix,1)
+       temp2d(i,j,86) = GFS_Data(nb)%Sfcprop%tiice(ix,2)
 
        idx_opt = 87 
        if (Model%lsm == Model%lsm_noahmp) then
-        temp2d(i,j,idx_opt) = IPD_Data(nb)%Sfcprop%snowxy(ix)
-        temp2d(i,j,idx_opt+1) = IPD_Data(nb)%Sfcprop%tvxy(ix)
-        temp2d(i,j,idx_opt+2) = IPD_Data(nb)%Sfcprop%tgxy(ix)
-        temp2d(i,j,idx_opt+3) = IPD_Data(nb)%Sfcprop%canicexy(ix)
-        temp2d(i,j,idx_opt+4) = IPD_Data(nb)%Sfcprop%canliqxy(ix)
-        temp2d(i,j,idx_opt+5) = IPD_Data(nb)%Sfcprop%eahxy(ix)
-        temp2d(i,j,idx_opt+6) = IPD_Data(nb)%Sfcprop%tahxy(ix)
-        temp2d(i,j,idx_opt+7) = IPD_Data(nb)%Sfcprop%cmxy(ix)
-        temp2d(i,j,idx_opt+8) = IPD_Data(nb)%Sfcprop%chxy(ix)
-        temp2d(i,j,idx_opt+9) = IPD_Data(nb)%Sfcprop%fwetxy(ix)
-        temp2d(i,j,idx_opt+10) = IPD_Data(nb)%Sfcprop%sneqvoxy(ix)
-        temp2d(i,j,idx_opt+11) = IPD_Data(nb)%Sfcprop%alboldxy(ix)
-        temp2d(i,j,idx_opt+12) = IPD_Data(nb)%Sfcprop%qsnowxy(ix)
-        temp2d(i,j,idx_opt+13) = IPD_Data(nb)%Sfcprop%wslakexy(ix)
-        temp2d(i,j,idx_opt+14) = IPD_Data(nb)%Sfcprop%zwtxy(ix)
-        temp2d(i,j,idx_opt+15) = IPD_Data(nb)%Sfcprop%waxy(ix)
-        temp2d(i,j,idx_opt+16) = IPD_Data(nb)%Sfcprop%wtxy(ix)
-        temp2d(i,j,idx_opt+17) = IPD_Data(nb)%Sfcprop%lfmassxy(ix)
-        temp2d(i,j,idx_opt+18) = IPD_Data(nb)%Sfcprop%rtmassxy(ix)
-        temp2d(i,j,idx_opt+19) = IPD_Data(nb)%Sfcprop%stmassxy(ix)
-        temp2d(i,j,idx_opt+20) = IPD_Data(nb)%Sfcprop%woodxy(ix)
-        temp2d(i,j,idx_opt+21) = IPD_Data(nb)%Sfcprop%stblcpxy(ix)
-        temp2d(i,j,idx_opt+22) = IPD_Data(nb)%Sfcprop%fastcpxy(ix)
-        temp2d(i,j,idx_opt+23) = IPD_Data(nb)%Sfcprop%xsaixy(ix)
-        temp2d(i,j,idx_opt+24) = IPD_Data(nb)%Sfcprop%xlaixy(ix)
-        temp2d(i,j,idx_opt+25) = IPD_Data(nb)%Sfcprop%taussxy(ix)
-        temp2d(i,j,idx_opt+26) = IPD_Data(nb)%Sfcprop%smcwtdxy(ix)
-        temp2d(i,j,idx_opt+27) = IPD_Data(nb)%Sfcprop%deeprechxy(ix)
-        temp2d(i,j,idx_opt+28) = IPD_Data(nb)%Sfcprop%rechxy(ix)
+        temp2d(i,j,idx_opt) = GFS_Data(nb)%Sfcprop%snowxy(ix)
+        temp2d(i,j,idx_opt+1) = GFS_Data(nb)%Sfcprop%tvxy(ix)
+        temp2d(i,j,idx_opt+2) = GFS_Data(nb)%Sfcprop%tgxy(ix)
+        temp2d(i,j,idx_opt+3) = GFS_Data(nb)%Sfcprop%canicexy(ix)
+        temp2d(i,j,idx_opt+4) = GFS_Data(nb)%Sfcprop%canliqxy(ix)
+        temp2d(i,j,idx_opt+5) = GFS_Data(nb)%Sfcprop%eahxy(ix)
+        temp2d(i,j,idx_opt+6) = GFS_Data(nb)%Sfcprop%tahxy(ix)
+        temp2d(i,j,idx_opt+7) = GFS_Data(nb)%Sfcprop%cmxy(ix)
+        temp2d(i,j,idx_opt+8) = GFS_Data(nb)%Sfcprop%chxy(ix)
+        temp2d(i,j,idx_opt+9) = GFS_Data(nb)%Sfcprop%fwetxy(ix)
+        temp2d(i,j,idx_opt+10) = GFS_Data(nb)%Sfcprop%sneqvoxy(ix)
+        temp2d(i,j,idx_opt+11) = GFS_Data(nb)%Sfcprop%alboldxy(ix)
+        temp2d(i,j,idx_opt+12) = GFS_Data(nb)%Sfcprop%qsnowxy(ix)
+        temp2d(i,j,idx_opt+13) = GFS_Data(nb)%Sfcprop%wslakexy(ix)
+        temp2d(i,j,idx_opt+14) = GFS_Data(nb)%Sfcprop%zwtxy(ix)
+        temp2d(i,j,idx_opt+15) = GFS_Data(nb)%Sfcprop%waxy(ix)
+        temp2d(i,j,idx_opt+16) = GFS_Data(nb)%Sfcprop%wtxy(ix)
+        temp2d(i,j,idx_opt+17) = GFS_Data(nb)%Sfcprop%lfmassxy(ix)
+        temp2d(i,j,idx_opt+18) = GFS_Data(nb)%Sfcprop%rtmassxy(ix)
+        temp2d(i,j,idx_opt+19) = GFS_Data(nb)%Sfcprop%stmassxy(ix)
+        temp2d(i,j,idx_opt+20) = GFS_Data(nb)%Sfcprop%woodxy(ix)
+        temp2d(i,j,idx_opt+21) = GFS_Data(nb)%Sfcprop%stblcpxy(ix)
+        temp2d(i,j,idx_opt+22) = GFS_Data(nb)%Sfcprop%fastcpxy(ix)
+        temp2d(i,j,idx_opt+23) = GFS_Data(nb)%Sfcprop%xsaixy(ix)
+        temp2d(i,j,idx_opt+24) = GFS_Data(nb)%Sfcprop%xlaixy(ix)
+        temp2d(i,j,idx_opt+25) = GFS_Data(nb)%Sfcprop%taussxy(ix)
+        temp2d(i,j,idx_opt+26) = GFS_Data(nb)%Sfcprop%smcwtdxy(ix)
+        temp2d(i,j,idx_opt+27) = GFS_Data(nb)%Sfcprop%deeprechxy(ix)
+        temp2d(i,j,idx_opt+28) = GFS_Data(nb)%Sfcprop%rechxy(ix)
 
-        temp2d(i,j,idx_opt+29) = IPD_Data(nb)%Sfcprop%snicexy(ix,-2)
-        temp2d(i,j,idx_opt+30) = IPD_Data(nb)%Sfcprop%snicexy(ix,-1)
-        temp2d(i,j,idx_opt+31) = IPD_Data(nb)%Sfcprop%snicexy(ix,0)
-        temp2d(i,j,idx_opt+32) = IPD_Data(nb)%Sfcprop%snliqxy(ix,-2)
-        temp2d(i,j,idx_opt+33) = IPD_Data(nb)%Sfcprop%snliqxy(ix,-1)
-        temp2d(i,j,idx_opt+34) = IPD_Data(nb)%Sfcprop%snliqxy(ix,0)
-        temp2d(i,j,idx_opt+35) = IPD_Data(nb)%Sfcprop%tsnoxy(ix,-2)
-        temp2d(i,j,idx_opt+36) = IPD_Data(nb)%Sfcprop%tsnoxy(ix,-1)
-        temp2d(i,j,idx_opt+37) = IPD_Data(nb)%Sfcprop%tsnoxy(ix,0)
-        temp2d(i,j,idx_opt+38) = IPD_Data(nb)%Sfcprop%smoiseq(ix,1)
-        temp2d(i,j,idx_opt+39) = IPD_Data(nb)%Sfcprop%smoiseq(ix,2)
-        temp2d(i,j,idx_opt+40) = IPD_Data(nb)%Sfcprop%smoiseq(ix,3)
-        temp2d(i,j,idx_opt+41) = IPD_Data(nb)%Sfcprop%smoiseq(ix,4)
-        temp2d(i,j,idx_opt+42) = IPD_Data(nb)%Sfcprop%zsnsoxy(ix,-2)
-        temp2d(i,j,idx_opt+43) = IPD_Data(nb)%Sfcprop%zsnsoxy(ix,-1)
-        temp2d(i,j,idx_opt+44) = IPD_Data(nb)%Sfcprop%zsnsoxy(ix,0)
-        temp2d(i,j,idx_opt+45) = IPD_Data(nb)%Sfcprop%zsnsoxy(ix,1)
-        temp2d(i,j,idx_opt+46) = IPD_Data(nb)%Sfcprop%zsnsoxy(ix,2)
-        temp2d(i,j,idx_opt+47) = IPD_Data(nb)%Sfcprop%zsnsoxy(ix,3)
-        temp2d(i,j,idx_opt+48) = IPD_Data(nb)%Sfcprop%zsnsoxy(ix,4)
+        temp2d(i,j,idx_opt+29) = GFS_Data(nb)%Sfcprop%snicexy(ix,-2)
+        temp2d(i,j,idx_opt+30) = GFS_Data(nb)%Sfcprop%snicexy(ix,-1)
+        temp2d(i,j,idx_opt+31) = GFS_Data(nb)%Sfcprop%snicexy(ix,0)
+        temp2d(i,j,idx_opt+32) = GFS_Data(nb)%Sfcprop%snliqxy(ix,-2)
+        temp2d(i,j,idx_opt+33) = GFS_Data(nb)%Sfcprop%snliqxy(ix,-1)
+        temp2d(i,j,idx_opt+34) = GFS_Data(nb)%Sfcprop%snliqxy(ix,0)
+        temp2d(i,j,idx_opt+35) = GFS_Data(nb)%Sfcprop%tsnoxy(ix,-2)
+        temp2d(i,j,idx_opt+36) = GFS_Data(nb)%Sfcprop%tsnoxy(ix,-1)
+        temp2d(i,j,idx_opt+37) = GFS_Data(nb)%Sfcprop%tsnoxy(ix,0)
+        temp2d(i,j,idx_opt+38) = GFS_Data(nb)%Sfcprop%smoiseq(ix,1)
+        temp2d(i,j,idx_opt+39) = GFS_Data(nb)%Sfcprop%smoiseq(ix,2)
+        temp2d(i,j,idx_opt+40) = GFS_Data(nb)%Sfcprop%smoiseq(ix,3)
+        temp2d(i,j,idx_opt+41) = GFS_Data(nb)%Sfcprop%smoiseq(ix,4)
+        temp2d(i,j,idx_opt+42) = GFS_Data(nb)%Sfcprop%zsnsoxy(ix,-2)
+        temp2d(i,j,idx_opt+43) = GFS_Data(nb)%Sfcprop%zsnsoxy(ix,-1)
+        temp2d(i,j,idx_opt+44) = GFS_Data(nb)%Sfcprop%zsnsoxy(ix,0)
+        temp2d(i,j,idx_opt+45) = GFS_Data(nb)%Sfcprop%zsnsoxy(ix,1)
+        temp2d(i,j,idx_opt+46) = GFS_Data(nb)%Sfcprop%zsnsoxy(ix,2)
+        temp2d(i,j,idx_opt+47) = GFS_Data(nb)%Sfcprop%zsnsoxy(ix,3)
+        temp2d(i,j,idx_opt+48) = GFS_Data(nb)%Sfcprop%zsnsoxy(ix,4)
         idx_opt = 136
        endif
 
        if (Model%nstf_name(1) > 0) then
-         temp2d(i,j,idx_opt   ) = IPD_Data(nb)%Sfcprop%tref(ix)
-         temp2d(i,j,idx_opt+ 1) = IPD_Data(nb)%Sfcprop%z_c(ix)
-         temp2d(i,j,idx_opt+ 2) = IPD_Data(nb)%Sfcprop%c_0(ix)
-         temp2d(i,j,idx_opt+ 3) = IPD_Data(nb)%Sfcprop%c_d(ix)
-         temp2d(i,j,idx_opt+ 4) = IPD_Data(nb)%Sfcprop%w_0(ix)
-         temp2d(i,j,idx_opt+ 5) = IPD_Data(nb)%Sfcprop%w_d(ix)
-         temp2d(i,j,idx_opt+ 6) = IPD_Data(nb)%Sfcprop%xt(ix)
-         temp2d(i,j,idx_opt+ 7) = IPD_Data(nb)%Sfcprop%xs(ix)
-         temp2d(i,j,idx_opt+ 8) = IPD_Data(nb)%Sfcprop%xu(ix)
-         temp2d(i,j,idx_opt+ 9) = IPD_Data(nb)%Sfcprop%xz(ix)
-         temp2d(i,j,idx_opt+10) = IPD_Data(nb)%Sfcprop%zm(ix)
-         temp2d(i,j,idx_opt+11) = IPD_Data(nb)%Sfcprop%xtts(ix)
-         temp2d(i,j,idx_opt+12) = IPD_Data(nb)%Sfcprop%xzts(ix)
-         temp2d(i,j,idx_opt+13) = IPD_Data(nb)%Sfcprop%ifd(ix)
-         temp2d(i,j,idx_opt+14) = IPD_Data(nb)%Sfcprop%dt_cool(ix)
-         temp2d(i,j,idx_opt+15) = IPD_Data(nb)%Sfcprop%qrain(ix)
+         temp2d(i,j,idx_opt   ) = GFS_Data(nb)%Sfcprop%tref(ix)
+         temp2d(i,j,idx_opt+ 1) = GFS_Data(nb)%Sfcprop%z_c(ix)
+         temp2d(i,j,idx_opt+ 2) = GFS_Data(nb)%Sfcprop%c_0(ix)
+         temp2d(i,j,idx_opt+ 3) = GFS_Data(nb)%Sfcprop%c_d(ix)
+         temp2d(i,j,idx_opt+ 4) = GFS_Data(nb)%Sfcprop%w_0(ix)
+         temp2d(i,j,idx_opt+ 5) = GFS_Data(nb)%Sfcprop%w_d(ix)
+         temp2d(i,j,idx_opt+ 6) = GFS_Data(nb)%Sfcprop%xt(ix)
+         temp2d(i,j,idx_opt+ 7) = GFS_Data(nb)%Sfcprop%xs(ix)
+         temp2d(i,j,idx_opt+ 8) = GFS_Data(nb)%Sfcprop%xu(ix)
+         temp2d(i,j,idx_opt+ 9) = GFS_Data(nb)%Sfcprop%xz(ix)
+         temp2d(i,j,idx_opt+10) = GFS_Data(nb)%Sfcprop%zm(ix)
+         temp2d(i,j,idx_opt+11) = GFS_Data(nb)%Sfcprop%xtts(ix)
+         temp2d(i,j,idx_opt+12) = GFS_Data(nb)%Sfcprop%xzts(ix)
+         temp2d(i,j,idx_opt+13) = GFS_Data(nb)%Sfcprop%ifd(ix)
+         temp2d(i,j,idx_opt+14) = GFS_Data(nb)%Sfcprop%dt_cool(ix)
+         temp2d(i,j,idx_opt+15) = GFS_Data(nb)%Sfcprop%qrain(ix)
        endif
 
        do l = 1,Model%ntot2d
-         temp2d(i,j,nsfcprop2d+l) = IPD_Data(nb)%Tbd%phy_f2d(ix,l)
+         temp2d(i,j,nsfcprop2d+l) = GFS_Data(nb)%Tbd%phy_f2d(ix,l)
        enddo
 
        do l = 1,Model%nctp
-         temp2d(i,j,nsfcprop2d+Model%ntot2d+l) = IPD_Data(nb)%Tbd%phy_fctd(ix,l)
+         temp2d(i,j,nsfcprop2d+Model%ntot2d+l) = GFS_Data(nb)%Tbd%phy_fctd(ix,l)
        enddo
 
-       temp3dlevsp1(i,j,:, 1) = IPD_Data(nb)%Statein%phii(ix,:)
-       temp3dlevsp1(i,j,:, 2) = IPD_Data(nb)%Statein%prsi(ix,:)
-       temp3dlevsp1(i,j,:, 3) = IPD_Data(nb)%Statein%prsik(ix,:)
+       temp3dlevsp1(i,j,:, 1) = GFS_Data(nb)%Statein%phii(ix,:)
+       temp3dlevsp1(i,j,:, 2) = GFS_Data(nb)%Statein%prsi(ix,:)
+       temp3dlevsp1(i,j,:, 3) = GFS_Data(nb)%Statein%prsik(ix,:)
 
-       temp3d(i,j,:, 1) = IPD_Data(nb)%Statein%phil(ix,:)
-       temp3d(i,j,:, 2) = IPD_Data(nb)%Statein%prsl(ix,:)
-       temp3d(i,j,:, 3) = IPD_Data(nb)%Statein%prslk(ix,:)
-       temp3d(i,j,:, 4) = IPD_Data(nb)%Statein%ugrs(ix,:)
-       temp3d(i,j,:, 5) = IPD_Data(nb)%Statein%vgrs(ix,:)
-       temp3d(i,j,:, 6) = IPD_Data(nb)%Statein%vvl(ix,:)
-       temp3d(i,j,:, 7) = IPD_Data(nb)%Statein%tgrs(ix,:)
-       temp3d(i,j,:, 8) = IPD_Data(nb)%Stateout%gu0(ix,:)
-       temp3d(i,j,:, 9) = IPD_Data(nb)%Stateout%gv0(ix,:)
-       temp3d(i,j,:,10) = IPD_Data(nb)%Stateout%gt0(ix,:)
-       temp3d(i,j,:,11) = IPD_Data(nb)%Radtend%htrsw(ix,:)
-       temp3d(i,j,:,12) = IPD_Data(nb)%Radtend%htrlw(ix,:)
-       temp3d(i,j,:,13) = IPD_Data(nb)%Radtend%swhc(ix,:)
-       temp3d(i,j,:,14) = IPD_Data(nb)%Radtend%lwhc(ix,:)
+       temp3d(i,j,:, 1) = GFS_Data(nb)%Statein%phil(ix,:)
+       temp3d(i,j,:, 2) = GFS_Data(nb)%Statein%prsl(ix,:)
+       temp3d(i,j,:, 3) = GFS_Data(nb)%Statein%prslk(ix,:)
+       temp3d(i,j,:, 4) = GFS_Data(nb)%Statein%ugrs(ix,:)
+       temp3d(i,j,:, 5) = GFS_Data(nb)%Statein%vgrs(ix,:)
+       temp3d(i,j,:, 6) = GFS_Data(nb)%Statein%vvl(ix,:)
+       temp3d(i,j,:, 7) = GFS_Data(nb)%Statein%tgrs(ix,:)
+       temp3d(i,j,:, 8) = GFS_Data(nb)%Stateout%gu0(ix,:)
+       temp3d(i,j,:, 9) = GFS_Data(nb)%Stateout%gv0(ix,:)
+       temp3d(i,j,:,10) = GFS_Data(nb)%Stateout%gt0(ix,:)
+       temp3d(i,j,:,11) = GFS_Data(nb)%Radtend%htrsw(ix,:)
+       temp3d(i,j,:,12) = GFS_Data(nb)%Radtend%htrlw(ix,:)
+       temp3d(i,j,:,13) = GFS_Data(nb)%Radtend%swhc(ix,:)
+       temp3d(i,j,:,14) = GFS_Data(nb)%Radtend%lwhc(ix,:)
        do l = 1,Model%ntot3d
-         temp3d(i,j,:,14+l) = IPD_Data(nb)%Tbd%phy_f3d(ix,:,l)
+         temp3d(i,j,:,14+l) = GFS_Data(nb)%Tbd%phy_f3d(ix,:,l)
        enddo
        do l = 1,ntr
-         temp3d(i,j,:,14+Model%ntot3d+l)     = IPD_Data(nb)%Statein%qgrs(ix,:,l)
-         temp3d(i,j,:,14+Model%ntot3d+ntr+l) = IPD_Data(nb)%Stateout%gq0(ix,:,l)
+         temp3d(i,j,:,14+Model%ntot3d+l)     = GFS_Data(nb)%Statein%qgrs(ix,:,l)
+         temp3d(i,j,:,14+Model%ntot3d+ntr+l) = GFS_Data(nb)%Stateout%gq0(ix,:,l)
        enddo
      enddo
    enddo
@@ -445,7 +442,7 @@ module FV3GFS_io_mod
    deallocate(temp2d)
    deallocate(temp3d)
    deallocate(temp3dlevsp1)
-   end subroutine FV3GFS_IPD_checksum
+   end subroutine FV3GFS_GFS_checksum
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
@@ -470,7 +467,7 @@ module FV3GFS_io_mod
     !--- interface variable definitions
     type(GFS_sfcprop_type),    intent(inout) :: Sfcprop(:)
     type (block_control_type), intent(in)    :: Atm_block
-    type(IPD_control_type),    intent(inout) :: Model
+    type(GFS_control_type),    intent(inout) :: Model
     type (domain2d),           intent(in)    :: fv_domain
     logical,                   intent(in)    :: warm_start
     !--- local variables
@@ -1625,7 +1622,7 @@ module FV3GFS_io_mod
     !--- interface variable definitions
     type(GFS_sfcprop_type),      intent(in) :: Sfcprop(:)
     type(block_control_type),    intent(in) :: Atm_block
-    type(IPD_control_type),      intent(in) :: Model
+    type(GFS_control_type),      intent(in) :: Model
     type(domain2d),              intent(in) :: fv_domain
     character(len=32), optional, intent(in) :: timestamp
     !--- local variables
@@ -2084,11 +2081,11 @@ module FV3GFS_io_mod
 !    opens:  phys_data.tile?.nc
 !   
 !----------------------------------------------------------------------      
-  subroutine phys_restart_read (IPD_Restart, Atm_block, Model, fv_domain)
+  subroutine phys_restart_read (GFS_Restart, Atm_block, Model, fv_domain)
     !--- interface variable definitions
-    type(IPD_restart_type),      intent(in) :: IPD_Restart
+    type(GFS_restart_type),      intent(in) :: GFS_Restart
     type(block_control_type),    intent(in) :: Atm_block
-    type(IPD_control_type),      intent(in) :: Model
+    type(GFS_control_type),      intent(in) :: Model
     type(domain2d),              intent(in) :: fv_domain
     !--- local variables
     integer :: i, j, k, nb, ix, num
@@ -2107,10 +2104,10 @@ module FV3GFS_io_mod
     npz = Atm_block%npz
     nx  = (iec - isc + 1)
     ny  = (jec - jsc + 1)
-    nvar2d = IPD_Restart%num2d
-    nvar3d = IPD_Restart%num3d
-    fdiag  = IPD_Restart%fdiag
-    ldiag  = IPD_Restart%ldiag
+    nvar2d = GFS_Restart%num2d
+    nvar3d = GFS_Restart%num3d
+    fdiag  = GFS_Restart%fdiag
+    ldiag  = GFS_Restart%ldiag
  
     !--- register the restart fields
     if (.not. allocated(phy_var2)) then
@@ -2121,12 +2118,12 @@ module FV3GFS_io_mod
       
       do num = 1,nvar2d
         var2_p => phy_var2(:,:,num)
-        id_restart = register_restart_field (Phy_restart, fn_phy, trim(IPD_Restart%name2d(num)), &
+        id_restart = register_restart_field (Phy_restart, fn_phy, trim(GFS_Restart%name2d(num)), &
                                              var2_p, domain=fv_domain, mandatory=.false.)
       enddo
       do num = 1,nvar3d
         var3_p => phy_var3(:,:,:,num)
-        id_restart = register_restart_field (Phy_restart, fn_phy, trim(IPD_restart%name3d(num)), &
+        id_restart = register_restart_field (Phy_restart, fn_phy, trim(GFS_restart%name3d(num)), &
                                              var3_p, domain=fv_domain, mandatory=.false.)
       enddo
       nullify(var2_p)
@@ -2151,7 +2148,7 @@ module FV3GFS_io_mod
         do ix = 1, Atm_block%blksz(nb)            
           i = Atm_block%index(nb)%ii(ix) - isc + 1
           j = Atm_block%index(nb)%jj(ix) - jsc + 1
-          IPD_Restart%data(nb,num)%var2p(ix) = phy_var2(i,j,num)
+          GFS_Restart%data(nb,num)%var2p(ix) = phy_var2(i,j,num)
         enddo
       enddo
     enddo
@@ -2163,7 +2160,7 @@ module FV3GFS_io_mod
           do ix = 1, Atm_block%blksz(nb)
             i = Atm_block%index(nb)%ii(ix) - isc + 1
             j = Atm_block%index(nb)%jj(ix) - jsc + 1
-            IPD_Restart%data(nb,num)%var2p(ix) = zero
+            GFS_Restart%data(nb,num)%var2p(ix) = zero
           enddo
         enddo 
       enddo
@@ -2175,7 +2172,7 @@ module FV3GFS_io_mod
           do ix = 1, Atm_block%blksz(nb)            
             i = Atm_block%index(nb)%ii(ix) - isc + 1
             j = Atm_block%index(nb)%jj(ix) - jsc + 1
-            IPD_Restart%data(nb,num)%var3p(ix,k) = phy_var3(i,j,k,num)
+            GFS_Restart%data(nb,num)%var3p(ix,k) = phy_var3(i,j,k,num)
           enddo
         enddo
       enddo
@@ -2194,11 +2191,11 @@ module FV3GFS_io_mod
 !
 !    calls:  register_restart_field, save_restart
 !----------------------------------------------------------------------      
-  subroutine phys_restart_write (IPD_Restart, Atm_block, Model, fv_domain, timestamp)
+  subroutine phys_restart_write (GFS_Restart, Atm_block, Model, fv_domain, timestamp)
     !--- interface variable definitions
-    type(IPD_restart_type),      intent(in) :: IPD_Restart
+    type(GFS_restart_type),      intent(in) :: GFS_Restart
     type(block_control_type),    intent(in) :: Atm_block
-    type(IPD_control_type),      intent(in) :: Model
+    type(GFS_control_type),      intent(in) :: Model
     type(domain2d),              intent(in) :: fv_domain
     character(len=32), optional, intent(in) :: timestamp
     !--- local variables
@@ -2217,8 +2214,8 @@ module FV3GFS_io_mod
     npz = Atm_block%npz
     nx  = (iec - isc + 1)
     ny  = (jec - jsc + 1)
-    nvar2d = IPD_Restart%num2d
-    nvar3d = IPD_Restart%num3d
+    nvar2d = GFS_Restart%num2d
+    nvar3d = GFS_Restart%num3d
 
     !--- register the restart fields 
     if (.not. allocated(phy_var2)) then
@@ -2229,12 +2226,12 @@ module FV3GFS_io_mod
       
       do num = 1,nvar2d
         var2_p => phy_var2(:,:,num)
-        id_restart = register_restart_field (Phy_restart, fn_phy, trim(IPD_Restart%name2d(num)), &
+        id_restart = register_restart_field (Phy_restart, fn_phy, trim(GFS_Restart%name2d(num)), &
                                              var2_p, domain=fv_domain, mandatory=.false.)
       enddo
       do num = 1,nvar3d
         var3_p => phy_var3(:,:,:,num)
-        id_restart = register_restart_field (Phy_restart, fn_phy, trim(IPD_restart%name3d(num)), &
+        id_restart = register_restart_field (Phy_restart, fn_phy, trim(GFS_restart%name3d(num)), &
                                              var3_p, domain=fv_domain, mandatory=.false.)
       enddo
       nullify(var2_p)
@@ -2248,7 +2245,7 @@ module FV3GFS_io_mod
         do ix = 1, Atm_block%blksz(nb)            
           i = Atm_block%index(nb)%ii(ix) - isc + 1
           j = Atm_block%index(nb)%jj(ix) - jsc + 1
-          phy_var2(i,j,num) = IPD_Restart%data(nb,num)%var2p(ix)
+          phy_var2(i,j,num) = GFS_Restart%data(nb,num)%var2p(ix)
         enddo
       enddo
     enddo
@@ -2260,7 +2257,7 @@ module FV3GFS_io_mod
           do ix = 1, Atm_block%blksz(nb)            
             i = Atm_block%index(nb)%ii(ix) - isc + 1
             j = Atm_block%index(nb)%jj(ix) - jsc + 1
-            phy_var3(i,j,k,num) = IPD_Restart%data(nb,num)%var3p(ix,k)
+            phy_var3(i,j,k,num) = GFS_Restart%data(nb,num)%var3p(ix,k)
           enddo
         enddo
       enddo
@@ -2285,10 +2282,10 @@ module FV3GFS_io_mod
   subroutine fv3gfs_diag_register(Diag, Time, Atm_block, Model, xlon, xlat, axes)
     use physcons,  only: con_g
 !--- subroutine interface variable definitions
-    type(IPD_diag_type),       intent(inout) :: Diag(:)
+    type(GFS_externaldiag_type),       intent(inout) :: Diag(:)
     type(time_type),           intent(in)    :: Time
     type (block_control_type), intent(in)    :: Atm_block
-    type(IPD_control_type),    intent(in)    :: Model
+    type(GFS_control_type),    intent(in)    :: Model
     real(kind=kind_phys),      intent(in)    :: xlon(:,:)
     real(kind=kind_phys),      intent(in)    :: xlat(:,:)
     integer, dimension(4),     intent(in)    :: axes
@@ -2401,7 +2398,7 @@ module FV3GFS_io_mod
                                 dt, time_int, time_intfull, time_radsw, time_radlw)
 !--- subroutine interface variable definitions
     type(time_type),           intent(in) :: time
-    type(IPD_diag_type),       intent(in) :: diag(:)
+    type(GFS_externaldiag_type),       intent(in) :: diag(:)
     type (block_control_type), intent(in) :: atm_block
     integer,                   intent(in) :: nx, ny, levs, ntcw, ntoz
     real(kind=kind_phys),      intent(in) :: dt
@@ -2854,7 +2851,7 @@ module FV3GFS_io_mod
 !
    implicit none
 !
-   type(IPD_diag_type),intent(in)              :: Diag(:)
+   type(GFS_externaldiag_type),intent(in)              :: Diag(:)
    integer, intent(in)                         :: axes(:)
    type(ESMF_FieldBundle),intent(inout)        :: phys_bundle(:)
    type(ESMF_Grid),intent(inout)               :: fcst_grid
