@@ -84,7 +84,8 @@ use DYCORE_typedefs,    only: DYCORE_data_type, DYCORE_diag_type
 
 use GFS_typedefs,       only: GFS_init_type, GFS_kind_phys => kind_phys
 use GFS_restart,        only: GFS_restart_type, GFS_restart_populate
-use GFS_diagnostics,    only: GFS_externaldiag_type
+use GFS_diagnostics,    only: GFS_externaldiag_type, &
+                              GFS_externaldiag_populate
 use CCPP_data,          only: ccpp_suite, GFS_control, &
                               GFS_data, GFS_interstitial
 use GFS_driver,         only: GFS_initialize
@@ -168,9 +169,8 @@ type(DYCORE_data_type),    allocatable :: DYCORE_Data(:)  ! number of blocks
 type(DYCORE_diag_type)                 :: DYCORE_Diag(25)
 
 !----------------
-!  IPD containers
+!  GFS containers
 !----------------
-! GFS_control and GFS_data are coming from CCPP_data
 type(GFS_externaldiag_type), target :: GFS_Diag(DIAG_SIZE)
 type(GFS_restart_type)              :: GFS_restart_var
 
@@ -546,6 +546,13 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    call GFS_initialize (GFS_control, GFS_data%Statein, GFS_data%Stateout, GFS_data%Sfcprop,     &
                         GFS_data%Coupling, GFS_data%Grid, GFS_data%Tbd, GFS_data%Cldprop, GFS_data%Radtend, & 
                         GFS_data%Intdiag, GFS_interstitial, commglobal, mpp_npes(), Init_parm)
+
+   !--- populate/associate the Diag container elements
+   call GFS_externaldiag_populate (GFS_Diag, GFS_Control, GFS_Data%Statein, GFS_Data%Stateout,   &
+                                             GFS_Data%Sfcprop, GFS_Data%Coupling, GFS_Data%Grid, &
+                                             GFS_Data%Tbd, GFS_Data%Cldprop, GFS_Data%Radtend,   &
+                                             GFS_Data%Intdiag, Init_parm)
+
 
 !--- Initialize stochastic physics pattern generation / cellular automata for first time step
    call stochastic_physics_wrapper(GFS_control, GFS_data, Atm_block, ierr)
