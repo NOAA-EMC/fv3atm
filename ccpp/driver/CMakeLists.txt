@@ -29,7 +29,7 @@ add_library(
 
     GFS_diagnostics.F90
     GFS_restart.F90
-    GFS_driver.F90
+    GFS_init.F90
 
     ${CMAKE_BINARY_DIR}/FV3/ccpp/physics/ccpp_static_api.F90
     CCPP_driver.F90

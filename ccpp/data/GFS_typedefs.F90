@@ -3616,6 +3616,10 @@ module GFS_typedefs
 
 !--- integrated dynamics through earth's atmosphere
     Model%lsidea           = lsidea
+    if (Model%lsidea) then
+      print *,' LSIDEA is active but needs to be reworked for FV3 - shutting down'
+      stop
+    endif
 
 !--- calendars and time parameters and activation triggers
     Model%dtp              = dt_phys

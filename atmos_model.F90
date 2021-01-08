@@ -88,7 +88,7 @@ use GFS_diagnostics,    only: GFS_externaldiag_type, &
                               GFS_externaldiag_populate
 use CCPP_data,          only: ccpp_suite, GFS_control, &
                               GFS_data, GFS_interstitial
-use GFS_driver,         only: GFS_initialize
+use GFS_init,           only: GFS_initialize
 use CCPP_driver,        only: CCPP_step, non_uniform_blocks
 
 use stochastic_physics_wrapper_mod, only: stochastic_physics_wrapper,stochastic_physics_wrapper_end

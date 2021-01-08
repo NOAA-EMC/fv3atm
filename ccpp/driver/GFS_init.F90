@@ -1,4 +1,4 @@
-module GFS_driver
+module GFS_init
 
   use machine,                  only: kind_phys
   use GFS_typedefs,             only: GFS_init_type,                       &
@@ -134,13 +134,6 @@ module GFS_driver
     call set_soilveg(Model%me, Model%isot, Model%ivegsrc, Model%nlunit)
 ! *DH
 
-    !--- lsidea initialization
-    if (Model%lsidea) then
-      print *,' LSIDEA is active but needs to be reworked for FV3 - shutting down'
-      stop
-      !--- NEED TO get the logic from the old phys/gloopb.f initialization area
-    endif
-
   end subroutine GFS_initialize
 
 !------------------
@@ -184,4 +177,4 @@ module GFS_driver
 
   end subroutine GFS_grid_populate
 
-end module GFS_driver
+end module GFS_init
