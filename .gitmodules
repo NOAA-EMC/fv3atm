@@ -6,10 +6,8 @@
 	branch = remove_ipd_step3_and_5
 [submodule "ccpp/framework"]
 	path = ccpp/framework
-	#url = https://github.com/NCAR/ccpp-framework
-	#branch = master
-	url = https://github.com/climbfuji/ccpp-framework
-	branch = remove_ipd_step3_and_5
+	url = https://github.com/NCAR/ccpp-framework
+	branch = master
 [submodule "ccpp/physics"]
 	path = ccpp/physics
 	#url = https://github.com/NCAR/ccpp-physics
