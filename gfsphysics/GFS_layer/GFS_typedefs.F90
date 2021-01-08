@@ -14,6 +14,8 @@ module GFS_typedefs
 
        use module_radsw_parameters,  only: topfsw_type, sfcfsw_type, profsw_type, cmpfsw_type, NBDSW
        use module_radlw_parameters,  only: topflw_type, sfcflw_type, proflw_type, NBDLW
+       use ozne_def,                 only: levozp, oz_coeff
+       use h2o_def,                  only: levh2o, h2o_coeff
        use mo_gas_optics_rrtmgp,     only: ty_gas_optics_rrtmgp
        use mo_optical_props,         only: ty_optical_props_1scl,ty_optical_props_2str
        use mo_cloud_optics,          only: ty_cloud_optics
@@ -48,10 +50,10 @@ module GFS_typedefs
       ! from aerclm_def
       integer, parameter :: ntrcaerm = 15
 
-      ! These will be set later in GFS_Control%initialize,
-      ! since they depend on the runtime config (e.g. Model%ntoz, Model%h2o_phys, Model%aero_in)
-      private :: levozp, oz_coeff, levh2o, h2o_coeff, ntrcaer
-      integer :: levozp, oz_coeff, levh2o, h2o_coeff, ntrcaer
+      ! This will be set later in GFS_Control%initialize, since
+      ! it depends on the runtime config (Model%aero_in)
+      private :: ntrcaer
+      integer :: ntrcaer
 #endif
       ! If these are changed to >99, need to adjust formatting string in GFS_diagnostics.F90 (and names in diag_tables)
       integer, parameter :: naux2dmax = 20 !< maximum number of auxiliary 2d arrays in output (for debugging)
@@ -1171,10 +1173,11 @@ module GFS_typedefs
     integer              :: nqvdelt         !< the index of specific humidity at the previous timestep for Z-C MP in phy_f3d
     integer              :: nps2delt        !< the index of surface air pressure 2 timesteps back for Z-C MP in phy_f2d
     integer              :: npsdelt         !< the index of surface air pressure at the previous timestep for Z-C MP in phy_f2d
+    integer              :: ncnvwind        !< the index of surface wind enhancement due to convection for MYNN SFC and RAS CNV in phy f2d
 #endif
 
 !--- debug flag
-    logical              :: debug         
+    logical              :: debug
     logical              :: pre_rad         !< flag for testing purpose
 
 !--- variables modified at each time step
@@ -1863,8 +1866,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: graupelmp(:)       => null()  !<
     real (kind=kind_phys), pointer      :: gwdcu(:,:)         => null()  !<
     real (kind=kind_phys), pointer      :: gwdcv(:,:)         => null()  !<
-    integer                             :: h2o_coeff                     !<
-    real (kind=kind_phys), pointer      :: h2o_pres(:)        => null()  !<
+
     real (kind=kind_phys), pointer      :: hefac(:)           => null()  !<
     real (kind=kind_phys), pointer      :: hffac(:)           => null()  !<
     real (kind=kind_phys), pointer      :: hflxq(:)           => null()  !<
@@ -1898,8 +1900,6 @@ module GFS_typedefs
     integer,               pointer      :: ktop(:)            => null()  !<
     integer                             :: latidxprnt                    !<
     integer                             :: levi                          !<
-    integer                             :: levh2o                        !<
-    integer                             :: levozp                        !<
     integer                             :: lmk                           !<
     integer                             :: lmp                           !<
     integer,               pointer      :: mbota(:,:)         => null()  !<
@@ -1929,9 +1929,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: oc(:)              => null()  !<
     real (kind=kind_phys), pointer      :: olyr(:,:)          => null()  !<
     logical              , pointer      :: otspt(:,:)         => null()  !<
-    integer                             :: oz_coeff                      !<
     integer                             :: oz_coeffp5                    !<
-    real (kind=kind_phys), pointer      :: oz_pres(:)         => null()  !<
     logical                             :: phys_hydrostatic              !<
     real (kind=kind_phys), pointer      :: plvl(:,:)          => null()  !<
     real (kind=kind_phys), pointer      :: plyr(:,:)          => null()  !<
@@ -4358,7 +4356,7 @@ module GFS_typedefs
           stop
        else
           levozp   = 1
-          oz_coeff = 0
+          oz_coeff = 1
        end if
     end if
 #endif
@@ -4876,6 +4874,9 @@ module GFS_typedefs
 #endif
     if(Model%cnvcld) Model%ncnvcld3d = 1
 
+!--- get cnvwind index in phy_f2d; last entry in phy_f2d array
+    Model%ncnvwind = Model%num_p2d
+
 !--- get cnvw and cnvc indices in phy_f3d
     Model%ncnvw = -999
     Model%ncnvc = -999
@@ -5212,6 +5213,8 @@ module GFS_typedefs
       print *, ' shocaftcnv        : ', Model%shocaftcnv
       print *, ' shoc_cld          : ', Model%shoc_cld
       print *, ' uni_cld           : ', Model%uni_cld
+      print *, ' oz_phys           : ', Model%oz_phys
+      print *, ' oz_phys_2015      : ', Model%oz_phys_2015
       print *, ' h2o_phys          : ', Model%h2o_phys
       print *, ' pdfcld            : ', Model%pdfcld
       print *, ' shcnvcw           : ', Model%shcnvcw
@@ -5509,8 +5512,6 @@ module GFS_typedefs
     endif
 
 !--- ozone and stratosphere h2o needs
-    ! DH* oz_coeff is set to zero if both ozphys options are false,
-    ! better to use conditional allocations here for ozpl (and h2opl)? *DH
     allocate (Tbd%ozpl  (IM,levozp,oz_coeff))
     allocate (Tbd%h2opl (IM,levh2o,h2o_coeff))
     Tbd%ozpl  = clear_val
@@ -5529,8 +5530,6 @@ module GFS_typedefs
     Tbd%aer_nm = clear_val
 
 #ifdef CCPP
-! DH* TODO - MOVE THIS TO a block-vector dependent structure in GFS_control?
-! e.g. GFS_Control%imap(blk), GFS_Control%jmap(blk), or ii instead if imap etc? *DH
 !--- maps of local index ix to global indices i and j for this block
     allocate (Tbd%imap (IM))
     allocate (Tbd%jmap (IM))
@@ -6552,7 +6551,6 @@ module GFS_typedefs
     allocate (Interstitial%gflx_ocean      (IM))
     allocate (Interstitial%gwdcu           (IM,Model%levs))
     allocate (Interstitial%gwdcv           (IM,Model%levs))
-    allocate (Interstitial%h2o_pres        (levh2o))
     allocate (Interstitial%hefac           (IM))
     allocate (Interstitial%hffac           (IM))
     allocate (Interstitial%hflxq           (IM))
@@ -6581,7 +6579,6 @@ module GFS_typedefs
     allocate (Interstitial%oa4             (IM,4))
     allocate (Interstitial%oc              (IM))
     allocate (Interstitial%olyr            (IM,Model%levr+LTP))
-    allocate (Interstitial%oz_pres         (levozp))
     allocate (Interstitial%plvl            (IM,Model%levr+1+LTP))
     allocate (Interstitial%plyr            (IM,Model%levr+LTP))
     allocate (Interstitial%prnum           (IM,Model%levs))
@@ -6827,23 +6824,18 @@ module GFS_typedefs
     Interstitial%ipr              = min(IM,10)
     Interstitial%latidxprnt       = 1
     Interstitial%levi             = Model%levs+1
-    Interstitial%levh2o           = levh2o
-    Interstitial%levozp           = levozp
     Interstitial%lmk              = Model%levr+LTP
     Interstitial%lmp              = Model%levr+1+LTP
-    Interstitial%h2o_coeff        = h2o_coeff
     Interstitial%nbdlw            = NBDLW
     Interstitial%nbdsw            = NBDSW
     Interstitial%nf_aelw          = NF_AELW
     Interstitial%nf_aesw          = NF_AESW
     Interstitial%nspc1            = NSPC1
-    Interstitial%oz_coeff         = oz_coeff
-    Interstitial%oz_coeffp5       = oz_coeff+5
-    ! h2o_pres and oz_pres do not change during the run, but
-    ! need to be set later in GFS_phys_time_vary_init (after
-    ! h2o_pres/oz_pres are read in read_h2odata/read_o3data)
-    Interstitial%h2o_pres         = clear_val
-    Interstitial%oz_pres          = clear_val
+    if (Model%oz_phys .or. Model%oz_phys_2015) then
+      Interstitial%oz_coeffp5     = oz_coeff+5
+    else
+      Interstitial%oz_coeffp5     = 5
+    endif
     !
     Interstitial%skip_macro       = .false.
     ! The value phys_hydrostatic from dynamics does not match the
@@ -7449,14 +7441,10 @@ module GFS_typedefs
     ! Print static variables
     write (0,'(a,3i6)') 'Interstitial_print for mpirank, omprank, blkno: ', mpirank, omprank, blkno
     write (0,*) 'Interstitial_print: values that do not change'
-    write (0,*) 'Interstitial%h2o_coeff         = ', Interstitial%h2o_coeff
-    write (0,*) 'sum(Interstitial%h2o_pres)     = ', sum(Interstitial%h2o_pres)
     write (0,*) 'Interstitial%ipr               = ', Interstitial%ipr
     write (0,*) 'Interstitial%itc               = ', Interstitial%itc
     write (0,*) 'Interstitial%latidxprnt        = ', Interstitial%latidxprnt
     write (0,*) 'Interstitial%levi              = ', Interstitial%levi
-    write (0,*) 'Interstitial%levh2o            = ', Interstitial%levh2o
-    write (0,*) 'Interstitial%levozp            = ', Interstitial%levozp
     write (0,*) 'Interstitial%lmk               = ', Interstitial%lmk
     write (0,*) 'Interstitial%lmp               = ', Interstitial%lmp
     write (0,*) 'Interstitial%nbdlw             = ', Interstitial%nbdlw
@@ -7468,8 +7456,6 @@ module GFS_typedefs
     write (0,*) 'Interstitial%nspc1             = ', Interstitial%nspc1
     write (0,*) 'Interstitial%ntiwx             = ', Interstitial%ntiwx
     write (0,*) 'Interstitial%nvdiff            = ', Interstitial%nvdiff
-    write (0,*) 'Interstitial%oz_coeff          = ', Interstitial%oz_coeff
-    write (0,*) 'sum(Interstitial%oz_pres)      = ', sum(Interstitial%oz_pres)
     write (0,*) 'Interstitial%phys_hydrostatic  = ', Interstitial%phys_hydrostatic
     write (0,*) 'Interstitial%skip_macro        = ', Interstitial%skip_macro
     write (0,*) 'Interstitial%trans_aero        = ', Interstitial%trans_aero

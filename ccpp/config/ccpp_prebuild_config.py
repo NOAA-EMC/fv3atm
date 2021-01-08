@@ -17,6 +17,8 @@ VARIABLE_DEFINITION_FILES = [
     # actual variable definition files
     'ccpp/physics/physics/machine.F',
     'ccpp/physics/physics/radsw_param.f',
+    'ccpp/physics/physics/h2o_def.f',
+    'ccpp/physics/physics/ozne_def.f',
     'ccpp/physics/physics/radlw_param.f',
     'gfsphysics/CCPP_layer/CCPP_typedefs.F90',
     'gfsphysics/GFS_layer/GFS_typedefs.F90',
