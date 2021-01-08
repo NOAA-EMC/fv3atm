@@ -6,7 +6,7 @@ module GFS_restart
                               GFS_coupling_type, GFS_grid_type,     &
                               GFS_tbd_type,      GFS_cldprop_type,  &
                               GFS_radtend_type,  GFS_diag_type,     &
-                              GFS_init_type   
+                              GFS_init_type
   use GFS_diagnostics,  only: GFS_externaldiag_type
 
   type var_subtype

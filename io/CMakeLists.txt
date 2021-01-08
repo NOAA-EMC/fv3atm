@@ -32,14 +32,16 @@ target_compile_definitions(io PRIVATE "${_io_defs_private}")
 target_include_directories(io PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/mod>)
 
 target_link_libraries(io PRIVATE fms
-                                 gfsphysics)
+                                 gfsphysics
+                                 ccppdriver)
 
 if(INLINE_POST)
   target_link_libraries(io PRIVATE upp::upp)
 endif()
 
 target_include_directories(io PRIVATE ${CMAKE_BINARY_DIR}/FV3/ccpp/framework/src
-                                      ${CMAKE_BINARY_DIR}/FV3/ccpp/physics)
+                                      ${CMAKE_BINARY_DIR}/FV3/ccpp/physics
+                                      ${CMAKE_BINARY_DIR}/FV3/ccpp/driver/mod)
 
 target_link_libraries(io PRIVATE nemsio::nemsio
                                  esmf)

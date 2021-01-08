@@ -15,13 +15,6 @@ set(CCPP_SOURCES
     physics/namelist_soilveg.f
     physics/set_soilveg.f
     physics/noahmp_tables.f90
-
-    CCPP_layer/CCPP_data.F90
-    ${CMAKE_BINARY_DIR}/FV3/ccpp/physics/ccpp_static_api.F90
-
-    GFS_layer/GFS_diagnostics.F90
-    GFS_layer/GFS_driver.F90
-    GFS_layer/GFS_restart.F90
 )
 
 list(APPEND _gfsphysics_defs_private NEMS_GSM
