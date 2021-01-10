@@ -20,6 +20,13 @@
   dimensions = (horizontal_loop_extent,vertical_dimension_plus_one)
   type = real
   kind = kind_phys
+[prsi(:,1)]
+  standard_name = air_pressure_at_lowest_model_interface
+  long_name = air pressure at lowest model interface
+  units = Pa
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
 [prsik]
   standard_name = dimensionless_exner_function_at_model_interfaces
   long_name = dimensionless Exner function at model layer interfaces
@@ -2410,6 +2417,13 @@
   units = flag
   dimensions = ()
   type = logical
+[fhcyc]
+  standard_name = frequency_for_surface_cycling_calls
+  long_name = frequency for surface cycling calls
+  units = h
+  dimensions = ()
+  type = real
+  kind = kind_phys
 [nscyc]
   standard_name = number_of_timesteps_between_surface_cycling_calls
   long_name = number of timesteps between surface cycling calls
@@ -3433,6 +3447,12 @@
   units = index
   dimensions = ()
   type = integer
+[use_ufo]
+  standard_name = flag_for_gcycle_surface_option
+  long_name = flag for gcycle surface option
+  units = flag
+  dimensions = ()
+  type = logical
 [lcurr_sf]
   standard_name = flag_for_ocean_currents_in_surface_layer_scheme
   long_name = flag for taking ocean currents into account in surface layer scheme
@@ -3953,6 +3973,12 @@
   dimensions = ()
   type = real
   kind = kind_phys
+[nst_anl]
+  standard_name = flag_for_nsstm_analysis_in_gcycle
+  long_name = flag for NSSTM analysis in gcycle/sfcsub
+  units = flag
+  dimensions = ()
+  type = logical
 [nstf_name(1)]
   standard_name = flag_for_nsstm_run
   long_name = NSSTM flag: off/uncoupled/coupled=0/1/2
@@ -4478,6 +4504,12 @@
   units = 
   dimensions = ()
   type = integer
+[ncnvwind]
+  standard_name = index_for_surface_wind_enhancement_due_to_convection
+  long_name = the index of surface wind enhancement due to convection in phy f2d
+  units = 
+  dimensions = ()
+  type = integer
 [debug]
   standard_name = flag_debug
   long_name = control flag for debug
@@ -4979,12 +5011,14 @@
   units = index
   dimensions = (horizontal_loop_extent)
   type = integer
+  active = (index_for_ozone>0)
 [jindx2_o3]
   standard_name = upper_ozone_interpolation_index
   long_name = interpolation high index for ozone
   units = index
   dimensions = (horizontal_loop_extent)
   type = integer
+  active = (index_for_ozone>0)
 [ddy_o3]
   standard_name = ozone_interpolation_weight
   long_name = interpolation high index for ozone
@@ -4992,18 +5026,21 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
+  active = (index_for_ozone>0)
 [jindx1_h]
   standard_name = lower_water_vapor_interpolation_index
   long_name = interpolation low index for stratospheric water vapor
   units = index
   dimensions = (horizontal_loop_extent)
   type = integer
+  active = (flag_for_stratospheric_water_vapor_physics)
 [jindx2_h]
   standard_name = upper_water_vapor_interpolation_index
   long_name = interpolation high index for stratospheric water vapor
   units = index
   dimensions = (horizontal_loop_extent)
   type = integer
+  active = (flag_for_stratospheric_water_vapor_physics)
 [ddy_h]
   standard_name = water_vapor_interpolation_weight
   long_name = interpolation high index for stratospheric water vapor
@@ -5011,18 +5048,21 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
+  active = (flag_for_stratospheric_water_vapor_physics)
 [jindx1_aer]
   standard_name = lower_aerosol_y_interpolation_index
   long_name = interpolation low index for prescribed aerosols in the y direction
   units = index
   dimensions = (horizontal_loop_extent)
   type = integer
+  active = (flag_for_aerosol_input_MG_radiation)
 [jindx2_aer]
   standard_name = upper_aerosol_y_interpolation_index
   long_name = interpolation high index for prescribed aerosols in the y direction
   units = index
   dimensions = (horizontal_loop_extent)
   type = integer
+  active = (flag_for_aerosol_input_MG_radiation)
 [ddy_aer]
   standard_name = aerosol_y_interpolation_weight
   long_name = interpolation high index for prescribed aerosols in the y direction
@@ -5030,18 +5070,21 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
+  active = (flag_for_aerosol_input_MG_radiation)
 [iindx1_aer]
   standard_name = lower_aerosol_x_interpolation_index
   long_name = interpolation low index for prescribed aerosols in the x direction
   units = index
   dimensions = (horizontal_loop_extent)
   type = integer
+  active = (flag_for_aerosol_input_MG_radiation)
 [iindx2_aer]
   standard_name = upper_aerosol_x_interpolation_index
   long_name = interpolation high index for prescribed aerosols in the x direction
   units = index
   dimensions = (horizontal_loop_extent)
   type = integer
+  active = (flag_for_aerosol_input_MG_radiation)
 [ddx_aer]
   standard_name = aerosol_x_interpolation_weight
   long_name = interpolation high index for prescribed aerosols in the x direction
@@ -5049,18 +5092,21 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
+  active = (flag_for_aerosol_input_MG_radiation)
 [jindx1_ci]
   standard_name = lower_cloud_nuclei_y_interpolation_index
   long_name = interpolation low index for ice and cloud condensation nuclei in the y direction
   units = index
   dimensions = (horizontal_loop_extent)
   type = integer
+  active = (flag_for_in_ccn_forcing_for_morrison_gettelman_microphysics==1)
 [jindx2_ci]
   standard_name = upper_cloud_nuclei_y_interpolation_index
   long_name = interpolation high index for ice and cloud condensation nuclei in the y direction
   units = index
   dimensions = (horizontal_loop_extent)
   type = integer
+  active = (flag_for_in_ccn_forcing_for_morrison_gettelman_microphysics==1)
 [ddy_ci]
   standard_name = cloud_nuclei_y_interpolation_weight
   long_name = interpolation high index for ice and cloud condensation nuclei in the y direction
@@ -5068,18 +5114,21 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
+  active = (flag_for_in_ccn_forcing_for_morrison_gettelman_microphysics==1)
 [iindx1_ci]
   standard_name = lower_cloud_nuclei_x_interpolation_index
   long_name = interpolation low index for ice and cloud condensation nuclei in the x direction
   units = index
   dimensions = (horizontal_loop_extent)
   type = integer
+  active = (flag_for_in_ccn_forcing_for_morrison_gettelman_microphysics==1)
 [iindx2_ci]
   standard_name = upper_cloud_nuclei_x_interpolation_index
   long_name = interpolation high index for ice and cloud condensation nuclei in the x direction
   units = index
   dimensions = (horizontal_loop_extent)
   type = integer
+  active = (flag_for_in_ccn_forcing_for_morrison_gettelman_microphysics==1)
 [ddx_ci]
   standard_name = cloud_nuclei_x_interpolation_weight
   long_name = interpolation high index for ice and cloud condensation nuclei in the x direction
@@ -5087,6 +5136,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
+  active = (flag_for_in_ccn_forcing_for_morrison_gettelman_microphysics==1)
 
 ########################################################################
 [ccpp-table-properties]
@@ -5232,6 +5282,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
+  active = (index_for_surface_air_pressure_two_timesteps_back > 0)
 [phy_f2d(:,index_for_surface_air_pressure_at_previous_timestep)]
   standard_name = surface_air_pressure_at_previous_timestep
   long_name = surface air pressure at previous timestep
@@ -5239,13 +5290,15 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[phy_f2d(:,array_dimension_of_2d_arrays_for_microphysics)]
+  active = (index_for_surface_air_pressure_at_previous_timestep > 0)
+[phy_f2d(:,index_for_surface_wind_enhancement_due_to_convection)]
   standard_name = surface_wind_enhancement_due_to_convection
   long_name = surface wind enhancement due to convection
   units = m s-1
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
+  active = (index_for_surface_wind_enhancement_due_to_convection > 0)
 [phy_f3d(:,:,index_for_air_temperature_two_timesteps_back)]
   standard_name = air_temperature_two_timesteps_back
   long_name = air temperature two timesteps back
@@ -5253,6 +5306,7 @@
   dimensions = (horizontal_loop_extent,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (index_for_air_temperature_two_timesteps_back > 0)
 [phy_f3d(:,:,index_for_specific_humidity_two_timesteps_back)]
   standard_name = water_vapor_specific_humidity_two_timesteps_back
   long_name = water vapor specific humidity two timesteps back
@@ -5260,6 +5314,7 @@
   dimensions = (horizontal_loop_extent,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (index_for_specific_humidity_two_timesteps_back > 0)
 [phy_f3d(:,:,index_for_air_temperature_at_previous_timestep)]
   standard_name = air_temperature_at_previous_timestep
   long_name = air temperature at previous timestep
@@ -5267,6 +5322,7 @@
   dimensions = (horizontal_loop_extent,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (index_for_air_temperature_at_previous_timestep > 0)
 [phy_f3d(:,:,index_for_specific_humidity_at_previous_timestep)]
   standard_name = water_vapor_specific_humidity_at_previous_timestep
   long_name = water vapor specific humidity at previous timestep
@@ -5274,6 +5330,7 @@
   dimensions = (horizontal_loop_extent,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (index_for_specific_humidity_at_previous_timestep > 0)
 [phy_f3d(:,:,index_for_convective_cloud_water_mixing_ratio_in_phy_f3d)]
   standard_name = convective_cloud_water_mixing_ratio_in_phy_f3d
   long_name = convective cloud water mixing ratio in the phy_f3d array
@@ -5281,6 +5338,7 @@
   dimensions = (horizontal_loop_extent,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (index_for_convective_cloud_water_mixing_ratio_in_phy_f3d > 0)
 [phy_f3d(:,:,index_for_convective_cloud_cover_in_phy_f3d)]
   standard_name = convective_cloud_cover_in_phy_f3d
   long_name = convective cloud cover in the phy_f3d array
@@ -5288,6 +5346,7 @@
   dimensions = (horizontal_loop_extent,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (index_for_convective_cloud_cover_in_phy_f3d > 0)
 [phy_f3d(:,:,index_of_kinematic_buoyancy_flux_from_shoc_in_phy_f3d)]
   standard_name = kinematic_buoyancy_flux_from_shoc
   long_name = upward kinematic buoyancy flux from the SHOC scheme
@@ -5295,6 +5354,7 @@
   dimensions = (horizontal_loop_extent,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (index_of_kinematic_buoyancy_flux_from_shoc_in_phy_f3d > 0)
 [phy_f3d(:,:,index_of_atmosphere_heat_diffusivity_from_shoc_in_phy_f3d)]
   standard_name = atmosphere_heat_diffusivity_from_shoc
   long_name = diffusivity for heat from the SHOC scheme
@@ -5302,6 +5362,7 @@
   dimensions = (horizontal_loop_extent,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (index_of_atmosphere_heat_diffusivity_from_shoc_in_phy_f3d > 0)
 [phy_f3d(:,:,index_of_subgrid_scale_cloud_fraction_from_shoc_in_phy_f3d)]
   standard_name = subgrid_scale_cloud_fraction_from_shoc
   long_name = subgrid-scale cloud fraction from the SHOC scheme
@@ -5309,6 +5370,7 @@
   dimensions = (horizontal_loop_extent,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (index_of_subgrid_scale_cloud_fraction_from_shoc_in_phy_f3d > 0)
 [phy_f3d(:,:,index_for_cloud_fraction_in_3d_arrays_for_microphysics)]
   standard_name = cloud_fraction_for_MG
   long_name = cloud fraction used by Morrison-Gettelman MP
@@ -5316,6 +5378,7 @@
   dimensions = (horizontal_loop_extent,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (index_for_cloud_fraction_in_3d_arrays_for_microphysics > 0)
 [phy_f3d(:,:,index_for_cloud_liquid_water_effective_radius)]
   standard_name = effective_radius_of_stratiform_cloud_liquid_water_particle_in_um
   long_name = eff. radius of cloud liquid water particle in micrometer
@@ -5323,6 +5386,7 @@
   dimensions = (horizontal_loop_extent,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (index_for_cloud_liquid_water_effective_radius > 0)
 [phy_f3d(:,:,index_for_ice_effective_radius)]
   standard_name = effective_radius_of_stratiform_cloud_ice_particle_in_um
   long_name = eff. radius of cloud ice water particle in micrometer
@@ -5330,6 +5394,7 @@
   dimensions = (horizontal_loop_extent,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (index_for_ice_effective_radius > 0)
 [phy_f3d(:,:,index_for_rain_effective_radius)]
   standard_name = effective_radius_of_stratiform_cloud_rain_particle_in_um
   long_name = effective radius of cloud rain particle in micrometers
@@ -5337,6 +5402,7 @@
   dimensions = (horizontal_loop_extent,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (index_for_rain_effective_radius > 0)
 [phy_f3d(:,:,index_for_snow_effective_radius)]
   standard_name = effective_radius_of_stratiform_cloud_snow_particle_in_um
   long_name = effective radius of cloud snow particle in micrometers
@@ -5344,6 +5410,7 @@
   dimensions = (horizontal_loop_extent,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (index_for_snow_effective_radius > 0)
 [phy_f3d(:,:,index_for_graupel_effective_radius)]
   standard_name = effective_radius_of_stratiform_cloud_graupel_particle_in_um
   long_name = eff. radius of cloud graupel particle in micrometer
@@ -5351,6 +5418,7 @@
   dimensions = (horizontal_loop_extent,vertical_dimension)
   type = real
   kind = kind_phys
+  active = (index_for_graupel_effective_radius > 0)
 [forcet]
   standard_name = temperature_tendency_due_to_dynamics
   long_name = temperature tendency due to dynamics only
@@ -8428,19 +8496,6 @@
   dimensions = (horizontal_loop_extent,vertical_dimension)
   type = real
   kind = kind_phys
-[h2o_coeff]
-  standard_name = number_of_coefficients_in_h2o_forcing_data
-  long_name = number of coefficients in h2o forcing data
-  units = index
-  dimensions = ()
-  type = integer
-[h2o_pres]
-  standard_name = natural_log_of_h2o_forcing_data_pressure_levels
-  long_name = natural log of h2o forcing data pressure levels
-  units = log(Pa)
-  dimensions = (vertical_dimension_of_h2o_forcing_data)
-  type = real
-  kind = kind_phys
 [hefac]
   standard_name = surface_upward_latent_heat_flux_reduction_factor
   long_name = surface upward latent heat flux reduction factor from canopy heat storage
@@ -8636,18 +8691,6 @@
 [levi]
   standard_name = vertical_interface_dimension
   long_name = vertical interface dimension
-  units = count
-  dimensions = ()
-  type = integer
-[levh2o]
-  standard_name = vertical_dimension_of_h2o_forcing_data
-  long_name = number of vertical layers in h2o forcing data
-  units = count
-  dimensions = ()
-  type = integer
-[levozp]
-  standard_name = vertical_dimension_of_ozone_forcing_data
-  long_name = number of vertical layers in ozone forcing data
   units = count
   dimensions = ()
   type = integer
@@ -8862,25 +8905,12 @@
   units = flag
   dimensions = (number_of_tracers_plus_one,2)
   type = logical
-[oz_coeff]
-  standard_name = number_of_coefficients_in_ozone_forcing_data
-  long_name = number of coefficients in ozone forcing data
-  units = index
-  dimensions = ()
-  type = integer
 [oz_coeffp5]
   standard_name = number_of_coefficients_in_ozone_forcing_data_plus_five
   long_name = number of coefficients in ozone forcing data plus five
   units = index
   dimensions = ()
   type = integer
-[oz_pres]
-  standard_name = natural_log_of_ozone_forcing_data_pressure_levels
-  long_name = natural log of ozone forcing data pressure levels
-  units = log(Pa)
-  dimensions = (vertical_dimension_of_ozone_forcing_data)
-  type = real
-  kind = kind_phys
 [phys_hydrostatic]
   standard_name = flag_for_hydrostatic_heating_from_physics
   long_name = flag for use of hydrostatic heating in physics
