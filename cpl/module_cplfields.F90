@@ -17,7 +17,7 @@ module module_cplfields
   type(ESMF_Field), target, public    :: exportFields(NexportFields)
   character(len=*), public, parameter :: exportFieldsList(NexportFields) = (/ &
        "inst_zonal_wind_height10m                ", &
-       "inst_merid_wind_height10m                "
+       "inst_merid_wind_height10m                "  &
   /)
   ! Field types should be provided for proper handling
   ! according to the table below:
@@ -27,12 +27,12 @@ module module_cplfields
   !  s : surface (2D)
   !  t : tracers (4D)
   character(len=*), public, parameter :: exportFieldTypes(NexportFields) = (/ &
-       "s","s"
+       "s","s"                                      &
   /)
   ! Set exportFieldShare to .true. if field is provided as memory reference
   ! to coupled components
   logical, public, parameter :: exportFieldShare(NexportFields) = (/ &
-       .false.,.false.
+       .false.,.false.                              &
   /)
   real(kind=8), allocatable, public :: exportData(:,:,:)
 
@@ -41,7 +41,7 @@ module module_cplfields
   logical,          public            :: importFieldsValid(NimportFields)
   type(ESMF_Field), target, public    :: importFields(NimportFields)
   character(len=*), public, parameter :: importFieldsList(NimportFields) = (/ &
-       "land_mask                              "
+       "land_mask                              "    &
   /)
   character(len=*), public, parameter :: importFieldTypes(NimportFields) = (/ &
        "s"                                  &
