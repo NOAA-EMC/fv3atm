@@ -72,7 +72,9 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
   use module_fv3_config, only:  dt_atmos, calendar, restart_interval,             &
                                 quilting, calendar_type, cpl,                     &
                                 cplprint_flag, force_date_from_configure,         &
-                                num_restart_interval, frestart, restart_endfcst
+                                num_restart_interval, frestart, restart_endfcst,  &
+                                diagnostic
+  use module_write_netcdf, only: write_grid_netcdf
 !
 !-----------------------------------------------------------------------
 !
@@ -210,6 +212,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     logical :: single_restart
     integer, allocatable, dimension(:) :: isl, iel, jsl, jel
     integer, allocatable, dimension(:,:,:) :: deBlockList
+    integer :: tlb(2), tub(2)
 
     type(ESMF_Decomp_Flag)  :: decompflagPTile(2,6)
 
@@ -431,8 +434,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
           fcstGrid = ESMF_GridCreateNoPeriDim(regDecomp=(/atm_int_state%Atm%layout(1),atm_int_state%Atm%layout(2)/), &
                                               minIndex=(/1,1/), &
                                               maxIndex=(/atm_int_state%Atm%mlon,atm_int_state%Atm%mlat/), &
-                                              gridEdgeLWidth=(/0,0/), &
-                                              gridEdgeUWidth=(/0,0/), &
+                                              gridAlign=(/-1,-1/), &
                                               decompflag=(/ESMF_DECOMP_SYMMEDGEMAX,ESMF_DECOMP_SYMMEDGEMAX/), &
                                               name="fcst_grid", &
                                               indexflag=ESMF_INDEX_DELOCAL, &
@@ -453,6 +455,18 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
           enddo
 
           ! add and define "corner" coordinate values
+          call ESMF_GridAddCoord(fcstGrid, staggerLoc=ESMF_STAGGERLOC_CORNER, &
+                                 rc=rc); ESMF_ERR_ABORT(rc)
+          call ESMF_GridGetCoord(fcstGrid, coordDim=1, staggerLoc=ESMF_STAGGERLOC_CORNER, &
+                                 totalLBound=tlb, totalUBound=tub, &
+                                 farrayPtr=glonPtr, rc=rc); ESMF_ERR_ABORT(rc)
+          glonPtr(tlb(1):tub(1),tlb(2):tub(2)) = &
+             atm_int_state%Atm%lon_bnd(tlb(1):tub(1),tlb(2):tub(2)) * dtor
+          call ESMF_GridGetCoord(fcstGrid, coordDim=2, staggerLoc=ESMF_STAGGERLOC_CORNER, &
+                                 totalLBound=tlb, totalUBound=tub, &
+                                 farrayPtr=glatPtr, rc=rc); ESMF_ERR_ABORT(rc)
+          glatPtr(tlb(1):tub(1),tlb(2):tub(2)) = &
+            atm_int_state%Atm%lat_bnd(tlb(1):tub(1),tlb(2):tub(2)) * dtor
           !call ESMF_GridAddCoord(fcstGrid, staggerLoc=ESMF_STAGGERLOC_CORNER, staggerAlign=(/1,1/), rc=rc); ESMF_ERR_ABORT(rc)
           !call ESMF_GridGetCoord(fcstGrid, coordDim=1, staggerLoc=ESMF_STAGGERLOC_CORNER,           farrayPtr=glonPtr, rc=rc); ESMF_ERR_ABORT(rc)
           !call ESMF_GridGetCoord(fcstGrid, coordDim=2, staggerLoc=ESMF_STAGGERLOC_CORNER,           farrayPtr=glatPtr, rc=rc); ESMF_ERR_ABORT(rc)
@@ -545,6 +559,12 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !                                   filename='fv3cap_fv3Grid', rc=rc)
 !            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 !          endif
+        endif
+!
+!test to write out netcdf file:
+        if (btest(diagnostic,16)) then
+          call write_grid_netcdf(fcstGrid, "diagnostic_FV3_fcst_initialize_grid.nc", regridArea=.TRUE., rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
         endif
 !
 ! Add gridfile Attribute to the exportState
