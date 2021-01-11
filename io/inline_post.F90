@@ -8,7 +8,7 @@ module inline_post
                                    output_grid
   use write_internal_state, only : wrt_internal_state
   use post_gfs,             only : post_getattr_gfs, post_run_gfs
-  use post_regional         only : post_getattr_regional, post_run_regional
+  use post_regional,        only : post_getattr_regional, post_run_regional
 
   implicit none
 
@@ -36,16 +36,17 @@ module inline_post
       integer,intent(in)                        :: mynfhr
       integer,intent(in)                        :: mynfmin
       integer,intent(in)                        :: mynfsec
-      character(*),intent(in)                   :: output_grid
 !
+      print *,'inline_post_run, output_grid=',trim(output_grid)
       if(trim(output_grid) == 'gaussian_grid'                &
-        .or. trim(output_grid) == 'global_latlon) then
-          call post_run_gfs(wrt_int_state, mype, wrt_mpi_comm, lead_write_task, &
-                            nf_hours, nf_minutes,nseconds)
+        .or. trim(output_grid) == 'global_latlon') then
+          call post_run_gfs(wrt_int_state, mypei, mpicomp, lead_write, &
+                            mynfhr, mynfmin,mynfsec)
       else if( trim(output_grid) == 'regional_latlon'          &
-        .or.  trim(output_grid) == 'lambert_conformal') then
-          call post_run_regional(wrt_int_state, mype, wrt_mpi_comm, lead_write_task, &
-                            nf_hours, nf_minutes,nseconds)
+        .or.  trim(output_grid) == 'rotated_latlon') then
+      print *,'inline_post_run, call post_run_regional'
+          call post_run_regional(wrt_int_state, mypei, mpicomp, lead_write, &
+                            mynfhr, mynfmin,mynfsec)
         endif
 
 !
@@ -53,20 +54,21 @@ module inline_post
 !
 !-----------------------------------------------------------------------
 !
-    subroutine inline_post_getattr(wrt_int_state, output_grid)
+    subroutine inline_post_getattr(wrt_int_state)
 !
       use esmf
 !
       implicit none
 !
       type(wrt_internal_state),intent(inout)    :: wrt_int_state
-      character(*),intent(in)                   :: output_grid
 !
+      print *,'inline_post_getattr, output_grid=',trim(output_grid)
         if(trim(output_grid) == 'gaussian_grid'                &
-          .or. trim(output_grid) == 'global_latlon) then
+          .or. trim(output_grid) == 'global_latlon') then
             call post_getattr_gfs(wrt_int_state)
         else if( trim(output_grid) == 'regional_latlon'          &
-          .or.  trim(output_grid) == 'lambert_conformal') then
+          .or.  trim(output_grid) == 'rotated_latlon') then
+      print *,'inline_post_getattr, call post_getattr_regional'
             call post_getattr_regional(wrt_int_state)
         endif
 !

@@ -83,8 +83,12 @@ module_wrt_grid_comp.o: module_wrt_grid_comp.F90
 	$(FC) $(CPPDEFS) $(CPPFLAGS) $(FPPFLAGS) $(FFLAGS) $(OTHERFLAGS) $(OTHER_FFLAGS) $(ESMF_INC) -c module_wrt_grid_comp.F90
 post_gfs.o: post_gfs.F90
 	$(FC) $(CPPDEFS) $(CPPFLAGS) $(FPPFLAGS) $(FFLAGS) $(OTHERFLAGS) $(OTHER_FFLAGS) $(ESMF_INC) -I$(UPP_INC) -c post_gfs.F90
-post_gfs_stub.o: post_gfs_stub.F90
-	$(FC) $(CPPDEFS) $(CPPFLAGS) $(FPPFLAGS) $(FFLAGS) $(OTHERFLAGS) $(OTHER_FFLAGS) $(ESMF_INC) -c post_gfs_stub.F90
+post_regional.o: post_regional.F90
+	$(FC) $(CPPDEFS) $(CPPFLAGS) $(FPPFLAGS) $(FFLAGS) $(OTHERFLAGS) $(OTHER_FFLAGS) $(ESMF_INC) -I$(UPP_INC) -c post_regional.F90
+inline_post.o: inline_post.F90
+	$(FC) $(CPPDEFS) $(CPPFLAGS) $(FPPFLAGS) $(FFLAGS) $(OTHERFLAGS) $(OTHER_FFLAGS) $(ESMF_INC) -c inline_post.F90
+inline_post_stub.o: inline_post_stub.F90
+	$(FC) $(CPPDEFS) $(CPPFLAGS) $(FPPFLAGS) $(FFLAGS) $(OTHERFLAGS) $(OTHER_FFLAGS) $(ESMF_INC) -c inline_post_stub.F90
 
 
 .PHONY: clean

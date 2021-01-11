@@ -463,28 +463,6 @@
             latPtr(i,j) = lat(j)
           enddo
         enddo
-        wrt_int_state%lat_start = lbound(latPtr,2)
-        wrt_int_state%lat_end   = ubound(latPtr,2)
-        wrt_int_state%lon_start = lbound(lonPtr,1)
-        wrt_int_state%lon_end   = ubound(lonPtr,1)
-        allocate( wrt_int_state%lat_start_wrtgrp(wrt_int_state%petcount))
-        allocate( wrt_int_state%lat_end_wrtgrp  (wrt_int_state%petcount))
-        call mpi_allgather(wrt_int_state%lat_start,1,MPI_INTEGER,    &
-                           wrt_int_state%lat_start_wrtgrp, 1, MPI_INTEGER, wrt_mpi_comm, rc)
-        call mpi_allgather(wrt_int_state%lat_end,  1,MPI_INTEGER,    &
-                           wrt_int_state%lat_end_wrtgrp,   1, MPI_INTEGER, wrt_mpi_comm, rc)
-        if( lprnt ) print *,'aft wrtgrd, global_latlon, dimj_start=',wrt_int_state%lat_start_wrtgrp, &
-          'dimj_end=',wrt_int_state%lat_end_wrtgrp, 'wrt_group=',n_group
-        allocate( wrt_int_state%latPtr(wrt_int_state%lon_start:wrt_int_state%lon_end, &
-                  wrt_int_state%lat_start:wrt_int_state%lat_end))
-        allocate( wrt_int_state%lonPtr(wrt_int_state%lon_start:wrt_int_state%lon_end, &
-                  wrt_int_state%lat_start:wrt_int_state%lat_end))
-        do j=wrt_int_state%lat_start,wrt_int_state%lat_end
-          do i=wrt_int_state%lon_start,wrt_int_state%lon_end
-            wrt_int_state%latPtr(i,j) = latPtr(i,j)
-            wrt_int_state%lonPtr(i,j) = lonPtr(i,j)
-          enddo
-        enddo
         wrt_int_state%im = imo
         wrt_int_state%jm = jmo
         wrt_int_state%post_maptype = 0
@@ -509,6 +487,8 @@
         call ESMF_GridGetCoord(wrtgrid, coordDim=2, farrayPtr=latPtr, rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
+        wrt_int_state%im = imo
+        wrt_int_state%jm = jmo
         if ( trim(output_grid) == 'regional_latlon' ) then
             do j=lbound(lonPtr,2),ubound(lonPtr,2)
             do i=lbound(lonPtr,1),ubound(lonPtr,1)
@@ -516,6 +496,7 @@
               latPtr(i,j) = lat1 + (lat2-lat1)/(jmo-1) * (j-1)
             enddo
             enddo
+            wrt_int_state%post_maptype = 0
         else if ( trim(output_grid) == 'rotated_latlon' ) then
             do j=lbound(lonPtr,2),ubound(lonPtr,2)
             do i=lbound(lonPtr,1),ubound(lonPtr,1)
@@ -527,6 +508,7 @@
               latPtr(i,j) = geo_lat
             enddo
             enddo
+            wrt_int_state%post_maptype = 207
         else if ( trim(output_grid) == 'lambert_conformal' ) then
             lon1_r8 = dble(lon1)
             lat1_r8 = dble(lat1)
@@ -543,7 +525,29 @@
               latPtr(i,j) = geo_lat
             enddo
             enddo
+            wrt_int_state%post_maptype = 1
         endif
+
+        wrt_int_state%lat_start = lbound(latPtr,2)
+        wrt_int_state%lat_end   = ubound(latPtr,2)
+        wrt_int_state%lon_start = lbound(lonPtr,1)
+        wrt_int_state%lon_end   = ubound(lonPtr,1)
+        allocate( wrt_int_state%lat_start_wrtgrp(wrt_int_state%petcount))
+        allocate( wrt_int_state%lat_end_wrtgrp  (wrt_int_state%petcount))
+        call mpi_allgather(wrt_int_state%lat_start,1,MPI_INTEGER,    &
+                       wrt_int_state%lat_start_wrtgrp, 1, MPI_INTEGER, wrt_mpi_comm, rc)
+        call mpi_allgather(wrt_int_state%lat_end,  1,MPI_INTEGER,    &
+                           wrt_int_state%lat_end_wrtgrp,   1, MPI_INTEGER, wrt_mpi_comm, rc)
+        allocate( wrt_int_state%latPtr(wrt_int_state%lon_start:wrt_int_state%lon_end, &
+                  wrt_int_state%lat_start:wrt_int_state%lat_end))
+        allocate( wrt_int_state%lonPtr(wrt_int_state%lon_start:wrt_int_state%lon_end, &
+                  wrt_int_state%lat_start:wrt_int_state%lat_end))
+        do j=wrt_int_state%lat_start,wrt_int_state%lat_end
+        do i=wrt_int_state%lon_start,wrt_int_state%lon_end
+          wrt_int_state%latPtr(i,j) = latPtr(i,j)
+          wrt_int_state%lonPtr(i,j) = lonPtr(i,j)
+        enddo
+        enddo
 
       else
 
@@ -1160,8 +1164,9 @@
 !-----------------------------------------------------------------------
 !
       call ESMF_LogWrite("before initialize for POST", ESMF_LOGMSG_INFO, rc=rc)
+      print *,'in wrt grid comp, dopost=',wrt_int_state%write_dopost
       if( wrt_int_state%write_dopost ) then
-        call inline_post_getattr(wrt_int_state, output_grid)
+        call inline_post_getattr(wrt_int_state)
       endif
 !
 !-----------------------------------------------------------------------
@@ -1411,7 +1416,7 @@
         endif
 
         call inline_post_run(wrt_int_state, mype, wrt_mpi_comm, lead_write_task, &
-                          nf_hours, nf_minutes,nseconds, output_grid)
+                          nf_hours, nf_minutes,nseconds)
       endif
 !
 !-----------------------------------------------------------------------
@@ -2007,6 +2012,7 @@
      real(ESMF_KIND_R4), dimension(:,:,:),   pointer  :: var3dPtr3dr4
      real(ESMF_KIND_R4), dimension(:,:,:),   pointer  :: vect3dPtr2dr4
      real(ESMF_KIND_R4), dimension(:,:,:,:), pointer  :: vect4dPtr3dr4
+     real(ESMF_KIND_R4), dimension(:,:), allocatable  :: maskwrt
 
      logical :: mvispresent=.false.
      real(ESMF_KIND_R4) :: missing_value_r4=-1.e+10

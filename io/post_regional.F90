@@ -69,7 +69,7 @@ module post_regional
 !
       real(kind=8)   :: btim0, btim1, btim2, btim3,btim4,btim5,btim6,btim7
 !
-!      print *,'in post_run start'
+      print *,'in post_run start'
 !-----------------------------------------------------------------------
 !*** set up dimensions
 !-----------------------------------------------------------------------
@@ -116,10 +116,10 @@ module post_regional
 !*** allocate post variables
 !-----------------------------------------------------------------------
 !
-!     if(mype==0) print *,'in post_run,be post_alctvars, dim=',wrt_int_state%im, &
-!       wrt_int_state%jm, wrt_int_state%lm,'mype=',mype,'wrttasks_per_group=', &
-!       wrttasks_per_group,'lead_write=',lead_write,'jts=',jts,'jte=',jte,   &
-!       'jstagrp=',jstagrp,'jendgrp=',jendgrp
+     if(mype==0) print *,'in post_run,be post_alctvars, dim=',wrt_int_state%im, &
+       wrt_int_state%jm, wrt_int_state%lm,'mype=',mype,'wrttasks_per_group=', &
+       wrttasks_per_group,'lead_write=',lead_write,'jts=',jts,'jte=',jte,   &
+       'jstagrp=',jstagrp,'jendgrp=',jendgrp
         call post_alctvars(wrt_int_state%im,wrt_int_state%jm,        &
           wrt_int_state%lm,mype,wrttasks_per_group,lead_write,    &
           mpicomp,jts,jte,jstagrp,jendgrp)
@@ -233,10 +233,9 @@ module post_regional
       implicit none
 !
       type(wrt_internal_state),intent(inout)    :: wrt_int_state
-      type(ESMF_FieldBundle), intent(in)        :: fldbundle
 !
 ! local variable
-      integer i,j,k,n,kz, attcount
+      integer i,j,k,n,kz, attcount, nfb
       integer ni,naryi,nr4,nr8,rc
       integer aklen,varival
       real(4) varr4val
@@ -245,7 +244,9 @@ module post_regional
       type(ESMF_TypeKind_Flag)           :: typekind
       real(4), dimension(:), allocatable :: ak4,bk4
       real(8), dimension(:), allocatable :: ak8,bk8
+      type(ESMF_FieldBundle)             :: fldbundle
 !
+      print *,'in post_reional, attr'
       do nfb=1, wrt_int_state%FBcount
         fldbundle = wrt_int_state%wrtFB(nfb)
 
@@ -312,8 +313,39 @@ module post_regional
         endif
 
         STANDLON = cenlon
-        print*,'lambert conformal,lonstart,latstart,cenlon,cenlat,truelat1,truelat2,stadlon,dyval,dxval', &
-          lonstart,latstart,cenlon,cenlat,truelat1,truelat2,standlon,dyval,dxval
+      else if(trim(output_grid) == 'rotated_latlon') then
+        MAPTYPE=207
+        GRIDTYPE='A'
+
+        if( cen_lon<0 ) then
+          cenlon = nint((cen_lon+360.)*gdsdegr)
+        else
+          cenlon = nint(cen_lon*gdsdegr)
+        endif
+        cenlat = cen_lat*gdsdegr
+        if( lon1<0 ) then
+          lonstart = nint((lon1+360.)*gdsdegr)
+        else
+          lonstart = nint(lon1*gdsdegr)
+        endif
+        if( lon2<0 ) then
+          lonlast = nint((lon2+360.)*gdsdegr)
+        else
+          lonlast = nint(lon2*gdsdegr)
+        endif
+        latstart = nint(lat1*gdsdegr)
+        latlast  = nint(lat2*gdsdegr)
+
+        if(dlon<spval) then
+          dxval = dlon*gdsdegr
+          dyval = dlat*gdsdegr
+        else
+          dxval = spval
+          dyval = spval
+        endif
+
+        print*,'rotated latlon,lonstart,latstart,cenlon,cenlat,dyval,dxval', &
+          lonstart,lonlast,latstart,latlast,cenlon,cenlat,dyval,dxval
       endif
 
 ! look at the field bundle attributes
@@ -391,9 +423,9 @@ module post_regional
         endif
 !
       enddo
-
 !
       enddo !end nfb
+!
       print *,'in post_getattr, dtp=',wrt_int_state%dtp
 !
     end subroutine post_getattr_regional
@@ -913,11 +945,11 @@ module post_regional
               call ESMF_FieldGet(fcstField(n), localDe=0, farrayPtr=arrayr42d, rc=rc)
               if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
                 line=__LINE__, file=__FILE__)) return  ! bail out
-!              call ESMF_AttributeGet(fcstField(n), convention="NetCDF", purpose="FV3", &
-!                   name='_FillValue', value=fillValue, rc=rc)
-!              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-!                line=__LINE__, file=__FILE__)) return  ! bail out
-              fillValue=9.99E20
+              call ESMF_AttributeGet(fcstField(n), convention="NetCDF", purpose="FV3", &
+                   name='_FillValue', value=fillValue, rc=rc)
+              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+                line=__LINE__, file=__FILE__)) return  ! bail out
+!              fillValue=9.99E20
               print *,'in post_lam, get field ',trim(fieldname),' fillValue=',fillValue
 
             else if (typekind == ESMF_TYPEKIND_R8) then
@@ -2293,24 +2325,24 @@ module post_regional
 !              k1=totalLBound3d(3);k2=totalUBound3d(3)
               print *,'fields=',maxval(arrayr43d), minval(arrayr43d)
 
-               fillvalue=-1.E10
-!              call ESMF_AttributeGet(fcstField(n), convention="NetCDF", purpose="FV3", &
-!                 name="_FillValue", typekind=attTypeKind, isPresent=mvispresent, rc=rc)
-!              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-!                line=__LINE__, file=__FILE__)) return  ! bail out
-!              print *,'in post_lam, get mvispresent=',mvispresent
-!              if( mvispresent ) then
-!                if (attTypeKind==ESMF_TYPEKIND_R4) then
-!                 call ESMF_AttributeGet(fcstField(n), convention="NetCDF", purpose="FV3", &
-!                        name="_FillValue", value=fillvalue, isPresent=mvispresent, rc=rc)
-!              print *,'in post_lam, get fillvalue=',fillvalue
-!                else
-!                  call ESMF_AttributeGet(fcstField(n), convention="NetCDF", purpose="FV3", &
-!                        name="_FillValue", value=fillvalue8, isPresent=mvispresent, rc=rc)
-!              print *,'in post_lam, get fillvalue8=',fillvalue8
-!                  fillvalue=fillvalue8
-!                endif
-!              endif
+!               fillvalue=-1.E10
+              call ESMF_AttributeGet(fcstField(n), convention="NetCDF", purpose="FV3", &
+                 name="_FillValue", typekind=attTypeKind, isPresent=mvispresent, rc=rc)
+              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+                line=__LINE__, file=__FILE__)) return  ! bail out
+              print *,'in post_lam, get mvispresent=',mvispresent
+              if( mvispresent ) then
+                if (attTypeKind==ESMF_TYPEKIND_R4) then
+                 call ESMF_AttributeGet(fcstField(n), convention="NetCDF", purpose="FV3", &
+                        name="_FillValue", value=fillvalue, isPresent=mvispresent, rc=rc)
+              print *,'in post_lam, get fillvalue r4=',fillvalue
+                else
+                  call ESMF_AttributeGet(fcstField(n), convention="NetCDF", purpose="FV3", &
+                        name="_FillValue", value=fillvalue8, isPresent=mvispresent, rc=rc)
+              print *,'in post_lam, get fillvalue8=',fillvalue8
+                  fillvalue=fillvalue8
+                endif
+              endif
 !              call ESMF_AttributeGet(fcstField(n), convention="NetCDF", purpose="FV3", &
 !                   name='_FillValue', value=fillvalue, rc=rc)
               print *,'in post_lam, get field value,fillvalue=',fillvalue
@@ -2475,6 +2507,9 @@ module post_regional
                     enddo
                   enddo
                 enddo
+              print *,'in post_lam,clwmr 3d=',maxval(qqw(ista:iend,jsta:jend,1)),minval(qqw(ista:iend,jsta:jend,1)), &
+                'lm=',maxval(qqw(ista:iend,jsta:jend,lm)),minval(qqw(ista:iend,jsta:jend,lm)), &
+                qqw(ista,jsta,1),arrayr43d(ista,jsta,1),'fillvlaue=',fillvalue
               endif
 
               ! model level ice mixing ratio
@@ -2514,6 +2549,9 @@ module post_regional
                     enddo
                   enddo
                 enddo
+              print *,'in post_lam,snmr 3d=',maxval(qqs(ista:iend,jsta:jend,1)),minval(qqs(ista:iend,jsta:jend,1)), &
+                'lm=',maxval(qqs(ista:iend,jsta:jend,lm)),minval(qqs(ista:iend,jsta:jend,lm)), &
+                qqs(ista,jsta,1),arrayr43d(ista,jsta,1),'fillvlaue=',fillvalue
               endif
 
               ! model level rain water mixing ratio

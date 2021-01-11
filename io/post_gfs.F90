@@ -223,7 +223,6 @@ module post_gfs
       implicit none
 !
       type(wrt_internal_state),intent(inout)    :: wrt_int_state
-      type(ESMF_FieldBundle), intent(in)        :: fldbundle
 !
 ! local variable
       integer i,j,k,n,kz, attcount, nfb
@@ -235,6 +234,7 @@ module post_gfs
       type(ESMF_TypeKind_Flag)           :: typekind
       real(4), dimension(:), allocatable :: ak4,bk4
       real(8), dimension(:), allocatable :: ak8,bk8
+      type(ESMF_FieldBundle)             :: fldbundle
 !
 ! field bundle
      do nfb=1, wrt_int_state%FBcount
@@ -844,7 +844,7 @@ module post_gfs
 !              !$omp parallel do private(i,j)
 !              do j=jsta,jend
 !                do i=ista, iend
-!                  pint(i,j)=arrayr42d(i,j)
+!                  pint(i,j,lp1)=arrayr42d(i,j)
 !                enddo
 !              enddo
 !            endif
