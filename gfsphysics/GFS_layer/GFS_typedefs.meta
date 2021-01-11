@@ -4933,6 +4933,14 @@
   type = logical
   intent = in
   optional = F
+[do_ugwp_v1_w_gsldrag]
+  standard_name = do_ugwp_v1_w_gsldrag
+  long_name = flag to activate ver 1 CIRES UGWP - with OGWD of GSL
+  units = flag
+  dimensions = ()
+  type = logical
+  intent = in
+  optional = F  
 [lmfdeep2]
   standard_name = flag_for_scale_aware_mass_flux_convection
   long_name = flag for some scale-aware mass-flux convection scheme active
@@ -4945,6 +4953,7 @@
   name = GFS_grid_type
   type = ddt
   dependencies = 
+
 
 [ccpp-arg-table]
   name = GFS_grid_type
@@ -5136,8 +5145,34 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (flag_for_in_ccn_forcing_for_morrison_gettelman_microphysics==1)
-
+  active = (flag_for_in_ccn_forcing_for_morrison_gettelman_microphysics==1)  
+[jindx1_tau]
+  standard_name = index_interp_weight1_taungw
+  long_name = index1 for weight1 for tau NGWs 
+  units = none
+  dimensions = (horizontal_loop_extent)
+  type = integer
+[jindx2_tau]
+  standard_name = index_interp_weight2_taungw
+  long_name = index2 for weight2 for tau NGWs 
+  units = none
+  dimensions = (horizontal_loop_extent)
+  type = integer  
+[ddy_j1tau]
+  standard_name = interp_weight1_taungw
+  long_name = interpolation weight1 for tau NGWs 
+  units = none
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys  
+[ddy_j2tau]
+  standard_name = interp_weight2_taungw
+  long_name = interpolation weight2 for tau NGWs 
+  units = none
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys 
+ 
 ########################################################################
 [ccpp-table-properties]
   name = GFS_tbd_type
@@ -5161,6 +5196,13 @@
   dimensions = (horizontal_loop_extent)
   type = integer
   active = (flag_for_lw_clouds_sub_grid_approximation == 2 .or. flag_for_sw_clouds_grid_approximation == 2)
+[tau_amf]
+  standard_name = ngw_abs_momentum_flux
+  long_name = ngw_absolute_momentum_flux
+  units = various
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys  
 [ozpl]
   standard_name = ozone_forcing
   long_name = ozone forcing data
@@ -5282,7 +5324,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (index_for_surface_air_pressure_two_timesteps_back > 0)
+  active = (index_for_surface_air_pressure_two_timesteps_back > 0)  
 [phy_f2d(:,index_for_surface_air_pressure_at_previous_timestep)]
   standard_name = surface_air_pressure_at_previous_timestep
   long_name = surface air pressure at previous timestep
@@ -5626,6 +5668,7 @@
   type = real
   kind = kind_phys
   active = (do_myjsfc .or. do_myjpbl)
+
 
 ########################################################################
 [ccpp-table-properties]
@@ -7117,6 +7160,13 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
+[zngw]
+  standard_name = time_integral_of_height_of_launch_level_of_ngw
+  long_name = time integral of height of launch level of nonstationary gw
+  units = m
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys     
 [tau_tofd]
   standard_name = time_integral_of_momentum_flux_due_to_turbulent_orographic_form_drag
   long_name = time integral of momentum flux due to TOFD
@@ -7145,6 +7195,13 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
+[tau_oss]
+  standard_name = time_integral_of_momentum_flux_due_to_sso
+  long_name = time integral of momentum flux due to subgrid-scale orography
+  units = Pa
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys     
 [du3dt_mtb]
   standard_name = time_integral_of_change_in_x_wind_due_to_mountain_blocking_drag
   long_name = time integral of change in x wind due to mountain blocking drag
@@ -8495,7 +8552,7 @@
   units = m s-2
   dimensions = (horizontal_loop_extent,vertical_dimension)
   type = real
-  kind = kind_phys
+  kind = kind_phys  
 [hefac]
   standard_name = surface_upward_latent_heat_flux_reduction_factor
   long_name = surface upward latent heat flux reduction factor from canopy heat storage
@@ -8693,7 +8750,7 @@
   long_name = vertical interface dimension
   units = count
   dimensions = ()
-  type = integer
+  type = integer  
 [lmk]
   standard_name = adjusted_vertical_layer_dimension_for_radiation
   long_name = adjusted number of vertical layers for radiation
@@ -9864,10 +9921,73 @@
   units = m
   dimensions = (horizontal_loop_extent)
   type = real
+  kind = kind_phys  
+[dudt_gw]
+  standard_name = tendency_of_x_wind_due_to_allgw
+  long_name = zonal wind tendency due to all GWs
+  units = m s-2
+  dimensions = (horizontal_loop_extent,vertical_dimension)
+  type = real
+  kind = kind_phys
+[dvdt_gw]
+  standard_name = tendency_of_y_wind_due_to_allgw
+  long_name = meridional wind tendency due to all GWs
+  units = m s-2
+  dimensions = (horizontal_loop_extent,vertical_dimension)
+  type = real
+  kind = kind_phys
+[dtdt_gw]
+  standard_name = tendency_of_air_temperature_due_to_allgw
+  long_name = air temperature tendency due to all GWs
+  units = K s-1
+  dimensions = (horizontal_loop_extent,vertical_dimension)
+  type = real
+  kind = kind_phys
+[kdis_gw]
+  standard_name = eddy_mixing_due_to_allgw
+  long_name = eddy mixing due to all GWs
+  units = m2 s-1
+  dimensions = (horizontal_loop_extent,vertical_dimension)
+  type = real
+  kind = kind_phys
+[dudt_ngw]
+  standard_name = tendency_of_x_wind_due_to_ngw
+  long_name = zonal wind tendency due to non-stationary GWs
+  units = m s-2
+  dimensions = (horizontal_loop_extent,vertical_dimension)
+  type = real
+  kind = kind_phys
+[dvdt_ngw]
+  standard_name = tendency_of_y_wind_due_to_ngw
+  long_name = meridional wind tendency due to non-stationary GWs  
+  units = m s-2
+  dimensions = (horizontal_loop_extent,vertical_dimension)
+  type = real
+  kind = kind_phys
+[dtdt_ngw]
+  standard_name = tendency_of_air_temperature_due_to_ngw
+  long_name = air temperature tendency due to non-stationary GWs  
+  units = K s-1
+  dimensions = (horizontal_loop_extent,vertical_dimension)
+  type = real
+  kind = kind_phys
+[kdis_ngw]
+  standard_name = eddy_mixing_due_to_ngw
+  long_name = eddy mixing due to non-stationary GWs  
+  units = m2 s-1
+  dimensions = (horizontal_loop_extent,vertical_dimension)
+  type = real
+  kind = kind_phys
+[zobl]
+  standard_name = height_of_mountain_blocking_v1
+  long_name = height of mountain blocking drag_v1
+  units = m
+  dimensions = (horizontal_loop_extent)
+  type = real
   kind = kind_phys
 [zlwb]
   standard_name = height_of_low_level_wave_breaking
-  long_name = height of drag due to low level wave breaking
+  long_name = height of low level wave breaking 
   units = m
   dimensions = (horizontal_loop_extent)
   type = real
@@ -9879,6 +9999,13 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
+[zngw]
+  standard_name = height_of_launch_level_of_nonsta_gravity_wave
+  long_name = height of launch level of non-stationary GWs
+  units = m
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys 
 [tau_tofd]
   standard_name = instantaneous_momentum_flux_due_to_turbulent_orographic_form_drag
   long_name = instantaneous momentum flux due to TOFD
@@ -9900,6 +10027,13 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
+[tau_oss]
+  standard_name = instantaneous_momentum_flux_due_to_sso
+  long_name = momentum flux or stress due to SSO including OBL-OSS-OFD
+  units = Pa
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys   
 [tau_ngw]
   standard_name = instantaneous_momentum_flux_due_to_nonstationary_gravity_wave
   long_name = instantaneous momentum flux due to nonstationary gravity waves
@@ -9914,13 +10048,6 @@
   dimensions = (horizontal_loop_extent,vertical_dimension)
   type = real
   kind = kind_phys
-[dudt_ogw]
-  standard_name = instantaneous_change_in_x_wind_due_to_orographic_gravity_wave_drag
-  long_name = instantaneous change in x wind due to orographic gw drag
-  units = m s-2
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
 [dudt_tms]
   standard_name = instantaneous_change_in_x_wind_due_to_turbulent_orographic_form_drag
   long_name = instantaneous change in x wind due to TOFD
@@ -9928,6 +10055,125 @@
   dimensions = (horizontal_loop_extent,vertical_dimension)
   type = real
   kind = kind_phys
+[dudt_ogw]
+  standard_name = instantaneous_change_in_x_wind_due_to_orographic_gravity_wave_drag
+  long_name = x momentum tendency from meso scale ogw  
+  units = m s-2
+  dimensions = (horizontal_loop_extent,vertical_dimension)
+  type = real
+  kind = kind_phys
+[dvdt_ogw]
+  standard_name = y_momentum_tendency_from_meso_scale_ogw
+  long_name = y momentum tendency from meso scale ogw
+  units = m s-2
+  dimensions = (horizontal_loop_extent,vertical_dimension)
+  type = real
+  kind = kind_phys
+[dtdt_sso]
+  standard_name = tendency_of_air_temperature_due_to_sso
+  long_name = air temperature tendency due to subgrid-scale orography
+  units = K s-1
+  dimensions = (horizontal_loop_extent,vertical_dimension)
+  type = real
+  kind = kind_phys        
+[du_ogwcol]
+  standard_name = integrated_x_momentum_flux_from_meso_scale_ogw
+  long_name = integrated x momentum flux from meso scale ogw
+  units = Pa
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[dv_ogwcol]
+  standard_name = integrated_y_momentum_flux_from_meso_scale_ogw
+  long_name = integrated y momentum flux from meso scale ogw
+  units = Pa
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[dudt_obl]
+  standard_name = x_momentum_tendency_from_blocking_drag_vy
+  long_name = x momentum tendency from blocking drag  
+  units = m s-2  
+  dimensions = (horizontal_loop_extent,vertical_dimension)  
+  type = real
+  kind = kind_phys 
+[dvdt_obl]
+  standard_name = y_momentum_tendency_from_blocking_drag_vy
+  long_name = y momentum tendency from blocking drag 
+  units = m s-2
+  dimensions = (horizontal_loop_extent,vertical_dimension)
+  type = real
+  kind = kind_phys      
+[du_oblcol]
+  standard_name = integrated_x_momentum_flux_from_blocking_drag_vy
+  long_name = integrated x momentum flux from blocking drag 
+  units = Pa
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[dv_oblcol]
+  standard_name = integrated_y_momentum_flux_from_blocking_drag_vy
+  long_name = integrated y momentum flux from blocking drag
+  units = Pa
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[dudt_oss]
+  standard_name = x_momentum_tendency_from_small_scale_gwd_vy
+  long_name = x momentum tendency from small scale gwd
+  units = m s-2
+  dimensions = (horizontal_loop_extent,vertical_dimension)
+  type = real
+  kind = kind_phys
+[dvdt_oss]
+  standard_name = y_momentum_tendency_from_small_scale_gwd_vy
+  long_name = y momentum tendency from small scale gwd
+  units = m s-2
+  dimensions = (horizontal_loop_extent,vertical_dimension)
+  type = real
+  kind = kind_phys
+[du_osscol]
+  standard_name = integrated_x_momentum_flux_from_small_scale_gwd_vy
+  long_name = integrated x momentum flux from small scale gwd
+  units = Pa
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[dv_osscol]
+  standard_name = integrated_y_momentum_flux_from_small_scale_gwd_vy
+  long_name = integrated y momentum flux from small scale gwd
+  units = Pa
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[dudt_ofd]
+  standard_name = x_momentum_tendency_from_form_drag_vy
+  long_name = x momentum tendency from form drag
+  units = m s-2
+  dimensions = (horizontal_loop_extent,vertical_dimension)
+  type = real
+  kind = kind_phys
+[dvdt_ofd]
+  standard_name = y_momentum_tendency_from_form_drag_vy
+  long_name = y momentum tendency from form drag
+  units = m s-2
+  dimensions = (horizontal_loop_extent,vertical_dimension)
+  type = real
+  kind = kind_phys
+[du_ofdcol]
+  standard_name = integrated_x_momentum_flux_from_form_drag_vy
+  long_name = integrated x momentum flux from form drag
+  units = Pa
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys 
+[dv_ofdcol]
+  standard_name = integrated_y_momentum_flux_from_form_drag_vy
+  long_name = integrated y momentum flux from form drag
+  units = Pa
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys  
 [qs_lay]
   standard_name = saturation_vapor_pressure
   long_name = saturation vapor pressure
@@ -9945,7 +10191,7 @@
   type = real
   kind = kind_phys
   optional = F
-  active = (flag_for_rrtmgp_radiation_scheme)
+  active = (flag_for_rrtmgp_radiation_scheme)              
 [p_lay]
   standard_name = air_pressure_at_layer_for_RRTMGP_in_hPa
   long_name = air pressure layer
@@ -10312,6 +10558,7 @@
   units = DDT
   dimensions = ()
   type = ty_optical_props_2str
+  
 [lw_optical_props_aerosol]
   standard_name = longwave_optical_properties_for_aerosols
   long_name = Fortran DDT containing RRTMGP optical properties
