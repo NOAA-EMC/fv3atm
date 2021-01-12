@@ -13,88 +13,11 @@ module module_cplfields
   private
 
 ! Export Fields ----------------------------------------
-  integer,          public, parameter :: NexportFields = 71
+  integer,          public, parameter :: NexportFields = 2
   type(ESMF_Field), target, public    :: exportFields(NexportFields)
   character(len=*), public, parameter :: exportFieldsList(NexportFields) = (/ &
-       "inst_pres_interface                      ", &
-       "inst_pres_levels                         ", &
-       "inst_geop_interface                      ", &
-       "inst_geop_levels                         ", &
-       "inst_temp_levels                         ", &
-       "inst_zonal_wind_levels                   ", &
-       "inst_merid_wind_levels                   ", &
-       "inst_omega_levels                        ", &
-       "inst_tracer_mass_frac                    ", &
-       "soil_type                                ", &
-       "inst_pbl_height                          ", &
-       "surface_cell_area                        ", &
-       "inst_convective_rainfall_amount          ", &
-       "inst_exchange_coefficient_heat_levels    ", &
-       "inst_spec_humid_conv_tendency_levels     ", &
-       "inst_friction_velocity                   ", &
-       "inst_rainfall_amount                     ", &
-       "inst_soil_moisture_content               ", &
-       "inst_up_sensi_heat_flx                   ", &
-       "inst_lwe_snow_thickness                  ", &
-       "vegetation_type                          ", &
-       "inst_vegetation_area_frac                ", &
-       "inst_surface_roughness                   ", &
-       "mean_zonal_moment_flx                    ", &
-       "mean_merid_moment_flx                    ", &
-       "mean_sensi_heat_flx                      ", &
-       "mean_laten_heat_flx                      ", &
-       "mean_down_lw_flx                         ", &
-       "mean_down_sw_flx                         ", &
-       "mean_prec_rate                           ", &
-       "inst_zonal_moment_flx                    ", &
-       "inst_merid_moment_flx                    ", &
-       "inst_sensi_heat_flx                      ", &
-       "inst_laten_heat_flx                      ", &
-       "inst_down_lw_flx                         ", &
-       "inst_down_sw_flx                         ", &
-       "inst_temp_height2m                       ", &
-       "inst_spec_humid_height2m                 ", &
        "inst_zonal_wind_height10m                ", &
-       "inst_merid_wind_height10m                ", &
-       "inst_temp_height_surface                 ", &
-       "inst_pres_height_surface                 ", &
-       "inst_surface_height                      ", &
-       "mean_net_lw_flx                          ", &
-       "mean_net_sw_flx                          ", &
-       "inst_net_lw_flx                          ", &
-       "inst_net_sw_flx                          ", &
-       "mean_down_sw_ir_dir_flx                  ", &
-       "mean_down_sw_ir_dif_flx                  ", &
-       "mean_down_sw_vis_dir_flx                 ", &
-       "mean_down_sw_vis_dif_flx                 ", &
-       "inst_down_sw_ir_dir_flx                  ", &
-       "inst_down_sw_ir_dif_flx                  ", &
-       "inst_down_sw_vis_dir_flx                 ", &
-       "inst_down_sw_vis_dif_flx                 ", &
-       "mean_net_sw_ir_dir_flx                   ", &
-       "mean_net_sw_ir_dif_flx                   ", &
-       "mean_net_sw_vis_dir_flx                  ", &
-       "mean_net_sw_vis_dif_flx                  ", &
-       "inst_net_sw_ir_dir_flx                   ", &
-       "inst_net_sw_ir_dif_flx                   ", &
-       "inst_net_sw_vis_dir_flx                  ", &
-       "inst_net_sw_vis_dif_flx                  ", &
-       "inst_land_sea_mask                       ", &
-       "inst_temp_height_lowest                  ", &
-       "inst_spec_humid_height_lowest            ", &
-       "inst_zonal_wind_height_lowest            ", &
-       "inst_merid_wind_height_lowest            ", &
-       "inst_pres_height_lowest                  ", &
-       "inst_height_lowest                       ", &
-       "mean_fprec_rate                          " &
-!      "northward_wind_neutral                   ", &
-!      "eastward_wind_neutral                    ", &
-!      "upward_wind_neutral                      ", &
-!      "temp_neutral                             ", &
-!      "O_Density                                ", &
-!      "O2_Density                               ", &
-!      "N2_Density                               ", &
-!      "height                                   "  &
+       "inst_merid_wind_height10m                "  &
   /)
   ! Field types should be provided for proper handling
   ! according to the table below:
@@ -104,80 +27,29 @@ module module_cplfields
   !  s : surface (2D)
   !  t : tracers (4D)
   character(len=*), public, parameter :: exportFieldTypes(NexportFields) = (/ &
-       "i","l","i","l","l","l","l","l","t", &
-       "s","s","s","s","l","l","s","s","g", &
-       "s","s","s","s","s","s","s","s",     &
-       "s","s","s","s","s","s","s","s",     &
-       "s","s","s","s","s","s","s","s",     &
-       "s","s","s","s","s","s","s","s",     &
-       "s","s","s","s","s","s","s","s",     &
-       "s","s","s","s","s","s","s","s",     &
-       "s","s","s","s","s"                  &
-!      "l","l","l","l","l","l","l","s",     &
+       "s","s"                                      &
   /)
   ! Set exportFieldShare to .true. if field is provided as memory reference
   ! to coupled components
   logical, public, parameter :: exportFieldShare(NexportFields) = (/ &
-       .true. ,.true. ,.true. ,.true. ,.true. , &
-       .true. ,.true. ,.true. ,.true. ,.true. , &
-       .true. ,.true. ,.true. ,.true. ,.true. , &
-       .true. ,.true. ,.true. ,.true. ,.true. , &
-       .true. ,.true. ,.true. ,.false.,.false., &
-       .false.,.false.,.false.,.false.,.false., &
-       .false.,.false.,.false.,.false.,.false. , &
-       .true. ,.false.,.false.,.false.,.false. , &
-       .true. ,.false.,.false.,.false.,.false., &
-       .false.,.false.,.false.,.false.,.false., &
-       .false.,.false.,.false.,.false.,.false., &
-       .false.,.false.,.false.,.false.,.false., &
-       .false.,.false.,.false.,.true. ,.false., &
-       .false.,.false.,.false.,.false.,.false., &
-       .false.                                  &
-!      .false.,.false.,.false.,.false.,.false., &
-!      .false.,.false.,.false.                  &
+       .false.,.false.                              &
   /)
   real(kind=8), allocatable, public :: exportData(:,:,:)
 
 ! Import Fields ----------------------------------------
-  integer,          public, parameter :: NimportFields = 16
+  integer,          public, parameter :: NimportFields = 1
   logical,          public            :: importFieldsValid(NimportFields)
   type(ESMF_Field), target, public    :: importFields(NimportFields)
   character(len=*), public, parameter :: importFieldsList(NimportFields) = (/ &
-       "inst_tracer_mass_frac                  ", &
-       "land_mask                              ", &
-       "sea_ice_surface_temperature            ", &
-       "sea_surface_temperature                ", &
-       "ice_fraction                           ", &
-!      "inst_ice_ir_dif_albedo                 ", &
-!      "inst_ice_ir_dir_albedo                 ", &
-!      "inst_ice_vis_dif_albedo                ", &
-!      "inst_ice_vis_dir_albedo                ", &
-       "mean_up_lw_flx_ice                     ", &
-       "mean_laten_heat_flx_atm_into_ice       ", &
-       "mean_sensi_heat_flx_atm_into_ice       ", &
-!      "mean_evap_rate                         ", &
-       "stress_on_air_ice_zonal                ", &
-       "stress_on_air_ice_merid                ", &
-       "mean_ice_volume                        ", &
-       "mean_snow_volume                       ", &
-       "inst_tracer_up_surface_flx             ", &
-       "inst_tracer_down_surface_flx           ", &
-       "inst_tracer_clmn_mass_dens             ", &
-       "inst_tracer_anth_biom_flx              "  &
+       "land_mask                              "    &
   /)
   character(len=*), public, parameter :: importFieldTypes(NimportFields) = (/ &
-       "t",                                 &
-       "s","s","s","s","s",                 &
-       "s","s","s","s","s",                 &
-       "s","u","d","c","b"                  &
+       "s"                                  &
   /)
   ! Set importFieldShare to .true. if field is provided as memory reference
   ! from coupled components
   logical, public, parameter :: importFieldShare(NimportFields) = (/ &
-       .true. ,                                 &
-       .false.,.false.,.false.,.false.,.false., &
-       .false.,.false.,.false.,.false.,.false., &
-       .false.,.true. ,.true. ,.true. ,.true.   &
+       .false.                                  &
   /)
 
   ! Methods
