@@ -83,8 +83,11 @@ if(MULTI_GASES)
 endif()
 
 if(32BIT)
+  set(DYN32 ON CACHE BOOL "Enable support for 32bit fast physics in CCPP")
   list(APPEND _fv3dycore_defs_private OVERLOAD_R4
                                       OVERLOAD_R8)
+else()
+  set(DYN32 OFF CACHE BOOL "Disable support for 32bit fast physics in CCPP")
 endif()
 
 list(APPEND _fv3dycore_defs_private CCPP)
