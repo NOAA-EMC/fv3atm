@@ -2037,13 +2037,6 @@
   type = real
   kind = kind_phys
   active = (flag_for_cellular_automata)
-[emis_multiplier]
-  standard_name = gsd_chem_ca_global_emis_multiplier
-  long_name = fraction of emissions to generate based on cellular automata
-  units = frac
-  dimensions = (horizontal_dimension)
-  type = real
-  kind = kind_phys
 [condition]
   standard_name = physics_field_for_coupling
   long_name = physics_field_for_coupling

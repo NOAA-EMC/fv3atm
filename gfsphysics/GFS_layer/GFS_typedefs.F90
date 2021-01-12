@@ -515,7 +515,6 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: ca_micro (:)   => null() !
     real (kind=kind_phys), pointer :: condition(:)   => null() !
     real (kind=kind_phys), pointer :: vfact_ca(:)    => null() !
-    real (kind=kind_phys), pointer :: emis_multiplier(:) => null() !
     !--- stochastic physics
     real (kind=kind_phys), pointer :: shum_wts  (:,:) => null()  !
     real (kind=kind_phys), pointer :: sppt_wts  (:,:) => null()  !
@@ -2860,11 +2859,6 @@ module GFS_typedefs
       Coupling%ca_micro  = clear_val   
       Coupling%condition = clear_val
     endif
-
-    !if (Model%ca_global_emis .or. Model%do_sppt_emis) then
-      allocate (Coupling%emis_multiplier (IM))
-      Coupling%emis_multiplier = 1.0
-    !endif
 
     ! -- GSDCHEM coupling options
     if (Model%cplchm) then
