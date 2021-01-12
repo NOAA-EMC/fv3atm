@@ -1,7 +1,7 @@
 
 if(NOT DYN32)
-remove_definitions(-DOVERLOAD_R8)
-remove_definitions(-DOVERLOAD_R4)
+  remove_definitions(-DOVERLOAD_R8)
+  remove_definitions(-DOVERLOAD_R4)
 endif()
 
 message ("Force 64 bits in ccpp/data")
@@ -12,7 +12,7 @@ if(CMAKE_Fortran_COMPILER_ID MATCHES "Intel")
     string (REPLACE "-i4 -real-size 32" "-i4 -real-size 64 -no-prec-div -no-prec-sqrt" CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS}")
   endif()
 elseif(CMAKE_Fortran_COMPILER_ID MATCHES "GNU")
-    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fdefault-real-8")
+  set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fdefault-real-8")
 endif()
 
 list(APPEND _ccppdata_defs_private NEMS_GSM
