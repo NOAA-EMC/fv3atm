@@ -254,6 +254,7 @@ subroutine update_atmos_radiation_physics (Atmos)
   type (atmos_data_type), intent(in) :: Atmos
 !--- local variables---
     integer :: nb, jdat(8), rc
+
     procedure(IPD_func0d_proc), pointer :: Func0d => NULL()
     procedure(IPD_func1d_proc), pointer :: Func1d => NULL()
     !
@@ -289,13 +290,12 @@ subroutine update_atmos_radiation_physics (Atmos)
 !--- execute the IPD atmospheric setup step
       call mpp_clock_begin(setupClock)
 #ifdef CCPP
-      call CCPP_step (step="time_vary", nblks=Atm_block%nblks, ierr=ierr)
-      if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP time_vary step failed')
+      call CCPP_step (step="timestep_init", nblks=Atm_block%nblks, ierr=ierr)
+      if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP timestep_init step failed')
 
 !--- call stochastic physics pattern generation / cellular automata
       call stochastic_physics_wrapper(IPD_Control, IPD_Data, Atm_block, ierr)
       if (ierr/=0)  call mpp_error(FATAL, 'Call to stochastic_physics_wrapper failed')
-
 #else
       Func1d => time_vary_step
       call IPD_step (IPD_Control, IPD_Data(:), IPD_Diag, IPD_Restart, IPD_func1d=Func1d)
@@ -419,6 +419,15 @@ subroutine update_atmos_radiation_physics (Atmos)
       endif
       call getiauforcing(IPD_Control,IAU_data)
       if (mpp_pe() == mpp_root_pe() .and. debug) write(6,*) "end of radiation and physics step"
+
+#ifdef CCPP
+!--- execute the IPD atmospheric timestep finalize step
+      call mpp_clock_begin(setupClock)
+      call CCPP_step (step="timestep_finalize", nblks=Atm_block%nblks, ierr=ierr)
+      if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP timestep_finalize step failed')
+      call mpp_clock_end(setupClock)
+#endif
+
     endif
 
 #ifdef CCPP
