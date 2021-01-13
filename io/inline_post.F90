@@ -43,7 +43,8 @@ module inline_post
           call post_run_gfs(wrt_int_state, mypei, mpicomp, lead_write, &
                             mynfhr, mynfmin,mynfsec)
       else if( trim(output_grid) == 'regional_latlon'          &
-        .or.  trim(output_grid) == 'rotated_latlon') then
+        .or.  trim(output_grid) == 'rotated_latlon'            &
+        .or.  trim(output_grid) == 'lambert_conformal') then
       print *,'inline_post_run, call post_run_regional'
           call post_run_regional(wrt_int_state, mypei, mpicomp, lead_write, &
                             mynfhr, mynfmin,mynfsec)
@@ -67,7 +68,8 @@ module inline_post
           .or. trim(output_grid) == 'global_latlon') then
             call post_getattr_gfs(wrt_int_state)
         else if( trim(output_grid) == 'regional_latlon'          &
-          .or.  trim(output_grid) == 'rotated_latlon') then
+          .or.  trim(output_grid) == 'rotated_latlon'            &
+          .or.  trim(output_grid) == 'lambert_conformal') then
       print *,'inline_post_getattr, call post_getattr_regional'
             call post_getattr_regional(wrt_int_state)
         endif
