@@ -35,6 +35,9 @@ add_library(
     CCPP_driver.F90
 )
 
+# Compile GFS_diagnostics.F90 without optimization, this leads to out of memory errors on wcoss_dell_p3
+set_property(SOURCE GFS_diagnostics.F90 APPEND_STRING PROPERTY COMPILE_FLAGS "-O0")
+
 target_link_libraries(ccppdriver gfsphysics)
 target_link_libraries(ccppdriver ccpp)
 target_link_libraries(ccppdriver ccppphys)
