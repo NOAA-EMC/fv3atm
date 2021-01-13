@@ -74,6 +74,7 @@ add_library(fv3dycore ${_fv3dycore_srcs})
 list(APPEND _fv3dycore_defs_private SPMD
                                     use_WRTCOMP
                                     GFS_PHYS
+                                    GFS_TYPES
                                     USE_GFSL63
                                     MOIST_CAPPA
                                     USE_COND)
