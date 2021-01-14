@@ -159,10 +159,6 @@ else (APPLE)
 endif(APPLE)
 
 #------------------------------------------------------------------------------
-# Add -DCCPP preprocessor flag (needed to preprocess GFS_typedefs.F90 from FV3)
-ADD_DEFINITIONS(-DCCPP)
-
-#------------------------------------------------------------------------------
 # Add host-model specific preprocessor flag (needed for some physics schemes)
 ADD_DEFINITIONS(-DFV3)
 
