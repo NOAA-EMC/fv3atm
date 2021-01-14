@@ -2724,7 +2724,7 @@ end subroutine atmos_data_type_chksum
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) =  IPD_Data(nb)%Sfcprop%fice(ix)*IPD_Data(nb)%Sfcprop%oceanfrac(ix)
+          exportData(i,j,idx) = one - IPD_Data(nb)%Sfcprop%fice(ix)*IPD_Data(nb)%Sfcprop%oceanfrac(ix)
         enddo
       enddo
     endif
