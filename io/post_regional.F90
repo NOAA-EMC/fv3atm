@@ -201,7 +201,9 @@ module post_regional
 !
             if ( ieof == 0) call process(kth,kpv,th(1:kth),pv(1:kpv),iostatusD3D)
 !
+            print *,'after process,ifhr=',ifhr
             call mpi_barrier(mpicomp,ierr)
+            print *,'after mpi_barrier,ifhr=',ifhr
             call gribit2(post_fname)
             if(allocated(datapd))deallocate(datapd)
             if(allocated(fld_info))deallocate(fld_info)
@@ -471,7 +473,12 @@ module post_regional
                              avgetrans, avgesnow, avgprec_cont, avgcprate_cont,&
                              avisbeamswin, avisdiffswin, airbeamswin, airdiffswin, &
                              alwoutc, alwtoac, aswoutc, aswtoac, alwinc, aswinc,& 
-                             avgpotevp, snoavg, ti, si, cuppt
+                             avgpotevp, snoavg, ti, si, cuppt,                 &
+                             w_up_max, w_dn_max, up_heli_max,up_heli_min,      &
+                             up_heli_max03,up_heli_min03,rel_vort_max01,       &
+                             rel_vort_max, rel_vort_maxhy1, refd_max,          &
+                             refdm10c_max, u10max, v10max, wspd10max, sfcuxi,  &
+                             sfcvxi
       use soil,        only: sldpth, sh2o, smc, stc
       use masks,       only: lmv, lmh, htm, vtm, gdlat, gdlon, dx, dy, hbm2, sm, sice
       use ctlblk_mod,  only: im, jm, lm, lp1, jsta, jend, jsta_2l, jend_2u, jsta_m,jend_m, &
@@ -831,8 +838,6 @@ module post_regional
      foundland = .false.
      foundice = .false.
 
-     if(mype==0) print *,'dong haha', wrt_int_state%FBCount
-
      get_lsmsk: do ibdl=1, wrt_int_state%FBCount
 
 ! find lans sea mask
@@ -1048,6 +1053,17 @@ module post_regional
               enddo
             endif
 
+            !  mid day avg albedo
+            if(trim(fieldname)=='albdo_ave') then
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,avgalbedo,arrayr42d,fillValue,spval)
+              do j=jsta,jend
+                do i=ista, iend
+                  avgalbedo(i,j)=arrayr42d(i,j)*0.01
+                  if(abs(arrayr42d(i,j)-fillValue) < small) avgalbedo(i,j)=spval
+                enddo
+              enddo
+            endif
+
             ! surface potential T
             if(trim(fieldname)=='tmpsfc') then
               !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,arrayr42d,ths,fillValue,spval)
@@ -1142,6 +1158,61 @@ module post_regional
                   else
                     cprate(i,j) = spval
                   endif
+                enddo
+              enddo
+            endif
+
+            ! max hourly 1-km agl reflectivity
+            if(trim(fieldname)=='refdmax') then
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,refd_max,arrayr42d,sm,sice,fillValue)
+              do j=jsta,jend
+                do i=ista, iend
+                  refd_max(i,j) = arrayr42d(i,j)
+                  if (abs(arrayr42d(i,j)-fillValue) < small) refd_max(i,j) = spval
+                enddo
+              enddo
+            endif
+
+            ! max hourly -10C reflectivity
+            if(trim(fieldname)=='refdmax263k') then
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,refdm10c_max,arrayr42d,sm,sice,fillValue)
+              do j=jsta,jend
+                do i=ista, iend
+                  refdm10c_max(i,j) = arrayr42d(i,j)
+                  if (abs(arrayr42d(i,j)-fillValue) < small) refdm10c_max(i,j) = spval
+                enddo
+              enddo
+            endif
+
+            ! max hourly u comp of 10m agl wind
+            if(trim(fieldname)=='u10max') then
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,u10max,arrayr42d,sm,sice,fillValue)
+              do j=jsta,jend
+                do i=ista, iend
+                  u10max(i,j) = arrayr42d(i,j)
+                  if (abs(arrayr42d(i,j)-fillValue) < small) u10max(i,j) = spval
+                enddo
+              enddo
+            endif
+
+            ! max hourly v comp of 10m agl wind
+            if(trim(fieldname)=='v10max') then
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,v10max,arrayr42d,sm,sice,fillValue)
+              do j=jsta,jend
+                do i=ista, iend
+                  v10max(i,j) = arrayr42d(i,j)
+                  if (abs(arrayr42d(i,j)-fillValue) < small) v10max(i,j) = spval
+                enddo
+              enddo
+            endif
+
+            ! max hourly 10m agl wind speed
+            if(trim(fieldname)=='spd10max') then
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,wspd10max,arrayr42d,sm,sice,fillValue)
+              do j=jsta,jend
+                do i=ista, iend
+                  wspd10max(i,j) = arrayr42d(i,j)
+                  if (abs(arrayr42d(i,j)-fillValue) < small) wspd10max(i,j) = spval
                 enddo
               enddo
             endif
@@ -1768,6 +1839,28 @@ module post_regional
               enddo
             endif
 
+            ! inst zonal momentum flux
+            if(trim(fieldname)=='uflx') then
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,sfcuxi,arrayr42d,fillValue,spval)
+              do j=jsta,jend
+                do i=ista, iend
+                  sfcuxi(i,j) = arrayr42d(i,j)
+                  if( abs(arrayr42d(i,j)-fillValue) < small) sfcuxi(i,j) = spval
+                enddo
+              enddo
+            endif
+
+            ! inst meridional momentum flux
+            if(trim(fieldname)=='vflx') then
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,sfcvxi,arrayr42d,fillValue,spval)
+              do j=jsta,jend
+                do i=ista, iend
+                  sfcvxi(i,j) = arrayr42d(i,j)
+                  if( abs(arrayr42d(i,j)-fillValue) < small) sfcvxi(i,j) = spval
+                enddo
+              enddo
+            endif
+
             ! time averaged zonal gravity wave stress
             if(trim(fieldname)=='u-gwd_ave') then
               !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,gtaux,arrayr42d,fillValue,spval)
@@ -1892,105 +1985,6 @@ module post_regional
               enddo
             endif
 
-            ! time averaged low cloud top pressure
-            if(trim(fieldname)=='pres_avelct') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,ptopl,arrayr42d,fillValue,spval)
-              do j=jsta,jend
-                do i=ista, iend
-                  ptopl(i,j) = arrayr42d(i,j)
-                  if( abs(arrayr42d(i,j)-fillValue) < small)  ptopl(i,j) = spval
-                enddo
-              enddo
-            endif
-
-            ! time averaged low cloud bottom pressure
-            if(trim(fieldname)=='pres_avelcb') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,pbotl,arrayr42d,fillValue,spval)
-              do j=jsta,jend
-                do i=ista, iend
-                  pbotl(i,j) = arrayr42d(i,j)
-                  if( abs(arrayr42d(i,j)-fillValue) < small)  pbotl(i,j) = spval
-                enddo
-              enddo
-            endif
-
-            ! time averaged low cloud top temperature
-            if(trim(fieldname)=='tmp_avelct') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,ttopl,arrayr42d,fillValue,spval)
-              do j=jsta,jend
-                do i=ista, iend
-                  ttopl(i,j) = arrayr42d(i,j)
-                  if( abs(arrayr42d(i,j)-fillValue) < small)  ttopl(i,j) = spval
-                enddo
-              enddo
-            endif
-
-            ! time averaged middle cloud top pressure
-            if(trim(fieldname)=='pres_avemct') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,ptopm,arrayr42d,fillValue,spval)
-              do j=jsta,jend
-                do i=ista, iend
-                  ptopm(i,j) = arrayr42d(i,j)
-                  if( abs(arrayr42d(i,j)-fillValue) < small)  ptopm(i,j) = spval
-                enddo
-              enddo
-            endif
-
-            ! time averaged middle cloud bottom pressure
-            if(trim(fieldname)=='pres_avemcb') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,pbotm,arrayr42d,fillValue,spval)
-              do j=jsta,jend
-                do i=ista, iend
-                  pbotm(i,j) = arrayr42d(i,j)
-                  if( abs(arrayr42d(i,j)-fillValue) < small)  pbotm(i,j) = spval
-                enddo
-              enddo
-            endif
-
-            ! time averaged middle cloud top temperature
-            if(trim(fieldname)=='tmp_avemct') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,ttopm,arrayr42d,fillValue,spval)
-              do j=jsta,jend
-                do i=ista, iend
-                  ttopm(i,j) = arrayr42d(i,j)
-                  if( abs(arrayr42d(i,j)-fillValue) < small)  ttopm(i,j) = spval
-                enddo
-              enddo
-            endif
-
-            ! time averaged high cloud top pressure
-            if(trim(fieldname)=='pres_avehct') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,ptoph,arrayr42d,fillValue,spval)
-              do j=jsta,jend
-                do i=ista, iend
-                  ptoph(i,j) = arrayr42d(i,j)
-                  if( abs(arrayr42d(i,j)-fillValue) < small)  ptoph(i,j) = spval
-                enddo
-              enddo
-            endif
-
-            ! time averaged high cloud bottom pressure
-            if(trim(fieldname)=='pres_avehcb') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,pboth,arrayr42d,fillValue,spval)
-              do j=jsta,jend
-                do i=ista, iend
-                  pboth(i,j) = arrayr42d(i,j)
-                  if( abs(arrayr42d(i,j)-fillValue) < small)  pboth(i,j) = spval
-                enddo
-              enddo
-            endif
-
-            ! time averaged high cloud top temperature
-            if(trim(fieldname)=='tmp_avehct') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,ttoph,arrayr42d,fillValue,spval)
-              do j=jsta,jend
-                do i=ista, iend
-                  ttoph(i,j) = arrayr42d(i,j)
-                  if( abs(arrayr42d(i,j)-fillValue) < small)  ttoph(i,j) = spval
-                enddo
-              enddo
-            endif
-
             ! time averaged boundary layer cloud cover
             if(trim(fieldname)=='tcdc_avebndcl') then
               !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,pblcfr,arrayr42d,fillValue)
@@ -2027,7 +2021,7 @@ module post_regional
             endif
 
             ! shelter max temperature
-            if(trim(fieldname)=='tmax_max2m') then
+            if(trim(fieldname)=='t02max') then
               !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,maxtshltr,arrayr42d,fillValue,spval)
               do j=jsta,jend
                 do i=ista, iend
@@ -2038,12 +2032,34 @@ module post_regional
             endif
 
             ! shelter min temperature
-            if(trim(fieldname)=='tmin_min2m') then
+            if(trim(fieldname)=='t02min') then
               !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,mintshltr,arrayr42d,fillValue,spval)
               do j=jsta,jend
                 do i=ista, iend
                   mintshltr(i,j) = arrayr42d(i,j)
                   if( abs(arrayr42d(i,j)-fillValue) < small)  mintshltr(i,j) = spval
+                enddo
+              enddo
+            endif
+
+            ! shelter max rh
+            if(trim(fieldname)=='rh02max') then
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,maxrhshltr,arrayr42d,fillValue,spval)
+              do j=jsta,jend
+                do i=ista, iend
+                  maxrhshltr(i,j) = arrayr42d(i,j)
+                  if( abs(arrayr42d(i,j)-fillValue) < small)  maxrhshltr(i,j) = spval
+                enddo
+              enddo
+            endif
+
+            ! shelter min rh
+            if(trim(fieldname)=='rh02min') then
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,minrhshltr,arrayr42d,fillValue,spval)
+              do j=jsta,jend
+                do i=ista, iend
+                  minrhshltr(i,j) = arrayr42d(i,j)
+                  if( abs(arrayr42d(i,j)-fillValue) < small)  minrhshltr(i,j) = spval
                 enddo
               enddo
             endif
@@ -2204,28 +2220,6 @@ module post_regional
               enddo
             endif
 
-            ! shelter max specific humidity
-            if(trim(fieldname)=='spfhmax_max2m') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,maxqshltr,arrayr42d,fillValue,spval)
-              do j=jsta,jend
-                do i=ista, iend
-                  maxqshltr(i,j) = arrayr42d(i,j)
-                  if( abs(arrayr42d(i,j)-fillValue) < small) maxqshltr(i,j) = spval
-                enddo
-              enddo
-            endif
-
-            ! shelter min temperature
-            if(trim(fieldname)=='spfhmin_min2m') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,minqshltr,arrayr42d,fillValue,spval)
-              do j=jsta,jend
-                do i=ista, iend
-                  minqshltr(i,j) = arrayr42d(i,j)
-                  if( abs(arrayr42d(i,j)-fillValue) < small) minqshltr(i,j) = spval
-                enddo
-              enddo
-            endif
-
             ! storm runoffs
             if(trim(fieldname)=='ssrun_acc') then
               !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,ssroff,arrayr42d,sm,fillValue)
@@ -2310,22 +2304,116 @@ module post_regional
               enddo
             endif
 
+            ! model level upvvelmax
+            if(trim(fieldname)=='upvvelmax') then
+              !$omp parallel do default(none) private(i,j,l) shared(jsta,jend,ista,iend,spval,w_up_max,arrayr42d,fillvalue)
+              do j=jsta,jend
+                do i=ista, iend
+                  w_up_max(i,j) = arrayr42d(i,j)
+                  if( abs(arrayr42d(i,j)-fillValue) < small) w_up_max(i,j) = spval
+                enddo
+              enddo
+            endif
+
+            ! model level dnvvelmax
+            if(trim(fieldname)=='dnvvelmax') then
+              !$omp parallel do default(none) private(i,j,l) shared(jsta,jend,ista,iend,spval,w_dn_max,arrayr42d,fillvalue)
+              do j=jsta,jend
+                do i=ista, iend
+                  w_dn_max(i,j) = arrayr42d(i,j)
+                  if( abs(arrayr42d(i,j)-fillValue) < small) w_dn_max(i,j) = spval
+                enddo
+              enddo
+            endif
+
+            ! model level uhmax25
+            if(trim(fieldname)=='uhmax25') then
+              !$omp parallel do default(none) private(i,j,l) shared(jsta,jend,ista,iend,spval,up_heli_max,arrayr42d,fillvalue)
+              do j=jsta,jend
+                do i=ista, iend
+                  up_heli_max(i,j) = arrayr42d(i,j)
+                  if( abs(arrayr42d(i,j)-fillValue) < small) up_heli_max(i,j) = spval
+                enddo
+              enddo
+            endif
+
+            ! model level uhmin25
+            if(trim(fieldname)=='uhmin25') then
+              !$omp parallel do default(none) private(i,j,l) shared(jsta,jend,ista,iend,spval,up_heli_min,arrayr42d,fillvalue)
+              do j=jsta,jend
+                do i=ista, iend
+                  up_heli_min(i,j) = arrayr42d(i,j)
+                  if( abs(arrayr42d(i,j)-fillValue) < small) up_heli_min(i,j) = spval
+                enddo
+              enddo
+            endif
+
+            ! model level uhmax03
+            if(trim(fieldname)=='uhmax03') then
+              !$omp parallel do default(none) private(i,j,l) shared(jsta,jend,ista,iend,spval,up_heli_max03,arrayr42d,fillvalue)
+              do j=jsta,jend
+                do i=ista, iend
+                  up_heli_max03(i,j) = arrayr42d(i,j)
+                  if( abs(arrayr42d(i,j)-fillValue) < small) up_heli_max03(i,j) = spval
+                enddo
+              enddo
+            endif
+
+            ! model level uhmin03
+            if(trim(fieldname)=='uhmin03') then
+              !$omp parallel do default(none) private(i,j,l) shared(jsta,jend,ista,iend,spval,up_heli_min03,arrayr42d,fillvalue)
+              do j=jsta,jend
+                do i=ista, iend
+                  up_heli_min03(i,j) = arrayr42d(i,j)
+                  if( abs(arrayr42d(i,j)-fillValue) < small) up_heli_min03(i,j) = spval
+                enddo
+              enddo
+            endif
+
+            ! model level maxvort01
+            if(trim(fieldname)=='maxvort01') then
+              !$omp parallel do default(none) private(i,j,l) shared(jsta,jend,ista,iend,spval,rel_vort_max01,arrayr42d,fillvalue)
+              do j=jsta,jend
+                do i=ista, iend
+                  rel_vort_max01(i,j) = arrayr42d(i,j)
+                  if( abs(arrayr42d(i,j)-fillValue) < small) rel_vort_max01(i,j) = spval
+                enddo
+              enddo
+            endif
+
+            ! model level maxvort02
+            if(trim(fieldname)=='maxvort02') then
+              !$omp parallel do default(none) private(i,j,l) shared(jsta,jend,ista,iend,spval,rel_vort_max,arrayr42d,fillvalue)
+              do j=jsta,jend
+                do i=ista, iend
+                  rel_vort_max(i,j) = arrayr42d(i,j)
+                  if( abs(arrayr42d(i,j)-fillValue) < small) rel_vort_max(i,j) = spval
+                enddo
+              enddo
+            endif
+
+            ! model level maxvorthy1
+            if(trim(fieldname)=='maxvorthy1') then
+              !$omp parallel do default(none) private(i,j,l) shared(jsta,jend,ista,iend,spval,rel_vort_maxhy1,arrayr42d,fillvalue)
+              do j=jsta,jend
+                do i=ista, iend
+                  rel_vort_maxhy1(i,j) = arrayr42d(i,j)
+                  if( abs(arrayr42d(i,j)-fillValue) < small) rel_vort_maxhy1(i,j) = spval
+                enddo
+              enddo
+            endif
+
+
 !          else if (fieldDimCount > gridDimCount) then
           else if (fieldDimCount ==3) then
              print *,'in post_lam, get field value,n=',n,'fieldname=',trim(fieldname)
             if (typekind == ESMF_TYPEKIND_R4) then
               call ESMF_FieldGet(fcstField(n), localDe=0, farrayPtr=arrayr43d, rc=rc)
               print *,'in post_lam, bf ESMF_FieldGet,rc=',rc
-!              call ESMF_FieldGet(fcstField(n), localDe=0, farrayPtr=arrayr43d, totalLBound=totalLBound3d, &
-!                   totalUBound=totalUBound3d,rc=rc)
               if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
                 line=__LINE__, file=__FILE__)) return  ! bail out
-!              i1=totalLBound3d(1);i2=totalUBound3d(1)
-!              j1=totalLBound3d(2);j2=totalUBound3d(2)
-!              k1=totalLBound3d(3);k2=totalUBound3d(3)
               print *,'fields=',maxval(arrayr43d), minval(arrayr43d)
 
-!               fillvalue=-1.E10
               call ESMF_AttributeGet(fcstField(n), convention="NetCDF", purpose="FV3", &
                  name="_FillValue", typekind=attTypeKind, isPresent=mvispresent, rc=rc)
               if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
@@ -2350,12 +2438,12 @@ module post_regional
               call ESMF_FieldGet(fcstField(n), localDe=0, farrayPtr=arrayr83d, rc=rc)
               if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
                 line=__LINE__, file=__FILE__)) return  ! bail out
-              print *,'in post_lam, get field valuer8,n=',n,'fieldname=',trim(fieldname)
+!              print *,'in post_lam, get field valuer8,n=',n,'fieldname=',trim(fieldname)
               call ESMF_AttributeGet(fcstField(n), convention="NetCDF", purpose="FV3", &
                    name='_FillValue', value=fillvalue8, rc=rc)
               if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
                 line=__LINE__, file=__FILE__)) return  ! bail out
-              print *,'in post_lam, get field value,fillvalue8=',fillvalue8
+!              print *,'in post_lam, get field value,fillvalue8=',fillvalue8
 
               allocate(arrayr43d(ista:iend,jsta:jend,kstart:kend))
               arrayr43d = 0.
@@ -2495,7 +2583,7 @@ module post_regional
             endif
 
 ! for GFDL MP
-            if (imp_physics == 11) then
+!            if (imp_physics == 11) then
               ! model level cloud water mixing ratio
               if(trim(fieldname)=='clwmr') then
                 !$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,qqw,arrayr43d,fillvalue,spval)
@@ -2567,20 +2655,7 @@ module post_regional
                 enddo
               endif
 !gfdlmp
-            endif
-
-            ! model level cloud amount
-            if(trim(fieldname)=='cld_amt') then
-              !$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,cfr,arrayr43d,fillvalue,spval)
-              do l=1,lm
-                do j=jsta,jend
-                  do i=ista, iend
-                    cfr(i,j,l) = arrayr43d(i,j,l)
-                    if(abs(arrayr43d(i,j,l)-fillvalue)<small) cfr(i,j,l) = spval
-                  enddo
-                enddo
-              enddo
-            endif
+!            endif
 
             ! model level ref3d
             if(trim(fieldname)=='ref3D') then
@@ -2596,18 +2671,19 @@ module post_regional
               print *,'in gfs_post, get ref_10cm=',maxval(ref_10cm), minval(ref_10cm)
             endif
 
-            ! model level ref3d
-            if(trim(fieldname)=='tke') then
-              !$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,q2,arrayr43d,fillvalue,spval)
+            ! model level cloud fraction
+            if(trim(fieldname)=='cldfra') then
+              !$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,cfr,arrayr43d,fillvalue,spval)
               do l=1,lm
                 do j=jsta,jend
                   do i=ista, iend
-                    q2(i,j,l) = arrayr43d(i,j,l)
-                    if(abs(arrayr43d(i,j,l)-fillvalue)<small) q2(i,j,l) = spval
+                    cfr(i,j,l) = arrayr43d(i,j,l)
+                    if(abs(arrayr43d(i,j,l)-fillvalue)<small) cfr(i,j,l) = spval
                   enddo
                 enddo
               enddo
             endif
+          
 !3d fields
           endif
 
@@ -2724,7 +2800,7 @@ module post_regional
 !$omp parallel do default(none) private(i,j) shared(l,jsta,jend,im,zmid,zint,pmid,alpint,spval)
         do j=jsta,jend
           do i=1,im
-            if( pmid(i,j,l) /= spval) then
+            if( zint(i,j,l+1)/=spval .and. zint(i,j,l)/=spval .and. pmid(i,j,l) /= spval) then
               zmid(i,j,l)=zint(i,j,l+1)+(zint(i,j,l)-zint(i,j,l+1))* &
                     (log(pmid(i,j,l))-alpint(i,j,l+1))/ &
                     (alpint(i,j,l)-alpint(i,j,l+1))
