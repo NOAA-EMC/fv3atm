@@ -2037,13 +2037,6 @@
   type = real
   kind = kind_phys
   active = (flag_for_cellular_automata)
-[emis_multiplier]
-  standard_name = gsd_chem_ca_global_emis_multiplier
-  long_name = fraction of emissions to generate based on cellular automata
-  units = frac
-  dimensions = (horizontal_dimension)
-  type = real
-  kind = kind_phys
 [condition]
   standard_name = physics_field_for_coupling
   long_name = physics_field_for_coupling
@@ -3983,6 +3976,62 @@
   dimensions =  (number_of_land_surface_variables_perturbed) 
   type = character
   kind = len=3
+[pert_scale_anthro]
+  standard_name = anthropogenic_scaling_factor
+  long_name = Scaling factor for emissions of anthropogenic emissions
+  units = none
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[pert_scale_dust]
+  standard_name = dust_emissions_scaling_factor
+  long_name = Scaling factor for emissions of dust emissions
+  units = none
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[pert_scale_plume]
+  standard_name = plume_emissions_scaling_factor
+  long_name = Scaling factor for emissions of plume rising
+  units = none
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[pert_scale_seas]
+  standard_name = sea_spray_emissions_scaling_factor
+  long_name = Scaling factor for emissions of sea spray
+  units = none
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[emis_amp_anthro]
+  standard_name = anthropogenic_emissions_perturbation_amplitude
+  long_name = multiplier of emissions random perturbation of anthropogenic emissions
+  units = none
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[emis_amp_dust]
+  standard_name = dust_emissions_perturbation_amplitude
+  long_name = multiplier of emissions random perturbation of dust emissions
+  units = none
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[emis_amp_plume]
+  standard_name = plume_emissions_perturbation_amplitude
+  long_name = multiplier of emissions random perturbation of plume rise emissions
+  units = none
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[emis_amp_seas]
+  standard_name = sea_spray_emissions_perturbation_amplitude
+  long_name = multiplier of emissions random perturbation of sea salt emissions
+  units = none
+  dimensions = ()
+  type = real
+  kind = kind_phys
 [ntrac]
   standard_name = number_of_tracers
   long_name = number of tracers
