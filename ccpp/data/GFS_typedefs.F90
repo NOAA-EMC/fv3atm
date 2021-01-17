@@ -829,6 +829,7 @@ module GFS_typedefs
                                             !< gwd_opt = 33 => GSL drag suite with extra output
     logical              :: do_ugwp_v0           !< flag for version 0 ugwp GWD
     logical              :: do_ugwp_v0_orog_only !< flag for version 0 ugwp GWD (orographic drag only)
+    logical              :: do_ugwp_v0_nst_only  !< flag for version 0 ugwp GWD (non-stationary GWD only)
     logical              :: do_gsl_drag_ls_bl    !< flag for GSL drag (large-scale GWD and blocking only)
     logical              :: do_gsl_drag_ss       !< flag for GSL drag (small-scale GWD only)
     logical              :: do_gsl_drag_tofd     !< flag for GSL drag (turbulent orog form drag only)
@@ -3101,6 +3102,7 @@ module GFS_typedefs
                                                                       !< gwd_opt = 33: GSL drag suite with extra output
     logical              :: do_ugwp_v0           = .true.       !< flag for version 0 ugwp GWD
     logical              :: do_ugwp_v0_orog_only = .false.      !< flag for version 0 ugwp GWD (orographic drag only)
+    logical              :: do_ugwp_v0_nst_only  = .false.      !< flag for version 0 ugwp GWD (non-stationary GWD only)
     logical              :: do_gsl_drag_ls_bl    = .false.      !< flag for GSL drag (large-scale GWD and blocking only)
     logical              :: do_gsl_drag_ss       = .false.      !< flag for GSL drag (small-scale GWD only)
     logical              :: do_gsl_drag_tofd     = .false.      !< flag for GSL drag (turbulent orog form drag only)
@@ -3394,6 +3396,7 @@ module GFS_typedefs
                                bl_mynn_mixqt, bl_mynn_output, icloud_bl, bl_mynn_tkeadvect, &
                                ! *DH
                                gwd_opt, do_ugwp_v0, do_ugwp_v0_orog_only,                   &
+                               do_ugwp_v0_nst_only,                                         &
                                do_gsl_drag_ls_bl, do_gsl_drag_ss, do_gsl_drag_tofd,         &
                                do_ugwp_v1, do_ugwp_v1_orog_only,                            &
                                var_ric, coef_ric_l, coef_ric_s, hurr_pbl,                   &
@@ -3972,6 +3975,7 @@ module GFS_typedefs
     end if
     Model%do_ugwp_v0           = do_ugwp_v0
     Model%do_ugwp_v0_orog_only = do_ugwp_v0_orog_only
+    Model%do_ugwp_v0_nst_only  = do_ugwp_v0_nst_only
     Model%do_gsl_drag_ls_bl    = do_gsl_drag_ls_bl
     Model%do_gsl_drag_ss       = do_gsl_drag_ss
     Model%do_gsl_drag_tofd     = do_gsl_drag_tofd
@@ -4984,6 +4988,7 @@ module GFS_typedefs
       print *, ' gwd_opt           : ', Model%gwd_opt
       print *, ' do_ugwp_v0           : ', Model%do_ugwp_v0
       print *, ' do_ugwp_v0_orog_only : ', Model%do_ugwp_v0_orog_only
+      print *, ' do_ugwp_v0_nst_only  : ', Model%do_ugwp_v0_nst_only
       print *, ' do_gsl_drag_ls_bl    : ', Model%do_gsl_drag_ls_bl
       print *, ' do_gsl_drag_ss       : ', Model%do_gsl_drag_ss
       print *, ' do_gsl_drag_tofd     : ', Model%do_gsl_drag_tofd
