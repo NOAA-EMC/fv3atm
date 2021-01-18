@@ -2622,14 +2622,14 @@ end subroutine atmos_data_type_chksum
     endif
 
    ! oceanfrac used by atm to calculate fluxes
-    idx = queryfieldlist(exportFieldsList,'oceanfrac_in_atm')
+    idx = queryfieldlist(exportFieldsList,'openwater_frac_in_atm')
     if (idx > 0 ) then
 !$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = one - IPD_Data(nb)%Sfcprop%fice(ix)*IPD_Data(nb)%Sfcprop%oceanfrac(ix)
+          exportData(i,j,idx) = (one - GFS_Data(nb)%Sfcprop%fice(ix))*GFS_Data(nb)%Sfcprop%oceanfrac(ix)
         enddo
       enddo
     endif

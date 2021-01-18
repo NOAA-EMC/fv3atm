@@ -87,7 +87,7 @@ module module_cplfields
        "inst_pres_height_lowest                  ", &
        "inst_height_lowest                       ", &
        "mean_fprec_rate                          ", &
-       "oceanfrac_in_atm                         "  &
+       "openwater_frac_in_atm                    "  &
 !      "northward_wind_neutral                   ", &
 !      "eastward_wind_neutral                    ", &
 !      "upward_wind_neutral                      ", &
