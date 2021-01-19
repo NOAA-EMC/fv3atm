@@ -29,6 +29,8 @@ module stochastic_physics_wrapper_mod
   real(kind=kind_phys), dimension(:,:), allocatable, save :: facwf
   !emissivity
   real(kind=kind_phys), dimension(:,:), allocatable, save :: semis
+  !roughness length for land
+  real(kind=kind_phys), dimension(:,:), allocatable, save :: zorll
 
   real(kind=kind_phys), dimension(:,:), allocatable, save :: stype
 
@@ -138,6 +140,7 @@ module stochastic_physics_wrapper_mod
           allocate(facsf(1:Atm_block%nblks,maxval(GFS_Control%blksz)))
           allocate(facwf(1:Atm_block%nblks,maxval(GFS_Control%blksz)))
           allocate(semis(1:Atm_block%nblks,maxval(GFS_Control%blksz)))
+          allocate(zorll(1:Atm_block%nblks,maxval(GFS_Control%blksz)))
       endif
 
       do nb=1,Atm_block%nblks
@@ -205,6 +208,7 @@ module stochastic_physics_wrapper_mod
                 facsf(nb,1:GFS_Control%blksz(nb))  = GFS_Data(nb)%Sfcprop%facsf(:)
                 facwf(nb,1:GFS_Control%blksz(nb))  = GFS_Data(nb)%Sfcprop%facwf(:)
                 semis(nb,1:GFS_Control%blksz(nb))  = GFS_Data(nb)%Radtend%semis(:)
+                zorll(nb,1:GFS_Control%blksz(nb))  = GFS_Data(nb)%Sfcprop%zorll(:)
              end do
 
              if (GFS_Control%lsm == GFS_Control%lsm_noah) then
@@ -234,7 +238,7 @@ module stochastic_physics_wrapper_mod
                                GFS_Control%dtf, GFS_Control%kdt, GFS_Control%lndp_each_step,                                  &
                                GFS_Control%n_var_lndp, GFS_Control%lndp_var_list, GFS_Control%lndp_prt_list,                  &
                                sfc_wts, xlon, xlat, stype, GFS_Control%pores, GFS_Control%resid,param_update_flag,            &
-                               smc, slc, stc, vfrac, alvsf, alnsf, alvwf, alnwf, facsf, facwf, snoalb, semis, ierr)
+                               smc, slc, stc, vfrac, alvsf, alnsf, alvwf, alnwf, facsf, facwf, snoalb, semis, zorll, ierr)
              if (ierr/=0)  then
                     write(6,*) 'call to GFS_apply_lndp failed'
                     return
@@ -250,6 +254,7 @@ module stochastic_physics_wrapper_mod
                GFS_Data(nb)%Sfcprop%facsf(:)  = facsf(nb,1:GFS_Control%blksz(nb))
                GFS_Data(nb)%Sfcprop%facwf(:)  = facwf(nb,1:GFS_Control%blksz(nb))
                GFS_Data(nb)%Radtend%semis(:)  = semis(nb,1:GFS_Control%blksz(nb))
+               GFS_Data(nb)%Sfcprop%zorll(:)  = zorll(nb,1:GFS_Control%blksz(nb))
              enddo
 
              if (GFS_Control%lsm == GFS_Control%lsm_noah) then
@@ -400,6 +405,7 @@ module stochastic_physics_wrapper_mod
           if (allocated(facsf)) deallocate(facsf)
           if (allocated(facwf)) deallocate(facwf)
           if (allocated(semis)) deallocate(semis)
+          if (allocated(zorll)) deallocate(zorll)
       endif
       call finalize_stochastic_physics()
    endif
