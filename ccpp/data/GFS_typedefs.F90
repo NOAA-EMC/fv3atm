@@ -182,7 +182,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: smc (:,:)   => null()  !< soil moisture content
     real (kind=kind_phys), pointer :: stc (:,:)   => null()  !< soil temperature content
     real (kind=kind_phys), pointer :: slc (:,:)   => null()  !< soil liquid water content
- 
+
     contains
       procedure :: create  => statein_create  !<   allocate array data
   end type GFS_statein_type
@@ -439,7 +439,7 @@ module GFS_typedefs
 !--- outgoing accumulated quantities
     real (kind=kind_phys), pointer :: rain_cpl  (:)  => null()   !< total rain precipitation
     real (kind=kind_phys), pointer :: rainc_cpl (:)  => null()   !< convective rain precipitation
-    real (kind=kind_phys), pointer :: snow_cpl  (:)  => null()   !< total snow precipitation  
+    real (kind=kind_phys), pointer :: snow_cpl  (:)  => null()   !< total snow precipitation
     real (kind=kind_phys), pointer :: dusfc_cpl (:)  => null()   !< sfc u momentum flux
     real (kind=kind_phys), pointer :: dvsfc_cpl (:)  => null()   !< sfc v momentum flux
     real (kind=kind_phys), pointer :: dtsfc_cpl (:)  => null()   !< sfc sensible heat flux
@@ -488,7 +488,7 @@ module GFS_typedefs
     !--- cellular automata
     real (kind=kind_phys), pointer :: ca1      (:)   => null() !
     real (kind=kind_phys), pointer :: ca2      (:)   => null() !
-    real (kind=kind_phys), pointer :: ca3      (:)   => null() !  
+    real (kind=kind_phys), pointer :: ca3      (:)   => null() !
     real (kind=kind_phys), pointer :: ca_deep  (:)   => null() !
     real (kind=kind_phys), pointer :: ca_turb  (:)   => null() !
     real (kind=kind_phys), pointer :: ca_shal  (:)   => null() !
@@ -636,7 +636,7 @@ module GFS_typedefs
                                             !<           available; use latest; do extrapolation.
                                             !< ictm=yyyy0 => use yyyy data for the forecast time;
                                             !<           no extrapolation.
-                                            !< ictm=yyyy1 = > use yyyy data for the fcst. If needed, 
+                                            !< ictm=yyyy1 = > use yyyy data for the fcst. If needed,
                                             !<           do extrapolation to match the fcst time.
                                             !< ictm=-1 => use user provided external data for
                                             !<           the fcst time; no extrapolation.
@@ -651,9 +651,9 @@ module GFS_typedefs
                                             !< =0 => Use constant decorrelation length, decorr_con
                                             !< =1 => Use spatially varying decorrelation length (Hogan et al. 2010)
                                             !< =2 => Use spatially and temporally varyint decorrelation length (Oreopoulos et al. 2012)
-    real(kind_phys)      :: dcorr_con       !< Decorrelation length constant (km) (if idcor = 0) 
+    real(kind_phys)      :: dcorr_con       !< Decorrelation length constant (km) (if idcor = 0)
     logical              :: crick_proof     !< CRICK-Proof cloud water
-    logical              :: ccnorm          !< Cloud condensate normalized by cloud cover 
+    logical              :: ccnorm          !< Cloud condensate normalized by cloud cover
     logical              :: norad_precip    !< radiation precip flag for Ferrier/Moorthi
     logical              :: lwhtr           !< flag to output lw heating rate (Radtend%lwhc)
     logical              :: swhtr           !< flag to output sw heating rate (Radtend%swhc)
@@ -711,7 +711,7 @@ module GFS_typedefs
     integer              :: fprcp              !< no prognostic rain and snow (MG)
     integer              :: pdfflag            !< pdf flag for MG macrophysics
     real(kind=kind_phys) :: mg_dcs             !< Morrison-Gettelman microphysics parameters
-    real(kind=kind_phys) :: mg_qcvar      
+    real(kind=kind_phys) :: mg_qcvar
     real(kind=kind_phys) :: mg_ts_auto_ice(2)  !< ice auto conversion time scale
     real(kind=kind_phys) :: mg_rhmini          !< relative humidity threshold parameter for nucleating ice
 
@@ -811,7 +811,7 @@ module GFS_typedefs
     logical              :: pert_cd         !< flag for perturbing the surface drag coefficient for momentum in surface layer scheme (1 = True)
     integer              :: ntsflg          !< flag for updating skin temperature in the GFDL surface layer scheme
     real(kind=kind_phys) :: sfenth          !< enthalpy flux factor 0 zot via charnock ..>0 zot enhanced>15m/s
-    
+
 !--- flake model parameters
     integer              :: lkm             !< flag for flake model
 
@@ -998,7 +998,7 @@ module GFS_typedefs
                                             !< nstf_name(5) : zsea2 in mm
 !--- fractional grid
     logical              :: frac_grid       !< flag for fractional grid
-    logical              :: ignore_lake     !< flag for ignoring lakes 
+    logical              :: ignore_lake     !< flag for ignoring lakes
     real(kind=kind_phys) :: min_lakeice     !< minimum lake ice value
     real(kind=kind_phys) :: min_seaice      !< minimum sea  ice value
     real(kind=kind_phys) :: min_lake_height !< minimum lake height value
@@ -1035,7 +1035,7 @@ module GFS_typedefs
     integer              :: ncells_g        !< cellular automata finer grid  
     real(kind=kind_phys) :: nfracseed       !< cellular automata seed probability 
     integer              :: nseed           !< cellular automata seed frequency
-    integer              :: nseed_g         !< cellular automata seed frequency    
+    integer              :: nseed_g         !< cellular automata seed frequency
     logical              :: do_ca           !< cellular automata main switch
     logical              :: ca_sgs          !< switch for sgs ca
     logical              :: ca_global       !< switch for global ca
@@ -1058,10 +1058,10 @@ module GFS_typedefs
     integer              :: lndp_type
     integer              :: n_var_lndp
     character(len=3)     :: lndp_var_list(6)  ! dimension here must match  n_var_max_lndp in  stochy_nml_def
-    real(kind=kind_phys) :: lndp_prt_list(6)  ! dimension here must match  n_var_max_lndp in  stochy_nml_def 
-                                              ! also previous code had dimension 5 for each pert, to allow 
-                                              ! multiple patterns. It wasn't fully coded (and wouldn't have worked 
-                                              ! with nlndp>1, so I just dropped it). If we want to code it properly, 
+    real(kind=kind_phys) :: lndp_prt_list(6)  ! dimension here must match  n_var_max_lndp in  stochy_nml_def
+                                              ! also previous code had dimension 5 for each pert, to allow
+                                              ! multiple patterns. It wasn't fully coded (and wouldn't have worked
+                                              ! with nlndp>1, so I just dropped it). If we want to code it properly,
                                               ! we'd need to make this dim(6,5).
 !--- tracer handling
     character(len=32), pointer :: tracer_names(:) !< array of initialized tracers from dynamic core
@@ -2131,7 +2131,7 @@ module GFS_typedefs
 !------------------------
 ! GFS_statein_type%create
 !------------------------
-  subroutine statein_create (Statein, IM, Model) 
+  subroutine statein_create (Statein, IM, Model)
     implicit none
 
     class(GFS_statein_type)             :: Statein
@@ -2476,7 +2476,7 @@ module GFS_typedefs
     Sfcprop%tsnoxy     = clear_val
     Sfcprop%smoiseq    = clear_val
     Sfcprop%zsnsoxy    = clear_val
-    
+
     allocate(Sfcprop%draincprv  (IM))
     allocate(Sfcprop%drainncprv (IM))
     allocate(Sfcprop%diceprv    (IM))
@@ -2488,7 +2488,7 @@ module GFS_typedefs
     Sfcprop%diceprv     = clear_val
     Sfcprop%dsnowprv    = clear_val
     Sfcprop%dgraupelprv = clear_val
-    
+
    endif
 
     ! HWRF NOAH LSM allocate and init when used
@@ -2497,7 +2497,7 @@ module GFS_typedefs
       allocate(Sfcprop%snotime(IM))
       Sfcprop%snotime = clear_val
     end if
-    
+
     if (Model%do_myjsfc.or.Model%do_myjpbl.or.(Model%lsm == Model%lsm_noah_wrfv4)) then
       allocate(Sfcprop%z0base(IM))
       Sfcprop%z0base = clear_val
@@ -2770,7 +2770,7 @@ module GFS_typedefs
       Coupling%ca_turb   = clear_val
       Coupling%ca_shal   = clear_val
       Coupling%ca_rad    = clear_val
-      Coupling%ca_micro  = clear_val   
+      Coupling%ca_micro  = clear_val
       Coupling%condition = clear_val
     endif
 
@@ -2960,7 +2960,7 @@ module GFS_typedefs
                                                              !< =2 => Use spatially and temporally varyint decorrelation length (Oreopoulos et al. 2012)
     real(kind_phys)      :: dcorr_con         = 2.5          !< Decorrelation length constant (km) (if idcor = 0)
     logical              :: crick_proof       = .false.      !< CRICK-Proof cloud water
-    logical              :: ccnorm            = .false.      !< Cloud condensate normalized by cloud cover 
+    logical              :: ccnorm            = .false.      !< Cloud condensate normalized by cloud cover
     logical              :: norad_precip      = .false.      !< radiation precip flag for Ferrier/Moorthi
     logical              :: lwhtr             = .true.       !< flag to output lw heating rate (Radtend%lwhc)
     logical              :: swhtr             = .true.       !< flag to output sw heating rate (Radtend%swhc)
@@ -2982,7 +2982,7 @@ module GFS_typedefs
     logical              :: doGP_cldoptics_LUT  = .false.    !< Use RRTMGP cloud-optics: LUTs?
     integer              :: rrtmgp_nrghice      = 0          !< Number of ice-roughness categories
     integer              :: rrtmgp_nGauss_ang   = 1          !< Number of angles used in Gaussian quadrature
-    logical              :: do_GPsw_Glw         = .false.     
+    logical              :: do_GPsw_Glw         = .false.
     logical              :: use_LW_jacobian     = .false.    !< Use Jacobian of LW to update LW radiation tendencies.
     logical              :: doGP_lwscat         = .false.    !< If true, include scattering in longwave cloud-optics, only compatible w/ GP cloud-optics
 !--- Z-C microphysical parameters
@@ -3333,8 +3333,8 @@ module GFS_typedefs
     logical :: do_shum      = .false.
     logical :: do_skeb      = .false.
     integer :: skeb_npass   = 11
-    integer :: lndp_type    = 0 
-    integer :: n_var_lndp   =  0 
+    integer :: lndp_type    = 0
+    integer :: n_var_lndp   = 0
 
 !--- aerosol scavenging factors
     character(len=20) :: fscav_aero(20) = 'default'
@@ -3433,7 +3433,7 @@ module GFS_typedefs
                                nca, ncells, nlives, nca_g, ncells_g, nlives_g, nfracseed,   &
                                nseed, nseed_g, nthresh, do_ca,                              &
                                ca_sgs, ca_global,iseed_ca,ca_smooth,                        &
-                               nspinup,ca_amplitude,nsmooth,ca_closure,ca_entr,ca_trigger,  & 
+                               nspinup,ca_amplitude,nsmooth,ca_closure,ca_entr,ca_trigger,  &
                           !--- IAU
                                iau_delthrs,iaufhrs,iau_inc_files,iau_filter_increments,     &
                                iau_drymassfixer,                                            &
@@ -3445,7 +3445,7 @@ module GFS_typedefs
                           !--- aerosol scavenging factors ('name:value' string array)
                                fscav_aero
 
-!--- other parameters 
+!--- other parameters
     integer :: nctp    =  0                !< number of cloud types in CS scheme
     logical :: gen_coord_hybrid = .false.  !< for Henry's gen coord
 
@@ -4554,12 +4554,12 @@ module GFS_typedefs
         stop
       end if
       if (Model%me == Model%master) print *,' Using Thompson double moment microphysics', &
-                                          ' ltaerosol = ',Model%ltaerosol, &
-                                          ' ttendlim =',Model%ttendlim, &
-                                          ' effr_in =',Model%effr_in, &
-                                          ' lradar =',Model%lradar, &
-                                          ' nsradar_reset =',Model%nsradar_reset, &
-                                          ' num_p3d =',Model%num_p3d, &
+                                          ' ltaerosol = ',Model%ltaerosol,                &
+                                          ' ttendlim =',Model%ttendlim,                   &
+                                          ' effr_in =',Model%effr_in,                     &
+                                          ' lradar =',Model%lradar,                       &
+                                          ' nsradar_reset =',Model%nsradar_reset,         &
+                                          ' num_p3d =',Model%num_p3d,                     &
                                           ' num_p2d =',Model%num_p2d
 
     else if (Model%imp_physics == Model%imp_physics_mg) then        ! Morrison-Gettelman Microphysics
@@ -4581,7 +4581,7 @@ module GFS_typedefs
           Model%ncnd = 5
         endif
         Model%num_p3d = 6
-        Model%ngeffr = 6
+        Model%ngeffr  = 6
       endif
       if (Model%me == Model%master)                                                                 &
          print *,' Using Morrison-Gettelman double moment microphysics',                            &
@@ -4602,11 +4602,11 @@ module GFS_typedefs
       Model%npdf3d  = 0
       if(Model%effr_in) then
         Model%num_p3d = 5
-        Model%nleffr = 1
-        Model%nieffr = 2
-        Model%nreffr = 3
-        Model%nseffr = 4
-        Model%ngeffr = 5
+        Model%nleffr  = 1
+        Model%nieffr  = 2
+        Model%nreffr  = 3
+        Model%nseffr  = 4
+        Model%ngeffr  = 5
       else
         Model%num_p3d = 1
         ! Effective radii not used, point to valid index in dummy phy_f3d array
@@ -5353,18 +5353,18 @@ module GFS_typedefs
        allocate (Tbd%phy_myj_a1t    (IM))
        allocate (Tbd%phy_myj_a1q    (IM))
        !print*,"Allocating all MYJ schemes variables:"
-       Tbd%phy_myj_qsfc   = clear_val 
-       Tbd%phy_myj_thz0   = clear_val 
-       Tbd%phy_myj_qz0    = clear_val 
-       Tbd%phy_myj_uz0    = clear_val 
-       Tbd%phy_myj_vz0    = clear_val  
-       Tbd%phy_myj_akhs   = clear_val 
-       Tbd%phy_myj_akms   = clear_val 
-       Tbd%phy_myj_chkqlm = clear_val 
-       Tbd%phy_myj_elflx  = clear_val 
-       Tbd%phy_myj_a1u    = clear_val 
-       Tbd%phy_myj_a1t    = clear_val 
-       Tbd%phy_myj_a1q    = clear_val 
+       Tbd%phy_myj_qsfc   = clear_val
+       Tbd%phy_myj_thz0   = clear_val
+       Tbd%phy_myj_qz0    = clear_val
+       Tbd%phy_myj_uz0    = clear_val
+       Tbd%phy_myj_vz0    = clear_val
+       Tbd%phy_myj_akhs   = clear_val
+       Tbd%phy_myj_akms   = clear_val
+       Tbd%phy_myj_chkqlm = clear_val
+       Tbd%phy_myj_elflx  = clear_val
+       Tbd%phy_myj_a1u    = clear_val
+       Tbd%phy_myj_a1t    = clear_val
+       Tbd%phy_myj_a1q    = clear_val
     end if
 
   end subroutine tbd_create
@@ -5382,7 +5382,7 @@ module GFS_typedefs
     type(GFS_control_type), intent(in) :: Model
 
     allocate (Cldprop%cv  (IM))
-    allocate (Cldprop%cvt (IM)) 
+    allocate (Cldprop%cvt (IM))
     allocate (Cldprop%cvb (IM))
     
     Cldprop%cv  = clear_val
@@ -5396,9 +5396,9 @@ module GFS_typedefs
 ! GFS_radtend_type%create
 !******************************************
   subroutine radtend_create (Radtend, IM, Model)
-                               
+
     implicit none
-       
+
     class(GFS_radtend_type)            :: Radtend
     integer,                intent(in) :: IM
     type(GFS_control_type), intent(in) :: Model
@@ -5415,7 +5415,7 @@ module GFS_typedefs
     Radtend%sfcflw%upfx0 = clear_val
     Radtend%sfcflw%dnfxc = clear_val
     Radtend%sfcflw%dnfx0 = clear_val
-         
+ 
     allocate (Radtend%htrsw  (IM,Model%levs))
     allocate (Radtend%htrlw  (IM,Model%levs))
     allocate (Radtend%sfalb  (IM))
@@ -5429,12 +5429,12 @@ module GFS_typedefs
     Radtend%coszen = clear_val
     Radtend%tsflw  = clear_val
     Radtend%semis  = clear_val
-             
+
 !--- In/Out (???) (radiation only)
     allocate (Radtend%coszdg (IM))
 
     Radtend%coszdg = clear_val
-             
+ 
 !--- In/Out (???) (physics only)
     allocate (Radtend%swhc  (IM,Model%levs))
     allocate (Radtend%lwhc  (IM,Model%levs))
@@ -6374,7 +6374,7 @@ module GFS_typedefs
        allocate (Interstitial%fluxswUP_allsky      (IM, Model%levs+1))
        allocate (Interstitial%fluxswDOWN_allsky    (IM, Model%levs+1))
        allocate (Interstitial%fluxswUP_clrsky      (IM, Model%levs+1))
-       allocate (Interstitial%fluxswDOWN_clrsky    (IM, Model%levs+1))      
+       allocate (Interstitial%fluxswDOWN_clrsky    (IM, Model%levs+1))
        allocate (Interstitial%aerosolslw           (IM, Model%levs, Model%rrtmgp_nBandsLW, NF_AELW))
        allocate (Interstitial%aerosolssw           (IM, Model%levs, Model%rrtmgp_nBandsSW, NF_AESW))
        allocate (Interstitial%cld_frac             (IM, Model%levs))
@@ -6388,7 +6388,7 @@ module GFS_typedefs
        allocate (Interstitial%cld_rerain           (IM, Model%levs))
        allocate (Interstitial%precip_frac          (IM, Model%levs))
        allocate (Interstitial%icseed_lw            (IM))
-       allocate (Interstitial%icseed_sw            (IM))      
+       allocate (Interstitial%icseed_sw            (IM))
        allocate (Interstitial%flxprf_lw            (IM, Model%levs+1))
        allocate (Interstitial%flxprf_sw            (IM, Model%levs+1))
        allocate (Interstitial%sfc_emiss_byband     (Model%rrtmgp_nBandsLW,IM))
@@ -6771,7 +6771,7 @@ module GFS_typedefs
       Interstitial%precip_overlap_param = clear_val
       Interstitial%fluxlwDOWN_allsky    = clear_val
       Interstitial%fluxlwUP_clrsky      = clear_val
-      Interstitial%fluxlwDOWN_clrsky    = clear_val                
+      Interstitial%fluxlwDOWN_clrsky    = clear_val
       Interstitial%fluxswUP_allsky      = clear_val
       Interstitial%fluxswDOWN_allsky    = clear_val
       Interstitial%fluxswUP_clrsky      = clear_val
