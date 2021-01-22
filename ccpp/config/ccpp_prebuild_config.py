@@ -115,6 +115,8 @@ SCHEME_FILES = [
     'ccpp/physics/physics/cires_ugwp_post.F90',
     'ccpp/physics/physics/unified_ugwp.F90',
     'ccpp/physics/physics/unified_ugwp_post.F90',
+    'ccpp/physics/physics/ugwpv1_gsldrag.F90',
+    'ccpp/physics/physics/ugwpv1_gsldrag_post.F90',        
     'ccpp/physics/physics/cnvc90.f',
     'ccpp/physics/physics/cs_conv.F90',
     'ccpp/physics/physics/cs_conv_aw_adj.F90',
