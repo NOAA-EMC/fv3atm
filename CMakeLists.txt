@@ -45,6 +45,7 @@ list(APPEND _fv3dycore_srcs
   atmos_cubed_sphere/model/a2b_edge.F90
   atmos_cubed_sphere/model/multi_gases.F90
   atmos_cubed_sphere/model/boundary.F90
+  atmos_cubed_sphere/model/bounding_box.F90
   atmos_cubed_sphere/model/dyn_core.F90
   atmos_cubed_sphere/model/fv_arrays.F90
   atmos_cubed_sphere/model/fv_control.F90
@@ -52,6 +53,9 @@ list(APPEND _fv3dycore_srcs
   atmos_cubed_sphere/model/fv_fill.F90
   atmos_cubed_sphere/model/fv_grid_utils.F90
   atmos_cubed_sphere/model/fv_mapz.F90
+  atmos_cubed_sphere/model/fv_moving_nest.F90
+  atmos_cubed_sphere/model/fv_moving_nest_logging.F90
+  atmos_cubed_sphere/model/fv_moving_nest_utils.F90
   atmos_cubed_sphere/model/fv_nesting.F90
   atmos_cubed_sphere/model/fv_regional_bc.F90
   atmos_cubed_sphere/model/fv_sg.F90
@@ -97,6 +101,10 @@ list(APPEND _fv3dycore_defs_private SPMD
 
 if(MULTI_GASES)
   list(APPEND _fv3dycore_defs_private MULTI_GASES)
+endif()
+
+if(MOVING_NEST)
+  list(APPEND _fv3dycore_defs_private MOVING_NEST)
 endif()
 
 if(32BIT)
