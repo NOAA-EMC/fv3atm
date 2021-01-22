@@ -79,7 +79,6 @@
       <scheme>mp_thompson_post</scheme>
       <scheme>GFS_MP_generic_post</scheme>
       <scheme>cu_gf_driver_post</scheme>
-      <!-- <scheme>tracer_sanitizer</scheme> -->
       <scheme>maximum_hourly_diagnostics</scheme>
     </subcycle>
   </group>
