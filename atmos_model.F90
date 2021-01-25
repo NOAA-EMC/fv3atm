@@ -81,33 +81,20 @@ use atmosphere_mod,     only: set_atmosphere_pelist
 use atmosphere_mod,     only: Atm, mygrid
 use block_control_mod,  only: block_control_type, define_blocks_packed
 use DYCORE_typedefs,    only: DYCORE_data_type, DYCORE_diag_type
-#ifdef CCPP
-use IPD_typedefs,       only: IPD_init_type, IPD_diag_type,    &
-                              IPD_restart_type, IPD_kind_phys, &
-                              IPD_func0d_proc, IPD_func1d_proc
-#else
-use IPD_typedefs,       only: IPD_init_type, IPD_control_type, &
-                              IPD_data_type, IPD_diag_type,    &
-                              IPD_restart_type, IPD_kind_phys, &
-                              IPD_func0d_proc, IPD_func1d_proc
-#endif
 
-#ifdef CCPP
-use CCPP_data,          only: ccpp_suite,                      &
-                              IPD_control => GFS_control,      &
-                              IPD_data => GFS_data,            &
-                              IPD_interstitial => GFS_interstitial
-use IPD_driver,         only: IPD_initialize, IPD_initialize_rst
+use GFS_typedefs,       only: GFS_init_type, GFS_kind_phys => kind_phys
+use GFS_restart,        only: GFS_restart_type, GFS_restart_populate
+use GFS_diagnostics,    only: GFS_externaldiag_type, &
+                              GFS_externaldiag_populate
+use CCPP_data,          only: ccpp_suite, GFS_control, &
+                              GFS_data, GFS_interstitial
+use GFS_init,           only: GFS_initialize
 use CCPP_driver,        only: CCPP_step, non_uniform_blocks
 
 use stochastic_physics_wrapper_mod, only: stochastic_physics_wrapper,stochastic_physics_wrapper_end
-#else
-use IPD_driver,         only: IPD_initialize, IPD_initialize_rst, IPD_step
-use physics_abstraction_layer, only: time_vary_step, radiation_step1, physics_step1, physics_step2
-#endif
 
 use FV3GFS_io_mod,      only: FV3GFS_restart_read, FV3GFS_restart_write, &
-                              FV3GFS_IPD_checksum,                       &
+                              FV3GFS_GFS_checksum,                       &
                               FV3GFS_diag_register, FV3GFS_diag_output,  &
                               DIAG_SIZE
 use fv_iau_mod,         only: iau_external_data_type,getiauforcing,iau_initialize
@@ -143,9 +130,9 @@ public addLsmask2grid
      real(kind=8),             pointer, dimension(:)     :: ak, bk
      real,                     pointer, dimension(:,:)   :: lon_bnd  => null() ! local longitude axis grid box corners in radians.
      real,                     pointer, dimension(:,:)   :: lat_bnd  => null() ! local latitude axis grid box corners in radians.
-     real(kind=IPD_kind_phys), pointer, dimension(:,:)   :: lon      => null() ! local longitude axis grid box centers in radians.
-     real(kind=IPD_kind_phys), pointer, dimension(:,:)   :: lat      => null() ! local latitude axis grid box centers in radians.
-     real(kind=IPD_kind_phys), pointer, dimension(:,:)   :: dx, dy
+     real(kind=GFS_kind_phys), pointer, dimension(:,:)   :: lon      => null() ! local longitude axis grid box centers in radians.
+     real(kind=GFS_kind_phys), pointer, dimension(:,:)   :: lat      => null() ! local latitude axis grid box centers in radians.
+     real(kind=GFS_kind_phys), pointer, dimension(:,:)   :: dx, dy
      real(kind=8),             pointer, dimension(:,:)   :: area
      real(kind=8),             pointer, dimension(:,:,:) :: layer_hgt, level_hgt
      type(domain2d)                :: domain             ! domain decomposition
@@ -153,7 +140,7 @@ public addLsmask2grid
      type(time_type)               :: Time_step          ! atmospheric time step.
      type(time_type)               :: Time_init          ! reference time.
      type(grid_box_type)           :: grid               ! hold grid information needed for 2nd order conservative flux exchange
-     type(IPD_diag_type), pointer, dimension(:) :: Diag
+     type(GFS_externaldiag_type), pointer, dimension(:) :: Diag
  end type atmos_data_type
                                                          ! to calculate gradient on cubic sphere grid.
 !</PUBLICTYPE >
@@ -170,11 +157,7 @@ logical :: sync         = .false.
 integer, parameter     :: maxhr = 4096
 real, dimension(maxhr) :: fdiag = 0.
 real                   :: fhmax=384.0, fhmaxhf=120.0, fhout=3.0, fhouthf=1.0,avg_max_length=3600.
-#ifdef CCPP
 namelist /atmos_model_nml/ blocksize, chksum_debug, dycore_only, debug, sync, fdiag, fhmax, fhmaxhf, fhout, fhouthf, ccpp_suite, avg_max_length
-#else
-namelist /atmos_model_nml/ blocksize, chksum_debug, dycore_only, debug, sync, fdiag, fhmax, fhmaxhf, fhout, fhouthf, avg_max_length
-#endif
 
 type (time_type) :: diag_time, diag_time_fhzero
 
@@ -186,18 +169,10 @@ type(DYCORE_data_type),    allocatable :: DYCORE_Data(:)  ! number of blocks
 type(DYCORE_diag_type)                 :: DYCORE_Diag(25)
 
 !----------------
-!  IPD containers
+!  GFS containers
 !----------------
-#ifndef CCPP
-type(IPD_control_type)              :: IPD_Control
-type(IPD_data_type),    allocatable :: IPD_Data(:)  ! number of blocks
-type(IPD_diag_type),    target      :: IPD_Diag(DIAG_SIZE)
-type(IPD_restart_type)              :: IPD_Restart
-#else
-! IPD_Control and IPD_Data are coming from CCPP_data
-type(IPD_diag_type),    target      :: IPD_Diag(DIAG_SIZE)
-type(IPD_restart_type)              :: IPD_Restart
-#endif
+type(GFS_externaldiag_type), target :: GFS_Diag(DIAG_SIZE)
+type(GFS_restart_type)              :: GFS_restart_var
 
 !--------------
 ! IAU container
@@ -220,10 +195,10 @@ character(len=128) :: tagname = '$Name$'
   logical,parameter :: flip_vc = .true.
 #endif
 
-  real(kind=IPD_kind_phys), parameter :: zero    = 0.0_IPD_kind_phys,     &
-                                         one     = 1.0_IPD_kind_phys,     &
-                                         epsln   = 1.0e-10_IPD_kind_phys, &
-                                         zorlmin = 1.0e-7_IPD_kind_phys
+  real(kind=GFS_kind_phys), parameter :: zero    = 0.0_GFS_kind_phys,     &
+                                         one     = 1.0_GFS_kind_phys,     &
+                                         epsln   = 1.0e-10_GFS_kind_phys, &
+                                         zorlmin = 1.0e-7_GFS_kind_phys
 
 contains
 
@@ -253,63 +228,51 @@ subroutine update_atmos_radiation_physics (Atmos)
 !-----------------------------------------------------------------------
   type (atmos_data_type), intent(in) :: Atmos
 !--- local variables---
-    integer :: nb, jdat(8), rc
-
-    procedure(IPD_func0d_proc), pointer :: Func0d => NULL()
-    procedure(IPD_func1d_proc), pointer :: Func1d => NULL()
-    !
-#ifdef CCPP
-    integer :: ierr
-#endif
+    integer :: nb, jdat(8), rc, ierr
 
     if (mpp_pe() == mpp_root_pe() .and. debug) write(6,*) "statein driver"
 !--- get atmospheric state from the dynamic core
     call set_atmosphere_pelist()
     call mpp_clock_begin(getClock)
-    if (IPD_control%do_skeb) call atmosphere_diss_est (IPD_control%skeb_npass) !  do smoothing for SKEB
-    call atmos_phys_driver_statein (IPD_data, Atm_block, flip_vc)
+    if (GFS_control%do_skeb) call atmosphere_diss_est (GFS_control%skeb_npass) !  do smoothing for SKEB
+    call atmos_phys_driver_statein (GFS_data, Atm_block, flip_vc)
     call mpp_clock_end(getClock)
 
 !--- if dycore only run, set up the dummy physics output state as the input state
     if (dycore_only) then
       do nb = 1,Atm_block%nblks
-        IPD_Data(nb)%Stateout%gu0 = IPD_Data(nb)%Statein%ugrs
-        IPD_Data(nb)%Stateout%gv0 = IPD_Data(nb)%Statein%vgrs
-        IPD_Data(nb)%Stateout%gt0 = IPD_Data(nb)%Statein%tgrs
-        IPD_Data(nb)%Stateout%gq0 = IPD_Data(nb)%Statein%qgrs
+        GFS_data(nb)%Stateout%gu0 = GFS_data(nb)%Statein%ugrs
+        GFS_data(nb)%Stateout%gv0 = GFS_data(nb)%Statein%vgrs
+        GFS_data(nb)%Stateout%gt0 = GFS_data(nb)%Statein%tgrs
+        GFS_data(nb)%Stateout%gq0 = GFS_data(nb)%Statein%qgrs
       enddo
     else
       if (mpp_pe() == mpp_root_pe() .and. debug) write(6,*) "setup step"
 
-!--- update IPD_Control%jdat(8)
+!--- update GFS_control%jdat(8)
       jdat(:) = 0
       call get_date (Atmos%Time, jdat(1), jdat(2), jdat(3),  &
                                  jdat(5), jdat(6), jdat(7))
-      IPD_Control%jdat(:) = jdat(:)
+      GFS_control%jdat(:) = jdat(:)
 
 !--- execute the IPD atmospheric setup step
       call mpp_clock_begin(setupClock)
-#ifdef CCPP
       call CCPP_step (step="timestep_init", nblks=Atm_block%nblks, ierr=ierr)
       if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP timestep_init step failed')
 
 !--- call stochastic physics pattern generation / cellular automata
-      call stochastic_physics_wrapper(IPD_Control, IPD_Data, Atm_block, ierr)
+      call stochastic_physics_wrapper(GFS_control, GFS_data, Atm_block, ierr)
       if (ierr/=0)  call mpp_error(FATAL, 'Call to stochastic_physics_wrapper failed')
-#else
-      Func1d => time_vary_step
-      call IPD_step (IPD_Control, IPD_Data(:), IPD_Diag, IPD_Restart, IPD_func1d=Func1d)
-#endif
 
 !--- if coupled, assign coupled fields
 
-      if( IPD_Control%cplflx .or. IPD_Control%cplwav ) then
+      if( GFS_control%cplflx .or. GFS_control%cplwav ) then
 
 !       if (mpp_pe() == mpp_root_pe() .and. debug) then
 !          print *,'in atmos_model,nblks=',Atm_block%nblks
-!         print *,'in atmos_model,IPD_Data size=',size(IPD_Data)
-!         print *,'in atmos_model,tsfc(1)=',IPD_Data(1)%sfcprop%tsfc(1)
-!         print *,'in atmos_model, tsfc size=',size(IPD_Data(1)%sfcprop%tsfc)
+!         print *,'in atmos_model,GFS_data size=',size(GFS_data)
+!         print *,'in atmos_model,tsfc(1)=',GFS_data(1)%sfcprop%tsfc(1)
+!         print *,'in atmos_model, tsfc size=',size(GFS_data(1)%sfcprop%tsfc)
 !       endif
 
         call assign_importdata(rc)
@@ -319,21 +282,21 @@ subroutine update_atmos_radiation_physics (Atmos)
       ! Calculate total non-physics tendencies by substracting old IPD Stateout
       ! variables from new/updated IPD Statein variables (gives the tendencies
       ! due to anything else than physics)
-      if (IPD_Control%ldiag3d) then
+      if (GFS_control%ldiag3d) then
         do nb = 1,Atm_block%nblks
-          IPD_Data(nb)%Intdiag%du3dt(:,:,8)  = IPD_Data(nb)%Intdiag%du3dt(:,:,8)  &
-                                              + (IPD_Data(nb)%Statein%ugrs - IPD_Data(nb)%Stateout%gu0)
-          IPD_Data(nb)%Intdiag%dv3dt(:,:,8)  = IPD_Data(nb)%Intdiag%dv3dt(:,:,8)  &
-                                              + (IPD_Data(nb)%Statein%vgrs - IPD_Data(nb)%Stateout%gv0)
-          IPD_Data(nb)%Intdiag%dt3dt(:,:,11) = IPD_Data(nb)%Intdiag%dt3dt(:,:,11) &
-                                              + (IPD_Data(nb)%Statein%tgrs - IPD_Data(nb)%Stateout%gt0)
+          GFS_data(nb)%Intdiag%du3dt(:,:,8)  = GFS_data(nb)%Intdiag%du3dt(:,:,8)  &
+                                              + (GFS_data(nb)%Statein%ugrs - GFS_data(nb)%Stateout%gu0)
+          GFS_data(nb)%Intdiag%dv3dt(:,:,8)  = GFS_data(nb)%Intdiag%dv3dt(:,:,8)  &
+                                              + (GFS_data(nb)%Statein%vgrs - GFS_data(nb)%Stateout%gv0)
+          GFS_data(nb)%Intdiag%dt3dt(:,:,11) = GFS_data(nb)%Intdiag%dt3dt(:,:,11) &
+                                              + (GFS_data(nb)%Statein%tgrs - GFS_data(nb)%Stateout%gt0)
         enddo
-        if (IPD_Control%qdiag3d) then
+        if (GFS_control%qdiag3d) then
           do nb = 1,Atm_block%nblks
-            IPD_Data(nb)%Intdiag%dq3dt(:,:,12) = IPD_Data(nb)%Intdiag%dq3dt(:,:,12) &
-                  + (IPD_Data(nb)%Statein%qgrs(:,:,IPD_Control%ntqv) - IPD_Data(nb)%Stateout%gq0(:,:,IPD_Control%ntqv))
-            IPD_Data(nb)%Intdiag%dq3dt(:,:,13) = IPD_Data(nb)%Intdiag%dq3dt(:,:,13) &
-                  + (IPD_Data(nb)%Statein%qgrs(:,:,IPD_Control%ntoz) - IPD_Data(nb)%Stateout%gq0(:,:,IPD_Control%ntoz))
+            GFS_data(nb)%Intdiag%dq3dt(:,:,12) = GFS_data(nb)%Intdiag%dq3dt(:,:,12) &
+                  + (GFS_data(nb)%Statein%qgrs(:,:,GFS_control%ntqv) - GFS_data(nb)%Stateout%gq0(:,:,GFS_control%ntqv))
+            GFS_data(nb)%Intdiag%dq3dt(:,:,13) = GFS_data(nb)%Intdiag%dq3dt(:,:,13) &
+                  + (GFS_data(nb)%Statein%qgrs(:,:,GFS_control%ntoz) - GFS_data(nb)%Stateout%gq0(:,:,GFS_control%ntoz))
           enddo
         endif
       endif
@@ -345,27 +308,16 @@ subroutine update_atmos_radiation_physics (Atmos)
 !--- execute the IPD atmospheric radiation subcomponent (RRTM)
 
       call mpp_clock_begin(radClock)
-#ifdef CCPP
       ! Performance improvement. Only enter if it is time to call the radiation physics.
-      if (IPD_Control%lsswr .or. IPD_Control%lslwr) then
+      if (GFS_control%lsswr .or. GFS_control%lslwr) then
         call CCPP_step (step="radiation", nblks=Atm_block%nblks, ierr=ierr)
         if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP radiation step failed')
       endif
-#else
-      Func0d => radiation_step1
-!$OMP parallel do default (none)       &
-!$OMP            schedule (dynamic,1), &
-!$OMP            shared   (Atm_block, IPD_Control, IPD_Data, IPD_Diag, IPD_Restart, Func0d) &
-!$OMP            private  (nb)
-      do nb = 1,Atm_block%nblks
-        call IPD_step (IPD_Control, IPD_Data(nb:nb), IPD_Diag, IPD_Restart, IPD_func0d=Func0d)
-      enddo
-#endif
       call mpp_clock_end(radClock)
 
       if (chksum_debug) then
-        if (mpp_pe() == mpp_root_pe()) print *,'RADIATION STEP  ', IPD_Control%kdt, IPD_Control%fhour
-        call FV3GFS_IPD_checksum(IPD_Control, IPD_Data, Atm_block)
+        if (mpp_pe() == mpp_root_pe()) print *,'RADIATION STEP  ', GFS_control%kdt, GFS_control%fhour
+        call FV3GFS_GFS_checksum(GFS_control, GFS_data, Atm_block)
       endif
 
       if (mpp_pe() == mpp_root_pe() .and. debug) write(6,*) "physics driver"
@@ -373,24 +325,13 @@ subroutine update_atmos_radiation_physics (Atmos)
 !--- execute the IPD atmospheric physics step1 subcomponent (main physics driver)
 
       call mpp_clock_begin(physClock)
-#ifdef CCPP
       call CCPP_step (step="physics", nblks=Atm_block%nblks, ierr=ierr)
       if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP physics step failed')
-#else
-      Func0d => physics_step1
-!$OMP parallel do default (none) &
-!$OMP            schedule (dynamic,1), &
-!$OMP            shared   (Atm_block, IPD_Control, IPD_Data, IPD_Diag, IPD_Restart, Func0d) &
-!$OMP            private  (nb)
-      do nb = 1,Atm_block%nblks
-        call IPD_step (IPD_Control, IPD_Data(nb:nb), IPD_Diag, IPD_Restart, IPD_func0d=Func0d)
-      enddo
-#endif
       call mpp_clock_end(physClock)
 
       if (chksum_debug) then
-        if (mpp_pe() == mpp_root_pe()) print *,'PHYSICS STEP1   ', IPD_Control%kdt, IPD_Control%fhour
-        call FV3GFS_IPD_checksum(IPD_Control, IPD_Data, Atm_block)
+        if (mpp_pe() == mpp_root_pe()) print *,'PHYSICS STEP1   ', GFS_control%kdt, GFS_control%fhour
+        call FV3GFS_GFS_checksum(GFS_control, GFS_data, Atm_block)
       endif
 
       if (mpp_pe() == mpp_root_pe() .and. debug) write(6,*) "stochastic physics driver"
@@ -398,42 +339,28 @@ subroutine update_atmos_radiation_physics (Atmos)
 !--- execute the IPD atmospheric physics step2 subcomponent (stochastic physics driver)
 
       call mpp_clock_begin(physClock)
-#ifdef CCPP
       call CCPP_step (step="stochastics", nblks=Atm_block%nblks, ierr=ierr)
       if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP stochastics step failed')
-#else
-      Func0d => physics_step2
-!$OMP parallel do default (none) &
-!$OMP            schedule (dynamic,1), &
-!$OMP            shared   (Atm_block, IPD_Control, IPD_Data, IPD_Diag, IPD_Restart, Func0d) &
-!$OMP            private  (nb)
-      do nb = 1,Atm_block%nblks
-        call IPD_step (IPD_Control, IPD_Data(nb:nb), IPD_Diag, IPD_Restart, IPD_func0d=Func0d)
-      enddo
-#endif
       call mpp_clock_end(physClock)
 
       if (chksum_debug) then
-        if (mpp_pe() == mpp_root_pe()) print *,'PHYSICS STEP2   ', IPD_Control%kdt, IPD_Control%fhour
-        call FV3GFS_IPD_checksum(IPD_Control, IPD_Data, Atm_block)
+        if (mpp_pe() == mpp_root_pe()) print *,'PHYSICS STEP2   ', GFS_control%kdt, GFS_control%fhour
+        call FV3GFS_GFS_checksum(GFS_control, GFS_data, Atm_block)
       endif
-      call getiauforcing(IPD_Control,IAU_data)
+      call getiauforcing(GFS_control,IAU_data)
       if (mpp_pe() == mpp_root_pe() .and. debug) write(6,*) "end of radiation and physics step"
 
-#ifdef CCPP
 !--- execute the IPD atmospheric timestep finalize step
       call mpp_clock_begin(setupClock)
       call CCPP_step (step="timestep_finalize", nblks=Atm_block%nblks, ierr=ierr)
       if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP timestep_finalize step failed')
       call mpp_clock_end(setupClock)
-#endif
 
     endif
 
-#ifdef CCPP
     ! Update flag for first time step of time integration
-    IPD_Control%first_time_step = .false.
-#endif
+    GFS_control%first_time_step = .false.
+
 !-----------------------------------------------------------------------
  end subroutine update_atmos_radiation_physics
 ! </SUBROUTINE>
@@ -451,9 +378,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
 #ifdef _OPENMP
   use omp_lib
 #endif
-#ifdef CCPP
   use fv_mp_mod, only: commglobal
-#endif
   use mpp_mod, only: mpp_npes
 
   type (atmos_data_type), intent(inout) :: Atmos
@@ -466,14 +391,14 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
   integer :: isc, iec, jsc, jec
   integer :: isd, ied, jsd, jed
   integer :: blk, ibs, ibe, jbs, jbe
-  real(kind=IPD_kind_phys) :: dt_phys
+  real(kind=GFS_kind_phys) :: dt_phys
   real, allocatable    :: q(:,:,:,:), p_half(:,:,:)
   character(len=80)    :: control
   character(len=64)    :: filename, filename2, pelist_name
   character(len=132)   :: text
   logical              :: p_hydro, hydro, fexist
   logical, save        :: block_message = .true.
-  type(IPD_init_type)  :: Init_parm
+  type(GFS_init_type)  :: Init_parm
   integer              :: bdat(8), cdat(8)
   integer              :: ntracers, maxhf, maxh
   character(len=32), allocatable, target :: tracer_names(:)
@@ -494,12 +419,6 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
 !-----------------------------------------------------------------------
 ! initialize atmospheric model -----
 
-#ifndef CCPP
-!---------- initialize atmospheric dynamics -------
-   call atmosphere_init (Atmos%Time_init, Atmos%Time, Atmos%Time_step,&
-                         Atmos%grid, Atmos%area)
-#endif
-
    IF ( file_exist('input.nml')) THEN
 #ifdef INTERNAL_FILE_NML
       read(input_nml_file, nml=atmos_model_nml, iostat=io)
@@ -515,12 +434,10 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
 #endif
    endif
 
-#ifdef CCPP
 !---------- initialize atmospheric dynamics after reading the namelist -------
 !---------- (need name of CCPP suite definition file from input.nml) ---------
    call atmosphere_init (Atmos%Time_init, Atmos%Time, Atmos%Time_step,&
                          Atmos%grid, Atmos%area)
-#endif
 
 !-----------------------------------------------------------------------
    call atmosphere_resolution (nlon, nlat, global=.false.)
@@ -544,7 +461,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
                               blocksize, block_message)
 
    allocate(DYCORE_Data(Atm_block%nblks))
-   allocate(IPD_Data(Atm_block%nblks))
+   allocate(GFS_data(Atm_block%nblks))
 
 #ifdef _OPENMP
    nthrds = omp_get_max_threads()
@@ -552,7 +469,6 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    nthrds = 1
 #endif
 
-#ifdef CCPP
    ! This logic deals with non-uniform block sizes for CCPP.
    ! When non-uniform block sizes are used, it is required
    ! that only the last block has a different (smaller)
@@ -564,18 +480,16 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    ! runs over the last, smaller block.
    if (minval(Atm_block%blksz)==maxval(Atm_block%blksz)) then
       non_uniform_blocks = .false.
-      allocate(IPD_Interstitial(nthrds))
+      allocate(GFS_interstitial(nthrds))
    else if (all(minloc(Atm_block%blksz)==(/size(Atm_block%blksz)/))) then
       non_uniform_blocks = .true.
-      allocate(IPD_Interstitial(nthrds+1))
+      allocate(GFS_interstitial(nthrds+1))
    else
       call mpp_error(FATAL, 'For non-uniform blocksizes, only the last element ' // &
                             'in Atm_block%blksz can be different from the others')
    end if
 
-#endif
-
-!--- update IPD_Control%jdat(8)
+!--- update GFS_control%jdat(8)
    bdat(:) = 0
    call get_date (Time_init, bdat(1), bdat(2), bdat(3),  &
                              bdat(5), bdat(6), bdat(7))
@@ -614,10 +528,8 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    Init_parm%xlat            => Atmos%lat
    Init_parm%area            => Atmos%area
    Init_parm%tracer_names    => tracer_names
-#ifdef CCPP
    Init_parm%restart         = Atm(mygrid)%flagstruct%warm_start
    Init_parm%hydrostatic     = Atm(mygrid)%flagstruct%hydrostatic
-#endif
 
 #ifdef INTERNAL_FILE_NML
    Init_parm%input_nml_file  => input_nml_file
@@ -631,24 +543,22 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    endif
 #endif
 
-#ifdef CCPP
-   call IPD_initialize (IPD_Control, IPD_Data, IPD_Diag, IPD_Restart, &
-                        IPD_Interstitial, commglobal, mpp_npes(), Init_parm)
+   call GFS_initialize (GFS_control, GFS_data%Statein, GFS_data%Stateout, GFS_data%Sfcprop,     &
+                        GFS_data%Coupling, GFS_data%Grid, GFS_data%Tbd, GFS_data%Cldprop, GFS_data%Radtend, & 
+                        GFS_data%Intdiag, GFS_interstitial, commglobal, mpp_npes(), Init_parm)
 
-!--- Initialize stochastic physics pattern generation / cellular automata for first time step
-   call stochastic_physics_wrapper(IPD_Control, IPD_Data, Atm_block, ierr)
-   if (ierr/=0)  call mpp_error(FATAL, 'Call to stochastic_physics_wrapper failed')
+   !--- populate/associate the Diag container elements
+   call GFS_externaldiag_populate (GFS_Diag, GFS_Control, GFS_Data%Statein, GFS_Data%Stateout,   &
+                                             GFS_Data%Sfcprop, GFS_Data%Coupling, GFS_Data%Grid, &
+                                             GFS_Data%Tbd, GFS_Data%Cldprop, GFS_Data%Radtend,   &
+                                             GFS_Data%Intdiag, Init_parm)
 
-#else
-   call IPD_initialize (IPD_Control, IPD_Data, IPD_Diag, IPD_Restart, Init_parm)
-#endif
+   Atmos%Diag => GFS_Diag
 
-   Atmos%Diag => IPD_Diag
-
-   Atm(mygrid)%flagstruct%do_skeb = IPD_Control%do_skeb
+   Atm(mygrid)%flagstruct%do_skeb = GFS_control%do_skeb
 
 !  initialize the IAU module
-   call iau_initialize (IPD_Control,IAU_data,Init_parm)
+   call iau_initialize (GFS_control,IAU_data,Init_parm)
 
    Init_parm%blksz           => null()
    Init_parm%ak              => null()
@@ -660,40 +570,40 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    deallocate (tracer_names)
 
    !--- update tracers in FV3 with any initialized during the physics/radiation init phase
-!rab   call atmosphere_tracer_postinit (IPD_Data, Atm_block)
+!rab   call atmosphere_tracer_postinit (GFS_data, Atm_block)
 
    call atmosphere_nggps_diag (Time, init=.true.)
-   call FV3GFS_diag_register (IPD_Diag, Time, Atm_block, IPD_Control, Atmos%lon, Atmos%lat, Atmos%axes)
-   call IPD_initialize_rst (IPD_Control, IPD_Data, IPD_Diag, IPD_Restart, Init_parm)
-#ifdef CCPP
-   call FV3GFS_restart_read (IPD_Data, IPD_Restart, Atm_block, IPD_Control, Atmos%domain, Atm(mygrid)%flagstruct%warm_start)
-#else
-   call FV3GFS_restart_read (IPD_Data, IPD_Restart, Atm_block, IPD_Control, Atmos%domain)
-#endif
+   call FV3GFS_diag_register (GFS_Diag, Time, Atm_block, GFS_control, Atmos%lon, Atmos%lat, Atmos%axes)
+   call GFS_restart_populate (GFS_restart_var, GFS_control, GFS_data%Statein, GFS_data%Stateout, GFS_data%Sfcprop, &
+                              GFS_data%Coupling, GFS_data%Grid, GFS_data%Tbd, GFS_data%Cldprop, GFS_data%Radtend, &
+                              GFS_data%IntDiag, Init_parm, GFS_Diag)
+   call FV3GFS_restart_read (GFS_data, GFS_restart_var, Atm_block, GFS_control, Atmos%domain, Atm(mygrid)%flagstruct%warm_start)
 
-   ! Populate the IPD_Data%Statein container with the prognostic state
+   ! Populate the GFS_data%Statein container with the prognostic state
    ! in Atm_block, which contains the initial conditions/restart data.
-   call atmos_phys_driver_statein (IPD_data, Atm_block, flip_vc)
+   call atmos_phys_driver_statein (GFS_data, Atm_block, flip_vc)
 
    ! When asked to calculate 3-dim. tendencies, set Stateout variables to
    ! Statein variables here in order to capture the first call to dycore
-    if (IPD_Control%ldiag3d) then
+    if (GFS_control%ldiag3d) then
       do nb = 1,Atm_block%nblks
-        IPD_Data(nb)%Stateout%gu0 = IPD_Data(nb)%Statein%ugrs
-        IPD_Data(nb)%Stateout%gv0 = IPD_Data(nb)%Statein%vgrs
-        IPD_Data(nb)%Stateout%gt0 = IPD_Data(nb)%Statein%tgrs
-        IPD_Data(nb)%Stateout%gq0 = IPD_Data(nb)%Statein%qgrs
+        GFS_data(nb)%Stateout%gu0 = GFS_data(nb)%Statein%ugrs
+        GFS_data(nb)%Stateout%gv0 = GFS_data(nb)%Statein%vgrs
+        GFS_data(nb)%Stateout%gt0 = GFS_data(nb)%Statein%tgrs
+        GFS_data(nb)%Stateout%gq0 = GFS_data(nb)%Statein%qgrs
       enddo
     endif
 
-#ifdef CCPP
    ! Initialize the CCPP framework
    call CCPP_step (step="init", nblks=Atm_block%nblks, ierr=ierr)
    if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP init step failed')
    ! Initialize the CCPP physics
    call CCPP_step (step="physics_init", nblks=Atm_block%nblks, ierr=ierr)
    if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP physics_init step failed')
-#endif
+
+!--- Initialize stochastic physics pattern generation / cellular automata for first time step
+   call stochastic_physics_wrapper(GFS_control, GFS_data, Atm_block, ierr)
+   if (ierr/=0)  call mpp_error(FATAL, 'Call to stochastic_physics_wrapper failed')
 
    !--- set the initial diagnostic timestamp
    diag_time = Time
@@ -757,15 +667,14 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    call atmosphere_get_bottom_layer (Atm_block, DYCORE_Data)
 
     !if in coupled mode, set up coupled fields
-    if (IPD_Control%cplflx .or. IPD_Control%cplwav) then
+    if (GFS_control%cplflx .or. GFS_control%cplwav) then
       if (mpp_pe() == mpp_root_pe()) print *,'COUPLING: IPD layer'
       call setup_exportdata(ierr)
     endif
 
-#ifdef CCPP
    ! Set flag for first time step of time integration
-   IPD_Control%first_time_step = .true.
-#endif
+   GFS_control%first_time_step = .true.
+
 !-----------------------------------------------------------------------
 end subroutine atmos_model_init
 ! </SUBROUTINE>
@@ -814,7 +723,7 @@ subroutine atmos_model_exchange_phase_1 (Atmos, rc)
     if (present(rc)) rc = ESMF_SUCCESS
 
     !--- if coupled, exchange coupled fields
-    if( IPD_Control%cplchm ) then
+    if( GFS_control%cplchm ) then
       ! -- export fields to chemistry
       call update_atmos_chemistry('export', rc=localrc)
       if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
@@ -850,7 +759,7 @@ subroutine atmos_model_exchange_phase_2 (Atmos, rc)
     if (present(rc)) rc = ESMF_SUCCESS
 
     !--- if coupled, exchange coupled fields
-    if( IPD_Control%cplchm ) then
+    if( GFS_control%cplchm ) then
       ! -- import fields from chemistry
       call update_atmos_chemistry('import', rc=localrc)
       if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
@@ -870,19 +779,19 @@ subroutine update_atmos_model_state (Atmos)
 !--- local variables
   integer :: isec, seconds, isec_fhzero
   integer :: rc
-  real(kind=IPD_kind_phys) :: time_int, time_intfull
+  real(kind=GFS_kind_phys) :: time_int, time_intfull
 !
     call set_atmosphere_pelist()
     call mpp_clock_begin(fv3Clock)
     call mpp_clock_begin(updClock)
-    call atmosphere_state_update (Atmos%Time, IPD_Data, IAU_Data, Atm_block, flip_vc)
+    call atmosphere_state_update (Atmos%Time, GFS_data, IAU_Data, Atm_block, flip_vc)
     call mpp_clock_end(updClock)
     call mpp_clock_end(fv3Clock)
 
     if (chksum_debug) then
-      if (mpp_pe() == mpp_root_pe()) print *,'UPDATE STATE    ', IPD_Control%kdt, IPD_Control%fhour
-      if (mpp_pe() == mpp_root_pe()) print *,'in UPDATE STATE    ', size(IPD_Data(1)%SfcProp%tsfc),'nblks=',Atm_block%nblks
-      call FV3GFS_IPD_checksum(IPD_Control, IPD_Data, Atm_block)
+      if (mpp_pe() == mpp_root_pe()) print *,'UPDATE STATE    ', GFS_control%kdt, GFS_control%fhour
+      if (mpp_pe() == mpp_root_pe()) print *,'in UPDATE STATE    ', size(GFS_data(1)%SfcProp%tsfc),'nblks=',Atm_block%nblks
+      call FV3GFS_GFS_checksum(GFS_control, GFS_data, Atm_block)
     endif
 
     !--- advance time ---
@@ -891,7 +800,7 @@ subroutine update_atmos_model_state (Atmos)
     call get_time (Atmos%Time - diag_time, isec)
     call get_time (Atmos%Time - Atmos%Time_init, seconds)
     call atmosphere_nggps_diag(Atmos%Time,ltavg=.true.,avg_max_length=avg_max_length)
-    if (ANY(nint(fdiag(:)*3600.0) == seconds) .or. (IPD_Control%kdt == first_kdt) .or. nsout > 0) then
+    if (ANY(nint(fdiag(:)*3600.0) == seconds) .or. (GFS_control%kdt == first_kdt) .or. nsout > 0) then
       if (mpp_pe() == mpp_root_pe()) write(6,*) "---isec,seconds",isec,seconds
       time_int = real(isec)
       if(Atmos%iau_offset > zero) then
@@ -911,13 +820,13 @@ subroutine update_atmos_model_state (Atmos)
       endif
       if (mpp_pe() == mpp_root_pe()) write(6,*) ' gfs diags time since last bucket empty: ',time_int/3600.,'hrs'
       call atmosphere_nggps_diag(Atmos%Time)
-      call FV3GFS_diag_output(Atmos%Time, IPD_DIag, Atm_block, IPD_Control%nx, IPD_Control%ny, &
-                            IPD_Control%levs, 1, 1, 1.0_IPD_kind_phys, time_int, time_intfull,              &
-                            IPD_Control%fhswr, IPD_Control%fhlwr)
-      if (nint(IPD_Control%fhzero) > 0) then
-        if (mod(isec,3600*nint(IPD_Control%fhzero)) == 0) diag_time = Atmos%Time
+      call FV3GFS_diag_output(Atmos%Time, GFS_Diag, Atm_block, GFS_control%nx, GFS_control%ny, &
+                            GFS_control%levs, 1, 1, 1.0_GFS_kind_phys, time_int, time_intfull,              &
+                            GFS_control%fhswr, GFS_control%fhlwr)
+      if (nint(GFS_control%fhzero) > 0) then
+        if (mod(isec,3600*nint(GFS_control%fhzero)) == 0) diag_time = Atmos%Time
       else
-        if (mod(isec,nint(3600*IPD_Control%fhzero)) == 0) diag_time = Atmos%Time
+        if (mod(isec,nint(3600*GFS_control%fhzero)) == 0) diag_time = Atmos%Time
       endif
       call diag_send_complete_instant (Atmos%Time)
     endif
@@ -929,7 +838,7 @@ subroutine update_atmos_model_state (Atmos)
     call atmosphere_get_bottom_layer (Atm_block, DYCORE_Data)
 
     !if in coupled mode, set up coupled fields
-    if (IPD_Control%cplflx .or. IPD_Control%cplwav) then
+    if (GFS_control%cplflx .or. GFS_control%cplwav) then
       call setup_exportdata(rc)
     endif
 
@@ -962,30 +871,25 @@ subroutine update_atmos_model_state (Atmos)
 subroutine atmos_model_end (Atmos)
   type (atmos_data_type), intent(inout) :: Atmos
 !---local variables
-  integer :: idx, seconds
-#ifdef CCPP
-  integer :: ierr
-#endif
+  integer :: idx, seconds, ierr
 
 !-----------------------------------------------------------------------
 !---- termination routine for atmospheric model ----
 
     call atmosphere_end (Atmos % Time, Atmos%grid, restart_endfcst)
 
-    call stochastic_physics_wrapper_end(IPD_Control)
+    call stochastic_physics_wrapper_end(GFS_control)
 
     if(restart_endfcst) then
-      call FV3GFS_restart_write (IPD_Data, IPD_Restart, Atm_block, &
-                                 IPD_Control, Atmos%domain)
+      call FV3GFS_restart_write (GFS_data, GFS_restart_var, Atm_block, &
+                                 GFS_control, Atmos%domain)
     endif
 
-#ifdef CCPP
 !   Fast physics (from dynamics) are finalized in atmosphere_end above;
 !   standard/slow physics (from IPD) are finalized in CCPP_step 'finalize'.
 !   The CCPP framework for all cdata structures is finalized in CCPP_step 'finalize'.
     call CCPP_step (step="finalize", nblks=Atm_block%nblks, ierr=ierr)
     if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP finalize step failed')
-#endif
 
 end subroutine atmos_model_end
 
@@ -1000,8 +904,8 @@ subroutine atmos_model_restart(Atmos, timestamp)
   character(len=*),  intent(in)           :: timestamp
 
     call atmosphere_restart(timestamp)
-    call FV3GFS_restart_write (IPD_Data, IPD_Restart, Atm_block, &
-                               IPD_Control, Atmos%domain, timestamp)
+    call FV3GFS_restart_write (GFS_data, GFS_restart_var, Atm_block, &
+                               GFS_control, Atmos%domain, timestamp)
 
 end subroutine atmos_model_restart
 ! </SUBROUTINE>
@@ -1027,9 +931,9 @@ subroutine get_atmos_model_ungridded_dim(nlev, nsoillev, ntracers,     &
   !--- number of soil levels
   if (present(nsoillev)) then
     nsoillev = 0
-    if (allocated(IPD_Data)) then
-      if (associated(IPD_Data(1)%Sfcprop%slc)) &
-        nsoillev = size(IPD_Data(1)%Sfcprop%slc, dim=2)
+    if (allocated(GFS_data)) then
+      if (associated(GFS_data(1)%Sfcprop%slc)) &
+        nsoillev = size(GFS_data(1)%Sfcprop%slc, dim=2)
     end if
   end if
 
@@ -1039,17 +943,17 @@ subroutine get_atmos_model_ungridded_dim(nlev, nsoillev, ntracers,     &
   !--- number of tracers used in chemistry diagnostic output
   if (present(num_diag_down_flux)) then
     num_diag_down_flux = 0
-    if (associated(IPD_Data(1)%IntDiag%sedim)) &
-      num_diag_down_flux = size(IPD_Data(1)%IntDiag%sedim, dim=2)
+    if (associated(GFS_data(1)%IntDiag%sedim)) &
+      num_diag_down_flux = size(GFS_data(1)%IntDiag%sedim, dim=2)
     if (present(num_diag_type_down_flux)) then
       num_diag_type_down_flux = 0
-      if (associated(IPD_Data(1)%IntDiag%sedim))  &
+      if (associated(GFS_data(1)%IntDiag%sedim))  &
         num_diag_type_down_flux = num_diag_type_down_flux + 1
-      if (associated(IPD_Data(1)%IntDiag%drydep)) &
+      if (associated(GFS_data(1)%IntDiag%drydep)) &
         num_diag_type_down_flux = num_diag_type_down_flux + 1
-      if (associated(IPD_Data(1)%IntDiag%wetdpl)) &
+      if (associated(GFS_data(1)%IntDiag%wetdpl)) &
         num_diag_type_down_flux = num_diag_type_down_flux + 1
-      if (associated(IPD_Data(1)%IntDiag%wetdpc)) &
+      if (associated(GFS_data(1)%IntDiag%wetdpc)) &
         num_diag_type_down_flux = num_diag_type_down_flux + 1
     end if
   end if
@@ -1057,25 +961,25 @@ subroutine get_atmos_model_ungridded_dim(nlev, nsoillev, ntracers,     &
   !--- number of bins for chemistry diagnostic output
   if (present(num_diag_sfc_emis_flux)) then
     num_diag_sfc_emis_flux = 0
-    if (associated(IPD_Data(1)%IntDiag%duem)) &
-      num_diag_sfc_emis_flux = size(IPD_Data(1)%IntDiag%duem, dim=2)
-    if (associated(IPD_Data(1)%IntDiag%ssem)) &
+    if (associated(GFS_data(1)%IntDiag%duem)) &
+      num_diag_sfc_emis_flux = size(GFS_data(1)%IntDiag%duem, dim=2)
+    if (associated(GFS_data(1)%IntDiag%ssem)) &
       num_diag_sfc_emis_flux = &
-        num_diag_sfc_emis_flux + size(IPD_Data(1)%IntDiag%ssem, dim=2)
+        num_diag_sfc_emis_flux + size(GFS_data(1)%IntDiag%ssem, dim=2)
   end if
 
   !--- number of tracers used in emission diagnostic output
   if (present(num_diag_burn_emis_flux)) then
     num_diag_burn_emis_flux = 0
-    if (associated(IPD_Data(1)%IntDiag%abem)) &
-      num_diag_burn_emis_flux = size(IPD_Data(1)%IntDiag%abem, dim=2)
+    if (associated(GFS_data(1)%IntDiag%abem)) &
+      num_diag_burn_emis_flux = size(GFS_data(1)%IntDiag%abem, dim=2)
   end if
 
   !--- number of tracers used in column mass density diagnostics
   if (present(num_diag_cmass)) then
     num_diag_cmass = 0
-    if (associated(IPD_Data(1)%IntDiag%aecm)) &
-      num_diag_cmass = size(IPD_Data(1)%IntDiag%aecm, dim=2)
+    if (associated(GFS_data(1)%IntDiag%aecm)) &
+      num_diag_cmass = size(GFS_data(1)%IntDiag%aecm, dim=2)
   end if
 
 end subroutine get_atmos_model_ungridded_dim
@@ -1095,7 +999,7 @@ end subroutine get_atmos_model_ungridded_dim
 !  tracers must match their order in the chemistry component.
 !
 !  Requires:
-!         IPD_Data
+!         GFS_data
 !         Atm_block
 ! </DESCRIPTION>
 subroutine update_atmos_chemistry(state, rc)
@@ -1163,17 +1067,17 @@ subroutine update_atmos_chemistry(state, rc)
       nte = nt
 
       !--- if chemical tracers are present, set bounds appropriately
-      if (IPD_Control%ntchm > 0) then
-        if (IPD_Control%ntchs /= NO_TRACER) then
-          ntb = IPD_Control%ntchs
-          nte = IPD_Control%ntchm + ntb - 1
+      if (GFS_control%ntchm > 0) then
+        if (GFS_control%ntchs /= NO_TRACER) then
+          ntb = GFS_control%ntchs
+          nte = GFS_control%ntchm + ntb - 1
         end if
       end if
 
       !--- tracer concentrations
       do it = ntb, nte
 !$OMP parallel do default (none) &
-!$OMP             shared  (it, nk, nj, ni, Atm_block, IPD_Data, q)  &
+!$OMP             shared  (it, nk, nj, ni, Atm_block, GFS_data, q)  &
 !$OMP             private (k, j, jb, i, ib, nb, ix)
         do k = 1, nk
           do j = 1, nj
@@ -1182,7 +1086,7 @@ subroutine update_atmos_chemistry(state, rc)
               ib = i + Atm_block%isc - 1
               nb = Atm_block%blkno(ib,jb)
               ix = Atm_block%ixp(ib,jb)
-              IPD_Data(nb)%Stateout%gq0(ix,k,it) = q(i,j,k,it)
+              GFS_data(nb)%Stateout%gq0(ix,k,it) = q(i,j,k,it)
             enddo
           enddo
         enddo
@@ -1192,7 +1096,7 @@ subroutine update_atmos_chemistry(state, rc)
       !--- (a) column mass densities
       do it = 1, size(qm, dim=3)
 !$OMP parallel do default (none) &
-!$OMP             shared  (it, nj, ni, Atm_block, IPD_Data, qm)  &
+!$OMP             shared  (it, nj, ni, Atm_block, GFS_data, qm)  &
 !$OMP             private (j, jb, i, ib, nb, ix)
         do j = 1, nj
           jb = j + Atm_block%jsc - 1
@@ -1200,17 +1104,17 @@ subroutine update_atmos_chemistry(state, rc)
             ib = i + Atm_block%isc - 1
             nb = Atm_block%blkno(ib,jb)
             ix = Atm_block%ixp(ib,jb)
-            IPD_Data(nb)%IntDiag%aecm(ix,it) = qm(i,j,it)
+            GFS_data(nb)%IntDiag%aecm(ix,it) = qm(i,j,it)
           enddo
         enddo
       enddo
 
       !--- (b) dust and sea salt emissions
-      ntb = size(IPD_Data(1)%IntDiag%duem, dim=2)
+      ntb = size(GFS_data(1)%IntDiag%duem, dim=2)
       nte = size(qu, dim=3)
       do it = 1, min(ntb, nte)
 !$OMP parallel do default (none) &
-!$OMP             shared  (it, nj, ni, Atm_block, IPD_Data, qu)  &
+!$OMP             shared  (it, nj, ni, Atm_block, GFS_data, qu)  &
 !$OMP             private (j, jb, i, ib, nb, ix)
         do j = 1, nj
           jb = j + Atm_block%jsc - 1
@@ -1218,16 +1122,16 @@ subroutine update_atmos_chemistry(state, rc)
             ib = i + Atm_block%isc - 1
             nb = Atm_block%blkno(ib,jb)
             ix = Atm_block%ixp(ib,jb)
-            IPD_Data(nb)%IntDiag%duem(ix,it) = qu(i,j,it)
+            GFS_data(nb)%IntDiag%duem(ix,it) = qu(i,j,it)
           enddo
         enddo
       enddo
 
       nte = nte - ntb
       if (nte > 0) then
-        do it = 1, min(size(IPD_Data(1)%IntDiag%ssem, dim=2), nte)
+        do it = 1, min(size(GFS_data(1)%IntDiag%ssem, dim=2), nte)
 !$OMP parallel do default (none) &
-!$OMP             shared  (it, nj, ni, ntb, Atm_block, IPD_Data, qu)  &
+!$OMP             shared  (it, nj, ni, ntb, Atm_block, GFS_data, qu)  &
 !$OMP             private (j, jb, i, ib, nb, ix)
           do j = 1, nj
             jb = j + Atm_block%jsc - 1
@@ -1235,7 +1139,7 @@ subroutine update_atmos_chemistry(state, rc)
               ib = i + Atm_block%isc - 1
               nb = Atm_block%blkno(ib,jb)
               ix = Atm_block%ixp(ib,jb)
-              IPD_Data(nb)%IntDiag%ssem(ix,it) = qu(i,j,it+ntb)
+              GFS_data(nb)%IntDiag%ssem(ix,it) = qu(i,j,it+ntb)
             enddo
           enddo
         enddo
@@ -1244,7 +1148,7 @@ subroutine update_atmos_chemistry(state, rc)
       !--- (c) sedimentation and dry/wet deposition
       do it = 1, size(qd, dim=3)
 !$OMP parallel do default (none) &
-!$OMP             shared  (it, nj, ni, Atm_block, IPD_Data, qd)  &
+!$OMP             shared  (it, nj, ni, Atm_block, GFS_data, qd)  &
 !$OMP             private (j, jb, i, ib, nb, ix)
         do j = 1, nj
           jb = j + Atm_block%jsc - 1
@@ -1252,10 +1156,10 @@ subroutine update_atmos_chemistry(state, rc)
             ib = i + Atm_block%isc - 1
             nb = Atm_block%blkno(ib,jb)
             ix = Atm_block%ixp(ib,jb)
-            IPD_Data(nb)%IntDiag%sedim (ix,it) = qd(i,j,it,1)
-            IPD_Data(nb)%IntDiag%drydep(ix,it) = qd(i,j,it,2)
-            IPD_Data(nb)%IntDiag%wetdpl(ix,it) = qd(i,j,it,3)
-            IPD_Data(nb)%IntDiag%wetdpc(ix,it) = qd(i,j,it,4)
+            GFS_data(nb)%IntDiag%sedim (ix,it) = qd(i,j,it,1)
+            GFS_data(nb)%IntDiag%drydep(ix,it) = qd(i,j,it,2)
+            GFS_data(nb)%IntDiag%wetdpl(ix,it) = qd(i,j,it,3)
+            GFS_data(nb)%IntDiag%wetdpc(ix,it) = qd(i,j,it,4)
           enddo
         enddo
       enddo
@@ -1263,7 +1167,7 @@ subroutine update_atmos_chemistry(state, rc)
       !--- (d) anthropogenic and biomass burning emissions
       do it = 1, size(qb, dim=3)
 !$OMP parallel do default (none) &
-!$OMP             shared  (it, nj, ni, Atm_block, IPD_Data, qb)  &
+!$OMP             shared  (it, nj, ni, Atm_block, GFS_data, qb)  &
 !$OMP             private (j, jb, i, ib, nb, ix)
         do j = 1, nj
           jb = j + Atm_block%jsc - 1
@@ -1271,12 +1175,12 @@ subroutine update_atmos_chemistry(state, rc)
             ib = i + Atm_block%isc - 1
             nb = Atm_block%blkno(ib,jb)
             ix = Atm_block%ixp(ib,jb)
-            IPD_Data(nb)%IntDiag%abem(ix,it) = qb(i,j,it)
+            GFS_data(nb)%IntDiag%abem(ix,it) = qb(i,j,it)
           enddo
         enddo
       enddo
 
-      if (IPD_Control%debug) then
+      if (GFS_control%debug) then
         write(6,'("update_atmos: ",a,": qgrs - min/max/avg",3g16.6)') &
           trim(state), minval(q), maxval(q), sum(q)/size(q)
         write(6,'("update_atmos: ",a,": qup  - min/max/avg",3g16.6)') &
@@ -1401,7 +1305,7 @@ subroutine update_atmos_chemistry(state, rc)
 
       !--- handle all three-dimensional variables
 !$OMP parallel do default (none) &
-!$OMP             shared  (nk, nj, ni, Atm_block, IPD_Data, prsi, phii, prsl, phil, temp, ua, va, vvl, dkt, dqdt)  &
+!$OMP             shared  (nk, nj, ni, Atm_block, GFS_data, prsi, phii, prsl, phil, temp, ua, va, vvl, dkt, dqdt)  &
 !$OMP             private (k, j, jb, i, ib, nb, ix)
       do k = 1, nk
         do j = 1, nj
@@ -1411,17 +1315,17 @@ subroutine update_atmos_chemistry(state, rc)
             nb = Atm_block%blkno(ib,jb)
             ix = Atm_block%ixp(ib,jb)
             !--- interface values
-            prsi(i,j,k) = IPD_Data(nb)%Statein%prsi(ix,k)
-            phii(i,j,k) = IPD_Data(nb)%Statein%phii(ix,k)
+            prsi(i,j,k) = GFS_data(nb)%Statein%prsi(ix,k)
+            phii(i,j,k) = GFS_data(nb)%Statein%phii(ix,k)
             !--- layer values
-            prsl(i,j,k) = IPD_Data(nb)%Statein%prsl(ix,k)
-            phil(i,j,k) = IPD_Data(nb)%Statein%phil(ix,k)
-            temp(i,j,k) = IPD_Data(nb)%Stateout%gt0(ix,k)
-            ua  (i,j,k) = IPD_Data(nb)%Stateout%gu0(ix,k)
-            va  (i,j,k) = IPD_Data(nb)%Stateout%gv0(ix,k)
-            vvl (i,j,k) = IPD_Data(nb)%Statein%vvl (ix,k)
-            dkt (i,j,k) = IPD_Data(nb)%Coupling%dkt(ix,k)
-            dqdt(i,j,k) = IPD_Data(nb)%Coupling%dqdti(ix,k)
+            prsl(i,j,k) = GFS_data(nb)%Statein%prsl(ix,k)
+            phil(i,j,k) = GFS_data(nb)%Statein%phil(ix,k)
+            temp(i,j,k) = GFS_data(nb)%Stateout%gt0(ix,k)
+            ua  (i,j,k) = GFS_data(nb)%Stateout%gu0(ix,k)
+            va  (i,j,k) = GFS_data(nb)%Stateout%gv0(ix,k)
+            vvl (i,j,k) = GFS_data(nb)%Statein%vvl (ix,k)
+            dkt (i,j,k) = GFS_data(nb)%Coupling%dkt(ix,k)
+            dqdt(i,j,k) = GFS_data(nb)%Coupling%dqdti(ix,k)
           enddo
         enddo
       enddo
@@ -1435,15 +1339,15 @@ subroutine update_atmos_chemistry(state, rc)
           ib = i + Atm_block%isc - 1
           nb = Atm_block%blkno(ib,jb)
           ix = Atm_block%ixp(ib,jb)
-          prsi(i,j,k) = IPD_Data(nb)%Statein%prsi(ix,k)
-          phii(i,j,k) = IPD_Data(nb)%Statein%phii(ix,k)
+          prsi(i,j,k) = GFS_data(nb)%Statein%prsi(ix,k)
+          phii(i,j,k) = GFS_data(nb)%Statein%phii(ix,k)
         enddo
       enddo
 
       !--- tracers quantities
       do it = 1, nt
 !$OMP parallel do default (none) &
-!$OMP             shared  (it, nk, nj, ni, Atm_block, IPD_Data, q)  &
+!$OMP             shared  (it, nk, nj, ni, Atm_block, GFS_data, q)  &
 !$OMP             private (k, j, jb, i, ib, nb, ix)
         do k = 1, nk
           do j = 1, nj
@@ -1452,14 +1356,14 @@ subroutine update_atmos_chemistry(state, rc)
               ib = i + Atm_block%isc - 1
               nb = Atm_block%blkno(ib,jb)
               ix = Atm_block%ixp(ib,jb)
-              q(i,j,k,it) = IPD_Data(nb)%Stateout%gq0(ix,k,it)
+              q(i,j,k,it) = GFS_data(nb)%Stateout%gq0(ix,k,it)
             enddo
           enddo
         enddo
       enddo
 
 !$OMP parallel do default (none) &
-!$OMP             shared  (nj, ni, Atm_block, IPD_Data, &
+!$OMP             shared  (nj, ni, Atm_block, GFS_data, &
 !$OMP                      hpbl, area, stype, rainc, rain, uustar, sfcdsw, &
 !$OMP                      slmsk, snowd, tsfc, shfsfc, vtype, vfrac, zorl, slc) &
 !$OMP             private (j, jb, i, ib, nb, ix)
@@ -1469,28 +1373,28 @@ subroutine update_atmos_chemistry(state, rc)
           ib = i + Atm_block%isc - 1
           nb = Atm_block%blkno(ib,jb)
           ix = Atm_block%ixp(ib,jb)
-          hpbl(i,j)   = IPD_Data(nb)%Tbd%hpbl(ix)
-          area(i,j)   = IPD_Data(nb)%Grid%area(ix)
-          stype(i,j)  = IPD_Data(nb)%Sfcprop%stype(ix)
-          rainc(i,j)  = IPD_Data(nb)%Coupling%rainc_cpl(ix)
-          rain(i,j)   = IPD_Data(nb)%Coupling%rain_cpl(ix)  &
-                      + IPD_Data(nb)%Coupling%snow_cpl(ix)
-          uustar(i,j) = IPD_Data(nb)%Sfcprop%uustar(ix)
-          sfcdsw(i,j) = IPD_Data(nb)%Coupling%sfcdsw(ix)
-          slmsk(i,j)  = IPD_Data(nb)%Sfcprop%slmsk(ix)
-          snowd(i,j)  = IPD_Data(nb)%Sfcprop%snowd(ix)
-          tsfc(i,j)   = IPD_Data(nb)%Sfcprop%tsfc(ix)
-          shfsfc(i,j) = IPD_Data(nb)%Coupling%ushfsfci(ix)
-          vtype(i,j)  = IPD_Data(nb)%Sfcprop%vtype(ix)
-          vfrac(i,j)  = IPD_Data(nb)%Sfcprop%vfrac(ix)
-          zorl(i,j)   = IPD_Data(nb)%Sfcprop%zorl(ix)
-          slc(i,j,:)  = IPD_Data(nb)%Sfcprop%slc(ix,:)
+          hpbl(i,j)   = GFS_data(nb)%Tbd%hpbl(ix)
+          area(i,j)   = GFS_data(nb)%Grid%area(ix)
+          stype(i,j)  = GFS_data(nb)%Sfcprop%stype(ix)
+          rainc(i,j)  = GFS_data(nb)%Coupling%rainc_cpl(ix)
+          rain(i,j)   = GFS_data(nb)%Coupling%rain_cpl(ix)  &
+                      + GFS_data(nb)%Coupling%snow_cpl(ix)
+          uustar(i,j) = GFS_data(nb)%Sfcprop%uustar(ix)
+          sfcdsw(i,j) = GFS_data(nb)%Coupling%sfcdsw(ix)
+          slmsk(i,j)  = GFS_data(nb)%Sfcprop%slmsk(ix)
+          snowd(i,j)  = GFS_data(nb)%Sfcprop%snowd(ix)
+          tsfc(i,j)   = GFS_data(nb)%Sfcprop%tsfc(ix)
+          shfsfc(i,j) = GFS_data(nb)%Coupling%ushfsfci(ix)
+          vtype(i,j)  = GFS_data(nb)%Sfcprop%vtype(ix)
+          vfrac(i,j)  = GFS_data(nb)%Sfcprop%vfrac(ix)
+          zorl(i,j)   = GFS_data(nb)%Sfcprop%zorl(ix)
+          slc(i,j,:)  = GFS_data(nb)%Sfcprop%slc(ix,:)
         enddo
       enddo
 
       ! -- zero out accumulated fields
 !$OMP parallel do default (none) &
-!$OMP             shared  (nj, ni, Atm_block, IPD_Control, IPD_Data) &
+!$OMP             shared  (nj, ni, Atm_block, GFS_control, GFS_data) &
 !$OMP             private (j, jb, i, ib, nb, ix)
       do j = 1, nj
         jb = j + Atm_block%jsc - 1
@@ -1498,15 +1402,15 @@ subroutine update_atmos_chemistry(state, rc)
           ib = i + Atm_block%isc - 1
           nb = Atm_block%blkno(ib,jb)
           ix = Atm_block%ixp(ib,jb)
-          IPD_Data(nb)%coupling%rainc_cpl(ix)  = zero
-          if (.not.IPD_Control%cplflx) then
-            IPD_Data(nb)%coupling%rain_cpl(ix) = zero
-            IPD_Data(nb)%coupling%snow_cpl(ix) = zero
+          GFS_data(nb)%coupling%rainc_cpl(ix)  = zero
+          if (.not.GFS_control%cplflx) then
+            GFS_data(nb)%coupling%rain_cpl(ix) = zero
+            GFS_data(nb)%coupling%snow_cpl(ix) = zero
           end if
         enddo
       enddo
 
-      if (IPD_Control%debug) then
+      if (GFS_control%debug) then
         ! -- diagnostics
         write(6,'("update_atmos: prsi   - min/max/avg",3g16.6)') minval(prsi),   maxval(prsi),   sum(prsi)/size(prsi)
         write(6,'("update_atmos: phii   - min/max/avg",3g16.6)') minval(phii),   maxval(phii),   sum(phii)/size(phii)
@@ -1622,27 +1526,27 @@ end subroutine atmos_data_type_chksum
     type(ESMF_TypeKind_Flag)                           :: datatype
     real(kind=ESMF_KIND_R4),  dimension(:,:), pointer  :: datar42d
     real(kind=ESMF_KIND_R8),  dimension(:,:), pointer  :: datar82d
-    real(kind=IPD_kind_phys), dimension(:,:), pointer  :: datar8
-    real(kind=IPD_kind_phys)                           :: tem, ofrac
+    real(kind=GFS_kind_phys), dimension(:,:), pointer  :: datar8
+    real(kind=GFS_kind_phys)                           :: tem, ofrac
     logical found, isFieldCreated, lcpl_fice
-    real (kind=IPD_kind_phys), parameter :: z0ice=1.1    !  (in cm)
+    real (kind=GFS_kind_phys), parameter :: z0ice=1.1    !  (in cm)
 !
 !------------------------------------------------------------------------------
 !
 ! set up local dimension
     rc  = -999
-    isc = IPD_control%isc
-    iec = IPD_control%isc+IPD_control%nx-1
-    jsc = IPD_control%jsc
-    jec = IPD_control%jsc+IPD_control%ny-1
+    isc = GFS_control%isc
+    iec = GFS_control%isc+GFS_control%nx-1
+    jsc = GFS_control%jsc
+    jec = GFS_control%jsc+GFS_control%ny-1
     lcpl_fice = .false.
 
     allocate(datar8(isc:iec,jsc:jec))
 
 !   if (mpp_pe() == mpp_root_pe() .and. debug) print *,'in cplImp,dim=',isc,iec,jsc,jec
-!   if (mpp_pe() == mpp_root_pe() .and. debug) print *,'in cplImp,IPD_Data, size', size(IPD_Data)
-!   if (mpp_pe() == mpp_root_pe() .and. debug) print *,'in cplImp,tsfc, size', size(IPD_Data(1)%sfcprop%tsfc)
-!   if (mpp_pe() == mpp_root_pe() .and. debug) print *,'in cplImp,tsfc, min_seaice', IPD_Control%min_seaice
+!   if (mpp_pe() == mpp_root_pe() .and. debug) print *,'in cplImp,GFS_data, size', size(GFS_data)
+!   if (mpp_pe() == mpp_root_pe() .and. debug) print *,'in cplImp,tsfc, size', size(GFS_data(1)%sfcprop%tsfc)
+!   if (mpp_pe() == mpp_root_pe() .and. debug) print *,'in cplImp,tsfc, min_seaice', GFS_control%min_seaice
 
     do n=1,nImportFields ! Each import field is only available if it was connected in the import state.
 
@@ -1686,7 +1590,7 @@ end subroutine atmos_data_type_chksum
 !              do i=isc,iec
 !                nb = Atm_block%blkno(i,j)
 !                ix = Atm_block%ixp(i,j)
-!                IPD_Data(nb)%Coupling%slimskin_cpl(ix) = datar8(i,j)
+!                GFS_data(nb)%Coupling%slimskin_cpl(ix) = datar8(i,j)
 !              enddo
 !            enddo
 !            if( mpp_pe()==mpp_root_pe()) print *,'get land mask from mediator'
@@ -1699,19 +1603,19 @@ end subroutine atmos_data_type_chksum
           fldname = 'wave_z0_roughness_length'
           if (trim(impfield_name) == trim(fldname)) then
             findex = QueryFieldList(ImportFieldsList,fldname)
-            if (importFieldsValid(findex) .and. IPD_control%cplwav2atm) then
+            if (importFieldsValid(findex) .and. GFS_control%cplwav2atm) then
 !$omp parallel do default(shared) private(i,j,nb,ix,tem)
               do j=jsc,jec
                 do i=isc,iec
                   nb = Atm_block%blkno(i,j)
                   ix = Atm_block%ixp(i,j)
-                  if (IPD_Data(nb)%Sfcprop%oceanfrac(ix) > zero .and.  datar8(i,j) > zorlmin) then
-                    tem = 100.0_IPD_kind_phys * min(0.1_IPD_kind_phys, datar8(i,j))
-!                   IPD_Data(nb)%Coupling%zorlwav_cpl(ix) = tem
-                    IPD_Data(nb)%Sfcprop%zorlo(ix)        = tem
-                    IPD_Data(nb)%Sfcprop%zorlw(ix)        = tem
+                  if (GFS_data(nb)%Sfcprop%oceanfrac(ix) > zero .and.  datar8(i,j) > zorlmin) then
+                    tem = 100.0_GFS_kind_phys * min(0.1_GFS_kind_phys, datar8(i,j))
+!                   GFS_data(nb)%Coupling%zorlwav_cpl(ix) = tem
+                    GFS_data(nb)%Sfcprop%zorlo(ix)        = tem
+                    GFS_data(nb)%Sfcprop%zorlw(ix)        = tem
                   else
-                    IPD_Data(nb)%Sfcprop%zorlw(ix) = -999.0_IPD_kind_phys
+                    GFS_data(nb)%Sfcprop%zorlw(ix) = -999.0_GFS_kind_phys
 
                   endif
                 enddo
@@ -1730,9 +1634,9 @@ end subroutine atmos_data_type_chksum
                 do i=isc,iec
                   nb = Atm_block%blkno(i,j)
                   ix = Atm_block%ixp(i,j)
-                  if (IPD_Data(nb)%Sfcprop%oceanfrac(ix) > zero .and.  datar8(i,j) > 150.0) then
-!                   IPD_Data(nb)%Coupling%tisfcin_cpl(ix) = datar8(i,j)
-                    IPD_Data(nb)%Sfcprop%tisfc(ix)       = datar8(i,j)
+                  if (GFS_data(nb)%Sfcprop%oceanfrac(ix) > zero .and.  datar8(i,j) > 150.0) then
+!                   GFS_data(nb)%Coupling%tisfcin_cpl(ix) = datar8(i,j)
+                    GFS_data(nb)%Sfcprop%tisfc(ix)       = datar8(i,j)
                   endif
                 enddo
               enddo
@@ -1750,9 +1654,9 @@ end subroutine atmos_data_type_chksum
                 do i=isc,iec
                   nb = Atm_block%blkno(i,j)
                   ix = Atm_block%ixp(i,j)
-                  if (IPD_Data(nb)%Sfcprop%oceanfrac(ix) > zero .and. datar8(i,j) > 150.0) then
-!                   IPD_Data(nb)%Coupling%tseain_cpl(ix) = datar8(i,j)
-                    IPD_Data(nb)%Sfcprop%tsfco(ix)       = datar8(i,j)
+                  if (GFS_data(nb)%Sfcprop%oceanfrac(ix) > zero .and. datar8(i,j) > 150.0) then
+!                   GFS_data(nb)%Coupling%tseain_cpl(ix) = datar8(i,j)
+                    GFS_data(nb)%Sfcprop%tsfco(ix)       = datar8(i,j)
                   endif
                 enddo
               enddo
@@ -1773,20 +1677,20 @@ end subroutine atmos_data_type_chksum
                   nb = Atm_block%blkno(i,j)
                   ix = Atm_block%ixp(i,j)
 
-                  IPD_Data(nb)%Coupling%slimskin_cpl(ix) = IPD_Data(nb)%Sfcprop%slmsk(ix)
-                  ofrac = IPD_Data(nb)%Sfcprop%oceanfrac(ix)
+                  GFS_data(nb)%Coupling%slimskin_cpl(ix) = GFS_data(nb)%Sfcprop%slmsk(ix)
+                  ofrac = GFS_data(nb)%Sfcprop%oceanfrac(ix)
                   if (ofrac > zero) then
-                    IPD_Data(nb)%Sfcprop%fice(ix) = max(zero, min(one, datar8(i,j)/ofrac)) !LHS: ice frac wrt water area
-                    if (IPD_Data(nb)%Sfcprop%fice(ix) >= IPD_control%min_seaice) then
-                      if (IPD_Data(nb)%Sfcprop%fice(ix) > one-epsln) IPD_Data(nb)%Sfcprop%fice(ix) = one
-                      if (abs(one-ofrac) < epsln) IPD_Data(nb)%Sfcprop%slmsk(ix) = 2.0_IPD_kind_phys !slmsk=2 crashes in gcycle on partial land points
-!                     IPD_Data(nb)%Sfcprop%slmsk(ix)         = 2.0_IPD_kind_phys
-                      IPD_Data(nb)%Coupling%slimskin_cpl(ix) = 4.0_IPD_kind_phys
+                    GFS_data(nb)%Sfcprop%fice(ix) = max(zero, min(one, datar8(i,j)/ofrac)) !LHS: ice frac wrt water area
+                    if (GFS_data(nb)%Sfcprop%fice(ix) >= GFS_control%min_seaice) then
+                      if (GFS_data(nb)%Sfcprop%fice(ix) > one-epsln) GFS_data(nb)%Sfcprop%fice(ix) = one
+                      if (abs(one-ofrac) < epsln) GFS_data(nb)%Sfcprop%slmsk(ix) = 2.0_GFS_kind_phys !slmsk=2 crashes in gcycle on partial land points
+!                     GFS_data(nb)%Sfcprop%slmsk(ix)         = 2.0_GFS_kind_phys
+                      GFS_data(nb)%Coupling%slimskin_cpl(ix) = 4.0_GFS_kind_phys
                     else
-                      IPD_Data(nb)%Sfcprop%fice(ix) = zero
+                      GFS_data(nb)%Sfcprop%fice(ix) = zero
                       if (abs(one-ofrac) < epsln) then
-                        IPD_Data(nb)%Sfcprop%slmsk(ix)         = zero
-                        IPD_Data(nb)%Coupling%slimskin_cpl(ix) = zero
+                        GFS_data(nb)%Sfcprop%slmsk(ix)         = zero
+                        GFS_data(nb)%Coupling%slimskin_cpl(ix) = zero
                       endif
                     endif
                   endif
@@ -1807,15 +1711,15 @@ end subroutine atmos_data_type_chksum
 !               do i=isc,iec
 !                 nb = Atm_block%blkno(i,j)
 !                 ix = Atm_block%ixp(i,j)
-!                if (IPD_Data(nb)%Sfcprop%slmsk(ix) < 0.1 .or. IPD_Data(nb)%Sfcprop%slmsk(ix) > 1.9) then
-!                   IPD_Data(nb)%Coupling%ulwsfcin_cpl(ix) = -datar8(i,j)
+!                if (GFS_data(nb)%Sfcprop%slmsk(ix) < 0.1 .or. GFS_data(nb)%Sfcprop%slmsk(ix) > 1.9) then
+!                   GFS_data(nb)%Coupling%ulwsfcin_cpl(ix) = -datar8(i,j)
 !                 endif
 !               enddo
                 do i=isc,iec
                   nb = Atm_block%blkno(i,j)
                   ix = Atm_block%ixp(i,j)
-                  if (IPD_Data(nb)%Sfcprop%oceanfrac(ix) > zero) then
-                    IPD_Data(nb)%Coupling%ulwsfcin_cpl(ix) = -datar8(i,j)
+                  if (GFS_data(nb)%Sfcprop%oceanfrac(ix) > zero) then
+                    GFS_data(nb)%Coupling%ulwsfcin_cpl(ix) = -datar8(i,j)
                   endif
                 enddo
               enddo
@@ -1834,8 +1738,8 @@ end subroutine atmos_data_type_chksum
                 do i=isc,iec
                   nb = Atm_block%blkno(i,j)
                   ix = Atm_block%ixp(i,j)
-                  if (IPD_Data(nb)%Sfcprop%oceanfrac(ix) > zero) then
-                    IPD_Data(nb)%Coupling%dqsfcin_cpl(ix) = -datar8(i,j)
+                  if (GFS_data(nb)%Sfcprop%oceanfrac(ix) > zero) then
+                    GFS_data(nb)%Coupling%dqsfcin_cpl(ix) = -datar8(i,j)
                   endif
                 enddo
               enddo
@@ -1854,8 +1758,8 @@ end subroutine atmos_data_type_chksum
                 do i=isc,iec
                   nb = Atm_block%blkno(i,j)
                   ix = Atm_block%ixp(i,j)
-                  if (IPD_Data(nb)%Sfcprop%oceanfrac(ix) > zero) then
-                    IPD_Data(nb)%Coupling%dtsfcin_cpl(ix) = -datar8(i,j)
+                  if (GFS_data(nb)%Sfcprop%oceanfrac(ix) > zero) then
+                    GFS_data(nb)%Coupling%dtsfcin_cpl(ix) = -datar8(i,j)
                   endif
                 enddo
               enddo
@@ -1874,8 +1778,8 @@ end subroutine atmos_data_type_chksum
                 do i=isc,iec
                   nb = Atm_block%blkno(i,j)
                   ix = Atm_block%ixp(i,j)
-                  if (IPD_Data(nb)%Sfcprop%oceanfrac(ix) > zero) then
-                    IPD_Data(nb)%Coupling%dusfcin_cpl(ix) = -datar8(i,j)
+                  if (GFS_data(nb)%Sfcprop%oceanfrac(ix) > zero) then
+                    GFS_data(nb)%Coupling%dusfcin_cpl(ix) = -datar8(i,j)
                   endif
                 enddo
               enddo
@@ -1894,8 +1798,8 @@ end subroutine atmos_data_type_chksum
                 do i=isc,iec
                   nb = Atm_block%blkno(i,j)
                   ix = Atm_block%ixp(i,j)
-                  if (IPD_Data(nb)%Sfcprop%oceanfrac(ix) > zero) then
-                    IPD_Data(nb)%Coupling%dvsfcin_cpl(ix) = -datar8(i,j)
+                  if (GFS_data(nb)%Sfcprop%oceanfrac(ix) > zero) then
+                    GFS_data(nb)%Coupling%dvsfcin_cpl(ix) = -datar8(i,j)
                   endif
                 enddo
               enddo
@@ -1914,9 +1818,9 @@ end subroutine atmos_data_type_chksum
                 do i=isc,iec
                   nb = Atm_block%blkno(i,j)
                   ix = Atm_block%ixp(i,j)
-                  if (IPD_Data(nb)%Sfcprop%oceanfrac(ix) > zero) then
-!                   IPD_Data(nb)%Coupling%hicein_cpl(ix) = datar8(i,j)
-                    IPD_Data(nb)%Sfcprop%hice(ix)        = datar8(i,j)
+                  if (GFS_data(nb)%Sfcprop%oceanfrac(ix) > zero) then
+!                   GFS_data(nb)%Coupling%hicein_cpl(ix) = datar8(i,j)
+                    GFS_data(nb)%Sfcprop%hice(ix)        = datar8(i,j)
                   endif
                 enddo
               enddo
@@ -1935,8 +1839,8 @@ end subroutine atmos_data_type_chksum
                 do i=isc,iec
                   nb = Atm_block%blkno(i,j)
                   ix = Atm_block%ixp(i,j)
-                  if (IPD_Data(nb)%Sfcprop%oceanfrac(ix) > zero) then
-                    IPD_Data(nb)%Coupling%hsnoin_cpl(ix) = datar8(i,j)
+                  if (GFS_data(nb)%Sfcprop%oceanfrac(ix) > zero) then
+                    GFS_data(nb)%Coupling%hsnoin_cpl(ix) = datar8(i,j)
                   endif
                 enddo
               enddo
@@ -1957,37 +1861,37 @@ end subroutine atmos_data_type_chksum
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          if (IPD_Data(nb)%Sfcprop%oceanfrac(ix) > zero) then
+          if (GFS_data(nb)%Sfcprop%oceanfrac(ix) > zero) then
 !if it is ocean or ice get surface temperature from mediator
-            if (IPD_Data(nb)%Sfcprop%fice(ix) >= IPD_control%min_seaice) then
+            if (GFS_data(nb)%Sfcprop%fice(ix) >= GFS_control%min_seaice) then
 
-!           if(IPD_Data(nb)%Coupling%ficein_cpl(ix) >= IPD_control%min_seaice) then
-!             IPD_Data(nb)%Sfcprop%tisfc(ix)       = IPD_Data(nb)%Coupling%tisfcin_cpl(ix)
-!             IPD_Data(nb)%Sfcprop%fice(ix)        = IPD_Data(nb)%Coupling%ficein_cpl(ix)
-!             IPD_Data(nb)%Sfcprop%hice(ix)        = IPD_Data(nb)%Coupling%hicein_cpl(ix)
-!             IPD_Data(nb)%Sfcprop%snowd(ix)       = IPD_Data(nb)%Coupling%hsnoin_cpl(ix)
+!           if(GFS_data(nb)%Coupling%ficein_cpl(ix) >= GFS_control%min_seaice) then
+!             GFS_data(nb)%Sfcprop%tisfc(ix)       = GFS_data(nb)%Coupling%tisfcin_cpl(ix)
+!             GFS_data(nb)%Sfcprop%fice(ix)        = GFS_data(nb)%Coupling%ficein_cpl(ix)
+!             GFS_data(nb)%Sfcprop%hice(ix)        = GFS_data(nb)%Coupling%hicein_cpl(ix)
+!             GFS_data(nb)%Sfcprop%snowd(ix)       = GFS_data(nb)%Coupling%hsnoin_cpl(ix)
 
-              IPD_Data(nb)%Coupling%hsnoin_cpl(ix) = IPD_Data(nb)%Coupling%hsnoin_cpl(ix) &
-                                                   / max(0.01_IPD_kind_phys, IPD_Data(nb)%Sfcprop%fice(ix))
-!                                                  / max(0.01_IPD_kind_phys, IPD_Data(nb)%Coupling%ficein_cpl(ix))
-              IPD_Data(nb)%Sfcprop%zorli(ix)       = z0ice
+              GFS_data(nb)%Coupling%hsnoin_cpl(ix) = GFS_data(nb)%Coupling%hsnoin_cpl(ix) &
+                                                   / max(0.01_GFS_kind_phys, GFS_data(nb)%Sfcprop%fice(ix))
+!                                                  / max(0.01_GFS_kind_phys, GFS_data(nb)%Coupling%ficein_cpl(ix))
+              GFS_data(nb)%Sfcprop%zorli(ix)       = z0ice
             else
-!             IPD_Data(nb)%Sfcprop%tisfc(ix)       = IPD_Data(nb)%Coupling%tseain_cpl(ix)
-              IPD_Data(nb)%Sfcprop%tisfc(ix)       = IPD_Data(nb)%Sfcprop%tsfco(ix)
-              IPD_Data(nb)%Sfcprop%fice(ix)        = zero
-              IPD_Data(nb)%Sfcprop%hice(ix)        = zero
-!             IPD_Data(nb)%Sfcprop%snowd(ix)       = zero
-              IPD_Data(nb)%Coupling%hsnoin_cpl(ix) = zero
+!             GFS_data(nb)%Sfcprop%tisfc(ix)       = GFS_data(nb)%Coupling%tseain_cpl(ix)
+              GFS_data(nb)%Sfcprop%tisfc(ix)       = GFS_data(nb)%Sfcprop%tsfco(ix)
+              GFS_data(nb)%Sfcprop%fice(ix)        = zero
+              GFS_data(nb)%Sfcprop%hice(ix)        = zero
+!             GFS_data(nb)%Sfcprop%snowd(ix)       = zero
+              GFS_data(nb)%Coupling%hsnoin_cpl(ix) = zero
 !
-              IPD_Data(nb)%Coupling%dtsfcin_cpl(ix)  = -99999.0 ! over open water - should not be used in ATM
-              IPD_Data(nb)%Coupling%dqsfcin_cpl(ix)  = -99999.0 !                 ,,
-              IPD_Data(nb)%Coupling%dusfcin_cpl(ix)  = -99999.0 !                 ,,
-              IPD_Data(nb)%Coupling%dvsfcin_cpl(ix)  = -99999.0 !                 ,,
-              IPD_Data(nb)%Coupling%dtsfcin_cpl(ix)  = -99999.0 !                 ,,
-              IPD_Data(nb)%Coupling%ulwsfcin_cpl(ix) = -99999.0 !                 ,,
-              if (abs(one-IPD_Data(nb)%Sfcprop%oceanfrac(ix)) < epsln) then !  100% open water
-                IPD_Data(nb)%Coupling%slimskin_cpl(ix) = zero
-                IPD_Data(nb)%Sfcprop%slmsk(ix)         = zero
+              GFS_data(nb)%Coupling%dtsfcin_cpl(ix)  = -99999.0 ! over open water - should not be used in ATM
+              GFS_data(nb)%Coupling%dqsfcin_cpl(ix)  = -99999.0 !                 ,,
+              GFS_data(nb)%Coupling%dusfcin_cpl(ix)  = -99999.0 !                 ,,
+              GFS_data(nb)%Coupling%dvsfcin_cpl(ix)  = -99999.0 !                 ,,
+              GFS_data(nb)%Coupling%dtsfcin_cpl(ix)  = -99999.0 !                 ,,
+              GFS_data(nb)%Coupling%ulwsfcin_cpl(ix) = -99999.0 !                 ,,
+              if (abs(one-GFS_data(nb)%Sfcprop%oceanfrac(ix)) < epsln) then !  100% open water
+                GFS_data(nb)%Coupling%slimskin_cpl(ix) = zero
+                GFS_data(nb)%Sfcprop%slmsk(ix)         = zero
               endif
             endif
           endif
@@ -2000,13 +1904,13 @@ end subroutine atmos_data_type_chksum
 !     do i=isc,iec
 !       nb = Atm_block%blkno(i,j)
 !       ix = Atm_block%ixp(i,j)
-!       if (abs(IPD_Data(nb)%Grid%xlon_d(ix)-2.89) < 0.1 .and. &
-!           abs(IPD_Data(nb)%Grid%xlat_d(ix)+58.99) < 0.1) then
-!         write(0,*)' in assign tisfc=',IPD_Data(nb)%Sfcprop%tisfc(ix),     &
-!          ' oceanfrac=',IPD_Data(nb)%Sfcprop%oceanfrac(ix),' i=',i,' j=',j,&
-!!         ' tisfcin=',IPD_Data(nb)%Coupling%tisfcin_cpl(ix),               &
-!          ' tisfcin=',IPD_Data(nb)%Sfcprop%tisfc(ix),                      &
-!          ' fice=',IPD_Data(nb)%Sfcprop%fice(ix)
+!       if (abs(GFS_data(nb)%Grid%xlon_d(ix)-2.89) < 0.1 .and. &
+!           abs(GFS_data(nb)%Grid%xlat_d(ix)+58.99) < 0.1) then
+!         write(0,*)' in assign tisfc=',GFS_data(nb)%Sfcprop%tisfc(ix),     &
+!          ' oceanfrac=',GFS_data(nb)%Sfcprop%oceanfrac(ix),' i=',i,' j=',j,&
+!!         ' tisfcin=',GFS_data(nb)%Coupling%tisfcin_cpl(ix),               &
+!          ' tisfcin=',GFS_data(nb)%Sfcprop%tisfc(ix),                      &
+!          ' fice=',GFS_data(nb)%Sfcprop%fice(ix)
 !       endif
 !     enddo
 !   enddo
@@ -2033,20 +1937,20 @@ end subroutine atmos_data_type_chksum
 
     !--- local variables
     integer                :: j, i, ix, nb, isc, iec, jsc, jec, idx
-    real(IPD_kind_phys)    :: rtime, rtimek
+    real(GFS_kind_phys)    :: rtime, rtimek
 !
     if (mpp_pe() == mpp_root_pe()) print *,'enter setup_exportdata'
 
-    isc = IPD_control%isc
-    iec = IPD_control%isc+IPD_control%nx-1
-    jsc = IPD_control%jsc
-    jec = IPD_control%jsc+IPD_control%ny-1
+    isc = GFS_control%isc
+    iec = GFS_control%isc+GFS_control%nx-1
+    jsc = GFS_control%jsc
+    jec = GFS_control%jsc+GFS_control%ny-1
 
-    rtime  = one / IPD_control%dtp
-    rtimek = IPD_control%rho_h2o * rtime
+    rtime  = one / GFS_control%dtp
+    rtimek = GFS_control%rho_h2o * rtime
 !    print *,'in cplExp,dim=',isc,iec,jsc,jec,'nExportFields=',nExportFields
-!    print *,'in cplExp,IPD_Data, size', size(IPD_Data)
-!    print *,'in cplExp,u10micpl, size', size(IPD_Data(1)%coupling%u10mi_cpl)
+!    print *,'in cplExp,GFS_data, size', size(GFS_data)
+!    print *,'in cplExp,u10micpl, size', size(GFS_data(1)%coupling%u10mi_cpl)
 
     if(.not.allocated(exportData)) then
       allocate(exportData(isc:iec,jsc:jec,nExportFields))
@@ -2054,7 +1958,7 @@ end subroutine atmos_data_type_chksum
 
     ! set cpl fields to export Data
 
-    if (IPD_Control%cplflx .or. IPD_Control%cplwav) then
+    if (GFS_control%cplflx .or. GFS_control%cplwav) then
     ! Instantaneous u wind (m/s) 10 m above ground
     idx = queryfieldlist(exportFieldsList,'inst_zonal_wind_height10m')
     if (idx > 0 ) then
@@ -2064,7 +1968,7 @@ end subroutine atmos_data_type_chksum
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = IPD_Data(nb)%coupling%u10mi_cpl(ix)
+          exportData(i,j,idx) = GFS_data(nb)%coupling%u10mi_cpl(ix)
         enddo
       enddo
     endif
@@ -2078,7 +1982,7 @@ end subroutine atmos_data_type_chksum
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = IPD_Data(nb)%coupling%v10mi_cpl(ix)
+          exportData(i,j,idx) = GFS_data(nb)%coupling%v10mi_cpl(ix)
         enddo
       enddo
       if (mpp_pe() == mpp_root_pe() .and. debug) print *,'cpl, get v10mi_cpl, exportData=',exportData(isc,jsc,idx),'idx=',idx
@@ -2086,7 +1990,7 @@ end subroutine atmos_data_type_chksum
 
     endif !if cplflx or cplwav
 
-    if (IPD_Control%cplflx) then
+    if (GFS_control%cplflx) then
     ! MEAN Zonal compt of momentum flux (N/m**2)
     idx = queryfieldlist(exportFieldsList,'mean_zonal_moment_flx_atm')
     if (idx > 0 ) then
@@ -2095,7 +1999,7 @@ end subroutine atmos_data_type_chksum
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = IPD_Data(nb)%coupling%dusfc_cpl(ix) * rtime
+          exportData(i,j,idx) = GFS_data(nb)%coupling%dusfc_cpl(ix) * rtime
         enddo
       enddo
     endif
@@ -2108,7 +2012,7 @@ end subroutine atmos_data_type_chksum
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = IPD_Data(nb)%coupling%dvsfc_cpl(ix) * rtime
+          exportData(i,j,idx) = GFS_data(nb)%coupling%dvsfc_cpl(ix) * rtime
         enddo
       enddo
     endif
@@ -2121,7 +2025,7 @@ end subroutine atmos_data_type_chksum
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = IPD_Data(nb)%coupling%dtsfc_cpl(ix) * rtime
+          exportData(i,j,idx) = GFS_data(nb)%coupling%dtsfc_cpl(ix) * rtime
         enddo
       enddo
     endif
@@ -2134,7 +2038,7 @@ end subroutine atmos_data_type_chksum
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = IPD_Data(nb)%coupling%dqsfc_cpl(ix) * rtime
+          exportData(i,j,idx) = GFS_data(nb)%coupling%dqsfc_cpl(ix) * rtime
         enddo
       enddo
     endif
@@ -2147,7 +2051,7 @@ end subroutine atmos_data_type_chksum
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = IPD_Data(nb)%coupling%dlwsfc_cpl(ix) * rtime
+          exportData(i,j,idx) = GFS_data(nb)%coupling%dlwsfc_cpl(ix) * rtime
         enddo
       enddo
     endif
@@ -2160,7 +2064,7 @@ end subroutine atmos_data_type_chksum
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = IPD_Data(nb)%coupling%dswsfc_cpl(ix) * rtime
+          exportData(i,j,idx) = GFS_data(nb)%coupling%dswsfc_cpl(ix) * rtime
         enddo
       enddo
     endif
@@ -2173,7 +2077,7 @@ end subroutine atmos_data_type_chksum
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = IPD_Data(nb)%coupling%rain_cpl(ix) * rtimek
+          exportData(i,j,idx) = GFS_data(nb)%coupling%rain_cpl(ix) * rtimek
         enddo
       enddo
     endif
@@ -2186,7 +2090,7 @@ end subroutine atmos_data_type_chksum
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = IPD_Data(nb)%coupling%dusfci_cpl(ix)
+          exportData(i,j,idx) = GFS_data(nb)%coupling%dusfci_cpl(ix)
         enddo
       enddo
     endif
@@ -2199,7 +2103,7 @@ end subroutine atmos_data_type_chksum
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = IPD_Data(nb)%coupling%dvsfci_cpl(ix)
+          exportData(i,j,idx) = GFS_data(nb)%coupling%dvsfci_cpl(ix)
         enddo
       enddo
     endif
@@ -2212,7 +2116,7 @@ end subroutine atmos_data_type_chksum
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = IPD_Data(nb)%coupling%dtsfci_cpl(ix)
+          exportData(i,j,idx) = GFS_data(nb)%coupling%dtsfci_cpl(ix)
         enddo
       enddo
     endif
@@ -2225,7 +2129,7 @@ end subroutine atmos_data_type_chksum
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = IPD_Data(nb)%coupling%dqsfci_cpl(ix)
+          exportData(i,j,idx) = GFS_data(nb)%coupling%dqsfci_cpl(ix)
         enddo
       enddo
     endif
@@ -2238,7 +2142,7 @@ end subroutine atmos_data_type_chksum
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = IPD_Data(nb)%coupling%dlwsfci_cpl(ix)
+          exportData(i,j,idx) = GFS_data(nb)%coupling%dlwsfci_cpl(ix)
         enddo
       enddo
     endif
@@ -2251,7 +2155,7 @@ end subroutine atmos_data_type_chksum
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = IPD_Data(nb)%coupling%dswsfci_cpl(ix)
+          exportData(i,j,idx) = GFS_data(nb)%coupling%dswsfci_cpl(ix)
         enddo
       enddo
     endif
@@ -2264,7 +2168,7 @@ end subroutine atmos_data_type_chksum
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = IPD_Data(nb)%coupling%t2mi_cpl(ix)
+          exportData(i,j,idx) = GFS_data(nb)%coupling%t2mi_cpl(ix)
         enddo
       enddo
     endif
@@ -2277,7 +2181,7 @@ end subroutine atmos_data_type_chksum
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = IPD_Data(nb)%coupling%q2mi_cpl(ix)
+          exportData(i,j,idx) = GFS_data(nb)%coupling%q2mi_cpl(ix)
         enddo
       enddo
     endif
@@ -2290,7 +2194,7 @@ end subroutine atmos_data_type_chksum
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = IPD_Data(nb)%coupling%tsfci_cpl(ix)
+          exportData(i,j,idx) = GFS_data(nb)%coupling%tsfci_cpl(ix)
         enddo
       enddo
     endif
@@ -2303,7 +2207,7 @@ end subroutine atmos_data_type_chksum
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = IPD_Data(nb)%coupling%psurfi_cpl(ix)
+          exportData(i,j,idx) = GFS_data(nb)%coupling%psurfi_cpl(ix)
         enddo
       enddo
     endif
@@ -2316,7 +2220,7 @@ end subroutine atmos_data_type_chksum
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = IPD_Data(nb)%coupling%oro_cpl(ix)
+          exportData(i,j,idx) = GFS_data(nb)%coupling%oro_cpl(ix)
         enddo
       enddo
     endif
@@ -2329,7 +2233,7 @@ end subroutine atmos_data_type_chksum
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = IPD_Data(nb)%coupling%nlwsfc_cpl(ix) * rtime
+          exportData(i,j,idx) = GFS_data(nb)%coupling%nlwsfc_cpl(ix) * rtime
         enddo
       enddo
     endif
@@ -2342,7 +2246,7 @@ end subroutine atmos_data_type_chksum
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = IPD_Data(nb)%coupling%nswsfc_cpl(ix) * rtime
+          exportData(i,j,idx) = GFS_data(nb)%coupling%nswsfc_cpl(ix) * rtime
         enddo
       enddo
     endif
@@ -2355,7 +2259,7 @@ end subroutine atmos_data_type_chksum
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = IPD_Data(nb)%coupling%nlwsfci_cpl(ix)
+          exportData(i,j,idx) = GFS_data(nb)%coupling%nlwsfci_cpl(ix)
         enddo
       enddo
     endif
@@ -2368,7 +2272,7 @@ end subroutine atmos_data_type_chksum
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = IPD_Data(nb)%coupling%nswsfci_cpl(ix)
+          exportData(i,j,idx) = GFS_data(nb)%coupling%nswsfci_cpl(ix)
         enddo
       enddo
     endif
@@ -2381,7 +2285,7 @@ end subroutine atmos_data_type_chksum
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = IPD_Data(nb)%coupling%dnirbm_cpl(ix) * rtime
+          exportData(i,j,idx) = GFS_data(nb)%coupling%dnirbm_cpl(ix) * rtime
         enddo
       enddo
     endif
@@ -2394,7 +2298,7 @@ end subroutine atmos_data_type_chksum
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = IPD_Data(nb)%coupling%dnirdf_cpl(ix) * rtime
+          exportData(i,j,idx) = GFS_data(nb)%coupling%dnirdf_cpl(ix) * rtime
         enddo
       enddo
     endif
@@ -2407,7 +2311,7 @@ end subroutine atmos_data_type_chksum
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = IPD_Data(nb)%coupling%dvisbm_cpl(ix) * rtime
+          exportData(i,j,idx) = GFS_data(nb)%coupling%dvisbm_cpl(ix) * rtime
         enddo
       enddo
     endif
@@ -2420,7 +2324,7 @@ end subroutine atmos_data_type_chksum
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = IPD_Data(nb)%coupling%dvisdf_cpl(ix) * rtime
+          exportData(i,j,idx) = GFS_data(nb)%coupling%dvisdf_cpl(ix) * rtime
         enddo
       enddo
     endif
@@ -2433,7 +2337,7 @@ end subroutine atmos_data_type_chksum
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = IPD_Data(nb)%coupling%dnirbmi_cpl(ix)
+          exportData(i,j,idx) = GFS_data(nb)%coupling%dnirbmi_cpl(ix)
         enddo
       enddo
     endif
@@ -2446,7 +2350,7 @@ end subroutine atmos_data_type_chksum
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = IPD_Data(nb)%coupling%dnirdfi_cpl(ix)
+          exportData(i,j,idx) = GFS_data(nb)%coupling%dnirdfi_cpl(ix)
         enddo
       enddo
     endif
@@ -2459,7 +2363,7 @@ end subroutine atmos_data_type_chksum
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = IPD_Data(nb)%coupling%dvisbmi_cpl(ix)
+          exportData(i,j,idx) = GFS_data(nb)%coupling%dvisbmi_cpl(ix)
         enddo
       enddo
     endif
@@ -2472,7 +2376,7 @@ end subroutine atmos_data_type_chksum
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = IPD_Data(nb)%coupling%dvisdfi_cpl(ix)
+          exportData(i,j,idx) = GFS_data(nb)%coupling%dvisdfi_cpl(ix)
         enddo
       enddo
     endif
@@ -2485,7 +2389,7 @@ end subroutine atmos_data_type_chksum
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = IPD_Data(nb)%coupling%nnirbm_cpl(ix) * rtime
+          exportData(i,j,idx) = GFS_data(nb)%coupling%nnirbm_cpl(ix) * rtime
         enddo
       enddo
     endif
@@ -2498,7 +2402,7 @@ end subroutine atmos_data_type_chksum
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = IPD_Data(nb)%coupling%nnirdf_cpl(ix) * rtime
+          exportData(i,j,idx) = GFS_data(nb)%coupling%nnirdf_cpl(ix) * rtime
         enddo
       enddo
     endif
@@ -2511,7 +2415,7 @@ end subroutine atmos_data_type_chksum
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = IPD_Data(nb)%coupling%nvisbm_cpl(ix) * rtime
+          exportData(i,j,idx) = GFS_data(nb)%coupling%nvisbm_cpl(ix) * rtime
         enddo
       enddo
     endif
@@ -2524,7 +2428,7 @@ end subroutine atmos_data_type_chksum
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = IPD_Data(nb)%coupling%nvisdf_cpl(ix) * rtime
+          exportData(i,j,idx) = GFS_data(nb)%coupling%nvisdf_cpl(ix) * rtime
         enddo
       enddo
     endif
@@ -2537,7 +2441,7 @@ end subroutine atmos_data_type_chksum
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = IPD_Data(nb)%coupling%nnirbmi_cpl(ix)
+          exportData(i,j,idx) = GFS_data(nb)%coupling%nnirbmi_cpl(ix)
         enddo
       enddo
     endif
@@ -2550,7 +2454,7 @@ end subroutine atmos_data_type_chksum
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = IPD_Data(nb)%coupling%nnirdfi_cpl(ix)
+          exportData(i,j,idx) = GFS_data(nb)%coupling%nnirdfi_cpl(ix)
         enddo
       enddo
     endif
@@ -2563,7 +2467,7 @@ end subroutine atmos_data_type_chksum
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = IPD_Data(nb)%coupling%nvisbmi_cpl(ix)
+          exportData(i,j,idx) = GFS_data(nb)%coupling%nvisbmi_cpl(ix)
         enddo
       enddo
     endif
@@ -2576,7 +2480,7 @@ end subroutine atmos_data_type_chksum
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = IPD_Data(nb)%coupling%nvisdfi_cpl(ix)
+          exportData(i,j,idx) = GFS_data(nb)%coupling%nvisdfi_cpl(ix)
         enddo
       enddo
     endif
@@ -2589,7 +2493,7 @@ end subroutine atmos_data_type_chksum
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = IPD_Data(nb)%coupling%slmsk_cpl(ix)
+          exportData(i,j,idx) = GFS_data(nb)%coupling%slmsk_cpl(ix)
         enddo
       enddo
     endif
@@ -2711,7 +2615,7 @@ end subroutine atmos_data_type_chksum
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = IPD_Data(nb)%coupling%snow_cpl(ix) * rtimek
+          exportData(i,j,idx) = GFS_data(nb)%coupling%snow_cpl(ix) * rtimek
         enddo
       enddo
     endif
@@ -2722,34 +2626,34 @@ end subroutine atmos_data_type_chksum
     call fillExportFields(exportData)
 
 !---
-    if (IPD_Control%cplflx) then
+    if (GFS_control%cplflx) then
 ! zero out accumulated fields
 !$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          IPD_Data(nb)%coupling%dusfc_cpl(ix)  = zero
-          IPD_Data(nb)%coupling%dvsfc_cpl(ix)  = zero
-          IPD_Data(nb)%coupling%dtsfc_cpl(ix)  = zero
-          IPD_Data(nb)%coupling%dqsfc_cpl(ix)  = zero
-          IPD_Data(nb)%coupling%dlwsfc_cpl(ix) = zero
-          IPD_Data(nb)%coupling%dswsfc_cpl(ix) = zero
-          IPD_Data(nb)%coupling%rain_cpl(ix)   = zero
-          IPD_Data(nb)%coupling%nlwsfc_cpl(ix) = zero
-          IPD_Data(nb)%coupling%nswsfc_cpl(ix) = zero
-          IPD_Data(nb)%coupling%dnirbm_cpl(ix) = zero
-          IPD_Data(nb)%coupling%dnirdf_cpl(ix) = zero
-          IPD_Data(nb)%coupling%dvisbm_cpl(ix) = zero
-          IPD_Data(nb)%coupling%dvisdf_cpl(ix) = zero
-          IPD_Data(nb)%coupling%nnirbm_cpl(ix) = zero
-          IPD_Data(nb)%coupling%nnirdf_cpl(ix) = zero
-          IPD_Data(nb)%coupling%nvisbm_cpl(ix) = zero
-          IPD_Data(nb)%coupling%nvisdf_cpl(ix) = zero
-          IPD_Data(nb)%coupling%snow_cpl(ix)   = zero
+          GFS_data(nb)%coupling%dusfc_cpl(ix)  = zero
+          GFS_data(nb)%coupling%dvsfc_cpl(ix)  = zero
+          GFS_data(nb)%coupling%dtsfc_cpl(ix)  = zero
+          GFS_data(nb)%coupling%dqsfc_cpl(ix)  = zero
+          GFS_data(nb)%coupling%dlwsfc_cpl(ix) = zero
+          GFS_data(nb)%coupling%dswsfc_cpl(ix) = zero
+          GFS_data(nb)%coupling%rain_cpl(ix)   = zero
+          GFS_data(nb)%coupling%nlwsfc_cpl(ix) = zero
+          GFS_data(nb)%coupling%nswsfc_cpl(ix) = zero
+          GFS_data(nb)%coupling%dnirbm_cpl(ix) = zero
+          GFS_data(nb)%coupling%dnirdf_cpl(ix) = zero
+          GFS_data(nb)%coupling%dvisbm_cpl(ix) = zero
+          GFS_data(nb)%coupling%dvisdf_cpl(ix) = zero
+          GFS_data(nb)%coupling%nnirbm_cpl(ix) = zero
+          GFS_data(nb)%coupling%nnirdf_cpl(ix) = zero
+          GFS_data(nb)%coupling%nvisbm_cpl(ix) = zero
+          GFS_data(nb)%coupling%nvisdf_cpl(ix) = zero
+          GFS_data(nb)%coupling%snow_cpl(ix)   = zero
         enddo
       enddo
-      if (mpp_pe() == mpp_root_pe()) print *,'zeroing coupling accumulated fields at kdt= ',IPD_Control%kdt
+      if (mpp_pe() == mpp_root_pe()) print *,'zeroing coupling accumulated fields at kdt= ',GFS_control%kdt
     endif !cplflx
 !   if (mpp_pe() == mpp_root_pe()) print *,'end of setup_exportdata'
 
@@ -2771,10 +2675,10 @@ end subroutine atmos_data_type_chksum
     integer, allocatable  :: lsmask(:,:)
     integer(kind=ESMF_KIND_I4), pointer  :: maskPtr(:,:)
 !
-    isc = IPD_control%isc
-    iec = IPD_control%isc+IPD_control%nx-1
-    jsc = IPD_control%jsc
-    jec = IPD_control%jsc+IPD_control%ny-1
+    isc = GFS_control%isc
+    iec = GFS_control%isc+GFS_control%nx-1
+    jsc = GFS_control%jsc
+    jec = GFS_control%jsc+GFS_control%ny-1
     allocate(lsmask(isc:iec,jsc:jec))
 !
 !$omp parallel do default(shared) private(i,j,nb,ix)
@@ -2783,7 +2687,7 @@ end subroutine atmos_data_type_chksum
         nb = Atm_block%blkno(i,j)
         ix = Atm_block%ixp(i,j)
 ! use land sea mask: land:1, ocean:0
-        lsmask(i,j) = floor(one + epsln - IPD_Data(nb)%SfcProp%oceanfrac(ix))
+        lsmask(i,j) = floor(one + epsln - GFS_data(nb)%SfcProp%oceanfrac(ix))
       enddo
     enddo
 !
