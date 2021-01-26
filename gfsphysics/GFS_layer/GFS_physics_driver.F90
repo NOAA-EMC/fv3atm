@@ -3202,9 +3202,13 @@ module module_physics_driver
         dtdt(1:im,:) = Stateout%gt0(1:im,:)
       endif   ! end if_ldiag3d/cnvgwd
 
-      if (Model%ldiag3d .or. Model%lgocart) then
+      if (Model%ldiag3d .or. Model%lgocart .or. Model%cplchm) then
         dqdt(1:im,:,1) = Stateout%gq0(1:im,:,1)
-      endif   ! end if_ldiag3d/lgocart
+      endif   ! end if_ldiag3d/lgocart/cplchm
+
+      if (Model%lgocart .or. Model%cplchm) then
+        Coupling%dqdti(1:im,:) = 0._kind_phys
+      endif   ! end if_lgocart/cplchm
 
 #ifdef GFS_HYDRO
       call get_phi(im, ix, levs, ntrac, Stateout%gt0, Stateout%gq0,    &

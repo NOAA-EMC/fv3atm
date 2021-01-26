@@ -68,7 +68,8 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !
   use module_fv3_io_def, only:  num_pes_fcst, num_files, filename_base, nbdlphys, &
                                 iau_offset
-  use module_fv3_config, only:  dt_atmos, calendar, restart_interval,             &
+  use module_fv3_config, only:  dt_atmos, calendar, restart_interval, &
+                                other_restart_time, &
                                 quilting, calendar_type, cpl,                     &
                                 cplprint_flag, force_date_from_configure
 !
@@ -88,7 +89,8 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     type(atmos_data_type)  :: Atm
     type(time_type)        :: Time_atmos, Time_init, Time_end,  &
                               Time_step_atmos, Time_step_ocean, &
-                              Time_restart, Time_step_restart
+                              Time_restart, Time_step_restart,  &
+                              Time_restart1, Time_other_restart
     integer :: num_atmos_calls, ret, intrm_rst
   end type
 
@@ -179,7 +181,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 
     integer                                :: Run_length
     integer,dimension(6)                   :: date, date_end
-    integer                                :: res_intvl
+    integer                                :: res_intvl, res_time
     integer                                :: mpi_comm_comp
 !
     logical,save                           :: first=.true.
@@ -321,10 +323,13 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
                     date_init,'time_atmos=',date,'time_end=',date_end,'dt_atmos=',dt_atmos, &
                     'Run_length=',Run_length
      res_intvl = restart_interval*3600
+     res_time = other_restart_time*3600
      atm_int_state%Time_step_restart = set_time (res_intvl, 0)
+     atm_int_state%Time_other_restart = set_time (res_time, 0)
      atm_int_state%Time_restart      = atm_int_state%Time_atmos + atm_int_state%Time_step_restart
+     atm_int_state%Time_restart1 = atm_int_state%Time_init + atm_int_state%Time_other_restart
      atm_int_state%intrm_rst         = 0
-     if (res_intvl>0) atm_int_state%intrm_rst = 1
+     if (res_intvl>0 .or. res_time>0) atm_int_state%intrm_rst = 1
      atm_int_state%Atm%iau_offset    = iau_offset
 !
 !
@@ -784,6 +789,14 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
           call wrt_atmres_timestamp(atm_int_state,timestamp)
           atm_int_state%Time_restart = atm_int_state%Time_restart + atm_int_state%Time_step_restart
         endif
+
+        if ((na /= atm_int_state%num_atmos_calls) .and.   &
+           (atm_int_state%Time_atmos == atm_int_state%Time_restart1)) then
+          timestamp = date_to_string (atm_int_state%Time_restart1)
+          call atmos_model_restart(atm_int_state%Atm, timestamp)
+          call wrt_atmres_timestamp(atm_int_state,timestamp)
+        endif
+
       endif
 !
       call print_memuse_stats('after full step')

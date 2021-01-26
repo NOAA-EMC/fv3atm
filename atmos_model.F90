@@ -1395,6 +1395,24 @@ subroutine update_atmos_chemistry(state, rc)
         enddo
       enddo
 
+      ! -- zero out accumulated fields
+!$OMP parallel do default (none) &
+!$OMP             shared  (nj, ni, Atm_block, IPD_Control, IPD_Data) &
+!$OMP             private (j, jb, i, ib, nb, ix)
+      do j = 1, nj
+        jb = j + Atm_block%jsc - 1
+        do i = 1, ni
+          ib = i + Atm_block%isc - 1
+          nb = Atm_block%blkno(ib,jb)
+          ix = Atm_block%ixp(ib,jb)
+          IPD_Data(nb)%coupling%rainc_cpl(ix)  = 0._IPD_kind_phys
+          if (.not.IPD_Control%cplflx) then
+            IPD_Data(nb)%coupling%rain_cpl(ix) = 0._IPD_kind_phys
+            IPD_Data(nb)%coupling%snow_cpl(ix) = 0._IPD_kind_phys
+          end if
+        enddo
+      enddo
+
       if (IPD_Control%debug) then
         ! -- diagnostics
         write(6,'("update_atmos: prsi   - min/max/avg",3g16.6)') minval(prsi),   maxval(prsi),   sum(prsi)/size(prsi)
@@ -2536,24 +2554,24 @@ end subroutine atmos_data_type_chksum
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          IPD_Data(nb)%coupling%dusfc_cpl(ix)  = 0.0
-          IPD_Data(nb)%coupling%dvsfc_cpl(ix)  = 0.0
-          IPD_Data(nb)%coupling%dtsfc_cpl(ix)  = 0.0
-          IPD_Data(nb)%coupling%dqsfc_cpl(ix)  = 0.0
-          IPD_Data(nb)%coupling%dlwsfc_cpl(ix) = 0.0
-          IPD_Data(nb)%coupling%dswsfc_cpl(ix) = 0.0
-          IPD_Data(nb)%coupling%rain_cpl(ix)   = 0.0
-          IPD_Data(nb)%coupling%nlwsfc_cpl(ix) = 0.0
-          IPD_Data(nb)%coupling%nswsfc_cpl(ix) = 0.0
-          IPD_Data(nb)%coupling%dnirbm_cpl(ix) = 0.0
-          IPD_Data(nb)%coupling%dnirdf_cpl(ix) = 0.0
-          IPD_Data(nb)%coupling%dvisbm_cpl(ix) = 0.0
-          IPD_Data(nb)%coupling%dvisdf_cpl(ix) = 0.0
-          IPD_Data(nb)%coupling%nnirbm_cpl(ix) = 0.0
-          IPD_Data(nb)%coupling%nnirdf_cpl(ix) = 0.0
-          IPD_Data(nb)%coupling%nvisbm_cpl(ix) = 0.0
-          IPD_Data(nb)%coupling%nvisdf_cpl(ix) = 0.0
-          IPD_Data(nb)%coupling%snow_cpl(ix)   = 0.0
+          IPD_Data(nb)%coupling%dusfc_cpl(ix)  = 0._IPD_kind_phys
+          IPD_Data(nb)%coupling%dvsfc_cpl(ix)  = 0._IPD_kind_phys
+          IPD_Data(nb)%coupling%dtsfc_cpl(ix)  = 0._IPD_kind_phys
+          IPD_Data(nb)%coupling%dqsfc_cpl(ix)  = 0._IPD_kind_phys
+          IPD_Data(nb)%coupling%dlwsfc_cpl(ix) = 0._IPD_kind_phys
+          IPD_Data(nb)%coupling%dswsfc_cpl(ix) = 0._IPD_kind_phys
+          IPD_Data(nb)%coupling%rain_cpl(ix)   = 0._IPD_kind_phys
+          IPD_Data(nb)%coupling%nlwsfc_cpl(ix) = 0._IPD_kind_phys
+          IPD_Data(nb)%coupling%nswsfc_cpl(ix) = 0._IPD_kind_phys
+          IPD_Data(nb)%coupling%dnirbm_cpl(ix) = 0._IPD_kind_phys
+          IPD_Data(nb)%coupling%dnirdf_cpl(ix) = 0._IPD_kind_phys
+          IPD_Data(nb)%coupling%dvisbm_cpl(ix) = 0._IPD_kind_phys
+          IPD_Data(nb)%coupling%dvisdf_cpl(ix) = 0._IPD_kind_phys
+          IPD_Data(nb)%coupling%nnirbm_cpl(ix) = 0._IPD_kind_phys
+          IPD_Data(nb)%coupling%nnirdf_cpl(ix) = 0._IPD_kind_phys
+          IPD_Data(nb)%coupling%nvisbm_cpl(ix) = 0._IPD_kind_phys
+          IPD_Data(nb)%coupling%nvisdf_cpl(ix) = 0._IPD_kind_phys
+          IPD_Data(nb)%coupling%snow_cpl(ix)   = 0._IPD_kind_phys
         enddo
       enddo
     endif !cplflx
