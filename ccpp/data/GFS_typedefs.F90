@@ -423,7 +423,6 @@ module GFS_typedefs
                                                                  !< GFS_radtend_type%sfclsw%dnfxc
     real (kind=kind_phys), pointer :: sfculw(:)      => null()   !< total sky sfc upward lw flux ( w/m**2 ) 
     real (kind=kind_phys), pointer :: sfculw_jac(:)  => null()   !< Jacobian of total sky sfc upward lw flux ( w/m**2/K ) 
-
 !--- incoming quantities
     real (kind=kind_phys), pointer :: dusfcin_cpl(:) => null()   !< aoi_fld%dusfcin(item,lan)
     real (kind=kind_phys), pointer :: dvsfcin_cpl(:) => null()   !< aoi_fld%dvsfcin(item,lan)

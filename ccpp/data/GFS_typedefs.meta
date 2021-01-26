@@ -5000,7 +5000,6 @@
   type = ddt
   dependencies = 
 
-
 [ccpp-arg-table]
   name = GFS_grid_type
   type = ddt
@@ -5191,7 +5190,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (flag_for_in_ccn_forcing_for_morrison_gettelman_microphysics==1)  
+  active = (flag_for_in_ccn_forcing_for_morrison_gettelman_microphysics==1)
 [jindx1_tau]
   standard_name = index_interp_weight1_taungw
   long_name = index1 for weight1 for tau NGWs 
@@ -5218,7 +5217,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys 
- 
+
 ########################################################################
 [ccpp-table-properties]
   name = GFS_tbd_type
@@ -5370,7 +5369,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (index_for_surface_air_pressure_two_timesteps_back > 0)  
+  active = (index_for_surface_air_pressure_two_timesteps_back > 0)
 [phy_f2d(:,index_for_surface_air_pressure_at_previous_timestep)]
   standard_name = surface_air_pressure_at_previous_timestep
   long_name = surface air pressure at previous timestep
@@ -5714,7 +5713,6 @@
   type = real
   kind = kind_phys
   active = (do_myjsfc .or. do_myjpbl)
-
 
 ########################################################################
 [ccpp-table-properties]
@@ -8598,7 +8596,7 @@
   units = m s-2
   dimensions = (horizontal_loop_extent,vertical_dimension)
   type = real
-  kind = kind_phys  
+  kind = kind_phys
 [hefac]
   standard_name = surface_upward_latent_heat_flux_reduction_factor
   long_name = surface upward latent heat flux reduction factor from canopy heat storage
@@ -8796,7 +8794,7 @@
   long_name = vertical interface dimension
   units = count
   dimensions = ()
-  type = integer  
+  type = integer
 [lmk]
   standard_name = adjusted_vertical_layer_dimension_for_radiation
   long_name = adjusted number of vertical layers for radiation
@@ -10033,7 +10031,7 @@
   kind = kind_phys
 [zlwb]
   standard_name = height_of_low_level_wave_breaking
-  long_name = height of low level wave breaking 
+  long_name = height of low level wave breaking
   units = m
   dimensions = (horizontal_loop_extent)
   type = real
@@ -10103,7 +10101,7 @@
   kind = kind_phys
 [dudt_ogw]
   standard_name = instantaneous_change_in_x_wind_due_to_orographic_gravity_wave_drag
-  long_name = x momentum tendency from meso scale ogw  
+  long_name = x momentum tendency from meso scale ogw
   units = m s-2
   dimensions = (horizontal_loop_extent,vertical_dimension)
   type = real
@@ -10237,7 +10235,7 @@
   type = real
   kind = kind_phys
   optional = F
-  active = (flag_for_rrtmgp_radiation_scheme)              
+  active = (flag_for_rrtmgp_radiation_scheme)
 [p_lay]
   standard_name = air_pressure_at_layer_for_RRTMGP_in_hPa
   long_name = air pressure layer
@@ -10604,7 +10602,6 @@
   units = DDT
   dimensions = ()
   type = ty_optical_props_2str
-  
 [lw_optical_props_aerosol]
   standard_name = longwave_optical_properties_for_aerosols
   long_name = Fortran DDT containing RRTMGP optical properties
