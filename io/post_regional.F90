@@ -1053,17 +1053,6 @@ module post_regional
               enddo
             endif
 
-            !  mid day avg albedo
-            if(trim(fieldname)=='albdo_ave') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,avgalbedo,arrayr42d,fillValue,spval)
-              do j=jsta,jend
-                do i=ista, iend
-                  avgalbedo(i,j)=arrayr42d(i,j)*0.01
-                  if(abs(arrayr42d(i,j)-fillValue) < small) avgalbedo(i,j)=spval
-                enddo
-              enddo
-            endif
-
             ! surface potential T
             if(trim(fieldname)=='tmpsfc') then
               !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,arrayr42d,ths,fillValue,spval)
