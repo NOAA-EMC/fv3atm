@@ -69,7 +69,6 @@ module post_regional
 !
       real(kind=8)   :: btim0, btim1, btim2, btim3,btim4,btim5,btim6,btim7
 !
-      print *,'in post_run start'
 !-----------------------------------------------------------------------
 !*** set up dimensions
 !-----------------------------------------------------------------------
@@ -201,9 +200,7 @@ module post_regional
 !
             if ( ieof == 0) call process(kth,kpv,th(1:kth),pv(1:kpv),iostatusD3D)
 !
-            print *,'after process,ifhr=',ifhr
             call mpi_barrier(mpicomp,ierr)
-            print *,'after mpi_barrier,ifhr=',ifhr
             call gribit2(post_fname)
             if(allocated(datapd))deallocate(datapd)
             if(allocated(fld_info))deallocate(fld_info)
@@ -248,13 +245,13 @@ module post_regional
       real(8), dimension(:), allocatable :: ak8,bk8
       type(ESMF_FieldBundle)             :: fldbundle
 !
-      print *,'in post_reional, attr'
+      spval = 9.99e20
       do nfb=1, wrt_int_state%FBcount
         fldbundle = wrt_int_state%wrtFB(nfb)
 
 ! set grid spec:
-      print*,'in post_getattr_lam,output_grid=',trim(output_grid),'nfb=',nfb
-      print*,'in post_getattr_lam, lon1=',lon1,lon2,lat1,lat2,dlon,dlat
+      if(mype==0) print*,'in post_getattr_lam,output_grid=',trim(output_grid),'nfb=',nfb
+      if(mype==0) print*,'in post_getattr_lam, lon1=',lon1,lon2,lat1,lat2,dlon,dlat
       gdsdegr = 1000000.
 
       if(trim(output_grid) == 'regional_latlon') then
@@ -277,7 +274,7 @@ module post_regional
         dxval = dlon*gdsdegr
         dyval = dlat*gdsdegr
 
-        print*,'lonstart,latstart,dyval,dxval', &
+        if(mype==0) print*,'lonstart,latstart,dyval,dxval', &
         lonstart,lonlast,latstart,latlast,dyval,dxval
 
       else if(trim(output_grid) == 'lambert_conformal') then
@@ -337,6 +334,10 @@ module post_regional
         endif
         latstart = nint(lat1*gdsdegr)
         latlast  = nint(lat2*gdsdegr)
+        latstart_r = latstart
+        lonstart_r = lonstart
+        latlast_r = latlast
+        lonlast_r = lonlast
 
         if(dlon<spval) then
           dxval = dlon*gdsdegr
@@ -346,8 +347,8 @@ module post_regional
           dyval = spval
         endif
 
-        print*,'rotated latlon,lonstart,latstart,cenlon,cenlat,dyval,dxval', &
-          lonstart,lonlast,latstart,latlast,cenlon,cenlat,dyval,dxval
+        if(mype==0) print*,'rotated latlon,lonstart,latstart,cenlon,cenlat,dyval,dxval', &
+          lonstart_r,lonlast_r,latstart_r,latlast_r,cenlon,cenlat,dyval,dxval
       endif
 
 ! look at the field bundle attributes
@@ -427,8 +428,6 @@ module post_regional
       enddo
 !
       enddo !end nfb
-!
-      print *,'in post_getattr, dtp=',wrt_int_state%dtp
 !
     end subroutine post_getattr_regional
 !-----------------------------------------------------------------------
@@ -549,7 +548,6 @@ module post_regional
       imp_physics = wrt_int_state%imp_physics       !set GFS mp physics to 99 for Zhao scheme
       dtp         = wrt_int_state%dtp
       iSF_SURFACE_PHYSICS = 2
-      spval = 9.99e20
 !
 ! nems gfs has zhour defined
       tprec   = float(wrt_int_state%fhzero)
@@ -857,7 +855,7 @@ module post_regional
                    name='_FillValue', value=fillvalue, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
                 line=__LINE__, file=__FILE__)) return  ! bail out
-           print *,'in post_lam, get land field value,fillvalue=',fillvalue
+!           print *,'in post_lam, get land field value,fillvalue=',fillvalue
 
           ista = lbound(arrayr42d,1)
           iend = ubound(arrayr42d,1)
@@ -891,7 +889,7 @@ module post_regional
                    name='_FillValue', value=fillvalue, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
                 line=__LINE__, file=__FILE__)) return  ! bail out
-           print *,'in post_lam, get icec  field value,fillvalue=',fillvalue
+!           if(mype==0) print *,'in post_lam, get icec  field value,fillvalue=',fillvalue
 
           ista = lbound(arrayr42d,1)
           iend = ubound(arrayr42d,1)
@@ -912,13 +910,13 @@ module post_regional
        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
          line=__LINE__, file=__FILE__)) return  ! bail out
      endif
-     if(mype==0) print *,'after find sm and sice,imp_physics=',imp_physics,'nbdl=',wrt_int_state%FBCount
+!     if(mype==0) print *,'after find sm and sice,imp_physics=',imp_physics,'nbdl=',wrt_int_state%FBCount
 !
      file_loop_all: do ibdl=1, wrt_int_state%FBCount
 !
 ! get grid dimension count
-       if(mype==0) print *,'in setvar, read field, ibdl=',ibdl,'idim=',   &
-         ista,iend,'jdim=',jsta,jend
+!       if(mype==0) print *,'in setvar, read field, ibdl=',ibdl,'idim=',   &
+!         ista,iend,'jdim=',jsta,jend
        call ESMF_FieldBundleGet(wrt_int_state%wrtFB(ibdl), grid=wrtGrid,  &
          fieldCount=ncount_field, name=wrtFBName,rc=rc)
        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
@@ -955,7 +953,7 @@ module post_regional
               if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
                 line=__LINE__, file=__FILE__)) return  ! bail out
 !              fillValue=9.99E20
-              print *,'in post_lam, get field ',trim(fieldname),' fillValue=',fillValue
+!              print *,'in post_lam, get field ',trim(fieldname),' fillValue=',fillValue
 
             else if (typekind == ESMF_TYPEKIND_R8) then
               call ESMF_FieldGet(fcstField(n), localDe=0, farrayPtr=arrayr82d, rc=rc)
@@ -966,7 +964,7 @@ module post_regional
               if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
                 line=__LINE__, file=__FILE__)) return  ! bail out
               fillValue = fillValue8
-              print *,'in post_lam, get field ',trim(fieldname),' fillvalue r82r4=',fillvalue
+!              print *,'in post_lam, get field ',trim(fieldname),' fillvalue r82r4=',fillvalue
 
               allocate( arrayr42d(ista:iend,jsta:jend))
               !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,arrayr42d,arrayr82d)
@@ -2395,34 +2393,29 @@ module post_regional
 
 !          else if (fieldDimCount > gridDimCount) then
           else if (fieldDimCount ==3) then
-             print *,'in post_lam, get field value,n=',n,'fieldname=',trim(fieldname)
+!             print *,'in post_lam, get field value,n=',n,'fieldname=',trim(fieldname)
             if (typekind == ESMF_TYPEKIND_R4) then
               call ESMF_FieldGet(fcstField(n), localDe=0, farrayPtr=arrayr43d, rc=rc)
-              print *,'in post_lam, bf ESMF_FieldGet,rc=',rc
               if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
                 line=__LINE__, file=__FILE__)) return  ! bail out
-              print *,'fields=',maxval(arrayr43d), minval(arrayr43d)
 
               call ESMF_AttributeGet(fcstField(n), convention="NetCDF", purpose="FV3", &
                  name="_FillValue", typekind=attTypeKind, isPresent=mvispresent, rc=rc)
               if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
                 line=__LINE__, file=__FILE__)) return  ! bail out
-              print *,'in post_lam, get mvispresent=',mvispresent
               if( mvispresent ) then
                 if (attTypeKind==ESMF_TYPEKIND_R4) then
                  call ESMF_AttributeGet(fcstField(n), convention="NetCDF", purpose="FV3", &
                         name="_FillValue", value=fillvalue, isPresent=mvispresent, rc=rc)
-              print *,'in post_lam, get fillvalue r4=',fillvalue
                 else
                   call ESMF_AttributeGet(fcstField(n), convention="NetCDF", purpose="FV3", &
                         name="_FillValue", value=fillvalue8, isPresent=mvispresent, rc=rc)
-              print *,'in post_lam, get fillvalue8=',fillvalue8
                   fillvalue=fillvalue8
                 endif
               endif
 !              call ESMF_AttributeGet(fcstField(n), convention="NetCDF", purpose="FV3", &
 !                   name='_FillValue', value=fillvalue, rc=rc)
-              print *,'in post_lam, get field value,fillvalue=',fillvalue
+!              print *,'in post_lam, get field value,fillvalue=',fillvalue
             else if (typekind == ESMF_TYPEKIND_R8) then
               call ESMF_FieldGet(fcstField(n), localDe=0, farrayPtr=arrayr83d, rc=rc)
               if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
@@ -2458,9 +2451,9 @@ module post_regional
                   enddo
                 enddo
               enddo
-              print *,'in post_lam,tmp 3d=',maxval(t(ista:iend,jsta:jend,1)),minval(t(ista:iend,jsta:jend,1)), &
-                'lm=',maxval(t(ista:iend,jsta:jend,lm)),minval(t(ista:iend,jsta:jend,lm)), &
-                t(ista,jsta,1),arrayr43d(ista,jsta,1),'fillvlaue=',fillvalue
+!              print *,'in post_lam,tmp 3d=',maxval(t(ista:iend,jsta:jend,1)),minval(t(ista:iend,jsta:jend,1)), &
+!                'lm=',maxval(t(ista:iend,jsta:jend,lm)),minval(t(ista:iend,jsta:jend,lm)), &
+!                t(ista,jsta,1),arrayr43d(ista,jsta,1),'fillvlaue=',fillvalue
 
               !! sig4
               !$omp parallel do default(none) private(i,j,tlmh) shared(lm,jsta,jend,ista,iend,t,sigt4,spval)
@@ -2500,8 +2493,8 @@ module post_regional
                   enddo
                 enddo
               enddo
-              print *,'in post_lam,uh 3d=',maxval(uh(ista:iend,jsta:jend,1)),minval(uh(ista:iend,jsta:jend,1)), &
-                'lm=',maxval(uh(ista:iend,jsta:jend,lm)),minval(uh(ista:iend,jsta:jend,lm)),'lm=',lm,'dim=',ista,iend,jsta,jend
+!              print *,'in post_lam,uh 3d=',maxval(uh(ista:iend,jsta:jend,1)),minval(uh(ista:iend,jsta:jend,1)), &
+!                'lm=',maxval(uh(ista:iend,jsta:jend,lm)),minval(uh(ista:iend,jsta:jend,lm)),'lm=',lm,'dim=',ista,iend,jsta,jend
             endif
 
             ! model level v wind
@@ -2541,8 +2534,8 @@ module post_regional
                   enddo
                 enddo
               enddo
-              print *,'in post_lam,zint 3d=',maxval(zint(ista:iend,jsta:jend,1)),minval(zint(ista:iend,jsta:jend,1)), &
-                'lm=',maxval(zint(ista:iend,jsta:jend,lm)),minval(zint(ista:iend,jsta:jend,lm))
+!              print *,'in post_lam,zint 3d=',maxval(zint(ista:iend,jsta:jend,1)),minval(zint(ista:iend,jsta:jend,1)), &
+!                'lm=',maxval(zint(ista:iend,jsta:jend,lm)),minval(zint(ista:iend,jsta:jend,lm))
             endif
 
             ! model level w
@@ -2584,9 +2577,9 @@ module post_regional
                     enddo
                   enddo
                 enddo
-              print *,'in post_lam,clwmr 3d=',maxval(qqw(ista:iend,jsta:jend,1)),minval(qqw(ista:iend,jsta:jend,1)), &
-                'lm=',maxval(qqw(ista:iend,jsta:jend,lm)),minval(qqw(ista:iend,jsta:jend,lm)), &
-                qqw(ista,jsta,1),arrayr43d(ista,jsta,1),'fillvlaue=',fillvalue
+!              print *,'in post_lam,clwmr 3d=',maxval(qqw(ista:iend,jsta:jend,1)),minval(qqw(ista:iend,jsta:jend,1)), &
+!                'lm=',maxval(qqw(ista:iend,jsta:jend,lm)),minval(qqw(ista:iend,jsta:jend,lm)), &
+!                qqw(ista,jsta,1),arrayr43d(ista,jsta,1),'fillvlaue=',fillvalue
               endif
 
               ! model level ice mixing ratio
@@ -2626,9 +2619,9 @@ module post_regional
                     enddo
                   enddo
                 enddo
-              print *,'in post_lam,snmr 3d=',maxval(qqs(ista:iend,jsta:jend,1)),minval(qqs(ista:iend,jsta:jend,1)), &
-                'lm=',maxval(qqs(ista:iend,jsta:jend,lm)),minval(qqs(ista:iend,jsta:jend,lm)), &
-                qqs(ista,jsta,1),arrayr43d(ista,jsta,1),'fillvlaue=',fillvalue
+!              print *,'in post_lam,snmr 3d=',maxval(qqs(ista:iend,jsta:jend,1)),minval(qqs(ista:iend,jsta:jend,1)), &
+!                'lm=',maxval(qqs(ista:iend,jsta:jend,lm)),minval(qqs(ista:iend,jsta:jend,lm)), &
+!                qqs(ista,jsta,1),arrayr43d(ista,jsta,1),'fillvlaue=',fillvalue
               endif
 
               ! model level rain water mixing ratio
@@ -2657,7 +2650,7 @@ module post_regional
                   enddo
                 enddo
               enddo
-              print *,'in gfs_post, get ref_10cm=',maxval(ref_10cm), minval(ref_10cm)
+!              print *,'in gfs_post, get ref_10cm=',maxval(ref_10cm), minval(ref_10cm)
             endif
 
             ! model level cloud fraction
@@ -2679,17 +2672,13 @@ module post_regional
 ! end loop ncount_field
         enddo
 
-       if(mype==0) print *, 'dong wrtFB_names',ibdl,trim(wrt_int_state%wrtFB_names(ibdl)),trim(filename_base(1)),trim(filename_base(2))  
-       if(mype==0) print *, 'dong wrtFB_names2',index(trim(wrt_int_state%wrtFB_names(ibdl)),trim(filename_base(1)))                       
-!        if ( index(trim(wrt_int_state%wrtFB_names(ibdl)),trim(filename_base(1))) > 0)  then 
-        if ( ibdl .eq. 1)  then                         
-          print *, 'dong wrtFB_names3', mype
+        if ( index(trim(wrt_int_state%wrtFB_names(ibdl)),trim(filename_base(1))) > 0)  then 
           setvar_atmfile = .true.
         endif
-!        if ( index(trim(wrt_int_state%wrtFB_names(ibdl)),trim(filename_base(2))) > 0)   &
-        if ( ibdl .eq. 2)  then                        
+        if ( index(trim(wrt_int_state%wrtFB_names(ibdl)),trim(filename_base(2))) > 0)   then
           setvar_sfcfile = .true.
         endif
+        if(mype==0) print *,'setvar_atmfile=',setvar_atmfile,'setvar_sfcfile=',setvar_sfcfile,'ibdl=',ibdl
         deallocate(fcstField)
 
 ! end file_loop_all
@@ -2723,8 +2712,8 @@ module post_regional
           enddo
         enddo
       enddo
-      print *,'in post_lam,omga 3d=',maxval(omga(ista:iend,jsta:jend,1)),minval(omga(ista:iend,jsta:jend,1)), &
-           'lm=',maxval(omga(ista:iend,jsta:jend,lm)),minval(omga(ista:iend,jsta:jend,lm))
+!      print *,'in post_lam,omga 3d=',maxval(omga(ista:iend,jsta:jend,1)),minval(omga(ista:iend,jsta:jend,1)), &
+!           'lm=',maxval(omga(ista:iend,jsta:jend,lm)),minval(omga(ista:iend,jsta:jend,lm))
 
 ! compute pint from top down
 !$omp parallel do default(none) private(i,j) shared(jsta,jend,im,ak5,pint)
@@ -2799,13 +2788,13 @@ module post_regional
           end do
         end do
       end do
-        print *,'in post_gfs,zmid=',maxval(zmid(1:im,jsta:jend,1)), &
-          minval(zmid(1:im,jsta:jend,1)),maxloc(zmid(1:im,jsta:jend,1)), &
-          'zint=',maxval(zint(1:im,jsta:jend,2)),minval(zint(1:im,jsta:jend,1)),  &
-          'pmid=',maxval(pmid(1:im,jsta:jend,1)),minval(pmid(1:im,jsta:jend,1)),  &
-          'alpint=',maxval(alpint(1:im,jsta:jend,2)),minval(alpint(1:im,jsta:jend,2))
-        print *,'in post_gfs,alpint=',maxval(alpint(1:im,jsta:jend,1)), &
-          minval(alpint(1:im,jsta:jend,1))
+!        print *,'in post_gfs,zmid=',maxval(zmid(1:im,jsta:jend,1)), &
+!          minval(zmid(1:im,jsta:jend,1)),maxloc(zmid(1:im,jsta:jend,1)), &
+!          'zint=',maxval(zint(1:im,jsta:jend,2)),minval(zint(1:im,jsta:jend,1)),  &
+!          'pmid=',maxval(pmid(1:im,jsta:jend,1)),minval(pmid(1:im,jsta:jend,1)),  &
+!          'alpint=',maxval(alpint(1:im,jsta:jend,2)),minval(alpint(1:im,jsta:jend,2))
+!        print *,'in post_gfs,alpint=',maxval(alpint(1:im,jsta:jend,1)), &
+!          minval(alpint(1:im,jsta:jend,1))
 
 ! surface potential T, and potential T at roughness length
 !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,lp1,sm,ths,sst,thz0,pint)
@@ -2825,8 +2814,8 @@ module post_regional
           endif
         enddo
       enddo
-      print *,'in post_gfs,ths=',maxval(ths(1:im,jsta:jend)), &
-          minval(ths(1:im,jsta:jend))
+!      print *,'in post_gfs,ths=',maxval(ths(1:im,jsta:jend)), &
+!          minval(ths(1:im,jsta:jend))
 
 ! compute cwm for gfdlmp
       if(  imp_physics == 11 ) then
@@ -2857,8 +2846,8 @@ module post_regional
           endif
         enddo
       enddo
-      print *,'in post_gfs,tshltr=',maxval(tshltr(1:im,jsta:jend)), &
-          minval(tshltr(1:im,jsta:jend))
+!      print *,'in post_gfs,tshltr=',maxval(tshltr(1:im,jsta:jend)), &
+!          minval(tshltr(1:im,jsta:jend))
 
 !htop
       do j=jsta,jend

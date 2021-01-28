@@ -1164,7 +1164,7 @@
 !-----------------------------------------------------------------------
 !
       call ESMF_LogWrite("before initialize for POST", ESMF_LOGMSG_INFO, rc=rc)
-      print *,'in wrt grid comp, dopost=',wrt_int_state%write_dopost
+      if (lprnt) print *,'in wrt grid comp, dopost=',wrt_int_state%write_dopost
       if( wrt_int_state%write_dopost ) then
         call inline_post_getattr(wrt_int_state)
       endif
