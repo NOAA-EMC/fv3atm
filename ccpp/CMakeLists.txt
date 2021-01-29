@@ -25,8 +25,6 @@ endif()
 # Set include directories for make, also set CCPP_... for external projects
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR}/framework/src)
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR}/physics)
-SET(CCPP_INCLUDE_DIRS "${CMAKE_CURRENT_BINARY_DIR}/framework/src;${CMAKE_CURRENT_BINARY_DIR}/physics")
-SET(CCPP_LIB_DIRS "${CMAKE_CURRENT_BINARY_DIR}/framework/src;${CMAKE_CURRENT_BINARY_DIR}/physics")
 
 #------------------------------------------------------------------------------
 # Generate Compiler flags for C/CXX/Fortran - set to match NEMSfv3gfs flags
