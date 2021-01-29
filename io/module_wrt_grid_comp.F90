@@ -1402,6 +1402,7 @@
       lmask_fields = .false.
       if( wrt_int_state%write_dopost ) then
 !
+        wbeg = MPI_Wtime()
         if (trim(output_grid) == 'regional_latlon' .or. &
             trim(output_grid) == 'rotated_latlon'  .or. &
             trim(output_grid) == 'lambert_conformal') then
@@ -1417,6 +1418,12 @@
 
         call inline_post_run(wrt_int_state, mype, wrt_mpi_comm, lead_write_task, &
                           nf_hours, nf_minutes,nseconds)
+        wend = MPI_Wtime()
+        if (lprnt) then
+          write(*,'(A,F10.5,A,I4.2,A,I2.2)')' actual    inline post Time is ',wend-wbeg &
+                     ,' at Fcst ',nf_hours,':',nf_minutes
+            endif
+
       endif
 !
 !-----------------------------------------------------------------------
