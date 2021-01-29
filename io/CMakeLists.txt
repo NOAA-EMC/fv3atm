@@ -32,11 +32,11 @@ target_compile_definitions(io PRIVATE "${_io_defs_private}")
 target_include_directories(io PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/mod>)
 
 if(32BIT)
-   target_link_libraries(io PRIVATE fms_r4
+   target_link_libraries(io PRIVATE FMS::fms_r4
                                     gfsphysics
                                     ccppdriver)
 else()
-   target_link_libraries(io PRIVATE fms_r8
+   target_link_libraries(io PRIVATE FMS::fms_r8
                                     gfsphysics
                                     ccppdriver)
 endif()

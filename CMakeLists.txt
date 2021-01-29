@@ -109,11 +109,11 @@ target_include_directories(fv3dycore INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT
                                                $<INSTALL_INTERFACE:mod>)
 
 if(32BIT)
-   target_link_libraries(fv3dycore PUBLIC fms_r4
+   target_link_libraries(fv3dycore PUBLIC FMS::fms_r4
                                           gfsphysics
                                           esmf)
 else()
-   target_link_libraries(fv3dycore PUBLIC fms_r8
+   target_link_libraries(fv3dycore PUBLIC FMS::fms_r8
                                           gfsphysics
                                           esmf)
 endif()
