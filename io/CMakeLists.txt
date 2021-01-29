@@ -31,9 +31,15 @@ set_target_properties(io PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BIN
 target_compile_definitions(io PRIVATE "${_io_defs_private}")
 target_include_directories(io PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/mod>)
 
-target_link_libraries(io PRIVATE fms
-                                 gfsphysics
-                                 ccppdriver)
+if(32BIT)
+   target_link_libraries(io PRIVATE fms_r4
+                                    gfsphysics
+                                    ccppdriver)
+else()
+   target_link_libraries(io PRIVATE fms_r8
+                                    gfsphysics
+                                    ccppdriver)
+endif()
 
 if(INLINE_POST)
   target_link_libraries(io PRIVATE upp::upp)

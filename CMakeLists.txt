@@ -108,9 +108,16 @@ target_include_directories(fv3dycore PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/atmos_c
 target_include_directories(fv3dycore INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/mod>
                                                $<INSTALL_INTERFACE:mod>)
 
-target_link_libraries(fv3dycore PUBLIC fms
-                                       gfsphysics
-                                       esmf)
+if(32BIT)
+   target_link_libraries(fv3dycore PUBLIC fms_r4
+                                          gfsphysics
+                                          esmf)
+else()
+   target_link_libraries(fv3dycore PUBLIC fms_r8
+                                          gfsphysics
+                                          esmf)
+endif()
+
 if(OpenMP_Fortran_FOUND)
   target_link_libraries(fv3dycore PUBLIC OpenMP::OpenMP_Fortran)
 endif()
