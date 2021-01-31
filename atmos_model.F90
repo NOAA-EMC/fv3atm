@@ -1626,7 +1626,7 @@ end subroutine atmos_data_type_chksum
 ! get sea ice surface temperature
 !--------------------------------
           fldname = 'sea_ice_surface_temperature'
-          if (trim(impfield_name) == trim(fldname)) then
+          if (trim(impfield_name) == trim(fldname) .and. GFS_control%kdt > 1) then
             findex  = QueryFieldList(ImportFieldsList,fldname)
             if (importFieldsValid(findex)) then
 !$omp parallel do default(shared) private(i,j,nb,ix)
@@ -1667,7 +1667,7 @@ end subroutine atmos_data_type_chksum
 ! get sea ice fraction:  fice or sea ice concentration from the mediator
 !-----------------------------------------------------------------------
           fldname = 'ice_fraction'
-          if (trim(impfield_name) == trim(fldname)) then
+          if (trim(impfield_name) == trim(fldname) .and. GFS_control%kdt > 1) then
             findex  = QueryFieldList(ImportFieldsList,fldname)
             if (importFieldsValid(findex)) then
               lcpl_fice = .true.
