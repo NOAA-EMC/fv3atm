@@ -2640,7 +2640,7 @@ module post_regional
 !            endif
 
             ! model level ref3d
-            if(trim(fieldname)=='ref3D') then
+            if(trim(fieldname)=='ref_10cm') then
               !$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,ref_10cm,arrayr43d,fillvalue,spval)
               do l=1,lm
                 do j=jsta,jend
@@ -2650,7 +2650,7 @@ module post_regional
                   enddo
                 enddo
               enddo
-!              print *,'in gfs_post, get ref_10cm=',maxval(ref_10cm), minval(ref_10cm)
+              if(mype==0) print *,'in gfs_post, get ref_10cm=',maxval(ref_10cm), minval(ref_10cm),'ibdl=',bdl
             endif
 
             ! model level cloud fraction
