@@ -2650,7 +2650,7 @@ module post_regional
                   enddo
                 enddo
               enddo
-              if(mype==0) print *,'in gfs_post, get ref_10cm=',maxval(ref_10cm), minval(ref_10cm),'ibdl=',bdl
+              if(mype==0) print *,'in gfs_post, get ref_10cm=',maxval(ref_10cm), minval(ref_10cm),'ibdl=',ibdl
             endif
 
             ! model level cloud fraction
