@@ -2818,7 +2818,7 @@ module post_regional
 !          minval(ths(1:im,jsta:jend))
 
 ! compute cwm for gfdlmp
-      if(  imp_physics == 11 ) then
+!      if(  imp_physics == 11 ) then
         do l=1,lm
 !$omp parallel do default(none) private(i,j) shared(l,jsta,jend,ista,iend,cwm,qqg,qqs,qqr,qqi,qqw,spval)
           do j=jsta,jend
@@ -2831,7 +2831,7 @@ module post_regional
             enddo
           enddo
         enddo
-      endif
+!      endif
 
 ! estimate 2m pres and convert t2m to theta
 !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,lm,pshltr,pint,tshltr,spval)
