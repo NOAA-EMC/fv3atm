@@ -8,5 +8,7 @@
 	branch = master
 [submodule "ccpp/physics"]
 	path = ccpp/physics
-	url = https://github.com/NCAR/ccpp-physics
-	branch = master
+	#url = https://github.com/NCAR/ccpp-physics
+	#branch = master
+	url = https://github.com/climbfuji/ccpp-physics
+	branch = move_lsm_table_init_to_ccpp
