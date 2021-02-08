@@ -127,13 +127,6 @@ module GFS_init
     !--- populate the grid components
     call GFS_grid_populate (Grid, Init_parm%xlon, Init_parm%xlat, Init_parm%area)
 
-! DH* TODO - MOVE TO CCPP
-! sfc_drv.f/lsm_noah_init and sfc_noahmp_drv.f/noahmpdrv_init; Note: This is
-! automatically called during the CCPP physics initialization stage.
-    !--- initialize soil vegetation
-    call set_soilveg(Model%me, Model%isot, Model%ivegsrc, Model%nlunit)
-! *DH
-
   end subroutine GFS_initialize
 
 !------------------
