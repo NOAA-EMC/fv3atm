@@ -4916,7 +4916,7 @@
   dimensions = ()
   type = logical
 [do_ugwp_v0]
-  standard_name = do_ugwp_v0
+  standard_name = flag_for_ugwp_version_0
   long_name = flag to activate ver 0 CIRES UGWP
   units = flag
   dimensions = ()
@@ -4924,7 +4924,7 @@
   intent = in
   optional = F
 [do_ugwp_v0_orog_only]
-  standard_name = do_ugwp_v0_orog_only
+  standard_name = flag_for_ugwp_version_0_orographic_gwd
   long_name = flag to activate ver 0 CIRES UGWP - orographic GWD only
   units = flag
   dimensions = ()
@@ -4932,7 +4932,7 @@
   intent = in
   optional = F
 [do_ugwp_v0_nst_only]
-  standard_name = do_ugwp_v0_nst_only
+  standard_name = flag_for_ugwp_version_0_nonorographic_gwd
   long_name = flag to activate ver 0 CIRES UGWP - non-stationary GWD only
   units = flag
   dimensions = ()
@@ -4940,7 +4940,7 @@
   intent = in
   optional = F
 [do_gsl_drag_ls_bl]
-  standard_name = do_gsl_drag_ls_bl
+  standard_name = flag_for_gsl_drag_suite_large_scale_orographic_and_blocking_drag
   long_name = flag to activate GSL drag suite - large-scale GWD and blocking
   units = flag
   dimensions = ()
@@ -4948,7 +4948,7 @@
   intent = in
   optional = F
 [do_gsl_drag_ss]
-  standard_name = do_gsl_drag_ss
+  standard_name = flag_for_gsl_drag_suite_small_scale_orographic_drag
   long_name = flag to activate GSL drag suite - small-scale GWD
   units = flag
   dimensions = ()
@@ -4956,7 +4956,7 @@
   intent = in
   optional = F
 [do_gsl_drag_tofd]
-  standard_name = do_gsl_drag_tofd
+  standard_name = flag_for_gsl_drag_suite_turbulent_orographic_form_drag
   long_name = flag to activate GSL drag suite - turb orog form drag
   units = flag
   dimensions = ()
@@ -4964,7 +4964,7 @@
   intent = in
   optional = F
 [do_ugwp_v1]
-  standard_name = do_ugwp_v1
+  standard_name = flag_for_ugwp_version_1
   long_name = flag to activate ver 1 CIRES UGWP
   units = flag
   dimensions = ()
@@ -4972,7 +4972,7 @@
   intent = in
   optional = F
 [do_ugwp_v1_orog_only]
-  standard_name = do_ugwp_v1_orog_only
+  standard_name = flag_for_ugwp_version_1_orographic_gwd
   long_name = flag to activate ver 1 CIRES UGWP - orographic GWD only
   units = flag
   dimensions = ()
@@ -4980,7 +4980,7 @@
   intent = in
   optional = F
 [do_ugwp_v1_w_gsldrag]
-  standard_name = do_ugwp_v1_w_gsldrag
+  standard_name = flag_for_ugwp_version_1_nonorographic_gwd
   long_name = flag to activate ver 1 CIRES UGWP - with OGWD of GSL
   units = flag
   dimensions = ()
@@ -5192,35 +5192,35 @@
   kind = kind_phys
   active = (flag_for_in_ccn_forcing_for_morrison_gettelman_microphysics==1)
 [jindx1_tau]
-  standard_name = index_interp_weight1_taungw
+  standard_name = lower_latitude_index_of_absolute_momentum_flux_due_to_nonorographic_gravity_wave_drag_for_interpolation
   long_name = index1 for weight1 for tau NGWs
   units = none
   dimensions = (horizontal_loop_extent)
   type = integer
-  active = (do_ugwp_v1)
+  active = (flag_for_ugwp_version_1)
 [jindx2_tau]
-  standard_name = index_interp_weight2_taungw
+  standard_name = upper_latitude_index_of_absolute_momentum_flux_due_to_nonorographic_gravity_wave_drag_for_interpolation
   long_name = index2 for weight2 for tau NGWs
   units = none
   dimensions = (horizontal_loop_extent)
   type = integer
-  active = (do_ugwp_v1)
+  active = (flag_for_ugwp_version_1)
 [ddy_j1tau]
-  standard_name = interp_weight1_taungw
+  standard_name = latitude_interpolation_weight_complement_for_absolute_momentum_flux_due_to_nonorographic_gravity_wave_drag
   long_name = interpolation weight1 for tau NGWs
   units = none
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (do_ugwp_v1)
+  active = (flag_for_ugwp_version_1)
 [ddy_j2tau]
-  standard_name = interp_weight2_taungw
+  standard_name = latitude_interpolation_weight_for_absolute_momentum_flux_due_to_nonorographic_gravity_wave_drag
   long_name = interpolation weight2 for tau NGWs
   units = none
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (do_ugwp_v1)
+  active = (flag_for_ugwp_version_1)
 
 ########################################################################
 [ccpp-table-properties]
@@ -5246,7 +5246,7 @@
   type = integer
   active = (flag_for_lw_clouds_sub_grid_approximation == 2 .or. flag_for_sw_clouds_grid_approximation == 2)
 [tau_amf]
-  standard_name = ngw_abs_momentum_flux
+  standard_name = absolute_momentum_flux_due_to_nonorographic_gravity_wave_drag
   long_name = ngw_absolute_momentum_flux
   units = various
   dimensions = (horizontal_loop_extent)
@@ -5967,134 +5967,6 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[dusfc_ls]
-  standard_name = integrated_x_momentum_flux_from_large_scale_gwd
-  long_name = integrated x momentum flux from large scale gwd
-  units = Pa s
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-  active = (gwd_opt == 33)
-[dvsfc_ls]
-  standard_name = integrated_y_momentum_flux_from_large_scale_gwd
-  long_name = integrated y momentum flux from large scale gwd
-  units = Pa s
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-  active = (gwd_opt == 33)
-[dusfc_bl]
-  standard_name = integrated_x_momentum_flux_from_blocking_drag
-  long_name = integrated x momentum flux from blocking drag
-  units = Pa s
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-  active = (gwd_opt == 33)
-[dvsfc_bl]
-  standard_name = integrated_y_momentum_flux_from_blocking_drag
-  long_name = integrated y momentum flux from blocking drag
-  units = Pa s
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-  active = (gwd_opt == 33)
-[dusfc_ss]
-  standard_name = integrated_x_momentum_flux_from_small_scale_gwd
-  long_name = integrated x momentum flux from small scale gwd
-  units = Pa s
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-  active = (gwd_opt == 33)
-[dvsfc_ss]
-  standard_name = integrated_y_momentum_flux_from_small_scale_gwd
-  long_name = integrated y momentum flux from small scale gwd
-  units = Pa s
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-  active = (gwd_opt == 33)
-[dusfc_fd]
-  standard_name = integrated_x_momentum_flux_from_form_drag
-  long_name = integrated x momentum flux from form drag
-  units = Pa s
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-  active = (gwd_opt == 33)
-[dvsfc_fd]
-  standard_name = integrated_y_momentum_flux_from_form_drag
-  long_name = integrated y momentum flux from form drag
-  units = Pa s
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-  active = (gwd_opt == 33)
-[dtaux2d_ls]
-  standard_name = x_momentum_tendency_from_large_scale_gwd
-  long_name = x momentum tendency from large scale gwd
-  units = m s-2
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (gwd_opt == 33)
-[dtauy2d_ls]
-  standard_name = y_momentum_tendency_from_large_scale_gwd
-  long_name = y momentum tendency from large scale gwd
-  units = m s-2
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (gwd_opt == 33)
-[dtaux2d_bl]
-  standard_name = x_momentum_tendency_from_blocking_drag
-  long_name = x momentum tendency from blocking drag
-  units = m s-2
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (gwd_opt == 33)
-[dtauy2d_bl]
-  standard_name = y_momentum_tendency_from_blocking_drag
-  long_name = y momentum tendency from blocking drag
-  units = m s-2
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (gwd_opt == 33)
-[dtaux2d_ss]
-  standard_name = x_momentum_tendency_from_small_scale_gwd
-  long_name = x momentum tendency from small scale gwd
-  units = m s-2
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (gwd_opt == 33)
-[dtauy2d_ss]
-  standard_name = y_momentum_tendency_from_small_scale_gwd
-  long_name = y momentum tendency from small scale gwd
-  units = m s-2
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  active = (gwd_opt == 33)
-  kind = kind_phys
-[dtaux2d_fd]
-  standard_name = x_momentum_tendency_from_form_drag
-  long_name = x momentum tendency from form drag
-  units = m s-2
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (gwd_opt == 33)
-[dtauy2d_fd]
-  standard_name = y_momentum_tendency_from_form_drag
-  long_name = y momentum tendency from form drag
-  units = m s-2
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (gwd_opt == 33)
 [totprcp]
   standard_name = accumulated_lwe_thickness_of_precipitation_amount
   long_name = accumulated total precipitation
@@ -7208,13 +7080,6 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[zngw]
-  standard_name = time_integral_of_height_of_launch_level_of_ngw
-  long_name = time integral of height of launch level of nonstationary gw
-  units = m
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
 [tau_tofd]
   standard_name = time_integral_of_momentum_flux_due_to_turbulent_orographic_form_drag
   long_name = time integral of momentum flux due to TOFD
@@ -7239,13 +7104,6 @@
 [tau_ngw]
   standard_name = time_integral_of_momentum_flux_due_to_nonstationary_gravity_wave
   long_name = time integral of momentum flux due to nonstationary gravity waves
-  units = Pa
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-[tau_oss]
-  standard_name = time_integral_of_momentum_flux_due_to_sso
-  long_name = time integral of momentum flux due to subgrid-scale orography
   units = Pa
   dimensions = (horizontal_loop_extent)
   type = real
@@ -9935,34 +9793,6 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[gw_dudt]
-  standard_name = tendency_of_x_wind_due_to_ugwp
-  long_name = zonal wind tendency due to UGWP
-  units = m s-2
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
-[gw_dvdt]
-  standard_name = tendency_of_y_wind_due_to_ugwp
-  long_name = meridional wind tendency due to UGWP
-  units = m s-2
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
-[gw_dtdt]
-  standard_name = tendency_of_air_temperature_due_to_ugwp
-  long_name = air temperature tendency due to UGWP
-  units = K s-1
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
-[gw_kdis]
-  standard_name = eddy_mixing_due_to_ugwp
-  long_name = eddy mixing due to UGWP
-  units = m2 s-1
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
 [zmtb]
   standard_name = height_of_mountain_blocking
   long_name = height of mountain blocking drag
@@ -9971,66 +9801,59 @@
   type = real
   kind = kind_phys
 [dudt_gw]
-  standard_name = tendency_of_x_wind_due_to_allgw
+  standard_name = tendency_of_x_wind_due_to_gravity_wave_drag
   long_name = zonal wind tendency due to all GWs
   units = m s-2
   dimensions = (horizontal_loop_extent,vertical_dimension)
   type = real
   kind = kind_phys
 [dvdt_gw]
-  standard_name = tendency_of_y_wind_due_to_allgw
+  standard_name = tendency_of_y_wind_due_to_gravity_wave_drag
   long_name = meridional wind tendency due to all GWs
   units = m s-2
   dimensions = (horizontal_loop_extent,vertical_dimension)
   type = real
   kind = kind_phys
 [dtdt_gw]
-  standard_name = tendency_of_air_temperature_due_to_allgw
+  standard_name = tendency_of_air_temperature_due_to_gravity_wave_drag
   long_name = air temperature tendency due to all GWs
   units = K s-1
   dimensions = (horizontal_loop_extent,vertical_dimension)
   type = real
   kind = kind_phys
 [kdis_gw]
-  standard_name = eddy_mixing_due_to_allgw
+  standard_name = atmosphere_momentum_diffusivity_due_to_gravity_wave_drag
   long_name = eddy mixing due to all GWs
   units = m2 s-1
   dimensions = (horizontal_loop_extent,vertical_dimension)
   type = real
   kind = kind_phys
 [dudt_ngw]
-  standard_name = tendency_of_x_wind_due_to_ngw
+  standard_name = tendency_of_x_wind_due_to_nonorographic_gravity_wave_drag
   long_name = zonal wind tendency due to non-stationary GWs
   units = m s-2
   dimensions = (horizontal_loop_extent,vertical_dimension)
   type = real
   kind = kind_phys
 [dvdt_ngw]
-  standard_name = tendency_of_y_wind_due_to_ngw
+  standard_name = tendency_of_y_wind_due_to_nonorographic_gravity_wave_drag
   long_name = meridional wind tendency due to non-stationary GWs
   units = m s-2
   dimensions = (horizontal_loop_extent,vertical_dimension)
   type = real
   kind = kind_phys
 [dtdt_ngw]
-  standard_name = tendency_of_air_temperature_due_to_ngw
+  standard_name = tendency_of_air_temperature_due_to_nonorographic_gravity_wave_drag
   long_name = air temperature tendency due to non-stationary GWs
   units = K s-1
   dimensions = (horizontal_loop_extent,vertical_dimension)
   type = real
   kind = kind_phys
 [kdis_ngw]
-  standard_name = eddy_mixing_due_to_ngw
+  standard_name = atmosphere_momentum_diffusivity_due_to_nonorographic_gravity_wave_drag
   long_name = eddy mixing due to non-stationary GWs
   units = m2 s-1
   dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
-[zobl]
-  standard_name = height_of_mountain_blocking_v1
-  long_name = height of mountain blocking drag_v1
-  units = m
-  dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
 [zlwb]
@@ -10048,7 +9871,7 @@
   type = real
   kind = kind_phys
 [zngw]
-  standard_name = height_of_launch_level_of_nonsta_gravity_wave
+  standard_name = height_of_launch_level_of_nonorographic_gravity_waves
   long_name = height of launch level of non-stationary GWs
   units = m
   dimensions = (horizontal_loop_extent)
@@ -10076,7 +9899,7 @@
   type = real
   kind = kind_phys
 [tau_oss]
-  standard_name = instantaneous_momentum_flux_due_to_sso
+  standard_name = momentum_flux_due_to_subgrid_scale_orographic_gravity_wave_drag
   long_name = momentum flux or stress due to SSO including OBL-OSS-OFD
   units = Pa
   dimensions = (horizontal_loop_extent)
@@ -10097,126 +9920,119 @@
   type = real
   kind = kind_phys
 [dudt_tms]
-  standard_name = instantaneous_change_in_x_wind_due_to_turbulent_orographic_form_drag
+  standard_name = tendency_of_x_wind_due_to_turbulent_orographic_form_drag
   long_name = instantaneous change in x wind due to TOFD
   units = m s-2
   dimensions = (horizontal_loop_extent,vertical_dimension)
   type = real
   kind = kind_phys
 [dudt_ogw]
-  standard_name = instantaneous_change_in_x_wind_due_to_orographic_gravity_wave_drag
+  standard_name = tendency_of_x_wind_due_to_mesoscale_orographic_gravity_wave_drag
   long_name = x momentum tendency from meso scale ogw
   units = m s-2
   dimensions = (horizontal_loop_extent,vertical_dimension)
   type = real
   kind = kind_phys
 [dvdt_ogw]
-  standard_name = y_momentum_tendency_from_meso_scale_ogw
+  standard_name = tendency_of_y_wind_due_to_mesoscale_orographic_gravity_wave_drag
   long_name = y momentum tendency from meso scale ogw
   units = m s-2
   dimensions = (horizontal_loop_extent,vertical_dimension)
   type = real
   kind = kind_phys
-[dtdt_sso]
-  standard_name = tendency_of_air_temperature_due_to_sso
-  long_name = air temperature tendency due to subgrid-scale orography
-  units = K s-1
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
 [du_ogwcol]
-  standard_name = integrated_x_momentum_flux_from_meso_scale_ogw
+  standard_name = vertically_integrated_x_momentum_flux_due_to_mesoscale_orographic_gravity_wave_drag
   long_name = integrated x momentum flux from meso scale ogw
   units = Pa
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
 [dv_ogwcol]
-  standard_name = integrated_y_momentum_flux_from_meso_scale_ogw
+  standard_name = vertically_integrated_y_momentum_flux_due_to_mesoscale_orographic_gravity_wave_drag
   long_name = integrated y momentum flux from meso scale ogw
   units = Pa
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
 [dudt_obl]
-  standard_name = x_momentum_tendency_from_blocking_drag_vy
+  standard_name = tendency_of_x_momentum_due_to_blocking_drag
   long_name = x momentum tendency from blocking drag
   units = m s-2
   dimensions = (horizontal_loop_extent,vertical_dimension)
   type = real
   kind = kind_phys
 [dvdt_obl]
-  standard_name = y_momentum_tendency_from_blocking_drag_vy
+  standard_name = tendency_of_y_momentum_due_to_blocking_drag
   long_name = y momentum tendency from blocking drag
   units = m s-2
   dimensions = (horizontal_loop_extent,vertical_dimension)
   type = real
   kind = kind_phys
 [du_oblcol]
-  standard_name = integrated_x_momentum_flux_from_blocking_drag_vy
+  standard_name = vertically_integrated_x_momentum_flux_due_to_blocking_drag
   long_name = integrated x momentum flux from blocking drag
   units = Pa
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
 [dv_oblcol]
-  standard_name = integrated_y_momentum_flux_from_blocking_drag_vy
+  standard_name = vertically_integrated_y_momentum_flux_due_to_blocking_drag
   long_name = integrated y momentum flux from blocking drag
   units = Pa
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
 [dudt_oss]
-  standard_name = x_momentum_tendency_from_small_scale_gwd_vy
+  standard_name = tendency_of_x_momentum_due_to_small_scale_gravity_wave_drag
   long_name = x momentum tendency from small scale gwd
   units = m s-2
   dimensions = (horizontal_loop_extent,vertical_dimension)
   type = real
   kind = kind_phys
 [dvdt_oss]
-  standard_name = y_momentum_tendency_from_small_scale_gwd_vy
+  standard_name = tendency_of_y_momentum_due_to_small_scale_gravity_wave_drag
   long_name = y momentum tendency from small scale gwd
   units = m s-2
   dimensions = (horizontal_loop_extent,vertical_dimension)
   type = real
   kind = kind_phys
 [du_osscol]
-  standard_name = integrated_x_momentum_flux_from_small_scale_gwd_vy
+  standard_name = vertically_integrated_x_momentum_flux_due_to_small_scale_gravity_wave_drag
   long_name = integrated x momentum flux from small scale gwd
   units = Pa
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
 [dv_osscol]
-  standard_name = integrated_y_momentum_flux_from_small_scale_gwd_vy
+  standard_name = vertically_integrated_y_momentum_flux_due_to_small_scale_gravity_wave_drag
   long_name = integrated y momentum flux from small scale gwd
   units = Pa
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
 [dudt_ofd]
-  standard_name = x_momentum_tendency_from_form_drag_vy
+  standard_name = tendency_of_x_momentum_due_to_form_drag
   long_name = x momentum tendency from form drag
   units = m s-2
   dimensions = (horizontal_loop_extent,vertical_dimension)
   type = real
   kind = kind_phys
 [dvdt_ofd]
-  standard_name = y_momentum_tendency_from_form_drag_vy
+  standard_name = tendency_of_y_momentum_due_to_form_drag
   long_name = y momentum tendency from form drag
   units = m s-2
   dimensions = (horizontal_loop_extent,vertical_dimension)
   type = real
   kind = kind_phys
 [du_ofdcol]
-  standard_name = integrated_x_momentum_flux_from_form_drag_vy
+  standard_name = vertically_integrated_x_momentum_flux_due_to_form_drag
   long_name = integrated x momentum flux from form drag
   units = Pa
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
 [dv_ofdcol]
-  standard_name = integrated_y_momentum_flux_from_form_drag_vy
+  standard_name = vertically_integrated_y_momentum_flux_due_to_form_drag
   long_name = integrated y momentum flux from form drag
   units = Pa
   dimensions = (horizontal_loop_extent)

@@ -1478,24 +1478,6 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: exch_h     (:,:)   => null()  !
     real (kind=kind_phys), pointer :: exch_m     (:,:)   => null()  !
 
-    !--- Drag Suite variables
-    real (kind=kind_phys), pointer :: dtaux2d_ls  (:,:)   => null()  !
-    real (kind=kind_phys), pointer :: dtauy2d_ls  (:,:)   => null()  !
-    real (kind=kind_phys), pointer :: dtaux2d_bl  (:,:)   => null()  !
-    real (kind=kind_phys), pointer :: dtauy2d_bl  (:,:)   => null()  !
-    real (kind=kind_phys), pointer :: dtaux2d_ss  (:,:)   => null()  !
-    real (kind=kind_phys), pointer :: dtauy2d_ss  (:,:)   => null()  !
-    real (kind=kind_phys), pointer :: dtaux2d_fd  (:,:)   => null()  !
-    real (kind=kind_phys), pointer :: dtauy2d_fd  (:,:)   => null()  !
-    real (kind=kind_phys), pointer :: dusfc_ls    (:)     => null()  !
-    real (kind=kind_phys), pointer :: dvsfc_ls    (:)     => null()  !
-    real (kind=kind_phys), pointer :: dusfc_bl    (:)     => null()  !
-    real (kind=kind_phys), pointer :: dvsfc_bl    (:)     => null()  !
-    real (kind=kind_phys), pointer :: dusfc_ss    (:)     => null()  !
-    real (kind=kind_phys), pointer :: dvsfc_ss    (:)     => null()  !
-    real (kind=kind_phys), pointer :: dusfc_fd    (:)     => null()  !
-    real (kind=kind_phys), pointer :: dvsfc_fd    (:)     => null()  !
-
 ! Output - only in physics
     real (kind=kind_phys), pointer :: u10m   (:)     => null()   !< 10 meter u/v wind speed
     real (kind=kind_phys), pointer :: v10m   (:)     => null()   !< 10 meter u/v wind speed
@@ -1994,13 +1976,6 @@ module GFS_typedefs
 ! five mechnanisms of momentum deposition due to various types of GWs
 ! (oss, ofd, obl, ogw) + ngw = sum( sso + ngw)
 !==================================================================================================
-! old ugwp-v0 cires_ugwp.F90
-!
-    real (kind=kind_phys), pointer      :: gw_dudt(:,:)       => null()  !<
-    real (kind=kind_phys), pointer      :: gw_dvdt(:,:)       => null()  !<
-    real (kind=kind_phys), pointer      :: gw_dtdt(:,:)       => null()  !<
-    real (kind=kind_phys), pointer      :: gw_kdis(:,:)       => null()  !<
-!==================================================================================================
 ! new ugwp-v1 cires_ugwp.F90
 ! OGWs +NGWs
     real (kind=kind_phys), pointer      :: dudt_gw(:,:)       => null()  !<
@@ -2012,10 +1987,9 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: dvdt_ngw(:,:)      => null()  !<
     real (kind=kind_phys), pointer      :: dtdt_ngw(:,:)      => null()  !<
     real (kind=kind_phys), pointer      :: kdis_ngw(:,:)      => null()  !<
-    real (kind=kind_phys), pointer      :: dudt_ogw(:,:)      => null()  !<
 !oro-GWs
+    real (kind=kind_phys), pointer      :: dudt_ogw(:,:)      => null()  !<
     real (kind=kind_phys), pointer      :: dvdt_ogw(:,:)      => null()  !<
-    real (kind=kind_phys), pointer      :: dtdt_sso(:,:)      => null()  !<
     real (kind=kind_phys), pointer      :: dudt_obl(:,:)      => null()  !<
     real (kind=kind_phys), pointer      :: dvdt_obl(:,:)      => null()  !<
     real (kind=kind_phys), pointer      :: dudt_oss(:,:)      => null()  !<
@@ -2039,14 +2013,13 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: tau_ngw(:)         => null()  !< instantaneous momentum flux of NGWs
 
     real (kind=kind_phys), pointer      :: zngw(:)            => null()  !< launch levels of NGWs
-    real (kind=kind_phys), pointer      :: zobl(:)            => null()  !< mountain blocking height
+    real (kind=kind_phys), pointer      :: zmtb(:)            => null()  !< mountain blocking height
     real (kind=kind_phys), pointer      :: zlwb(:)            => null()  !< low level wave breaking height
     real (kind=kind_phys), pointer      :: zogw(:)            => null()  !< height of OGW-launch
 
 ! DH* CHECK IF NEEDED
     real (kind=kind_phys), pointer      :: dudt_mtb(:,:)      => null()  !< daily aver u-wind tend due to mountain blocking
     real (kind=kind_phys), pointer      :: dudt_tms(:,:)      => null()  !< daily aver u-wind tend due to TMS
-    real (kind=kind_phys), pointer      :: zmtb(:)            => null()  !< mountain blocking height
 ! *DH CHECK IF NEEDED
 
     ! RRTMGP
@@ -5787,43 +5760,6 @@ module GFS_typedefs
       Diag%exch_m        = clear_val
     endif
 
-    !--- Drag Suite variables:
-    if (Model%gwd_opt == 33 .or. Model%gwd_opt == 22) then
-      !print*,"Allocating all Drag Suite variables:"
-      allocate (Diag%dtaux2d_ls  (IM,Model%levs))
-      allocate (Diag%dtauy2d_ls  (IM,Model%levs))
-      allocate (Diag%dtaux2d_bl  (IM,Model%levs))
-      allocate (Diag%dtauy2d_bl  (IM,Model%levs))
-      allocate (Diag%dtaux2d_ss  (IM,Model%levs))
-      allocate (Diag%dtauy2d_ss  (IM,Model%levs))
-      allocate (Diag%dtaux2d_fd  (IM,Model%levs))
-      allocate (Diag%dtauy2d_fd  (IM,Model%levs))
-      Diag%dtaux2d_ls    = clear_val
-      Diag%dtauy2d_ls    = clear_val
-      Diag%dtaux2d_bl    = clear_val
-      Diag%dtauy2d_bl    = clear_val
-      Diag%dtaux2d_ss    = clear_val
-      Diag%dtauy2d_ss    = clear_val
-      Diag%dtaux2d_fd    = clear_val
-      Diag%dtauy2d_fd    = clear_val
-      allocate (Diag%dusfc_ls    (IM))
-      allocate (Diag%dvsfc_ls    (IM))
-      allocate (Diag%dusfc_bl    (IM))
-      allocate (Diag%dvsfc_bl    (IM))
-      allocate (Diag%dusfc_ss    (IM))
-      allocate (Diag%dvsfc_ss    (IM))
-      allocate (Diag%dusfc_fd    (IM))
-      allocate (Diag%dvsfc_fd    (IM))
-      Diag%dusfc_ls      = 0
-      Diag%dvsfc_ls      = 0
-      Diag%dusfc_bl      = 0
-      Diag%dvsfc_bl      = 0
-      Diag%dusfc_ss      = 0
-      Diag%dvsfc_ss      = 0
-      Diag%dusfc_fd      = 0
-      Diag%dvsfc_fd      = 0
-    endif
-
     ! Auxiliary arrays in output for debugging
     if (Model%naux2d>0) then
       allocate (Diag%aux2d(IM,Model%naux2d))
@@ -6485,7 +6421,6 @@ module GFS_typedefs
       allocate (Interstitial%tau_ngw         (IM))
       allocate (Interstitial%tau_oss         (IM))
       allocate (Interstitial%zmtb            (IM))
-      allocate (Interstitial%zobl            (IM))
       allocate (Interstitial%zlwb            (IM))
       allocate (Interstitial%zogw            (IM))
       allocate (Interstitial%zngw            (IM))
@@ -6497,7 +6432,6 @@ module GFS_typedefs
       allocate (Interstitial%dvdt_ogw        (IM,Model%levs))
       allocate (Interstitial%dvdt_ofd        (IM,Model%levs))
       allocate (Interstitial%dvdt_oss        (IM,Model%levs))
-      allocate (Interstitial%dtdt_sso        (IM,Model%levs))
       allocate (Interstitial%du_ogwcol            (IM))
       allocate (Interstitial%dv_ogwcol            (IM))
       allocate (Interstitial%du_oblcol            (IM))
@@ -6514,10 +6448,10 @@ module GFS_typedefs
       allocate (Interstitial%dudt_mtb        (IM,Model%levs))
       allocate (Interstitial%dudt_tms        (IM,Model%levs))
       allocate (Interstitial%dudt_ogw        (IM,Model%levs))
-      allocate (Interstitial%gw_dudt         (IM,Model%levs))
-      allocate (Interstitial%gw_dvdt         (IM,Model%levs))
-      allocate (Interstitial%gw_dtdt         (IM,Model%levs))
-      allocate (Interstitial%gw_kdis         (IM,Model%levs))
+      allocate (Interstitial%dudt_gw         (IM,Model%levs))
+      allocate (Interstitial%dvdt_gw         (IM,Model%levs))
+      allocate (Interstitial%dtdt_gw         (IM,Model%levs))
+      allocate (Interstitial%kdis_gw         (IM,Model%levs))
       !
       allocate (Interstitial%tau_mtb         (IM))
       allocate (Interstitial%tau_ogw         (IM))
@@ -6525,7 +6459,6 @@ module GFS_typedefs
       allocate (Interstitial%tau_ngw         (IM))
       allocate (Interstitial%tau_oss         (IM))
       allocate (Interstitial%zmtb            (IM))
-      allocate (Interstitial%zobl            (IM))
       allocate (Interstitial%zlwb            (IM))
       allocate (Interstitial%zogw            (IM))
       allocate (Interstitial%zngw            (IM))
@@ -6539,6 +6472,24 @@ module GFS_typedefs
        allocate (Interstitial%ocss            (IM))
        allocate (Interstitial%oa4ss           (IM,4))
        allocate (Interstitial%clxss           (IM,4))
+       if (Model%gwd_opt==33 .or. Model%gwd_opt==22) then
+           allocate (Interstitial%dudt_ogw  (IM,Model%levs))
+           allocate (Interstitial%dvdt_ogw  (IM,Model%levs))
+           allocate (Interstitial%du_ogwcol (IM)           )
+           allocate (Interstitial%dv_ogwcol (IM)           )
+           allocate (Interstitial%dudt_obl  (IM,Model%levs))
+           allocate (Interstitial%dvdt_obl  (IM,Model%levs))
+           allocate (Interstitial%du_oblcol (IM)           )
+           allocate (Interstitial%dv_oblcol (IM)           )
+           allocate (Interstitial%dudt_oss  (IM,Model%levs))
+           allocate (Interstitial%dvdt_oss  (IM,Model%levs))
+           allocate (Interstitial%du_osscol (IM)           )
+           allocate (Interstitial%dv_osscol (IM)           )
+           allocate (Interstitial%dudt_ofd  (IM,Model%levs))
+           allocate (Interstitial%dvdt_ogw  (IM,Model%levs))
+           allocate (Interstitial%du_ofdcol (IM)           )
+           allocate (Interstitial%dv_ofdcol (IM)           )
+       end if
     end if
 !
     ! Allocate arrays that are conditional on physics choices
@@ -7135,6 +7086,7 @@ module GFS_typedefs
       Interstitial%dvdt_ngw        = clear_val
       Interstitial%dtdt_ngw        = clear_val
       Interstitial%kdis_ngw        = clear_val
+      Interstitial%dudt_ogw        = clear_val
       Interstitial%dvdt_ogw        = clear_val
       Interstitial%dudt_obl        = clear_val
       Interstitial%dvdt_obl        = clear_val
@@ -7158,7 +7110,7 @@ module GFS_typedefs
       Interstitial%du_ofdcol       = clear_val
       Interstitial%dv_ofdcol       = clear_val
 
-      Interstitial%zobl            = clear_val
+      Interstitial%zmtb            = clear_val
       Interstitial%zlwb            = clear_val
       Interstitial%zogw            = clear_val
       Interstitial%zngw            = clear_val
@@ -7166,10 +7118,10 @@ module GFS_typedefs
 
 ! CIRES UGWP v0
     if (Model%do_ugwp_v0 .or. Model%do_gsl_drag_ls_bl .or. Model%do_gsl_drag_ss .or. Model%do_gsl_drag_tofd) then
-      Interstitial%gw_dudt         = clear_val
-      Interstitial%gw_dvdt         = clear_val
-      Interstitial%gw_dtdt         = clear_val
-      Interstitial%gw_kdis         = clear_val
+      Interstitial%dudt_gw         = clear_val
+      Interstitial%dvdt_gw         = clear_val
+      Interstitial%dtdt_gw         = clear_val
+      Interstitial%kdis_gw         = clear_val
       Interstitial%zmtb            = clear_val
       Interstitial%dudt_mtb        = clear_val
       Interstitial%dudt_ogw        = clear_val
@@ -7180,7 +7132,6 @@ module GFS_typedefs
       Interstitial%tau_tofd        = clear_val
       Interstitial%tau_ngw         = clear_val
       Interstitial%tau_oss         = clear_val
-      Interstitial%zobl            = clear_val
       Interstitial%zlwb            = clear_val
       Interstitial%zogw            = clear_val
       Interstitial%zngw            = clear_val
@@ -7193,6 +7144,24 @@ module GFS_typedefs
        Interstitial%ocss            = clear_val
        Interstitial%oa4ss           = clear_val
        Interstitial%clxss           = clear_val
+       if (Model%gwd_opt==33 .or. Model%gwd_opt==22) then
+          Interstitial%dudt_ogw     = clear_val
+          Interstitial%dvdt_ogw     = clear_val
+          Interstitial%du_ogwcol    = clear_val
+          Interstitial%dv_ogwcol    = clear_val
+          Interstitial%dudt_obl     = clear_val
+          Interstitial%dvdt_obl     = clear_val
+          Interstitial%du_oblcol    = clear_val
+          Interstitial%dv_oblcol    = clear_val
+          Interstitial%dudt_oss     = clear_val
+          Interstitial%dvdt_oss     = clear_val
+          Interstitial%du_osscol    = clear_val
+          Interstitial%dv_osscol    = clear_val
+          Interstitial%dudt_ofd     = clear_val
+          Interstitial%dvdt_ogw     = clear_val
+          Interstitial%du_ofdcol    = clear_val
+          Interstitial%dv_ofdcol    = clear_val
+       end if
     end if
 !
     ! Reset fields that are conditional on physics choices
@@ -7564,6 +7533,7 @@ module GFS_typedefs
       write (0,*) 'sum(Interstitial%dvdt_ngw        ) = ', sum(Interstitial%dvdt_ngw      )
       write (0,*) 'sum(Interstitial%dtdt_ngw        ) = ', sum(Interstitial%dtdt_ngw      )
       write (0,*) 'sum(Interstitial%kdis_ngw        ) = ', sum(Interstitial%kdis_ngw      )
+      write (0,*) 'sum(Interstitial%dudt_ogw        ) = ', sum(Interstitial%dudt_ogw      )
       write (0,*) 'sum(Interstitial%dvdt_ogw        ) = ', sum(Interstitial%dvdt_ogw      )
       write (0,*) 'sum(Interstitial%dudt_obl        ) = ', sum(Interstitial%dudt_obl      )
       write (0,*) 'sum(Interstitial%dvdt_obl        ) = ', sum(Interstitial%dvdt_obl      )
@@ -7584,17 +7554,17 @@ module GFS_typedefs
       write (0,*) 'sum(Interstitial%dv_osscol       ) = ', sum(Interstitial%dv_osscol     )
       write (0,*) 'sum(Interstitial%du_ofdcol       ) = ', sum(Interstitial%du_ofdcol     )
       write (0,*) 'sum(Interstitial%dv_ofdcol       ) = ', sum(Interstitial%dv_ofdcol     )
-      write (0,*) 'sum(Interstitial%zobl            ) = ', sum(Interstitial%zobl          )
+      write (0,*) 'sum(Interstitial%zmtb            ) = ', sum(Interstitial%zmtb          )
       write (0,*) 'sum(Interstitial%zlwb            ) = ', sum(Interstitial%zlwb          )
       write (0,*) 'sum(Interstitial%zogw            ) = ', sum(Interstitial%zogw          )
       write (0,*) 'sum(Interstitial%zngw            ) = ', sum(Interstitial%zngw          )
     end if
 ! CIRES UGWP v0
     if (Model%do_ugwp_v0 .or. Model%do_gsl_drag_ls_bl .or. Model%do_gsl_drag_ss .or. Model%do_gsl_drag_tofd) then
-      write (0,*) 'sum(Interstitial%gw_dudt         ) = ', sum(Interstitial%gw_dudt       )
-      write (0,*) 'sum(Interstitial%gw_dvdt         ) = ', sum(Interstitial%gw_dvdt       )
-      write (0,*) 'sum(Interstitial%gw_dtdt         ) = ', sum(Interstitial%gw_dtdt       )
-      write (0,*) 'sum(Interstitial%gw_kdis         ) = ', sum(Interstitial%gw_kdis       )
+      write (0,*) 'sum(Interstitial%dudt_gw         ) = ', sum(Interstitial%dudt_gw       )
+      write (0,*) 'sum(Interstitial%dvdt_gw         ) = ', sum(Interstitial%dvdt_gw       )
+      write (0,*) 'sum(Interstitial%dtdt_gw         ) = ', sum(Interstitial%dtdt_gw       )
+      write (0,*) 'sum(Interstitial%kdis_gw         ) = ', sum(Interstitial%kdis_gw       )
       write (0,*) 'sum(Interstitial%tau_mtb         ) = ', sum(Interstitial%tau_mtb       )
       write (0,*) 'sum(Interstitial%tau_ogw         ) = ', sum(Interstitial%tau_ogw       )
       write (0,*) 'sum(Interstitial%tau_tofd        ) = ', sum(Interstitial%tau_tofd      )
@@ -7603,7 +7573,6 @@ module GFS_typedefs
       write (0,*) 'sum(Interstitial%zmtb            ) = ', sum(Interstitial%zmtb          )
       write (0,*) 'sum(Interstitial%zlwb            ) = ', sum(Interstitial%zlwb          )
       write (0,*) 'sum(Interstitial%zogw            ) = ', sum(Interstitial%zogw          )
-      write (0,*) 'sum(Interstitial%zobl            ) = ', sum(Interstitial%zobl          )
       write (0,*) 'sum(Interstitial%dudt_mtb        ) = ', sum(Interstitial%dudt_mtb      )
       write (0,*) 'sum(Interstitial%dudt_ogw        ) = ', sum(Interstitial%dudt_ogw      )
       write (0,*) 'sum(Interstitial%dudt_tms        ) = ', sum(Interstitial%dudt_tms      )
@@ -7616,6 +7585,24 @@ module GFS_typedefs
        write (0,*) 'sum(Interstitial%ocss            ) = ', sum(Interstitial%ocss)
        write (0,*) 'sum(Interstitial%oa4ss           ) = ', sum(Interstitial%oa4ss)
        write (0,*) 'sum(Interstitial%clxss           ) = ', sum(Interstitial%clxss)
+       if (Model%gwd_opt==33 .or. Model%gwd_opt==22) then
+          write (0,*) 'sum(Interstitial%dudt_ogw        ) = ', sum(Interstitial%dudt_ogw      )
+          write (0,*) 'sum(Interstitial%dvdt_ogw        ) = ', sum(Interstitial%dvdt_ogw      )
+          write (0,*) 'sum(Interstitial%du_ogwcol       ) = ', sum(Interstitial%du_ogwcol     )
+          write (0,*) 'sum(Interstitial%dv_ogwcol       ) = ', sum(Interstitial%dv_ogwcol     )
+          write (0,*) 'sum(Interstitial%dudt_obl        ) = ', sum(Interstitial%dudt_obl      )
+          write (0,*) 'sum(Interstitial%dvdt_obl        ) = ', sum(Interstitial%dvdt_obl      )
+          write (0,*) 'sum(Interstitial%du_oblcol       ) = ', sum(Interstitial%du_oblcol     )
+          write (0,*) 'sum(Interstitial%dv_oblcol       ) = ', sum(Interstitial%dv_oblcol     )
+          write (0,*) 'sum(Interstitial%dudt_oss        ) = ', sum(Interstitial%dudt_oss      )
+          write (0,*) 'sum(Interstitial%dvdt_oss        ) = ', sum(Interstitial%dvdt_oss      )
+          write (0,*) 'sum(Interstitial%du_osscol       ) = ', sum(Interstitial%du_osscol     )
+          write (0,*) 'sum(Interstitial%dv_osscol       ) = ', sum(Interstitial%dv_osscol     )
+          write (0,*) 'sum(Interstitial%dudt_ofd        ) = ', sum(Interstitial%dudt_ofd      )
+          write (0,*) 'sum(Interstitial%dvdt_ogw        ) = ', sum(Interstitial%dvdt_ogw      )
+          write (0,*) 'sum(Interstitial%du_ofdcol       ) = ', sum(Interstitial%du_ofdcol     )
+          write (0,*) 'sum(Interstitial%dv_ofdcol       ) = ', sum(Interstitial%dv_ofdcol     )
+       end if
     end if
 !
     ! Print arrays that are conditional on physics choices
