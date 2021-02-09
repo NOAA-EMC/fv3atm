@@ -31,13 +31,6 @@ module FV3GFS_io_mod
   use constants_mod,      only: grav, rdgas
   use physcons,           only: con_tice          !saltwater freezing temp (K)
 !
-!--- GFS physics modules
-! DH* TO BE MOVED TO CCPP
-!--- variables needed for calculating 'sncovr'
-  use namelist_soilveg,   only: salp_data, snupx
-! *DH
-
-!
 ! --- variables needed for Noah MP init
 !
   use noahmp_tables,      only: laim_table,saim_table,sla_table,      &
@@ -1114,8 +1107,12 @@ module FV3GFS_io_mod
           if (Model%rdlai) then
             Sfcprop(nb)%xlaixy(ix)        = sfc_var2(i,j,nvar_s2m+29)
           endif
-        else if (Model%lsm == Model%lsm_ruc .and. Model%rdlai) then
-          Sfcprop(nb)%xlaixy(ix) = sfc_var2(i,j,nvar_s2m+19)
+        else if (Model%lsm == Model%lsm_ruc) then
+          ! Initialize RUC snow cover on ice from snow cover
+          Sfcprop(nb)%sncovr_ice(ix)      = Sfcprop(nb)%sncovr(ix)
+          if (Model%rdlai) then
+            Sfcprop(nb)%xlaixy(ix) = sfc_var2(i,j,nvar_s2m+19)
+          end if
         elseif (Model%lsm == Model%lsm_noahmp) then
           !--- Extra Noah MP variables
           Sfcprop(nb)%snowxy(ix)     = sfc_var2(i,j,nvar_s2m+19)
@@ -1203,44 +1200,9 @@ module FV3GFS_io_mod
 !         It has to be done after the weasd is available
 !         sfc_var2(1,1,32) is the first; we need this to allocate snow related fields
 
-! DH* MOVE TO CCPP - all of it? some? need to check carefully what belongs here and what not
-
-    ! Calculating sncovr does not belong into an I/O routine?
-    ! TODO? move to physics and stop building namelist_soilveg/set_soilveg
-    ! in the FV3/non-CCPP physics when the CCPP-enabled executable is built.
-
     i = Atm_block%index(1)%ii(1) - isc + 1
     j = Atm_block%index(1)%jj(1) - jsc + 1
 
-    !--- if sncovr does not exist in the restart, need to create it
-    if (sfc_var2(i,j,32) < -9990.0_r8) then
-      if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing sncovr')
-      !--- compute sncovr from existing variables
-      !--- code taken directly from read_fix.f
-!$omp parallel do default(shared) private(nb, ix, vegtyp, rsnow)
-      do nb = 1, Atm_block%nblks
-        do ix = 1, Atm_block%blksz(nb)
-          Sfcprop(nb)%sncovr(ix) = zero
-          if (Sfcprop(nb)%landfrac(ix) >= drythresh .or. Sfcprop(nb)%fice(ix) >= Model%min_seaice) then
-            vegtyp = Sfcprop(nb)%vtype(ix)
-            if (vegtyp == 0) vegtyp = 7
-            rsnow  = 0.001_r8*Sfcprop(nb)%weasd(ix)/snupx(vegtyp)
-            if (0.001_r8*Sfcprop(nb)%weasd(ix) < snupx(vegtyp)) then
-              Sfcprop(nb)%sncovr(ix) = one - (exp(-salp_data*rsnow) - rsnow*exp(-salp_data))
-            else
-              Sfcprop(nb)%sncovr(ix) = one
-            endif
-          endif
-        enddo
-      enddo
-      !--- For RUC LSM: create sncovr_ice from sncovr
-      if (Model%lsm == Model%lsm_ruc) then
-        if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - fill sncovr_ice with sncovr')
-        do nb = 1, Atm_block%nblks
-          Sfcprop(nb)%sncovr_ice(:) = Sfcprop(nb)%sncovr(:)
-        end do
-      endif
-    endif
 
 !   if (Model%frac_grid) then
 
