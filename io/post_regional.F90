@@ -576,7 +576,7 @@ module post_regional
           ip1 = i + 1
           if (ip1 > im) ip1 = ip1 - im
           dx(i,j) = erad*cos(gdlat(i,j)*dtr)*(gdlon(ip1,j)-gdlon(i,j))*dtr
-          dy(i,j)  = erad*(gdlat(i,j)-gdlat(i,j+1))*dtr  ! like A*DPH
+          dy(i,j) = erad*(gdlat(i,j+1)-gdlat(i,j))*dtr  ! like A*DPH
         end do
       end do
 !
