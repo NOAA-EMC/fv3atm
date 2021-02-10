@@ -505,9 +505,9 @@ module FV3GFS_io_mod
 
     if (Model%lsm == Model%lsm_ruc .and. warm_start) then
       if(Model%rdlai) then
-        nvar_s2r = 7
+        nvar_s2r = 11
       else
-        nvar_s2r = 6
+        nvar_s2r = 10
       end if
       nvar_s3  = 5
     else
@@ -833,13 +833,17 @@ module FV3GFS_io_mod
         sfc_name2(nvar_s2m+47) = 'rechxy'
       else if (Model%lsm == Model%lsm_ruc .and. warm_start) then
         sfc_name2(nvar_s2m+19) = 'wetness'
-        sfc_name2(nvar_s2m+20) = 'clw_surf'
-        sfc_name2(nvar_s2m+21) = 'qwv_surf'
-        sfc_name2(nvar_s2m+22) = 'tsnow'
-        sfc_name2(nvar_s2m+23) = 'snowfall_acc'
-        sfc_name2(nvar_s2m+24) = 'swe_snowfall_acc'
+        sfc_name2(nvar_s2m+20) = 'clw_surf_land'
+        sfc_name2(nvar_s2m+21) = 'clw_surf_ice'
+        sfc_name2(nvar_s2m+22) = 'qwv_surf_land'
+        sfc_name2(nvar_s2m+23) = 'qwv_surf_ice'
+        sfc_name2(nvar_s2m+24) = 'tsnow_land'
+        sfc_name2(nvar_s2m+25) = 'tsnow_ice'
+        sfc_name2(nvar_s2m+26) = 'snowfall_acc_land'
+        sfc_name2(nvar_s2m+27) = 'snowfall_acc_ice'
+        sfc_name2(nvar_s2m+28) = 'sncovr_ice'
         if (Model%rdlai) then
-          sfc_name2(nvar_s2m+25) = 'lai'
+          sfc_name2(nvar_s2m+29) = 'lai'
         endif
       else if (Model%lsm == Model%lsm_ruc .and. Model%rdlai) then
         sfc_name2(nvar_s2m+19) = 'lai'
@@ -1097,17 +1101,21 @@ module FV3GFS_io_mod
 
         if (Model%lsm == Model%lsm_ruc .and. warm_start) then
           !--- Extra RUC variables
-          Sfcprop(nb)%wetness(ix)    = sfc_var2(i,j,nvar_s2m+19)
-          Sfcprop(nb)%clw_surf(ix)   = sfc_var2(i,j,nvar_s2m+20)
-          Sfcprop(nb)%qwv_surf(ix)   = sfc_var2(i,j,nvar_s2m+21)
-          Sfcprop(nb)%tsnow(ix)      = sfc_var2(i,j,nvar_s2m+22)
-          Sfcprop(nb)%snowfallac(ix) = sfc_var2(i,j,nvar_s2m+23)
-          Sfcprop(nb)%acsnow(ix)     = sfc_var2(i,j,nvar_s2m+24)
+          Sfcprop(nb)%wetness(ix)         = sfc_var2(i,j,nvar_s2m+19)
+          Sfcprop(nb)%clw_surf_land(ix)   = sfc_var2(i,j,nvar_s2m+20)
+          Sfcprop(nb)%clw_surf_ice(ix)    = sfc_var2(i,j,nvar_s2m+21)
+          Sfcprop(nb)%qwv_surf_land(ix)   = sfc_var2(i,j,nvar_s2m+22)
+          Sfcprop(nb)%qwv_surf_ice(ix)    = sfc_var2(i,j,nvar_s2m+23)
+          Sfcprop(nb)%tsnow_land(ix)      = sfc_var2(i,j,nvar_s2m+24)
+          Sfcprop(nb)%tsnow_ice(ix)       = sfc_var2(i,j,nvar_s2m+25)
+          Sfcprop(nb)%snowfallac_land(ix) = sfc_var2(i,j,nvar_s2m+26)
+          Sfcprop(nb)%snowfallac_ice(ix)  = sfc_var2(i,j,nvar_s2m+27)
+          Sfcprop(nb)%sncovr_ice(ix)      = sfc_var2(i,j,nvar_s2m+28)
           if (Model%rdlai) then
-            Sfcprop(nb)%xlaixy(ix)   = sfc_var2(i,j,nvar_s2m+25)
+            Sfcprop(nb)%xlaixy(ix)        = sfc_var2(i,j,nvar_s2m+29)
           endif
         else if (Model%lsm == Model%lsm_ruc .and. Model%rdlai) then
-          Sfcprop(nb)%xlaixy(ix)     = sfc_var2(i,j,nvar_s2m+19)
+          Sfcprop(nb)%xlaixy(ix) = sfc_var2(i,j,nvar_s2m+19)
         elseif (Model%lsm == Model%lsm_noahmp) then
           !--- Extra Noah MP variables
           Sfcprop(nb)%snowxy(ix)     = sfc_var2(i,j,nvar_s2m+19)
@@ -1206,7 +1214,7 @@ module FV3GFS_io_mod
 
     !--- if sncovr does not exist in the restart, need to create it
     if (sfc_var2(i,j,32) < -9990.0_r8) then
-      if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing sncovr') 
+      if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing sncovr')
       !--- compute sncovr from existing variables
       !--- code taken directly from read_fix.f
 !$omp parallel do default(shared) private(nb, ix, vegtyp, rsnow)
@@ -1225,6 +1233,13 @@ module FV3GFS_io_mod
           endif
         enddo
       enddo
+      !--- For RUC LSM: create sncovr_ice from sncovr
+      if (Model%lsm == Model%lsm_ruc) then
+        if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - fill sncovr_ice with sncovr')
+        do nb = 1, Atm_block%nblks
+          Sfcprop(nb)%sncovr_ice(:) = Sfcprop(nb)%sncovr(:)
+        end do
+      endif
     endif
 
 !   if (Model%frac_grid) then
@@ -1648,9 +1663,9 @@ module FV3GFS_io_mod
     nvar2o = 18
     if (Model%lsm == Model%lsm_ruc) then
       if (Model%rdlai) then
-        nvar2r = 7
+        nvar2r = 11
       else
-        nvar2r = 6
+        nvar2r = 10
       endif
       nvar3  = 5
     else
@@ -1774,13 +1789,17 @@ module FV3GFS_io_mod
       sfc_name2(nvar2m+18) = 'qrain'
       if (Model%lsm == Model%lsm_ruc) then
         sfc_name2(nvar2m+19) = 'wetness'
-        sfc_name2(nvar2m+20) = 'clw_surf'
-        sfc_name2(nvar2m+21) = 'qwv_surf'
-        sfc_name2(nvar2m+22) = 'tsnow'
-        sfc_name2(nvar2m+23) = 'snowfall_acc'
-        sfc_name2(nvar2m+24) = 'swe_snowfall_acc'
+        sfc_name2(nvar2m+20) = 'clw_surf_land'
+        sfc_name2(nvar2m+21) = 'clw_surf_ice'
+        sfc_name2(nvar2m+22) = 'qwv_surf_land'
+        sfc_name2(nvar2m+23) = 'qwv_surf_ice'
+        sfc_name2(nvar2m+24) = 'tsnow_land'
+        sfc_name2(nvar2m+25) = 'tsnow_ice'
+        sfc_name2(nvar2m+26) = 'snowfall_acc_land'
+        sfc_name2(nvar2m+27) = 'snowfall_acc_ice'
+        sfc_name2(nvar2m+28) = 'sncovr_ice'
         if (Model%rdlai) then
-          sfc_name2(nvar2m+25) = 'lai'
+          sfc_name2(nvar2m+29) = 'lai'
         endif
       else if(Model%lsm == Model%lsm_noahmp) then
         ! Only needed when Noah MP LSM is used - 29 2D
@@ -1979,13 +1998,17 @@ module FV3GFS_io_mod
         if (Model%lsm == Model%lsm_ruc) then
           !--- Extra RUC variables
           sfc_var2(i,j,nvar2m+19) = Sfcprop(nb)%wetness(ix)
-          sfc_var2(i,j,nvar2m+20) = Sfcprop(nb)%clw_surf(ix)
-          sfc_var2(i,j,nvar2m+21) = Sfcprop(nb)%qwv_surf(ix)
-          sfc_var2(i,j,nvar2m+22) = Sfcprop(nb)%tsnow(ix)
-          sfc_var2(i,j,nvar2m+23) = Sfcprop(nb)%snowfallac(ix)
-          sfc_var2(i,j,nvar2m+24) = Sfcprop(nb)%acsnow(ix)
+          sfc_var2(i,j,nvar2m+20) = Sfcprop(nb)%clw_surf_land(ix)
+          sfc_var2(i,j,nvar2m+21) = Sfcprop(nb)%clw_surf_ice(ix)
+          sfc_var2(i,j,nvar2m+22) = Sfcprop(nb)%qwv_surf_land(ix)
+          sfc_var2(i,j,nvar2m+23) = Sfcprop(nb)%qwv_surf_ice(ix)
+          sfc_var2(i,j,nvar2m+24) = Sfcprop(nb)%tsnow_land(ix)
+          sfc_var2(i,j,nvar2m+25) = Sfcprop(nb)%tsnow_ice(ix)
+          sfc_var2(i,j,nvar2m+26) = Sfcprop(nb)%snowfallac_land(ix)
+          sfc_var2(i,j,nvar2m+27) = Sfcprop(nb)%snowfallac_ice(ix)
+          sfc_var2(i,j,nvar2m+28) = Sfcprop(nb)%sncovr_ice(ix)
           if (Model%rdlai) then
-            sfc_var2(i,j,nvar2m+25) = Sfcprop(nb)%xlaixy(ix)
+            sfc_var2(i,j,nvar2m+29) = Sfcprop(nb)%xlaixy(ix)
           endif
         else if (Model%lsm == Model%lsm_noahmp) then
           !--- Extra Noah MP variables

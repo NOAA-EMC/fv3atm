@@ -555,11 +555,6 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
                                              GFS_Data%Tbd, GFS_Data%Cldprop, GFS_Data%Radtend,   &
                                              GFS_Data%Intdiag, Init_parm)
 
-
-!--- Initialize stochastic physics pattern generation / cellular automata for first time step
-   call stochastic_physics_wrapper(GFS_control, GFS_data, Atm_block, ierr)
-   if (ierr/=0)  call mpp_error(FATAL, 'Call to stochastic_physics_wrapper failed')
-
    Atmos%Diag => GFS_Diag
 
    Atm(mygrid)%flagstruct%do_skeb = GFS_control%do_skeb
@@ -607,6 +602,10 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    ! Initialize the CCPP physics
    call CCPP_step (step="physics_init", nblks=Atm_block%nblks, ierr=ierr)
    if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP physics_init step failed')
+
+!--- Initialize stochastic physics pattern generation / cellular automata for first time step
+   call stochastic_physics_wrapper(GFS_control, GFS_data, Atm_block, ierr)
+   if (ierr/=0)  call mpp_error(FATAL, 'Call to stochastic_physics_wrapper failed')
 
    !--- set the initial diagnostic timestamp
    diag_time = Time
