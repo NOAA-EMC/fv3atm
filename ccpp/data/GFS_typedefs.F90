@@ -1544,7 +1544,32 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: cldfra (:,:)   => null()  !< instantaneous 3D cloud fraction
     !--- MP quantities for 3D diagnositics
     real (kind=kind_phys), pointer :: refl_10cm(:,:) => null()  !< instantaneous refl_10cm
+!
+!---vay-2018 UGWP-diagnostics instantaneous
+!
+! OGWs +NGWs
+    real (kind=kind_phys), pointer :: dudt_gw(:,:)   => null()  !<
+    real (kind=kind_phys), pointer :: dvdt_gw(:,:)   => null()  !<
+    real (kind=kind_phys), pointer :: dtdt_gw(:,:)   => null()  !<
+    real (kind=kind_phys), pointer :: kdis_gw(:,:)   => null()  !<
+!oro-GWs
+    real (kind=kind_phys), pointer :: dudt_ogw(:,:)  => null()  !<
+    real (kind=kind_phys), pointer :: dvdt_ogw(:,:)  => null()  !<
+    real (kind=kind_phys), pointer :: dudt_obl(:,:)  => null()  !<
+    real (kind=kind_phys), pointer :: dvdt_obl(:,:)  => null()  !<
+    real (kind=kind_phys), pointer :: dudt_oss(:,:)  => null()  !<
+    real (kind=kind_phys), pointer :: dvdt_oss(:,:)  => null()  !<
+    real (kind=kind_phys), pointer :: dudt_ofd(:,:)  => null()  !<
+    real (kind=kind_phys), pointer :: dvdt_ofd(:,:)  => null()  !<
 
+    real (kind=kind_phys), pointer :: du_ogwcol(:)   => null()  !<
+    real (kind=kind_phys), pointer :: dv_ogwcol(:)   => null()  !<
+    real (kind=kind_phys), pointer :: du_oblcol(:)   => null()  !<
+    real (kind=kind_phys), pointer :: dv_oblcol(:)   => null()  !<
+    real (kind=kind_phys), pointer :: du_osscol(:)   => null()  !<
+    real (kind=kind_phys), pointer :: dv_osscol(:)   => null()  !<
+    real (kind=kind_phys), pointer :: du_ofdcol(:)   => null()  !<
+    real (kind=kind_phys), pointer :: dv_ofdcol(:)   => null()  !<
 !
 !---vay-2018 UGWP-diagnostics daily mean
 !
@@ -1973,38 +1998,14 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: zorl_ocean(:)      => null()  !<
     real (kind=kind_phys), pointer      :: zt1d(:)            => null()  !<
 !==================================================================================================
-! five mechnanisms of momentum deposition due to various types of GWs
+! UGWP - five mechnanisms of momentum deposition due to various types of GWs
 ! (oss, ofd, obl, ogw) + ngw = sum( sso + ngw)
 !==================================================================================================
-! new ugwp-v1 cires_ugwp.F90
-! OGWs +NGWs
-    real (kind=kind_phys), pointer      :: dudt_gw(:,:)       => null()  !<
-    real (kind=kind_phys), pointer      :: dvdt_gw(:,:)       => null()  !<
-    real (kind=kind_phys), pointer      :: dtdt_gw(:,:)       => null()  !<
-    real (kind=kind_phys), pointer      :: kdis_gw(:,:)       => null()  !<
 ! nGWs
     real (kind=kind_phys), pointer      :: dudt_ngw(:,:)      => null()  !<
     real (kind=kind_phys), pointer      :: dvdt_ngw(:,:)      => null()  !<
     real (kind=kind_phys), pointer      :: dtdt_ngw(:,:)      => null()  !<
     real (kind=kind_phys), pointer      :: kdis_ngw(:,:)      => null()  !<
-!oro-GWs
-    real (kind=kind_phys), pointer      :: dudt_ogw(:,:)      => null()  !<
-    real (kind=kind_phys), pointer      :: dvdt_ogw(:,:)      => null()  !<
-    real (kind=kind_phys), pointer      :: dudt_obl(:,:)      => null()  !<
-    real (kind=kind_phys), pointer      :: dvdt_obl(:,:)      => null()  !<
-    real (kind=kind_phys), pointer      :: dudt_oss(:,:)      => null()  !<
-    real (kind=kind_phys), pointer      :: dvdt_oss(:,:)      => null()  !<
-    real (kind=kind_phys), pointer      :: dudt_ofd(:,:)      => null()  !<
-    real (kind=kind_phys), pointer      :: dvdt_ofd(:,:)      => null()  !<
-
-    real (kind=kind_phys), pointer      :: du_ogwcol(:)       => null()  !<
-    real (kind=kind_phys), pointer      :: dv_ogwcol(:)       => null()  !<
-    real (kind=kind_phys), pointer      :: du_oblcol(:)       => null()  !<
-    real (kind=kind_phys), pointer      :: dv_oblcol(:)       => null()  !<
-    real (kind=kind_phys), pointer      :: du_osscol(:)       => null()  !<
-    real (kind=kind_phys), pointer      :: dv_osscol(:)       => null()  !<
-    real (kind=kind_phys), pointer      :: du_ofdcol(:)       => null()  !<
-    real (kind=kind_phys), pointer      :: dv_ofdcol(:)       => null()  !<
 
     real (kind=kind_phys), pointer      :: tau_oss(: )        => null()  !< instantaneous momentum flux due to OSS
     real (kind=kind_phys), pointer      :: tau_tofd(:)        => null()  !< instantaneous momentum flux due to TOFD
@@ -2017,10 +2018,8 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: zlwb(:)            => null()  !< low level wave breaking height
     real (kind=kind_phys), pointer      :: zogw(:)            => null()  !< height of OGW-launch
 
-! DH* CHECK IF NEEDED
     real (kind=kind_phys), pointer      :: dudt_mtb(:,:)      => null()  !< daily aver u-wind tend due to mountain blocking
     real (kind=kind_phys), pointer      :: dudt_tms(:,:)      => null()  !< daily aver u-wind tend due to TMS
-! *DH CHECK IF NEEDED
 
     ! RRTMGP
     integer                             :: ipsdlw0                              !<
@@ -5666,50 +5665,64 @@ module GFS_typedefs
 !     allocate (Diag%det_mf (IM,Model%levs))
     endif
 
-!vay-2018
+! UGWP
+    allocate (Diag%zmtb      (IM)           )
+    allocate (Diag%zogw      (IM)           )
+    allocate (Diag%zlwb      (IM)           )
+    allocate (Diag%tau_ogw   (IM)           )
+    allocate (Diag%tau_ngw   (IM)           )
+    allocate (Diag%tau_mtb   (IM)           )
+    allocate (Diag%tau_tofd  (IM)           )
+    allocate (Diag%dudt_gw   (IM,Model%levs))
+    allocate (Diag%dvdt_gw   (IM,Model%levs))
+    allocate (Diag%dtdt_gw   (IM,Model%levs))
+    allocate (Diag%kdis_gw   (IM,Model%levs))
+
     if (Model%ldiag_ugwp) then
       allocate (Diag%du3dt_dyn  (IM,Model%levs) )
-
       allocate (Diag%du3dt_pbl  (IM,Model%levs) )
       allocate (Diag%dv3dt_pbl  (IM,Model%levs) )
       allocate (Diag%dt3dt_pbl  (IM,Model%levs) )
-
       allocate (Diag%du3dt_ogw  (IM,Model%levs) )
       allocate (Diag%dv3dt_ogw  (IM,Model%levs) )
       allocate (Diag%dt3dt_ogw  (IM,Model%levs) )
-
       allocate (Diag%du3dt_mtb  (IM,Model%levs) )
       allocate (Diag%dv3dt_mtb  (IM,Model%levs) )
       allocate (Diag%dt3dt_mtb  (IM,Model%levs) )
-
       allocate (Diag%du3dt_tms  (IM,Model%levs) )
       allocate (Diag%dv3dt_tms  (IM,Model%levs) )
       allocate (Diag%dt3dt_tms  (IM,Model%levs) )
-
       allocate (Diag%du3dt_ngw  (IM,Model%levs) )
       allocate (Diag%dv3dt_ngw  (IM,Model%levs) )
       allocate (Diag%dt3dt_ngw  (IM,Model%levs) )
-
       allocate (Diag%du3dt_cgw  (IM,Model%levs) )
       allocate (Diag%dv3dt_cgw  (IM,Model%levs) )
-      allocate (Diag%dt3dt_moist  (IM,Model%levs) )
-
+      allocate (Diag%dt3dt_moist (IM,Model%levs))
       allocate (Diag%dudt_tot  (IM,Model%levs) )
       allocate (Diag%dvdt_tot  (IM,Model%levs) )
       allocate (Diag%dtdt_tot  (IM,Model%levs) )
-
       allocate (Diag%uav_ugwp  (IM,Model%levs) )
       allocate (Diag%tav_ugwp  (IM,Model%levs) )
-
     endif
 
-    allocate (Diag%zmtb      (IM) )
-    allocate (Diag%zogw      (IM) )
-    allocate (Diag%zlwb      (IM) )
-    allocate (Diag%tau_ogw   (IM) )
-    allocate (Diag%tau_ngw   (IM) )
-    allocate (Diag%tau_mtb   (IM) )
-    allocate (Diag%tau_tofd  (IM) )
+    if (Model%do_ugwp_v1 .or. Model%gwd_opt==33 .or. Model%gwd_opt==22) then
+      allocate (Diag%dudt_ogw  (IM,Model%levs))
+      allocate (Diag%dvdt_ogw  (IM,Model%levs))
+      allocate (Diag%dudt_obl  (IM,Model%levs))
+      allocate (Diag%dvdt_obl  (IM,Model%levs))
+      allocate (Diag%dudt_oss  (IM,Model%levs))
+      allocate (Diag%dvdt_oss  (IM,Model%levs))
+      allocate (Diag%dudt_ofd  (IM,Model%levs))
+      allocate (Diag%dvdt_ogw  (IM,Model%levs))
+      allocate (Diag%du_ogwcol (IM)           )
+      allocate (Diag%dv_ogwcol (IM)           )
+      allocate (Diag%du_oblcol (IM)           )
+      allocate (Diag%dv_oblcol (IM)           )
+      allocate (Diag%du_osscol (IM)           )
+      allocate (Diag%dv_osscol (IM)           )
+      allocate (Diag%du_ofdcol (IM)           )
+      allocate (Diag%dv_ofdcol (IM)           )
+    end if
 
     !--- 3D diagnostics for Thompson MP / GFDL MP
     allocate (Diag%refl_10cm(IM,Model%levs))
@@ -5944,43 +5957,7 @@ module GFS_typedefs
     endif
 
 !
-!-----------------------------
-    if (Model%ldiag_ugwp)   then
-      if(Model%me == Model%master) print *,'VAY in diag_phys_zero at kdt=',Model%kdt, Model%ldiag_ugwp
-      Diag%du3dt_pbl   = zero
-      Diag%dv3dt_pbl   = zero
-      Diag%dt3dt_pbl   = zero
-!
-      Diag%du3dt_ogw   = zero
-      Diag%dv3dt_ogw   = zero
-      Diag%dt3dt_ogw   = zero
-
-      Diag%du3dt_mtb   = zero
-      Diag%dv3dt_mtb   = zero
-      Diag%dt3dt_mtb   = zero
-
-      Diag%du3dt_tms   = zero
-      Diag%dv3dt_tms   = zero
-      Diag%dt3dt_tms   = zero
-
-      Diag%du3dt_ngw   = zero
-      Diag%dv3dt_ngw   = zero
-      Diag%dt3dt_ngw   = zero
-
-      Diag%du3dt_moist = zero
-      Diag%dv3dt_moist = zero
-      Diag%dt3dt_moist = zero
-
-      Diag%dudt_tot    = zero
-      Diag%dvdt_tot    = zero
-      Diag%dtdt_tot    = zero
-
-      Diag%uav_ugwp    = zero
-      Diag%tav_ugwp    = zero
-!COORDE
-      Diag%du3dt_dyn   = zero
-    endif
-
+! UGWP
     Diag%zmtb        = zero
     Diag%zogw        = zero
     Diag%zlwb        = zero
@@ -5988,6 +5965,58 @@ module GFS_typedefs
     Diag%tau_ogw     = zero
     Diag%tau_ngw     = zero
     Diag%tau_tofd    = zero
+    Diag%dudt_gw     = zero
+    Diag%dvdt_gw     = zero
+    Diag%dtdt_gw     = zero
+    Diag%kdis_gw     = zero
+
+    if (Model%do_ugwp_v1 .or. Model%gwd_opt==33 .or. Model%gwd_opt==22) then
+      Diag%dudt_ogw    = zero
+      Diag%dvdt_ogw    = zero
+      Diag%dudt_obl    = zero
+      Diag%dvdt_obl    = zero
+      Diag%dudt_oss    = zero
+      Diag%dvdt_oss    = zero
+      Diag%dudt_ofd    = zero
+      Diag%dvdt_ofd    = zero
+      Diag%du_ogwcol   = zero
+      Diag%dv_ogwcol   = zero
+      Diag%du_oblcol   = zero
+      Diag%dv_oblcol   = zero
+      Diag%du_osscol   = zero
+      Diag%dv_osscol   = zero
+      Diag%du_ofdcol   = zero
+      Diag%dv_ofdcol   = zero
+    end if
+
+    if (Model%ldiag_ugwp) then
+      Diag%du3dt_pbl   = zero
+      Diag%dv3dt_pbl   = zero
+      Diag%dt3dt_pbl   = zero
+      Diag%du3dt_ogw   = zero
+      Diag%dv3dt_ogw   = zero
+      Diag%dt3dt_ogw   = zero
+      Diag%du3dt_mtb   = zero
+      Diag%dv3dt_mtb   = zero
+      Diag%dt3dt_mtb   = zero
+      Diag%du3dt_tms   = zero
+      Diag%dv3dt_tms   = zero
+      Diag%dt3dt_tms   = zero
+      Diag%du3dt_ngw   = zero
+      Diag%dv3dt_ngw   = zero
+      Diag%dt3dt_ngw   = zero
+      Diag%du3dt_moist = zero
+      Diag%dv3dt_moist = zero
+      Diag%dt3dt_moist = zero
+      Diag%dudt_tot    = zero
+      Diag%dvdt_tot    = zero
+      Diag%dtdt_tot    = zero
+      Diag%uav_ugwp    = zero
+      Diag%tav_ugwp    = zero
+!COORDE
+      Diag%du3dt_dyn   = zero
+    endif
+
 !
 !-----------------------------
 
@@ -6404,65 +6433,25 @@ module GFS_typedefs
        allocate (Interstitial%active_gases_array   (Model%nGases))
     end if
 
-! DH* ONLY ALLOCATE AND INITIALIZE IF USED!
-! CIRES UGWP v1 - also for v0 ?
+! UGWP common
+    allocate (Interstitial%tau_mtb         (IM))
+    allocate (Interstitial%tau_ogw         (IM))
+    allocate (Interstitial%tau_tofd        (IM))
+    allocate (Interstitial%tau_ngw         (IM))
+    allocate (Interstitial%tau_oss         (IM))
+    allocate (Interstitial%dudt_mtb        (IM,Model%levs))
+    allocate (Interstitial%dudt_tms        (IM,Model%levs))
+    allocate (Interstitial%zmtb            (IM)           )
+    allocate (Interstitial%zlwb            (IM)           )
+    allocate (Interstitial%zogw            (IM)           )
+    allocate (Interstitial%zngw            (IM)           )
+
+! CIRES UGWP v1
     if (Model%do_ugwp_v1) then
       allocate (Interstitial%dudt_ngw        (IM,Model%levs))
       allocate (Interstitial%dvdt_ngw        (IM,Model%levs))
       allocate (Interstitial%dtdt_ngw        (IM,Model%levs))
       allocate (Interstitial%kdis_ngw        (IM,Model%levs))
-      allocate (Interstitial%dudt_gw         (IM,Model%levs))
-      allocate (Interstitial%dvdt_gw         (IM,Model%levs))
-      allocate (Interstitial%dtdt_gw         (IM,Model%levs))
-      allocate (Interstitial%kdis_gw         (IM,Model%levs))
-      allocate (Interstitial%tau_mtb         (IM))
-      allocate (Interstitial%tau_ogw         (IM))
-      allocate (Interstitial%tau_tofd        (IM))
-      allocate (Interstitial%tau_ngw         (IM))
-      allocate (Interstitial%tau_oss         (IM))
-      allocate (Interstitial%zmtb            (IM))
-      allocate (Interstitial%zlwb            (IM))
-      allocate (Interstitial%zogw            (IM))
-      allocate (Interstitial%zngw            (IM))
-      allocate (Interstitial%dudt_obl        (IM,Model%levs))
-      allocate (Interstitial%dudt_ogw        (IM,Model%levs))
-      allocate (Interstitial%dudt_ofd        (IM,Model%levs))
-      allocate (Interstitial%dudt_oss        (IM,Model%levs))
-      allocate (Interstitial%dvdt_obl        (IM,Model%levs))
-      allocate (Interstitial%dvdt_ogw        (IM,Model%levs))
-      allocate (Interstitial%dvdt_ofd        (IM,Model%levs))
-      allocate (Interstitial%dvdt_oss        (IM,Model%levs))
-      allocate (Interstitial%du_ogwcol            (IM))
-      allocate (Interstitial%dv_ogwcol            (IM))
-      allocate (Interstitial%du_oblcol            (IM))
-      allocate (Interstitial%dv_oblcol            (IM))
-      allocate (Interstitial%du_osscol            (IM))
-      allocate (Interstitial%dv_osscol            (IM))
-      allocate (Interstitial%du_ofdcol            (IM))
-      allocate (Interstitial%dv_ofdcol            (IM))
-    end if
-
-
-! old CIRES UGWP v0
-    if (Model%do_ugwp_v0 .or. Model%do_gsl_drag_ls_bl .or. Model%do_gsl_drag_ss .or. Model%do_gsl_drag_tofd) then
-      allocate (Interstitial%dudt_mtb        (IM,Model%levs))
-      allocate (Interstitial%dudt_tms        (IM,Model%levs))
-      allocate (Interstitial%dudt_ogw        (IM,Model%levs))
-      allocate (Interstitial%dudt_gw         (IM,Model%levs))
-      allocate (Interstitial%dvdt_gw         (IM,Model%levs))
-      allocate (Interstitial%dtdt_gw         (IM,Model%levs))
-      allocate (Interstitial%kdis_gw         (IM,Model%levs))
-      !
-      allocate (Interstitial%tau_mtb         (IM))
-      allocate (Interstitial%tau_ogw         (IM))
-      allocate (Interstitial%tau_tofd        (IM))
-      allocate (Interstitial%tau_ngw         (IM))
-      allocate (Interstitial%tau_oss         (IM))
-      allocate (Interstitial%zmtb            (IM))
-      allocate (Interstitial%zlwb            (IM))
-      allocate (Interstitial%zogw            (IM))
-      allocate (Interstitial%zngw            (IM))
-
     end if
 
 !-- GSL drag suite
@@ -6472,24 +6461,6 @@ module GFS_typedefs
        allocate (Interstitial%ocss            (IM))
        allocate (Interstitial%oa4ss           (IM,4))
        allocate (Interstitial%clxss           (IM,4))
-       if (Model%gwd_opt==33 .or. Model%gwd_opt==22) then
-           allocate (Interstitial%dudt_ogw  (IM,Model%levs))
-           allocate (Interstitial%dvdt_ogw  (IM,Model%levs))
-           allocate (Interstitial%du_ogwcol (IM)           )
-           allocate (Interstitial%dv_ogwcol (IM)           )
-           allocate (Interstitial%dudt_obl  (IM,Model%levs))
-           allocate (Interstitial%dvdt_obl  (IM,Model%levs))
-           allocate (Interstitial%du_oblcol (IM)           )
-           allocate (Interstitial%dv_oblcol (IM)           )
-           allocate (Interstitial%dudt_oss  (IM,Model%levs))
-           allocate (Interstitial%dvdt_oss  (IM,Model%levs))
-           allocate (Interstitial%du_osscol (IM)           )
-           allocate (Interstitial%dv_osscol (IM)           )
-           allocate (Interstitial%dudt_ofd  (IM,Model%levs))
-           allocate (Interstitial%dvdt_ogw  (IM,Model%levs))
-           allocate (Interstitial%du_ofdcol (IM)           )
-           allocate (Interstitial%dv_ofdcol (IM)           )
-       end if
     end if
 !
     ! Allocate arrays that are conditional on physics choices
@@ -7075,66 +7046,23 @@ module GFS_typedefs
     Interstitial%zorl_ocean      = huge
     Interstitial%zt1d            = clear_val
 
+! UGWP common
+    Interstitial%tau_mtb         = clear_val
+    Interstitial%tau_ogw         = clear_val
+    Interstitial%tau_tofd        = clear_val
+    Interstitial%tau_ngw         = clear_val
+    Interstitial%tau_oss         = clear_val
+    Interstitial%zmtb            = clear_val
+    Interstitial%zlwb            = clear_val
+    Interstitial%zogw            = clear_val
+    Interstitial%zngw            = clear_val
+
 ! CIRES UGWP v1
     if (Model%do_ugwp_v1) then
-      Interstitial%dudt_gw         = clear_val
-      Interstitial%dvdt_gw         = clear_val
-      Interstitial%dtdt_gw         = clear_val
-      Interstitial%kdis_gw         = clear_val
-
       Interstitial%dudt_ngw        = clear_val
       Interstitial%dvdt_ngw        = clear_val
       Interstitial%dtdt_ngw        = clear_val
       Interstitial%kdis_ngw        = clear_val
-      Interstitial%dudt_ogw        = clear_val
-      Interstitial%dvdt_ogw        = clear_val
-      Interstitial%dudt_obl        = clear_val
-      Interstitial%dvdt_obl        = clear_val
-      Interstitial%dudt_oss        = clear_val
-      Interstitial%dvdt_oss        = clear_val
-      Interstitial%dudt_ofd        = clear_val
-      Interstitial%dvdt_ofd        = clear_val
-
-      Interstitial%tau_mtb         = clear_val
-      Interstitial%tau_ogw         = clear_val
-      Interstitial%tau_tofd        = clear_val
-      Interstitial%tau_ngw         = clear_val
-
-      Interstitial%tau_oss         = clear_val
-      Interstitial%du_ogwcol       = clear_val
-      Interstitial%dv_ogwcol       = clear_val
-      Interstitial%du_oblcol       = clear_val
-      Interstitial%dv_oblcol       = clear_val
-      Interstitial%du_osscol       = clear_val
-      Interstitial%dv_osscol       = clear_val
-      Interstitial%du_ofdcol       = clear_val
-      Interstitial%dv_ofdcol       = clear_val
-
-      Interstitial%zmtb            = clear_val
-      Interstitial%zlwb            = clear_val
-      Interstitial%zogw            = clear_val
-      Interstitial%zngw            = clear_val
-    end if
-
-! CIRES UGWP v0
-    if (Model%do_ugwp_v0 .or. Model%do_gsl_drag_ls_bl .or. Model%do_gsl_drag_ss .or. Model%do_gsl_drag_tofd) then
-      Interstitial%dudt_gw         = clear_val
-      Interstitial%dvdt_gw         = clear_val
-      Interstitial%dtdt_gw         = clear_val
-      Interstitial%kdis_gw         = clear_val
-      Interstitial%zmtb            = clear_val
-      Interstitial%dudt_mtb        = clear_val
-      Interstitial%dudt_ogw        = clear_val
-      Interstitial%dudt_tms        = clear_val
-      !
-      Interstitial%tau_mtb         = clear_val
-      Interstitial%tau_ogw         = clear_val
-      Interstitial%tau_tofd        = clear_val
-      Interstitial%tau_ngw         = clear_val
-      Interstitial%tau_oss         = clear_val
-      Interstitial%zlwb            = clear_val
-      Interstitial%zogw            = clear_val
-      Interstitial%zngw            = clear_val
     end if
 
 !-- GSL drag suite
@@ -7144,24 +7072,6 @@ module GFS_typedefs
        Interstitial%ocss            = clear_val
        Interstitial%oa4ss           = clear_val
        Interstitial%clxss           = clear_val
-       if (Model%gwd_opt==33 .or. Model%gwd_opt==22) then
-          Interstitial%dudt_ogw     = clear_val
-          Interstitial%dvdt_ogw     = clear_val
-          Interstitial%du_ogwcol    = clear_val
-          Interstitial%dv_ogwcol    = clear_val
-          Interstitial%dudt_obl     = clear_val
-          Interstitial%dvdt_obl     = clear_val
-          Interstitial%du_oblcol    = clear_val
-          Interstitial%dv_oblcol    = clear_val
-          Interstitial%dudt_oss     = clear_val
-          Interstitial%dvdt_oss     = clear_val
-          Interstitial%du_osscol    = clear_val
-          Interstitial%dv_osscol    = clear_val
-          Interstitial%dudt_ofd     = clear_val
-          Interstitial%dvdt_ogw     = clear_val
-          Interstitial%du_ofdcol    = clear_val
-          Interstitial%dv_ofdcol    = clear_val
-       end if
     end if
 !
     ! Reset fields that are conditional on physics choices
@@ -7522,62 +7432,27 @@ module GFS_typedefs
     write (0,*) 'sum(Interstitial%zorl_land       ) = ', sum(Interstitial%zorl_land       )
     write (0,*) 'sum(Interstitial%zorl_ocean      ) = ', sum(Interstitial%zorl_ocean      )
     write (0,*) 'sum(Interstitial%zt1d            ) = ', sum(Interstitial%zt1d            )
-    ! DH* NEED TO UPDATE GFS_DEBUG PRINTS!!! *DH
+
+! UGWP common
+    write (0,*) 'sum(Interstitial%tau_mtb         ) = ', sum(Interstitial%tau_mtb       )
+    write (0,*) 'sum(Interstitial%tau_ogw         ) = ', sum(Interstitial%tau_ogw       )
+    write (0,*) 'sum(Interstitial%tau_tofd        ) = ', sum(Interstitial%tau_tofd      )
+    write (0,*) 'sum(Interstitial%tau_ngw         ) = ', sum(Interstitial%tau_ngw       )
+    write (0,*) 'sum(Interstitial%tau_oss         ) = ', sum(Interstitial%tau_oss       )
+    write (0,*) 'sum(Interstitial%dudt_mtb        ) = ', sum(Interstitial%dudt_mtb      )
+    write (0,*) 'sum(Interstitial%dudt_tms        ) = ', sum(Interstitial%dudt_tms      )
+    write (0,*) 'sum(Interstitial%zmtb            ) = ', sum(Interstitial%zmtb          )
+    write (0,*) 'sum(Interstitial%zlwb            ) = ', sum(Interstitial%zlwb          )
+    write (0,*) 'sum(Interstitial%zogw            ) = ', sum(Interstitial%zogw          )
+    write (0,*) 'sum(Interstitial%zngw            ) = ', sum(Interstitial%zngw          )
+
 ! UGWP v1
     if (Model%do_ugwp_v1) then
-      write (0,*) 'sum(Interstitial%dudt_gw         ) = ', sum(Interstitial%dudt_gw       )
-      write (0,*) 'sum(Interstitial%dvdt_gw         ) = ', sum(Interstitial%dvdt_gw       )
-      write (0,*) 'sum(Interstitial%dtdt_gw         ) = ', sum(Interstitial%dtdt_gw       )
-      write (0,*) 'sum(Interstitial%kdis_gw         ) = ', sum(Interstitial%kdis_gw       )
       write (0,*) 'sum(Interstitial%dudt_ngw        ) = ', sum(Interstitial%dudt_ngw      )
       write (0,*) 'sum(Interstitial%dvdt_ngw        ) = ', sum(Interstitial%dvdt_ngw      )
       write (0,*) 'sum(Interstitial%dtdt_ngw        ) = ', sum(Interstitial%dtdt_ngw      )
       write (0,*) 'sum(Interstitial%kdis_ngw        ) = ', sum(Interstitial%kdis_ngw      )
-      write (0,*) 'sum(Interstitial%dudt_ogw        ) = ', sum(Interstitial%dudt_ogw      )
-      write (0,*) 'sum(Interstitial%dvdt_ogw        ) = ', sum(Interstitial%dvdt_ogw      )
-      write (0,*) 'sum(Interstitial%dudt_obl        ) = ', sum(Interstitial%dudt_obl      )
-      write (0,*) 'sum(Interstitial%dvdt_obl        ) = ', sum(Interstitial%dvdt_obl      )
-      write (0,*) 'sum(Interstitial%dudt_oss        ) = ', sum(Interstitial%dudt_oss      )
-      write (0,*) 'sum(Interstitial%dvdt_oss        ) = ', sum(Interstitial%dvdt_oss      )
-      write (0,*) 'sum(Interstitial%dudt_ofd        ) = ', sum(Interstitial%dudt_ofd      )
-      write (0,*) 'sum(Interstitial%dvdt_ofd        ) = ', sum(Interstitial%dvdt_ofd      )
-      write (0,*) 'sum(Interstitial%tau_mtb         ) = ', sum(Interstitial%tau_mtb       )
-      write (0,*) 'sum(Interstitial%tau_ogw         ) = ', sum(Interstitial%tau_ogw       )
-      write (0,*) 'sum(Interstitial%tau_tofd        ) = ', sum(Interstitial%tau_tofd      )
-      write (0,*) 'sum(Interstitial%tau_ngw         ) = ', sum(Interstitial%tau_ngw       )
-      write (0,*) 'sum(Interstitial%tau_oss         ) = ', sum(Interstitial%tau_oss       )
-      write (0,*) 'sum(Interstitial%du_ogwcol       ) = ', sum(Interstitial%du_ogwcol     )
-      write (0,*) 'sum(Interstitial%dv_ogwcol       ) = ', sum(Interstitial%dv_ogwcol     )
-      write (0,*) 'sum(Interstitial%du_oblcol       ) = ', sum(Interstitial%du_oblcol     )
-      write (0,*) 'sum(Interstitial%dv_oblcol       ) = ', sum(Interstitial%dv_oblcol     )
-      write (0,*) 'sum(Interstitial%du_osscol       ) = ', sum(Interstitial%du_osscol     )
-      write (0,*) 'sum(Interstitial%dv_osscol       ) = ', sum(Interstitial%dv_osscol     )
-      write (0,*) 'sum(Interstitial%du_ofdcol       ) = ', sum(Interstitial%du_ofdcol     )
-      write (0,*) 'sum(Interstitial%dv_ofdcol       ) = ', sum(Interstitial%dv_ofdcol     )
-      write (0,*) 'sum(Interstitial%zmtb            ) = ', sum(Interstitial%zmtb          )
-      write (0,*) 'sum(Interstitial%zlwb            ) = ', sum(Interstitial%zlwb          )
-      write (0,*) 'sum(Interstitial%zogw            ) = ', sum(Interstitial%zogw          )
-      write (0,*) 'sum(Interstitial%zngw            ) = ', sum(Interstitial%zngw          )
     end if
-! CIRES UGWP v0
-    if (Model%do_ugwp_v0 .or. Model%do_gsl_drag_ls_bl .or. Model%do_gsl_drag_ss .or. Model%do_gsl_drag_tofd) then
-      write (0,*) 'sum(Interstitial%dudt_gw         ) = ', sum(Interstitial%dudt_gw       )
-      write (0,*) 'sum(Interstitial%dvdt_gw         ) = ', sum(Interstitial%dvdt_gw       )
-      write (0,*) 'sum(Interstitial%dtdt_gw         ) = ', sum(Interstitial%dtdt_gw       )
-      write (0,*) 'sum(Interstitial%kdis_gw         ) = ', sum(Interstitial%kdis_gw       )
-      write (0,*) 'sum(Interstitial%tau_mtb         ) = ', sum(Interstitial%tau_mtb       )
-      write (0,*) 'sum(Interstitial%tau_ogw         ) = ', sum(Interstitial%tau_ogw       )
-      write (0,*) 'sum(Interstitial%tau_tofd        ) = ', sum(Interstitial%tau_tofd      )
-      write (0,*) 'sum(Interstitial%tau_ngw         ) = ', sum(Interstitial%tau_ngw       )
-      write (0,*) 'sum(Interstitial%tau_oss         ) = ', sum(Interstitial%tau_oss       )
-      write (0,*) 'sum(Interstitial%zmtb            ) = ', sum(Interstitial%zmtb          )
-      write (0,*) 'sum(Interstitial%zlwb            ) = ', sum(Interstitial%zlwb          )
-      write (0,*) 'sum(Interstitial%zogw            ) = ', sum(Interstitial%zogw          )
-      write (0,*) 'sum(Interstitial%dudt_mtb        ) = ', sum(Interstitial%dudt_mtb      )
-      write (0,*) 'sum(Interstitial%dudt_ogw        ) = ', sum(Interstitial%dudt_ogw      )
-      write (0,*) 'sum(Interstitial%dudt_tms        ) = ', sum(Interstitial%dudt_tms      )
-    end if
-! DH* ! CIRES UGWP v1 MISSING *DH
 !-- GSL drag suite
     if (Model%gwd_opt==3 .or. Model%gwd_opt==33 .or. &
         Model%gwd_opt==2 .or. Model%gwd_opt==22) then
@@ -7585,24 +7460,6 @@ module GFS_typedefs
        write (0,*) 'sum(Interstitial%ocss            ) = ', sum(Interstitial%ocss)
        write (0,*) 'sum(Interstitial%oa4ss           ) = ', sum(Interstitial%oa4ss)
        write (0,*) 'sum(Interstitial%clxss           ) = ', sum(Interstitial%clxss)
-       if (Model%gwd_opt==33 .or. Model%gwd_opt==22) then
-          write (0,*) 'sum(Interstitial%dudt_ogw        ) = ', sum(Interstitial%dudt_ogw      )
-          write (0,*) 'sum(Interstitial%dvdt_ogw        ) = ', sum(Interstitial%dvdt_ogw      )
-          write (0,*) 'sum(Interstitial%du_ogwcol       ) = ', sum(Interstitial%du_ogwcol     )
-          write (0,*) 'sum(Interstitial%dv_ogwcol       ) = ', sum(Interstitial%dv_ogwcol     )
-          write (0,*) 'sum(Interstitial%dudt_obl        ) = ', sum(Interstitial%dudt_obl      )
-          write (0,*) 'sum(Interstitial%dvdt_obl        ) = ', sum(Interstitial%dvdt_obl      )
-          write (0,*) 'sum(Interstitial%du_oblcol       ) = ', sum(Interstitial%du_oblcol     )
-          write (0,*) 'sum(Interstitial%dv_oblcol       ) = ', sum(Interstitial%dv_oblcol     )
-          write (0,*) 'sum(Interstitial%dudt_oss        ) = ', sum(Interstitial%dudt_oss      )
-          write (0,*) 'sum(Interstitial%dvdt_oss        ) = ', sum(Interstitial%dvdt_oss      )
-          write (0,*) 'sum(Interstitial%du_osscol       ) = ', sum(Interstitial%du_osscol     )
-          write (0,*) 'sum(Interstitial%dv_osscol       ) = ', sum(Interstitial%dv_osscol     )
-          write (0,*) 'sum(Interstitial%dudt_ofd        ) = ', sum(Interstitial%dudt_ofd      )
-          write (0,*) 'sum(Interstitial%dvdt_ogw        ) = ', sum(Interstitial%dvdt_ogw      )
-          write (0,*) 'sum(Interstitial%du_ofdcol       ) = ', sum(Interstitial%du_ofdcol     )
-          write (0,*) 'sum(Interstitial%dv_ofdcol       ) = ', sum(Interstitial%dv_ofdcol     )
-       end if
     end if
 !
     ! Print arrays that are conditional on physics choices
