@@ -955,11 +955,11 @@ module FV3GFS_io_mod
     endif
 #endif
       !--- register the 3D fields
-    if (Model%frac_grid) then
+!    if (Model%frac_grid) then
       sfc_name3(0) = 'tiice'
       var3_p => sfc_var3ice(:,:,:)
       id_restart = register_restart_field(Sfc_restart, fn_srf, sfc_name3(0), var3_p, domain=fv_domain, mandatory=.false.)
-    end if
+!    end if
  
     do num = 1,nvar_s3
       var3_p => sfc_var3(:,:,:,num)
@@ -1077,16 +1077,16 @@ module FV3GFS_io_mod
 
         if (Sfcprop(nb)%lakefrac(ix) > zero) then
           Sfcprop(nb)%oceanfrac(ix) = zero ! lake & ocean don't coexist in a cell
-          if (Sfcprop(nb)%fice(ix) < Model%min_lakeice) then
-             Sfcprop(nb)%fice(ix) = zero
-             if (Sfcprop(nb)%slmsk(ix) == 2) Sfcprop(nb)%slmsk(ix) = 0
-          endif
+!          if (Sfcprop(nb)%fice(ix) < Model%min_lakeice) then
+!             Sfcprop(nb)%fice(ix) = zero
+!             if (Sfcprop(nb)%slmsk(ix) == 2) Sfcprop(nb)%slmsk(ix) = 0
+!          endif
         else
           Sfcprop(nb)%oceanfrac(ix) = one - Sfcprop(nb)%landfrac(ix)
-          if (Sfcprop(nb)%fice(ix) < Model%min_seaice) then
-             Sfcprop(nb)%fice(ix) = zero
-             if (Sfcprop(nb)%slmsk(ix) == 2) Sfcprop(nb)%slmsk(ix) = 0
-          endif
+!          if (Sfcprop(nb)%fice(ix) < Model%min_seaice) then
+!             Sfcprop(nb)%fice(ix) = zero
+!             if (Sfcprop(nb)%slmsk(ix) == 2) Sfcprop(nb)%slmsk(ix) = 0
+!          endif
         endif
         !
         !--- NSSTM variables
@@ -1357,28 +1357,47 @@ module FV3GFS_io_mod
         enddo
       enddo
     else
+      if( Model%phour < 1.e-7) then
 !$omp parallel do default(shared) private(nb, ix, tem)
-      do nb = 1, Atm_block%nblks
-        do ix = 1, Atm_block%blksz(nb)
-      !--- specify tsfcl/zorll/zorli from existing variable tsfco/zorlo
-!         Sfcprop(nb)%tsfcl(ix) = Sfcprop(nb)%tsfco(ix)
-!         Sfcprop(nb)%zorll(ix) = Sfcprop(nb)%zorlo(ix)
-!         Sfcprop(nb)%zorli(ix) = Sfcprop(nb)%zorlo(ix)
-!         Sfcprop(nb)%zorl(ix)  = Sfcprop(nb)%zorlo(ix)
-!         Sfcprop(nb)%tsfc(ix)  = Sfcprop(nb)%tsfco(ix)
-          if (Sfcprop(nb)%slmsk(ix) == 1) then
-            Sfcprop(nb)%zorl(ix) = Sfcprop(nb)%zorll(ix) 
-            Sfcprop(nb)%tsfc(ix) = Sfcprop(nb)%tsfcl(ix)
-          else
-            tem = one - Sfcprop(nb)%fice(ix)
-            Sfcprop(nb)%zorl(ix) = Sfcprop(nb)%zorli(ix) * Sfcprop(nb)%fice(ix) &
-                                 + Sfcprop(nb)%zorlo(ix) * tem
-
-            Sfcprop(nb)%tsfc(ix) = Sfcprop(nb)%tisfc(ix) * Sfcprop(nb)%fice(ix) &
-                                 + Sfcprop(nb)%tsfco(ix) * tem
-          endif
+        do nb = 1, Atm_block%nblks
+          do ix = 1, Atm_block%blksz(nb)
+       !--- specify tsfcl/zorll/zorli from existing variable tsfco/zorlo
+!            Sfcprop(nb)%tsfcl(ix) = Sfcprop(nb)%tsfco(ix)
+!            Sfcprop(nb)%zorll(ix) = Sfcprop(nb)%zorlo(ix)
+!            Sfcprop(nb)%zorli(ix) = Sfcprop(nb)%zorlo(ix)
+!            Sfcprop(nb)%zorl(ix)  = Sfcprop(nb)%zorlo(ix)
+            if (Sfcprop(nb)%slmsk(ix) == 1) then
+              Sfcprop(nb)%zorl(ix) = Sfcprop(nb)%zorll(ix) 
+              Sfcprop(nb)%tsfc(ix) = Sfcprop(nb)%tsfcl(ix)
+            else
+              tem = one - Sfcprop(nb)%fice(ix)
+              Sfcprop(nb)%zorl(ix) = Sfcprop(nb)%zorli(ix) * Sfcprop(nb)%fice(ix) &
+                                   + Sfcprop(nb)%zorlo(ix) * tem
+              Sfcprop(nb)%tsfc(ix) = Sfcprop(nb)%tisfc(ix) * Sfcprop(nb)%fice(ix) &
+                                   + Sfcprop(nb)%tsfco(ix) * tem
+            endif
+          enddo
         enddo
-      enddo
+      else
+!$omp parallel do default(shared) private(nb, ix, tem)
+        do nb = 1, Atm_block%nblks
+          do ix = 1, Atm_block%blksz(nb)
+      !--- specify tsfcl/zorll/zorli from existing variable tsfco/zorlo
+            Sfcprop(nb)%tsfc(ix)  = Sfcprop(nb)%tsfco(ix)
+            if (Sfcprop(nb)%slmsk(ix) == 1) then
+              Sfcprop(nb)%zorl(ix) = Sfcprop(nb)%zorll(ix)
+              Sfcprop(nb)%tsfc(ix) = Sfcprop(nb)%tsfcl(ix)
+            else
+              tem = one - Sfcprop(nb)%fice(ix)
+              Sfcprop(nb)%zorl(ix) = Sfcprop(nb)%zorli(ix) * Sfcprop(nb)%fice(ix) &
+                                   + Sfcprop(nb)%zorlo(ix) * tem
+              if (Sfcprop(nb)%fice(ix) > min(Model%min_seaice,Model%min_lakeice)) then
+                Sfcprop(nb)%tsfc(ix) = Sfcprop(nb)%tsfcl(ix)
+              endif
+            endif
+          enddo
+        enddo
+      endif
     endif ! if (Model%frac_grid)
 
 !#ifdef CCPP
@@ -1959,11 +1978,11 @@ module FV3GFS_io_mod
 #endif
 
       !--- register the 3D fields
-      if (Model%frac_grid) then
+!      if (Model%frac_grid) then
         sfc_name3(0) = 'tiice'
         var3_p => sfc_var3ice(:,:,:)
         id_restart = register_restart_field(Sfc_restart, fn_srf, sfc_name3(0), var3_p, domain=fv_domain)
-      endif
+!      endif
 
       do num = 1,nvar3
         var3_p => sfc_var3(:,:,:,num)
