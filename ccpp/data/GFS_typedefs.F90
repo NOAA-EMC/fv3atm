@@ -5713,7 +5713,7 @@ module GFS_typedefs
       allocate (Diag%dudt_oss  (IM,Model%levs))
       allocate (Diag%dvdt_oss  (IM,Model%levs))
       allocate (Diag%dudt_ofd  (IM,Model%levs))
-      allocate (Diag%dvdt_ogw  (IM,Model%levs))
+      allocate (Diag%dvdt_ofd  (IM,Model%levs))
       allocate (Diag%du_ogwcol (IM)           )
       allocate (Diag%dv_ogwcol (IM)           )
       allocate (Diag%du_oblcol (IM)           )
@@ -5722,6 +5722,8 @@ module GFS_typedefs
       allocate (Diag%dv_osscol (IM)           )
       allocate (Diag%du_ofdcol (IM)           )
       allocate (Diag%dv_ofdcol (IM)           )
+    else
+      allocate (Diag%dudt_ogw  (IM,Model%levs))
     end if
 
     !--- 3D diagnostics for Thompson MP / GFDL MP
@@ -5987,6 +5989,8 @@ module GFS_typedefs
       Diag%dv_osscol   = zero
       Diag%du_ofdcol   = zero
       Diag%dv_ofdcol   = zero
+    else
+      Diag%dudt_ogw    = zero
     end if
 
     if (Model%ldiag_ugwp) then
