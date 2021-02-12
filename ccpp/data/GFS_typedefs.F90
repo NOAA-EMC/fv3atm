@@ -5658,11 +5658,14 @@ module GFS_typedefs
       allocate (Diag%dt3dt  (IM,Model%levs,11))
       if (Model%qdiag3d) then
         allocate (Diag%dq3dt  (IM,Model%levs,13))
+      else
+        allocate (Diag%dq3dt  (1,1,13))
       endif
-!--- needed to allocate GoCart coupling fields
-!     allocate (Diag%upd_mf (IM,Model%levs))
-!     allocate (Diag%dwn_mf (IM,Model%levs))
-!     allocate (Diag%det_mf (IM,Model%levs))
+    else
+      allocate (Diag%du3dt  (1,1,8))
+      allocate (Diag%dv3dt  (1,1,8))
+      allocate (Diag%dt3dt  (1,1,11))
+      allocate (Diag%dq3dt  (1,1,13))
     endif
 
 ! UGWP
