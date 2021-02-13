@@ -1151,7 +1151,7 @@ module post_regional
 
             ! max hourly 1-km agl reflectivity
             if(trim(fieldname)=='refdmax') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,refd_max,arrayr42d,sm,sice,fillValue)
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,refd_max,arrayr42d,sm,fillValue)
               do j=jsta,jend
                 do i=ista, iend
                   refd_max(i,j) = arrayr42d(i,j)
@@ -1162,7 +1162,7 @@ module post_regional
 
             ! max hourly -10C reflectivity
             if(trim(fieldname)=='refdmax263k') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,refdm10c_max,arrayr42d,sm,sice,fillValue)
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,refdm10c_max,arrayr42d,sm,fillValue)
               do j=jsta,jend
                 do i=ista, iend
                   refdm10c_max(i,j) = arrayr42d(i,j)
@@ -1173,7 +1173,7 @@ module post_regional
 
             ! max hourly u comp of 10m agl wind
             if(trim(fieldname)=='u10max') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,u10max,arrayr42d,sm,sice,fillValue)
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,u10max,arrayr42d,sm,fillValue)
               do j=jsta,jend
                 do i=ista, iend
                   u10max(i,j) = arrayr42d(i,j)
@@ -1184,7 +1184,7 @@ module post_regional
 
             ! max hourly v comp of 10m agl wind
             if(trim(fieldname)=='v10max') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,v10max,arrayr42d,sm,sice,fillValue)
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,v10max,arrayr42d,sm,fillValue)
               do j=jsta,jend
                 do i=ista, iend
                   v10max(i,j) = arrayr42d(i,j)
@@ -1195,7 +1195,7 @@ module post_regional
 
             ! max hourly 10m agl wind speed
             if(trim(fieldname)=='spd10max') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,wspd10max,arrayr42d,sm,sice,fillValue)
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,wspd10max,arrayr42d,sm,fillValue)
               do j=jsta,jend
                 do i=ista, iend
                   wspd10max(i,j) = arrayr42d(i,j)
@@ -2802,7 +2802,11 @@ module post_regional
         do i=ista, iend
           !assign sst
           if (sm(i,j) /= 0.0 .and. ths(i,j) /= spval) then
+            if ((sice(i,j) >= 0.15) then
+              sst(i,j) = 271.4
+            else
              sst(i,j) = ths(i,j)
+            endif
           else
              sst(i,j) = spval
           endif
