@@ -2802,7 +2802,7 @@ module post_regional
         do i=ista, iend
           !assign sst
           if (sm(i,j) /= 0.0 .and. ths(i,j) /= spval) then
-            if ((sice(i,j) >= 0.15) then
+            if (sice(i,j) >= 0.15) then
               sst(i,j) = 271.4
             else
              sst(i,j) = ths(i,j)
