@@ -2797,7 +2797,7 @@ module post_regional
 !          minval(alpint(1:im,jsta:jend,1))
 
 ! surface potential T, and potential T at roughness length
-!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,lp1,sm,ths,sst,thz0,pint)
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,lp1,sm,ths,sst,thz0,sice,pint)
       do j=jsta,jend
         do i=ista, iend
           !assign sst
