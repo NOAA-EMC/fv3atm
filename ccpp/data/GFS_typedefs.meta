@@ -1,7 +1,7 @@
 [ccpp-table-properties]
   name = GFS_statein_type
   type = ddt
-  dependencies = 
+  dependencies =
 
 [ccpp-arg-table]
   name = GFS_statein_type
@@ -273,7 +273,7 @@
 [ccpp-table-properties]
   name = GFS_stateout_type
   type = ddt
-  dependencies = 
+  dependencies =
 
 [ccpp-arg-table]
   name = GFS_stateout_type
@@ -454,7 +454,7 @@
 [ccpp-table-properties]
   name = GFS_sfcprop_type
   type = ddt
-  dependencies = 
+  dependencies =
 
 [ccpp-arg-table]
   name = GFS_sfcprop_type
@@ -969,7 +969,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)
 [tvxy]
   standard_name = vegetation_temperature
   long_name = vegetation temperature
@@ -977,7 +977,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)
 [tgxy]
   standard_name = ground_temperature_for_noahmp
   long_name = ground temperature for noahmp
@@ -985,7 +985,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)
 [canicexy]
   standard_name = canopy_intercepted_ice_mass
   long_name = canopy intercepted ice mass
@@ -993,7 +993,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)
 [canliqxy]
   standard_name = canopy_intercepted_liquid_water
   long_name = canopy intercepted liquid water
@@ -1001,7 +1001,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)
 [eahxy]
   standard_name = canopy_air_vapor_pressure
   long_name = canopy air vapor pressure
@@ -1009,7 +1009,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)
 [tahxy]
   standard_name = canopy_air_temperature
   long_name = canopy air temperature
@@ -1017,7 +1017,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)
 [cmxy]
   standard_name = surface_drag_coefficient_for_momentum_for_noahmp
   long_name = surface drag coefficient for momentum for noahmp
@@ -1025,7 +1025,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)
 [chxy]
   standard_name = surface_drag_coefficient_for_heat_and_moisture_for_noahmp
   long_name = surface exchange coeff heat & moisture for noahmp
@@ -1033,7 +1033,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)
 [fwetxy]
   standard_name = area_fraction_of_wet_canopy
   long_name = area fraction of canopy that is wetted/snowed
@@ -1041,7 +1041,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)
 [sneqvoxy]
   standard_name = snow_mass_at_previous_time_step
   long_name = snow mass at previous time step
@@ -1049,7 +1049,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)
 [alboldxy]
   standard_name = snow_albedo_at_previous_time_step
   long_name = snow albedo at previous time step
@@ -1057,7 +1057,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)
 [qsnowxy]
   standard_name = snow_precipitation_rate_at_surface
   long_name = snow precipitation rate at surface
@@ -1065,7 +1065,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)
 [wslakexy]
   standard_name = lake_water_storage
   long_name = lake water storage
@@ -1073,7 +1073,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)
 [zwtxy]
   standard_name = water_table_depth
   long_name = water table depth
@@ -1081,7 +1081,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)
 [waxy]
   standard_name = water_storage_in_aquifer
   long_name = water storage in aquifer
@@ -1089,7 +1089,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)
 [wtxy]
   standard_name = water_storage_in_aquifer_and_saturated_soil
   long_name = water storage in aquifer and saturated soil
@@ -1097,7 +1097,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)
 [tsnoxy]
   standard_name = snow_temperature
   long_name = snow_temperature
@@ -1105,7 +1105,7 @@
   dimensions = (horizontal_loop_extent, lower_bound_of_snow_vertical_dimension_for_land_surface_model:0)
   type = real
   kind = kind_phys
-  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)
 [zsnsoxy]
   standard_name = layer_bottom_depth_from_snow_surface
   long_name = depth from the top of the snow surface at the bottom of the layer
@@ -1113,7 +1113,7 @@
   dimensions = (horizontal_loop_extent, lower_bound_of_snow_vertical_dimension_for_land_surface_model:soil_vertical_dimension_for_land_surface_model)
   type = real
   kind = kind_phys
-  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)
 [snicexy]
   standard_name = snow_layer_ice
   long_name = snow layer ice
@@ -1121,7 +1121,7 @@
   dimensions = (horizontal_loop_extent, lower_bound_of_snow_vertical_dimension_for_land_surface_model:0)
   type = real
   kind = kind_phys
-  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)
 [snliqxy]
   standard_name = snow_layer_liquid_water
   long_name = snow layer liquid water
@@ -1129,7 +1129,7 @@
   dimensions = (horizontal_loop_extent, lower_bound_of_snow_vertical_dimension_for_land_surface_model:0)
   type = real
   kind = kind_phys
-  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)
 [lfmassxy]
   standard_name = leaf_mass
   long_name = leaf mass
@@ -1137,7 +1137,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)
 [rtmassxy]
   standard_name = fine_root_mass
   long_name = fine root mass
@@ -1145,7 +1145,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)
 [stmassxy]
   standard_name = stem_mass
   long_name = stem mass
@@ -1153,7 +1153,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)
 [woodxy]
   standard_name = wood_mass
   long_name = wood mass including woody roots
@@ -1161,7 +1161,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)
 [stblcpxy]
   standard_name = slow_soil_pool_mass_content_of_carbon
   long_name = stable carbon in deep soil
@@ -1169,7 +1169,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)
 [fastcpxy]
   standard_name = fast_soil_pool_mass_content_of_carbon
   long_name = short-lived carbon in shallow soil
@@ -1177,10 +1177,10 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)
 [xlaixy]
   standard_name = leaf_area_index
-  long_name = leaf area index 
+  long_name = leaf area index
   units = none
   dimensions = (horizontal_loop_extent)
   type = real
@@ -1188,12 +1188,12 @@
   active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme .or. (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme .and. flag_for_reading_leaf_area_index_from_input))
 [xsaixy]
   standard_name = stem_area_index
-  long_name = stem area index 
+  long_name = stem area index
   units = none
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)
 [taussxy]
   standard_name = nondimensional_snow_age
   long_name = non-dimensional snow age
@@ -1201,7 +1201,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)
 [smoiseq]
   standard_name = equilibrium_soil_water_content
   long_name = equilibrium soil water content
@@ -1209,7 +1209,7 @@
   dimensions = (horizontal_loop_extent,soil_vertical_dimension_for_land_surface_model)
   type = real
   kind = kind_phys
-  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)
 [smcwtdxy]
   standard_name = soil_water_content_between_soil_bottom_and_water_table
   long_name = soil water content between the bottom of the soil and the water table
@@ -1217,7 +1217,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)
 [deeprechxy]
   standard_name = water_table_recharge_when_deep
   long_name = recharge to or from the water table when deep
@@ -1225,7 +1225,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)
 [rechxy]
   standard_name = water_table_recharge_when_shallow
   long_name = recharge to or from the water table when shallow
@@ -1249,7 +1249,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme) 
+  active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme)
 [sh2o]
   standard_name = volume_fraction_of_unfrozen_soil_moisture_for_land_surface_model
   long_name = volume fraction of unfrozen soil moisture for lsm
@@ -1257,7 +1257,7 @@
   dimensions = (horizontal_loop_extent,soil_vertical_dimension_for_land_surface_model)
   type = real
   kind = kind_phys
-  active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme) 
+  active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme)
 [keepsmfr]
   standard_name = volume_fraction_of_frozen_soil_moisture_for_land_surface_model
   long_name = volume fraction of frozen soil moisture for lsm
@@ -1265,7 +1265,7 @@
   dimensions = (horizontal_loop_extent,soil_vertical_dimension_for_land_surface_model)
   type = real
   kind = kind_phys
-  active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme) 
+  active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme)
 [smois]
   standard_name = volume_fraction_of_soil_moisture_for_land_surface_model
   long_name = volumetric fraction of soil moisture for lsm
@@ -1273,7 +1273,7 @@
   dimensions = (horizontal_loop_extent,soil_vertical_dimension_for_land_surface_model)
   type = real
   kind = kind_phys
-  active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme) 
+  active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme)
 [tslb]
   standard_name = soil_temperature_for_land_surface_model
   long_name = soil temperature for land surface model
@@ -1297,7 +1297,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme) 
+  active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme)
 [qwv_surf_land]
   standard_name = water_vapor_mixing_ratio_at_surface_over_land
   long_name = water vapor mixing ratio at surface over land
@@ -1313,7 +1313,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme) 
+  active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme)
 [flag_frsoil]
   standard_name = flag_for_frozen_soil_physics
   long_name = flag for frozen soil physics (RUC)
@@ -1321,7 +1321,7 @@
   dimensions = (horizontal_loop_extent,soil_vertical_dimension_for_land_surface_model)
   type = real
   kind = kind_phys
-  active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme) 
+  active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme)
 [rhofr]
   standard_name = density_of_frozen_precipitation
   long_name = density of frozen precipitation
@@ -1329,7 +1329,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme) 
+  active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme)
 [tsnow_land]
   standard_name = snow_temperature_bottom_first_layer_over_land
   long_name = snow temperature at the bottom of the first snow layer over land
@@ -1345,7 +1345,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme) 
+  active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme)
 [snowfallac_land]
   standard_name = total_accumulated_snowfall_over_land
   long_name = run-total snow accumulation on the ground
@@ -1361,7 +1361,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme) 
+  active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme)
 [ustm]
   standard_name = surface_friction_velocity_drag
   long_name = friction velocity isolated for momentum only
@@ -1502,7 +1502,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)
 [drainncprv]
   standard_name = explicit_rainfall_rate_from_previous_timestep
   long_name = explicit rainfall rate previous timestep
@@ -1510,7 +1510,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)
 [diceprv]
   standard_name = ice_precipitation_rate_from_previous_timestep
   long_name = ice precipitation rate from previous timestep
@@ -1518,7 +1518,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)
 [dsnowprv]
   standard_name = snow_precipitation_rate_from_previous_timestep
   long_name = snow precipitation rate from previous timestep
@@ -1526,7 +1526,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)
 [dgraupelprv]
   standard_name = graupel_precipitation_rate_from_previous_timestep
   long_name = graupel precipitation rate from previous timestep
@@ -1534,7 +1534,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)  
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)
 [alvsf]
   standard_name = mean_vis_albedo_with_strong_cosz_dependency
   long_name = mean vis albedo with strong cosz dependency
@@ -1568,7 +1568,7 @@
 [ccpp-table-properties]
   name = GFS_coupling_type
   type = ddt
-  dependencies = 
+  dependencies =
 
 [ccpp-arg-table]
   name = GFS_coupling_type
@@ -1994,7 +1994,7 @@
 [ulwsfcin_cpl]
   standard_name = surface_upwelling_longwave_flux_for_coupling
   long_name = surface upwelling LW flux for coupling
-  units = W m-2 
+  units = W m-2
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
@@ -2002,7 +2002,7 @@
 [dusfcin_cpl]
   standard_name = surface_x_momentum_flux_for_coupling
   long_name = sfc x momentum flux for coupling
-  units = Pa 
+  units = Pa
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
@@ -2010,7 +2010,7 @@
 [dvsfcin_cpl]
   standard_name = surface_y_momentum_flux_for_coupling
   long_name = sfc y momentum flux for coupling
-  units = Pa 
+  units = Pa
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
@@ -2168,7 +2168,7 @@
 [ccpp-table-properties]
   name = GFS_control_type
   type = ddt
-  dependencies = 
+  dependencies =
 
 [ccpp-arg-table]
   name = GFS_control_type
@@ -2489,13 +2489,13 @@
 [nsswr]
   standard_name = number_of_timesteps_between_shortwave_radiation_calls
   long_name = number of timesteps between shortwave radiation calls
-  units = 
+  units =
   dimensions = ()
   type = integer
 [nslwr]
   standard_name = number_of_timesteps_between_longwave_radiation_calls
   long_name = number of timesteps between longwave radiation calls
-  units = 
+  units =
   dimensions = ()
   type = integer
 [fhswr]
@@ -2616,7 +2616,7 @@
   type = integer
 [iovr]
   standard_name = flag_for_cloud_overlap_method_for_radiation
-  long_name = flag for cloud overlap method 
+  long_name = flag for cloud overlap method
   units = flag
   dimensions = ()
   type = integer
@@ -2680,7 +2680,7 @@
   units = none
   dimensions =  ()
   type = character
-  kind = len=128 
+  kind = len=128
 [nGases]
   standard_name = number_of_active_gases_used_by_RRTMGP
   long_name = number of gases available used by RRTMGP (Model%nGases)
@@ -2702,7 +2702,7 @@
   type = character
   kind = len=128
 [lw_file_clouds]
-  standard_name = rrtmgp_coeff_lw_cloud_optics 
+  standard_name = rrtmgp_coeff_lw_cloud_optics
   long_name = file containing coefficients for RRTMGP LW cloud optics (Model%lw_file_clouds)
   units = none
   dimensions =  ()
@@ -2720,7 +2720,7 @@
   units = count
   dimensions =  ()
   type = integer
-[sw_file_gas] 
+[sw_file_gas]
   standard_name = rrtmgp_kdistribution_sw
   long_name = file containing RRTMGP SW k-distribution (Model%sw_file_gas)
   units = none
@@ -2728,9 +2728,9 @@
   type = character
   kind = len=128
 [sw_file_clouds]
-  standard_name = rrtmgp_coeff_sw_cloud_optics 
+  standard_name = rrtmgp_coeff_sw_cloud_optics
   long_name = file containing coefficients for RRTMGP SW cloud optics (Model%sw_file_clouds)
-  units = none 
+  units = none
   dimensions =  ()
   type = character
   kind = len=128
@@ -2751,7 +2751,7 @@
   long_name = logical flag to control cloud optics scheme.
   units = flag
   dimensions = ()
-  type = logical  
+  type = logical
 [doGP_cldoptics_PADE]
   standard_name = flag_to_calc_lw_cld_optics_using_RRTMGP_PADE
   long_name = logical flag to control cloud optics scheme.
@@ -2769,10 +2769,10 @@
   long_name = logical flag to control RRTMGP LW calculation
   units = flag
   dimensions = ()
-  type = logical 
-[doGP_lwscat] 
+  type = logical
+[doGP_lwscat]
   standard_name = flag_to_include_longwave_scattering_in_cloud_optics
-  long_name = logical flag to control the addition of LW scattering in RRTMGP 
+  long_name = logical flag to control the addition of LW scattering in RRTMGP
   units = flag
   dimensions = ()
   type = logical
@@ -3005,7 +3005,7 @@
 [mg_qcvar]
   standard_name = mg_cloud_water_variance
   long_name = cloud water relative variance for MG microphysics
-  units = 
+  units =
   dimensions = ()
   type = real
   kind = kind_phys
@@ -3318,7 +3318,7 @@
   dimensions = (soil_vertical_dimension_for_land_surface_model)
   type = real
   kind = kind_phys
-  active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme) 
+  active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme)
 [pores]
   standard_name = maximum_soil_moisture_content_for_land_surface_model
   long_name = maximum soil moisture for a given soil type for land surface model
@@ -3401,9 +3401,9 @@
   dimensions = ()
   type = integer
 [spec_adv]
-  standard_name = flag_for_individual_cloud_species_advected 
+  standard_name = flag_for_individual_cloud_species_advected
   long_name = flag for individual cloud species advected
-  units = flag 
+  units = flag
   dimensions = ()
   type = logical
 [flgmin]
@@ -3640,7 +3640,7 @@
 [shcnvcw]
   standard_name = flag_shallow_convective_cloud
   long_name = flag for shallow convective cloud
-  units = 
+  units =
   dimensions = ()
   type = logical
 [redrag]
@@ -4249,14 +4249,14 @@
   standard_name =magnitude_of_perturbations_for_landperts
   long_name = magnitude of perturbations for landperts
   units = variable
-  dimensions = (number_of_land_surface_variables_perturbed) 
+  dimensions = (number_of_land_surface_variables_perturbed)
   type = real
   kind = kind_phys
 [lndp_var_list]
   standard_name = variables_to_be_perturbed_for_landperts
   long_name = variables to be perturbed for landperts
   units = none
-  dimensions =  (number_of_land_surface_variables_perturbed) 
+  dimensions =  (number_of_land_surface_variables_perturbed)
   type = character
   kind = len=3
 [ntrac]
@@ -4509,43 +4509,43 @@
 [nT2delt]
   standard_name = index_for_air_temperature_two_timesteps_back
   long_name = the index of air temperature two timesteps back in phy f3d
-  units = 
+  units =
   dimensions = ()
   type = integer
 [nTdelt]
   standard_name = index_for_air_temperature_at_previous_timestep
   long_name = the index of air temperature at previous timestep in phy f3d
-  units = 
+  units =
   dimensions = ()
   type = integer
 [nqv2delt]
   standard_name = index_for_specific_humidity_two_timesteps_back
   long_name = the index of specific humidity two timesteps back in phy f3d
-  units = 
+  units =
   dimensions = ()
   type = integer
 [nqvdelt]
   standard_name = index_for_specific_humidity_at_previous_timestep
   long_name = the index of specific humidity at previous timestep in phy f3d
-  units = 
+  units =
   dimensions = ()
   type = integer
 [nps2delt]
   standard_name = index_for_surface_air_pressure_two_timesteps_back
   long_name = the index of surface air pressure two timesteps back in phy f2d
-  units = 
+  units =
   dimensions = ()
   type = integer
 [npsdelt]
   standard_name = index_for_surface_air_pressure_at_previous_timestep
   long_name = the index of surface air pressure at previous timestep in phy f2d
-  units = 
+  units =
   dimensions = ()
   type = integer
 [ncnvwind]
   standard_name = index_for_surface_wind_enhancement_due_to_convection
   long_name = the index of surface wind enhancement due to convection in phy f2d
-  units = 
+  units =
   dimensions = ()
   type = integer
 [debug]
@@ -4748,7 +4748,7 @@
   standard_name = gwd_opt
   long_name = flag to choose gwd scheme
   units = flag
-  dimensions = () 
+  dimensions = ()
   type = integer
 [do_mynnedmf]
   standard_name = do_mynnedmf
@@ -4916,7 +4916,7 @@
   dimensions = ()
   type = logical
 [do_ugwp_v0]
-  standard_name = do_ugwp_v0
+  standard_name = flag_for_ugwp_version_0
   long_name = flag to activate ver 0 CIRES UGWP
   units = flag
   dimensions = ()
@@ -4924,15 +4924,23 @@
   intent = in
   optional = F
 [do_ugwp_v0_orog_only]
-  standard_name = do_ugwp_v0_orog_only
+  standard_name = flag_for_ugwp_version_0_orographic_gwd
   long_name = flag to activate ver 0 CIRES UGWP - orographic GWD only
   units = flag
   dimensions = ()
   type = logical
   intent = in
   optional = F
+[do_ugwp_v0_nst_only]
+  standard_name = flag_for_ugwp_version_0_nonorographic_gwd
+  long_name = flag to activate ver 0 CIRES UGWP - non-stationary GWD only
+  units = flag
+  dimensions = ()
+  type = logical
+  intent = in
+  optional = F
 [do_gsl_drag_ls_bl]
-  standard_name = do_gsl_drag_ls_bl
+  standard_name = flag_for_gsl_drag_suite_large_scale_orographic_and_blocking_drag
   long_name = flag to activate GSL drag suite - large-scale GWD and blocking
   units = flag
   dimensions = ()
@@ -4940,7 +4948,7 @@
   intent = in
   optional = F
 [do_gsl_drag_ss]
-  standard_name = do_gsl_drag_ss
+  standard_name = flag_for_gsl_drag_suite_small_scale_orographic_drag
   long_name = flag to activate GSL drag suite - small-scale GWD
   units = flag
   dimensions = ()
@@ -4948,7 +4956,7 @@
   intent = in
   optional = F
 [do_gsl_drag_tofd]
-  standard_name = do_gsl_drag_tofd
+  standard_name = flag_for_gsl_drag_suite_turbulent_orographic_form_drag
   long_name = flag to activate GSL drag suite - turb orog form drag
   units = flag
   dimensions = ()
@@ -4956,7 +4964,7 @@
   intent = in
   optional = F
 [do_ugwp_v1]
-  standard_name = do_ugwp_v1
+  standard_name = flag_for_ugwp_version_1
   long_name = flag to activate ver 1 CIRES UGWP
   units = flag
   dimensions = ()
@@ -4964,8 +4972,16 @@
   intent = in
   optional = F
 [do_ugwp_v1_orog_only]
-  standard_name = do_ugwp_v1_orog_only
+  standard_name = flag_for_ugwp_version_1_orographic_gwd
   long_name = flag to activate ver 1 CIRES UGWP - orographic GWD only
+  units = flag
+  dimensions = ()
+  type = logical
+  intent = in
+  optional = F
+[do_ugwp_v1_w_gsldrag]
+  standard_name = flag_for_ugwp_version_1_nonorographic_gwd
+  long_name = flag to activate ver 1 CIRES UGWP - with OGWD of GSL
   units = flag
   dimensions = ()
   type = logical
@@ -4977,12 +4993,12 @@
   units = flag
   dimensions = ()
   type = logical
-  
+
 ########################################################################
 [ccpp-table-properties]
   name = GFS_grid_type
   type = ddt
-  dependencies = 
+  dependencies =
 
 [ccpp-arg-table]
   name = GFS_grid_type
@@ -5175,12 +5191,42 @@
   type = real
   kind = kind_phys
   active = (flag_for_in_ccn_forcing_for_morrison_gettelman_microphysics==1)
+[jindx1_tau]
+  standard_name = lower_latitude_index_of_absolute_momentum_flux_due_to_nonorographic_gravity_wave_drag_for_interpolation
+  long_name = index1 for weight1 for tau NGWs
+  units = none
+  dimensions = (horizontal_loop_extent)
+  type = integer
+  active = (flag_for_ugwp_version_1)
+[jindx2_tau]
+  standard_name = upper_latitude_index_of_absolute_momentum_flux_due_to_nonorographic_gravity_wave_drag_for_interpolation
+  long_name = index2 for weight2 for tau NGWs
+  units = none
+  dimensions = (horizontal_loop_extent)
+  type = integer
+  active = (flag_for_ugwp_version_1)
+[ddy_j1tau]
+  standard_name = latitude_interpolation_weight_complement_for_absolute_momentum_flux_due_to_nonorographic_gravity_wave_drag
+  long_name = interpolation weight1 for tau NGWs
+  units = none
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (flag_for_ugwp_version_1)
+[ddy_j2tau]
+  standard_name = latitude_interpolation_weight_for_absolute_momentum_flux_due_to_nonorographic_gravity_wave_drag
+  long_name = interpolation weight2 for tau NGWs
+  units = none
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (flag_for_ugwp_version_1)
 
 ########################################################################
 [ccpp-table-properties]
   name = GFS_tbd_type
   type = ddt
-  dependencies = 
+  dependencies =
 
 [ccpp-arg-table]
   name = GFS_tbd_type
@@ -5199,6 +5245,13 @@
   dimensions = (horizontal_loop_extent)
   type = integer
   active = (flag_for_lw_clouds_sub_grid_approximation == 2 .or. flag_for_sw_clouds_grid_approximation == 2)
+[tau_amf]
+  standard_name = absolute_momentum_flux_due_to_nonorographic_gravity_wave_drag
+  long_name = ngw_absolute_momentum_flux
+  units = various
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
 [ozpl]
   standard_name = ozone_forcing
   long_name = ozone forcing data
@@ -5669,7 +5722,7 @@
 [ccpp-table-properties]
   name = GFS_cldprop_type
   type = ddt
-  dependencies = 
+  dependencies =
 
 [ccpp-arg-table]
   name = GFS_cldprop_type
@@ -5700,7 +5753,7 @@
 [ccpp-table-properties]
   name = GFS_radtend_type
   type = ddt
-  dependencies = 
+  dependencies =
 
 [ccpp-arg-table]
   name = GFS_radtend_type
@@ -5792,7 +5845,7 @@
 [ccpp-table-properties]
   name = GFS_diag_type
   type = ddt
-  dependencies = 
+  dependencies =
 
 [ccpp-arg-table]
   name = GFS_diag_type
@@ -5914,134 +5967,6 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[dusfc_ls]
-  standard_name = integrated_x_momentum_flux_from_large_scale_gwd
-  long_name = integrated x momentum flux from large scale gwd
-  units = Pa s
-  dimensions = (horizontal_loop_extent)
-  type = real 
-  kind = kind_phys
-  active = (gwd_opt == 33)
-[dvsfc_ls]
-  standard_name = integrated_y_momentum_flux_from_large_scale_gwd
-  long_name = integrated y momentum flux from large scale gwd
-  units = Pa s
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-  active = (gwd_opt == 33)
-[dusfc_bl]
-  standard_name = integrated_x_momentum_flux_from_blocking_drag
-  long_name = integrated x momentum flux from blocking drag
-  units = Pa s
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-  active = (gwd_opt == 33)
-[dvsfc_bl]
-  standard_name = integrated_y_momentum_flux_from_blocking_drag
-  long_name = integrated y momentum flux from blocking drag
-  units = Pa s
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-  active = (gwd_opt == 33)
-[dusfc_ss]
-  standard_name = integrated_x_momentum_flux_from_small_scale_gwd
-  long_name = integrated x momentum flux from small scale gwd
-  units = Pa s
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-  active = (gwd_opt == 33)
-[dvsfc_ss]
-  standard_name = integrated_y_momentum_flux_from_small_scale_gwd
-  long_name = integrated y momentum flux from small scale gwd
-  units = Pa s
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-  active = (gwd_opt == 33)
-[dusfc_fd]
-  standard_name = integrated_x_momentum_flux_from_form_drag
-  long_name = integrated x momentum flux from form drag
-  units = Pa s
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-  active = (gwd_opt == 33)
-[dvsfc_fd]
-  standard_name = integrated_y_momentum_flux_from_form_drag
-  long_name = integrated y momentum flux from form drag
-  units = Pa s
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-  active = (gwd_opt == 33)
-[dtaux2d_ls]
-  standard_name = x_momentum_tendency_from_large_scale_gwd
-  long_name = x momentum tendency from large scale gwd
-  units = m s-2
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (gwd_opt == 33)
-[dtauy2d_ls]
-  standard_name = y_momentum_tendency_from_large_scale_gwd
-  long_name = y momentum tendency from large scale gwd
-  units = m s-2
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (gwd_opt == 33)
-[dtaux2d_bl]
-  standard_name = x_momentum_tendency_from_blocking_drag
-  long_name = x momentum tendency from blocking drag
-  units = m s-2
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (gwd_opt == 33)
-[dtauy2d_bl]
-  standard_name = y_momentum_tendency_from_blocking_drag
-  long_name = y momentum tendency from blocking drag
-  units = m s-2
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (gwd_opt == 33)
-[dtaux2d_ss]
-  standard_name = x_momentum_tendency_from_small_scale_gwd
-  long_name = x momentum tendency from small scale gwd
-  units = m s-2
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (gwd_opt == 33)
-[dtauy2d_ss]
-  standard_name = y_momentum_tendency_from_small_scale_gwd
-  long_name = y momentum tendency from small scale gwd
-  units = m s-2
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  active = (gwd_opt == 33)
-  kind = kind_phys
-[dtaux2d_fd]
-  standard_name = x_momentum_tendency_from_form_drag
-  long_name = x momentum tendency from form drag
-  units = m s-2
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (gwd_opt == 33)
-[dtauy2d_fd]
-  standard_name = y_momentum_tendency_from_form_drag
-  long_name = y momentum tendency from form drag
-  units = m s-2
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (gwd_opt == 33)
 [totprcp]
   standard_name = accumulated_lwe_thickness_of_precipitation_amount
   long_name = accumulated total precipitation
@@ -7215,6 +7140,146 @@
   type = real
   kind = kind_phys
   active = (diag_ugwp_flag)
+[dudt_gw]
+  standard_name = tendency_of_x_wind_due_to_gravity_wave_drag
+  long_name = zonal wind tendency due to all GWs
+  units = m s-2
+  dimensions = (horizontal_loop_extent,vertical_dimension)
+  type = real
+  kind = kind_phys
+[dvdt_gw]
+  standard_name = tendency_of_y_wind_due_to_gravity_wave_drag
+  long_name = meridional wind tendency due to all GWs
+  units = m s-2
+  dimensions = (horizontal_loop_extent,vertical_dimension)
+  type = real
+  kind = kind_phys
+[dtdt_gw]
+  standard_name = tendency_of_air_temperature_due_to_gravity_wave_drag
+  long_name = air temperature tendency due to all GWs
+  units = K s-1
+  dimensions = (horizontal_loop_extent,vertical_dimension)
+  type = real
+  kind = kind_phys
+[kdis_gw]
+  standard_name = atmosphere_momentum_diffusivity_due_to_gravity_wave_drag
+  long_name = eddy mixing due to all GWs
+  units = m2 s-1
+  dimensions = (horizontal_loop_extent,vertical_dimension)
+  type = real
+  kind = kind_phys
+[dudt_ogw]
+  standard_name = tendency_of_x_wind_due_to_mesoscale_orographic_gravity_wave_drag
+  long_name = x momentum tendency from meso scale ogw
+  units = m s-2
+  dimensions = (horizontal_loop_extent,vertical_dimension)
+  type = real
+  kind = kind_phys
+[dvdt_ogw]
+  standard_name = tendency_of_y_wind_due_to_mesoscale_orographic_gravity_wave_drag
+  long_name = y momentum tendency from meso scale ogw
+  units = m s-2
+  dimensions = (horizontal_loop_extent,vertical_dimension)
+  type = real
+  kind = kind_phys
+[du_ogwcol]
+  standard_name = vertically_integrated_x_momentum_flux_due_to_mesoscale_orographic_gravity_wave_drag
+  long_name = integrated x momentum flux from meso scale ogw
+  units = Pa
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[dv_ogwcol]
+  standard_name = vertically_integrated_y_momentum_flux_due_to_mesoscale_orographic_gravity_wave_drag
+  long_name = integrated y momentum flux from meso scale ogw
+  units = Pa
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[dudt_obl]
+  standard_name = tendency_of_x_momentum_due_to_blocking_drag
+  long_name = x momentum tendency from blocking drag
+  units = m s-2
+  dimensions = (horizontal_loop_extent,vertical_dimension)
+  type = real
+  kind = kind_phys
+[dvdt_obl]
+  standard_name = tendency_of_y_momentum_due_to_blocking_drag
+  long_name = y momentum tendency from blocking drag
+  units = m s-2
+  dimensions = (horizontal_loop_extent,vertical_dimension)
+  type = real
+  kind = kind_phys
+[du_oblcol]
+  standard_name = vertically_integrated_x_momentum_flux_due_to_blocking_drag
+  long_name = integrated x momentum flux from blocking drag
+  units = Pa
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[dv_oblcol]
+  standard_name = vertically_integrated_y_momentum_flux_due_to_blocking_drag
+  long_name = integrated y momentum flux from blocking drag
+  units = Pa
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[dudt_oss]
+  standard_name = tendency_of_x_momentum_due_to_small_scale_gravity_wave_drag
+  long_name = x momentum tendency from small scale gwd
+  units = m s-2
+  dimensions = (horizontal_loop_extent,vertical_dimension)
+  type = real
+  kind = kind_phys
+[dvdt_oss]
+  standard_name = tendency_of_y_momentum_due_to_small_scale_gravity_wave_drag
+  long_name = y momentum tendency from small scale gwd
+  units = m s-2
+  dimensions = (horizontal_loop_extent,vertical_dimension)
+  type = real
+  kind = kind_phys
+[du_osscol]
+  standard_name = vertically_integrated_x_momentum_flux_due_to_small_scale_gravity_wave_drag
+  long_name = integrated x momentum flux from small scale gwd
+  units = Pa
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[dv_osscol]
+  standard_name = vertically_integrated_y_momentum_flux_due_to_small_scale_gravity_wave_drag
+  long_name = integrated y momentum flux from small scale gwd
+  units = Pa
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[dudt_ofd]
+  standard_name = tendency_of_x_momentum_due_to_form_drag
+  long_name = x momentum tendency from form drag
+  units = m s-2
+  dimensions = (horizontal_loop_extent,vertical_dimension)
+  type = real
+  kind = kind_phys
+[dvdt_ofd]
+  standard_name = tendency_of_y_momentum_due_to_form_drag
+  long_name = y momentum tendency from form drag
+  units = m s-2
+  dimensions = (horizontal_loop_extent,vertical_dimension)
+  type = real
+  kind = kind_phys
+[du_ofdcol]
+  standard_name = vertically_integrated_x_momentum_flux_due_to_form_drag
+  long_name = integrated x momentum flux from form drag
+  units = Pa
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[dv_ofdcol]
+  standard_name = vertically_integrated_y_momentum_flux_due_to_form_drag
+  long_name = integrated y momentum flux from form drag
+  units = Pa
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
 [dv3dt_ngw]
   standard_name = time_integral_of_change_in_y_wind_due_to_nonstationary_gravity_wave
   long_name = time integral of change in y wind due to NGW
@@ -7240,12 +7305,11 @@
   kind = kind_phys
   active = (number_of_2d_auxiliary_arrays > 0)
 
-
 ########################################################################
 [ccpp-table-properties]
   name = GFS_interstitial_type
   type = ddt
-  dependencies = 
+  dependencies =
 
 [ccpp-arg-table]
   name = GFS_interstitial_type
@@ -9868,34 +9932,6 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[gw_dudt]
-  standard_name = tendency_of_x_wind_due_to_ugwp
-  long_name = zonal wind tendency due to UGWP
-  units = m s-2
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
-[gw_dvdt]
-  standard_name = tendency_of_y_wind_due_to_ugwp
-  long_name = meridional wind tendency due to UGWP
-  units = m s-2
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
-[gw_dtdt]
-  standard_name = tendency_of_air_temperature_due_to_ugwp
-  long_name = air temperature tendency due to UGWP
-  units = K s-1
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
-[gw_kdis]
-  standard_name = eddy_mixing_due_to_ugwp
-  long_name = eddy mixing due to UGWP
-  units = m2 s-1
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
 [zmtb]
   standard_name = height_of_mountain_blocking
   long_name = height of mountain blocking drag
@@ -9903,9 +9939,37 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
+[dudt_ngw]
+  standard_name = tendency_of_x_wind_due_to_nonorographic_gravity_wave_drag
+  long_name = zonal wind tendency due to non-stationary GWs
+  units = m s-2
+  dimensions = (horizontal_loop_extent,vertical_dimension)
+  type = real
+  kind = kind_phys
+[dvdt_ngw]
+  standard_name = tendency_of_y_wind_due_to_nonorographic_gravity_wave_drag
+  long_name = meridional wind tendency due to non-stationary GWs
+  units = m s-2
+  dimensions = (horizontal_loop_extent,vertical_dimension)
+  type = real
+  kind = kind_phys
+[dtdt_ngw]
+  standard_name = tendency_of_air_temperature_due_to_nonorographic_gravity_wave_drag
+  long_name = air temperature tendency due to non-stationary GWs
+  units = K s-1
+  dimensions = (horizontal_loop_extent,vertical_dimension)
+  type = real
+  kind = kind_phys
+[kdis_ngw]
+  standard_name = atmosphere_momentum_diffusivity_due_to_nonorographic_gravity_wave_drag
+  long_name = eddy mixing due to non-stationary GWs
+  units = m2 s-1
+  dimensions = (horizontal_loop_extent,vertical_dimension)
+  type = real
+  kind = kind_phys
 [zlwb]
   standard_name = height_of_low_level_wave_breaking
-  long_name = height of drag due to low level wave breaking
+  long_name = height of low level wave breaking
   units = m
   dimensions = (horizontal_loop_extent)
   type = real
@@ -9913,6 +9977,13 @@
 [zogw]
   standard_name = height_of_launch_level_of_orographic_gravity_wave
   long_name = height of launch level of orographic gravity wave
+  units = m
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[zngw]
+  standard_name = height_of_launch_level_of_nonorographic_gravity_waves
+  long_name = height of launch level of non-stationary GWs
   units = m
   dimensions = (horizontal_loop_extent)
   type = real
@@ -9938,6 +10009,13 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
+[tau_oss]
+  standard_name = momentum_flux_due_to_subgrid_scale_orographic_gravity_wave_drag
+  long_name = momentum flux or stress due to SSO including OBL-OSS-OFD
+  units = Pa
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
 [tau_ngw]
   standard_name = instantaneous_momentum_flux_due_to_nonstationary_gravity_wave
   long_name = instantaneous momentum flux due to nonstationary gravity waves
@@ -9952,15 +10030,8 @@
   dimensions = (horizontal_loop_extent,vertical_dimension)
   type = real
   kind = kind_phys
-[dudt_ogw]
-  standard_name = instantaneous_change_in_x_wind_due_to_orographic_gravity_wave_drag
-  long_name = instantaneous change in x wind due to orographic gw drag
-  units = m s-2
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
 [dudt_tms]
-  standard_name = instantaneous_change_in_x_wind_due_to_turbulent_orographic_form_drag
+  standard_name = tendency_of_x_wind_due_to_turbulent_orographic_form_drag
   long_name = instantaneous change in x wind due to TOFD
   units = m s-2
   dimensions = (horizontal_loop_extent,vertical_dimension)
@@ -10066,13 +10137,13 @@
   active = (flag_for_rrtmgp_radiation_scheme)
 [ipsdsw0]
   standard_name = initial_permutation_seed_sw
-  long_name = initial seed for McICA SW 
+  long_name = initial seed for McICA SW
   units = none
   dimensions = ()
   type = integer
 [ipsdlw0]
   standard_name = initial_permutation_seed_lw
-  long_name = initial seed for McICA LW 
+  long_name = initial seed for McICA LW
   units = none
   dimensions = ()
   type = integer
@@ -10277,13 +10348,13 @@
   long_name = Fortran DDT containing RRTMGP optical properties
   units = DDT
   dimensions = ()
-  type = ty_optical_props_2str  
+  type = ty_optical_props_2str
 [sw_optical_props_precip]
   standard_name = shortwave_optical_properties_for_precipitation
   long_name = Fortran DDT containing RRTMGP optical properties
   units = DDT
   dimensions = ()
-  type = ty_optical_props_2str  
+  type = ty_optical_props_2str
 [sw_optical_props_clouds]
   standard_name = shortwave_optical_properties_for_cloudy_atmosphere
   long_name = Fortran DDT containing RRTMGP optical properties
@@ -10433,7 +10504,7 @@
 [ccpp-table-properties]
   name = GFS_data_type
   type = ddt
-  dependencies = 
+  dependencies =
 
 [ccpp-arg-table]
   name = GFS_data_type
@@ -10631,7 +10702,7 @@
   units = kg kg-1
   dimensions = ()
   type = real
-  kind = kind_phys  
+  kind = kind_phys
 [con_omega]
   standard_name = angular_velocity_of_earth
   long_name = angular velocity of earth
@@ -10791,5 +10862,5 @@
   long_name = specific heat of ice at constant pressure
   units = J kg-1 K-1
   dimensions = ()
-  type = real 
+  type = real
   kind = kind_phys
