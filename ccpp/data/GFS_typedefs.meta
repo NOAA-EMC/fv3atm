@@ -3311,6 +3311,12 @@
   units = count
   dimensions = ()
   type = integer
+[lsnow_lsm_ubound]
+  standard_name = upper_bound_of_snow_vertical_dimension_for_land_surface_model
+  long_name = upper bound of of snow-related arrays for land surface model
+  units = count
+  dimensions = ()
+  type = integer
 [zs]
   standard_name = depth_of_soil_levels_for_land_surface_model
   long_name = depth of soil levels for land surface model
@@ -3318,7 +3324,13 @@
   dimensions = (soil_vertical_dimension_for_land_surface_model)
   type = real
   kind = kind_phys
-  active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme)
+[dzs]
+  standard_name = thickness_of_soil_levels_for_land_surface_model
+  long_name = thickness of soil levels for land surface model
+  units = m
+  dimensions = (soil_vertical_dimension_for_land_surface_model)
+  type = real
+  kind = kind_phys
 [pores]
   standard_name = maximum_soil_moisture_content_for_land_surface_model
   long_name = maximum soil moisture for a given soil type for land surface model
@@ -9528,14 +9540,6 @@
   long_name = soil temperature before entering a physics scheme
   units = K
   dimensions = (horizontal_loop_extent,soil_vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (flag_for_land_surface_scheme == flag_for_noah_wrfv4_land_surface_scheme)
-[sthick]
-  standard_name = soil_layer_thickness
-  long_name = soil layer thickness
-  units = m
-  dimensions = (soil_vertical_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_land_surface_scheme == flag_for_noah_wrfv4_land_surface_scheme)
