@@ -2393,7 +2393,7 @@ module post_regional
 
 !          else if (fieldDimCount > gridDimCount) then
           else if (fieldDimCount ==3) then
-!             print *,'in post_lam, get field value,n=',n,'fieldname=',trim(fieldname)
+!            print *,'in post_lam, get field value,n=',n,'fieldname=',trim(fieldname)
             if (typekind == ESMF_TYPEKIND_R4) then
               call ESMF_FieldGet(fcstField(n), localDe=0, farrayPtr=arrayr43d, rc=rc)
               if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
@@ -2651,6 +2651,20 @@ module post_regional
                 enddo
               enddo
 !              if(mype==0) print *,'in gfs_post, get ref_10cm=',maxval(ref_10cm), minval(ref_10cm),'ibdl=',ibdl
+            endif
+
+            ! model level tke
+            if(trim(fieldname)=='tke') then
+              !$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,q2,arrayr43d, fillvalue,spval)
+              do l=1,lm
+                do j=jsta,jend
+                  do i=ista, iend
+                    q2(i,j,l)=arrayr43d(i,j,l)
+                    if(abs(arrayr43d(i,j,l)-fillvalue)<small) q2(i,j,l) = spval
+                  enddo
+                enddo
+!              print *,'in gfs_post, get tke=',maxval(q2(:,:,l)), minval(q2(:,:,l)),'l=',l
+              enddo
             endif
 
             ! model level cloud fraction
