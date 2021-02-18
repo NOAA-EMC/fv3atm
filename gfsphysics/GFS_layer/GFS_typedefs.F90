@@ -1,4 +1,3 @@
-#undef MULTI_GASES
 
 module GFS_typedefs
 
