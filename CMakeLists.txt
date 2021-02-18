@@ -108,6 +108,9 @@ target_include_directories(fv3dycore INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT
                                                $<INSTALL_INTERFACE:mod>)
 
 target_link_libraries(fv3dycore PUBLIC fms
+                                       ccpp
+                                       ccppphys
+                                       ccppdata
                                        esmf)
 if(OpenMP_Fortran_FOUND)
   target_link_libraries(fv3dycore PUBLIC OpenMP::OpenMP_Fortran)
