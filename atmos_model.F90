@@ -2502,7 +2502,7 @@ end subroutine atmos_data_type_chksum
 
     ! bottom layer temperature (t)
     idx = queryfieldlist(exportFieldsList,'inst_temp_height_lowest')
-    if (mpp_pe() == mpp_root_pe()) print *,'cpl, in get inst_temp_height_lowest'
+!   if (mpp_pe() == mpp_root_pe()) print *,'cpl, in get inst_temp_height_lowest'
     if (idx > 0 ) then
 !$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
@@ -2516,7 +2516,7 @@ end subroutine atmos_data_type_chksum
           endif
         enddo
       enddo
-    if (mpp_pe() == mpp_root_pe()) print *,'cpl, in get inst_temp_height_lowest=',exportData(isc,jsc,idx)
+      if (mpp_pe() == mpp_root_pe()) print *,'cpl, in get inst_temp_height_lowest=',exportData(isc,jsc,idx)
     endif
 
     ! bottom layer specific humidity (q)
