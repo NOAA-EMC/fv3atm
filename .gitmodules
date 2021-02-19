@@ -8,5 +8,7 @@
 	branch = release/public-v5
 [submodule "ccpp/physics"]
 	path = ccpp/physics
-	url =  https://github.com/NCAR/ccpp-physics
-	branch = release/public-v5
+	#url =  https://github.com/NCAR/ccpp-physics
+	#branch = release/public-v5
+	url =  https://github.com/grantfirl/ccpp-physics
+	branch = v5_scm_mods
