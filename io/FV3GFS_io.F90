@@ -171,7 +171,7 @@ module FV3GFS_io_mod
    ntr = size(GFS_Data(1)%Statein%qgrs,3)
 
    if(Model%lsm == Model%lsm_noahmp) then
-     nsfcprop2d = 151  
+     nsfcprop2d = 156  
    else
      nsfcprop2d = 102
    endif
@@ -351,7 +351,12 @@ module FV3GFS_io_mod
         temp2d(i,j,idx_opt+46) = GFS_Data(nb)%Sfcprop%zsnsoxy(ix,2)
         temp2d(i,j,idx_opt+47) = GFS_Data(nb)%Sfcprop%zsnsoxy(ix,3)
         temp2d(i,j,idx_opt+48) = GFS_Data(nb)%Sfcprop%zsnsoxy(ix,4)
-        idx_opt = 136
+        temp2d(i,j,idx_opt+49) = GFS_Data(nb)%Sfcprop%albdvis(ix)
+        temp2d(i,j,idx_opt+50) = GFS_Data(nb)%Sfcprop%albdnir(ix)
+        temp2d(i,j,idx_opt+51) = GFS_Data(nb)%Sfcprop%albivis(ix)
+        temp2d(i,j,idx_opt+52) = GFS_Data(nb)%Sfcprop%albinir(ix)
+        temp2d(i,j,idx_opt+53) = GFS_Data(nb)%Sfcprop%emiss(ix)
+        idx_opt = 141
        endif
 
        if (Model%nstf_name(1) > 0) then
@@ -493,7 +498,7 @@ module FV3GFS_io_mod
     endif
 
     if (Model%lsm == Model%lsm_noahmp) then
-      nvar_s2mp = 29       !mp 2D
+      nvar_s2mp = 34       !mp 2D
       nvar_s3mp = 5        !mp 3D
     else
       nvar_s2mp = 0        !mp 2D
@@ -772,7 +777,7 @@ module FV3GFS_io_mod
       sfc_name2(nvar_s2m+17) = 'dt_cool'
       sfc_name2(nvar_s2m+18) = 'qrain'
 !
-! Only needed when Noah MP LSM is used - 29 2D
+! Only needed when Noah MP LSM is used - 34 2D
 !
       if (Model%lsm == Model%lsm_noahmp) then
         sfc_name2(nvar_s2m+19) = 'snowxy'
@@ -804,6 +809,11 @@ module FV3GFS_io_mod
         sfc_name2(nvar_s2m+45) = 'smcwtdxy'
         sfc_name2(nvar_s2m+46) = 'deeprechxy'
         sfc_name2(nvar_s2m+47) = 'rechxy'
+        sfc_name2(nvar_s2m+48) = 'albdvis'
+        sfc_name2(nvar_s2m+49) = 'albdnir'
+        sfc_name2(nvar_s2m+50) = 'albivis'
+        sfc_name2(nvar_s2m+51) = 'albinir'
+        sfc_name2(nvar_s2m+52) = 'emiss'
       else if (Model%lsm == Model%lsm_ruc .and. warm_start) then
         sfc_name2(nvar_s2m+19) = 'wetness'
         sfc_name2(nvar_s2m+20) = 'clw_surf_land'
@@ -1124,6 +1134,11 @@ module FV3GFS_io_mod
           Sfcprop(nb)%smcwtdxy(ix)   = sfc_var2(i,j,nvar_s2m+45)
           Sfcprop(nb)%deeprechxy(ix) = sfc_var2(i,j,nvar_s2m+46)
           Sfcprop(nb)%rechxy(ix)     = sfc_var2(i,j,nvar_s2m+47)
+          Sfcprop(nb)%albdvis(ix)    = sfc_var2(i,j,nvar_s2m+48)
+          Sfcprop(nb)%albdnir(ix)    = sfc_var2(i,j,nvar_s2m+49)
+          Sfcprop(nb)%albivis(ix)    = sfc_var2(i,j,nvar_s2m+50)
+          Sfcprop(nb)%albinir(ix)    = sfc_var2(i,j,nvar_s2m+51)
+          Sfcprop(nb)%emiss(ix)      = sfc_var2(i,j,nvar_s2m+52)
         endif
 
         if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp .or. Model%lsm == Model%lsm_noah_wrfv4 .or. (.not.warm_start)) then

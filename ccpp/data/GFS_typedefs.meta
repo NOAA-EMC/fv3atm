@@ -1242,6 +1242,46 @@
   type = real
   kind = kind_phys
   active = (flag_for_land_surface_scheme == flag_for_noah_wrfv4_land_surface_scheme)
+[albdvis]
+  standard_name = surface_albedo_direct_visible
+  long_name = direct surface albedo visible band
+  units = frac
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)
+[albdnir]
+  standard_name = surface_albedo_direct_NIR
+  long_name = direct surface albedo NIR band
+  units = frac
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)
+[albivis]
+  standard_name = surface_albedo_diffuse_visible
+  long_name = diffuse surface albedo visible band
+  units = frac
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)
+[albinir]
+  standard_name = surface_albedo_diffuse_NIR
+  long_name = diffuse surface albedo NIR band
+  units = frac
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)
+[emiss]
+  standard_name = surface_emissivity_lsm
+  long_name = surface emissivity from lsm
+  units = frac
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)
 [wetness]
   standard_name = normalized_soil_wetness_for_land_surface_model
   long_name = normalized soil wetness for lsm
