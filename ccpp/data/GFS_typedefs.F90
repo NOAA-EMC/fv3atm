@@ -3887,8 +3887,8 @@ module GFS_typedefs
     elseif (Model%lsm==Model%lsm_ruc .or. Model%lsm==Model%lsm_noah_wrfv4) then
       Model%zs  = clear_val
       Model%dzs = clear_val
-     end if
-     ! *DH
+    end if
+    ! *DH
 
     ! Set number of ice model layers
     Model%kice      = kice
