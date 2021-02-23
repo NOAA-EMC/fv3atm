@@ -2885,6 +2885,7 @@ module post_regional
 ! hbot
       do j=jsta,jend
         do i=1,im
+          hbot(i,j) = spval
           if(pbot(i,j) < spval)then
             do l=lm,1,-1
               if(pbot(i,j) >= pmid(i,j,l)) then
