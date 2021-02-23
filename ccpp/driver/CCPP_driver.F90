@@ -3,14 +3,17 @@ module CCPP_driver
   use ccpp_api,           only: ccpp_t
 
   use ccpp_static_api,    only: ccpp_physics_init,                   &
+                                ccpp_physics_timestep_init,          &
                                 ccpp_physics_run,                    &
+                                ccpp_physics_timestep_finalize,      &
                                 ccpp_physics_finalize
 
   use CCPP_data,          only: cdata_tile,                          &
                                 cdata_domain,                        &
                                 cdata_block,                         &
                                 ccpp_suite,                          &
-                                GFS_control
+                                GFS_control,                         &
+                                GFS_data
 
   implicit none
 
@@ -55,6 +58,8 @@ module CCPP_driver
     ! Local variables
     integer :: nb, nt, ntX
     integer :: ierr2
+    ! DH* 20210104 - remove kdt_rad when code to clear diagnostic buckets is removed
+    integer :: kdt_rad
 
     ierr = 0
 
@@ -95,9 +100,9 @@ module CCPP_driver
 
     else if (trim(step)=="physics_init") then
 
-      ! Since the physics init steps are independent of the blocking structure,
+      ! Since the physics init step is independent of the blocking structure,
       ! we can use cdata_domain here. Since we don't use threading on the outside,
-      ! we can allow threading inside the time_vary routines.
+      ! we can allow threading inside the physics init routines.
       GFS_control%nthreads = nthrds
 
       call ccpp_physics_init(cdata_domain, suite_name=trim(ccpp_suite), ierr=ierr)
@@ -107,21 +112,52 @@ module CCPP_driver
         return
       end if
 
-    else if (trim(step)=="time_vary") then
+    ! Timestep init = time_vary
+    else if (trim(step)=="timestep_init") then
 
-      ! Since the time_vary steps only use data structures for all blocks (except the
-      ! CCPP-internal variables ccpp_error_flag and ccpp_error_message, which are defined
-      ! for all cdata structures independently), we can use cdata_domain here.
-      ! Since we don't use threading on the outside, we can allow threading
-      ! inside the time_vary routines.
+      ! Since the physics timestep init step is independent of the blocking structure,
+      ! we can use cdata_domain here. Since we don't use threading on the outside,
+      ! we can allow threading inside the timestep init (time_vary) routines.
       GFS_control%nthreads = nthrds
 
-      call ccpp_physics_run(cdata_domain, suite_name=trim(ccpp_suite), group_name="time_vary", ierr=ierr)
+      call ccpp_physics_timestep_init(cdata_domain, suite_name=trim(ccpp_suite), group_name="time_vary", ierr=ierr)
       if (ierr/=0) then
-        write(0,'(a)') "An error occurred in ccpp_physics_run for group time_vary"
+        write(0,'(a)') "An error occurred in ccpp_physics_timestep_init for group time_vary"
         write(0,'(a)') trim(cdata_domain%errmsg)
         return
       end if
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      ! DH* 20210104 - this block of code will be removed once the CCPP framework    !
+      ! fully supports handling diagnostics through its metadata, work in progress   !
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      !--- determine if radiation diagnostics buckets need to be cleared
+      if (nint(GFS_control%fhzero*3600) >= nint(max(GFS_control%fhswr,GFS_control%fhlwr))) then
+        if (mod(GFS_control%kdt,GFS_control%nszero) == 1) then
+          do nb = 1,nblks
+            call GFS_data(nb)%Intdiag%rad_zero(GFS_control)
+          end do
+        endif
+      else
+        kdt_rad = nint(min(GFS_control%fhswr,GFS_control%fhlwr)/GFS_control%dtp)
+        if (mod(GFS_control%kdt,kdt_rad) == 1) then
+          do nb = 1,nblks
+            call GFS_data(nb)%Intdiag%rad_zero(GFS_control)
+          enddo
+        endif
+      endif
+
+      !--- determine if physics diagnostics buckets need to be cleared
+      if (mod(GFS_control%kdt,GFS_control%nszero) == 1) then
+        do nb = 1,nblks
+          call GFS_data(nb)%Intdiag%phys_zero(GFS_control)
+        end do
+      endif
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      ! *DH 20210104                                                                 !
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     ! Radiation and stochastic physics
     else if (trim(step)=="radiation" .or. trim(step)=="physics" .or. trim(step)=="stochastics") then
@@ -161,6 +197,21 @@ module CCPP_driver
 
 !$OMP end parallel
       if (ierr/=0) return
+
+    ! Timestep finalize = time_vary
+    else if (trim(step)=="timestep_finalize") then
+
+      ! Since the physics timestep finalize step is independent of the blocking structure,
+      ! we can use cdata_domain here. Since we don't use threading on the outside,
+      ! we can allow threading inside the timestep finalize (time_vary) routines.
+      GFS_control%nthreads = nthrds
+
+      call ccpp_physics_timestep_finalize(cdata_domain, suite_name=trim(ccpp_suite), group_name="time_vary", ierr=ierr)
+      if (ierr/=0) then
+        write(0,'(a)') "An error occurred in ccpp_physics_timestep_finalize for group time_vary"
+        write(0,'(a)') trim(cdata_domain%errmsg)
+        return
+      end if
 
     ! Finalize
     else if (trim(step)=="finalize") then

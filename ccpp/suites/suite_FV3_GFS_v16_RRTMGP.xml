@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<suite name="FV3_GFS_v15p2_RRTMGP" version="1">
+<suite name="FV3_GFS_v16_RRTMGP" version="1">
   <!-- <init></init> -->
   <group name="fast_physics">
     <subcycle loop="1">
@@ -68,7 +68,7 @@
       <scheme>sfc_diag_post</scheme>
       <scheme>GFS_surface_generic_post</scheme>
       <scheme>GFS_PBL_generic_pre</scheme>
-      <scheme>hedmf</scheme>
+      <scheme>satmedmfvdifq</scheme>
       <scheme>GFS_PBL_generic_post</scheme>
       <scheme>GFS_GWD_generic_pre</scheme>
       <scheme>cires_ugwp</scheme>

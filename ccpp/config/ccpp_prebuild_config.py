@@ -17,10 +17,12 @@ VARIABLE_DEFINITION_FILES = [
     # actual variable definition files
     'ccpp/physics/physics/machine.F',
     'ccpp/physics/physics/radsw_param.f',
+    'ccpp/physics/physics/h2o_def.f',
+    'ccpp/physics/physics/ozne_def.f',
     'ccpp/physics/physics/radlw_param.f',
-    'gfsphysics/CCPP_layer/CCPP_typedefs.F90',
-    'gfsphysics/GFS_layer/GFS_typedefs.F90',
-    'gfsphysics/CCPP_layer/CCPP_data.F90',
+    'ccpp/data/CCPP_typedefs.F90',
+    'ccpp/data/GFS_typedefs.F90',
+    'ccpp/data/CCPP_data.F90',
     'ccpp/physics/physics/rte-rrtmgp/rrtmgp/mo_gas_optics_rrtmgp.F90',
     'ccpp/physics/physics/rte-rrtmgp/rrtmgp/mo_gas_concentrations.F90',
     'ccpp/physics/physics/rte-rrtmgp/rte/mo_optical_props.F90',
@@ -113,6 +115,8 @@ SCHEME_FILES = [
     'ccpp/physics/physics/cires_ugwp_post.F90',
     'ccpp/physics/physics/unified_ugwp.F90',
     'ccpp/physics/physics/unified_ugwp_post.F90',
+    'ccpp/physics/physics/ugwpv1_gsldrag.F90',
+    'ccpp/physics/physics/ugwpv1_gsldrag_post.F90',        
     'ccpp/physics/physics/cnvc90.f',
     'ccpp/physics/physics/cs_conv.F90',
     'ccpp/physics/physics/cs_conv_aw_adj.F90',
@@ -199,8 +203,10 @@ SCHEME_FILES = [
     'ccpp/physics/physics/rrtmgp_lw_cloud_sampling.F90',
     'ccpp/physics/physics/rrtmgp_sw_cloud_sampling.F90',
     'ccpp/physics/physics/GFS_cloud_diagnostics.F90',
+    'ccpp/physics/physics/GFS_rrtmgp_thompsonmp_pre.F90',
     'ccpp/physics/physics/GFS_rrtmgp_gfdlmp_pre.F90',
     'ccpp/physics/physics/GFS_rrtmgp_zhaocarr_pre.F90',
+    'ccpp/physics/physics/GFS_rrtmgp_cloud_overlap_pre.F90',
     'ccpp/physics/physics/GFS_rrtmgp_sw_post.F90'
     ]
 
@@ -295,12 +301,6 @@ OPTIONAL_ARGUMENTS = {
             'rime_factor',
             ],
         },
-    'rrtmgp_lw_rte' : {
-         'rrtmgp_lw_rte_run' : [
-             'RRTMGP_jacobian_of_lw_flux_profile_upward',
-             'RRTMGP_jacobian_of_lw_flux_profile_downward',
-             ],
-         },
     'rrtmgp_sw_rte' : {
          'rrtmgp_sw_rte_run' : [
              'components_of_surface_downward_shortwave_fluxes',
@@ -315,12 +315,6 @@ OPTIONAL_ARGUMENTS = {
     'GFS_rrtmgp_lw_post' : {
          'GFS_rrtmgp_lw_post_run' : [
              'tendency_of_air_temperature_due_to_longwave_heating_assuming_clear_sky_on_radiation_time_step',
-             ],
-         },
-    'GFS_suite_interstitial_2' : {
-         'GFS_suite_interstitial_2_run' : [
-             'RRTMGP_jacobian_of_lw_flux_profile_upward',
-             'RRTMGP_lw_flux_profile_upward_allsky',
              ],
          },
     #'subroutine_name_1' : 'all',
