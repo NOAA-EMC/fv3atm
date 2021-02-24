@@ -2022,6 +2022,8 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: dudt_tms(:,:)      => null()  !< daily aver u-wind tend due to TMS
 
     ! RRTMGP
+    real (kind=kind_phys)               :: minGPpres                            !< Minimum pressure allowed by RRTMGP.
+    real (kind=kind_phys)               :: minGPtemp                            !< Minimum temperature allowed by RRTMGP. 
     integer                             :: ipsdlw0                              !<
     integer                             :: ipsdsw0                              !<
     real (kind=kind_phys), pointer      :: p_lay(:,:)                => null()  !<
@@ -2071,10 +2073,6 @@ module GFS_typedefs
     integer, pointer                    :: icseed_sw(:)              => null()  !< RRTMGP seed for RNG for shortwave radiation
     type(proflw_type), pointer          :: flxprf_lw(:,:)            => null()  !< DDT containing RRTMGP longwave fluxes
     type(profsw_type), pointer          :: flxprf_sw(:,:)            => null()  !< DDT containing RRTMGP shortwave fluxes
-    type(ty_gas_optics_rrtmgp)          :: lw_gas_props                         !< RRTMGP DDT
-    type(ty_gas_optics_rrtmgp)          :: sw_gas_props                         !< RRTMGP DDT
-    type(ty_cloud_optics)               :: lw_cloud_props                       !< RRTMGP DDT
-    type(ty_cloud_optics)               :: sw_cloud_props                       !< RRTMGP DDT
     type(ty_optical_props_2str)         :: lw_optical_props_cloudsByBand        !< RRTMGP DDT
     type(ty_optical_props_2str)         :: lw_optical_props_clouds              !< RRTMGP DDT
     type(ty_optical_props_2str)         :: lw_optical_props_precipByBand        !< RRTMGP DDT
@@ -6155,6 +6153,7 @@ module GFS_typedefs
     class(GFS_interstitial_type)       :: Interstitial
     integer,                intent(in) :: IM
     type(GFS_control_type), intent(in) :: Model
+    integer                            :: iGas
     !
     allocate (Interstitial%otspt      (Model%ntracp1,2))
     ! Set up numbers of tracers for PBL, convection, etc: sets
@@ -6438,6 +6437,14 @@ module GFS_typedefs
        allocate (Interstitial%toa_src_sw           (IM,Model%rrtmgp_nGptsSW))
        allocate (Interstitial%toa_src_lw           (IM,Model%rrtmgp_nGptsLW))
        allocate (Interstitial%active_gases_array   (Model%nGases))
+       ! ty_gas_concs
+       Interstitial%gas_concentrations%ncol = IM
+       Interstitial%gas_concentrations%nlay = Model%levs
+       allocate(Interstitial%gas_concentrations%gas_name(Model%nGases))
+       allocate(Interstitial%gas_concentrations%concs(Model%nGases))
+       do iGas=1,Model%nGases
+          allocate(Interstitial%gas_concentrations%concs(iGas)%conc(IM, Model%levs))
+       enddo
     end if
 
 ! UGWP common
