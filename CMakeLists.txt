@@ -108,7 +108,6 @@ target_include_directories(fv3dycore INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT
                                                $<INSTALL_INTERFACE:mod>)
 
 target_link_libraries(fv3dycore PUBLIC fms
-                                       ccpp
                                        ccppphys
                                        ccppdata
                                        esmf)
