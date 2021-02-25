@@ -4031,8 +4031,7 @@ module GFS_typedefs
     Model%rbcr              = rbcr
     Model%do_gwd            = maxval(Model%cdmbgwd) > 0.0 ! flag to restore OGWs of GFS-v15
 ! OLD GFS-v12-15 conv scheme
-!    Model%do_cnvgwd         = Model%cnvgwd .and. maxval(Model%cdmbgwd(3:4)) == 0.0
-    Model%do_cnvgwd         = .false.               ! this avoids all "mysteries" to use Convective GWs in UFS
+    Model%do_cnvgwd         = Model%cnvgwd .and. maxval(Model%cdmbgwd(3:4)) == 0.0
     Model%do_mynnedmf       = do_mynnedmf
     Model%do_mynnsfclay     = do_mynnsfclay
     ! DH* TODO - move to MYNN namelist section
