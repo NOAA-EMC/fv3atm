@@ -10377,114 +10377,104 @@
   type = real
   kind = kind_phys
   active = (flag_for_rrtmgp_radiation_scheme)
-[sw_gas_props]
-  standard_name = coefficients_for_sw_gas_optics
-  long_name = DDT containing spectral information for RRTMGP SW radiation scheme
-  units = DDT
-  dimensions = ()
-  type = ty_gas_optics_rrtmgp
-[sw_cloud_props]
-  standard_name = coefficients_for_sw_cloud_optics
-  long_name = DDT containing spectral information for RRTMGP SW radiation scheme
-  units = DDT
-  dimensions = ()
-  type = ty_cloud_optics
 [sw_optical_props_clrsky]
   standard_name = shortwave_optical_properties_for_clear_sky
   long_name = Fortran DDT containing RRTMGP optical properties
   units = DDT
   dimensions = ()
   type = ty_optical_props_2str
+  active = (flag_for_rrtmgp_radiation_scheme)
 [sw_optical_props_cloudsByBand]
   standard_name = shortwave_optical_properties_for_cloudy_atmosphere_by_band
   long_name = Fortran DDT containing RRTMGP optical properties
   units = DDT
   dimensions = ()
   type = ty_optical_props_2str
+  active = (flag_for_rrtmgp_radiation_scheme)
 [sw_optical_props_precipByBand]
   standard_name = shortwave_optical_properties_for_precipitation_by_band
   long_name = Fortran DDT containing RRTMGP optical properties
   units = DDT
   dimensions = ()
   type = ty_optical_props_2str
+  active = (flag_for_rrtmgp_radiation_scheme)
 [sw_optical_props_precip]
   standard_name = shortwave_optical_properties_for_precipitation
   long_name = Fortran DDT containing RRTMGP optical properties
   units = DDT
   dimensions = ()
   type = ty_optical_props_2str
+  active = (flag_for_rrtmgp_radiation_scheme)
 [sw_optical_props_clouds]
   standard_name = shortwave_optical_properties_for_cloudy_atmosphere
   long_name = Fortran DDT containing RRTMGP optical properties
   units = DDT
   dimensions = ()
   type = ty_optical_props_2str
+  active = (flag_for_rrtmgp_radiation_scheme)
 [sw_optical_props_aerosol]
   standard_name = shortwave_optical_properties_for_aerosols
   long_name = Fortran DDT containing RRTMGP optical properties
   units = DDT
   dimensions = ()
   type = ty_optical_props_2str
+  active = (flag_for_rrtmgp_radiation_scheme)
 [gas_concentrations]
   standard_name = Gas_concentrations_for_RRTMGP_suite
   long_name = DDT containing gas concentrations for RRTMGP radiation scheme
   units = DDT
   dimensions = ()
   type = ty_gas_concs
+  active = (flag_for_rrtmgp_radiation_scheme)
 [sources]
   standard_name = longwave_source_function
   long_name = Fortran DDT containing RRTMGP source functions
   units = DDT
   dimensions = ()
   type = ty_source_func_lw
-[lw_gas_props]
-  standard_name = coefficients_for_lw_gas_optics
-  long_name = DDT containing spectral information for RRTMGP LW radiation scheme
-  units = DDT
-  dimensions = ()
-  type = ty_gas_optics_rrtmgp
-[lw_cloud_props]
-  standard_name = coefficients_for_lw_cloud_optics
-  long_name = DDT containing spectral information for RRTMGP LW radiation scheme
-  units = DDT
-  dimensions = ()
-  type = ty_cloud_optics
+  active = (flag_for_rrtmgp_radiation_scheme)
 [lw_optical_props_clrsky]
   standard_name = longwave_optical_properties_for_clear_sky
   long_name = Fortran DDT containing RRTMGP optical properties
   units = DDT
   dimensions = ()
   type = ty_optical_props_1scl
+  active = (flag_for_rrtmgp_radiation_scheme)
 [lw_optical_props_clouds]
   standard_name = longwave_optical_properties_for_cloudy_atmosphere
   long_name = Fortran DDT containing RRTMGP optical properties
   units = DDT
   dimensions = ()
   type = ty_optical_props_2str
+  active = (flag_for_rrtmgp_radiation_scheme)
 [lw_optical_props_precip]
   standard_name = longwave_optical_properties_for_precipitation
   long_name = Fortran DDT containing RRTMGP optical properties
   units = DDT
   dimensions = ()
   type = ty_optical_props_2str
+  active = (flag_for_rrtmgp_radiation_scheme)
 [lw_optical_props_cloudsByBand]
   standard_name = longwave_optical_properties_for_cloudy_atmosphere_by_band
   long_name = Fortran DDT containing RRTMGP optical properties
   units = DDT
   dimensions = ()
   type = ty_optical_props_2str
+  active = (flag_for_rrtmgp_radiation_scheme)
 [lw_optical_props_precipByBand]
   standard_name = longwave_optical_properties_for_precipitation_by_band
   long_name = Fortran DDT containing RRTMGP optical properties
   units = DDT
   dimensions = ()
   type = ty_optical_props_2str
+  active = (flag_for_rrtmgp_radiation_scheme)
 [lw_optical_props_aerosol]
   standard_name = longwave_optical_properties_for_aerosols
   long_name = Fortran DDT containing RRTMGP optical properties
   units = DDT
   dimensions = ()
   type = ty_optical_props_1scl
+  active = (flag_for_rrtmgp_radiation_scheme)
 [sfc_emiss_byband]
   standard_name = surface_emissivity_in_each_RRTMGP_LW_band
   long_name = surface emissivity in each RRTMGP LW band

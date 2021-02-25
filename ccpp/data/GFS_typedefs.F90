@@ -6792,6 +6792,7 @@ module GFS_typedefs
     !
     class(GFS_interstitial_type) :: Interstitial
     type(GFS_control_type), intent(in) :: Model
+    integer :: iGas
     !
     Interstitial%aerodp       = clear_val
     Interstitial%alb1d        = clear_val
@@ -6895,6 +6896,9 @@ module GFS_typedefs
       Interstitial%sfc_alb_uvvis_dif    = clear_val
       Interstitial%toa_src_sw           = clear_val
       Interstitial%toa_src_lw           = clear_val
+      do iGas=1,Model%nGases
+        Interstitial%gas_concentrations%concs(iGas)%conc = clear_val
+      end do
     end if
     !
   end subroutine interstitial_rad_reset
