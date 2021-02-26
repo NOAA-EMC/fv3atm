@@ -10160,6 +10160,20 @@
   type = real
   kind = kind_phys
   active = (flag_for_rrtmgp_radiation_scheme)
+[minGPpres]
+  standard_name = minimum_pressure_in_RRTMGP
+  long_name = minimum pressure allowed in RRTMGP
+  units = Pa
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[minGPtemp]
+  standard_name = minimum_temperature_in_RRTMGP
+  long_name = minimum temperature allowed in RRTMGP
+  units = K
+  dimensions = ()
+  type = real
+  kind = kind_phys
 [ipsdsw0]
   standard_name = initial_permutation_seed_sw
   long_name = initial seed for McICA SW
