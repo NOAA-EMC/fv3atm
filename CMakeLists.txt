@@ -194,7 +194,7 @@ endif()
 ### Install
 ###############################################################################
 install(
-  TARGETS fv3atm fv3dycore io gfsphysics ${CCPP_LIBRARIES} cpl stochastic_physics_wrapper
+  TARGETS fv3atm fv3dycore io gfsphysics ${CCPP_LIBRARIES} cpl stochastic_physics_wrapper stochastic_physics
   EXPORT fv3atm-config
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib)
