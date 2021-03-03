@@ -8,7 +8,5 @@
 	branch = master
 [submodule "ccpp/physics"]
 	path = ccpp/physics
-	#url = https://github.com/NCAR/ccpp-physics
-	#branch = master
-	url = https://github.com/climbfuji/ccpp-physics
-	branch = noahmp_init_in_ccpp
+	url = https://github.com/NCAR/ccpp-physics
+	branch = master
