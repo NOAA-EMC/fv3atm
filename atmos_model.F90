@@ -1862,25 +1862,15 @@ end subroutine atmos_data_type_chksum
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
           if (GFS_data(nb)%Sfcprop%oceanfrac(ix) > zero) then
-!if it is ocean or ice get surface temperature from mediator
             if (GFS_data(nb)%Sfcprop%fice(ix) >= GFS_control%min_seaice) then
 
-!           if(GFS_data(nb)%Coupling%ficein_cpl(ix) >= GFS_control%min_seaice) then
-!             GFS_data(nb)%Sfcprop%tisfc(ix)       = GFS_data(nb)%Coupling%tisfcin_cpl(ix)
-!             GFS_data(nb)%Sfcprop%fice(ix)        = GFS_data(nb)%Coupling%ficein_cpl(ix)
-!             GFS_data(nb)%Sfcprop%hice(ix)        = GFS_data(nb)%Coupling%hicein_cpl(ix)
-!             GFS_data(nb)%Sfcprop%snowd(ix)       = GFS_data(nb)%Coupling%hsnoin_cpl(ix)
-
               GFS_data(nb)%Coupling%hsnoin_cpl(ix) = GFS_data(nb)%Coupling%hsnoin_cpl(ix) &
-                                                   / max(0.01_GFS_kind_phys, GFS_data(nb)%Sfcprop%fice(ix))
-!                                                  / max(0.01_GFS_kind_phys, GFS_data(nb)%Coupling%ficein_cpl(ix))
+                                                   / GFS_data(nb)%Sfcprop%fice(ix)
               GFS_data(nb)%Sfcprop%zorli(ix)       = z0ice
             else
-!             GFS_data(nb)%Sfcprop%tisfc(ix)       = GFS_data(nb)%Coupling%tseain_cpl(ix)
               GFS_data(nb)%Sfcprop%tisfc(ix)       = GFS_data(nb)%Sfcprop%tsfco(ix)
               GFS_data(nb)%Sfcprop%fice(ix)        = zero
               GFS_data(nb)%Sfcprop%hice(ix)        = zero
-!             GFS_data(nb)%Sfcprop%snowd(ix)       = zero
               GFS_data(nb)%Coupling%hsnoin_cpl(ix) = zero
 !
               GFS_data(nb)%Coupling%dtsfcin_cpl(ix)  = -99999.0 ! over open water - should not be used in ATM
