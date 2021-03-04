@@ -32,7 +32,6 @@ target_compile_definitions(io PRIVATE "${_io_defs_private}")
 target_include_directories(io PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/mod>)
 
 target_link_libraries(io PRIVATE fms
-                                 gfsphysics
                                  ccppdriver)
 
 if(INLINE_POST)

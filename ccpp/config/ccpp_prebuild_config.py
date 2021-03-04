@@ -179,7 +179,7 @@ SCHEME_FILES = [
     'ccpp/physics/physics/sfc_drv.f',
     'ccpp/physics/physics/sfc_noah_wrfv4_interstitial.F90',
     'ccpp/physics/physics/sfc_noah_wrfv4.F90',
-    'ccpp/physics/physics/sfc_noahmp_drv.f',
+    'ccpp/physics/physics/sfc_noahmp_drv.F90',
     'ccpp/physics/physics/flake_driver.F90',
     'ccpp/physics/physics/sfc_nst.f',
     'ccpp/physics/physics/sfc_ocean.F',
