@@ -1242,6 +1242,46 @@
   type = real
   kind = kind_phys
   active = (flag_for_land_surface_scheme == flag_for_noah_wrfv4_land_surface_scheme)
+[albdvis]
+  standard_name = surface_albedo_direct_visible
+  long_name = direct surface albedo visible band
+  units = frac
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)
+[albdnir]
+  standard_name = surface_albedo_direct_NIR
+  long_name = direct surface albedo NIR band
+  units = frac
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)
+[albivis]
+  standard_name = surface_albedo_diffuse_visible
+  long_name = diffuse surface albedo visible band
+  units = frac
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)
+[albinir]
+  standard_name = surface_albedo_diffuse_NIR
+  long_name = diffuse surface albedo NIR band
+  units = frac
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)
+[emiss]
+  standard_name = surface_emissivity_lsm
+  long_name = surface emissivity from lsm
+  units = frac
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)
 [wetness]
   standard_name = normalized_soil_wetness_for_land_surface_model
   long_name = normalized soil wetness for lsm
@@ -3311,6 +3351,12 @@
   units = count
   dimensions = ()
   type = integer
+[lsnow_lsm_ubound]
+  standard_name = upper_bound_of_snow_vertical_dimension_for_land_surface_model
+  long_name = upper bound of of snow-related arrays for land surface model
+  units = count
+  dimensions = ()
+  type = integer
 [zs]
   standard_name = depth_of_soil_levels_for_land_surface_model
   long_name = depth of soil levels for land surface model
@@ -3318,7 +3364,13 @@
   dimensions = (soil_vertical_dimension_for_land_surface_model)
   type = real
   kind = kind_phys
-  active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme)
+[dzs]
+  standard_name = thickness_of_soil_levels_for_land_surface_model
+  long_name = thickness of soil levels for land surface model
+  units = m
+  dimensions = (soil_vertical_dimension_for_land_surface_model)
+  type = real
+  kind = kind_phys
 [pores]
   standard_name = maximum_soil_moisture_content_for_land_surface_model
   long_name = maximum soil moisture for a given soil type for land surface model
@@ -9531,14 +9583,6 @@
   type = real
   kind = kind_phys
   active = (flag_for_land_surface_scheme == flag_for_noah_wrfv4_land_surface_scheme)
-[sthick]
-  standard_name = soil_layer_thickness
-  long_name = soil layer thickness
-  units = m
-  dimensions = (soil_vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (flag_for_land_surface_scheme == flag_for_noah_wrfv4_land_surface_scheme)
 [stress]
   standard_name = surface_wind_stress
   long_name = surface wind stress
@@ -10135,6 +10179,20 @@
   type = real
   kind = kind_phys
   active = (flag_for_rrtmgp_radiation_scheme)
+[minGPpres]
+  standard_name = minimum_pressure_in_RRTMGP
+  long_name = minimum pressure allowed in RRTMGP
+  units = Pa
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[minGPtemp]
+  standard_name = minimum_temperature_in_RRTMGP
+  long_name = minimum temperature allowed in RRTMGP
+  units = K
+  dimensions = ()
+  type = real
+  kind = kind_phys
 [ipsdsw0]
   standard_name = initial_permutation_seed_sw
   long_name = initial seed for McICA SW
@@ -10319,114 +10377,104 @@
   type = real
   kind = kind_phys
   active = (flag_for_rrtmgp_radiation_scheme)
-[sw_gas_props]
-  standard_name = coefficients_for_sw_gas_optics
-  long_name = DDT containing spectral information for RRTMGP SW radiation scheme
-  units = DDT
-  dimensions = ()
-  type = ty_gas_optics_rrtmgp
-[sw_cloud_props]
-  standard_name = coefficients_for_sw_cloud_optics
-  long_name = DDT containing spectral information for RRTMGP SW radiation scheme
-  units = DDT
-  dimensions = ()
-  type = ty_cloud_optics
 [sw_optical_props_clrsky]
   standard_name = shortwave_optical_properties_for_clear_sky
   long_name = Fortran DDT containing RRTMGP optical properties
   units = DDT
   dimensions = ()
   type = ty_optical_props_2str
+  active = (flag_for_rrtmgp_radiation_scheme)
 [sw_optical_props_cloudsByBand]
   standard_name = shortwave_optical_properties_for_cloudy_atmosphere_by_band
   long_name = Fortran DDT containing RRTMGP optical properties
   units = DDT
   dimensions = ()
   type = ty_optical_props_2str
+  active = (flag_for_rrtmgp_radiation_scheme)
 [sw_optical_props_precipByBand]
   standard_name = shortwave_optical_properties_for_precipitation_by_band
   long_name = Fortran DDT containing RRTMGP optical properties
   units = DDT
   dimensions = ()
   type = ty_optical_props_2str
+  active = (flag_for_rrtmgp_radiation_scheme)
 [sw_optical_props_precip]
   standard_name = shortwave_optical_properties_for_precipitation
   long_name = Fortran DDT containing RRTMGP optical properties
   units = DDT
   dimensions = ()
   type = ty_optical_props_2str
+  active = (flag_for_rrtmgp_radiation_scheme)
 [sw_optical_props_clouds]
   standard_name = shortwave_optical_properties_for_cloudy_atmosphere
   long_name = Fortran DDT containing RRTMGP optical properties
   units = DDT
   dimensions = ()
   type = ty_optical_props_2str
+  active = (flag_for_rrtmgp_radiation_scheme)
 [sw_optical_props_aerosol]
   standard_name = shortwave_optical_properties_for_aerosols
   long_name = Fortran DDT containing RRTMGP optical properties
   units = DDT
   dimensions = ()
   type = ty_optical_props_2str
+  active = (flag_for_rrtmgp_radiation_scheme)
 [gas_concentrations]
   standard_name = Gas_concentrations_for_RRTMGP_suite
   long_name = DDT containing gas concentrations for RRTMGP radiation scheme
   units = DDT
   dimensions = ()
   type = ty_gas_concs
+  active = (flag_for_rrtmgp_radiation_scheme)
 [sources]
   standard_name = longwave_source_function
   long_name = Fortran DDT containing RRTMGP source functions
   units = DDT
   dimensions = ()
   type = ty_source_func_lw
-[lw_gas_props]
-  standard_name = coefficients_for_lw_gas_optics
-  long_name = DDT containing spectral information for RRTMGP LW radiation scheme
-  units = DDT
-  dimensions = ()
-  type = ty_gas_optics_rrtmgp
-[lw_cloud_props]
-  standard_name = coefficients_for_lw_cloud_optics
-  long_name = DDT containing spectral information for RRTMGP LW radiation scheme
-  units = DDT
-  dimensions = ()
-  type = ty_cloud_optics
+  active = (flag_for_rrtmgp_radiation_scheme)
 [lw_optical_props_clrsky]
   standard_name = longwave_optical_properties_for_clear_sky
   long_name = Fortran DDT containing RRTMGP optical properties
   units = DDT
   dimensions = ()
   type = ty_optical_props_1scl
+  active = (flag_for_rrtmgp_radiation_scheme)
 [lw_optical_props_clouds]
   standard_name = longwave_optical_properties_for_cloudy_atmosphere
   long_name = Fortran DDT containing RRTMGP optical properties
   units = DDT
   dimensions = ()
   type = ty_optical_props_2str
+  active = (flag_for_rrtmgp_radiation_scheme)
 [lw_optical_props_precip]
   standard_name = longwave_optical_properties_for_precipitation
   long_name = Fortran DDT containing RRTMGP optical properties
   units = DDT
   dimensions = ()
   type = ty_optical_props_2str
+  active = (flag_for_rrtmgp_radiation_scheme)
 [lw_optical_props_cloudsByBand]
   standard_name = longwave_optical_properties_for_cloudy_atmosphere_by_band
   long_name = Fortran DDT containing RRTMGP optical properties
   units = DDT
   dimensions = ()
   type = ty_optical_props_2str
+  active = (flag_for_rrtmgp_radiation_scheme)
 [lw_optical_props_precipByBand]
   standard_name = longwave_optical_properties_for_precipitation_by_band
   long_name = Fortran DDT containing RRTMGP optical properties
   units = DDT
   dimensions = ()
   type = ty_optical_props_2str
+  active = (flag_for_rrtmgp_radiation_scheme)
 [lw_optical_props_aerosol]
   standard_name = longwave_optical_properties_for_aerosols
   long_name = Fortran DDT containing RRTMGP optical properties
   units = DDT
   dimensions = ()
   type = ty_optical_props_1scl
+  active = (flag_for_rrtmgp_radiation_scheme)
 [sfc_emiss_byband]
   standard_name = surface_emissivity_in_each_RRTMGP_LW_band
   long_name = surface emissivity in each RRTMGP LW band
