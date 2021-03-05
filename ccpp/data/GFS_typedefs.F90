@@ -422,8 +422,10 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: sfcdlw(:)      => null()   !< total sky sfc downward lw flux ( w/m**2 )
                                                                  !< GFS_radtend_type%sfclsw%dnfxc
     real (kind=kind_phys), pointer :: sfculw(:)      => null()   !< total sky sfc upward lw flux ( w/m**2 )
-    real (kind=kind_phys), pointer :: sfculw_jac(:,:)=> null()   !< Jacobian of total sky sfc upward lw flux ( w/m**2/K )
-    real (kind=kind_phys), pointer :: sfcdlw_jac(:,:)=> null()   !< Jacobian of total sky sfc downward lw flux ( w/m**2/K ) 
+    real (kind=kind_phys), pointer :: fluxlwUP_jac(:,:)      => null()  !< GP Jacobian up   LW total sky flux profile ( w/m**2/K )
+    real (kind=kind_phys), pointer :: fluxlwDOWN_jac(:,:)    => null()  !< GP Jacobian down LW total sky flux profile ( w/m**2/K )
+    real (kind=kind_phys), pointer :: fluxlwUP_allsky(:,:)   => null()  !< GP          up   LW total sky flux profile ( w/m**2/K )
+    real (kind=kind_phys), pointer :: fluxlwDOWN_allsky(:,:) => null()  !< GP          down LW total sky flux profile ( w/m**2/K )
 !--- incoming quantities
     real (kind=kind_phys), pointer :: dusfcin_cpl(:) => null()   !< aoi_fld%dusfcin(item,lan)
     real (kind=kind_phys), pointer :: dvsfcin_cpl(:) => null()   !< aoi_fld%dvsfcin(item,lan)
@@ -2051,16 +2053,12 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: cld_rwp(:,:)              => null()  !< Cloud rain water path
     real (kind=kind_phys), pointer      :: cld_rerain(:,:)           => null()  !< Cloud rain effective radius
     real (kind=kind_phys), pointer      :: precip_frac(:,:)          => null()  !< Precipitation fraction
-    real (kind=kind_phys), pointer      :: fluxlwUP_allsky(:,:)      => null()  !< RRTMGP upward   longwave  all-sky flux profile
-    real (kind=kind_phys), pointer      :: fluxlwDOWN_allsky(:,:)    => null()  !< RRTMGP downward longwave  all-sky flux profile
     real (kind=kind_phys), pointer      :: fluxlwUP_clrsky(:,:)      => null()  !< RRTMGP upward   longwave  clr-sky flux profile
     real (kind=kind_phys), pointer      :: fluxlwDOWN_clrsky(:,:)    => null()  !< RRTMGP downward longwave  clr-sky flux profile
     real (kind=kind_phys), pointer      :: fluxswUP_allsky(:,:)      => null()  !< RRTMGP upward   shortwave all-sky flux profile
     real (kind=kind_phys), pointer      :: fluxswDOWN_allsky(:,:)    => null()  !< RRTMGP downward shortwave all-sky flux profile
     real (kind=kind_phys), pointer      :: fluxswUP_clrsky(:,:)      => null()  !< RRTMGP upward   shortwave clr-sky flux profile
     real (kind=kind_phys), pointer      :: fluxswDOWN_clrsky(:,:)    => null()  !< RRTMGP downward shortwave clr-sky flux profile
-    real (kind=kind_phys), pointer      :: fluxlwUP_jac(:,:)         => null()  !< RRTMGP upward Jacobian of longwave flux
-    real (kind=kind_phys), pointer      :: fluxlwDOWN_jac(:,:)       => null()  !< RRTMGP downward Jacobian of longwave flux
     real (kind=kind_phys), pointer      :: sfc_emiss_byband(:,:)     => null()  !<
     real (kind=kind_phys), pointer      :: sec_diff_byband(:,:)      => null()  !<
     real (kind=kind_phys), pointer      :: sfc_alb_nir_dir(:,:)      => null()  !<
@@ -2643,15 +2641,23 @@ module GFS_typedefs
     allocate (Coupling%sfcnsw (IM))
     allocate (Coupling%sfcdlw (IM))
     allocate (Coupling%sfculw (IM))
-    allocate (Coupling%sfculw_jac (IM,Model%levs+1))
-    allocate (Coupling%sfcdlw_jac (IM,Model%levs+1))
 
     Coupling%sfcdsw = clear_val
     Coupling%sfcnsw = clear_val
     Coupling%sfcdlw = clear_val
     Coupling%sfculw = clear_val
-    Coupling%sfculw_jac = clear_val
-    Coupling%sfcdlw_jac = clear_val
+
+    ! Coupling to RRTMGP, used for time step LW rad adjustment.
+    if (Model%do_RRTMGP) then
+       allocate (Coupling%fluxlwUP_jac      (IM,Model%levs+1))
+       allocate (Coupling%fluxlwDOWN_jac    (IM,Model%levs+1))
+       allocate (Coupling%fluxlwUP_allsky   (IM,Model%levs+1))
+       allocate (Coupling%fluxlwDOWN_allsky (IM,Model%levs+1))
+       Coupling%fluxlwUP_jac      = clear_val
+       Coupling%fluxlwDOWN_jac    = clear_val
+       Coupling%fluxlwUP_allsky   = clear_val
+       Coupling%fluxlwDOWN_allsky = clear_val
+    endif
 
     if (Model%cplflx .or. Model%do_sppt .or. Model%cplchm .or. Model%ca_global) then
       allocate (Coupling%rain_cpl (IM))
@@ -6407,9 +6413,7 @@ module GFS_typedefs
        allocate (Interstitial%t_lay                (IM, Model%levs))
        allocate (Interstitial%cloud_overlap_param  (IM, Model%levs))
        allocate (Interstitial%precip_overlap_param (IM, Model%levs))
-       allocate (Interstitial%fluxlwDOWN_allsky    (IM, Model%levs+1))
        allocate (Interstitial%fluxlwUP_clrsky      (IM, Model%levs+1))
-       allocate (Interstitial%fluxlwUP_allsky      (IM, Model%levs+1))
        allocate (Interstitial%fluxlwDOWN_clrsky    (IM, Model%levs+1))
        allocate (Interstitial%fluxswUP_allsky      (IM, Model%levs+1))
        allocate (Interstitial%fluxswDOWN_allsky    (IM, Model%levs+1))
@@ -6811,7 +6815,6 @@ module GFS_typedefs
     end if
 
     if (Model%do_RRTMGP) then
-      Interstitial%fluxlwUP_allsky      = clear_val
       Interstitial%tracer               = clear_val
       Interstitial%tv_lay               = clear_val
       Interstitial%relhum               = clear_val
@@ -6824,7 +6827,6 @@ module GFS_typedefs
       Interstitial%t_lay                = clear_val
       Interstitial%cloud_overlap_param  = clear_val
       Interstitial%precip_overlap_param = clear_val
-      Interstitial%fluxlwDOWN_allsky    = clear_val
       Interstitial%fluxlwUP_clrsky      = clear_val
       Interstitial%fluxlwDOWN_clrsky    = clear_val
       Interstitial%fluxswUP_allsky      = clear_val
@@ -7566,8 +7568,6 @@ module GFS_typedefs
        write (0,*) 'sum(Interstitial%precip_frac          ) = ', sum(Interstitial%precip_frac )
        write (0,*) 'sum(Interstitial%icseed_lw            ) = ', sum(Interstitial%icseed_lw   )
        write (0,*) 'sum(Interstitial%icseed_sw            ) = ', sum(Interstitial%icseed_sw   )
-       write (0,*) 'sum(Interstitial%fluxlwUP_allsky      ) = ', sum(Interstitial%fluxlwUP_allsky  )
-       write (0,*) 'sum(Interstitial%fluxlwDOWN_allsky    ) = ', sum(Interstitial%fluxlwDOWN_allsky)
        write (0,*) 'sum(Interstitial%fluxlwUP_clrsky      ) = ', sum(Interstitial%fluxlwUP_clrsky  )
        write (0,*) 'sum(Interstitial%fluxlwDOWN_clrsky    ) = ', sum(Interstitial%fluxlwDOWN_clrsky)
        write (0,*) 'sum(Interstitial%fluxswUP_allsky      ) = ', sum(Interstitial%fluxswUP_allsky  )

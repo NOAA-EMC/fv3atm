@@ -1657,20 +1657,38 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[sfculw_jac]
-  standard_name = RRTMGP_jacobian_of_lw_flux_upward_at_surface
-  long_name = RRTMGP Jacobian upward longwave flux at surface
+[fluxlwUP_jac]
+  standard_name = RRTMGP_jacobian_of_lw_flux_upward
+  long_name = RRTMGP Jacobian upward longwave flux profile
   units = W m-2 K-1
   dimensions = (horizontal_loop_extent,vertical_dimension_plus_one)
   type = real
   kind = kind_phys
-[sfcdlw_jac]
-  standard_name = RRTMGP_jacobian_of_lw_flux_downward_at_surface
-  long_name = RRTMGP Jacobian downward longwave flux at surface
+  active = (flag_for_rrtmgp_radiation_scheme)
+[fluxlwDOWN_jac]
+  standard_name = RRTMGP_jacobian_of_lw_flux_downward
+  long_name = RRTMGP Jacobian downward longwave flux at profile
   units = W m-2 K-1
   dimensions = (horizontal_loop_extent,vertical_dimension_plus_one)
   type = real
   kind = kind_phys
+  active = (flag_for_rrtmgp_radiation_scheme)
+[fluxlwUP_allsky]
+  standard_name = RRTMGP_lw_flux_profile_upward_allsky
+  long_name = RRTMGP upward longwave all-sky flux profile
+  units = W m-2
+  dimensions = (horizontal_loop_extent,vertical_dimension_plus_one)
+  type = real
+  kind = kind_phys
+  active = (flag_for_rrtmgp_radiation_scheme)
+[fluxlwDOWN_allsky]
+  standard_name = RRTMGP_lw_flux_profile_downward_allsky
+  long_name = RRTMGP downward longwave all-sky flux profile
+  units = W m-2
+  dimensions = (horizontal_loop_extent,vertical_dimension_plus_one)
+  type = real
+  kind = kind_phys
+  active = (flag_for_rrtmgp_radiation_scheme)
 [rain_cpl]
   standard_name = lwe_thickness_of_precipitation_amount_for_coupling
   long_name = total rain precipitation
@@ -10182,22 +10200,6 @@
   dimensions = (horizontal_loop_extent,vertical_dimension)
   type = real
   kind = kind_phys
-[fluxlwUP_allsky]
-  standard_name = RRTMGP_lw_flux_profile_upward_allsky
-  long_name = RRTMGP upward longwave all-sky flux profile
-  units = W m-2
-  dimensions = (horizontal_loop_extent,vertical_dimension_plus_one)
-  type = real
-  kind = kind_phys
-  active = (flag_for_rrtmgp_radiation_scheme)
-[fluxlwDOWN_allsky]
-  standard_name = RRTMGP_lw_flux_profile_downward_allsky
-  long_name = RRTMGP downward longwave all-sky flux profile
-  units = W m-2
-  dimensions = (horizontal_loop_extent,vertical_dimension_plus_one)
-  type = real
-  kind = kind_phys
-  active = (flag_for_rrtmgp_radiation_scheme)
 [fluxlwUP_clrsky]
   standard_name = RRTMGP_lw_flux_profile_upward_clrsky
   long_name = RRTMGP upward longwave clr-sky flux profile
