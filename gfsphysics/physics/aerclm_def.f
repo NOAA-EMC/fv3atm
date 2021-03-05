@@ -2,7 +2,7 @@
       use machine , only : kind_phys
       implicit none
      
-      integer, parameter   :: levsaer=50, ntrcaerm=15, timeaer=12
+      integer, parameter   :: levsaer=72, ntrcaerm=15, timeaer=12
       integer              :: latsaer, lonsaer, ntrcaer
 
       character*10         :: specname(ntrcaerm)
