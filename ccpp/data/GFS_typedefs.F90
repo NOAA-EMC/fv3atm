@@ -2027,6 +2027,8 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: dudt_tms(:,:)      => null()  !< daily aver u-wind tend due to TMS
 
     ! RRTMGP
+    real (kind=kind_phys)               :: minGPpres                            !< Minimum pressure allowed by RRTMGP.
+    real (kind=kind_phys)               :: minGPtemp                            !< Minimum temperature allowed by RRTMGP. 
     integer                             :: ipsdlw0                              !<
     integer                             :: ipsdsw0                              !<
     real (kind=kind_phys), pointer      :: p_lay(:,:)                => null()  !<
