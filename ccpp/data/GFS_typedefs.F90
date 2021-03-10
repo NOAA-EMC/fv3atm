@@ -317,6 +317,11 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: smcwtdxy(:)  => null()  !<
     real (kind=kind_phys), pointer :: deeprechxy(:)=> null()  !<
     real (kind=kind_phys), pointer :: rechxy  (:)  => null()  !<
+    real (kind=kind_phys), pointer :: albdvis  (:) => null()  !<
+    real (kind=kind_phys), pointer :: albdnir  (:) => null()  !<
+    real (kind=kind_phys), pointer :: albivis  (:) => null()  !<
+    real (kind=kind_phys), pointer :: albinir  (:) => null()  !<
+    real (kind=kind_phys), pointer :: emiss    (:) => null()  !<
 
     real (kind=kind_phys), pointer :: snicexy   (:,:) => null()  !<
     real (kind=kind_phys), pointer :: snliqxy   (:,:) => null()  !<
@@ -780,7 +785,9 @@ module GFS_typedefs
     integer              :: lsoil_lsm       !< number of soil layers internal to land surface model
     integer              :: lsnow_lsm       !< maximum number of snow layers internal to land surface model
     integer              :: lsnow_lsm_lbound!< lower bound for snow arrays, depending on lsnow_lsm
+    integer              :: lsnow_lsm_ubound!< upper bound for snow arrays, depending on lsnow_lsm
     real(kind=kind_phys), pointer :: zs(:)    => null() !< depth of soil levels for land surface model
+    real(kind=kind_phys), pointer :: dzs(:)   => null() !< thickness of soil levels for land surface model
     real(kind=kind_phys), pointer :: pores(:) => null() !< max soil moisture for a given soil type for land surface model
     real(kind=kind_phys), pointer :: resid(:) => null() !< min soil moisture for a given soil type for land surface model
     logical              :: rdlai           !< read LAI from input file (for RUC LSM or NOAH LSM WRFv4)
@@ -1939,7 +1946,6 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: soilm_in_m(:)      => null()  !<
     integer, pointer                    :: soiltype(:)        => null()  !<
     real (kind=kind_phys), pointer      :: stc_save(:,:)      => null()  !<
-    real (kind=kind_phys), pointer      :: sthick (:)         => null()  !<
     real (kind=kind_phys), pointer      :: stress(:)          => null()  !<
     real (kind=kind_phys), pointer      :: stress_ice(:)      => null()  !<
     real (kind=kind_phys), pointer      :: stress_land(:)     => null()  !<
@@ -2462,10 +2468,15 @@ module GFS_typedefs
     allocate (Sfcprop%taussxy  (IM))
     allocate (Sfcprop%smcwtdxy (IM))
     allocate (Sfcprop%deeprechxy (IM))
-    allocate (Sfcprop%rechxy    (IM))
-    allocate (Sfcprop%snicexy    (IM, Model%lsnow_lsm_lbound:0))
-    allocate (Sfcprop%snliqxy    (IM, Model%lsnow_lsm_lbound:0))
-    allocate (Sfcprop%tsnoxy     (IM, Model%lsnow_lsm_lbound:0))
+    allocate (Sfcprop%rechxy     (IM))
+    allocate (Sfcprop%albdvis    (IM))
+    allocate (Sfcprop%albdnir    (IM))
+    allocate (Sfcprop%albivis    (IM))
+    allocate (Sfcprop%albinir    (IM))
+    allocate (Sfcprop%emiss      (IM))
+    allocate (Sfcprop%snicexy    (IM, Model%lsnow_lsm_lbound:Model%lsnow_lsm_ubound))
+    allocate (Sfcprop%snliqxy    (IM, Model%lsnow_lsm_lbound:Model%lsnow_lsm_ubound))
+    allocate (Sfcprop%tsnoxy     (IM, Model%lsnow_lsm_lbound:Model%lsnow_lsm_ubound))
     allocate (Sfcprop%smoiseq    (IM, Model%lsoil_lsm))
     allocate (Sfcprop%zsnsoxy    (IM, Model%lsnow_lsm_lbound:Model%lsoil_lsm))
 
@@ -2498,6 +2509,11 @@ module GFS_typedefs
     Sfcprop%smcwtdxy   = clear_val
     Sfcprop%deeprechxy = clear_val
     Sfcprop%rechxy     = clear_val
+    Sfcprop%albdvis    = clear_val
+    Sfcprop%albdnir    = clear_val
+    Sfcprop%albivis    = clear_val
+    Sfcprop%albinir    = clear_val
+    Sfcprop%emiss      = clear_val
 
     Sfcprop%snicexy    = clear_val
     Sfcprop%snliqxy    = clear_val
@@ -3845,17 +3861,33 @@ module GFS_typedefs
       write(0,*) 'Logic error: rdlai = .true. only works with RUC LSM'
       stop
     end if
+
     ! Set surface layers for CCPP physics
     if (lsoil_lsm==-1) then
       Model%lsoil_lsm      = lsoil
     else
       Model%lsoil_lsm      = lsoil_lsm
     end if
-    ! Allocate variable to store depth of soil layers
-    if (Model%lsm==Model%lsm_ruc) then
-       allocate (Model%zs(Model%lsoil_lsm))
-       Model%zs = clear_val
+    ! DH* TODO - need to clean up how different land surface models handle initializing zs and dzs
+    ! For Noah and NoahMP, hardcode here for the moment; for RUC, these variables get initialized
+    ! in the RUC LSM init calls; for Noah WRF4, dzs gets initialized in sfc_noah_wrfv4_interstitial
+    ! init, and zs doesn't get used at all.
+    ! Allocate variables to store depth/thickness of soil layers
+    allocate (Model%zs (Model%lsoil_lsm))
+    allocate (Model%dzs(Model%lsoil_lsm))
+    if (Model%lsm==Model%lsm_noah .or. Model%lsm==Model%lsm_noahmp) then
+      if (Model%lsoil_lsm/=4) then
+        write(0,*) 'Error in GFS_typedefs.F90, number of soil layers must be 4 for Noah/NoahMP'
+        stop
+      end if
+      Model%zs  = (/-0.1_kind_phys, -0.4_kind_phys, -1.0_kind_phys, -2.0_kind_phys/)
+      Model%dzs = (/ 0.1_kind_phys,  0.3_kind_phys,  0.6_kind_phys,  1.0_kind_phys/)
+    elseif (Model%lsm==Model%lsm_ruc .or. Model%lsm==Model%lsm_noah_wrfv4) then
+      Model%zs  = clear_val
+      Model%dzs = clear_val
     end if
+    ! *DH
+
     ! Set number of ice model layers
     Model%kice      = kice
 
@@ -3865,13 +3897,21 @@ module GFS_typedefs
     Model%pores    = clear_val
     Model%resid    = clear_val
     !
-    if (lsnow_lsm /= 3) then
-      write(0,*) 'Logic error: NoahMP expects the maximum number of snow layers to be exactly 3 (see sfc_noahmp_drv.f)'
-      stop
+    if (Model%lsm==Model%lsm_noahmp) then
+      if (lsnow_lsm/=3) then
+        write(0,*) 'Logic error: NoahMP expects the maximum number of snow layers to be exactly 3 (see sfc_noahmp_drv.f)'
+        stop
+      else
+        Model%lsnow_lsm        = lsnow_lsm
+        ! Set lower bound for LSM model, runs from negative (above surface) to surface (zero)
+        Model%lsnow_lsm_lbound = -Model%lsnow_lsm+1
+        Model%lsnow_lsm_ubound = 0
+      end if
     else
-      Model%lsnow_lsm        = lsnow_lsm
-      ! Set lower bound for LSM model, runs from negative (above surface) to surface (zero)
-      Model%lsnow_lsm_lbound = -Model%lsnow_lsm+1
+      ! Not used by any of the other LSM choices
+      Model%lsnow_lsm        = 0
+      Model%lsnow_lsm_lbound = 0
+      Model%lsnow_lsm_ubound = 0
     end if
     Model%isurban          = -999      !GJF isurban is only used in NOAH WRFv4 and is initialized in sfc_noah_GFS_interstitial.F90/sfc_noah_GFS_pre_init
     Model%isice            = -999      !GJF isice is only used in NOAH WRFv4 and is initialized in sfc_noah_GFS_interstitial.F90/sfc_noah_GFS_pre_init
@@ -3991,8 +4031,7 @@ module GFS_typedefs
     Model%rbcr              = rbcr
     Model%do_gwd            = maxval(Model%cdmbgwd) > 0.0 ! flag to restore OGWs of GFS-v15
 ! OLD GFS-v12-15 conv scheme
-!    Model%do_cnvgwd         = Model%cnvgwd .and. maxval(Model%cdmbgwd(3:4)) == 0.0
-    Model%do_cnvgwd         = .false.               ! this avoids all "mysteries" to use Convective GWs in UFS
+    Model%do_cnvgwd         = Model%cnvgwd .and. maxval(Model%cdmbgwd(3:4)) == 0.0
     Model%do_mynnedmf       = do_mynnedmf
     Model%do_mynnsfclay     = do_mynnsfclay
     ! DH* TODO - move to MYNN namelist section
@@ -4953,7 +4992,14 @@ module GFS_typedefs
       print *, ' lsoil             : ', Model%lsoil
       print *, ' rdlai             : ', Model%rdlai
       print *, ' lsoil_lsm         : ', Model%lsoil_lsm
-      print *, ' lsnow_lsm         : ', Model%lsnow_lsm
+      if (Model%lsm==Model%lsm_noahmp) then
+        print *, ' lsnow_lsm         : ', Model%lsnow_lsm
+        print *, ' lsnow_lsm_lbound  : ', Model%lsnow_lsm_lbound
+        print *, ' lsnow_lsm_ubound  : ', Model%lsnow_lsm_ubound
+      end if
+      print *, ' zs  (may be unset): ', Model%zs
+      print *, ' dzs (may be unset): ', Model%dzs
+      !
       print *, ' iopt_thcnd        : ', Model%iopt_thcnd
       print *, ' ua_phys           : ', Model%ua_phys
       print *, ' usemonalb         : ', Model%usemonalb
@@ -6551,7 +6597,6 @@ module GFS_typedefs
        allocate (Interstitial%snohf_snowmelt  (IM))
        allocate (Interstitial%soilm_in_m      (IM))
        allocate (Interstitial%stc_save        (IM,Model%lsoil))
-       allocate (Interstitial%sthick          (Model%lsoil))
        allocate (Interstitial%th1             (IM))
        allocate (Interstitial%tprcp_rate_land (IM))
        allocate (Interstitial%tsfc_land_save  (IM))
@@ -6747,6 +6792,7 @@ module GFS_typedefs
     !
     class(GFS_interstitial_type) :: Interstitial
     type(GFS_control_type), intent(in) :: Model
+    integer :: iGas
     !
     Interstitial%aerodp       = clear_val
     Interstitial%alb1d        = clear_val
@@ -6850,6 +6896,9 @@ module GFS_typedefs
       Interstitial%sfc_alb_uvvis_dif    = clear_val
       Interstitial%toa_src_sw           = clear_val
       Interstitial%toa_src_lw           = clear_val
+      do iGas=1,Model%nGases
+        Interstitial%gas_concentrations%concs(iGas)%conc = clear_val
+      end do
     end if
     !
   end subroutine interstitial_rad_reset
@@ -7153,7 +7202,6 @@ module GFS_typedefs
        Interstitial%snohf_snowmelt  = clear_val
        Interstitial%soilm_in_m      = clear_val
        Interstitial%stc_save        = clear_val
-       Interstitial%sthick          = clear_val
        Interstitial%th1             = clear_val
        Interstitial%tprcp_rate_land = huge
        Interstitial%tsfc_land_save  = huge
@@ -7541,7 +7589,6 @@ module GFS_typedefs
        write (0,*) 'sum(Interstitial%snohf_frzgra    ) = ', sum(Interstitial%snohf_frzgra    )
        write (0,*) 'sum(Interstitial%snohf_snowmelt  ) = ', sum(Interstitial%snohf_snowmelt  )
        write (0,*) 'sum(Interstitial%soilm_in_m      ) = ', sum(Interstitial%soilm_in_m      )
-       write (0,*) 'sum(Interstitial%sthick          ) = ', sum(Interstitial%sthick          )
        write (0,*) 'sum(Interstitial%th1             ) = ', sum(Interstitial%th1             )
        write (0,*) 'sum(Interstitial%tprcp_rate_land ) = ', sum(Interstitial%tprcp_rate_land )
        write (0,*) 'sum(Interstitial%tsfc_land_save  ) = ', sum(Interstitial%tsfc_land_save  )
