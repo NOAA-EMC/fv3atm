@@ -4233,7 +4233,9 @@ module GFS_typedefs
     endif
 
     ! -- setup aerosol scavenging factors
-    allocate(Model%fscav(Model%ntchm))
+    n = max(Model%ntrac, Model%ntchm)
+    allocate(Model%fscav(n))
+    Model%fscav = -9999.0
     if (Model%ntchm > 0) then
       ! -- initialize to default
       Model%fscav = 0.6_kind_phys
