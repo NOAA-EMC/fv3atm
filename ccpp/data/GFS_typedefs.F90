@@ -426,6 +426,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: fluxlwDOWN_jac(:,:)    => null()  !< GP Jacobian down LW total sky flux profile ( w/m**2/K )
     real (kind=kind_phys), pointer :: fluxlwUP_allsky(:,:)   => null()  !< GP          up   LW total sky flux profile ( w/m**2/K )
     real (kind=kind_phys), pointer :: fluxlwDOWN_allsky(:,:) => null()  !< GP          down LW total sky flux profile ( w/m**2/K )
+    real (kind=kind_phys), pointer :: htrlw(:,:)             => null()  !< GP updated LW heating rate
 !--- incoming quantities
     real (kind=kind_phys), pointer :: dusfcin_cpl(:) => null()   !< aoi_fld%dusfcin(item,lan)
     real (kind=kind_phys), pointer :: dvsfcin_cpl(:) => null()   !< aoi_fld%dvsfcin(item,lan)
@@ -2653,10 +2654,12 @@ module GFS_typedefs
        allocate (Coupling%fluxlwDOWN_jac    (IM,Model%levs+1))
        allocate (Coupling%fluxlwUP_allsky   (IM,Model%levs+1))
        allocate (Coupling%fluxlwDOWN_allsky (IM,Model%levs+1))
+       allocate (Coupling%htrlw             (IM,Model%levs))
        Coupling%fluxlwUP_jac      = clear_val
        Coupling%fluxlwDOWN_jac    = clear_val
        Coupling%fluxlwUP_allsky   = clear_val
        Coupling%fluxlwDOWN_allsky = clear_val
+       Coupling%htrlw             = clear_val
     endif
 
     if (Model%cplflx .or. Model%do_sppt .or. Model%cplchm .or. Model%ca_global) then
@@ -3768,6 +3771,10 @@ module GFS_typedefs
     ! RRTMGP LW scattering calculation not supported w/ RRTMG cloud-optics
     if (Model%doGP_lwscat .and. Model%doG_cldoptics) then
       write(0,*) "Logic error, RRTMGP Longwave cloud-scattering not supported with RRTMG cloud-optics."
+      stop
+    end if
+   if (Model%doGP_cldoptics_PADE .and. Model%doGP_cldoptics_LUT) then
+      write(0,*) "Logic error, Both RRTMGP cloud-optics options cannot be selected. "
       stop
     end if
 
