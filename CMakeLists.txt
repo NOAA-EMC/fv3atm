@@ -22,7 +22,6 @@ if(NOT RC EQUAL 0)
 endif()
 
 add_subdirectory(cpl)
-add_subdirectory(gfsphysics)
 add_subdirectory(io)
 
 ###############################################################################
@@ -109,7 +108,8 @@ target_include_directories(fv3dycore INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT
                                                $<INSTALL_INTERFACE:mod>)
 
 target_link_libraries(fv3dycore PUBLIC fms
-                                       gfsphysics
+                                       ccppphys
+                                       ccppdata
                                        esmf)
 if(OpenMP_Fortran_FOUND)
   target_link_libraries(fv3dycore PUBLIC OpenMP::OpenMP_Fortran)
@@ -123,10 +123,9 @@ add_subdirectory(ccpp)
 add_subdirectory(ccpp/data)
 add_subdirectory(ccpp/driver)
 add_dependencies(ccppphys   ccpp)
-add_dependencies(gfsphysics ccpp ccppphys)
-add_dependencies(ccppdata   ccpp ccppphys gfsphysics)
-add_dependencies(ccppdriver ccpp ccppphys ccppdata gfsphysics)
-add_dependencies(fv3dycore  ccppdriver ccpp ccppphys ccppdata gfsphysics)
+add_dependencies(ccppdata   ccpp ccppphys)
+add_dependencies(ccppdriver ccpp ccppphys ccppdata)
+add_dependencies(fv3dycore  ccppdriver ccpp ccppphys ccppdata)
 target_include_directories(fv3dycore PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/ccpp/framework/src
                                              ${CMAKE_CURRENT_BINARY_DIR}/ccpp/physics
                                              ${CMAKE_CURRENT_BINARY_DIR}/ccpp/driver)
@@ -193,7 +192,7 @@ endif()
 ### Install
 ###############################################################################
 install(
-  TARGETS fv3atm fv3dycore io gfsphysics ${CCPP_LIBRARIES} cpl stochastic_physics stochastic_physics_wrapper
+  TARGETS fv3atm fv3dycore io ${CCPP_LIBRARIES} cpl stochastic_physics stochastic_physics_wrapper
   EXPORT fv3atm-config
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib)
