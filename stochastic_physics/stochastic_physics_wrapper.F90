@@ -153,7 +153,7 @@ module stochastic_physics_wrapper_mod
          call run_stochastic_physics(GFS_Control%levs, GFS_Control%kdt, GFS_Control%fhour, GFS_Control%blksz,                     &
                                  sppt_wts=sppt_wts, shum_wts=shum_wts, skebu_wts=skebu_wts, skebv_wts=skebv_wts, sfc_wts=sfc_wts, &
                                  nthreads=nthreads)
-         ! Copy contiguous data back 
+         ! Copy contiguous data back
          do nb=1,Atm_block%nblks
             GFS_Data(nb)%Coupling%sfc_wts(:,:) = sfc_wts(nb,1:GFS_Control%blksz(nb),:)
          end do

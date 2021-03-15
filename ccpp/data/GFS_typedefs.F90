@@ -1757,7 +1757,6 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: drain(:)           => null()  !<
     real (kind=kind_phys), pointer      :: drain_in_m_sm1(:)  => null()  !<
     real (kind=kind_phys), pointer      :: dtdt(:,:)          => null()  !<
-    real (kind=kind_phys), pointer      :: dtdtnp(:,:)        => null()  !<
     real (kind=kind_phys), pointer      :: dtsfc1(:)          => null()  !<
     real (kind=kind_phys), pointer      :: dtzm(:)            => null()  !<
     real (kind=kind_phys), pointer      :: dt_mf(:,:)         => null()  !<
@@ -2849,7 +2848,6 @@ module GFS_typedefs
     endif
 
     !--- stochastic shum option
-    if (Model%me.EQ.0) print*,'allocating shum_wts',Model%do_shum
     if (Model%do_shum) then
       allocate (Coupling%shum_wts  (IM,Model%levs))
       Coupling%shum_wts = clear_val
@@ -5695,7 +5693,6 @@ module GFS_typedefs
     allocate (Diag%sppt_wts(IM,Model%levs))
     allocate (Diag%shum_wts(IM,Model%levs))
     allocate (Diag%sfc_wts(IM,Model%n_var_lndp))
-    if (Model%me.EQ.0) print*,'diag allocating shum_wts'
     allocate (Diag%zmtnblck(IM))    
     allocate (Diag%ca1      (IM))
     allocate (Diag%ca2      (IM))
@@ -6280,7 +6277,6 @@ module GFS_typedefs
     allocate (Interstitial%dqsfc1          (IM))
     allocate (Interstitial%drain           (IM))
     allocate (Interstitial%dtdt            (IM,Model%levs))
-    allocate (Interstitial%dtdtnp          (IM,Model%levs))
     allocate (Interstitial%dtsfc1          (IM))
     allocate (Interstitial%dt_mf           (IM,Model%levs))
     allocate (Interstitial%dtzm            (IM))
@@ -6974,7 +6970,6 @@ module GFS_typedefs
     Interstitial%drain           = clear_val
     Interstitial%dt_mf           = clear_val
     Interstitial%dtdt            = clear_val
-    Interstitial%dtdtnp          = clear_val
     Interstitial%dtsfc1          = clear_val
     Interstitial%dtzm            = clear_val
     Interstitial%dudt            = clear_val
