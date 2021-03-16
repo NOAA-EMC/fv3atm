@@ -96,6 +96,13 @@ case "$MACHINE_ID" in
             export F77=mpiifort
             export F90=mpiifort
             ;;
+        comet)
+            export CC=mpiicc
+            export CXX=mpiicpc
+            export FC=mpiifort
+            export F77=mpiifort
+            export F90=mpiifort
+            ;;
         macosx.gnu)
             # set in generic modulefile
             ;;
