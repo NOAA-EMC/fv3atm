@@ -2806,6 +2806,12 @@
   units = count
   dimensions = ()
   type = integer
+[convert_dry_rho]
+  standard_name = flag_for_converting_hydrometeors_from_moist_to_dry_air
+  long_name = flag for converting hydrometeors from moist to dry air
+  units = flag
+  dimensions = ()
+  type = logical
 [imp_physics]
   standard_name = flag_for_microphysics_scheme
   long_name = choice of microphysics scheme

@@ -686,6 +686,11 @@ module GFS_typedefs
 
 !--- microphysical switch
     integer              :: ncld                           !< choice of cloud scheme
+    logical              :: convert_dry_rho = .false.      !< flag for converting number concentrations from moist to dry
+                                                           !< this flag will no longer be needed once the CCPP standard
+                                                           !< names and the CCPP framework logic have been augmented to
+                                                           !< automatically determine whether such conversions are necessary
+                                                           !< and if yes, perform them; hardcoded to .false. for now
     !--- new microphysical switch
     integer              :: imp_physics                    !< choice of microphysics scheme
     integer              :: imp_physics_gfdl = 11          !< choice of GFDL     microphysics scheme
