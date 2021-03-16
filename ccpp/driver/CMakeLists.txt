@@ -50,5 +50,5 @@ target_include_directories(ccppdriver PRIVATE ${CMAKE_BINARY_DIR}/FV3/ccpp/frame
                                               ${CMAKE_BINARY_DIR}/FV3/ccpp/physics)
 
 set_target_properties(ccppdriver PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mod)
-target_compile_definitions(ccppdriver PRIVATE "${_ccppdata_defs_private}")
+target_compile_definitions(ccppdriver PRIVATE "${_ccppdriver_defs_private}")
 target_include_directories(ccppdriver PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/mod>)
