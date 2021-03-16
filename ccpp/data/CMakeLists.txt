@@ -32,8 +32,12 @@ add_library(
     CCPP_data.F90
 )
 
-target_link_libraries(ccppdata ccpp)
-target_link_libraries(ccppdata ccppphys)
+target_link_libraries(ccppdata PUBLIC ccpp)
+target_link_libraries(ccppdata PUBLIC ccppphys)
+
+if(OpenMP_Fortran_FOUND)
+  target_link_libraries(ccppdata PUBLIC OpenMP::OpenMP_Fortran)
+endif()
 
 target_include_directories(ccppdata PRIVATE ${CMAKE_BINARY_DIR}/FV3/ccpp/framework/src
                                             ${CMAKE_BINARY_DIR}/FV3/ccpp/physics)
