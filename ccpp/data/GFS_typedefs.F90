@@ -1993,9 +1993,6 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: xlai1d(:)          => null()  !<
     real (kind=kind_phys), pointer      :: xmu(:)             => null()  !<
     real (kind=kind_phys), pointer      :: z01d(:)            => null()  !<
-    real (kind=kind_phys), pointer      :: zorl_ice(:)        => null()  !<
-    real (kind=kind_phys), pointer      :: zorl_land(:)       => null()  !<
-    real (kind=kind_phys), pointer      :: zorl_ocean(:)      => null()  !<
     real (kind=kind_phys), pointer      :: zt1d(:)            => null()  !<
 !==================================================================================================
 ! UGWP - five mechnanisms of momentum deposition due to various types of GWs
@@ -2282,9 +2279,9 @@ module GFS_typedefs
     Sfcprop%tiice     = clear_val
     Sfcprop%snowd     = clear_val
     Sfcprop%zorl      = clear_val
-    Sfcprop%zorlo     = clear_val
-    Sfcprop%zorll     = clear_val
-    Sfcprop%zorli     = clear_val
+    Sfcprop%zorlo     = huge
+    Sfcprop%zorll     = huge
+    Sfcprop%zorli     = huge
     Sfcprop%zorlw     = clear_val
     Sfcprop%fice      = clear_val
 !   Sfcprop%hprim     = clear_val
@@ -6386,9 +6383,6 @@ module GFS_typedefs
     allocate (Interstitial%xlai1d          (IM))
     allocate (Interstitial%xmu             (IM))
     allocate (Interstitial%z01d            (IM))
-    allocate (Interstitial%zorl_ice        (IM))
-    allocate (Interstitial%zorl_land       (IM))
-    allocate (Interstitial%zorl_ocean      (IM))
     allocate (Interstitial%zt1d            (IM))
 
     ! RRTMGP
@@ -7048,9 +7042,6 @@ module GFS_typedefs
     Interstitial%xlai1d          = clear_val
     Interstitial%xmu             = clear_val
     Interstitial%z01d            = clear_val
-    Interstitial%zorl_ice        = huge
-    Interstitial%zorl_land       = huge
-    Interstitial%zorl_ocean      = huge
     Interstitial%zt1d            = clear_val
 
 ! UGWP common
@@ -7435,9 +7426,6 @@ module GFS_typedefs
     write (0,*) 'sum(Interstitial%xlai1d          ) = ', sum(Interstitial%xlai1d          )
     write (0,*) 'sum(Interstitial%xmu             ) = ', sum(Interstitial%xmu             )
     write (0,*) 'sum(Interstitial%z01d            ) = ', sum(Interstitial%z01d            )
-    write (0,*) 'sum(Interstitial%zorl_ice        ) = ', sum(Interstitial%zorl_ice        )
-    write (0,*) 'sum(Interstitial%zorl_land       ) = ', sum(Interstitial%zorl_land       )
-    write (0,*) 'sum(Interstitial%zorl_ocean      ) = ', sum(Interstitial%zorl_ocean      )
     write (0,*) 'sum(Interstitial%zt1d            ) = ', sum(Interstitial%zt1d            )
 
 ! UGWP common

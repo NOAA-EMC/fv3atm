@@ -9904,27 +9904,6 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[zorl_ocean]
-  standard_name = surface_roughness_length_over_ocean_interstitial
-  long_name = surface roughness length over ocean (temporary use as interstitial)
-  units = cm
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-[zorl_land]
-  standard_name = surface_roughness_length_over_land_interstitial
-  long_name = surface roughness length over land  (temporary use as interstitial)
-  units = cm
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-[zorl_ice]
-  standard_name = surface_roughness_length_over_ice_interstitial
-  long_name = surface roughness length over ice   (temporary use as interstitial)
-  units = cm
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
 [zt1d]
   standard_name = perturbation_of_heat_to_momentum_roughness_length_ratio
   long_name = perturbation of heat to momentum roughness length ratio
