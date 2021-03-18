@@ -250,8 +250,8 @@ module post_regional
         fldbundle = wrt_int_state%wrtFB(nfb)
 
 ! set grid spec:
-      if(mype==0) print*,'in post_getattr_lam,output_grid=',trim(output_grid),'nfb=',nfb
-      if(mype==0) print*,'in post_getattr_lam, lon1=',lon1,lon2,lat1,lat2,dlon,dlat
+!      if(mype==0) print*,'in post_getattr_lam,output_grid=',trim(output_grid),'nfb=',nfb
+!      if(mype==0) print*,'in post_getattr_lam, lon1=',lon1,lon2,lat1,lat2,dlon,dlat
       gdsdegr = 1000000.
 
       if(trim(output_grid) == 'regional_latlon') then
@@ -274,8 +274,8 @@ module post_regional
         dxval = dlon*gdsdegr
         dyval = dlat*gdsdegr
 
-        if(mype==0) print*,'lonstart,latstart,dyval,dxval', &
-        lonstart,lonlast,latstart,latlast,dyval,dxval
+!        if(mype==0) print*,'lonstart,latstart,dyval,dxval', &
+!        lonstart,lonlast,latstart,latlast,dyval,dxval
 
       else if(trim(output_grid) == 'lambert_conformal') then
         MAPTYPE=1
@@ -347,8 +347,8 @@ module post_regional
           dyval = spval
         endif
 
-        if(mype==0) print*,'rotated latlon,lonstart,latstart,cenlon,cenlat,dyval,dxval', &
-          lonstart_r,lonlast_r,latstart_r,latlast_r,cenlon,cenlat,dyval,dxval
+!        if(mype==0) print*,'rotated latlon,lonstart,latstart,cenlon,cenlat,dyval,dxval', &
+!          lonstart_r,lonlast_r,latstart_r,latlast_r,cenlon,cenlat,dyval,dxval
       endif
 
 ! look at the field bundle attributes
@@ -557,8 +557,8 @@ module post_regional
       tsrfc   = tprec
       tmaxmin = tprec
       td3d    = tprec
-      if(mype==0)print*,'MP_PHYSICS= ',imp_physics,'nbdl=',nbdl, 'tprec=',tprec,'tclod=',tclod, &
-       'dtp=',dtp,'tmaxmin=',tmaxmin,'jsta=',jsta,jend,im,jm
+!      if(mype==0)print*,'MP_PHYSICS= ',imp_physics,'nbdl=',nbdl, 'tprec=',tprec,'tclod=',tclod, &
+!       'dtp=',dtp,'tmaxmin=',tmaxmin,'jsta=',jsta,jend,im,jm
 
 !
 !$omp parallel do default(shared),private(i,j)
@@ -803,7 +803,7 @@ module post_regional
       idat(4)  = wrt_int_state%fdate(4)
       idat(5)  = wrt_int_state%fdate(5)
 !
-      if(mype==0) print *,'idat=',idat,'sdat=',sdat,'ihrst=',ihrst
+!      if(mype==0) print *,'idat=',idat,'sdat=',sdat,'ihrst=',ihrst
 !      CALL W3DIFDAT(JDATE,IDATE,0,RINC)
 !
 !      if(mype==0)print *,' rinc=',rinc
@@ -925,14 +925,14 @@ module post_regional
        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
           line=__LINE__, file=__FILE__)) return  ! bail out
 
-       if(mype==0) print *,'in setvar, allocate fcstField,ibdl=',ibdl,'count=',ncount_field,'wrtFBname=',trim(wrtFBName)
+!       if(mype==0) print *,'in setvar, allocate fcstField,ibdl=',ibdl,'count=',ncount_field,'wrtFBname=',trim(wrtFBName)
        allocate(fcstField(ncount_field))
        call ESMF_FieldBundleGet(wrt_int_state%wrtFB(ibdl),           &
          fieldList=fcstField, itemorderflag=ESMF_ITEMORDER_ADDORDER, rc=rc)
        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
           line=__LINE__, file=__FILE__)) return  ! bail out
 
-       if(mype==0) print *,'in setvar, read field, ibdl=',ibdl, 'nfield=',ncount_field
+!       if(mype==0) print *,'in setvar, read field, ibdl=',ibdl, 'nfield=',ncount_field
        do n=1, ncount_field
 !
           call ESMF_FieldGet(fcstField(n),typekind=typekind, name=fieldname, &
