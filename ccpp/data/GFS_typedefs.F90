@@ -5704,6 +5704,9 @@ module GFS_typedefs
       allocate (Diag%dt3dt  (IM,Model%levs,11))
       if (Model%qdiag3d) then
         allocate (Diag%dq3dt  (IM,Model%levs,13))
+        allocate (Diag%upd_mf (IM,Model%levs))
+        allocate (Diag%dwn_mf (IM,Model%levs))
+        allocate (Diag%det_mf (IM,Model%levs))
       else
         allocate (Diag%dq3dt  (1,1,13))
       endif
@@ -6001,9 +6004,9 @@ module GFS_typedefs
       Diag%dt3dt    = zero
       if (Model%qdiag3d) then
         Diag%dq3dt    = zero
-!        Diag%upd_mf   = zero
-!        Diag%dwn_mf   = zero
-!        Diag%det_mf   = zero
+        Diag%upd_mf   = zero
+        Diag%dwn_mf   = zero
+        Diag%det_mf   = zero
       endif
     endif
 
