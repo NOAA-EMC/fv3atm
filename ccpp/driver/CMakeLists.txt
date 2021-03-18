@@ -38,14 +38,17 @@ add_library(
 # Compile GFS_diagnostics.F90 without optimization, this leads to out of memory errors on wcoss_dell_p3
 set_property(SOURCE GFS_diagnostics.F90 APPEND_STRING PROPERTY COMPILE_FLAGS "-O0")
 
-target_link_libraries(ccppdriver gfsphysics)
-target_link_libraries(ccppdriver ccpp)
-target_link_libraries(ccppdriver ccppphys)
-target_link_libraries(ccppdriver ccppdata)
+target_link_libraries(ccppdriver PUBLIC ccpp)
+target_link_libraries(ccppdriver PUBLIC ccppphys)
+target_link_libraries(ccppdriver PUBLIC ccppdata)
+
+if(OpenMP_Fortran_FOUND)
+  target_link_libraries(ccppdriver PUBLIC OpenMP::OpenMP_Fortran)
+endif()
 
 target_include_directories(ccppdriver PRIVATE ${CMAKE_BINARY_DIR}/FV3/ccpp/framework/src
                                               ${CMAKE_BINARY_DIR}/FV3/ccpp/physics)
 
 set_target_properties(ccppdriver PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mod)
-target_compile_definitions(ccppdata PRIVATE "${_ccppdata_defs_private}")
+target_compile_definitions(ccppdriver PRIVATE "${_ccppdriver_defs_private}")
 target_include_directories(ccppdriver PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/mod>)
