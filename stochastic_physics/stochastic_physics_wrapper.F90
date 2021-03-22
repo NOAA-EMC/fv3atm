@@ -95,9 +95,15 @@ module stochastic_physics_wrapper_mod
     initalize_stochastic_physics: if (GFS_Control%kdt==0) then
 
       if (GFS_Control%do_sppt .OR. GFS_Control%do_shum .OR. GFS_Control%do_skeb .OR. (GFS_Control%lndp_type .GT. 0) ) then
+         allocate(xlat(1:Atm_block%nblks,maxval(GFS_Control%blksz)))
+         allocate(xlon(1:Atm_block%nblks,maxval(GFS_Control%blksz)))
+         do nb=1,Atm_block%nblks
+            xlat(nb,1:GFS_Control%blksz(nb)) = GFS_Data(nb)%Grid%xlat(:)
+            xlon(nb,1:GFS_Control%blksz(nb)) = GFS_Data(nb)%Grid%xlon(:)
+         end do
         ! Initialize stochastic physics
-        call init_stochastic_physics(GFS_Control%levs, GFS_Control%blksz, GFS_Control%dtp,                                               &
-            GFS_Control%input_nml_file, GFS_Control%fn_nml, GFS_Control%nlunit, GFS_Control%do_sppt, GFS_Control%do_shum,                &
+        call init_stochastic_physics(GFS_Control%levs, GFS_Control%blksz, GFS_Control%dtp, GFS_Control%sppt_amp,                         &
+            GFS_Control%input_nml_file, GFS_Control%fn_nml, GFS_Control%nlunit, xlon, xlat, GFS_Control%do_sppt, GFS_Control%do_shum,                &
             GFS_Control%do_skeb, GFS_Control%lndp_type, GFS_Control%n_var_lndp, GFS_Control%use_zmtnblck, GFS_Control%skeb_npass, &
             GFS_Control%lndp_var_list, GFS_Control%lndp_prt_list,    &
             GFS_Control%ak, GFS_Control%bk, nthreads, GFS_Control%master, GFS_Control%communicator, ierr)
@@ -106,8 +112,6 @@ module stochastic_physics_wrapper_mod
                     return
             endif
       end if
-      allocate(xlat(1:Atm_block%nblks,maxval(GFS_Control%blksz)))
-      allocate(xlon(1:Atm_block%nblks,maxval(GFS_Control%blksz)))
       if (GFS_Control%do_sppt) then
          allocate(sppt_wts(1:Atm_block%nblks,maxval(GFS_Control%blksz),1:GFS_Control%levs))
       end if
@@ -143,17 +147,13 @@ module stochastic_physics_wrapper_mod
           allocate(zorll(1:Atm_block%nblks,maxval(GFS_Control%blksz)))
       endif
 
-      do nb=1,Atm_block%nblks
-         xlat(nb,1:GFS_Control%blksz(nb)) = GFS_Data(nb)%Grid%xlat(:)
-         xlon(nb,1:GFS_Control%blksz(nb)) = GFS_Data(nb)%Grid%xlon(:)
-      end do
 
       if ( GFS_Control%lndp_type .EQ. 1 ) then ! this scheme sets perts once
          allocate(sfc_wts(1:Atm_block%nblks,maxval(GFS_Control%blksz),GFS_Control%n_var_lndp))
-         call run_stochastic_physics(GFS_Control%levs, GFS_Control%kdt, GFS_Control%phour, GFS_Control%blksz, xlat=xlat, xlon=xlon, &
+         call run_stochastic_physics(GFS_Control%levs, GFS_Control%kdt, GFS_Control%fhour, GFS_Control%blksz,                     &
                                  sppt_wts=sppt_wts, shum_wts=shum_wts, skebu_wts=skebu_wts, skebv_wts=skebv_wts, sfc_wts=sfc_wts, &
                                  nthreads=nthreads)
-         ! Copy contiguous data back; no need to copy xlat/xlon, these are intent(in) - just deallocate
+         ! Copy contiguous data back
          do nb=1,Atm_block%nblks
             GFS_Data(nb)%Coupling%sfc_wts(:,:) = sfc_wts(nb,1:GFS_Control%blksz(nb),:)
          end do
@@ -170,12 +170,11 @@ module stochastic_physics_wrapper_mod
       endif
 
     else initalize_stochastic_physics
-
       if (GFS_Control%do_sppt .OR. GFS_Control%do_shum .OR. GFS_Control%do_skeb .OR. (GFS_Control%lndp_type .EQ. 2) ) then
-         call run_stochastic_physics(GFS_Control%levs, GFS_Control%kdt, GFS_Control%phour, GFS_Control%blksz, xlat=xlat, xlon=xlon, &
+         call run_stochastic_physics(GFS_Control%levs, GFS_Control%kdt, GFS_Control%fhour, GFS_Control%blksz, &
                                  sppt_wts=sppt_wts, shum_wts=shum_wts, skebu_wts=skebu_wts, skebv_wts=skebv_wts, sfc_wts=sfc_wts, &
                                  nthreads=nthreads)
-         ! Copy contiguous data back; no need to copy xlat/xlon, these are intent(in) - just deallocate
+         ! Copy contiguous data back
          if (GFS_Control%do_sppt) then
             do nb=1,Atm_block%nblks
                 GFS_Data(nb)%Coupling%sppt_wts(:,:) = sppt_wts(nb,1:GFS_Control%blksz(nb),:)
@@ -239,6 +238,7 @@ module stochastic_physics_wrapper_mod
                                GFS_Control%n_var_lndp, GFS_Control%lndp_var_list, GFS_Control%lndp_prt_list,                  &
                                sfc_wts, xlon, xlat, stype, GFS_Control%pores, GFS_Control%resid,param_update_flag,            &
                                smc, slc, stc, vfrac, alvsf, alnsf, alvwf, alnwf, facsf, facwf, snoalb, semis, zorll, ierr)
+
              if (ierr/=0)  then
                     write(6,*) 'call to GFS_apply_lndp failed'
                     return

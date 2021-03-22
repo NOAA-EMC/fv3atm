@@ -34,23 +34,20 @@ module inline_post
       integer,intent(in)                        :: mynfmin
       integer,intent(in)                        :: mynfsec
 !
-      print *,'in stub post_run_gfs - not supported on this machine, return'
+      print *,'in stub inline_post_run - not supported on this machine, return'
 !
     end subroutine inline_post_run
 !
 !-----------------------------------------------------------------------
 !
-    subroutine inline_post_getattr(wrt_int_state, fldbundle)
-!
-      use esmf
+    subroutine inline_post_getattr(wrt_int_state)
 !
       implicit none
 !
       type(wrt_internal_state),intent(inout)    :: wrt_int_state
-      type(ESMF_FieldBundle), intent(in)        :: fldbundle
 !
 !
-      print *,'in stub post_getattr_gfs - not supported on this machine, return'
+      print *,'in stub inline_post_getattr - not supported on this machine, return'
 !
     end subroutine inline_post_getattr
 
