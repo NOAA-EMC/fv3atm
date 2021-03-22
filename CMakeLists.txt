@@ -165,6 +165,7 @@ add_dependencies(fv3atm ccppdriver ccppdata ccppphys ccpp)
 target_link_libraries(fv3atm PUBLIC ccppdriver ccppdata ccppphys ccpp)
 
 target_include_directories(fv3atm PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/stochastic_physics)
+target_include_directories(fv3atm PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/../stochastic_physics)
 target_compile_definitions(fv3atm PRIVATE "${_fv3atm_defs_private}")
 
 target_link_libraries(fv3atm PUBLIC fv3dycore
@@ -192,7 +193,7 @@ endif()
 ### Install
 ###############################################################################
 install(
-  TARGETS fv3atm fv3dycore io ${CCPP_LIBRARIES} cpl stochastic_physics stochastic_physics_wrapper
+  TARGETS fv3atm fv3dycore io ${CCPP_LIBRARIES} cpl stochastic_physics_wrapper
   EXPORT fv3atm-config
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib)
