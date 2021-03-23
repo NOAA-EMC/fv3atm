@@ -7,6 +7,6 @@
    url = https://github.com/NCAR/ccpp-framework
    branch = master
 [submodule "ccpp/physics"]
-	path = ccpp/physics
-	url = https://github.com/AnningCheng-NOAA/ccpp-physics
-	branch = merra2
+   path = ccpp/physics
+   url = https://github.com/AnningCheng-NOAA/ccpp-physics
+   branch = merra2
