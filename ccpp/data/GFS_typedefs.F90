@@ -2805,6 +2805,8 @@ module GFS_typedefs
    !-- cellular automata
     allocate (Coupling%condition(IM))
     allocate (Coupling%vfact_ca(Model%levs))
+    Coupling%condition = clear_val
+    Coupling%vfact_ca = clear_val
     if (Model%do_ca) then
       allocate (Coupling%ca1      (IM))
       allocate (Coupling%ca2      (IM))
@@ -2814,7 +2816,6 @@ module GFS_typedefs
       allocate (Coupling%ca_shal  (IM))
       allocate (Coupling%ca_rad   (IM))
       allocate (Coupling%ca_micro (IM))
-      Coupling%vfact_ca = clear_val
       Coupling%ca1       = clear_val
       Coupling%ca2       = clear_val
       Coupling%ca3       = clear_val
@@ -2823,7 +2824,6 @@ module GFS_typedefs
       Coupling%ca_shal   = clear_val
       Coupling%ca_rad    = clear_val
       Coupling%ca_micro  = clear_val
-      Coupling%condition = clear_val
     endif
 
     ! -- GSDCHEM coupling options
