@@ -231,7 +231,7 @@ subroutine update_atmos_radiation_physics (Atmos)
   type (atmos_data_type), intent(in) :: Atmos
 !--- local variables---
     integer :: nb, jdat(8), rc, ierr, i, count
-    real(kind=8) :: pdiff, psum, pcount, maxabs, pmaxloc(7) ! must be kind=8 to match fv_mp_mod
+    real(kind=8) :: to_hpa, pdiff, psum, pcount, maxabs, pmaxloc(7) ! must be kind=8 to match fv_mp_mod
     integer :: isc, iec, jsc, jec, nlev, tile_num
     logical :: p_hydro, hydro
 
@@ -395,12 +395,13 @@ subroutine update_atmos_radiation_physics (Atmos)
         call mp_reduce_maxloc(maxabs,pmaxloc,size(pmaxloc))
         
         if(is_master() .and. pcount>0) then
-2933      format('At forecast hour ',F9.3,' mean pgr change is ',F15.7,' Pa')
-2934      format('    abs max change      ',F15.7,' Pa at tile=',I0,' i=',I0,' j=',I0)
-2935      format('    value at that point ',F15.7,' Pa    lat=',F12.6,' lon=',F12.6)
-          print 2933, GFS_control%fhour, psum/pcount
-          print 2934, pmaxloc(4), nint(pmaxloc(1:3))
-          print 2935, pmaxloc(5), pmaxloc(6:7)*57.29577951308232 ! 180/pi
+          to_hpa = 3600.0/GFS_control%dtp * 1.0/100.0 ! convert Pa/timestep to hPa/hour
+2933      format('At forecast hour ',F9.3,' mean pgr change is ',F16.8,' hPa/hr')
+2934      format('  abs max change   ',F15.10,' bar  at  tile=',I0,' i=',I0,' j=',I0)
+2935      format('  pgr at that point',F15.10,' bar      lat=',F12.6,' lon=',F12.6)
+          print 2933, GFS_control%fhour, psum/pcount*to_hpa
+          print 2934, pmaxloc(4)*1e-5, nint(pmaxloc(1:3))
+          print 2935, pmaxloc(5)*1e-5, pmaxloc(6:7)*57.29577951308232 ! 180/pi
         endif
       endif
       do nb = 1,ATM_block%nblks
