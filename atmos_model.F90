@@ -226,9 +226,14 @@ contains
 
 subroutine update_atmos_radiation_physics (Atmos)
 !-----------------------------------------------------------------------
+  use fv_mp_mod, only: mp_reduce_sum, mp_reduce_maxloc, is_master
+  implicit none
   type (atmos_data_type), intent(in) :: Atmos
 !--- local variables---
-    integer :: nb, jdat(8), rc, ierr
+    integer :: nb, jdat(8), rc, ierr, i, count
+    real(kind=8) :: pdiff, psum, pcount, maxabs, pmaxloc(5) ! must be kind=8 to match fv_mp_mod
+    integer :: isc, iec, jsc, jec, nlev, tile_num
+    logical :: p_hydro, hydro
 
     if (mpp_pe() == mpp_root_pe() .and. debug) write(6,*) "statein driver"
 !--- get atmospheric state from the dynamic core
@@ -358,6 +363,52 @@ subroutine update_atmos_radiation_physics (Atmos)
 
     endif
 
+    if(GFS_control%print_diff_pgr) then
+      if(.not. GFS_control%first_time_step) then
+        ! Get tile number:
+        call atmosphere_control_data (isc, iec, jsc, jec, nlev, p_hydro, hydro, tile_num)
+        pmaxloc(1) = tile_num
+        pmaxloc(2:5) = 0
+        
+        ! Get pgr stats:
+        psum = 0
+        pcount = 0
+        maxabs = 0
+        do nb = 1,ATM_block%nblks
+          count = size(GFS_data(nb)%Statein%pgr)
+          do i=1,count
+            pdiff = GFS_data(nb)%Statein%pgr(i)-GFS_data(nb)%Intdiag%old_pgr(i)
+            psum = psum+pdiff
+            if(abs(pdiff)>=maxabs) then
+              maxabs=abs(pdiff)
+              pmaxloc(2)=ATM_block%index(nb)%ii(i)
+              pmaxloc(3)=ATM_block%index(nb)%jj(i)
+              pmaxloc(4)=pdiff
+              pmaxloc(5)=GFS_data(nb)%Statein%pgr(i)
+            endif
+          enddo
+          pcount = pcount+count
+        enddo
+        
+        ! Sum pgr stats
+        call mp_reduce_sum(pcount)
+        call mp_reduce_sum(psum)
+        call mp_reduce_maxloc(maxabs,pmaxloc,size(pmaxloc))
+        
+        if(is_master() .and. pcount>0) then
+2933      format('At forecast hour ',F9.3,' mean pgr change is ',F15.7)
+2934      format('    abs max change      ',F15.7,' at tile=',I0,' i=',I0,' j=',I0)
+2935      format('    value at that point ',F15.7)
+          print 2933, GFS_control%fhour, psum/pcount
+          print 2934, pmaxloc(4), nint(pmaxloc(1:3))
+          print 2935, pmaxloc(5)
+        endif
+      endif
+      do nb = 1,ATM_block%nblks
+        GFS_data(nb)%Intdiag%old_pgr=GFS_data(nb)%Statein%pgr
+      enddo
+    endif
+    
     ! Update flag for first time step of time integration
     GFS_control%first_time_step = .false.
 
