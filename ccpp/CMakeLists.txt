@@ -221,18 +221,6 @@ else (SIONLIB)
 endif (SIONLIB)
 
 #------------------------------------------------------------------------------
-# Set Intel MKL flags for preprocessor, compiler and linker (if defined)
-if(MKL_DIR)
-  set (MKL_INC "-m64 -I${MKL_DIR}/include")
-  set (MKL_LIB "-L${MKL_DIR}/lib -Wl,-rpath,${MKL_DIR}/lib -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl")
-  set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${MKL_INC} ${MKL_LIB}")
-  ADD_DEFINITIONS(-DMKL)
-  message (STATUS "Enable Intel MKL support")
-else(MKL_DIR)
-  message (STATUS "Disable Intel MKL support")
-endif(MKL_DIR)
-
-#------------------------------------------------------------------------------
 # Set netCDF flags for preprocessor, compiler and linker (if defined)
 # Legacy settings for old make build
 if(NETCDF_DIR)
