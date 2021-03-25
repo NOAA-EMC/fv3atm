@@ -231,7 +231,7 @@ subroutine update_atmos_radiation_physics (Atmos)
   type (atmos_data_type), intent(in) :: Atmos
 !--- local variables---
     integer :: nb, jdat(8), rc, ierr, i, count
-    real(kind=8) :: pdiff, psum, pcount, maxabs, pmaxloc(5) ! must be kind=8 to match fv_mp_mod
+    real(kind=8) :: pdiff, psum, pcount, maxabs, pmaxloc(7) ! must be kind=8 to match fv_mp_mod
     integer :: isc, iec, jsc, jec, nlev, tile_num
     logical :: p_hydro, hydro
 
@@ -381,10 +381,9 @@ subroutine update_atmos_radiation_physics (Atmos)
             psum = psum+pdiff
             if(abs(pdiff)>=maxabs) then
               maxabs=abs(pdiff)
-              pmaxloc(2)=ATM_block%index(nb)%ii(i)
-              pmaxloc(3)=ATM_block%index(nb)%jj(i)
-              pmaxloc(4)=pdiff
-              pmaxloc(5)=GFS_data(nb)%Statein%pgr(i)
+              pmaxloc(2:3)=(/ ATM_block%index(nb)%ii(i), ATM_block%index(nb)%jj(i) /)
+              pmaxloc(4:7)=(/ pdiff, GFS_data(nb)%Statein%pgr(i), &
+                   GFS_data(nb)%Grid%xlat(i), GFS_data(nb)%Grid%xlon(i) /)
             endif
           enddo
           pcount = pcount+count
@@ -396,12 +395,12 @@ subroutine update_atmos_radiation_physics (Atmos)
         call mp_reduce_maxloc(maxabs,pmaxloc,size(pmaxloc))
         
         if(is_master() .and. pcount>0) then
-2933      format('At forecast hour ',F9.3,' mean pgr change is ',F15.7)
-2934      format('    abs max change      ',F15.7,' at tile=',I0,' i=',I0,' j=',I0)
-2935      format('    value at that point ',F15.7)
+2933      format('At forecast hour ',F9.3,' mean pgr change is ',F15.7,' Pa')
+2934      format('    abs max change      ',F15.7,' Pa at tile=',I0,' i=',I0,' j=',I0)
+2935      format('    value at that point ',F15.7,' Pa    lat=',F12.6,' lon=',F12.6)
           print 2933, GFS_control%fhour, psum/pcount
           print 2934, pmaxloc(4), nint(pmaxloc(1:3))
-          print 2935, pmaxloc(5)
+          print 2935, pmaxloc(5), pmaxloc(6:7)*57.29577951308232 ! 180/pi
         endif
       endif
       do nb = 1,ATM_block%nblks
