@@ -226,14 +226,10 @@ contains
 
 subroutine update_atmos_radiation_physics (Atmos)
 !-----------------------------------------------------------------------
-  use fv_mp_mod, only: mp_reduce_sum, mp_reduce_maxloc, is_master
   implicit none
   type (atmos_data_type), intent(in) :: Atmos
 !--- local variables---
-    integer :: nb, jdat(8), rc, ierr, i, count
-    real(kind=8) :: to_hpa, pdiff, psum, pcount, maxabs, pmaxloc(7) ! must be kind=8 to match fv_mp_mod
-    integer :: isc, iec, jsc, jec, nlev, tile_num
-    logical :: p_hydro, hydro
+    integer :: nb, jdat(8), rc, ierr
 
     if (mpp_pe() == mpp_root_pe() .and. debug) write(6,*) "statein driver"
 !--- get atmospheric state from the dynamic core
@@ -363,17 +359,58 @@ subroutine update_atmos_radiation_physics (Atmos)
 
     endif
 
+    ! Per-timestep diagnostics must be after physics but before
+    ! flagging the first timestep.
+    call atmos_timestep_diagnostics(Atmos)
+    
+    ! Update flag for first time step of time integration
+    GFS_control%first_time_step = .false.
+
+!-----------------------------------------------------------------------
+ end subroutine update_atmos_radiation_physics
+! </SUBROUTINE>
+
+
+!#######################################################################
+! <SUBROUTINE NAME="atmos_timestep_diagnostics">
+!
+! <OVERVIEW>
+! Calculates per-timestep, domain-wide, diagnostic, information and
+! prints to stdout from master rank. Must be called after physics
+! update but before first_time_step flag is cleared.
+! </OVERVIEW>
+
+!   <TEMPLATE>
+!     call  atmos_timestep_diagnostics (Atmos)
+!   </TEMPLATE>
+
+! <INOUT NAME="Atmos" TYPE="type(atmos_data_type)">
+!   Derived-type variable that contains fields needed by the flux exchange module.
+!   These fields describe the atmospheric grid and are needed to
+!   compute/exchange fluxes with other component models.  All fields in this
+!   variable type are allocated for the global grid (without halo regions).
+! </INOUT>
+subroutine atmos_timestep_diagnostics(Atmos)
+  use mpi
+  implicit none
+  type (atmos_data_type), intent(in) :: Atmos
+!--- local variables---
+    integer :: i, nb, count, ierror
+    ! double precision ensures ranks and sums are not truncated
+    ! regardless of compilation settings
+    double precision :: pdiff, psum, pcount, maxabs, pmaxloc(7)
+    double precision :: sendbuf(2), recvbuf(2), global_average
+
     if(GFS_control%print_diff_pgr) then
       if(.not. GFS_control%first_time_step) then
-        ! Get tile number:
-        call atmosphere_control_data (isc, iec, jsc, jec, nlev, p_hydro, hydro, tile_num)
-        pmaxloc(1) = tile_num
-        pmaxloc(2:5) = 0
-        
-        ! Get pgr stats:
-        psum = 0
-        pcount = 0
-        maxabs = 0
+        pmaxloc = 0.0d0
+        recvbuf = 0.0d0
+        psum = 0.0d0
+        pcount = 0.0d0
+        maxabs = 0.0d0
+
+        ! Put pgr stats in pmaxloc, psum, and pcount:
+        pmaxloc(1) = GFS_Control%tile_num
         do nb = 1,ATM_block%nblks
           count = size(GFS_data(nb)%Statein%pgr)
           do i=1,count
@@ -389,33 +426,34 @@ subroutine update_atmos_radiation_physics (Atmos)
           pcount = pcount+count
         enddo
         
-        ! Sum pgr stats
-        call mp_reduce_sum(pcount)
-        call mp_reduce_sum(psum)
-        call mp_reduce_maxloc(maxabs,pmaxloc,size(pmaxloc))
+        ! Sum pgr stats from psum/pcount and convert to hPa/hour global avg:
+        sendbuf(1:2) = (/ psum, pcount /)
+        call MPI_Allreduce(sendbuf,recvbuf,2,MPI_DOUBLE_PRECISION,MPI_SUM,GFS_Control%communicator,ierror)
+        global_average = recvbuf(1)/recvbuf(2) * 36.0d0/GFS_control%dtp
+
+        ! Get the pmaxloc for the global maximum:
+        sendbuf(1:2) = (/ maxabs, dble(GFS_Control%me) /)
+        call MPI_Allreduce(sendbuf,recvbuf,1,MPI_2DOUBLE_PRECISION,MPI_MAXLOC,GFS_Control%communicator,ierror)
+        call MPI_Bcast(pmaxloc,size(pmaxloc),MPI_DOUBLE_PRECISION,nint(recvbuf(2)),GFS_Control%communicator,ierror)
         
-        if(is_master() .and. pcount>0) then
-          to_hpa = 3600.0/GFS_control%dtp * 1.0/100.0 ! convert Pa/timestep to hPa/hour
+        if(GFS_Control%me == GFS_Control%master) then
 2933      format('At forecast hour ',F9.3,' mean pgr change is ',F16.8,' hPa/hr')
 2934      format('  abs max change   ',F15.10,' bar  at  tile=',I0,' i=',I0,' j=',I0)
 2935      format('  pgr at that point',F15.10,' bar      lat=',F12.6,' lon=',F12.6)
-          print 2933, GFS_control%fhour, psum/pcount*to_hpa
-          print 2934, pmaxloc(4)*1e-5, nint(pmaxloc(1:3))
-          print 2935, pmaxloc(5)*1e-5, pmaxloc(6:7)*57.29577951308232 ! 180/pi
+          print 2933, GFS_control%fhour, global_average
+          print 2934, pmaxloc(4)*1d-5, nint(pmaxloc(1:3))
+          print 2935, pmaxloc(5)*1d-5, pmaxloc(6:7)*57.29577951308232d0 ! 180/pi
         endif
       endif
+      ! old_pgr is updated every timestep, including the first one where stats aren't printed:
       do nb = 1,ATM_block%nblks
         GFS_data(nb)%Intdiag%old_pgr=GFS_data(nb)%Statein%pgr
       enddo
     endif
-    
-    ! Update flag for first time step of time integration
-    GFS_control%first_time_step = .false.
 
 !-----------------------------------------------------------------------
- end subroutine update_atmos_radiation_physics
+end subroutine atmos_timestep_diagnostics
 ! </SUBROUTINE>
-
 
 !#######################################################################
 ! <SUBROUTINE NAME="atmos_model_init">
