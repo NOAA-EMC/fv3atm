@@ -398,7 +398,7 @@ subroutine atmos_timestep_diagnostics(Atmos)
     integer :: i, nb, count, ierror
     ! double precision ensures ranks and sums are not truncated
     ! regardless of compilation settings
-    double precision :: pdiff, psum, pcount, maxabs, pmaxloc(7)
+    double precision :: pdiff, psum, pcount, maxabs, pmaxloc(7), adiff
     double precision :: sendbuf(2), recvbuf(2), global_average
 
     if(GFS_control%print_diff_pgr) then
@@ -415,9 +415,10 @@ subroutine atmos_timestep_diagnostics(Atmos)
           count = size(GFS_data(nb)%Statein%pgr)
           do i=1,count
             pdiff = GFS_data(nb)%Statein%pgr(i)-GFS_data(nb)%Intdiag%old_pgr(i)
-            psum = psum+pdiff
-            if(abs(pdiff)>=maxabs) then
-              maxabs=abs(pdiff)
+            adiff = abs(pdiff)
+            psum = psum+adiff
+            if(adiff>=maxabs) then
+              maxabs=adiff
               pmaxloc(2:3)=(/ ATM_block%index(nb)%ii(i), ATM_block%index(nb)%jj(i) /)
               pmaxloc(4:7)=(/ pdiff, GFS_data(nb)%Statein%pgr(i), &
                    GFS_data(nb)%Grid%xlat(i), GFS_data(nb)%Grid%xlon(i) /)
@@ -437,7 +438,7 @@ subroutine atmos_timestep_diagnostics(Atmos)
         call MPI_Bcast(pmaxloc,size(pmaxloc),MPI_DOUBLE_PRECISION,nint(recvbuf(2)),GFS_Control%communicator,ierror)
         
         if(GFS_Control%me == GFS_Control%master) then
-2933      format('At forecast hour ',F9.3,' mean pgr change is ',F16.8,' hPa/hr')
+2933      format('At forecast hour ',F9.3,' mean abs pgr change is ',F16.8,' hPa/hr')
 2934      format('  abs max change   ',F15.10,' bar  at  tile=',I0,' i=',I0,' j=',I0)
 2935      format('  pgr at that point',F15.10,' bar      lat=',F12.6,' lon=',F12.6)
           print 2933, GFS_control%fhour, global_average
