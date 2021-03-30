@@ -657,20 +657,6 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[alb_ice]
-  standard_name =surface_snow_free_albedo_over_ice
-  long_name = surface snow-free albedo over ice
-  units = frac
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-[alb_snow_ice]
-  standard_name =surface_snow_albedo_over_ice
-  long_name = surface snow albedo over ice
-  units = frac
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
 [sfalb_lnd_bck]
   standard_name =surface_snow_free_albedo_over_land
   long_name = surface snow-free albedo over ice

@@ -244,8 +244,6 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: sfalb_ice (:) => null() !< surface albedo over ice for LSM
     real (kind=kind_phys), pointer :: emis_lnd (:)  => null() !< surface emissivity over land for LSM
     real (kind=kind_phys), pointer :: emis_ice (:)  => null() !< surface emissivity over ice for LSM
-    real (kind=kind_phys), pointer :: alb_ice  (:)  => null() !< snow-free albedo over ice
-    real (kind=kind_phys), pointer :: alb_snow_ice  (:) => null() !< snow albedo for snow on ice
     real (kind=kind_phys), pointer :: sfalb_lnd_bck (:) => null() !< snow-free albedo over land
 
 
@@ -2293,8 +2291,6 @@ module GFS_typedefs
     allocate (Sfcprop%emis_ice (IM))
     allocate (Sfcprop%sfalb_lnd (IM))
     allocate (Sfcprop%sfalb_ice (IM))
-    allocate (Sfcprop%alb_ice  (IM))
-    allocate (Sfcprop%alb_snow_ice  (IM))
     allocate (Sfcprop%sfalb_lnd_bck (IM))
 
     Sfcprop%slmsk     = clear_val
@@ -2320,8 +2316,6 @@ module GFS_typedefs
     Sfcprop%emis_ice  = clear_val
     Sfcprop%sfalb_lnd = clear_val
     Sfcprop%sfalb_ice = clear_val
-    Sfcprop%alb_ice   = clear_val
-    Sfcprop%alb_snow_ice = clear_val
     Sfcprop%sfalb_lnd_bck= clear_val
 
 !--- In (radiation only)
