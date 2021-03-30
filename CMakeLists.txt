@@ -47,8 +47,12 @@ list(APPEND _fv3dycore_srcs
   atmos_cubed_sphere/model/tp_core.F90
   atmos_cubed_sphere/model/nh_core.F90
   atmos_cubed_sphere/model/nh_utils.F90
+  atmos_cubed_sphere/tools/coarse_grained_diagnostics.F90
+  atmos_cubed_sphere/tools/coarse_grained_restart_files.F90
+  atmos_cubed_sphere/tools/coarse_graining.F90
   atmos_cubed_sphere/tools/external_ic.F90
   atmos_cubed_sphere/tools/external_sst.F90
+  atmos_cubed_sphere/tools/fv_diag_column.F90
   atmos_cubed_sphere/tools/fv_diagnostics.F90
   atmos_cubed_sphere/tools/fv_eta.F90
   atmos_cubed_sphere/tools/fv_grid_tools.F90
@@ -103,7 +107,8 @@ set_target_properties(fv3dycore PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURR
 
 target_compile_definitions(fv3dycore PRIVATE "${_fv3dycore_defs_private}")
 target_include_directories(fv3dycore PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/atmos_cubed_sphere
-                                             ${CMAKE_CURRENT_BINARY_DIR}/ccpp/driver/mod)
+                                              ${CMAKE_CURRENT_SOURCE_DIR}/atmos_cubed_sphere/tools
+                                              ${CMAKE_CURRENT_BINARY_DIR}/ccpp/driver/mod)
 target_include_directories(fv3dycore INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/mod>
                                                $<INSTALL_INTERFACE:mod>)
 
