@@ -189,7 +189,7 @@ module module_cap_cpl
           call NUOPC_Realize(state, field=field, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-          ! -- zero out field 
+          ! -- zero out field
           call ESMF_FieldFill(field, dataFillScheme="const", const1=0._ESMF_KIND_R8, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
@@ -211,16 +211,17 @@ module module_cap_cpl
   !-----------------------------------------------------------------------------
 
     subroutine diagnose_cplFields(gcomp, importState, exportstate, clock_fv3,    &
-         statewrite_flag, stdiagnose_flag, state_tag, timestr)
+                     fcstpe, statewrite_flag, stdiagnose_flag, state_tag, timestr)
 
       type(ESMF_GridComp), intent(in)       :: gcomp
       type(ESMF_State)                      :: importState, exportstate
       type(ESMF_Clock),intent(in)           :: clock_fv3
+      logical, intent(in)                   :: fcstpe
       logical, intent(in)                   :: statewrite_flag
       integer, intent(in)                   :: stdiagnose_flag
       character(len=*),         intent(in)  :: state_tag                        !< Import or export.
       character(len=*),         intent(in)  :: timestr                          !< Import or export.
-      integer                               :: timeslice = 1 
+      integer                               :: timeslice = 1
 !
       character(len=160) :: nuopcMsg
       character(len=160) :: filename
@@ -239,11 +240,11 @@ module module_cap_cpl
                            unit=nuopcMsg)
 !      call ESMF_LogWrite(nuopcMsg, ESMF_LOGMSG_INFO)
 
-      if(trim(state_tag) .eq. 'import')then 
+      if(trim(state_tag) .eq. 'import')then
         call ESMF_GridCompGet(gcomp, importState=importState, rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-        if(stdiagnose_flag > 0)then
+        if(stdiagnose_flag > 0 .and. fcstpe)then
          call state_diagnose(importState, ':IS', rc=rc)
         end if
 
@@ -259,7 +260,7 @@ module module_cap_cpl
         call ESMF_GridCompGet(gcomp, exportState=exportState, rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-        if(stdiagnose_flag > 0)then
+        if(stdiagnose_flag > 0 .and. fcstpe)then
          call state_diagnose(exportState, ':ES', rc=rc)
         end if
 
