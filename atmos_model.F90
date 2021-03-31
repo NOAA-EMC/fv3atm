@@ -260,9 +260,12 @@ subroutine update_atmos_radiation_physics (Atmos)
       call CCPP_step (step="timestep_init", nblks=Atm_block%nblks, ierr=ierr)
       if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP timestep_init step failed')
 
+      if (GFS_Control%do_sppt .or. GFS_Control%do_shum .or. GFS_Control%do_skeb .or. &
+          GFS_Control%lndp_type > 0  .or. GFS_Control%do_ca ) then
 !--- call stochastic physics pattern generation / cellular automata
-      call stochastic_physics_wrapper(GFS_control, GFS_data, Atm_block, ierr)
-      if (ierr/=0)  call mpp_error(FATAL, 'Call to stochastic_physics_wrapper failed')
+        call stochastic_physics_wrapper(GFS_control, GFS_data, Atm_block, ierr)
+        if (ierr/=0)  call mpp_error(FATAL, 'Call to stochastic_physics_wrapper failed')
+      endif
 
 !--- if coupled, assign coupled fields
 
@@ -334,14 +337,19 @@ subroutine update_atmos_radiation_physics (Atmos)
         call FV3GFS_GFS_checksum(GFS_control, GFS_data, Atm_block)
       endif
 
-      if (mpp_pe() == mpp_root_pe() .and. debug) write(6,*) "stochastic physics driver"
+      if (GFS_Control%do_sppt .or. GFS_Control%do_shum .or. GFS_Control%do_skeb .or. &
+          GFS_Control%lndp_type > 0  .or. GFS_Control%do_ca ) then
+
+        if (mpp_pe() == mpp_root_pe() .and. debug) write(6,*) "stochastic physics driver"
 
 !--- execute the IPD atmospheric physics step2 subcomponent (stochastic physics driver)
 
-      call mpp_clock_begin(physClock)
-      call CCPP_step (step="stochastics", nblks=Atm_block%nblks, ierr=ierr)
-      if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP stochastics step failed')
-      call mpp_clock_end(physClock)
+        call mpp_clock_begin(physClock)
+        call CCPP_step (step="stochastics", nblks=Atm_block%nblks, ierr=ierr)
+        if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP stochastics step failed')
+        call mpp_clock_end(physClock)
+
+      endif
 
       if (chksum_debug) then
         if (mpp_pe() == mpp_root_pe()) print *,'PHYSICS STEP2   ', GFS_control%kdt, GFS_control%fhour
@@ -601,9 +609,14 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    call CCPP_step (step="physics_init", nblks=Atm_block%nblks, ierr=ierr)
    if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP physics_init step failed')
 
+   if (GFS_Control%do_sppt .or. GFS_Control%do_shum .or. GFS_Control%do_skeb .or. &
+       GFS_Control%lndp_type > 0  .or. GFS_Control%do_ca ) then
+
 !--- Initialize stochastic physics pattern generation / cellular automata for first time step
-   call stochastic_physics_wrapper(GFS_control, GFS_data, Atm_block, ierr)
-   if (ierr/=0)  call mpp_error(FATAL, 'Call to stochastic_physics_wrapper failed')
+     call stochastic_physics_wrapper(GFS_control, GFS_data, Atm_block, ierr)
+     if (ierr/=0)  call mpp_error(FATAL, 'Call to stochastic_physics_wrapper failed')
+
+   endif
 
    !--- set the initial diagnostic timestamp
    diag_time = Time
@@ -882,9 +895,15 @@ subroutine atmos_model_end (Atmos)
     if(restart_endfcst) then
       call FV3GFS_restart_write (GFS_data, GFS_restart_var, Atm_block, &
                                  GFS_control, Atmos%domain)
-      call write_stoch_restart_atm('RESTART/atm_stoch.res.nc')
+!     call write_stoch_restart_atm('RESTART/atm_stoch.res.nc')
     endif
-    call stochastic_physics_wrapper_end(GFS_control)
+    if (GFS_Control%do_sppt .or. GFS_Control%do_shum .or. GFS_Control%do_skeb .or. &
+        GFS_Control%lndp_type > 0  .or. GFS_Control%do_ca ) then
+      if(restart_endfcst) then
+        call write_stoch_restart_atm('RESTART/atm_stoch.res.nc')
+      endif
+      call stochastic_physics_wrapper_end(GFS_control)
+    endif
 
 !   Fast physics (from dynamics) are finalized in atmosphere_end above;
 !   standard/slow physics (from IPD) are finalized in CCPP_step 'finalize'.
