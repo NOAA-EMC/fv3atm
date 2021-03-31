@@ -4,13 +4,9 @@
 	branch = dev/emc
 [submodule "ccpp/framework"]
 	path = ccpp/framework
-	#url = https://github.com/NCAR/ccpp-framework
-	#branch = master
-	url = https://github.com/climbfuji/ccpp-framework
-	branch = speedup_recompile_again_20210326
+	url = https://github.com/NCAR/ccpp-framework
+	branch = master
 [submodule "ccpp/physics"]
 	path = ccpp/physics
-	#url = https://github.com/NCAR/ccpp-physics
-	#branch = master
-	url = https://github.com/climbfuji/ccpp-physics
-	branch = update_thompson_mp_from_gsl_develop
+	url = https://github.com/NCAR/ccpp-physics
+	branch = master
