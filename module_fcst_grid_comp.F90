@@ -75,6 +75,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
                                 num_restart_interval, frestart, restart_endfcst,  &
                                 diagnostic
   use module_write_netcdf, only: write_grid_netcdf
+  use get_stochy_pattern_mod, only: write_stoch_restart_atm
 !
 !-----------------------------------------------------------------------
 !
@@ -847,6 +848,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
             atm_int_state%Time_restart = atm_int_state%Time_atstart + restart_inctime
             timestamp = date_to_string (atm_int_state%Time_restart)
             call atmos_model_restart(atm_int_state%Atm, timestamp)
+            call write_stoch_restart_atm('RESTART/'//trim(timestamp)//'.atm_stoch.res.nc')
 
             call wrt_atmres_timestamp(atm_int_state,timestamp)
           endif
