@@ -6,10 +6,8 @@
 	branch = nest_workaround_read_ccpp_suite_from_input_nml
 [submodule "ccpp/framework"]
 	path = ccpp/framework
-	#url = https://github.com/NCAR/ccpp-framework
-	#branch = master
-	url = https://github.com/climbfuji/ccpp-framework
-	branch = speedup_recompile_again_20210326
+	url = https://github.com/NCAR/ccpp-framework
+	branch = master
 [submodule "ccpp/physics"]
 	path = ccpp/physics
 	url = https://github.com/NCAR/ccpp-physics
