@@ -691,11 +691,12 @@ module GFS_typedefs
 
 !--- microphysical switch
     integer              :: ncld                           !< choice of cloud scheme
-    logical              :: convert_dry_rho = .false.      !< flag for converting number concentrations from moist to dry
+    logical              :: convert_dry_rho = .true.       !< flag for converting mass/number concentrations from moist to dry
+                                                           !< for physics options that expect dry mass/number concentrations;
                                                            !< this flag will no longer be needed once the CCPP standard
                                                            !< names and the CCPP framework logic have been augmented to
                                                            !< automatically determine whether such conversions are necessary
-                                                           !< and if yes, perform them; hardcoded to .false. for now
+                                                           !< and if yes, perform them; hardcoded to .true. for now
     !--- new microphysical switch
     integer              :: imp_physics                    !< choice of microphysics scheme
     integer              :: imp_physics_gfdl = 11          !< choice of GFDL     microphysics scheme
@@ -1070,11 +1071,15 @@ module GFS_typedefs
 
 !--- stochastic physics control parameters
     logical              :: do_sppt
+    logical              :: pert_clds
+    logical              :: pert_radtend
+    logical              :: pert_mp
     logical              :: use_zmtnblck
     logical              :: do_shum
     logical              :: do_skeb
     integer              :: skeb_npass
     integer              :: lndp_type
+    real(kind=kind_phys) :: sppt_amp          ! pjp cloud perturbations
     integer              :: n_var_lndp
     logical              :: lndp_each_step    ! flag to indicate that land perturbations are applied at every time step,
                                               ! otherwise they are applied only after gcycle is run
@@ -1288,7 +1293,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: acvt     (:)     => null()  !< arrays used by cnvc90 top (cnvc90.f)
 
 !--- Stochastic physics properties calculated in physics_driver
-    real (kind=kind_phys), pointer :: dtdtr     (:,:)  => null()  !< temperature change due to radiative heating per time step (K)
+    real (kind=kind_phys), pointer :: dtdtnp    (:,:)  => null()  !< temperature change from physics that should not be perturbed with SPPT (k)
     real (kind=kind_phys), pointer :: dtotprcp  (:)    => null()  !< change in totprcp  (diag_type)
     real (kind=kind_phys), pointer :: dcnvprcp  (:)    => null()  !< change in cnvprcp  (diag_type)
     real (kind=kind_phys), pointer :: drain_cpl (:)    => null()  !< change in rain_cpl (coupling_type)
@@ -1537,6 +1542,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: skebv_wts(:,:) => null()   !< 10 meter v wind speed
     real (kind=kind_phys), pointer :: sppt_wts(:,:)  => null()   !<
     real (kind=kind_phys), pointer :: shum_wts(:,:)  => null()   !<
+    real (kind=kind_phys), pointer :: sfc_wts(:,:)  => null()   !<
     real (kind=kind_phys), pointer :: zmtnblck(:)    => null()   !<mountain blocking evel
     real (kind=kind_phys), pointer :: du3dt (:,:,:)  => null()   !< u momentum change due to physics
     real (kind=kind_phys), pointer :: dv3dt (:,:,:)  => null()   !< v momentum change due to physics
@@ -1759,7 +1765,6 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: drain(:)           => null()  !<
     real (kind=kind_phys), pointer      :: drain_in_m_sm1(:)  => null()  !<
     real (kind=kind_phys), pointer      :: dtdt(:,:)          => null()  !<
-    real (kind=kind_phys), pointer      :: dtdtc(:,:)         => null()  !<
     real (kind=kind_phys), pointer      :: dtsfc1(:)          => null()  !<
     real (kind=kind_phys), pointer      :: dtzm(:)            => null()  !<
     real (kind=kind_phys), pointer      :: dt_mf(:,:)         => null()  !<
@@ -3388,6 +3393,9 @@ module GFS_typedefs
 
 !--- stochastic physics control parameters
     logical :: do_sppt      = .false.
+    logical :: pert_mp      = .false.
+    logical :: pert_clds    = .false.
+    logical :: pert_radtend = .true.
     logical :: use_zmtnblck = .false.
     logical :: do_shum      = .false.
     logical :: do_skeb      = .false.
@@ -3470,6 +3478,7 @@ module GFS_typedefs
                                dlqf, rbcr, shoc_parm, psauras, prauras, wminras,            &
                                do_sppt, do_shum, do_skeb,                                   &
                                lndp_type,  n_var_lndp, lndp_each_step,                      &
+                               pert_mp,pert_clds,pert_radtend,                              &
                           !--- Rayleigh friction
                                prslrd0, ral_ts,  ldiag_ugwp, do_ugwp, do_tofd,              &
                           ! --- Ferrier-Aligo
@@ -4150,6 +4159,9 @@ module GFS_typedefs
     ! physics that are parsed here and then compared in init_stochastic_physics
     ! to the stochastic physics namelist parametersto ensure consistency.
     Model%do_sppt          = do_sppt
+    Model%pert_mp          = pert_mp
+    Model%pert_clds        = pert_clds
+    Model%pert_radtend     = pert_radtend
     Model%use_zmtnblck     = use_zmtnblck
     Model%do_shum          = do_shum
     Model%do_skeb          = do_skeb
@@ -4242,7 +4254,9 @@ module GFS_typedefs
     endif
 
     ! -- setup aerosol scavenging factors
-    allocate(Model%fscav(Model%ntchm))
+    n = max(Model%ntrac, Model%ntchm)
+    allocate(Model%fscav(n))
+    Model%fscav = -9999.0
     if (Model%ntchm > 0) then
       ! -- initialize to default
       Model%fscav = 0.6_kind_phys
@@ -5170,6 +5184,9 @@ module GFS_typedefs
       print *, ' '
       print *, 'stochastic physics'
       print *, ' do_sppt           : ', Model%do_sppt
+      print *, ' pert_mp         : ', Model%pert_mp
+      print *, ' pert_clds       : ', Model%pert_clds
+      print *, ' pert_radtend    : ', Model%pert_radtend
       print *, ' do_shum           : ', Model%do_shum
       print *, ' do_skeb           : ', Model%do_skeb
       print *, ' lndp_type         : ', Model%lndp_type
@@ -5412,10 +5429,10 @@ module GFS_typedefs
     endif
 
     if (Model%do_sppt .or. Model%ca_global) then
-      allocate (Tbd%dtdtr     (IM,Model%levs))
+      allocate (Tbd%dtdtnp    (IM,Model%levs))
       allocate (Tbd%dtotprcp  (IM))
       allocate (Tbd%dcnvprcp  (IM))
-      Tbd%dtdtr     = clear_val
+      Tbd%dtdtnp    = clear_val
       Tbd%dtotprcp  = clear_val
       Tbd%dcnvprcp  = clear_val
     endif
@@ -5692,7 +5709,8 @@ module GFS_typedefs
     allocate (Diag%skebv_wts(IM,Model%levs))
     allocate (Diag%sppt_wts(IM,Model%levs))
     allocate (Diag%shum_wts(IM,Model%levs))
-    allocate (Diag%zmtnblck(IM))
+    allocate (Diag%sfc_wts(IM,Model%n_var_lndp))
+    allocate (Diag%zmtnblck(IM))    
     allocate (Diag%ca1      (IM))
     allocate (Diag%ca2      (IM))
     allocate (Diag%ca3      (IM))
@@ -5716,6 +5734,9 @@ module GFS_typedefs
       allocate (Diag%dt3dt  (IM,Model%levs,11))
       if (Model%qdiag3d) then
         allocate (Diag%dq3dt  (IM,Model%levs,13))
+        allocate (Diag%upd_mf (IM,Model%levs))
+        allocate (Diag%dwn_mf (IM,Model%levs))
+        allocate (Diag%det_mf (IM,Model%levs))
       else
         allocate (Diag%dq3dt  (1,1,13))
       endif
@@ -5766,7 +5787,8 @@ module GFS_typedefs
       allocate (Diag%tav_ugwp  (IM,Model%levs) )
     endif
 
-    if (Model%do_ugwp_v1 .or. Model%gwd_opt==33 .or. Model%gwd_opt==22) then
+    if (Model%do_ugwp_v1 .or. Model%gwd_opt==33 .or. Model%gwd_opt==22 &
+                         .or. Model%gwd_opt==3  .or. Model%gwd_opt==2) then
       allocate (Diag%dudt_ogw  (IM,Model%levs))
       allocate (Diag%dvdt_ogw  (IM,Model%levs))
       allocate (Diag%dudt_obl  (IM,Model%levs))
@@ -6013,9 +6035,9 @@ module GFS_typedefs
       Diag%dt3dt    = zero
       if (Model%qdiag3d) then
         Diag%dq3dt    = zero
-!        Diag%upd_mf   = zero
-!        Diag%dwn_mf   = zero
-!        Diag%det_mf   = zero
+        Diag%upd_mf   = zero
+        Diag%dwn_mf   = zero
+        Diag%det_mf   = zero
       endif
     endif
 
@@ -6033,7 +6055,8 @@ module GFS_typedefs
     Diag%dtdt_gw     = zero
     Diag%kdis_gw     = zero
 
-    if (Model%do_ugwp_v1 .or. Model%gwd_opt==33 .or. Model%gwd_opt==22) then
+    if (Model%do_ugwp_v1 .or. Model%gwd_opt==33 .or. Model%gwd_opt==22 &
+                         .or. Model%gwd_opt==3  .or. Model%gwd_opt==2) then
       Diag%dudt_ogw    = zero
       Diag%dvdt_ogw    = zero
       Diag%dudt_obl    = zero
@@ -6276,7 +6299,6 @@ module GFS_typedefs
     allocate (Interstitial%dqsfc1          (IM))
     allocate (Interstitial%drain           (IM))
     allocate (Interstitial%dtdt            (IM,Model%levs))
-    allocate (Interstitial%dtdtc           (IM,Model%levs))
     allocate (Interstitial%dtsfc1          (IM))
     allocate (Interstitial%dt_mf           (IM,Model%levs))
     allocate (Interstitial%dtzm            (IM))
@@ -6521,7 +6543,8 @@ module GFS_typedefs
     allocate (Interstitial%zngw            (IM)           )
 
 ! CIRES UGWP v1
-    if (Model%do_ugwp_v1) then
+    if (Model%do_ugwp_v1 .or. Model%gwd_opt==33 .or. Model%gwd_opt==22 &
+                         .or. Model%gwd_opt==3  .or. Model%gwd_opt==2) then
       allocate (Interstitial%dudt_ngw        (IM,Model%levs))
       allocate (Interstitial%dvdt_ngw        (IM,Model%levs))
       allocate (Interstitial%dtdt_ngw        (IM,Model%levs))
@@ -6970,7 +6993,6 @@ module GFS_typedefs
     Interstitial%drain           = clear_val
     Interstitial%dt_mf           = clear_val
     Interstitial%dtdt            = clear_val
-    Interstitial%dtdtc           = clear_val
     Interstitial%dtsfc1          = clear_val
     Interstitial%dtzm            = clear_val
     Interstitial%dudt            = clear_val
@@ -7135,7 +7157,8 @@ module GFS_typedefs
     Interstitial%zngw            = clear_val
 
 ! CIRES UGWP v1
-    if (Model%do_ugwp_v1) then
+    if (Model%do_ugwp_v1 .or. Model%gwd_opt==33 .or. Model%gwd_opt==22 &
+                         .or. Model%gwd_opt==3  .or. Model%gwd_opt==2) then
       Interstitial%dudt_ngw        = clear_val
       Interstitial%dvdt_ngw        = clear_val
       Interstitial%dtdt_ngw        = clear_val
@@ -7322,7 +7345,6 @@ module GFS_typedefs
     write (0,*) 'sum(Interstitial%dqsfc1          ) = ', sum(Interstitial%dqsfc1          )
     write (0,*) 'sum(Interstitial%drain           ) = ', sum(Interstitial%drain           )
     write (0,*) 'sum(Interstitial%dtdt            ) = ', sum(Interstitial%dtdt            )
-    write (0,*) 'sum(Interstitial%dtdtc           ) = ', sum(Interstitial%dtdtc           )
     write (0,*) 'sum(Interstitial%dtsfc1          ) = ', sum(Interstitial%dtsfc1          )
     write (0,*) 'sum(Interstitial%dtzm            ) = ', sum(Interstitial%dtzm            )
     write (0,*) 'sum(Interstitial%dt_mf           ) = ', sum(Interstitial%dt_mf           )
