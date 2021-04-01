@@ -439,7 +439,7 @@ subroutine atmos_timestep_diagnostics(Atmos)
         
         if(GFS_Control%me == GFS_Control%master) then
 2933      format('At forecast hour ',F9.3,' mean abs pgr change is ',F16.8,' hPa/hr')
-2934      format('  abs max change   ',F15.10,' bar  at  tile=',I0,' i=',I0,' j=',I0)
+2934      format('  max abs change   ',F15.10,' bar  at  tile=',I0,' i=',I0,' j=',I0)
 2935      format('  pgr at that point',F15.10,' bar      lat=',F12.6,' lon=',F12.6)
           print 2933, GFS_control%fhour, global_average
           print 2934, pmaxloc(4)*1d-5, nint(pmaxloc(1:3))
