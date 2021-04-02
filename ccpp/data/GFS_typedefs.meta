@@ -6945,6 +6945,13 @@
   dimensions = (horizontal_loop_extent,adjusted_vertical_layer_dimension_for_radiation)
   type = real
   kind = kind_phys
+[dkudiagnostic]
+  standard_name = atmosphere_momentum_diffusivity
+  long_name = diffusivity for momentum
+  units = m2 s-1
+  dimensions = (horizontal_loop_extent,vertical_dimension_minus_one)
+  type = real
+  kind = kind_phys
 [ndust]
   standard_name = number_of_dust_bins_for_diagnostics
   long_name = number of dust bins for diagnostics
