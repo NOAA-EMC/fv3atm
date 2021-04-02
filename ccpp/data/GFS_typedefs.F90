@@ -2283,9 +2283,9 @@ module GFS_typedefs
     Sfcprop%tiice     = clear_val
     Sfcprop%snowd     = clear_val
     Sfcprop%zorl      = clear_val
-    Sfcprop%zorlo     = huge
-    Sfcprop%zorll     = huge
-    Sfcprop%zorli     = huge
+    Sfcprop%zorlo     = clear_val
+    Sfcprop%zorll     = clear_val
+    Sfcprop%zorli     = clear_val
     Sfcprop%zorlw     = clear_val
     Sfcprop%fice      = clear_val
 !   Sfcprop%hprim     = clear_val
