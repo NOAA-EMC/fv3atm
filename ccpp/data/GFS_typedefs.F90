@@ -1146,9 +1146,10 @@ module GFS_typedefs
     integer              :: npsdelt         !< the index of surface air pressure at the previous timestep for Z-C MP in phy_f2d
     integer              :: ncnvwind        !< the index of surface wind enhancement due to convection for MYNN SFC and RAS CNV in phy f2d
 
-!--- debug flag
+!--- debug flags
     logical              :: debug
     logical              :: pre_rad         !< flag for testing purpose
+    logical              :: print_diff_pgr  !< print average change in pgr every timestep (does not need debug flag)
 
 !--- variables modified at each time step
     integer              :: ipt             !< index for diagnostic printout point
@@ -1676,6 +1677,7 @@ module GFS_typedefs
                                                                !< for black carbon, organic carbon, and sulfur dioxide         ( ug/m**2/s )
     real (kind=kind_phys), pointer :: aecm  (:,:) => null()    !< instantaneous aerosol column mass densities for
                                                                !< pm2.5, black carbon, organic carbon, sulfate, dust, sea salt ( g/m**2 )
+    real (kind=kind_phys), pointer :: old_pgr(:) => null()     !< pgr at last timestep
 
     ! Auxiliary output arrays for debugging
     real (kind=kind_phys), pointer :: aux2d(:,:)  => null()    !< auxiliary 2d arrays in output (for debugging)
@@ -3380,9 +3382,10 @@ module GFS_typedefs
     logical  :: iau_filter_increments         = .false.     !< filter IAU increments
     logical  :: iau_drymassfixer              = .false.     !< IAU dry mass fixer
 
-!--- debug flag
+!--- debug flags
     logical              :: debug          = .false.
     logical              :: pre_rad        = .false.         !< flag for testing purpose
+    logical              :: print_diff_pgr = .false.         !< print average change in pgr every timestep
 
 !  max and min lon and lat for critical relative humidity
     integer :: max_lon=5000, max_lat=2000, min_lon=192, min_lat=94
@@ -3506,7 +3509,7 @@ module GFS_typedefs
                                iau_delthrs,iaufhrs,iau_inc_files,iau_filter_increments,     &
                                iau_drymassfixer,                                            &
                           !--- debug options
-                               debug, pre_rad,                                              &
+                               debug, pre_rad, print_diff_pgr,                              &
                           !--- parameter range for critical relative humidity
                                max_lon, max_lat, min_lon, min_lat, rhcmax,                  &
                                phys_version,                                                &
@@ -4198,9 +4201,10 @@ module GFS_typedefs
     Model%iau_drymassfixer = iau_drymassfixer
     if(Model%me==0) print *,' model init,iaufhrs=',Model%iaufhrs
 
-!--- debug flag
+!--- debug flags
     Model%debug            = debug
     Model%pre_rad          = pre_rad
+    Model%print_diff_pgr   = print_diff_pgr
 
 !--- tracer handling
     Model%ntrac            = size(tracer_names)
@@ -5609,6 +5613,11 @@ module GFS_typedefs
 
 !
     logical, save :: linit
+
+    if(Model%print_diff_pgr) then
+      allocate(Diag%old_pgr(IM))
+      Diag%old_pgr = clear_val
+    endif
 
     !--- Radiation
     allocate (Diag%fluxr   (IM,Model%nfxr))

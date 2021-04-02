@@ -4637,6 +4637,12 @@
   units = flag
   dimensions = ()
   type = logical
+[print_diff_pgr]
+  standard_name = flag_to_print_pgr_differences_every_timestep
+  long_name = flag to print pgr differences every timestep
+  units = flag
+  dimensions = ()
+  type = logical
 [ipt]
   standard_name = index_for_diagnostic_printout
   long_name = horizontal index for point used for diagnostic printout
@@ -7410,6 +7416,13 @@
   type = real
   kind = kind_phys
   active = (number_of_2d_auxiliary_arrays > 0)
+[old_pgr]
+  standard_name = surface_air_pressure_from_previous_timestep
+  long_name = surface air pressure from previous timestep
+  units = Pa
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
 
 ########################################################################
 [ccpp-table-properties]
