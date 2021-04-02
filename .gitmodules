@@ -10,5 +10,5 @@
 	path = ccpp/physics
 	#url = https://github.com/NCAR/ccpp-physics
 	#branch = master
-	url = https://github.com/AnningCheng-NOAA/ccpp-physics
-	branch = merra2
+	url = https://github.com/climbfuji/ccpp-physics
+	branch = threading_aerosol_interp_noahmp_init
