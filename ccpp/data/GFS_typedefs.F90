@@ -231,7 +231,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: tiice(:,:)   => null()  !< internal ice temperature
     real (kind=kind_phys), pointer :: snowd  (:)   => null()  !< snow depth water equivalent in mm ; same as snwdph
     real (kind=kind_phys), pointer :: zorl   (:)   => null()  !< composite surface roughness in cm
-    real (kind=kind_phys), pointer :: zorlo  (:)   => null()  !< ocean surface roughness in cm
+    real (kind=kind_phys), pointer :: zorlw  (:)   => null()  !< water surface roughness in cm
     real (kind=kind_phys), pointer :: zorll  (:)   => null()  !< land surface roughness in cm
     real (kind=kind_phys), pointer :: zorli  (:)   => null()  !< ice  surface roughness in cm
     real (kind=kind_phys), pointer :: zorlwav(:)   => null()  !< wave surface roughness in cm
@@ -2273,7 +2273,7 @@ module GFS_typedefs
     allocate (Sfcprop%tiice    (IM,Model%kice))
     allocate (Sfcprop%snowd    (IM))
     allocate (Sfcprop%zorl     (IM))
-    allocate (Sfcprop%zorlo    (IM))
+    allocate (Sfcprop%zorlw    (IM))
     allocate (Sfcprop%zorll    (IM))
     allocate (Sfcprop%zorli    (IM))
     allocate (Sfcprop%zorlwav  (IM))
@@ -2293,7 +2293,7 @@ module GFS_typedefs
     Sfcprop%tiice     = clear_val
     Sfcprop%snowd     = clear_val
     Sfcprop%zorl      = clear_val
-    Sfcprop%zorlo     = clear_val
+    Sfcprop%zorlw     = clear_val
     Sfcprop%zorll     = clear_val
     Sfcprop%zorli     = clear_val
     Sfcprop%zorlwav   = clear_val

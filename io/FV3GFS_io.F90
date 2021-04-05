@@ -955,7 +955,7 @@ module FV3GFS_io_mod
         Sfcprop(nb)%tsfco(ix)  = sfc_var2(i,j,2)    !--- tsfc (tsea in sfc file)
         Sfcprop(nb)%weasd(ix)  = sfc_var2(i,j,3)    !--- weasd (sheleg in sfc file)
         Sfcprop(nb)%tg3(ix)    = sfc_var2(i,j,4)    !--- tg3
-        Sfcprop(nb)%zorlo(ix)  = sfc_var2(i,j,5)    !--- zorl on ocean
+        Sfcprop(nb)%zorlw(ix)  = sfc_var2(i,j,5)    !--- zorl on water
         Sfcprop(nb)%alvsf(ix)  = sfc_var2(i,j,6)    !--- alvsf
         Sfcprop(nb)%alvwf(ix)  = sfc_var2(i,j,7)    !--- alvwf
         Sfcprop(nb)%alnsf(ix)  = sfc_var2(i,j,8)    !--- alnsf
@@ -989,13 +989,13 @@ module FV3GFS_io_mod
           Sfcprop(nb)%zorli(ix)  = sfc_var2(i,j,35) !--- zorll (zorl on ice  portion of a cell)
 !       else
 !         Sfcprop(nb)%tsfcl(ix)  = Sfcprop(nb)%tsfco(ix)
-!         Sfcprop(nb)%zorll(ix)  = Sfcprop(nb)%zorlo(ix)
-!         Sfcprop(nb)%zorli(ix)  = Sfcprop(nb)%zorlo(ix)
+!         Sfcprop(nb)%zorll(ix)  = Sfcprop(nb)%zorlw(ix)
+!         Sfcprop(nb)%zorli(ix)  = Sfcprop(nb)%zorlw(ix)
 !       endif
         if(Model%cplwav) then
           Sfcprop(nb)%zorlwav(ix)  = sfc_var2(i,j,nvar_s2m) !--- (zorw  from wave model)
         else
-          Sfcprop(nb)%zorlwav(ix)  = Sfcprop(nb)%zorlo(ix)
+          Sfcprop(nb)%zorlwav(ix)  = Sfcprop(nb)%zorlw(ix)
         endif
 
         if(Model%frac_grid) then ! obtain slmsk from landfrac
@@ -1216,7 +1216,7 @@ module FV3GFS_io_mod
 !$omp parallel do default(shared) private(nb, ix)
         do nb = 1, Atm_block%nblks
           do ix = 1, Atm_block%blksz(nb)
-            Sfcprop(nb)%zorll(ix) = Sfcprop(nb)%zorlo(ix) !--- compute zorll from existing variables
+            Sfcprop(nb)%zorll(ix) = Sfcprop(nb)%zorlw(ix) !--- compute zorll from existing variables
           enddo
         enddo
       endif
@@ -1226,7 +1226,7 @@ module FV3GFS_io_mod
 !$omp parallel do default(shared) private(nb, ix)
         do nb = 1, Atm_block%nblks
           do ix = 1, Atm_block%blksz(nb)
-            Sfcprop(nb)%zorli(ix) = Sfcprop(nb)%zorlo(ix) !--- compute zorli from existing variables
+            Sfcprop(nb)%zorli(ix) = Sfcprop(nb)%zorlw(ix) !--- compute zorli from existing variables
           enddo
         enddo
       endif
@@ -1236,7 +1236,7 @@ module FV3GFS_io_mod
 !$omp parallel do default(shared) private(nb, ix)
         do nb = 1, Atm_block%nblks
           do ix = 1, Atm_block%blksz(nb)
-            Sfcprop(nb)%zorlwav(ix) = Sfcprop(nb)%zorlo(ix) !--- compute zorlwav from existing variables
+            Sfcprop(nb)%zorlwav(ix) = Sfcprop(nb)%zorlw(ix) !--- compute zorlwav from existing variables
           enddo
         enddo
       endif
@@ -1250,7 +1250,7 @@ module FV3GFS_io_mod
           tem  = tem1 * Sfcprop(nb)%fice(ix) ! tem = ice fraction wrt whole cell
           Sfcprop(nb)%zorl(ix) = Sfcprop(nb)%zorll(ix) * Sfcprop(nb)%landfrac(ix) &
                                + Sfcprop(nb)%zorli(ix) * tem                      &
-                               + Sfcprop(nb)%zorlo(ix) * (tem1-tem)
+                               + Sfcprop(nb)%zorlw(ix) * (tem1-tem)
 
           Sfcprop(nb)%tsfc(ix) = Sfcprop(nb)%tsfcl(ix) * Sfcprop(nb)%landfrac(ix) &
                                + Sfcprop(nb)%tisfc(ix) * tem                      &
@@ -1262,18 +1262,18 @@ module FV3GFS_io_mod
 !$omp parallel do default(shared) private(nb, ix, tem)
         do nb = 1, Atm_block%nblks
           do ix = 1, Atm_block%blksz(nb)
-      !--- specify tsfcl/zorll/zorli from existing variable tsfco/zorlo
+      !--- specify tsfcl/zorll/zorli from existing variable tsfco/zorlw
 !           Sfcprop(nb)%tsfcl(ix) = Sfcprop(nb)%tsfco(ix)
-!           Sfcprop(nb)%zorll(ix) = Sfcprop(nb)%zorlo(ix)
-!           Sfcprop(nb)%zorli(ix) = Sfcprop(nb)%zorlo(ix)
-!           Sfcprop(nb)%zorl(ix)  = Sfcprop(nb)%zorlo(ix)
+!           Sfcprop(nb)%zorll(ix) = Sfcprop(nb)%zorlw(ix)
+!           Sfcprop(nb)%zorli(ix) = Sfcprop(nb)%zorlw(ix)
+!           Sfcprop(nb)%zorl(ix)  = Sfcprop(nb)%zorlw(ix)
             if (Sfcprop(nb)%slmsk(ix) == 1) then
               Sfcprop(nb)%zorl(ix) = Sfcprop(nb)%zorll(ix) 
               Sfcprop(nb)%tsfc(ix) = Sfcprop(nb)%tsfcl(ix)
             else
               tem = one - Sfcprop(nb)%fice(ix)
               Sfcprop(nb)%zorl(ix) = Sfcprop(nb)%zorli(ix) * Sfcprop(nb)%fice(ix) &
-                                   + Sfcprop(nb)%zorlo(ix) * tem
+                                   + Sfcprop(nb)%zorlw(ix) * tem
               Sfcprop(nb)%tsfc(ix) = Sfcprop(nb)%tisfc(ix) * Sfcprop(nb)%fice(ix) &
                                    + Sfcprop(nb)%tsfco(ix) * tem
             endif
@@ -1283,7 +1283,7 @@ module FV3GFS_io_mod
 !$omp parallel do default(shared) private(nb, ix, tem)
         do nb = 1, Atm_block%nblks
           do ix = 1, Atm_block%blksz(nb)
-      !--- specify tsfcl/zorll/zorli from existing variable tsfco/zorlo
+      !--- specify tsfcl/zorll/zorli from existing variable tsfco/zorlw
             Sfcprop(nb)%tsfc(ix)  = Sfcprop(nb)%tsfco(ix)
             if (Sfcprop(nb)%slmsk(ix) == 1) then
               Sfcprop(nb)%zorl(ix) = Sfcprop(nb)%zorll(ix)
@@ -1291,7 +1291,7 @@ module FV3GFS_io_mod
             else
               tem = one - Sfcprop(nb)%fice(ix)
               Sfcprop(nb)%zorl(ix) = Sfcprop(nb)%zorli(ix) * Sfcprop(nb)%fice(ix) &
-                                   + Sfcprop(nb)%zorlo(ix) * tem
+                                   + Sfcprop(nb)%zorlw(ix) * tem
               if (Sfcprop(nb)%fice(ix) > min(Model%min_seaice,Model%min_lakeice)) then
                 Sfcprop(nb)%tsfc(ix) = Sfcprop(nb)%tsfcl(ix)
               endif
@@ -1621,7 +1621,7 @@ module FV3GFS_io_mod
         sfc_var2(i,j,1)  = Sfcprop(nb)%slmsk(ix) !--- slmsk
 !       if (Model%frac_grid) then
           sfc_var2(i,j,2) = Sfcprop(nb)%tsfco(ix) !--- tsfc (tsea in sfc file)
-          sfc_var2(i,j,5) = Sfcprop(nb)%zorlo(ix) !--- zorlo
+          sfc_var2(i,j,5) = Sfcprop(nb)%zorlw(ix) !--- zorlw
 !       else
 !         sfc_var2(i,j,2) = Sfcprop(nb)%tsfc(ix)  !--- tsfc (tsea in sfc file)
 !         sfc_var2(i,j,5) = Sfcprop(nb)%zorl(ix)  !--- zorl

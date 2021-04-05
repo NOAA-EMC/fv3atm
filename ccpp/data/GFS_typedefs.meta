@@ -543,7 +543,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[zorlo]
+[zorlw]
   standard_name = surface_roughness_length_over_water
   long_name = surface roughness length over water
   units = cm
