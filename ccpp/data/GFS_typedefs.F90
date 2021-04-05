@@ -234,7 +234,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: zorlo  (:)   => null()  !< ocean surface roughness in cm
     real (kind=kind_phys), pointer :: zorll  (:)   => null()  !< land surface roughness in cm
     real (kind=kind_phys), pointer :: zorli  (:)   => null()  !< ice  surface roughness in cm
-    real (kind=kind_phys), pointer :: zorlw  (:)   => null()  !< wave surface roughness in cm
+    real (kind=kind_phys), pointer :: zorlwav(:)   => null()  !< wave surface roughness in cm
     real (kind=kind_phys), pointer :: fice   (:)   => null()  !< ice fraction over open water grid
 !   real (kind=kind_phys), pointer :: hprim  (:)   => null()  !< topographic standard deviation in m
     real (kind=kind_phys), pointer :: hprime (:,:) => null()  !< orographic metrics
@@ -2276,7 +2276,7 @@ module GFS_typedefs
     allocate (Sfcprop%zorlo    (IM))
     allocate (Sfcprop%zorll    (IM))
     allocate (Sfcprop%zorli    (IM))
-    allocate (Sfcprop%zorlw    (IM))
+    allocate (Sfcprop%zorlwav  (IM))
     allocate (Sfcprop%fice     (IM))
 !   allocate (Sfcprop%hprim    (IM))
     allocate (Sfcprop%hprime   (IM,Model%nmtvr))
@@ -2296,7 +2296,7 @@ module GFS_typedefs
     Sfcprop%zorlo     = clear_val
     Sfcprop%zorll     = clear_val
     Sfcprop%zorli     = clear_val
-    Sfcprop%zorlw     = clear_val
+    Sfcprop%zorlwav   = clear_val
     Sfcprop%fice      = clear_val
 !   Sfcprop%hprim     = clear_val
     Sfcprop%hprime    = clear_val

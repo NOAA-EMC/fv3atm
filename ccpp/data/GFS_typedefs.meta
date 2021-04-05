@@ -564,7 +564,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[zorlw]
+[zorlwav]
   standard_name = surface_roughness_length_from_wave_model
   long_name = surface roughness length from wave model
   units = cm
