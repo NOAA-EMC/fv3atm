@@ -6,7 +6,6 @@ target_include_directories(stochastic_physics_wrapper PRIVATE ${CMAKE_BINARY_DIR
 target_include_directories(stochastic_physics_wrapper PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/mod>)
 target_link_libraries(stochastic_physics_wrapper PUBLIC fms
                                                         stochastic_physics
-                                                        gfsphysics
                                                         fv3dycore)
 
 if(OpenMP_Fortran_FOUND)

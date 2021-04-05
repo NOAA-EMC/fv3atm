@@ -2,22 +2,22 @@
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !-----------------------------------------------------------------------
 !
-module post_gfs
+module inline_post
 
   use module_fv3_io_def,    only : wrttasks_per_group,filename_base
   use write_internal_state, only : wrt_internal_state
 
   implicit none
 
-  public  post_run_gfs, post_getattr_gfs
+  public  inline_post_run, inline_post_getattr
 
   contains
 
-  subroutine post_run_gfs(wrt_int_state,mypei,mpicomp,lead_write,      &
+  subroutine inline_post_run(wrt_int_state,mypei,mpicomp,lead_write,      &
              mynfhr,mynfmin,mynfsec)
 !
 !  revision history:
-!     Jul 2019    J. Wang      create interface to run inline post for FV3
+!     Oct 2020    J. Wang      create interface to run inline post
 !
 !
 !-----------------------------------------------------------------------
@@ -34,25 +34,22 @@ module post_gfs
       integer,intent(in)                        :: mynfmin
       integer,intent(in)                        :: mynfsec
 !
-      print *,'in stub post_run_gfs - not supported on this machine, return'
+      print *,'in stub inline_post_run - not supported on this machine, return'
 !
-    end subroutine post_run_gfs
+    end subroutine inline_post_run
 !
 !-----------------------------------------------------------------------
 !
-    subroutine post_getattr_gfs(wrt_int_state, fldbundle)
-!
-      use esmf
+    subroutine inline_post_getattr(wrt_int_state)
 !
       implicit none
 !
       type(wrt_internal_state),intent(inout)    :: wrt_int_state
-      type(ESMF_FieldBundle), intent(in)        :: fldbundle
 !
 !
-      print *,'in stub post_getattr_gfs - not supported on this machine, return'
+      print *,'in stub inline_post_getattr - not supported on this machine, return'
 !
-    end subroutine post_getattr_gfs
+    end subroutine inline_post_getattr
 
 
-    end module post_gfs
+    end module inline_post

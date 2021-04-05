@@ -1,9 +1,9 @@
 list(APPEND _io_defs_private use_WRTCOMP)
 
 if(INLINE_POST)
-  set(POST_SRC post_gfs.F90 post_nems_routines.F90)
+  set(POST_SRC inline_post.F90 post_nems_routines.F90 post_gfs.F90 post_regional.F90)
 else()
-  set(POST_SRC post_gfs_stub.F90)
+  set(POST_SRC inline_post_stub.F90)
   list(APPEND _io_defs_private NO_INLINE_POST)
 endif()
 
@@ -32,7 +32,6 @@ target_compile_definitions(io PRIVATE "${_io_defs_private}")
 target_include_directories(io PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/mod>)
 
 target_link_libraries(io PRIVATE fms
-                                 gfsphysics
                                  ccppdriver)
 
 if(INLINE_POST)

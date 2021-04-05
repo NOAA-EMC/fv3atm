@@ -101,6 +101,10 @@ module GFS_restart
     if (Model%imfdeepcnv == 3) then
       Restart%num2d = Restart%num2d + 1
     endif
+    ! NoahMP
+    if (Model%lsm == Model%lsm_noahmp) then
+      Restart%num2d = Restart%num2d + 10
+    endif
     ! RUC 
     if (Model%lsm == Model%lsm_ruc) then
       Restart%num2d = Restart%num2d + 5
@@ -188,6 +192,59 @@ module GFS_restart
       Restart%name2d(num) = 'gf_2d_conv_act'
       do nb = 1,nblks
         Restart%data(nb,num)%var2p => Sfcprop(nb)%conv_act(:)
+      enddo
+    endif
+    ! NoahMP
+    if (Model%lsm == Model%lsm_noahmp) then
+      num = num + 1
+      Restart%name2d(num) = 'noahmp_2d_raincprv'
+      do nb = 1,nblks
+        Restart%data(nb,num)%var2p => Sfcprop(nb)%raincprv(:)
+      enddo
+      num = num + 1
+      Restart%name2d(num) = 'noahmp_2d_rainncprv'
+      do nb = 1,nblks
+        Restart%data(nb,num)%var2p => Sfcprop(nb)%rainncprv(:)
+      enddo
+      num = num + 1
+      Restart%name2d(num) = 'noahmp_2d_iceprv'
+      do nb = 1,nblks
+        Restart%data(nb,num)%var2p => Sfcprop(nb)%iceprv(:)
+      enddo
+      num = num + 1
+      Restart%name2d(num) = 'noahmp_2d_snowprv'
+      do nb = 1,nblks
+        Restart%data(nb,num)%var2p => Sfcprop(nb)%snowprv(:)
+      enddo
+      num = num + 1
+      Restart%name2d(num) = 'noahmp_2d_graupelprv'
+      do nb = 1,nblks
+        Restart%data(nb,num)%var2p => Sfcprop(nb)%graupelprv(:)
+      enddo
+      num = num + 1
+      Restart%name2d(num) = 'noahmp_2d_draincprv'
+      do nb = 1,nblks
+        Restart%data(nb,num)%var2p => Sfcprop(nb)%draincprv(:)
+      enddo
+      num = num + 1
+      Restart%name2d(num) = 'noahmp_2d_drainncprv'
+      do nb = 1,nblks
+        Restart%data(nb,num)%var2p => Sfcprop(nb)%drainncprv(:)
+      enddo
+      num = num + 1
+      Restart%name2d(num) = 'noahmp_2d_diceprv'
+      do nb = 1,nblks
+        Restart%data(nb,num)%var2p => Sfcprop(nb)%diceprv(:)
+      enddo
+      num = num + 1
+      Restart%name2d(num) = 'noahmp_2d_dsnowprv'
+      do nb = 1,nblks
+        Restart%data(nb,num)%var2p => Sfcprop(nb)%dsnowprv(:)
+      enddo
+      num = num + 1
+      Restart%name2d(num) = 'noahmp_2d_dgraupelprv'
+      do nb = 1,nblks
+        Restart%data(nb,num)%var2p => Sfcprop(nb)%dgraupelprv(:)
       enddo
     endif
     ! RUC 
