@@ -11,4 +11,4 @@
 	#url = https://github.com/NCAR/ccpp-physics
 	#branch = master
 	url = https://github.com/climbfuji/ccpp-physics
-	branch = remove_zorl_interstitial
+	branch = rename_surface_composites_ocean_water
