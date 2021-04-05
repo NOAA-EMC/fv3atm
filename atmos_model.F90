@@ -1614,9 +1614,9 @@ end subroutine atmos_data_type_chksum
                     tem = 100.0_GFS_kind_phys * min(0.1_GFS_kind_phys, datar8(i,j))
 !                   GFS_data(nb)%Coupling%zorlwav_cpl(ix) = tem
                     GFS_data(nb)%Sfcprop%zorlo(ix)        = tem
-                    GFS_data(nb)%Sfcprop%zorlw(ix)        = tem
+                    GFS_data(nb)%Sfcprop%zorlwav(ix)      = tem
                   else
-                    GFS_data(nb)%Sfcprop%zorlw(ix) = -999.0_GFS_kind_phys
+                    GFS_data(nb)%Sfcprop%zorlwav(ix) = -999.0_GFS_kind_phys
 
                   endif
                 enddo
