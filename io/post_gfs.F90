@@ -212,7 +212,7 @@ module post_gfs
 !
 !-----------------------------------------------------------------------
 !
-    subroutine post_getattr_gfs(wrt_int_state, fldbundle)
+    subroutine post_getattr_gfs(wrt_int_state)
 !
       use esmf
       use ctlblk_mod,           only: im, jm, mpi_comm_comp
@@ -223,10 +223,9 @@ module post_gfs
       implicit none
 !
       type(wrt_internal_state),intent(inout)    :: wrt_int_state
-      type(ESMF_FieldBundle), intent(in)        :: fldbundle
 !
 ! local variable
-      integer i,j,k,n,kz, attcount
+      integer i,j,k,n,kz, attcount, nfb
       integer ni,naryi,nr4,nr8,rc
       integer aklen,varival
       real(4) varr4val
@@ -235,7 +234,12 @@ module post_gfs
       type(ESMF_TypeKind_Flag)           :: typekind
       real(4), dimension(:), allocatable :: ak4,bk4
       real(8), dimension(:), allocatable :: ak8,bk8
+      type(ESMF_FieldBundle)             :: fldbundle
 !
+! field bundle
+     do nfb=1, wrt_int_state%FBcount
+       fldbundle = wrt_int_state%wrtFB(nfb) 
+
 ! look at the field bundle attributes
       call ESMF_AttributeGet(fldbundle, convention="NetCDF", purpose="FV3", &
         attnestflag=ESMF_ATTNEST_OFF, Count=attcount, rc=rc)
@@ -311,6 +315,8 @@ module post_gfs
         endif
 !
       enddo
+!
+      enddo !end nfb
 !      print *,'in post_getattr, dtp=',wrt_int_state%dtp
 !
     end subroutine post_getattr_gfs
@@ -838,7 +844,7 @@ module post_gfs
 !              !$omp parallel do private(i,j)
 !              do j=jsta,jend
 !                do i=ista, iend
-!                  pint(i,j)=arrayr42d(i,j)
+!                  pint(i,j,lp1)=arrayr42d(i,j)
 !                enddo
 !              enddo
 !            endif
@@ -2429,6 +2435,7 @@ module post_gfs
 ! hbot
       do j=jsta,jend
         do i=1,im
+          hbot(i,j) = spval
           if(pbot(i,j) < spval)then
             do l=lm,1,-1
               if(pbot(i,j) >= pmid(i,j,l)) then
