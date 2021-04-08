@@ -101,17 +101,17 @@ module stochastic_physics_wrapper_mod
             xlon(nb,1:GFS_Control%blksz(nb)) = GFS_Data(nb)%Grid%xlon(:)
          end do
         ! Initialize stochastic physics
-        call init_stochastic_physics(GFS_Control%levs, GFS_Control%blksz, GFS_Control%dtp, GFS_Control%sppt_amp,                      &
-            GFS_Control%input_nml_file, GFS_Control%fn_nml, GFS_Control%nlunit, xlon, xlat, GFS_Control%do_sppt, GFS_Control%do_shum, &
-            GFS_Control%do_skeb, GFS_Control%lndp_type, GFS_Control%n_var_lndp, GFS_Control%use_zmtnblck, GFS_Control%skeb_npass,     &
-            GFS_Control%lndp_var_list, GFS_Control%lndp_prt_list,                                                                     &
+        call init_stochastic_physics(GFS_Control%levs, GFS_Control%blksz, GFS_Control%dtp, GFS_Control%sppt_amp,                          &
+            GFS_Control%input_nml_file, GFS_Control%fn_nml, GFS_Control%nlunit, xlon, xlat, GFS_Control%do_sppt_any, GFS_Control%do_shum, &
+            GFS_Control%do_skeb, GFS_Control%lndp_type, GFS_Control%n_var_lndp, GFS_Control%use_zmtnblck, GFS_Control%skeb_npass,         &
+            GFS_Control%lndp_var_list, GFS_Control%lndp_prt_list,                                                                         &
             GFS_Control%ak, GFS_Control%bk, nthreads, GFS_Control%master, GFS_Control%communicator, ierr)
             if (ierr/=0)  then
                 write(6,*) 'call to init_stochastic_physics failed'
                 return
             endif
       end if
-      if (GFS_Control%do_sppt) then
+      if (GFS_Control%do_sppt_any) then
          allocate(sppt_wts(1:Atm_block%nblks,maxval(GFS_Control%blksz),1:GFS_Control%levs))
       end if
       if (GFS_Control%do_shum) then
@@ -174,7 +174,7 @@ module stochastic_physics_wrapper_mod
                                  sppt_wts=sppt_wts, shum_wts=shum_wts, skebu_wts=skebu_wts, skebv_wts=skebv_wts, sfc_wts=sfc_wts, &
                                  nthreads=nthreads)
          ! Copy contiguous data back
-         if (GFS_Control%do_sppt) then
+         if (GFS_Control%do_sppt_any) then
             do nb=1,Atm_block%nblks
                 GFS_Data(nb)%Coupling%sppt_wts(:,:) = sppt_wts(nb,1:GFS_Control%blksz(nb),:)
             end do

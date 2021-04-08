@@ -241,9 +241,9 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: z0base (:)   => null()  !< background or baseline surface roughness length in m
     real (kind=kind_phys), pointer :: semisbase(:) => null()  !< background surface emissivity
     ! Chemistry
-    real (kind=kind_phys), pointer :: dust_in(:,:) => null()  !< fengsha dust input
-    real (kind=kind_phys), pointer :: emi_in (:,:) => null()  !< anthropogenic background input
-    real (kind=kind_phys), pointer :: emi2_in(:,:,:) => null()!< anthropogenic background 3D input
+    real (kind=kind_phys), pointer :: dust_in(:,:)     => null()  !< fengsha dust input
+    real (kind=kind_phys), pointer :: emi_in (:,:)     => null()  !< anthropogenic background input
+    real (kind=kind_phys), pointer :: emi2_in(:,:,:)   => null()  !< anthropogenic background 3D input
     real (kind=kind_phys), pointer :: fire_MODIS (:,:) => null()  !< anthropogenic fire MODIS input
     real (kind=kind_phys), pointer :: fire_GBBEPx(:,:) => null()  !< anthropogenic fire GBBEPx input
 
@@ -1180,8 +1180,15 @@ module GFS_typedefs
     integer              :: nkbfshoc        !< the index of upward kinematic buoyancy flux from SHOC in phy_f3d
     integer              :: nahdshoc        !< the index of diffusivity for heat from from SHOC in phy_f3d
     integer              :: nscfshoc        !< the index of subgrid-scale cloud fraction from from SHOC in phy_f3d
+    integer              :: nT2delt         !< the index of air temperature 2 timesteps back for Z-C MP in phy_f3d
+    integer              :: nTdelt          !< the index of air temperature at the previous timestep for Z-C MP in phy_f3d
+    integer              :: nqv2delt        !< the index of specific humidity 2 timesteps back for Z-C MP in phy_f3d
+    integer              :: nqvdelt         !< the index of specific humidity at the previous timestep for Z-C MP in phy_f3d
+    integer              :: nps2delt        !< the index of surface air pressure 2 timesteps back for Z-C MP in phy_f2d
+    integer              :: npsdelt         !< the index of surface air pressure at the previous timestep for Z-C MP in phy_f2d
+    integer              :: ncnvwind        !< the index of surface wind enhancement due to convection for MYNN SFC and RAS CNV in phy f2d
 
-!--- debug flag
+!--- debug flags
     logical              :: debug
     logical              :: pre_rad         !< flag for testing purpose
     logical              :: print_diff_pgr  !< print average change in pgr every timestep (does not need debug flag)
@@ -1222,14 +1229,6 @@ module GFS_typedefs
     integer              :: wetdep_ls_opt
     character(len=512)   :: restart_inname  ! chemistry restart input directory
     character(len=512)   :: restart_outname ! chemistry restart output directory
-
-    integer              :: nT2delt         !< the index of air temperature 2 timesteps back for Z-C MP in phy_f3d
-    integer              :: nTdelt          !< the index of air temperature at the previous timestep for Z-C MP in phy_f3d
-    integer              :: nqv2delt        !< the index of specific humidity 2 timesteps back for Z-C MP in phy_f3d
-    integer              :: nqvdelt         !< the index of specific humidity at the previous timestep for Z-C MP in phy_f3d
-    integer              :: nps2delt        !< the index of surface air pressure 2 timesteps back for Z-C MP in phy_f2d
-    integer              :: npsdelt         !< the index of surface air pressure at the previous timestep for Z-C MP in phy_f2d
-    integer              :: ncnvwind        !< the index of surface wind enhancement due to convection for MYNN SFC and RAS CNV in phy f2d
 
 !--- variables modified at each time step
     integer              :: ipt             !< index for diagnostic printout point
@@ -2370,9 +2369,9 @@ module GFS_typedefs
     allocate (Sfcprop%hprime   (IM,Model%nmtvr))
     allocate (Sfcprop%dust_in  (IM,5))
     allocate (Sfcprop%emi_in   (IM,10))
-    allocate (Sfcprop%emi2_in  (IM,64,3))
-    allocate (Sfcprop%fire_MODIS (IM,13))
-    allocate (Sfcprop%fire_GBBEPx(IM,5))
+    allocate (Sfcprop%emi2_in  (IM,Model%levs,3))
+    allocate (Sfcprop%fire_MODIS  (IM,13))
+    allocate (Sfcprop%fire_GBBEPx (IM,5))
 
     Sfcprop%slmsk     = clear_val
     Sfcprop%oceanfrac = clear_val
@@ -3544,13 +3543,13 @@ module GFS_typedefs
     integer              :: plumerise_flag = 2
     integer              :: seas_opt = 2
     integer              :: seas_emis_scheme = -1
-    real(kind=kind_phys), dimension(5) :: seas_emis_scale=(/1.0,1.0,1.0,1.0,1.0/)
+    real(kind=kind_phys), dimension(5) :: seas_emis_scale = (/1.0,1.0,1.0,1.0,1.0/)
     integer              :: vertmix_onoff = 1
     integer              :: gfdlmp_onoff = 1
     integer              :: aer_ra_frq = 60
     integer              :: wetdep_ls_opt  = 1
-    character(len=512)   :: restart_inname =''
-    character(len=512)   :: restart_outname =''
+    character(len=512)   :: restart_inname = ''
+    character(len=512)   :: restart_outname = ''
 
 !--- aerosol scavenging factors
     character(len=20) :: fscav_aero(20) = 'default'
@@ -4032,6 +4031,7 @@ module GFS_typedefs
 !--- land/surface model parameters
     Model%lsm              = lsm
     Model%lsoil            = lsoil
+
     ! Consistency check for HWRF Noah LSM
     if (Model%lsm == Model%lsm_noah_wrfv4 .and. Model%nscyc>0) then
       write(0,*) 'Logic error: NOAH WRFv4 LSM cannot be used with surface data cycling at this point (fhcyc>0)'
@@ -4437,6 +4437,7 @@ module GFS_typedefs
     Model%ntss5            = get_tracer_index(Model%tracer_names, 'seas5',      Model%me, Model%master, Model%debug)
     Model%ntpp10           = get_tracer_index(Model%tracer_names, 'pp10',       Model%me, Model%master, Model%debug)
     endif ! cplchm tracers
+
     if (Model%ntchs > 0) then
       Model%ntchm          = get_tracer_index(Model%tracer_names, 'pp10',       Model%me, Model%master, Model%debug)
       if (Model%ntchm > 0) then
@@ -5422,9 +5423,9 @@ module GFS_typedefs
       print *, ' '
       print *, 'stochastic physics'
       print *, ' do_sppt           : ', Model%do_sppt
-      print *, ' pert_mp         : ', Model%pert_mp
-      print *, ' pert_clds       : ', Model%pert_clds
-      print *, ' pert_radtend    : ', Model%pert_radtend
+      print *, ' pert_mp           : ', Model%pert_mp
+      print *, ' pert_clds         : ', Model%pert_clds
+      print *, ' pert_radtend      : ', Model%pert_radtend
       print *, ' do_sppt_emis      : ', Model%do_sppt_emis
       print *, ' do_sppt_any       : ', Model%do_sppt_any
       print *, ' do_shum           : ', Model%do_shum

@@ -610,35 +610,35 @@
   standard_name = fengsha_dust_input
   long_name = fengsha dust input
   units = various
-  dimensions = (horizontal_dimension,5)
+  dimensions = (horizontal_loop_extent,5)
   type = real
   kind = kind_phys
 [emi_in]
   standard_name = anthropogenic_background_input
   long_name = anthropogenic background input
   units = various
-  dimensions = (horizontal_dimension,10)
+  dimensions = (horizontal_loop_extent,10)
   type = real
   kind = kind_phys
 [emi2_in]
   standard_name = anthropogenic_background_3d_input
   long_name = anthropogenic background 3d input
   units = various
-  dimensions = (horizontal_dimension,vertical_dimension,3)
+  dimensions = (horizontal_loop_extent,vertical_dimension,3)
   type = real
   kind = kind_phys
 [fire_GBBEPx]
   standard_name = emission_fire_GBBEPx
   long_name = emission fire GBBEPx
   units = various
-  dimensions = (horizontal_dimension,5)
+  dimensions = (horizontal_loop_extent,5)
   type = real
   kind = kind_phys
 [fire_MODIS]
   standard_name = emission_fire_MODIS
   long_name = emission fire MODIS
   units = various
-  dimensions = (horizontal_dimension,13)
+  dimensions = (horizontal_loop_extent,13)
   type = real
   kind = kind_phys
 [sncovr]
@@ -652,7 +652,7 @@
   standard_name = surface_snow_area_fraction_over_ice
   long_name = surface snow area fraction over ice
   units = frac
-  dimensions = (horizontal_dimension)
+  dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
   active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme)
@@ -1409,7 +1409,7 @@
   standard_name = snow_temperature_bottom_first_layer_over_land
   long_name = snow temperature at the bottom of the first snow layer over land
   units = K
-  dimensions = (horizontal_dimension)
+  dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
   active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme)
@@ -2203,14 +2203,14 @@
   standard_name = chem_buffer_ebu
   long_name = chemistry buffer of ebu
   units = various
-  dimensions = (horizontal_dimension,vertical_dimension_plus_one,1,7)
+  dimensions = (horizontal_loop_extent,vertical_dimension_plus_one,1,7)
   type = real
   kind = kind_phys
 [faersw_cpl]
   standard_name = gsdchem_aerosol_optical_properties_for_shortwave_bands_01_14
   long_name = gsdchem aerosol optical properties for shortwave bands 01-14
   units = various
-  dimensions = (horizontal_dimension,adjusted_vertical_layer_dimension_for_radiation,14,3)
+  dimensions = (horizontal_loop_extent,adjusted_vertical_layer_dimension_for_radiation,14,3)
   type = real
   kind = kind_phys
 [nwfa2d]
@@ -3423,6 +3423,27 @@
   long_name = depth of soil levels for land surface model
   units = m
   dimensions = (soil_vertical_dimension_for_land_surface_model)
+  type = real
+  kind = kind_phys
+[dzs]
+  standard_name = thickness_of_soil_levels_for_land_surface_model
+  long_name = thickness of soil levels for land surface model
+  units = m
+  dimensions = (soil_vertical_dimension_for_land_surface_model)
+  type = real
+  kind = kind_phys
+[pores]
+  standard_name = maximum_soil_moisture_content_for_land_surface_model
+  long_name = maximum soil moisture for a given soil type for land surface model
+  units = m
+  dimensions = (30)
+  type = real
+  kind = kind_phys
+[resid]
+  standard_name = minimum_soil_moisture_content_for_land_surface_model
+  long_name = minimum soil moisture for a given soil type for land surface model
+  units = m
+  dimensions = (30)
   type = real
   kind = kind_phys
 [rdlai]
@@ -7410,7 +7431,7 @@
   standard_name = instantaneous_dust_emission_flux
   long_name = instantaneous dust emission flux
   units = kg m-2 s-1
-  dimensions = (horizontal_dimension,number_of_dust_bins_for_diagnostics)
+  dimensions = (horizontal_loop_extent,number_of_dust_bins_for_diagnostics)
   type = real
   kind = kind_phys
   active = (number_of_dust_bins_for_diagnostics > 0)
@@ -7418,7 +7439,7 @@
   standard_name = instantaneous_seasalt_emission_flux
   long_name = instantaneous sea salt emission flux
   units = kg m-2 s-1
-  dimensions = (horizontal_dimension,number_of_seasalt_bins_for_diagnostics)
+  dimensions = (horizontal_loop_extent,number_of_seasalt_bins_for_diagnostics)
   type = real
   kind = kind_phys
   active = (number_of_seasalt_bins_for_diagnostics > 0)
@@ -7426,7 +7447,7 @@
   standard_name = instantaneous_sedimentation
   long_name = instantaneous sedimentation
   units = kg m-2 s-1
-  dimensions = (horizontal_dimension,number_of_chemical_tracers_for_diagnostics)
+  dimensions = (horizontal_loop_extent,number_of_chemical_tracers_for_diagnostics)
   type = real
   kind = kind_phys
   active = (number_of_chemical_tracers_for_diagnostics > 0)
@@ -7434,7 +7455,7 @@
   standard_name = instantaneous_dry_deposition
   long_name = instantaneous dry deposition
   units = kg m-2 s-1
-  dimensions = (horizontal_dimension,number_of_chemical_tracers_for_diagnostics)
+  dimensions = (horizontal_loop_extent,number_of_chemical_tracers_for_diagnostics)
   type = real
   kind = kind_phys
   active = (number_of_chemical_tracers_for_diagnostics > 0)
@@ -7442,7 +7463,7 @@
   standard_name = instantaneous_large_scale_wet_deposition
   long_name = instantaneous large-scale wet deposition
   units = kg m-2 s-1
-  dimensions = (horizontal_dimension,number_of_chemical_tracers_for_diagnostics)
+  dimensions = (horizontal_loop_extent,number_of_chemical_tracers_for_diagnostics)
   type = real
   kind = kind_phys
   active = (number_of_chemical_tracers_for_diagnostics > 0)
@@ -7450,28 +7471,28 @@
   standard_name = instantaneous_convective_scale_wet_deposition
   long_name = instantaneous convective-scale wet deposition
   units = kg m-2 s-1
-  dimensions = (horizontal_dimension,number_of_chemical_tracers_for_diagnostics)
+  dimensions = (horizontal_loop_extent,number_of_chemical_tracers_for_diagnostics)
   type = real
   kind = kind_phys
 [wetdpc_deep]
   standard_name = instantaneous_deep_convective_wet_deposition
   long_name = instantaneous deep convective wet deposition
   units = kg m-2 s-1
-  dimensions = (horizontal_dimension,number_of_chemical_tracers)
+  dimensions = (horizontal_loop_extent,number_of_chemical_tracers)
   type = real
   kind = kind_phys
 [wetdpc_mid]
   standard_name = instantaneous_mid_convective_wet_deposition
   long_name = instantaneous mid convective wet deposition
   units = kg m-2 s-1
-  dimensions = (horizontal_dimension,number_of_chemical_tracers)
+  dimensions = (horizontal_loop_extent,number_of_chemical_tracers)
   type = real
   kind = kind_phys
 [wetdpc_shal]
   standard_name = instantaneous_shal_convective_wet_deposition
   long_name = instantaneous shallow convective wet deposition
   units = kg m-2 s-1
-  dimensions = (horizontal_dimension,number_of_chemical_tracers)
+  dimensions = (horizontal_loop_extent,number_of_chemical_tracers)
   type = real
   kind = kind_phys
   active = (number_of_chemical_tracers_for_diagnostics > 0)
@@ -10607,7 +10628,7 @@
   standard_name = saturation_vapor_pressure
   long_name = saturation vapor pressure
   units = Pa
-  dimensions = (horizontal_dimension,vertical_dimension)
+  dimensions = (horizontal_loop_extent,vertical_dimension)
   type = real
   kind = kind_phys
   optional = F
@@ -10616,7 +10637,7 @@
   standard_name = water_vapor_mixing_ratio
   long_name = water vaport mixing ratio
   units = kg/kg
-  dimensions = (horizontal_dimension,vertical_dimension)
+  dimensions = (horizontal_loop_extent,vertical_dimension)
   type = real
   kind = kind_phys
   optional = F
