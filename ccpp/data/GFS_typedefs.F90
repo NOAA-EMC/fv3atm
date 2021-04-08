@@ -331,7 +331,6 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: albdnir_ice  (:) => null()  !<
     real (kind=kind_phys), pointer :: albivis_ice  (:) => null()  !<
     real (kind=kind_phys), pointer :: albinir_ice  (:) => null()  !<
-    real (kind=kind_phys), pointer :: emiss    (:) => null()  !<
 
     real (kind=kind_phys), pointer :: snicexy   (:,:) => null()  !<
     real (kind=kind_phys), pointer :: snliqxy   (:,:) => null()  !<
@@ -700,8 +699,9 @@ module GFS_typedefs
     logical              :: doGP_lwscat             !< If true, include scattering in longwave cloud-optics, only compatible w/ GP cloud-optics
 
 !--- microphysical switch
-    integer              :: ncld            !< choice of cloud scheme
-    logical              :: convert_dry_rho = .false.      !< flag for converting number concentrations from moist to dry
+    integer              :: ncld                           !< choice of cloud scheme
+    logical              :: convert_dry_rho = .true.       !< flag for converting mass/number concentrations from moist to dry
+                                                           !< for physics options that expect dry mass/number concentrations;
                                                            !< this flag will no longer be needed once the CCPP standard
                                                            !< names and the CCPP framework logic have been augmented to
                                                            !< automatically determine whether such conversions are necessary
@@ -2294,10 +2294,6 @@ module GFS_typedefs
 !   allocate (Sfcprop%hprim    (IM))
     allocate (Sfcprop%hprime   (IM,Model%nmtvr))
     allocate (Sfcprop%emis_lnd (IM))
-    allocate (Sfcprop%emis_ice (IM))
-    allocate (Sfcprop%sfalb_lnd (IM))
-    allocate (Sfcprop%sfalb_ice (IM))
-    allocate (Sfcprop%sfalb_lnd_bck (IM))
 
     Sfcprop%slmsk     = clear_val
     Sfcprop%oceanfrac = clear_val
@@ -2319,10 +2315,6 @@ module GFS_typedefs
 !   Sfcprop%hprim     = clear_val
     Sfcprop%hprime    = clear_val
     Sfcprop%emis_lnd  = clear_val
-    Sfcprop%emis_ice  = clear_val
-    Sfcprop%sfalb_lnd = clear_val
-    Sfcprop%sfalb_ice = clear_val
-    Sfcprop%sfalb_lnd_bck= clear_val
 
 !--- In (radiation only)
     allocate (Sfcprop%snoalb (IM))
@@ -2379,6 +2371,14 @@ module GFS_typedefs
     allocate (Sfcprop%sncovr (IM))
     if (Model%lsm == Model%lsm_ruc) then
       allocate (Sfcprop%sncovr_ice (IM))
+      allocate (Sfcprop%emis_ice (IM))
+      allocate (Sfcprop%albdvis_ice (IM))
+      allocate (Sfcprop%albdnir_ice (IM))
+      allocate (Sfcprop%albivis_ice (IM))
+      allocate (Sfcprop%albinir_ice (IM))
+      allocate (Sfcprop%sfalb_lnd (IM))
+      allocate (Sfcprop%sfalb_ice (IM))
+      allocate (Sfcprop%sfalb_lnd_bck (IM))
     end if
     allocate (Sfcprop%canopy (IM))
     allocate (Sfcprop%ffmm   (IM))
@@ -2394,7 +2394,15 @@ module GFS_typedefs
     Sfcprop%weasd  = clear_val
     Sfcprop%sncovr = clear_val
     if (Model%lsm == Model%lsm_ruc) then
-      Sfcprop%sncovr_ice = clear_val
+      Sfcprop%sncovr_ice  = clear_val
+      Sfcprop%emis_ice    = clear_val
+      Sfcprop%albdvis_ice = clear_val
+      Sfcprop%albdnir_ice = clear_val
+      Sfcprop%albivis_ice = clear_val
+      Sfcprop%albinir_ice = clear_val
+      Sfcprop%sfalb_lnd   = clear_val
+      Sfcprop%sfalb_ice   = clear_val
+      Sfcprop%sfalb_lnd_bck = clear_val
     end if
     Sfcprop%canopy = clear_val
     Sfcprop%ffmm   = clear_val
@@ -2460,11 +2468,20 @@ module GFS_typedefs
       allocate(Sfcprop%iceprv    (IM))
       allocate(Sfcprop%snowprv   (IM))
       allocate(Sfcprop%graupelprv(IM))
+      allocate(Sfcprop%albdvis_lnd (IM))
+      allocate(Sfcprop%albdnir_lnd (IM))
+      allocate(Sfcprop%albivis_lnd (IM))
+      allocate(Sfcprop%albinir_lnd (IM))
+
       Sfcprop%raincprv   = clear_val
       Sfcprop%rainncprv  = clear_val
       Sfcprop%iceprv     = clear_val
       Sfcprop%snowprv    = clear_val
       Sfcprop%graupelprv = clear_val
+      Sfcprop%albdvis_lnd = clear_val
+      Sfcprop%albdnir_lnd = clear_val
+      Sfcprop%albivis_lnd = clear_val
+      Sfcprop%albinir_lnd = clear_val
     end if
 ! Noah MP allocate and init when used
 !
@@ -2499,15 +2516,6 @@ module GFS_typedefs
     allocate (Sfcprop%smcwtdxy (IM))
     allocate (Sfcprop%deeprechxy (IM))
     allocate (Sfcprop%rechxy    (IM))
-    allocate (Sfcprop%albdvis_lnd (IM))
-    allocate (Sfcprop%albdnir_lnd (IM))
-    allocate (Sfcprop%albivis_lnd (IM))
-    allocate (Sfcprop%albinir_lnd (IM))
-    allocate (Sfcprop%albdvis_ice (IM))
-    allocate (Sfcprop%albdnir_ice (IM))
-    allocate (Sfcprop%albivis_ice (IM))
-    allocate (Sfcprop%albinir_ice (IM))
-    allocate (Sfcprop%emiss      (IM))
     allocate (Sfcprop%snicexy    (IM, Model%lsnow_lsm_lbound:Model%lsnow_lsm_ubound))
     allocate (Sfcprop%snliqxy    (IM, Model%lsnow_lsm_lbound:Model%lsnow_lsm_ubound))
     allocate (Sfcprop%tsnoxy     (IM, Model%lsnow_lsm_lbound:Model%lsnow_lsm_ubound))
@@ -2543,15 +2551,6 @@ module GFS_typedefs
     Sfcprop%smcwtdxy   = clear_val
     Sfcprop%deeprechxy = clear_val
     Sfcprop%rechxy     = clear_val
-    Sfcprop%albdvis_lnd    = clear_val
-    Sfcprop%albdnir_lnd    = clear_val
-    Sfcprop%albivis_lnd    = clear_val
-    Sfcprop%albinir_lnd    = clear_val
-    Sfcprop%albdvis_ice    = clear_val
-    Sfcprop%albdnir_ice    = clear_val
-    Sfcprop%albivis_ice    = clear_val
-    Sfcprop%albinir_ice    = clear_val
-    Sfcprop%emiss      = clear_val
 
     Sfcprop%snicexy    = clear_val
     Sfcprop%snliqxy    = clear_val
@@ -6069,11 +6068,11 @@ module GFS_typedefs
       Diag%dv3dt    = zero
       Diag%dt3dt    = zero
       if (Model%qdiag3d) then
-         Diag%dq3dt    = zero
-!     Diag%upd_mf   = zero
-!     Diag%dwn_mf   = zero
-!     Diag%det_mf   = zero
-    endif
+        Diag%dq3dt    = zero
+        Diag%upd_mf   = zero
+        Diag%dwn_mf   = zero
+        Diag%det_mf   = zero
+      endif
     endif
 
 !
