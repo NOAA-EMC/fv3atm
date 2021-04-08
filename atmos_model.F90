@@ -812,7 +812,7 @@ subroutine atmos_model_exchange_phase_1 (Atmos, rc)
     !--- begin
     if (present(rc)) rc = ESMF_SUCCESS
 
-#ifndef CCPP
+#if 0
     !--- if coupled, exchange coupled fields
     if( GFS_control%cplchm ) then
       ! -- export fields to chemistry
@@ -850,7 +850,7 @@ subroutine atmos_model_exchange_phase_2 (Atmos, rc)
     !--- begin
     if (present(rc)) rc = ESMF_SUCCESS
 
-#ifndef CCPP
+#if 0
     !--- if coupled, exchange coupled fields
     if( GFS_control%cplchm ) then
       ! -- import fields from chemistry
