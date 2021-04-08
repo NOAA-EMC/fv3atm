@@ -351,10 +351,10 @@ module FV3GFS_io_mod
         temp2d(i,j,idx_opt+46) = GFS_Data(nb)%Sfcprop%zsnsoxy(ix,2)
         temp2d(i,j,idx_opt+47) = GFS_Data(nb)%Sfcprop%zsnsoxy(ix,3)
         temp2d(i,j,idx_opt+48) = GFS_Data(nb)%Sfcprop%zsnsoxy(ix,4)
-        temp2d(i,j,idx_opt+49) = GFS_Data(nb)%Sfcprop%albdvis(ix)
-        temp2d(i,j,idx_opt+50) = GFS_Data(nb)%Sfcprop%albdnir(ix)
-        temp2d(i,j,idx_opt+51) = GFS_Data(nb)%Sfcprop%albivis(ix)
-        temp2d(i,j,idx_opt+52) = GFS_Data(nb)%Sfcprop%albinir(ix)
+        temp2d(i,j,idx_opt+49) = GFS_Data(nb)%Sfcprop%albdvis_lnd(ix)
+        temp2d(i,j,idx_opt+50) = GFS_Data(nb)%Sfcprop%albdnir_lnd(ix)
+        temp2d(i,j,idx_opt+51) = GFS_Data(nb)%Sfcprop%albivis_lnd(ix)
+        temp2d(i,j,idx_opt+52) = GFS_Data(nb)%Sfcprop%albinir_lnd(ix)
         temp2d(i,j,idx_opt+53) = GFS_Data(nb)%Sfcprop%emiss(ix)
         idx_opt = 141
        endif
@@ -1134,10 +1134,10 @@ module FV3GFS_io_mod
           Sfcprop(nb)%smcwtdxy(ix)   = sfc_var2(i,j,nvar_s2m+45)
           Sfcprop(nb)%deeprechxy(ix) = sfc_var2(i,j,nvar_s2m+46)
           Sfcprop(nb)%rechxy(ix)     = sfc_var2(i,j,nvar_s2m+47)
-          Sfcprop(nb)%albdvis(ix)    = sfc_var2(i,j,nvar_s2m+48)
-          Sfcprop(nb)%albdnir(ix)    = sfc_var2(i,j,nvar_s2m+49)
-          Sfcprop(nb)%albivis(ix)    = sfc_var2(i,j,nvar_s2m+50)
-          Sfcprop(nb)%albinir(ix)    = sfc_var2(i,j,nvar_s2m+51)
+          Sfcprop(nb)%albdvis_lnd(ix)    = sfc_var2(i,j,nvar_s2m+48)
+          Sfcprop(nb)%albdnir_lnd(ix)    = sfc_var2(i,j,nvar_s2m+49)
+          Sfcprop(nb)%albivis_lnd(ix)    = sfc_var2(i,j,nvar_s2m+50)
+          Sfcprop(nb)%albinir_lnd(ix)    = sfc_var2(i,j,nvar_s2m+51)
           Sfcprop(nb)%emiss(ix)      = sfc_var2(i,j,nvar_s2m+52)
         endif
 
