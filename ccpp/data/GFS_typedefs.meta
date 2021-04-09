@@ -1289,6 +1289,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme .or. flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme)
 [albdnir_lnd]
   standard_name = surface_albedo_direct_NIR_over_land
   long_name = direct surface albedo NIR band over land
@@ -1296,6 +1297,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme .or. flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme)
 [albivis_lnd]
   standard_name = surface_albedo_diffuse_visible_over_land
   long_name = diffuse surface albedo visible band over land
@@ -1303,6 +1305,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme .or. flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme)
 [albinir_lnd]
   standard_name = surface_albedo_diffuse_NIR_over_land
   long_name = diffuse surface albedo NIR band over land
@@ -1310,6 +1313,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme .or. flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme)
 [albdvis_ice]
   standard_name = surface_albedo_direct_visible_over_ice
   long_name = direct surface albedo visible band over ice
