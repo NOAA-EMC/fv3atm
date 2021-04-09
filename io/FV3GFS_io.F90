@@ -1150,7 +1150,7 @@ module FV3GFS_io_mod
             Sfcprop(nb)%xs(ix)      = zero
             Sfcprop(nb)%xu(ix)      = zero
             Sfcprop(nb)%xv(ix)      = zero
-            Sfcprop(nb)%xz(ix)      = 30.0_r8
+            Sfcprop(nb)%xz(ix)      = 20.0_r8
             Sfcprop(nb)%zm(ix)      = zero
             Sfcprop(nb)%xtts(ix)    = zero
             Sfcprop(nb)%xzts(ix)    = zero
