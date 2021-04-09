@@ -7413,12 +7413,12 @@
 
 ########################################################################
 [ccpp-table-properties]
-  name = GFS_interstitial_type
+  name = GFS_suite_interstitial_type
   type = ddt
   dependencies =
 
 [ccpp-arg-table]
-  name = GFS_interstitial_type
+  name = GFS_suite_interstitial_type
   type = ddt
 [qv_r]
   standard_name = humidity_mixing_ratio
@@ -7726,20 +7726,6 @@
   long_name = fraction of clouds for low, middle, high, total and BL
   units = frac
   dimensions = (horizontal_loop_extent,5)
-  type = real
-  kind = kind_phys
-[cldtaulw]
-  standard_name = cloud_optical_depth_layers_at_10mu_band
-  long_name = approx 10mu band layer cloud optical depth
-  units = none
-  dimensions = (horizontal_loop_extent,adjusted_vertical_layer_dimension_for_radiation)
-  type = real
-  kind = kind_phys
-[cldtausw]
-  standard_name = cloud_optical_depth_layers_at_0p55mu_band
-  long_name = approx .55mu band layer cloud optical depth
-  units = none
-  dimensions = (horizontal_loop_extent,adjusted_vertical_layer_dimension_for_radiation)
   type = real
   kind = kind_phys
 [cld1d]
@@ -10111,6 +10097,30 @@
   dimensions = (horizontal_loop_extent,vertical_dimension)
   type = real
   kind = kind_phys
+
+########################################################################
+[ccpp-table-properties]
+  name = GFS_interstitial_type
+  type = ddt
+  dependencies =
+
+[ccpp-arg-table]
+  name = GFS_interstitial_type
+  type = ddt
+[cldtaulw]
+  standard_name = cloud_optical_depth_layers_at_10mu_band
+  long_name = approx 10mu band layer cloud optical depth
+  units = none
+  dimensions = (horizontal_loop_extent,adjusted_vertical_layer_dimension_for_radiation)
+  type = real
+  kind = kind_phys
+[cldtausw]
+  standard_name = cloud_optical_depth_layers_at_0p55mu_band
+  long_name = approx .55mu band layer cloud optical depth
+  units = none
+  dimensions = (horizontal_loop_extent,adjusted_vertical_layer_dimension_for_radiation)
+  type = real
+  kind = kind_phys
 [qs_lay]
   standard_name = saturation_vapor_pressure
   long_name = saturation vapor pressure
@@ -10235,20 +10245,6 @@
   units = none
   dimensions = ()
   type = integer
-[cldtausw]
-  standard_name = RRTMGP_cloud_optical_depth_layers_at_0_55mu_band
-  long_name = approx .55mu band layer cloud optical depth
-  units = none
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
-[cldtaulw]
-  standard_name = RRTMGP_cloud_optical_depth_layers_at_10mu_band
-  long_name = approx 10mu band layer cloud optical depth
-  units = none
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
 [fluxlwUP_allsky]
   standard_name = RRTMGP_lw_flux_profile_upward_allsky
   long_name = RRTMGP upward longwave all-sky flux profile
@@ -10690,6 +10686,12 @@
   units = DDT
   dimensions = ()
   type = GFS_grid_type
+[GFS_suite_interstitial_type]
+  standard_name = GFS_suite_interstitial_type
+  long_name = definition of type GFS_suite_interstitial_type
+  units = DDT
+  dimensions = ()
+  type = GFS_suite_interstitial_type
 [GFS_interstitial_type]
   standard_name = GFS_interstitial_type
   long_name = definition of type GFS_interstitial_type

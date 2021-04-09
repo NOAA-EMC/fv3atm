@@ -30,6 +30,12 @@
   units = DDT
   dimensions = ()
   type = GFS_data_type
+[GFS_Suite_Interstitial(ccpp_block_number)]
+  standard_name = GFS_suite_interstitial_type_instance
+  long_name = instance of derived type GFS_suite_interstitial_type
+  units = DDT
+  dimensions = ()
+  type = GFS_suite_interstitial_type
 [GFS_Interstitial(ccpp_thread_number)]
   standard_name = GFS_interstitial_type_instance
   long_name = instance of derived type GFS_interstitial_type
@@ -42,6 +48,12 @@
   units = DDT
   dimensions = (ccpp_block_count)
   type = GFS_data_type
+[GFS_Suite_Interstitial]
+  standard_name = GFS_suite_interstitial_type_instance_all_blocks
+  long_name = instance of derived type GFS_suite_interstitial_type
+  units = DDT
+  dimensions = (ccpp_block_count)
+  type = GFS_suite_interstitial_type
 [GFS_Interstitial]
   standard_name = GFS_interstitial_type_instance_all_threads
   long_name = instance of derived type GFS_interstitial_type

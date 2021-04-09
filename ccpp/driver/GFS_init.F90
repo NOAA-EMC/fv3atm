@@ -7,6 +7,7 @@ module GFS_init
                                       GFS_control_type, GFS_grid_type,     &
                                       GFS_tbd_type,     GFS_cldprop_type,  &
                                       GFS_radtend_type, GFS_diag_type,     &
+                                      GFS_suite_interstitial_type,         &
                                       GFS_interstitial_type
 
   implicit none
@@ -27,28 +28,29 @@ module GFS_init
 !--------------
   subroutine GFS_initialize (Model, Statein, Stateout, Sfcprop,     &
                              Coupling, Grid, Tbd, Cldprop, Radtend, & 
-                             Diag, Interstitial, communicator,      &
-                             ntasks, Init_parm)
+                             Diag, Suite_Interstitial, Interstitial,&
+                             communicator, ntasks, Init_parm)
 
 #ifdef _OPENMP
     use omp_lib
 #endif
 
     !--- interface variables
-    type(GFS_control_type),      intent(inout) :: Model
-    type(GFS_statein_type),      intent(inout) :: Statein(:)
-    type(GFS_stateout_type),     intent(inout) :: Stateout(:)
-    type(GFS_sfcprop_type),      intent(inout) :: Sfcprop(:)
-    type(GFS_coupling_type),     intent(inout) :: Coupling(:)
-    type(GFS_grid_type),         intent(inout) :: Grid(:)
-    type(GFS_tbd_type),          intent(inout) :: Tbd(:)
-    type(GFS_cldprop_type),      intent(inout) :: Cldprop(:)
-    type(GFS_radtend_type),      intent(inout) :: Radtend(:)
-    type(GFS_diag_type),         intent(inout) :: Diag(:)
-    type(GFS_interstitial_type), intent(inout) :: Interstitial(:)
-    integer,                     intent(in)    :: communicator
-    integer,                     intent(in)    :: ntasks
-    type(GFS_init_type),         intent(in)    :: Init_parm
+    type(GFS_control_type),            intent(inout) :: Model
+    type(GFS_statein_type),            intent(inout) :: Statein(:)
+    type(GFS_stateout_type),           intent(inout) :: Stateout(:)
+    type(GFS_sfcprop_type),            intent(inout) :: Sfcprop(:)
+    type(GFS_coupling_type),           intent(inout) :: Coupling(:)
+    type(GFS_grid_type),               intent(inout) :: Grid(:)
+    type(GFS_tbd_type),                intent(inout) :: Tbd(:)
+    type(GFS_cldprop_type),            intent(inout) :: Cldprop(:)
+    type(GFS_radtend_type),            intent(inout) :: Radtend(:)
+    type(GFS_diag_type),               intent(inout) :: Diag(:)
+    type(GFS_suite_interstitial_type), intent(inout) :: Suite_Interstitial(:)
+    type(GFS_interstitial_type),       intent(inout) :: Interstitial(:)
+    integer,                           intent(in)    :: communicator
+    integer,                           intent(in)    :: ntasks
+    type(GFS_init_type),               intent(in)    :: Init_parm
 
     !--- local variables
     integer :: nb
@@ -93,6 +95,8 @@ module GFS_init
       call Radtend  (nb)%create (ix, Model)
 !--- internal representation of diagnostics
       call Diag     (nb)%create (ix, Model)
+!--- variables internal to physics, but persistent for suites
+      call Suite_Interstitial (nb)%create (ix, Model)
     enddo
 
 ! This logic deals with non-uniform block sizes for CCPP. When non-uniform block sizes

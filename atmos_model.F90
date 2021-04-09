@@ -86,8 +86,8 @@ use GFS_typedefs,       only: GFS_init_type, GFS_kind_phys => kind_phys
 use GFS_restart,        only: GFS_restart_type, GFS_restart_populate
 use GFS_diagnostics,    only: GFS_externaldiag_type, &
                               GFS_externaldiag_populate
-use CCPP_data,          only: ccpp_suite, GFS_control, &
-                              GFS_data, GFS_interstitial
+use CCPP_data,          only: ccpp_suite, GFS_control, GFS_data, &
+                              GFS_suite_interstitial, GFS_interstitial
 use GFS_init,           only: GFS_initialize
 use CCPP_driver,        only: CCPP_step, non_uniform_blocks
 
@@ -462,6 +462,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
 
    allocate(DYCORE_Data(Atm_block%nblks))
    allocate(GFS_data(Atm_block%nblks))
+   allocate(GFS_suite_interstitial(Atm_block%nblks))
 
 #ifdef _OPENMP
    nthrds = omp_get_max_threads()
@@ -543,9 +544,9 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    endif
 #endif
 
-   call GFS_initialize (GFS_control, GFS_data%Statein, GFS_data%Stateout, GFS_data%Sfcprop,     &
-                        GFS_data%Coupling, GFS_data%Grid, GFS_data%Tbd, GFS_data%Cldprop, GFS_data%Radtend, & 
-                        GFS_data%Intdiag, GFS_interstitial, commglobal, mpp_npes(), Init_parm)
+   call GFS_initialize (GFS_Control, GFS_Data%Statein, GFS_Data%Stateout, GFS_Data%Sfcprop, GFS_Data%Coupling, &
+                        GFS_Data%Grid, GFS_Data%Tbd, GFS_Data%Cldprop, GFS_Data%Radtend, GFS_Data%Intdiag,     & 
+                        GFS_suite_Interstitial, GFS_Interstitial, commglobal, mpp_npes(), Init_parm)
 
    !--- populate/associate the Diag container elements
    call GFS_externaldiag_populate (GFS_Diag, GFS_Control, GFS_Data%Statein, GFS_Data%Stateout,   &

@@ -6,8 +6,9 @@ module CCPP_data
 
     use ccpp_types,    only: ccpp_t
     use CCPP_typedefs, only: CCPP_interstitial_type
-    use GFS_typedefs,  only: GFS_control_type,       &
-                             GFS_data_type,          &
+    use GFS_typedefs,  only: GFS_control_type,            &
+                             GFS_data_type,               &
+                             GFS_suite_interstitial_type, &
                              GFS_interstitial_type
 
     implicit none
@@ -21,15 +22,17 @@ module CCPP_data
            CCPP_interstitial,      &
            GFS_control,            &
            GFS_data,               &
+           GFS_suite_interstitial, &
            GFS_interstitial
 
     !-------------------------------------------------------!
     !  GFS data containers, GFS_Data has dimension nblocks  !
     !  and GFS_Interstitial has dimension nthreads          !
     !-------------------------------------------------------!
-    type(GFS_control_type),                                    save, target :: GFS_control
-    type(GFS_data_type),          dimension(:),   allocatable, save, target :: GFS_data
-    type(GFS_interstitial_type),  dimension(:),   allocatable, save, target :: GFS_interstitial
+    type(GFS_control_type),                                         save, target :: GFS_control
+    type(GFS_data_type),               dimension(:),   allocatable, save, target :: GFS_data
+    type(GFS_suite_interstitial_type), dimension(:),   allocatable, save, target :: GFS_suite_interstitial
+    type(GFS_interstitial_type),       dimension(:),   allocatable, save, target :: GFS_interstitial
 
     !------------------------------------------------------!
     !  CCPP data containers for dynamics (fast physics)    !
