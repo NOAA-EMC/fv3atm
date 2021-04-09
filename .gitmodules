@@ -11,4 +11,4 @@
 	#url = https://github.com/NCAR/ccpp-physics
 	#branch = master
 	url = https://github.com/climbfuji/ccpp-physics
-	branch = rename_surface_composites_ocean_water
+	branch = split_physics_group_20210409
