@@ -830,7 +830,7 @@ module post_regional
       enddo
 !
 !** temporary fix: initialize t10m, t10avg, psfcavg, akhsavg, akmsavg
-!$omp parallel do default(none),private(i,j),shared(jsta_2l,jend_2u,im,spval), &
+!$omp parallel do default(none),private(i,j),shared(jsta_2l,jend_2u,im), &
 !$omp& shared(t10m,t10avg,psfcavg,akhsavg, akmsavg)
       do j=jsta_2l,jend_2u
         do i=1,im
