@@ -9,4 +9,4 @@
 [submodule "ccpp/physics"]
 	path = ccpp/physics
 	url = https://github.com/dustinswales/ccpp-physics
-	branch = hotfix_GPthreadsafe
+	branch = addLWadj_fullProfile
