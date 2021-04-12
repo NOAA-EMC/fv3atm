@@ -325,8 +325,16 @@ subroutine update_atmos_radiation_physics (Atmos)
 !--- execute the atmospheric physics step1 subcomponent (main physics driver)
 
       call mpp_clock_begin(physClock)
-      call CCPP_step (step="physics", nblks=Atm_block%nblks, ierr=ierr)
-      if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP physics step failed')
+      if (trim(ccpp_suite)=='FV3_GFS_v16') then
+        call CCPP_step (step="surface_physics", nblks=Atm_block%nblks, ierr=ierr)
+        if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP surface physics step failed')
+        if (mpp_pe() == mpp_root_pe() .and. debug) write(6,*) "time to do something facy between surface and atmosphere physics"
+        call CCPP_step (step="atmosphere_physics", nblks=Atm_block%nblks, ierr=ierr)
+        if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP atmosphere physics step failed')
+      else
+        call CCPP_step (step="physics", nblks=Atm_block%nblks, ierr=ierr)
+        if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP physics step failed')
+      end if
       call mpp_clock_end(physClock)
 
       if (chksum_debug) then

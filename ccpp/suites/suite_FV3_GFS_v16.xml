@@ -28,10 +28,15 @@
       <scheme>GFS_rrtmg_post</scheme>
     </subcycle>
   </group>
-  <group name="physics">
+  <group name="surface_physics">
     <subcycle loop="1">
       <scheme>GFS_suite_interstitial_phys_reset</scheme>
       <scheme>GFS_suite_stateout_reset</scheme>
+      <!-- DH*
+      <scheme>GFS_diagtoscreen</scheme>
+      <scheme>GFS_suiteinterstitialtoscreen</scheme>
+      <scheme>GFS_interstitialtoscreen</scheme>
+       *DH -->
       <scheme>get_prs_fv3</scheme>
       <scheme>GFS_suite_interstitial_1</scheme>
       <scheme>GFS_surface_generic_pre</scheme>
@@ -57,6 +62,10 @@
       <scheme>sfc_diag</scheme>
       <scheme>sfc_diag_post</scheme>
       <scheme>GFS_surface_generic_post</scheme>
+    </subcycle>
+  </group>
+  <group name="atmosphere_physics">
+    <subcycle loop="1">
       <scheme>GFS_PBL_generic_pre</scheme>
       <scheme>satmedmfvdifq</scheme>
       <scheme>GFS_PBL_generic_post</scheme>
