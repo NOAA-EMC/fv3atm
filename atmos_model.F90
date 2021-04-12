@@ -229,6 +229,7 @@ subroutine update_atmos_radiation_physics (Atmos)
   implicit none
   type (atmos_data_type), intent(in) :: Atmos
 !--- local variables---
+    integer :: idtend, itrac
     integer :: nb, jdat(8), rc, ierr
 
     if (mpp_pe() == mpp_root_pe() .and. debug) write(6,*) "statein driver"
@@ -283,21 +284,40 @@ subroutine update_atmos_radiation_physics (Atmos)
       ! Calculate total non-physics tendencies by substracting old IPD Stateout
       ! variables from new/updated IPD Statein variables (gives the tendencies
       ! due to anything else than physics)
-      if (GFS_control%ldiag3d) then
-        do nb = 1,Atm_block%nblks
-          GFS_data(nb)%Intdiag%du3dt(:,:,8)  = GFS_data(nb)%Intdiag%du3dt(:,:,8)  &
-                                              + (GFS_data(nb)%Statein%ugrs - GFS_data(nb)%Stateout%gu0)
-          GFS_data(nb)%Intdiag%dv3dt(:,:,8)  = GFS_data(nb)%Intdiag%dv3dt(:,:,8)  &
-                                              + (GFS_data(nb)%Statein%vgrs - GFS_data(nb)%Stateout%gv0)
-          GFS_data(nb)%Intdiag%dt3dt(:,:,11) = GFS_data(nb)%Intdiag%dt3dt(:,:,11) &
-                                              + (GFS_data(nb)%Statein%tgrs - GFS_data(nb)%Stateout%gt0)
-        enddo
-        if (GFS_control%qdiag3d) then
+      if (GFS_Control%ldiag3d) then
+        idtend = GFS_Control%dtidx(GFS_Control%index_of_x_wind,GFS_Control%index_of_process_non_physics)
+        if(idtend>=1) then
           do nb = 1,Atm_block%nblks
-            GFS_data(nb)%Intdiag%dq3dt(:,:,12) = GFS_data(nb)%Intdiag%dq3dt(:,:,12) &
-                  + (GFS_data(nb)%Statein%qgrs(:,:,GFS_control%ntqv) - GFS_data(nb)%Stateout%gq0(:,:,GFS_control%ntqv))
-            GFS_data(nb)%Intdiag%dq3dt(:,:,13) = GFS_data(nb)%Intdiag%dq3dt(:,:,13) &
-                  + (GFS_data(nb)%Statein%qgrs(:,:,GFS_control%ntoz) - GFS_data(nb)%Stateout%gq0(:,:,GFS_control%ntoz))
+            GFS_data(nb)%Intdiag%dtend(:,:,idtend) = GFS_data(nb)%Intdiag%dtend(:,:,idtend) &
+                 + (GFS_data(nb)%Statein%ugrs - GFS_data(nb)%Stateout%gu0)
+          enddo
+        endif
+
+        idtend = GFS_Control%dtidx(GFS_Control%index_of_y_wind,GFS_Control%index_of_process_non_physics)
+        if(idtend>=1) then
+          do nb = 1,Atm_block%nblks
+            GFS_data(nb)%Intdiag%dtend(:,:,idtend) = GFS_data(nb)%Intdiag%dtend(:,:,idtend) &
+                 + (GFS_data(nb)%Statein%vgrs - GFS_data(nb)%Stateout%gv0)
+          enddo
+        endif
+
+        idtend = GFS_Control%dtidx(GFS_Control%index_of_temperature,GFS_Control%index_of_process_non_physics)
+        if(idtend>=1) then
+          do nb = 1,Atm_block%nblks
+            GFS_data(nb)%Intdiag%dtend(:,:,idtend) = GFS_data(nb)%Intdiag%dtend(:,:,idtend) &
+                 + (GFS_data(nb)%Statein%tgrs - GFS_data(nb)%Stateout%gt0)
+          enddo
+        endif
+
+        if (GFS_Control%qdiag3d) then
+          do itrac=1,GFS_Control%ntrac
+            idtend = GFS_Control%dtidx(itrac+100,GFS_Control%index_of_process_non_physics)
+            if(idtend>=1) then
+              do nb = 1,Atm_block%nblks
+                GFS_data(nb)%Intdiag%dtend(:,:,idtend) = GFS_data(nb)%Intdiag%dtend(:,:,idtend) &
+                     + (GFS_data(nb)%Statein%qgrs(:,:,itrac) - GFS_data(nb)%Stateout%gq0(:,:,itrac))
+              enddo
+            endif
           enddo
         endif
       endif
