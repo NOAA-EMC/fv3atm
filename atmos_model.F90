@@ -416,24 +416,6 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
 
    logunit = stdlog()
 
-!-----------------------------------------------------------------------
-! initialize atmospheric model -----
-
-   IF ( file_exist('input.nml')) THEN
-#ifdef INTERNAL_FILE_NML
-      read(input_nml_file, nml=atmos_model_nml, iostat=io)
-      ierr = check_nml_error(io, 'atmos_model_nml')
-#else
-      unit = open_namelist_file ( )
-      ierr=1
-      do while (ierr /= 0)
-         read  (unit, nml=atmos_model_nml, iostat=io, end=10)
-         ierr = check_nml_error(io,'atmos_model_nml')
-      enddo
- 10     call close_file (unit)
-#endif
-   endif
-
 !---------- initialize atmospheric dynamics after reading the namelist -------
 !---------- (need name of CCPP suite definition file from input.nml) ---------
    call atmosphere_init (Atmos%Time_init, Atmos%Time, Atmos%Time_step,&
@@ -453,6 +435,25 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
 
    Atmos%mlon = mlon
    Atmos%mlat = mlat
+
+!----------------------------------------------------------------------------------------------
+! initialize atmospheric model - must happen AFTER atmosphere_init so that nests work correctly
+
+   IF ( file_exist('input.nml')) THEN
+#ifdef INTERNAL_FILE_NML
+      read(input_nml_file, nml=atmos_model_nml, iostat=io)
+      ierr = check_nml_error(io, 'atmos_model_nml')
+#else
+      unit = open_namelist_file ( )
+      ierr=1
+      do while (ierr /= 0)
+         read  (unit, nml=atmos_model_nml, iostat=io, end=10)
+         ierr = check_nml_error(io,'atmos_model_nml')
+      enddo
+ 10     call close_file (unit)
+#endif
+   endif
+
 !-----------------------------------------------------------------------
 !--- before going any further check definitions for 'blocks'
 !-----------------------------------------------------------------------
@@ -2620,6 +2621,20 @@ end subroutine atmos_data_type_chksum
         enddo
       enddo
     endif
+
+   ! oceanfrac used by atm to calculate fluxes
+    idx = queryfieldlist(exportFieldsList,'openwater_frac_in_atm')
+    if (idx > 0 ) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          exportData(i,j,idx) = (one - GFS_Data(nb)%Sfcprop%fice(ix))*GFS_Data(nb)%Sfcprop%oceanfrac(ix)
+        enddo
+      enddo
+    endif
+
     endif !cplflx
 
 !---
