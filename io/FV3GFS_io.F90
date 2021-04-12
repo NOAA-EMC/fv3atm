@@ -355,7 +355,7 @@ module FV3GFS_io_mod
         temp2d(i,j,idx_opt+50) = GFS_Data(nb)%Sfcprop%albdnir_lnd(ix)
         temp2d(i,j,idx_opt+51) = GFS_Data(nb)%Sfcprop%albivis_lnd(ix)
         temp2d(i,j,idx_opt+52) = GFS_Data(nb)%Sfcprop%albinir_lnd(ix)
-        temp2d(i,j,idx_opt+53) = GFS_Data(nb)%Sfcprop%emiss(ix)
+        temp2d(i,j,idx_opt+53) = GFS_Data(nb)%Sfcprop%emis_lnd(ix)
         idx_opt = 141
        endif
 
@@ -809,11 +809,11 @@ module FV3GFS_io_mod
         sfc_name2(nvar_s2m+45) = 'smcwtdxy'
         sfc_name2(nvar_s2m+46) = 'deeprechxy'
         sfc_name2(nvar_s2m+47) = 'rechxy'
-        sfc_name2(nvar_s2m+48) = 'albdvis'
-        sfc_name2(nvar_s2m+49) = 'albdnir'
-        sfc_name2(nvar_s2m+50) = 'albivis'
-        sfc_name2(nvar_s2m+51) = 'albinir'
-        sfc_name2(nvar_s2m+52) = 'emiss'
+        sfc_name2(nvar_s2m+48) = 'albdvis_lnd'
+        sfc_name2(nvar_s2m+49) = 'albdnir_lnd'
+        sfc_name2(nvar_s2m+50) = 'albivis_lnd'
+        sfc_name2(nvar_s2m+51) = 'albinir_lnd'
+        sfc_name2(nvar_s2m+52) = 'emis_lnd'
       else if (Model%lsm == Model%lsm_ruc .and. warm_start) then
         sfc_name2(nvar_s2m+19) = 'wetness'
         sfc_name2(nvar_s2m+20) = 'clw_surf_land'
@@ -1134,11 +1134,11 @@ module FV3GFS_io_mod
           Sfcprop(nb)%smcwtdxy(ix)   = sfc_var2(i,j,nvar_s2m+45)
           Sfcprop(nb)%deeprechxy(ix) = sfc_var2(i,j,nvar_s2m+46)
           Sfcprop(nb)%rechxy(ix)     = sfc_var2(i,j,nvar_s2m+47)
-          Sfcprop(nb)%albdvis_lnd(ix)    = sfc_var2(i,j,nvar_s2m+48)
-          Sfcprop(nb)%albdnir_lnd(ix)    = sfc_var2(i,j,nvar_s2m+49)
-          Sfcprop(nb)%albivis_lnd(ix)    = sfc_var2(i,j,nvar_s2m+50)
-          Sfcprop(nb)%albinir_lnd(ix)    = sfc_var2(i,j,nvar_s2m+51)
-          Sfcprop(nb)%emiss(ix)      = sfc_var2(i,j,nvar_s2m+52)
+          Sfcprop(nb)%albdvis_lnd(ix)= sfc_var2(i,j,nvar_s2m+48)
+          Sfcprop(nb)%albdnir_lnd(ix)= sfc_var2(i,j,nvar_s2m+49)
+          Sfcprop(nb)%albivis_lnd(ix)= sfc_var2(i,j,nvar_s2m+50)
+          Sfcprop(nb)%albinir_lnd(ix)= sfc_var2(i,j,nvar_s2m+51)
+          Sfcprop(nb)%emis_lnd(ix)   = sfc_var2(i,j,nvar_s2m+52)
         endif
 
         if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp .or. Model%lsm == Model%lsm_noah_wrfv4 .or. (.not.warm_start)) then
