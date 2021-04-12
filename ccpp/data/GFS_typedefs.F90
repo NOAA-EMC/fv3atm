@@ -762,8 +762,12 @@ module GFS_typedefs
     !--- Thompson's microphysical parameters
     logical              :: ltaerosol       !< flag for aerosol version
     logical              :: lradar          !< flag for radar reflectivity
+    logical              :: fcons           !< flag for constraints
+    logical              :: ffixneg         !< flag for fixing negative traces
     real(kind=kind_phys) :: nsradar_reset   !< seconds between resetting radar reflectivity calculation
     real(kind=kind_phys) :: ttendlim        !< temperature tendency limiter per time step in K/s
+    real(kind=kind_phys) :: crtclw          !< ritical value for cloud water to rain in kg kg-1
+    real(kind=kind_phys) :: srhci           !< critical super rh for ice generation
 
     !--- GFDL microphysical paramters
     logical              :: lgfdlmprad      !< flag for GFDL mp scheme and radiation consistency
@@ -3093,8 +3097,12 @@ module GFS_typedefs
     !--- Thompson microphysical parameters
     logical              :: ltaerosol      = .false.            !< flag for aerosol version
     logical              :: lradar         = .false.            !< flag for radar reflectivity
+    logical              :: fcons          = .false.            !< flag for constraints
+    logical              :: ffixneg        = .false.            !< flag for fixing negative traces
     real(kind=kind_phys) :: nsradar_reset  = -999.0             !< seconds between resetting radar reflectivity calculation, set to <0 for every time step
     real(kind=kind_phys) :: ttendlim       = -999.0             !< temperature tendency limiter, set to <0 to deactivate
+    real(kind=kind_phys) :: crtclw         = 0.01e-3            !< critical value for cloud water to rain in kg kg-1
+    real(kind=kind_phys) :: srhci          = 0.25               !< critical super rh for ice generation
 
     !--- GFDL microphysical parameters
     logical              :: lgfdlmprad     = .false.            !< flag for GFDLMP radiation interaction
@@ -3436,7 +3444,7 @@ module GFS_typedefs
                                mg_ncnst, mg_ninst, mg_ngnst, sed_supersat, do_sb_physics,   &
                                mg_alf,   mg_qcmin, mg_do_ice_gmao, mg_do_liq_liu,           &
                                ltaerosol, lradar, nsradar_reset, lrefres, ttendlim,         &
-                               lgfdlmprad,                                                  &
+                               lgfdlmprad, fcons, ffixneg, crtclw, srhci,                   &
                           !--- max hourly
                                avg_max_length,                                              &
                           !--- land/surface model control
@@ -3848,8 +3856,12 @@ module GFS_typedefs
 !--- Thompson MP parameters
     Model%ltaerosol        = ltaerosol
     Model%lradar           = lradar
+    Model%fcons            = fcons
+    Model%ffixneg          = ffixneg
     Model%nsradar_reset    = nsradar_reset
     Model%ttendlim         = ttendlim
+    Model%crtclw           = crtclw
+    Model%srhci            = srhci
 !--- F-A MP parameters
     Model%rhgrd            = rhgrd
     Model%spec_adv         = spec_adv
@@ -4678,8 +4690,12 @@ module GFS_typedefs
       if (Model%me == Model%master) print *,' Using Thompson double moment microphysics', &
                                           ' ltaerosol = ',Model%ltaerosol, &
                                           ' ttendlim =',Model%ttendlim, &
+                                          ' crtclw =',Model%crtclw, &
+                                          ' srhci=',Model%srhci, &
                                           ' effr_in =',Model%effr_in, &
                                           ' lradar =',Model%lradar, &
+                                          ' fcons =',Model%fcons, &
+                                          ' ffixneg =',Model%ffixneg, &
                                           ' nsradar_reset =',Model%nsradar_reset, &
                                           ' num_p3d =',Model%num_p3d, &
                                           ' num_p2d =',Model%num_p2d
@@ -4976,9 +4992,13 @@ module GFS_typedefs
         print *, ' Thompson microphysical parameters'
         print *, ' ltaerosol         : ', Model%ltaerosol
         print *, ' lradar            : ', Model%lradar
+        print *, ' fcons             : ', Model%fcons
+        print *, ' ffixneg           : ', Model%ffixneg
         print *, ' nsradar_reset     : ', Model%nsradar_reset
         print *, ' lrefres           : ', Model%lrefres
         print *, ' ttendlim          : ', Model%ttendlim
+        print *, ' crtclw            : ', Model%crtclw
+        print *, ' srhci             : ', Model%srhci
         print *, ' '
       endif
       if (Model%imp_physics == Model%imp_physics_mg) then

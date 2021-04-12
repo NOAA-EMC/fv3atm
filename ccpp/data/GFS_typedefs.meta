@@ -3284,6 +3284,32 @@
   units = flag
   dimensions = ()
   type = logical
+[fcons]
+  standard_name = flag_for_constraints
+  long_name = flag for constraints
+  units = flag
+  dimensions = ()
+  type = logical
+[ffixneg]
+  standard_name = flag_for_fixing_negative_traces
+  long_name = flag for fixing negative traces
+  units = flag
+  dimensions = ()
+  type = logical
+[crtclw]
+  standard_name = critical_value_for_cloud_water_to_rain
+  long_name = critical value for cloud water to rain
+  units = kg kg-1
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[srhci]
+  standard_name = critical_super_rh_for_ice_generation
+  long_name = critical super rh for ice generation
+  units = frac
+  dimensions = ()
+  type = real
+  kind = kind_phys
 [ttendlim]
   standard_name = limit_for_temperature_tendency_for_microphysics
   long_name = temperature tendency limiter per physics time step
