@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<suite name="FV3_GSD_noah" lib="ccppphys" ver="4">
+<suite name="FV3_GSD_noah" version="1">
   <!-- <init></init> -->
   <group name="time_vary">
     <subcycle loop="1">
@@ -79,7 +79,6 @@
       <scheme>mp_thompson_post</scheme>
       <scheme>GFS_MP_generic_post</scheme>
       <scheme>cu_gf_driver_post</scheme>
-      <scheme>tracer_sanitizer</scheme>
       <scheme>maximum_hourly_diagnostics</scheme>
     </subcycle>
   </group>
