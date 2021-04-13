@@ -3306,7 +3306,7 @@
 [srhci]
   standard_name = critical_super_rh_for_ice_generation
   long_name = critical super rh for ice generation
-  units = frac
+  units = none
   dimensions = ()
   type = real
   kind = kind_phys
