@@ -7,7 +7,7 @@ set -eu
 VALID_MACHINES=( wcoss_cray wcoss_dell_p3 gaea.intel jet.intel \
                  hera.intel orion.intel \
                  cheyenne.intel cheyenne.intel-impi cheyenne.gnu cheyenne.pgi endeavor.intel \
-                 stampede.intel supermuc_phase2.intel comet macosx.gnu \
+                 stampede.intel supermuc_phase2.intel macosx.gnu \
                  linux.intel linux.gnu linux.pgi )
 
 ###################################################################################################
