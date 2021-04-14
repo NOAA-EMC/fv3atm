@@ -543,9 +543,9 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[zorlo]
-  standard_name = surface_roughness_length_over_ocean
-  long_name = surface roughness length over ocean
+[zorlw]
+  standard_name = surface_roughness_length_over_water
+  long_name = surface roughness length over water
   units = cm
   dimensions = (horizontal_loop_extent)
   type = real
@@ -564,7 +564,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[zorlw]
+[zorlwav]
   standard_name = surface_roughness_length_from_wave_model
   long_name = surface roughness length from wave model
   units = cm
@@ -3979,8 +3979,8 @@
   type = real
   kind = kind_phys
 [betas_deep]
-  standard_name = downdraft_fraction_reaching_surface_over_ocean_deep_convection
-  long_name = downdraft fraction reaching surface over ocean for deep convection
+  standard_name = downdraft_fraction_reaching_surface_over_water_deep_convection
+  long_name = downdraft fraction reaching surface over water for deep convection
   units = frac
   dimensions = ()
   type = real
@@ -4121,8 +4121,8 @@
   type = real
   kind = kind_phys
 [sfc_z0_type]
-  standard_name = flag_for_surface_roughness_option_over_ocean
-  long_name = surface roughness options over ocean
+  standard_name = flag_for_surface_roughness_option_over_water
+  long_name = surface roughness options over water
   units = flag
   dimensions = ()
   type = integer
@@ -4950,8 +4950,8 @@
   type = real
   kind = kind_phys
 [coef_ric_s]
-  standard_name = coefficient_for_variable_bulk_richardson_number_over_ocean
-  long_name = coefficient for calculating variable bulk richardson number for hurricane PBL over ocean
+  standard_name = coefficient_for_variable_bulk_richardson_number_over_water
+  long_name = coefficient for calculating variable bulk richardson number for hurricane PBL over water
   units = none
   dimensions = ()
   type = real
@@ -7500,9 +7500,9 @@
   type = real
   kind = kind_phys
   active = (flag_for_microphysics_scheme == flag_for_fer_hires_microphysics_scheme)
-[adjsfculw_ocean]
-  standard_name = surface_upwelling_longwave_flux_over_ocean_interstitial
-  long_name = surface upwelling longwave flux at current time over ocean (temporary use as interstitial)
+[adjsfculw_water]
+  standard_name = surface_upwelling_longwave_flux_over_water_interstitial
+  long_name = surface upwelling longwave flux at current time over water (temporary use as interstitial)
   units = W m-2
   dimensions = (horizontal_loop_extent)
   type = real
@@ -7620,9 +7620,9 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[cd_ocean]
-  standard_name = surface_drag_coefficient_for_momentum_in_air_over_ocean
-  long_name = surface exchange coeff for momentum over ocean
+[cd_water]
+  standard_name = surface_drag_coefficient_for_momentum_in_air_over_water
+  long_name = surface exchange coeff for momentum over water
   units = none
   dimensions = (horizontal_loop_extent)
   type = real
@@ -7648,9 +7648,9 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[cdq_ocean]
-  standard_name = surface_drag_coefficient_for_heat_and_moisture_in_air_over_ocean
-  long_name = surface exchange coeff heat & moisture over ocean
+[cdq_water]
+  standard_name = surface_drag_coefficient_for_heat_and_moisture_in_air_over_water
+  long_name = surface exchange coeff heat surface exchange coeff heat & moisture over ocean moisture over water
   units = none
   dimensions = (horizontal_loop_extent)
   type = real
@@ -7669,9 +7669,9 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[chh_ocean]
-  standard_name = surface_drag_mass_flux_for_heat_and_moisture_in_air_over_ocean
-  long_name = thermal exchange coefficient over ocean
+[chh_water]
+  standard_name = surface_drag_mass_flux_for_heat_and_moisture_in_air_over_water
+  long_name = thermal exchange coefficient over water
   units = kg m-2 s-1
   dimensions = (horizontal_loop_extent)
   type = real
@@ -7863,9 +7863,9 @@
   type = real
   kind = kind_phys
   active = (gwd_opt == 3 .or. gwd_opt == 33)
-[cmm_ocean]
-  standard_name = surface_drag_wind_speed_for_momentum_in_air_over_ocean
-  long_name = momentum exchange coefficient over ocean
+[cmm_water]
+  standard_name = surface_drag_wind_speed_for_momentum_in_air_over_water
+  long_name = momentum exchange coefficient over water
   units = m s-1
   dimensions = (horizontal_loop_extent)
   type = real
@@ -8223,9 +8223,9 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[semis_ocean]
-  standard_name = surface_longwave_emissivity_over_ocean_interstitial
-  long_name = surface lw emissivity in fraction over ocean (temporary use as interstitial)
+[semis_water]
+  standard_name = surface_longwave_emissivity_over_water_interstitial
+  long_name = surface lw emissivity in fraction over water (temporary use as interstitial)
   units = frac
   dimensions = (horizontal_loop_extent)
   type = real
@@ -8251,9 +8251,9 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[ep1d_ocean]
-  standard_name = surface_upward_potential_latent_heat_flux_over_ocean
-  long_name = surface upward potential latent heat flux over ocean
+[ep1d_water]
+  standard_name = surface_upward_potential_latent_heat_flux_over_water
+  long_name = surface upward potential latent heat flux over water
   units = W m-2
   dimensions = (horizontal_loop_extent)
   type = real
@@ -8279,9 +8279,9 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[evap_ocean]
-  standard_name = kinematic_surface_upward_latent_heat_flux_over_ocean
-  long_name = kinematic surface upward latent heat flux over ocean
+[evap_water]
+  standard_name = kinematic_surface_upward_latent_heat_flux_over_water
+  long_name = kinematic surface upward latent heat flux over water
   units = kg kg-1 m s-1
   dimensions = (horizontal_loop_extent)
   type = real
@@ -8370,9 +8370,9 @@
   dimensions = (horizontal_loop_extent,adjusted_vertical_layer_dimension_for_radiation,number_of_aerosol_bands_for_shortwave_radiation)
   type = real
   kind = kind_phys
-[ffhh_ocean]
-  standard_name = Monin_Obukhov_similarity_function_for_heat_over_ocean
-  long_name = Monin-Obukhov similarity function for heat over ocean
+[ffhh_water]
+  standard_name = Monin_Obukhov_similarity_function_for_heat_over_water
+  long_name = Monin-Obukhov similarity function for heat over water
   units = none
   dimensions = (horizontal_loop_extent)
   type = real
@@ -8398,9 +8398,9 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[fh2_ocean]
-  standard_name = Monin_Obukhov_similarity_function_for_heat_at_2m_over_ocean
-  long_name = Monin-Obukhov similarity parameter for heat at 2m over ocean
+[fh2_water]
+  standard_name = Monin_Obukhov_similarity_function_for_heat_at_2m_over_water
+  long_name = Monin-Obukhov similarity parameter for heat at 2m over water
   units = none
   dimensions = (horizontal_loop_extent)
   type = real
@@ -8451,9 +8451,9 @@
   dimensions = (horizontal_loop_extent)
   type = logical
   active = (flag_for_land_surface_scheme == flag_for_noah_wrfv4_land_surface_scheme)
-[ffmm_ocean]
-  standard_name = Monin_Obukhov_similarity_function_for_momentum_over_ocean
-  long_name = Monin-Obukhov similarity function for momentum over ocean
+[ffmm_water]
+  standard_name = Monin_Obukhov_similarity_function_for_momentum_over_water
+  long_name = Monin-Obukhov similarity function for momentum over water
   units = none
   dimensions = (horizontal_loop_extent)
   type = real
@@ -8479,9 +8479,9 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[fm10_ocean]
-  standard_name = Monin_Obukhov_similarity_function_for_momentum_at_10m_over_ocean
-  long_name = Monin-Obukhov similarity parameter for momentum at 10m over ocean
+[fm10_water]
+  standard_name = Monin_Obukhov_similarity_function_for_momentum_at_10m_over_water
+  long_name = Monin-Obukhov similarity parameter for momentum at 10m over water
   units = none
   dimensions = (horizontal_loop_extent)
   type = real
@@ -8535,9 +8535,9 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[gabsbdlw_ocean]
-  standard_name = surface_downwelling_longwave_flux_absorbed_by_ground_over_ocean
-  long_name = total sky surface downward longwave flux absorbed by the ground over ocean
+[gabsbdlw_water]
+  standard_name = surface_downwelling_longwave_flux_absorbed_by_ground_over_water
+  long_name = total sky surface downward longwave flux absorbed by the ground over water
   units = W m-2
   dimensions = (horizontal_loop_extent)
   type = real
@@ -8654,9 +8654,9 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[gflx_ocean]
-  standard_name = upward_heat_flux_in_soil_over_ocean
-  long_name = soil heat flux over ocean
+[gflx_water]
+  standard_name = upward_heat_flux_in_soil_over_water
+  long_name = soil heat flux over water
   units = W m-2
   dimensions = (horizontal_loop_extent)
   type = real
@@ -8718,9 +8718,9 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[hflx_ocean]
-  standard_name = kinematic_surface_upward_sensible_heat_flux_over_ocean
-  long_name = kinematic surface upward sensible heat flux over ocean
+[hflx_water]
+  standard_name = kinematic_surface_upward_sensible_heat_flux_over_water
+  long_name = kinematic surface upward sensible heat flux over water
   units = K m s-1
   dimensions = (horizontal_loop_extent)
   type = real
@@ -9201,9 +9201,9 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[qss_ocean]
-  standard_name = surface_specific_humidity_over_ocean
-  long_name = surface air saturation specific humidity over ocean
+[qss_water]
+  standard_name = surface_specific_humidity_over_water
+  long_name = surface air saturation specific humidity over water
   units = kg kg-1
   dimensions = (horizontal_loop_extent)
   type = real
@@ -9294,9 +9294,9 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[rb_ocean]
-  standard_name = bulk_richardson_number_at_lowest_model_level_over_ocean
-  long_name = bulk Richardson number at the surface over ocean
+[rb_water]
+  standard_name = bulk_richardson_number_at_lowest_model_level_over_water
+  long_name = bulk Richardson number at the surface over water
   units = none
   dimensions = (horizontal_loop_extent)
   type = real
@@ -9525,9 +9525,9 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[snowd_ocean]
-  standard_name = surface_snow_thickness_water_equivalent_over_ocean
-  long_name = water equivalent snow depth over ocean
+[snowd_water]
+  standard_name = surface_snow_thickness_water_equivalent_over_water
+  long_name = water equivalent snow depth over water
   units = mm
   dimensions = (horizontal_loop_extent)
   type = real
@@ -9637,9 +9637,9 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[stress_ocean]
-  standard_name = surface_wind_stress_over_ocean
-  long_name = surface wind stress over ocean
+[stress_water]
+  standard_name = surface_wind_stress_over_water
+  long_name = surface wind stress over water
   units = m2 s-2
   dimensions = (horizontal_loop_extent)
   type = real
@@ -9702,9 +9702,9 @@
   dimensions = (horizontal_loop_extent,adjusted_vertical_layer_dimension_for_radiation)
   type = real
   kind = kind_phys
-[tprcp_ocean]
-  standard_name = nonnegative_lwe_thickness_of_precipitation_amount_on_dynamics_timestep_over_ocean
-  long_name = total precipitation amount in each time step over ocean
+[tprcp_water]
+  standard_name = nonnegative_lwe_thickness_of_precipitation_amount_on_dynamics_timestep_over_water
+  long_name = total precipitation amount in each time step over water
   units = m
   dimensions = (horizontal_loop_extent)
   type = real
@@ -9770,9 +9770,9 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[tsfc_ocean]
-  standard_name = surface_skin_temperature_over_ocean_interstitial
-  long_name = surface skin temperature over ocean (temporary use as interstitial)
+[tsfc_water]
+  standard_name = surface_skin_temperature_over_water_interstitial
+  long_name = surface skin temperature over water (temporary use as interstitial)
   units = K
   dimensions = (horizontal_loop_extent)
   type = real
@@ -9813,9 +9813,9 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[tsurf_ocean]
-  standard_name = surface_skin_temperature_after_iteration_over_ocean
-  long_name = surface skin temperature after iteration over ocean
+[tsurf_water]
+  standard_name = surface_skin_temperature_after_iteration_over_water
+  long_name = surface skin temperature after iteration over water
   units = K
   dimensions = (horizontal_loop_extent)
   type = real
@@ -9847,9 +9847,9 @@
   dimensions = (horizontal_loop_extent,vertical_dimension)
   type = real
   kind = kind_phys
-[uustar_ocean]
-  standard_name = surface_friction_velocity_over_ocean
-  long_name = surface friction velocity over ocean
+[uustar_water]
+  standard_name = surface_friction_velocity_over_water
+  long_name = surface friction velocity over water
   units = m s-1
   dimensions = (horizontal_loop_extent)
   type = real
@@ -9910,9 +9910,9 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[weasd_ocean]
-  standard_name = water_equivalent_accumulated_snow_depth_over_ocean
-  long_name = water equiv of acc snow depth over ocean
+[weasd_water]
+  standard_name = water_equivalent_accumulated_snow_depth_over_water
+  long_name = water equiv of acc snow depth over water
   units = mm
   dimensions = (horizontal_loop_extent)
   type = real
@@ -9992,27 +9992,6 @@
   standard_name = perturbation_of_momentum_roughness_length
   long_name = perturbation of momentum roughness length
   units = frac
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-[zorl_ocean]
-  standard_name = surface_roughness_length_over_ocean_interstitial
-  long_name = surface roughness length over ocean (temporary use as interstitial)
-  units = cm
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-[zorl_land]
-  standard_name = surface_roughness_length_over_land_interstitial
-  long_name = surface roughness length over land  (temporary use as interstitial)
-  units = cm
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-[zorl_ice]
-  standard_name = surface_roughness_length_over_ice_interstitial
-  long_name = surface roughness length over ice   (temporary use as interstitial)
-  units = cm
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys

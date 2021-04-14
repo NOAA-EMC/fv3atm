@@ -11,4 +11,4 @@
 	#url = https://github.com/NCAR/ccpp-physics
 	#branch = master
 	url = https://github.com/climbfuji/ccpp-physics
-	branch = threading_aerosol_interp_noahmp_init
+	branch = zorl_ocnwat_merra2_combined
