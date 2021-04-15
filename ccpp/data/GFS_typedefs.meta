@@ -9504,6 +9504,13 @@
   units = W m-2
   dimensions = (horizontal_loop_extent)
   type = cmpfsw_type
+[sfcalb]
+  standard_name = surface_albedo_components
+  long_name = surface albedo IR/UV/VIS components
+  units = frac
+  dimensions = (horizontal_loop_extent,number_of_components_for_surface_albedo)
+  type = real
+  kind = kind_phys
 [sfcalb(:,1)]
   standard_name = surface_albedo_due_to_near_IR_direct
   long_name = surface albedo due to near IR direct beam
