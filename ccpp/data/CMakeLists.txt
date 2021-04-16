@@ -31,7 +31,7 @@ add_library(
 target_link_libraries(ccppdata PUBLIC ccpp)
 target_link_libraries(ccppdata PUBLIC ccppphys)
 
-if(OpenMP_Fortran_FOUND)
+if(OPENMP)
   target_link_libraries(ccppdata PUBLIC OpenMP::OpenMP_Fortran)
 endif()
 

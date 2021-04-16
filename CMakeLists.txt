@@ -96,7 +96,7 @@ endif()
 
 list(APPEND _fv3dycore_defs_private CCPP)
 
-if(OpenMP_Fortran_FOUND)
+if(OPENMP)
   list(APPEND _fv3dycore_defs_private OPENMP)
 endif()
 
@@ -116,7 +116,7 @@ target_link_libraries(fv3dycore PUBLIC fms
                                        ccppphys
                                        ccppdata
                                        esmf)
-if(OpenMP_Fortran_FOUND)
+if(OPENMP)
   target_link_libraries(fv3dycore PUBLIC OpenMP::OpenMP_Fortran)
 endif()
 
@@ -190,7 +190,7 @@ if(INLINE_POST)
   target_link_libraries(fv3atm PUBLIC upp::upp)
 endif()
 
-if(OpenMP_Fortran_FOUND)
+if(OPENMP)
   target_link_libraries(fv3atm PUBLIC OpenMP::OpenMP_Fortran)
 endif()
 

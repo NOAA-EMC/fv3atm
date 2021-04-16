@@ -8,6 +8,6 @@ target_link_libraries(stochastic_physics_wrapper PUBLIC fms
                                                         stochastic_physics
                                                         fv3dycore)
 
-if(OpenMP_Fortran_FOUND)
+if(OPENMP)
   target_link_libraries(stochastic_physics_wrapper PUBLIC OpenMP::OpenMP_Fortran)
 endif()

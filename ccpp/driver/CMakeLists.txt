@@ -38,7 +38,7 @@ target_link_libraries(ccppdriver PUBLIC ccpp)
 target_link_libraries(ccppdriver PUBLIC ccppphys)
 target_link_libraries(ccppdriver PUBLIC ccppdata)
 
-if(OpenMP_Fortran_FOUND)
+if(OPENMP)
   target_link_libraries(ccppdriver PUBLIC OpenMP::OpenMP_Fortran)
 endif()
 
