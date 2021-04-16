@@ -1564,7 +1564,8 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: refl_10cm(:,:) => null()  !< instantaneous refl_10cm
 
     !--- Extra PBL diagnostics
-    real (kind=kind_phys), pointer :: dkudiagnostic(:,:) => null()  !< Eddy diffusitivity from the EDMF and EDMF-TKE
+    real (kind=kind_phys), pointer :: dkt(:,:)       => null()  !< Eddy diffusitivity for heat from the EDMF and EDMF-TKE
+    real (kind=kind_phys), pointer :: dku(:,:)       => null()  !< Eddy diffusitivity for momentum from the EDMF and EDMF-TKE
 
 !
 !---vay-2018 UGWP-diagnostics instantaneous
@@ -5805,7 +5806,8 @@ module GFS_typedefs
     allocate (Diag%refl_10cm(IM,Model%levs))
 
     !--- New PBL Diagnostics
-    allocate (Diag%dkudiagnostic(IM,Model%levs))
+    allocate (Diag%dkt(IM,Model%levs))
+    allocate (Diag%dku(IM,Model%levs))
 
     !--  New max hourly diag.
     allocate (Diag%refdmax(IM))
@@ -6104,7 +6106,8 @@ module GFS_typedefs
 !-----------------------------
 
 ! Extra PBL diagnostics
-    Diag%dkudiagnostic  = zero
+    Diag%dkt = zero
+    Diag%dku = zero
 
 ! max hourly diagnostics
     Diag%refl_10cm   = zero
