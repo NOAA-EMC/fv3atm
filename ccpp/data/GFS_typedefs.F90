@@ -1992,7 +1992,6 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: tsfc_land_save(:)  => null()  !<
     real (kind=kind_phys), pointer      :: tsfc_ocean(:)      => null()  !<
     real (kind=kind_phys), pointer      :: tsfg(:)            => null()  !<
-    real (kind=kind_phys), pointer      :: tsurf(:)           => null()  !<
     real (kind=kind_phys), pointer      :: tsurf_ice(:)       => null()  !<
     real (kind=kind_phys), pointer      :: tsurf_land(:)      => null()  !<
     real (kind=kind_phys), pointer      :: tsurf_ocean(:)     => null()  !<
@@ -2023,6 +2022,9 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: zorl_land(:)       => null()  !<
     real (kind=kind_phys), pointer      :: zorl_ocean(:)      => null()  !<
     real (kind=kind_phys), pointer      :: zt1d(:)            => null()  !<
+    real (kind=kind_phys), pointer      :: ztmax_ice(:)       => null()  !<
+    real (kind=kind_phys), pointer      :: ztmax_land(:)      => null()  !<
+    real (kind=kind_phys), pointer      :: ztmax_water(:)     => null()  !<
 !==================================================================================================
 ! UGWP - five mechnanisms of momentum deposition due to various types of GWs
 ! (oss, ofd, obl, ogw) + ngw = sum( sso + ngw)
@@ -6483,7 +6485,6 @@ module GFS_typedefs
     allocate (Interstitial%tsfc_land       (IM))
     allocate (Interstitial%tsfc_ocean      (IM))
     allocate (Interstitial%tsfg            (IM))
-    allocate (Interstitial%tsurf           (IM))
     allocate (Interstitial%tsurf_ice       (IM))
     allocate (Interstitial%tsurf_land      (IM))
     allocate (Interstitial%tsurf_ocean     (IM))
@@ -6510,6 +6511,9 @@ module GFS_typedefs
     allocate (Interstitial%zorl_land       (IM))
     allocate (Interstitial%zorl_ocean      (IM))
     allocate (Interstitial%zt1d            (IM))
+    allocate (Interstitial%ztmax_ice       (IM))
+    allocate (Interstitial%ztmax_land      (IM))
+    allocate (Interstitial%ztmax_water     (IM))
 
     ! RRTMGP
     if (Model%do_RRTMGP) then
@@ -7155,7 +7159,6 @@ module GFS_typedefs
     Interstitial%tsfc_ice        = huge
     Interstitial%tsfc_land       = huge
     Interstitial%tsfc_ocean      = huge
-    Interstitial%tsurf           = clear_val
     Interstitial%tsurf_ice       = huge
     Interstitial%tsurf_land      = huge
     Interstitial%tsurf_ocean     = huge
@@ -7183,6 +7186,9 @@ module GFS_typedefs
     Interstitial%zorl_land       = huge
     Interstitial%zorl_ocean      = huge
     Interstitial%zt1d            = clear_val
+    Interstitial%ztmax_ice       = clear_val
+    Interstitial%ztmax_land      = clear_val
+    Interstitial%ztmax_water     = clear_val
 
 ! UGWP common
     Interstitial%tau_mtb         = clear_val
@@ -7542,7 +7548,6 @@ module GFS_typedefs
     write (0,*) 'sum(Interstitial%tsfc_land       ) = ', sum(Interstitial%tsfc_land       )
     write (0,*) 'sum(Interstitial%tsfc_ocean      ) = ', sum(Interstitial%tsfc_ocean      )
     write (0,*) 'sum(Interstitial%tsfg            ) = ', sum(Interstitial%tsfg            )
-    write (0,*) 'sum(Interstitial%tsurf           ) = ', sum(Interstitial%tsurf           )
     write (0,*) 'sum(Interstitial%tsurf_ice       ) = ', sum(Interstitial%tsurf_ice       )
     write (0,*) 'sum(Interstitial%tsurf_land      ) = ', sum(Interstitial%tsurf_land      )
     write (0,*) 'sum(Interstitial%tsurf_ocean     ) = ', sum(Interstitial%tsurf_ocean     )

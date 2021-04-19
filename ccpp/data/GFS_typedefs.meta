@@ -9891,13 +9891,6 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[tsurf]
-  standard_name = surface_skin_temperature_after_iteration
-  long_name = surface skin temperature after iteration
-  units = K
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
 [tsurf_ocean]
   standard_name = surface_skin_temperature_after_iteration_over_ocean
   long_name = surface skin temperature after iteration over ocean
@@ -10098,6 +10091,27 @@
   standard_name = surface_roughness_length_over_ice_interstitial
   long_name = surface roughness length over ice   (temporary use as interstitial)
   units = cm
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[ztmax_water]
+  standard_name = ztmax_whatever_that_is_over_water
+  long_name = zxtmax whatever that is over water
+  units = ???
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[ztmax_land]
+  standard_name = ztmax_whatever_that_is_over_land
+  long_name = zxtmax whatever that is over land
+  units = ???
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[ztmax_ice]
+  standard_name = ztmax_whatever_that_is_over_ice
+  long_name = zxtmax whatever that is over ice
+  units = ???
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
