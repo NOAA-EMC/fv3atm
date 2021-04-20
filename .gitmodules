@@ -8,5 +8,7 @@
 	branch = gsl/develop
 [submodule "ccpp/physics"]
 	path = ccpp/physics
-	url = https://github.com/NOAA-GSL/ccpp-physics
-	branch = gsl/develop-chem
+	#url = https://github.com/NOAA-GSL/ccpp-physics
+	#branch = gsl/develop-chem
+	url = https://github.com/climbfuji/ccpp-physics
+	branch = move_plumrise_to_gocart_repo
