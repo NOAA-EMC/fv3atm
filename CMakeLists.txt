@@ -127,15 +127,21 @@ endif()
 add_subdirectory(ccpp)
 add_subdirectory(ccpp/data)
 add_subdirectory(ccpp/driver)
-add_dependencies(ccppphys   ccpp)
+if(GOCART)
+  add_dependencies(ccppphys ccpp gocart)
+endif()
 add_dependencies(ccppdata   ccpp ccppphys)
 add_dependencies(ccppdriver ccpp ccppphys ccppdata)
 add_dependencies(fv3dycore  ccppdriver ccpp ccppphys ccppdata)
 target_include_directories(fv3dycore PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/ccpp/framework/src
                                              ${CMAKE_CURRENT_BINARY_DIR}/ccpp/physics
                                              ${CMAKE_CURRENT_BINARY_DIR}/ccpp/driver)
+
 target_link_libraries(ccppphys PUBLIC sp::sp_d
                                       w3nco::w3nco_d)
+if(GOCART)
+  target_link_libraries(ccppphys PUBLIC gocart)
+endif()
 
 ###############################################################################
 ### stochastic_physics
