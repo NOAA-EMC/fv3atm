@@ -825,8 +825,18 @@ module FV3GFS_io_mod
         sfc_name2(nvar_s2m+26) = 'snowfall_acc_land'
         sfc_name2(nvar_s2m+27) = 'snowfall_acc_ice'
         sfc_name2(nvar_s2m+28) = 'sncovr_ice'
+        sfc_name2(nvar_s2m+29) = 'albdvis_lnd'
+        sfc_name2(nvar_s2m+30) = 'albdnir_lnd'
+        sfc_name2(nvar_s2m+31) = 'albivis_lnd'
+        sfc_name2(nvar_s2m+32) = 'albinir_lnd'
+        sfc_name2(nvar_s2m+33) = 'emis_lnd'
+        sfc_name2(nvar_s2m+34) = 'albdvis_ice'
+        sfc_name2(nvar_s2m+35) = 'albdnir_ice'
+        sfc_name2(nvar_s2m+36) = 'albivis_ice'
+        sfc_name2(nvar_s2m+37) = 'albinir_ice'
+        sfc_name2(nvar_s2m+38) = 'emis_ice'
         if (Model%rdlai) then
-          sfc_name2(nvar_s2m+29) = 'lai'
+          sfc_name2(nvar_s2m+39) = 'lai'
         endif
       else if (Model%lsm == Model%lsm_ruc .and. Model%rdlai) then
         sfc_name2(nvar_s2m+19) = 'lai'
@@ -1094,8 +1104,18 @@ module FV3GFS_io_mod
           Sfcprop(nb)%snowfallac_land(ix) = sfc_var2(i,j,nvar_s2m+26)
           Sfcprop(nb)%snowfallac_ice(ix)  = sfc_var2(i,j,nvar_s2m+27)
           Sfcprop(nb)%sncovr_ice(ix)      = sfc_var2(i,j,nvar_s2m+28)
+          Sfcprop(nb)%albdvis_lnd(ix)     = sfc_var2(i,j,nvar_s2m+29)
+          Sfcprop(nb)%albdnir_lnd(ix)     = sfc_var2(i,j,nvar_s2m+30)
+          Sfcprop(nb)%albivis_lnd(ix)     = sfc_var2(i,j,nvar_s2m+31)
+          Sfcprop(nb)%albinir_lnd(ix)     = sfc_var2(i,j,nvar_s2m+32)
+          Sfcprop(nb)%emis_lnd(ix)        = sfc_var2(i,j,nvar_s2m+33)
+          Sfcprop(nb)%albdvis_ice(ix)     = sfc_var2(i,j,nvar_s2m+34)
+          Sfcprop(nb)%albdnir_ice(ix)     = sfc_var2(i,j,nvar_s2m+35)
+          Sfcprop(nb)%albivis_ice(ix)     = sfc_var2(i,j,nvar_s2m+36)
+          Sfcprop(nb)%albinir_ice(ix)     = sfc_var2(i,j,nvar_s2m+37)
+          Sfcprop(nb)%emis_ice(ix)        = sfc_var2(i,j,nvar_s2m+38)
           if (Model%rdlai) then
-            Sfcprop(nb)%xlaixy(ix)        = sfc_var2(i,j,nvar_s2m+29)
+            Sfcprop(nb)%xlaixy(ix)        = sfc_var2(i,j,nvar_s2m+39)
           endif
         else if (Model%lsm == Model%lsm_ruc) then
           ! Initialize RUC snow cover on ice from snow cover
