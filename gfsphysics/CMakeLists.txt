@@ -116,6 +116,7 @@ set(IPD_SOURCES_f
     physics/shalcv_opr.f
     physics/tracer_const_h.f
     physics/tridi2t3.f
+    physics/ideaca.f
 )
 
 set(IDEA_PHYS_SRCS_f

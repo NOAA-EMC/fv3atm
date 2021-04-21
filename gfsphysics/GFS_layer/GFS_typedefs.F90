@@ -548,11 +548,9 @@ module GFS_typedefs
 
     integer              :: me              !< MPI rank designator
     integer              :: master          !< MPI rank of master atmosphere processor
-!hmhj #ifdef CCPP
     integer              :: communicator    !< MPI communicator
     integer              :: ntasks          !< MPI size in communicator
     integer              :: nthreads        !< OpenMP threads available for physics
-!hmhj #endif
     integer              :: nlunit          !< unit for namelist
     character(len=64)    :: fn_nml          !< namelist filename for surface data cycling
     character(len=256), pointer :: input_nml_file(:) !< character string containing full namelist
@@ -2157,7 +2155,6 @@ module GFS_typedefs
 !-------------------------
 ! GFS sub-containers
 !-------------------------
-!hmhj #ifdef CCPP
 !------------------------------------------------------------------------------------
 ! combined type of all of the above except GFS_control_type and GFS_interstitial_type
 !------------------------------------------------------------------------------------
@@ -2175,7 +2172,6 @@ module GFS_typedefs
      type(GFS_radtend_type)  :: Radtend
      type(GFS_diag_type)     :: Intdiag
   end type GFS_data_type
-!hmhj #endif
 
 !----------------
 ! PUBLIC ENTITIES
@@ -4227,6 +4223,8 @@ module GFS_typedefs
     Model%ntoz             = get_tracer_index(Model%tracer_names, 'spo3',       Model%me, Model%master, Model%debug)
 #else
     Model%ntoz             = get_tracer_index(Model%tracer_names, 'o3mr',       Model%me, Model%master, Model%debug)
+    if( Model%ntoz <= 0 )  &
+    Model%ntoz             =  get_tracer_index(Model%tracer_names, 'spo3',       Model%me, Model%master, Model%debug)  
 #endif
     Model%ntcw             = get_tracer_index(Model%tracer_names, 'liq_wat',    Model%me, Model%master, Model%debug)
     Model%ntiw             = get_tracer_index(Model%tracer_names, 'ice_wat',    Model%me, Model%master, Model%debug)
