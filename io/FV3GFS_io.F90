@@ -172,10 +172,11 @@ module FV3GFS_io_mod
 
    if (Model%lsm == Model%lsm_noahmp) then
      nsfcprop2d = 156
-   elseif (Model%lsm == Model%lsm_s) then
+   elseif (Model%lsm == Model%lsm_ruc) then
      nsfcprop2d = 122
      if (Model%rdlai) then
        nsfcprop2d = nsfcprop2d + 1
+     endif
    else
      nsfcprop2d = 102
    endif
@@ -362,30 +363,30 @@ module FV3GFS_io_mod
         temp2d(i,j,idx_opt+53) = GFS_Data(nb)%Sfcprop%emis_lnd(ix)
         idx_opt = 141
        elseif (Model%lsm == Model%lsm_ruc) then
-        temp2d(i,j,idx_opt)    = Sfcprop(nb)%wetness(ix)
-        temp2d(i,j,idx_opt+1)  = Sfcprop(nb)%clw_surf_land(ix)
-        temp2d(i,j,idx_opt+2)  = Sfcprop(nb)%clw_surf_ice(ix)
-        temp2d(i,j,idx_opt+3)  = Sfcprop(nb)%qwv_surf_land(ix)
-        temp2d(i,j,idx_opt+4)  = Sfcprop(nb)%qwv_surf_ice(ix)
-        temp2d(i,j,idx_opt+5)  = Sfcprop(nb)%tsnow_land(ix)
-        temp2d(i,j,idx_opt+6)  = Sfcprop(nb)%tsnow_ice(ix)
-        temp2d(i,j,idx_opt+7)  = Sfcprop(nb)%snowfallac_land(ix)
-        temp2d(i,j,idx_opt+8)  = Sfcprop(nb)%snowfallac_ice(ix)
-        temp2d(i,j,idx_opt+9)  = Sfcprop(nb)%sncovr_ice(ix)
-        temp2d(i,j,idx_opt+10) = Sfcprop(nb)%albdvis_lnd(ix)
-        temp2d(i,j,idx_opt+11) = Sfcprop(nb)%albdnir_lnd(ix)
-        temp2d(i,j,idx_opt+12) = Sfcprop(nb)%albivis_lnd(ix)
-        temp2d(i,j,idx_opt+13) = Sfcprop(nb)%albinir_lnd(ix)
-        temp2d(i,j,idx_opt+14) = Sfcprop(nb)%emis_lnd(ix)
-        temp2d(i,j,idx_opt+15) = Sfcprop(nb)%albdvis_ice(ix)
-        temp2d(i,j,idx_opt+16) = Sfcprop(nb)%albdnir_ice(ix)
-        temp2d(i,j,idx_opt+17) = Sfcprop(nb)%albivis_ice(ix)
-        temp2d(i,j,idx_opt+18) = Sfcprop(nb)%albinir_ice(ix)
-        temp2d(i,j,idx_opt+19) = Sfcprop(nb)%emis_ice(ix)
-        idxopt = 107
+        temp2d(i,j,idx_opt)    = GFS_Data(nb)%Sfcprop%wetness(ix)
+        temp2d(i,j,idx_opt+1)  = GFS_Data(nb)%Sfcprop%clw_surf_land(ix)
+        temp2d(i,j,idx_opt+2)  = GFS_Data(nb)%Sfcprop%clw_surf_ice(ix)
+        temp2d(i,j,idx_opt+3)  = GFS_Data(nb)%Sfcprop%qwv_surf_land(ix)
+        temp2d(i,j,idx_opt+4)  = GFS_Data(nb)%Sfcprop%qwv_surf_ice(ix)
+        temp2d(i,j,idx_opt+5)  = GFS_Data(nb)%Sfcprop%tsnow_land(ix)
+        temp2d(i,j,idx_opt+6)  = GFS_Data(nb)%Sfcprop%tsnow_ice(ix)
+        temp2d(i,j,idx_opt+7)  = GFS_Data(nb)%Sfcprop%snowfallac_land(ix)
+        temp2d(i,j,idx_opt+8)  = GFS_Data(nb)%Sfcprop%snowfallac_ice(ix)
+        temp2d(i,j,idx_opt+9)  = GFS_Data(nb)%Sfcprop%sncovr_ice(ix)
+        temp2d(i,j,idx_opt+10) = GFS_Data(nb)%Sfcprop%albdvis_lnd(ix)
+        temp2d(i,j,idx_opt+11) = GFS_Data(nb)%Sfcprop%albdnir_lnd(ix)
+        temp2d(i,j,idx_opt+12) = GFS_Data(nb)%Sfcprop%albivis_lnd(ix)
+        temp2d(i,j,idx_opt+13) = GFS_Data(nb)%Sfcprop%albinir_lnd(ix)
+        temp2d(i,j,idx_opt+14) = GFS_Data(nb)%Sfcprop%emis_lnd(ix)
+        temp2d(i,j,idx_opt+15) = GFS_Data(nb)%Sfcprop%albdvis_ice(ix)
+        temp2d(i,j,idx_opt+16) = GFS_Data(nb)%Sfcprop%albdnir_ice(ix)
+        temp2d(i,j,idx_opt+17) = GFS_Data(nb)%Sfcprop%albivis_ice(ix)
+        temp2d(i,j,idx_opt+18) = GFS_Data(nb)%Sfcprop%albinir_ice(ix)
+        temp2d(i,j,idx_opt+19) = GFS_Data(nb)%Sfcprop%emis_ice(ix)
+        idx_opt = 107
         if (Model%rdlai) then
-          temp2d(i,j,idx_opt+20) = Sfcprop(nb)%xlaixy(ix)
-          idxopt = idxopt + 1
+          temp2d(i,j,idx_opt+20) = GFS_Data(nb)%Sfcprop%xlaixy(ix)
+          idx_opt = idx_opt + 1
         endif
        endif
 
