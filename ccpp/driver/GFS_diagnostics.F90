@@ -1935,6 +1935,28 @@ module GFS_diagnostics
 
     idx = idx + 1
     ExtDiag(idx)%axes = 3
+    ExtDiag(idx)%name = 'dkt'
+    ExtDiag(idx)%desc = 'Eddy diffusivity for heat'
+    ExtDiag(idx)%unit = 'm2s-1'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%dkt(:,:)
+    enddo
+
+    idx = idx + 1
+    ExtDiag(idx)%axes = 3
+    ExtDiag(idx)%name = 'dku'
+    ExtDiag(idx)%desc = 'Eddy diffusivity for momentum'
+    ExtDiag(idx)%unit = 'm2s-1'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%dku(:,:)
+    enddo
+
+    idx = idx + 1
+    ExtDiag(idx)%axes = 3
     ExtDiag(idx)%name = 'cldfra'
     ExtDiag(idx)%desc = 'Instantaneous 3D Cloud Fraction'
     ExtDiag(idx)%unit = 'frac'

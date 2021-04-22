@@ -448,7 +448,7 @@ module post_regional
       use vrbls3d,     only: t, q, uh, vh, wh, alpint, dpres, zint, zmid, o3,  &
                              qqr, qqs, cwm, qqi, qqw, qqg, omga, cfr, pmid,    &
                              q2, rlwtt, rswtt, tcucn, tcucns, train, el_pbl,   &
-                             pint, exch_h, ref_10cm
+                             pint, exch_h, ref_10cm, extcof55, aextc55, u, v
       use vrbls2d,     only: f, pd, sigt4, fis, pblh, ustar, z0, ths, qs, twbs,&
                              qwbs, avgcprate, cprate, avgprec, prec, lspa, sno,&
                              cldefi, th10, q10, tshltr, pshltr, tshltr, albase,&
@@ -477,7 +477,8 @@ module post_regional
                              up_heli_max03,up_heli_min03,rel_vort_max01,       &
                              rel_vort_max, rel_vort_maxhy1, refd_max,          &
                              refdm10c_max, u10max, v10max, wspd10max, sfcuxi,  &
-                             sfcvxi
+                             sfcvxi, t10m, t10avg, psfcavg, akhsavg, akmsavg,  &
+                             albedo, tg
       use soil,        only: sldpth, sh2o, smc, stc
       use masks,       only: lmv, lmh, htm, vtm, gdlat, gdlon, dx, dy, hbm2, sm, sice
       use ctlblk_mod,  only: im, jm, lm, lp1, jsta, jend, jsta_2l, jend_2u, jsta_m,jend_m, &
@@ -641,7 +642,7 @@ module post_regional
           lspa(i,j) = SPVAL
           th10(i,j) = SPVAL
           q10(i,j) = SPVAL
-          albase(i,j) = SPVAL
+          albase(i,j) = 0.
         enddo
       enddo
 
@@ -826,6 +827,34 @@ module post_regional
             qqs(i,j,l) = 0.
             qqi(i,j,l) = 0.
           enddo
+        enddo
+      enddo
+!
+!** temporary fix: initialize t10m, t10avg, psfcavg, akhsavg, akmsavg,
+!** albedo, tg
+!$omp parallel do default(none),private(i,j),shared(jsta_2l,jend_2u,im), &
+!$omp& shared(t10m,t10avg,psfcavg,akhsavg,akmsavg,albedo,tg)
+      do j=jsta_2l,jend_2u
+        do i=1,im
+          t10m(i,j) = 0.
+          t10avg(i,j) = 0.
+          psfcavg(i,j) = 0.
+          akhsavg(i,j) = 0.
+          akmsavg(i,j) = 0.
+          albedo(i,j) = 0.
+          tg(i,j) = 0.
+        enddo
+      enddo
+!$omp parallel do default(none),private(i,j,k),shared(jsta_2l,jend_2u,im,lm), &
+!$omp& shared(extcof55,aextc55,u,v)
+      do k=1,lm
+        do j=jsta_2l,jend_2u
+        do i=1,im
+          extcof55(i,j,k) = 0.
+          aextc55(i,j,k) = 0.
+          u(i,j,k) = 0.
+          v(i,j,k) = 0.
+        enddo
         enddo
       enddo
 !
@@ -1299,9 +1328,6 @@ module post_regional
                 do i=ista, iend
                   mxsnal(i,j) = arrayr42d(i,j)
                   if (abs(arrayr42d(i,j)-fillValue) < small) mxsnal(i,j) = spval
-                  if (mxsnal(i,j) /= spval) then
-                    mxsnal(i,j) = mxsnal(i,j) * 0.01
-                  endif
                 enddo
               enddo
             endif
@@ -1372,7 +1398,7 @@ module post_regional
                   else
                     islope(i,j) = 0
                   endif
-                  if (abs(arrayr42d(i,j)-fillValue) < small) islope(i,j) = spval
+                  if (abs(arrayr42d(i,j)-fillValue) < small) islope(i,j) = 0
                 enddo
               enddo
             endif
@@ -1925,7 +1951,7 @@ module post_regional
                 do i=ista, iend
                   if (arrayr42d(i,j) < spval) then
                     ivgtyp(i,j) = nint(arrayr42d(i,j))
-                    if( abs(arrayr42d(i,j)-fillValue) < small)  ivgtyp(i,j) = spval
+                    if( abs(arrayr42d(i,j)-fillValue) < small)  ivgtyp(i,j) = 0
                   else
                     ivgtyp(i,j) = 0
                   endif
@@ -1940,7 +1966,7 @@ module post_regional
                 do i=ista, iend
                   if (arrayr42d(i,j) < spval) then
                     isltyp(i,j) = nint(arrayr42d(i,j))
-                    if( abs(arrayr42d(i,j)-fillValue) < small)  isltyp(i,j) = spval
+                    if( abs(arrayr42d(i,j)-fillValue) < small)  isltyp(i,j) = 0
                   else
                     isltyp(i,j) = 0
                   endif
