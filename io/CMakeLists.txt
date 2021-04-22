@@ -1,9 +1,9 @@
 list(APPEND _io_defs_private use_WRTCOMP)
 
 if(INLINE_POST)
-  set(POST_SRC post_gfs.F90 post_nems_routines.F90)
+  set(POST_SRC inline_post.F90 post_nems_routines.F90 post_gfs.F90 post_regional.F90)
 else()
-  set(POST_SRC post_gfs_stub.F90)
+  set(POST_SRC inline_post_stub.F90)
   list(APPEND _io_defs_private NO_INLINE_POST)
 endif()
 
@@ -11,9 +11,7 @@ if(NOT PARALLEL_NETCDF)
   list(APPEND _io_defs_private NO_PARALLEL_NETCDF)
 endif()
 
-if(CCPP)
-  list(APPEND _io_defs_private CCPP)
-endif()
+list(APPEND _io_defs_private CCPP)
 
 add_library(
     io
@@ -34,17 +32,15 @@ target_compile_definitions(io PRIVATE "${_io_defs_private}")
 target_include_directories(io PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/mod>)
 
 target_link_libraries(io PRIVATE fms
-                                 gfsphysics
-                                 ipd)
+                                 ccppdriver)
 
 if(INLINE_POST)
-  target_link_libraries(io PRIVATE nceppost::nceppost)
+  target_link_libraries(io PRIVATE upp::upp)
 endif()
 
-if(CCPP)
-  target_include_directories(io PRIVATE ${CMAKE_BINARY_DIR}/FV3/ccpp/framework/src
-                                        ${CMAKE_BINARY_DIR}/FV3/ccpp/physics)
-endif()
+target_include_directories(io PRIVATE ${CMAKE_BINARY_DIR}/FV3/ccpp/framework/src
+                                      ${CMAKE_BINARY_DIR}/FV3/ccpp/physics
+                                      ${CMAKE_BINARY_DIR}/FV3/ccpp/driver/mod)
 
 target_link_libraries(io PRIVATE nemsio::nemsio
                                  esmf)
