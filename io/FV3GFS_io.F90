@@ -170,8 +170,12 @@ module FV3GFS_io_mod
 
    ntr = size(GFS_Data(1)%Statein%qgrs,3)
 
-   if(Model%lsm == Model%lsm_noahmp) then
-     nsfcprop2d = 156  
+   if (Model%lsm == Model%lsm_noahmp) then
+     nsfcprop2d = 156
+   elseif (Model%lsm == Model%lsm_s) then
+     nsfcprop2d = 122
+     if (Model%rdlai) then
+       nsfcprop2d = nsfcprop2d + 1
    else
      nsfcprop2d = 102
    endif
@@ -301,16 +305,16 @@ module FV3GFS_io_mod
 
        idx_opt = 87 
        if (Model%lsm == Model%lsm_noahmp) then
-        temp2d(i,j,idx_opt) = GFS_Data(nb)%Sfcprop%snowxy(ix)
-        temp2d(i,j,idx_opt+1) = GFS_Data(nb)%Sfcprop%tvxy(ix)
-        temp2d(i,j,idx_opt+2) = GFS_Data(nb)%Sfcprop%tgxy(ix)
-        temp2d(i,j,idx_opt+3) = GFS_Data(nb)%Sfcprop%canicexy(ix)
-        temp2d(i,j,idx_opt+4) = GFS_Data(nb)%Sfcprop%canliqxy(ix)
-        temp2d(i,j,idx_opt+5) = GFS_Data(nb)%Sfcprop%eahxy(ix)
-        temp2d(i,j,idx_opt+6) = GFS_Data(nb)%Sfcprop%tahxy(ix)
-        temp2d(i,j,idx_opt+7) = GFS_Data(nb)%Sfcprop%cmxy(ix)
-        temp2d(i,j,idx_opt+8) = GFS_Data(nb)%Sfcprop%chxy(ix)
-        temp2d(i,j,idx_opt+9) = GFS_Data(nb)%Sfcprop%fwetxy(ix)
+        temp2d(i,j,idx_opt)    = GFS_Data(nb)%Sfcprop%snowxy(ix)
+        temp2d(i,j,idx_opt+1)  = GFS_Data(nb)%Sfcprop%tvxy(ix)
+        temp2d(i,j,idx_opt+2)  = GFS_Data(nb)%Sfcprop%tgxy(ix)
+        temp2d(i,j,idx_opt+3)  = GFS_Data(nb)%Sfcprop%canicexy(ix)
+        temp2d(i,j,idx_opt+4)  = GFS_Data(nb)%Sfcprop%canliqxy(ix)
+        temp2d(i,j,idx_opt+5)  = GFS_Data(nb)%Sfcprop%eahxy(ix)
+        temp2d(i,j,idx_opt+6)  = GFS_Data(nb)%Sfcprop%tahxy(ix)
+        temp2d(i,j,idx_opt+7)  = GFS_Data(nb)%Sfcprop%cmxy(ix)
+        temp2d(i,j,idx_opt+8)  = GFS_Data(nb)%Sfcprop%chxy(ix)
+        temp2d(i,j,idx_opt+9)  = GFS_Data(nb)%Sfcprop%fwetxy(ix)
         temp2d(i,j,idx_opt+10) = GFS_Data(nb)%Sfcprop%sneqvoxy(ix)
         temp2d(i,j,idx_opt+11) = GFS_Data(nb)%Sfcprop%alboldxy(ix)
         temp2d(i,j,idx_opt+12) = GFS_Data(nb)%Sfcprop%qsnowxy(ix)
@@ -357,6 +361,32 @@ module FV3GFS_io_mod
         temp2d(i,j,idx_opt+52) = GFS_Data(nb)%Sfcprop%albinir_lnd(ix)
         temp2d(i,j,idx_opt+53) = GFS_Data(nb)%Sfcprop%emis_lnd(ix)
         idx_opt = 141
+       elseif (Model%lsm == Model%lsm_ruc) then
+        temp2d(i,j,idx_opt)    = Sfcprop(nb)%wetness(ix)
+        temp2d(i,j,idx_opt+1)  = Sfcprop(nb)%clw_surf_land(ix)
+        temp2d(i,j,idx_opt+2)  = Sfcprop(nb)%clw_surf_ice(ix)
+        temp2d(i,j,idx_opt+3)  = Sfcprop(nb)%qwv_surf_land(ix)
+        temp2d(i,j,idx_opt+4)  = Sfcprop(nb)%qwv_surf_ice(ix)
+        temp2d(i,j,idx_opt+5)  = Sfcprop(nb)%tsnow_land(ix)
+        temp2d(i,j,idx_opt+6)  = Sfcprop(nb)%tsnow_ice(ix)
+        temp2d(i,j,idx_opt+7)  = Sfcprop(nb)%snowfallac_land(ix)
+        temp2d(i,j,idx_opt+8)  = Sfcprop(nb)%snowfallac_ice(ix)
+        temp2d(i,j,idx_opt+9)  = Sfcprop(nb)%sncovr_ice(ix)
+        temp2d(i,j,idx_opt+10) = Sfcprop(nb)%albdvis_lnd(ix)
+        temp2d(i,j,idx_opt+11) = Sfcprop(nb)%albdnir_lnd(ix)
+        temp2d(i,j,idx_opt+12) = Sfcprop(nb)%albivis_lnd(ix)
+        temp2d(i,j,idx_opt+13) = Sfcprop(nb)%albinir_lnd(ix)
+        temp2d(i,j,idx_opt+14) = Sfcprop(nb)%emis_lnd(ix)
+        temp2d(i,j,idx_opt+15) = Sfcprop(nb)%albdvis_ice(ix)
+        temp2d(i,j,idx_opt+16) = Sfcprop(nb)%albdnir_ice(ix)
+        temp2d(i,j,idx_opt+17) = Sfcprop(nb)%albivis_ice(ix)
+        temp2d(i,j,idx_opt+18) = Sfcprop(nb)%albinir_ice(ix)
+        temp2d(i,j,idx_opt+19) = Sfcprop(nb)%emis_ice(ix)
+        idxopt = 107
+        if (Model%rdlai) then
+          temp2d(i,j,idx_opt+20) = Sfcprop(nb)%xlaixy(ix)
+          idxopt = idxopt + 1
+        endif
        endif
 
        if (Model%nstf_name(1) > 0) then
@@ -483,9 +513,9 @@ module FV3GFS_io_mod
 
     if (Model%lsm == Model%lsm_ruc .and. warm_start) then
       if(Model%rdlai) then
-        nvar_s2r = 11
+        nvar_s2r = 21
       else
-        nvar_s2r = 10
+        nvar_s2r = 20
       end if
       nvar_s3  = 5
     else
@@ -1374,9 +1404,9 @@ module FV3GFS_io_mod
     nvar2o = 18
     if (Model%lsm == Model%lsm_ruc) then
       if (Model%rdlai) then
-        nvar2r = 11
+        nvar2r = 21
       else
-        nvar2r = 10
+        nvar2r = 20
       endif
       nvar3  = 5
     else
@@ -1509,8 +1539,18 @@ module FV3GFS_io_mod
         sfc_name2(nvar2m+26) = 'snowfall_acc_land'
         sfc_name2(nvar2m+27) = 'snowfall_acc_ice'
         sfc_name2(nvar2m+28) = 'sncovr_ice'
+        sfc_name2(nvar2m+29) = 'albdvis_lnd'
+        sfc_name2(nvar2m+30) = 'albdnir_lnd'
+        sfc_name2(nvar2m+31) = 'albivis_lnd'
+        sfc_name2(nvar2m+32) = 'albinir_lnd'
+        sfc_name2(nvar2m+33) = 'emis_lnd'
+        sfc_name2(nvar2m+34) = 'albdvis_ice'
+        sfc_name2(nvar2m+35) = 'albdnir_ice'
+        sfc_name2(nvar2m+36) = 'albivis_ice'
+        sfc_name2(nvar2m+37) = 'albinir_ice'
+        sfc_name2(nvar2m+38) = 'emis_ice'
         if (Model%rdlai) then
-          sfc_name2(nvar2m+29) = 'lai'
+          sfc_name2(nvar2m+39) = 'lai'
         endif
       else if(Model%lsm == Model%lsm_noahmp) then
         ! Only needed when Noah MP LSM is used - 29 2D
@@ -1718,8 +1758,18 @@ module FV3GFS_io_mod
           sfc_var2(i,j,nvar2m+26) = Sfcprop(nb)%snowfallac_land(ix)
           sfc_var2(i,j,nvar2m+27) = Sfcprop(nb)%snowfallac_ice(ix)
           sfc_var2(i,j,nvar2m+28) = Sfcprop(nb)%sncovr_ice(ix)
+          sfc_var2(i,j,nvar2m+29) = Sfcprop(nb)%albdvis_lnd(ix)
+          sfc_var2(i,j,nvar2m+30) = Sfcprop(nb)%albdnir_lnd(ix)
+          sfc_var2(i,j,nvar2m+31) = Sfcprop(nb)%albivis_lnd(ix)
+          sfc_var2(i,j,nvar2m+32) = Sfcprop(nb)%albinir_lnd(ix)
+          sfc_var2(i,j,nvar2m+33) = Sfcprop(nb)%emis_lnd(ix)
+          sfc_var2(i,j,nvar2m+34) = Sfcprop(nb)%albdvis_ice(ix)
+          sfc_var2(i,j,nvar2m+35) = Sfcprop(nb)%albdnir_ice(ix)
+          sfc_var2(i,j,nvar2m+36) = Sfcprop(nb)%albivis_ice(ix)
+          sfc_var2(i,j,nvar2m+37) = Sfcprop(nb)%albinir_ice(ix)
+          sfc_var2(i,j,nvar2m+38) = Sfcprop(nb)%emis_ice(ix)
           if (Model%rdlai) then
-            sfc_var2(i,j,nvar2m+29) = Sfcprop(nb)%xlaixy(ix)
+            sfc_var2(i,j,nvar2m+39) = Sfcprop(nb)%xlaixy(ix)
           endif
         else if (Model%lsm == Model%lsm_noahmp) then
           !--- Extra Noah MP variables
