@@ -5805,8 +5805,8 @@ module GFS_typedefs
     allocate (Diag%refl_10cm(IM,Model%levs))
 
     !--- New PBL Diagnostics
-    allocate (Diag%dkt(IM,Model%levs-1))
-    allocate (Diag%dku(IM,Model%levs-1))
+    allocate (Diag%dkt(IM,Model%levs))
+    allocate (Diag%dku(IM,Model%levs))
 
     !--  New max hourly diag.
     allocate (Diag%refdmax(IM))
