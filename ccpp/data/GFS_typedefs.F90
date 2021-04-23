@@ -4421,7 +4421,7 @@ module GFS_typedefs
         do itrac=1,Model%ntrac
            write(namestr,'("tracer",I0)') itrac
            write(descstr,'("tracer ",I0," of ",I0)') itrac, Model%ntrac
-           call label_dtend_tracer(Model,100+itrac,trim(namestr),trim(descstr))
+           call label_dtend_tracer(Model,100+itrac,trim(namestr),trim(descstr),'kg kg-1 s-1')
         enddo
 
         if(Model%ntchs>0) then
@@ -4433,7 +4433,7 @@ module GFS_typedefs
               do ichem=Model%ntchs,Model%ntchs+Model%ntchm-1
                  write(namestr,'("chem",I0)') ichem
                  write(descstr,'("chemical tracer ",I0," of ",I0)') ichem, Model%ntchm
-                 call label_dtend_tracer(Model,100+ichem,trim(namestr),trim(descstr))
+                 call label_dtend_tracer(Model,100+ichem,trim(namestr),trim(descstr),'kg kg-1 s-1')
               enddo
            endif
 
@@ -4441,15 +4441,15 @@ module GFS_typedefs
            call label_dtend_tracer(Model,100+Model%ntchs,'so2','sulfur dioxide concentration')
            if(Model%ntchm>0) then
               ! Need better descriptions of these.
-              call label_dtend_tracer(Model,100+Model%ntchm+Model%ntchs-1,'pp10','pp10 concentration')
+              call label_dtend_tracer(Model,100+Model%ntchm+Model%ntchs-1,'pp10','pp10 concentration','kg kg-1 s-1')
 
               itrac=get_tracer_index(Model%tracer_names, 'DMS', Model%me, Model%master, Model%debug)
               if(itrac>0) then
-                 call label_dtend_tracer(Model,100+itrac,'DMS','DMS concentration')
+                 call label_dtend_tracer(Model,100+itrac,'DMS','DMS concentration','kg kg-1 s-1')
               endif
               itrac=get_tracer_index(Model%tracer_names, 'msa', Model%me, Model%master, Model%debug)
               if(itrac>0) then
-                 call label_dtend_tracer(Model,100+itrac,'msa','msa concentration')
+                 call label_dtend_tracer(Model,100+itrac,'msa','msa concentration','kg kg-1 s-1')
               endif
            endif
         endif
@@ -4459,25 +4459,25 @@ module GFS_typedefs
         call label_dtend_tracer(Model,Model%index_of_y_wind,'v','y wind','m s-2')
 
         ! Other tracer names. These were taken from GFS_typedefs.F90 with descriptions from GFS_typedefs.meta
-        call label_dtend_tracer(Model,100+Model%ntqv,'qv','water vapor specific humidity')
-        call label_dtend_tracer(Model,100+Model%ntoz,'o3','ozone concentration')
-        call label_dtend_tracer(Model,100+Model%ntcw,'liq_wat','cloud condensate (or liquid water)')
-        call label_dtend_tracer(Model,100+Model%ntiw,'ice_wat','ice water')
-        call label_dtend_tracer(Model,100+Model%ntrw,'rainwat','rain water')
-        call label_dtend_tracer(Model,100+Model%ntsw,'snowwat','snow water')
-        call label_dtend_tracer(Model,100+Model%ntgl,'graupel','graupel')
-        call label_dtend_tracer(Model,100+Model%ntclamt,'cld_amt','cloud amount integer')
-        call label_dtend_tracer(Model,100+Model%ntlnc,'water_nc','liquid number concentration')
-        call label_dtend_tracer(Model,100+Model%ntinc,'ice_nc','ice number concentration')
-        call label_dtend_tracer(Model,100+Model%ntrnc,'rain_nc','rain number concentration')
-        call label_dtend_tracer(Model,100+Model%ntsnc,'snow_nc','snow number concentration')
-        call label_dtend_tracer(Model,100+Model%ntgnc,'graupel_nc','graupel number concentration')
-        call label_dtend_tracer(Model,100+Model%ntke,'sgs_tke','turbulent kinetic energy')
-        call label_dtend_tracer(Model,100+Model%nqrimef,'q_rimef','mass weighted rime factor')
-        call label_dtend_tracer(Model,100+Model%ntwa,'liq_aero','number concentration of water-friendly aerosols')
-        call label_dtend_tracer(Model,100+Model%ntia,'ice_aero','number concentration of ice-friendly aerosols')
-        call label_dtend_tracer(Model,100+Model%nto,'o_ion','oxygen ion concentration')
-        call label_dtend_tracer(Model,100+Model%nto2,'o2','oxygen concentration')
+        call label_dtend_tracer(Model,100+Model%ntqv,'qv','water vapor specific humidity','kg kg-1 s-1')
+        call label_dtend_tracer(Model,100+Model%ntoz,'o3','ozone concentration','kg kg-1 s-1')
+        call label_dtend_tracer(Model,100+Model%ntcw,'liq_wat','cloud condensate (or liquid water)','kg kg-1 s-1')
+        call label_dtend_tracer(Model,100+Model%ntiw,'ice_wat','ice water','kg kg-1 s-1')
+        call label_dtend_tracer(Model,100+Model%ntrw,'rainwat','rain water','kg kg-1 s-1')
+        call label_dtend_tracer(Model,100+Model%ntsw,'snowwat','snow water','kg kg-1 s-1')
+        call label_dtend_tracer(Model,100+Model%ntgl,'graupel','graupel','kg kg-1 s-1')
+        call label_dtend_tracer(Model,100+Model%ntclamt,'cld_amt','cloud amount integer','kg kg-1 s-1')
+        call label_dtend_tracer(Model,100+Model%ntlnc,'water_nc','liquid number concentration','kg-1 s-1')
+        call label_dtend_tracer(Model,100+Model%ntinc,'ice_nc','ice number concentration','kg-1 s-1')
+        call label_dtend_tracer(Model,100+Model%ntrnc,'rain_nc','rain number concentration','kg-1 s-1')
+        call label_dtend_tracer(Model,100+Model%ntsnc,'snow_nc','snow number concentration','kg-1 s-1')
+        call label_dtend_tracer(Model,100+Model%ntgnc,'graupel_nc','graupel number concentration','kg-1 s-1')
+        call label_dtend_tracer(Model,100+Model%ntke,'sgs_tke','turbulent kinetic energy','J s-1')
+        call label_dtend_tracer(Model,100+Model%nqrimef,'q_rimef','mass weighted rime factor','kg-1 s-1')
+        call label_dtend_tracer(Model,100+Model%ntwa,'liq_aero','number concentration of water-friendly aerosols','kg-1 s-1')
+        call label_dtend_tracer(Model,100+Model%ntia,'ice_aero','number concentration of ice-friendly aerosols','kg-1 s-1')
+        call label_dtend_tracer(Model,100+Model%nto,'o_ion','oxygen ion concentration','kg kg-1 s-1')
+        call label_dtend_tracer(Model,100+Model%nto2,'o2','oxygen concentration','kg kg-1 s-1')
 
         call label_dtend_cause(Model,Model%index_of_process_pbl,'pbl','tendency due to PBL')
         call label_dtend_cause(Model,Model%index_of_process_dcnv,'deepcnv','tendency due to deep convection')
@@ -6064,7 +6064,7 @@ module GFS_typedefs
     type(GFS_control_type), intent(inout) :: Model
     integer, intent(in) :: itrac
     character(len=*), intent(in) :: name, desc
-    character(len=*), optional, intent(in) :: unit
+    character(len=*), intent(in) :: unit
     
     if(itrac<2) then
        ! Special index 1 is for unallocated tracers
@@ -6073,11 +6073,7 @@ module GFS_typedefs
     
     Model%dtend_var_labels(itrac)%name = name
     Model%dtend_var_labels(itrac)%desc = desc
-    if(present(unit)) then
-       Model%dtend_var_labels(itrac)%unit=unit
-    else
-       Model%dtend_var_labels(itrac)%unit='kg kg-1 s-1'
-    endif
+    Model%dtend_var_labels(itrac)%unit = unit
   end subroutine label_dtend_tracer
   
   subroutine label_dtend_cause(Model,icause,name,desc,mod_name,time_avg)
