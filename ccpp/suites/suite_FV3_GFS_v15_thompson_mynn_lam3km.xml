@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<suite name="FV3_GSD_v0" version="1">
+<suite name="FV3_GFS_v15_thompson_mynn_lam3km" version="1">
   <!-- <init></init> -->
   <group name="time_vary">
     <subcycle loop="1">
@@ -39,12 +39,13 @@
     </subcycle>
     <!-- Surface iteration loop -->
     <subcycle loop="2">
-      <scheme>sfc_diff</scheme>
+      <scheme>mynnsfc_wrapper</scheme>
       <scheme>GFS_surface_loop_control_part1</scheme>
       <scheme>sfc_nst_pre</scheme>
       <scheme>sfc_nst</scheme>
       <scheme>sfc_nst_post</scheme>
-      <scheme>lsm_ruc</scheme>
+      <scheme>lsm_noah</scheme>
+      <scheme>sfc_sice</scheme>
       <scheme>GFS_surface_loop_control_part2</scheme>
     </subcycle>
     <!-- End of surface iteration loop -->
@@ -55,7 +56,6 @@
       <scheme>GFS_surface_generic_post</scheme>
       <scheme>mynnedmf_wrapper</scheme>
       <scheme>GFS_GWD_generic_pre</scheme>
-      <scheme>cires_ugwp</scheme>
       <scheme>cires_ugwp_post</scheme>
       <scheme>GFS_GWD_generic_post</scheme>
       <scheme>rayleigh_damp</scheme>
@@ -64,12 +64,6 @@
       <scheme>h2ophys</scheme>
       <scheme>get_phi_fv3</scheme>
       <scheme>GFS_suite_interstitial_3</scheme>
-      <scheme>GFS_DCNV_generic_pre</scheme>
-      <scheme>cu_gf_driver_pre</scheme>
-      <scheme>cu_gf_driver</scheme>
-      <scheme>GFS_DCNV_generic_post</scheme>
-      <scheme>GFS_SCNV_generic_pre</scheme>
-      <scheme>GFS_SCNV_generic_post</scheme>
       <scheme>GFS_suite_interstitial_4</scheme>
       <scheme>cnvc90</scheme>
       <scheme>GFS_MP_generic_pre</scheme>
@@ -77,14 +71,12 @@
       <scheme>mp_thompson</scheme>
       <scheme>mp_thompson_post</scheme>
       <scheme>GFS_MP_generic_post</scheme>
-      <scheme>cu_gf_driver_post</scheme>
       <scheme>maximum_hourly_diagnostics</scheme>
     </subcycle>
   </group>
   <group name="stochastics">
     <subcycle loop="1">
       <scheme>GFS_stochastics</scheme>
-      <scheme>phys_tend</scheme>
     </subcycle>
   </group>
   <!-- <finalize></finalize> -->
