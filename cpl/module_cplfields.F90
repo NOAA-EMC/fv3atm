@@ -116,27 +116,11 @@ module module_cplfields
        "s","s","s","s","s","s"              &
 !      "l","l","l","l","l","l","l","s",     &
   /)
-  ! Set exportFieldShare to .true. if field is provided as memory reference
-  ! to coupled components
-  logical, public, parameter :: exportFieldShare(NexportFields) = (/ &
-       .true. ,.true. ,.true. ,.true. ,.true. , &
-       .true. ,.true. ,.true. ,.true. ,.true. , &
-       .true. ,.true. ,.true. ,.true. ,.true. , &
-       .true. ,.true. ,.true. ,.true. ,.true. , &
-       .true. ,.true. ,.true. ,.false.,.false., &
-       .false.,.false.,.false.,.false.,.false., &
-       .false.,.false.,.false.,.false.,.false. , &
-       .true. ,.false.,.false.,.false.,.false. , &
-       .true. ,.false.,.false.,.false.,.false., &
-       .false.,.false.,.false.,.false.,.false., &
-       .false.,.false.,.false.,.false.,.false., &
-       .false.,.false.,.false.,.false.,.false., &
-       .false.,.false.,.false.,.true. ,.false., &
-       .false.,.false.,.false.,.false.,.false., &
-       .false.,.false.                          &
-!      .false.,.false.,.false.,.false.,.false., &
-!      .false.,.false.,.false.                  &
-  /)
+  ! Set exportFieldShare to .true. for all exported fields
+  ! to allow coupled components to access such fields via
+  ! memory reference if possible
+  logical, public, parameter :: exportFieldShare(NexportFields) = .true.
+
   real(kind=8), allocatable, public :: exportData(:,:,:)
 
 ! Import Fields ----------------------------------------
