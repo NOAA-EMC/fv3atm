@@ -1313,7 +1313,7 @@ subroutine update_atmos_chemistry(state, rc)
       if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
         line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
-      if (IPD_Control%cplgocart) then
+      if (GFS_Control%cplgocart) then
         call cplFieldGet(state,'inst_zonal_wind_height10m', farrayPtr2d=u10m, rc=localrc)
         if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
           line=__LINE__, file=__FILE__, rcToReturn=rc)) return
@@ -1486,7 +1486,7 @@ subroutine update_atmos_chemistry(state, rc)
         write(6,'("update_atmos: stype  - min/max/avg",3g16.6)') minval(stype),  maxval(stype),  sum(stype)/size(stype)
         write(6,'("update_atmos: zorl   - min/max/avg",3g16.6)') minval(zorl),   maxval(zorl),   sum(zorl)/size(zorl)
         write(6,'("update_atmos: slc    - min/max/avg",3g16.6)') minval(slc),    maxval(slc),    sum(slc)/size(slc)
-        if (IPD_Control%cplgocart) then
+        if (GFS_Control%cplgocart) then
           write(6,'("update_atmos: dtsfc  - min/max/avg",3g16.6)') minval(dtsfc),   maxval(dtsfc),   sum(dtsfc)/size(dtsfc)
           write(6,'("update_atmos: fice   - min/max/avg",3g16.6)') minval(fice),    maxval(fice),    sum(fice)/size(fice)
           write(6,'("update_atmos: flake  - min/max/avg",3g16.6)') minval(flake),   maxval(flake),   sum(flake)/size(flake)
