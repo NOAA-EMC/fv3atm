@@ -1550,7 +1550,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: skebv_wts(:,:) => null()   !< 10 meter v wind speed
     real (kind=kind_phys), pointer :: sppt_wts(:,:)  => null()   !<
     real (kind=kind_phys), pointer :: shum_wts(:,:)  => null()   !<
-    real (kind=kind_phys), pointer :: sfc_wts(:,:)  => null()   !<
+    real (kind=kind_phys), pointer :: sfc_wts(:,:)   => null()   !<
     real (kind=kind_phys), pointer :: zmtnblck(:)    => null()   !<mountain blocking evel
     real (kind=kind_phys), pointer :: du3dt (:,:,:)  => null()   !< u momentum change due to physics
     real (kind=kind_phys), pointer :: dv3dt (:,:,:)  => null()   !< v momentum change due to physics
@@ -5726,16 +5726,17 @@ module GFS_typedefs
     if (.not. Model%lsm == Model%lsm_ruc) then
       allocate (Diag%wet1    (IM))
     end if
-    allocate (Diag%sr      (IM))
-    allocate (Diag%tdomr   (IM))
-    allocate (Diag%tdomzr  (IM))
-    allocate (Diag%tdomip  (IM))
-    allocate (Diag%tdoms   (IM))
+    allocate (Diag%sr       (IM))
+    allocate (Diag%tdomr    (IM))
+    allocate (Diag%tdomzr   (IM))
+    allocate (Diag%tdomip   (IM))
+    allocate (Diag%tdoms    (IM))
     allocate (Diag%skebu_wts(IM,Model%levs))
     allocate (Diag%skebv_wts(IM,Model%levs))
-    allocate (Diag%sppt_wts(IM,Model%levs))
-    allocate (Diag%shum_wts(IM,Model%levs))
-    allocate (Diag%zmtnblck(IM))    
+    allocate (Diag%sppt_wts (IM,Model%levs))
+    allocate (Diag%shum_wts (IM,Model%levs))
+    allocate (Diag%sfc_wts  (IM,Model%levs))
+    allocate (Diag%zmtnblck (IM))
     allocate (Diag%ca1      (IM))
     allocate (Diag%ca2      (IM))
     allocate (Diag%ca3      (IM))
@@ -6016,6 +6017,7 @@ module GFS_typedefs
     Diag%skebv_wts  = zero
     Diag%sppt_wts   = zero
     Diag%shum_wts   = zero
+    Diag%sfc_wts    = zero
     Diag%zmtnblck   = zero
 
     if (Model%imp_physics == Model%imp_physics_fer_hires) then
