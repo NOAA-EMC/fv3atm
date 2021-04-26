@@ -3369,7 +3369,9 @@ module GFS_typedefs
 !--- potential temperature definition in surface layer physics
     logical              :: thsfc_loc      = .true.          !< flag for local vs. standard potential temperature
                                                              !<.true. means use local (gridpoint) surface pressure to define potential temperature
+                                                             !<       this is the current GFS physics approach
                                                              !<.false. means use reference pressure of 1000 hPa to define potential temperature
+                                                             !<       this is the alternative method proposed by GSL
 
 !--- vertical diffusion
     real(kind=kind_phys) :: xkzm_m         = 1.0d0           !< [in] bkgd_vdif_m  background vertical diffusion for momentum
@@ -3528,6 +3530,7 @@ module GFS_typedefs
                                ignore_lake,                                                 &
                           !--- surface layer
                                sfc_z0_type,                                                 &
+                          !--- switch beteeen local and standard potential temperature
                                thsfc_loc,                                                   &
                           !    vertical diffusion
                                xkzm_m, xkzm_h, xkzm_s, xkzminv, moninq_fac, dspfac,         &
