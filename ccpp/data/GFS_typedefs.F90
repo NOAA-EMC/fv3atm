@@ -4438,7 +4438,7 @@ module GFS_typedefs
            endif
 
            ! More specific chemical tracer names:
-           call label_dtend_tracer(Model,100+Model%ntchs,'so2','sulfur dioxide concentration')
+           call label_dtend_tracer(Model,100+Model%ntchs,'so2','sulfur dioxide concentration','kg kg-1 s-1')
            if(Model%ntchm>0) then
               ! Need better descriptions of these.
               call label_dtend_tracer(Model,100+Model%ntchm+Model%ntchs-1,'pp10','pp10 concentration','kg kg-1 s-1')
