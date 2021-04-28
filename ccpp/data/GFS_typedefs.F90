@@ -2686,7 +2686,7 @@ module GFS_typedefs
       Coupling%snow_cpl = clear_val
     endif
 
-    if (Model%cplflx .or. Model%cplwav) then
+    if (Model%cplflx .or. Model%cplgocart .or. Model%cplwav) then
       !--- instantaneous quantities
       allocate (Coupling%u10mi_cpl (IM))
       allocate (Coupling%v10mi_cpl (IM))
@@ -3683,14 +3683,10 @@ module GFS_typedefs
     Model%ncols            = sum(Model%blksz)
 
 !--- coupling parameters
-    if (cplgocart) then
-      cplchm = .true.
-      cplflx = .true.
-    end if
     Model%cplflx           = cplflx
     Model%cplwav           = cplwav
     Model%cplwav2atm       = cplwav2atm
-    Model%cplchm           = cplchm
+    Model%cplchm           = cplchm .or. cplgocart
     Model%cplgocart        = cplgocart
 
 !--- integrated dynamics through earth's atmosphere
@@ -4907,6 +4903,7 @@ module GFS_typedefs
       print *, ' cplwav            : ', Model%cplwav
       print *, ' cplwav2atm        : ', Model%cplwav2atm
       print *, ' cplchm            : ', Model%cplchm
+      print *, ' cplgocart         : ', Model%cplgocart
       print *, ' '
       print *, 'integrated dynamics through earth atmosphere'
       print *, ' lsidea            : ', Model%lsidea
