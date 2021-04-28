@@ -25,8 +25,6 @@ endif()
 # Set include directories for make, also set CCPP_... for external projects
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR}/framework/src)
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR}/physics)
-SET(CCPP_INCLUDE_DIRS "${CMAKE_CURRENT_BINARY_DIR}/framework/src;${CMAKE_CURRENT_BINARY_DIR}/physics")
-SET(CCPP_LIB_DIRS "${CMAKE_CURRENT_BINARY_DIR}/framework/src;${CMAKE_CURRENT_BINARY_DIR}/physics")
 
 #------------------------------------------------------------------------------
 # Generate Compiler flags for C/CXX/Fortran - set to match NEMSfv3gfs flags
@@ -111,7 +109,7 @@ elseif (${CMAKE_Fortran_COMPILER_ID} MATCHES "Intel")
     set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -ftrapuv -traceback")
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftrapuv -traceback")
     set (CMAKE_Fortran_FLAGS  "${CMAKE_Fortran_FLAGS} -check -check noarg_temp_created -check nopointer -warn -warn noerrors -fp-stack-check")
-    set (CMAKE_Fortran_FLAGS  "${CMAKE_Fortran_FLAGS} -fstack-protector-all -fpe0 -traceback -debug -ftrapuv")
+    set (CMAKE_Fortran_FLAGS  "${CMAKE_Fortran_FLAGS} -fstack-protector-all -fpe0 -traceback -debug -ftrapuv -init=snan,arrays")
   elseif (${CMAKE_BUILD_TYPE} MATCHES "Bitforbit")
     if(LEGACY_INTEL)
       set (CMAKE_Fortran_FLAGS  "${CMAKE_Fortran_FLAGS} -debug minimal -fp-model strict -qoverride-limits -traceback")
@@ -121,11 +119,9 @@ elseif (${CMAKE_Fortran_COMPILER_ID} MATCHES "Intel")
   elseif (${CMAKE_BUILD_TYPE} MATCHES "Release")
     # Specify aggressive optimization flags (to be overwritten for individual files in ccpp-physics' CMakeLists.txt)
     if (AVX2)
-      if (SIMDMULTIARCH)
-        set (CMAKE_Fortran_FLAGS_OPT "-no-prec-div -no-prec-sqrt -axSSE4.2,AVX,CORE-AVX2,CORE-AVX512")
-      else (SIMDMULTIARCH)
-        set (CMAKE_Fortran_FLAGS_OPT "-no-prec-div -no-prec-sqrt -xCORE-AVX2")
-      endif (SIMDMULTIARCH)
+      set (CMAKE_Fortran_FLAGS_OPT "-no-prec-div -no-prec-sqrt -xCORE-AVX2")
+    elseif (SIMDMULTIARCH)
+      set (CMAKE_Fortran_FLAGS_OPT "-no-prec-div -no-prec-sqrt -axSSE4.2,CORE-AVX2")
     endif (AVX2)
     set (CMAKE_Fortran_FLAGS  "${CMAKE_Fortran_FLAGS} -debug minimal -fp-model source -qoverride-limits -qopt-prefetch=3")
   endif (${CMAKE_BUILD_TYPE} MATCHES "Debug")
@@ -159,10 +155,6 @@ elseif(UNIX)
 else (APPLE)
   message (FATAL_ERROR "Unsupported platform, only Linux and MacOSX are supported at this time.")
 endif(APPLE)
-
-#------------------------------------------------------------------------------
-# Add -DCCPP preprocessor flag (needed to preprocess GFS_typedefs.F90 from FV3)
-ADD_DEFINITIONS(-DCCPP)
 
 #------------------------------------------------------------------------------
 # Add host-model specific preprocessor flag (needed for some physics schemes)
@@ -227,18 +219,6 @@ if (SIONLIB)
 else (SIONLIB)
   message (STATUS "Disable SIONlib support")
 endif (SIONLIB)
-
-#------------------------------------------------------------------------------
-# Set Intel MKL flags for preprocessor, compiler and linker (if defined)
-if(MKL_DIR)
-  set (MKL_INC "-m64 -I${MKL_DIR}/include")
-  set (MKL_LIB "-L${MKL_DIR}/lib -Wl,-rpath,${MKL_DIR}/lib -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl")
-  set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${MKL_INC} ${MKL_LIB}")
-  ADD_DEFINITIONS(-DMKL)
-  message (STATUS "Enable Intel MKL support")
-else(MKL_DIR)
-  message (STATUS "Disable Intel MKL support")
-endif(MKL_DIR)
 
 #------------------------------------------------------------------------------
 # Set netCDF flags for preprocessor, compiler and linker (if defined)
