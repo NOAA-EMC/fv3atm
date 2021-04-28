@@ -1303,6 +1303,10 @@ subroutine update_atmos_chemistry(state, rc)
       if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
         line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
+      call cplFieldGet(state,'inst_soil_moisture_content', farrayPtr3d=slc, rc=localrc)
+      if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+
       if (GFS_Control%cplgocart) then
         call cplFieldGet(state,'inst_cloud_frac_levels', farrayPtr3d=cldfra, rc=localrc)
         if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
@@ -1347,10 +1351,6 @@ subroutine update_atmos_chemistry(state, rc)
           line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
         call cplFieldGet(state,'inst_down_sw_flx', farrayPtr2d=sfcdsw, rc=localrc)
-        if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
-          line=__LINE__, file=__FILE__, rcToReturn=rc)) return
-
-        call cplFieldGet(state,'inst_soil_moisture_content', farrayPtr3d=slc, rc=localrc)
         if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
           line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
@@ -1461,6 +1461,7 @@ subroutine update_atmos_chemistry(state, rc)
           shfsfc(i,j) = GFS_Data(nb)%Coupling%ushfsfci(ix)
           tsfc(i,j)   = GFS_Data(nb)%Sfcprop%tsfc(ix)
           zorl(i,j)   = GFS_Data(nb)%Sfcprop%zorl(ix)
+          slc(i,j,:)  = GFS_Data(nb)%Sfcprop%slc(ix,:)
           if (GFS_Control%cplgocart) then
             u10m(i,j)   = GFS_Data(nb)%Coupling%u10mi_cpl(ix)
             v10m(i,j)   = GFS_Data(nb)%Coupling%v10mi_cpl(ix)
@@ -1479,7 +1480,6 @@ subroutine update_atmos_chemistry(state, rc)
             snowd(i,j)  = GFS_Data(nb)%Sfcprop%snowd(ix)
             vtype(i,j)  = GFS_Data(nb)%Sfcprop%vtype(ix)
             vfrac(i,j)  = GFS_Data(nb)%Sfcprop%vfrac(ix)
-            slc(i,j,:)  = GFS_Data(nb)%Sfcprop%slc(ix,:)
           end if
         enddo
       enddo
@@ -1521,6 +1521,7 @@ subroutine update_atmos_chemistry(state, rc)
         write(6,'("update_atmos: tsfc   - min/max/avg",3g16.6)') minval(tsfc),   maxval(tsfc),   sum(tsfc)/size(tsfc)
         write(6,'("update_atmos: area   - min/max/avg",3g16.6)') minval(area),   maxval(area),   sum(area)/size(area)
         write(6,'("update_atmos: zorl   - min/max/avg",3g16.6)') minval(zorl),   maxval(zorl),   sum(zorl)/size(zorl)
+        write(6,'("update_atmos: slc    - min/max/avg",3g16.6)') minval(slc),    maxval(slc),    sum(slc)/size(slc)
         if (GFS_Control%cplgocart) then
           write(6,'("update_atmos: cldfra - min/max/avg",3g16.6)') minval(cldfra), maxval(cldfra), sum(cldfra)/size(cldfra)
           write(6,'("update_atmos: fice   - min/max/avg",3g16.6)') minval(fice),   maxval(fice),   sum(fice)/size(fice)
@@ -1533,7 +1534,6 @@ subroutine update_atmos_chemistry(state, rc)
           write(6,'("update_atmos: dkt    - min/max/avg",3g16.6)') minval(dkt),    maxval(dkt),    sum(dkt)/size(dkt)
           write(6,'("update_atmos: dqdt   - min/max/avg",3g16.6)') minval(dqdt),   maxval(dqdt),   sum(dqdt)/size(dqdt)
           write(6,'("update_atmos: sfcdsw - min/max/avg",3g16.6)') minval(sfcdsw), maxval(sfcdsw), sum(sfcdsw)/size(sfcdsw)
-          write(6,'("update_atmos: slc    - min/max/avg",3g16.6)') minval(slc),    maxval(slc),    sum(slc)/size(slc)
           write(6,'("update_atmos: stype  - min/max/avg",3g16.6)') minval(stype),  maxval(stype),  sum(stype)/size(stype)
           write(6,'("update_atmos: snowd  - min/max/avg",3g16.6)') minval(snowd),  maxval(snowd),  sum(snowd)/size(snowd)
           write(6,'("update_atmos: vfrac  - min/max/avg",3g16.6)') minval(vfrac),  maxval(vfrac),  sum(vfrac)/size(vfrac)
