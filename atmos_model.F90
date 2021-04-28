@@ -1028,7 +1028,7 @@ subroutine update_atmos_chemistry(state, rc)
 
   real(ESMF_KIND_R8), dimension(:,:), pointer :: hpbl, area, stype, rainc, &
     uustar, rain, sfcdsw, slmsk, tsfc, shfsfc, snowd, vtype, vfrac, zorl,  &
-    dtsfc, focn, flake, fice, u10m, v10m
+    dtsfc, focn, flake, fice, u10m, v10m, swet
 
 ! logical, parameter :: diag = .true.
 
@@ -1311,6 +1311,10 @@ subroutine update_atmos_chemistry(state, rc)
         if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
           line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
+        call cplFieldGet(state,'inst_surface_soil_wetness', farrayPtr2d=swet, rc=localrc)
+        if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+
         call cplFieldGet(state,'ice_fraction', farrayPtr2d=fice, rc=localrc)
         if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
           line=__LINE__, file=__FILE__, rcToReturn=rc)) return
@@ -1428,7 +1432,7 @@ subroutine update_atmos_chemistry(state, rc)
 !$OMP             shared  (nj, ni, Atm_block, GFS_data, GFS_Control, &
 !$OMP                      hpbl, area, stype, rainc, rain, uustar, sfcdsw, &
 !$OMP                      dtsfc, fice, flake, focn, u10m, v10m, &
-!$OMP                      slmsk, snowd, tsfc, shfsfc, vtype, vfrac, zorl, slc) &
+!$OMP                      slmsk, snowd, tsfc, shfsfc, vtype, vfrac, zorl, slc, swet) &
 !$OMP             private (j, jb, i, ib, nb, ix)
       do j = 1, nj
         jb = j + Atm_block%jsc - 1
@@ -1452,6 +1456,11 @@ subroutine update_atmos_chemistry(state, rc)
             focn(i,j)   = GFS_Data(nb)%Sfcprop%oceanfrac(ix)
             flake(i,j)  = max(zero, GFS_Data(nb)%Sfcprop%lakefrac(ix))
             fice(i,j)   = GFS_Data(nb)%Sfcprop%fice(ix)
+            if (GFS_Control%lsm == GFS_Control%lsm_ruc) then
+              swet(i,j) = GFS_Data(nb)%Sfcprop%wetness(ix)
+            else
+              swet(i,j) = GFS_Data(nb)%IntDiag%wet1(ix)
+            end if
           else
             stype(i,j)  = GFS_Data(nb)%Sfcprop%stype(ix)
             sfcdsw(i,j) = GFS_Data(nb)%Coupling%sfcdsw(ix)
@@ -1504,6 +1513,7 @@ subroutine update_atmos_chemistry(state, rc)
           write(6,'("update_atmos: fice   - min/max/avg",3g16.6)') minval(fice),   maxval(fice),   sum(fice)/size(fice)
           write(6,'("update_atmos: flake  - min/max/avg",3g16.6)') minval(flake),  maxval(flake),  sum(flake)/size(flake)
           write(6,'("update_atmos: focn   - min/max/avg",3g16.6)') minval(focn),   maxval(focn),   sum(focn)/size(focn)
+          write(6,'("update_atmos: swet   - min/max/avg",3g16.6)') minval(swet),   maxval(swet),   sum(swet)/size(swet)
           write(6,'("update_atmos: u10m   - min/max/avg",3g16.6)') minval(u10m),   maxval(u10m),   sum(u10m)/size(u10m)
           write(6,'("update_atmos: v10m   - min/max/avg",3g16.6)') minval(v10m),   maxval(v10m),   sum(v10m)/size(v10m)
         else
