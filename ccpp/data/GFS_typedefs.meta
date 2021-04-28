@@ -2475,6 +2475,12 @@
   units = flag
   dimensions = ()
   type = logical
+[cplgocart]
+  standard_name = flag_for_gocart_coupling
+  long_name = flag controlling gocart collection (default off)
+  units = flag
+  dimensions = ()
+  type = logical
 [lsidea]
   standard_name = flag_idealized_physics
   long_name = flag for idealized physics
