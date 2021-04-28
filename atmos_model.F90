@@ -1022,7 +1022,8 @@ subroutine update_atmos_chemistry(state, rc)
                                                      prsi, phii,  &
                                                      temp, dqdt,  &
                                                      ua, va, vvl, &
-                                                     dkt, slc,    &
+                                                     cldfra, dkt, &
+                                                     slc, &
                                                      qb, qm, qu
   real(ESMF_KIND_R8), dimension(:,:,:,:), pointer :: qd, q
 
@@ -1303,6 +1304,10 @@ subroutine update_atmos_chemistry(state, rc)
         line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
       if (GFS_Control%cplgocart) then
+        call cplFieldGet(state,'inst_cloud_frac_levels', farrayPtr3d=cldfra, rc=localrc)
+        if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+
         call cplFieldGet(state,'inst_zonal_wind_height10m', farrayPtr2d=u10m, rc=localrc)
         if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
           line=__LINE__, file=__FILE__, rcToReturn=rc)) return
@@ -1369,7 +1374,7 @@ subroutine update_atmos_chemistry(state, rc)
       !--- handle all three-dimensional variables
 !$OMP parallel do default (none) &
 !$OMP             shared  (nk, nj, ni, Atm_block, GFS_Data, GFS_Control, &
-!$OMP                      prsi, phii, prsl, phil, temp, ua, va, vvl, dkt, dqdt)  &
+!$OMP                      cldfra, prsi, phii, prsl, phil, temp, ua, va, vvl, dkt, dqdt)  &
 !$OMP             private (k, j, jb, i, ib, nb, ix)
       do k = 1, nk
         do j = 1, nj
@@ -1387,7 +1392,9 @@ subroutine update_atmos_chemistry(state, rc)
             temp(i,j,k) = GFS_Data(nb)%Stateout%gt0(ix,k)
             ua  (i,j,k) = GFS_Data(nb)%Stateout%gu0(ix,k)
             va  (i,j,k) = GFS_Data(nb)%Stateout%gv0(ix,k)
-            if (.not.GFS_Control%cplgocart) then
+            if (GFS_Control%cplgocart) then
+              cldfra(i,j,k) = GFS_Data(nb)%IntDiag%cldfra(ix,k)
+            else
               vvl (i,j,k) = GFS_Data(nb)%Statein%vvl (ix,k)
               dkt (i,j,k) = GFS_Data(nb)%Coupling%dkt(ix,k)
               dqdt(i,j,k) = GFS_Data(nb)%Coupling%dqdti(ix,k)
@@ -1510,6 +1517,7 @@ subroutine update_atmos_chemistry(state, rc)
         write(6,'("update_atmos: area   - min/max/avg",3g16.6)') minval(area),   maxval(area),   sum(area)/size(area)
         write(6,'("update_atmos: zorl   - min/max/avg",3g16.6)') minval(zorl),   maxval(zorl),   sum(zorl)/size(zorl)
         if (GFS_Control%cplgocart) then
+          write(6,'("update_atmos: cldfra - min/max/avg",3g16.6)') minval(cldfra), maxval(cldfra), sum(cldfra)/size(cldfra)
           write(6,'("update_atmos: fice   - min/max/avg",3g16.6)') minval(fice),   maxval(fice),   sum(fice)/size(fice)
           write(6,'("update_atmos: flake  - min/max/avg",3g16.6)') minval(flake),  maxval(flake),  sum(flake)/size(flake)
           write(6,'("update_atmos: focn   - min/max/avg",3g16.6)') minval(focn),   maxval(focn),   sum(focn)/size(focn)
