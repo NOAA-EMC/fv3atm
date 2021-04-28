@@ -1261,25 +1261,7 @@ subroutine update_atmos_chemistry(state, rc)
       if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
         line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
-      call cplFieldGet(state,'inst_omega_levels', farrayPtr3d=vvl, rc=localrc)
-      if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, file=__FILE__, rcToReturn=rc)) return
-
-      call cplFieldGet(state,'inst_spec_humid_conv_tendency_levels', &
-                       farrayPtr3d=dqdt, rc=localrc)
-      if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, file=__FILE__, rcToReturn=rc)) return
-
       call cplFieldGet(state,'inst_tracer_mass_frac', farrayPtr4d=q, rc=localrc)
-      if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, file=__FILE__, rcToReturn=rc)) return
-
-      call cplFieldGet(state,'inst_soil_moisture_content', &
-                       farrayPtr3d=slc, rc=localrc)
-      if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, file=__FILE__, rcToReturn=rc)) return
-
-      call cplFieldGet(state,'soil_type', farrayPtr2d=stype, rc=localrc)
       if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
         line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
@@ -1296,20 +1278,11 @@ subroutine update_atmos_chemistry(state, rc)
       if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
         line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
-      call cplFieldGet(state,'inst_exchange_coefficient_heat_levels', &
-                       farrayPtr3d=dkt, rc=localrc)
-      if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, file=__FILE__, rcToReturn=rc)) return
-
       call cplFieldGet(state,'inst_friction_velocity', farrayPtr2d=uustar, rc=localrc)
       if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
         line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
       call cplFieldGet(state,'inst_rainfall_amount', farrayPtr2d=rain, rc=localrc)
-      if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, file=__FILE__, rcToReturn=rc)) return
-
-      call cplFieldGet(state,'inst_down_sw_flx', farrayPtr2d=sfcdsw, rc=localrc)
       if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
         line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
@@ -1322,18 +1295,6 @@ subroutine update_atmos_chemistry(state, rc)
         line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
       call cplFieldGet(state,'inst_up_sensi_heat_flx', farrayPtr2d=shfsfc, rc=localrc)
-      if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, file=__FILE__, rcToReturn=rc)) return
-
-      call cplFieldGet(state,'inst_lwe_snow_thickness', farrayPtr2d=snowd, rc=localrc)
-      if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, file=__FILE__, rcToReturn=rc)) return
-
-      call cplFieldGet(state,'vegetation_type', farrayPtr2d=vtype, rc=localrc)
-      if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, file=__FILE__, rcToReturn=rc)) return
-
-      call cplFieldGet(state,'inst_vegetation_area_frac', farrayPtr2d=vfrac, rc=localrc)
       if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
         line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
@@ -1350,10 +1311,6 @@ subroutine update_atmos_chemistry(state, rc)
         if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
           line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
-        call cplFieldGet(state,'inst_sensi_heat_flx', farrayPtr2d=dtsfc, rc=localrc)
-        if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
-          line=__LINE__, file=__FILE__, rcToReturn=rc)) return
-
         call cplFieldGet(state,'ice_fraction', farrayPtr2d=fice, rc=localrc)
         if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
           line=__LINE__, file=__FILE__, rcToReturn=rc)) return
@@ -1363,6 +1320,44 @@ subroutine update_atmos_chemistry(state, rc)
           line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
         call cplFieldGet(state,'ocean_fraction', farrayPtr2d=focn, rc=localrc)
+        if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+      else
+        call cplFieldGet(state,'inst_exchange_coefficient_heat_levels', &
+                         farrayPtr3d=dkt, rc=localrc)
+        if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+
+        call cplFieldGet(state,'inst_spec_humid_conv_tendency_levels', &
+                         farrayPtr3d=dqdt, rc=localrc)
+        if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+
+        call cplFieldGet(state,'inst_down_sw_flx', farrayPtr2d=sfcdsw, rc=localrc)
+        if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+
+        call cplFieldGet(state,'inst_soil_moisture_content', farrayPtr3d=slc, rc=localrc)
+        if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+
+        call cplFieldGet(state,'inst_lwe_snow_thickness', farrayPtr2d=snowd, rc=localrc)
+        if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+
+        call cplFieldGet(state,'soil_type', farrayPtr2d=stype, rc=localrc)
+        if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+
+        call cplFieldGet(state,'inst_vegetation_area_frac', farrayPtr2d=vfrac, rc=localrc)
+        if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+
+        call cplFieldGet(state,'vegetation_type', farrayPtr2d=vtype, rc=localrc)
+        if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+
+        call cplFieldGet(state,'inst_omega_levels', farrayPtr3d=vvl, rc=localrc)
         if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
           line=__LINE__, file=__FILE__, rcToReturn=rc)) return
       end if
@@ -1448,10 +1443,10 @@ subroutine update_atmos_chemistry(state, rc)
                       + GFS_Data(nb)%Coupling%snow_cpl(ix)
           uustar(i,j) = GFS_Data(nb)%Sfcprop%uustar(ix)
           slmsk(i,j)  = GFS_Data(nb)%Sfcprop%slmsk(ix)
+          shfsfc(i,j) = GFS_Data(nb)%Coupling%ushfsfci(ix)
           tsfc(i,j)   = GFS_Data(nb)%Sfcprop%tsfc(ix)
           zorl(i,j)   = GFS_Data(nb)%Sfcprop%zorl(ix)
           if (GFS_Control%cplgocart) then
-            dtsfc(i,j)  = GFS_Data(nb)%Coupling%dtsfci_cpl(ix)
             u10m(i,j)   = GFS_Data(nb)%Coupling%u10mi_cpl(ix)
             v10m(i,j)   = GFS_Data(nb)%Coupling%v10mi_cpl(ix)
             focn(i,j)   = GFS_Data(nb)%Sfcprop%oceanfrac(ix)
@@ -1461,7 +1456,6 @@ subroutine update_atmos_chemistry(state, rc)
             stype(i,j)  = GFS_Data(nb)%Sfcprop%stype(ix)
             sfcdsw(i,j) = GFS_Data(nb)%Coupling%sfcdsw(ix)
             snowd(i,j)  = GFS_Data(nb)%Sfcprop%snowd(ix)
-            shfsfc(i,j) = GFS_Data(nb)%Coupling%ushfsfci(ix)
             vtype(i,j)  = GFS_Data(nb)%Sfcprop%vtype(ix)
             vfrac(i,j)  = GFS_Data(nb)%Sfcprop%vfrac(ix)
             slc(i,j,:)  = GFS_Data(nb)%Sfcprop%slc(ix,:)
@@ -1496,31 +1490,32 @@ subroutine update_atmos_chemistry(state, rc)
         write(6,'("update_atmos: tgrs   - min/max/avg",3g16.6)') minval(temp),   maxval(temp),   sum(temp)/size(temp)
         write(6,'("update_atmos: ugrs   - min/max/avg",3g16.6)') minval(ua),     maxval(ua),     sum(ua)/size(ua)
         write(6,'("update_atmos: vgrs   - min/max/avg",3g16.6)') minval(va),     maxval(va),     sum(va)/size(va)
-        write(6,'("update_atmos: vvl    - min/max/avg",3g16.6)') minval(vvl),    maxval(vvl),    sum(vvl)/size(vvl)
-        write(6,'("update_atmos: dqdt   - min/max/avg",3g16.6)') minval(dqdt),   maxval(dqdt),   sum(dqdt)/size(dqdt)
         write(6,'("update_atmos: qgrs   - min/max/avg",3g16.6)') minval(q),      maxval(q),      sum(q)/size(q)
 
         write(6,'("update_atmos: hpbl   - min/max/avg",3g16.6)') minval(hpbl),   maxval(hpbl),   sum(hpbl)/size(hpbl)
         write(6,'("update_atmos: rainc  - min/max/avg",3g16.6)') minval(rainc),  maxval(rainc),  sum(rainc)/size(rainc)
         write(6,'("update_atmos: rain   - min/max/avg",3g16.6)') minval(rain),   maxval(rain),   sum(rain)/size(rain)
         write(6,'("update_atmos: shfsfc - min/max/avg",3g16.6)') minval(shfsfc), maxval(shfsfc), sum(shfsfc)/size(shfsfc)
-        write(6,'("update_atmos: sfcdsw - min/max/avg",3g16.6)') minval(sfcdsw), maxval(sfcdsw), sum(sfcdsw)/size(sfcdsw)
         write(6,'("update_atmos: slmsk  - min/max/avg",3g16.6)') minval(slmsk),  maxval(slmsk),  sum(slmsk)/size(slmsk)
-        write(6,'("update_atmos: snowd  - min/max/avg",3g16.6)') minval(snowd),  maxval(snowd),  sum(snowd)/size(snowd)
         write(6,'("update_atmos: tsfc   - min/max/avg",3g16.6)') minval(tsfc),   maxval(tsfc),   sum(tsfc)/size(tsfc)
-        write(6,'("update_atmos: vtype  - min/max/avg",3g16.6)') minval(vtype),  maxval(vtype),  sum(vtype)/size(vtype)
-        write(6,'("update_atmos: vfrac  - min/max/avg",3g16.6)') minval(vfrac),  maxval(vfrac),  sum(vfrac)/size(vfrac)
         write(6,'("update_atmos: area   - min/max/avg",3g16.6)') minval(area),   maxval(area),   sum(area)/size(area)
-        write(6,'("update_atmos: stype  - min/max/avg",3g16.6)') minval(stype),  maxval(stype),  sum(stype)/size(stype)
         write(6,'("update_atmos: zorl   - min/max/avg",3g16.6)') minval(zorl),   maxval(zorl),   sum(zorl)/size(zorl)
-        write(6,'("update_atmos: slc    - min/max/avg",3g16.6)') minval(slc),    maxval(slc),    sum(slc)/size(slc)
         if (GFS_Control%cplgocart) then
-          write(6,'("update_atmos: dtsfc  - min/max/avg",3g16.6)') minval(dtsfc),   maxval(dtsfc),   sum(dtsfc)/size(dtsfc)
-          write(6,'("update_atmos: fice   - min/max/avg",3g16.6)') minval(fice),    maxval(fice),    sum(fice)/size(fice)
-          write(6,'("update_atmos: flake  - min/max/avg",3g16.6)') minval(flake),   maxval(flake),   sum(flake)/size(flake)
-          write(6,'("update_atmos: focn   - min/max/avg",3g16.6)') minval(focn),    maxval(focn),    sum(focn)/size(focn)
-          write(6,'("update_atmos: u10m   - min/max/avg",3g16.6)') minval(u10m),    maxval(u10m),    sum(u10m)/size(u10m)
-          write(6,'("update_atmos: v10m   - min/max/avg",3g16.6)') minval(v10m),    maxval(v10m),    sum(v10m)/size(v10m)
+          write(6,'("update_atmos: fice   - min/max/avg",3g16.6)') minval(fice),   maxval(fice),   sum(fice)/size(fice)
+          write(6,'("update_atmos: flake  - min/max/avg",3g16.6)') minval(flake),  maxval(flake),  sum(flake)/size(flake)
+          write(6,'("update_atmos: focn   - min/max/avg",3g16.6)') minval(focn),   maxval(focn),   sum(focn)/size(focn)
+          write(6,'("update_atmos: u10m   - min/max/avg",3g16.6)') minval(u10m),   maxval(u10m),   sum(u10m)/size(u10m)
+          write(6,'("update_atmos: v10m   - min/max/avg",3g16.6)') minval(v10m),   maxval(v10m),   sum(v10m)/size(v10m)
+        else
+          write(6,'("update_atmos: dkt    - min/max/avg",3g16.6)') minval(dkt),    maxval(dkt),    sum(dkt)/size(dkt)
+          write(6,'("update_atmos: dqdt   - min/max/avg",3g16.6)') minval(dqdt),   maxval(dqdt),   sum(dqdt)/size(dqdt)
+          write(6,'("update_atmos: sfcdsw - min/max/avg",3g16.6)') minval(sfcdsw), maxval(sfcdsw), sum(sfcdsw)/size(sfcdsw)
+          write(6,'("update_atmos: slc    - min/max/avg",3g16.6)') minval(slc),    maxval(slc),    sum(slc)/size(slc)
+          write(6,'("update_atmos: stype  - min/max/avg",3g16.6)') minval(stype),  maxval(stype),  sum(stype)/size(stype)
+          write(6,'("update_atmos: snowd  - min/max/avg",3g16.6)') minval(snowd),  maxval(snowd),  sum(snowd)/size(snowd)
+          write(6,'("update_atmos: vfrac  - min/max/avg",3g16.6)') minval(vfrac),  maxval(vfrac),  sum(vfrac)/size(vfrac)
+          write(6,'("update_atmos: vtype  - min/max/avg",3g16.6)') minval(vtype),  maxval(vtype),  sum(vtype)/size(vtype)
+          write(6,'("update_atmos: vvl    - min/max/avg",3g16.6)') minval(vvl),    maxval(vvl),    sum(vvl)/size(vvl)
         end if
       end if
 
