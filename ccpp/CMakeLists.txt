@@ -112,6 +112,10 @@ add_library(
     ${CMAKE_CURRENT_BINARY_DIR}/physics/ccpp_static_api.F90
 )
 
+# Compile GFS_diagnostics.F90 without optimization, this leads to out of memory errors on wcoss_dell_p3
+set_property(SOURCE driver/GFS_diagnostics.F90 APPEND_STRING PROPERTY COMPILE_FLAGS "-O0")
+
+
 target_link_libraries(fv3ccpp PUBLIC ccpp)
 target_link_libraries(fv3ccpp PUBLIC ccppphys)
 
