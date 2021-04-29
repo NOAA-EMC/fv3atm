@@ -30,6 +30,13 @@ INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR}/physics)
 # Generate Compiler flags for C/CXX/Fortran - set to match NEMSfv3gfs flags
 # for DEBUG, REPRO and PROD mode for all three compilers
 
+# DH* 20210429 - quick workaround to get REPRO mode propagated
+# correctly to CCPP - will be cleaned up in Dusan's next PR
+if(REPRO)
+  set(CMAKE_BUILD_TYPE Bitforbit CACHE STRING "Choose the type of build." FORCE)
+endif()
+# *DH 20210429
+
 # Set basic compiler optimization levels, depending on build type
 if (${CMAKE_BUILD_TYPE} MATCHES "Debug")
   ADD_DEFINITIONS(-DDEBUG)
