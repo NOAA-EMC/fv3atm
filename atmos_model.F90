@@ -2599,7 +2599,7 @@ end subroutine atmos_data_type_chksum
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
           if (associated(DYCORE_Data(nb)%coupling%z_bot)) then
-            exportData(i,j,idx) = DYCORE_Data(nb)%coupling%z_bot(ix)
+            exportData(i,j,idx) = max(DYCORE_Data(nb)%coupling%z_bot(ix),one)
           else
             exportData(i,j,idx) = zero
           endif
