@@ -1562,6 +1562,11 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: cldfra (:,:)   => null()  !< instantaneous 3D cloud fraction
     !--- MP quantities for 3D diagnositics
     real (kind=kind_phys), pointer :: refl_10cm(:,:) => null()  !< instantaneous refl_10cm
+
+    !--- Extra PBL diagnostics
+    real (kind=kind_phys), pointer :: dkt(:,:)       => null()  !< Eddy diffusitivity for heat
+    real (kind=kind_phys), pointer :: dku(:,:)       => null()  !< Eddy diffusitivity for momentum
+
 !
 !---vay-2018 UGWP-diagnostics instantaneous
 !
@@ -1755,7 +1760,6 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: del(:,:)           => null()  !<
     real (kind=kind_phys), pointer      :: del_gz(:,:)        => null()  !<
     real (kind=kind_phys), pointer      :: delr(:,:)          => null()  !<
-    real (kind=kind_phys), pointer      :: dkt(:,:)           => null()  !<
     real (kind=kind_phys), pointer      :: dlength(:)         => null()  !<
     real (kind=kind_phys), pointer      :: dqdt(:,:,:)        => null()  !<
     real (kind=kind_phys), pointer      :: dqsdt2(:)          => null()  !<
@@ -5775,8 +5779,7 @@ module GFS_typedefs
       allocate (Diag%tav_ugwp  (IM,Model%levs) )
     endif
 
-    if (Model%do_ugwp_v1 .or. Model%gwd_opt==33 .or. Model%gwd_opt==22 &
-                         .or. Model%gwd_opt==3  .or. Model%gwd_opt==2) then
+    if (Model%do_ugwp_v1 .or. Model%gwd_opt==33 .or. Model%gwd_opt==22) then
       allocate (Diag%dudt_ogw  (IM,Model%levs))
       allocate (Diag%dvdt_ogw  (IM,Model%levs))
       allocate (Diag%dudt_obl  (IM,Model%levs))
@@ -5799,6 +5802,10 @@ module GFS_typedefs
 
     !--- 3D diagnostics for Thompson MP / GFDL MP
     allocate (Diag%refl_10cm(IM,Model%levs))
+
+    !--- New PBL Diagnostics
+    allocate (Diag%dkt(IM,Model%levs))
+    allocate (Diag%dku(IM,Model%levs))
 
     !--  New max hourly diag.
     allocate (Diag%refdmax(IM))
@@ -6043,8 +6050,7 @@ module GFS_typedefs
     Diag%dtdt_gw     = zero
     Diag%kdis_gw     = zero
 
-    if (Model%do_ugwp_v1 .or. Model%gwd_opt==33 .or. Model%gwd_opt==22 &
-                         .or. Model%gwd_opt==3  .or. Model%gwd_opt==2) then
+    if (Model%do_ugwp_v1 .or. Model%gwd_opt==33 .or. Model%gwd_opt==22) then
       Diag%dudt_ogw    = zero
       Diag%dvdt_ogw    = zero
       Diag%dudt_obl    = zero
@@ -6095,6 +6101,10 @@ module GFS_typedefs
 
 !
 !-----------------------------
+
+! Extra PBL diagnostics
+    Diag%dkt = zero
+    Diag%dku = zero
 
 ! max hourly diagnostics
     Diag%refl_10cm   = zero
@@ -6281,7 +6291,6 @@ module GFS_typedefs
     allocate (Interstitial%del             (IM,Model%levs))
     allocate (Interstitial%del_gz          (IM,Model%levs+1))
     allocate (Interstitial%delr            (IM,Model%levr+LTP))
-    allocate (Interstitial%dkt             (IM,Model%levs-1))
     allocate (Interstitial%dlength         (IM))
     allocate (Interstitial%dqdt            (IM,Model%levs,Model%ntrac))
     allocate (Interstitial%dqsfc1          (IM))
@@ -6528,8 +6537,7 @@ module GFS_typedefs
     allocate (Interstitial%zngw            (IM)           )
 
 ! CIRES UGWP v1
-    if (Model%do_ugwp_v1 .or. Model%gwd_opt==33 .or. Model%gwd_opt==22 &
-                         .or. Model%gwd_opt==3  .or. Model%gwd_opt==2) then
+    if (Model%do_ugwp_v1) then
       allocate (Interstitial%dudt_ngw        (IM,Model%levs))
       allocate (Interstitial%dvdt_ngw        (IM,Model%levs))
       allocate (Interstitial%dtdt_ngw        (IM,Model%levs))
@@ -6971,7 +6979,6 @@ module GFS_typedefs
     Interstitial%dd_mf           = clear_val
     Interstitial%del             = clear_val
     Interstitial%del_gz          = clear_val
-    Interstitial%dkt             = clear_val
     Interstitial%dlength         = clear_val
     Interstitial%dqdt            = clear_val
     Interstitial%dqsfc1          = clear_val
@@ -7139,8 +7146,7 @@ module GFS_typedefs
     Interstitial%zngw            = clear_val
 
 ! CIRES UGWP v1
-    if (Model%do_ugwp_v1 .or. Model%gwd_opt==33 .or. Model%gwd_opt==22 &
-                         .or. Model%gwd_opt==3  .or. Model%gwd_opt==2) then
+    if (Model%do_ugwp_v1) then
       Interstitial%dudt_ngw        = clear_val
       Interstitial%dvdt_ngw        = clear_val
       Interstitial%dtdt_ngw        = clear_val
@@ -7321,7 +7327,6 @@ module GFS_typedefs
     write (0,*) 'sum(Interstitial%del             ) = ', sum(Interstitial%del             )
     write (0,*) 'sum(Interstitial%del_gz          ) = ', sum(Interstitial%del_gz          )
     write (0,*) 'sum(Interstitial%delr            ) = ', sum(Interstitial%delr            )
-    write (0,*) 'sum(Interstitial%dkt             ) = ', sum(Interstitial%dkt             )
     write (0,*) 'sum(Interstitial%dlength         ) = ', sum(Interstitial%dlength         )
     write (0,*) 'sum(Interstitial%dqdt            ) = ', sum(Interstitial%dqdt            )
     write (0,*) 'sum(Interstitial%dqsfc1          ) = ', sum(Interstitial%dqsfc1          )
