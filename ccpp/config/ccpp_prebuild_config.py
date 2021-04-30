@@ -89,6 +89,7 @@ TYPEDEFS_NEW_METADATA = {
         },
     }
 
+
 # Add all physics scheme files relative to basedir
 SCHEME_FILES = [
     # Relative path to source (from where ccpp_prebuild.py is called) : [ list of physics sets in which scheme may be called ];
@@ -159,6 +160,7 @@ SCHEME_FILES = [
     'ccpp/physics/physics/mp_thompson_pre.F90',
     'ccpp/physics/physics/mp_thompson.F90',
     'ccpp/physics/physics/mp_thompson_post.F90',
+    'ccpp/physics/physics/mp_nssl_2mom.F90',
     'ccpp/physics/physics/ozphys.f',
     'ccpp/physics/physics/ozphys_2015.f',
     'ccpp/physics/physics/precpd.f',
