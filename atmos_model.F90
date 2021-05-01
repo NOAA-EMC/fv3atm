@@ -1222,13 +1222,17 @@ subroutine update_atmos_chemistry(state, rc)
       if (GFS_control%debug) then
         write(6,'("update_atmos: ",a,": qgrs - min/max/avg",3g16.6)') &
           trim(state), minval(q), maxval(q), sum(q)/size(q)
-        write(6,'("update_atmos: ",a,": qup  - min/max/avg",3g16.6)') &
+        if (associated(qu)) &
+          write(6,'("update_atmos: ",a,": qup  - min/max/avg",3g16.6)') &
           trim(state), minval(qu), maxval(qu), sum(qu)/size(qu)
-        write(6,'("update_atmos: ",a,": qdwn - min/max/avg",3g16.6)') &
+        if (associated(qd)) &
+          write(6,'("update_atmos: ",a,": qdwn - min/max/avg",3g16.6)') &
           trim(state), minval(qd), maxval(qd), sum(qd)/size(qd)
-        write(6,'("update_atmos: ",a,": qcmd - min/max/avg",3g16.6)') &
+        if (associated(qm)) &
+          write(6,'("update_atmos: ",a,": qcmd - min/max/avg",3g16.6)') &
           trim(state), minval(qm), maxval(qm), sum(qm)/size(qm)
-        write(6,'("update_atmos: ",a,": qabb - min/max/avg",3g16.6)') &
+        if (associated(qb)) &
+          write(6,'("update_atmos: ",a,": qabb - min/max/avg",3g16.6)') &
           trim(state), minval(qb), maxval(qb), sum(qb)/size(qb)
       end if
 
