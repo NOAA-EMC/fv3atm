@@ -520,6 +520,8 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: ushfsfci(:)     => null()  !< instantaneous upward sensible heat flux (w/m**2)
     real (kind=kind_phys), pointer :: dkt     (:,:)   => null()  !< instantaneous dkt diffusion coefficient for temperature (m**2/s)
     real (kind=kind_phys), pointer :: qci_conv(:,:)   => null()  !< convective cloud condesate after rainout
+    real (kind=kind_phys), pointer :: pfi_lsan(:,:)   => null()  !< instantaneous 3D flux of ice    nonconvective precipitation (kg m-2 s-1)
+    real (kind=kind_phys), pointer :: pfl_lsan(:,:)   => null()  !< instantaneous 3D flux of liquid nonconvective precipitation (kg m-2 s-1)
 
 
     contains
@@ -2835,7 +2837,7 @@ module GFS_typedefs
       Coupling%condition = clear_val
     endif
 
-    ! -- GSDCHEM coupling options
+    ! -- Aerosols coupling options
     if (Model%cplchm) then
       !--- outgoing instantaneous quantities
       allocate (Coupling%ushfsfci  (IM))
@@ -2848,6 +2850,13 @@ module GFS_typedefs
       Coupling%ushfsfci  = clear_val
       Coupling%dkt       = clear_val
       Coupling%dqdti     = clear_val
+      if (Model%cplgocart) then
+        ! -- instantaneous 3d fluxes of nonconvective ice and liquid precipitations
+        allocate (Coupling%pfi_lsan  (IM,Model%levs))
+        allocate (Coupling%pfl_lsan  (IM,Model%levs))
+        Coupling%pfi_lsan  = clear_val
+        Coupling%pfl_lsan  = clear_val
+      endif
     endif
 
     !--- stochastic physics option

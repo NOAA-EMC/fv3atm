@@ -1018,11 +1018,12 @@ subroutine update_atmos_chemistry(state, rc)
   integer :: nb, ix, i, j, k, k1, it
   integer :: ib, jb
 
-  real(ESMF_KIND_R8), dimension(:,:,:),   pointer :: prsl, phil,  &
-                                                     prsi, phii,  &
-                                                     temp, dqdt,  &
-                                                     ua, va, vvl, &
-                                                     cldfra, dkt, &
+  real(ESMF_KIND_R8), dimension(:,:,:),   pointer :: prsl, phil,   &
+                                                     prsi, phii,   &
+                                                     temp, dqdt,   &
+                                                     ua, va, vvl,  &
+                                                     cldfra, dkt,  &
+                                                     pflls, pfils, &
                                                      slc, &
                                                      qb, qm, qu
   real(ESMF_KIND_R8), dimension(:,:,:,:), pointer :: qd, q
@@ -1312,6 +1313,16 @@ subroutine update_atmos_chemistry(state, rc)
         line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
       if (GFS_Control%cplgocart) then
+        call cplFieldGet(state,'inst_liq_nonconv_tendency_levels', &
+                         farrayPtr3d=pflls, rc=localrc)
+        if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+
+        call cplFieldGet(state,'inst_ice_nonconv_tendency_levels', &
+                         farrayPtr3d=pfils, rc=localrc)
+        if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+
         call cplFieldGet(state,'inst_cloud_frac_levels', farrayPtr3d=cldfra, rc=localrc)
         if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
           line=__LINE__, file=__FILE__, rcToReturn=rc)) return
@@ -1382,7 +1393,8 @@ subroutine update_atmos_chemistry(state, rc)
       !--- handle all three-dimensional variables
 !$OMP parallel do default (none) &
 !$OMP             shared  (nk, nj, ni, Atm_block, GFS_Data, GFS_Control, &
-!$OMP                      cldfra, prsi, phii, prsl, phil, temp, ua, va, vvl, dkt, dqdt)  &
+!$OMP                      cldfra, pfils, pflls, prsi, phii, prsl, phil, &
+!$OMP                      temp, ua, va, vvl, dkt, dqdt)  &
 !$OMP             private (k, j, jb, i, ib, nb, ix)
       do k = 1, nk
         do j = 1, nj
@@ -1402,6 +1414,8 @@ subroutine update_atmos_chemistry(state, rc)
             va  (i,j,k) = GFS_Data(nb)%Stateout%gv0(ix,k)
             if (GFS_Control%cplgocart) then
               cldfra(i,j,k) = GFS_Data(nb)%IntDiag%cldfra(ix,k)
+              pfils (i,j,k) = GFS_Data(nb)%Coupling%pfi_lsan(ix,k)
+              pflls (i,j,k) = GFS_Data(nb)%Coupling%pfl_lsan(ix,k)
             else
               vvl (i,j,k) = GFS_Data(nb)%Statein%vvl (ix,k)
               dkt (i,j,k) = GFS_Data(nb)%Coupling%dkt(ix,k)
@@ -1531,6 +1545,8 @@ subroutine update_atmos_chemistry(state, rc)
           write(6,'("update_atmos: fice   - min/max/avg",3g16.6)') minval(fice),   maxval(fice),   sum(fice)/size(fice)
           write(6,'("update_atmos: flake  - min/max/avg",3g16.6)') minval(flake),  maxval(flake),  sum(flake)/size(flake)
           write(6,'("update_atmos: focn   - min/max/avg",3g16.6)') minval(focn),   maxval(focn),   sum(focn)/size(focn)
+          write(6,'("update_atmos: pfils  - min/max/avg",3g16.6)') minval(pfils),  maxval(pfils),  sum(pfils)/size(pfils)
+          write(6,'("update_atmos: pflls  - min/max/avg",3g16.6)') minval(pflls),  maxval(pflls),  sum(pflls)/size(pflls)
           write(6,'("update_atmos: swet   - min/max/avg",3g16.6)') minval(swet),   maxval(swet),   sum(swet)/size(swet)
           write(6,'("update_atmos: u10m   - min/max/avg",3g16.6)') minval(u10m),   maxval(u10m),   sum(u10m)/size(u10m)
           write(6,'("update_atmos: v10m   - min/max/avg",3g16.6)') minval(v10m),   maxval(v10m),   sum(v10m)/size(v10m)
