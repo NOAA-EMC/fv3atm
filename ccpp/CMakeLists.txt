@@ -30,6 +30,13 @@ INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR}/physics)
 # Generate Compiler flags for C/CXX/Fortran - set to match NEMSfv3gfs flags
 # for DEBUG, REPRO and PROD mode for all three compilers
 
+# DH* 20210429 - quick workaround to get REPRO mode propagated
+# correctly to CCPP - will be cleaned up in Dusan's next PR
+if(REPRO)
+  set(CMAKE_BUILD_TYPE Bitforbit CACHE STRING "Choose the type of build." FORCE)
+endif()
+# *DH 20210429
+
 # Set basic compiler optimization levels, depending on build type
 if (${CMAKE_BUILD_TYPE} MATCHES "Debug")
   ADD_DEFINITIONS(-DDEBUG)
@@ -177,48 +184,6 @@ endif (DYN32)
 # Add model-specific flags for C/C++/Fortran preprocessor
 ADD_DEFINITIONS(-DMOIST_CAPPA -DUSE_COND -DNEMS_GSM)
 ADD_DEFINITIONS(-DINTERNAL_FILE_NML)
-
-#------------------------------------------------------------------------------
-# Set OpenMP flags for C/C++/Fortran compiler and preprocessor
-if (OPENMP)
-  include(detect_openmp)
-  detect_openmp()
-  set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-  set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-  set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${OpenMP_Fortran_FLAGS}")
-  message(STATUS "Enable OpenMP support for C/C++/Fortran compiler")
-  ADD_DEFINITIONS(-DOPENMP)
-else (OPENMP)
-  message (STATUS "Disable OpenMP support for C/C++/Fortran compiler")
-endif (OPENMP)
-
-#------------------------------------------------------------------------------
-# Set SIONlib flags for preprocessor, compiler and linker (if defined)
-if (SIONLIB)
-  execute_process(COMMAND ${SIONLIB}/bin/sionconfig --mpi --cflags --f90
-                  RESULT_VARIABLE exit_code
-                  OUTPUT_VARIABLE SIONlib_Fortran_FLAGS
-                  ERROR_VARIABLE stderr
-                  OUTPUT_STRIP_TRAILING_WHITESPACE
-                  ERROR_STRIP_TRAILING_WHITESPACE)
-  if (NOT exit_code EQUAL "0")
-     message (FATAL_ERROR "Execution of '${SIONLIB}/bin/sionconfig --mpi --cflags --f90' failed")
-  endif (NOT exit_code EQUAL "0")
-  execute_process(COMMAND ${SIONLIB}/bin/sionconfig --mpi --libs --f90
-                  RESULT_VARIABLE exit_code
-                  OUTPUT_VARIABLE SIONlib_Fortran_LIBS
-                  ERROR_VARIABLE stderr
-                  OUTPUT_STRIP_TRAILING_WHITESPACE
-                  ERROR_STRIP_TRAILING_WHITESPACE)
-  if (NOT exit_code EQUAL "0")
-     message (FATAL_ERROR "Execution of '${SIONLIB}/bin/sionconfig --mpi --libs --f90' failed")
-  endif (NOT exit_code EQUAL "0")
-  set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${SIONlib_Fortran_FLAGS} ${SIONlib_Fortran_LIBS}")
-  ADD_DEFINITIONS(-DSION)
-  message (STATUS "Enable SIONlib support")
-else (SIONLIB)
-  message (STATUS "Disable SIONlib support")
-endif (SIONLIB)
 
 #------------------------------------------------------------------------------
 # Set netCDF flags for preprocessor, compiler and linker (if defined)
