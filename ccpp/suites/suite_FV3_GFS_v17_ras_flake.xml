@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<suite name="FV3_GFS_v15_ras" version="1">
+<suite name="FV3_GFS_v17_ras_flake" version="1">
   <!-- <init></init> -->
   <group name="fast_physics">
     <subcycle loop="1">
@@ -44,10 +44,11 @@
     <subcycle loop="2">
       <scheme>sfc_diff</scheme>
       <scheme>GFS_surface_loop_control_part1</scheme>
+      <scheme>lsm_noah</scheme>
       <scheme>sfc_nst_pre</scheme>
       <scheme>sfc_nst</scheme>
       <scheme>sfc_nst_post</scheme>
-      <scheme>lsm_noah</scheme>
+      <scheme>flake_driver</scheme>
       <scheme>sfc_sice</scheme>
       <scheme>GFS_surface_loop_control_part2</scheme>
     </subcycle>
@@ -58,7 +59,7 @@
       <scheme>sfc_diag_post</scheme>
       <scheme>GFS_surface_generic_post</scheme>
       <scheme>GFS_PBL_generic_pre</scheme>
-      <scheme>hedmf</scheme>
+      <scheme>satmedmfvdifq</scheme>
       <scheme>GFS_PBL_generic_post</scheme>
       <scheme>GFS_GWD_generic_pre</scheme>
       <scheme>cires_ugwp</scheme>
@@ -86,6 +87,7 @@
   <group name="stochastics">
     <subcycle loop="1">
       <scheme>GFS_stochastics</scheme>
+      <scheme>phys_tend</scheme>
     </subcycle>
   </group>
   <!-- <finalize></finalize> -->

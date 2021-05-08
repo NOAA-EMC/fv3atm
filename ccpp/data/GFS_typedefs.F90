@@ -3156,7 +3156,7 @@ module GFS_typedefs
     real(kind=kind_phys) :: sfenth         = 0.0                      !< enthalpy flux factor 0 zot via charnock ..>0 zot enhanced>15m/s
 
 !--- flake model parameters
-    integer              :: lkm            =  0  !< flag for flake model
+    integer              :: lkm            =  0                       !< flag for flake model - default no flake
 
 !--- tuning parameters for physical parameterizations
     logical              :: ras            = .false.                  !< flag for ras convection scheme
