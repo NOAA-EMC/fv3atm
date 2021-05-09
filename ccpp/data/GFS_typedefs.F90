@@ -693,6 +693,7 @@ module GFS_typedefs
     logical              :: doGP_lwscat             !< If true, include scattering in longwave cloud-optics, only compatible w/ GP cloud-optics
     real(kind_phys)      :: minGPpres               !< Minimum pressure allowed in RRTMGP.
     real(kind_phys)      :: minGPtemp               !< Minimum temperature allowed in RRTMGP.
+    real(kind_phys)      :: maxGPtemp               !< Maximum temperature allowed in RRTMGP.
 
 !--- microphysical switch
     integer              :: ncld                           !< choice of cloud scheme
@@ -3811,6 +3812,11 @@ module GFS_typedefs
           write(0,*) "Logic error, RRTMGP spectral dimensions (bands/gpts) need to be provided."
           stop
        endif
+       else
+          if (Model%use_LW_jacobian) then
+             write(0,*) "Logic error, RRTMGP LW Jacobian adjustment cannot be used with RRTMG radiation."
+             Model%use_LW_jacobian = .false.
+          endif
     endif
 
     ! The CCPP versions of the RRTMG lw/sw schemes are configured
