@@ -3923,8 +3923,32 @@ module GFS_typedefs
     end if
     ! *DH
 
+    if (Model%lsm==Model%lsm_noah_wrfv4) then
+      if (Model%lsoil_lsm/=4) then
+        write(0,*) 'Error in GFS_typedefs.F90, number of soil layers must be 4 for Noah_WRFv4'
+        stop
+      end if
+    elseif (Model%lsm==Model%lsm_ruc)) then
+      if (Model%lsoil_lsm/=9) then
+        write(0,*) 'Error in GFS_typedefs.F90, number of soil layers must be 9 for RUC'
+        stop
+      end if
+    end if       
+
     ! Set number of ice model layers
     Model%kice      = kice
+
+    if (Model%lsm==Model%lsm_noah .or. Model%lsm==Model%lsm_noahmp .or. Model%lsm=Model%lsm_noah_wrfv4) then
+      if (kice/=2) then
+        write(0,*) 'Error in GFS_typedefs.F90, number of ice model layers must be 2 for Noah/NoahMP/Noah_WRFv4'
+        stop
+      end if
+    elseif (Model%lsm==Model%lsm_ruc) then
+      if (kice/=9) then
+        write(0,*) 'Error in GFS_typedefs.F90, number of ice model layers must be 9 for RUC'
+        stop
+      end if
+    end if
 
     ! Allocate variable for min/max soil moisture for a given soil type
     allocate (Model%pores(30))
@@ -4695,7 +4719,7 @@ module GFS_typedefs
       if (.not. Model%effr_in) then
         print *,' Thompson MP requires effr_in to be set to .true. - job aborted'
         stop
-      end if
+      end if      
       if (Model%me == Model%master) print *,' Using Thompson double moment microphysics', &
                                           ' ltaerosol = ',Model%ltaerosol, &
                                           ' ttendlim =',Model%ttendlim, &
