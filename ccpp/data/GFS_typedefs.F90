@@ -7371,13 +7371,13 @@ module GFS_typedefs
        Interstitial%weasd_land_save = huge
     end if
     !
-    ! Set flag for resetting maximum hourly output fields
+    ! Set flag for resetting maximum hourly output fields - at first time step and after every output time step
     Interstitial%reset = mod(Model%kdt-1, nint(Model%avg_max_length/Model%dtp)) == 0
-    ! Set flag for resetting radar reflectivity calculation
+    ! Set flag for resetting radar reflectivity calculation - at first time step and before every output tiue step
     if (Model%nsradar_reset<0) then
       Interstitial%radar_reset = .true.
     else
-      Interstitial%radar_reset = mod(Model%kdt-1, nint(Model%nsradar_reset/Model%dtp)) == 0
+      Interstitial%radar_reset = ( Model%kdt == 1 .or. mod(Model%kdt, nint(Model%nsradar_reset/Model%dtp)) == 0 )
     end if
     !
   end subroutine interstitial_phys_reset
