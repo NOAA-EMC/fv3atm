@@ -1851,6 +1851,7 @@ module GFS_typedefs
     integer,               pointer      :: idxday(:)          => null()  !<
     logical,               pointer      :: icy(:)             => null()  !<
     logical,               pointer      :: lake(:)            => null()  !<
+    logical,               pointer      :: use_flake(:)       => null()  !<
     logical,               pointer      :: ocean(:)           => null()  !<
     integer                             :: ipr                           !<
     integer,               pointer      :: islmsk(:)          => null()  !<
@@ -6387,6 +6388,7 @@ module GFS_typedefs
     allocate (Interstitial%idxday          (IM))
     allocate (Interstitial%icy             (IM))
     allocate (Interstitial%lake            (IM))
+    allocate (Interstitial%use_flake       (IM))
     allocate (Interstitial%ocean           (IM))
     allocate (Interstitial%islmsk          (IM))
     allocate (Interstitial%islmsk_cice     (IM))
@@ -7140,6 +7142,7 @@ module GFS_typedefs
     Interstitial%dry             = .false.
     Interstitial%icy             = .false.
     Interstitial%lake            = .false.
+    Interstitial%use_flake       = .false.
     Interstitial%ocean           = .false.
     Interstitial%islmsk          = 0
     Interstitial%islmsk_cice     = 0
@@ -7498,6 +7501,7 @@ module GFS_typedefs
     write (0,*) 'sum(Interstitial%idxday          ) = ', sum(Interstitial%idxday          )
     write (0,*) 'Interstitial%icy(:)==.true.        = ', count(Interstitial%icy(:)        )
     write (0,*) 'Interstitial%lake(:)==.true.       = ', count(Interstitial%lake(:)       )
+    write (0,*) 'Interstitial%use_flake(:)==.true.  = ', count(Interstitial%use_flake(:)  )
     write (0,*) 'Interstitial%ocean(:)==.true.      = ', count(Interstitial%ocean(:)      )
     write (0,*) 'sum(Interstitial%islmsk          ) = ', sum(Interstitial%islmsk          )
     write (0,*) 'sum(Interstitial%islmsk_cice     ) = ', sum(Interstitial%islmsk_cice     )
