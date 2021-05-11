@@ -231,10 +231,10 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: tiice(:,:)   => null()  !< internal ice temperature
     real (kind=kind_phys), pointer :: snowd  (:)   => null()  !< snow depth water equivalent in mm ; same as snwdph
     real (kind=kind_phys), pointer :: zorl   (:)   => null()  !< composite surface roughness in cm
-    real (kind=kind_phys), pointer :: zorlw  (:)   => null()  !< wave surface roughness in cm
+    real (kind=kind_phys), pointer :: zorlw  (:)   => null()  !< water surface roughness in cm
     real (kind=kind_phys), pointer :: zorll  (:)   => null()  !< land surface roughness in cm
     real (kind=kind_phys), pointer :: zorli  (:)   => null()  !< ice  surface roughness in cm
-    real (kind=kind_phys), pointer :: zorlwav(:)   => null()  !< cwwater surface roughness in cm derived from wave model
+    real (kind=kind_phys), pointer :: zorlwav(:)   => null()  !< wave surface roughness in cm derived from wave model
     real (kind=kind_phys), pointer :: fice   (:)   => null()  !< ice fraction over open water grid
 !   real (kind=kind_phys), pointer :: hprim  (:)   => null()  !< topographic standard deviation in m
     real (kind=kind_phys), pointer :: hprime (:,:) => null()  !< orographic metrics
@@ -1546,7 +1546,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: skebv_wts(:,:) => null()   !< 10 meter v wind speed
     real (kind=kind_phys), pointer :: sppt_wts(:,:)  => null()   !<
     real (kind=kind_phys), pointer :: shum_wts(:,:)  => null()   !<
-    real (kind=kind_phys), pointer :: sfc_wts(:,:)  => null()   !<
+    real (kind=kind_phys), pointer :: sfc_wts(:,:)   => null()   !<
     real (kind=kind_phys), pointer :: zmtnblck(:)    => null()   !<mountain blocking evel
     real (kind=kind_phys), pointer :: du3dt (:,:,:)  => null()   !< u momentum change due to physics
     real (kind=kind_phys), pointer :: dv3dt (:,:,:)  => null()   !< v momentum change due to physics
@@ -2707,7 +2707,7 @@ module GFS_typedefs
 !     allocate (Coupling%zorlwav_cpl (IM))
 
 !     Coupling%zorlwav_cpl  = clear_val
-!   end if
+!   endif
 
     if (Model%cplflx) then
       !--- incoming quantities
@@ -5309,7 +5309,7 @@ module GFS_typedefs
 
     implicit none
 
-    class(GFS_grid_type)              :: Grid
+    class(GFS_grid_type)               :: Grid
     integer,                intent(in) :: IM
     type(GFS_control_type), intent(in) :: Model
 
