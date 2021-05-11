@@ -6,187 +6,124 @@ module module_cplfields
   !-----------------------------------------------------------------------------
 
   use ESMF
-  use NUOPC
 
   implicit none
 
   private
 
+  type, public :: FieldInfo
+    character(len=41) :: name
+    character(len=1) :: type
+    character(len=9) :: shared
+  end type
+
 ! Export Fields ----------------------------------------
   integer,          public, parameter :: NexportFields = 72
   type(ESMF_Field), target, public    :: exportFields(NexportFields)
-  character(len=*), public, parameter :: exportFieldsList(NexportFields) = (/ &
-       "inst_pres_interface                      ", &
-       "inst_pres_levels                         ", &
-       "inst_geop_interface                      ", &
-       "inst_geop_levels                         ", &
-       "inst_temp_levels                         ", &
-       "inst_zonal_wind_levels                   ", &
-       "inst_merid_wind_levels                   ", &
-       "inst_omega_levels                        ", &
-       "inst_tracer_mass_frac                    ", &
-       "soil_type                                ", &
-       "inst_pbl_height                          ", &
-       "surface_cell_area                        ", &
-       "inst_convective_rainfall_amount          ", &
-       "inst_exchange_coefficient_heat_levels    ", &
-       "inst_spec_humid_conv_tendency_levels     ", &
-       "inst_friction_velocity                   ", &
-       "inst_rainfall_amount                     ", &
-       "inst_soil_moisture_content               ", &
-       "inst_up_sensi_heat_flx                   ", &
-       "inst_lwe_snow_thickness                  ", &
-       "vegetation_type                          ", &
-       "inst_vegetation_area_frac                ", &
-       "inst_surface_roughness                   ", &
-       "mean_zonal_moment_flx_atm                ", &
-       "mean_merid_moment_flx_atm                ", &
-       "mean_sensi_heat_flx                      ", &
-       "mean_laten_heat_flx                      ", &
-       "mean_down_lw_flx                         ", &
-       "mean_down_sw_flx                         ", &
-       "mean_prec_rate                           ", &
-       "inst_zonal_moment_flx                    ", &
-       "inst_merid_moment_flx                    ", &
-       "inst_sensi_heat_flx                      ", &
-       "inst_laten_heat_flx                      ", &
-       "inst_down_lw_flx                         ", &
-       "inst_down_sw_flx                         ", &
-       "inst_temp_height2m                       ", &
-       "inst_spec_humid_height2m                 ", &
-       "inst_zonal_wind_height10m                ", &
-       "inst_merid_wind_height10m                ", &
-       "inst_temp_height_surface                 ", &
-       "inst_pres_height_surface                 ", &
-       "inst_surface_height                      ", &
-       "mean_net_lw_flx                          ", &
-       "mean_net_sw_flx                          ", &
-       "inst_net_lw_flx                          ", &
-       "inst_net_sw_flx                          ", &
-       "mean_down_sw_ir_dir_flx                  ", &
-       "mean_down_sw_ir_dif_flx                  ", &
-       "mean_down_sw_vis_dir_flx                 ", &
-       "mean_down_sw_vis_dif_flx                 ", &
-       "inst_down_sw_ir_dir_flx                  ", &
-       "inst_down_sw_ir_dif_flx                  ", &
-       "inst_down_sw_vis_dir_flx                 ", &
-       "inst_down_sw_vis_dif_flx                 ", &
-       "mean_net_sw_ir_dir_flx                   ", &
-       "mean_net_sw_ir_dif_flx                   ", &
-       "mean_net_sw_vis_dir_flx                  ", &
-       "mean_net_sw_vis_dif_flx                  ", &
-       "inst_net_sw_ir_dir_flx                   ", &
-       "inst_net_sw_ir_dif_flx                   ", &
-       "inst_net_sw_vis_dir_flx                  ", &
-       "inst_net_sw_vis_dif_flx                  ", &
-       "inst_land_sea_mask                       ", &
-       "inst_temp_height_lowest                  ", &
-       "inst_spec_humid_height_lowest            ", &
-       "inst_zonal_wind_height_lowest            ", &
-       "inst_merid_wind_height_lowest            ", &
-       "inst_pres_height_lowest                  ", &
-       "inst_height_lowest                       ", &
-       "mean_fprec_rate                          ", &
-       "openwater_frac_in_atm                    "  &
-!      "northward_wind_neutral                   ", &
-!      "eastward_wind_neutral                    ", &
-!      "upward_wind_neutral                      ", &
-!      "temp_neutral                             ", &
-!      "O_Density                                ", &
-!      "O2_Density                               ", &
-!      "N2_Density                               ", &
-!      "height                                   "  &
-  /)
-  ! Field types should be provided for proper handling
-  ! according to the table below:
-  !  g : soil levels (3D)
-  !  i : interface (3D)
-  !  l : model levels (3D)
-  !  s : surface (2D)
-  !  t : tracers (4D)
-  character(len=*), public, parameter :: exportFieldTypes(NexportFields) = (/ &
-       "i","l","i","l","l","l","l","l","t", &
-       "s","s","s","s","l","l","s","s","g", &
-       "s","s","s","s","s","s","s","s",     &
-       "s","s","s","s","s","s","s","s",     &
-       "s","s","s","s","s","s","s","s",     &
-       "s","s","s","s","s","s","s","s",     &
-       "s","s","s","s","s","s","s","s",     &
-       "s","s","s","s","s","s","s","s",     &
-       "s","s","s","s","s","s"              &
-!      "l","l","l","l","l","l","l","s",     &
-  /)
-  ! Set exportFieldShare to .true. if field is provided as memory reference
-  ! to coupled components
-  logical, public, parameter :: exportFieldShare(NexportFields) = (/ &
-       .true. ,.true. ,.true. ,.true. ,.true. , &
-       .true. ,.true. ,.true. ,.true. ,.true. , &
-       .true. ,.true. ,.true. ,.true. ,.true. , &
-       .true. ,.true. ,.true. ,.true. ,.true. , &
-       .true. ,.true. ,.true. ,.false.,.false., &
-       .false.,.false.,.false.,.false.,.false., &
-       .false.,.false.,.false.,.false.,.false. , &
-       .true. ,.false.,.false.,.false.,.false. , &
-       .true. ,.false.,.false.,.false.,.false., &
-       .false.,.false.,.false.,.false.,.false., &
-       .false.,.false.,.false.,.false.,.false., &
-       .false.,.false.,.false.,.false.,.false., &
-       .false.,.false.,.false.,.true. ,.false., &
-       .false.,.false.,.false.,.false.,.false., &
-       .false.,.false.                          &
-!      .false.,.false.,.false.,.false.,.false., &
-!      .false.,.false.,.false.                  &
-  /)
+
+  type(FieldInfo), dimension(NexportFields), public, parameter :: exportFieldsInfo = [ &
+    FieldInfo("inst_pres_interface                      ", "i", "share    " ), &
+    FieldInfo("inst_pres_levels                         ", "l", "share    " ), &
+    FieldInfo("inst_geop_interface                      ", "i", "share    " ), &
+    FieldInfo("inst_geop_levels                         ", "l", "share    " ), &
+    FieldInfo("inst_temp_levels                         ", "l", "share    " ), &
+    FieldInfo("inst_zonal_wind_levels                   ", "l", "share    " ), &
+    FieldInfo("inst_merid_wind_levels                   ", "l", "share    " ), &
+    FieldInfo("inst_omega_levels                        ", "l", "share    " ), &
+    FieldInfo("inst_tracer_mass_frac                    ", "t", "share    " ), &
+    FieldInfo("soil_type                                ", "s", "share    " ), &
+    FieldInfo("inst_pbl_height                          ", "s", "share    " ), &
+    FieldInfo("surface_cell_area                        ", "s", "share    " ), &
+    FieldInfo("inst_convective_rainfall_amount          ", "s", "share    " ), &
+    FieldInfo("inst_exchange_coefficient_heat_levels    ", "l", "share    " ), &
+    FieldInfo("inst_spec_humid_conv_tendency_levels     ", "l", "share    " ), &
+    FieldInfo("inst_friction_velocity                   ", "s", "share    " ), &
+    FieldInfo("inst_rainfall_amount                     ", "s", "share    " ), &
+    FieldInfo("inst_soil_moisture_content               ", "g", "share    " ), &
+    FieldInfo("inst_up_sensi_heat_flx                   ", "s", "share    " ), &
+    FieldInfo("inst_lwe_snow_thickness                  ", "s", "share    " ), &
+    FieldInfo("vegetation_type                          ", "s", "share    " ), &
+    FieldInfo("inst_vegetation_area_frac                ", "s", "share    " ), &
+    FieldInfo("inst_surface_roughness                   ", "s", "share    " ), &
+    FieldInfo("mean_zonal_moment_flx_atm                ", "s", "not share" ), &
+    FieldInfo("mean_merid_moment_flx_atm                ", "s", "not share" ), &
+    FieldInfo("mean_sensi_heat_flx                      ", "s", "not share" ), &
+    FieldInfo("mean_laten_heat_flx                      ", "s", "not share" ), &
+    FieldInfo("mean_down_lw_flx                         ", "s", "not share" ), &
+    FieldInfo("mean_down_sw_flx                         ", "s", "not share" ), &
+    FieldInfo("mean_prec_rate                           ", "s", "not share" ), &
+    FieldInfo("inst_zonal_moment_flx                    ", "s", "not share" ), &
+    FieldInfo("inst_merid_moment_flx                    ", "s", "not share" ), &
+    FieldInfo("inst_sensi_heat_flx                      ", "s", "not share" ), &
+    FieldInfo("inst_laten_heat_flx                      ", "s", "not share" ), &
+    FieldInfo("inst_down_lw_flx                         ", "s", "not share" ), &
+    FieldInfo("inst_down_sw_flx                         ", "s", "share    " ), &
+    FieldInfo("inst_temp_height2m                       ", "s", "not share" ), &
+    FieldInfo("inst_spec_humid_height2m                 ", "s", "not share" ), &
+    FieldInfo("inst_zonal_wind_height10m                ", "s", "not share" ), &
+    FieldInfo("inst_merid_wind_height10m                ", "s", "not share" ), &
+    FieldInfo("inst_temp_height_surface                 ", "s", "share    " ), &
+    FieldInfo("inst_pres_height_surface                 ", "s", "not share" ), &
+    FieldInfo("inst_surface_height                      ", "s", "not share" ), &
+    FieldInfo("mean_net_lw_flx                          ", "s", "not share" ), &
+    FieldInfo("mean_net_sw_flx                          ", "s", "not share" ), &
+    FieldInfo("inst_net_lw_flx                          ", "s", "not share" ), &
+    FieldInfo("inst_net_sw_flx                          ", "s", "not share" ), &
+    FieldInfo("mean_down_sw_ir_dir_flx                  ", "s", "not share" ), &
+    FieldInfo("mean_down_sw_ir_dif_flx                  ", "s", "not share" ), &
+    FieldInfo("mean_down_sw_vis_dir_flx                 ", "s", "not share" ), &
+    FieldInfo("mean_down_sw_vis_dif_flx                 ", "s", "not share" ), &
+    FieldInfo("inst_down_sw_ir_dir_flx                  ", "s", "not share" ), &
+    FieldInfo("inst_down_sw_ir_dif_flx                  ", "s", "not share" ), &
+    FieldInfo("inst_down_sw_vis_dir_flx                 ", "s", "not share" ), &
+    FieldInfo("inst_down_sw_vis_dif_flx                 ", "s", "not share" ), &
+    FieldInfo("mean_net_sw_ir_dir_flx                   ", "s", "not share" ), &
+    FieldInfo("mean_net_sw_ir_dif_flx                   ", "s", "not share" ), &
+    FieldInfo("mean_net_sw_vis_dir_flx                  ", "s", "not share" ), &
+    FieldInfo("mean_net_sw_vis_dif_flx                  ", "s", "not share" ), &
+    FieldInfo("inst_net_sw_ir_dir_flx                   ", "s", "not share" ), &
+    FieldInfo("inst_net_sw_ir_dif_flx                   ", "s", "not share" ), &
+    FieldInfo("inst_net_sw_vis_dir_flx                  ", "s", "not share" ), &
+    FieldInfo("inst_net_sw_vis_dif_flx                  ", "s", "not share" ), &
+    FieldInfo("inst_land_sea_mask                       ", "s", "share    " ), &
+    FieldInfo("inst_temp_height_lowest                  ", "s", "not share" ), &
+    FieldInfo("inst_spec_humid_height_lowest            ", "s", "not share" ), &
+    FieldInfo("inst_zonal_wind_height_lowest            ", "s", "not share" ), &
+    FieldInfo("inst_merid_wind_height_lowest            ", "s", "not share" ), &
+    FieldInfo("inst_pres_height_lowest                  ", "s", "not share" ), &
+    FieldInfo("inst_height_lowest                       ", "s", "not share" ), &
+    FieldInfo("mean_fprec_rate                          ", "s", "not share" ), &
+    FieldInfo("openwater_frac_in_atm                    ", "s", "not share" ) ]
+
   real(kind=8), allocatable, public :: exportData(:,:,:)
 
 ! Import Fields ----------------------------------------
   integer,          public, parameter :: NimportFields = 17
   logical,          public            :: importFieldsValid(NimportFields)
   type(ESMF_Field), target, public    :: importFields(NimportFields)
-  character(len=*), public, parameter :: importFieldsList(NimportFields) = (/ &
-       "inst_tracer_mass_frac                  ", &
-       "land_mask                              ", &
-       "sea_ice_surface_temperature            ", &
-       "sea_surface_temperature                ", &
-       "ice_fraction                           ", &
-!      "inst_ice_ir_dif_albedo                 ", &
-!      "inst_ice_ir_dir_albedo                 ", &
-!      "inst_ice_vis_dif_albedo                ", &
-!      "inst_ice_vis_dir_albedo                ", &
-       "mean_up_lw_flx_ice                     ", &
-       "mean_laten_heat_flx_atm_into_ice       ", &
-       "mean_sensi_heat_flx_atm_into_ice       ", &
-!      "mean_evap_rate                         ", &
-       "stress_on_air_ice_zonal                ", &
-       "stress_on_air_ice_merid                ", &
-       "mean_ice_volume                        ", &
-       "mean_snow_volume                       ", &
-       "inst_tracer_up_surface_flx             ", &
-       "inst_tracer_down_surface_flx           ", &
-       "inst_tracer_clmn_mass_dens             ", &
-       "inst_tracer_anth_biom_flx              ", &
-       "wave_z0_roughness_length               "  &
-  /)
-  character(len=*), public, parameter :: importFieldTypes(NimportFields) = (/ &
-       "t",                                 &
-       "s","s","s","s","s",                 &
-       "s","s","s","s","s",                 &
-       "s","u","d","c","b",                 &
-       "s"                                  &
-  /)
-  ! Set importFieldShare to .true. if field is provided as memory reference
-  ! from coupled components
-  logical, public, parameter :: importFieldShare(NimportFields) = (/ &
-       .true. ,                                 &
-       .false.,.false.,.false.,.false.,.false., &
-       .false.,.false.,.false.,.false.,.false., &
-       .false.,.true. ,.true. ,.true. ,.true. , &
-       .false.                                  &
-  /)
+
+  type(FieldInfo), dimension(NimportFields), public, parameter :: importFieldsInfo = [ &
+    FieldInfo("inst_tracer_mass_frac                    ", "t", "share    " ), &
+    FieldInfo("land_mask                                ", "s", "not share" ), &
+    FieldInfo("sea_ice_surface_temperature              ", "s", "not share" ), &
+    FieldInfo("sea_surface_temperature                  ", "s", "not share" ), &
+    FieldInfo("ice_fraction                             ", "s", "not share" ), &
+    FieldInfo("mean_up_lw_flx_ice                       ", "s", "not share" ), &
+    FieldInfo("mean_laten_heat_flx_atm_into_ice         ", "s", "not share" ), &
+    FieldInfo("mean_sensi_heat_flx_atm_into_ice         ", "s", "not share" ), &
+    FieldInfo("stress_on_air_ice_zonal                  ", "s", "not share" ), &
+    FieldInfo("stress_on_air_ice_merid                  ", "s", "not share" ), &
+    FieldInfo("mean_ice_volume                          ", "s", "not share" ), &
+    FieldInfo("mean_snow_volume                         ", "s", "not share" ), &
+    FieldInfo("inst_tracer_up_surface_flx               ", "u", "share    " ), &
+    FieldInfo("inst_tracer_down_surface_flx             ", "d", "share    " ), &
+    FieldInfo("inst_tracer_clmn_mass_dens               ", "c", "share    " ), &
+    FieldInfo("inst_tracer_anth_biom_flx                ", "b", "share    " ), &
+    FieldInfo("wave_z0_roughness_length                 ", "s", "not share" ) ]
 
   ! Methods
   public fillExportFields
-  public queryFieldList
+  public queryImportFields, queryExportFields
   public cplFieldGet
 
 !-----------------------------------------------------------------------------
@@ -205,7 +142,7 @@ module module_cplfields
     character(len=ESMF_MAXSTR)                  :: fieldName
     real(kind=ESMF_KIND_R4), dimension(:,:), pointer   :: datar42d
     real(kind=ESMF_KIND_R8), dimension(:,:), pointer   :: datar82d
-    
+
 !
     if (present(rc)) rc=ESMF_SUCCESS
 
@@ -236,19 +173,38 @@ module module_cplfields
 !
 !------------------------------------------------------------------------------
 !
-  integer function queryFieldList(fieldlist, fieldname, abortflag, rc)
+  integer function queryExportFields(fieldname, abortflag)
+
+    character(len=*),intent(in) :: fieldname
+    logical, optional           :: abortflag
+
+    queryExportFields = queryFieldList(exportFieldsInfo, fieldname, abortflag)
+
+  end function queryExportFields
+
+  integer function queryImportFields(fieldname, abortflag)
+
+    character(len=*),intent(in) :: fieldname
+    logical, optional           :: abortflag
+
+    queryImportFields = queryFieldList(importFieldsInfo, fieldname, abortflag)
+
+  end function queryImportFields
+
+
+  integer function queryFieldList(fieldsInfo, fieldname, abortflag)
     ! returns integer index of first found fieldname in fieldlist
     ! by default, will abort if field not found, set abortflag to false
     ! to turn off the abort.
     ! return value of < 1 means the field was not found
 
-    character(len=*),intent(in) :: fieldlist(:)
+    type(FieldInfo) ,intent(in) :: fieldsInfo(:)
     character(len=*),intent(in) :: fieldname
     logical, optional           :: abortflag
-    integer, optional           :: rc
 
     integer :: n
     logical :: labort
+    integer :: rc
 
     labort = .true.
     if (present(abortflag)) then
@@ -257,8 +213,8 @@ module module_cplfields
 
     queryFieldList = 0
     n = 1
-    do while (queryFieldList < 1 .and. n <= size(fieldlist))
-      if (trim(fieldlist(n)) == trim(fieldname)) then
+    do while (queryFieldList < 1 .and. n <= size(fieldsInfo))
+      if (trim(fieldsInfo(n)%name) == trim(fieldname)) then
         queryFieldList = n
       else
         n = n + 1

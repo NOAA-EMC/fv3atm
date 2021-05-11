@@ -7,11 +7,13 @@ module module_cap_cpl
 !
   use esmf
   use NUOPC
+
+  use module_cplfields, only : FieldInfo
 !
   implicit none
   private
   public clock_cplIntval
-  public realizeConnectedInternCplField
+  ! public realizeConnectedInternCplField
   public realizeConnectedCplFields
   public diagnose_cplFields
 !
@@ -50,7 +52,7 @@ module module_cap_cpl
     end subroutine clock_cplIntval
 
   !-----------------------------------------------------------------------------
-
+#if 0
     subroutine realizeConnectedInternCplField(state, field, standardName, grid, rc)
 
       type(ESMF_State)                :: state
@@ -95,14 +97,14 @@ module module_cap_cpl
       endif
 
     end subroutine realizeConnectedInternCplField
-
+#endif
   !-----------------------------------------------------------------------------
 
     subroutine realizeConnectedCplFields(state, grid,                                      &
                                          numLevels, numSoilLayers, numTracers,             &
                                          num_diag_sfc_emis_flux, num_diag_down_flux,       &
                                          num_diag_type_down_flux, num_diag_burn_emis_flux, &
-                                         num_diag_cmass, fieldNames, fieldTypes, state_tag,&
+                                         num_diag_cmass, fields_info, state_tag,             &
                                          fieldList, rc)
 
       type(ESMF_State),            intent(inout)  :: state
@@ -115,8 +117,7 @@ module module_cap_cpl
       integer,                        intent(in)  :: num_diag_type_down_flux
       integer,                        intent(in)  :: num_diag_burn_emis_flux
       integer,                        intent(in)  :: num_diag_cmass
-      character(len=*), dimension(:), intent(in)  :: fieldNames
-      character(len=*), dimension(:), intent(in)  :: fieldTypes
+      type(FieldInfo), dimension(:),  intent(in)  :: fields_info
       character(len=*),               intent(in)  :: state_tag                              !< Import or export.
       type(ESMF_Field), dimension(:), intent(out) :: fieldList
       integer,                        intent(out) :: rc
@@ -129,21 +130,15 @@ module module_cap_cpl
       ! begin
       rc = ESMF_SUCCESS
 
-      if (size(fieldNames) /= size(fieldTypes)) then
-        call ESMF_LogSetError(rcToCheck=ESMF_RC_ARG_SIZE, &
-          msg="fieldNames and fieldTypes must have same size.", line=__LINE__, file=__FILE__, rcToReturn=rc)
-        return
-      end if
-
-      do item = 1, size(fieldNames)
-        isConnected = NUOPC_IsConnected(state, fieldName=trim(fieldNames(item)), rc=rc)
+      do item = 1, size(fields_info)
+        isConnected = NUOPC_IsConnected(state, fieldName=trim(fields_info(item)%name), rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
         if (isConnected) then
-          call ESMF_StateGet(state, field=field, itemName=trim(fieldNames(item)), rc=rc)
+          call ESMF_StateGet(state, field=field, itemName=trim(fields_info(item)%name), rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
           call ESMF_FieldEmptySet(field, grid=grid, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-          select case (fieldTypes(item))
+          select case (fields_info(item)%type)
             case ('l','layer')
               call ESMF_FieldEmptyComplete(field, typekind=ESMF_TYPEKIND_R8, &
                                        ungriddedLBound=(/1/), ungriddedUBound=(/numLevels/), rc=rc)
@@ -182,7 +177,7 @@ module module_cap_cpl
               if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
             case default
               call ESMF_LogSetError(ESMF_RC_NOT_VALID, &
-                msg="exportFieldType = '"//trim(fieldTypes(item))//"' not recognized", &
+                msg="exportFieldType = '"//trim(fields_info(item)%type)//"' not recognized", &
                 line=__LINE__, file=__FILE__, rcToReturn=rc)
               return
           end select
@@ -195,13 +190,13 @@ module module_cap_cpl
 
           ! -- save field
           fieldList(item) = field
-          call ESMF_LogWrite('realizeConnectedCplFields '//trim(state_tag)//' Field '//trim(fieldNames(item))  &
+          call ESMF_LogWrite('realizeConnectedCplFields '//trim(state_tag)//' Field '//trim(fields_info(item)%name)  &
                              // ' is connected ', ESMF_LOGMSG_INFO, line=__LINE__, file=__FILE__, rc=rc)
         else
           ! remove a not connected Field from State
-          call ESMF_StateRemove(state, (/trim(fieldNames(item))/), rc=rc)
+          call ESMF_StateRemove(state, (/trim(fields_info(item)%name)/), rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-          call ESMF_LogWrite('realizeConnectedCplFields '//trim(state_tag)//' Field '//trim(fieldNames(item))  &
+          call ESMF_LogWrite('realizeConnectedCplFields '//trim(state_tag)//' Field '//trim(fields_info(item)%name)  &
                              // ' is not connected ', ESMF_LOGMSG_INFO, line=__LINE__, file=__FILE__, rc=rc)
         end if
       end do
@@ -495,32 +490,32 @@ module module_cap_cpl
     call ESMF_StateGet(State, itemCount=itemCount, rc=lrc)
     if (ESMF_LogFoundError(rcToCheck=lrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
     allocate(itemNameList(itemCount))
-   
+
     call ESMF_StateGet(State, itemNameList=itemNameList, rc=lrc)
     if (ESMF_LogFoundError(rcToCheck=lrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-   
+
     do n = 1, itemCount
        call ESMF_StateGet(State, itemName=trim(itemNameList(n)), itemType=itemType, rc=lrc)
        if (ESMF_LogFoundError(rcToCheck=lrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-   
+
      if(itemType == ESMF_STATEITEM_FIELD)then
        call ESMF_StateGet(State, itemName=trim(itemNameList(n)), field=lfield, rc=lrc)
        if (ESMF_LogFoundError(rcToCheck=lrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-  
+
        call ESMF_FieldGet(lfield, dimCount=dimcount, rc=lrc)
        if (ESMF_LogFoundError(rcToCheck=lrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-       
+
        if(dimcount == 2)then
          call ESMF_FieldGet(lfield, farrayPtr=dataPtr2d, rc=lrc)
          if (ESMF_LogFoundError(rcToCheck=lrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-   
+
          write(tmpstr,'(A,3g14.7)') trim(subname)//' '//trim(lstring)//':'//trim(itemNameList(n))//'  ', &
            minval(dataPtr2d),maxval(dataPtr2d),sum(dataPtr2d)
          call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=lrc)
        else
          call ESMF_FieldGet(lfield, farrayPtr=dataPtr3d, rc=lrc)
          if (ESMF_LogFoundError(rcToCheck=lrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-  
+
          write(tmpstr,'(A,3g14.7)') trim(subname)//' '//trim(lstring)//':'//trim(itemNameList(n))//'  ', &
            minval(dataPtr3d),maxval(dataPtr3d),sum(dataPtr3d)
          call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=lrc)
