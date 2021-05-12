@@ -1,28 +1,9 @@
-# Call to CCPP code generator
-if(DEBUG)
-  set(_ccpp_debug_arg "--debug")
-endif()
-if(DEFINED CCPP_SUITES)
-  set(_ccpp_suites_arg "--suites=${CCPP_SUITES}")
-  message("Calling CCPP code generator (ccpp_prebuild.py) for suites ${_ccpp_suites_arg} ...")
-else()
-  message("Calling CCPP code generator (ccpp_prebuild.py) for all available suites ...")
-endif()
-execute_process(COMMAND ${Python_EXECUTABLE}
-                        "ccpp/framework/scripts/ccpp_prebuild.py"
-                        "--config=ccpp/config/ccpp_prebuild_config.py"
-                        "--builddir=${CMAKE_CURRENT_BINARY_DIR}" ${_ccpp_suites_arg} ${_ccpp_debug_arg}
-                WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-                OUTPUT_FILE ${CMAKE_CURRENT_BINARY_DIR}/ccpp_prebuild.out
-                ERROR_FILE  ${CMAKE_CURRENT_BINARY_DIR}/ccpp_prebuild.err
-                RESULT_VARIABLE RC)
-# Check return code from ccpp_prebuild.py
-if(NOT RC EQUAL 0)
-  message(FATAL_ERROR "An error occured while running ccpp_prebuild.py, check ${CMAKE_CURRENT_BINARY_DIR}/ccpp_prebuild.{out,err}")
-endif()
 
-add_subdirectory(cpl)
-add_subdirectory(io)
+###############################################################################
+### CCPP
+###############################################################################
+
+add_subdirectory(ccpp)
 
 ###############################################################################
 ### fv3dycore
@@ -87,16 +68,11 @@ if(MULTI_GASES)
 endif()
 
 if(32BIT)
-  set(DYN32 ON CACHE BOOL "Enable support for 32bit fast physics in CCPP")
   list(APPEND _fv3dycore_defs_private OVERLOAD_R4
                                       OVERLOAD_R8)
-else()
-  set(DYN32 OFF CACHE BOOL "Disable support for 32bit fast physics in CCPP")
 endif()
 
-list(APPEND _fv3dycore_defs_private CCPP)
-
-if(OpenMP_Fortran_FOUND)
+if(OPENMP)
   list(APPEND _fv3dycore_defs_private OPENMP)
 endif()
 
@@ -104,80 +80,79 @@ set_property(SOURCE atmos_cubed_sphere/model/nh_utils.F90 APPEND_STRING PROPERTY
 set_property(SOURCE atmos_cubed_sphere/model/fv_mapz.F90  APPEND_STRING PROPERTY COMPILE_FLAGS "${FAST}")
 
 set_target_properties(fv3dycore PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mod)
-
-target_compile_definitions(fv3dycore PRIVATE "${_fv3dycore_defs_private}")
-target_include_directories(fv3dycore PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/atmos_cubed_sphere
-                                              ${CMAKE_CURRENT_SOURCE_DIR}/atmos_cubed_sphere/tools
-                                              ${CMAKE_CURRENT_BINARY_DIR}/ccpp/driver/mod)
 target_include_directories(fv3dycore INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/mod>
                                                $<INSTALL_INTERFACE:mod>)
 
+target_compile_definitions(fv3dycore PRIVATE "${_fv3dycore_defs_private}")
+
+#  So much for being consistent:
+# atmos_cubed_sphere/tools/fv_diagnostics.F90: #include <fv_diagnostics.h>
+# atmos_cubed_sphere/tools/fv_eta.F90:         #include <tools/fv_eta.h>
+target_include_directories(fv3dycore PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/atmos_cubed_sphere
+                                             ${CMAKE_CURRENT_SOURCE_DIR}/atmos_cubed_sphere/tools)
+
 target_link_libraries(fv3dycore PUBLIC fms
-                                       ccppphys
-                                       ccppdata
+                                       fv3ccpp
                                        esmf)
-if(OpenMP_Fortran_FOUND)
+if(OPENMP)
   target_link_libraries(fv3dycore PUBLIC OpenMP::OpenMP_Fortran)
 endif()
 
-###############################################################################
-### CCPP
-###############################################################################
-
-add_subdirectory(ccpp)
-add_subdirectory(ccpp/data)
-add_subdirectory(ccpp/driver)
-add_dependencies(ccppphys   ccpp)
-add_dependencies(ccppdata   ccpp ccppphys)
-add_dependencies(ccppdriver ccpp ccppphys ccppdata)
-add_dependencies(fv3dycore  ccppdriver ccpp ccppphys ccppdata)
+# This should not be necessary once framework and physics targets define BUILD_INTERFACE
 target_include_directories(fv3dycore PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/ccpp/framework/src
-                                             ${CMAKE_CURRENT_BINARY_DIR}/ccpp/physics
-                                             ${CMAKE_CURRENT_BINARY_DIR}/ccpp/driver)
-target_link_libraries(ccppphys PUBLIC sp::sp_d
-                                      w3nco::w3nco_d)
-
-###############################################################################
-### stochastic_physics
-###############################################################################
-# When specifying an out-of-tree source a binary directory must be explicitly specified.
-#add_subdirectory(../stochastic_physics stochastic_physics)
-add_subdirectory(stochastic_physics)
+                                             ${CMAKE_CURRENT_BINARY_DIR}/ccpp/physics)
 
 ###############################################################################
 ### fv3atm
 ###############################################################################
+if(INLINE_POST)
+  set(POST_SRC io/inline_post.F90 io/post_nems_routines.F90 io/post_gfs.F90 io/post_regional.F90)
+else()
+  set(POST_SRC io/inline_post_stub.F90)
+  list(APPEND _fv3atm_defs_private NO_INLINE_POST)
+endif()
+
+if(NOT PARALLEL_NETCDF)
+  list(APPEND _fv3atm_defs_private NO_PARALLEL_NETCDF)
+endif()
+
 add_library(fv3atm
   atmos_model.F90
   fv3_cap.F90
   module_fv3_config.F90
   module_fcst_grid_comp.F90
-  time_utils.F90)
+  stochastic_physics/stochastic_physics_wrapper.F90
+  cpl/module_cplfields.F90
+  cpl/module_cap_cpl.F90
+  io/ffsync.F90
+  io/FV3GFS_io.F90
+  io/module_write_nemsio.F90
+  io/module_write_netcdf.F90
+  io/module_write_netcdf_parallel.F90
+  io/module_fv3_io_def.F90
+  io/module_write_internal_state.F90
+  io/module_wrt_grid_comp.F90
+  ${POST_SRC}
+)
 
 list(APPEND _fv3atm_defs_private GFS_PHYS
                                  INTERNAL_FILE_NML
+                                 use_WRTCOMP
                                  ESMF_VERSION_MAJOR=${ESMF_VERSION_MAJOR})
+
+target_compile_definitions(fv3atm PRIVATE "${_fv3atm_defs_private}")
 
 set_target_properties(fv3atm PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mod)
 target_include_directories(fv3atm INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/mod>
                                             $<INSTALL_INTERFACE:mod>)
 
-list(APPEND _fv3atm_defs_private CCPP)
-target_include_directories(fv3atm PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/ccpp/physics
-                                          ${CMAKE_CURRENT_BINARY_DIR}/ccpp/driver/mod)
-set(CCPP_LIBRARIES ccppdriver ccppdata ccppphys ccpp)
-add_dependencies(fv3atm ccppdriver ccppdata ccppphys ccpp)
-target_link_libraries(fv3atm PUBLIC ccppdriver ccppdata ccppphys ccpp)
-
-target_include_directories(fv3atm PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/stochastic_physics)
-target_include_directories(fv3atm PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/../stochastic_physics)
-target_compile_definitions(fv3atm PRIVATE "${_fv3atm_defs_private}")
+# This should not be necessary once framework and physics targets define BUILD_INTERFACE
+target_include_directories(fv3atm PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/ccpp/physics)
 
 target_link_libraries(fv3atm PUBLIC fv3dycore
-                                    cpl
-                                    io
+                                    fv3ccpp
                                     stochastic_physics
-                                    stochastic_physics_wrapper)
+                                    fms)
 
 target_link_libraries(fv3atm PUBLIC nemsio::nemsio
                                     w3emc::w3emc_d
@@ -190,7 +165,7 @@ if(INLINE_POST)
   target_link_libraries(fv3atm PUBLIC upp::upp)
 endif()
 
-if(OpenMP_Fortran_FOUND)
+if(OPENMP)
   target_link_libraries(fv3atm PUBLIC OpenMP::OpenMP_Fortran)
 endif()
 
@@ -198,7 +173,7 @@ endif()
 ### Install
 ###############################################################################
 install(
-  TARGETS fv3atm fv3dycore io ${CCPP_LIBRARIES} cpl stochastic_physics_wrapper
+  TARGETS fv3atm fv3dycore fv3ccpp
   EXPORT fv3atm-config
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib)
