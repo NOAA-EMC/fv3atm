@@ -94,8 +94,6 @@ module module_cplfields
     FieldInfo("mean_fprec_rate                          ", "s"), &
     FieldInfo("openwater_frac_in_atm                    ", "s") ]
 
-  real(kind=8), allocatable, public :: exportData(:,:,:)
-
 ! Import Fields ----------------------------------------
   integer,          public, parameter :: NimportFields = 17
   logical,          public            :: importFieldsValid(NimportFields)
@@ -121,58 +119,14 @@ module module_cplfields
     FieldInfo("wave_z0_roughness_length                 ", "s") ]
 
   ! Methods
-  public fillExportFields
   public queryImportFields, queryExportFields
   public cplFieldGet
 
 !-----------------------------------------------------------------------------
   contains
 !-----------------------------------------------------------------------------
-
-  subroutine fillExportFields(data_a2oi, rc)
-    ! Fill updated data into the export Fields.
-    real(kind=8), target, intent(in)            :: data_a2oi(:,:,:)
-    integer, intent(out), optional              :: rc
-
-    integer                                     :: localrc
-    integer                                     :: n,dimCount
-    logical                                     :: isCreated
-    type(ESMF_TypeKind_Flag)                    :: datatype
-    character(len=ESMF_MAXSTR)                  :: fieldName
-    real(kind=ESMF_KIND_R4), dimension(:,:), pointer   :: datar42d
-    real(kind=ESMF_KIND_R8), dimension(:,:), pointer   :: datar82d
-
-!
-    if (present(rc)) rc=ESMF_SUCCESS
-
-    do n=1, size(exportFields)
-      isCreated = ESMF_FieldIsCreated(exportFields(n), rc=localrc)
-      if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
-      if (isCreated) then
-! set data
-        call ESMF_FieldGet(exportFields(n), name=fieldname, dimCount=dimCount, typekind=datatype, rc=localrc)
-        if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
-        !print *,'in fillExportFields, field created n=',n,size(exportFields),'name=', trim(fieldname)
-        if ( datatype == ESMF_TYPEKIND_R8) then
-           if ( dimCount == 2) then
-             call ESMF_FieldGet(exportFields(n),farrayPtr=datar82d,localDE=0, rc=localrc)
-             if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
-             datar82d = data_a2oi(:,:,n)
-           endif
-        else if ( datatype == ESMF_TYPEKIND_R4) then
-           if ( dimCount == 2) then
-             call ESMF_FieldGet(exportFields(n),farrayPtr=datar82d,localDE=0, rc=localrc)
-             if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
-             datar42d = data_a2oi(:,:,n)
-           endif
-        endif
-      endif
-    enddo
-  end subroutine fillExportFields
-!
-!------------------------------------------------------------------------------
-!
   integer function queryExportFields(fieldname, abortflag)
+
 
     character(len=*),intent(in) :: fieldname
     logical, optional           :: abortflag

@@ -55,13 +55,13 @@ module fv3gfs_cap_mod
   use module_wrt_grid_comp,   only: wrtSS => SetServices
 !
   use module_cplfields,       only: nExportFields, exportFields, exportFieldsInfo, &
-                                    exportData, fillExportFields,                  &
                                     nImportFields, importFields, importFieldsInfo, &
                                     importFieldsValid, queryImportFields
 
   use module_cap_cpl,         only: realizeConnectedCplFields,               &
                                     clock_cplIntval, diagnose_cplFields
 
+  use atmos_model_mod,        only: setup_exportdata
 
   implicit none
   private
@@ -923,9 +923,10 @@ module fv3gfs_cap_mod
                                      num_diag_cmass, importFieldsInfo, 'FV3 Import',     &
                                      importFields, rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__,  file=__FILE__)) return
+
+      call setup_exportdata()
+
     end if
-!jw
-    call fillExportFields(exportData)
 
   end subroutine InitializeRealize
 
