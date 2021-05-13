@@ -867,7 +867,7 @@ module fv3gfs_cap_mod
     do i = 1, size(importFieldsInfo)
       call NUOPC_Advertise(importState, &
                            StandardName=trim(importFieldsInfo(i)%name), &
-                           SharePolicyField=importFieldsInfo(i)%shared, vm=fcstVM, rc=rc)
+                           SharePolicyField='share', vm=fcstVM, rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
     end do
 
@@ -875,7 +875,7 @@ module fv3gfs_cap_mod
     do i = 1, size(exportFieldsInfo)
       call NUOPC_Advertise(exportState, &
                            StandardName=trim(exportFieldsInfo(i)%name), &
-                           SharePolicyField=exportFieldsInfo(i)%shared, vm=fcstVM, rc=rc)
+                           SharePolicyField='share', vm=fcstVM, rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
     end do
 

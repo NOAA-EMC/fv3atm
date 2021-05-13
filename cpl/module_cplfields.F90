@@ -14,7 +14,6 @@ module module_cplfields
   type, public :: FieldInfo
     character(len=41) :: name
     character(len=1) :: type
-    character(len=9) :: shared
   end type
 
 ! Export Fields ----------------------------------------
@@ -22,78 +21,78 @@ module module_cplfields
   type(ESMF_Field), target, public    :: exportFields(NexportFields)
 
   type(FieldInfo), dimension(NexportFields), public, parameter :: exportFieldsInfo = [ &
-    FieldInfo("inst_pres_interface                      ", "i", "share    " ), &
-    FieldInfo("inst_pres_levels                         ", "l", "share    " ), &
-    FieldInfo("inst_geop_interface                      ", "i", "share    " ), &
-    FieldInfo("inst_geop_levels                         ", "l", "share    " ), &
-    FieldInfo("inst_temp_levels                         ", "l", "share    " ), &
-    FieldInfo("inst_zonal_wind_levels                   ", "l", "share    " ), &
-    FieldInfo("inst_merid_wind_levels                   ", "l", "share    " ), &
-    FieldInfo("inst_omega_levels                        ", "l", "share    " ), &
-    FieldInfo("inst_tracer_mass_frac                    ", "t", "share    " ), &
-    FieldInfo("soil_type                                ", "s", "share    " ), &
-    FieldInfo("inst_pbl_height                          ", "s", "share    " ), &
-    FieldInfo("surface_cell_area                        ", "s", "share    " ), &
-    FieldInfo("inst_convective_rainfall_amount          ", "s", "share    " ), &
-    FieldInfo("inst_exchange_coefficient_heat_levels    ", "l", "share    " ), &
-    FieldInfo("inst_spec_humid_conv_tendency_levels     ", "l", "share    " ), &
-    FieldInfo("inst_friction_velocity                   ", "s", "share    " ), &
-    FieldInfo("inst_rainfall_amount                     ", "s", "share    " ), &
-    FieldInfo("inst_soil_moisture_content               ", "g", "share    " ), &
-    FieldInfo("inst_up_sensi_heat_flx                   ", "s", "share    " ), &
-    FieldInfo("inst_lwe_snow_thickness                  ", "s", "share    " ), &
-    FieldInfo("vegetation_type                          ", "s", "share    " ), &
-    FieldInfo("inst_vegetation_area_frac                ", "s", "share    " ), &
-    FieldInfo("inst_surface_roughness                   ", "s", "share    " ), &
-    FieldInfo("mean_zonal_moment_flx_atm                ", "s", "not share" ), &
-    FieldInfo("mean_merid_moment_flx_atm                ", "s", "not share" ), &
-    FieldInfo("mean_sensi_heat_flx                      ", "s", "not share" ), &
-    FieldInfo("mean_laten_heat_flx                      ", "s", "not share" ), &
-    FieldInfo("mean_down_lw_flx                         ", "s", "not share" ), &
-    FieldInfo("mean_down_sw_flx                         ", "s", "not share" ), &
-    FieldInfo("mean_prec_rate                           ", "s", "not share" ), &
-    FieldInfo("inst_zonal_moment_flx                    ", "s", "not share" ), &
-    FieldInfo("inst_merid_moment_flx                    ", "s", "not share" ), &
-    FieldInfo("inst_sensi_heat_flx                      ", "s", "not share" ), &
-    FieldInfo("inst_laten_heat_flx                      ", "s", "not share" ), &
-    FieldInfo("inst_down_lw_flx                         ", "s", "not share" ), &
-    FieldInfo("inst_down_sw_flx                         ", "s", "share    " ), &
-    FieldInfo("inst_temp_height2m                       ", "s", "not share" ), &
-    FieldInfo("inst_spec_humid_height2m                 ", "s", "not share" ), &
-    FieldInfo("inst_zonal_wind_height10m                ", "s", "not share" ), &
-    FieldInfo("inst_merid_wind_height10m                ", "s", "not share" ), &
-    FieldInfo("inst_temp_height_surface                 ", "s", "share    " ), &
-    FieldInfo("inst_pres_height_surface                 ", "s", "not share" ), &
-    FieldInfo("inst_surface_height                      ", "s", "not share" ), &
-    FieldInfo("mean_net_lw_flx                          ", "s", "not share" ), &
-    FieldInfo("mean_net_sw_flx                          ", "s", "not share" ), &
-    FieldInfo("inst_net_lw_flx                          ", "s", "not share" ), &
-    FieldInfo("inst_net_sw_flx                          ", "s", "not share" ), &
-    FieldInfo("mean_down_sw_ir_dir_flx                  ", "s", "not share" ), &
-    FieldInfo("mean_down_sw_ir_dif_flx                  ", "s", "not share" ), &
-    FieldInfo("mean_down_sw_vis_dir_flx                 ", "s", "not share" ), &
-    FieldInfo("mean_down_sw_vis_dif_flx                 ", "s", "not share" ), &
-    FieldInfo("inst_down_sw_ir_dir_flx                  ", "s", "not share" ), &
-    FieldInfo("inst_down_sw_ir_dif_flx                  ", "s", "not share" ), &
-    FieldInfo("inst_down_sw_vis_dir_flx                 ", "s", "not share" ), &
-    FieldInfo("inst_down_sw_vis_dif_flx                 ", "s", "not share" ), &
-    FieldInfo("mean_net_sw_ir_dir_flx                   ", "s", "not share" ), &
-    FieldInfo("mean_net_sw_ir_dif_flx                   ", "s", "not share" ), &
-    FieldInfo("mean_net_sw_vis_dir_flx                  ", "s", "not share" ), &
-    FieldInfo("mean_net_sw_vis_dif_flx                  ", "s", "not share" ), &
-    FieldInfo("inst_net_sw_ir_dir_flx                   ", "s", "not share" ), &
-    FieldInfo("inst_net_sw_ir_dif_flx                   ", "s", "not share" ), &
-    FieldInfo("inst_net_sw_vis_dir_flx                  ", "s", "not share" ), &
-    FieldInfo("inst_net_sw_vis_dif_flx                  ", "s", "not share" ), &
-    FieldInfo("inst_land_sea_mask                       ", "s", "share    " ), &
-    FieldInfo("inst_temp_height_lowest                  ", "s", "not share" ), &
-    FieldInfo("inst_spec_humid_height_lowest            ", "s", "not share" ), &
-    FieldInfo("inst_zonal_wind_height_lowest            ", "s", "not share" ), &
-    FieldInfo("inst_merid_wind_height_lowest            ", "s", "not share" ), &
-    FieldInfo("inst_pres_height_lowest                  ", "s", "not share" ), &
-    FieldInfo("inst_height_lowest                       ", "s", "not share" ), &
-    FieldInfo("mean_fprec_rate                          ", "s", "not share" ), &
-    FieldInfo("openwater_frac_in_atm                    ", "s", "not share" ) ]
+    FieldInfo("inst_pres_interface                      ", "i"), &
+    FieldInfo("inst_pres_levels                         ", "l"), &
+    FieldInfo("inst_geop_interface                      ", "i"), &
+    FieldInfo("inst_geop_levels                         ", "l"), &
+    FieldInfo("inst_temp_levels                         ", "l"), &
+    FieldInfo("inst_zonal_wind_levels                   ", "l"), &
+    FieldInfo("inst_merid_wind_levels                   ", "l"), &
+    FieldInfo("inst_omega_levels                        ", "l"), &
+    FieldInfo("inst_tracer_mass_frac                    ", "t"), &
+    FieldInfo("soil_type                                ", "s"), &
+    FieldInfo("inst_pbl_height                          ", "s"), &
+    FieldInfo("surface_cell_area                        ", "s"), &
+    FieldInfo("inst_convective_rainfall_amount          ", "s"), &
+    FieldInfo("inst_exchange_coefficient_heat_levels    ", "l"), &
+    FieldInfo("inst_spec_humid_conv_tendency_levels     ", "l"), &
+    FieldInfo("inst_friction_velocity                   ", "s"), &
+    FieldInfo("inst_rainfall_amount                     ", "s"), &
+    FieldInfo("inst_soil_moisture_content               ", "g"), &
+    FieldInfo("inst_up_sensi_heat_flx                   ", "s"), &
+    FieldInfo("inst_lwe_snow_thickness                  ", "s"), &
+    FieldInfo("vegetation_type                          ", "s"), &
+    FieldInfo("inst_vegetation_area_frac                ", "s"), &
+    FieldInfo("inst_surface_roughness                   ", "s"), &
+    FieldInfo("mean_zonal_moment_flx_atm                ", "s"), &
+    FieldInfo("mean_merid_moment_flx_atm                ", "s"), &
+    FieldInfo("mean_sensi_heat_flx                      ", "s"), &
+    FieldInfo("mean_laten_heat_flx                      ", "s"), &
+    FieldInfo("mean_down_lw_flx                         ", "s"), &
+    FieldInfo("mean_down_sw_flx                         ", "s"), &
+    FieldInfo("mean_prec_rate                           ", "s"), &
+    FieldInfo("inst_zonal_moment_flx                    ", "s"), &
+    FieldInfo("inst_merid_moment_flx                    ", "s"), &
+    FieldInfo("inst_sensi_heat_flx                      ", "s"), &
+    FieldInfo("inst_laten_heat_flx                      ", "s"), &
+    FieldInfo("inst_down_lw_flx                         ", "s"), &
+    FieldInfo("inst_down_sw_flx                         ", "s"), &
+    FieldInfo("inst_temp_height2m                       ", "s"), &
+    FieldInfo("inst_spec_humid_height2m                 ", "s"), &
+    FieldInfo("inst_zonal_wind_height10m                ", "s"), &
+    FieldInfo("inst_merid_wind_height10m                ", "s"), &
+    FieldInfo("inst_temp_height_surface                 ", "s"), &
+    FieldInfo("inst_pres_height_surface                 ", "s"), &
+    FieldInfo("inst_surface_height                      ", "s"), &
+    FieldInfo("mean_net_lw_flx                          ", "s"), &
+    FieldInfo("mean_net_sw_flx                          ", "s"), &
+    FieldInfo("inst_net_lw_flx                          ", "s"), &
+    FieldInfo("inst_net_sw_flx                          ", "s"), &
+    FieldInfo("mean_down_sw_ir_dir_flx                  ", "s"), &
+    FieldInfo("mean_down_sw_ir_dif_flx                  ", "s"), &
+    FieldInfo("mean_down_sw_vis_dir_flx                 ", "s"), &
+    FieldInfo("mean_down_sw_vis_dif_flx                 ", "s"), &
+    FieldInfo("inst_down_sw_ir_dir_flx                  ", "s"), &
+    FieldInfo("inst_down_sw_ir_dif_flx                  ", "s"), &
+    FieldInfo("inst_down_sw_vis_dir_flx                 ", "s"), &
+    FieldInfo("inst_down_sw_vis_dif_flx                 ", "s"), &
+    FieldInfo("mean_net_sw_ir_dir_flx                   ", "s"), &
+    FieldInfo("mean_net_sw_ir_dif_flx                   ", "s"), &
+    FieldInfo("mean_net_sw_vis_dir_flx                  ", "s"), &
+    FieldInfo("mean_net_sw_vis_dif_flx                  ", "s"), &
+    FieldInfo("inst_net_sw_ir_dir_flx                   ", "s"), &
+    FieldInfo("inst_net_sw_ir_dif_flx                   ", "s"), &
+    FieldInfo("inst_net_sw_vis_dir_flx                  ", "s"), &
+    FieldInfo("inst_net_sw_vis_dif_flx                  ", "s"), &
+    FieldInfo("inst_land_sea_mask                       ", "s"), &
+    FieldInfo("inst_temp_height_lowest                  ", "s"), &
+    FieldInfo("inst_spec_humid_height_lowest            ", "s"), &
+    FieldInfo("inst_zonal_wind_height_lowest            ", "s"), &
+    FieldInfo("inst_merid_wind_height_lowest            ", "s"), &
+    FieldInfo("inst_pres_height_lowest                  ", "s"), &
+    FieldInfo("inst_height_lowest                       ", "s"), &
+    FieldInfo("mean_fprec_rate                          ", "s"), &
+    FieldInfo("openwater_frac_in_atm                    ", "s") ]
 
   real(kind=8), allocatable, public :: exportData(:,:,:)
 
@@ -103,23 +102,23 @@ module module_cplfields
   type(ESMF_Field), target, public    :: importFields(NimportFields)
 
   type(FieldInfo), dimension(NimportFields), public, parameter :: importFieldsInfo = [ &
-    FieldInfo("inst_tracer_mass_frac                    ", "t", "share    " ), &
-    FieldInfo("land_mask                                ", "s", "not share" ), &
-    FieldInfo("sea_ice_surface_temperature              ", "s", "not share" ), &
-    FieldInfo("sea_surface_temperature                  ", "s", "not share" ), &
-    FieldInfo("ice_fraction                             ", "s", "not share" ), &
-    FieldInfo("mean_up_lw_flx_ice                       ", "s", "not share" ), &
-    FieldInfo("mean_laten_heat_flx_atm_into_ice         ", "s", "not share" ), &
-    FieldInfo("mean_sensi_heat_flx_atm_into_ice         ", "s", "not share" ), &
-    FieldInfo("stress_on_air_ice_zonal                  ", "s", "not share" ), &
-    FieldInfo("stress_on_air_ice_merid                  ", "s", "not share" ), &
-    FieldInfo("mean_ice_volume                          ", "s", "not share" ), &
-    FieldInfo("mean_snow_volume                         ", "s", "not share" ), &
-    FieldInfo("inst_tracer_up_surface_flx               ", "u", "share    " ), &
-    FieldInfo("inst_tracer_down_surface_flx             ", "d", "share    " ), &
-    FieldInfo("inst_tracer_clmn_mass_dens               ", "c", "share    " ), &
-    FieldInfo("inst_tracer_anth_biom_flx                ", "b", "share    " ), &
-    FieldInfo("wave_z0_roughness_length                 ", "s", "not share" ) ]
+    FieldInfo("inst_tracer_mass_frac                    ", "t"), &
+    FieldInfo("land_mask                                ", "s"), &
+    FieldInfo("sea_ice_surface_temperature              ", "s"), &
+    FieldInfo("sea_surface_temperature                  ", "s"), &
+    FieldInfo("ice_fraction                             ", "s"), &
+    FieldInfo("mean_up_lw_flx_ice                       ", "s"), &
+    FieldInfo("mean_laten_heat_flx_atm_into_ice         ", "s"), &
+    FieldInfo("mean_sensi_heat_flx_atm_into_ice         ", "s"), &
+    FieldInfo("stress_on_air_ice_zonal                  ", "s"), &
+    FieldInfo("stress_on_air_ice_merid                  ", "s"), &
+    FieldInfo("mean_ice_volume                          ", "s"), &
+    FieldInfo("mean_snow_volume                         ", "s"), &
+    FieldInfo("inst_tracer_up_surface_flx               ", "u"), &
+    FieldInfo("inst_tracer_down_surface_flx             ", "d"), &
+    FieldInfo("inst_tracer_clmn_mass_dens               ", "c"), &
+    FieldInfo("inst_tracer_anth_biom_flx                ", "b"), &
+    FieldInfo("wave_z0_roughness_length                 ", "s") ]
 
   ! Methods
   public fillExportFields
