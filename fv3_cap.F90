@@ -277,14 +277,14 @@ module fv3gfs_cap_mod
 !       'petcount=',petcount,'mype=',mype
 !
 ! create an instance clock for fv3
-    clock_fv3 = ESMF_ClockCreate(clock, rc=RC)
+    clock_fv3 = ESMF_ClockCreate(clock, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 !
 !------------------------------------------------------------------------
 ! get config variables
 !
-    CF = ESMF_ConfigCreate(rc=RC)
-    CALL ESMF_ConfigLoadFile(config=CF ,filename='model_configure' ,rc=RC)
+    CF = ESMF_ConfigCreate(rc=rc)
+    CALL ESMF_ConfigLoadFile(config=CF ,filename='model_configure' ,rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 !
     num_restart_interval = ESMF_ConfigGetLen(config=CF, label ='restart_interval:',rc=rc)
@@ -294,7 +294,7 @@ module fv3gfs_cap_mod
     allocate(restart_interval(num_restart_interval))
     restart_interval = 0
     CALL  ESMF_ConfigGetAttribute(CF,valueList=restart_interval,label='restart_interval:', &
-      count=num_restart_interval, rc=RC)
+      count=num_restart_interval, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
     if(mype == 0) print *,'af nems config,restart_interval=',restart_interval
 !
@@ -361,7 +361,7 @@ module fv3gfs_cap_mod
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 !
       allocate(filename_base(num_files))
-      CALL ESMF_ConfigFindLabel(CF,'filename_base:',rc=RC)
+      CALL ESMF_ConfigFindLabel(CF,'filename_base:',rc=rc)
       do i=1,num_files
         CALL ESMF_ConfigGetAttribute(config=CF,value=filename_base(i), rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
@@ -372,7 +372,7 @@ module fv3gfs_cap_mod
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
       if (num_files == num_output_file) then
         CALL ESMF_ConfigGetAttribute(CF,valueList=output_file,label='output_file:', &
-             count=num_files, rc=RC)
+             count=num_files, rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
         do i = 1, num_files
           if(output_file(i) /= "netcdf" .and. output_file(i) /= "netcdf_parallel") then
@@ -381,7 +381,7 @@ module fv3gfs_cap_mod
           endif
         enddo
       else if ( num_output_file == 1) then
-        CALL ESMF_ConfigGetAttribute(CF,valuelist=output_file,label='output_file:', count=1, rc=RC)
+        CALL ESMF_ConfigGetAttribute(CF,valuelist=output_file,label='output_file:', count=1, rc=rc)
         output_file(1:num_files) = output_file(1)
       else
         output_file(1:num_files) = 'netcdf'
@@ -529,17 +529,17 @@ module fv3gfs_cap_mod
     ! - fv3 clock. However, the fv3 clock may have been reset from restart
     ! - therefore the EARTH driver clock must also be adjusted.
     ! - Affected: currTime, timeStep
-    call ESMF_ClockGet(clock, timeStep=earthStep, rc=RC)
+    call ESMF_ClockGet(clock, timeStep=earthStep, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
     if (earthStep > (stopTime-currTime)) earthStep = stopTime - currTime
-    call ESMF_ClockSet(clock, currTime=currTime, timeStep=earthStep, rc=RC)
+    call ESMF_ClockSet(clock, currTime=currTime, timeStep=earthStep, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
     ! Set fv3 component clock as copy of EARTH clock.
-    call NUOPC_CompSetClock(gcomp, clock, rc=RC)
+    call NUOPC_CompSetClock(gcomp, clock, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
@@ -894,6 +894,7 @@ module fv3gfs_cap_mod
     integer, intent(out) :: rc
 
     ! local variables
+    character(len=*),parameter  :: subname='(fv3gfs_cap:InitializeRealize)'
     logical :: isPetLocal
     integer :: n
 
@@ -935,25 +936,21 @@ module fv3gfs_cap_mod
     integer, intent(out)                   :: rc
 
     ! local variables
-    type(ESMF_State)                       :: importState, exportState
     type(ESMF_Clock)                       :: clock
     type(ESMF_Time)                        :: currTime
     type(ESMF_TimeInterval)                :: timeStep
     type(ESMF_Time)                        :: startTime, stopTime
     type(ESMF_TimeInterval)                :: time_elapsed
-    integer(ESMF_KIND_I8)                  :: n_interval, time_elapsed_sec
 !
     integer :: na, i, urc
     logical :: fcstpe
-    logical :: isAlarmEnabled, isAlarmRinging, lalarm, reconcileFlag
+    logical :: isAlarmEnabled, isAlarmRinging, lalarm
     character(len=*),parameter  :: subname='(fv3_cap:ModelAdvance)'
     character(240)              :: msgString
-    character(240)              :: import_timestr, export_timestr
+    character(240)              :: startTime_str, currTime_str, stopTime_str, timeStep_str
 !jw debug
     character(ESMF_MAXSTR)      :: name
-    integer :: mype,date(6), fieldcount, fcst_nfld
-    real(kind=ESMF_KIND_R4), pointer  :: dataPtr(:,:,:), dataPtr2d(:,:)
-    character(64)  :: fcstbdl_name
+    integer :: mype
     real(kind=8)   :: MPI_Wtime
     real(kind=8)   :: timeri, timewri, timewr, timerhi, timerh
 
@@ -962,7 +959,7 @@ module fv3gfs_cap_mod
 
     rc = ESMF_SUCCESS
 
-    if (profile_memory) call ESMF_VMLogMemInfo("Entering FV3 Model_ADVANCE: ")
+    if (profile_memory) call ESMF_VMLogMemInfo("Entering FV3 ModelAdvance: ")
 
     timeri = mpi_wtime()
 !
@@ -1019,28 +1016,14 @@ module fv3gfs_cap_mod
                        timeStep=timeStep, stopTime=stopTime, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-!    if(mype==0)  print *,'total steps=', nint((stopTime-startTime)/timeStep)
-!    if(mype==lead_wrttask(1))  print *,'on wrt lead,total steps=', nint((stopTime-startTime)/timeStep)
-    call ESMF_TimeGet(time=stopTime,yy=date(1),mm=date(2),dd=date(3),h=date(4), &
-                      m=date(5),s=date(6),rc=rc)
-!     if(mype==0) print *,'af clock,stop date=',date
-!     if(mype==lead_wrttask(1)) print *,'on wrt lead,af clock,stop date=',date
-    call ESMF_TimeIntervalGet(timeStep,yy=date(1),mm=date(2),d=date(3),h=date(4), &
-                      m=date(5),s=date(6),rc=rc)
-!     if(mype==0) print *,'af clock,timestep date=',date
-!     if(mype==lead_wrttask(1)) print *,'on wrt lead,af clock,timestep date=',date
-!
-      call ESMF_ClockGet(clock_fv3, currTime=currTime, timeStep=timeStep, rc=rc)
-      call ESMF_TimeGet(currTime,          timestring=import_timestr, rc=rc)
-      call ESMF_TimeGet(currTime+timestep, timestring=export_timestr, rc=rc)
+    ! call ESMF_TimeGet(startTime,         timestring=startTime_str, rc=rc)
+    ! call ESMF_TimeGet(currTime,          timestring=currTime_str, rc=rc)
+    ! call ESMF_TimeGet(stopTime,          timestring=stopTime_str, rc=rc)
+    ! call ESMF_TimeIntervalGet(timeStep,  timestring=timeStep_str, rc=rc)
 
 !
 !-----------------------------------------------------------------------------
 !*** integration loop
-
-    reconcileFlag = .true.
-    call esmf_clockget(clock_fv3, timestep=timestep, starttime=starttime, &
-                       currtime=currtime, rc=rc)
 
     integrate: do while(.NOT.ESMF_ClockIsStopTime(clock_fv3, rc = RC))
 !
@@ -1058,8 +1041,7 @@ module fv3gfs_cap_mod
 
       ! assign import_data called during phase=1
       if( dbug > 0 .or. cplprint_flag ) then
-          call diagnose_cplFields(gcomp, importState, exportstate, clock_fv3,    &
-                                  fcstpe, cplprint_flag, dbug, 'import', import_timestr)
+          call diagnose_cplFields(gcomp, clock_fv3, fcstpe, cplprint_flag, dbug, 'import')
       endif
 
       call ESMF_GridCompRun(fcstComp, exportState=fcstState, clock=clock_fv3, &
@@ -1174,22 +1156,17 @@ module fv3gfs_cap_mod
 ! end quilting
       endif
 
-!      if (mype == 0 .or. mype == 1536 .or. mype==2160) then
-!        print *,'fv3_cap,end integrate,na=',na,' time=',mpi_wtime()- timewri
-!      endif
+      if( dbug > 0 .or. cplprint_flag ) then
+        call diagnose_cplFields(gcomp, clock_fv3, fcstpe, cplprint_flag, dbug, 'export')
+      end if
+
 
 !*** end integreate loop
     enddo integrate
 !
-!jw for coupled, check clock and dump import and export state
-    if( dbug > 0 .or. cplprint_flag ) then
-      call diagnose_cplFields(gcomp, importState, exportstate, clock_fv3,    &
-                              fcstpe, cplprint_flag, dbug, 'export', export_timestr)
-    end if
-
     if (mype==0) print *,'fv3_cap,end integrate,na=',na,' time=',mpi_wtime()- timeri
 
-    if (profile_memory) call ESMF_VMLogMemInfo("Leaving FV3 Model_ADVANCE: ")
+    if (profile_memory) call ESMF_VMLogMemInfo("Leaving FV3 ModelAdvance: ")
 
   end subroutine ModelAdvance
 
@@ -1205,18 +1182,14 @@ module fv3gfs_cap_mod
     type(ESMF_Time)                        :: currTime
     type(ESMF_TimeInterval)                :: timeStep
     type(ESMF_Time)                        :: startTime, stopTime
-    type(ESMF_TimeInterval)                :: time_elapsed
-    integer(ESMF_KIND_I8)                  :: n_interval, time_elapsed_sec
 !
     integer :: na, i, urc
-    logical :: lalarm, reconcileFlag
+    logical :: lalarm
     character(len=*),parameter  :: subname='(fv3_cap:ModelAdvance_phase1)'
     character(240)              :: msgString
 !jw debug
     character(ESMF_MAXSTR)            :: name
-    integer                           :: mype,date(6), fieldcount, fcst_nfld
-    real(kind=ESMF_KIND_R4), pointer  :: dataPtr(:,:,:), dataPtr2d(:,:)
-    character(64) :: fcstbdl_name
+    integer                           :: mype,date(6)
     real(kind=8)  :: MPI_Wtime
     real(kind=8)  :: timewri, timewr, timerhi, timerh
 
@@ -1224,7 +1197,7 @@ module fv3gfs_cap_mod
 
     rc = ESMF_SUCCESS
 
-    if(profile_memory) call ESMF_VMLogMemInfo("Entering FV3 Model_ADVANCE phase1: ")
+    if(profile_memory) call ESMF_VMLogMemInfo("Entering FV3 ModelAdvance_phase1: ")
 !
     call ESMF_GridCompGet(gcomp, name=name, localpet=mype, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
@@ -1289,8 +1262,6 @@ module fv3gfs_cap_mod
 !-----------------------------------------------------------------------------
 !*** no integration loop here!
 
-    reconcileFlag = .true.
-
 !*** for forecast tasks
 
     call ESMF_LogWrite('Model Advance phase1: before fcstcomp run ', ESMF_LOGMSG_INFO, rc=rc)
@@ -1305,7 +1276,7 @@ module fv3gfs_cap_mod
     call ESMF_LogWrite('Model Advance phase1: after fcstcomp run ', ESMF_LOGMSG_INFO, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-    if (profile_memory) call ESMF_VMLogMemInfo("Leaving FV3 Model_ADVANCE phase1: ")
+    if (profile_memory) call ESMF_VMLogMemInfo("Leaving FV3 ModelAdvance_phase1: ")
 
   end subroutine ModelAdvance_phase1
 
@@ -1322,33 +1293,27 @@ module fv3gfs_cap_mod
     type(ESMF_TimeInterval)                :: timeStep
     type(ESMF_Time)                        :: startTime, stopTime
     type(ESMF_TimeInterval)                :: time_elapsed
-    integer(ESMF_KIND_I8)                  :: n_interval, time_elapsed_sec
 !
     integer :: na, i, urc
-    logical :: isAlarmEnabled, isAlarmRinging, lalarm, reconcileFlag
+    logical :: isAlarmEnabled, isAlarmRinging, lalarm
     character(len=*),parameter  :: subname='(fv3_cap:ModelAdvance_phase2)'
     character(240)              :: msgString
 !jw debug
     character(ESMF_MAXSTR)            :: name
-    integer                           :: mype,date(6), fieldcount, fcst_nfld
-    real(kind=ESMF_KIND_R4), pointer  :: dataPtr(:,:,:), dataPtr2d(:,:)
-    character(64)  :: fcstbdl_name
+    integer                           :: mype,date(6)
     real(kind=8)   :: MPI_Wtime
     real(kind=8)   :: timewri, timewr, timerhi, timerh
 
 !-----------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
-    if(profile_memory) &
-      call ESMF_VMLogMemInfo("Entering FV3 Model_ADVANCE phase2: ")
+    if(profile_memory) call ESMF_VMLogMemInfo("Entering FV3 ModelAdvance_phase2: ")
 !
     call ESMF_GridCompGet(gcomp, name=name, localpet=mype, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
 !-----------------------------------------------------------------------------
 !*** no integration loop
-
-    reconcileFlag = .true.
 
 !
 !*** for forecast tasks
@@ -1482,8 +1447,7 @@ module fv3gfs_cap_mod
                           unit=nuopcMsg)
      call ESMF_LogWrite(nuopcMsg, ESMF_LOGMSG_INFO)
 
-     if(profile_memory) &
-       call ESMF_VMLogMemInfo("Leaving FV3 Model_ADVANCE phase2: ")
+     if(profile_memory) call ESMF_VMLogMemInfo("Leaving FV3 ModelAdvance_phase2: ")
 
   end subroutine ModelAdvance_phase2
 
@@ -1496,6 +1460,7 @@ module fv3gfs_cap_mod
     type(ESMF_GridComp)   :: gcomp
     integer, intent(out)  :: rc
 !
+    character(len=*),parameter  :: subname='(fv3gfs_cap:fv3_checkimport)'
     integer :: n, nf
     type(ESMF_Clock)   :: clock
     type(ESMF_Time)    :: currTime, invalidTime
@@ -1566,7 +1531,7 @@ module fv3gfs_cap_mod
         endif
         write(MESSAGE_CHECK,'(A,2i4,l3)') &
           "FV3_CHECKIMPORT "//trim(fldname),n,nf,importFieldsValid(nf)
-        CALL ESMF_LogWrite(MESSAGE_CHECK,ESMF_LOGMSG_INFO,rc=RC)
+        CALL ESMF_LogWrite(MESSAGE_CHECK,ESMF_LOGMSG_INFO,rc=rc)
       enddo
     endif
 
@@ -1579,6 +1544,7 @@ module fv3gfs_cap_mod
     integer, intent(out) :: rc
 
     ! local variables
+    character(len=*),parameter  :: subname='(fv3gfs_cap:TimestampExport_phase1)'
     type(ESMF_Clock)     :: driverClock, modelClock
     type(ESMF_State)     :: exportState
 
@@ -1607,7 +1573,8 @@ module fv3gfs_cap_mod
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 !
-    integer              :: i, unit, date(6), mype, urc
+    character(len=*),parameter  :: subname='(fv3gfs_cap:atmos_model_finalize)'
+    integer              :: i, unit, mype, urc
     type(ESMF_VM)        :: vm
     real(kind=8)         :: MPI_Wtime, timeffs
 !

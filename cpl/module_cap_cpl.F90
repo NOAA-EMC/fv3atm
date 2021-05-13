@@ -205,64 +205,61 @@ module module_cap_cpl
 
   !-----------------------------------------------------------------------------
 
-    subroutine diagnose_cplFields(gcomp, importState, exportstate, clock_fv3,    &
-                     fcstpe, statewrite_flag, stdiagnose_flag, state_tag, timestr)
+    subroutine diagnose_cplFields(gcomp, clock_fv3, fcstpe, &
+                                  statewrite_flag, stdiagnose_flag, state_tag)
 
       type(ESMF_GridComp), intent(in)       :: gcomp
-      type(ESMF_State)                      :: importState, exportstate
       type(ESMF_Clock),intent(in)           :: clock_fv3
       logical, intent(in)                   :: fcstpe
       logical, intent(in)                   :: statewrite_flag
       integer, intent(in)                   :: stdiagnose_flag
       character(len=*),         intent(in)  :: state_tag                        !< Import or export.
-      character(len=*),         intent(in)  :: timestr                          !< Import or export.
-      integer                               :: timeslice = 1
-!
+
+      character(len=*),parameter :: subname='(module_cap_cpl:diagnose_cplFields)'
+      type(ESMF_Time) :: currTime
+      type(ESMF_State) :: state
+      character(len=240) :: timestr
+      integer :: timeslice = 1
       character(len=160) :: nuopcMsg
       character(len=160) :: filename
       integer :: rc
 !
-      call ESMF_ClockPrint(clock_fv3, options="currTime",                            &
-                           preString="leaving FV3_ADVANCE with clock_fv3 current: ", &
-                           unit=nuopcMsg)
-!      call ESMF_LogWrite(nuopcMsg, ESMF_LOGMSG_INFO)
-      call ESMF_ClockPrint(clock_fv3, options="startTime",                           &
-                           preString="leaving FV3_ADVANCE with clock_fv3 start:   ", &
-                           unit=nuopcMsg)
-!      call ESMF_LogWrite(nuopcMsg, ESMF_LOGMSG_INFO)
-      call ESMF_ClockPrint(clock_fv3, options="stopTime",                            &
-                           preString="leaving FV3_ADVANCE with clock_fv3 stop:    ", &
-                           unit=nuopcMsg)
-!      call ESMF_LogWrite(nuopcMsg, ESMF_LOGMSG_INFO)
+      call ESMF_ClockGet(clock_fv3, currTime=currTime, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+      call ESMF_TimeGet(currTime, timestring=timestr, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+      call ESMF_ClockPrint(clock_fv3, options="currTime", preString="current time: ", unit=nuopcMsg)
+      call ESMF_LogWrite(trim(subname)//' '//trim(state_tag)//' '//trim(nuopcMsg), ESMF_LOGMSG_INFO)
 
       if(trim(state_tag) .eq. 'import')then
-        call ESMF_GridCompGet(gcomp, importState=importState, rc=rc)
+        call ESMF_GridCompGet(gcomp, importState=state, rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
         if(stdiagnose_flag > 0 .and. fcstpe)then
-         call state_diagnose(importState, ':IS', rc=rc)
+         call state_diagnose(state, ':IS', rc=rc)
         end if
 
         ! Dump Fields out
         if (statewrite_flag) then
           write(filename,'(A)') 'fv3_cap_import_'//trim(timestr)//'_'
-          call State_RWFields_tiles(importState,trim(filename), timeslice, rc=rc)
+          call State_RWFields_tiles(state,trim(filename), timeslice, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
         end if
       end if
 
       if(trim(state_tag) .eq. 'export')then
-        call ESMF_GridCompGet(gcomp, exportState=exportState, rc=rc)
+        call ESMF_GridCompGet(gcomp, exportState=state, rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
         if(stdiagnose_flag > 0 .and. fcstpe)then
-         call state_diagnose(exportState, ':ES', rc=rc)
+         call state_diagnose(state, ':ES', rc=rc)
         end if
 
         ! Dump Fields out
         if (statewrite_flag) then
           write(filename,'(A)') 'fv3_cap_export_'//trim(timestr)//'_'
-          call State_RWFields_tiles(exportState,trim(filename), timeslice, rc=rc)
+          call State_RWFields_tiles(state,trim(filename), timeslice, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
         end if
       end if
@@ -393,8 +390,7 @@ module module_cap_cpl
       ! local variables
 
       rc = ESMF_SUCCESS
-      !call ESMF_LogWrite(trim(subname)//trim(filename)//": called",
-      !ESMF_LOGMSG_INFO, rc=rc)
+      !call ESMF_LogWrite(trim(subname)//trim(filename)//": called", ESMF_LOGMSG_INFO, rc=rc)
 
       call ESMF_StateGet(state, itemCount=icount, rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
@@ -434,7 +430,6 @@ module module_cap_cpl
       IOComp = ESMFIO_Create(gridFv3, rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
           line=__LINE__, file=__FILE__)) return  ! bail out
-      call ESMF_LogWrite(trim(subname)//": write "//trim(filename), ESMF_LOGMSG_INFO, rc=rc)
 
       do ifld=1, fieldCount
         call ESMF_StateGet(state, itemName=fldNameList(ifld), field=flds(ifld), rc=rc)
@@ -451,8 +446,7 @@ module module_cap_cpl
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, file=__FILE__)) call ESMF_Finalize()
 
-      !call ESMF_LogWrite(trim(subname)//trim(filename)//": finished",
-      !ESMF_LOGMSG_INFO, rc=rc)
+      !call ESMF_LogWrite(trim(subname)//trim(filename)//": finished", ESMF_LOGMSG_INFO, rc=rc)
 
     end subroutine State_RWFields_tiles
 
