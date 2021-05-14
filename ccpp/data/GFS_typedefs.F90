@@ -4666,11 +4666,6 @@ module GFS_typedefs
       Model%nqvdelt  = 4
       Model%nps2delt = 1
       Model%npsdelt  = 2
-      
-      if (Model%ncld /= 1) then
-        print *,' Zhao-Carr MP requires ncld to be set to 1 - job aborted'
-        stop
-      end if
 
       if (Model%me == Model%master) print *,' Using Zhao/Carr/Sundqvist Microphysics'
 
@@ -4695,10 +4690,6 @@ module GFS_typedefs
       Model%nleffr  = 1
       Model%nieffr  = 2
       Model%nseffr  = 3
-      if (Model%ncld /= 5) then
-        print *,' Ferrier-Aligo MP requires ncld to be set to 5 - job aborted'
-        stop
-      end if
       if (Model%me == Model%master) print *,' Using Ferrier-Aligo MP scheme', &
                                           ' microphysics', &
                                           ' lradar =',Model%lradar
@@ -4726,11 +4717,7 @@ module GFS_typedefs
       Model%nleffr  = 1
       Model%nieffr  = 2
       Model%nseffr  = 3
-
-      if (Model%ncld /= 5) then
-        print *,' Thompson MP requires ncld to be set to 5 - job aborted'
-        stop
-      end if         
+         
       if (.not. Model%effr_in) then
         print *,' Thompson MP requires effr_in to be set to .true. - job aborted'
         stop
@@ -4755,10 +4742,6 @@ module GFS_typedefs
       Model%nieffr  = 3
       Model%nreffr  = 4
       Model%nseffr  = 5
-      if (Model%ncld /= 2) then
-        print *,' Morrison-Gettelman MP requires ncld to be set to 2 - job aborted'
-        stop
-      end if
       if (abs(Model%fprcp) == 1) then
         Model%ncnd  = 4
       elseif (Model%fprcp >= 2) then
@@ -4806,10 +4789,6 @@ module GFS_typedefs
       Model%pdfcld  = .false.
       Model%shcnvcw = .false.
       Model%ncnd    = 5
-      if (Model%ncld /= 5) then
-        print *,' GFDL MP requires ncld to be set to 5 - job aborted'
-        stop
-      end if
       if (Model%me == Model%master) print *,' avg_max_length=',Model%avg_max_length
       if (Model%me == Model%master) print *,' Using GFDL Cloud Microphysics'
     else
