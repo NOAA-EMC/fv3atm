@@ -2112,7 +2112,8 @@ module FV3GFS_io_mod
     jeco   = Atm_block%jec
     levo   = model%levs
     fhzero = nint(Model%fhzero)
-    ncld   = Model%ncld
+!   ncld   = Model%ncld
+    ncld   = Model%imp_physics
     nsoil  = Model%lsoil
     dtp    = Model%dtp
     imp_physics  = Model%imp_physics

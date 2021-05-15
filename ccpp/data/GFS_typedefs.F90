@@ -695,7 +695,6 @@ module GFS_typedefs
     real(kind_phys)      :: minGPtemp               !< Minimum temperature allowed in RRTMGP.
 
 !--- microphysical switch
-    integer              :: ncld                           !< choice of cloud scheme
     logical              :: convert_dry_rho = .true.       !< flag for converting mass/number concentrations from moist to dry
                                                            !< for physics options that expect dry mass/number concentrations;
                                                            !< this flag will no longer be needed once the CCPP standard
@@ -1112,7 +1111,7 @@ module GFS_typedefs
     integer              :: ntrnc           !< tracer index for rain   number concentration
     integer              :: ntsnc           !< tracer index for snow   number concentration
     integer              :: ntgnc           !< tracer index for graupel number concentration
-    integer              :: ntke            !< tracer index for kinetic energy
+    integer              :: ntke            !< tracer index for sgs kinetic energy
     integer              :: nto             !< tracer index for oxygen ion
     integer              :: nto2            !< tracer index for oxygen
     integer              :: ntwa            !< tracer index for water friendly aerosol
@@ -3055,7 +3054,6 @@ module GFS_typedefs
     logical              :: use_LW_jacobian     = .false.    !< Use Jacobian of LW to update LW radiation tendencies.
     logical              :: doGP_lwscat         = .false.    !< If true, include scattering in longwave cloud-optics, only compatible w/ GP cloud-optics
 !--- Z-C microphysical parameters
-    integer              :: ncld              =  1                 !< choice of cloud scheme
     integer              :: imp_physics       =  99                !< choice of cloud scheme
     real(kind=kind_phys) :: psautco(2)        = (/6.0d-4,3.0d-4/)  !< [in] auto conversion coeff from ice to snow
     real(kind=kind_phys) :: prautco(2)        = (/1.0d-4,1.0d-4/)  !< [in] auto conversion coeff from cloud to rain
@@ -3439,7 +3437,7 @@ module GFS_typedefs
                           ! IN CCN forcing
                                iccn,                                                        &
                           !--- microphysical parameterizations
-                               ncld, imp_physics, psautco, prautco, evpco, wminco,          &
+                               imp_physics, psautco, prautco, evpco, wminco,                &
                                fprcp, pdfflag, mg_dcs, mg_qcvar, mg_ts_auto_ice, mg_rhmini, &
                                effr_in, tf, tcr,                                            &
                                microp_uniform, do_cldice, hetfrz_classnuc,                  &
@@ -3824,7 +3822,6 @@ module GFS_typedefs
     end if
 
 !--- microphysical switch
-    Model%ncld             = ncld
     Model%imp_physics      = imp_physics
 !--- use effective radii in radiation, used by several microphysics options
     Model%effr_in          = effr_in
@@ -4795,7 +4792,6 @@ module GFS_typedefs
 !   Unified cloud for SHOC and/or MG3
     Model%uni_cld = .false.
     Model%indcld  = -1
-!   if (Model%shoc_cld .or. Model%ncld == 2 .or. Model%ntclamt > 0) then
     if (Model%imp_physics == Model%imp_physics_mg) then
       Model%uni_cld = .true.
       Model%indcld  = 1
@@ -4981,7 +4977,6 @@ module GFS_typedefs
       endif
       print *, ' '
       print *, 'microphysical switch'
-      print *, ' ncld              : ', Model%ncld
       print *, ' imp_physics       : ', Model%imp_physics
       print *, ' '
 
@@ -6754,7 +6749,7 @@ module GFS_typedefs
     integer :: n, tracers
 
     !first, initialize the values (in case the values don't get initialized within if statements below)
-    Interstitial%nncl             = Model%ncld
+    Interstitial%nncl             = 1
     Interstitial%nvdiff           = Model%ntrac
     Interstitial%mg3_as_mg2       = .false.
     Interstitial%nn               = Model%ntrac + 1
@@ -6765,7 +6760,6 @@ module GFS_typedefs
     Interstitial%otspt(:,:)       = .true.
     Interstitial%nsamftrac        = 0
     Interstitial%ncstrac          = 0
-    Interstitial%nscav            = Model%ntrac-Model%ncld+2
 
     ! perform aerosol convective transport and PBL diffusion
     Interstitial%trans_aero = Model%cplchm .and. Model%trans_trac
@@ -6782,12 +6776,17 @@ module GFS_typedefs
       Interstitial%nvdiff = Model%ntrac -3
       if (Model%satmedmf) Interstitial%nvdiff = Interstitial%nvdiff + 1
       Interstitial%nncl = 5
+    elseif (Model%imp_physics_zhao_carr == 99 .or.                    &
+            Model%imp_physics_zhao_carr_pdf == 98  ) then
+      Interstitial%nncl = 1
     elseif (Model%ntclamt > 0) then             ! for GFDL MP don't diffuse cloud amount
       Interstitial%nvdiff = Model%ntrac - 1
     endif
 
     if (Model%imp_physics == Model%imp_physics_gfdl) then
       Interstitial%nncl = 5
+    elseif (Model%imp_physics == Model%imp_physics_fer_hires) then
+      Interstitial%nncl = 3
     endif
 
     if (Model%imp_physics == Model%imp_physics_mg) then
@@ -6804,6 +6803,9 @@ module GFS_typedefs
         endif
       endif
     endif
+
+    Interstitial%nscav = Model%ntrac-Interstitial%nncl+2
+
 
     ! DH* STILL VALID GIVEN THE CHANGES BELOW FOR CPLCHM?
     if (Interstitial%nvdiff == Model%ntrac) then
@@ -6849,9 +6851,9 @@ module GFS_typedefs
         stop
       endif
       if (Interstitial%trans_aero) Interstitial%nvdiff = Interstitial%nvdiff + Model%ntchm
-      if (Model%ntke > 0) Interstitial%nvdiff = Interstitial%nvdiff + 1    ! adding tke to the list
     endif
 
+    if (Model%ntke > 0) Interstitial%nvdiff = Interstitial%nvdiff + 1    ! adding tke to the list
     Interstitial%ntkev = Interstitial%nvdiff
 
     if (Model%ntiw > 0) then
