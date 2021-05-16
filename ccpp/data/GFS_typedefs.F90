@@ -3429,7 +3429,8 @@ module GFS_typedefs
     logical :: lndp_each_step = .false.
 
 !--- aerosol scavenging factors
-    character(len=20) :: fscav_aero(20) = 'default'
+    integer, parameter :: max_scav_factors = 25
+    character(len=40)  :: fscav_aero(max_scav_factors)
 
 !--- END NAMELIST VARIABLES
 
