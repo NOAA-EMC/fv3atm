@@ -4535,6 +4535,24 @@
   units = index
   dimensions = ()
   type = integer
+[ndchm]
+  standard_name = number_of_diagnostic_chemical_tracers
+  long_name = number of diagnostic chemical tracers
+  units = count
+  dimensions = ()
+  type = integer
+[ndchs]
+  standard_name = index_for_first_diagnostic_chemical_tracer
+  long_name = tracer index for first diagnostic chemical tracer
+  units = index
+  dimensions = ()
+  type = integer
+[ndche]
+  standard_name = index_for_last_diagnostic_chemical_tracer
+  long_name = tracer index for last diagnostic chemical tracer
+  units = index
+  dimensions = ()
+  type = integer
 [ntdiag]
   standard_name = diagnostics_control_for_chemical_tracers
   long_name = array to control diagnostics for chemical tracers

@@ -402,6 +402,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
   integer              :: bdat(8), cdat(8)
   integer              :: ntracers, maxhf, maxh
   character(len=32), allocatable, target :: tracer_names(:)
+  integer,           allocatable, target :: tracer_types(:)
   integer :: nthrds, nb
 
 !-----------------------------------------------------------------------
@@ -498,10 +499,11 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    call get_date (Time,      cdat(1), cdat(2), cdat(3),  &
                              cdat(5), cdat(6), cdat(7))
    call get_number_tracers(MODEL_ATMOS, num_tracers=ntracers)
-   allocate (tracer_names(ntracers))
+   allocate (tracer_names(ntracers), tracer_types(ntracers))
    do i = 1, ntracers
      call get_tracer_names(MODEL_ATMOS, i, tracer_names(i))
    enddo
+   call get_atmos_tracer_types(tracer_types)
 !--- setup Init_parm
    Init_parm%me              =  mpp_pe()
    Init_parm%master          =  mpp_root_pe()
@@ -529,6 +531,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    Init_parm%xlat            => Atmos%lat
    Init_parm%area            => Atmos%area
    Init_parm%tracer_names    => tracer_names
+   Init_parm%tracer_types    => tracer_types
    Init_parm%restart         = Atm(mygrid)%flagstruct%warm_start
    Init_parm%hydrostatic     = Atm(mygrid)%flagstruct%hydrostatic
 
@@ -569,6 +572,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    Init_parm%area            => null()
    Init_parm%tracer_names    => null()
    deallocate (tracer_names)
+   deallocate (tracer_types)
 
    !--- update tracers in FV3 with any initialized during the physics/radiation init phase
 !rab   call atmosphere_tracer_postinit (GFS_data, Atm_block)
@@ -988,6 +992,103 @@ end subroutine get_atmos_model_ungridded_dim
 ! </SUBROUTINE>
 
 !#######################################################################
+! <SUBROUTINE NAME="get_atmos_tracer_types">
+! <DESCRIPTION>
+!  Identify and return usage and type id of atmospheric tracers.
+!  Ids are defined as:
+!    0 = generic tracer
+!    1 = chemistry - prognostic
+!    2 = chemistry - diagnostic
+!
+!  Tracers are identified via the additional 'tracer_usage' keyword and
+!  their optional 'type' qualifier. A tracer is assumed prognostic if
+!  'type' is not provided. See examples from the field_table file below:
+!
+!  Prognostic tracer:
+!  ------------------
+!  "TRACER", "atmos_mod",    "so2"
+!            "longname",     "so2 mixing ratio"
+!            "units",        "ppm"
+!            "tracer_usage", "chemistry"
+!            "profile_type", "fixed", "surface_value=5.e-6" /
+!
+!  Diagnostic tracer:
+!  ------------------
+!  "TRACER", "atmos_mod",    "pm25"
+!            "longname",     "PM2.5"
+!            "units",        "ug/m3"
+!            "tracer_usage", "chemistry", "type=diagnostic"
+!            "profile_type", "fixed", "surface_value=5.e-6" /
+!
+!  For atmospheric chemistry, the order of both prognostic and diagnostic
+!  tracers is validated against the model's internal assumptions.
+!
+! </DESCRIPTION>
+subroutine get_atmos_tracer_types(tracer_types)
+
+  use field_manager_mod,  only: parse
+  use tracer_manager_mod, only: query_method
+
+  integer, intent(out) :: tracer_types(:)
+
+  !--- local variables
+  logical :: found
+  integer :: n, num_tracers, num_types
+  integer :: id_max, id_min, id_num, ip_max, ip_min, ip_num
+  character(len=32)  :: tracer_usage
+  character(len=128) :: control, tracer_type
+
+  !--- begin
+
+  !--- validate array size
+  call get_number_tracers(MODEL_ATMOS, num_tracers=num_tracers)
+
+  if (size(tracer_types) < num_tracers) &
+    call mpp_error(FATAL, 'insufficient size of tracer type array')
+
+  !--- initialize tracer indices
+  id_min = num_tracers + 1
+  id_max = -id_min
+  ip_min = id_min
+  ip_max = id_max
+  id_num = 0
+  ip_num = 0
+
+  do n = 1, num_tracers
+    tracer_types(n) = 0
+    found = query_method('tracer_usage',MODEL_ATMOS,n,tracer_usage,control)
+    if (found) then
+      if (trim(tracer_usage) == 'chemistry') then
+        tracer_type = 'prognostic'
+        num_types = parse(control, 'type', tracer_type)
+        if (trim(tracer_type) == 'diagnostic') then
+          tracer_types(n) = 2
+          id_num = id_num + 1
+          id_max = n
+          if (id_num == 1) id_min = n
+        else
+          tracer_types(n) = 1
+          ip_num = ip_num + 1
+          ip_max = n
+          if (ip_num == 1) ip_min = n
+        end if
+      end if
+    end if
+  end do
+
+  if (ip_num > ip_max - ip_min + 1) &
+    call mpp_error(FATAL, 'prognostic chemistry tracers must be consecutive')
+
+  if (id_num > id_max - id_min + 1) &
+    call mpp_error(FATAL, 'diagnostic chemistry tracers must be consecutive')
+
+  if (ip_max > id_min) &
+    call mpp_error(FATAL, 'diagnostic chemistry tracers must follow prognostic ones')
+
+end subroutine get_atmos_tracer_types
+! </SUBROUTINE>
+
+!#######################################################################
 ! <SUBROUTINE NAME="update_atmos_chemistry">
 ! <DESCRIPTION>
 !  Populate exported chemistry fields with current atmospheric state
@@ -1073,10 +1174,8 @@ subroutine update_atmos_chemistry(state, rc)
 
       !--- if chemical tracers are present, set bounds appropriately
       if (GFS_control%ntchm > 0) then
-        if (GFS_control%ntchs /= NO_TRACER) then
-          ntb = GFS_control%ntchs
-          nte = GFS_control%ntchm + ntb - 1
-        end if
+        ntb = GFS_control%ntchs
+        nte = GFS_control%ntche
       end if
 
       !--- prognostic tracer concentrations
@@ -1101,9 +1200,9 @@ subroutine update_atmos_chemistry(state, rc)
       !--- set tracer concentrations in the atmospheric state directly
       !--- since the atmosphere's driver cannot perform this step while
       !--- updating the state
-      if (GFS_Control%ntche > nte) then
-        ntb = nte + 1
-        nte = GFS_Control%ntche
+      if (GFS_control%ndchm > 0) then
+        ntb = GFS_control%ndchs
+        nte = GFS_control%ndche
 !$OMP parallel do default (none) &
 !$OMP             shared  (mygrid, nk, ntb, nte, Atm, Atm_block, q) &
 !$OMP             private (i, ib, ix, j, jb, k, k1, nb)
