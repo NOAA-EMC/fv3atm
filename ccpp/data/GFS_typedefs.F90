@@ -1205,9 +1205,10 @@ module GFS_typedefs
     real(kind=kind_phys) :: rhcmax          ! maximum critical relative humidity, replaces rhc_max in physcons.F90
 
     contains
-      procedure :: init           => control_initialize
-      procedure :: init_chemistry => control_chemistry_initialize
-      procedure :: print          => control_print
+      procedure :: init            => control_initialize
+      procedure :: init_chemistry  => control_chemistry_initialize
+      procedure :: init_scavenging => control_scavenging_initialize
+      procedure :: print           => control_print
   end type GFS_control_type
 
 
@@ -4274,40 +4275,8 @@ module GFS_typedefs
 !--- initialize parameters for atmospheric chemistry tracers
     call Model%init_chemistry(tracer_types)
 
-    ! -- setup aerosol scavenging factors
-    n = max(Model%ntrac, Model%ntchm)
-    allocate(Model%fscav(n))
-    Model%fscav = -9999.0
-    if (Model%ntchm > 0) then
-      ! -- initialize to default
-      Model%fscav = 0.6_kind_phys
-      n = get_tracer_index(Model%tracer_names, 'seas1', Model%me, Model%master, Model%debug) - Model%ntchs + 1
-      if (n > 0) Model%fscav(n) = 1.0_kind_phys
-      n = get_tracer_index(Model%tracer_names, 'seas2', Model%me, Model%master, Model%debug) - Model%ntchs + 1
-      if (n > 0) Model%fscav(n) = 1.0_kind_phys
-      n = get_tracer_index(Model%tracer_names, 'seas3', Model%me, Model%master, Model%debug) - Model%ntchs + 1
-      if (n > 0) Model%fscav(n) = 1.0_kind_phys
-      n = get_tracer_index(Model%tracer_names, 'seas4', Model%me, Model%master, Model%debug) - Model%ntchs + 1
-      if (n > 0) Model%fscav(n) = 1.0_kind_phys
-      n = get_tracer_index(Model%tracer_names, 'seas5', Model%me, Model%master, Model%debug) - Model%ntchs + 1
-      if (n > 0) Model%fscav(n) = 1.0_kind_phys
-      ! -- read factors from namelist
-      do i = 1, size(fscav_aero)
-        j = index(fscav_aero(i),":")
-        if (j > 1) then
-          read(fscav_aero(i)(j+1:), *, iostat=ios) tem
-          if (ios /= 0) cycle
-          if (adjustl(fscav_aero(i)(:j-1)) == "*") then
-            Model%fscav = tem
-            exit
-          else
-            n = get_tracer_index(Model%tracer_names, adjustl(fscav_aero(i)(:j-1)), Model%me, Model%master, Model%debug) &
-                - Model%ntchs + 1
-            if (n > 0) Model%fscav(n) = tem
-          endif
-        endif
-      enddo
-    endif
+!--- setup aerosol scavenging factors
+    call Model%init_scavenging(fscav_aero)
 
     ! To ensure that these values match what's in the physics,
     ! array sizes are compared during model init in GFS_phys_time_vary_init()
@@ -4908,6 +4877,56 @@ module GFS_typedefs
     if (Model%ndchm > 0) Model%ndche = Model%ndchs + Model%ndchm - 1
 
   end subroutine control_chemistry_initialize
+
+
+!----------------------------
+! GFS_control%init_scavenging
+!----------------------------
+  subroutine control_scavenging_initialize(Model, fscav)
+
+    use parse_tracers, only: get_tracer_index
+
+    !--- interface variables
+    class(GFS_control_type)      :: Model
+    character(len=*), intent(in) :: fscav(:)
+
+    !--- local variables
+    integer              :: i, ios, j, n
+    real(kind=kind_phys) :: tem
+
+    !--- begin
+    allocate(Model%fscav(Model%ntchm))
+
+    if (Model%ntchm > 0) then
+      !--- set default as no scavenging
+      Model%fscav = zero
+      ! -- read factors from namelist
+      ! -- set default first, if available
+      do i = 1, size(fscav)
+        j = index(fscav(i),":")
+        if (j > 1) then
+          read(fscav(i)(j+1:), *, iostat=ios) tem
+          if (ios /= 0) cycle
+          if (adjustl(fscav(i)(:j-1)) == "*") then
+            Model%fscav = tem
+            exit
+          endif
+        endif
+      enddo
+      ! -- then read factors for each tracer
+      do i = 1, size(fscav)
+        j = index(fscav(i),":")
+        if (j > 1) then
+          read(fscav(i)(j+1:), *, iostat=ios) tem
+          if (ios /= 0) cycle
+          n = get_tracer_index(Model%tracer_names, adjustl(fscav(i)(:j-1)), Model%me, Model%master, Model%debug) &
+              - Model%ntchs + 1
+          if (n > 0) Model%fscav(n) = tem
+        endif
+      enddo
+    endif
+
+  end subroutine control_scavenging_initialize
 
 
 !------------------
