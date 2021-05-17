@@ -142,7 +142,6 @@ module GFS_typedefs
     real(kind=kind_phys), pointer :: xlat(:,:)   !< column latitude  for MPI rank
     real(kind=kind_phys), pointer :: area(:,:)   !< column area for length scale calculations
 
-
     integer                    :: nwat            !< number of hydrometeors in dcyore (including water vapor)
     character(len=32), pointer :: tracer_names(:) !< tracers names to dereference tracer id
                                                   !< based on name location in array
@@ -4669,15 +4668,10 @@ module GFS_typedefs
       Model%nqvdelt  = 4
       Model%nps2delt = 1
       Model%npsdelt  = 2
-      
-      if (Model%ncld /= 1) then
-        print *,' Zhao-Carr MP requires ncld to be set to 1 - job aborted'
-        stop
-      else if (nwat /= 2) then
+      if (nwat /= 2) then
         print *,' Zhao-Carr MP requires nwat to be set to 2 - job aborted'
         stop
       end if
-
       if (Model%me == Model%master) print *,' Using Zhao/Carr/Sundqvist Microphysics'
 
     elseif (Model%imp_physics == Model%imp_physics_zhao_carr_pdf) then !Zhao Microphysics with PDF cloud
@@ -4698,10 +4692,7 @@ module GFS_typedefs
       Model%nleffr  = 1
       Model%nieffr  = 2
       Model%nseffr  = 3
-      if (Model%ncld /= 5) then
-        print *,' Ferrier-Aligo MP requires ncld to be set to 5 - job aborted'
-        stop
-      else if (nwat /= 4) then
+      if (nwat /= 4) then
         print *,' Ferrier-Aligo MP requires nwat to be set to 4 - job aborted'
         stop
       end if
@@ -4733,18 +4724,14 @@ module GFS_typedefs
       Model%nleffr  = 1
       Model%nieffr  = 2
       Model%nseffr  = 3
-
-      if (Model%ncld /= 5) then
-        print *,' Thompson MP requires ncld to be set to 5 - job aborted'
-        stop
-      else if (nwat /= 6) then
+      if (nwat /= 6) then
         print *,' Thompson MP requires nwat to be set to 6 - job aborted'
         stop
       end if
       if (.not. Model%effr_in) then
         print *,' Thompson MP requires effr_in to be set to .true. - job aborted'
         stop
-      end if      
+      end if
       if (Model%me == Model%master) print *,' Using Thompson double moment microphysics', &
                                           ' ltaerosol = ',Model%ltaerosol, &
                                           ' ttendlim =',Model%ttendlim, &
@@ -4765,10 +4752,7 @@ module GFS_typedefs
       Model%nieffr  = 3
       Model%nreffr  = 4
       Model%nseffr  = 5
-      if (Model%ncld /= 2) then
-        print *,' Morrison-Gettelman MP requires ncld to be set to 2 - job aborted'
-        stop
-      else if (nwat /= 6) then
+      if (nwat /= 6) then
         print *,' Morrison-Gettelman MP requires nwat to be set to 6 - job aborted'
         stop
       end if
@@ -4819,15 +4803,13 @@ module GFS_typedefs
       Model%pdfcld  = .false.
       Model%shcnvcw = .false.
       Model%ncnd    = 5
-      if (Model%ncld /= 5) then
-        print *,' GFDL MP requires ncld to be set to 5 - job aborted'
-        stop
-      else if (nwat /= 6) then
-        print *,' GFDL MP rrequires nwat to be set to 6 - job aborted'
+      if (nwat /= 6) then
+        print *,' GFDL MP requires nwat to be set to 6 - job aborted'
         stop
       end if
       if (Model%me == Model%master) print *,' avg_max_length=',Model%avg_max_length
       if (Model%me == Model%master) print *,' Using GFDL Cloud Microphysics'
+
     else
       if (Model%me == Model%master) print *,'Wrong imp_physics value. Job abort.'
       stop
