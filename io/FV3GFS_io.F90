@@ -173,7 +173,7 @@ module FV3GFS_io_mod
    if (Model%lsm == Model%lsm_noahmp) then
      nsfcprop2d = 156
    elseif (Model%lsm == Model%lsm_ruc) then
-     nsfcprop2d = 122
+     nsfcprop2d = 125
      if (Model%rdlai) then
        nsfcprop2d = nsfcprop2d + 1
      endif
@@ -377,15 +377,18 @@ module FV3GFS_io_mod
         temp2d(i,j,idx_opt+11) = GFS_Data(nb)%Sfcprop%albdnir_lnd(ix)
         temp2d(i,j,idx_opt+12) = GFS_Data(nb)%Sfcprop%albivis_lnd(ix)
         temp2d(i,j,idx_opt+13) = GFS_Data(nb)%Sfcprop%albinir_lnd(ix)
-        temp2d(i,j,idx_opt+14) = GFS_Data(nb)%Sfcprop%emis_lnd(ix)
-        temp2d(i,j,idx_opt+15) = GFS_Data(nb)%Sfcprop%albdvis_ice(ix)
-        temp2d(i,j,idx_opt+16) = GFS_Data(nb)%Sfcprop%albdnir_ice(ix)
-        temp2d(i,j,idx_opt+17) = GFS_Data(nb)%Sfcprop%albivis_ice(ix)
-        temp2d(i,j,idx_opt+18) = GFS_Data(nb)%Sfcprop%albinir_ice(ix)
-        temp2d(i,j,idx_opt+19) = GFS_Data(nb)%Sfcprop%emis_ice(ix)
-        idx_opt = 107
+        temp2d(i,j,idx_opt+14) = GFS_Data(nb)%Sfcprop%sfalb_lnd(ix)
+        temp2d(i,j,idx_opt+15) = GFS_Data(nb)%Sfcprop%sfalb_lnd_bck(ix)
+        temp2d(i,j,idx_opt+16) = GFS_Data(nb)%Sfcprop%albdvis_ice(ix)
+        temp2d(i,j,idx_opt+17) = GFS_Data(nb)%Sfcprop%albdnir_ice(ix)
+        temp2d(i,j,idx_opt+18) = GFS_Data(nb)%Sfcprop%albivis_ice(ix)
+        temp2d(i,j,idx_opt+19) = GFS_Data(nb)%Sfcprop%albinir_ice(ix)
+        temp2d(i,j,idx_opt+20) = GFS_Data(nb)%Sfcprop%sfalb_ice(ix)
+        temp2d(i,j,idx_opt+21) = GFS_Data(nb)%Sfcprop%emis_lnd(ix)
+        temp2d(i,j,idx_opt+22) = GFS_Data(nb)%Sfcprop%emis_ice(ix)
+        idx_opt = 110
         if (Model%rdlai) then
-          temp2d(i,j,idx_opt+20) = GFS_Data(nb)%Sfcprop%xlaixy(ix)
+          temp2d(i,j,idx_opt+23) = GFS_Data(nb)%Sfcprop%xlaixy(ix)
           idx_opt = idx_opt + 1
         endif
        endif
@@ -514,9 +517,9 @@ module FV3GFS_io_mod
 
     if (Model%lsm == Model%lsm_ruc .and. warm_start) then
       if(Model%rdlai) then
-        nvar_s2r = 21
+        nvar_s2r = 24
       else
-        nvar_s2r = 20
+        nvar_s2r = 23
       end if
       nvar_s3  = 5
     else
@@ -860,14 +863,17 @@ module FV3GFS_io_mod
         sfc_name2(nvar_s2m+30) = 'albdnir_lnd'
         sfc_name2(nvar_s2m+31) = 'albivis_lnd'
         sfc_name2(nvar_s2m+32) = 'albinir_lnd'
-        sfc_name2(nvar_s2m+33) = 'emis_lnd'
-        sfc_name2(nvar_s2m+34) = 'albdvis_ice'
-        sfc_name2(nvar_s2m+35) = 'albdnir_ice'
-        sfc_name2(nvar_s2m+36) = 'albivis_ice'
-        sfc_name2(nvar_s2m+37) = 'albinir_ice'
-        sfc_name2(nvar_s2m+38) = 'emis_ice'
+        sfc_name2(nvar_s2m+33) = 'sfalb_lnd'
+        sfc_name2(nvar_s2m+34) = 'sfalb_lnd_bck'
+        sfc_name2(nvar_s2m+35) = 'albdvis_ice'
+        sfc_name2(nvar_s2m+36) = 'albdnir_ice'
+        sfc_name2(nvar_s2m+37) = 'albivis_ice'
+        sfc_name2(nvar_s2m+38) = 'albinir_ice'
+        sfc_name2(nvar_s2m+39) = 'sfalb_ice'
+        sfc_name2(nvar_s2m+40) = 'emis_lnd'
+        sfc_name2(nvar_s2m+41) = 'emis_ice'
         if (Model%rdlai) then
-          sfc_name2(nvar_s2m+39) = 'lai'
+          sfc_name2(nvar_s2m+42) = 'lai'
         endif
       else if (Model%lsm == Model%lsm_ruc .and. Model%rdlai) then
         sfc_name2(nvar_s2m+19) = 'lai'
@@ -1139,14 +1145,17 @@ module FV3GFS_io_mod
           Sfcprop(nb)%albdnir_lnd(ix)     = sfc_var2(i,j,nvar_s2m+30)
           Sfcprop(nb)%albivis_lnd(ix)     = sfc_var2(i,j,nvar_s2m+31)
           Sfcprop(nb)%albinir_lnd(ix)     = sfc_var2(i,j,nvar_s2m+32)
-          Sfcprop(nb)%emis_lnd(ix)        = sfc_var2(i,j,nvar_s2m+33)
-          Sfcprop(nb)%albdvis_ice(ix)     = sfc_var2(i,j,nvar_s2m+34)
-          Sfcprop(nb)%albdnir_ice(ix)     = sfc_var2(i,j,nvar_s2m+35)
-          Sfcprop(nb)%albivis_ice(ix)     = sfc_var2(i,j,nvar_s2m+36)
-          Sfcprop(nb)%albinir_ice(ix)     = sfc_var2(i,j,nvar_s2m+37)
-          Sfcprop(nb)%emis_ice(ix)        = sfc_var2(i,j,nvar_s2m+38)
+          Sfcprop(nb)%sfalb_lnd(ix)       = sfc_var2(i,j,nvar_s2m+33)
+          Sfcprop(nb)%sfalb_lnd_bck(ix)   = sfc_var2(i,j,nvar_s2m+34)
+          Sfcprop(nb)%albdvis_ice(ix)     = sfc_var2(i,j,nvar_s2m+35)
+          Sfcprop(nb)%albdnir_ice(ix)     = sfc_var2(i,j,nvar_s2m+36)
+          Sfcprop(nb)%albivis_ice(ix)     = sfc_var2(i,j,nvar_s2m+37)
+          Sfcprop(nb)%albinir_ice(ix)     = sfc_var2(i,j,nvar_s2m+38)
+          Sfcprop(nb)%sfalb_ice(ix)       = sfc_var2(i,j,nvar_s2m+39)
+          Sfcprop(nb)%emis_lnd(ix)        = sfc_var2(i,j,nvar_s2m+40)
+          Sfcprop(nb)%emis_ice(ix)        = sfc_var2(i,j,nvar_s2m+41)
           if (Model%rdlai) then
-            Sfcprop(nb)%xlaixy(ix)        = sfc_var2(i,j,nvar_s2m+39)
+            Sfcprop(nb)%xlaixy(ix)        = sfc_var2(i,j,nvar_s2m+42)
           endif
         else if (Model%lsm == Model%lsm_ruc) then
           ! Initialize RUC snow cover on ice from snow cover
@@ -1405,9 +1414,9 @@ module FV3GFS_io_mod
     nvar2o = 18
     if (Model%lsm == Model%lsm_ruc) then
       if (Model%rdlai) then
-        nvar2r = 21
+        nvar2r = 24
       else
-        nvar2r = 20
+        nvar2r = 23
       endif
       nvar3  = 5
     else
@@ -1544,14 +1553,17 @@ module FV3GFS_io_mod
         sfc_name2(nvar2m+30) = 'albdnir_lnd'
         sfc_name2(nvar2m+31) = 'albivis_lnd'
         sfc_name2(nvar2m+32) = 'albinir_lnd'
-        sfc_name2(nvar2m+33) = 'emis_lnd'
-        sfc_name2(nvar2m+34) = 'albdvis_ice'
-        sfc_name2(nvar2m+35) = 'albdnir_ice'
-        sfc_name2(nvar2m+36) = 'albivis_ice'
-        sfc_name2(nvar2m+37) = 'albinir_ice'
-        sfc_name2(nvar2m+38) = 'emis_ice'
+        sfc_name2(nvar2m+33) = 'sfalb_lnd'
+        sfc_name2(nvar2m+34) = 'sfalb_lnd_bck'
+        sfc_name2(nvar2m+35) = 'albdvis_ice'
+        sfc_name2(nvar2m+36) = 'albdnir_ice'
+        sfc_name2(nvar2m+37) = 'albivis_ice'
+        sfc_name2(nvar2m+38) = 'albinir_ice'
+        sfc_name2(nvar2m+39) = 'sfalb_ice'
+        sfc_name2(nvar2m+40) = 'emis_lnd'
+        sfc_name2(nvar2m+41) = 'emis_ice'
         if (Model%rdlai) then
-          sfc_name2(nvar2m+39) = 'lai'
+          sfc_name2(nvar2m+42) = 'lai'
         endif
       else if(Model%lsm == Model%lsm_noahmp) then
         ! Only needed when Noah MP LSM is used - 29 2D
@@ -1763,14 +1775,17 @@ module FV3GFS_io_mod
           sfc_var2(i,j,nvar2m+30) = Sfcprop(nb)%albdnir_lnd(ix)
           sfc_var2(i,j,nvar2m+31) = Sfcprop(nb)%albivis_lnd(ix)
           sfc_var2(i,j,nvar2m+32) = Sfcprop(nb)%albinir_lnd(ix)
-          sfc_var2(i,j,nvar2m+33) = Sfcprop(nb)%emis_lnd(ix)
-          sfc_var2(i,j,nvar2m+34) = Sfcprop(nb)%albdvis_ice(ix)
-          sfc_var2(i,j,nvar2m+35) = Sfcprop(nb)%albdnir_ice(ix)
-          sfc_var2(i,j,nvar2m+36) = Sfcprop(nb)%albivis_ice(ix)
-          sfc_var2(i,j,nvar2m+37) = Sfcprop(nb)%albinir_ice(ix)
-          sfc_var2(i,j,nvar2m+38) = Sfcprop(nb)%emis_ice(ix)
+          sfc_var2(i,j,nvar2m+33) = Sfcprop(nb)%sfalb_lnd(ix)
+          sfc_var2(i,j,nvar2m+34) = Sfcprop(nb)%sfalb_lnd_bck(ix)
+          sfc_var2(i,j,nvar2m+35) = Sfcprop(nb)%albdvis_ice(ix)
+          sfc_var2(i,j,nvar2m+36) = Sfcprop(nb)%albdnir_ice(ix)
+          sfc_var2(i,j,nvar2m+37) = Sfcprop(nb)%albivis_ice(ix)
+          sfc_var2(i,j,nvar2m+38) = Sfcprop(nb)%albinir_ice(ix)
+          sfc_var2(i,j,nvar2m+39) = Sfcprop(nb)%sfalb_ice(ix)
+          sfc_var2(i,j,nvar2m+40) = Sfcprop(nb)%emis_lnd(ix)
+          sfc_var2(i,j,nvar2m+41) = Sfcprop(nb)%emis_ice(ix)
           if (Model%rdlai) then
-            sfc_var2(i,j,nvar2m+39) = Sfcprop(nb)%xlaixy(ix)
+            sfc_var2(i,j,nvar2m+42) = Sfcprop(nb)%xlaixy(ix)
           endif
         else if (Model%lsm == Model%lsm_noahmp) then
           !--- Extra Noah MP variables

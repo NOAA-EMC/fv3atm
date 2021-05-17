@@ -661,7 +661,7 @@
   kind = kind_phys
   active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme)
 [sfalb_lnd_bck]
-  standard_name =surface_snow_free_albedo_over_land
+  standard_name = surface_snow_free_albedo_over_land
   long_name = surface snow-free albedo over ice
   units = frac
   dimensions = (horizontal_loop_extent)

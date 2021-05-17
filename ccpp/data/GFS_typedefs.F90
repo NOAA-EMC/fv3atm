@@ -246,7 +246,6 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: emis_ice (:)  => null() !< surface emissivity over ice for LSM
     real (kind=kind_phys), pointer :: sfalb_lnd_bck (:) => null() !< snow-free albedo over land
 
-
 !--- In (radiation only)
     real (kind=kind_phys), pointer :: sncovr (:)   => null()  !< snow cover in fraction over land
     real (kind=kind_phys), pointer :: sncovr_ice (:)  => null()  !< snow cover in fraction over ice (RUC LSM only)
