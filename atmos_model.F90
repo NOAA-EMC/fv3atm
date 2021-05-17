@@ -1928,6 +1928,7 @@ end subroutine atmos_data_type_chksum
 
     !--- local variables
     integer                :: j, i, k, ix, nb, nk, isc, iec, jsc, jec, idx
+    integer                :: sphum, liq_wat, ice_wat, o3mr
     real(GFS_kind_phys)    :: rtime, rtimek
 
     integer                                     :: localrc, rc
@@ -1984,10 +1985,7 @@ end subroutine atmos_data_type_chksum
          call ESMF_Finalize(endflag=ESMF_END_ABORT)
       endif
 
-      if(.not. associated(datar82d)) then
-         write(0,*)'not associated ', trim(fieldname)
-         call ESMF_Finalize(endflag=ESMF_END_ABORT)
-      endif
+
 
     ! Instantaneous u wind (m/s) 10 m above ground
     if (trim(fieldname) == 'inst_zonal_wind_height10m') then
@@ -2606,20 +2604,282 @@ end subroutine atmos_data_type_chksum
       enddo
     endif
 
-   ! inst_temp_levels
-    if (trim(fieldname) == 'inst_temp_levels') then
-!$omp parallel do default(shared) private(i,j,k,nb,ix)
+   ! For JEDI
+
+    sphum   = get_tracer_index(MODEL_ATMOS, 'sphum')
+    liq_wat = get_tracer_index(MODEL_ATMOS, 'liq_wat')
+    ice_wat = get_tracer_index(MODEL_ATMOS, 'ice_wat')
+    o3mr    = get_tracer_index(MODEL_ATMOS, 'o3mr')
+
+    if (trim(fieldname) == 'u') then
+!$omp parallel do default(shared) private(i,j,k)
       do k = 1, nk
       do j=jsc,jec
         do i=isc,iec
-          nb = Atm_block%blkno(i,j)
-          ix = Atm_block%ixp(i,j)
-          datar83d(i-isc+1,j-jsc+1,k) = GFS_data(nb)%Stateout%gt0(ix,k)
+          datar83d(i-isc+1,j-jsc+1,k) = Atm(mygrid)%u(i,j,k)
         enddo
       enddo
       enddo
     endif
 
+    if (trim(fieldname) == 'v') then
+!$omp parallel do default(shared) private(i,j,k)
+      do k = 1, nk
+      do j=jsc,jec
+        do i=isc,iec
+          datar83d(i-isc+1,j-jsc+1,k) = Atm(mygrid)%v(i,j,k)
+        enddo
+      enddo
+      enddo
+    endif
+
+    if (trim(fieldname) == 'ua') then
+!$omp parallel do default(shared) private(i,j,k,nb,ix)
+      do k = 1, nk
+      do j=jsc,jec
+        do i=isc,iec
+          datar83d(i-isc+1,j-jsc+1,k) = Atm(mygrid)%ua(i,j,k)
+        enddo
+      enddo
+      enddo
+    endif
+
+    if (trim(fieldname) == 'va') then
+!$omp parallel do default(shared) private(i,j,k)
+      do k = 1, nk
+      do j=jsc,jec
+        do i=isc,iec
+          datar83d(i-isc+1,j-jsc+1,k) = Atm(mygrid)%va(i,j,k)
+        enddo
+      enddo
+      enddo
+    endif
+
+    if (trim(fieldname) == 't') then
+!$omp parallel do default(shared) private(i,j,k)
+      do k = 1, nk
+      do j=jsc,jec
+        do i=isc,iec
+          datar83d(i-isc+1,j-jsc+1,k) = Atm(mygrid)%pt(i,j,k)
+        enddo
+      enddo
+      enddo
+    endif
+
+    if (trim(fieldname) == 'delp') then
+!$omp parallel do default(shared) private(i,j,k)
+      do k = 1, nk
+      do j=jsc,jec
+        do i=isc,iec
+          datar83d(i-isc+1,j-jsc+1,k) = Atm(mygrid)%delp(i,j,k)
+        enddo
+      enddo
+      enddo
+    endif
+
+    if (trim(fieldname) == 'sphum' .and. sphum > 0) then
+!$omp parallel do default(shared) private(i,j,k)
+      do k = 1, nk
+      do j=jsc,jec
+        do i=isc,iec
+          datar83d(i-isc+1,j-jsc+1,k) = Atm(mygrid)%q(i,j,k,sphum)
+        enddo
+      enddo
+      enddo
+    endif
+
+    if (trim(fieldname) == 'ice_wat' .and. ice_wat > 0) then
+!$omp parallel do default(shared) private(i,j,k)
+      do k = 1, nk
+      do j=jsc,jec
+        do i=isc,iec
+          datar83d(i-isc+1,j-jsc+1,k) = Atm(mygrid)%q(i,j,k,ice_wat)
+        enddo
+      enddo
+      enddo
+    endif
+
+    if (trim(fieldname) == 'liq_wat' .and. liq_wat > 0) then
+!$omp parallel do default(shared) private(i,j,k)
+      do k = 1, nk
+      do j=jsc,jec
+        do i=isc,iec
+          datar83d(i-isc+1,j-jsc+1,k) = Atm(mygrid)%q(i,j,k,liq_wat)
+        enddo
+      enddo
+      enddo
+    endif
+
+    if (trim(fieldname) == 'o3mr' .and. o3mr > 0) then
+!$omp parallel do default(shared) private(i,j,k)
+      do k = 1, nk
+      do j=jsc,jec
+        do i=isc,iec
+          datar83d(i-isc+1,j-jsc+1,k) = Atm(mygrid)%q(i,j,k,o3mr)
+        enddo
+      enddo
+      enddo
+    endif
+
+    if (trim(fieldname) == 'phis') then
+!$omp parallel do default(shared) private(i,j)
+      do j=jsc,jec
+        do i=isc,iec
+          datar82d(i-isc+1,j-jsc+1) = Atm(mygrid)%phis(i,j)
+        enddo
+      enddo
+    endif
+
+    if (trim(fieldname) == 'u_srf') then
+!$omp parallel do default(shared) private(i,j)
+      do j=jsc,jec
+        do i=isc,iec
+          datar82d(i-isc+1,j-jsc+1) = Atm(mygrid)%u_srf(i,j)
+        enddo
+      enddo
+    endif
+
+    if (trim(fieldname) == 'v_srf') then
+!$omp parallel do default(shared) private(i,j)
+      do j=jsc,jec
+        do i=isc,iec
+          datar82d(i-isc+1,j-jsc+1) = Atm(mygrid)%v_srf(i,j)
+        enddo
+      enddo
+    endif
+
+    ! physics
+    if (trim(fieldname) == 'slmsk') then
+!$omp parallel do default(shared) private(i,j,nb,ix)
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%Sfcprop%slmsk(ix)
+        enddo
+      enddo
+    endif
+
+    if (trim(fieldname) == 'weasd') then
+!$omp parallel do default(shared) private(i,j,nb,ix)
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%Sfcprop%weasd(ix)
+        enddo
+      enddo
+    endif
+
+    if (trim(fieldname) == 'tsfc') then
+!$omp parallel do default(shared) private(i,j,nb,ix)
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%Sfcprop%tsfco(ix)
+        enddo
+      enddo
+    endif
+
+    if (trim(fieldname) == 'vtype') then
+!$omp parallel do default(shared) private(i,j,nb,ix)
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%Sfcprop%vtype(ix)
+        enddo
+      enddo
+    endif
+
+    if (trim(fieldname) == 'stype') then
+!$omp parallel do default(shared) private(i,j,nb,ix)
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%Sfcprop%stype(ix)
+        enddo
+      enddo
+    endif
+
+    if (trim(fieldname) == 'vfrac') then
+!$omp parallel do default(shared) private(i,j,nb,ix)
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%Sfcprop%vfrac(ix)
+        enddo
+      enddo
+    endif
+
+    if (trim(fieldname) == 'stc') then
+!$omp parallel do default(shared) private(i,j,nb,ix)
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          datar83d(i-isc+1,j-jsc+1,:) = GFS_data(nb)%Sfcprop%stc(ix,:)
+        enddo
+      enddo
+    endif
+
+    if (trim(fieldname) == 'smc') then
+!$omp parallel do default(shared) private(i,j,nb,ix)
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          datar83d(i-isc+1,j-jsc+1,:) = GFS_data(nb)%Sfcprop%smc(ix,:)
+        enddo
+      enddo
+    endif
+
+    if (trim(fieldname) == 'snwdph') then
+!$omp parallel do default(shared) private(i,j,nb,ix)
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%Sfcprop%snowd(ix)
+        enddo
+      enddo
+    endif
+
+    if (trim(fieldname) == 'f10m') then
+!$omp parallel do default(shared) private(i,j,nb,ix)
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%Sfcprop%f10m(ix)
+        enddo
+      enddo
+    endif
+
+    if (trim(fieldname) == 'zorl') then
+!$omp parallel do default(shared) private(i,j,nb,ix)
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%Sfcprop%zorl(ix)
+        enddo
+      enddo
+    endif
+
+    if (trim(fieldname) == 't2m') then
+!$omp parallel do default(shared) private(i,j,nb,ix)
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%Sfcprop%t2m(ix)
+        enddo
+      enddo
+    endif
 
     enddo ! exportFields
 

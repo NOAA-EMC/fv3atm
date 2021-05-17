@@ -17,7 +17,7 @@ module module_cplfields
   end type
 
 ! Export Fields ----------------------------------------
-  integer,          public, parameter :: NexportFields = 72
+  integer,          public, parameter :: NexportFields = 97
   type(ESMF_Field), target, public    :: exportFields(NexportFields)
 
   type(FieldInfo), dimension(NexportFields), public, parameter :: exportFieldsInfo = [ &
@@ -92,7 +92,36 @@ module module_cplfields
     FieldInfo("inst_pres_height_lowest                  ", "s"), &
     FieldInfo("inst_height_lowest                       ", "s"), &
     FieldInfo("mean_fprec_rate                          ", "s"), &
-    FieldInfo("openwater_frac_in_atm                    ", "s") ]
+    FieldInfo("openwater_frac_in_atm                    ", "s"), &
+
+    !  For JEDI
+    ! dynamics
+    FieldInfo("u                                        ", "l"), &
+    FieldInfo("v                                        ", "l"), &
+    FieldInfo("ua                                       ", "l"), &
+    FieldInfo("va                                       ", "l"), &
+    FieldInfo("t                                        ", "l"), &
+    FieldInfo("delp                                     ", "l"), &
+    FieldInfo("sphum                                    ", "l"), &
+    FieldInfo("ice_wat                                  ", "l"), &
+    FieldInfo("liq_wat                                  ", "l"), &
+    FieldInfo("o3mr                                     ", "l"), &
+    FieldInfo("phis                                     ", "s"), &
+    FieldInfo("u_srf                                    ", "s"), &
+    FieldInfo("v_srf                                    ", "s"), &
+    ! physics
+    FieldInfo("slmsk                                    ", "s"), &
+    FieldInfo("weasd                                    ", "s"), &
+    FieldInfo("tsea                                     ", "s"), &
+    FieldInfo("vtype                                    ", "s"), &
+    FieldInfo("stype                                    ", "s"), &
+    FieldInfo("vfrac                                    ", "s"), &
+    FieldInfo("stc                                      ", "g"), &
+    FieldInfo("smc                                      ", "g"), &
+    FieldInfo("snwdph                                   ", "s"), &
+    FieldInfo("f10m                                     ", "s"), &
+    FieldInfo("zorl                                     ", "s"), &
+    FieldInfo("t2m                                      ", "s") ]
 
 ! Import Fields ----------------------------------------
   integer,          public, parameter :: NimportFields = 17
