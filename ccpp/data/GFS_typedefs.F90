@@ -1884,7 +1884,6 @@ module GFS_typedefs
     integer                             :: nf_aelw                       !<
     integer                             :: nf_aesw                       !<
     integer                             :: nn                            !<
-    integer                             :: nncl                          !<
     integer                             :: nsamftrac                     !<
     integer                             :: nscav                         !<
     integer                             :: nspc1                         !<
@@ -4660,7 +4659,7 @@ module GFS_typedefs
       Model%pdfcld  = .false.
       Model%shcnvcw = .false.
       ! DH* REALLY ?
-      Model%ncnd    = 5
+      Model%ncnd    = 5                      !???????? need to clarify this - Moorthi
       Model%nleffr  = 1
       Model%nieffr  = 2
       Model%nseffr  = 3
@@ -6254,7 +6253,7 @@ module GFS_typedefs
     !
     allocate (Interstitial%otspt      (Model%ntracp1,2))
     ! Set up numbers of tracers for PBL, convection, etc: sets
-    ! Interstitial%{nncl,nvdiff,mg3_as_mg2,nn,tracers_total,ntiwx,ntk,ntkev,otspt,nsamftrac,ncstrac,nscav}
+    ! Interstitial%{nvdiff,mg3_as_mg2,nn,tracers_total,ntiwx,ntk,ntkev,otspt,nsamftrac,ncstrac,nscav}
     call interstitial_setup_tracers(Interstitial, Model)
     ! Allocate arrays
     allocate (Interstitial%adjsfculw_land  (IM))
@@ -6750,7 +6749,6 @@ module GFS_typedefs
     integer :: n, tracers
 
     !first, initialize the values (in case the values don't get initialized within if statements below)
-    Interstitial%nncl             = 1
     Interstitial%nvdiff           = Model%ntrac
     Interstitial%mg3_as_mg2       = .false.
     Interstitial%nn               = Model%ntrac + 1
@@ -6772,42 +6770,27 @@ module GFS_typedefs
         Interstitial%nvdiff = 9
       endif
       if (Model%satmedmf) Interstitial%nvdiff = Interstitial%nvdiff + 1
-      Interstitial%nncl = 5
     elseif (Model%imp_physics == Model%imp_physics_wsm6) then
       Interstitial%nvdiff = Model%ntrac -3
       if (Model%satmedmf) Interstitial%nvdiff = Interstitial%nvdiff + 1
-      Interstitial%nncl = 5
-    elseif (Model%imp_physics == Model%imp_physics_zhao_carr .or.                    &
-            Model%imp_physics == Model%imp_physics_zhao_carr_pdf ) then
-      Interstitial%nncl = 1
     elseif (Model%ntclamt > 0) then             ! for GFDL MP don't diffuse cloud amount
       Interstitial%nvdiff = Model%ntrac - 1
     endif
 
-    if (Model%imp_physics == Model%imp_physics_gfdl) then
-      Interstitial%nncl = 5
-    elseif (Model%imp_physics == Model%imp_physics_fer_hires) then
-      Interstitial%nncl = 3
-    endif
-
     if (Model%imp_physics == Model%imp_physics_mg) then
       if (abs(Model%fprcp) == 0) then
-        Interstitial%nncl = 2                          ! MG1
       elseif (abs(Model%fprcp) == 1) then
-        Interstitial%nncl = 4                          ! MG2 with rain and snow
         Interstitial%mg3_as_mg2 = .false.
       elseif (Model%fprcp >= 2) then
         if(Model%ntgl > 0 .and. (Model%mg_do_graupel .or. Model%mg_do_hail)) then
-          Interstitial%nncl = 5                        ! MG3 with rain and snow and grapuel/hail
           Interstitial%mg3_as_mg2 = .false.
         else                              ! MG3 code run without graupel/hail i.e. as MG2
-          Interstitial%nncl = 4
           Interstitial%mg3_as_mg2 = .true.
         endif
       endif
     endif
 
-    Interstitial%nscav = Model%ntrac-Interstitial%nncl+2
+    Interstitial%nscav = Model%ntrac - Model%ncnd + 2
 
 
     ! DH* STILL VALID GIVEN THE CHANGES BELOW FOR CPLCHM?

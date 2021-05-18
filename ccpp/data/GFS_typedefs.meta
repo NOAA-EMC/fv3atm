@@ -9053,12 +9053,6 @@
   units = count
   dimensions = ()
   type = integer
-[nncl]
-  standard_name = number_of_tracers_for_cloud_condensate
-  long_name = number of tracers for cloud condensate
-  units = count
-  dimensions = ()
-  type = integer
 [nsamftrac]
   standard_name = number_of_tracers_for_samf
   long_name = number of tracers for scale-aware mass flux schemes
