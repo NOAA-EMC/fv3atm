@@ -3067,7 +3067,8 @@ module GFS_typedefs
     integer              :: icloud            = 0                  !< cloud effect to the optical depth in radiation; this also controls the cloud fraction options
                                                                    !<  3: with cloud effect from FA, and use cloud fraction option 3, based on Sundqvist et al. (1989)
 !--- M-G microphysical parameters
-    integer              :: fprcp             =  0                 !< no prognostic rain and snow (MG)
+    integer              :: fprcp             =  2                 !< when "0" no prognostic rain and snow (MG)
+                                                                   !< "1" for MG2 and "2" for MG3
     integer              :: pdfflag           =  4                 !< pdf flag for MG macro physics
     real(kind=kind_phys) :: mg_dcs            = 200.0              !< Morrison-Gettelman microphysics parameters
     real(kind=kind_phys) :: mg_qcvar          = 1.0
@@ -6776,8 +6777,8 @@ module GFS_typedefs
       Interstitial%nvdiff = Model%ntrac -3
       if (Model%satmedmf) Interstitial%nvdiff = Interstitial%nvdiff + 1
       Interstitial%nncl = 5
-    elseif (Model%imp_physics_zhao_carr == 99 .or.                    &
-            Model%imp_physics_zhao_carr_pdf == 98  ) then
+    elseif (Model%imp_physics == Model%imp_physics_zhao_carr .or.                    &
+            Model%imp_physics == Model%imp_physics_zhao_carr_pdf ) then
       Interstitial%nncl = 1
     elseif (Model%ntclamt > 0) then             ! for GFDL MP don't diffuse cloud amount
       Interstitial%nvdiff = Model%ntrac - 1
@@ -6790,7 +6791,9 @@ module GFS_typedefs
     endif
 
     if (Model%imp_physics == Model%imp_physics_mg) then
-      if (abs(Model%fprcp) == 1) then
+      if (abs(Model%fprcp) == 0) then
+        Interstitial%nncl = 2                          ! MG1
+      elseif (abs(Model%fprcp) == 1) then
         Interstitial%nncl = 4                          ! MG2 with rain and snow
         Interstitial%mg3_as_mg2 = .false.
       elseif (Model%fprcp >= 2) then
@@ -6851,10 +6854,10 @@ module GFS_typedefs
         stop
       endif
       if (Interstitial%trans_aero) Interstitial%nvdiff = Interstitial%nvdiff + Model%ntchm
+      if (Model%ntke > 0) Interstitial%nvdiff = Interstitial%nvdiff + 1    !  adding tke to the list
     endif
 
-    if (Model%ntke > 0) Interstitial%nvdiff = Interstitial%nvdiff + 1    ! adding tke to the list
-    Interstitial%ntkev = Interstitial%nvdiff
+    if (Model%ntke > 0) Interstitial%ntkev = Interstitial%nvdiff
 
     if (Model%ntiw > 0) then
       if (Model%ntclamt > 0) then
