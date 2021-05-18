@@ -124,7 +124,7 @@ module module_cplfields
     FieldInfo("t2m                                      ", "s") ]
 
 ! Import Fields ----------------------------------------
-  integer,          public, parameter :: NimportFields = 17
+  integer,          public, parameter :: NimportFields = 42
   logical,          public            :: importFieldsValid(NimportFields)
   type(ESMF_Field), target, public    :: importFields(NimportFields)
 
@@ -145,7 +145,36 @@ module module_cplfields
     FieldInfo("inst_tracer_down_surface_flx             ", "d"), &
     FieldInfo("inst_tracer_clmn_mass_dens               ", "c"), &
     FieldInfo("inst_tracer_anth_biom_flx                ", "b"), &
-    FieldInfo("wave_z0_roughness_length                 ", "s") ]
+    FieldInfo("wave_z0_roughness_length                 ", "s"), &
+
+    !  For JEDI
+    ! dynamics
+    FieldInfo("u                                        ", "l"), &
+    FieldInfo("v                                        ", "l"), &
+    FieldInfo("ua                                       ", "l"), &
+    FieldInfo("va                                       ", "l"), &
+    FieldInfo("t                                        ", "l"), &
+    FieldInfo("delp                                     ", "l"), &
+    FieldInfo("sphum                                    ", "l"), &
+    FieldInfo("ice_wat                                  ", "l"), &
+    FieldInfo("liq_wat                                  ", "l"), &
+    FieldInfo("o3mr                                     ", "l"), &
+    FieldInfo("phis                                     ", "s"), &
+    FieldInfo("u_srf                                    ", "s"), &
+    FieldInfo("v_srf                                    ", "s"), &
+    ! physics
+    FieldInfo("slmsk                                    ", "s"), &
+    FieldInfo("weasd                                    ", "s"), &
+    FieldInfo("tsea                                     ", "s"), &
+    FieldInfo("vtype                                    ", "s"), &
+    FieldInfo("stype                                    ", "s"), &
+    FieldInfo("vfrac                                    ", "s"), &
+    FieldInfo("stc                                      ", "g"), &
+    FieldInfo("smc                                      ", "g"), &
+    FieldInfo("snwdph                                   ", "s"), &
+    FieldInfo("f10m                                     ", "s"), &
+    FieldInfo("zorl                                     ", "s"), &
+    FieldInfo("t2m                                      ", "s") ]
 
   ! Methods
   public queryImportFields, queryExportFields
@@ -155,7 +184,6 @@ module module_cplfields
   contains
 !-----------------------------------------------------------------------------
   integer function queryExportFields(fieldname, abortflag)
-
 
     character(len=*),intent(in) :: fieldname
     logical, optional           :: abortflag

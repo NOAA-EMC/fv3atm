@@ -5,7 +5,7 @@ module module_cap_cpl
 ! revision history
 !  12 Mar 2018: J. Wang       Pull coupled subroutines from fv3_cap.F90 to this module
 !
-  use esmf
+  use ESMF
   use NUOPC
 
   use module_cplfields, only : FieldInfo
