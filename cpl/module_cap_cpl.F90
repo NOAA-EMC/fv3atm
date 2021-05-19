@@ -51,33 +51,37 @@ module module_cap_cpl
 
   !-----------------------------------------------------------------------------
 
-    subroutine addFieldMetadata(field, metadata, rc)
+    subroutine addFieldMetadata(field, key, values, rc)
 
-      ! This subroutine implements an inelegant method to pass metadata, encoded
-      ! as string, to a coupled model that is accessing the field via reference
-      ! sharing (NUOPC SharedStatusField=.true.).
+      ! This subroutine implements a preliminary method to provide metadata to
+      ! a coupled model that is accessing the field via reference sharing
+      ! (NUOPC SharedStatusField=.true.). The method sets a (key, values) pair
+      ! in the field's array ESMF_Info object to retrieve an array of strings
+      ! encoding metadata.
+      !
       ! Such a capability should be implemented in the standard NUOPC connector
       ! for more general applications, possibly providing access to the field's
       ! ESMF_Info object.
 
       type(ESMF_Field)               :: field
-      character(len=*),  intent(in)  :: metadata
+      character(len=*),  intent(in)  :: key
+      character(len=*),  intent(in)  :: values(:)
       integer, optional, intent(out) :: rc
 
       ! local variable
       integer          :: localrc
       type(ESMF_Array) :: array
+      type(ESMF_Info)  :: info
 
       ! begin
       if (present(rc)) rc = ESMF_SUCCESS
 
-      if (len_trim(metadata) > 0) then
-        call ESMF_FieldGet(field, array=array, rc=localrc)
-        if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
-
-        call ESMF_ArraySet(array, name=metadata, rc=localrc)
-        if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
-      end if
+      call ESMF_FieldGet(field, array=array, rc=localrc)
+      if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+      call ESMF_InfoGetFromHost(array, info, rc=localrc)
+      if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+      call ESMF_InfoSet(info, key, values, rc=localrc)
+      if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
     end subroutine addFieldMetadata
 
@@ -157,12 +161,11 @@ module module_cap_cpl
       integer,                        intent(out) :: rc
 
       ! local variables
-      integer          :: item, tracerCount
+      integer          :: item, pos, tracerCount
       logical          :: isConnected
       type(ESMF_Field) :: field
       type(ESMF_StateIntent_Flag) :: stateintent
-      character(len=32)           :: tracerName
-      character(:), allocatable   :: metadata
+      character(len=32), allocatable, dimension(:) :: tracerNames, tracerUnits
 
       ! begin
       rc = ESMF_SUCCESS
@@ -178,11 +181,10 @@ module module_cap_cpl
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
       if (stateintent == ESMF_STATEINTENT_EXPORT) then
-        metadata = ""
         call get_number_tracers(MODEL_ATMOS, num_tracers=tracerCount)
+        allocate(tracerNames(tracerCount), tracerUnits(tracerCount))
         do item = 1, tracerCount
-          call get_tracer_names(MODEL_ATMOS, item, tracerName)
-          metadata = trim(metadata)//":"//trim(tracerName)
+          call get_tracer_names(MODEL_ATMOS, item, tracerNames(item), units=tracerUnits(item))
         end do
       end if
 
@@ -207,8 +209,12 @@ module module_cap_cpl
               call ESMF_FieldEmptyComplete(field, typekind=ESMF_TYPEKIND_R8, &
                                        ungriddedLBound=(/1, 1/), ungriddedUBound=(/numLevels, numTracers/), rc=rc)
               if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-              if (allocated(metadata)) then
-                call addFieldMetadata(field, metadata, rc=rc)
+              if (allocated(tracerNames)) then
+                call addFieldMetadata(field, 'tracerNames', tracerNames, rc=rc)
+                if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+              end if
+              if (allocated(tracerUnits)) then
+                call addFieldMetadata(field, 'tracerUnits', tracerUnits, rc=rc)
                 if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
               end if
             case ('u','tracer_up_flux')
@@ -261,7 +267,8 @@ module module_cap_cpl
         end if
       end do
 
-      if (allocated(metadata)) deallocate(metadata)
+      if (allocated(tracerNames)) deallocate(tracerNames)
+      if (allocated(tracerUnits)) deallocate(tracerUnits)
 
     end subroutine realizeConnectedCplFields
 
