@@ -591,6 +591,7 @@ module GFS_typedefs
 
 !--- coupling parameters
     logical              :: cplflx          !< default no cplflx collection
+    logical              :: cplice          !< default yes cplice collection (used together with cplflx)
     logical              :: cplwav          !< default no cplwav collection
     logical              :: cplwav2atm      !< default no wav->atm coupling
     logical              :: cplchm          !< default no cplchm collection
@@ -2978,6 +2979,7 @@ module GFS_typedefs
 
     !--- coupling parameters
     logical              :: cplflx         = .false.         !< default no cplflx collection
+    logical              :: cplice         = .true.          !< default yes cplice collection (used together with cplflx)
     logical              :: cplwav         = .false.         !< default no cplwav collection
     logical              :: cplwav2atm     = .false.         !< default no cplwav2atm coupling
     logical              :: cplchm         = .false.         !< default no cplchm collection
@@ -3422,7 +3424,7 @@ module GFS_typedefs
                                aux2d_time_avg, aux3d_time_avg, fhcyc,                       &
                                thermodyn_id, sfcpress_id,                                   &
                           !--- coupling parameters
-                               cplflx, cplwav, cplwav2atm, cplchm, lsidea,                  &
+                               cplflx, cplice, cplwav, cplwav2atm, cplchm, lsidea,          &
                           !--- radiation parameters
                                fhswr, fhlwr, levr, nfxr, iaerclm, iflip, isol, ico2, ialb,  &
                                isot, iems, iaer, icliq_sw, iovr, ictm, isubc_sw,            &
@@ -3690,6 +3692,7 @@ module GFS_typedefs
 
 !--- coupling parameters
     Model%cplflx           = cplflx
+    Model%cplice           = cplice
     Model%cplwav           = cplwav
     Model%cplwav2atm       = cplwav2atm
     Model%cplchm           = cplchm
@@ -4910,6 +4913,7 @@ module GFS_typedefs
       print *, ' '
       print *, 'coupling parameters'
       print *, ' cplflx            : ', Model%cplflx
+      print *, ' cplice            : ', Model%cplice
       print *, ' cplwav            : ', Model%cplwav
       print *, ' cplwav2atm        : ', Model%cplwav2atm
       print *, ' cplchm            : ', Model%cplchm

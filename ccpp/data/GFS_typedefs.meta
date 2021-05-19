@@ -2482,6 +2482,12 @@
   units = flag
   dimensions = ()
   type = logical
+[cplice]
+  standard_name = flag_for_sea_ice_coupling
+  long_name = flag controlling cplice collection (default on)
+  units = flag
+  dimensions = ()
+  type = logical
 [cplwav]
   standard_name = flag_for_wave_coupling
   long_name = flag controlling cplwav collection (default off)
