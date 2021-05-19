@@ -8,5 +8,5 @@
 	branch = master
 [submodule "ccpp/physics"]
 	path = ccpp/physics
-	url = https://github.com/XiaSun-Atmos/ccpp-physics
-	branch = consistency_redo
+	url = https://github.com/climbfuji/ccpp-physics
+	branch = consistency_redo_dom_mods
