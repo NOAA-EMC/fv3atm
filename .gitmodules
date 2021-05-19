@@ -5,8 +5,10 @@
 [submodule "ccpp/framework"]
 	path = ccpp/framework
 	url = https://github.com/NCAR/ccpp-framework
-	branch = master
+	branch = main
 [submodule "ccpp/physics"]
 	path = ccpp/physics
+	#url = https://github.com/NCAR/ccpp-physics
+	#branch = main
 	url = https://github.com/climbfuji/ccpp-physics
 	branch = consistency_redo_dom_mods
