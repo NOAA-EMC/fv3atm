@@ -267,17 +267,8 @@ subroutine update_atmos_radiation_physics (Atmos)
 
 !--- if coupled, assign coupled fields
 
-      if( GFS_control%cplflx .or. GFS_control%cplwav ) then
-
-!       if (mpp_pe() == mpp_root_pe() .and. debug) then
-!          print *,'in atmos_model,nblks=',Atm_block%nblks
-!         print *,'in atmos_model,GFS_data size=',size(GFS_data)
-!         print *,'in atmos_model,tsfc(1)=',GFS_data(1)%sfcprop%tsfc(1)
-!         print *,'in atmos_model, tsfc size=',size(GFS_data(1)%sfcprop%tsfc)
-!       endif
-
+      if (.not. GFS_control%cplchm) then
         call assign_importdata(rc)
-
       endif
 
       ! Calculate total non-physics tendencies by substracting old GFS Stateout
@@ -834,9 +825,9 @@ subroutine update_atmos_model_state (Atmos)
     call atmosphere_get_bottom_layer (Atm_block, DYCORE_Data)
 
     !if in coupled mode, set up coupled fields
-    ! if (GFS_control%cplflx .or. GFS_control%cplwav) then
+    if (.not. GFS_control%cplchm) then
       call setup_exportdata()
-    ! endif
+    endif
 
  end subroutine update_atmos_model_state
 ! </SUBROUTINE>
