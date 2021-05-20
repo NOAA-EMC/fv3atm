@@ -131,7 +131,7 @@ module module_cplfields
   real(kind=8), allocatable, public :: exportData(:,:,:)
 
 ! Import Fields ----------------------------------------
-  integer,          public, parameter :: NimportFields = 17
+  integer,          public, parameter :: NimportFields = 13
   logical,          public            :: importFieldsValid(NimportFields)
   type(ESMF_Field), target, public    :: importFields(NimportFields)
   character(len=*), public, parameter :: importFieldsList(NimportFields) = (/ &
@@ -152,18 +152,11 @@ module module_cplfields
        "stress_on_air_ice_merid                ", &
        "mean_ice_volume                        ", &
        "mean_snow_volume                       ", &
-       "inst_tracer_up_surface_flx             ", &
-       "inst_tracer_down_surface_flx           ", &
-       "inst_tracer_clmn_mass_dens             ", &
-       "inst_tracer_anth_biom_flx              ", &
        "wave_z0_roughness_length               "  &
   /)
   character(len=*), public, parameter :: importFieldTypes(NimportFields) = (/ &
-       "t",                                 &
-       "s","s","s","s","s",                 &
-       "s","s","s","s","s",                 &
-       "s","u","d","c","b",                 &
-       "s"                                  &
+       "t","s","s","s","s","s","s","s","s","s", &
+       "s","s","s"                              &
   /)
   ! Set importFieldShare to .true. if field is provided as memory reference
   ! from coupled components
@@ -171,8 +164,7 @@ module module_cplfields
        .true. ,                                 &
        .false.,.false.,.false.,.false.,.false., &
        .false.,.false.,.false.,.false.,.false., &
-       .false.,.true. ,.true. ,.true. ,.true. , &
-       .false.                                  &
+       .false.,.false.                          &
   /)
 
   ! Methods

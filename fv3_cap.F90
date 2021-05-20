@@ -47,10 +47,7 @@ module fv3gfs_cap_mod
 !
   use module_fcst_grid_comp,  only: fcstSS => SetServices,                   &
                                     fcstGrid, numLevels, numSoilLayers,      &
-                                    numTracers, num_diag_sfc_emis_flux,      &
-                                    num_diag_down_flux,                      &
-                                    num_diag_type_down_flux,                 &
-                                    num_diag_burn_emis_flux, num_diag_cmass
+                                    numTracers
 
   use module_wrt_grid_comp,   only: wrtSS => SetServices
 !
@@ -933,10 +930,9 @@ module fv3gfs_cap_mod
       if (isPetLocal) then
 
         ! -- realize connected fields in exportState
-        call realizeConnectedCplFields(exportState, fcstGrid,                                                &
-                                       numLevels, numSoilLayers, numTracers, num_diag_sfc_emis_flux,         &
-                                       num_diag_down_flux, num_diag_type_down_flux, num_diag_burn_emis_flux, &
-                                       num_diag_cmass, exportFieldsList, exportFieldTypes, 'FV3 Export',     &
+        call realizeConnectedCplFields(exportState, fcstGrid,                            &
+                                       numLevels, numSoilLayers, numTracers,             &
+                                       exportFieldsList, exportFieldTypes, 'FV3 Export', &
                                        exportFields, rc)
 
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__,  file=__FILE__)) return
@@ -945,10 +941,9 @@ module fv3gfs_cap_mod
         if (allocated(exportData)) call fillExportFields(exportData)
 
         ! -- realize connected fields in importState
-        call realizeConnectedCplFields(importState, fcstGrid,                                                &
-                                       numLevels, numSoilLayers, numTracers, num_diag_sfc_emis_flux,         &
-                                       num_diag_down_flux, num_diag_type_down_flux, num_diag_burn_emis_flux, &
-                                       num_diag_cmass, importFieldsList, importFieldTypes, 'FV3 Import',     &
+        call realizeConnectedCplFields(importState, fcstGrid,                            &
+                                       numLevels, numSoilLayers, numTracers,             &
+                                       importFieldsList, importFieldTypes, 'FV3 Import', &
                                        importFields, rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__,  file=__FILE__)) return
       end if

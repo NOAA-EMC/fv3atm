@@ -923,13 +923,9 @@ end subroutine atmos_model_restart
 !  Retrieve ungridded dimensions of atmospheric model arrays
 ! </DESCRIPTION>
 
-subroutine get_atmos_model_ungridded_dim(nlev, nsoillev, ntracers,     &
-  num_diag_sfc_emis_flux, num_diag_down_flux, num_diag_type_down_flux, &
-  num_diag_burn_emis_flux, num_diag_cmass)
+subroutine get_atmos_model_ungridded_dim(nlev, nsoillev, ntracers)
 
-  integer, optional, intent(out) :: nlev, nsoillev, ntracers,            &
-    num_diag_sfc_emis_flux, num_diag_down_flux, num_diag_type_down_flux, &
-    num_diag_burn_emis_flux, num_diag_cmass
+  integer, optional, intent(out) :: nlev, nsoillev, ntracers
 
   !--- number of atmospheric vertical levels
   if (present(nlev)) nlev = Atm_block%npz
@@ -945,48 +941,6 @@ subroutine get_atmos_model_ungridded_dim(nlev, nsoillev, ntracers,     &
 
   !--- total number of atmospheric tracers
   if (present(ntracers)) call get_number_tracers(MODEL_ATMOS, num_tracers=ntracers)
-
-  !--- number of tracers used in chemistry diagnostic output
-  if (present(num_diag_down_flux)) then
-    num_diag_down_flux = 0
-    if (associated(GFS_data(1)%IntDiag%sedim)) &
-      num_diag_down_flux = size(GFS_data(1)%IntDiag%sedim, dim=2)
-    if (present(num_diag_type_down_flux)) then
-      num_diag_type_down_flux = 0
-      if (associated(GFS_data(1)%IntDiag%sedim))  &
-        num_diag_type_down_flux = num_diag_type_down_flux + 1
-      if (associated(GFS_data(1)%IntDiag%drydep)) &
-        num_diag_type_down_flux = num_diag_type_down_flux + 1
-      if (associated(GFS_data(1)%IntDiag%wetdpl)) &
-        num_diag_type_down_flux = num_diag_type_down_flux + 1
-      if (associated(GFS_data(1)%IntDiag%wetdpc)) &
-        num_diag_type_down_flux = num_diag_type_down_flux + 1
-    end if
-  end if
-
-  !--- number of bins for chemistry diagnostic output
-  if (present(num_diag_sfc_emis_flux)) then
-    num_diag_sfc_emis_flux = 0
-    if (associated(GFS_data(1)%IntDiag%duem)) &
-      num_diag_sfc_emis_flux = size(GFS_data(1)%IntDiag%duem, dim=2)
-    if (associated(GFS_data(1)%IntDiag%ssem)) &
-      num_diag_sfc_emis_flux = &
-        num_diag_sfc_emis_flux + size(GFS_data(1)%IntDiag%ssem, dim=2)
-  end if
-
-  !--- number of tracers used in emission diagnostic output
-  if (present(num_diag_burn_emis_flux)) then
-    num_diag_burn_emis_flux = 0
-    if (associated(GFS_data(1)%IntDiag%abem)) &
-      num_diag_burn_emis_flux = size(GFS_data(1)%IntDiag%abem, dim=2)
-  end if
-
-  !--- number of tracers used in column mass density diagnostics
-  if (present(num_diag_cmass)) then
-    num_diag_cmass = 0
-    if (associated(GFS_data(1)%IntDiag%aecm)) &
-      num_diag_cmass = size(GFS_data(1)%IntDiag%aecm, dim=2)
-  end if
 
 end subroutine get_atmos_model_ungridded_dim
 ! </SUBROUTINE>
@@ -1121,17 +1075,14 @@ subroutine update_atmos_chemistry(state, rc)
 
   real(ESMF_KIND_R8), dimension(:,:,:),   pointer :: prsl, phil,   &
                                                      prsi, phii,   &
-                                                     temp, dqdt,   &
-                                                     ua, va, vvl,  &
-                                                     cldfra, dkt,  &
+                                                     temp, cldfra, &
                                                      pflls, pfils, &
-                                                     slc, &
-                                                     qb, qm, qu
-  real(ESMF_KIND_R8), dimension(:,:,:,:), pointer :: qd, q
+                                                     ua, va, slc
+  real(ESMF_KIND_R8), dimension(:,:,:,:), pointer :: q
 
-  real(ESMF_KIND_R8), dimension(:,:), pointer :: hpbl, area, stype, rainc, &
-    uustar, rain, sfcdsw, slmsk, tsfc, shfsfc, snowd, vtype, vfrac, zorl,  &
-    dtsfc, focn, flake, fice, fsnow, u10m, v10m, swet
+  real(ESMF_KIND_R8), dimension(:,:), pointer :: hpbl, area, rainc, &
+    uustar, rain, slmsk, tsfc, shfsfc, zorl, focn, flake, fice,     &
+    fsnow, u10m, v10m, swet
 
 ! logical, parameter :: diag = .true.
 
@@ -1149,22 +1100,6 @@ subroutine update_atmos_chemistry(state, rc)
     case ('import')
       !--- retrieve references to allocated memory for each field
       call cplFieldGet(state,'inst_tracer_mass_frac', farrayPtr4d=q, rc=localrc)
-      if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, file=__FILE__, rcToReturn=rc)) return
-      call cplFieldGet(state,'inst_tracer_up_surface_flx', &
-        farrayPtr3d=qu, rc=localrc)
-      if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, file=__FILE__, rcToReturn=rc)) return
-      call cplFieldGet(state,'inst_tracer_down_surface_flx', &
-        farrayPtr4d=qd, rc=localrc)
-      if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, file=__FILE__, rcToReturn=rc)) return
-      call cplFieldGet(state,'inst_tracer_clmn_mass_dens', &
-        farrayPtr3d=qm, rc=localrc)
-      if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, file=__FILE__, rcToReturn=rc)) return
-      call cplFieldGet(state,'inst_tracer_anth_biom_flx', &
-        farrayPtr3d=qb, rc=localrc)
       if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
         line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
@@ -1224,116 +1159,9 @@ subroutine update_atmos_chemistry(state, rc)
         end do
       end if
 
-      !--- other diagnostics
-      !--- (a) column mass densities
-      nte = 0
-      if (associated(qm)) nte = size(qm, dim=3)
-      do it = 1, nte
-!$OMP parallel do default (none) &
-!$OMP             shared  (it, nj, ni, Atm_block, GFS_data, qm)  &
-!$OMP             private (j, jb, i, ib, nb, ix)
-        do j = 1, nj
-          jb = j + Atm_block%jsc - 1
-          do i = 1, ni
-            ib = i + Atm_block%isc - 1
-            nb = Atm_block%blkno(ib,jb)
-            ix = Atm_block%ixp(ib,jb)
-            GFS_data(nb)%IntDiag%aecm(ix,it) = qm(i,j,it)
-          enddo
-        enddo
-      enddo
-
-      !--- (b) dust and sea salt emissions
-      ntb = size(GFS_data(1)%IntDiag%duem, dim=2)
-      nte = 0
-      if (associated(qu)) nte = size(qu, dim=3)
-      do it = 1, min(ntb, nte)
-!$OMP parallel do default (none) &
-!$OMP             shared  (it, nj, ni, Atm_block, GFS_data, qu)  &
-!$OMP             private (j, jb, i, ib, nb, ix)
-        do j = 1, nj
-          jb = j + Atm_block%jsc - 1
-          do i = 1, ni
-            ib = i + Atm_block%isc - 1
-            nb = Atm_block%blkno(ib,jb)
-            ix = Atm_block%ixp(ib,jb)
-            GFS_data(nb)%IntDiag%duem(ix,it) = qu(i,j,it)
-          enddo
-        enddo
-      enddo
-
-      nte = nte - ntb
-      if (nte > 0) then
-        do it = 1, min(size(GFS_data(1)%IntDiag%ssem, dim=2), nte)
-!$OMP parallel do default (none) &
-!$OMP             shared  (it, nj, ni, ntb, Atm_block, GFS_data, qu)  &
-!$OMP             private (j, jb, i, ib, nb, ix)
-          do j = 1, nj
-            jb = j + Atm_block%jsc - 1
-            do i = 1, ni
-              ib = i + Atm_block%isc - 1
-              nb = Atm_block%blkno(ib,jb)
-              ix = Atm_block%ixp(ib,jb)
-              GFS_data(nb)%IntDiag%ssem(ix,it) = qu(i,j,it+ntb)
-            enddo
-          enddo
-        enddo
-      endif
-
-      !--- (c) sedimentation and dry/wet deposition
-      nte = 0
-      if (associated(qd)) nte = size(qd, dim=3)
-      do it = 1, nte
-!$OMP parallel do default (none) &
-!$OMP             shared  (it, nj, ni, Atm_block, GFS_data, qd)  &
-!$OMP             private (j, jb, i, ib, nb, ix)
-        do j = 1, nj
-          jb = j + Atm_block%jsc - 1
-          do i = 1, ni
-            ib = i + Atm_block%isc - 1
-            nb = Atm_block%blkno(ib,jb)
-            ix = Atm_block%ixp(ib,jb)
-            GFS_data(nb)%IntDiag%sedim (ix,it) = qd(i,j,it,1)
-            GFS_data(nb)%IntDiag%drydep(ix,it) = qd(i,j,it,2)
-            GFS_data(nb)%IntDiag%wetdpl(ix,it) = qd(i,j,it,3)
-            GFS_data(nb)%IntDiag%wetdpc(ix,it) = qd(i,j,it,4)
-          enddo
-        enddo
-      enddo
-
-      !--- (d) anthropogenic and biomass burning emissions
-      nte = 0
-      if (associated(qb)) nte = size(qb, dim=3)
-      do it = 1, nte
-!$OMP parallel do default (none) &
-!$OMP             shared  (it, nj, ni, Atm_block, GFS_data, qb)  &
-!$OMP             private (j, jb, i, ib, nb, ix)
-        do j = 1, nj
-          jb = j + Atm_block%jsc - 1
-          do i = 1, ni
-            ib = i + Atm_block%isc - 1
-            nb = Atm_block%blkno(ib,jb)
-            ix = Atm_block%ixp(ib,jb)
-            GFS_data(nb)%IntDiag%abem(ix,it) = qb(i,j,it)
-          enddo
-        enddo
-      enddo
-
       if (GFS_control%debug) then
         write(6,'("update_atmos: ",a,": qgrs - min/max/avg",3g16.6)') &
           trim(state), minval(q), maxval(q), sum(q)/size(q)
-        if (associated(qu)) &
-          write(6,'("update_atmos: ",a,": qup  - min/max/avg",3g16.6)') &
-          trim(state), minval(qu), maxval(qu), sum(qu)/size(qu)
-        if (associated(qd)) &
-          write(6,'("update_atmos: ",a,": qdwn - min/max/avg",3g16.6)') &
-          trim(state), minval(qd), maxval(qd), sum(qd)/size(qd)
-        if (associated(qm)) &
-          write(6,'("update_atmos: ",a,": qcmd - min/max/avg",3g16.6)') &
-          trim(state), minval(qm), maxval(qm), sum(qm)/size(qm)
-        if (associated(qb)) &
-          write(6,'("update_atmos: ",a,": qabb - min/max/avg",3g16.6)') &
-          trim(state), minval(qb), maxval(qb), sum(qb)/size(qb)
       end if
 
     case ('export')
@@ -1412,89 +1240,53 @@ subroutine update_atmos_chemistry(state, rc)
       if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
         line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
-      if (GFS_Control%cplgocart) then
-        call cplFieldGet(state,'inst_liq_nonconv_tendency_levels', &
-                         farrayPtr3d=pflls, rc=localrc)
-        if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
-          line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+      call cplFieldGet(state,'inst_liq_nonconv_tendency_levels', &
+                       farrayPtr3d=pflls, rc=localrc)
+      if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
-        call cplFieldGet(state,'inst_ice_nonconv_tendency_levels', &
-                         farrayPtr3d=pfils, rc=localrc)
-        if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
-          line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+      call cplFieldGet(state,'inst_ice_nonconv_tendency_levels', &
+                       farrayPtr3d=pfils, rc=localrc)
+      if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
-        call cplFieldGet(state,'inst_cloud_frac_levels', farrayPtr3d=cldfra, rc=localrc)
-        if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
-          line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+      call cplFieldGet(state,'inst_cloud_frac_levels', farrayPtr3d=cldfra, rc=localrc)
+      if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
-        call cplFieldGet(state,'inst_zonal_wind_height10m', farrayPtr2d=u10m, rc=localrc)
-        if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
-          line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+      call cplFieldGet(state,'inst_zonal_wind_height10m', farrayPtr2d=u10m, rc=localrc)
+      if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
-        call cplFieldGet(state,'inst_merid_wind_height10m', farrayPtr2d=v10m, rc=localrc)
-        if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
-          line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+      call cplFieldGet(state,'inst_merid_wind_height10m', farrayPtr2d=v10m, rc=localrc)
+      if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
-        call cplFieldGet(state,'inst_surface_soil_wetness', farrayPtr2d=swet, rc=localrc)
-        if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
-          line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+      call cplFieldGet(state,'inst_surface_soil_wetness', farrayPtr2d=swet, rc=localrc)
+      if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
-        call cplFieldGet(state,'ice_fraction', farrayPtr2d=fice, rc=localrc)
-        if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
-          line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+      call cplFieldGet(state,'ice_fraction', farrayPtr2d=fice, rc=localrc)
+      if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
-        call cplFieldGet(state,'lake_fraction', farrayPtr2d=flake, rc=localrc)
-        if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
-          line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+      call cplFieldGet(state,'lake_fraction', farrayPtr2d=flake, rc=localrc)
+      if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
-        call cplFieldGet(state,'ocean_fraction', farrayPtr2d=focn, rc=localrc)
-        if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
-          line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+      call cplFieldGet(state,'ocean_fraction', farrayPtr2d=focn, rc=localrc)
+      if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
-        call cplFieldGet(state,'surface_snow_area_fraction', farrayPtr2d=fsnow, rc=localrc)
-        if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
-          line=__LINE__, file=__FILE__, rcToReturn=rc)) return
-      else
-        call cplFieldGet(state,'inst_exchange_coefficient_heat_levels', &
-                         farrayPtr3d=dkt, rc=localrc)
-        if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
-          line=__LINE__, file=__FILE__, rcToReturn=rc)) return
-
-        call cplFieldGet(state,'inst_spec_humid_conv_tendency_levels', &
-                         farrayPtr3d=dqdt, rc=localrc)
-        if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
-          line=__LINE__, file=__FILE__, rcToReturn=rc)) return
-
-        call cplFieldGet(state,'inst_down_sw_flx', farrayPtr2d=sfcdsw, rc=localrc)
-        if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
-          line=__LINE__, file=__FILE__, rcToReturn=rc)) return
-
-        call cplFieldGet(state,'inst_lwe_snow_thickness', farrayPtr2d=snowd, rc=localrc)
-        if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
-          line=__LINE__, file=__FILE__, rcToReturn=rc)) return
-
-        call cplFieldGet(state,'soil_type', farrayPtr2d=stype, rc=localrc)
-        if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
-          line=__LINE__, file=__FILE__, rcToReturn=rc)) return
-
-        call cplFieldGet(state,'inst_vegetation_area_frac', farrayPtr2d=vfrac, rc=localrc)
-        if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
-          line=__LINE__, file=__FILE__, rcToReturn=rc)) return
-
-        call cplFieldGet(state,'vegetation_type', farrayPtr2d=vtype, rc=localrc)
-        if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
-          line=__LINE__, file=__FILE__, rcToReturn=rc)) return
-
-        call cplFieldGet(state,'inst_omega_levels', farrayPtr3d=vvl, rc=localrc)
-        if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
-          line=__LINE__, file=__FILE__, rcToReturn=rc)) return
-      end if
+      call cplFieldGet(state,'surface_snow_area_fraction', farrayPtr2d=fsnow, rc=localrc)
+      if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
       !--- handle all three-dimensional variables
 !$OMP parallel do default (none) &
 !$OMP             shared  (nk, nj, ni, Atm_block, GFS_Data, GFS_Control, &
 !$OMP                      cldfra, pfils, pflls, prsi, phii, prsl, phil, &
-!$OMP                      temp, ua, va, vvl, dkt, dqdt)  &
+!$OMP                      temp, ua, va)  &
 !$OMP             private (k, j, jb, i, ib, nb, ix)
       do k = 1, nk
         do j = 1, nj
@@ -1512,15 +1304,9 @@ subroutine update_atmos_chemistry(state, rc)
             temp(i,j,k) = GFS_Data(nb)%Stateout%gt0(ix,k)
             ua  (i,j,k) = GFS_Data(nb)%Stateout%gu0(ix,k)
             va  (i,j,k) = GFS_Data(nb)%Stateout%gv0(ix,k)
-            if (GFS_Control%cplgocart) then
-              cldfra(i,j,k) = GFS_Data(nb)%IntDiag%cldfra(ix,k)
-              pfils (i,j,k) = GFS_Data(nb)%Coupling%pfi_lsan(ix,k)
-              pflls (i,j,k) = GFS_Data(nb)%Coupling%pfl_lsan(ix,k)
-            else
-              vvl (i,j,k) = GFS_Data(nb)%Statein%vvl (ix,k)
-              dkt (i,j,k) = GFS_Data(nb)%Coupling%dkt(ix,k)
-              dqdt(i,j,k) = GFS_Data(nb)%Coupling%dqdti(ix,k)
-            end if
+            cldfra(i,j,k) = GFS_Data(nb)%IntDiag%cldfra(ix,k)
+            pfils (i,j,k) = GFS_Data(nb)%Coupling%pfi_lsan(ix,k)
+            pflls (i,j,k) = GFS_Data(nb)%Coupling%pfl_lsan(ix,k)
           enddo
         enddo
       enddo
@@ -1559,9 +1345,9 @@ subroutine update_atmos_chemistry(state, rc)
 
 !$OMP parallel do default (none) &
 !$OMP             shared  (nj, ni, Atm_block, GFS_data, GFS_Control, &
-!$OMP                      hpbl, area, stype, rainc, rain, uustar, sfcdsw, &
-!$OMP                      dtsfc, fice, flake, focn, fsnow, u10m, v10m, &
-!$OMP                      slmsk, snowd, tsfc, shfsfc, vtype, vfrac, zorl, slc, swet) &
+!$OMP                      hpbl, area, rainc, rain, uustar,      &
+!$OMP                      fice, flake, focn, fsnow, u10m, v10m, &
+!$OMP                      slmsk, tsfc, shfsfc, zorl, slc, swet) &
 !$OMP             private (j, jb, i, ib, nb, ix)
       do j = 1, nj
         jb = j + Atm_block%jsc - 1
@@ -1580,24 +1366,16 @@ subroutine update_atmos_chemistry(state, rc)
           tsfc(i,j)   = GFS_Data(nb)%Sfcprop%tsfc(ix)
           zorl(i,j)   = GFS_Data(nb)%Sfcprop%zorl(ix)
           slc(i,j,:)  = GFS_Data(nb)%Sfcprop%slc(ix,:)
-          if (GFS_Control%cplgocart) then
-            u10m(i,j)   = GFS_Data(nb)%Coupling%u10mi_cpl(ix)
-            v10m(i,j)   = GFS_Data(nb)%Coupling%v10mi_cpl(ix)
-            focn(i,j)   = GFS_Data(nb)%Sfcprop%oceanfrac(ix)
-            flake(i,j)  = max(zero, GFS_Data(nb)%Sfcprop%lakefrac(ix))
-            fice(i,j)   = GFS_Data(nb)%Sfcprop%fice(ix)
-            fsnow(i,j)  = GFS_Data(nb)%Sfcprop%sncovr(ix)
-            if (GFS_Control%lsm == GFS_Control%lsm_ruc) then
-              swet(i,j) = GFS_Data(nb)%Sfcprop%wetness(ix)
-            else
-              swet(i,j) = GFS_Data(nb)%IntDiag%wet1(ix)
-            end if
+          u10m(i,j)   = GFS_Data(nb)%Coupling%u10mi_cpl(ix)
+          v10m(i,j)   = GFS_Data(nb)%Coupling%v10mi_cpl(ix)
+          focn(i,j)   = GFS_Data(nb)%Sfcprop%oceanfrac(ix)
+          flake(i,j)  = max(zero, GFS_Data(nb)%Sfcprop%lakefrac(ix))
+          fice(i,j)   = GFS_Data(nb)%Sfcprop%fice(ix)
+          fsnow(i,j)  = GFS_Data(nb)%Sfcprop%sncovr(ix)
+          if (GFS_Control%lsm == GFS_Control%lsm_ruc) then
+            swet(i,j) = GFS_Data(nb)%Sfcprop%wetness(ix)
           else
-            stype(i,j)  = GFS_Data(nb)%Sfcprop%stype(ix)
-            sfcdsw(i,j) = GFS_Data(nb)%Coupling%sfcdsw(ix)
-            snowd(i,j)  = GFS_Data(nb)%Sfcprop%snowd(ix)
-            vtype(i,j)  = GFS_Data(nb)%Sfcprop%vtype(ix)
-            vfrac(i,j)  = GFS_Data(nb)%Sfcprop%vfrac(ix)
+            swet(i,j) = GFS_Data(nb)%IntDiag%wet1(ix)
           end if
         enddo
       enddo
@@ -1640,26 +1418,15 @@ subroutine update_atmos_chemistry(state, rc)
         write(6,'("update_atmos: area   - min/max/avg",3g16.6)') minval(area),   maxval(area),   sum(area)/size(area)
         write(6,'("update_atmos: zorl   - min/max/avg",3g16.6)') minval(zorl),   maxval(zorl),   sum(zorl)/size(zorl)
         write(6,'("update_atmos: slc    - min/max/avg",3g16.6)') minval(slc),    maxval(slc),    sum(slc)/size(slc)
-        if (GFS_Control%cplgocart) then
-          write(6,'("update_atmos: cldfra - min/max/avg",3g16.6)') minval(cldfra), maxval(cldfra), sum(cldfra)/size(cldfra)
-          write(6,'("update_atmos: fice   - min/max/avg",3g16.6)') minval(fice),   maxval(fice),   sum(fice)/size(fice)
-          write(6,'("update_atmos: flake  - min/max/avg",3g16.6)') minval(flake),  maxval(flake),  sum(flake)/size(flake)
-          write(6,'("update_atmos: focn   - min/max/avg",3g16.6)') minval(focn),   maxval(focn),   sum(focn)/size(focn)
-          write(6,'("update_atmos: pfils  - min/max/avg",3g16.6)') minval(pfils),  maxval(pfils),  sum(pfils)/size(pfils)
-          write(6,'("update_atmos: pflls  - min/max/avg",3g16.6)') minval(pflls),  maxval(pflls),  sum(pflls)/size(pflls)
-          write(6,'("update_atmos: swet   - min/max/avg",3g16.6)') minval(swet),   maxval(swet),   sum(swet)/size(swet)
-          write(6,'("update_atmos: u10m   - min/max/avg",3g16.6)') minval(u10m),   maxval(u10m),   sum(u10m)/size(u10m)
-          write(6,'("update_atmos: v10m   - min/max/avg",3g16.6)') minval(v10m),   maxval(v10m),   sum(v10m)/size(v10m)
-        else
-          write(6,'("update_atmos: dkt    - min/max/avg",3g16.6)') minval(dkt),    maxval(dkt),    sum(dkt)/size(dkt)
-          write(6,'("update_atmos: dqdt   - min/max/avg",3g16.6)') minval(dqdt),   maxval(dqdt),   sum(dqdt)/size(dqdt)
-          write(6,'("update_atmos: sfcdsw - min/max/avg",3g16.6)') minval(sfcdsw), maxval(sfcdsw), sum(sfcdsw)/size(sfcdsw)
-          write(6,'("update_atmos: stype  - min/max/avg",3g16.6)') minval(stype),  maxval(stype),  sum(stype)/size(stype)
-          write(6,'("update_atmos: snowd  - min/max/avg",3g16.6)') minval(snowd),  maxval(snowd),  sum(snowd)/size(snowd)
-          write(6,'("update_atmos: vfrac  - min/max/avg",3g16.6)') minval(vfrac),  maxval(vfrac),  sum(vfrac)/size(vfrac)
-          write(6,'("update_atmos: vtype  - min/max/avg",3g16.6)') minval(vtype),  maxval(vtype),  sum(vtype)/size(vtype)
-          write(6,'("update_atmos: vvl    - min/max/avg",3g16.6)') minval(vvl),    maxval(vvl),    sum(vvl)/size(vvl)
-        end if
+        write(6,'("update_atmos: cldfra - min/max/avg",3g16.6)') minval(cldfra), maxval(cldfra), sum(cldfra)/size(cldfra)
+        write(6,'("update_atmos: fice   - min/max/avg",3g16.6)') minval(fice),   maxval(fice),   sum(fice)/size(fice)
+        write(6,'("update_atmos: flake  - min/max/avg",3g16.6)') minval(flake),  maxval(flake),  sum(flake)/size(flake)
+        write(6,'("update_atmos: focn   - min/max/avg",3g16.6)') minval(focn),   maxval(focn),   sum(focn)/size(focn)
+        write(6,'("update_atmos: pfils  - min/max/avg",3g16.6)') minval(pfils),  maxval(pfils),  sum(pfils)/size(pfils)
+        write(6,'("update_atmos: pflls  - min/max/avg",3g16.6)') minval(pflls),  maxval(pflls),  sum(pflls)/size(pflls)
+        write(6,'("update_atmos: swet   - min/max/avg",3g16.6)') minval(swet),   maxval(swet),   sum(swet)/size(swet)
+        write(6,'("update_atmos: u10m   - min/max/avg",3g16.6)') minval(u10m),   maxval(u10m),   sum(u10m)/size(u10m)
+        write(6,'("update_atmos: v10m   - min/max/avg",3g16.6)') minval(v10m),   maxval(v10m),   sum(v10m)/size(v10m)
       end if
 
     case default

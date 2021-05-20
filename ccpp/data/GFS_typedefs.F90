@@ -518,10 +518,8 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: nwfa2d  (:)     => null()  !< instantaneous water-friendly sfc aerosol source
     real (kind=kind_phys), pointer :: nifa2d  (:)     => null()  !< instantaneous ice-friendly sfc aerosol source
 
-    !--- instantaneous quantities for GSDCHEM coupling
-    real (kind=kind_phys), pointer :: dqdti   (:,:)   => null()  !< instantaneous total moisture tendency (kg/kg/s)
+    !--- instantaneous quantities for chemistry coupling
     real (kind=kind_phys), pointer :: ushfsfci(:)     => null()  !< instantaneous upward sensible heat flux (w/m**2)
-    real (kind=kind_phys), pointer :: dkt     (:,:)   => null()  !< instantaneous dkt diffusion coefficient for temperature (m**2/s)
     real (kind=kind_phys), pointer :: qci_conv(:,:)   => null()  !< convective cloud condesate after rainout
     real (kind=kind_phys), pointer :: pfi_lsan(:,:)   => null()  !< instantaneous 3D flux of ice    nonconvective precipitation (kg m-2 s-1)
     real (kind=kind_phys), pointer :: pfl_lsan(:,:)   => null()  !< instantaneous 3D flux of liquid nonconvective precipitation (kg m-2 s-1)
@@ -596,7 +594,6 @@ module GFS_typedefs
     logical              :: cplwav          !< default no cplwav collection
     logical              :: cplwav2atm      !< default no wav->atm coupling
     logical              :: cplchm          !< default no cplchm collection
-    logical              :: cplgocart       !< default no cplgocart collection
 
 !--- integrated dynamics through earth's atmosphere
     logical              :: lsidea
@@ -1681,21 +1678,6 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: tau_tofd(:)    => null()   !
 !---vay-2018 UGWP-diagnostics
 
-    !--- Output diagnostics for coupled chemistry
-    integer                        :: ndust                    !< number of dust bins for diagnostics
-    integer                        :: nseasalt                 !< number of seasalt bins for diagnostics
-    integer                        :: ntchmdiag                !< number of chemical tracers for diagnostics
-    real (kind=kind_phys), pointer :: duem  (:,:) => null()    !< instantaneous dust emission flux                             ( kg/m**2/s )
-    real (kind=kind_phys), pointer :: ssem  (:,:) => null()    !< instantaneous sea salt emission flux                         ( kg/m**2/s )
-    real (kind=kind_phys), pointer :: sedim (:,:) => null()    !< instantaneous sedimentation                                  ( kg/m**2/s )
-    real (kind=kind_phys), pointer :: drydep(:,:) => null()    !< instantaneous dry deposition                                 ( kg/m**2/s )
-    real (kind=kind_phys), pointer :: wetdpl(:,:) => null()    !< instantaneous large-scale wet deposition                     ( kg/m**2/s )
-    real (kind=kind_phys), pointer :: wetdpc(:,:) => null()    !< instantaneous convective-scale wet deposition                ( kg/m**2/s )
-    real (kind=kind_phys), pointer :: abem  (:,:) => null()    !< instantaneous anthopogenic and biomass burning emissions
-                                                               !< for black carbon, organic carbon, and sulfur dioxide         ( ug/m**2/s )
-    real (kind=kind_phys), pointer :: aecm  (:,:) => null()    !< instantaneous aerosol column mass densities for
-                                                               !< pm2.5, black carbon, organic carbon, sulfate, dust, sea salt ( g/m**2 )
-
     ! Auxiliary output arrays for debugging
     real (kind=kind_phys), pointer :: aux2d(:,:)  => null()    !< auxiliary 2d arrays in output (for debugging)
     real (kind=kind_phys), pointer :: aux3d(:,:,:)=> null()    !< auxiliary 2d arrays in output (for debugging)
@@ -1704,7 +1686,6 @@ module GFS_typedefs
       procedure :: create    => diag_create
       procedure :: rad_zero  => diag_rad_zero
       procedure :: phys_zero => diag_phys_zero
-      procedure :: chem_init => diag_chem_init
   end type GFS_diag_type
 
 !---------------------------------------------------------------------
@@ -2702,7 +2683,7 @@ module GFS_typedefs
       Coupling%snow_cpl = clear_val
     endif
 
-    if (Model%cplflx .or. Model%cplgocart .or. Model%cplwav) then
+    if (Model%cplflx .or. Model%cplchm .or. Model%cplwav) then
       !--- instantaneous quantities
       allocate (Coupling%u10mi_cpl (IM))
       allocate (Coupling%v10mi_cpl (IM))
@@ -2855,22 +2836,15 @@ module GFS_typedefs
     if (Model%cplchm) then
       !--- outgoing instantaneous quantities
       allocate (Coupling%ushfsfci  (IM))
-      allocate (Coupling%dkt       (IM,Model%levs))
-      allocate (Coupling%dqdti     (IM,Model%levs))
       !--- accumulated convective rainfall
       allocate (Coupling%rainc_cpl (IM))
-
+      ! -- instantaneous 3d fluxes of nonconvective ice and liquid precipitations
+      allocate (Coupling%pfi_lsan  (IM,Model%levs))
+      allocate (Coupling%pfl_lsan  (IM,Model%levs))
       Coupling%rainc_cpl = clear_val
       Coupling%ushfsfci  = clear_val
-      Coupling%dkt       = clear_val
-      Coupling%dqdti     = clear_val
-      if (Model%cplgocart) then
-        ! -- instantaneous 3d fluxes of nonconvective ice and liquid precipitations
-        allocate (Coupling%pfi_lsan  (IM,Model%levs))
-        allocate (Coupling%pfl_lsan  (IM,Model%levs))
-        Coupling%pfi_lsan  = clear_val
-        Coupling%pfl_lsan  = clear_val
-      endif
+      Coupling%pfi_lsan  = clear_val
+      Coupling%pfl_lsan  = clear_val
     endif
 
     !--- stochastic physics option
@@ -2998,7 +2972,6 @@ module GFS_typedefs
     logical              :: cplwav         = .false.         !< default no cplwav collection
     logical              :: cplwav2atm     = .false.         !< default no cplwav2atm coupling
     logical              :: cplchm         = .false.         !< default no cplchm collection
-    logical              :: cplgocart      = .false.         !< default no cplgocart collection
 
 !--- integrated dynamics through earth's atmosphere
     logical              :: lsidea         = .false.
@@ -3441,7 +3414,7 @@ module GFS_typedefs
                                aux2d_time_avg, aux3d_time_avg, fhcyc,                       &
                                thermodyn_id, sfcpress_id,                                   &
                           !--- coupling parameters
-                               cplflx, cplwav, cplwav2atm, cplchm, cplgocart, lsidea,       &
+                               cplflx, cplwav, cplwav2atm, cplchm, lsidea,                  &
                           !--- radiation parameters
                                fhswr, fhlwr, levr, nfxr, iaerclm, iflip, isol, ico2, ialb,  &
                                isot, iems, iaer, icliq_sw, iovr, ictm, isubc_sw,            &
@@ -3711,8 +3684,7 @@ module GFS_typedefs
     Model%cplflx           = cplflx
     Model%cplwav           = cplwav
     Model%cplwav2atm       = cplwav2atm
-    Model%cplchm           = cplchm .or. cplgocart
-    Model%cplgocart        = cplgocart
+    Model%cplchm           = cplchm
 
 !--- integrated dynamics through earth's atmosphere
     Model%lsidea           = lsidea
@@ -4983,7 +4955,6 @@ module GFS_typedefs
       print *, ' cplwav            : ', Model%cplwav
       print *, ' cplwav2atm        : ', Model%cplwav2atm
       print *, ' cplchm            : ', Model%cplchm
-      print *, ' cplgocart         : ', Model%cplgocart
       print *, ' '
       print *, 'integrated dynamics through earth atmosphere'
       print *, ' lsidea            : ', Model%lsidea
@@ -5957,9 +5928,6 @@ module GFS_typedefs
       Diag%aux3d = clear_val
     endif
 
-    !--- diagnostics for coupled chemistry
-    if (Model%cplchm) call Diag%chem_init(IM,Model)
-
     call Diag%rad_zero  (Model)
 !    if(Model%me==0) print *,'in diag_create, call rad_zero'
     linit = .true.
@@ -6220,103 +6188,6 @@ module GFS_typedefs
     endif
 
   end subroutine diag_phys_zero
-
-!-----------------------
-! GFS_diag%chem_init
-!-----------------------
-  subroutine diag_chem_init(Diag, IM, Model)
-
-    use parse_tracers,    only: get_tracer_index, NO_TRACER
-
-    class(GFS_diag_type)               :: Diag
-    integer,                intent(in) :: IM
-    type(GFS_control_type), intent(in) :: Model
-
-    ! -- local variables
-    integer :: n
-
-    ! -- initialize diagnostic variables depending on
-    ! -- specific chemical tracers
-    if (Model%ntchm > 0) then
-      ! -- retrieve number of dust bins
-      n = get_number_bins('dust')
-      Diag%ndust = n
-      if (n > 0) then
-        allocate (Diag%duem(IM,n))
-        Diag%duem = zero
-      end if
-
-      ! -- retrieve number of sea salt bins
-      n = get_number_bins('seas')
-      Diag%nseasalt = n
-      if (n > 0) then
-        allocate (Diag%ssem(IM,n))
-        Diag%ssem = zero
-      end if
-    end if
-
-    ! -- sedimentation and dry/wet deposition diagnostics
-    if (associated(Model%ntdiag)) then
-      ! -- get number of tracers with enabled diagnostics
-      n = count(Model%ntdiag)
-      Diag%ntchmdiag = n
-
-      ! -- initialize sedimentation
-      allocate (Diag%sedim(IM,n))
-      Diag%sedim = zero
-
-      ! -- initialize dry deposition
-      allocate (Diag%drydep(IM,n))
-      Diag%drydep = zero
-
-      ! -- initialize large-scale wet deposition
-      allocate (Diag%wetdpl(IM,n))
-      Diag%wetdpl = zero
-
-      ! -- initialize convective-scale wet deposition
-      allocate (Diag%wetdpc(IM,n))
-      Diag%wetdpc = zero
-    end if
-
-    ! -- initialize anthropogenic and biomass
-    ! -- burning emission diagnostics for
-    ! -- (in order): black carbon,
-    ! -- organic carbon, and sulfur dioxide
-    allocate (Diag%abem(IM,6))
-    Diag%abem = zero
-
-    ! -- initialize column burden diagnostics
-    ! -- for aerosol species (in order): pm2.5
-    ! -- black carbon, organic carbon, sulfate,
-    ! -- dust, sea salt
-    allocate (Diag%aecm(IM,6))
-    Diag%aecm = zero
-
-  contains
-
-    integer function get_number_bins(tracer_type)
-      character(len=*), intent(in) :: tracer_type
-
-      logical :: next
-      integer :: n
-      character(len=5) :: name
-
-      get_number_bins = 0
-
-      n = 0
-      next = .true.
-      do while (next)
-        n = n + 1
-        write(name,'(a,i1)') tracer_type, n + 1
-        next = get_tracer_index(Model%tracer_names, name, &
-          Model%me, Model%master, Model%debug) /= NO_TRACER
-      end do
-
-      get_number_bins = n
-
-    end function get_number_bins
-
-  end subroutine diag_chem_init
 
   !-------------------------
   ! GFS_interstitial_type%create

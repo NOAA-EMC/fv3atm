@@ -134,11 +134,9 @@ module module_cap_cpl
 
   !-----------------------------------------------------------------------------
 
-    subroutine realizeConnectedCplFields(state, grid,                                      &
-                                         numLevels, numSoilLayers, numTracers,             &
-                                         num_diag_sfc_emis_flux, num_diag_down_flux,       &
-                                         num_diag_type_down_flux, num_diag_burn_emis_flux, &
-                                         num_diag_cmass, fieldNames, fieldTypes, state_tag,&
+    subroutine realizeConnectedCplFields(state, grid,                          &
+                                         numLevels, numSoilLayers, numTracers, &
+                                         fieldNames, fieldTypes, state_tag,    &
                                          fieldList, rc)
 
       use field_manager_mod,  only: MODEL_ATMOS
@@ -149,11 +147,6 @@ module module_cap_cpl
       integer,                        intent(in)  :: numLevels
       integer,                        intent(in)  :: numSoilLayers
       integer,                        intent(in)  :: numTracers
-      integer,                        intent(in)  :: num_diag_sfc_emis_flux
-      integer,                        intent(in)  :: num_diag_down_flux
-      integer,                        intent(in)  :: num_diag_type_down_flux
-      integer,                        intent(in)  :: num_diag_burn_emis_flux
-      integer,                        intent(in)  :: num_diag_cmass
       character(len=*), dimension(:), intent(in)  :: fieldNames
       character(len=*), dimension(:), intent(in)  :: fieldTypes
       character(len=*),               intent(in)  :: state_tag                              !< Import or export.
@@ -217,23 +210,6 @@ module module_cap_cpl
                 call addFieldMetadata(field, 'tracerUnits', tracerUnits, rc=rc)
                 if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
               end if
-            case ('u','tracer_up_flux')
-              call ESMF_FieldEmptyComplete(field, typekind=ESMF_TYPEKIND_R8, &
-                                       ungriddedLBound=(/1/), ungriddedUBound=(/num_diag_sfc_emis_flux/), rc=rc)
-              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-            case ('d','tracer_down_flx')
-              call ESMF_FieldEmptyComplete(field, typekind=ESMF_TYPEKIND_R8, &
-                                       ungriddedLBound=(/1, 1/),        &
-                                       ungriddedUBound=(/num_diag_down_flux, num_diag_type_down_flux/), rc=rc)
-              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-            case ('b','tracer_anth_biom_emission')
-              call ESMF_FieldEmptyComplete(field, typekind=ESMF_TYPEKIND_R8, &
-                                       ungriddedLBound=(/1/), ungriddedUBound=(/num_diag_burn_emis_flux/), rc=rc)
-              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-            case ('c','tracer_column_mass_density')
-              call ESMF_FieldEmptyComplete(field, typekind=ESMF_TYPEKIND_R8, &
-                                       ungriddedLBound=(/1/), ungriddedUBound=(/num_diag_cmass/), rc=rc)
-              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
             case ('s','surface')
               call ESMF_FieldEmptyComplete(field, typekind=ESMF_TYPEKIND_R8, rc=rc)
               if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
