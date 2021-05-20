@@ -536,6 +536,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    Init_parm%xlon            => Atmos%lon
    Init_parm%xlat            => Atmos%lat
    Init_parm%area            => Atmos%area
+   Init_parm%nwat            = Atm(mygrid)%flagstruct%nwat
    Init_parm%tracer_names    => tracer_names
    Init_parm%restart         = Atm(mygrid)%flagstruct%warm_start
    Init_parm%hydrostatic     = Atm(mygrid)%flagstruct%hydrostatic
