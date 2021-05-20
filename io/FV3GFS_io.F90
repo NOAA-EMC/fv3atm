@@ -989,40 +989,14 @@ module FV3GFS_io_mod
         Sfcprop(nb)%slope(ix)  = sfc_var2(i,j,30)   !--- slope
         Sfcprop(nb)%snoalb(ix) = sfc_var2(i,j,31)   !--- snoalb
         Sfcprop(nb)%sncovr(ix) = sfc_var2(i,j,32)   !--- sncovr
-!       if(Model%frac_grid) then
-          Sfcprop(nb)%tsfcl(ix)  = sfc_var2(i,j,33) !--- sfcl  (temp on land portion of a cell)
-          Sfcprop(nb)%zorll(ix)  = sfc_var2(i,j,34) !--- zorll (zorl on land portion of a cell)
-          Sfcprop(nb)%zorli(ix)  = sfc_var2(i,j,35) !--- zorll (zorl on ice  portion of a cell)
-!       else
-!         Sfcprop(nb)%tsfcl(ix)  = Sfcprop(nb)%tsfco(ix)
-!         Sfcprop(nb)%zorll(ix)  = Sfcprop(nb)%zorlw(ix)
-!         Sfcprop(nb)%zorli(ix)  = Sfcprop(nb)%zorlw(ix)
-!       endif
+        Sfcprop(nb)%tsfcl(ix)  = sfc_var2(i,j,33) !--- sfcl  (temp on land portion of a cell)
+        Sfcprop(nb)%zorll(ix)  = sfc_var2(i,j,34) !--- zorll (zorl on land portion of a cell)
+        Sfcprop(nb)%zorli(ix)  = sfc_var2(i,j,35) !--- zorll (zorl on ice  portion of a cell)
         if(Model%cplwav) then
           Sfcprop(nb)%zorlwav(ix)  = sfc_var2(i,j,nvar_s2m) !--- (zorw  from wave model)
         else
           Sfcprop(nb)%zorlwav(ix)  = Sfcprop(nb)%zorlw(ix)
         endif
-
-!-------------------------------------------------
-!       if(Model%frac_grid) then ! obtain slmsk from landfrac
-!! next 5 lines are temporary till lake model is available
-!         if (Sfcprop(nb)%lakefrac(ix) > zero) then
-!!          Sfcprop(nb)%lakefrac(ix) = nint(Sfcprop(nb)%lakefrac(ix))
-!           Sfcprop(nb)%landfrac(ix) = one - Sfcprop(nb)%lakefrac(ix)
-!           if (Sfcprop(nb)%lakefrac(ix) == zero) Sfcprop(nb)%fice(ix) = zero
-!         endif
-!         Sfcprop(nb)%slmsk(ix) = ceiling(Sfcprop(nb)%landfrac(ix))
-!         if (Sfcprop(nb)%fice(ix) > Model%min_lakeice .and. Sfcprop(nb)%landfrac(ix) == zero) Sfcprop(nb)%slmsk(ix) = 2 ! land dominates ice if co-exist
-!       else ! obtain landfrac from slmsk
-!         if (Sfcprop(nb)%slmsk(ix) > 1.9_r8) then
-!           Sfcprop(nb)%landfrac(ix) = zero
-!         else
-!           Sfcprop(nb)%landfrac(ix) = Sfcprop(nb)%slmsk(ix)
-!         endif
-!       endif
-
-!-------------------------------------------------
 
         if (Model%frac_grid) then
           if (Sfcprop(nb)%landfrac(ix) > -999.0_r8) then
@@ -1067,7 +1041,6 @@ module FV3GFS_io_mod
           endif
         else                                             ! not a fractional grid
           if (Sfcprop(nb)%landfrac(ix) > -999.0_r8) then
-!           Sfcprop(nb)%slmsk(ix) = ceiling(Sfcprop(nb)%landfrac(ix))
             if (Sfcprop(nb)%lakefrac(ix) > zero) then
               Sfcprop(nb)%oceanfrac(ix) = zero
               Sfcprop(nb)%landfrac(ix)  = zero
@@ -1107,35 +1080,6 @@ module FV3GFS_io_mod
           endif
         endif
 
-!       if (Sfcprop(nb)%lakefrac(ix) > zero) then
-!         Sfcprop(nb)%oceanfrac(ix) = zero ! lake & ocean don't coexist in a cell
-!         if (Sfcprop(nb)%slmsk(ix) /= one) then
-!           if (Sfcprop(nb)%fice(ix) >= Model%min_lakeice) then
-!             if (Sfcprop(nb)%slmsk(ix) < 1.9_r8)      &
-!               write(*,'(a,2i3,3f6.2)') 'reset lake slmsk=2 at nb,ix=' &
-!              ,nb,ix,Sfcprop(nb)%fice(ix),Sfcprop(nb)%slmsk(ix),Sfcprop(nb)%lakefrac(ix)
-!               Sfcprop(nb)%slmsk(ix) = 2.
-!           else if (Sfcprop(nb)%slmsk(ix) > 1.e-7) then
-!               write(*,'(a,2i3,3f6.2)') 'reset lake slmsk=0 at nb,ix=' &
-!              ,nb,ix,Sfcprop(nb)%fice(ix),Sfcprop(nb)%slmsk(ix),Sfcprop(nb)%lakefrac(ix)
-!               Sfcprop(nb)%slmsk(ix) = zero
-!           end if
-!         end if
-!       else
-!         Sfcprop(nb)%oceanfrac(ix) = one - Sfcprop(nb)%landfrac(ix)
-!         if (Sfcprop(nb)%slmsk(ix) /= one) then
-!           if (Sfcprop(nb)%fice(ix) >= Model%min_seaice) then
-!             if (Sfcprop(nb)%slmsk(ix) < 1.9_r8)      &
-!               write(*,'(a,2i3,3f6.2)') 'reset sea slmsk=2 at nb,ix=' &
-!              ,nb,ix,Sfcprop(nb)%fice(ix),Sfcprop(nb)%slmsk(ix),Sfcprop(nb)%landfrac(ix)
-!               Sfcprop(nb)%slmsk(ix) = 2.
-!           else if (Sfcprop(nb)%slmsk(ix) > 1.e-7) then
-!               write(*,'(a,2i3,4f6.2)') 'reset sea slmsk=0 at nb,ix=' &
-!              ,nb,ix,Sfcprop(nb)%fice(ix),Sfcprop(nb)%slmsk(ix),Sfcprop(nb)%landfrac(ix)
-!               Sfcprop(nb)%slmsk(ix) = zero
-!           end if
-!         end if
-!       endif
         !
         !--- NSSTM variables
         if (Model%nstf_name(1) > 0) then

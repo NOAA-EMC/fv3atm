@@ -4654,12 +4654,13 @@ module GFS_typedefs
     Model%nqvdelt  = -999
     Model%nps2delt = -999
     Model%npsdelt  = -999
+    Model%ncnd     = nwat - 1                   ! ncnd is the number of cloud condensate types
     if (Model%imp_physics == Model%imp_physics_zhao_carr) then
       Model%npdf3d   = 0
       Model%num_p3d  = 4
       Model%num_p2d  = 3
       Model%shcnvcw  = .false.
-      Model%ncnd     = 1                   ! ncnd is the number of cloud condensate types
+!     Model%ncnd     = 1                   ! ncnd is the number of cloud condensate types
       Model%nT2delt  = 1
       Model%nqv2delt = 2
       Model%nTdelt   = 3
@@ -4676,7 +4677,7 @@ module GFS_typedefs
       Model%npdf3d  = 3
       Model%num_p3d = 4
       Model%num_p2d = 3
-      Model%ncnd    = 1
+!     Model%ncnd    = 1
       if (Model%me == Model%master) print *,'Using Zhao/Carr/Sundqvist Microphysics with PDF Cloud'
 
     else if (Model%imp_physics == Model%imp_physics_fer_hires) then     ! Ferrier-Aligo scheme
@@ -4686,7 +4687,7 @@ module GFS_typedefs
       Model%pdfcld  = .false.
       Model%shcnvcw = .false.
       ! DH* REALLY ?
-      Model%ncnd    = 5                      !???????? need to clarify this - Moorthi
+!     Model%ncnd    = 3                      !???????? need to clarify this - Moorthi
       Model%nleffr  = 1
       Model%nieffr  = 2
       Model%nseffr  = 3
@@ -4706,7 +4707,7 @@ module GFS_typedefs
       !Model%num_p2d = 1
       !Model%pdfcld  = .false.
       !Model%shcnvcw = .false.
-      !Model%ncnd    = 5
+!     !Model%ncnd    = 5
       !Model%nleffr  = 1
       !Model%nieffr  = 2
       !Model%nseffr  = 3
@@ -4718,7 +4719,7 @@ module GFS_typedefs
       Model%num_p2d = 1
       Model%pdfcld  = .false.
       Model%shcnvcw = .false.
-      Model%ncnd    = 5
+!     Model%ncnd    = 5
       Model%nleffr  = 1
       Model%nieffr  = 2
       Model%nseffr  = 3
@@ -4745,25 +4746,29 @@ module GFS_typedefs
       Model%num_p2d = 1
       Model%pdfcld  = .false.
       Model%shcnvcw = .false.
-      Model%ncnd    = 2
+!     Model%ncnd    = 2
       Model%nleffr  = 2
       Model%nieffr  = 3
       Model%nreffr  = 4
       Model%nseffr  = 5
-      if (nwat /= 6) then
-        print *,' Morrison-Gettelman MP requires nwat to be set to 6 - job aborted'
-        stop
-      end if
-      if (abs(Model%fprcp) == 1) then
-        Model%ncnd  = 4
-      elseif (Model%fprcp >= 2) then
-        Model%ncnd  = 4
-        if (Model%mg_do_graupel .or. Model%mg_do_hail) then
-          Model%ncnd = 5
-        endif
+      if (Model%mg_do_graupel .or. Model%mg_do_hail) then
         Model%num_p3d = 6
         Model%ngeffr  = 6
       endif
+      if (nwat /= 6 .and. Model%fprcp >= 2) then
+        print *,' Morrison-Gettelman MP requires nwat to be set to 6 - job aborted'
+        stop
+      end if
+!     if (abs(Model%fprcp) == 1) then
+!       Model%ncnd  = 4
+!     elseif (Model%fprcp >= 2) then
+!       Model%ncnd  = 4
+!       if (Model%mg_do_graupel .or. Model%mg_do_hail) then
+!         Model%ncnd = 5
+!       endif
+!       Model%num_p3d = 6
+!       Model%ngeffr  = 6
+!     endif
       if (Model%me == Model%master)                                                                 &
          print *,' Using Morrison-Gettelman double moment microphysics',                            &
                  ' iaerclm=',         Model%iaerclm,         ' iccn=',          Model%iccn,         &
@@ -4800,7 +4805,7 @@ module GFS_typedefs
       Model%num_p2d = 1
       Model%pdfcld  = .false.
       Model%shcnvcw = .false.
-      Model%ncnd    = 5
+!     Model%ncnd    = 5
       if (nwat /= 6) then
         print *,' GFDL MP requires nwat to be set to 6 - job aborted'
         stop
