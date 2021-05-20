@@ -75,7 +75,8 @@ module GFS_init
                      Init_parm%gnx, Init_parm%gny,                 &
                      Init_parm%dt_dycore, Init_parm%dt_phys,       &
                      Init_parm%iau_offset, Init_parm%bdat,         &
-                     Init_parm%cdat, Init_parm%tracer_names,       &
+                     Init_parm%cdat, Init_parm%nwat,               &
+                     Init_parm%tracer_names,                       &
                      Init_parm%input_nml_file, Init_parm%tile_num, &
                      Init_parm%blksz, Init_parm%ak, Init_parm%bk,  &
                      Init_parm%restart, Init_parm%hydrostatic,     &
