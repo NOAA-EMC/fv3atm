@@ -4214,37 +4214,6 @@
   dimensions = ()
   type = real
   kind = kind_phys
-[nca]
-  standard_name = number_of_independent_cellular_automata
-  long_name = number of independent cellular automata
-  units = count
-  dimensions = ()
-  type = integer
-[nlives]
-  standard_name = cellular_automata_lifetime
-  long_name = cellular automata lifetime
-  units = count
-  dimensions = ()
-  type = integer
-[ncells]
-  standard_name = cellular_automata_finer_grid
-  long_name = cellular automata finer grid
-  units = count
-  dimensions = ()
-  type = integer
-[nfracseed]
-  standard_name = cellular_automata_seed_probability
-  long_name = cellular automata seed probability
-  units = fraction
-  dimensions = ()
-  type = real
-  kind = kind_phys
-[nseed]
-  standard_name = cellular_automata_seed_frequency
-  long_name = cellular automata seed frequency in units of time steps
-  units = count
-  dimensions = ()
-  type = integer
 [do_ca]
   standard_name = flag_for_cellular_automata
   long_name = cellular automata main switch
@@ -4281,24 +4250,6 @@
   units = flag
   dimensions = ()
   type = logical
-[ca_smooth]
-  standard_name = flag_for_gaussian_spatial_filter
-  long_name = switch for gaussian spatial filter
-  units = flag
-  dimensions = ()
-  type = logical
-[iseed_ca]
-  standard_name = seed_for_random_number_generation_in_cellular_automata_scheme
-  long_name = seed for random number generation in ca scheme
-  units = none
-  dimensions = ()
-  type = integer
-[nspinup]
-  standard_name = number_of_iterations_to_spin_up_cellular_automata
-  long_name = number of iterations to spin up the ca
-  units = count
-  dimensions = ()
-  type = integer
 [nthresh]
   standard_name = threshold_for_perturbed_vertical_velocity
   long_name = threshold used for perturbed vertical velocity
