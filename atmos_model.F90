@@ -380,6 +380,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
 #endif
   use fv_mp_mod, only: commglobal
   use mpp_mod, only: mpp_npes
+  use update_ca, only: read_ca_restart
 
   type (atmos_data_type), intent(inout) :: Atmos
   type (time_type), intent(in) :: Time_init, Time, Time_step
@@ -580,7 +581,9 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
                               GFS_data%Coupling, GFS_data%Grid, GFS_data%Tbd, GFS_data%Cldprop, GFS_data%Radtend, &
                               GFS_data%IntDiag, Init_parm, GFS_Diag)
    call FV3GFS_restart_read (GFS_data, GFS_restart_var, Atm_block, GFS_control, Atmos%domain, Atm(mygrid)%flagstruct%warm_start)
-
+   if(GFS_control%ca_sgs)then
+      call read_ca_restart (Atmos%domain,GFS_control%scells)
+   endif
    ! Populate the GFS_data%Statein container with the prognostic state
    ! in Atm_block, which contains the initial conditions/restart data.
    call atmos_phys_driver_statein (GFS_data, Atm_block, flip_vc)
@@ -872,6 +875,7 @@ subroutine update_atmos_model_state (Atmos)
 
 subroutine atmos_model_end (Atmos)
   use get_stochy_pattern_mod, only: write_stoch_restart_atm
+  use update_ca, only: write_ca_restart
   type (atmos_data_type), intent(inout) :: Atmos
 !---local variables
   integer :: idx, seconds, ierr
@@ -885,6 +889,9 @@ subroutine atmos_model_end (Atmos)
       call FV3GFS_restart_write (GFS_data, GFS_restart_var, Atm_block, &
                                  GFS_control, Atmos%domain)
       call write_stoch_restart_atm('RESTART/atm_stoch.res.nc')
+      if(GFS_control%ca_sgs)then
+         call write_ca_restart(Atmos%domain,GFS_control%scells)
+      endif
     endif
     call stochastic_physics_wrapper_end(GFS_control)
 
@@ -903,13 +910,16 @@ end subroutine atmos_model_end
 !  Write out restart files registered through register_restart_file
 ! </DESCRIPTION>
 subroutine atmos_model_restart(Atmos, timestamp)
+  use update_ca, only: write_ca_restart
   type (atmos_data_type),   intent(inout) :: Atmos
   character(len=*),  intent(in)           :: timestamp
 
     call atmosphere_restart(timestamp)
     call FV3GFS_restart_write (GFS_data, GFS_restart_var, Atm_block, &
                                GFS_control, Atmos%domain, timestamp)
-
+    if(GFS_control%ca_sgs)then
+       call write_ca_restart(Atmos%domain,GFS_control%scells,timestamp)
+    endif
 end subroutine atmos_model_restart
 ! </SUBROUTINE>
 
