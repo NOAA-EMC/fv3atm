@@ -35,11 +35,9 @@ module stochastic_physics_wrapper_mod
   real(kind=kind_phys), dimension(:,:), allocatable, save :: stype
 
   ! For cellular automata
-  real(kind=kind_phys), dimension(:,:,:), allocatable, save :: ugrs
-  real(kind=kind_phys), dimension(:,:,:), allocatable, save :: qgrs
-  real(kind=kind_phys), dimension(:,:),   allocatable, save :: pgr
-  real(kind=kind_phys), dimension(:,:,:), allocatable, save :: vvl
-  real(kind=kind_phys), dimension(:,:,:), allocatable, save :: prsl
+  real(kind=kind_phys), dimension(:,:),   allocatable, save :: sst
+  real(kind=kind_phys), dimension(:,:),   allocatable, save :: lmsk
+  real(kind=kind_phys), dimension(:,:),   allocatable, save :: lake
   real(kind=kind_phys), dimension(:,:),   allocatable, save :: condition
   real(kind=kind_phys), dimension(:,:),   allocatable, save :: ca_deep_cpl, ca_turb_cpl, ca_shal_cpl
   real(kind=kind_phys), dimension(:,:),   allocatable, save :: ca_deep_diag,ca_turb_diag,ca_shal_diag
@@ -276,15 +274,30 @@ module stochastic_physics_wrapper_mod
 
     endif initalize_stochastic_physics
 
+    if (GFS_Control%kdt==0) then
+       do nb=1,Atm_block%nblks
+          GFS_Data(nb)%Intdiag%ca_deep(:)  = 0.
+          GFS_Data(nb)%Intdiag%ca_turb(:)  = 0.
+          GFS_Data(nb)%Intdiag%ca_shal(:)  = 0.
+          GFS_Data(nb)%Coupling%ca_deep(:) = 0.
+          GFS_Data(nb)%Coupling%ca_turb(:) = 0.
+          GFS_Data(nb)%Coupling%ca_shal(:) = 0.
+          GFS_Data(nb)%Coupling%ca1(:) = 0.
+          GFS_Data(nb)%Coupling%ca2(:) = 0.
+          GFS_Data(nb)%Coupling%ca3(:) = 0.
+          GFS_Data(nb)%Intdiag%ca1(:)  = 0.
+          GFS_Data(nb)%Intdiag%ca2(:)  = 0.
+          GFS_Data(nb)%Intdiag%ca3(:)  = 0.
+       enddo
+    else
+
     ! Cellular automata code is identical for initialization (kstep=0) and time integration (kstep>0)
     if(GFS_Control%do_ca)then
        if(GFS_Control%ca_sgs)then
          ! Allocate contiguous arrays; copy in as needed
-         allocate(ugrs        (1:Atm_block%nblks,maxval(GFS_Control%blksz),1:GFS_Control%levs))
-         allocate(qgrs        (1:Atm_block%nblks,maxval(GFS_Control%blksz),1:GFS_Control%levs))
-         allocate(pgr         (1:Atm_block%nblks,maxval(GFS_Control%blksz)                   ))
-         allocate(vvl         (1:Atm_block%nblks,maxval(GFS_Control%blksz),1:GFS_Control%levs))
-         allocate(prsl        (1:Atm_block%nblks,maxval(GFS_Control%blksz),1:GFS_Control%levs))
+         allocate(sst         (1:Atm_block%nblks,maxval(GFS_Control%blksz)                   ))
+         allocate(lmsk        (1:Atm_block%nblks,maxval(GFS_Control%blksz)                   ))
+         allocate(lake        (1:Atm_block%nblks,maxval(GFS_Control%blksz)                   ))
          allocate(ca_deep_diag(1:Atm_block%nblks,maxval(GFS_Control%blksz)                   ))
          allocate(ca_turb_diag(1:Atm_block%nblks,maxval(GFS_Control%blksz)                   ))
          allocate(ca_shal_diag(1:Atm_block%nblks,maxval(GFS_Control%blksz)                   ))
@@ -293,22 +306,21 @@ module stochastic_physics_wrapper_mod
          allocate(ca_turb_cpl (1:Atm_block%nblks,maxval(GFS_Control%blksz)                   ))
          allocate(ca_shal_cpl (1:Atm_block%nblks,maxval(GFS_Control%blksz)                   ))
          do nb=1,Atm_block%nblks
-             ugrs       (nb,1:GFS_Control%blksz(nb),:) = GFS_Data(nb)%Statein%ugrs(:,:)
-             qgrs       (nb,1:GFS_Control%blksz(nb),:) = GFS_Data(nb)%Statein%qgrs(:,:,1)
-             pgr        (nb,1:GFS_Control%blksz(nb))   = GFS_Data(nb)%Statein%pgr(:)
-             vvl        (nb,1:GFS_Control%blksz(nb),:) = GFS_Data(nb)%Statein%vvl(:,:)
-             prsl       (nb,1:GFS_Control%blksz(nb),:) = GFS_Data(nb)%Statein%prsl(:,:)
+             sst        (nb,1:GFS_Control%blksz(nb))   = GFS_Data(nb)%Sfcprop%tsfco(:)
+             lmsk       (nb,1:GFS_Control%blksz(nb))   = GFS_Data(nb)%Sfcprop%slmsk(:)
+             lake       (nb,1:GFS_Control%blksz(nb))   = GFS_Data(nb)%Sfcprop%lakefrac(:)
              condition  (nb,1:GFS_Control%blksz(nb))   = GFS_Data(nb)%Coupling%condition(:)
              ca_deep_cpl(nb,1:GFS_Control%blksz(nb))   = GFS_Data(nb)%Coupling%ca_deep(:)
              ca_turb_cpl(nb,1:GFS_Control%blksz(nb))   = GFS_Data(nb)%Coupling%ca_turb(:)
              ca_shal_cpl(nb,1:GFS_Control%blksz(nb))   = GFS_Data(nb)%Coupling%ca_shal(:)
          enddo
-         call cellular_automata_sgs(GFS_Control%kdt,ugrs,qgrs,pgr,vvl,prsl,condition,ca_deep_cpl,ca_turb_cpl,ca_shal_cpl, &
-            ca_deep_diag,ca_turb_diag,ca_shal_diag,Atm(mygrid)%domain_for_coupler,Atm_block%nblks,                        &
+         call cellular_automata_sgs(GFS_Control%kdt,GFS_control%dtf,GFS_control%restart,GFS_Control%first_time_step,       &
+            sst,lmsk,lake,condition,ca_deep_cpl,ca_turb_cpl,ca_shal_cpl,ca_deep_diag,ca_turb_diag,                        &
+            ca_shal_diag,Atm(mygrid)%domain_for_coupler,Atm_block%nblks,                                                  &
             Atm_block%isc,Atm_block%iec,Atm_block%jsc,Atm_block%jec,Atm(mygrid)%npx,Atm(mygrid)%npy, GFS_Control%levs,    &
-            GFS_Control%nca,GFS_Control%ncells,GFS_Control%nlives,GFS_Control%nfracseed,                                  &
-            GFS_Control%nseed,GFS_Control%nthresh,GFS_Control%ca_global,GFS_Control%ca_sgs,GFS_Control%iseed_ca,          &
-            GFS_Control%ca_smooth,GFS_Control%nspinup,Atm_block%blksz(1),GFS_Control%master,GFS_Control%communicator)
+            GFS_Control%nthresh,GFS_Control%rcell,GFS_Control%nca,GFS_Control%scells,GFS_Control%tlives,GFS_Control%nfracseed,    &
+            GFS_Control%nseed,GFS_Control%ca_global,GFS_Control%ca_sgs,GFS_Control%iseed_ca,          &
+            GFS_Control%ca_smooth,GFS_Control%nspinup,GFS_Control%ca_trigger,Atm_block%blksz(1),GFS_Control%master,GFS_Control%communicator)
          ! Copy contiguous data back as needed
          do nb=1,Atm_block%nblks
              GFS_Data(nb)%Intdiag%ca_deep(:)  = ca_deep_diag(nb,1:GFS_Control%blksz(nb))
@@ -318,11 +330,9 @@ module stochastic_physics_wrapper_mod
              GFS_Data(nb)%Coupling%ca_turb(:) = ca_turb_cpl (nb,1:GFS_Control%blksz(nb))
              GFS_Data(nb)%Coupling%ca_shal(:) = ca_shal_cpl (nb,1:GFS_Control%blksz(nb))
          enddo
-         deallocate(ugrs        )
-         deallocate(qgrs        )
-         deallocate(pgr         )
-         deallocate(vvl         )
-         deallocate(prsl        )
+         deallocate(sst         )
+         deallocate(lmsk        )
+         deallocate(lake        )
          deallocate(condition   )
          deallocate(ca_deep_cpl )
          deallocate(ca_turb_cpl )
@@ -339,9 +349,10 @@ module stochastic_physics_wrapper_mod
           allocate(ca1_diag(1:Atm_block%nblks,maxval(GFS_Control%blksz)))
           allocate(ca2_diag(1:Atm_block%nblks,maxval(GFS_Control%blksz)))
           allocate(ca3_diag(1:Atm_block%nblks,maxval(GFS_Control%blksz)))
-          call cellular_automata_global(GFS_Control%kdt,ca1_cpl,ca2_cpl,ca3_cpl,ca1_diag,ca2_diag,ca3_diag,Atm(mygrid)%domain_for_coupler, &
+          call cellular_automata_global(GFS_Control%kdt,GFS_Control%first_time_step,ca1_cpl,ca2_cpl,ca3_cpl,ca1_diag,ca2_diag,ca3_diag,     &
+            Atm(mygrid)%domain_for_coupler, &
             Atm_block%nblks,Atm_block%isc,Atm_block%iec,Atm_block%jsc,Atm_block%jec,Atm(mygrid)%npx,Atm(mygrid)%npy,GFS_Control%levs,      &
-            GFS_Control%nca_g,GFS_Control%ncells_g,GFS_Control%nlives_g,GFS_Control%nfracseed,GFS_Control%nseed_g,GFS_Control%nthresh,     &
+            GFS_Control%nca_g,GFS_Control%ncells_g,GFS_Control%nlives_g,GFS_Control%nfracseed,GFS_Control%nseed_g,                         &
             GFS_Control%ca_global,GFS_Control%ca_sgs,GFS_Control%iseed_ca,GFS_Control%ca_smooth,GFS_Control%nspinup,Atm_block%blksz(1),    &
             GFS_Control%nsmooth,GFS_Control%ca_amplitude,GFS_Control%master,GFS_Control%communicator)
           ! Copy contiguous data back
@@ -361,6 +372,8 @@ module stochastic_physics_wrapper_mod
           deallocate(ca3_diag)
        endif
     endif
+
+    endif !kdt = 0
 
   end subroutine stochastic_physics_wrapper
 
