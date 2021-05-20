@@ -9837,34 +9837,6 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[tsurf]
-  standard_name = surface_skin_temperature_after_iteration
-  long_name = surface skin temperature after iteration
-  units = K
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-[tsurf_water]
-  standard_name = surface_skin_temperature_after_iteration_over_water
-  long_name = surface skin temperature after iteration over water
-  units = K
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-[tsurf_land]
-  standard_name = surface_skin_temperature_after_iteration_over_land
-  long_name = surface skin temperature after iteration over land
-  units = K
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-[tsurf_ice]
-  standard_name = surface_skin_temperature_after_iteration_over_ice
-  long_name = surface skin temperature after iteration over ice
-  units = K
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
 [tracers_water]
   standard_name = number_of_water_tracers
   long_name = number of water-related tracers
