@@ -4,9 +4,13 @@
 	branch = dev/emc
 [submodule "ccpp/framework"]
 	path = ccpp/framework
-	url = https://github.com/NOAA-GSL/ccpp-framework
-	branch = gsl/develop
+	#url = https://github.com/NOAA-GSL/ccpp-framework
+	#branch = gsl/develop
+	url = https://github.com/climbfuji/ccpp-framework
+	branch = update_gsl_develop_from_main
 [submodule "ccpp/physics"]
 	path = ccpp/physics
-	url = https://github.com/NOAA-GSL/ccpp-physics
-	branch = gsl/develop
+	#url = https://github.com/NOAA-GSL/ccpp-physics
+	#branch = gsl/develop
+	url = https://github.com/climbfuji/ccpp-physics
+	branch = update_gsl_develop_from_main
