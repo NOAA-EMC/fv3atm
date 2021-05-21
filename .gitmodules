@@ -1,12 +1,12 @@
-[submodule "ccpp/framework"]
-	path = ccpp/framework
-	url = https://github.com/NCAR/ccpp-framework
-	branch = master
-[submodule "ccpp/physics"]
-	path = ccpp/physics
-	url = https://github.com/rmontuoro/ccpp-physics
-	branch = feature/ufs-gocart-integration
 [submodule "atmos_cubed_sphere"]
 	path = atmos_cubed_sphere
 	url = https://github.com/rmontuoro/GFDL_atmos_cubed_sphere
 	branch = bugfix/ic-init-tracers
+[submodule "ccpp/framework"]
+	path = ccpp/framework
+	url = https://github.com/NCAR/ccpp-framework
+	branch = main
+[submodule "ccpp/physics"]
+	path = ccpp/physics
+	url = https://github.com/rmontuoro/ccpp-physics
+	branch = feature/ufs-gocart-integration
