@@ -1014,29 +1014,38 @@ subroutine get_atmos_tracer_types(tracer_types)
     found = query_method('tracer_usage',MODEL_ATMOS,n,tracer_usage,control)
     if (found) then
       if (trim(tracer_usage) == 'chemistry') then
+        !--- set default to prognostic
         tracer_type = 'prognostic'
         num_types = parse(control, 'type', tracer_type)
-        if (trim(tracer_type) == 'diagnostic') then
-          tracer_types(n) = 2
-          id_num = id_num + 1
-          id_max = n
-          if (id_num == 1) id_min = n
-        else
-          tracer_types(n) = 1
-          ip_num = ip_num + 1
-          ip_max = n
-          if (ip_num == 1) ip_min = n
-        end if
+        select case (trim(tracer_type))
+          case ('diagnostic')
+            tracer_types(n) = 2
+            id_num = id_num + 1
+            id_max = n
+            if (id_num == 1) id_min = n
+          case ('prognostic')
+            tracer_types(n) = 1
+            ip_num = ip_num + 1
+            ip_max = n
+            if (ip_num == 1) ip_min = n
+        end select
       end if
     end if
   end do
 
-  if (ip_num > ip_max - ip_min + 1) &
-    call mpp_error(FATAL, 'prognostic chemistry tracers must be consecutive')
+  if (ip_num > 0) then
+    !--- check if prognostic tracers are contiguous
+    if (ip_num > ip_max - ip_min + 1) &
+      call mpp_error(FATAL, 'prognostic chemistry tracers must be contiguous')
+  end if
 
-  if (id_num > id_max - id_min + 1) &
-    call mpp_error(FATAL, 'diagnostic chemistry tracers must be consecutive')
+  if (id_num > 0) then
+    !--- check if diagnostic tracers are contiguous
+    if (id_num > id_max - id_min + 1) &
+      call mpp_error(FATAL, 'diagnostic chemistry tracers must be consecutive')
+  end if
 
+  !--- prognostic tracers must precede diagnostic ones
   if (ip_max > id_min) &
     call mpp_error(FATAL, 'diagnostic chemistry tracers must follow prognostic ones')
 
