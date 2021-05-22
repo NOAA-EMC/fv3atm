@@ -70,7 +70,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
   use module_fv3_io_def, only:  num_pes_fcst, num_files, filename_base, nbdlphys, &
                                 iau_offset
   use module_fv3_config, only:  dt_atmos, calendar, restart_interval,             &
-                                quilting, calendar_type, cpl,                     &
+                                quilting, calendar_type,                          &
                                 cplprint_flag, force_date_from_configure,         &
                                 num_restart_interval, frestart, restart_endfcst
   use get_stochy_pattern_mod, only: write_stoch_restart_atm
@@ -528,17 +528,19 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 
       endif
 !
-!test to write out vtk file:
-      if( cpl ) then
+      !! FIXME
+      if ( .not. atm_int_state%Atm%nested ) then  !! global only
         call addLsmask2grid(fcstGrid, rc=rc)
-          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-!         print *,'call addLsmask2grid after fcstGrid, rc=',rc
-!          if( cplprint_flag ) then
-!            call ESMF_GridWriteVTK(fcstGrid, staggerloc=ESMF_STAGGERLOC_CENTER,  &
-!                                   filename='fv3cap_fv3Grid', rc=rc)
-!            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-!          endif
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+!       print *,'call addLsmask2grid after fcstGrid, rc=',rc
       endif
+
+!test to write out vtk file:
+!     if( cplprint_flag ) then
+!       call ESMF_GridWriteVTK(fcstGrid, staggerloc=ESMF_STAGGERLOC_CENTER,  &
+!                              filename='fv3cap_fv3Grid', rc=rc)
+!       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+!     endif
 !
 ! Add gridfile Attribute to the exportState
       call ESMF_AttributeAdd(exportState, convention="NetCDF", purpose="FV3", &
