@@ -8,5 +8,5 @@
 	branch = master
 [submodule "ccpp/physics"]
 	path = ccpp/physics
-	url = https://github.com/JongilHan66/ccpp-physics.git
+	url = https://github.com/JongilHan66/ccpp-physics
 	branch = ccpp_hanp7
