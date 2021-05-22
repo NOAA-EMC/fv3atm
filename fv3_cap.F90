@@ -15,11 +15,13 @@ module fv3gfs_cap_mod
 
   use ESMF
   use NUOPC
-  use NUOPC_Model,            only: model_routine_SS        => SetServices,       &
-                                    model_routine_Run       => routine_Run,       &
-                                    model_label_Advance     => label_Advance,     &
-                                    model_label_CheckImport => label_CheckImport, &
-                                    model_label_Finalize    => label_Finalize,    &
+  use NUOPC_Model,            only: model_routine_SS => SetServices, &
+                                    routine_Run,                     &
+                                    label_Advertise,                 &
+                                    label_RealizeProvided,           &
+                                    label_Advance,                   &
+                                    label_CheckImport,               &
+                                    label_Finalize,                  &
                                     NUOPC_ModelGet
 !
   use module_fv3_config,      only: quilting, restart_interval,              &
@@ -112,53 +114,46 @@ module fv3gfs_cap_mod
     call NUOPC_CompDerive(gcomp, model_routine_SS, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-    ! initialization, switching to IPD versions
-    call ESMF_GridCompSetEntryPoint(gcomp, ESMF_METHOD_INITIALIZE, &
-                                    userRoutine=InitializeP0, phase=0, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
     ! set entry point for methods that require specific implementation
-    call NUOPC_CompSetEntryPoint(gcomp, ESMF_METHOD_INITIALIZE, &
-                                 phaseLabelList=(/"IPDv01p1"/), userRoutine=InitializeAdvertise, rc=rc)
+    call NUOPC_CompSpecialize(gcomp, specLabel=label_Advertise, specRoutine=InitializeAdvertise, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-    call NUOPC_CompSetEntryPoint(gcomp, ESMF_METHOD_INITIALIZE, &
-                                 phaseLabelList=(/"IPDv01p3"/), userRoutine=InitializeRealize, rc=rc)
+    call NUOPC_CompSpecialize(gcomp, specLabel=label_RealizeProvided, specRoutine=InitializeRealize, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
     ! model advance method(s)
-    call NUOPC_CompSpecialize(gcomp, specLabel=model_label_Advance, &
+    call NUOPC_CompSpecialize(gcomp, specLabel=label_Advance, &
                               specRoutine=ModelAdvance, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
     ! checking the import fields is a bit more complex because of coldstart option
-    call ESMF_MethodRemove(gcomp, model_label_CheckImport, rc=rc)
+    call ESMF_MethodRemove(gcomp, label_CheckImport, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-    call NUOPC_CompSpecialize(gcomp, specLabel=model_label_CheckImport, &
+    call NUOPC_CompSpecialize(gcomp, specLabel=label_CheckImport, &
                               specRoutine=fv3_checkimport, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
     ! setup Run/Advance phase: phase1
     call NUOPC_CompSetEntryPoint(gcomp, ESMF_METHOD_RUN, &
-                                 phaseLabelList=(/"phase1"/), userRoutine=model_routine_Run, rc=rc)
+                                 phaseLabelList=(/"phase1"/), userRoutine=routine_Run, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-    call NUOPC_CompSpecialize(gcomp, specLabel=model_label_Advance, &
+    call NUOPC_CompSpecialize(gcomp, specLabel=label_Advance, &
                               specPhaseLabel="phase1", specRoutine=ModelAdvance_phase1, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
     ! setup Run/Advance phase: phase2
     call NUOPC_CompSetEntryPoint(gcomp, ESMF_METHOD_RUN, &
-                                 phaseLabelList=(/"phase2"/), userRoutine=model_routine_Run, rc=rc)
+                                 phaseLabelList=(/"phase2"/), userRoutine=routine_Run, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-    call NUOPC_CompSpecialize(gcomp, specLabel=model_label_Advance, &
+    call NUOPC_CompSpecialize(gcomp, specLabel=label_Advance, &
                               specPhaseLabel="phase2", specRoutine=ModelAdvance_phase2, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
     ! specializations required to support 'inline' run sequences
-    call NUOPC_CompSpecialize(gcomp, specLabel=model_label_CheckImport, &
+    call NUOPC_CompSpecialize(gcomp, specLabel=label_CheckImport, &
                               specPhaseLabel="phase1", specRoutine=NUOPC_NoOp, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
@@ -166,12 +161,12 @@ module fv3gfs_cap_mod
                               specPhaseLabel="phase1", specRoutine=TimestampExport_phase1, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-    call NUOPC_CompSpecialize(gcomp, specLabel=model_label_CheckImport, &
+    call NUOPC_CompSpecialize(gcomp, specLabel=label_CheckImport, &
                               specPhaseLabel="phase2", specRoutine=NUOPC_NoOp, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
     ! model finalize method(s)
-    call NUOPC_CompSpecialize(gcomp, specLabel=model_label_Finalize, &
+    call NUOPC_CompSpecialize(gcomp, specLabel=label_Finalize, &
                               specRoutine=atmos_model_finalize, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
@@ -179,59 +174,19 @@ module fv3gfs_cap_mod
 
   !-----------------------------------------------------------------------------
 
-  subroutine InitializeP0(gcomp, importState, exportState, clock, rc)
-    type(ESMF_GridComp)   :: gcomp
-    type(ESMF_State)      :: importState, exportState
-    type(ESMF_Clock)      :: clock
-    integer, intent(out)  :: rc
-
-    character(len=10)     :: value
-    character(240)        :: msgString
-    logical               :: isPresent, isSet
-    character(len=*),parameter  :: subname='(fv3gfs_cap:InitializeP0)'
-
-    rc = ESMF_SUCCESS
-
-    ! Switch to IPDv01 by filtering all other phaseMap entries
-    call NUOPC_CompFilterPhaseMap(gcomp, ESMF_METHOD_INITIALIZE, &
-                                  acceptStringList=(/"IPDv01p"/), rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-    call ESMF_AttributeGet(gcomp, name="ProfileMemory", value=value, defaultValue="true", &
-                           convention="NUOPC", purpose="Instance", rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-    profile_memory = (trim(value)/="false")
-
-    call ESMF_AttributeGet(gcomp, name="DumpFields", value=value, defaultValue="false", &
-                           convention="NUOPC", purpose="Instance", rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-    cplprint_flag = (trim(value)=="true")
-    write(msgString,'(A,l6)') trim(subname)//' cplprint_flag = ',cplprint_flag
-    call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_INFO, rc=rc)
-
-    ! Read in cap debug flag
-    call NUOPC_CompAttributeGet(gcomp, name='dbug_flag', value=value, isPresent=isPresent, isSet=isSet, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-    if (isPresent .and. isSet) then
-     read(value,*) dbug
-    end if
-    write(msgString,'(A,i6)') trim(subname)//' dbug = ',dbug
-    call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_INFO, rc=rc)
-
-  end subroutine
-
-  !-----------------------------------------------------------------------------
-
-  subroutine InitializeAdvertise(gcomp, importState, exportState, clock, rc)
+  subroutine InitializeAdvertise(gcomp, rc)
 
     type(ESMF_GridComp)                    :: gcomp
-    type(ESMF_State)                       :: importState, exportState
-    type(ESMF_Clock)                       :: clock
     integer, intent(out)                   :: rc
 
 !
 ! local variables
+    type(ESMF_State)                       :: importState, exportState
+    type(ESMF_Clock)                       :: clock
+
+    character(len=10)                      :: value
+    character(240)                         :: msgString
+    logical                                :: isPresent, isSet
     type(ESMF_VM)                          :: vm, fcstVM
     type(ESMF_Time)                        :: CurrTime, starttime, StopTime
     type(ESMF_Time)                        :: alarm_output_hf_ring, alarm_output_ring
@@ -264,6 +219,32 @@ module fv3gfs_cap_mod
 !
     rc = ESMF_SUCCESS
     timeis = mpi_wtime()
+
+    ! query for importState and exportState
+    call NUOPC_ModelGet(gcomp, driverClock=clock, importState=importState, exportState=exportState, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+    call ESMF_AttributeGet(gcomp, name="ProfileMemory", value=value, defaultValue="true", &
+                           convention="NUOPC", purpose="Instance", rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+    profile_memory = (trim(value)/="false")
+
+    call ESMF_AttributeGet(gcomp, name="DumpFields", value=value, defaultValue="false", &
+                           convention="NUOPC", purpose="Instance", rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+    cplprint_flag = (trim(value)=="true")
+    write(msgString,'(A,l6)') trim(subname)//' cplprint_flag = ',cplprint_flag
+    call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_INFO, rc=rc)
+
+    ! Read in cap debug flag
+    call NUOPC_CompAttributeGet(gcomp, name='dbug_flag', value=value, isPresent=isPresent, isSet=isSet, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+    if (isPresent .and. isSet) then
+     read(value,*) dbug
+    end if
+    write(msgString,'(A,i6)') trim(subname)//' dbug = ',dbug
+    call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_INFO, rc=rc)
 
     call ESMF_GridCompGet(gcomp,name=name,vm=vm,rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
@@ -887,18 +868,21 @@ module fv3gfs_cap_mod
 
   !-----------------------------------------------------------------------------
 
-  subroutine InitializeRealize(gcomp, importState, exportState, clock, rc)
+  subroutine InitializeRealize(gcomp, rc)
     type(ESMF_GridComp)  :: gcomp
-    type(ESMF_State)     :: importState, exportState
-    type(ESMF_Clock)     :: clock
     integer, intent(out) :: rc
 
     ! local variables
     character(len=*),parameter  :: subname='(fv3gfs_cap:InitializeRealize)'
+    type(ESMF_State)     :: importState, exportState
     logical :: isPetLocal
     integer :: n
 
     rc = ESMF_SUCCESS
+
+    ! query for importState and exportState
+    call NUOPC_ModelGet(gcomp, importState=importState, exportState=exportState, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
     ! --- conditionally realize or remove Fields in importState and exportState -------------------
 
