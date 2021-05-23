@@ -911,7 +911,8 @@ module fv3gfs_cap_mod
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__,  file=__FILE__)) return
 
       ! -- initialize export fields if applicable
-!     if (allocated(exportData)) call fillExportFields(exportData)
+      call setup_exportdata(rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__,  file=__FILE__)) return
 
       ! -- realize connected fields in importState
       call realizeConnectedCplFields(importState, fcstGrid,                          &
@@ -919,9 +920,7 @@ module fv3gfs_cap_mod
                                      importFieldsInfo, 'FV3 Import', importFields, rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__,  file=__FILE__)) return
 
-      call setup_exportdata()
-
-    endif
+    end if
 
   end subroutine InitializeRealize
 
