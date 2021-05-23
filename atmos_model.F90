@@ -767,6 +767,7 @@ subroutine update_atmos_model_state (Atmos, rc)
   type (atmos_data_type), intent(inout) :: Atmos
   integer, optional,      intent(out)   :: rc
 !--- local variables
+  integer :: localrc
   integer :: isec, seconds, isec_fhzero
   real(kind=GFS_kind_phys) :: time_int, time_intfull
 !
@@ -830,9 +831,9 @@ subroutine update_atmos_model_state (Atmos, rc)
 
     !if in coupled mode, set up coupled fields
     if (.not. GFS_control%cplchm) then
-      call setup_exportdata(rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, file=__FILE__)) return
+      call setup_exportdata(rc=localrc)
+      if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, file=__FILE__, rcToReturn=rc)) return
     endif
 
  end subroutine update_atmos_model_state
@@ -2363,7 +2364,7 @@ end subroutine atmos_data_type_chksum
                call ESMF_FieldGet(exportFields(n),farrayPtr=datar82d,localDE=0, rc=localrc)
                if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
              case (3)
-               call ESMF_FieldGet(exportFields(n),farrayPtr=datar82d,localDE=0, rc=localrc)
+               call ESMF_FieldGet(exportFields(n),farrayPtr=datar83d,localDE=0, rc=localrc)
                if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
              case default
                !--- skip field
