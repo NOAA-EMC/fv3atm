@@ -761,14 +761,17 @@ subroutine atmos_model_exchange_phase_2 (Atmos, rc)
 ! <SUBROUTINE NAME="update_atmos_model_state"
 !
 ! <OVERVIEW>
-subroutine update_atmos_model_state (Atmos)
+subroutine update_atmos_model_state (Atmos, rc)
 ! to update the model state after all concurrency is completed
+  use ESMF
   type (atmos_data_type), intent(inout) :: Atmos
+  integer, optional,      intent(out)   :: rc
 !--- local variables
   integer :: isec, seconds, isec_fhzero
-  integer :: rc
   real(kind=GFS_kind_phys) :: time_int, time_intfull
 !
+    if (present(rc)) rc = ESMF_SUCCESS
+
     call set_atmosphere_pelist()
     call mpp_clock_begin(fv3Clock)
     call mpp_clock_begin(updClock)
@@ -827,7 +830,9 @@ subroutine update_atmos_model_state (Atmos)
 
     !if in coupled mode, set up coupled fields
     if (.not. GFS_control%cplchm) then
-      call setup_exportdata()
+      call setup_exportdata(rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, file=__FILE__)) return
     endif
 
  end subroutine update_atmos_model_state
@@ -2302,31 +2307,40 @@ end subroutine atmos_data_type_chksum
   end subroutine assign_importdata
 
 !
-  subroutine setup_exportdata()
+  subroutine setup_exportdata(rc)
 
     use ESMF
 
     use module_cplfields, only: exportFields
 
+    !--- arguments
+    integer, optional, intent(out) :: rc
+
     !--- local variables
-    integer                :: j, i, k, ix, nb, nk, isc, iec, jsc, jec, idx
+    integer                :: i, j, k, idx, ix
+    integer                :: isc, iec, jsc, jec
+    integer                :: ib, jb, nb, nsb, nk
     integer                :: sphum, liq_wat, ice_wat, o3mr
     real(GFS_kind_phys)    :: rtime, rtimek
 
-    integer                                     :: localrc, rc
-    integer                                     :: n,dimCount
-    logical                                     :: isCreated
+    integer                                     :: localrc
+    integer                                     :: n,rank
+    logical                                     :: isFound
     type(ESMF_TypeKind_Flag)                    :: datatype
     character(len=ESMF_MAXSTR)                  :: fieldName
     real(kind=ESMF_KIND_R4), dimension(:,:), pointer   :: datar42d
     real(kind=ESMF_KIND_R8), dimension(:,:), pointer   :: datar82d
     real(kind=ESMF_KIND_R8), dimension(:,:,:), pointer :: datar83d
 
+    !--- begin
+    if (present(rc)) rc = ESMF_SUCCESS
+
     isc = Atm_block%isc
     iec = Atm_block%iec
     jsc = Atm_block%jsc
     jec = Atm_block%jec
     nk  = Atm_block%npz
+    nsb = Atm_block%blkno(isc,jsc)
 
     rtime  = one / GFS_control%dtp
     rtimek = GFS_control%rho_h2o * rtime
@@ -2337,931 +2351,46 @@ end subroutine atmos_data_type_chksum
       datar82d => null()
       datar83d => null()
 
-      isCreated = ESMF_FieldIsCreated(exportFields(n), rc=localrc)
+      isFound = ESMF_FieldIsCreated(exportFields(n), rc=localrc)
       if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
-      if (.not. isCreated) cycle
 
-      call ESMF_FieldGet(exportFields(n), name=fieldname, dimCount=dimCount, typekind=datatype, rc=localrc)
-      if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
-      if (datatype == ESMF_TYPEKIND_R8) then
-         if (dimCount == 2) then
-           call ESMF_FieldGet(exportFields(n),farrayPtr=datar82d,localDE=0, rc=localrc)
-           if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
-         else if (dimCount == 3) then
-           call ESMF_FieldGet(exportFields(n),farrayPtr=datar83d,localDE=0, rc=localrc)
-           if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
-         else
-            write(0,*)'not implemented dimCount ',dimCount, trim(fieldname)
-            call ESMF_Finalize(endflag=ESMF_END_ABORT)
-         endif
-      else if (datatype == ESMF_TYPEKIND_R4) then
-         if (dimCount == 2) then
-           call ESMF_FieldGet(exportFields(n),farrayPtr=datar42d,localDE=0, rc=localrc)
-           if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
-         else
-            write(0,*)'not implemented dimCount ',dimCount, trim(fieldname)
-            call ESMF_Finalize(endflag=ESMF_END_ABORT)
-         endif
-      else
-         write(0,*) 'not implemented datatype ',datatype, trim(fieldname)
-         call ESMF_Finalize(endflag=ESMF_END_ABORT)
-      endif
-
-
-
-    ! Instantaneous u wind (m/s) 10 m above ground
-    if (trim(fieldname) == 'inst_zonal_wind_height10m') then
-!$omp parallel do default(shared) private(i,j,nb,ix)
-      do j=jsc,jec
-        do i=isc,iec
-          nb = Atm_block%blkno(i,j)
-          ix = Atm_block%ixp(i,j)
-          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%u10mi_cpl(ix)
-        enddo
-      enddo
-    endif
-
-    ! Instantaneous v wind (m/s) 10 m above ground
-    if (trim(fieldname) == 'inst_merid_wind_height10m') then
-!$omp parallel do default(shared) private(i,j,nb,ix)
-      do j=jsc,jec
-        do i=isc,iec
-          nb = Atm_block%blkno(i,j)
-          ix = Atm_block%ixp(i,j)
-          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%v10mi_cpl(ix)
-        enddo
-      enddo
-    endif
-
-    ! MEAN Zonal compt of momentum flux (N/m**2)
-    if (trim(fieldname) == 'mean_zonal_moment_flx_atm') then
-!$omp parallel do default(shared) private(i,j,nb,ix)
-      do j=jsc,jec
-        do i=isc,iec
-          nb = Atm_block%blkno(i,j)
-          ix = Atm_block%ixp(i,j)
-          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%dusfc_cpl(ix) * rtime
-        enddo
-      enddo
-    endif
-
-    ! MEAN Merid compt of momentum flux (N/m**2)
-    if (trim(fieldname) == 'mean_merid_moment_flx_atm') then
-!$omp parallel do default(shared) private(i,j,nb,ix)
-      do j=jsc,jec
-        do i=isc,iec
-          nb = Atm_block%blkno(i,j)
-          ix = Atm_block%ixp(i,j)
-          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%dvsfc_cpl(ix) * rtime
-        enddo
-      enddo
-    endif
-
-    ! MEAN Sensible heat flux (W/m**2)
-    if (trim(fieldname) == 'mean_sensi_heat_flx') then
-!$omp parallel do default(shared) private(i,j,nb,ix)
-      do j=jsc,jec
-        do i=isc,iec
-          nb = Atm_block%blkno(i,j)
-          ix = Atm_block%ixp(i,j)
-          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%dtsfc_cpl(ix) * rtime
-        enddo
-      enddo
-    endif
-
-    ! MEAN Latent heat flux (W/m**2)
-    if (trim(fieldname) == 'mean_laten_heat_flx') then
-!$omp parallel do default(shared) private(i,j,nb,ix)
-      do j=jsc,jec
-        do i=isc,iec
-          nb = Atm_block%blkno(i,j)
-          ix = Atm_block%ixp(i,j)
-          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%dqsfc_cpl(ix) * rtime
-        enddo
-      enddo
-    endif
-
-    ! MEAN Downward LW heat flux (W/m**2)
-    if (trim(fieldname) == 'mean_down_lw_flx') then
-!$omp parallel do default(shared) private(i,j,nb,ix)
-      do j=jsc,jec
-        do i=isc,iec
-          nb = Atm_block%blkno(i,j)
-          ix = Atm_block%ixp(i,j)
-          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%dlwsfc_cpl(ix) * rtime
-        enddo
-      enddo
-    endif
-
-    ! MEAN Downward SW heat flux (W/m**2)
-    if (trim(fieldname) == 'mean_down_sw_flx') then
-!$omp parallel do default(shared) private(i,j,nb,ix)
-      do j=jsc,jec
-        do i=isc,iec
-          nb = Atm_block%blkno(i,j)
-          ix = Atm_block%ixp(i,j)
-          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%dswsfc_cpl(ix) * rtime
-        enddo
-      enddo
-    endif
-
-    ! MEAN precipitation rate (kg/m2/s)
-    if (trim(fieldname) == 'mean_prec_rate') then
-!$omp parallel do default(shared) private(i,j,nb,ix)
-      do j=jsc,jec
-        do i=isc,iec
-          nb = Atm_block%blkno(i,j)
-          ix = Atm_block%ixp(i,j)
-          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%rain_cpl(ix) * rtimek
-        enddo
-      enddo
-    endif
-
-    ! Instataneous Zonal compt of momentum flux (N/m**2)
-    if (trim(fieldname) == 'inst_zonal_moment_flx') then
-!$omp parallel do default(shared) private(i,j,nb,ix)
-      do j=jsc,jec
-        do i=isc,iec
-          nb = Atm_block%blkno(i,j)
-          ix = Atm_block%ixp(i,j)
-          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%dusfci_cpl(ix)
-        enddo
-      enddo
-    endif
-
-    ! Instataneous Merid compt of momentum flux (N/m**2)
-    if (trim(fieldname) == 'inst_merid_moment_flx') then
-!$omp parallel do default(shared) private(i,j,nb,ix)
-      do j=jsc,jec
-        do i=isc,iec
-          nb = Atm_block%blkno(i,j)
-          ix = Atm_block%ixp(i,j)
-          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%dvsfci_cpl(ix)
-        enddo
-      enddo
-    endif
-
-    ! Instataneous Sensible heat flux (W/m**2)
-    if (trim(fieldname) == 'inst_sensi_heat_flx') then
-!$omp parallel do default(shared) private(i,j,nb,ix)
-      do j=jsc,jec
-        do i=isc,iec
-          nb = Atm_block%blkno(i,j)
-          ix = Atm_block%ixp(i,j)
-          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%dtsfci_cpl(ix)
-        enddo
-      enddo
-    endif
-
-    ! Instataneous Latent heat flux (W/m**2)
-    if (trim(fieldname) == 'inst_laten_heat_flx') then
-!$omp parallel do default(shared) private(i,j,nb,ix)
-      do j=jsc,jec
-        do i=isc,iec
-          nb = Atm_block%blkno(i,j)
-          ix = Atm_block%ixp(i,j)
-          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%dqsfci_cpl(ix)
-        enddo
-      enddo
-    endif
-
-    ! Instataneous Downward long wave radiation flux (W/m**2)
-    if (trim(fieldname) == 'inst_down_lw_flx') then
-!$omp parallel do default(shared) private(i,j,nb,ix)
-      do j=jsc,jec
-        do i=isc,iec
-          nb = Atm_block%blkno(i,j)
-          ix = Atm_block%ixp(i,j)
-          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%dlwsfci_cpl(ix)
-        enddo
-      enddo
-    endif
-
-    ! Instataneous Downward solar radiation flux (W/m**2)
-    if (trim(fieldname) == 'inst_down_sw_flx') then
-!$omp parallel do default(shared) private(i,j,nb,ix)
-      do j=jsc,jec
-        do i=isc,iec
-          nb = Atm_block%blkno(i,j)
-          ix = Atm_block%ixp(i,j)
-          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%dswsfci_cpl(ix)
-        enddo
-      enddo
-    endif
-
-    ! Instataneous Temperature (K) 2 m above ground
-    if (trim(fieldname) == 'inst_temp_height2m') then
-!$omp parallel do default(shared) private(i,j,nb,ix)
-      do j=jsc,jec
-        do i=isc,iec
-          nb = Atm_block%blkno(i,j)
-          ix = Atm_block%ixp(i,j)
-          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%t2mi_cpl(ix)
-        enddo
-      enddo
-    endif
-
-    ! Instataneous Specific humidity (kg/kg) 2 m above ground
-    if (trim(fieldname) == 'inst_spec_humid_height2m') then
-!$omp parallel do default(shared) private(i,j,nb,ix)
-      do j=jsc,jec
-        do i=isc,iec
-          nb = Atm_block%blkno(i,j)
-          ix = Atm_block%ixp(i,j)
-          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%q2mi_cpl(ix)
-        enddo
-      enddo
-    endif
-
-    ! Instataneous Temperature (K) at surface
-    if (trim(fieldname) == 'inst_temp_height_surface') then
-!$omp parallel do default(shared) private(i,j,nb,ix)
-      do j=jsc,jec
-        do i=isc,iec
-          nb = Atm_block%blkno(i,j)
-          ix = Atm_block%ixp(i,j)
-          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%tsfci_cpl(ix)
-        enddo
-      enddo
-    endif
-
-    ! Instataneous Pressure (Pa) land and sea surface
-    if (trim(fieldname) == 'inst_pres_height_surface') then
-!$omp parallel do default(shared) private(i,j,nb,ix)
-      do j=jsc,jec
-        do i=isc,iec
-          nb = Atm_block%blkno(i,j)
-          ix = Atm_block%ixp(i,j)
-          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%psurfi_cpl(ix)
-        enddo
-      enddo
-    endif
-
-    ! Instataneous Surface height (m)
-    if (trim(fieldname) == 'inst_surface_height') then
-!$omp parallel do default(shared) private(i,j,nb,ix)
-      do j=jsc,jec
-        do i=isc,iec
-          nb = Atm_block%blkno(i,j)
-          ix = Atm_block%ixp(i,j)
-          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%oro_cpl(ix)
-        enddo
-      enddo
-    endif
-
-    ! MEAN NET long wave radiation flux (W/m**2)
-    if (trim(fieldname) == 'mean_net_lw_flx') then
-!$omp parallel do default(shared) private(i,j,nb,ix)
-      do j=jsc,jec
-        do i=isc,iec
-          nb = Atm_block%blkno(i,j)
-          ix = Atm_block%ixp(i,j)
-          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%nlwsfc_cpl(ix) * rtime
-        enddo
-      enddo
-    endif
-
-    ! MEAN NET solar radiation flux over the ocean (W/m**2)
-    if (trim(fieldname) == 'mean_net_sw_flx') then
-!$omp parallel do default(shared) private(i,j,nb,ix)
-      do j=jsc,jec
-        do i=isc,iec
-          nb = Atm_block%blkno(i,j)
-          ix = Atm_block%ixp(i,j)
-          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%nswsfc_cpl(ix) * rtime
-        enddo
-      enddo
-    endif
-
-    ! Instataneous NET long wave radiation flux (W/m**2)
-    if (trim(fieldname) == 'inst_net_lw_flx') then
-!$omp parallel do default(shared) private(i,j,nb,ix)
-      do j=jsc,jec
-        do i=isc,iec
-          nb = Atm_block%blkno(i,j)
-          ix = Atm_block%ixp(i,j)
-          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%nlwsfci_cpl(ix)
-        enddo
-      enddo
-    endif
-
-    ! Instataneous NET solar radiation flux over the ocean (W/m**2)
-    if (trim(fieldname) == 'inst_net_sw_flx') then
-!$omp parallel do default(shared) private(i,j,nb,ix)
-      do j=jsc,jec
-        do i=isc,iec
-          nb = Atm_block%blkno(i,j)
-          ix = Atm_block%ixp(i,j)
-          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%nswsfci_cpl(ix)
-        enddo
-      enddo
-    endif
-
-    ! MEAN sfc downward nir direct flux (W/m**2)
-    if (trim(fieldname) == 'mean_down_sw_ir_dir_flx') then
-!$omp parallel do default(shared) private(i,j,nb,ix)
-      do j=jsc,jec
-        do i=isc,iec
-          nb = Atm_block%blkno(i,j)
-          ix = Atm_block%ixp(i,j)
-          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%dnirbm_cpl(ix) * rtime
-        enddo
-      enddo
-    endif
-
-    ! MEAN sfc downward nir diffused flux (W/m**2)
-    if (trim(fieldname) == 'mean_down_sw_ir_dif_flx') then
-!$omp parallel do default(shared) private(i,j,nb,ix)
-      do j=jsc,jec
-        do i=isc,iec
-          nb = Atm_block%blkno(i,j)
-          ix = Atm_block%ixp(i,j)
-          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%dnirdf_cpl(ix) * rtime
-        enddo
-      enddo
-    endif
-
-    ! MEAN sfc downward uv+vis direct flux (W/m**2)
-    if (trim(fieldname) == 'mean_down_sw_vis_dir_flx') then
-!$omp parallel do default(shared) private(i,j,nb,ix)
-      do j=jsc,jec
-        do i=isc,iec
-          nb = Atm_block%blkno(i,j)
-          ix = Atm_block%ixp(i,j)
-          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%dvisbm_cpl(ix) * rtime
-        enddo
-      enddo
-    endif
-
-    ! MEAN sfc downward uv+vis diffused flux (W/m**2)
-    if (trim(fieldname) == 'mean_down_sw_vis_dif_flx') then
-!$omp parallel do default(shared) private(i,j,nb,ix)
-      do j=jsc,jec
-        do i=isc,iec
-          nb = Atm_block%blkno(i,j)
-          ix = Atm_block%ixp(i,j)
-          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%dvisdf_cpl(ix) * rtime
-        enddo
-      enddo
-    endif
-
-    ! Instataneous sfc downward nir direct flux (W/m**2)
-    if (trim(fieldname) == 'inst_down_sw_ir_dir_flx') then
-!$omp parallel do default(shared) private(i,j,nb,ix)
-      do j=jsc,jec
-        do i=isc,iec
-          nb = Atm_block%blkno(i,j)
-          ix = Atm_block%ixp(i,j)
-          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%dnirbmi_cpl(ix)
-        enddo
-      enddo
-    endif
-
-    ! Instataneous sfc downward nir diffused flux (W/m**2)
-    if (trim(fieldname) == 'inst_down_sw_ir_dif_flx') then
-!$omp parallel do default(shared) private(i,j,nb,ix)
-      do j=jsc,jec
-        do i=isc,iec
-          nb = Atm_block%blkno(i,j)
-          ix = Atm_block%ixp(i,j)
-          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%dnirdfi_cpl(ix)
-        enddo
-      enddo
-    endif
-
-    ! Instataneous sfc downward uv+vis direct flux (W/m**2)
-    if (trim(fieldname) == 'inst_down_sw_vis_dir_flx') then
-!$omp parallel do default(shared) private(i,j,nb,ix)
-      do j=jsc,jec
-        do i=isc,iec
-          nb = Atm_block%blkno(i,j)
-          ix = Atm_block%ixp(i,j)
-          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%dvisbmi_cpl(ix)
-        enddo
-      enddo
-    endif
-
-    ! Instataneous sfc downward uv+vis diffused flux (W/m**2)
-    if (trim(fieldname) == 'inst_down_sw_vis_dif_flx') then
-!$omp parallel do default(shared) private(i,j,nb,ix)
-      do j=jsc,jec
-        do i=isc,iec
-          nb = Atm_block%blkno(i,j)
-          ix = Atm_block%ixp(i,j)
-          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%dvisdfi_cpl(ix)
-        enddo
-      enddo
-    endif
-
-    ! MEAN NET sfc nir direct flux (W/m**2)
-    if (trim(fieldname) == 'mean_net_sw_ir_dir_flx') then
-!$omp parallel do default(shared) private(i,j,nb,ix)
-      do j=jsc,jec
-        do i=isc,iec
-          nb = Atm_block%blkno(i,j)
-          ix = Atm_block%ixp(i,j)
-          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%nnirbm_cpl(ix) * rtime
-        enddo
-      enddo
-    endif
-
-    ! MEAN NET sfc nir diffused flux (W/m**2)
-    if (trim(fieldname) == 'mean_net_sw_ir_dif_flx') then
-!$omp parallel do default(shared) private(i,j,nb,ix)
-      do j=jsc,jec
-        do i=isc,iec
-          nb = Atm_block%blkno(i,j)
-          ix = Atm_block%ixp(i,j)
-          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%nnirdf_cpl(ix) * rtime
-        enddo
-      enddo
-    endif
-
-    ! MEAN NET sfc uv+vis direct flux (W/m**2)
-    if (trim(fieldname) == 'mean_net_sw_vis_dir_flx') then
-!$omp parallel do default(shared) private(i,j,nb,ix)
-      do j=jsc,jec
-        do i=isc,iec
-          nb = Atm_block%blkno(i,j)
-          ix = Atm_block%ixp(i,j)
-          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%nvisbm_cpl(ix) * rtime
-        enddo
-      enddo
-    endif
-
-    ! MEAN NET sfc uv+vis diffused flux (W/m**2)
-    if (trim(fieldname) == 'mean_net_sw_vis_dif_flx') then
-!$omp parallel do default(shared) private(i,j,nb,ix)
-      do j=jsc,jec
-        do i=isc,iec
-          nb = Atm_block%blkno(i,j)
-          ix = Atm_block%ixp(i,j)
-          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%nvisdf_cpl(ix) * rtime
-        enddo
-      enddo
-    endif
-
-    ! Instataneous net sfc nir direct flux (W/m**2)
-    if (trim(fieldname) == 'inst_net_sw_ir_dir_flx') then
-!$omp parallel do default(shared) private(i,j,nb,ix)
-      do j=jsc,jec
-        do i=isc,iec
-          nb = Atm_block%blkno(i,j)
-          ix = Atm_block%ixp(i,j)
-          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%nnirbmi_cpl(ix)
-        enddo
-      enddo
-    endif
-
-    ! Instataneous net sfc nir diffused flux (W/m**2)
-    if (trim(fieldname) == 'inst_net_sw_ir_dif_flx') then
-!$omp parallel do default(shared) private(i,j,nb,ix)
-      do j=jsc,jec
-        do i=isc,iec
-          nb = Atm_block%blkno(i,j)
-          ix = Atm_block%ixp(i,j)
-          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%nnirdfi_cpl(ix)
-        enddo
-      enddo
-    endif
-
-    ! Instataneous net sfc uv+vis direct flux (W/m**2)
-    if (trim(fieldname) == 'inst_net_sw_vis_dir_flx') then
-!$omp parallel do default(shared) private(i,j,nb,ix)
-      do j=jsc,jec
-        do i=isc,iec
-          nb = Atm_block%blkno(i,j)
-          ix = Atm_block%ixp(i,j)
-          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%nvisbmi_cpl(ix)
-        enddo
-      enddo
-    endif
-
-    ! Instataneous net sfc uv+vis diffused flux (W/m**2)
-    if (trim(fieldname) == 'inst_net_sw_vis_dif_flx') then
-!$omp parallel do default(shared) private(i,j,nb,ix)
-      do j=jsc,jec
-        do i=isc,iec
-          nb = Atm_block%blkno(i,j)
-          ix = Atm_block%ixp(i,j)
-          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%nvisdfi_cpl(ix)
-        enddo
-      enddo
-    endif
-
-    ! Land/Sea mask (sea:0,land:1)
-    if (trim(fieldname) == 'inst_land_sea_mask') then
-!$omp parallel do default(shared) private(i,j,nb,ix)
-      do j=jsc,jec
-        do i=isc,iec
-          nb = Atm_block%blkno(i,j)
-          ix = Atm_block%ixp(i,j)
-          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%slmsk_cpl(ix)
-        enddo
-      enddo
-    endif
-
-! Data from DYCORE:
-
-    ! bottom layer temperature (t)
-    if (trim(fieldname) == 'inst_temp_height_lowest') then
-!$omp parallel do default(shared) private(i,j,nb,ix)
-      do j=jsc,jec
-        do i=isc,iec
-          nb = Atm_block%blkno(i,j)
-          ix = Atm_block%ixp(i,j)
-          if (associated(DYCORE_Data(nb)%coupling%t_bot)) then
-            datar82d(i-isc+1,j-jsc+1) = DYCORE_Data(nb)%coupling%t_bot(ix)
-          else
-            datar82d(i-isc+1,j-jsc+1) = zero
-          endif
-        enddo
-      enddo
-    endif
-
-    ! bottom layer specific humidity (q)
-    !!! CHECK if tracer 1 is for specific humidity !!!
-    if (trim(fieldname) == 'inst_spec_humid_height_lowest') then
-!$omp parallel do default(shared) private(i,j,nb,ix)
-      do j=jsc,jec
-        do i=isc,iec
-          nb = Atm_block%blkno(i,j)
-          ix = Atm_block%ixp(i,j)
-          if (associated(DYCORE_Data(nb)%coupling%tr_bot)) then
-            datar82d(i-isc+1,j-jsc+1) = DYCORE_Data(nb)%coupling%tr_bot(ix,1)
-          else
-            datar82d(i-isc+1,j-jsc+1) = zero
-          endif
-        enddo
-      enddo
-    endif
-
-    ! bottom layer zonal wind (u)
-    if (trim(fieldname) == 'inst_zonal_wind_height_lowest') then
-!$omp parallel do default(shared) private(i,j,nb,ix)
-      do j=jsc,jec
-        do i=isc,iec
-          nb = Atm_block%blkno(i,j)
-          ix = Atm_block%ixp(i,j)
-          if (associated(DYCORE_Data(nb)%coupling%u_bot)) then
-            datar82d(i-isc+1,j-jsc+1) = DYCORE_Data(nb)%coupling%u_bot(ix)
-          else
-            datar82d(i-isc+1,j-jsc+1) = zero
-          endif
-        enddo
-      enddo
-    endif
-
-    ! bottom layer meridionalw wind (v)
-    if (trim(fieldname) == 'inst_merid_wind_height_lowest') then
-!$omp parallel do default(shared) private(i,j,nb,ix)
-      do j=jsc,jec
-        do i=isc,iec
-          nb = Atm_block%blkno(i,j)
-          ix = Atm_block%ixp(i,j)
-          if (associated(DYCORE_Data(nb)%coupling%v_bot)) then
-            datar82d(i-isc+1,j-jsc+1) = DYCORE_Data(nb)%coupling%v_bot(ix)
-          else
-            datar82d(i-isc+1,j-jsc+1) = zero
-          endif
-        enddo
-      enddo
-    endif
-
-    ! bottom layer pressure (p)
-    if (trim(fieldname) == 'inst_pres_height_lowest') then
-!$omp parallel do default(shared) private(i,j,nb,ix)
-      do j=jsc,jec
-        do i=isc,iec
-          nb = Atm_block%blkno(i,j)
-          ix = Atm_block%ixp(i,j)
-          if (associated(DYCORE_Data(nb)%coupling%p_bot)) then
-            datar82d(i-isc+1,j-jsc+1) = DYCORE_Data(nb)%coupling%p_bot(ix)
-          else
-            datar82d(i-isc+1,j-jsc+1) = zero
-          endif
-        enddo
-      enddo
-    endif
-
-    ! bottom layer height (z)
-    if (trim(fieldname) == 'inst_height_lowest') then
-!$omp parallel do default(shared) private(i,j,nb,ix)
-      do j=jsc,jec
-        do i=isc,iec
-          nb = Atm_block%blkno(i,j)
-          ix = Atm_block%ixp(i,j)
-          if (associated(DYCORE_Data(nb)%coupling%z_bot)) then
-            datar82d(i-isc+1,j-jsc+1) = DYCORE_Data(nb)%coupling%z_bot(ix)
-          else
-            datar82d(i-isc+1,j-jsc+1) = zero
-          endif
-        enddo
-      enddo
-    endif
-
-! END Data from DYCORE.
-
-    ! MEAN snow precipitation rate (kg/m2/s)
-    if (trim(fieldname) == 'mean_fprec_rate') then
-!$omp parallel do default(shared) private(i,j,nb,ix)
-      do j=jsc,jec
-        do i=isc,iec
-          nb = Atm_block%blkno(i,j)
-          ix = Atm_block%ixp(i,j)
-          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%snow_cpl(ix) * rtimek
-        enddo
-      enddo
-    endif
-
-   ! oceanfrac used by atm to calculate fluxes
-    if (trim(fieldname) == 'openwater_frac_in_atm') then
-!$omp parallel do default(shared) private(i,j,nb,ix)
-      do j=jsc,jec
-        do i=isc,iec
-          nb = Atm_block%blkno(i,j)
-          ix = Atm_block%ixp(i,j)
-          datar82d(i-isc+1,j-jsc+1) = (one - GFS_Data(nb)%Sfcprop%fice(ix))*GFS_Data(nb)%Sfcprop%oceanfrac(ix)
-        enddo
-      enddo
-    endif
-
-   ! For JEDI
-
-    sphum   = get_tracer_index(MODEL_ATMOS, 'sphum')
-    liq_wat = get_tracer_index(MODEL_ATMOS, 'liq_wat')
-    ice_wat = get_tracer_index(MODEL_ATMOS, 'ice_wat')
-    o3mr    = get_tracer_index(MODEL_ATMOS, 'o3mr')
-
-    if (trim(fieldname) == 'u') then
-!$omp parallel do default(shared) private(i,j,k)
-      do k = 1, nk
-      do j=jsc,jec
-        do i=isc,iec
-          datar83d(i-isc+1,j-jsc+1,k) = Atm(mygrid)%u(i,j,k)
-        enddo
-      enddo
-      enddo
-    endif
-
-    if (trim(fieldname) == 'v') then
-!$omp parallel do default(shared) private(i,j,k)
-      do k = 1, nk
-      do j=jsc,jec
-        do i=isc,iec
-          datar83d(i-isc+1,j-jsc+1,k) = Atm(mygrid)%v(i,j,k)
-        enddo
-      enddo
-      enddo
-    endif
-
-    if (trim(fieldname) == 'ua') then
-!$omp parallel do default(shared) private(i,j,k,nb,ix)
-      do k = 1, nk
-      do j=jsc,jec
-        do i=isc,iec
-          datar83d(i-isc+1,j-jsc+1,k) = Atm(mygrid)%ua(i,j,k)
-        enddo
-      enddo
-      enddo
-    endif
-
-    if (trim(fieldname) == 'va') then
-!$omp parallel do default(shared) private(i,j,k)
-      do k = 1, nk
-      do j=jsc,jec
-        do i=isc,iec
-          datar83d(i-isc+1,j-jsc+1,k) = Atm(mygrid)%va(i,j,k)
-        enddo
-      enddo
-      enddo
-    endif
-
-    if (trim(fieldname) == 't') then
-!$omp parallel do default(shared) private(i,j,k)
-      do k = 1, nk
-      do j=jsc,jec
-        do i=isc,iec
-          datar83d(i-isc+1,j-jsc+1,k) = Atm(mygrid)%pt(i,j,k)
-        enddo
-      enddo
-      enddo
-    endif
-
-    if (trim(fieldname) == 'delp') then
-!$omp parallel do default(shared) private(i,j,k)
-      do k = 1, nk
-      do j=jsc,jec
-        do i=isc,iec
-          datar83d(i-isc+1,j-jsc+1,k) = Atm(mygrid)%delp(i,j,k)
-        enddo
-      enddo
-      enddo
-    endif
-
-    if (trim(fieldname) == 'sphum' .and. sphum > 0) then
-!$omp parallel do default(shared) private(i,j,k)
-      do k = 1, nk
-      do j=jsc,jec
-        do i=isc,iec
-          datar83d(i-isc+1,j-jsc+1,k) = Atm(mygrid)%q(i,j,k,sphum)
-        enddo
-      enddo
-      enddo
-    endif
-
-    if (trim(fieldname) == 'ice_wat' .and. ice_wat > 0) then
-!$omp parallel do default(shared) private(i,j,k)
-      do k = 1, nk
-      do j=jsc,jec
-        do i=isc,iec
-          datar83d(i-isc+1,j-jsc+1,k) = Atm(mygrid)%q(i,j,k,ice_wat)
-        enddo
-      enddo
-      enddo
-    endif
-
-    if (trim(fieldname) == 'liq_wat' .and. liq_wat > 0) then
-!$omp parallel do default(shared) private(i,j,k)
-      do k = 1, nk
-      do j=jsc,jec
-        do i=isc,iec
-          datar83d(i-isc+1,j-jsc+1,k) = Atm(mygrid)%q(i,j,k,liq_wat)
-        enddo
-      enddo
-      enddo
-    endif
-
-    if (trim(fieldname) == 'o3mr' .and. o3mr > 0) then
-!$omp parallel do default(shared) private(i,j,k)
-      do k = 1, nk
-      do j=jsc,jec
-        do i=isc,iec
-          datar83d(i-isc+1,j-jsc+1,k) = Atm(mygrid)%q(i,j,k,o3mr)
-        enddo
-      enddo
-      enddo
-    endif
-
-    if (trim(fieldname) == 'phis') then
-!$omp parallel do default(shared) private(i,j)
-      do j=jsc,jec
-        do i=isc,iec
-          datar82d(i-isc+1,j-jsc+1) = Atm(mygrid)%phis(i,j)
-        enddo
-      enddo
-    endif
-
-    if (trim(fieldname) == 'u_srf') then
-!$omp parallel do default(shared) private(i,j)
-      do j=jsc,jec
-        do i=isc,iec
-          datar82d(i-isc+1,j-jsc+1) = Atm(mygrid)%u_srf(i,j)
-        enddo
-      enddo
-    endif
-
-    if (trim(fieldname) == 'v_srf') then
-!$omp parallel do default(shared) private(i,j)
-      do j=jsc,jec
-        do i=isc,iec
-          datar82d(i-isc+1,j-jsc+1) = Atm(mygrid)%v_srf(i,j)
-        enddo
-      enddo
-    endif
-
-    ! physics
-    if (trim(fieldname) == 'slmsk') then
-!$omp parallel do default(shared) private(i,j,nb,ix)
-      do j=jsc,jec
-        do i=isc,iec
-          nb = Atm_block%blkno(i,j)
-          ix = Atm_block%ixp(i,j)
-          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%Sfcprop%slmsk(ix)
-        enddo
-      enddo
-    endif
-
-    if (trim(fieldname) == 'weasd') then
-!$omp parallel do default(shared) private(i,j,nb,ix)
-      do j=jsc,jec
-        do i=isc,iec
-          nb = Atm_block%blkno(i,j)
-          ix = Atm_block%ixp(i,j)
-          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%Sfcprop%weasd(ix)
-        enddo
-      enddo
-    endif
-
-    if (trim(fieldname) == 'tsea') then
-!$omp parallel do default(shared) private(i,j,nb,ix)
-      do j=jsc,jec
-        do i=isc,iec
-          nb = Atm_block%blkno(i,j)
-          ix = Atm_block%ixp(i,j)
-          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%Sfcprop%tsfco(ix)
-        enddo
-      enddo
-    endif
-
-    if (trim(fieldname) == 'vtype') then
-!$omp parallel do default(shared) private(i,j,nb,ix)
-      do j=jsc,jec
-        do i=isc,iec
-          nb = Atm_block%blkno(i,j)
-          ix = Atm_block%ixp(i,j)
-          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%Sfcprop%vtype(ix)
-        enddo
-      enddo
-    endif
-
-    if (trim(fieldname) == 'stype') then
-!$omp parallel do default(shared) private(i,j,nb,ix)
-      do j=jsc,jec
-        do i=isc,iec
-          nb = Atm_block%blkno(i,j)
-          ix = Atm_block%ixp(i,j)
-          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%Sfcprop%stype(ix)
-        enddo
-      enddo
-    endif
-
-    if (trim(fieldname) == 'vfrac') then
-!$omp parallel do default(shared) private(i,j,nb,ix)
-      do j=jsc,jec
-        do i=isc,iec
-          nb = Atm_block%blkno(i,j)
-          ix = Atm_block%ixp(i,j)
-          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%Sfcprop%vfrac(ix)
-        enddo
-      enddo
-    endif
-
-    if (trim(fieldname) == 'stc') then
-!$omp parallel do default(shared) private(i,j,nb,ix)
-      do j=jsc,jec
-        do i=isc,iec
-          nb = Atm_block%blkno(i,j)
-          ix = Atm_block%ixp(i,j)
-          datar83d(i-isc+1,j-jsc+1,:) = GFS_data(nb)%Sfcprop%stc(ix,:)
-        enddo
-      enddo
-    endif
-
-    if (trim(fieldname) == 'smc') then
-!$omp parallel do default(shared) private(i,j,nb,ix)
-      do j=jsc,jec
-        do i=isc,iec
-          nb = Atm_block%blkno(i,j)
-          ix = Atm_block%ixp(i,j)
-          datar83d(i-isc+1,j-jsc+1,:) = GFS_data(nb)%Sfcprop%smc(ix,:)
-        enddo
-      enddo
-    endif
-
-    if (trim(fieldname) == 'snwdph') then
-!$omp parallel do default(shared) private(i,j,nb,ix)
-      do j=jsc,jec
-        do i=isc,iec
-          nb = Atm_block%blkno(i,j)
-          ix = Atm_block%ixp(i,j)
-          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%Sfcprop%snowd(ix)
-        enddo
-      enddo
-    endif
-
-    if (trim(fieldname) == 'f10m') then
-!$omp parallel do default(shared) private(i,j,nb,ix)
-      do j=jsc,jec
-        do i=isc,iec
-          nb = Atm_block%blkno(i,j)
-          ix = Atm_block%ixp(i,j)
-          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%Sfcprop%f10m(ix)
-        enddo
-      enddo
-    endif
-
-    if (trim(fieldname) == 'zorl') then
-!$omp parallel do default(shared) private(i,j,nb,ix)
-      do j=jsc,jec
-        do i=isc,iec
-          nb = Atm_block%blkno(i,j)
-          ix = Atm_block%ixp(i,j)
-          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%Sfcprop%zorl(ix)
-        enddo
-      enddo
-    endif
-
-    if (trim(fieldname) == 't2m') then
-!$omp parallel do default(shared) private(i,j,nb,ix)
-      do j=jsc,jec
-        do i=isc,iec
-          nb = Atm_block%blkno(i,j)
-          ix = Atm_block%ixp(i,j)
-          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%Sfcprop%t2m(ix)
-        enddo
-      enddo
-    endif
+      if (isFound) then
+        call ESMF_FieldGet(exportFields(n), name=fieldname, rank=rank, typekind=datatype, rc=localrc)
+        if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+        if (datatype == ESMF_TYPEKIND_R8) then
+           select case (rank)
+             case (2)
+               call ESMF_FieldGet(exportFields(n),farrayPtr=datar82d,localDE=0, rc=localrc)
+               if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+             case (3)
+               call ESMF_FieldGet(exportFields(n),farrayPtr=datar82d,localDE=0, rc=localrc)
+               if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+             case default
+               !--- skip field
+               isFound = .false.
+           end select
+        else if (datatype == ESMF_TYPEKIND_R4) then
+           select case (rank)
+             case (2)
+               call ESMF_FieldGet(exportFields(n),farrayPtr=datar42d,localDE=0, rc=localrc)
+               if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+             case default
+               !--- skip field
+               isFound = .false.
+           end select
+        else
+          !--- skip field
+          isFound = .false.
+        end if
+      end if
+
+      if (isFound) then
+        select case (trim(fieldname))
+#include "physics_export_fields.h"
+#include "dynamics_export_fields.h"
+#include "jedi_export_fields.h"
+        end select
+      end if
 
     enddo ! exportFields
 
