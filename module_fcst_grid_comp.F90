@@ -808,7 +808,8 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
       call atmos_model_exchange_phase_2 (atm_int_state%Atm, rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-      call update_atmos_model_state (atm_int_state%Atm)
+      call update_atmos_model_state (atm_int_state%Atm, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
 !--- intermediate restart
       if (atm_int_state%intrm_rst>0) then
