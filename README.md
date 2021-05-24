@@ -1,13 +1,23 @@
 
 # fv3atm
 
-This is the [NOAA Environmental Modeling
-Center](https://www.emc.ncep.noaa.gov/emc_new.php) version of the FV3
-atmospheric model dynamical core, originally from the [Geophysical
-Fluid Dynamics Laboratory](https://www.gfdl.noaa.gov/).
+This repository contains a driver and key subcomponents of the
+atmospheric component of the NOAA's [Unified Forecast System
+(UFS)](https://ufscommunity.org/) weather model.
 
-The fv3atm is part of NOAA's [Unified Forecast System
-(UFS)](https://ufscommunity.org/).
+The subcomponents include:
+
+ - The Finite-Volume Cubed-Sphere (FV3) dynamical core, originally
+from the [Geophysical Fluid Dynamics
+Laboratory](https://www.gfdl.noaa.gov/).
+ - The Common Community Physics Package (CCPP) from the [National Center
+  for Atmospheric Research (NCAR)](https://ncar.ucar.edu/), including:
+   - [CCPP Framework](https://github.com/NCAR/ccpp-framework).
+   - [CCPP Physics](https://github.com/NCAR/ccpp-physics)
+ - wrapper code to call [UFS stochastic
+   physics](https://stochastic-physics.readthedocs.io/en/latest/)
+ - io
+ - cpl
 
 ## Prerequisites
 
@@ -24,6 +34,16 @@ This package also requires the following packages:
  - [ESMF](https://github.com/esmf-org/esmf)
  - [GFDL's Flexible Modeling System](https://github.com/NOAA-GFDL/FMS)
  - [Jasper](https://github.com/jasper-software/jasper)
+
+## Obtaining fv3atm
+
+To obtain fv3atm, clone the git repository, and update the submodules:
+
+```
+git clone https://github.com/NOAA-EMC/fv3atm.git
+cd fv3atm
+git submodule update --init --recursive
+```
 
 ## Building and Installing
 
