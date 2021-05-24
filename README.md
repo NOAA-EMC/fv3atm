@@ -16,8 +16,9 @@ Laboratory](https://www.gfdl.noaa.gov/).
    - [CCPP Physics](https://github.com/NCAR/ccpp-physics)
  - wrapper code to call [UFS stochastic
    physics](https://stochastic-physics.readthedocs.io/en/latest/)
- - io
- - cpl
+ - The io code handles netCDF I/O.
+ - The cpl coupler code connects the different components and allows
+   them to communicate.
 
 ## Prerequisites
 
