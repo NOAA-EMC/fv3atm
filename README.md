@@ -12,7 +12,7 @@ The fv3atm is part of NOAA's [Unified Forecast System
 ## Prerequisites
 
 This package requires the following
-[NCEPLIBS](https://github.com/NOAA-EMC/NCEPLIBS) packages:
+ - [NCEPLIBS](https://github.com/NOAA-EMC/NCEPLIBS) packages:
  - [NCEPLIBS-w3nco](https://github.com/NOAA-EMC/NCEPLIBS-w3nco)
  - [NCEPLIBS-bacio](https://github.com/NOAA-EMC/NCEPLIBS-bacio)
  - [NCEPLIBS-nemsio](https://github.com/NOAA-EMC/NCEPLIBS-nemsio)
