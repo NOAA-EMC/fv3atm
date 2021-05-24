@@ -3,16 +3,16 @@
     module module_wrt_grid_comp
 !
 !-----------------------------------------------------------------------
-!***  This module includes the funcationailty of write gridded component.
+!***  This module includes the functionality of write gridded component.
 !-----------------------------------------------------------------------
-!***  At intialization step, write grid is defined. The firecast field
+!***  At initialization step, write grid is defined. The forecast field
 !***  bundle is mirrored and output field information inside the field
 !***  bundle is used to create ESMF field on the write grid and added in
-!***  the mirrror field bundle on write grid component. Also the IO_BaseTime
-!***  is set to the intial clock time.
+!***  the mirror field bundle on write grid component. Also the IO_BaseTime
+!***  is set to the initial clock time.
 !***  At the run step, output time is set from the write grid comp clock
 !***  the ESMF field bundles that contains the data on write grid are
-!***  writen out through ESMF field bundle write to netcdf files.
+!***  written out through ESMF field bundle write to netcdf files.
 !***  The ESMF field bundle write uses parallel write, so if output grid
 !***  is cubed sphere grid, the  six tiles file will be written out at
 !***  same time.
@@ -22,14 +22,13 @@
 !***
 !     Jul 2017:  J. Wang/G. Theurich  - initial code for fv3 write grid component
 !     Aug 2017:  J. Wang              - add nemsio binary output for Gaussian grid
-!     Mar 2018:  S  Moorthi           - changing cfhour to accomodate up to 99999 hours
+!     Mar 2018:  S  Moorthi           - changing cfhour to accommodate up to 99999 hours
 !     Aug 2019:  J. Wang              - add inline post
 !
 !---------------------------------------------------------------------------------
 !
       use mpi
       use esmf
-      use fms_io_mod,         only: field_exist
 
       use write_internal_state
       use module_fv3_io_def,   only : num_pes_fcst,                             &
@@ -157,7 +156,7 @@
       type(ESMF_Config)                       :: cf
       type(ESMF_DELayout)                     :: delayout
       type(ESMF_Grid)                         :: wrtGrid, fcstGrid
-      type(ESMF_Array)                        :: array_work, array
+      type(ESMF_Array)                        :: array
       type(ESMF_FieldBundle)                  :: fieldbdl_work
       type(ESMF_Field)                        :: field_work, field
       type(ESMF_Decomp_Flag)                  :: decompflagPTile(2,6)
@@ -203,7 +202,6 @@
       logical,save                            :: first=.true.
       logical                                 :: lprnt
 !test
-      integer myattCount
       real(ESMF_KIND_R8),dimension(:,:), pointer :: glatPtr, glonPtr
 !
 !-----------------------------------------------------------------------
@@ -1297,7 +1295,6 @@
 !***  the run step for the write gridded component.
 !-----------------------------------------------------------------------
 !
-!
       type(ESMF_GridComp)            :: wrt_comp
       type(ESMF_State)               :: imp_state_write, exp_state_write
       type(ESMF_Clock)               :: clock
@@ -1311,18 +1308,13 @@
       type(ESMF_Time)                       :: currtime
       type(ESMF_TypeKind_Flag)              :: datatype
       type(ESMF_Field)                      :: field_work
-      type(ESMF_Grid)                       :: grid_work, fbgrid, wrtgrid
-      type(ESMF_Array)                      :: array_work
+      type(ESMF_Grid)                       :: fbgrid, wrtgrid
       type(ESMF_State),save                 :: stateGridFB
       type(optimizeT), save                 :: optimize(4)
       type(ESMF_GridComp), save, allocatable   :: compsGridFB(:)
 !
       type(write_wrap)                      :: wrap
       type(wrt_internal_state),pointer      :: wrt_int_state
-!
-      integer,dimension(:),allocatable,save :: ih_int, ih_real
-!
-      INTEGER,SAVE                          :: NPOSN_1,NPOSN_2
 !
       integer                               :: i,j,n,mype,nolog
 !
@@ -1333,23 +1325,14 @@
       integer                               :: nbdl, idx, date(6), ndig
       integer                               :: step=1
 !
-      REAL                                  :: DEGRAD
-!
       logical                               :: opened
       logical                               :: lmask_fields
       logical,save                          :: first=.true.
       logical,save                          :: file_first=.true.
 !
-      character(esmf_maxstr)            :: filename,compname,bundle_name
+      character(esmf_maxstr)                :: filename,compname,bundle_name
       character(40)                         :: cfhour, cform
-      character(10)                         :: stepString
-      character(80)                         :: attrValueS
-      integer                               :: attrValueI
-      real                                  :: attrValueR
       real(ESMF_KIND_R8)                    :: time
-
-!
-!-----------------------------------------------------------------------
 !
       real(kind=8)  :: wait_time, MPI_Wtime
       real(kind=8)  :: times,times2,etim
@@ -1357,11 +1340,9 @@
       real(kind=8)  :: tbeg,tend
       real(kind=8)  :: wbeg,wend
 
-      integer fieldcount, dimCount
       real(kind=ESMF_KIND_R8), dimension(:,:,:), pointer   :: datar8
       real(kind=ESMF_KIND_R8), dimension(:,:),   pointer   :: datar82d
 !
-      integer myattCount
       logical lprnt
 !
 !-----------------------------------------------------------------------
@@ -1854,8 +1835,7 @@
 !
 !***  local variables
 !
-      integer :: stat
-!
+      integer                        :: stat
       type(write_wrap)               :: wrap
 !
 !-----------------------------------------------------------------------
