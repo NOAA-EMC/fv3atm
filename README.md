@@ -6,7 +6,7 @@ Center](https://www.emc.ncep.noaa.gov/emc_new.php) version of the FV3
 atmospheric model dynamical core, originally from the [Geophysical
 Fluid Dynamics Laboratory](https://www.gfdl.noaa.gov/).
 
-The fvsatm is part of NOAA's [Unified Forecast System
+The fv3atm is part of NOAA's [Unified Forecast System
 (UFS)](https://ufscommunity.org/).
 
 ## Prerequisites
