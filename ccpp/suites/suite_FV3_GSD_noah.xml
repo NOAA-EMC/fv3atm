@@ -76,7 +76,7 @@
       <scheme>GFS_MP_generic_pre</scheme>
       <scheme>mp_thompson_pre</scheme>
     </subcycle>
-    <subcycle loop="1">
+    <subcycle loop="4">
       <scheme>mp_thompson</scheme>
     </subcycle>
     <subcycle loop="1">
