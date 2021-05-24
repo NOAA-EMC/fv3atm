@@ -142,6 +142,7 @@ module GFS_typedefs
     real(kind=kind_phys), pointer :: xlat(:,:)   !< column latitude  for MPI rank
     real(kind=kind_phys), pointer :: area(:,:)   !< column area for length scale calculations
 
+    integer                    :: nwat            !< number of hydrometeors in dcyore (including water vapor)
     character(len=32), pointer :: tracer_names(:) !< tracers names to dereference tracer id
                                                   !< based on name location in array
     character(len=64) :: fn_nml                   !< namelist filename
@@ -2907,7 +2908,7 @@ module GFS_typedefs
                                  logunit, isc, jsc, nx, ny, levs,   &
                                  cnx, cny, gnx, gny, dt_dycore,     &
                                  dt_phys, iau_offset, idat, jdat,   &
-                                 tracer_names,                      &
+                                 nwat, tracer_names,                &
                                  input_nml_file, tile_num, blksz,   &
                                  ak, bk, restart, hydrostatic,      &
                                  communicator, ntasks, nthreads)
@@ -2941,6 +2942,7 @@ module GFS_typedefs
     integer,                intent(in) :: iau_offset
     integer,                intent(in) :: idat(8)
     integer,                intent(in) :: jdat(8)
+    integer,                intent(in) :: nwat
     character(len=32),      intent(in) :: tracer_names(:)
     character(len=256),     intent(in), pointer :: input_nml_file(:)
     integer,                intent(in) :: blksz(:)
@@ -3923,8 +3925,32 @@ module GFS_typedefs
     end if
     ! *DH
 
+    if (Model%lsm==Model%lsm_noah_wrfv4) then
+      if (Model%lsoil_lsm/=4) then
+        write(0,*) 'Error in GFS_typedefs.F90, number of soil layers must be 4 for Noah_WRFv4'
+        stop
+      end if
+    elseif (Model%lsm==Model%lsm_ruc) then
+      if (Model%lsoil_lsm/=9) then
+        write(0,*) 'Error in GFS_typedefs.F90, number of soil layers must be 9 for RUC'
+        stop
+      end if
+    end if       
+
     ! Set number of ice model layers
     Model%kice      = kice
+
+    if (Model%lsm==Model%lsm_noah .or. Model%lsm==Model%lsm_noahmp .or. Model%lsm==Model%lsm_noah_wrfv4) then
+      if (kice/=2) then
+        write(0,*) 'Error in GFS_typedefs.F90, number of ice model layers must be 2 for Noah/NoahMP/Noah_WRFv4'
+        stop
+      end if
+    elseif (Model%lsm==Model%lsm_ruc) then
+      if (kice/=9) then
+        write(0,*) 'Error in GFS_typedefs.F90, number of ice model layers must be 9 for RUC'
+        stop
+      end if
+    end if
 
     ! Allocate variable for min/max soil moisture for a given soil type
     allocate (Model%pores(30))
@@ -4642,6 +4668,10 @@ module GFS_typedefs
       Model%nqvdelt  = 4
       Model%nps2delt = 1
       Model%npsdelt  = 2
+      if (nwat /= 2) then
+        print *,' Zhao-Carr MP requires nwat to be set to 2 - job aborted'
+        stop
+      end if
       if (Model%me == Model%master) print *,' Using Zhao/Carr/Sundqvist Microphysics'
 
     elseif (Model%imp_physics == Model%imp_physics_zhao_carr_pdf) then !Zhao Microphysics with PDF cloud
@@ -4651,9 +4681,6 @@ module GFS_typedefs
       Model%ncnd    = 1
       if (Model%me == Model%master) print *,'Using Zhao/Carr/Sundqvist Microphysics with PDF Cloud'
 
-    !else if (Model%imp_physics == 5) then        ! F-A goes here
-    !  print *,' Ferrier Microphysics scheme has been deprecated - job aborted'
-    !  stop
     else if (Model%imp_physics == Model%imp_physics_fer_hires) then     ! Ferrier-Aligo scheme
       Model%npdf3d  = 0
       Model%num_p3d = 3
@@ -4665,22 +4692,27 @@ module GFS_typedefs
       Model%nleffr  = 1
       Model%nieffr  = 2
       Model%nseffr  = 3
+      if (nwat /= 4) then
+        print *,' Ferrier-Aligo MP requires nwat to be set to 4 - job aborted'
+        stop
+      end if
       if (Model%me == Model%master) print *,' Using Ferrier-Aligo MP scheme', &
                                           ' microphysics', &
                                           ' lradar =',Model%lradar
 
-
     elseif (Model%imp_physics == Model%imp_physics_wsm6) then !WSM6 microphysics
-      Model%npdf3d  = 0
-      Model%num_p3d = 3
-      Model%num_p2d = 1
-      Model%pdfcld  = .false.
-      Model%shcnvcw = .false.
-      Model%ncnd    = 5
-      Model%nleffr  = 1
-      Model%nieffr  = 2
-      Model%nseffr  = 3
-      if (Model%me == Model%master) print *,' Using wsm6 microphysics'
+      print *,' Error, WSM6 no longer supported - job aborted'
+      stop
+      !Model%npdf3d  = 0
+      !Model%num_p3d = 3
+      !Model%num_p2d = 1
+      !Model%pdfcld  = .false.
+      !Model%shcnvcw = .false.
+      !Model%ncnd    = 5
+      !Model%nleffr  = 1
+      !Model%nieffr  = 2
+      !Model%nseffr  = 3
+      !if (Model%me == Model%master) print *,' Using wsm6 microphysics'
 
     elseif (Model%imp_physics == Model%imp_physics_thompson) then !Thompson microphysics
       Model%npdf3d  = 0
@@ -4692,6 +4724,10 @@ module GFS_typedefs
       Model%nleffr  = 1
       Model%nieffr  = 2
       Model%nseffr  = 3
+      if (nwat /= 6) then
+        print *,' Thompson MP requires nwat to be set to 6 - job aborted'
+        stop
+      end if
       if (.not. Model%effr_in) then
         print *,' Thompson MP requires effr_in to be set to .true. - job aborted'
         stop
@@ -4716,6 +4752,10 @@ module GFS_typedefs
       Model%nieffr  = 3
       Model%nreffr  = 4
       Model%nseffr  = 5
+      if (nwat /= 6) then
+        print *,' Morrison-Gettelman MP requires nwat to be set to 6 - job aborted'
+        stop
+      end if
       if (abs(Model%fprcp) == 1) then
         Model%ncnd  = 4
       elseif (Model%fprcp >= 2) then
@@ -4763,8 +4803,13 @@ module GFS_typedefs
       Model%pdfcld  = .false.
       Model%shcnvcw = .false.
       Model%ncnd    = 5
+      if (nwat /= 6) then
+        print *,' GFDL MP requires nwat to be set to 6 - job aborted'
+        stop
+      end if
       if (Model%me == Model%master) print *,' avg_max_length=',Model%avg_max_length
       if (Model%me == Model%master) print *,' Using GFDL Cloud Microphysics'
+
     else
       if (Model%me == Model%master) print *,'Wrong imp_physics value. Job abort.'
       stop
