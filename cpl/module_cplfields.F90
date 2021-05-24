@@ -105,7 +105,7 @@ module module_cplfields
     FieldInfo("inst_height_lowest                       ", "s"), &
     FieldInfo("mean_fprec_rate                          ", "s"), &
     FieldInfo("openwater_frac_in_atm                    ", "s"), &
-    FieldInfo("ice_fraction                             ", "s"), &
+    FieldInfo("ice_fraction_in_atm                      ", "s"), &
     FieldInfo("lake_fraction                            ", "s"), &
     FieldInfo("ocean_fraction                           ", "s"), &
     FieldInfo("surface_snow_area_fraction               ", "s"), &
