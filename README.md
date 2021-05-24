@@ -1,19 +1,28 @@
 
 # fv3atm
 
-This is the NOAA EMC version of the FV3 atmospheric model dynamical
-core, originally from GFDL.
+This is the [NOAA Environmental Modeling
+Center](https://www.emc.ncep.noaa.gov/emc_new.php) version of the FV3
+atmospheric model dynamical core, originally from the [Geophysical
+Fluid Dynamics Laboratory](https://www.gfdl.noaa.gov/).
 
-## Authors
-
-Not sure what to list here...
+The fvsatm is part of NOAA's [Unified Forecast System
+(UFS)](https://ufscommunity.org/).
 
 ## Prerequisites
 
-This package requires the following packages:
+This package requires the following
+[NCEPLIBS](https://github.com/NOAA-EMC/NCEPLIBS) packages:
+ - [NCEPLIBS-w3nco](https://github.com/NOAA-EMC/NCEPLIBS-w3nco)
+ - [NCEPLIBS-bacio](https://github.com/NOAA-EMC/NCEPLIBS-bacio)
+ - [NCEPLIBS-nemsio](https://github.com/NOAA-EMC/NCEPLIBS-nemsio)
+ - [NCEPLIBS-sp](https://github.com/NOAA-EMC/NCEPLIBS-sp)
+
+This package also requires the following packages:
  - [netcdf-c Library](https://github.com/Unidata/netcdf-c)
  - [netcdf-fortran Library](https://github.com/Unidata/netcdf-fortran)
  - [ESMF](https://github.com/esmf-org/esmf)
+ - [GFDL's Flexible Modeling System](https://github.com/NOAA-GFDL/FMS)
  - [Jasper](https://github.com/jasper-software/jasper)
 
 ## Building and Installing
@@ -25,7 +34,6 @@ cmake -DCMAKE_INSTALL_PREFIX=/path/to/install ..
 make -j2
 make install
 ```
-
 
 ## References
 
