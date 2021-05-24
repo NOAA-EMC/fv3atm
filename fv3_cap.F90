@@ -24,7 +24,7 @@ module fv3gfs_cap_mod
                                     label_Finalize,                  &
                                     NUOPC_ModelGet
 !
-  use module_fv3_config,      only: quilting, restart_interval,              &
+  use module_fv3_config,      only: quilting,                                &
                                     nfhout, nfhout_hf, nsout, dt_atmos,      &
                                     nfhmax, nfhmax_hf,output_hfmax,          &
                                     output_interval,output_interval_hf,      &
@@ -32,7 +32,7 @@ module fv3gfs_cap_mod
                                     calendar, calendar_type,                 &
                                     force_date_from_configure,               &
                                     cplprint_flag,output_1st_tstep_rst,      &
-                                    first_kdt,num_restart_interval
+                                    first_kdt
 
   use module_fv3_io_def,      only: num_pes_fcst,write_groups,               &
                                     num_files, filename_base,                &
@@ -177,7 +177,7 @@ module fv3gfs_cap_mod
     character(240)                         :: msgString
     logical                                :: isPresent, isSet
     type(ESMF_VM)                          :: vm, fcstVM
-    type(ESMF_Time)                        :: CurrTime, starttime, StopTime
+    type(ESMF_Time)                        :: currTime, startTime, stopTime
     type(ESMF_Time)                        :: alarm_output_hf_ring, alarm_output_ring
     type(ESMF_Time)                        :: alarm_output_hf_stop, alarm_output_stop
     type(ESMF_TimeInterval)                :: RunDuration, timeStep, rsthour, IAU_offsetTI
@@ -251,17 +251,6 @@ module fv3gfs_cap_mod
     CF = ESMF_ConfigCreate(rc=rc)
     call ESMF_ConfigLoadFile(config=CF ,filename='model_configure' ,rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-!
-    num_restart_interval = ESMF_ConfigGetLen(config=CF, label ='restart_interval:',rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-    if(mype == 0) print *,'af nems config,num_restart_interval=',num_restart_interval
-    if (num_restart_interval<=0) num_restart_interval = 1
-    allocate(restart_interval(num_restart_interval))
-    restart_interval = 0
-    call  ESMF_ConfigGetAttribute(CF,valueList=restart_interval,label='restart_interval:', &
-      count=num_restart_interval, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-    if(mype == 0) print *,'af nems config,restart_interval=',restart_interval
 !
     call ESMF_ConfigGetAttribute(config=CF,value=calendar, &
                                  label ='calendar:', &
@@ -356,11 +345,11 @@ module fv3gfs_cap_mod
 !------------------------------------------------------------------------
 ! may need to set currTime for restart
 !
-    call ESMF_ClockGet(clock_fv3, currTIME=CurrTime,  StartTime=startTime,    &
+    call ESMF_ClockGet(clock_fv3, currTime=currTime,  StartTime=startTime,    &
                        RunDuration=RunDuration, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-    StopTime = startTime + RunDuration
+    stopTime = startTime + RunDuration
 
 ! *** read restart time from restart file
     do i=751,899
@@ -385,15 +374,15 @@ module fv3gfs_cap_mod
     if(mype == 0) print *,'bf clock_fv3,date=',date,'date_init=',date_init
 
     call ESMF_VMbroadcast(vm, date, 6, 0)
-    call ESMF_TimeSet(time=CurrTime,yy=date(1),mm=date(2),dd=date(3),h=date(4), &
+    call ESMF_TimeSet(time=currTime,yy=date(1),mm=date(2),dd=date(3),h=date(4), &
                       m=date(5),s=date(6),rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 999 continue
 998 continue
 !    if(mype==0) print *,'final date =',date,'date_init=',date_init
 
-!reset CurrTime in clock
-    call ESMF_ClockSet(clock_fv3, currTIME=CurrTime, startTime=startTime,  &
+!reset currTime in clock
+    call ESMF_ClockSet(clock_fv3, currTime=currTime, startTime=startTime,  &
                        stopTime=stopTime, timeStep=timeStep, rc=rc)
 
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
@@ -422,7 +411,7 @@ module fv3gfs_cap_mod
 
     first_kdt = 1
     if( output_1st_tstep_rst) then
-      rsthour   = CurrTime - StartTime
+      rsthour   = currTime - StartTime
       first_kdt = nint(rsthour/timeStep) + 1
     endif
 
@@ -475,51 +464,45 @@ module fv3gfs_cap_mod
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
     if(mype == 0) print *,'af fcstCom FBCount= ',FBcount
 !
-! allocate arrays
-    allocate(fcstFB(FBCount), fcstItemNameList(FBCount), fcstItemTypeList(FBCount))
-!
-! pull out the item names and item types from fcstState
-    call ESMF_StateGet(fcstState, itemNameList=fcstItemNameList, &
-                       itemTypeList=fcstItemTypeList, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-!
-! loop over all items in the fcstState and collect all FieldBundles
-    do i=1, FBcount
-      if (fcstItemTypeList(i) == ESMF_STATEITEM_FIELDBUNDLE) then
-        ! access the FieldBundle
-        call ESMF_StateGet(fcstState, itemName=fcstItemNameList(i), &
-                           fieldbundle=fcstFB(i), rc=rc)
-        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-!    if(mype==0.or.mype==144) print *,'af fcstFB,i=',i,'name=',trim(fcstItemNameList(i))
-      else
-
-      !***### anything but a FieldBundle in the state is unexpected here
-          call ESMF_LogSetError(ESMF_RC_ARG_BAD,                                 &
-                                msg="Only FieldBundles supported in fcstState.", &
-                                line=__LINE__, file=__FILE__, rcToReturn=rc)
-          return
-      endif
-    enddo
-!
 !-----------------------------------------------------------------------
 !***  create and initialize Write component(s).
 !-----------------------------------------------------------------------
 !
     if( quilting ) then
 
-!
+      allocate(fcstFB(FBCount), fcstItemNameList(FBCount), fcstItemTypeList(FBCount))
       allocate(wrtComp(write_groups), wrtState(write_groups) )
-      allocate(wrtFB(5,write_groups), routehandle(5,write_groups))
+      allocate(wrtFB(FBCount,write_groups), routehandle(FBCount,write_groups))
       allocate(lead_wrttask(write_groups), last_wrttask(write_groups))
-!
       allocate(petList(wrttasks_per_group))
-      if(mype == 0) print *,'af allco wrtComp,write_groups=',write_groups
-
-! set up ESMF time interval at center of iau window
-      call ESMF_TimeIntervalSet(IAU_offsetTI, h=iau_offset, rc=rc)
-!
       allocate(originPetList(num_pes_fcst+wrttasks_per_group))
       allocate(targetPetList(num_pes_fcst+wrttasks_per_group))
+      if(mype == 0) print *,'af allco wrtComp,write_groups=',write_groups
+
+! pull out the item names and item types from fcstState
+      call ESMF_StateGet(fcstState, itemNameList=fcstItemNameList, &
+                         itemTypeList=fcstItemTypeList, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+! loop over all items in the fcstState and collect all FieldBundles
+      do i=1, FBcount
+        if (fcstItemTypeList(i) == ESMF_STATEITEM_FIELDBUNDLE) then
+          ! access the FieldBundle
+          call ESMF_StateGet(fcstState, itemName=fcstItemNameList(i), &
+                             fieldbundle=fcstFB(i), rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+!          if(mype==0.or.mype==144) print *,'af fcstFB,i=',i,'name=',trim(fcstItemNameList(i))
+        else
+        !***### anything but a FieldBundle in the state is unexpected here
+          call ESMF_LogSetError(ESMF_RC_ARG_BAD,                                 &
+                                msg="Only FieldBundles supported in fcstState.", &
+                                line=__LINE__, file=__FILE__, rcToReturn=rc)
+          return
+        endif
+      enddo
+!
+! set up ESMF time interval at center of iau window
+      call ESMF_TimeIntervalSet(IAU_offsetTI, h=iau_offset, rc=rc)
 !
       k = num_pes_fcst
       timerhs = MPI_Wtime()
@@ -1342,7 +1325,7 @@ module fv3gfs_cap_mod
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
     date(1:6) = 0
-    call ESMF_TimeGet(time=CurrTime,yy=date(1),mm=date(2),dd=date(3),h=date(4), &
+    call ESMF_TimeGet(time=currTime,yy=date(1),mm=date(2),dd=date(3),h=date(4), &
                       m=date(5),s=date(6),rc=rc)
 !   if(mype==0) print *,'in fv3_checkimport, currtime=',date(1:6)
 

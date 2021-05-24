@@ -99,7 +99,7 @@ use FV3GFS_io_mod,      only: FV3GFS_restart_read, FV3GFS_restart_write, &
                               DIAG_SIZE
 use fv_iau_mod,         only: iau_external_data_type,getiauforcing,iau_initialize
 use module_fv3_config,  only: output_1st_tstep_rst, first_kdt, nsout,    &
-                              frestart, restart_endfcst
+                              restart_endfcst
 
 !-----------------------------------------------------------------------
 
