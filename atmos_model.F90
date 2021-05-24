@@ -1034,7 +1034,7 @@ subroutine get_atmos_tracer_types(tracer_types)
   if (id_num > 0) then
     !--- check if diagnostic tracers are contiguous
     if (id_num > id_max - id_min + 1) &
-      call mpp_error(FATAL, 'diagnostic chemistry tracers must be consecutive')
+      call mpp_error(FATAL, 'diagnostic chemistry tracers must be contiguous')
   end if
 
   !--- prognostic tracers must precede diagnostic ones
