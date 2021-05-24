@@ -34,18 +34,13 @@ module fv3gfs_cap_mod
                                     cplprint_flag,output_1st_tstep_rst,      &
                                     first_kdt,num_restart_interval
 
-  use module_fv3_io_def,      only: num_pes_fcst,write_groups,app_domain,    &
+  use module_fv3_io_def,      only: num_pes_fcst,write_groups,               &
                                     num_files, filename_base,                &
                                     wrttasks_per_group, n_group,             &
                                     lead_wrttask, last_wrttask,              &
                                     output_grid, output_file,                &
-                                    imo,jmo,ichunk2d,jchunk2d,write_nemsioflip,&
-                                    ichunk3d,jchunk3d,kchunk3d,              &
-                                    write_fsyncflag, nsout_io,               &
-                                    cen_lon, cen_lat, ideflate,              &
-                                    lon1, lat1, lon2, lat2, dlon, dlat,      &
-                                    stdlat1, stdlat2, dx, dy, iau_offset,    &
-                                    nbits
+                                    nsout_io,                                &
+                                    iau_offset
 !
   use module_fcst_grid_comp,  only: fcstSS => SetServices,                   &
                                     fcstGrid, numLevels, numSoilLayers,      &
@@ -295,25 +290,8 @@ module fv3gfs_cap_mod
     call ESMF_ConfigGetAttribute(config=CF,value=iau_offset,default=0,label ='iau_offset:',rc=rc)
     if (iau_offset < 0) iau_offset=0
 
-    ! chunksizes for netcdf_parallel
-    call ESMF_ConfigGetAttribute(config=CF,value=ichunk2d,default=0,label ='ichunk2d:',rc=rc)
-    call ESMF_ConfigGetAttribute(config=CF,value=jchunk2d,default=0,label ='jchunk2d:',rc=rc)
-    call ESMF_ConfigGetAttribute(config=CF,value=ichunk3d,default=0,label ='ichunk3d:',rc=rc)
-    call ESMF_ConfigGetAttribute(config=CF,value=jchunk3d,default=0,label ='jchunk3d:',rc=rc)
-    call ESMF_ConfigGetAttribute(config=CF,value=kchunk3d,default=0,label ='kchunk3d:',rc=rc)
-
-    ! zlib compression flag
-    call ESMF_ConfigGetAttribute(config=CF,value=ideflate,default=0,label ='ideflate:',rc=rc)
-    if (ideflate < 0) ideflate=0
-
-    call ESMF_ConfigGetAttribute(config=CF,value=nbits,default=0,label ='nbits:',rc=rc)
-    ! nbits quantization level for lossy compression (must be between 1 and 31)
-    ! 1 is most compression, 31 is least. If outside this range, set to zero
-    ! which means use lossless compression.
-    if (nbits < 1 .or. nbits > 31)  nbits=0  ! lossless compression (no quantization)
 
     if(mype == 0) print *,'af nems config,quilting=',quilting,'calendar=', trim(calendar),' iau_offset=',iau_offset
-    if(mype == 0) print *,'af nems config,ideflate=',ideflate,'nbits=',nbits
 !
     nfhout = 0 ; nfhmax_hf = 0 ; nfhout_hf = 0 ; nsout = 0
     if ( quilting ) then
@@ -323,10 +301,6 @@ module fv3gfs_cap_mod
 !
       CALL ESMF_ConfigGetAttribute(config=CF,value=wrttasks_per_group, &
                                    label ='write_tasks_per_group:',rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-      CALL ESMF_ConfigGetAttribute(config=CF,value=app_domain, default="global", &
-                                   label ='app_domain:',rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
       CALL ESMF_ConfigGetAttribute(config=CF,value=isrcTermProcessing, default=0, &
@@ -382,75 +356,6 @@ module fv3gfs_cap_mod
       call ESMF_ConfigGetAttribute(config=CF, value=nsout,    label ='nsout:',rc=rc)
       nsout_io = nsout
       if(mype==0) print *,'af nems config,nfhout,nsout=',nfhout,nfhmax_hf,nfhout_hf, nsout
-
-! variables for I/O options
-      call ESMF_ConfigGetAttribute(config=CF, value=output_grid, label ='output_grid:',rc=rc)
-      if (mype == 0) then
-        print *,'output_grid=',trim(output_grid)
-      end if
-      write_nemsioflip =.false.
-      write_fsyncflag  =.false.
-
-      if(trim(output_grid) == 'gaussian_grid' .or. trim(output_grid) == 'global_latlon') then
-        call ESMF_ConfigGetAttribute(config=CF, value=imo, label ='imo:',rc=rc)
-        call ESMF_ConfigGetAttribute(config=CF, value=jmo, label ='jmo:',rc=rc)
-        call ESMF_ConfigGetAttribute(config=CF, value=write_nemsioflip, label ='write_nemsioflip:', default=.true., rc=rc)
-        call ESMF_ConfigGetAttribute(config=CF, value=write_fsyncflag,  label ='write_fsyncflag:', default=.true., rc=rc)
-        if (mype == 0) then
-          print *,'imo=',imo,'jmo=',jmo
-          print *,'write_nemsioflip=',write_nemsioflip,'write_fsyncflag=',write_fsyncflag
-        end if
-      else if(trim(output_grid) == 'regional_latlon') then
-        call ESMF_ConfigGetAttribute(config=CF, value=lon1, label ='lon1:',rc=rc)
-        call ESMF_ConfigGetAttribute(config=CF, value=lat1, label ='lat1:',rc=rc)
-        call ESMF_ConfigGetAttribute(config=CF, value=lon2, label ='lon2:',rc=rc)
-        call ESMF_ConfigGetAttribute(config=CF, value=lat2, label ='lat2:',rc=rc)
-        call ESMF_ConfigGetAttribute(config=CF, value=dlon, label ='dlon:',rc=rc)
-        call ESMF_ConfigGetAttribute(config=CF, value=dlat, label ='dlat:',rc=rc)
-        imo = (lon2-lon1)/dlon + 1
-        jmo = (lat2-lat1)/dlat + 1
-        if (mype == 0) then
-          print *,'lon1=',lon1,' lat1=',lat1
-          print *,'lon2=',lon2,' lat2=',lat2
-          print *,'dlon=',dlon,' dlat=',dlat
-          print *,'imo =',imo, ' jmo=',jmo
-        end if
-      else if (trim(output_grid) == 'rotated_latlon') then
-        call ESMF_ConfigGetAttribute(config=CF, value=cen_lon, label ='cen_lon:',rc=rc)
-        call ESMF_ConfigGetAttribute(config=CF, value=cen_lat, label ='cen_lat:',rc=rc)
-        call ESMF_ConfigGetAttribute(config=CF, value=lon1,    label ='lon1:',   rc=rc)
-        call ESMF_ConfigGetAttribute(config=CF, value=lat1,    label ='lat1:',   rc=rc)
-        call ESMF_ConfigGetAttribute(config=CF, value=lon2,    label ='lon2:',   rc=rc)
-        call ESMF_ConfigGetAttribute(config=CF, value=lat2,    label ='lat2:',   rc=rc)
-        call ESMF_ConfigGetAttribute(config=CF, value=dlon,    label ='dlon:',   rc=rc)
-        call ESMF_ConfigGetAttribute(config=CF, value=dlat,    label ='dlat:',   rc=rc)
-        imo = (lon2-lon1)/dlon + 1
-        jmo = (lat2-lat1)/dlat + 1
-        if (mype == 0) then
-          print *,'lon1=',lon1,' lat1=',lat1
-          print *,'lon2=',lon2,' lat2=',lat2
-          print *,'dlon=',dlon,' dlat=',dlat
-          print *,'imo =',imo, ' jmo=',jmo
-        end if
-      else if (trim(output_grid) == 'lambert_conformal') then
-        call ESMF_ConfigGetAttribute(config=CF, value=cen_lon, label ='cen_lon:',rc=rc)
-        call ESMF_ConfigGetAttribute(config=CF, value=cen_lat, label ='cen_lat:',rc=rc)
-        call ESMF_ConfigGetAttribute(config=CF, value=stdlat1, label ='stdlat1:',rc=rc)
-        call ESMF_ConfigGetAttribute(config=CF, value=stdlat2, label ='stdlat2:',rc=rc)
-        call ESMF_ConfigGetAttribute(config=CF, value=imo,     label ='nx:',     rc=rc)
-        call ESMF_ConfigGetAttribute(config=CF, value=jmo,     label ='ny:',     rc=rc)
-        call ESMF_ConfigGetAttribute(config=CF, value=lon1,    label ='lon1:',   rc=rc)
-        call ESMF_ConfigGetAttribute(config=CF, value=lat1,    label ='lat1:',   rc=rc)
-        call ESMF_ConfigGetAttribute(config=CF, value=dx,      label ='dx:',     rc=rc)
-        call ESMF_ConfigGetAttribute(config=CF, value=dy,      label ='dy:',     rc=rc)
-        if (mype == 0) then
-          print *,'cen_lon=',cen_lon,' cen_lat=',cen_lat
-          print *,'stdlat1=',stdlat1,' stdlat2=',stdlat2
-          print *,'lon1=',lon1,' lat1=',lat1
-          print *,'nx=',imo, ' ny=',jmo
-          print *,'dx=',dx,' dy=',dy
-        endif
-      endif ! output_grid
 
     endif ! quilting
 !
