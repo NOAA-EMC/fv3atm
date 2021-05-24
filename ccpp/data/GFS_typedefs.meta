@@ -2835,6 +2835,26 @@
   units = flag
   dimensions = ()
   type = logical
+[damp_LW_fluxadj]
+  standard_name = flag_to_damp_RRTMGP_LW_jacobian_flux_adjustment
+  long_name = logical flag to control RRTMGP LW calculation
+  units = flag
+  dimensions = ()
+  type = logical
+[lfnc_k_grad]
+  standard_name = steepness_of_flux_damping
+  long_name = steepness of logistic function for damping the LW flux adjustment
+  units = none
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[lfnc_p0]
+  standard_name = midpoint_used_for_flux_damping
+  long_name = midpoint for damping the LW flux adjustment	
+  units = Pa
+  dimensions = ()
+  type = real
+  kind = kind_phys
 [doGP_lwscat]
   standard_name = flag_to_include_longwave_scattering_in_cloud_optics
   long_name = logical flag to control the addition of LW scattering in RRTMGP
