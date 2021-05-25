@@ -37,7 +37,6 @@ This package also requires the following packages:
  - [netcdf-fortran Library](https://github.com/Unidata/netcdf-fortran)
  - [ESMF](https://github.com/esmf-org/esmf)
  - [GFDL's Flexible Modeling System](https://github.com/NOAA-GFDL/FMS)
- - [Jasper](https://github.com/jasper-software/jasper)
 
 ## Obtaining fv3atm
 
