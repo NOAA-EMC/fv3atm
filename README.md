@@ -10,8 +10,10 @@ The subcomponents include:
  - The Finite-Volume Cubed-Sphere (FV3) dynamical core, originally
 from the [Geophysical Fluid Dynamics
 Laboratory](https://www.gfdl.noaa.gov/).
- - The Common Community Physics Package (CCPP) from the [National Center
-  for Atmospheric Research (NCAR)](https://ncar.ucar.edu/), including:
+ - The Common Community Physics Package (CCPP) supported by the
+   [Developmental Testbed Center
+   (DTC)](https://dtcenter.org/community-code/common-community-physics-package-ccpp),
+   including:
    - [CCPP Framework](https://github.com/NCAR/ccpp-framework).
    - [CCPP Physics](https://github.com/NCAR/ccpp-physics)
  - wrapper code to call [UFS stochastic
@@ -23,7 +25,7 @@ Laboratory](https://www.gfdl.noaa.gov/).
 ## Prerequisites
 
 This package requires the following
- - [NCEPLIBS](https://github.com/NOAA-EMC/NCEPLIBS) packages:
+[NCEPLIBS](https://github.com/NOAA-EMC/NCEPLIBS) packages:
  - [NCEPLIBS-w3nco](https://github.com/NOAA-EMC/NCEPLIBS-w3nco)
  - [NCEPLIBS-bacio](https://github.com/NOAA-EMC/NCEPLIBS-bacio)
  - [NCEPLIBS-nemsio](https://github.com/NOAA-EMC/NCEPLIBS-nemsio)
@@ -45,18 +47,6 @@ git clone https://github.com/NOAA-EMC/fv3atm.git
 cd fv3atm
 git submodule update --init --recursive
 ```
-
-## Building and Installing
-
-```
-mkdir build
-cd build
-cmake -DCMAKE_INSTALL_PREFIX=/path/to/install ..
-make -j2
-make install
-```
-
-## References
 
 ## Disclaimer
 
