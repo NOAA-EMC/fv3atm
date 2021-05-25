@@ -7283,6 +7283,8 @@ module GFS_typedefs
     Interstitial%tau_tofd        = clear_val
     Interstitial%tau_ngw         = clear_val
     Interstitial%tau_oss         = clear_val
+    Interstitial%dudt_mtb        = clear_val
+    Interstitial%dudt_tms        = clear_val
     Interstitial%zmtb            = clear_val
     Interstitial%zlwb            = clear_val
     Interstitial%zogw            = clear_val
