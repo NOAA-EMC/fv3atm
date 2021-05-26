@@ -1632,6 +1632,7 @@ end subroutine atmos_data_type_chksum
                     GFS_data(nb)%Sfcprop%zorlwav(ix)      = tem
                   else
                     GFS_data(nb)%Sfcprop%zorlwav(ix) = -999.0_GFS_kind_phys
+
                   endif
                 enddo
               enddo
