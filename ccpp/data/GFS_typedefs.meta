@@ -4206,6 +4206,20 @@
   dimensions = ()
   type = real
   kind = kind_phys
+[rlmx]
+  standard_name = maximum_allowed_mixing_length_in_boundary_layer_mass_flux_scheme
+  long_name = maximum allowed mixing length in boundary layer mass flux scheme
+  units = m
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[elmx]
+  standard_name = maximum_allowed_dissipation_mixing_length_in_boundary_layer_mass_flux_scheme
+  long_name = maximum allowed dissipation mixing length in boundary layer mass flux scheme
+  units = m
+  dimensions = ()
+  type = real
+  kind = kind_phys
 [z0fac]
   standard_name = surface_roughness_fraction_factor
   long_name = surface roughness fraction for canopy heat storage parameterization

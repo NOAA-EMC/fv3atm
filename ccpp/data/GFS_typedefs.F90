@@ -1045,6 +1045,8 @@ module GFS_typedefs
     real(kind=kind_phys) :: dspfac          !< tke dissipative heating factor
     real(kind=kind_phys) :: bl_upfr         !< updraft fraction in boundary layer mass flux scheme
     real(kind=kind_phys) :: bl_dnfr         !< downdraft fraction in boundary layer mass flux scheme
+    real(kind=kind_phys) :: rlmx            !< maximum allowed mixing length in boundary layer mass flux scheme
+    real(kind=kind_phys) :: elmx            !< maximum allowed dissipation mixing length in boundary layer mass flux scheme
 
 !--- parameters for canopy heat storage (CHS) parameterization
     real(kind=kind_phys) :: z0fac           !< surface roughness fraction factor
@@ -3356,6 +3358,8 @@ module GFS_typedefs
     real(kind=kind_phys) :: dspfac         = 1.0             !< tke dissipative heating factor
     real(kind=kind_phys) :: bl_upfr        = 0.13            !< updraft fraction in boundary layer mass flux scheme
     real(kind=kind_phys) :: bl_dnfr        = 0.1             !< downdraft fraction in boundary layer mass flux scheme
+    real(kind=kind_phys) :: rlmx           = 300.            !< maximum allowed mixing length in boundary layer mass flux scheme
+    real(kind=kind_phys) :: elmx           = 300.            !< maximum allowed dissipation mixing length in boundary layer mass flux scheme
 
 !--- parameters for canopy heat storage (CHS) parameterization
     real(kind=kind_phys) :: z0fac          = 0.3
@@ -3506,7 +3510,7 @@ module GFS_typedefs
                                sfc_z0_type,                                                 &
                           !    vertical diffusion
                                xkzm_m, xkzm_h, xkzm_s, xkzminv, moninq_fac, dspfac,         &
-                               bl_upfr, bl_dnfr,                                            &
+                               bl_upfr, bl_dnfr, rlmx, elmx,                                &
                           !--- canopy heat storage parameterization
                                z0fac, e0fac,                                                &
                           !--- cellular automata
@@ -4170,6 +4174,8 @@ module GFS_typedefs
     Model%dspfac           = dspfac
     Model%bl_upfr          = bl_upfr
     Model%bl_dnfr          = bl_dnfr
+    Model%rlmx             = rlmx
+    Model%elmx             = elmx
 
 !--- canopy heat storage parametrization
     Model%z0fac            = z0fac
@@ -5197,6 +5203,8 @@ module GFS_typedefs
       print *, ' dspfac            : ', Model%dspfac
       print *, ' bl_upfr           : ', Model%bl_upfr
       print *, ' bl_dnfr           : ', Model%bl_dnfr
+      print *, ' rlmx              : ', Model%rlmx
+      print *, ' elmx              : ', Model%elmx
       print *, ' '
       print *, 'parameters for canopy heat storage parametrization'
       print *, ' z0fac             : ', Model%z0fac
