@@ -1296,8 +1296,7 @@ module FV3GFS_io_mod
         enddo
       endif
 
-      ! Fill in composite tsfc and zorl for coldstart runs - they are always written out together
-      !if (sfc_var2(i,j,36) < -9990.0_r8 .and. sfc_var2(i,j,37) < -9990.0_r8) then
+      ! Fill in composite tsfc and zorl for coldstart runs
       compute_tsfc_zorl_for_colstart: if (.not. warm_start) then
         if(Model%frac_grid) then ! 3-way composite
           if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing composite tsfc and zorl')
