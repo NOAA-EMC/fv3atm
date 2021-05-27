@@ -691,8 +691,8 @@ module GFS_typedefs
     character(len=128)   :: active_gases_array(100) !< character array for each trace gas name
     logical              :: use_LW_jacobian         !< If true, use Jacobian of LW to update radiation tendency.
     logical              :: damp_LW_fluxadj         !< If true, damp the LW flux adjustment using the Jacobian w/ height with logistic function
-    real(kind_phys)      :: lfnc_k_grad             !<          Logistic function growth rate
-    real(kind_phys)      :: lfnc_p0                 !<          Logistic functions (sigmoid) midpoint
+    real(kind_phys)      :: lfnc_k                  !<          Logistic function transition depth (Pa)
+    real(kind_phys)      :: lfnc_p0                 !<          Logistic function transition level (Pa)
     logical              :: doGP_lwscat             !< If true, include scattering in longwave cloud-optics, only compatible w/ GP cloud-optics
     real(kind_phys)      :: minGPpres               !< Minimum pressure allowed in RRTMGP.
     real(kind_phys)      :: minGPtemp               !< Minimum temperature allowed in RRTMGP.
@@ -3057,7 +3057,7 @@ module GFS_typedefs
     logical              :: do_GPsw_Glw         = .false.
     logical              :: use_LW_jacobian     = .false.    !< Use Jacobian of LW to update LW radiation tendencies.
     logical              :: damp_LW_fluxadj     = .false.    !< Damp LW Jacobian flux adjustment with height.
-    real(kind=kind_phys) :: lfnc_k_grad         = -999       !<
+    real(kind=kind_phys) :: lfnc_k              = -999       !<
     real(kind=kind_phys) :: lfnc_p0             = -999       !<
     logical              :: doGP_lwscat         = .false.    !< If true, include scattering in longwave cloud-optics, only compatible w/ GP cloud-optics
 !--- Z-C microphysical parameters
@@ -3441,7 +3441,7 @@ module GFS_typedefs
                                sw_file_gas, sw_file_clouds, rrtmgp_nBandsSW, rrtmgp_nGptsSW,&
                                doG_cldoptics, doGP_cldoptics_PADE, doGP_cldoptics_LUT,      &
                                rrtmgp_nrghice, rrtmgp_nGauss_ang, do_GPsw_Glw,              &
-                               use_LW_jacobian, doGP_lwscat, damp_LW_fluxadj, lfnc_k_grad,  &
+                               use_LW_jacobian, doGP_lwscat, damp_LW_fluxadj, lfnc_k,       &
                                lfnc_p0,                                                     &
                           ! IN CCN forcing
                                iccn,                                                        &
@@ -3799,7 +3799,7 @@ module GFS_typedefs
     Model%doGP_cldoptics_LUT  = doGP_cldoptics_LUT
     Model%use_LW_jacobian     = use_LW_jacobian
     Model%damp_LW_fluxadj     = damp_LW_fluxadj
-    Model%lfnc_k_grad         = lfnc_k_grad
+    Model%lfnc_k              = 1. / lfnc_k
     Model%lfnc_p0             = lfnc_p0
     Model%doGP_lwscat         = doGP_lwscat
     if (Model%do_RRTMGP) then
@@ -4994,7 +4994,7 @@ module GFS_typedefs
         print *, ' doGP_cldoptics_LUT : ', Model%doGP_cldoptics_LUT
         print *, ' use_LW_jacobian    : ', Model%use_LW_jacobian
         print *, ' damp_LW_fluxadj    : ', Model%damp_LW_fluxadj
-        print *, ' lfnc_k_grad        : ', Model%lfnc_k_grad
+        print *, ' lfnc_k             : ', Model%lfnc_k
         print *, ' lfnc_p0            : ', Model%lfnc_p0
         print *, ' doGP_lwscat        : ', Model%doGP_lwscat
       endif
