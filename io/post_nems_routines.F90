@@ -19,10 +19,10 @@
       use vrbls2d
       use soil
       use masks,      only: lmv, lmh, htm, vtm
-      use ctlblk_mod, only: im, jm, lm, im_jm, lp1, grib, gdsdegr, me,             &
-                            ioform, jsta, jend, jsta_m, jsta_m2,                   &
+      use ctlblk_mod, only: im, jm, lm, im_jm, lp1, grib, gdsdegr, me,      &
+                            ioform, jsta, jend, jsta_m, jsta_m2, &
                             jend_m, jend_m2, jvend_2u, jsta_2l, jend_2u, iup, idn, &
-                            icnt, idsp, mpi_comm_comp, num_servers,                &
+                            icnt, idsp, mpi_comm_comp, num_servers,     &
                             num_procs
 !
 !-----------------------------------------------------------------------
@@ -58,7 +58,7 @@
 ! set ndegr
       gdsdegr = 1000000.
       IOFORM = 'grib'
-!     me = mype-lead_write
+      me = mype-lead_write
       last_write_task = lead_write+nwtlpes-1
       mpi_comm_comp = mpicomp
       num_procs = nwtlpes
@@ -162,7 +162,7 @@
 !---
       character (len=*), intent(in) :: post_namelist
       integer :: kpo,kth,kpv,nlunit
-      real    :: untcnvt
+      real :: untcnvt
       logical :: popascal
       real,dimension(komax) :: po,th,pv
       namelist/nampgb/kpo,po,kth,th,kpv,pv,popascal,d3d_on,gocart_on,  &
@@ -199,7 +199,7 @@
       endif
  119  continue
       if (me == 0) then
-        print*,'komax,iret for nampgb= ',komax,iret,' me=',me
+        print*,'komax,iret for nampgb= ',komax,iret
         print*,'komax,kpo,kth,th,kpv,pv,popascal== ',komax,kpo            &
      &  ,kth,th(1:kth),kpv,pv(1:kpv),popascal,' gocart_on=',gocart_on
        endif
@@ -238,7 +238,7 @@
       lsmp1 = lsm + 1
       pthresh = 0.000001
       if (me==0) print*,'LSM, SPL = ',lsm,spl(1:lsm),' pthresh=', &
-        pthresh,' me=',me
+        pthresh
 !
 ! set default novegtype for GFS, need to get this variable from gfs physics
       novegtype = 20
