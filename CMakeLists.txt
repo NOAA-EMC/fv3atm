@@ -144,7 +144,6 @@ list(APPEND _fv3atm_defs_private GFS_PHYS
 target_compile_definitions(fv3atm PRIVATE "${_fv3atm_defs_private}")
 
 set_target_properties(fv3atm PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mod)
-target_include_directories(fv3atm PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_include_directories(fv3atm INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/mod>
                                             $<INSTALL_INTERFACE:mod>)
 
