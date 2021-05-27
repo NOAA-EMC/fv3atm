@@ -122,6 +122,7 @@ add_library(fv3atm
   module_fv3_config.F90
   module_fcst_grid_comp.F90
   stochastic_physics/stochastic_physics_wrapper.F90
+  cpl/module_block_data.F90
   cpl/module_cplfields.F90
   cpl/module_cap_cpl.F90
   io/ffsync.F90
