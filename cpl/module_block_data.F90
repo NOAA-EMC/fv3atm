@@ -183,7 +183,7 @@ contains
 
     ! -- local variables
     integer         :: i, ib, ix, j, jb
-    real(kind_phys) :: factor
+    real            :: factor
 
     ! -- begin
     if (associated(destin_ptr)) then
@@ -243,7 +243,7 @@ contains
 
     ! -- local variables
     integer         :: i, ib, ix, j, jb, k
-    real(kind_phys) :: factor
+    real            :: factor
 
     ! -- begin
     if (associated(destin_ptr)) then
@@ -309,7 +309,7 @@ contains
 
     ! -- local variables
     integer         :: i, ib, ix, j, jb, k
-    real(kind_phys) :: factor
+    real            :: factor
 
     ! -- begin
     if (associated(destin_ptr)) then
