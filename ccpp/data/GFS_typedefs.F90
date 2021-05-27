@@ -4376,7 +4376,7 @@ module GFS_typedefs
     Model%phour            = rinc(4)/con_hr
     Model%fhour            = (rinc(4) + Model%dtp)/con_hr
     Model%zhour            = mod(Model%phour,Model%fhzero)
-    Model%kdt              = 0
+    Model%kdt              = nint(Model%fhour*con_hr/Model%dtp)
     Model%first_time_step  = .true.
     Model%restart          = restart
     Model%hydrostatic      = hydrostatic
