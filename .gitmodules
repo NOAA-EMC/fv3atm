@@ -1,7 +1,7 @@
 [submodule "atmos_cubed_sphere"]
 	path = atmos_cubed_sphere
-	url = https://github.com/SMoorthi-emc/GFDL_atmos_cubed_sphere
-	branch = SM_May042021
+	url =  https://github.com/NOAA-EMC/GFDL_atmos_cubed_sphere
+	branch = dev/emc
 [submodule "ccpp/framework"]
 	path = ccpp/framework
 	url = https://github.com/NCAR/ccpp-framework
@@ -9,4 +9,4 @@
 [submodule "ccpp/physics"]
 	path = ccpp/physics
 	url = https://github.com/SMoorthi-emc/ccpp-physics
-	branch = SM_May012021
+	branch = SM_May182021
