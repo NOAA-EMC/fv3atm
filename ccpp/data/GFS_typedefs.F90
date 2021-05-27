@@ -3799,7 +3799,7 @@ module GFS_typedefs
     Model%doGP_cldoptics_LUT  = doGP_cldoptics_LUT
     Model%use_LW_jacobian     = use_LW_jacobian
     Model%damp_LW_fluxadj     = damp_LW_fluxadj
-    Model%lfnc_k              = 1. / lfnc_k
+    Model%lfnc_k              = lfnc_k
     Model%lfnc_p0             = lfnc_p0
     Model%doGP_lwscat         = doGP_lwscat
     if (Model%do_RRTMGP) then
