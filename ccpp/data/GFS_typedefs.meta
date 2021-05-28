@@ -9261,6 +9261,13 @@
   dimensions = (horizontal_loop_extent,vertical_dimension)
   type = real
   kind = kind_phys
+[save_q(:,:,index_for_turbulent_kinetic_energy)]
+  standard_name = turbulent_kinetic_energy_save
+  long_name = turbulent kinetic energy before entering a physics scheme
+  units = kg kg-1
+  dimensions = (horizontal_loop_extent,vertical_dimension)
+  type = real
+  kind = kind_phys
 [save_q(:,:,index_for_liquid_cloud_condensate)]
   standard_name = cloud_condensed_water_mixing_ratio_save
   long_name = ratio of mass of cloud water to mass of dry air plus vapor (without condensates) before entering a physics scheme
@@ -9278,6 +9285,20 @@
 [save_q(:,:,index_for_water_vapor)]
   standard_name = water_vapor_specific_humidity_save
   long_name = water vapor specific humidity before entering a physics scheme
+  units = kg kg-1
+  dimensions = (horizontal_loop_extent,vertical_dimension)
+  type = real
+  kind = kind_phys
+[save_q(:,:,index_for_liquid_cloud_number_concentration)]
+  standard_name = liquid_cloud_number_concentration_save
+  long_name = liquid cloud number concentration before entering a physics scheme
+  units = kg kg-1
+  dimensions = (horizontal_loop_extent,vertical_dimension)
+  type = real
+  kind = kind_phys
+[save_q(:,:,index_for_ice_cloud_number_concentration)]
+  standard_name = ice_cloud_number_concentration_save
+  long_name = ice cloud number concentration before entering a physics scheme
   units = kg kg-1
   dimensions = (horizontal_loop_extent,vertical_dimension)
   type = real

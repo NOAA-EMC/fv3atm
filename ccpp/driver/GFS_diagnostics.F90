@@ -85,10 +85,6 @@ module GFS_diagnostics
        do nb = 1,nblks
           ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%dtend(:,:,idtend)
        enddo
-       if(Model%me==Model%master .and. Model%ldiag3d) then
-307       format('ExtDiag(',I4,') = dtend(:,:,',I4,') = ',A,' (',A,': ',A,')')
-          print 307,idx,idtend,trim(ExtDiag(idx)%name),trim(ExtDiag(idx)%mod_name),trim(ExtDiag(idx)%desc)
-       endif
     endif
   end subroutine add_dtend
   

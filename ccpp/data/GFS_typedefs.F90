@@ -2184,7 +2184,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: cwm        (:,:)   => null()  !<
 
     !-- 3D diagnostics
-    integer :: rtg_ozone_index
+    integer :: rtg_ozone_index, rtg_tke_index
 
     contains
       procedure :: create      => interstitial_create     !<   allocate array data
@@ -3600,7 +3600,7 @@ module GFS_typedefs
     integer :: ncnvcld3d = 0       !< number of convective 3d clouds fields
 
     integer :: itrac, ipat, ichem
-    logical :: have_pbl, have_dcnv, have_scnv, have_mp, have_oz_phys, have_samf, have_pbl_edmf
+    logical :: have_pbl, have_dcnv, have_scnv, have_mp, have_oz_phys, have_samf, have_pbl_edmf, have_cnvtrans, have_rdamp
     character(len=20) :: namestr
     character(len=44) :: descstr
 
@@ -4450,14 +4450,23 @@ module GFS_typedefs
 
     if(ldiag3d) then
        ! Flags used to turn on or off tracer "causes"
-       have_pbl_edmf = Model%hybedmf .or. Model%satmedmf .or. do_mynnedmf
+       have_pbl_edmf = Model%hybedmf .or. Model%satmedmf .or. Model%do_mynnedmf
        have_samf =  Model%satmedmf .or. Model%trans_trac .or. Model%ras .or. Model%do_shoc
        have_pbl = .true.
-       have_dcnv = Model%imfdeepcnv>=0 !Model%ras .or. Model%cscnv .or. Model%do_deep .or. Model%hwrf_samfdeep
-       have_scnv = Model%imfshalcnv>=0 !Model%shal_cnv
+       have_dcnv = Model%imfdeepcnv>0 !Model%ras .or. Model%cscnv .or. Model%do_deep .or. Model%hwrf_samfdeep
+       have_scnv = Model%imfshalcnv>0 !Model%shal_cnv
        have_mp = Model%imp_physics>0
        have_oz_phys = Model%oz_phys .or. Model%oz_phys_2015
-       
+
+       ! Rayleigh damping flag must match logic in rayleigh_damp.f
+       have_rdamp = .not. (Model%lsidea .or. Model%ral_ts <= 0.0 .or. Model%prslrd0 == 0.0)
+
+       ! have_cnvtrans flag must match logic elsewhere in GFS_typedefs and suite interstitials.
+       have_cnvtrans = (have_dcnv .or. have_scnv) .and. &
+            (cscnv .or. satmedmf .or. trans_trac .or. ras) &
+            .and. Model%flag_for_scnv_generic_tend &
+            .and. Model%flag_for_dcnv_generic_tend
+
        ! Increment idtend and fill dtidx:
         allocate(Model%dtend_var_labels(Model%ntracp100))
         allocate(Model%dtend_process_labels(Model%nprocess))
@@ -4552,7 +4561,7 @@ module GFS_typedefs
        call fill_dtidx(Model,dtend_select,Model%index_of_temperature,Model%index_of_process_scnv,have_scnv)
        call fill_dtidx(Model,dtend_select,Model%index_of_temperature,Model%index_of_process_mp,have_mp)
        call fill_dtidx(Model,dtend_select,Model%index_of_temperature,Model%index_of_process_orographic_gwd)
-       call fill_dtidx(Model,dtend_select,Model%index_of_temperature,Model%index_of_process_rayleigh_damping)
+       call fill_dtidx(Model,dtend_select,Model%index_of_temperature,Model%index_of_process_rayleigh_damping,have_rdamp)
        call fill_dtidx(Model,dtend_select,Model%index_of_temperature,Model%index_of_process_nonorographic_gwd)
        call fill_dtidx(Model,dtend_select,Model%index_of_temperature,Model%index_of_process_physics)
        call fill_dtidx(Model,dtend_select,Model%index_of_temperature,Model%index_of_process_non_physics)
@@ -4565,8 +4574,8 @@ module GFS_typedefs
        call fill_dtidx(Model,dtend_select,Model%index_of_y_wind,Model%index_of_process_dcnv,have_dcnv)
        call fill_dtidx(Model,dtend_select,Model%index_of_x_wind,Model%index_of_process_nonorographic_gwd)
        call fill_dtidx(Model,dtend_select,Model%index_of_y_wind,Model%index_of_process_nonorographic_gwd)
-       call fill_dtidx(Model,dtend_select,Model%index_of_x_wind,Model%index_of_process_rayleigh_damping)
-       call fill_dtidx(Model,dtend_select,Model%index_of_y_wind,Model%index_of_process_rayleigh_damping)
+       call fill_dtidx(Model,dtend_select,Model%index_of_x_wind,Model%index_of_process_rayleigh_damping,have_rdamp)
+       call fill_dtidx(Model,dtend_select,Model%index_of_y_wind,Model%index_of_process_rayleigh_damping,have_rdamp)
        call fill_dtidx(Model,dtend_select,Model%index_of_x_wind,Model%index_of_process_scnv,have_scnv)
        call fill_dtidx(Model,dtend_select,Model%index_of_y_wind,Model%index_of_process_scnv,have_scnv)
        call fill_dtidx(Model,dtend_select,Model%index_of_x_wind,Model%index_of_process_physics)
@@ -4575,25 +4584,35 @@ module GFS_typedefs
        call fill_dtidx(Model,dtend_select,Model%index_of_y_wind,Model%index_of_process_non_physics)
 
        if(qdiag3d) then
-          if(have_samf) then
-            do itrac=1,Model%ntrac
-              if(itrac==Model%ntchs) exit ! remaining tracers are chemical
-              if(itrac==Model%ntke) cycle ! TKE is handled by convective transport (see below)
-              call fill_dtidx(Model,dtend_select,100+itrac,Model%index_of_process_dcnv,have_dcnv)
-              call fill_dtidx(Model,dtend_select,100+itrac,Model%index_of_process_scnv,have_scnv)
-            enddo
-          else
-            call fill_dtidx(Model,dtend_select,100+Model%ntqv,Model%index_of_process_dcnv,have_dcnv)
-            call fill_dtidx(Model,dtend_select,100+Model%ntqv,Model%index_of_process_scnv,have_scnv)
-            call fill_dtidx(Model,dtend_select,100+Model%ntcw,Model%index_of_process_dcnv,have_dcnv)
-            call fill_dtidx(Model,dtend_select,100+Model%ntcw,Model%index_of_process_scnv,have_scnv)
-            call fill_dtidx(Model,dtend_select,100+Model%ntiw,Model%index_of_process_dcnv,have_dcnv)
-            call fill_dtidx(Model,dtend_select,100+Model%ntiw,Model%index_of_process_scnv,have_scnv)
-          endif
-          call fill_dtidx(Model,dtend_select,100+Model%ntke,Model%index_of_process_conv_trans,have_scnv.or.have_dcnv)
-          call fill_dtidx(Model,dtend_select,100+Model%ntclamt,Model%index_of_process_conv_trans,have_scnv.or.have_dcnv)
+          call fill_dtidx(Model,dtend_select,100+Model%ntqv,Model%index_of_process_scnv,have_scnv)
+          call fill_dtidx(Model,dtend_select,100+Model%ntqv,Model%index_of_process_dcnv,have_dcnv)
 
-          call fill_dtidx(Model,dtend_select,100+Model%ntoz,Model%index_of_process_pbl,have_pbl .and. have_oz_phys)
+          if(have_cnvtrans) then
+             do itrac=2,Model%ntrac
+                if(itrac==Model%ntchs) exit ! remaining tracers are chemical
+                if ( itrac /= Model%ntcw  .and. itrac /= Model%ntiw  .and. itrac /= Model%ntclamt .and. &
+                     itrac /= Model%ntrw  .and. itrac /= Model%ntsw  .and. itrac /= Model%ntrnc   .and. &
+                     itrac /= Model%ntsnc .and. itrac /= Model%ntgl  .and. itrac /= Model%ntgnc) then
+                   call fill_dtidx(Model,dtend_select,100+itrac,Model%index_of_process_scnv,have_scnv)
+                   call fill_dtidx(Model,dtend_select,100+itrac,Model%index_of_process_dcnv,have_dcnv)
+                else if(Model%ntchs<=0 .or. itrac<Model%ntchs) then
+                   call fill_dtidx(Model,dtend_select,100+itrac,Model%index_of_process_conv_trans)
+                endif
+                if ( itrac == Model%ntlnc .or. itrac == Model%ntinc .or. itrac==Model%ntrnc .or. &
+                     itrac == Model%ntsnc .or. itrac == Model%ntgnc .or. itrac==Model%nqrimef) then
+                   call fill_dtidx(Model,dtend_select,100+itrac,Model%index_of_process_conv_trans)
+                endif
+             enddo
+          else if(have_scnv .or. have_dcnv) then
+             ! Scheme does its own tendency reporting, or does not use convective transport.
+             do itrac=2,Model%ntrac
+                if(itrac==Model%ntchs) exit ! remaining tracers are chemical
+                call fill_dtidx(Model,dtend_select,100+itrac,Model%index_of_process_scnv,have_scnv)
+                call fill_dtidx(Model,dtend_select,100+itrac,Model%index_of_process_dcnv,have_dcnv)
+             enddo
+          endif
+
+          call fill_dtidx(Model,dtend_select,100+Model%ntoz,Model%index_of_process_pbl,have_pbl)
           call fill_dtidx(Model,dtend_select,100+Model%ntoz,Model%index_of_process_prod_loss,have_oz_phys)
           call fill_dtidx(Model,dtend_select,100+Model%ntoz,Model%index_of_process_ozmix,have_oz_phys)
           call fill_dtidx(Model,dtend_select,100+Model%ntoz,Model%index_of_process_temp,have_oz_phys)
@@ -4612,12 +4631,14 @@ module GFS_typedefs
           do itrac=1,Model%ntrac
              if(itrac==Model%ntchs) exit ! remaining tracers are chemical
              if(itrac==Model%ntoz) cycle ! already took care of ozone
-             call fill_dtidx(Model,dtend_select,100+itrac,Model%index_of_process_mp,have_mp)
-             if(have_pbl_edmf) then
+             if(Model%do_mynnedmf .or. Model%satmedmf) then
                call fill_dtidx(Model,dtend_select,100+itrac,Model%index_of_process_pbl,have_pbl)
              endif
              call fill_dtidx(Model,dtend_select,100+itrac,Model%index_of_process_physics,.true.)
              call fill_dtidx(Model,dtend_select,100+itrac,Model%index_of_process_non_physics,.true.)
+             if(itrac/=Model%ntke) then
+               call fill_dtidx(Model,dtend_select,100+itrac,Model%index_of_process_mp,have_mp)
+             endif
           enddo
        endif
     end if
@@ -5963,20 +5984,33 @@ module GFS_typedefs
     logical, intent(in), optional :: flag
 
     character(len=100) :: name
-    logical :: flag2
 
-    flag2=.true.
-    if(present(flag)) flag2=flag
+    if(present(flag)) then
+       if(.not. flag) return
+    endif
 
-    if(icause>0 .and. flag2 .and. itrac>0) then
+    if(icause>0 .and. itrac>0) then
+       if(Model%dtidx(itrac,icause)>0) then
+          return ! This tendency is already allocated.
+       endif
+
        name = 'dtend_'//trim(Model%dtend_var_labels(itrac)%name)//'_'//trim(Model%dtend_process_labels(icause)%name)
+
        if(fglob_list(dtend_select,trim(name))) then
           Model%ndtend = Model%ndtend+1
           Model%dtidx(itrac,icause) = Model%ndtend
+          if(Model%me==Model%master) then
+             print 308,'selected',trim(Model%dtend_process_labels(icause)%mod_name), trim(name), &
+               trim(Model%dtend_var_labels(itrac)%desc), trim(Model%dtend_process_labels(icause)%desc), &
+               trim(Model%dtend_var_labels(itrac)%unit)
+          endif
        elseif(Model%me==Model%master) then
-          print '(A,A,A)','Skipping ',trim(name),' due to mismatch with dtend_select.'
+             print 308,'disabled',trim(Model%dtend_process_labels(icause)%mod_name), trim(name), &
+               trim(Model%dtend_var_labels(itrac)%desc), trim(Model%dtend_process_labels(icause)%desc), &
+               trim(Model%dtend_var_labels(itrac)%unit)
        endif
     endif
+308 format('dtend ',A,': ',A,' ',A,' = ',A,' ',A,' (',A,')')
   end subroutine fill_dtidx
 
   recursive function fglob(pattern,string) result(match)
@@ -6006,7 +6040,7 @@ module GFS_typedefs
     istr=1 ! First string character not yet matched
     outer: do while(ipat<=npat)
        if_glob: if(pattern(ipat:ipat)=='*' .or. pattern(ipat:ipat)=='?') then
-          ! Collect sequences of * and ? to avoid pathalogical cases.
+          ! Collect sequences of * and ? to avoid pathological cases.
           min_match=0 ! Number of "?" which is minimum number of chars to match
           match_infinity=.false. ! Do we see a "*"?
           glob_collect: do while(ipat<=npat)
