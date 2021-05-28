@@ -47,7 +47,7 @@ module GFS_typedefs
 
       ! If these are changed to >99, need to adjust formatting string in GFS_diagnostics.F90 (and names in diag_tables)
       integer, parameter :: naux2dmax = 20 !< maximum number of auxiliary 2d arrays in output (for debugging)
-      integer, parameter :: naux3dmax = 20 !< maximum number of auxiliary 3d arrays in output (for debugging)
+      integer, parameter :: naux3dmax = 60 !< maximum number of auxiliary 3d arrays in output (for debugging)
 
 !> \section arg_table_GFS_typedefs
 !! \htmlinclude GFS_typedefs.html
