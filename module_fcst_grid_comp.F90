@@ -76,6 +76,12 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
                                 diagnostic
   use module_write_netcdf, only: write_grid_netcdf
   use get_stochy_pattern_mod, only: write_stoch_restart_atm
+
+#ifdef MOVING_NEST
+use CCPP_data,          only: GFS_data
+use fv_moving_nest_main, only: update_moving_nest
+#endif MOVING_NEST
+
 !
 !-----------------------------------------------------------------------
 !
@@ -763,6 +769,12 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
       call get_date (atm_int_state%Time_atmos, date(1), date(2), date(3),  &
                      date(4), date(5), date(6))
       atm_int_state%Time_atmos = atm_int_state%Time_atmos + atm_int_state%Time_step_atmos
+
+#ifdef MOVING_NEST     
+      ! W. Ramstrom, AOML/HRD -- May 28, 2021
+      ! Evaluates whether to move nest, then performs move if needed
+      call update_moving_nest (atm_int_state%Atm, GFS_data, atm_int_state%Time_step_atmos)
+#endif MOVING_NEST
 
       call update_atmos_model_dynamics (atm_int_state%Atm)
 
