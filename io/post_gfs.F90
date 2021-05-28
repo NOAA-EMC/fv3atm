@@ -158,9 +158,11 @@ module post_gfs
             filenameflat = 'postxconfig-NT.txt'
             if(size(paramset)>0) then
               do i=1,size(paramset)
-                if (size(paramset(i)%param)>0) then
-                  deallocate(paramset(i)%param)
-                  nullify(paramset(i)%param)
+                if (associated(paramset(i)%param)) then
+                  if (size(paramset(i)%param)>0) then
+                    deallocate(paramset(i)%param)
+                    nullify(paramset(i)%param)
+                  endif
                 endif
               enddo
               deallocate(paramset)
