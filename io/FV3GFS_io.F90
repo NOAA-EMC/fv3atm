@@ -1050,89 +1050,91 @@ module FV3GFS_io_mod
           Sfcprop(nb)%zorlwav(ix)  = Sfcprop(nb)%zorlw(ix)
         endif
 
-        if (.not. warm_start) then
-          if (Model%frac_grid) then
-            if (Sfcprop(nb)%landfrac(ix) > -999.0_r8) then
-              Sfcprop(nb)%slmsk(ix) = ceiling(Sfcprop(nb)%landfrac(ix)-1.0e-6)
-              if (Sfcprop(nb)%lakefrac(ix) > zero) then
-                Sfcprop(nb)%oceanfrac(ix) = zero ! lake & ocean don't coexist in a cell
-                if (nint(Sfcprop(nb)%slmsk(ix)) /= 1) then
-                  if(Sfcprop(nb)%fice(ix) >= Model%min_lakeice) then
-                    Sfcprop(nb)%slmsk(ix) = 2
-                  else
-                    Sfcprop(nb)%slmsk(ix) = 0
-                  endif
-                endif
-              else
-                Sfcprop(nb)%lakefrac(ix)  = zero
-                Sfcprop(nb)%oceanfrac(ix) = one - Sfcprop(nb)%landfrac(ix)
-                if (nint(Sfcprop(nb)%slmsk(ix)) /= 1) then
-                  if (Sfcprop(nb)%fice(ix) >= Model%min_seaice) then
-                    Sfcprop(nb)%slmsk(ix) = 2
-                  else
-                    Sfcprop(nb)%slmsk(ix) = 0
-                  endif
+        if (Model%frac_grid) then
+          if (Sfcprop(nb)%landfrac(ix) > -999.0_r8) then
+            Sfcprop(nb)%slmsk(ix) = ceiling(Sfcprop(nb)%landfrac(ix)-1.0e-6)
+            if (Sfcprop(nb)%lakefrac(ix) > zero) then
+              Sfcprop(nb)%oceanfrac(ix) = zero ! lake & ocean don't coexist in a cell
+              if (nint(Sfcprop(nb)%slmsk(ix)) /= 1) then
+                if(Sfcprop(nb)%fice(ix) >= Model%min_lakeice) then
+                  Sfcprop(nb)%slmsk(ix) = 2
+                else
+                  Sfcprop(nb)%slmsk(ix) = 0
                 endif
               endif
             else
-              if (nint(Sfcprop(nb)%slmsk(ix)) == 1) then
-                Sfcprop(nb)%landfrac(ix)  = one
-                Sfcprop(nb)%lakefrac(ix)  = zero
-                Sfcprop(nb)%oceanfrac(ix) = zero
-              else
-                if (Sfcprop(nb)%slmsk(ix) < 0.1_r8 .or. Sfcprop(nb)%slmsk(ix) > 1.9_r8) then
-                  Sfcprop(nb)%landfrac(ix) = zero
-                  if (Sfcprop(nb)%oro_uf(ix) > min_lake_orog) then   ! lakes
-                    Sfcprop(nb)%lakefrac(ix)  = one
-                    Sfcprop(nb)%oceanfrac(ix) = zero
-                  else                                               ! ocean
-                    Sfcprop(nb)%lakefrac(ix)  = zero
-                    Sfcprop(nb)%oceanfrac(ix) = one
-                  endif
+              Sfcprop(nb)%lakefrac(ix)  = zero
+              Sfcprop(nb)%oceanfrac(ix) = one - Sfcprop(nb)%landfrac(ix)
+              if (nint(Sfcprop(nb)%slmsk(ix)) /= 1) then
+                if (Sfcprop(nb)%fice(ix) >= Model%min_seaice) then
+                  Sfcprop(nb)%slmsk(ix) = 2
+                else
+                  Sfcprop(nb)%slmsk(ix) = 0
                 endif
               endif
             endif
-          else                                             ! not a fractional grid
-            if (Sfcprop(nb)%landfrac(ix) > -999.0_r8) then
-              if (Sfcprop(nb)%lakefrac(ix) > zero) then
-                Sfcprop(nb)%oceanfrac(ix) = zero
-                Sfcprop(nb)%landfrac(ix)  = zero
-                Sfcprop(nb)%lakefrac(ix)  = one
-                Sfcprop(nb)%slmsk(ix)     = zero
-                if (Sfcprop(nb)%fice(ix) >= Model%min_lakeice) Sfcprop(nb)%slmsk(ix) = 2.0
-              elseif (Sfcprop(nb)%landfrac(ix) > zero) then
-                Sfcprop(nb)%landfrac(ix)  = one
-                Sfcprop(nb)%lakefrac(ix)  = zero
-                Sfcprop(nb)%oceanfrac(ix) = zero
-                Sfcprop(nb)%slmsk(ix)     = one
-              else
-                Sfcprop(nb)%oceanfrac(ix) = one
-                Sfcprop(nb)%landfrac(ix)  = zero
-                Sfcprop(nb)%lakefrac(ix)  = zero
-                Sfcprop(nb)%slmsk(ix)     = zero
-                if (Sfcprop(nb)%fice(ix) >= Model%min_seaice) Sfcprop(nb)%slmsk(ix) = 2.0
-              endif
+          else
+            if (nint(Sfcprop(nb)%slmsk(ix)) == 1) then
+              Sfcprop(nb)%landfrac(ix)  = one
+              Sfcprop(nb)%lakefrac(ix)  = zero
+              Sfcprop(nb)%oceanfrac(ix) = zero
             else
-              if (nint(Sfcprop(nb)%slmsk(ix)) == 1) then
-                Sfcprop(nb)%landfrac(ix)  = one
-                Sfcprop(nb)%lakefrac(ix)  = zero
-                Sfcprop(nb)%oceanfrac(ix) = zero
-              else
-                Sfcprop(nb)%slmsk(ix)    = zero
+              if (Sfcprop(nb)%slmsk(ix) < 0.1_r8 .or. Sfcprop(nb)%slmsk(ix) > 1.9_r8) then
                 Sfcprop(nb)%landfrac(ix) = zero
                 if (Sfcprop(nb)%oro_uf(ix) > min_lake_orog) then   ! lakes
-                  Sfcprop(nb)%lakefrac(ix) = one
+                  Sfcprop(nb)%lakefrac(ix)  = one
                   Sfcprop(nb)%oceanfrac(ix) = zero
-                  if (Sfcprop(nb)%fice(ix) > Model%min_lakeice) Sfcprop(nb)%slmsk(ix) = 2.0
-                else                                       ! ocean
+                else                                               ! ocean
                   Sfcprop(nb)%lakefrac(ix)  = zero
                   Sfcprop(nb)%oceanfrac(ix) = one
-                  if (Sfcprop(nb)%fice(ix) > Model%min_seaice) Sfcprop(nb)%slmsk(ix) = 2.0
                 endif
               endif
             endif
           endif
-        endif    ! if (.not. warm_start)
+        else                                             ! not a fractional grid
+          if (Sfcprop(nb)%landfrac(ix) > -999.0_r8) then
+            if (Sfcprop(nb)%lakefrac(ix) > zero) then
+              Sfcprop(nb)%oceanfrac(ix) = zero
+              Sfcprop(nb)%landfrac(ix)  = zero
+              Sfcprop(nb)%lakefrac(ix)  = one
+              Sfcprop(nb)%slmsk(ix)     = zero
+              if (Sfcprop(nb)%fice(ix) >= Model%min_lakeice) Sfcprop(nb)%slmsk(ix) = 2.0
+            elseif (Sfcprop(nb)%landfrac(ix) > zero) then
+              Sfcprop(nb)%landfrac(ix)  = one
+              Sfcprop(nb)%lakefrac(ix)  = zero
+              Sfcprop(nb)%oceanfrac(ix) = zero
+              Sfcprop(nb)%slmsk(ix)     = one
+            else
+              Sfcprop(nb)%oceanfrac(ix) = one
+              Sfcprop(nb)%landfrac(ix)  = zero
+              Sfcprop(nb)%lakefrac(ix)  = zero
+              Sfcprop(nb)%slmsk(ix)     = zero
+              if (Sfcprop(nb)%fice(ix) >= Model%min_seaice) Sfcprop(nb)%slmsk(ix) = 2.0
+            endif
+          else
+            if (nint(Sfcprop(nb)%slmsk(ix)) == 1) then
+              Sfcprop(nb)%landfrac(ix)  = one
+              Sfcprop(nb)%lakefrac(ix)  = zero
+              Sfcprop(nb)%oceanfrac(ix) = zero
+            else
+              Sfcprop(nb)%slmsk(ix)    = zero
+              Sfcprop(nb)%landfrac(ix) = zero
+              if (Sfcprop(nb)%oro_uf(ix) > min_lake_orog) then   ! lakes
+                Sfcprop(nb)%lakefrac(ix) = one
+                Sfcprop(nb)%oceanfrac(ix) = zero
+                if (Sfcprop(nb)%fice(ix) > Model%min_lakeice) Sfcprop(nb)%slmsk(ix) = 2.0
+              else                                       ! ocean
+                Sfcprop(nb)%lakefrac(ix)  = zero
+                Sfcprop(nb)%oceanfrac(ix) = one
+                if (Sfcprop(nb)%fice(ix) > Model%min_seaice) Sfcprop(nb)%slmsk(ix) = 2.0
+              endif
+            endif
+          endif
+        endif
+
+        if (warm_start) then
+          Sfcprop(nb)%slmsk(ix)  = sfc_var2(i,j,1)    !--- slmsk
+        endif
  
         !
         !--- NSSTM variables
