@@ -578,6 +578,13 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
+[snodi]
+  standard_name = surface_snow_thickness_water_equivalent_over_ice
+  long_name = water equivalent snow depth over ice
+  units = mm
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
 [hprime]
   standard_name = statistical_measures_of_subgrid_orography
   long_name = orographic metrics
@@ -9565,13 +9572,6 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[snowd_water]
-  standard_name = surface_snow_thickness_water_equivalent_over_water
-  long_name = water equivalent snow depth over water
-  units = mm
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
 [snowd_land]
   standard_name = surface_snow_thickness_water_equivalent_over_land
   long_name = water equivalent snow depth over land
@@ -9587,13 +9587,6 @@
   type = real
   kind = kind_phys
   active = (flag_for_land_surface_scheme == flag_for_noah_wrfv4_land_surface_scheme)
-[snowd_ice]
-  standard_name = surface_snow_thickness_water_equivalent_over_ice
-  long_name = water equivalent snow depth over ice
-  units = mm
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
 [snow_depth]
   standard_name = actual_snow_depth
   long_name = actual snow depth
@@ -9947,13 +9940,6 @@
   standard_name = maximum_updraft_velocity_at_cloud_base
   long_name = maximum updraft velocity at cloud base
   units = m s-1
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-[weasd_water]
-  standard_name = water_equivalent_accumulated_snow_depth_over_water
-  long_name = water equiv of acc snow depth over water
-  units = mm
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys

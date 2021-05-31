@@ -237,6 +237,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: zorli  (:)   => null()  !< ice  surface roughness in cm
     real (kind=kind_phys), pointer :: zorlwav(:)   => null()  !< wave surface roughness in cm derived from wave model
     real (kind=kind_phys), pointer :: fice   (:)   => null()  !< ice fraction over open water grid
+    real (kind=kind_phys), pointer :: snodi  (:)   => null()  !< snow depth over sea/lake ice
 !   real (kind=kind_phys), pointer :: hprim  (:)   => null()  !< topographic standard deviation in m
     real (kind=kind_phys), pointer :: hprime (:,:) => null()  !< orographic metrics
     real (kind=kind_phys), pointer :: z0base (:)   => null()  !< background or baseline surface roughness length in m
@@ -1951,10 +1952,10 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: smcmax(:)          => null()  !<
     real (kind=kind_phys), pointer      :: smc_save(:,:)      => null()  !<
     real (kind=kind_phys), pointer      :: snowc(:)           => null()  !<
-    real (kind=kind_phys), pointer      :: snowd_ice(:)       => null()  !<
+!   real (kind=kind_phys), pointer      :: snowd_ice(:)       => null()  !<
     real (kind=kind_phys), pointer      :: snowd_land(:)      => null()  !<
     real (kind=kind_phys), pointer      :: snowd_land_save(:) => null()  !<
-    real (kind=kind_phys), pointer      :: snowd_water(:)     => null()  !<
+!   real (kind=kind_phys), pointer      :: snowd_water(:)     => null()  !<
     real (kind=kind_phys), pointer      :: snow_depth(:)      => null()  !<
     real (kind=kind_phys), pointer      :: snohf(:)           => null()  !<
     real (kind=kind_phys), pointer      :: snohf_snow(:)      => null()  !<
@@ -2006,7 +2007,7 @@ module GFS_typedefs
     integer, pointer                    :: vegtype(:)         => null()  !<
     real (kind=kind_phys), pointer      :: w_upi(:,:)         => null()  !<
     real (kind=kind_phys), pointer      :: wcbmax(:)          => null()  !<
-    real (kind=kind_phys), pointer      :: weasd_water(:)     => null()  !<
+!   real (kind=kind_phys), pointer      :: weasd_water(:)     => null()  !<
     real (kind=kind_phys), pointer      :: weasd_land(:)      => null()  !<
     real (kind=kind_phys), pointer      :: weasd_land_save(:) => null()  !<
     real (kind=kind_phys), pointer      :: weasd_ice(:)       => null()  !<
@@ -2281,6 +2282,7 @@ module GFS_typedefs
     allocate (Sfcprop%zorli    (IM))
     allocate (Sfcprop%zorlwav  (IM))
     allocate (Sfcprop%fice     (IM))
+    allocate (Sfcprop%snodi    (IM))
 !   allocate (Sfcprop%hprim    (IM))
     allocate (Sfcprop%hprime   (IM,Model%nmtvr))
 
@@ -2301,6 +2303,7 @@ module GFS_typedefs
     Sfcprop%zorli     = clear_val
     Sfcprop%zorlwav   = clear_val
     Sfcprop%fice      = clear_val
+    Sfcprop%snodi     = clear_val
 !   Sfcprop%hprim     = clear_val
     Sfcprop%hprime    = clear_val
 
@@ -6483,9 +6486,9 @@ module GFS_typedefs
     allocate (Interstitial%sigmatot        (IM,Model%levs))
     allocate (Interstitial%slopetype       (IM))
     allocate (Interstitial%snowc           (IM))
-    allocate (Interstitial%snowd_ice       (IM))
+!   allocate (Interstitial%snowd_ice       (IM))
     allocate (Interstitial%snowd_land      (IM))
-    allocate (Interstitial%snowd_water     (IM))
+!   allocate (Interstitial%snowd_water     (IM))
     allocate (Interstitial%snohf           (IM))
     allocate (Interstitial%snowmt          (IM))
     allocate (Interstitial%soiltype        (IM))
@@ -6521,7 +6524,7 @@ module GFS_typedefs
     allocate (Interstitial%wcbmax          (IM))
     allocate (Interstitial%weasd_ice       (IM))
     allocate (Interstitial%weasd_land      (IM))
-    allocate (Interstitial%weasd_water     (IM))
+!   allocate (Interstitial%weasd_water     (IM))
     allocate (Interstitial%wind            (IM))
     allocate (Interstitial%work1           (IM))
     allocate (Interstitial%work2           (IM))
@@ -7222,9 +7225,9 @@ module GFS_typedefs
     Interstitial%sigmatot        = clear_val
     Interstitial%slopetype       = 0
     Interstitial%snowc           = clear_val
-    Interstitial%snowd_ice       = huge
+!   Interstitial%snowd_ice       = huge
     Interstitial%snowd_land      = huge
-    Interstitial%snowd_water     = huge
+!   Interstitial%snowd_water     = huge
     Interstitial%snohf           = clear_val
     Interstitial%snowmt          = clear_val
     Interstitial%soiltype        = 0
@@ -7257,7 +7260,7 @@ module GFS_typedefs
     Interstitial%wcbmax          = clear_val
     Interstitial%weasd_ice       = huge
     Interstitial%weasd_land      = huge
-    Interstitial%weasd_water     = huge
+!   Interstitial%weasd_water     = huge
     Interstitial%wind            = huge
     Interstitial%work1           = clear_val
     Interstitial%work2           = clear_val
@@ -7601,9 +7604,9 @@ module GFS_typedefs
     write (0,*) 'sum(Interstitial%sigmatot        ) = ', sum(Interstitial%sigmatot        )
     write (0,*) 'sum(Interstitial%slopetype       ) = ', sum(Interstitial%slopetype       )
     write (0,*) 'sum(Interstitial%snowc           ) = ', sum(Interstitial%snowc           )
-    write (0,*) 'sum(Interstitial%snowd_ice       ) = ', sum(Interstitial%snowd_ice       )
+!   write (0,*) 'sum(Interstitial%snowd_ice       ) = ', sum(Interstitial%snowd_ice       )
     write (0,*) 'sum(Interstitial%snowd_land      ) = ', sum(Interstitial%snowd_land      )
-    write (0,*) 'sum(Interstitial%snowd_water     ) = ', sum(Interstitial%snowd_water     )
+!   write (0,*) 'sum(Interstitial%snowd_water     ) = ', sum(Interstitial%snowd_water     )
     write (0,*) 'sum(Interstitial%snohf           ) = ', sum(Interstitial%snohf           )
     write (0,*) 'sum(Interstitial%snowmt          ) = ', sum(Interstitial%snowmt          )
     write (0,*) 'sum(Interstitial%soiltype        ) = ', sum(Interstitial%soiltype        )
@@ -7639,7 +7642,7 @@ module GFS_typedefs
     write (0,*) 'sum(Interstitial%wcbmax          ) = ', sum(Interstitial%wcbmax          )
     write (0,*) 'sum(Interstitial%weasd_ice       ) = ', sum(Interstitial%weasd_ice       )
     write (0,*) 'sum(Interstitial%weasd_land      ) = ', sum(Interstitial%weasd_land      )
-    write (0,*) 'sum(Interstitial%weasd_water     ) = ', sum(Interstitial%weasd_water     )
+!   write (0,*) 'sum(Interstitial%weasd_water     ) = ', sum(Interstitial%weasd_water     )
     write (0,*) 'sum(Interstitial%wind            ) = ', sum(Interstitial%wind            )
     write (0,*) 'sum(Interstitial%work1           ) = ', sum(Interstitial%work1           )
     write (0,*) 'sum(Interstitial%work2           ) = ', sum(Interstitial%work2           )

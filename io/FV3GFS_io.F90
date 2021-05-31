@@ -600,7 +600,8 @@ module FV3GFS_io_mod
     enddo
  
 !   if (Model%frac_grid) then  ! needs more variables
-      nvar_s2m = 35
+!     nvar_s2m = 35
+      nvar_s2m = 36
 !   else
 !     nvar_s2m = 32
 !   endif
@@ -757,7 +758,8 @@ module FV3GFS_io_mod
 !     if(Model%frac_grid) then
         sfc_name2(33) = 'tsfcl' !temp on land portion of a cell
         sfc_name2(34) = 'zorll' !zorl on land portion of a cell
-        sfc_name2(35) = 'zorli' !zorl on land portion of a cell
+        sfc_name2(35) = 'zorli' !zorl on ice portion of a cell
+        sfc_name2(36) = 'snodi' !weasd on ice portion of a cell
 !     endif
       if(Model%cplwav) then
         sfc_name2(nvar_s2m) = 'zorlwav' !zorl on land portion of a cell
@@ -841,8 +843,9 @@ module FV3GFS_io_mod
       !--- register the 2D fields
       do num = 1,nvar_s2m
         var2_p => sfc_var2(:,:,num)
-        if (trim(sfc_name2(num)) == 'sncovr'.or. trim(sfc_name2(num)) == 'tsfcl' .or. trim(sfc_name2(num)) == 'zorll' &
-                                            .or. trim(sfc_name2(num)) == 'zorli' .or. trim(sfc_name2(num)) == 'zorlwav') then
+        if (trim(sfc_name2(num)) == 'sncovr'.or. trim(sfc_name2(num)) == 'tsfcl' .or. trim(sfc_name2(num)) == 'zorll'   &
+                                            .or. trim(sfc_name2(num)) == 'zorli' .or. trim(sfc_name2(num)) == 'zorlwav' &
+                                            .or. trim(sfc_name2(num)) == 'snodi') then
           id_restart = register_restart_field(Sfc_restart, fn_srf, sfc_name2(num), var2_p, domain=fv_domain, mandatory=.false.)
         else
           id_restart = register_restart_field(Sfc_restart, fn_srf, sfc_name2(num), var2_p, domain=fv_domain)
@@ -991,7 +994,8 @@ module FV3GFS_io_mod
         Sfcprop(nb)%sncovr(ix) = sfc_var2(i,j,32)   !--- sncovr
         Sfcprop(nb)%tsfcl(ix)  = sfc_var2(i,j,33) !--- sfcl  (temp on land portion of a cell)
         Sfcprop(nb)%zorll(ix)  = sfc_var2(i,j,34) !--- zorll (zorl on land portion of a cell)
-        Sfcprop(nb)%zorli(ix)  = sfc_var2(i,j,35) !--- zorll (zorl on ice  portion of a cell)
+        Sfcprop(nb)%zorli(ix)  = sfc_var2(i,j,35) !--- zorli (zorl on ice  portion of a cell)
+        Sfcprop(nb)%snodi(ix)  = sfc_var2(i,j,36) !--- snodi (weasd on ice  portion of a cell)
         if(Model%cplwav) then
           Sfcprop(nb)%zorlwav(ix)  = sfc_var2(i,j,nvar_s2m) !--- (zorw  from wave model)
         else
@@ -1083,7 +1087,7 @@ module FV3GFS_io_mod
         if (warm_start) then
           Sfcprop(nb)%slmsk(ix)  = sfc_var2(i,j,1)    !--- slmsk
         endif
- 
+
         !
         !--- NSSTM variables
         if (Model%nstf_name(1) > 0) then
@@ -1278,6 +1282,20 @@ module FV3GFS_io_mod
         enddo
       endif
 
+      if (sfc_var2(i,j,36) < -9990.0_r8) then
+        if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing zorli')
+!$omp parallel do default(shared) private(nb, ix)
+        do nb = 1, Atm_block%nblks
+          do ix = 1, Atm_block%blksz(nb)
+            if (Sfcprop(nb)%fice(ix) > min(Model%min_seaice,Model%min_lakeice)) then
+              Sfcprop(nb)%snodi(ix) = Sfcprop(nb)%snowd(ix) / Sfcprop(nb)%fice(ix) !--- use snowd over ice and zero over water/land
+            else
+              Sfcprop(nb)%snodi(ix) = zero
+            endif
+          enddo
+        enddo
+      endif
+
       if (sfc_var2(i,j,nvar_s2m) < -9990.0_r8) then
         if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing zorlwav')
 !$omp parallel do default(shared) private(nb, ix)
@@ -1393,7 +1411,8 @@ module FV3GFS_io_mod
     real(kind=kind_phys), pointer, dimension(:,:,:) :: var3_p3 => NULL()
 
 !   if (Model%frac_grid) then ! needs more variables
-      nvar2m = 35
+!     nvar2m = 35
+      nvar2m = 36
 !   else
 !     nvar2m = 32
 !   endif
@@ -1501,7 +1520,8 @@ module FV3GFS_io_mod
 !     if (Model%frac_grid) then
         sfc_name2(33) = 'tsfcl'   !temp on land portion of a cell
         sfc_name2(34) = 'zorll'   !zorl on land portion of a cell
-        sfc_name2(35) = 'zorli'   !zorl on land portion of a cell
+        sfc_name2(35) = 'zorli'   !zorl on ice portion of a cell
+        sfc_name2(36) = 'snodi'   !weasd on land portion of a cell
 !     endif
       if (Model%cplwav) then
         sfc_name2(nvar2m) = 'zorlwav'   !zorl on land portion of a cell
@@ -1575,8 +1595,9 @@ module FV3GFS_io_mod
     !--- register the 2D fields
       do num = 1,nvar2m
         var2_p => sfc_var2(:,:,num)
-        if (trim(sfc_name2(num)) == 'sncovr'.or.trim(sfc_name2(num)) == 'tsfcl'.or.trim(sfc_name2(num)) == 'zorll' &
-                                            .or.trim(sfc_name2(num)) == 'zorli' .or.trim(sfc_name2(num)) == 'zorlwav') then
+        if (trim(sfc_name2(num)) == 'sncovr'.or.trim(sfc_name2(num)) == 'tsfcl'.or.trim(sfc_name2(num)) == 'zorll'    &
+                                            .or.trim(sfc_name2(num)) == 'zorli' .or.trim(sfc_name2(num)) == 'zorlwav' &
+                                            .or.trim(sfc_name2(num)) == 'snodi') then
           id_restart = register_restart_field(Sfc_restart, fn_srf, sfc_name2(num), var2_p, domain=fv_domain, mandatory=.false.)
         else
           id_restart = register_restart_field(Sfc_restart, fn_srf, sfc_name2(num), var2_p, domain=fv_domain)
@@ -1707,6 +1728,7 @@ module FV3GFS_io_mod
           sfc_var2(i,j,33) = Sfcprop(nb)%tsfcl(ix) !--- tsfcl (temp on land)
           sfc_var2(i,j,34) = Sfcprop(nb)%zorll(ix) !--- zorll (zorl on land)
           sfc_var2(i,j,35) = Sfcprop(nb)%zorli(ix) !--- zorli (zorl on ice)
+          sfc_var2(i,j,36) = Sfcprop(nb)%snodi(ix) !--- snodi (weasd on ice)
 !       endif
         if (Model%cplwav) then
           sfc_var2(i,j,nvar2m) = Sfcprop(nb)%zorlwav(ix) !--- zorlwav (zorl from wav)
