@@ -156,17 +156,19 @@ module post_gfs
             if(mype==0) print *,'af read_xml at fh00,name=',trim(filenameflat)
           else if(ifhr > 0) then
             filenameflat = 'postxconfig-NT.txt'
-            if(associated(paramset) .and. size(paramset)>0) then
-              do i=1,size(paramset)
-                if (associated(paramset(i)%param)) then
-                  if (size(paramset(i)%param)>0) then
-                    deallocate(paramset(i)%param)
-                    nullify(paramset(i)%param)
+            if(associated(paramset)) then
+              if( size(paramset)>0) then
+                do i=1,size(paramset)
+                  if (associated(paramset(i)%param)) then
+                    if (size(paramset(i)%param)>0) then
+                      deallocate(paramset(i)%param)
+                      nullify(paramset(i)%param)
+                    endif
                   endif
-                endif
-              enddo
-              deallocate(paramset)
-              nullify(paramset)
+                enddo
+                deallocate(paramset)
+                nullify(paramset)
+              endif
             endif
             num_pset = 0
             call read_xml()
