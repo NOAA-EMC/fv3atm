@@ -32,7 +32,11 @@ This package requires the following
  - [NCEPLIBS-nemsio](https://github.com/NOAA-EMC/NCEPLIBS-nemsio)
  - [NCEPLIBS-sp](https://github.com/NOAA-EMC/NCEPLIBS-sp)
 
-This package also requires the following packages:
+If the INLINE_POST cmake variable is set, the upp library will be
+needed:
+ - [Unified Post Processing Library](https://github.com/NOAA-EMC/EMC_post)
+
+This package also requires the following external packages:
  - [netcdf-c Library](https://github.com/Unidata/netcdf-c)
  - [netcdf-fortran Library](https://github.com/Unidata/netcdf-fortran)
  - [ESMF](https://github.com/esmf-org/esmf)
