@@ -1133,9 +1133,9 @@ module GFS_typedefs
     integer              :: ntracp100       !< number of tracers plus one hundred
     integer              :: nqrimef         !< tracer index for mass weighted rime factor
 
-    integer, pointer :: dtidx(:,:) => null()   !< index in outermost dimension of dtend
-    integer :: ndtend               !< size of outermost dimension of dtend
-    type(dtend_var_label), pointer :: dtend_var_labels(:) => null() !< information about first dim of dtidx
+    integer, pointer :: dtidx(:,:) => null()                                !< index in outermost dimension of dtend
+    integer :: ndtend                                                       !< size of outermost dimension of dtend
+    type(dtend_var_label), pointer :: dtend_var_labels(:) => null()         !< information about first dim of dtidx
     type(dtend_process_label), pointer :: dtend_process_labels(:) => null() !< information about second dim of dtidx
 
     ! Indices within inner dimension of dtidx for things that are not tracers:
@@ -1620,7 +1620,7 @@ module GFS_typedefs
     ! dtend/dtidxt: Multitudenous 3d tendencies in a 4D array: (i,k,0:ntrac,nprocess)
     ! Sparse in outermost two dimensions. dtidx(1:100+ntrac,nprocess) maps to dtend 
     ! outer dimension index.
-    real (kind=kind_phys), pointer :: dtend (:,:,:) => null()    !< tracer changes due to physics
+    real (kind=kind_phys), pointer :: dtend (:,:,:)  => null()   !< tracer changes due to physics
 
     real (kind=kind_phys), pointer :: refdmax (:)    => null()   !< max hourly 1-km agl reflectivity
     real (kind=kind_phys), pointer :: refdmax263k(:) => null()   !< max hourly -10C reflectivity
