@@ -101,6 +101,9 @@ use fv_iau_mod,         only: iau_external_data_type,getiauforcing,iau_initializ
 use module_fv3_config,  only: output_1st_tstep_rst, first_kdt, nsout,    &
                               frestart, restart_endfcst
 
+#ifdef MOVING_NEST
+use fv_moving_nest_main, only: update_moving_nest
+#endif MOVING_NEST
 !-----------------------------------------------------------------------
 
 implicit none
@@ -681,7 +684,6 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
 end subroutine atmos_model_init
 ! </SUBROUTINE>
 
-
 !#######################################################################
 ! <SUBROUTINE NAME="update_atmos_model_dynamics"
 !
@@ -691,6 +693,11 @@ subroutine update_atmos_model_dynamics (Atmos)
   type (atmos_data_type), intent(in) :: Atmos
 
     call set_atmosphere_pelist()
+#ifdef MOVING_NEST
+    ! W. Ramstrom, AOML/HRD -- May 28, 2021
+    ! Evaluates whether to move nest, then performs move if needed
+    call update_moving_nest (Atm_block, GFS_control, GFS_data, Atmos%Time)
+#endif MOVING_NEST
     call mpp_clock_begin(fv3Clock)
     call atmosphere_dynamics (Atmos%Time)
     call mpp_clock_end(fv3Clock)
