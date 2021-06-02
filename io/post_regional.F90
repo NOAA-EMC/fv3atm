@@ -33,7 +33,7 @@ module post_regional
 !
       use ctlblk_mod, only : komax,ifhr,ifmin,modelname,datapd,fld_info, &
                              npset,grib,gocart_on,icount_calmict, jsta,  &
-                             jend,im, nsoil, filenameflat, me
+                             jend,im, nsoil, filenameflat
       use gridspec_mod, only : maptype, gridtype,latstart,latlast,       &
                                lonstart,lonlast
       use grib2_module, only : gribit2,num_pset,nrecout,first_grbtbl
@@ -85,7 +85,6 @@ module post_regional
       jte       = wrt_int_state%lat_end                !<-- Ending J of this write task's subsection
       maptype   = wrt_int_state%post_maptype
       nbdl      = wrt_int_state%FBCount
-      me        = mype - lead_write
 
       if(mype==0) print *,'in post_run,jts=',jts,'jte=',jte,'nwtpg=',nwtpg,'nwtpg=',nwtpg, &
         'jts=',jts,'jte=',jte,'maptype=',maptype,'nbdl=',nbdl,'log_postalct=',log_postalct
