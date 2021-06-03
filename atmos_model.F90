@@ -2603,7 +2603,8 @@ end subroutine atmos_data_type_chksum
               localrc = ESMF_SUCCESS
           end select
         enddo
-        if (ESMF_LogFoundError(rcToCheck=localrc, msg="Failed to copy "//trim(fieldname), line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+        if (ESMF_LogFoundError(rcToCheck=localrc, msg="Failure to populate exported field: "//trim(fieldname), &
+          line=__LINE__, file=__FILE__, rcToReturn=rc)) return
       endif
     enddo ! exportFields
 
