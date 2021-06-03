@@ -1230,8 +1230,7 @@ subroutine update_atmos_chemistry(state, rc)
       if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
         line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
-!     call cplFieldGet(state,'inst_up_sensi_heat_flx', farrayPtr2d=shfsfc, rc=localrc)
-      call cplFieldGet(state,'inst_sensi_heat_flx', farrayPtr2d=shfsfc, rc=localrc)
+      call cplFieldGet(state,'inst_up_sensi_heat_flx', farrayPtr2d=shfsfc, rc=localrc)
       if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
         line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
