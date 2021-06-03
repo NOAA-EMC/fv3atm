@@ -2594,7 +2594,7 @@ end subroutine atmos_data_type_chksum
             case ('t2m')
               call block_data_copy(datar82d, GFS_data(nb)%sfcprop%t2m, Atm_block, nb, rc=localrc)
             case default
-              localrc = ESMF_SUCCESS
+              localrc = ESMF_RC_NOT_FOUND
           end select
         enddo
         if (ESMF_LogFoundError(rcToCheck=localrc, msg="Failure to populate exported field: "//trim(fieldname), &
