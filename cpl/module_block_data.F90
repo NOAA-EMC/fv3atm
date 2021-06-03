@@ -467,6 +467,8 @@ contains
     integer, optional,         intent(out) :: rc
 
     ! -- begin
+    if (present(rc)) rc = ESMF_RC_PTR_NOTALLOC
+
     if (associated(destin_ptr)) then
       if (associated(source_ptr)) then
         call block_copy_1d_to_2d_r8(destin_ptr, source_ptr, block, block_index, rc=rc)
@@ -491,6 +493,8 @@ contains
     integer, optional,         intent(out) :: rc
 
     ! -- begin
+    if (present(rc)) rc = ESMF_RC_PTR_NOTALLOC
+
     if (associated(destin_ptr)) then
       if (associated(source_ptr)) then
         call block_copy_1dslice_to_2d_r8(destin_ptr, source_ptr, slice, block, block_index, rc=rc)
@@ -514,6 +518,8 @@ contains
     integer, optional,         intent(out) :: rc
 
     ! -- begin
+    if (present(rc)) rc = ESMF_RC_PTR_NOTALLOC
+
     if (associated(destin_ptr)) then
       if (associated(source_ptr)) then
         call block_copy_2d_to_3d_r8(destin_ptr, source_ptr, block, block_index, rc=rc)
