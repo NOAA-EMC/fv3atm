@@ -834,12 +834,10 @@ subroutine update_atmos_model_state (Atmos, rc)
     !--- get bottom layer data from dynamical core for coupling
     call atmosphere_get_bottom_layer (Atm_block, DYCORE_Data)
 
-    !if in coupled mode, set up coupled fields
-    if (.not. GFS_control%cplchm) then
-      call setup_exportdata(rc=localrc)
-      if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, file=__FILE__, rcToReturn=rc)) return
-    endif
+    !--- if in coupled mode, set up coupled fields
+    call setup_exportdata(rc=localrc)
+    if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
  end subroutine update_atmos_model_state
 ! </SUBROUTINE>
@@ -2335,6 +2333,9 @@ end subroutine atmos_data_type_chksum
 
     !--- begin
     if (present(rc)) rc = ESMF_SUCCESS
+
+    !--- disable if coupling with chemistry
+    if (GFS_control%cplchm) return
 
     isc = Atm_block%isc
     iec = Atm_block%iec
