@@ -1714,6 +1714,11 @@ module FV3GFS_io_mod
           sfc_var2(i,j,36) = Sfcprop(nb)%tsfc(ix)  !--- tsfc composite
           sfc_var2(i,j,37) = Sfcprop(nb)%zorl(ix)  !--- zorl composite
 !       endif
+          sfc_var2(i,j,38) = Sfcprop(nb)%albdvis_lnd(ix)
+          sfc_var2(i,j,39) = Sfcprop(nb)%albdnir_lnd(ix)
+          sfc_var2(i,j,40) = Sfcprop(nb)%albivis_lnd(ix)
+          sfc_var2(i,j,41) = Sfcprop(nb)%albinir_lnd(ix)
+          sfc_var2(i,j,42) = Sfcprop(nb)%emis_lnd(ix)
         if (Model%cplwav) then
           sfc_var2(i,j,nvar2m) = Sfcprop(nb)%zorlwav(ix) !--- zorlwav (zorl from wav)
         endif
@@ -1751,21 +1756,16 @@ module FV3GFS_io_mod
           sfc_var2(i,j,nvar2m+26) = Sfcprop(nb)%snowfallac_land(ix)
           sfc_var2(i,j,nvar2m+27) = Sfcprop(nb)%snowfallac_ice(ix)
           sfc_var2(i,j,nvar2m+28) = Sfcprop(nb)%sncovr_ice(ix)
-          sfc_var2(i,j,nvar2m+29) = Sfcprop(nb)%albdvis_lnd(ix)
-          sfc_var2(i,j,nvar2m+30) = Sfcprop(nb)%albdnir_lnd(ix)
-          sfc_var2(i,j,nvar2m+31) = Sfcprop(nb)%albivis_lnd(ix)
-          sfc_var2(i,j,nvar2m+32) = Sfcprop(nb)%albinir_lnd(ix)
-          sfc_var2(i,j,nvar2m+33) = Sfcprop(nb)%sfalb_lnd(ix)
-          sfc_var2(i,j,nvar2m+34) = Sfcprop(nb)%sfalb_lnd_bck(ix)
-          sfc_var2(i,j,nvar2m+35) = Sfcprop(nb)%albdvis_ice(ix)
-          sfc_var2(i,j,nvar2m+36) = Sfcprop(nb)%albdnir_ice(ix)
-          sfc_var2(i,j,nvar2m+37) = Sfcprop(nb)%albivis_ice(ix)
-          sfc_var2(i,j,nvar2m+38) = Sfcprop(nb)%albinir_ice(ix)
-          sfc_var2(i,j,nvar2m+39) = Sfcprop(nb)%sfalb_ice(ix)
-          sfc_var2(i,j,nvar2m+40) = Sfcprop(nb)%emis_lnd(ix)
-          sfc_var2(i,j,nvar2m+41) = Sfcprop(nb)%emis_ice(ix)
+          sfc_var2(i,j,nvar2m+29) = Sfcprop(nb)%sfalb_lnd(ix)
+          sfc_var2(i,j,nvar2m+30) = Sfcprop(nb)%sfalb_lnd_bck(ix)
+          sfc_var2(i,j,nvar2m+31) = Sfcprop(nb)%albdvis_ice(ix)
+          sfc_var2(i,j,nvar2m+32) = Sfcprop(nb)%albdnir_ice(ix)
+          sfc_var2(i,j,nvar2m+33) = Sfcprop(nb)%albivis_ice(ix)
+          sfc_var2(i,j,nvar2m+34) = Sfcprop(nb)%albinir_ice(ix)
+          sfc_var2(i,j,nvar2m+35) = Sfcprop(nb)%sfalb_ice(ix)
+          sfc_var2(i,j,nvar2m+36) = Sfcprop(nb)%emis_ice(ix)
           if (Model%rdlai) then
-            sfc_var2(i,j,nvar2m+42) = Sfcprop(nb)%xlaixy(ix)
+            sfc_var2(i,j,nvar2m+37) = Sfcprop(nb)%xlaixy(ix)
           endif
         else if (Model%lsm == Model%lsm_noahmp) then
           !--- Extra Noah MP variables
