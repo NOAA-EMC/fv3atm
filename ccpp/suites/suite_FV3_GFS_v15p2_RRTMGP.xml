@@ -19,6 +19,7 @@
     <subcycle loop="1">
       <scheme>GFS_suite_interstitial_rad_reset</scheme>
       <scheme>GFS_rrtmgp_pre</scheme>
+      <scheme>GFS_radiation_surface</scheme>
       <scheme>GFS_rrtmgp_gfdlmp_pre</scheme>
       <scheme>GFS_rrtmgp_cloud_overlap_pre</scheme>
       <scheme>GFS_cloud_diagnostics</scheme>
