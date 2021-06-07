@@ -628,6 +628,46 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
+[emis_lnd]
+  standard_name = surface_longwave_emissivity_over_land
+  long_name = surface lw emissivity in fraction over land
+  units = frac
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[emis_ice]
+  standard_name = surface_longwave_emissivity_over_ice
+  long_name = surface lw emissivity in fraction over ice
+  units = frac
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme)
+[sfalb_lnd]
+  standard_name = surface_diffused_shortwave_albedo_over_land
+  long_name = mean surface diffused sw albedo over land
+  units = frac
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  optional = F
+  active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme)
+[sfalb_ice]
+  standard_name = surface_diffused_shortwave_albedo_over_ice
+  long_name = mean surface diffused sw albedo over ice
+  units = frac
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme)
+[sfalb_lnd_bck]
+  standard_name = surface_snow_free_albedo_over_land
+  long_name = surface snow-free albedo over ice
+  units = frac
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme)
 [alvwf]
   standard_name = mean_vis_albedo_with_weak_cosz_dependency
   long_name = mean vis albedo with weak cosz dependency
@@ -1242,46 +1282,70 @@
   type = real
   kind = kind_phys
   active = (flag_for_land_surface_scheme == flag_for_noah_wrfv4_land_surface_scheme)
-[albdvis]
-  standard_name = surface_albedo_direct_visible
-  long_name = direct surface albedo visible band
+[albdvis_lnd]
+  standard_name = surface_albedo_direct_visible_over_land
+  long_name = direct surface albedo visible band over land
   units = frac
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)
-[albdnir]
-  standard_name = surface_albedo_direct_NIR
-  long_name = direct surface albedo NIR band
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme .or. flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme)
+[albdnir_lnd]
+  standard_name = surface_albedo_direct_NIR_over_land
+  long_name = direct surface albedo NIR band over land
   units = frac
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)
-[albivis]
-  standard_name = surface_albedo_diffuse_visible
-  long_name = diffuse surface albedo visible band
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme .or. flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme)
+[albivis_lnd]
+  standard_name = surface_albedo_diffuse_visible_over_land
+  long_name = diffuse surface albedo visible band over land
   units = frac
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)
-[albinir]
-  standard_name = surface_albedo_diffuse_NIR
-  long_name = diffuse surface albedo NIR band
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme .or. flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme)
+[albinir_lnd]
+  standard_name = surface_albedo_diffuse_NIR_over_land
+  long_name = diffuse surface albedo NIR band over land
   units = frac
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)
-[emiss]
-  standard_name = surface_emissivity_lsm
-  long_name = surface emissivity from lsm
+  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme .or. flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme)
+[albdvis_ice]
+  standard_name = surface_albedo_direct_visible_over_ice
+  long_name = direct surface albedo visible band over ice
   units = frac
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme)
+  active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme)
+[albdnir_ice]
+  standard_name = surface_albedo_direct_NIR_over_ice
+  long_name = direct surface albedo NIR band over ice
+  units = frac
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme)
+[albivis_ice]
+  standard_name = surface_albedo_diffuse_visible_over_ice
+  long_name = diffuse surface albedo visible band over ice
+  units = frac
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme)
+[albinir_ice]
+  standard_name = surface_albedo_diffuse_NIR_over_ice
+  long_name = diffuse surface albedo NIR band over ice
+  units = frac
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = ( flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme)
 [wetness]
   standard_name = normalized_soil_wetness_for_land_surface_model
   long_name = normalized soil wetness for lsm
@@ -3743,6 +3807,12 @@
 [redrag]
   standard_name = flag_for_reduced_drag_coefficient_over_sea
   long_name = flag for reduced drag coeff. over sea
+  units = flag
+  dimensions = ()
+  type = logical
+[thsfc_loc]
+  standard_name = flag_for_reference_pressure_theta
+  long_name = flag for reference pressure in theta calculation
   units = flag
   dimensions = ()
   type = logical
@@ -9423,6 +9493,13 @@
   units = W m-2
   dimensions = (horizontal_loop_extent)
   type = cmpfsw_type
+[sfcalb]
+  standard_name = surface_albedo_components
+  long_name = surface albedo IR/UV/VIS components
+  units = frac
+  dimensions = (horizontal_loop_extent,number_of_components_for_surface_albedo)
+  type = real
+  kind = kind_phys
 [sfcalb(:,1)]
   standard_name = surface_albedo_due_to_near_IR_direct
   long_name = surface albedo due to near IR direct beam
@@ -9803,13 +9880,6 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[tsurf]
-  standard_name = surface_skin_temperature_after_iteration
-  long_name = surface skin temperature after iteration
-  units = K
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
 [tsurf_water]
   standard_name = surface_skin_temperature_after_iteration_over_water
   long_name = surface skin temperature after iteration over water
@@ -9989,6 +10059,27 @@
   standard_name = perturbation_of_momentum_roughness_length
   long_name = perturbation of momentum roughness length
   units = frac
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[ztmax_water]
+  standard_name = bounded_surface_roughness_length_for_heat_over_water
+  long_name = bounded surface roughness length for heat over water
+  units = m
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[ztmax_land]
+  standard_name = bounded_surface_roughness_length_for_heat_over_land
+  long_name = bounded surface roughness length for heat over land
+  units = m
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[ztmax_ice]
+  standard_name = bounded_surface_roughness_length_for_heat_over_ice
+  long_name = bounded surface roughness length for heat over ice
+  units = m
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
