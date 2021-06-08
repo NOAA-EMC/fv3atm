@@ -1064,7 +1064,6 @@ module FV3GFS_io_mod
           Sfcprop(nb)%oceanfrac(ix) = zero ! lake & ocean don't coexist in a cell
           if (Sfcprop(nb)%slmsk(ix) /= one) then
             if (Sfcprop(nb)%fice(ix) >= Model%min_lakeice) then
-              if (Sfcprop(nb)%slmsk(ix) < 1.9_r8)      &
                 Sfcprop(nb)%slmsk(ix) = 2.
             else if (Sfcprop(nb)%slmsk(ix) > 1.e-7) then
                 Sfcprop(nb)%slmsk(ix) = zero
@@ -1074,7 +1073,6 @@ module FV3GFS_io_mod
           Sfcprop(nb)%oceanfrac(ix) = one - Sfcprop(nb)%landfrac(ix)
           if (Sfcprop(nb)%slmsk(ix) /= one) then
             if (Sfcprop(nb)%fice(ix) >= Model%min_seaice) then
-              if (Sfcprop(nb)%slmsk(ix) < 1.9_r8)      &
                 Sfcprop(nb)%slmsk(ix) = 2.
             else if (Sfcprop(nb)%slmsk(ix) > 1.e-7) then
                 Sfcprop(nb)%slmsk(ix) = zero
