@@ -2181,6 +2181,38 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
+[sfc_alb_nir_dir_cpl]
+  standard_name = surface_nir_albedo_direct_rad_for_coupling
+  long_name = sfc near IR albedo for direct radiation for coupling
+  units = frac
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (flag_for_flux_coupling)
+[sfc_alb_nir_dif_cpl]
+  standard_name = surface_nir_albedo_diffuse_rad_for_coupling
+  long_name = sfc near IR albedo for diffuse radiation for coupling
+  units = frac
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (flag_for_flux_coupling)
+[sfc_alb_vis_dir_cpl]
+  standard_name = surface_vis_albedo_direct_rad_for_coupling
+  long_name = sfc visible albedo for direct radiation for coupling
+  units = frac
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (flag_for_flux_coupling)
+[sfc_alb_vis_dif_cpl]
+  standard_name = surface_vis_albedo_diffuse_rad_for_coupling
+  long_name = sfc visible albedo for diffuse radiation for coupling
+  units = frac
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (flag_for_flux_coupling)
 [slimskin_cpl]
   standard_name = sea_land_ice_mask_in	
   long_name = sea/land/ice mask input (=0/1/2)

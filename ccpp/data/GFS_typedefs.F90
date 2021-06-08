@@ -442,20 +442,25 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: fluxlwUP_allsky(:,:)   => null()  !< GP          up   LW total sky flux profile ( w/m**2/K )
     real (kind=kind_phys), pointer :: fluxlwDOWN_allsky(:,:) => null()  !< GP          down LW total sky flux profile ( w/m**2/K )
     real (kind=kind_phys), pointer :: htrlw(:,:)             => null()  !< GP updated LW heating rate
+
 !--- incoming quantities
-    real (kind=kind_phys), pointer :: dusfcin_cpl(:) => null()   !< aoi_fld%dusfcin(item,lan)
-    real (kind=kind_phys), pointer :: dvsfcin_cpl(:) => null()   !< aoi_fld%dvsfcin(item,lan)
-    real (kind=kind_phys), pointer :: dtsfcin_cpl(:) => null()   !< aoi_fld%dtsfcin(item,lan)
-    real (kind=kind_phys), pointer :: dqsfcin_cpl(:) => null()   !< aoi_fld%dqsfcin(item,lan)
-    real (kind=kind_phys), pointer :: ulwsfcin_cpl(:)=> null()   !< aoi_fld%ulwsfcin(item,lan)
-!   real (kind=kind_phys), pointer :: tseain_cpl(:)  => null()   !< aoi_fld%tseain(item,lan)
-!   real (kind=kind_phys), pointer :: tisfcin_cpl(:) => null()   !< aoi_fld%tisfcin(item,lan)
-!   real (kind=kind_phys), pointer :: ficein_cpl(:)  => null()   !< aoi_fld%ficein(item,lan)
-!   real (kind=kind_phys), pointer :: hicein_cpl(:)  => null()   !< aoi_fld%hicein(item,lan)
-    real (kind=kind_phys), pointer :: hsnoin_cpl(:)  => null()   !< aoi_fld%hsnoin(item,lan)
+    real (kind=kind_phys), pointer :: dusfcin_cpl(:)          => null()   !< aoi_fld%dusfcin(item,lan)
+    real (kind=kind_phys), pointer :: dvsfcin_cpl(:)          => null()   !< aoi_fld%dvsfcin(item,lan)
+    real (kind=kind_phys), pointer :: dtsfcin_cpl(:)          => null()   !< aoi_fld%dtsfcin(item,lan)
+    real (kind=kind_phys), pointer :: dqsfcin_cpl(:)          => null()   !< aoi_fld%dqsfcin(item,lan)
+    real (kind=kind_phys), pointer :: ulwsfcin_cpl(:)         => null()   !< aoi_fld%ulwsfcin(item,lan)
+!   real (kind=kind_phys), pointer :: tseain_cpl(:)           => null()   !< aoi_fld%tseain(item,lan)
+!   real (kind=kind_phys), pointer :: tisfcin_cpl(:)          => null()   !< aoi_fld%tisfcin(item,lan)
+!   real (kind=kind_phys), pointer :: ficein_cpl(:)           => null()   !< aoi_fld%ficein(item,lan)
+!   real (kind=kind_phys), pointer :: hicein_cpl(:)           => null()   !< aoi_fld%hicein(item,lan)
+    real (kind=kind_phys), pointer :: hsnoin_cpl(:)           => null()   !< aoi_fld%hsnoin(item,lan)
+    real (kind=kind_phys), pointer :: sfc_alb_nir_dir_cpl(:)  => null()   !< sfc nir albedo for direct rad
+    real (kind=kind_phys), pointer :: sfc_alb_nir_dif_cpl(:)  => null()   !< sfc nir albedo for diffuse rad
+    real (kind=kind_phys), pointer :: sfc_alb_vis_dir_cpl(:)  => null()   !< sfc vis albedo for direct rad
+    real (kind=kind_phys), pointer :: sfc_alb_vis_dif_cpl(:)  => null()   !< sfc vis albedo for diffuse rad
     !--- only variable needed for cplwav2atm=.TRUE.
-!   real (kind=kind_phys), pointer :: zorlwav_cpl(:) => null()   !< roughness length from wave model
-    !--- also needed for ice/ocn coupling - Xingren
+!   real (kind=kind_phys), pointer :: zorlwav_cpl(:)          => null()   !< roughness length from wave model
+    !--- also needed for ice/ocn coupling 
     real (kind=kind_phys), pointer :: slimskin_cpl(:)=> null()   !< aoi_fld%slimskin(item,lan)
 
 !--- outgoing accumulated quantities
@@ -2748,29 +2753,37 @@ module GFS_typedefs
 
     if (Model%cplflx) then
       !--- incoming quantities
-      allocate (Coupling%slimskin_cpl (IM))
-      allocate (Coupling%dusfcin_cpl  (IM))
-      allocate (Coupling%dvsfcin_cpl  (IM))
-      allocate (Coupling%dtsfcin_cpl  (IM))
-      allocate (Coupling%dqsfcin_cpl  (IM))
-      allocate (Coupling%ulwsfcin_cpl (IM))
-!     allocate (Coupling%tseain_cpl   (IM))
-!     allocate (Coupling%tisfcin_cpl  (IM))
-!     allocate (Coupling%ficein_cpl   (IM))
-!     allocate (Coupling%hicein_cpl   (IM))
-      allocate (Coupling%hsnoin_cpl   (IM))
+      allocate (Coupling%slimskin_cpl        (IM))
+      allocate (Coupling%dusfcin_cpl         (IM))
+      allocate (Coupling%dvsfcin_cpl         (IM))
+      allocate (Coupling%dtsfcin_cpl         (IM))
+      allocate (Coupling%dqsfcin_cpl         (IM))
+      allocate (Coupling%ulwsfcin_cpl        (IM))
+!     allocate (Coupling%tseain_cpl          (IM))
+!     allocate (Coupling%tisfcin_cpl         (IM))
+!     allocate (Coupling%ficein_cpl          (IM))
+!     allocate (Coupling%hicein_cpl          (IM))
+      allocate (Coupling%hsnoin_cpl          (IM))
+      allocate (Coupling%sfc_alb_nir_dir_cpl (IM))
+      allocate (Coupling%sfc_alb_nir_dif_cpl (IM))
+      allocate (Coupling%sfc_alb_vis_dir_cpl (IM))
+      allocate (Coupling%sfc_alb_vis_dif_cpl (IM))
 
-      Coupling%slimskin_cpl = clear_val
-      Coupling%dusfcin_cpl  = clear_val
-      Coupling%dvsfcin_cpl  = clear_val
-      Coupling%dtsfcin_cpl  = clear_val
-      Coupling%dqsfcin_cpl  = clear_val
-      Coupling%ulwsfcin_cpl = clear_val
-!     Coupling%tseain_cpl   = clear_val
-!     Coupling%tisfcin_cpl  = clear_val
-!     Coupling%ficein_cpl   = clear_val
-!     Coupling%hicein_cpl   = clear_val
-      Coupling%hsnoin_cpl   = clear_val
+      Coupling%slimskin_cpl          = clear_val
+      Coupling%dusfcin_cpl           = clear_val
+      Coupling%dvsfcin_cpl           = clear_val
+      Coupling%dtsfcin_cpl           = clear_val
+      Coupling%dqsfcin_cpl           = clear_val
+      Coupling%ulwsfcin_cpl          = clear_val
+!     Coupling%tseain_cpl            = clear_val
+!     Coupling%tisfcin_cpl           = clear_val
+!     Coupling%ficein_cpl            = clear_val
+!     Coupling%hicein_cpl            = clear_val
+      Coupling%hsnoin_cpl            = clear_val
+      Coupling%sfc_alb_nir_dir_cpl   = clear_val
+      Coupling%sfc_alb_nir_dif_cpl   = clear_val
+      Coupling%sfc_alb_vis_dir_cpl   = clear_val
+      Coupling%sfc_alb_vis_dif_cpl   = clear_val
 
       !--- accumulated quantities
       allocate (Coupling%dusfc_cpl  (IM))
