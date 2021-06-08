@@ -1541,6 +1541,10 @@ end subroutine atmos_data_type_chksum
     logical found, isFieldCreated, lcpl_fice
     real (kind=GFS_kind_phys), parameter :: z0ice=1.1    !  (in cm)
 !
+      real(kind=GFS_kind_phys), parameter :: himax = 8.0      !< maximum ice thickness allowed
+!     real(kind=GFS_kind_phys), parameter :: himin = 0.1      !< minimum ice thickness required
+      real(kind=GFS_kind_phys), parameter :: hsmax = 2.0      !< maximum snow depth allowed
+!
 !------------------------------------------------------------------------------
 !
     rc  = -999
@@ -1839,7 +1843,7 @@ end subroutine atmos_data_type_chksum
                   ix = Atm_block%ixp(i,j)
                   if (GFS_data(nb)%Sfcprop%oceanfrac(ix) > zero) then
 !                   GFS_data(nb)%Coupling%hicein_cpl(ix) = datar8(i,j)
-                    GFS_data(nb)%Sfcprop%hice(ix)        = datar8(i,j)
+                    GFS_data(nb)%Sfcprop%hice(ix)        = min(datar8(i,j), himax)
                   endif
                 enddo
               enddo
@@ -2262,8 +2266,8 @@ end subroutine atmos_data_type_chksum
           if (GFS_data(nb)%Sfcprop%oceanfrac(ix) > zero) then
             if (GFS_data(nb)%Sfcprop%fice(ix) >= GFS_control%min_seaice) then
 
-              GFS_data(nb)%Coupling%hsnoin_cpl(ix) = GFS_data(nb)%Coupling%hsnoin_cpl(ix) &
-                                                   / GFS_data(nb)%Sfcprop%fice(ix)
+              GFS_data(nb)%Coupling%hsnoin_cpl(ix) = min(hsmax, GFS_data(nb)%Coupling%hsnoin_cpl(ix) &
+                             / (GFS_data(nb)%Sfcprop%fice(ix)*GFS_data(nb)%Sfcprop%oceanfrac(ix)))
               GFS_data(nb)%Sfcprop%zorli(ix)       = z0ice
             else
               GFS_data(nb)%Sfcprop%tisfc(ix)       = GFS_data(nb)%Sfcprop%tsfco(ix)
