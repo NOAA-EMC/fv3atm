@@ -578,9 +578,16 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[snodi]
-  standard_name = surface_snow_thickness_water_equivalent_over_ice
-  long_name = water equivalent snow depth over ice
+[snodl]
+  standard_name = surface_snow_thickness_water_equivalent_over_land
+  long_name = water equivalent snow depth over land
+  units = mm
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[weasdl]
+  standard_name = water_equivalent_accumulated_snow_depth_over_land
+  long_name = water equiv of acc snow depth over land
   units = mm
   dimensions = (horizontal_loop_extent)
   type = real
@@ -2174,6 +2181,38 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
+[sfc_alb_nir_dir_cpl]
+  standard_name = surface_nir_albedo_direct_rad_for_coupling
+  long_name = sfc near IR albedo for direct radiation for coupling
+  units = frac
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (flag_for_flux_coupling)
+[sfc_alb_nir_dif_cpl]
+  standard_name = surface_nir_albedo_diffuse_rad_for_coupling
+  long_name = sfc near IR albedo for diffuse radiation for coupling
+  units = frac
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (flag_for_flux_coupling)
+[sfc_alb_vis_dir_cpl]
+  standard_name = surface_vis_albedo_direct_rad_for_coupling
+  long_name = sfc visible albedo for direct radiation for coupling
+  units = frac
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (flag_for_flux_coupling)
+[sfc_alb_vis_dif_cpl]
+  standard_name = surface_vis_albedo_diffuse_rad_for_coupling
+  long_name = sfc visible albedo for diffuse radiation for coupling
+  units = frac
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (flag_for_flux_coupling)
 [slimskin_cpl]
   standard_name = sea_land_ice_mask_in	
   long_name = sea/land/ice mask input (=0/1/2)
@@ -9649,9 +9688,9 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[snowd_land]
-  standard_name = surface_snow_thickness_water_equivalent_over_land
-  long_name = water equivalent snow depth over land
+[snowd_ice]
+  standard_name = surface_snow_thickness_water_equivalent_over_ice
+  long_name = water equivalent snow depth over ice
   units = mm
   dimensions = (horizontal_loop_extent)
   type = real
@@ -10010,13 +10049,6 @@
   standard_name = maximum_updraft_velocity_at_cloud_base
   long_name = maximum updraft velocity at cloud base
   units = m s-1
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-[weasd_land]
-  standard_name = water_equivalent_accumulated_snow_depth_over_land
-  long_name = water equiv of acc snow depth over land
-  units = mm
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys

@@ -124,7 +124,7 @@ module module_cplfields
     FieldInfo("t2m                                      ", "s") ]
 
 ! Import Fields ----------------------------------------
-  integer,          public, parameter :: NimportFields = 42
+  integer,          public, parameter :: NimportFields = 46
   logical,          public            :: importFieldsValid(NimportFields)
   type(ESMF_Field), target, public    :: importFields(NimportFields)
 
@@ -141,6 +141,10 @@ module module_cplfields
     FieldInfo("stress_on_air_ice_merid                  ", "s"), &
     FieldInfo("mean_ice_volume                          ", "s"), &
     FieldInfo("mean_snow_volume                         ", "s"), &
+    FieldInfo("inst_ice_ir_dif_albedo                   ", "s"), &
+    FieldInfo("inst_ice_ir_dir_albedo                   ", "s"), &
+    FieldInfo("inst_ice_vis_dif_albedo                  ", "s"), &
+    FieldInfo("inst_ice_vis_dir_albedo                  ", "s"), &
     FieldInfo("inst_tracer_up_surface_flx               ", "u"), &
     FieldInfo("inst_tracer_down_surface_flx             ", "d"), &
     FieldInfo("inst_tracer_clmn_mass_dens               ", "c"), &

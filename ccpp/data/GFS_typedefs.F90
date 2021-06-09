@@ -237,7 +237,8 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: zorli  (:)   => null()  !< ice  surface roughness in cm
     real (kind=kind_phys), pointer :: zorlwav(:)   => null()  !< wave surface roughness in cm derived from wave model
     real (kind=kind_phys), pointer :: fice   (:)   => null()  !< ice fraction over open water grid
-    real (kind=kind_phys), pointer :: snodi  (:)   => null()  !< snow depth over sea/lake ice
+    real (kind=kind_phys), pointer :: snodl  (:)   => null()  !< snow depth over land
+    real (kind=kind_phys), pointer :: weasdl (:)   => null()  !< weasds over land
 !   real (kind=kind_phys), pointer :: hprim  (:)   => null()  !< topographic standard deviation in m
     real (kind=kind_phys), pointer :: hprime (:,:) => null()  !< orographic metrics
     real (kind=kind_phys), pointer :: z0base (:)   => null()  !< background or baseline surface roughness length in m
@@ -441,20 +442,25 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: fluxlwUP_allsky(:,:)   => null()  !< GP          up   LW total sky flux profile ( w/m**2/K )
     real (kind=kind_phys), pointer :: fluxlwDOWN_allsky(:,:) => null()  !< GP          down LW total sky flux profile ( w/m**2/K )
     real (kind=kind_phys), pointer :: htrlw(:,:)             => null()  !< GP updated LW heating rate
+
 !--- incoming quantities
-    real (kind=kind_phys), pointer :: dusfcin_cpl(:) => null()   !< aoi_fld%dusfcin(item,lan)
-    real (kind=kind_phys), pointer :: dvsfcin_cpl(:) => null()   !< aoi_fld%dvsfcin(item,lan)
-    real (kind=kind_phys), pointer :: dtsfcin_cpl(:) => null()   !< aoi_fld%dtsfcin(item,lan)
-    real (kind=kind_phys), pointer :: dqsfcin_cpl(:) => null()   !< aoi_fld%dqsfcin(item,lan)
-    real (kind=kind_phys), pointer :: ulwsfcin_cpl(:)=> null()   !< aoi_fld%ulwsfcin(item,lan)
-!   real (kind=kind_phys), pointer :: tseain_cpl(:)  => null()   !< aoi_fld%tseain(item,lan)
-!   real (kind=kind_phys), pointer :: tisfcin_cpl(:) => null()   !< aoi_fld%tisfcin(item,lan)
-!   real (kind=kind_phys), pointer :: ficein_cpl(:)  => null()   !< aoi_fld%ficein(item,lan)
-!   real (kind=kind_phys), pointer :: hicein_cpl(:)  => null()   !< aoi_fld%hicein(item,lan)
-    real (kind=kind_phys), pointer :: hsnoin_cpl(:)  => null()   !< aoi_fld%hsnoin(item,lan)
+    real (kind=kind_phys), pointer :: dusfcin_cpl(:)          => null()   !< aoi_fld%dusfcin(item,lan)
+    real (kind=kind_phys), pointer :: dvsfcin_cpl(:)          => null()   !< aoi_fld%dvsfcin(item,lan)
+    real (kind=kind_phys), pointer :: dtsfcin_cpl(:)          => null()   !< aoi_fld%dtsfcin(item,lan)
+    real (kind=kind_phys), pointer :: dqsfcin_cpl(:)          => null()   !< aoi_fld%dqsfcin(item,lan)
+    real (kind=kind_phys), pointer :: ulwsfcin_cpl(:)         => null()   !< aoi_fld%ulwsfcin(item,lan)
+!   real (kind=kind_phys), pointer :: tseain_cpl(:)           => null()   !< aoi_fld%tseain(item,lan)
+!   real (kind=kind_phys), pointer :: tisfcin_cpl(:)          => null()   !< aoi_fld%tisfcin(item,lan)
+!   real (kind=kind_phys), pointer :: ficein_cpl(:)           => null()   !< aoi_fld%ficein(item,lan)
+!   real (kind=kind_phys), pointer :: hicein_cpl(:)           => null()   !< aoi_fld%hicein(item,lan)
+    real (kind=kind_phys), pointer :: hsnoin_cpl(:)           => null()   !< aoi_fld%hsnoin(item,lan)
+    real (kind=kind_phys), pointer :: sfc_alb_nir_dir_cpl(:)  => null()   !< sfc nir albedo for direct rad
+    real (kind=kind_phys), pointer :: sfc_alb_nir_dif_cpl(:)  => null()   !< sfc nir albedo for diffuse rad
+    real (kind=kind_phys), pointer :: sfc_alb_vis_dir_cpl(:)  => null()   !< sfc vis albedo for direct rad
+    real (kind=kind_phys), pointer :: sfc_alb_vis_dif_cpl(:)  => null()   !< sfc vis albedo for diffuse rad
     !--- only variable needed for cplwav2atm=.TRUE.
-!   real (kind=kind_phys), pointer :: zorlwav_cpl(:) => null()   !< roughness length from wave model
-    !--- also needed for ice/ocn coupling - Xingren
+!   real (kind=kind_phys), pointer :: zorlwav_cpl(:)          => null()   !< roughness length from wave model
+    !--- also needed for ice/ocn coupling 
     real (kind=kind_phys), pointer :: slimskin_cpl(:)=> null()   !< aoi_fld%slimskin(item,lan)
 
 !--- outgoing accumulated quantities
@@ -1964,8 +1970,8 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: smcmax(:)          => null()  !<
     real (kind=kind_phys), pointer      :: smc_save(:,:)      => null()  !<
     real (kind=kind_phys), pointer      :: snowc(:)           => null()  !<
-!   real (kind=kind_phys), pointer      :: snowd_ice(:)       => null()  !<
-    real (kind=kind_phys), pointer      :: snowd_land(:)      => null()  !<
+    real (kind=kind_phys), pointer      :: snowd_ice(:)       => null()  !<
+!   real (kind=kind_phys), pointer      :: snowd_land(:)      => null()  !<
     real (kind=kind_phys), pointer      :: snowd_land_save(:) => null()  !<
 !   real (kind=kind_phys), pointer      :: snowd_water(:)     => null()  !<
     real (kind=kind_phys), pointer      :: snow_depth(:)      => null()  !<
@@ -2019,7 +2025,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: w_upi(:,:)         => null()  !<
     real (kind=kind_phys), pointer      :: wcbmax(:)          => null()  !<
 !   real (kind=kind_phys), pointer      :: weasd_water(:)     => null()  !<
-    real (kind=kind_phys), pointer      :: weasd_land(:)      => null()  !<
+!   real (kind=kind_phys), pointer      :: weasd_land(:)      => null()  !<
     real (kind=kind_phys), pointer      :: weasd_land_save(:) => null()  !<
     real (kind=kind_phys), pointer      :: weasd_ice(:)       => null()  !<
     real (kind=kind_phys), pointer      :: wind(:)            => null()  !<
@@ -2296,7 +2302,8 @@ module GFS_typedefs
     allocate (Sfcprop%zorli    (IM))
     allocate (Sfcprop%zorlwav  (IM))
     allocate (Sfcprop%fice     (IM))
-    allocate (Sfcprop%snodi    (IM))
+    allocate (Sfcprop%snodl    (IM))
+    allocate (Sfcprop%weasdl   (IM))
 !   allocate (Sfcprop%hprim    (IM))
     allocate (Sfcprop%hprime   (IM,Model%nmtvr))
     allocate (Sfcprop%emis_lnd (IM))
@@ -2318,7 +2325,8 @@ module GFS_typedefs
     Sfcprop%zorli     = clear_val
     Sfcprop%zorlwav   = clear_val
     Sfcprop%fice      = clear_val
-    Sfcprop%snodi     = clear_val
+    Sfcprop%snodl     = clear_val
+    Sfcprop%weasdl    = clear_val
 !   Sfcprop%hprim     = clear_val
     Sfcprop%hprime    = clear_val
     Sfcprop%emis_lnd  = clear_val
@@ -2745,29 +2753,37 @@ module GFS_typedefs
 
     if (Model%cplflx) then
       !--- incoming quantities
-      allocate (Coupling%slimskin_cpl (IM))
-      allocate (Coupling%dusfcin_cpl  (IM))
-      allocate (Coupling%dvsfcin_cpl  (IM))
-      allocate (Coupling%dtsfcin_cpl  (IM))
-      allocate (Coupling%dqsfcin_cpl  (IM))
-      allocate (Coupling%ulwsfcin_cpl (IM))
-!     allocate (Coupling%tseain_cpl   (IM))
-!     allocate (Coupling%tisfcin_cpl  (IM))
-!     allocate (Coupling%ficein_cpl   (IM))
-!     allocate (Coupling%hicein_cpl   (IM))
-      allocate (Coupling%hsnoin_cpl   (IM))
+      allocate (Coupling%slimskin_cpl        (IM))
+      allocate (Coupling%dusfcin_cpl         (IM))
+      allocate (Coupling%dvsfcin_cpl         (IM))
+      allocate (Coupling%dtsfcin_cpl         (IM))
+      allocate (Coupling%dqsfcin_cpl         (IM))
+      allocate (Coupling%ulwsfcin_cpl        (IM))
+!     allocate (Coupling%tseain_cpl          (IM))
+!     allocate (Coupling%tisfcin_cpl         (IM))
+!     allocate (Coupling%ficein_cpl          (IM))
+!     allocate (Coupling%hicein_cpl          (IM))
+      allocate (Coupling%hsnoin_cpl          (IM))
+      allocate (Coupling%sfc_alb_nir_dir_cpl (IM))
+      allocate (Coupling%sfc_alb_nir_dif_cpl (IM))
+      allocate (Coupling%sfc_alb_vis_dir_cpl (IM))
+      allocate (Coupling%sfc_alb_vis_dif_cpl (IM))
 
-      Coupling%slimskin_cpl = clear_val
-      Coupling%dusfcin_cpl  = clear_val
-      Coupling%dvsfcin_cpl  = clear_val
-      Coupling%dtsfcin_cpl  = clear_val
-      Coupling%dqsfcin_cpl  = clear_val
-      Coupling%ulwsfcin_cpl = clear_val
-!     Coupling%tseain_cpl   = clear_val
-!     Coupling%tisfcin_cpl  = clear_val
-!     Coupling%ficein_cpl   = clear_val
-!     Coupling%hicein_cpl   = clear_val
-      Coupling%hsnoin_cpl   = clear_val
+      Coupling%slimskin_cpl          = clear_val
+      Coupling%dusfcin_cpl           = clear_val
+      Coupling%dvsfcin_cpl           = clear_val
+      Coupling%dtsfcin_cpl           = clear_val
+      Coupling%dqsfcin_cpl           = clear_val
+      Coupling%ulwsfcin_cpl          = clear_val
+!     Coupling%tseain_cpl            = clear_val
+!     Coupling%tisfcin_cpl           = clear_val
+!     Coupling%ficein_cpl            = clear_val
+!     Coupling%hicein_cpl            = clear_val
+      Coupling%hsnoin_cpl            = clear_val
+      Coupling%sfc_alb_nir_dir_cpl   = clear_val
+      Coupling%sfc_alb_nir_dif_cpl   = clear_val
+      Coupling%sfc_alb_vis_dir_cpl   = clear_val
+      Coupling%sfc_alb_vis_dif_cpl   = clear_val
 
       !--- accumulated quantities
       allocate (Coupling%dusfc_cpl  (IM))
@@ -6532,8 +6548,8 @@ module GFS_typedefs
     allocate (Interstitial%sigmatot        (IM,Model%levs))
     allocate (Interstitial%slopetype       (IM))
     allocate (Interstitial%snowc           (IM))
-!   allocate (Interstitial%snowd_ice       (IM))
-    allocate (Interstitial%snowd_land      (IM))
+    allocate (Interstitial%snowd_ice       (IM))
+!   allocate (Interstitial%snowd_land      (IM))
 !   allocate (Interstitial%snowd_water     (IM))
     allocate (Interstitial%snohf           (IM))
     allocate (Interstitial%snowmt          (IM))
@@ -6568,7 +6584,7 @@ module GFS_typedefs
     allocate (Interstitial%vegtype         (IM))
     allocate (Interstitial%wcbmax          (IM))
     allocate (Interstitial%weasd_ice       (IM))
-    allocate (Interstitial%weasd_land      (IM))
+!   allocate (Interstitial%weasd_land      (IM))
 !   allocate (Interstitial%weasd_water     (IM))
     allocate (Interstitial%wind            (IM))
     allocate (Interstitial%work1           (IM))
@@ -7273,8 +7289,8 @@ module GFS_typedefs
     Interstitial%sigmatot        = clear_val
     Interstitial%slopetype       = 0
     Interstitial%snowc           = clear_val
-!   Interstitial%snowd_ice       = huge
-    Interstitial%snowd_land      = huge
+    Interstitial%snowd_ice       = huge
+!   Interstitial%snowd_land      = huge
 !   Interstitial%snowd_water     = huge
     Interstitial%snohf           = clear_val
     Interstitial%snowmt          = clear_val
@@ -7306,7 +7322,7 @@ module GFS_typedefs
     Interstitial%vegtype         = 0
     Interstitial%wcbmax          = clear_val
     Interstitial%weasd_ice       = huge
-    Interstitial%weasd_land      = huge
+!   Interstitial%weasd_land      = huge
 !   Interstitial%weasd_water     = huge
     Interstitial%wind            = huge
     Interstitial%work1           = clear_val
@@ -7656,8 +7672,8 @@ module GFS_typedefs
     write (0,*) 'sum(Interstitial%sigmatot        ) = ', sum(Interstitial%sigmatot        )
     write (0,*) 'sum(Interstitial%slopetype       ) = ', sum(Interstitial%slopetype       )
     write (0,*) 'sum(Interstitial%snowc           ) = ', sum(Interstitial%snowc           )
-!   write (0,*) 'sum(Interstitial%snowd_ice       ) = ', sum(Interstitial%snowd_ice       )
-    write (0,*) 'sum(Interstitial%snowd_land      ) = ', sum(Interstitial%snowd_land      )
+    write (0,*) 'sum(Interstitial%snowd_ice       ) = ', sum(Interstitial%snowd_ice       )
+!   write (0,*) 'sum(Interstitial%snowd_land      ) = ', sum(Interstitial%snowd_land      )
 !   write (0,*) 'sum(Interstitial%snowd_water     ) = ', sum(Interstitial%snowd_water     )
     write (0,*) 'sum(Interstitial%snohf           ) = ', sum(Interstitial%snohf           )
     write (0,*) 'sum(Interstitial%snowmt          ) = ', sum(Interstitial%snowmt          )
@@ -7692,7 +7708,7 @@ module GFS_typedefs
     write (0,*) 'sum(Interstitial%vegtype         ) = ', sum(Interstitial%vegtype         )
     write (0,*) 'sum(Interstitial%wcbmax          ) = ', sum(Interstitial%wcbmax          )
     write (0,*) 'sum(Interstitial%weasd_ice       ) = ', sum(Interstitial%weasd_ice       )
-    write (0,*) 'sum(Interstitial%weasd_land      ) = ', sum(Interstitial%weasd_land      )
+!   write (0,*) 'sum(Interstitial%weasd_land      ) = ', sum(Interstitial%weasd_land      )
 !   write (0,*) 'sum(Interstitial%weasd_water     ) = ', sum(Interstitial%weasd_water     )
     write (0,*) 'sum(Interstitial%wind            ) = ', sum(Interstitial%wind            )
     write (0,*) 'sum(Interstitial%work1           ) = ', sum(Interstitial%work1           )
