@@ -1780,15 +1780,13 @@ module FV3GFS_io_mod
         sfc_var2(i,j,30) = Sfcprop(nb)%slope(ix) !--- slope
         sfc_var2(i,j,31) = Sfcprop(nb)%snoalb(ix)!--- snoalb
         sfc_var2(i,j,32) = Sfcprop(nb)%sncovr(ix)!--- sncovr
-!       if (Model%frac_grid) then
-          sfc_var2(i,j,33) = Sfcprop(nb)%tsfcl(ix)  !--- tsfcl (temp on land)
-          sfc_var2(i,j,34) = Sfcprop(nb)%zorll(ix)  !--- zorll (zorl on land)
-          sfc_var2(i,j,35) = Sfcprop(nb)%zorli(ix)  !--- zorli (zorl on ice)
-          sfc_var2(i,j,36) = Sfcprop(nb)%snodl(ix)  !--- snodl (snowd on ice)
-          sfc_var2(i,j,37) = Sfcprop(nb)%tsfc(ix)   !--- tsfc composite
-          sfc_var2(i,j,38) = Sfcprop(nb)%zorl(ix)   !--- zorl composite
-          sfc_var2(i,j,39) = Sfcprop(nb)%weasdl(ix) !--- weasdl (weasd on ice)
-!       endif
+        sfc_var2(i,j,33) = Sfcprop(nb)%tsfcl(ix)  !--- tsfcl (temp on land)
+        sfc_var2(i,j,34) = Sfcprop(nb)%zorll(ix)  !--- zorll (zorl on land)
+        sfc_var2(i,j,35) = Sfcprop(nb)%zorli(ix)  !--- zorli (zorl on ice)
+        sfc_var2(i,j,36) = Sfcprop(nb)%snodl(ix)  !--- snodl (snowd on ice)
+        sfc_var2(i,j,37) = Sfcprop(nb)%tsfc(ix)   !--- tsfc composite
+        sfc_var2(i,j,38) = Sfcprop(nb)%zorl(ix)   !--- zorl composite
+        sfc_var2(i,j,39) = Sfcprop(nb)%weasdl(ix) !--- weasdl (weasd on ice)
         if (Model%cplwav) then
           sfc_var2(i,j,nvar2m) = Sfcprop(nb)%zorlwav(ix) !--- zorlwav (zorl from wav)
         endif
