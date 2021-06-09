@@ -167,6 +167,12 @@ list(APPEND _fv3atm_defs_private GFS_PHYS
                                  INTERNAL_FILE_NML
                                  ESMF_VERSION_MAJOR=${ESMF_VERSION_MAJOR})
 
+if(MOVING_NEST)
+  list(APPEND _fv3atm_defs_private MOVING_NEST)
+endif()
+
+
+
 set_target_properties(fv3atm PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mod)
 target_include_directories(fv3atm INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/mod>
                                             $<INSTALL_INTERFACE:mod>)

@@ -102,7 +102,7 @@ use module_fv3_config,  only: output_1st_tstep_rst, first_kdt, nsout,    &
                               frestart, restart_endfcst
 
 #ifdef MOVING_NEST
-use fv_moving_nest_main, only: update_moving_nest
+use fv_moving_nest_main_mod, only: update_moving_nest
 #endif MOVING_NEST
 !-----------------------------------------------------------------------
 
