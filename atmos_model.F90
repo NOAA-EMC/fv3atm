@@ -102,7 +102,7 @@ use module_fv3_config,  only: output_1st_tstep_rst, first_kdt, nsout,    &
                               frestart, restart_endfcst
 
 #ifdef MOVING_NEST
-use fv_moving_nest_main_mod, only: update_moving_nest
+use fv_moving_nest_main_mod, only: update_moving_nest, dump_moving_nest
 #endif MOVING_NEST
 !-----------------------------------------------------------------------
 
@@ -700,6 +700,12 @@ subroutine update_atmos_model_dynamics (Atmos)
 #endif MOVING_NEST
     call mpp_clock_begin(fv3Clock)
     call atmosphere_dynamics (Atmos%Time)
+#ifdef MOVING_NEST
+    ! W. Ramstrom, AOML/HRD -- June 9, 2021
+    ! Debugging output of moving nest code.  Called from this level to access needed input variables.
+    call dump_moving_nest (Atm_block, GFS_control, GFS_data, Atmos%Time)
+#endif MOVING_NEST
+
     call mpp_clock_end(fv3Clock)
 
 end subroutine update_atmos_model_dynamics
