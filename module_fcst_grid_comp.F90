@@ -503,7 +503,6 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 
         else !! nesting
 
-#if ESMF_VERSION_MAJOR >= 8
           if (mype==0) globalTileLayout = atm_int_state%Atm%layout
           call ESMF_VMBroadcast(vm, bcstData=globalTileLayout, count=2, &
                                   rootPet=0, rc=rc)
@@ -548,10 +547,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
                                        delayout=delayout, isSphere=.false., indexflag=ESMF_INDEX_DELOCAL, &
               rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-#else
-          write(0,*)'nest quilting is supported only with ESMF 8'
-          call ESMF_Finalize(endflag=ESMF_END_ABORT)
-#endif
+
         endif
 
       endif
