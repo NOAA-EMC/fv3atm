@@ -274,25 +274,26 @@ module stochastic_physics_wrapper_mod
 
     endif initalize_stochastic_physics
 
-    if (GFS_Control%kdt==0) then
-       do nb=1,Atm_block%nblks
-          GFS_Data(nb)%Intdiag%ca_deep(:)  = 0.
-          GFS_Data(nb)%Intdiag%ca_turb(:)  = 0.
-          GFS_Data(nb)%Intdiag%ca_shal(:)  = 0.
-          GFS_Data(nb)%Coupling%ca_deep(:) = 0.
-          GFS_Data(nb)%Coupling%ca_turb(:) = 0.
-          GFS_Data(nb)%Coupling%ca_shal(:) = 0.
-          GFS_Data(nb)%Coupling%ca1(:) = 0.
-          GFS_Data(nb)%Coupling%ca2(:) = 0.
-          GFS_Data(nb)%Coupling%ca3(:) = 0.
-          GFS_Data(nb)%Intdiag%ca1(:)  = 0.
-          GFS_Data(nb)%Intdiag%ca2(:)  = 0.
-          GFS_Data(nb)%Intdiag%ca3(:)  = 0.
-       enddo
-    else
-
-    ! Cellular automata code is identical for initialization (kstep=0) and time integration (kstep>0)
     if(GFS_Control%do_ca)then
+       if (GFS_Control%kdt==0) then
+       
+          do nb=1,Atm_block%nblks
+             GFS_Data(nb)%Intdiag%ca_deep(:)  = 0.
+             GFS_Data(nb)%Intdiag%ca_turb(:)  = 0.
+             GFS_Data(nb)%Intdiag%ca_shal(:)  = 0.
+             GFS_Data(nb)%Coupling%ca_deep(:) = 0.
+             GFS_Data(nb)%Coupling%ca_turb(:) = 0.
+             GFS_Data(nb)%Coupling%ca_shal(:) = 0.
+             GFS_Data(nb)%Coupling%ca1(:) = 0.
+             GFS_Data(nb)%Coupling%ca2(:) = 0.
+             GFS_Data(nb)%Coupling%ca3(:) = 0.
+             GFS_Data(nb)%Intdiag%ca1(:)  = 0.
+             GFS_Data(nb)%Intdiag%ca2(:)  = 0.
+             GFS_Data(nb)%Intdiag%ca3(:)  = 0.
+          enddo
+   
+       else
+
        if(GFS_Control%ca_sgs)then
          ! Allocate contiguous arrays; copy in as needed
          allocate(sst         (1:Atm_block%nblks,maxval(GFS_Control%blksz)                   ))
@@ -371,9 +372,10 @@ module stochastic_physics_wrapper_mod
           deallocate(ca2_diag)
           deallocate(ca3_diag)
        endif
-    endif
 
-    endif !kdt = 0
+    endif !kdt =0
+
+    endif !do_ca
 
   end subroutine stochastic_physics_wrapper
 
