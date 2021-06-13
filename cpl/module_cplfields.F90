@@ -141,7 +141,7 @@ module module_cplfields
     FieldInfo("t2m                                      ", "s") ]
 
 ! Import Fields ----------------------------------------
-  integer,          public, parameter :: NimportFields = 38
+  integer,          public, parameter :: NimportFields = 42
   logical,          public            :: importFieldsValid(NimportFields)
   type(ESMF_Field), target, public    :: importFields(NimportFields)
 
@@ -158,6 +158,10 @@ module module_cplfields
     FieldInfo("stress_on_air_ice_merid                  ", "s"), &
     FieldInfo("mean_ice_volume                          ", "s"), &
     FieldInfo("mean_snow_volume                         ", "s"), &
+    FieldInfo("inst_ice_ir_dif_albedo                   ", "s"), &
+    FieldInfo("inst_ice_ir_dir_albedo                   ", "s"), &
+    FieldInfo("inst_ice_vis_dif_albedo                  ", "s"), &
+    FieldInfo("inst_ice_vis_dir_albedo                  ", "s"), &
     FieldInfo("wave_z0_roughness_length                 ", "s"), &
 
     !  For JEDI
