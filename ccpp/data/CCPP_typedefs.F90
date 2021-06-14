@@ -226,11 +226,11 @@ contains
     else
       Interstitial%ngas  = 1
     end if
-    allocate(Interstitial%rilist(0:Interstitial%ngas))
-    allocate(Interstitial%cpilist(0:Interstitial%ngas))
+    allocate(Interstitial%rilist(1:Interstitial%ngas))
+    allocate(Interstitial%cpilist(1:Interstitial%ngas))
     if (present(rilist)) then
-      Interstitial%rilist  = rilist
-      Interstitial%cpilist = cpilist
+      Interstitial%rilist  = rilist(1:Interstitial%ngas)
+      Interstitial%cpilist = cpilist(1:Interstitial%ngas)
     else
       Interstitial%rilist  = 0.0
       Interstitial%cpilist = 0.0
