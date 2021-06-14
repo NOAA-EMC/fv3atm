@@ -2710,7 +2710,6 @@ module GFS_typedefs
     allocate (Coupling%sfcnsw (IM))
     allocate (Coupling%sfcdlw (IM))
     allocate (Coupling%sfculw (IM))
-    allocate (Coupling%sfculw_jac (IM))
 
     Coupling%sfcdsw = clear_val
     Coupling%sfcnsw = clear_val
