@@ -440,20 +440,25 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: fluxlwUP_allsky(:,:)   => null()  !< GP          up   LW total sky flux profile ( w/m**2/K )
     real (kind=kind_phys), pointer :: fluxlwDOWN_allsky(:,:) => null()  !< GP          down LW total sky flux profile ( w/m**2/K )
     real (kind=kind_phys), pointer :: htrlw(:,:)             => null()  !< GP updated LW heating rate
+
 !--- incoming quantities
-    real (kind=kind_phys), pointer :: dusfcin_cpl(:) => null()   !< aoi_fld%dusfcin(item,lan)
-    real (kind=kind_phys), pointer :: dvsfcin_cpl(:) => null()   !< aoi_fld%dvsfcin(item,lan)
-    real (kind=kind_phys), pointer :: dtsfcin_cpl(:) => null()   !< aoi_fld%dtsfcin(item,lan)
-    real (kind=kind_phys), pointer :: dqsfcin_cpl(:) => null()   !< aoi_fld%dqsfcin(item,lan)
-    real (kind=kind_phys), pointer :: ulwsfcin_cpl(:)=> null()   !< aoi_fld%ulwsfcin(item,lan)
-!   real (kind=kind_phys), pointer :: tseain_cpl(:)  => null()   !< aoi_fld%tseain(item,lan)
-!   real (kind=kind_phys), pointer :: tisfcin_cpl(:) => null()   !< aoi_fld%tisfcin(item,lan)
-!   real (kind=kind_phys), pointer :: ficein_cpl(:)  => null()   !< aoi_fld%ficein(item,lan)
-!   real (kind=kind_phys), pointer :: hicein_cpl(:)  => null()   !< aoi_fld%hicein(item,lan)
-    real (kind=kind_phys), pointer :: hsnoin_cpl(:)  => null()   !< aoi_fld%hsnoin(item,lan)
+    real (kind=kind_phys), pointer :: dusfcin_cpl(:)          => null()   !< aoi_fld%dusfcin(item,lan)
+    real (kind=kind_phys), pointer :: dvsfcin_cpl(:)          => null()   !< aoi_fld%dvsfcin(item,lan)
+    real (kind=kind_phys), pointer :: dtsfcin_cpl(:)          => null()   !< aoi_fld%dtsfcin(item,lan)
+    real (kind=kind_phys), pointer :: dqsfcin_cpl(:)          => null()   !< aoi_fld%dqsfcin(item,lan)
+    real (kind=kind_phys), pointer :: ulwsfcin_cpl(:)         => null()   !< aoi_fld%ulwsfcin(item,lan)
+!   real (kind=kind_phys), pointer :: tseain_cpl(:)           => null()   !< aoi_fld%tseain(item,lan)
+!   real (kind=kind_phys), pointer :: tisfcin_cpl(:)          => null()   !< aoi_fld%tisfcin(item,lan)
+!   real (kind=kind_phys), pointer :: ficein_cpl(:)           => null()   !< aoi_fld%ficein(item,lan)
+!   real (kind=kind_phys), pointer :: hicein_cpl(:)           => null()   !< aoi_fld%hicein(item,lan)
+    real (kind=kind_phys), pointer :: hsnoin_cpl(:)           => null()   !< aoi_fld%hsnoin(item,lan)
+    real (kind=kind_phys), pointer :: sfc_alb_nir_dir_cpl(:)  => null()   !< sfc nir albedo for direct rad
+    real (kind=kind_phys), pointer :: sfc_alb_nir_dif_cpl(:)  => null()   !< sfc nir albedo for diffuse rad
+    real (kind=kind_phys), pointer :: sfc_alb_vis_dir_cpl(:)  => null()   !< sfc vis albedo for direct rad
+    real (kind=kind_phys), pointer :: sfc_alb_vis_dif_cpl(:)  => null()   !< sfc vis albedo for diffuse rad
     !--- only variable needed for cplwav2atm=.TRUE.
-!   real (kind=kind_phys), pointer :: zorlwav_cpl(:) => null()   !< roughness length from wave model
-    !--- also needed for ice/ocn coupling - Xingren
+!   real (kind=kind_phys), pointer :: zorlwav_cpl(:)          => null()   !< roughness length from wave model
+    !--- also needed for ice/ocn coupling 
     real (kind=kind_phys), pointer :: slimskin_cpl(:)=> null()   !< aoi_fld%slimskin(item,lan)
 
 !--- outgoing accumulated quantities
@@ -1066,8 +1071,8 @@ module GFS_typedefs
 
 !---cellular automata control parameters
     integer              :: nca             !< number of independent cellular automata
-    integer              :: nlives          !< cellular automata lifetime
-    integer              :: ncells          !< cellular automata finer grid
+    integer              :: tlives          !< cellular automata lifetime
+    integer              :: scells          !< cellular automata finer grid
     integer              :: nca_g           !< number of independent cellular automata
     integer              :: nlives_g        !< cellular automata lifetime
     integer              :: ncells_g        !< cellular automata finer grid
@@ -1080,7 +1085,8 @@ module GFS_typedefs
     logical              :: ca_smooth       !< switch for gaussian spatial filter
     integer              :: iseed_ca        !< seed for random number generation in ca scheme
     integer              :: nspinup         !< number of iterations to spin up the ca
-    real(kind=kind_phys) :: nthresh         !< threshold used for perturbed vertical velocity
+    real(kind=kind_phys) :: rcell           !< threshold used for CA scheme
+    real(kind=kind_phys) :: nthresh         !< threshold used for convection coupling
     real                 :: ca_amplitude    !< amplitude of ca trigger perturbation
     integer              :: nsmooth         !< number of passes through smoother
     logical              :: ca_closure      !< logical switch for ca on closure
@@ -2743,29 +2749,37 @@ module GFS_typedefs
 
     if (Model%cplflx) then
       !--- incoming quantities
-      allocate (Coupling%slimskin_cpl (IM))
-      allocate (Coupling%dusfcin_cpl  (IM))
-      allocate (Coupling%dvsfcin_cpl  (IM))
-      allocate (Coupling%dtsfcin_cpl  (IM))
-      allocate (Coupling%dqsfcin_cpl  (IM))
-      allocate (Coupling%ulwsfcin_cpl (IM))
-!     allocate (Coupling%tseain_cpl   (IM))
-!     allocate (Coupling%tisfcin_cpl  (IM))
-!     allocate (Coupling%ficein_cpl   (IM))
-!     allocate (Coupling%hicein_cpl   (IM))
-      allocate (Coupling%hsnoin_cpl   (IM))
+      allocate (Coupling%slimskin_cpl        (IM))
+      allocate (Coupling%dusfcin_cpl         (IM))
+      allocate (Coupling%dvsfcin_cpl         (IM))
+      allocate (Coupling%dtsfcin_cpl         (IM))
+      allocate (Coupling%dqsfcin_cpl         (IM))
+      allocate (Coupling%ulwsfcin_cpl        (IM))
+!     allocate (Coupling%tseain_cpl          (IM))
+!     allocate (Coupling%tisfcin_cpl         (IM))
+!     allocate (Coupling%ficein_cpl          (IM))
+!     allocate (Coupling%hicein_cpl          (IM))
+      allocate (Coupling%hsnoin_cpl          (IM))
+      allocate (Coupling%sfc_alb_nir_dir_cpl (IM))
+      allocate (Coupling%sfc_alb_nir_dif_cpl (IM))
+      allocate (Coupling%sfc_alb_vis_dir_cpl (IM))
+      allocate (Coupling%sfc_alb_vis_dif_cpl (IM))
 
-      Coupling%slimskin_cpl = clear_val
-      Coupling%dusfcin_cpl  = clear_val
-      Coupling%dvsfcin_cpl  = clear_val
-      Coupling%dtsfcin_cpl  = clear_val
-      Coupling%dqsfcin_cpl  = clear_val
-      Coupling%ulwsfcin_cpl = clear_val
-!     Coupling%tseain_cpl   = clear_val
-!     Coupling%tisfcin_cpl  = clear_val
-!     Coupling%ficein_cpl   = clear_val
-!     Coupling%hicein_cpl   = clear_val
-      Coupling%hsnoin_cpl   = clear_val
+      Coupling%slimskin_cpl          = clear_val
+      Coupling%dusfcin_cpl           = clear_val
+      Coupling%dvsfcin_cpl           = clear_val
+      Coupling%dtsfcin_cpl           = clear_val
+      Coupling%dqsfcin_cpl           = clear_val
+      Coupling%ulwsfcin_cpl          = clear_val
+!     Coupling%tseain_cpl            = clear_val
+!     Coupling%tisfcin_cpl           = clear_val
+!     Coupling%ficein_cpl            = clear_val
+!     Coupling%hicein_cpl            = clear_val
+      Coupling%hsnoin_cpl            = clear_val
+      Coupling%sfc_alb_nir_dir_cpl   = clear_val
+      Coupling%sfc_alb_nir_dif_cpl   = clear_val
+      Coupling%sfc_alb_vis_dir_cpl   = clear_val
+      Coupling%sfc_alb_vis_dif_cpl   = clear_val
 
       !--- accumulated quantities
       allocate (Coupling%dusfc_cpl  (IM))
@@ -3404,22 +3418,22 @@ module GFS_typedefs
 
 !---Cellular automaton options
     integer              :: nca            = 1
-    integer              :: ncells         = 5
-    integer              :: nlives         = 30
+    integer              :: scells         = 2600
+    integer              :: tlives         = 1800
     integer              :: nca_g          = 1
     integer              :: ncells_g       = 1
     integer              :: nlives_g       = 100
     real(kind=kind_phys) :: nfracseed      = 0.5
-    integer              :: nseed          = 100000
+    integer              :: nseed          = 1
     integer              :: nseed_g        = 100
-    integer              :: iseed_ca       = 0
+    integer              :: iseed_ca       = 1
     integer              :: nspinup        = 1
     logical              :: do_ca          = .false.
     logical              :: ca_sgs         = .false.
     logical              :: ca_global      = .false.
     logical              :: ca_smooth      = .false.
-    real(kind=kind_phys) :: nthresh        = 0.0
-    real                 :: ca_amplitude   = 500.
+    real(kind=kind_phys) :: rcell          = 0.72
+    real                 :: ca_amplitude   = 0.35
     integer              :: nsmooth        = 100
     logical              :: ca_closure     = .false.
     logical              :: ca_entr        = .false.
@@ -3552,8 +3566,8 @@ module GFS_typedefs
                           !--- canopy heat storage parameterization
                                z0fac, e0fac,                                                &
                           !--- cellular automata
-                               nca, ncells, nlives, nca_g, ncells_g, nlives_g, nfracseed,   &
-                               nseed, nseed_g, nthresh, do_ca,                              &
+                               nca, scells, tlives, nca_g, ncells_g, nlives_g, nfracseed,   &
+                               nseed, nseed_g, rcell, do_ca,                              &
                                ca_sgs, ca_global,iseed_ca,ca_smooth,                        &
                                nspinup,ca_amplitude,nsmooth,ca_closure,ca_entr,ca_trigger,  &
                           !--- IAU
@@ -4260,8 +4274,8 @@ module GFS_typedefs
 
     !--- cellular automata options
     Model%nca              = nca
-    Model%ncells           = ncells
-    Model%nlives           = nlives
+    Model%scells           = scells
+    Model%tlives           = tlives
     Model%nca_g            = nca_g
     Model%ncells_g         = ncells_g
     Model%nlives_g         = nlives_g
@@ -4274,7 +4288,7 @@ module GFS_typedefs
     Model%iseed_ca         = iseed_ca
     Model%ca_smooth        = ca_smooth
     Model%nspinup          = nspinup
-    Model%nthresh          = nthresh
+    Model%rcell            = rcell
     Model%ca_amplitude     = ca_amplitude
     Model%nsmooth          = nsmooth
     Model%ca_closure       = ca_closure
@@ -5301,8 +5315,8 @@ module GFS_typedefs
       print *, ' '
       print *, 'cellular automata'
       print *, ' nca               : ', Model%nca
-      print *, ' ncells            : ', Model%ncells
-      print *, ' nlives            : ', Model%nlives
+      print *, ' scells            : ', Model%scells
+      print *, ' tlives            : ', Model%tlives
       print *, ' nca_g             : ', Model%nca_g
       print *, ' ncells_g          : ', Model%ncells_g
       print *, ' nlives_g          : ', Model%nlives_g
@@ -5315,7 +5329,7 @@ module GFS_typedefs
       print *, ' iseed_ca          : ', Model%iseed_ca
       print *, ' ca_smooth         : ', Model%ca_smooth
       print *, ' nspinup           : ', Model%nspinup
-      print *, ' nthresh           : ', Model%nthresh
+      print *, ' rcell             : ', Model%rcell
       print *, ' ca_amplitude      : ', Model%ca_amplitude
       print *, ' nsmooth           : ', Model%nsmooth
       print *, ' ca_closure        : ', Model%ca_closure
