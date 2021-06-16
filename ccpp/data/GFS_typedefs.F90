@@ -1578,6 +1578,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: t02min  (:)    => null()   !< min hourly 2m T
     real (kind=kind_phys), pointer :: rh02max (:)    => null()   !< max hourly 2m RH
     real (kind=kind_phys), pointer :: rh02min (:)    => null()   !< min hourly 2m RH
+    real (kind=kind_phys), pointer :: pratemax(:)    => null()   !< max hourly precipitation rate
 !--- accumulated quantities for 3D diagnostics
     real (kind=kind_phys), pointer :: upd_mf (:,:)   => null()  !< instantaneous convective updraft mass flux
     real (kind=kind_phys), pointer :: dwn_mf (:,:)   => null()  !< instantaneous convective downdraft mass flux
@@ -5944,6 +5945,7 @@ module GFS_typedefs
     allocate (Diag%t02min(IM))
     allocate (Diag%rh02max(IM))
     allocate (Diag%rh02min(IM))
+    allocate (Diag%pratemax(IM))
 
     !--- MYNN variables:
     if (Model%do_mynnedmf) then
@@ -6245,6 +6247,7 @@ module GFS_typedefs
     Diag%t02min      = 999.
     Diag%rh02max     = -999.
     Diag%rh02min     = 999.
+    Diag%pratemax     = 0.
     set_totprcp      = .false.
     if (present(linit) ) set_totprcp = linit
     if (present(iauwindow_center) ) set_totprcp = iauwindow_center
