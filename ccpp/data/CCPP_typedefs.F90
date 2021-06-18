@@ -273,8 +273,7 @@ contains
       ! DH* This is copied from fv_mapz.F90, does it work with SW_DYNAMICS?
       do k=1,npz
          Interstitial%kmp = k
-!SK      if ( Interstitial%pfull(k) > 10.E2 ) exit
-         if ( Interstitial%pfull(k) > 30.E2 ) exit
+         if ( Interstitial%pfull(k) > 10.E2 ) exit
       enddo
   end subroutine interstitital_calculate_pressure_levels
 
