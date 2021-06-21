@@ -4220,6 +4220,12 @@
   dimensions = ()
   type = real
   kind = kind_phys
+[sfc_rlm]
+  standard_name = choice_of_near_surface_mixing_length_in_boundary_layer_mass_flux_scheme
+  long_name = choice of near surface mixing length in boundary layer mass flux scheme
+  units = none
+  dimensions = ()
+  type = integer
 [z0fac]
   standard_name = surface_roughness_fraction_factor
   long_name = surface roughness fraction for canopy heat storage parameterization
