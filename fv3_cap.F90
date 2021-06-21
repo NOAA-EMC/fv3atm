@@ -346,12 +346,25 @@ module fv3gfs_cap_mod
         enddo
       endif
 !
-! variables for alarms
-      call ESMF_ConfigGetAttribute(config=CF, value=nfhout,   label ='nfhout:',   rc=rc)
-      call ESMF_ConfigGetAttribute(config=CF, value=nfhmax_hf,label ='nfhmax_hf:',rc=rc)
-      call ESMF_ConfigGetAttribute(config=CF, value=nfhout_hf,label ='nfhout_hf:',rc=rc)
-      call ESMF_ConfigGetAttribute(config=CF, value=nsout,    label ='nsout:',rc=rc)
+! variables for output
+      call ESMF_ConfigGetAttribute(config=CF, value=nfhout,   label ='nfhout:',   default=-1,rc=rc)
+      call ESMF_ConfigGetAttribute(config=CF, value=nfhmax_hf,label ='nfhmax_hf:',default=-1,rc=rc)
+      call ESMF_ConfigGetAttribute(config=CF, value=nfhout_hf,label ='nfhout_hf:',default=-1,rc=rc)
+      call ESMF_ConfigGetAttribute(config=CF, value=nsout,    label ='nsout:',    default=-1,rc=rc)
       nsout_io = nsout
+!
+      num_output_hours = ESMF_ConfigGetLen(config=CF, label ='fdiag:',rc=rc)
+      if (num_restart_interval>0) num_restart_interval = 1
+    allocate(restart_interval(num_restart_interval))
+    restart_interval = 0
+    call
+ESMF_ConfigGetAttribute(CF,valueList=restart_interval,label='restart_interval:',
+&
+      count=num_restart_interval, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,
+line=__LINE__, file=__FILE__)) return
+    if(mype == 0) print *,'af nems config,restart_interval=',restart_interval
+
       if(mype==0) print *,'af nems config,nfhout,nsout=',nfhout,nfhmax_hf,nfhout_hf, nsout
 
     endif ! quilting
