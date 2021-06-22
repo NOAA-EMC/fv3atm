@@ -1064,13 +1064,8 @@ module FV3GFS_io_mod
           Sfcprop(nb)%oceanfrac(ix) = zero ! lake & ocean don't coexist in a cell
           if (Sfcprop(nb)%slmsk(ix) /= one) then
             if (Sfcprop(nb)%fice(ix) >= Model%min_lakeice) then
-              if (Sfcprop(nb)%slmsk(ix) < 1.9_r8)      &
-                write(*,'(a,2i3,3f6.2)') 'reset lake slmsk=2 at nb,ix=' &
-               ,nb,ix,Sfcprop(nb)%fice(ix),Sfcprop(nb)%slmsk(ix),Sfcprop(nb)%lakefrac(ix)
                 Sfcprop(nb)%slmsk(ix) = 2.
             else if (Sfcprop(nb)%slmsk(ix) > 1.e-7) then
-                write(*,'(a,2i3,3f6.2)') 'reset lake slmsk=0 at nb,ix=' &
-               ,nb,ix,Sfcprop(nb)%fice(ix),Sfcprop(nb)%slmsk(ix),Sfcprop(nb)%lakefrac(ix)
                 Sfcprop(nb)%slmsk(ix) = zero
             end if
           end if
@@ -1078,13 +1073,8 @@ module FV3GFS_io_mod
           Sfcprop(nb)%oceanfrac(ix) = one - Sfcprop(nb)%landfrac(ix)
           if (Sfcprop(nb)%slmsk(ix) /= one) then
             if (Sfcprop(nb)%fice(ix) >= Model%min_seaice) then
-              if (Sfcprop(nb)%slmsk(ix) < 1.9_r8)      &
-                write(*,'(a,2i3,3f6.2)') 'reset sea slmsk=2 at nb,ix=' &
-               ,nb,ix,Sfcprop(nb)%fice(ix),Sfcprop(nb)%slmsk(ix),Sfcprop(nb)%landfrac(ix)
                 Sfcprop(nb)%slmsk(ix) = 2.
             else if (Sfcprop(nb)%slmsk(ix) > 1.e-7) then
-                write(*,'(a,2i3,4f6.2)') 'reset sea slmsk=0 at nb,ix=' &
-               ,nb,ix,Sfcprop(nb)%fice(ix),Sfcprop(nb)%slmsk(ix),Sfcprop(nb)%landfrac(ix)
                 Sfcprop(nb)%slmsk(ix) = zero
             end if
           end if

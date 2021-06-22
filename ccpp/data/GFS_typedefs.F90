@@ -1090,8 +1090,8 @@ module GFS_typedefs
 
 !---cellular automata control parameters
     integer              :: nca             !< number of independent cellular automata
-    integer              :: nlives          !< cellular automata lifetime
-    integer              :: ncells          !< cellular automata finer grid
+    integer              :: tlives          !< cellular automata lifetime
+    integer              :: scells          !< cellular automata finer grid
     integer              :: nca_g           !< number of independent cellular automata
     integer              :: nlives_g        !< cellular automata lifetime
     integer              :: ncells_g        !< cellular automata finer grid
@@ -1104,7 +1104,8 @@ module GFS_typedefs
     logical              :: ca_smooth       !< switch for gaussian spatial filter
     integer              :: iseed_ca        !< seed for random number generation in ca scheme
     integer              :: nspinup         !< number of iterations to spin up the ca
-    real(kind=kind_phys) :: nthresh         !< threshold used for perturbed vertical velocity
+    real(kind=kind_phys) :: rcell           !< threshold used for CA scheme
+    real(kind=kind_phys) :: nthresh         !< threshold used for convection coupling
     real                 :: ca_amplitude    !< amplitude of ca trigger perturbation
     integer              :: nsmooth         !< number of passes through smoother
     logical              :: ca_closure      !< logical switch for ca on closure
@@ -1633,6 +1634,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: t02min  (:)    => null()   !< min hourly 2m T
     real (kind=kind_phys), pointer :: rh02max (:)    => null()   !< max hourly 2m RH
     real (kind=kind_phys), pointer :: rh02min (:)    => null()   !< min hourly 2m RH
+    real (kind=kind_phys), pointer :: pratemax(:)    => null()   !< max hourly precipitation rate
 !--- accumulated quantities for 3D diagnostics
     real (kind=kind_phys), pointer :: upd_mf (:,:)   => null()  !< instantaneous convective updraft mass flux
     real (kind=kind_phys), pointer :: dwn_mf (:,:)   => null()  !< instantaneous convective downdraft mass flux
@@ -3479,22 +3481,22 @@ module GFS_typedefs
 
 !---Cellular automaton options
     integer              :: nca            = 1
-    integer              :: ncells         = 5
-    integer              :: nlives         = 30
+    integer              :: scells         = 2600
+    integer              :: tlives         = 1800
     integer              :: nca_g          = 1
     integer              :: ncells_g       = 1
     integer              :: nlives_g       = 100
     real(kind=kind_phys) :: nfracseed      = 0.5
-    integer              :: nseed          = 100000
+    integer              :: nseed          = 1
     integer              :: nseed_g        = 100
-    integer              :: iseed_ca       = 0
+    integer              :: iseed_ca       = 1
     integer              :: nspinup        = 1
     logical              :: do_ca          = .false.
     logical              :: ca_sgs         = .false.
     logical              :: ca_global      = .false.
     logical              :: ca_smooth      = .false.
-    real(kind=kind_phys) :: nthresh        = 0.0
-    real                 :: ca_amplitude   = 500.
+    real(kind=kind_phys) :: rcell          = 0.72
+    real                 :: ca_amplitude   = 0.35
     integer              :: nsmooth        = 100
     logical              :: ca_closure     = .false.
     logical              :: ca_entr        = .false.
@@ -3628,8 +3630,8 @@ module GFS_typedefs
                           !--- canopy heat storage parameterization
                                z0fac, e0fac,                                                &
                           !--- cellular automata
-                               nca, ncells, nlives, nca_g, ncells_g, nlives_g, nfracseed,   &
-                               nseed, nseed_g, nthresh, do_ca,                              &
+                               nca, scells, tlives, nca_g, ncells_g, nlives_g, nfracseed,   &
+                               nseed, nseed_g, rcell, do_ca,                              &
                                ca_sgs, ca_global,iseed_ca,ca_smooth,                        &
                                nspinup,ca_amplitude,nsmooth,ca_closure,ca_entr,ca_trigger,  &
                           !--- IAU
@@ -4340,8 +4342,8 @@ module GFS_typedefs
 
     !--- cellular automata options
     Model%nca              = nca
-    Model%ncells           = ncells
-    Model%nlives           = nlives
+    Model%scells           = scells
+    Model%tlives           = tlives
     Model%nca_g            = nca_g
     Model%ncells_g         = ncells_g
     Model%nlives_g         = nlives_g
@@ -4354,7 +4356,7 @@ module GFS_typedefs
     Model%iseed_ca         = iseed_ca
     Model%ca_smooth        = ca_smooth
     Model%nspinup          = nspinup
-    Model%nthresh          = nthresh
+    Model%rcell            = rcell
     Model%ca_amplitude     = ca_amplitude
     Model%nsmooth          = nsmooth
     Model%ca_closure       = ca_closure
@@ -5626,8 +5628,8 @@ module GFS_typedefs
       print *, ' '
       print *, 'cellular automata'
       print *, ' nca               : ', Model%nca
-      print *, ' ncells            : ', Model%ncells
-      print *, ' nlives            : ', Model%nlives
+      print *, ' scells            : ', Model%scells
+      print *, ' tlives            : ', Model%tlives
       print *, ' nca_g             : ', Model%nca_g
       print *, ' ncells_g          : ', Model%ncells_g
       print *, ' nlives_g          : ', Model%nlives_g
@@ -5640,7 +5642,7 @@ module GFS_typedefs
       print *, ' iseed_ca          : ', Model%iseed_ca
       print *, ' ca_smooth         : ', Model%ca_smooth
       print *, ' nspinup           : ', Model%nspinup
-      print *, ' nthresh           : ', Model%nthresh
+      print *, ' rcell             : ', Model%rcell
       print *, ' ca_amplitude      : ', Model%ca_amplitude
       print *, ' nsmooth           : ', Model%nsmooth
       print *, ' ca_closure        : ', Model%ca_closure
@@ -6467,6 +6469,7 @@ module GFS_typedefs
     allocate (Diag%t02min(IM))
     allocate (Diag%rh02max(IM))
     allocate (Diag%rh02min(IM))
+    allocate (Diag%pratemax(IM))
 
     !--- MYNN variables:
     if (Model%do_mynnedmf) then
@@ -6765,6 +6768,7 @@ module GFS_typedefs
     Diag%t02min      = 999.
     Diag%rh02max     = -999.
     Diag%rh02min     = 999.
+    Diag%pratemax     = 0.
     set_totprcp      = .false.
     if (present(linit) ) set_totprcp = linit
     if (present(iauwindow_center) ) set_totprcp = iauwindow_center
