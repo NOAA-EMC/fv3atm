@@ -3671,14 +3671,16 @@ module GFS_diagnostics
         idx = idx + 1
         ExtDiag(idx)%axes = 3
         select case (num)
-          !case (0)
+          ! This is the place to add specific names, descriptions,
+          ! and units if so desired
+          !case (1)
           ! ...
           case default
             write (xtra,'(I2.2)') num
-            ExtDiag(idx)%name = 'thompson_ext_diag3d_' // trim(extra)
-            ExtDiag(idx)%name = 'Thompson extended diagnostics array ' // trim(extra)
+            ExtDiag(idx)%name = 'thompson_diag3d_' // trim(xtra)
+            ExtDiag(idx)%desc = 'Thompson extended diagnostics array ' // trim(xtra)
+            ExtDiag(idx)%unit = 'unknown'
         end select
-        ExtDiag(idx)%unit = 'unknown'
         ExtDiag(idx)%mod_name = 'gfs_phys'
         ExtDiag(idx)%intpl_method = 'bilinear'
         ExtDiag(idx)%time_avg = .false.
