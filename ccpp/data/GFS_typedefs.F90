@@ -47,7 +47,7 @@ module GFS_typedefs
 
       ! If these are changed to >99, need to adjust formatting string in GFS_diagnostics.F90 (and names in diag_tables)
       integer, parameter :: naux2dmax = 20 !< maximum number of auxiliary 2d arrays in output (for debugging)
-      integer, parameter :: naux3dmax = 60 !< maximum number of auxiliary 3d arrays in output (for debugging)
+      integer, parameter :: naux3dmax = 20 !< maximum number of auxiliary 3d arrays in output (for debugging)
 
 !> \section arg_table_GFS_typedefs
 !! \htmlinclude GFS_typedefs.html
@@ -785,6 +785,8 @@ module GFS_typedefs
     logical              :: lradar          !< flag for radar reflectivity
     real(kind=kind_phys) :: nsradar_reset   !< seconds between resetting radar reflectivity calculation
     real(kind=kind_phys) :: ttendlim        !< temperature tendency limiter per time step in K/s
+    logical              :: ext_diag_thompson !< flag for extended diagnostic output from Thompson
+    integer, parameter   :: thompson_ext_ndiag3d=45 !< number of 3d arrays for extended diagnostic output from Thompson
 
     !--- GFDL microphysical paramters
     logical              :: lgfdlmprad      !< flag for GFDL mp scheme and radiation consistency
@@ -1705,6 +1707,9 @@ module GFS_typedefs
                                                                !< for black carbon, organic carbon, and sulfur dioxide         ( ug/m**2/s )
     real (kind=kind_phys), pointer :: aecm  (:,:) => null()    !< instantaneous aerosol column mass densities for
                                                                !< pm2.5, black carbon, organic carbon, sulfate, dust, sea salt ( g/m**2 )
+
+    ! Extended output diagnostics for Thompson MP
+    real (kind=kind_phys), pointer :: thompson_ext_diag3d (:,:,:) => null() ! extended diagnostic 3d output arrays from Thompson MP
 
     ! Auxiliary output arrays for debugging
     real (kind=kind_phys), pointer :: aux2d(:,:)  => null()    !< auxiliary 2d arrays in output (for debugging)
@@ -3154,6 +3159,7 @@ module GFS_typedefs
     logical              :: lradar         = .false.            !< flag for radar reflectivity
     real(kind=kind_phys) :: nsradar_reset  = -999.0             !< seconds between resetting radar reflectivity calculation, set to <0 for every time step
     real(kind=kind_phys) :: ttendlim       = -999.0             !< temperature tendency limiter, set to <0 to deactivate
+    logical              :: ext_diag_thompson = .false.         !< flag for extended diagnostic output from Thompson
 
     !--- GFDL microphysical parameters
     logical              :: lgfdlmprad     = .false.            !< flag for GFDLMP radiation interaction
@@ -3502,7 +3508,7 @@ module GFS_typedefs
                                mg_ncnst, mg_ninst, mg_ngnst, sed_supersat, do_sb_physics,   &
                                mg_alf,   mg_qcmin, mg_do_ice_gmao, mg_do_liq_liu,           &
                                ltaerosol, lradar, nsradar_reset, lrefres, ttendlim,         &
-                               lgfdlmprad,                                                  &
+                               ext_diag_thompson, lgfdlmprad,                               &
                           !--- max hourly
                                avg_max_length,                                              &
                           !--- land/surface model control
@@ -3929,6 +3935,8 @@ module GFS_typedefs
     Model%lradar           = lradar
     Model%nsradar_reset    = nsradar_reset
     Model%ttendlim         = ttendlim
+    Model%ext_diag_thompson= ext_diag_thompson
+
 !--- F-A MP parameters
     Model%rhgrd            = rhgrd
     Model%spec_adv         = spec_adv
@@ -4794,6 +4802,7 @@ module GFS_typedefs
       if (Model%me == Model%master) print *,' Using Thompson double moment microphysics', &
                                           ' ltaerosol = ',Model%ltaerosol, &
                                           ' ttendlim =',Model%ttendlim, &
+                                          ' ext_diag_thompson =',Model%ext_diag_thompson, &
                                           ' effr_in =',Model%effr_in, &
                                           ' lradar =',Model%lradar, &
                                           ' nsradar_reset =',Model%nsradar_reset, &
@@ -5103,6 +5112,7 @@ module GFS_typedefs
         print *, ' nsradar_reset     : ', Model%nsradar_reset
         print *, ' lrefres           : ', Model%lrefres
         print *, ' ttendlim          : ', Model%ttendlim
+        print *, ' ext_diag_thompson : ', Model%ext_diag_thompson
         print *, ' '
       endif
       if (Model%imp_physics == Model%imp_physics_mg) then
@@ -5976,6 +5986,12 @@ module GFS_typedefs
       Diag%exch_m        = clear_val
     endif
 
+    ! Extended diagnostics for Thompson MP
+    if (Model%ext_diag_thompson) then
+      allocate (Diag%thompson_ext_diag3d(IM,Model%levs,Model%thompson_ext_ndiag3d))
+      Diag%thompson_ext_diag3d = clear_val
+    endif
+
     ! Auxiliary arrays in output for debugging
     if (Model%naux2d>0) then
       allocate (Diag%aux2d(IM,Model%naux2d))
@@ -6247,6 +6263,19 @@ module GFS_typedefs
       Diag%totice  = zero
       Diag%totsnw  = zero
       Diag%totgrp  = zero
+    endif
+
+    ! Extended diagnostics for Thompson MP
+    if (Model%ext_diag_thompson) then
+      Diag%thompson_ext_diag3d = clear_val
+    endif
+
+    ! Auxiliary arrays in output for debugging
+    if (Model%naux2d>0) then
+      Diag%aux2d = clear_val
+    endif
+    if (Model%naux3d>0) then
+      Diag%aux3d = clear_val
     endif
 
   end subroutine diag_phys_zero

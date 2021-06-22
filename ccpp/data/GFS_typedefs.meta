@@ -3426,6 +3426,18 @@
   dimensions = ()
   type = real
   kind = kind_phys
+[ext_diag_thompson]
+  standard_name = flag_for_extended_diagnostic_output_from_thompson_microphysics
+  long_name = flag for extended diagnostic output from thompson microphysics
+  units = flag
+  dimensions = ()
+  type = logical
+[thompson_ext_ndiag3d]
+  standard_name = number_of_3d_arrays_for_extended_diagnostic_output_from_thompson_microphysics
+  long_name = number of 3d arrays for extended diagnostic output from thompson microphysics
+  units = count
+  dimensions = ()
+  type = integer
 [lgfdlmprad]
   standard_name = flag_for_GFDL_microphysics_radiation_interaction
   long_name = flag for GFDL microphysics-radiation interaction
