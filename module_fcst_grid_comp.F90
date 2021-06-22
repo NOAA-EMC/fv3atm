@@ -210,7 +210,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     integer :: jsc, jec, isc, iec, nlev
     type(domain2D) :: domain
     integer :: n, fcstNpes, tmpvar
-    logical :: single_restart
+    logical :: single_restart, fexist
     integer, allocatable, dimension(:) :: isl, iel, jsl, jel
     integer, allocatable, dimension(:,:,:) :: deBlockList
 
@@ -404,10 +404,12 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
      call  atmos_model_init (atm_int_state%Atm,  atm_int_state%Time_init, &
                              atm_int_state%Time_atmos, atm_int_state%Time_step_atmos)
 !
-     call data_override_init ( ) ! Atm_domain_in  = Atm%domain, &
-                                 ! Ice_domain_in  = Ice%domain, &
-                                 ! Land_domain_in = Land%domain )
-
+     inquire(FILE='data_table', EXIST=fexist)
+     if (fexist) then
+       call data_override_init ( ) ! Atm_domain_in  = Atm%domain, &
+                                   ! Ice_domain_in  = Ice%domain, &
+                                   ! Land_domain_in = Land%domain )
+     endif
 !-----------------------------------------------------------------------
 !---- open and close dummy file in restart dir to check if dir exists --
 
