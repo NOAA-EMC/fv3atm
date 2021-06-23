@@ -786,7 +786,7 @@ module GFS_typedefs
     real(kind=kind_phys) :: nsradar_reset   !< seconds between resetting radar reflectivity calculation
     real(kind=kind_phys) :: ttendlim        !< temperature tendency limiter per time step in K/s
     logical              :: ext_diag_thompson !< flag for extended diagnostic output from Thompson
-    integer              :: thompson_ext_ndiag3d=45 !< number of 3d arrays for extended diagnostic output from Thompson
+    integer              :: thompson_ext_ndiag3d=40 !< number of 3d arrays for extended diagnostic output from Thompson
 
     !--- GFDL microphysical paramters
     logical              :: lgfdlmprad      !< flag for GFDL mp scheme and radiation consistency
@@ -6266,19 +6266,6 @@ module GFS_typedefs
       Diag%totice  = zero
       Diag%totsnw  = zero
       Diag%totgrp  = zero
-    endif
-
-    ! Extended diagnostics for Thompson MP
-    if (Model%ext_diag_thompson) then
-      Diag%thompson_ext_diag3d = clear_val
-    endif
-
-    ! Auxiliary arrays in output for debugging
-    if (Model%naux2d>0) then
-      Diag%aux2d = clear_val
-    endif
-    if (Model%naux3d>0) then
-      Diag%aux3d = clear_val
     endif
 
   end subroutine diag_phys_zero
