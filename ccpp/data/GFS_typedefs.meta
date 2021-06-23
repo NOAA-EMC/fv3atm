@@ -9441,9 +9441,15 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[reset]
+[max_hourly_reset]
   standard_name = flag_reset_maximum_hourly_fields
   long_name = flag for resetting maximum hourly fields
+  units = flag
+  dimensions = ()
+  type = logical
+[ext_diag_thompson_reset]
+  standard_name = flag_reset_extended_diagnostics_output_arrays_from_thompson_microphysics
+  long_name = flag for resetting extended diagnostics output arrays from thompson microphysics
   units = flag
   dimensions = ()
   type = logical

@@ -1950,7 +1950,8 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: rb_ice(:)          => null()  !<
     real (kind=kind_phys), pointer      :: rb_land(:)         => null()  !<
     real (kind=kind_phys), pointer      :: rb_water(:)        => null()  !<
-    logical                             :: reset                         !<
+    logical                             :: max_hourly_reset              !<
+    logical                             :: ext_diag_thompson_reset       !<
     real (kind=kind_phys), pointer      :: rhc(:,:)           => null()  !<
     real (kind=kind_phys), pointer      :: rho1(:)            => null()  !<
     real (kind=kind_phys), pointer      :: runoff(:)          => null()  !<
@@ -7457,7 +7458,10 @@ module GFS_typedefs
     end if
     !
     ! Set flag for resetting maximum hourly output fields
-    Interstitial%reset = mod(Model%kdt-1, nint(Model%avg_max_length/Model%dtp)) == 0
+    Interstitial%max_hourly_reset = mod(Model%kdt-1, nint(Model%avg_max_length/Model%dtp)) == 0
+    ! Use same logic in UFS to reset Thompson extended diagnostics
+    Interstitial%ext_diag_thompson_reset = Interstitial%max_hourly_reset
+    !
     ! Set flag for resetting radar reflectivity calculation
     if (Model%nsradar_reset<0) then
       Interstitial%radar_reset = .true.
@@ -7664,7 +7668,8 @@ module GFS_typedefs
     write (0,*) 'sum(Interstitial%rb_ice          ) = ', sum(Interstitial%rb_ice          )
     write (0,*) 'sum(Interstitial%rb_land         ) = ', sum(Interstitial%rb_land         )
     write (0,*) 'sum(Interstitial%rb_water        ) = ', sum(Interstitial%rb_water        )
-    write (0,*) 'Interstitial%reset                 = ', Interstitial%reset
+    write (0,*) 'Interstitial%max_hourly_reset      = ', Interstitial%max_hourly_reset
+    write (0,*) 'Interstitial%ext_diag_thompson_reset = ', Interstitial%ext_diag_thompson_reset
     write (0,*) 'sum(Interstitial%rhc             ) = ', sum(Interstitial%rhc             )
     write (0,*) 'sum(Interstitial%runoff          ) = ', sum(Interstitial%runoff          )
     write (0,*) 'sum(Interstitial%save_q          ) = ', sum(Interstitial%save_q          )
