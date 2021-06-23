@@ -204,7 +204,7 @@ character(len=128) :: tagname = '$Name$'
 contains
 
 !#######################################################################
-! <SUBROUTINE NAME="update_radiation_physics">
+! <SUBROUTINE NAME="update_atmos_radiation_physics">
 !
 !<DESCRIPTION>
 !   Called every time step as the atmospheric driver to compute the
@@ -261,8 +261,8 @@ subroutine update_atmos_radiation_physics (Atmos)
       call CCPP_step (step="timestep_init", nblks=Atm_block%nblks, ierr=ierr)
       if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP timestep_init step failed')
 
-      if (GFS_Control%do_sppt .or. GFS_Control%do_shum .or. GFS_Control%do_skeb .or. &
-          GFS_Control%lndp_type > 0  .or. GFS_Control%do_ca ) then
+      if ((GFS_Control%do_sppt .or. GFS_Control%do_shum .or. GFS_Control%do_skeb .or. &
+           GFS_Control%lndp_type > 0  .or. GFS_Control%do_ca) .and. GFS_Control%kdt > GFS_Control%kdt_start) then
 !--- call stochastic physics pattern generation / cellular automata
         call stochastic_physics_wrapper(GFS_control, GFS_data, Atm_block, ierr)
         if (ierr/=0)  call mpp_error(FATAL, 'Call to stochastic_physics_wrapper failed')
@@ -607,7 +607,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP physics_init step failed')
 
    if (GFS_Control%do_sppt .or. GFS_Control%do_shum .or. GFS_Control%do_skeb .or. &
-       GFS_Control%lndp_type > 0  .or. GFS_Control%do_ca ) then
+       GFS_Control%lndp_type > 0  .or. GFS_Control%do_ca) then
 
 !--- Initialize stochastic physics pattern generation / cellular automata for first time step
      call stochastic_physics_wrapper(GFS_control, GFS_data, Atm_block, ierr)
@@ -1553,7 +1553,7 @@ end subroutine atmos_data_type_chksum
 !
       real(kind=GFS_kind_phys), parameter :: himax = 8.0      !< maximum ice thickness allowed
 !     real(kind=GFS_kind_phys), parameter :: himin = 0.1      !< minimum ice thickness required
-      real(kind=GFS_kind_phys), parameter :: hsmax = 2.0      !< maximum snow depth allowed
+      real(kind=GFS_kind_phys), parameter :: hsmax = 100.0    !< maximum snow depth (m) allowed
 !
 !------------------------------------------------------------------------------
 !
@@ -1659,7 +1659,7 @@ end subroutine atmos_data_type_chksum
 ! get sea ice surface temperature
 !--------------------------------
           fldname = 'sea_ice_surface_temperature'
-          if (trim(impfield_name) == trim(fldname) .and. GFS_control%kdt > 1) then
+          if (trim(impfield_name) == trim(fldname)) then
             findex  = queryImportFields(fldname)
             if (importFieldsValid(findex)) then
 !$omp parallel do default(shared) private(i,j,nb,ix)
@@ -1700,7 +1700,7 @@ end subroutine atmos_data_type_chksum
 ! get sea ice fraction:  fice or sea ice concentration from the mediator
 !-----------------------------------------------------------------------
           fldname = 'ice_fraction'
-          if (trim(impfield_name) == trim(fldname) .and. GFS_control%kdt > 1) then
+          if (trim(impfield_name) == trim(fldname)) then
             findex  = queryImportFields(fldname)
             if (importFieldsValid(findex)) then
               lcpl_fice = .true.

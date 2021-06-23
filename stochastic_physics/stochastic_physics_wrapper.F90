@@ -79,7 +79,7 @@ module stochastic_physics_wrapper_mod
     type(block_control_type), intent(inout) :: Atm_block
     integer,                  intent(out)   :: ierr
 
-    integer :: nthreads, nb
+    integer :: nthreads, nb, levs, maxblk, kdt_loc
     logical :: param_update_flag
 
 #ifdef _OPENMP
@@ -89,18 +89,22 @@ module stochastic_physics_wrapper_mod
 #endif
     ierr = 0
 
+    levs   = GFS_Control%levs
+    maxblk = maxval(GFS_Control%blksz)
+    kdt_loc = GFS_Control%kdt - GFS_Control%kdt_start
     ! Initialize
-    initalize_stochastic_physics: if (GFS_Control%kdt==0) then
 
-      if (GFS_Control%do_sppt .OR. GFS_Control%do_shum .OR. GFS_Control%do_skeb .OR. (GFS_Control%lndp_type .GT. 0) ) then
-         allocate(xlat(1:Atm_block%nblks,maxval(GFS_Control%blksz)))
-         allocate(xlon(1:Atm_block%nblks,maxval(GFS_Control%blksz)))
+    initalize_stochastic_physics: if (kdt_loc == 0) then
+
+      if (GFS_Control%do_sppt .OR. GFS_Control%do_shum .OR. GFS_Control%do_skeb .OR. (GFS_Control%lndp_type > 0) ) then
+         if (.not. allocated(xlat)) allocate(xlat(1:Atm_block%nblks,maxblk))
+         if (.not. allocated(xlon)) allocate(xlon(1:Atm_block%nblks,maxblk))
          do nb=1,Atm_block%nblks
             xlat(nb,1:GFS_Control%blksz(nb)) = GFS_Data(nb)%Grid%xlat(:)
             xlon(nb,1:GFS_Control%blksz(nb)) = GFS_Data(nb)%Grid%xlon(:)
          end do
         ! Initialize stochastic physics
-        call init_stochastic_physics(GFS_Control%levs, GFS_Control%blksz, GFS_Control%dtp, GFS_Control%sppt_amp,                         &
+        call init_stochastic_physics(levs, GFS_Control%blksz, GFS_Control%dtp, GFS_Control%sppt_amp,                         &
             GFS_Control%input_nml_file, GFS_Control%fn_nml, GFS_Control%nlunit, xlon, xlat, GFS_Control%do_sppt, GFS_Control%do_shum,                &
             GFS_Control%do_skeb, GFS_Control%lndp_type, GFS_Control%n_var_lndp, GFS_Control%use_zmtnblck, GFS_Control%skeb_npass, &
             GFS_Control%lndp_var_list, GFS_Control%lndp_prt_list,    &
@@ -111,17 +115,17 @@ module stochastic_physics_wrapper_mod
             endif
       end if
       if (GFS_Control%do_sppt) then
-         allocate(sppt_wts(1:Atm_block%nblks,maxval(GFS_Control%blksz),1:GFS_Control%levs))
+         if (.not. allocated(sppt_wts)) allocate(sppt_wts(1:Atm_block%nblks,maxblk,1:levs))
       end if
       if (GFS_Control%do_shum) then
-         allocate(shum_wts(1:Atm_block%nblks,maxval(GFS_Control%blksz),1:GFS_Control%levs))
+         if (.not. allocated(shum_wts)) allocate(shum_wts(1:Atm_block%nblks,maxblk,1:levs))
       end if
       if (GFS_Control%do_skeb) then
-         allocate(skebu_wts(1:Atm_block%nblks,maxval(GFS_Control%blksz),1:GFS_Control%levs))
-         allocate(skebv_wts(1:Atm_block%nblks,maxval(GFS_Control%blksz),1:GFS_Control%levs))
+         if (.not. allocated(skebu_wts)) allocate(skebu_wts(1:Atm_block%nblks,maxblk,1:levs))
+         if (.not. allocated(skebv_wts)) allocate(skebv_wts(1:Atm_block%nblks,maxblk,1:levs))
       end if
       if ( GFS_Control%lndp_type .EQ. 2 ) then ! this scheme updates through forecast
-         allocate(sfc_wts(1:Atm_block%nblks,maxval(GFS_Control%blksz),1:GFS_Control%n_var_lndp))
+         if (.not. allocated(sfc_wts)) allocate(sfc_wts(1:Atm_block%nblks,maxblk,1:GFS_Control%n_var_lndp))
       end if
       if (GFS_Control%lndp_type .EQ. 2) then ! save wts, and apply lndp scheme
           if (GFS_Control%lsm == GFS_Control%lsm_noah) then
@@ -129,26 +133,26 @@ module stochastic_physics_wrapper_mod
           elseif (GFS_Control%lsm == GFS_Control%lsm_ruc) then
             lsoil = GFS_Control%lsoil_lsm
           endif
-          allocate(smc(1:Atm_block%nblks,maxval(GFS_Control%blksz),lsoil))
-          allocate(slc(1:Atm_block%nblks,maxval(GFS_Control%blksz),lsoil))
-          allocate(stc(1:Atm_block%nblks,maxval(GFS_Control%blksz),lsoil))
-          allocate(stype(1:Atm_block%nblks,maxval(GFS_Control%blksz)))
-          allocate(vfrac(1:Atm_block%nblks,maxval(GFS_Control%blksz)))
-          allocate(snoalb(1:Atm_block%nblks,maxval(GFS_Control%blksz)))
-          allocate(alvsf(1:Atm_block%nblks,maxval(GFS_Control%blksz)))
-          allocate(alnsf(1:Atm_block%nblks,maxval(GFS_Control%blksz)))
-          allocate(alvwf(1:Atm_block%nblks,maxval(GFS_Control%blksz)))
-          allocate(alnwf(1:Atm_block%nblks,maxval(GFS_Control%blksz)))
-          allocate(facsf(1:Atm_block%nblks,maxval(GFS_Control%blksz)))
-          allocate(facwf(1:Atm_block%nblks,maxval(GFS_Control%blksz)))
-          allocate(semis(1:Atm_block%nblks,maxval(GFS_Control%blksz)))
-          allocate(zorll(1:Atm_block%nblks,maxval(GFS_Control%blksz)))
+          if (.not. allocated(smc))    allocate(smc(1:Atm_block%nblks,maxblk,lsoil))
+          if (.not. allocated(slc))    allocate(slc(1:Atm_block%nblks,maxblk,lsoil))
+          if (.not. allocated(stc))    allocate(stc(1:Atm_block%nblks,maxblk,lsoil))
+          if (.not. allocated(stype))  allocate(stype(1:Atm_block%nblks,maxblk))
+          if (.not. allocated(vfrac))  allocate(vfrac(1:Atm_block%nblks,maxblk))
+          if (.not. allocated(snoalb)) allocate(snoalb(1:Atm_block%nblks,maxblk))
+          if (.not. allocated(alvsf))  allocate(alvsf(1:Atm_block%nblks,maxblk))
+          if (.not. allocated(alnsf))  allocate(alnsf(1:Atm_block%nblks,maxblk))
+          if (.not. allocated(alvwf))  allocate(alvwf(1:Atm_block%nblks,maxblk))
+          if (.not. allocated(alnwf))  allocate(alnwf(1:Atm_block%nblks,maxblk))
+          if (.not. allocated(facsf))  allocate(facsf(1:Atm_block%nblks,maxblk))
+          if (.not. allocated(facwf))  allocate(facwf(1:Atm_block%nblks,maxblk))
+          if (.not. allocated(semis))  allocate(semis(1:Atm_block%nblks,maxblk))
+          if (.not. allocated(zorll))  allocate(zorll(1:Atm_block%nblks,maxblk))
       endif
 
 
       if ( GFS_Control%lndp_type .EQ. 1 ) then ! this scheme sets perts once
-         allocate(sfc_wts(1:Atm_block%nblks,maxval(GFS_Control%blksz),GFS_Control%n_var_lndp))
-         call run_stochastic_physics(GFS_Control%levs, GFS_Control%kdt, GFS_Control%fhour, GFS_Control%blksz,                     &
+         if (.not. allocated(sfc_wts)) allocate(sfc_wts(1:Atm_block%nblks, maxblk, GFS_Control%n_var_lndp))
+         call run_stochastic_physics(levs, kdt_loc, GFS_Control%fhour, GFS_Control%blksz,                     &
                                  sppt_wts=sppt_wts, shum_wts=shum_wts, skebu_wts=skebu_wts, skebv_wts=skebv_wts, sfc_wts=sfc_wts, &
                                  nthreads=nthreads)
          ! Copy contiguous data back
@@ -161,7 +165,7 @@ module stochastic_physics_wrapper_mod
       if(GFS_Control%do_ca)then
         ! DH* The current implementation of cellular_automata assumes that all blocksizes are the
         ! same - abort if this is not the case, otherwise proceed with Atm_block%blksz(1) below
-        if (.not. minval(Atm_block%blksz)==maxval(Atm_block%blksz)) then
+        if (.not. minval(Atm_block%blksz) == maxblk) then
            call mpp_error(FATAL, 'Logic errror: cellular_automata not compatible with non-uniform blocksizes')
         end if
         ! *DH
@@ -169,7 +173,7 @@ module stochastic_physics_wrapper_mod
 
     else initalize_stochastic_physics
       if (GFS_Control%do_sppt .OR. GFS_Control%do_shum .OR. GFS_Control%do_skeb .OR. (GFS_Control%lndp_type .EQ. 2) ) then
-         call run_stochastic_physics(GFS_Control%levs, GFS_Control%kdt, GFS_Control%fhour, GFS_Control%blksz, &
+         call run_stochastic_physics(levs, kdt_loc, GFS_Control%fhour, GFS_Control%blksz, &
                                  sppt_wts=sppt_wts, shum_wts=shum_wts, skebu_wts=skebu_wts, skebv_wts=skebv_wts, sfc_wts=sfc_wts, &
                                  nthreads=nthreads)
          ! Copy contiguous data back
@@ -232,7 +236,7 @@ module stochastic_physics_wrapper_mod
              endif
 
              call lndp_apply_perts(GFS_Control%blksz, GFS_Control%lsm, GFS_Control%lsm_noah, GFS_Control%lsm_ruc, lsoil,      &
-                               GFS_Control%dtf, GFS_Control%kdt, GFS_Control%lndp_each_step,                                  &
+                               GFS_Control%dtf, kdt_loc, GFS_Control%lndp_each_step,                                          &
                                GFS_Control%n_var_lndp, GFS_Control%lndp_var_list, GFS_Control%lndp_prt_list,                  &
                                sfc_wts, xlon, xlat, stype, GFS_Control%pores, GFS_Control%resid,param_update_flag,            &
                                smc, slc, stc, vfrac, alvsf, alnsf, alvwf, alnwf, facsf, facwf, snoalb, semis, zorll, ierr)
@@ -275,7 +279,7 @@ module stochastic_physics_wrapper_mod
     endif initalize_stochastic_physics
 
     if(GFS_Control%do_ca)then
-       if (GFS_Control%kdt==0) then
+       if (kdt_loc == 0) then
        
           do nb=1,Atm_block%nblks
              GFS_Data(nb)%Intdiag%ca_deep(:)  = 0.
@@ -296,16 +300,16 @@ module stochastic_physics_wrapper_mod
 
        if(GFS_Control%ca_sgs)then
          ! Allocate contiguous arrays; copy in as needed
-         allocate(sst         (1:Atm_block%nblks,maxval(GFS_Control%blksz)                   ))
-         allocate(lmsk        (1:Atm_block%nblks,maxval(GFS_Control%blksz)                   ))
-         allocate(lake        (1:Atm_block%nblks,maxval(GFS_Control%blksz)                   ))
-         allocate(ca_deep_diag(1:Atm_block%nblks,maxval(GFS_Control%blksz)                   ))
-         allocate(ca_turb_diag(1:Atm_block%nblks,maxval(GFS_Control%blksz)                   ))
-         allocate(ca_shal_diag(1:Atm_block%nblks,maxval(GFS_Control%blksz)                   ))
-         allocate(condition   (1:Atm_block%nblks,maxval(GFS_Control%blksz)                   ))
-         allocate(ca_deep_cpl (1:Atm_block%nblks,maxval(GFS_Control%blksz)                   ))
-         allocate(ca_turb_cpl (1:Atm_block%nblks,maxval(GFS_Control%blksz)                   ))
-         allocate(ca_shal_cpl (1:Atm_block%nblks,maxval(GFS_Control%blksz)                   ))
+         if (.not. allocated(sst))          allocate(sst         (1:Atm_block%nblks, maxblk))
+         if (.not. allocated(lmsk))         allocate(lmsk        (1:Atm_block%nblks, maxblk))
+         if (.not. allocated(lake))         allocate(lake        (1:Atm_block%nblks, maxblk))
+         if (.not. allocated(ca_deep_diag)) allocate(ca_deep_diag(1:Atm_block%nblks, maxblk))
+         if (.not. allocated(ca_turb_diag)) allocate(ca_turb_diag(1:Atm_block%nblks, maxblk))
+         if (.not. allocated(ca_shal_diag)) allocate(ca_shal_diag(1:Atm_block%nblks, maxblk))
+         if (.not. allocated(condition))    allocate(condition   (1:Atm_block%nblks, maxblk))
+         if (.not. allocated(ca_deep_cpl))  allocate(ca_deep_cpl (1:Atm_block%nblks, maxblk))
+         if (.not. allocated(ca_turb_cpl))  allocate(ca_turb_cpl (1:Atm_block%nblks, maxblk))
+         if (.not. allocated(ca_shal_cpl))  allocate(ca_shal_cpl (1:Atm_block%nblks, maxblk))
          do nb=1,Atm_block%nblks
              sst        (nb,1:GFS_Control%blksz(nb))   = GFS_Data(nb)%Sfcprop%tsfco(:)
              lmsk       (nb,1:GFS_Control%blksz(nb))   = GFS_Data(nb)%Sfcprop%slmsk(:)
@@ -315,10 +319,10 @@ module stochastic_physics_wrapper_mod
              ca_turb_cpl(nb,1:GFS_Control%blksz(nb))   = GFS_Data(nb)%Coupling%ca_turb(:)
              ca_shal_cpl(nb,1:GFS_Control%blksz(nb))   = GFS_Data(nb)%Coupling%ca_shal(:)
          enddo
-         call cellular_automata_sgs(GFS_Control%kdt,GFS_control%dtf,GFS_control%restart,GFS_Control%first_time_step,       &
-            sst,lmsk,lake,condition,ca_deep_cpl,ca_turb_cpl,ca_shal_cpl,ca_deep_diag,ca_turb_diag,                        &
-            ca_shal_diag,Atm(mygrid)%domain_for_coupler,Atm_block%nblks,                                                  &
-            Atm_block%isc,Atm_block%iec,Atm_block%jsc,Atm_block%jec,Atm(mygrid)%npx,Atm(mygrid)%npy, GFS_Control%levs,    &
+         call cellular_automata_sgs(kdt_loc,GFS_control%dtf,GFS_control%restart,GFS_Control%first_time_step,               &
+            sst,lmsk,lake,condition,ca_deep_cpl,ca_turb_cpl,ca_shal_cpl,ca_deep_diag,ca_turb_diag,                         &
+            ca_shal_diag,Atm(mygrid)%domain_for_coupler,Atm_block%nblks,                                                   &
+            Atm_block%isc,Atm_block%iec,Atm_block%jsc,Atm_block%jec,Atm(mygrid)%npx,Atm(mygrid)%npy, levs,                 &
             GFS_Control%nthresh,GFS_Control%rcell,GFS_Control%nca,GFS_Control%scells,GFS_Control%tlives,GFS_Control%nfracseed,    &
             GFS_Control%nseed,GFS_Control%ca_global,GFS_Control%ca_sgs,GFS_Control%iseed_ca,          &
             GFS_Control%ca_smooth,GFS_Control%nspinup,GFS_Control%ca_trigger,Atm_block%blksz(1),GFS_Control%master,GFS_Control%communicator)
@@ -344,15 +348,15 @@ module stochastic_physics_wrapper_mod
        endif
        if(GFS_Control%ca_global)then
           ! Allocate contiguous arrays; no need to copy in (intent out)
-          allocate(ca1_cpl (1:Atm_block%nblks,maxval(GFS_Control%blksz)))
-          allocate(ca2_cpl (1:Atm_block%nblks,maxval(GFS_Control%blksz)))
-          allocate(ca3_cpl (1:Atm_block%nblks,maxval(GFS_Control%blksz)))
-          allocate(ca1_diag(1:Atm_block%nblks,maxval(GFS_Control%blksz)))
-          allocate(ca2_diag(1:Atm_block%nblks,maxval(GFS_Control%blksz)))
-          allocate(ca3_diag(1:Atm_block%nblks,maxval(GFS_Control%blksz)))
-          call cellular_automata_global(GFS_Control%kdt,GFS_Control%first_time_step,ca1_cpl,ca2_cpl,ca3_cpl,ca1_diag,ca2_diag,ca3_diag,     &
+          if (.not. allocated(ca1_cpl))  allocate(ca1_cpl (1:Atm_block%nblks, maxblk))
+          if (.not. allocated(ca2_cpl))  allocate(ca2_cpl (1:Atm_block%nblks, maxblk))
+          if (.not. allocated(ca3_cpl))  allocate(ca3_cpl (1:Atm_block%nblks, maxblk))
+          if (.not. allocated(ca1_diag)) allocate(ca1_diag(1:Atm_block%nblks, maxblk))
+          if (.not. allocated(ca2_cpl))  allocate(ca2_diag(1:Atm_block%nblks, maxblk))
+          if (.not. allocated(ca3_diag)) allocate(ca3_diag(1:Atm_block%nblks, maxblk))
+          call cellular_automata_global(kdt_loc,GFS_Control%first_time_step,ca1_cpl,ca2_cpl,ca3_cpl,ca1_diag,ca2_diag,ca3_diag,            &
             Atm(mygrid)%domain_for_coupler, &
-            Atm_block%nblks,Atm_block%isc,Atm_block%iec,Atm_block%jsc,Atm_block%jec,Atm(mygrid)%npx,Atm(mygrid)%npy,GFS_Control%levs,      &
+            Atm_block%nblks,Atm_block%isc,Atm_block%iec,Atm_block%jsc,Atm_block%jec,Atm(mygrid)%npx,Atm(mygrid)%npy,levs,                  &
             GFS_Control%nca_g,GFS_Control%ncells_g,GFS_Control%nlives_g,GFS_Control%nfracseed,GFS_Control%nseed_g,                         &
             GFS_Control%ca_global,GFS_Control%ca_sgs,GFS_Control%iseed_ca,GFS_Control%ca_smooth,GFS_Control%nspinup,Atm_block%blksz(1),    &
             GFS_Control%nsmooth,GFS_Control%ca_amplitude,GFS_Control%master,GFS_Control%communicator)
@@ -373,7 +377,7 @@ module stochastic_physics_wrapper_mod
           deallocate(ca3_diag)
        endif
 
-    endif !kdt =0
+    endif !kdt_loc = 0
 
     endif !do_ca
 

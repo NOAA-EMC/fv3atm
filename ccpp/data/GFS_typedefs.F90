@@ -1191,6 +1191,7 @@ module GFS_typedefs
     real(kind=kind_phys) :: fhour           !< current forecast hour
     real(kind=kind_phys) :: zhour           !< previous hour diagnostic buckets emptied
     integer              :: kdt             !< current forecast iteration
+    integer              :: kdt_start       !< current forecast iteration
     logical              :: first_time_step !< flag signaling first time step for time integration routine
     logical              :: restart         !< flag whether this is a coldstart (.false.) or a warmstart/restart (.true.)
     logical              :: hydrostatic     !< flag whether this is a hydrostatic or non-hydrostatic run
@@ -4443,6 +4444,7 @@ module GFS_typedefs
     Model%fhour            = (rinc(4) + Model%dtp)/con_hr
     Model%zhour            = mod(Model%phour,Model%fhzero)
     Model%kdt              = nint(Model%fhour*con_hr/Model%dtp)
+    Model%kdt_start        = Model%kdt
     Model%first_time_step  = .true.
     Model%restart          = restart
     Model%hydrostatic      = hydrostatic
@@ -5403,6 +5405,7 @@ module GFS_typedefs
       print *, ' fhour             : ', Model%fhour
       print *, ' zhour             : ', Model%zhour
       print *, ' kdt               : ', Model%kdt
+      print *, ' kdt_start         : ', Model%kdt_start
       print *, ' jdat              : ', Model%jdat
       print *, ' si                : ', Model%si
       print *, ' sec               : ', Model%sec
