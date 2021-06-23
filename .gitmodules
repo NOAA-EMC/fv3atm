@@ -4,9 +4,9 @@
 	branch = dev/emc
 [submodule "ccpp/framework"]
 	path = ccpp/framework
-	url = https://github.com/climbfuji/ccpp-framework
-	branch = update_gsl_develop_from_main_20210531
+	url = https://github.com/NCAR/ccpp-framework
+	branch = main
 [submodule "ccpp/physics"]
 	path = ccpp/physics
-	url = https://github.com/climbfuji/ccpp-physics
-	branch = update_gsl_develop_from_main_20210531
+	url = https://github.com/NCAR/ccpp-physics
+	branch = main
