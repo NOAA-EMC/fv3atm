@@ -101,6 +101,10 @@ module GFS_restart
     if (Model%imfdeepcnv == 3) then
       Restart%num2d = Restart%num2d + 1
     endif
+    ! CA
+    if (Model%imfdeepcnv == 2 .and. Model%do_ca) then
+      Restart%num2d = Restart%num2d + 1
+    endif
     ! NoahMP
     if (Model%lsm == Model%lsm_noahmp) then
       Restart%num2d = Restart%num2d + 10
@@ -184,8 +188,17 @@ module GFS_restart
 !      print *,'in restart 2d field, Restart%name2d(',offset+idx,')=',trim(Restart%name2d(offset+idx))
     enddo
 
-    !--- RAP/HRRR-specific variables, 2D
     num = offset + ndiag_rst
+    !--- Celluluar Automaton, 2D
+    !CA
+    if (Model%imfdeepcnv == 2 .and. Model%do_ca) then
+      num = num + 1
+      Restart%name2d(num) = 'ca_condition'
+      do nb = 1,nblks
+        Restart%data(nb,num)%var2p => Coupling(nb)%condition(:)
+      enddo
+    endif
+    !--- RAP/HRRR-specific variables, 2D
     ! GF
     if (Model%imfdeepcnv == Model%imfdeepcnv_gf) then
       num = num + 1
