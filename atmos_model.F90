@@ -261,8 +261,8 @@ subroutine update_atmos_radiation_physics (Atmos)
       call CCPP_step (step="timestep_init", nblks=Atm_block%nblks, ierr=ierr)
       if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP timestep_init step failed')
 
-      if ((GFS_Control%do_sppt .or. GFS_Control%do_shum .or. GFS_Control%do_skeb .or. &
-           GFS_Control%lndp_type > 0  .or. GFS_Control%do_ca) .and. GFS_Control%kdt > GFS_Control%kdt_start) then
+      if (GFS_Control%do_sppt .or. GFS_Control%do_shum .or. GFS_Control%do_skeb .or. &
+          GFS_Control%lndp_type > 0  .or. GFS_Control%do_ca ) then
 !--- call stochastic physics pattern generation / cellular automata
         call stochastic_physics_wrapper(GFS_control, GFS_data, Atm_block, ierr)
         if (ierr/=0)  call mpp_error(FATAL, 'Call to stochastic_physics_wrapper failed')
@@ -270,7 +270,8 @@ subroutine update_atmos_radiation_physics (Atmos)
 
 !--- if coupled, assign coupled fields
 
-      if (.not. GFS_control%cplchm) then
+!     if (.not. GFS_control%cplchm) then
+      if (GFS_control%cplflx .or. GFS_control%cplwav2atm) then
         call assign_importdata(rc)
       endif
 
@@ -825,7 +826,7 @@ subroutine update_atmos_model_state (Atmos)
       if (mpp_pe() == mpp_root_pe()) write(6,*) ' gfs diags time since last bucket empty: ',time_int/3600.,'hrs'
       call atmosphere_nggps_diag(Atmos%Time)
       call FV3GFS_diag_output(Atmos%Time, GFS_Diag, Atm_block, GFS_control%nx, GFS_control%ny, &
-                            GFS_control%levs, 1, 1, 1.0_GFS_kind_phys, time_int, time_intfull,              &
+                            GFS_control%levs, 1, 1, 1.0_GFS_kind_phys, time_int, time_intfull, &
                             GFS_control%fhswr, GFS_control%fhlwr)
       if (nint(GFS_control%fhzero) > 0) then
         if (mod(isec,3600*nint(GFS_control%fhzero)) == 0) diag_time = Atmos%Time

@@ -1191,7 +1191,6 @@ module GFS_typedefs
     real(kind=kind_phys) :: fhour           !< current forecast hour
     real(kind=kind_phys) :: zhour           !< previous hour diagnostic buckets emptied
     integer              :: kdt             !< current forecast iteration
-    integer              :: kdt_start       !< current forecast iteration
     logical              :: first_time_step !< flag signaling first time step for time integration routine
     logical              :: restart         !< flag whether this is a coldstart (.false.) or a warmstart/restart (.true.)
     logical              :: hydrostatic     !< flag whether this is a hydrostatic or non-hydrostatic run
@@ -3330,11 +3329,11 @@ module GFS_typedefs
                                                                       !< (used if mstrat=.true.)
     real(kind=kind_phys) :: crtrh(3)       = (/0.90d0,0.90d0,0.90d0/) !< critical relative humidity at the surface
                                                                       !< PBL top and at the top of the atmosphere
-    real(kind=kind_phys) :: dlqf(2)        = (/0.0d0,0.0d0/)          !< factor for cloud condensate detrainment
+    real(kind=kind_phys) :: dlqf(2)        = (/0.15,0.15/)            !< factor for cloud condensate detrainment
                                                                       !< from cloud edges for RAS
     real(kind=kind_phys) :: psauras(2)     = (/1.0d-3,1.0d-3/)        !< [in] auto conversion coeff from ice to snow in ras
     real(kind=kind_phys) :: prauras(2)     = (/2.0d-3,2.0d-3/)        !< [in] auto conversion coeff from cloud to rain in ras
-    real(kind=kind_phys) :: wminras(2)     = (/1.0d-5,1.0d-5/)        !< [in] water and ice minimum threshold for ras
+    real(kind=kind_phys) :: wminras(2)     = (/1.0d-6,1.0d-6/)        !< [in] water and ice minimum threshold for ras
     integer              :: nrcmax         = 32                       !< number of random numbers used in RAS
 
     real(kind=kind_phys) :: rbcr           = 0.25                     !< Critical Richardson Number in PBL scheme
@@ -4444,7 +4443,6 @@ module GFS_typedefs
     Model%fhour            = (rinc(4) + Model%dtp)/con_hr
     Model%zhour            = mod(Model%phour,Model%fhzero)
     Model%kdt              = nint(Model%fhour*con_hr/Model%dtp)
-    Model%kdt_start        = Model%kdt
     Model%first_time_step  = .true.
     Model%restart          = restart
     Model%hydrostatic      = hydrostatic
@@ -5405,7 +5403,6 @@ module GFS_typedefs
       print *, ' fhour             : ', Model%fhour
       print *, ' zhour             : ', Model%zhour
       print *, ' kdt               : ', Model%kdt
-      print *, ' kdt_start         : ', Model%kdt_start
       print *, ' jdat              : ', Model%jdat
       print *, ' si                : ', Model%si
       print *, ' sec               : ', Model%sec
