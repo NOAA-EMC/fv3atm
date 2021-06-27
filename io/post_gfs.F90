@@ -22,6 +22,7 @@ module post_gfs
 !
 !  revision history:
 !     Jul 2019    J. Wang      create interface to run inline post for FV3
+!     Apr 2021    R. Sun       Added variables for Thomspon MP
 !
 !-----------------------------------------------------------------------
 !*** run post on write grid comp
@@ -342,7 +343,7 @@ module post_gfs
       use vrbls3d,     only: t, q, uh, vh, wh, alpint, dpres, zint, zmid, o3,  &
                              qqr, qqs, cwm, qqi, qqw, qqg, omga, cfr, pmid,    &
                              q2, rlwtt, rswtt, tcucn, tcucns, train, el_pbl,   &
-                             pint, exch_h, ref_10cm
+                             pint, exch_h, ref_10cm, qqni,qqnr,qqnwfa,qqnifa
       use vrbls2d,     only: f, pd, sigt4, fis, pblh, ustar, z0, ths, qs, twbs,&
                              qwbs, avgcprate, cprate, avgprec, prec, lspa, sno,&
                              cldefi, th10, q10, tshltr, pshltr, tshltr, albase,&
@@ -2182,8 +2183,8 @@ module post_gfs
               enddo
             endif
 
-! for GFDL MP
-            if (imp_physics == 11) then
+! for GFDL MP or Thompson MP 
+            if (imp_physics == 11 .or. imp_physics == 8) then
               ! model level cloud water mixing ratio
               if(trim(fieldname)=='clwmr') then
                 !$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,qqw,arrayr43d)
@@ -2243,6 +2244,56 @@ module post_gfs
                   enddo
                 enddo
               endif
+
+              if(imp_physics == 8) then
+              ! model level rain number
+              if(trim(fieldname)=='ncrain') then
+                !$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,qqnr,arrayr43d)
+                do l=1,lm
+                  do j=jsta,jend
+                    do i=ista, iend
+                      qqnr(i,j,l)=arrayr43d(i,j,l)
+                    enddo
+                  enddo
+                enddo
+              endif
+
+              ! model level rain number
+              if(trim(fieldname)=='ncice') then
+                !$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,qqni,arrayr43d)
+                do l=1,lm
+                  do j=jsta,jend
+                    do i=ista, iend
+                      qqni(i,j,l)=arrayr43d(i,j,l)
+                    enddo
+                  enddo
+                enddo
+              endif
+
+              ! model level rain number
+              if(trim(fieldname)=='nwfa') then
+                !$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,qqnwfa,arrayr43d)
+                do l=1,lm
+                  do j=jsta,jend
+                    do i=ista, iend
+                      qqnwfa(i,j,l)=arrayr43d(i,j,l)
+                    enddo
+                  enddo
+                enddo
+              endif
+
+              ! model level rain number
+              if(trim(fieldname)=='nifa') then
+                !$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,qqnifa,arrayr43d)
+                do l=1,lm
+                  do j=jsta,jend
+                    do i=ista, iend
+                      qqnifa(i,j,l)=arrayr43d(i,j,l)
+                    enddo
+                  enddo
+                enddo
+              endif
+              endif !if(imp_physics == 8) then
 !gfdlmp
             endif
 
@@ -2400,8 +2451,8 @@ module post_gfs
         enddo
       enddo
 
-! compute cwm for gfdlmp
-      if(  imp_physics == 11 ) then
+! compute cwm for gfdlmp or Thompson 
+      if(  imp_physics == 11 .or. imp_physics == 8) then
         do l=1,lm
 !$omp parallel do default(none) private(i,j) shared(l,jsta,jend,ista,iend,cwm,qqg,qqs,qqr,qqi,qqw)
           do j=jsta,jend
