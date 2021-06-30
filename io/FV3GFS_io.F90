@@ -1097,20 +1097,22 @@ module FV3GFS_io_mod
               Sfcprop(nb)%lakefrac(ix)  = one
               Sfcprop(nb)%slmsk(ix)     = zero
               if (Sfcprop(nb)%fice(ix) >= Model%min_lakeice) Sfcprop(nb)%slmsk(ix) = 2.0
-            elseif (Sfcprop(nb)%landfrac(ix) > zero) then
-              Sfcprop(nb)%landfrac(ix)  = one
-              Sfcprop(nb)%lakefrac(ix)  = zero
-              Sfcprop(nb)%oceanfrac(ix) = zero
-              Sfcprop(nb)%slmsk(ix)     = one
             else
-              Sfcprop(nb)%oceanfrac(ix) = one
-              Sfcprop(nb)%landfrac(ix)  = zero
-              Sfcprop(nb)%lakefrac(ix)  = zero
-              Sfcprop(nb)%slmsk(ix)     = zero
-              if (Sfcprop(nb)%fice(ix) >= Model%min_seaice) Sfcprop(nb)%slmsk(ix) = 2.0
+              Sfcprop(nb)%slmsk(ix) = nint(Sfcprop(nb)%landfrac(ix))
+              if (Sfcprop(nb)%stype(ix) <= 0) Sfcprop(nb)%slmsk(ix) = zero
+              if (nint(Sfcprop(nb)%slmsk(ix)) == 0) then
+                Sfcprop(nb)%oceanfrac(ix) = one
+                Sfcprop(nb)%landfrac(ix)  = zero
+                Sfcprop(nb)%lakefrac(ix)  = zero
+                if (Sfcprop(nb)%fice(ix) >= Model%min_seaice) Sfcprop(nb)%slmsk(ix) = 2.0
+              else
+                Sfcprop(nb)%landfrac(ix)  = one
+                Sfcprop(nb)%lakefrac(ix)  = zero
+                Sfcprop(nb)%oceanfrac(ix) = zero
+              endif
             endif
           else
-            if (nint(Sfcprop(nb)%slmsk(ix)) == 1) then
+            if (nint(Sfcprop(nb)%slmsk(ix)) == 1 .and. Sfcprop(nb)%stype(ix) > 0) then
               Sfcprop(nb)%landfrac(ix)  = one
               Sfcprop(nb)%lakefrac(ix)  = zero
               Sfcprop(nb)%oceanfrac(ix) = zero
@@ -1133,7 +1135,7 @@ module FV3GFS_io_mod
         if (warm_start) then
           Sfcprop(nb)%slmsk(ix)  = sfc_var2(i,j,1)    !--- slmsk
         endif
- 
+
         !
         !--- NSSTM variables
         if (Model%nstf_name(1) > 0) then
