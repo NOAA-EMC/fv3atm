@@ -21,6 +21,7 @@ module fv3gfs_cap_mod
                                     label_RealizeProvided,                   &
                                     label_Advance,                           &
                                     label_CheckImport,                       &
+                                    label_TimestampExport,                   &
                                     label_Finalize,                          &
                                     NUOPC_ModelGet
 !
@@ -144,7 +145,7 @@ module fv3gfs_cap_mod
                               specPhaseLabel="phase1", specRoutine=NUOPC_NoOp, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-    call NUOPC_CompSpecialize(gcomp, specLabel="ModelBase_TimestampExport", &
+    call NUOPC_CompSpecialize(gcomp, specLabel=label_TimestampExport, &
                               specPhaseLabel="phase1", specRoutine=TimestampExport_phase1, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
