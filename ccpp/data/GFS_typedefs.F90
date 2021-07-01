@@ -144,7 +144,7 @@ module GFS_typedefs
 
     integer                    :: nwat            !< number of hydrometeors in dcyore (including water vapor)
     character(len=32), pointer :: tracer_names(:) !< tracers names to dereference tracer id
-                                                  !< based on name location in array
+    integer,           pointer :: tracer_types(:) !< tracers types: 0=generic, 1=chem,prog, 2=chem,diag
     character(len=64) :: fn_nml                   !< namelist filename
     character(len=256), pointer :: input_nml_file(:) !< character string containing full namelist
                                                      !< for use with internal file reads
@@ -532,11 +532,11 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: nwfa2d  (:)     => null()  !< instantaneous water-friendly sfc aerosol source
     real (kind=kind_phys), pointer :: nifa2d  (:)     => null()  !< instantaneous ice-friendly sfc aerosol source
 
-    !--- instantaneous quantities for GSDCHEM coupling
-    real (kind=kind_phys), pointer :: dqdti   (:,:)   => null()  !< instantaneous total moisture tendency (kg/kg/s)
+    !--- instantaneous quantities for chemistry coupling
     real (kind=kind_phys), pointer :: ushfsfci(:)     => null()  !< instantaneous upward sensible heat flux (w/m**2)
-    real (kind=kind_phys), pointer :: dkt     (:,:)   => null()  !< instantaneous dkt diffusion coefficient for temperature (m**2/s)
     real (kind=kind_phys), pointer :: qci_conv(:,:)   => null()  !< convective cloud condesate after rainout
+    real (kind=kind_phys), pointer :: pfi_lsan(:,:)   => null()  !< instantaneous 3D flux of ice    nonconvective precipitation (kg m-2 s-1)
+    real (kind=kind_phys), pointer :: pfl_lsan(:,:)   => null()  !< instantaneous 3D flux of liquid nonconvective precipitation (kg m-2 s-1)
 
 
     contains
@@ -1136,8 +1136,12 @@ module GFS_typedefs
     integer              :: nto2            !< tracer index for oxygen
     integer              :: ntwa            !< tracer index for water friendly aerosol
     integer              :: ntia            !< tracer index for ice friendly aerosol
-    integer              :: ntchm           !< number of chemical tracers
-    integer              :: ntchs           !< tracer index for first chemical tracer
+    integer              :: ntchm           !< number of prognostic chemical tracers (advected)
+    integer              :: ntchs           !< tracer index for first prognostic chemical tracer
+    integer              :: ntche           !< tracer index for last prognostic chemical tracer
+    integer              :: ndchm           !< number of diagnostic chemical tracers (not advected)
+    integer              :: ndchs           !< tracer index for first diagnostic chemical tracer
+    integer              :: ndche           !< tracer index for last diagnostic chemical tracer
     logical, pointer     :: ntdiag(:) => null() !< array to control diagnostics for chemical tracers
     real(kind=kind_phys), pointer :: fscav(:)  => null() !< array of aerosol scavenging coefficients
 
@@ -1217,8 +1221,10 @@ module GFS_typedefs
     real(kind=kind_phys) :: rhcmax          ! maximum critical relative humidity, replaces rhc_max in physcons.F90
 
     contains
-      procedure :: init  => control_initialize
-      procedure :: print => control_print
+      procedure :: init            => control_initialize
+      procedure :: init_chemistry  => control_chemistry_initialize
+      procedure :: init_scavenging => control_scavenging_initialize
+      procedure :: print           => control_print
   end type GFS_control_type
 
 
@@ -1692,21 +1698,6 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: tau_tofd(:)    => null()   !
 !---vay-2018 UGWP-diagnostics
 
-    !--- Output diagnostics for coupled chemistry
-    integer                        :: ndust                    !< number of dust bins for diagnostics
-    integer                        :: nseasalt                 !< number of seasalt bins for diagnostics
-    integer                        :: ntchmdiag                !< number of chemical tracers for diagnostics
-    real (kind=kind_phys), pointer :: duem  (:,:) => null()    !< instantaneous dust emission flux                             ( kg/m**2/s )
-    real (kind=kind_phys), pointer :: ssem  (:,:) => null()    !< instantaneous sea salt emission flux                         ( kg/m**2/s )
-    real (kind=kind_phys), pointer :: sedim (:,:) => null()    !< instantaneous sedimentation                                  ( kg/m**2/s )
-    real (kind=kind_phys), pointer :: drydep(:,:) => null()    !< instantaneous dry deposition                                 ( kg/m**2/s )
-    real (kind=kind_phys), pointer :: wetdpl(:,:) => null()    !< instantaneous large-scale wet deposition                     ( kg/m**2/s )
-    real (kind=kind_phys), pointer :: wetdpc(:,:) => null()    !< instantaneous convective-scale wet deposition                ( kg/m**2/s )
-    real (kind=kind_phys), pointer :: abem  (:,:) => null()    !< instantaneous anthopogenic and biomass burning emissions
-                                                               !< for black carbon, organic carbon, and sulfur dioxide         ( ug/m**2/s )
-    real (kind=kind_phys), pointer :: aecm  (:,:) => null()    !< instantaneous aerosol column mass densities for
-                                                               !< pm2.5, black carbon, organic carbon, sulfate, dust, sea salt ( g/m**2 )
-
     ! Auxiliary output arrays for debugging
     real (kind=kind_phys), pointer :: aux2d(:,:)  => null()    !< auxiliary 2d arrays in output (for debugging)
     real (kind=kind_phys), pointer :: aux3d(:,:,:)=> null()    !< auxiliary 2d arrays in output (for debugging)
@@ -1715,7 +1706,6 @@ module GFS_typedefs
       procedure :: create    => diag_create
       procedure :: rad_zero  => diag_rad_zero
       procedure :: phys_zero => diag_phys_zero
-      procedure :: chem_init => diag_chem_init
   end type GFS_diag_type
 
 !---------------------------------------------------------------------
@@ -2731,13 +2721,19 @@ module GFS_typedefs
       Coupling%snow_cpl = clear_val
     endif
 
-    if (Model%cplflx .or. Model%cplwav) then
+    if (Model%cplflx .or. Model%cplchm .or. Model%cplwav) then
       !--- instantaneous quantities
       allocate (Coupling%u10mi_cpl (IM))
       allocate (Coupling%v10mi_cpl (IM))
 
       Coupling%u10mi_cpl = clear_val
       Coupling%v10mi_cpl = clear_val
+    endif
+
+    if (Model%cplflx .or. Model%cplchm) then
+      !--- instantaneous quantities
+      allocate (Coupling%tsfci_cpl (IM))
+      Coupling%tsfci_cpl = clear_val
     endif
 
 !   if (Model%cplwav2atm) then
@@ -2835,7 +2831,6 @@ module GFS_typedefs
       allocate (Coupling%nvisdfi_cpl (IM))
       allocate (Coupling%t2mi_cpl    (IM))
       allocate (Coupling%q2mi_cpl    (IM))
-      allocate (Coupling%tsfci_cpl   (IM))
       allocate (Coupling%psurfi_cpl  (IM))
       allocate (Coupling%oro_cpl     (IM))
       allocate (Coupling%slmsk_cpl   (IM))
@@ -2858,7 +2853,6 @@ module GFS_typedefs
       Coupling%nvisdfi_cpl = clear_val
       Coupling%t2mi_cpl    = clear_val
       Coupling%q2mi_cpl    = clear_val
-      Coupling%tsfci_cpl   = clear_val
       Coupling%psurfi_cpl  = clear_val
       Coupling%oro_cpl     = clear_val  !< pointer to sfcprop%oro
       Coupling%slmsk_cpl   = clear_val  !< pointer to sfcprop%slmsk
@@ -2888,19 +2882,19 @@ module GFS_typedefs
       Coupling%condition = clear_val
     endif
 
-    ! -- GSDCHEM coupling options
+    ! -- Aerosols coupling options
     if (Model%cplchm) then
       !--- outgoing instantaneous quantities
       allocate (Coupling%ushfsfci  (IM))
-      allocate (Coupling%dkt       (IM,Model%levs))
-      allocate (Coupling%dqdti     (IM,Model%levs))
       !--- accumulated convective rainfall
       allocate (Coupling%rainc_cpl (IM))
-
+      ! -- instantaneous 3d fluxes of nonconvective ice and liquid precipitations
+      allocate (Coupling%pfi_lsan  (IM,Model%levs))
+      allocate (Coupling%pfl_lsan  (IM,Model%levs))
       Coupling%rainc_cpl = clear_val
       Coupling%ushfsfci  = clear_val
-      Coupling%dkt       = clear_val
-      Coupling%dqdti     = clear_val
+      Coupling%pfi_lsan  = clear_val
+      Coupling%pfl_lsan  = clear_val
     endif
 
     !--- stochastic physics option
@@ -2953,7 +2947,7 @@ module GFS_typedefs
                                  logunit, isc, jsc, nx, ny, levs,   &
                                  cnx, cny, gnx, gny, dt_dycore,     &
                                  dt_phys, iau_offset, idat, jdat,   &
-                                 nwat, tracer_names,                &
+                                 nwat, tracer_names, tracer_types,  &
                                  input_nml_file, tile_num, blksz,   &
                                  ak, bk, restart, hydrostatic,      &
                                  communicator, ntasks, nthreads)
@@ -2989,6 +2983,7 @@ module GFS_typedefs
     integer,                intent(in) :: jdat(8)
     integer,                intent(in) :: nwat
     character(len=32),      intent(in) :: tracer_names(:)
+    integer,                intent(in) :: tracer_types(:)
     character(len=256),     intent(in), pointer :: input_nml_file(:)
     integer,                intent(in) :: blksz(:)
     real(kind=kind_phys), dimension(:), intent(in) :: ak
@@ -3470,7 +3465,8 @@ module GFS_typedefs
     logical :: lndp_each_step = .false.
 
 !--- aerosol scavenging factors
-    character(len=20) :: fscav_aero(20) = 'default'
+    integer, parameter :: max_scav_factors = 25
+    character(len=40)  :: fscav_aero(max_scav_factors)
 
 !--- END NAMELIST VARIABLES
 
@@ -4340,59 +4336,12 @@ module GFS_typedefs
     Model%nqrimef          = get_tracer_index(Model%tracer_names, 'q_rimef',    Model%me, Model%master, Model%debug)
     Model%ntwa             = get_tracer_index(Model%tracer_names, 'liq_aero',   Model%me, Model%master, Model%debug)
     Model%ntia             = get_tracer_index(Model%tracer_names, 'ice_aero',   Model%me, Model%master, Model%debug)
-    Model%ntchm            = 0
-    Model%ntchs            = get_tracer_index(Model%tracer_names, 'so2',        Model%me, Model%master, Model%debug)
-    if (Model%ntchs > 0) then
-      Model%ntchm          = get_tracer_index(Model%tracer_names, 'pp10',       Model%me, Model%master, Model%debug)
-      if (Model%ntchm > 0) then
-        Model%ntchm = Model%ntchm - Model%ntchs + 1
-        allocate(Model%ntdiag(Model%ntchm))
-        ! -- turn on all tracer diagnostics to .true. by default, except for so2
-        Model%ntdiag(1)  = .false.
-        Model%ntdiag(2:) = .true.
-        ! -- turn off diagnostics for DMS
-        n = get_tracer_index(Model%tracer_names, 'DMS', Model%me, Model%master, Model%debug) - Model%ntchs + 1
-        if (n > 0) Model%ntdiag(n) = .false.
-        ! -- turn off diagnostics for msa
-        n = get_tracer_index(Model%tracer_names, 'msa', Model%me, Model%master, Model%debug) - Model%ntchs + 1
-        if (n > 0) Model%ntdiag(n) = .false.
-      endif
-    endif
 
-    ! -- setup aerosol scavenging factors
-    n = max(Model%ntrac, Model%ntchm)
-    allocate(Model%fscav(n))
-    Model%fscav = -9999.0
-    if (Model%ntchm > 0) then
-      ! -- initialize to default
-      Model%fscav = 0.6_kind_phys
-      n = get_tracer_index(Model%tracer_names, 'seas1', Model%me, Model%master, Model%debug) - Model%ntchs + 1
-      if (n > 0) Model%fscav(n) = 1.0_kind_phys
-      n = get_tracer_index(Model%tracer_names, 'seas2', Model%me, Model%master, Model%debug) - Model%ntchs + 1
-      if (n > 0) Model%fscav(n) = 1.0_kind_phys
-      n = get_tracer_index(Model%tracer_names, 'seas3', Model%me, Model%master, Model%debug) - Model%ntchs + 1
-      if (n > 0) Model%fscav(n) = 1.0_kind_phys
-      n = get_tracer_index(Model%tracer_names, 'seas4', Model%me, Model%master, Model%debug) - Model%ntchs + 1
-      if (n > 0) Model%fscav(n) = 1.0_kind_phys
-      n = get_tracer_index(Model%tracer_names, 'seas5', Model%me, Model%master, Model%debug) - Model%ntchs + 1
-      if (n > 0) Model%fscav(n) = 1.0_kind_phys
-      ! -- read factors from namelist
-      do i = 1, size(fscav_aero)
-        j = index(fscav_aero(i),":")
-        if (j > 1) then
-          read(fscav_aero(i)(j+1:), *, iostat=ios) tem
-          if (ios /= 0) cycle
-          if (adjustl(fscav_aero(i)(:j-1)) == "*") then
-            Model%fscav = tem
-            exit
-          else
-            n = get_tracer_index(Model%tracer_names, adjustl(fscav_aero(i)(:j-1)), Model%me, Model%master, Model%debug) &
-                - Model%ntchs + 1
-            if (n > 0) Model%fscav(n) = tem
-          endif
-        endif
-      enddo
-    endif
+!--- initialize parameters for atmospheric chemistry tracers
+    call Model%init_chemistry(tracer_types)
+
+!--- setup aerosol scavenging factors
+    call Model%init_scavenging(fscav_aero)
 
     ! To ensure that these values match what's in the physics,
     ! array sizes are compared during model init in GFS_phys_time_vary_init()
@@ -4967,6 +4916,103 @@ module GFS_typedefs
   end subroutine control_initialize
 
 
+!---------------------------
+! GFS_control%init_chemistry
+!---------------------------
+  subroutine control_chemistry_initialize(Model, tracer_types)
+
+    !--- Identify number and starting/ending indices of both
+    !--- prognostic and diagnostic chemistry tracers.
+    !--- Each tracer set is assumed to be contiguous.
+
+    use parse_tracers, only: NO_TRACER
+
+    !--- interface variables
+    class(GFS_control_type) :: Model
+    integer,     intent(in) :: tracer_types(:)
+
+    !--- local variables
+    integer :: n
+
+    !--- begin
+    Model%ntchm = 0
+    Model%ntchs = NO_TRACER
+    Model%ntche = NO_TRACER
+    Model%ndchm = 0
+    Model%ndchs = NO_TRACER
+    Model%ndche = NO_TRACER
+
+    do n = 1, size(tracer_types)
+      select case (tracer_types(n))
+        case (1)
+          ! -- prognostic chemistry tracers
+          Model%ntchm = Model%ntchm + 1
+          if (Model%ntchm == 1) Model%ntchs = n
+        case (2)
+          ! -- diagnostic chemistry tracers
+          Model%ndchm = Model%ndchm + 1
+          if (Model%ndchm == 1) Model%ndchs = n
+        case default
+          ! -- generic tracers
+      end select
+    end do
+
+    if (Model%ntchm > 0) Model%ntche = Model%ntchs + Model%ntchm - 1
+    if (Model%ndchm > 0) Model%ndche = Model%ndchs + Model%ndchm - 1
+
+  end subroutine control_chemistry_initialize
+
+
+!----------------------------
+! GFS_control%init_scavenging
+!----------------------------
+  subroutine control_scavenging_initialize(Model, fscav)
+
+    use parse_tracers, only: get_tracer_index
+
+    !--- interface variables
+    class(GFS_control_type)      :: Model
+    character(len=*), intent(in) :: fscav(:)
+
+    !--- local variables
+    integer              :: i, ios, j, n
+    real(kind=kind_phys) :: tem
+
+    !--- begin
+    allocate(Model%fscav(Model%ntchm))
+
+    if (Model%ntchm > 0) then
+      !--- set default as no scavenging
+      Model%fscav = zero
+      ! -- read factors from namelist
+      ! -- set default first, if available
+      do i = 1, size(fscav)
+        j = index(fscav(i),":")
+        if (j > 1) then
+          read(fscav(i)(j+1:), *, iostat=ios) tem
+          if (ios /= 0) cycle
+          if (adjustl(fscav(i)(:j-1)) == "*") then
+            Model%fscav = tem
+            exit
+          endif
+        endif
+      enddo
+      ! -- then read factors for each tracer
+      do i = 1, size(fscav)
+        j = index(fscav(i),":")
+        if (j > 1) then
+          read(fscav(i)(j+1:), *, iostat=ios) tem
+          if (ios /= 0) cycle
+          n = get_tracer_index(Model%tracer_names, adjustl(fscav(i)(:j-1)), Model%me, Model%master, Model%debug) &
+              - Model%ntchs + 1
+          if (n > 0) Model%fscav(n) = tem
+        endif
+      enddo
+    endif
+
+  end subroutine control_scavenging_initialize
+
+
 !------------------
 ! GFS_control%print
 !------------------
@@ -5366,6 +5412,10 @@ module GFS_typedefs
       print *, ' ntia              : ', Model%ntia
       print *, ' ntchm             : ', Model%ntchm
       print *, ' ntchs             : ', Model%ntchs
+      print *, ' ntche             : ', Model%ntche
+      print *, ' ndchm             : ', Model%ndchm
+      print *, ' ndchs             : ', Model%ndchs
+      print *, ' ndche             : ', Model%ndche
       print *, ' fscav             : ', Model%fscav
       print *, ' '
       print *, 'derived totals for phy_f*d'
@@ -5993,9 +6043,6 @@ module GFS_typedefs
       Diag%aux3d = clear_val
     endif
 
-    !--- diagnostics for coupled chemistry
-    if (Model%cplchm) call Diag%chem_init(IM,Model)
-
     call Diag%rad_zero  (Model)
 !    if(Model%me==0) print *,'in diag_create, call rad_zero'
     linit = .true.
@@ -6258,103 +6305,6 @@ module GFS_typedefs
     endif
 
   end subroutine diag_phys_zero
-
-!-----------------------
-! GFS_diag%chem_init
-!-----------------------
-  subroutine diag_chem_init(Diag, IM, Model)
-
-    use parse_tracers,    only: get_tracer_index, NO_TRACER
-
-    class(GFS_diag_type)               :: Diag
-    integer,                intent(in) :: IM
-    type(GFS_control_type), intent(in) :: Model
-
-    ! -- local variables
-    integer :: n
-
-    ! -- initialize diagnostic variables depending on
-    ! -- specific chemical tracers
-    if (Model%ntchm > 0) then
-      ! -- retrieve number of dust bins
-      n = get_number_bins('dust')
-      Diag%ndust = n
-      if (n > 0) then
-        allocate (Diag%duem(IM,n))
-        Diag%duem = zero
-      end if
-
-      ! -- retrieve number of sea salt bins
-      n = get_number_bins('seas')
-      Diag%nseasalt = n
-      if (n > 0) then
-        allocate (Diag%ssem(IM,n))
-        Diag%ssem = zero
-      end if
-    end if
-
-    ! -- sedimentation and dry/wet deposition diagnostics
-    if (associated(Model%ntdiag)) then
-      ! -- get number of tracers with enabled diagnostics
-      n = count(Model%ntdiag)
-      Diag%ntchmdiag = n
-
-      ! -- initialize sedimentation
-      allocate (Diag%sedim(IM,n))
-      Diag%sedim = zero
-
-      ! -- initialize dry deposition
-      allocate (Diag%drydep(IM,n))
-      Diag%drydep = zero
-
-      ! -- initialize large-scale wet deposition
-      allocate (Diag%wetdpl(IM,n))
-      Diag%wetdpl = zero
-
-      ! -- initialize convective-scale wet deposition
-      allocate (Diag%wetdpc(IM,n))
-      Diag%wetdpc = zero
-    end if
-
-    ! -- initialize anthropogenic and biomass
-    ! -- burning emission diagnostics for
-    ! -- (in order): black carbon,
-    ! -- organic carbon, and sulfur dioxide
-    allocate (Diag%abem(IM,6))
-    Diag%abem = zero
-
-    ! -- initialize column burden diagnostics
-    ! -- for aerosol species (in order): pm2.5
-    ! -- black carbon, organic carbon, sulfate,
-    ! -- dust, sea salt
-    allocate (Diag%aecm(IM,6))
-    Diag%aecm = zero
-
-  contains
-
-    integer function get_number_bins(tracer_type)
-      character(len=*), intent(in) :: tracer_type
-
-      logical :: next
-      integer :: n
-      character(len=5) :: name
-
-      get_number_bins = 0
-
-      n = 0
-      next = .true.
-      do while (next)
-        n = n + 1
-        write(name,'(a,i1)') tracer_type, n + 1
-        next = get_tracer_index(Model%tracer_names, name, &
-          Model%me, Model%master, Model%debug) /= NO_TRACER
-      end do
-
-      get_number_bins = n
-
-    end function get_number_bins
-
-  end subroutine diag_chem_init
 
   !-------------------------
   ! GFS_interstitial_type%create

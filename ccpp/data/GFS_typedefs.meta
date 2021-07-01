@@ -2277,14 +2277,6 @@
   type = real
   kind = kind_phys
   active = (index_for_stochastic_land_surface_perturbation_type .ne. 0)
-[dqdti]
-  standard_name = instantaneous_water_vapor_specific_humidity_tendency_due_to_convection
-  long_name = instantaneous moisture tendency due to convection
-  units = kg kg-1 s-1
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (flag_for_chemistry_coupling)
 [nwfa2d]
   standard_name = tendency_of_water_friendly_aerosols_at_surface
   long_name = instantaneous water-friendly sfc aerosol source
@@ -2309,14 +2301,6 @@
   type = real
   kind = kind_phys
   active = (flag_for_chemistry_coupling)
-[dkt]
-  standard_name = instantaneous_atmosphere_heat_diffusivity
-  long_name = instantaneous atmospheric heat diffusivity
-  units = m2 s-1
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (flag_for_chemistry_coupling)
 [qci_conv]
   standard_name = convective_cloud_condesate_after_rainout
   long_name = convective cloud condesate after rainout
@@ -2325,6 +2309,22 @@
   type = real
   kind = kind_phys
   active = (flag_for_mass_flux_deep_convection_scheme == flag_for_gf_deep_convection_scheme)
+[pfi_lsan]
+  standard_name = ice_flux_due_to_large_scale_precipitation
+  long_name = instantaneous 3D flux of ice from nonconvective precipitation
+  units = kg m-2 s-1
+  dimensions = (horizontal_loop_extent,vertical_dimension)
+  type = real
+  kind = kind_phys
+  active = (flag_for_chemistry_coupling)
+[pfl_lsan]
+  standard_name = liquid_flux_due_to_large_scale_precipitation
+  long_name = instantaneous 3D flux of liquid water from nonconvective precipitation
+  units = kg m-2 s-1
+  dimensions = (horizontal_loop_extent,vertical_dimension)
+  type = real
+  kind = kind_phys
+  active = (flag_for_chemistry_coupling)
 ########################################################################
 [ccpp-table-properties]
   name = GFS_control_type
@@ -4570,6 +4570,30 @@
 [ntchs]
   standard_name = index_for_first_chemical_tracer
   long_name = tracer index for first chemical tracer
+  units = index
+  dimensions = ()
+  type = integer
+[ntche]
+  standard_name = index_for_last_chemical_tracer
+  long_name = tracer index for last chemical tracer
+  units = index
+  dimensions = ()
+  type = integer
+[ndchm]
+  standard_name = number_of_diagnostic_chemical_tracers
+  long_name = number of diagnostic chemical tracers
+  units = count
+  dimensions = ()
+  type = integer
+[ndchs]
+  standard_name = index_for_first_diagnostic_chemical_tracer
+  long_name = tracer index for first diagnostic chemical tracer
+  units = index
+  dimensions = ()
+  type = integer
+[ndche]
+  standard_name = index_for_last_diagnostic_chemical_tracer
+  long_name = tracer index for last diagnostic chemical tracer
   units = index
   dimensions = ()
   type = integer
@@ -7069,86 +7093,6 @@
   long_name = instantaneous 3D cloud fraction for all MPs
   units = frac
   dimensions = (horizontal_loop_extent,adjusted_vertical_layer_dimension_for_radiation)
-  type = real
-  kind = kind_phys
-[ndust]
-  standard_name = number_of_dust_bins_for_diagnostics
-  long_name = number of dust bins for diagnostics
-  units = count
-  dimensions = ()
-  type = integer
-[nseasalt]
-  standard_name = number_of_seasalt_bins_for_diagnostics
-  long_name = number of seasalt bins for diagnostics
-  units = count
-  dimensions = ()
-  type = integer
-[ntchmdiag]
-  standard_name = number_of_chemical_tracers_for_diagnostics
-  long_name = number of chemical tracers for diagnostic output
-  units = count
-  dimensions = ()
-  type = integer
-[duem]
-  standard_name = instantaneous_dust_emission_flux
-  long_name = instantaneous dust emission flux
-  units = kg m-2 s-1
-  dimensions = (horizonal_dimension,number_of_dust_bins_for_diagnostics)
-  type = real
-  kind = kind_phys
-  active = (number_of_dust_bins_for_diagnostics > 0)
-[ssem]
-  standard_name = instantaneous_seasalt_emission_flux
-  long_name = instantaneous sea salt emission flux
-  units = kg m-2 s-1
-  dimensions = (horizonal_dimension,number_of_seasalt_bins_for_diagnostics)
-  type = real
-  kind = kind_phys
-  active = (number_of_seasalt_bins_for_diagnostics > 0)
-[sedim]
-  standard_name = instantaneous_sedimentation
-  long_name = instantaneous sedimentation
-  units = kg m-2 s-1
-  dimensions = (horizonal_dimension,number_of_chemical_tracers_for_diagnostics)
-  type = real
-  kind = kind_phys
-  active = (number_of_chemical_tracers_for_diagnostics > 0)
-[drydep]
-  standard_name = instantaneous_dry_deposition
-  long_name = instantaneous dry deposition
-  units = kg m-2 s-1
-  dimensions = (horizonal_dimension,number_of_chemical_tracers_for_diagnostics)
-  type = real
-  kind = kind_phys
-  active = (number_of_chemical_tracers_for_diagnostics > 0)
-[wetdpl]
-  standard_name = instantaneous_large_scale_wet_deposition
-  long_name = instantaneous large-scale wet deposition
-  units = kg m-2 s-1
-  dimensions = (horizonal_dimension,number_of_chemical_tracers_for_diagnostics)
-  type = real
-  kind = kind_phys
-  active = (number_of_chemical_tracers_for_diagnostics > 0)
-[wetdpc]
-  standard_name = instantaneous_convective_scale_wet_deposition
-  long_name = instantaneous convective-scale wet deposition
-  units = kg m-2 s-1
-  dimensions = (horizonal_dimension,number_of_chemical_tracers_for_diagnostics)
-  type = real
-  kind = kind_phys
-  active = (number_of_chemical_tracers_for_diagnostics > 0)
-[abem]
-  standard_name = instantaneous_anthopogenic_and_biomass_burning_emissions
-  long_name = instantaneous anthopogenic and biomass burning emissions for black carbon, organic carbon, and sulfur dioxide
-  units = ug m-2 s-1
-  dimensions = (horizontal_loop_extent,6)
-  type = real
-  kind = kind_phys
-[aecm]
-  standard_name = instantaneous_aerosol_column_mass_densities
-  long_name = instantaneous aerosol column mass densities for pm2.5, black carbon, organic carbon, sulfate, dust, sea salt
-  units = g m-2
-  dimensions = (horizontal_loop_extent,6)
   type = real
   kind = kind_phys
 [edmf_a]
