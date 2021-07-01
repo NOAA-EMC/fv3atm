@@ -272,27 +272,27 @@ OPTIONAL_ARGUMENTS = {
         },
     'mp_thompson' : {
         'mp_thompson_init' : [
-            'cloud_droplet_number_concentration',
-            'water_friendly_aerosol_number_concentration',
-            'ice_friendly_aerosol_number_concentration',
-            'tendency_of_water_friendly_aerosols_at_surface',
-            'tendency_of_ice_friendly_aerosols_at_surface',
+            'mass_number_concentration_of_cloud_liquid_water_particles_in_air',
+            'mass_number_concentration_of_hygroscopic_aerosols',
+            'mass_number_concentration_of_nonhygroscopic_ice_nucleating_aerosols',
+            'tendency_of_hygroscopic_aerosols_at_surface_adjacent_layer',
+            'tendency_of_nonhygroscopic_ice_nucleating_aerosols_at_surface_adjacent_layer',
             # DH* 2020-06-01: turn off calculation of effective radii, now done in GFS_rrtmg_pre
-            #'effective_radius_of_stratiform_cloud_liquid_water_particle_in_um',
-            #'effective_radius_of_stratiform_cloud_ice_particle_in_um',
-            #'effective_radius_of_stratiform_cloud_snow_particle_in_um',
+            #'effective_radius_of_stratiform_cloud_liquid_water_particle',
+            #'effective_radius_of_stratiform_cloud_ice_particle',
+            #'effective_radius_of_stratiform_cloud_snow_particle',
             # *DH 2020-06-01
             ],
         'mp_thompson_run' : [
-            'cloud_droplet_number_concentration_updated_by_physics',
-            'water_friendly_aerosol_number_concentration_updated_by_physics',
-            'ice_friendly_aerosol_number_concentration_updated_by_physics',
-            'tendency_of_water_friendly_aerosols_at_surface',
-            'tendency_of_ice_friendly_aerosols_at_surface',
+            'mass_number_concentration_of_cloud_liquid_water_particles_in_air_of_new_state',
+            'mass_number_concentration_of_hygroscopic_aerosols_of_new_state',
+            'mass_number_concentration_of_nonhygroscopic_ice_nucleating_aerosols_of_new_state',
+            'tendency_of_hygroscopic_aerosols_at_surface_adjacent_layer',
+            'tendency_of_nonhygroscopic_ice_nucleating_aerosols_at_surface_adjacent_layer',
             # DH* 2020-06-01: turn off calculation of effective radii, now done in GFS_rrtmg_pre
-            #'effective_radius_of_stratiform_cloud_liquid_water_particle_in_um',
-            #'effective_radius_of_stratiform_cloud_ice_particle_in_um',
-            #'effective_radius_of_stratiform_cloud_snow_particle_in_um',
+            #'effective_radius_of_stratiform_cloud_liquid_water_particle',
+            #'effective_radius_of_stratiform_cloud_ice_particle',
+            #'effective_radius_of_stratiform_cloud_snow_particle',
             # *DH 2020-06-01
             ],
         },
@@ -303,13 +303,13 @@ OPTIONAL_ARGUMENTS = {
          },
     'GFS_rrtmgp_sw_post' : {
          'GFS_rrtmgp_sw_post_run' : [
-             'tendency_of_air_temperature_due_to_shortwave_heating_assuming_clear_sky_on_radiation_time_step',
+             'tendency_of_air_temperature_due_to_shortwave_heating_assuming_clear_sky_on_radiation_timestep',
              'components_of_surface_downward_shortwave_fluxes',
              ],
          },
     'GFS_rrtmgp_lw_post' : {
          'GFS_rrtmgp_lw_post_run' : [
-             'tendency_of_air_temperature_due_to_longwave_heating_assuming_clear_sky_on_radiation_time_step',
+             'tendency_of_air_temperature_due_to_longwave_heating_assuming_clear_sky_on_radiation_timestep',
              ],
          },
     #'subroutine_name_1' : 'all',
