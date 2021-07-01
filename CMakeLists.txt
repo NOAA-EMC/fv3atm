@@ -138,8 +138,7 @@ add_library(fv3atm
 
 list(APPEND _fv3atm_defs_private GFS_PHYS
                                  INTERNAL_FILE_NML
-                                 use_WRTCOMP
-                                 ESMF_VERSION_MAJOR=${ESMF_VERSION_MAJOR})
+                                 use_WRTCOMP)
 
 target_compile_definitions(fv3atm PRIVATE "${_fv3atm_defs_private}")
 
