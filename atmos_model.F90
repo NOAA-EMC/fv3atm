@@ -99,7 +99,7 @@ use FV3GFS_io_mod,      only: FV3GFS_restart_read, FV3GFS_restart_write, &
                               DIAG_SIZE
 use fv_iau_mod,         only: iau_external_data_type,getiauforcing,iau_initialize
 use module_fv3_config,  only: output_1st_tstep_rst, first_kdt, nsout,    &
-                              restart_endfcst
+                              restart_endfcst, output_fh
 
 !-----------------------------------------------------------------------
 
@@ -156,9 +156,8 @@ logical :: debug        = .false.
 !logical :: debug        = .true.
 logical :: sync         = .false.
 integer, parameter     :: maxhr = 4096
-real, dimension(maxhr) :: fdiag = 0.
-real                   :: fhmax=384.0, fhmaxhf=120.0, fhout=3.0, fhouthf=1.0,avg_max_length=3600.
-namelist /atmos_model_nml/ blocksize, chksum_debug, dycore_only, debug, sync, fdiag, fhmax, fhmaxhf, fhout, fhouthf, ccpp_suite, avg_max_length
+real    :: avg_max_length=3600.
+namelist /atmos_model_nml/ blocksize, chksum_debug, dycore_only, debug, sync, ccpp_suite, avg_max_length
 
 type (time_type) :: diag_time, diag_time_fhzero
 
@@ -625,28 +624,9 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
       call close_file (unit)
    endif
 
-   !--- get fdiag
+   !--- get output forecast time
 #ifdef GFS_PHYS
-!--- check fdiag to see if it is an interval or a list
-   if (nint(fdiag(2)) == 0) then
-     if (fhmaxhf > 0) then
-       maxhf = fhmaxhf / fhouthf
-       maxh  = maxhf + (fhmax-fhmaxhf) / fhout
-       fdiag(1) = fhouthf
-       do i=2,maxhf
-        fdiag(i) = fdiag(i-1) + fhouthf
-       enddo
-       do i=maxhf+1,maxh
-         fdiag(i) = fdiag(i-1) + fhout
-       enddo
-     else
-       maxh  = fhmax / fhout
-       do i = 2, maxh
-         fdiag(i) = fdiag(i-1) + fhout
-       enddo
-     endif
-   endif
-   if (mpp_pe() == mpp_root_pe()) write(6,*) "---fdiag",fdiag(1:40)
+   if (mpp_pe() == mpp_root_pe()) write(6,*) "---output_fh",output_fh(1:size(output_fh))
 #endif
 
    setupClock = mpp_clock_id( 'GFS Step Setup        ', flags=clock_flag_default, grain=CLOCK_COMPONENT )
@@ -791,7 +771,7 @@ subroutine update_atmos_model_state (Atmos)
     call get_time (Atmos%Time - diag_time, isec)
     call get_time (Atmos%Time - Atmos%Time_init, seconds)
     call atmosphere_nggps_diag(Atmos%Time,ltavg=.true.,avg_max_length=avg_max_length)
-    if (ANY(nint(fdiag(:)*3600.0) == seconds) .or. (GFS_control%kdt == first_kdt) .or. nsout > 0) then
+    if (ANY(nint(output_fh(:)*3600.0) == seconds) .or. (GFS_control%kdt == first_kdt) .or. nsout > 0) then
       if (mpp_pe() == mpp_root_pe()) write(6,*) "---isec,seconds",isec,seconds
       time_int = real(isec)
       if(Atmos%iau_offset > zero) then
