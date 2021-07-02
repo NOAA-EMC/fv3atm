@@ -17,7 +17,15 @@ module module_cplfields
   end type
 
 ! Export Fields ----------------------------------------
-  integer,          public, parameter :: NexportFields = 97
+
+  ! Please specify fields as: FieldInfo("standard_name", "type")
+  ! Field types should be provided according to the table below:
+  !  g : soil levels (3D)
+  !  i : interface (3D)
+  !  l : model levels (3D)
+  !  s : surface (2D)
+  !  t : tracers (4D)
+  integer,          public, parameter :: NexportFields = 105
   type(ESMF_Field), target, public    :: exportFields(NexportFields)
 
   type(FieldInfo), dimension(NexportFields), public, parameter :: exportFieldsInfo = [ &
@@ -36,9 +44,13 @@ module module_cplfields
     FieldInfo("inst_convective_rainfall_amount          ", "s"), &
     FieldInfo("inst_exchange_coefficient_heat_levels    ", "l"), &
     FieldInfo("inst_spec_humid_conv_tendency_levels     ", "l"), &
+    FieldInfo("inst_ice_nonconv_tendency_levels         ", "l"), &
+    FieldInfo("inst_liq_nonconv_tendency_levels         ", "l"), &
+    FieldInfo("inst_cloud_frac_levels                   ", "l"), &
     FieldInfo("inst_friction_velocity                   ", "s"), &
     FieldInfo("inst_rainfall_amount                     ", "s"), &
     FieldInfo("inst_soil_moisture_content               ", "g"), &
+    FieldInfo("inst_surface_soil_wetness                ", "s"), &
     FieldInfo("inst_up_sensi_heat_flx                   ", "s"), &
     FieldInfo("inst_lwe_snow_thickness                  ", "s"), &
     FieldInfo("vegetation_type                          ", "s"), &
@@ -93,6 +105,11 @@ module module_cplfields
     FieldInfo("inst_height_lowest                       ", "s"), &
     FieldInfo("mean_fprec_rate                          ", "s"), &
     FieldInfo("openwater_frac_in_atm                    ", "s"), &
+    FieldInfo("ice_fraction_in_atm                      ", "s"), &
+    FieldInfo("lake_fraction                            ", "s"), &
+    FieldInfo("ocean_fraction                           ", "s"), &
+    FieldInfo("surface_snow_area_fraction               ", "s"), &
+
 
     !  For JEDI
     ! dynamics
@@ -124,7 +141,7 @@ module module_cplfields
     FieldInfo("t2m                                      ", "s") ]
 
 ! Import Fields ----------------------------------------
-  integer,          public, parameter :: NimportFields = 46
+  integer,          public, parameter :: NimportFields = 42
   logical,          public            :: importFieldsValid(NimportFields)
   type(ESMF_Field), target, public    :: importFields(NimportFields)
 
@@ -145,10 +162,6 @@ module module_cplfields
     FieldInfo("inst_ice_ir_dir_albedo                   ", "s"), &
     FieldInfo("inst_ice_vis_dif_albedo                  ", "s"), &
     FieldInfo("inst_ice_vis_dir_albedo                  ", "s"), &
-    FieldInfo("inst_tracer_up_surface_flx               ", "u"), &
-    FieldInfo("inst_tracer_down_surface_flx             ", "d"), &
-    FieldInfo("inst_tracer_clmn_mass_dens               ", "c"), &
-    FieldInfo("inst_tracer_anth_biom_flx                ", "b"), &
     FieldInfo("wave_z0_roughness_length                 ", "s"), &
 
     !  For JEDI
