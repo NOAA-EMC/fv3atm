@@ -111,21 +111,13 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
   integer :: numLevels     = 0
   integer :: numSoilLayers = 0
   integer :: numTracers    = 0
-  integer :: num_diag_sfc_emis_flux  = 0
-  integer :: num_diag_down_flux      = 0
-  integer :: num_diag_type_down_flux = 0
-  integer :: num_diag_burn_emis_flux = 0
-  integer :: num_diag_cmass          = 0
 
-  integer                  :: frestart(999)
-
+  integer :: frestart(999)
 !
 !-----------------------------------------------------------------------
 !
   public SetServices, fcstGrid
-  public numLevels, numSoilLayers, numTracers,        &
-         num_diag_sfc_emis_flux, num_diag_down_flux,  &
-         num_diag_type_down_flux, num_diag_burn_emis_flux, num_diag_cmass
+  public numLevels, numSoilLayers, numTracers
 !
   contains
 !
@@ -692,13 +684,9 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !end qulting
       endif
 
-      call get_atmos_model_ungridded_dim(nlev=numLevels, nsoillev=numSoilLayers,             &
-                                         ntracers=numTracers,                                &
-                                         num_diag_burn_emis_flux=num_diag_burn_emis_flux,    &
-                                         num_diag_sfc_emis_flux=num_diag_sfc_emis_flux,      &
-                                         num_diag_down_flux=num_diag_down_flux,              &
-                                         num_diag_type_down_flux=num_diag_type_down_flux,    &
-                                         num_diag_cmass=num_diag_cmass)
+      call get_atmos_model_ungridded_dim(nlev=numLevels,         &
+                                         nsoillev=numSoilLayers, &
+                                         ntracers=numTracers)
 !
 !-----------------------------------------------------------------------
 !
@@ -840,7 +828,8 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
       call atmos_model_exchange_phase_2 (atm_int_state%Atm, rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-      call update_atmos_model_state (atm_int_state%Atm)
+      call update_atmos_model_state (atm_int_state%Atm, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
 !--- intermediate restart
       if (atm_int_state%intrm_rst>0) then
