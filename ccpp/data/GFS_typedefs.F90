@@ -329,10 +329,12 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: albdnir_lnd  (:) => null()  !<
     real (kind=kind_phys), pointer :: albivis_lnd  (:) => null()  !<
     real (kind=kind_phys), pointer :: albinir_lnd  (:) => null()  !<
-    real (kind=kind_phys), pointer :: albdvis_ice  (:) => null()  !<
-    real (kind=kind_phys), pointer :: albdnir_ice  (:) => null()  !<
-    real (kind=kind_phys), pointer :: albivis_ice  (:) => null()  !<
-    real (kind=kind_phys), pointer :: albinir_ice  (:) => null()  !<
+
+    real (kind=kind_phys), pointer :: albdirvis_ice (:) => null()  !<
+    real (kind=kind_phys), pointer :: albdifvis_ice (:) => null()  !<
+    real (kind=kind_phys), pointer :: albdirnir_ice (:) => null()  !<
+    real (kind=kind_phys), pointer :: albdifnir_ice (:) => null()  !<
+!   real (kind=kind_phys), pointer :: sfalb_ice     (:) => null()  !<
 
     real (kind=kind_phys), pointer :: snicexy   (:,:) => null()  !<
     real (kind=kind_phys), pointer :: snliqxy   (:,:) => null()  !<
@@ -454,10 +456,10 @@ module GFS_typedefs
 !   real (kind=kind_phys), pointer :: ficein_cpl(:)           => null()   !< aoi_fld%ficein(item,lan)
 !   real (kind=kind_phys), pointer :: hicein_cpl(:)           => null()   !< aoi_fld%hicein(item,lan)
     real (kind=kind_phys), pointer :: hsnoin_cpl(:)           => null()   !< aoi_fld%hsnoin(item,lan)
-    real (kind=kind_phys), pointer :: sfc_alb_nir_dir_cpl(:)  => null()   !< sfc nir albedo for direct rad
-    real (kind=kind_phys), pointer :: sfc_alb_nir_dif_cpl(:)  => null()   !< sfc nir albedo for diffuse rad
-    real (kind=kind_phys), pointer :: sfc_alb_vis_dir_cpl(:)  => null()   !< sfc vis albedo for direct rad
-    real (kind=kind_phys), pointer :: sfc_alb_vis_dif_cpl(:)  => null()   !< sfc vis albedo for diffuse rad
+!   real (kind=kind_phys), pointer :: sfc_alb_nir_dir_cpl(:)  => null()   !< sfc nir albedo for direct rad
+!   real (kind=kind_phys), pointer :: sfc_alb_nir_dif_cpl(:)  => null()   !< sfc nir albedo for diffuse rad
+!   real (kind=kind_phys), pointer :: sfc_alb_vis_dir_cpl(:)  => null()   !< sfc vis albedo for direct rad
+!   real (kind=kind_phys), pointer :: sfc_alb_vis_dif_cpl(:)  => null()   !< sfc vis albedo for diffuse rad
     !--- only variable needed for cplwav2atm=.TRUE.
 !   real (kind=kind_phys), pointer :: zorlwav_cpl(:)          => null()   !< roughness length from wave model
     !--- also needed for ice/ocn coupling 
@@ -610,7 +612,7 @@ module GFS_typedefs
     logical              :: cplwav          !< default no cplwav collection
     logical              :: cplwav2atm      !< default no wav->atm coupling
     logical              :: cplchm          !< default no cplchm collection
-
+    logical              :: use_cice_alb    !< default .true. if cplflx is .true. else .false.  
 !--- integrated dynamics through earth's atmosphere
     logical              :: lsidea
 
@@ -2376,17 +2378,24 @@ module GFS_typedefs
     allocate (Sfcprop%hice   (IM))
     allocate (Sfcprop%weasd  (IM))
     allocate (Sfcprop%sncovr (IM))
+    if (Model%use_cice_alb .or. Model%lsm == Model%lsm_ruc) then
+      allocate (Sfcprop%albdirvis_ice (IM))
+      allocate (Sfcprop%albdifvis_ice (IM))
+      allocate (Sfcprop%albdirnir_ice (IM))
+      allocate (Sfcprop%albdifnir_ice (IM))
+!     allocate (Sfcprop%sfalb_ice (IM))
+    endif
     if (Model%lsm == Model%lsm_ruc) then
       allocate (Sfcprop%sncovr_ice (IM))
       allocate (Sfcprop%emis_ice (IM))
-      allocate (Sfcprop%albdvis_ice (IM))
-      allocate (Sfcprop%albdnir_ice (IM))
-      allocate (Sfcprop%albivis_ice (IM))
-      allocate (Sfcprop%albinir_ice (IM))
+!     allocate (Sfcprop%albdvis_ice (IM))
+!     allocate (Sfcprop%albdnir_ice (IM))
+!     allocate (Sfcprop%albivis_ice (IM))
+!     allocate (Sfcprop%albinir_ice (IM))
       allocate (Sfcprop%sfalb_lnd (IM))
       allocate (Sfcprop%sfalb_ice (IM))
       allocate (Sfcprop%sfalb_lnd_bck (IM))
-    end if
+    endif
     allocate (Sfcprop%canopy (IM))
     allocate (Sfcprop%ffmm   (IM))
     allocate (Sfcprop%ffhh   (IM))
@@ -2400,17 +2409,24 @@ module GFS_typedefs
     Sfcprop%hice   = clear_val
     Sfcprop%weasd  = clear_val
     Sfcprop%sncovr = clear_val
+    if (Model%use_cice_alb .or. Model%lsm == Model%lsm_ruc) then
+      Sfcprop%albdirvis_ice = clear_val
+      Sfcprop%albdifvis_ice = clear_val
+      Sfcprop%albdirnir_ice = clear_val
+      Sfcprop%albdifnir_ice = clear_val
+!     Sfcprop%sfalb_ice     = clear_val
+    endif
     if (Model%lsm == Model%lsm_ruc) then
       Sfcprop%sncovr_ice  = clear_val
       Sfcprop%emis_ice    = clear_val
-      Sfcprop%albdvis_ice = clear_val
-      Sfcprop%albdnir_ice = clear_val
-      Sfcprop%albivis_ice = clear_val
-      Sfcprop%albinir_ice = clear_val
+!     Sfcprop%albdvis_ice = clear_val
+!     Sfcprop%albdnir_ice = clear_val
+!     Sfcprop%albivis_ice = clear_val
+!     Sfcprop%albinir_ice = clear_val
       Sfcprop%sfalb_lnd   = clear_val
       Sfcprop%sfalb_ice   = clear_val
       Sfcprop%sfalb_lnd_bck = clear_val
-    end if
+    endif
     Sfcprop%canopy = clear_val
     Sfcprop%ffmm   = clear_val
     Sfcprop%ffhh   = clear_val
@@ -2762,10 +2778,10 @@ module GFS_typedefs
 !     allocate (Coupling%ficein_cpl          (IM))
 !     allocate (Coupling%hicein_cpl          (IM))
       allocate (Coupling%hsnoin_cpl          (IM))
-      allocate (Coupling%sfc_alb_nir_dir_cpl (IM))
-      allocate (Coupling%sfc_alb_nir_dif_cpl (IM))
-      allocate (Coupling%sfc_alb_vis_dir_cpl (IM))
-      allocate (Coupling%sfc_alb_vis_dif_cpl (IM))
+!     allocate (Coupling%sfc_alb_nir_dir_cpl (IM))
+!     allocate (Coupling%sfc_alb_nir_dif_cpl (IM))
+!     allocate (Coupling%sfc_alb_vis_dir_cpl (IM))
+!     allocate (Coupling%sfc_alb_vis_dif_cpl (IM))
 
       Coupling%slimskin_cpl          = clear_val
       Coupling%dusfcin_cpl           = clear_val
@@ -2778,10 +2794,10 @@ module GFS_typedefs
 !     Coupling%ficein_cpl            = clear_val
 !     Coupling%hicein_cpl            = clear_val
       Coupling%hsnoin_cpl            = clear_val
-      Coupling%sfc_alb_nir_dir_cpl   = clear_val
-      Coupling%sfc_alb_nir_dif_cpl   = clear_val
-      Coupling%sfc_alb_vis_dir_cpl   = clear_val
-      Coupling%sfc_alb_vis_dif_cpl   = clear_val
+!     Coupling%sfc_alb_nir_dir_cpl   = clear_val
+!     Coupling%sfc_alb_nir_dif_cpl   = clear_val
+!     Coupling%sfc_alb_vis_dir_cpl   = clear_val
+!     Coupling%sfc_alb_vis_dif_cpl   = clear_val
 
       !--- accumulated quantities
       allocate (Coupling%dusfc_cpl  (IM))
@@ -3029,6 +3045,7 @@ module GFS_typedefs
     logical              :: cplwav         = .false.         !< default no cplwav collection
     logical              :: cplwav2atm     = .false.         !< default no cplwav2atm coupling
     logical              :: cplchm         = .false.         !< default no cplchm collection
+    logical              :: use_cice_alb   = .false.         !< default no cice albedo
 
 !--- integrated dynamics through earth's atmosphere
     logical              :: lsidea         = .false.
@@ -3480,7 +3497,7 @@ module GFS_typedefs
                                aux2d_time_avg, aux3d_time_avg, fhcyc,                       &
                                thermodyn_id, sfcpress_id,                                   &
                           !--- coupling parameters
-                               cplflx, cplwav, cplwav2atm, cplchm, lsidea,                  &
+                               cplflx, cplwav, cplwav2atm, cplchm, use_cice_alb, lsidea,    &
                           !--- radiation parameters
                                fhswr, fhlwr, levr, nfxr, iaerclm, iflip, isol, ico2, ialb,  &
                                isot, iems, iaer, icliq_sw, iovr, ictm, isubc_sw,            &
@@ -3753,6 +3770,7 @@ module GFS_typedefs
     Model%cplwav           = cplwav
     Model%cplwav2atm       = cplwav2atm
     Model%cplchm           = cplchm
+    Model%use_cice_alb     = use_cice_alb
 
 !--- integrated dynamics through earth's atmosphere
     Model%lsidea           = lsidea
@@ -5072,6 +5090,7 @@ module GFS_typedefs
       print *, ' cplwav            : ', Model%cplwav
       print *, ' cplwav2atm        : ', Model%cplwav2atm
       print *, ' cplchm            : ', Model%cplchm
+      print *, ' use_cice_alb      : ', Model%use_cice_alb
       print *, ' '
       print *, 'integrated dynamics through earth atmosphere'
       print *, ' lsidea            : ', Model%lsidea
