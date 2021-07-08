@@ -271,8 +271,7 @@ subroutine update_atmos_radiation_physics (Atmos)
 
 !--- if coupled, assign coupled fields
 
-!     if (.not. GFS_control%cplchm) then
-      if (GFS_control%cplflx .or. GFS_control%cplwav2atm) then
+      if (.not. GFS_control%cplchm) then
         call assign_importdata(rc)
       endif
 
