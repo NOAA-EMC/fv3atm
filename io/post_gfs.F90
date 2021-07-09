@@ -29,7 +29,7 @@ module post_gfs
 !
       use ctlblk_mod, only : komax,ifhr,ifmin,modelname,datapd,fld_info, &
                              npset,grib,gocart_on,icount_calmict, jsta,  &
-                             jend,im, nsoil, filenameflat
+                             jend,im, nsoil, filenameflat, me
       use gridspec_mod, only : maptype, gridtype
       use grib2_module, only : gribit2,num_pset,nrecout,first_grbtbl
       use xml_perl_data,only : paramset
@@ -81,6 +81,7 @@ module post_gfs
       jte       = wrt_int_state%lat_end                !<-- Ending J of this write task's subsection
       maptype   = wrt_int_state%post_maptype
       nbdl      = wrt_int_state%FBCount
+      me        = mype - lead_write
 
       if(mype==0) print *,'in post_run,jts=',jts,'jte=',jte,'nwtpg=',nwtpg,'nwtpg=',nwtpg, &
         'jts=',jts,'jte=',jte,'maptype=',maptype,'nbdl=',nbdl,'log_postalct=',log_postalct
@@ -112,19 +113,20 @@ module post_gfs
 !-----------------------------------------------------------------------
 !
 !     if(mype==0) print *,'in post_run,be post_alctvars, dim=',wrt_int_state%im, &
-!       wrt_int_state%jm, wrt_int_state%lm,'mype=',mype,'wrttasks_per_group=', &
-!       wrttasks_per_group,'lead_write=',lead_write,'jts=',jts,'jte=',jte,   &
+!       wrt_int_state%jm, wrt_int_state%lm,'mype=',mype,'wrttasks_per_group=',   &
+!       wrttasks_per_group,'lead_write=',lead_write,'jts=',jts,'jte=',jte,       &
 !       'jstagrp=',jstagrp,'jendgrp=',jendgrp
-        call post_alctvars(wrt_int_state%im,wrt_int_state%jm,        &
-          wrt_int_state%lm,mype,wrttasks_per_group,lead_write,    &
-          mpicomp,jts,jte,jstagrp,jendgrp)
+
+        call post_alctvars(wrt_int_state%im,wrt_int_state%jm,                    &
+                           wrt_int_state%lm,mype,wrttasks_per_group,lead_write,  &
+                           mpicomp,jts,jte,jstagrp,jendgrp)
 !
 !-----------------------------------------------------------------------
 !*** read namelist for pv,th,po
 !-----------------------------------------------------------------------
 !
-        log_postalct = .true.
-        first_grbtbl = .true.
+        log_postalct   = .true.
+        first_grbtbl   = .true.
         read_postcntrl = .true.
 !
       ENDIF
@@ -137,16 +139,16 @@ module post_gfs
       ifmin = mynfmin
       if (ifhr == 0 ) ifmin = 0
       if(mype==0) print *,'bf set_postvars,ifmin=',ifmin,'ifhr=',ifhr
-      setvar_atmfile=.false.
-      setvar_sfcfile=.false.
+      setvar_atmfile = .false.
+      setvar_sfcfile = .false.
       call set_postvars_gfs(wrt_int_state,mpicomp,setvar_atmfile,   &
-           setvar_sfcfile)
+                            setvar_sfcfile)
 
 !       print *,'af set_postvars,setvar_atmfile=',setvar_atmfile,  &
 !        'setvar_sfcfile=',setvar_sfcfile
 !
       if (setvar_atmfile.and.setvar_sfcfile) then
-! 20190807 no need to call microinit for GFDLMP
+! 20190807 need to call microinit only for Ferrier microphysics
 !        call MICROINIT
 !
         if(grib=="grib2" .and. read_postcntrl) then
@@ -157,7 +159,7 @@ module post_gfs
           else if(ifhr > 0) then
             filenameflat = 'postxconfig-NT.txt'
             if(associated(paramset)) then
-              if( size(paramset)>0) then
+              if(size(paramset)>0) then
                 do i=1,size(paramset)
                   if (associated(paramset(i)%param)) then
                     if (size(paramset(i)%param)>0) then
@@ -247,66 +249,62 @@ module post_gfs
 ! look at the field bundle attributes
       call ESMF_AttributeGet(fldbundle, convention="NetCDF", purpose="FV3", &
         attnestflag=ESMF_ATTNEST_OFF, Count=attcount, rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__,file=__FILE__))return  ! bail out
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__,file=__FILE__))return
 !
       aklen=0.
       do i=1, attCount
 
-        call ESMF_AttributeGet(fldbundle, convention="NetCDF", purpose="FV3", &
-          attnestflag=ESMF_ATTNEST_OFF, attributeIndex=i, name=attName, &
-          typekind=typekind, itemCount=n,  rc=rc)
-        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-          line=__LINE__,file=__FILE__))return  ! bail out
+        call ESMF_AttributeGet(fldbundle, convention="NetCDF", purpose="FV3",                &
+                               attnestflag=ESMF_ATTNEST_OFF, attributeIndex=i, name=attName, &
+                               typekind=typekind, itemCount=n,  rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__,file=__FILE__))return
 
         if (typekind==ESMF_TYPEKIND_I4 ) then
-          if(n==1) then
+          if(n == 1) then
             call ESMF_AttributeGet(fldbundle, convention="NetCDF", purpose="FV3", &
-              name=trim(attName), value=varival, rc=rc)
-            if (trim(attName) == 'ncnsto') wrt_int_state%ntrac=varival
-            if (trim(attName) == 'ncld')   wrt_int_state%ncld=varival
-            if (trim(attName) == 'nsoil')  wrt_int_state%nsoil=varival
-            if (trim(attName) == 'fhzero') wrt_int_state%fhzero=varival
-            if (trim(attName) == 'imp_physics') wrt_int_state%imp_physics=varival
+                                   name=trim(attName), value=varival, rc=rc)
+            if (trim(attName) == 'ncnsto')      wrt_int_state%ntrac       = varival
+            if (trim(attName) == 'ncld')        wrt_int_state%ncld        = varival
+            if (trim(attName) == 'nsoil')       wrt_int_state%nsoil       = varival
+            if (trim(attName) == 'fhzero')      wrt_int_state%fhzero      = varival
+            if (trim(attName) == 'imp_physics') wrt_int_state%imp_physics = varival
           endif
-        else if (typekind==ESMF_TYPEKIND_R4) then
-          if(n==1) then
+        else if (typekind == ESMF_TYPEKIND_R4) then
+          if(n == 1) then
             call ESMF_AttributeGet(fldbundle, convention="NetCDF", purpose="FV3", &
-              name=trim(attName), value=varr4val, rc=rc)
-            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-              line=__LINE__, file=__FILE__)) return  ! bail out
+                                   name=trim(attName), value=varr4val, rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
             if (trim(attName) == 'dtp')   then
                wrt_int_state%dtp=varr4val
             endif
-          else if(n>1) then
+          else if(n > 1) then
             if(trim(attName) =="ak") then
               if(allocated(wrt_int_state%ak)) deallocate(wrt_int_state%ak)
               allocate(wrt_int_state%ak(n))
               call ESMF_AttributeGet(fldbundle, convention="NetCDF", purpose="FV3", &
-                name=trim(attName), valueList=wrt_int_state%ak, rc=rc)
+                                     name=trim(attName), valueList=wrt_int_state%ak, rc=rc)
               wrt_int_state%lm = n-1
-            else if(trim(attName) =="bk") then
+            else if(trim(attName) == "bk") then
               if(allocated(wrt_int_state%bk)) deallocate(wrt_int_state%bk)
               allocate(wrt_int_state%bk(n))
               call ESMF_AttributeGet(fldbundle, convention="NetCDF", purpose="FV3", &
-                name=trim(attName), valueList=wrt_int_state%bk, rc=rc)
+                                     name=trim(attName), valueList=wrt_int_state%bk, rc=rc)
             endif
           endif
-        else if (typekind==ESMF_TYPEKIND_R8) then
-          if(n==1) then
+        else if (typekind == ESMF_TYPEKIND_R8) then
+          if(n == 1) then
             call ESMF_AttributeGet(fldbundle, convention="NetCDF", purpose="FV3", &
               name=trim(attName), value=varr8val, rc=rc)
-            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-              line=__LINE__, file=__FILE__)) return  ! bail out
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
             if (trim(attName) == 'dtp')   then
                wrt_int_state%dtp=varr8val
             endif
-          else if(n>1) then
-            if(trim(attName) =="ak") then
+          else if(n > 1) then
+            if(trim(attName) == "ak") then
               if(allocated(wrt_int_state%ak)) deallocate(wrt_int_state%ak)
               allocate(wrt_int_state%ak(n))
               call ESMF_AttributeGet(fldbundle, convention="NetCDF", purpose="FV3", &
-              name=trim(attName), valueList=wrt_int_state%ak, rc=rc)
+                                     name=trim(attName), valueList=wrt_int_state%ak, rc=rc)
               wrt_int_state%lm = n-1
             else if(trim(attName) =="bk") then
               if(allocated(wrt_int_state%bk)) deallocate(wrt_int_state%bk)
@@ -342,7 +340,8 @@ module post_gfs
       use vrbls3d,     only: t, q, uh, vh, wh, alpint, dpres, zint, zmid, o3,  &
                              qqr, qqs, cwm, qqi, qqw, qqg, omga, cfr, pmid,    &
                              q2, rlwtt, rswtt, tcucn, tcucns, train, el_pbl,   &
-                             pint, exch_h, ref_10cm
+                             pint, exch_h, ref_10cm,                           &
+                             qqnw, qqni, qqnr, qqns, qqng
       use vrbls2d,     only: f, pd, sigt4, fis, pblh, ustar, z0, ths, qs, twbs,&
                              qwbs, avgcprate, cprate, avgprec, prec, lspa, sno,&
                              cldefi, th10, q10, tshltr, pshltr, tshltr, albase,&
@@ -370,11 +369,11 @@ module post_gfs
       use soil,        only: sldpth, sh2o, smc, stc
       use masks,       only: lmv, lmh, htm, vtm, gdlat, gdlon, dx, dy, hbm2, sm, sice
       use ctlblk_mod,  only: im, jm, lm, lp1, jsta, jend, jsta_2l, jend_2u, jsta_m,jend_m, &
-                             lsm, pt, imp_physics, spval, mpi_comm_comp, gdsdegr,  &
-                             tprec, tclod, trdlw, trdsw, tsrfc, tmaxmin, theat, &
+                             lsm, pt, imp_physics, spval, mpi_comm_comp, gdsdegr,     &
+                             tprec, tclod, trdlw, trdsw, tsrfc, tmaxmin, theat,       &
                              ardlw, ardsw, asrfc, avrain, avcnvc, iSF_SURFACE_PHYSICS,&
-                             td3d, idat, sdat, ifhr, ifmin, dt, nphs, dtq2, pt_tbl, &
-                             alsl, spl, ihrst 
+                             td3d, idat, sdat, ifhr, ifmin, dt, nphs, dtq2, pt_tbl,   &
+                             alsl, spl, ihrst
       use params_mod,  only: erad, dtr, capa, p1000
       use gridspec_mod,only: latstart, latlast, lonstart, lonlast, cenlon, cenlat
       use lookup_mod,  only: thl, plq, ptbl, ttbl, rdq, rdth, rdp, rdthe, pl,   &
@@ -399,12 +398,12 @@ module post_gfs
 !
 !-----------------------------------------------------------------------
 !
-      integer i, ip1, j, l, k, n, iret, ibdl, rc, kstart, kend
+      integer i, ip1, j, l, ll, k, n, iret, ibdl, rc, kstart, kend
       integer ista,iend,fieldDimCount,gridDimCount,ncount_field
       integer jdate(8)
       logical foundland, foundice, found
       real(4) rinc(5)
-      real    tlmh,RADI,TMP,ES,TV,RHOAIR,tem,tstart,dtp
+      real    tlmh,RADI,TMP,ES,TV,RHOAIR,tem,tstart,dtp, dtq2001
       real, dimension(:),allocatable    :: ak5, bk5
       real(4),dimension(:,:),pointer    :: arrayr42d
       real(8),dimension(:,:),pointer    :: arrayr82d
@@ -483,7 +482,7 @@ module post_gfs
       end do
 !
 ! GFS does not output PD
-      pt    = ak5(1)
+      pt = ak5(1)
 
 ! GFS may not have model derived radar ref.
 !                        TKE
@@ -494,7 +493,7 @@ module post_gfs
         do j=jsta,jend
           do i=1,im
             ref_10cm(i,j,l) = SPVAL
-            q2(i,j,l) = SPVAL
+            q2(i,j,l)  = SPVAL
             cfr(i,j,l) = SPVAL
           enddo
         enddo
@@ -506,10 +505,10 @@ module post_gfs
 !$omp parallel do default(none),private(i,j),shared(jsta,jend,im,spval,qs,twbs,qwbs,ths)
       do j=jsta,jend
         do i=1,im
-          qs(i,j) = SPVAL
+          qs(i,j)   = SPVAL
           twbs(i,j) = SPVAL
           qwbs(i,j) = SPVAL
-          ths(i,j) = SPVAL
+          ths(i,j)  = SPVAL
         enddo
       enddo
 
@@ -517,6 +516,7 @@ module post_gfs
       dtq2 = wrt_int_state%dtp
       nphs = 2.
       dt   = dtq2/nphs
+      dtq2001 = dtq2*0.001
 !
 ! GFS does not have convective cloud efficiency
 !                   similated precip
@@ -524,22 +524,16 @@ module post_gfs
 !                   10 m humidity
 !                   snow free albedo
 !$omp parallel do default(none), private(i,j), shared(jsta,jend,im,spval), &
-!$omp& shared(cldefi,lspa,th10,q10,albase)
+!$omp& shared(cldefi,lspa,th10,q10,albase,cprate)
       do j=jsta,jend
         do i=1,im
           cldefi(i,j) = SPVAL
-          lspa(i,j) = SPVAL
-          th10(i,j) = SPVAL
-          q10(i,j) = SPVAL
+          lspa(i,j)   = SPVAL
+          th10(i,j)   = SPVAL
+          q10(i,j)    = SPVAL
           albase(i,j) = SPVAL
-        enddo
-      enddo
 
-! GFS does not have convective precip
-!$omp parallel do default(none) private(i,j) shared(jsta,jend,im,cprate)
-      do j=jsta,jend
-        do i=1,im
-          cprate(i,j) = 0.
+          cprate(i,j) = 0.0  ! GFS does not have convective precip   ????
         enddo
       enddo
 
@@ -614,7 +608,7 @@ module post_gfs
 !$omp& shared(rlwtt,rswtt,tcucn,tcucns,train)
         do j=jsta_2l,jend_2u
           do i=1,im
-            rlwtt(i,j,l) = spval
+            rlwtt(i,j,l)  = spval
             rswtt(i,j,l)  = spval
             tcucn(i,j,l)  = spval
             tcucns(i,j,l) = spval
@@ -730,19 +724,19 @@ module post_gfs
 ! find lans sea mask
         found = .false.
         call ESMF_FieldBundleGet(wrt_int_state%wrtFB(ibdl),fieldName='land',isPresent=found, rc=rc)
-        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-          line=__LINE__, file=__FILE__)) return  ! bail out
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
 !        if(mype==0) print *,'ibdl=',ibdl,'land, found=',found
         if (found) then
           call ESMF_FieldBundleGet(wrt_int_state%wrtFB(ibdl),'land',field=theField, rc=rc)
-          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-            line=__LINE__, file=__FILE__)) return  ! bail out
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
           call ESMF_FieldGet(theField, localDe=0, farrayPtr=arrayr42d, rc=rc)
-          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-            line=__LINE__, file=__FILE__)) return  ! bail out
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
           ista = lbound(arrayr42d,1)
           iend = ubound(arrayr42d,1)
-          !$omp parallel do default(none),private(i,j),shared(jsta,jend,ista,iend,spval,arrayr42d,sm)
+!$omp parallel do default(none),private(i,j),shared(jsta,jend,ista,iend,spval,arrayr42d,sm)
           do j=jsta, jend
             do i=ista, iend
               if (arrayr42d(i,j) /= spval) sm(i,j) = 1.- arrayr42d(i,j)
@@ -754,19 +748,17 @@ module post_gfs
 ! find ice fraction
         found = .false.
         call ESMF_FieldBundleGet(wrt_int_state%wrtFB(ibdl),'icec',isPresent=found, rc=rc)
-        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-          line=__LINE__, file=__FILE__)) return  ! bail out
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 !        if(mype==0) print *,'ibdl=',ibdl,'ice, found=',found
         if (found) then
           call ESMF_FieldBundleGet(wrt_int_state%wrtFB(ibdl),'icec',field=theField, rc=rc)
-          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-            line=__LINE__, file=__FILE__)) return  ! bail out
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
           call ESMF_FieldGet(theField, localDe=0, farrayPtr=arrayr42d, rc=rc)
-          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-            line=__LINE__, file=__FILE__)) return  ! bail out
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
           ista = lbound(arrayr42d,1)
           iend = ubound(arrayr42d,1)
-          !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,sice,arrayr42d,sm)
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,sice,arrayr42d,sm)
           do j=jsta, jend
             do i=ista, iend
               sice(i,j) = arrayr42d(i,j)
@@ -778,9 +770,8 @@ module post_gfs
 
      enddo get_lsmsk
      if (.not.foundland .or. .not.foundice) then
-       rc=999
-       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-         line=__LINE__, file=__FILE__)) return  ! bail out
+       rc = 999
+       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
      endif
      if(mype==0) print *,'after find sm and sice,imp_physics=',imp_physics,'nbdl=',wrt_int_state%FBCount
 !
@@ -788,29 +779,27 @@ module post_gfs
 !
 ! get grid dimension count
 !       if(mype==0) print *,'in setvar, read field, ibdl=',ibdl,'idim=',   &
-!         ista,iend,'jdim=',jsta,jend
+!                            ista,iend,'jdim=',jsta,jend
        call ESMF_FieldBundleGet(wrt_int_state%wrtFB(ibdl), grid=wrtGrid,  &
-         fieldCount=ncount_field, name=wrtFBName,rc=rc)
-       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-          line=__LINE__, file=__FILE__)) return  ! bail out
+                                fieldCount=ncount_field, name=wrtFBName,rc=rc)
+       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
        call ESMF_GridGet(wrtgrid, dimCount=gridDimCount, rc=rc)
-       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-          line=__LINE__, file=__FILE__)) return  ! bail out
+       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
 !       if(mype==0) print *,'in setvar, allocate fcstField,ibdl=',ibdl,'count=',ncount_field,'wrtFBname=',trim(wrtFBName)
        allocate(fcstField(ncount_field))
        call ESMF_FieldBundleGet(wrt_int_state%wrtFB(ibdl),           &
-         fieldList=fcstField, itemorderflag=ESMF_ITEMORDER_ADDORDER, rc=rc)
-       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-          line=__LINE__, file=__FILE__)) return  ! bail out
+                                fieldList=fcstField, itemorderflag=ESMF_ITEMORDER_ADDORDER, rc=rc)
+       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
 !       if(mype==0) print *,'in setvar, read field, ibdl=',ibdl, 'nfield=',ncount_field
+
        do n=1, ncount_field
 !
           call ESMF_FieldGet(fcstField(n),typekind=typekind, name=fieldname, &
-            dimCount=fieldDimCount,rc=rc)
-          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-            line=__LINE__, file=__FILE__)) return  ! bail out
+                             dimCount=fieldDimCount,rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
           if (index(trim(fieldname),"vector") >0) cycle
 !
 !** for 2D fields
@@ -818,14 +807,14 @@ module post_gfs
 
             if (typekind == ESMF_TYPEKIND_R4) then
               call ESMF_FieldGet(fcstField(n), localDe=0, farrayPtr=arrayr42d, rc=rc)
-              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-                line=__LINE__, file=__FILE__)) return  ! bail out
+              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
             else if (typekind == ESMF_TYPEKIND_R8) then
               call ESMF_FieldGet(fcstField(n), localDe=0, farrayPtr=arrayr82d, rc=rc)
-              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-                line=__LINE__, file=__FILE__)) return  ! bail out
+              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
               allocate( arrayr42d(ista:iend,jsta:jend))
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,arrayr42d,arrayr82d)
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,arrayr42d,arrayr82d)
               do j=jsta, jend
                 do i=ista, iend
                   arrayr42d(i,j) = arrayr82d(i,j)
@@ -834,18 +823,18 @@ module post_gfs
             endif
 
             ! Terrain height (*G later)
-            if(trim(fieldname)=='hgtsfc') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,fis,arrayr42d)
+            if(trim(fieldname) == 'hgtsfc') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,fis,arrayr42d)
               do j=jsta,jend
                 do i=ista, iend
-                  fis(i,j)=arrayr42d(i,j)
+                  fis(i,j) = arrayr42d(i,j)
                 enddo
               enddo
             endif
 
             ! Surface pressure
 !            if(trim(fieldname)=='pressfc') then
-!              !$omp parallel do private(i,j)
+!!$omp parallel do private(i,j)
 !              do j=jsta,jend
 !                do i=ista, iend
 !                  pint(i,j,lp1)=arrayr42d(i,j)
@@ -854,38 +843,38 @@ module post_gfs
 !            endif
 
             ! PBL height using nemsio
-            if(trim(fieldname)=='hpbl') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,pblh,arrayr42d)
+            if(trim(fieldname) == 'hpbl') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,pblh,arrayr42d)
               do j=jsta,jend
                 do i=ista, iend
-                  pblh(i,j)=arrayr42d(i,j)
+                  pblh(i,j) = arrayr42d(i,j)
                 enddo
               enddo
             endif
 
             ! frictional velocity
-            if(trim(fieldname)=='fricv') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,ustar,arrayr42d)
+            if(trim(fieldname) == 'fricv') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,ustar,arrayr42d)
               do j=jsta,jend
                 do i=ista, iend
-                  ustar(i,j)=arrayr42d(i,j)
+                  ustar(i,j) = arrayr42d(i,j)
                 enddo
               enddo
             endif
 
             ! roughness length
-            if(trim(fieldname)=='sfcr') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,z0,arrayr42d)
+            if(trim(fieldname) == 'sfcr') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,z0,arrayr42d)
               do j=jsta,jend
                 do i=ista, iend
-                  z0(i,j)=arrayr42d(i,j)
+                  z0(i,j) = arrayr42d(i,j)
                 enddo
               enddo
             endif
 
             ! sfc exchange coeff
-            if(trim(fieldname)=='sfexc') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,sfcexc,arrayr42d)
+            if(trim(fieldname) == 'sfexc') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,sfcexc,arrayr42d)
               do j=jsta,jend
                 do i=ista, iend
                   sfcexc(i,j)=arrayr42d(i,j)
@@ -894,18 +883,18 @@ module post_gfs
             endif
 
             ! aerodynamic conductance
-            if(trim(fieldname)=='acond') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,acond,arrayr42d)
+            if(trim(fieldname) == 'acond') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,acond,arrayr42d)
               do j=jsta,jend
                 do i=ista, iend
-                  acond(i,j)=arrayr42d(i,j)
+                  acond(i,j) = arrayr42d(i,j)
                 enddo
               enddo
             endif
 
             ! surface potential T
-            if(trim(fieldname)=='tmpsfc') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,arrayr42d,ths)
+            if(trim(fieldname) == 'tmpsfc') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,arrayr42d,ths)
               do j=jsta,jend
                 do i=ista, iend
                   if (arrayr42d(i,j) /= spval) then
@@ -916,114 +905,114 @@ module post_gfs
             endif
 
             ! convective precip in m per physics time step
-            if(trim(fieldname)=='cpratb_ave') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,dtq2,arrayr42d,avgcprate)
+            if(trim(fieldname) == 'cpratb_ave') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,dtq2001,arrayr42d,avgcprate)
               do j=jsta,jend
                 do i=ista, iend
                   if (arrayr42d(i,j) /= spval)   &
-                    avgcprate(i,j) = arrayr42d(i,j) * (dtq2*0.001)
+                    avgcprate(i,j) = arrayr42d(i,j) * dtq2001
                 enddo
               enddo
             endif
 
             ! continuous bucket convective precip in m per physics time step
-            if(trim(fieldname)=='cprat_ave') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,dtq2,arrayr42d,avgcprate_cont)
+            if(trim(fieldname) =='cprat_ave') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,dtq2001,arrayr42d,avgcprate_cont)
               do j=jsta,jend
                 do i=ista, iend
                   if (arrayr42d(i,j) /= spval) then
-                    avgcprate_cont(i,j) = arrayr42d(i,j) * (dtq2*0.001)
+                    avgcprate_cont(i,j) = arrayr42d(i,j) * dtq2001
                   endif
                 enddo
               enddo
             endif
 
             ! time averaged bucketed precip rate
-            if(trim(fieldname)=='prateb_ave') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,dtq2,arrayr42d,avgprec)
+            if(trim(fieldname) == 'prateb_ave') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,dtq2001,arrayr42d,avgprec)
               do j=jsta,jend
                 do i=ista, iend
                   if (arrayr42d(i,j) /= spval) then
-                    avgprec(i,j) = arrayr42d(i,j) * (dtq2*0.001)
+                    avgprec(i,j) = arrayr42d(i,j) * dtq2001
                   endif
                 enddo
               enddo
             endif
 
             ! time averaged continuous precip rate in m per physics time step
-            if(trim(fieldname)=='prate_ave') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,dtq2,arrayr42d,avgprec_cont)
+            if(trim(fieldname) == 'prate_ave') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,dtq2001,arrayr42d,avgprec_cont)
               do j=jsta,jend
                 do i=ista, iend
                   if (arrayr42d(i,j) /= spval) then
-                    avgprec_cont(i,j) = arrayr42d(i,j) * (dtq2*0.001)
+                    avgprec_cont(i,j) = arrayr42d(i,j) * dtq2001
                   endif
                 enddo
               enddo
             endif
 
             ! precip rate in m per physics time step
-            if(trim(fieldname)=='tprcp') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,dtq2,dtp,arrayr42d,prec)
+            if(trim(fieldname) == 'tprcp') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,dtq2001,dtp,arrayr42d,prec)
               do j=jsta,jend
                 do i=ista, iend
                   if (arrayr42d(i,j) /= spval) then
-                    prec(i,j) = arrayr42d(i,j) * (dtq2*0.001) * 1000./dtp
+                    prec(i,j) = arrayr42d(i,j) * (dtq2001 * 1000./dtp)
                   endif
                 enddo
               enddo
             endif
 
             ! convective precip rate in m per physics time step
-            if(trim(fieldname)=='cnvprcp') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,dtq2,dtp,arrayr42d,cprate)
+            if(trim(fieldname) == 'cnvprcp') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,dtq2001,dtp,arrayr42d,cprate)
               do j=jsta,jend
                 do i=ista, iend
                   if (arrayr42d(i,j) /= spval) then
-                    cprate(i,j) = max(0.,arrayr42d(i,j)) * (dtq2*0.001) * 1000./dtp
+                    cprate(i,j) = max(0.,arrayr42d(i,j)) * (dtq2001 * 1000./dtp)
                   endif
                 enddo
               enddo
             endif
 
             ! inst snow water eqivalent
-            if(trim(fieldname)=='weasd') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,sno,arrayr42d,sm,sice)
+            if(trim(fieldname) == 'weasd') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,sno,arrayr42d,sm,sice)
               do j=jsta,jend
                 do i=ista, iend
                   sno(i,j) = arrayr42d(i,j)
-                  if (sm(i,j) == 1.0 .and. sice(i,j)==0.)sno(i,j) = spval
+                  if (sm(i,j) == 1.0 .and. sice(i,j) == 0.) sno(i,j) = spval
                 enddo
               enddo
             endif
 
             ! ave snow cover
-            if(trim(fieldname)=='snowc_ave') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,snoavg,arrayr42d,sm,sice)
+            if(trim(fieldname) == 'snowc_ave') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,snoavg,arrayr42d,sm,sice)
               do j=jsta,jend
                 do i=ista, iend
                   snoavg(i,j) = arrayr42d(i,j)
-                  if (sm(i,j)==1.0 .and. sice(i,j)==0.) snoavg(i,j) = spval
+                  if (sm(i,j) == 1.0 .and. sice(i,j) == 0.) snoavg(i,j) = spval
                   if (snoavg(i,j) /= spval) snoavg(i,j) = snoavg(i,j)/100.
                 enddo
               enddo
             endif
 
             ! snow depth in mm
-            if(trim(fieldname)=='snod') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,si,arrayr42d,sm,sice)
+            if(trim(fieldname) == 'snod') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,si,arrayr42d,sm,sice)
               do j=jsta,jend
                 do i=ista, iend
                   si(i,j) = arrayr42d(i,j)
-                  if (sm(i,j)==1.0 .and. sice(i,j)==0.) si(i,j)=spval
+                  if (sm(i,j) == 1.0 .and. sice(i,j) == 0.) si(i,j)=spval
                   if (si(i,j) /= spval) si(i,j) = si(i,j) * 1000.0
                 enddo
               enddo
             endif
 
             ! 2m potential T (computed later)
-            if(trim(fieldname)=='tmp2m') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,tshltr,arrayr42d)
+            if(trim(fieldname) == 'tmp2m') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,tshltr,arrayr42d)
               do j=jsta,jend
                 do i=ista, iend
                   tshltr(i,j) = arrayr42d(i,j)
@@ -1032,8 +1021,8 @@ module post_gfs
             endif
 
             ! surface potential T
-            if(trim(fieldname)=='spfh2m') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,qshltr,arrayr42d)
+            if(trim(fieldname) == 'spfh2m') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,qshltr,arrayr42d)
               do j=jsta,jend
                 do i=ista, iend
                   qshltr(i,j) = arrayr42d(i,j)
@@ -1042,8 +1031,8 @@ module post_gfs
             endif
 
             ! mid day avg albedo in fraction
-            if(trim(fieldname)=='albdo_ave') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,avgalbedo,arrayr42d)
+            if(trim(fieldname) == 'albdo_ave') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,avgalbedo,arrayr42d)
               do j=jsta,jend
                 do i=ista, iend
                   avgalbedo(i,j) = arrayr42d(i,j)
@@ -1055,8 +1044,8 @@ module post_gfs
             endif
 
             ! time averaged column cloud fraction
-            if(trim(fieldname)=='tcdc_aveclm') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,avgtcdc,arrayr42d)
+            if(trim(fieldname) == 'tcdc_aveclm') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,avgtcdc,arrayr42d)
               do j=jsta,jend
                 do i=ista, iend
                   avgtcdc(i,j) = arrayr42d(i,j)
@@ -1068,8 +1057,8 @@ module post_gfs
             endif
 
             ! maximum snow albedo in fraction
-            if(trim(fieldname)=='snoalb') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,mxsnal,arrayr42d)
+            if(trim(fieldname) == 'snoalb') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,mxsnal,arrayr42d)
               do j=jsta,jend
                 do i=ista, iend
                   mxsnal(i,j) = arrayr42d(i,j)
@@ -1081,8 +1070,8 @@ module post_gfs
             endif
 
             ! ave high cloud fraction
-            if(trim(fieldname)=='tcdc_avehcl') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,avgcfrach,arrayr42d)
+            if(trim(fieldname) == 'tcdc_avehcl') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,avgcfrach,arrayr42d)
               do j=jsta,jend
                 do i=ista, iend
                   avgcfrach(i,j) = arrayr42d(i,j)
@@ -1094,8 +1083,8 @@ module post_gfs
             endif
 
             ! ave low cloud fraction
-            if(trim(fieldname)=='tcdc_avelcl') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,avgcfracl,arrayr42d)
+            if(trim(fieldname) == 'tcdc_avelcl') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,avgcfracl,arrayr42d)
               do j=jsta,jend
                 do i=ista, iend
                   avgcfracl(i,j) = arrayr42d(i,j)
@@ -1107,8 +1096,8 @@ module post_gfs
             endif
 
             ! ave middle cloud fraction
-            if(trim(fieldname)=='tcdc_avemcl') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,avgcfracm,arrayr42d)
+            if(trim(fieldname) == 'tcdc_avemcl') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,avgcfracm,arrayr42d)
               do j=jsta,jend
                 do i=ista, iend
                   avgcfracm(i,j) = arrayr42d(i,j)
@@ -1120,8 +1109,8 @@ module post_gfs
             endif
 
             ! inst convective cloud fraction
-            if(trim(fieldname)=='tcdccnvcl') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,cnvcfr,arrayr42d)
+            if(trim(fieldname) == 'tcdccnvcl') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,cnvcfr,arrayr42d)
               do j=jsta,jend
                 do i=ista, iend
                   cnvcfr(i,j) = arrayr42d(i,j)
@@ -1133,8 +1122,8 @@ module post_gfs
             endif
 
             ! slope type
-            if(trim(fieldname)=='sltyp') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,arrayr42d,islope)
+            if(trim(fieldname) == 'sltyp') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,arrayr42d,islope)
               do j=jsta,jend
                 do i=ista, iend
                   if (arrayr42d(i,j) < spval) then
@@ -1147,8 +1136,8 @@ module post_gfs
             endif
 
             ! time averaged column cloud fraction
-            if(trim(fieldname)=='cnwat') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,cmc,arrayr42d,sm)
+            if(trim(fieldname) == 'cnwat') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,cmc,arrayr42d,sm)
               do j=jsta,jend
                 do i=ista, iend
                   cmc(i,j) = arrayr42d(i,j)
@@ -1159,8 +1148,8 @@ module post_gfs
             endif
 
             ! frozen precip fraction
-            if(trim(fieldname)=='cpofp') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,arrayr42d,sr)
+            if(trim(fieldname) == 'cpofp') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,arrayr42d,sr)
               do j=jsta,jend
                 do i=ista, iend
                   if (arrayr42d(i,j) /= spval) then
@@ -1174,8 +1163,8 @@ module post_gfs
             endif
 
             ! sea ice skin temperature
-            if(trim(fieldname)=='tisfc') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,sice,arrayr42d,ti)
+            if(trim(fieldname) == 'tisfc') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,sice,arrayr42d,ti)
               do j=jsta,jend
                 do i=ista,iend
                   if (arrayr42d(i,j) /= spval) then
@@ -1189,8 +1178,8 @@ module post_gfs
             endif
 
             ! vegetation fraction
-            if(trim(fieldname)=='veg') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,vegfrc,arrayr42d,sm)
+            if(trim(fieldname) == 'veg') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,vegfrc,arrayr42d,sm)
               do j=jsta,jend
                 do i=ista, iend
                   vegfrc(i,j) = arrayr42d(i,j)
@@ -1205,8 +1194,8 @@ module post_gfs
             endif
 
             ! liquid volumetric soil mpisture in fraction
-            if(trim(fieldname)=='soill1') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,sh2o,arrayr42d,sm)
+            if(trim(fieldname) == 'soill1') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,sh2o,arrayr42d,sm)
               do j=jsta,jend
                 do i=ista, iend
                   sh2o(i,j,1) = arrayr42d(i,j)
@@ -1216,8 +1205,8 @@ module post_gfs
             endif
 
             ! liquid volumetric soil mpisture in fraction
-            if(trim(fieldname)=='soill2') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,sh2o,arrayr42d,sm)
+            if(trim(fieldname) == 'soill2') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,sh2o,arrayr42d,sm)
               do j=jsta,jend
                 do i=ista, iend
                   sh2o(i,j,2) = arrayr42d(i,j)
@@ -1227,8 +1216,8 @@ module post_gfs
             endif
 
             ! liquid volumetric soil mpisture in fraction
-            if(trim(fieldname)=='soill3') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,sh2o,arrayr42d,sm)
+            if(trim(fieldname) == 'soill3') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,sh2o,arrayr42d,sm)
               do j=jsta,jend
                 do i=ista, iend
                   sh2o(i,j,3) = arrayr42d(i,j)
@@ -1238,8 +1227,8 @@ module post_gfs
             endif
 
             ! liquid volumetric soil mpisture in fraction
-            if(trim(fieldname)=='soill4') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,sh2o,arrayr42d,sm)
+            if(trim(fieldname) == 'soill4') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,sh2o,arrayr42d,sm)
               do j=jsta,jend
                 do i=ista, iend
                   sh2o(i,j,4) = arrayr42d(i,j)
@@ -1249,8 +1238,8 @@ module post_gfs
             endif
 
             ! volumetric soil moisture
-            if(trim(fieldname)=='soilw1') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,smc,arrayr42d,sm)
+            if(trim(fieldname) == 'soilw1') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,smc,arrayr42d,sm)
               do j=jsta,jend
                 do i=ista, iend
                   smc(i,j,1) = arrayr42d(i,j)
@@ -1260,8 +1249,8 @@ module post_gfs
             endif
 
             ! volumetric soil moisture
-            if(trim(fieldname)=='soilw2') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,smc,arrayr42d,sm)
+            if(trim(fieldname) == 'soilw2') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,smc,arrayr42d,sm)
               do j=jsta,jend
                 do i=ista, iend
                   smc(i,j,2) = arrayr42d(i,j)
@@ -1271,8 +1260,8 @@ module post_gfs
             endif
 
             ! volumetric soil moisture
-            if(trim(fieldname)=='soilw3') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,smc,arrayr42d,sm)
+            if(trim(fieldname) == 'soilw3') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,smc,arrayr42d,sm)
               do j=jsta,jend
                 do i=ista, iend
                   smc(i,j,3) = arrayr42d(i,j)
@@ -1282,8 +1271,8 @@ module post_gfs
             endif
 
             ! volumetric soil moisture
-            if(trim(fieldname)=='soilw4') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,smc,arrayr42d,sm)
+            if(trim(fieldname) == 'soilw4') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,smc,arrayr42d,sm)
               do j=jsta,jend
                 do i=ista, iend
                   smc(i,j,4) = arrayr42d(i,j)
@@ -1293,8 +1282,8 @@ module post_gfs
             endif
 
             ! soil temperature
-            if(trim(fieldname)=='soilt1') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,stc,arrayr42d,sm,sice)
+            if(trim(fieldname) == 'soilt1') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,stc,arrayr42d,sm,sice)
               do j=jsta,jend
                 do i=ista, iend
                   stc(i,j,1) = arrayr42d(i,j)
@@ -1305,8 +1294,8 @@ module post_gfs
             endif
 
             ! soil temperature
-            if(trim(fieldname)=='soilt2') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,stc,arrayr42d,sm,sice)
+            if(trim(fieldname) == 'soilt2') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,stc,arrayr42d,sm,sice)
               do j=jsta,jend
                 do i=ista, iend
                   stc(i,j,2) = arrayr42d(i,j)
@@ -1317,8 +1306,8 @@ module post_gfs
             endif
 
             ! soil temperature
-            if(trim(fieldname)=='soilt3') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,stc,arrayr42d,sm,sice)
+            if(trim(fieldname) == 'soilt3') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,stc,arrayr42d,sm,sice)
               do j=jsta,jend
                 do i=ista, iend
                   stc(i,j,3) = arrayr42d(i,j)
@@ -1329,8 +1318,8 @@ module post_gfs
             endif
 
             ! soil temperature
-            if(trim(fieldname)=='soilt4') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,stc,arrayr42d,sm,sice)
+            if(trim(fieldname) == 'soilt4') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,stc,arrayr42d,sm,sice)
               do j=jsta,jend
                 do i=ista, iend
                   stc(i,j,4) = arrayr42d(i,j)
@@ -1342,7 +1331,7 @@ module post_gfs
 
             ! time averaged incoming sfc longwave
             if(trim(fieldname)=='dlwrf_ave') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,alwin,arrayr42d)
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,alwin,arrayr42d)
               do j=jsta,jend
                 do i=ista, iend
                   alwin(i,j) = arrayr42d(i,j)
@@ -1351,8 +1340,8 @@ module post_gfs
             endif
 
             ! inst incoming sfc longwave
-            if(trim(fieldname)=='dlwrf') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,rlwin,arrayr42d)
+            if(trim(fieldname) == 'dlwrf') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,rlwin,arrayr42d)
               do j=jsta,jend
                 do i=ista, iend
                   rlwin(i,j) = arrayr42d(i,j)
@@ -1361,8 +1350,8 @@ module post_gfs
             endif
 
             ! time averaged outgoing sfc longwave, CLDRAD puts a minus sign
-            if(trim(fieldname)=='ulwrf_ave') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,alwout,arrayr42d)
+            if(trim(fieldname) == 'ulwrf_ave') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,alwout,arrayr42d)
               do j=jsta,jend
                 do i=ista, iend
                   alwout(i,j) = arrayr42d(i,j)
@@ -1372,8 +1361,8 @@ module post_gfs
             endif
 
             ! inst outgoing sfc longwave
-            if(trim(fieldname)=='ulwrf') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,radot,arrayr42d)
+            if(trim(fieldname) == 'ulwrf') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,radot,arrayr42d)
               do j=jsta,jend
                 do i=ista, iend
                   radot(i,j) = arrayr42d(i,j)
@@ -1382,8 +1371,8 @@ module post_gfs
             endif
 
             ! time averaged outgoing model top longwave
-            if(trim(fieldname)=='ulwrf_avetoa') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,alwtoa,arrayr42d)
+            if(trim(fieldname) == 'ulwrf_avetoa') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,alwtoa,arrayr42d)
               do j=jsta,jend
                 do i=ista, iend
                   alwtoa(i,j) = arrayr42d(i,j)
@@ -1392,8 +1381,8 @@ module post_gfs
             endif
 
             ! time averaged incoming sfc shortwave
-            if(trim(fieldname)=='dswrf_ave') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,aswin,arrayr42d)
+            if(trim(fieldname) == 'dswrf_ave') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,aswin,arrayr42d)
               do j=jsta,jend
                 do i=ista, iend
                   aswin(i,j) = arrayr42d(i,j)
@@ -1402,8 +1391,8 @@ module post_gfs
             endif
 
             ! inst incoming sfc shortwave
-            if(trim(fieldname)=='dswrf') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,rswin,arrayr42d)
+            if(trim(fieldname) == 'dswrf') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,rswin,arrayr42d)
               do j=jsta,jend
                 do i=ista, iend
                   rswin(i,j) = arrayr42d(i,j)
@@ -1412,8 +1401,8 @@ module post_gfs
             endif
 
             ! time averaged incoming sfc uv-b
-            if(trim(fieldname)=='duvb_ave') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,auvbin,arrayr42d)
+            if(trim(fieldname) == 'duvb_ave') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,auvbin,arrayr42d)
               do j=jsta,jend
                 do i=ista, iend
                   auvbin(i,j) = arrayr42d(i,j)
@@ -1422,8 +1411,8 @@ module post_gfs
             endif
 
             ! time averaged incoming sfc clear sky uv-b
-            if(trim(fieldname)=='cduvb_ave') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,auvbinc,arrayr42d)
+            if(trim(fieldname) == 'cduvb_ave') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,auvbinc,arrayr42d)
               do j=jsta,jend
                 do i=ista, iend
                   auvbinc(i,j) = arrayr42d(i,j)
@@ -1432,8 +1421,8 @@ module post_gfs
             endif
 
             ! time averaged outgoing sfc shortwave,CLDRAD puts a minus sign
-            if(trim(fieldname)=='uswrf_ave') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,aswout,arrayr42d)
+            if(trim(fieldname) == 'uswrf_ave') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,aswout,arrayr42d)
               do j=jsta,jend
                 do i=ista, iend
                   aswout(i,j) = arrayr42d(i,j)
@@ -1443,8 +1432,8 @@ module post_gfs
             endif
 
             ! inst outgoing sfc shortwave
-            if(trim(fieldname)=='uswrf') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,rswout,arrayr42d)
+            if(trim(fieldname) == 'uswrf') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,rswout,arrayr42d)
               do j=jsta,jend
                 do i=ista, iend
                   rswout(i,j) = arrayr42d(i,j)
@@ -1453,8 +1442,8 @@ module post_gfs
             endif
 
             ! time averaged model top incoming shortwave
-            if(trim(fieldname)=='dswrf_avetoa') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,aswintoa,arrayr42d)
+            if(trim(fieldname) == 'dswrf_avetoa') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,aswintoa,arrayr42d)
               do j=jsta,jend
                 do i=ista, iend
                   aswintoa(i,j) = arrayr42d(i,j)
@@ -1463,8 +1452,8 @@ module post_gfs
             endif
 
             ! ime averaged model top outgoing shortwave
-            if(trim(fieldname)=='uswrf_avetoa') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,aswtoa,arrayr42d)
+            if(trim(fieldname) == 'uswrf_avetoa') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,aswtoa,arrayr42d)
               do j=jsta,jend
                 do i=ista, iend
                   aswtoa(i,j) = arrayr42d(i,j)
@@ -1474,8 +1463,8 @@ module post_gfs
 
             ! time averaged surface sensible heat flux, multiplied by -1 because
             ! wrf model fluxhas reversed sign convention using gfsio
-            if(trim(fieldname)=='shtfl_ave') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,sfcshx,arrayr42d)
+            if(trim(fieldname) == 'shtfl_ave') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,sfcshx,arrayr42d)
               do j=jsta,jend
                 do i=ista, iend
                   sfcshx(i,j) = arrayr42d(i,j)
@@ -1485,8 +1474,8 @@ module post_gfs
             endif
 
             ! inst surface sensible heat flux
-            if(trim(fieldname)=='shtfl') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,twbs,arrayr42d)
+            if(trim(fieldname) == 'shtfl') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,twbs,arrayr42d)
               do j=jsta,jend
                 do i=ista, iend
                   twbs(i,j) = arrayr42d(i,j)
@@ -1497,8 +1486,8 @@ module post_gfs
 
             ! time averaged surface latent heat flux, multiplied by -1 because
             ! wrf model flux has reversed sign vonvention using gfsio
-            if(trim(fieldname)=='lhtfl_ave') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,sfclhx,arrayr42d)
+            if(trim(fieldname) == 'lhtfl_ave') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,sfclhx,arrayr42d)
               do j=jsta,jend
                 do i=ista, iend
                   sfclhx(i,j) = arrayr42d(i,j)
@@ -1508,8 +1497,8 @@ module post_gfs
             endif
 
             ! inst surface latent heat flux
-            if(trim(fieldname)=='lhtfl') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,qwbs,arrayr42d)
+            if(trim(fieldname) == 'lhtfl') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,qwbs,arrayr42d)
               do j=jsta,jend
                 do i=ista, iend
                   qwbs(i,j) = arrayr42d(i,j)
@@ -1519,30 +1508,30 @@ module post_gfs
             endif
 
             ! time averaged ground heat flux
-            if(trim(fieldname)=='gflux_ave') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,subshx,arrayr42d,sm,sice)
+            if(trim(fieldname) == 'gflux_ave') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,subshx,arrayr42d,sm,sice)
               do j=jsta,jend
                 do i=ista, iend
                   subshx(i,j) = arrayr42d(i,j)
-                  if (sm(i,j) == 1.0 .and. sice(i,j) ==0.) subshx(i,j) = spval
+                  if (sm(i,j) == 1.0 .and. sice(i,j) == 0.) subshx(i,j) = spval
                 enddo
               enddo
             endif
 
             ! inst ground heat flux
-            if(trim(fieldname)=='gflux') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,grnflx,arrayr42d,sm,sice)
+            if(trim(fieldname) == 'gflux') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,grnflx,arrayr42d,sm,sice)
               do j=jsta,jend
                 do i=ista, iend
                   grnflx(i,j) = arrayr42d(i,j)
-                  if (sm(i,j) == 1.0 .and. sice(i,j) ==0.) grnflx(i,j) = spval
+                  if (sm(i,j) == 1.0 .and. sice(i,j) == 0.) grnflx(i,j) = spval
                 enddo
               enddo
             endif
 
             ! time averaged zonal momentum flux
-            if(trim(fieldname)=='uflx_ave') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,sfcux,arrayr42d)
+            if(trim(fieldname) == 'uflx_ave') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,sfcux,arrayr42d)
               do j=jsta,jend
                 do i=ista, iend
                   sfcux(i,j) = arrayr42d(i,j)
@@ -1551,8 +1540,8 @@ module post_gfs
             endif
 
             ! time averaged meridional momentum flux
-            if(trim(fieldname)=='vflx_ave') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,sfcvx,arrayr42d)
+            if(trim(fieldname) == 'vflx_ave') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,sfcvx,arrayr42d)
               do j=jsta,jend
                 do i=ista, iend
                   sfcvx(i,j) = arrayr42d(i,j)
@@ -1561,8 +1550,8 @@ module post_gfs
             endif
 
             ! time averaged zonal gravity wave stress
-            if(trim(fieldname)=='u-gwd_ave') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,gtaux,arrayr42d)
+            if(trim(fieldname) == 'u-gwd_ave') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,gtaux,arrayr42d)
               do j=jsta,jend
                 do i=ista, iend
                   gtaux(i,j) = arrayr42d(i,j)
@@ -1571,8 +1560,8 @@ module post_gfs
             endif
 
             ! time averaged meridional gravity wave stress
-            if(trim(fieldname)=='v-gwd_ave') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,gtauy,arrayr42d)
+            if(trim(fieldname) == 'v-gwd_ave') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,gtauy,arrayr42d)
               do j=jsta,jend
                 do i=ista, iend
                   gtauy(i,j) = arrayr42d(i,j)
@@ -1581,30 +1570,30 @@ module post_gfs
             endif
 
             ! time averaged accumulated potential evaporation
-            if(trim(fieldname)=='pevpr_ave') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,avgpotevp,arrayr42d,sm,sice)
+            if(trim(fieldname) == 'pevpr_ave') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,avgpotevp,arrayr42d,sm,sice)
               do j=jsta,jend
                 do i=ista, iend
                   avgpotevp(i,j) = arrayr42d(i,j)
-                  if (sm(i,j) == 1.0 .and. sice(i,j) ==0.) avgpotevp(i,j) = spval
+                  if (sm(i,j) == 1.0 .and. sice(i,j) == 0.) avgpotevp(i,j) = spval
                 enddo
               enddo
             endif
 
             ! inst potential evaporation
-            if(trim(fieldname)=='pevpr') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,potevp,arrayr42d,sm,sice)
+            if(trim(fieldname) == 'pevpr') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,potevp,arrayr42d,sm,sice)
               do j=jsta,jend
                 do i=ista, iend
                   potevp(i,j) = arrayr42d(i,j)
-                  if (sm(i,j) == 1.0 .and. sice(i,j) ==0.) potevp(i,j) = spval
+                  if (sm(i,j) == 1.0 .and. sice(i,j) == 0.) potevp(i,j) = spval
                 enddo
               enddo
             endif
 
             ! 10 m u
-            if(trim(fieldname)=='ugrd10m') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,u10,arrayr42d,u10h)
+            if(trim(fieldname) == 'ugrd10m') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,u10,arrayr42d,u10h)
               do j=jsta,jend
                 do i=ista, iend
                   u10(i,j) = arrayr42d(i,j)
@@ -1614,8 +1603,8 @@ module post_gfs
             endif
 
             ! 10 m v
-            if(trim(fieldname)=='vgrd10m') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,v10,arrayr42d,v10h)
+            if(trim(fieldname) == 'vgrd10m') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,v10,arrayr42d,v10h)
               do j=jsta,jend
                 do i=ista, iend
                   v10(i,j) = arrayr42d(i,j)
@@ -1625,8 +1614,8 @@ module post_gfs
             endif
 
             ! vegetation type
-            if(trim(fieldname)=='vtype') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,arrayr42d,ivgtyp)
+            if(trim(fieldname) == 'vtype') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,arrayr42d,ivgtyp)
               do j=jsta,jend
                 do i=ista, iend
                   if (arrayr42d(i,j) < spval) then
@@ -1639,8 +1628,8 @@ module post_gfs
             endif
 
             ! soil type
-            if(trim(fieldname)=='sotyp') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,arrayr42d,isltyp)
+            if(trim(fieldname) == 'sotyp') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,arrayr42d,isltyp)
               do j=jsta,jend
                 do i=ista, iend
                   if (arrayr42d(i,j) < spval) then
@@ -1653,8 +1642,8 @@ module post_gfs
             endif
 
             ! inst  cloud top pressure
-            if(trim(fieldname)=='prescnvclt') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,ptop,arrayr42d)
+            if(trim(fieldname) == 'prescnvclt') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,ptop,arrayr42d)
               do j=jsta,jend
                 do i=ista, iend
                   ptop(i,j) = arrayr42d(i,j)
@@ -1664,8 +1653,8 @@ module post_gfs
             endif
 
             ! inst cloud bottom pressure
-            if(trim(fieldname)=='prescnvclb') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,pbot,arrayr42d)
+            if(trim(fieldname) == 'prescnvclb') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,pbot,arrayr42d)
               do j=jsta,jend
                 do i=ista, iend
                   pbot(i,j) = arrayr42d(i,j)
@@ -1675,8 +1664,8 @@ module post_gfs
             endif
 
             ! time averaged low cloud top pressure
-            if(trim(fieldname)=='pres_avelct') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,ptopl,arrayr42d)
+            if(trim(fieldname) == 'pres_avelct') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,ptopl,arrayr42d)
               do j=jsta,jend
                 do i=ista, iend
                   ptopl(i,j) = arrayr42d(i,j)
@@ -1685,8 +1674,8 @@ module post_gfs
             endif
 
             ! time averaged low cloud bottom pressure
-            if(trim(fieldname)=='pres_avelcb') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,pbotl,arrayr42d)
+            if(trim(fieldname) == 'pres_avelcb') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,pbotl,arrayr42d)
               do j=jsta,jend
                 do i=ista, iend
                   pbotl(i,j) = arrayr42d(i,j)
@@ -1695,8 +1684,8 @@ module post_gfs
             endif
 
             ! time averaged low cloud top temperature
-            if(trim(fieldname)=='tmp_avelct') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,ttopl,arrayr42d)
+            if(trim(fieldname) == 'tmp_avelct') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,ttopl,arrayr42d)
               do j=jsta,jend
                 do i=ista, iend
                   ttopl(i,j) = arrayr42d(i,j)
@@ -1705,8 +1694,8 @@ module post_gfs
             endif
 
             ! time averaged middle cloud top pressure
-            if(trim(fieldname)=='pres_avemct') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,ptopm,arrayr42d)
+            if(trim(fieldname) == 'pres_avemct') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,ptopm,arrayr42d)
               do j=jsta,jend
                 do i=ista, iend
                   ptopm(i,j) = arrayr42d(i,j)
@@ -1715,8 +1704,8 @@ module post_gfs
             endif
 
             ! time averaged middle cloud bottom pressure
-            if(trim(fieldname)=='pres_avemcb') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,pbotm,arrayr42d)
+            if(trim(fieldname) == 'pres_avemcb') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,pbotm,arrayr42d)
               do j=jsta,jend
                 do i=ista, iend
                   pbotm(i,j) = arrayr42d(i,j)
@@ -1725,8 +1714,8 @@ module post_gfs
             endif
 
             ! time averaged middle cloud top temperature
-            if(trim(fieldname)=='tmp_avemct') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,ttopm,arrayr42d)
+            if(trim(fieldname) == 'tmp_avemct') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,ttopm,arrayr42d)
               do j=jsta,jend
                 do i=ista, iend
                   ttopm(i,j) = arrayr42d(i,j)
@@ -1735,8 +1724,8 @@ module post_gfs
             endif
 
             ! time averaged high cloud top pressure
-            if(trim(fieldname)=='pres_avehct') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,ptoph,arrayr42d)
+            if(trim(fieldname) == 'pres_avehct') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,ptoph,arrayr42d)
               do j=jsta,jend
                 do i=ista, iend
                   ptoph(i,j) = arrayr42d(i,j)
@@ -1745,8 +1734,8 @@ module post_gfs
             endif
 
             ! time averaged high cloud bottom pressure
-            if(trim(fieldname)=='pres_avehcb') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,pboth,arrayr42d)
+            if(trim(fieldname) == 'pres_avehcb') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,pboth,arrayr42d)
               do j=jsta,jend
                 do i=ista, iend
                   pboth(i,j) = arrayr42d(i,j)
@@ -1755,8 +1744,8 @@ module post_gfs
             endif
 
             ! time averaged high cloud top temperature
-            if(trim(fieldname)=='tmp_avehct') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,ttoph,arrayr42d)
+            if(trim(fieldname) == 'tmp_avehct') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,ttoph,arrayr42d)
               do j=jsta,jend
                 do i=ista, iend
                   ttoph(i,j) = arrayr42d(i,j)
@@ -1765,8 +1754,8 @@ module post_gfs
             endif
 
             ! time averaged boundary layer cloud cover
-            if(trim(fieldname)=='tcdc_avebndcl') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,pblcfr,arrayr42d)
+            if(trim(fieldname) == 'tcdc_avebndcl') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,pblcfr,arrayr42d)
               do j=jsta,jend
                 do i=ista, iend
                   pblcfr(i,j) = arrayr42d(i,j)
@@ -1776,8 +1765,8 @@ module post_gfs
             endif
 
             ! cloud work function
-            if(trim(fieldname)=='cwork_aveclm') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,cldwork,arrayr42d)
+            if(trim(fieldname) == 'cwork_aveclm') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,cldwork,arrayr42d)
               do j=jsta,jend
                 do i=ista, iend
                   cldwork(i,j) = arrayr42d(i,j)
@@ -1786,8 +1775,8 @@ module post_gfs
             endif
 
             ! water runoff
-            if(trim(fieldname)=='watr_acc') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,runoff,arrayr42d,sm)
+            if(trim(fieldname) == 'watr_acc') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,runoff,arrayr42d,sm)
               do j=jsta,jend
                 do i=ista, iend
                   runoff(i,j) = arrayr42d(i,j)
@@ -1797,8 +1786,8 @@ module post_gfs
             endif
 
             ! shelter max temperature
-            if(trim(fieldname)=='tmax_max2m') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,maxtshltr,arrayr42d)
+            if(trim(fieldname) == 'tmax_max2m') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,maxtshltr,arrayr42d)
               do j=jsta,jend
                 do i=ista, iend
                   maxtshltr(i,j) = arrayr42d(i,j)
@@ -1807,8 +1796,8 @@ module post_gfs
             endif
 
             ! shelter min temperature
-            if(trim(fieldname)=='tmin_min2m') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,mintshltr,arrayr42d)
+            if(trim(fieldname) == 'tmin_min2m') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,mintshltr,arrayr42d)
               do j=jsta,jend
                 do i=ista, iend
                   mintshltr(i,j) = arrayr42d(i,j)
@@ -1817,8 +1806,8 @@ module post_gfs
             endif
 
             ! ice thickness
-            if(trim(fieldname)=='icetk') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,dzice,arrayr42d)
+            if(trim(fieldname) == 'icetk') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,dzice,arrayr42d)
               do j=jsta,jend
                 do i=ista, iend
                   dzice(i,j) = arrayr42d(i,j)
@@ -1827,8 +1816,8 @@ module post_gfs
             endif
 
             ! wilting point
-            if(trim(fieldname)=='wilt') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend, spval,smcwlt,arrayr42d,sm)
+            if(trim(fieldname) == 'wilt') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend, spval,smcwlt,arrayr42d,sm)
               do j=jsta,jend
                 do i=ista, iend
                   smcwlt(i,j) = arrayr42d(i,j)
@@ -1838,8 +1827,8 @@ module post_gfs
             endif
 
             ! sunshine duration
-            if(trim(fieldname)=='sunsd_acc') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,suntime,arrayr42d)
+            if(trim(fieldname) == 'sunsd_acc') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,suntime,arrayr42d)
               do j=jsta,jend
                 do i=ista, iend
                   suntime(i,j) = arrayr42d(i,j)
@@ -1848,8 +1837,8 @@ module post_gfs
             endif
 
             ! field capacity
-            if(trim(fieldname)=='fldcp') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,fieldcapa,arrayr42d,sm)
+            if(trim(fieldname) == 'fldcp') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,fieldcapa,arrayr42d,sm)
               do j=jsta,jend
                 do i=ista, iend
                   fieldcapa(i,j) = arrayr42d(i,j)
@@ -1859,8 +1848,8 @@ module post_gfs
             endif
 
             ! time averaged surface visible beam downward solar flux
-            if(trim(fieldname)=='vbdsf_ave') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,avisbeamswin,arrayr42d)
+            if(trim(fieldname) == 'vbdsf_ave') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,avisbeamswin,arrayr42d)
               do j=jsta,jend
                 do i=ista, iend
                   avisbeamswin(i,j) = arrayr42d(i,j)
@@ -1869,8 +1858,8 @@ module post_gfs
             endif
 
             ! time averaged surface visible diffuse downward solar flux
-            if(trim(fieldname)=='vddsf_ave') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,avisdiffswin,arrayr42d)
+            if(trim(fieldname) == 'vddsf_ave') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,avisdiffswin,arrayr42d)
               do j=jsta,jend
                 do i=ista, iend
                   avisdiffswin(i,j) = arrayr42d(i,j)
@@ -1879,8 +1868,8 @@ module post_gfs
             endif
 
             ! time averaged surface near IR beam downward solar flux
-            if(trim(fieldname)=='nbdsf_ave') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,airbeamswin,arrayr42d)
+            if(trim(fieldname) == 'nbdsf_ave') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,airbeamswin,arrayr42d)
               do j=jsta,jend
                 do i=ista, iend
                   airbeamswin(i,j) = arrayr42d(i,j)
@@ -1889,8 +1878,8 @@ module post_gfs
             endif
 
             ! time averaged surface near IR diffuse downward solar flux
-            if(trim(fieldname)=='nddsf_ave') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,airdiffswin,arrayr42d)
+            if(trim(fieldname) == 'nddsf_ave') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,airdiffswin,arrayr42d)
               do j=jsta,jend
                 do i=ista, iend
                   airdiffswin(i,j) = arrayr42d(i,j)
@@ -1899,8 +1888,8 @@ module post_gfs
             endif
 
             ! time averaged surface clear sky outgoing LW
-            if(trim(fieldname)=='csulf') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,alwoutc,arrayr42d)
+            if(trim(fieldname) == 'csulf') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,alwoutc,arrayr42d)
               do j=jsta,jend
                 do i=ista, iend
                   alwoutc(i,j) = arrayr42d(i,j)
@@ -1909,8 +1898,8 @@ module post_gfs
             endif
 
             ! time averaged TOA clear sky outgoing LW
-            if(trim(fieldname)=='csulftoa') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,alwtoac,arrayr42d)
+            if(trim(fieldname) == 'csulftoa') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,alwtoac,arrayr42d)
               do j=jsta,jend
                 do i=ista, iend
                   alwtoac(i,j) = arrayr42d(i,j)
@@ -1919,8 +1908,8 @@ module post_gfs
             endif
 
             ! time averaged surface clear sky outgoing SW
-            if(trim(fieldname)=='csusf') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,aswoutc,arrayr42d)
+            if(trim(fieldname) == 'csusf') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,aswoutc,arrayr42d)
               do j=jsta,jend
                 do i=ista, iend
                   aswoutc(i,j) = arrayr42d(i,j)
@@ -1929,8 +1918,8 @@ module post_gfs
             endif
 
             ! time averaged TOA clear sky outgoing SW
-            if(trim(fieldname)=='csusftoa') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,aswtoac,arrayr42d)
+            if(trim(fieldname) == 'csusftoa') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,aswtoac,arrayr42d)
               do j=jsta,jend
                 do i=ista, iend
                   aswtoac(i,j) = arrayr42d(i,j)
@@ -1939,8 +1928,8 @@ module post_gfs
             endif
 
             ! time averaged surface clear sky incoming LW
-            if(trim(fieldname)=='csdlf') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,alwinc,arrayr42d)
+            if(trim(fieldname) == 'csdlf') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,alwinc,arrayr42d)
               do j=jsta,jend
                 do i=ista, iend
                   alwinc(i,j) = arrayr42d(i,j)
@@ -1949,8 +1938,8 @@ module post_gfs
             endif
 
             ! time averaged surface clear sky incoming SW
-            if(trim(fieldname)=='csdsf') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,aswinc,arrayr42d)
+            if(trim(fieldname) == 'csdsf') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,aswinc,arrayr42d)
               do j=jsta,jend
                 do i=ista, iend
                   aswinc(i,j) = arrayr42d(i,j)
@@ -1959,8 +1948,8 @@ module post_gfs
             endif
 
             ! shelter max specific humidity
-            if(trim(fieldname)=='spfhmax_max2m') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,maxqshltr,arrayr42d)
+            if(trim(fieldname) == 'spfhmax_max2m') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,maxqshltr,arrayr42d)
               do j=jsta,jend
                 do i=ista, iend
                   maxqshltr(i,j) = arrayr42d(i,j)
@@ -1969,8 +1958,8 @@ module post_gfs
             endif
 
             ! shelter min temperature
-            if(trim(fieldname)=='spfhmin_min2m') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,minqshltr,arrayr42d)
+            if(trim(fieldname) == 'spfhmin_min2m') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,minqshltr,arrayr42d)
               do j=jsta,jend
                 do i=ista, iend
                   minqshltr(i,j) = arrayr42d(i,j)
@@ -1979,8 +1968,8 @@ module post_gfs
             endif
 
             ! storm runoffs
-            if(trim(fieldname)=='ssrun_acc') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,ssroff,arrayr42d,sm)
+            if(trim(fieldname) == 'ssrun_acc') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,ssroff,arrayr42d,sm)
               do j=jsta,jend
                 do i=ista, iend
                   ssroff(i,j) = arrayr42d(i,j)
@@ -1990,8 +1979,8 @@ module post_gfs
             endif
 
             !  direct soil evaporation
-            if(trim(fieldname)=='evbs_ave') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,avgedir,arrayr42d,sm)
+            if(trim(fieldname) == 'evbs_ave') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,avgedir,arrayr42d,sm)
               do j=jsta,jend
                 do i=ista, iend
                   avgedir(i,j) = arrayr42d(i,j)
@@ -2001,8 +1990,8 @@ module post_gfs
             endif
 
             ! canopy water evap
-            if(trim(fieldname)=='evcw_ave') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,avgecan,arrayr42d,sm)
+            if(trim(fieldname) == 'evcw_ave') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,avgecan,arrayr42d,sm)
               do j=jsta,jend
                 do i=ista, iend
                   avgecan(i,j) = arrayr42d(i,j)
@@ -2012,8 +2001,8 @@ module post_gfs
             endif
 
             ! plant transpiration
-            if(trim(fieldname)=='trans_ave') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,avgetrans,arrayr42d,sm)
+            if(trim(fieldname) == 'trans_ave') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,avgetrans,arrayr42d,sm)
               do j=jsta,jend
                 do i=ista, iend
                   avgetrans(i,j) = arrayr42d(i,j)
@@ -2023,19 +2012,19 @@ module post_gfs
             endif
 
             ! snow sublimation
-            if(trim(fieldname)=='sbsno_ave') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,avgesnow,arrayr42d,sm,sice)
+            if(trim(fieldname) == 'sbsno_ave') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,avgesnow,arrayr42d,sm,sice)
               do j=jsta,jend
                 do i=ista, iend
                   avgesnow(i,j) = arrayr42d(i,j)
-                  if (sm(i,j)==1.0 .and. sice(i,j)==0.) avgesnow(i,j)=spval
+                  if (sm(i,j) == 1.0 .and. sice(i,j) == 0.) avgesnow(i,j) = spval
                 enddo
               enddo
             endif
 
             ! total soil moisture
-            if(trim(fieldname)=='soilm') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,smstot,arrayr42d,sm)
+            if(trim(fieldname) == 'soilm') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,smstot,arrayr42d,sm)
               do j=jsta,jend
                 do i=ista, iend
                   smstot(i,j) = arrayr42d(i,j)
@@ -2045,8 +2034,8 @@ module post_gfs
             endif
 
             ! snow phase change heat flux
-            if(trim(fieldname)=='snohf') then
-              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,snopcx,arrayr42d,sm)
+            if(trim(fieldname) == 'snohf') then
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,snopcx,arrayr42d,sm)
               do j=jsta,jend
                 do i=ista, iend
                   snopcx(i,j) = arrayr42d(i,j)
@@ -2056,19 +2045,17 @@ module post_gfs
             endif
 
 !          else if (fieldDimCount > gridDimCount) then
-          else if (fieldDimCount ==3) then
+          else if (fieldDimCount == 3) then
             if (typekind == ESMF_TYPEKIND_R4) then
               call ESMF_FieldGet(fcstField(n), localDe=0, farrayPtr=arrayr43d, rc=rc)
-              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-                line=__LINE__, file=__FILE__)) return  ! bail out
+              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, & line=__LINE__, file=__FILE__)) return
             else if (typekind == ESMF_TYPEKIND_R8) then
               call ESMF_FieldGet(fcstField(n), localDe=0, farrayPtr=arrayr83d, rc=rc)
-              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-                line=__LINE__, file=__FILE__)) return  ! bail out
+              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
               allocate(arrayr43d(ista:iend,jsta:jend,kstart:kend))
               arrayr43d = 0.
               do k=kstart,kend
-             !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,k,arrayr43d,arrayr83d)
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,k,arrayr43d,arrayr83d)
                 do j=jsta,jend
                   do i=ista,iend
                     arrayr43d(i,j,k) = arrayr83d(i,j,k)
@@ -2078,8 +2065,8 @@ module post_gfs
             endif
 
             ! model level T
-            if(trim(fieldname)=='tmp') then
-              !$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,t,arrayr43d)
+            if(trim(fieldname) == 'tmp') then
+!$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,t,arrayr43d)
               do l=1,lm
                 do j=jsta,jend
                   do i=ista, iend
@@ -2089,7 +2076,7 @@ module post_gfs
               enddo
 
               !! sig4
-              !$omp parallel do default(none) private(i,j,tlmh) shared(lm,jsta,jend,ista,iend,t,sigt4)
+!$omp parallel do default(none) private(i,j,tlmh) shared(lm,jsta,jend,ista,iend,t,sigt4)
               do j=jsta,jend
                 do i=ista, iend
                   tlmh = t(i,j,lm) * t(i,j,lm)
@@ -2099,172 +2086,237 @@ module post_gfs
             endif
 
             ! model level spfh
-            if(trim(fieldname)=='spfh') then
-              !$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,q,arrayr43d)
+            if(trim(fieldname) == 'spfh') then
+!$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,q,arrayr43d)
               do l=1,lm
                 do j=jsta,jend
                   do i=ista, iend
-                    q(i,j,l)=arrayr43d(i,j,l)
+                    q(i,j,l) = arrayr43d(i,j,l)
                   enddo
                 enddo
               enddo
             endif
 
             ! model level u wind
-            if(trim(fieldname)=='ugrd') then
-              !$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,uh,arrayr43d)
+            if(trim(fieldname) == 'ugrd') then
+!$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,uh,arrayr43d)
               do l=1,lm
                 do j=jsta,jend
                   do i=ista, iend
-                    uh(i,j,l)=arrayr43d(i,j,l)
+                    uh(i,j,l) = arrayr43d(i,j,l)
                   enddo
                 enddo
               enddo
             endif
 
             ! model level v wind
-            if(trim(fieldname)=='vgrd') then
-              !$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,vh,arrayr43d)
+            if(trim(fieldname) == 'vgrd') then
+!$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,vh,arrayr43d)
               do l=1,lm
                 do j=jsta,jend
                   do i=ista, iend
-                    vh(i,j,l)=arrayr43d(i,j,l)
+                    vh(i,j,l) = arrayr43d(i,j,l)
                   enddo
                 enddo
               enddo
             endif
 
             ! model level pressure thinkness
-            if(trim(fieldname)=='dpres') then
-              !$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,dpres,arrayr43d)
+            if(trim(fieldname) == 'dpres') then
+!$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,dpres,arrayr43d)
               do l=1,lm
                 do j=jsta,jend
                   do i=ista, iend
-                    dpres(i,j,l)=arrayr43d(i,j,l)
+                    dpres(i,j,l) = arrayr43d(i,j,l)
                   enddo
                 enddo
               enddo
             endif
 
             ! model level gh thinkness, model output negative delz
-            if(trim(fieldname)=='delz') then
-              !$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,zint,arrayr43d)
+            if(trim(fieldname) == 'delz') then
+!$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,zint,arrayr43d)
               do l=1,lm
                 do j=jsta,jend
                   do i=ista, iend
-                    zint(i,j,l)=-1.*arrayr43d(i,j,l)
+                    zint(i,j,l) = -arrayr43d(i,j,l)
                   enddo
                 enddo
               enddo
             endif
 
             ! model level w
-            if(trim(fieldname)=='dzdt') then
-              !$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,wh,arrayr43d)
+            if(trim(fieldname) == 'dzdt') then
+!$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,wh,arrayr43d)
               do l=1,lm
                 do j=jsta,jend
                   do i=ista, iend
-                    wh(i,j,l)=arrayr43d(i,j,l)
+                    wh(i,j,l) = arrayr43d(i,j,l)
                   enddo
                 enddo
               enddo
             endif
 
             ! model level ozone mixing ratio
-            if(trim(fieldname)=='o3mr') then
-              !$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,o3,arrayr43d)
+            if(trim(fieldname) == 'o3mr') then
+!$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,o3,arrayr43d)
               do l=1,lm
                 do j=jsta,jend
                   do i=ista, iend
-                    o3(i,j,l)=arrayr43d(i,j,l)
+                    o3(i,j,l) = arrayr43d(i,j,l)
                   enddo
                 enddo
               enddo
             endif
 
-! for GFDL MP
-            if (imp_physics == 11) then
+! for GFDL or MG3 MP
+! ------------------
+            if (imp_physics == 10 .or. imp_physics == 11) then
               ! model level cloud water mixing ratio
-              if(trim(fieldname)=='clwmr') then
-                !$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,qqw,arrayr43d)
+              if(trim(fieldname) == 'clwmr') then
+!$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,qqw,arrayr43d)
                 do l=1,lm
                   do j=jsta,jend
                     do i=ista, iend
-                      qqw(i,j,l)=arrayr43d(i,j,l)
+                      qqw(i,j,l) = arrayr43d(i,j,l)
                     enddo
                   enddo
                 enddo
               endif
 
               ! model level ice mixing ratio
-              if(trim(fieldname)=='icmr') then
-                !$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,qqi,arrayr43d)
+              if(trim(fieldname) == 'icmr') then
+!$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,qqi,arrayr43d)
                 do l=1,lm
                   do j=jsta,jend
                     do i=ista, iend
-                      qqi(i,j,l)=arrayr43d(i,j,l)
+                      qqi(i,j,l) = arrayr43d(i,j,l)
                     enddo
                   enddo
                 enddo
               endif
 
               ! model level rain water mixing ratio
-              if(trim(fieldname)=='rwmr') then
-                !$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,qqr,arrayr43d)
+              if(trim(fieldname) == 'rwmr') then
+!$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,qqr,arrayr43d)
                 do l=1,lm
                   do j=jsta,jend
                     do i=ista, iend
-                      qqr(i,j,l)=arrayr43d(i,j,l)
+                      qqr(i,j,l) = arrayr43d(i,j,l)
                     enddo
                   enddo
                 enddo
               endif
 
               ! model level snow mixing ratio
-              if(trim(fieldname)=='snmr') then
-                !$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,qqs,arrayr43d)
+              if(trim(fieldname) == 'snmr') then
+!$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,qqs,arrayr43d)
                 do l=1,lm
                   do j=jsta,jend
                     do i=ista, iend
-                      qqs(i,j,l)=arrayr43d(i,j,l)
+                      qqs(i,j,l) = arrayr43d(i,j,l)
                     enddo
                   enddo
                 enddo
               endif
 
               ! model level rain water mixing ratio
-              if(trim(fieldname)=='grle') then
-                !$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,qqg,arrayr43d)
+              if(trim(fieldname) == 'grle') then
+!$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,qqg,arrayr43d)
                 do l=1,lm
                   do j=jsta,jend
                     do i=ista, iend
-                      qqg(i,j,l)=arrayr43d(i,j,l)
+                      qqg(i,j,l) = arrayr43d(i,j,l)
                     enddo
                   enddo
                 enddo
               endif
-!gfdlmp
-            endif
+
+            endif         !gfdlmp or MG3 mp
+! for MG3 MP
+! ----------
+            if (imp_physics == 10) then
+              ! model level cloud water mixing ratio number concentration
+              if(trim(fieldname) == 'clwnc') then
+!$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,qqnw,arrayr43d)
+                do l=1,lm
+                  do j=jsta,jend
+                    do i=ista, iend
+                      qqnw(i,j,l) = arrayr43d(i,j,l)
+                    enddo
+                  enddo
+                enddo
+              endif
+
+              ! model level ice mixing ratio number concentration
+              if(trim(fieldname) == 'icenc') then
+!$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,qqni,arrayr43d)
+                do l=1,lm
+                  do j=jsta,jend
+                    do i=ista, iend
+                      qqni(i,j,l) = arrayr43d(i,j,l)
+                    enddo
+                  enddo
+                enddo
+              endif
+
+              ! model level rain water mixing ratio number concentration
+              if(trim(fieldname) == 'rwnc') then
+!$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,qqnr,arrayr43d)
+                do l=1,lm
+                  do j=jsta,jend
+                    do i=ista, iend
+                      qqnr(i,j,l) = arrayr43d(i,j,l)
+                    enddo
+                  enddo
+                enddo
+              endif
+
+              ! model level snow mixing ratio number concentration
+              if(trim(fieldname) == 'snnc') then
+!$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,qqns,arrayr43d)
+                do l=1,lm
+                  do j=jsta,jend
+                    do i=ista, iend
+                      qqns(i,j,l) = arrayr43d(i,j,l)
+                    enddo
+                  enddo
+                enddo
+              endif
+
+             ! model level rain water mixing ratio number concentration
+              if(trim(fieldname) == 'grlenc') then
+!$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,qqng,arrayr43d)
+                do l=1,lm
+                  do j=jsta,jend
+                    do i=ista, iend
+                      qqng(i,j,l) = arrayr43d(i,j,l)
+                    enddo
+                  enddo
+                enddo
+              endif
+
+            endif    ! for MG3 MP
 
             ! model level cloud amount
-            if(trim(fieldname)=='cld_amt') then
-              !$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,cfr,arrayr43d)
+            if(trim(fieldname) == 'cld_amt') then
+!$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,cfr,arrayr43d)
               do l=1,lm
                 do j=jsta,jend
                   do i=ista, iend
-                    cfr(i,j,l)=arrayr43d(i,j,l)
+                    cfr(i,j,l) = arrayr43d(i,j,l)
                   enddo
                 enddo
               enddo
             endif
 
             ! model level ref3d
-            if(trim(fieldname)=='ref3D') then
-              !$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,ref_10cm,arrayr43d)
+            if(trim(fieldname) == 'ref3D') then
+!$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,ref_10cm,arrayr43d)
               do l=1,lm
                 do j=jsta,jend
                   do i=ista, iend
-                    ref_10cm(i,j,l)=arrayr43d(i,j,l)
+                    ref_10cm(i,j,l) = arrayr43d(i,j,l)
                   enddo
                 enddo
               enddo
@@ -2272,12 +2324,12 @@ module post_gfs
             endif
 
             ! model level ref3d
-            if(trim(fieldname)=='tke') then
-              !$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,q2,arrayr43d)
+            if(trim(fieldname) == 'tke') then
+!$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,q2,arrayr43d)
               do l=1,lm
                 do j=jsta,jend
                   do i=ista, iend
-                    q2(i,j,l)=arrayr43d(i,j,l)
+                    q2(i,j,l) = arrayr43d(i,j,l)
                   enddo
                 enddo
               enddo
@@ -2285,8 +2337,7 @@ module post_gfs
 !3d fields
           endif
 
-! end loop ncount_field
-        enddo
+        enddo   ! end loop ncount_field
 
         if ( index(trim(wrt_int_state%wrtFB_names(ibdl)),trim(filename_base(1))) > 0)   &
           setvar_atmfile = .true.
@@ -2312,46 +2363,33 @@ module post_gfs
 !$omp parallel do default(none) private(i,j) shared(l,jsta,jend,im,omga,wh,dpres,zint)
         do j=jsta,jend
           do i=1,im
-            omga(i,j,l) = (-1.) * wh(i,j,l) * dpres(i,j,l)/zint(i,j,l)
+            omga(i,j,l) = - wh(i,j,l) * dpres(i,j,l)/zint(i,j,l)
             zint(i,j,l) = zint(i,j,l) + zint(i,j,l+1)
           enddo
         enddo
       enddo
 
 ! compute pint from top down
-!$omp parallel do default(none) private(i,j) shared(jsta,jend,im,ak5,pint)
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,im,ak5,pint,pd,spval)
       do j=jsta,jend
         do i=1,im
           pint(i,j,1) = ak5(1)
-        end do
-      end do
+          pd(i,j)     = spval
+        enddo
+      enddo
 
       do l=2,lp1
-!$omp parallel do default(none) private(i,j) shared(l,jsta,jend,im,pint,dpres)
+        ll = l - 1
+!$omp parallel do default(none) private(i,j) shared(l,ll,jsta,jend,im,pint,dpres,pmid)
         do j=jsta,jend
           do i=1,im
-            pint(i,j,l) = pint(i,j,l-1) + dpres(i,j,l-1)
-          enddo
-        enddo
-      end do
-
+            pint(i,j,l)  = pint(i,j,ll) + dpres(i,j,ll)
 !compute pmid from averaged two layer pint
-      do l=lm,1,-1
-!$omp parallel do default(none) private(i,j) shared(l,jsta,jend,im,pmid,pint)
-        do j=jsta,jend
-          do i=1,im
-            pmid(i,j,l) = 0.5*(pint(i,j,l)+pint(i,j,l+1))
+            pmid(i,j,ll) = 0.5*(pint(i,j,ll)+pint(i,j,l))
           enddo
         enddo
       enddo
 
-!$omp parallel do default(none) private(i,j) shared(jsta,jend,im,spval,pt,pd,pint)
-      do j=jsta,jend
-        do i=1,im
-          pd(i,j)     = spval
-          pint(i,j,1) = pt
-        end do
-      end do
 !      print *,'in setvar, pt=',pt,'ak5(lp1)=', ak5(lp1),'ak5(1)=',ak5(1)
 
 ! compute alpint
@@ -2359,22 +2397,23 @@ module post_gfs
 !$omp parallel do default(none) private(i,j) shared(l,jsta,jend,im,alpint,pint)
         do j=jsta,jend
           do i=1,im
-            alpint(i,j,l)=log(pint(i,j,l))
-          end do
-        end do
-      end do
+            alpint(i,j,l) = log(pint(i,j,l))
+          enddo
+        enddo
+      enddo
 
 ! compute zmid  
       do l=lm,1,-1
-!$omp parallel do default(none) private(i,j) shared(l,jsta,jend,im,zmid,zint,pmid,alpint)
+        ll = l + 1
+!$omp parallel do default(none) private(i,j) shared(l,ll,jsta,jend,im,zmid,zint,pmid,alpint)
         do j=jsta,jend
           do i=1,im
-            zmid(i,j,l)=zint(i,j,l+1)+(zint(i,j,l)-zint(i,j,l+1))* &
-                    (log(pmid(i,j,l))-alpint(i,j,l+1))/ &
-                    (alpint(i,j,l)-alpint(i,j,l+1))
-          end do
-        end do
-      end do
+            zmid(i,j,l) = zint(i,j,ll) + (zint(i,j,l)-zint(i,j,ll))        &
+                                       * (log(pmid(i,j,l))-alpint(i,j,ll)) &
+                                       / (alpint(i,j,l)-alpint(i,j,ll))
+          enddo
+        enddo
+      enddo
 !        print *,'in post_gfs,zmid=',maxval(zmid(1:im,jsta:jend,1)), &
 !          minval(zmid(1:im,jsta:jend,1)),maxloc(zmid(1:im,jsta:jend,1)), &
 !          'zint=',maxval(zint(1:im,jsta:jend,2)),minval(zint(1:im,jsta:jend,1)),  &
@@ -2400,13 +2439,13 @@ module post_gfs
         enddo
       enddo
 
-! compute cwm for gfdlmp
-      if(  imp_physics == 11 ) then
+! compute cwm for gfdlmp or MG3
+      if(  imp_physics == 10  .or. imp_physics == 11) then
         do l=1,lm
 !$omp parallel do default(none) private(i,j) shared(l,jsta,jend,ista,iend,cwm,qqg,qqs,qqr,qqi,qqw)
           do j=jsta,jend
             do i=ista,iend
-              cwm(i,j,l)=qqg(i,j,l)+qqs(i,j,l)+qqr(i,j,l)+qqi(i,j,l)+qqw(i,j,l)
+              cwm(i,j,l) = qqg(i,j,l) + qqs(i,j,l) + qqr(i,j,l) + qqi(i,j,l) + qqw(i,j,l)
             enddo
           enddo
         enddo
@@ -2416,8 +2455,8 @@ module post_gfs
 !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,lm,pshltr,pint,tshltr)
       do j=jsta,jend
         do i=ista, iend
-          pshltr(I,J)=pint(i,j,lm+1)*EXP(-0.068283/tshltr(i,j))
-          tshltr(i,j)= tshltr(i,j)*(p1000/pshltr(I,J))**CAPA
+          pshltr(I,J) = pint(i,j,lm+1)*EXP(-0.068283/tshltr(i,j))
+          tshltr(i,j) =  tshltr(i,j)*(p1000/pshltr(I,J))**CAPA
         enddo
       enddo
 
@@ -2428,13 +2467,13 @@ module post_gfs
           if(ptop(i,j) < spval)then
             do l=1,lm
               if(ptop(i,j) <= pmid(i,j,l))then
-                htop(i,j)=l
+                htop(i,j) = l
                 exit
-              end if
-            end do
-          end if
-        end do
-      end do
+              endif
+            enddo
+          endif
+        enddo
+      enddo
 
 ! hbot
       do j=jsta,jend
