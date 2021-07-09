@@ -127,7 +127,6 @@ add_library(fv3atm
   cpl/module_cap_cpl.F90
   io/ffsync.F90
   io/FV3GFS_io.F90
-  io/module_write_nemsio.F90
   io/module_write_netcdf.F90
   io/module_write_netcdf_parallel.F90
   io/module_fv3_io_def.F90
@@ -155,9 +154,7 @@ target_link_libraries(fv3atm PUBLIC fv3dycore
                                     stochastic_physics
                                     fms)
 
-target_link_libraries(fv3atm PUBLIC nemsio::nemsio
-                                    w3emc::w3emc_d
-                                    w3nco::w3nco_d
+target_link_libraries(fv3atm PUBLIC w3nco::w3nco_d
                                     sp::sp_d
                                     bacio::bacio_4
                                     esmf)
