@@ -56,6 +56,14 @@ if(MPI)
 endif()
 
 #------------------------------------------------------------------------------
+# Set additional flags for debug build
+if(DEBUG)
+  if(CMAKE_Fortran_COMPILER_ID MATCHES "Intel")
+    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -init=snan,arrays")
+  endif()
+endif()
+
+#------------------------------------------------------------------------------
 # Set flag for 32bit dynamics build
 if(32BIT)
   set(DYN32 ON CACHE BOOL "Enable support for 32bit fast physics in CCPP")

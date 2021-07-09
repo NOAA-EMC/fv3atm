@@ -5,13 +5,15 @@ module module_cap_cpl
 ! revision history
 !  12 Mar 2018: J. Wang       Pull coupled subroutines from fv3_cap.F90 to this module
 !
-  use esmf
+  use ESMF
   use NUOPC
+
+  use module_cplfields, only : FieldInfo
 !
   implicit none
   private
   public clock_cplIntval
-  public realizeConnectedInternCplField
+  ! public realizeConnectedInternCplField
   public realizeConnectedCplFields
   public diagnose_cplFields
 !
@@ -51,6 +53,43 @@ module module_cap_cpl
 
   !-----------------------------------------------------------------------------
 
+    subroutine addFieldMetadata(field, key, values, rc)
+
+      ! This subroutine implements a preliminary method to provide metadata to
+      ! a coupled model that is accessing the field via reference sharing
+      ! (NUOPC SharedStatusField=.true.). The method sets a (key, values) pair
+      ! in the field's array ESMF_Info object to retrieve an array of strings
+      ! encoding metadata.
+      !
+      ! Such a capability should be implemented in the standard NUOPC connector
+      ! for more general applications, possibly providing access to the field's
+      ! ESMF_Info object.
+
+      type(ESMF_Field)               :: field
+      character(len=*),  intent(in)  :: key
+      character(len=*),  intent(in)  :: values(:)
+      integer, optional, intent(out) :: rc
+
+      ! local variable
+      integer          :: localrc
+      type(ESMF_Array) :: array
+      type(ESMF_Info)  :: info
+
+      ! begin
+      if (present(rc)) rc = ESMF_SUCCESS
+
+      call ESMF_FieldGet(field, array=array, rc=localrc)
+      if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+      call ESMF_InfoGetFromHost(array, info, rc=localrc)
+      if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+      call ESMF_InfoSet(info, key, values, rc=localrc)
+      if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+
+    end subroutine addFieldMetadata
+
+  !-----------------------------------------------------------------------------
+
+#if 0
     subroutine realizeConnectedInternCplField(state, field, standardName, grid, rc)
 
       type(ESMF_State)                :: state
@@ -95,39 +134,36 @@ module module_cap_cpl
       endif
 
     end subroutine realizeConnectedInternCplField
-
+#endif
   !-----------------------------------------------------------------------------
 
-    subroutine realizeConnectedCplFields(state, grid,                                      &
-                                         numLevels, numSoilLayers, numTracers,             &
-                                         num_diag_sfc_emis_flux, num_diag_down_flux,       &
-                                         num_diag_type_down_flux, num_diag_burn_emis_flux, &
-                                         num_diag_cmass, fieldNames, fieldTypes, state_tag,&
-                                         fieldList, fill_value, rc)
+    subroutine realizeConnectedCplFields(state, grid,                          &
+                                         numLevels, numSoilLayers, numTracers, &
+                                         fields_info, state_tag, fieldList, fill_value, rc)
+
+      use field_manager_mod,  only: MODEL_ATMOS
+      use tracer_manager_mod, only: get_number_tracers, get_tracer_names
 
       type(ESMF_State),            intent(inout)  :: state
       type(ESMF_Grid),                intent(in)  :: grid
       integer,                        intent(in)  :: numLevels
       integer,                        intent(in)  :: numSoilLayers
       integer,                        intent(in)  :: numTracers
-      integer,                        intent(in)  :: num_diag_sfc_emis_flux
-      integer,                        intent(in)  :: num_diag_down_flux
-      integer,                        intent(in)  :: num_diag_type_down_flux
-      integer,                        intent(in)  :: num_diag_burn_emis_flux
-      integer,                        intent(in)  :: num_diag_cmass
-      character(len=*), dimension(:), intent(in)  :: fieldNames
-      character(len=*), dimension(:), intent(in)  :: fieldTypes
+      type(FieldInfo), dimension(:),  intent(in)  :: fields_info
       character(len=*),               intent(in)  :: state_tag                              !< Import or export.
       type(ESMF_Field), dimension(:), intent(out) :: fieldList
       real(ESMF_KIND_R8), optional  , intent(in)  :: fill_value
       integer,                        intent(out) :: rc
 
       ! local variables
-      integer            :: item
-      logical            :: isConnected
-      type(ESMF_Field)   :: field
+
+      integer          :: item, pos, tracerCount
+      logical          :: isConnected
+      type(ESMF_Field) :: field
       real(ESMF_KIND_R8) :: l_fill_value
       real(ESMF_KIND_R8), parameter :: d_fill_value = 0._ESMF_KIND_R8
+      type(ESMF_StateIntent_Flag) :: stateintent
+      character(len=32), allocatable, dimension(:) :: tracerNames, tracerUnits
 
       ! begin
       rc = ESMF_SUCCESS
@@ -138,21 +174,27 @@ module module_cap_cpl
         l_fill_value = d_fill_value
       end if
 
-      if (size(fieldNames) /= size(fieldTypes)) then
-        call ESMF_LogSetError(rcToCheck=ESMF_RC_ARG_SIZE, &
-          msg="fieldNames and fieldTypes must have same size.", line=__LINE__, file=__FILE__, rcToReturn=rc)
-        return
+      ! attach list of tracer names to exported tracer field as metadata
+      call ESMF_StateGet(state, stateintent=stateintent, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+      if (stateintent == ESMF_STATEINTENT_EXPORT) then
+        call get_number_tracers(MODEL_ATMOS, num_tracers=tracerCount)
+        allocate(tracerNames(tracerCount), tracerUnits(tracerCount))
+        do item = 1, tracerCount
+          call get_tracer_names(MODEL_ATMOS, item, tracerNames(item), units=tracerUnits(item))
+        end do
       end if
 
-      do item = 1, size(fieldNames)
-        isConnected = NUOPC_IsConnected(state, fieldName=trim(fieldNames(item)), rc=rc)
+      do item = 1, size(fields_info)
+        isConnected = NUOPC_IsConnected(state, fieldName=trim(fields_info(item)%name), rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
         if (isConnected) then
-          call ESMF_StateGet(state, field=field, itemName=trim(fieldNames(item)), rc=rc)
+          call ESMF_StateGet(state, field=field, itemName=trim(fields_info(item)%name), rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
           call ESMF_FieldEmptySet(field, grid=grid, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-          select case (fieldTypes(item))
+          select case (fields_info(item)%type)
             case ('l','layer')
               call ESMF_FieldEmptyComplete(field, typekind=ESMF_TYPEKIND_R8, &
                                        ungriddedLBound=(/1/), ungriddedUBound=(/numLevels/), rc=rc)
@@ -165,23 +207,14 @@ module module_cap_cpl
               call ESMF_FieldEmptyComplete(field, typekind=ESMF_TYPEKIND_R8, &
                                        ungriddedLBound=(/1, 1/), ungriddedUBound=(/numLevels, numTracers/), rc=rc)
               if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-            case ('u','tracer_up_flux')
-              call ESMF_FieldEmptyComplete(field, typekind=ESMF_TYPEKIND_R8, &
-                                       ungriddedLBound=(/1/), ungriddedUBound=(/num_diag_sfc_emis_flux/), rc=rc)
-              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-            case ('d','tracer_down_flx')
-              call ESMF_FieldEmptyComplete(field, typekind=ESMF_TYPEKIND_R8, &
-                                       ungriddedLBound=(/1, 1/),        &
-                                       ungriddedUBound=(/num_diag_down_flux, num_diag_type_down_flux/), rc=rc)
-              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-            case ('b','tracer_anth_biom_emission')
-              call ESMF_FieldEmptyComplete(field, typekind=ESMF_TYPEKIND_R8, &
-                                       ungriddedLBound=(/1/), ungriddedUBound=(/num_diag_burn_emis_flux/), rc=rc)
-              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-            case ('c','tracer_column_mass_density')
-              call ESMF_FieldEmptyComplete(field, typekind=ESMF_TYPEKIND_R8, &
-                                       ungriddedLBound=(/1/), ungriddedUBound=(/num_diag_cmass/), rc=rc)
-              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+              if (allocated(tracerNames)) then
+                call addFieldMetadata(field, 'tracerNames', tracerNames, rc=rc)
+                if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+              end if
+              if (allocated(tracerUnits)) then
+                call addFieldMetadata(field, 'tracerUnits', tracerUnits, rc=rc)
+                if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+              end if
             case ('s','surface')
               call ESMF_FieldEmptyComplete(field, typekind=ESMF_TYPEKIND_R8, rc=rc)
               if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
@@ -191,92 +224,92 @@ module module_cap_cpl
               if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
             case default
               call ESMF_LogSetError(ESMF_RC_NOT_VALID, &
-                msg="exportFieldType = '"//trim(fieldTypes(item))//"' not recognized", &
+                msg="exportFieldType = '"//trim(fields_info(item)%type)//"' not recognized", &
                 line=__LINE__, file=__FILE__, rcToReturn=rc)
               return
           end select
           call NUOPC_Realize(state, field=field, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-          ! -- zero out field
+          ! -- initialize field value
           call ESMF_FieldFill(field, dataFillScheme="const", const1=l_fill_value, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
           ! -- save field
           fieldList(item) = field
-          call ESMF_LogWrite('realizeConnectedCplFields '//trim(state_tag)//' Field '//trim(fieldNames(item))  &
+          call ESMF_LogWrite('realizeConnectedCplFields '//trim(state_tag)//' Field '//trim(fields_info(item)%name)  &
                              // ' is connected ', ESMF_LOGMSG_INFO, line=__LINE__, file=__FILE__, rc=rc)
         else
           ! remove a not connected Field from State
-          call ESMF_StateRemove(state, (/trim(fieldNames(item))/), rc=rc)
+          call ESMF_StateRemove(state, (/trim(fields_info(item)%name)/), rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-          call ESMF_LogWrite('realizeConnectedCplFields '//trim(state_tag)//' Field '//trim(fieldNames(item))  &
+          call ESMF_LogWrite('realizeConnectedCplFields '//trim(state_tag)//' Field '//trim(fields_info(item)%name)  &
                              // ' is not connected ', ESMF_LOGMSG_INFO, line=__LINE__, file=__FILE__, rc=rc)
         end if
       end do
+
+      if (allocated(tracerNames)) deallocate(tracerNames)
+      if (allocated(tracerUnits)) deallocate(tracerUnits)
 
     end subroutine realizeConnectedCplFields
 
   !-----------------------------------------------------------------------------
 
-    subroutine diagnose_cplFields(gcomp, importState, exportstate, clock_fv3,    &
-                     fcstpe, statewrite_flag, stdiagnose_flag, state_tag, timestr)
+    subroutine diagnose_cplFields(gcomp, clock_fv3, fcstpe, &
+                                  statewrite_flag, stdiagnose_flag, state_tag)
 
       type(ESMF_GridComp), intent(in)       :: gcomp
-      type(ESMF_State)                      :: importState, exportstate
       type(ESMF_Clock),intent(in)           :: clock_fv3
       logical, intent(in)                   :: fcstpe
       logical, intent(in)                   :: statewrite_flag
       integer, intent(in)                   :: stdiagnose_flag
       character(len=*),         intent(in)  :: state_tag                        !< Import or export.
-      character(len=*),         intent(in)  :: timestr                          !< Import or export.
-      integer                               :: timeslice = 1
-!
+
+      character(len=*),parameter :: subname='(module_cap_cpl:diagnose_cplFields)'
+      type(ESMF_Time) :: currTime
+      type(ESMF_State) :: state
+      character(len=240) :: timestr
+      integer :: timeslice = 1
       character(len=160) :: nuopcMsg
       character(len=160) :: filename
       integer :: rc
 !
-      call ESMF_ClockPrint(clock_fv3, options="currTime",                            &
-                           preString="leaving FV3_ADVANCE with clock_fv3 current: ", &
-                           unit=nuopcMsg)
-!      call ESMF_LogWrite(nuopcMsg, ESMF_LOGMSG_INFO)
-      call ESMF_ClockPrint(clock_fv3, options="startTime",                           &
-                           preString="leaving FV3_ADVANCE with clock_fv3 start:   ", &
-                           unit=nuopcMsg)
-!      call ESMF_LogWrite(nuopcMsg, ESMF_LOGMSG_INFO)
-      call ESMF_ClockPrint(clock_fv3, options="stopTime",                            &
-                           preString="leaving FV3_ADVANCE with clock_fv3 stop:    ", &
-                           unit=nuopcMsg)
-!      call ESMF_LogWrite(nuopcMsg, ESMF_LOGMSG_INFO)
+      call ESMF_ClockGet(clock_fv3, currTime=currTime, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+      call ESMF_TimeGet(currTime, timestring=timestr, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+      call ESMF_ClockPrint(clock_fv3, options="currTime", preString="current time: ", unit=nuopcMsg)
+      call ESMF_LogWrite(trim(subname)//' '//trim(state_tag)//' '//trim(nuopcMsg), ESMF_LOGMSG_INFO)
 
       if(trim(state_tag) .eq. 'import')then
-        call ESMF_GridCompGet(gcomp, importState=importState, rc=rc)
+        call ESMF_GridCompGet(gcomp, importState=state, rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
         if(stdiagnose_flag > 0 .and. fcstpe)then
-         call state_diagnose(importState, ':IS', rc=rc)
+         call state_diagnose(state, ':IS', rc=rc)
         end if
 
         ! Dump Fields out
         if (statewrite_flag) then
           write(filename,'(A)') 'fv3_cap_import_'//trim(timestr)//'_'
-          call State_RWFields_tiles(importState,trim(filename), timeslice, rc=rc)
+          call State_RWFields_tiles(state,trim(filename), timeslice, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
         end if
       end if
 
       if(trim(state_tag) .eq. 'export')then
-        call ESMF_GridCompGet(gcomp, exportState=exportState, rc=rc)
+        call ESMF_GridCompGet(gcomp, exportState=state, rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
         if(stdiagnose_flag > 0 .and. fcstpe)then
-         call state_diagnose(exportState, ':ES', rc=rc)
+         call state_diagnose(state, ':ES', rc=rc)
         end if
 
         ! Dump Fields out
         if (statewrite_flag) then
           write(filename,'(A)') 'fv3_cap_export_'//trim(timestr)//'_'
-          call State_RWFields_tiles(exportState,trim(filename), timeslice, rc=rc)
+          call State_RWFields_tiles(state,trim(filename), timeslice, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
         end if
       end if
@@ -407,8 +440,7 @@ module module_cap_cpl
       ! local variables
 
       rc = ESMF_SUCCESS
-      !call ESMF_LogWrite(trim(subname)//trim(filename)//": called",
-      !ESMF_LOGMSG_INFO, rc=rc)
+      !call ESMF_LogWrite(trim(subname)//trim(filename)//": called", ESMF_LOGMSG_INFO, rc=rc)
 
       call ESMF_StateGet(state, itemCount=icount, rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
@@ -448,7 +480,6 @@ module module_cap_cpl
       IOComp = ESMFIO_Create(gridFv3, rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
           line=__LINE__, file=__FILE__)) return  ! bail out
-      call ESMF_LogWrite(trim(subname)//": write "//trim(filename), ESMF_LOGMSG_INFO, rc=rc)
 
       do ifld=1, fieldCount
         call ESMF_StateGet(state, itemName=fldNameList(ifld), field=flds(ifld), rc=rc)
@@ -465,8 +496,7 @@ module module_cap_cpl
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, file=__FILE__)) call ESMF_Finalize()
 
-      !call ESMF_LogWrite(trim(subname)//trim(filename)//": finished",
-      !ESMF_LOGMSG_INFO, rc=rc)
+      !call ESMF_LogWrite(trim(subname)//trim(filename)//": finished", ESMF_LOGMSG_INFO, rc=rc)
 
     end subroutine State_RWFields_tiles
 
@@ -504,32 +534,32 @@ module module_cap_cpl
     call ESMF_StateGet(State, itemCount=itemCount, rc=lrc)
     if (ESMF_LogFoundError(rcToCheck=lrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
     allocate(itemNameList(itemCount))
-   
+
     call ESMF_StateGet(State, itemNameList=itemNameList, rc=lrc)
     if (ESMF_LogFoundError(rcToCheck=lrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-   
+
     do n = 1, itemCount
        call ESMF_StateGet(State, itemName=trim(itemNameList(n)), itemType=itemType, rc=lrc)
        if (ESMF_LogFoundError(rcToCheck=lrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-   
+
      if(itemType == ESMF_STATEITEM_FIELD)then
        call ESMF_StateGet(State, itemName=trim(itemNameList(n)), field=lfield, rc=lrc)
        if (ESMF_LogFoundError(rcToCheck=lrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-  
+
        call ESMF_FieldGet(lfield, dimCount=dimcount, rc=lrc)
        if (ESMF_LogFoundError(rcToCheck=lrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-       
+
        if(dimcount == 2)then
          call ESMF_FieldGet(lfield, farrayPtr=dataPtr2d, rc=lrc)
          if (ESMF_LogFoundError(rcToCheck=lrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-   
+
          write(tmpstr,'(A,3g14.7)') trim(subname)//' '//trim(lstring)//':'//trim(itemNameList(n))//'  ', &
            minval(dataPtr2d),maxval(dataPtr2d),sum(dataPtr2d)
          call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=lrc)
        else
          call ESMF_FieldGet(lfield, farrayPtr=dataPtr3d, rc=lrc)
          if (ESMF_LogFoundError(rcToCheck=lrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-  
+
          write(tmpstr,'(A,3g14.7)') trim(subname)//' '//trim(lstring)//':'//trim(itemNameList(n))//'  ', &
            minval(dataPtr3d),maxval(dataPtr3d),sum(dataPtr3d)
          call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=lrc)
