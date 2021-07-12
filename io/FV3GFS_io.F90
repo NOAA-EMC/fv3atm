@@ -1785,10 +1785,10 @@ module FV3GFS_io_mod
         sfc_var2(i,j,33) = Sfcprop(nb)%tsfcl(ix)  !--- tsfcl (temp on land)
         sfc_var2(i,j,34) = Sfcprop(nb)%zorll(ix)  !--- zorll (zorl on land)
         sfc_var2(i,j,35) = Sfcprop(nb)%zorli(ix)  !--- zorli (zorl on ice)
-        sfc_var2(i,j,36) = Sfcprop(nb)%snodl(ix)  !--- snodl (snowd on ice)
+        sfc_var2(i,j,36) = Sfcprop(nb)%snodl(ix)  !--- snodl (snowd on land)
         sfc_var2(i,j,37) = Sfcprop(nb)%tsfc(ix)   !--- tsfc composite
         sfc_var2(i,j,38) = Sfcprop(nb)%zorl(ix)   !--- zorl composite
-        sfc_var2(i,j,39) = Sfcprop(nb)%weasdl(ix) !--- weasdl (weasd on ice)
+        sfc_var2(i,j,39) = Sfcprop(nb)%weasdl(ix) !--- weasdl (weasd on land)
         if (Model%cplwav) then
           sfc_var2(i,j,nvar2m) = Sfcprop(nb)%zorlwav(ix) !--- zorlwav (zorl from wav)
         endif

@@ -238,7 +238,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: zorlwav(:)   => null()  !< wave surface roughness in cm derived from wave model
     real (kind=kind_phys), pointer :: fice   (:)   => null()  !< ice fraction over open water grid
     real (kind=kind_phys), pointer :: snodl  (:)   => null()  !< snow depth over land
-    real (kind=kind_phys), pointer :: weasdl (:)   => null()  !< weasds over land
+    real (kind=kind_phys), pointer :: weasdl (:)   => null()  !< weasd over land
 !   real (kind=kind_phys), pointer :: hprim  (:)   => null()  !< topographic standard deviation in m
     real (kind=kind_phys), pointer :: hprime (:,:) => null()  !< orographic metrics
     real (kind=kind_phys), pointer :: z0base (:)   => null()  !< background or baseline surface roughness length in m
@@ -6886,8 +6886,7 @@ module GFS_typedefs
     endif
 
     if (Model%imp_physics == Model%imp_physics_mg) then
-      if (abs(Model%fprcp) == 0) then
-      elseif (abs(Model%fprcp) == 1) then
+      if (abs(Model%fprcp) == 1) then
         Interstitial%mg3_as_mg2 = .false.
       elseif (Model%fprcp >= 2) then
         if(Model%ntgl > 0 .and. (Model%mg_do_graupel .or. Model%mg_do_hail)) then
