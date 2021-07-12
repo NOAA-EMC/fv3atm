@@ -8,5 +8,5 @@
 	branch = main
 [submodule "ccpp/physics"]
 	path = ccpp/physics
-	url = https://github.com/climbfuji/ccpp-physics
-	branch = thompson_ext_diag_dom
+	url = https://github.com/NCAR/ccpp-physics
+	branch = main
