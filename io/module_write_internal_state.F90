@@ -89,7 +89,6 @@
 !-----------------------------------------
 !
       logical :: output_history
-      logical :: write_nemsioflag
       logical :: write_netcdfflag
 !
 !-----------------------------------------
