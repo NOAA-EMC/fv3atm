@@ -3676,6 +3676,32 @@ module GFS_diagnostics
       enddo
     endif
 
+    ! Extended diagnostics from Thompson MP
+    thompson_extended_diagnostics: if (Model%ext_diag_thompson) then
+      do num=1,Model%thompson_ext_ndiag3d
+        idx = idx + 1
+        ExtDiag(idx)%axes = 3
+        select case (num)
+          ! This is the place to add specific names, descriptions,
+          ! and units if so desired
+          !case (1)
+          ! ...
+          case default
+            write (xtra,'(I2.2)') num
+            ExtDiag(idx)%name = 'thompson_diag3d_' // trim(xtra)
+            ExtDiag(idx)%desc = 'Thompson extended diagnostics array ' // trim(xtra)
+            ExtDiag(idx)%unit = 'unknown'
+        end select
+        ExtDiag(idx)%mod_name = 'gfs_phys'
+        ExtDiag(idx)%intpl_method = 'bilinear'
+        ExtDiag(idx)%time_avg = .false.
+        allocate (ExtDiag(idx)%data(nblks))
+        do nb = 1,nblks
+          ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%thompson_ext_diag3d(:,:,num)
+        enddo
+      enddo
+    end if thompson_extended_diagnostics
+
     !! Cloud effective radii from Microphysics
     !if (Model%imp_physics == Model%imp_physics_thompson .or. Model%imp_physics == Model%imp_physics_wsm6 .or. Model%imp_physics == Model%imp_physics_fer_hires) then
     !  idx = idx + 1
