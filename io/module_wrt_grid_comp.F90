@@ -39,7 +39,7 @@
                                       cen_lon, cen_lat,                         &
                                       lon1, lat1, lon2, lat2, dlon, dlat,       &
                                       stdlat1, stdlat2, dx, dy, iau_offset,     &
-                                      write_fsyncflag, ideflate
+                                      ideflate
       use module_write_netcdf, only : write_netcdf
       use physcons,            only : pi => con_pi
       use inline_post,         only : inline_post_run, inline_post_getattr
@@ -285,15 +285,12 @@
       if (lprnt) then
         print *,'output_grid=',trim(output_grid)
       end if
-      write_fsyncflag  =.false.
 
       if(trim(output_grid) == 'gaussian_grid' .or. trim(output_grid) == 'global_latlon') then
         call ESMF_ConfigGetAttribute(config=CF, value=imo, label ='imo:',rc=rc)
         call ESMF_ConfigGetAttribute(config=CF, value=jmo, label ='jmo:',rc=rc)
-        call ESMF_ConfigGetAttribute(config=CF, value=write_fsyncflag,  label ='write_fsyncflag:', default=.true., rc=rc)
         if (lprnt) then
           print *,'imo=',imo,'jmo=',jmo
-          print *,'write_fsyncflag=',write_fsyncflag
         end if
       else if(trim(output_grid) == 'regional_latlon') then
         call ESMF_ConfigGetAttribute(config=CF, value=lon1, label ='lon1:',rc=rc)
