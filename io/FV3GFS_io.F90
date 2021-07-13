@@ -1300,7 +1300,7 @@ module FV3GFS_io_mod
       compute_tsfc_zorl_for_colstart: if (.not. warm_start) then
         if(Model%frac_grid) then ! 3-way composite
           if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing composite tsfc and zorl')
-!$omp parallel do default(shared) private(nb, ix)
+!$omp parallel do default(shared) private(nb, ix, term1, tem)
           do nb = 1, Atm_block%nblks
             do ix = 1, Atm_block%blksz(nb)
               Sfcprop(nb)%tsfco(ix) = max(con_tice, Sfcprop(nb)%tsfco(ix)) ! this may break restart reproducibility 
