@@ -205,7 +205,7 @@ character(len=128) :: tagname = '$Name$'
 contains
 
 !#######################################################################
-! <SUBROUTINE NAME="update_radiation_physics">
+! <SUBROUTINE NAME="update_atmos_radiation_physics">
 !
 !<DESCRIPTION>
 !   Called every time step as the atmospheric driver to compute the
@@ -262,9 +262,12 @@ subroutine update_atmos_radiation_physics (Atmos)
       call CCPP_step (step="timestep_init", nblks=Atm_block%nblks, ierr=ierr)
       if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP timestep_init step failed')
 
+      if (GFS_Control%do_sppt .or. GFS_Control%do_shum .or. GFS_Control%do_skeb .or. &
+          GFS_Control%lndp_type > 0  .or. GFS_Control%do_ca ) then
 !--- call stochastic physics pattern generation / cellular automata
-      call stochastic_physics_wrapper(GFS_control, GFS_data, Atm_block, ierr)
-      if (ierr/=0)  call mpp_error(FATAL, 'Call to stochastic_physics_wrapper failed')
+        call stochastic_physics_wrapper(GFS_control, GFS_data, Atm_block, ierr)
+        if (ierr/=0)  call mpp_error(FATAL, 'Call to stochastic_physics_wrapper failed')
+      endif
 
 !--- if coupled, assign coupled fields
 
@@ -327,14 +330,19 @@ subroutine update_atmos_radiation_physics (Atmos)
         call FV3GFS_GFS_checksum(GFS_control, GFS_data, Atm_block)
       endif
 
-      if (mpp_pe() == mpp_root_pe() .and. debug) write(6,*) "stochastic physics driver"
+      if (GFS_Control%do_sppt .or. GFS_Control%do_shum .or. GFS_Control%do_skeb .or. &
+          GFS_Control%lndp_type > 0  .or. GFS_Control%do_ca ) then
+
+        if (mpp_pe() == mpp_root_pe() .and. debug) write(6,*) "stochastic physics driver"
 
 !--- execute the atmospheric physics step2 subcomponent (stochastic physics driver)
 
-      call mpp_clock_begin(physClock)
-      call CCPP_step (step="stochastics", nblks=Atm_block%nblks, ierr=ierr)
-      if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP stochastics step failed')
-      call mpp_clock_end(physClock)
+        call mpp_clock_begin(physClock)
+        call CCPP_step (step="stochastics", nblks=Atm_block%nblks, ierr=ierr)
+        if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP stochastics step failed')
+        call mpp_clock_end(physClock)
+
+      endif
 
       if (chksum_debug) then
         if (mpp_pe() == mpp_root_pe()) print *,'PHYSICS STEP2   ', GFS_control%kdt, GFS_control%fhour
@@ -603,9 +611,14 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    call CCPP_step (step="physics_init", nblks=Atm_block%nblks, ierr=ierr)
    if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP physics_init step failed')
 
+   if (GFS_Control%do_sppt .or. GFS_Control%do_shum .or. GFS_Control%do_skeb .or. &
+       GFS_Control%lndp_type > 0  .or. GFS_Control%do_ca) then
+
 !--- Initialize stochastic physics pattern generation / cellular automata for first time step
-   call stochastic_physics_wrapper(GFS_control, GFS_data, Atm_block, ierr)
-   if (ierr/=0)  call mpp_error(FATAL, 'Call to stochastic_physics_wrapper failed')
+     call stochastic_physics_wrapper(GFS_control, GFS_data, Atm_block, ierr)
+     if (ierr/=0)  call mpp_error(FATAL, 'Call to stochastic_physics_wrapper failed')
+
+   endif
 
    !--- set the initial diagnostic timestamp
    diag_time = Time
@@ -821,7 +834,7 @@ subroutine update_atmos_model_state (Atmos, rc)
       if (mpp_pe() == mpp_root_pe()) write(6,*) ' gfs diags time since last bucket empty: ',time_int/3600.,'hrs'
       call atmosphere_nggps_diag(Atmos%Time)
       call FV3GFS_diag_output(Atmos%Time, GFS_Diag, Atm_block, GFS_control%nx, GFS_control%ny, &
-                            GFS_control%levs, 1, 1, 1.0_GFS_kind_phys, time_int, time_intfull,              &
+                            GFS_control%levs, 1, 1, 1.0_GFS_kind_phys, time_int, time_intfull, &
                             GFS_control%fhswr, GFS_control%fhlwr)
       if (nint(GFS_control%fhzero) > 0) then
         if (mod(isec,3600*nint(GFS_control%fhzero)) == 0) diag_time = Atmos%Time
@@ -883,12 +896,18 @@ subroutine atmos_model_end (Atmos)
     if(restart_endfcst) then
       call FV3GFS_restart_write (GFS_data, GFS_restart_var, Atm_block, &
                                  GFS_control, Atmos%domain)
-      call write_stoch_restart_atm('RESTART/atm_stoch.res.nc')
-      if(GFS_control%ca_sgs)then
-         call write_ca_restart(Atmos%domain,GFS_control%scells)
-      endif
+!     call write_stoch_restart_atm('RESTART/atm_stoch.res.nc')
     endif
-    call stochastic_physics_wrapper_end(GFS_control)
+    if (GFS_Control%do_sppt .or. GFS_Control%do_shum .or. GFS_Control%do_skeb .or. &
+        GFS_Control%lndp_type > 0  .or. GFS_Control%do_ca ) then
+      if(restart_endfcst) then
+        call write_stoch_restart_atm('RESTART/atm_stoch.res.nc')
+        if (GFS_control%ca_sgs)then
+          call write_ca_restart(Atmos%domain,GFS_control%scells)
+        endif
+      endif
+      call stochastic_physics_wrapper_end(GFS_control)
+    endif
 
 !   Fast physics (from dynamics) are finalized in atmosphere_end above;
 !   standard/slow physics (from CCPP) are finalized in CCPP_step 'finalize'.
@@ -1533,6 +1552,10 @@ end subroutine atmos_data_type_chksum
     logical found, isFieldCreated, lcpl_fice
     real (kind=GFS_kind_phys), parameter :: z0ice=1.1    !  (in cm)
 !
+      real(kind=GFS_kind_phys), parameter :: himax = 8.0      !< maximum ice thickness allowed
+!     real(kind=GFS_kind_phys), parameter :: himin = 0.1      !< minimum ice thickness required
+      real(kind=GFS_kind_phys), parameter :: hsmax = 100.0    !< maximum snow depth (m) allowed
+!
 !------------------------------------------------------------------------------
 !
     rc  = -999
@@ -1623,8 +1646,8 @@ end subroutine atmos_data_type_chksum
                   if (GFS_data(nb)%Sfcprop%oceanfrac(ix) > zero .and.  datar8(i,j) > zorlmin) then
                     tem = 100.0_GFS_kind_phys * min(0.1_GFS_kind_phys, datar8(i,j))
 !                   GFS_data(nb)%Coupling%zorlwav_cpl(ix) = tem
-                    GFS_data(nb)%Sfcprop%zorlw(ix)        = tem
                     GFS_data(nb)%Sfcprop%zorlwav(ix)      = tem
+                    GFS_data(nb)%Sfcprop%zorlw(ix)        = tem
                   else
                     GFS_data(nb)%Sfcprop%zorlwav(ix) = -999.0_GFS_kind_phys
 
@@ -1831,7 +1854,7 @@ end subroutine atmos_data_type_chksum
                   ix = Atm_block%ixp(i,j)
                   if (GFS_data(nb)%Sfcprop%oceanfrac(ix) > zero) then
 !                   GFS_data(nb)%Coupling%hicein_cpl(ix) = datar8(i,j)
-                    GFS_data(nb)%Sfcprop%hice(ix)        = datar8(i,j)
+                    GFS_data(nb)%Sfcprop%hice(ix)        = min(datar8(i,j), himax)
                   endif
                 enddo
               enddo
@@ -2336,25 +2359,15 @@ end subroutine atmos_data_type_chksum
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
           if (GFS_data(nb)%Sfcprop%oceanfrac(ix) > zero) then
-!if it is ocean or ice get surface temperature from mediator
             if (GFS_data(nb)%Sfcprop%fice(ix) >= GFS_control%min_seaice) then
 
-!           if(GFS_data(nb)%Coupling%ficein_cpl(ix) >= GFS_control%min_seaice) then
-!             GFS_data(nb)%Sfcprop%tisfc(ix)       = GFS_data(nb)%Coupling%tisfcin_cpl(ix)
-!             GFS_data(nb)%Sfcprop%fice(ix)        = GFS_data(nb)%Coupling%ficein_cpl(ix)
-!             GFS_data(nb)%Sfcprop%hice(ix)        = GFS_data(nb)%Coupling%hicein_cpl(ix)
-!             GFS_data(nb)%Sfcprop%snowd(ix)       = GFS_data(nb)%Coupling%hsnoin_cpl(ix)
-
-              GFS_data(nb)%Coupling%hsnoin_cpl(ix) = GFS_data(nb)%Coupling%hsnoin_cpl(ix) &
-                                                   / max(0.01_GFS_kind_phys, GFS_data(nb)%Sfcprop%fice(ix))
-!                                                  / max(0.01_GFS_kind_phys, GFS_data(nb)%Coupling%ficein_cpl(ix))
+              GFS_data(nb)%Coupling%hsnoin_cpl(ix) = min(hsmax, GFS_data(nb)%Coupling%hsnoin_cpl(ix) &
+                             / (GFS_data(nb)%Sfcprop%fice(ix)*GFS_data(nb)%Sfcprop%oceanfrac(ix)))
               GFS_data(nb)%Sfcprop%zorli(ix)       = z0ice
             else
-!             GFS_data(nb)%Sfcprop%tisfc(ix)       = GFS_data(nb)%Coupling%tseain_cpl(ix)
               GFS_data(nb)%Sfcprop%tisfc(ix)       = GFS_data(nb)%Sfcprop%tsfco(ix)
               GFS_data(nb)%Sfcprop%fice(ix)        = zero
               GFS_data(nb)%Sfcprop%hice(ix)        = zero
-!             GFS_data(nb)%Sfcprop%snowd(ix)       = zero
               GFS_data(nb)%Coupling%hsnoin_cpl(ix) = zero
 !
               GFS_data(nb)%Coupling%dtsfcin_cpl(ix)  = -99999.0 ! over open water - should not be used in ATM
@@ -2693,7 +2706,7 @@ end subroutine atmos_data_type_chksum
           end select
         enddo
         if (ESMF_LogFoundError(rcToCheck=localrc, msg="Failure to populate exported field: "//trim(fieldname), &
-          line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+                               line=__LINE__, file=__FILE__, rcToReturn=rc)) return
       endif
     enddo ! exportFields
 
