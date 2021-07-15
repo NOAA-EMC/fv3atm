@@ -578,6 +578,20 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
+[snodl]
+  standard_name = surface_snow_thickness_water_equivalent_over_land
+  long_name = water equivalent snow depth over land
+  units = mm
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[weasdl]
+  standard_name = water_equivalent_accumulated_snow_depth_over_land
+  long_name = water equiv of acc snow depth over land
+  units = mm
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
 [hprime]
   standard_name = statistical_measures_of_subgrid_orography
   long_name = orographic metrics
@@ -2277,14 +2291,6 @@
   type = real
   kind = kind_phys
   active = (index_for_stochastic_land_surface_perturbation_type .ne. 0)
-[dqdti]
-  standard_name = instantaneous_water_vapor_specific_humidity_tendency_due_to_convection
-  long_name = instantaneous moisture tendency due to convection
-  units = kg kg-1 s-1
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (flag_for_chemistry_coupling)
 [nwfa2d]
   standard_name = tendency_of_water_friendly_aerosols_at_surface
   long_name = instantaneous water-friendly sfc aerosol source
@@ -2309,14 +2315,6 @@
   type = real
   kind = kind_phys
   active = (flag_for_chemistry_coupling)
-[dkt]
-  standard_name = instantaneous_atmosphere_heat_diffusivity
-  long_name = instantaneous atmospheric heat diffusivity
-  units = m2 s-1
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (flag_for_chemistry_coupling)
 [qci_conv]
   standard_name = convective_cloud_condesate_after_rainout
   long_name = convective cloud condesate after rainout
@@ -2325,6 +2323,22 @@
   type = real
   kind = kind_phys
   active = (flag_for_mass_flux_deep_convection_scheme == flag_for_gf_deep_convection_scheme)
+[pfi_lsan]
+  standard_name = ice_flux_due_to_large_scale_precipitation
+  long_name = instantaneous 3D flux of ice from nonconvective precipitation
+  units = kg m-2 s-1
+  dimensions = (horizontal_loop_extent,vertical_dimension)
+  type = real
+  kind = kind_phys
+  active = (flag_for_chemistry_coupling)
+[pfl_lsan]
+  standard_name = liquid_flux_due_to_large_scale_precipitation
+  long_name = instantaneous 3D flux of liquid water from nonconvective precipitation
+  units = kg m-2 s-1
+  dimensions = (horizontal_loop_extent,vertical_dimension)
+  type = real
+  kind = kind_phys
+  active = (flag_for_chemistry_coupling)
 ########################################################################
 [ccpp-table-properties]
   name = GFS_control_type
@@ -2931,6 +2945,26 @@
   units = flag
   dimensions = ()
   type = logical
+[damp_LW_fluxadj]
+  standard_name = flag_to_damp_RRTMGP_LW_jacobian_flux_adjustment
+  long_name = logical flag to control RRTMGP LW calculation
+  units = flag
+  dimensions = ()
+  type = logical
+[lfnc_k]
+  standard_name = transition_pressure_length_scale_for_flux_damping
+  long_name = depth of transition layer	in logistic function for LW flux adjustment damping
+  units = Pa
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[lfnc_p0]
+  standard_name = transition_pressure_for_flux_damping
+  long_name = transition pressure for LW flux adjustment damping
+  units = Pa
+  dimensions = ()
+  type = real
+  kind = kind_phys
 [doGP_lwscat]
   standard_name = flag_to_include_longwave_scattering_in_cloud_optics
   long_name = logical flag to control the addition of LW scattering in RRTMGP
@@ -2971,6 +3005,13 @@
 [minGPtemp]
   standard_name = minimum_temperature_in_RRTMGP
   long_name = minimum temperature allowed in RRTMGP
+  units = K
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[maxGPtemp]
+  standard_name = maximum_temperature_in_RRTMGP
+  long_name = maximum temperature allowed in RRTMGP
   units = K
   dimensions = ()
   type = real
@@ -3426,6 +3467,18 @@
   dimensions = ()
   type = real
   kind = kind_phys
+[ext_diag_thompson]
+  standard_name = flag_for_extended_diagnostic_output_from_thompson_microphysics
+  long_name = flag for extended diagnostic output from thompson microphysics
+  units = flag
+  dimensions = ()
+  type = logical
+[thompson_ext_ndiag3d]
+  standard_name = number_of_3d_diagnostic_output_arrays_from_thompson_microphysics
+  long_name = number of 3d arrays for extended diagnostic output from thompson microphysics
+  units = count
+  dimensions = ()
+  type = integer
 [lgfdlmprad]
   standard_name = flag_for_GFDL_microphysics_radiation_interaction
   long_name = flag for GFDL microphysics-radiation interaction
@@ -4713,6 +4766,30 @@
 [ntchs]
   standard_name = index_for_first_chemical_tracer
   long_name = tracer index for first chemical tracer
+  units = index
+  dimensions = ()
+  type = integer
+[ntche]
+  standard_name = index_for_last_chemical_tracer
+  long_name = tracer index for last chemical tracer
+  units = index
+  dimensions = ()
+  type = integer
+[ndchm]
+  standard_name = number_of_diagnostic_chemical_tracers
+  long_name = number of diagnostic chemical tracers
+  units = count
+  dimensions = ()
+  type = integer
+[ndchs]
+  standard_name = index_for_first_diagnostic_chemical_tracer
+  long_name = tracer index for first diagnostic chemical tracer
+  units = index
+  dimensions = ()
+  type = integer
+[ndche]
+  standard_name = index_for_last_diagnostic_chemical_tracer
+  long_name = tracer index for last diagnostic chemical tracer
   units = index
   dimensions = ()
   type = integer
@@ -6909,86 +6986,6 @@
   dimensions = (horizontal_loop_extent,adjusted_vertical_layer_dimension_for_radiation)
   type = real
   kind = kind_phys
-[ndust]
-  standard_name = number_of_dust_bins_for_diagnostics
-  long_name = number of dust bins for diagnostics
-  units = count
-  dimensions = ()
-  type = integer
-[nseasalt]
-  standard_name = number_of_seasalt_bins_for_diagnostics
-  long_name = number of seasalt bins for diagnostics
-  units = count
-  dimensions = ()
-  type = integer
-[ntchmdiag]
-  standard_name = number_of_chemical_tracers_for_diagnostics
-  long_name = number of chemical tracers for diagnostic output
-  units = count
-  dimensions = ()
-  type = integer
-[duem]
-  standard_name = instantaneous_dust_emission_flux
-  long_name = instantaneous dust emission flux
-  units = kg m-2 s-1
-  dimensions = (horizonal_dimension,number_of_dust_bins_for_diagnostics)
-  type = real
-  kind = kind_phys
-  active = (number_of_dust_bins_for_diagnostics > 0)
-[ssem]
-  standard_name = instantaneous_seasalt_emission_flux
-  long_name = instantaneous sea salt emission flux
-  units = kg m-2 s-1
-  dimensions = (horizonal_dimension,number_of_seasalt_bins_for_diagnostics)
-  type = real
-  kind = kind_phys
-  active = (number_of_seasalt_bins_for_diagnostics > 0)
-[sedim]
-  standard_name = instantaneous_sedimentation
-  long_name = instantaneous sedimentation
-  units = kg m-2 s-1
-  dimensions = (horizonal_dimension,number_of_chemical_tracers_for_diagnostics)
-  type = real
-  kind = kind_phys
-  active = (number_of_chemical_tracers_for_diagnostics > 0)
-[drydep]
-  standard_name = instantaneous_dry_deposition
-  long_name = instantaneous dry deposition
-  units = kg m-2 s-1
-  dimensions = (horizonal_dimension,number_of_chemical_tracers_for_diagnostics)
-  type = real
-  kind = kind_phys
-  active = (number_of_chemical_tracers_for_diagnostics > 0)
-[wetdpl]
-  standard_name = instantaneous_large_scale_wet_deposition
-  long_name = instantaneous large-scale wet deposition
-  units = kg m-2 s-1
-  dimensions = (horizonal_dimension,number_of_chemical_tracers_for_diagnostics)
-  type = real
-  kind = kind_phys
-  active = (number_of_chemical_tracers_for_diagnostics > 0)
-[wetdpc]
-  standard_name = instantaneous_convective_scale_wet_deposition
-  long_name = instantaneous convective-scale wet deposition
-  units = kg m-2 s-1
-  dimensions = (horizonal_dimension,number_of_chemical_tracers_for_diagnostics)
-  type = real
-  kind = kind_phys
-  active = (number_of_chemical_tracers_for_diagnostics > 0)
-[abem]
-  standard_name = instantaneous_anthopogenic_and_biomass_burning_emissions
-  long_name = instantaneous anthopogenic and biomass burning emissions for black carbon, organic carbon, and sulfur dioxide
-  units = ug m-2 s-1
-  dimensions = (horizontal_loop_extent,6)
-  type = real
-  kind = kind_phys
-[aecm]
-  standard_name = instantaneous_aerosol_column_mass_densities
-  long_name = instantaneous aerosol column mass densities for pm2.5, black carbon, organic carbon, sulfate, dust, sea salt
-  units = g m-2
-  dimensions = (horizontal_loop_extent,6)
-  type = real
-  kind = kind_phys
 [edmf_a]
   standard_name = emdf_updraft_area
   long_name = updraft area from mass flux scheme
@@ -7358,6 +7355,14 @@
   type = real
   kind = kind_phys
   active = (diag_ugwp_flag)
+[thompson_ext_diag3d]
+  standard_name = extended_diagnostics_output_from_thompson_microphysics
+  long_name = set of 3d arrays for extended diagnostics output from thompson microphysics
+  units = none
+  dimensions = (horizontal_loop_extent,vertical_dimension,number_of_3d_diagnostic_output_arrays_from_thompson_microphysics)
+  type = real
+  kind = kind_phys
+  active = (flag_for_extended_diagnostic_output_from_thompson_microphysics)
 [aux2d]
   standard_name = auxiliary_2d_arrays
   long_name = auxiliary 2d arrays to output (for debugging)
@@ -8763,6 +8768,12 @@
   units = flag
   dimensions = (horizontal_loop_extent)
   type = logical
+[use_flake]
+  standard_name = flag_for_using_flake
+  long_name = flag indicating lake points using flake model
+  units = flag
+  dimensions = (horizontal_loop_extent)
+  type = logical
 [ocean]
   standard_name = flag_nonzero_ocean_surface_fraction
   long_name = flag indicating presence of some ocean surface area fraction
@@ -8968,12 +8979,6 @@
 [nn]
   standard_name = number_of_tracers_for_convective_transport
   long_name = number of tracers for convective transport
-  units = count
-  dimensions = ()
-  type = integer
-[nncl]
-  standard_name = number_of_tracers_for_cloud_condensate
-  long_name = number of tracers for cloud condensate
   units = count
   dimensions = ()
   type = integer
@@ -9279,9 +9284,15 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[reset]
+[max_hourly_reset]
   standard_name = flag_reset_maximum_hourly_fields
   long_name = flag for resetting maximum hourly fields
+  units = flag
+  dimensions = ()
+  type = logical
+[ext_diag_thompson_reset]
+  standard_name = flag_reset_extended_diagnostics_output_arrays_from_thompson_microphysics
+  long_name = flag for resetting extended diagnostics output arrays from thompson microphysics
   units = flag
   dimensions = ()
   type = logical
@@ -9517,16 +9528,9 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[snowd_water]
-  standard_name = surface_snow_thickness_water_equivalent_over_water
-  long_name = water equivalent snow depth over water
-  units = mm
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-[snowd_land]
-  standard_name = surface_snow_thickness_water_equivalent_over_land
-  long_name = water equivalent snow depth over land
+[snowd_ice]
+  standard_name = surface_snow_thickness_water_equivalent_over_ice
+  long_name = water equivalent snow depth over ice
   units = mm
   dimensions = (horizontal_loop_extent)
   type = real
@@ -9539,13 +9543,6 @@
   type = real
   kind = kind_phys
   active = (flag_for_land_surface_scheme == flag_for_noah_wrfv4_land_surface_scheme)
-[snowd_ice]
-  standard_name = surface_snow_thickness_water_equivalent_over_ice
-  long_name = water equivalent snow depth over ice
-  units = mm
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
 [snow_depth]
   standard_name = actual_snow_depth
   long_name = actual snow depth
@@ -9892,20 +9889,6 @@
   standard_name = maximum_updraft_velocity_at_cloud_base
   long_name = maximum updraft velocity at cloud base
   units = m s-1
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-[weasd_water]
-  standard_name = water_equivalent_accumulated_snow_depth_over_water
-  long_name = water equiv of acc snow depth over water
-  units = mm
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-[weasd_land]
-  standard_name = water_equivalent_accumulated_snow_depth_over_land
-  long_name = water equiv of acc snow depth over land
-  units = mm
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
