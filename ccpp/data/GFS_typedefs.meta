@@ -2919,6 +2919,26 @@
   units = flag
   dimensions = ()
   type = logical
+[damp_LW_fluxadj]
+  standard_name = flag_to_damp_RRTMGP_LW_jacobian_flux_adjustment
+  long_name = logical flag to control RRTMGP LW calculation
+  units = flag
+  dimensions = ()
+  type = logical
+[lfnc_k]
+  standard_name = transition_pressure_length_scale_for_flux_damping
+  long_name = depth of transition layer	in logistic function for LW flux adjustment damping
+  units = Pa
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[lfnc_p0]
+  standard_name = transition_pressure_for_flux_damping
+  long_name = transition pressure for LW flux adjustment damping
+  units = Pa
+  dimensions = ()
+  type = real
+  kind = kind_phys
 [doGP_lwscat]
   standard_name = flag_to_include_longwave_scattering_in_cloud_optics
   long_name = logical flag to control the addition of LW scattering in RRTMGP
@@ -2959,6 +2979,13 @@
 [minGPtemp]
   standard_name = minimum_temperature_in_RRTMGP
   long_name = minimum temperature allowed in RRTMGP
+  units = K
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[maxGPtemp]
+  standard_name = maximum_temperature_in_RRTMGP
+  long_name = maximum temperature allowed in RRTMGP
   units = K
   dimensions = ()
   type = real
@@ -3408,6 +3435,18 @@
   dimensions = ()
   type = real
   kind = kind_phys
+[ext_diag_thompson]
+  standard_name = flag_for_extended_diagnostic_output_from_thompson_microphysics
+  long_name = flag for extended diagnostic output from thompson microphysics
+  units = flag
+  dimensions = ()
+  type = logical
+[thompson_ext_ndiag3d]
+  standard_name = number_of_3d_diagnostic_output_arrays_from_thompson_microphysics
+  long_name = number of 3d arrays for extended diagnostic output from thompson microphysics
+  units = count
+  dimensions = ()
+  type = integer
 [lgfdlmprad]
   standard_name = flag_for_GFDL_microphysics_radiation_interaction
   long_name = flag for GFDL microphysics-radiation interaction
@@ -7433,6 +7472,14 @@
   type = real
   kind = kind_phys
   active = (diag_ugwp_flag)
+[thompson_ext_diag3d]
+  standard_name = extended_diagnostics_output_from_thompson_microphysics
+  long_name = set of 3d arrays for extended diagnostics output from thompson microphysics
+  units = none
+  dimensions = (horizontal_loop_extent,vertical_dimension,number_of_3d_diagnostic_output_arrays_from_thompson_microphysics)
+  type = real
+  kind = kind_phys
+  active = (flag_for_extended_diagnostic_output_from_thompson_microphysics)
 [aux2d]
   standard_name = auxiliary_2d_arrays
   long_name = auxiliary 2d arrays to output (for debugging)
@@ -9347,9 +9394,15 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[reset]
+[max_hourly_reset]
   standard_name = flag_reset_maximum_hourly_fields
   long_name = flag for resetting maximum hourly fields
+  units = flag
+  dimensions = ()
+  type = logical
+[ext_diag_thompson_reset]
+  standard_name = flag_reset_extended_diagnostics_output_arrays_from_thompson_microphysics
+  long_name = flag for resetting extended diagnostics output arrays from thompson microphysics
   units = flag
   dimensions = ()
   type = logical

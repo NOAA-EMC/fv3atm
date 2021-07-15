@@ -1882,89 +1882,92 @@ end subroutine atmos_data_type_chksum
               if (mpp_pe() == mpp_root_pe() .and. debug)  print *,'fv3 assign_import: get snow_volume from mediator'
             endif
           endif
+
+          if (GFS_control%use_cice_alb) then
 !
 ! get instantaneous near IR albedo for diffuse radiation: for sea ice covered area
 !---------------------------------------------------------------------------------
-          fldname = 'inst_ice_ir_dif_albedo'
-          if (trim(impfield_name) == trim(fldname)) then
-            findex  = queryImportFields(fldname)
-            if (importFieldsValid(findex)) then
+            fldname = 'inst_ice_ir_dif_albedo'
+            if (trim(impfield_name) == trim(fldname)) then
+              findex  = queryImportFields(fldname)
+              if (importFieldsValid(findex)) then
 !$omp parallel do default(shared) private(i,j,nb,ix)
-              do j=jsc,jec
-                do i=isc,iec
-                  nb = Atm_block%blkno(i,j)
-                  ix = Atm_block%ixp(i,j)
-                  if (GFS_data(nb)%Sfcprop%oceanfrac(ix) > zero) then
-!                   GFS_data(nb)%Coupling%sfc_alb_nir_dif_cpl(ix) = datar8(i,j)
-                    GFS_data(nb)%Sfcprop%albdifnir_ice(ix) = datar8(i,j)
-                  endif
+                do j=jsc,jec
+                  do i=isc,iec
+                    nb = Atm_block%blkno(i,j)
+                    ix = Atm_block%ixp(i,j)
+                    if (GFS_data(nb)%Sfcprop%oceanfrac(ix) > zero) then
+!                     GFS_data(nb)%Coupling%sfc_alb_nir_dif_cpl(ix) = datar8(i,j)
+                      GFS_data(nb)%Sfcprop%albdifnir_ice(ix) = datar8(i,j)
+                    endif
+                  enddo
                 enddo
-              enddo
-              if (mpp_pe() == mpp_root_pe() .and. debug)  print *,'fv3 assign_import: get sfc_alb_nir_dif_cpl from mediator'
+                if (mpp_pe() == mpp_root_pe() .and. debug)  print *,'fv3 assign_import: get sfc_alb_nir_dif_cpl from mediator'
+              endif
             endif
-          endif
 !
 ! get instantaneous near IR albedo for direct radiation: for sea ice covered area
 !---------------------------------------------------------------------------------
-          fldname = 'inst_ice_ir_dir_albedo'
-          if (trim(impfield_name) == trim(fldname)) then
-            findex  = queryImportFields(fldname)
-            if (importFieldsValid(findex)) then
+            fldname = 'inst_ice_ir_dir_albedo'
+            if (trim(impfield_name) == trim(fldname)) then
+              findex  = queryImportFields(fldname)
+              if (importFieldsValid(findex)) then
 !$omp parallel do default(shared) private(i,j,nb,ix)
-              do j=jsc,jec
-                do i=isc,iec
-                  nb = Atm_block%blkno(i,j)
-                  ix = Atm_block%ixp(i,j)
-                  if (GFS_data(nb)%Sfcprop%oceanfrac(ix) > zero) then
-!                   GFS_data(nb)%Coupling%sfc_alb_nir_dir_cpl(ix) = datar8(i,j)
-                    GFS_data(nb)%Sfcprop%albdirnir_ice(ix) = datar8(i,j)
-                  endif
+                do j=jsc,jec
+                  do i=isc,iec
+                    nb = Atm_block%blkno(i,j)
+                    ix = Atm_block%ixp(i,j)
+                    if (GFS_data(nb)%Sfcprop%oceanfrac(ix) > zero) then
+!                     GFS_data(nb)%Coupling%sfc_alb_nir_dir_cpl(ix) = datar8(i,j)
+                      GFS_data(nb)%Sfcprop%albdirnir_ice(ix) = datar8(i,j)
+                    endif
+                  enddo
                 enddo
-              enddo
-              if (mpp_pe() == mpp_root_pe() .and. debug)  print *,'fv3 assign_import: get sfc_alb_nir_dir_cpl from mediator'
+                if (mpp_pe() == mpp_root_pe() .and. debug)  print *,'fv3 assign_import: get sfc_alb_nir_dir_cpl from mediator'
+              endif
             endif
-          endif
 !
 ! get instantaneous visible albedo for diffuse radiation: for sea ice covered area
 !---------------------------------------------------------------------------------
-          fldname = 'inst_ice_vis_dif_albedo'
-          if (trim(impfield_name) == trim(fldname)) then
-            findex  = queryImportFields(fldname)
-            if (importFieldsValid(findex)) then
+            fldname = 'inst_ice_vis_dif_albedo'
+            if (trim(impfield_name) == trim(fldname)) then
+              findex  = queryImportFields(fldname)
+              if (importFieldsValid(findex)) then
 !$omp parallel do default(shared) private(i,j,nb,ix)
-              do j=jsc,jec
-                do i=isc,iec
-                  nb = Atm_block%blkno(i,j)
-                  ix = Atm_block%ixp(i,j)
-                  if (GFS_data(nb)%Sfcprop%oceanfrac(ix) > zero) then
-!                   GFS_data(nb)%Coupling%sfc_alb_vis_dif_cpl(ix) = datar8(i,j)
-                    GFS_data(nb)%Sfcprop%albdifvis_ice(ix) = datar8(i,j)
-                  endif
+                do j=jsc,jec
+                  do i=isc,iec
+                    nb = Atm_block%blkno(i,j)
+                    ix = Atm_block%ixp(i,j)
+                    if (GFS_data(nb)%Sfcprop%oceanfrac(ix) > zero) then
+!                     GFS_data(nb)%Coupling%sfc_alb_vis_dif_cpl(ix) = datar8(i,j)
+                      GFS_data(nb)%Sfcprop%albdifvis_ice(ix) = datar8(i,j)
+                    endif
+                  enddo
                 enddo
-              enddo
-              if (mpp_pe() == mpp_root_pe() .and. debug)  print *,'fv3 assign_import: get sfc_alb_vis_dif_cpl from mediator'
+                if (mpp_pe() == mpp_root_pe() .and. debug)  print *,'fv3 assign_import: get sfc_alb_vis_dif_cpl from mediator'
+              endif
             endif
-          endif
 
 !
 ! get instantaneous visible IR albedo for direct radiation: for sea ice covered area
 !---------------------------------------------------------------------------------
-          fldname = 'inst_ice_vis_dir_albedo'
-          if (trim(impfield_name) == trim(fldname)) then
-            findex  = queryImportFields(fldname)
-            if (importFieldsValid(findex)) then
+            fldname = 'inst_ice_vis_dir_albedo'
+            if (trim(impfield_name) == trim(fldname)) then
+              findex  = queryImportFields(fldname)
+              if (importFieldsValid(findex)) then
 !$omp parallel do default(shared) private(i,j,nb,ix)
-              do j=jsc,jec
-                do i=isc,iec
-                  nb = Atm_block%blkno(i,j)
-                  ix = Atm_block%ixp(i,j)
-                  if (GFS_data(nb)%Sfcprop%oceanfrac(ix) > zero) then
-!                   GFS_data(nb)%Coupling%sfc_alb_vis_dir_cpl(ix) = datar8(i,j)
-                    GFS_data(nb)%Sfcprop%albdirvis_ice(ix) = datar8(i,j)
-                  endif
+                do j=jsc,jec
+                  do i=isc,iec
+                    nb = Atm_block%blkno(i,j)
+                    ix = Atm_block%ixp(i,j)
+                    if (GFS_data(nb)%Sfcprop%oceanfrac(ix) > zero) then
+!                     GFS_data(nb)%Coupling%sfc_alb_vis_dir_cpl(ix) = datar8(i,j)
+                      GFS_data(nb)%Sfcprop%albdirvis_ice(ix) = datar8(i,j)
+                    endif
+                  enddo
                 enddo
-              enddo
-              if (mpp_pe() == mpp_root_pe() .and. debug)  print *,'fv3 assign_import: get inst_ice_vis_dir_albedo from mediator'
+                if (mpp_pe() == mpp_root_pe() .and. debug)  print *,'fv3 assign_import: get inst_ice_vis_dir_albedo from mediator'
+              endif
             endif
           endif
 
@@ -2381,10 +2384,10 @@ end subroutine atmos_data_type_chksum
               GFS_data(nb)%Coupling%dvsfcin_cpl(ix)  = -99999.0 !                 ,,
               GFS_data(nb)%Coupling%dtsfcin_cpl(ix)  = -99999.0 !                 ,,
               GFS_data(nb)%Coupling%ulwsfcin_cpl(ix) = -99999.0 !                 ,,
-              GFS_data(nb)%Sfcprop%albdirvis_ice(ix) = -9999.0  !                 ,,
-              GFS_data(nb)%Sfcprop%albdirnir_ice(ix) = -9999.0  !                 ,,
-              GFS_data(nb)%Sfcprop%albdifvis_ice(ix) = -9999.0  !                 ,,
-              GFS_data(nb)%Sfcprop%albdifnir_ice(ix) = -9999.0  !                 ,,
+!             GFS_data(nb)%Sfcprop%albdirvis_ice(ix) = -9999.0  !                 ,,
+!             GFS_data(nb)%Sfcprop%albdirnir_ice(ix) = -9999.0  !                 ,,
+!             GFS_data(nb)%Sfcprop%albdifvis_ice(ix) = -9999.0  !                 ,,
+!             GFS_data(nb)%Sfcprop%albdifnir_ice(ix) = -9999.0  !                 ,,
               if (abs(one-GFS_data(nb)%Sfcprop%oceanfrac(ix)) < epsln) then !  100% open water
                 GFS_data(nb)%Coupling%slimskin_cpl(ix) = zero
                 GFS_data(nb)%Sfcprop%slmsk(ix)         = zero
