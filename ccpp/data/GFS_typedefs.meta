@@ -760,6 +760,14 @@
   type = real
   kind = kind_phys
   active = (flag_for_mass_flux_deep_convection_scheme == flag_for_gf_deep_convection_scheme)
+[conv_act_m]
+  standard_name = gf_mid_memory_counter
+  long_name = Memory counter for GF midlevel
+  units = none
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (flag_for_mass_flux_deep_convection_scheme == flag_for_gf_deep_convection_scheme)
 [hice]
   standard_name = sea_ice_thickness
   long_name = sea ice thickness
