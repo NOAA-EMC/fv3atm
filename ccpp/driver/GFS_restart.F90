@@ -193,6 +193,16 @@ module GFS_restart
       do nb = 1,nblks
         Restart%data(nb,num)%var2p => Sfcprop(nb)%conv_act(:)
       enddo
+      num = num + 1
+      Restart%name2d(num) = 'gf_2d_conv_act_m'
+      do nb = 1,nblks
+        Restart%data(nb,num)%var2p => Sfcprop(nb)%conv_act_m(:)
+      enddo
+      num = num + 1
+      Restart%name2d(num) = 'aod_gf'
+      do nb = 1,nblks
+        Restart%data(nb,num)%var2p => Tbd(nb)%aod_gf(:)
+      enddo
     endif
     ! NoahMP
     if (Model%lsm == Model%lsm_noahmp) then
