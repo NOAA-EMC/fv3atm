@@ -784,13 +784,13 @@ module FV3GFS_io_mod
       sfc_name2(31) = 'snoalb'
       !--- variables below here are optional
       sfc_name2(32) = 'sncovr'
-      sfc_name2(33) = 'tsfcl' !temp on land portion of a cell
-      sfc_name2(34) = 'zorll' !zorl on land portion of a cell
-      sfc_name2(35) = 'zorli' !zorl on ice portion of a cell
-      sfc_name2(36) = 'snodl' !snowd on land portion of a cell
-      sfc_name2(37) = 'tsfc'  !tsfc composite
-      sfc_name2(38) = 'zorlw' !zorl on water portion of a cell
-      sfc_name2(39) = 'weasdl'!weasd on land portion of a cell
+      sfc_name2(33) = 'snodl' !snowd on land portion of a cell
+      sfc_name2(34) = 'weasdl'!weasd on land portion of a cell
+      sfc_name2(35) = 'tsfc'  !tsfc composite
+      sfc_name2(36) = 'tsfcl' !temp on land portion of a cell
+      sfc_name2(37) = 'zorlw' !zorl on water portion of a cell
+      sfc_name2(38) = 'zorll' !zorl on land portion of a cell
+      sfc_name2(39) = 'zorli' !zorl on ice portion of a cell
       if(Model%cplwav) then
         sfc_name2(nvar_s2m) = 'zorlwav' !zorl from wave component
       endif
@@ -1034,17 +1034,17 @@ module FV3GFS_io_mod
         Sfcprop(nb)%slope(ix)  = sfc_var2(i,j,30)   !--- slope
         Sfcprop(nb)%snoalb(ix) = sfc_var2(i,j,31)   !--- snoalb
         Sfcprop(nb)%sncovr(ix) = sfc_var2(i,j,32)   !--- sncovr
-        Sfcprop(nb)%tsfcl(ix)  = sfc_var2(i,j,33) !--- sfcl  (temp on land portion of a cell)
-        Sfcprop(nb)%zorll(ix)  = sfc_var2(i,j,34) !--- zorll (zorl on land portion of a cell)
-        Sfcprop(nb)%zorli(ix)  = sfc_var2(i,j,35) !--- zorli (zorl on ice  portion of a cell)
-        Sfcprop(nb)%snodl(ix)  = sfc_var2(i,j,36) !--- snodl (snowd on land  portion of a cell)
-        Sfcprop(nb)%tsfc(ix)   = sfc_var2(i,j,37) !--- tsfc composite
-        Sfcprop(nb)%zorlw(ix)  = sfc_var2(i,j,38) !--- zorlw (zorl on water portion of a cell)
-        Sfcprop(nb)%weasdl(ix) = sfc_var2(i,j,39) !--- weasdl (weasd on land  portion of a cell)
+        Sfcprop(nb)%snodl(ix)  = sfc_var2(i,j,33)   !--- snodl (snowd on land  portion of a cell)
+        Sfcprop(nb)%weasdl(ix) = sfc_var2(i,j,34)   !--- weasdl (weasd on land  portion of a cell)
+        Sfcprop(nb)%tsfc(ix)   = sfc_var2(i,j,35)   !--- tsfc composite
+        Sfcprop(nb)%tsfcl(ix)  = sfc_var2(i,j,36)   !--- tsfcl  (temp on land portion of a cell)
+        Sfcprop(nb)%zorlw(ix)  = sfc_var2(i,j,37)   !--- zorlw (zorl on water portion of a cell)
+        Sfcprop(nb)%zorll(ix)  = sfc_var2(i,j,38)   !--- zorll (zorl on land portion of a cell)
+        Sfcprop(nb)%zorli(ix)  = sfc_var2(i,j,39)   !--- zorli (zorl on ice  portion of a cell)
         if(Model%cplwav) then
           Sfcprop(nb)%zorlwav(ix)  = sfc_var2(i,j,nvar_s2m) !--- (zorw  from wave model)
         else
-          Sfcprop(nb)%zorlwav(ix)  = Sfcprop(nb)%zorlw(ix)
+          Sfcprop(nb)%zorlwav(ix)  = Sfcprop(nb)%zorl(ix)
         endif
 
         if (Model%frac_grid) then
@@ -1388,7 +1388,6 @@ module FV3GFS_io_mod
 !$omp parallel do default(shared) private(nb, ix, tem)
         do nb = 1, Atm_block%nblks
           do ix = 1, Atm_block%blksz(nb)
-            !--- specify tsfcl/zorll/zorli from existing variable tsfco/zorlw
             if (Sfcprop(nb)%slmsk(ix) == 1) then
               Sfcprop(nb)%tsfc(ix) = Sfcprop(nb)%tsfcl(ix)
             else
@@ -1559,21 +1558,19 @@ module FV3GFS_io_mod
       sfc_name2(29) = 'shdmax'
       sfc_name2(30) = 'slope'
       sfc_name2(31) = 'snoalb'
-    !--- variables below here are optional
+      !--- variables below here are optional
       sfc_name2(32) = 'sncovr'
-!     if (Model%frac_grid) then
-        sfc_name2(33) = 'tsfcl'   !temp on land portion of a cell
-        sfc_name2(34) = 'zorll'   !zorl on land portion of a cell
-        sfc_name2(35) = 'zorli'   !zorl on ice portion of a cell
-        sfc_name2(36) = 'snodl'   !snowd on land portion of a cell
-        sfc_name2(37) = 'tsfc'    !tsfc composite
-        sfc_name2(38) = 'zorlw'   !zorl on water portion of a cell
-        sfc_name2(39) = 'weasd'   !weasd on land portion of a cell
-!     endif
+      sfc_name2(33) = 'snodl' !snowd on land portion of a cell
+      sfc_name2(34) = 'weasdl'!weasd on land portion of a cell
+      sfc_name2(35) = 'tsfc'  !tsfc composite
+      sfc_name2(36) = 'tsfcl' !temp on land portion of a cell
+      sfc_name2(37) = 'zorlw' !zorl on water portion of a cell
+      sfc_name2(38) = 'zorll' !zorl on land portion of a cell
+      sfc_name2(39) = 'zorli' !zorl on ice portion of a cell
       if (Model%cplwav) then
         sfc_name2(nvar2m) = 'zorlwav'   !zorl from wave component
       endif
-    !--- NSSTM inputs only needed when (nstf_name(1) > 0) .and. (nstf_name(2)) == 0)
+      !--- NSSTM inputs only needed when (nstf_name(1) > 0) .and. (nstf_name(2)) == 0)
       sfc_name2(nvar2m+1)  = 'tref'
       sfc_name2(nvar2m+2)  = 'z_c'
       sfc_name2(nvar2m+3)  = 'c_0'
@@ -1778,14 +1775,14 @@ module FV3GFS_io_mod
         sfc_var2(i,j,29) = Sfcprop(nb)%shdmax(ix)!--- shdmax
         sfc_var2(i,j,30) = Sfcprop(nb)%slope(ix) !--- slope
         sfc_var2(i,j,31) = Sfcprop(nb)%snoalb(ix)!--- snoalb
-        sfc_var2(i,j,32) = Sfcprop(nb)%sncovr(ix)!--- sncovr
-        sfc_var2(i,j,33) = Sfcprop(nb)%tsfcl(ix)  !--- tsfcl (temp on land)
-        sfc_var2(i,j,34) = Sfcprop(nb)%zorll(ix)  !--- zorll (zorl on land)
-        sfc_var2(i,j,35) = Sfcprop(nb)%zorli(ix)  !--- zorli (zorl on ice)
-        sfc_var2(i,j,36) = Sfcprop(nb)%snodl(ix)  !--- snodl (snowd on land)
-        sfc_var2(i,j,37) = Sfcprop(nb)%tsfc(ix)   !--- tsfc composite
-        sfc_var2(i,j,38) = Sfcprop(nb)%zorlw(ix)  !--- zorl (zorl on water)
-        sfc_var2(i,j,39) = Sfcprop(nb)%weasdl(ix) !--- weasdl (weasd on land)
+        sfc_var2(i,j,32) = Sfcprop(nb)%sncovr(ix) !--- sncovr
+        sfc_var2(i,j,33) = Sfcprop(nb)%snodl(ix)  !--- snodl (snowd on land)
+        sfc_var2(i,j,34) = Sfcprop(nb)%weasdl(ix) !--- weasdl (weasd on land)
+        sfc_var2(i,j,35) = Sfcprop(nb)%tsfc(ix)   !--- tsfc composite
+        sfc_var2(i,j,36) = Sfcprop(nb)%tsfcl(ix)  !--- tsfcl (temp on land)
+        sfc_var2(i,j,37) = Sfcprop(nb)%zorlw(ix)  !--- zorl (zorl on water)
+        sfc_var2(i,j,38) = Sfcprop(nb)%zorll(ix)  !--- zorll (zorl on land)
+        sfc_var2(i,j,39) = Sfcprop(nb)%zorli(ix)  !--- zorli (zorl on ice)
         if (Model%cplwav) then
           sfc_var2(i,j,nvar2m) = Sfcprop(nb)%zorlwav(ix) !--- zorlwav (zorl from wav)
         endif
