@@ -98,8 +98,8 @@ module GFS_restart
     Restart%num2d = 3 + Model%ntot2d + Model%nctp + ndiag_rst
 
     ! GF
-    if (Model%imfdeepcnv == 3) then
-      Restart%num2d = Restart%num2d + 1
+    if (Model%imfdeepcnv == Model%imfdeepcnv_gf) then
+      Restart%num2d = Restart%num2d + 3
     endif
     ! NoahMP
     if (Model%lsm == Model%lsm_noahmp) then
