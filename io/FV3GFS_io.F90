@@ -1625,7 +1625,7 @@ module FV3GFS_io_mod
         sfc_name2(36) = 'snodl'   !snowd on land portion of a cell
         sfc_name2(37) = 'tsfc'    !tsfc composite
         sfc_name2(38) = 'zorl'    !zorl composite
-        sfc_name2(39) = 'weasd'   !weasd on land portion of a cell
+        sfc_name2(39) = 'weasdl'  !weasd on land portion of a cell
 !     endif
       if (Model%use_cice_alb .or. Model%lsm == Model%lsm_ruc) then
         sfc_name2(40) = 'albdirvis_ice'
