@@ -1762,6 +1762,9 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: tau_tofd(:)    => null()   !
 !---vay-2018 UGWP-diagnostics
 
+    ! Diagnostic arrays for per-timestep diagnostics
+    real (kind=kind_phys), pointer :: old_pgr(:) => null()     !< pgr at last timestep
+
     ! Extended output diagnostics for Thompson MP
     real (kind=kind_phys), pointer :: thompson_ext_diag3d (:,:,:) => null() ! extended diagnostic 3d output arrays from Thompson MP
 
