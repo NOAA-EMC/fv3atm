@@ -204,7 +204,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     integer :: jsc, jec, isc, iec, nlev
     type(domain2D) :: domain
     integer :: n, fcstNpes, tmpvar
-    logical :: single_restart
+    logical :: single_restart, fexist
     integer, allocatable, dimension(:) :: isl, iel, jsl, jel
     integer, allocatable, dimension(:,:,:) :: deBlockList
     integer :: tlb(2), tub(2)
@@ -399,10 +399,12 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
      call  atmos_model_init (atm_int_state%Atm,  atm_int_state%Time_init, &
                              atm_int_state%Time_atmos, atm_int_state%Time_step_atmos)
 !
-     call data_override_init ( ) ! Atm_domain_in  = Atm%domain, &
-                                 ! Ice_domain_in  = Ice%domain, &
-                                 ! Land_domain_in = Land%domain )
-
+     inquire(FILE='data_table', EXIST=fexist)
+     if (fexist) then
+       call data_override_init ( ) ! Atm_domain_in  = Atm%domain, &
+                                   ! Ice_domain_in  = Ice%domain, &
+                                   ! Land_domain_in = Land%domain )
+     endif
 !-----------------------------------------------------------------------
 !---- open and close dummy file in restart dir to check if dir exists --
 
@@ -509,7 +511,6 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 
         else !! nesting
 
-#if ESMF_VERSION_MAJOR >= 8
           if (mype==0) globalTileLayout = atm_int_state%Atm%layout
           call ESMF_VMBroadcast(vm, bcstData=globalTileLayout, count=2, &
                                   rootPet=0, rc=rc)
@@ -554,10 +555,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
                                        delayout=delayout, isSphere=.false., indexflag=ESMF_INDEX_DELOCAL, &
               rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-#else
-          write(0,*)'nest quilting is supported only with ESMF 8'
-          call ESMF_Finalize(endflag=ESMF_END_ABORT)
-#endif
+
         endif
 
       endif
