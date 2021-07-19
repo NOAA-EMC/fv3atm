@@ -275,6 +275,7 @@ module GFS_typedefs
 
 !-- In/Out
     real (kind=kind_phys), pointer :: conv_act(:)  => null()  !< convective activity counter for Grell-Freitas
+    real (kind=kind_phys), pointer :: conv_act_m(:)  => null()  !< midlevel convective activity counter for Grell-Freitas
     real (kind=kind_phys), pointer :: hice   (:)   => null()  !< sea ice thickness
     real (kind=kind_phys), pointer :: weasd  (:)   => null()  !< water equiv of accumulated snow depth (kg/m**2)
                                                               !< over land and sea ice
@@ -1384,6 +1385,8 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: prevst (:,:)     => null()  !<
     real (kind=kind_phys), pointer :: prevsq (:,:)     => null()  !<
     integer,               pointer :: cactiv   (:)     => null()  !< convective activity memory contour
+    integer,               pointer :: cactiv_m (:)     => null()  !< mid-level convective activity memory contour
+    real (kind=kind_phys), pointer :: aod_gf   (:)     => null()
 
     !--- MYNN prognostic variables that can't be in the Intdiag or Interstitial DDTs
     real (kind=kind_phys), pointer :: CLDFRA_BL  (:,:)   => null()  !
@@ -2719,7 +2722,9 @@ module GFS_typedefs
     end if
     if (Model%imfdeepcnv == Model%imfdeepcnv_gf) then
         allocate (Sfcprop%conv_act(IM))
+        allocate (Sfcprop%conv_act_m(IM))
         Sfcprop%conv_act = zero
+        Sfcprop%conv_act_m = zero
     end if
 
   end subroutine sfcprop_create
@@ -5884,7 +5889,11 @@ module GFS_typedefs
 
     if (Model%imfdeepcnv == Model%imfdeepcnv_gf) then
        allocate(Tbd%cactiv(IM))
+       allocate(Tbd%cactiv_m(IM))
+       allocate(Tbd%aod_gf(IM))
        Tbd%cactiv = zero
+       Tbd%cactiv_m = zero
+       Tbd%aod_gf = zero
     end if
 
     !--- MYNN variables:
