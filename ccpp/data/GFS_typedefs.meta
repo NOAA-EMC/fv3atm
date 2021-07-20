@@ -578,6 +578,20 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
+[snodl]
+  standard_name = surface_snow_thickness_water_equivalent_over_land
+  long_name = water equivalent snow depth over land
+  units = mm
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[weasdl]
+  standard_name = water_equivalent_accumulated_snow_depth_over_land
+  long_name = water equiv of acc snow depth over land
+  units = mm
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
 [hprime]
   standard_name = statistical_measures_of_subgrid_orography
   long_name = orographic metrics
@@ -2931,6 +2945,26 @@
   units = flag
   dimensions = ()
   type = logical
+[damp_LW_fluxadj]
+  standard_name = flag_to_damp_RRTMGP_LW_jacobian_flux_adjustment
+  long_name = logical flag to control RRTMGP LW calculation
+  units = flag
+  dimensions = ()
+  type = logical
+[lfnc_k]
+  standard_name = transition_pressure_length_scale_for_flux_damping
+  long_name = depth of transition layer	in logistic function for LW flux adjustment damping
+  units = Pa
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[lfnc_p0]
+  standard_name = transition_pressure_for_flux_damping
+  long_name = transition pressure for LW flux adjustment damping
+  units = Pa
+  dimensions = ()
+  type = real
+  kind = kind_phys
 [doGP_lwscat]
   standard_name = flag_to_include_longwave_scattering_in_cloud_optics
   long_name = logical flag to control the addition of LW scattering in RRTMGP
@@ -2971,6 +3005,13 @@
 [minGPtemp]
   standard_name = minimum_temperature_in_RRTMGP
   long_name = minimum temperature allowed in RRTMGP
+  units = K
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[maxGPtemp]
+  standard_name = maximum_temperature_in_RRTMGP
+  long_name = maximum temperature allowed in RRTMGP
   units = K
   dimensions = ()
   type = real
@@ -3426,6 +3467,18 @@
   dimensions = ()
   type = real
   kind = kind_phys
+[ext_diag_thompson]
+  standard_name = flag_for_extended_diagnostic_output_from_thompson_microphysics
+  long_name = flag for extended diagnostic output from thompson microphysics
+  units = flag
+  dimensions = ()
+  type = logical
+[thompson_ext_ndiag3d]
+  standard_name = number_of_3d_diagnostic_output_arrays_from_thompson_microphysics
+  long_name = number of 3d arrays for extended diagnostic output from thompson microphysics
+  units = count
+  dimensions = ()
+  type = integer
 [lgfdlmprad]
   standard_name = flag_for_GFDL_microphysics_radiation_interaction
   long_name = flag for GFDL microphysics-radiation interaction
@@ -3872,6 +3925,12 @@
   units = flag
   dimensions = ()
   type = logical
+[lseaspray]
+  standard_name = flag_for_sea_spray
+  long_name = flag for sea spray parameterization
+  units = flag
+  dimensions = ()
+  type = logical
 [random_clds]
   standard_name = flag_for_random_clouds_for_RAS
   long_name = flag for using random clouds with the RAS scheme
@@ -4126,6 +4185,13 @@
   dimensions = ()
   type = real
   kind = kind_phys
+[evef]
+  standard_name = rain_evaporation_coefficient_convection
+  long_name = convective rain evaporation coefficient for convection
+  units = frac
+  dimensions = ()
+  type = real
+  kind = kind_phys
 [evfact_deep]
   standard_name = rain_evaporation_coefficient_deep_convection
   long_name = convective rain evaporation coefficient for deep convection
@@ -4302,16 +4368,16 @@
   dimensions = ()
   type = real
   kind = kind_phys
-[z0fac]
-  standard_name = surface_roughness_fraction_factor
-  long_name = surface roughness fraction for canopy heat storage parameterization
+[h0facu]
+  standard_name = canopy_heat_storage_factor_for_sensible_heat_flux_in_unstable_surface_layer
+  long_name = canopy heat storage factor for sensible heat flux in unstable surface layer
   units = none
   dimensions = ()
   type = real
   kind = kind_phys
-[e0fac]
-  standard_name = latent_heat_flux_fraction_factor_relative_to_sensible_heat_flux
-  long_name = latent heat flux fraction relative to sensible heat flux for canopy heat storage parameterization
+[h0facs]
+  standard_name = canopy_heat_storage_factor_for_sensible_heat_flux_in_stable_surface_layer
+  long_name = canopy heat storage factor for sensible heat flux in stable surface layer
   units = none
   dimensions = ()
   type = real
@@ -7451,6 +7517,14 @@
   type = real
   kind = kind_phys
   active = (diag_ugwp_flag)
+[thompson_ext_diag3d]
+  standard_name = extended_diagnostics_output_from_thompson_microphysics
+  long_name = set of 3d arrays for extended diagnostics output from thompson microphysics
+  units = none
+  dimensions = (horizontal_loop_extent,vertical_dimension,number_of_3d_diagnostic_output_arrays_from_thompson_microphysics)
+  type = real
+  kind = kind_phys
+  active = (flag_for_extended_diagnostic_output_from_thompson_microphysics)
 [aux2d]
   standard_name = auxiliary_2d_arrays
   long_name = auxiliary 2d arrays to output (for debugging)
@@ -8322,13 +8396,6 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[evapq]
-  standard_name = kinematic_surface_upward_latent_heat_flux_reduced_by_surface_roughness
-  long_name = kinematic surface upward latent heat flux reduced by surface roughness
-  units = kg kg-1 m s-1
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
 [evap_water]
   standard_name = kinematic_surface_upward_latent_heat_flux_over_water
   long_name = kinematic surface upward latent heat flux over water
@@ -8747,9 +8814,9 @@
   dimensions = (horizontal_loop_extent,vertical_dimension)
   type = real
   kind = kind_phys
-[hefac]
-  standard_name = surface_upward_latent_heat_flux_reduction_factor
-  long_name = surface upward latent heat flux reduction factor from canopy heat storage
+[zvfun]
+  standard_name = function_of_surface_roughness_length_and_green_vegetation_fraction
+  long_name = function of surface roughness length and green vegetation fraction
   units = none
   dimensions = (horizontal_loop_extent)
   type = real
@@ -8762,8 +8829,8 @@
   type = real
   kind = kind_phys
 [hflxq]
-  standard_name = kinematic_surface_upward_sensible_heat_flux_reduced_by_surface_roughness
-  long_name = kinematic surface upward sensible heat flux reduced by surface roughness
+  standard_name = kinematic_surface_upward_sensible_heat_flux_reduced_by_surface_roughness_and_vegetation
+  long_name = kinematic surface upward sensible heat flux reduced by surface roughness and vegetation
   units = K m s-1
   dimensions = (horizontal_loop_extent)
   type = real
@@ -8846,6 +8913,12 @@
 [lake]
   standard_name = flag_nonzero_lake_surface_fraction
   long_name = flag indicating presence of some lake surface area fraction
+  units = flag
+  dimensions = (horizontal_loop_extent)
+  type = logical
+[use_flake]
+  standard_name = flag_for_using_flake
+  long_name = flag indicating lake points using flake model
   units = flag
   dimensions = (horizontal_loop_extent)
   type = logical
@@ -9054,12 +9127,6 @@
 [nn]
   standard_name = number_of_tracers_for_convective_transport
   long_name = number of tracers for convective transport
-  units = count
-  dimensions = ()
-  type = integer
-[nncl]
-  standard_name = number_of_tracers_for_cloud_condensate
-  long_name = number of tracers for cloud condensate
   units = count
   dimensions = ()
   type = integer
@@ -9365,9 +9432,15 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[reset]
+[max_hourly_reset]
   standard_name = flag_reset_maximum_hourly_fields
   long_name = flag for resetting maximum hourly fields
+  units = flag
+  dimensions = ()
+  type = logical
+[ext_diag_thompson_reset]
+  standard_name = flag_reset_extended_diagnostics_output_arrays_from_thompson_microphysics
+  long_name = flag for resetting extended diagnostics output arrays from thompson microphysics
   units = flag
   dimensions = ()
   type = logical
@@ -9582,16 +9655,9 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[snowd_water]
-  standard_name = surface_snow_thickness_water_equivalent_over_water
-  long_name = water equivalent snow depth over water
-  units = mm
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-[snowd_land]
-  standard_name = surface_snow_thickness_water_equivalent_over_land
-  long_name = water equivalent snow depth over land
+[snowd_ice]
+  standard_name = surface_snow_thickness_water_equivalent_over_ice
+  long_name = water equivalent snow depth over ice
   units = mm
   dimensions = (horizontal_loop_extent)
   type = real
@@ -9604,13 +9670,6 @@
   type = real
   kind = kind_phys
   active = (flag_for_land_surface_scheme == flag_for_noah_wrfv4_land_surface_scheme)
-[snowd_ice]
-  standard_name = surface_snow_thickness_water_equivalent_over_ice
-  long_name = water equivalent snow depth over ice
-  units = mm
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
 [snow_depth]
   standard_name = actual_snow_depth
   long_name = actual snow depth
@@ -9957,20 +10016,6 @@
   standard_name = maximum_updraft_velocity_at_cloud_base
   long_name = maximum updraft velocity at cloud base
   units = m s-1
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-[weasd_water]
-  standard_name = water_equivalent_accumulated_snow_depth_over_water
-  long_name = water equiv of acc snow depth over water
-  units = mm
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-[weasd_land]
-  standard_name = water_equivalent_accumulated_snow_depth_over_land
-  long_name = water equiv of acc snow depth over land
-  units = mm
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
