@@ -382,7 +382,9 @@ subroutine update_atmos_radiation_physics (Atmos)
 
     ! Per-timestep diagnostics must be after physics but before
     ! flagging the first timestep.
-    call atmos_timestep_diagnostics(Atmos)
+    if(GFS_control%print_diff_pgr) then
+      call atmos_timestep_diagnostics(Atmos)
+    endif
     
     ! Update flag for first time step of time integration
     GFS_control%first_time_step = .false.
