@@ -676,47 +676,54 @@ module fv3gfs_cap_mod
 ! if the run has iau, it will start output at fh=00 at the cycle time (usually StartTime+IAU_offsetTI)
       if(nsout > 0) then
 !--- use nsout for output frequency nsout*dt_atmos
-        nfh = nint((nfhmax-output_startfh)/(nsout*dt_atmos/3600.))+1
-        allocate(output_fh(nfh))
-        if( output_startfh == 0) then
-          output_fh(1) = dt_atmos/3600.
-        else
-          output_fh(1) = output_startfh
+        nfh = 0
+        if( nfhmax > output_startfh ) nfh = nint((nfhmax-output_startfh)/(nsout*dt_atmos/3600.))+1
+        if(nfh >0) then 
+          allocate(output_fh(nfh))
+          if( output_startfh == 0) then
+            output_fh(1) = dt_atmos/3600.
+          else
+            output_fh(1) = output_startfh
+          endif
+          do i=2,nfh
+            output_fh(i) = (i-1)*nsout*dt_atmos/3600. + output_startfh
+          enddo
         endif
-        do i=2,nfh
-          output_fh(i) = (i-1)*nsout*dt_atmos/3600. + output_startfh
-        enddo
       elseif (nfhmax_hf > 0 ) then
 !--- use high frequency output and low frequency for output forecast time
-        nfh = nint((nfhmax_hf-output_startfh)/nfhout_hf)+1
+        nfh = 0
+        if( nfhout_hf>0 .and. nfhmax_hf>output_startfh) nfh = nint((nfhmax_hf-output_startfh)/nfhout_hf)+1
         nfh2 = 0
-        if( nfhout>0 ) nfh2 = nint((nfhmax-nfhmax_hf)/nfhout)
-        allocate(output_fh(nfh+nfh2))
-        if( output_startfh == 0) then
-          output_fh(1) = dt_atmos/3600.
-        else
-          output_fh(1) = output_startfh
-        endif
-        do i=2,nfh
-          output_fh(i) = (i-1)*nfhout_hf + output_startfh
-        enddo
-        if(  nfhout>0 ) then
+        if( nfhout>0 .and. nfhmax>nfhmax_hf) nfh2 = nint((nfhmax-nfhmax_hf)/nfhout)
+        if( nfh+nfh2 > 0) then
+          allocate(output_fh(nfh+nfh2))
+          if( output_startfh == 0) then
+            output_fh(1) = dt_atmos/3600.
+          else
+            output_fh(1) = output_startfh
+          endif
+          do i=2,nfh
+            output_fh(i) = (i-1)*nfhout_hf + output_startfh
+          enddo
           do i=1,nfh2
-            output_fh(nfh+i) = nfhmax_hf + i*nfhout
+              output_fh(nfh+i) = nfhmax_hf + i*nfhout
           enddo
         endif
       elseif (nfhout > 0 ) then
 !--- use one output freqency
-        nfh = nint((nfhmax-output_startfh)/nfhout) + 1
-        allocate(output_fh(nfh))
-        if( output_startfh == 0) then
-          output_fh(1) = dt_atmos/3600.
-        else
-          output_fh(1) = output_startfh
+        nfh = 0
+        if( nfhout > 0 .and. nfhmax>output_startfh) nfh = nint((nfhmax-output_startfh)/nfhout) + 1
+        if( nfh > 0 ) then
+          allocate(output_fh(nfh))
+          if( output_startfh == 0) then
+            output_fh(1) = dt_atmos/3600.
+          else
+            output_fh(1) = output_startfh
+          endif
+          do i=2,nfh
+            output_fh(i) = (i-1)*nfhout + output_startfh
+          enddo
         endif
-        do i=2,nfh
-          output_fh(i) = (i-1)*nfhout + output_startfh
-        enddo
       elseif (noutput_fh > 0 ) then
 !--- use output_fh to sepcify output forecast time
         lfreq = .false.
@@ -725,17 +732,20 @@ module fv3gfs_cap_mod
              count=noutput_fh, rc=rc)
           if(outputfh2(2) == -1) then
             !--- output_hf is output frequency, the second item is -1
-            nfh = nint((nfhmax-output_startfh)/outputfh2(1)) + 1
             lfreq = .true.
-            allocate(output_fh(nfh))
-            if( output_startfh == 0) then
-              output_fh(1) = dt_atmos/3600.
-            else
-              output_fh(1) = output_startfh
+            nfh = 0
+            if( nfhmax>output_startfh) nfh = nint((nfhmax-output_startfh)/outputfh2(1)) + 1
+            if( nfh > 0) then
+              allocate(output_fh(nfh))
+              if( output_startfh == 0) then
+                output_fh(1) = dt_atmos/3600.
+              else
+                output_fh(1) = output_startfh
+              endif
+              do i=2,nfh
+                output_fh(i) = (i-1)*outputfh2(1) + output_startfh
+              enddo
             endif
-            do i=2,nfh
-              output_fh(i) = (i-1)*outputfh2(1) + output_startfh
-            enddo
           endif
         endif
         if( noutput_fh /= 2 .or. .not. lfreq ) then

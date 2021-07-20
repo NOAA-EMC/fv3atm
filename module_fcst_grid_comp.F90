@@ -71,7 +71,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !
   use module_fv3_io_def, only:  num_pes_fcst, num_files, filename_base, nbdlphys, &
                                 iau_offset
-  use module_fv3_config, only:  dt_atmos, calendar,                               &
+  use module_fv3_config, only:  dt_atmos, calendar, fcst_mpi_comm,                &
                                 quilting, calendar_type,                          &
                                 cplprint_flag, force_date_from_configure,         &
                                 restart_endfcst
@@ -178,7 +178,6 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 
     integer                                :: Run_length
     integer,dimension(6)                   :: date, date_end
-    integer                                :: mpi_comm_comp
 !
     character(len=9) :: month
     integer :: initClock, unit, nfhour, total_inttime
@@ -238,7 +237,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 !
     call ESMF_VMGetCurrent(vm=VM,rc=RC)
-    call ESMF_VMGet(vm=VM, localPet=mype, mpiCommunicator=mpi_comm_comp, &
+    call ESMF_VMGet(vm=VM, localPet=mype, mpiCommunicator=fcst_mpi_comm, &
                     petCount=ntasks, rc=rc)
     if (mype == 0) write(0,*)'in fcst comp init, ntasks=',ntasks
 !
@@ -258,7 +257,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     if(mype == 0) print *,'af nems config,restart_interval=',restart_interval
 
 !
-    call fms_init(mpi_comm_comp)
+    call fms_init(fcst_mpi_comm)
     call mpp_init()
     initClock = mpp_clock_id( 'Initialization' )
     call mpp_clock_begin (initClock) !nesting problem

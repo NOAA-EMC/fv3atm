@@ -15,6 +15,7 @@
 !
   integer                  :: nfhout, nfhout_hf, nsout, dt_atmos
   integer                  :: nfhmax_hf, first_kdt
+  integer                  :: fcst_mpi_comm
   real                     :: nfhmax
   type(ESMF_Alarm)         :: alarm_output_hf, alarm_output
   type(ESMF_TimeInterval)  :: output_hfmax
