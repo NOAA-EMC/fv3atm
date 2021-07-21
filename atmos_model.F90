@@ -228,8 +228,10 @@ contains
 
 subroutine update_atmos_radiation_physics (Atmos)
 !-----------------------------------------------------------------------
+  implicit none
   type (atmos_data_type), intent(in) :: Atmos
 !--- local variables---
+    integer :: idtend, itrac
     integer :: nb, jdat(8), rc, ierr
 
     if (mpp_pe() == mpp_root_pe() .and. debug) write(6,*) "statein driver"
@@ -278,21 +280,40 @@ subroutine update_atmos_radiation_physics (Atmos)
       ! Calculate total non-physics tendencies by substracting old GFS Stateout
       ! variables from new/updated GFS Statein variables (gives the tendencies
       ! due to anything else than physics)
-      if (GFS_control%ldiag3d) then
-        do nb = 1,Atm_block%nblks
-          GFS_data(nb)%Intdiag%du3dt(:,:,8)  = GFS_data(nb)%Intdiag%du3dt(:,:,8)  &
-                                              + (GFS_data(nb)%Statein%ugrs - GFS_data(nb)%Stateout%gu0)
-          GFS_data(nb)%Intdiag%dv3dt(:,:,8)  = GFS_data(nb)%Intdiag%dv3dt(:,:,8)  &
-                                              + (GFS_data(nb)%Statein%vgrs - GFS_data(nb)%Stateout%gv0)
-          GFS_data(nb)%Intdiag%dt3dt(:,:,11) = GFS_data(nb)%Intdiag%dt3dt(:,:,11) &
-                                              + (GFS_data(nb)%Statein%tgrs - GFS_data(nb)%Stateout%gt0)
-        enddo
-        if (GFS_control%qdiag3d) then
+      if (GFS_Control%ldiag3d) then
+        idtend = GFS_Control%dtidx(GFS_Control%index_of_x_wind,GFS_Control%index_of_process_non_physics)
+        if(idtend>=1) then
           do nb = 1,Atm_block%nblks
-            GFS_data(nb)%Intdiag%dq3dt(:,:,12) = GFS_data(nb)%Intdiag%dq3dt(:,:,12) &
-                  + (GFS_data(nb)%Statein%qgrs(:,:,GFS_control%ntqv) - GFS_data(nb)%Stateout%gq0(:,:,GFS_control%ntqv))
-            GFS_data(nb)%Intdiag%dq3dt(:,:,13) = GFS_data(nb)%Intdiag%dq3dt(:,:,13) &
-                  + (GFS_data(nb)%Statein%qgrs(:,:,GFS_control%ntoz) - GFS_data(nb)%Stateout%gq0(:,:,GFS_control%ntoz))
+            GFS_data(nb)%Intdiag%dtend(:,:,idtend) = GFS_data(nb)%Intdiag%dtend(:,:,idtend) &
+                 + (GFS_data(nb)%Statein%ugrs - GFS_data(nb)%Stateout%gu0)
+          enddo
+        endif
+
+        idtend = GFS_Control%dtidx(GFS_Control%index_of_y_wind,GFS_Control%index_of_process_non_physics)
+        if(idtend>=1) then
+          do nb = 1,Atm_block%nblks
+            GFS_data(nb)%Intdiag%dtend(:,:,idtend) = GFS_data(nb)%Intdiag%dtend(:,:,idtend) &
+                 + (GFS_data(nb)%Statein%vgrs - GFS_data(nb)%Stateout%gv0)
+          enddo
+        endif
+
+        idtend = GFS_Control%dtidx(GFS_Control%index_of_temperature,GFS_Control%index_of_process_non_physics)
+        if(idtend>=1) then
+          do nb = 1,Atm_block%nblks
+            GFS_data(nb)%Intdiag%dtend(:,:,idtend) = GFS_data(nb)%Intdiag%dtend(:,:,idtend) &
+                 + (GFS_data(nb)%Statein%tgrs - GFS_data(nb)%Stateout%gt0)
+          enddo
+        endif
+
+        if (GFS_Control%qdiag3d) then
+          do itrac=1,GFS_Control%ntrac
+            idtend = GFS_Control%dtidx(itrac+100,GFS_Control%index_of_process_non_physics)
+            if(idtend>=1) then
+              do nb = 1,Atm_block%nblks
+                GFS_data(nb)%Intdiag%dtend(:,:,idtend) = GFS_data(nb)%Intdiag%dtend(:,:,idtend) &
+                     + (GFS_data(nb)%Statein%qgrs(:,:,itrac) - GFS_data(nb)%Stateout%gq0(:,:,itrac))
+              enddo
+            endif
           enddo
         endif
       endif
@@ -359,6 +380,12 @@ subroutine update_atmos_radiation_physics (Atmos)
 
     endif
 
+    ! Per-timestep diagnostics must be after physics but before
+    ! flagging the first timestep.
+    if(GFS_control%print_diff_pgr) then
+      call atmos_timestep_diagnostics(Atmos)
+    endif
+    
     ! Update flag for first time step of time integration
     GFS_control%first_time_step = .false.
 
@@ -366,6 +393,91 @@ subroutine update_atmos_radiation_physics (Atmos)
  end subroutine update_atmos_radiation_physics
 ! </SUBROUTINE>
 
+
+!#######################################################################
+! <SUBROUTINE NAME="atmos_timestep_diagnostics">
+!
+! <OVERVIEW>
+! Calculates per-timestep, domain-wide, diagnostic, information and
+! prints to stdout from master rank. Must be called after physics
+! update but before first_time_step flag is cleared.
+! </OVERVIEW>
+
+!   <TEMPLATE>
+!     call  atmos_timestep_diagnostics (Atmos)
+!   </TEMPLATE>
+
+! <INOUT NAME="Atmos" TYPE="type(atmos_data_type)">
+!   Derived-type variable that contains fields needed by the flux exchange module.
+!   These fields describe the atmospheric grid and are needed to
+!   compute/exchange fluxes with other component models.  All fields in this
+!   variable type are allocated for the global grid (without halo regions).
+! </INOUT>
+subroutine atmos_timestep_diagnostics(Atmos)
+  use mpi
+  implicit none
+  type (atmos_data_type), intent(in) :: Atmos
+!--- local variables---
+    integer :: i, nb, count, ierror
+    ! double precision ensures ranks and sums are not truncated
+    ! regardless of compilation settings
+    double precision :: pdiff, psum, pcount, maxabs, pmaxloc(7), adiff
+    double precision :: sendbuf(2), recvbuf(2), global_average
+
+    if(GFS_control%print_diff_pgr) then
+      if(.not. GFS_control%first_time_step) then
+        pmaxloc = 0.0d0
+        recvbuf = 0.0d0
+        psum = 0.0d0
+        pcount = 0.0d0
+        maxabs = 0.0d0
+
+        ! Put pgr stats in pmaxloc, psum, and pcount:
+        pmaxloc(1) = GFS_Control%tile_num
+        do nb = 1,ATM_block%nblks
+          count = size(GFS_data(nb)%Statein%pgr)
+          do i=1,count
+            pdiff = GFS_data(nb)%Statein%pgr(i)-GFS_data(nb)%Intdiag%old_pgr(i)
+            adiff = abs(pdiff)
+            psum = psum+adiff
+            if(adiff>=maxabs) then
+              maxabs=adiff
+              pmaxloc(2:3)=(/ ATM_block%index(nb)%ii(i), ATM_block%index(nb)%jj(i) /)
+              pmaxloc(4:7)=(/ pdiff, GFS_data(nb)%Statein%pgr(i), &
+                   GFS_data(nb)%Grid%xlat(i), GFS_data(nb)%Grid%xlon(i) /)
+            endif
+          enddo
+          pcount = pcount+count
+        enddo
+        
+        ! Sum pgr stats from psum/pcount and convert to hPa/hour global avg:
+        sendbuf(1:2) = (/ psum, pcount /)
+        call MPI_Allreduce(sendbuf,recvbuf,2,MPI_DOUBLE_PRECISION,MPI_SUM,GFS_Control%communicator,ierror)
+        global_average = recvbuf(1)/recvbuf(2) * 36.0d0/GFS_control%dtp
+
+        ! Get the pmaxloc for the global maximum:
+        sendbuf(1:2) = (/ maxabs, dble(GFS_Control%me) /)
+        call MPI_Allreduce(sendbuf,recvbuf,1,MPI_2DOUBLE_PRECISION,MPI_MAXLOC,GFS_Control%communicator,ierror)
+        call MPI_Bcast(pmaxloc,size(pmaxloc),MPI_DOUBLE_PRECISION,nint(recvbuf(2)),GFS_Control%communicator,ierror)
+        
+        if(GFS_Control%me == GFS_Control%master) then
+2933      format('At forecast hour ',F9.3,' mean abs pgr change is ',F16.8,' hPa/hr')
+2934      format('  max abs change   ',F15.10,' bar  at  tile=',I0,' i=',I0,' j=',I0)
+2935      format('  pgr at that point',F15.10,' bar      lat=',F12.6,' lon=',F12.6)
+          print 2933, GFS_control%fhour, global_average
+          print 2934, pmaxloc(4)*1d-5, nint(pmaxloc(1:3))
+          print 2935, pmaxloc(5)*1d-5, pmaxloc(6:7)*57.29577951308232d0 ! 180/pi
+        endif
+      endif
+      ! old_pgr is updated every timestep, including the first one where stats aren't printed:
+      do nb = 1,ATM_block%nblks
+        GFS_data(nb)%Intdiag%old_pgr=GFS_data(nb)%Statein%pgr
+      enddo
+    endif
+
+!-----------------------------------------------------------------------
+end subroutine atmos_timestep_diagnostics
+! </SUBROUTINE>
 
 !#######################################################################
 ! <SUBROUTINE NAME="atmos_model_init">
