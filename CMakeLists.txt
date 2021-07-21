@@ -174,6 +174,10 @@ set_target_properties(fv3atm PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT
 target_include_directories(fv3atm INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/mod>
                                             $<INSTALL_INTERFACE:mod>)
 
+if(MULTI_GASES)
+  list(APPEND _fv3atm_defs_private MULTI_GASES)
+endif()
+
 if(CCPP)
   list(APPEND _fv3atm_defs_private CCPP)
   target_include_directories(fv3atm PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/ccpp/driver/mod)
