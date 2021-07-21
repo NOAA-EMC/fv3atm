@@ -43,18 +43,17 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
                                 addLsmask2grid
 
   use constants_mod,      only: constants_init
-  use       fms_mod,      only: open_namelist_file, file_exist, check_nml_error, &
+  use fms_mod,            only: open_namelist_file, file_exist, check_nml_error, &
                                 error_mesg, fms_init, fms_end, close_file,       &
                                 write_version_number, uppercase
 
-  use mpp_mod,            only: mpp_init, mpp_pe, mpp_root_pe, mpp_npes, mpp_get_current_pelist, &
-                                mpp_set_current_pelist, stdlog, mpp_error, NOTE, FATAL, WARNING
-  use mpp_mod,            only: mpp_clock_id, mpp_clock_begin, mpp_clock_end, mpp_sync
+  use mpp_mod,            only: mpp_init, mpp_pe, mpp_root_pe,  &
+                                mpp_error, FATAL, WARNING
+  use mpp_mod,            only: mpp_clock_id, mpp_clock_begin, mpp_clock_end
 
   use mpp_io_mod,         only: mpp_open, mpp_close, MPP_NATIVE, MPP_RDONLY, MPP_DELETE
 
-  use mpp_domains_mod,    only: mpp_get_global_domain, mpp_global_field, CORNER, domain2d
-  use mpp_domains_mod,    only: mpp_get_compute_domains
+  use mpp_domains_mod,    only: mpp_get_compute_domains, domain2D 
   use memutils_mod,       only: print_memuse_stats
   use sat_vapor_pres_mod, only: sat_vapor_pres_init
 
@@ -71,7 +70,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !
   use module_fv3_io_def, only:  num_pes_fcst, num_files, filename_base, nbdlphys, &
                                 iau_offset
-  use module_fv3_config, only:  dt_atmos, calendar, fcst_mpi_comm,                &
+  use module_fv3_config, only:  dt_atmos, calendar, fcst_mpi_comm, fcst_ntasks,   &
                                 quilting, calendar_type,                          &
                                 cplprint_flag, force_date_from_configure,         &
                                 restart_endfcst
@@ -181,7 +180,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !
     character(len=9) :: month
     integer :: initClock, unit, nfhour, total_inttime
-    integer :: mype, ntasks
+    integer :: mype
     character(3) cfhour
     character(4) dateSY
     character(2) dateSM,dateSD,dateSH,dateSN,dateSS
@@ -238,8 +237,8 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !
     call ESMF_VMGetCurrent(vm=VM,rc=RC)
     call ESMF_VMGet(vm=VM, localPet=mype, mpiCommunicator=fcst_mpi_comm, &
-                    petCount=ntasks, rc=rc)
-    if (mype == 0) write(0,*)'in fcst comp init, ntasks=',ntasks
+                    petCount=fcst_ntasks, rc=rc)
+    if (mype == 0) write(0,*)'in fcst comp init, fcst_ntasks=',fcst_ntasks
 !
     CF = ESMF_ConfigCreate(rc=rc)
     call ESMF_ConfigLoadFile(config=CF ,filename='model_configure' ,rc=rc)

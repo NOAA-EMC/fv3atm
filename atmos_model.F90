@@ -99,7 +99,8 @@ use FV3GFS_io_mod,      only: FV3GFS_restart_read, FV3GFS_restart_write, &
                               DIAG_SIZE
 use fv_iau_mod,         only: iau_external_data_type,getiauforcing,iau_initialize
 use module_fv3_config,  only: output_1st_tstep_rst, first_kdt, nsout,    &
-                              restart_endfcst, output_fh, fcst_mpi_comm
+                              restart_endfcst, output_fh, fcst_mpi_comm, &
+                              fcst_ntasks
 use module_block_data,  only: block_atmos_copy, block_data_copy,         &
                               block_data_copy_or_fill,                   &
                               block_data_combine_fractions
@@ -380,8 +381,6 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
 #ifdef _OPENMP
   use omp_lib
 #endif
-  use fv_mp_mod, only: commglobal
-  use mpp_mod, only: mpp_npes
   use update_ca, only: read_ca_restart
 
   type (atmos_data_type), intent(inout) :: Atmos
@@ -511,6 +510,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    Init_parm%me              =  mpp_pe()
    Init_parm%master          =  mpp_root_pe()
    Init_parm%fcst_mpi_comm   =  fcst_mpi_comm
+   Init_parm%fcst_ntasks     =  fcst_ntasks
    Init_parm%tile_num        =  tile_num
    Init_parm%isc             =  isc
    Init_parm%jsc             =  jsc
@@ -554,7 +554,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
 
    call GFS_initialize (GFS_control, GFS_data%Statein, GFS_data%Stateout, GFS_data%Sfcprop,     &
                         GFS_data%Coupling, GFS_data%Grid, GFS_data%Tbd, GFS_data%Cldprop, GFS_data%Radtend, &
-                        GFS_data%Intdiag, GFS_interstitial, commglobal, mpp_npes(), Init_parm)
+                        GFS_data%Intdiag, GFS_interstitial, Init_parm)
 
    !--- populate/associate the Diag container elements
    call GFS_externaldiag_populate (GFS_Diag, GFS_Control, GFS_Data%Statein, GFS_Data%Stateout,   &
