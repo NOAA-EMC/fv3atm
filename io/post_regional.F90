@@ -482,7 +482,7 @@ module post_regional
                              rel_vort_max, rel_vort_maxhy1, refd_max,          &
                              refdm10c_max, u10max, v10max, wspd10max, sfcuxi,  &
                              sfcvxi, t10m, t10avg, psfcavg, akhsavg, akmsavg,  &
-                             albedo, tg
+                             albedo, tg, prate_max
       use soil,        only: sldpth, sh2o, smc, stc
       use masks,       only: lmv, lmh, htm, vtm, gdlat, gdlon, dx, dy, hbm2, sm, sice
       use ctlblk_mod,  only: im, jm, lm, lp1, jsta, jend, jsta_2l, jend_2u, jsta_m,jend_m, &
@@ -1178,6 +1178,17 @@ module post_regional
                   else
                     cprate(i,j) = spval
                   endif
+                enddo
+              enddo
+            endif
+
+            ! max hourly surface precipitation rate
+            if(trim(fieldname)=='pratemax') then
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,prate_max,arrayr42d,sm,fillValue)
+              do j=jsta,jend
+                do i=ista, iend
+                  prate_max(i,j) = arrayr42d(i,j)
+                  if (abs(arrayr42d(i,j)-fillValue) < small) prate_max(i,j) = spval
                 enddo
               enddo
             endif

@@ -1445,6 +1445,17 @@ module GFS_diagnostics
 
     idx = idx + 1
     ExtDiag(idx)%axes = 2
+    ExtDiag(idx)%name = 'pratemax'
+    ExtDiag(idx)%desc = 'max hourly precipitation rate'
+    ExtDiag(idx)%unit = 'mm h-1'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%pratemax(:)
+    enddo
+
+    idx = idx + 1
+    ExtDiag(idx)%axes = 2
     ExtDiag(idx)%name = 'rain'
     ExtDiag(idx)%desc = 'total rain at this time step'
     ExtDiag(idx)%unit = 'XXX'
@@ -3233,6 +3244,32 @@ module GFS_diagnostics
       enddo
     endif
 
+    ! Extended diagnostics from Thompson MP
+    thompson_extended_diagnostics: if (Model%ext_diag_thompson) then
+      do num=1,Model%thompson_ext_ndiag3d
+        idx = idx + 1
+        ExtDiag(idx)%axes = 3
+        select case (num)
+          ! This is the place to add specific names, descriptions,
+          ! and units if so desired
+          !case (1)
+          ! ...
+          case default
+            write (xtra,'(I2.2)') num
+            ExtDiag(idx)%name = 'thompson_diag3d_' // trim(xtra)
+            ExtDiag(idx)%desc = 'Thompson extended diagnostics array ' // trim(xtra)
+            ExtDiag(idx)%unit = 'unknown'
+        end select
+        ExtDiag(idx)%mod_name = 'gfs_phys'
+        ExtDiag(idx)%intpl_method = 'bilinear'
+        ExtDiag(idx)%time_avg = .false.
+        allocate (ExtDiag(idx)%data(nblks))
+        do nb = 1,nblks
+          ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%thompson_ext_diag3d(:,:,num)
+        enddo
+      enddo
+    end if thompson_extended_diagnostics
+
     !! Cloud effective radii from Microphysics
     !if (Model%imp_physics == Model%imp_physics_thompson .or. Model%imp_physics == Model%imp_physics_wsm6 .or. Model%imp_physics == Model%imp_physics_fer_hires) then
     !  idx = idx + 1
@@ -3500,161 +3537,6 @@ module GFS_diagnostics
     endif
 
 !  print *,'in gfdl_diag_register,af all extdiag, idx=',idx
-
-! -- chemistry diagnostic variables
-  if (Model%cplchm) then
-
-    if (Model%ntchm > 0) then
-
-      if (associated(IntDiag(1)%duem)) then
-        do num = 1, size(IntDiag(1)%duem, dim=2)
-          idx = idx + 1
-          ExtDiag(idx)%axes = 2
-          write(ExtDiag(idx)%name,'("duem",i3.3)') num
-          write(ExtDiag(idx)%desc,'("Dust Emission Bin ",i0)') num
-          ExtDiag(idx)%unit = 'kg/m2/s'
-          ExtDiag(idx)%mod_name = 'gfs_phys'
-          allocate (ExtDiag(idx)%data(nblks))
-          do nb = 1,nblks
-            ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%duem(:,num)
-          enddo
-        enddo
-      endif
-
-      if (associated(IntDiag(1)%ssem)) then
-        do num = 1, size(IntDiag(1)%ssem, dim=2)
-          idx = idx + 1
-          ExtDiag(idx)%axes = 2
-          write(ExtDiag(idx)%name,'("ssem",i3.3)') num
-          write(ExtDiag(idx)%desc,'("Seasalt Emission Bin ",i0)') num
-          ExtDiag(idx)%unit = 'kg/m2/s'
-          ExtDiag(idx)%mod_name = 'gfs_phys'
-          allocate (ExtDiag(idx)%data(nblks))
-          do nb = 1,nblks
-            ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%ssem(:,num)
-          enddo
-        enddo
-      endif
-
-      if (associated(Model%ntdiag)) then
-        idt = 0
-        do num = Model%ntchs, Model%ntchm + Model%ntchs - 1
-          if (Model%ntdiag(num-Model%ntchs+1)) then
-            idt = idt + 1
-            idx = idx + 1
-            ExtDiag(idx)%axes = 2
-            ExtDiag(idx)%name = trim(Model%tracer_names(num)) // 'sd'
-            ExtDiag(idx)%desc = trim(Model%tracer_names(num)) // ' Sedimentation'
-            ExtDiag(idx)%unit = 'kg/m2/s'
-            ExtDiag(idx)%mod_name = 'gfs_phys'
-            allocate (ExtDiag(idx)%data(nblks))
-            do nb = 1,nblks
-              ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%sedim(:,idt)
-            enddo
-
-            idx = idx + 1
-            ExtDiag(idx)%axes = 2
-            ExtDiag(idx)%name = trim(Model%tracer_names(num)) // 'dp'
-            ExtDiag(idx)%desc = trim(Model%tracer_names(num)) // ' Dry Deposition'
-            ExtDiag(idx)%unit = 'kg/m2/s'
-            ExtDiag(idx)%mod_name = 'gfs_phys'
-            allocate (ExtDiag(idx)%data(nblks))
-            do nb = 1,nblks
-              ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%drydep(:,idt)
-            enddo
-
-            idx = idx + 1
-            ExtDiag(idx)%axes = 2
-            ExtDiag(idx)%name = trim(Model%tracer_names(num)) // 'wtl'
-            ExtDiag(idx)%desc = trim(Model%tracer_names(num)) // ' Large-Scale Wet Deposition'
-            ExtDiag(idx)%unit = 'kg/m2/s'
-            ExtDiag(idx)%mod_name = 'gfs_phys'
-            allocate (ExtDiag(idx)%data(nblks))
-            do nb = 1,nblks
-              ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%wetdpl(:,idt)
-            enddo
-
-            idx = idx + 1
-            ExtDiag(idx)%axes = 2
-            ExtDiag(idx)%name = trim(Model%tracer_names(num)) // 'wtc'
-            ExtDiag(idx)%desc = trim(Model%tracer_names(num)) // ' Convective-Scale Wet Deposition'
-            ExtDiag(idx)%unit = 'kg/m2/s'
-            ExtDiag(idx)%mod_name = 'gfs_phys'
-            allocate (ExtDiag(idx)%data(nblks))
-            do nb = 1,nblks
-              ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%wetdpc(:,idt)
-            enddo
-          endif
-        enddo
-      endif
-
-    endif
-
-    num = size(IntDiag(1)%abem, dim=2)
-    do num = 1, size(IntDiag(1)%abem, dim=2)
-      idx = idx + 1
-      select case (mod(num,3))
-        case (0)
-          ExtDiag(idx)%name = 'bcem'
-          ExtDiag(idx)%desc = 'Black Carbon'
-        case (1)
-          ExtDiag(idx)%name = 'ocem'
-          ExtDiag(idx)%desc = 'Organic Carbon'
-        case (2)
-          ExtDiag(idx)%name = 'so2em'
-          ExtDiag(idx)%desc = 'SO2'
-      end select
-
-      if (num > 3) then
-        ExtDiag(idx)%name = trim(ExtDiag(idx)%name) // 'bb'
-        ExtDiag(idx)%desc = trim(ExtDiag(idx)%desc) // ' Biomass Burning Emissions'
-      else
-        ExtDiag(idx)%name = trim(ExtDiag(idx)%name) // 'an'
-        ExtDiag(idx)%desc = trim(ExtDiag(idx)%desc) // ' Anthropogenic Emissions'
-      end if
-
-      ExtDiag(idx)%axes = 2
-      ExtDiag(idx)%unit = 'ug/m2/s'
-      ExtDiag(idx)%mod_name = 'gfs_phys'
-      allocate (ExtDiag(idx)%data(nblks))
-      do nb = 1,nblks
-        ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%abem(:,num)
-      enddo
-    end do
-
-    do num = 1, size(IntDiag(1)%aecm, dim=2)
-      idx = idx + 1
-      select case (num)
-        case(1)
-          ExtDiag(idx)%name = 'aecmass'
-          ExtDiag(idx)%desc = 'Aerosol Column Mass Density (PM2.5)'
-        case(2)
-          ExtDiag(idx)%name = 'bccmass'
-          ExtDiag(idx)%desc = 'Black Carbon Column Mass Density'
-        case(3)
-          ExtDiag(idx)%name = 'occmass'
-          ExtDiag(idx)%desc = 'Organic Carbon Column Mass Density'
-        case(4)
-          ExtDiag(idx)%name = 'sucmass'
-          ExtDiag(idx)%desc = 'Sulfate Column Mass Density'
-        case(5)
-          ExtDiag(idx)%name = 'ducmass'
-          ExtDiag(idx)%desc = 'Dust Column Mass Density'
-        case(6)
-          ExtDiag(idx)%name = 'sscmass'
-          ExtDiag(idx)%desc = 'Seasalt Column Mass Density'
-      end select
-
-      ExtDiag(idx)%axes = 2
-      ExtDiag(idx)%unit = 'g/m2'
-      ExtDiag(idx)%mod_name = 'gfs_phys'
-      allocate (ExtDiag(idx)%data(nblks))
-      do nb = 1,nblks
-        ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%aecm(:,num)
-      enddo
-    end do
-
-  endif
 
 !--- prognostic variable tendencies (t, u, v, sph, clwmr, o3)
 !rab    idx = idx + 1
