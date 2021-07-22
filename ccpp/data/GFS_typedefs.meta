@@ -578,6 +578,20 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
+[snodl]
+  standard_name = surface_snow_thickness_water_equivalent_over_land
+  long_name = water equivalent snow depth over land
+  units = mm
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[weasdl]
+  standard_name = water_equivalent_accumulated_snow_depth_over_land
+  long_name = water equiv of acc snow depth over land
+  units = mm
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
 [hprime]
   standard_name = statistical_measures_of_subgrid_orography
   long_name = orographic metrics
@@ -2277,14 +2291,6 @@
   type = real
   kind = kind_phys
   active = (index_for_stochastic_land_surface_perturbation_type .ne. 0)
-[dqdti]
-  standard_name = instantaneous_water_vapor_specific_humidity_tendency_due_to_convection
-  long_name = instantaneous moisture tendency due to convection
-  units = kg kg-1 s-1
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (flag_for_chemistry_coupling)
 [nwfa2d]
   standard_name = tendency_of_water_friendly_aerosols_at_surface
   long_name = instantaneous water-friendly sfc aerosol source
@@ -2309,14 +2315,6 @@
   type = real
   kind = kind_phys
   active = (flag_for_chemistry_coupling)
-[dkt]
-  standard_name = instantaneous_atmosphere_heat_diffusivity
-  long_name = instantaneous atmospheric heat diffusivity
-  units = m2 s-1
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (flag_for_chemistry_coupling)
 [qci_conv]
   standard_name = convective_cloud_condesate_after_rainout
   long_name = convective cloud condesate after rainout
@@ -2325,6 +2323,22 @@
   type = real
   kind = kind_phys
   active = (flag_for_mass_flux_deep_convection_scheme == flag_for_gf_deep_convection_scheme)
+[pfi_lsan]
+  standard_name = ice_flux_due_to_large_scale_precipitation
+  long_name = instantaneous 3D flux of ice from nonconvective precipitation
+  units = kg m-2 s-1
+  dimensions = (horizontal_loop_extent,vertical_dimension)
+  type = real
+  kind = kind_phys
+  active = (flag_for_chemistry_coupling)
+[pfl_lsan]
+  standard_name = liquid_flux_due_to_large_scale_precipitation
+  long_name = instantaneous 3D flux of liquid water from nonconvective precipitation
+  units = kg m-2 s-1
+  dimensions = (horizontal_loop_extent,vertical_dimension)
+  type = real
+  kind = kind_phys
+  active = (flag_for_chemistry_coupling)
 ########################################################################
 [ccpp-table-properties]
   name = GFS_control_type
@@ -2931,6 +2945,26 @@
   units = flag
   dimensions = ()
   type = logical
+[damp_LW_fluxadj]
+  standard_name = flag_to_damp_RRTMGP_LW_jacobian_flux_adjustment
+  long_name = logical flag to control RRTMGP LW calculation
+  units = flag
+  dimensions = ()
+  type = logical
+[lfnc_k]
+  standard_name = transition_pressure_length_scale_for_flux_damping
+  long_name = depth of transition layer	in logistic function for LW flux adjustment damping
+  units = Pa
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[lfnc_p0]
+  standard_name = transition_pressure_for_flux_damping
+  long_name = transition pressure for LW flux adjustment damping
+  units = Pa
+  dimensions = ()
+  type = real
+  kind = kind_phys
 [doGP_lwscat]
   standard_name = flag_to_include_longwave_scattering_in_cloud_optics
   long_name = logical flag to control the addition of LW scattering in RRTMGP
@@ -2971,6 +3005,13 @@
 [minGPtemp]
   standard_name = minimum_temperature_in_RRTMGP
   long_name = minimum temperature allowed in RRTMGP
+  units = K
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[maxGPtemp]
+  standard_name = maximum_temperature_in_RRTMGP
+  long_name = maximum temperature allowed in RRTMGP
   units = K
   dimensions = ()
   type = real
@@ -3426,6 +3467,18 @@
   dimensions = ()
   type = real
   kind = kind_phys
+[ext_diag_thompson]
+  standard_name = flag_for_extended_diagnostic_output_from_thompson_microphysics
+  long_name = flag for extended diagnostic output from thompson microphysics
+  units = flag
+  dimensions = ()
+  type = logical
+[thompson_ext_ndiag3d]
+  standard_name = number_of_3d_diagnostic_output_arrays_from_thompson_microphysics
+  long_name = number of 3d arrays for extended diagnostic output from thompson microphysics
+  units = count
+  dimensions = ()
+  type = integer
 [lgfdlmprad]
   standard_name = flag_for_GFDL_microphysics_radiation_interaction
   long_name = flag for GFDL microphysics-radiation interaction
@@ -3872,6 +3925,12 @@
   units = flag
   dimensions = ()
   type = logical
+[lseaspray]
+  standard_name = flag_for_sea_spray
+  long_name = flag for sea spray parameterization
+  units = flag
+  dimensions = ()
+  type = logical
 [random_clds]
   standard_name = flag_for_random_clouds_for_RAS
   long_name = flag for using random clouds with the RAS scheme
@@ -4126,6 +4185,13 @@
   dimensions = ()
   type = real
   kind = kind_phys
+[evef]
+  standard_name = rain_evaporation_coefficient_convection
+  long_name = convective rain evaporation coefficient for convection
+  units = frac
+  dimensions = ()
+  type = real
+  kind = kind_phys
 [evfact_deep]
   standard_name = rain_evaporation_coefficient_deep_convection
   long_name = convective rain evaporation coefficient for deep convection
@@ -4302,16 +4368,16 @@
   dimensions = ()
   type = real
   kind = kind_phys
-[z0fac]
-  standard_name = surface_roughness_fraction_factor
-  long_name = surface roughness fraction for canopy heat storage parameterization
+[h0facu]
+  standard_name = canopy_heat_storage_factor_for_sensible_heat_flux_in_unstable_surface_layer
+  long_name = canopy heat storage factor for sensible heat flux in unstable surface layer
   units = none
   dimensions = ()
   type = real
   kind = kind_phys
-[e0fac]
-  standard_name = latent_heat_flux_fraction_factor_relative_to_sensible_heat_flux
-  long_name = latent heat flux fraction relative to sensible heat flux for canopy heat storage parameterization
+[h0facs]
+  standard_name = canopy_heat_storage_factor_for_sensible_heat_flux_in_stable_surface_layer
+  long_name = canopy heat storage factor for sensible heat flux in stable surface layer
   units = none
   dimensions = ()
   type = real
@@ -4446,6 +4512,162 @@
   units = count
   dimensions = ()
   type = integer
+[ntracp100]
+  standard_name = number_of_tracers_plus_one_hundred
+  long_name = number of tracers plus one hundred
+  units = count
+  dimensions = ()
+  type = integer
+[nprocess]
+  standard_name = number_of_cumulative_change_processes
+  long_name = number of processes that cause changes in state variables
+  units = count
+  dimensions = ()
+  type = integer
+[nprocess_summed]
+  standard_name = number_of_physics_causes_of_tracer_changes
+  long_name = number of causes in dtidx per tracer summed for total physics tendency
+  units = count
+  dimensions = ()
+  type = integer
+[dtidx]
+  standard_name = cumulative_change_of_state_variables_outer_index
+  long_name = index of state-variable and process in last dimension of diagnostic tendencies array AKA cumulative_change_index
+  units = index
+  dimensions = (number_of_tracers_plus_one_hundred,number_of_cumulative_change_processes)
+  type = integer
+[ndtend]
+  standard_name = cumulative_change_of_state_variables_outer_index_max
+  long_name = last dimension of array of diagnostic tendencies for state variables
+  units = count
+  dimensions = ()
+  type = integer
+[index_of_process_pbl]
+  standard_name = index_of_subgrid_scale_vertical_mixing_process_in_cumulative_change_index
+  long_name = index of subgrid scale vertical mixing process in second dimension of array cumulative change index
+  units = index
+  dimensions = ()
+  type = integer
+[index_of_process_dcnv]
+  standard_name = index_of_deep_convection_process_process_in_cumulative_change_index
+  long_name = index of deep convection process in second dimension of array cumulative change index
+  units = index
+  dimensions = ()
+  type = integer
+[index_of_process_scnv]
+  standard_name = index_of_shallow_convection_process_process_in_cumulative_change_index
+  long_name = index of shallow convection process in second dimension of array cumulative change index
+  units = index
+  dimensions = ()
+  type = integer
+[index_of_process_mp]
+  standard_name = index_of_microphysics_process_process_in_cumulative_change_index
+  long_name = index of microphysics transport process in second dimension of array cumulative change index
+  units = index
+  dimensions = ()
+  type = integer
+[index_of_process_prod_loss]
+  standard_name = index_of_production_and_loss_process_in_cumulative_change_index
+  long_name = index of production and loss effect in photochemistry process in second dimension of array cumulative change index
+  units = index
+  dimensions = ()
+  type = integer
+[index_of_process_ozmix]
+  standard_name = index_of_ozone_mixing_ratio_process_in_cumulative_change_index
+  long_name = index of ozone mixing ratio effect in photochemistry process in second dimension of array cumulative change index
+  units = index
+  dimensions = ()
+  type = integer
+[index_of_process_temp]
+  standard_name = index_of_temperature_process_in_cumulative_change_index
+  long_name = index of temperature effect in photochemistry process in second dimension of array cumulative change index
+  units = index
+  dimensions = ()
+  type = integer
+[index_of_process_overhead_ozone]
+  standard_name = index_of_overhead_process_in_cumulative_change_index
+  long_name = index of overhead ozone effect in photochemistry process in second dimension of array cumulative change index
+  units = index
+  dimensions = ()
+  type = integer
+[index_of_process_longwave]
+  standard_name = index_of_longwave_heating_process_in_cumulative_change_index
+  long_name = index of longwave heating process in second dimension of array cumulative change index
+  units = index
+  dimensions = ()
+  type = integer
+[index_of_process_shortwave]
+  standard_name = index_of_shortwave_heating_process_in_cumulative_change_index
+  long_name = index of shortwave heating process in second dimension of array cumulative change index
+  units = index
+  dimensions = ()
+  type = integer
+[index_of_process_orographic_gwd]
+  standard_name = index_of_orographic_gravity_wave_drag_process_in_cumulative_change_index
+  long_name = index of orographic gravity wave drag process in second dimension of array cumulative change index
+  units = index
+  dimensions = ()
+  type = integer
+[index_of_process_rayleigh_damping]
+  standard_name = index_of_rayleigh_damping_process_in_cumulative_change_index
+  long_name = index of rayleigh damping process in second dimension of array cumulative change index
+  units = index
+  dimensions = ()
+  type = integer
+[index_of_process_nonorographic_gwd]
+  standard_name = index_of_nonorographic_gravity_wave_drag_process_in_cumulative_change_index
+  long_name = index of nonorographic gravity wave drag process in second dimension of array cumulative change index
+  units = index
+  dimensions = ()
+  type = integer
+[index_of_process_conv_trans]
+  standard_name = index_of_convective_transport_process_in_cumulative_change_index
+  long_name = index of convective transport process in second dimension of array cumulative change index
+  units = index
+  dimensions = ()
+  type = integer
+[index_of_process_physics]
+  standard_name = index_of_all_physics_process_in_cumulative_change_index
+  long_name = index of all physics transport process in second dimension of array cumulative change index
+  units = index
+  dimensions = ()
+  type = integer
+[index_of_process_non_physics]
+  standard_name = index_of_non_physics_process_in_cumulative_change_index
+  long_name = index of non-physics transport process in second dimension of array cumulative change index
+  units = index
+  dimensions = ()
+  type = integer
+[index_of_process_photochem]
+  standard_name = index_of_photochemistry_process_in_cumulative_change_index
+  long_name = index of photochemistry process in second dimension of array cumulative change index
+  units = index
+  dimensions = ()
+  type = integer
+[is_photochem]
+  standard_name = flags_for_photochemistry_processes_to_sum
+  long_name = flags for photochemistry processes to sum as the total photochemistry process cumulative change
+  units = flag
+  dimensions = (number_of_cumulative_change_processes)
+  type = logical
+[index_of_temperature]
+  standard_name = index_of_temperature_in_cumulative_change_index
+  long_name = index of temperature in first dimension of array cumulative change index
+  units = index
+  dimensions = ()
+  type = integer
+[index_of_x_wind]
+  standard_name = index_of_x_wind_in_cumulative_change_index
+  long_name = index of x-wind in first dimension of array cumulative change index
+  units = index
+  dimensions = ()
+  type = integer
+[index_of_y_wind]
+  standard_name = index_of_y_wind_in_cumulative_change_index
+  long_name = index of x-wind in first dimension of array cumulative change index
+  units = index
+  dimensions = ()
+  type = integer
 [ntqv]
   standard_name = index_for_water_vapor
   long_name = tracer index for water vapor (specific humidity)
@@ -4557,6 +4779,30 @@
 [ntchs]
   standard_name = index_for_first_chemical_tracer
   long_name = tracer index for first chemical tracer
+  units = index
+  dimensions = ()
+  type = integer
+[ntche]
+  standard_name = index_for_last_chemical_tracer
+  long_name = tracer index for last chemical tracer
+  units = index
+  dimensions = ()
+  type = integer
+[ndchm]
+  standard_name = number_of_diagnostic_chemical_tracers
+  long_name = number of diagnostic chemical tracers
+  units = count
+  dimensions = ()
+  type = integer
+[ndchs]
+  standard_name = index_for_first_diagnostic_chemical_tracer
+  long_name = tracer index for first diagnostic chemical tracer
+  units = index
+  dimensions = ()
+  type = integer
+[ndche]
+  standard_name = index_for_last_diagnostic_chemical_tracer
+  long_name = tracer index for last diagnostic chemical tracer
   units = index
   dimensions = ()
   type = integer
@@ -4726,6 +4972,12 @@
 [debug]
   standard_name = flag_debug
   long_name = control flag for debug
+  units = flag
+  dimensions = ()
+  type = logical
+[print_diff_pgr]
+  standard_name = flag_to_print_pgr_differences_every_timestep
+  long_name = flag to print pgr differences every timestep
   units = flag
   dimensions = ()
   type = logical
@@ -6641,325 +6893,14 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[du3dt(:,:,1)]
-  standard_name = cumulative_change_in_x_wind_due_to_PBL
-  long_name = cumulative change in x wind due to PBL
-  units = m s-1
-  dimensions = (horizontal_loop_extent,vertical_dimension)
+[dtend]
+  standard_name = cumulative_change_of_state_variables
+  long_name = diagnostic tendencies for state variables
+  units = various
+  dimensions = (horizontal_loop_extent,vertical_dimension,number_of_cumulative_change_processes)
   type = real
   kind = kind_phys
   active = (flag_diagnostics_3D)
-[du3dt(:,:,2)]
-  standard_name = cumulative_change_in_x_wind_due_to_orographic_gravity_wave_drag
-  long_name = cumulative change in x wind due to orographic gravity wave drag
-  units = m s-1
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (flag_diagnostics_3D)
-[du3dt(:,:,3)]
-  standard_name = cumulative_change_in_x_wind_due_to_deep_convection
-  long_name = cumulative change in x wind due to deep convection
-  units = m s-1
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (flag_diagnostics_3D)
-[du3dt(:,:,4)]
-  standard_name = cumulative_change_in_x_wind_due_to_convective_gravity_wave_drag
-  long_name = cumulative change in x wind due to convective gravity wave drag
-  units = m s-1
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (flag_diagnostics_3D)
-[du3dt(:,:,5)]
-  standard_name = cumulative_change_in_x_wind_due_to_rayleigh_damping
-  long_name = cumulative change in x wind due to Rayleigh damping
-  units = m s-1
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (flag_diagnostics_3D)
-[du3dt(:,:,6)]
-  standard_name = cumulative_change_in_x_wind_due_to_shallow_convection
-  long_name = cumulative change in x wind due to shallow convection
-  units = m s-1
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (flag_diagnostics_3D)
-[du3dt(:,:,7)]
-  standard_name = cumulative_change_in_x_wind_due_to_physics
-  long_name = cumulative change in x wind due to physics
-  units = m s-1
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (flag_diagnostics_3D)
-[du3dt(:,:,8)]
-  standard_name = cumulative_change_in_x_wind_due_to_non_physics_processes
-  long_name = cumulative change in x wind due to non-physics processes
-  units = m s-1
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (flag_diagnostics_3D)
-[dv3dt(:,:,1)]
-  standard_name = cumulative_change_in_y_wind_due_to_PBL
-  long_name = cumulative change in y wind due to PBL
-  units = m s-1
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (flag_diagnostics_3D)
-[dv3dt(:,:,2)]
-  standard_name = cumulative_change_in_y_wind_due_to_orographic_gravity_wave_drag
-  long_name = cumulative change in y wind due to orographic gravity wave drag
-  units = m s-1
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (flag_diagnostics_3D)
-[dv3dt(:,:,3)]
-  standard_name = cumulative_change_in_y_wind_due_to_deep_convection
-  long_name = cumulative change in y wind due to deep convection
-  units = m s-1
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (flag_diagnostics_3D)
-[dv3dt(:,:,4)]
-  standard_name = cumulative_change_in_y_wind_due_to_convective_gravity_wave_drag
-  long_name = cumulative change in y wind due to convective gravity wave drag
-  units = m s-1
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
-[dv3dt(:,:,5)]
-  standard_name = cumulative_change_in_y_wind_due_to_rayleigh_damping
-  long_name = cumulative change in y wind due to Rayleigh damping
-  units = m s-1
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (flag_diagnostics_3D)
-[dv3dt(:,:,6)]
-  standard_name = cumulative_change_in_y_wind_due_to_shallow_convection
-  long_name = cumulative change in y wind due to shallow convection
-  units = m s-1
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (flag_diagnostics_3D)
-[dv3dt(:,:,7)]
-  standard_name = cumulative_change_in_y_wind_due_to_physics
-  long_name = cumulative change in y wind due to physics
-  units = m s-1
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (flag_diagnostics_3D)
-[dv3dt(:,:,8)]
-  standard_name = cumulative_change_in_y_wind_due_to_non_physics_processes
-  long_name = cumulative change in y wind due to non-physics processes
-  units = m s-1
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (flag_diagnostics_3D)
-[dt3dt(:,:,1)]
-  standard_name = cumulative_change_in_temperature_due_to_longwave_radiation
-  long_name = cumulative change in temperature due to longwave radiation
-  units = K
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (flag_diagnostics_3D)
-[dt3dt(:,:,2)]
-  standard_name = cumulative_change_in_temperature_due_to_shortwave_radiation
-  long_name = cumulative change in temperature due to shortwave radiation
-  units = K
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (flag_diagnostics_3D)
-[dt3dt(:,:,3)]
-  standard_name = cumulative_change_in_temperature_due_to_PBL
-  long_name = cumulative change in temperature due to PBL
-  units = K
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (flag_diagnostics_3D)
-[dt3dt(:,:,4)]
-  standard_name = cumulative_change_in_temperature_due_to_deep_convection
-  long_name = cumulative change in temperature due to deep convection
-  units = K
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (flag_diagnostics_3D)
-[dt3dt(:,:,5)]
-  standard_name = cumulative_change_in_temperature_due_to_shallow_convection
-  long_name = cumulative change in temperature due to shallow convection
-  units = K
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (flag_diagnostics_3D)
-[dt3dt(:,:,6)]
-  standard_name = cumulative_change_in_temperature_due_to_microphysics
-  long_name = cumulative change in temperature due to microphysics
-  units = K
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (flag_diagnostics_3D)
-[dt3dt(:,:,7)]
-  standard_name = cumulative_change_in_temperature_due_to_orographic_gravity_wave_drag
-  long_name = cumulative change in temperature due to orographic gravity wave drag
-  units = K
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (flag_diagnostics_3D)
-[dt3dt(:,:,8)]
-  standard_name = cumulative_change_in_temperature_due_to_rayleigh_damping
-  long_name = cumulative change in temperature due to Rayleigh damping
-  units = K
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (flag_diagnostics_3D)
-[dt3dt(:,:,9)]
-  standard_name = cumulative_change_in_temperature_due_to_convective_gravity_wave_drag
-  long_name = cumulative change in temperature due to convective gravity wave drag
-  units = K
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (flag_diagnostics_3D)
-[dt3dt(:,:,10)]
-  standard_name = cumulative_change_in_temperature_due_to_physics
-  long_name = cumulative change in temperature due to physics
-  units = K
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (flag_diagnostics_3D)
-[dt3dt(:,:,11)]
-  standard_name = cumulative_change_in_temperature_due_to_non_physics_processes
-  long_name = cumulative change in temperature due to non-physics processed
-  units = K
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (flag_diagnostics_3D)
-[dq3dt(:,:,1)]
-  standard_name = cumulative_change_in_water_vapor_specific_humidity_due_to_PBL
-  long_name = cumulative change in water vapor specific humidity due to PBL
-  units = kg kg-1
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (flag_diagnostics_3D .and. flag_tracer_diagnostics_3D)
-[dq3dt(:,:,2)]
-  standard_name = cumulative_change_in_water_vapor_specific_humidity_due_to_deep_convection
-  long_name = cumulative change in water vapor specific humidity due to deep convection
-  units = kg kg-1
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (flag_diagnostics_3D .and. flag_tracer_diagnostics_3D)
-[dq3dt(:,:,3)]
-  standard_name = cumulative_change_in_water_vapor_specific_humidity_due_to_shallow_convection
-  long_name = cumulative change in water vapor specific humidity due to shallow convection
-  units = kg kg-1
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (flag_diagnostics_3D .and. flag_tracer_diagnostics_3D)
-[dq3dt(:,:,4)]
-  standard_name = cumulative_change_in_water_vapor_specific_humidity_due_to_microphysics
-  long_name = cumulative change in water vapor specific humidity due to microphysics
-  units = kg kg-1
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (flag_diagnostics_3D .and. flag_tracer_diagnostics_3D)
-[dq3dt(:,:,5)]
-  standard_name = cumulative_change_in_ozone_mixing_ratio_due_to_PBL
-  long_name = cumulative change in ozone mixing ratio due to PBL
-  units = kg kg-1
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (flag_diagnostics_3D .and. flag_tracer_diagnostics_3D)
-[dq3dt(:,:,6)]
-  standard_name = cumulative_change_in_ozone_concentration_due_to_production_and_loss_rate
-  long_name = cumulative change in ozone concentration due to production and loss rate
-  units = kg kg-1
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (flag_diagnostics_3D .and. flag_tracer_diagnostics_3D)
-[dq3dt(:,:,7)]
-  standard_name = cumulative_change_in_ozone_concentration_due_to_ozone_mixing_ratio
-  long_name = cumulative change in ozone concentration due to ozone mixing ratio
-  units = kg kg-1
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (flag_diagnostics_3D .and. flag_tracer_diagnostics_3D)
-[dq3dt(:,:,8)]
-  standard_name = cumulative_change_in_ozone_concentration_due_to_temperature
-  long_name = cumulative change in ozone concentration due to temperature
-  units = kg kg-1
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (flag_diagnostics_3D .and. flag_tracer_diagnostics_3D)
-[dq3dt(:,:,9)]
-  standard_name = cumulative_change_in_ozone_concentration_due_to_overhead_ozone_column
-  long_name = cumulative change in ozone concentration due to overhead ozone column
-  units = kg kg-1
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (flag_diagnostics_3D .and. flag_tracer_diagnostics_3D)
-[dq3dt(:,:,10)]
-  standard_name = cumulative_change_in_water_vapor_specific_humidity_due_to_physics
-  long_name = cumulative change in water vapor specific humidity due to physics
-  units = kg kg-1
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (flag_diagnostics_3D .and. flag_tracer_diagnostics_3D)
-[dq3dt(:,:,11)]
-  standard_name = cumulative_change_in_ozone_concentration_due_to_physics
-  long_name = cumulative change in ozone concentration due to physics
-  units = kg kg-1
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (flag_diagnostics_3D .and. flag_tracer_diagnostics_3D)
-[dq3dt(:,:,12)]
-  standard_name = cumulative_change_in_water_vapor_specific_humidity_due_to_non_physics_processes
-  long_name = cumulative change in water vapor specific humidity due to non-physics processes
-  units = kg kg-1
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (flag_diagnostics_3D .and. flag_tracer_diagnostics_3D)
-[dq3dt(:,:,13)]
-  standard_name = cumulative_change_in_ozone_concentration_due_to_non_physics_processes
-  long_name = cumulative change in ozone_concentration due to non-physics processes
-  units = kg kg-1
-  dimensions = (horizontal_loop_extent,vertical_dimension)
-  type = real
-  kind = kind_phys
-  active = (flag_diagnostics_3D .and. flag_tracer_diagnostics_3D)
 [refdmax]
   standard_name = maximum_reflectivity_at_1km_agl_over_maximum_hourly_time_interval
   long_name = maximum reflectivity at 1km agl over maximum hourly time interval
@@ -6999,6 +6940,13 @@
   standard_name = minimum_relative_humidity_at_2m_over_maximum_hourly_time_interval
   long_name = minumum relative humidity at 2m over maximum hourly time interval
   units = %
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[pratemax]
+  standard_name = maximum_precipitation_rate_over_maximum_hourly_time_interval
+  long_name = maximum precipitation rate over maximum hourly time interval
+  units = mm h-1
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
@@ -7049,86 +6997,6 @@
   long_name = instantaneous 3D cloud fraction for all MPs
   units = frac
   dimensions = (horizontal_loop_extent,adjusted_vertical_layer_dimension_for_radiation)
-  type = real
-  kind = kind_phys
-[ndust]
-  standard_name = number_of_dust_bins_for_diagnostics
-  long_name = number of dust bins for diagnostics
-  units = count
-  dimensions = ()
-  type = integer
-[nseasalt]
-  standard_name = number_of_seasalt_bins_for_diagnostics
-  long_name = number of seasalt bins for diagnostics
-  units = count
-  dimensions = ()
-  type = integer
-[ntchmdiag]
-  standard_name = number_of_chemical_tracers_for_diagnostics
-  long_name = number of chemical tracers for diagnostic output
-  units = count
-  dimensions = ()
-  type = integer
-[duem]
-  standard_name = instantaneous_dust_emission_flux
-  long_name = instantaneous dust emission flux
-  units = kg m-2 s-1
-  dimensions = (horizonal_dimension,number_of_dust_bins_for_diagnostics)
-  type = real
-  kind = kind_phys
-  active = (number_of_dust_bins_for_diagnostics > 0)
-[ssem]
-  standard_name = instantaneous_seasalt_emission_flux
-  long_name = instantaneous sea salt emission flux
-  units = kg m-2 s-1
-  dimensions = (horizonal_dimension,number_of_seasalt_bins_for_diagnostics)
-  type = real
-  kind = kind_phys
-  active = (number_of_seasalt_bins_for_diagnostics > 0)
-[sedim]
-  standard_name = instantaneous_sedimentation
-  long_name = instantaneous sedimentation
-  units = kg m-2 s-1
-  dimensions = (horizonal_dimension,number_of_chemical_tracers_for_diagnostics)
-  type = real
-  kind = kind_phys
-  active = (number_of_chemical_tracers_for_diagnostics > 0)
-[drydep]
-  standard_name = instantaneous_dry_deposition
-  long_name = instantaneous dry deposition
-  units = kg m-2 s-1
-  dimensions = (horizonal_dimension,number_of_chemical_tracers_for_diagnostics)
-  type = real
-  kind = kind_phys
-  active = (number_of_chemical_tracers_for_diagnostics > 0)
-[wetdpl]
-  standard_name = instantaneous_large_scale_wet_deposition
-  long_name = instantaneous large-scale wet deposition
-  units = kg m-2 s-1
-  dimensions = (horizonal_dimension,number_of_chemical_tracers_for_diagnostics)
-  type = real
-  kind = kind_phys
-  active = (number_of_chemical_tracers_for_diagnostics > 0)
-[wetdpc]
-  standard_name = instantaneous_convective_scale_wet_deposition
-  long_name = instantaneous convective-scale wet deposition
-  units = kg m-2 s-1
-  dimensions = (horizonal_dimension,number_of_chemical_tracers_for_diagnostics)
-  type = real
-  kind = kind_phys
-  active = (number_of_chemical_tracers_for_diagnostics > 0)
-[abem]
-  standard_name = instantaneous_anthopogenic_and_biomass_burning_emissions
-  long_name = instantaneous anthopogenic and biomass burning emissions for black carbon, organic carbon, and sulfur dioxide
-  units = ug m-2 s-1
-  dimensions = (horizontal_loop_extent,6)
-  type = real
-  kind = kind_phys
-[aecm]
-  standard_name = instantaneous_aerosol_column_mass_densities
-  long_name = instantaneous aerosol column mass densities for pm2.5, black carbon, organic carbon, sulfate, dust, sea salt
-  units = g m-2
-  dimensions = (horizontal_loop_extent,6)
   type = real
   kind = kind_phys
 [edmf_a]
@@ -7500,6 +7368,14 @@
   type = real
   kind = kind_phys
   active = (diag_ugwp_flag)
+[thompson_ext_diag3d]
+  standard_name = extended_diagnostics_output_from_thompson_microphysics
+  long_name = set of 3d arrays for extended diagnostics output from thompson microphysics
+  units = none
+  dimensions = (horizontal_loop_extent,vertical_dimension,number_of_3d_diagnostic_output_arrays_from_thompson_microphysics)
+  type = real
+  kind = kind_phys
+  active = (flag_for_extended_diagnostic_output_from_thompson_microphysics)
 [aux2d]
   standard_name = auxiliary_2d_arrays
   long_name = auxiliary 2d arrays to output (for debugging)
@@ -7516,6 +7392,13 @@
   type = real
   kind = kind_phys
   active = (number_of_3d_auxiliary_arrays > 0)
+[old_pgr]
+  standard_name = surface_air_pressure_from_previous_timestep
+  long_name = surface air pressure from previous timestep
+  units = Pa
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
 
 ########################################################################
 [ccpp-table-properties]
@@ -8371,13 +8254,6 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[evapq]
-  standard_name = kinematic_surface_upward_latent_heat_flux_reduced_by_surface_roughness
-  long_name = kinematic surface upward latent heat flux reduced by surface roughness
-  units = kg kg-1 m s-1
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
 [evap_water]
   standard_name = kinematic_surface_upward_latent_heat_flux_over_water
   long_name = kinematic surface upward latent heat flux over water
@@ -8796,9 +8672,9 @@
   dimensions = (horizontal_loop_extent,vertical_dimension)
   type = real
   kind = kind_phys
-[hefac]
-  standard_name = surface_upward_latent_heat_flux_reduction_factor
-  long_name = surface upward latent heat flux reduction factor from canopy heat storage
+[zvfun]
+  standard_name = function_of_surface_roughness_length_and_green_vegetation_fraction
+  long_name = function of surface roughness length and green vegetation fraction
   units = none
   dimensions = (horizontal_loop_extent)
   type = real
@@ -8811,8 +8687,8 @@
   type = real
   kind = kind_phys
 [hflxq]
-  standard_name = kinematic_surface_upward_sensible_heat_flux_reduced_by_surface_roughness
-  long_name = kinematic surface upward sensible heat flux reduced by surface roughness
+  standard_name = kinematic_surface_upward_sensible_heat_flux_reduced_by_surface_roughness_and_vegetation
+  long_name = kinematic surface upward sensible heat flux reduced by surface roughness and vegetation
   units = K m s-1
   dimensions = (horizontal_loop_extent)
   type = real
@@ -8895,6 +8771,12 @@
 [lake]
   standard_name = flag_nonzero_lake_surface_fraction
   long_name = flag indicating presence of some lake surface area fraction
+  units = flag
+  dimensions = (horizontal_loop_extent)
+  type = logical
+[use_flake]
+  standard_name = flag_for_using_flake
+  long_name = flag indicating lake points using flake model
   units = flag
   dimensions = (horizontal_loop_extent)
   type = logical
@@ -9103,12 +8985,6 @@
 [nn]
   standard_name = number_of_tracers_for_convective_transport
   long_name = number of tracers for convective transport
-  units = count
-  dimensions = ()
-  type = integer
-[nncl]
-  standard_name = number_of_tracers_for_cloud_condensate
-  long_name = number of tracers for cloud condensate
   units = count
   dimensions = ()
   type = integer
@@ -9414,9 +9290,15 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[reset]
+[max_hourly_reset]
   standard_name = flag_reset_maximum_hourly_fields
   long_name = flag for resetting maximum hourly fields
+  units = flag
+  dimensions = ()
+  type = logical
+[ext_diag_thompson_reset]
+  standard_name = flag_reset_extended_diagnostics_output_arrays_from_thompson_microphysics
+  long_name = flag for resetting extended diagnostics output arrays from thompson microphysics
   units = flag
   dimensions = ()
   type = logical
@@ -9456,6 +9338,13 @@
   dimensions = (horizontal_loop_extent,vertical_dimension)
   type = real
   kind = kind_phys
+[save_q(:,:,index_for_turbulent_kinetic_energy)]
+  standard_name = turbulent_kinetic_energy_save
+  long_name = turbulent kinetic energy before entering a physics scheme
+  units = kg kg-1
+  dimensions = (horizontal_loop_extent,vertical_dimension)
+  type = real
+  kind = kind_phys
 [save_q(:,:,index_for_liquid_cloud_condensate)]
   standard_name = cloud_condensed_water_mixing_ratio_save
   long_name = ratio of mass of cloud water to mass of dry air plus vapor (without condensates) before entering a physics scheme
@@ -9473,6 +9362,20 @@
 [save_q(:,:,index_for_water_vapor)]
   standard_name = water_vapor_specific_humidity_save
   long_name = water vapor specific humidity before entering a physics scheme
+  units = kg kg-1
+  dimensions = (horizontal_loop_extent,vertical_dimension)
+  type = real
+  kind = kind_phys
+[save_q(:,:,index_for_liquid_cloud_number_concentration)]
+  standard_name = liquid_cloud_number_concentration_save
+  long_name = liquid cloud number concentration before entering a physics scheme
+  units = kg kg-1
+  dimensions = (horizontal_loop_extent,vertical_dimension)
+  type = real
+  kind = kind_phys
+[save_q(:,:,index_for_ice_cloud_number_concentration)]
+  standard_name = ice_cloud_number_concentration_save
+  long_name = ice cloud number concentration before entering a physics scheme
   units = kg kg-1
   dimensions = (horizontal_loop_extent,vertical_dimension)
   type = real
@@ -9631,16 +9534,9 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[snowd_water]
-  standard_name = surface_snow_thickness_water_equivalent_over_water
-  long_name = water equivalent snow depth over water
-  units = mm
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-[snowd_land]
-  standard_name = surface_snow_thickness_water_equivalent_over_land
-  long_name = water equivalent snow depth over land
+[snowd_ice]
+  standard_name = surface_snow_thickness_water_equivalent_over_ice
+  long_name = water equivalent snow depth over ice
   units = mm
   dimensions = (horizontal_loop_extent)
   type = real
@@ -9653,13 +9549,6 @@
   type = real
   kind = kind_phys
   active = (flag_for_land_surface_scheme == flag_for_noah_wrfv4_land_surface_scheme)
-[snowd_ice]
-  standard_name = surface_snow_thickness_water_equivalent_over_ice
-  long_name = water equivalent snow depth over ice
-  units = mm
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
 [snow_depth]
   standard_name = actual_snow_depth
   long_name = actual snow depth
@@ -10006,20 +9895,6 @@
   standard_name = maximum_updraft_velocity_at_cloud_base
   long_name = maximum updraft velocity at cloud base
   units = m s-1
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-[weasd_water]
-  standard_name = water_equivalent_accumulated_snow_depth_over_water
-  long_name = water equiv of acc snow depth over water
-  units = mm
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-[weasd_land]
-  standard_name = water_equivalent_accumulated_snow_depth_over_land
-  long_name = water equiv of acc snow depth over land
-  units = mm
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
@@ -10667,6 +10542,12 @@
   type = character
   kind = len=128
   active = (flag_for_rrtmgp_radiation_scheme)
+[rtg_ozone_index]
+  standard_name = vertically_diffused_tracer_index_of_ozone
+  long_name = number of tracers
+  units = count
+  dimensions = ()
+  type = integer
 
 ########################################################################
 [ccpp-table-properties]
