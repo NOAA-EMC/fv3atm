@@ -185,8 +185,8 @@ module fv3gfs_cap_mod
     integer                                :: noutput_fh, nfh, nfm, nfs, nfh2
     integer                                :: petcount
     integer                                :: num_output_file
-    real                                   :: output_startfh, outputfh2(2)
-    logical                                :: opened, lfreq
+    real                                   :: output_startfh, outputfh, outputfh2(2)
+    logical                                :: opened, loutput_fh, lfreq
     character(ESMF_MAXSTR)                 :: name
     integer,dimension(:), allocatable      :: petList, fcstPetList, originPetList, targetPetList
     character(len=esmf_maxstr),allocatable :: fcstItemNameList(:)
@@ -264,7 +264,10 @@ module fv3gfs_cap_mod
     call ESMF_ConfigGetAttribute(config=CF,value=iau_offset,default=0,label ='iau_offset:',rc=rc)
     if (iau_offset < 0) iau_offset=0
 
-    if(mype == 0) print *,'af nems config,quilting=',quilting,'calendar=', trim(calendar),' iau_offset=',iau_offset
+    noutput_fh = ESMF_ConfigGetLen(config=CF, label ='output_fh:',rc=rc)
+
+    if(mype == 0) print *,'af nems config,quilting=',quilting,'calendar=', trim(calendar),' iau_offset=',iau_offset, &
+      'noutput_fh=',noutput_fh
 !
     nfhout = 0 ; nfhmax_hf = 0 ; nfhout_hf = 0 ; nsout = 0
     if ( quilting ) then
@@ -329,8 +332,6 @@ module fv3gfs_cap_mod
       call ESMF_ConfigGetAttribute(config=CF, value=nsout,    label ='nsout:',    default=-1,rc=rc)
       nsout_io = nsout
 !
-      noutput_fh = ESMF_ConfigGetLen(config=CF, label ='output_fh:',rc=rc)
-
       if(mype==0) print *,'af nems config,nfhout,nsout=',nfhout,nfhmax_hf,nfhout_hf, nsout,noutput_fh
 
     endif ! quilting
@@ -704,9 +705,28 @@ module fv3gfs_cap_mod
             output_fh(i) = (i-1)*nfhout + output_startfh
           enddo
         endif
-      elseif (noutput_fh > 0 ) then
+      endif
+!
+!-----------------------------------------------------------------------
+!***  SET THE FIRST WRITE GROUP AS THE FIRST ONE TO ACT.
+!-----------------------------------------------------------------------
+!
+      n_group = 1
+!
+!end quilting
+    endif
+!
+!-- set up output forecast time if output_fh is specified
+    if (noutput_fh > 0 ) then
 !--- use output_fh to sepcify output forecast time
+      loutput_fh = .true.
+      if(noutput_fh == 1) then
+        call ESMF_ConfigGetAttribute(CF,value=outputfh,label='output_fh:', rc=rc)
+        if(outputfh == -1) loutput_fh = .false.
+      endif
+      if( loutput_fh ) then
         lfreq = .false.
+        if( allocated(output_fh)) deallocate(output_fh)
         if(noutput_fh == 2) then
           call ESMF_ConfigGetAttribute(CF,valueList=outputfh2,label='output_fh:', &
              count=noutput_fh, rc=rc)
@@ -742,17 +762,9 @@ module fv3gfs_cap_mod
             enddo
           endif
         endif
-      endif 
-      if(mype==0) print *,'output_fh=',output_fh(1:size(output_fh))
-!
-!-----------------------------------------------------------------------
-!***  SET THE FIRST WRITE GROUP AS THE FIRST ONE TO ACT.
-!-----------------------------------------------------------------------
-!
-      n_group = 1
-!
-!end quilting
-    endif
+      endif ! end loutput_fh
+    endif 
+    if(mype==0) print *,'output_fh=',output_fh(1:size(output_fh))
 !
     ! --- advertise Fields in importState and exportState -------------------
 
