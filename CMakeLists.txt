@@ -9,6 +9,11 @@ add_subdirectory(ccpp)
 ### fv3 dynamical core
 ###############################################################################
 
+# These ifdefs need to be turned ON in the dycore.
+set(use_WRTCOMP ON)
+set(GFS_PHYS    ON)
+set(GFS_TYPES   ON)
+set(USE_GFSL63  ON)
 add_subdirectory(atmos_cubed_sphere)
 
 ###############################################################################
