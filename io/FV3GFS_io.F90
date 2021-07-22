@@ -1298,9 +1298,37 @@ module FV3GFS_io_mod
     i = Atm_block%index(1)%ii(1) - isc + 1
     j = Atm_block%index(1)%jj(1) - jsc + 1
 
-
-
     if (sfc_var2(i,j,33) < -9990.0_r8) then
+      if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing snodl')
+!$omp parallel do default(shared) private(nb, ix, tem)
+      do nb = 1, Atm_block%nblks
+        do ix = 1, Atm_block%blksz(nb)
+          if (Sfcprop(nb)%landfrac(ix) > zero) then
+            tem = one / Sfcprop(nb)%landfrac(ix)
+            Sfcprop(nb)%snodl(ix)  = Sfcprop(nb)%snowd(ix) * tem
+          else
+            Sfcprop(nb)%snodl(ix)  = zero
+          endif
+        enddo
+      enddo
+    endif
+
+    if (sfc_var2(i,j,34) < -9990.0_r8) then
+      if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing weasdl')
+!$omp parallel do default(shared) private(nb, ix, tem)
+      do nb = 1, Atm_block%nblks
+        do ix = 1, Atm_block%blksz(nb)
+          if (Sfcprop(nb)%landfrac(ix) > zero) then
+            tem = one / Sfcprop(nb)%landfrac(ix)
+            Sfcprop(nb)%weasdl(ix) = Sfcprop(nb)%weasd(ix) * tem
+          else
+            Sfcprop(nb)%weasdl(ix) = zero
+          endif
+        enddo
+      enddo
+    endif
+
+    if (sfc_var2(i,j,36) < -9990.0_r8) then
       if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing tsfcl')
 !$omp parallel do default(shared) private(nb, ix)
       do nb = 1, Atm_block%nblks
@@ -1310,27 +1338,7 @@ module FV3GFS_io_mod
       enddo
     endif
 
-    if (sfc_var2(i,j,34) < -9990.0_r8) then
-      if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing zorll')
-!$omp parallel do default(shared) private(nb, ix)
-      do nb = 1, Atm_block%nblks
-        do ix = 1, Atm_block%blksz(nb)
-          Sfcprop(nb)%zorll(ix) = Sfcprop(nb)%zorl(ix) !--- compute zorll from existing variables
-        enddo
-      enddo
-    endif
-
-    if (sfc_var2(i,j,35) < -9990.0_r8) then
-      if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing zorli')
-!$omp parallel do default(shared) private(nb, ix)
-      do nb = 1, Atm_block%nblks
-        do ix = 1, Atm_block%blksz(nb)
-          Sfcprop(nb)%zorli(ix) = Sfcprop(nb)%zorl(ix) !--- compute zorli from existing variables
-        enddo
-      enddo
-    endif
-
-    if (sfc_var2(i,j,38) < -9990.0_r8) then
+    if (sfc_var2(i,j,37) < -9990.0_r8) then
       if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing zorlw')
 !$omp parallel do default(shared) private(nb, ix)
       do nb = 1, Atm_block%nblks
@@ -1340,31 +1348,34 @@ module FV3GFS_io_mod
       enddo
     endif
 
-    if (sfc_var2(i,j,36) < -9990.0_r8) then
-      if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - using snowd')
-!$omp parallel do default(shared) private(nb, ix, tem)
+    if (sfc_var2(i,j,38) < -9990.0_r8) then
+      if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing zorll')
+!$omp parallel do default(shared) private(nb, ix)
       do nb = 1, Atm_block%nblks
         do ix = 1, Atm_block%blksz(nb)
-          if (Sfcprop(nb)%landfrac(ix) > zero) then
-            tem = one / Sfcprop(nb)%landfrac(ix)
-            Sfcprop(nb)%snodl(ix)  = Sfcprop(nb)%snowd(ix) * tem
-            Sfcprop(nb)%weasdl(ix) = Sfcprop(nb)%weasd(ix) * tem
-          else
-            Sfcprop(nb)%snodl(ix)  = zero
-            Sfcprop(nb)%weasdl(ix) = zero
-          endif
+          Sfcprop(nb)%zorll(ix) = Sfcprop(nb)%zorl(ix) !--- compute zorll from existing variables
         enddo
       enddo
     endif
 
-      ! Fill in composite tsfc for coldstart runs
-    compute_tsfc_for_colstart: if (.not. warm_start) then
+    if (sfc_var2(i,j,39) < -9990.0_r8) then
+      if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing zorli')
+!$omp parallel do default(shared) private(nb, ix)
+      do nb = 1, Atm_block%nblks
+        do ix = 1, Atm_block%blksz(nb)
+          Sfcprop(nb)%zorli(ix) = Sfcprop(nb)%zorl(ix) !--- compute zorli from existing variables
+        enddo
+      enddo
+    endif
+
+      ! Fill in composite tsfc for coldstart runs - must happen after tsfcl is computed
+    compute_tsfc_for_colstart: if (sfc_var2(i,j,35) < -9990.0_r8) then
+      if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing composite tsfc')
       if(Model%frac_grid) then ! 3-way composite
-        if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing composite tsfc')
 !$omp parallel do default(shared) private(nb, ix, tem, tem1)
         do nb = 1, Atm_block%nblks
           do ix = 1, Atm_block%blksz(nb)
-            Sfcprop(nb)%tsfco(ix) = max(con_tice, Sfcprop(nb)%tsfco(ix)) ! this may break restart reproducibility 
+            Sfcprop(nb)%tsfco(ix) = max(con_tice, Sfcprop(nb)%tsfco(ix)) ! this may break restart reproducibility
             tem1 = one - Sfcprop(nb)%landfrac(ix)
             tem  = tem1 * Sfcprop(nb)%fice(ix) ! tem = ice fraction wrt whole cell
             Sfcprop(nb)%tsfc(ix) = Sfcprop(nb)%tsfcl(ix) * Sfcprop(nb)%landfrac(ix) &
@@ -1551,11 +1562,11 @@ module FV3GFS_io_mod
       sfc_name2(37) = 'zorlw' !zorl on water portion of a cell
       sfc_name2(38) = 'zorll' !zorl on land portion of a cell
       sfc_name2(39) = 'zorli' !zorl on ice portion of a cell
-      sfc_name2(38) = 'albdvis_lnd'
-      sfc_name2(39) = 'albdnir_lnd'
-      sfc_name2(40) = 'albivis_lnd'
-      sfc_name2(41) = 'albinir_lnd'
-      sfc_name2(42) = 'emis_lnd'
+      sfc_name2(40) = 'albdvis_lnd'
+      sfc_name2(41) = 'albdnir_lnd'
+      sfc_name2(42) = 'albivis_lnd'
+      sfc_name2(43) = 'albinir_lnd'
+      sfc_name2(44) = 'emis_lnd'
       if (Model%cplwav) then
         sfc_name2(nvar2m) = 'zorlwav'   !zorl from wave component
       endif
@@ -1732,7 +1743,7 @@ module FV3GFS_io_mod
         i = Atm_block%index(nb)%ii(ix) - isc + 1
         j = Atm_block%index(nb)%jj(ix) - jsc + 1
         sfc_var2(i,j,1)  = Sfcprop(nb)%slmsk(ix) !--- slmsk
-        sfc_var2(i,j,2) = Sfcprop(nb)%tsfco(ix)  !--- tsfc (tsea in sfc file)
+        sfc_var2(i,j,2)  = Sfcprop(nb)%tsfco(ix) !--- tsfc (tsea in sfc file)
         sfc_var2(i,j,3)  = Sfcprop(nb)%weasd(ix) !--- weasd (sheleg in sfc file)
         sfc_var2(i,j,4)  = Sfcprop(nb)%tg3(ix)   !--- tg3
         sfc_var2(i,j,5)  = Sfcprop(nb)%zorl(ix)  !--- zorl
