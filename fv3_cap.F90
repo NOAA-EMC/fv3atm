@@ -464,6 +464,9 @@ module fv3gfs_cap_mod
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
     if(mype == 0) print *,'af fcstCom FBCount= ',FBcount
 !
+! set start time for output
+      output_startfh = 0.
+!
 !-----------------------------------------------------------------------
 !***  create and initialize Write component(s).
 !-----------------------------------------------------------------------
@@ -644,7 +647,6 @@ module fv3gfs_cap_mod
 !---  set up output forecast time array
 !
 !--- get current forecast length
-      output_startfh = 0.
       if(iau_offset > 0) then
         output_startfh = iau_offset
       endif
