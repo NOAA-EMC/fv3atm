@@ -2420,7 +2420,11 @@ module FV3GFS_io_mod
              used=send_data(Diag(idx)%id, var3, Time, is_in=is_in, js_in=js_in, ks_in=1) 
            endif
            !--- ozone mixing ration tendency
+#ifdef MULTI_GASES
+           if (trim(Diag(idx)%name) == 'dspo3_dt') then
+#else
            if (trim(Diag(idx)%name) == 'do3mr_dt') then
+#endif
              var3(1:nx,1:ny,1:levs) =  RESHAPE(Statein%qgrs(1:ngptc,levs:1:-1,ntoz:ntoz), (/nx,ny,levs/))
              var3(1:nx,1:ny,1:levs) = (RESHAPE(Stateout%gq0(1:ngptc,levs:1:-1,ntoz:ntoz), (/nx,ny,levs/))  &
                                         - var3(1:nx,1:ny,1:levs))*rdt
