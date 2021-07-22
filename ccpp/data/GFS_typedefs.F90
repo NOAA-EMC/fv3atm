@@ -2370,6 +2370,10 @@ module GFS_typedefs
     allocate (Sfcprop%weasdl   (IM))
 !   allocate (Sfcprop%hprim    (IM))
     allocate (Sfcprop%hprime   (IM,Model%nmtvr))
+    allocate(Sfcprop%albdvis_lnd (IM))
+    allocate(Sfcprop%albdnir_lnd (IM))
+    allocate(Sfcprop%albivis_lnd (IM))
+    allocate(Sfcprop%albinir_lnd (IM))
     allocate (Sfcprop%emis_lnd (IM))
 
     Sfcprop%slmsk     = clear_val
@@ -2393,6 +2397,10 @@ module GFS_typedefs
     Sfcprop%weasdl    = clear_val
 !   Sfcprop%hprim     = clear_val
     Sfcprop%hprime    = clear_val
+    Sfcprop%albdvis_lnd = clear_val
+    Sfcprop%albdnir_lnd = clear_val
+    Sfcprop%albivis_lnd = clear_val
+    Sfcprop%albinir_lnd = clear_val
     Sfcprop%emis_lnd  = clear_val
 
 !--- In (radiation only)
@@ -2547,20 +2555,12 @@ module GFS_typedefs
       allocate(Sfcprop%iceprv    (IM))
       allocate(Sfcprop%snowprv   (IM))
       allocate(Sfcprop%graupelprv(IM))
-      allocate(Sfcprop%albdvis_lnd (IM))
-      allocate(Sfcprop%albdnir_lnd (IM))
-      allocate(Sfcprop%albivis_lnd (IM))
-      allocate(Sfcprop%albinir_lnd (IM))
 
       Sfcprop%raincprv   = clear_val
       Sfcprop%rainncprv  = clear_val
       Sfcprop%iceprv     = clear_val
       Sfcprop%snowprv    = clear_val
       Sfcprop%graupelprv = clear_val
-      Sfcprop%albdvis_lnd = clear_val
-      Sfcprop%albdnir_lnd = clear_val
-      Sfcprop%albivis_lnd = clear_val
-      Sfcprop%albinir_lnd = clear_val
     end if
 ! Noah MP allocate and init when used
 !
