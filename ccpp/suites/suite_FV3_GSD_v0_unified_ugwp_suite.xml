@@ -80,6 +80,7 @@
       <scheme>GFS_MP_generic_post</scheme>
       <scheme>cu_gf_driver_post</scheme>
       <scheme>maximum_hourly_diagnostics</scheme>
+      <scheme>phys_tend</scheme>
     </subcycle>
   </group>
   <group name="stochastics">
