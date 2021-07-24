@@ -729,7 +729,11 @@ module FV3GFS_io_mod
       !--- allocate the various containers needed for restarts
       allocate(sfc_name2(nvar_s2m+nvar_s2o+nvar_s2mp+nvar_s2r))
       allocate(sfc_name3(0:nvar_s3+nvar_s3mp))
-      allocate(sfc_var2(nx,ny,nvar_s2m+nvar_s2o+nvar_s2mp+nvar_s2r),sfc_var3ice(nx,ny,Model%kice))
+      allocate(sfc_var2(nx,ny,nvar_s2m+nvar_s2o+nvar_s2mp+nvar_s2r))
+      ! Note that this may cause problems with RUC LSM for coldstart runs from GFS data
+      ! if the initial conditions do contain this variable, because Model%kice is 9 for
+      ! RUC LSM, but tiice in the initial conditions will only have two vertical layers
+      allocate(sfc_var3ice(nx,ny,Model%kice))
 
       if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp .or. Model%lsm == Model%lsm_noah_wrfv4 .or. (.not.warm_start)) then
         allocate(sfc_var3(nx,ny,Model%lsoil,nvar_s3))
@@ -1034,7 +1038,7 @@ module FV3GFS_io_mod
         Sfcprop(nb)%slope(ix)  = sfc_var2(i,j,30)   !--- slope
         Sfcprop(nb)%snoalb(ix) = sfc_var2(i,j,31)   !--- snoalb
         Sfcprop(nb)%sncovr(ix) = sfc_var2(i,j,32)   !--- sncovr
-        Sfcprop(nb)%tsfcl(ix)  = sfc_var2(i,j,33) !--- sfcl  (temp on land portion of a cell)
+        Sfcprop(nb)%tsfcl(ix)  = sfc_var2(i,j,33) !--- tsfcl (temp on land portion of a cell)
         Sfcprop(nb)%zorll(ix)  = sfc_var2(i,j,34) !--- zorll (zorl on land portion of a cell)
         Sfcprop(nb)%zorli(ix)  = sfc_var2(i,j,35) !--- zorli (zorl on ice  portion of a cell)
         Sfcprop(nb)%snodl(ix)  = sfc_var2(i,j,36) !--- snodl (snowd on land  portion of a cell)
@@ -1565,7 +1569,7 @@ module FV3GFS_io_mod
         sfc_name2(36) = 'snodl'   !snowd on land portion of a cell
         sfc_name2(37) = 'tsfc'    !tsfc composite
         sfc_name2(38) = 'zorl'    !zorl composite
-        sfc_name2(39) = 'weasd'   !weasd on land portion of a cell
+        sfc_name2(39) = 'weasdl'  !weasd on land portion of a cell
 !     endif
       if (Model%cplwav) then
         sfc_name2(nvar2m) = 'zorlwav'   !zorl on land portion of a cell
