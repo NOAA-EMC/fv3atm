@@ -73,6 +73,7 @@
       <scheme>mp_thompson_post</scheme>
       <scheme>GFS_MP_generic_post</scheme>
       <scheme>maximum_hourly_diagnostics</scheme>
+      <scheme>phys_tend</scheme>
     </subcycle>
   </group>
   <group name="stochastics">
