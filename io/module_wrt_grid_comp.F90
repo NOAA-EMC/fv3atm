@@ -21,7 +21,6 @@
 !***  Revision history
 !***
 !     Jul 2017:  J. Wang/G. Theurich  - initial code for fv3 write grid component
-!     Aug 2017:  J. Wang              - add nemsio binary output for Gaussian grid
 !     Mar 2018:  S  Moorthi           - changing cfhour to accommodate up to 99999 hours
 !     Aug 2019:  J. Wang              - add inline post
 !
@@ -34,14 +33,13 @@
       use module_fv3_io_def,   only : num_pes_fcst,                             &
                                       n_group, num_files, app_domain,           &
                                       filename_base, output_grid, output_file,  &
-                                      imo,jmo,ichunk2d,jchunk2d,write_nemsioflip,&
+                                      imo,jmo,ichunk2d,jchunk2d,                &
                                       ichunk3d,jchunk3d,kchunk3d,nbits,         &
                                       nsout => nsout_io,                        &
                                       cen_lon, cen_lat,                         &
                                       lon1, lat1, lon2, lat2, dlon, dlat,       &
                                       stdlat1, stdlat2, dx, dy, iau_offset,     &
-                                      write_fsyncflag, ideflate
-      use module_write_nemsio, only : nemsio_first_call, write_nemsio
+                                      ideflate
       use module_write_netcdf, only : write_netcdf
       use physcons,            only : pi => con_pi
       use inline_post,         only : inline_post_run, inline_post_getattr
@@ -287,17 +285,12 @@
       if (lprnt) then
         print *,'output_grid=',trim(output_grid)
       end if
-      write_nemsioflip =.false.
-      write_fsyncflag  =.false.
 
       if(trim(output_grid) == 'gaussian_grid' .or. trim(output_grid) == 'global_latlon') then
         call ESMF_ConfigGetAttribute(config=CF, value=imo, label ='imo:',rc=rc)
         call ESMF_ConfigGetAttribute(config=CF, value=jmo, label ='jmo:',rc=rc)
-        call ESMF_ConfigGetAttribute(config=CF, value=write_nemsioflip, label ='write_nemsioflip:', default=.true., rc=rc)
-        call ESMF_ConfigGetAttribute(config=CF, value=write_fsyncflag,  label ='write_fsyncflag:', default=.true., rc=rc)
         if (lprnt) then
           print *,'imo=',imo,'jmo=',jmo
-          print *,'write_nemsioflip=',write_nemsioflip,'write_fsyncflag=',write_fsyncflag
         end if
       else if(trim(output_grid) == 'regional_latlon') then
         call ESMF_ConfigGetAttribute(config=CF, value=lon1, label ='lon1:',rc=rc)
@@ -439,15 +432,9 @@
 !
         allocate(slat(jmo), lat(jmo), lon(imo))
         call splat(4, jmo, slat)
-        if(write_nemsioflip) then
-          do j=1,jmo
-            lat(j) = asin(slat(j)) * radi
-          enddo
-        else
-          do j=1,jmo
-            lat(jmo-j+1) = asin(slat(j)) * radi
-          enddo
-        endif
+        do j=1,jmo
+          lat(jmo-j+1) = asin(slat(j)) * radi
+        enddo
         wrt_int_state%latstart = lat(1)
         wrt_int_state%latlast  = lat(jmo)
         do j=1,imo
@@ -514,27 +501,15 @@
         if (mod(jmo,2) == 0) then
           ! if jmo even, lats do not include poles and equator
           delat = 180.d0/real(jmo,8)
-          if(write_nemsioflip) then
-            do j=1,jmo
-              lat(j) = 90.d0 - 0.5*delat - real(j-1,8)*delat
-            enddo
-          else
-            do j=1,jmo
-              lat(j) = -90.d0 + 0.5*delat + real(j-1,8)*delat
-            enddo
-          endif
+          do j=1,jmo
+            lat(j) = -90.d0 + 0.5*delat + real(j-1,8)*delat
+          enddo
         else
           ! if jmo odd, lats include poles and equator
           delat = 180.d0/real(jmo-1,8)
-          if(write_nemsioflip) then
-            do j=1,jmo
-              lat(j) = 90.d0 - real(j-1,8)*delat
-            enddo
-          else
-            do j=1,jmo
-              lat(j) = -90.d0 + real(j-1,8)*delat
-            enddo
-          endif
+          do j=1,jmo
+            lat(j) = -90.d0 + real(j-1,8)*delat
+          enddo
         endif
         wrt_int_state%latstart = lat(1)
         wrt_int_state%latlast  = lat(jmo)
@@ -1257,21 +1232,6 @@
       endif
 !
 !-----------------------------------------------------------------------
-!***  Initialize for nemsio file
-!-----------------------------------------------------------------------
-!
-      call ESMF_LogWrite("before initialize for nemsio file", ESMF_LOGMSG_INFO, rc=rc)
-      do i= 1, wrt_int_state%FBcount
-         if (trim(output_grid) == 'gaussian_grid' .and. trim(output_file(i)) == 'nemsio') then
-!           if (lprnt) write(0,*) 'in wrt initial, befnemsio_first_call wrt_int_state%FBcount=',wrt_int_state%FBcount
-             call nemsio_first_call(wrt_int_state%wrtFB(i), imo, jmo,         &
-                                   wrt_int_state%mype, ntasks, wrt_mpi_comm, &
-                                   wrt_int_state%FBcount, i, idate, lat, lon, rc)
-         endif
-      enddo
-      call ESMF_LogWrite("after initialize for nemsio file", ESMF_LOGMSG_INFO, rc=rc)
-!
-!-----------------------------------------------------------------------
 !
       IF(RC /= ESMF_SUCCESS) THEN
         WRITE(0,*)"FAIL: Write_Initialize."
@@ -1548,12 +1508,8 @@
              endif
           endif
 
-          if ( trim(output_file(nbdl)) == 'nemsio' ) then
-             filename = trim(wrt_int_state%wrtFB_names(nbdl))//'f'//trim(cfhour)//'.nemsio'
-          else
-             filename = trim(wrt_int_state%wrtFB_names(nbdl))//'f'//trim(cfhour)//'.nc'
-          endif
-!           if(mype == lead_write_task) print *,'in wrt run,filename=',trim(filename)
+          filename = trim(wrt_int_state%wrtFB_names(nbdl))//'f'//trim(cfhour)//'.nc'
+!          if(mype == lead_write_task) print *,'in wrt run,filename=',trim(filename)
 
 !
 ! set the time Attribute on the grid to carry it into the lower levels
@@ -1598,18 +1554,7 @@
 
           else if (trim(output_grid) == 'gaussian_grid') then
 
-            if (trim(output_file(nbdl)) == 'nemsio') then
-
-              wbeg = MPI_Wtime()
-              call write_nemsio(file_bundle,trim(filename),nf_hours, nf_minutes, &
-                                nseconds, nseconds_num, nseconds_den,nbdl, rc)
-              wend = MPI_Wtime()
-              if (lprnt) then
-                write(*,'(A,F10.5,A,I4.2,A,I2.2)')' nemsio      Write Time is ',wend-wbeg  &
-                      ,' at Fcst ',NF_HOURS,':',NF_MINUTES
-              endif
-
-            else if (trim(output_file(nbdl)) == 'netcdf') then
+            if (trim(output_file(nbdl)) == 'netcdf') then
 
               wbeg = MPI_Wtime()
               call write_netcdf(file_bundle,wrt_int_state%wrtFB(nbdl),trim(filename), &
