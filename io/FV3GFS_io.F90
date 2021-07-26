@@ -305,10 +305,10 @@ module FV3GFS_io_mod
        temp2d(i,j,84) = GFS_Data(nb)%Radtend%sfcflw(ix)%dnfx0
        temp2d(i,j,85) = GFS_Data(nb)%Sfcprop%tiice(ix,1)
        temp2d(i,j,86) = GFS_Data(nb)%Sfcprop%tiice(ix,2)
-       temp2d(i,j,87) = GFS_Data(nb)%Sfcprop%albdvis_lnd(ix)
-       temp2d(i,j,88) = GFS_Data(nb)%Sfcprop%albdnir_lnd(ix)
-       temp2d(i,j,89) = GFS_Data(nb)%Sfcprop%albivis_lnd(ix)
-       temp2d(i,j,90) = GFS_Data(nb)%Sfcprop%albinir_lnd(ix)
+       temp2d(i,j,87) = GFS_Data(nb)%Sfcprop%albdirvis_lnd(ix)
+       temp2d(i,j,88) = GFS_Data(nb)%Sfcprop%albdirnir_lnd(ix)
+       temp2d(i,j,89) = GFS_Data(nb)%Sfcprop%albdifvis_lnd(ix)
+       temp2d(i,j,90) = GFS_Data(nb)%Sfcprop%albdifnir_lnd(ix)
        temp2d(i,j,91) = GFS_Data(nb)%Sfcprop%emis_lnd(ix)
 
        idx_opt = 92
@@ -385,10 +385,10 @@ module FV3GFS_io_mod
         temp2d(i,j,idx_opt+9)  = GFS_Data(nb)%Sfcprop%sncovr_ice(ix)
         temp2d(i,j,idx_opt+10) = GFS_Data(nb)%Sfcprop%sfalb_lnd(ix)
         temp2d(i,j,idx_opt+11) = GFS_Data(nb)%Sfcprop%sfalb_lnd_bck(ix)
-!       temp2d(i,j,idx_opt+16) = GFS_Data(nb)%Sfcprop%albdvis_ice(ix)
-!       temp2d(i,j,idx_opt+17) = GFS_Data(nb)%Sfcprop%albdnir_ice(ix)
-!       temp2d(i,j,idx_opt+18) = GFS_Data(nb)%Sfcprop%albivis_ice(ix)
-!       temp2d(i,j,idx_opt+19) = GFS_Data(nb)%Sfcprop%albinir_ice(ix)
+!       temp2d(i,j,idx_opt+16) = GFS_Data(nb)%Sfcprop%albdirvis_ice(ix)
+!       temp2d(i,j,idx_opt+17) = GFS_Data(nb)%Sfcprop%albdirnir_ice(ix)
+!       temp2d(i,j,idx_opt+18) = GFS_Data(nb)%Sfcprop%albdifvis_ice(ix)
+!       temp2d(i,j,idx_opt+19) = GFS_Data(nb)%Sfcprop%albdifnir_ice(ix)
         temp2d(i,j,idx_opt+12) = GFS_Data(nb)%Sfcprop%sfalb_ice(ix)
         temp2d(i,j,idx_opt+13) = GFS_Data(nb)%Sfcprop%emis_ice(ix)
         idx_opt = idx_opt + 14
@@ -798,10 +798,10 @@ module FV3GFS_io_mod
       sfc_name2(37) = 'zorlw' !zorl on water portion of a cell
       sfc_name2(38) = 'zorll' !zorl on land portion of a cell
       sfc_name2(39) = 'zorli' !zorl on ice portion of a cell
-      sfc_name2(40) = 'albdvis_lnd'
-      sfc_name2(41) = 'albdnir_lnd'
-      sfc_name2(42) = 'albivis_lnd'
-      sfc_name2(43) = 'albinir_lnd'
+      sfc_name2(40) = 'albdirvis_lnd'
+      sfc_name2(41) = 'albdirnir_lnd'
+      sfc_name2(42) = 'albdifvis_lnd'
+      sfc_name2(43) = 'albdifnir_lnd'
       sfc_name2(44) = 'emis_lnd'
 
       if (Model%use_cice_alb .or. Model%lsm == Model%lsm_ruc) then
@@ -881,10 +881,10 @@ module FV3GFS_io_mod
         sfc_name2(nvar_s2m+28) = 'sncovr_ice'
         sfc_name2(nvar_s2m+29) = 'sfalb_lnd'
         sfc_name2(nvar_s2m+30) = 'sfalb_lnd_bck'
-!       sfc_name2(nvar_s2m+31) = 'albdvis_ice'
-!       sfc_name2(nvar_s2m+32) = 'albdnir_ice'
-!       sfc_name2(nvar_s2m+33) = 'albivis_ice'
-!       sfc_name2(nvar_s2m+34) = 'albinir_ice'
+!       sfc_name2(nvar_s2m+31) = 'albdirvis_ice'
+!       sfc_name2(nvar_s2m+32) = 'albdirnir_ice'
+!       sfc_name2(nvar_s2m+33) = 'albdifvis_ice'
+!       sfc_name2(nvar_s2m+34) = 'albdifnir_ice'
         sfc_name2(nvar_s2m+31) = 'sfalb_ice'
         sfc_name2(nvar_s2m+32) = 'emis_ice'
         if (Model%rdlai) then
@@ -901,12 +901,10 @@ module FV3GFS_io_mod
                                             .or. trim(sfc_name2(num)) == 'zorli' .or. trim(sfc_name2(num)) == 'zorlwav' &
                                             .or. trim(sfc_name2(num)) == 'snodl' .or. trim(sfc_name2(num)) == 'weasdl'  &
                                             .or. trim(sfc_name2(num)) == 'tsfc'  .or. trim(sfc_name2(num)) ==  'zorlw'  &
-                                 .or. trim(sfc_name2(num)) == 'albdvis_lnd' .or.  trim(sfc_name2(num)) == 'albdnir_lnd' &
-                                 .or. trim(sfc_name2(num)) == 'albivis_lnd' .or.  trim(sfc_name2(num)) == 'albinir_lnd' &
-                                 .or. trim(sfc_name2(num)) == 'albdirvis_ice'                                           &
-                                 .or. trim(sfc_name2(num)) == 'albdifvis_ice'                                           &
-                                 .or. trim(sfc_name2(num)) == 'albdirnir_ice'                                           &
-                                 .or. trim(sfc_name2(num)) == 'albdifnir_ice'                                           &
+                                 .or. trim(sfc_name2(num)) == 'albdirvis_lnd' .or. trim(sfc_name2(num)) == 'albdirnir_lnd' &
+                                 .or. trim(sfc_name2(num)) == 'albdifvis_lnd' .or. trim(sfc_name2(num)) == 'albdifnir_lnd' &
+                                 .or. trim(sfc_name2(num)) == 'albdirvis_ice' .or. trim(sfc_name2(num)) == 'albdifvis_ice' &
+                                 .or. trim(sfc_name2(num)) == 'albdirnir_ice' .or. trim(sfc_name2(num)) == 'albdifnir_ice' &
                                  .or. trim(sfc_name2(num)) == 'emis_lnd' ) then
           id_restart = register_restart_field(Sfc_restart, fn_srf, sfc_name2(num), var2_p, domain=fv_domain, mandatory=.false.)
         else
@@ -1059,10 +1057,10 @@ module FV3GFS_io_mod
         Sfcprop(nb)%zorlw(ix)  = sfc_var2(i,j,37)   !--- zorlw (zorl on water portion of a cell)
         Sfcprop(nb)%zorll(ix)  = sfc_var2(i,j,38)   !--- zorll (zorl on land portion of a cell)
         Sfcprop(nb)%zorli(ix)  = sfc_var2(i,j,39)   !--- zorli (zorl on ice  portion of a cell)
-        Sfcprop(nb)%albdvis_lnd(ix)= sfc_var2(i,j,40)
-        Sfcprop(nb)%albdnir_lnd(ix)= sfc_var2(i,j,41)
-        Sfcprop(nb)%albivis_lnd(ix)= sfc_var2(i,j,42)
-        Sfcprop(nb)%albinir_lnd(ix)= sfc_var2(i,j,43)
+        Sfcprop(nb)%albdirvis_lnd(ix) = sfc_var2(i,j,40)
+        Sfcprop(nb)%albdirnir_lnd(ix) = sfc_var2(i,j,41)
+        Sfcprop(nb)%albdifvis_lnd(ix) = sfc_var2(i,j,42)
+        Sfcprop(nb)%albdifnir_lnd(ix) = sfc_var2(i,j,43)
         Sfcprop(nb)%emis_lnd(ix)   = sfc_var2(i,j,44)
         if (Model%use_cice_alb .or. Model%lsm == Model%lsm_ruc) then
           Sfcprop(nb)%albdirvis_ice(ix) = sfc_var2(i,j,45)
@@ -1225,10 +1223,10 @@ module FV3GFS_io_mod
           Sfcprop(nb)%sncovr_ice(ix)      = sfc_var2(i,j,nvar_s2m+28)
           Sfcprop(nb)%sfalb_lnd(ix)       = sfc_var2(i,j,nvar_s2m+29)
           Sfcprop(nb)%sfalb_lnd_bck(ix)   = sfc_var2(i,j,nvar_s2m+30)
-!         Sfcprop(nb)%albdvis_ice(ix)     = sfc_var2(i,j,nvar_s2m+31)
-!         Sfcprop(nb)%albdnir_ice(ix)     = sfc_var2(i,j,nvar_s2m+32)
-!         Sfcprop(nb)%albivis_ice(ix)     = sfc_var2(i,j,nvar_s2m+33)
-!         Sfcprop(nb)%albinir_ice(ix)     = sfc_var2(i,j,nvar_s2m+34)
+!         Sfcprop(nb)%albdirvis_ice(ix)   = sfc_var2(i,j,nvar_s2m+31)
+!         Sfcprop(nb)%albdirnir_ice(ix)   = sfc_var2(i,j,nvar_s2m+32)
+!         Sfcprop(nb)%albdifvis_ice(ix)   = sfc_var2(i,j,nvar_s2m+33)
+!         Sfcprop(nb)%albdifnir_ice(ix)   = sfc_var2(i,j,nvar_s2m+34)
           Sfcprop(nb)%sfalb_ice(ix)       = sfc_var2(i,j,nvar_s2m+31)
           Sfcprop(nb)%emis_ice(ix)        = sfc_var2(i,j,nvar_s2m+32)
           if (Model%rdlai) then
@@ -1616,10 +1614,10 @@ module FV3GFS_io_mod
       sfc_name2(37) = 'zorlw' !zorl on water portion of a cell
       sfc_name2(38) = 'zorll' !zorl on land portion of a cell
       sfc_name2(39) = 'zorli' !zorl on ice portion of a cell
-      sfc_name2(40) = 'albdvis_lnd'
-      sfc_name2(41) = 'albdnir_lnd'
-      sfc_name2(42) = 'albivis_lnd'
-      sfc_name2(43) = 'albinir_lnd'
+      sfc_name2(40) = 'albdirvis_lnd'
+      sfc_name2(41) = 'albdirnir_lnd'
+      sfc_name2(42) = 'albdifvis_lnd'
+      sfc_name2(43) = 'albdifnir_lnd'
       sfc_name2(44) = 'emis_lnd'
 
       if (Model%use_cice_alb .or. Model%lsm == Model%lsm_ruc) then
@@ -1665,10 +1663,10 @@ module FV3GFS_io_mod
         sfc_name2(nvar2m+28) = 'sncovr_ice'
         sfc_name2(nvar2m+29) = 'sfalb_lnd'
         sfc_name2(nvar2m+30) = 'sfalb_lnd_bck'
-!       sfc_name2(nvar2m+31) = 'albdvis_ice'
-!       sfc_name2(nvar2m+32) = 'albdnir_ice'
-!       sfc_name2(nvar2m+33) = 'albivis_ice'
-!       sfc_name2(nvar2m+34) = 'albinir_ice'
+!       sfc_name2(nvar2m+31) = 'albdirvis_ice'
+!       sfc_name2(nvar2m+32) = 'albdirnir_ice'
+!       sfc_name2(nvar2m+33) = 'albdifvis_ice'
+!       sfc_name2(nvar2m+34) = 'albdifnir_ice'
         sfc_name2(nvar2m+31) = 'sfalb_ice'
         sfc_name2(nvar2m+32) = 'emis_ice'
         if (Model%rdlai) then
@@ -1714,13 +1712,11 @@ module FV3GFS_io_mod
                                              .or. trim(sfc_name2(num)) == 'zorli' .or.trim(sfc_name2(num))  == 'zorlwav' &
                                              .or. trim(sfc_name2(num)) == 'snodl' .or. trim(sfc_name2(num)) == 'weasdl'  &
                                              .or. trim(sfc_name2(num)) == 'tsfc'  .or. trim(sfc_name2(num)) ==  'zorlw'  &
-                                  .or. trim(sfc_name2(num)) == 'albdvis_lnd' .or.  trim(sfc_name2(num)) == 'albdnir_lnd' &
-                                  .or. trim(sfc_name2(num)) == 'albivis_lnd' .or.  trim(sfc_name2(num)) == 'albinir_lnd' &
-                                             .or. trim(sfc_name2(num)) == 'albdirvis_ice'                                &
-                                             .or. trim(sfc_name2(num)) == 'albdifvis_ice'                                &
-                                             .or. trim(sfc_name2(num)) == 'albdirnir_ice'                                &
-                                             .or. trim(sfc_name2(num)) == 'albdifnir_ice'                                &
-!                                            .or. trim(sfc_name2(num)) == 'sfalb_ice'                                    &
+                                  .or. trim(sfc_name2(num)) == 'albdirvis_lnd' .or. trim(sfc_name2(num)) == 'albdirnir_lnd' &
+                                  .or. trim(sfc_name2(num)) == 'albdifvis_lnd' .or. trim(sfc_name2(num)) == 'albdifnir_lnd' &
+                                  .or. trim(sfc_name2(num)) == 'albdirvis_ice' .or. trim(sfc_name2(num)) == 'albdifvis_ice' &
+                                  .or. trim(sfc_name2(num)) == 'albdirnir_ice' .or. trim(sfc_name2(num)) == 'albdifnir_ice' &
+!                                 .or. trim(sfc_name2(num)) == 'sfalb_ice'                                    &
                                   .or. trim(sfc_name2(num)) == 'emis_lnd' ) then
           id_restart = register_restart_field(Sfc_restart, fn_srf, sfc_name2(num), var2_p, domain=fv_domain, mandatory=.false.)
         else
@@ -1849,10 +1845,10 @@ module FV3GFS_io_mod
         sfc_var2(i,j,37) = Sfcprop(nb)%zorlw(ix)  !--- zorl (zorl on water)
         sfc_var2(i,j,38) = Sfcprop(nb)%zorll(ix)  !--- zorll (zorl on land)
         sfc_var2(i,j,39) = Sfcprop(nb)%zorli(ix)  !--- zorli (zorl on ice)
-        sfc_var2(i,j,40) = Sfcprop(nb)%albdvis_lnd(ix)
-        sfc_var2(i,j,41) = Sfcprop(nb)%albdnir_lnd(ix)
-        sfc_var2(i,j,42) = Sfcprop(nb)%albivis_lnd(ix)
-        sfc_var2(i,j,43) = Sfcprop(nb)%albinir_lnd(ix)
+        sfc_var2(i,j,40) = Sfcprop(nb)%albdirvis_lnd(ix)
+        sfc_var2(i,j,41) = Sfcprop(nb)%albdirnir_lnd(ix)
+        sfc_var2(i,j,42) = Sfcprop(nb)%albdifvis_lnd(ix)
+        sfc_var2(i,j,43) = Sfcprop(nb)%albdifnir_lnd(ix)
         sfc_var2(i,j,44) = Sfcprop(nb)%emis_lnd(ix)
         if (Model%use_cice_alb .or. Model%lsm == Model%lsm_ruc) then
           sfc_var2(i,j,45) = Sfcprop(nb)%albdirvis_ice(ix)
@@ -1900,10 +1896,10 @@ module FV3GFS_io_mod
           sfc_var2(i,j,nvar2m+28) = Sfcprop(nb)%sncovr_ice(ix)
           sfc_var2(i,j,nvar2m+29) = Sfcprop(nb)%sfalb_lnd(ix)
           sfc_var2(i,j,nvar2m+30) = Sfcprop(nb)%sfalb_lnd_bck(ix)
-!         sfc_var2(i,j,nvar2m+31) = Sfcprop(nb)%albdvis_ice(ix)
-!         sfc_var2(i,j,nvar2m+32) = Sfcprop(nb)%albdnir_ice(ix)
-!         sfc_var2(i,j,nvar2m+33) = Sfcprop(nb)%albivis_ice(ix)
-!         sfc_var2(i,j,nvar2m+34) = Sfcprop(nb)%albinir_ice(ix)
+!         sfc_var2(i,j,nvar2m+31) = Sfcprop(nb)%albdirvis_ice(ix)
+!         sfc_var2(i,j,nvar2m+32) = Sfcprop(nb)%albdirnir_ice(ix)
+!         sfc_var2(i,j,nvar2m+33) = Sfcprop(nb)%albdifvis_ice(ix)
+!         sfc_var2(i,j,nvar2m+34) = Sfcprop(nb)%albdifnir_ice(ix)
           sfc_var2(i,j,nvar2m+31) = Sfcprop(nb)%sfalb_ice(ix)
           sfc_var2(i,j,nvar2m+32) = Sfcprop(nb)%emis_ice(ix)
           if (Model%rdlai) then

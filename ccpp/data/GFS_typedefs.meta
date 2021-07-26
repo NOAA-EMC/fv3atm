@@ -1296,7 +1296,7 @@
   type = real
   kind = kind_phys
   active = (flag_for_land_surface_scheme == flag_for_noah_wrfv4_land_surface_scheme)
-[albdvis_lnd]
+[albdirvis_lnd]
   standard_name = surface_albedo_direct_visible_over_land
   long_name = direct surface albedo visible band over land
   units = frac
@@ -1304,7 +1304,7 @@
   type = real
   kind = kind_phys
   active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme .or. flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme)
-[albdnir_lnd]
+[albdirnir_lnd]
   standard_name = surface_albedo_direct_NIR_over_land
   long_name = direct surface albedo NIR band over land
   units = frac
@@ -1312,7 +1312,7 @@
   type = real
   kind = kind_phys
   active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme .or. flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme)
-[albivis_lnd]
+[albdifvis_lnd]
   standard_name = surface_albedo_diffuse_visible_over_land
   long_name = diffuse surface albedo visible band over land
   units = frac
@@ -1320,7 +1320,7 @@
   type = real
   kind = kind_phys
   active = (flag_for_land_surface_scheme == flag_for_noahmp_land_surface_scheme .or. flag_for_land_surface_scheme == flag_for_ruc_land_surface_scheme)
-[albinir_lnd]
+[albdifnir_lnd]
   standard_name = surface_albedo_diffuse_NIR_over_land
   long_name = diffuse surface albedo NIR band over land
   units = frac
