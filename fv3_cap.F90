@@ -182,7 +182,7 @@ module fv3gfs_cap_mod
 
     integer,dimension(6)                   :: date, date_init
     integer                                :: i, j, k, io_unit, urc, ierr
-    integer                                :: noutput_fh, nfh, nfm, nfs, nfh2
+    integer                                :: noutput_fh, nfh, nfh2
     integer                                :: petcount
     integer                                :: num_output_file
     real                                   :: output_startfh, outputfh, outputfh2(2)
@@ -195,7 +195,6 @@ module fv3gfs_cap_mod
     integer                                :: isrcTermProcessing
 
     character(len=*),parameter             :: subname='(fv3_cap:InitializeAdvertise)'
-    integer                                :: nfmout, nfsout , nfmout_hf, nfsout_hf
     real(kind=8)                           :: MPI_Wtime, timewri, timeis, timerhs
 !
 !------------------------------------------------------------------------
@@ -1057,7 +1056,7 @@ module fv3gfs_cap_mod
     type(ESMF_TimeInterval)     :: time_elapsed
 
     integer                     :: na, i, urc
-    integer                     :: nfh, nfm, nfs, nfseconds
+    integer                     :: nfseconds
     logical                     :: fcstpe
     character(len=*),parameter  :: subname='(fv3_cap:ModelAdvance_phase2)'
 
