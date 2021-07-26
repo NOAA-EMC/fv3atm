@@ -122,11 +122,10 @@ add_library(fv3atm
   module_fv3_config.F90
   module_fcst_grid_comp.F90
   stochastic_physics/stochastic_physics_wrapper.F90
+  cpl/module_block_data.F90
   cpl/module_cplfields.F90
   cpl/module_cap_cpl.F90
-  io/ffsync.F90
   io/FV3GFS_io.F90
-  io/module_write_nemsio.F90
   io/module_write_netcdf.F90
   io/module_write_netcdf_parallel.F90
   io/module_fv3_io_def.F90
@@ -137,8 +136,7 @@ add_library(fv3atm
 
 list(APPEND _fv3atm_defs_private GFS_PHYS
                                  INTERNAL_FILE_NML
-                                 use_WRTCOMP
-                                 ESMF_VERSION_MAJOR=${ESMF_VERSION_MAJOR})
+                                 use_WRTCOMP)
 
 target_compile_definitions(fv3atm PRIVATE "${_fv3atm_defs_private}")
 
@@ -154,9 +152,7 @@ target_link_libraries(fv3atm PUBLIC fv3dycore
                                     stochastic_physics
                                     fms)
 
-target_link_libraries(fv3atm PUBLIC nemsio::nemsio
-                                    w3emc::w3emc_d
-                                    w3nco::w3nco_d
+target_link_libraries(fv3atm PUBLIC w3nco::w3nco_d
                                     sp::sp_d
                                     bacio::bacio_4
                                     esmf)
