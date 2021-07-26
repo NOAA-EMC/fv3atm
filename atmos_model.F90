@@ -756,10 +756,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
       call close_file (unit)
    endif
 
-   !--- get output forecast time
-#ifdef GFS_PHYS
-   if (mpp_pe() == mpp_root_pe()) write(6,*) "---output_fh",output_fh(1:size(output_fh))
-#endif
+   !--- set up clock time
 
    setupClock = mpp_clock_id( 'GFS Step Setup        ', flags=clock_flag_default, grain=CLOCK_COMPONENT )
    radClock   = mpp_clock_id( 'GFS Radiation         ', flags=clock_flag_default, grain=CLOCK_COMPONENT )
