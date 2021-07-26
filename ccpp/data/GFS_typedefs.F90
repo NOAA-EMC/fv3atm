@@ -4985,8 +4985,10 @@ module GFS_typedefs
       if (Model%do_gwd) then
         if (Model%do_ugwp) then
           print *,' Unified gravity wave drag parameterization used'
+        elseif (Model%gwd_opt == 2) then
+          print *,'GSL unified oragraphic gravity wave drag parameterization used'
         else
-          print *,' Original mountain blocking and oragraphic  gravity wave drag parameterization used'
+          print *,' Original mountain blocking and oragraphic gravity wave drag parameterization used'
           if (cdmbgwd(3) > 0.0) print *,' non-statioary gravity wave drag parameterization used'
         endif
           print *,' do_gwd=',Model%do_gwd
