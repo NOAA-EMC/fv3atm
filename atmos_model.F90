@@ -159,7 +159,6 @@ logical :: dycore_only  = .false.
 logical :: debug        = .false.
 !logical :: debug        = .true.
 logical :: sync         = .false.
-integer, parameter     :: maxhr = 4096
 real    :: avg_max_length=3600.
 namelist /atmos_model_nml/ blocksize, chksum_debug, dycore_only, debug, sync, ccpp_suite, avg_max_length
 

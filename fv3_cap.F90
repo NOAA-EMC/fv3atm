@@ -1095,8 +1095,7 @@ module fv3gfs_cap_mod
 
     time_elapsed  = currtime - starttime
     na = nint(time_elapsed/timeStep)
-    call ESMF_TimeIntervalGet(time_elapsed, h=nfh, m=nfm, s=nfs, rc=rc)
-    nfseconds = nfh*3600.+ nfm*60. + nfs
+    call ESMF_TimeIntervalGet(time_elapsed, s=nfseconds, rc=rc)
 !
     if(mype==0) print *,'n fv3_cap,in model run, advance,na=',na
 
