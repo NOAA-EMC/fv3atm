@@ -1,3 +1,27 @@
+# This is the main CMake build file for fv3atm.
+
+cmake_minimum_required(VERSION 3.15)
+
+# Get the version from the VERSION file.
+file(STRINGS "VERSION" pVersion)
+
+project(
+  fv3atm
+  VERSION ${pVersion}
+  LANGUAGES C Fortran)
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
+# Find external packages.
+find_package(NetCDF 4.3.3 REQUIRED C Fortran)
+find_package(MPI REQUIRED C Fortran)
+find_package(ESMF 8.0.0 REQUIRED)
+
+# Find NCEPLIBS packages.
+find_package(w3nco 2.4.0 REQUIRED)
+find_package(w3emc 2.7.3 REQUIRED)
+find_package(bacio 2.4.0 REQUIRED)
+find_package(nemsio 2.5.0 REQUIRED)
+find_package(sp 2.3.3 REQUIRED)
 
 ###############################################################################
 ### CCPP
