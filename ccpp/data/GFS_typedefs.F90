@@ -815,6 +815,7 @@ module GFS_typedefs
     real(kind=kind_phys) :: ttendlim        !< temperature tendency limiter per time step in K/s
     logical              :: ext_diag_thompson !< flag for extended diagnostic output from Thompson
     integer              :: thompson_ext_ndiag3d=37 !< number of 3d arrays for extended diagnostic output from Thompson
+    real(kind=kind_phys) :: dt_inner        !< time step for the inner loop in s
 
     !--- GFDL microphysical paramters
     logical              :: lgfdlmprad      !< flag for GFDL mp scheme and radiation consistency
@@ -2373,6 +2374,10 @@ module GFS_typedefs
     allocate (Sfcprop%weasdl   (IM))
 !   allocate (Sfcprop%hprim    (IM))
     allocate (Sfcprop%hprime   (IM,Model%nmtvr))
+    allocate(Sfcprop%albdvis_lnd (IM))
+    allocate(Sfcprop%albdnir_lnd (IM))
+    allocate(Sfcprop%albivis_lnd (IM))
+    allocate(Sfcprop%albinir_lnd (IM))
     allocate (Sfcprop%emis_lnd (IM))
 
     Sfcprop%slmsk     = clear_val
@@ -2396,6 +2401,10 @@ module GFS_typedefs
     Sfcprop%weasdl    = clear_val
 !   Sfcprop%hprim     = clear_val
     Sfcprop%hprime    = clear_val
+    Sfcprop%albdvis_lnd = clear_val
+    Sfcprop%albdnir_lnd = clear_val
+    Sfcprop%albivis_lnd = clear_val
+    Sfcprop%albinir_lnd = clear_val
     Sfcprop%emis_lnd  = clear_val
 
 !--- In (radiation only)
@@ -2550,20 +2559,12 @@ module GFS_typedefs
       allocate(Sfcprop%iceprv    (IM))
       allocate(Sfcprop%snowprv   (IM))
       allocate(Sfcprop%graupelprv(IM))
-      allocate(Sfcprop%albdvis_lnd (IM))
-      allocate(Sfcprop%albdnir_lnd (IM))
-      allocate(Sfcprop%albivis_lnd (IM))
-      allocate(Sfcprop%albinir_lnd (IM))
 
       Sfcprop%raincprv   = clear_val
       Sfcprop%rainncprv  = clear_val
       Sfcprop%iceprv     = clear_val
       Sfcprop%snowprv    = clear_val
       Sfcprop%graupelprv = clear_val
-      Sfcprop%albdvis_lnd = clear_val
-      Sfcprop%albdnir_lnd = clear_val
-      Sfcprop%albivis_lnd = clear_val
-      Sfcprop%albinir_lnd = clear_val
     end if
 ! Noah MP allocate and init when used
 !
@@ -3253,6 +3254,7 @@ module GFS_typedefs
     real(kind=kind_phys) :: nsradar_reset  = -999.0             !< seconds between resetting radar reflectivity calculation, set to <0 for every time step
     real(kind=kind_phys) :: ttendlim       = -999.0             !< temperature tendency limiter, set to <0 to deactivate
     logical              :: ext_diag_thompson = .false.         !< flag for extended diagnostic output from Thompson
+    real(kind=kind_phys) :: dt_inner       = -999.0             !< time step for the inner loop 
 
     !--- GFDL microphysical parameters
     logical              :: lgfdlmprad     = .false.            !< flag for GFDLMP radiation interaction
@@ -3613,7 +3615,7 @@ module GFS_typedefs
                                mg_ncnst, mg_ninst, mg_ngnst, sed_supersat, do_sb_physics,   &
                                mg_alf,   mg_qcmin, mg_do_ice_gmao, mg_do_liq_liu,           &
                                ltaerosol, lradar, nsradar_reset, lrefres, ttendlim,         &
-                               ext_diag_thompson, lgfdlmprad,                               &
+                               ext_diag_thompson, dt_inner, lgfdlmprad,                     &
                           !--- max hourly
                                avg_max_length,                                              &
                           !--- land/surface model control
@@ -4057,7 +4059,11 @@ module GFS_typedefs
     Model%nsradar_reset    = nsradar_reset
     Model%ttendlim         = ttendlim
     Model%ext_diag_thompson= ext_diag_thompson
-
+    if (dt_inner>0) then
+      Model%dt_inner       = dt_inner
+    else
+      Model%dt_inner       = Model%dtp
+    endif
 !--- F-A MP parameters
     Model%rhgrd            = rhgrd
     Model%spec_adv         = spec_adv
@@ -5156,6 +5162,7 @@ module GFS_typedefs
                                           ' ltaerosol = ',Model%ltaerosol, &
                                           ' ttendlim =',Model%ttendlim, &
                                           ' ext_diag_thompson =',Model%ext_diag_thompson, &
+                                          ' dt_inner =',Model%dt_inner, &
                                           ' effr_in =',Model%effr_in, &
                                           ' lradar =',Model%lradar, &
                                           ' nsradar_reset =',Model%nsradar_reset, &
@@ -5573,6 +5580,7 @@ module GFS_typedefs
         print *, ' lrefres           : ', Model%lrefres
         print *, ' ttendlim          : ', Model%ttendlim
         print *, ' ext_diag_thompson : ', Model%ext_diag_thompson
+        print *, ' dt_inner          : ', Model%dt_inner
         print *, ' '
       endif
       if (Model%imp_physics == Model%imp_physics_mg) then

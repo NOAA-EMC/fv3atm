@@ -3479,6 +3479,13 @@
   units = count
   dimensions = ()
   type = integer
+[dt_inner]
+  standard_name = time_step_for_inner_loop
+  long_name = time step for inner loop
+  units = s
+  dimensions = ()
+  type = real
+  kind = kind_phys
 [lgfdlmprad]
   standard_name = flag_for_GFDL_microphysics_radiation_interaction
   long_name = flag for GFDL microphysics-radiation interaction
