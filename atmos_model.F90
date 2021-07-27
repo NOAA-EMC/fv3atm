@@ -99,8 +99,11 @@ use FV3GFS_io_mod,      only: FV3GFS_restart_read, FV3GFS_restart_write, &
                               DIAG_SIZE
 use fv_iau_mod,         only: iau_external_data_type,getiauforcing,iau_initialize
 use module_fv3_config,  only: output_1st_tstep_rst, first_kdt, nsout,    &
-                              restart_endfcst
-use module_block_data
+                              restart_endfcst, output_fh, fcst_mpi_comm, &
+                              fcst_ntasks
+use module_block_data,  only: block_atmos_copy, block_data_copy,         &
+                              block_data_copy_or_fill,                   &
+                              block_data_combine_fractions
 
 !-----------------------------------------------------------------------
 
@@ -156,10 +159,8 @@ logical :: dycore_only  = .false.
 logical :: debug        = .false.
 !logical :: debug        = .true.
 logical :: sync         = .false.
-integer, parameter     :: maxhr = 4096
-real, dimension(maxhr) :: fdiag = 0.
-real                   :: fhmax=384.0, fhmaxhf=120.0, fhout=3.0, fhouthf=1.0,avg_max_length=3600.
-namelist /atmos_model_nml/ blocksize, chksum_debug, dycore_only, debug, sync, fdiag, fhmax, fhmaxhf, fhout, fhouthf, ccpp_suite, avg_max_length
+real    :: avg_max_length=3600.
+namelist /atmos_model_nml/ blocksize, chksum_debug, dycore_only, debug, sync, ccpp_suite, avg_max_length
 
 type (time_type) :: diag_time, diag_time_fhzero
 
@@ -492,8 +493,6 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
 #ifdef _OPENMP
   use omp_lib
 #endif
-  use fv_mp_mod, only: commglobal
-  use mpp_mod, only: mpp_npes
   use update_ca, only: read_ca_restart
 
   type (atmos_data_type), intent(inout) :: Atmos
@@ -622,6 +621,8 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
 !--- setup Init_parm
    Init_parm%me              =  mpp_pe()
    Init_parm%master          =  mpp_root_pe()
+   Init_parm%fcst_mpi_comm   =  fcst_mpi_comm
+   Init_parm%fcst_ntasks     =  fcst_ntasks
    Init_parm%tile_num        =  tile_num
    Init_parm%isc             =  isc
    Init_parm%jsc             =  jsc
@@ -665,7 +666,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
 
    call GFS_initialize (GFS_control, GFS_data%Statein, GFS_data%Stateout, GFS_data%Sfcprop,     &
                         GFS_data%Coupling, GFS_data%Grid, GFS_data%Tbd, GFS_data%Cldprop, GFS_data%Radtend, &
-                        GFS_data%Intdiag, GFS_interstitial, commglobal, mpp_npes(), Init_parm)
+                        GFS_data%Intdiag, GFS_interstitial, Init_parm)
 
    !--- populate/associate the Diag container elements
    call GFS_externaldiag_populate (GFS_Diag, GFS_Control, GFS_Data%Statein, GFS_Data%Stateout,   &
@@ -756,29 +757,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
       call close_file (unit)
    endif
 
-   !--- get fdiag
-#ifdef GFS_PHYS
-!--- check fdiag to see if it is an interval or a list
-   if (nint(fdiag(2)) == 0) then
-     if (fhmaxhf > 0) then
-       maxhf = fhmaxhf / fhouthf
-       maxh  = maxhf + (fhmax-fhmaxhf) / fhout
-       fdiag(1) = fhouthf
-       do i=2,maxhf
-        fdiag(i) = fdiag(i-1) + fhouthf
-       enddo
-       do i=maxhf+1,maxh
-         fdiag(i) = fdiag(i-1) + fhout
-       enddo
-     else
-       maxh  = fhmax / fhout
-       do i = 2, maxh
-         fdiag(i) = fdiag(i-1) + fhout
-       enddo
-     endif
-   endif
-   if (mpp_pe() == mpp_root_pe()) write(6,*) "---fdiag",fdiag(1:40)
-#endif
+   !--- set up clock time
 
    setupClock = mpp_clock_id( 'GFS Step Setup        ', flags=clock_flag_default, grain=CLOCK_COMPONENT )
    radClock   = mpp_clock_id( 'GFS Radiation         ', flags=clock_flag_default, grain=CLOCK_COMPONENT )
@@ -926,7 +905,7 @@ subroutine update_atmos_model_state (Atmos, rc)
     call get_time (Atmos%Time - diag_time, isec)
     call get_time (Atmos%Time - Atmos%Time_init, seconds)
     call atmosphere_nggps_diag(Atmos%Time,ltavg=.true.,avg_max_length=avg_max_length)
-    if (ANY(nint(fdiag(:)*3600.0) == seconds) .or. (GFS_control%kdt == first_kdt) .or. nsout > 0) then
+    if (ANY(nint(output_fh(:)*3600.0) == seconds) .or. (GFS_control%kdt == first_kdt) .or. nsout > 0) then
       if (mpp_pe() == mpp_root_pe()) write(6,*) "---isec,seconds",isec,seconds
       time_int = real(isec)
       if(Atmos%iau_offset > zero) then
