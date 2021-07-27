@@ -2,14 +2,14 @@ module FV3GFS_io_mod
 
 !-----------------------------------------------------------------------
 !    gfs_physics_driver_mod defines the GFS physics routines used by
-!    the GFDL FMS system to obtain tendencies and boundary fluxes due 
+!    the GFDL FMS system to obtain tendencies and boundary fluxes due
 !    to the physical parameterizations and processes that drive 
 !    atmospheric time tendencies for use by other components, namely
 !    the atmospheric dynamical core.
 !
 !    NOTE: This module currently supports only the operational GFS
 !          parameterizations as of September 2015.  Further development
-!          is needed to support the full suite of physical 
+!          is needed to support the full suite of physical
 !          parameterizations present in the GFS physics package.
 !-----------------------------------------------------------------------
 !
@@ -52,11 +52,11 @@ module FV3GFS_io_mod
 #endif
 
   !--- GFDL filenames
-  character(len=32)  :: fn_oro = 'oro_data.nc'
+  character(len=32)  :: fn_oro    = 'oro_data.nc'
   character(len=32)  :: fn_oro_ls = 'oro_data_ls.nc'
   character(len=32)  :: fn_oro_ss = 'oro_data_ss.nc'
-  character(len=32)  :: fn_srf = 'sfc_data.nc'
-  character(len=32)  :: fn_phy = 'phy_data.nc'
+  character(len=32)  :: fn_srf    = 'sfc_data.nc'
+  character(len=32)  :: fn_phy    = 'phy_data.nc'
 
   !--- GFDL FMS netcdf restart data types
   type(restart_file_type) :: Oro_restart, Sfc_restart, Phy_restart
@@ -94,6 +94,8 @@ module FV3GFS_io_mod
   real, parameter:: stndrd_atmos_ps = 101325.0_r8
   real, parameter:: stndrd_atmos_lapse = 0.0065_r8
   real, parameter:: drythresh = 1.e-4_r8, zero = 0.0_r8, one = 1.0_r8
+  real, parameter:: min_lake_orog = 200.0_r8
+  real(kind=kind_phys), parameter :: timin = 173.0_r8  ! minimum temperature allowed for snow/ice
  
 !--- miscellaneous other variables
   logical :: use_wrtgridcomp_output = .FALSE.
@@ -191,8 +193,8 @@ module FV3GFS_io_mod
 
    do j=jsc,jec
      do i=isc,iec
-       nb = Atm_block%blkno(i,j) 
-       ix = Atm_block%ixp(i,j) 
+       nb = Atm_block%blkno(i,j)
+       ix = Atm_block%ixp(i,j)
        !--- statein pressure
        temp2d(i,j, 1) = GFS_Data(nb)%Statein%pgr(ix)
        temp2d(i,j, 2) = GFS_Data(nb)%Sfcprop%slmsk(ix)
@@ -304,7 +306,7 @@ module FV3GFS_io_mod
        temp2d(i,j,85) = GFS_Data(nb)%Sfcprop%tiice(ix,1)
        temp2d(i,j,86) = GFS_Data(nb)%Sfcprop%tiice(ix,2)
 
-       idx_opt = 87 
+       idx_opt = 87
        if (Model%lsm == Model%lsm_noahmp) then
         temp2d(i,j,idx_opt)    = GFS_Data(nb)%Sfcprop%snowxy(ix)
         temp2d(i,j,idx_opt+1)  = GFS_Data(nb)%Sfcprop%tvxy(ix)
@@ -474,19 +476,19 @@ module FV3GFS_io_mod
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-!----------------------------------------------------------------------      
+!----------------------------------------------------------------------
 ! sfc_prop_restart_read
-!----------------------------------------------------------------------      
+!----------------------------------------------------------------------
 !    creates and populates a data type which is then used to "register"
 !    restart variables with the GFDL FMS restart subsystem.
 !    calls a GFDL FMS routine to restore the data from a restart file.
 !    calculates sncovr if it is not present in the restart file.
 !
 !    calls:  register_restart_field, restart_state, free_restart
-!   
+!
 !    opens:  oro_data.tile?.nc, sfc_data.tile?.nc
 !   
-!----------------------------------------------------------------------      
+!----------------------------------------------------------------------
   subroutine sfc_prop_restart_read (Sfcprop, Atm_block, Model, fv_domain, warm_start)
     !--- interface variable definitions
     type(GFS_sfcprop_type),    intent(inout) :: Sfcprop(:)
@@ -619,6 +621,10 @@ module FV3GFS_io_mod
         Sfcprop(nb)%oro(ix)       = oro_var2(i,j,15)
         !--- oro_uf
         Sfcprop(nb)%oro_uf(ix)    = oro_var2(i,j,16)
+
+        Sfcprop(nb)%landfrac(ix)  = -9999.0
+        Sfcprop(nb)%lakefrac(ix)  = -9999.0
+
         Sfcprop(nb)%landfrac(ix)  = oro_var2(i,j,17) !land frac [0:1]
         Sfcprop(nb)%lakefrac(ix)  = oro_var2(i,j,18) !lake frac [0:1]
 
@@ -627,11 +633,7 @@ module FV3GFS_io_mod
       enddo
     enddo
  
-!   if (Model%frac_grid) then  ! needs more variables
-      nvar_s2m = 37
-!   else
-!     nvar_s2m = 32
-!   endif
+    nvar_s2m = 39
     if (Model%cplwav) then
       nvar_s2m = nvar_s2m + 1
     endif
@@ -720,14 +722,18 @@ module FV3GFS_io_mod
 
       call free_restart_type(Oro_ls_restart)
       call free_restart_type(Oro_ss_restart)
-    end if
+    endif
 
     !--- SURFACE FILE
     if (.not. allocated(sfc_name2)) then
       !--- allocate the various containers needed for restarts
       allocate(sfc_name2(nvar_s2m+nvar_s2o+nvar_s2mp+nvar_s2r))
       allocate(sfc_name3(0:nvar_s3+nvar_s3mp))
-      allocate(sfc_var2(nx,ny,nvar_s2m+nvar_s2o+nvar_s2mp+nvar_s2r),sfc_var3ice(nx,ny,Model%kice))
+      allocate(sfc_var2(nx,ny,nvar_s2m+nvar_s2o+nvar_s2mp+nvar_s2r))
+      ! Note that this may cause problems with RUC LSM for coldstart runs from GFS data
+      ! if the initial conditions do contain this variable, because Model%kice is 9 for
+      ! RUC LSM, but tiice in the initial conditions will only have two vertical layers
+      allocate(sfc_var3ice(nx,ny,Model%kice))
 
       if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp .or. Model%lsm == Model%lsm_noah_wrfv4 .or. (.not.warm_start)) then
         allocate(sfc_var3(nx,ny,Model%lsoil,nvar_s3))
@@ -782,18 +788,18 @@ module FV3GFS_io_mod
       sfc_name2(31) = 'snoalb'
       !--- variables below here are optional
       sfc_name2(32) = 'sncovr'
-!     if(Model%frac_grid) then
-        sfc_name2(33) = 'tsfcl' !temp on land portion of a cell
-        sfc_name2(34) = 'zorll' !zorl on land portion of a cell
-        sfc_name2(35) = 'zorli' !zorl on land portion of a cell
-        sfc_name2(36) = 'tsfc'  !tsfc composite
-        sfc_name2(37) = 'zorl'  !zorl composite
-!     endif
+      sfc_name2(33) = 'tsfcl' !temp on land portion of a cell
+      sfc_name2(34) = 'zorll' !zorl on land portion of a cell
+      sfc_name2(35) = 'zorli' !zorl on ice portion of a cell
+      sfc_name2(36) = 'snodl' !snowd on land portion of a cell
+      sfc_name2(37) = 'tsfc'  !tsfc composite
+      sfc_name2(38) = 'zorl'  !zorl composite
+      sfc_name2(39) = 'weasdl'!weasd on land portion of a cell
       if(Model%cplwav) then
         sfc_name2(nvar_s2m) = 'zorlwav' !zorl on land portion of a cell
       endif
 
-      !--- NSSTM inputs only needed when (nstf_name(1) > 0) .and. (nstf_name(2)) == 0) 
+      !--- NSSTM inputs only needed when (nstf_name(1) > 0) .and. (nstf_name(2)) == 0)
       sfc_name2(nvar_s2m+1)  = 'tref'
       sfc_name2(nvar_s2m+2)  = 'z_c'
       sfc_name2(nvar_s2m+3)  = 'c_0'
@@ -884,8 +890,9 @@ module FV3GFS_io_mod
       !--- register the 2D fields
       do num = 1,nvar_s2m
         var2_p => sfc_var2(:,:,num)
-        if (trim(sfc_name2(num)) == 'sncovr'.or. trim(sfc_name2(num)) == 'tsfcl' .or. trim(sfc_name2(num)) == 'zorll' &
+        if (trim(sfc_name2(num)) == 'sncovr'.or. trim(sfc_name2(num)) == 'tsfcl' .or. trim(sfc_name2(num)) == 'zorll'   &
                                             .or. trim(sfc_name2(num)) == 'zorli' .or. trim(sfc_name2(num)) == 'zorlwav' &
+                                            .or. trim(sfc_name2(num)) == 'snodl' .or. trim(sfc_name2(num)) == 'weasdl'  &
                                             .or. trim(sfc_name2(num)) == 'tsfc'  .or. trim(sfc_name2(num)) ==  'zorl') then
           id_restart = register_restart_field(Sfc_restart, fn_srf, sfc_name2(num), var2_p, domain=fv_domain, mandatory=.false.)
         else
@@ -945,11 +952,9 @@ module FV3GFS_io_mod
     endif
 
       !--- register the 3D fields
-!   if (Model%frac_grid) then
-      sfc_name3(0) = 'tiice'
-      var3_p => sfc_var3ice(:,:,:)
-      id_restart = register_restart_field(Sfc_restart, fn_srf, sfc_name3(0), var3_p, domain=fv_domain, mandatory=.false.)
-!   end if
+    sfc_name3(0) = 'tiice'
+    var3_p => sfc_var3ice(:,:,:)
+    id_restart = register_restart_field(Sfc_restart, fn_srf, sfc_name3(0), var3_p, domain=fv_domain, mandatory=.false.)
  
     do num = 1,nvar_s3
       var3_p => sfc_var3(:,:,:,num)
@@ -1033,62 +1038,108 @@ module FV3GFS_io_mod
         Sfcprop(nb)%slope(ix)  = sfc_var2(i,j,30)   !--- slope
         Sfcprop(nb)%snoalb(ix) = sfc_var2(i,j,31)   !--- snoalb
         Sfcprop(nb)%sncovr(ix) = sfc_var2(i,j,32)   !--- sncovr
-!       if(Model%frac_grid) then
-          Sfcprop(nb)%tsfcl(ix)  = sfc_var2(i,j,33) !--- sfcl  (temp on land portion of a cell)
-          Sfcprop(nb)%zorll(ix)  = sfc_var2(i,j,34) !--- zorll (zorl on land portion of a cell)
-          Sfcprop(nb)%zorli(ix)  = sfc_var2(i,j,35) !--- zorll (zorl on ice  portion of a cell)
-          Sfcprop(nb)%tsfc(ix)   = sfc_var2(i,j,36) !--- tsfc composite
-          Sfcprop(nb)%zorl(ix)   = sfc_var2(i,j,37) !--- zorl composite
-!       else
-!         Sfcprop(nb)%tsfcl(ix)  = Sfcprop(nb)%tsfco(ix)
-!         Sfcprop(nb)%zorll(ix)  = Sfcprop(nb)%zorlw(ix)
-!         Sfcprop(nb)%zorli(ix)  = Sfcprop(nb)%zorlw(ix)
-!       endif
+        Sfcprop(nb)%tsfcl(ix)  = sfc_var2(i,j,33) !--- tsfcl (temp on land portion of a cell)
+        Sfcprop(nb)%zorll(ix)  = sfc_var2(i,j,34) !--- zorll (zorl on land portion of a cell)
+        Sfcprop(nb)%zorli(ix)  = sfc_var2(i,j,35) !--- zorli (zorl on ice  portion of a cell)
+        Sfcprop(nb)%snodl(ix)  = sfc_var2(i,j,36) !--- snodl (snowd on land  portion of a cell)
+        Sfcprop(nb)%tsfc(ix)   = sfc_var2(i,j,37) !--- tsfc composite
+        Sfcprop(nb)%zorl(ix)   = sfc_var2(i,j,38) !--- zorl composite
+        Sfcprop(nb)%weasdl(ix) = sfc_var2(i,j,39) !--- weasdl (weasd on land  portion of a cell)
         if(Model%cplwav) then
           Sfcprop(nb)%zorlwav(ix)  = sfc_var2(i,j,nvar_s2m) !--- (zorw  from wave model)
         else
           Sfcprop(nb)%zorlwav(ix)  = Sfcprop(nb)%zorlw(ix)
         endif
 
-        if(Model%frac_grid) then ! obtain slmsk from landfrac
-          Sfcprop(nb)%slmsk(ix) = ceiling(Sfcprop(nb)%landfrac(ix)) !nint/floor are options
-        else ! obtain landfrac from slmsk
-          if (Sfcprop(nb)%slmsk(ix) > 1.9_r8) then
-            Sfcprop(nb)%landfrac(ix) = zero
+        if (Model%frac_grid) then
+          if (Sfcprop(nb)%landfrac(ix) > -999.0_r8) then
+            Sfcprop(nb)%slmsk(ix) = ceiling(Sfcprop(nb)%landfrac(ix)-1.0e-6)
+            if (Sfcprop(nb)%lakefrac(ix) > zero) then
+              Sfcprop(nb)%oceanfrac(ix) = zero ! lake & ocean don't coexist in a cell
+              if (nint(Sfcprop(nb)%slmsk(ix)) /= 1) then
+                if(Sfcprop(nb)%fice(ix) >= Model%min_lakeice) then
+                  Sfcprop(nb)%slmsk(ix) = 2
+                else
+                  Sfcprop(nb)%slmsk(ix) = 0
+                endif
+              endif
+            else
+              Sfcprop(nb)%lakefrac(ix)  = zero
+              Sfcprop(nb)%oceanfrac(ix) = one - Sfcprop(nb)%landfrac(ix)
+              if (nint(Sfcprop(nb)%slmsk(ix)) /= 1) then
+                if (Sfcprop(nb)%fice(ix) >= Model%min_seaice) then
+                  Sfcprop(nb)%slmsk(ix) = 2
+                else
+                  Sfcprop(nb)%slmsk(ix) = 0
+                endif
+              endif
+            endif
           else
-            Sfcprop(nb)%landfrac(ix) = Sfcprop(nb)%slmsk(ix)
+            Model%frac_grid = .false.
+            if (nint(Sfcprop(nb)%slmsk(ix)) == 1) then
+              Sfcprop(nb)%landfrac(ix)  = one
+              Sfcprop(nb)%lakefrac(ix)  = zero
+              Sfcprop(nb)%oceanfrac(ix) = zero
+            else
+              if (Sfcprop(nb)%slmsk(ix) < 0.1_r8 .or. Sfcprop(nb)%slmsk(ix) > 1.9_r8) then
+                Sfcprop(nb)%landfrac(ix) = zero
+                if (Sfcprop(nb)%oro_uf(ix) > min_lake_orog) then   ! lakes
+                  Sfcprop(nb)%lakefrac(ix)  = one
+                  Sfcprop(nb)%oceanfrac(ix) = zero
+                else                                               ! ocean
+                  Sfcprop(nb)%lakefrac(ix)  = zero
+                  Sfcprop(nb)%oceanfrac(ix) = one
+                endif
+              endif
+            endif
+          endif
+        else                                             ! not a fractional grid
+          if (Sfcprop(nb)%landfrac(ix) > -999.0_r8) then
+            if (Sfcprop(nb)%lakefrac(ix) > zero) then
+              Sfcprop(nb)%oceanfrac(ix) = zero
+              Sfcprop(nb)%landfrac(ix)  = zero
+              Sfcprop(nb)%lakefrac(ix)  = one
+              Sfcprop(nb)%slmsk(ix)     = zero
+              if (Sfcprop(nb)%fice(ix) >= Model%min_lakeice) Sfcprop(nb)%slmsk(ix) = 2.0
+            else
+              Sfcprop(nb)%slmsk(ix) = nint(Sfcprop(nb)%landfrac(ix))
+              if (Sfcprop(nb)%stype(ix) <= 0) Sfcprop(nb)%slmsk(ix) = zero
+              if (nint(Sfcprop(nb)%slmsk(ix)) == 0) then
+                Sfcprop(nb)%oceanfrac(ix) = one
+                Sfcprop(nb)%landfrac(ix)  = zero
+                Sfcprop(nb)%lakefrac(ix)  = zero
+                if (Sfcprop(nb)%fice(ix) >= Model%min_seaice) Sfcprop(nb)%slmsk(ix) = 2.0
+              else
+                Sfcprop(nb)%landfrac(ix)  = one
+                Sfcprop(nb)%lakefrac(ix)  = zero
+                Sfcprop(nb)%oceanfrac(ix) = zero
+              endif
+            endif
+          else
+            if (nint(Sfcprop(nb)%slmsk(ix)) == 1 .and. Sfcprop(nb)%stype(ix) > 0) then
+              Sfcprop(nb)%landfrac(ix)  = one
+              Sfcprop(nb)%lakefrac(ix)  = zero
+              Sfcprop(nb)%oceanfrac(ix) = zero
+            else
+              Sfcprop(nb)%slmsk(ix)    = zero
+              Sfcprop(nb)%landfrac(ix) = zero
+              if (Sfcprop(nb)%oro_uf(ix) > min_lake_orog) then   ! lakes
+                Sfcprop(nb)%lakefrac(ix) = one
+                Sfcprop(nb)%oceanfrac(ix) = zero
+                if (Sfcprop(nb)%fice(ix) > Model%min_lakeice) Sfcprop(nb)%slmsk(ix) = 2.0
+              else                                       ! ocean
+                Sfcprop(nb)%lakefrac(ix)  = zero
+                Sfcprop(nb)%oceanfrac(ix) = one
+                if (Sfcprop(nb)%fice(ix) > Model%min_seaice) Sfcprop(nb)%slmsk(ix) = 2.0
+              endif
+            endif
           endif
         endif
 
-        if (Sfcprop(nb)%lakefrac(ix) > zero) then
-          Sfcprop(nb)%oceanfrac(ix) = zero ! lake & ocean don't coexist in a cell
-          if (Sfcprop(nb)%slmsk(ix) /= one) then
-            if (Sfcprop(nb)%fice(ix) >= Model%min_lakeice) then
-              if (Sfcprop(nb)%slmsk(ix) < 1.9_r8)      &
-                write(*,'(a,2i3,3f6.2)') 'reset lake slmsk=2 at nb,ix=' &
-               ,nb,ix,Sfcprop(nb)%fice(ix),Sfcprop(nb)%slmsk(ix),Sfcprop(nb)%lakefrac(ix)
-                Sfcprop(nb)%slmsk(ix) = 2.
-            else if (Sfcprop(nb)%slmsk(ix) > 1.e-7) then
-                write(*,'(a,2i3,3f6.2)') 'reset lake slmsk=0 at nb,ix=' &
-               ,nb,ix,Sfcprop(nb)%fice(ix),Sfcprop(nb)%slmsk(ix),Sfcprop(nb)%lakefrac(ix)
-                Sfcprop(nb)%slmsk(ix) = zero
-            end if
-          end if
-        else
-          Sfcprop(nb)%oceanfrac(ix) = one - Sfcprop(nb)%landfrac(ix)
-          if (Sfcprop(nb)%slmsk(ix) /= one) then
-            if (Sfcprop(nb)%fice(ix) >= Model%min_seaice) then
-              if (Sfcprop(nb)%slmsk(ix) < 1.9_r8)      &
-                write(*,'(a,2i3,3f6.2)') 'reset sea slmsk=2 at nb,ix=' &
-               ,nb,ix,Sfcprop(nb)%fice(ix),Sfcprop(nb)%slmsk(ix),Sfcprop(nb)%landfrac(ix)
-                Sfcprop(nb)%slmsk(ix) = 2.
-            else if (Sfcprop(nb)%slmsk(ix) > 1.e-7) then
-                write(*,'(a,2i3,4f6.2)') 'reset sea slmsk=0 at nb,ix=' &
-               ,nb,ix,Sfcprop(nb)%fice(ix),Sfcprop(nb)%slmsk(ix),Sfcprop(nb)%landfrac(ix)
-                Sfcprop(nb)%slmsk(ix) = zero
-            end if
-          end if
+        if (warm_start) then
+          Sfcprop(nb)%slmsk(ix)  = sfc_var2(i,j,1)    !--- slmsk
         endif
+
         !
         !--- NSSTM variables
         if (Model%nstf_name(1) > 0) then
@@ -1223,7 +1274,7 @@ module FV3GFS_io_mod
 
             do lsoil = 1, 4
               Sfcprop(nb)%smoiseq(ix,lsoil)  = sfc_var3eq(i,j,lsoil,7)
-            enddo 
+            enddo
 
             do lsoil = -2, 4
               Sfcprop(nb)%zsnsoxy(ix,lsoil)  = sfc_var3zn(i,j,lsoil,8)
@@ -1239,10 +1290,10 @@ module FV3GFS_io_mod
             Sfcprop(nb)%keepsmfr(ix,lsoil)    = sfc_var3(i,j,lsoil,4) !--- keepsmfr
             Sfcprop(nb)%flag_frsoil(ix,lsoil) = sfc_var3(i,j,lsoil,5) !--- flag_frsoil
           enddo
-        end if
+        endif
 
         do k = 1,Model%kice
-          Sfcprop(nb)%tiice(ix,k)= sfc_var3ice(i,j,k)   !--- internal ice temp
+          Sfcprop(nb)%tiice(ix,k) = sfc_var3ice(i,j,k)   !--- internal ice temp
         enddo
 
       enddo   !ix
@@ -1264,93 +1315,109 @@ module FV3GFS_io_mod
     j = Atm_block%index(1)%jj(1) - jsc + 1
 
 
-!   if (Model%frac_grid) then
 
-      if (sfc_var2(i,j,33) < -9990.0_r8) then
-        if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing tsfcl')
+    if (sfc_var2(i,j,33) < -9990.0_r8) then
+      if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing tsfcl')
 !$omp parallel do default(shared) private(nb, ix)
-        do nb = 1, Atm_block%nblks
-          do ix = 1, Atm_block%blksz(nb)
-            Sfcprop(nb)%tsfcl(ix) = Sfcprop(nb)%tsfco(ix) !--- compute tsfcl from existing variables
-          enddo
+      do nb = 1, Atm_block%nblks
+        do ix = 1, Atm_block%blksz(nb)
+          Sfcprop(nb)%tsfcl(ix) = Sfcprop(nb)%tsfco(ix) !--- compute tsfcl from existing variables
         enddo
-      endif
+      enddo
+    endif
 
-      if (sfc_var2(i,j,34) < -9990.0_r8) then
-        if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing zorll')
+    if (sfc_var2(i,j,34) < -9990.0_r8) then
+      if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing zorll')
 !$omp parallel do default(shared) private(nb, ix)
-        do nb = 1, Atm_block%nblks
-          do ix = 1, Atm_block%blksz(nb)
-            Sfcprop(nb)%zorll(ix) = Sfcprop(nb)%zorlw(ix) !--- compute zorll from existing variables
-          enddo
+      do nb = 1, Atm_block%nblks
+        do ix = 1, Atm_block%blksz(nb)
+          Sfcprop(nb)%zorll(ix) = Sfcprop(nb)%zorlw(ix) !--- compute zorll from existing variables
         enddo
-      endif
+      enddo
+    endif
 
-      if (sfc_var2(i,j,35) < -9990.0_r8) then
-        if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing zorli')
+    if (sfc_var2(i,j,35) < -9990.0_r8) then
+      if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing zorli')
 !$omp parallel do default(shared) private(nb, ix)
-        do nb = 1, Atm_block%nblks
-          do ix = 1, Atm_block%blksz(nb)
-            Sfcprop(nb)%zorli(ix) = Sfcprop(nb)%zorlw(ix) !--- compute zorli from existing variables
-          enddo
+      do nb = 1, Atm_block%nblks
+        do ix = 1, Atm_block%blksz(nb)
+          Sfcprop(nb)%zorli(ix) = Sfcprop(nb)%zorlw(ix) !--- compute zorli from existing variables
         enddo
-      endif
+      enddo
+    endif
+
+    if (sfc_var2(i,j,36) < -9990.0_r8) then
+      if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - using snowd')
+!$omp parallel do default(shared) private(nb, ix, tem)
+      do nb = 1, Atm_block%nblks
+        do ix = 1, Atm_block%blksz(nb)
+          if (Sfcprop(nb)%landfrac(ix) > zero) then
+            tem = one / Sfcprop(nb)%landfrac(ix)
+            Sfcprop(nb)%snodl(ix)  = Sfcprop(nb)%snowd(ix) * tem
+            Sfcprop(nb)%weasdl(ix) = Sfcprop(nb)%weasd(ix) * tem
+          else
+            Sfcprop(nb)%snodl(ix)  = zero
+            Sfcprop(nb)%weasdl(ix) = zero
+          endif
+        enddo
+      enddo
+    endif
 
       ! Fill in composite tsfc and zorl for coldstart runs
-      compute_tsfc_zorl_for_colstart: if (.not. warm_start) then
-        if(Model%frac_grid) then ! 3-way composite
-          if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing composite tsfc and zorl')
-!$omp parallel do default(shared) private(nb, ix)
-          do nb = 1, Atm_block%nblks
-            do ix = 1, Atm_block%blksz(nb)
-              Sfcprop(nb)%tsfco(ix) = max(con_tice, Sfcprop(nb)%tsfco(ix)) ! this may break restart reproducibility 
-              tem1 = one - Sfcprop(nb)%landfrac(ix)
-              tem  = tem1 * Sfcprop(nb)%fice(ix) ! tem = ice fraction wrt whole cell
-              Sfcprop(nb)%zorl(ix) = Sfcprop(nb)%zorll(ix) * Sfcprop(nb)%landfrac(ix) &
-                                   + Sfcprop(nb)%zorli(ix) * tem                      &
-                                   + Sfcprop(nb)%zorlw(ix) * (tem1-tem)
-
-              Sfcprop(nb)%tsfc(ix) = Sfcprop(nb)%tsfcl(ix) * Sfcprop(nb)%landfrac(ix) &
-                                   + Sfcprop(nb)%tisfc(ix) * tem                      &
-                                   + Sfcprop(nb)%tsfco(ix) * (tem1-tem)
-            enddo
-          enddo
-        else
-!$omp parallel do default(shared) private(nb, ix, tem)
-          do nb = 1, Atm_block%nblks
-            do ix = 1, Atm_block%blksz(nb)
-              !--- specify tsfcl/zorll/zorli from existing variable tsfco/zorlw
-              if (Sfcprop(nb)%slmsk(ix) == 1) then
-                Sfcprop(nb)%zorl(ix) = Sfcprop(nb)%zorll(ix) 
-                Sfcprop(nb)%tsfc(ix) = Sfcprop(nb)%tsfcl(ix)
-              else
-                tem = one - Sfcprop(nb)%fice(ix)
-                Sfcprop(nb)%zorl(ix) = Sfcprop(nb)%zorli(ix) * Sfcprop(nb)%fice(ix) &
-                                     + Sfcprop(nb)%zorlw(ix) * tem
-                Sfcprop(nb)%tsfc(ix) = Sfcprop(nb)%tisfc(ix) * Sfcprop(nb)%fice(ix) &
-                                     + Sfcprop(nb)%tsfco(ix) * tem
-              endif
-            enddo
-          enddo
-        endif
-      endif compute_tsfc_zorl_for_colstart
-
-      if (sfc_var2(i,j,nvar_s2m) < -9990.0_r8) then
-        if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing zorlwav')
-!$omp parallel do default(shared) private(nb, ix)
+    compute_tsfc_zorl_for_colstart: if (.not. warm_start) then
+      if(Model%frac_grid) then ! 3-way composite
+        if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing composite tsfc and zorl')
+!$omp parallel do default(shared) private(nb, ix, tem, tem1)
         do nb = 1, Atm_block%nblks
           do ix = 1, Atm_block%blksz(nb)
-            Sfcprop(nb)%zorlwav(ix) = Sfcprop(nb)%zorlw(ix) !--- compute zorlwav from existing variables
+            Sfcprop(nb)%tsfco(ix) = max(con_tice, Sfcprop(nb)%tsfco(ix)) ! this may break restart reproducibility 
+            tem1 = one - Sfcprop(nb)%landfrac(ix)
+            tem  = tem1 * Sfcprop(nb)%fice(ix) ! tem = ice fraction wrt whole cell
+            Sfcprop(nb)%zorl(ix) = Sfcprop(nb)%zorll(ix) * Sfcprop(nb)%landfrac(ix) &
+                                 + Sfcprop(nb)%zorli(ix) * tem                      &
+                                 + Sfcprop(nb)%zorlw(ix) * (tem1-tem)
+
+            Sfcprop(nb)%tsfc(ix) = Sfcprop(nb)%tsfcl(ix) * Sfcprop(nb)%landfrac(ix) &
+                                 + Sfcprop(nb)%tisfc(ix) * tem                      &
+                                 + Sfcprop(nb)%tsfco(ix) * (tem1-tem)
+          enddo
+        enddo
+      else
+!$omp parallel do default(shared) private(nb, ix, tem)
+        do nb = 1, Atm_block%nblks
+          do ix = 1, Atm_block%blksz(nb)
+            !--- specify tsfcl/zorll/zorli from existing variable tsfco/zorlw
+            if (Sfcprop(nb)%slmsk(ix) == 1) then
+              Sfcprop(nb)%zorl(ix) = Sfcprop(nb)%zorll(ix) 
+              Sfcprop(nb)%tsfc(ix) = Sfcprop(nb)%tsfcl(ix)
+            else
+              tem = one - Sfcprop(nb)%fice(ix)
+              Sfcprop(nb)%zorl(ix) = Sfcprop(nb)%zorli(ix) * Sfcprop(nb)%fice(ix) &
+                                   + Sfcprop(nb)%zorlw(ix) * tem
+              Sfcprop(nb)%tsfc(ix) = Sfcprop(nb)%tisfc(ix) * Sfcprop(nb)%fice(ix) &
+                                   + Sfcprop(nb)%tsfco(ix) * tem
+            endif
           enddo
         enddo
       endif
+    endif compute_tsfc_zorl_for_colstart
 
-    if (nint(sfc_var3ice(1,1,1)) == -9999) then
+    if (sfc_var2(i,j,nvar_s2m) < -9990.0_r8) then
+      if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing zorlwav')
+!$omp parallel do default(shared) private(nb, ix)
+      do nb = 1, Atm_block%nblks
+        do ix = 1, Atm_block%blksz(nb)
+          Sfcprop(nb)%zorlwav(ix) = Sfcprop(nb)%zorlw(ix) !--- compute zorlwav from existing variables
+        enddo
+      enddo
+    endif
+
+    if (nint(sfc_var3ice(1,1,1)) == -9999) then    !--- initialize internal ice temp from layer 1 and 2 soil temp
       if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing tiice')
       do nb = 1, Atm_block%nblks
         do ix = 1, Atm_block%blksz(nb)
-          Sfcprop(nb)%tiice(ix,1) = Sfcprop(nb)%stc(ix,1) !--- initialize internal ice temp from soil temp at layer 1
-          Sfcprop(nb)%tiice(ix,2) = Sfcprop(nb)%stc(ix,2) !--- initialize internal ice temp from soil temp at layer 2
+          Sfcprop(nb)%tiice(ix,1) = max(timin, min(con_tice, Sfcprop(nb)%stc(ix,1)))
+          Sfcprop(nb)%tiice(ix,2) = max(timin, min(con_tice, Sfcprop(nb)%stc(ix,2)))
         enddo
       enddo
     endif
@@ -1358,16 +1425,16 @@ module FV3GFS_io_mod
   end subroutine sfc_prop_restart_read
 
 
-!----------------------------------------------------------------------      
+!----------------------------------------------------------------------
 ! sfc_prop_restart_write
-!----------------------------------------------------------------------      
+!----------------------------------------------------------------------
 !    routine to write out GFS surface restarts via the GFDL FMS restart
 !    subsystem.
-!    takes an optional argument to append timestamps for intermediate 
+!    takes an optional argument to append timestamps for intermediate
 !    restarts.
 !
 !    calls:  register_restart_field, save_restart
-!----------------------------------------------------------------------      
+!----------------------------------------------------------------------
   subroutine sfc_prop_restart_write (Sfcprop, Atm_block, Model, fv_domain, timestamp)
     !--- interface variable definitions
     type(GFS_sfcprop_type),      intent(in) :: Sfcprop(:)
@@ -1390,7 +1457,7 @@ module FV3GFS_io_mod
     real(kind=kind_phys), pointer, dimension(:,:,:) :: var3_p3 => NULL()
 
 !   if (Model%frac_grid) then ! needs more variables
-      nvar2m = 37
+      nvar2m = 39
 !   else
 !     nvar2m = 32
 !   endif
@@ -1498,9 +1565,11 @@ module FV3GFS_io_mod
 !     if (Model%frac_grid) then
         sfc_name2(33) = 'tsfcl'   !temp on land portion of a cell
         sfc_name2(34) = 'zorll'   !zorl on land portion of a cell
-        sfc_name2(35) = 'zorli'   !zorl on land portion of a cell
-        sfc_name2(36) = 'tsfc'    !tsfc composite
-        sfc_name2(37) = 'zorl'    !zorl composite
+        sfc_name2(35) = 'zorli'   !zorl on ice portion of a cell
+        sfc_name2(36) = 'snodl'   !snowd on land portion of a cell
+        sfc_name2(37) = 'tsfc'    !tsfc composite
+        sfc_name2(38) = 'zorl'    !zorl composite
+        sfc_name2(39) = 'weasdl'  !weasd on land portion of a cell
 !     endif
       if (Model%cplwav) then
         sfc_name2(nvar2m) = 'zorlwav'   !zorl on land portion of a cell
@@ -1583,12 +1652,14 @@ module FV3GFS_io_mod
         sfc_name2(nvar2m+46) = 'deeprechxy'
         sfc_name2(nvar2m+47) = 'rechxy'
       endif
- 
+
     !--- register the 2D fields
       do num = 1,nvar2m
         var2_p => sfc_var2(:,:,num)
-        if (trim(sfc_name2(num)) == 'sncovr'.or.trim(sfc_name2(num)) == 'tsfcl'.or.trim(sfc_name2(num)) == 'zorll' &
-                                            .or.trim(sfc_name2(num)) == 'zorli' .or.trim(sfc_name2(num)) == 'zorlwav') then
+        if (trim(sfc_name2(num)) == 'sncovr' .or. trim(sfc_name2(num)) == 'tsfcl' .or.trim(sfc_name2(num))  == 'zorll'   &
+                                             .or. trim(sfc_name2(num)) == 'zorli' .or.trim(sfc_name2(num))  == 'zorlwav' &
+                                             .or. trim(sfc_name2(num)) == 'snodl' .or. trim(sfc_name2(num)) == 'weasdl'  &
+                                             .or. trim(sfc_name2(num)) == 'tsfc'  .or. trim(sfc_name2(num)) ==  'zorl') then
           id_restart = register_restart_field(Sfc_restart, fn_srf, sfc_name2(num), var2_p, domain=fv_domain, mandatory=.false.)
         else
           id_restart = register_restart_field(Sfc_restart, fn_srf, sfc_name2(num), var2_p, domain=fv_domain)
@@ -1670,7 +1741,7 @@ module FV3GFS_io_mod
       endif ! lsm = lsm_noahmp
     endif
 
-   
+
 !$omp parallel do default(shared) private(i, j, nb, ix, lsoil)
     do nb = 1, Atm_block%nblks
       do ix = 1, Atm_block%blksz(nb)
@@ -1715,13 +1786,13 @@ module FV3GFS_io_mod
         sfc_var2(i,j,30) = Sfcprop(nb)%slope(ix) !--- slope
         sfc_var2(i,j,31) = Sfcprop(nb)%snoalb(ix)!--- snoalb
         sfc_var2(i,j,32) = Sfcprop(nb)%sncovr(ix)!--- sncovr
-!       if (Model%frac_grid) then
-          sfc_var2(i,j,33) = Sfcprop(nb)%tsfcl(ix) !--- tsfcl (temp on land)
-          sfc_var2(i,j,34) = Sfcprop(nb)%zorll(ix) !--- zorll (zorl on land)
-          sfc_var2(i,j,35) = Sfcprop(nb)%zorli(ix) !--- zorli (zorl on ice)
-          sfc_var2(i,j,36) = Sfcprop(nb)%tsfc(ix)  !--- tsfc composite
-          sfc_var2(i,j,37) = Sfcprop(nb)%zorl(ix)  !--- zorl composite
-!       endif
+        sfc_var2(i,j,33) = Sfcprop(nb)%tsfcl(ix)  !--- tsfcl (temp on land)
+        sfc_var2(i,j,34) = Sfcprop(nb)%zorll(ix)  !--- zorll (zorl on land)
+        sfc_var2(i,j,35) = Sfcprop(nb)%zorli(ix)  !--- zorli (zorl on ice)
+        sfc_var2(i,j,36) = Sfcprop(nb)%snodl(ix)  !--- snodl (snowd on land)
+        sfc_var2(i,j,37) = Sfcprop(nb)%tsfc(ix)   !--- tsfc composite
+        sfc_var2(i,j,38) = Sfcprop(nb)%zorl(ix)   !--- zorl composite
+        sfc_var2(i,j,39) = Sfcprop(nb)%weasdl(ix) !--- weasdl (weasd on land)
         if (Model%cplwav) then
           sfc_var2(i,j,nvar2m) = Sfcprop(nb)%zorlwav(ix) !--- zorlwav (zorl from wav)
         endif
@@ -1810,7 +1881,7 @@ module FV3GFS_io_mod
 
         do k = 1,Model%kice
           sfc_var3ice(i,j,k) = Sfcprop(nb)%tiice(ix,k) !--- internal ice temperature
-        end do
+        enddo
 
         if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp .or. Model%lsm == Model%lsm_noah_wrfv4) then
           !--- 3D variables
@@ -1856,19 +1927,19 @@ module FV3GFS_io_mod
   end subroutine sfc_prop_restart_write
 
 
-!----------------------------------------------------------------------      
+!----------------------------------------------------------------------
 ! phys_restart_read
-!----------------------------------------------------------------------      
+!----------------------------------------------------------------------
 !    creates and populates a data type which is then used to "register"
 !    restart variables with the GFDL FMS restart subsystem.
 !    calls a GFDL FMS routine to restore the data from a restart file.
 !    calculates sncovr if it is not present in the restart file.
 !
 !    calls:  register_restart_field, restart_state, free_restart
-!   
+!
 !    opens:  phys_data.tile?.nc
 !   
-!----------------------------------------------------------------------      
+!----------------------------------------------------------------------
   subroutine phys_restart_read (GFS_Restart, Atm_block, Model, fv_domain)
     !--- interface variable definitions
     type(GFS_restart_type),      intent(in) :: GFS_Restart
@@ -1892,6 +1963,7 @@ module FV3GFS_io_mod
     npz = Atm_block%npz
     nx  = (iec - isc + 1)
     ny  = (jec - jsc + 1)
+
     nvar2d = GFS_Restart%num2d
     nvar3d = GFS_Restart%num3d
     fdiag  = GFS_Restart%fdiag
@@ -1903,7 +1975,7 @@ module FV3GFS_io_mod
       allocate (phy_var3(nx,ny,npz,nvar3d))
       phy_var2 = zero
       phy_var3 = zero
-      
+
       do num = 1,nvar2d
         var2_p => phy_var2(:,:,num)
         id_restart = register_restart_field (Phy_restart, fn_phy, trim(GFS_Restart%name2d(num)), &
@@ -1933,7 +2005,7 @@ module FV3GFS_io_mod
 !$omp parallel do default(shared) private(i, j, nb, ix)
     do num = 1,nvar2d
       do nb = 1,Atm_block%nblks
-        do ix = 1, Atm_block%blksz(nb)            
+        do ix = 1, Atm_block%blksz(nb)
           i = Atm_block%index(nb)%ii(ix) - isc + 1
           j = Atm_block%index(nb)%jj(ix) - jsc + 1
           GFS_Restart%data(nb,num)%var2p(ix) = phy_var2(i,j,num)
@@ -1957,7 +2029,7 @@ module FV3GFS_io_mod
 !$omp parallel do default(shared) private(i, j, k, nb, ix)
       do nb = 1,Atm_block%nblks
         do k=1,npz
-          do ix = 1, Atm_block%blksz(nb)            
+          do ix = 1, Atm_block%blksz(nb)
             i = Atm_block%index(nb)%ii(ix) - isc + 1
             j = Atm_block%index(nb)%jj(ix) - jsc + 1
             GFS_Restart%data(nb,num)%var3p(ix,k) = phy_var3(i,j,k,num)
@@ -1969,16 +2041,16 @@ module FV3GFS_io_mod
   end subroutine phys_restart_read
 
 
-!----------------------------------------------------------------------      
+!----------------------------------------------------------------------
 ! phys_restart_write
-!----------------------------------------------------------------------      
+!----------------------------------------------------------------------
 !    routine to write out GFS surface restarts via the GFDL FMS restart
 !    subsystem.
 !    takes an optional argument to append timestamps for intermediate 
 !    restarts.
 !
 !    calls:  register_restart_field, save_restart
-!----------------------------------------------------------------------      
+!----------------------------------------------------------------------
   subroutine phys_restart_write (GFS_Restart, Atm_block, Model, fv_domain, timestamp)
     !--- interface variable definitions
     type(GFS_restart_type),      intent(in) :: GFS_Restart
@@ -2011,7 +2083,7 @@ module FV3GFS_io_mod
       allocate (phy_var3(nx,ny,npz,nvar3d))
       phy_var2 = zero
       phy_var3 = zero
-      
+
       do num = 1,nvar2d
         var2_p => phy_var2(:,:,num)
         id_restart = register_restart_field (Phy_restart, fn_phy, trim(GFS_Restart%name2d(num)), &
@@ -2055,9 +2127,9 @@ module FV3GFS_io_mod
 
   end subroutine phys_restart_write
 
-!-------------------------------------------------------------------------      
+!-------------------------------------------------------------------------
 !--- gfdl_diag_register ---
-!-------------------------------------------------------------------------      
+!-------------------------------------------------------------------------
 !    creates and populates a data type which is then used to "register"
 !    GFS physics diagnostic variables with the GFDL FMS diagnostic manager.
 !    includes short & long names, units, conversion factors, etc.
@@ -2066,7 +2138,7 @@ module FV3GFS_io_mod
 !    the diag_table to determine what variables are to be output.
 !
 !    calls:  register_diag_field
-!-------------------------------------------------------------------------      
+!-------------------------------------------------------------------------
   subroutine fv3gfs_diag_register(Diag, Time, Atm_block, Model, xlon, xlat, axes)
     use physcons,  only: con_g
 !--- subroutine interface variable definitions
@@ -2086,7 +2158,8 @@ module FV3GFS_io_mod
     jeco   = Atm_block%jec
     levo   = model%levs
     fhzero = nint(Model%fhzero)
-    ncld   = Model%ncld
+!   ncld   = Model%ncld
+    ncld   = Model%imp_physics
     nsoil  = Model%lsoil
     dtp    = Model%dtp
     imp_physics  = Model%imp_physics
@@ -2106,7 +2179,7 @@ module FV3GFS_io_mod
     enddo
 
     if (tot_diag_idx == DIAG_SIZE) then
-      call mpp_error(fatal, 'FV3GFS_io::fv3gfs_diag_register - need to increase parameter DIAG_SIZE') 
+      call mpp_error(fatal, 'FV3GFS_io::fv3gfs_diag_register - need to increase parameter DIAG_SIZE')
     endif
 
     allocate(nstt(tot_diag_idx), nstt_vctbl(tot_diag_idx))
@@ -2171,17 +2244,17 @@ module FV3GFS_io_mod
        ' nrgst_vctbl=',nrgst_vctbl, 'isco=',isco,ieco,'jsco=',jsco,jeco,' num_axes_phys=', num_axes_phys
 
   end subroutine fv3gfs_diag_register
-!-------------------------------------------------------------------------      
+!-------------------------------------------------------------------------
 
 
-!-------------------------------------------------------------------------      
+!-------------------------------------------------------------------------
 !--- gfs_diag_output ---
-!-------------------------------------------------------------------------      
+!-------------------------------------------------------------------------
 !    routine to transfer the diagnostic data to the gfdl fms diagnostic 
 !    manager for eventual output to the history files.
 !
 !    calls:  send_data
-!-------------------------------------------------------------------------      
+!-------------------------------------------------------------------------
   subroutine fv3gfs_diag_output(time, diag, atm_block, nx, ny, levs, ntcw, ntoz, &
                                 dt, time_int, time_intfull, time_radsw, time_radlw)
 !--- subroutine interface variable definitions
@@ -2367,42 +2440,42 @@ module FV3GFS_io_mod
              var3(1:nx,1:ny,1:levs) =  RESHAPE(Statein%tgrs(1:ngptc,levs:1:-1), (/nx,ny,levs/))
              var3(1:nx,1:ny,1:levs) = (RESHAPE(Stateout%gt0(1:ngptc,levs:1:-1), (/nx,ny,levs/))  &
                                         - var3(1:nx,1:ny,1:levs))*rdt
-             used=send_data(Diag(idx)%id, var3, Time, is_in=is_in, js_in=js_in, ks_in=1) 
+             used=send_data(Diag(idx)%id, var3, Time, is_in=is_in, js_in=js_in, ks_in=1)
            endif
            !--- horizontal wind component tendency
            if (trim(Diag(idx)%name) == 'du_dt') then
              var3(1:nx,1:ny,1:levs) =  RESHAPE(Statein%ugrs(1:ngptc,levs:1:-1), (/nx,ny,levs/))
              var3(1:nx,1:ny,1:levs) = (RESHAPE(Stateout%gu0(1:ngptc,levs:1:-1), (/nx,ny,levs/))  &
                                         - var3(1:nx,1:ny,1:levs))*rdt
-             used=send_data(Diag(idx)%id, var3, Time, is_in=is_in, js_in=js_in, ks_in=1) 
+             used=send_data(Diag(idx)%id, var3, Time, is_in=is_in, js_in=js_in, ks_in=1)
            endif
            !--- meridional wind component tendency
            if (trim(Diag(idx)%name) == 'dv_dt') then
              var3(1:nx,1:ny,1:levs) =  RESHAPE(Statein%vgrs(1:ngptc,levs:1:-1), (/nx,ny,levs/))
              var3(1:nx,1:ny,1:levs) = (RESHAPE(Stateout%gv0(1:ngptc,levs:1:-1), (/nx,ny,levs/))  &
                                         - var3(1:nx,1:ny,1:levs))*rdt
-             used=send_data(Diag(idx)%id, var3, Time, is_in=is_in, js_in=js_in, ks_in=1) 
+             used=send_data(Diag(idx)%id, var3, Time, is_in=is_in, js_in=js_in, ks_in=1)
            endif
            !--- specific humidity tendency
            if (trim(Diag(idx)%name) == 'dsphum_dt') then
              var3(1:nx,1:ny,1:levs) =  RESHAPE(Statein%qgrs(1:ngptc,levs:1:-1,1:1), (/nx,ny,levs/))
              var3(1:nx,1:ny,1:levs) = (RESHAPE(Stateout%gq0(1:ngptc,levs:1:-1,1:1), (/nx,ny,levs/))  &
                                         - var3(1:nx,1:ny,1:levs))*rdt
-             used=send_data(Diag(idx)%id, var3, Time, is_in=is_in, js_in=js_in, ks_in=1) 
+             used=send_data(Diag(idx)%id, var3, Time, is_in=is_in, js_in=js_in, ks_in=1)
            endif
            !--- cloud water mixing ration tendency
            if (trim(Diag(idx)%name) == 'dclwmr_dt') then
              var3(1:nx,1:ny,1:levs) =  RESHAPE(Statein%qgrs(1:ngptc,levs:1:-1,ntcw:ntcw), (/nx,ny,levs/))
              var3(1:nx,1:ny,1:levs) = (RESHAPE(Stateout%gq0(1:ngptc,levs:1:-1,ntcw:ntcw), (/nx,ny,levs/))  &
                                         - var3(1:nx,1:ny,1:levs))*rdt
-             used=send_data(Diag(idx)%id, var3, Time, is_in=is_in, js_in=js_in, ks_in=1) 
+             used=send_data(Diag(idx)%id, var3, Time, is_in=is_in, js_in=js_in, ks_in=1)
            endif
            !--- ozone mixing ration tendency
            if (trim(Diag(idx)%name) == 'do3mr_dt') then
              var3(1:nx,1:ny,1:levs) =  RESHAPE(Statein%qgrs(1:ngptc,levs:1:-1,ntoz:ntoz), (/nx,ny,levs/))
              var3(1:nx,1:ny,1:levs) = (RESHAPE(Stateout%gq0(1:ngptc,levs:1:-1,ntoz:ntoz), (/nx,ny,levs/))  &
                                         - var3(1:nx,1:ny,1:levs))*rdt
-             used=send_data(Diag(idx)%id, var3, Time, is_in=is_in, js_in=js_in, ks_in=1) 
+             used=send_data(Diag(idx)%id, var3, Time, is_in=is_in, js_in=js_in, ks_in=1)
            endif
 #endif
          endif
@@ -3078,6 +3151,6 @@ module FV3GFS_io_mod
 
  end subroutine find_output_name
 #endif
-!-------------------------------------------------------------------------      
+!-------------------------------------------------------------------------
 
 end module FV3GFS_io_mod

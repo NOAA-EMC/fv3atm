@@ -52,6 +52,43 @@ module module_cap_cpl
     end subroutine clock_cplIntval
 
   !-----------------------------------------------------------------------------
+
+    subroutine addFieldMetadata(field, key, values, rc)
+
+      ! This subroutine implements a preliminary method to provide metadata to
+      ! a coupled model that is accessing the field via reference sharing
+      ! (NUOPC SharedStatusField=.true.). The method sets a (key, values) pair
+      ! in the field's array ESMF_Info object to retrieve an array of strings
+      ! encoding metadata.
+      !
+      ! Such a capability should be implemented in the standard NUOPC connector
+      ! for more general applications, possibly providing access to the field's
+      ! ESMF_Info object.
+
+      type(ESMF_Field)               :: field
+      character(len=*),  intent(in)  :: key
+      character(len=*),  intent(in)  :: values(:)
+      integer, optional, intent(out) :: rc
+
+      ! local variable
+      integer          :: localrc
+      type(ESMF_Array) :: array
+      type(ESMF_Info)  :: info
+
+      ! begin
+      if (present(rc)) rc = ESMF_SUCCESS
+
+      call ESMF_FieldGet(field, array=array, rc=localrc)
+      if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+      call ESMF_InfoGetFromHost(array, info, rc=localrc)
+      if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+      call ESMF_InfoSet(info, key, values, rc=localrc)
+      if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+
+    end subroutine addFieldMetadata
+
+  !-----------------------------------------------------------------------------
+
 #if 0
     subroutine realizeConnectedInternCplField(state, field, standardName, grid, rc)
 
@@ -100,35 +137,44 @@ module module_cap_cpl
 #endif
   !-----------------------------------------------------------------------------
 
-    subroutine realizeConnectedCplFields(state, grid,                                      &
-                                         numLevels, numSoilLayers, numTracers,             &
-                                         num_diag_sfc_emis_flux, num_diag_down_flux,       &
-                                         num_diag_type_down_flux, num_diag_burn_emis_flux, &
-                                         num_diag_cmass, fields_info, state_tag,             &
-                                         fieldList, rc)
+    subroutine realizeConnectedCplFields(state, grid,                          &
+                                         numLevels, numSoilLayers, numTracers, &
+                                         fields_info, state_tag, fieldList, rc)
+
+      use field_manager_mod,  only: MODEL_ATMOS
+      use tracer_manager_mod, only: get_number_tracers, get_tracer_names
 
       type(ESMF_State),            intent(inout)  :: state
       type(ESMF_Grid),                intent(in)  :: grid
       integer,                        intent(in)  :: numLevels
       integer,                        intent(in)  :: numSoilLayers
       integer,                        intent(in)  :: numTracers
-      integer,                        intent(in)  :: num_diag_sfc_emis_flux
-      integer,                        intent(in)  :: num_diag_down_flux
-      integer,                        intent(in)  :: num_diag_type_down_flux
-      integer,                        intent(in)  :: num_diag_burn_emis_flux
-      integer,                        intent(in)  :: num_diag_cmass
       type(FieldInfo), dimension(:),  intent(in)  :: fields_info
       character(len=*),               intent(in)  :: state_tag                              !< Import or export.
       type(ESMF_Field), dimension(:), intent(out) :: fieldList
       integer,                        intent(out) :: rc
 
       ! local variables
-      integer          :: item
+      integer          :: item, pos, tracerCount
       logical          :: isConnected
       type(ESMF_Field) :: field
+      type(ESMF_StateIntent_Flag) :: stateintent
+      character(len=32), allocatable, dimension(:) :: tracerNames, tracerUnits
 
       ! begin
       rc = ESMF_SUCCESS
+
+      ! attach list of tracer names to exported tracer field as metadata
+      call ESMF_StateGet(state, stateintent=stateintent, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+      if (stateintent == ESMF_STATEINTENT_EXPORT) then
+        call get_number_tracers(MODEL_ATMOS, num_tracers=tracerCount)
+        allocate(tracerNames(tracerCount), tracerUnits(tracerCount))
+        do item = 1, tracerCount
+          call get_tracer_names(MODEL_ATMOS, item, tracerNames(item), units=tracerUnits(item))
+        end do
+      end if
 
       do item = 1, size(fields_info)
         isConnected = NUOPC_IsConnected(state, fieldName=trim(fields_info(item)%name), rc=rc)
@@ -151,23 +197,14 @@ module module_cap_cpl
               call ESMF_FieldEmptyComplete(field, typekind=ESMF_TYPEKIND_R8, &
                                        ungriddedLBound=(/1, 1/), ungriddedUBound=(/numLevels, numTracers/), rc=rc)
               if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-            case ('u','tracer_up_flux')
-              call ESMF_FieldEmptyComplete(field, typekind=ESMF_TYPEKIND_R8, &
-                                       ungriddedLBound=(/1/), ungriddedUBound=(/num_diag_sfc_emis_flux/), rc=rc)
-              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-            case ('d','tracer_down_flx')
-              call ESMF_FieldEmptyComplete(field, typekind=ESMF_TYPEKIND_R8, &
-                                       ungriddedLBound=(/1, 1/),        &
-                                       ungriddedUBound=(/num_diag_down_flux, num_diag_type_down_flux/), rc=rc)
-              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-            case ('b','tracer_anth_biom_emission')
-              call ESMF_FieldEmptyComplete(field, typekind=ESMF_TYPEKIND_R8, &
-                                       ungriddedLBound=(/1/), ungriddedUBound=(/num_diag_burn_emis_flux/), rc=rc)
-              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-            case ('c','tracer_column_mass_density')
-              call ESMF_FieldEmptyComplete(field, typekind=ESMF_TYPEKIND_R8, &
-                                       ungriddedLBound=(/1/), ungriddedUBound=(/num_diag_cmass/), rc=rc)
-              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+              if (allocated(tracerNames)) then
+                call addFieldMetadata(field, 'tracerNames', tracerNames, rc=rc)
+                if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+              end if
+              if (allocated(tracerUnits)) then
+                call addFieldMetadata(field, 'tracerUnits', tracerUnits, rc=rc)
+                if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+              end if
             case ('s','surface')
               call ESMF_FieldEmptyComplete(field, typekind=ESMF_TYPEKIND_R8, rc=rc)
               if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
@@ -200,6 +237,9 @@ module module_cap_cpl
                              // ' is not connected ', ESMF_LOGMSG_INFO, line=__LINE__, file=__FILE__, rc=rc)
         end if
       end do
+
+      if (allocated(tracerNames)) deallocate(tracerNames)
+      if (allocated(tracerUnits)) deallocate(tracerUnits)
 
     end subroutine realizeConnectedCplFields
 
