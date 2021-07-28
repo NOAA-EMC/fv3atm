@@ -629,13 +629,8 @@ module GFS_typedefs
     logical              :: cplwav2atm      !< default no wav->atm coupling
     logical              :: cplchm          !< default no cplchm collection
 
-#ifdef IDEA_PHYS
 !--- integrated dynamics through earth's atmosphere
     logical              :: lsidea
-    character(len=4)     :: weimer_model
-#else
-    logical              :: lsidea
-#endif
 
 !vay 2018  GW physics switches
 
@@ -3036,18 +3031,6 @@ module GFS_typedefs
 
 !--- modules
     use physcons,         only: con_rerth, con_pi
-
-#ifdef IDEA_PHYS
-    use wam_f107_kp_mod,  only: f107_kp_size, f107_kp_interval,      &
-                                f107_kp_skip_size, f107_kp_data_size,&
-                                f107_kp_read_in_start
-!                               f107_kp_read_in_start, kdt_interval
-    use module_IPE_to_WAM, only: ipe_to_wam_coupling
-    use namelist_wamphysics_def
-!x #else
-!x     use wam_f107_kp_mod,  only: f107_kp_size, f107_kp_interval,     &
-!x                                 f107_kp_skip_size, f107_kp_data_size
-#endif
     use mersenne_twister, only: random_setseed, random_number
     use parse_tracers,    only: get_tracer_index
 !
@@ -3120,13 +3103,8 @@ module GFS_typedefs
     logical              :: cplwav2atm     = .false.         !< default no cplwav2atm coupling
     logical              :: cplchm         = .false.         !< default no cplchm collection
 
-#ifdef IDEA_PHYS
 !--- integrated dynamics through earth's atmosphere
-    logical              :: lsidea         = .true.
-    character(len=4)     :: weimer_model   = 'epot'
-#else
     logical              :: lsidea         = .false.
-#endif
 
 !--- radiation parameters
     real(kind=kind_phys) :: fhswr          = 3600.           !< frequency for shortwave radiation (secs)
@@ -4789,31 +4767,6 @@ module GFS_typedefs
     Model%yearlen          = 365
     Model%julian           = -9999.
 
-#ifdef IDEA_PHYS
-    ! Beware! The values set here reside in wam_f107_kp_mod and determine sizes of arrays
-    ! inside that module. These arrays get used later in modules idea_tracer.f, idea_ion.f,
-    ! idea_solar_heating.f, efield.f, and idea_composition.f.
-    ! Since in wam_f107_kp_mod no default values are assigned to the four integers below, not
-    ! setting them here can lead to memory corruption that is hard to detect.
-!--- stored in wam_f107_kp module
-    
-    lsidea            = .false.
-    weimer_model      = 'epot'
-    f107_kp_size      = 56
-    f107_kp_skip_size = 0
-    f107_kp_read_in_start=0
-    f107_kp_data_size = 56
-    f107_kp_interval  = 10800
-!SK2020Aug20:
-!/home/skar/GSMWAM-IPE/WAM/src/gsm/phys/gfs_physics_grid_comp_mod.f
-!   interpolate_weight = 1-real(mod((int_state%kdt-1)*timestep_sec,f107_kp_interval))/f107_kp_interval
-!   kdt_interval=((int_state%kdt-1)*timestep_sec/f107_kp_interval)+1
-!   kdt_interval      = 1    !Do not set it here!!
-    ipe_to_wam_coupling = .false.
-#else
-    lsidea            = .false.
-#endif
-
 !--- BEGIN CODE FROM GFS_PHYSICS_INITIALIZE
 !--- define physcons module variables
     tem          = con_rerth*con_rerth*(con_pi+con_pi)*con_pi
@@ -4840,10 +4793,6 @@ module GFS_typedefs
 
 
 !--- BEGIN CODE FROM COMPNS_PHYSICS
-#ifdef IDEA_PHYS
-      call wam_control_default
-      call idea_wamcontrol_init(Model%me)
-#endif
 !--- shoc scheme
     if (do_shoc) then
       if (Model%imp_physics == Model%imp_physics_thompson) then
@@ -5487,13 +5436,7 @@ module GFS_typedefs
       print *, ' cplwav2atm        : ', Model%cplwav2atm
       print *, ' cplchm            : ', Model%cplchm
       print *, ' '
-#ifdef IDEA_PHYS
-      print *, 'integrated dynamics through earth atmosphere'
       print *, ' lsidea            : ', Model%lsidea
-      print *, ' weimer_model      : ', Model%weimer_model
-#else
-      print *, ' lsidea            : ', Model%lsidea
-#endif
       print *, ' '
       print *, 'calendars and time parameters and activation triggers'
       print *, ' dtp               : ', Model%dtp
