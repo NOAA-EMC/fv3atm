@@ -8812,9 +8812,9 @@
   dimensions = (horizontal_loop_extent)
   type = integer
 [itc]
-  standard_name = number_of_aerosol_tracers_for_convection
-  long_name = number of aerosol tracers transported/scavenged by convection
-  units = count
+  standard_name = index_of_first_chemical_tracer_for_convection
+  long_name = index of first chemical tracer transported/scavenged by convection
+  units = index
   dimensions = ()
   type = integer
 [wet]
