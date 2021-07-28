@@ -1303,7 +1303,6 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (control_for_land_surface_scheme == identifier_for_noahmp_land_surface_scheme .or. control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme)
 [albdnir_lnd]
   standard_name = surface_albedo_direct_NIR_over_land
   long_name = direct surface albedo NIR band over land
@@ -1311,7 +1310,6 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (control_for_land_surface_scheme == identifier_for_noahmp_land_surface_scheme .or. control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme)
 [albivis_lnd]
   standard_name = surface_albedo_diffuse_visible_over_land
   long_name = diffuse surface albedo visible band over land
@@ -1319,7 +1317,6 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (control_for_land_surface_scheme == identifier_for_noahmp_land_surface_scheme .or. control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme)
 [albinir_lnd]
   standard_name = surface_albedo_diffuse_NIR_over_land
   long_name = diffuse surface albedo NIR band over land
@@ -1327,7 +1324,6 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (control_for_land_surface_scheme == identifier_for_noahmp_land_surface_scheme .or. control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme)
 [albdvis_ice]
   standard_name = surface_albedo_direct_visible_over_ice
   long_name = direct surface albedo visible band over ice
@@ -9345,18 +9341,14 @@
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
   kind = kind_phys
-<<<<<<< HEAD
-[save_q(:,:,index_for_turbulent_kinetic_energy)]
+[save_q(:,:,index_of_turbulent_kinetic_energy_in_tracer_concentration_array)]
   standard_name = turbulent_kinetic_energy_save
   long_name = turbulent kinetic energy before entering a physics scheme
   units = kg kg-1
-  dimensions = (horizontal_loop_extent,vertical_dimension)
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
   kind = kind_phys
-[save_q(:,:,index_for_liquid_cloud_condensate)]
-=======
 [save_q(:,:,index_of_cloud_liquid_water_mixing_ratio_in_tracer_concentration_array)]
->>>>>>> 6cd487a5db54f3d81f2eb1c53af4c0a143f81926
   standard_name = cloud_condensed_water_mixing_ratio_save
   long_name = ratio of mass of cloud water to mass of dry air plus vapor (without condensates) before entering a physics scheme
   units = kg kg-1
@@ -9559,9 +9551,6 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-<<<<<<< HEAD
-  active = (flag_for_land_surface_scheme == flag_for_noah_wrfv4_land_surface_scheme)
-=======
   active = (control_for_land_surface_scheme == identifier_for_noah_wrfv4_land_surface_scheme)
 [snowd_ice]
   standard_name = surface_snow_thickness_water_equivalent_over_ice
@@ -9570,7 +9559,6 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
->>>>>>> 6cd487a5db54f3d81f2eb1c53af4c0a143f81926
 [snow_depth]
   standard_name = actual_snow_depth
   long_name = actual snow depth
