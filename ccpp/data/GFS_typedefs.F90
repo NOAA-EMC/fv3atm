@@ -3112,7 +3112,7 @@ module GFS_typedefs
     integer              :: nhfrad         = 0               !< number of timesteps for which to call radiation on physics timestep (coldstarts)
     integer              :: levr           = -99             !< number of vertical levels for radiation calculations
     integer              :: nfxr           = 39+6            !< second dimension of input/output array fluxr
-    logical              :: iaerclm        = .false.         !< flag for initializing aero data 
+    logical              :: iaerclm        = .false.         !< flag for initializing aero data
     integer              :: iccn           =  0              !< logical to use IN CCN forcing for MG2/3
     integer              :: iflip          =  1              !< iflip - is not the same as flipv
     integer              :: isol           =  0              !< use prescribed solar constant
