@@ -43,18 +43,17 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
                                 addLsmask2grid
 
   use constants_mod,      only: constants_init
-  use       fms_mod,      only: open_namelist_file, file_exist, check_nml_error, &
+  use fms_mod,            only: open_namelist_file, file_exist, check_nml_error, &
                                 error_mesg, fms_init, fms_end, close_file,       &
                                 write_version_number, uppercase
 
-  use mpp_mod,            only: mpp_init, mpp_pe, mpp_root_pe, mpp_npes, mpp_get_current_pelist, &
-                                mpp_set_current_pelist, stdlog, mpp_error, NOTE, FATAL, WARNING
-  use mpp_mod,            only: mpp_clock_id, mpp_clock_begin, mpp_clock_end, mpp_sync
+  use mpp_mod,            only: mpp_init, mpp_pe, mpp_root_pe,  &
+                                mpp_error, FATAL, WARNING
+  use mpp_mod,            only: mpp_clock_id, mpp_clock_begin, mpp_clock_end
 
   use mpp_io_mod,         only: mpp_open, mpp_close, MPP_NATIVE, MPP_RDONLY, MPP_DELETE
 
-  use mpp_domains_mod,    only: mpp_get_global_domain, mpp_global_field, CORNER, domain2d
-  use mpp_domains_mod,    only: mpp_get_compute_domains
+  use mpp_domains_mod,    only: mpp_get_compute_domains, domain2D 
   use memutils_mod,       only: print_memuse_stats
   use sat_vapor_pres_mod, only: sat_vapor_pres_init
 
@@ -71,7 +70,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !
   use module_fv3_io_def, only:  num_pes_fcst, num_files, filename_base, nbdlphys, &
                                 iau_offset
-  use module_fv3_config, only:  dt_atmos, calendar,                               &
+  use module_fv3_config, only:  dt_atmos, calendar, fcst_mpi_comm, fcst_ntasks,   &
                                 quilting, calendar_type,                          &
                                 cplprint_flag, force_date_from_configure,         &
                                 restart_endfcst
@@ -178,11 +177,10 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 
     integer                                :: Run_length
     integer,dimension(6)                   :: date, date_end
-    integer                                :: mpi_comm_comp
 !
     character(len=9) :: month
     integer :: initClock, unit, nfhour, total_inttime
-    integer :: mype, ntasks
+    integer :: mype
     character(3) cfhour
     character(4) dateSY
     character(2) dateSM,dateSD,dateSH,dateSN,dateSS
@@ -200,9 +198,10 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     real(ESMF_KIND_R8),dimension(:,:), pointer :: glatPtr, glonPtr
     real(ESMF_KIND_R8),parameter :: dtor = 180.0_ESMF_KIND_R8 / 3.1415926535897931_ESMF_KIND_R8
     integer :: jsc, jec, isc, iec, nlev
-    type(domain2D) :: domain
+    type(domain2D)  :: domain
+    type(time_type) :: iautime
     integer :: n, fcstNpes, tmpvar
-    logical :: single_restart, fexist
+    logical :: freq_restart, fexist
     integer, allocatable, dimension(:) :: isl, iel, jsl, jel
     integer, allocatable, dimension(:,:,:) :: deBlockList
 
@@ -212,7 +211,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     integer               :: nestRootPet, peListSize(1)
     integer, allocatable  :: petMap(:)
 
-    integer                       :: num_restart_interval
+    integer                       :: num_restart_interval, restart_starttime
     real,dimension(:),allocatable :: restart_interval
 !
 !-----------------------------------------------------------------------
@@ -237,9 +236,9 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 !
     call ESMF_VMGetCurrent(vm=VM,rc=RC)
-    call ESMF_VMGet(vm=VM, localPet=mype, mpiCommunicator=mpi_comm_comp, &
-                    petCount=ntasks, rc=rc)
-    if (mype == 0) write(0,*)'in fcst comp init, ntasks=',ntasks
+    call ESMF_VMGet(vm=VM, localPet=mype, mpiCommunicator=fcst_mpi_comm, &
+                    petCount=fcst_ntasks, rc=rc)
+    if (mype == 0) write(0,*)'in fcst comp init, fcst_ntasks=',fcst_ntasks
 !
     CF = ESMF_ConfigCreate(rc=rc)
     call ESMF_ConfigLoadFile(config=CF ,filename='model_configure' ,rc=rc)
@@ -257,7 +256,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     if(mype == 0) print *,'af nems config,restart_interval=',restart_interval
 
 !
-    call fms_init(mpi_comm_comp)
+    call fms_init(fcst_mpi_comm)
     call mpp_init()
     initClock = mpp_clock_id( 'Initialization' )
     call mpp_clock_begin (initClock) !nesting problem
@@ -344,22 +343,33 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     if (mype == 0) write(0,*)'num_atmos_calls=',atm_int_state%num_atmos_calls,'time_init=', &
                     date_init,'time_atmos=',date,'time_end=',date_end,'dt_atmos=',dt_atmos, &
                     'Run_length=',Run_length
+
+! set up forecast time array that controls when to write out restart files
     frestart = 0
-    single_restart = .false.
-    call get_time(atm_int_state%Time_end - atm_int_state%Time_atstart,total_inttime)
-    if(num_restart_interval == 2) then
-      if(restart_interval(2)== -1) single_restart = .true.
+    call get_time(atm_int_state%Time_end - atm_int_state%Time_init,total_inttime)
+! set iau offset time
+    atm_int_state%Atm%iau_offset    = iau_offset
+    if(iau_offset > 0 ) then
+      iautime =  set_time(iau_offset * 3600, 0)
     endif
-    if(single_restart) then
-      frestart(1) =  restart_interval(1) * 3600
-    elseif ( num_restart_interval == 1) then
+! if the second item is -1, the first number is frequency
+    freq_restart = .false.
+    if(num_restart_interval == 2) then
+      if(restart_interval(2)== -1) freq_restart = .true.
+    endif
+    if(freq_restart) then
       if(restart_interval(1) == 0) then
         frestart(1) = total_inttime
       else if(restart_interval(1) > 0) then
         tmpvar = restart_interval(1) * 3600
-        frestart(1) = tmpvar
         atm_int_state%Time_step_restart = set_time (tmpvar, 0)
-        atm_int_state%Time_restart      = atm_int_state%Time_atstart + atm_int_state%Time_step_restart
+        if(iau_offset > 0 ) then
+          atm_int_state%Time_restart = atm_int_state%Time_init + iautime + atm_int_state%Time_step_restart
+          frestart(1) = tmpvar + iau_offset *3600
+        else
+          atm_int_state%Time_restart = atm_int_state%Time_init + atm_int_state%Time_step_restart
+          frestart(1) = tmpvar
+        endif
         i = 2
         do while ( atm_int_state%Time_restart < atm_int_state%Time_end )
           frestart(i) = frestart(i-1) + tmpvar
@@ -367,19 +377,29 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
            i = i + 1
         enddo
       endif
-    else if(num_restart_interval > 1) then
-      do i=1,num_restart_interval
-        frestart(i) = restart_interval(i) * 3600
-      enddo
+! otherwise it is an array with forecast time at which the restart files will be written out
+    else if(num_restart_interval >= 1) then
+      if(restart_interval(1) == 0 ) then
+        frestart(1) = total_inttime
+      else
+        if(iau_offset > 0 ) then
+          restart_starttime = iau_offset *3600
+        else
+          restart_starttime = 0
+        endif
+        do i=1,num_restart_interval
+          frestart(i) = restart_interval(i) * 3600. + restart_starttime
+        enddo
+      endif
     endif
+! if to write out restart at the end of forecast
     restart_endfcst = .false.
     if ( ANY(frestart(:) == total_inttime) ) restart_endfcst = .true.
     if (mype == 0) print *,'frestart=',frestart(1:10)/3600, 'restart_endfcst=',restart_endfcst, &
       'total_inttime=',total_inttime
-
+! if there is restart writing during integration 
     atm_int_state%intrm_rst         = 0
     if (frestart(1)>0) atm_int_state%intrm_rst = 1
-    atm_int_state%Atm%iau_offset    = iau_offset
 !
 !----- write time stamps (for start time and end time) ------
 
