@@ -2081,7 +2081,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: vdftra(:,:,:)      => null()  !<
     real (kind=kind_phys), pointer      :: vegf1d(:)          => null()  !<
     real (kind=kind_phys)               :: lndp_vgf                      !<
-  
+ 
     integer, pointer                    :: vegtype(:)         => null()  !<
     real (kind=kind_phys), pointer      :: w_upi(:,:)         => null()  !<
     real (kind=kind_phys), pointer      :: wcbmax(:)          => null()  !<
@@ -2255,7 +2255,7 @@ module GFS_typedefs
 !------------------------
 ! GFS_statein_type%create
 !------------------------
-  subroutine statein_create (Statein, IM, Model) 
+  subroutine statein_create (Statein, IM, Model)
     implicit none
 
     class(GFS_statein_type)             :: Statein
@@ -3111,7 +3111,7 @@ module GFS_typedefs
     real(kind=kind_phys) :: fhlwr          = 3600.           !< frequency for longwave radiation (secs)
     integer              :: nhfrad         = 0               !< number of timesteps for which to call radiation on physics timestep (coldstarts)
     integer              :: levr           = -99             !< number of vertical levels for radiation calculations
-    integer              :: nfxr           = 39+6            !< second dimension of input/output array fluxr   
+    integer              :: nfxr           = 39+6            !< second dimension of input/output array fluxr
     logical              :: iaerclm        = .false.         !< flag for initializing aero data 
     integer              :: iccn           =  0              !< logical to use IN CCN forcing for MG2/3
     integer              :: iflip          =  1              !< iflip - is not the same as flipv
@@ -3134,7 +3134,7 @@ module GFS_typedefs
                                                              !<           available; use latest; do extrapolation.
                                                              !< ictm=yyyy0 => use yyyy data for the forecast time;
                                                              !<           no extrapolation.
-                                                             !< ictm=yyyy1 = > use yyyy data for the fcst. If needed, 
+                                                             !< ictm=yyyy1 = > use yyyy data for the fcst. If needed,
                                                              !<           do extrapolation to match the fcst time.
                                                              !< ictm=-1 => use user provided external data for
                                                              !<           the fcst time; no extrapolation.
