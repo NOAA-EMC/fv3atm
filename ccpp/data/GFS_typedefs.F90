@@ -2081,7 +2081,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: vdftra(:,:,:)      => null()  !<
     real (kind=kind_phys), pointer      :: vegf1d(:)          => null()  !<
     real (kind=kind_phys)               :: lndp_vgf                      !<
- 
+
     integer, pointer                    :: vegtype(:)         => null()  !<
     real (kind=kind_phys), pointer      :: w_upi(:,:)         => null()  !<
     real (kind=kind_phys), pointer      :: wcbmax(:)          => null()  !<
