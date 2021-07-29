@@ -1644,9 +1644,11 @@ end subroutine atmos_data_type_chksum
     logical found, isFieldCreated, lcpl_fice
     real (kind=GFS_kind_phys), parameter :: z0ice=1.1    !  (in cm)
 !
-      real(kind=GFS_kind_phys), parameter :: himax = 8.0      !< maximum ice thickness allowed
+!     real(kind=GFS_kind_phys), parameter :: himax = 8.0      !< maximum ice thickness allowed
 !     real(kind=GFS_kind_phys), parameter :: himin = 0.1      !< minimum ice thickness required
-      real(kind=GFS_kind_phys), parameter :: hsmax = 100.0    !< maximum snow depth (m) allowed
+!     real(kind=GFS_kind_phys), parameter :: hsmax = 100.0    !< maximum snow depth (m) allowed
+      real(kind=GFS_kind_phys), parameter :: himax = 1.0e12   !< maximum ice thickness allowed
+      real(kind=GFS_kind_phys), parameter :: hsmax = 1.0e12   !< maximum snow depth (m) allowed
 !
 !------------------------------------------------------------------------------
 !
