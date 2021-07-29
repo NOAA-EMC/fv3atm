@@ -633,7 +633,7 @@ module GFS_typedefs
     logical              :: cplwav          !< default no cplwav collection
     logical              :: cplwav2atm      !< default no wav->atm coupling
     logical              :: cplchm          !< default no cplchm collection
-    logical              :: use_cice_alb    !< default .true. if cplflx is .true. else .false.  
+    logical              :: use_cice_alb    !< default .false.
 !--- integrated dynamics through earth's atmosphere
     logical              :: lsidea
 
