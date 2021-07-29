@@ -1097,8 +1097,8 @@ module GFS_typedefs
     real(kind=kind_phys) :: bl_dnfr         !< downdraft fraction in boundary layer mass flux scheme
 
 !--- parameters for canopy heat storage (CHS) parameterization
-    real(kind=kind_phys) :: h0facu          !< CHS factor for sensible heat flux in unstable surface layer                                       
-    real(kind=kind_phys) :: h0facs          !< CHS factor for sensible heat flux in stable surface layer                           
+    real(kind=kind_phys) :: h0facu          !< CHS factor for sensible heat flux in unstable surface layer
+    real(kind=kind_phys) :: h0facs          !< CHS factor for sensible heat flux in stable surface layer
 
 !---cellular automata control parameters
     integer              :: nca             !< number of independent cellular automata
@@ -1146,10 +1146,10 @@ module GFS_typedefs
                                               ! we'd need to make this dim(6,5).
 !--- tracer handling
     character(len=32), pointer :: tracer_names(:) !< array of initialized tracers from dynamic core
-    integer              :: ntrac           !< number of tracers
-    integer              :: ntracp1         !< number of tracers plus one
-    integer              :: ntracp100       !< number of tracers plus one hundred
-    integer              :: nqrimef         !< tracer index for mass weighted rime factor
+    integer              :: ntrac                 !< number of tracers
+    integer              :: ntracp1               !< number of tracers plus one
+    integer              :: ntracp100             !< number of tracers plus one hundred
+    integer              :: nqrimef               !< tracer index for mass weighted rime factor
 
     integer, pointer :: dtidx(:,:) => null()                                !< index in outermost dimension of dtend
     integer :: ndtend                                                       !< size of outermost dimension of dtend
@@ -1972,6 +1972,7 @@ module GFS_typedefs
     integer                             :: nsamftrac                     !<
     integer                             :: nscav                         !<
     integer                             :: nspc1                         !<
+    integer                             :: ntcwx                         !<
     integer                             :: ntiwx                         !<
     integer                             :: ntk                           !<
     integer                             :: ntkev                         !<
@@ -4114,7 +4115,7 @@ module GFS_typedefs
         write(0,*) 'Error in GFS_typedefs.F90, number of soil layers must be 9 for RUC'
         stop
       end if
-    end if       
+    end if
 
     ! Set number of ice model layers
     Model%kice      = kice
@@ -6925,7 +6926,7 @@ module GFS_typedefs
     !
     allocate (Interstitial%otspt      (Model%ntracp1,2))
     ! Set up numbers of tracers for PBL, convection, etc: sets
-    ! Interstitial%{nvdiff,mg3_as_mg2,nn,tracers_total,ntiwx,ntk,ntkev,otspt,nsamftrac,ncstrac,nscav}
+    ! Interstitial%{nvdiff,mg3_as_mg2,nn,tracers_total,ntcwx,ntiwx,ntk,ntkev,otspt,nsamftrac,ncstrac,nscav}
     call interstitial_setup_tracers(Interstitial, Model)
     ! Allocate arrays
     allocate (Interstitial%adjsfculw_land  (IM))
@@ -7211,7 +7212,7 @@ module GFS_typedefs
           allocate(Interstitial%gas_concentrations%concs(iGas)%conc(IM, Model%levs))
        enddo
        !
-       ! lw_optical_props_clrsky (ty_optical_props_1scl) 
+       ! lw_optical_props_clrsky (ty_optical_props_1scl)
        !
        allocate(Interstitial%lw_optical_props_clrsky%tau(      IM, Model%levs, Model%rrtmgp_nGptsLW  ))
        allocate(Interstitial%lw_optical_props_clrsky%band2gpt     (2,          Model%rrtmgp_nBandsLW ))
@@ -7225,7 +7226,7 @@ module GFS_typedefs
        allocate(Interstitial%lw_optical_props_aerosol%band_lims_wvn(2,         Model%rrtmgp_nBandsLW ))
        allocate(Interstitial%lw_optical_props_aerosol%gpt2band(                Model%rrtmgp_nBandsLW ))
        !
-       ! lw_optical_props_cloudsByBand (ty_optical_props_2str)    
+       ! lw_optical_props_cloudsByBand (ty_optical_props_2str)
        !
        allocate(Interstitial%lw_optical_props_cloudsByBand%tau(IM, Model%levs, Model%rrtmgp_nBandsLW ))
        allocate(Interstitial%lw_optical_props_cloudsByBand%ssa(IM, Model%levs, Model%rrtmgp_nBandsLW ))
@@ -7464,8 +7465,7 @@ module GFS_typedefs
 
     Interstitial%nscav = Model%ntrac - Model%ncnd + 2
 
-
-    ! DH* STILL VALID GIVEN THE CHANGES BELOW FOR CPLCHM?
+    Interstitial%ntcwx = Model%ntcw
     if (Interstitial%nvdiff == Model%ntrac) then
       Interstitial%ntiwx = Model%ntiw
     else
@@ -8033,6 +8033,7 @@ module GFS_typedefs
     write (0,*) 'Interstitial%nsamftrac         = ', Interstitial%nsamftrac
     write (0,*) 'Interstitial%nscav             = ', Interstitial%nscav
     write (0,*) 'Interstitial%nspc1             = ', Interstitial%nspc1
+    write (0,*) 'Interstitial%ntcwx             = ', Interstitial%ntcwx
     write (0,*) 'Interstitial%ntiwx             = ', Interstitial%ntiwx
     write (0,*) 'Interstitial%nvdiff            = ', Interstitial%nvdiff
     write (0,*) 'Interstitial%phys_hydrostatic  = ', Interstitial%phys_hydrostatic
