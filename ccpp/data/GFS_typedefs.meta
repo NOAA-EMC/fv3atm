@@ -10922,3 +10922,24 @@
   dimensions = ()
   type = real
   kind = kind_phys
+[con_psat]
+  standard_name = saturation_pressure_at_triple_point_of_water
+  long_name = saturation pressure at triple point of water
+  units = Pa
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[karman]
+  standard_name = von_karman_constant
+  long_name = Von Karman constant
+  units = none
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[rainmin]
+  standard_name = lwe_thickness_of_minimum_rain_amount
+  long_name = liquid water equivalent thickness of minimum rain amount
+  units = m
+  dimensions = ()
+  type = real
+  kind = kind_phys
