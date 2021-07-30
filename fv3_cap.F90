@@ -25,11 +25,10 @@ module fv3gfs_cap_mod
                                     label_Finalize,                          &
                                     NUOPC_ModelGet
 !
-  use module_fv3_config,      only: quilting,                                &
+  use module_fv3_config,      only: quilting, output_fh,                     &
                                     nfhout, nfhout_hf, nsout, dt_atmos,      &
                                     nfhmax, nfhmax_hf,output_hfmax,          &
                                     output_interval,output_interval_hf,      &
-                                    alarm_output_hf, alarm_output,           &
                                     calendar, calendar_type,                 &
                                     force_date_from_configure,               &
                                     cplprint_flag,output_1st_tstep_rst,      &
@@ -40,8 +39,7 @@ module fv3gfs_cap_mod
                                     wrttasks_per_group, n_group,             &
                                     lead_wrttask, last_wrttask,              &
                                     output_grid, output_file,                &
-                                    nsout_io,                                &
-                                    iau_offset
+                                    nsout_io, iau_offset 
 !
   use module_fcst_grid_comp,  only: fcstSS => SetServices,                   &
                                     fcstGrid, numLevels, numSoilLayers,      &
@@ -176,8 +174,6 @@ module fv3gfs_cap_mod
     logical                                :: isPresent, isSet
     type(ESMF_VM)                          :: vm, fcstVM
     type(ESMF_Time)                        :: currTime, startTime, stopTime
-    type(ESMF_Time)                        :: alarm_output_hf_ring, alarm_output_ring
-    type(ESMF_Time)                        :: alarm_output_hf_stop, alarm_output_stop
     type(ESMF_TimeInterval)                :: RunDuration, timeStep, rsthour, IAU_offsetTI
     type(ESMF_Config)                      :: cf
     type(ESMF_RegridMethod_Flag)           :: regridmethod
@@ -186,9 +182,11 @@ module fv3gfs_cap_mod
 
     integer,dimension(6)                   :: date, date_init
     integer                                :: i, j, k, io_unit, urc, ierr
+    integer                                :: noutput_fh, nfh, nfh2
     integer                                :: petcount
     integer                                :: num_output_file
-    logical                                :: opened
+    real                                   :: output_startfh, outputfh, outputfh2(2)
+    logical                                :: opened, loutput_fh, lfreq
     character(ESMF_MAXSTR)                 :: name
     integer,dimension(:), allocatable      :: petList, fcstPetList, originPetList, targetPetList
     character(len=esmf_maxstr),allocatable :: fcstItemNameList(:)
@@ -197,7 +195,6 @@ module fv3gfs_cap_mod
     integer                                :: isrcTermProcessing
 
     character(len=*),parameter             :: subname='(fv3_cap:InitializeAdvertise)'
-    integer                                :: nfmout, nfsout , nfmout_hf, nfsout_hf
     real(kind=8)                           :: MPI_Wtime, timewri, timeis, timerhs
 !
 !------------------------------------------------------------------------
@@ -276,7 +273,10 @@ module fv3gfs_cap_mod
     call ESMF_ConfigGetAttribute(config=CF,value=iau_offset,default=0,label ='iau_offset:',rc=rc)
     if (iau_offset < 0) iau_offset=0
 
-    if(mype == 0) print *,'af nems config,quilting=',quilting,'calendar=', trim(calendar),' iau_offset=',iau_offset
+    noutput_fh = ESMF_ConfigGetLen(config=CF, label ='output_fh:',rc=rc)
+
+    if(mype == 0) print *,'af nems config,quilting=',quilting,'calendar=', trim(calendar),' iau_offset=',iau_offset, &
+      'noutput_fh=',noutput_fh
 !
     nfhout = 0 ; nfhmax_hf = 0 ; nfhout_hf = 0 ; nsout = 0
     if ( quilting ) then
@@ -334,13 +334,14 @@ module fv3gfs_cap_mod
         enddo
       endif
 !
-! variables for alarms
-      call ESMF_ConfigGetAttribute(config=CF, value=nfhout,   label ='nfhout:',   rc=rc)
-      call ESMF_ConfigGetAttribute(config=CF, value=nfhmax_hf,label ='nfhmax_hf:',rc=rc)
-      call ESMF_ConfigGetAttribute(config=CF, value=nfhout_hf,label ='nfhout_hf:',rc=rc)
-      call ESMF_ConfigGetAttribute(config=CF, value=nsout,    label ='nsout:',rc=rc)
+! variables for output
+      call ESMF_ConfigGetAttribute(config=CF, value=nfhout,   label ='nfhout:',   default=-1,rc=rc)
+      call ESMF_ConfigGetAttribute(config=CF, value=nfhmax_hf,label ='nfhmax_hf:',default=-1,rc=rc)
+      call ESMF_ConfigGetAttribute(config=CF, value=nfhout_hf,label ='nfhout_hf:',default=-1,rc=rc)
+      call ESMF_ConfigGetAttribute(config=CF, value=nsout,    label ='nsout:',    default=-1,rc=rc)
       nsout_io = nsout
-      if(mype==0) print *,'af nems config,nfhout,nsout=',nfhout,nfhmax_hf,nfhout_hf, nsout
+!
+      if(mype==0) print *,'af nems config,nfhout,nsout=',nfhout,nfhmax_hf,nfhout_hf, nsout,noutput_fh
 
     endif ! quilting
 !
@@ -471,6 +472,9 @@ module fv3gfs_cap_mod
     call ESMF_StateGet(fcstState, itemCount=FBCount, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
     if(mype == 0) print *,'af fcstCom FBCount= ',FBcount
+!
+! set start time for output
+      output_startfh = 0.
 !
 !-----------------------------------------------------------------------
 !***  create and initialize Write component(s).
@@ -649,71 +653,70 @@ module fv3gfs_cap_mod
       deallocate(targetPetList)
 !
 !---------------------------------------------------------------------------------
-!---  SET UP ALARM
+!---  set up output forecast time array
 !
-!--- for every time step output, overwrite nfhout
-
+!--- get current forecast length
+      if(iau_offset > 0) then
+        output_startfh = iau_offset
+      endif
+      if(mype==0) print *,'in fv3 cap init, output_startfh=',output_startfh,'nsout=',nsout, &
+        'iau_offset=',iau_offset,'nfhmax_hf=',nfhmax_hf,'nfhout_hf=',nfhout_hf, &
+        'nfhout=',nfhout
+!
+!--- set up output_fh with output forecast hours
+! if the run does not have iau, it will have output after first step integration as fh00
+! if the run has iau, it will start output at fh=00 at the cycle time (usually StartTime+IAU_offsetTI)
       if(nsout > 0) then
-        nfhout = int(nsout*dt_atmos/3600.)
-        nfmout = int((nsout*dt_atmos-nfhout*3600.)/60.)
-        nfsout = int(nsout*dt_atmos-nfhout*3600.-nfmout*60)
-      else
-        nfmout = 0
-        nfsout = 0
-      endif
-      call ESMF_TimeIntervalSet(output_interval, h=nfhout, m=nfmout,  s=nfsout, rc=rc)
-      if(mype==0) print *,'af set up output_interval,rc=',rc,'nfhout=',nfhout,nfmout,nfsout
-
-      if (nfhmax_hf > 0 .and. nsout <= 0) then
-
-        nfmout_hf = 0; nfsout_hf = 0
-        call ESMF_TimeIntervalSet(output_interval_hf, h=nfhout_hf, m=nfmout_hf, &
-                                  s=nfsout_hf, rc=rc)
-        call ESMF_TimeIntervalSet(output_hfmax, h=nfhmax_hf, m=0, s=0, rc=rc)
-        alarm_output_hf_stop = starttime + output_hfmax + output_interval_hf
-        if (currtime <= starttime+output_hfmax) then
-          nhf = (currtime-starttime)/output_interval_hf
-          alarm_output_hf_ring = startTime + (nhf+1_ESMF_KIND_I4)*output_interval_hf
-          if(iau_offset > 0) then
-            alarm_output_hf_ring = startTime + IAU_offsetTI
-            if( currtime > alarm_output_hf_ring ) then
-              alarm_output_hf_ring = startTime + (nhf+1_ESMF_KIND_I4)*output_interval_hf
-            endif
+!--- use nsout for output frequency nsout*dt_atmos
+        nfh = 0
+        if( nfhmax > output_startfh ) nfh = nint((nfhmax-output_startfh)/(nsout*dt_atmos/3600.))+1
+        if(nfh >0) then 
+          allocate(output_fh(nfh))
+          if( output_startfh == 0) then
+            output_fh(1) = dt_atmos/3600.
+          else
+            output_fh(1) = output_startfh
           endif
-          alarm_output_hf = ESMF_AlarmCreate(clock_fv3,name='ALARM_OUTPUT_HF',  &
-                                             ringTime =alarm_output_hf_ring,    &
-                                             ringInterval =output_interval_hf,  &  !<-- Time interval between
-                                             stoptime =alarm_output_hf_stop,    &  !<-- Time interval between
-                                             ringTimeStepCount=1,               &  !<-- The Alarm rings for this many timesteps
-                                             sticky           =.false.,         &  !<-- Alarm does not ring until turned off
-                                             rc               =rc)
-          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-          alarm_output_ring = startTime + output_hfmax + output_interval
-        else
-          nrg = (currtime-starttime-output_hfmax)/output_interval
-          alarm_output_ring = startTime + output_hfmax + (nrg+1_ESMF_KIND_I4) * output_interval
+          do i=2,nfh
+            output_fh(i) = (i-1)*nsout*dt_atmos/3600. + output_startfh
+          enddo
         endif
-      else
-        nrg = (currtime-starttime)/output_interval
-        alarm_output_ring = startTime + (nrg+1_ESMF_KIND_I4) * output_interval
-        if(iau_offset > 0) then
-          alarm_output_ring = startTime + IAU_offsetTI
-          if( currtime > alarm_output_ring ) then
-            alarm_output_ring = startTime + (nrg+1_ESMF_KIND_I4) * output_interval
+      elseif (nfhmax_hf > 0 ) then
+!--- use high frequency output and low frequency for output forecast time
+        nfh = 0
+        if( nfhout_hf>0 .and. nfhmax_hf>output_startfh) nfh = nint((nfhmax_hf-output_startfh)/nfhout_hf)+1
+        nfh2 = 0
+        if( nfhout>0 .and. nfhmax>nfhmax_hf) nfh2 = nint((nfhmax-nfhmax_hf)/nfhout)
+        if( nfh+nfh2 > 0) then
+          allocate(output_fh(nfh+nfh2))
+          if( output_startfh == 0) then
+            output_fh(1) = dt_atmos/3600.
+          else
+            output_fh(1) = output_startfh
           endif
+          do i=2,nfh
+            output_fh(i) = (i-1)*nfhout_hf + output_startfh
+          enddo
+          do i=1,nfh2
+              output_fh(nfh+i) = nfhmax_hf + i*nfhout
+          enddo
+        endif
+      elseif (nfhout > 0 ) then
+!--- use one output freqency
+        nfh = 0
+        if( nfhout > 0 .and. nfhmax>output_startfh) nfh = nint((nfhmax-output_startfh)/nfhout) + 1
+        if( nfh > 0 ) then
+          allocate(output_fh(nfh))
+          if( output_startfh == 0) then
+            output_fh(1) = dt_atmos/3600.
+          else
+            output_fh(1) = output_startfh
+          endif
+          do i=2,nfh
+            output_fh(i) = (i-1)*nfhout + output_startfh
+          enddo
         endif
       endif
-
-      call ESMF_TimeIntervalSet(output_interval, h=nfhout, m=nfmout, &
-                                s=nfsout, rc=rc)
-      alarm_output = ESMF_AlarmCreate(clock_fv3, name  ='ALARM_OUTPUT',    &
-                                      ringTime         =alarm_output_ring, & !<-- Forecast/Restart start time (ESMF)
-                                      ringInterval     =output_interval,   & !<-- Time interval between
-                                      ringTimeStepCount=1,                 & !<-- The Alarm rings for this many timesteps
-                                      sticky           =.false.,           & !<-- Alarm does not ring until turned off
-                                      rc               =rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 !
 !-----------------------------------------------------------------------
 !***  SET THE FIRST WRITE GROUP AS THE FIRST ONE TO ACT.
@@ -723,6 +726,56 @@ module fv3gfs_cap_mod
 !
 !end quilting
     endif
+!
+!-- set up output forecast time if output_fh is specified
+    if (noutput_fh > 0 ) then
+!--- use output_fh to sepcify output forecast time
+      loutput_fh = .true.
+      if(noutput_fh == 1) then
+        call ESMF_ConfigGetAttribute(CF,value=outputfh,label='output_fh:', rc=rc)
+        if(outputfh == -1) loutput_fh = .false.
+      endif
+      if( loutput_fh ) then
+        lfreq = .false.
+        if( allocated(output_fh)) deallocate(output_fh)
+        if(noutput_fh == 2) then
+          call ESMF_ConfigGetAttribute(CF,valueList=outputfh2,label='output_fh:', &
+             count=noutput_fh, rc=rc)
+          if(outputfh2(2) == -1) then
+            !--- output_hf is output frequency, the second item is -1
+            lfreq = .true.
+            nfh = 0
+            if( nfhmax>output_startfh) nfh = nint((nfhmax-output_startfh)/outputfh2(1)) + 1
+            if( nfh > 0) then
+              allocate(output_fh(nfh))
+              if( output_startfh == 0) then
+                output_fh(1) = dt_atmos/3600.
+              else
+                output_fh(1) = output_startfh
+              endif
+              do i=2,nfh
+                output_fh(i) = (i-1)*outputfh2(1) + output_startfh
+              enddo
+            endif
+          endif
+        endif
+        if( noutput_fh /= 2 .or. .not. lfreq ) then
+          allocate(output_fh(noutput_fh))
+          output_fh = 0
+          call ESMF_ConfigGetAttribute(CF,valueList=output_fh,label='output_fh:', &
+             count=noutput_fh, rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+          if( output_startfh == 0) then
+            if(output_fh(1)==0) output_fh(1) = dt_atmos/3600.
+          else
+            do i=1,noutput_fh
+              output_fh(i) = output_startfh + output_fh(i)
+            enddo
+          endif
+        endif
+      endif ! end loutput_fh
+    endif 
+    if(mype==0) print *,'output_fh=',output_fh(1:size(output_fh))
 !
     ! --- advertise Fields in importState and exportState -------------------
 
@@ -1013,8 +1066,8 @@ module fv3gfs_cap_mod
     type(ESMF_TimeInterval)     :: time_elapsed
 
     integer                     :: na, i, urc
+    integer                     :: nfseconds
     logical                     :: fcstpe
-    logical                     :: isAlarmEnabled, isAlarmRinging, lalarm
     character(len=*),parameter  :: subname='(fv3_cap:ModelAdvance_phase2)'
 
     character(240)              :: msgString
@@ -1051,47 +1104,18 @@ module fv3gfs_cap_mod
 
     time_elapsed  = currtime - starttime
     na = nint(time_elapsed/timeStep)
-
-    ! if(mype==0) print *,'in fv3_cap,in model run, advance2,na=',na
+    call ESMF_TimeIntervalGet(time_elapsed, s=nfseconds, rc=rc)
+!
+    if(mype==0) print *,'n fv3_cap,in model run, advance,na=',na
 
 !-------------------------------------------------------------------------------
-!*** if alarms ring, call data transfer and write grid comp run
+!*** if it is output time, call data transfer and write grid comp run
     if( quilting ) then
 
-      lalarm = .false.
-      if (nfhmax_hf > 0) then
-
-        if(currtime <= starttime+output_hfmax) then
-          isAlarmEnabled = ESMF_AlarmIsEnabled(alarm = ALARM_OUTPUT_HF, rc = RC)
-          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-          if(isAlarmEnabled) then
-            isAlarmRinging = ESMF_AlarmIsRinging(alarm = ALARM_OUTPUT_HF,rc = Rc)
-            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-            if (isAlarmRinging) LALARM = .true.
-          endif
-        else
-          isAlarmEnabled = ESMF_AlarmIsEnabled(alarm = ALARM_OUTPUT, rc = RC)
-          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-          if(isAlarmEnabled) then
-            isAlarmRinging = ESMF_AlarmIsRinging(alarm = ALARM_OUTPUT,rc = Rc)
-            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-            if (isAlarmRinging) LALARM = .true.
-          endif
-        endif
-
-      endif
+      output: if (ANY(nint(output_fh(:)*3600.0) == nfseconds)) then
 !
-      isAlarmEnabled = ESMF_AlarmIsEnabled(alarm = ALARM_OUTPUT, rc = RC)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-      if(isAlarmEnabled) then
-        isAlarmRinging = ESMF_AlarmIsRinging(alarm = ALARM_OUTPUT,rc = Rc)
-        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-        if (isAlarmRinging) LALARM = .true.
-      endif
-      ! if (mype == 0 .or. mype == lead_wrttask(1)) print *,' aft fcst run lalarm=',lalarm, &
-      !                                                     'FBcount=',FBcount,'na=',na
-
-      output: IF(lalarm .or. na==first_kdt ) then
+       if (mype == 0 .or. mype == lead_wrttask(1)) print *,' aft fcst run output time=',nfseconds, &
+       'FBcount=',FBcount,'na=',na
 
         timerhi = MPI_Wtime()
         call ESMF_VMEpochEnter(epoch=ESMF_VMEpoch_Buffer, rc=rc)
@@ -1121,15 +1145,9 @@ module fv3gfs_cap_mod
         if (ESMF_LogFoundError(rcToCheck=rc,  msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
         if (ESMF_LogFoundError(rcToCheck=urc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
-        ! if (mype == 0 .or. mype == lead_wrttask(n_group)) print *,'aft wrtgridcomp run,na=',na,  &
-        !                                                           ' time=', timerh- timerhi
-
         call ESMF_LogWrite('Model Advance: after wrtcomp run ', ESMF_LOGMSG_INFO, rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-        ! if (mype == 0 .or. mype == lead_wrttask(n_group)) print *,'fv3_cap,aft model advance phase2,na=', &
-         !if (mype == 0 .or. mype == lead_wrttask(n_group)) print *,'fv3_cap,aft model advance phase2,na=', &
-         !                                                          na,' time=', MPI_Wtime()- timewri
         if (n_group == write_groups) then
           n_group = 1
         else
