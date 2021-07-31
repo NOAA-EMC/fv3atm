@@ -2612,6 +2612,18 @@
   units = flag
   dimensions = ()
   type = logical
+[cpl_imp_mrg]
+  standard_name = flag_for_merging_imported_data
+  long_name = flag controlling cpl_imp_mrg for imported data (default off)
+  units = flag
+  dimensions = ()
+  type = logical
+[cpl_imp_dbg]
+  standard_name = flag_for_debugging_merged_imported_data
+  long_name = flag controlling cpl_imp_dbg for imported data (default off)
+  units = flag
+  dimensions = ()
+  type = logical
 [lsidea]
   standard_name = flag_for_integrated_dynamics_through_earths_atmosphere
   long_name = flag for idealized physics

@@ -158,11 +158,9 @@ logical :: chksum_debug = .false.
 logical :: dycore_only  = .false.
 logical :: debug        = .false.
 !logical :: debug        = .true.
-logical :: merge_import = .true.
-logical :: debug_merge  = .false.
 logical :: sync         = .false.
 real    :: avg_max_length=3600.
-namelist /atmos_model_nml/ blocksize, chksum_debug, dycore_only, debug, sync, ccpp_suite, avg_max_length, merge_import, debug_merge
+namelist /atmos_model_nml/ blocksize, chksum_debug, dycore_only, debug, sync, ccpp_suite, avg_max_length
 
 type (time_type) :: diag_time, diag_time_fhzero
 
@@ -1696,7 +1694,7 @@ end subroutine atmos_data_type_chksum
             call ESMF_FieldGet(importFields(n),farrayPtr=datar82d,localDE=0, rc=rc)
             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
             datar8 = datar82d
-            if (merge_import) then
+            if (GFS_control%cpl_imp_mrg) then
               mergeflg(:,:) = datar82d(:,:).eq.missing_value
             endif
             if (mpp_pe() == mpp_root_pe() .and. debug) print *,'in cplIMP,atmos gets ',trim(impfield_name),' datar8=', &
@@ -2459,7 +2457,7 @@ end subroutine atmos_data_type_chksum
         endif
 
           ! write post merge import data to NetCDF file.
-          if (debug_merge) then
+          if (GFS_control%cpl_imp_dbg) then
             call ESMF_FieldGet(importFields(n), grid=grid, rc=rc)
             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 

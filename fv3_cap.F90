@@ -32,7 +32,7 @@ module fv3gfs_cap_mod
                                     calendar, calendar_type,                 &
                                     force_date_from_configure,               &
                                     cplprint_flag,output_1st_tstep_rst,      &
-                                    first_kdt,diagnostic
+                                    first_kdt
 
   use module_fv3_io_def,      only: num_pes_fcst,write_groups,               &
                                     num_files, filename_base,                &
@@ -217,16 +217,6 @@ module fv3gfs_cap_mod
 
     cplprint_flag = (trim(value)=="true")
     write(msgString,'(A,l6)') trim(subname)//' cplprint_flag = ',cplprint_flag
-    call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_INFO, rc=rc)
-
-    call ESMF_AttributeGet(gcomp, name="Diagnostic", value=value, defaultValue="0", &
-                           convention="NUOPC", purpose="Instance", rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-    diagnostic = ESMF_UtilString2Int(value, &
-      specialStringList=(/"min","max"/), &
-      specialValueList=(/0,65535/), rc=rc)
-    write(msgString,'(A,I16)') trim(subname)//' diagnostic = ',diagnostic
     call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_INFO, rc=rc)
 
     ! Read in cap debug flag
