@@ -1075,9 +1075,19 @@ module FV3GFS_io_mod
           Sfcprop(nb)%zorlwav(ix)  = Sfcprop(nb)%zorlw(ix)
         endif
 
+        if (nint(Sfcprop(nb)%stype(ix)) == 14 .or.  int(Sfcprop(nb)%stype(ix)+0.5) <= 0) then
+          Sfcprop(nb)%landfrac(ix) = zero
+          Sfcprop(nb)%stype(ix) = -999.0
+          if (Sfcprop(nb)%lakefrac(ix) > zero) then
+            Sfcprop(nb)%lakefrac(ix) = one
+          endif
+        endif
+
         if (Model%frac_grid) then
           if (Sfcprop(nb)%landfrac(ix) > -999.0_r8) then
             Sfcprop(nb)%slmsk(ix) = ceiling(Sfcprop(nb)%landfrac(ix)-1.0e-6)
+            if (Sfcprop(nb)%slmsk(ix) == 1 .and. nint(Sfcprop(nb)%stype(ix)) == 14) &
+              Sfcprop(nb)%slmsk(ix) = 0
             if (Sfcprop(nb)%lakefrac(ix) > zero) then
               Sfcprop(nb)%oceanfrac(ix) = zero ! lake & ocean don't coexist in a cell
               if (nint(Sfcprop(nb)%slmsk(ix)) /= 1) then
@@ -1127,7 +1137,8 @@ module FV3GFS_io_mod
               if (Sfcprop(nb)%fice(ix) >= Model%min_lakeice) Sfcprop(nb)%slmsk(ix) = 2.0
             else
               Sfcprop(nb)%slmsk(ix) = nint(Sfcprop(nb)%landfrac(ix))
-              if (Sfcprop(nb)%stype(ix) <= 0) Sfcprop(nb)%slmsk(ix) = zero
+              if (Sfcprop(nb)%stype(ix) <= 0 .or. nint(Sfcprop(nb)%stype(ix)) == 14) &
+                Sfcprop(nb)%slmsk(ix) = zero
               if (nint(Sfcprop(nb)%slmsk(ix)) == 0) then
                 Sfcprop(nb)%oceanfrac(ix) = one
                 Sfcprop(nb)%landfrac(ix)  = zero
@@ -1140,7 +1151,8 @@ module FV3GFS_io_mod
               endif
             endif
           else
-            if (nint(Sfcprop(nb)%slmsk(ix)) == 1 .and. Sfcprop(nb)%stype(ix) > 0) then
+            if (nint(Sfcprop(nb)%slmsk(ix)) == 1 .and. Sfcprop(nb)%stype(ix) > 0      &
+                                                 .and. nint(Sfcprop(nb)%stype(ix)) /= 14) then
               Sfcprop(nb)%landfrac(ix)  = one
               Sfcprop(nb)%lakefrac(ix)  = zero
               Sfcprop(nb)%oceanfrac(ix) = zero
