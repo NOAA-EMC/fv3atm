@@ -2794,41 +2794,6 @@ end subroutine atmos_data_type_chksum
               localrc = ESMF_RC_NOT_FOUND
           end select
         enddo
-        if (GFS_control%cplchm) then
-          select case (trim(fieldname))
-            case ('inst_pres_interface', &
-                  'inst_pres_levels', &
-                  'inst_geop_interface', &
-                  'inst_geop_levels', &
-                  'inst_temp_levels', &
-                  'inst_zonal_wind_levels', &
-                  'inst_merid_wind_levels', &
-                  'inst_tracer_mass_frac', &
-                  'inst_pbl_height', &
-                  'surface_cell_area', &
-                  'inst_convective_rainfall_amount', &
-                  'inst_friction_velocity', &
-                  'inst_rainfall_amount', &
-                  'inst_land_sea_mask', &
-                  'inst_temp_height_surface', &
-                  'inst_up_sensi_heat_flx', &
-                  'inst_surface_roughness', &
-                  'inst_soil_moisture_content', &
-                  'inst_liq_nonconv_tendency_levels', &
-                  'inst_ice_nonconv_tendency_levels', &
-                  'inst_cloud_frac_levels', &
-                  'inst_zonal_wind_height10m', &
-                  'inst_merid_wind_height10m', &
-                  'inst_surface_soil_wetness', &
-                  'ice_fraction_in_atm', &
-                  'lake_fraction', &
-                  'ocean_fraction', &
-                  'surface_snow_area_fraction')
-                localrc = ESMF_SUCCESS
-              case default
-                ! -- still not found
-          end select
-        end if
         if (ESMF_LogFoundError(rcToCheck=localrc, msg="Failure to populate exported field: "//trim(fieldname), &
                                line=__LINE__, file=__FILE__, rcToReturn=rc)) return
       endif
