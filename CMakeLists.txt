@@ -68,10 +68,6 @@ if(MULTI_GASES)
   list(APPEND _fv3dycore_defs_private MULTI_GASES)
 endif()
 
-if(MOLECULAR_DIFFUSION)
-  list(APPEND _fv3dycore_defs_private MOLECULAR_DIFFUSION)
-endif()
-
 if(DEEP_ATMOS_DYNAMICS)
   list(APPEND _fv3dycore_defs_private DEEP_ATMOS_DYNAMICS)
 endif()
