@@ -2513,7 +2513,6 @@ end subroutine atmos_data_type_chksum
     !--- local variables
     integer                :: i, j, k, idx, ix
     integer                :: isc, iec, jsc, jec
-    integer                :: isc_g, iec_g, jsc_g, jec_g
     integer                :: ib, jb, nb, nsb, nk
     integer                :: sphum, liq_wat, ice_wat, o3mr
     real(GFS_kind_phys)    :: rtime, rtimek
@@ -2586,10 +2585,6 @@ end subroutine atmos_data_type_chksum
       end if
 
       if (isFound) then
-          isc_g = Atm(mygrid)%bd%isc
-          iec_g = Atm(mygrid)%bd%iec
-          jsc_g = Atm(mygrid)%bd%jsc
-          jec_g = Atm(mygrid)%bd%jec
 !$omp parallel do default(shared) private(nb) reduction(max:localrc)
         do nb = 1, Atm_block%nblks
           select case (trim(fieldname))
@@ -2746,35 +2741,35 @@ end subroutine atmos_data_type_chksum
               call block_data_copy_or_fill(datar82d, DYCORE_data(nb)%coupling%z_bot, zeror8, Atm_block, nb, rc=localrc)
             !--- JEDI fields
             case ('u')
-              call block_atmos_copy(datar83d, Atm(mygrid)%u(isc_g:iec_g,jsc_g:jec_g,:), Atm_block, nb, rc=localrc)
+              call block_atmos_copy(datar83d, Atm(mygrid)%u(isc:iec,jsc:jec,:), Atm_block, nb, rc=localrc)
             case ('v')
-              call block_atmos_copy(datar83d, Atm(mygrid)%v(isc_g:iec_g,jsc_g:jec_g,:), Atm_block, nb, rc=localrc)
+              call block_atmos_copy(datar83d, Atm(mygrid)%v(isc:iec,jsc:jec,:), Atm_block, nb, rc=localrc)
             case ('ua')
-              call block_atmos_copy(datar83d, Atm(mygrid)%ua(isc_g:iec_g,jsc_g:jec_g,:),Atm_block, nb, rc=localrc)
+              call block_atmos_copy(datar83d, Atm(mygrid)%ua(isc:iec,jsc:jec,:),Atm_block, nb, rc=localrc)
             case ('va')
-              call block_atmos_copy(datar83d, Atm(mygrid)%va(isc_g:iec_g,jsc_g:jec_g,:), Atm_block, nb, rc=localrc)
+              call block_atmos_copy(datar83d, Atm(mygrid)%va(isc:iec,jsc:jec,:), Atm_block, nb, rc=localrc)
             case ('t')
-              call block_atmos_copy(datar83d, Atm(mygrid)%pt(isc_g:iec_g,jsc_g:jec_g,:), Atm_block, nb, rc=localrc)
+              call block_atmos_copy(datar83d, Atm(mygrid)%pt(isc:iec,jsc:jec,:), Atm_block, nb, rc=localrc)
             case ('delp')
-              call block_atmos_copy(datar83d, Atm(mygrid)%delp(isc_g:iec_g,jsc_g:jec_g,:), Atm_block, nb, rc=localrc)
+              call block_atmos_copy(datar83d, Atm(mygrid)%delp(isc:iec,jsc:jec,:), Atm_block, nb, rc=localrc)
             case ('sphum')
               sphum = get_tracer_index(MODEL_ATMOS, 'sphum')
-              call block_atmos_copy(datar83d, Atm(mygrid)%q(isc_g:iec_g,jsc_g:jec_g,:,:), sphum, Atm_block, nb, rc=localrc)
+              call block_atmos_copy(datar83d, Atm(mygrid)%q(isc:iec,jsc:jec,:,:), sphum, Atm_block, nb, rc=localrc)
             case ('ice_wat')
               ice_wat = get_tracer_index(MODEL_ATMOS, 'ice_wat')
-              call block_atmos_copy(datar83d, Atm(mygrid)%q(isc_g:iec_g,jsc_g:jec_g,:,:), ice_wat, Atm_block, nb, rc=localrc)
+              call block_atmos_copy(datar83d, Atm(mygrid)%q(isc:iec,jsc:jec,:,:), ice_wat, Atm_block, nb, rc=localrc)
             case ('liq_wat')
               liq_wat = get_tracer_index(MODEL_ATMOS, 'liq_wat')
-              call block_atmos_copy(datar83d, Atm(mygrid)%q(isc_g:iec_g,jsc_g:jec_g,:,:), liq_wat, Atm_block, nb, rc=localrc)
+              call block_atmos_copy(datar83d, Atm(mygrid)%q(isc:iec,jsc:jec,:,:), liq_wat, Atm_block, nb, rc=localrc)
             case ('o3mr')
               o3mr = get_tracer_index(MODEL_ATMOS, 'o3mr')
-              call block_atmos_copy(datar83d, Atm(mygrid)%q(isc_g:iec_g,jsc_g:jec_g,:,:), o3mr, Atm_block, nb, rc=localrc)
+              call block_atmos_copy(datar83d, Atm(mygrid)%q(isc:iec,jsc:jec,:,:), o3mr, Atm_block, nb, rc=localrc)
             case ('phis')
-              call block_atmos_copy(datar82d, Atm(mygrid)%phis(isc_g:iec_g,jsc_g:jec_g), Atm_block, nb, rc=localrc)
+              call block_atmos_copy(datar82d, Atm(mygrid)%phis(isc:iec,jsc:jec), Atm_block, nb, rc=localrc)
             case ('u_srf')
-              call block_atmos_copy(datar82d, Atm(mygrid)%u_srf(isc_g:iec_g,jsc_g:jec_g), Atm_block, nb, rc=localrc)
+              call block_atmos_copy(datar82d, Atm(mygrid)%u_srf(isc:iec,jsc:jec), Atm_block, nb, rc=localrc)
             case ('v_srf')
-              call block_atmos_copy(datar82d, Atm(mygrid)%v_srf(isc_g:iec_g,jsc_g:jec_g), Atm_block, nb, rc=localrc)
+              call block_atmos_copy(datar82d, Atm(mygrid)%v_srf(isc:iec,jsc:jec), Atm_block, nb, rc=localrc)
             case ('weasd')
               call block_data_copy(datar82d, GFS_data(nb)%sfcprop%weasd, Atm_block, nb, rc=localrc)
             case ('tsea')
