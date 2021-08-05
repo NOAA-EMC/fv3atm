@@ -819,7 +819,7 @@ module fv3gfs_cap_mod
       ! -- realize connected fields in exportState
       call realizeConnectedCplFields(exportState, fcstGrid,                          &
                                      numLevels, numSoilLayers, numTracers,           &
-                                     exportFieldsInfo, 'FV3 Export', exportFields, rc)
+                                     exportFieldsInfo, 'FV3 Export', exportFields, 0.0_ESMF_KIND_R8, rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__,  file=__FILE__)) return
 
       ! -- initialize export fields if applicable
@@ -829,7 +829,7 @@ module fv3gfs_cap_mod
       ! -- realize connected fields in importState
       call realizeConnectedCplFields(importState, fcstGrid,                          &
                                      numLevels, numSoilLayers, numTracers,           &
-                                     importFieldsInfo, 'FV3 Import', importFields, rc)
+                                     importFieldsInfo, 'FV3 Import', importFields, 9.99e20_ESMF_KIND_R8, rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__,  file=__FILE__)) return
 
     end if

@@ -275,7 +275,7 @@ subroutine update_atmos_radiation_physics (Atmos)
 !--- if coupled, assign coupled fields
 
       if (.not. GFS_control%cplchm) then
-        call assign_importdata(rc)
+        call assign_importdata(jdat(:),rc)
       endif
 
       ! Calculate total non-physics tendencies by substracting old GFS Stateout
@@ -1621,13 +1621,14 @@ end subroutine atmos_data_type_chksum
                 Atmos%lat      )
   end subroutine dealloc_atmos_data_type
 
-  subroutine assign_importdata(rc)
+  subroutine assign_importdata(jdat, rc)
 
     use module_cplfields,  only: importFields, nImportFields, queryImportFields, &
                                  importFieldsValid
     use ESMF
 !
     implicit none
+    integer, intent(in)  :: jdat(8)
     integer, intent(out) :: rc
 
     !--- local variables
@@ -1639,9 +1640,15 @@ end subroutine atmos_data_type_chksum
     real(kind=ESMF_KIND_R8),  dimension(:,:), pointer  :: datar82d
     real(kind=ESMF_KIND_R8),  dimension(:,:,:), pointer:: datar83d
     real(kind=GFS_kind_phys), dimension(:,:), pointer  :: datar8
+    logical,                  dimension(:,:), pointer  :: mergeflg
     real(kind=GFS_kind_phys)                           :: tem, ofrac
     logical found, isFieldCreated, lcpl_fice
+    real(ESMF_KIND_R8), parameter :: missing_value = 9.99e20_ESMF_KIND_R8
+    type(ESMF_Grid)  :: grid
+    type(ESMF_Field) :: dbgField
+    character(19)    :: currtimestring
     real (kind=GFS_kind_phys), parameter :: z0ice=1.1    !  (in cm)
+
 !
       real(kind=GFS_kind_phys), parameter :: himax = 8.0      !< maximum ice thickness allowed
 !     real(kind=GFS_kind_phys), parameter :: himin = 0.1      !< minimum ice thickness required
@@ -1660,6 +1667,7 @@ end subroutine atmos_data_type_chksum
     lcpl_fice = .false.
 
     allocate(datar8(isc:iec,jsc:jec))
+    allocate(mergeflg(isc:iec,jsc:jec))
 
 !   if (mpp_pe() == mpp_root_pe() .and. debug) print *,'in cplImp,dim=',isc,iec,jsc,jec
 !   if (mpp_pe() == mpp_root_pe() .and. debug) print *,'in cplImp,GFS_data, size', size(GFS_data)
@@ -1676,6 +1684,7 @@ end subroutine atmos_data_type_chksum
       if (isFieldCreated) then ! put the data from local cubed sphere grid to column grid for phys
 
         datar8 = -99999.0
+        mergeflg = .false.
         call ESMF_FieldGet(importFields(n), dimCount=dimCount ,typekind=datatype, &
                            name=impfield_name, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
@@ -1685,6 +1694,9 @@ end subroutine atmos_data_type_chksum
             call ESMF_FieldGet(importFields(n),farrayPtr=datar82d,localDE=0, rc=rc)
             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
             datar8 = datar82d
+            if (GFS_control%cpl_imp_mrg) then
+              mergeflg(:,:) = datar82d(:,:).eq.missing_value
+            endif
             if (mpp_pe() == mpp_root_pe() .and. debug) print *,'in cplIMP,atmos gets ',trim(impfield_name),' datar8=', &
                                                                datar8(isc,jsc), maxval(datar8), minval(datar8)
             found = .true.
@@ -1779,9 +1791,17 @@ end subroutine atmos_data_type_chksum
                 do i=isc,iec
                   nb = Atm_block%blkno(i,j)
                   ix = Atm_block%ixp(i,j)
-                  if (GFS_data(nb)%Sfcprop%oceanfrac(ix) > zero .and. datar8(i,j) > 150.0) then
-!                   GFS_data(nb)%Coupling%tseain_cpl(ix) = datar8(i,j)
-                    GFS_data(nb)%Sfcprop%tsfco(ix)       = datar8(i,j)
+                  if (GFS_Data(nb)%Sfcprop%oceanfrac(ix) > zero .and. datar8(i,j) > 150.0) then
+                    if(mergeflg(i,j)) then
+!                     GFS_Data(nb)%Coupling%tseain_cpl(ix) = &
+!                       GFS_Data(nb)%Sfcprop%tsfc(ix)
+                      GFS_Data(nb)%Sfcprop%tsfco(ix)       = &
+                        GFS_Data(nb)%Sfcprop%tsfc(ix)
+                      datar8(i,j) = GFS_Data(nb)%Sfcprop%tsfc(ix)
+                    else
+!                     GFS_Data(nb)%Coupling%tseain_cpl(ix) = datar8(i,j)
+                      GFS_Data(nb)%Sfcprop%tsfco(ix)       = datar8(i,j)
+                    endif
                   endif
                 enddo
               enddo
@@ -2436,10 +2456,29 @@ end subroutine atmos_data_type_chksum
           endif
         endif
 
+          ! write post merge import data to NetCDF file.
+          if (GFS_control%cpl_imp_dbg) then
+            call ESMF_FieldGet(importFields(n), grid=grid, rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+            dbgField = ESMF_FieldCreate(grid=grid, farrayPtr=datar8, name=impfield_name, rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+            write (currtimestring, "(I4.4,'-',I2.2,'-',I2.2,'T',I2.2,':',I2.2,':',I2.2)") &
+              jdat(1), jdat(2), jdat(3), jdat(5), jdat(6), jdat(7)
+            call ESMF_FieldWrite(dbgField, fileName='fv3_merge_'//trim(impfield_name)//'_'// &
+              trim(currtimestring)//'.nc', rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+            call ESMF_FieldDestroy(dbgField, rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+          endif
+
         endif ! if (found) then
       endif   ! if (isFieldCreated) then
     enddo
 !
+    deallocate(mergeflg)
     deallocate(datar8)
 
 ! update sea ice related fields:
