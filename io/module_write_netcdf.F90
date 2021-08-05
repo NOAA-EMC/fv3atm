@@ -398,7 +398,7 @@ module module_write_netcdf
     end if
 
   end subroutine write_netcdf
-
+!
 !----------------------------------------------------------------------------------------
   subroutine get_global_attr(fldbundle, ncid, rc)
     type(ESMF_FieldBundle), intent(in) :: fldbundle
