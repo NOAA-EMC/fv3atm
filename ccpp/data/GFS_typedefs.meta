@@ -2556,6 +2556,12 @@
   units = flag
   dimensions = ()
   type = logical
+[cplice]
+  standard_name = flag_for_sea_ice_coupling
+  long_name = flag controlling cplice collection (default on)
+  units = flag
+  dimensions = ()
+  type = logical
 [cplwav]
   standard_name = flag_for_ocean_wave_coupling
   long_name = flag controlling cplwav collection (default off)
@@ -2574,9 +2580,21 @@
   units = flag
   dimensions = ()
   type = logical
+[cpl_imp_mrg]
+  standard_name = flag_for_merging_imported_data
+  long_name = flag controlling cpl_imp_mrg for imported data (default off)
+  units = flag
+  dimensions = ()
+  type = logical
+[cpl_imp_dbg]
+  standard_name = flag_for_debugging_merged_imported_data
+  long_name = flag controlling cpl_imp_dbg for imported data (default off)
+  units = flag
+  dimensions = ()
+  type = logical
 [use_cice_alb]
-  standard_name = flag_for_cice_albedo
-  long_name = flag for using ice albedos form CICE when coupled (default on)
+ standard_name = flag_for_cice_albedo
+ long_name = flag for using ice albedos form CICE when coupled (default false)
   units = flag
   dimensions = ()
   type = logical
@@ -4339,6 +4357,26 @@
   dimensions = ()
   type = real
   kind = kind_phys
+[rlmx]
+  standard_name = maximum_allowed_mixing_length_in_boundary_layer_mass_flux_scheme
+  long_name = maximum allowed mixing length in boundary layer mass flux scheme
+  units = m
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[elmx]
+  standard_name = maximum_allowed_dissipation_mixing_length_in_boundary_layer_mass_flux_scheme
+  long_name = maximum allowed dissipation mixing length in boundary layer mass flux scheme
+  units = m
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[sfc_rlm]
+  standard_name = choice_of_near_surface_mixing_length_in_boundary_layer_mass_flux_scheme
+  long_name = choice of near surface mixing length in boundary layer mass flux scheme
+  units = none
+  dimensions = ()
+  type = integer
 [h0facu]
   standard_name = multiplicative_tuning_parameter_for_reduced_surface_heat_fluxes_due_to_canopy_heat_storage
   long_name = canopy heat storage factor for sensible heat flux in unstable surface layer
