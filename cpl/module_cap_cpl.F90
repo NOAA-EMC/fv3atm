@@ -139,7 +139,7 @@ module module_cap_cpl
 
     subroutine realizeConnectedCplFields(state, grid,                          &
                                          numLevels, numSoilLayers, numTracers, &
-                                         fields_info, state_tag, fieldList, rc)
+                                         fields_info, state_tag, fieldList, fill_value, rc)
 
       use field_manager_mod,  only: MODEL_ATMOS
       use tracer_manager_mod, only: get_number_tracers, get_tracer_names
@@ -152,17 +152,27 @@ module module_cap_cpl
       type(FieldInfo), dimension(:),  intent(in)  :: fields_info
       character(len=*),               intent(in)  :: state_tag                              !< Import or export.
       type(ESMF_Field), dimension(:), intent(out) :: fieldList
+      real(ESMF_KIND_R8), optional  , intent(in)  :: fill_value
       integer,                        intent(out) :: rc
 
       ! local variables
+
       integer          :: item, pos, tracerCount
       logical          :: isConnected
       type(ESMF_Field) :: field
+      real(ESMF_KIND_R8) :: l_fill_value
+      real(ESMF_KIND_R8), parameter :: d_fill_value = 0._ESMF_KIND_R8
       type(ESMF_StateIntent_Flag) :: stateintent
       character(len=32), allocatable, dimension(:) :: tracerNames, tracerUnits
 
       ! begin
       rc = ESMF_SUCCESS
+
+      if (present(fill_value)) then
+        l_fill_value = fill_value
+      else
+        l_fill_value = d_fill_value
+      end if
 
       ! attach list of tracer names to exported tracer field as metadata
       call ESMF_StateGet(state, stateintent=stateintent, rc=rc)
@@ -221,8 +231,8 @@ module module_cap_cpl
           call NUOPC_Realize(state, field=field, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-          ! -- zero out field
-          call ESMF_FieldFill(field, dataFillScheme="const", const1=0._ESMF_KIND_R8, rc=rc)
+          ! -- initialize field value
+          call ESMF_FieldFill(field, dataFillScheme="const", const1=l_fill_value, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
           ! -- save field
