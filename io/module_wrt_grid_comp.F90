@@ -66,6 +66,7 @@
       integer,save      :: mytile                                         !<-- the tile number in write task
       integer,save      :: wrt_mpi_comm                                   !<-- the mpi communicator in the write comp
       integer,save      :: idate(7)
+      logical,save      :: write_nsflip
       logical,save      :: first_init=.false.
       logical,save      :: first_run=.false.
       logical,save      :: first_getlatlon=.true.
@@ -259,6 +260,11 @@
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
         line=__LINE__, file=__FILE__)) return
 
+      call ESMF_ConfigGetAttribute(config=CF,value=write_nsflip,default=.false., &
+                                   label='write_nsflip:',rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, file=__FILE__)) return
+
 
     ! chunksizes for netcdf_parallel
     call ESMF_ConfigGetAttribute(config=CF,value=ichunk2d,default=0,label ='ichunk2d:',rc=rc)
@@ -432,9 +438,15 @@
 !
         allocate(slat(jmo), lat(jmo), lon(imo))
         call splat(4, jmo, slat)
-        do j=1,jmo
-          lat(jmo-j+1) = asin(slat(j)) * radi
-        enddo
+        if(write_nsflip) then
+          do j=1,jmo
+            lat(j) = asin(slat(j)) * radi
+          enddo
+        else
+          do j=1,jmo
+            lat(jmo-j+1) = asin(slat(j)) * radi
+          enddo
+        endif
         wrt_int_state%latstart = lat(1)
         wrt_int_state%latlast  = lat(jmo)
         do j=1,imo
@@ -501,15 +513,27 @@
         if (mod(jmo,2) == 0) then
           ! if jmo even, lats do not include poles and equator
           delat = 180.d0/real(jmo,8)
-          do j=1,jmo
-            lat(j) = -90.d0 + 0.5*delat + real(j-1,8)*delat
-          enddo
+          if(write_nsflip) then
+            do j=1,jmo
+              lat(j) = 90.d0 - 0.5*delat - real(j-1,8)*delat
+            enddo
+          else
+            do j=1,jmo
+              lat(j) = -90.d0 + 0.5*delat + real(j-1,8)*delat
+            enddo
+          endif
         else
           ! if jmo odd, lats include poles and equator
           delat = 180.d0/real(jmo-1,8)
-          do j=1,jmo
-            lat(j) = -90.d0 + real(j-1,8)*delat
-          enddo
+          if(write_nsflip) then
+            do j=1,jmo
+              lat(j) = 90.d0 - real(j-1,8)*delat
+            enddo
+          else
+            do j=1,jmo
+              lat(j) = -90.d0 + real(j-1,8)*delat
+            enddo
+          endif
         endif
         wrt_int_state%latstart = lat(1)
         wrt_int_state%latlast  = lat(jmo)
