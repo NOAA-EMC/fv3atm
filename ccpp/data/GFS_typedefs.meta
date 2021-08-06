@@ -1331,7 +1331,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme .or. flag_for_cice_albedo == .true.)
+  active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme .or. flag_for_cice_albedo .eqv. .true.)
 [albdifvis_ice]
   standard_name = surface_albedo_diffuse_visible_over_ice
   long_name = diffuse surface albedo visible band over ice
@@ -1339,7 +1339,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme .or. flag_for_cice_albedo == .true.)
+  active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme .or. flag_for_cice_albedo .eqv. .true.)
 [albdirnir_ice]
   standard_name = surface_albedo_direct_NIR_over_ice
   long_name = direct surface albedo NIR band over ice
@@ -1347,7 +1347,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme .or. flag_for_cice_albedo == .true.)
+  active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme .or. flag_for_cice_albedo .eqv. .true.)
 [albdifnir_ice]
   standard_name = surface_albedo_diffuse_NIR_over_ice
   long_name = diffuse surface albedo NIR band over ice
@@ -1355,7 +1355,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme .or. flag_for_cice_albedo == .true.)
+  active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme .or. flag_for_cice_albedo .eqv. .true.)
 [wetness]
   standard_name = normalized_soil_wetness_for_land_surface_model
   long_name = normalized soil wetness for lsm
