@@ -1077,7 +1077,7 @@ module FV3GFS_io_mod
 
         if (nint(Sfcprop(nb)%stype(ix)) == 14 .or.  int(Sfcprop(nb)%stype(ix)+0.5) <= 0) then
           Sfcprop(nb)%landfrac(ix) = zero
-          Sfcprop(nb)%stype(ix) = -999.0
+          Sfcprop(nb)%stype(ix) = 0
           if (Sfcprop(nb)%lakefrac(ix) > zero) then
             Sfcprop(nb)%lakefrac(ix) = one
           endif
@@ -1522,9 +1522,9 @@ module FV3GFS_io_mod
     nvar2o = 18
     if (Model%lsm == Model%lsm_ruc) then
       if (Model%rdlai) then
-        nvar2r = 19
+        nvar2r = 15
       else
-        nvar2r = 18
+        nvar2r = 14
       endif
       nvar3  = 5
     else
