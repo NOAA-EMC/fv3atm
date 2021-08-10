@@ -8247,8 +8247,8 @@
   type = real
   kind = kind_phys
 [semis_water]
-  standard_name = surface_longwave_emissivity_over_water_interstitial
-  long_name = surface lw emissivity in fraction over water (temporary use as interstitial)
+  standard_name = surface_longwave_emissivity_over_water
+  long_name = surface lw emissivity in fraction over water
   units = frac
   dimensions = (horizontal_loop_extent)
   type = real
@@ -9808,13 +9808,6 @@
 [tsfc_water]
   standard_name = surface_skin_temperature_over_water
   long_name = surface skin temperature over water
-  units = K
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-[tsfc_land]
-  standard_name = surface_skin_temperature_over_land_interstitial
-  long_name = surface skin temperature over land  (temporary use as interstitial)
   units = K
   dimensions = (horizontal_loop_extent)
   type = real
