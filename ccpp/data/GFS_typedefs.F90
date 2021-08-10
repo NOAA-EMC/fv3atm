@@ -327,14 +327,16 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: smcwtdxy(:)  => null()  !<
     real (kind=kind_phys), pointer :: deeprechxy(:)=> null()  !<
     real (kind=kind_phys), pointer :: rechxy  (:)  => null()  !<
-    real (kind=kind_phys), pointer :: albdvis_lnd  (:) => null()  !<
-    real (kind=kind_phys), pointer :: albdnir_lnd  (:) => null()  !<
-    real (kind=kind_phys), pointer :: albivis_lnd  (:) => null()  !<
-    real (kind=kind_phys), pointer :: albinir_lnd  (:) => null()  !<
-    real (kind=kind_phys), pointer :: albdvis_ice  (:) => null()  !<
-    real (kind=kind_phys), pointer :: albdnir_ice  (:) => null()  !<
-    real (kind=kind_phys), pointer :: albivis_ice  (:) => null()  !<
-    real (kind=kind_phys), pointer :: albinir_ice  (:) => null()  !<
+    real (kind=kind_phys), pointer :: albdirvis_lnd (:) => null()  !<
+    real (kind=kind_phys), pointer :: albdirnir_lnd (:) => null()  !<
+    real (kind=kind_phys), pointer :: albdifvis_lnd (:) => null()  !<
+    real (kind=kind_phys), pointer :: albdifnir_lnd (:) => null()  !<
+
+    real (kind=kind_phys), pointer :: albdirvis_ice (:) => null()  !<
+    real (kind=kind_phys), pointer :: albdifvis_ice (:) => null()  !<
+    real (kind=kind_phys), pointer :: albdirnir_ice (:) => null()  !<
+    real (kind=kind_phys), pointer :: albdifnir_ice (:) => null()  !<
+!   real (kind=kind_phys), pointer :: sfalb_ice     (:) => null()  !<
 
     real (kind=kind_phys), pointer :: snicexy   (:,:) => null()  !<
     real (kind=kind_phys), pointer :: snliqxy   (:,:) => null()  !<
@@ -456,10 +458,10 @@ module GFS_typedefs
 !   real (kind=kind_phys), pointer :: ficein_cpl(:)           => null()   !< aoi_fld%ficein(item,lan)
 !   real (kind=kind_phys), pointer :: hicein_cpl(:)           => null()   !< aoi_fld%hicein(item,lan)
     real (kind=kind_phys), pointer :: hsnoin_cpl(:)           => null()   !< aoi_fld%hsnoin(item,lan)
-    real (kind=kind_phys), pointer :: sfc_alb_nir_dir_cpl(:)  => null()   !< sfc nir albedo for direct rad
-    real (kind=kind_phys), pointer :: sfc_alb_nir_dif_cpl(:)  => null()   !< sfc nir albedo for diffuse rad
-    real (kind=kind_phys), pointer :: sfc_alb_vis_dir_cpl(:)  => null()   !< sfc vis albedo for direct rad
-    real (kind=kind_phys), pointer :: sfc_alb_vis_dif_cpl(:)  => null()   !< sfc vis albedo for diffuse rad
+!   real (kind=kind_phys), pointer :: sfc_alb_nir_dir_cpl(:)  => null()   !< sfc nir albedo for direct rad
+!   real (kind=kind_phys), pointer :: sfc_alb_nir_dif_cpl(:)  => null()   !< sfc nir albedo for diffuse rad
+!   real (kind=kind_phys), pointer :: sfc_alb_vis_dir_cpl(:)  => null()   !< sfc vis albedo for direct rad
+!   real (kind=kind_phys), pointer :: sfc_alb_vis_dif_cpl(:)  => null()   !< sfc vis albedo for diffuse rad
     !--- only variable needed for cplwav2atm=.TRUE.
 !   real (kind=kind_phys), pointer :: zorlwav_cpl(:)          => null()   !< roughness length from wave model
     !--- also needed for ice/ocn coupling 
@@ -632,6 +634,7 @@ module GFS_typedefs
     logical              :: cplwav          !< default no cplwav collection
     logical              :: cplwav2atm      !< default no wav->atm coupling
     logical              :: cplchm          !< default no cplchm collection
+    logical              :: use_cice_alb    !< default .false. - i.e. don't use albedo imported from the ice model
     logical              :: cpl_imp_mrg     !< default no merge import with internal forcings
     logical              :: cpl_imp_dbg     !< default no write import data to file post merge
 
@@ -1101,8 +1104,8 @@ module GFS_typedefs
     integer              :: sfc_rlm         !< choice of near surface mixing length in boundary layer mass flux scheme
 
 !--- parameters for canopy heat storage (CHS) parameterization
-    real(kind=kind_phys) :: h0facu          !< CHS factor for sensible heat flux in unstable surface layer                                       
-    real(kind=kind_phys) :: h0facs          !< CHS factor for sensible heat flux in stable surface layer                           
+    real(kind=kind_phys) :: h0facu          !< CHS factor for sensible heat flux in unstable surface layer
+    real(kind=kind_phys) :: h0facs          !< CHS factor for sensible heat flux in stable surface layer
 
 !---cellular automata control parameters
     integer              :: nca             !< number of independent cellular automata
@@ -1150,10 +1153,10 @@ module GFS_typedefs
                                               ! we'd need to make this dim(6,5).
 !--- tracer handling
     character(len=32), pointer :: tracer_names(:) !< array of initialized tracers from dynamic core
-    integer              :: ntrac           !< number of tracers
-    integer              :: ntracp1         !< number of tracers plus one
-    integer              :: ntracp100       !< number of tracers plus one hundred
-    integer              :: nqrimef         !< tracer index for mass weighted rime factor
+    integer              :: ntrac                 !< number of tracers
+    integer              :: ntracp1               !< number of tracers plus one
+    integer              :: ntracp100             !< number of tracers plus one hundred
+    integer              :: nqrimef               !< tracer index for mass weighted rime factor
 
     integer, pointer :: dtidx(:,:) => null()                                !< index in outermost dimension of dtend
     integer :: ndtend                                                       !< size of outermost dimension of dtend
@@ -2379,10 +2382,10 @@ module GFS_typedefs
     allocate (Sfcprop%weasdl   (IM))
 !   allocate (Sfcprop%hprim    (IM))
     allocate (Sfcprop%hprime   (IM,Model%nmtvr))
-    allocate(Sfcprop%albdvis_lnd (IM))
-    allocate(Sfcprop%albdnir_lnd (IM))
-    allocate(Sfcprop%albivis_lnd (IM))
-    allocate(Sfcprop%albinir_lnd (IM))
+    allocate(Sfcprop%albdirvis_lnd (IM))
+    allocate(Sfcprop%albdirnir_lnd (IM))
+    allocate(Sfcprop%albdifvis_lnd (IM))
+    allocate(Sfcprop%albdifnir_lnd (IM))
     allocate (Sfcprop%emis_lnd (IM))
 
     Sfcprop%slmsk     = clear_val
@@ -2406,10 +2409,10 @@ module GFS_typedefs
     Sfcprop%weasdl    = clear_val
 !   Sfcprop%hprim     = clear_val
     Sfcprop%hprime    = clear_val
-    Sfcprop%albdvis_lnd = clear_val
-    Sfcprop%albdnir_lnd = clear_val
-    Sfcprop%albivis_lnd = clear_val
-    Sfcprop%albinir_lnd = clear_val
+    Sfcprop%albdirvis_lnd = clear_val
+    Sfcprop%albdirnir_lnd = clear_val
+    Sfcprop%albdifvis_lnd = clear_val
+    Sfcprop%albdifnir_lnd = clear_val
     Sfcprop%emis_lnd  = clear_val
 
 !--- In (radiation only)
@@ -2465,17 +2468,24 @@ module GFS_typedefs
     allocate (Sfcprop%hice   (IM))
     allocate (Sfcprop%weasd  (IM))
     allocate (Sfcprop%sncovr (IM))
+    if (Model%use_cice_alb .or. Model%lsm == Model%lsm_ruc) then
+      allocate (Sfcprop%albdirvis_ice (IM))
+      allocate (Sfcprop%albdifvis_ice (IM))
+      allocate (Sfcprop%albdirnir_ice (IM))
+      allocate (Sfcprop%albdifnir_ice (IM))
+!     allocate (Sfcprop%sfalb_ice (IM))
+    endif
     if (Model%lsm == Model%lsm_ruc) then
       allocate (Sfcprop%sncovr_ice (IM))
       allocate (Sfcprop%emis_ice (IM))
-      allocate (Sfcprop%albdvis_ice (IM))
-      allocate (Sfcprop%albdnir_ice (IM))
-      allocate (Sfcprop%albivis_ice (IM))
-      allocate (Sfcprop%albinir_ice (IM))
+!     allocate (Sfcprop%albdirvis_ice (IM))
+!     allocate (Sfcprop%albdirnir_ice (IM))
+!     allocate (Sfcprop%albdifvis_ice (IM))
+!     allocate (Sfcprop%albdifnir_ice (IM))
       allocate (Sfcprop%sfalb_lnd (IM))
       allocate (Sfcprop%sfalb_ice (IM))
       allocate (Sfcprop%sfalb_lnd_bck (IM))
-    end if
+    endif
     allocate (Sfcprop%canopy (IM))
     allocate (Sfcprop%ffmm   (IM))
     allocate (Sfcprop%ffhh   (IM))
@@ -2489,17 +2499,24 @@ module GFS_typedefs
     Sfcprop%hice   = clear_val
     Sfcprop%weasd  = clear_val
     Sfcprop%sncovr = clear_val
+    if (Model%use_cice_alb .or. Model%lsm == Model%lsm_ruc) then
+      Sfcprop%albdirvis_ice = clear_val
+      Sfcprop%albdifvis_ice = clear_val
+      Sfcprop%albdirnir_ice = clear_val
+      Sfcprop%albdifnir_ice = clear_val
+!     Sfcprop%sfalb_ice     = clear_val
+    endif
     if (Model%lsm == Model%lsm_ruc) then
       Sfcprop%sncovr_ice  = clear_val
       Sfcprop%emis_ice    = clear_val
-      Sfcprop%albdvis_ice = clear_val
-      Sfcprop%albdnir_ice = clear_val
-      Sfcprop%albivis_ice = clear_val
-      Sfcprop%albinir_ice = clear_val
+!     Sfcprop%albdirvis_ice = clear_val
+!     Sfcprop%albdirnir_ice = clear_val
+!     Sfcprop%albdifvis_ice = clear_val
+!     Sfcprop%albdifnir_ice = clear_val
       Sfcprop%sfalb_lnd   = clear_val
       Sfcprop%sfalb_ice   = clear_val
       Sfcprop%sfalb_lnd_bck = clear_val
-    end if
+    endif
     Sfcprop%canopy = clear_val
     Sfcprop%ffmm   = clear_val
     Sfcprop%ffhh   = clear_val
@@ -2843,10 +2860,10 @@ module GFS_typedefs
 !     allocate (Coupling%ficein_cpl          (IM))
 !     allocate (Coupling%hicein_cpl          (IM))
       allocate (Coupling%hsnoin_cpl          (IM))
-      allocate (Coupling%sfc_alb_nir_dir_cpl (IM))
-      allocate (Coupling%sfc_alb_nir_dif_cpl (IM))
-      allocate (Coupling%sfc_alb_vis_dir_cpl (IM))
-      allocate (Coupling%sfc_alb_vis_dif_cpl (IM))
+!     allocate (Coupling%sfc_alb_nir_dir_cpl (IM))
+!     allocate (Coupling%sfc_alb_nir_dif_cpl (IM))
+!     allocate (Coupling%sfc_alb_vis_dir_cpl (IM))
+!     allocate (Coupling%sfc_alb_vis_dif_cpl (IM))
 
       Coupling%slimskin_cpl          = clear_val
       Coupling%dusfcin_cpl           = clear_val
@@ -2859,10 +2876,10 @@ module GFS_typedefs
 !     Coupling%ficein_cpl            = clear_val
 !     Coupling%hicein_cpl            = clear_val
       Coupling%hsnoin_cpl            = clear_val
-      Coupling%sfc_alb_nir_dir_cpl   = clear_val
-      Coupling%sfc_alb_nir_dif_cpl   = clear_val
-      Coupling%sfc_alb_vis_dir_cpl   = clear_val
-      Coupling%sfc_alb_vis_dif_cpl   = clear_val
+!     Coupling%sfc_alb_nir_dir_cpl   = clear_val
+!     Coupling%sfc_alb_nir_dif_cpl   = clear_val
+!     Coupling%sfc_alb_vis_dir_cpl   = clear_val
+!     Coupling%sfc_alb_vis_dif_cpl   = clear_val
 
       !--- accumulated quantities
       allocate (Coupling%dusfc_cpl  (IM))
@@ -3113,6 +3130,7 @@ module GFS_typedefs
     logical              :: cplwav         = .false.         !< default no cplwav collection
     logical              :: cplwav2atm     = .false.         !< default no cplwav2atm coupling
     logical              :: cplchm         = .false.         !< default no cplchm collection
+    logical              :: use_cice_alb   = .false.         !< default no cice albedo
     logical              :: cpl_imp_mrg    = .false.         !< default no merge import with internal forcings
     logical              :: cpl_imp_dbg    = .false.         !< default no write import data to file post merge
 
@@ -3579,7 +3597,7 @@ module GFS_typedefs
                           !--- coupling parameters
                                cplflx, cplice, cplwav, cplwav2atm, cplchm,                  &
                                cpl_imp_mrg, cpl_imp_dbg,                                    &
-                               lsidea,                                                      &
+                               use_cice_alb, lsidea,                                        &
                           !--- radiation parameters
                                fhswr, fhlwr, levr, nfxr, iaerclm, iflip, isol, ico2, ialb,  &
                                isot, iems, iaer, icliq_sw, iovr, ictm, isubc_sw,            &
@@ -3858,6 +3876,7 @@ module GFS_typedefs
     Model%cplwav           = cplwav
     Model%cplwav2atm       = cplwav2atm
     Model%cplchm           = cplchm
+    Model%use_cice_alb     = use_cice_alb
     Model%cpl_imp_mrg      = cpl_imp_mrg
     Model%cpl_imp_dbg      = cpl_imp_dbg
 
@@ -4114,7 +4133,7 @@ module GFS_typedefs
         write(0,*) 'Error in GFS_typedefs.F90, number of soil layers must be 9 for RUC'
         stop
       end if
-    end if       
+    end if
 
     ! Set number of ice model layers
     Model%kice      = kice
@@ -4990,8 +5009,10 @@ module GFS_typedefs
       if (Model%do_gwd) then
         if (Model%do_ugwp) then
           print *,' Unified gravity wave drag parameterization used'
+        elseif (Model%gwd_opt == 2) then
+          print *,'GSL unified oragraphic gravity wave drag parameterization used'
         else
-          print *,' Original mountain blocking and oragraphic  gravity wave drag parameterization used'
+          print *,' Original mountain blocking and oragraphic gravity wave drag parameterization used'
           if (cdmbgwd(3) > 0.0) print *,' non-statioary gravity wave drag parameterization used'
         endif
           print *,' do_gwd=',Model%do_gwd
@@ -5447,6 +5468,7 @@ module GFS_typedefs
       print *, ' cplwav            : ', Model%cplwav
       print *, ' cplwav2atm        : ', Model%cplwav2atm
       print *, ' cplchm            : ', Model%cplchm
+      print *, ' use_cice_alb      : ', Model%use_cice_alb
       print *, ' cpl_imp_mrg       : ', Model%cpl_imp_mrg
       print *, ' cpl_imp_dbg       : ', Model%cpl_imp_dbg
       print *, ' '
@@ -7217,7 +7239,7 @@ module GFS_typedefs
           allocate(Interstitial%gas_concentrations%concs(iGas)%conc(IM, Model%levs))
        enddo
        !
-       ! lw_optical_props_clrsky (ty_optical_props_1scl) 
+       ! lw_optical_props_clrsky (ty_optical_props_1scl)
        !
        allocate(Interstitial%lw_optical_props_clrsky%tau(      IM, Model%levs, Model%rrtmgp_nGptsLW  ))
        allocate(Interstitial%lw_optical_props_clrsky%band2gpt     (2,          Model%rrtmgp_nBandsLW ))
@@ -7231,7 +7253,7 @@ module GFS_typedefs
        allocate(Interstitial%lw_optical_props_aerosol%band_lims_wvn(2,         Model%rrtmgp_nBandsLW ))
        allocate(Interstitial%lw_optical_props_aerosol%gpt2band(                Model%rrtmgp_nBandsLW ))
        !
-       ! lw_optical_props_cloudsByBand (ty_optical_props_2str)    
+       ! lw_optical_props_cloudsByBand (ty_optical_props_2str)
        !
        allocate(Interstitial%lw_optical_props_cloudsByBand%tau(IM, Model%levs, Model%rrtmgp_nBandsLW ))
        allocate(Interstitial%lw_optical_props_cloudsByBand%ssa(IM, Model%levs, Model%rrtmgp_nBandsLW ))
