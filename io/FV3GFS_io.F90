@@ -1172,7 +1172,7 @@ module FV3GFS_io_mod
           endif
         endif
 
-        if (warm_start) then
+        if (warm_start .and. Model%kdt > 1) then
           Sfcprop(nb)%slmsk(ix)  = sfc_var2(i,j,1)    !--- slmsk
         endif
 
