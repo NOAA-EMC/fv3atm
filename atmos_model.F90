@@ -273,10 +273,8 @@ subroutine update_atmos_radiation_physics (Atmos)
       endif
 
 !--- if coupled, assign coupled fields
-
-      if (.not. GFS_control%cplchm) then
-        call assign_importdata(jdat(:),rc)
-      endif
+      call assign_importdata(jdat(:),rc)
+      if (rc/=0)  call mpp_error(FATAL, 'Call to assign_importdata failed')
 
       ! Calculate total non-physics tendencies by substracting old GFS Stateout
       ! variables from new/updated GFS Statein variables (gives the tendencies
@@ -2557,7 +2555,7 @@ end subroutine atmos_data_type_chksum
 
     use ESMF
 
-    use module_cplfields, only: exportFields
+    use module_cplfields, only: exportFields, chemistryFieldNames
 
     !--- arguments
     integer, optional, intent(out) :: rc
@@ -2583,9 +2581,6 @@ end subroutine atmos_data_type_chksum
 
     !--- begin
     if (present(rc)) rc = ESMF_SUCCESS
-
-    !--- disable if coupling with chemistry
-    if (GFS_control%cplchm) return
 
     isc = Atm_block%isc
     iec = Atm_block%iec
@@ -2635,6 +2630,9 @@ end subroutine atmos_data_type_chksum
           isFound = .false.
         end if
       end if
+
+      !--- skip field if only required for chemistry
+      if (isFound .and. GFS_control%cplchm) isFound = .not.any(trim(fieldname) == chemistryFieldNames)
 
       if (isFound) then
 !$omp parallel do default(shared) private(nb) reduction(max:localrc)
