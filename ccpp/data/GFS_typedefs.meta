@@ -1296,66 +1296,66 @@
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_noah_wrfv4_land_surface_scheme)
-[albdvis_lnd]
+[albdirvis_lnd]
   standard_name = surface_albedo_direct_visible_over_land
   long_name = direct surface albedo visible band over land
   units = frac
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[albdnir_lnd]
+[albdirnir_lnd]
   standard_name = surface_albedo_direct_NIR_over_land
   long_name = direct surface albedo NIR band over land
   units = frac
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[albivis_lnd]
+[albdifvis_lnd]
   standard_name = surface_albedo_diffuse_visible_over_land
   long_name = diffuse surface albedo visible band over land
   units = frac
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[albinir_lnd]
+[albdifnir_lnd]
   standard_name = surface_albedo_diffuse_NIR_over_land
   long_name = diffuse surface albedo NIR band over land
   units = frac
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[albdvis_ice]
+[albdirvis_ice]
   standard_name = surface_albedo_direct_visible_over_ice
   long_name = direct surface albedo visible band over ice
   units = frac
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme)
-[albdnir_ice]
-  standard_name = surface_albedo_direct_NIR_over_ice
-  long_name = direct surface albedo NIR band over ice
-  units = frac
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-  active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme)
-[albivis_ice]
+  active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme .or. flag_for_cice_albedo .eqv. .true.)
+[albdifvis_ice]
   standard_name = surface_albedo_diffuse_visible_over_ice
   long_name = diffuse surface albedo visible band over ice
   units = frac
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme)
-[albinir_ice]
+  active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme .or. flag_for_cice_albedo .eqv. .true.)
+[albdirnir_ice]
+  standard_name = surface_albedo_direct_NIR_over_ice
+  long_name = direct surface albedo NIR band over ice
+  units = frac
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme .or. flag_for_cice_albedo .eqv. .true.)
+[albdifnir_ice]
   standard_name = surface_albedo_diffuse_NIR_over_ice
   long_name = diffuse surface albedo NIR band over ice
   units = frac
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = ( control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme)
+  active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme .or. flag_for_cice_albedo .eqv. .true.)
 [wetness]
   standard_name = normalized_soil_wetness_for_land_surface_model
   long_name = normalized soil wetness for lsm
@@ -2177,40 +2177,8 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[sfc_alb_nir_dir_cpl]
-  standard_name = surface_nir_albedo_direct_rad_for_coupling
-  long_name = sfc near IR albedo for direct radiation for coupling
-  units = frac
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-  active = (flag_for_surface_flux_coupling)
-[sfc_alb_nir_dif_cpl]
-  standard_name = surface_nir_albedo_diffuse_rad_for_coupling
-  long_name = sfc near IR albedo for diffuse radiation for coupling
-  units = frac
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-  active = (flag_for_surface_flux_coupling)
-[sfc_alb_vis_dir_cpl]
-  standard_name = surface_vis_albedo_direct_rad_for_coupling
-  long_name = sfc visible albedo for direct radiation for coupling
-  units = frac
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-  active = (flag_for_surface_flux_coupling)
-[sfc_alb_vis_dif_cpl]
-  standard_name = surface_vis_albedo_diffuse_rad_for_coupling
-  long_name = sfc visible albedo for diffuse radiation for coupling
-  units = frac
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-  active = (flag_for_surface_flux_coupling)
 [slimskin_cpl]
-  standard_name = area_type_from_coupled_process	
+  standard_name = area_type_from_coupled_process
   long_name = sea/land/ice mask input (=0/1/2)
   units = flag
   dimensions = (horizontal_loop_extent)
@@ -2581,6 +2549,12 @@
   units = flag
   dimensions = ()
   type = logical
+[cplice]
+  standard_name = flag_for_sea_ice_coupling
+  long_name = flag controlling cplice collection (default on)
+  units = flag
+  dimensions = ()
+  type = logical
 [cplwav]
   standard_name = flag_for_ocean_wave_coupling
   long_name = flag controlling cplwav collection (default off)
@@ -2596,6 +2570,24 @@
 [cplchm]
   standard_name = flag_for_chemistry_coupling
   long_name = flag controlling cplchm collection (default off)
+  units = flag
+  dimensions = ()
+  type = logical
+[cpl_imp_mrg]
+  standard_name = flag_for_merging_imported_data
+  long_name = flag controlling cpl_imp_mrg for imported data (default off)
+  units = flag
+  dimensions = ()
+  type = logical
+[cpl_imp_dbg]
+  standard_name = flag_for_debugging_merged_imported_data
+  long_name = flag controlling cpl_imp_dbg for imported data (default off)
+  units = flag
+  dimensions = ()
+  type = logical
+[use_cice_alb]
+ standard_name = flag_for_cice_albedo
+ long_name = flag for using ice albedos form CICE when coupled (default false)
   units = flag
   dimensions = ()
   type = logical
@@ -3005,12 +2997,6 @@
   dimensions = ()
   type = real
   kind = kind_phys
-[ncld]
-  standard_name = number_of_hydrometeors
-  long_name = choice of cloud scheme / number of hydrometeors
-  units = count
-  dimensions = ()
-  type = integer
 [convert_dry_rho]
   standard_name = flag_for_converting_hydrometeors_from_moist_to_dry_air
   long_name = flag for converting hydrometeors from moist to dry air
@@ -4364,6 +4350,26 @@
   dimensions = ()
   type = real
   kind = kind_phys
+[rlmx]
+  standard_name = maximum_allowed_mixing_length_in_boundary_layer_mass_flux_scheme
+  long_name = maximum allowed mixing length in boundary layer mass flux scheme
+  units = m
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[elmx]
+  standard_name = maximum_allowed_dissipation_mixing_length_in_boundary_layer_mass_flux_scheme
+  long_name = maximum allowed dissipation mixing length in boundary layer mass flux scheme
+  units = m
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[sfc_rlm]
+  standard_name = choice_of_near_surface_mixing_length_in_boundary_layer_mass_flux_scheme
+  long_name = choice of near surface mixing length in boundary layer mass flux scheme
+  units = none
+  dimensions = ()
+  type = integer
 [h0facu]
   standard_name = multiplicative_tuning_parameter_for_reduced_surface_heat_fluxes_due_to_canopy_heat_storage
   long_name = canopy heat storage factor for sensible heat flux in unstable surface layer
@@ -8801,9 +8807,9 @@
   dimensions = (horizontal_loop_extent)
   type = integer
 [itc]
-  standard_name = number_of_aerosol_tracers_for_convection
-  long_name = number of aerosol tracers transported/scavenged by convection
-  units = count
+  standard_name = index_of_first_chemical_tracer_for_convection
+  long_name = index of first chemical tracer transported/scavenged by convection
+  units = index
   dimensions = ()
   type = integer
 [wet]
@@ -10898,6 +10904,27 @@
   standard_name = specific_heat_of_ice_at_constant_pressure
   long_name = specific heat of ice at constant pressure
   units = J kg-1 K-1
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[con_psat]
+  standard_name = saturation_pressure_at_triple_point_of_water
+  long_name = saturation pressure at triple point of water
+  units = Pa
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[karman]
+  standard_name = von_karman_constant
+  long_name = Von Karman constant
+  units = none
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[rainmin]
+  standard_name = lwe_thickness_of_minimum_rain_amount
+  long_name = liquid water equivalent thickness of minimum rain amount
+  units = m
   dimensions = ()
   type = real
   kind = kind_phys
