@@ -9781,8 +9781,8 @@
   type = real
   kind = kind_phys
 [tsfc_land_save]
-  standard_name = surface_skin_temperature_over_land_interstitial_save
-  long_name = surface skin temperature over land before entering a physics scheme (temporary use as interstitial)
+  standard_name = surface_skin_temperature_over_land_save
+  long_name = surface skin temperature over land before entering a physics scheme
   units = K
   dimensions = (horizontal_loop_extent)
   type = real
