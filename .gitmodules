@@ -8,5 +8,7 @@
 	branch = gsl/develop
 [submodule "ccpp/physics"]
 	path = ccpp/physics
-	url = https://github.com/NOAA-GSL/ccpp-physics
-	branch = gsl/develop
+	#url = https://github.com/NOAA-GSL/ccpp-physics
+	#branch = gsl/develop
+	url = https://github.com/tanyasmirnova/ccpp-physics
+	branch = gsl_dev_11aug21_lake
