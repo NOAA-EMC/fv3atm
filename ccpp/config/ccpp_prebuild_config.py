@@ -15,26 +15,27 @@ HOST_MODEL_IDENTIFIER = "FV3"
 # dependencies of these files to the list.
 VARIABLE_DEFINITION_FILES = [
     # actual variable definition files
+    'framework/src/ccpp_types.F90',
     'physics/physics/machine.F',
     'physics/physics/radsw_param.f',
+    'physics/physics/radlw_param.f',
     'physics/physics/h2o_def.f',
     'physics/physics/ozne_def.f',
-    'physics/physics/radlw_param.f',
     'physics/physics/radiation_surface.f',
-    'data/CCPP_typedefs.F90',
-    'data/GFS_typedefs.F90',
-    'data/CCPP_data.F90',
     'physics/physics/rte-rrtmgp/rrtmgp/mo_gas_optics_rrtmgp.F90',
     'physics/physics/rte-rrtmgp/rrtmgp/mo_gas_concentrations.F90',
     'physics/physics/rte-rrtmgp/rte/mo_optical_props.F90',
     'physics/physics/rte-rrtmgp/extensions/cloud_optics/mo_cloud_optics.F90',
     'physics/physics/rte-rrtmgp/rte/mo_source_functions.F90',
+    'data/CCPP_typedefs.F90',
+    'data/GFS_typedefs.F90',
+    'data/CCPP_data.F90',
     ]
 
 TYPEDEFS_NEW_METADATA = {
     'ccpp_types' : {
-        'ccpp_types' : '',
         'ccpp_t' : 'cdata',
+        'ccpp_types' : '',
         },
     'machine' : {
         'machine' : '',
