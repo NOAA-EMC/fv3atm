@@ -296,19 +296,19 @@ module stochastic_physics_wrapper_mod
 
       if (GFS_Control%do_ca) then
 
-       if(GFS_Control%ca_sgs)then
+        if(GFS_Control%ca_sgs)then
          ! Allocate contiguous arrays; copy in as needed
-         allocate(sst         (1:nblks, maxblk))
-         allocate(lmsk        (1:nblks, maxblk))
-         allocate(lake        (1:nblks, maxblk))
-         allocate(ca_deep_diag(1:nblks, maxblk))
-         allocate(ca_turb_diag(1:nblks, maxblk))
-         allocate(ca_shal_diag(1:nblks, maxblk))
-         allocate(condition   (1:nblks, maxblk))
-         allocate(ca_deep_cpl (1:nblks, maxblk))
-         allocate(ca_turb_cpl (1:nblks, maxblk))
-         allocate(ca_shal_cpl (1:nblks, maxblk))
-         do nb=1,nblks
+          allocate(sst         (1:nblks, maxblk))
+          allocate(lmsk        (1:nblks, maxblk))
+          allocate(lake        (1:nblks, maxblk))
+          allocate(ca_deep_diag(1:nblks, maxblk))
+          allocate(ca_turb_diag(1:nblks, maxblk))
+          allocate(ca_shal_diag(1:nblks, maxblk))
+          allocate(condition   (1:nblks, maxblk))
+          allocate(ca_deep_cpl (1:nblks, maxblk))
+          allocate(ca_turb_cpl (1:nblks, maxblk))
+          allocate(ca_shal_cpl (1:nblks, maxblk))
+          do nb=1,nblks
              sst        (nb,1:GFS_Control%blksz(nb)) = GFS_Data(nb)%Sfcprop%tsfco(:)
              lmsk       (nb,1:GFS_Control%blksz(nb)) = GFS_Data(nb)%Sfcprop%slmsk(:)
              lake       (nb,1:GFS_Control%blksz(nb)) = GFS_Data(nb)%Sfcprop%lakefrac(:)
@@ -316,35 +316,35 @@ module stochastic_physics_wrapper_mod
              ca_deep_cpl(nb,1:GFS_Control%blksz(nb)) = GFS_Data(nb)%Coupling%ca_deep(:)
              ca_turb_cpl(nb,1:GFS_Control%blksz(nb)) = GFS_Data(nb)%Coupling%ca_turb(:)
              ca_shal_cpl(nb,1:GFS_Control%blksz(nb)) = GFS_Data(nb)%Coupling%ca_shal(:)
-         enddo
-         call cellular_automata_sgs(GFS_Control%kdt,GFS_control%dtf,GFS_control%restart,GFS_Control%first_time_step,              &
-            sst,lmsk,lake,condition,ca_deep_cpl,ca_turb_cpl,ca_shal_cpl,ca_deep_diag,ca_turb_diag,                                &
-            ca_shal_diag,Atm(mygrid)%domain_for_coupler,nblks,                                                                    &
-            Atm_block%isc,Atm_block%iec,Atm_block%jsc,Atm_block%jec,Atm(mygrid)%npx,Atm(mygrid)%npy, levs,                        &
-            GFS_Control%nthresh,GFS_Control%rcell,GFS_Control%nca,GFS_Control%scells,GFS_Control%tlives,GFS_Control%nfracseed,    &
-            GFS_Control%nseed,GFS_Control%ca_global,GFS_Control%ca_sgs,GFS_Control%iseed_ca,                                      &
-            GFS_Control%ca_smooth,GFS_Control%nspinup,GFS_Control%ca_trigger,Atm_block%blksz(1),GFS_Control%master,GFS_Control%communicator)
+          enddo
+          call cellular_automata_sgs(GFS_Control%kdt,GFS_control%dtf,GFS_control%restart,GFS_Control%first_time_step,              &
+             sst,lmsk,lake,condition,ca_deep_cpl,ca_turb_cpl,ca_shal_cpl,ca_deep_diag,ca_turb_diag,                                &
+             ca_shal_diag,Atm(mygrid)%domain_for_coupler,nblks,                                                                    &
+             Atm_block%isc,Atm_block%iec,Atm_block%jsc,Atm_block%jec,Atm(mygrid)%npx,Atm(mygrid)%npy, levs,                        &
+             GFS_Control%nthresh,GFS_Control%rcell,GFS_Control%nca,GFS_Control%scells,GFS_Control%tlives,GFS_Control%nfracseed,    &
+             GFS_Control%nseed,GFS_Control%ca_global,GFS_Control%ca_sgs,GFS_Control%iseed_ca,                                      &
+             GFS_Control%ca_smooth,GFS_Control%nspinup,GFS_Control%ca_trigger,Atm_block%blksz(1),GFS_Control%master,GFS_Control%communicator)
          ! Copy contiguous data back as needed
-         do nb=1,nblks
+          do nb=1,nblks
              GFS_Data(nb)%Intdiag%ca_deep(:)  = ca_deep_diag(nb,1:GFS_Control%blksz(nb))
              GFS_Data(nb)%Intdiag%ca_turb(:)  = ca_turb_diag(nb,1:GFS_Control%blksz(nb))
              GFS_Data(nb)%Intdiag%ca_shal(:)  = ca_shal_diag(nb,1:GFS_Control%blksz(nb))
              GFS_Data(nb)%Coupling%ca_deep(:) = ca_deep_cpl (nb,1:GFS_Control%blksz(nb))
              GFS_Data(nb)%Coupling%ca_turb(:) = ca_turb_cpl (nb,1:GFS_Control%blksz(nb))
              GFS_Data(nb)%Coupling%ca_shal(:) = ca_shal_cpl (nb,1:GFS_Control%blksz(nb))
-         enddo
-         deallocate(sst         )
-         deallocate(lmsk        )
-         deallocate(lake        )
-         deallocate(condition   )
-         deallocate(ca_deep_cpl )
-         deallocate(ca_turb_cpl )
-         deallocate(ca_shal_cpl )
-         deallocate(ca_deep_diag)
-         deallocate(ca_turb_diag)
-         deallocate(ca_shal_diag)
-       endif
-       if(GFS_Control%ca_global)then
+          enddo
+          deallocate(sst         )
+          deallocate(lmsk        )
+          deallocate(lake        )
+          deallocate(condition   )
+          deallocate(ca_deep_cpl )
+          deallocate(ca_turb_cpl )
+          deallocate(ca_shal_cpl )
+          deallocate(ca_deep_diag)
+          deallocate(ca_turb_diag)
+          deallocate(ca_shal_diag)
+        endif
+        if(GFS_Control%ca_global)then
           ! Allocate contiguous arrays; no need to copy in (intent out)
           allocate(ca1_cpl (1:nblks, maxblk))
           allocate(ca2_cpl (1:nblks, maxblk))
@@ -372,7 +372,7 @@ module stochastic_physics_wrapper_mod
           deallocate(ca1_diag)
           deallocate(ca2_diag)
           deallocate(ca3_diag)
-       endif
+        endif
 
       endif !do_ca
 
