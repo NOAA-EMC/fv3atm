@@ -294,7 +294,7 @@ module stochastic_physics_wrapper_mod
          endif ! lndp block
       end if
 
-    if (GFS_Control%do_ca) then
+      if (GFS_Control%do_ca) then
 
        if(GFS_Control%ca_sgs)then
          ! Allocate contiguous arrays; copy in as needed
@@ -374,8 +374,7 @@ module stochastic_physics_wrapper_mod
           deallocate(ca3_diag)
        endif
 
-
-    endif !do_ca
+      endif !do_ca
 
     endif initalize_stochastic_physics
 
