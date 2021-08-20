@@ -650,6 +650,8 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    Init_parm%hydrostatic     = Atm(mygrid)%flagstruct%hydrostatic
 
 #ifdef INTERNAL_FILE_NML
+   ! allocate required to work around GNU compiler bug 100886 https://gcc.gnu.org/bugzilla/show_bug.cgi?id=100886
+   allocate(Init_parm%input_nml_file, mold=input_nml_file)
    Init_parm%input_nml_file  => input_nml_file
    Init_parm%fn_nml='using internal file'
 #else
