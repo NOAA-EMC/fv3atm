@@ -427,9 +427,9 @@ subroutine atmos_timestep_diagnostics(Atmos)
       if(.not. GFS_control%first_time_step) then
         pmaxloc = 0.0d0
         recvbuf = 0.0d0
-        psum = 0.0d0
-        pcount = 0.0d0
-        maxabs = 0.0d0
+        psum    = 0.0d0
+        pcount  = 0.0d0
+        maxabs  = 0.0d0
 
         ! Put pgr stats in pmaxloc, psum, and pcount:
         pmaxloc(1) = GFS_Control%tile_num
@@ -438,11 +438,11 @@ subroutine atmos_timestep_diagnostics(Atmos)
           do i=1,count
             pdiff = GFS_data(nb)%Statein%pgr(i)-GFS_data(nb)%Intdiag%old_pgr(i)
             adiff = abs(pdiff)
-            psum = psum+adiff
+            psum  = psum + adiff
             if(adiff>=maxabs) then
               maxabs=adiff
-              pmaxloc(2:3)=(/ ATM_block%index(nb)%ii(i), ATM_block%index(nb)%jj(i) /)
-              pmaxloc(4:7)=(/ pdiff, GFS_data(nb)%Statein%pgr(i), &
+              pmaxloc(2:3) = (/ ATM_block%index(nb)%ii(i), ATM_block%index(nb)%jj(i) /)
+              pmaxloc(4:7) = (/ pdiff, GFS_data(nb)%Statein%pgr(i), &
                    GFS_data(nb)%Grid%xlat(i), GFS_data(nb)%Grid%xlon(i) /)
             endif
           enddo

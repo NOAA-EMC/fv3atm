@@ -36,14 +36,14 @@ module stochastic_physics_wrapper_mod
   real(kind=kind_phys), dimension(:,:),   allocatable, save :: stype
 
   ! For cellular automata
-  real(kind=kind_phys), dimension(:,:),   allocatable, save :: sst
-  real(kind=kind_phys), dimension(:,:),   allocatable, save :: lmsk
-  real(kind=kind_phys), dimension(:,:),   allocatable, save :: lake
-  real(kind=kind_phys), dimension(:,:),   allocatable, save :: condition
-  real(kind=kind_phys), dimension(:,:),   allocatable, save :: ca_deep_cpl, ca_turb_cpl, ca_shal_cpl
-  real(kind=kind_phys), dimension(:,:),   allocatable, save :: ca_deep_diag,ca_turb_diag,ca_shal_diag
-  real(kind=kind_phys), dimension(:,:),   allocatable, save :: ca1_cpl, ca2_cpl, ca3_cpl
-  real(kind=kind_phys), dimension(:,:),   allocatable, save :: ca1_diag,ca2_diag,ca3_diag
+  real(kind=kind_phys), dimension(:,:),   allocatable :: sst
+  real(kind=kind_phys), dimension(:,:),   allocatable :: lmsk
+  real(kind=kind_phys), dimension(:,:),   allocatable :: lake
+  real(kind=kind_phys), dimension(:,:),   allocatable :: condition
+  real(kind=kind_phys), dimension(:,:),   allocatable :: ca_deep_cpl, ca_turb_cpl, ca_shal_cpl
+  real(kind=kind_phys), dimension(:,:),   allocatable :: ca_deep_diag,ca_turb_diag,ca_shal_diag
+  real(kind=kind_phys), dimension(:,:),   allocatable :: ca1_cpl, ca2_cpl, ca3_cpl
+  real(kind=kind_phys), dimension(:,:),   allocatable :: ca1_diag,ca2_diag,ca3_diag
 
 
 !----------------
