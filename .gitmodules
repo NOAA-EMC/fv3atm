@@ -9,4 +9,4 @@
 [submodule "ccpp/physics"]
 	path = ccpp/physics
 	url = https://github.com/AnningCheng-NOAA/ccpp-physics
-	branch = main
+	branch = merra2_thompson
