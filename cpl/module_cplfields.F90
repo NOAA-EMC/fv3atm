@@ -193,6 +193,34 @@ module module_cplfields
     FieldInfo("zorl                                     ", "s"), &
     FieldInfo("t2m                                      ", "s") ]
 
+! Fields exported exclusively for coupling with chemistry
+  character(*), public, parameter :: chemistryFieldNames(*) = [ &
+    "inst_pres_interface             ", &
+    "inst_pres_levels                ", &
+    "inst_geop_interface             ", &
+    "inst_geop_levels                ", &
+    "inst_temp_levels                ", &
+    "inst_zonal_wind_levels          ", &
+    "inst_merid_wind_levels          ", &
+    "inst_tracer_mass_frac           ", &
+    "inst_pbl_height                 ", &
+    "surface_cell_area               ", &
+    "inst_convective_rainfall_amount ", &
+    "inst_friction_velocity          ", &
+    "inst_rainfall_amount            ", &
+    "inst_up_sensi_heat_flx          ", &
+    "inst_surface_roughness          ", &
+    "inst_soil_moisture_content      ", &
+    "inst_liq_nonconv_tendency_levels", &
+    "inst_ice_nonconv_tendency_levels", &
+    "inst_cloud_frac_levels          ", &
+    "inst_surface_soil_wetness       ", &
+    "ice_fraction_in_atm             ", &
+    "lake_fraction                   ", &
+    "ocean_fraction                  ", &
+    "surface_snow_area_fraction      "  &
+    ]
+
   ! Methods
   public queryImportFields, queryExportFields
   public cplFieldGet
