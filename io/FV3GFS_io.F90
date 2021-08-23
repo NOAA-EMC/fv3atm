@@ -980,13 +980,14 @@ module FV3GFS_io_mod
            if(is_lsoil) then
               call register_restart_field(Sfc_restart, sfc_name2(num), var2_p, dimensions=(/'lat','lon'/), is_optional=.true.)
            else
-              call register_restart_field(Sfc_restart, sfc_name2(num), var2_p, dimensions=(/'Time','yaxis_1','xaxis_1'/), is_optional=.true.)
+              call register_restart_field(Sfc_restart, sfc_name2(num), var2_p, dimensions=(/'Time   ','yaxis_1','xaxis_1'/),&
+                                         &is_optional=.true.)
            end if
         else
            if(is_lsoil) then
               call register_restart_field(Sfc_restart,sfc_name2(num),var2_p, dimensions=(/'lat','lon'/))
            else
-              call register_restart_field(Sfc_restart,sfc_name2(num),var2_p, dimensions=(/'Time','yaxis_1','xaxis_1'/))
+              call register_restart_field(Sfc_restart,sfc_name2(num),var2_p, dimensions=(/'Time   ','yaxis_1','xaxis_1'/))
            end if
         endif
      enddo
@@ -999,7 +1000,7 @@ module FV3GFS_io_mod
             if(is_lsoil) then
                call register_restart_field(Sfc_restart, sfc_name2(num), var2_p, dimensions=(/'lat','lon'/), is_optional=.not.mand)
             else
-               call register_restart_field(Sfc_restart, sfc_name2(num), var2_p, dimensions=(/'Time','yaxis_1','xaxis_1'/), &
+               call register_restart_field(Sfc_restart, sfc_name2(num), var2_p, dimensions=(/'Time   ','yaxis_1','xaxis_1'/), &
                                           &is_optional=.not.mand)
             endif
          enddo
@@ -1011,7 +1012,7 @@ module FV3GFS_io_mod
             if(is_lsoil) then
                call register_restart_field(Sfc_restart, sfc_name2(num), var2_p, dimensions=(/'lat','lon'/) )
             else
-               call register_restart_field(Sfc_restart, sfc_name2(num), var2_p, dimensions=(/'Time','yaxis_1','xaxis_1'/) )
+               call register_restart_field(Sfc_restart, sfc_name2(num), var2_p, dimensions=(/'Time   ','yaxis_1','xaxis_1'/) )
             end if
          enddo
       endif ! mp/ruc
@@ -1025,7 +1026,7 @@ module FV3GFS_io_mod
             if(is_lsoil) then
                call register_restart_field(Sfc_restart, sfc_name2(num), var2_p, dimensions=(/'lat','lon'/), is_optional=.not.mand)
             else
-               call register_restart_field(Sfc_restart, sfc_name2(num), var2_p, dimensions=(/'Time','yaxis_1','xaxis_1'/), &
+               call register_restart_field(Sfc_restart, sfc_name2(num), var2_p, dimensions=(/'Time   ','yaxis_1','xaxis_1'/), &
                                           &is_optional=.not.mand)
             end if
          enddo
@@ -1058,17 +1059,19 @@ module FV3GFS_io_mod
       !--- register the 3D fields
     sfc_name3(0) = 'tiice'
     var3_p => sfc_var3ice(:,:,:)
-    call register_restart_field(Sfc_restart, sfc_name3(0), var3_p, dimensions=(/'xaxis_1', 'yaxis_1', 'zaxis_1', 'Time'/), is_optional=.true.)
+    call register_restart_field(Sfc_restart, sfc_name3(0), var3_p, dimensions=(/'xaxis_1', 'yaxis_1', 'zaxis_1', 'Time   '/),&
+                              &is_optional=.true.)
 
     do num = 1,nvar_s3
        var3_p => sfc_var3(:,:,:,num)
        if ( warm_start ) then
-          call register_restart_field(Sfc_restart, sfc_name3(num), var3_p, dimensions=(/'xaxis_1', 'yaxis_1', 'lsoil', 'Time'/), is_optional=.true.)
+          call register_restart_field(Sfc_restart, sfc_name3(num), var3_p, dimensions=(/'xaxis_1', 'yaxis_1', 'lsoil  ', 'Time'/),&
+                                     &is_optional=.true.)
        else
           if(is_lsoil) then
-             call register_restart_field(Sfc_restart, sfc_name3(num), var3_p, dimensions=(/'lat', 'lon', 'lsoil'/), is_optional=.true.)
+             call register_restart_field(Sfc_restart, sfc_name3(num), var3_p, dimensions=(/'lat  ', 'lon  ', 'lsoil'/), is_optional=.true.)
           else
-             call register_restart_field(Sfc_restart, sfc_name3(num), var3_p, dimensions=(/'xaxis_1','yaxis_1','zaxis1','Time'/), &
+             call register_restart_field(Sfc_restart, sfc_name3(num), var3_p, dimensions=(/'xaxis_1','yaxis_1','zaxis1','Time   '/),&
                                         &is_optional=.true.)
           end if
        end if
@@ -1078,14 +1081,17 @@ module FV3GFS_io_mod
        mand = .false.
        do num = nvar_s3+1,nvar_s3+3
           var3_p1 => sfc_var3sn(:,:,:,num)
-          call register_restart_field(Sfc_restart, sfc_name3(num), var3_p1, dimensions=(/'xaxis_1', 'yaxis_1','zaxis_2', 'Time'/), is_optional=.not.mand)
+          call register_restart_field(Sfc_restart, sfc_name3(num), var3_p1, dimensions=(/'xaxis_1', 'yaxis_1','zaxis_2', 'Time   '/),&
+                                     &is_optional=.not.mand)
        enddo
 
        var3_p2 => sfc_var3eq(:,:,:,7)
-       call register_restart_field(Sfc_restart, sfc_name3(7), var3_p2, dimensions=(/'xaxis_1', 'yaxis_1', 'zaxis_3', 'Time'/), is_optional=.not.mand)
+       call register_restart_field(Sfc_restart, sfc_name3(7), var3_p2, dimensions=(/'xaxis_1', 'yaxis_1', 'zaxis_3', 'Time   '/),&
+                                  &is_optional=.not.mand)
 
        var3_p3 => sfc_var3zn(:,:,:,8)
-       call register_restart_field(Sfc_restart, sfc_name3(8), var3_p3, dimensions=(/'xaxis_1', 'yaxis_1', 'zaxis_4', 'Time'/), is_optional=.not.mand)
+       call register_restart_field(Sfc_restart, sfc_name3(8), var3_p3, dimensions=(/'xaxis_1', 'yaxis_1', 'zaxis_4', 'Time   '/),&
+                                  &is_optional=.not.mand)
 
        nullify(var3_p1)
        nullify(var3_p2)
@@ -1912,9 +1918,9 @@ module FV3GFS_io_mod
            .or. trim(sfc_name2(num)) == 'albdirvis_ice' .or. trim(sfc_name2(num)) == 'albdirnir_ice' &
            .or. trim(sfc_name2(num)) == 'albdifvis_ice' .or. trim(sfc_name2(num)) == 'albdifnir_ice' &
            .or. trim(sfc_name2(num)) == 'emis_lnd' ) then
-         call register_restart_field(Sfc_restart, sfc_name2(num), var2_p, dimensions=(/'xaxis_1','yaxis_1','Time'/), is_optional=.true.)
+         call register_restart_field(Sfc_restart, sfc_name2(num), var2_p, dimensions=(/'xaxis_1','yaxis_1','Time   '/), is_optional=.true.)
       else
-         call register_restart_field(Sfc_restart, sfc_name2(num), var2_p, dimensions=(/'xaxis_1', 'yaxis_1', 'Time'/) )
+         call register_restart_field(Sfc_restart, sfc_name2(num), var2_p, dimensions=(/'xaxis_1', 'yaxis_1', 'Time   '/) )
       endif
    enddo
    if (Model%nstf_name(1) > 0) then
@@ -1922,20 +1928,22 @@ module FV3GFS_io_mod
       if (Model%nstf_name(2) ==0) mand = .true.
       do num = nvar2m+1,nvar2m+nvar2o
          var2_p => sfc_var2(:,:,num)
-         call register_restart_field(Sfc_restart, sfc_name2(num), var2_p, dimensions=(/'xaxis_1', 'yaxis_1', 'Time'/), is_optional=.not.mand)
+         call register_restart_field(Sfc_restart, sfc_name2(num), var2_p, dimensions=(/'xaxis_1', 'yaxis_1', 'Time  '/),&
+                                    &is_optional=.not.mand)
       enddo
    endif
-   
+
    if (Model%lsm == Model%lsm_ruc) then ! nvar2mp =0
       do num = nvar2m+nvar2o+1, nvar2m+nvar2o+nvar2r
          var2_p => sfc_var2(:,:,num)
-         call register_restart_field(Sfc_restart, sfc_name2(num), var2_p, dimensions=(/'xaxis_1', 'yaxis_1', 'Time'/))
+         call register_restart_field(Sfc_restart, sfc_name2(num), var2_p, dimensions=(/'xaxis_1', 'yaxis_1', 'Time  '/))
       enddo
    else if (Model%lsm == Model%lsm_noahmp) then ! nvar2r =0
       mand = .true.                  ! actually should be true since it is after cold start
       do num = nvar2m+nvar2o+1,nvar2m+nvar2o+nvar2mp
          var2_p => sfc_var2(:,:,num)
-         call register_restart_field(Sfc_restart, sfc_name2(num), var2_p, dimensions=(/'xaxis_1', 'yaxis_1', 'Time'/), is_optional=.not.mand)
+         call register_restart_field(Sfc_restart, sfc_name2(num), var2_p, dimensions=(/'xaxis_1', 'yaxis_1', 'Time  '/),&
+                                    &is_optional=.not.mand)
       enddo
    endif
    nullify(var2_p)
@@ -1960,40 +1968,43 @@ module FV3GFS_io_mod
       sfc_name3(4) = 'smfr'
       sfc_name3(5) = 'flfr'
    end if
-   
+
    !--- register the 3D fields
    !     if (Model%frac_grid) then
    sfc_name3(0) = 'tiice'
    var3_p => sfc_var3ice(:,:,:)
-   call register_restart_field(Sfc_restart, sfc_name3(0), var3_p, dimensions=(/'xaxis_1', 'yaxis_1', 'zaxis_1', 'Time'/))
+   call register_restart_field(Sfc_restart, sfc_name3(0), var3_p, dimensions=(/'xaxis_1', 'yaxis_1', 'zaxis_1', 'Time   '/))
    !     endif
 
    if(Model%lsm == Model%lsm_ruc) then
       do num = 1,nvar3
          var3_p => sfc_var3(:,:,:,num)
-         call register_restart_field(Sfc_restart, sfc_name3(num), var3_p, dimensions=(/'xaxis_1', 'yaxis_1', 'zaxis_1', 'Time'/))
+         call register_restart_field(Sfc_restart, sfc_name3(num), var3_p, dimensions=(/'xaxis_1', 'yaxis_1', 'zaxis_1', 'Time   '/))
       enddo
       nullify(var3_p)
    else
       do num = 1,nvar3
          var3_p => sfc_var3(:,:,:,num)
-         call register_restart_field(Sfc_restart, sfc_name3(num), var3_p, dimensions=(/'xaxis_1', 'yaxis_1', 'zaxis_2', 'Time'/))
+         call register_restart_field(Sfc_restart, sfc_name3(num), var3_p, dimensions=(/'xaxis_1', 'yaxis_1', 'zaxis_2', 'Time   '/))
       enddo
       nullify(var3_p)
    endif
-   
+
    if (Model%lsm == Model%lsm_noahmp) then
       mand = .true.
       do num = nvar3+1,nvar3+3
          var3_p1 => sfc_var3sn(:,:,:,num)
-         call register_restart_field(Sfc_restart, sfc_name3(num), var3_p1, dimensions=(/'xaxis_1', 'yaxis_1', 'zaxis_3', 'Time'/),is_optional=.not.mand)
+         call register_restart_field(Sfc_restart, sfc_name3(num), var3_p1, dimensions=(/'xaxis_1', 'yaxis_1', 'zaxis_3', 'Time   '/),&
+                                    &is_optional=.not.mand)
       enddo
-      
+
       var3_p2 => sfc_var3eq(:,:,:,7)
-      call register_restart_field(Sfc_restart, sfc_name3(7), var3_p2, dimensions=(/'xaxis_1', 'yaxis_1', 'zaxis_2', 'Time'/), is_optional=.not.mand)
-      
+      call register_restart_field(Sfc_restart, sfc_name3(7), var3_p2, dimensions=(/'xaxis_1', 'yaxis_1', 'zaxis_2', 'Time   '/),&
+                                    &is_optional=.not.mand)
+ 
       var3_p3 => sfc_var3zn(:,:,:,8)
-      call register_restart_field(Sfc_restart, sfc_name3(8), var3_p3, dimensions=(/'xaxis_1', 'yaxis_1', 'zaxis_4', 'Time'/), is_optional=.not.mand)
+      call register_restart_field(Sfc_restart, sfc_name3(8), var3_p3, dimensions=(/'xaxis_1', 'yaxis_1', 'zaxis_4', 'Time   '/),&
+                                 &is_optional=.not.mand)
       
       nullify(var3_p1)
       nullify(var3_p2)
@@ -2254,11 +2265,12 @@ module FV3GFS_io_mod
 
       do num = 1,nvar2d
         var2_p => phy_var2(:,:,num)
-        call register_restart_field(Phy_restart, trim(GFS_Restart%name2d(num)), var2_p, dimensions=(/'xaxis_1','yaxis_1','Time'/), is_optional=.true.)
+        call register_restart_field(Phy_restart, trim(GFS_Restart%name2d(num)), var2_p, dimensions=(/'xaxis_1','yaxis_1','Time   '/),&
+                                   &is_optional=.true.)
       enddo
       do num = 1,nvar3d
         var3_p => phy_var3(:,:,:,num)
-        call register_restart_field(Phy_restart, trim(GFS_restart%name3d(num)), var3_p, dimensions=(/'xaxis_1','yaxis_1','zaxis_1','Time'/), is_optional=.true.)
+        call register_restart_field(Phy_restart, trim(GFS_restart%name3d(num)), var3_p, dimensions=(/'xaxis_1','yaxis_1','zaxis_1','Time   '/), is_optional=.true.)
       enddo
       nullify(var2_p)
       nullify(var3_p)
@@ -2399,11 +2411,13 @@ module FV3GFS_io_mod
 
     do num = 1,nvar2d
        var2_p => phy_var2(:,:,num)
-       call register_restart_field(Phy_restart, trim(GFS_Restart%name2d(num)), var2_p, dimensions=(/'xaxis_1','yaxis_1','Time'/), is_optional=.true.)
+       call register_restart_field(Phy_restart, trim(GFS_Restart%name2d(num)), var2_p, dimensions=(/'xaxis_1','yaxis_1','Time   '/),&
+                                  &is_optional=.true.)
     enddo
     do num = 1,nvar3d
        var3_p => phy_var3(:,:,:,num)
-       call register_restart_field(Phy_restart, trim(GFS_Restart%name3d(num)), var3_p, dimensions=(/'xaxis_1','yaxis_1','zaxis_1','Time'/), is_optional=.true.)
+       call register_restart_field(Phy_restart, trim(GFS_Restart%name3d(num)), var3_p, dimensions=(/'xaxis_1','yaxis_1','zaxis_1','Time   '/),&
+                                  &is_optional=.true.)
     enddo
     nullify(var2_p)
     nullify(var3_p)
