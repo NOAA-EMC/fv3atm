@@ -631,7 +631,7 @@
   standard_name = surface_snow_area_fraction_over_ice
   long_name = surface snow area fraction over ice
   units = frac
-  dimensions = (horizontal_dimension)
+  dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme)
@@ -1456,7 +1456,7 @@
   standard_name = temperature_in_surface_snow_at_surface_adjacent_layer_over_land
   long_name = snow temperature at the bottom of the first snow layer over land
   units = K
-  dimensions = (horizontal_dimension)
+  dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme)
