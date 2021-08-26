@@ -97,7 +97,7 @@ add_subdirectory(framework)
 
 add_subdirectory(physics)
 add_dependencies(ccppphys ccpp)
-target_link_libraries(ccppphys PUBLIC NetCDF::NetCDF_Fortran)
+target_link_libraries(ccppphys PUBLIC w3nco::w3nco_d NetCDF::NetCDF_Fortran)
 # This should not be necessary once framework and physics targets define BUILD_INTERFACE
 target_include_directories(ccppphys PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/framework/src)
 
