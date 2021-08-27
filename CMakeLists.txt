@@ -39,6 +39,7 @@ list(APPEND _fv3dycore_srcs
   atmos_cubed_sphere/model/fv_fill.F90
   atmos_cubed_sphere/model/fv_grid_utils.F90
   atmos_cubed_sphere/model/fv_mapz.F90
+  atmos_cubed_sphere/model/fv_tracker.F90
   atmos_cubed_sphere/model/fv_moving_nest.F90
   atmos_cubed_sphere/model/fv_moving_nest_logging.F90
   atmos_cubed_sphere/model/fv_moving_nest_main.F90
