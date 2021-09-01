@@ -24,7 +24,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
   use esmf
 
   use time_manager_mod,   only: time_type, set_calendar_type, set_time,    &
-                                set_date, days_in_month, month_name,       &
+                                set_date, month_name,                      &
                                 operator(+), operator(-), operator (<),    &
                                 operator (>), operator (/=), operator (/), &
                                 operator (==), operator (*),               &
@@ -43,22 +43,20 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
                                 addLsmask2grid
 
   use constants_mod,      only: constants_init
-  use fms_mod,            only: open_namelist_file, file_exist, check_nml_error, &
-                                error_mesg, fms_init, fms_end, close_file,       &
+  use fms_mod,            only: error_mesg, fms_init, fms_end,             &
                                 write_version_number, uppercase
 
   use mpp_mod,            only: mpp_init, mpp_pe, mpp_root_pe,  &
                                 mpp_error, FATAL, WARNING
-  use mpp_mod,            only: mpp_clock_id, mpp_clock_begin, mpp_clock_end
+  use mpp_mod,            only: mpp_clock_id, mpp_clock_begin
 
-  use mpp_io_mod,         only: mpp_open, mpp_close, MPP_NATIVE, MPP_RDONLY, MPP_DELETE
+  use mpp_io_mod,         only: mpp_open, mpp_close, MPP_DELETE
 
   use mpp_domains_mod,    only: mpp_get_compute_domains, domain2D 
-  use memutils_mod,       only: print_memuse_stats
   use sat_vapor_pres_mod, only: sat_vapor_pres_init
 
   use diag_manager_mod,   only: diag_manager_init, diag_manager_end, &
-                                get_base_date, diag_manager_set_time_end
+                                diag_manager_set_time_end
 
   use data_override_mod,  only: data_override_init
   use fv_nggps_diags_mod, only: fv_dyn_bundle_setup
@@ -873,8 +871,6 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
           endif
         endif
       endif
-!
-      call print_memuse_stats('after full step')
 !
 !-----------------------------------------------------------------------
 !
