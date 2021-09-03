@@ -60,7 +60,7 @@ module post_gfs
       real,dimension(komax),save :: po, th, pv
       logical        :: Log_runpost
       character(255) :: post_fname*255
-      real * 4, dimension(komax) :: th4, pv4
+      real * 4, dimension(komax), save :: th4, pv4
 
       integer,save :: iostatusD3D=-1
 !
@@ -109,6 +109,9 @@ module post_gfs
 !
         call read_postnmlt(kpo,kth,kpv,po,th,pv,wrt_int_state%post_nlunit, &
                            wrt_int_state%post_namelist)
+
+        th4(1:kth) = th(1:kth)
+        pv4(1:kpv) = pv(1:kpv)
 !
 !-----------------------------------------------------------------------
 !*** allocate post variables
@@ -184,14 +187,10 @@ module post_gfs
         IEOF  = 0
         npset = 0
         icount_calmict = 0
-        th4(1:kth) = th(1:kth)
-        pv4(1:kpv) = pv(1:kpv)
         do while( IEOF == 0)
 !
           if(grib == "grib2") then
             npset = npset + 1
-      if (mype == 0) write(0,*)' in post_gfs kth=',kth,' th=',th(1:kth),&
-     ' kpv=',kpv,' pv=',pv(1:kpv)
             call set_outflds(kth,th4,kpv,pv4)
             if(allocated(datapd))deallocate(datapd)
             allocate(datapd(wrt_int_state%im,jte-jts+1,nrecout+100))
