@@ -357,9 +357,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
       if(restart_interval(2)== -1) freq_restart = .true.
     endif
     if(freq_restart) then
-      if(restart_interval(1) == 0) then
-        frestart(1) = total_inttime
-      else if(restart_interval(1) > 0) then
+      if(restart_interval(1) >= 0) then
         tmpvar = restart_interval(1) * 3600
         atm_int_state%Time_step_restart = set_time (tmpvar, 0)
         if(iau_offset > 0 ) then
@@ -369,16 +367,18 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
           atm_int_state%Time_restart = atm_int_state%Time_init + atm_int_state%Time_step_restart
           frestart(1) = tmpvar
         endif
-        i = 2
-        do while ( atm_int_state%Time_restart < atm_int_state%Time_end )
-          frestart(i) = frestart(i-1) + tmpvar
-          atm_int_state%Time_restart = atm_int_state%Time_restart + atm_int_state%Time_step_restart
-           i = i + 1
-        enddo
+        if(restart_interval(1) > 0) then
+          i = 2
+          do while ( atm_int_state%Time_restart < atm_int_state%Time_end )
+            frestart(i) = frestart(i-1) + tmpvar
+            atm_int_state%Time_restart = atm_int_state%Time_restart + atm_int_state%Time_step_restart
+             i = i + 1
+          enddo
+        endif
       endif
 ! otherwise it is an array with forecast time at which the restart files will be written out
     else if(num_restart_interval >= 1) then
-      if(restart_interval(1) == 0 ) then
+      if(num_restart_interval == 1 .and. restart_interval(1) == 0 ) then
         frestart(1) = total_inttime
       else
         if(iau_offset > 0 ) then
@@ -859,11 +859,11 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !--- intermediate restart
       if (atm_int_state%intrm_rst>0) then
         if (na /= atm_int_state%num_atmos_calls-1) then
-          call get_time(atm_int_state%Time_atmos - atm_int_state%Time_atstart, seconds)
+          call get_time(atm_int_state%Time_atmos - atm_int_state%Time_init, seconds)
           if (ANY(frestart(:) == seconds)) then
-            restart_inctime = set_time(seconds, 0)
-            atm_int_state%Time_restart = atm_int_state%Time_atstart + restart_inctime
-            timestamp = date_to_string (atm_int_state%Time_restart)
+            if (mype == 0) write(0,*)'write out restart at na=',na,' seconds=',seconds,  &
+               'integration lenght=',na*dt_atmos/3600.
+            timestamp = date_to_string (atm_int_state%Time_atmos)
             call atmos_model_restart(atm_int_state%Atm, timestamp)
             call write_stoch_restart_atm('RESTART/'//trim(timestamp)//'.atm_stoch.res.nc')
 
