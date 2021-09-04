@@ -192,6 +192,7 @@ module post_gfs
           if(grib == "grib2") then
             npset = npset + 1
             call set_outflds(kth,th4,kpv,pv4)
+!           call set_outflds(kth,th,kpv,pv)
             if(allocated(datapd))deallocate(datapd)
             allocate(datapd(wrt_int_state%im,jte-jts+1,nrecout+100))
 !$omp parallel do default(none),private(i,j,k),shared(nrecout,jend,jsta,im,datapd)
@@ -205,7 +206,8 @@ module post_gfs
             call get_postfilename(post_fname)
             if (mype==0) write(0,*)'post_fname=',trim(post_fname)
 !
-            if ( ieof == 0) call process(kth,kpv,th(1:kth),pv(1:kpv),iostatusD3D)
+!           if ( ieof == 0) call process(kth,kpv,th(1:kth),pv(1:kpv),iostatusD3D)
+            if ( ieof == 0) call process(kth,kpv,th4(1:kth),pv4(1:kpv),iostatusD3D)
 !
             call mpi_barrier(mpicomp,ierr)
             call gribit2(post_fname)
