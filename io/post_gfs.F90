@@ -356,7 +356,7 @@ module post_gfs
                              cfrach, cfracl, cfracm, avgcfrach, qshltr,        &
                              avgcfracl, avgcfracm, cnvcfr, islope, cmc, grnflx,&
                              vegfrc, acfrcv, ncfrcv, acfrst, ncfrst, ssroff,   &
-                             bgroff, rlwin,      &
+                             bgroff, rlwin,                                    &
                              rlwtoa, cldwork, alwin, alwout, alwtoa, rswin,    &
                              rswinc, rswout, aswin, auvbin, auvbinc, aswout,   &
                              aswtoa, sfcshx, sfclhx, subshx, snopcx, sfcux,    &
@@ -472,8 +472,8 @@ module post_gfs
           if (ip1 > im) ip1 = ip1 - im
           dx(i,j) = erad*cos(gdlat(i,j)*dtr)*(gdlon(ip1,j)-gdlon(i,j))*dtr
           dy(i,j)  = erad*(gdlat(i,j)-gdlat(i,j+1))*dtr  ! like A*DPH
-        end do
-      end do
+        enddo
+      enddo
 !
       if(.not. allocated(ak5)) allocate(ak5(lm+1),bk5(lm+1))
       do i=1,lm+1
@@ -485,8 +485,8 @@ module post_gfs
       do j=jsta,jend
         do i=1,im
           f(I,J) = 1.454441e-4*sin(gdlat(i,j)*dtr)   ! 2*omeg*sin(phi)
-        end do
-      end do
+        enddo
+      enddo
 !
 ! GFS does not output PD
       pt = ak5(1)
@@ -683,16 +683,16 @@ module post_gfs
       enddo
 !
 ! get inital date
-      sdat(1)  = wrt_int_state%idate(2)   !month
-      sdat(2)  = wrt_int_state%idate(3)   !day
-      sdat(3)  = wrt_int_state%idate(1)   !year
-      ihrst    = wrt_int_state%idate(4)   !hour
+      sdat(1) = wrt_int_state%idate(2)   !month
+      sdat(2) = wrt_int_state%idate(3)   !day
+      sdat(3) = wrt_int_state%idate(1)   !year
+      ihrst   = wrt_int_state%idate(4)   !hour
 
-      idat(1)  = wrt_int_state%fdate(2)
-      idat(2)  = wrt_int_state%fdate(3)
-      idat(3)  = wrt_int_state%fdate(1)
-      idat(4)  = wrt_int_state%fdate(4)
-      idat(5)  = wrt_int_state%fdate(5)
+      idat(1) = wrt_int_state%fdate(2)
+      idat(2) = wrt_int_state%fdate(3)
+      idat(3) = wrt_int_state%fdate(1)
+      idat(4) = wrt_int_state%fdate(4)
+      idat(5) = wrt_int_state%fdate(5)
 !
       if(mype==0) print *,'idat=',idat,'sdat=',sdat,'ihrst=',ihrst
 !      CALL W3DIFDAT(JDATE,IDATE,0,RINC)
@@ -725,7 +725,7 @@ module post_gfs
 !-----------------------------------------------------------------------------
 !
      foundland = .false.
-     foundice = .false.
+     foundice  = .false.
      get_lsmsk: do ibdl=1, wrt_int_state%FBCount
 
 ! find lans sea mask
@@ -2541,11 +2541,11 @@ module post_gfs
               if(pbot(i,j) >= pmid(i,j,l)) then
                 hbot(i,j) = l
                 exit
-              end if
-            end do
-          end if
-        end do
-      end do
+              endif
+            enddo
+          endif
+        enddo
+      enddo
 
 ! generate look up table for lifted parcel calculations
       thl    = 210.
@@ -2567,7 +2567,7 @@ module post_gfs
 !$omp parallel do default(none) private(l) shared(lsm,alsl,spl)
       do l = 1,lsm
          alsl(l) = log(spl(l))
-      end do
+      enddo
 !
 !      print *,'in gfs_post, end ref_10cm=',maxval(ref_10cm), minval(ref_10cm)
 !!! above is fv3 change
