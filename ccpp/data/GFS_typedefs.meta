@@ -2555,6 +2555,12 @@
   units = flag
   dimensions = ()
   type = logical
+[cplocn2atm]
+  standard_name = flag_for_one_way_ocean_coupling_to_atmosphere
+  long_name = flag controlling ocean coupling to the atmosphere (default on)
+  units = flag
+  dimensions = ()
+  type = logical
 [cplwav]
   standard_name = flag_for_ocean_wave_coupling
   long_name = flag controlling cplwav collection (default off)
