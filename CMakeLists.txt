@@ -62,6 +62,8 @@ list(APPEND _fv3dycore_defs_private SPMD
                                     GFS_TYPES
                                     USE_GFSL63
                                     MOIST_CAPPA
+                                    INTERNAL_FILE_NML
+                                    ENABLE_QUAD_PRECISION
                                     USE_COND)
 
 if(MULTI_GASES)
