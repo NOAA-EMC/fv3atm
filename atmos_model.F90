@@ -1787,7 +1787,7 @@ end subroutine atmos_data_type_chksum
           fldname = 'sea_surface_temperature'
           if (trim(impfield_name) == trim(fldname)) then
             findex  = queryImportFields(fldname)
-            if (importFieldsValid(findex)) then
+            if (importFieldsValid(findex) .and. GFS_control%cplocn2atm) then
 !$omp parallel do default(shared) private(i,j,nb,ix)
               do j=jsc,jec
                 do i=isc,iec
