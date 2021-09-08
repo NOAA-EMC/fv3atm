@@ -254,7 +254,7 @@ module stochastic_physics_wrapper_mod
              endif
 
              call lndp_apply_perts(GFS_Control%blksz, GFS_Control%lsm, GFS_Control%lsm_noah, GFS_Control%lsm_ruc, lsoil,      &
-                               GFS_Control%dtf, GFS_Control%kdt, GFS_Control%lndp_each_step,                                  &
+                               GFS_Control%dtp, GFS_Control%kdt, GFS_Control%lndp_each_step,                                  &
                                GFS_Control%n_var_lndp, GFS_Control%lndp_var_list, GFS_Control%lndp_prt_list,                  &
                                sfc_wts, xlon, xlat, stype, GFS_Control%pores, GFS_Control%resid,param_update_flag,            &
                                smc, slc, stc, vfrac, alvsf, alnsf, alvwf, alnwf, facsf, facwf, snoalb, semis, zorll, ierr)
@@ -317,12 +317,12 @@ module stochastic_physics_wrapper_mod
              ca_turb_cpl(nb,1:GFS_Control%blksz(nb)) = GFS_Data(nb)%Coupling%ca_turb(:)
              ca_shal_cpl(nb,1:GFS_Control%blksz(nb)) = GFS_Data(nb)%Coupling%ca_shal(:)
          enddo
-         call cellular_automata_sgs(GFS_Control%kdt,GFS_control%dtf,GFS_control%restart,GFS_Control%first_time_step,              &
+         call cellular_automata_sgs(GFS_Control%kdt,GFS_control%dtp,GFS_control%restart,GFS_Control%first_time_step,              &
             sst,lmsk,lake,condition,ca_deep_cpl,ca_turb_cpl,ca_shal_cpl,ca_deep_diag,ca_turb_diag,                                &
             ca_shal_diag,Atm(mygrid)%domain_for_coupler,nblks,                                                                    &
             Atm_block%isc,Atm_block%iec,Atm_block%jsc,Atm_block%jec,Atm(mygrid)%npx,Atm(mygrid)%npy, levs,                        &
             GFS_Control%nthresh,GFS_Control%rcell,GFS_Control%nca,GFS_Control%scells,GFS_Control%tlives,GFS_Control%nfracseed,    &
-            GFS_Control%nseed,GFS_Control%ca_global,GFS_Control%ca_sgs,GFS_Control%iseed_ca,                                      &
+            GFS_Control%nseed,GFS_Control%ca_global,GFS_Control%ca_sgs,GFS_Control%iseed_ca,GFS_Control%tile_num,                 &
             GFS_Control%ca_smooth,GFS_Control%nspinup,GFS_Control%ca_trigger,Atm_block%blksz(1),GFS_Control%master,GFS_Control%communicator)
          ! Copy contiguous data back as needed
          do nb=1,nblks
@@ -352,10 +352,10 @@ module stochastic_physics_wrapper_mod
           allocate(ca1_diag(1:nblks, maxblk))
           allocate(ca2_diag(1:nblks, maxblk))
           allocate(ca3_diag(1:nblks, maxblk))
-          call cellular_automata_global(GFS_Control%kdt,GFS_Control%first_time_step,ca1_cpl,ca2_cpl,ca3_cpl,ca1_diag,ca2_diag,ca3_diag,         &
+          call cellular_automata_global(GFS_Control%kdt,GFS_control%restart,GFS_Control%first_time_step,ca1_cpl,ca2_cpl,ca3_cpl,ca1_diag,ca2_diag,ca3_diag,         &
             Atm(mygrid)%domain_for_coupler, nblks,Atm_block%isc,Atm_block%iec,Atm_block%jsc,Atm_block%jec,Atm(mygrid)%npx,Atm(mygrid)%npy,levs, &
             GFS_Control%nca_g,GFS_Control%ncells_g,GFS_Control%nlives_g,GFS_Control%nfracseed,GFS_Control%nseed_g,                              &
-            GFS_Control%ca_global,GFS_Control%ca_sgs,GFS_Control%iseed_ca,GFS_Control%ca_smooth,GFS_Control%nspinup,Atm_block%blksz(1),         &
+            GFS_Control%ca_global,GFS_Control%ca_sgs,GFS_Control%iseed_ca,GFS_control%til_num,GFS_Control%ca_smooth,GFS_Control%nspinup,Atm_block%blksz(1),         &
             GFS_Control%nsmooth,GFS_Control%ca_amplitude,GFS_Control%master,GFS_Control%communicator)
           ! Copy contiguous data back
           do nb=1,nblks
