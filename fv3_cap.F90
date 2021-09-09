@@ -534,7 +534,7 @@ module fv3gfs_cap_mod
     if (ESMF_LogFoundError(rcToCheck=urc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 !
 ! reconcile the fcstComp's import state
-    call ESMF_StateReconcile(fcstState, attreconflag= ESMF_ATTRECONCILE_ON, rc=rc)
+    call ESMF_StateReconcile(fcstState, attreconflag=ESMF_ATTRECONCILE_ON, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 !
 ! determine number elements in fcstState
