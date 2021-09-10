@@ -3,7 +3,7 @@
   #url = https://github.com/NOAA-GFDL/GFDL_atmos_cubed_sphere
   #branch = dev/emc
   url = https://github.com/aerorahul/GFDL_atmos_cubed_sphere
-  branch = feature/cmake_in_dycore_of_emc
+  branch = feature/cmake_only_in_dycore_of_emc
 [submodule "ccpp/framework"]
   path = ccpp/framework
   #url = https://github.com/NCAR/ccpp-framework
