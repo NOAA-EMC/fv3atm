@@ -631,7 +631,7 @@
   standard_name = surface_snow_area_fraction_over_ice
   long_name = surface snow area fraction over ice
   units = frac
-  dimensions = (horizontal_dimension)
+  dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme)
@@ -1296,66 +1296,66 @@
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_noah_wrfv4_land_surface_scheme)
-[albdvis_lnd]
+[albdirvis_lnd]
   standard_name = surface_albedo_direct_visible_over_land
   long_name = direct surface albedo visible band over land
   units = frac
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[albdnir_lnd]
+[albdirnir_lnd]
   standard_name = surface_albedo_direct_NIR_over_land
   long_name = direct surface albedo NIR band over land
   units = frac
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[albivis_lnd]
+[albdifvis_lnd]
   standard_name = surface_albedo_diffuse_visible_over_land
   long_name = diffuse surface albedo visible band over land
   units = frac
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[albinir_lnd]
+[albdifnir_lnd]
   standard_name = surface_albedo_diffuse_NIR_over_land
   long_name = diffuse surface albedo NIR band over land
   units = frac
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[albdvis_ice]
+[albdirvis_ice]
   standard_name = surface_albedo_direct_visible_over_ice
   long_name = direct surface albedo visible band over ice
   units = frac
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme)
-[albdnir_ice]
-  standard_name = surface_albedo_direct_NIR_over_ice
-  long_name = direct surface albedo NIR band over ice
-  units = frac
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-  active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme)
-[albivis_ice]
+  active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme .or. flag_for_cice_albedo .eqv. .true.)
+[albdifvis_ice]
   standard_name = surface_albedo_diffuse_visible_over_ice
   long_name = diffuse surface albedo visible band over ice
   units = frac
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme)
-[albinir_ice]
+  active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme .or. flag_for_cice_albedo .eqv. .true.)
+[albdirnir_ice]
+  standard_name = surface_albedo_direct_NIR_over_ice
+  long_name = direct surface albedo NIR band over ice
+  units = frac
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme .or. flag_for_cice_albedo .eqv. .true.)
+[albdifnir_ice]
   standard_name = surface_albedo_diffuse_NIR_over_ice
   long_name = diffuse surface albedo NIR band over ice
   units = frac
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = ( control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme)
+  active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme .or. flag_for_cice_albedo .eqv. .true.)
 [wetness]
   standard_name = normalized_soil_wetness_for_land_surface_model
   long_name = normalized soil wetness for lsm
@@ -1448,7 +1448,7 @@
   standard_name = temperature_in_surface_snow_at_surface_adjacent_layer_over_land
   long_name = snow temperature at the bottom of the first snow layer over land
   units = K
-  dimensions = (horizontal_dimension)
+  dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme)
@@ -2177,40 +2177,8 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[sfc_alb_nir_dir_cpl]
-  standard_name = surface_nir_albedo_direct_rad_for_coupling
-  long_name = sfc near IR albedo for direct radiation for coupling
-  units = frac
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-  active = (flag_for_surface_flux_coupling)
-[sfc_alb_nir_dif_cpl]
-  standard_name = surface_nir_albedo_diffuse_rad_for_coupling
-  long_name = sfc near IR albedo for diffuse radiation for coupling
-  units = frac
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-  active = (flag_for_surface_flux_coupling)
-[sfc_alb_vis_dir_cpl]
-  standard_name = surface_vis_albedo_direct_rad_for_coupling
-  long_name = sfc visible albedo for direct radiation for coupling
-  units = frac
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-  active = (flag_for_surface_flux_coupling)
-[sfc_alb_vis_dif_cpl]
-  standard_name = surface_vis_albedo_diffuse_rad_for_coupling
-  long_name = sfc visible albedo for diffuse radiation for coupling
-  units = frac
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-  active = (flag_for_surface_flux_coupling)
 [slimskin_cpl]
-  standard_name = area_type_from_coupled_process	
+  standard_name = area_type_from_coupled_process
   long_name = sea/land/ice mask input (=0/1/2)
   units = flag
   dimensions = (horizontal_loop_extent)
@@ -2413,13 +2381,6 @@
   units = none
   dimensions = ()
   type = integer
-[fhzero]
-  standard_name = frequency_for_diagnostic_clearing
-  long_name = frequency for clearing diagnostic fields
-  units = h
-  dimensions = ()
-  type = real
-  kind = kind_phys
 [ldiag3d]
   standard_name = flag_for_diagnostics_3D
   long_name = flag for 3d diagnostic fields
@@ -2627,6 +2588,12 @@
 [cpl_imp_dbg]
   standard_name = flag_for_debugging_merged_imported_data
   long_name = flag controlling cpl_imp_dbg for imported data (default off)
+  units = flag
+  dimensions = ()
+  type = logical
+[use_cice_alb]
+ standard_name = flag_for_cice_albedo
+ long_name = flag for using ice albedos form CICE when coupled (default false)
   units = flag
   dimensions = ()
   type = logical
@@ -3036,12 +3003,6 @@
   dimensions = ()
   type = real
   kind = kind_phys
-[ncld]
-  standard_name = number_of_hydrometeors
-  long_name = choice of cloud scheme / number of hydrometeors
-  units = count
-  dimensions = ()
-  type = integer
 [convert_dry_rho]
   standard_name = flag_for_converting_hydrometeors_from_moist_to_dry_air
   long_name = flag for converting hydrometeors from moist to dry air
@@ -7537,22 +7498,22 @@
   kind = kind_phys
   active = (control_for_microphysics_scheme == identifier_for_fer_hires_microphysics_scheme)
 [adjsfculw_water]
-  standard_name = surface_upwelling_longwave_flux_over_water_interstitial
-  long_name = surface upwelling longwave flux at current time over water (temporary use as interstitial)
+  standard_name = surface_upwelling_longwave_flux_over_water
+  long_name = surface upwelling longwave flux at current time over water
   units = W m-2
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
 [adjsfculw_land]
-  standard_name = surface_upwelling_longwave_flux_over_land_interstitial
-  long_name = surface upwelling longwave flux at current time over land (temporary use as interstitial)
+  standard_name = surface_upwelling_longwave_flux_over_land
+  long_name = surface upwelling longwave flux at current time over land
   units = W m-2
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
 [adjsfculw_ice]
-  standard_name = surface_upwelling_longwave_flux_over_ice_interstitial
-  long_name = surface upwelling longwave flux at current time over ice (temporary use as interstitial)
+  standard_name = surface_upwelling_longwave_flux_over_ice
+  long_name = surface upwelling longwave flux at current time over ice
   units = W m-2
   dimensions = (horizontal_loop_extent)
   type = real
@@ -8253,8 +8214,8 @@
   type = real
   kind = kind_phys
 [semis_water]
-  standard_name = surface_longwave_emissivity_over_water_interstitial
-  long_name = surface lw emissivity in fraction over water (temporary use as interstitial)
+  standard_name = surface_longwave_emissivity_over_water
+  long_name = surface lw emissivity in fraction over water
   units = frac
   dimensions = (horizontal_loop_extent)
   type = real
@@ -8852,9 +8813,9 @@
   dimensions = (horizontal_loop_extent)
   type = integer
 [itc]
-  standard_name = number_of_aerosol_tracers_for_convection
-  long_name = number of aerosol tracers transported/scavenged by convection
-  units = count
+  standard_name = index_of_first_chemical_tracer_for_convection
+  long_name = index of first chemical tracer transported/scavenged by convection
+  units = index
   dimensions = ()
   type = integer
 [wet]
@@ -9729,13 +9690,6 @@
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_noah_wrfv4_land_surface_scheme)
-[tice]
-  standard_name = sea_ice_temperature_interstitial
-  long_name = sea ice surface skin temperature use as interstitial
-  units = K
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
 [tlvl]
   standard_name = air_temperature_at_interface_for_radiation
   long_name = air temperature at vertical interface for radiation calculation
@@ -9819,30 +9773,23 @@
   type = real
   kind = kind_phys
 [tsfc_water]
-  standard_name = surface_skin_temperature_over_water_interstitial
-  long_name = surface skin temperature over water (temporary use as interstitial)
-  units = K
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-[tsfc_land]
-  standard_name = surface_skin_temperature_over_land_interstitial
-  long_name = surface skin temperature over land  (temporary use as interstitial)
+  standard_name = surface_skin_temperature_over_water
+  long_name = surface skin temperature over water
   units = K
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
 [tsfc_land_save]
-  standard_name = surface_skin_temperature_over_land_interstitial_save
-  long_name = surface skin temperature over land before entering a physics scheme (temporary use as interstitial)
+  standard_name = surface_skin_temperature_over_land_save
+  long_name = surface skin temperature over land before entering a physics scheme
   units = K
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_noah_wrfv4_land_surface_scheme)
 [tsfc_ice]
-  standard_name = surface_skin_temperature_over_ice_interstitial
-  long_name = surface skin temperature over ice   (temporary use as interstitial)
+  standard_name = surface_skin_temperature_over_ice
+  long_name = surface skin temperature over ice
   units = K
   dimensions = (horizontal_loop_extent)
   type = real
@@ -10163,7 +10110,7 @@
   standard_name = saturation_vapor_pressure
   long_name = saturation vapor pressure
   units = Pa
-  dimensions = (horizontal_dimension,vertical_layer_dimension)
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
   kind = kind_phys
   optional = F
@@ -10172,7 +10119,7 @@
   standard_name = water_vapor_mixing_ratio
   long_name = water vaport mixing ratio
   units = kg/kg
-  dimensions = (horizontal_dimension,vertical_layer_dimension)
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
   kind = kind_phys
   optional = F
@@ -10269,20 +10216,6 @@
   units = none
   dimensions = ()
   type = integer
-[cldtausw]
-  standard_name = RRTMGP_cloud_optical_depth_layers_at_0_55mu_band
-  long_name = approx .55mu band layer cloud optical depth
-  units = none
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
-  type = real
-  kind = kind_phys
-[cldtaulw]
-  standard_name = RRTMGP_cloud_optical_depth_layers_at_10mu_band
-  long_name = approx 10mu band layer cloud optical depth
-  units = none
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
-  type = real
-  kind = kind_phys
 [fluxlwUP_clrsky]
   standard_name = RRTMGP_lw_flux_profile_upward_clrsky
   long_name = RRTMGP upward longwave clr-sky flux profile
@@ -10963,6 +10896,27 @@
   standard_name = specific_heat_of_ice_at_constant_pressure
   long_name = specific heat of ice at constant pressure
   units = J kg-1 K-1
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[con_psat]
+  standard_name = saturation_pressure_at_triple_point_of_water
+  long_name = saturation pressure at triple point of water
+  units = Pa
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[karman]
+  standard_name = von_karman_constant
+  long_name = Von Karman constant
+  units = none
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[rainmin]
+  standard_name = lwe_thickness_of_minimum_rain_amount
+  long_name = liquid water equivalent thickness of minimum rain amount
+  units = m
   dimensions = ()
   type = real
   kind = kind_phys
