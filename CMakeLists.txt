@@ -85,7 +85,7 @@ endif()
 ### Install
 ###############################################################################
 install(
-  TARGETS fv3atm fv3ccpp
+  TARGETS fv3atm
   EXPORT fv3atm-config
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib)
