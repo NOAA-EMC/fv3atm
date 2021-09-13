@@ -90,9 +90,7 @@ endif()
 # Build CCPP framework and physics
 
 add_subdirectory(framework)
-
 add_subdirectory(physics)
-#add_dependencies(ccpp_physics ccpp_framework) ! Not sure if this is needed at all
 
 #------------------------------------------------------------------------------
 # Build fv3ccpp
