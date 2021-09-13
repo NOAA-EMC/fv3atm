@@ -126,3 +126,17 @@ endif()
 
 set_target_properties(fv3ccpp PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mod)
 target_include_directories(fv3ccpp PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/mod>)
+
+###############################################################################
+### Install
+###############################################################################
+install(
+  TARGETS fv3ccpp ccpp_framework ccpp_physics
+  EXPORT fv3ccpp-config
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib)
+
+install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mod DESTINATION ${CMAKE_INSTALL_PREFIX})
+
+install(EXPORT fv3ccpp-config
+  DESTINATION lib/cmake)
