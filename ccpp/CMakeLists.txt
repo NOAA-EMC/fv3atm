@@ -90,16 +90,8 @@ endif()
 # Build CCPP framework and physics
 
 add_subdirectory(framework)
-
 add_subdirectory(physics)
-# DH*
 add_dependencies(ccpp_physics ccpp_framework)
-#
-#add_dependencies(ccppphys ccpp)
-#target_link_libraries(ccppphys PUBLIC w3nco::w3nco_d NetCDF::NetCDF_Fortran)
-## This should not be necessary once framework and physics targets define BUILD_INTERFACE
-#target_include_directories(ccppphys PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/framework/src)
-# *DH
 
 #------------------------------------------------------------------------------
 # Build fv3ccpp
