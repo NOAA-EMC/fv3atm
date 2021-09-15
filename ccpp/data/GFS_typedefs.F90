@@ -263,13 +263,13 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: facwf  (:)   => null()  !< fractional coverage with   weak cosz dependency
 
 !--- In (physics only)
-    real (kind=kind_phys), pointer :: slope  (:)   => null()  !< sfc slope type for lsm
+    integer,               pointer :: slope  (:)   => null()  !< sfc slope type for lsm
     real (kind=kind_phys), pointer :: shdmin (:)   => null()  !< min fractional coverage of green veg
     real (kind=kind_phys), pointer :: shdmax (:)   => null()  !< max fractnl cover of green veg (not used)
     real (kind=kind_phys), pointer :: tg3    (:)   => null()  !< deep soil temperature
     real (kind=kind_phys), pointer :: vfrac  (:)   => null()  !< vegetation fraction
-    real (kind=kind_phys), pointer :: vtype  (:)   => null()  !< vegetation type
-    real (kind=kind_phys), pointer :: stype  (:)   => null()  !< soil type
+    integer,               pointer :: vtype  (:)   => null()  !< vegetation type
+    integer,               pointer :: stype  (:)   => null()  !< soil type
     real (kind=kind_phys), pointer :: uustar (:)   => null()  !< boundary layer parameter
     real (kind=kind_phys), pointer :: oro    (:)   => null()  !< orography
     real (kind=kind_phys), pointer :: oro_uf (:)   => null()  !< unfiltered orography
@@ -2041,7 +2041,6 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: sigmatot(:,:)      => null()  !<
     logical                             :: skip_macro                    !<
     real (kind=kind_phys), pointer      :: slc_save(:,:)      => null()  !<
-    integer, pointer                    :: slopetype(:)       => null()  !<
     real (kind=kind_phys), pointer      :: smcmax(:)          => null()  !<
     real (kind=kind_phys), pointer      :: smc_save(:,:)      => null()  !<
     real (kind=kind_phys), pointer      :: snowc(:)           => null()  !<
@@ -2057,7 +2056,6 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: snowmp(:)          => null()  !<
     real (kind=kind_phys), pointer      :: snowmt(:)          => null()  !<
     real (kind=kind_phys), pointer      :: soilm_in_m(:)      => null()  !<
-    integer, pointer                    :: soiltype(:)        => null()  !<
     real (kind=kind_phys), pointer      :: stc_save(:,:)      => null()  !<
     real (kind=kind_phys), pointer      :: stress(:)          => null()  !<
     real (kind=kind_phys), pointer      :: stress_ice(:)      => null()  !<
@@ -2094,7 +2092,6 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: vegf1d(:)          => null()  !<
     real (kind=kind_phys)               :: lndp_vgf                      !<
 
-    integer, pointer                    :: vegtype(:)         => null()  !<
     real (kind=kind_phys), pointer      :: w_upi(:,:)         => null()  !<
     real (kind=kind_phys), pointer      :: wcbmax(:)          => null()  !<
 !   real (kind=kind_phys), pointer      :: weasd_water(:)     => null()  !<
@@ -2448,14 +2445,14 @@ module GFS_typedefs
     allocate (Sfcprop%hflx    (IM))
     allocate (Sfcprop%qss     (IM))
 
-    Sfcprop%slope   = clear_val
+    Sfcprop%slope   = zero
     Sfcprop%shdmin  = clear_val
     Sfcprop%shdmax  = clear_val
     Sfcprop%snoalb  = clear_val
     Sfcprop%tg3     = clear_val
     Sfcprop%vfrac   = clear_val
-    Sfcprop%vtype   = clear_val
-    Sfcprop%stype   = clear_val
+    Sfcprop%vtype   = zero
+    Sfcprop%stype   = zero
     Sfcprop%uustar  = clear_val
     Sfcprop%oro     = clear_val
     Sfcprop%oro_uf  = clear_val
@@ -7134,14 +7131,12 @@ module GFS_typedefs
     allocate (Interstitial%sigmaf          (IM))
     allocate (Interstitial%sigmafrac       (IM,Model%levs))
     allocate (Interstitial%sigmatot        (IM,Model%levs))
-    allocate (Interstitial%slopetype       (IM))
     allocate (Interstitial%snowc           (IM))
     allocate (Interstitial%snowd_ice       (IM))
 !   allocate (Interstitial%snowd_land      (IM))
 !   allocate (Interstitial%snowd_water     (IM))
     allocate (Interstitial%snohf           (IM))
     allocate (Interstitial%snowmt          (IM))
-    allocate (Interstitial%soiltype        (IM))
     allocate (Interstitial%stress          (IM))
     allocate (Interstitial%stress_ice      (IM))
     allocate (Interstitial%stress_land     (IM))
@@ -7167,7 +7162,6 @@ module GFS_typedefs
     allocate (Interstitial%uustar_water    (IM))
     allocate (Interstitial%vdftra          (IM,Model%levs,Interstitial%nvdiff))  !GJF first dimension was set as 'IX' in GFS_physics_driver
     allocate (Interstitial%vegf1d          (IM))
-    allocate (Interstitial%vegtype         (IM))
     allocate (Interstitial%wcbmax          (IM))
     allocate (Interstitial%weasd_ice       (IM))
 !   allocate (Interstitial%weasd_land      (IM))
@@ -7870,14 +7864,12 @@ module GFS_typedefs
     Interstitial%sigmaf          = clear_val
     Interstitial%sigmafrac       = clear_val
     Interstitial%sigmatot        = clear_val
-    Interstitial%slopetype       = 0
     Interstitial%snowc           = clear_val
     Interstitial%snowd_ice       = huge
 !   Interstitial%snowd_land      = huge
 !   Interstitial%snowd_water     = huge
     Interstitial%snohf           = clear_val
     Interstitial%snowmt          = clear_val
-    Interstitial%soiltype        = 0
     Interstitial%stress          = clear_val
     Interstitial%stress_ice      = huge
     Interstitial%stress_land     = huge
@@ -7900,7 +7892,6 @@ module GFS_typedefs
     Interstitial%vdftra          = clear_val
     Interstitial%vegf1d          = clear_val
     Interstitial%lndp_vgf        = clear_val
-    Interstitial%vegtype         = 0
     Interstitial%wcbmax          = clear_val
     Interstitial%weasd_ice       = huge
 !   Interstitial%weasd_land      = huge
@@ -8255,14 +8246,12 @@ module GFS_typedefs
     write (0,*) 'sum(Interstitial%sigmaf          ) = ', sum(Interstitial%sigmaf          )
     write (0,*) 'sum(Interstitial%sigmafrac       ) = ', sum(Interstitial%sigmafrac       )
     write (0,*) 'sum(Interstitial%sigmatot        ) = ', sum(Interstitial%sigmatot        )
-    write (0,*) 'sum(Interstitial%slopetype       ) = ', sum(Interstitial%slopetype       )
     write (0,*) 'sum(Interstitial%snowc           ) = ', sum(Interstitial%snowc           )
     write (0,*) 'sum(Interstitial%snowd_ice       ) = ', sum(Interstitial%snowd_ice       )
 !   write (0,*) 'sum(Interstitial%snowd_land      ) = ', sum(Interstitial%snowd_land      )
 !   write (0,*) 'sum(Interstitial%snowd_water     ) = ', sum(Interstitial%snowd_water     )
     write (0,*) 'sum(Interstitial%snohf           ) = ', sum(Interstitial%snohf           )
     write (0,*) 'sum(Interstitial%snowmt          ) = ', sum(Interstitial%snowmt          )
-    write (0,*) 'sum(Interstitial%soiltype        ) = ', sum(Interstitial%soiltype        )
     write (0,*) 'sum(Interstitial%stress          ) = ', sum(Interstitial%stress          )
     write (0,*) 'sum(Interstitial%stress_ice      ) = ', sum(Interstitial%stress_ice      )
     write (0,*) 'sum(Interstitial%stress_land     ) = ', sum(Interstitial%stress_land     )
@@ -8288,11 +8277,8 @@ module GFS_typedefs
     write (0,*) 'sum(Interstitial%uustar_water    ) = ', sum(Interstitial%uustar_water    )
     write (0,*) 'sum(Interstitial%vdftra          ) = ', sum(Interstitial%vdftra          )
     write (0,*) 'sum(Interstitial%vegf1d          ) = ', sum(Interstitial%vegf1d          )
-    write (0,*) 'sum(Interstitial%vegtype         ) = ', sum(Interstitial%vegtype         )
     write (0,*) 'sum(Interstitial%wcbmax          ) = ', sum(Interstitial%wcbmax          )
     write (0,*) 'sum(Interstitial%weasd_ice       ) = ', sum(Interstitial%weasd_ice       )
-!   write (0,*) 'sum(Interstitial%weasd_land      ) = ', sum(Interstitial%weasd_land      )
-!   write (0,*) 'sum(Interstitial%weasd_water     ) = ', sum(Interstitial%weasd_water     )
     write (0,*) 'sum(Interstitial%wind            ) = ', sum(Interstitial%wind            )
     write (0,*) 'sum(Interstitial%work1           ) = ', sum(Interstitial%work1           )
     write (0,*) 'sum(Interstitial%work2           ) = ', sum(Interstitial%work2           )
