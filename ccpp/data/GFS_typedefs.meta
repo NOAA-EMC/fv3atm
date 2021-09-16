@@ -10513,6 +10513,24 @@
   units = count
   dimensions = ()
   type = integer
+[vtype_save]
+  standard_name = vegetation_type_classification_save
+  long_name = vegetation type for lsm save
+  units = index
+  dimensions = (horizontal_loop_extent)
+  type = integer
+[stype_save]
+  standard_name = soil_type_classification_save
+  long_name = soil type for lsm save
+  units = index
+  dimensions = (horizontal_loop_extent)
+  type = integer
+[slope_save]
+  standard_name = surface_slope_classification_save
+  long_name = sfc slope type for lsm save
+  units = index
+  dimensions = (horizontal_loop_extent)
+  type = integer
 
 ########################################################################
 [ccpp-table-properties]
