@@ -2031,8 +2031,8 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: save_v(:,:)        => null()  !<
     real (kind=kind_phys), pointer      :: sbsno(:)           => null()  !<
     type (cmpfsw_type),    pointer      :: scmpsw(:)          => null()  !<
-    real (kind=kind_phys), pointer      :: semis_ice(:)       => null()  !<
-    real (kind=kind_phys), pointer      :: semis_land(:)      => null()  !<
+!   real (kind=kind_phys), pointer      :: semis_ice(:)       => null()  !<
+!   real (kind=kind_phys), pointer      :: semis_land(:)      => null()  !<
     real (kind=kind_phys), pointer      :: semis_water(:)     => null()  !<
     real (kind=kind_phys), pointer      :: sfcalb(:,:)        => null()  !<
     real (kind=kind_phys), pointer      :: sigma(:)           => null()  !<
@@ -2386,6 +2386,7 @@ module GFS_typedefs
     allocate(Sfcprop%albdifvis_lnd (IM))
     allocate(Sfcprop%albdifnir_lnd (IM))
     allocate (Sfcprop%emis_lnd (IM))
+    allocate (Sfcprop%emis_ice (IM))
 
     Sfcprop%slmsk     = clear_val
     Sfcprop%oceanfrac = clear_val
@@ -2413,6 +2414,7 @@ module GFS_typedefs
     Sfcprop%albdifvis_lnd = clear_val
     Sfcprop%albdifnir_lnd = clear_val
     Sfcprop%emis_lnd  = clear_val
+    Sfcprop%emis_ice  = clear_val
 
 !--- In (radiation only)
     allocate (Sfcprop%snoalb (IM))
@@ -2476,7 +2478,7 @@ module GFS_typedefs
     endif
     if (Model%lsm == Model%lsm_ruc) then
       allocate (Sfcprop%sncovr_ice (IM))
-      allocate (Sfcprop%emis_ice (IM))
+!     allocate (Sfcprop%emis_ice (IM))
       allocate (Sfcprop%sfalb_lnd (IM))
       allocate (Sfcprop%sfalb_ice (IM))
       allocate (Sfcprop%sfalb_lnd_bck (IM))
@@ -2503,7 +2505,7 @@ module GFS_typedefs
     endif
     if (Model%lsm == Model%lsm_ruc) then
       Sfcprop%sncovr_ice  = clear_val
-      Sfcprop%emis_ice    = clear_val
+!     Sfcprop%emis_ice    = clear_val
       Sfcprop%sfalb_lnd   = clear_val
       Sfcprop%sfalb_ice   = clear_val
       Sfcprop%sfalb_lnd_bck = clear_val
@@ -7118,8 +7120,8 @@ module GFS_typedefs
     allocate (Interstitial%save_v          (IM,Model%levs))
     allocate (Interstitial%sbsno           (IM))
     allocate (Interstitial%scmpsw          (IM))
-    allocate (Interstitial%semis_ice       (IM))
-    allocate (Interstitial%semis_land      (IM))
+!   allocate (Interstitial%semis_ice       (IM))
+!   allocate (Interstitial%semis_land      (IM))
     allocate (Interstitial%semis_water     (IM))
     allocate (Interstitial%sfcalb          (IM,NF_ALBD))
     allocate (Interstitial%sigma           (IM))
@@ -7855,8 +7857,8 @@ module GFS_typedefs
     Interstitial%save_u          = clear_val
     Interstitial%save_v          = clear_val
     Interstitial%sbsno           = clear_val
-    Interstitial%semis_ice       = clear_val
-    Interstitial%semis_land      = clear_val
+!   Interstitial%semis_ice       = clear_val
+!   Interstitial%semis_land      = clear_val
     Interstitial%semis_water     = clear_val
     Interstitial%sigma           = clear_val
     Interstitial%sigmaf          = clear_val
@@ -8239,8 +8241,8 @@ module GFS_typedefs
     write (0,*) 'sum(Interstitial%scmpsw%nirdf    ) = ', sum(Interstitial%scmpsw%nirdf    )
     write (0,*) 'sum(Interstitial%scmpsw%visbm    ) = ', sum(Interstitial%scmpsw%visbm    )
     write (0,*) 'sum(Interstitial%scmpsw%visdf    ) = ', sum(Interstitial%scmpsw%visdf    )
-    write (0,*) 'sum(Interstitial%semis_ice       ) = ', sum(Interstitial%semis_ice       )
-    write (0,*) 'sum(Interstitial%semis_land      ) = ', sum(Interstitial%semis_land      )
+!   write (0,*) 'sum(Interstitial%semis_ice       ) = ', sum(Interstitial%semis_ice       )
+!   write (0,*) 'sum(Interstitial%semis_land      ) = ', sum(Interstitial%semis_land      )
     write (0,*) 'sum(Interstitial%semis_water     ) = ', sum(Interstitial%semis_water     )
     write (0,*) 'sum(Interstitial%sfcalb          ) = ', sum(Interstitial%sfcalb          )
     write (0,*) 'sum(Interstitial%sigma           ) = ', sum(Interstitial%sigma           )

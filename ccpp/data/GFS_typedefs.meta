@@ -8220,20 +8220,6 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[semis_land]
-  standard_name = surface_longwave_emissivity_over_land_interstitial
-  long_name = surface lw emissivity in fraction over land (temporary use as interstitial)
-  units = frac
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-[semis_ice]
-  standard_name = surface_longwave_emissivity_over_ice_interstitial
-  long_name = surface lw emissivity in fraction over ice (temporary use as interstitial)
-  units = frac
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
 [ep1d]
   standard_name = surface_upward_potential_latent_heat_flux
   long_name = surface upward potential latent heat flux

@@ -1169,7 +1169,7 @@ module FV3GFS_io_mod
         Sfcprop(nb)%albdirnir_lnd(ix) = sfc_var2(i,j,41)
         Sfcprop(nb)%albdifvis_lnd(ix) = sfc_var2(i,j,42)
         Sfcprop(nb)%albdifnir_lnd(ix) = sfc_var2(i,j,43)
-        Sfcprop(nb)%emis_lnd(ix)   = sfc_var2(i,j,44)
+        Sfcprop(nb)%emis_lnd(ix)      = sfc_var2(i,j,44)
         if (Model%use_cice_alb .or. Model%lsm == Model%lsm_ruc) then
           Sfcprop(nb)%albdirvis_ice(ix) = sfc_var2(i,j,45)
           Sfcprop(nb)%albdifvis_ice(ix) = sfc_var2(i,j,46)
