@@ -2381,13 +2381,6 @@
   units = none
   dimensions = ()
   type = integer
-[fhzero]
-  standard_name = frequency_for_diagnostic_clearing
-  long_name = frequency for clearing diagnostic fields
-  units = h
-  dimensions = ()
-  type = real
-  kind = kind_phys
 [ldiag3d]
   standard_name = flag_for_diagnostics_3D
   long_name = flag for 3d diagnostic fields
@@ -3433,6 +3426,12 @@
 [ltaerosol]
   standard_name = flag_for_aerosol_physics
   long_name = flag for aerosol physics
+  units = flag
+  dimensions = ()
+  type = logical
+[mraerosol]
+  standard_name = flag_for_merra2_aerosol_aware_for_thompson
+  long_name = flag for merra2 aerosol-aware physics for thompson microphysics
   units = flag
   dimensions = ()
   type = logical
@@ -10217,20 +10216,6 @@
   units = none
   dimensions = ()
   type = integer
-[cldtausw]
-  standard_name = RRTMGP_cloud_optical_depth_layers_at_0_55mu_band
-  long_name = approx .55mu band layer cloud optical depth
-  units = none
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
-  type = real
-  kind = kind_phys
-[cldtaulw]
-  standard_name = RRTMGP_cloud_optical_depth_layers_at_10mu_band
-  long_name = approx 10mu band layer cloud optical depth
-  units = none
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
-  type = real
-  kind = kind_phys
 [fluxlwUP_clrsky]
   standard_name = RRTMGP_lw_flux_profile_upward_clrsky
   long_name = RRTMGP upward longwave clr-sky flux profile
