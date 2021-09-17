@@ -14,7 +14,6 @@ set(use_WRTCOMP ON)
 set(GFS_PHYS    ON)
 set(GFS_TYPES   ON)
 set(USE_GFSL63  ON)
-set(UFS_FV3     ON)
 add_subdirectory(atmos_cubed_sphere)
 
 ###############################################################################
