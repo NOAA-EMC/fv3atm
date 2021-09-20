@@ -264,12 +264,15 @@ module GFS_typedefs
 
 !--- In (physics only)
     integer,               pointer :: slope  (:)   => null()  !< sfc slope type for lsm
+    integer,               pointer :: slope_save (:) => null()!< sfc slope type save
     real (kind=kind_phys), pointer :: shdmin (:)   => null()  !< min fractional coverage of green veg
     real (kind=kind_phys), pointer :: shdmax (:)   => null()  !< max fractnl cover of green veg (not used)
     real (kind=kind_phys), pointer :: tg3    (:)   => null()  !< deep soil temperature
     real (kind=kind_phys), pointer :: vfrac  (:)   => null()  !< vegetation fraction
     integer,               pointer :: vtype  (:)   => null()  !< vegetation type
     integer,               pointer :: stype  (:)   => null()  !< soil type
+    integer,               pointer :: vtype_save (:) => null()!< vegetation type save
+    integer,               pointer :: stype_save (:) => null()!< soil type save
     real (kind=kind_phys), pointer :: uustar (:)   => null()  !< boundary layer parameter
     real (kind=kind_phys), pointer :: oro    (:)   => null()  !< orography
     real (kind=kind_phys), pointer :: oro_uf (:)   => null()  !< unfiltered orography
@@ -2218,11 +2221,6 @@ module GFS_typedefs
     !-- 3D diagnostics
     integer :: rtg_ozone_index, rtg_tke_index
 
-    ! DH* DO WE NEED THIS ???
-    integer, pointer :: vtype_save (:) => null()  !< vegetation type save
-    integer, pointer :: stype_save (:) => null()  !< soil type save
-    integer, pointer :: slope_save (:) => null()  !< slope type save
-
     contains
       procedure :: create      => interstitial_create     !<   allocate array data
       procedure :: rad_reset   => interstitial_rad_reset  !<   reset array data for radiation
@@ -2434,35 +2432,41 @@ module GFS_typedefs
 
 !--- physics surface props
 !--- In
-    allocate (Sfcprop%slope   (IM))
-    allocate (Sfcprop%shdmin  (IM))
-    allocate (Sfcprop%shdmax  (IM))
-    allocate (Sfcprop%snoalb  (IM))
-    allocate (Sfcprop%tg3     (IM))
-    allocate (Sfcprop%vfrac   (IM))
-    allocate (Sfcprop%vtype   (IM))
-    allocate (Sfcprop%stype   (IM))
-    allocate (Sfcprop%uustar  (IM))
-    allocate (Sfcprop%oro     (IM))
-    allocate (Sfcprop%oro_uf  (IM))
-    allocate (Sfcprop%evap    (IM))
-    allocate (Sfcprop%hflx    (IM))
-    allocate (Sfcprop%qss     (IM))
+    allocate (Sfcprop%slope      (IM))
+    allocate (Sfcprop%slope_save (IM))
+    allocate (Sfcprop%shdmin     (IM))
+    allocate (Sfcprop%shdmax     (IM))
+    allocate (Sfcprop%snoalb     (IM))
+    allocate (Sfcprop%tg3        (IM))
+    allocate (Sfcprop%vfrac      (IM))
+    allocate (Sfcprop%vtype      (IM))
+    allocate (Sfcprop%vtype_save (IM))
+    allocate (Sfcprop%stype      (IM))
+    allocate (Sfcprop%stype_save (IM))
+    allocate (Sfcprop%uustar     (IM))
+    allocate (Sfcprop%oro        (IM))
+    allocate (Sfcprop%oro_uf     (IM))
+    allocate (Sfcprop%evap       (IM))
+    allocate (Sfcprop%hflx       (IM))
+    allocate (Sfcprop%qss        (IM))
 
-    Sfcprop%slope   = zero
-    Sfcprop%shdmin  = clear_val
-    Sfcprop%shdmax  = clear_val
-    Sfcprop%snoalb  = clear_val
-    Sfcprop%tg3     = clear_val
-    Sfcprop%vfrac   = clear_val
-    Sfcprop%vtype   = zero
-    Sfcprop%stype   = zero
-    Sfcprop%uustar  = clear_val
-    Sfcprop%oro     = clear_val
-    Sfcprop%oro_uf  = clear_val
-    Sfcprop%evap    = clear_val
-    Sfcprop%hflx    = clear_val
-    Sfcprop%qss     = clear_val
+    Sfcprop%slope      = zero
+    Sfcprop%slope_save = zero
+    Sfcprop%shdmin     = clear_val
+    Sfcprop%shdmax     = clear_val
+    Sfcprop%snoalb     = clear_val
+    Sfcprop%tg3        = clear_val
+    Sfcprop%vfrac      = clear_val
+    Sfcprop%vtype      = zero
+    Sfcprop%vtype_save = zero
+    Sfcprop%stype      = zero
+    Sfcprop%stype_save = zero
+    Sfcprop%uustar     = clear_val
+    Sfcprop%oro        = clear_val
+    Sfcprop%oro_uf     = clear_val
+    Sfcprop%evap       = clear_val
+    Sfcprop%hflx       = clear_val
+    Sfcprop%qss        = clear_val
 
 !--- In/Out
     allocate (Sfcprop%hice   (IM))
@@ -7435,11 +7439,6 @@ module GFS_typedefs
     ! which is set to .true.
     Interstitial%phys_hydrostatic = .true.
     !
-    ! DH* DO WE NEED THIS ???
-    allocate (Interstitial%vtype_save (IM))
-    allocate (Interstitial%stype_save (IM))
-    allocate (Interstitial%slope_save (IM))
-    ! *DH
     ! Reset all other variables
     call Interstitial%rad_reset (Model)
     call Interstitial%phys_reset (Model)
@@ -8031,11 +8030,6 @@ module GFS_typedefs
       Interstitial%radar_reset = mod(Model%kdt-1, nint(Model%nsradar_reset/Model%dtp)) == 0
     end if
     !
-    ! DH* DO WE NEED THIS ???
-    Interstitial%vtype_save = clear_val
-    Interstitial%stype_save = clear_val
-    Interstitial%slope_save = clear_val
-    ! *DH
   end subroutine interstitial_phys_reset
 
 end module GFS_typedefs
