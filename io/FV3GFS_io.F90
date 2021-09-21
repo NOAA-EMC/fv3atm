@@ -2640,17 +2640,22 @@ module FV3GFS_io_mod
          if (diag(idx)%axes == 2) then
            ! Integer data
            int_or_real: if (associated(Diag(idx)%data(1)%int2)) then
-             var2(1:nx,1:ny) = 0._kind_phys
-             do j = 1, ny
-               jj = j + jsc -1
-               do i = 1, nx
-                 ii = i + isc -1
-                 nb = Atm_block%blkno(ii,jj)
-                 ix = Atm_block%ixp(ii,jj)
-                 var2(i,j) = real(Diag(idx)%data(nb)%int2(ix), kind=kind_phys)
+             if (trim(Diag(idx)%intpl_method) == 'nearest_stod') then
+               var2(1:nx,1:ny) = 0._kind_phys
+               do j = 1, ny
+                 jj = j + jsc -1
+                 do i = 1, nx
+                   ii = i + isc -1
+                   nb = Atm_block%blkno(ii,jj)
+                   ix = Atm_block%ixp(ii,jj)
+                   var2(i,j) = real(Diag(idx)%data(nb)%int2(ix), kind=kind_phys)
+                 enddo
                enddo
-             enddo
-             call store_data(Diag(idx)%id, var2, Time, idx, Diag(idx)%intpl_method, Diag(idx)%name)
+               call store_data(Diag(idx)%id, var2, Time, idx, Diag(idx)%intpl_method, Diag(idx)%name)
+             else
+               call mpp_error(FATAL, 'Interpolation method ' // trim(Diag(idx)%intpl_method) // ' for integer variable ' &
+                                    // trim(Diag(idx)%name) // ' not supported.')
+             endif
            ! Real data
            else ! int_or_real
              if (trim(diag(idx)%mask) == 'positive_flux') then
