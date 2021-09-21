@@ -148,9 +148,9 @@ module GFS_typedefs
     character(len=32), pointer :: tracer_names(:) !< tracers names to dereference tracer id
     integer,           pointer :: tracer_types(:) !< tracers types: 0=generic, 1=chem,prog, 2=chem,diag
     character(len=64) :: fn_nml                   !< namelist filename
-    character(len=256), pointer :: input_nml_file(:) !< character string containing full namelist
-                                                     !< for use with internal file reads
-  end type GFS_init_type
+    character(len=:), pointer, dimension(:) :: input_nml_file => null() !< character string containing full namelist
+                                                                        !< for use with internal file reads    
+ end type GFS_init_type
 
 
 !----------------------------------------------------------------
@@ -587,8 +587,8 @@ module GFS_typedefs
     integer              :: nthreads        !< OpenMP threads available for physics
     integer              :: nlunit          !< unit for namelist
     character(len=64)    :: fn_nml          !< namelist filename for surface data cycling
-    character(len=256), pointer :: input_nml_file(:) !< character string containing full namelist
-                                                     !< for use with internal file reads
+    character(len=:), pointer, dimension(:) :: input_nml_file => null() !< character string containing full namelist
+                                                                        !< for use with internal file reads
     integer              :: input_nml_file_length    !< length (number of lines) in namelist for internal reads
     integer              :: logunit
     real(kind=kind_phys) :: fhzero          !< hours between clearing of diagnostic buckets
@@ -632,6 +632,7 @@ module GFS_typedefs
 !--- coupling parameters
     logical              :: cplflx          !< default no cplflx collection
     logical              :: cplice          !< default yes cplice collection (used together with cplflx)
+    logical              :: cplocn2atm      !< default yes ocn->atm coupling
     logical              :: cplwav          !< default no cplwav collection
     logical              :: cplwav2atm      !< default no wav->atm coupling
     logical              :: cplchm          !< default no cplchm collection
@@ -3091,7 +3092,7 @@ module GFS_typedefs
     integer,                intent(in) :: nwat
     character(len=32),      intent(in) :: tracer_names(:)
     integer,                intent(in) :: tracer_types(:)
-    character(len=256),     intent(in), pointer :: input_nml_file(:)
+    character(len=:),       intent(in), dimension(:), pointer :: input_nml_file
     integer,                intent(in) :: blksz(:)
     real(kind=kind_phys), dimension(:), intent(in) :: ak
     real(kind=kind_phys), dimension(:), intent(in) :: bk
@@ -3130,6 +3131,7 @@ module GFS_typedefs
     !--- coupling parameters
     logical              :: cplflx         = .false.         !< default no cplflx collection
     logical              :: cplice         = .true.          !< default yes cplice collection (used together with cplflx)
+    logical              :: cplocn2atm     = .true.          !< default yes cplocn2atm coupling (turn on the feedback from ocn to atm)
     logical              :: cplwav         = .false.         !< default no cplwav collection
     logical              :: cplwav2atm     = .false.         !< default no cplwav2atm coupling
     logical              :: cplchm         = .false.         !< default no cplchm collection
@@ -3598,7 +3600,7 @@ module GFS_typedefs
                                naux3d, aux2d_time_avg, aux3d_time_avg, fhcyc,               &
                                thermodyn_id, sfcpress_id,                                   &
                           !--- coupling parameters
-                               cplflx, cplice, cplwav, cplwav2atm, cplchm,                  &
+                               cplflx, cplice, cplocn2atm, cplwav, cplwav2atm, cplchm,      &
                                cpl_imp_mrg, cpl_imp_dbg,                                    &
                                use_cice_alb, lsidea,                                        &
                           !--- radiation parameters
@@ -3728,6 +3730,8 @@ module GFS_typedefs
 
 !--- read in the namelist
 #ifdef INTERNAL_FILE_NML
+    ! allocate required to work around GNU compiler bug 100886 https://gcc.gnu.org/bugzilla/show_bug.cgi?id=100886
+    allocate(Model%input_nml_file, mold=input_nml_file)
     Model%input_nml_file => input_nml_file
     read(Model%input_nml_file, nml=gfs_physics_nml)
     ! Set length (number of lines) in namelist for internal reads
@@ -3876,6 +3880,7 @@ module GFS_typedefs
 !--- coupling parameters
     Model%cplflx           = cplflx
     Model%cplice           = cplice
+    Model%cplocn2atm       = cplocn2atm
     Model%cplwav           = cplwav
     Model%cplwav2atm       = cplwav2atm
     Model%cplchm           = cplchm
@@ -5468,6 +5473,7 @@ module GFS_typedefs
       print *, 'coupling parameters'
       print *, ' cplflx            : ', Model%cplflx
       print *, ' cplice            : ', Model%cplice
+      print *, ' cplocn2atm        : ', Model%cplocn2atm
       print *, ' cplwav            : ', Model%cplwav
       print *, ' cplwav2atm        : ', Model%cplwav2atm
       print *, ' cplchm            : ', Model%cplchm
