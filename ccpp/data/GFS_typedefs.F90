@@ -741,6 +741,7 @@ module GFS_typedefs
     real(kind_phys)      :: lfnc_p0                 !<          Logistic function transition level (Pa)
     logical              :: doGP_lwscat             !< If true, include scattering in longwave cloud-optics, only compatible w/ GP cloud-optics
     real(kind_phys)      :: minGPpres               !< Minimum pressure allowed in RRTMGP.
+    real(kind_phys)      :: maxGPpres               !< Maximum pressure allowed in RRTMGP.
     real(kind_phys)      :: minGPtemp               !< Minimum temperature allowed in RRTMGP.
     real(kind_phys)      :: maxGPtemp               !< Maximum temperature allowed in RRTMGP.
 
@@ -3997,6 +3998,10 @@ module GFS_typedefs
        if (Model%doGP_cldoptics_PADE .and. Model%doGP_cldoptics_LUT) then
           write(0,*) "Logic error, Both RRTMGP cloud-optics options cannot be selected. "
           stop
+       end if
+       if (.not. Model%doGP_cldoptics_PADE .and. .not. Model%doGP_cldoptics_LUT .and. .not. Model%doG_cldoptics) then
+          write(0,*) "Logic error, No option for cloud-optics scheme provided. Using RRTMG cloud-optics"
+          Model%doG_cldoptics = .true.
        end if
        if (Model%rrtmgp_nGptsSW  .lt. 0 .or. Model%rrtmgp_nGptsLW  .lt. 0 .or. &
            Model%rrtmgp_nBandsSW .lt. 0 .or. Model%rrtmgp_nBandsLW .lt. 0) then

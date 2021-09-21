@@ -2991,6 +2991,13 @@
   dimensions = ()
   type = real
   kind = kind_phys
+[maxGPpres]
+  standard_name = maximum_pressure_in_RRTMGP
+  long_name = maximum pressure allowed in RRTMGP
+  units = Pa
+  dimensions = ()
+  type = real
+  kind = kind_phys
 [minGPtemp]
   standard_name = minimum_temperature_in_RRTMGP
   long_name = minimum temperature allowed in RRTMGP
@@ -10127,17 +10134,17 @@
   optional = F
   active = (flag_for_rrtmgp_radiation_scheme)
 [p_lay]
-  standard_name = air_pressure_at_layer_for_RRTMGP_in_hPa
+  standard_name = air_pressure_at_layer_for_RRTMGP
   long_name = air pressure layer
-  units = hPa
+  units = Pa
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_rrtmgp_radiation_scheme)
 [p_lev]
-  standard_name = air_pressure_at_interface_for_RRTMGP_in_hPa
+  standard_name = air_pressure_at_interface_for_RRTMGP
   long_name = air pressure level
-  units = hPa
+  units = Pa
   dimensions = (horizontal_loop_extent,vertical_interface_dimension)
   type = real
   kind = kind_phys
