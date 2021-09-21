@@ -261,16 +261,16 @@ subroutine update_atmos_radiation_physics (Atmos)
       call CCPP_step (step="timestep_init", nblks=Atm_block%nblks, ierr=ierr)
       if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP timestep_init step failed')
 
-!--- if coupled, assign coupled fields
-      call assign_importdata(jdat(:),rc)
-      if (rc/=0)  call mpp_error(FATAL, 'Call to assign_importdata failed')
-
       if (GFS_Control%do_sppt .or. GFS_Control%do_shum .or. GFS_Control%do_skeb .or. &
           GFS_Control%lndp_type > 0  .or. GFS_Control%do_ca ) then
 !--- call stochastic physics pattern generation / cellular automata
         call stochastic_physics_wrapper(GFS_control, GFS_data, Atm_block, ierr)
         if (ierr/=0)  call mpp_error(FATAL, 'Call to stochastic_physics_wrapper failed')
       endif
+
+!--- if coupled, assign coupled fields
+      call assign_importdata(jdat(:),rc)
+      if (rc/=0)  call mpp_error(FATAL, 'Call to assign_importdata failed')
 
       ! Calculate total non-physics tendencies by substracting old GFS Stateout
       ! variables from new/updated GFS Statein variables (gives the tendencies
