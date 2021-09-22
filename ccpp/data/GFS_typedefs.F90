@@ -526,7 +526,6 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: ca_rad   (:)   => null() !
     real (kind=kind_phys), pointer :: ca_micro (:)   => null() !
     real (kind=kind_phys), pointer :: condition(:)   => null() !
-    real (kind=kind_phys), pointer :: vfact_ca(:)    => null() !
     !--- stochastic physics
     real (kind=kind_phys), pointer :: shum_wts  (:,:) => null()  !
     real (kind=kind_phys), pointer :: sppt_wts  (:,:) => null()  !
@@ -1122,7 +1121,7 @@ module GFS_typedefs
     logical              :: ca_sgs          !< switch for sgs ca
     logical              :: ca_global       !< switch for global ca
     logical              :: ca_smooth       !< switch for gaussian spatial filter
-    integer              :: iseed_ca        !< seed for random number generation in ca scheme
+    integer*8            :: iseed_ca        !< seed for random number generation in ca scheme
     integer              :: nspinup         !< number of iterations to spin up the ca
     real(kind=kind_phys) :: rcell           !< threshold used for CA scheme
     real(kind=kind_phys) :: nthresh         !< threshold used for convection coupling
@@ -1131,6 +1130,7 @@ module GFS_typedefs
     logical              :: ca_closure      !< logical switch for ca on closure
     logical              :: ca_entr         !< logical switch for ca on entrainment
     logical              :: ca_trigger      !< logical switch for ca on trigger
+    real (kind=kind_phys), allocatable :: vfact_ca(:) !< vertical tapering for ca_global
 
 !--- stochastic physics control parameters
     logical              :: do_sppt
@@ -2963,7 +2963,6 @@ module GFS_typedefs
 
    !-- cellular automata
     allocate (Coupling%condition(IM))
-    allocate (Coupling%vfact_ca(Model%levs))
     if (Model%do_ca) then
       allocate (Coupling%ca1      (IM))
       allocate (Coupling%ca2      (IM))
@@ -2973,7 +2972,6 @@ module GFS_typedefs
       allocate (Coupling%ca_shal  (IM))
       allocate (Coupling%ca_rad   (IM))
       allocate (Coupling%ca_micro (IM))
-      Coupling%vfact_ca = clear_val
       Coupling%ca1       = clear_val
       Coupling%ca2       = clear_val
       Coupling%ca3       = clear_val
@@ -3053,7 +3051,7 @@ module GFS_typedefs
                                  nwat, tracer_names, tracer_types,  &
                                  input_nml_file, tile_num, blksz,   &
                                  ak, bk, restart, hydrostatic,      &
-                                 communicator, ntasks, nthreads)
+                                 communicator, ntasks, nthreads )
 
 !--- modules
     use physcons,         only: con_rerth, con_pi
@@ -4423,6 +4421,11 @@ module GFS_typedefs
     Model%lndp_each_step   = lndp_each_step
 
     !--- cellular automata options
+    ! force namelist constsitency
+    allocate(Model%vfact_ca(levs))
+    if ( .not. ca_global ) nca_g=0
+    if ( .not. ca_sgs ) nca=0
+     
     Model%nca              = nca
     Model%scells           = scells
     Model%tlives           = tlives

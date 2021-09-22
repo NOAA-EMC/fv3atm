@@ -2193,13 +2193,6 @@
   type = real
   kind = kind_phys
   active = (flag_for_cellular_automata)
-[vfact_ca]
-  standard_name = cellular_automata_vertical_weight
-  long_name = vertical weight for ca
-  units = frac
-  dimensions = (vertical_layer_dimension)
-  type = real
-  kind = kind_phys
 [ca1]
   standard_name = cellular_automata_global_pattern_from_coupled_process
   long_name = cellular automata global pattern
@@ -4408,6 +4401,13 @@
   units = flag
   dimensions = ()
   type = logical
+[vfact_ca]
+  standard_name = cellular_automata_vertical_weight
+  long_name = vertical weight for ca
+  units = frac
+  dimensions = (vertical_layer_dimension)
+  type = real
+  kind = kind_phys
 [ca_closure]
   standard_name = flag_for_global_cellular_automata_closure
   long_name = switch for ca on closure
