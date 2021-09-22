@@ -24,7 +24,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
   use esmf
 
   use time_manager_mod,   only: time_type, set_calendar_type, set_time,    &
-                                set_date, days_in_month, month_name,       &
+                                set_date, month_name,                      &
                                 operator(+), operator(-), operator (<),    &
                                 operator (>), operator (/=), operator (/), &
                                 operator (==), operator (*),               &
@@ -43,22 +43,20 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
                                 addLsmask2grid
 
   use constants_mod,      only: constants_init
-  use fms_mod,            only: open_namelist_file, file_exist, check_nml_error, &
-                                error_mesg, fms_init, fms_end, close_file,       &
+  use fms_mod,            only: error_mesg, fms_init, fms_end,             &
                                 write_version_number, uppercase
 
   use mpp_mod,            only: mpp_init, mpp_pe, mpp_root_pe,  &
                                 mpp_error, FATAL, WARNING
-  use mpp_mod,            only: mpp_clock_id, mpp_clock_begin, mpp_clock_end
+  use mpp_mod,            only: mpp_clock_id, mpp_clock_begin
 
-  use mpp_io_mod,         only: mpp_open, mpp_close, MPP_NATIVE, MPP_RDONLY, MPP_DELETE
+  use mpp_io_mod,         only: mpp_open, mpp_close, MPP_DELETE
 
   use mpp_domains_mod,    only: mpp_get_compute_domains, domain2D 
-  use memutils_mod,       only: print_memuse_stats
   use sat_vapor_pres_mod, only: sat_vapor_pres_init
 
   use diag_manager_mod,   only: diag_manager_init, diag_manager_end, &
-                                get_base_date, diag_manager_set_time_end
+                                diag_manager_set_time_end
 
   use data_override_mod,  only: data_override_init
   use fv_nggps_diags_mod, only: fv_dyn_bundle_setup
@@ -359,9 +357,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
       if(restart_interval(2)== -1) freq_restart = .true.
     endif
     if(freq_restart) then
-      if(restart_interval(1) == 0) then
-        frestart(1) = total_inttime
-      else if(restart_interval(1) > 0) then
+      if(restart_interval(1) >= 0) then
         tmpvar = restart_interval(1) * 3600
         atm_int_state%Time_step_restart = set_time (tmpvar, 0)
         if(iau_offset > 0 ) then
@@ -371,16 +367,18 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
           atm_int_state%Time_restart = atm_int_state%Time_init + atm_int_state%Time_step_restart
           frestart(1) = tmpvar
         endif
-        i = 2
-        do while ( atm_int_state%Time_restart < atm_int_state%Time_end )
-          frestart(i) = frestart(i-1) + tmpvar
-          atm_int_state%Time_restart = atm_int_state%Time_restart + atm_int_state%Time_step_restart
-           i = i + 1
-        enddo
+        if(restart_interval(1) > 0) then
+          i = 2
+          do while ( atm_int_state%Time_restart < atm_int_state%Time_end )
+            frestart(i) = frestart(i-1) + tmpvar
+            atm_int_state%Time_restart = atm_int_state%Time_restart + atm_int_state%Time_step_restart
+             i = i + 1
+          enddo
+        endif
       endif
 ! otherwise it is an array with forecast time at which the restart files will be written out
     else if(num_restart_interval >= 1) then
-      if(restart_interval(1) == 0 ) then
+      if(num_restart_interval == 1 .and. restart_interval(1) == 0 ) then
         frestart(1) = total_inttime
       else
         if(iau_offset > 0 ) then
@@ -861,11 +859,11 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !--- intermediate restart
       if (atm_int_state%intrm_rst>0) then
         if (na /= atm_int_state%num_atmos_calls-1) then
-          call get_time(atm_int_state%Time_atmos - atm_int_state%Time_atstart, seconds)
+          call get_time(atm_int_state%Time_atmos - atm_int_state%Time_init, seconds)
           if (ANY(frestart(:) == seconds)) then
-            restart_inctime = set_time(seconds, 0)
-            atm_int_state%Time_restart = atm_int_state%Time_atstart + restart_inctime
-            timestamp = date_to_string (atm_int_state%Time_restart)
+            if (mype == 0) write(0,*)'write out restart at na=',na,' seconds=',seconds,  &
+               'integration lenght=',na*dt_atmos/3600.
+            timestamp = date_to_string (atm_int_state%Time_atmos)
             call atmos_model_restart(atm_int_state%Atm, timestamp)
             call write_stoch_restart_atm('RESTART/'//trim(timestamp)//'.atm_stoch.res.nc')
 
@@ -873,8 +871,6 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
           endif
         endif
       endif
-!
-      call print_memuse_stats('after full step')
 !
 !-----------------------------------------------------------------------
 !
