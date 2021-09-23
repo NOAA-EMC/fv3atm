@@ -10,5 +10,3 @@
   path = ccpp/physics
   url = https://github.com/NCAR/ccpp-physics
   branch = main
-  url = https://github.com/climbfuji/ccpp-physics
-  branch = update_roughness_length_grassland_noahmp
