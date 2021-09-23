@@ -148,9 +148,9 @@ module GFS_typedefs
     character(len=32), pointer :: tracer_names(:) !< tracers names to dereference tracer id
     integer,           pointer :: tracer_types(:) !< tracers types: 0=generic, 1=chem,prog, 2=chem,diag
     character(len=64) :: fn_nml                   !< namelist filename
-    character(len=256), pointer :: input_nml_file(:) !< character string containing full namelist
-                                                     !< for use with internal file reads
-  end type GFS_init_type
+    character(len=:), pointer, dimension(:) :: input_nml_file => null() !< character string containing full namelist
+                                                                        !< for use with internal file reads    
+ end type GFS_init_type
 
 
 !----------------------------------------------------------------
@@ -586,8 +586,8 @@ module GFS_typedefs
     integer              :: nthreads        !< OpenMP threads available for physics
     integer              :: nlunit          !< unit for namelist
     character(len=64)    :: fn_nml          !< namelist filename for surface data cycling
-    character(len=256), pointer :: input_nml_file(:) !< character string containing full namelist
-                                                     !< for use with internal file reads
+    character(len=:), pointer, dimension(:) :: input_nml_file => null() !< character string containing full namelist
+                                                                        !< for use with internal file reads
     integer              :: input_nml_file_length    !< length (number of lines) in namelist for internal reads
     integer              :: logunit
     real(kind=kind_phys) :: fhzero          !< hours between clearing of diagnostic buckets
@@ -631,6 +631,7 @@ module GFS_typedefs
 !--- coupling parameters
     logical              :: cplflx          !< default no cplflx collection
     logical              :: cplice          !< default yes cplice collection (used together with cplflx)
+    logical              :: cplocn2atm      !< default yes ocn->atm coupling
     logical              :: cplwav          !< default no cplwav collection
     logical              :: cplwav2atm      !< default no wav->atm coupling
     logical              :: cplchm          !< default no cplchm collection
@@ -2065,7 +2066,6 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: t2mmp(:)           => null()  !<
     real (kind=kind_phys), pointer      :: theta(:)           => null()  !<
     real (kind=kind_phys), pointer      :: th1(:)             => null()  !<
-    real (kind=kind_phys), pointer      :: tice(:)            => null()  !<
     real (kind=kind_phys), pointer      :: tlvl(:,:)          => null()  !<
     real (kind=kind_phys), pointer      :: tlyr(:,:)          => null()  !<
     real (kind=kind_phys), pointer      :: tprcp_ice(:)       => null()  !<
@@ -2080,7 +2080,6 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: tseal(:)           => null()  !<
     real (kind=kind_phys), pointer      :: tsfa(:)            => null()  !<
     real (kind=kind_phys), pointer      :: tsfc_ice(:)        => null()  !<
-    real (kind=kind_phys), pointer      :: tsfc_land(:)       => null()  !<
     real (kind=kind_phys), pointer      :: tsfc_land_save(:)  => null()  !<
     real (kind=kind_phys), pointer      :: tsfc_water(:)      => null()  !<
     real (kind=kind_phys), pointer      :: tsfg(:)            => null()  !<
@@ -3088,7 +3087,7 @@ module GFS_typedefs
     integer,                intent(in) :: nwat
     character(len=32),      intent(in) :: tracer_names(:)
     integer,                intent(in) :: tracer_types(:)
-    character(len=256),     intent(in), pointer :: input_nml_file(:)
+    character(len=:),       intent(in), dimension(:), pointer :: input_nml_file
     integer,                intent(in) :: blksz(:)
     real(kind=kind_phys), dimension(:), intent(in) :: ak
     real(kind=kind_phys), dimension(:), intent(in) :: bk
@@ -3127,6 +3126,7 @@ module GFS_typedefs
     !--- coupling parameters
     logical              :: cplflx         = .false.         !< default no cplflx collection
     logical              :: cplice         = .true.          !< default yes cplice collection (used together with cplflx)
+    logical              :: cplocn2atm     = .true.          !< default yes cplocn2atm coupling (turn on the feedback from ocn to atm)
     logical              :: cplwav         = .false.         !< default no cplwav collection
     logical              :: cplwav2atm     = .false.         !< default no cplwav2atm coupling
     logical              :: cplchm         = .false.         !< default no cplchm collection
@@ -3595,7 +3595,7 @@ module GFS_typedefs
                                naux3d, aux2d_time_avg, aux3d_time_avg, fhcyc,               &
                                thermodyn_id, sfcpress_id,                                   &
                           !--- coupling parameters
-                               cplflx, cplice, cplwav, cplwav2atm, cplchm,                  &
+                               cplflx, cplice, cplocn2atm, cplwav, cplwav2atm, cplchm,      &
                                cpl_imp_mrg, cpl_imp_dbg,                                    &
                                use_cice_alb, lsidea,                                        &
                           !--- radiation parameters
@@ -3725,6 +3725,8 @@ module GFS_typedefs
 
 !--- read in the namelist
 #ifdef INTERNAL_FILE_NML
+    ! allocate required to work around GNU compiler bug 100886 https://gcc.gnu.org/bugzilla/show_bug.cgi?id=100886
+    allocate(Model%input_nml_file, mold=input_nml_file)
     Model%input_nml_file => input_nml_file
     read(Model%input_nml_file, nml=gfs_physics_nml)
     ! Set length (number of lines) in namelist for internal reads
@@ -3873,6 +3875,7 @@ module GFS_typedefs
 !--- coupling parameters
     Model%cplflx           = cplflx
     Model%cplice           = cplice
+    Model%cplocn2atm       = cplocn2atm
     Model%cplwav           = cplwav
     Model%cplwav2atm       = cplwav2atm
     Model%cplchm           = cplchm
@@ -5465,6 +5468,7 @@ module GFS_typedefs
       print *, 'coupling parameters'
       print *, ' cplflx            : ', Model%cplflx
       print *, ' cplice            : ', Model%cplice
+      print *, ' cplocn2atm        : ', Model%cplocn2atm
       print *, ' cplwav            : ', Model%cplwav
       print *, ' cplwav2atm        : ', Model%cplwav2atm
       print *, ' cplchm            : ', Model%cplchm
@@ -7143,7 +7147,6 @@ module GFS_typedefs
     allocate (Interstitial%stress_land     (IM))
     allocate (Interstitial%stress_water    (IM))
     allocate (Interstitial%theta           (IM))
-    allocate (Interstitial%tice            (IM))
     allocate (Interstitial%tlvl            (IM,Model%levr+1+LTP))
     allocate (Interstitial%tlyr            (IM,Model%levr+LTP))
     allocate (Interstitial%tprcp_ice       (IM))
@@ -7153,7 +7156,6 @@ module GFS_typedefs
     allocate (Interstitial%tseal           (IM))
     allocate (Interstitial%tsfa            (IM))
     allocate (Interstitial%tsfc_ice        (IM))
-    allocate (Interstitial%tsfc_land       (IM))
     allocate (Interstitial%tsfc_water      (IM))
     allocate (Interstitial%tsfg            (IM))
     allocate (Interstitial%tsurf_ice       (IM))
@@ -7881,14 +7883,12 @@ module GFS_typedefs
     Interstitial%stress_land     = huge
     Interstitial%stress_water    = huge
     Interstitial%theta           = clear_val
-    Interstitial%tice            = clear_val
     Interstitial%tprcp_ice       = huge
     Interstitial%tprcp_land      = huge
     Interstitial%tprcp_water     = huge
     Interstitial%trans           = clear_val
     Interstitial%tseal           = clear_val
     Interstitial%tsfc_ice        = huge
-    Interstitial%tsfc_land       = huge
     Interstitial%tsfc_water      = huge
     Interstitial%tsurf_ice       = huge
     Interstitial%tsurf_land      = huge
@@ -8268,7 +8268,6 @@ module GFS_typedefs
     write (0,*) 'sum(Interstitial%stress_land     ) = ', sum(Interstitial%stress_land     )
     write (0,*) 'sum(Interstitial%stress_water    ) = ', sum(Interstitial%stress_water    )
     write (0,*) 'sum(Interstitial%theta           ) = ', sum(Interstitial%theta           )
-    write (0,*) 'sum(Interstitial%tice            ) = ', sum(Interstitial%tice            )
     write (0,*) 'sum(Interstitial%tlvl            ) = ', sum(Interstitial%tlvl            )
     write (0,*) 'sum(Interstitial%tlyr            ) = ', sum(Interstitial%tlyr            )
     write (0,*) 'sum(Interstitial%tprcp_ice       ) = ', sum(Interstitial%tprcp_ice       )
@@ -8278,7 +8277,6 @@ module GFS_typedefs
     write (0,*) 'sum(Interstitial%tseal           ) = ', sum(Interstitial%tseal           )
     write (0,*) 'sum(Interstitial%tsfa            ) = ', sum(Interstitial%tsfa            )
     write (0,*) 'sum(Interstitial%tsfc_ice        ) = ', sum(Interstitial%tsfc_ice        )
-    write (0,*) 'sum(Interstitial%tsfc_land       ) = ', sum(Interstitial%tsfc_land       )
     write (0,*) 'sum(Interstitial%tsfc_water      ) = ', sum(Interstitial%tsfc_water      )
     write (0,*) 'sum(Interstitial%tsfg            ) = ', sum(Interstitial%tsfg            )
     write (0,*) 'sum(Interstitial%tsurf_ice       ) = ', sum(Interstitial%tsurf_ice       )
