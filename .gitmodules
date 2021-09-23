@@ -1,9 +1,7 @@
 [submodule "atmos_cubed_sphere"]
   path = atmos_cubed_sphere
-  #url = https://github.com/NOAA-GFDL/GFDL_atmos_cubed_sphere
-  #branch = dev/emc
-  url = https://github.com/aerorahul/GFDL_atmos_cubed_sphere
-  branch = feature/cmake_only_in_dycore_of_emc
+  url = https://github.com/NOAA-GFDL/GFDL_atmos_cubed_sphere
+  branch = dev/emc
 [submodule "ccpp/framework"]
   path = ccpp/framework
   url = https://github.com/NCAR/ccpp-framework
