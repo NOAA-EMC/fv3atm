@@ -140,7 +140,7 @@ module fv3gfs_cap_mod
 
     ! specializations required to support 'inline' run sequences
     call NUOPC_CompSpecialize(gcomp, specLabel=label_CheckImport, &
-                              specPhaseLabel="phase1", specRoutine=NUOPC_NoOp, rc=rc)
+                              specPhaseLabel="phase1", specRoutine=fv3_checkimport, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
     call NUOPC_CompSpecialize(gcomp, specLabel=label_TimestampExport, &
