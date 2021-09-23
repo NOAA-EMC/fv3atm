@@ -1,4 +1,10 @@
-*.o
+*.[aox]
 *.mod
-*.a
 *.pyc
+
+*.sw[a-p]
+~
+
+build/
+install/
+
