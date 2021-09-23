@@ -4,10 +4,6 @@ project(CCPP-FV3
         LANGUAGES C CXX Fortran)
 set(PROJECT "CCPP-FV3")
 
-# Attempt to add link library "NetCDF::NetCDF_Fortran" to target "ccppphys"
-# which is not built in this directory.
-cmake_policy(SET CMP0079 NEW)
-
 #------------------------------------------------------------------------------
 # Set a default build type if none was specified
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
@@ -94,12 +90,7 @@ endif()
 # Build CCPP framework and physics
 
 add_subdirectory(framework)
-
 add_subdirectory(physics)
-add_dependencies(ccppphys ccpp)
-target_link_libraries(ccppphys PUBLIC NetCDF::NetCDF_Fortran)
-# This should not be necessary once framework and physics targets define BUILD_INTERFACE
-target_include_directories(ccppphys PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/framework/src)
 
 #------------------------------------------------------------------------------
 # Build fv3ccpp
@@ -124,16 +115,26 @@ add_library(
 set_property(SOURCE driver/GFS_diagnostics.F90 APPEND_STRING PROPERTY COMPILE_FLAGS "-O0")
 
 
-target_link_libraries(fv3ccpp PUBLIC ccpp)
-target_link_libraries(fv3ccpp PUBLIC ccppphys)
+target_link_libraries(fv3ccpp PUBLIC ccpp_framework)
+target_link_libraries(fv3ccpp PUBLIC ccpp_physics)
 
 if(OPENMP)
   target_link_libraries(fv3ccpp PUBLIC OpenMP::OpenMP_Fortran)
 endif()
 
-# This should not be necessary once framework and physics targets define BUILD_INTERFACE
-target_include_directories(fv3ccpp PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/framework/src
-                                           ${CMAKE_CURRENT_BINARY_DIR}/physics)
-
 set_target_properties(fv3ccpp PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mod)
 target_include_directories(fv3ccpp PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/mod>)
+
+###############################################################################
+### Install
+###############################################################################
+install(
+  TARGETS fv3ccpp ccpp_framework ccpp_physics
+  EXPORT fv3ccpp-config
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib)
+
+install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mod DESTINATION ${CMAKE_INSTALL_PREFIX})
+
+install(EXPORT fv3ccpp-config
+  DESTINATION lib/cmake)

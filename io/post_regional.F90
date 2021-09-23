@@ -296,13 +296,7 @@ module post_regional
         else
           lonstart = nint(lon1*gdsdegr)
         endif
-        if( lon2<0 ) then
-          lonlast = nint((lon2+360.)*gdsdegr)
-        else
-          lonlast = nint(lon2*gdsdegr)
-        endif
         latstart = nint(lat1*gdsdegr)
-        latlast  = nint(lat2*gdsdegr)
 
         truelat1 = nint(stdlat1*gdsdegr)
         truelat2 = nint(stdlat2*gdsdegr)
