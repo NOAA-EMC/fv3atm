@@ -79,7 +79,7 @@ module GFS_init
                      Init_parm%blksz, Init_parm%ak, Init_parm%bk,  &
                      Init_parm%restart, Init_parm%hydrostatic,     &
                      Init_parm%fcst_mpi_comm,                      &
-                     Init_parm%fcst_ntasks, nthrds )
+                     Init_parm%fcst_ntasks, nthrds)
 
     do nb = 1,nblks
       ix = Init_parm%blksz(nb)

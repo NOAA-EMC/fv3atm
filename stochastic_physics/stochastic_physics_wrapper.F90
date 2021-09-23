@@ -168,21 +168,6 @@ module stochastic_physics_wrapper_mod
         if (.not. minval(Atm_block%blksz) == maxblk) then
            call mpp_error(FATAL, 'Logic errror: cellular_automata not compatible with non-uniform blocksizes')
         end if
-        ! *DH
-        !do nb=1,nblks
-        !  GFS_Data(nb)%Intdiag%ca_deep(:)  = 0.
-        !  GFS_Data(nb)%Intdiag%ca_turb(:)  = 0.
-        !  GFS_Data(nb)%Intdiag%ca_shal(:)  = 0.
-        !  GFS_Data(nb)%Coupling%ca_deep(:) = 0.
-        !  GFS_Data(nb)%Coupling%ca_turb(:) = 0.
-        !  GFS_Data(nb)%Coupling%ca_shal(:) = 0.
-        !  GFS_Data(nb)%Coupling%ca1(:) = 0.
-        !  GFS_Data(nb)%Coupling%ca2(:) = 0.
-        !  GFS_Data(nb)%Coupling%ca3(:) = 0.
-        !  GFS_Data(nb)%Intdiag%ca1(:)  = 0.
-        !  GFS_Data(nb)%Intdiag%ca2(:)  = 0.
-        !  GFS_Data(nb)%Intdiag%ca3(:)  = 0.
-        !enddo
         if(GFS_Control%ca_sgs)then
            allocate(sst         (1:nblks, maxblk))
            allocate(lmsk        (1:nblks, maxblk))
