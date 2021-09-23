@@ -1212,7 +1212,7 @@ module fv3gfs_cap_mod
     type(ESMF_Clock)           :: clock
     type(ESMF_Time)            :: currTime, invalidTime
     type(ESMF_State)           :: importState
-    logical                    :: timeCheck1,timeCheck2
+    logical                    :: isValid
     type(ESMF_Field),pointer   :: fieldList(:)
     character(len=128)         :: fldname
     character(esmf_maxstr)     :: msgString
@@ -1250,25 +1250,32 @@ module fv3gfs_cap_mod
         call ESMF_FieldGet(fieldList(n), name=fldname, rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-        nf = queryImportFields(fldname)
-        timeCheck1 = NUOPC_IsAtTime(fieldList(n), invalidTime, rc=rc)
+        ! check if import field carries a valid timestamp
+        call NUOPC_GetTimestamp(fieldList(n), isValid=isValid, rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-        if (timeCheck1) then
-          importFieldsValid(nf) = .false.
-!         if(mtype==0) print *,'in fv3_checkimport,',trim(fldname),' is set unvalid, nf=',nf,' at time',date(1:6)
-        else
-          timeCheck2 = NUOPC_IsAtTime(fieldList(n), currTime, rc=rc)
+        if (isValid) then
+          ! if timestamp is set, check if it is valid
+          isValid = .not.NUOPC_IsAtTime(fieldList(n), invalidTime, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+        end if
 
-          if (.not.timeCheck2) then
-            !TODO: introduce and use INCOMPATIBILITY return codes!!!!
+        ! store field status in internal array
+        nf = queryImportFields(fldname)
+        importFieldsValid(nf) = isValid
+
+        if (isValid) then
+          ! check if field is current
+          isValid = NUOPC_IsAtTime(fieldList(n), currTime, rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+          if (.not.isValid) then
             call ESMF_LogSetError(ESMF_RC_ARG_BAD, &
-                                  msg="NUOPC INCOMPATIBILITY DETECTED: Import Field not at current time", &
+                                  msg="NUOPC INCOMPATIBILITY DETECTED: Import Field " &
+                                      // trim(fldname) // " not at current time", &
                                   line=__LINE__, file=__FILE__, rcToReturn=rc)
-              return
-          endif
-        endif
+            return
+          end if
+        end if
         write(msgString,'(A,2i4,l3)') "fv3_checkimport "//trim(fldname),n,nf,importFieldsValid(nf)
         call ESMF_LogWrite(msgString,ESMF_LOGMSG_INFO,rc=rc)
       enddo
