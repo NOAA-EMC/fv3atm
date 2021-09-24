@@ -2,7 +2,7 @@
 
 module GFS_typedefs
 
-       use machine,                  only: kind_phys
+       use machine,                  only: kind_phys,kind_dbl_prec
        use physcons,                 only: con_cp, con_fvirt, con_g,                       &
                                            con_hvap, con_hfus, con_pi, con_rd, con_rv,     &
                                            con_t0c, con_cvap, con_cliq, con_eps, con_epsq, &
@@ -1121,7 +1121,7 @@ module GFS_typedefs
     logical              :: ca_sgs          !< switch for sgs ca
     logical              :: ca_global       !< switch for global ca
     logical              :: ca_smooth       !< switch for gaussian spatial filter
-    integer*8            :: iseed_ca        !< seed for random number generation in ca scheme
+    integer(kind=kind_dbl_prec) :: iseed_ca        !< seed for random number generation in ca scheme
     integer              :: nspinup         !< number of iterations to spin up the ca
     real(kind=kind_phys) :: rcell           !< threshold used for CA scheme
     real(kind=kind_phys) :: nthresh         !< threshold used for convection coupling
@@ -3051,7 +3051,7 @@ module GFS_typedefs
                                  nwat, tracer_names, tracer_types,  &
                                  input_nml_file, tile_num, blksz,   &
                                  ak, bk, restart, hydrostatic,      &
-                                 communicator, ntasks, nthreads )
+                                 communicator, ntasks, nthreads)
 
 !--- modules
     use physcons,         only: con_rerth, con_pi
