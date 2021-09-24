@@ -1412,7 +1412,7 @@
       if (nsout > 0) then
         ndig = max(log10(nf_hours+0.5)+1., 3.)
         write(cform, '("(I",I1,".",I1,",A1,I2.2,A1,I2.2)")') ndig, ndig
-        write(cfhour, cform) nf_hours,':',nf_minutes,':',nseconds
+        write(cfhour, cform) nf_hours,'-',nf_minutes,'-',nseconds
       else
         ndig = max(log10(nf_hours+0.5)+1., 3.)
         write(cform, '("(I",I1,".",I1,")")') ndig, ndig
