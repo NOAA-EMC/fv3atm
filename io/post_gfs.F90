@@ -18,19 +18,20 @@ module post_gfs
   contains
 
   subroutine post_run_gfs(wrt_int_state,mypei,mpicomp,lead_write,      &
-             mynfhr,mynfmin,mynfsec)
+                          mynfhr,mynfmin,mynfsec)
 !
 !  revision history:
 !     Jul 2019    J. Wang      create interface to run inline post for FV3
+!         2020    S. Moorthi   update to handle MG microphysics
 !     Apr 2021    R. Sun       Added variables for Thomspon MP
 !
 !-----------------------------------------------------------------------
 !*** run post on write grid comp
 !-----------------------------------------------------------------------
 !
-      use ctlblk_mod, only : komax,ifhr,ifmin,modelname,datapd,fld_info, &
-                             npset,grib,gocart_on,icount_calmict, jsta,  &
-                             jend,im, nsoil, filenameflat, me
+      use ctlblk_mod,   only : komax,ifhr,ifmin,modelname,datapd,fld_info, &
+                               npset,grib,gocart_on,icount_calmict, jsta,  &
+                               jend,im, nsoil, filenameflat, me
       use gridspec_mod, only : maptype, gridtype
       use grib2_module, only : gribit2,num_pset,nrecout,first_grbtbl
       use xml_perl_data,only : paramset
@@ -41,13 +42,13 @@ module post_gfs
 !
 !-----------------------------------------------------------------------
 !
-      type(wrt_internal_state),intent(in)       :: wrt_int_state
-      integer,intent(in)                        :: mypei
-      integer,intent(in)                        :: mpicomp
-      integer,intent(in)                        :: lead_write
-      integer,intent(in)                        :: mynfhr
-      integer,intent(in)                        :: mynfmin
-      integer,intent(in)                        :: mynfsec
+      type(wrt_internal_state),intent(in)  :: wrt_int_state
+      integer,intent(in)                   :: mypei
+      integer,intent(in)                   :: mpicomp
+      integer,intent(in)                   :: lead_write
+      integer,intent(in)                   :: mynfhr
+      integer,intent(in)                   :: mynfmin
+      integer,intent(in)                   :: mynfsec
 !
 !-----------------------------------------------------------------------
 !***  LOCAL VARIABLES
@@ -57,12 +58,12 @@ module post_gfs
       integer,allocatable  :: jstagrp(:),jendgrp(:)
       integer,save         :: kpo,kth,kpv
       logical,save         :: log_postalct=.false.
-      real,dimension(komax),save :: po, th, pv
-      logical        :: Log_runpost
-      character(255) :: post_fname*255
+      real,dimension(komax),save       :: po, th, pv
+      logical                          :: Log_runpost
+      character(255)                   :: post_fname*255
       real * 4, dimension(komax), save :: th4, pv4
 
-      integer,save :: iostatusD3D=-1
+      integer, save  :: iostatusD3D=-1
 !
       real(kind=8)   :: btim0, btim1, btim2, btim3,btim4,btim5,btim6,btim7
 !
@@ -93,7 +94,7 @@ module post_gfs
 !*** set up fields to run post
 !-----------------------------------------------------------------------
 !
-      if (.not.log_postalct) then
+      if (.not. log_postalct) then
 !
         allocate(jstagrp(nwtpg),jendgrp(nwtpg))
 !
@@ -150,7 +151,7 @@ module post_gfs
                             setvar_sfcfile)
 
 !       print *,'af set_postvars,setvar_atmfile=',setvar_atmfile,  &
-!        'setvar_sfcfile=',setvar_sfcfile
+!               'setvar_sfcfile=',setvar_sfcfile
 !
       if (setvar_atmfile.and.setvar_sfcfile) then
 ! 20190807 need to call microinit only for Ferrier microphysics
@@ -211,8 +212,8 @@ module post_gfs
 !
             call mpi_barrier(mpicomp,ierr)
             call gribit2(post_fname)
-            if(allocated(datapd))deallocate(datapd)
-            if(allocated(fld_info))deallocate(fld_info)
+            if(allocated(datapd))   deallocate(datapd)
+            if(allocated(fld_info)) deallocate(fld_info)
             if(npset >= num_pset) exit
 
           endif
@@ -250,83 +251,83 @@ module post_gfs
       type(ESMF_FieldBundle)             :: fldbundle
 !
 ! field bundle
-     do nfb=1, wrt_int_state%FBcount
-       fldbundle = wrt_int_state%wrtFB(nfb) 
+      do nfb=1, wrt_int_state%FBcount
+        fldbundle = wrt_int_state%wrtFB(nfb) 
 
 ! look at the field bundle attributes
-      call ESMF_AttributeGet(fldbundle, convention="NetCDF", purpose="FV3", &
-        attnestflag=ESMF_ATTNEST_OFF, Count=attcount, rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__,file=__FILE__))return
-!
-      aklen=0.
-      do i=1, attCount
-
-        call ESMF_AttributeGet(fldbundle, convention="NetCDF", purpose="FV3",                &
-                               attnestflag=ESMF_ATTNEST_OFF, attributeIndex=i, name=attName, &
-                               typekind=typekind, itemCount=n,  rc=rc)
+        call ESMF_AttributeGet(fldbundle, convention="NetCDF", purpose="FV3", &
+          attnestflag=ESMF_ATTNEST_OFF, Count=attcount, rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__,file=__FILE__))return
-
-        if (typekind==ESMF_TYPEKIND_I4 ) then
-          if(n == 1) then
-            call ESMF_AttributeGet(fldbundle, convention="NetCDF", purpose="FV3", &
-                                   name=trim(attName), value=varival, rc=rc)
-            if (trim(attName) == 'ncnsto')      wrt_int_state%ntrac       = varival
-            if (trim(attName) == 'ncld')        wrt_int_state%ncld        = varival
-            if (trim(attName) == 'nsoil')       wrt_int_state%nsoil       = varival
-            if (trim(attName) == 'fhzero')      wrt_int_state%fhzero      = varival
-            if (trim(attName) == 'imp_physics') wrt_int_state%imp_physics = varival
-          endif
-        else if (typekind == ESMF_TYPEKIND_R4) then
-          if(n == 1) then
-            call ESMF_AttributeGet(fldbundle, convention="NetCDF", purpose="FV3", &
-                                   name=trim(attName), value=varr4val, rc=rc)
-            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-            if (trim(attName) == 'dtp')   then
-               wrt_int_state%dtp=varr4val
-            endif
-          else if(n > 1) then
-            if(trim(attName) =="ak") then
-              if(allocated(wrt_int_state%ak)) deallocate(wrt_int_state%ak)
-              allocate(wrt_int_state%ak(n))
-              call ESMF_AttributeGet(fldbundle, convention="NetCDF", purpose="FV3", &
-                                     name=trim(attName), valueList=wrt_int_state%ak, rc=rc)
-              wrt_int_state%lm = n-1
-            else if(trim(attName) == "bk") then
-              if(allocated(wrt_int_state%bk)) deallocate(wrt_int_state%bk)
-              allocate(wrt_int_state%bk(n))
-              call ESMF_AttributeGet(fldbundle, convention="NetCDF", purpose="FV3", &
-                                     name=trim(attName), valueList=wrt_int_state%bk, rc=rc)
-            endif
-          endif
-        else if (typekind == ESMF_TYPEKIND_R8) then
-          if(n == 1) then
-            call ESMF_AttributeGet(fldbundle, convention="NetCDF", purpose="FV3", &
-              name=trim(attName), value=varr8val, rc=rc)
-            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-            if (trim(attName) == 'dtp')   then
-               wrt_int_state%dtp=varr8val
-            endif
-          else if(n > 1) then
-            if(trim(attName) == "ak") then
-              if(allocated(wrt_int_state%ak)) deallocate(wrt_int_state%ak)
-              allocate(wrt_int_state%ak(n))
-              call ESMF_AttributeGet(fldbundle, convention="NetCDF", purpose="FV3", &
-                                     name=trim(attName), valueList=wrt_int_state%ak, rc=rc)
-              wrt_int_state%lm = n-1
-            else if(trim(attName) =="bk") then
-              if(allocated(wrt_int_state%bk)) deallocate(wrt_int_state%bk)
-              allocate(wrt_int_state%bk(n))
-              call ESMF_AttributeGet(fldbundle, convention="NetCDF", purpose="FV3", &
-              name=trim(attName), valueList=wrt_int_state%bk, rc=rc)
-            endif
-            wrt_int_state%lm = size(wrt_int_state%ak) - 1
-          endif
-        endif
 !
-      enddo
+        aklen=0.
+        do i=1, attCount
+
+          call ESMF_AttributeGet(fldbundle, convention="NetCDF", purpose="FV3",                &
+                                 attnestflag=ESMF_ATTNEST_OFF, attributeIndex=i, name=attName, &
+                                 typekind=typekind, itemCount=n,  rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__,file=__FILE__))return
+
+          if (typekind==ESMF_TYPEKIND_I4 ) then
+            if(n == 1) then
+              call ESMF_AttributeGet(fldbundle, convention="NetCDF", purpose="FV3", &
+                                     name=trim(attName), value=varival, rc=rc)
+              if (trim(attName) == 'ncnsto')      wrt_int_state%ntrac       = varival
+              if (trim(attName) == 'ncld')        wrt_int_state%ncld        = varival
+              if (trim(attName) == 'nsoil')       wrt_int_state%nsoil       = varival
+              if (trim(attName) == 'fhzero')      wrt_int_state%fhzero      = varival
+              if (trim(attName) == 'imp_physics') wrt_int_state%imp_physics = varival
+            endif
+          else if (typekind == ESMF_TYPEKIND_R4) then
+            if(n == 1) then
+              call ESMF_AttributeGet(fldbundle, convention="NetCDF", purpose="FV3", &
+                                     name=trim(attName), value=varr4val, rc=rc)
+              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+              if (trim(attName) == 'dtp')   then
+                wrt_int_state%dtp=varr4val
+              endif
+            else if(n > 1) then
+              if(trim(attName) =="ak") then
+                if(allocated(wrt_int_state%ak)) deallocate(wrt_int_state%ak)
+                allocate(wrt_int_state%ak(n))
+                call ESMF_AttributeGet(fldbundle, convention="NetCDF", purpose="FV3", &
+                                       name=trim(attName), valueList=wrt_int_state%ak, rc=rc)
+                wrt_int_state%lm = n-1
+              else if(trim(attName) == "bk") then
+                if(allocated(wrt_int_state%bk)) deallocate(wrt_int_state%bk)
+                allocate(wrt_int_state%bk(n))
+                call ESMF_AttributeGet(fldbundle, convention="NetCDF", purpose="FV3", &
+                                       name=trim(attName), valueList=wrt_int_state%bk, rc=rc)
+              endif
+            endif
+          else if (typekind == ESMF_TYPEKIND_R8) then
+            if(n == 1) then
+              call ESMF_AttributeGet(fldbundle, convention="NetCDF", purpose="FV3", &
+                name=trim(attName), value=varr8val, rc=rc)
+              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+              if (trim(attName) == 'dtp')   then
+                wrt_int_state%dtp=varr8val
+              endif
+            else if(n > 1) then
+              if(trim(attName) == "ak") then
+                if(allocated(wrt_int_state%ak)) deallocate(wrt_int_state%ak)
+                allocate(wrt_int_state%ak(n))
+                call ESMF_AttributeGet(fldbundle, convention="NetCDF", purpose="FV3", &
+                                       name=trim(attName), valueList=wrt_int_state%ak, rc=rc)
+                wrt_int_state%lm = n-1
+              else if(trim(attName) =="bk") then
+                if(allocated(wrt_int_state%bk)) deallocate(wrt_int_state%bk)
+                allocate(wrt_int_state%bk(n))
+                call ESMF_AttributeGet(fldbundle, convention="NetCDF", purpose="FV3", &
+                name=trim(attName), valueList=wrt_int_state%bk, rc=rc)
+              endif
+              wrt_int_state%lm = size(wrt_int_state%ak) - 1
+            endif
+          endif
+!
+        enddo
 !
       enddo !end nfb
-!      print *,'in post_getattr, dtp=',wrt_int_state%dtp
+!     print *,'in post_getattr, dtp=',wrt_int_state%dtp
 !
     end subroutine post_getattr_gfs
 !-----------------------------------------------------------------------
@@ -419,12 +420,12 @@ module post_gfs
       real,dimension(:),    allocatable :: slat,qstl
       real,external::FPVSNEW
       real,dimension(:,:),allocatable :: dummy, p2d, t2d, q2d,  qs2d,  &
-                             cw2d, cfr2d
-      character(len=80)              :: fieldname, wrtFBName
-      type(ESMF_Grid)                :: wrtGrid
-      type(ESMF_Field)               :: theField
-      type(ESMF_Field), allocatable  :: fcstField(:)
-      type(ESMF_TypeKind_Flag)       :: typekind
+                                         cw2d, cfr2d
+      character(len=80)               :: fieldname, wrtFBName
+      type(ESMF_Grid)                 :: wrtGrid
+      type(ESMF_Field)                :: theField
+      type(ESMF_Field), allocatable   :: fcstField(:)
+      type(ESMF_TypeKind_Flag)        :: typekind
 !
 !-----------------------------------------------------------------------
 !***  INTEGER SCALAR/1D HISTORY VARIABLES
@@ -445,7 +446,7 @@ module post_gfs
       tmaxmin = tprec
       td3d    = tprec
       if(mype==0)print*,'MP_PHYSICS= ',imp_physics,'nbdl=',nbdl, 'tprec=',tprec,'tclod=',tclod, &
-       'dtp=',dtp,'tmaxmin=',tmaxmin
+                        'dtp=',dtp,'tmaxmin=',tmaxmin
 
 !      write(6,*) 'maptype and gridtype is ', maptype,gridtype
 !
@@ -461,6 +462,7 @@ module post_gfs
       lonlast  = nint(wrt_int_state%lonlast*gdsdegr)
       latstart = nint(wrt_int_state%latstart*gdsdegr)
       latlast  = nint(wrt_int_state%latlast*gdsdegr)
+
 !      print*,'latstart,latlast B bcast= ',latstart,latlast
 !      print*,'lonstart,lonlast B bcast= ',lonstart,lonlast
 
@@ -471,7 +473,7 @@ module post_gfs
           ip1 = i + 1
           if (ip1 > im) ip1 = ip1 - im
           dx(i,j) = erad*cos(gdlat(i,j)*dtr)*(gdlon(ip1,j)-gdlon(i,j))*dtr
-          dy(i,j)  = erad*(gdlat(i,j)-gdlat(i,j+1))*dtr  ! like A*DPH
+          dy(i,j) = erad*(gdlat(i,j)-gdlat(i,j+1))*dtr  ! like A*DPH
         enddo
       enddo
 !
