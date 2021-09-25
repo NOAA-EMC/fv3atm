@@ -2465,6 +2465,7 @@ module GFS_typedefs
     allocate (Sfcprop%hice   (IM))
     allocate (Sfcprop%weasd  (IM))
     allocate (Sfcprop%sncovr (IM))
+    allocate (Sfcprop%sncovr_ice (IM))
     if (Model%use_cice_alb .or. Model%lsm == Model%lsm_ruc) then
       allocate (Sfcprop%albdirvis_ice (IM))
       allocate (Sfcprop%albdifvis_ice (IM))
@@ -2473,7 +2474,6 @@ module GFS_typedefs
 !     allocate (Sfcprop%sfalb_ice (IM))
     endif
     if (Model%lsm == Model%lsm_ruc) then
-      allocate (Sfcprop%sncovr_ice (IM))
       allocate (Sfcprop%sfalb_lnd (IM))
       allocate (Sfcprop%sfalb_ice (IM))
       allocate (Sfcprop%sfalb_lnd_bck (IM))
@@ -2491,6 +2491,7 @@ module GFS_typedefs
     Sfcprop%hice   = clear_val
     Sfcprop%weasd  = clear_val
     Sfcprop%sncovr = clear_val
+    Sfcprop%sncovr_ice = clear_val
     if (Model%use_cice_alb .or. Model%lsm == Model%lsm_ruc) then
       Sfcprop%albdirvis_ice = clear_val
       Sfcprop%albdifvis_ice = clear_val
@@ -2499,7 +2500,6 @@ module GFS_typedefs
 !     Sfcprop%sfalb_ice     = clear_val
     endif
     if (Model%lsm == Model%lsm_ruc) then
-      Sfcprop%sncovr_ice    = clear_val
       Sfcprop%sfalb_lnd     = clear_val
       Sfcprop%sfalb_ice     = clear_val
       Sfcprop%sfalb_lnd_bck = clear_val
