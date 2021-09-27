@@ -252,7 +252,7 @@ module post_gfs
 !
 ! field bundle
       do nfb=1, wrt_int_state%FBcount
-        fldbundle = wrt_int_state%wrtFB(nfb) 
+        fldbundle = wrt_int_state%wrtFB(nfb)
 
 ! look at the field bundle attributes
         call ESMF_AttributeGet(fldbundle, convention="NetCDF", purpose="FV3", &
@@ -267,7 +267,7 @@ module post_gfs
                                  typekind=typekind, itemCount=n,  rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__,file=__FILE__))return
 
-          if (typekind==ESMF_TYPEKIND_I4 ) then
+          if (typekind == ESMF_TYPEKIND_I4) then
             if(n == 1) then
               call ESMF_AttributeGet(fldbundle, convention="NetCDF", purpose="FV3", &
                                      name=trim(attName), value=varival, rc=rc)
