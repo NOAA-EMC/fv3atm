@@ -1641,6 +1641,7 @@ end subroutine atmos_data_type_chksum
 !     real(kind=GFS_kind_phys), parameter :: hsmax = 100.0    !< maximum snow depth (m) allowed
       real(kind=GFS_kind_phys), parameter :: himax = 1.0e12   !< maximum ice thickness allowed
       real(kind=GFS_kind_phys), parameter :: hsmax = 1.0e12   !< maximum snow depth (m) allowed
+      real(kind=GFS_kind_phys), parameter :: con_sbc = 5.670400e-8_GFS_kind_phys !< stefan-boltzmann
 !
 !------------------------------------------------------------------------------
 !
@@ -2478,7 +2479,7 @@ end subroutine atmos_data_type_chksum
 
 ! update sea ice related fields:
     if( lcpl_fice ) then
-!$omp parallel do default(shared) private(i,j,nb,ix)
+!$omp parallel do default(shared) private(i,j,nb,ix,tem)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
@@ -2489,6 +2490,9 @@ end subroutine atmos_data_type_chksum
               GFS_data(nb)%Coupling%hsnoin_cpl(ix) = min(hsmax, GFS_data(nb)%Coupling%hsnoin_cpl(ix) &
                              / (GFS_data(nb)%Sfcprop%fice(ix)*GFS_data(nb)%Sfcprop%oceanfrac(ix)))
               GFS_data(nb)%Sfcprop%zorli(ix)       = z0ice
+              tem = GFS_data(nb)%Sfcprop%tisfc(ix) * GFS_data(nb)%Sfcprop%tisfc(ix)
+              GFS_data(nb)%Sfcprop%emis_ice(ix)    = GFS_data(nb)%Coupling%ulwsfcin_cpl(ix)          &
+                                                   / (con_sbc * tem * tem)
             else
               GFS_data(nb)%Sfcprop%tisfc(ix)       = GFS_data(nb)%Sfcprop%tsfco(ix)
               GFS_data(nb)%Sfcprop%fice(ix)        = zero

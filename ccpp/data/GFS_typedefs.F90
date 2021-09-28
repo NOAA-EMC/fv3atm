@@ -2075,7 +2075,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: trans(:)           => null()  !<
     real (kind=kind_phys), pointer      :: tseal(:)           => null()  !<
     real (kind=kind_phys), pointer      :: tsfa(:)            => null()  !<
-    real (kind=kind_phys), pointer      :: tsfc_ice(:)        => null()  !<
+!   real (kind=kind_phys), pointer      :: tsfc_ice(:)        => null()  !<
     real (kind=kind_phys), pointer      :: tsfc_land_save(:)  => null()  !<
     real (kind=kind_phys), pointer      :: tsfc_water(:)      => null()  !<
     real (kind=kind_phys), pointer      :: tsfg(:)            => null()  !<
@@ -7139,7 +7139,7 @@ module GFS_typedefs
     allocate (Interstitial%trans           (IM))
     allocate (Interstitial%tseal           (IM))
     allocate (Interstitial%tsfa            (IM))
-    allocate (Interstitial%tsfc_ice        (IM))
+!   allocate (Interstitial%tsfc_ice        (IM))
     allocate (Interstitial%tsfc_water      (IM))
     allocate (Interstitial%tsfg            (IM))
     allocate (Interstitial%tsurf_ice       (IM))
@@ -7868,7 +7868,7 @@ module GFS_typedefs
     Interstitial%tprcp_water     = huge
     Interstitial%trans           = clear_val
     Interstitial%tseal           = clear_val
-    Interstitial%tsfc_ice        = huge
+!   Interstitial%tsfc_ice        = huge
     Interstitial%tsfc_water      = huge
     Interstitial%tsurf_ice       = huge
     Interstitial%tsurf_land      = huge
@@ -8254,7 +8254,7 @@ module GFS_typedefs
     write (0,*) 'sum(Interstitial%trans           ) = ', sum(Interstitial%trans           )
     write (0,*) 'sum(Interstitial%tseal           ) = ', sum(Interstitial%tseal           )
     write (0,*) 'sum(Interstitial%tsfa            ) = ', sum(Interstitial%tsfa            )
-    write (0,*) 'sum(Interstitial%tsfc_ice        ) = ', sum(Interstitial%tsfc_ice        )
+!   write (0,*) 'sum(Interstitial%tsfc_ice        ) = ', sum(Interstitial%tsfc_ice        )
     write (0,*) 'sum(Interstitial%tsfc_water      ) = ', sum(Interstitial%tsfc_water      )
     write (0,*) 'sum(Interstitial%tsfg            ) = ', sum(Interstitial%tsfg            )
     write (0,*) 'sum(Interstitial%tsurf_ice       ) = ', sum(Interstitial%tsurf_ice       )
