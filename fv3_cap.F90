@@ -39,7 +39,7 @@ module fv3gfs_cap_mod
                                     wrttasks_per_group, n_group,             &
                                     lead_wrttask, last_wrttask,              &
                                     output_grid, output_file,                &
-                                    nsout_io, iau_offset 
+                                    nsout_io, iau_offset, lflname_fulltime
 !
   use module_fcst_grid_comp,  only: fcstSS => SetServices,                   &
                                     fcstGrid, numLevels, numSoilLayers,      &
@@ -688,7 +688,7 @@ module fv3gfs_cap_mod
             output_fh(i) = (i-1)*nfhout_hf + output_startfh
           enddo
           do i=1,nfh2
-              output_fh(nfh+i) = nfhmax_hf + i*nfhout
+            output_fh(nfh+i) = nfhmax_hf + i*nfhout
           enddo
         endif
       elseif (nfhout > 0 ) then
@@ -721,6 +721,7 @@ module fv3gfs_cap_mod
     if (noutput_fh > 0 ) then
 !--- use output_fh to sepcify output forecast time
       loutput_fh = .true.
+      lflname_fulltime = .false.
       if(noutput_fh == 1) then
         call ESMF_ConfigGetAttribute(CF,value=outputfh,label='output_fh:', rc=rc)
         if(outputfh == -1) loutput_fh = .false.
@@ -745,6 +746,9 @@ module fv3gfs_cap_mod
               endif
               do i=2,nfh
                 output_fh(i) = (i-1)*outputfh2(1) + output_startfh
+                if(.not.lflname_fulltime) then
+                  if(mode(nint(output_fh(i)*3600),3600) /= 0) lflname_fulltime = .true.
+                endif
               enddo
             endif
           endif
@@ -760,12 +764,15 @@ module fv3gfs_cap_mod
           else
             do i=1,noutput_fh
               output_fh(i) = output_startfh + output_fh(i)
+              if(.not.lflname_fulltime) then
+                if(mode(nint(output_fh(i)*3600),3600) /= 0) lflname_fulltime = .true.
+              endif
             enddo
           endif
         endif
       endif ! end loutput_fh
     endif 
-    if(mype==0) print *,'output_fh=',output_fh(1:size(output_fh))
+    if(mype==0) print *,'output_fh=',output_fh(1:size(output_fh)),'lflname_fulltime=',lflname_fulltime
 !
     ! --- advertise Fields in importState and exportState -------------------
 
