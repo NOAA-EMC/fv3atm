@@ -747,7 +747,7 @@ module fv3gfs_cap_mod
               do i=2,nfh
                 output_fh(i) = (i-1)*outputfh2(1) + output_startfh
                 if(.not.lflname_fulltime) then
-                  if(mod(nint(output_fh(i)*3600),3600) /= 0) lflname_fulltime = .true.
+                  if(mod(nint(output_fh(i)*3600.),3600) /= 0) lflname_fulltime = .true.
                 endif
               enddo
             endif
@@ -761,11 +761,16 @@ module fv3gfs_cap_mod
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
           if( output_startfh == 0) then
             if(output_fh(1)==0) output_fh(1) = dt_atmos/3600.
+            do i=1,noutput_fh
+              if(.not.lflname_fulltime) then
+                if(mod(nint(output_fh(i)*3600.),3600) /= 0) lflname_fulltime = .true.
+              endif
+            enddo
           else
             do i=1,noutput_fh
               output_fh(i) = output_startfh + output_fh(i)
               if(.not.lflname_fulltime) then
-                if(mod(nint(output_fh(i)*3600),3600) /= 0) lflname_fulltime = .true.
+                if(mod(nint(output_fh(i)*3600.),3600) /= 0) lflname_fulltime = .true.
               endif
             enddo
           endif
