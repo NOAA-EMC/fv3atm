@@ -181,7 +181,7 @@ module fv3gfs_cap_mod
     integer(ESMF_KIND_I4)                  :: nhf, nrg
 
     integer,dimension(6)                   :: date, date_init
-    integer                                :: i, j, k, io_unit, urc, ierr
+    integer                                :: i, j, k, io_unit, urc, ierr, ist
     integer                                :: noutput_fh, nfh, nfh2
     integer                                :: petcount
     integer                                :: num_output_file
@@ -760,8 +760,12 @@ module fv3gfs_cap_mod
              count=noutput_fh, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
           if( output_startfh == 0) then
-            if(output_fh(1)==0) output_fh(1) = dt_atmos/3600.
-            do i=1,noutput_fh
+            ist = 1
+            if(output_fh(1)==0) then
+              output_fh(1) = dt_atmos/3600.
+              ist= 2
+            endif
+            do i=ist,noutput_fh
               if(.not.lflname_fulltime) then
                 if(mod(nint(output_fh(i)*3600.),3600) /= 0) lflname_fulltime = .true.
               endif
