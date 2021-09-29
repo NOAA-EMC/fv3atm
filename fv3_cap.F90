@@ -747,7 +747,7 @@ module fv3gfs_cap_mod
               do i=2,nfh
                 output_fh(i) = (i-1)*outputfh2(1) + output_startfh
                 if(.not.lflname_fulltime) then
-                  if(mode(nint(output_fh(i)*3600),3600) /= 0) lflname_fulltime = .true.
+                  if(mod(nint(output_fh(i)*3600),3600) /= 0) lflname_fulltime = .true.
                 endif
               enddo
             endif
@@ -765,7 +765,7 @@ module fv3gfs_cap_mod
             do i=1,noutput_fh
               output_fh(i) = output_startfh + output_fh(i)
               if(.not.lflname_fulltime) then
-                if(mode(nint(output_fh(i)*3600),3600) /= 0) lflname_fulltime = .true.
+                if(mod(nint(output_fh(i)*3600),3600) /= 0) lflname_fulltime = .true.
               endif
             enddo
           endif
