@@ -312,9 +312,6 @@ module stochastic_physics_wrapper_mod
             GFS_Control%nspinup,GFS_Control%ca_trigger,Atm_block%blksz(1),GFS_Control%master,GFS_Control%communicator)
          ! Copy contiguous data back as needed
          do nb=1,nblks
-             GFS_Data(nb)%Intdiag%ca_deep(:)  = ca_deep_cpl(nb,1:GFS_Control%blksz(nb))
-             GFS_Data(nb)%Intdiag%ca_turb(:)  = ca_turb_cpl(nb,1:GFS_Control%blksz(nb))
-             GFS_Data(nb)%Intdiag%ca_shal(:)  = ca_shal_cpl(nb,1:GFS_Control%blksz(nb))
              GFS_Data(nb)%Coupling%ca_deep(:) = ca_deep_cpl (nb,1:GFS_Control%blksz(nb))
              GFS_Data(nb)%Coupling%ca_turb(:) = ca_turb_cpl (nb,1:GFS_Control%blksz(nb))
              GFS_Data(nb)%Coupling%ca_shal(:) = ca_shal_cpl (nb,1:GFS_Control%blksz(nb))
@@ -331,9 +328,6 @@ module stochastic_physics_wrapper_mod
              GFS_Data(nb)%Coupling%ca1(:) = ca1_cpl(nb,1:GFS_Control%blksz(nb))
              GFS_Data(nb)%Coupling%ca2(:) = ca2_cpl(nb,1:GFS_Control%blksz(nb))
              GFS_Data(nb)%Coupling%ca3(:) = ca3_cpl(nb,1:GFS_Control%blksz(nb))
-             GFS_Data(nb)%Intdiag%ca1(:)  = ca1_cpl(nb,1:GFS_Control%blksz(nb))
-             GFS_Data(nb)%Intdiag%ca2(:)  = ca2_cpl(nb,1:GFS_Control%blksz(nb))
-             GFS_Data(nb)%Intdiag%ca3(:)  = ca3_cpl(nb,1:GFS_Control%blksz(nb))
           enddo
        endif
 

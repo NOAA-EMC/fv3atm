@@ -1633,20 +1633,6 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: tdomip (:)     => null()   !< dominant accumulated sleet type
     real (kind=kind_phys), pointer :: tdoms  (:)     => null()   !< dominant accumulated snow type
 
-    real (kind=kind_phys), pointer :: ca1      (:)   => null() !
-    real (kind=kind_phys), pointer :: ca2      (:)   => null() !
-    real (kind=kind_phys), pointer :: ca3      (:)   => null() !
-    real (kind=kind_phys), pointer :: ca_deep  (:)   => null()   !< cellular automata fraction
-    real (kind=kind_phys), pointer :: ca_turb  (:)   => null()   !< cellular automata fraction
-    real (kind=kind_phys), pointer :: ca_shal  (:)   => null()   !< cellular automata fraction
-    real (kind=kind_phys), pointer :: ca_rad   (:)   => null()   !< cellular automata fraction
-    real (kind=kind_phys), pointer :: ca_micro (:)   => null()   !< cellular automata fraction
-
-    real (kind=kind_phys), pointer :: skebu_wts(:,:) => null()   !< 10 meter u wind speed
-    real (kind=kind_phys), pointer :: skebv_wts(:,:) => null()   !< 10 meter v wind speed
-    real (kind=kind_phys), pointer :: sppt_wts(:,:)  => null()   !<
-    real (kind=kind_phys), pointer :: shum_wts(:,:)  => null()   !<
-    real (kind=kind_phys), pointer :: sfc_wts(:,:)   => null()   !<
     real (kind=kind_phys), pointer :: zmtnblck(:)    => null()   !<mountain blocking evel
 
     ! dtend/dtidxt: Multitudinous 3d tendencies in a 4D array: (i,k,1:100+ntrac,nprocess)
@@ -6522,27 +6508,13 @@ module GFS_typedefs
     allocate (Diag%tdomzr   (IM))
     allocate (Diag%tdomip   (IM))
     allocate (Diag%tdoms    (IM))
-    allocate (Diag%skebu_wts(IM,Model%levs))
-    allocate (Diag%skebv_wts(IM,Model%levs))
-    allocate (Diag%sppt_wts (IM,Model%levs))
-    allocate (Diag%shum_wts (IM,Model%levs))
-    allocate (Diag%sfc_wts  (IM,Model%n_var_lndp))
     allocate (Diag%zmtnblck (IM))
-    allocate (Diag%ca1      (IM))
-    allocate (Diag%ca2      (IM))
-    allocate (Diag%ca3      (IM))
 
     ! F-A MP scheme
     if (Model%imp_physics == Model%imp_physics_fer_hires) then
      allocate (Diag%train     (IM,Model%levs))
     end if
     allocate (Diag%cldfra     (IM,Model%levs))
-
-    allocate (Diag%ca_deep  (IM))
-    allocate (Diag%ca_turb  (IM))
-    allocate (Diag%ca_shal  (IM))
-    allocate (Diag%ca_rad   (IM))
-    allocate (Diag%ca_micro (IM))
 
     !--- 3D diagnostics
     if (Model%ldiag3d) then
@@ -6794,12 +6766,6 @@ module GFS_typedefs
     Diag%tdomzr     = zero
     Diag%tdomip     = zero
     Diag%tdoms      = zero
-    Diag%skebu_wts  = zero
-    Diag%skebv_wts  = zero
-    Diag%sppt_wts   = zero
-    Diag%shum_wts   = zero
-    Diag%sfc_wts    = zero
-    Diag%zmtnblck   = zero
 
     if (Model%imp_physics == Model%imp_physics_fer_hires) then
        Diag%train      = zero
@@ -6833,16 +6799,6 @@ module GFS_typedefs
       Diag%exch_m        = clear_val
     endif
 
-    if (Model%do_ca) then
-      Diag%ca1      = zero
-      Diag%ca2      = zero
-      Diag%ca3      = zero
-      Diag%ca_deep  = zero
-      Diag%ca_turb  = zero
-      Diag%ca_shal  = zero
-      Diag%ca_rad   = zero
-      Diag%ca_micro = zero
-    endif
 !    if(Model%me == Model%master) print *,'in diag_phys_zero, totprcpb set to 0,kdt=',Model%kdt
 
     if (Model%ldiag3d) then
