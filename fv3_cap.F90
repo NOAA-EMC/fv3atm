@@ -43,7 +43,7 @@ module fv3gfs_cap_mod
 !
   use module_fcst_grid_comp,  only: fcstSS => SetServices,                   &
                                     fcstGrid, numLevels, numSoilLayers,      &
-                                    numTracers
+                                    numTracers, ngrids, mygrid
 
   use module_wrt_grid_comp,   only: wrtSS => SetServices
 !
@@ -817,7 +817,7 @@ module fv3gfs_cap_mod
     if (isPetLocal) then
 
       ! -- realize connected fields in exportState
-      call realizeConnectedCplFields(exportState, fcstGrid,                          &
+      call realizeConnectedCplFields(exportState, fcstGrid(mygrid),                  &
                                      numLevels, numSoilLayers, numTracers,           &
                                      exportFieldsInfo, 'FV3 Export', exportFields, 0.0_ESMF_KIND_R8, rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__,  file=__FILE__)) return
@@ -827,7 +827,7 @@ module fv3gfs_cap_mod
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__,  file=__FILE__)) return
 
       ! -- realize connected fields in importState
-      call realizeConnectedCplFields(importState, fcstGrid,                          &
+      call realizeConnectedCplFields(importState, fcstGrid(mygrid),                  &
                                      numLevels, numSoilLayers, numTracers,           &
                                      importFieldsInfo, 'FV3 Import', importFields, 9.99e20_ESMF_KIND_R8, rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__,  file=__FILE__)) return
