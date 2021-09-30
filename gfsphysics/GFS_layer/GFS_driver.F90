@@ -665,7 +665,7 @@ module GFS_driver
 ! Since IPD_func0d_proc declares all arguments as intent(inout), we
 ! need to do the same here - however, this way we are loosing the
 ! valuable information on the actual intent to this routine. *DH
-#ifdef __GFORTRAN__
+#if defined(__GFORTRAN__) || defined(__FUJITSU) || defined(__CRAY_X86_ROME)
     type(GFS_control_type),         intent(inout) :: Model
     type(GFS_statein_type),         intent(inout) :: Statein
     type(GFS_stateout_type),        intent(inout) :: Stateout
