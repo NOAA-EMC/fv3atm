@@ -2037,7 +2037,7 @@ module GFS_diagnostics
     ExtDiag(idx)%mod_name = 'gfs_phys'
     allocate (ExtDiag(idx)%data(nblks))
     do nb = 1,nblks
-      ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%skebu_wts(:,:)
+      ExtDiag(idx)%data(nb)%var3 => Coupling(nb)%skebu_wts(:,:)
     enddo
 
     idx = idx + 1
@@ -2048,7 +2048,7 @@ module GFS_diagnostics
     ExtDiag(idx)%mod_name = 'gfs_phys'
     allocate (ExtDiag(idx)%data(nblks))
     do nb = 1,nblks
-      ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%skebv_wts(:,:)
+      ExtDiag(idx)%data(nb)%var3 => Coupling(nb)%skebv_wts(:,:)
     enddo
 
     idx = idx + 1
@@ -2091,7 +2091,7 @@ module GFS_diagnostics
     ExtDiag(idx)%mod_name = 'gfs_phys'
     allocate (ExtDiag(idx)%data(nblks))
     do nb = 1,nblks
-      ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%sppt_wts(:,:)
+      ExtDiag(idx)%data(nb)%var3 => Coupling(nb)%sppt_wts(:,:)
     enddo
 
     idx = idx + 1
@@ -2102,7 +2102,7 @@ module GFS_diagnostics
     ExtDiag(idx)%mod_name = 'gfs_phys'
     allocate (ExtDiag(idx)%data(nblks))
     do nb = 1,nblks
-      ExtDiag(idx)%data(nb)%var3 => IntDiag(nb)%shum_wts(:,:)
+      ExtDiag(idx)%data(nb)%var3 => Coupling(nb)%shum_wts(:,:)
     enddo
 
     idx = idx + 1
@@ -2113,7 +2113,7 @@ module GFS_diagnostics
     ExtDiag(idx)%mod_name = 'gfs_phys'
     allocate (ExtDiag(idx)%data(nblks))
     do nb = 1,nblks
-      ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%sfc_wts(:,1)
+      ExtDiag(idx)%data(nb)%var2 => Coupling(nb)%sfc_wts(:,1)
     enddo
 
     idx = idx + 1
@@ -2124,7 +2124,7 @@ module GFS_diagnostics
     ExtDiag(idx)%mod_name = 'gfs_phys'
     allocate (ExtDiag(idx)%data(nblks))
     do nb = 1,nblks
-      ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%sfc_wts(:,2)
+      ExtDiag(idx)%data(nb)%var2 => Coupling(nb)%sfc_wts(:,2)
     enddo
 
     idx = idx + 1
@@ -2135,7 +2135,7 @@ module GFS_diagnostics
     ExtDiag(idx)%mod_name = 'gfs_phys'
     allocate (ExtDiag(idx)%data(nblks))
     do nb = 1,nblks
-      ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%ca1(:)
+      ExtDiag(idx)%data(nb)%var2 => Coupling(nb)%ca1(:)
     enddo
 
     idx = idx + 1
@@ -2146,7 +2146,7 @@ module GFS_diagnostics
     ExtDiag(idx)%mod_name = 'gfs_phys'
     allocate (ExtDiag(idx)%data(nblks))
     do nb = 1,nblks
-      ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%ca_deep(:)
+      ExtDiag(idx)%data(nb)%var2 => Coupling(nb)%ca_deep(:)
     enddo
 
     idx = idx + 1
@@ -2157,7 +2157,7 @@ module GFS_diagnostics
     ExtDiag(idx)%mod_name = 'gfs_phys'
     allocate (ExtDiag(idx)%data(nblks))
     do nb = 1,nblks
-      ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%ca_turb(:)
+      ExtDiag(idx)%data(nb)%var2 => Coupling(nb)%ca_turb(:)
     enddo
 
     idx = idx + 1
@@ -2168,7 +2168,7 @@ module GFS_diagnostics
     ExtDiag(idx)%mod_name = 'gfs_phys'
     allocate (ExtDiag(idx)%data(nblks))
     do nb = 1,nblks
-      ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%ca_shal(:)
+      ExtDiag(idx)%data(nb)%var2 => Coupling(nb)%ca_shal(:)
     enddo
 
     idx = idx + 1
@@ -2179,7 +2179,7 @@ module GFS_diagnostics
     ExtDiag(idx)%mod_name = 'gfs_phys'
     allocate (ExtDiag(idx)%data(nblks))
     do nb = 1,nblks
-      ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%ca_rad(:)
+      ExtDiag(idx)%data(nb)%var2 => Coupling(nb)%ca_rad(:)
     enddo
 
     idx = idx + 1
@@ -2190,7 +2190,7 @@ module GFS_diagnostics
     ExtDiag(idx)%mod_name = 'gfs_phys'
     allocate (ExtDiag(idx)%data(nblks))
     do nb = 1,nblks
-      ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%ca_micro(:)
+      ExtDiag(idx)%data(nb)%var2 => Coupling(nb)%ca_micro(:)
     enddo
 
   if (Model%ldiag_ugwp) THEN
