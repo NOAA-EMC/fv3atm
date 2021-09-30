@@ -2,7 +2,7 @@
 
 module GFS_typedefs
 
-       use machine,                  only: kind_phys
+       use machine,                  only: kind_phys,kind_dbl_prec
        use physcons,                 only: con_cp, con_fvirt, con_g,                       &
                                            con_hvap, con_hfus, con_pi, con_rd, con_rv,     &
                                            con_t0c, con_cvap, con_cliq, con_eps, con_epsq, &
@@ -523,7 +523,6 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: ca_rad   (:)   => null() !
     real (kind=kind_phys), pointer :: ca_micro (:)   => null() !
     real (kind=kind_phys), pointer :: condition(:)   => null() !
-    real (kind=kind_phys), pointer :: vfact_ca(:)    => null() !
     !--- stochastic physics
     real (kind=kind_phys), pointer :: shum_wts  (:,:) => null()  !
     real (kind=kind_phys), pointer :: sppt_wts  (:,:) => null()  !
@@ -1118,7 +1117,7 @@ module GFS_typedefs
     logical              :: ca_sgs          !< switch for sgs ca
     logical              :: ca_global       !< switch for global ca
     logical              :: ca_smooth       !< switch for gaussian spatial filter
-    integer              :: iseed_ca        !< seed for random number generation in ca scheme
+    integer(kind=kind_dbl_prec) :: iseed_ca        !< seed for random number generation in ca scheme
     integer              :: nspinup         !< number of iterations to spin up the ca
     real(kind=kind_phys) :: rcell           !< threshold used for CA scheme
     real(kind=kind_phys) :: nthresh         !< threshold used for convection coupling
@@ -1127,6 +1126,7 @@ module GFS_typedefs
     logical              :: ca_closure      !< logical switch for ca on closure
     logical              :: ca_entr         !< logical switch for ca on entrainment
     logical              :: ca_trigger      !< logical switch for ca on trigger
+    real (kind=kind_phys), allocatable :: vfact_ca(:) !< vertical tapering for ca_global
 
 !--- stochastic physics control parameters
     logical              :: do_sppt
@@ -1629,20 +1629,6 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: tdomip (:)     => null()   !< dominant accumulated sleet type
     real (kind=kind_phys), pointer :: tdoms  (:)     => null()   !< dominant accumulated snow type
 
-    real (kind=kind_phys), pointer :: ca1      (:)   => null() !
-    real (kind=kind_phys), pointer :: ca2      (:)   => null() !
-    real (kind=kind_phys), pointer :: ca3      (:)   => null() !
-    real (kind=kind_phys), pointer :: ca_deep  (:)   => null()   !< cellular automata fraction
-    real (kind=kind_phys), pointer :: ca_turb  (:)   => null()   !< cellular automata fraction
-    real (kind=kind_phys), pointer :: ca_shal  (:)   => null()   !< cellular automata fraction
-    real (kind=kind_phys), pointer :: ca_rad   (:)   => null()   !< cellular automata fraction
-    real (kind=kind_phys), pointer :: ca_micro (:)   => null()   !< cellular automata fraction
-
-    real (kind=kind_phys), pointer :: skebu_wts(:,:) => null()   !< 10 meter u wind speed
-    real (kind=kind_phys), pointer :: skebv_wts(:,:) => null()   !< 10 meter v wind speed
-    real (kind=kind_phys), pointer :: sppt_wts(:,:)  => null()   !<
-    real (kind=kind_phys), pointer :: shum_wts(:,:)  => null()   !<
-    real (kind=kind_phys), pointer :: sfc_wts(:,:)   => null()   !<
     real (kind=kind_phys), pointer :: zmtnblck(:)    => null()   !<mountain blocking evel
 
     ! dtend/dtidxt: Multitudinous 3d tendencies in a 4D array: (i,k,1:100+ntrac,nprocess)
@@ -2951,7 +2937,6 @@ module GFS_typedefs
 
    !-- cellular automata
     allocate (Coupling%condition(IM))
-    allocate (Coupling%vfact_ca(Model%levs))
     if (Model%do_ca) then
       allocate (Coupling%ca1      (IM))
       allocate (Coupling%ca2      (IM))
@@ -2961,7 +2946,6 @@ module GFS_typedefs
       allocate (Coupling%ca_shal  (IM))
       allocate (Coupling%ca_rad   (IM))
       allocate (Coupling%ca_micro (IM))
-      Coupling%vfact_ca = clear_val
       Coupling%ca1       = clear_val
       Coupling%ca2       = clear_val
       Coupling%ca3       = clear_val
@@ -4401,6 +4385,11 @@ module GFS_typedefs
     Model%lndp_each_step   = lndp_each_step
 
     !--- cellular automata options
+    ! force namelist constsitency
+    allocate(Model%vfact_ca(levs))
+    if ( .not. ca_global ) nca_g=0
+    if ( .not. ca_sgs ) nca=0
+     
     Model%nca              = nca
     Model%scells           = scells
     Model%tlives           = tlives
@@ -6495,27 +6484,13 @@ module GFS_typedefs
     allocate (Diag%tdomzr   (IM))
     allocate (Diag%tdomip   (IM))
     allocate (Diag%tdoms    (IM))
-    allocate (Diag%skebu_wts(IM,Model%levs))
-    allocate (Diag%skebv_wts(IM,Model%levs))
-    allocate (Diag%sppt_wts (IM,Model%levs))
-    allocate (Diag%shum_wts (IM,Model%levs))
-    allocate (Diag%sfc_wts  (IM,Model%n_var_lndp))
     allocate (Diag%zmtnblck (IM))
-    allocate (Diag%ca1      (IM))
-    allocate (Diag%ca2      (IM))
-    allocate (Diag%ca3      (IM))
 
     ! F-A MP scheme
     if (Model%imp_physics == Model%imp_physics_fer_hires) then
      allocate (Diag%train     (IM,Model%levs))
     end if
     allocate (Diag%cldfra     (IM,Model%levs))
-
-    allocate (Diag%ca_deep  (IM))
-    allocate (Diag%ca_turb  (IM))
-    allocate (Diag%ca_shal  (IM))
-    allocate (Diag%ca_rad   (IM))
-    allocate (Diag%ca_micro (IM))
 
     !--- 3D diagnostics
     if (Model%ldiag3d) then
@@ -6767,12 +6742,6 @@ module GFS_typedefs
     Diag%tdomzr     = zero
     Diag%tdomip     = zero
     Diag%tdoms      = zero
-    Diag%skebu_wts  = zero
-    Diag%skebv_wts  = zero
-    Diag%sppt_wts   = zero
-    Diag%shum_wts   = zero
-    Diag%sfc_wts    = zero
-    Diag%zmtnblck   = zero
 
     if (Model%imp_physics == Model%imp_physics_fer_hires) then
        Diag%train      = zero
@@ -6806,16 +6775,6 @@ module GFS_typedefs
       Diag%exch_m        = clear_val
     endif
 
-    if (Model%do_ca) then
-      Diag%ca1      = zero
-      Diag%ca2      = zero
-      Diag%ca3      = zero
-      Diag%ca_deep  = zero
-      Diag%ca_turb  = zero
-      Diag%ca_shal  = zero
-      Diag%ca_rad   = zero
-      Diag%ca_micro = zero
-    endif
 !    if(Model%me == Model%master) print *,'in diag_phys_zero, totprcpb set to 0,kdt=',Model%kdt
 
     if (Model%ldiag3d) then
