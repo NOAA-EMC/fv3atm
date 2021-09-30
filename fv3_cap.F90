@@ -747,7 +747,7 @@ module fv3gfs_cap_mod
               do i=2,nfh
                 output_fh(i) = (i-1)*outputfh2(1) + output_startfh
                 ! Except fh000, which is the first time output, if any other of the 
-                ! output time is not integer hour, set lflname_fulltime to be ture, so the 
+                ! output time is not integer hour, set lflname_fulltime to be true, so the
                 ! history file names will contain the full time stamp (HHH-MM-SS).
                 if(.not.lflname_fulltime) then
                   if(mod(nint(output_fh(i)*3600.),3600) /= 0) lflname_fulltime = .true.
@@ -763,9 +763,9 @@ module fv3gfs_cap_mod
              count=noutput_fh, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
           if( output_startfh == 0) then
-            ! if the output time in output_fh array contains first time stamp output,
+            ! If the output time in output_fh array contains first time stamp output,
             ! check the rest of output time, otherwise, check all the output time. 
-            ! if any of them is not integer hour, the history file names will
+            ! If any of them is not integer hour, the history file names will
             ! contain the full time stamp (HHH-MM-SS)
             ist = 1
             if(output_fh(1)==0) then
@@ -780,8 +780,8 @@ module fv3gfs_cap_mod
           else
             do i=1,noutput_fh
               output_fh(i) = output_startfh + output_fh(i)
-              ! when output_startfh >0, check all the output time, if any of
-              ! them is not integer hour, set lflname_fulltime to be ture. The 
+              ! When output_startfh >0, check all the output time, if any of
+              ! them is not integer hour, set lflname_fulltime to be true. The
               ! history file names will contain the full time stamp (HHH-MM-SS).
               if(.not.lflname_fulltime) then
                 if(mod(nint(output_fh(i)*3600.),3600) /= 0) lflname_fulltime = .true.
