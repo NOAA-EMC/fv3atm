@@ -2193,13 +2193,6 @@
   type = real
   kind = kind_phys
   active = (flag_for_cellular_automata)
-[vfact_ca]
-  standard_name = cellular_automata_vertical_weight
-  long_name = vertical weight for ca
-  units = frac
-  dimensions = (vertical_layer_dimension)
-  type = real
-  kind = kind_phys
 [ca1]
   standard_name = cellular_automata_global_pattern_from_coupled_process
   long_name = cellular automata global pattern
@@ -4408,6 +4401,13 @@
   units = flag
   dimensions = ()
   type = logical
+[vfact_ca]
+  standard_name = cellular_automata_vertical_weight
+  long_name = vertical weight for ca
+  units = frac
+  dimensions = (vertical_layer_dimension)
+  type = real
+  kind = kind_phys
 [ca_closure]
   standard_name = flag_for_global_cellular_automata_closure
   long_name = switch for ca on closure
@@ -6864,41 +6864,6 @@
   long_name = dominant snow type
   units = none
   dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-[skebu_wts]
-  standard_name = weights_for_stochastic_skeb_perturbation_of_x_wind_flipped
-  long_name = weights for stochastic skeb perturbation of x wind, flipped
-  units = none
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
-  type = real
-  kind = kind_phys
-[skebv_wts]
-  standard_name = weights_for_stochastic_skeb_perturbation_of_y_wind_flipped
-  long_name = weights for stochastic skeb perturbation of y wind, flipped
-  units = none
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
-  type = real
-  kind = kind_phys
-[sppt_wts]
-  standard_name = weights_for_stochastic_sppt_perturbation_flipped
-  long_name = weights for stochastic sppt perturbation, flipped
-  units = none
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
-  type = real
-  kind = kind_phys
-[shum_wts]
-  standard_name = weights_for_stochastic_shum_perturbation_flipped
-  long_name = weights for stochastic shum perturbation, flipped
-  units = none
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
-  type = real
-  kind = kind_phys
-[sfc_wts]
-  standard_name = weights_for_stochastic_surface_physics_perturbation_flipped
-  long_name = weights for stochastic surface physics perturbation, flipped
-  units = none
-  dimensions = (horizontal_loop_extent,number_of_perturbed_land_surface_variables)
   type = real
   kind = kind_phys
 [zmtnblck]
