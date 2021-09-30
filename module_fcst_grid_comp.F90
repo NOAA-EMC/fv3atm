@@ -444,6 +444,9 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
       if (mype == 0) write(0,*)'be create fcst grid'
 
       gridfile = "grid_spec.nc" ! default
+      if (field_exist("INPUT/grid_spec.nc", "atm_mosaic_file")) then
+        call read_data("INPUT/grid_spec.nc", "atm_mosaic_file", gridfile)
+      endif
 
       ngrids = atm_int_state%Atm%ngrids
       mygrid = atm_int_state%Atm%mygrid
@@ -451,19 +454,21 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
       allocate (fcstGrid(ngrids))
       do n=1,ngrids
 
+        call atmos_model_get_nth_domain_info(n, layout, nx, ny, pelist)
+        call ESMF_VMBroadcast(vm, bcstData=layout, count=2, rootPet=pelist(1), rc=rc); ESMF_ERR_ABORT(rc)
+
         top_domain_is_global(1) = 0
         if (n==1) then
            if(mygrid==1) then
               if ( .not. atm_int_state%Atm%regional) top_domain_is_global(1) = 1
            endif
-           call ESMF_VMBroadcast(vm, bcstData=top_domain_is_global, count=1, rootPet=0, rc=rc); ESMF_ERR_ABORT(rc)
+           call ESMF_VMBroadcast(vm, bcstData=top_domain_is_global, count=1, rootPet=pelist(1), rc=rc); ESMF_ERR_ABORT(rc)
         endif
-        call atmos_model_get_nth_domain_info(n, layout, nx, ny, pelist)
-        call ESMF_VMBroadcast(vm, bcstData=layout, count=2, rootPet=pelist(1), rc=rc); ESMF_ERR_ABORT(rc)
 
         if (n==1 .and. top_domain_is_global(1)==1) then
 
           delayout = ESMF_DELayoutCreate(petMap=pelist, rc=rc); ESMF_ERR_ABORT(rc); ESMF_ERR_ABORT(rc)
+          write(0,*)'pelist=',pelist
           do tl=1,6
               decomptile(1,tl) = layout(1)
               decomptile(2,tl) = layout(2)
@@ -533,10 +538,6 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
       end do
 
 #if 0
-      if (field_exist("INPUT/grid_spec.nc", "atm_mosaic_file")) then
-        call read_data("INPUT/grid_spec.nc", "atm_mosaic_file", gridfile)
-      endif
-
       if( atm_int_state%Atm%regional ) then
 
         call atmosphere_control_data (isc, iec, jsc, jec, nlev)
