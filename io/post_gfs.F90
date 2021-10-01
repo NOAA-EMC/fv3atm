@@ -256,10 +256,10 @@ module post_gfs
 
 ! look at the field bundle attributes
         call ESMF_AttributeGet(fldbundle, convention="NetCDF", purpose="FV3", &
-          attnestflag=ESMF_ATTNEST_OFF, Count=attcount, rc=rc)
+                               attnestflag=ESMF_ATTNEST_OFF, Count=attcount, rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__,file=__FILE__))return
 !
-        aklen=0.
+        aklen = 0.
         do i=1, attCount
 
           call ESMF_AttributeGet(fldbundle, convention="NetCDF", purpose="FV3",                &
@@ -302,7 +302,7 @@ module post_gfs
           else if (typekind == ESMF_TYPEKIND_R8) then
             if(n == 1) then
               call ESMF_AttributeGet(fldbundle, convention="NetCDF", purpose="FV3", &
-                name=trim(attName), value=varr8val, rc=rc)
+                                     name=trim(attName), value=varr8val, rc=rc)
               if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
               if (trim(attName) == 'dtp')   then
                 wrt_int_state%dtp=varr8val
@@ -318,7 +318,7 @@ module post_gfs
                 if(allocated(wrt_int_state%bk)) deallocate(wrt_int_state%bk)
                 allocate(wrt_int_state%bk(n))
                 call ESMF_AttributeGet(fldbundle, convention="NetCDF", purpose="FV3", &
-                name=trim(attName), valueList=wrt_int_state%bk, rc=rc)
+                                       name=trim(attName), valueList=wrt_int_state%bk, rc=rc)
               endif
               wrt_int_state%lm = size(wrt_int_state%ak) - 1
             endif
