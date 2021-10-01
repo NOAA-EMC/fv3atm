@@ -20,6 +20,7 @@
   integer           :: ichunk2d,jchunk2d,ichunk3d,jchunk3d,kchunk3d
   integer           :: nbdlphys
   integer           :: nsout_io, iau_offset, ideflate, nbits
+  logical           :: lflname_fulltime
   real              :: cen_lon, cen_lat, lon1, lat1, lon2, lat2, dlon, dlat
   real              :: stdlat1, stdlat2, dx, dy
   character(len=esmf_maxstr),dimension(:),allocatable :: filename_base
