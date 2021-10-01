@@ -28,8 +28,7 @@ module GFS_init
 !--------------
   subroutine GFS_initialize (Model, Statein, Stateout, Sfcprop,     &
                              Coupling, Grid, Tbd, Cldprop, Radtend, & 
-                             Diag, Interstitial, communicator,      &
-                             ntasks, Init_parm)
+                             Diag, Interstitial, Init_parm)
 
 #ifdef _OPENMP
     use omp_lib
@@ -47,8 +46,6 @@ module GFS_init
     type(GFS_radtend_type),      intent(inout) :: Radtend(:)
     type(GFS_diag_type),         intent(inout) :: Diag(:)
     type(GFS_interstitial_type), intent(inout) :: Interstitial(:)
-    integer,                     intent(in)    :: communicator
-    integer,                     intent(in)    :: ntasks
     type(GFS_init_type),         intent(in)    :: Init_parm
 
     !--- local variables
@@ -76,11 +73,14 @@ module GFS_init
                      Init_parm%gnx, Init_parm%gny,                 &
                      Init_parm%dt_dycore, Init_parm%dt_phys,       &
                      Init_parm%iau_offset, Init_parm%bdat,         &
-                     Init_parm%cdat, Init_parm%tracer_names,       &
+                     Init_parm%cdat, Init_parm%nwat,               &
+                     Init_parm%tracer_names,                       &
+                     Init_parm%tracer_types,                       &
                      Init_parm%input_nml_file, Init_parm%tile_num, &
                      Init_parm%blksz, Init_parm%ak, Init_parm%bk,  &
                      Init_parm%restart, Init_parm%hydrostatic,     &
-                     communicator, ntasks, nthrds)
+                     Init_parm%fcst_mpi_comm,                      &
+                     Init_parm%fcst_ntasks, nthrds)
 
     do nb = 1,nblks
       ix = Init_parm%blksz(nb)

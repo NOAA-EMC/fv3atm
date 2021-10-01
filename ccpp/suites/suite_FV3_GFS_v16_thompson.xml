@@ -14,6 +14,7 @@
     <subcycle loop="1">
       <scheme>GFS_suite_interstitial_rad_reset</scheme>
       <scheme>GFS_rrtmg_pre</scheme>
+      <scheme>GFS_radiation_surface</scheme>
       <scheme>rrtmg_sw_pre</scheme>
       <scheme>rrtmg_sw</scheme>
       <scheme>rrtmg_sw_post</scheme>
@@ -59,7 +60,6 @@
       <scheme>cires_ugwp</scheme>
       <scheme>cires_ugwp_post</scheme>
       <scheme>GFS_GWD_generic_post</scheme>
-      <scheme>rayleigh_damp</scheme>
       <scheme>GFS_suite_stateout_update</scheme>
       <scheme>ozphys_2015</scheme>
       <scheme>h2ophys</scheme>
@@ -75,16 +75,20 @@
       <scheme>cnvc90</scheme>
       <scheme>GFS_MP_generic_pre</scheme>
       <scheme>mp_thompson_pre</scheme>
+    </subcycle>
+    <subcycle loop="2">
       <scheme>mp_thompson</scheme>
+    </subcycle>
+    <subcycle loop="1">
       <scheme>mp_thompson_post</scheme>
       <scheme>GFS_MP_generic_post</scheme>
       <scheme>maximum_hourly_diagnostics</scheme>
+      <scheme>phys_tend</scheme>
     </subcycle>
   </group>
   <group name="stochastics">
     <subcycle loop="1">
       <scheme>GFS_stochastics</scheme>
-      <scheme>phys_tend</scheme>
     </subcycle>
   </group>
   <!-- <finalize></finalize> -->
