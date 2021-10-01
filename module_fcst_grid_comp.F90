@@ -73,7 +73,6 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
                                 cplprint_flag, force_date_from_configure,         &
                                 restart_endfcst
   use get_stochy_pattern_mod, only: write_stoch_restart_atm
-
 !
 !-----------------------------------------------------------------------
 !
@@ -983,6 +982,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
                                  date(4), date(5), date(6))
 
 !----- write restart file ------
+
     call mpp_set_current_pelist()
     if (mpp_pe() == mpp_root_pe())then
         call mpp_open( unit, 'RESTART/'//trim(timestamp)//'.coupler.res', nohdrs=.TRUE. )
