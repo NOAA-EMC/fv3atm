@@ -685,8 +685,8 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
                               GFS_data%Coupling, GFS_data%Grid, GFS_data%Tbd, GFS_data%Cldprop,  GFS_data%Radtend, &
                               GFS_data%IntDiag, Init_parm, GFS_Diag)
    call FV3GFS_restart_read (GFS_data, GFS_restart_var, Atm_block, GFS_control, Atmos%domain, Atm(mygrid)%flagstruct%warm_start)
-   if(GFS_control%ca_sgs)then
-      call read_ca_restart (Atmos%domain,GFS_control%scells)
+   if(GFS_control%do_ca .and. Atm(mygrid)%flagstruct%warm_start)then
+      call read_ca_restart (Atmos%domain,GFS_control%scells,GFS_control%nca,GFS_control%ncells_g,GFS_control%nca_g)
    endif
    ! Populate the GFS_data%Statein container with the prognostic state
    ! in Atm_block, which contains the initial conditions/restart data.
@@ -913,13 +913,14 @@ subroutine update_atmos_model_state (Atmos, rc)
       call FV3GFS_diag_output(Atmos%Time, GFS_Diag, Atm_block, GFS_control%nx, GFS_control%ny, &
                             GFS_control%levs, 1, 1, 1.0_GFS_kind_phys, time_int, time_intfull, &
                             GFS_control%fhswr, GFS_control%fhlwr)
-      if (nint(GFS_control%fhzero) > 0) then
-        if (mod(isec,3600*nint(GFS_control%fhzero)) == 0) diag_time = Atmos%Time
-      else
-        if (mod(isec,nint(3600*GFS_control%fhzero)) == 0) diag_time = Atmos%Time
-      endif
-      call diag_send_complete_instant (Atmos%Time)
     endif
+    if (nint(GFS_control%fhzero) > 0) then
+      if (mod(isec,3600*nint(GFS_control%fhzero)) == 0) diag_time = Atmos%Time
+    else
+      if (mod(isec,nint(3600*GFS_control%fhzero)) == 0) diag_time = Atmos%Time
+    endif
+    call diag_send_complete_instant (Atmos%Time)
+
 
     !--- this may not be necessary once write_component is fully implemented
     !!!call diag_send_complete_extra (Atmos%Time)
@@ -979,8 +980,8 @@ subroutine atmos_model_end (Atmos)
         GFS_Control%lndp_type > 0  .or. GFS_Control%do_ca ) then
       if(restart_endfcst) then
         call write_stoch_restart_atm('RESTART/atm_stoch.res.nc')
-        if (GFS_control%ca_sgs)then
-          call write_ca_restart(Atmos%domain,GFS_control%scells)
+        if (GFS_control%do_ca)then
+          call write_ca_restart()
         endif
       endif
       call stochastic_physics_wrapper_end(GFS_control)
@@ -1008,8 +1009,8 @@ subroutine atmos_model_restart(Atmos, timestamp)
     call atmosphere_restart(timestamp)
     call FV3GFS_restart_write (GFS_data, GFS_restart_var, Atm_block, &
                                GFS_control, Atmos%domain, timestamp)
-    if(GFS_control%ca_sgs)then
-       call write_ca_restart(Atmos%domain,GFS_control%scells,timestamp)
+    if(GFS_control%do_ca)then
+       call write_ca_restart(timestamp)
     endif
 end subroutine atmos_model_restart
 ! </SUBROUTINE>
