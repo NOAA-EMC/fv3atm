@@ -697,12 +697,17 @@
   type = real
   kind = kind_phys
 [slope]
-  standard_name = surface_slope_classification_real
+  standard_name = surface_slope_classification
   long_name = sfc slope type for lsm
   units = index
   dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
+  type = integer
+[slope_save]
+  standard_name = surface_slope_classification_save
+  long_name = sfc slope type for lsm save
+  units = index
+  dimensions = (horizontal_loop_extent)
+  type = integer
 [shdmin]
   standard_name = min_vegetation_area_fraction
   long_name = min fractional coverage of green vegetation
@@ -732,19 +737,29 @@
   type = real
   kind = kind_phys
 [vtype]
-  standard_name = vegetation_type_classification_real
+  standard_name = vegetation_type_classification
   long_name = vegetation type for lsm
   units = index
   dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
+  type = integer
+[vtype_save]
+  standard_name = vegetation_type_classification_save
+  long_name = vegetation type for lsm save
+  units = index
+  dimensions = (horizontal_loop_extent)
+  type = integer
 [stype]
-  standard_name = soil_type_classification_real
+  standard_name = soil_type_classification
   long_name = soil type for lsm
   units = index
   dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
+  type = integer
+[stype_save]
+  standard_name = soil_type_classification_save
+  long_name = soil type for lsm save
+  units = index
+  dimensions = (horizontal_loop_extent)
+  type = integer
 [uustar]
   standard_name = surface_friction_velocity
   long_name = boundary layer parameter
@@ -9477,12 +9492,6 @@
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_noah_wrfv4_land_surface_scheme)
-[slopetype]
-  standard_name = surface_slope_classification
-  long_name = surface slope type at each grid cell
-  units = index
-  dimensions = (horizontal_loop_extent)
-  type = integer
 [smcmax]
   standard_name = soil_porosity
   long_name = volumetric soil porosity
@@ -9583,12 +9592,6 @@
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_noah_wrfv4_land_surface_scheme)
-[soiltype]
-  standard_name = soil_type_classification
-  long_name = soil type at each grid cell
-  units = index
-  dimensions = (horizontal_loop_extent)
-  type = integer
 [stc_save]
   standard_name = soil_temperature_save
   long_name = soil temperature before entering a physics scheme
@@ -9828,12 +9831,6 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[vegtype]
-  standard_name = vegetation_type_classification
-  long_name = vegetation type at each grid cell
-  units = index
-  dimensions = (horizontal_loop_extent)
-  type = integer
 [w_upi]
   standard_name = vertical_velocity_for_updraft
   long_name = vertical velocity for updraft
