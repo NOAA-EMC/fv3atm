@@ -697,12 +697,17 @@
   type = real
   kind = kind_phys
 [slope]
-  standard_name = surface_slope_classification_real
+  standard_name = surface_slope_classification
   long_name = sfc slope type for lsm
   units = index
   dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
+  type = integer
+[slope_save]
+  standard_name = surface_slope_classification_save
+  long_name = sfc slope type for lsm save
+  units = index
+  dimensions = (horizontal_loop_extent)
+  type = integer
 [shdmin]
   standard_name = min_vegetation_area_fraction
   long_name = min fractional coverage of green vegetation
@@ -732,19 +737,29 @@
   type = real
   kind = kind_phys
 [vtype]
-  standard_name = vegetation_type_classification_real
+  standard_name = vegetation_type_classification
   long_name = vegetation type for lsm
   units = index
   dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
+  type = integer
+[vtype_save]
+  standard_name = vegetation_type_classification_save
+  long_name = vegetation type for lsm save
+  units = index
+  dimensions = (horizontal_loop_extent)
+  type = integer
 [stype]
-  standard_name = soil_type_classification_real
+  standard_name = soil_type_classification
   long_name = soil type for lsm
   units = index
   dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
+  type = integer
+[stype_save]
+  standard_name = soil_type_classification_save
+  long_name = soil type for lsm save
+  units = index
+  dimensions = (horizontal_loop_extent)
+  type = integer
 [uustar]
   standard_name = surface_friction_velocity
   long_name = boundary layer parameter
@@ -9384,12 +9399,6 @@
   units = flag
   dimensions = ()
   type = logical
-[slopetype]
-  standard_name = surface_slope_classification
-  long_name = surface slope type at each grid cell
-  units = index
-  dimensions = (horizontal_loop_extent)
-  type = integer
 [snowc]
   standard_name = surface_snow_area_fraction
   long_name = surface snow area fraction
@@ -9426,12 +9435,6 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[soiltype]
-  standard_name = soil_type_classification
-  long_name = soil type at each grid cell
-  units = index
-  dimensions = (horizontal_loop_extent)
-  type = integer
 [stress]
   standard_name = surface_wind_stress
   long_name = surface wind stress
@@ -9646,12 +9649,6 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[vegtype]
-  standard_name = vegetation_type_classification
-  long_name = vegetation type at each grid cell
-  units = index
-  dimensions = (horizontal_loop_extent)
-  type = integer
 [w_upi]
   standard_name = vertical_velocity_for_updraft
   long_name = vertical velocity for updraft
