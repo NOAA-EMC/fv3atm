@@ -1971,6 +1971,7 @@ module GFS_typedefs
     integer                             :: nspc1                         !<
     integer                             :: ntcwx                         !<
     integer                             :: ntiwx                         !<
+    integer                             :: ntrwx                         !<
     integer                             :: ntk                           !<
     integer                             :: ntkev                         !<
     integer                             :: nvdiff                        !<
@@ -7423,6 +7424,9 @@ module GFS_typedefs
     Interstitial%otspt(:,:)       = .true.
     Interstitial%nsamftrac        = 0
     Interstitial%ncstrac          = 0
+    Interstitial%ntcwx            = 0
+    Interstitial%ntiwx            = 0
+    Interstitial%ntrwx            = 0
 
     ! perform aerosol convective transport and PBL diffusion
     Interstitial%trans_aero = Model%cplchm .and. Model%trans_trac
@@ -7455,27 +7459,33 @@ module GFS_typedefs
 
     Interstitial%nscav = Model%ntrac - Model%ncnd + 2
 
-    Interstitial%ntcwx = Model%ntcw
     if (Interstitial%nvdiff == Model%ntrac) then
+      Interstitial%ntcwx = Model%ntcw
       Interstitial%ntiwx = Model%ntiw
+      Interstitial%ntrwx = Model%ntrw
     else
       if (Model%imp_physics == Model%imp_physics_wsm6) then
+        Interstitial%ntcwx = 2
         Interstitial%ntiwx = 3
       elseif (Model%imp_physics == Model%imp_physics_thompson) then
-        if(Model%ltaerosol) then
-          Interstitial%ntiwx = 3
-        else
-          Interstitial%ntiwx = 3
-        endif
-      elseif (Model%imp_physics == Model%imp_physics_gfdl) then
+        Interstitial%ntcwx = 2
         Interstitial%ntiwx = 3
+        Interstitial%ntrwx = 4
+      elseif (Model%imp_physics == Model%imp_physics_gfdl) then
+        Interstitial%ntcwx = 2
+        Interstitial%ntiwx = 3
+        Interstitial%ntrwx = 4
       ! F-A MP scheme
       elseif (Model%imp_physics == Model%imp_physics_fer_hires) then
-        Interstitial%ntiwx = 3 ! total ice or total condensate
-      elseif (Model%imp_physics == Model%imp_physics_mg) then
+        Interstitial%ntcwx = 2
         Interstitial%ntiwx = 3
-      else
-        Interstitial%ntiwx = 0
+        Interstitial%ntrwx = 4
+      elseif (Model%imp_physics == Model%imp_physics_mg) then
+        Interstitial%ntcwx = 2
+        Interstitial%ntiwx = 3
+        Interstitial%ntrwx = 4
+      elseif (Model%imp_physics == Model%imp_physics_zhao_carr) then
+        Interstitial%ntcwx = 2
       endif
     endif
     ! *DH

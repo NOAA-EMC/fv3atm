@@ -9006,6 +9006,12 @@
   units = index
   dimensions = ()
   type = integer
+[ntrwx]
+  standard_name = index_for_rain_water_vertical_diffusion_tracer
+  long_name = tracer index for rain water in the vertically diffused tracer array
+  units = index
+  dimensions = ()
+  type = integer
 [ntk]
   standard_name = index_for_turbulent_kinetic_energy_convective_transport_tracer
   long_name = index for turbulent kinetic energy in the convectively transported tracer array
