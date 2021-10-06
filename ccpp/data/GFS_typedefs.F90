@@ -4063,6 +4063,10 @@ module GFS_typedefs
 !--- Thompson MP parameters
     Model%ltaerosol        = ltaerosol
     Model%mraerosol        = mraerosol
+    if (Model%ltaerosol .and. Model%mraerosol) then
+      write(0,*) 'Logic error: Only one Thompson aerosol option can be true, either ltaerosol or mraerosol)'
+      stop
+    end if
     Model%lradar           = lradar
     Model%nsradar_reset    = nsradar_reset
     Model%ttendlim         = ttendlim
