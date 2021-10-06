@@ -46,7 +46,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
   use fms_mod,            only: error_mesg, fms_init, fms_end,             &
                                 write_version_number, uppercase
 
-  use mpp_mod,            only: mpp_init, mpp_pe, mpp_root_pe,  &
+  use mpp_mod,            only: mpp_init, mpp_pe, mpp_root_pe, mpp_set_current_pelist,  &
                                 mpp_error, FATAL, WARNING
   use mpp_mod,            only: mpp_clock_id, mpp_clock_begin
 
