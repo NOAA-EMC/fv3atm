@@ -39,7 +39,7 @@
                                       cen_lon, cen_lat,                         &
                                       lon1, lat1, lon2, lat2, dlon, dlat,       &
                                       stdlat1, stdlat2, dx, dy, iau_offset,     &
-                                      ideflate
+                                      ideflate, lflname_fulltime
       use module_write_netcdf, only : write_netcdf
       use physcons,            only : pi => con_pi
       use inline_post,         only : inline_post_run, inline_post_getattr
@@ -1408,11 +1408,10 @@
 
       nf_minutes = int((nf_seconds-nf_hours*3600.)/60.)
       nseconds   = int(nf_seconds-nf_hours*3600.-nf_minutes*60.)
-!      if (nf_seconds-nf_hours*3600 > 0 .and. nsout > 0) then
-      if (nsout > 0) then
+      if (nsout > 0 .or. lflname_fulltime) then
         ndig = max(log10(nf_hours+0.5)+1., 3.)
         write(cform, '("(I",I1,".",I1,",A1,I2.2,A1,I2.2)")') ndig, ndig
-        write(cfhour, cform) nf_hours,':',nf_minutes,':',nseconds
+        write(cfhour, cform) nf_hours,'-',nf_minutes,'-',nseconds
       else
         ndig = max(log10(nf_hours+0.5)+1., 3.)
         write(cform, '("(I",I1,".",I1,")")') ndig, ndig
