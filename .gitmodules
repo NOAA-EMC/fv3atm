@@ -1,12 +1,12 @@
 [submodule "atmos_cubed_sphere"]
-	path = atmos_cubed_sphere
-	url = https://github.com/XiaqiongZhou-NOAA/GFDL_atmos_cubed_sphere
-	branch = md
+  path = atmos_cubed_sphere
+  url = https://github.com/XiaqiongZhou-NOAA/GFDL_atmos_cubed_sphere
+  branch = md
 [submodule "ccpp/framework"]
-	path = ccpp/framework
-	url = https://github.com/NCAR/ccpp-framework
-	branch = main
+  path = ccpp/framework
+  url = https://github.com/NCAR/ccpp-framework
+  branch = main
 [submodule "ccpp/physics"]
-	path = ccpp/physics
-	url = https://github.com/XiaqiongZhou-NOAA/ccpp-physics
-	branch = udhmhj
+  path = ccpp/physics
+  url = https://github.com/XiaqiongZhou-NOAA/ccpp-physics
+  branch = udhmhj
