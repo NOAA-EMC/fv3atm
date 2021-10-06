@@ -60,9 +60,6 @@ set_target_properties(fv3atm PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT
 target_include_directories(fv3atm INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/mod>
                                             $<INSTALL_INTERFACE:mod>)
 
-# This should not be necessary once framework and physics targets define BUILD_INTERFACE
-target_include_directories(fv3atm PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/ccpp/physics)
-
 target_link_libraries(fv3atm PUBLIC fv3
                                     fv3ccpp
                                     stochastic_physics
