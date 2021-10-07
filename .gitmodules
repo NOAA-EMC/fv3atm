@@ -10,7 +10,5 @@
   path = ccpp/physics
   #url = https://github.com/NCAR/ccpp-physics
   #branch = main
-  #url = https://github.com/AnningCheng-NOAA/ccpp-physics
-  #branch = merra2_thompson
-  url = https://github.com/climbfuji/ccpp-physics
-  branch = mraerosol_dom
+  url = https://github.com/AnningCheng-NOAA/ccpp-physics
+  branch = merra2_thompson
