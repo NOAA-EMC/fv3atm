@@ -39,7 +39,7 @@ module fv3gfs_cap_mod
                                     wrttasks_per_group, n_group,             &
                                     lead_wrttask, last_wrttask,              &
                                     output_grid, output_file,                &
-                                    nsout_io, iau_offset 
+                                    nsout_io, iau_offset, lflname_fulltime
 !
   use module_fcst_grid_comp,  only: fcstSS => SetServices,                   &
                                     fcstGrid, numLevels, numSoilLayers,      &
@@ -140,7 +140,7 @@ module fv3gfs_cap_mod
 
     ! specializations required to support 'inline' run sequences
     call NUOPC_CompSpecialize(gcomp, specLabel=label_CheckImport, &
-                              specPhaseLabel="phase1", specRoutine=NUOPC_NoOp, rc=rc)
+                              specPhaseLabel="phase1", specRoutine=fv3_checkimport, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
     call NUOPC_CompSpecialize(gcomp, specLabel=label_TimestampExport, &
@@ -181,7 +181,7 @@ module fv3gfs_cap_mod
     integer(ESMF_KIND_I4)                  :: nhf, nrg
 
     integer,dimension(6)                   :: date, date_init
-    integer                                :: i, j, k, io_unit, urc, ierr
+    integer                                :: i, j, k, io_unit, urc, ierr, ist
     integer                                :: noutput_fh, nfh, nfh2
     integer                                :: petcount
     integer                                :: num_output_file
@@ -688,7 +688,7 @@ module fv3gfs_cap_mod
             output_fh(i) = (i-1)*nfhout_hf + output_startfh
           enddo
           do i=1,nfh2
-              output_fh(nfh+i) = nfhmax_hf + i*nfhout
+            output_fh(nfh+i) = nfhmax_hf + i*nfhout
           enddo
         endif
       elseif (nfhout > 0 ) then
@@ -721,6 +721,7 @@ module fv3gfs_cap_mod
     if (noutput_fh > 0 ) then
 !--- use output_fh to sepcify output forecast time
       loutput_fh = .true.
+      lflname_fulltime = .false.
       if(noutput_fh == 1) then
         call ESMF_ConfigGetAttribute(CF,value=outputfh,label='output_fh:', rc=rc)
         if(outputfh == -1) loutput_fh = .false.
@@ -745,6 +746,12 @@ module fv3gfs_cap_mod
               endif
               do i=2,nfh
                 output_fh(i) = (i-1)*outputfh2(1) + output_startfh
+                ! Except fh000, which is the first time output, if any other of the 
+                ! output time is not integer hour, set lflname_fulltime to be true, so the
+                ! history file names will contain the full time stamp (HHH-MM-SS).
+                if(.not.lflname_fulltime) then
+                  if(mod(nint(output_fh(i)*3600.),3600) /= 0) lflname_fulltime = .true.
+                endif
               enddo
             endif
           endif
@@ -756,16 +763,35 @@ module fv3gfs_cap_mod
              count=noutput_fh, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
           if( output_startfh == 0) then
-            if(output_fh(1)==0) output_fh(1) = dt_atmos/3600.
+            ! If the output time in output_fh array contains first time stamp output,
+            ! check the rest of output time, otherwise, check all the output time. 
+            ! If any of them is not integer hour, the history file names will
+            ! contain the full time stamp (HHH-MM-SS)
+            ist = 1
+            if(output_fh(1)==0) then
+              output_fh(1) = dt_atmos/3600.
+              ist= 2
+            endif
+            do i=ist,noutput_fh
+              if(.not.lflname_fulltime) then
+                if(mod(nint(output_fh(i)*3600.),3600) /= 0) lflname_fulltime = .true.
+              endif
+            enddo
           else
             do i=1,noutput_fh
               output_fh(i) = output_startfh + output_fh(i)
+              ! When output_startfh >0, check all the output time, if any of
+              ! them is not integer hour, set lflname_fulltime to be true. The
+              ! history file names will contain the full time stamp (HHH-MM-SS).
+              if(.not.lflname_fulltime) then
+                if(mod(nint(output_fh(i)*3600.),3600) /= 0) lflname_fulltime = .true.
+              endif
             enddo
           endif
         endif
       endif ! end loutput_fh
     endif 
-    if(mype==0) print *,'output_fh=',output_fh(1:size(output_fh))
+    if(mype==0) print *,'output_fh=',output_fh(1:size(output_fh)),'lflname_fulltime=',lflname_fulltime
 !
     ! --- advertise Fields in importState and exportState -------------------
 
@@ -1186,7 +1212,7 @@ module fv3gfs_cap_mod
     type(ESMF_Clock)           :: clock
     type(ESMF_Time)            :: currTime, invalidTime
     type(ESMF_State)           :: importState
-    logical                    :: timeCheck1,timeCheck2
+    logical                    :: isValid
     type(ESMF_Field),pointer   :: fieldList(:)
     character(len=128)         :: fldname
     character(esmf_maxstr)     :: msgString
@@ -1224,25 +1250,32 @@ module fv3gfs_cap_mod
         call ESMF_FieldGet(fieldList(n), name=fldname, rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-        nf = queryImportFields(fldname)
-        timeCheck1 = NUOPC_IsAtTime(fieldList(n), invalidTime, rc=rc)
+        ! check if import field carries a valid timestamp
+        call NUOPC_GetTimestamp(fieldList(n), isValid=isValid, rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-        if (timeCheck1) then
-          importFieldsValid(nf) = .false.
-!         if(mtype==0) print *,'in fv3_checkimport,',trim(fldname),' is set unvalid, nf=',nf,' at time',date(1:6)
-        else
-          timeCheck2 = NUOPC_IsAtTime(fieldList(n), currTime, rc=rc)
+        if (isValid) then
+          ! if timestamp is set, check if it is valid
+          isValid = .not.NUOPC_IsAtTime(fieldList(n), invalidTime, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+        end if
 
-          if (.not.timeCheck2) then
-            !TODO: introduce and use INCOMPATIBILITY return codes!!!!
+        ! store field status in internal array
+        nf = queryImportFields(fldname)
+        importFieldsValid(nf) = isValid
+
+        if (isValid) then
+          ! check if field is current
+          isValid = NUOPC_IsAtTime(fieldList(n), currTime, rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+          if (.not.isValid) then
             call ESMF_LogSetError(ESMF_RC_ARG_BAD, &
-                                  msg="NUOPC INCOMPATIBILITY DETECTED: Import Field not at current time", &
+                                  msg="NUOPC INCOMPATIBILITY DETECTED: Import Field " &
+                                      // trim(fldname) // " not at current time", &
                                   line=__LINE__, file=__FILE__, rcToReturn=rc)
-              return
-          endif
-        endif
+            return
+          end if
+        end if
         write(msgString,'(A,2i4,l3)') "fv3_checkimport "//trim(fldname),n,nf,importFieldsValid(nf)
         call ESMF_LogWrite(msgString,ESMF_LOGMSG_INFO,rc=rc)
       enddo

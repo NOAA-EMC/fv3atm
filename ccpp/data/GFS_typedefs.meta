@@ -631,7 +631,7 @@
   standard_name = surface_snow_area_fraction_over_ice
   long_name = surface snow area fraction over ice
   units = frac
-  dimensions = (horizontal_dimension)
+  dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme)
@@ -697,12 +697,17 @@
   type = real
   kind = kind_phys
 [slope]
-  standard_name = surface_slope_classification_real
+  standard_name = surface_slope_classification
   long_name = sfc slope type for lsm
   units = index
   dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
+  type = integer
+[slope_save]
+  standard_name = surface_slope_classification_save
+  long_name = sfc slope type for lsm save
+  units = index
+  dimensions = (horizontal_loop_extent)
+  type = integer
 [shdmin]
   standard_name = min_vegetation_area_fraction
   long_name = min fractional coverage of green vegetation
@@ -732,19 +737,29 @@
   type = real
   kind = kind_phys
 [vtype]
-  standard_name = vegetation_type_classification_real
+  standard_name = vegetation_type_classification
   long_name = vegetation type for lsm
   units = index
   dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
+  type = integer
+[vtype_save]
+  standard_name = vegetation_type_classification_save
+  long_name = vegetation type for lsm save
+  units = index
+  dimensions = (horizontal_loop_extent)
+  type = integer
 [stype]
-  standard_name = soil_type_classification_real
+  standard_name = soil_type_classification
   long_name = soil type for lsm
   units = index
   dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
+  type = integer
+[stype_save]
+  standard_name = soil_type_classification_save
+  long_name = soil type for lsm save
+  units = index
+  dimensions = (horizontal_loop_extent)
+  type = integer
 [uustar]
   standard_name = surface_friction_velocity
   long_name = boundary layer parameter
@@ -1448,7 +1463,7 @@
   standard_name = temperature_in_surface_snow_at_surface_adjacent_layer_over_land
   long_name = snow temperature at the bottom of the first snow layer over land
   units = K
-  dimensions = (horizontal_dimension)
+  dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme)
@@ -2193,13 +2208,6 @@
   type = real
   kind = kind_phys
   active = (flag_for_cellular_automata)
-[vfact_ca]
-  standard_name = cellular_automata_vertical_weight
-  long_name = vertical weight for ca
-  units = frac
-  dimensions = (vertical_layer_dimension)
-  type = real
-  kind = kind_phys
 [ca1]
   standard_name = cellular_automata_global_pattern_from_coupled_process
   long_name = cellular automata global pattern
@@ -2552,6 +2560,12 @@
 [cplice]
   standard_name = flag_for_sea_ice_coupling
   long_name = flag controlling cplice collection (default on)
+  units = flag
+  dimensions = ()
+  type = logical
+[cplocn2atm]
+  standard_name = flag_for_one_way_ocean_coupling_to_atmosphere
+  long_name = flag controlling ocean coupling to the atmosphere (default on)
   units = flag
   dimensions = ()
   type = logical
@@ -4408,6 +4422,13 @@
   units = flag
   dimensions = ()
   type = logical
+[vfact_ca]
+  standard_name = cellular_automata_vertical_weight
+  long_name = vertical weight for ca
+  units = frac
+  dimensions = (vertical_layer_dimension)
+  type = real
+  kind = kind_phys
 [ca_closure]
   standard_name = flag_for_global_cellular_automata_closure
   long_name = switch for ca on closure
@@ -6857,41 +6878,6 @@
   long_name = dominant snow type
   units = none
   dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-[skebu_wts]
-  standard_name = weights_for_stochastic_skeb_perturbation_of_x_wind_flipped
-  long_name = weights for stochastic skeb perturbation of x wind, flipped
-  units = none
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
-  type = real
-  kind = kind_phys
-[skebv_wts]
-  standard_name = weights_for_stochastic_skeb_perturbation_of_y_wind_flipped
-  long_name = weights for stochastic skeb perturbation of y wind, flipped
-  units = none
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
-  type = real
-  kind = kind_phys
-[sppt_wts]
-  standard_name = weights_for_stochastic_sppt_perturbation_flipped
-  long_name = weights for stochastic sppt perturbation, flipped
-  units = none
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
-  type = real
-  kind = kind_phys
-[shum_wts]
-  standard_name = weights_for_stochastic_shum_perturbation_flipped
-  long_name = weights for stochastic shum perturbation, flipped
-  units = none
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
-  type = real
-  kind = kind_phys
-[sfc_wts]
-  standard_name = weights_for_stochastic_surface_physics_perturbation_flipped
-  long_name = weights for stochastic surface physics perturbation, flipped
-  units = none
-  dimensions = (horizontal_loop_extent,number_of_perturbed_land_surface_variables)
   type = real
   kind = kind_phys
 [zmtnblck]
@@ -9519,12 +9505,6 @@
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_noah_wrfv4_land_surface_scheme)
-[slopetype]
-  standard_name = surface_slope_classification
-  long_name = surface slope type at each grid cell
-  units = index
-  dimensions = (horizontal_loop_extent)
-  type = integer
 [smcmax]
   standard_name = soil_porosity
   long_name = volumetric soil porosity
@@ -9625,12 +9605,6 @@
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_noah_wrfv4_land_surface_scheme)
-[soiltype]
-  standard_name = soil_type_classification
-  long_name = soil type at each grid cell
-  units = index
-  dimensions = (horizontal_loop_extent)
-  type = integer
 [stc_save]
   standard_name = soil_temperature_save
   long_name = soil temperature before entering a physics scheme
@@ -9877,12 +9851,6 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[vegtype]
-  standard_name = vegetation_type_classification
-  long_name = vegetation type at each grid cell
-  units = index
-  dimensions = (horizontal_loop_extent)
-  type = integer
 [w_upi]
   standard_name = vertical_velocity_for_updraft
   long_name = vertical velocity for updraft
@@ -10110,7 +10078,7 @@
   standard_name = saturation_vapor_pressure
   long_name = saturation vapor pressure
   units = Pa
-  dimensions = (horizontal_dimension,vertical_layer_dimension)
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
   kind = kind_phys
   optional = F
@@ -10119,7 +10087,7 @@
   standard_name = water_vapor_mixing_ratio
   long_name = water vaport mixing ratio
   units = kg/kg
-  dimensions = (horizontal_dimension,vertical_layer_dimension)
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
   kind = kind_phys
   optional = F

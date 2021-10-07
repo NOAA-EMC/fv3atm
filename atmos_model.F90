@@ -47,12 +47,8 @@ use mpp_mod,            only: mpp_clock_end, CLOCK_COMPONENT, MPP_CLOCK_SYNC
 use mpp_mod,            only: FATAL, mpp_min, mpp_max, mpp_error, mpp_chksum
 use mpp_domains_mod,    only: domain2d
 use mpp_mod,            only: mpp_get_current_pelist_name
-#ifdef INTERNAL_FILE_NML
 use mpp_mod,            only: input_nml_file
-#else
-use fms_mod,            only: open_namelist_file
-#endif
-use fms_mod,            only: file_exist, error_mesg
+use fms2_io_mod,        only: file_exists
 use fms_mod,            only: close_file, write_version_number, stdlog, stdout
 use fms_mod,            only: clock_flag_default
 use fms_mod,            only: check_nml_error
@@ -551,19 +547,9 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
 !----------------------------------------------------------------------------------------------
 ! initialize atmospheric model - must happen AFTER atmosphere_init so that nests work correctly
 
-   IF ( file_exist('input.nml')) THEN
-#ifdef INTERNAL_FILE_NML
+   IF ( file_exists('input.nml')) THEN
       read(input_nml_file, nml=atmos_model_nml, iostat=io)
       ierr = check_nml_error(io, 'atmos_model_nml')
-#else
-      unit = open_namelist_file ( )
-      ierr=1
-      do while (ierr /= 0)
-         read  (unit, nml=atmos_model_nml, iostat=io, end=10)
-         ierr = check_nml_error(io,'atmos_model_nml')
-      enddo
- 10     call close_file (unit)
-#endif
    endif
 
 !-----------------------------------------------------------------------
@@ -650,6 +636,8 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    Init_parm%hydrostatic     = Atm(mygrid)%flagstruct%hydrostatic
 
 #ifdef INTERNAL_FILE_NML
+   ! allocate required to work around GNU compiler bug 100886 https://gcc.gnu.org/bugzilla/show_bug.cgi?id=100886
+   allocate(Init_parm%input_nml_file, mold=input_nml_file)
    Init_parm%input_nml_file  => input_nml_file
    Init_parm%fn_nml='using internal file'
 #else
@@ -697,8 +685,8 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
                               GFS_data%Coupling, GFS_data%Grid, GFS_data%Tbd, GFS_data%Cldprop,  GFS_data%Radtend, &
                               GFS_data%IntDiag, Init_parm, GFS_Diag)
    call FV3GFS_restart_read (GFS_data, GFS_restart_var, Atm_block, GFS_control, Atmos%domain, Atm(mygrid)%flagstruct%warm_start)
-   if(GFS_control%ca_sgs)then
-      call read_ca_restart (Atmos%domain,GFS_control%scells)
+   if(GFS_control%do_ca .and. Atm(mygrid)%flagstruct%warm_start)then
+      call read_ca_restart (Atmos%domain,GFS_control%scells,GFS_control%nca,GFS_control%ncells_g,GFS_control%nca_g)
    endif
    ! Populate the GFS_data%Statein container with the prognostic state
    ! in Atm_block, which contains the initial conditions/restart data.
@@ -925,13 +913,14 @@ subroutine update_atmos_model_state (Atmos, rc)
       call FV3GFS_diag_output(Atmos%Time, GFS_Diag, Atm_block, GFS_control%nx, GFS_control%ny, &
                             GFS_control%levs, 1, 1, 1.0_GFS_kind_phys, time_int, time_intfull, &
                             GFS_control%fhswr, GFS_control%fhlwr)
-      if (nint(GFS_control%fhzero) > 0) then
-        if (mod(isec,3600*nint(GFS_control%fhzero)) == 0) diag_time = Atmos%Time
-      else
-        if (mod(isec,nint(3600*GFS_control%fhzero)) == 0) diag_time = Atmos%Time
-      endif
-      call diag_send_complete_instant (Atmos%Time)
     endif
+    if (nint(GFS_control%fhzero) > 0) then
+      if (mod(isec,3600*nint(GFS_control%fhzero)) == 0) diag_time = Atmos%Time
+    else
+      if (mod(isec,nint(3600*GFS_control%fhzero)) == 0) diag_time = Atmos%Time
+    endif
+    call diag_send_complete_instant (Atmos%Time)
+
 
     !--- this may not be necessary once write_component is fully implemented
     !!!call diag_send_complete_extra (Atmos%Time)
@@ -991,8 +980,8 @@ subroutine atmos_model_end (Atmos)
         GFS_Control%lndp_type > 0  .or. GFS_Control%do_ca ) then
       if(restart_endfcst) then
         call write_stoch_restart_atm('RESTART/atm_stoch.res.nc')
-        if (GFS_control%ca_sgs)then
-          call write_ca_restart(Atmos%domain,GFS_control%scells)
+        if (GFS_control%do_ca)then
+          call write_ca_restart()
         endif
       endif
       call stochastic_physics_wrapper_end(GFS_control)
@@ -1020,8 +1009,8 @@ subroutine atmos_model_restart(Atmos, timestamp)
     call atmosphere_restart(timestamp)
     call FV3GFS_restart_write (GFS_data, GFS_restart_var, Atm_block, &
                                GFS_control, Atmos%domain, timestamp)
-    if(GFS_control%ca_sgs)then
-       call write_ca_restart(Atmos%domain,GFS_control%scells,timestamp)
+    if(GFS_control%do_ca)then
+       call write_ca_restart(timestamp)
     endif
 end subroutine atmos_model_restart
 ! </SUBROUTINE>
@@ -1785,7 +1774,7 @@ end subroutine atmos_data_type_chksum
           fldname = 'sea_surface_temperature'
           if (trim(impfield_name) == trim(fldname)) then
             findex  = queryImportFields(fldname)
-            if (importFieldsValid(findex)) then
+            if (importFieldsValid(findex) .and. GFS_control%cplocn2atm) then
 !$omp parallel do default(shared) private(i,j,nb,ix)
               do j=jsc,jec
                 do i=isc,iec
@@ -2337,7 +2326,7 @@ end subroutine atmos_data_type_chksum
               do i=isc,iec
                 nb = Atm_block%blkno(i,j)
                 ix = Atm_block%ixp(i,j)
-                GFS_data(nb)%Sfcprop%vtype(ix) = datar82d(i-isc+1,j-jsc+1)
+                GFS_data(nb)%Sfcprop%vtype(ix) = int(datar82d(i-isc+1,j-jsc+1))
               enddo
             enddo
           endif
@@ -2352,7 +2341,7 @@ end subroutine atmos_data_type_chksum
               do i=isc,iec
                 nb = Atm_block%blkno(i,j)
                 ix = Atm_block%ixp(i,j)
-                GFS_data(nb)%Sfcprop%stype(ix) = datar82d(i-isc+1,j-jsc+1)
+                GFS_data(nb)%Sfcprop%stype(ix) = int(datar82d(i-isc+1,j-jsc+1))
               enddo
             enddo
           endif

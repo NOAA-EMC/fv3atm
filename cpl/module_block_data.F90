@@ -8,6 +8,7 @@ module module_block_data
   implicit none
 
   interface block_data_copy
+    module procedure block_copy_1d_i4_to_2d_r8
     module procedure block_copy_1d_to_2d_r8
     module procedure block_copy_2d_to_2d_r8
     module procedure block_copy_2d_to_3d_r8
@@ -49,6 +50,40 @@ module module_block_data
 contains
 
   ! -- copy: 1D to 2D
+
+  subroutine block_copy_1d_i4_to_2d_r8(destin_ptr, source_ptr, block, block_index, scale_factor, rc)
+
+    ! -- arguments
+    real(ESMF_KIND_R8),        pointer     :: destin_ptr(:,:)
+    integer,                   pointer     :: source_ptr(:)
+    type(block_control_type),  intent(in)  :: block
+    integer,                   intent(in)  :: block_index
+    real(kind_phys), optional, intent(in)  :: scale_factor
+    integer,         optional, intent(out) :: rc
+
+    ! -- local variables
+    integer         :: localrc
+    integer         :: i, ib, ix, j, jb
+    real(kind_phys) :: factor
+
+    ! -- begin
+    localrc = ESMF_RC_PTR_NOTALLOC
+    if (associated(destin_ptr) .and. associated(source_ptr)) then
+      factor = 1._kind_phys
+      if (present(scale_factor)) factor = scale_factor
+      do ix = 1, block%blksz(block_index)
+        ib = block%index(block_index)%ii(ix)
+        jb = block%index(block_index)%jj(ix)
+        i = ib - block%isc + 1
+        j = jb - block%jsc + 1
+        destin_ptr(i,j) = factor * real(source_ptr(ix), kind=kind_phys)
+      enddo
+      localrc = ESMF_SUCCESS
+    end if
+
+    if (present(rc)) rc = localrc
+
+  end subroutine block_copy_1d_i4_to_2d_r8
 
   subroutine block_copy_1d_to_2d_r8(destin_ptr, source_ptr, block, block_index, scale_factor, rc)
 
