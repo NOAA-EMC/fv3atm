@@ -446,6 +446,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: fluxlwUP_allsky(:,:)   => null()  !< GP          up   LW total sky flux profile ( w/m**2/K )
     real (kind=kind_phys), pointer :: fluxlwDOWN_allsky(:,:) => null()  !< GP          down LW total sky flux profile ( w/m**2/K )
     real (kind=kind_phys), pointer :: htrlw(:,:)             => null()  !< GP updated LW heating rate
+    real (kind=kind_phys), pointer :: tsfc_radtime(:)        => null()  !< GP surface temperature on radiation timestep
 
 !--- incoming quantities
     real (kind=kind_phys), pointer :: dusfcin_cpl(:)          => null()   !< aoi_fld%dusfcin(item,lan)
@@ -740,6 +741,7 @@ module GFS_typedefs
     real(kind_phys)      :: lfnc_p0                 !<          Logistic function transition level (Pa)
     logical              :: doGP_lwscat             !< If true, include scattering in longwave cloud-optics, only compatible w/ GP cloud-optics
     real(kind_phys)      :: minGPpres               !< Minimum pressure allowed in RRTMGP.
+    real(kind_phys)      :: maxGPpres               !< Maximum pressure allowed in RRTMGP.
     real(kind_phys)      :: minGPtemp               !< Minimum temperature allowed in RRTMGP.
     real(kind_phys)      :: maxGPtemp               !< Maximum temperature allowed in RRTMGP.
 
@@ -2785,10 +2787,12 @@ module GFS_typedefs
        allocate (Coupling%fluxlwUP_allsky   (IM,Model%levs+1))
        allocate (Coupling%fluxlwDOWN_allsky (IM,Model%levs+1))
        allocate (Coupling%htrlw             (IM,Model%levs))
+       allocate (Coupling%tsfc_radtime      (IM))
        Coupling%fluxlwUP_jac      = clear_val
        Coupling%fluxlwUP_allsky   = clear_val
        Coupling%fluxlwDOWN_allsky = clear_val
        Coupling%htrlw             = clear_val
+       Coupling%tsfc_radtime      = clear_val
     endif
 
     if (Model%cplflx .or. Model%do_sppt .or. Model%cplchm .or. Model%ca_global) then
@@ -3969,6 +3973,10 @@ module GFS_typedefs
        if (Model%doGP_cldoptics_PADE .and. Model%doGP_cldoptics_LUT) then
           write(0,*) "Logic error, Both RRTMGP cloud-optics options cannot be selected. "
           stop
+       end if
+       if (.not. Model%doGP_cldoptics_PADE .and. .not. Model%doGP_cldoptics_LUT .and. .not. Model%doG_cldoptics) then
+          write(0,*) "Logic error, No option for cloud-optics scheme provided. Using RRTMG cloud-optics"
+          Model%doG_cldoptics = .true.
        end if
        if (Model%rrtmgp_nGptsSW  .lt. 0 .or. Model%rrtmgp_nGptsLW  .lt. 0 .or. &
            Model%rrtmgp_nBandsSW .lt. 0 .or. Model%rrtmgp_nBandsLW .lt. 0) then
