@@ -2492,8 +2492,14 @@ end subroutine atmos_data_type_chksum
                              / (GFS_data(nb)%Sfcprop%fice(ix)*GFS_data(nb)%Sfcprop%oceanfrac(ix)))
               GFS_data(nb)%Sfcprop%zorli(ix)       = z0ice
               tem = GFS_data(nb)%Sfcprop%tisfc(ix) * GFS_data(nb)%Sfcprop%tisfc(ix)
-              GFS_data(nb)%Sfcprop%emis_ice(ix)    = GFS_data(nb)%Coupling%ulwsfcin_cpl(ix)          &
-                                                   / (con_sbc * tem * tem)
+              tem = con_sbc * tem * tem
+              if (GFS_data(nb)%Coupling%ulwsfcin_cpl(ix) > zero) then
+                GFS_data(nb)%Sfcprop%emis_ice(ix)    = GFS_data(nb)%Coupling%ulwsfcin_cpl(ix) / tem
+                GFS_data(nb)%Sfcprop%emis_ice(ix)    = max(0.9, min(one, GFS_data(nb)%Sfcprop%emis_ice(ix)))
+              else
+                GFS_data(nb)%Sfcprop%emis_ice(ix)    = 0.96
+              endif
+              GFS_data(nb)%Coupling%ulwsfcin_cpl(ix) = tem * GFS_data(nb)%Sfcprop%emis_ice(ix)
             else
               GFS_data(nb)%Sfcprop%tisfc(ix)       = GFS_data(nb)%Sfcprop%tsfco(ix)
               GFS_data(nb)%Sfcprop%fice(ix)        = zero

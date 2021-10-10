@@ -56,11 +56,11 @@
       <scheme>sfc_diff</scheme>
       <scheme>GFS_surface_loop_control_part1</scheme>
       <scheme>lsm_noah</scheme>
+      <scheme>sfc_cice</scheme>
+      <scheme>sfc_sice</scheme>
       <scheme>sfc_nst_pre</scheme>
       <scheme>sfc_nst</scheme>
       <scheme>sfc_nst_post</scheme>
-      <scheme>sfc_cice</scheme>
-      <scheme>sfc_sice</scheme>
       <scheme>GFS_surface_loop_control_part2</scheme>
     </subcycle>
     <!-- End of surface iteration loop -->
