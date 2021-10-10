@@ -578,7 +578,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
           ! create the nest Grid by reading it from file but use DELayout
-          fcstGrid = ESMF_GridCreate(filename="INPUT/"//trim(gridfile),                               &
+          fcstGrid = ESMF_GridCreate(filename="INPUT/"//trim(gridfile),                                   &
                                        fileformat=ESMF_FILEFORMAT_GRIDSPEC, regDecomp=regDecomp,          &
                                        decompflag=(/ESMF_DECOMP_SYMMEDGEMAX,ESMF_DECOMP_SYMMEDGEMAX/),    &
                                        delayout=delayout, isSphere=.false., indexflag=ESMF_INDEX_DELOCAL, &
