@@ -313,8 +313,10 @@ module FV3GFS_io_mod
        temp2d(i,j,89) = GFS_Data(nb)%Sfcprop%albdifvis_lnd(ix)
        temp2d(i,j,90) = GFS_Data(nb)%Sfcprop%albdifnir_lnd(ix)
        temp2d(i,j,91) = GFS_Data(nb)%Sfcprop%emis_lnd(ix)
+       temp2d(i,j,92) = GFS_Data(nb)%Sfcprop%emis_ice(ix)
+       temp2d(i,j,93) = GFS_Data(nb)%Sfcprop%sncovr_ice(ix)
 
-       idx_opt = 92
+       idx_opt = 93
        if (Model%use_cice_alb .or. Model%lsm == Model%lsm_ruc) then
          temp2d(i,j,idx_opt+1) = GFS_Data(nb)%Sfcprop%albdirvis_ice(ix)
          temp2d(i,j,idx_opt+2) = GFS_Data(nb)%Sfcprop%albdirnir_ice(ix)
@@ -385,18 +387,12 @@ module FV3GFS_io_mod
         temp2d(i,j,idx_opt+6)  = GFS_Data(nb)%Sfcprop%tsnow_ice(ix)
         temp2d(i,j,idx_opt+7)  = GFS_Data(nb)%Sfcprop%snowfallac_land(ix)
         temp2d(i,j,idx_opt+8)  = GFS_Data(nb)%Sfcprop%snowfallac_ice(ix)
-        temp2d(i,j,idx_opt+9)  = GFS_Data(nb)%Sfcprop%sncovr_ice(ix)
-        temp2d(i,j,idx_opt+10) = GFS_Data(nb)%Sfcprop%sfalb_lnd(ix)
-        temp2d(i,j,idx_opt+11) = GFS_Data(nb)%Sfcprop%sfalb_lnd_bck(ix)
-!       temp2d(i,j,idx_opt+16) = GFS_Data(nb)%Sfcprop%albdirvis_ice(ix)
-!       temp2d(i,j,idx_opt+17) = GFS_Data(nb)%Sfcprop%albdirnir_ice(ix)
-!       temp2d(i,j,idx_opt+18) = GFS_Data(nb)%Sfcprop%albdifvis_ice(ix)
-!       temp2d(i,j,idx_opt+19) = GFS_Data(nb)%Sfcprop%albdifnir_ice(ix)
-        temp2d(i,j,idx_opt+12) = GFS_Data(nb)%Sfcprop%sfalb_ice(ix)
-        temp2d(i,j,idx_opt+13) = GFS_Data(nb)%Sfcprop%emis_ice(ix)
-        idx_opt = idx_opt + 14
+        temp2d(i,j,idx_opt+9)  = GFS_Data(nb)%Sfcprop%sfalb_lnd(ix)
+        temp2d(i,j,idx_opt+10) = GFS_Data(nb)%Sfcprop%sfalb_lnd_bck(ix)
+        temp2d(i,j,idx_opt+11) = GFS_Data(nb)%Sfcprop%sfalb_ice(ix)
+        idx_opt = idx_opt + 11
         if (Model%rdlai) then
-          temp2d(i,j,idx_opt+23) = GFS_Data(nb)%Sfcprop%xlaixy(ix)
+          temp2d(i,j,idx_opt+1) = GFS_Data(nb)%Sfcprop%xlaixy(ix)
           idx_opt = idx_opt + 1
         endif
        endif
@@ -531,9 +527,9 @@ module FV3GFS_io_mod
 
     if (Model%lsm == Model%lsm_ruc .and. warm_start) then
       if(Model%rdlai) then
-        nvar_s2r = 15
+        nvar_s2r = 13
       else
-        nvar_s2r = 14
+        nvar_s2r = 12
       end if
       nvar_s3  = 5
     else
@@ -1651,9 +1647,9 @@ module FV3GFS_io_mod
     nvar2o = 18
     if (Model%lsm == Model%lsm_ruc) then
       if (Model%rdlai) then
-        nvar2r = 15
+        nvar2r = 13
       else
-        nvar2r = 14
+        nvar2r = 12
       endif
       nvar3  = 5
     else
@@ -1836,11 +1832,11 @@ module FV3GFS_io_mod
       sfc_name2(46) = 'sncovr_ice'
 
       if (Model%use_cice_alb .or. Model%lsm == Model%lsm_ruc) then
-        sfc_name2(45) = 'albdirvis_ice'
-        sfc_name2(46) = 'albdifvis_ice'
-        sfc_name2(47) = 'albdirnir_ice'
-        sfc_name2(48) = 'albdifnir_ice'
-!       sfc_name2(49) = 'sfalb_ice'
+        sfc_name2(47) = 'albdirvis_ice'
+        sfc_name2(48) = 'albdifvis_ice'
+        sfc_name2(49) = 'albdirnir_ice'
+        sfc_name2(50) = 'albdifnir_ice'
+!       sfc_name2(51) = 'sfalb_ice'
       endif
 
       if (Model%cplwav) then
@@ -1875,15 +1871,9 @@ module FV3GFS_io_mod
         sfc_name2(nvar2m+25) = 'tsnow_ice'
         sfc_name2(nvar2m+26) = 'snowfall_acc_land'
         sfc_name2(nvar2m+27) = 'snowfall_acc_ice'
-!       sfc_name2(nvar2m+28) = 'sncovr_ice'
         sfc_name2(nvar2m+28) = 'sfalb_lnd'
         sfc_name2(nvar2m+29) = 'sfalb_lnd_bck'
-!       sfc_name2(nvar2m+31) = 'albdirvis_ice'
-!       sfc_name2(nvar2m+32) = 'albdirnir_ice'
-!       sfc_name2(nvar2m+33) = 'albdifvis_ice'
-!       sfc_name2(nvar2m+34) = 'albdifnir_ice'
         sfc_name2(nvar2m+30) = 'sfalb_ice'
-!       sfc_name2(nvar2m+32) = 'emis_ice'
         if (Model%rdlai) then
           sfc_name2(nvar2m+31) = 'lai'
         endif
@@ -2123,15 +2113,9 @@ module FV3GFS_io_mod
           sfc_var2(i,j,nvar2m+25) = Sfcprop(nb)%tsnow_ice(ix)
           sfc_var2(i,j,nvar2m+26) = Sfcprop(nb)%snowfallac_land(ix)
           sfc_var2(i,j,nvar2m+27) = Sfcprop(nb)%snowfallac_ice(ix)
-!         sfc_var2(i,j,nvar2m+28) = Sfcprop(nb)%sncovr_ice(ix)
           sfc_var2(i,j,nvar2m+28) = Sfcprop(nb)%sfalb_lnd(ix)
           sfc_var2(i,j,nvar2m+29) = Sfcprop(nb)%sfalb_lnd_bck(ix)
-!         sfc_var2(i,j,nvar2m+31) = Sfcprop(nb)%albdirvis_ice(ix)
-!         sfc_var2(i,j,nvar2m+32) = Sfcprop(nb)%albdirnir_ice(ix)
-!         sfc_var2(i,j,nvar2m+33) = Sfcprop(nb)%albdifvis_ice(ix)
-!         sfc_var2(i,j,nvar2m+34) = Sfcprop(nb)%albdifnir_ice(ix)
           sfc_var2(i,j,nvar2m+30) = Sfcprop(nb)%sfalb_ice(ix)
-!         sfc_var2(i,j,nvar2m+32) = Sfcprop(nb)%emis_ice(ix)
           if (Model%rdlai) then
             sfc_var2(i,j,nvar2m+31) = Sfcprop(nb)%xlaixy(ix)
           endif
