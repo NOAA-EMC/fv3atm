@@ -63,8 +63,6 @@ target_include_directories(fv3atm INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_BI
 if(MULTI_GASES)
   list(APPEND _fv3atm_defs_private MULTI_GASES)
 endif()
-# This should not be necessary once framework and physics targets define BUILD_INTERFACE
-target_include_directories(fv3atm PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/ccpp/physics)
 
 target_link_libraries(fv3atm PUBLIC fv3
                                     fv3ccpp
