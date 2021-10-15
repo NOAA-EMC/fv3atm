@@ -592,6 +592,20 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
+[snodi]
+  standard_name = surface_snow_thickness_water_equivalent_over_ice
+  long_name = water equivalent snow depth over ice
+  units = mm
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[weasdi]
+  standard_name = water_equivalent_accumulated_snow_depth_over_ice
+  long_name = water equiv of acc snow depth over land
+  units = mm
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
 [hprime]
   standard_name = statistical_measures_of_subgrid_orography_collection_array
   long_name = orographic metrics
@@ -9530,13 +9544,6 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[snowd_ice]
-  standard_name = surface_snow_thickness_water_equivalent_over_ice
-  long_name = water equivalent snow depth over ice
-  units = mm
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
 [snowd_land_save]
   standard_name = surface_snow_thickness_water_equivalent_over_land_save
   long_name = water equivalent snow depth over land before entering a physics scheme
@@ -9869,13 +9876,6 @@
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_noah_wrfv4_land_surface_scheme)
-[weasd_ice]
-  standard_name = water_equivalent_accumulated_snow_depth_over_ice
-  long_name = water equiv of acc snow depth over ice
-  units = mm
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
 [wind]
   standard_name = wind_speed_at_lowest_model_layer
   long_name = wind speed at lowest model level

@@ -241,6 +241,8 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: fice   (:)   => null()  !< ice fraction over open water grid
     real (kind=kind_phys), pointer :: snodl  (:)   => null()  !< snow depth over land
     real (kind=kind_phys), pointer :: weasdl (:)   => null()  !< weasd over land
+    real (kind=kind_phys), pointer :: snodi  (:)   => null()  !< snow depth over ice
+    real (kind=kind_phys), pointer :: weasdi (:)   => null()  !< weasd over ice
 !   real (kind=kind_phys), pointer :: hprim  (:)   => null()  !< topographic standard deviation in m
     real (kind=kind_phys), pointer :: hprime (:,:) => null()  !< orographic metrics
     real (kind=kind_phys), pointer :: z0base (:)   => null()  !< background or baseline surface roughness length in m
@@ -2034,7 +2036,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: smcmax(:)          => null()  !<
     real (kind=kind_phys), pointer      :: smc_save(:,:)      => null()  !<
     real (kind=kind_phys), pointer      :: snowc(:)           => null()  !<
-    real (kind=kind_phys), pointer      :: snowd_ice(:)       => null()  !<
+!   real (kind=kind_phys), pointer      :: snowd_ice(:)       => null()  !<
     real (kind=kind_phys), pointer      :: snowd_land_save(:) => null()  !<
     real (kind=kind_phys), pointer      :: snow_depth(:)      => null()  !<
     real (kind=kind_phys), pointer      :: snohf(:)           => null()  !<
@@ -2085,7 +2087,7 @@ module GFS_typedefs
 !   real (kind=kind_phys), pointer      :: weasd_water(:)     => null()  !<
 !   real (kind=kind_phys), pointer      :: weasd_land(:)      => null()  !<
     real (kind=kind_phys), pointer      :: weasd_land_save(:) => null()  !<
-    real (kind=kind_phys), pointer      :: weasd_ice(:)       => null()  !<
+!   real (kind=kind_phys), pointer      :: weasd_ice(:)       => null()  !<
     real (kind=kind_phys), pointer      :: wind(:)            => null()  !<
     real (kind=kind_phys), pointer      :: work1(:)           => null()  !<
     real (kind=kind_phys), pointer      :: work2(:)           => null()  !<
@@ -2363,6 +2365,8 @@ module GFS_typedefs
     allocate (Sfcprop%fice     (IM))
     allocate (Sfcprop%snodl    (IM))
     allocate (Sfcprop%weasdl   (IM))
+    allocate (Sfcprop%snodi    (IM))
+    allocate (Sfcprop%weasdi   (IM))
 !   allocate (Sfcprop%hprim    (IM))
     allocate (Sfcprop%hprime   (IM,Model%nmtvr))
     allocate(Sfcprop%albdirvis_lnd (IM))
@@ -2391,6 +2395,8 @@ module GFS_typedefs
     Sfcprop%fice      = clear_val
     Sfcprop%snodl     = clear_val
     Sfcprop%weasdl    = clear_val
+    Sfcprop%snodi     = clear_val
+    Sfcprop%weasdi    = clear_val
 !   Sfcprop%hprim     = clear_val
     Sfcprop%hprime    = clear_val
     Sfcprop%albdirvis_lnd = clear_val
@@ -7097,7 +7103,7 @@ module GFS_typedefs
     allocate (Interstitial%sigmafrac       (IM,Model%levs))
     allocate (Interstitial%sigmatot        (IM,Model%levs))
     allocate (Interstitial%snowc           (IM))
-    allocate (Interstitial%snowd_ice       (IM))
+!   allocate (Interstitial%snowd_ice       (IM))
     allocate (Interstitial%snohf           (IM))
     allocate (Interstitial%snowmt          (IM))
     allocate (Interstitial%stress          (IM))
@@ -7126,7 +7132,7 @@ module GFS_typedefs
     allocate (Interstitial%vdftra          (IM,Model%levs,Interstitial%nvdiff))  !GJF first dimension was set as 'IX' in GFS_physics_driver
     allocate (Interstitial%vegf1d          (IM))
     allocate (Interstitial%wcbmax          (IM))
-    allocate (Interstitial%weasd_ice       (IM))
+!   allocate (Interstitial%weasd_ice       (IM))
 !   allocate (Interstitial%weasd_land      (IM))
 !   allocate (Interstitial%weasd_water     (IM))
     allocate (Interstitial%wind            (IM))
@@ -7826,7 +7832,7 @@ module GFS_typedefs
     Interstitial%sigmafrac       = clear_val
     Interstitial%sigmatot        = clear_val
     Interstitial%snowc           = clear_val
-    Interstitial%snowd_ice       = Model%huge
+!   Interstitial%snowd_ice       = Model%huge
     Interstitial%snohf           = clear_val
     Interstitial%snowmt          = clear_val
     Interstitial%stress          = clear_val
@@ -7852,7 +7858,7 @@ module GFS_typedefs
     Interstitial%vegf1d          = clear_val
     Interstitial%lndp_vgf        = clear_val
     Interstitial%wcbmax          = clear_val
-    Interstitial%weasd_ice       = Model%huge
+!   Interstitial%weasd_ice       = Model%huge
 !   Interstitial%weasd_land      = Model%huge
 !   Interstitial%weasd_water     = Model%huge
     Interstitial%wind            = Model%huge
