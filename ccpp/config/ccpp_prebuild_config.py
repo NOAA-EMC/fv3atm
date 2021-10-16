@@ -162,6 +162,7 @@ SCHEME_FILES = [
     'physics/physics/mp_thompson_pre.F90',
     'physics/physics/mp_thompson.F90',
     'physics/physics/mp_thompson_post.F90',
+    'physics/physics/mp_nssl.F90'                      ,
     'physics/physics/ozphys.f',
     'physics/physics/ozphys_2015.f',
     'physics/physics/precpd.f',
@@ -297,6 +298,14 @@ OPTIONAL_ARGUMENTS = {
             # *DH 2020-06-01
             ],
         },
+    'mp_nssl' : {
+         'mp_nssl_run' : [
+           'effective_radius_of_stratiform_cloud_liquid_water_particle',
+           'effective_radius_of_stratiform_cloud_ice_particle',
+           'effective_radius_of_stratiform_cloud_snow_particle',
+           'effective_radius_of_stratiform_cloud_rain_particle'
+             ],
+         },
     'rrtmgp_sw_rte' : {
          'rrtmgp_sw_rte_run' : [
              'components_of_surface_downward_shortwave_fluxes',
