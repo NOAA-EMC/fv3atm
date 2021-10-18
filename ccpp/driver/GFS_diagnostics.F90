@@ -3209,7 +3209,9 @@ module GFS_diagnostics
       do nb = 1,nblks
         ExtDiag(idx)%data(nb)%var3 => Statein(nb)%qgrs(:,:,Model%ntwa)
       enddo
+    endif
 
+    if (Model%ltaerosol) then
       idx = idx + 1
       ExtDiag(idx)%axes = 2
       ExtDiag(idx)%name = 'nwfa2d'
@@ -3233,7 +3235,9 @@ module GFS_diagnostics
       do nb = 1,nblks
         ExtDiag(idx)%data(nb)%var3 => Statein(nb)%qgrs(:,:,Model%ntia)
       enddo
+    endif
 
+    if (Model%ltaerosol) then
       idx = idx + 1
       ExtDiag(idx)%axes = 2
       ExtDiag(idx)%name = 'nifa2d'
