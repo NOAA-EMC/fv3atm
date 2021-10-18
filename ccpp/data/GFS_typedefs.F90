@@ -7478,7 +7478,6 @@ module GFS_typedefs
         Interstitial%ntiwx = 0
       endif
     endif
-    ! *DH
 
     if (Model%cplchm) then
       ! Only Zhao/Carr/Sundqvist and GFDL microphysics schemes are supported

@@ -613,6 +613,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
+  active = (flag_for_mellor_yamada_janic_surface_layer_scheme .or. flag_for_mellor_yamada_janic_pbl_scheme .or. (control_for_land_surface_scheme == identifier_for_noah_wrfv4_land_surface_scheme))
 [semisbase]
   standard_name = baseline_surface_longwave_emissivity
   long_name = baseline surface lw emissivity in fraction
