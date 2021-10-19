@@ -697,12 +697,17 @@
   type = real
   kind = kind_phys
 [slope]
-  standard_name = surface_slope_classification_real
+  standard_name = surface_slope_classification
   long_name = sfc slope type for lsm
   units = index
   dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
+  type = integer
+[slope_save]
+  standard_name = surface_slope_classification_save
+  long_name = sfc slope type for lsm save
+  units = index
+  dimensions = (horizontal_loop_extent)
+  type = integer
 [shdmin]
   standard_name = min_vegetation_area_fraction
   long_name = min fractional coverage of green vegetation
@@ -732,19 +737,29 @@
   type = real
   kind = kind_phys
 [vtype]
-  standard_name = vegetation_type_classification_real
+  standard_name = vegetation_type_classification
   long_name = vegetation type for lsm
   units = index
   dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
+  type = integer
+[vtype_save]
+  standard_name = vegetation_type_classification_save
+  long_name = vegetation type for lsm save
+  units = index
+  dimensions = (horizontal_loop_extent)
+  type = integer
 [stype]
-  standard_name = soil_type_classification_real
+  standard_name = soil_type_classification
   long_name = soil type for lsm
   units = index
   dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
+  type = integer
+[stype_save]
+  standard_name = soil_type_classification_save
+  long_name = soil type for lsm save
+  units = index
+  dimensions = (horizontal_loop_extent)
+  type = integer
 [uustar]
   standard_name = surface_friction_velocity
   long_name = boundary layer parameter
@@ -1787,6 +1802,14 @@
   type = real
   kind = kind_phys
   active = (flag_for_rrtmgp_radiation_scheme)
+[tsfc_radtime]
+  standard_name = surface_skin_temperature_on_radiation_timestep
+  long_name = surface skin temperature on radiation timestep
+  units = K
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (flag_for_rrtmgp_radiation_scheme)
 [fluxlwUP_jac]
   standard_name = RRTMGP_jacobian_of_lw_flux_upward
   long_name = RRTMGP Jacobian upward longwave flux profile
@@ -2201,13 +2224,6 @@
   type = real
   kind = kind_phys
   active = (flag_for_cellular_automata)
-[vfact_ca]
-  standard_name = cellular_automata_vertical_weight
-  long_name = vertical weight for ca
-  units = frac
-  dimensions = (vertical_layer_dimension)
-  type = real
-  kind = kind_phys
 [ca1]
   standard_name = cellular_automata_global_pattern_from_coupled_process
   long_name = cellular automata global pattern
@@ -2993,6 +3009,13 @@
 [minGPpres]
   standard_name = minimum_pressure_in_RRTMGP
   long_name = minimum pressure allowed in RRTMGP
+  units = Pa
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[maxGPpres]
+  standard_name = maximum_pressure_in_RRTMGP
+  long_name = maximum pressure allowed in RRTMGP
   units = Pa
   dimensions = ()
   type = real
@@ -4416,6 +4439,13 @@
   units = flag
   dimensions = ()
   type = logical
+[vfact_ca]
+  standard_name = cellular_automata_vertical_weight
+  long_name = vertical weight for ca
+  units = frac
+  dimensions = (vertical_layer_dimension)
+  type = real
+  kind = kind_phys
 [ca_closure]
   standard_name = flag_for_global_cellular_automata_closure
   long_name = switch for ca on closure
@@ -6880,41 +6910,6 @@
   long_name = dominant snow type
   units = none
   dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-[skebu_wts]
-  standard_name = weights_for_stochastic_skeb_perturbation_of_x_wind_flipped
-  long_name = weights for stochastic skeb perturbation of x wind, flipped
-  units = none
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
-  type = real
-  kind = kind_phys
-[skebv_wts]
-  standard_name = weights_for_stochastic_skeb_perturbation_of_y_wind_flipped
-  long_name = weights for stochastic skeb perturbation of y wind, flipped
-  units = none
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
-  type = real
-  kind = kind_phys
-[sppt_wts]
-  standard_name = weights_for_stochastic_sppt_perturbation_flipped
-  long_name = weights for stochastic sppt perturbation, flipped
-  units = none
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
-  type = real
-  kind = kind_phys
-[shum_wts]
-  standard_name = weights_for_stochastic_shum_perturbation_flipped
-  long_name = weights for stochastic shum perturbation, flipped
-  units = none
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
-  type = real
-  kind = kind_phys
-[sfc_wts]
-  standard_name = weights_for_stochastic_surface_physics_perturbation_flipped
-  long_name = weights for stochastic surface physics perturbation, flipped
-  units = none
-  dimensions = (horizontal_loop_extent,number_of_perturbed_land_surface_variables)
   type = real
   kind = kind_phys
 [zmtnblck]
@@ -9542,12 +9537,6 @@
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_noah_wrfv4_land_surface_scheme)
-[slopetype]
-  standard_name = surface_slope_classification
-  long_name = surface slope type at each grid cell
-  units = index
-  dimensions = (horizontal_loop_extent)
-  type = integer
 [smcmax]
   standard_name = soil_porosity
   long_name = volumetric soil porosity
@@ -9648,12 +9637,6 @@
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_noah_wrfv4_land_surface_scheme)
-[soiltype]
-  standard_name = soil_type_classification
-  long_name = soil type at each grid cell
-  units = index
-  dimensions = (horizontal_loop_extent)
-  type = integer
 [stc_save]
   standard_name = soil_temperature_save
   long_name = soil temperature before entering a physics scheme
@@ -9900,12 +9883,6 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[vegtype]
-  standard_name = vegetation_type_classification
-  long_name = vegetation type at each grid cell
-  units = index
-  dimensions = (horizontal_loop_extent)
-  type = integer
 [w_upi]
   standard_name = vertical_velocity_for_updraft
   long_name = vertical velocity for updraft
@@ -10148,17 +10125,17 @@
   optional = F
   active = (flag_for_rrtmgp_radiation_scheme)
 [p_lay]
-  standard_name = air_pressure_at_layer_for_RRTMGP_in_hPa
+  standard_name = air_pressure_at_layer_for_RRTMGP
   long_name = air pressure layer
-  units = hPa
+  units = Pa
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_rrtmgp_radiation_scheme)
 [p_lev]
-  standard_name = air_pressure_at_interface_for_RRTMGP_in_hPa
+  standard_name = air_pressure_at_interface_for_RRTMGP
   long_name = air pressure level
-  units = hPa
+  units = Pa
   dimensions = (horizontal_loop_extent,vertical_interface_dimension)
   type = real
   kind = kind_phys
