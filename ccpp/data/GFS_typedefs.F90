@@ -635,7 +635,7 @@ module GFS_typedefs
 
 !--- coupling parameters
     logical              :: cplflx          !< default no cplflx collection
-    logical              :: cplice          !< default yes cplice collection (used together with cplflx)
+    logical              :: cplice          !< default no cplice collection (used together with cplflx)
     logical              :: cplocn2atm      !< default yes ocn->atm coupling
     logical              :: cplwav          !< default no cplwav collection
     logical              :: cplwav2atm      !< default no wav->atm coupling
@@ -3113,7 +3113,7 @@ module GFS_typedefs
 
     !--- coupling parameters
     logical              :: cplflx         = .false.         !< default no cplflx collection
-    logical              :: cplice         = .true.          !< default yes cplice collection (used together with cplflx)
+    logical              :: cplice         = .false.         !< default no cplice collection (used together with cplflx)
     logical              :: cplocn2atm     = .true.          !< default yes cplocn2atm coupling (turn on the feedback from ocn to atm)
     logical              :: cplwav         = .false.         !< default no cplwav collection
     logical              :: cplwav2atm     = .false.         !< default no cplwav2atm coupling
@@ -3865,6 +3865,14 @@ module GFS_typedefs
 !--- coupling parameters
     Model%cplflx           = cplflx
     Model%cplice           = cplice
+    ! Consistency check, currently allowed combinations are
+    ! Model%cplflx == .false. and Model%cplice == .false. (uncoupled runs)
+    ! Model%cplflx == .true.  and Model%cplice == .true.  (coupled S2S runs)
+    ! Model%cplflx == .true.  and Model%cplice == .false. (HAFS FV3ATM-HYCOM)
+    if (Model%cplice .and. .not. Model%cplflx) then
+      print *,' Logic error: Model%cplflx==.false. and Model%cplice==.true. is currently not supported - shutting down'
+      stop
+    endif
     Model%cplocn2atm       = cplocn2atm
     Model%cplwav           = cplwav
     Model%cplwav2atm       = cplwav2atm
