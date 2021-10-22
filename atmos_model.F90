@@ -423,9 +423,9 @@ subroutine atmos_timestep_diagnostics(Atmos)
       if(.not. GFS_control%first_time_step) then
         pmaxloc = 0.0d0
         recvbuf = 0.0d0
-        psum = 0.0d0
-        pcount = 0.0d0
-        maxabs = 0.0d0
+        psum    = 0.0d0
+        pcount  = 0.0d0
+        maxabs  = 0.0d0
 
         ! Put pgr stats in pmaxloc, psum, and pcount:
         pmaxloc(1) = GFS_Control%tile_num
@@ -434,11 +434,11 @@ subroutine atmos_timestep_diagnostics(Atmos)
           do i=1,count
             pdiff = GFS_data(nb)%Statein%pgr(i)-GFS_data(nb)%Intdiag%old_pgr(i)
             adiff = abs(pdiff)
-            psum = psum+adiff
+            psum  = psum + adiff
             if(adiff>=maxabs) then
               maxabs=adiff
-              pmaxloc(2:3)=(/ ATM_block%index(nb)%ii(i), ATM_block%index(nb)%jj(i) /)
-              pmaxloc(4:7)=(/ pdiff, GFS_data(nb)%Statein%pgr(i), &
+              pmaxloc(2:3) = (/ ATM_block%index(nb)%ii(i), ATM_block%index(nb)%jj(i) /)
+              pmaxloc(4:7) = (/ pdiff, GFS_data(nb)%Statein%pgr(i), &
                    GFS_data(nb)%Grid%xlat(i), GFS_data(nb)%Grid%xlon(i) /)
             endif
           enddo
@@ -1642,6 +1642,7 @@ end subroutine atmos_data_type_chksum
 !     real(kind=GFS_kind_phys), parameter :: hsmax = 100.0    !< maximum snow depth (m) allowed
       real(kind=GFS_kind_phys), parameter :: himax = 1.0e12   !< maximum ice thickness allowed
       real(kind=GFS_kind_phys), parameter :: hsmax = 1.0e12   !< maximum snow depth (m) allowed
+      real(kind=GFS_kind_phys), parameter :: con_sbc = 5.670400e-8_GFS_kind_phys !< stefan-boltzmann
 !
 !------------------------------------------------------------------------------
 !
@@ -2479,7 +2480,7 @@ end subroutine atmos_data_type_chksum
 
 ! update sea ice related fields:
     if( lcpl_fice ) then
-!$omp parallel do default(shared) private(i,j,nb,ix)
+!$omp parallel do default(shared) private(i,j,nb,ix,tem)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
@@ -2490,6 +2491,15 @@ end subroutine atmos_data_type_chksum
               GFS_data(nb)%Coupling%hsnoin_cpl(ix) = min(hsmax, GFS_data(nb)%Coupling%hsnoin_cpl(ix) &
                              / (GFS_data(nb)%Sfcprop%fice(ix)*GFS_data(nb)%Sfcprop%oceanfrac(ix)))
               GFS_data(nb)%Sfcprop%zorli(ix)       = z0ice
+              tem = GFS_data(nb)%Sfcprop%tisfc(ix) * GFS_data(nb)%Sfcprop%tisfc(ix)
+              tem = con_sbc * tem * tem
+              if (GFS_data(nb)%Coupling%ulwsfcin_cpl(ix) > zero) then
+                GFS_data(nb)%Sfcprop%emis_ice(ix)    = GFS_data(nb)%Coupling%ulwsfcin_cpl(ix) / tem
+                GFS_data(nb)%Sfcprop%emis_ice(ix)    = max(0.9, min(one, GFS_data(nb)%Sfcprop%emis_ice(ix)))
+              else
+                GFS_data(nb)%Sfcprop%emis_ice(ix)    = 0.96
+              endif
+              GFS_data(nb)%Coupling%ulwsfcin_cpl(ix) = tem * GFS_data(nb)%Sfcprop%emis_ice(ix)
             else
               GFS_data(nb)%Sfcprop%tisfc(ix)       = GFS_data(nb)%Sfcprop%tsfco(ix)
               GFS_data(nb)%Sfcprop%fice(ix)        = zero
