@@ -516,8 +516,8 @@
   type = real
   kind = kind_phys
 [tisfc]
-  standard_name = sea_ice_temperature
-  long_name = sea ice surface skin temperature
+  standard_name = surface_skin_temperature_over_ice
+  long_name = surface skin temperature over ice
   units = K
   dimensions = (horizontal_loop_extent)
   type = real
@@ -587,6 +587,20 @@
   kind = kind_phys
 [weasdl]
   standard_name = water_equivalent_accumulated_snow_depth_over_land
+  long_name = water equiv of acc snow depth over land
+  units = mm
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[snodi]
+  standard_name = surface_snow_thickness_water_equivalent_over_ice
+  long_name = water equivalent snow depth over ice
+  units = mm
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[weasdi]
+  standard_name = water_equivalent_accumulated_snow_depth_over_ice
   long_name = water equiv of acc snow depth over land
   units = mm
   dimensions = (horizontal_loop_extent)
@@ -1346,7 +1360,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme .or. flag_for_cice_albedo .eqv. .true.)
+  active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme .or. flag_for_cice_albedo)
 [albdifvis_ice]
   standard_name = surface_albedo_diffuse_visible_over_ice
   long_name = diffuse surface albedo visible band over ice
@@ -1354,7 +1368,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme .or. flag_for_cice_albedo .eqv. .true.)
+  active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme .or. flag_for_cice_albedo)
 [albdirnir_ice]
   standard_name = surface_albedo_direct_NIR_over_ice
   long_name = direct surface albedo NIR band over ice
@@ -1362,7 +1376,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme .or. flag_for_cice_albedo .eqv. .true.)
+  active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme .or. flag_for_cice_albedo)
 [albdifnir_ice]
   standard_name = surface_albedo_diffuse_NIR_over_ice
   long_name = diffuse surface albedo NIR band over ice
@@ -1370,7 +1384,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme .or. flag_for_cice_albedo .eqv. .true.)
+  active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme .or. flag_for_cice_albedo)
 [wetness]
   standard_name = normalized_soil_wetness_for_land_surface_model
   long_name = normalized soil wetness for lsm
@@ -5203,6 +5217,13 @@
   dimensions = ()
   type = real
   kind = kind_phys
+[huge]
+  standard_name = netcdf_float_fillvalue
+  long_name = definition of NetCDF float FillValue
+  units = none
+  dimensions = ()
+  type = real
+  kind = kind_phys
 [icloud]
   standard_name = control_for_cloud_area_fraction_option
   long_name = cloud effect to the optical depth and cloud fraction in radiation
@@ -8215,20 +8236,6 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[semis_land]
-  standard_name = surface_longwave_emissivity_over_land_interstitial
-  long_name = surface lw emissivity in fraction over land (temporary use as interstitial)
-  units = frac
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-[semis_ice]
-  standard_name = surface_longwave_emissivity_over_ice_interstitial
-  long_name = surface lw emissivity in fraction over ice (temporary use as interstitial)
-  units = frac
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
 [ep1d]
   standard_name = surface_upward_potential_latent_heat_flux
   long_name = surface upward potential latent heat flux
@@ -9537,13 +9544,6 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[snowd_ice]
-  standard_name = surface_snow_thickness_water_equivalent_over_ice
-  long_name = water equivalent snow depth over ice
-  units = mm
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
 [snowd_land_save]
   standard_name = surface_snow_thickness_water_equivalent_over_land_save
   long_name = water equivalent snow depth over land before entering a physics scheme
@@ -9770,13 +9770,6 @@
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_noah_wrfv4_land_surface_scheme)
-[tsfc_ice]
-  standard_name = surface_skin_temperature_over_ice
-  long_name = surface skin temperature over ice
-  units = K
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
 [tsfg]
   standard_name = surface_ground_temperature_for_radiation
   long_name = surface ground temperature for radiation
@@ -9883,13 +9876,6 @@
   type = real
   kind = kind_phys
   active = (control_for_land_surface_scheme == identifier_for_noah_wrfv4_land_surface_scheme)
-[weasd_ice]
-  standard_name = water_equivalent_accumulated_snow_depth_over_ice
-  long_name = water equiv of acc snow depth over ice
-  units = mm
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
 [wind]
   standard_name = wind_speed_at_lowest_model_layer
   long_name = wind speed at lowest model level
@@ -10666,13 +10652,6 @@
   units = none
   dimensions = ()
   type = integer
-[huge]
-  standard_name = netcdf_float_fillvalue
-  long_name = definition of NetCDF float FillValue
-  units = none
-  dimensions = ()
-  type = real
-  kind = kind_phys
 [con_cliq]
   standard_name = specific_heat_of_liquid_water_at_constant_pressure
   long_name = specific heat of liquid water at constant pressure
