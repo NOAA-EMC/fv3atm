@@ -738,7 +738,7 @@ module GFS_typedefs
     integer              :: rrtmgp_nrghice          !< Number of ice-roughness categories
     integer              :: rrtmgp_nGauss_ang       !< Number of angles used in Gaussian quadrature
     logical              :: do_GPsw_Glw             !< If set to true use rrtmgp for SW calculation, rrtmg for LW.
-    character(len=128)   :: active_gases_array(100) !< character array for each trace gas name
+    character(len=128), pointer :: active_gases_array(:) => null() !< character array for each trace gas name
     logical              :: use_LW_jacobian         !< If true, use Jacobian of LW to update radiation tendency.
     logical              :: damp_LW_fluxadj         !< If true, damp the LW flux adjustment using the Jacobian w/ height with logistic function
     real(kind_phys)      :: lfnc_k                  !<          Logistic function transition depth (Pa)
@@ -1152,8 +1152,8 @@ module GFS_typedefs
     integer              :: n_var_lndp
     logical              :: lndp_each_step    ! flag to indicate that land perturbations are applied at every time step,
                                               ! otherwise they are applied only after gcycle is run
-    character(len=3)     :: lndp_var_list(6)  ! dimension here must match  n_var_max_lndp in  stochy_nml_def
-    real(kind=kind_phys) :: lndp_prt_list(6)  ! dimension here must match  n_var_max_lndp in  stochy_nml_def
+    character(len=3)    , pointer :: lndp_var_list(:)  ! dimension here must match  n_var_max_lndp in  stochy_nml_def
+    real(kind=kind_phys), pointer :: lndp_prt_list(:)  ! dimension here must match  n_var_max_lndp in  stochy_nml_def
                                               ! also previous code had dimension 5 for each pert, to allow
                                               ! multiple patterns. It wasn't fully coded (and wouldn't have worked
                                               ! with nlndp>1, so I just dropped it). If we want to code it properly,
@@ -2164,7 +2164,6 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: sfc_alb_uvvis_dif(:,:)    => null()  !<
     real (kind=kind_phys), pointer      :: toa_src_lw(:,:)           => null()  !<
     real (kind=kind_phys), pointer      :: toa_src_sw(:,:)           => null()  !<
-    character(len=128),    pointer      :: active_gases_array(:)     => null()  !< Character array for each trace gas name
     integer, pointer                    :: icseed_lw(:)              => null()  !< RRTMGP seed for RNG for longwave radiation
     integer, pointer                    :: icseed_sw(:)              => null()  !< RRTMGP seed for RNG for shortwave radiation
     type(proflw_type), pointer          :: flxprf_lw(:,:)            => null()  !< DDT containing RRTMGP longwave fluxes
@@ -2184,25 +2183,11 @@ module GFS_typedefs
     type(ty_gas_concs)                  :: gas_concentrations                   !< RRTMGP DDT
     type(ty_source_func_lw)             :: sources                              !< RRTMGP DDT
 
-    !-- HWRF physics: dry mixing ratios
-    real (kind=kind_phys), pointer :: qv_r(:,:)               => null()  !<
-    real (kind=kind_phys), pointer :: qc_r(:,:)               => null()  !<
-    real (kind=kind_phys), pointer :: qi_r(:,:)               => null()  !<
-    real (kind=kind_phys), pointer :: qr_r(:,:)               => null()  !<
-    real (kind=kind_phys), pointer :: qs_r(:,:)               => null()  !<
-    real (kind=kind_phys), pointer :: qg_r(:,:)               => null()  !<
-
     !-- GSL drag suite
     real (kind=kind_phys), pointer      :: varss(:)           => null()  !<
     real (kind=kind_phys), pointer      :: ocss(:)            => null()  !<
     real (kind=kind_phys), pointer      :: oa4ss(:,:)         => null()  !<
     real (kind=kind_phys), pointer      :: clxss(:,:)         => null()  !<
-
-    !-- Ferrier-Aligo MP scheme
-    real (kind=kind_phys), pointer :: f_rain     (:,:)   => null()  !<
-    real (kind=kind_phys), pointer :: f_ice      (:,:)   => null()  !<
-    real (kind=kind_phys), pointer :: f_rimef    (:,:)   => null()  !<
-    real (kind=kind_phys), pointer :: cwm        (:,:)   => null()  !<
 
     !-- 3D diagnostics
     integer :: rtg_ozone_index, rtg_tke_index
@@ -3009,7 +2994,7 @@ module GFS_typedefs
     endif
 
     !--- stochastic land perturbation option
-    if (Model%lndp_type .NE. 0) then
+    if (Model%lndp_type /= 0) then
       allocate (Coupling%sfc_wts  (IM,Model%n_var_lndp))
       Coupling%sfc_wts = clear_val
     endif
@@ -3974,6 +3959,13 @@ module GFS_typedefs
     Model%do_GPsw_Glw         = do_GPsw_Glw
     Model%active_gases        = active_gases
     Model%ngases              = nGases
+    if (Model%do_RRTMGP) then
+      allocate (Model%active_gases_array(Model%nGases))
+      ! Reset, will be populated by RRTMGP
+      do ipat=1,Model%nGases
+        Model%active_gases_array(ipat) = ''
+      enddo
+    endif
     Model%rrtmgp_root         = rrtmgp_root
     Model%lw_file_gas         = lw_file_gas
     Model%lw_file_clouds      = lw_file_clouds
@@ -4430,10 +4422,16 @@ module GFS_typedefs
     Model%use_zmtnblck     = use_zmtnblck
     Model%do_shum          = do_shum
     Model%do_skeb          = do_skeb
+    !--- stochastic surface perturbation options
     Model%lndp_type        = lndp_type
     Model%n_var_lndp       = n_var_lndp
     Model%lndp_each_step   = lndp_each_step
-
+    if (Model%lndp_type/=0) then
+      allocate(Model%lndp_var_list(Model%n_var_lndp))
+      allocate(Model%lndp_prt_list(Model%n_var_lndp))
+      Model%lndp_var_list(:) = ''
+      Model%lndp_prt_list(:) = clear_val
+    end if
     !--- cellular automata options
     ! force namelist constsitency
     allocate(Model%vfact_ca(levs))
@@ -7211,7 +7209,6 @@ module GFS_typedefs
        allocate (Interstitial%sfc_alb_uvvis_dif    (Model%rrtmgp_nBandsSW,IM))
        allocate (Interstitial%toa_src_sw           (IM,Model%rrtmgp_nGptsSW))
        allocate (Interstitial%toa_src_lw           (IM,Model%rrtmgp_nGptsLW))
-       allocate (Interstitial%active_gases_array   (Model%nGases))
        !
        !  gas_concentrations (ty_gas_concs)
        !
@@ -7338,21 +7335,6 @@ module GFS_typedefs
        allocate (Interstitial%cnv_fice   (IM,Model%levs))
        allocate (Interstitial%cnv_ndrop  (IM,Model%levs))
        allocate (Interstitial%cnv_nice   (IM,Model%levs))
-    end if
-    if (Model%imp_physics == Model%imp_physics_fer_hires) then
-    !--- if HWRF physics?
-       allocate (Interstitial%qv_r        (IM,Model%levs))
-       allocate (Interstitial%qc_r        (IM,Model%levs))
-       allocate (Interstitial%qi_r        (IM,Model%levs))
-       allocate (Interstitial%qr_r        (IM,Model%levs))
-       allocate (Interstitial%qs_r        (IM,Model%levs))
-       allocate (Interstitial%qg_r        (IM,Model%levs))
-
-    !--- Ferrier-Aligo MP scheme
-       allocate (Interstitial%f_ice       (IM,Model%levs))
-       allocate (Interstitial%f_rain      (IM,Model%levs))
-       allocate (Interstitial%f_rimef     (IM,Model%levs))
-       allocate (Interstitial%cwm         (IM,Model%levs))
     end if
     if (Model%do_shoc) then
        if (.not. associated(Interstitial%qrn))  allocate (Interstitial%qrn  (IM,Model%levs))
@@ -7619,22 +7601,6 @@ module GFS_typedefs
     Interstitial%tlyr         = clear_val
     Interstitial%tsfa         = clear_val
     Interstitial%tsfg         = clear_val
-
-! F-A scheme
-    if (Model%imp_physics == Model%imp_physics_fer_hires) then
-        Interstitial%qv_r       = clear_val
-        Interstitial%qc_r       = clear_val
-        Interstitial%qi_r       = clear_val
-        Interstitial%qr_r       = clear_val
-        Interstitial%qs_r       = clear_val
-        Interstitial%qg_r       = clear_val
-      if(Model%spec_adv) then
-        Interstitial%f_ice     = clear_val
-        Interstitial%f_rain    = clear_val
-        Interstitial%f_rimef   = clear_val
-        Interstitial%cwm       = clear_val
-      end if
-    end if
 
     if (Model%do_RRTMGP) then
       Interstitial%tracer               = clear_val
@@ -7946,12 +7912,6 @@ module GFS_typedefs
        Interstitial%cnv_fice  = clear_val
        Interstitial%cnv_ndrop = clear_val
        Interstitial%cnv_nice  = clear_val
-    end if
-    if (Model%imp_physics == Model%imp_physics_fer_hires .and. Model%spec_adv) then
-       Interstitial%f_ice     = clear_val
-       Interstitial%f_rain    = clear_val
-       Interstitial%f_rimef   = clear_val
-       Interstitial%cwm       = clear_val
     end if
     if (Model%do_shoc) then
        Interstitial%qrn       = clear_val
