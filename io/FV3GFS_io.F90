@@ -313,8 +313,10 @@ module FV3GFS_io_mod
        temp2d(i,j,89) = GFS_Data(nb)%Sfcprop%albdifvis_lnd(ix)
        temp2d(i,j,90) = GFS_Data(nb)%Sfcprop%albdifnir_lnd(ix)
        temp2d(i,j,91) = GFS_Data(nb)%Sfcprop%emis_lnd(ix)
+       temp2d(i,j,92) = GFS_Data(nb)%Sfcprop%emis_ice(ix)
+       temp2d(i,j,93) = GFS_Data(nb)%Sfcprop%sncovr_ice(ix)
 
-       idx_opt = 92
+       idx_opt = 93
        if (Model%use_cice_alb .or. Model%lsm == Model%lsm_ruc) then
          temp2d(i,j,idx_opt+1) = GFS_Data(nb)%Sfcprop%albdirvis_ice(ix)
          temp2d(i,j,idx_opt+2) = GFS_Data(nb)%Sfcprop%albdirnir_ice(ix)
@@ -385,18 +387,12 @@ module FV3GFS_io_mod
         temp2d(i,j,idx_opt+6)  = GFS_Data(nb)%Sfcprop%tsnow_ice(ix)
         temp2d(i,j,idx_opt+7)  = GFS_Data(nb)%Sfcprop%snowfallac_land(ix)
         temp2d(i,j,idx_opt+8)  = GFS_Data(nb)%Sfcprop%snowfallac_ice(ix)
-        temp2d(i,j,idx_opt+9)  = GFS_Data(nb)%Sfcprop%sncovr_ice(ix)
-        temp2d(i,j,idx_opt+10) = GFS_Data(nb)%Sfcprop%sfalb_lnd(ix)
-        temp2d(i,j,idx_opt+11) = GFS_Data(nb)%Sfcprop%sfalb_lnd_bck(ix)
-!       temp2d(i,j,idx_opt+16) = GFS_Data(nb)%Sfcprop%albdirvis_ice(ix)
-!       temp2d(i,j,idx_opt+17) = GFS_Data(nb)%Sfcprop%albdirnir_ice(ix)
-!       temp2d(i,j,idx_opt+18) = GFS_Data(nb)%Sfcprop%albdifvis_ice(ix)
-!       temp2d(i,j,idx_opt+19) = GFS_Data(nb)%Sfcprop%albdifnir_ice(ix)
-        temp2d(i,j,idx_opt+12) = GFS_Data(nb)%Sfcprop%sfalb_ice(ix)
-        temp2d(i,j,idx_opt+13) = GFS_Data(nb)%Sfcprop%emis_ice(ix)
-        idx_opt = idx_opt + 14
+        temp2d(i,j,idx_opt+9)  = GFS_Data(nb)%Sfcprop%sfalb_lnd(ix)
+        temp2d(i,j,idx_opt+10) = GFS_Data(nb)%Sfcprop%sfalb_lnd_bck(ix)
+        temp2d(i,j,idx_opt+11) = GFS_Data(nb)%Sfcprop%sfalb_ice(ix)
+        idx_opt = idx_opt + 11
         if (Model%rdlai) then
-          temp2d(i,j,idx_opt+23) = GFS_Data(nb)%Sfcprop%xlaixy(ix)
+          temp2d(i,j,idx_opt+1) = GFS_Data(nb)%Sfcprop%xlaixy(ix)
           idx_opt = idx_opt + 1
         endif
        endif
@@ -531,9 +527,9 @@ module FV3GFS_io_mod
 
     if (Model%lsm == Model%lsm_ruc .and. warm_start) then
       if(Model%rdlai) then
-        nvar_s2r = 15
+        nvar_s2r = 13
       else
-        nvar_s2r = 14
+        nvar_s2r = 12
       end if
       nvar_s3  = 5
     else
@@ -657,7 +653,7 @@ module FV3GFS_io_mod
       enddo
     enddo
 
-    nvar_s2m = 44
+    nvar_s2m = 48
     if (Model%use_cice_alb .or. Model%lsm == Model%lsm_ruc) then
       nvar_s2m = nvar_s2m + 4
 !     nvar_s2m = nvar_s2m + 5
@@ -848,13 +844,17 @@ module FV3GFS_io_mod
       sfc_name2(42) = 'albdifvis_lnd'
       sfc_name2(43) = 'albdifnir_lnd'
       sfc_name2(44) = 'emis_lnd'
+      sfc_name2(45) = 'emis_ice'
+      sfc_name2(46) = 'sncovr_ice'
+      sfc_name2(47) = 'snodi' ! snowd on ice portion of a cell
+      sfc_name2(48) = 'weasdi'! weasd on ice portion of a cell
 
       if (Model%use_cice_alb .or. Model%lsm == Model%lsm_ruc) then
-        sfc_name2(45) = 'albdirvis_ice'
-        sfc_name2(46) = 'albdifvis_ice'
-        sfc_name2(47) = 'albdirnir_ice'
-        sfc_name2(48) = 'albdifnir_ice'
-!       sfc_name2(49) = 'sfalb_ice'
+        sfc_name2(49) = 'albdirvis_ice'
+        sfc_name2(50) = 'albdifvis_ice'
+        sfc_name2(51) = 'albdirnir_ice'
+        sfc_name2(52) = 'albdifnir_ice'
+!       sfc_name2(53) = 'sfalb_ice'
       endif
 
       if(Model%cplwav) then
@@ -923,17 +923,11 @@ module FV3GFS_io_mod
         sfc_name2(nvar_s2m+25) = 'tsnow_ice'
         sfc_name2(nvar_s2m+26) = 'snowfall_acc_land'
         sfc_name2(nvar_s2m+27) = 'snowfall_acc_ice'
-        sfc_name2(nvar_s2m+28) = 'sncovr_ice'
-        sfc_name2(nvar_s2m+29) = 'sfalb_lnd'
-        sfc_name2(nvar_s2m+30) = 'sfalb_lnd_bck'
-!       sfc_name2(nvar_s2m+31) = 'albdirvis_ice'
-!       sfc_name2(nvar_s2m+32) = 'albdirnir_ice'
-!       sfc_name2(nvar_s2m+33) = 'albdifvis_ice'
-!       sfc_name2(nvar_s2m+34) = 'albdifnir_ice'
-        sfc_name2(nvar_s2m+31) = 'sfalb_ice'
-        sfc_name2(nvar_s2m+32) = 'emis_ice'
+        sfc_name2(nvar_s2m+28) = 'sfalb_lnd'
+        sfc_name2(nvar_s2m+29) = 'sfalb_lnd_bck'
+        sfc_name2(nvar_s2m+30) = 'sfalb_ice'
         if (Model%rdlai) then
-          sfc_name2(nvar_s2m+33) = 'lai'
+          sfc_name2(nvar_s2m+31) = 'lai'
         endif
       else if (Model%lsm == Model%lsm_ruc .and. Model%rdlai) then
         sfc_name2(nvar_s2m+19) = 'lai'
@@ -975,12 +969,14 @@ module FV3GFS_io_mod
         if (trim(sfc_name2(num)) == 'sncovr'.or. trim(sfc_name2(num)) == 'tsfcl' .or. trim(sfc_name2(num)) == 'zorll'   &
                                             .or. trim(sfc_name2(num)) == 'zorli' .or. trim(sfc_name2(num)) == 'zorlwav' &
                                             .or. trim(sfc_name2(num)) == 'snodl' .or. trim(sfc_name2(num)) == 'weasdl'  &
+                                            .or. trim(sfc_name2(num)) == 'snodi' .or. trim(sfc_name2(num)) == 'weasdi'  &
                                             .or. trim(sfc_name2(num)) == 'tsfc'  .or. trim(sfc_name2(num)) ==  'zorlw'  &
                                             .or. trim(sfc_name2(num)) == 'albdirvis_lnd' .or. trim(sfc_name2(num)) == 'albdirnir_lnd' &
                                             .or. trim(sfc_name2(num)) == 'albdifvis_lnd' .or. trim(sfc_name2(num)) == 'albdifnir_lnd' &
                                             .or. trim(sfc_name2(num)) == 'albdirvis_ice' .or. trim(sfc_name2(num)) == 'albdirnir_ice' &
                                             .or. trim(sfc_name2(num)) == 'albdifvis_ice' .or. trim(sfc_name2(num)) == 'albdifnir_ice' &
-                                            .or. trim(sfc_name2(num)) == 'emis_lnd' ) then
+                                            .or. trim(sfc_name2(num)) == 'emis_lnd'      .or. trim(sfc_name2(num)) == 'emis_ice'      &
+                                            .or. trim(sfc_name2(num)) == 'sncovr_ice') then
            if(is_lsoil) then
               call register_restart_field(Sfc_restart, sfc_name2(num), var2_p, dimensions=(/'lat','lon'/), is_optional=.true.)
            else
@@ -1173,13 +1169,17 @@ module FV3GFS_io_mod
         Sfcprop(nb)%albdirnir_lnd(ix) = sfc_var2(i,j,41)
         Sfcprop(nb)%albdifvis_lnd(ix) = sfc_var2(i,j,42)
         Sfcprop(nb)%albdifnir_lnd(ix) = sfc_var2(i,j,43)
-        Sfcprop(nb)%emis_lnd(ix)   = sfc_var2(i,j,44)
+        Sfcprop(nb)%emis_lnd(ix)      = sfc_var2(i,j,44)
+        Sfcprop(nb)%emis_ice(ix)      = sfc_var2(i,j,45)
+        Sfcprop(nb)%sncovr_ice(ix)    = sfc_var2(i,j,46)
+        Sfcprop(nb)%snodi(ix)         = sfc_var2(i,j,47)   !--- snodi (snowd on ice  portion of a cell)
+        Sfcprop(nb)%weasdi(ix)        = sfc_var2(i,j,48)   !--- weasdi (weasd on ice  portion of a cell)
         if (Model%use_cice_alb .or. Model%lsm == Model%lsm_ruc) then
-          Sfcprop(nb)%albdirvis_ice(ix) = sfc_var2(i,j,45)
-          Sfcprop(nb)%albdifvis_ice(ix) = sfc_var2(i,j,46)
-          Sfcprop(nb)%albdirnir_ice(ix) = sfc_var2(i,j,47)
-          Sfcprop(nb)%albdifnir_ice(ix) = sfc_var2(i,j,48)
-!         Sfcprop(nb)%sfalb_ice(ix)     = sfc_var2(i,j,49)
+          Sfcprop(nb)%albdirvis_ice(ix) = sfc_var2(i,j,49)
+          Sfcprop(nb)%albdifvis_ice(ix) = sfc_var2(i,j,50)
+          Sfcprop(nb)%albdirnir_ice(ix) = sfc_var2(i,j,51)
+          Sfcprop(nb)%albdifnir_ice(ix) = sfc_var2(i,j,52)
+!         Sfcprop(nb)%sfalb_ice(ix)     = sfc_var2(i,j,53)
         endif
         if(Model%cplwav) then
           Sfcprop(nb)%zorlwav(ix)  = sfc_var2(i,j,nvar_s2m) !--- (zorl from wave model)
@@ -1284,7 +1284,7 @@ module FV3GFS_io_mod
           endif
         endif
 
-        if (warm_start) then
+        if (warm_start .and. Model%kdt > 1) then
           Sfcprop(nb)%slmsk(ix)  = sfc_var2(i,j,1)    !--- slmsk
         endif
 
@@ -1344,17 +1344,11 @@ module FV3GFS_io_mod
           Sfcprop(nb)%tsnow_ice(ix)       = sfc_var2(i,j,nvar_s2m+25)
           Sfcprop(nb)%snowfallac_land(ix) = sfc_var2(i,j,nvar_s2m+26)
           Sfcprop(nb)%snowfallac_ice(ix)  = sfc_var2(i,j,nvar_s2m+27)
-          Sfcprop(nb)%sncovr_ice(ix)      = sfc_var2(i,j,nvar_s2m+28)
-          Sfcprop(nb)%sfalb_lnd(ix)       = sfc_var2(i,j,nvar_s2m+29)
-          Sfcprop(nb)%sfalb_lnd_bck(ix)   = sfc_var2(i,j,nvar_s2m+30)
-!         Sfcprop(nb)%albdirvis_ice(ix)   = sfc_var2(i,j,nvar_s2m+31)
-!         Sfcprop(nb)%albdirnir_ice(ix)   = sfc_var2(i,j,nvar_s2m+32)
-!         Sfcprop(nb)%albdifvis_ice(ix)   = sfc_var2(i,j,nvar_s2m+33)
-!         Sfcprop(nb)%albdifnir_ice(ix)   = sfc_var2(i,j,nvar_s2m+34)
-          Sfcprop(nb)%sfalb_ice(ix)       = sfc_var2(i,j,nvar_s2m+31)
-          Sfcprop(nb)%emis_ice(ix)        = sfc_var2(i,j,nvar_s2m+32)
+          Sfcprop(nb)%sfalb_lnd(ix)       = sfc_var2(i,j,nvar_s2m+28)
+          Sfcprop(nb)%sfalb_lnd_bck(ix)   = sfc_var2(i,j,nvar_s2m+29)
+          Sfcprop(nb)%sfalb_ice(ix)       = sfc_var2(i,j,nvar_s2m+30)
           if (Model%rdlai) then
-            Sfcprop(nb)%xlaixy(ix)        = sfc_var2(i,j,nvar_s2m+33)
+            Sfcprop(nb)%xlaixy(ix)        = sfc_var2(i,j,nvar_s2m+31)
           endif
         else if (Model%lsm == Model%lsm_ruc) then
           ! Initialize RUC snow cover on ice from snow cover
@@ -1522,8 +1516,29 @@ module FV3GFS_io_mod
       enddo
     endif
 
+    if (sfc_var2(i,j,45) < -9990.0_r8) then
+      if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing emis_ice')
+!$omp parallel do default(shared) private(nb, ix)
+      do nb = 1, Atm_block%nblks
+        do ix = 1, Atm_block%blksz(nb)
+          Sfcprop(nb)%emis_ice(ix) = 0.96
+        enddo
+      enddo
+    endif
+
+    if (sfc_var2(i,j,46) < -9990.0_r8 .and. Model%lsm /= Model%lsm_ruc) then
+      if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing sncovr_ice')
+!$omp parallel do default(shared) private(nb, ix)
+      do nb = 1, Atm_block%nblks
+        do ix = 1, Atm_block%blksz(nb)
+!         Sfcprop(nb)%sncovr_ice(ix) = Sfcprop(nb)%sncovr(ix)
+          Sfcprop(nb)%sncovr_ice(ix) = zero
+        enddo
+      enddo
+    endif
+
     if (Model%use_cice_alb) then
-      if (sfc_var2(i,j,45) < -9990.0_r8) then
+      if (sfc_var2(i,j,49) < -9990.0_r8) then
 !$omp parallel do default(shared) private(nb, ix)
         do nb = 1, Atm_block%nblks
           do ix = 1, Atm_block%blksz(nb)
@@ -1633,7 +1648,7 @@ module FV3GFS_io_mod
     integer :: is, ie
     integer, allocatable, dimension(:) :: buffer
 
-    nvar2m = 44
+    nvar2m = 48
     if (Model%use_cice_alb .or. Model%lsm == Model%lsm_ruc) then
       nvar2m = nvar2m + 4
 !     nvar2m = nvar2m + 5
@@ -1642,9 +1657,9 @@ module FV3GFS_io_mod
     nvar2o = 18
     if (Model%lsm == Model%lsm_ruc) then
       if (Model%rdlai) then
-        nvar2r = 15
+        nvar2r = 13
       else
-        nvar2r = 14
+        nvar2r = 12
       endif
       nvar3  = 5
     else
@@ -1823,13 +1838,17 @@ module FV3GFS_io_mod
       sfc_name2(42) = 'albdifvis_lnd'
       sfc_name2(43) = 'albdifnir_lnd'
       sfc_name2(44) = 'emis_lnd'
+      sfc_name2(45) = 'emis_ice'
+      sfc_name2(46) = 'sncovr_ice'
+      sfc_name2(47) = 'snodi' !snowd on ice portion of a cell
+      sfc_name2(48) = 'weasdi'!weasd on ice portion of a cell
 
       if (Model%use_cice_alb .or. Model%lsm == Model%lsm_ruc) then
-        sfc_name2(45) = 'albdirvis_ice'
-        sfc_name2(46) = 'albdifvis_ice'
-        sfc_name2(47) = 'albdirnir_ice'
-        sfc_name2(48) = 'albdifnir_ice'
-!       sfc_name2(49) = 'sfalb_ice'
+        sfc_name2(49) = 'albdirvis_ice'
+        sfc_name2(50) = 'albdifvis_ice'
+        sfc_name2(51) = 'albdirnir_ice'
+        sfc_name2(52) = 'albdifnir_ice'
+!       sfc_name2(53) = 'sfalb_ice'
       endif
 
       if (Model%cplwav) then
@@ -1864,17 +1883,11 @@ module FV3GFS_io_mod
         sfc_name2(nvar2m+25) = 'tsnow_ice'
         sfc_name2(nvar2m+26) = 'snowfall_acc_land'
         sfc_name2(nvar2m+27) = 'snowfall_acc_ice'
-        sfc_name2(nvar2m+28) = 'sncovr_ice'
-        sfc_name2(nvar2m+29) = 'sfalb_lnd'
-        sfc_name2(nvar2m+30) = 'sfalb_lnd_bck'
-!       sfc_name2(nvar2m+31) = 'albdirvis_ice'
-!       sfc_name2(nvar2m+32) = 'albdirnir_ice'
-!       sfc_name2(nvar2m+33) = 'albdifvis_ice'
-!       sfc_name2(nvar2m+34) = 'albdifnir_ice'
-        sfc_name2(nvar2m+31) = 'sfalb_ice'
-        sfc_name2(nvar2m+32) = 'emis_ice'
+        sfc_name2(nvar2m+28) = 'sfalb_lnd'
+        sfc_name2(nvar2m+29) = 'sfalb_lnd_bck'
+        sfc_name2(nvar2m+30) = 'sfalb_ice'
         if (Model%rdlai) then
-          sfc_name2(nvar2m+33) = 'lai'
+          sfc_name2(nvar2m+31) = 'lai'
         endif
       else if(Model%lsm == Model%lsm_noahmp) then
         ! Only needed when Noah MP LSM is used - 29 2D
@@ -1916,12 +1929,14 @@ module FV3GFS_io_mod
       if (trim(sfc_name2(num)) == 'sncovr' .or. trim(sfc_name2(num)) == 'tsfcl' .or.trim(sfc_name2(num))  == 'zorll'   &
            .or. trim(sfc_name2(num)) == 'zorli' .or.trim(sfc_name2(num))  == 'zorlwav' &
            .or. trim(sfc_name2(num)) == 'snodl' .or. trim(sfc_name2(num)) == 'weasdl'  &
+           .or. trim(sfc_name2(num)) == 'snodi' .or. trim(sfc_name2(num)) == 'weasdi'  &
            .or. trim(sfc_name2(num)) == 'tsfc'  .or. trim(sfc_name2(num)) ==  'zorlw'  &
            .or. trim(sfc_name2(num)) == 'albdirvis_lnd' .or. trim(sfc_name2(num)) == 'albdirnir_lnd' &
            .or. trim(sfc_name2(num)) == 'albdifvis_lnd' .or. trim(sfc_name2(num)) == 'albdifnir_lnd' &
            .or. trim(sfc_name2(num)) == 'albdirvis_ice' .or. trim(sfc_name2(num)) == 'albdirnir_ice' &
            .or. trim(sfc_name2(num)) == 'albdifvis_ice' .or. trim(sfc_name2(num)) == 'albdifnir_ice' &
-           .or. trim(sfc_name2(num)) == 'emis_lnd' ) then
+           .or. trim(sfc_name2(num)) == 'emis_lnd'      .or. trim(sfc_name2(num)) == 'emis_ice'      &
+           .or. trim(sfc_name2(num)) == 'sncovr_ice' ) then
          call register_restart_field(Sfc_restart, sfc_name2(num), var2_p, dimensions=(/'xaxis_1','yaxis_1','Time   '/), is_optional=.true.)
       else
          call register_restart_field(Sfc_restart, sfc_name2(num), var2_p, dimensions=(/'xaxis_1', 'yaxis_1', 'Time   '/) )
@@ -2066,12 +2081,16 @@ module FV3GFS_io_mod
         sfc_var2(i,j,42) = Sfcprop(nb)%albdifvis_lnd(ix)
         sfc_var2(i,j,43) = Sfcprop(nb)%albdifnir_lnd(ix)
         sfc_var2(i,j,44) = Sfcprop(nb)%emis_lnd(ix)
+        sfc_var2(i,j,45) = Sfcprop(nb)%emis_ice(ix)
+        sfc_var2(i,j,46) = Sfcprop(nb)%sncovr_ice(ix)
+        sfc_var2(i,j,47) = Sfcprop(nb)%snodi(ix)  !--- snodi (snowd on ice)
+        sfc_var2(i,j,48) = Sfcprop(nb)%weasdi(ix) !--- weasdi (weasd on ice)
         if (Model%use_cice_alb .or. Model%lsm == Model%lsm_ruc) then
-          sfc_var2(i,j,45) = Sfcprop(nb)%albdirvis_ice(ix)
-          sfc_var2(i,j,46) = Sfcprop(nb)%albdifvis_ice(ix)
-          sfc_var2(i,j,47) = Sfcprop(nb)%albdirnir_ice(ix)
-          sfc_var2(i,j,48) = Sfcprop(nb)%albdifnir_ice(ix)
-!         sfc_var2(i,j,49) = Sfcprop(nb)%sfalb_ice(ix)
+          sfc_var2(i,j,49) = Sfcprop(nb)%albdirvis_ice(ix)
+          sfc_var2(i,j,50) = Sfcprop(nb)%albdifvis_ice(ix)
+          sfc_var2(i,j,51) = Sfcprop(nb)%albdirnir_ice(ix)
+          sfc_var2(i,j,52) = Sfcprop(nb)%albdifnir_ice(ix)
+!         sfc_var2(i,j,53) = Sfcprop(nb)%sfalb_ice(ix)
         endif
         if (Model%cplwav) then
           sfc_var2(i,j,nvar2m) = Sfcprop(nb)%zorlwav(ix) !--- zorlwav (zorl from wav)
@@ -2109,17 +2128,11 @@ module FV3GFS_io_mod
           sfc_var2(i,j,nvar2m+25) = Sfcprop(nb)%tsnow_ice(ix)
           sfc_var2(i,j,nvar2m+26) = Sfcprop(nb)%snowfallac_land(ix)
           sfc_var2(i,j,nvar2m+27) = Sfcprop(nb)%snowfallac_ice(ix)
-          sfc_var2(i,j,nvar2m+28) = Sfcprop(nb)%sncovr_ice(ix)
-          sfc_var2(i,j,nvar2m+29) = Sfcprop(nb)%sfalb_lnd(ix)
-          sfc_var2(i,j,nvar2m+30) = Sfcprop(nb)%sfalb_lnd_bck(ix)
-!         sfc_var2(i,j,nvar2m+31) = Sfcprop(nb)%albdirvis_ice(ix)
-!         sfc_var2(i,j,nvar2m+32) = Sfcprop(nb)%albdirnir_ice(ix)
-!         sfc_var2(i,j,nvar2m+33) = Sfcprop(nb)%albdifvis_ice(ix)
-!         sfc_var2(i,j,nvar2m+34) = Sfcprop(nb)%albdifnir_ice(ix)
-          sfc_var2(i,j,nvar2m+31) = Sfcprop(nb)%sfalb_ice(ix)
-          sfc_var2(i,j,nvar2m+32) = Sfcprop(nb)%emis_ice(ix)
+          sfc_var2(i,j,nvar2m+28) = Sfcprop(nb)%sfalb_lnd(ix)
+          sfc_var2(i,j,nvar2m+29) = Sfcprop(nb)%sfalb_lnd_bck(ix)
+          sfc_var2(i,j,nvar2m+30) = Sfcprop(nb)%sfalb_ice(ix)
           if (Model%rdlai) then
-            sfc_var2(i,j,nvar2m+33) = Sfcprop(nb)%xlaixy(ix)
+            sfc_var2(i,j,nvar2m+31) = Sfcprop(nb)%xlaixy(ix)
           endif
         else if (Model%lsm == Model%lsm_noahmp) then
           !--- Extra Noah MP variables
@@ -2156,6 +2169,7 @@ module FV3GFS_io_mod
 
         do k = 1,Model%kice
           sfc_var3ice(i,j,k) = Sfcprop(nb)%tiice(ix,k) !--- internal ice temperature
+          if (sfc_var3ice(i,j,k) < one) sfc_var3ice(i,j,k) = zero
         enddo
 
         if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp .or. Model%lsm == Model%lsm_noah_wrfv4) then
