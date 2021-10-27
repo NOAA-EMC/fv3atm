@@ -89,6 +89,9 @@ if(MULTI_GASES)
   add_definitions(-DMULTI_GASES)
 endif()
 
+if(IDEA_PHYS)
+  add_definitions(-DIDEA_PHYS)
+endif()
 #------------------------------------------------------------------------------
 # Build CCPP framework and physics
 
