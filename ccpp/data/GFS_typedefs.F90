@@ -1,4 +1,3 @@
-#undef MULTI_GASES
 
 module GFS_typedefs
 
@@ -827,6 +826,9 @@ module GFS_typedefs
     logical              :: ext_diag_thompson !< flag for extended diagnostic output from Thompson
     integer              :: thompson_ext_ndiag3d=37 !< number of 3d arrays for extended diagnostic output from Thompson
     real(kind=kind_phys) :: dt_inner        !< time step for the inner loop in s
+    logical              :: sedi_semi       !< flag for semi Lagrangian sedi of rain
+    logical              :: sedi_semi_update!< flag for v update in semi Lagrangian sedi of rain
+    logical              :: sedi_semi_decfl !< flag for interation with semi Lagrangian sedi of rain
 
     !--- GFDL microphysical paramters
     logical              :: lgfdlmprad      !< flag for GFDL mp scheme and radiation consistency
@@ -2185,10 +2187,10 @@ module GFS_typedefs
     type(ty_source_func_lw)             :: sources                              !< RRTMGP DDT
 
     !-- GSL drag suite
-    real (kind=kind_phys), pointer :: varss(:)           => null()  !<
-    real (kind=kind_phys), pointer :: ocss(:)            => null()  !<
-    real (kind=kind_phys), pointer :: oa4ss(:,:)         => null()  !<
-    real (kind=kind_phys), pointer :: clxss(:,:)         => null()  !<
+    real (kind=kind_phys), pointer      :: varss(:)           => null()  !<
+    real (kind=kind_phys), pointer      :: ocss(:)            => null()  !<
+    real (kind=kind_phys), pointer      :: oa4ss(:,:)         => null()  !<
+    real (kind=kind_phys), pointer      :: clxss(:,:)         => null()  !<
 
     !-- 3D diagnostics
     integer :: rtg_ozone_index, rtg_tke_index
@@ -3237,6 +3239,9 @@ module GFS_typedefs
     real(kind=kind_phys) :: ttendlim       = -999.0             !< temperature tendency limiter, set to <0 to deactivate
     logical              :: ext_diag_thompson = .false.         !< flag for extended diagnostic output from Thompson
     real(kind=kind_phys) :: dt_inner       = -999.0             !< time step for the inner loop 
+    logical              :: sedi_semi      = .false.            !< flag for semi Lagrangian sedi of rain
+    logical              :: sedi_semi_update = .false.          !< flag for v update in semi Lagrangian sedi of rain
+    logical              :: sedi_semi_decfl = .false.           !< flag for interation with semi Lagrangian sedi of rain
 
     !--- GFDL microphysical parameters
     logical              :: lgfdlmprad     = .false.            !< flag for GFDLMP radiation interaction
@@ -3572,7 +3577,14 @@ module GFS_typedefs
                           !--- coupling parameters
                                cplflx, cplice, cplocn2atm, cplwav, cplwav2atm, cplchm,      &
                                cpl_imp_mrg, cpl_imp_dbg,                                    &
-                               use_cice_alb, lsidea,                                        &
+                               use_cice_alb,                                                &
+#ifdef IDEA_PHYS
+                               lsidea, weimer_model, f107_kp_size, f107_kp_interval,        &
+                               f107_kp_skip_size, f107_kp_data_size, f107_kp_read_in_start, &
+                               ipe_to_wam_coupling,                                         &
+#else
+                                lsidea,                                                     &
+#endif
                           !--- radiation parameters
                                fhswr, fhlwr, levr, nfxr, iaerclm, iflip, isol, ico2, ialb,  &
                                isot, iems, iaer, icliq_sw, iovr, ictm, isubc_sw,            &
@@ -3598,6 +3610,7 @@ module GFS_typedefs
                                mg_alf,   mg_qcmin, mg_do_ice_gmao, mg_do_liq_liu,           &
                                ltaerosol, lradar, nsradar_reset, lrefres, ttendlim,         &
                                ext_diag_thompson, dt_inner, lgfdlmprad,                     &
+                               sedi_semi, sedi_semi_update, sedi_semi_decfl,                &
                           !--- max hourly
                                avg_max_length,                                              &
                           !--- land/surface model control
@@ -3872,6 +3885,10 @@ module GFS_typedefs
       print *,' LSIDEA is active but needs to be reworked for FV3 - shutting down'
       stop
     endif
+#ifdef IDEA_PHYS
+!--- integrated dynamics through earth's atmosphere
+    Model%weimer_model     = weimer_model
+#endif
 
 !--- calendars and time parameters and activation triggers
     Model%dtp              = dt_phys
@@ -4068,6 +4085,9 @@ module GFS_typedefs
     else
       Model%dt_inner       = Model%dtp
     endif
+    Model%sedi_semi        = sedi_semi
+    Model%sedi_semi_update = sedi_semi_update
+    Model%sedi_semi_decfl  = sedi_semi_decfl
 !--- F-A MP parameters
     Model%rhgrd            = rhgrd
     Model%spec_adv         = spec_adv
@@ -4472,11 +4492,13 @@ module GFS_typedefs
     Model%tracer_names(:)  = tracer_names(:)
     Model%ntqv             = 1
 #ifdef MULTI_GASES
-    Model%nto              = get_tracer_index(Model%tracer_names, 'spfo',        Model%me, Model%master, Model%debug)
-    Model%nto2             = get_tracer_index(Model%tracer_names, 'spfo2',       Model%me, Model%master, Model%debug)
-    Model%ntoz             = get_tracer_index(Model%tracer_names, 'spfo3',       Model%me, Model%master, Model%debug)
+    Model%nto              = get_tracer_index(Model%tracer_names, 'spo',        Model%me, Model%master, Model%debug)
+    Model%nto2             = get_tracer_index(Model%tracer_names, 'spo2',       Model%me, Model%master, Model%debug)
+    Model%ntoz             = get_tracer_index(Model%tracer_names, 'spo3',       Model%me, Model%master, Model%debug)
 #else
     Model%ntoz             = get_tracer_index(Model%tracer_names, 'o3mr',       Model%me, Model%master, Model%debug)
+    if( Model%ntoz <= 0 )  &
+    Model%ntoz             =  get_tracer_index(Model%tracer_names, 'spo3',       Model%me, Model%master, Model%debug)  
 #endif
     Model%ntcw             = get_tracer_index(Model%tracer_names, 'liq_wat',    Model%me, Model%master, Model%debug)
     Model%ntiw             = get_tracer_index(Model%tracer_names, 'ice_wat',    Model%me, Model%master, Model%debug)
@@ -5153,6 +5175,9 @@ module GFS_typedefs
                                           ' ttendlim =',Model%ttendlim, &
                                           ' ext_diag_thompson =',Model%ext_diag_thompson, &
                                           ' dt_inner =',Model%dt_inner, &
+                                          ' sedi_semi=',Model%sedi_semi, & 
+                                          ' sedi_semi_update=',sedi_semi_update, & 
+                                          ' sedi_semi_decfl=',sedi_semi_decfl, &
                                           ' effr_in =',Model%effr_in, &
                                           ' lradar =',Model%lradar, &
                                           ' nsradar_reset =',Model%nsradar_reset, &
@@ -5482,7 +5507,6 @@ module GFS_typedefs
       print *, ' cpl_imp_mrg       : ', Model%cpl_imp_mrg
       print *, ' cpl_imp_dbg       : ', Model%cpl_imp_dbg
       print *, ' '
-      print *, 'integrated dynamics through earth atmosphere'
       print *, ' lsidea            : ', Model%lsidea
       print *, ' '
       print *, 'calendars and time parameters and activation triggers'
@@ -5571,6 +5595,9 @@ module GFS_typedefs
         print *, ' ttendlim          : ', Model%ttendlim
         print *, ' ext_diag_thompson : ', Model%ext_diag_thompson
         print *, ' dt_inner          : ', Model%dt_inner
+        print *, ' sedi_semi         : ', Model%sedi_semi
+        print *, ' sedi_semi_update  : ', Model%sedi_semi_update
+        print *, ' sedi_semi_decfl  : ', Model%sedi_semi_decfl
         print *, ' '
       endif
       if (Model%imp_physics == Model%imp_physics_mg) then
