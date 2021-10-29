@@ -45,9 +45,7 @@
       <scheme>sfc_nst_pre</scheme>
       <scheme>sfc_nst</scheme>
       <scheme>sfc_nst_post</scheme>
-      <scheme>sfc_noah_wrfv4_pre</scheme>
-      <scheme>sfc_noah_wrfv4</scheme>
-      <scheme>sfc_noah_wrfv4_post</scheme>
+      <scheme>noahmpdrv</scheme>
       <scheme>sfc_sice</scheme>
       <scheme>GFS_surface_loop_control_part2</scheme>
     </subcycle>
