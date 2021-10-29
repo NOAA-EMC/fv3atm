@@ -180,8 +180,6 @@ SCHEME_FILES = [
     'physics/physics/sfc_cice.f',
     'physics/physics/sfc_diff.f',
     'physics/physics/sfc_drv.f',
-    'physics/physics/sfc_noah_wrfv4_interstitial.F90',
-    'physics/physics/sfc_noah_wrfv4.F90',
     'physics/physics/sfc_noahmp_drv.F90',
     'physics/physics/flake_driver.F90',
     'physics/physics/sfc_nst.f',
