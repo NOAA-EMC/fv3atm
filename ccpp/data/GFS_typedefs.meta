@@ -678,7 +678,6 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  optional = F
   active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme)
 [sfalb_ice]
   standard_name = surface_diffused_shortwave_albedo_over_ice
@@ -5429,72 +5428,54 @@
   units = flag
   dimensions = ()
   type = logical
-  intent = in
-  optional = F
 [do_ugwp_v0_orog_only]
   standard_name = flag_for_ugwp_version_0_orographic_gwd
   long_name = flag to activate ver 0 CIRES UGWP - orographic GWD only
   units = flag
   dimensions = ()
   type = logical
-  intent = in
-  optional = F
 [do_ugwp_v0_nst_only]
   standard_name = flag_for_ugwp_version_0_nonorographic_gwd
   long_name = flag to activate ver 0 CIRES UGWP - non-stationary GWD only
   units = flag
   dimensions = ()
   type = logical
-  intent = in
-  optional = F
 [do_gsl_drag_ls_bl]
   standard_name = flag_for_gsl_drag_suite_large_scale_orographic_and_blocking_drag
   long_name = flag to activate GSL drag suite - large-scale GWD and blocking
   units = flag
   dimensions = ()
   type = logical
-  intent = in
-  optional = F
 [do_gsl_drag_ss]
   standard_name = flag_for_gsl_drag_suite_small_scale_orographic_drag
   long_name = flag to activate GSL drag suite - small-scale GWD
   units = flag
   dimensions = ()
   type = logical
-  intent = in
-  optional = F
 [do_gsl_drag_tofd]
   standard_name = flag_for_gsl_drag_suite_turbulent_orographic_form_drag
   long_name = flag to activate GSL drag suite - turb orog form drag
   units = flag
   dimensions = ()
   type = logical
-  intent = in
-  optional = F
 [do_ugwp_v1]
   standard_name = flag_for_ugwp_version_1
   long_name = flag to activate ver 1 CIRES UGWP
   units = flag
   dimensions = ()
   type = logical
-  intent = in
-  optional = F
 [do_ugwp_v1_orog_only]
   standard_name = flag_for_ugwp_version_1_orographic_gwd
   long_name = flag to activate ver 1 CIRES UGWP - orographic GWD only
   units = flag
   dimensions = ()
   type = logical
-  intent = in
-  optional = F
 [do_ugwp_v1_w_gsldrag]
   standard_name = flag_for_ugwp_version_1_nonorographic_gwd
   long_name = flag to activate ver 1 CIRES UGWP - with OGWD of GSL
   units = flag
   dimensions = ()
   type = logical
-  intent = in
-  optional = F
 [lmfdeep2]
   standard_name = flag_for_scale_aware_mass_flux_deep_convection_for_radiation
   long_name = flag for some scale-aware mass-flux convection scheme active
@@ -9831,7 +9812,6 @@
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
   kind = kind_phys
-  optional = F
   active = (flag_for_rrtmgp_radiation_scheme)
 [q_lay]
   standard_name = water_vapor_mixing_ratio
@@ -9840,7 +9820,6 @@
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
   kind = kind_phys
-  optional = F
   active = (flag_for_rrtmgp_radiation_scheme)
 [p_lay]
   standard_name = air_pressure_at_layer_for_RRTMGP
