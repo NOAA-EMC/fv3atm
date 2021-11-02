@@ -1,12 +1,12 @@
 [submodule "atmos_cubed_sphere"]
-	path = atmos_cubed_sphere
-	url = https://github.com/hafs-community/GFDL_atmos_cubed_sphere
-	branch = support/HAFS
+  path = atmos_cubed_sphere
+  url = https://github.com/hafs-community/GFDL_atmos_cubed_sphere
+  branch = support/HAFS
 [submodule "ccpp/framework"]
-	path = ccpp/framework
-	url = https://github.com/NCAR/ccpp-framework
-	branch = main
+  path = ccpp/framework
+  url = https://github.com/NCAR/ccpp-framework
+  branch = main
 [submodule "ccpp/physics"]
-	path = ccpp/physics
-	url = https://github.com/NCAR/ccpp-physics
-	branch = main
+  path = ccpp/physics
+  url = https://github.com/NCAR/ccpp-physics
+  branch = main

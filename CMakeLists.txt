@@ -6,103 +6,15 @@
 add_subdirectory(ccpp)
 
 ###############################################################################
-### fv3dycore
+### fv3 dynamical core
 ###############################################################################
-list(APPEND _fv3dycore_srcs
-  atmos_cubed_sphere/model/a2b_edge.F90
-  atmos_cubed_sphere/model/multi_gases.F90
-  atmos_cubed_sphere/model/boundary.F90
-  atmos_cubed_sphere/model/dyn_core.F90
-  atmos_cubed_sphere/model/fv_arrays.F90
-  atmos_cubed_sphere/model/fv_control.F90
-  atmos_cubed_sphere/model/fv_dynamics.F90
-  atmos_cubed_sphere/model/fv_fill.F90
-  atmos_cubed_sphere/model/fv_grid_utils.F90
-  atmos_cubed_sphere/model/fv_mapz.F90
-  atmos_cubed_sphere/model/fv_nesting.F90
-  atmos_cubed_sphere/model/fv_regional_bc.F90
-  atmos_cubed_sphere/model/fv_sg.F90
-  atmos_cubed_sphere/model/fv_tracer2d.F90
-  atmos_cubed_sphere/model/fv_update_phys.F90
-  atmos_cubed_sphere/model/sw_core.F90
-  atmos_cubed_sphere/model/tp_core.F90
-  atmos_cubed_sphere/model/nh_core.F90
-  atmos_cubed_sphere/model/nh_utils.F90
-  atmos_cubed_sphere/tools/coarse_grained_diagnostics.F90
-  atmos_cubed_sphere/tools/coarse_grained_restart_files.F90
-  atmos_cubed_sphere/tools/coarse_graining.F90
-  atmos_cubed_sphere/tools/external_ic.F90
-  atmos_cubed_sphere/tools/external_sst.F90
-  atmos_cubed_sphere/tools/fv_diag_column.F90
-  atmos_cubed_sphere/tools/fv_diagnostics.F90
-  atmos_cubed_sphere/tools/fv_eta.F90
-  atmos_cubed_sphere/tools/fv_grid_tools.F90
-  atmos_cubed_sphere/tools/fv_io.F90
-  atmos_cubed_sphere/tools/fv_mp_mod.F90
-  atmos_cubed_sphere/tools/fv_nudge.F90
-  atmos_cubed_sphere/tools/fv_treat_da_inc.F90
-  atmos_cubed_sphere/tools/fv_iau_mod.F90
-  atmos_cubed_sphere/tools/fv_restart.F90
-  atmos_cubed_sphere/tools/fv_surf_map.F90
-  atmos_cubed_sphere/tools/fv_timing.F90
-  atmos_cubed_sphere//tools/init_hydro.F90
-  atmos_cubed_sphere/tools/sim_nc_mod.F90
-  atmos_cubed_sphere/tools/sorted_index.F90
-  atmos_cubed_sphere/tools/test_cases.F90
-  atmos_cubed_sphere/driver/fvGFS/DYCORE_typedefs.F90
-  atmos_cubed_sphere/driver/fvGFS/fv_nggps_diag.F90
-  atmos_cubed_sphere/driver/fvGFS/atmosphere.F90)
 
-add_library(fv3dycore ${_fv3dycore_srcs})
-
-list(APPEND _fv3dycore_defs_private SPMD
-                                    use_WRTCOMP
-                                    GFS_PHYS
-                                    GFS_TYPES
-                                    USE_GFSL63
-                                    MOIST_CAPPA
-                                    INTERNAL_FILE_NML
-                                    ENABLE_QUAD_PRECISION
-                                    USE_COND)
-
-if(MULTI_GASES)
-  list(APPEND _fv3dycore_defs_private MULTI_GASES)
-endif()
-
-if(32BIT)
-  list(APPEND _fv3dycore_defs_private OVERLOAD_R4
-                                      OVERLOAD_R8)
-endif()
-
-if(OPENMP)
-  list(APPEND _fv3dycore_defs_private OPENMP)
-endif()
-
-set_property(SOURCE atmos_cubed_sphere/model/nh_utils.F90 APPEND_STRING PROPERTY COMPILE_FLAGS "${FAST}")
-set_property(SOURCE atmos_cubed_sphere/model/fv_mapz.F90  APPEND_STRING PROPERTY COMPILE_FLAGS "${FAST}")
-
-set_target_properties(fv3dycore PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mod)
-target_include_directories(fv3dycore INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/mod>
-                                               $<INSTALL_INTERFACE:mod>)
-
-target_compile_definitions(fv3dycore PRIVATE "${_fv3dycore_defs_private}")
-
-#  So much for being consistent:
-# atmos_cubed_sphere/tools/fv_diagnostics.F90: #include <fv_diagnostics.h>
-# atmos_cubed_sphere/tools/fv_eta.F90:         #include <tools/fv_eta.h>
-target_include_directories(fv3dycore PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/atmos_cubed_sphere
-                                             ${CMAKE_CURRENT_SOURCE_DIR}/atmos_cubed_sphere/tools)
-
-target_link_libraries(fv3dycore PUBLIC fms
-                                       fv3ccpp
-                                       esmf)
-if(OPENMP)
-  target_link_libraries(fv3dycore PUBLIC OpenMP::OpenMP_Fortran)
-endif()
-
-# This should not be necessary once framework and physics targets define BUILD_INTERFACE
-target_include_directories(fv3dycore PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/ccpp/framework/src
-                                             ${CMAKE_CURRENT_BINARY_DIR}/ccpp/physics)
+# These ifdefs need to be turned ON in the dycore.
+set(use_WRTCOMP ON)
+set(GFS_PHYS    ON)
+set(GFS_TYPES   ON)
+set(USE_GFSL63  ON)
+add_subdirectory(atmos_cubed_sphere)
 
 ###############################################################################
 ### fv3atm
@@ -136,6 +48,8 @@ add_library(fv3atm
   ${POST_SRC}
 )
 
+add_dependencies(fv3atm fv3 fv3ccpp stochastic_physics)
+
 list(APPEND _fv3atm_defs_private GFS_PHYS
                                  INTERNAL_FILE_NML
                                  use_WRTCOMP)
@@ -146,10 +60,11 @@ set_target_properties(fv3atm PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT
 target_include_directories(fv3atm INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/mod>
                                             $<INSTALL_INTERFACE:mod>)
 
-# This should not be necessary once framework and physics targets define BUILD_INTERFACE
-target_include_directories(fv3atm PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/ccpp/physics)
+if(MULTI_GASES)
+  list(APPEND _fv3atm_defs_private MULTI_GASES)
+endif()
 
-target_link_libraries(fv3atm PUBLIC fv3dycore
+target_link_libraries(fv3atm PUBLIC fv3
                                     fv3ccpp
                                     stochastic_physics
                                     fms)
@@ -171,7 +86,7 @@ endif()
 ### Install
 ###############################################################################
 install(
-  TARGETS fv3atm fv3dycore fv3ccpp
+  TARGETS fv3atm
   EXPORT fv3atm-config
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib)

@@ -423,9 +423,9 @@ subroutine atmos_timestep_diagnostics(Atmos)
       if(.not. GFS_control%first_time_step) then
         pmaxloc = 0.0d0
         recvbuf = 0.0d0
-        psum = 0.0d0
-        pcount = 0.0d0
-        maxabs = 0.0d0
+        psum    = 0.0d0
+        pcount  = 0.0d0
+        maxabs  = 0.0d0
 
         ! Put pgr stats in pmaxloc, psum, and pcount:
         pmaxloc(1) = GFS_Control%tile_num
@@ -434,11 +434,11 @@ subroutine atmos_timestep_diagnostics(Atmos)
           do i=1,count
             pdiff = GFS_data(nb)%Statein%pgr(i)-GFS_data(nb)%Intdiag%old_pgr(i)
             adiff = abs(pdiff)
-            psum = psum+adiff
+            psum  = psum + adiff
             if(adiff>=maxabs) then
               maxabs=adiff
-              pmaxloc(2:3)=(/ ATM_block%index(nb)%ii(i), ATM_block%index(nb)%jj(i) /)
-              pmaxloc(4:7)=(/ pdiff, GFS_data(nb)%Statein%pgr(i), &
+              pmaxloc(2:3) = (/ ATM_block%index(nb)%ii(i), ATM_block%index(nb)%jj(i) /)
+              pmaxloc(4:7) = (/ pdiff, GFS_data(nb)%Statein%pgr(i), &
                    GFS_data(nb)%Grid%xlat(i), GFS_data(nb)%Grid%xlon(i) /)
             endif
           enddo
@@ -685,8 +685,8 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
                               GFS_data%Coupling, GFS_data%Grid, GFS_data%Tbd, GFS_data%Cldprop,  GFS_data%Radtend, &
                               GFS_data%IntDiag, Init_parm, GFS_Diag)
    call FV3GFS_restart_read (GFS_data, GFS_restart_var, Atm_block, GFS_control, Atmos%domain, Atm(mygrid)%flagstruct%warm_start)
-   if(GFS_control%ca_sgs)then
-      call read_ca_restart (Atmos%domain,GFS_control%scells)
+   if(GFS_control%do_ca .and. Atm(mygrid)%flagstruct%warm_start)then
+      call read_ca_restart (Atmos%domain,GFS_control%scells,GFS_control%nca,GFS_control%ncells_g,GFS_control%nca_g)
    endif
    ! Populate the GFS_data%Statein container with the prognostic state
    ! in Atm_block, which contains the initial conditions/restart data.
@@ -913,13 +913,14 @@ subroutine update_atmos_model_state (Atmos, rc)
       call FV3GFS_diag_output(Atmos%Time, GFS_Diag, Atm_block, GFS_control%nx, GFS_control%ny, &
                             GFS_control%levs, 1, 1, 1.0_GFS_kind_phys, time_int, time_intfull, &
                             GFS_control%fhswr, GFS_control%fhlwr)
-      if (nint(GFS_control%fhzero) > 0) then
-        if (mod(isec,3600*nint(GFS_control%fhzero)) == 0) diag_time = Atmos%Time
-      else
-        if (mod(isec,nint(3600*GFS_control%fhzero)) == 0) diag_time = Atmos%Time
-      endif
-      call diag_send_complete_instant (Atmos%Time)
     endif
+    if (nint(GFS_control%fhzero) > 0) then
+      if (mod(isec,3600*nint(GFS_control%fhzero)) == 0) diag_time = Atmos%Time
+    else
+      if (mod(isec,nint(3600*GFS_control%fhzero)) == 0) diag_time = Atmos%Time
+    endif
+    call diag_send_complete_instant (Atmos%Time)
+
 
     !--- this may not be necessary once write_component is fully implemented
     !!!call diag_send_complete_extra (Atmos%Time)
@@ -979,8 +980,8 @@ subroutine atmos_model_end (Atmos)
         GFS_Control%lndp_type > 0  .or. GFS_Control%do_ca ) then
       if(restart_endfcst) then
         call write_stoch_restart_atm('RESTART/atm_stoch.res.nc')
-        if (GFS_control%ca_sgs)then
-          call write_ca_restart(Atmos%domain,GFS_control%scells)
+        if (GFS_control%do_ca)then
+          call write_ca_restart()
         endif
       endif
       call stochastic_physics_wrapper_end(GFS_control)
@@ -1008,8 +1009,8 @@ subroutine atmos_model_restart(Atmos, timestamp)
     call atmosphere_restart(timestamp)
     call FV3GFS_restart_write (GFS_data, GFS_restart_var, Atm_block, &
                                GFS_control, Atmos%domain, timestamp)
-    if(GFS_control%ca_sgs)then
-       call write_ca_restart(Atmos%domain,GFS_control%scells,timestamp)
+    if(GFS_control%do_ca)then
+       call write_ca_restart(timestamp)
     endif
 end subroutine atmos_model_restart
 ! </SUBROUTINE>
@@ -1641,6 +1642,7 @@ end subroutine atmos_data_type_chksum
 !     real(kind=GFS_kind_phys), parameter :: hsmax = 100.0    !< maximum snow depth (m) allowed
       real(kind=GFS_kind_phys), parameter :: himax = 1.0e12   !< maximum ice thickness allowed
       real(kind=GFS_kind_phys), parameter :: hsmax = 1.0e12   !< maximum snow depth (m) allowed
+      real(kind=GFS_kind_phys), parameter :: con_sbc = 5.670400e-8_GFS_kind_phys !< stefan-boltzmann
 !
 !------------------------------------------------------------------------------
 !
@@ -2325,7 +2327,7 @@ end subroutine atmos_data_type_chksum
               do i=isc,iec
                 nb = Atm_block%blkno(i,j)
                 ix = Atm_block%ixp(i,j)
-                GFS_data(nb)%Sfcprop%vtype(ix) = datar82d(i-isc+1,j-jsc+1)
+                GFS_data(nb)%Sfcprop%vtype(ix) = int(datar82d(i-isc+1,j-jsc+1))
               enddo
             enddo
           endif
@@ -2340,7 +2342,7 @@ end subroutine atmos_data_type_chksum
               do i=isc,iec
                 nb = Atm_block%blkno(i,j)
                 ix = Atm_block%ixp(i,j)
-                GFS_data(nb)%Sfcprop%stype(ix) = datar82d(i-isc+1,j-jsc+1)
+                GFS_data(nb)%Sfcprop%stype(ix) = int(datar82d(i-isc+1,j-jsc+1))
               enddo
             enddo
           endif
@@ -2478,7 +2480,7 @@ end subroutine atmos_data_type_chksum
 
 ! update sea ice related fields:
     if( lcpl_fice ) then
-!$omp parallel do default(shared) private(i,j,nb,ix)
+!$omp parallel do default(shared) private(i,j,nb,ix,tem)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
@@ -2489,6 +2491,15 @@ end subroutine atmos_data_type_chksum
               GFS_data(nb)%Coupling%hsnoin_cpl(ix) = min(hsmax, GFS_data(nb)%Coupling%hsnoin_cpl(ix) &
                              / (GFS_data(nb)%Sfcprop%fice(ix)*GFS_data(nb)%Sfcprop%oceanfrac(ix)))
               GFS_data(nb)%Sfcprop%zorli(ix)       = z0ice
+              tem = GFS_data(nb)%Sfcprop%tisfc(ix) * GFS_data(nb)%Sfcprop%tisfc(ix)
+              tem = con_sbc * tem * tem
+              if (GFS_data(nb)%Coupling%ulwsfcin_cpl(ix) > zero) then
+                GFS_data(nb)%Sfcprop%emis_ice(ix)    = GFS_data(nb)%Coupling%ulwsfcin_cpl(ix) / tem
+                GFS_data(nb)%Sfcprop%emis_ice(ix)    = max(0.9, min(one, GFS_data(nb)%Sfcprop%emis_ice(ix)))
+              else
+                GFS_data(nb)%Sfcprop%emis_ice(ix)    = 0.96
+              endif
+              GFS_data(nb)%Coupling%ulwsfcin_cpl(ix) = tem * GFS_data(nb)%Sfcprop%emis_ice(ix)
             else
               GFS_data(nb)%Sfcprop%tisfc(ix)       = GFS_data(nb)%Sfcprop%tsfco(ix)
               GFS_data(nb)%Sfcprop%fice(ix)        = zero
