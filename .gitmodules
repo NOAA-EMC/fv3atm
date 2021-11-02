@@ -13,4 +13,4 @@
   #url = https://github.com/NCAR/ccpp-physics
   #branch = main
   url = https://github.com/climbfuji/ccpp-physics
-  branch = remove_optional_arguments_from_ccpp
+  branch = cleanup-ccpp-and-remove-optional-arguments
