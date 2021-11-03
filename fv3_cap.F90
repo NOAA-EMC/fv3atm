@@ -43,8 +43,8 @@ module fv3gfs_cap_mod
 !
   use module_fcst_grid_comp,  only: fcstSS => SetServices,                   &
                                     fcstGrid, numLevels, numSoilLayers,      &
-                                    numTracers, ngrids, mygrid
 
+                                    numTracers, ngrids, mygrid, grid_number_on_all_pets
   use module_wrt_grid_comp,   only: wrtSS => SetServices
 !
   use module_cplfields,       only: nExportFields, exportFields, exportFieldsInfo, &
@@ -193,6 +193,7 @@ module fv3gfs_cap_mod
     type(ESMF_StateItem_Flag), allocatable :: fcstItemTypeList(:)
     character(20)                          :: cwrtcomp
     integer                                :: isrcTermProcessing
+    integer                                :: domain_id
 
     character(len=*),parameter             :: subname='(fv3_cap:InitializeAdvertise)'
     real(kind=8)                           :: MPI_Wtime, timewri, timeis, timerhs
@@ -483,7 +484,9 @@ module fv3gfs_cap_mod
 
 ! pull out the item names and item types from fcstState
       call ESMF_StateGet(fcstState, itemNameList=fcstItemNameList, &
-                         itemTypeList=fcstItemTypeList, rc=rc)
+                         itemTypeList=fcstItemTypeList, &
+                        !itemorderflag=ESMF_ITEMORDER_ADDORDER, &
+                         rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
 ! loop over all items in the fcstState and collect all FieldBundles
@@ -570,7 +573,8 @@ module fv3gfs_cap_mod
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
 ! loop over all FieldBundle in the states and precompute Regrid operation
-        do j=1, FBcount
+        ! do j=1, FBcount
+        do j=2, 4  ! second domain only
 
           ! access the mirrored FieldBundle in the wrtState(i)
           call ESMF_StateGet(wrtState(i),                                   &
@@ -605,8 +609,8 @@ module fv3gfs_cap_mod
 ! this is a Store() for the first wrtComp -> must do the Store()
             timewri = MPI_Wtime()
 
-            call ESMF_FieldBundleRegridStore(fcstFB(j), wrtFB(j,i),                                    &
-                                             regridMethod=regridmethod, routehandle=routehandle(j,i),  &
+            call ESMF_FieldBundleRegridStore(fcstFB(j), wrtFB(j,1),                                    &
+                                             regridMethod=regridmethod, routehandle=routehandle(j,1),  &
                                              unmappedaction=ESMF_UNMAPPEDACTION_IGNORE,                &
                                              srcTermProcessing=isrcTermProcessing, rc=rc)
 
@@ -633,10 +637,10 @@ module fv3gfs_cap_mod
           endif
           write(msgString,"(A,I2.2,',',I2.2,A)") "... returned from wrtFB(",j,i, ") FieldBundleRegridStore()."
           call ESMF_LogWrite(msgString, ESMF_LOGMSG_INFO, rc=rc)
-        enddo
+        enddo  ! j=1, FBcount
 
 ! end write_groups
-      enddo
+      enddo   ! i=1, write_groups
       if(mype==0) print *,'in fv3cap init, time wrtcrt/regrdst',MPI_Wtime()-timerhs
       deallocate(petList)
       deallocate(originPetList)
@@ -1055,7 +1059,7 @@ module fv3gfs_cap_mod
     type(ESMF_Time)             :: startTime, stopTime
     type(ESMF_TimeInterval)     :: time_elapsed
 
-    integer                     :: na, i, urc
+    integer                     :: na, j, urc
     integer                     :: nfseconds
     logical                     :: fcstpe
     character(len=*),parameter  :: subname='(fv3_cap:ModelAdvance_phase2)'
@@ -1111,10 +1115,11 @@ module fv3gfs_cap_mod
         call ESMF_VMEpochEnter(epoch=ESMF_VMEpoch_Buffer, rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-        do i=1, FBCount
+        ! do j=1, FBCount
+        do j=2, 4  ! second domain only
 
-          call ESMF_FieldBundleRegrid(fcstFB(i), wrtFB(i,n_group),         &
-                                      routehandle=routehandle(i, n_group), &
+          call ESMF_FieldBundleRegrid(fcstFB(j), wrtFB(j,n_group),         &
+                                      routehandle=routehandle(j, n_group), &
                                       termorderflag=(/ESMF_TERMORDER_SRCSEQ/), rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 !
