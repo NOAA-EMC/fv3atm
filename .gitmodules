@@ -6,7 +6,7 @@
   path = ccpp/framework
   #url = https://github.com/NCAR/ccpp-framework
   #branch = main
-  url = https://github.com/climbfuji/ccpp-frameworks
+  url = https://github.com/climbfuji/ccpp-framework
   branch = remove_optional_arguments_from_ccpp
 [submodule "ccpp/physics"]
   path = ccpp/physics
