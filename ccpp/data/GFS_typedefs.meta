@@ -627,7 +627,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (flag_for_mellor_yamada_janjic_surface_layer_scheme .or. flag_for_mellor_yamada_janjic_pbl_scheme .or. (control_for_land_surface_scheme == identifier_for_noah_wrfv4_land_surface_scheme))
+  active = (flag_for_mellor_yamada_janjic_surface_layer_scheme .or. flag_for_mellor_yamada_janjic_pbl_scheme)
 [semisbase]
   standard_name = baseline_surface_longwave_emissivity
   long_name = baseline surface lw emissivity in fraction
@@ -3513,7 +3513,6 @@
   dimensions = ()
   type = logical
   intent = in
-  optional = F
 [sedi_semi_update]
   standard_name = flag_for_v_update_in_semi_Lagrangian_sedi
   long_name = flag for v update in semi Lagrangian sedi of rain
@@ -3521,7 +3520,6 @@
   dimensions = ()
   type = logical
   intent = in
-  optional = F
 [sedi_semi_decfl]
   standard_name = flag_for_iteration_with_semi_Lagrangian_sedi
   long_name = flag for interation with semi Lagrangian sedi of rain
@@ -3529,7 +3527,6 @@
   dimensions = ()
   type = logical
   intent = in
-  optional = F
 [lgfdlmprad]
   standard_name = flag_for_GFDL_microphysics_radiation_interaction
   long_name = flag for GFDL microphysics-radiation interaction
