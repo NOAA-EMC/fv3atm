@@ -2990,7 +2990,7 @@ module GFS_typedefs
     endif
 
     !--- stochastic physics option
-    if (Model%do_sppt .or. Model%ca_global)then
+    if (Model%do_sppt .or. Model%ca_global) then
       allocate (Coupling%sppt_wts  (IM,Model%levs))
       Coupling%sppt_wts = clear_val
     endif
@@ -3011,7 +3011,7 @@ module GFS_typedefs
     endif
 
     !--- stochastic land perturbation option
-    if (Model%lndp_type .NE. 0) then
+    if (Model%lndp_type /= 0) then
       allocate (Coupling%sfc_wts  (IM,Model%n_var_lndp))
       Coupling%sfc_wts = clear_val
     endif
