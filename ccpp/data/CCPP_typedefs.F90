@@ -219,18 +219,18 @@ contains
     ! For multi-gases physics
     Interstitial%nwat  = nwat
     ! If ngas, rilist and cpilist are present, then
-    ! multi-gases physics are used. If not, set ngas=1
+    ! multi-gases physics are used. If not, set ngas=0
     ! (safe value), allocate rilist/cpilist and set to zero
     if(present(ngas)) then
       Interstitial%ngas  = ngas
     else
-      Interstitial%ngas  = 1
+      Interstitial%ngas  = 0
     end if
-    allocate(Interstitial%rilist(1:Interstitial%ngas))
-    allocate(Interstitial%cpilist(1:Interstitial%ngas))
+    allocate(Interstitial%rilist(0:Interstitial%ngas))
+    allocate(Interstitial%cpilist(0:Interstitial%ngas))
     if (present(rilist)) then
-      Interstitial%rilist  = rilist(1:Interstitial%ngas)
-      Interstitial%cpilist = cpilist(1:Interstitial%ngas)
+      Interstitial%rilist  = rilist(0:Interstitial%ngas)
+      Interstitial%cpilist = cpilist(0:Interstitial%ngas)
     else
       Interstitial%rilist  = 0.0
       Interstitial%cpilist = 0.0
