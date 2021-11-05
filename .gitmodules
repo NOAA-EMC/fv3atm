@@ -10,3 +10,6 @@
   path = ccpp/physics
   url = https://github.com/NCAR/ccpp-physics
   branch = main
+[submodule "upp"]
+  path = upp
+  url = https://github.com/DusanJovic-NOAA/UPP
