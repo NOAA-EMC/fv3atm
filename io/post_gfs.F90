@@ -2172,7 +2172,11 @@ module post_gfs
             endif
 
             ! model level ozone mixing ratio
+#ifdef MULTI_GASES
+            if(trim(fieldname)=='spo3') then
+#else
             if(trim(fieldname)=='o3mr') then
+#endif
               !$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,o3,arrayr43d)
               do l=1,lm
                 do j=jsta,jend

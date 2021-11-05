@@ -20,7 +20,10 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/framework/cmake")
 #------------------------------------------------------------------------------
 # Call to CCPP code generator
 if(DEBUG)
+  # Enable debugging features in auto-generated physics caps
   set(_ccpp_debug_arg "--debug")
+  # Enable verbose output from ccpp_prebuild.py
+  set(_ccpp_verbose_arg "--verbose")
 endif()
 if(DEFINED CCPP_SUITES)
   set(_ccpp_suites_arg "--suites=${CCPP_SUITES}")
@@ -31,7 +34,7 @@ endif()
 execute_process(COMMAND ${Python_EXECUTABLE}
                         "framework/scripts/ccpp_prebuild.py"
                         "--config=config/ccpp_prebuild_config.py"
-                        "--builddir=${CMAKE_CURRENT_BINARY_DIR}" ${_ccpp_suites_arg} ${_ccpp_debug_arg}
+                        "--builddir=${CMAKE_CURRENT_BINARY_DIR}" ${_ccpp_suites_arg} ${_ccpp_debug_arg} ${_ccpp_verbose_arg}
                 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
                 OUTPUT_FILE ${CMAKE_CURRENT_BINARY_DIR}/ccpp_prebuild.out
                 ERROR_FILE  ${CMAKE_CURRENT_BINARY_DIR}/ccpp_prebuild.err
@@ -86,6 +89,9 @@ if(MULTI_GASES)
   add_definitions(-DMULTI_GASES)
 endif()
 
+if(IDEA_PHYS)
+  add_definitions(-DIDEA_PHYS)
+endif()
 #------------------------------------------------------------------------------
 # Build CCPP framework and physics
 
