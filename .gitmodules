@@ -12,4 +12,5 @@
   branch = main
 [submodule "upp"]
   path = upp
-  url = https://github.com/DusanJovic-NOAA/UPP
+  url = https://github.com/NOAA-EMC/UPP
+  branch = develop
