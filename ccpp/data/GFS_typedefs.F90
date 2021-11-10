@@ -7749,7 +7749,7 @@ module GFS_typedefs
              n /= Model%nthl  .and. n /= Model%nthnc .and. n /= Model%ntgv    .and. &
              n /= Model%nthv  .and. n /= Model%ntccn .and. n /= Model%ntccna )
         Interstitial%otsptflag(n) = ltest
-        if ( ltest ) THEN
+        if ( ltest ) then
           tracers = tracers + 1
           if (Model%ntke  == n ) then
             Interstitial%otspt(tracers+1,1) = .false.
