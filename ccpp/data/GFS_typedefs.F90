@@ -533,6 +533,11 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: skebu_wts (:,:) => null()  !
     real (kind=kind_phys), pointer :: skebv_wts (:,:) => null()  !
     real (kind=kind_phys), pointer :: sfc_wts   (:,:) => null()  ! mg, sfc-perts
+    real (kind=kind_phys), pointer :: spp_wts_pbl   (:,:) => null()  ! spp-pbl-perts
+    real (kind=kind_phys), pointer :: spp_wts_sfc   (:,:) => null()  ! spp-sfc-perts
+    real (kind=kind_phys), pointer :: spp_wts_mp    (:,:) => null()  ! spp-mp-perts
+    real (kind=kind_phys), pointer :: spp_wts_gwd   (:,:) => null()  ! spp-gwd-perts
+    real (kind=kind_phys), pointer :: spp_wts_rad   (:,:) => null()  ! spp-rad-perts
 
     !--- aerosol surface emissions for Thompson microphysics
     real (kind=kind_phys), pointer :: nwfa2d  (:)     => null()  !< instantaneous water-friendly sfc aerosol source
@@ -1152,6 +1157,11 @@ module GFS_typedefs
                                               ! multiple patterns. It wasn't fully coded (and wouldn't have worked
                                               ! with nlndp>1, so I just dropped it). If we want to code it properly,
                                               ! we'd need to make this dim(6,5).
+    logical              :: do_spp
+    integer              :: n_var_spp
+    character(len=3)     :: spp_var_list(6)  ! dimension here must match  n_var_max_spp in  stochy_nml_def
+    real(kind=kind_phys) :: spp_prt_list(6)  ! dimension here must match  n_var_max_spp in  stochy_nml_def 
+
 !--- tracer handling
     character(len=32), pointer :: tracer_names(:) !< array of initialized tracers from dynamic core
     integer              :: ntrac                 !< number of tracers
@@ -1647,6 +1657,11 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: sppt_wts(:,:)  => null()   !<
     real (kind=kind_phys), pointer :: shum_wts(:,:)  => null()   !<
     real (kind=kind_phys), pointer :: sfc_wts(:,:)   => null()   !<
+    real (kind=kind_phys), pointer :: spp_wts_pbl(:,:)  => null()   !<
+    real (kind=kind_phys), pointer :: spp_wts_sfc(:,:)  => null()   !<
+    real (kind=kind_phys), pointer :: spp_wts_mp(:,:)   => null()   !<
+    real (kind=kind_phys), pointer :: spp_wts_gwd(:,:)  => null()   !<
+    real (kind=kind_phys), pointer :: spp_wts_rad(:,:)  => null()   !<
     real (kind=kind_phys), pointer :: zmtnblck(:)    => null()   !<mountain blocking evel
 
     ! dtend/dtidxt: Multitudinous 3d tendencies in a 4D array: (i,k,1:100+ntrac,nprocess)
@@ -3027,6 +3042,21 @@ module GFS_typedefs
       Coupling%sfc_wts = clear_val
     endif
 
+    !--- stochastic spp perturbation option
+    if (Model%do_spp) then
+! --- allocate all of the wts arrays? yes, it's a run-time switch...  
+      allocate (Coupling%spp_wts_pbl  (IM,Model%levs))
+      Coupling%spp_wts_pbl = clear_val
+      allocate (Coupling%spp_wts_sfc  (IM,Model%levs))
+      Coupling%spp_wts_sfc = clear_val
+      allocate (Coupling%spp_wts_mp   (IM,Model%levs))
+      Coupling%spp_wts_mp = clear_val
+      allocate (Coupling%spp_wts_gwd   (IM,Model%levs))
+      Coupling%spp_wts_gwd = clear_val
+      allocate (Coupling%spp_wts_rad   (IM,Model%levs))
+      Coupling%spp_wts_rad = clear_val
+    endif
+
     !--- needed for Thompson's aerosol option
     if(Model%imp_physics == Model%imp_physics_thompson .and. Model%ltaerosol) then
       allocate (Coupling%nwfa2d (IM))
@@ -3582,6 +3612,8 @@ module GFS_typedefs
     integer :: lndp_type      = 0
     integer :: n_var_lndp     = 0
     logical :: lndp_each_step = .false.
+    integer :: n_var_spp    =  0
+    logical :: do_spp       = .false.
 
 !--- aerosol scavenging factors
     integer, parameter :: max_scav_factors = 25
@@ -3660,6 +3692,7 @@ module GFS_typedefs
                                cs_parm, flgmin, cgwf, ccwf, cdmbgwd, sup, ctei_rm, crtrh,   &
                                dlqf, rbcr, shoc_parm, psauras, prauras, wminras,            &
                                do_sppt, do_shum, do_skeb,                                   &
+                               do_spp, n_var_spp,                                           &
                                lndp_type,  n_var_lndp, lndp_each_step,                      &
                                pert_mp,pert_clds,pert_radtend,                              &
                           !--- Rayleigh friction
@@ -4421,6 +4454,8 @@ module GFS_typedefs
     Model%lndp_type        = lndp_type
     Model%n_var_lndp       = n_var_lndp
     Model%lndp_each_step   = lndp_each_step
+    Model%do_spp           = do_spp
+    Model%n_var_spp        = n_var_spp
 
     !--- cellular automata options
     Model%nca              = nca
@@ -5779,6 +5814,8 @@ module GFS_typedefs
       print *, ' lndp_type         : ', Model%lndp_type
       print *, ' n_var_lndp        : ', Model%n_var_lndp
       print *, ' lndp_each_step    : ', Model%lndp_each_step
+      print *, ' do_spp            : ', Model%do_spp
+      print *, ' n_var_spp         : ', Model%n_var_spp
       print *, ' '
       print *, 'cellular automata'
       print *, ' nca               : ', Model%nca
@@ -6524,6 +6561,11 @@ module GFS_typedefs
     allocate (Diag%sppt_wts (IM,Model%levs))
     allocate (Diag%shum_wts (IM,Model%levs))
     allocate (Diag%sfc_wts  (IM,Model%n_var_lndp))
+    allocate (Diag%spp_wts_pbl(IM,Model%levs))
+    allocate (Diag%spp_wts_sfc(IM,Model%levs))
+    allocate (Diag%spp_wts_mp(IM,Model%levs))
+    allocate (Diag%spp_wts_gwd(IM,Model%levs))
+    allocate (Diag%spp_wts_rad(IM,Model%levs))
     allocate (Diag%zmtnblck (IM))
     allocate (Diag%ca1      (IM))
     allocate (Diag%ca2      (IM))
@@ -6796,6 +6838,11 @@ module GFS_typedefs
     Diag%sppt_wts   = zero
     Diag%shum_wts   = zero
     Diag%sfc_wts    = zero
+    Diag%spp_wts_pbl = zero
+    Diag%spp_wts_sfc = zero
+    Diag%spp_wts_mp  = zero
+    Diag%spp_wts_gwd = zero
+    Diag%spp_wts_rad = zero
     Diag%zmtnblck   = zero
 
     if (Model%imp_physics == Model%imp_physics_fer_hires) then
