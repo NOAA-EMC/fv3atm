@@ -1113,8 +1113,8 @@ module GFS_typedefs
 
 !---cellular automata control parameters
     integer              :: nca             !< number of independent cellular automata
-    integer              :: tlives          !< cellular automata lifetime
-    integer              :: scells          !< cellular automata finer grid
+    integer              :: nlives          !< cellular automata lifetime
+    integer              :: ncells          !< cellular automata finer grid
     integer              :: nca_g           !< number of independent cellular automata
     integer              :: nlives_g        !< cellular automata lifetime
     integer              :: ncells_g        !< cellular automata finer grid
@@ -1127,7 +1127,6 @@ module GFS_typedefs
     logical              :: ca_smooth       !< switch for gaussian spatial filter
     integer(kind=kind_dbl_prec) :: iseed_ca        !< seed for random number generation in ca scheme
     integer              :: nspinup         !< number of iterations to spin up the ca
-    real(kind=kind_phys) :: rcell           !< threshold used for CA scheme
     real(kind=kind_phys) :: nthresh         !< threshold used for convection coupling
     real                 :: ca_amplitude    !< amplitude of ca trigger perturbation
     integer              :: nsmooth         !< number of passes through smoother
@@ -1966,6 +1965,7 @@ module GFS_typedefs
     integer                             :: nspc1                         !<
     integer                             :: ntcwx                         !<
     integer                             :: ntiwx                         !<
+    integer                             :: ntrwx                         !<
     integer                             :: ntk                           !<
     integer                             :: ntkev                         !<
     integer                             :: nvdiff                        !<
@@ -3464,8 +3464,9 @@ module GFS_typedefs
 
 !---Cellular automaton options
     integer              :: nca            = 1
-    integer              :: scells         = 2600
-    integer              :: tlives         = 1800
+    integer              :: ncells         = 5
+    integer              :: nlives         = 12
+    
     integer              :: nca_g          = 1
     integer              :: ncells_g       = 1
     integer              :: nlives_g       = 100
@@ -3478,7 +3479,7 @@ module GFS_typedefs
     logical              :: ca_sgs         = .false.
     logical              :: ca_global      = .false.
     logical              :: ca_smooth      = .false.
-    real(kind=kind_phys) :: rcell          = 0.72
+    real(kind=kind_phys) :: nthresh        = 18
     real                 :: ca_amplitude   = 0.35
     integer              :: nsmooth        = 100
     logical              :: ca_closure     = .false.
@@ -3627,8 +3628,8 @@ module GFS_typedefs
                           !--- canopy heat storage parameterization
                                h0facu, h0facs,                                              &
                           !--- cellular automata
-                               nca, scells, tlives, nca_g, ncells_g, nlives_g, nfracseed,   &
-                               nseed,  nseed_g,  rcell, do_ca,                              &
+                               nca, ncells, nlives, nca_g, ncells_g, nlives_g, nfracseed,   &
+                               nseed,  nseed_g,  nthresh, do_ca,                              &
                                ca_sgs, ca_global,iseed_ca,ca_smooth,                        &
                                nspinup,ca_amplitude,nsmooth,ca_closure,ca_entr,ca_trigger,  &
                           !--- IAU
@@ -4392,8 +4393,8 @@ module GFS_typedefs
     if ( .not. ca_sgs ) nca=0
      
     Model%nca              = nca
-    Model%scells           = scells
-    Model%tlives           = tlives
+    Model%ncells           = ncells
+    Model%nlives           = nlives
     Model%nca_g            = nca_g
     Model%ncells_g         = ncells_g
     Model%nlives_g         = nlives_g
@@ -4406,7 +4407,7 @@ module GFS_typedefs
     Model%iseed_ca         = iseed_ca
     Model%ca_smooth        = ca_smooth
     Model%nspinup          = nspinup
-    Model%rcell            = rcell
+    Model%nthresh          = nthresh
     Model%ca_amplitude     = ca_amplitude
     Model%nsmooth          = nsmooth
     Model%ca_closure       = ca_closure
@@ -5756,8 +5757,8 @@ module GFS_typedefs
       print *, ' '
       print *, 'cellular automata'
       print *, ' nca               : ', Model%nca
-      print *, ' scells            : ', Model%scells
-      print *, ' tlives            : ', Model%tlives
+      print *, ' ncells            : ', Model%ncells
+      print *, ' nlives            : ', Model%nlives
       print *, ' nca_g             : ', Model%nca_g
       print *, ' ncells_g          : ', Model%ncells_g
       print *, ' nlives_g          : ', Model%nlives_g
@@ -5770,7 +5771,7 @@ module GFS_typedefs
       print *, ' iseed_ca          : ', Model%iseed_ca
       print *, ' ca_smooth         : ', Model%ca_smooth
       print *, ' nspinup           : ', Model%nspinup
-      print *, ' rcell             : ', Model%rcell
+      print *, ' nthresh           : ', Model%nthresh
       print *, ' ca_amplitude      : ', Model%ca_amplitude
       print *, ' nsmooth           : ', Model%nsmooth
       print *, ' ca_closure        : ', Model%ca_closure
@@ -7351,6 +7352,9 @@ module GFS_typedefs
     Interstitial%otspt(:,:)       = .true.
     Interstitial%nsamftrac        = 0
     Interstitial%ncstrac          = 0
+    Interstitial%ntcwx            = 0
+    Interstitial%ntiwx            = 0
+    Interstitial%ntrwx            = 0
 
     ! perform aerosol convective transport and PBL diffusion
     Interstitial%trans_aero = Model%cplchm .and. Model%trans_trac
@@ -7383,30 +7387,35 @@ module GFS_typedefs
 
     Interstitial%nscav = Model%ntrac - Model%ncnd + 2
 
-    Interstitial%ntcwx = Model%ntcw
     if (Interstitial%nvdiff == Model%ntrac) then
+      Interstitial%ntcwx = Model%ntcw
       Interstitial%ntiwx = Model%ntiw
+      Interstitial%ntrwx = Model%ntrw
     else
       if (Model%imp_physics == Model%imp_physics_wsm6) then
+        Interstitial%ntcwx = 2
         Interstitial%ntiwx = 3
       elseif (Model%imp_physics == Model%imp_physics_thompson) then
-        if(Model%ltaerosol) then
-          Interstitial%ntiwx = 3
-        else
-          Interstitial%ntiwx = 3
-        endif
-      elseif (Model%imp_physics == Model%imp_physics_gfdl) then
+        Interstitial%ntcwx = 2
         Interstitial%ntiwx = 3
+        Interstitial%ntrwx = 4
+      elseif (Model%imp_physics == Model%imp_physics_gfdl) then
+        Interstitial%ntcwx = 2
+        Interstitial%ntiwx = 3
+        Interstitial%ntrwx = 4
       ! F-A MP scheme
       elseif (Model%imp_physics == Model%imp_physics_fer_hires) then
-        Interstitial%ntiwx = 3 ! total ice or total condensate
-      elseif (Model%imp_physics == Model%imp_physics_mg) then
+        Interstitial%ntcwx = 2
         Interstitial%ntiwx = 3
-      else
-        Interstitial%ntiwx = 0
+        Interstitial%ntrwx = 4
+      elseif (Model%imp_physics == Model%imp_physics_mg) then
+        Interstitial%ntcwx = 2
+        Interstitial%ntiwx = 3
+        Interstitial%ntrwx = 4
+      elseif (Model%imp_physics == Model%imp_physics_zhao_carr) then
+        Interstitial%ntcwx = 2
       endif
     endif
-    ! *DH
 
     if (Model%cplchm) then
       ! Only Zhao/Carr/Sundqvist and GFDL microphysics schemes are supported
