@@ -7587,16 +7587,16 @@ module GFS_typedefs
       Interstitial%lw_optical_props_clrsky%tau       = clear_val
       Interstitial%lw_optical_props_aerosol%tau      = clear_val
       Interstitial%lw_optical_props_clouds%tau       = clear_val
-      Interstitial%lw_optical_props_clouds%ssa       = 1
+      Interstitial%lw_optical_props_clouds%ssa       = clear_val
       Interstitial%lw_optical_props_clouds%g         = clear_val
       Interstitial%lw_optical_props_precip%tau       = clear_val
-      Interstitial%lw_optical_props_precip%ssa       = 1
+      Interstitial%lw_optical_props_precip%ssa       = clear_val
       Interstitial%lw_optical_props_precip%g         = clear_val
       Interstitial%lw_optical_props_cloudsByBand%tau = clear_val
-      Interstitial%lw_optical_props_cloudsByBand%ssa = 1
+      Interstitial%lw_optical_props_cloudsByBand%ssa = clear_val
       Interstitial%lw_optical_props_cloudsByBand%g   = clear_val
       Interstitial%lw_optical_props_precipByBand%tau = clear_val
-      Interstitial%lw_optical_props_precipByBand%ssa = 1
+      Interstitial%lw_optical_props_precipByBand%ssa = clear_val
       Interstitial%lw_optical_props_precipByBand%g   = clear_val
       Interstitial%sources%sfc_source                = clear_val
       Interstitial%sources%lay_source                = clear_val
@@ -7611,6 +7611,24 @@ module GFS_typedefs
       Interstitial%flxprf_sw%dnfxc                   = clear_val
       Interstitial%flxprf_sw%upfx0                   = clear_val
       Interstitial%flxprf_sw%dnfx0                   = clear_val
+      Interstitial%sw_optical_props_clrsky%tau       = clear_val
+      Interstitial%sw_optical_props_clrsky%ssa       = clear_val
+      Interstitial%sw_optical_props_clrsky%g         = clear_val
+      Interstitial%sw_optical_props_aerosol%tau      = clear_val
+      Interstitial%sw_optical_props_aerosol%ssa      = clear_val
+      Interstitial%sw_optical_props_aerosol%g        = clear_val
+      Interstitial%sw_optical_props_clouds%tau       = clear_val
+      Interstitial%sw_optical_props_clouds%ssa       = clear_val
+      Interstitial%sw_optical_props_clouds%g         = clear_val
+      Interstitial%sw_optical_props_precip%tau       = clear_val
+      Interstitial%sw_optical_props_precip%ssa       = clear_val
+      Interstitial%sw_optical_props_precip%g         = clear_val
+      Interstitial%sw_optical_props_cloudsByBand%tau = clear_val
+      Interstitial%sw_optical_props_cloudsByBand%ssa = clear_val
+      Interstitial%sw_optical_props_cloudsByBand%g   = clear_val
+      Interstitial%sw_optical_props_precipByBand%tau = clear_val
+      Interstitial%sw_optical_props_precipByBand%ssa = clear_val
+      Interstitial%sw_optical_props_precipByBand%g   = clear_val
     end if
     !
   end subroutine interstitial_rad_reset
