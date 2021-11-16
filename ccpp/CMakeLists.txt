@@ -89,6 +89,9 @@ if(MULTI_GASES)
   add_definitions(-DMULTI_GASES)
 endif()
 
+if(IDEA_PHYS)
+  add_definitions(-DIDEA_PHYS)
+endif()
 #------------------------------------------------------------------------------
 # Build CCPP framework and physics
 
@@ -101,10 +104,6 @@ add_subdirectory(physics)
 # Can we move data/*.F90 and driver/*.F90 to this directory ???
 add_library(
     fv3ccpp
-
-    data/CCPP_typedefs.F90
-    data/GFS_typedefs.F90
-    data/CCPP_data.F90
 
     driver/GFS_diagnostics.F90
     driver/GFS_restart.F90
