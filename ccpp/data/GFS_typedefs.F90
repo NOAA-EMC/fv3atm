@@ -746,6 +746,9 @@ module GFS_typedefs
     real(kind_phys)      :: maxGPpres               !< Maximum pressure allowed in RRTMGP.
     real(kind_phys)      :: minGPtemp               !< Minimum temperature allowed in RRTMGP.
     real(kind_phys)      :: maxGPtemp               !< Maximum temperature allowed in RRTMGP.
+    logical              :: top_at_1                !< Vertical ordering flag.
+    integer              :: iSFC                    !< Vertical index for surface
+    integer              :: iTOA                    !< Vertical index for TOA
 
 !--- microphysical switch
     logical              :: convert_dry_rho = .true.       !< flag for converting mass/number concentrations from moist to dry
