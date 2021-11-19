@@ -3534,20 +3534,6 @@
   dimensions = ()
   type = real
   kind = kind_phys
-[d0s]
-  standard_name = diameter_of_ice_particle_to_be_converted_to_snow
-  long_name =  diameter of ice particle to be converted to snow
-  units = meter
-  dimensions = ()
-  type = real
-  kind = kind_phys
-[d0g]
-  standard_name = diameter_of_snow_particle_to_be_converted_to_graupel
-  long_name =  diameter of snow particle to be converted to graupel
-  units = meter
-  dimensions = ()
-  type = real
-  kind = kind_phys
 [lgfdlmprad]
   standard_name = flag_for_GFDL_microphysics_radiation_interaction
   long_name = flag for GFDL microphysics-radiation interaction

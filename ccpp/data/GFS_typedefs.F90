@@ -826,8 +826,6 @@ module GFS_typedefs
     logical              :: sedi_semi_update!< flag for v update in semi Lagrangian sedi of rain
     logical              :: sedi_semi_decfl !< flag for interation with semi Lagrangian sedi of rain
     real(kind=kind_phys) :: crt_sati        !< critical over saturation for ice generation
-    real(kind=kind_phys) :: d0s             !< diameter of ice particle to be converted to snow 
-    real(kind=kind_phys) :: d0g             !< diameter of snow particle to be converted to graupel
 
     !--- GFDL microphysical paramters
     logical              :: lgfdlmprad      !< flag for GFDL mp scheme and radiation consistency
@@ -3199,8 +3197,6 @@ module GFS_typedefs
     logical              :: sedi_semi_update = .false.          !< flag for v update in semi Lagrangian sedi of rain
     logical              :: sedi_semi_decfl = .false.           !< flag for interation with semi Lagrangian sedi of rain
     real(kind=kind_phys) :: crt_sati       = 0.25               !< critical over saturation for ice generation
-    real(kind=kind_phys) :: d0s            =200.E-6             !< diameter of ice particle to be converted to snow in meter
-    real(kind=kind_phys) :: d0g            =250.E-6             !< diameter of snow particle to be converted to graupel in meter
 
     !--- GFDL microphysical parameters
     logical              :: lgfdlmprad     = .false.            !< flag for GFDLMP radiation interaction
@@ -3570,7 +3566,7 @@ module GFS_typedefs
                                ltaerosol, lradar, nsradar_reset, lrefres, ttendlim,         &
                                ext_diag_thompson, dt_inner, lgfdlmprad,                     &
                                sedi_semi, sedi_semi_update, sedi_semi_decfl,                & 
-                               crt_sati, d0s, d0g,                                          &
+                               crt_sati,                                                    &
                           !--- max hourly
                                avg_max_length,                                              &
                           !--- land/surface model control
@@ -4054,18 +4050,6 @@ module GFS_typedefs
       Model%crt_sati       =  0.25
     else 
       Model%crt_sati       = crt_sati
-    endif 
-    if(d0s < 50.e-6) then 
-       Model%d0s           = 50.e-6
-    else if(d0s>500.e-6) then 
-       Model%d0s           = 500.e-6
-    else 
-      Model%d0s            = d0s 
-    endif 
-    if(d0g <= d0s + 50.e-6) then 
-       Model%d0g           = d0s + 50.e-6 
-    else if (d0g > 1000.e-6) then 
-       Model%d0g           = 1000.e-6 
     endif 
      
 !--- F-A MP parameters
@@ -5147,8 +5131,6 @@ module GFS_typedefs
                                           ' sedi_semi_update=',sedi_semi_update, & 
                                           ' sedi_semi_decfl=',sedi_semi_decfl, &
                                           ' crt_sati=',crt_sati, &
-                                          ' d0s=',d0s, &
-                                          ' d0g=',d0g, &
                                           ' effr_in =',Model%effr_in, &
                                           ' lradar =',Model%lradar, &
                                           ' nsradar_reset =',Model%nsradar_reset, &
@@ -5570,8 +5552,6 @@ module GFS_typedefs
         print *, ' sedi_semi_update  : ', Model%sedi_semi_update
         print *, ' sedi_semi_decfl   : ', Model%sedi_semi_decfl
         print *, ' crt_sati          : ', Model%crt_sati
-        print *, ' d0s               : ', Model%d0s 
-        print *, ' d0g               : ', Model%d0g 
         print *, ' '
       endif
       if (Model%imp_physics == Model%imp_physics_mg) then
