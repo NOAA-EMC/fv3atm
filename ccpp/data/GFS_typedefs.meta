@@ -627,6 +627,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
+  active = (flag_for_mellor_yamada_janjic_surface_layer_scheme .or. flag_for_mellor_yamada_janjic_pbl_scheme)
 [semisbase]
   standard_name = baseline_surface_longwave_emissivity
   long_name = baseline surface lw emissivity in fraction
@@ -678,7 +679,6 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  optional = F
   active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme)
 [sfalb_ice]
   standard_name = surface_diffused_shortwave_albedo_over_ice
@@ -3513,7 +3513,6 @@
   dimensions = ()
   type = logical
   intent = in
-  optional = F
 [sedi_semi_update]
   standard_name = flag_for_v_update_in_semi_Lagrangian_sedi
   long_name = flag for v update in semi Lagrangian sedi of rain
@@ -3521,7 +3520,6 @@
   dimensions = ()
   type = logical
   intent = in
-  optional = F
 [sedi_semi_decfl]
   standard_name = flag_for_iteration_with_semi_Lagrangian_sedi
   long_name = flag for interation with semi Lagrangian sedi of rain
@@ -3529,7 +3527,6 @@
   dimensions = ()
   type = logical
   intent = in
-  optional = F
 [lgfdlmprad]
   standard_name = flag_for_GFDL_microphysics_radiation_interaction
   long_name = flag for GFDL microphysics-radiation interaction
@@ -5271,13 +5268,13 @@
   dimensions = ()
   type = logical
 [do_myjsfc]
-  standard_name = flag_for_mellor_yamada_janic_surface_layer_scheme
+  standard_name = flag_for_mellor_yamada_janjic_surface_layer_scheme
   long_name = flag to activate MYJ surface layer scheme
   units = flag
   dimensions = ()
   type = logical
 [do_myjpbl]
-  standard_name = flag_for_mellor_yamada_janic_pbl_scheme
+  standard_name = flag_for_mellor_yamada_janjic_pbl_scheme
   long_name = flag to activate MYJ PBL scheme
   units = flag
   dimensions = ()
@@ -5429,72 +5426,54 @@
   units = flag
   dimensions = ()
   type = logical
-  intent = in
-  optional = F
 [do_ugwp_v0_orog_only]
   standard_name = flag_for_ugwp_version_0_orographic_gwd
   long_name = flag to activate ver 0 CIRES UGWP - orographic GWD only
   units = flag
   dimensions = ()
   type = logical
-  intent = in
-  optional = F
 [do_ugwp_v0_nst_only]
   standard_name = flag_for_ugwp_version_0_nonorographic_gwd
   long_name = flag to activate ver 0 CIRES UGWP - non-stationary GWD only
   units = flag
   dimensions = ()
   type = logical
-  intent = in
-  optional = F
 [do_gsl_drag_ls_bl]
   standard_name = flag_for_gsl_drag_suite_large_scale_orographic_and_blocking_drag
   long_name = flag to activate GSL drag suite - large-scale GWD and blocking
   units = flag
   dimensions = ()
   type = logical
-  intent = in
-  optional = F
 [do_gsl_drag_ss]
   standard_name = flag_for_gsl_drag_suite_small_scale_orographic_drag
   long_name = flag to activate GSL drag suite - small-scale GWD
   units = flag
   dimensions = ()
   type = logical
-  intent = in
-  optional = F
 [do_gsl_drag_tofd]
   standard_name = flag_for_gsl_drag_suite_turbulent_orographic_form_drag
   long_name = flag to activate GSL drag suite - turb orog form drag
   units = flag
   dimensions = ()
   type = logical
-  intent = in
-  optional = F
 [do_ugwp_v1]
   standard_name = flag_for_ugwp_version_1
   long_name = flag to activate ver 1 CIRES UGWP
   units = flag
   dimensions = ()
   type = logical
-  intent = in
-  optional = F
 [do_ugwp_v1_orog_only]
   standard_name = flag_for_ugwp_version_1_orographic_gwd
   long_name = flag to activate ver 1 CIRES UGWP - orographic GWD only
   units = flag
   dimensions = ()
   type = logical
-  intent = in
-  optional = F
 [do_ugwp_v1_w_gsldrag]
   standard_name = flag_for_ugwp_version_1_nonorographic_gwd
   long_name = flag to activate ver 1 CIRES UGWP - with OGWD of GSL
   units = flag
   dimensions = ()
   type = logical
-  intent = in
-  optional = F
 [lmfdeep2]
   standard_name = flag_for_scale_aware_mass_flux_deep_convection_for_radiation
   long_name = flag for some scale-aware mass-flux convection scheme active
@@ -6136,7 +6115,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (flag_for_mellor_yamada_janic_surface_layer_scheme .or. flag_for_mellor_yamada_janic_pbl_scheme)
+  active = (flag_for_mellor_yamada_janjic_surface_layer_scheme .or. flag_for_mellor_yamada_janjic_pbl_scheme)
 [phy_myj_thz0]
   standard_name = air_potential_temperature_at_top_of_viscous_sublayer
   long_name = potential temperature at viscous sublayer top over water
@@ -6144,7 +6123,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (flag_for_mellor_yamada_janic_surface_layer_scheme .or. flag_for_mellor_yamada_janic_pbl_scheme)
+  active = (flag_for_mellor_yamada_janjic_surface_layer_scheme .or. flag_for_mellor_yamada_janjic_pbl_scheme)
 [phy_myj_qz0]
   standard_name = specific_humidity_at_top_of_viscous_sublayer
   long_name = specific humidity at_viscous sublayer top over water
@@ -6152,7 +6131,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (flag_for_mellor_yamada_janic_surface_layer_scheme .or. flag_for_mellor_yamada_janic_pbl_scheme)
+  active = (flag_for_mellor_yamada_janjic_surface_layer_scheme .or. flag_for_mellor_yamada_janjic_pbl_scheme)
 [phy_myj_uz0]
   standard_name = x_wind_at_top_of_viscous_sublayer
   long_name = u wind component at viscous sublayer top over water
@@ -6160,7 +6139,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (flag_for_mellor_yamada_janic_surface_layer_scheme .or. flag_for_mellor_yamada_janic_pbl_scheme)
+  active = (flag_for_mellor_yamada_janjic_surface_layer_scheme .or. flag_for_mellor_yamada_janjic_pbl_scheme)
 [phy_myj_vz0]
   standard_name = y_wind_at_top_of_viscous_sublayer
   long_name = v wind component at viscous sublayer top over water
@@ -6168,7 +6147,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (flag_for_mellor_yamada_janic_surface_layer_scheme .or. flag_for_mellor_yamada_janic_pbl_scheme)
+  active = (flag_for_mellor_yamada_janjic_surface_layer_scheme .or. flag_for_mellor_yamada_janjic_pbl_scheme)
 [phy_myj_akhs]
   standard_name = heat_exchange_coefficient_for_MYJ_schemes
   long_name = surface heat exchange_coefficient for MYJ schemes
@@ -6176,7 +6155,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (flag_for_mellor_yamada_janic_surface_layer_scheme .or. flag_for_mellor_yamada_janic_pbl_scheme)
+  active = (flag_for_mellor_yamada_janjic_surface_layer_scheme .or. flag_for_mellor_yamada_janjic_pbl_scheme)
 [phy_myj_akms]
   standard_name = momentum_exchange_coefficient_for_MYJ_schemes
   long_name = surface momentum exchange_coefficient for MYJ schemes
@@ -6184,7 +6163,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (flag_for_mellor_yamada_janic_surface_layer_scheme .or. flag_for_mellor_yamada_janic_pbl_scheme)
+  active = (flag_for_mellor_yamada_janjic_surface_layer_scheme .or. flag_for_mellor_yamada_janjic_pbl_scheme)
 [phy_myj_chkqlm]
   standard_name = control_for_surface_layer_evaporation
   long_name = surface layer evaporation switch
@@ -6192,15 +6171,15 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (flag_for_mellor_yamada_janic_surface_layer_scheme .or. flag_for_mellor_yamada_janic_pbl_scheme)
+  active = (flag_for_mellor_yamada_janjic_surface_layer_scheme .or. flag_for_mellor_yamada_janjic_pbl_scheme)
 [phy_myj_elflx]
-  standard_name = surface_upward_specific_humidity_flux_for_mellor_yamada_janic_surface_layer_scheme
+  standard_name = surface_upward_specific_humidity_flux_for_mellor_yamada_janjic_surface_layer_scheme
   long_name = kinematic surface latent heat flux
   units = m s-1 kg kg-1
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (flag_for_mellor_yamada_janic_surface_layer_scheme .or. flag_for_mellor_yamada_janic_pbl_scheme)
+  active = (flag_for_mellor_yamada_janjic_surface_layer_scheme .or. flag_for_mellor_yamada_janjic_pbl_scheme)
 [phy_myj_a1u]
   standard_name = weight_for_momentum_at_top_of_viscous_sublayer
   long_name = weight for momentum at viscous layer top
@@ -6208,7 +6187,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (flag_for_mellor_yamada_janic_surface_layer_scheme .or. flag_for_mellor_yamada_janic_pbl_scheme)
+  active = (flag_for_mellor_yamada_janjic_surface_layer_scheme .or. flag_for_mellor_yamada_janjic_pbl_scheme)
 [phy_myj_a1t]
   standard_name = weight_for_potental_temperature_at_top_of_viscous_sublayer
   long_name = weight for potental temperature at viscous layer top
@@ -6216,7 +6195,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (flag_for_mellor_yamada_janic_surface_layer_scheme .or. flag_for_mellor_yamada_janic_pbl_scheme)
+  active = (flag_for_mellor_yamada_janjic_surface_layer_scheme .or. flag_for_mellor_yamada_janjic_pbl_scheme)
 [phy_myj_a1q]
   standard_name = weight_for_specific_humidity_at_top_of_viscous_sublayer
   long_name = weight for Specfic Humidity at viscous layer top
@@ -6224,7 +6203,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (flag_for_mellor_yamada_janic_surface_layer_scheme .or. flag_for_mellor_yamada_janic_pbl_scheme)
+  active = (flag_for_mellor_yamada_janjic_surface_layer_scheme .or. flag_for_mellor_yamada_janjic_pbl_scheme)
 
 ########################################################################
 [ccpp-table-properties]
@@ -8989,6 +8968,12 @@
   units = index
   dimensions = ()
   type = integer
+[ntrwx]
+  standard_name = index_for_rain_water_vertical_diffusion_tracer
+  long_name = tracer index for rain water in the vertically diffused tracer array
+  units = index
+  dimensions = ()
+  type = integer
 [ntk]
   standard_name = index_for_turbulent_kinetic_energy_convective_transport_tracer
   long_name = index for turbulent kinetic energy in the convectively transported tracer array
@@ -9901,7 +9886,6 @@
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
   kind = kind_phys
-  optional = F
   active = (flag_for_rrtmgp_radiation_scheme)
 [q_lay]
   standard_name = water_vapor_mixing_ratio
@@ -9910,7 +9894,6 @@
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
   kind = kind_phys
-  optional = F
   active = (flag_for_rrtmgp_radiation_scheme)
 [p_lay]
   standard_name = air_pressure_at_layer_for_RRTMGP
