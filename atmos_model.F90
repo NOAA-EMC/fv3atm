@@ -689,7 +689,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
                               GFS_data%IntDiag, Init_parm, GFS_Diag)
    call FV3GFS_restart_read (GFS_data, GFS_restart_var, Atm_block, GFS_control, Atmos%domain, Atm(mygrid)%flagstruct%warm_start)
    if(GFS_control%do_ca .and. Atm(mygrid)%flagstruct%warm_start)then
-      call read_ca_restart (Atmos%domain,GFS_control%scells,GFS_control%nca,GFS_control%ncells_g,GFS_control%nca_g)
+      call read_ca_restart (Atmos%domain,GFS_control%ncells,GFS_control%nca,GFS_control%ncells_g,GFS_control%nca_g)
    endif
    ! Populate the GFS_data%Statein container with the prognostic state
    ! in Atm_block, which contains the initial conditions/restart data.
