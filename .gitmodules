@@ -14,3 +14,7 @@
   #branch = main
   url = https://github.com/climbfuji/ccpp-physics
   branch = correct_units_due_to_feature_capgen
+[submodule "upp"]
+  path = upp
+  url = https://github.com/NOAA-EMC/UPP
+  branch = develop
