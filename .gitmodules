@@ -12,3 +12,7 @@
   #branch = main
   url = https://github.com/RuiyuSun/ccpp-physics
   branch = semi-lagrangian_sedi_graupel
+[submodule "upp"]
+  path = upp
+  url = https://github.com/NOAA-EMC/UPP
+  branch = develop
