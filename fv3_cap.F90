@@ -777,6 +777,7 @@ module fv3gfs_cap_mod
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
     end do
 
+    if(mype==0) print *,'in fv3_cap, aft import, bf export fields in atmos'
     ! exportable fields:
     do i = 1, size(exportFieldsInfo)
       call NUOPC_Advertise(exportState, &
