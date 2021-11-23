@@ -20,6 +20,8 @@ add_subdirectory(atmos_cubed_sphere)
 ### fv3atm
 ###############################################################################
 if(INLINE_POST)
+  set(BUILD_POSTEXEC OFF)
+  add_subdirectory(upp)
   set(POST_SRC io/inline_post.F90 io/post_nems_routines.F90 io/post_gfs.F90 io/post_regional.F90)
 else()
   set(POST_SRC io/inline_post_stub.F90)
@@ -60,8 +62,9 @@ set_target_properties(fv3atm PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT
 target_include_directories(fv3atm INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/mod>
                                             $<INSTALL_INTERFACE:mod>)
 
-# This should not be necessary once framework and physics targets define BUILD_INTERFACE
-target_include_directories(fv3atm PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/ccpp/physics)
+if(MULTI_GASES)
+  list(APPEND _fv3atm_defs_private MULTI_GASES)
+endif()
 
 target_link_libraries(fv3atm PUBLIC fv3
                                     fv3ccpp

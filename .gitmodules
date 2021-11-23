@@ -7,6 +7,10 @@
   url = https://github.com/NCAR/ccpp-framework
   branch = main
 [submodule "ccpp/physics"]
-	path = ccpp/physics
-	url = https://github.com/llpcarson/ccpp-physics
-	branch = feature/stoch_spp
+  path = ccpp/physics
+  url = https://github.com/llpcarson/ccpp-physics
+  branch = feature/stoch_spp
+[submodule "upp"]
+  path = upp
+  url = https://github.com/NOAA-EMC/UPP
+  branch = develop

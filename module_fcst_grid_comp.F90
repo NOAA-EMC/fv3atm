@@ -46,13 +46,13 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
   use fms_mod,            only: error_mesg, fms_init, fms_end,             &
                                 write_version_number, uppercase
 
-  use mpp_mod,            only: mpp_init, mpp_pe, mpp_root_pe,  &
-                                mpp_error, FATAL, WARNING
+  use mpp_mod,            only: mpp_init, mpp_pe, mpp_npes, mpp_root_pe,   &
+                                mpp_error, FATAL, WARNING, NOTE
   use mpp_mod,            only: mpp_clock_id, mpp_clock_begin
 
   use mpp_io_mod,         only: mpp_open, mpp_close, MPP_DELETE
 
-  use mpp_domains_mod,    only: mpp_get_compute_domains, domain2D 
+  use mpp_domains_mod,    only: mpp_get_compute_domains, domain2D
   use sat_vapor_pres_mod, only: sat_vapor_pres_init
 
   use diag_manager_mod,   only: diag_manager_init, diag_manager_end, &
@@ -206,8 +206,8 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 
     type(ESMF_Decomp_Flag)  :: decompflagPTile(2,6)
 
-    integer               :: globalTileLayout(2)
-    integer               :: nestRootPet, peListSize(1)
+    integer               :: TileLayout(2)
+    integer               :: nestRootPet, npes(1), peListSize(1)
     integer, allocatable  :: petMap(:)
 
     integer                       :: num_restart_interval, restart_starttime
@@ -435,7 +435,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !*** first try: Create cubed sphere grid from file
 !-----------------------------------------------------------------------
 !
-      if (mype == 0) write(0,*)'be create fcst grid'
+      call mpp_error(NOTE, 'before create fcst grid')
 
       gridfile = "grid_spec.nc" ! default
 
@@ -443,7 +443,11 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
         call read_data("INPUT/grid_spec.nc", "atm_mosaic_file", gridfile)
       endif
 
-      if( atm_int_state%Atm%regional ) then
+      if (mpp_pe() == mpp_root_pe()) &
+      write(*, *) 'create fcst grid: mype,regional,nested=',mype,atm_int_state%Atm%regional,atm_int_state%Atm%nested
+
+      ! regional-only without nests
+      if( atm_int_state%Atm%regional .and. .not. atm_int_state%Atm%nested ) then
 
         call atmosphere_control_data (isc, iec, jsc, jec, nlev)
 
@@ -485,44 +489,63 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
           enddo
         enddo
 
-          ! add and define "corner" coordinate values
-          call ESMF_GridAddCoord(fcstGrid, staggerLoc=ESMF_STAGGERLOC_CORNER, &
-                                 rc=rc); ESMF_ERR_ABORT(rc)
-          call ESMF_GridGetCoord(fcstGrid, coordDim=1, staggerLoc=ESMF_STAGGERLOC_CORNER, &
-                                 totalLBound=tlb, totalUBound=tub, &
-                                 farrayPtr=glonPtr, rc=rc); ESMF_ERR_ABORT(rc)
-          glonPtr(tlb(1):tub(1),tlb(2):tub(2)) = &
-             atm_int_state%Atm%lon_bnd(tlb(1):tub(1),tlb(2):tub(2)) * dtor
-          call ESMF_GridGetCoord(fcstGrid, coordDim=2, staggerLoc=ESMF_STAGGERLOC_CORNER, &
-                                 totalLBound=tlb, totalUBound=tub, &
-                                 farrayPtr=glatPtr, rc=rc); ESMF_ERR_ABORT(rc)
-          glatPtr(tlb(1):tub(1),tlb(2):tub(2)) = &
-            atm_int_state%Atm%lat_bnd(tlb(1):tub(1),tlb(2):tub(2)) * dtor
+        ! add and define "corner" coordinate values
+        call ESMF_GridAddCoord(fcstGrid, staggerLoc=ESMF_STAGGERLOC_CORNER, &
+                               rc=rc); ESMF_ERR_ABORT(rc)
+        call ESMF_GridGetCoord(fcstGrid, coordDim=1, staggerLoc=ESMF_STAGGERLOC_CORNER, &
+                               totalLBound=tlb, totalUBound=tub, &
+                               farrayPtr=glonPtr, rc=rc); ESMF_ERR_ABORT(rc)
+        glonPtr(tlb(1):tub(1),tlb(2):tub(2)) = &
+           atm_int_state%Atm%lon_bnd(tlb(1):tub(1),tlb(2):tub(2)) * dtor
+        call ESMF_GridGetCoord(fcstGrid, coordDim=2, staggerLoc=ESMF_STAGGERLOC_CORNER, &
+                               totalLBound=tlb, totalUBound=tub, &
+                               farrayPtr=glatPtr, rc=rc); ESMF_ERR_ABORT(rc)
+        glatPtr(tlb(1):tub(1),tlb(2):tub(2)) = &
+          atm_int_state%Atm%lat_bnd(tlb(1):tub(1),tlb(2):tub(2)) * dtor
 
-      else ! not regional
+        call mpp_error(NOTE, 'after create fcst grid for regional-only')
 
-        if ( .not. atm_int_state%Atm%nested ) then  !! global only
+      else ! not regional only
+
+        if (.not. atm_int_state%Atm%regional .and. .not. atm_int_state%Atm%nested ) then  !! global only
 
           do tl=1,6
               decomptile(1,tl) = atm_int_state%Atm%layout(1)
               decomptile(2,tl) = atm_int_state%Atm%layout(2)
               decompflagPTile(:,tl) = (/ESMF_DECOMP_SYMMEDGEMAX,ESMF_DECOMP_SYMMEDGEMAX/)
           enddo
-          fcstGrid = ESMF_GridCreateMosaic(filename="INPUT/"//trim(gridfile),                                 &
+          fcstGrid = ESMF_GridCreateMosaic(filename="INPUT/"//trim(gridfile),                                   &
                                              regDecompPTile=decomptile,tileFilePath="INPUT/",                   &
                                              decompflagPTile=decompflagPTile,                                   &
                                              staggerlocList=(/ESMF_STAGGERLOC_CENTER, ESMF_STAGGERLOC_CORNER/), &
                                              name='fcst_grid', rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-        else !! nesting
+          call mpp_error(NOTE, 'after create fcst grid for global-only with INPUT/'//trim(gridfile))
 
-          if (mype==0) globalTileLayout = atm_int_state%Atm%layout
-          call ESMF_VMBroadcast(vm, bcstData=globalTileLayout, count=2, &
+        else !! global-nesting or regional-nesting
+
+          if (mype==0) TileLayout = atm_int_state%Atm%layout
+          call ESMF_VMBroadcast(vm, bcstData=TileLayout, count=2, &
                                   rootPet=0, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-          nestRootPet = globalTileLayout(1) * globalTileLayout(2) * 6
+          if (mype==0) npes(1) = mpp_npes()
+          call ESMF_VMBroadcast(vm, bcstData=npes, count=1, &
+                                  rootPet=0, rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+          if ( npes(1) == TileLayout(1) * TileLayout(2) * 6 ) then
+            ! global-nesting
+            nestRootPet = npes(1)
+            gridfile="grid.nest02.tile7.nc"
+          else if ( npes(1) == TileLayout(1) * TileLayout(2) ) then
+            ! regional-nesting
+            nestRootPet = npes(1)
+            gridfile="grid.nest02.tile2.nc"
+          else
+            call mpp_error(FATAL, 'Inconsistent nestRootPet and Atm%layout')
+          endif
 
           if (mype == nestRootPet) then
             if (nestRootPet /= atm_int_state%Atm%pelist(1)) then
@@ -555,12 +578,14 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
           ! create the nest Grid by reading it from file but use DELayout
-          fcstGrid = ESMF_GridCreate(filename='INPUT/grid.nest02.tile7.nc',                             &
+          fcstGrid = ESMF_GridCreate(filename="INPUT/"//trim(gridfile),                                   &
                                        fileformat=ESMF_FILEFORMAT_GRIDSPEC, regDecomp=regDecomp,          &
                                        decompflag=(/ESMF_DECOMP_SYMMEDGEMAX,ESMF_DECOMP_SYMMEDGEMAX/),    &
                                        delayout=delayout, isSphere=.false., indexflag=ESMF_INDEX_DELOCAL, &
-              rc=rc)
+                                       rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+          call mpp_error(NOTE, 'after create fcst grid with INPUT/'//trim(gridfile))
 
         endif
 
