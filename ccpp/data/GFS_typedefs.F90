@@ -825,7 +825,6 @@ module GFS_typedefs
     logical              :: sedi_semi       !< flag for semi Lagrangian sedi of rain
     logical              :: sedi_semi_update!< flag for v update in semi Lagrangian sedi of rain
     logical              :: sedi_semi_decfl !< flag for interation with semi Lagrangian sedi of rain
-    real(kind=kind_phys) :: crt_sati        !< critical over saturation for ice generation
 
     !--- GFDL microphysical paramters
     logical              :: lgfdlmprad      !< flag for GFDL mp scheme and radiation consistency
@@ -3196,7 +3195,6 @@ module GFS_typedefs
     logical              :: sedi_semi      = .false.            !< flag for semi Lagrangian sedi of rain
     logical              :: sedi_semi_update = .false.          !< flag for v update in semi Lagrangian sedi of rain
     logical              :: sedi_semi_decfl = .false.           !< flag for interation with semi Lagrangian sedi of rain
-    real(kind=kind_phys) :: crt_sati       = 0.25               !< critical over saturation for ice generation
 
     !--- GFDL microphysical parameters
     logical              :: lgfdlmprad     = .false.            !< flag for GFDLMP radiation interaction
@@ -3566,7 +3564,6 @@ module GFS_typedefs
                                ltaerosol, lradar, nsradar_reset, lrefres, ttendlim,         &
                                ext_diag_thompson, dt_inner, lgfdlmprad,                     &
                                sedi_semi, sedi_semi_update, sedi_semi_decfl,                & 
-                               crt_sati,                                                    &
                           !--- max hourly
                                avg_max_length,                                              &
                           !--- land/surface model control
@@ -4044,13 +4041,6 @@ module GFS_typedefs
     Model%sedi_semi        = sedi_semi
     Model%sedi_semi_update = sedi_semi_update
     Model%sedi_semi_decfl  = sedi_semi_decfl
-    if(crt_sati < 0.0) then 
-      Model%crt_sati       =  0.0 
-    else if( crt_sati > 0.25) then 
-      Model%crt_sati       =  0.25
-    else 
-      Model%crt_sati       = crt_sati
-    endif 
      
 !--- F-A MP parameters
     Model%rhgrd            = rhgrd
@@ -5130,7 +5120,6 @@ module GFS_typedefs
                                           ' sedi_semi=',Model%sedi_semi, & 
                                           ' sedi_semi_update=',sedi_semi_update, & 
                                           ' sedi_semi_decfl=',sedi_semi_decfl, &
-                                          ' crt_sati=',crt_sati, &
                                           ' effr_in =',Model%effr_in, &
                                           ' lradar =',Model%lradar, &
                                           ' nsradar_reset =',Model%nsradar_reset, &
@@ -5551,7 +5540,6 @@ module GFS_typedefs
         print *, ' sedi_semi         : ', Model%sedi_semi
         print *, ' sedi_semi_update  : ', Model%sedi_semi_update
         print *, ' sedi_semi_decfl   : ', Model%sedi_semi_decfl
-        print *, ' crt_sati          : ', Model%crt_sati
         print *, ' '
       endif
       if (Model%imp_physics == Model%imp_physics_mg) then

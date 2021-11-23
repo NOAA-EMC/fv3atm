@@ -3527,13 +3527,6 @@
   dimensions = ()
   type = logical
   intent = in
-[crt_sati]
-  standard_name = critical_over_saturation_for_ice_generation
-  long_name = critical over saturation for ice generation
-  units = none
-  dimensions = ()
-  type = real
-  kind = kind_phys
 [lgfdlmprad]
   standard_name = flag_for_GFDL_microphysics_radiation_interaction
   long_name = flag for GFDL microphysics-radiation interaction
