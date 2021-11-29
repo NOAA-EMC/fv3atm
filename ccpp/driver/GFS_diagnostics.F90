@@ -977,18 +977,20 @@ module GFS_diagnostics
     do nb = 1,nblks
       ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%snohfa(:)
     enddo
-
-    idx = idx + 1
-    ExtDiag(idx)%axes = 2
-    ExtDiag(idx)%name = 'pah_ave'
-    ExtDiag(idx)%desc = ' Total Precipitation Advected Heat - GFS lsm'
-    ExtDiag(idx)%unit = 'W/m**2'
-    ExtDiag(idx)%mod_name = 'gfs_phys'
-    ExtDiag(idx)%time_avg = .TRUE.
-    allocate (ExtDiag(idx)%data(nblks))
-    do nb = 1,nblks
-      ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%paha(:)
-    enddo
+    
+    if (Model%lsm == Model%lsm_noahmp) then
+     idx = idx + 1
+     ExtDiag(idx)%axes = 2
+     ExtDiag(idx)%name = 'pah_ave'
+     ExtDiag(idx)%desc = ' Total Precipitation Advected Heat - GFS lsm'
+     ExtDiag(idx)%unit = 'W/m**2'
+     ExtDiag(idx)%mod_name = 'gfs_phys'
+     ExtDiag(idx)%time_avg = .TRUE.
+     allocate (ExtDiag(idx)%data(nblks))
+     do nb = 1,nblks
+       ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%paha(:)
+     enddo
+    endif
 
     idx = idx + 1
     ExtDiag(idx)%axes = 2
@@ -1244,16 +1246,18 @@ module GFS_diagnostics
       ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%tedir(:)
     enddo
 
-    idx = idx + 1
-    ExtDiag(idx)%axes = 2
-    ExtDiag(idx)%name = 'wa_acc'
-    ExtDiag(idx)%desc = 'total water storage in aquifer'
-    ExtDiag(idx)%unit = 'kg/m**2'
-    ExtDiag(idx)%mod_name = 'gfs_phys'
-    allocate (ExtDiag(idx)%data(nblks))
-    do nb = 1,nblks
-      ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%twa(:)
-    enddo
+    if (Model%lsm == Model%lsm_noahmp) then   
+     idx = idx + 1
+     ExtDiag(idx)%axes = 2
+     ExtDiag(idx)%name = 'wa_acc'
+     ExtDiag(idx)%desc = 'total water storage in aquifer'
+     ExtDiag(idx)%unit = 'kg/m**2'
+     ExtDiag(idx)%mod_name = 'gfs_phys'
+     allocate (ExtDiag(idx)%data(nblks))
+     do nb = 1,nblks
+       ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%twa(:)
+     enddo
+    endif
 
     idx = idx + 1
     ExtDiag(idx)%axes = 2
@@ -1912,16 +1916,18 @@ module GFS_diagnostics
       ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%gfluxi(:)
     enddo
 
-    idx = idx + 1
-    ExtDiag(idx)%axes = 2
-    ExtDiag(idx)%name = 'pahi'
-    ExtDiag(idx)%desc = 'instantaneous precipitation advected heat flux'
-    ExtDiag(idx)%unit = 'W/m**2'
-    ExtDiag(idx)%mod_name = 'gfs_phys'
-    allocate (ExtDiag(idx)%data(nblks))
-    do nb = 1,nblks
-      ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%pahi(:)
-    enddo
+    if (Model%lsm == Model%lsm_noahmp) then   
+     idx = idx + 1
+     ExtDiag(idx)%axes = 2
+     ExtDiag(idx)%name = 'pahi'
+     ExtDiag(idx)%desc = 'instantaneous precipitation advected heat flux'
+     ExtDiag(idx)%unit = 'W/m**2'
+     ExtDiag(idx)%mod_name = 'gfs_phys'
+     allocate (ExtDiag(idx)%data(nblks))
+     do nb = 1,nblks
+       ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%pahi(:)
+     enddo
+    endif
 
     idx = idx + 1
     ExtDiag(idx)%axes = 2
