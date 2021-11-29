@@ -175,15 +175,25 @@ module FV3GFS_io_mod
 
    ntr = size(GFS_Data(1)%Statein%qgrs,3)
 
+     nsfcprop2d = 93
    if (Model%lsm == Model%lsm_noahmp) then
-     nsfcprop2d = 156
+     nsfcprop2d = nsfcprop2d + 49
+     if (Model%use_cice_alb) then
+       nsfcprop2d = nsfcprop2d + 4
+     endif
    elseif (Model%lsm == Model%lsm_ruc) then
-     nsfcprop2d = 125
+     nsfcprop2d = nsfcprop2d + 4 + 12
      if (Model%rdlai) then
        nsfcprop2d = nsfcprop2d + 1
      endif
    else
-     nsfcprop2d = 107
+     if (Model%use_cice_alb) then
+       nsfcprop2d = nsfcprop2d + 4
+     endif
+   endif
+
+   if (Model%nstf_name(1) > 0) then
+     nsfcprop2d = nsfcprop2d + 16
    endif
 
    allocate (temp2d(isc:iec,jsc:jec,nsfcprop2d+Model%ntot3d+Model%nctp))
@@ -233,7 +243,7 @@ module FV3GFS_io_mod
        temp2d(i,j,32) = GFS_Data(nb)%Sfcprop%f10m(ix)
        temp2d(i,j,33) = GFS_Data(nb)%Sfcprop%tprcp(ix)
        temp2d(i,j,34) = GFS_Data(nb)%Sfcprop%srflag(ix)
-       if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp .or. Model%lsm == Model%lsm_noah_wrfv4) then
+       if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp) then
          temp2d(i,j,35) = GFS_Data(nb)%Sfcprop%slc(ix,1)
          temp2d(i,j,36) = GFS_Data(nb)%Sfcprop%slc(ix,2)
          temp2d(i,j,37) = GFS_Data(nb)%Sfcprop%slc(ix,3)
@@ -316,14 +326,14 @@ module FV3GFS_io_mod
        temp2d(i,j,92) = GFS_Data(nb)%Sfcprop%emis_ice(ix)
        temp2d(i,j,93) = GFS_Data(nb)%Sfcprop%sncovr_ice(ix)
 
-       idx_opt = 93
+       idx_opt = 94
        if (Model%use_cice_alb .or. Model%lsm == Model%lsm_ruc) then
-         temp2d(i,j,idx_opt+1) = GFS_Data(nb)%Sfcprop%albdirvis_ice(ix)
-         temp2d(i,j,idx_opt+2) = GFS_Data(nb)%Sfcprop%albdirnir_ice(ix)
-         temp2d(i,j,idx_opt+3) = GFS_Data(nb)%Sfcprop%albdifvis_ice(ix)
-         temp2d(i,j,idx_opt+4) = GFS_Data(nb)%Sfcprop%albdifnir_ice(ix)
+         temp2d(i,j,idx_opt) = GFS_Data(nb)%Sfcprop%albdirvis_ice(ix)
+         temp2d(i,j,idx_opt+1) = GFS_Data(nb)%Sfcprop%albdirnir_ice(ix)
+         temp2d(i,j,idx_opt+2) = GFS_Data(nb)%Sfcprop%albdifvis_ice(ix)
+         temp2d(i,j,idx_opt+3) = GFS_Data(nb)%Sfcprop%albdifnir_ice(ix)
+       idx_opt = idx_opt + 4
        endif
-       idx_opt = idx_opt + 5
 
        if (Model%lsm == Model%lsm_noahmp) then
         temp2d(i,j,idx_opt)    = GFS_Data(nb)%Sfcprop%snowxy(ix)
@@ -390,7 +400,7 @@ module FV3GFS_io_mod
         temp2d(i,j,idx_opt+9)  = GFS_Data(nb)%Sfcprop%sfalb_lnd(ix)
         temp2d(i,j,idx_opt+10) = GFS_Data(nb)%Sfcprop%sfalb_lnd_bck(ix)
         temp2d(i,j,idx_opt+11) = GFS_Data(nb)%Sfcprop%sfalb_ice(ix)
-        idx_opt = idx_opt + 11
+        idx_opt = idx_opt + 12
         if (Model%rdlai) then
           temp2d(i,j,idx_opt+1) = GFS_Data(nb)%Sfcprop%xlaixy(ix)
           idx_opt = idx_opt + 1
@@ -779,7 +789,7 @@ module FV3GFS_io_mod
       ! RUC LSM, but tiice in the initial conditions will only have two vertical layers
       allocate(sfc_var3ice(nx,ny,Model%kice))
 
-      if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp .or. Model%lsm == Model%lsm_noah_wrfv4 .or. (.not.warm_start)) then
+      if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp .or. (.not.warm_start)) then
         allocate(sfc_var3(nx,ny,Model%lsoil,nvar_s3))
       else if (Model%lsm == Model%lsm_ruc) then
         allocate(sfc_var3(nx,ny,Model%lsoil_lsm,nvar_s3))
@@ -951,7 +961,7 @@ module FV3GFS_io_mod
         call register_axis(Sfc_restart, 'yaxis_1', 'Y')
         call register_axis(Sfc_restart, 'zaxis_1', dimension_length=Model%kice)
         
-        if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp .or. Model%lsm == Model%lsm_noah_wrfv4) then
+        if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp) then
           call register_axis(Sfc_restart, 'zaxis_2', dimension_length=Model%lsoil)
         else if(Model%lsm == Model%lsm_ruc) then
           call register_axis(Sfc_restart, 'zaxis_2', dimension_length=Model%lsoil_lsm)
@@ -1035,7 +1045,7 @@ module FV3GFS_io_mod
    endif  ! if not allocated
 
 
-    if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp .or. Model%lsm == Model%lsm_noah_wrfv4 .or. (.not.warm_start)) then
+    if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp .or. (.not.warm_start)) then
       !--- names of the 3D variables to save
       sfc_name3(1) = 'stc'
       sfc_name3(2) = 'smc'
@@ -1389,7 +1399,7 @@ module FV3GFS_io_mod
           Sfcprop(nb)%rechxy(ix)     = sfc_var2(i,j,nvar_s2m+47)
         endif
 
-        if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp .or. Model%lsm == Model%lsm_noah_wrfv4 .or. (.not.warm_start)) then
+        if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp .or. (.not.warm_start)) then
           !--- 3D variables
           do lsoil = 1,Model%lsoil
             Sfcprop(nb)%stc(ix,lsoil) = sfc_var3(i,j,lsoil,1)   !--- stc
@@ -1727,7 +1737,7 @@ module FV3GFS_io_mod
       call write_data(Sfc_restart, 'zaxis_1', buffer)
       deallocate(buffer)
 
-      if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp .or. Model%lsm == Model%lsm_noah_wrfv4) then
+      if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp) then
         call register_axis(Sfc_restart, 'zaxis_2', dimension_length=Model%lsoil)
         call register_field(Sfc_restart, 'zaxis_2', 'double', (/'zaxis_2'/))
         call register_variable_attribute(Sfc_restart, 'zaxis_2', 'cartesian_axis', 'Z', str_len=1)
@@ -1774,7 +1784,7 @@ module FV3GFS_io_mod
       allocate(sfc_name2(nvar2m+nvar2o+nvar2mp+nvar2r))
       allocate(sfc_name3(0:nvar3+nvar3mp))
       allocate(sfc_var2(nx,ny,nvar2m+nvar2o+nvar2mp+nvar2r))
-      if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp .or. Model%lsm == Model%lsm_noah_wrfv4) then
+      if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp) then
         allocate(sfc_var3(nx,ny,Model%lsoil,nvar3))
       elseif (Model%lsm == Model%lsm_ruc) then
         allocate(sfc_var3(nx,ny,Model%lsoil_lsm,nvar3))
@@ -1967,7 +1977,7 @@ module FV3GFS_io_mod
    endif
    nullify(var2_p)
 
-   if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp .or. Model%lsm == Model%lsm_noah_wrfv4) then
+   if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp) then
       !--- names of the 3D variables to save
       sfc_name3(1) = 'stc'
       sfc_name3(2) = 'smc'
@@ -2172,7 +2182,7 @@ module FV3GFS_io_mod
           if (sfc_var3ice(i,j,k) < one) sfc_var3ice(i,j,k) = zero
         enddo
 
-        if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp .or. Model%lsm == Model%lsm_noah_wrfv4) then
+        if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp) then
           !--- 3D variables
           do lsoil = 1,Model%lsoil
             sfc_var3(i,j,lsoil,1) = Sfcprop(nb)%stc(ix,lsoil) !--- stc
@@ -2835,7 +2845,11 @@ module FV3GFS_io_mod
              used=send_data(Diag(idx)%id, var3, Time, is_in=is_in, js_in=js_in, ks_in=1)
            endif
            !--- ozone mixing ration tendency
+#ifdef MULTI_GASES
+           if (trim(Diag(idx)%name) == 'dspo3_dt') then
+#else
            if (trim(Diag(idx)%name) == 'do3mr_dt') then
+#endif
              var3(1:nx,1:ny,1:levs) =  RESHAPE(Statein%qgrs(1:ngptc,levs:1:-1,ntoz:ntoz), (/nx,ny,levs/))
              var3(1:nx,1:ny,1:levs) = (RESHAPE(Stateout%gq0(1:ngptc,levs:1:-1,ntoz:ntoz), (/nx,ny,levs/))  &
                                         - var3(1:nx,1:ny,1:levs))*rdt
