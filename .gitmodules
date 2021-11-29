@@ -12,3 +12,7 @@
   #branch = main
   url = https://github.com/gthompsnWRF/ccpp-physics
   branch = new_thompson_cloud_fraction
+[submodule "upp"]
+  path = upp
+  url = https://github.com/NOAA-EMC/UPP
+  branch = develop
