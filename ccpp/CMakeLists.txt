@@ -102,10 +102,6 @@ add_subdirectory(physics)
 add_library(
     fv3ccpp
 
-    data/CCPP_typedefs.F90
-    data/GFS_typedefs.F90
-    data/CCPP_data.F90
-
     driver/GFS_diagnostics.F90
     driver/GFS_restart.F90
     driver/GFS_init.F90
