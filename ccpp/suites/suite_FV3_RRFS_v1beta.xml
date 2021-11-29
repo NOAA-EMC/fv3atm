@@ -78,7 +78,6 @@
   <group name="stochastics">
     <subcycle loop="1">
       <scheme>GFS_stochastics</scheme>
-      <scheme>phys_tend</scheme>
     </subcycle>
   </group>
   <!-- <finalize></finalize> -->
