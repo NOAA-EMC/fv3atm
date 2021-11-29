@@ -6425,7 +6425,6 @@ module GFS_typedefs
     allocate (Diag%snohfa  (IM))
     allocate (Diag%transa  (IM))
     allocate (Diag%sbsnoa  (IM))
-    allocate (Diag%paha    (IM))
     allocate (Diag%snowca  (IM))
     allocate (Diag%soilm   (IM))
     allocate (Diag%tmpmin  (IM))
@@ -6444,7 +6443,6 @@ module GFS_typedefs
     allocate (Diag%tecan   (IM))
     allocate (Diag%tetran  (IM))
     allocate (Diag%tedir   (IM))
-    allocate (Diag%twa     (IM))
     allocate (Diag%ep      (IM))
     allocate (Diag%cldwrk  (IM))
     allocate (Diag%dugwd   (IM))
@@ -6493,7 +6491,6 @@ module GFS_typedefs
     allocate (Diag%dtsfci  (IM))
     allocate (Diag%dqsfci  (IM))
     allocate (Diag%gfluxi  (IM))
-    allocate (Diag%pahi    (IM))
     allocate (Diag%epi     (IM))
     allocate (Diag%smcwlt2 (IM))
     allocate (Diag%smcref2 (IM))
@@ -6506,6 +6503,12 @@ module GFS_typedefs
     allocate (Diag%tdomip   (IM))
     allocate (Diag%tdoms    (IM))
     allocate (Diag%zmtnblck (IM))
+
+    if(Model%lsm == Model%lsm_noahmp) then
+      allocate (Diag%paha    (IM))
+      allocate (Diag%twa     (IM))
+      allocate (Diag%pahi    (IM))
+    endif
 
     ! F-A MP scheme
     if (Model%imp_physics == Model%imp_physics_fer_hires) then
@@ -6698,7 +6701,6 @@ module GFS_typedefs
     Diag%transa     = zero
     Diag%sbsnoa     = zero
     Diag%snowca     = zero
-    Diag%paha       = zero
     Diag%soilm      = zero
     Diag%tmpmin     = Model%huge
     Diag%tmpmax     = zero
@@ -6714,7 +6716,6 @@ module GFS_typedefs
     Diag%tecan      = zero
     Diag%tetran     = zero
     Diag%tedir      = zero
-    Diag%twa        = zero
     Diag%ep         = zero
     Diag%cldwrk     = zero
     Diag%dugwd      = zero
@@ -6757,7 +6758,6 @@ module GFS_typedefs
     Diag%dtsfci     = zero
     Diag%dqsfci     = zero
     Diag%gfluxi     = zero
-    Diag%pahi       = zero
     Diag%epi        = zero
     Diag%smcwlt2    = zero
     Diag%smcref2    = zero
@@ -6769,6 +6769,12 @@ module GFS_typedefs
     Diag%tdomzr     = zero
     Diag%tdomip     = zero
     Diag%tdoms      = zero
+
+    if(Model%lsm == Model%lsm_noahmp)then
+      Diag%paha       = zero
+      Diag%twa        = zero
+      Diag%pahi       = zero
+    endif
 
     if (Model%imp_physics == Model%imp_physics_fer_hires) then
        Diag%train      = zero
