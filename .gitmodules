@@ -10,3 +10,7 @@
   path = ccpp/physics
   url = https://github.com/dustinswales/ccpp-physics
   branch = cleanup_p8ORTs
+[submodule "upp"]
+  path = upp
+  url = https://github.com/NOAA-EMC/UPP
+  branch = develop

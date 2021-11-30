@@ -20,6 +20,8 @@ add_subdirectory(atmos_cubed_sphere)
 ### fv3atm
 ###############################################################################
 if(INLINE_POST)
+  set(BUILD_POSTEXEC OFF)
+  add_subdirectory(upp)
   set(POST_SRC io/inline_post.F90 io/post_nems_routines.F90 io/post_gfs.F90 io/post_regional.F90)
 else()
   set(POST_SRC io/inline_post_stub.F90)
