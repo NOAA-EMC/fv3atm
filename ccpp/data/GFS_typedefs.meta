@@ -6382,6 +6382,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
+  active = (control_for_land_surface_scheme == identifier_for_noahmp_land_surface_scheme)
 [transa]
   standard_name = cumulative_transpiration_flux_multiplied_by_timestep
   long_name = cumulative total plant transpiration rate multiplied by timestep
@@ -6586,6 +6587,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
+  active = (control_for_land_surface_scheme == identifier_for_noahmp_land_surface_scheme)
 [cldwrk]
   standard_name = cumulative_cloud_work_function
   long_name = cumulative cloud work function (valid only with sas)
@@ -6880,6 +6882,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
+  active = (control_for_land_surface_scheme == identifier_for_noahmp_land_surface_scheme)
 [epi]
   standard_name = instantaneous_surface_potential_evaporation
   long_name = instantaneous sfc potential evaporation
