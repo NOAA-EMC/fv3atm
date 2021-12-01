@@ -609,7 +609,7 @@
 [hprime]
   standard_name = statistical_measures_of_subgrid_orography_collection_array
   long_name = orographic metrics
-  units = various
+  units = mixed
   dimensions = (horizontal_loop_extent,number_of_statistical_measures_of_subgrid_orography)
   type = real
   kind = kind_phys
@@ -3255,7 +3255,7 @@
 [mg_qcvar]
   standard_name = relative_variance_of_subgrid_cloud_condensate_distribution
   long_name = cloud water relative variance for MG microphysics
-  units =
+  units = frac
   dimensions = ()
   type = real
   kind = kind_phys
@@ -3269,7 +3269,7 @@
 [mg_rhmini]
   standard_name = relative_humidity_threshold_for_ice_nucleation
   long_name = relative humidity threshold parameter for nucleating ice for MG microphysics
-  units = none
+  units = frac
   dimensions = ()
   type = real
   kind = kind_phys
@@ -3520,21 +3520,12 @@
   units = flag
   dimensions = ()
   type = logical
-  intent = in
-[sedi_semi_update]
-  standard_name = flag_for_v_update_in_semi_Lagrangian_sedi
-  long_name = flag for v update in semi Lagrangian sedi of rain
-  units = flag
+[decfl]
+  standard_name = deformed_CFL_factor
+  long_name = deformed CFL factor
+  units = count
   dimensions = ()
-  type = logical
-  intent = in
-[sedi_semi_decfl]
-  standard_name = flag_for_iteration_with_semi_Lagrangian_sedi
-  long_name = flag for interation with semi Lagrangian sedi of rain
-  units = flag
-  dimensions = ()
-  type = logical
-  intent = in
+  type = integer
 [lgfdlmprad]
   standard_name = flag_for_GFDL_microphysics_radiation_interaction
   long_name = flag for GFDL microphysics-radiation interaction
@@ -3827,7 +3818,7 @@
 [rhgrd]
   standard_name = relative_humidity_threshold_for_condensation
   long_name = relative humidity threshold parameter for condensation for FA scheme
-  units = none
+  units = frac
   dimensions = ()
   type = real
   kind = kind_phys
@@ -5743,21 +5734,21 @@
 [tau_amf]
   standard_name = absolute_momentum_flux_due_to_nonorographic_gravity_wave_drag
   long_name = ngw_absolute_momentum_flux
-  units = various
+  units = mixed
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
 [ozpl]
   standard_name = ozone_forcing
   long_name = ozone forcing data
-  units = various
+  units = mixed
   dimensions = (horizontal_loop_extent,vertical_dimension_of_ozone_forcing_data,number_of_coefficients_in_ozone_forcing_data)
   type = real
   kind = kind_phys
 [h2opl]
   standard_name = stratospheric_water_vapor_forcing
   long_name = water forcing data
-  units = various
+  units = mixed
   dimensions = (horizontal_loop_extent,vertical_dimension_of_h2o_forcing_data,number_of_coefficients_in_h2o_forcing_data)
   type = real
   kind = kind_phys
@@ -6363,7 +6354,7 @@
 [fluxr]
   standard_name = cumulative_radiation_diagnostic
   long_name = time-accumulated 2D radiation-related diagnostic fields
-  units = various
+  units = mixed
   dimensions = (horizontal_loop_extent,number_of_diagnostics_variables_for_radiation)
   type = real
   kind = kind_phys
@@ -6944,7 +6935,7 @@
 [dtend]
   standard_name = cumulative_change_of_state_variables
   long_name = diagnostic tendencies for state variables
-  units = various
+  units = mixed
   dimensions = (horizontal_loop_extent,vertical_layer_dimension,cumulative_change_of_state_variables_outer_index_max)
   type = real
   kind = kind_phys
@@ -6980,14 +6971,14 @@
 [rh02max]
   standard_name = maximum_relative_humidity_at_2m_over_maximum_hourly_time_interval
   long_name = maximum relative humidity at 2m over maximum hourly time interval
-  units = %
+  units = frac
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
 [rh02min]
   standard_name = minimum_relative_humidity_at_2m_over_maximum_hourly_time_interval
   long_name = minumum relative humidity at 2m over maximum hourly time interval
-  units = %
+  units = frac
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
@@ -8209,7 +8200,7 @@
 [faerlw]
   standard_name = aerosol_optical_properties_for_longwave_bands_01_16
   long_name = aerosol optical properties for longwave bands 01-16
-  units = various
+  units = mixed
   dimensions = (horizontal_loop_extent,adjusted_vertical_layer_dimension_for_radiation,number_of_aerosol_bands_for_longwave_radiation,number_of_aerosol_output_fields_for_longwave_radiation)
   type = real
   kind = kind_phys
@@ -8237,7 +8228,7 @@
 [faersw]
   standard_name = aerosol_optical_properties_for_shortwave_bands_01_16
   long_name = aerosol optical properties for shortwave bands 01-16
-  units = various
+  units = mixed
   dimensions = (horizontal_loop_extent,adjusted_vertical_layer_dimension_for_radiation,number_of_aerosol_bands_for_shortwave_radiation,number_of_aerosol_output_fields_for_shortwave_radiation)
   type = real
   kind = kind_phys
@@ -9843,7 +9834,7 @@
 [q_lay]
   standard_name = water_vapor_mixing_ratio
   long_name = water vaport mixing ratio
-  units = kg/kg
+  units = kg kg-1
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
   kind = kind_phys
@@ -10005,7 +9996,7 @@
 [aerosolslw]
   standard_name = RRTMGP_aerosol_optical_properties_for_longwave_bands_01_16
   long_name = aerosol optical properties for longwave bands 01-16
-  units = various
+  units = mixed
   dimensions = (horizontal_loop_extent,vertical_layer_dimension, number_of_longwave_bands,number_of_aerosol_output_fields_for_longwave_radiation)
   type = real
   kind = kind_phys
@@ -10034,7 +10025,7 @@
 [aerosolssw]
   standard_name = RRTMGP_aerosol_optical_properties_for_shortwave_bands_01_16
   long_name = aerosol optical properties for shortwave bands 01-16
-  units = various
+  units = mixed
   dimensions = (horizontal_loop_extent,vertical_layer_dimension, number_of_shortwave_bands, number_of_aerosol_output_fields_for_shortwave_radiation)
   type = real
   kind = kind_phys

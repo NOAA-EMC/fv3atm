@@ -824,8 +824,7 @@ module GFS_typedefs
     integer              :: thompson_ext_ndiag3d=37 !< number of 3d arrays for extended diagnostic output from Thompson
     real(kind=kind_phys) :: dt_inner        !< time step for the inner loop in s
     logical              :: sedi_semi       !< flag for semi Lagrangian sedi of rain
-    logical              :: sedi_semi_update!< flag for v update in semi Lagrangian sedi of rain
-    logical              :: sedi_semi_decfl !< flag for interation with semi Lagrangian sedi of rain
+    integer              :: decfl           !< deformed CFL factor
 
     !--- GFDL microphysical paramters
     logical              :: lgfdlmprad      !< flag for GFDL mp scheme and radiation consistency
@@ -3198,8 +3197,7 @@ module GFS_typedefs
     logical              :: ext_diag_thompson = .false.         !< flag for extended diagnostic output from Thompson
     real(kind=kind_phys) :: dt_inner       = -999.0             !< time step for the inner loop 
     logical              :: sedi_semi      = .false.            !< flag for semi Lagrangian sedi of rain
-    logical              :: sedi_semi_update = .false.          !< flag for v update in semi Lagrangian sedi of rain
-    logical              :: sedi_semi_decfl = .false.           !< flag for interation with semi Lagrangian sedi of rain
+    integer              :: decfl          = 8                  !< deformed CFL factor
 
     !--- GFDL microphysical parameters
     logical              :: lgfdlmprad     = .false.            !< flag for GFDLMP radiation interaction
@@ -3569,7 +3567,7 @@ module GFS_typedefs
                                mg_alf,   mg_qcmin, mg_do_ice_gmao, mg_do_liq_liu,           &
                                ltaerosol, lradar, nsradar_reset, lrefres, ttendlim,         &
                                ext_diag_thompson, dt_inner, lgfdlmprad,                     &
-                               sedi_semi, sedi_semi_update, sedi_semi_decfl,                &
+                               sedi_semi, decfl,                                            &
                           !--- max hourly
                                avg_max_length,                                              &
                           !--- land/surface model control
@@ -4045,8 +4043,7 @@ module GFS_typedefs
       Model%dt_inner       = Model%dtp
     endif
     Model%sedi_semi        = sedi_semi
-    Model%sedi_semi_update = sedi_semi_update
-    Model%sedi_semi_decfl  = sedi_semi_decfl
+    Model%decfl            = decfl
 !--- F-A MP parameters
     Model%rhgrd            = rhgrd
     Model%spec_adv         = spec_adv
@@ -5123,8 +5120,7 @@ module GFS_typedefs
                                           ' ext_diag_thompson =',Model%ext_diag_thompson, &
                                           ' dt_inner =',Model%dt_inner, &
                                           ' sedi_semi=',Model%sedi_semi, & 
-                                          ' sedi_semi_update=',sedi_semi_update, & 
-                                          ' sedi_semi_decfl=',sedi_semi_decfl, &
+                                          ' decfl=',decfl, &
                                           ' effr_in =',Model%effr_in, &
                                           ' lradar =',Model%lradar, &
                                           ' nsradar_reset =',Model%nsradar_reset, &
@@ -5543,8 +5539,7 @@ module GFS_typedefs
         print *, ' ext_diag_thompson : ', Model%ext_diag_thompson
         print *, ' dt_inner          : ', Model%dt_inner
         print *, ' sedi_semi         : ', Model%sedi_semi
-        print *, ' sedi_semi_update  : ', Model%sedi_semi_update
-        print *, ' sedi_semi_decfl  : ', Model%sedi_semi_decfl
+        print *, ' decfl             : ', Model%decfl
         print *, ' '
       endif
       if (Model%imp_physics == Model%imp_physics_mg) then
