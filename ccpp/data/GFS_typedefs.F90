@@ -1542,6 +1542,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: evbsa  (:)     => null()   !< noah lsm diagnostics
     real (kind=kind_phys), pointer :: evcwa  (:)     => null()   !< noah lsm diagnostics
     real (kind=kind_phys), pointer :: snohfa (:)     => null()   !< noah lsm diagnostics
+    real (kind=kind_phys), pointer :: paha   (:)     => null()   !< noah lsm diagnostics
     real (kind=kind_phys), pointer :: transa (:)     => null()   !< noah lsm diagnostics
     real (kind=kind_phys), pointer :: sbsnoa (:)     => null()   !< noah lsm diagnostics
     real (kind=kind_phys), pointer :: snowca (:)     => null()   !< noah lsm diagnostics
@@ -1560,6 +1561,10 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: suntim (:)     => null()   !< sunshine duration time (s)
     real (kind=kind_phys), pointer :: runoff (:)     => null()   !< total water runoff
     real (kind=kind_phys), pointer :: ep     (:)     => null()   !< potential evaporation
+    real (kind=kind_phys), pointer :: tecan  (:)     => null()   !< total evaporation of intercepted water
+    real (kind=kind_phys), pointer :: tetran (:)     => null()   !< total transpiration rate
+    real (kind=kind_phys), pointer :: tedir  (:)     => null()   !< total soil surface evaporation rate
+    real (kind=kind_phys), pointer :: twa    (:)     => null()   !< total water storage in aquifer
     real (kind=kind_phys), pointer :: cldwrk (:)     => null()   !< cloud workfunction (valid only with sas)
     real (kind=kind_phys), pointer :: dugwd  (:)     => null()   !< vertically integrated u change by OGWD
     real (kind=kind_phys), pointer :: dvgwd  (:)     => null()   !< vertically integrated v change by OGWD
@@ -1626,6 +1631,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: dtsfci (:)     => null()   !< instantaneous sfc sensible heat flux
     real (kind=kind_phys), pointer :: dqsfci (:)     => null()   !< instantaneous sfc latent heat flux
     real (kind=kind_phys), pointer :: gfluxi (:)     => null()   !< instantaneous sfc ground heat flux
+    real (kind=kind_phys), pointer :: pahi   (:)     => null()   !< instantaneous precipitation advected heat flux
     real (kind=kind_phys), pointer :: epi    (:)     => null()   !< instantaneous sfc potential evaporation
     real (kind=kind_phys), pointer :: smcwlt2(:)     => null()   !< wilting point (volumetric)
     real (kind=kind_phys), pointer :: smcref2(:)     => null()   !< soil moisture threshold (volumetric)
@@ -1870,6 +1876,10 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: evap_water(:)      => null()  !<
     real (kind=kind_phys), pointer      :: evbs(:)            => null()  !<
     real (kind=kind_phys), pointer      :: evcw(:)            => null()  !<
+    real (kind=kind_phys), pointer      :: pah(:)             => null()  !<
+    real (kind=kind_phys), pointer      :: ecan(:)            => null()  !<
+    real (kind=kind_phys), pointer      :: etran(:)           => null()  !<
+    real (kind=kind_phys), pointer      :: edir(:)            => null()  !<
     real (kind=kind_phys), pointer      :: faerlw(:,:,:,:)    => null()  !<
     real (kind=kind_phys), pointer      :: faersw(:,:,:,:)    => null()  !<
     real (kind=kind_phys), pointer      :: ffhh_ice(:)        => null()  !<
@@ -6430,6 +6440,9 @@ module GFS_typedefs
     allocate (Diag%ulwsfc  (IM))
     allocate (Diag%suntim  (IM))
     allocate (Diag%runoff  (IM))
+    allocate (Diag%tecan   (IM))
+    allocate (Diag%tetran  (IM))
+    allocate (Diag%tedir   (IM))
     allocate (Diag%ep      (IM))
     allocate (Diag%cldwrk  (IM))
     allocate (Diag%dugwd   (IM))
@@ -6490,6 +6503,12 @@ module GFS_typedefs
     allocate (Diag%tdomip   (IM))
     allocate (Diag%tdoms    (IM))
     allocate (Diag%zmtnblck (IM))
+
+    if(Model%lsm == Model%lsm_noahmp) then
+      allocate (Diag%paha    (IM))
+      allocate (Diag%twa     (IM))
+      allocate (Diag%pahi    (IM))
+    endif
 
     ! F-A MP scheme
     if (Model%imp_physics == Model%imp_physics_fer_hires) then
@@ -6694,6 +6713,9 @@ module GFS_typedefs
     Diag%ulwsfc     = zero
     Diag%suntim     = zero
     Diag%runoff     = zero
+    Diag%tecan      = zero
+    Diag%tetran     = zero
+    Diag%tedir      = zero
     Diag%ep         = zero
     Diag%cldwrk     = zero
     Diag%dugwd      = zero
@@ -6747,6 +6769,12 @@ module GFS_typedefs
     Diag%tdomzr     = zero
     Diag%tdomip     = zero
     Diag%tdoms      = zero
+
+    if(Model%lsm == Model%lsm_noahmp)then
+      Diag%paha       = zero
+      Diag%twa        = zero
+      Diag%pahi       = zero
+    endif
 
     if (Model%imp_physics == Model%imp_physics_fer_hires) then
        Diag%train      = zero
@@ -6976,6 +7004,10 @@ module GFS_typedefs
     allocate (Interstitial%evap_water      (IM))
     allocate (Interstitial%evbs            (IM))
     allocate (Interstitial%evcw            (IM))
+    allocate (Interstitial%pah             (IM))
+    allocate (Interstitial%ecan            (IM))
+    allocate (Interstitial%etran           (IM))
+    allocate (Interstitial%edir            (IM))
     allocate (Interstitial%faerlw          (IM,Model%levr+LTP,NBDLW,NF_AELW))
     allocate (Interstitial%faersw          (IM,Model%levr+LTP,NBDSW,NF_AESW))
     allocate (Interstitial%ffhh_ice        (IM))
@@ -7665,6 +7697,10 @@ module GFS_typedefs
     Interstitial%evap_water      = Model%huge
     Interstitial%evbs            = clear_val
     Interstitial%evcw            = clear_val
+    Interstitial%pah             = clear_val
+    Interstitial%ecan            = clear_val
+    Interstitial%etran           = clear_val
+    Interstitial%edir            = clear_val
     Interstitial%ffhh_ice        = Model%huge
     Interstitial%ffhh_land       = Model%huge
     Interstitial%ffhh_water      = Model%huge
