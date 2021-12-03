@@ -14,3 +14,7 @@
   #branch = main
   url = https://github.com/climbfuji/ccpp-physics
   branch = cleanup_cmake_build_config
+[submodule "upp"]
+  path = upp
+  url = https://github.com/NOAA-EMC/UPP
+  branch = develop
