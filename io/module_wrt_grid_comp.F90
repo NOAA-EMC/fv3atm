@@ -537,8 +537,8 @@
         endif
         wrt_int_state%latstart = lat(1)
         wrt_int_state%latlast  = lat(jmo)
-        do j=1,imo
-          lon(j) = 360.d0/real(imo,8) *real(j-1,8)
+        do i=1,imo
+          lon(i) = 360.d0/real(imo,8) *real(i-1,8)
         enddo
         wrt_int_state%lonstart = lon(1)
         wrt_int_state%lonlast  = lon(imo)
