@@ -544,7 +544,7 @@
         wrt_int_state%lonlast  = lon(imo)
         do j=lbound(latPtr,2),ubound(latPtr,2)
           do i=lbound(lonPtr,1),ubound(lonPtr,1)
-            lonPtr(i,j) = 360.d0/real(imo,8) * real(i-1,8)
+            lonPtr(i,j) = lon(i)
             latPtr(i,j) = lat(j)
           enddo
         enddo
