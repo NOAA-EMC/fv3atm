@@ -272,7 +272,6 @@ module GFS_diagnostics
       ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%dlwsfci(:)
     enddo
 
-
     idx = idx + 1
     ExtDiag(idx)%axes = 2
     ExtDiag(idx)%name = 'ULWRF'
@@ -289,7 +288,7 @@ module GFS_diagnostics
 
     idx = idx + 1
     ExtDiag(idx)%axes = 2
-    ExtDiag(idx)%name = 'rad_swdnt'
+    ExtDiag(idx)%name = 'DSWRFItoa'
     ExtDiag(idx)%desc = 'instantaneous top of atmos downward shortwave flux'
     ExtDiag(idx)%unit = 'W/m**2'
     ExtDiag(idx)%mod_name = 'gfs_phys'
@@ -300,10 +299,9 @@ module GFS_diagnostics
       ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%fluxr(:,23)
     enddo
 
-
     idx = idx + 1
     ExtDiag(idx)%axes = 2
-    ExtDiag(idx)%name = 'rad_swupt'
+    ExtDiag(idx)%name = 'USWRFItoa'
     ExtDiag(idx)%desc = 'instantaneous top of atmos upward shortwave flux'
     ExtDiag(idx)%unit = 'W/m**2'
     ExtDiag(idx)%mod_name = 'gfs_phys'
@@ -316,7 +314,7 @@ module GFS_diagnostics
 
     idx = idx + 1
     ExtDiag(idx)%axes = 2
-    ExtDiag(idx)%name = 'rad_lwupt'
+    ExtDiag(idx)%name = 'ULWRFItoa'
     ExtDiag(idx)%desc = 'instantaneous top of atmos upward longwave flux'
     ExtDiag(idx)%unit = 'W/m**2'
     ExtDiag(idx)%mod_name = 'gfs_phys'
