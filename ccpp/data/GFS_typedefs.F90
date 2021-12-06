@@ -2105,9 +2105,6 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: dudt_mtb(:,:)      => null()  !< daily aver u-wind tend due to mountain blocking
     real (kind=kind_phys), pointer      :: dudt_tms(:,:)      => null()  !< daily aver u-wind tend due to TMS
 
-    ! Usaed by both RRTMG and RRTMGP
-    type (cmpfsw_type),    pointer      :: scmpsw(:)          => null()  !< 
-
     ! RRTMGP
     real (kind=kind_phys), pointer      :: p_lay(:,:)                => null()  !<
     real (kind=kind_phys), pointer      :: p_lev(:,:)                => null()  !<
@@ -7150,9 +7147,6 @@ module GFS_typedefs
     allocate (Interstitial%ztmax_ice       (IM))
     allocate (Interstitial%ztmax_land      (IM))
     allocate (Interstitial%ztmax_water     (IM))
-
-    ! Interstitials used by both RRTMG and RRTMGP
-    allocate (Interstitial%scmpsw          (IM))
 
     ! RRTMGP
     if (Model%do_RRTMGP) then
