@@ -86,11 +86,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 
   type atmos_internalstate_type
     type(atmos_data_type)  :: Atm
-    type(time_type)        :: Time_atmos, Time_init, Time_end,  &
-                              Time_step_atmos, Time_step_ocean, &
-                              Time_restart, Time_step_restart,  &
-                              Time_atstart
-    integer :: num_atmos_calls, ret, intrm_rst
+    integer :: num_atmos_calls, intrm_rst
   end type
 
   type atmos_internalstate_wrapper
@@ -197,7 +193,6 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     real(ESMF_KIND_R8),parameter :: dtor = 180.0_ESMF_KIND_R8 / 3.1415926535897931_ESMF_KIND_R8
     integer :: jsc, jec, isc, iec, nlev
     type(domain2D)  :: domain
-    type(time_type) :: iautime
     integer :: n, fcstNpes, tmpvar
     logical :: freq_restart, fexist
     integer, allocatable, dimension(:) :: isl, iel, jsl, jel
@@ -212,6 +207,9 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 
     integer                       :: num_restart_interval, restart_starttime
     real,dimension(:),allocatable :: restart_interval
+    type(time_type)               :: Time_init, Time, Time_step, Time_end, &
+                                     Time_restart, Time_step_restart
+    type(time_type)               :: iautime
 !
 !-----------------------------------------------------------------------
 !***********************************************************************
@@ -302,8 +300,8 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
     if ( date_init(1) == 0 ) date_init = date
-    atm_int_state%Time_init  = set_date (date_init(1), date_init(2), date_init(3), &
-                                         date_init(4), date_init(5), date_init(6))
+    Time_init  = set_date (date_init(1), date_init(2), date_init(3), &
+                           date_init(4), date_init(5), date_init(6))
     if(mype==0) write(*,'(A,6I5)') 'StartTime=',date_init
 
     date=0
@@ -314,8 +312,8 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 
     if(mype==0) write(*,'(A,6I5)') 'CurrTime =',date
 
-    atm_int_state%Time_atmos = set_date (date(1), date(2), date(3),  &
-                                         date(4), date(5), date(6))
+    Time = set_date (date(1), date(2), date(3),  &
+                     date(4), date(5), date(6))
 
     date_end=0
     call ESMF_TimeGet (StopTime,                                       &
@@ -324,28 +322,25 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
     if ( date_end(1) == 0 ) date_end = date
-    atm_int_state%Time_end   = set_date (date_end(1), date_end(2), date_end(3),  &
-                                         date_end(4), date_end(5), date_end(6))
+    Time_end   = set_date (date_end(1), date_end(2), date_end(3),  &
+                           date_end(4), date_end(5), date_end(6))
     if(mype==0) write(*,'(A,6I5)') 'StopTime =',date_end
-!
-    call diag_manager_set_time_end(atm_int_state%Time_end)
 !
     CALL ESMF_TimeIntervalGet(RunDuration, S=Run_length, RC=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 !
     call diag_manager_init (TIME_INIT=date)
-    call diag_manager_set_time_end(atm_int_state%Time_end)
+    call diag_manager_set_time_end(Time_end)
 !
-    atm_int_state%Time_step_atmos = set_time (dt_atmos,0)
+    Time_step = set_time (dt_atmos,0)
     atm_int_state%num_atmos_calls = Run_length / dt_atmos
-    atm_int_state%Time_atstart = atm_int_state%Time_atmos
     if (mype == 0) write(0,*)'num_atmos_calls=',atm_int_state%num_atmos_calls,'time_init=', &
-                    date_init,'time_atmos=',date,'time_end=',date_end,'dt_atmos=',dt_atmos, &
+                    date_init,'time=',date,'time_end=',date_end,'dt_atmos=',dt_atmos, &
                     'Run_length=',Run_length
 
 ! set up forecast time array that controls when to write out restart files
     frestart = 0
-    call get_time(atm_int_state%Time_end - atm_int_state%Time_init,total_inttime)
+    call get_time(Time_end - Time_init, total_inttime)
 ! set iau offset time
     atm_int_state%Atm%iau_offset    = iau_offset
     if(iau_offset > 0 ) then
@@ -359,19 +354,19 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     if(freq_restart) then
       if(restart_interval(1) >= 0) then
         tmpvar = restart_interval(1) * 3600
-        atm_int_state%Time_step_restart = set_time (tmpvar, 0)
+        Time_step_restart = set_time (tmpvar, 0)
         if(iau_offset > 0 ) then
-          atm_int_state%Time_restart = atm_int_state%Time_init + iautime + atm_int_state%Time_step_restart
+          Time_restart = Time_init + iautime + Time_step_restart
           frestart(1) = tmpvar + iau_offset *3600
         else
-          atm_int_state%Time_restart = atm_int_state%Time_init + atm_int_state%Time_step_restart
+          Time_restart = Time_init + Time_step_restart
           frestart(1) = tmpvar
         endif
         if(restart_interval(1) > 0) then
           i = 2
-          do while ( atm_int_state%Time_restart < atm_int_state%Time_end )
+          do while ( Time_restart < Time_end )
             frestart(i) = frestart(i-1) + tmpvar
-            atm_int_state%Time_restart = atm_int_state%Time_restart + atm_int_state%Time_step_restart
+            Time_restart = Time_restart + Time_step_restart
              i = i + 1
           enddo
         endif
@@ -412,8 +407,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !
 !------ initialize component models ------
 
-     call  atmos_model_init (atm_int_state%Atm,  atm_int_state%Time_init, &
-                             atm_int_state%Time_atmos, atm_int_state%Time_step_atmos)
+     call  atmos_model_init (atm_int_state%Atm, Time_init, Time, Time_step)
 !
      inquire(FILE='data_table', EXIST=fexist)
      if (fexist) then
@@ -801,10 +795,6 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !-----------------------------------------------------------------------
 ! *** call fcst integration subroutines
 
-      call get_date (atm_int_state%Time_atmos, date(1), date(2), date(3),  &
-                     date(4), date(5), date(6))
-      atm_int_state%Time_atmos = atm_int_state%Time_atmos + atm_int_state%Time_step_atmos
-
       call update_atmos_model_dynamics (atm_int_state%Atm)
 
       call update_atmos_radiation_physics (atm_int_state%Atm)
@@ -845,7 +835,6 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
       integer                    :: i,j, mype, na, date(6), seconds
       character(20)              :: compname
 
-      type(time_type)            :: restart_inctime
       type(ESMF_Time)            :: currtime
       integer(kind=ESMF_KIND_I8) :: ntimestep_esmf
       character(len=64)          :: timestamp
@@ -884,11 +873,11 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !--- intermediate restart
       if (atm_int_state%intrm_rst>0) then
         if (na /= atm_int_state%num_atmos_calls-1) then
-          call get_time(atm_int_state%Time_atmos - atm_int_state%Time_init, seconds)
+          call get_time(atm_int_state%Atm%Time - atm_int_state%Atm%Time_init, seconds)
           if (ANY(frestart(:) == seconds)) then
             if (mype == 0) write(0,*)'write out restart at na=',na,' seconds=',seconds,  &
                'integration lenght=',na*dt_atmos/3600.
-            timestamp = date_to_string (atm_int_state%Time_atmos)
+            timestamp = date_to_string (atm_int_state%Atm%Time)
             call atmos_model_restart(atm_int_state%Atm, timestamp)
             call write_stoch_restart_atm('RESTART/'//trim(timestamp)//'.atm_stoch.res.nc')
 
@@ -949,15 +938,9 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !
       call atmos_model_end (atm_int_state%atm)
 !
-!*** check time versus expected ending time
-
-      if (atm_int_state%Time_atmos /= atm_int_state%Time_end)  &
-        call error_mesg ('program coupler',  &
-                         'final time does not match expected ending time', WARNING)
-
 !*** write restart file
       if( restart_endfcst ) then
-        call get_date (atm_int_state%Time_atmos, date(1), date(2), date(3),  &
+        call get_date (atm_int_state%Atm%Time, date(1), date(2), date(3),  &
                                date(4), date(5), date(6))
         call mpp_open( unit, 'RESTART/coupler.res', nohdrs=.TRUE. )
         if (mpp_pe() == mpp_root_pe())then
@@ -972,7 +955,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
         call mpp_close(unit)
       endif
 !
-      call diag_manager_end(atm_int_state%Time_atmos )
+      call diag_manager_end (atm_int_state%Atm%Time)
 
       call fms_end
 !
@@ -1002,8 +985,8 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 
 !----- compute current date ------
 
-    call get_date (atm_int_state%Time_atmos, date(1), date(2), date(3),  &
-                                 date(4), date(5), date(6))
+    call get_date (atm_int_state%Atm%Time, date(1), date(2), date(3),  &
+                                           date(4), date(5), date(6))
 
 !----- write restart file ------
 
