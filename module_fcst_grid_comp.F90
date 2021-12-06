@@ -1,10 +1,5 @@
-#ifdef __PGI
-#define ESMF_ERR_ABORT(rc) \
-if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; call ESMF_Finalize(endflag=ESMF_END_ABORT)
-#else
 #define ESMF_ERR_ABORT(rc) \
 if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundError(rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
-#endif
 
 !-----------------------------------------------------------------------
 !
@@ -231,16 +226,21 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     wrap%ptr => atm_int_state
     call ESMF_GridCompSetInternalState(fcst_comp, wrap, rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-!
+
     call ESMF_VMGetCurrent(vm=VM,rc=RC)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
     call ESMF_VMGet(vm=VM, localPet=mype, mpiCommunicator=fcst_mpi_comm, &
                     petCount=fcst_ntasks, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
     if (mype == 0) write(0,*)'in fcst comp init, fcst_ntasks=',fcst_ntasks
-!
+
     CF = ESMF_ConfigCreate(rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
     call ESMF_ConfigLoadFile(config=CF ,filename='model_configure' ,rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-!
+
     num_restart_interval = ESMF_ConfigGetLen(config=CF, label ='restart_interval:',rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
     if(mype == 0) print *,'af nems config,num_restart_interval=',num_restart_interval
@@ -248,10 +248,9 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     allocate(restart_interval(num_restart_interval))
     restart_interval = 0
     call ESMF_ConfigGetAttribute(CF,valueList=restart_interval,label='restart_interval:', &
-      count=num_restart_interval, rc=rc)
+                                 count=num_restart_interval, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
     if(mype == 0) print *,'af nems config,restart_interval=',restart_interval
-
 !
     call fms_init(fcst_mpi_comm)
     call mpp_init()
@@ -295,7 +294,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     date_init = 0
     call ESMF_TimeGet (StartTime,                      &
                        YY=date_init(1), MM=date_init(2), DD=date_init(3), &
-                       H=date_init(4),  M =date_init(5), S =date_init(6), RC=rc)
+                       H=date_init(4),  M =date_init(5), S =date_init(6), rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
     if ( date_init(1) == 0 ) date_init = date
@@ -306,7 +305,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     date=0
     call ESMF_TimeGet (CurrTime,                           &
                        YY=date(1), MM=date(2), DD=date(3), &
-                       H=date(4),  M =date(5), S =date(6), RC=rc )
+                       H=date(4),  M =date(5), S =date(6), rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
     if(mype==0) write(*,'(A,6I5)') 'CurrTime =',date
@@ -317,7 +316,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     date_end=0
     call ESMF_TimeGet (StopTime,                                       &
                        YY=date_end(1), MM=date_end(2), DD=date_end(3), &
-                       H=date_end(4),  M =date_end(5), S =date_end(6), RC=rc )
+                       H=date_end(4),  M =date_end(5), S =date_end(6), rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
     if ( date_end(1) == 0 ) date_end = date
@@ -325,7 +324,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
                            date_end(4), date_end(5), date_end(6))
     if(mype==0) write(*,'(A,6I5)') 'StopTime =',date_end
 !
-    CALL ESMF_TimeIntervalGet(RunDuration, S=Run_length, RC=rc)
+    CALL ESMF_TimeIntervalGet(RunDuration, S=Run_length, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 !
     call diag_manager_init (TIME_INIT=date)
@@ -650,7 +649,6 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 
       call ESMF_AttributeSet(exportState, convention="NetCDF", purpose="FV3", &
                                name="time:units", value=trim(dateS), rc=rc)
-!                              name="time:units", value="hours since 2016-10-03 00:00:00", rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
       call ESMF_AttributeSet(exportState, convention="NetCDF", purpose="FV3", &
@@ -680,8 +678,8 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 ! for dyn
            name_FB1 = trim(name_FB)//'_bilinear'
            fieldbundle = ESMF_FieldBundleCreate(name=trim(name_FB1),rc=rc)
-           if (mype == 0) write(0,*)'af create fcst fieldbundle, name=',trim(name_FB),'rc=',rc
            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+           if (mype == 0) write(0,*)'af create fcst fieldbundle, name=',trim(name_FB),'rc=',rc
 
            call fv_dyn_bundle_setup(atm_int_state%Atm%axes,          &
                                     fieldbundle, fcstGrid, quilting, rc=rc)
@@ -702,8 +700,8 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
                name_FB1 = trim(name_FB)//'_bilinear'
              endif
              fieldbundlephys(j) = ESMF_FieldBundleCreate(name=trim(name_FB1),rc=rc)
-             if (mype == 0) write(0,*)'af create fcst fieldbundle, name=',trim(name_FB1),'rc=',rc
              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+             if (mype == 0) write(0,*)'af create fcst fieldbundle, name=',trim(name_FB1),'rc=',rc
            enddo
 !
            call fv_phys_bundle_setup(atm_int_state%Atm%diag, atm_int_state%Atm%axes, &
