@@ -27,7 +27,6 @@ module fv3gfs_cap_mod
 !
   use module_fv3_config,      only: quilting, output_fh,                     &
                                     nfhout, nfhout_hf, nsout, dt_atmos,      &
-                                    nfhmax, nfhmax_hf,                       &
                                     calendar, calendar_type,                 &
                                     force_date_from_configure,               &
                                     cplprint_flag,output_1st_tstep_rst,      &
@@ -184,6 +183,8 @@ module fv3gfs_cap_mod
     integer                                :: noutput_fh, nfh, nfh2
     integer                                :: petcount
     integer                                :: num_output_file
+    integer                                :: nfhmax_hf
+    real                                   :: nfhmax
     real                                   :: output_startfh, outputfh, outputfh2(2)
     logical                                :: opened, loutput_fh, lfreq
     character(ESMF_MAXSTR)                 :: name
