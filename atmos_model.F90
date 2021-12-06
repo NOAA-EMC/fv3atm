@@ -380,7 +380,7 @@ subroutine update_atmos_radiation_physics (Atmos)
     if(GFS_control%print_diff_pgr) then
       call atmos_timestep_diagnostics(Atmos)
     endif
-    
+
     ! Update flag for first time step of time integration
     GFS_control%first_time_step = .false.
 
@@ -444,7 +444,7 @@ subroutine atmos_timestep_diagnostics(Atmos)
           enddo
           pcount = pcount+count
         enddo
-        
+
         ! Sum pgr stats from psum/pcount and convert to hPa/hour global avg:
         sendbuf(1:2) = (/ psum, pcount /)
         call MPI_Allreduce(sendbuf,recvbuf,2,MPI_DOUBLE_PRECISION,MPI_SUM,GFS_Control%communicator,ierror)
@@ -454,7 +454,7 @@ subroutine atmos_timestep_diagnostics(Atmos)
         sendbuf(1:2) = (/ maxabs, dble(GFS_Control%me) /)
         call MPI_Allreduce(sendbuf,recvbuf,1,MPI_2DOUBLE_PRECISION,MPI_MAXLOC,GFS_Control%communicator,ierror)
         call MPI_Bcast(pmaxloc,size(pmaxloc),MPI_DOUBLE_PRECISION,nint(recvbuf(2)),GFS_Control%communicator,ierror)
-        
+
         if(GFS_Control%me == GFS_Control%master) then
 2933      format('At forecast hour ',F9.3,' mean abs pgr change is ',F16.8,' hPa/hr')
 2934      format('  max abs change   ',F15.10,' bar  at  tile=',I0,' i=',I0,' j=',I0)

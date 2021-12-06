@@ -660,7 +660,7 @@ module fv3gfs_cap_mod
 !--- use nsout for output frequency nsout*dt_atmos
         nfh = 0
         if( nfhmax > output_startfh ) nfh = nint((nfhmax-output_startfh)/(nsout*dt_atmos/3600.))+1
-        if(nfh >0) then 
+        if(nfh >0) then
           allocate(output_fh(nfh))
           if( output_startfh == 0) then
             output_fh(1) = dt_atmos/3600.
@@ -746,7 +746,7 @@ module fv3gfs_cap_mod
               endif
               do i=2,nfh
                 output_fh(i) = (i-1)*outputfh2(1) + output_startfh
-                ! Except fh000, which is the first time output, if any other of the 
+                ! Except fh000, which is the first time output, if any other of the
                 ! output time is not integer hour, set lflname_fulltime to be true, so the
                 ! history file names will contain the full time stamp (HHH-MM-SS).
                 if(.not.lflname_fulltime) then
@@ -764,7 +764,7 @@ module fv3gfs_cap_mod
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
           if( output_startfh == 0) then
             ! If the output time in output_fh array contains first time stamp output,
-            ! check the rest of output time, otherwise, check all the output time. 
+            ! check the rest of output time, otherwise, check all the output time.
             ! If any of them is not integer hour, the history file names will
             ! contain the full time stamp (HHH-MM-SS)
             ist = 1
@@ -790,7 +790,7 @@ module fv3gfs_cap_mod
           endif
         endif
       endif ! end loutput_fh
-    endif 
+    endif
     if(mype==0) print *,'output_fh=',output_fh(1:size(output_fh)),'lflname_fulltime=',lflname_fulltime
 !
     ! --- advertise Fields in importState and exportState -------------------

@@ -396,7 +396,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     if ( ANY(frestart(:) == total_inttime) ) restart_endfcst = .true.
     if (mype == 0) print *,'frestart=',frestart(1:10)/3600, 'restart_endfcst=',restart_endfcst, &
       'total_inttime=',total_inttime
-! if there is restart writing during integration 
+! if there is restart writing during integration
     atm_int_state%intrm_rst         = 0
     if (frestart(1)>0) atm_int_state%intrm_rst = 1
 !
