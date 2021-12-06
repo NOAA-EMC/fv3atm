@@ -1089,6 +1089,20 @@ module GFS_diagnostics
     do nb = 1,nblks
       ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%snohfa(:)
     enddo
+    
+    if (Model%lsm == Model%lsm_noahmp) then
+     idx = idx + 1
+     ExtDiag(idx)%axes = 2
+     ExtDiag(idx)%name = 'pah_ave'
+     ExtDiag(idx)%desc = ' Total Precipitation Advected Heat - GFS lsm'
+     ExtDiag(idx)%unit = 'W/m**2'
+     ExtDiag(idx)%mod_name = 'gfs_phys'
+     ExtDiag(idx)%time_avg = .TRUE.
+     allocate (ExtDiag(idx)%data(nblks))
+     do nb = 1,nblks
+       ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%paha(:)
+     enddo
+    endif
 
     idx = idx + 1
     ExtDiag(idx)%axes = 2
@@ -1310,6 +1324,52 @@ module GFS_diagnostics
     do nb = 1,nblks
       ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%runoff(:)
     enddo
+
+    idx = idx + 1
+    ExtDiag(idx)%axes = 2
+    ExtDiag(idx)%name = 'ecan_acc'
+    ExtDiag(idx)%desc = 'total evaporation of intercepted water'
+    ExtDiag(idx)%unit = 'kg/m**2'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%tecan(:)
+    enddo
+
+    idx = idx + 1
+    ExtDiag(idx)%axes = 2
+    ExtDiag(idx)%name = 'etran_acc'
+    ExtDiag(idx)%desc = 'total plant transpiration'
+    ExtDiag(idx)%unit = 'kg/m**2'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%tetran(:)
+    enddo
+
+    idx = idx + 1
+    ExtDiag(idx)%axes = 2
+    ExtDiag(idx)%name = 'edir_acc'
+    ExtDiag(idx)%desc = 'total soil surface evaporation'
+    ExtDiag(idx)%unit = 'kg/m**2'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%tedir(:)
+    enddo
+
+    if (Model%lsm == Model%lsm_noahmp) then   
+     idx = idx + 1
+     ExtDiag(idx)%axes = 2
+     ExtDiag(idx)%name = 'wa_acc'
+     ExtDiag(idx)%desc = 'total water storage in aquifer'
+     ExtDiag(idx)%unit = 'kg/m**2'
+     ExtDiag(idx)%mod_name = 'gfs_phys'
+     allocate (ExtDiag(idx)%data(nblks))
+     do nb = 1,nblks
+       ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%twa(:)
+     enddo
+    endif
 
     idx = idx + 1
     ExtDiag(idx)%axes = 2
@@ -1967,6 +2027,19 @@ module GFS_diagnostics
     do nb = 1,nblks
       ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%gfluxi(:)
     enddo
+
+    if (Model%lsm == Model%lsm_noahmp) then   
+     idx = idx + 1
+     ExtDiag(idx)%axes = 2
+     ExtDiag(idx)%name = 'pahi'
+     ExtDiag(idx)%desc = 'instantaneous precipitation advected heat flux'
+     ExtDiag(idx)%unit = 'W/m**2'
+     ExtDiag(idx)%mod_name = 'gfs_phys'
+     allocate (ExtDiag(idx)%data(nblks))
+     do nb = 1,nblks
+       ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%pahi(:)
+     enddo
+    endif
 
     idx = idx + 1
     ExtDiag(idx)%axes = 2
@@ -2849,6 +2922,17 @@ module GFS_diagnostics
     allocate (ExtDiag(idx)%data(nblks))
     do nb = 1,nblks
       ExtDiag(idx)%data(nb)%int2 => Sfcprop(nb)%stype(:)
+    enddo
+
+    idx = idx + 1
+    ExtDiag(idx)%axes = 2
+    ExtDiag(idx)%name = 'lfrac'
+    ExtDiag(idx)%desc = 'land fraction'
+    ExtDiag(idx)%unit = 'fraction [0:1]'
+    ExtDiag(idx)%mod_name = 'gfs_sfc'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%landfrac(:)
     enddo
 
     idx = idx + 1
