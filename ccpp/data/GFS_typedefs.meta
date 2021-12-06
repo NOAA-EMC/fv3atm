@@ -671,7 +671,13 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme)
+[emis_wat]
+  standard_name = surface_longwave_emissivity_over_water
+  long_name = surface lw emissivity in fraction over water
+  units = frac
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
 [sfalb_lnd]
   standard_name = surface_diffused_shortwave_albedo_over_land
   long_name = mean surface diffused sw albedo over land
@@ -6375,6 +6381,14 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
+[paha]
+  standard_name = cumulative_precipitation_advected_heat_flux_multiplied_by_timestep
+  long_name = cumulative precipitation advected heat flux multiplied by timestep
+  units = W m-2 s
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (control_for_land_surface_scheme == identifier_for_noahmp_land_surface_scheme)
 [transa]
   standard_name = cumulative_transpiration_flux_multiplied_by_timestep
   long_name = cumulative total plant transpiration rate multiplied by timestep
@@ -6551,6 +6565,35 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
+[tecan]
+  standard_name = total_evaporation_of_intercepted_water
+  long_name = total evaporation of intercepted water
+  units = kg m-2
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[tetran]
+  standard_name = total_transpiration_rate
+  long_name = total transpiration rate
+  units = kg m-2
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[tedir]
+  standard_name = total_soil_surface_evaporation_rate
+  long_name = total soil surface evaporation rate
+  units = kg m-2
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[twa]
+  standard_name = total_water_storage_in_aquifer
+  long_name = total water storage in aquifer
+  units = kg m-2
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (control_for_land_surface_scheme == identifier_for_noahmp_land_surface_scheme)
 [cldwrk]
   standard_name = cumulative_cloud_work_function
   long_name = cumulative cloud work function (valid only with sas)
@@ -6838,6 +6881,14 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
+[pahi]
+  standard_name = instantaneous_total_precipitation_advected_heat
+  long_name = instantaneous precipitation advected heat - total
+  units = W m-2
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (control_for_land_surface_scheme == identifier_for_noahmp_land_surface_scheme)
 [epi]
   standard_name = instantaneous_surface_potential_evaporation
   long_name = instantaneous sfc potential evaporation
@@ -8146,13 +8197,6 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-[semis_water]
-  standard_name = surface_longwave_emissivity_over_water
-  long_name = surface lw emissivity in fraction over water
-  units = frac
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
 [ep1d]
   standard_name = surface_upward_potential_latent_heat_flux
   long_name = surface upward potential latent heat flux
@@ -8213,6 +8257,34 @@
   standard_name = canopy_upward_latent_heat_flux
   long_name = canopy upward latent heat flux
   units = W m-2
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[pah]
+  standard_name = total_precipitation_advected_heat
+  long_name = precipitation advected heat - total
+  units = W m-2
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[ecan]
+  standard_name = evaporation_of_intercepted_water
+  long_name = evaporation of intercepted water
+  units = kg m-2 s-1
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[etran]
+  standard_name = transpiration_rate
+  long_name = transpiration rate
+  units = kg m-2 s-1
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[edir]
+  standard_name = soil_surface_evaporation_rate
+  long_name = soil surface evaporation rate
+  units = kg m-2 s-1
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
