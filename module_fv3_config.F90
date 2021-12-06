@@ -17,9 +17,6 @@
   integer                  :: nfhmax_hf, first_kdt
   integer                  :: fcst_mpi_comm, fcst_ntasks
   real                     :: nfhmax
-  type(ESMF_Alarm)         :: alarm_output_hf, alarm_output
-  type(ESMF_TimeInterval)  :: output_hfmax
-  type(ESMF_TimeInterval)  :: output_interval,output_interval_hf
 !
   logical                  :: cplprint_flag
   logical                  :: quilting, output_1st_tstep_rst

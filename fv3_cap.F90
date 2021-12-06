@@ -27,8 +27,7 @@ module fv3gfs_cap_mod
 !
   use module_fv3_config,      only: quilting, output_fh,                     &
                                     nfhout, nfhout_hf, nsout, dt_atmos,      &
-                                    nfhmax, nfhmax_hf,output_hfmax,          &
-                                    output_interval,output_interval_hf,      &
+                                    nfhmax, nfhmax_hf,                       &
                                     calendar, calendar_type,                 &
                                     force_date_from_configure,               &
                                     cplprint_flag,output_1st_tstep_rst,      &
