@@ -50,7 +50,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
   use mpp_domains_mod,    only: mpp_get_compute_domains, domain2D
   use sat_vapor_pres_mod, only: sat_vapor_pres_init
 
-  use diag_manager_mod,   only: diag_manager_init, diag_manager_end, &
+  use diag_manager_mod,   only: diag_manager_init, diag_manager_end,       &
                                 diag_manager_set_time_end
 
   use data_override_mod,  only: data_override_init
@@ -60,13 +60,14 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
   use fms_io_mod,         only: field_exist, read_data
 
   use atmosphere_mod,     only: atmosphere_control_data
-!
-  use module_fv3_io_def, only:  num_pes_fcst, num_files, filename_base, nbdlphys, &
-                                iau_offset
-  use module_fv3_config, only:  dt_atmos, calendar, fcst_mpi_comm, fcst_ntasks,   &
-                                quilting, calendar_type,                          &
-                                cplprint_flag, force_date_from_configure,         &
+
+  use module_fv3_io_def,  only: num_pes_fcst, num_files, filename_base,    &
+                                nbdlphys, iau_offset
+  use module_fv3_config,  only: dt_atmos, fcst_mpi_comm, fcst_ntasks,      &
+                                quilting, calendar, calendar_type,         &
+                                cplprint_flag, force_date_from_configure,  &
                                 restart_endfcst
+
   use get_stochy_pattern_mod, only: write_stoch_restart_atm
 !
 !-----------------------------------------------------------------------
@@ -90,7 +91,6 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 
   type(atmos_internalstate_type),pointer,save :: atm_int_state
   type(atmos_internalstate_wrapper),save      :: wrap
-  type(ESMF_VM),save                          :: VM
   type(ESMF_Grid)                             :: fcstGrid
 
 !----- coupled model data -----
@@ -145,7 +145,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
   subroutine fcst_initialize(fcst_comp, importState, exportState, clock, rc)
 !
 !-----------------------------------------------------------------------
-!***  INITIALIZE THE WRITE GRIDDED COMPONENT.
+!***  INITIALIZE THE FORECAST GRIDDED COMPONENT.
 !-----------------------------------------------------------------------
 !
     type(esmf_GridComp)                    :: fcst_comp
@@ -153,8 +153,9 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     type(esmf_Clock)                       :: clock
     integer,intent(out)                    :: rc
 !
-!***  LOCAL VARIABLES
+!***  local variables
 !
+    type(ESMF_VM)                          :: vm
     integer                                :: tl, i, j
     integer,dimension(2,6)                 :: decomptile                  !define delayout for the 6 cubed-sphere tiles
     integer,dimension(2)                   :: regdecomp                   !define delayout for the nest grid
@@ -180,7 +181,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     character(256)                         :: gridfile
     type(ESMF_FieldBundle),dimension(:), allocatable  :: fieldbundlephys
 
-    real(8) :: mpi_wtime, timeis
+    real(kind=8) :: mpi_wtime, timeis
 
     type(ESMF_DELayout) :: delayout
     type(ESMF_DistGrid) :: distgrid
@@ -214,26 +215,26 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     rc     = ESMF_SUCCESS
 !
 !-----------------------------------------------------------------------
-!***  ALLOCATE THE WRITE COMPONENT'S INTERNAL STATE.
+!***  ALLOCATE THE FORECAST COMPONENT'S INTERNAL STATE.
 !-----------------------------------------------------------------------
 !
     allocate(atm_int_state,stat=rc)
 !
 !-----------------------------------------------------------------------
-!***  ATTACH THE INTERNAL STATE TO THE WRITE COMPONENT.
+!***  ATTACH THE INTERNAL STATE TO THE FORECAST COMPONENT.
 !-----------------------------------------------------------------------
 !
     wrap%ptr => atm_int_state
-    call ESMF_GridCompSetInternalState(fcst_comp, wrap, rc)
+    call ESMF_GridCompSetInternalState(fcst_comp, wrap, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-    call ESMF_VMGetCurrent(vm=VM,rc=RC)
+    call ESMF_VMGetCurrent(vm=vm,rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-    call ESMF_VMGet(vm=VM, localPet=mype, mpiCommunicator=fcst_mpi_comm, &
+    call ESMF_VMGet(vm=vm, localPet=mype, mpiCommunicator=fcst_mpi_comm, &
                     petCount=fcst_ntasks, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-    if (mype == 0) write(0,*)'in fcst comp init, fcst_ntasks=',fcst_ntasks
+    if (mype == 0) write(*,*)'in fcst comp init, fcst_ntasks=',fcst_ntasks
 
     CF = ESMF_ConfigCreate(rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
@@ -243,14 +244,14 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 
     num_restart_interval = ESMF_ConfigGetLen(config=CF, label ='restart_interval:',rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-    if(mype == 0) print *,'af nems config,num_restart_interval=',num_restart_interval
+    if (mype == 0) print *,'af nems config,num_restart_interval=',num_restart_interval
     if (num_restart_interval<=0) num_restart_interval = 1
     allocate(restart_interval(num_restart_interval))
     restart_interval = 0
     call ESMF_ConfigGetAttribute(CF,valueList=restart_interval,label='restart_interval:', &
                                  count=num_restart_interval, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-    if(mype == 0) print *,'af nems config,restart_interval=',restart_interval
+    if (mype == 0) print *,'af nems config,restart_interval=',restart_interval
 !
     call fms_init(fcst_mpi_comm)
     call mpp_init()
@@ -300,7 +301,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     if ( date_init(1) == 0 ) date_init = date
     Time_init  = set_date (date_init(1), date_init(2), date_init(3), &
                            date_init(4), date_init(5), date_init(6))
-    if(mype==0) write(*,'(A,6I5)') 'StartTime=',date_init
+    if (mype == 0) write(*,'(A,6I5)') 'StartTime=',date_init
 
     date=0
     call ESMF_TimeGet (CurrTime,                           &
@@ -308,7 +309,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
                        H=date(4),  M =date(5), S =date(6), rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-    if(mype==0) write(*,'(A,6I5)') 'CurrTime =',date
+    if (mype == 0) write(*,'(A,6I5)') 'CurrTime =',date
 
     Time = set_date (date(1), date(2), date(3),  &
                      date(4), date(5), date(6))
@@ -322,7 +323,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     if ( date_end(1) == 0 ) date_end = date
     Time_end   = set_date (date_end(1), date_end(2), date_end(3),  &
                            date_end(4), date_end(5), date_end(6))
-    if(mype==0) write(*,'(A,6I5)') 'StopTime =',date_end
+    if (mype == 0) write(*,'(A,6I5)') 'StopTime =',date_end
 !
     CALL ESMF_TimeIntervalGet(RunDuration, S=Run_length, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
@@ -332,7 +333,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !
     Time_step = set_time (dt_atmos,0)
     atm_int_state%num_atmos_calls = Run_length / dt_atmos
-    if (mype == 0) write(0,*)'num_atmos_calls=',atm_int_state%num_atmos_calls,'time_init=', &
+    if (mype == 0) write(*,*)'num_atmos_calls=',atm_int_state%num_atmos_calls,'time_init=', &
                     date_init,'time=',date,'time_end=',date_end,'dt_atmos=',dt_atmos, &
                     'Run_length=',Run_length
 
@@ -517,12 +518,12 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 
         else !! global-nesting or regional-nesting
 
-          if (mype==0) TileLayout = atm_int_state%Atm%layout
+          if (mype == 0) TileLayout = atm_int_state%Atm%layout
           call ESMF_VMBroadcast(vm, bcstData=TileLayout, count=2, &
                                   rootPet=0, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-          if (mype==0) npes(1) = mpp_npes()
+          if (mype == 0) npes(1) = mpp_npes()
           call ESMF_VMBroadcast(vm, bcstData=npes, count=1, &
                                   rootPet=0, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
@@ -645,7 +646,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 
       dateS="hours since "//dateSY//'-'//dateSM//'-'//dateSD//' '//dateSH//':'//    &
             dateSN//":"//dateSS
-      if (mype == 0) write(0,*)'dateS=',trim(dateS),'date_init=',date_init
+      if (mype == 0) write(*,*)'dateS=',trim(dateS),'date_init=',date_init
 
       call ESMF_AttributeSet(exportState, convention="NetCDF", purpose="FV3", &
                                name="time:units", value=trim(dateS), rc=rc)
@@ -679,7 +680,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
            name_FB1 = trim(name_FB)//'_bilinear'
            fieldbundle = ESMF_FieldBundleCreate(name=trim(name_FB1),rc=rc)
            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-           if (mype == 0) write(0,*)'af create fcst fieldbundle, name=',trim(name_FB),'rc=',rc
+           if (mype == 0) write(*,*)'af create fcst fieldbundle, name=',trim(name_FB),'rc=',rc
 
            call fv_dyn_bundle_setup(atm_int_state%Atm%axes,          &
                                     fieldbundle, fcstGrid, quilting, rc=rc)
@@ -701,7 +702,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
              endif
              fieldbundlephys(j) = ESMF_FieldBundleCreate(name=trim(name_FB1),rc=rc)
              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-             if (mype == 0) write(0,*)'af create fcst fieldbundle, name=',trim(name_FB1),'rc=',rc
+             if (mype == 0) write(*,*)'af create fcst fieldbundle, name=',trim(name_FB1),'rc=',rc
            enddo
 !
            call fv_phys_bundle_setup(atm_int_state%Atm%diag, atm_int_state%Atm%axes, &
@@ -728,16 +729,8 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
       call get_atmos_model_ungridded_dim(nlev=numLevels,         &
                                          nsoillev=numSoilLayers, &
                                          ntracers=numTracers)
-!
-!-----------------------------------------------------------------------
-!
-      IF(rc /= ESMF_SUCCESS) THEN
-        WRITE(0,*)"FAIL: Fcst_Initialize."
-!      ELSE
-!        WRITE(0,*)"PASS: Fcst_Initialize."
-      ENDIF
-!
-      if (mype == 0) write(0,*)'in fcst,init total time: ', mpi_wtime() - timeis
+
+      if (mype == 0) write(*,*)'fcst_initialize total time: ', mpi_wtime() - timeis
 !
 !-----------------------------------------------------------------------
 !
@@ -758,30 +751,24 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
       type(ESMF_Clock)           :: clock
       integer,intent(out)        :: rc
 !
-!-----------------------------------------------------------------------
 !***  local variables
 !
       integer                    :: i,j, mype, na, date(6)
-      character(20)              :: compname
-
       type(ESMF_Time)            :: currtime
       integer(kind=ESMF_KIND_I8) :: ntimestep_esmf
       character(len=64)          :: timestamp
-!
-!-----------------------------------------------------------------------
-!
-      real(kind=8)   :: mpi_wtime, tbeg1
+      real(kind=8)               :: mpi_wtime, tbeg1
 !
 !-----------------------------------------------------------------------
 !***********************************************************************
 !-----------------------------------------------------------------------
 !
       tbeg1 = mpi_wtime()
-      rc    = esmf_success
+      rc    = ESMF_SUCCESS
 !
 !-----------------------------------------------------------------------
 !
-      call ESMF_GridCompGet(fcst_comp, name=compname, localpet=mype, rc=rc)
+      call ESMF_GridCompGet(fcst_comp, localpet=mype, rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 !
       call ESMF_ClockGet(clock, advanceCount=NTIMESTEP_ESMF, rc=rc)
@@ -799,20 +786,14 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
       call atmos_model_exchange_phase_1 (atm_int_state%Atm, rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-!-----------------------------------------------------------------------
-!
-!     IF(RC /= ESMF_SUCCESS) THEN
-!       if(mype==0) WRITE(0,*)"FAIL: fcst_RUN"
-!      ELSE
-        if(mype==0) WRITE(*,*)"PASS: fcstRUN phase 1, na = ",na, ' time is ', mpi_wtime()-tbeg1
-!     ENDIF
+      if (mype == 0) write(*,*)"PASS: fcstRUN phase 1, na = ",na, ' time is ', mpi_wtime()-tbeg1
 !
 !-----------------------------------------------------------------------
 !
    end subroutine fcst_run_phase_1
 !
 !-----------------------------------------------------------------------
-!&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+!#######################################################################
 !-----------------------------------------------------------------------
 !
    subroutine fcst_run_phase_2(fcst_comp, importState, exportState,clock,rc)
@@ -826,37 +807,30 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
       type(ESMF_Clock)           :: clock
       integer,intent(out)        :: rc
 !
-!-----------------------------------------------------------------------
 !***  local variables
 !
       integer                    :: i,j, mype, na, date(6), seconds
-      character(20)              :: compname
-
       type(ESMF_Time)            :: currtime
       integer(kind=ESMF_KIND_I8) :: ntimestep_esmf
       character(len=64)          :: timestamp
-!
-!-----------------------------------------------------------------------
-!
-      real(kind=8)   :: mpi_wtime, tbeg1
+      real(kind=8)               :: mpi_wtime, tbeg1
 !
 !-----------------------------------------------------------------------
 !***********************************************************************
 !-----------------------------------------------------------------------
 !
       tbeg1 = mpi_wtime()
-      rc    = esmf_success
+      rc    = ESMF_SUCCESS
 !
 !-----------------------------------------------------------------------
 !
-      call ESMF_GridCompGet(fcst_comp, name=compname, localpet=mype, rc=rc)
+      call ESMF_GridCompGet(fcst_comp, localpet=mype, rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-!
+
       call ESMF_ClockGet(clock, advanceCount=NTIMESTEP_ESMF, rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
       na = NTIMESTEP_ESMF
-      if (mype == 0) write(0,*)'in fcst run phase 2, na=',na
 !
 !-----------------------------------------------------------------------
 ! *** call fcst integration subroutines
@@ -872,7 +846,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
         if (na /= atm_int_state%num_atmos_calls-1) then
           call get_time(atm_int_state%Atm%Time - atm_int_state%Atm%Time_init, seconds)
           if (ANY(frestart(:) == seconds)) then
-            if (mype == 0) write(0,*)'write out restart at na=',na,' seconds=',seconds,  &
+            if (mype == 0) write(*,*)'write out restart at na=',na,' seconds=',seconds,  &
                'integration lenght=',na*dt_atmos/3600.
             timestamp = date_to_string (atm_int_state%Atm%Time)
             call atmos_model_restart(atm_int_state%Atm, timestamp)
@@ -882,21 +856,15 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
           endif
         endif
       endif
-!
-!-----------------------------------------------------------------------
-!
-!     IF(RC /= ESMF_SUCCESS) THEN
-!      if(mype==0) WRITE(0,*)"FAIL: fcst_RUN"
-!      ELSE
-       if(mype==0) WRITE(*,*)"PASS: fcstRUN phase 2, na = ",na, ' time is ', mpi_wtime()-tbeg1
-!     ENDIF
+
+      if (mype == 0) write(*,*)"PASS: fcstRUN phase 2, na = ",na, ' time is ', mpi_wtime()-tbeg1
 !
 !-----------------------------------------------------------------------
 !
    end subroutine fcst_run_phase_2
 !
 !-----------------------------------------------------------------------
-!&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+!#######################################################################
 !-----------------------------------------------------------------------
 !
    subroutine fcst_finalize(fcst_comp, importState, exportState,clock,rc)
@@ -905,36 +873,30 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !***  finalize the forecast grid component.
 !-----------------------------------------------------------------------
 !
-      type(ESMF_GridComp)            :: fcst_comp
-      type(ESMF_State)               :: importState, exportState
-      type(ESMF_Clock)               :: clock
-      integer,intent(out)            :: rc
+      type(ESMF_GridComp)        :: fcst_comp
+      type(ESMF_State)           :: importState, exportState
+      type(ESMF_Clock)           :: clock
+      integer,intent(out)        :: rc
 !
 !***  local variables
 !
-      integer :: unit
-      integer,dimension(6)           :: date
-
-      real(8) mpi_wtime, tfs, tfe
+      integer                    :: mype
+      integer                    :: unit
+      integer,dimension(6)       :: date
+      real(kind=8)               :: mpi_wtime, tbeg1
 !
 !-----------------------------------------------------------------------
 !***********************************************************************
 !-----------------------------------------------------------------------
 !
-      tfs = mpi_wtime()
-      rc  = ESMF_SUCCESS
-!
-!-----------------------------------------------------------------------
-!***  retrieve the fcst component's esmf internal state
-!-----------------------------------------------------------------------
-!
-      call ESMF_GridCompGetInternalState(fcst_comp, wrap, rc)
-      atm_int_state => wrap%ptr
-!
-!-----------------------------------------------------------------------
+      tbeg1 = mpi_wtime()
+      rc    = ESMF_SUCCESS
+
+      call ESMF_GridCompGet(fcst_comp, localpet=mype, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 !
       call atmos_model_end (atm_int_state%atm)
-!
+
 !*** write restart file
       if( restart_endfcst ) then
         call get_date (atm_int_state%Atm%Time, date(1), date(2), date(3),  &
@@ -951,21 +913,13 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
         endif
         call mpp_close(unit)
       endif
-!
+
       call diag_manager_end (atm_int_state%Atm%Time)
 
       call fms_end
+
+      if (mype == 0) write(*,*)'fcst_finalize total time: ', mpi_wtime() - tbeg1
 !
-!-----------------------------------------------------------------------
-!
-      IF(RC /= ESMF_SUCCESS)THEN
-        WRITE(0,*)'FAIL: Write_Finalize.'
-!      ELSE
-!        WRITE(0,*)'PASS: Write_Finalize.'
-      ENDIF
-!
-      tfe = mpi_wtime()
-!      print *,'fms end time: ', tfe-tfs
 !-----------------------------------------------------------------------
 !
   end subroutine fcst_finalize
@@ -1010,7 +964,6 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     logical, intent(in), optional                    :: regridArea
     integer, intent(out)                             :: rc
 !
-!-----------------------------------------------------------------------
 !***  local variables
 !
     logical                     :: ioCapable
