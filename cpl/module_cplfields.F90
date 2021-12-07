@@ -142,7 +142,7 @@ module module_cplfields
     FieldInfo("t2m                                      ", "s") ]
 
 ! Import Fields ----------------------------------------
-  integer,          public, parameter :: NimportFields = 42
+  integer,          public, parameter :: NimportFields = 47
   logical,          public            :: importFieldsValid(NimportFields)
   type(ESMF_Field), target, public    :: importFields(NimportFields)
 
@@ -164,6 +164,13 @@ module module_cplfields
     FieldInfo("inst_ice_vis_dif_albedo                  ", "s"), &
     FieldInfo("inst_ice_vis_dir_albedo                  ", "s"), &
     FieldInfo("wave_z0_roughness_length                 ", "s"), &
+
+    ! For receiving fluxes from mediator
+    FieldInfo("mean_zonal_moment_flx                    ", "s"), &
+    FieldInfo("mean_merid_moment_flx                    ", "s"), &
+    FieldInfo("mean_laten_heat_flx                      ", "s"), &
+    FieldInfo("mean_sensi_heat_flx                      ", "s"), &
+    FieldInfo("mean_up_lw_flx                           ", "s"), &
 
     !  For JEDI
     ! dynamics
