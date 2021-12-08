@@ -13,7 +13,6 @@ module module_cap_cpl
   implicit none
   private
   public clock_cplIntval
-  ! public realizeConnectedInternCplField
   public realizeConnectedCplFields
   public diagnose_cplFields
 !
@@ -87,54 +86,6 @@ module module_cap_cpl
 
     end subroutine addFieldMetadata
 
-  !-----------------------------------------------------------------------------
-
-#if 0
-    subroutine realizeConnectedInternCplField(state, field, standardName, grid, rc)
-
-      type(ESMF_State)                :: state
-      type(ESMF_Field), optional      :: field
-      character(len=*), optional      :: standardName
-      type(ESMF_Grid), optional       :: grid
-      integer, intent(out), optional  :: rc
-
-      ! local variables
-      character(len=80)               :: fieldName
-      type(ESMF_ArraySpec)            :: arrayspec
-      integer                         :: i, localrc
-      logical                         :: isConnected
-      real(ESMF_KIND_R8), pointer     :: fptr(:,:)
-
-      if (present(rc)) rc = ESMF_SUCCESS
-
-      fieldName = standardName  ! use standard name as field name
-
-      !! Create fields using wam2dmesh if they are WAM fields
-      isConnected = NUOPC_IsConnected(state, fieldName=fieldName, rc=localrc)
-      if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
-
-      if (isConnected) then
-
-        field = ESMF_FieldCreate(grid, ESMF_TYPEKIND_R8, name=fieldName, rc=localrc)
-        if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
-        call NUOPC_Realize(state, field=field, rc=localrc)
-        if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
-
-        call ESMF_FieldGet(field, farrayPtr=fptr, rc=localrc)
-        if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
-
-        fptr=0._ESMF_KIND_R8 ! zero out the entire field
-        call NUOPC_SetAttribute(field, name="Updated", value="true", rc=localrc)
-        if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
-
-      else
-        ! remove a not connected Field from State
-        call ESMF_StateRemove(state, (/fieldName/), rc=localrc)
-        if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
-      endif
-
-    end subroutine realizeConnectedInternCplField
-#endif
   !-----------------------------------------------------------------------------
 
     subroutine realizeConnectedCplFields(state, grid,                          &
@@ -315,103 +266,6 @@ module module_cap_cpl
       end if
 
     end subroutine diagnose_cplFields
-
-  !-----------------------------------------------------------------------------
-
-    subroutine ESMFPP_RegridWriteState(state, fileName, timeslice, rc)
-
-      type(ESMF_State), intent(in)          :: state
-      character(len=*), intent(in)          :: fileName
-      integer, intent(in)                   :: timeslice
-      integer, intent(out)                  :: rc
-
-      ! local
-      type(ESMF_Field)                       :: field
-      type(ESMF_Grid)                        :: outGrid
-      integer                                :: i, icount
-      character(64), allocatable             :: itemNameList(:)
-      type(ESMF_StateItem_Flag), allocatable :: typeList(:)
-
-      rc = ESMF_SUCCESS
-
-      ! 1degx1deg
-      outGrid = ESMF_GridCreate1PeriDimUfrm(maxIndex=(/360,180/), &
-                                            minCornerCoord=(/0.0_ESMF_KIND_R8,-90.0_ESMF_KIND_R8/), &
-                                            maxCornerCoord=(/360.0_ESMF_KIND_R8,90.0_ESMF_KIND_R8/), &
-                                            staggerLocList=(/ESMF_STAGGERLOC_CORNER, ESMF_STAGGERLOC_CENTER/), rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-      call ESMF_StateGet(state, itemCount=icount, rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-      allocate(typeList(icount), itemNameList(icount))
-      call ESMF_StateGet(state, itemTypeList=typeList, itemNameList=itemNameList, rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-      do i = 1, icount
-        if(typeList(i) == ESMF_STATEITEM_FIELD) then
-          call ESMF_LogWrite("RegridWrite Field Name Initiated: "//trim(itemNameList(i)), ESMF_LOGMSG_INFO)
-          call ESMF_StateGet(state, itemName=itemNameList(i), field=field, rc=rc)
-          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-          call ESMFPP_RegridWrite(field, outGrid, ESMF_REGRIDMETHOD_BILINEAR, &
-                                  fileName//trim(itemNameList(i))//'.nc', trim(itemNameList(i)), timeslice, rc=rc)
-          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-          call ESMF_LogWrite("RegridWrite Field Name done: "//trim(itemNameList(i)), ESMF_LOGMSG_INFO)
-        endif
-      enddo
-
-      deallocate(typeList, itemNameList)
-
-      call ESMF_GridDestroy(outGrid,noGarbage=.true., rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-    end subroutine ESMFPP_RegridWriteState
-
-    subroutine ESMFPP_RegridWrite(inField, outGrid, regridMethod, fileName, fieldName, timeslice, rc)
-
-      ! input arguments
-      type(ESMF_Field), intent(in)             :: inField
-      type(ESMF_Grid), intent(in)              :: outGrid
-      type(ESMF_RegridMethod_Flag), intent(in) :: regridMethod
-      character(len=*), intent(in)             :: filename
-      character(len=*), intent(in)             :: fieldName
-      integer,          intent(in)             :: timeslice
-      integer,          intent(inout)          :: rc
-
-      ! local variables
-      integer                                  :: srcTermProcessing
-      type(ESMF_Routehandle)                   :: rh
-      type(ESMF_Field)                         :: outField
-
-      outField = ESMF_FieldCreate(outGrid, typekind=ESMF_TYPEKIND_R8, rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-      ! Perform entire regridding arithmetic on the destination PET
-      srcTermProcessing = 0
-      ! For other options for the regrid operation, please refer to:
-      ! http://www.earthsystemmodeling.org/esmf_releases/last_built/ESMF_refdoc/node5.html#SECTION050366000000000000000
-      call ESMF_FieldRegridStore(inField, outField, regridMethod=regridMethod, &
-                                 unmappedaction=ESMF_UNMAPPEDACTION_IGNORE,    &
-                                 srcTermProcessing=srcTermProcessing, Routehandle=rh, rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-      ! Use fixed ascending order for the sum terms based on their source
-      ! sequence index to ensure bit-for-bit reproducibility
-      call ESMF_FieldRegrid(inField, outField, Routehandle=rh, &
-                            termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-      call ESMF_FieldWrite(outField, fileName, variableName=fieldName, timeslice=timeslice, rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-      call ESMF_FieldRegridRelease(routehandle=rh, rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-      call ESMF_FieldDestroy(outField,noGarbage=.true., rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-      rc = ESMF_SUCCESS
-
-    end subroutine ESMFPP_RegridWrite
 
   !-----------------------------------------------------------------------------
 

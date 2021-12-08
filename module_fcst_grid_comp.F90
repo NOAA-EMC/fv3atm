@@ -154,21 +154,19 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     type(ESMF_FieldBundle)                 :: fieldbundle
 !
     type(ESMF_Time)                        :: CurrTime, StartTime, StopTime
-    type(ESMF_TimeInterval)                :: RunDuration, TimeElapsed
+    type(ESMF_TimeInterval)                :: RunDuration
     type(ESMF_Config)                      :: cf
 
     integer                                :: Run_length
     integer,dimension(6)                   :: date, date_end
 !
     character(len=9) :: month
-    integer :: initClock, unit, nfhour, total_inttime
+    integer :: initClock, unit, total_inttime
     integer :: mype
-    character(3) cfhour
     character(4) dateSY
     character(2) dateSM,dateSD,dateSH,dateSN,dateSS
     character(len=esmf_maxstr) name_FB, name_FB1
     character(len=80) :: dateS
-    real,    allocatable, dimension(:,:) :: glon_bnd, glat_bnd
 
     character(256)                         :: gridfile
     type(ESMF_FieldBundle),dimension(:), allocatable  :: fieldbundlephys
@@ -729,10 +727,8 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !
 !***  local variables
 !
-      integer                    :: i,j, mype, na, date(6)
-      type(ESMF_Time)            :: currtime
+      integer                    :: mype, na
       integer(kind=ESMF_KIND_I8) :: ntimestep_esmf
-      character(len=64)          :: timestamp
       real(kind=8)               :: mpi_wtime, tbeg1
 !
 !-----------------------------------------------------------------------
@@ -785,8 +781,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !
 !***  local variables
 !
-      integer                    :: i,j, mype, na, date(6), seconds
-      type(ESMF_Time)            :: currtime
+      integer                    :: mype, na, date(6), seconds
       integer(kind=ESMF_KIND_I8) :: ntimestep_esmf
       character(len=64)          :: timestamp
       integer                    :: unit
@@ -934,7 +929,6 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     type(ESMF_Array)            :: array
     type(ESMF_ArrayBundle)      :: arraybundle
     logical                     :: isPresent
-    integer                     :: stat
     logical                     :: hasCorners
     logical                     :: lRegridArea
     type(ESMF_Field)            :: areaField

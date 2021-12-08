@@ -165,7 +165,6 @@ type (time_type) :: diag_time, diag_time_fhzero
 !  DYCORE containers
 !-------------------
 type(DYCORE_data_type),    allocatable :: DYCORE_Data(:)  ! number of blocks
-type(DYCORE_diag_type)                 :: DYCORE_Diag(25)
 
 !----------------
 !  GFS containers
@@ -491,23 +490,21 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
   type (atmos_data_type), intent(inout) :: Atmos
   type (time_type), intent(in) :: Time_init, Time, Time_step
 !--- local variables ---
-  integer :: unit, ntdiag, ntfamily, i, j, k
-  integer :: mlon, mlat, nlon, nlat, nlev, sec, dt
+  integer :: unit, i
+  integer :: mlon, mlat, nlon, nlat, nlev, sec
   integer :: ierr, io, logunit
-  integer :: idx, tile_num
+  integer :: tile_num
   integer :: isc, iec, jsc, jec
-  integer :: isd, ied, jsd, jed
-  integer :: blk, ibs, ibe, jbs, jbe
   real(kind=GFS_kind_phys) :: dt_phys
-  real, allocatable    :: q(:,:,:,:), p_half(:,:,:)
-  character(len=80)    :: control
-  character(len=64)    :: filename, filename2, pelist_name
-  character(len=132)   :: text
-  logical              :: p_hydro, hydro, fexist
+#ifndef INTERNAL_FILE_NML
+  character(len=64)    :: filename, pelist_name
+  logical              :: fexist
+#endif
+  logical              :: p_hydro, hydro
   logical, save        :: block_message = .true.
   type(GFS_init_type)  :: Init_parm
   integer              :: bdat(8), cdat(8)
-  integer              :: ntracers, maxhf, maxh
+  integer              :: ntracers
   character(len=32), allocatable, target :: tracer_names(:)
   integer,           allocatable, target :: tracer_types(:)
   integer :: nthrds, nb
@@ -964,7 +961,7 @@ subroutine atmos_model_end (Atmos)
   use update_ca, only: write_ca_restart
   type (atmos_data_type), intent(inout) :: Atmos
 !---local variables
-  integer :: idx, seconds, ierr
+  integer :: ierr
 
 !-----------------------------------------------------------------------
 !---- termination routine for atmospheric model ----
@@ -992,6 +989,8 @@ subroutine atmos_model_end (Atmos)
 !   The CCPP framework for all cdata structures is finalized in CCPP_step 'finalize'.
     call CCPP_step (step="finalize", nblks=Atm_block%nblks, ierr=ierr)
     if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP finalize step failed')
+
+    call dealloc_atmos_data_type (Atmos)
 
 end subroutine atmos_model_end
 
@@ -1543,53 +1542,6 @@ subroutine update_atmos_chemistry(state, rc)
 end subroutine update_atmos_chemistry
 ! </SUBROUTINE>
 
-!#######################################################################
-! <SUBROUTINE NAME="atmos_data_type_chksum">
-!
-! <OVERVIEW>
-!  Print checksums of the various fields in the atmos_data_type.
-! </OVERVIEW>
-
-! <DESCRIPTION>
-!  Routine to print checksums of the various fields in the atmos_data_type.
-! </DESCRIPTION>
-
-! <TEMPLATE>
-!   call atmos_data_type_chksum(id, timestep, atm)
-! </TEMPLATE>
-
-! <IN NAME="Atm" TYPE="type(atmos_data_type)">
-!   Derived-type variable that contains fields in the atmos_data_type.
-! </INOUT>
-!
-! <IN NAME="id" TYPE="character">
-!   Label to differentiate where this routine in being called from.
-! </IN>
-!
-! <IN NAME="timestep" TYPE="integer">
-!   An integer to indicate which timestep this routine is being called for.
-! </IN>
-!
-subroutine atmos_data_type_chksum(id, timestep, atm)
-type(atmos_data_type), intent(in) :: atm
-    character(len=*),  intent(in) :: id
-    integer         ,  intent(in) :: timestep
-    integer :: n, outunit
-
-100 format("CHECKSUM::",A32," = ",Z20)
-101 format("CHECKSUM::",A16,a,'%',a," = ",Z20)
-
-  outunit = stdout()
-  write(outunit,*) 'BEGIN CHECKSUM(Atmos_data_type):: ', id, timestep
-  write(outunit,100) ' atm%lon_bnd                ', mpp_chksum(atm%lon_bnd)
-  write(outunit,100) ' atm%lat_bnd                ', mpp_chksum(atm%lat_bnd)
-  write(outunit,100) ' atm%lon                    ', mpp_chksum(atm%lon)
-  write(outunit,100) ' atm%lat                    ', mpp_chksum(atm%lat)
-
-end subroutine atmos_data_type_chksum
-
-! </SUBROUTINE>
-
   subroutine alloc_atmos_data_type (nlon, nlat, Atmos)
    integer, intent(in) :: nlon, nlat
    type(atmos_data_type), intent(inout) :: Atmos
@@ -1623,7 +1575,7 @@ end subroutine atmos_data_type_chksum
     integer :: sphum, liq_wat, ice_wat, o3mr
     character(len=128) :: impfield_name, fldname
     type(ESMF_TypeKind_Flag)                           :: datatype
-    real(kind=ESMF_KIND_R4),  dimension(:,:), pointer  :: datar42d
+    ! real(kind=ESMF_KIND_R4),  dimension(:,:), pointer  :: datar42d
     real(kind=ESMF_KIND_R8),  dimension(:,:), pointer  :: datar82d
     real(kind=ESMF_KIND_R8),  dimension(:,:,:), pointer:: datar83d
     real(kind=GFS_kind_phys), dimension(:,:), pointer  :: datar8
@@ -2560,9 +2512,9 @@ end subroutine atmos_data_type_chksum
     integer, optional, intent(out) :: rc
 
     !--- local variables
-    integer                :: i, j, k, idx, ix
+    integer                :: i, j, ix
     integer                :: isc, iec, jsc, jec
-    integer                :: ib, jb, nb, nsb, nk
+    integer                :: nb, nk
     integer                :: sphum, liq_wat, ice_wat, o3mr
     real(GFS_kind_phys)    :: rtime, rtimek
 
@@ -2586,7 +2538,6 @@ end subroutine atmos_data_type_chksum
     jsc = Atm_block%jsc
     jec = Atm_block%jec
     nk  = Atm_block%npz
-    nsb = Atm_block%blkno(isc,jsc)
 
     rtime  = one / GFS_control%dtp
     rtimek = GFS_control%rho_h2o * rtime
@@ -2895,7 +2846,6 @@ end subroutine atmos_data_type_chksum
     integer isc, iec, jsc, jec
     integer i, j, nb, ix
 !    integer CLbnd(2), CUbnd(2), CCount(2), TLbnd(2), TUbnd(2), TCount(2)
-    type(ESMF_StaggerLoc) :: staggerloc
     integer, allocatable  :: lsmask(:,:)
     integer(kind=ESMF_KIND_I4), pointer  :: maskPtr(:,:)
 !

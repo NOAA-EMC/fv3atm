@@ -176,10 +176,9 @@ module fv3gfs_cap_mod
     type(ESMF_Config)                      :: cf
     type(ESMF_RegridMethod_Flag)           :: regridmethod
     type(ESMF_TimeInterval)                :: earthStep
-    integer(ESMF_KIND_I4)                  :: nhf, nrg
 
     integer,dimension(6)                   :: date, date_init
-    integer                                :: i, j, k, io_unit, urc, ierr, ist
+    integer                                :: i, j, k, io_unit, urc, ist
     integer                                :: noutput_fh, nfh, nfh2
     integer                                :: petcount
     integer                                :: num_output_file
@@ -824,10 +823,9 @@ module fv3gfs_cap_mod
     integer, intent(out) :: rc
 
     ! local variables
-    character(len=*),parameter  :: subname='(fv3gfs_cap:InitializeRealize)'
-    type(ESMF_State)     :: importState, exportState
-    logical :: isPetLocal
-    integer :: n
+    character(len=*),parameter :: subname='(fv3gfs_cap:InitializeRealize)'
+    type(ESMF_State)           :: importState, exportState
+    logical                    :: isPetLocal
 
     rc = ESMF_SUCCESS
 
@@ -872,12 +870,11 @@ module fv3gfs_cap_mod
     ! local variables
     type(ESMF_Clock)            :: clock
     type(ESMF_Time)             :: currTime, startTime, stopTime
-    type(ESMF_TimeInterval)     :: timeStep
+    ! type(ESMF_TimeInterval)     :: timeStep
 
-    integer                     :: i, urc
     character(len=*),parameter  :: subname='(fv3_cap:ModelAdvance)'
     character(240)              :: msgString
-    character(240)              :: startTime_str, currTime_str, stopTime_str, timeStep_str
+    ! character(240)              :: startTime_str, currTime_str, stopTime_str, timeStep_str
 
 !-----------------------------------------------------------------------------
 
@@ -962,11 +959,9 @@ module fv3gfs_cap_mod
     integer, intent(out)        :: rc
 
     ! local variables
-    type(ESMF_State)            :: importState, exportState
     type(ESMF_Clock)            :: clock
-    type(ESMF_Time)             :: currTime
     type(ESMF_TimeInterval)     :: timeStep
-    type(ESMF_Time)             :: startTime, stopTime
+    type(ESMF_Time)             :: startTime, stopTime, currTime
 
     integer                     :: urc
     logical                     :: fcstpe
@@ -1074,8 +1069,6 @@ module fv3gfs_cap_mod
     integer, intent(out)        :: rc
 
     ! local variables
-    type(ESMF_State)            :: importState, exportState
-    type(ESMF_Clock)            :: clock
     type(ESMF_Time)             :: currTime
     type(ESMF_TimeInterval)     :: timeStep
     type(ESMF_Time)             :: startTime, stopTime
@@ -1323,7 +1316,7 @@ module fv3gfs_cap_mod
 
     ! local variables
     character(len=*),parameter :: subname='(fv3gfs_cap:ModelFinalize)'
-    integer                    :: i, unit, urc
+    integer                    :: i, urc
     type(ESMF_VM)              :: vm
     real(kind=8)               :: MPI_Wtime, timeffs
 !
