@@ -813,6 +813,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
       type(ESMF_Time)            :: currtime
       integer(kind=ESMF_KIND_I8) :: ntimestep_esmf
       character(len=64)          :: timestamp
+      integer                    :: unit
       real(kind=8)               :: mpi_wtime, tbeg1
 !
 !-----------------------------------------------------------------------
@@ -841,18 +842,32 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
       call update_atmos_model_state (atm_int_state%Atm, rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-!--- intermediate restart
+      !--- intermediate restart
       if (atm_int_state%intrm_rst>0) then
         if (na /= atm_int_state%num_atmos_calls-1) then
           call get_time(atm_int_state%Atm%Time - atm_int_state%Atm%Time_init, seconds)
           if (ANY(frestart(:) == seconds)) then
             if (mype == 0) write(*,*)'write out restart at na=',na,' seconds=',seconds,  &
-               'integration lenght=',na*dt_atmos/3600.
+                                     'integration lenght=',na*dt_atmos/3600.
+
             timestamp = date_to_string (atm_int_state%Atm%Time)
             call atmos_model_restart(atm_int_state%Atm, timestamp)
             call write_stoch_restart_atm('RESTART/'//trim(timestamp)//'.atm_stoch.res.nc')
 
-            call wrt_atmres_timestamp(atm_int_state,timestamp)
+            !----- write restart file ------
+            if (mpp_pe() == mpp_root_pe())then
+                call get_date (atm_int_state%Atm%Time, date(1), date(2), date(3),  &
+                                                       date(4), date(5), date(6))
+                call mpp_open( unit, 'RESTART/'//trim(timestamp)//'.coupler.res', nohdrs=.TRUE. )
+                write( unit, '(i6,8x,a)' )calendar_type, &
+                     '(Calendar: no_calendar=0, thirty_day_months=1, julian=2, gregorian=3, noleap=4)'
+
+                write( unit, '(6i6,8x,a)' )date_init, &
+                     'Model start time:   year, month, day, hour, minute, second'
+                write( unit, '(6i6,8x,a)' )date, &
+                     'Current model time: year, month, day, hour, minute, second'
+                call mpp_close(unit)
+            endif
           endif
         endif
       endif
@@ -923,36 +938,6 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !-----------------------------------------------------------------------
 !
   end subroutine fcst_finalize
-!
-!#######################################################################
-!-- change name from coupler_res to wrt_res_stamp to avoid confusion,
-!-- here we only write out atmos restart time stamp
-!
-  subroutine wrt_atmres_timestamp(atm_int_state,timestamp)
-    type(atmos_internalstate_type), intent(in) :: atm_int_state
-    character(len=32), intent(in) :: timestamp
-
-    integer :: unit, date(6)
-
-!----- compute current date ------
-
-    call get_date (atm_int_state%Atm%Time, date(1), date(2), date(3),  &
-                                           date(4), date(5), date(6))
-
-!----- write restart file ------
-
-    if (mpp_pe() == mpp_root_pe())then
-        call mpp_open( unit, 'RESTART/'//trim(timestamp)//'.coupler.res', nohdrs=.TRUE. )
-        write( unit, '(i6,8x,a)' )calendar_type, &
-             '(Calendar: no_calendar=0, thirty_day_months=1, julian=2, gregorian=3, noleap=4)'
-
-        write( unit, '(6i6,8x,a)' )date_init, &
-             'Model start time:   year, month, day, hour, minute, second'
-        write( unit, '(6i6,8x,a)' )date, &
-             'Current model time: year, month, day, hour, minute, second'
-        call mpp_close(unit)
-    endif
-  end subroutine wrt_atmres_timestamp
 !
 !#######################################################################
 !-- write forecast grid to NetCDF file for diagnostics
