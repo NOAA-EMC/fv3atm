@@ -49,8 +49,8 @@ module fv3gfs_cap_mod
                                     nImportFields, importFields, importFieldsInfo, &
                                     importFieldsValid, queryImportFields
 
-  use module_cap_cpl,         only: realizeConnectedCplFields,               &
-                                    clock_cplIntval, diagnose_cplFields
+  use module_cplfields,       only: realizeConnectedCplFields
+  use module_cap_cpl,         only: clock_cplIntval, diagnose_cplFields
 
   use atmos_model_mod,        only: setup_exportdata
 
