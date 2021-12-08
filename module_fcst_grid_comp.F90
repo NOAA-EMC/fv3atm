@@ -80,18 +80,10 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !
 !---- model defined-types ----
 
-  type atmos_internalstate_type
-    type(atmos_data_type)  :: Atm
-    integer :: num_atmos_calls, intrm_rst
-  end type
+  type(atmos_data_type), save :: Atmos
 
-  type atmos_internalstate_wrapper
-    type(atmos_internalstate_type), pointer :: ptr
-  end type
-
-  type(atmos_internalstate_type),pointer,save :: atm_int_state
-  type(atmos_internalstate_wrapper),save      :: wrap
-  type(ESMF_Grid)                             :: fcstGrid
+  type(ESMF_Grid)             :: fcstGrid
+  integer                     :: num_atmos_calls, intrm_rst
 
 !----- coupled model data -----
 
@@ -214,20 +206,6 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     timeis = mpi_wtime()
     rc     = ESMF_SUCCESS
 !
-!-----------------------------------------------------------------------
-!***  ALLOCATE THE FORECAST COMPONENT'S INTERNAL STATE.
-!-----------------------------------------------------------------------
-!
-    allocate(atm_int_state,stat=rc)
-!
-!-----------------------------------------------------------------------
-!***  ATTACH THE INTERNAL STATE TO THE FORECAST COMPONENT.
-!-----------------------------------------------------------------------
-!
-    wrap%ptr => atm_int_state
-    call ESMF_GridCompSetInternalState(fcst_comp, wrap, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
     call ESMF_VMGetCurrent(vm=vm,rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
@@ -332,8 +310,8 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     call diag_manager_set_time_end(Time_end)
 !
     Time_step = set_time (dt_atmos,0)
-    atm_int_state%num_atmos_calls = Run_length / dt_atmos
-    if (mype == 0) write(*,*)'num_atmos_calls=',atm_int_state%num_atmos_calls,'time_init=', &
+    num_atmos_calls = Run_length / dt_atmos
+    if (mype == 0) write(*,*)'num_atmos_calls=',num_atmos_calls,'time_init=', &
                     date_init,'time=',date,'time_end=',date_end,'dt_atmos=',dt_atmos, &
                     'Run_length=',Run_length
 
@@ -341,7 +319,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     frestart = 0
     call get_time(Time_end - Time_init, total_inttime)
 ! set iau offset time
-    atm_int_state%Atm%iau_offset    = iau_offset
+    Atmos%iau_offset    = iau_offset
     if(iau_offset > 0 ) then
       iautime =  set_time(iau_offset * 3600, 0)
     endif
@@ -391,8 +369,8 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     if (mype == 0) print *,'frestart=',frestart(1:10)/3600, 'restart_endfcst=',restart_endfcst, &
       'total_inttime=',total_inttime
 ! if there is restart writing during integration
-    atm_int_state%intrm_rst         = 0
-    if (frestart(1)>0) atm_int_state%intrm_rst = 1
+    intrm_rst         = 0
+    if (frestart(1)>0) intrm_rst = 1
 !
 !----- write time stamps (for start time and end time) ------
 
@@ -406,13 +384,11 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !
 !------ initialize component models ------
 
-     call  atmos_model_init (atm_int_state%Atm, Time_init, Time, Time_step)
+     call  atmos_model_init (Atmos, Time_init, Time, Time_step)
 !
      inquire(FILE='data_table', EXIST=fexist)
      if (fexist) then
-       call data_override_init ( ) ! Atm_domain_in  = Atm%domain, &
-                                   ! Ice_domain_in  = Ice%domain, &
-                                   ! Land_domain_in = Land%domain )
+       call data_override_init()
      endif
 !-----------------------------------------------------------------------
 !---- open and close dummy file in restart dir to check if dir exists --
@@ -437,15 +413,15 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
       endif
 
       if (mpp_pe() == mpp_root_pe()) &
-      write(*, *) 'create fcst grid: mype,regional,nested=',mype,atm_int_state%Atm%regional,atm_int_state%Atm%nested
+      write(*, *) 'create fcst grid: mype,regional,nested=',mype,Atmos%regional,Atmos%nested
 
       ! regional-only without nests
-      if( atm_int_state%Atm%regional .and. .not. atm_int_state%Atm%nested ) then
+      if( Atmos%regional .and. .not. Atmos%nested ) then
 
         call atmosphere_control_data (isc, iec, jsc, jec, nlev)
 
-        domain   = atm_int_state%Atm%domain
-        fcstNpes = atm_int_state%Atm%layout(1)*atm_int_state%Atm%layout(2)
+        domain   = Atmos%domain
+        fcstNpes = Atmos%layout(1)*Atmos%layout(2)
         allocate(isl(fcstNpes), iel(fcstNpes), jsl(fcstNpes), jel(fcstNpes))
         allocate(deBlockList(2,2,fcstNpes))
         call mpp_get_compute_domains(domain,xbegin=isl,xend=iel,ybegin=jsl,yend=jel)
@@ -455,13 +431,13 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
         end do
         delayout = ESMF_DELayoutCreate(petMap=(/(i,i=0,fcstNpes-1)/), rc=rc); ESMF_ERR_ABORT(rc)
         distgrid = ESMF_DistGridCreate(minIndex=(/1,1/), &
-                                         maxIndex=(/atm_int_state%Atm%mlon,atm_int_state%Atm%mlat/), &
+                                         maxIndex=(/Atmos%mlon,Atmos%mlat/), &
                                          delayout=delayout, &
                                          deBlockList=deBlockList, rc=rc); ESMF_ERR_ABORT(rc)
 
-        fcstGrid = ESMF_GridCreateNoPeriDim(regDecomp=(/atm_int_state%Atm%layout(1),atm_int_state%Atm%layout(2)/), &
+        fcstGrid = ESMF_GridCreateNoPeriDim(regDecomp=(/Atmos%layout(1),Atmos%layout(2)/), &
                                               minIndex=(/1,1/), &
-                                              maxIndex=(/atm_int_state%Atm%mlon,atm_int_state%Atm%mlat/), &
+                                              maxIndex=(/Atmos%mlon,Atmos%mlat/), &
                                               gridAlign=(/-1,-1/), &
                                               decompflag=(/ESMF_DECOMP_SYMMEDGEMAX,ESMF_DECOMP_SYMMEDGEMAX/), &
                                               name="fcst_grid", &
@@ -477,8 +453,8 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 
         do j = jsc, jec
           do i = isc, iec
-            glonPtr(i-isc+1,j-jsc+1) = atm_int_state%Atm%lon(i-isc+1,j-jsc+1) * dtor
-            glatPtr(i-isc+1,j-jsc+1) = atm_int_state%Atm%lat(i-isc+1,j-jsc+1) * dtor
+            glonPtr(i-isc+1,j-jsc+1) = Atmos%lon(i-isc+1,j-jsc+1) * dtor
+            glatPtr(i-isc+1,j-jsc+1) = Atmos%lat(i-isc+1,j-jsc+1) * dtor
           enddo
         enddo
 
@@ -489,22 +465,22 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
                                totalLBound=tlb, totalUBound=tub, &
                                farrayPtr=glonPtr, rc=rc); ESMF_ERR_ABORT(rc)
         glonPtr(tlb(1):tub(1),tlb(2):tub(2)) = &
-           atm_int_state%Atm%lon_bnd(tlb(1):tub(1),tlb(2):tub(2)) * dtor
+           Atmos%lon_bnd(tlb(1):tub(1),tlb(2):tub(2)) * dtor
         call ESMF_GridGetCoord(fcstGrid, coordDim=2, staggerLoc=ESMF_STAGGERLOC_CORNER, &
                                totalLBound=tlb, totalUBound=tub, &
                                farrayPtr=glatPtr, rc=rc); ESMF_ERR_ABORT(rc)
         glatPtr(tlb(1):tub(1),tlb(2):tub(2)) = &
-          atm_int_state%Atm%lat_bnd(tlb(1):tub(1),tlb(2):tub(2)) * dtor
+          Atmos%lat_bnd(tlb(1):tub(1),tlb(2):tub(2)) * dtor
 
         call mpp_error(NOTE, 'after create fcst grid for regional-only')
 
       else ! not regional only
 
-        if (.not. atm_int_state%Atm%regional .and. .not. atm_int_state%Atm%nested ) then  !! global only
+        if (.not. Atmos%regional .and. .not. Atmos%nested ) then  !! global only
 
           do tl=1,6
-              decomptile(1,tl) = atm_int_state%Atm%layout(1)
-              decomptile(2,tl) = atm_int_state%Atm%layout(2)
+              decomptile(1,tl) = Atmos%layout(1)
+              decomptile(2,tl) = Atmos%layout(2)
               decompflagPTile(:,tl) = (/ESMF_DECOMP_SYMMEDGEMAX,ESMF_DECOMP_SYMMEDGEMAX/)
           enddo
           fcstGrid = ESMF_GridCreateMosaic(filename="INPUT/"//trim(gridfile),                                   &
@@ -518,7 +494,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 
         else !! global-nesting or regional-nesting
 
-          if (mype == 0) TileLayout = atm_int_state%Atm%layout
+          if (mype == 0) TileLayout = Atmos%layout
           call ESMF_VMBroadcast(vm, bcstData=TileLayout, count=2, &
                                   rootPet=0, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
@@ -537,31 +513,31 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
             nestRootPet = npes(1)
             gridfile="grid.nest02.tile2.nc"
           else
-            call mpp_error(FATAL, 'Inconsistent nestRootPet and Atm%layout')
+            call mpp_error(FATAL, 'Inconsistent nestRootPet and Atmos%layout')
           endif
 
           if (mype == nestRootPet) then
-            if (nestRootPet /= atm_int_state%Atm%pelist(1)) then
-              write(0,*)'error in fcst_initialize: nestRootPet /= atm_int_state%Atm%pelist(1)'
+            if (nestRootPet /= Atmos%pelist(1)) then
+              write(0,*)'error in fcst_initialize: nestRootPet /= Atmos%pelist(1)'
               write(0,*)'error in fcst_initialize: nestRootPet = ',nestRootPet
-              write(0,*)'error in fcst_initialize: atm_int_state%Atm%pelist(1) = ',atm_int_state%Atm%pelist(1)
+              write(0,*)'error in fcst_initialize: Atmos%pelist(1) = ',Atmos%pelist(1)
               ESMF_ERR_ABORT(100)
             endif
           endif
 
           ! nest rootPet shares peList with others
-          if (mype == nestRootPet) peListSize(1) = size(atm_int_state%Atm%pelist)
+          if (mype == nestRootPet) peListSize(1) = size(Atmos%pelist)
           call ESMF_VMBroadcast(vm, bcstData=peListSize, count=1, rootPet=nestRootPet, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
           ! nest rootPet shares layout with others
-          if (mype == nestRootPet) regDecomp = atm_int_state%Atm%layout
+          if (mype == nestRootPet) regDecomp = Atmos%layout
           call ESMF_VMBroadcast(vm, bcstData=regDecomp, count=2, rootPet=nestRootPet, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
           ! prepare petMap variable
           allocate(petMap(peListSize(1)))
-          if (mype == nestRootPet) petMap = atm_int_state%Atm%pelist
+          if (mype == nestRootPet) petMap = Atmos%pelist
           ! do the actual broadcast of the petMap
           call ESMF_VMBroadcast(vm, bcstData=petMap, count=peListSize(1), rootPet=nestRootPet, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
@@ -585,7 +561,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
       endif
 !
       !! FIXME
-      if ( .not. atm_int_state%Atm%nested ) then  !! global only
+      if ( .not. Atmos%nested ) then  !! global only
         call addLsmask2grid(fcstGrid, rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 !       print *,'call addLsmask2grid after fcstGrid, rc=',rc
@@ -682,7 +658,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
            if (mype == 0) write(*,*)'af create fcst fieldbundle, name=',trim(name_FB),'rc=',rc
 
-           call fv_dyn_bundle_setup(atm_int_state%Atm%axes,          &
+           call fv_dyn_bundle_setup(Atmos%axes,          &
                                     fieldbundle, fcstGrid, quilting, rc=rc)
            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
@@ -705,7 +681,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
              if (mype == 0) write(*,*)'af create fcst fieldbundle, name=',trim(name_FB1),'rc=',rc
            enddo
 !
-           call fv_phys_bundle_setup(atm_int_state%Atm%diag, atm_int_state%Atm%axes, &
+           call fv_phys_bundle_setup(Atmos%diag, Atmos%axes, &
                                      fieldbundlephys, fcstGrid, quilting, nbdlphys)
 !
            ! Add the field to the importState so parent can connect to it
@@ -779,11 +755,11 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !-----------------------------------------------------------------------
 ! *** call fcst integration subroutines
 
-      call update_atmos_model_dynamics (atm_int_state%Atm)
+      call update_atmos_model_dynamics (Atmos)
 
-      call update_atmos_radiation_physics (atm_int_state%Atm)
+      call update_atmos_radiation_physics (Atmos)
 
-      call atmos_model_exchange_phase_1 (atm_int_state%Atm, rc=rc)
+      call atmos_model_exchange_phase_1 (Atmos, rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
       if (mype == 0) write(*,*)"PASS: fcstRUN phase 1, na = ",na, ' time is ', mpi_wtime()-tbeg1
@@ -836,27 +812,27 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !-----------------------------------------------------------------------
 ! *** call fcst integration subroutines
 
-      call atmos_model_exchange_phase_2 (atm_int_state%Atm, rc=rc)
+      call atmos_model_exchange_phase_2 (Atmos, rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-      call update_atmos_model_state (atm_int_state%Atm, rc=rc)
+      call update_atmos_model_state (Atmos, rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
       !--- intermediate restart
-      if (atm_int_state%intrm_rst>0) then
-        if (na /= atm_int_state%num_atmos_calls-1) then
-          call get_time(atm_int_state%Atm%Time - atm_int_state%Atm%Time_init, seconds)
+      if (intrm_rst>0) then
+        if (na /= num_atmos_calls-1) then
+          call get_time(Atmos%Time - Atmos%Time_init, seconds)
           if (ANY(frestart(:) == seconds)) then
             if (mype == 0) write(*,*)'write out restart at na=',na,' seconds=',seconds,  &
                                      'integration lenght=',na*dt_atmos/3600.
 
-            timestamp = date_to_string (atm_int_state%Atm%Time)
-            call atmos_model_restart(atm_int_state%Atm, timestamp)
+            timestamp = date_to_string (Atmos%Time)
+            call atmos_model_restart(Atmos, timestamp)
             call write_stoch_restart_atm('RESTART/'//trim(timestamp)//'.atm_stoch.res.nc')
 
             !----- write restart file ------
             if (mpp_pe() == mpp_root_pe())then
-                call get_date (atm_int_state%Atm%Time, date(1), date(2), date(3),  &
+                call get_date (Atmos%Time, date(1), date(2), date(3),  &
                                                        date(4), date(5), date(6))
                 call mpp_open( unit, 'RESTART/'//trim(timestamp)//'.coupler.res', nohdrs=.TRUE. )
                 write( unit, '(i6,8x,a)' )calendar_type, &
@@ -909,12 +885,12 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 
       call ESMF_GridCompGet(fcst_comp, localpet=mype, rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-!
-      call atmos_model_end (atm_int_state%atm)
+
+      call atmos_model_end (Atmos)
 
 !*** write restart file
       if( restart_endfcst ) then
-        call get_date (atm_int_state%Atm%Time, date(1), date(2), date(3),  &
+        call get_date (Atmos%Time, date(1), date(2), date(3),  &
                                date(4), date(5), date(6))
         call mpp_open( unit, 'RESTART/coupler.res', nohdrs=.TRUE. )
         if (mpp_pe() == mpp_root_pe())then
@@ -929,7 +905,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
         call mpp_close(unit)
       endif
 
-      call diag_manager_end (atm_int_state%Atm%Time)
+      call diag_manager_end (Atmos%Time)
 
       call fms_end
 
