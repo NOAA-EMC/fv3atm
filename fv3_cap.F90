@@ -50,7 +50,7 @@ module fv3gfs_cap_mod
                                     importFieldsValid, queryImportFields
 
   use module_cplfields,       only: realizeConnectedCplFields
-  use module_cap_cpl,         only: clock_cplIntval, diagnose_cplFields
+  use module_cap_cpl,         only: diagnose_cplFields
 
   use atmos_model_mod,        only: setup_exportdata
 
@@ -176,6 +176,9 @@ module fv3gfs_cap_mod
     type(ESMF_Config)                      :: cf
     type(ESMF_RegridMethod_Flag)           :: regridmethod
     type(ESMF_TimeInterval)                :: earthStep
+    real(ESMF_KIND_R8)                     :: medAtmCouplingIntervalSec
+    type(ESMF_Clock)                       :: fv3Clock
+    type(ESMF_TimeInterval)                :: fv3Step
 
     integer,dimension(6)                   :: date, date_init
     integer                                :: i, j, k, io_unit, urc, ist
@@ -405,7 +408,23 @@ module fv3gfs_cap_mod
       line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
     ! Read in the FV3 coupling interval
-    call clock_cplIntval(gcomp, CF)
+    call ESMF_ConfigGetAttribute(config=CF, value=medAtmCouplingIntervalSec, &
+                                 label="atm_coupling_interval_sec:", default=-1.0_ESMF_KIND_R8, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) &
+      call ESMF_Finalize(endflag=ESMF_END_ABORT)
+
+    if (medAtmCouplingIntervalSec > 0._ESMF_KIND_R8) then ! The coupling time step is provided
+      call ESMF_TimeIntervalSet(fv3Step, s_r8=medAtmCouplingIntervalSec, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) &
+        call ESMF_Finalize(endflag=ESMF_END_ABORT)
+      call ESMF_GridCompGet(gcomp, clock=fv3Clock, rc=RC)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) &
+        call ESMF_Finalize(endflag=ESMF_END_ABORT)
+      call ESMF_ClockSet(fv3Clock, timestep=fv3Step, rc=RC)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) &
+        call ESMF_Finalize(endflag=ESMF_END_ABORT)
+
+    endif
 
     first_kdt = 1
     if( output_1st_tstep_rst) then

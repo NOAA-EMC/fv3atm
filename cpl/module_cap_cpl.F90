@@ -10,43 +10,11 @@ module module_cap_cpl
   implicit none
 
   private
-  public clock_cplIntval
   public diagnose_cplFields
 !
   contains
 
   !-----------------------------------------------------------------------------
-  !-----------------------------------------------------------------------------
-
-    subroutine clock_cplIntval(gcomp, CF)
-
-      type(ESMF_GridComp)      :: gcomp
-      type(ESMF_Config)        :: CF
-!
-      real(ESMF_KIND_R8)       :: medAtmCouplingIntervalSec
-      type(ESMF_Clock)         :: fv3Clock
-      type(ESMF_TimeInterval)  :: fv3Step
-      integer                  :: rc
-!
-      call ESMF_ConfigGetAttribute(config=CF, value=medAtmCouplingIntervalSec, &
-                                   label="atm_coupling_interval_sec:", default=-1.0_ESMF_KIND_R8, rc=RC)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) &
-        call ESMF_Finalize(endflag=ESMF_END_ABORT)
-
-      if (medAtmCouplingIntervalSec > 0._ESMF_KIND_R8) then ! The coupling time step is provided
-        call ESMF_TimeIntervalSet(fv3Step, s_r8=medAtmCouplingIntervalSec, rc=RC)
-        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) &
-          call ESMF_Finalize(endflag=ESMF_END_ABORT)
-        call ESMF_GridCompGet(gcomp, clock=fv3Clock, rc=RC)
-        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) &
-          call ESMF_Finalize(endflag=ESMF_END_ABORT)
-        call ESMF_ClockSet(fv3Clock, timestep=fv3Step, rc=RC)
-        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) &
-          call ESMF_Finalize(endflag=ESMF_END_ABORT)
-      endif
-
-    end subroutine clock_cplIntval
-
   !-----------------------------------------------------------------------------
 
     subroutine diagnose_cplFields(gcomp, clock_fv3, fcstpe, &
