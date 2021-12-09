@@ -249,6 +249,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: sfalb_ice (:) => null() !< surface albedo over ice for LSM
     real (kind=kind_phys), pointer :: emis_lnd (:)  => null() !< surface emissivity over land for LSM
     real (kind=kind_phys), pointer :: emis_ice (:)  => null() !< surface emissivity over ice for LSM
+    real (kind=kind_phys), pointer :: emis_wat (:)  => null() !< surface emissivity over water
     real (kind=kind_phys), pointer :: sfalb_lnd_bck (:) => null() !< snow-free albedo over land
 
 !--- In (radiation only)
@@ -1552,6 +1553,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: evbsa  (:)     => null()   !< noah lsm diagnostics
     real (kind=kind_phys), pointer :: evcwa  (:)     => null()   !< noah lsm diagnostics
     real (kind=kind_phys), pointer :: snohfa (:)     => null()   !< noah lsm diagnostics
+    real (kind=kind_phys), pointer :: paha   (:)     => null()   !< noah lsm diagnostics
     real (kind=kind_phys), pointer :: transa (:)     => null()   !< noah lsm diagnostics
     real (kind=kind_phys), pointer :: sbsnoa (:)     => null()   !< noah lsm diagnostics
     real (kind=kind_phys), pointer :: snowca (:)     => null()   !< noah lsm diagnostics
@@ -1570,6 +1572,10 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: suntim (:)     => null()   !< sunshine duration time (s)
     real (kind=kind_phys), pointer :: runoff (:)     => null()   !< total water runoff
     real (kind=kind_phys), pointer :: ep     (:)     => null()   !< potential evaporation
+    real (kind=kind_phys), pointer :: tecan  (:)     => null()   !< total evaporation of intercepted water
+    real (kind=kind_phys), pointer :: tetran (:)     => null()   !< total transpiration rate
+    real (kind=kind_phys), pointer :: tedir  (:)     => null()   !< total soil surface evaporation rate
+    real (kind=kind_phys), pointer :: twa    (:)     => null()   !< total water storage in aquifer
     real (kind=kind_phys), pointer :: cldwrk (:)     => null()   !< cloud workfunction (valid only with sas)
     real (kind=kind_phys), pointer :: dugwd  (:)     => null()   !< vertically integrated u change by OGWD
     real (kind=kind_phys), pointer :: dvgwd  (:)     => null()   !< vertically integrated v change by OGWD
@@ -1636,6 +1642,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: dtsfci (:)     => null()   !< instantaneous sfc sensible heat flux
     real (kind=kind_phys), pointer :: dqsfci (:)     => null()   !< instantaneous sfc latent heat flux
     real (kind=kind_phys), pointer :: gfluxi (:)     => null()   !< instantaneous sfc ground heat flux
+    real (kind=kind_phys), pointer :: pahi   (:)     => null()   !< instantaneous precipitation advected heat flux
     real (kind=kind_phys), pointer :: epi    (:)     => null()   !< instantaneous sfc potential evaporation
     real (kind=kind_phys), pointer :: smcwlt2(:)     => null()   !< wilting point (volumetric)
     real (kind=kind_phys), pointer :: smcref2(:)     => null()   !< soil moisture threshold (volumetric)
@@ -1890,6 +1897,10 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: evap_water(:)      => null()  !<
     real (kind=kind_phys), pointer      :: evbs(:)            => null()  !<
     real (kind=kind_phys), pointer      :: evcw(:)            => null()  !<
+    real (kind=kind_phys), pointer      :: pah(:)             => null()  !<
+    real (kind=kind_phys), pointer      :: ecan(:)            => null()  !<
+    real (kind=kind_phys), pointer      :: etran(:)           => null()  !<
+    real (kind=kind_phys), pointer      :: edir(:)            => null()  !<
     real (kind=kind_phys), pointer      :: faerlw(:,:,:,:)    => null()  !<
     real (kind=kind_phys), pointer      :: faersw(:,:,:,:)    => null()  !<
     real (kind=kind_phys), pointer      :: ffhh_ice(:)        => null()  !<
@@ -2030,7 +2041,6 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: save_v(:,:)        => null()  !<
     real (kind=kind_phys), pointer      :: sbsno(:)           => null()  !<
     type (cmpfsw_type),    pointer      :: scmpsw(:)          => null()  !<
-    real (kind=kind_phys), pointer      :: semis_water(:)     => null()  !<
     real (kind=kind_phys), pointer      :: sfcalb(:,:)        => null()  !<
     real (kind=kind_phys), pointer      :: sigma(:)           => null()  !<
     real (kind=kind_phys), pointer      :: sigmaf(:)          => null()  !<
@@ -2345,6 +2355,7 @@ module GFS_typedefs
     allocate(Sfcprop%albdifnir_lnd (IM))
     allocate (Sfcprop%emis_lnd (IM))
     allocate (Sfcprop%emis_ice (IM))
+    allocate (Sfcprop%emis_wat (IM))
 
     Sfcprop%slmsk     = clear_val
     Sfcprop%oceanfrac = clear_val
@@ -2374,6 +2385,7 @@ module GFS_typedefs
     Sfcprop%albdifnir_lnd = clear_val
     Sfcprop%emis_lnd  = clear_val
     Sfcprop%emis_ice  = clear_val
+    Sfcprop%emis_wat  = clear_val
 
 !--- In (radiation only)
     allocate (Sfcprop%snoalb (IM))
@@ -6473,6 +6485,9 @@ module GFS_typedefs
     allocate (Diag%ulwsfc  (IM))
     allocate (Diag%suntim  (IM))
     allocate (Diag%runoff  (IM))
+    allocate (Diag%tecan   (IM))
+    allocate (Diag%tetran  (IM))
+    allocate (Diag%tedir   (IM))
     allocate (Diag%ep      (IM))
     allocate (Diag%cldwrk  (IM))
     allocate (Diag%dugwd   (IM))
@@ -6543,6 +6558,12 @@ module GFS_typedefs
     allocate (Diag%spp_wts_gwd(IM,Model%levs))
     allocate (Diag%spp_wts_rad(IM,Model%levs))
     allocate (Diag%zmtnblck (IM))
+
+    if(Model%lsm == Model%lsm_noahmp) then
+      allocate (Diag%paha    (IM))
+      allocate (Diag%twa     (IM))
+      allocate (Diag%pahi    (IM))
+    endif
 
     ! F-A MP scheme
     if (Model%imp_physics == Model%imp_physics_fer_hires) then
@@ -6747,6 +6768,9 @@ module GFS_typedefs
     Diag%ulwsfc     = zero
     Diag%suntim     = zero
     Diag%runoff     = zero
+    Diag%tecan      = zero
+    Diag%tetran     = zero
+    Diag%tedir      = zero
     Diag%ep         = zero
     Diag%cldwrk     = zero
     Diag%dugwd      = zero
@@ -6811,6 +6835,12 @@ module GFS_typedefs
     Diag%spp_wts_gwd = zero
     Diag%spp_wts_rad = zero
     Diag%zmtnblck   = zero
+
+    if(Model%lsm == Model%lsm_noahmp)then
+      Diag%paha       = zero
+      Diag%twa        = zero
+      Diag%pahi       = zero
+    endif
 
     if (Model%imp_physics == Model%imp_physics_fer_hires) then
        Diag%train      = zero
@@ -7040,6 +7070,10 @@ module GFS_typedefs
     allocate (Interstitial%evap_water      (IM))
     allocate (Interstitial%evbs            (IM))
     allocate (Interstitial%evcw            (IM))
+    allocate (Interstitial%pah             (IM))
+    allocate (Interstitial%ecan            (IM))
+    allocate (Interstitial%etran           (IM))
+    allocate (Interstitial%edir            (IM))
     allocate (Interstitial%faerlw          (IM,Model%levr+LTP,NBDLW,NF_AELW))
     allocate (Interstitial%faersw          (IM,Model%levr+LTP,NBDSW,NF_AESW))
     allocate (Interstitial%ffhh_ice        (IM))
@@ -7130,7 +7164,6 @@ module GFS_typedefs
     allocate (Interstitial%save_v          (IM,Model%levs))
     allocate (Interstitial%sbsno           (IM))
     allocate (Interstitial%scmpsw          (IM))
-    allocate (Interstitial%semis_water     (IM))
     allocate (Interstitial%sfcalb          (IM,NF_ALBD))
     allocate (Interstitial%sigma           (IM))
     allocate (Interstitial%sigmaf          (IM))
@@ -7729,6 +7762,10 @@ module GFS_typedefs
     Interstitial%evap_water      = Model%huge
     Interstitial%evbs            = clear_val
     Interstitial%evcw            = clear_val
+    Interstitial%pah             = clear_val
+    Interstitial%ecan            = clear_val
+    Interstitial%etran           = clear_val
+    Interstitial%edir            = clear_val
     Interstitial%ffhh_ice        = Model%huge
     Interstitial%ffhh_land       = Model%huge
     Interstitial%ffhh_water      = Model%huge
@@ -7804,7 +7841,6 @@ module GFS_typedefs
     Interstitial%save_u          = clear_val
     Interstitial%save_v          = clear_val
     Interstitial%sbsno           = clear_val
-    Interstitial%semis_water     = clear_val
     Interstitial%sigma           = clear_val
     Interstitial%sigmaf          = clear_val
     Interstitial%sigmafrac       = clear_val
