@@ -10,7 +10,7 @@
   path = ccpp/physics
   #url = https://github.com/NCAR/ccpp-physics
   #branch = main
-  url = https://github.com/gthompsnWRF/ccpp-physics
+  url = https://github.com/climbfuji/ccpp-physics
   branch = greg_new_thompson_cloud_fraction_with_ruiyu_cloud_cover_change_xu_randall
 [submodule "upp"]
   path = upp
