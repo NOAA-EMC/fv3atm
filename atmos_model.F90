@@ -496,10 +496,6 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
   integer :: tile_num
   integer :: isc, iec, jsc, jec
   real(kind=GFS_kind_phys) :: dt_phys
-#ifndef INTERNAL_FILE_NML
-  character(len=64)    :: filename, pelist_name
-  logical              :: fexist
-#endif
   logical              :: p_hydro, hydro
   logical, save        :: block_message = .true.
   type(GFS_init_type)  :: Init_parm
@@ -544,7 +540,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
 !----------------------------------------------------------------------------------------------
 ! initialize atmospheric model - must happen AFTER atmosphere_init so that nests work correctly
 
-   IF ( file_exists('input.nml')) THEN
+   if (file_exists('input.nml')) then
       read(input_nml_file, nml=atmos_model_nml, iostat=io)
       ierr = check_nml_error(io, 'atmos_model_nml')
    endif
@@ -632,19 +628,10 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    Init_parm%restart         = Atm(mygrid)%flagstruct%warm_start
    Init_parm%hydrostatic     = Atm(mygrid)%flagstruct%hydrostatic
 
-#ifdef INTERNAL_FILE_NML
    ! allocate required to work around GNU compiler bug 100886 https://gcc.gnu.org/bugzilla/show_bug.cgi?id=100886
    allocate(Init_parm%input_nml_file, mold=input_nml_file)
    Init_parm%input_nml_file  => input_nml_file
    Init_parm%fn_nml='using internal file'
-#else
-   pelist_name=mpp_get_current_pelist_name()
-   Init_parm%fn_nml='input_'//trim(pelist_name)//'.nml'
-   inquire(FILE=Init_parm%fn_nml, EXIST=fexist)
-   if (.not. fexist ) then
-      Init_parm%fn_nml='input.nml'
-   endif
-#endif
 
    call GFS_initialize (GFS_control, GFS_data%Statein, GFS_data%Stateout, GFS_data%Sfcprop,     &
                         GFS_data%Coupling, GFS_data%Grid, GFS_data%Tbd, GFS_data%Cldprop, GFS_data%Radtend, &
