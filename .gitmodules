@@ -11,7 +11,7 @@
   #url = https://github.com/NCAR/ccpp-physics
   #branch = main
   url = https://github.com/gthompsnWRF/ccpp-physics
-  branch = new_thompson_cloud_fraction
+  branch = greg_new_thompson_cloud_fraction_with_ruiyu_cloud_cover_change_xu_randall
 [submodule "upp"]
   path = upp
   url = https://github.com/NOAA-EMC/UPP
