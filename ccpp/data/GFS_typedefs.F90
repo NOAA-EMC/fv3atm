@@ -1671,6 +1671,12 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: cldfra (:,:)   => null()  !< instantaneous 3D cloud fraction
     !--- MP quantities for 3D diagnositics
     real (kind=kind_phys), pointer :: refl_10cm(:,:) => null()  !< instantaneous refl_10cm
+    real (kind=kind_phys), pointer :: cldfra2d (:)   => null()  !< instantaneous 2D cloud fraction
+    real (kind=kind_phys), pointer :: total_albedo (:)   => null()  !< total sky (with cloud) albedo at toa
+    real (kind=kind_phys), pointer :: lwp_ex (:)     => null()  !< liquid water path from microphysics
+    real (kind=kind_phys), pointer :: iwp_ex (:)     => null()  !< ice water path from microphysics
+    real (kind=kind_phys), pointer :: lwp_fc (:)     => null()  !< liquid water path from cloud fraction scheme
+    real (kind=kind_phys), pointer :: iwp_fc (:)     => null()  !< ice water path from cloud fraction scheme
 
     !--- Extra PBL diagnostics
     real (kind=kind_phys), pointer :: dkt(:,:)       => null()  !< Eddy diffusitivity for heat
@@ -6518,7 +6524,13 @@ module GFS_typedefs
     if (Model%imp_physics == Model%imp_physics_fer_hires) then
      allocate (Diag%train     (IM,Model%levs))
     end if
-    allocate (Diag%cldfra     (IM,Model%levs))
+    allocate (Diag%cldfra     (IM,Model%levr+LTP))
+    allocate (Diag%cldfra2d   (IM))
+    allocate (Diag%total_albedo (IM))
+    allocate (Diag%lwp_ex (IM))
+    allocate (Diag%iwp_ex (IM))
+    allocate (Diag%lwp_fc (IM))
+    allocate (Diag%iwp_fc (IM))
 
     !--- 3D diagnostics
     if (Model%ldiag3d) then
@@ -6784,6 +6796,12 @@ module GFS_typedefs
        Diag%train      = zero
     end if
     Diag%cldfra      = zero
+    Diag%cldfra2d    = zero
+    Diag%total_albedo = zero
+    Diag%lwp_ex     = zero
+    Diag%iwp_ex     = zero
+    Diag%lwp_fc     = zero
+    Diag%iwp_fc     = zero
 
     Diag%totprcpb   = zero
     Diag%cnvprcpb   = zero
@@ -6894,7 +6912,7 @@ module GFS_typedefs
     Diag%dku = zero
 
 ! max hourly diagnostics
-    Diag%refl_10cm   = zero
+    Diag%refl_10cm   = -35.
     Diag%refdmax     = -35.
     Diag%refdmax263k = -35.
     Diag%t02max      = -999.
