@@ -21,6 +21,7 @@ module fv3gfs_cap_mod
                                     label_RealizeProvided,                   &
                                     label_Advance,                           &
                                     label_CheckImport,                       &
+                                    label_SetRunClock,                       &
                                     label_TimestampExport,                   &
                                     label_Finalize,                          &
                                     NUOPC_ModelGet
@@ -60,7 +61,6 @@ module fv3gfs_cap_mod
 !
 !-----------------------------------------------------------------------
 !
-  type(ESMF_Clock),save                       :: clock_fv3
 
   type(ESMF_GridComp)                         :: fcstComp
   type(ESMF_State)                            :: fcstState
@@ -136,6 +136,13 @@ module fv3gfs_cap_mod
                               specPhaseLabel="phase2", specRoutine=ModelAdvance_phase2, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
+    call ESMF_MethodRemove(gcomp, label=label_SetRunClock, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+    call NUOPC_CompSpecialize(gcomp, specLabel=label_SetRunClock, &
+                                     specRoutine=ModelSetRunClock, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
     ! specializations required to support 'inline' run sequences
     call NUOPC_CompSpecialize(gcomp, specLabel=label_CheckImport, &
                               specPhaseLabel="phase1", specRoutine=fv3_checkimport, rc=rc)
@@ -166,6 +173,7 @@ module fv3gfs_cap_mod
 ! local variables
     type(ESMF_State)                       :: importState, exportState
     type(ESMF_Clock)                       :: clock
+    type(ESMF_Clock)                       :: clock_fv3
 
     character(len=10)                      :: value
     character(240)                         :: msgString
@@ -173,12 +181,9 @@ module fv3gfs_cap_mod
     type(ESMF_VM)                          :: vm, fcstVM
     type(ESMF_Time)                        :: currTime, startTime, stopTime
     type(ESMF_TimeInterval)                :: RunDuration, timeStep, rsthour, IAU_offsetTI
+    type(ESMF_TimeInterval)                :: earthStep
     type(ESMF_Config)                      :: cf
     type(ESMF_RegridMethod_Flag)           :: regridmethod
-    type(ESMF_TimeInterval)                :: earthStep
-    real(ESMF_KIND_R8)                     :: medAtmCouplingIntervalSec
-    type(ESMF_Clock)                       :: fv3Clock
-    type(ESMF_TimeInterval)                :: fv3Step
 
     integer,dimension(6)                   :: date, date_init
     integer                                :: i, j, k, io_unit, urc, ist
@@ -197,12 +202,18 @@ module fv3gfs_cap_mod
     integer                                :: isrcTermProcessing
 
     character(len=*),parameter             :: subname='(fv3_cap:InitializeAdvertise)'
-    real(kind=8)                           :: MPI_Wtime, timewri, timeis, timerhs
+    real(kind=8)                           :: MPI_Wtime, timeis, timerhs
 !
 !------------------------------------------------------------------------
 !
     rc = ESMF_SUCCESS
     timeis = MPI_Wtime()
+
+    call ESMF_GridCompGet(gcomp,name=name,vm=vm,rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+    call ESMF_VMGet(vm, petCount=petcount, localpet=mype, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
     ! query for importState and exportState
     call NUOPC_ModelGet(gcomp, driverClock=clock, importState=importState, exportState=exportState, rc=rc)
@@ -230,14 +241,7 @@ module fv3gfs_cap_mod
     write(msgString,'(A,i6)') trim(subname)//' dbug = ',dbug
     call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_INFO, rc=rc)
 
-    call ESMF_GridCompGet(gcomp,name=name,vm=vm,rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-    call ESMF_VMGet(vm, petCount=petcount, localpet=mype, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-!    print *,'in fv3_cap,initAdvertize,name=',trim(name),'petcount=',petcount,'mype=',mype
-!
 ! create an instance clock for fv3
     clock_fv3 = ESMF_ClockCreate(clock, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
@@ -406,25 +410,6 @@ module fv3gfs_cap_mod
     call NUOPC_CompSetClock(gcomp, clock, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
-
-    ! Read in the FV3 coupling interval
-    call ESMF_ConfigGetAttribute(config=CF, value=medAtmCouplingIntervalSec, &
-                                 label="atm_coupling_interval_sec:", default=-1.0_ESMF_KIND_R8, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) &
-      call ESMF_Finalize(endflag=ESMF_END_ABORT)
-
-    if (medAtmCouplingIntervalSec > 0._ESMF_KIND_R8) then ! The coupling time step is provided
-      call ESMF_TimeIntervalSet(fv3Step, s_r8=medAtmCouplingIntervalSec, rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) &
-        call ESMF_Finalize(endflag=ESMF_END_ABORT)
-      call ESMF_GridCompGet(gcomp, clock=fv3Clock, rc=RC)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) &
-        call ESMF_Finalize(endflag=ESMF_END_ABORT)
-      call ESMF_ClockSet(fv3Clock, timestep=fv3Step, rc=RC)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) &
-        call ESMF_Finalize(endflag=ESMF_END_ABORT)
-
-    endif
 
     first_kdt = 1
     if( output_1st_tstep_rst) then
@@ -621,8 +606,6 @@ module fv3gfs_cap_mod
 
           if (i==1) then
 ! this is a Store() for the first wrtComp -> must do the Store()
-            timewri = MPI_Wtime()
-
             call ESMF_FieldBundleRegridStore(fcstFB(j), wrtFB(j,i),                                    &
                                              regridMethod=regridmethod, routehandle=routehandle(j,i),  &
                                              unmappedaction=ESMF_UNMAPPEDACTION_IGNORE,                &
@@ -886,87 +869,18 @@ module fv3gfs_cap_mod
     type(ESMF_GridComp)         :: gcomp
     integer, intent(out)        :: rc
 
-    ! local variables
-    type(ESMF_Clock)            :: clock
-    type(ESMF_Time)             :: currTime, startTime, stopTime
-    ! type(ESMF_TimeInterval)     :: timeStep
-
-    character(len=*),parameter  :: subname='(fv3_cap:ModelAdvance)'
-    character(240)              :: msgString
-    ! character(240)              :: startTime_str, currTime_str, stopTime_str, timeStep_str
-
 !-----------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
 
     if (profile_memory) call ESMF_VMLogMemInfo("Entering FV3 ModelAdvance: ")
 
-    ! Because of the way that the internal Clock was set in SetClock(),
-    ! its timeStep is likely smaller than the parent timeStep. As a consequence
-    ! the time interval covered by a single parent timeStep will result in
-    ! multiple calls to the ModelAdvance() routine. Every time the currTime
-    ! will come in by one internal timeStep advanced. This goes until the
-    ! stopTime of the internal Clock has been reached.
-
-    call ESMF_ClockPrint(clock_fv3, options="currTime", &
-                         preString="------>Advancing FV3 from: ", unit=msgString, rc=rc)
+    call ModelAdvance_phase1(gcomp, rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-    call ESMF_LogWrite(msgString, ESMF_LOGMSG_INFO, rc=rc)
+    call ModelAdvance_phase2(gcomp, rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-!-----------------------------------------------------------------------
-!***  Use the internal Clock set by NUOPC layer for FV3 but update stopTime
-!-----------------------------------------------------------------------
-
-    ! Component internal Clock gets updated per NUOPC rules
-    call ESMF_GridCompGet(gcomp, clock=clock, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-    ! The stopTime will be updated to be the next coupling time
-    call ESMF_ClockGet(clock, currTime=currTime, stopTime=stopTime, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-    ! Set the coupling time to be stopTime in Clock that FV3 core uses
-    call ESMF_ClockSet(clock_fv3, currTime=currTime, stopTime=stopTime, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-    call ESMF_ClockPrint(clock_fv3, options="currTime", &
-                         preString="entering FV3_ADVANCE with clock_fv3 current: ", &
-                         unit=msgString)
-    call ESMF_LogWrite(msgString, ESMF_LOGMSG_INFO)
-    call ESMF_ClockPrint(clock_fv3, options="startTime", &
-                         preString="entering FV3_ADVANCE with clock_fv3 start:   ", &
-                         unit=msgString)
-    call ESMF_LogWrite(msgString, ESMF_LOGMSG_INFO)
-    call ESMF_ClockPrint(clock_fv3, options="stopTime", &
-                         preString="entering FV3_ADVANCE with clock_fv3 stop:    ", &
-                         unit=msgString)
-    call ESMF_LogWrite(msgString, ESMF_LOGMSG_INFO)
-
-    ! call ESMF_ClockGet(clock_fv3, startTime=startTime, currTime=currTime, &
-    !                    timeStep=timeStep, stopTime=stopTime, rc=rc)
-    ! if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-    ! call ESMF_TimeGet(startTime,         timestring=startTime_str, rc=rc)
-    ! call ESMF_TimeGet(currTime,          timestring=currTime_str, rc=rc)
-    ! call ESMF_TimeGet(stopTime,          timestring=stopTime_str, rc=rc)
-    ! call ESMF_TimeIntervalGet(timeStep,  timestring=timeStep_str, rc=rc)
-
-!
-!-----------------------------------------------------------------------------
-!*** integration loop
-
-    integrate: do while(.NOT.ESMF_ClockIsStopTime(clock_fv3, rc=rc))
-
-      call ModelAdvance_phase1(gcomp, rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-      call ModelAdvance_phase2(gcomp, rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-    enddo integrate
-!
     if (profile_memory) call ESMF_VMLogMemInfo("Leaving FV3 ModelAdvance: ")
 
   end subroutine ModelAdvance
@@ -979,15 +893,10 @@ module fv3gfs_cap_mod
 
     ! local variables
     type(ESMF_Clock)            :: clock
-    type(ESMF_TimeInterval)     :: timeStep
-    type(ESMF_Time)             :: startTime, stopTime, currTime
-
     integer                     :: urc
     logical                     :: fcstpe
     character(len=*),parameter  :: subname='(fv3_cap:ModelAdvance_phase1)'
     character(240)              :: msgString
-
-    integer                     :: date(6)
 
 !-----------------------------------------------------------------------------
 
@@ -995,86 +904,30 @@ module fv3gfs_cap_mod
 
     if(profile_memory) call ESMF_VMLogMemInfo("Entering FV3 ModelAdvance_phase1: ")
 
-    fcstpe = .false.
-    if( mype < num_pes_fcst ) fcstpe = .true.
-
-    ! Expecting to be called by NUOPC run method exactly once for every coupling
-    ! step.
-    ! Also expecting the coupling step to be identical to the timeStep for
-    ! clock_fv3.
-
-    call ESMF_ClockPrint(clock_fv3, options="currTime", &
-                         preString="------>Advancing FV3 phase1 from: ", unit=msgString, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-    call ESMF_LogWrite(msgString, ESMF_LOGMSG_INFO, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-!-----------------------------------------------------------------------
-!***  Use the internal Clock set by NUOPC layer for FV3 but update stopTime
-!-----------------------------------------------------------------------
-
-    ! Component internal Clock gets updated per NUOPC rules
     call ESMF_GridCompGet(gcomp, clock=clock, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-    ! The stopTime will be updated to be the next external coupling time
-    call ESMF_ClockGet(clock, currTime=currTime, stopTime=stopTime, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-    ! Set the FV3-OCN coupling time to be stopTime in Clock that FV3 core uses
-    !call ESMF_ClockSet(clock_fv3, currTime=currTime, stopTime=stopTime, rc=rc)
-    call ESMF_ClockSet(clock_fv3,                    stopTime=stopTime, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-    call ESMF_ClockPrint(clock_fv3, options="currTime", &
+    call ESMF_ClockPrint(clock, options="currTime", &
                          preString="entering FV3_ADVANCE phase1 with clock_fv3 current: ", &
                          unit=msgString)
     call ESMF_LogWrite(msgString, ESMF_LOGMSG_INFO)
-    call ESMF_ClockPrint(clock_fv3, options="startTime", &
+    call ESMF_ClockPrint(clock, options="startTime", &
                          preString="entering FV3_ADVANCE phase1 with clock_fv3 start:   ", &
                          unit=msgString)
     call ESMF_LogWrite(msgString, ESMF_LOGMSG_INFO)
-    call ESMF_ClockPrint(clock_fv3, options="stopTime", &
+    call ESMF_ClockPrint(clock, options="stopTime", &
                          preString="entering FV3_ADVANCE phase1 with clock_fv3 stop:    ", &
                          unit=msgString)
     call ESMF_LogWrite(msgString, ESMF_LOGMSG_INFO)
 
-    call ESMF_ClockGet(clock_fv3, startTime=startTime, currTime=currTime, &
-                       timeStep=timeStep, stopTime=stopTime, rc=rc)
+    call ESMF_GridCompRun(fcstComp, exportState=fcstState, clock=clock, phase=1, userRc=urc, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-!    if(mype==0)  print *,'total steps=', nint((stopTime-startTime)/timeStep)
-!    if(mype==lead_wrttask(1))  print *,'on wrt lead,total steps=', nint((stopTime-startTime)/timeStep)
-    call ESMF_TimeGet(time=stopTime,yy=date(1),mm=date(2),dd=date(3),h=date(4), &
-                      m=date(5),s=date(6),rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-!    if(mype==0) print *,'af clock,stop date=',date
-!    if(mype==lead_wrttask(1)) print *,'on wrt lead,af clock,stop date=',date
-    call ESMF_TimeIntervalGet(timeStep,yy=date(1),mm=date(2),d=date(3),h=date(4), &
-                              m=date(5),s=date(6),rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-!    if(mype==0) print *,'af clock,timestep date=',date
-!    if(mype==lead_wrttask(1)) print *,'on wrt lead,af clock,timestep date=',date
-
-    call ESMF_LogWrite('Model Advance phase1: before fcstcomp run ', ESMF_LOGMSG_INFO, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-    call ESMF_GridCompRun(fcstComp, exportState=fcstState, clock=clock_fv3, &
-                          phase=1, userRc=urc, rc=rc)
-    if (rc /= ESMF_SUCCESS) then
-      if(mype==0) print *,'after fcstComp phase1 rc=',rc
-    endif
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
     if (ESMF_LogFoundError(rcToCheck=urc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
-    call ESMF_LogWrite('Model Advance phase1: after fcstcomp run ', ESMF_LOGMSG_INFO, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-    ! assign import_data called during phase=1
     if( dbug > 0 .or. cplprint_flag ) then
-         call diagnose_cplFields(gcomp, clock_fv3, fcstpe, cplprint_flag, dbug, 'import')
+         fcstpe = .false.
+         if( mype < num_pes_fcst ) fcstpe = .true.
+         call diagnose_cplFields(gcomp, clock, fcstpe, cplprint_flag, dbug, 'import')
     endif
 
     if (profile_memory) call ESMF_VMLogMemInfo("Leaving FV3 ModelAdvance_phase1: ")
@@ -1099,53 +952,45 @@ module fv3gfs_cap_mod
     character(len=*),parameter  :: subname='(fv3_cap:ModelAdvance_phase2)'
 
     character(240)              :: msgString
-    real(kind=8)                :: MPI_Wtime
-    real(kind=8)                :: timewri, timerhi, timerh
+
+    type(ESMF_Clock)            :: clock, clock_out
 
 !-----------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
+
     if(profile_memory) call ESMF_VMLogMemInfo("Entering FV3 ModelAdvance_phase2: ")
 
-    fcstpe = .false.
-    if( mype < num_pes_fcst ) fcstpe = .true.
-!
-    timewri = MPI_Wtime()
-    call ESMF_LogWrite('Model Advance phase2: before fcstComp run phase2', ESMF_LOGMSG_INFO, rc=rc)
+    call ESMF_GridCompGet(gcomp, clock=clock, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-    call ESMF_GridCompRun(fcstComp, exportState=fcstState, clock=clock_fv3, &
-                          phase=2, userRc=urc, rc=rc)
-
+    call ESMF_GridCompRun(fcstComp, exportState=fcstState, clock=clock, phase=2, userRc=urc, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
     if (ESMF_LogFoundError(rcToCheck=urc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
-    call ESMF_LogWrite('Model Advance phase2: after fcstComp run phase2', ESMF_LOGMSG_INFO, rc=rc)
+    clock_out = ESMF_ClockCreate(clock, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-    call ESMF_ClockAdvance(clock = clock_fv3, rc = RC)
+    call ESMF_ClockAdvance(clock_out, rc = RC)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-    call ESMF_ClockGet(clock_fv3, startTime=startTime, currTime=currTime, &
-                       timeStep=timeStep, stopTime=stopTime, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-    time_elapsed  = currtime - starttime
-    na = nint(time_elapsed/timeStep)
-    call ESMF_TimeIntervalGet(time_elapsed, s=nfseconds, rc=rc)
-!
-    if(mype==0) print *,'n fv3_cap,in model run, advance,na=',na
 
 !-------------------------------------------------------------------------------
 !*** if it is output time, call data transfer and write grid comp run
     if( quilting ) then
+
+      call ESMF_ClockGet(clock_out, startTime=startTime, currTime=currTime, &
+                         timeStep=timeStep, stopTime=stopTime, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+      time_elapsed  = currtime - starttime
+      na = nint(time_elapsed/timeStep)
+      call ESMF_TimeIntervalGet(time_elapsed, s=nfseconds, rc=rc)
 
       output: if (ANY(nint(output_fh(:)*3600.0) == nfseconds)) then
 !
        if (mype == 0 .or. mype == lead_wrttask(1)) print *,' aft fcst run output time=',nfseconds, &
        'FBcount=',FBcount,'na=',na
 
-        timerhi = MPI_Wtime()
         call ESMF_VMEpochEnter(epoch=ESMF_VMEpoch_Buffer, rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
@@ -1165,11 +1010,7 @@ module fv3gfs_cap_mod
         call ESMF_LogWrite('Model Advance: before wrtcomp run ', ESMF_LOGMSG_INFO, rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-        timerhi = MPI_Wtime()
-        call ESMF_GridCompRun(wrtComp(n_group), importState=wrtState(n_group), clock=clock_fv3,userRc=urc,rc=rc)
-
-        timerh = MPI_Wtime()
-
+        call ESMF_GridCompRun(wrtComp(n_group), importState=wrtState(n_group), clock=clock_out, userRc=urc, rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc,  msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
         if (ESMF_LogFoundError(rcToCheck=urc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
@@ -1186,27 +1027,62 @@ module fv3gfs_cap_mod
 
     endif ! quilting
 
-!jw check clock
-    call ESMF_ClockPrint(clock_fv3, options="currTime", &
+    call ESMF_ClockPrint(clock, options="currTime", &
                          preString="leaving FV3_ADVANCE phase2 with clock_fv3 current: ", &
                          unit=msgString)
     call ESMF_LogWrite(msgString, ESMF_LOGMSG_INFO)
-    call ESMF_ClockPrint(clock_fv3, options="startTime", &
+    call ESMF_ClockPrint(clock, options="startTime", &
                          preString="leaving FV3_ADVANCE phase2 with clock_fv3 start:   ", &
                          unit=msgString)
     call ESMF_LogWrite(msgString, ESMF_LOGMSG_INFO)
-    call ESMF_ClockPrint(clock_fv3, options="stopTime", &
+    call ESMF_ClockPrint(clock, options="stopTime", &
                          preString="leaving FV3_ADVANCE phase2 with clock_fv3 stop:    ", &
                          unit=msgString)
     call ESMF_LogWrite(msgString, ESMF_LOGMSG_INFO)
 
     if( dbug > 0 .or. cplprint_flag ) then
-      call diagnose_cplFields(gcomp, clock_fv3, fcstpe, cplprint_flag, dbug, 'export')
+      fcstpe = .false.
+      if( mype < num_pes_fcst ) fcstpe = .true.
+      call diagnose_cplFields(gcomp, clock_out, fcstpe, cplprint_flag, dbug, 'export')
     end if
 
     if(profile_memory) call ESMF_VMLogMemInfo("Leaving FV3 ModelAdvance_phase2: ")
 
   end subroutine ModelAdvance_phase2
+
+!-----------------------------------------------------------------------------
+
+  subroutine ModelSetRunClock(gcomp, rc)
+
+    type(ESMF_GridComp)         :: gcomp
+    integer, intent(out)        :: rc
+
+    ! local variables
+    type(ESMF_Clock)            :: dclock, mclock
+    type(ESMF_TimeInterval)     :: dtimestep, mtimestep
+    type(ESMF_Time)             :: mcurrtime, mstoptime
+
+!-----------------------------------------------------------------------------
+
+    rc = ESMF_SUCCESS
+
+    call NUOPC_ModelGet(gcomp, driverClock=dclock, modelClock=mclock, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+    call ESMF_ClockGet(dclock, timeStep=dtimestep, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+    call ESMF_ClockGet(mclock, currTime=mcurrtime, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+    call ESMF_TimeIntervalSet(mtimestep,s=dt_atmos,rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+    mstoptime = mcurrtime + dtimestep
+
+    call ESMF_ClockSet(mclock, timeStep=mtimestep, stopTime=mstoptime, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+  end subroutine ModelSetRunClock
 
 !-----------------------------------------------------------------------------
 
@@ -1229,6 +1105,8 @@ module fv3gfs_cap_mod
     character(len=128)         :: fldname
     character(esmf_maxstr)     :: msgString
     integer                    :: date(6)
+
+    rc = ESMF_SUCCESS
 
     ! query the Component for its clock
     call ESMF_GridCompGet(gcomp, clock=clock, importState=importState, rc=rc)
@@ -1346,6 +1224,7 @@ module fv3gfs_cap_mod
     rc = ESMF_SUCCESS
 !
     call ESMF_GridCompGet(gcomp,vm=vm,rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 !
 !*** finalize grid comps
     if( quilting ) then
