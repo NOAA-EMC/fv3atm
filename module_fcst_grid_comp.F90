@@ -274,7 +274,6 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
                        H=date_init(4),  M =date_init(5), S =date_init(6), rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-    if ( date_init(1) == 0 ) date_init = date
     Time_init  = set_date (date_init(1), date_init(2), date_init(3), &
                            date_init(4), date_init(5), date_init(6))
     if (mype == 0) write(*,'(A,6I5)') 'StartTime=',date_init
@@ -296,7 +295,6 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
                        H=date_end(4),  M =date_end(5), S =date_end(6), rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-    if ( date_end(1) == 0 ) date_end = date
     Time_end   = set_date (date_end(1), date_end(2), date_end(3),  &
                            date_end(4), date_end(5), date_end(6))
     if (mype == 0) write(*,'(A,6I5)') 'StopTime =',date_end
