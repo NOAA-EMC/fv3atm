@@ -28,8 +28,7 @@ module fv3gfs_cap_mod
 !
   use module_fv3_config,      only: quilting, output_fh,                     &
                                     nfhout, nfhout_hf, nsout, dt_atmos,      &
-                                    calendar, calendar_type,                 &
-                                    force_date_from_configure,               &
+                                    calendar,                                &
                                     cplprint_flag,output_1st_tstep_rst,      &
                                     first_kdt
 
@@ -179,21 +178,19 @@ module fv3gfs_cap_mod
     character(240)                         :: msgString
     logical                                :: isPresent, isSet
     type(ESMF_VM)                          :: vm, fcstVM
-    type(ESMF_Time)                        :: currTime, startTime, stopTime
-    type(ESMF_TimeInterval)                :: RunDuration, timeStep, rsthour, IAU_offsetTI
-    type(ESMF_TimeInterval)                :: earthStep
+    type(ESMF_Time)                        :: currTime, startTime
+    type(ESMF_TimeInterval)                :: timeStep, rsthour, IAU_offsetTI
     type(ESMF_Config)                      :: cf
     type(ESMF_RegridMethod_Flag)           :: regridmethod
 
-    integer,dimension(6)                   :: date, date_init
-    integer                                :: i, j, k, io_unit, urc, ist
+    integer                                :: i, j, k, urc, ist
     integer                                :: noutput_fh, nfh, nfh2
     integer                                :: petcount
     integer                                :: num_output_file
     integer                                :: nfhmax_hf
     real                                   :: nfhmax
     real                                   :: output_startfh, outputfh, outputfh2(2)
-    logical                                :: opened, loutput_fh, lfreq
+    logical                                :: loutput_fh, lfreq
     character(ESMF_MAXSTR)                 :: name
     integer,dimension(:), allocatable      :: petList, fcstPetList, originPetList, targetPetList
     character(len=esmf_maxstr),allocatable :: fcstItemNameList(:)
@@ -271,8 +268,8 @@ module fv3gfs_cap_mod
 
     noutput_fh = ESMF_ConfigGetLen(config=CF, label ='output_fh:',rc=rc)
 
-    if(mype == 0) print *,'af nems config,quilting=',quilting,'calendar=', trim(calendar),' iau_offset=',iau_offset, &
-      'noutput_fh=',noutput_fh
+    if(mype == 0) print *,'af nems config,quilting=',quilting,' calendar=', trim(calendar),' iau_offset=',iau_offset, &
+      ' noutput_fh=',noutput_fh
 !
     nfhout = 0 ; nfhmax_hf = 0 ; nfhout_hf = 0 ; nsout = 0
     if ( quilting ) then
@@ -288,9 +285,8 @@ module fv3gfs_cap_mod
                                    label ='isrcTermProcessing:',rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-      if(mype == 0) print *,'af nems config,quilting=',quilting,'write_groups=', &
-        write_groups,wrttasks_per_group,'calendar=',trim(calendar),'calendar_type=',calendar_type, &
-        'isrcTermProcessing=', isrcTermProcessing
+      if(mype == 0) print *,'af nems config,quilting=',quilting,' write_groups=', &
+        write_groups,wrttasks_per_group,' isrcTermProcessing=', isrcTermProcessing
 !
       call ESMF_ConfigGetAttribute(config=CF,value=num_files, &
                                    label ='num_files:',rc=rc)
@@ -344,72 +340,12 @@ module fv3gfs_cap_mod
     call ESMF_ConfigGetAttribute(config=CF, value=dt_atmos, label ='dt_atmos:',   rc=rc)
     call ESMF_ConfigGetAttribute(config=CF, value=nfhmax,   label ='nhours_fcst:',rc=rc)
     if(mype == 0) print *,'af nems config,dt_atmos=',dt_atmos,'nfhmax=',nfhmax
-    call ESMF_TimeIntervalSet(timeStep,s=dt_atmos,rc=rc)
-    call ESMF_ClockSet(clock_fv3,timeStep=timeStep, rc=rc)
-!
-!------------------------------------------------------------------------
-! may need to set currTime for restart
-!
-    call ESMF_ClockGet(clock_fv3, currTime=currTime,  StartTime=startTime,    &
-                       RunDuration=RunDuration, rc=rc)
+
+    call ESMF_TimeIntervalSet(timeStep, s=dt_atmos, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-    stopTime = startTime + RunDuration
-
-! *** read restart time from restart file
-    do i=751,899
-       inquire(i, opened=opened)
-       if(.not. opened)then
-         io_unit = i
-         exit
-       endif
-    enddo
-!
-    date = 0 ; date_init = 0
-    force_date_from_configure = .true.
-!
-    open(unit=io_unit, file=trim('INPUT/coupler.res'),status="old",err=998 )
-    read (io_unit,*,err=999) calendar_type
-    read (io_unit,*) date_init
-    read (io_unit,*) date
-    close(io_unit)
-    force_date_from_configure = .false.
-!
-    if(date(1) == 0 .and. date_init(1) /= 0) date = date_init
-    if(mype == 0) print *,'bf clock_fv3,date=',date,'date_init=',date_init
-
-    call ESMF_VMbroadcast(vm, date, 6, 0)
-    call ESMF_TimeSet(time=currTime,yy=date(1),mm=date(2),dd=date(3),h=date(4), &
-                      m=date(5),s=date(6),rc=rc)
+    call ESMF_ClockSet(clock_fv3, timeStep=timeStep, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-999 continue
-998 continue
-!    if(mype==0) print *,'final date =',date,'date_init=',date_init
-
-!reset currTime in clock
-    call ESMF_ClockSet(clock_fv3, currTime=currTime, startTime=startTime,  &
-                       stopTime=stopTime, timeStep=timeStep, rc=rc)
-
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-    !
-    !Under NUOPC, the EARTH driver clock is a separate instance from the
-    ! - fv3 clock. However, the fv3 clock may have been reset from restart
-    ! - therefore the EARTH driver clock must also be adjusted.
-    ! - Affected: currTime, timeStep
-    call ESMF_ClockGet(clock, timeStep=earthStep, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
-
-    if (earthStep > (stopTime-currTime)) earthStep = stopTime - currTime
-    call ESMF_ClockSet(clock, currTime=currTime, timeStep=earthStep, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
-
-    ! Set fv3 component clock as copy of EARTH clock.
-    call NUOPC_CompSetClock(gcomp, clock, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
     first_kdt = 1
     if( output_1st_tstep_rst) then
@@ -943,7 +879,7 @@ module fv3gfs_cap_mod
     ! local variables
     type(ESMF_Time)             :: currTime
     type(ESMF_TimeInterval)     :: timeStep
-    type(ESMF_Time)             :: startTime, stopTime
+    type(ESMF_Time)             :: startTime
     type(ESMF_TimeInterval)     :: time_elapsed
 
     integer                     :: na, i, urc
@@ -979,10 +915,10 @@ module fv3gfs_cap_mod
     if( quilting ) then
 
       call ESMF_ClockGet(clock_out, startTime=startTime, currTime=currTime, &
-                         timeStep=timeStep, stopTime=stopTime, rc=rc)
+                         timeStep=timeStep, rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-      time_elapsed  = currtime - starttime
+      time_elapsed  = currTime - startTime
       na = nint(time_elapsed/timeStep)
       call ESMF_TimeIntervalGet(time_elapsed, s=nfseconds, rc=rc)
 
