@@ -9,7 +9,7 @@
 [submodule "ccpp/physics"]
   path = ccpp/physics
   url = https://github.com/SamuelTrahanNOAA/ccpp-physics
-  branch = feature/CCPP-CODEOWNERS
+  branch = feature/CODEOWNERS
 [submodule "upp"]
   path = upp
   url = https://github.com/NOAA-EMC/UPP
