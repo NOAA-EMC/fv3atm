@@ -8,10 +8,8 @@
   branch = main
 [submodule "ccpp/physics"]
   path = ccpp/physics
-  #url = https://github.com/NOAA-GSL/ccpp-physics
-  #branch = gsl/develop
-  url = https://github.com/climbfuji/ccpp-physics
-  branch = update_gsl_develop_from_main_20211215
+  url = https://github.com/NOAA-GSL/ccpp-physics
+  branch = gsl/develop
 [submodule "upp"]
   path = upp
   url = https://github.com/NOAA-EMC/UPP
