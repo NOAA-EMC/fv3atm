@@ -46,7 +46,6 @@
       <scheme>sfc_nst</scheme>
       <scheme>sfc_nst_post</scheme>
       <scheme>lsm_ruc</scheme>
-      <scheme>flake_driver</scheme>
       <scheme>GFS_surface_loop_control_part2</scheme>
     </subcycle>
     <!-- End of surface iteration loop -->
@@ -63,10 +62,8 @@
       <scheme>ozphys_2015</scheme>
       <scheme>h2ophys</scheme>
       <scheme>get_phi_fv3</scheme>
-      <!-- DH* only a small part of those two schemes are really required - room for optimization! -->
       <scheme>GFS_suite_interstitial_3</scheme>
       <scheme>GFS_suite_interstitial_4</scheme>
-      <!-- *DH only a small part of those two schemes are really required - room for optimization! -->
       <scheme>GFS_MP_generic_pre</scheme>
       <scheme>mp_thompson_pre</scheme>
       <scheme>mp_thompson</scheme>
@@ -79,7 +76,6 @@
   <group name="stochastics">
     <subcycle loop="1">
       <scheme>GFS_stochastics</scheme>
-      <scheme>phys_tend</scheme>
     </subcycle>
   </group>
   <!-- <finalize></finalize> -->
