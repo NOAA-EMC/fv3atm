@@ -175,15 +175,25 @@ module FV3GFS_io_mod
 
    ntr = size(GFS_Data(1)%Statein%qgrs,3)
 
+     nsfcprop2d = 93
    if (Model%lsm == Model%lsm_noahmp) then
-     nsfcprop2d = 156
+     nsfcprop2d = nsfcprop2d + 49
+     if (Model%use_cice_alb) then
+       nsfcprop2d = nsfcprop2d + 4
+     endif
    elseif (Model%lsm == Model%lsm_ruc) then
-     nsfcprop2d = 125
+     nsfcprop2d = nsfcprop2d + 4 + 12
      if (Model%rdlai) then
        nsfcprop2d = nsfcprop2d + 1
      endif
    else
-     nsfcprop2d = 107
+     if (Model%use_cice_alb) then
+       nsfcprop2d = nsfcprop2d + 4
+     endif
+   endif
+
+   if (Model%nstf_name(1) > 0) then
+     nsfcprop2d = nsfcprop2d + 16
    endif
 
    allocate (temp2d(isc:iec,jsc:jec,nsfcprop2d+Model%ntot3d+Model%nctp))
@@ -316,14 +326,14 @@ module FV3GFS_io_mod
        temp2d(i,j,92) = GFS_Data(nb)%Sfcprop%emis_ice(ix)
        temp2d(i,j,93) = GFS_Data(nb)%Sfcprop%sncovr_ice(ix)
 
-       idx_opt = 93
+       idx_opt = 94
        if (Model%use_cice_alb .or. Model%lsm == Model%lsm_ruc) then
-         temp2d(i,j,idx_opt+1) = GFS_Data(nb)%Sfcprop%albdirvis_ice(ix)
-         temp2d(i,j,idx_opt+2) = GFS_Data(nb)%Sfcprop%albdirnir_ice(ix)
-         temp2d(i,j,idx_opt+3) = GFS_Data(nb)%Sfcprop%albdifvis_ice(ix)
-         temp2d(i,j,idx_opt+4) = GFS_Data(nb)%Sfcprop%albdifnir_ice(ix)
+         temp2d(i,j,idx_opt) = GFS_Data(nb)%Sfcprop%albdirvis_ice(ix)
+         temp2d(i,j,idx_opt+1) = GFS_Data(nb)%Sfcprop%albdirnir_ice(ix)
+         temp2d(i,j,idx_opt+2) = GFS_Data(nb)%Sfcprop%albdifvis_ice(ix)
+         temp2d(i,j,idx_opt+3) = GFS_Data(nb)%Sfcprop%albdifnir_ice(ix)
+       idx_opt = idx_opt + 4
        endif
-       idx_opt = idx_opt + 5
 
        if (Model%lsm == Model%lsm_noahmp) then
         temp2d(i,j,idx_opt)    = GFS_Data(nb)%Sfcprop%snowxy(ix)
@@ -390,7 +400,7 @@ module FV3GFS_io_mod
         temp2d(i,j,idx_opt+9)  = GFS_Data(nb)%Sfcprop%sfalb_lnd(ix)
         temp2d(i,j,idx_opt+10) = GFS_Data(nb)%Sfcprop%sfalb_lnd_bck(ix)
         temp2d(i,j,idx_opt+11) = GFS_Data(nb)%Sfcprop%sfalb_ice(ix)
-        idx_opt = idx_opt + 11
+        idx_opt = idx_opt + 12
         if (Model%rdlai) then
           temp2d(i,j,idx_opt+1) = GFS_Data(nb)%Sfcprop%xlaixy(ix)
           idx_opt = idx_opt + 1
@@ -773,7 +783,11 @@ module FV3GFS_io_mod
       !--- allocate the various containers needed for restarts
       allocate(sfc_name2(nvar_s2m+nvar_s2o+nvar_s2mp+nvar_s2r))
       allocate(sfc_name3(0:nvar_s3+nvar_s3mp))
-      allocate(sfc_var2(nx,ny,nvar_s2m+nvar_s2o+nvar_s2mp+nvar_s2r),sfc_var3ice(nx,ny,Model%kice))
+      allocate(sfc_var2(nx,ny,nvar_s2m+nvar_s2o+nvar_s2mp+nvar_s2r))
+      ! Note that this may cause problems with RUC LSM for coldstart runs from GFS data
+      ! if the initial conditions do contain this variable, because Model%kice is 9 for
+      ! RUC LSM, but tiice in the initial conditions will only have two vertical layers
+      allocate(sfc_var3ice(nx,ny,Model%kice))
 
       if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp .or. (.not.warm_start)) then
         allocate(sfc_var3(nx,ny,Model%lsoil,nvar_s3))
@@ -2777,8 +2791,8 @@ module FV3GFS_io_mod
          !---
          !--- skipping other 3D variables with the following else statement
          !---
-         if(mpp_pe()==mpp_root_pe())print *,'in,fv3gfs_io. 3D fields, idx=',idx,'varname=',trim(diag(idx)%name), &
-             'lcnvfac=',lcnvfac, 'levo=',levo,'nx=',nx,'ny=',ny
+!         if(mpp_pe()==mpp_root_pe())print *,'in,fv3gfs_io. 3D fields, idx=',idx,'varname=',trim(diag(idx)%name), &
+!             'lcnvfac=',lcnvfac, 'levo=',levo,'nx=',nx,'ny=',ny
            do k=1, levo
              do j = 1, ny
                jj = j + jsc -1

@@ -347,8 +347,8 @@ module post_gfs
       use vrbls2d,     only: f, pd, sigt4, fis, pblh, ustar, z0, ths, qs, twbs,&
                              qwbs, avgcprate, cprate, avgprec, prec, lspa, sno,&
                              cldefi, th10, q10, tshltr, pshltr, tshltr, albase,&
-                             avgalbedo, avgtcdc, czen, czmean, mxsnal, radot,  &
-                             cfrach, cfracl, cfracm, avgcfrach, qshltr,        &
+                             avgalbedo, avgtcdc, czen, czmean, mxsnal,landfrac,&
+                             radot, cfrach, cfracl, cfracm, avgcfrach, qshltr, &
                              avgcfracl, avgcfracm, cnvcfr, islope, cmc, grnflx,&
                              vegfrc, acfrcv, ncfrcv, acfrst, ncfrst, ssroff,   &
                              bgroff, rlwin,      &
@@ -360,10 +360,11 @@ module post_gfs
                              acsnow, acsnom, sst, thz0, qz0, uz0, vz0, ptop,   &
                              htop, pbot, hbot, ptopl, pbotl, ttopl, ptopm,     &
                              pbotm, ttopm, ptoph, pboth, pblcfr, ttoph, runoff,&
+                             tecan, tetran, tedir, twa,                        &
                              maxtshltr, mintshltr, maxrhshltr, minrhshltr,     &
                              dzice, smcwlt, suntime, fieldcapa, htopd, hbotd,  &
                              htops, hbots, aswintoa, maxqshltr, minqshltr,     &
-                             acond, sr, u10h, v10h, avgedir, avgecan,          &
+                             acond, sr, u10h, v10h, avgedir, avgecan,paha,pahi,&
                              avgetrans, avgesnow, avgprec_cont, avgcprate_cont,&
                              avisbeamswin, avisdiffswin, airbeamswin, airdiffswin, &
                              alwoutc, alwtoac, aswoutc, aswtoac, alwinc, aswinc,& 
@@ -1081,6 +1082,18 @@ module post_gfs
               enddo
             endif
 
+            !  land fraction 
+            if(trim(fieldname)=='lfrac') then
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,landfrac,arrayr42d,sm)
+              do j=jsta,jend
+                do i=ista, iend
+                  landfrac(i,j) = arrayr42d(i,j)
+                  if (sm(i,j) /= 0.0) landfrac(i,j) = spval
+                enddo
+              enddo
+            endif
+ 
+
             ! ave high cloud fraction
             if(trim(fieldname)=='tcdc_avehcl') then
               !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,avgcfrach,arrayr42d)
@@ -1797,6 +1810,50 @@ module post_gfs
               enddo
             endif
 
+            ! accumulated evaporation of intercepted water
+            if(trim(fieldname)=='ecan_acc') then
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,tecan,arrayr42d,sm)
+              do j=jsta,jend
+                do i=ista, iend
+                  tecan(i,j) = arrayr42d(i,j)
+                  if (sm(i,j) /= 0.0) tecan(i,j) = spval
+                enddo
+              enddo
+            endif
+
+            ! accumulated plant transpiration 
+            if(trim(fieldname)=='etran_acc') then
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,tetran,arrayr42d,sm)
+              do j=jsta,jend
+                do i=ista, iend
+                  tetran(i,j) = arrayr42d(i,j)
+                  if (sm(i,j) /= 0.0) tetran(i,j) = spval
+                enddo
+              enddo
+            endif
+
+            ! accumulated soil surface evaporation
+            if(trim(fieldname)=='edir_acc') then
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,tedir,arrayr42d,sm)
+              do j=jsta,jend
+                do i=ista, iend
+                  tedir(i,j) = arrayr42d(i,j)
+                  if (sm(i,j) /= 0.0) tedir(i,j) = spval
+                enddo
+              enddo
+            endif
+
+            ! total water storage in aquifer
+            if(trim(fieldname)=='wa_acc') then
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,twa,arrayr42d,sm)
+              do j=jsta,jend
+                do i=ista, iend
+                  twa(i,j) = arrayr42d(i,j)
+                  if (sm(i,j) /= 0.0) twa(i,j) = spval
+                enddo
+              enddo
+            endif
+
             ! shelter max temperature
             if(trim(fieldname)=='tmax_max2m') then
               !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,maxtshltr,arrayr42d)
@@ -2008,6 +2065,28 @@ module post_gfs
                 do i=ista, iend
                   avgecan(i,j) = arrayr42d(i,j)
                   if (sm(i,j) /= 0.0) avgecan(i,j) = spval
+                enddo
+              enddo
+            endif
+
+            ! AVERAGED PRECIP ADVECTED HEAT FLUX
+            if(trim(fieldname)=='pah_ave') then
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,paha,arrayr42d,sm)
+              do j=jsta,jend
+                do i=ista, iend
+                  paha(i,j) = arrayr42d(i,j)
+                  if (sm(i,j) /= 0.0) paha(i,j) = spval
+                enddo
+              enddo
+            endif
+
+            ! instantaneous PRECIP ADVECTED HEAT FLUX
+            if(trim(fieldname)=='pahi') then
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,pahi,arrayr42d,sm)
+              do j=jsta,jend
+                do i=ista, iend
+                  pahi(i,j) = arrayr42d(i,j)
+                  if (sm(i,j) /= 0.0) pahi(i,j) = spval
                 enddo
               enddo
             endif
