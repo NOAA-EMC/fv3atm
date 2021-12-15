@@ -2791,8 +2791,8 @@ module FV3GFS_io_mod
          !---
          !--- skipping other 3D variables with the following else statement
          !---
-         if(mpp_pe()==mpp_root_pe())print *,'in,fv3gfs_io. 3D fields, idx=',idx,'varname=',trim(diag(idx)%name), &
-             'lcnvfac=',lcnvfac, 'levo=',levo,'nx=',nx,'ny=',ny
+!         if(mpp_pe()==mpp_root_pe())print *,'in,fv3gfs_io. 3D fields, idx=',idx,'varname=',trim(diag(idx)%name), &
+!             'lcnvfac=',lcnvfac, 'levo=',levo,'nx=',nx,'ny=',ny
            do k=1, levo
              do j = 1, ny
                jj = j + jsc -1

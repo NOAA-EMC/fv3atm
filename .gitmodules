@@ -12,3 +12,7 @@
   #branch = gsl/develop
   url = https://github.com/climbfuji/ccpp-physics
   branch = update_gsl_develop_from_main_20211215
+[submodule "upp"]
+  path = upp
+  url = https://github.com/NOAA-EMC/UPP
+  branch = develop
