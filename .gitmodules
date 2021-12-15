@@ -8,8 +8,12 @@
   branch = main
 [submodule "ccpp/physics"]
   path = ccpp/physics
-  url = https://github.com/NCAR/ccpp-physics
-  branch = main
+  #url = https://github.com/NCAR/ccpp-physics
+  #branch = main
+  #url = https://github.com/RuiyuSun/ccpp-physics
+  #branch = cloud_cover_xr
+  url = https://github.com/climbfuji/ccpp-physics
+  branch = cloud_cover_xr_dom
 [submodule "upp"]
   path = upp
   url = https://github.com/NOAA-EMC/UPP
