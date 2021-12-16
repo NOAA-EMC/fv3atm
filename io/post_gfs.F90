@@ -920,8 +920,7 @@ module post_gfs
 
             ! foundation temperature
             if(trim(fieldname)=='tref') then
-              !$omp parallel do default(none) private(i,j)
-              !shared(jsta,jend,ista,iend,spval,arrayr42d,fdnsst)
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,arrayr42d,fdnsst)
               do j=jsta,jend
                 do i=ista, iend
                   if (arrayr42d(i,j) /= spval) then
