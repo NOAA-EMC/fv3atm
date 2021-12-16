@@ -5208,7 +5208,7 @@ module GFS_typedefs
     endif
 
     if(Model%ras     .or. Model%cscnv)  Model%cnvcld = .false.
-    if(Model%do_shoc .or. Model%pdfcld .or. Model%do_mynnedmf) Model%cnvcld = .false.
+    if(Model%do_shoc .or. Model%pdfcld .or. Model%do_mynnedmf .or. Model%imfdeepcnv == Model%imfdeepcnv_gf) Model%cnvcld = .false.
     if(Model%cnvcld) Model%ncnvcld3d = 1
 
 !--- get cnvwind index in phy_f2d; last entry in phy_f2d array
