@@ -783,7 +783,11 @@ module FV3GFS_io_mod
       !--- allocate the various containers needed for restarts
       allocate(sfc_name2(nvar_s2m+nvar_s2o+nvar_s2mp+nvar_s2r))
       allocate(sfc_name3(0:nvar_s3+nvar_s3mp))
-      allocate(sfc_var2(nx,ny,nvar_s2m+nvar_s2o+nvar_s2mp+nvar_s2r),sfc_var3ice(nx,ny,Model%kice))
+      allocate(sfc_var2(nx,ny,nvar_s2m+nvar_s2o+nvar_s2mp+nvar_s2r))
+      ! Note that this may cause problems with RUC LSM for coldstart runs from GFS data
+      ! if the initial conditions do contain this variable, because Model%kice is 9 for
+      ! RUC LSM, but tiice in the initial conditions will only have two vertical layers
+      allocate(sfc_var3ice(nx,ny,Model%kice))
 
       if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp .or. (.not.warm_start)) then
         allocate(sfc_var3(nx,ny,Model%lsoil,nvar_s3))
@@ -2787,8 +2791,8 @@ module FV3GFS_io_mod
          !---
          !--- skipping other 3D variables with the following else statement
          !---
-         if(mpp_pe()==mpp_root_pe())print *,'in,fv3gfs_io. 3D fields, idx=',idx,'varname=',trim(diag(idx)%name), &
-             'lcnvfac=',lcnvfac, 'levo=',levo,'nx=',nx,'ny=',ny
+!         if(mpp_pe()==mpp_root_pe())print *,'in,fv3gfs_io. 3D fields, idx=',idx,'varname=',trim(diag(idx)%name), &
+!             'lcnvfac=',lcnvfac, 'levo=',levo,'nx=',nx,'ny=',ny
            do k=1, levo
              do j = 1, ny
                jj = j + jsc -1

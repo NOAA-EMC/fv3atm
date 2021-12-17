@@ -27,8 +27,6 @@ module fv3gfs_cap_mod
 !
   use module_fv3_config,      only: quilting, output_fh,                     &
                                     nfhout, nfhout_hf, nsout, dt_atmos,      &
-                                    nfhmax, nfhmax_hf,output_hfmax,          &
-                                    output_interval,output_interval_hf,      &
                                     calendar, calendar_type,                 &
                                     force_date_from_configure,               &
                                     cplprint_flag,output_1st_tstep_rst,      &
@@ -51,8 +49,8 @@ module fv3gfs_cap_mod
                                     nImportFields, importFields, importFieldsInfo, &
                                     importFieldsValid, queryImportFields
 
-  use module_cap_cpl,         only: realizeConnectedCplFields,               &
-                                    clock_cplIntval, diagnose_cplFields
+  use module_cplfields,       only: realizeConnectedCplFields
+  use module_cap_cpl,         only: diagnose_cplFields
 
   use atmos_model_mod,        only: setup_exportdata
 
@@ -178,13 +176,17 @@ module fv3gfs_cap_mod
     type(ESMF_Config)                      :: cf
     type(ESMF_RegridMethod_Flag)           :: regridmethod
     type(ESMF_TimeInterval)                :: earthStep
-    integer(ESMF_KIND_I4)                  :: nhf, nrg
+    real(ESMF_KIND_R8)                     :: medAtmCouplingIntervalSec
+    type(ESMF_Clock)                       :: fv3Clock
+    type(ESMF_TimeInterval)                :: fv3Step
 
     integer,dimension(6)                   :: date, date_init
-    integer                                :: i, j, k, io_unit, urc, ierr, ist
+    integer                                :: i, j, k, io_unit, urc, ist
     integer                                :: noutput_fh, nfh, nfh2
     integer                                :: petcount
     integer                                :: num_output_file
+    integer                                :: nfhmax_hf
+    real                                   :: nfhmax
     real                                   :: output_startfh, outputfh, outputfh2(2)
     logical                                :: opened, loutput_fh, lfreq
     character(ESMF_MAXSTR)                 :: name
@@ -406,7 +408,23 @@ module fv3gfs_cap_mod
       line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
     ! Read in the FV3 coupling interval
-    call clock_cplIntval(gcomp, CF)
+    call ESMF_ConfigGetAttribute(config=CF, value=medAtmCouplingIntervalSec, &
+                                 label="atm_coupling_interval_sec:", default=-1.0_ESMF_KIND_R8, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) &
+      call ESMF_Finalize(endflag=ESMF_END_ABORT)
+
+    if (medAtmCouplingIntervalSec > 0._ESMF_KIND_R8) then ! The coupling time step is provided
+      call ESMF_TimeIntervalSet(fv3Step, s_r8=medAtmCouplingIntervalSec, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) &
+        call ESMF_Finalize(endflag=ESMF_END_ABORT)
+      call ESMF_GridCompGet(gcomp, clock=fv3Clock, rc=RC)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) &
+        call ESMF_Finalize(endflag=ESMF_END_ABORT)
+      call ESMF_ClockSet(fv3Clock, timestep=fv3Step, rc=RC)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) &
+        call ESMF_Finalize(endflag=ESMF_END_ABORT)
+
+    endif
 
     first_kdt = 1
     if( output_1st_tstep_rst) then
@@ -660,7 +678,7 @@ module fv3gfs_cap_mod
 !--- use nsout for output frequency nsout*dt_atmos
         nfh = 0
         if( nfhmax > output_startfh ) nfh = nint((nfhmax-output_startfh)/(nsout*dt_atmos/3600.))+1
-        if(nfh >0) then 
+        if(nfh >0) then
           allocate(output_fh(nfh))
           if( output_startfh == 0) then
             output_fh(1) = dt_atmos/3600.
@@ -746,7 +764,7 @@ module fv3gfs_cap_mod
               endif
               do i=2,nfh
                 output_fh(i) = (i-1)*outputfh2(1) + output_startfh
-                ! Except fh000, which is the first time output, if any other of the 
+                ! Except fh000, which is the first time output, if any other of the
                 ! output time is not integer hour, set lflname_fulltime to be true, so the
                 ! history file names will contain the full time stamp (HHH-MM-SS).
                 if(.not.lflname_fulltime) then
@@ -764,7 +782,7 @@ module fv3gfs_cap_mod
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
           if( output_startfh == 0) then
             ! If the output time in output_fh array contains first time stamp output,
-            ! check the rest of output time, otherwise, check all the output time. 
+            ! check the rest of output time, otherwise, check all the output time.
             ! If any of them is not integer hour, the history file names will
             ! contain the full time stamp (HHH-MM-SS)
             ist = 1
@@ -790,7 +808,7 @@ module fv3gfs_cap_mod
           endif
         endif
       endif ! end loutput_fh
-    endif 
+    endif
     if(mype==0) print *,'output_fh=',output_fh(1:size(output_fh)),'lflname_fulltime=',lflname_fulltime
 !
     ! --- advertise Fields in importState and exportState -------------------
@@ -824,10 +842,9 @@ module fv3gfs_cap_mod
     integer, intent(out) :: rc
 
     ! local variables
-    character(len=*),parameter  :: subname='(fv3gfs_cap:InitializeRealize)'
-    type(ESMF_State)     :: importState, exportState
-    logical :: isPetLocal
-    integer :: n
+    character(len=*),parameter :: subname='(fv3gfs_cap:InitializeRealize)'
+    type(ESMF_State)           :: importState, exportState
+    logical                    :: isPetLocal
 
     rc = ESMF_SUCCESS
 
@@ -872,12 +889,11 @@ module fv3gfs_cap_mod
     ! local variables
     type(ESMF_Clock)            :: clock
     type(ESMF_Time)             :: currTime, startTime, stopTime
-    type(ESMF_TimeInterval)     :: timeStep
+    ! type(ESMF_TimeInterval)     :: timeStep
 
-    integer                     :: i, urc
     character(len=*),parameter  :: subname='(fv3_cap:ModelAdvance)'
     character(240)              :: msgString
-    character(240)              :: startTime_str, currTime_str, stopTime_str, timeStep_str
+    ! character(240)              :: startTime_str, currTime_str, stopTime_str, timeStep_str
 
 !-----------------------------------------------------------------------------
 
@@ -962,11 +978,9 @@ module fv3gfs_cap_mod
     integer, intent(out)        :: rc
 
     ! local variables
-    type(ESMF_State)            :: importState, exportState
     type(ESMF_Clock)            :: clock
-    type(ESMF_Time)             :: currTime
     type(ESMF_TimeInterval)     :: timeStep
-    type(ESMF_Time)             :: startTime, stopTime
+    type(ESMF_Time)             :: startTime, stopTime, currTime
 
     integer                     :: urc
     logical                     :: fcstpe
@@ -1074,8 +1088,6 @@ module fv3gfs_cap_mod
     integer, intent(out)        :: rc
 
     ! local variables
-    type(ESMF_State)            :: importState, exportState
-    type(ESMF_Clock)            :: clock
     type(ESMF_Time)             :: currTime
     type(ESMF_TimeInterval)     :: timeStep
     type(ESMF_Time)             :: startTime, stopTime
@@ -1323,7 +1335,7 @@ module fv3gfs_cap_mod
 
     ! local variables
     character(len=*),parameter :: subname='(fv3gfs_cap:ModelFinalize)'
-    integer                    :: i, unit, urc
+    integer                    :: i, urc
     type(ESMF_VM)              :: vm
     real(kind=8)               :: MPI_Wtime, timeffs
 !
