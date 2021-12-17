@@ -296,7 +296,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     if (mype == 0) write(*,'(A,6I5)') 'StopTime =',date_end
 
 !------------------------------------------------------------------------
-!   If this is a resterted run ('INPUT/coupler.res' file exists),
+!   If this is a restarted run ('INPUT/coupler.res' file exists),
 !   compare date and date_init to the values in 'coupler.res'
 
     if (mype == 0) then
