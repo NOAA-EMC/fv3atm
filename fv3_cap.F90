@@ -179,7 +179,7 @@ module fv3gfs_cap_mod
     logical                                :: isPresent, isSet
     type(ESMF_VM)                          :: vm, fcstVM
     type(ESMF_Time)                        :: currTime, startTime
-    type(ESMF_TimeInterval)                :: timeStep, rsthour, IAU_offsetTI
+    type(ESMF_TimeInterval)                :: timeStep, rsthour
     type(ESMF_Config)                      :: cf
     type(ESMF_RegridMethod_Flag)           :: regridmethod
 
@@ -441,9 +441,6 @@ module fv3gfs_cap_mod
           return
         endif
       enddo
-!
-! set up ESMF time interval at center of iau window
-      call ESMF_TimeIntervalSet(IAU_offsetTI, h=iau_offset, rc=rc)
 !
       k = num_pes_fcst
       timerhs = MPI_Wtime()
