@@ -166,11 +166,11 @@ module module_cplfields
     FieldInfo("wave_z0_roughness_length                 ", "s"), &
 
     ! For receiving fluxes from mediator
-    FieldInfo("mean_zonal_moment_flx                    ", "s"), &
-    FieldInfo("mean_merid_moment_flx                    ", "s"), &
-    FieldInfo("mean_laten_heat_flx                      ", "s"), &
-    FieldInfo("mean_sensi_heat_flx                      ", "s"), &
-    FieldInfo("mean_up_lw_flx                           ", "s"), &
+    FieldInfo("stress_on_air_ocn_zonal                  ", "s"), &
+    FieldInfo("stress_on_air_ocn_merid                  ", "s"), &
+    FieldInfo("mean_laten_heat_flx_atm_into_ocn         ", "s"), &
+    FieldInfo("mean_sensi_heat_flx_atm_into_ocn         ", "s"), &
+    FieldInfo("mean_up_lw_flx_ocn                       ", "s"), &
 
     !  For JEDI
     ! dynamics

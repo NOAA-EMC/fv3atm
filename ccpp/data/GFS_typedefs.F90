@@ -471,6 +471,12 @@ module GFS_typedefs
 !   real (kind=kind_phys), pointer :: zorlwav_cpl(:)          => null()   !< roughness length from wave model
     !--- also needed for ice/ocn coupling 
     real (kind=kind_phys), pointer :: slimskin_cpl(:)=> null()   !< aoi_fld%slimskin(item,lan)
+    !--- variables needed for use_med_flux =.TRUE.
+    real (kind=kind_phys), pointer :: dusfcino_cpl(:)         => null()   !< sfc u momentum flux over ocean
+    real (kind=kind_phys), pointer :: dvsfcino_cpl(:)         => null()   !< sfc v momentum flux over ocean
+    real (kind=kind_phys), pointer :: dtsfcino_cpl(:)         => null()   !< sfc latent heat flux over ocean
+    real (kind=kind_phys), pointer :: dqsfcino_cpl(:)         => null()   !< sfc sensible heat flux over ocean
+    real (kind=kind_phys), pointer :: ulwsfcino_cpl(:)        => null()   !< sfc upward lw flux over ocean
 
 !--- outgoing accumulated quantities
     real (kind=kind_phys), pointer :: rain_cpl  (:)  => null()   !< total rain precipitation
@@ -642,6 +648,7 @@ module GFS_typedefs
     logical              :: use_cice_alb    !< default .false. - i.e. don't use albedo imported from the ice model
     logical              :: cpl_imp_mrg     !< default no merge import with internal forcings
     logical              :: cpl_imp_dbg     !< default no write import data to file post merge
+    logical              :: use_med_flux    !< default .false. - i.e. don't use atmosphere-ocean fluxes imported from mediator
 
 !--- integrated dynamics through earth's atmosphere
     logical              :: lsidea
@@ -2834,6 +2841,18 @@ module GFS_typedefs
 !     Coupling%sfc_alb_vis_dir_cpl   = clear_val
 !     Coupling%sfc_alb_vis_dif_cpl   = clear_val
 
+      allocate (Coupling%dusfcino_cpl      (IM))
+      allocate (Coupling%dvsfcino_cpl      (IM))
+      allocate (Coupling%dtsfcino_cpl      (IM))
+      allocate (Coupling%dqsfcino_cpl      (IM))
+      allocate (Coupling%ulwsfcino_cpl     (IM))
+
+      Coupling%dusfcino_cpl        = clear_val
+      Coupling%dvsfcino_cpl        = clear_val
+      Coupling%dtsfcino_cpl        = clear_val
+      Coupling%dqsfcino_cpl        = clear_val
+      Coupling%ulwsfcino_cpl       = clear_val
+
       !--- accumulated quantities
       allocate (Coupling%dusfc_cpl  (IM))
       allocate (Coupling%dvsfc_cpl  (IM))
@@ -3085,6 +3104,7 @@ module GFS_typedefs
     logical              :: use_cice_alb   = .false.         !< default no cice albedo
     logical              :: cpl_imp_mrg    = .false.         !< default no merge import with internal forcings
     logical              :: cpl_imp_dbg    = .false.         !< default no write import data to file post merge
+    logical              :: use_med_flux   = .false.         !< default no atmosphere-ocean fluxes from mediator
 
 !--- integrated dynamics through earth's atmosphere
     logical              :: lsidea         = .false.
@@ -3560,7 +3580,7 @@ module GFS_typedefs
                                f107_kp_skip_size, f107_kp_data_size, f107_kp_read_in_start, &
                                ipe_to_wam_coupling,                                         &
 #else
-                                lsidea,                                                     &
+                               lsidea, use_med_flux,                                        &
 #endif
                           !--- radiation parameters
                                fhswr, fhlwr, levr, nfxr, iaerclm, iflip, isol, ico2, ialb,  &
@@ -3855,6 +3875,7 @@ module GFS_typedefs
     Model%use_cice_alb     = use_cice_alb
     Model%cpl_imp_mrg      = cpl_imp_mrg
     Model%cpl_imp_dbg      = cpl_imp_dbg
+    Model%use_med_flux     = use_med_flux
 
 !--- integrated dynamics through earth's atmosphere
     Model%lsidea           = lsidea
@@ -5454,6 +5475,7 @@ module GFS_typedefs
       print *, ' use_cice_alb      : ', Model%use_cice_alb
       print *, ' cpl_imp_mrg       : ', Model%cpl_imp_mrg
       print *, ' cpl_imp_dbg       : ', Model%cpl_imp_dbg
+      print *, ' use_med_flux      : ', Model%use_med_flux
       print *, ' '
       print *, ' lsidea            : ', Model%lsidea
       print *, ' '
