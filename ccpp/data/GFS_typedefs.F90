@@ -802,6 +802,11 @@ module GFS_typedefs
     real(kind=kind_phys) :: tcr
     real(kind=kind_phys) :: tcrf
 !
+    integer              :: num_dfi_radar      !< number of timespans with radar-prescribed temperature tendencies
+    real (kind=kind_phys) :: fh_dfi_radar(5)   !< begin+end of timespans to receive radar-prescribed temperature tendencies
+    real (kind=kind_phys) :: radar_tten_limits(2) !< radar_tten values outside this range (min,max) are discarded
+    integer              :: ix_dfi_radar(4) = -1 !< Index within dfi_radar_tten of each timespan (-1 means "none")
+    !
     logical              :: effr_in            !< eg to turn on ffective radii for MG
     logical              :: microp_uniform
     logical              :: do_cldliq
@@ -1197,6 +1202,7 @@ module GFS_typedefs
     integer :: index_of_process_conv_trans       !< tracer changes caused by convective transport
     integer :: index_of_process_physics          !< tracer changes caused by physics schemes
     integer :: index_of_process_non_physics      !< tracer changes caused by everything except physics schemes
+    integer :: index_of_process_dfi_radar        !< tracer changes caused by radar mp temperature tendency forcing
     integer :: index_of_process_photochem        !< all changes to ozone
     logical, pointer :: is_photochem(:) => null()!< flags for which processes should be summed as photochemical
 
@@ -1453,6 +1459,9 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: phy_myj_a1u(:)     => null()  !
     real (kind=kind_phys), pointer :: phy_myj_a1t(:)     => null()  !
     real (kind=kind_phys), pointer :: phy_myj_a1q(:)     => null()  !
+
+    !--- DFI Radar
+    real (kind=kind_phys), pointer :: dfi_radar_tten(:,:,:) => null()          !
 
     contains
       procedure :: create  => tbd_create  !<   allocate array data
@@ -3207,7 +3216,7 @@ module GFS_typedefs
     logical              :: mg_do_hail      = .false.           !< set .true. to turn on prognostic hail (with fprcp=2)
     logical              :: mg_do_ice_gmao  = .false.           !< set .true. to turn on gmao ice formulation
     logical              :: mg_do_liq_liu   = .true.            !< set .true. to turn on liu liquid treatment
-
+    real(kind=kind_phys) :: fh_dfi_radar(5) = -2e10             !< begin&end of four timespans over which radar_tten is applied
 
     !--- Thompson microphysical parameters
     logical              :: ltaerosol      = .false.            !< flag for aerosol version
@@ -3544,6 +3553,10 @@ module GFS_typedefs
     integer, parameter :: max_scav_factors = 25
     character(len=40)  :: fscav_aero(max_scav_factors)
 
+    real(kind=kind_phys), parameter :: limit_unspecified = 1e12
+    real(kind=kind_phys) :: radar_tten_limits(2) = (/ limit_unspecified, limit_unspecified /)
+    integer :: itime
+    
 !--- END NAMELIST VARIABLES
 
     NAMELIST /gfs_physics_nml/                                                              &
@@ -3664,7 +3677,9 @@ module GFS_typedefs
                                max_lon, max_lat, min_lon, min_lat, rhcmax, huge,            &
                                phys_version,                                                &
                           !--- aerosol scavenging factors ('name:value' string array)
-                               fscav_aero
+                               fscav_aero,                                                  &
+                          !--- (DFI) time ranges with radar-prescribed microphysics tendencies
+                               fh_dfi_radar, radar_tten_limits
 
 !--- other parameters
     integer :: nctp    =  0                !< number of cloud types in CS scheme
@@ -3737,6 +3752,49 @@ module GFS_typedefs
     Model%flag_for_pbl_generic_tend = .true.
     Model%flag_for_scnv_generic_tend = .true.
     Model%flag_for_dcnv_generic_tend = .true.
+
+    Model%fh_dfi_radar     = fh_dfi_radar
+    Model%num_dfi_radar    = 0
+
+    do i=1,4
+       if(fh_dfi_radar(i)>-1e10 .and. fh_dfi_radar(i+1)>-1e10) then
+          Model%num_dfi_radar = Model%num_dfi_radar+1
+          Model%ix_dfi_radar(i) = Model%num_dfi_radar
+       else
+          Model%ix_dfi_radar(i) = -1
+       endif
+    enddo
+
+    if(Model%num_dfi_radar>0) then
+       if(radar_tten_limits(1)==limit_unspecified) then
+          if(radar_tten_limits(2)==limit_unspecified) then
+             radar_tten_limits(1) = -19
+             radar_tten_limits(2) = 19
+             if(Model%me==Model%master) then
+                write(0,*) 'Warning: using internal defaults for radar_tten_limits. If the oceans boil, try different values.'
+                write(0,'(A,F12.4,A)') 'radar_tten_limits(1) = ',radar_tten_limits(1),' <-- lower limit'
+                write(0,'(A,F12.4,A)') 'radar_tten_limits(2) = ',radar_tten_limits(2),' <-- upper limit'
+             endif
+          else
+             radar_tten_limits(1) = -abs(radar_tten_limits(2))
+             radar_tten_limits(2) = abs(radar_tten_limits(2))
+          endif
+       else if(radar_tten_limits(2)==limit_unspecified) then
+           radar_tten_limits(1) = -abs(radar_tten_limits(1))
+           radar_tten_limits(2) = abs(radar_tten_limits(1))
+       else if(radar_tten_limits(1)>radar_tten_limits(2)) then
+          if(Model%me==Model%master) then
+             write(0,*) 'Error: radar_tten_limits lower limit is higher than upper!'
+             write(0,'(A,F12.4,A)') 'radar_tten_limits(1) = ',radar_tten_limits(1),' <-- lower limit'
+             write(0,'(A,F12.4,A)') 'radar_tten_limits(2) = ',radar_tten_limits(2),' <-- upper limit'
+             write(0,*) "If you do not want me to apply the prescribed tendencies, just say so! Remove fh_dfi_radar from your namelist."
+             stop
+          endif
+       else
+          !o! Rejoice !o! Radar_tten_limits had lower and upper bounds.
+       endif
+       Model%radar_tten_limits = radar_tten_limits
+    endif
 
     if(gwd_opt==1) then
       if(me==master) &
@@ -4506,17 +4564,18 @@ module GFS_typedefs
     Model%index_of_process_rayleigh_damping = 12
     Model%index_of_process_nonorographic_gwd = 13
     Model%index_of_process_conv_trans = 14
+    Model%index_of_process_dfi_radar = 15
 
     ! Number of processes to sum (last index of prior set)
-    Model%nprocess_summed = 14
+    Model%nprocess_summed = Model%index_of_process_dfi_radar
 
     ! Sums of other processes, which must be after nprocess_summed:
-    Model%index_of_process_physics = 15
-    Model%index_of_process_non_physics = 16
-    Model%index_of_process_photochem = 17
+    Model%index_of_process_physics = Model%nprocess_summed+1
+    Model%index_of_process_non_physics = Model%nprocess_summed+2
+    Model%index_of_process_photochem = Model%nprocess_summed+3
 
     ! Total number of processes (last index of prior set)
-    Model%nprocess = 17
+    Model%nprocess = Model%index_of_process_photochem
 
     ! List which processes should be summed as photochemical:
     allocate(Model%is_photochem(Model%nprocess))
@@ -4631,6 +4690,7 @@ module GFS_typedefs
         call label_dtend_cause(Model,Model%index_of_process_ozmix,'o3mix','tendency due to ozone mixing ratio')
         call label_dtend_cause(Model,Model%index_of_process_temp,'temp','tendency due to temperature')
         call label_dtend_cause(Model,Model%index_of_process_overhead_ozone,'o3column','tendency due to overhead ozone column')
+        call label_dtend_cause(Model,Model%index_of_process_dfi_radar,'dfi_radar','tendency due to dfi radar mp temperature forcing')
         call label_dtend_cause(Model,Model%index_of_process_photochem,'photochem','tendency due to photochemical processes')
         call label_dtend_cause(Model,Model%index_of_process_physics,'phys','tendency due to physics')
         call label_dtend_cause(Model,Model%index_of_process_non_physics,'nophys','tendency due to non-physics processes', &
@@ -4648,6 +4708,7 @@ module GFS_typedefs
        call fill_dtidx(Model,dtend_select,Model%index_of_temperature,Model%index_of_process_dcnv,have_dcnv)
        call fill_dtidx(Model,dtend_select,Model%index_of_temperature,Model%index_of_process_scnv,have_scnv)
        call fill_dtidx(Model,dtend_select,Model%index_of_temperature,Model%index_of_process_mp,have_mp)
+       call fill_dtidx(Model,dtend_select,Model%index_of_temperature,Model%index_of_process_dfi_radar,have_mp .and. Model%num_dfi_radar>0)
        call fill_dtidx(Model,dtend_select,Model%index_of_temperature,Model%index_of_process_orographic_gwd)
        call fill_dtidx(Model,dtend_select,Model%index_of_temperature,Model%index_of_process_rayleigh_damping,have_rdamp)
        call fill_dtidx(Model,dtend_select,Model%index_of_temperature,Model%index_of_process_nonorographic_gwd)
@@ -5402,6 +5463,9 @@ module GFS_typedefs
 !--- interface variables
     class(GFS_control_type) :: Model
 
+!--- local variables
+    integer :: i
+    
     if (Model%me == Model%master) then
       print *, ' '
       print *, 'basic control parameters'
@@ -5568,6 +5632,17 @@ module GFS_typedefs
         print *, ' rhgrd             : ', Model%rhgrd
         print *, ' icloud            : ', Model%icloud
         print *, ' '
+      endif
+      if (Model%num_dfi_radar>0) then
+        print *, ' num_dfi_radar     : ', Model%num_dfi_radar
+        do i = 1, 5
+8888       format('  fh_dfi_radar(',I0,')   :',F12.4)
+           if(Model%fh_dfi_radar(i)>-1e10) then
+              print 8888,i,Model%fh_dfi_radar(i)
+           endif
+        enddo
+9999    format('  radar_tten_limits: ', F12.4, ' ... ',F12.4)
+        print 9999,Model%radar_tten_limits(1),Model%radar_tten_limits(2)
       endif
       print *, 'land/surface model parameters'
       print *, ' lsm               : ', Model%lsm
@@ -5946,6 +6021,14 @@ module GFS_typedefs
       allocate (Tbd%icsdlw (IM))
       Tbd%icsdsw = zero
       Tbd%icsdlw = zero
+    endif
+
+!--- DFI radar forcing
+    nullify(Tbd%dfi_radar_tten)
+    if(Model%num_dfi_radar>0) then
+       allocate(Tbd%dfi_radar_tten(IM,Model%levs,Model%num_dfi_radar))
+       Tbd%dfi_radar_tten = -20.0
+       Tbd%dfi_radar_tten(:,1,:) = 0.0
     endif
 
 !--- ozone and stratosphere h2o needs

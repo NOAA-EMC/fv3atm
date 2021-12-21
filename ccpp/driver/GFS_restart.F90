@@ -60,7 +60,7 @@ module GFS_restart
 
     !--- local variables
     integer :: idx, ndiag_rst
-    integer :: ndiag_idx(20)
+    integer :: ndiag_idx(20), itime
     integer :: nblks, num, nb, max_rstrt, offset 
     character(len=2) :: c2 = ''
     
@@ -123,6 +123,9 @@ module GFS_restart
     endif
 
     Restart%num3d = Model%ntot3d
+    if (Model%num_dfi_radar>0) then
+      Restart%num3d = Restart%num3d + Model%num_dfi_radar
+    endif
     if(Model%lrefres) then
        Restart%num3d = Model%ntot3d+1
     endif
@@ -407,6 +410,26 @@ module GFS_restart
       Restart%name3d(num) = 'mynn_3d_cov'
       do nb = 1,nblks
         Restart%data(nb,num)%var3p => Tbd(nb)%cov(:,:)
+      enddo
+    endif
+
+    ! DFI Radar
+    if (Model%num_dfi_radar > 0) then
+      print *,'have num dfi radar ',Model%num_dfi_radar
+      do itime=1,4
+        if(Model%ix_dfi_radar(itime)>0) then
+          num = num + 1
+          if(itime==1) then
+            Restart%name3d(num) = 'radar_tten'
+          else
+            write(Restart%name3d(num),'("radar_tten_",I0)') itime
+          endif
+          print *,'restart ',trim(Restart%name3d(num))
+          do nb = 1,nblks
+            Restart%data(nb,num)%var3p => Tbd(nb)%dfi_radar_tten( &
+              :,:,Model%ix_dfi_radar(itime))
+          enddo
+        endif
       enddo
     endif
 
