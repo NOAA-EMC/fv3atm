@@ -283,6 +283,7 @@ module GFS_typedefs
 
 !-- In/Out
     real (kind=kind_phys), pointer :: conv_act(:)  => null()  !< convective activity counter for Grell-Freitas
+    real (kind=kind_phys), pointer :: conv_act_m(:)=> null()  !< midlevel convective activity counter for Grell-Freitas
     real (kind=kind_phys), pointer :: hice   (:)   => null()  !< sea ice thickness
     real (kind=kind_phys), pointer :: weasd  (:)   => null()  !< water equiv of accumulated snow depth (kg/m**2)
                                                               !< over land and sea ice
@@ -1425,6 +1426,8 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: prevst (:,:)     => null()  !<
     real (kind=kind_phys), pointer :: prevsq (:,:)     => null()  !<
     integer,               pointer :: cactiv   (:)     => null()  !< convective activity memory contour
+    integer,               pointer :: cactiv_m (:)     => null()  !< mid-level convective activity memory contour
+    real (kind=kind_phys), pointer :: aod_gf   (:)     => null()
 
     !--- MYNN prognostic variables that can't be in the Intdiag or Interstitial DDTs
     real (kind=kind_phys), pointer :: CLDFRA_BL  (:,:)   => null()  !
@@ -2706,7 +2709,9 @@ module GFS_typedefs
     end if
     if (Model%imfdeepcnv == Model%imfdeepcnv_gf) then
         allocate (Sfcprop%conv_act(IM))
+        allocate (Sfcprop%conv_act_m(IM))
         Sfcprop%conv_act = zero
+        Sfcprop%conv_act_m = zero
     end if
 
   end subroutine sfcprop_create
@@ -5061,7 +5066,6 @@ module GFS_typedefs
       Model%num_p3d  = 4
       Model%num_p2d  = 3
       Model%shcnvcw  = .false.
-!     Model%ncnd     = 1                   ! ncnd is the number of cloud condensate types
       Model%nT2delt  = 1
       Model%nqv2delt = 2
       Model%nTdelt   = 3
@@ -5078,7 +5082,6 @@ module GFS_typedefs
       Model%npdf3d  = 3
       Model%num_p3d = 4
       Model%num_p2d = 3
-!     Model%ncnd    = 1
       if (Model%me == Model%master) print *,'Using Zhao/Carr/Sundqvist Microphysics with PDF Cloud'
 
     else if (Model%imp_physics == Model%imp_physics_fer_hires) then     ! Ferrier-Aligo scheme
@@ -5087,8 +5090,6 @@ module GFS_typedefs
       Model%num_p2d = 1
       Model%pdfcld  = .false.
       Model%shcnvcw = .false.
-      ! DH* REALLY ?
-!     Model%ncnd    = 3                      !???????? need to clarify this - Moorthi
       Model%nleffr  = 1
       Model%nieffr  = 2
       Model%nseffr  = 3
@@ -5108,7 +5109,6 @@ module GFS_typedefs
       !Model%num_p2d = 1
       !Model%pdfcld  = .false.
       !Model%shcnvcw = .false.
-!     !Model%ncnd    = 5
       !Model%nleffr  = 1
       !Model%nieffr  = 2
       !Model%nseffr  = 3
@@ -5120,7 +5120,6 @@ module GFS_typedefs
       Model%num_p2d = 1
       Model%pdfcld  = .false.
       Model%shcnvcw = .false.
-!     Model%ncnd    = 5
       Model%nleffr  = 1
       Model%nieffr  = 2
       Model%nseffr  = 3
@@ -5151,7 +5150,6 @@ module GFS_typedefs
       Model%num_p2d = 1
       Model%pdfcld  = .false.
       Model%shcnvcw = .false.
-!     Model%ncnd    = 2
       Model%nleffr  = 2
       Model%nieffr  = 3
       Model%nreffr  = 4
@@ -5164,16 +5162,6 @@ module GFS_typedefs
         print *,' Morrison-Gettelman MP requires nwat to be set to 6 - job aborted'
         stop
       end if
-!     if (abs(Model%fprcp) == 1) then
-!       Model%ncnd  = 4
-!     elseif (Model%fprcp >= 2) then
-!       Model%ncnd  = 4
-!       if (Model%mg_do_graupel .or. Model%mg_do_hail) then
-!         Model%ncnd = 5
-!       endif
-!       Model%num_p3d = 6
-!       Model%ngeffr  = 6
-!     endif
       if (Model%me == Model%master)                                                                 &
          print *,' Using Morrison-Gettelman double moment microphysics',                            &
                  ' iaerclm=',         Model%iaerclm,         ' iccn=',          Model%iccn,         &
@@ -5210,7 +5198,6 @@ module GFS_typedefs
       Model%num_p2d = 1
       Model%pdfcld  = .false.
       Model%shcnvcw = .false.
-!     Model%ncnd    = 5
       if (nwat /= 6) then
         print *,' GFDL MP requires nwat to be set to 6 - job aborted'
         stop
@@ -5224,7 +5211,7 @@ module GFS_typedefs
     endif
 
     if(Model%ras     .or. Model%cscnv)  Model%cnvcld = .false.
-    if(Model%do_shoc .or. Model%pdfcld .or. Model%do_mynnedmf) Model%cnvcld = .false.
+    if(Model%do_shoc .or. Model%pdfcld .or. Model%do_mynnedmf .or. Model%imfdeepcnv == Model%imfdeepcnv_gf) Model%cnvcld = .false.
     if(Model%cnvcld) Model%ncnvcld3d = 1
 
 !--- get cnvwind index in phy_f2d; last entry in phy_f2d array
@@ -6050,7 +6037,11 @@ module GFS_typedefs
 
     if (Model%imfdeepcnv == Model%imfdeepcnv_gf) then
        allocate(Tbd%cactiv(IM))
+       allocate(Tbd%cactiv_m(IM))
+       allocate(Tbd%aod_gf(IM))
        Tbd%cactiv = zero
+       Tbd%cactiv_m = zero
+       Tbd%aod_gf = zero
     end if
 
     !--- MYNN variables:
