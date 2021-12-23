@@ -842,15 +842,15 @@ module fv3gfs_cap_mod
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
     call ESMF_ClockPrint(clock, options="currTime", &
-                         preString="entering FV3_ADVANCE phase1 with clock_fv3 current: ", &
+                         preString="entering FV3_ADVANCE phase1 with clock current: ", &
                          unit=msgString)
     call ESMF_LogWrite(msgString, ESMF_LOGMSG_INFO)
     call ESMF_ClockPrint(clock, options="startTime", &
-                         preString="entering FV3_ADVANCE phase1 with clock_fv3 start:   ", &
+                         preString="entering FV3_ADVANCE phase1 with clock start:   ", &
                          unit=msgString)
     call ESMF_LogWrite(msgString, ESMF_LOGMSG_INFO)
     call ESMF_ClockPrint(clock, options="stopTime", &
-                         preString="entering FV3_ADVANCE phase1 with clock_fv3 stop:    ", &
+                         preString="entering FV3_ADVANCE phase1 with clock stop:    ", &
                          unit=msgString)
     call ESMF_LogWrite(msgString, ESMF_LOGMSG_INFO)
 
@@ -962,15 +962,15 @@ module fv3gfs_cap_mod
     endif ! quilting
 
     call ESMF_ClockPrint(clock, options="currTime", &
-                         preString="leaving FV3_ADVANCE phase2 with clock_fv3 current: ", &
+                         preString="leaving FV3_ADVANCE phase2 with clock current: ", &
                          unit=msgString)
     call ESMF_LogWrite(msgString, ESMF_LOGMSG_INFO)
     call ESMF_ClockPrint(clock, options="startTime", &
-                         preString="leaving FV3_ADVANCE phase2 with clock_fv3 start:   ", &
+                         preString="leaving FV3_ADVANCE phase2 with clock start:   ", &
                          unit=msgString)
     call ESMF_LogWrite(msgString, ESMF_LOGMSG_INFO)
     call ESMF_ClockPrint(clock, options="stopTime", &
-                         preString="leaving FV3_ADVANCE phase2 with clock_fv3 stop:    ", &
+                         preString="leaving FV3_ADVANCE phase2 with clock stop:    ", &
                          unit=msgString)
     call ESMF_LogWrite(msgString, ESMF_LOGMSG_INFO)
 
