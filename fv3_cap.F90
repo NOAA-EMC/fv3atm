@@ -135,6 +135,7 @@ module fv3gfs_cap_mod
                               specPhaseLabel="phase2", specRoutine=ModelAdvance_phase2, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
+    ! specializations to set fv3 cap run clock (model clock)
     call ESMF_MethodRemove(gcomp, label=label_SetRunClock, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
