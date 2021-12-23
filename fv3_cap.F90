@@ -173,7 +173,6 @@ module fv3gfs_cap_mod
 ! local variables
     type(ESMF_State)                       :: importState, exportState
     type(ESMF_Clock)                       :: clock
-    type(ESMF_Clock)                       :: clock_fv3
 
     character(len=10)                      :: value
     character(240)                         :: msgString
@@ -239,11 +238,6 @@ module fv3gfs_cap_mod
     write(msgString,'(A,i6)') trim(subname)//' dbug = ',dbug
     call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_INFO, rc=rc)
 
-
-! create an instance clock for fv3
-    clock_fv3 = ESMF_ClockCreate(clock, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-!
 !------------------------------------------------------------------------
 ! get config variables
 !
@@ -345,9 +339,6 @@ module fv3gfs_cap_mod
     call ESMF_TimeIntervalSet(timeStep, s=dt_atmos, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-    call ESMF_ClockSet(clock_fv3, timeStep=timeStep, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
     first_kdt = 1
     if( output_1st_tstep_rst) then
       rsthour   = currTime - StartTime
@@ -389,7 +380,7 @@ module fv3gfs_cap_mod
 
 ! call fcst Initialize (including creating fcstgrid and fcst fieldbundle)
     call ESMF_GridCompInitialize(fcstComp, exportState=fcstState,    &
-                                 clock=clock_fv3, userRc=urc, rc=rc)
+                                 clock=clock, userRc=urc, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
     if (ESMF_LogFoundError(rcToCheck=urc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
@@ -487,7 +478,7 @@ module fv3gfs_cap_mod
 
 ! call into wrtComp(i) Initialize
         call ESMF_GridCompInitialize(wrtComp(i), importState=wrtstate(i), &
-                                     clock=clock_fv3, phase=1, userRc=urc, rc=rc)
+                                     clock=clock, phase=1, userRc=urc, rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
         if (ESMF_LogFoundError(rcToCheck=urc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
