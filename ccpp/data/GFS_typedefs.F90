@@ -3794,6 +3794,14 @@ module GFS_typedefs
           !o! Rejoice !o! Radar_tten_limits had lower and upper bounds.
        endif
        Model%radar_tten_limits = radar_tten_limits
+
+       if(me==master .and. imfdeepcnv>=0) then
+         if(imfdeepcnv/=3) then
+           write(0,*) 'Warning: untested configuration in use! Radar-derived convection suppression is only supported for the GF deep scheme. That feature will be inactive, but microphysics tendencies will still be enabled. This combination is untested. Beware!'
+         else
+           write(0,*) 'Warning: experimental configuration in use! Radar-derived convection suppression is experimental (GF deep scheme with fh_dfi_radar).'
+         endif
+       endif
     endif
 
     if(gwd_opt==1) then
