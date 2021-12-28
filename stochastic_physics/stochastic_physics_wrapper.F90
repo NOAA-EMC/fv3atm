@@ -92,7 +92,6 @@ module stochastic_physics_wrapper_mod
     levs   = GFS_Control%levs
     maxblk = maxval(GFS_Control%blksz)
     nblks  = Atm_block%nblks
-    print *,"SPP: levs,nblks",levs,nblks
 
     ! Initialize
 
