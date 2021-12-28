@@ -221,27 +221,22 @@ module stochastic_physics_wrapper_mod
                case('pbl')
                  do nb=1,Atm_block%nblks
                      GFS_Data(nb)%Coupling%spp_wts_pbl(:,:) = spp_wts(nb,1:GFS_Control%blksz(nb),:,n)
-                     GFS_Data(nb)%Intdiag%spp_wts_pbl(:,:) = spp_wts(nb,1:GFS_Control%blksz(nb),:,n)
                  end do
                case('sfc')
                  do nb=1,Atm_block%nblks
                      GFS_Data(nb)%Coupling%spp_wts_sfc(:,:) = spp_wts(nb,1:GFS_Control%blksz(nb),:,n)
-                     GFS_Data(nb)%Intdiag%spp_wts_sfc(:,:) = spp_wts(nb,1:GFS_Control%blksz(nb),:,n)
                  end do
                case('mp')
                  do nb=1,Atm_block%nblks
                      GFS_Data(nb)%Coupling%spp_wts_mp(:,:) = spp_wts(nb,1:GFS_Control%blksz(nb),:,n)
-                     GFS_Data(nb)%Intdiag%spp_wts_mp(:,:) = spp_wts(nb,1:GFS_Control%blksz(nb),:,n)
                  end do
                case('gwd')
                  do nb=1,Atm_block%nblks
                      GFS_Data(nb)%Coupling%spp_wts_gwd(:,:) = spp_wts(nb,1:GFS_Control%blksz(nb),:,n)
-                     GFS_Data(nb)%Intdiag%spp_wts_gwd(:,:) = spp_wts(nb,1:GFS_Control%blksz(nb),:,n)
                  end do
                case('rad')
                  do nb=1,Atm_block%nblks
                      GFS_Data(nb)%Coupling%spp_wts_rad(:,:) = spp_wts(nb,1:GFS_Control%blksz(nb),:,n)
-                     GFS_Data(nb)%Intdiag%spp_wts_rad(:,:) = spp_wts(nb,1:GFS_Control%blksz(nb),:,n)
                  end do
                end select
             ENDDO
