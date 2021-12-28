@@ -1661,16 +1661,6 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: tdomip (:)     => null()   !< dominant accumulated sleet type
     real (kind=kind_phys), pointer :: tdoms  (:)     => null()   !< dominant accumulated snow type
 
-    real (kind=kind_phys), pointer :: skebu_wts(:,:) => null()   !< 10 meter u wind speed
-    real (kind=kind_phys), pointer :: skebv_wts(:,:) => null()   !< 10 meter v wind speed
-    real (kind=kind_phys), pointer :: sppt_wts(:,:)  => null()   !<
-    real (kind=kind_phys), pointer :: shum_wts(:,:)  => null()   !<
-    real (kind=kind_phys), pointer :: sfc_wts(:,:)   => null()   !<
-    real (kind=kind_phys), pointer :: spp_wts_pbl(:,:)  => null()   !<
-    real (kind=kind_phys), pointer :: spp_wts_sfc(:,:)  => null()   !<
-    real (kind=kind_phys), pointer :: spp_wts_mp(:,:)   => null()   !<
-    real (kind=kind_phys), pointer :: spp_wts_gwd(:,:)  => null()   !<
-    real (kind=kind_phys), pointer :: spp_wts_rad(:,:)  => null()   !<
     real (kind=kind_phys), pointer :: zmtnblck(:)    => null()   !<mountain blocking evel
 
     ! dtend/dtidxt: Multitudinous 3d tendencies in a 4D array: (i,k,1:100+ntrac,nprocess)
