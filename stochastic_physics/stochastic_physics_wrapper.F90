@@ -104,7 +104,6 @@ module stochastic_physics_wrapper_mod
             xlat(nb,1:GFS_Control%blksz(nb)) = GFS_Data(nb)%Grid%xlat(:)
             xlon(nb,1:GFS_Control%blksz(nb)) = GFS_Data(nb)%Grid%xlon(:)
          end do
-    print *,"SPP: call init_stoch",GFS_Control%do_spp
         ! Initialize stochastic physics
         call init_stochastic_physics(levs, GFS_Control%blksz, GFS_Control%dtp, GFS_Control%sppt_amp,                                  &
             GFS_Control%input_nml_file, GFS_Control%fn_nml, GFS_Control%nlunit, xlon, xlat, GFS_Control%do_sppt, GFS_Control%do_shum, &
@@ -196,7 +195,6 @@ module stochastic_physics_wrapper_mod
 
     else initalize_stochastic_physics
       if (GFS_Control%do_sppt .OR. GFS_Control%do_shum .OR. GFS_Control%do_skeb .OR. (GFS_Control%lndp_type == 2) .OR. GFS_Control%do_spp) then
-         print *,"SPP: before run_stoch call"
          call run_stochastic_physics(levs, GFS_Control%kdt, GFS_Control%fhour, GFS_Control%blksz, &
                                  sppt_wts=sppt_wts, shum_wts=shum_wts, skebu_wts=skebu_wts, skebv_wts=skebv_wts, sfc_wts=sfc_wts, &
                                  spp_wts=spp_wts, nthreads=nthreads)
@@ -221,7 +219,6 @@ module stochastic_physics_wrapper_mod
             DO v=1,GFS_Control%n_var_spp
                select case (trim(GFS_Control%spp_var_list(v)))
                case('pbl')
-       print *,"SPP: spp_wts_pbl is ", v, maxval(spp_wts(:,:,:,v))
                  do nb=1,Atm_block%nblks
                      GFS_Data(nb)%Coupling%spp_wts_pbl(:,:) = spp_wts(nb,1:GFS_Control%blksz(nb),:,v)
                      GFS_Data(nb)%Intdiag%spp_wts_pbl(:,:) = spp_wts(nb,1:GFS_Control%blksz(nb),:,v)
