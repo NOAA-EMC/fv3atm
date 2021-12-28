@@ -239,7 +239,7 @@ module stochastic_physics_wrapper_mod
                      GFS_Data(nb)%Coupling%spp_wts_rad(:,:) = spp_wts(nb,1:GFS_Control%blksz(nb),:,n)
                  end do
                end select
-            ENDDO
+            end do
          end if
          if (GFS_Control%lndp_type == 2) then ! save wts, and apply lndp scheme
              do nb=1,nblks
