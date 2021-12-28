@@ -3001,7 +3001,6 @@ module GFS_typedefs
 
     !--- stochastic spp perturbation option
     if (Model%do_spp) then
-! --- allocate all of the wts arrays? yes, it's a run-time switch...  
       allocate (Coupling%spp_wts_pbl  (IM,Model%levs))
       Coupling%spp_wts_pbl = clear_val
       allocate (Coupling%spp_wts_sfc  (IM,Model%levs))
@@ -6546,16 +6545,6 @@ module GFS_typedefs
     allocate (Diag%tdomzr   (IM))
     allocate (Diag%tdomip   (IM))
     allocate (Diag%tdoms    (IM))
-    allocate (Diag%skebu_wts(IM,Model%levs))
-    allocate (Diag%skebv_wts(IM,Model%levs))
-    allocate (Diag%sppt_wts (IM,Model%levs))
-    allocate (Diag%shum_wts (IM,Model%levs))
-    allocate (Diag%sfc_wts  (IM,Model%n_var_lndp))
-    allocate (Diag%spp_wts_pbl(IM,Model%levs))
-    allocate (Diag%spp_wts_sfc(IM,Model%levs))
-    allocate (Diag%spp_wts_mp(IM,Model%levs))
-    allocate (Diag%spp_wts_gwd(IM,Model%levs))
-    allocate (Diag%spp_wts_rad(IM,Model%levs))
     allocate (Diag%zmtnblck (IM))
 
     if(Model%lsm == Model%lsm_noahmp) then
@@ -6829,17 +6818,6 @@ module GFS_typedefs
     Diag%tdomzr     = zero
     Diag%tdomip     = zero
     Diag%tdoms      = zero
-    Diag%skebu_wts  = zero
-    Diag%skebv_wts  = zero
-    Diag%sppt_wts   = zero
-    Diag%shum_wts   = zero
-    Diag%sfc_wts    = zero
-    Diag%spp_wts_pbl = zero
-    Diag%spp_wts_sfc = zero
-    Diag%spp_wts_mp  = zero
-    Diag%spp_wts_gwd = zero
-    Diag%spp_wts_rad = zero
-    Diag%zmtnblck   = zero
 
     if(Model%lsm == Model%lsm_noahmp)then
       Diag%paha       = zero
