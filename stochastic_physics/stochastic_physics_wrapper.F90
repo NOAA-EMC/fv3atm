@@ -79,7 +79,7 @@ module stochastic_physics_wrapper_mod
     type(block_control_type), intent(inout) :: Atm_block
     integer,                  intent(out)   :: ierr
 
-    integer :: nthreads, nb, levs, maxblk, nblks, v
+    integer :: nthreads, nb, levs, maxblk, nblks, n
     logical :: param_update_flag
 
 #ifdef _OPENMP
@@ -217,31 +217,31 @@ module stochastic_physics_wrapper_mod
          end if
          if (GFS_Control%do_spp) then
             DO v=1,GFS_Control%n_var_spp
-               select case (trim(GFS_Control%spp_var_list(v)))
+               select case (trim(GFS_Control%spp_var_list(n)))
                case('pbl')
                  do nb=1,Atm_block%nblks
-                     GFS_Data(nb)%Coupling%spp_wts_pbl(:,:) = spp_wts(nb,1:GFS_Control%blksz(nb),:,v)
-                     GFS_Data(nb)%Intdiag%spp_wts_pbl(:,:) = spp_wts(nb,1:GFS_Control%blksz(nb),:,v)
+                     GFS_Data(nb)%Coupling%spp_wts_pbl(:,:) = spp_wts(nb,1:GFS_Control%blksz(nb),:,n)
+                     GFS_Data(nb)%Intdiag%spp_wts_pbl(:,:) = spp_wts(nb,1:GFS_Control%blksz(nb),:,n)
                  end do
                case('sfc')
                  do nb=1,Atm_block%nblks
-                     GFS_Data(nb)%Coupling%spp_wts_sfc(:,:) = spp_wts(nb,1:GFS_Control%blksz(nb),:,v)
-                     GFS_Data(nb)%Intdiag%spp_wts_sfc(:,:) = spp_wts(nb,1:GFS_Control%blksz(nb),:,v)
+                     GFS_Data(nb)%Coupling%spp_wts_sfc(:,:) = spp_wts(nb,1:GFS_Control%blksz(nb),:,n)
+                     GFS_Data(nb)%Intdiag%spp_wts_sfc(:,:) = spp_wts(nb,1:GFS_Control%blksz(nb),:,n)
                  end do
                case('mp')
                  do nb=1,Atm_block%nblks
-                     GFS_Data(nb)%Coupling%spp_wts_mp(:,:) = spp_wts(nb,1:GFS_Control%blksz(nb),:,v)
-                     GFS_Data(nb)%Intdiag%spp_wts_mp(:,:) = spp_wts(nb,1:GFS_Control%blksz(nb),:,v)
+                     GFS_Data(nb)%Coupling%spp_wts_mp(:,:) = spp_wts(nb,1:GFS_Control%blksz(nb),:,n)
+                     GFS_Data(nb)%Intdiag%spp_wts_mp(:,:) = spp_wts(nb,1:GFS_Control%blksz(nb),:,n)
                  end do
                case('gwd')
                  do nb=1,Atm_block%nblks
-                     GFS_Data(nb)%Coupling%spp_wts_gwd(:,:) = spp_wts(nb,1:GFS_Control%blksz(nb),:,v)
-                     GFS_Data(nb)%Intdiag%spp_wts_gwd(:,:) = spp_wts(nb,1:GFS_Control%blksz(nb),:,v)
+                     GFS_Data(nb)%Coupling%spp_wts_gwd(:,:) = spp_wts(nb,1:GFS_Control%blksz(nb),:,n)
+                     GFS_Data(nb)%Intdiag%spp_wts_gwd(:,:) = spp_wts(nb,1:GFS_Control%blksz(nb),:,n)
                  end do
                case('rad')
                  do nb=1,Atm_block%nblks
-                     GFS_Data(nb)%Coupling%spp_wts_rad(:,:) = spp_wts(nb,1:GFS_Control%blksz(nb),:,v)
-                     GFS_Data(nb)%Intdiag%spp_wts_rad(:,:) = spp_wts(nb,1:GFS_Control%blksz(nb),:,v)
+                     GFS_Data(nb)%Coupling%spp_wts_rad(:,:) = spp_wts(nb,1:GFS_Control%blksz(nb),:,n)
+                     GFS_Data(nb)%Intdiag%spp_wts_rad(:,:) = spp_wts(nb,1:GFS_Control%blksz(nb),:,n)
                  end do
                end select
             ENDDO
