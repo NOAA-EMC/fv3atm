@@ -216,7 +216,7 @@ module stochastic_physics_wrapper_mod
             end do
          end if
          if (GFS_Control%do_spp) then
-            DO v=1,GFS_Control%n_var_spp
+            do n=1,GFS_Control%n_var_spp
                select case (trim(GFS_Control%spp_var_list(n)))
                case('pbl')
                  do nb=1,Atm_block%nblks
@@ -239,7 +239,7 @@ module stochastic_physics_wrapper_mod
                      GFS_Data(nb)%Coupling%spp_wts_rad(:,:) = spp_wts(nb,1:GFS_Control%blksz(nb),:,n)
                  end do
                end select
-            ENDDO
+            end do
          end if
          if (GFS_Control%lndp_type == 2) then ! save wts, and apply lndp scheme
              do nb=1,nblks
