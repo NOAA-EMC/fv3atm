@@ -3739,46 +3739,46 @@ module GFS_typedefs
 
     if(gwd_opt==1) then
       if(me==master) &
-           write(0,*) 'FLAG: gwd_opt==1 so gwd not generic'
+           write(*,*) 'FLAG: gwd_opt==1 so gwd not generic'
       Model%flag_for_gwd_generic_tend=.false.
     elseif(me==master) then
-      write(0,*) 'NO FLAG: gwd is generic'
+      write(*,*) 'NO FLAG: gwd is generic'
     endif
 
     if(satmedmf .and. isatmedmf==0) then
       if(me==master) &
-           write(0,*) 'FLAG: satmedmf and isatedmf=0 so pbl not generic'
+           write(*,*) 'FLAG: satmedmf and isatedmf=0 so pbl not generic'
       Model%flag_for_pbl_generic_tend=.false.
     elseif(satmedmf .and. isatmedmf==1) then
       if(me==master) &
-           write(0,*) 'FLAG: satmedmf and isatedmf=1 so pbl not generic'
+           write(*,*) 'FLAG: satmedmf and isatedmf=1 so pbl not generic'
       Model%flag_for_pbl_generic_tend=.false.
     else if(hybedmf) then
       if(me==master) &
-           write(0,*) 'FLAG: hybedmf so pbl not generic'
+           write(*,*) 'FLAG: hybedmf so pbl not generic'
       Model%flag_for_pbl_generic_tend=.false.
     else if(do_mynnedmf) then
       if(me==master) &
-           write(0,*) 'FLAG: do_mynnedmf so pbl not generic'
+           write(*,*) 'FLAG: do_mynnedmf so pbl not generic'
       Model%flag_for_pbl_generic_tend=.false.
     elseif(me==master) then
-      write(0,*) 'NO FLAG: pbl is generic'
+      write(*,*) 'NO FLAG: pbl is generic'
     endif
 
     if(imfshalcnv == Model%imfshalcnv_gf) then
       if(me==master) &
-           write(0,*) 'FLAG: imfshalcnv_gf so scnv not generic'
+           write(*,*) 'FLAG: imfshalcnv_gf so scnv not generic'
       Model%flag_for_scnv_generic_tend=.false.
     elseif(me==master) then
-      write(0,*) 'NO FLAG: scnv is generic'
+      write(*,*) 'NO FLAG: scnv is generic'
     endif
 
     if(imfdeepcnv == Model%imfdeepcnv_gf) then
       if(me==master) &
-           write(0,*) 'FLAG: imfdeepcnv_gf so dcnv not generic'
+           write(*,*) 'FLAG: imfdeepcnv_gf so dcnv not generic'
       Model%flag_for_dcnv_generic_tend=.false.
     elseif(me==master) then
-      write(0,*) 'NO FLAG: dcnv is generic'
+      write(*,*) 'NO FLAG: dcnv is generic'
     endif
 
 !
@@ -5062,7 +5062,6 @@ module GFS_typedefs
       Model%num_p3d  = 4
       Model%num_p2d  = 3
       Model%shcnvcw  = .false.
-!     Model%ncnd     = 1                   ! ncnd is the number of cloud condensate types
       Model%nT2delt  = 1
       Model%nqv2delt = 2
       Model%nTdelt   = 3
@@ -5079,7 +5078,6 @@ module GFS_typedefs
       Model%npdf3d  = 3
       Model%num_p3d = 4
       Model%num_p2d = 3
-!     Model%ncnd    = 1
       if (Model%me == Model%master) print *,'Using Zhao/Carr/Sundqvist Microphysics with PDF Cloud'
 
     else if (Model%imp_physics == Model%imp_physics_fer_hires) then     ! Ferrier-Aligo scheme
@@ -5088,8 +5086,6 @@ module GFS_typedefs
       Model%num_p2d = 1
       Model%pdfcld  = .false.
       Model%shcnvcw = .false.
-      ! DH* REALLY ?
-!     Model%ncnd    = 3                      !???????? need to clarify this - Moorthi
       Model%nleffr  = 1
       Model%nieffr  = 2
       Model%nseffr  = 3
@@ -5109,7 +5105,6 @@ module GFS_typedefs
       !Model%num_p2d = 1
       !Model%pdfcld  = .false.
       !Model%shcnvcw = .false.
-!     !Model%ncnd    = 5
       !Model%nleffr  = 1
       !Model%nieffr  = 2
       !Model%nseffr  = 3
@@ -5121,7 +5116,6 @@ module GFS_typedefs
       Model%num_p2d = 1
       Model%pdfcld  = .false.
       Model%shcnvcw = .false.
-!     Model%ncnd    = 5
       Model%nleffr  = 1
       Model%nieffr  = 2
       Model%nseffr  = 3
@@ -5152,7 +5146,6 @@ module GFS_typedefs
       Model%num_p2d = 1
       Model%pdfcld  = .false.
       Model%shcnvcw = .false.
-!     Model%ncnd    = 2
       Model%nleffr  = 2
       Model%nieffr  = 3
       Model%nreffr  = 4
@@ -5165,16 +5158,6 @@ module GFS_typedefs
         print *,' Morrison-Gettelman MP requires nwat to be set to 6 - job aborted'
         stop
       end if
-!     if (abs(Model%fprcp) == 1) then
-!       Model%ncnd  = 4
-!     elseif (Model%fprcp >= 2) then
-!       Model%ncnd  = 4
-!       if (Model%mg_do_graupel .or. Model%mg_do_hail) then
-!         Model%ncnd = 5
-!       endif
-!       Model%num_p3d = 6
-!       Model%ngeffr  = 6
-!     endif
       if (Model%me == Model%master)                                                                 &
          print *,' Using Morrison-Gettelman double moment microphysics',                            &
                  ' iaerclm=',         Model%iaerclm,         ' iccn=',          Model%iccn,         &
@@ -5211,7 +5194,6 @@ module GFS_typedefs
       Model%num_p2d = 1
       Model%pdfcld  = .false.
       Model%shcnvcw = .false.
-!     Model%ncnd    = 5
       if (nwat /= 6) then
         print *,' GFDL MP requires nwat to be set to 6 - job aborted'
         stop
@@ -5225,7 +5207,7 @@ module GFS_typedefs
     endif
 
     if(Model%ras     .or. Model%cscnv)  Model%cnvcld = .false.
-    if(Model%do_shoc .or. Model%pdfcld .or. Model%do_mynnedmf) Model%cnvcld = .false.
+    if(Model%do_shoc .or. Model%pdfcld .or. Model%do_mynnedmf .or. Model%imfdeepcnv == Model%imfdeepcnv_gf) Model%cnvcld = .false.
     if(Model%cnvcld) Model%ncnvcld3d = 1
 
 !--- get cnvwind index in phy_f2d; last entry in phy_f2d array
@@ -5267,7 +5249,7 @@ module GFS_typedefs
     endif
 
     if (me == Model%master)                                                     &
-      write(0,*) ' num_p3d=',   Model%num_p3d,   ' num_p2d=',  Model%num_p2d,   &
+      write(*,*) ' num_p3d=',   Model%num_p3d,   ' num_p2d=',  Model%num_p2d,   &
                  ' crtrh=',     Model%crtrh,     ' npdf3d=',   Model%npdf3d,    &
                  ' pdfcld=',    Model%pdfcld,    ' shcnvcw=',  Model%shcnvcw,   &
                  ' cnvcld=',    Model%cnvcld,    ' ncnvcld3d=',Model%ncnvcld3d, &
