@@ -115,7 +115,7 @@ module GFS_restart
     endif
     ! MYNN SFC
     if (Model%do_mynnsfclay) then
-      Restart%num2d = Restart%num2d + 1
+      Restart%num2d = Restart%num2d + 13
     endif
     ! Thompson aerosol-aware
     if (Model%imp_physics == Model%imp_physics_thompson .and. Model%ltaerosol) then
@@ -130,7 +130,7 @@ module GFS_restart
     if (Model%imfdeepcnv == 3) then
       Restart%num3d = Restart%num3d + 3
     endif
-    ! MYNN PBL 
+    ! MYNN PBL
     if (Model%do_mynnedmf) then
       Restart%num3d = Restart%num3d + 9
     endif
@@ -304,6 +304,66 @@ module GFS_restart
         Restart%name2d(num) = 'mynn_2d_uustar'
         do nb = 1,nblks
           Restart%data(nb,num)%var2p => Sfcprop(nb)%uustar(:)
+        enddo
+        num = num + 1
+        Restart%name2d(num) = 'mynn_2d_hpbl'
+        do nb = 1,nblks
+          Restart%data(nb,num)%var2p => Tbd(nb)%hpbl(:)
+        enddo
+        num = num + 1
+        Restart%name2d(num) = 'mynn_2d_ustm'
+        do nb = 1,nblks
+          Restart%data(nb,num)%var2p => Sfcprop(nb)%ustm(:)
+        enddo
+        num = num + 1
+        Restart%name2d(num) = 'mynn_2d_zol'
+        do nb = 1,nblks
+          Restart%data(nb,num)%var2p => Sfcprop(nb)%zol(:)
+        enddo
+        num = num + 1
+        Restart%name2d(num) = 'mynn_2d_mol'
+        do nb = 1,nblks
+          Restart%data(nb,num)%var2p => Sfcprop(nb)%mol(:)
+        enddo
+        num = num + 1
+        Restart%name2d(num) = 'mynn_2d_flhc'
+        do nb = 1,nblks
+          Restart%data(nb,num)%var2p => Sfcprop(nb)%flhc(:)
+        enddo
+        num = num + 1
+        Restart%name2d(num) = 'mynn_2d_flqc'
+        do nb = 1,nblks
+          Restart%data(nb,num)%var2p => Sfcprop(nb)%flqc(:)
+        enddo
+        num = num + 1
+        Restart%name2d(num) = 'mynn_2d_chs2'
+        do nb = 1,nblks
+          Restart%data(nb,num)%var2p => Sfcprop(nb)%chs2(:)
+        enddo
+        num = num + 1
+        Restart%name2d(num) = 'mynn_2d_cqs2'
+        do nb = 1,nblks
+          Restart%data(nb,num)%var2p => Sfcprop(nb)%cqs2(:)
+        enddo
+        num = num + 1
+        Restart%name2d(num) = 'mynn_2d_lh'
+        do nb = 1,nblks
+          Restart%data(nb,num)%var2p => Sfcprop(nb)%lh(:)
+        enddo
+        num = num + 1
+        Restart%name2d(num) = 'mynn_2d_hflx'
+        do nb = 1,nblks
+          Restart%data(nb,num)%var2p => Sfcprop(nb)%hflx(:)
+        enddo
+        num = num + 1
+        Restart%name2d(num) = 'mynn_2d_evap'
+        do nb = 1,nblks
+          Restart%data(nb,num)%var2p => Sfcprop(nb)%evap(:)
+        enddo
+        num = num + 1
+        Restart%name2d(num) = 'mynn_2d_qss'
+        do nb = 1,nblks
+          Restart%data(nb,num)%var2p => Sfcprop(nb)%qss(:)
         enddo
     endif
     ! Thompson aerosol-aware
