@@ -64,9 +64,8 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
   use module_fv3_io_def,  only: num_pes_fcst, num_files, filename_base,    &
                                 nbdlphys, iau_offset
   use module_fv3_config,  only: dt_atmos, fcst_mpi_comm, fcst_ntasks,      &
-                                quilting, calendar, calendar_type,         &
-                                cplprint_flag, force_date_from_configure,  &
-                                restart_endfcst
+                                quilting, calendar,                        &
+                                cplprint_flag, restart_endfcst
 
   use get_stochy_pattern_mod, only: write_stoch_restart_atm
 !
@@ -87,6 +86,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 
 !----- coupled model data -----
 
+  integer :: calendar_type = -99
   integer :: date_init(6)
   integer :: numLevels     = 0
   integer :: numSoilLayers = 0
@@ -196,6 +196,8 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     type(time_type)               :: Time_init, Time, Time_step, Time_end, &
                                      Time_restart, Time_step_restart
     type(time_type)               :: iautime
+    integer                       :: io_unit, calendar_type_res, date_res(6), date_init_res(6)
+
 !
 !-----------------------------------------------------------------------
 !***********************************************************************
@@ -236,28 +238,24 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 
     call constants_init
     call sat_vapor_pres_init
-!
-    if ( force_date_from_configure ) then
 
-      select case( uppercase(trim(calendar)) )
-      case( 'JULIAN' )
-          calendar_type = JULIAN
-      case( 'GREGORIAN' )
-          calendar_type = GREGORIAN
-      case( 'NOLEAP' )
-          calendar_type = NOLEAP
-      case( 'THIRTY_DAY' )
-          calendar_type = THIRTY_DAY_MONTHS
-      case( 'NO_CALENDAR' )
-          calendar_type = NO_CALENDAR
-      case default
-          call mpp_error ( FATAL, 'fcst_initialize: calendar must be one of '// &
-                                  'JULIAN|GREGORIAN|NOLEAP|THIRTY_DAY|NO_CALENDAR.' )
-      end select
+    select case( uppercase(trim(calendar)) )
+    case( 'JULIAN' )
+        calendar_type = JULIAN
+    case( 'GREGORIAN' )
+        calendar_type = GREGORIAN
+    case( 'NOLEAP' )
+        calendar_type = NOLEAP
+    case( 'THIRTY_DAY' )
+        calendar_type = THIRTY_DAY_MONTHS
+    case( 'NO_CALENDAR' )
+        calendar_type = NO_CALENDAR
+    case default
+        call mpp_error ( FATAL, 'fcst_initialize: calendar must be one of '// &
+                                'JULIAN|GREGORIAN|NOLEAP|THIRTY_DAY|NO_CALENDAR.' )
+    end select
 
-    endif
-!
-    call set_calendar_type (calendar_type         )
+    call set_calendar_type (calendar_type)
 !
 !-----------------------------------------------------------------------
 !***  set atmos time
@@ -266,7 +264,6 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     call ESMF_ClockGet(clock, CurrTime=CurrTime, StartTime=StartTime, &
                        StopTime=StopTime, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-    RunDuration = StopTime - CurrTime
 
     date_init = 0
     call ESMF_TimeGet (StartTime,                      &
@@ -284,10 +281,9 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
                        H=date(4),  M =date(5), S =date(6), rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-    if (mype == 0) write(*,'(A,6I5)') 'CurrTime =',date
-
     Time = set_date (date(1), date(2), date(3),  &
                      date(4), date(5), date(6))
+    if (mype == 0) write(*,'(A,6I5)') 'CurrTime =',date
 
     date_end=0
     call ESMF_TimeGet (StopTime,                                       &
@@ -298,7 +294,58 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     Time_end   = set_date (date_end(1), date_end(2), date_end(3),  &
                            date_end(4), date_end(5), date_end(6))
     if (mype == 0) write(*,'(A,6I5)') 'StopTime =',date_end
-!
+
+!------------------------------------------------------------------------
+!   If this is a restarted run ('INPUT/coupler.res' file exists),
+!   compare date and date_init to the values in 'coupler.res'
+
+    if (mype == 0) then
+      inquire(FILE='INPUT/coupler.res', EXIST=fexist)
+      if (fexist) then  ! file exists, this is a restart run
+
+        call ESMF_UtilIOUnitGet(unit=io_unit, rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+        open(unit=io_unit, file='INPUT/coupler.res', status='old', action='read', err=998)
+        read (io_unit,*,err=999) calendar_type_res
+        read (io_unit,*) date_init_res
+        read (io_unit,*) date_res
+        close(io_unit)
+
+        if(date_res(1) == 0 .and. date_init_res(1) /= 0) date_res = date_init_res
+
+        if(mype == 0) write(*,'(A,6(I4))') 'INPUT/coupler.res: date_init=',date_init_res
+        if(mype == 0) write(*,'(A,6(I4))') 'INPUT/coupler.res: date     =',date_res
+
+        if (calendar_type /= calendar_type_res) then
+          write(0,'(A)')      'fcst_initialize ERROR: calendar_type /= calendar_type_res'
+          write(0,'(A,6(I4))')'                       calendar_type     = ', calendar_type
+          write(0,'(A,6(I4))')'                       calendar_type_res = ', calendar_type_res
+          call ESMF_Finalize(endflag=ESMF_END_ABORT)
+        endif
+
+        if (.not. ALL(date_init.EQ.date_init_res)) then
+          write(0,'(A)')      'fcst_initialize ERROR: date_init /= date_init_res'
+          write(0,'(A,6(I4))')'                       date_init     = ', date_init
+          write(0,'(A,6(I4))')'                       date_init_res = ', date_init_res
+          call ESMF_Finalize(endflag=ESMF_END_ABORT)
+        endif
+
+        if (.not. ALL(date.EQ.date_res)) then
+          write(0,'(A)')      'fcst_initialize ERROR: date /= date_res'
+          write(0,'(A,6(I4))')'                       date     = ', date
+          write(0,'(A,6(I4))')'                       date_res = ', date_res
+          call ESMF_Finalize(endflag=ESMF_END_ABORT)
+        endif
+
+  999 continue
+  998 continue
+
+      endif ! fexist
+    endif ! mype == 0
+
+    RunDuration = StopTime - CurrTime
+
     CALL ESMF_TimeIntervalGet(RunDuration, S=Run_length, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 !
