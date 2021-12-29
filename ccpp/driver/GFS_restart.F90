@@ -415,7 +415,6 @@ module GFS_restart
 
     ! DFI Radar
     if (Model%num_dfi_radar > 0) then
-      print *,'have num dfi radar ',Model%num_dfi_radar
       do itime=1,4
         if(Model%ix_dfi_radar(itime)>0) then
           num = num + 1
@@ -424,7 +423,6 @@ module GFS_restart
           else
             write(Restart%name3d(num),'("radar_tten_",I0)') itime
           endif
-          print *,'restart ',trim(Restart%name3d(num))
           do nb = 1,nblks
             Restart%data(nb,num)%var3p => Tbd(nb)%dfi_radar_tten( &
               :,:,Model%ix_dfi_radar(itime))
