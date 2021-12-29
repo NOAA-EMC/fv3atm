@@ -12,3 +12,7 @@
   #branch = main
   url = https://github.com/NCAR/ccpp-physics
   branch = cleanup-ccpp-test-gfdlmp-split-clw
+[submodule "upp"]
+  path = upp
+  url = https://github.com/NOAA-EMC/UPP
+  branch = develop
