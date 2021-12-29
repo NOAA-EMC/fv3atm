@@ -11,7 +11,7 @@
   #url = https://github.com/NCAR/ccpp-physics
   #branch = main
   url = https://github.com/climbfuji/ccpp-physics
-  branch = wam_debug_and_thompson_suggestions
+  branch = wam_debug_only
 [submodule "upp"]
   path = upp
   url = https://github.com/NOAA-EMC/UPP
