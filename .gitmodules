@@ -10,7 +10,7 @@
   path = ccpp/physics
   #url = https://github.com/NCAR/ccpp-physics
   #branch = main
-  url = https://github.com/NCAR/ccpp-physics
+  url = https://github.com/climbfuji/ccpp-physics
   branch = cleanup-ccpp-test-gfdlmp-split-clw
 [submodule "upp"]
   path = upp
