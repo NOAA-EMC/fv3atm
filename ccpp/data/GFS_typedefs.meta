@@ -6281,6 +6281,7 @@
   dimensions = (horizontal_loop_extent,vertical_layer_dimension,num_dfi_radar)
   type = real
   kind = kind_phys
+  active = (num_dfi_radar>0)
 
 ########################################################################
 [ccpp-table-properties]
