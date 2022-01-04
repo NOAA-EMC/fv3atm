@@ -8,8 +8,8 @@
   branch = main
 [submodule "ccpp/physics"]
   path = ccpp/physics
-  url = https://github.com/NCAR/ccpp-physics
-  branch = main
+  url = https://github.com/SMoorthi-emc/ccpp-physics
+  branch = SM_Nov222021
 [submodule "upp"]
   path = upp
   url = https://github.com/NOAA-EMC/UPP
