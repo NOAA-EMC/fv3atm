@@ -121,6 +121,9 @@ module GFS_restart
     if (Model%imp_physics == Model%imp_physics_thompson .and. Model%ltaerosol) then
       Restart%num2d = Restart%num2d + 2
     endif
+    if (Model%do_cap_suppress .and. Model%num_dfi_radar>0) then
+      Restart%num2d = Restart%num2d + Model%num_dfi_radar
+    endif
 
     Restart%num3d = Model%ntot3d
     if (Model%num_dfi_radar>0) then
@@ -323,6 +326,23 @@ module GFS_restart
       enddo
     endif
 
+    ! Convection suppression
+    if (Model%do_cap_suppress .and. Model%num_dfi_radar > 0) then
+      do itime=1,Model%dfi_radar_max_intervals
+        if(Model%ix_dfi_radar(itime)>0) then
+          num = num + 1
+          if(itime==1) then
+            Restart%name2d(num) = 'cap_suppress'
+          else
+            write(Restart%name2d(num),'("cap_suppress_",I0)') itime
+          endif
+          do nb = 1,nblks
+            Restart%data(nb,num)%var2p => Tbd(nb)%cap_suppress(:,Model%ix_dfi_radar(itime))
+          enddo
+        endif
+      enddo
+    endif
+
     !--- phy_f3d variables
     do num = 1,Model%ntot3d
        !--- set the variable name
@@ -413,9 +433,9 @@ module GFS_restart
       enddo
     endif
 
-    ! DFI Radar
+    ! Radar-derived microphysics temperature tendencies
     if (Model%num_dfi_radar > 0) then
-      do itime=1,4
+      do itime=1,Model%dfi_radar_max_intervals
         if(Model%ix_dfi_radar(itime)>0) then
           num = num + 1
           if(itime==1) then

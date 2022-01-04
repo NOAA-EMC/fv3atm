@@ -48,6 +48,8 @@ module GFS_typedefs
       integer, parameter :: naux2dmax = 20 !< maximum number of auxiliary 2d arrays in output (for debugging)
       integer, parameter :: naux3dmax = 20 !< maximum number of auxiliary 3d arrays in output (for debugging)
 
+      integer, parameter :: dfi_radar_max_intervals = 4 !< Number of radar-derived temperature tendency and/or convection suppression intervals. Do not change.
+
 !> \section arg_table_GFS_typedefs
 !! \htmlinclude GFS_typedefs.html
 !!
@@ -803,9 +805,13 @@ module GFS_typedefs
     real(kind=kind_phys) :: tcrf
 !
     integer              :: num_dfi_radar      !< number of timespans with radar-prescribed temperature tendencies
-    real (kind=kind_phys) :: fh_dfi_radar(5)   !< begin+end of timespans to receive radar-prescribed temperature tendencies
+    real (kind=kind_phys) :: fh_dfi_radar(1+dfi_radar_max_intervals)   !< begin+end of timespans to receive radar-prescribed temperature tendencies
+    logical              :: do_cap_suppress    !< enable convection suppression in GF scheme if fh_dfi_radar is specified
     real (kind=kind_phys) :: radar_tten_limits(2) !< radar_tten values outside this range (min,max) are discarded
-    integer              :: ix_dfi_radar(4) = -1 !< Index within dfi_radar_tten of each timespan (-1 means "none")
+    integer              :: ix_dfi_radar(dfi_radar_max_intervals) = -1 !< Index within dfi_radar_tten of each timespan (-1 means "none")
+    integer              :: dfi_radar_max_intervals
+    integer              :: dfi_radar_max_intervals_plus_one
+
     !
     logical              :: effr_in            !< eg to turn on ffective radii for MG
     logical              :: microp_uniform
@@ -1461,7 +1467,8 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: phy_myj_a1q(:)     => null()  !
 
     !--- DFI Radar
-    real (kind=kind_phys), pointer :: dfi_radar_tten(:,:,:) => null()          !
+    real (kind=kind_phys), pointer :: dfi_radar_tten(:,:,:) => null() !
+    real (kind=kind_phys), pointer :: cap_suppress(:,:) => null() !
 
     contains
       procedure :: create  => tbd_create  !<   allocate array data
@@ -3216,7 +3223,8 @@ module GFS_typedefs
     logical              :: mg_do_hail      = .false.           !< set .true. to turn on prognostic hail (with fprcp=2)
     logical              :: mg_do_ice_gmao  = .false.           !< set .true. to turn on gmao ice formulation
     logical              :: mg_do_liq_liu   = .true.            !< set .true. to turn on liu liquid treatment
-    real(kind=kind_phys) :: fh_dfi_radar(5) = -2e10             !< begin&end of four timespans over which radar_tten is applied
+    real(kind=kind_phys) :: fh_dfi_radar(1+dfi_radar_max_intervals) = -2e10             !< begin&end of four timespans over which radar_tten is applied
+    logical              :: do_cap_suppress = .true.            !< set .true. to turn on convection suppression in GF scheme during limited intervals when fh_dfi_radar is enabled
 
     !--- Thompson microphysical parameters
     logical              :: ltaerosol      = .false.            !< flag for aerosol version
@@ -3679,7 +3687,8 @@ module GFS_typedefs
                           !--- aerosol scavenging factors ('name:value' string array)
                                fscav_aero,                                                  &
                           !--- (DFI) time ranges with radar-prescribed microphysics tendencies
-                               fh_dfi_radar, radar_tten_limits
+                          !          and (maybe) convection suppression
+                               fh_dfi_radar, radar_tten_limits, do_cap_suppress
 
 !--- other parameters
     integer :: nctp    =  0                !< number of cloud types in CS scheme
@@ -3755,8 +3764,11 @@ module GFS_typedefs
 
     Model%fh_dfi_radar     = fh_dfi_radar
     Model%num_dfi_radar    = 0
+    Model%dfi_radar_max_intervals = dfi_radar_max_intervals ! module-level parameter, top of file
+    Model%dfi_radar_max_intervals_plus_one = dfi_radar_max_intervals + 1
+    Model%do_cap_suppress = do_cap_suppress
 
-    do i=1,4
+    do i=1,dfi_radar_max_intervals
        if(fh_dfi_radar(i)>-1e10 .and. fh_dfi_radar(i+1)>-1e10) then
           Model%num_dfi_radar = Model%num_dfi_radar+1
           Model%ix_dfi_radar(i) = Model%num_dfi_radar
@@ -3795,11 +3807,13 @@ module GFS_typedefs
        endif
        Model%radar_tten_limits = radar_tten_limits
 
-       if(me==master .and. imfdeepcnv>=0) then
-         if(imfdeepcnv/=3) then
-           write(0,*) 'Warning: untested configuration in use! Radar-derived convection suppression is only supported for the GF deep scheme. That feature will be inactive, but microphysics tendencies will still be enabled. This combination is untested. Beware!'
-         else
-           write(0,*) 'Warning: experimental configuration in use! Radar-derived convection suppression is experimental (GF deep scheme with fh_dfi_radar).'
+       if(do_cap_suppress) then
+         if(me==master .and. imfdeepcnv>=0) then
+           if(imfdeepcnv/=3) then
+             write(0,*) 'Warning: untested configuration in use! Radar-derived convection suppression is only supported for the GF deep scheme. That feature will be inactive, but microphysics tendencies will still be enabled. This combination is untested. Beware!'
+           else
+             write(0,*) 'Warning: experimental configuration in use! Radar-derived convection suppression is experimental (GF deep scheme with fh_dfi_radar).'
+           endif
          endif
        endif
     endif
@@ -5643,7 +5657,8 @@ module GFS_typedefs
       endif
       if (Model%num_dfi_radar>0) then
         print *, ' num_dfi_radar     : ', Model%num_dfi_radar
-        do i = 1, 5
+        print *, ' do_cap_suppress   : ', Model%do_cap_suppress
+        do i = 1, dfi_radar_max_intervals+1
 8888       format('  fh_dfi_radar(',I0,')   :',F12.4)
            if(Model%fh_dfi_radar(i)>-1e10) then
               print 8888,i,Model%fh_dfi_radar(i)
@@ -6033,10 +6048,15 @@ module GFS_typedefs
 
 !--- DFI radar forcing
     nullify(Tbd%dfi_radar_tten)
+    nullify(Tbd%cap_suppress)
     if(Model%num_dfi_radar>0) then
        allocate(Tbd%dfi_radar_tten(IM,Model%levs,Model%num_dfi_radar))
        Tbd%dfi_radar_tten = -20.0
-       Tbd%dfi_radar_tten(:,1,:) = 0.0
+       Tbd%dfi_radar_tten(:,1,:) = zero
+       if(Model%do_cap_suppress) then
+         allocate(Tbd%cap_suppress(IM,Model%num_dfi_radar))
+         Tbd%cap_suppress(:,:) = zero
+       endif
     endif
 
 !--- ozone and stratosphere h2o needs
