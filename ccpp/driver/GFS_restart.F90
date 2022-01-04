@@ -98,8 +98,8 @@ module GFS_restart
     Restart%num2d = 3 + Model%ntot2d + Model%nctp + ndiag_rst
 
     ! GF
-    if (Model%imfdeepcnv == 3) then
-      Restart%num2d = Restart%num2d + 1
+    if (Model%imfdeepcnv == Model%imfdeepcnv_gf) then
+      Restart%num2d = Restart%num2d + 3
     endif
     ! CA
     if (Model%imfdeepcnv == 2 .and. Model%do_ca) then
@@ -205,6 +205,16 @@ module GFS_restart
       Restart%name2d(num) = 'gf_2d_conv_act'
       do nb = 1,nblks
         Restart%data(nb,num)%var2p => Sfcprop(nb)%conv_act(:)
+      enddo
+      num = num + 1
+      Restart%name2d(num) = 'gf_2d_conv_act_m'
+      do nb = 1,nblks
+        Restart%data(nb,num)%var2p => Sfcprop(nb)%conv_act_m(:)
+      enddo
+      num = num + 1
+      Restart%name2d(num) = 'aod_gf'
+      do nb = 1,nblks
+        Restart%data(nb,num)%var2p => Tbd(nb)%aod_gf(:)
       enddo
     endif
     ! NoahMP

@@ -168,7 +168,6 @@ type (time_type) :: diag_time, diag_time_fhzero
 !  DYCORE containers
 !-------------------
 type(DYCORE_data_type),    allocatable :: DYCORE_Data(:)  ! number of blocks
-type(DYCORE_diag_type)                 :: DYCORE_Diag(25)
 
 !----------------
 !  GFS containers
@@ -383,7 +382,7 @@ subroutine update_atmos_radiation_physics (Atmos)
     if(GFS_control%print_diff_pgr) then
       call atmos_timestep_diagnostics(Atmos)
     endif
-    
+
     ! Update flag for first time step of time integration
     GFS_control%first_time_step = .false.
 
@@ -426,9 +425,9 @@ subroutine atmos_timestep_diagnostics(Atmos)
       if(.not. GFS_control%first_time_step) then
         pmaxloc = 0.0d0
         recvbuf = 0.0d0
-        psum = 0.0d0
-        pcount = 0.0d0
-        maxabs = 0.0d0
+        psum    = 0.0d0
+        pcount  = 0.0d0
+        maxabs  = 0.0d0
 
         ! Put pgr stats in pmaxloc, psum, and pcount:
         pmaxloc(1) = GFS_Control%tile_num
@@ -437,17 +436,17 @@ subroutine atmos_timestep_diagnostics(Atmos)
           do i=1,count
             pdiff = GFS_data(nb)%Statein%pgr(i)-GFS_data(nb)%Intdiag%old_pgr(i)
             adiff = abs(pdiff)
-            psum = psum+adiff
+            psum  = psum + adiff
             if(adiff>=maxabs) then
               maxabs=adiff
-              pmaxloc(2:3)=(/ ATM_block%index(nb)%ii(i), ATM_block%index(nb)%jj(i) /)
-              pmaxloc(4:7)=(/ pdiff, GFS_data(nb)%Statein%pgr(i), &
+              pmaxloc(2:3) = (/ ATM_block%index(nb)%ii(i), ATM_block%index(nb)%jj(i) /)
+              pmaxloc(4:7) = (/ pdiff, GFS_data(nb)%Statein%pgr(i), &
                    GFS_data(nb)%Grid%xlat(i), GFS_data(nb)%Grid%xlon(i) /)
             endif
           enddo
           pcount = pcount+count
         enddo
-        
+
         ! Sum pgr stats from psum/pcount and convert to hPa/hour global avg:
         sendbuf(1:2) = (/ psum, pcount /)
         call MPI_Allreduce(sendbuf,recvbuf,2,MPI_DOUBLE_PRECISION,MPI_SUM,GFS_Control%communicator,ierror)
@@ -457,7 +456,7 @@ subroutine atmos_timestep_diagnostics(Atmos)
         sendbuf(1:2) = (/ maxabs, dble(GFS_Control%me) /)
         call MPI_Allreduce(sendbuf,recvbuf,1,MPI_2DOUBLE_PRECISION,MPI_MAXLOC,GFS_Control%communicator,ierror)
         call MPI_Bcast(pmaxloc,size(pmaxloc),MPI_DOUBLE_PRECISION,nint(recvbuf(2)),GFS_Control%communicator,ierror)
-        
+
         if(GFS_Control%me == GFS_Control%master) then
 2933      format('At forecast hour ',F9.3,' mean abs pgr change is ',F16.8,' hPa/hr')
 2934      format('  max abs change   ',F15.10,' bar  at  tile=',I0,' i=',I0,' j=',I0)
@@ -494,23 +493,17 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
   type (atmos_data_type), intent(inout) :: Atmos
   type (time_type), intent(in) :: Time_init, Time, Time_step
 !--- local variables ---
-  integer :: unit, ntdiag, ntfamily, i, j, k
-  integer :: mlon, mlat, nlon, nlat, nlev, sec, dt
+  integer :: unit, i
+  integer :: mlon, mlat, nlon, nlat, nlev, sec
   integer :: ierr, io, logunit
-  integer :: idx, tile_num
+  integer :: tile_num
   integer :: isc, iec, jsc, jec
-  integer :: isd, ied, jsd, jed
-  integer :: blk, ibs, ibe, jbs, jbe
   real(kind=GFS_kind_phys) :: dt_phys
-  real, allocatable    :: q(:,:,:,:), p_half(:,:,:)
-  character(len=80)    :: control
-  character(len=64)    :: filename, filename2, pelist_name
-  character(len=132)   :: text
-  logical              :: p_hydro, hydro, fexist
+  logical              :: p_hydro, hydro
   logical, save        :: block_message = .true.
   type(GFS_init_type)  :: Init_parm
   integer              :: bdat(8), cdat(8)
-  integer              :: ntracers, maxhf, maxh
+  integer              :: ntracers
   character(len=32), allocatable, target :: tracer_names(:)
   integer,           allocatable, target :: tracer_types(:)
   integer :: nthrds, nb
@@ -550,7 +543,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
 !----------------------------------------------------------------------------------------------
 ! initialize atmospheric model - must happen AFTER atmosphere_init so that nests work correctly
 
-   IF ( file_exists('input.nml')) THEN
+   if (file_exists('input.nml')) then
       read(input_nml_file, nml=atmos_model_nml, iostat=io)
       ierr = check_nml_error(io, 'atmos_model_nml')
    endif
@@ -638,19 +631,10 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    Init_parm%restart         = Atm(mygrid)%flagstruct%warm_start
    Init_parm%hydrostatic     = Atm(mygrid)%flagstruct%hydrostatic
 
-#ifdef INTERNAL_FILE_NML
    ! allocate required to work around GNU compiler bug 100886 https://gcc.gnu.org/bugzilla/show_bug.cgi?id=100886
    allocate(Init_parm%input_nml_file, mold=input_nml_file)
    Init_parm%input_nml_file  => input_nml_file
    Init_parm%fn_nml='using internal file'
-#else
-   pelist_name=mpp_get_current_pelist_name()
-   Init_parm%fn_nml='input_'//trim(pelist_name)//'.nml'
-   inquire(FILE=Init_parm%fn_nml, EXIST=fexist)
-   if (.not. fexist ) then
-      Init_parm%fn_nml='input.nml'
-   endif
-#endif
 
    call GFS_initialize (GFS_control, GFS_data%Statein, GFS_data%Stateout, GFS_data%Sfcprop,     &
                         GFS_data%Coupling, GFS_data%Grid, GFS_data%Tbd, GFS_data%Cldprop, GFS_data%Radtend, &
@@ -688,8 +672,8 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
                               GFS_data%Coupling, GFS_data%Grid, GFS_data%Tbd, GFS_data%Cldprop,  GFS_data%Radtend, &
                               GFS_data%IntDiag, Init_parm, GFS_Diag)
    call FV3GFS_restart_read (GFS_data, GFS_restart_var, Atm_block, GFS_control, Atmos%domain, Atm(mygrid)%flagstruct%warm_start)
-   if(GFS_control%ca_sgs)then
-      call read_ca_restart (Atmos%domain,GFS_control%scells)
+   if(GFS_control%do_ca .and. Atm(mygrid)%flagstruct%warm_start)then
+      call read_ca_restart (Atmos%domain,GFS_control%ncells,GFS_control%nca,GFS_control%ncells_g,GFS_control%nca_g)
    endif
    ! Populate the GFS_data%Statein container with the prognostic state
    ! in Atm_block, which contains the initial conditions/restart data.
@@ -916,13 +900,14 @@ subroutine update_atmos_model_state (Atmos, rc)
       call FV3GFS_diag_output(Atmos%Time, GFS_Diag, Atm_block, GFS_control%nx, GFS_control%ny, &
                             GFS_control%levs, 1, 1, 1.0_GFS_kind_phys, time_int, time_intfull, &
                             GFS_control%fhswr, GFS_control%fhlwr)
-      if (nint(GFS_control%fhzero) > 0) then
-        if (mod(isec,3600*nint(GFS_control%fhzero)) == 0) diag_time = Atmos%Time
-      else
-        if (mod(isec,nint(3600*GFS_control%fhzero)) == 0) diag_time = Atmos%Time
-      endif
-      call diag_send_complete_instant (Atmos%Time)
     endif
+    if (nint(GFS_control%fhzero) > 0) then
+      if (mod(isec,3600*nint(GFS_control%fhzero)) == 0) diag_time = Atmos%Time
+    else
+      if (mod(isec,nint(3600*GFS_control%fhzero)) == 0) diag_time = Atmos%Time
+    endif
+    call diag_send_complete_instant (Atmos%Time)
+
 
     !--- this may not be necessary once write_component is fully implemented
     !!!call diag_send_complete_extra (Atmos%Time)
@@ -966,7 +951,7 @@ subroutine atmos_model_end (Atmos)
   use update_ca, only: write_ca_restart
   type (atmos_data_type), intent(inout) :: Atmos
 !---local variables
-  integer :: idx, seconds, ierr
+  integer :: ierr
 
 !-----------------------------------------------------------------------
 !---- termination routine for atmospheric model ----
@@ -982,8 +967,8 @@ subroutine atmos_model_end (Atmos)
         GFS_Control%lndp_type > 0  .or. GFS_Control%do_ca ) then
       if(restart_endfcst) then
         call write_stoch_restart_atm('RESTART/atm_stoch.res.nc')
-        if (GFS_control%ca_sgs)then
-          call write_ca_restart(Atmos%domain,GFS_control%scells)
+        if (GFS_control%do_ca)then
+          call write_ca_restart()
         endif
       endif
       call stochastic_physics_wrapper_end(GFS_control)
@@ -994,6 +979,8 @@ subroutine atmos_model_end (Atmos)
 !   The CCPP framework for all cdata structures is finalized in CCPP_step 'finalize'.
     call CCPP_step (step="finalize", nblks=Atm_block%nblks, ierr=ierr)
     if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP finalize step failed')
+
+    call dealloc_atmos_data_type (Atmos)
 
 end subroutine atmos_model_end
 
@@ -1011,8 +998,8 @@ subroutine atmos_model_restart(Atmos, timestamp)
     call atmosphere_restart(timestamp)
     call FV3GFS_restart_write (GFS_data, GFS_restart_var, Atm_block, &
                                GFS_control, Atmos%domain, timestamp)
-    if(GFS_control%ca_sgs)then
-       call write_ca_restart(Atmos%domain,GFS_control%scells,timestamp)
+    if(GFS_control%do_ca)then
+       call write_ca_restart(timestamp)
     endif
 end subroutine atmos_model_restart
 ! </SUBROUTINE>
@@ -1545,53 +1532,6 @@ subroutine update_atmos_chemistry(state, rc)
 end subroutine update_atmos_chemistry
 ! </SUBROUTINE>
 
-!#######################################################################
-! <SUBROUTINE NAME="atmos_data_type_chksum">
-!
-! <OVERVIEW>
-!  Print checksums of the various fields in the atmos_data_type.
-! </OVERVIEW>
-
-! <DESCRIPTION>
-!  Routine to print checksums of the various fields in the atmos_data_type.
-! </DESCRIPTION>
-
-! <TEMPLATE>
-!   call atmos_data_type_chksum(id, timestep, atm)
-! </TEMPLATE>
-
-! <IN NAME="Atm" TYPE="type(atmos_data_type)">
-!   Derived-type variable that contains fields in the atmos_data_type.
-! </INOUT>
-!
-! <IN NAME="id" TYPE="character">
-!   Label to differentiate where this routine in being called from.
-! </IN>
-!
-! <IN NAME="timestep" TYPE="integer">
-!   An integer to indicate which timestep this routine is being called for.
-! </IN>
-!
-subroutine atmos_data_type_chksum(id, timestep, atm)
-type(atmos_data_type), intent(in) :: atm
-    character(len=*),  intent(in) :: id
-    integer         ,  intent(in) :: timestep
-    integer :: n, outunit
-
-100 format("CHECKSUM::",A32," = ",Z20)
-101 format("CHECKSUM::",A16,a,'%',a," = ",Z20)
-
-  outunit = stdout()
-  write(outunit,*) 'BEGIN CHECKSUM(Atmos_data_type):: ', id, timestep
-  write(outunit,100) ' atm%lon_bnd                ', mpp_chksum(atm%lon_bnd)
-  write(outunit,100) ' atm%lat_bnd                ', mpp_chksum(atm%lat_bnd)
-  write(outunit,100) ' atm%lon                    ', mpp_chksum(atm%lon)
-  write(outunit,100) ' atm%lat                    ', mpp_chksum(atm%lat)
-
-end subroutine atmos_data_type_chksum
-
-! </SUBROUTINE>
-
   subroutine alloc_atmos_data_type (nlon, nlat, Atmos)
    integer, intent(in) :: nlon, nlat
    type(atmos_data_type), intent(inout) :: Atmos
@@ -1625,7 +1565,6 @@ end subroutine atmos_data_type_chksum
     integer :: sphum, liq_wat, ice_wat, o3mr
     character(len=128) :: impfield_name, fldname
     type(ESMF_TypeKind_Flag)                           :: datatype
-    real(kind=ESMF_KIND_R4),  dimension(:,:), pointer  :: datar42d
     real(kind=ESMF_KIND_R8),  dimension(:,:), pointer  :: datar82d
     real(kind=ESMF_KIND_R8),  dimension(:,:,:), pointer:: datar83d
     real(kind=GFS_kind_phys), dimension(:,:), pointer  :: datar8
@@ -1644,6 +1583,7 @@ end subroutine atmos_data_type_chksum
 !     real(kind=GFS_kind_phys), parameter :: hsmax = 100.0    !< maximum snow depth (m) allowed
       real(kind=GFS_kind_phys), parameter :: himax = 1.0e12   !< maximum ice thickness allowed
       real(kind=GFS_kind_phys), parameter :: hsmax = 1.0e12   !< maximum snow depth (m) allowed
+      real(kind=GFS_kind_phys), parameter :: con_sbc = 5.670400e-8_GFS_kind_phys !< stefan-boltzmann
 !
 !------------------------------------------------------------------------------
 !
@@ -1691,10 +1631,6 @@ end subroutine atmos_data_type_chksum
             if (mpp_pe() == mpp_root_pe() .and. debug) print *,'in cplIMP,atmos gets ',trim(impfield_name),' datar8=', &
                                                                datar8(isc,jsc), maxval(datar8), minval(datar8)
             found = .true.
-! gfs physics runs with r8
-!          else
-!            call ESMF_FieldGet(importFields(n),farrayPtr=datar42d,localDE=0, rc=rc)
-!            datar8 = datar42d
           endif
 
         else if( dimCount == 3) then
@@ -2328,7 +2264,7 @@ end subroutine atmos_data_type_chksum
               do i=isc,iec
                 nb = Atm_block%blkno(i,j)
                 ix = Atm_block%ixp(i,j)
-                GFS_data(nb)%Sfcprop%vtype(ix) = datar82d(i-isc+1,j-jsc+1)
+                GFS_data(nb)%Sfcprop%vtype(ix) = int(datar82d(i-isc+1,j-jsc+1))
               enddo
             enddo
           endif
@@ -2343,7 +2279,7 @@ end subroutine atmos_data_type_chksum
               do i=isc,iec
                 nb = Atm_block%blkno(i,j)
                 ix = Atm_block%ixp(i,j)
-                GFS_data(nb)%Sfcprop%stype(ix) = datar82d(i-isc+1,j-jsc+1)
+                GFS_data(nb)%Sfcprop%stype(ix) = int(datar82d(i-isc+1,j-jsc+1))
               enddo
             enddo
           endif
@@ -2481,7 +2417,7 @@ end subroutine atmos_data_type_chksum
 
 ! update sea ice related fields:
     if( lcpl_fice ) then
-!$omp parallel do default(shared) private(i,j,nb,ix)
+!$omp parallel do default(shared) private(i,j,nb,ix,tem)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
@@ -2492,6 +2428,15 @@ end subroutine atmos_data_type_chksum
               GFS_data(nb)%Coupling%hsnoin_cpl(ix) = min(hsmax, GFS_data(nb)%Coupling%hsnoin_cpl(ix) &
                              / (GFS_data(nb)%Sfcprop%fice(ix)*GFS_data(nb)%Sfcprop%oceanfrac(ix)))
               GFS_data(nb)%Sfcprop%zorli(ix)       = z0ice
+              tem = GFS_data(nb)%Sfcprop%tisfc(ix) * GFS_data(nb)%Sfcprop%tisfc(ix)
+              tem = con_sbc * tem * tem
+              if (GFS_data(nb)%Coupling%ulwsfcin_cpl(ix) > zero) then
+                GFS_data(nb)%Sfcprop%emis_ice(ix)    = GFS_data(nb)%Coupling%ulwsfcin_cpl(ix) / tem
+                GFS_data(nb)%Sfcprop%emis_ice(ix)    = max(0.9, min(one, GFS_data(nb)%Sfcprop%emis_ice(ix)))
+              else
+                GFS_data(nb)%Sfcprop%emis_ice(ix)    = 0.96
+              endif
+              GFS_data(nb)%Coupling%ulwsfcin_cpl(ix) = tem * GFS_data(nb)%Sfcprop%emis_ice(ix)
             else
               GFS_data(nb)%Sfcprop%tisfc(ix)       = GFS_data(nb)%Sfcprop%tsfco(ix)
               GFS_data(nb)%Sfcprop%fice(ix)        = zero
@@ -2552,9 +2497,9 @@ end subroutine atmos_data_type_chksum
     integer, optional, intent(out) :: rc
 
     !--- local variables
-    integer                :: i, j, k, idx, ix
+    integer                :: i, j, ix
     integer                :: isc, iec, jsc, jec
-    integer                :: ib, jb, nb, nsb, nk
+    integer                :: nb, nk
     integer                :: sphum, liq_wat, ice_wat, o3mr
     real(GFS_kind_phys)    :: rtime, rtimek
 
@@ -2578,7 +2523,6 @@ end subroutine atmos_data_type_chksum
     jsc = Atm_block%jsc
     jec = Atm_block%jec
     nk  = Atm_block%npz
-    nsb = Atm_block%blkno(isc,jsc)
 
     rtime  = one / GFS_control%dtp
     rtimek = GFS_control%rho_h2o * rtime
@@ -2887,7 +2831,6 @@ end subroutine atmos_data_type_chksum
     integer isc, iec, jsc, jec
     integer i, j, nb, ix
 !    integer CLbnd(2), CUbnd(2), CCount(2), TLbnd(2), TUbnd(2), TCount(2)
-    type(ESMF_StaggerLoc) :: staggerloc
     integer, allocatable  :: lsmask(:,:)
     integer(kind=ESMF_KIND_I4), pointer  :: maskPtr(:,:)
 !
