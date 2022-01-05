@@ -71,6 +71,7 @@ contains
     if (associated(destin_ptr) .and. associated(source_ptr)) then
       factor = 1._kind_phys
       if (present(scale_factor)) factor = scale_factor
+!$omp parallel do private(ix,ib,jb,i,j)
       do ix = 1, block%blksz(block_index)
         ib = block%index(block_index)%ii(ix)
         jb = block%index(block_index)%jj(ix)
@@ -105,6 +106,7 @@ contains
     if (associated(destin_ptr) .and. associated(source_ptr)) then
       factor = 1._kind_phys
       if (present(scale_factor)) factor = scale_factor
+!$omp parallel do private(ix,ib,jb,i,j)
       do ix = 1, block%blksz(block_index)
         ib = block%index(block_index)%ii(ix)
         jb = block%index(block_index)%jj(ix)
@@ -144,6 +146,7 @@ contains
       if (slice > 0 .and. slice <= size(source_ptr, dim=2)) then
         factor = 1._kind_phys
         if (present(scale_factor)) factor = scale_factor
+!$omp parallel do private(ix,ib,jb,i,j)
         do ix = 1, block%blksz(block_index)
           ib = block%index(block_index)%ii(ix)
           jb = block%index(block_index)%jj(ix)
@@ -182,6 +185,7 @@ contains
       factor = 1._kind_phys
       if (present(scale_factor)) factor = scale_factor
       do k = 1, size(source_ptr, dim=2)
+!$omp parallel do private(ix,ib,jb,i,j)
         do ix = 1, block%blksz(block_index)
           ib = block%index(block_index)%ii(ix)
           jb = block%index(block_index)%jj(ix)
@@ -219,6 +223,7 @@ contains
     if (associated(destin_ptr) .and. associated(source_ptr)) then
       factor = 1._kind_phys
       if (present(scale_factor)) factor = scale_factor
+!$omp parallel do private(ix,ib,jb,i,j)
       do ix = 1, block%blksz(block_index)
         ib = block%index(block_index)%ii(ix)
         jb = block%index(block_index)%jj(ix)
@@ -253,6 +258,7 @@ contains
     if (associated(destin_ptr)) then
       factor = 1._kind_phys
       if (present(scale_factor)) factor = scale_factor
+!$omp parallel do private(ix,ib,jb,i,j)
       do ix = 1, block%blksz(block_index)
         ib = block%index(block_index)%ii(ix)
         jb = block%index(block_index)%jj(ix)
@@ -290,6 +296,7 @@ contains
       factor = 1._kind_phys
       if (present(scale_factor)) factor = scale_factor
       do k = 1, size(source_ptr, dim=3)
+!$omp parallel do private(ix,ib,jb,i,j)
         do ix = 1, block%blksz(block_index)
           ib = block%index(block_index)%ii(ix)
           jb = block%index(block_index)%jj(ix)
@@ -326,6 +333,7 @@ contains
       factor = 1._kind_phys
       if (present(scale_factor)) factor = scale_factor
       do k = 1, size(source_arr, dim=3)
+!$omp parallel do private(ix,ib,jb,i,j)
         do ix = 1, block%blksz(block_index)
           ib = block%index(block_index)%ii(ix)
           jb = block%index(block_index)%jj(ix)
@@ -367,6 +375,7 @@ contains
         factor = 1._kind_phys
         if (present(scale_factor)) factor = scale_factor
         do k = 1, size(source_ptr, dim=3)
+!$omp parallel do private(ix,ib,jb,i,j)
           do ix = 1, block%blksz(block_index)
             ib = block%index(block_index)%ii(ix)
             jb = block%index(block_index)%jj(ix)
@@ -407,6 +416,7 @@ contains
         factor = 1._kind_phys
         if (present(scale_factor)) factor = scale_factor
         do k = 1, size(source_arr, dim=3)
+!$omp parallel do private(ix,ib,jb,i,j)
           do ix = 1, block%blksz(block_index)
             ib = block%index(block_index)%ii(ix)
             jb = block%index(block_index)%jj(ix)
@@ -441,6 +451,7 @@ contains
     ! -- begin
     localrc = ESMF_RC_PTR_NOTALLOC
     if (associated(destin_ptr)) then
+!$omp parallel do private(ix,ib,jb,i,j)
       do ix = 1, block%blksz(block_index)
         ib = block%index(block_index)%ii(ix)
         jb = block%index(block_index)%jj(ix)
@@ -474,6 +485,7 @@ contains
     localrc = ESMF_RC_PTR_NOTALLOC
     if (associated(destin_ptr)) then
       do k = 1, size(destin_ptr, dim=3)
+!$omp parallel do private(ix,ib,jb,i,j)
         do ix = 1, block%blksz(block_index)
           ib = block%index(block_index)%ii(ix)
           jb = block%index(block_index)%jj(ix)
@@ -586,6 +598,7 @@ contains
     localrc = ESMF_RC_PTR_NOTALLOC
     if (associated(destin_ptr) .and. &
         associated(fract1_ptr) .and. associated(fract2_ptr)) then
+!$omp parallel do private(ix,ib,jb,i,j)
       do ix = 1, block%blksz(block_index)
         ib = block%index(block_index)%ii(ix)
         jb = block%index(block_index)%jj(ix)
