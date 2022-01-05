@@ -249,7 +249,6 @@
                              name="ngrids", value=ngrids, rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-      write(0,*)'ngrids=', ngrids
       ! must create an array of wrtGrid(1:ngrids)
 
 !-----------------------------------------------------------------------
@@ -1466,8 +1465,8 @@
 !*** loop on the files that need to write out
 !-----------------------------------------------------------------------
 
-      ! do i=1, FBCount
-      do i=2, 4 ! second domain only
+      do i=1, FBCount
+      ! do i=2, 4 ! second domain only
         call ESMF_LogWrite("before Write component get mirror file bundle", ESMF_LOGMSG_INFO, rc=rc)
         call ESMF_StateGet(imp_state_write, itemName="mirror_"//trim(fcstItemNameList(i)), &
                            fieldbundle=file_bundle, rc=rc)
@@ -1514,8 +1513,8 @@
 
       if ( wrt_int_state%output_history ) then
 
-        ! file_loop_all: do nbdl=1, wrt_int_state%FBCount
-        file_loop_all: do nbdl=2, 3 ! second domain only
+        file_loop_all: do nbdl=1, wrt_int_state%FBCount
+        ! file_loop_all: do nbdl=2, 3 ! second domain only
 !
           if(step == 1) then
             file_bundle = wrt_int_state%wrtFB(nbdl)

@@ -2483,7 +2483,6 @@ end subroutine update_atmos_chemistry
 
     rc=0
 !
-    if (mpp_pe() == mpp_root_pe()) print *,'end of assign_importdata'
   end subroutine assign_importdata
 
 !

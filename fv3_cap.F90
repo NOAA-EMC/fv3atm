@@ -41,8 +41,8 @@ module fv3gfs_cap_mod
 !
   use module_fcst_grid_comp,  only: fcstSS => SetServices,                   &
                                     fcstGrid, numLevels, numSoilLayers,      &
-
                                     numTracers, ngrids, mygrid, grid_number_on_all_pets
+
   use module_wrt_grid_comp,   only: wrtSS => SetServices
 !
   use module_cplfields,       only: nExportFields, exportFields, exportFieldsInfo, &
@@ -501,8 +501,8 @@ module fv3gfs_cap_mod
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
 ! loop over all FieldBundle in the states and precompute Regrid operation
-        ! do j=1, FBcount
-        do j=2, 4  ! second domain only
+        do j=1, FBcount
+        ! do j=2, 4  ! second domain only
 
           ! access the mirrored FieldBundle in the wrtState(i)
           call ESMF_StateGet(wrtState(i),                                   &
@@ -923,8 +923,8 @@ module fv3gfs_cap_mod
         call ESMF_VMEpochEnter(epoch=ESMF_VMEpoch_Buffer, rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-        ! do j=1, FBCount
-        do j=2, 4  ! second domain only
+        do j=1, FBCount
+        ! do j=2, 4  ! second domain only
 
           call ESMF_FieldBundleRegrid(fcstFB(j), wrtFB(j,n_group),         &
                                       routehandle=routehandle(j, n_group), &
@@ -936,7 +936,6 @@ module fv3gfs_cap_mod
         call ESMF_VMEpochExit(rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-        ! if(mype==0 .or. mype==lead_wrttask(1))  print *,'on wrt bf wrt run, na=',na
         call ESMF_LogWrite('Model Advance: before wrtcomp run ', ESMF_LOGMSG_INFO, rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
@@ -1165,6 +1164,9 @@ module fv3gfs_cap_mod
       enddo
     endif
 
+    call ESMF_VMBarrier(vm=vm, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc,  msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
     call ESMF_GridCompFinalize(fcstComp, exportState=fcststate,userRc=urc, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc,  msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
     if (ESMF_LogFoundError(rcToCheck=urc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
@@ -1181,8 +1183,8 @@ module fv3gfs_cap_mod
 
     call ESMF_StateDestroy(fcstState, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-    call ESMF_GridCompDestroy(fcstComp, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+    ! call ESMF_GridCompDestroy(fcstComp, rc=rc)
+    ! if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 !
     if(mype==0)print *,' wrt grid comp destroy time=',MPI_Wtime()-timeffs
 

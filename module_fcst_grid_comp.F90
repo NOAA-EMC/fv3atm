@@ -248,7 +248,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     call ESMF_StateAdd(exportState,(/fb/), rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-    call fv_dyn_bundle_setup(atm_int_state%Atm%axes, fb, grid, quilting=.true., rc=rc)
+    call fv_dyn_bundle_setup(Atmos%axes, fb, grid, quilting=.true., rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
   end subroutine init_dyn_fb
@@ -295,7 +295,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
     enddo
 
-    call fv_phys_bundle_setup(atm_int_state%Atm%diag, atm_int_state%Atm%axes, fbList, grid, quilting=.true., nbdlphys=itemCount, rc=rc)
+    call fv_phys_bundle_setup(Atmos%diag, Atmos%axes, fbList, grid, quilting=.true., nbdlphys=itemCount, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
   end subroutine init_phys_fb
@@ -319,6 +319,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !
     integer                                :: i, j
 !
+    type(ESMF_VM)                          :: VM
     type(ESMF_Time)                        :: CurrTime, StartTime, StopTime
     type(ESMF_TimeInterval)                :: RunDuration
     type(ESMF_Config)                      :: cf
@@ -631,8 +632,8 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
         call read_data("INPUT/grid_spec.nc", "atm_mosaic_file", gridfile)
       endif
 
-      ngrids = atm_int_state%Atm%ngrids
-      mygrid = atm_int_state%Atm%mygrid
+      ngrids = Atmos%ngrids
+      mygrid = Atmos%mygrid
       allocate(grid_number_on_all_pets(fcst_ntasks))
       call mpi_allgather(mygrid, 1, MPI_INTEGER, &
                          grid_number_on_all_pets, 1, MPI_INTEGER, &
@@ -647,7 +648,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
         top_domain_is_global(1) = 0
         if (n==1) then
            if(mygrid==1) then
-              if ( .not. atm_int_state%Atm%regional) top_domain_is_global(1) = 1
+              if ( .not. Atmos%regional) top_domain_is_global(1) = 1
            endif
            call ESMF_VMBroadcast(vm, bcstData=top_domain_is_global, count=1, rootPet=pelist(1), rc=rc); ESMF_ERR_ABORT(rc)
         endif
@@ -699,23 +700,23 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
             call ESMF_GridGetCoord(fcstGrid(n), coordDim=1, staggerLoc=ESMF_STAGGERLOC_CENTER, &
                                    totalLBound=tlb, totalUBound=tub, &
                                    farrayPtr=glonPtr, rc=rc); ESMF_ERR_ABORT(rc)
-            glonPtr(tlb(1):tub(1),tlb(2):tub(2)) = atm_int_state%Atm%lon(tlb(1):tub(1),tlb(2):tub(2)) * dtor
+            glonPtr(tlb(1):tub(1),tlb(2):tub(2)) = Atmos%lon(tlb(1):tub(1),tlb(2):tub(2)) * dtor
 
             call ESMF_GridGetCoord(fcstGrid(n), coordDim=2, staggerLoc=ESMF_STAGGERLOC_CENTER, &
                                    totalLBound=tlb, totalUBound=tub, &
                                    farrayPtr=glatPtr, rc=rc); ESMF_ERR_ABORT(rc)
-            glatPtr(tlb(1):tub(1),tlb(2):tub(2)) = atm_int_state%Atm%lat(tlb(1):tub(1),tlb(2):tub(2)) * dtor
+            glatPtr(tlb(1):tub(1),tlb(2):tub(2)) = Atmos%lat(tlb(1):tub(1),tlb(2):tub(2)) * dtor
 
             ! define "corner" coordinate values
             call ESMF_GridGetCoord(fcstGrid(n), coordDim=1, staggerLoc=ESMF_STAGGERLOC_CORNER, &
                                    totalLBound=tlb, totalUBound=tub, &
                                    farrayPtr=glonPtr, rc=rc); ESMF_ERR_ABORT(rc)
-            glonPtr(tlb(1):tub(1),tlb(2):tub(2)) = atm_int_state%Atm%lon_bnd(tlb(1):tub(1),tlb(2):tub(2)) * dtor
+            glonPtr(tlb(1):tub(1),tlb(2):tub(2)) = Atmos%lon_bnd(tlb(1):tub(1),tlb(2):tub(2)) * dtor
 
             call ESMF_GridGetCoord(fcstGrid(n), coordDim=2, staggerLoc=ESMF_STAGGERLOC_CORNER, &
                                    totalLBound=tlb, totalUBound=tub, &
                                    farrayPtr=glatPtr, rc=rc); ESMF_ERR_ABORT(rc)
-            glatPtr(tlb(1):tub(1),tlb(2):tub(2)) = atm_int_state%Atm%lat_bnd(tlb(1):tub(1),tlb(2):tub(2)) * dtor
+            glatPtr(tlb(1):tub(1),tlb(2):tub(2)) = Atmos%lat_bnd(tlb(1):tub(1),tlb(2):tub(2)) * dtor
           end if ! IsPetLocal
 
         end if
