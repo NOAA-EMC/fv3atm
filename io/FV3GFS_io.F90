@@ -1502,7 +1502,7 @@ module FV3GFS_io_mod
       do nb = 1, Atm_block%nblks
         do ix = 1, Atm_block%blksz(nb)
           if (Sfcprop(nb)%landfrac(ix) < one .and. Sfcprop(nb)%fice(ix) < one) then
-          Sfcprop(nb)%zorlw(ix) = min(Sfcprop(nb)%zorl(ix), 0.317e-2)
+          Sfcprop(nb)%zorlw(ix) = min(Sfcprop(nb)%zorl(ix), 0.317)
           endif
         enddo
       enddo
