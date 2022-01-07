@@ -50,6 +50,8 @@ module GFS_typedefs
 
       integer, parameter :: dfi_radar_max_intervals = 4 !< Number of radar-derived temperature tendency and/or convection suppression intervals. Do not change.
 
+      real(kind=kind_phys), parameter :: limit_unspecified = 1e12 !< special constant for "namelist value was not provided" in radar-derived temperature tendency limit range
+
 !> \section arg_table_GFS_typedefs
 !! \htmlinclude GFS_typedefs.html
 !!
@@ -3560,7 +3562,6 @@ module GFS_typedefs
     integer, parameter :: max_scav_factors = 25
     character(len=40)  :: fscav_aero(max_scav_factors)
 
-    real(kind=kind_phys), parameter :: limit_unspecified = 1e12
     real(kind=kind_phys) :: radar_tten_limits(2) = (/ limit_unspecified, limit_unspecified /)
     integer :: itime
     
@@ -3767,55 +3768,7 @@ module GFS_typedefs
     Model%dfi_radar_max_intervals_plus_one = dfi_radar_max_intervals + 1
     Model%do_cap_suppress = do_cap_suppress
 
-    do i=1,dfi_radar_max_intervals
-       if(fh_dfi_radar(i)>-1e10 .and. fh_dfi_radar(i+1)>-1e10) then
-          Model%num_dfi_radar = Model%num_dfi_radar+1
-          Model%ix_dfi_radar(i) = Model%num_dfi_radar
-       else
-          Model%ix_dfi_radar(i) = -1
-       endif
-    enddo
-
-    if(Model%num_dfi_radar>0) then
-       if(radar_tten_limits(1)==limit_unspecified) then
-          if(radar_tten_limits(2)==limit_unspecified) then
-             radar_tten_limits(1) = -19
-             radar_tten_limits(2) = 19
-             if(Model%me==Model%master) then
-                write(0,*) 'Warning: using internal defaults for radar_tten_limits. If the oceans boil, try different values.'
-                write(0,'(A,F12.4,A)') 'radar_tten_limits(1) = ',radar_tten_limits(1),' <-- lower limit'
-                write(0,'(A,F12.4,A)') 'radar_tten_limits(2) = ',radar_tten_limits(2),' <-- upper limit'
-             endif
-          else
-             radar_tten_limits(1) = -abs(radar_tten_limits(2))
-             radar_tten_limits(2) = abs(radar_tten_limits(2))
-          endif
-       else if(radar_tten_limits(2)==limit_unspecified) then
-           radar_tten_limits(1) = -abs(radar_tten_limits(1))
-           radar_tten_limits(2) = abs(radar_tten_limits(1))
-       else if(radar_tten_limits(1)>radar_tten_limits(2)) then
-          if(Model%me==Model%master) then
-             write(0,*) 'Error: radar_tten_limits lower limit is higher than upper!'
-             write(0,'(A,F12.4,A)') 'radar_tten_limits(1) = ',radar_tten_limits(1),' <-- lower limit'
-             write(0,'(A,F12.4,A)') 'radar_tten_limits(2) = ',radar_tten_limits(2),' <-- upper limit'
-             write(0,*) "If you do not want me to apply the prescribed tendencies, just say so! Remove fh_dfi_radar from your namelist."
-             stop
-          endif
-       else
-          !o! Rejoice !o! Radar_tten_limits had lower and upper bounds.
-       endif
-       Model%radar_tten_limits = radar_tten_limits
-
-       if(do_cap_suppress) then
-         if(me==master .and. imfdeepcnv>=0) then
-           if(imfdeepcnv/=3) then
-             write(0,*) 'Warning: untested configuration in use! Radar-derived convection suppression is only supported for the GF deep scheme. That feature will be inactive, but microphysics tendencies will still be enabled. This combination is untested. Beware!'
-           else
-             write(0,*) 'Warning: experimental configuration in use! Radar-derived convection suppression is experimental (GF deep scheme with fh_dfi_radar).'
-           endif
-         endif
-       endif
-    endif
+    call control_initialize_radar_tten(Model, radar_tten_limits)
 
     if(gwd_opt==1) then
       if(me==master) &
@@ -5379,6 +5332,68 @@ module GFS_typedefs
 
   end subroutine control_initialize
 
+  subroutine control_initialize_radar_tten(Model, radar_tten_limits)
+    implicit none
+
+    ! Helper subroutine for initializing variables for radar-derived
+    ! temperature tendency or convection suppression.
+    
+    class(GFS_control_type) :: Model
+    real(kind_phys) :: radar_tten_limits(2)
+    integer :: i
+
+    Model%num_dfi_radar    = 0
+    do i=1,dfi_radar_max_intervals
+       if(Model%fh_dfi_radar(i)>-1e10 .and. Model%fh_dfi_radar(i+1)>-1e10) then
+          Model%num_dfi_radar = Model%num_dfi_radar+1
+          Model%ix_dfi_radar(i) = Model%num_dfi_radar
+       else
+          Model%ix_dfi_radar(i) = -1
+       endif
+    enddo
+
+    if(Model%num_dfi_radar>0) then
+       if(radar_tten_limits(1)==limit_unspecified) then
+          if(radar_tten_limits(2)==limit_unspecified) then
+             radar_tten_limits(1) = -19
+             radar_tten_limits(2) = 19
+             if(Model%me==Model%master) then
+                write(0,*) 'Warning: using internal defaults for radar_tten_limits. If the oceans boil, try different values.'
+                write(0,'(A,F12.4,A)') 'radar_tten_limits(1) = ',radar_tten_limits(1),' <-- lower limit'
+                write(0,'(A,F12.4,A)') 'radar_tten_limits(2) = ',radar_tten_limits(2),' <-- upper limit'
+             endif
+          else
+             radar_tten_limits(1) = -abs(radar_tten_limits(2))
+             radar_tten_limits(2) = abs(radar_tten_limits(2))
+          endif
+       else if(radar_tten_limits(2)==limit_unspecified) then
+           radar_tten_limits(1) = -abs(radar_tten_limits(1))
+           radar_tten_limits(2) = abs(radar_tten_limits(1))
+       else if(radar_tten_limits(1)>radar_tten_limits(2)) then
+          if(Model%me==Model%master) then
+             write(0,*) 'Error: radar_tten_limits lower limit is higher than upper!'
+             write(0,'(A,F12.4,A)') 'radar_tten_limits(1) = ',radar_tten_limits(1),' <-- lower limit'
+             write(0,'(A,F12.4,A)') 'radar_tten_limits(2) = ',radar_tten_limits(2),' <-- upper limit'
+             write(0,*) "If you do not want me to apply the prescribed tendencies, just say so! Remove fh_dfi_radar from your namelist."
+             stop
+          endif
+       else
+          !o! Rejoice !o! Radar_tten_limits had lower and upper bounds.
+       endif
+       Model%radar_tten_limits = radar_tten_limits
+
+       if(Model%do_cap_suppress) then
+         if(Model%me==Model%master .and. Model%imfdeepcnv>=0) then
+           if(Model%imfdeepcnv/=3) then
+             write(0,*) 'Warning: untested configuration in use! Radar-derived convection suppression is only supported for the GF deep scheme. That feature will be inactive, but microphysics tendencies will still be enabled. This combination is untested. Beware!'
+           else
+             write(0,*) 'Warning: experimental configuration in use! Radar-derived convection suppression is experimental (GF deep scheme with fh_dfi_radar).'
+           endif
+         endif
+       endif
+    endif
+
+  end subroutine control_initialize_radar_tten
 
 !---------------------------
 ! GFS_control%init_chemistry
