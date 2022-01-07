@@ -1666,8 +1666,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: tdomzr (:)     => null()   !< dominant accumulated freezing rain type
     real (kind=kind_phys), pointer :: tdomip (:)     => null()   !< dominant accumulated sleet type
     real (kind=kind_phys), pointer :: tdoms  (:)     => null()   !< dominant accumulated snow type
-
-    real (kind=kind_phys), pointer :: zmtnblck(:)    => null()   !<mountain blocking evel
+    real (kind=kind_phys), pointer :: zmtnblck(:)    => null()   !<mountain blocking level
 
     ! dtend/dtidxt: Multitudinous 3d tendencies in a 4D array: (i,k,1:100+ntrac,nprocess)
     ! Sparse in outermost two dimensions. dtidx(1:100+ntrac,nprocess) maps to dtend 
@@ -6890,6 +6889,7 @@ module GFS_typedefs
     Diag%tdomzr     = zero
     Diag%tdomip     = zero
     Diag%tdoms      = zero
+    Diag%zmtnblck   = zero
 
     if(Model%lsm == Model%lsm_noahmp)then
       Diag%paha       = zero

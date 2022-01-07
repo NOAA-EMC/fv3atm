@@ -5108,7 +5108,7 @@
   dimensions = ()
   type = integer
 [ncnvwind]
-  standard_name = index_of_enhancement_to_wind_speed_at_surface_adjacent_layer_due_to_convectionin_in_xy_dimensioned_restart_array
+  standard_name = index_of_enhancement_to_wind_speed_at_surface_adjacent_layer_due_to_convection_in_xy_dimensioned_restart_array
   long_name = the index of surface wind enhancement due to convection in phy f2d
   units =
   dimensions = ()
@@ -5950,14 +5950,14 @@
   type = real
   kind = kind_phys
   active = (index_of_surface_air_pressure_on_previous_timestep_in_xyz_dimensioned_restart_array > 0)
-[phy_f2d(:,index_of_enhancement_to_wind_speed_at_surface_adjacent_layer_due_to_convectionin_in_xy_dimensioned_restart_array)]
+[phy_f2d(:,index_of_enhancement_to_wind_speed_at_surface_adjacent_layer_due_to_convection_in_xy_dimensioned_restart_array)]
   standard_name = enhancement_to_wind_speed_at_surface_adjacent_layer_due_to_convection
   long_name = surface wind enhancement due to convection
   units = m s-1
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (index_of_enhancement_to_wind_speed_at_surface_adjacent_layer_due_to_convectionin_in_xy_dimensioned_restart_array > 0)
+  active = (index_of_enhancement_to_wind_speed_at_surface_adjacent_layer_due_to_convection_in_xy_dimensioned_restart_array > 0)
 [phy_f3d(:,:,index_of_air_temperature_two_timesteps_back_in_xyz_dimensioned_restart_array)]
   standard_name = air_temperature_two_timesteps_back
   long_name = air temperature two timesteps back
