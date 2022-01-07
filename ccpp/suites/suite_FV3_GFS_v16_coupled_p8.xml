@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<suite name="FV3_GFS_v16_p8" version="1">
+<suite name="FV3_GFS_v16_coupled_p8" version="1">
   <!-- <init></init> -->
   <group name="fast_physics">
     <subcycle loop="1">
@@ -49,6 +49,7 @@
       <scheme>sfc_nst</scheme>
       <scheme>sfc_nst_post</scheme>
       <scheme>noahmpdrv</scheme>
+      <scheme>sfc_cice</scheme>
       <scheme>sfc_sice</scheme>
       <scheme>GFS_surface_loop_control_part2</scheme>
     </subcycle>
