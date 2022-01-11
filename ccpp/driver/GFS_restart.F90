@@ -60,7 +60,7 @@ module GFS_restart
 
     !--- local variables
     integer :: idx, ndiag_rst
-    integer :: ndiag_idx(20)
+    integer :: ndiag_idx(20), itime
     integer :: nblks, num, nb, max_rstrt, offset 
     character(len=2) :: c2 = ''
     
@@ -121,8 +121,14 @@ module GFS_restart
     if (Model%imp_physics == Model%imp_physics_thompson .and. Model%ltaerosol) then
       Restart%num2d = Restart%num2d + 2
     endif
+    if (Model%do_cap_suppress .and. Model%num_dfi_radar>0) then
+      Restart%num2d = Restart%num2d + Model%num_dfi_radar
+    endif
 
     Restart%num3d = Model%ntot3d
+    if (Model%num_dfi_radar>0) then
+      Restart%num3d = Restart%num3d + Model%num_dfi_radar
+    endif
     if(Model%lrefres) then
        Restart%num3d = Model%ntot3d+1
     endif
@@ -380,6 +386,23 @@ module GFS_restart
       enddo
     endif
 
+    ! Convection suppression
+    if (Model%do_cap_suppress .and. Model%num_dfi_radar > 0) then
+      do itime=1,Model%dfi_radar_max_intervals
+        if(Model%ix_dfi_radar(itime)>0) then
+          num = num + 1
+          if(itime==1) then
+            Restart%name2d(num) = 'cap_suppress'
+          else
+            write(Restart%name2d(num),'("cap_suppress_",I0)') itime
+          endif
+          do nb = 1,nblks
+            Restart%data(nb,num)%var2p => Tbd(nb)%cap_suppress(:,Model%ix_dfi_radar(itime))
+          enddo
+        endif
+      enddo
+    endif
+
     !--- phy_f3d variables
     do num = 1,Model%ntot3d
        !--- set the variable name
@@ -467,6 +490,24 @@ module GFS_restart
       Restart%name3d(num) = 'mynn_3d_cov'
       do nb = 1,nblks
         Restart%data(nb,num)%var3p => Tbd(nb)%cov(:,:)
+      enddo
+    endif
+
+    ! Radar-derived microphysics temperature tendencies
+    if (Model%num_dfi_radar > 0) then
+      do itime=1,Model%dfi_radar_max_intervals
+        if(Model%ix_dfi_radar(itime)>0) then
+          num = num + 1
+          if(itime==1) then
+            Restart%name3d(num) = 'radar_tten'
+          else
+            write(Restart%name3d(num),'("radar_tten_",I0)') itime
+          endif
+          do nb = 1,nblks
+            Restart%data(nb,num)%var3p => Tbd(nb)%dfi_radar_tten( &
+              :,:,Model%ix_dfi_radar(itime))
+          enddo
+        endif
       enddo
     endif
 
