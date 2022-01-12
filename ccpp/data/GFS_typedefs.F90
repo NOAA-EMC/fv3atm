@@ -2987,11 +2987,25 @@ module GFS_typedefs
       Coupling%skebu_wts = clear_val
       Coupling%skebv_wts = clear_val
     endif
-
+    
     !--- stochastic land perturbation option
     if (Model%lndp_type /= 0) then
       allocate (Coupling%sfc_wts  (IM,Model%n_var_lndp))
       Coupling%sfc_wts = clear_val
+    endif
+    
+    !--- stochastic spp perturbation option
+    if (Model%do_spp) then
+      allocate (Coupling%spp_wts_pbl  (IM,Model%levs))
+      Coupling%spp_wts_pbl = clear_val
+      allocate (Coupling%spp_wts_sfc  (IM,Model%levs))
+      Coupling%spp_wts_sfc = clear_val
+      allocate (Coupling%spp_wts_mp   (IM,Model%levs))
+      Coupling%spp_wts_mp = clear_val
+      allocate (Coupling%spp_wts_gwd   (IM,Model%levs))
+      Coupling%spp_wts_gwd = clear_val
+      allocate (Coupling%spp_wts_rad   (IM,Model%levs))
+      Coupling%spp_wts_rad = clear_val
     endif
 
     !--- needed for Thompson's aerosol option
