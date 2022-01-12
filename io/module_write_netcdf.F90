@@ -10,19 +10,23 @@ module module_write_netcdf
   use netcdf
   use module_fv3_io_def,only : ideflate, nbits, &
                                output_grid,dx,dy,lon1,lat1,lon2,lat2
+  use mpi
 
   implicit none
   private
   public write_netcdf
 
+  logical :: par
+
   contains
 
 !----------------------------------------------------------------------------------------
-  subroutine write_netcdf(fieldbundle, wrtfb, filename, mpi_comm, mype, im, jm, ichunk2d,jchunk2d,ichunk3d,jchunk3d,kchunk3d, rc)
+  subroutine write_netcdf(fieldbundle, wrtfb, filename, use_parallel_netcdf, mpi_comm, mype, im, jm, ichunk2d,jchunk2d,ichunk3d,jchunk3d,kchunk3d, rc)
 !
     type(ESMF_FieldBundle), intent(in) :: fieldbundle
     type(ESMF_FieldBundle), intent(in) :: wrtfb
     character(*), intent(in)           :: filename
+    logical, intent(in)                :: use_parallel_netcdf
     integer, intent(in)                :: mpi_comm
     integer, intent(in)                :: mype
     integer, intent(in)                :: im, jm
@@ -30,14 +34,14 @@ module module_write_netcdf
     integer, optional,intent(out)      :: rc
 !
 !** local vars
-    integer :: i,j,m,n,k
+    integer :: i,j,m,n,k,istart,iend,jstart,jend,i1,i2,j1,j2,k1,k2
     integer :: lm
 
     integer, dimension(:), allocatable     :: fldlev
-    real(4), dimension(:,:), allocatable   :: arrayr4
-    real(8), dimension(:,:), allocatable   :: arrayr8
-    real(4), dimension(:,:,:), allocatable :: arrayr4_3d,arrayr4_3d_save
-    real(8), dimension(:,:,:), allocatable :: arrayr8_3d
+    real(ESMF_KIND_R4), dimension(:,:), pointer   :: arrayr4
+    real(ESMF_KIND_R8), dimension(:,:), pointer   :: arrayr8
+    real(ESMF_KIND_R4), dimension(:,:,:), pointer :: arrayr4_3d,arrayr4_3d_save
+    real(ESMF_KIND_R8), dimension(:,:,:), pointer :: arrayr8_3d
 
     real(8) x(im),y(jm)
     integer :: fieldCount, fieldDimCount, gridDimCount
@@ -51,6 +55,7 @@ module module_write_netcdf
 
     integer :: attcount
     character(len=ESMF_MAXSTR) :: attName, fldName
+    integer :: totalLBound2d(2),totalUBound2d(2),totalLBound3d(3),totalUBound3d(3)
 
     integer :: varival
     real(4) :: varr4val, scale_fact, offset, dataMin, dataMax
@@ -60,14 +65,16 @@ module module_write_netcdf
 
     character(128) :: time_units
 
-    integer :: ncerr
+    integer :: ncerr,ierr
     integer :: ncid
     integer :: oldMode
     integer :: im_dimid, jm_dimid, pfull_dimid, phalf_dimid, time_dimid
     integer :: im_varid, jm_varid, lm_varid, time_varid, lon_varid, lat_varid
     integer, dimension(:), allocatable :: varids
     logical shuffle
-
+!
+    par = use_parallel_netcdf
+!
     call ESMF_FieldBundleGet(fieldbundle, fieldCount=fieldCount, rc=rc); ESMF_ERR_RETURN(rc)
 
     allocate(compress_err(fieldCount)); compress_err=-999.
@@ -104,17 +111,27 @@ module module_write_netcdf
 
     lm = maxval(fldlev(:))
 
+    ! for serial output preallocate 'global' arrays
+    if (.not. par) then
     allocate(arrayr4(im,jm))
     allocate(arrayr8(im,jm))
     allocate(arrayr4_3d(im,jm,lm),arrayr4_3d_save(im,jm,lm))
     allocate(arrayr8_3d(im,jm,lm))
+    end if
 
 ! create netcdf file and enter define mode
-    if (mype==0) then
+    if (par .or. mype==0) then
 
+    if (par) then
+    ncerr = nf90_create(trim(filename),&
+            cmode=IOR(IOR(NF90_CLOBBER,NF90_NETCDF4),NF90_CLASSIC_MODEL),&
+            comm=mpi_comm, info = MPI_INFO_NULL, ncid=ncid); NC_ERR_STOP(ncerr)
+    else
     ncerr = nf90_create(trim(filename),&
             cmode=IOR(IOR(NF90_CLOBBER,NF90_NETCDF4),NF90_CLASSIC_MODEL),&
             ncid=ncid); NC_ERR_STOP(ncerr)
+    end if
+! disable auto filling.
     ncerr = nf90_set_fill(ncid, NF90_NOFILL, oldMode); NC_ERR_STOP(ncerr)
 
     ! define dimensions
@@ -132,6 +149,13 @@ module module_write_netcdf
     ncerr = nf90_put_att(ncid, lat_varid, "units", "degrees_N"); NC_ERR_STOP(ncerr)
     ncerr = nf90_put_att(ncid, jm_varid, "cartesian_axis", "Y"); NC_ERR_STOP(ncerr)
 
+    if (par) then
+    ncerr = nf90_var_par_access(ncid, im_varid, NF90_INDEPENDENT)
+    ncerr = nf90_var_par_access(ncid, lon_varid, NF90_INDEPENDENT)
+    ncerr = nf90_var_par_access(ncid, jm_varid, NF90_INDEPENDENT)
+    ncerr = nf90_var_par_access(ncid, lat_varid, NF90_INDEPENDENT)
+    end if
+
     if (lm > 1) then
       call add_dim(ncid, "pfull", pfull_dimid, wrtgrid, rc)
       call add_dim(ncid, "phalf", phalf_dimid, wrtgrid, rc)
@@ -148,61 +172,64 @@ module module_write_netcdf
       if (fldlev(i) == 1) then
         if (typekind == ESMF_TYPEKIND_R4) then
           if (ideflate > 0) then
-             if (ichunk2d < 0 .or. jchunk2d < 0) then
-                ! let netcdf lib choose chunksize
-                ! shuffle filter on for 2d fields (lossless compression)
-                ncerr = nf90_def_var(ncid, trim(fldName), NF90_FLOAT, &
-                        (/im_dimid,jm_dimid,time_dimid/), varids(i), &
-                        shuffle=.true.,deflate_level=ideflate); NC_ERR_STOP(ncerr)
-             else
-                ncerr = nf90_def_var(ncid, trim(fldName), NF90_FLOAT, &
-                        (/im_dimid,jm_dimid,time_dimid/), varids(i), &
-                        shuffle=.true.,deflate_level=ideflate,&
-                        chunksizes=(/ichunk2d,jchunk2d,1/),cache_size=40*im*jm); NC_ERR_STOP(ncerr)
-             endif
+            if (ichunk2d < 0 .or. jchunk2d < 0) then
+               ! let netcdf lib choose chunksize
+               ! shuffle filter on for 2d fields (lossless compression)
+               ncerr = nf90_def_var(ncid, trim(fldName), NF90_FLOAT, &
+                       (/im_dimid,jm_dimid,time_dimid/), varids(i), &
+                       shuffle=.true.,deflate_level=ideflate); NC_ERR_STOP(ncerr)
+            else
+               ncerr = nf90_def_var(ncid, trim(fldName), NF90_FLOAT, &
+                       (/im_dimid,jm_dimid,time_dimid/), varids(i), &
+                       shuffle=.true.,deflate_level=ideflate,&
+                       chunksizes=(/ichunk2d,jchunk2d,1/)); NC_ERR_STOP(ncerr)
+            endif
+            ! compression filters require collective access.
           else
-             ncerr = nf90_def_var(ncid, trim(fldName), NF90_FLOAT, &
-             (/im_dimid,jm_dimid,time_dimid/), varids(i)); NC_ERR_STOP(ncerr)
+            ncerr = nf90_def_var(ncid, trim(fldName), NF90_FLOAT, &
+            (/im_dimid,jm_dimid,time_dimid/), varids(i)); NC_ERR_STOP(ncerr)
           endif
         else if (typekind == ESMF_TYPEKIND_R8) then
-           ncerr = nf90_def_var(ncid, trim(fldName), NF90_DOUBLE, &
+          ncerr = nf90_def_var(ncid, trim(fldName), NF90_DOUBLE, &
                                (/im_dimid,jm_dimid,time_dimid/), varids(i)); NC_ERR_STOP(ncerr)
         else
-           write(0,*)'Unsupported typekind ', typekind
-           stop
+          write(0,*)'Unsupported typekind ', typekind
+          stop
         end if
       else if (fldlev(i) > 1) then
-         if (typekind == ESMF_TYPEKIND_R4) then
-           if (ideflate > 0) then
-             ! shuffle filter off for 3d fields using lossy compression
-             if (nbits > 0) then
+        if (typekind == ESMF_TYPEKIND_R4) then
+          if (ideflate > 0) then
+            ! shuffle filter off for 3d fields using lossy compression
+            if (nbits > 0) then
                 shuffle=.false.
-             else
+            else
                 shuffle=.true.
-             endif
-             if (ichunk3d < 0 .or. jchunk3d < 0 .or. kchunk3d < 0) then
-                ! let netcdf lib choose chunksize
-                ncerr = nf90_def_var(ncid, trim(fldName), NF90_FLOAT, &
-                        (/im_dimid,jm_dimid,pfull_dimid,time_dimid/), varids(i), &
-                        shuffle=shuffle,deflate_level=ideflate); NC_ERR_STOP(ncerr)
-             else
-                ncerr = nf90_def_var(ncid, trim(fldName), NF90_FLOAT, &
+            endif
+            if (ichunk3d < 0 .or. jchunk3d < 0 .or. kchunk3d < 0) then
+               ! let netcdf lib choose chunksize
+               ncerr = nf90_def_var(ncid, trim(fldName), NF90_FLOAT, &
+                       (/im_dimid,jm_dimid,pfull_dimid,time_dimid/), varids(i), &
+                       shuffle=shuffle,deflate_level=ideflate); NC_ERR_STOP(ncerr)
+            else
+               ncerr = nf90_def_var(ncid, trim(fldName), NF90_FLOAT, &
                        (/im_dimid,jm_dimid,pfull_dimid,time_dimid/), varids(i), &
                        shuffle=shuffle,deflate_level=ideflate,&
                        chunksizes=(/ichunk3d,jchunk3d,kchunk3d,1/)); NC_ERR_STOP(ncerr)
-             endif
-           else
-             ncerr = nf90_def_var(ncid, trim(fldName), NF90_FLOAT, &
-                     (/im_dimid,jm_dimid,pfull_dimid,time_dimid/), varids(i)); NC_ERR_STOP(ncerr)
-           endif 
-         else if (typekind == ESMF_TYPEKIND_R8) then
-           ncerr = nf90_def_var(ncid, trim(fldName), NF90_DOUBLE, &
+            endif
+            ! compression filters require collective access.
+          else
+            ncerr = nf90_def_var(ncid, trim(fldName), NF90_FLOAT, &
+            (/im_dimid,jm_dimid,pfull_dimid,time_dimid/), varids(i)); NC_ERR_STOP(ncerr)
+          endif
+        else if (typekind == ESMF_TYPEKIND_R8) then
+          ncerr = nf90_def_var(ncid, trim(fldName), NF90_DOUBLE, &
                                 (/im_dimid,jm_dimid,pfull_dimid,time_dimid/), varids(i)); NC_ERR_STOP(ncerr)
         else
           write(0,*)'Unsupported typekind ', typekind
           stop
         end if
       end if
+      if (par) ncerr = nf90_var_par_access(ncid, varids(i), NF90_INDEPENDENT)
 
       ! define variable attributes
       call ESMF_AttributeGet(fcstField(i), convention="NetCDF", purpose="FV3", &
@@ -236,7 +263,7 @@ module module_write_netcdf
                                   name=trim(attName), value=varr8val, &
                                   rc=rc); ESMF_ERR_RETURN(rc)
            if (trim(attName) /= '_FillValue') then
-              ! FIXME:  _FillValue must be cast to var type for recent versions of netcdf
+              ! FIXME:  _FillValue must be cast to var type when using NF90_NETCDF4
               ncerr = nf90_put_att(ncid, varids(i), trim(attName), varr8val); NC_ERR_STOP(ncerr)
            endif
 
@@ -278,13 +305,21 @@ module module_write_netcdf
 ! end of define mode
 
     ! write grid_xt, grid_yt values
+    if (par) then
+    call ESMF_GridGetCoord(wrtGrid, coordDim=1, farrayPtr=arrayr8, rc=rc); ESMF_ERR_RETURN(rc)
+    else
     call ESMF_GridGetCoord(wrtGrid, coordDim=1, array=array, rc=rc); ESMF_ERR_RETURN(rc)
     call ESMF_ArrayGather(array, arrayr8, rootPet=0, rc=rc); ESMF_ERR_RETURN(rc)
-    if (mype==0) then
+    end if
+    istart = lbound(arrayr8,1); iend   = ubound(arrayr8,1)
+    jstart = lbound(arrayr8,2); jend   = ubound(arrayr8,2)
+    !print *,'in write netcdf mpi dim 1',istart,iend,jstart,jend,shape(arrayr8),minval(arrayr8(:,jstart)),maxval(arrayr8(:,jstart))
+    if (par .or. mype==0) then
        if (trim(output_grid) == 'gaussian_grid' .or. &
            trim(output_grid) == 'global_latlon' .or. &
            trim(output_grid) == 'regional_latlon') then
-          ncerr = nf90_put_var(ncid, im_varid, values=arrayr8(:,1)  ); NC_ERR_STOP(ncerr)
+          ncerr = nf90_put_var(ncid, im_varid, values=arrayr8(:,jstart),start=(/istart/), count=(/iend-istart+1/)); NC_ERR_STOP(ncerr)
+          ! ncerr = nf90_put_var(ncid, im_varid, values=arrayr8(:,1)  ); NC_ERR_STOP(ncerr)
        else if (trim(output_grid) == 'rotated_latlon') then
           do i=1,im
              x(i) = lon1 + (lon2-lon1)/(im-1) * (i-1)
@@ -296,16 +331,22 @@ module module_write_netcdf
           enddo
           ncerr = nf90_put_var(ncid, im_varid, values=x  ); NC_ERR_STOP(ncerr)
        endif
-       ncerr = nf90_put_var(ncid, lon_varid, values=arrayr8 ); NC_ERR_STOP(ncerr)
+       ncerr = nf90_put_var(ncid, lon_varid, values=arrayr8, start=(/istart,jstart/)); NC_ERR_STOP(ncerr)
+       ! ncerr = nf90_put_var(ncid, lon_varid, values=arrayr8 ); NC_ERR_STOP(ncerr)
     endif
 
+    if (par) then
+    call ESMF_GridGetCoord(wrtGrid, coordDim=2, farrayPtr=arrayr8, rc=rc); ESMF_ERR_RETURN(rc)
+    else
     call ESMF_GridGetCoord(wrtGrid, coordDim=2, array=array, rc=rc); ESMF_ERR_RETURN(rc)
     call ESMF_ArrayGather(array, arrayr8, rootPet=0, rc=rc); ESMF_ERR_RETURN(rc)
-    if (mype==0) then
+    end if
+    if (par .or. mype==0) then
        if (trim(output_grid) == 'gaussian_grid' .or. &
            trim(output_grid) == 'global_latlon' .or. &
            trim(output_grid) == 'regional_latlon') then
-          ncerr = nf90_put_var(ncid, jm_varid, values=arrayr8(1,:)  ); NC_ERR_STOP(ncerr)
+          ncerr = nf90_put_var(ncid, jm_varid, values=arrayr8(istart,:),start=(/jstart/),count=(/jend-jstart+1/)); NC_ERR_STOP(ncerr)
+          ! ncerr = nf90_put_var(ncid, jm_varid, values=arrayr8(1,:)  ); NC_ERR_STOP(ncerr)
        else if (trim(output_grid) == 'rotated_latlon') then
           do j=1,jm
              y(j) = lat1 + (lat2-lat1)/(jm-1) * (j-1)
@@ -317,7 +358,8 @@ module module_write_netcdf
           enddo
           ncerr = nf90_put_var(ncid, jm_varid, values=y  ); NC_ERR_STOP(ncerr)
        endif
-       ncerr = nf90_put_var(ncid, lat_varid, values=arrayr8 ); NC_ERR_STOP(ncerr)
+       ncerr = nf90_put_var(ncid, lat_varid, values=arrayr8, start=(/istart,jstart/)); NC_ERR_STOP(ncerr)
+       ! ncerr = nf90_put_var(ncid, lat_varid, values=arrayr8 ); NC_ERR_STOP(ncerr)
     endif
 
     do i=1, fieldCount
@@ -326,18 +368,68 @@ module module_write_netcdf
 
        if (fldlev(i) == 1) then
          if (typekind == ESMF_TYPEKIND_R4) then
+           if (par) then
+           call ESMF_FieldGet(fcstField(i), localDe=0, farrayPtr=arrayr4, totalLBound=totalLBound2d, totalUBound=totalUBound2d,rc=rc); ESMF_ERR_RETURN(rc)
+           ncerr = nf90_put_var(ncid, varids(i), values=arrayr4, start=(/totalLBound2d(1),totalLBound2d(2),1/)); NC_ERR_STOP(ncerr)
+           else
            call ESMF_FieldGather(fcstField(i), arrayr4, rootPet=0, rc=rc); ESMF_ERR_RETURN(rc)
            if (mype==0) then
              ncerr = nf90_put_var(ncid, varids(i), values=arrayr4, start=(/1,1,1/),count=(/im,jm,1/) ); NC_ERR_STOP(ncerr)
            end if
+           end if
          else if (typekind == ESMF_TYPEKIND_R8) then
+           if (par) then
+           call ESMF_FieldGet(fcstField(i), localDe=0, farrayPtr=arrayr8, totalLBound=totalLBound2d, totalUBound=totalUBound2d,rc=rc); ESMF_ERR_RETURN(rc)
+           ncerr = nf90_put_var(ncid, varids(i), values=arrayr8, start=(/totalLBound2d(1),totalLBound2d(2),1/)); NC_ERR_STOP(ncerr)
+           else
            call ESMF_FieldGather(fcstField(i), arrayr8, rootPet=0, rc=rc); ESMF_ERR_RETURN(rc)
            if (mype==0) then
              ncerr = nf90_put_var(ncid, varids(i), values=arrayr8, start=(/1,1,1/),count=(/im,jm,1/) ); NC_ERR_STOP(ncerr)
            end if
+           end if
          end if
       else if (fldlev(i) > 1) then
          if (typekind == ESMF_TYPEKIND_R4) then
+           if (par) then
+           call ESMF_FieldGet(fcstField(i), localDe=0, farrayPtr=arrayr4_3d, totalLBound=totalLBound3d, totalUBound=totalUBound3d,rc=rc); ESMF_ERR_RETURN(rc)
+           if (ideflate > 0 .and. nbits > 0) then
+              i1=totalLBound3d(1);i2=totalUBound3d(1)
+              j1=totalLBound3d(2);j2=totalUBound3d(2)
+              k1=totalLBound3d(3);k2=totalUBound3d(3)
+              dataMax = maxval(arrayr4_3d(i1:i2,j1:j2,k1:k2))
+              dataMin = minval(arrayr4_3d(i1:i2,j1:j2,k1:k2))
+              call mpi_allreduce(mpi_in_place,dataMax,1,mpi_real4,mpi_max,mpi_comm,ierr)
+              call mpi_allreduce(mpi_in_place,dataMin,1,mpi_real4,mpi_min,mpi_comm,ierr)
+              ! Lossy compression if nbits>0.
+              ! The floating point data is quantized to improve compression
+              ! See doi:10.5194/gmd-10-413-2017.  The method employed
+              ! here is identical to the 'scaled linear packing' method in
+              ! that paper, except that the data are scaling into an arbitrary
+              ! range (2**nbits-1 not just 2**16-1) and are stored as
+              ! re-scaled floats instead of short integers.
+              ! The zlib algorithm does almost as
+              ! well packing the re-scaled floats as it does the scaled
+              ! integers, and this avoids the need for the client to apply the
+              ! rescaling (plus it allows the ability to adjust the packing
+              ! range)
+              scale_fact = (dataMax - dataMin) / (2**nbits-1); offset = dataMin
+              if (scale_fact > 0.) then
+                allocate(arrayr4_3d_save(i1:i2,j1:j2,k1:k2))
+                arrayr4_3d_save(i1:i2,j1:j2,k1:k2)=arrayr4_3d(i1:i2,j1:j2,k1:k2)
+                arrayr4_3d = scale_fact*(nint((arrayr4_3d_save - offset) / scale_fact)) + offset
+                ! compute max abs compression error.
+                compress_err(i) = &
+                maxval(abs(arrayr4_3d_save(i1:i2,j1:j2,k1:k2)-arrayr4_3d(i1:i2,j1:j2,k1:k2)))
+                deallocate(arrayr4_3d_save)
+                call mpi_allreduce(mpi_in_place,compress_err(i),1,mpi_real4,mpi_max,mpi_comm,ierr)
+                !print *,'field name=',trim(fldName),dataMin,dataMax,compress_err(i)
+              else
+                ! field is constant
+                compress_err(i) = 0.
+              endif
+           endif
+           ncerr = nf90_put_var(ncid, varids(i), values=arrayr4_3d, start=(/totalLBound3d(1),totalLBound3d(2),totalLBound3d(3),1/)); NC_ERR_STOP(ncerr)
+           else
            call ESMF_FieldGather(fcstField(i), arrayr4_3d, rootPet=0, rc=rc); ESMF_ERR_RETURN(rc)
            if (mype==0) then
              if (ideflate > 0 .and. nbits > 0) then
@@ -355,25 +447,34 @@ module module_write_netcdf
                 ! range).
                 arrayr4_3d_save = arrayr4_3d
                 dataMax = maxval(arrayr4_3d); dataMin = minval(arrayr4_3d)
-                arrayr4_3d = quantized(arrayr4_3d_save, nbits, dataMin, dataMax)
+                scale_fact = (dataMax - dataMin) / (2**nbits-1); offset = dataMin
+                arrayr4_3d = scale_fact*(nint((arrayr4_3d_save - offset) / scale_fact)) + offset
+                ! arrayr4_3d = quantized(arrayr4_3d_save, nbits, dataMin, dataMax)
                 ! compute max abs compression error, save as a variable
                 ! attribute.
                 compress_err(i) = maxval(abs(arrayr4_3d_save-arrayr4_3d))
              endif
              ncerr = nf90_put_var(ncid, varids(i), values=arrayr4_3d, start=(/1,1,1/),count=(/im,jm,lm,1/) ); NC_ERR_STOP(ncerr)
            end if
+           end if
          else if (typekind == ESMF_TYPEKIND_R8) then
+           if (par) then
+           call ESMF_FieldGet(fcstField(i), localDe=0, farrayPtr=arrayr8_3d, totalLBound=totalLBound3d, totalUBound=totalUBound3d,rc=rc); ESMF_ERR_RETURN(rc)
+           !print *,'field name=',trim(fldName),'bound=',totalLBound3d,'ubound=',totalUBound3d
+           ncerr = nf90_put_var(ncid, varids(i), values=arrayr8_3d, start=(/totalLBound3d(1),totalLBound3d(2),totalLBound3d(3),1/)); NC_ERR_STOP(ncerr)
+           else
            call ESMF_FieldGather(fcstField(i), arrayr8_3d, rootPet=0, rc=rc); ESMF_ERR_RETURN(rc)
            if (mype==0) then
              ncerr = nf90_put_var(ncid, varids(i), values=arrayr8_3d, start=(/1,1,1/),count=(/im,jm,lm,1/) ); NC_ERR_STOP(ncerr)
            end if
+           end if
          end if
 
-      end if
+      end if  !end fldlev(i)
 
-    end do
+    end do  ! end fieldCount
 
-    if (ideflate > 0 .and. nbits > 0 .and. mype == 0) then
+    if (ideflate > 0 .and. nbits > 0 .and. (par .or. mype == 0)) then
        ncerr = nf90_redef(ncid=ncid); NC_ERR_STOP(ncerr)
        do i=1, fieldCount
           if (compress_err(i) > 0) then
@@ -384,16 +485,18 @@ module module_write_netcdf
        ncerr = nf90_enddef(ncid=ncid); NC_ERR_STOP(ncerr)
     endif
 
+    if (.not. par) then
     deallocate(arrayr4)
     deallocate(arrayr8)
     deallocate(arrayr4_3d,arrayr4_3d_save)
     deallocate(arrayr8_3d)
+    end if
 
     deallocate(fcstField)
     deallocate(varids)
     deallocate(compress_err)
 
-    if (mype==0) then
+    if (par .or. mype==0) then
     ncerr = nf90_close(ncid=ncid); NC_ERR_STOP(ncerr)
     end if
 
@@ -507,8 +610,8 @@ module module_write_netcdf
             call ESMF_AttributeGet(grid, convention="NetCDF", purpose="FV3", &
                                    name=trim(attName), value=varr8val, rc=rc); ESMF_ERR_RETURN(rc)
             if (trim(attName) /= '_FillValue') then
-              ! FIXME:  _FillValue must be cast to var type for recent versions
-              ! of netcdf
+              ! FIXME:  _FillValue must be cast to var type when using
+              ! NF90_NETCDF4. Until this is fixed, using netCDF default _FillValue.
               ncerr = nf90_put_att(ncid, varid, trim(attName(ind+1:len(attName))), varr8val); NC_ERR_STOP(ncerr)
             endif
 
@@ -548,7 +651,10 @@ module module_write_netcdf
                            typekind=typekind, itemCount=n, rc=rc); ESMF_ERR_RETURN(rc)
 
     if ( trim(dim_name) == "time" ) then
-    ncerr = nf90_def_dim(ncid, trim(dim_name), NF90_UNLIMITED, dimid); NC_ERR_STOP(ncerr)
+    ! using an unlimited dim requires collective mode (NF90_COLLECTIVE)
+    ! for parallel writes, which seems to slow things down on hera.
+    !ncerr = nf90_def_dim(ncid, trim(dim_name), NF90_UNLIMITED, dimid); NC_ERR_STOP(ncerr)
+    ncerr = nf90_def_dim(ncid, trim(dim_name), 1, dimid); NC_ERR_STOP(ncerr)
     else
     ncerr = nf90_def_dim(ncid, trim(dim_name), n, dimid); NC_ERR_STOP(ncerr)
     end if
@@ -575,33 +681,23 @@ module module_write_netcdf
         write(0,*)'Error in module_write_netcdf.F90(add_dim) unknown typekind for ',trim(dim_name)
         call ESMF_Finalize(endflag=ESMF_END_ABORT)
     end if
+    if (par) ncerr = nf90_var_par_access(ncid, dim_varid, NF90_INDEPENDENT)
 
     call get_grid_attr(grid, dim_name, ncid, dim_varid, rc)
 
   end subroutine add_dim
 !
 !----------------------------------------------------------------------------------------
-  subroutine nccheck(status)
-    use netcdf
-    implicit none
-    integer, intent (in) :: status
-
-    if (status /= nf90_noerr) then
-      write(0,*) status, trim(nf90_strerror(status))
-      stop "stopped"
-    end if
-  end subroutine nccheck
- 
-  elemental real function quantized(dataIn, nbits, dataMin, dataMax)
-    integer, intent(in) :: nbits
-    real(4), intent(in) :: dataIn, dataMin, dataMax
-    real(4) offset, scale_fact
-    ! convert data to 32 bit integers in range 0 to 2**nbits-1, then cast
-    ! cast back to 32 bit floats (data is then quantized in steps
-    ! proportional to 2**nbits so last 32-nbits in floating
-    ! point representation should be zero for efficient zlib compression).
-    scale_fact = (dataMax - dataMin) / (2**nbits-1); offset = dataMin
-    quantized = scale_fact*(nint((dataIn - offset) / scale_fact)) + offset
-  end function quantized
+  ! elemental real function quantized(dataIn, nbits, dataMin, dataMax)
+  !   integer, intent(in) :: nbits
+  !   real(4), intent(in) :: dataIn, dataMin, dataMax
+  !   real(4) offset, scale_fact
+  !   ! convert data to 32 bit integers in range 0 to 2**nbits-1, then cast
+  !   ! cast back to 32 bit floats (data is then quantized in steps
+  !   ! proportional to 2**nbits so last 32-nbits in floating
+  !   ! point representation should be zero for efficient zlib compression).
+  !   scale_fact = (dataMax - dataMin) / (2**nbits-1); offset = dataMin
+  !   quantized = scale_fact*(nint((dataIn - offset) / scale_fact)) + offset
+  ! end function quantized
 
 end module module_write_netcdf

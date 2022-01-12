@@ -43,7 +43,7 @@
       use module_write_netcdf, only : write_netcdf
       use physcons,            only : pi => con_pi
       use inline_post,         only : inline_post_run, inline_post_getattr
-      use module_write_netcdf_parallel, only : write_netcdf_parallel
+      ! use module_write_netcdf_parallel, only : write_netcdf_parallel
 !
 !-----------------------------------------------------------------------
 !
@@ -1603,7 +1603,7 @@
 
               wbeg = MPI_Wtime()
               call write_netcdf(file_bundle,wrt_int_state%wrtFB(nbdl),trim(filename), &
-                               wrt_mpi_comm,wrt_int_state%mype,imo,jmo,&
+                               .false., wrt_mpi_comm,wrt_int_state%mype,imo,jmo,&
                                ichunk2d,jchunk2d,ichunk3d,jchunk3d,kchunk3d,rc)
               wend = MPI_Wtime()
               if (lprnt) then
@@ -1620,9 +1620,12 @@
               line=__LINE__, file=__FILE__)) return
 #endif
               wbeg = MPI_Wtime()
-              call write_netcdf_parallel(file_bundle,wrt_int_state%wrtFB(nbdl),   &
-                                         trim(filename), wrt_mpi_comm,wrt_int_state%mype,imo,jmo,&
-                                         ichunk2d,jchunk2d,ichunk3d,jchunk3d,kchunk3d,rc)
+              call write_netcdf(file_bundle,wrt_int_state%wrtFB(nbdl),trim(filename), &
+                               .true., wrt_mpi_comm,wrt_int_state%mype,imo,jmo,&
+                               ichunk2d,jchunk2d,ichunk3d,jchunk3d,kchunk3d,rc)
+              ! call write_netcdf_parallel(file_bundle,wrt_int_state%wrtFB(nbdl),   &
+              !                            trim(filename), wrt_mpi_comm,wrt_int_state%mype,imo,jmo,&
+              !                            ichunk2d,jchunk2d,ichunk3d,jchunk3d,kchunk3d,rc)
               wend = MPI_Wtime()
               if (lprnt) then
                 write(*,'(A,F10.5,A,I4.2,A,I2.2)')' parallel netcdf      Write Time is ',wend-wbeg  &
@@ -1659,7 +1662,7 @@
 
               wbeg = MPI_Wtime()
               call write_netcdf(file_bundle,wrt_int_state%wrtFB(nbdl),trim(filename), &
-                               wrt_mpi_comm,wrt_int_state%mype,imo,jmo,&
+                               .false., wrt_mpi_comm,wrt_int_state%mype,imo,jmo,&
                                ichunk2d,jchunk2d,ichunk3d,jchunk3d,kchunk3d,rc)
               wend = MPI_Wtime()
               if (lprnt) then
@@ -1676,9 +1679,12 @@
               line=__LINE__, file=__FILE__)) return
 #endif
               wbeg = MPI_Wtime()
-              call write_netcdf_parallel(file_bundle,wrt_int_state%wrtFB(nbdl), &
-                                         trim(filename), wrt_mpi_comm,wrt_int_state%mype,imo,jmo,&
-                                         ichunk2d,jchunk2d,ichunk3d,jchunk3d,kchunk3d,rc)
+              call write_netcdf(file_bundle,wrt_int_state%wrtFB(nbdl),trim(filename), &
+                               .true., wrt_mpi_comm,wrt_int_state%mype,imo,jmo,&
+                               ichunk2d,jchunk2d,ichunk3d,jchunk3d,kchunk3d,rc)
+              ! call write_netcdf_parallel(file_bundle,wrt_int_state%wrtFB(nbdl), &
+              !                            trim(filename), wrt_mpi_comm,wrt_int_state%mype,imo,jmo,&
+              !                            ichunk2d,jchunk2d,ichunk3d,jchunk3d,kchunk3d,rc)
               wend = MPI_Wtime()
               if (lprnt) then
                 write(*,'(A,F10.5,A,I4.2,A,I2.2)')' parallel netcdf      Write Time is ',wend-wbeg  &
@@ -1715,7 +1721,7 @@
 
               wbeg = MPI_Wtime()
               call write_netcdf(file_bundle,wrt_int_state%wrtFB(nbdl),trim(filename), &
-                                wrt_mpi_comm,wrt_int_state%mype,imo,jmo,&
+                                .false., wrt_mpi_comm,wrt_int_state%mype,imo,jmo,&
                                 ichunk2d,jchunk2d,ichunk3d,jchunk3d,kchunk3d,rc)
               wend = MPI_Wtime()
               if (mype == lead_write_task) then
@@ -1732,9 +1738,12 @@
               line=__LINE__, file=__FILE__)) return
 #endif
               wbeg = MPI_Wtime()
-              call write_netcdf_parallel(file_bundle,wrt_int_state%wrtFB(nbdl), &
-                                         trim(filename), wrt_mpi_comm,wrt_int_state%mype,imo,jmo,&
-                                         ichunk2d,jchunk2d,ichunk3d,jchunk3d,kchunk3d,rc)
+              call write_netcdf(file_bundle,wrt_int_state%wrtFB(nbdl),trim(filename), &
+                                .true., wrt_mpi_comm,wrt_int_state%mype,imo,jmo,&
+                                ichunk2d,jchunk2d,ichunk3d,jchunk3d,kchunk3d,rc)
+              ! call write_netcdf_parallel(file_bundle,wrt_int_state%wrtFB(nbdl), &
+              !                            trim(filename), wrt_mpi_comm,wrt_int_state%mype,imo,jmo,&
+              !                            ichunk2d,jchunk2d,ichunk3d,jchunk3d,kchunk3d,rc)
               wend = MPI_Wtime()
               if (lprnt) then
                 write(*,'(A,F10.5,A,I4.2,A,I2.2)')' parallel netcdf      Write Time is ',wend-wbeg  &
