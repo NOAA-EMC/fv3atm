@@ -2245,40 +2245,40 @@
   kind = kind_phys
   active = (flag_for_stochastic_skeb_option)
 [spp_wts_pbl]
-  standard_name = weights_for_stochastic_spp_pbl_perturbation
-  long_name = weights for stochastic spp pbl perturbation
+  standard_name = weights_for_stochastic_spp_pbl_perturbations
+  long_name = weights for stochastic spp pbl perturbations
   units = none
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_stochastic_spp_option)
 [spp_wts_sfc]
-  standard_name = weights_for_stochastic_spp_sfc_perturbation
-  long_name = weights for stochastic spp sfc perturbation
+  standard_name = weights_for_stochastic_spp_sfc_perturbations
+  long_name = weights for stochastic spp sfc perturbations
   units = none
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_stochastic_spp_option)
 [spp_wts_mp]
-  standard_name = weights_for_stochastic_spp_mp_perturbation
-  long_name = weights for stochastic spp mp perturbation
+  standard_name = weights_for_stochastic_spp_mp_perturbations
+  long_name = weights for stochastic spp mp perturbations
   units = none
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_stochastic_spp_option)
 [spp_wts_gwd]
-  standard_name = weights_for_stochastic_spp_gwd_perturbation
-  long_name = weights for stochastic spp gwd perturbation
+  standard_name = weights_for_stochastic_spp_gwd_perturbations
+  long_name = weights for stochastic spp gwd perturbations
   units = none
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
   kind = kind_phys
   active = (flag_for_stochastic_spp_option)
 [spp_wts_rad]
-  standard_name = weights_for_stochastic_spp_rad_perturbation
-  long_name = weights for stochastic spp rad perturbation
+  standard_name = weights_for_stochastic_spp_rad_perturbations
+  long_name = weights for stochastic spp rad perturbations
   units = none
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
@@ -4660,6 +4660,36 @@
   dimensions =  (number_of_spp_schemes_perturbed)
   type = character
   kind = len=3
+[spp_pbl]
+  standard_name = control_for_planetary_boundary_layer_spp_perturbations
+  long_name = control for planetary boundary layer spp perturbations
+  units = count
+  dimensions = ()
+  type = integer
+[spp_sfc]
+  standard_name = control_for_surface_layer_spp_perturbations
+  long_name = control for surface layer spp perturbations
+  units = count
+  dimensions = ()
+  type = integer
+[spp_mp]
+  standard_name = control_for_microphysics_spp_perturbations
+  long_name = control for microphysics spp perturbations
+  units = count
+  dimensions = ()
+  type = integer
+[spp_rad]
+  standard_name = control_for_radiation_spp_perturbations
+  long_name = control for radiation spp perturbations
+  units = count
+  dimensions = ()
+  type = integer
+[spp_gwd]
+  standard_name = control_for_gravity_wave_drag_spp_perturbations
+  long_name = control for gravity wave drag spp perturbations
+  units = count
+  dimensions = ()
+  type = integer
 [ntrac]
   standard_name = number_of_tracers
   long_name = number of tracers

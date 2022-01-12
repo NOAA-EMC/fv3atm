@@ -1166,7 +1166,12 @@ module GFS_typedefs
                                               ! multiple patterns. It wasn't fully coded (and wouldn't have worked
                                               ! with nlndp>1, so I just dropped it). If we want to code it properly,
                                               ! we'd need to make this dim(6,5).
-    logical              :: do_spp
+    logical              :: do_spp            ! Overall flag to turn on SPP or not
+    integer              :: spp_pbl
+    integer              :: spp_sfc
+    integer              :: spp_mp
+    integer              :: spp_rad
+    integer              :: spp_gwd
     integer              :: n_var_spp
     character(len=3)     :: spp_var_list(6)  ! dimension here must match  n_var_max_spp in  stochy_nml_def
     real(kind=kind_phys) :: spp_prt_list(6)  ! dimension here must match  n_var_max_spp in  stochy_nml_def 
@@ -2989,20 +2994,6 @@ module GFS_typedefs
       Coupling%sfc_wts = clear_val
     endif
 
-    !--- stochastic spp perturbation option
-    if (Model%do_spp) then
-      allocate (Coupling%spp_wts_pbl  (IM,Model%levs))
-      Coupling%spp_wts_pbl = clear_val
-      allocate (Coupling%spp_wts_sfc  (IM,Model%levs))
-      Coupling%spp_wts_sfc = clear_val
-      allocate (Coupling%spp_wts_mp   (IM,Model%levs))
-      Coupling%spp_wts_mp = clear_val
-      allocate (Coupling%spp_wts_gwd   (IM,Model%levs))
-      Coupling%spp_wts_gwd = clear_val
-      allocate (Coupling%spp_wts_rad   (IM,Model%levs))
-      Coupling%spp_wts_rad = clear_val
-    endif
-
     !--- needed for Thompson's aerosol option
     if(Model%imp_physics == Model%imp_physics_thompson .and. Model%ltaerosol) then
       allocate (Coupling%nwfa2d (IM))
@@ -3564,6 +3555,11 @@ module GFS_typedefs
     integer :: n_var_lndp     = 0
     logical :: lndp_each_step = .false.
     integer :: n_var_spp    =  0
+    integer :: spp_pbl      =  0
+    integer :: spp_sfc      =  0
+    integer :: spp_mp       =  0
+    integer :: spp_rad      =  0
+    integer :: spp_gwd      =  0
     logical :: do_spp       = .false.
 
 !--- aerosol scavenging factors
