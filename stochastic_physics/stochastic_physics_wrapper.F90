@@ -128,6 +128,40 @@ module stochastic_physics_wrapper_mod
       end if
       if ( GFS_Control%do_spp ) then
          allocate(spp_wts(1:nblks,maxblk,1:levs,1:GFS_Control%n_var_spp))
+         do n=1,GFS_Control%n_var_spp
+           select case (trim(GFS_Control%spp_var_list(n)))
+           case('pbl')
+             GFS_Control%spp_pbl = 1
+             do nb=1,Atm_block%nblks
+               allocate(GFS_Data(nb)%Coupling%spp_wts_pbl(maxblk,1:levs))
+               GFS_Data(nb)%Coupling%spp_wts_pbl = 0.0_kind_phys
+             end do
+           case('sfc')
+             GFS_Control%spp_sfc = 1
+             do nb=1,Atm_block%nblks
+               allocate(GFS_Data(nb)%Coupling%spp_wts_sfc(maxblk,1:levs))
+               GFS_Data(nb)%Coupling%spp_wts_sfc = 0.0_kind_phys
+             end do
+           case('mp')
+             GFS_Control%spp_mp = 7
+             do nb=1,Atm_block%nblks
+               allocate(GFS_Data(nb)%Coupling%spp_wts_mp(maxblk,1:levs))
+               GFS_Data(nb)%Coupling%spp_wts_mp = 0.0_kind_phys
+             end do
+           case('rad')
+             GFS_Control%spp_rad = 1
+             do nb=1,Atm_block%nblks
+               allocate(GFS_Data(nb)%Coupling%spp_wts_rad(maxblk,1:levs))
+               GFS_Data(nb)%Coupling%spp_wts_rad = 0.0_kind_phys
+             end do
+           case('gwd')
+             GFS_Control%spp_gwd = 1
+             do nb=1,Atm_block%nblks
+               allocate(GFS_Data(nb)%Coupling%spp_wts_gwd(maxblk,1:levs))
+               GFS_Data(nb)%Coupling%spp_wts_gwd = 0.0_kind_phys
+             end do
+           end select
+         end do
       end if
       if ( GFS_Control%lndp_type == 2 ) then ! this scheme updates through forecast
          allocate(sfc_wts(1:nblks,maxblk,1:GFS_Control%n_var_lndp))
