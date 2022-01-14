@@ -4483,6 +4483,14 @@ module GFS_typedefs
       Model%lndp_var_list(:) = ''
       Model%lndp_prt_list(:) = clear_val
     end if
+    
+    if (Model%do_spp) then
+      allocate(Model%spp_var_list(Model%n_var_spp))
+      allocate(Model%spp_prt_list(Model%n_var_spp))
+      Model%spp_var_list(:) = ''
+      Model%spp_prt_list(:) = clear_val
+    end if
+
     !--- cellular automata options
     ! force namelist constsitency
     allocate(Model%vfact_ca(levs))
