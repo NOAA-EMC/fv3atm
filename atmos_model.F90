@@ -1572,7 +1572,7 @@ end subroutine update_atmos_chemistry
     type(ESMF_Grid)  :: grid
     type(ESMF_Field) :: dbgField
     character(19)    :: currtimestring
-    real (kind=GFS_kind_phys), parameter :: z0ice=1.1    !  (in cm)
+    real (kind=GFS_kind_phys), parameter :: z0ice=1.0    !  (in cm)
 
 !
 !     real(kind=GFS_kind_phys), parameter :: himax = 8.0      !< maximum ice thickness allowed
@@ -2423,7 +2423,7 @@ end subroutine update_atmos_chemistry
             if (GFS_data(nb)%Sfcprop%fice(ix) >= GFS_control%min_seaice) then
 
               GFS_data(nb)%Coupling%hsnoin_cpl(ix) = min(hsmax, GFS_data(nb)%Coupling%hsnoin_cpl(ix) &
-                             / (GFS_data(nb)%Sfcprop%fice(ix)*GFS_data(nb)%Sfcprop%oceanfrac(ix)))
+                                                              / GFS_data(nb)%Sfcprop%fice(ix))
               GFS_data(nb)%Sfcprop%zorli(ix)       = z0ice
               tem = GFS_data(nb)%Sfcprop%tisfc(ix) * GFS_data(nb)%Sfcprop%tisfc(ix)
               tem = con_sbc * tem * tem
