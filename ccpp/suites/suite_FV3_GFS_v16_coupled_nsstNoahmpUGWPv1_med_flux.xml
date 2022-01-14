@@ -45,9 +45,7 @@
     <subcycle loop="2">
       <scheme>sfc_diff</scheme>
       <scheme>GFS_surface_loop_control_part1</scheme>
-      <scheme>sfc_nst_pre</scheme>
-      <scheme>sfc_nst</scheme>
-      <scheme>sfc_nst_post</scheme>
+      <scheme>sfc_ocean</scheme>
       <scheme>noahmpdrv</scheme>
       <scheme>sfc_cice</scheme>
       <scheme>sfc_sice</scheme>
