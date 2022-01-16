@@ -4693,7 +4693,7 @@
 [spp_prt_list]
   standard_name =magnitude_of_spp_perturbations
   long_name = magnitude of spp perturbations
-  units = 1
+  units = variable
   dimensions = (number_of_spp_schemes_perturbed)
   type = real
   kind = kind_phys
