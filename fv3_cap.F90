@@ -186,7 +186,7 @@ module fv3gfs_cap_mod
 
     integer                                :: i, j, k, urc, ist
     integer                                :: noutput_fh, nfh, nfh2
-    integer                                :: petcount, fcstPet
+    integer                                :: petcount
     integer                                :: num_output_file
     integer                                :: nfhmax_hf
     real                                   :: nfhmax
@@ -746,10 +746,10 @@ module fv3gfs_cap_mod
 !
     ! --- advertise Fields in importState and exportState -------------------
 
-    call ESMF_GridCompGet(fcstComp, localPet=fcstPet, rc=rc)
+    isPetLocal = ESMF_GridCompIsPetLocal(fcstComp, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__,  file=__FILE__)) return
 
-    if (fcstPet >= 0) then ! only on active FCST PETs
+    if (isPetLocal) then ! only on active FCST PETs
 
       ! importable fields:
       do i = 1, size(importFieldsInfo)
@@ -793,10 +793,10 @@ module fv3gfs_cap_mod
 
     ! --- conditionally realize or remove Fields in importState and exportState -------------------
 
-    call ESMF_GridCompGet(fcstComp, localPet=fcstPet, rc=rc)
+    isPetLocal = ESMF_GridCompIsPetLocal(fcstComp, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__,  file=__FILE__)) return
 
-    if (fcstPet >= 0) then
+    if (isPetLocal) then
 
       ! -- realize connected fields in exportState
       call realizeConnectedCplFields(exportState, fcstGrid,                          &
