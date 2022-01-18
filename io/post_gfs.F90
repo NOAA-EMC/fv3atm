@@ -368,7 +368,7 @@ module post_gfs
                              avgetrans, avgesnow, avgprec_cont, avgcprate_cont,&
                              avisbeamswin, avisdiffswin, airbeamswin, airdiffswin, &
                              alwoutc, alwtoac, aswoutc, aswtoac, alwinc, aswinc,& 
-                             avgpotevp, snoavg, ti, si, cuppt
+                             avgpotevp, snoavg, ti, si, cuppt, fdnsst
       use soil,        only: sldpth, sh2o, smc, stc
       use masks,       only: lmv, lmh, htm, vtm, gdlat, gdlon, dx, dy, hbm2, sm, sice
       use ctlblk_mod,  only: im, jm, lm, lp1, jsta, jend, jsta_2l, jend_2u, jsta_m,jend_m, &
@@ -505,13 +505,14 @@ module post_gfs
 ! GFS does not have surface specific humidity
 !                   inst sensible heat flux
 !                   inst latent heat flux
-!$omp parallel do default(none),private(i,j),shared(jsta,jend,im,spval,qs,twbs,qwbs,ths)
+!$omp parallel do default(none),private(i,j),shared(jsta,jend,im,spval,qs,twbs,qwbs,ths,fdnsst)
       do j=jsta,jend
         do i=1,im
           qs(i,j) = SPVAL
           twbs(i,j) = SPVAL
           qwbs(i,j) = SPVAL
           ths(i,j) = SPVAL
+          fdnsst(i,j) = SPVAL
         enddo
       enddo
 
@@ -912,6 +913,18 @@ module post_gfs
                 do i=ista, iend
                   if (arrayr42d(i,j) /= spval) then
                     ths(i,j) = arrayr42d(i,j)
+                  endif
+                enddo
+              enddo
+            endif
+
+            ! foundation temperature
+            if(trim(fieldname)=='tref') then
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,arrayr42d,fdnsst)
+              do j=jsta,jend
+                do i=ista, iend
+                  if (arrayr42d(i,j) /= spval) then
+                    fdnsst(i,j) = arrayr42d(i,j)
                   endif
                 enddo
               enddo
