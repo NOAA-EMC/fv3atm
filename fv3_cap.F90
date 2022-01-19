@@ -746,28 +746,22 @@ module fv3gfs_cap_mod
 !
     ! --- advertise Fields in importState and exportState -------------------
 
-    isPetLocal = ESMF_GridCompIsPetLocal(fcstComp, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__,  file=__FILE__)) return
+    ! importable fields:
+    do i = 1, size(importFieldsInfo)
+      call NUOPC_Advertise(importState, &
+                           StandardName=trim(importFieldsInfo(i)%name), &
+                           SharePolicyField='share', vm=fcstVM, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+    end do
 
-    if (isPetLocal) then ! only on active FCST PETs
+    ! exportable fields:
+    do i = 1, size(exportFieldsInfo)
+      call NUOPC_Advertise(exportState, &
+                           StandardName=trim(exportFieldsInfo(i)%name), &
+                           SharePolicyField='share', vm=fcstVM, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+    end do
 
-      ! importable fields:
-      do i = 1, size(importFieldsInfo)
-        call NUOPC_Advertise(importState, &
-                             StandardName=trim(importFieldsInfo(i)%name), &
-                             SharePolicyField='share', vm=fcstVM, rc=rc)
-        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-      end do
-
-      ! exportable fields:
-      do i = 1, size(exportFieldsInfo)
-        call NUOPC_Advertise(exportState, &
-                             StandardName=trim(exportFieldsInfo(i)%name), &
-                             SharePolicyField='share', vm=fcstVM, rc=rc)
-        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-      end do
-
-    endif
     if(mype==0) print *,'in fv3_cap, aft import, export fields in atmos'
     if(mype==0) print *,'in fv3_cap, init time=',MPI_Wtime()-timeis
 !-----------------------------------------------------------------------
