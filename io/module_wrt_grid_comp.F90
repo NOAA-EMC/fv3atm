@@ -298,7 +298,7 @@
       if(trim(output_grid) == 'gaussian_grid' .or. trim(output_grid) == 'global_latlon') then
         call ESMF_ConfigGetAttribute(config=CF, value=itasks,default=1,label ='itasks:',rc=rc)
         jtasks = ntasks
-        if(itasks /= 0 ) jtasks = ntasks/itasks
+        if(itasks > 0 ) jtasks = ntasks/itasks
         if( itasks*jtasks /= ntasks ) then
           itasks = 1
           jtasks = ntasks
