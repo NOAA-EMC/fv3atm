@@ -295,15 +295,15 @@
         print *,'output_grid=',trim(output_grid)
       end if
 
-      if(trim(output_grid) == 'gaussian_grid' .or. trim(output_grid) == 'global_latlon') then
-        call ESMF_ConfigGetAttribute(config=CF, value=itasks,default=1,label ='itasks:',rc=rc)
+      call ESMF_ConfigGetAttribute(config=CF, value=itasks,default=1,label ='itasks:',rc=rc)
+      jtasks = ntasks
+      if(itasks > 0 ) jtasks = ntasks/itasks
+      if( itasks*jtasks /= ntasks ) then
+        itasks = 1
         jtasks = ntasks
-        if(itasks > 0 ) jtasks = ntasks/itasks
-        if( itasks*jtasks /= ntasks ) then
-          itasks = 1
-          jtasks = ntasks
-        endif
+      endif
 
+      if(trim(output_grid) == 'gaussian_grid' .or. trim(output_grid) == 'global_latlon') then
         call ESMF_ConfigGetAttribute(config=CF, value=imo, label ='imo:',rc=rc)
         call ESMF_ConfigGetAttribute(config=CF, value=jmo, label ='jmo:',rc=rc)
         if (lprnt) then
@@ -509,7 +509,7 @@
         deallocate(slat)
       else if ( trim(output_grid) == 'global_latlon') then
         wrtgrid = ESMF_GridCreate1PeriDim(minIndex=(/1,1/),                             &
-                                          maxIndex=(/imo,jmo/), regDecomp=(/1,ntasks/), &
+                                          maxIndex=(/imo,jmo/), regDecomp=(/itasks,jtasks/), &
                                           indexflag=ESMF_INDEX_GLOBAL, name='wrt_grid',rc=rc)
 
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
@@ -593,7 +593,7 @@
                 trim(output_grid) == 'lambert_conformal' ) then
 
         wrtgrid = ESMF_GridCreate1PeriDim(minIndex=(/1,1/),                             &
-                                          maxIndex=(/imo,jmo/), regDecomp=(/1,ntasks/), &
+                                          maxIndex=(/imo,jmo/), regDecomp=(/itasks,jtasks/), &
                                           indexflag=ESMF_INDEX_GLOBAL,                  &
                                           name='wrt_grid',rc=rc)
 
