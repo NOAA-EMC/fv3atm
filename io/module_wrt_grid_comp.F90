@@ -295,7 +295,8 @@
 
       if(trim(output_grid) == 'gaussian_grid' .or. trim(output_grid) == 'global_latlon') then
         call ESMF_ConfigGetAttribute(config=CF, value=itasks,default=1,label ='itasks:',rc=rc)
-        call ESMF_ConfigGetAttribute(config=CF, value=jtasks,default=1,label ='jtasks:',rc=rc)
+        jtasks = ntasks
+        if(itasks /= 0 ) jtasks = ntasks/itasks
         if( itasks*jtasks /= ntasks ) then
           itasks = 1
           jtasks = ntasks
@@ -469,7 +470,7 @@
           enddo
         enddo
        if(lprnt) print *,'aft wrtgrd, Gaussian, dimi,i=',lbound(lonPtr,1),ubound(lonPtr,1), &
-         lbound(lonPtr,2),ubound(lonPtr,2),'j(i)=',lbound(latPtr,1),ubound(latPtr,1) &
+         lbound(lonPtr,2),ubound(lonPtr,2),'j(i)=',lbound(latPtr,1),ubound(latPtr,1),&
          ' j(j)=',lbound(latPtr,2),ubound(latPtr,2),'imo=',imo,'jmo=',jmo
 !       if(wrt_int_state%mype==0) print *,'aft wrtgrd, lon=',lonPtr(1:5,1), &
 !        'lat=',latPtr(1,1:5),'imo,jmo=',imo,jmo
