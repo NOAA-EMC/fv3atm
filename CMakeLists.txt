@@ -43,7 +43,6 @@ add_library(fv3atm
   cpl/module_cap_cpl.F90
   io/FV3GFS_io.F90
   io/module_write_netcdf.F90
-  io/module_write_netcdf_parallel.F90
   io/module_fv3_io_def.F90
   io/module_write_internal_state.F90
   io/module_wrt_grid_comp.F90
