@@ -1,12 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<suite name="FV3_GFS_v16_p8" version="1">
+<suite name="FV3_HAFS_v0_thompson_tedmf_gfdlsf" version="1">
   <!-- <init></init> -->
-  <group name="fast_physics">
-    <subcycle loop="1">
-      <scheme>fv_sat_adj</scheme>
-    </subcycle>
-  </group>
   <group name="time_vary">
     <subcycle loop="1">
       <scheme>GFS_time_vary_pre</scheme>
@@ -43,12 +38,12 @@
     </subcycle>
     <!-- Surface iteration loop -->
     <subcycle loop="2">
-      <scheme>sfc_diff</scheme>
+      <scheme>gfdl_sfc_layer</scheme>
       <scheme>GFS_surface_loop_control_part1</scheme>
       <scheme>sfc_nst_pre</scheme>
       <scheme>sfc_nst</scheme>
       <scheme>sfc_nst_post</scheme>
-      <scheme>noahmpdrv</scheme>
+      <scheme>lsm_noah</scheme>
       <scheme>sfc_sice</scheme>
       <scheme>GFS_surface_loop_control_part2</scheme>
     </subcycle>
@@ -62,8 +57,8 @@
       <scheme>satmedmfvdifq</scheme>
       <scheme>GFS_PBL_generic_post</scheme>
       <scheme>GFS_GWD_generic_pre</scheme>
-      <scheme>ugwpv1_gsldrag</scheme>
-      <scheme>ugwpv1_gsldrag_post</scheme>
+      <scheme>cires_ugwp</scheme>
+      <scheme>cires_ugwp_post</scheme>
       <scheme>GFS_GWD_generic_post</scheme>
       <scheme>GFS_suite_stateout_update</scheme>
       <scheme>ozphys_2015</scheme>
@@ -79,7 +74,13 @@
       <scheme>GFS_suite_interstitial_4</scheme>
       <scheme>cnvc90</scheme>
       <scheme>GFS_MP_generic_pre</scheme>
-      <scheme>gfdl_cloud_microphys</scheme>
+      <scheme>mp_thompson_pre</scheme>
+    </subcycle>
+    <subcycle loop="2">
+      <scheme>mp_thompson</scheme>
+    </subcycle>
+    <subcycle loop="1">
+      <scheme>mp_thompson_post</scheme>
       <scheme>GFS_MP_generic_post</scheme>
       <scheme>maximum_hourly_diagnostics</scheme>
       <scheme>phys_tend</scheme>

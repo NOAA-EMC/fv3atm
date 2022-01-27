@@ -16,6 +16,7 @@ module fv3gfs_cap_mod
   use ESMF
   use NUOPC
   use NUOPC_Model,            only: model_routine_SS => SetServices,         &
+                                    SetVM,                                   &
                                     routine_Run,                             &
                                     label_Advertise,                         &
                                     label_RealizeProvided,                   &
@@ -197,7 +198,7 @@ module fv3gfs_cap_mod
     type(ESMF_StateItem_Flag), allocatable :: fcstItemTypeList(:)
     character(20)                          :: cwrtcomp
     integer                                :: isrcTermProcessing
-    integer                                :: domain_id
+    type(ESMF_Info)                        :: parentInfo, childInfo
 
     character(len=*),parameter             :: subname='(fv3_cap:InitializeAdvertise)'
     real(kind=8)                           :: MPI_Wtime, timeis, timerhs
@@ -368,6 +369,18 @@ module fv3gfs_cap_mod
     fcstComp = ESMF_GridCompCreate(petList=fcstPetList, name='fv3_fcst', rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 !
+    ! copy attributes from fv3cap component to fcstComp
+    call ESMF_InfoGetFromHost(gcomp, info=parentInfo, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc,  msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+    call ESMF_InfoGetFromHost(fcstComp, info=childInfo, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc,  msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+    call ESMF_InfoUpdate(lhs=childInfo, rhs=parentInfo, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc,  msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+    ! use the generic SetVM method to do resource and threading control
+    call ESMF_GridCompSetVM(fcstComp, SetVM, userRc=urc, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc,  msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+    if (ESMF_LogFoundError(rcToCheck=urc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
     call ESMF_GridCompSetServices(fcstComp, fcstSS, userRc=urc, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc,  msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
     if (ESMF_LogFoundError(rcToCheck=urc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
@@ -386,7 +399,7 @@ module fv3gfs_cap_mod
 
     if (ESMF_LogFoundError(rcToCheck=urc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 !
-! reconcile the fcstComp's import state
+! reconcile the fcstComp's export state
     call ESMF_StateReconcile(fcstState, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 !
@@ -456,6 +469,17 @@ module fv3gfs_cap_mod
         wrtComp(i) = ESMF_GridCompCreate(petList=petList, name=trim(cwrtcomp), rc=rc)
 !      print *,'af wrtComp(i)=',i,'name=',trim(cwrtcomp),'rc=',rc
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+! copy attributes from fv3cap component to wrtComp
+        call ESMF_InfoGetFromHost(wrtComp(i), info=childInfo, rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc,  msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+        call ESMF_InfoUpdate(lhs=childInfo, rhs=parentInfo, rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc,  msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+! use the generic SetVM method to do resource and threading control
+        call ESMF_GridCompSetVM(wrtComp(i), SetVM, userRc=urc, rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc,  msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+        if (ESMF_LogFoundError(rcToCheck=urc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
 ! call into wrtComp(i) SetServices
         call ESMF_GridCompSetServices(wrtComp(i), wrtSS, userRc=urc, rc=rc)
