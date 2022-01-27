@@ -841,7 +841,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
         do n=1,ngrids
         ! do n=2,3
         bundle_grid=''  ! top-level domain will NOT have g01_ prefix
-        if ( n>1 ) then
+        if ( ngrids>1 ) then
           write(bundle_grid,'(A1,I2.2,A1)') 'g',n, '_'
         endif
 
@@ -857,7 +857,6 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
            name_FB1 = trim(name_FB)//'_bilinear'
            fieldbundle(n) = ESMF_FieldBundleCreate(name=trim(name_FB1),rc=rc)
            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-           if (mype == 0) write(*,*)'af create fcst fieldbundle, name=',trim(name_FB),'rc=',rc
 
            call ESMF_AttributeAdd(fieldbundle(n), convention="NetCDF", purpose="FV3", &
                                   attrList=(/"domain_id"/), rc=rc)
@@ -884,7 +883,6 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
                name_FB1 = trim(name_FB)//'_bilinear'
              endif
              fieldbundlephys(j,n) = ESMF_FieldBundleCreate(name=trim(name_FB1),rc=rc)
-             if (mype == 0) write(0,*)'af create fcst fieldbundle, name= ',trim(name_FB1),'rc=',rc
              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
              call ESMF_AttributeAdd(fieldbundlephys(j,n), convention="NetCDF", purpose="FV3", &
