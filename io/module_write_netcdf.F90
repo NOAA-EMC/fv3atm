@@ -72,7 +72,7 @@ module module_write_netcdf
     character(len=ESMF_MAXSTR) :: attName, fldName
 
     integer :: varival
-    real(4) :: varr4val, scale_fact, offset, dataMin, dataMax
+    real(4) :: varr4val, dataMin, dataMax
     real(4), allocatable, dimension(:) :: compress_err
     real(8) :: varr8val
     character(len=ESMF_MAXSTR) :: varcval

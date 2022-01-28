@@ -67,11 +67,9 @@
 !
 !-----------------------------------------------------------------------
 !
-      type(wrt_internal_state),pointer :: wrt_int_state                 ! The internal state pointer.
       type(ESMF_FieldBundle)           :: gridFB
       integer                          :: FBcount
       character(len=esmf_maxstr),allocatable    :: fcstItemNameList(:)
-      real(ESMF_KIND_R4), dimension(:,:), allocatable  :: maskwrt
 !
 !-----------------------------------------------------------------------
       REAL(KIND=8)             :: btim,btim0
@@ -138,18 +136,17 @@
       type(write_wrap)                        :: WRAP
       type(wrt_internal_state),pointer        :: wrt_int_state
 
-      integer                                 :: ISTAT, tl, i, j, n, k
+      integer                                 :: tl, i, j, n, k
       integer,dimension(2,6)                  :: decomptile
       integer,dimension(2)                    :: regDecomp !define delayout for the nest grid
       integer                                 :: fieldCount
       integer                                 :: vm_mpi_comm
-      character(40)                           :: fieldName, axesname,longname
+      character(40)                           :: fieldName
       type(ESMF_Config)                       :: cf, cf_output_grid
       type(ESMF_DELayout)                     :: delayout
       type(ESMF_Grid)                         :: fcstGrid
       type(ESMF_Grid), allocatable            :: wrtGrid(:)
       type(ESMF_Array)                        :: array
-      type(ESMF_FieldBundle)                  :: fieldbdl_work
       type(ESMF_Field)                        :: field_work, field
       type(ESMF_Decomp_Flag)                  :: decompflagPTile(2,6)
 
@@ -171,7 +168,7 @@
       real(ESMF_KIND_R4)                      :: valueR4
       real(ESMF_KIND_R8)                      :: valueR8
 
-      integer :: attCount, axeslen, jidx, idx, noutfile
+      integer :: attCount, jidx, idx, noutfile
       character(19)  :: newdate
       character(128) :: FBlist_outfilename(100), outfile_name
       character(128),dimension(:,:), allocatable    :: outfilename
@@ -183,18 +180,12 @@
       real(ESMF_KIND_R8)                            :: lon1_r8, lat1_r8
       real(ESMF_KIND_R8)                            :: x1, y1, x, y, delat
       type(ESMF_TimeInterval)                       :: IAU_offsetTI
-      type(ESMF_DataCopy_Flag) :: copyflag=ESMF_DATACOPY_REFERENCE
-!     real(8),parameter :: PI=3.14159265358979d0
 
       character(256)                          :: cf_filename
       character(256)                          :: gridfile
       integer                                 :: num_output_file
-
 !
-      logical,save                            :: first=.true.
       logical                                 :: lprnt
-!test
-      real(ESMF_KIND_R8),dimension(:,:), pointer :: glatPtr, glonPtr
 
       integer :: ngrids, grid_id
 !
@@ -1382,8 +1373,6 @@
       TYPE(ESMF_VM)                         :: VM
       type(ESMF_FieldBundle)                :: file_bundle
       type(ESMF_Time)                       :: currtime
-      type(ESMF_TypeKind_Flag)              :: datatype
-      type(ESMF_Field)                      :: field_work
       type(ESMF_Grid)                       :: fbgrid, wrtGrid
       type(ESMF_State),save                 :: stateGridFB
       type(optimizeT), save                 :: optimize(4)
@@ -1397,28 +1386,20 @@
       integer                               :: nf_hours,nf_seconds, nf_minutes,     &
                                                nseconds,nseconds_num,nseconds_den
 !
-      integer                               :: id
-      integer                               :: nbdl, idx, date(6), ndig, nnnn
+      integer                               :: nbdl, date(6), ndig, nnnn
       integer                               :: step=1
 !
       logical                               :: opened
       logical                               :: lmask_fields
-      logical,save                          :: first=.true.
-      logical,save                          :: file_first=.true.
 !
-      character(esmf_maxstr)                :: filename,compname,bundle_name
+      character(esmf_maxstr)                :: filename,compname
       character(40)                         :: cfhour, cform
       real(ESMF_KIND_R8)                    :: time
 !
-      real(kind=8)  :: wait_time, MPI_Wtime
-      real(kind=8)  :: times,times2,etim
-      character(10) :: timeb
-      real(kind=8)  :: tbeg,tend
+      real(kind=8)  :: MPI_Wtime
+      real(kind=8)  :: tbeg
       real(kind=8)  :: wbeg,wend
 
-      real(kind=ESMF_KIND_R8), dimension(:,:,:), pointer   :: datar8
-      real(kind=ESMF_KIND_R8), dimension(:,:),   pointer   :: datar82d
-!
       logical :: use_parallel_netcdf
       logical :: lprnt
 !
@@ -1430,16 +1411,11 @@
       rc   = esmf_success
 !
 !-----------------------------------------------------------------------
-!***  get the current write grid comp name, id, and internal state
+!***  get the current write grid comp name, and internal state
 !
       call ESMF_GridCompGet(wrt_comp, name=compname, rc=rc)
 
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-!      print *,'in wrt run. compname=',trim(compname),' rc=',rc
-
-! instance id from name
-      read(compname(10:11),"(I2)") id
-
 ! Provide log message indicating which wrtComp is active
       call ESMF_LogWrite("Write component activated: "//trim(compname), &
                           ESMF_LOGMSG_INFO, rc=rc)
@@ -1495,7 +1471,7 @@
       nf_seconds = nf_hours*3600+nf_minuteS*60+nseconds+real(nseconds_num)/real(nseconds_den)
       wrt_int_state%nfhour = nf_seconds/3600.
       nf_hours   = int(nf_seconds/3600.)
-      if(mype == lead_write_task) print *,'in write grid comp, nf_hours=',nf_hours
+      if(lprnt) print *,'in write grid comp, nf_hours=',nf_hours
       ! if iau_offset > nf_hours, don't write out anything
       if (nf_hours < 0) return
 
@@ -1835,7 +1811,7 @@
      real, parameter   :: stndrd_atmos_lapse = 0.0065
 
      integer i,j,k,ifld,fieldCount,nstt,nend,fieldDimCount,gridDimCount
-     integer istart,iend,jstart,jend,kstart,kend,km
+     integer istart,iend,jstart,jend,kstart,kend
      logical uPresent, vPresent
      type(ESMF_Grid)  fieldGrid
      type(ESMF_Field)  ufield, vfield
@@ -1849,7 +1825,6 @@
      real(ESMF_KIND_R4), dimension(:,:,:),   pointer  :: uwind3dr4,vwind3dr4
      real(ESMF_KIND_R4), dimension(:,:,:),   pointer  :: cart3dPtr2dr4
      real(ESMF_KIND_R4), dimension(:,:,:,:), pointer  :: cart3dPtr3dr4
-     real(ESMF_KIND_R8), dimension(:,:,:,:), pointer  :: cart3dPtr3dr8
      real(ESMF_KIND_R8) :: coslon, sinlon, sinlat
 !
 ! get filed count
@@ -2032,8 +2007,8 @@
      type(ESMF_FieldBundle), intent(in)              :: file_bundle
      integer,                intent(out),   optional :: rc
 !
-     integer i,j,k,ifld,fieldCount,nstt,nend,fieldDimCount,gridDimCount
-     integer istart,iend,jstart,jend,kstart,kend,km
+     integer i,j,k,ifld,fieldCount,fieldDimCount,gridDimCount
+     integer istart,iend,jstart,jend,kstart,kend
      type(ESMF_Grid)  fieldGrid
      type(ESMF_TypeKind_Flag) typekind
      type(ESMF_TypeKind_Flag) attTypeKind
@@ -3305,12 +3280,12 @@
       121.737742088d0, 124.879308913d0, 128.020877005d0, 131.162446275d0, &
       134.304016638d0, 137.445588020d0, 140.587160352d0, 143.728733573d0, &
       146.870307625d0, 150.011882457d0, 153.153458019d0, 156.295034268d0 /
-      real(8)           :: dlt,d1=1.d0
-      integer           :: jhe,jho,j0=0
+      real(8)           :: dlt
+      integer           :: jhe,jho
 !     real(8),parameter :: PI=3.14159265358979d0,C=(1.d0-(2.d0/PI)**2)*0.25d0
       real(8),parameter ::                       C=(1.d0-(2.d0/PI)**2)*0.25d0
       real(8) r
-      integer jh,js,n,j
+      integer jh,n,j
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 !  GAUSSIAN LATITUDES
       IF(IDRT.EQ.4) THEN
@@ -3415,12 +3390,12 @@
       121.737742088d0, 124.879308913d0, 128.020877005d0, 131.162446275d0, &
       134.304016638d0, 137.445588020d0, 140.587160352d0, 143.728733573d0, &
       146.870307625d0, 150.011882457d0, 153.153458019d0, 156.295034268d0 /
-      real(8)           :: dlt,d1=1.d0
-      integer(4)        :: jhe,jho,j0=0
+      real(8)           :: dlt
+      integer(4)        :: jhe,jho
 !     real(8),parameter :: PI=3.14159265358979d0,C=(1.d0-(2.d0/PI)**2)*0.25d0
       real(8),parameter ::                       C=(1.d0-(2.d0/PI)**2)*0.25d0
       real(8) r
-      integer jh,js,n,j
+      integer jh,n,j
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 !  GAUSSIAN LATITUDES
       IF(IDRT.EQ.4) THEN
@@ -3570,7 +3545,7 @@
 ! inv == 1     (glon,glat) ---> (x,y)    lat/lon to grid
 ! inv == -1    (x,y) ---> (glon,glat)    grid to lat/lon
 
-      real(ESMF_KIND_R8) :: en,f,rho,rho0, dlon, theta, xp, yp
+      real(ESMF_KIND_R8) :: en,f,rho,rho0, dlon, theta
 
       IF (stlat1 == stlat2) THEN
          en=sin(stlat1*dtor)
@@ -3612,7 +3587,7 @@
        character(*), intent(inout)  :: outfile_name(:)
        integer, intent(inout)       :: noutfile
 
-       integer        :: i,j,n,idx
+       integer        :: i,j,n
        logical        :: found
 !
        noutfile = 0

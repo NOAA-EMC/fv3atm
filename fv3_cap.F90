@@ -186,7 +186,6 @@ module fv3gfs_cap_mod
     integer                                :: i, j, k, urc, ist
     integer                                :: noutput_fh, nfh, nfh2
     integer                                :: petcount
-    integer                                :: num_output_file
     integer                                :: nfhmax_hf
     real                                   :: nfhmax
     real                                   :: output_startfh, outputfh, outputfh2(2)
