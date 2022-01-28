@@ -859,11 +859,11 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
            call ESMF_AttributeAdd(fieldbundle(n), convention="NetCDF", purpose="FV3", &
-                                  attrList=(/"domain_id"/), rc=rc)
+                                  attrList=(/"grid_id"/), rc=rc)
            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
            call ESMF_AttributeSet(fieldbundle(n), convention="NetCDF", purpose="FV3", &
-                                  name="domain_id", value=n, rc=rc)
+                                  name="grid_id", value=n, rc=rc)
            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
            call ESMF_StateAdd(tempState, (/fieldbundle(n)/), rc=rc)
@@ -886,11 +886,11 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
              call ESMF_AttributeAdd(fieldbundlephys(j,n), convention="NetCDF", purpose="FV3", &
-                                    attrList=(/"domain_id"/), rc=rc)
+                                    attrList=(/"grid_id"/), rc=rc)
              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
              call ESMF_AttributeSet(fieldbundlephys(j,n), convention="NetCDF", purpose="FV3", &
-                                    name="domain_id", value=n, rc=rc)
+                                    name="grid_id", value=n, rc=rc)
              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
              call ESMF_StateAdd(tempState, (/fieldbundlephys(j,n)/), rc=rc)
