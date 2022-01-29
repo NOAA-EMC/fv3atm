@@ -362,9 +362,9 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     integer               :: globalTileLayout(2)
     integer               :: nestRootPet, peListSize(1)
     integer, allocatable  :: petMap(:)
-    integer               :: top_domain_is_global(1)
     integer               :: layout(2), nx, ny
     integer, pointer      :: pelist(:) => null()
+    logical               :: top_parent_is_global
 
     integer                       :: num_restart_interval, restart_starttime
     real,dimension(:),allocatable :: restart_interval
@@ -648,15 +648,16 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
         call atmos_model_get_nth_domain_info(n, layout, nx, ny, pelist)
         call ESMF_VMBroadcast(vm, bcstData=layout, count=2, rootPet=pelist(1), rc=rc); ESMF_ERR_ABORT(rc)
 
-        top_domain_is_global(1) = 0
         if (n==1) then
+           ! on grid==1 (top level parent) determine if the domain is global or regional
+           top_parent_is_global = .true.
            if(mygrid==1) then
-              if ( .not. Atmos%regional) top_domain_is_global(1) = 1
+              if (Atmos%regional) top_parent_is_global = .false.
            endif
-           call ESMF_VMBroadcast(vm, bcstData=top_domain_is_global, count=1, rootPet=pelist(1), rc=rc); ESMF_ERR_ABORT(rc)
+           call mpi_bcast(top_parent_is_global, 1, MPI_LOGICAL, 0, fcst_mpi_comm, rc)
         endif
 
-        if (n==1 .and. top_domain_is_global(1)==1) then
+        if (n==1 .and. top_parent_is_global) then
 
           fcstGridComp(n) = ESMF_GridCompCreate(name="global", petList=pelist, rc=rc); ESMF_ERR_ABORT(rc)
 
@@ -771,6 +772,15 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
                                name="ngrids", value=ngrids, rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
+! Add top_parent_is_global Attribute to the exportState
+      call ESMF_AttributeAdd(exportState, convention="NetCDF", purpose="FV3", &
+                               attrList=(/"top_parent_is_global"/), rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+      call ESMF_AttributeSet(exportState, convention="NetCDF", purpose="FV3", &
+                               name="top_parent_is_global", value=top_parent_is_global, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
 ! Add dimension Attributes to Grid
       do n=1,ngrids
         if (ESMF_GridCompIsPetLocal(fcstGridComp(n), rc=rc)) then
@@ -839,7 +849,6 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
         allocate(fieldbundlephys(nbdlphys,ngrids))
 
         do n=1,ngrids
-        ! do n=2,3
         bundle_grid=''  ! top-level domain will NOT have g01_ prefix
         if ( ngrids>1 ) then
           write(bundle_grid,'(A1,I2.2,A1)') 'g',n, '_'

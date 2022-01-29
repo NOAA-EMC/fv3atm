@@ -24,7 +24,6 @@ module module_fv3_io_def
   integer,dimension(:),allocatable     :: lead_wrttask, last_wrttask
 
   character(len=esmf_maxstr),dimension(:),allocatable :: output_grid
-  character(len=esmf_maxstr),dimension(:),allocatable :: app_domain
   integer,dimension(:),allocatable  :: imo,jmo
   real,dimension(:),allocatable     :: cen_lon, cen_lat
   real,dimension(:),allocatable     :: lon1, lat1, lon2, lat2, dlon, dlat

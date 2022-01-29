@@ -31,7 +31,7 @@
 
       use write_internal_state
       use module_fv3_io_def,   only : num_pes_fcst,                             &
-                                      n_group, num_files, app_domain,           &
+                                      n_group, num_files,                       &
                                       filename_base, output_grid, output_file,  &
                                       imo,jmo,ichunk2d,jchunk2d,                &
                                       ichunk3d,jchunk3d,kchunk3d,nbits,         &
@@ -59,7 +59,6 @@
       integer,save      :: last_write_task                                !<-- Rank of the last write task in the write group
       integer,save      :: ntasks                                         !<-- # of write tasks in the current group
 
-      integer,save      :: mytile                                         !<-- the tile number in write task
       integer,save      :: wrt_mpi_comm                                   !<-- the mpi communicator in the write comp
       integer,save      :: idate(7)
       logical,save      :: write_nsflip
@@ -188,6 +187,7 @@
       logical                                 :: lprnt
 
       integer :: ngrids, grid_id
+      logical :: top_parent_is_global
 !
 !-----------------------------------------------------------------------
 !***********************************************************************
@@ -298,10 +298,13 @@
                              name="ngrids", value=ngrids, rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
+      call ESMF_AttributeGet(imp_state_write, convention="NetCDF", purpose="FV3", &
+                             name="top_parent_is_global", value=top_parent_is_global, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
       allocate(wrtGrid(ngrids))
 
       allocate(output_grid(ngrids))
-      allocate(app_domain(ngrids))
 
       allocate(imo(ngrids))
       allocate(jmo(ngrids))
@@ -345,10 +348,9 @@
         if (allocated(wrt_int_state%latPtr) ) deallocate (wrt_int_state%latPtr)
         if (allocated(wrt_int_state%lonPtr) ) deallocate (wrt_int_state%lonPtr)
 
-      call ESMF_ConfigGetAttribute(config=cf_output_grid, value=app_domain(n), default="global", label ='app_domain:',rc=rc)
       call ESMF_ConfigGetAttribute(config=cf_output_grid, value=output_grid(n), label ='output_grid:',rc=rc)
       if (lprnt) then
-        print *,'grid_id= ', n, ' output_grid= ', trim(output_grid(n)), ' app_domain= ', trim(app_domain(n))
+        print *,'grid_id= ', n, ' output_grid= ', trim(output_grid(n))
       end if
 
       if(trim(output_grid(n)) == 'gaussian_grid' .or. trim(output_grid(n)) == 'global_latlon') then
@@ -432,12 +434,9 @@
       call ESMF_ConfigDestroy(config=cf_output_grid, rc=rc)
 
       if ( trim(output_grid(n)) == 'cubed_sphere_grid' ) then
-
-       !*** Create the cubed sphere grid with field on PETs
-       !*** first try: Create cubed sphere grid from file
-
-        mytile = mod(wrt_int_state%mype,ntasks)+1
-        if ( trim(app_domain(n)) == 'global' ) then
+        !*** Create cubed sphere grid from file
+        if (top_parent_is_global .and. n==1) then
+          gridfile = 'grid_spec.nc'   ! global top-level parent
           do tl=1,6
             decomptile(1,tl) = 1
             decomptile(2,tl) = jidx
@@ -448,18 +447,22 @@
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
           call ESMF_LogWrite("wrtComp: gridfile:"//trim(gridfile),ESMF_LOGMSG_INFO,rc=rc)
-          wrtGrid(n) = ESMF_GridCreateMosaic(filename="INPUT/"//trim(gridfile),                                 &
+          wrtGrid(n) = ESMF_GridCreateMosaic(filename="INPUT/"//trim(gridfile),                              &
                                           regDecompPTile=decomptile,tileFilePath="INPUT/",                   &
                                           decompflagPTile=decompflagPTile,                                   &
                                           staggerlocList=(/ESMF_STAGGERLOC_CENTER, ESMF_STAGGERLOC_CORNER/), &
                                           name='wrt_grid', rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
         else
-          if(trim(app_domain(n)) == 'nested') then
-            gridfile='grid.nest02.tile2.nc'
-          else if(trim(app_domain(n)) == 'regional') then
-            gridfile='grid.tile7.halo0.nc'
-          endif
+          if (top_parent_is_global) then
+            write(gridfile,'(A,I2.2,A,I1,A)') 'grid.nest', n, '.tile', n+5, '.nc'
+          else
+            if (n == 1) then
+              gridfile='grid.tile7.halo0.nc'   ! regional top-level parent
+            else
+              write(gridfile,'(A,I2.2,A,I1,A)') 'grid.nest', n, '.tile', n, '.nc'
+            endif
+          end if
           regDecomp(1) = 1
           regDecomp(2) = ntasks
           allocate(petMap(ntasks))
@@ -470,14 +473,15 @@
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
           ! create the nest Grid by reading it from file but use DELayout
-          wrtGrid(n) = ESMF_GridCreate(filename="INPUT/"//trim(gridfile),                                       &
+          call ESMF_LogWrite("wrtComp: gridfile:"//trim(gridfile),ESMF_LOGMSG_INFO,rc=rc)
+          wrtGrid(n) = ESMF_GridCreate(filename="INPUT/"//trim(gridfile),                                    &
                                     fileformat=ESMF_FILEFORMAT_GRIDSPEC, regDecomp=regDecomp,                &
                                     decompflag=(/ESMF_DECOMP_SYMMEDGEMAX,ESMF_DECOMP_SYMMEDGEMAX/),          &
                                     delayout=delayout, isSphere=.false., indexflag=ESMF_INDEX_DELOCAL,       &
                                     rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-          print *,'in nested/regional cubed_sphere grid, regDecomp=',regDecomp,' PetMap=',petMap(1),petMap(ntasks), &
+          if (lprnt) print *,'in nested/regional cubed_sphere grid, regDecomp=',regDecomp,' PetMap=',petMap(1),petMap(ntasks), &
             'gridfile=',trim(gridfile)
           deallocate(petMap)
         endif
@@ -1554,7 +1558,6 @@
           call ESMF_AttributeGet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
                                  name="grid_id", value=grid_id, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
 
           if(step == 1) then
             file_bundle = wrt_int_state%wrtFB(nbdl)

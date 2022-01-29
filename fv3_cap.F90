@@ -41,7 +41,7 @@ module fv3gfs_cap_mod
 !
   use module_fcst_grid_comp,  only: fcstSS => SetServices,                   &
                                     fcstGrid, numLevels, numSoilLayers,      &
-                                    numTracers, ngrids, mygrid, grid_number_on_all_pets
+                                    numTracers, mygrid, grid_number_on_all_pets
 
   use module_wrt_grid_comp,   only: wrtSS => SetServices
 !
