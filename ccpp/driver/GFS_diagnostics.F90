@@ -138,7 +138,7 @@ module GFS_diagnostics
     type(GFS_init_type),          intent(in)    :: Init_parm
 
 !--- local variables
-    integer :: idt, idx, num, nb, nblks, NFXR, idtend, ichem, itrac, iprocess
+    integer :: idt, idx, num, nb, nblks, NFXR, idtend, ichem, itrac, iprocess, i
     character(len=2) :: xtra
     real(kind=kind_phys), parameter :: cn_one = 1._kind_phys
     real(kind=kind_phys), parameter :: cn_100 = 100._kind_phys
@@ -159,6 +159,78 @@ module GFS_diagnostics
     ExtDiag(:)%intpl_method = 'nearest_stod'
 
     idx = 0 
+
+    idx = idx + 1
+    ExtDiag(idx)%axes = 2
+    ExtDiag(idx)%name = 'cldfra2d'
+    ExtDiag(idx)%desc = 'instantaneous 2D (max-in-column) cloud fraction'
+    ExtDiag(idx)%unit = 'frac'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    ExtDiag(idx)%intpl_method = 'bilinear'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%cldfra2d(:)
+    enddo
+
+    idx = idx + 1
+    ExtDiag(idx)%axes = 2
+    ExtDiag(idx)%name = 'total_albedo'
+    ExtDiag(idx)%desc = 'total sky albedo at toa'
+    ExtDiag(idx)%unit = 'frac'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    ExtDiag(idx)%intpl_method = 'bilinear'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%total_albedo(:)
+    enddo
+
+    idx = idx + 1
+    ExtDiag(idx)%axes = 2
+    ExtDiag(idx)%name = 'lwp_ex'
+    ExtDiag(idx)%desc = 'total liquid water path from explicit microphysics'
+    ExtDiag(idx)%unit = 'kg m-2'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    ExtDiag(idx)%intpl_method = 'bilinear'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%lwp_ex(:)
+    enddo
+
+    idx = idx + 1
+    ExtDiag(idx)%axes = 2
+    ExtDiag(idx)%name = 'iwp_ex'
+    ExtDiag(idx)%desc = 'total ice water path from explicit microphysics'
+    ExtDiag(idx)%unit = 'kg m-2'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    ExtDiag(idx)%intpl_method = 'bilinear'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%iwp_ex(:)
+    enddo
+
+    idx = idx + 1
+    ExtDiag(idx)%axes = 2
+    ExtDiag(idx)%name = 'lwp_fc'
+    ExtDiag(idx)%desc = 'total liquid water path from cloud fraction scheme'
+    ExtDiag(idx)%unit = 'kg m-2'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    ExtDiag(idx)%intpl_method = 'bilinear'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%lwp_fc(:)
+    enddo
+
+    idx = idx + 1
+    ExtDiag(idx)%axes = 2
+    ExtDiag(idx)%name = 'iwp_fc'
+    ExtDiag(idx)%desc = 'total ice water path from cloud fraction scheme'
+    ExtDiag(idx)%unit = 'kg m-2'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    ExtDiag(idx)%intpl_method = 'bilinear'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%iwp_fc(:)
+    enddo
 
     idx = idx + 1
     ExtDiag(idx)%axes = 2
@@ -200,7 +272,6 @@ module GFS_diagnostics
       ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%dlwsfci(:)
     enddo
 
-
     idx = idx + 1
     ExtDiag(idx)%axes = 2
     ExtDiag(idx)%name = 'ULWRF'
@@ -213,6 +284,45 @@ module GFS_diagnostics
     allocate (ExtDiag(idx)%data(nblks))
     do nb = 1,nblks
       ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%ulwsfc(:)
+    enddo
+
+    idx = idx + 1
+    ExtDiag(idx)%axes = 2
+    ExtDiag(idx)%name = 'DSWRFItoa'
+    ExtDiag(idx)%desc = 'instantaneous top of atmos downward shortwave flux'
+    ExtDiag(idx)%unit = 'W/m**2'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    ExtDiag(idx)%cnvfac = cn_one
+    ExtDiag(idx)%intpl_method = 'bilinear'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%fluxr(:,23)
+    enddo
+
+    idx = idx + 1
+    ExtDiag(idx)%axes = 2
+    ExtDiag(idx)%name = 'USWRFItoa'
+    ExtDiag(idx)%desc = 'instantaneous top of atmos upward shortwave flux'
+    ExtDiag(idx)%unit = 'W/m**2'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    ExtDiag(idx)%cnvfac = cn_one
+    ExtDiag(idx)%intpl_method = 'bilinear'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%fluxr(:,2)
+    enddo
+
+    idx = idx + 1
+    ExtDiag(idx)%axes = 2
+    ExtDiag(idx)%name = 'ULWRFItoa'
+    ExtDiag(idx)%desc = 'instantaneous top of atmos upward longwave flux'
+    ExtDiag(idx)%unit = 'W/m**2'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    ExtDiag(idx)%cnvfac = cn_one
+    ExtDiag(idx)%intpl_method = 'bilinear'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%fluxr(:,1)
     enddo
 
     idx = idx + 1
@@ -3366,39 +3476,58 @@ module GFS_diagnostics
       enddo
     end if thompson_extended_diagnostics
 
-    !! Cloud effective radii from Microphysics
-    !if (Model%imp_physics == Model%imp_physics_thompson .or. Model%imp_physics == Model%imp_physics_wsm6 .or. Model%imp_physics == Model%imp_physics_fer_hires) then
-    !  idx = idx + 1
-    !  ExtDiag(idx)%axes = 3
-    !  ExtDiag(idx)%name = 'cleffr'
-    !  ExtDiag(idx)%desc = 'effective radius of cloud liquid water particle'
-    !  ExtDiag(idx)%unit = 'um'
-    !  ExtDiag(idx)%mod_name = 'gfs_phys'
-    !  allocate (ExtDiag(idx)%data(nblks))
-    !  do nb = 1,nblks
-    !    ExtDiag(idx)%data(nb)%var3 => Tbd(nb)%phy_f3d(:,:,Model%nleffr)
-    !  enddo
-    !  idx = idx + 1
-    !  ExtDiag(idx)%axes = 3
-    !  ExtDiag(idx)%name = 'cieffr'
-    !  ExtDiag(idx)%desc = 'effective radius of stratiform cloud ice particle in um'
-    !  ExtDiag(idx)%unit = 'um'
-    !  ExtDiag(idx)%mod_name = 'gfs_phys'
-    !  allocate (ExtDiag(idx)%data(nblks))
-    !  do nb = 1,nblks
-    !    ExtDiag(idx)%data(nb)%var3 => Tbd(nb)%phy_f3d(:,:,Model%nieffr)
-    !  enddo
-    !  idx = idx + 1
-    !  ExtDiag(idx)%axes = 3
-    !  ExtDiag(idx)%name = 'cseffr'
-    !  ExtDiag(idx)%desc = 'effective radius of stratiform cloud snow particle in um'
-    !  ExtDiag(idx)%unit = 'um'
-    !  ExtDiag(idx)%mod_name = 'gfs_phys'
-    !  allocate (ExtDiag(idx)%data(nblks))
-    !  do nb = 1,nblks
-    !    ExtDiag(idx)%data(nb)%var3 => Tbd(nb)%phy_f3d(:,:,Model%nseffr)
-    !  enddo
-    !endif
+    do i=1,Model%num_dfi_radar
+       idx = idx + 1
+       ExtDiag(idx)%axes = 3
+       if(i>1) then
+          write(ExtDiag(idx)%name,'(A,I0)') 'radar_tten_',i
+       else
+          ExtDiag(idx)%name = 'radar_tten'
+       endif
+       write(ExtDiag(idx)%desc,'(A,I0,A,I0)') 'temperature tendency due to dfi radar tendencies ',i,' of ',Model%num_dfi_radar
+       ExtDiag(idx)%unit = 'K s-1'
+       ExtDiag(idx)%mod_name = 'gfs_phys'
+       ExtDiag(idx)%time_avg = .FALSE.
+
+       allocate (ExtDiag(idx)%data(nblks))
+       do nb = 1,nblks
+          ExtDiag(idx)%data(nb)%var3 => Tbd(nb)%dfi_radar_tten(:,:,i)
+       enddo
+    enddo
+
+    ! Cloud effective radii from Microphysics
+    if (Model%imp_physics == Model%imp_physics_thompson .or. Model%imp_physics == Model%imp_physics_fer_hires) then
+      idx = idx + 1
+      ExtDiag(idx)%axes = 3
+      ExtDiag(idx)%name = 'cleffr'
+      ExtDiag(idx)%desc = 'effective radius of cloud liquid water particle'
+      ExtDiag(idx)%unit = 'um'
+      ExtDiag(idx)%mod_name = 'gfs_phys'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var3 => Tbd(nb)%phy_f3d(:,:,Model%nleffr)
+      enddo
+      idx = idx + 1
+      ExtDiag(idx)%axes = 3
+      ExtDiag(idx)%name = 'cieffr'
+      ExtDiag(idx)%desc = 'effective radius of stratiform cloud ice particle in um'
+      ExtDiag(idx)%unit = 'um'
+      ExtDiag(idx)%mod_name = 'gfs_phys'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var3 => Tbd(nb)%phy_f3d(:,:,Model%nieffr)
+      enddo
+      idx = idx + 1
+      ExtDiag(idx)%axes = 3
+      ExtDiag(idx)%name = 'cseffr'
+      ExtDiag(idx)%desc = 'effective radius of stratiform cloud snow particle in um'
+      ExtDiag(idx)%unit = 'um'
+      ExtDiag(idx)%mod_name = 'gfs_phys'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var3 => Tbd(nb)%phy_f3d(:,:,Model%nseffr)
+      enddo
+    endif
 
     !MYNN
     if (Model%do_mynnedmf) then
