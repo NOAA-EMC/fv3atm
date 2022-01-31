@@ -146,8 +146,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     character(len=80)     :: name
     type(ESMF_Grid)       :: grid
     type(ESMF_Info)       :: info
-    character(len=256)    :: gridfile
-    integer               :: layout(2)
+    integer               :: layout(2), tilesize
     integer               :: tl, nx, ny
     integer,dimension(2,6):: decomptile                  !define delayout for the 6 cubed-sphere tiles
     integer,dimension(2)  :: regdecomp                   !define delayout for the nest grid
@@ -167,24 +166,23 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     call ESMF_InfoGetFromHost(nest, info=info, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-    call ESMF_InfoGet(info, key="gridfile", value=gridfile, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
     call ESMF_InfoGet(info, key="layout", values=layout, rc=rc); ESMF_ERR_ABORT(rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
     if (trim(name)=="global") then
       ! global domain
+      call ESMF_InfoGet(info, key="tilesize", value=tilesize, rc=rc); ESMF_ERR_ABORT(rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
       do tl=1,6
         decomptile(1,tl) = layout(1)
         decomptile(2,tl) = layout(2)
         decompflagPTile(:,tl) = (/ESMF_DECOMP_SYMMEDGEMAX,ESMF_DECOMP_SYMMEDGEMAX/)
       enddo
-      grid = ESMF_GridCreateMosaic(filename="INPUT/"//trim(gridfile),                                 &
-                                   regDecompPTile=decomptile,tileFilePath="INPUT/",                   &
-                                   decompflagPTile=decompflagPTile,                                   &
-                                   staggerlocList=(/ESMF_STAGGERLOC_CENTER, ESMF_STAGGERLOC_CORNER/), &
-                                   name="fcst_grid", rc=rc)
+      grid = ESMF_GridCreateCubedSphere(tileSize=tilesize, &
+                                        regDecompPTile=decomptile, &
+                                        decompflagPTile=decompflagPTile, &
+                                        name="fcst_grid", rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
     else
       ! nest domain
@@ -218,12 +216,12 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     type(ESMF_State)                       :: importState, exportState
     type(ESMF_Clock)                       :: clock
     integer,intent(out)                    :: rc
-    
+
     type(ESMF_Grid)                        :: grid
     integer                                :: itemCount
     character(len=ESMF_MAXSTR)             :: itemNameList(1)
     type(ESMF_FieldBundle)                 :: fb, fcstFB
-    
+
     call ESMF_GridCompGet(nest, grid=grid, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
@@ -266,13 +264,13 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     type(ESMF_State)                       :: importState, exportState
     type(ESMF_Clock)                       :: clock
     integer,intent(out)                    :: rc
-    
+
     type(ESMF_Grid)                        :: grid
     integer                                :: itemCount, i
     character(len=ESMF_MAXSTR), allocatable :: itemNameList(:)
     type(ESMF_FieldBundle), allocatable     :: fbList(:)
     type(ESMF_FieldBundle)                  :: fcstFB
-    
+
     call ESMF_GridCompGet(nest, grid=grid, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
@@ -280,10 +278,10 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
     allocate(itemNameList(itemCount), fbList(itemCount))
-    
+
     call ESMF_StateGet(importState, itemNameList=itemNameList, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-    
+
     do i=1, itemCount
       call ESMF_StateGet(importState, itemName=itemNameList(i), fieldbundle=fcstFB, rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
@@ -621,7 +619,6 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
          call mpp_close(unit, MPP_DELETE)
       endif
 !
-!
 !-----------------------------------------------------------------------
 !*** create grid for output fields
 !*** first try: Create cubed sphere grid from file
@@ -662,17 +659,12 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
           fcstGridComp(n) = ESMF_GridCompCreate(name="global", petList=pelist, rc=rc); ESMF_ERR_ABORT(rc)
 
           call ESMF_InfoGetFromHost(fcstGridComp(n), info=info, rc=rc); ESMF_ERR_ABORT(rc)
-          call ESMF_InfoSet(info, key="gridfile", value=trim(gridfile), rc=rc); ESMF_ERR_ABORT(rc)
           call ESMF_InfoSet(info, key="layout", values=layout, rc=rc); ESMF_ERR_ABORT(rc)
+          call ESMF_InfoSet(info, key="tilesize", value=Atmos%mlon, rc=rc); ESMF_ERR_ABORT(rc)
 
           call ESMF_GridCompSetServices(fcstGridComp(n), SetServicesNest, userrc=urc, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
           if (ESMF_LogFoundError(rcToCheck=urc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
-
-
-          if (ESMF_GridCompIsPetLocal(fcstGridComp(n), rc=rc)) then
-            call ESMF_GridCompGet(fcstGridComp(n), grid=fcstGrid(n), rc=rc); ESMF_ERR_ABORT(rc)
-          endif
 
         else
 
@@ -688,7 +680,6 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
           fcstGridComp(n) = ESMF_GridCompCreate(name="nest", petList=petListNest, rc=rc); ESMF_ERR_ABORT(rc)
 
           call ESMF_InfoGetFromHost(fcstGridComp(n), info=info, rc=rc); ESMF_ERR_ABORT(rc)
-          call ESMF_InfoSet(info, key="gridfile", value=trim(gridfile), rc=rc); ESMF_ERR_ABORT(rc)
           call ESMF_InfoSet(info, key="layout", values=layout, rc=rc); ESMF_ERR_ABORT(rc)
           call ESMF_InfoSet(info, key="nx", value=nx, rc=rc); ESMF_ERR_ABORT(rc)
           call ESMF_InfoSet(info, key="ny", value=ny, rc=rc); ESMF_ERR_ABORT(rc)
@@ -700,36 +691,36 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 
           deallocate(petListNest)
 
-          if (ESMF_GridCompIsPetLocal(fcstGridComp(n), rc=rc)) then
-            call ESMF_GridCompGet(fcstGridComp(n), grid=fcstGrid(n), rc=rc); ESMF_ERR_ABORT(rc)
-
-            call ESMF_GridAddCoord(fcstGrid(n), staggerLoc=ESMF_STAGGERLOC_CENTER, rc=rc); ESMF_ERR_ABORT(rc)
-            call ESMF_GridAddCoord(fcstGrid(n), staggerLoc=ESMF_STAGGERLOC_CORNER, rc=rc); ESMF_ERR_ABORT(rc)
-
-            ! define "center" coordinate values
-            call ESMF_GridGetCoord(fcstGrid(n), coordDim=1, staggerLoc=ESMF_STAGGERLOC_CENTER, &
-                                   totalLBound=tlb, totalUBound=tub, &
-                                   farrayPtr=glonPtr, rc=rc); ESMF_ERR_ABORT(rc)
-            glonPtr(tlb(1):tub(1),tlb(2):tub(2)) = Atmos%lon(tlb(1):tub(1),tlb(2):tub(2)) * dtor
-
-            call ESMF_GridGetCoord(fcstGrid(n), coordDim=2, staggerLoc=ESMF_STAGGERLOC_CENTER, &
-                                   totalLBound=tlb, totalUBound=tub, &
-                                   farrayPtr=glatPtr, rc=rc); ESMF_ERR_ABORT(rc)
-            glatPtr(tlb(1):tub(1),tlb(2):tub(2)) = Atmos%lat(tlb(1):tub(1),tlb(2):tub(2)) * dtor
-
-            ! define "corner" coordinate values
-            call ESMF_GridGetCoord(fcstGrid(n), coordDim=1, staggerLoc=ESMF_STAGGERLOC_CORNER, &
-                                   totalLBound=tlb, totalUBound=tub, &
-                                   farrayPtr=glonPtr, rc=rc); ESMF_ERR_ABORT(rc)
-            glonPtr(tlb(1):tub(1),tlb(2):tub(2)) = Atmos%lon_bnd(tlb(1):tub(1),tlb(2):tub(2)) * dtor
-
-            call ESMF_GridGetCoord(fcstGrid(n), coordDim=2, staggerLoc=ESMF_STAGGERLOC_CORNER, &
-                                   totalLBound=tlb, totalUBound=tub, &
-                                   farrayPtr=glatPtr, rc=rc); ESMF_ERR_ABORT(rc)
-            glatPtr(tlb(1):tub(1),tlb(2):tub(2)) = Atmos%lat_bnd(tlb(1):tub(1),tlb(2):tub(2)) * dtor
-          end if ! IsPetLocal
-
         end if
+
+        if (ESMF_GridCompIsPetLocal(fcstGridComp(n), rc=rc)) then
+          call ESMF_GridCompGet(fcstGridComp(n), grid=fcstGrid(n), rc=rc); ESMF_ERR_ABORT(rc)
+
+          call ESMF_GridAddCoord(fcstGrid(n), staggerLoc=ESMF_STAGGERLOC_CENTER, rc=rc); ESMF_ERR_ABORT(rc)
+          call ESMF_GridAddCoord(fcstGrid(n), staggerLoc=ESMF_STAGGERLOC_CORNER, rc=rc); ESMF_ERR_ABORT(rc)
+
+          ! define "center" coordinate values
+          call ESMF_GridGetCoord(fcstGrid(n), coordDim=1, staggerLoc=ESMF_STAGGERLOC_CENTER, &
+                                 totalLBound=tlb, totalUBound=tub, &
+                                 farrayPtr=glonPtr, rc=rc); ESMF_ERR_ABORT(rc)
+          glonPtr(tlb(1):tub(1),tlb(2):tub(2)) = Atmos%lon(tlb(1):tub(1),tlb(2):tub(2)) * dtor
+
+          call ESMF_GridGetCoord(fcstGrid(n), coordDim=2, staggerLoc=ESMF_STAGGERLOC_CENTER, &
+                                 totalLBound=tlb, totalUBound=tub, &
+                                 farrayPtr=glatPtr, rc=rc); ESMF_ERR_ABORT(rc)
+          glatPtr(tlb(1):tub(1),tlb(2):tub(2)) = Atmos%lat(tlb(1):tub(1),tlb(2):tub(2)) * dtor
+
+          ! define "corner" coordinate values
+          call ESMF_GridGetCoord(fcstGrid(n), coordDim=1, staggerLoc=ESMF_STAGGERLOC_CORNER, &
+                                 totalLBound=tlb, totalUBound=tub, &
+                                 farrayPtr=glonPtr, rc=rc); ESMF_ERR_ABORT(rc)
+          glonPtr(tlb(1):tub(1),tlb(2):tub(2)) = Atmos%lon_bnd(tlb(1):tub(1),tlb(2):tub(2)) * dtor
+
+          call ESMF_GridGetCoord(fcstGrid(n), coordDim=2, staggerLoc=ESMF_STAGGERLOC_CORNER, &
+                                 totalLBound=tlb, totalUBound=tub, &
+                                 farrayPtr=glatPtr, rc=rc); ESMF_ERR_ABORT(rc)
+          glatPtr(tlb(1):tub(1),tlb(2):tub(2)) = Atmos%lat_bnd(tlb(1):tub(1),tlb(2):tub(2)) * dtor
+        end if ! IsPetLocal
 
       end do
 !
