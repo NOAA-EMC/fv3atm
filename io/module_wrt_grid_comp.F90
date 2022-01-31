@@ -180,7 +180,7 @@
       real(ESMF_KIND_R8)                            :: x1, y1, x, y, delat
       type(ESMF_TimeInterval)                       :: IAU_offsetTI
 
-      character(256)                          :: cf_filename
+      character(256)                          :: cf_open, cf_close
       character(256)                          :: gridfile
       integer                                 :: num_output_file
 !
@@ -334,14 +334,15 @@
       do n=1, ngrids
 
         if (n == 1) then
-           cf_filename = 'model_configure'
+          ! for top level domain look directly in cf
+          cf_output_grid = cf
         else
-           write(cf_filename,'(A,I2.2)') 'output_grid_', n
+          ! for nest domains, look under specific section
+          write(cf_open,'("<output_grid_",I2.2,">")') n
+          write(cf_close,'("</output_grid_",I2.2,">")') n
+          cf_output_grid = ESMF_ConfigCreate(cf, openLabel=trim(cf_open), closeLabel=trim(cf_close), rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
         end if
-
-        cf_output_grid = ESMF_ConfigCreate(rc=rc)
-        call ESMF_ConfigLoadFile(config=cf_output_grid ,filename=trim(cf_filename) ,rc=rc)
-        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
         if (allocated(wrt_int_state%lat_start_wrtgrp)) deallocate (wrt_int_state%lat_start_wrtgrp)
         if (allocated(wrt_int_state%lat_end_wrtgrp  )) deallocate (wrt_int_state%lat_end_wrtgrp  )
@@ -431,7 +432,11 @@
       ! which means use lossless compression.
       if (nbits(n) < 1 .or. nbits(n) > 31)  nbits(n)=0  ! lossless compression (no quantization)
 
-      call ESMF_ConfigDestroy(config=cf_output_grid, rc=rc)
+      if (cf_output_grid /= cf) then
+        ! destroy the temporary config object created for nest domains
+        call ESMF_ConfigDestroy(config=cf_output_grid, rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+      endif
 
       if ( trim(output_grid(n)) == 'cubed_sphere_grid' ) then
         !*** Create cubed sphere grid from file

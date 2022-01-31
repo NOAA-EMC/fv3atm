@@ -620,8 +620,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
       endif
 !
 !-----------------------------------------------------------------------
-!*** create grid for output fields
-!*** first try: Create cubed sphere grid from file
+!*** create grid for output fields, using FV3 parameters
 !-----------------------------------------------------------------------
 !
       call mpp_error(NOTE, 'before create fcst grid')
@@ -840,7 +839,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
         allocate(fieldbundlephys(nbdlphys,ngrids))
 
         do n=1,ngrids
-        bundle_grid=''  ! top-level domain will NOT have g01_ prefix
+        bundle_grid=''  ! all domains have the gXX_ prefix
         if ( ngrids>1 ) then
           write(bundle_grid,'(A1,I2.2,A1)') 'g',n, '_'
         endif
