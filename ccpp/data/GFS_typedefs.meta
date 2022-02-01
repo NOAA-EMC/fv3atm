@@ -859,6 +859,13 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
+[rca]
+  standard_name = aerodynamic_resistance_in_canopy
+  long_name = canopy resistance
+  units = s m-1
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
 [tprcp]
   standard_name = nonnegative_lwe_thickness_of_precipitation_amount_on_dynamics_timestep
   long_name = total precipitation amount in each time step
@@ -1282,7 +1289,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (control_for_land_surface_scheme == identifier_for_noahmp_land_surface_scheme .or. (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme .and. flag_for_reading_leaf_area_index_from_input))
+  active = (control_for_land_surface_scheme == identifier_for_noah_land_surface_scheme .or. control_for_land_surface_scheme == identifier_for_noahmp_land_surface_scheme .or. (control_for_land_surface_scheme == identifier_for_ruc_land_surface_scheme .and. flag_for_reading_leaf_area_index_from_input))
 [xsaixy]
   standard_name = stem_area_index
   long_name = stem area index
@@ -2608,6 +2615,12 @@
 [cplwav2atm]
   standard_name = flag_for_one_way_ocean_wave_coupling_to_atmosphere
   long_name = flag controlling ocean wave coupling to the atmosphere (default off)
+  units = flag
+  dimensions = ()
+  type = logical
+[cplaqm]
+  standard_name = flag_for_aqm_coupling
+  long_name = flag controlling cplaqm collection (default off)
   units = flag
   dimensions = ()
   type = logical
