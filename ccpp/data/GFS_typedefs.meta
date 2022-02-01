@@ -9380,7 +9380,7 @@
   standard_name = flag_convective_tracer_transport_interstitial
   long_name = flag for interstitial tracer transport
   units = flag
-  dimensions = (number_of_tracers_plus_one)
+  dimensions = (number_of_tracers)
   type = logical
 [oz_coeffp5]
   standard_name = number_of_coefficients_in_ozone_forcing_data_plus_five
