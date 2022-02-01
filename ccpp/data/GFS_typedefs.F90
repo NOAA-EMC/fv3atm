@@ -3571,7 +3571,7 @@ module GFS_typedefs
     logical :: lndp_each_step = .false.
 
 !--- aerosol scavenging factors
-    integer, parameter :: max_scav_factors = 25
+    integer, parameter :: max_scav_factors = 183
     character(len=40)  :: fscav_aero(max_scav_factors)
 
     real(kind=kind_phys) :: radar_tten_limits(2) = (/ limit_unspecified, limit_unspecified /)
