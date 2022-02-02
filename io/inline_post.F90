@@ -16,7 +16,7 @@ module inline_post
 
   contains
 
-  subroutine inline_post_run(wrt_int_state,mypei,mpicomp,lead_write,      &
+  subroutine inline_post_run(wrt_int_state,grid_id,mypei,mpicomp,lead_write,      &
              mynfhr,mynfmin,mynfsec)
 !
 !  revision history:
@@ -30,6 +30,7 @@ module inline_post
 !-----------------------------------------------------------------------
 !
       type(wrt_internal_state),intent(in)       :: wrt_int_state
+      integer,intent(in)                        :: grid_id
       integer,intent(in)                        :: mypei
       integer,intent(in)                        :: mpicomp
       integer,intent(in)                        :: lead_write
@@ -37,14 +38,14 @@ module inline_post
       integer,intent(in)                        :: mynfmin
       integer,intent(in)                        :: mynfsec
 !
-      if(mypei == 0) print *,'inline_post_run, output_grid=',trim(output_grid)
-      if(trim(output_grid) == 'gaussian_grid'                &
-        .or. trim(output_grid) == 'global_latlon') then
+      if(mypei == 0) print *,'inline_post_run, output_grid=',trim(output_grid(grid_id))
+      if(trim(output_grid(grid_id)) == 'gaussian_grid'                &
+        .or. trim(output_grid(grid_id)) == 'global_latlon') then
           call post_run_gfs(wrt_int_state, mypei, mpicomp, lead_write, &
                             mynfhr, mynfmin,mynfsec)
-      else if( trim(output_grid) == 'regional_latlon'          &
-        .or.  trim(output_grid) == 'rotated_latlon'            &
-        .or.  trim(output_grid) == 'lambert_conformal') then
+      else if( trim(output_grid(grid_id)) == 'regional_latlon'          &
+        .or.  trim(output_grid(grid_id)) == 'rotated_latlon'            &
+        .or.  trim(output_grid(grid_id)) == 'lambert_conformal') then
       if(mypei == 0) print *,'inline_post_run, call post_run_regional'
           call post_run_regional(wrt_int_state, mypei, mpicomp, lead_write, &
                             mynfhr, mynfmin,mynfsec)
@@ -55,21 +56,22 @@ module inline_post
 !
 !-----------------------------------------------------------------------
 !
-    subroutine inline_post_getattr(wrt_int_state)
+    subroutine inline_post_getattr(wrt_int_state,grid_id)
 !
       use esmf
 !
       implicit none
 !
       type(wrt_internal_state),intent(inout)    :: wrt_int_state
+      integer, intent(in) :: grid_id
 !
-        if(trim(output_grid) == 'gaussian_grid'                &
-          .or. trim(output_grid) == 'global_latlon') then
+        if(trim(output_grid(grid_id)) == 'gaussian_grid'                &
+          .or. trim(output_grid(grid_id)) == 'global_latlon') then
             call post_getattr_gfs(wrt_int_state)
-        else if( trim(output_grid) == 'regional_latlon'          &
-          .or.  trim(output_grid) == 'rotated_latlon'            &
-          .or.  trim(output_grid) == 'lambert_conformal') then
-            call post_getattr_regional(wrt_int_state)
+        else if( trim(output_grid(grid_id)) == 'regional_latlon'          &
+          .or.  trim(output_grid(grid_id)) == 'rotated_latlon'            &
+          .or.  trim(output_grid(grid_id)) == 'lambert_conformal') then
+            call post_getattr_regional(wrt_int_state,grid_id)
         endif
 !
     end subroutine inline_post_getattr

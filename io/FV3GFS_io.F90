@@ -196,7 +196,7 @@ module FV3GFS_io_mod
      nsfcprop2d = nsfcprop2d + 16
    endif
 
-   allocate (temp2d(isc:iec,jsc:jec,nsfcprop2d+Model%ntot3d+Model%nctp))
+   allocate (temp2d(isc:iec,jsc:jec,nsfcprop2d+Model%ntot2d+Model%nctp))
    allocate (temp3d(isc:iec,jsc:jec,1:lev,14+Model%ntot3d+2*ntr))
    allocate (temp3dlevsp1(isc:iec,jsc:jec,1:lev+1,3))
 
@@ -3081,7 +3081,7 @@ module FV3GFS_io_mod
 !
 #ifdef use_WRTCOMP
 
- subroutine fv_phys_bundle_setup(Diag, axes, phys_bundle, fcst_grid, quilting, nbdlphys)
+ subroutine fv_phys_bundle_setup(Diag, axes, phys_bundle, fcst_grid, quilting, nbdlphys, rc)
 !
 !-------------------------------------------------------------
 !*** set esmf bundle for phys output fields
@@ -3098,9 +3098,11 @@ module FV3GFS_io_mod
    type(ESMF_Grid),intent(inout)               :: fcst_grid
    logical,intent(in)                          :: quilting
    integer, intent(in)                         :: nbdlphys
+   integer,intent(out)                         :: rc
+
 !
 !*** local variables
-   integer i, j, k, n, rc, idx, ibdl, nbdl
+   integer i, j, k, n, idx, ibdl, nbdl
    integer id, axis_length, direction, edges, axis_typ
    integer num_attributes, num_field_dyn
    integer currdate(6)
@@ -3227,6 +3229,7 @@ module FV3GFS_io_mod
                               name="vertical_dim_labels", valueList=axis_name_vert, rc=rc)
        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
      endif
+     deallocate(axis_name_vert)
    endif
 
 !*** add attributes
@@ -3341,6 +3344,8 @@ module FV3GFS_io_mod
      endif
 
    enddo
+   deallocate(axis_name)
+   deallocate(all_axes)
 
  end subroutine fv_phys_bundle_setup
 !
