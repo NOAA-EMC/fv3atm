@@ -338,7 +338,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 
     character(256)                         :: gridfile
 
-    character(4) :: bundle_grid
+    character(8) :: bundle_grid
     type(ESMF_FieldBundle),dimension(:), allocatable    :: fieldbundle     ! dynamics bundles
     type(ESMF_FieldBundle),dimension(:,:), allocatable  :: fieldbundlephys ! physics bundles
 
@@ -839,9 +839,9 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
         allocate(fieldbundlephys(nbdlphys,ngrids))
 
         do n=1,ngrids
-        bundle_grid=''  ! all domains have the gXX_ prefix
-        if ( ngrids>1 ) then
-          write(bundle_grid,'(A1,I2.2,A1)') 'g',n, '_'
+        bundle_grid=''
+        if (ngrids > 1 .and. n >= 2) then
+          write(bundle_grid,'(A5,I2.2,A1)') '.nest', n, '.'
         endif
 
         do i=1,num_files
@@ -849,7 +849,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
          tempState = ESMF_StateCreate(rc=rc)
          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-         name_FB = trim(bundle_grid) // filename_base(i)
+         name_FB = trim(filename_base(i)) // trim(bundle_grid)
 !
          if( i==1 ) then
 ! for dyn
