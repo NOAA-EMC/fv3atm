@@ -3943,7 +3943,7 @@ module GFS_typedefs
     if (levr < 0) then
       Model%levr           = levs
     else if (levr > levs) then
-      write(0,*) "Logic error, number of radiatiton levels (levr) cannot exceed number of model levels (levs)"
+      write(0,*) "Logic error, number of radiation levels (levr) cannot exceed number of model levels (levs)"
       stop
     else
       Model%levr           = levr
