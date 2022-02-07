@@ -501,11 +501,10 @@
         endif
       else if ( trim(output_grid(n)) == 'gaussian_grid') then
 
-        wrtGrid(n) = ESMF_GridCreate1PeriDim(minIndex=(/1,1/),                                     &
-                                          maxIndex=(/imo(n),jmo(n)/), regDecomp=(/itasks,jtasks/), &
-                                          indexflag=ESMF_INDEX_GLOBAL,                             &
-                                          name='wrt_grid',rc=rc)
-!                                         indexflag=ESMF_INDEX_GLOBAL, coordSys=ESMF_COORDSYS_SPH_DEG
+        wrtGrid(n) = ESMF_GridCreate1PeriDim(minIndex=(/1,1/),                                        &
+                                             maxIndex=(/imo(n),jmo(n)/), regDecomp=(/itasks,jtasks/), &
+                                             indexflag=ESMF_INDEX_GLOBAL,                             &
+                                             name='wrt_grid',rc=rc)
 
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
@@ -577,11 +576,13 @@
         wrt_int_state%jm = jmo(n)
         wrt_int_state%post_maptype = 4
 
-        deallocate(slat)
+        deallocate(slat, lat, lon)
+
       else if ( trim(output_grid(n)) == 'global_latlon') then
-        wrtGrid(n) = ESMF_GridCreate1PeriDim(minIndex=(/1,1/),                                     &
-                                          maxIndex=(/imo(n),jmo(n)/), regDecomp=(/itasks,jtasks/), &
-                                          indexflag=ESMF_INDEX_GLOBAL, name='wrt_grid',rc=rc)
+        wrtGrid(n) = ESMF_GridCreate1PeriDim(minIndex=(/1,1/),                                        &
+                                             maxIndex=(/imo(n),jmo(n)/), regDecomp=(/itasks,jtasks/), &
+                                             indexflag=ESMF_INDEX_GLOBAL,                             &
+                                             name='wrt_grid',rc=rc)
 
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
@@ -659,14 +660,16 @@
         wrt_int_state%jm = jmo(n)
         wrt_int_state%post_maptype = 0
 
+        deallocate(lat, lon)
+
       else if ( trim(output_grid(n)) == 'regional_latlon' .or. &
                 trim(output_grid(n)) == 'rotated_latlon'  .or. &
                 trim(output_grid(n)) == 'lambert_conformal' ) then
 
-        wrtGrid(n) = ESMF_GridCreate1PeriDim(minIndex=(/1,1/),                                     &
-                                          maxIndex=(/imo(n),jmo(n)/), regDecomp=(/itasks,jtasks/), &
-                                          indexflag=ESMF_INDEX_GLOBAL,                             &
-                                          name='wrt_grid',rc=rc)
+        wrtGrid(n) = ESMF_GridCreateNoPeriDim(minIndex=(/1,1/),                                        &
+                                              maxIndex=(/imo(n),jmo(n)/), regDecomp=(/itasks,jtasks/), &
+                                              indexflag=ESMF_INDEX_GLOBAL,                             &
+                                              name='wrt_grid',rc=rc)
 
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
@@ -1580,7 +1583,7 @@
             file_bundle = wrt_int_state%wrtFB(nbdl)
           endif
 
-          ! FIXME  map nbdl to [1:num_files]
+          ! FIXME  map nbdl to [1:num_files], only used for output_file
           nnnn = mod(nbdl-1, num_files) + 1
 
           ! set default chunksizes for netcdf output
@@ -1655,7 +1658,7 @@
           if (trim(output_grid(grid_id)) == 'cubed_sphere_grid') then
 
             wbeg = MPI_Wtime()
-            if (trim(output_file(nbdl)) == 'netcdf_parallel') then
+            if (trim(output_file(nnnn)) == 'netcdf_parallel') then
               call write_netcdf(wrt_int_state%wrtFB(nbdl),trim(filename), &
                                .true., wrt_mpi_comm,wrt_int_state%mype, &
                                grid_id,rc)
