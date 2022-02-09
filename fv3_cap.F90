@@ -365,7 +365,7 @@ module fv3gfs_cap_mod
 
 ! call fcst Initialize (including creating fcstgrid and fcst fieldbundle)
     call ESMF_GridCompInitialize(fcstComp, exportState=fcstState,    &
-                                 clock=clock, userRc=urc, rc=rc)
+                                 clock=clock, phase=1, userRc=urc, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
     if (ESMF_LogFoundError(rcToCheck=urc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
@@ -719,21 +719,12 @@ module fv3gfs_cap_mod
 !
     ! --- advertise Fields in importState and exportState -------------------
 
-    ! importable fields:
-    do i = 1, size(importFieldsInfo)
-      call NUOPC_Advertise(importState, &
-                           StandardName=trim(importFieldsInfo(i)%name), &
-                           SharePolicyField='share', vm=fcstVM, rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-    end do
+! call fcst Initialize (advertise phase)
+    call ESMF_GridCompInitialize(fcstComp, importState=importState, exportState=exportState, &
+                                 clock=clock, phase=2, userRc=urc, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-    ! exportable fields:
-    do i = 1, size(exportFieldsInfo)
-      call NUOPC_Advertise(exportState, &
-                           StandardName=trim(exportFieldsInfo(i)%name), &
-                           SharePolicyField='share', vm=fcstVM, rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-    end do
+    if (ESMF_LogFoundError(rcToCheck=urc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
     if(mype==0) print *,'in fv3_cap, aft import, export fields in atmos'
     if(mype==0) print *,'in fv3_cap, init time=',MPI_Wtime()-timeis
@@ -749,39 +740,25 @@ module fv3gfs_cap_mod
 
     ! local variables
     character(len=*),parameter :: subname='(fv3gfs_cap:InitializeRealize)'
+    type(ESMF_Clock)           :: clock
     type(ESMF_State)           :: importState, exportState
     logical                    :: isPetLocal
+    integer                    :: urc
 
     rc = ESMF_SUCCESS
 
     ! query for importState and exportState
-    call NUOPC_ModelGet(gcomp, importState=importState, exportState=exportState, rc=rc)
+    call NUOPC_ModelGet(gcomp, driverClock=clock, importState=importState, exportState=exportState, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
     ! --- conditionally realize or remove Fields in importState and exportState -------------------
 
-    isPetLocal = ESMF_GridCompIsPetLocal(fcstComp, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__,  file=__FILE__)) return
+! call fcst Initialize (realize phase)
+    call ESMF_GridCompInitialize(fcstComp, importState=importState, exportState=exportState, &
+                                 clock=clock, phase=3, userRc=urc, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-    if (isPetLocal) then
-
-      ! -- realize connected fields in exportState
-      call realizeConnectedCplFields(exportState, fcstGrid(mygrid),                  &
-                                     numLevels, numSoilLayers, numTracers,           &
-                                     exportFieldsInfo, 'FV3 Export', exportFields, 0.0_ESMF_KIND_R8, rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__,  file=__FILE__)) return
-
-      ! -- initialize export fields if applicable
-      call setup_exportdata(rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__,  file=__FILE__)) return
-
-      ! -- realize connected fields in importState
-      call realizeConnectedCplFields(importState, fcstGrid(mygrid),                  &
-                                     numLevels, numSoilLayers, numTracers,           &
-                                     importFieldsInfo, 'FV3 Import', importFields, 9.99e20_ESMF_KIND_R8, rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__,  file=__FILE__)) return
-
-    end if
+    if (ESMF_LogFoundError(rcToCheck=urc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
   end subroutine InitializeRealize
 
