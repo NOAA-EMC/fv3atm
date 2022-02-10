@@ -178,7 +178,7 @@
       real(ESMF_KIND_R8)                            :: rot_lon, rot_lat
       real(ESMF_KIND_R8)                            :: geo_lon, geo_lat
       real(ESMF_KIND_R8)                            :: lon1_r8, lat1_r8
-      real(ESMF_KIND_R8)                            :: x1, y1, x, y, delat
+      real(ESMF_KIND_R8)                            :: x1, y1, x, y, delat, delon
       type(ESMF_TimeInterval)                       :: IAU_offsetTI
 
       character(256)                          :: cf_open, cf_close
@@ -623,8 +623,9 @@
         endif
         wrt_int_state%latstart = lat(1)
         wrt_int_state%latlast  = lat(jmo(n))
+        delon = 360.d0/real(imo(n),8)
         do i=1,imo(n)
-          lon(i) = 360.d0/real(imo(n),8) *real(i-1,8)
+          lon(i) = real(i-1,8)*delon
         enddo
         wrt_int_state%lonstart = lon(1)
         wrt_int_state%lonlast  = lon(imo(n))
@@ -638,6 +639,12 @@
         wrt_int_state%lat_end   = ubound(latPtr,2)
         wrt_int_state%lon_start = lbound(lonPtr,1)
         wrt_int_state%lon_end   = ubound(lonPtr,1)
+        lon1(n) = wrt_int_state%lonstart
+        lon2(n) = wrt_int_state%lonlast
+        lat1(n) = wrt_int_state%latstart
+        lat2(n) = wrt_int_state%latlast
+        dlon(n) = delon
+        dlat(n) = delat
         allocate( wrt_int_state%lat_start_wrtgrp(wrt_int_state%petcount))
         allocate( wrt_int_state%lat_end_wrtgrp  (wrt_int_state%petcount))
         call mpi_allgather(wrt_int_state%lat_start,1,MPI_INTEGER,    &
@@ -1018,22 +1025,8 @@
               call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
                                      name="jm", value=jmo(grid_id), rc=rc)
 
-            else if (trim(output_grid(grid_id)) == 'global_latlon') then
-
-              call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                                     name="grid", value="latlon", rc=rc)
-              call ESMF_AttributeAdd(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                                     attrList=(/"lonstart","latstart","lonlast ","latlast "/), rc=rc)
-              call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                                     name="lonstart", value=wrt_int_state%lonstart, rc=rc)
-              call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                                     name="latstart", value=wrt_int_state%latstart, rc=rc)
-              call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                                     name="lonlast", value=wrt_int_state%lonlast, rc=rc)
-              call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
-                                     name="latlast", value=wrt_int_state%latlast, rc=rc)
-
-            else if (trim(output_grid(grid_id)) == 'regional_latlon') then
+            else if (trim(output_grid(grid_id)) == 'regional_latlon' &
+                .or. trim(output_grid(grid_id)) == 'global_latlon') then
 
               call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
                                      name="grid", value="latlon", rc=rc)
