@@ -175,18 +175,28 @@ module FV3GFS_io_mod
 
    ntr = size(GFS_Data(1)%Statein%qgrs,3)
 
+     nsfcprop2d = 93
    if (Model%lsm == Model%lsm_noahmp) then
-     nsfcprop2d = 156
+     nsfcprop2d = nsfcprop2d + 49
+     if (Model%use_cice_alb) then
+       nsfcprop2d = nsfcprop2d + 4
+     endif
    elseif (Model%lsm == Model%lsm_ruc) then
-     nsfcprop2d = 125
+     nsfcprop2d = nsfcprop2d + 4 + 12
      if (Model%rdlai) then
        nsfcprop2d = nsfcprop2d + 1
      endif
    else
-     nsfcprop2d = 107
+     if (Model%use_cice_alb) then
+       nsfcprop2d = nsfcprop2d + 4
+     endif
    endif
 
-   allocate (temp2d(isc:iec,jsc:jec,nsfcprop2d+Model%ntot3d+Model%nctp))
+   if (Model%nstf_name(1) > 0) then
+     nsfcprop2d = nsfcprop2d + 16
+   endif
+
+   allocate (temp2d(isc:iec,jsc:jec,nsfcprop2d+Model%ntot2d+Model%nctp))
    allocate (temp3d(isc:iec,jsc:jec,1:lev,14+Model%ntot3d+2*ntr))
    allocate (temp3dlevsp1(isc:iec,jsc:jec,1:lev+1,3))
 
@@ -233,7 +243,7 @@ module FV3GFS_io_mod
        temp2d(i,j,32) = GFS_Data(nb)%Sfcprop%f10m(ix)
        temp2d(i,j,33) = GFS_Data(nb)%Sfcprop%tprcp(ix)
        temp2d(i,j,34) = GFS_Data(nb)%Sfcprop%srflag(ix)
-       if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp .or. Model%lsm == Model%lsm_noah_wrfv4) then
+       if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp) then
          temp2d(i,j,35) = GFS_Data(nb)%Sfcprop%slc(ix,1)
          temp2d(i,j,36) = GFS_Data(nb)%Sfcprop%slc(ix,2)
          temp2d(i,j,37) = GFS_Data(nb)%Sfcprop%slc(ix,3)
@@ -313,15 +323,17 @@ module FV3GFS_io_mod
        temp2d(i,j,89) = GFS_Data(nb)%Sfcprop%albdifvis_lnd(ix)
        temp2d(i,j,90) = GFS_Data(nb)%Sfcprop%albdifnir_lnd(ix)
        temp2d(i,j,91) = GFS_Data(nb)%Sfcprop%emis_lnd(ix)
+       temp2d(i,j,92) = GFS_Data(nb)%Sfcprop%emis_ice(ix)
+       temp2d(i,j,93) = GFS_Data(nb)%Sfcprop%sncovr_ice(ix)
 
-       idx_opt = 92
+       idx_opt = 94
        if (Model%use_cice_alb .or. Model%lsm == Model%lsm_ruc) then
-         temp2d(i,j,idx_opt+1) = GFS_Data(nb)%Sfcprop%albdirvis_ice(ix)
-         temp2d(i,j,idx_opt+2) = GFS_Data(nb)%Sfcprop%albdirnir_ice(ix)
-         temp2d(i,j,idx_opt+3) = GFS_Data(nb)%Sfcprop%albdifvis_ice(ix)
-         temp2d(i,j,idx_opt+4) = GFS_Data(nb)%Sfcprop%albdifnir_ice(ix)
+         temp2d(i,j,idx_opt) = GFS_Data(nb)%Sfcprop%albdirvis_ice(ix)
+         temp2d(i,j,idx_opt+1) = GFS_Data(nb)%Sfcprop%albdirnir_ice(ix)
+         temp2d(i,j,idx_opt+2) = GFS_Data(nb)%Sfcprop%albdifvis_ice(ix)
+         temp2d(i,j,idx_opt+3) = GFS_Data(nb)%Sfcprop%albdifnir_ice(ix)
+       idx_opt = idx_opt + 4
        endif
-       idx_opt = idx_opt + 5
 
        if (Model%lsm == Model%lsm_noahmp) then
         temp2d(i,j,idx_opt)    = GFS_Data(nb)%Sfcprop%snowxy(ix)
@@ -385,18 +397,12 @@ module FV3GFS_io_mod
         temp2d(i,j,idx_opt+6)  = GFS_Data(nb)%Sfcprop%tsnow_ice(ix)
         temp2d(i,j,idx_opt+7)  = GFS_Data(nb)%Sfcprop%snowfallac_land(ix)
         temp2d(i,j,idx_opt+8)  = GFS_Data(nb)%Sfcprop%snowfallac_ice(ix)
-        temp2d(i,j,idx_opt+9)  = GFS_Data(nb)%Sfcprop%sncovr_ice(ix)
-        temp2d(i,j,idx_opt+10) = GFS_Data(nb)%Sfcprop%sfalb_lnd(ix)
-        temp2d(i,j,idx_opt+11) = GFS_Data(nb)%Sfcprop%sfalb_lnd_bck(ix)
-!       temp2d(i,j,idx_opt+16) = GFS_Data(nb)%Sfcprop%albdirvis_ice(ix)
-!       temp2d(i,j,idx_opt+17) = GFS_Data(nb)%Sfcprop%albdirnir_ice(ix)
-!       temp2d(i,j,idx_opt+18) = GFS_Data(nb)%Sfcprop%albdifvis_ice(ix)
-!       temp2d(i,j,idx_opt+19) = GFS_Data(nb)%Sfcprop%albdifnir_ice(ix)
-        temp2d(i,j,idx_opt+12) = GFS_Data(nb)%Sfcprop%sfalb_ice(ix)
-        temp2d(i,j,idx_opt+13) = GFS_Data(nb)%Sfcprop%emis_ice(ix)
-        idx_opt = idx_opt + 14
+        temp2d(i,j,idx_opt+9)  = GFS_Data(nb)%Sfcprop%sfalb_lnd(ix)
+        temp2d(i,j,idx_opt+10) = GFS_Data(nb)%Sfcprop%sfalb_lnd_bck(ix)
+        temp2d(i,j,idx_opt+11) = GFS_Data(nb)%Sfcprop%sfalb_ice(ix)
+        idx_opt = idx_opt + 12
         if (Model%rdlai) then
-          temp2d(i,j,idx_opt+23) = GFS_Data(nb)%Sfcprop%xlaixy(ix)
+          temp2d(i,j,idx_opt+1) = GFS_Data(nb)%Sfcprop%xlaixy(ix)
           idx_opt = idx_opt + 1
         endif
        endif
@@ -531,9 +537,9 @@ module FV3GFS_io_mod
 
     if (Model%lsm == Model%lsm_ruc .and. warm_start) then
       if(Model%rdlai) then
-        nvar_s2r = 15
+        nvar_s2r = 13
       else
-        nvar_s2r = 14
+        nvar_s2r = 12
       end if
       nvar_s3  = 5
     else
@@ -657,7 +663,7 @@ module FV3GFS_io_mod
       enddo
     enddo
 
-    nvar_s2m = 44
+    nvar_s2m = 48
     if (Model%use_cice_alb .or. Model%lsm == Model%lsm_ruc) then
       nvar_s2m = nvar_s2m + 4
 !     nvar_s2m = nvar_s2m + 5
@@ -777,9 +783,13 @@ module FV3GFS_io_mod
       !--- allocate the various containers needed for restarts
       allocate(sfc_name2(nvar_s2m+nvar_s2o+nvar_s2mp+nvar_s2r))
       allocate(sfc_name3(0:nvar_s3+nvar_s3mp))
-      allocate(sfc_var2(nx,ny,nvar_s2m+nvar_s2o+nvar_s2mp+nvar_s2r),sfc_var3ice(nx,ny,Model%kice))
+      allocate(sfc_var2(nx,ny,nvar_s2m+nvar_s2o+nvar_s2mp+nvar_s2r))
+      ! Note that this may cause problems with RUC LSM for coldstart runs from GFS data
+      ! if the initial conditions do contain this variable, because Model%kice is 9 for
+      ! RUC LSM, but tiice in the initial conditions will only have two vertical layers
+      allocate(sfc_var3ice(nx,ny,Model%kice))
 
-      if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp .or. Model%lsm == Model%lsm_noah_wrfv4 .or. (.not.warm_start)) then
+      if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp .or. (.not.warm_start)) then
         allocate(sfc_var3(nx,ny,Model%lsoil,nvar_s3))
       else if (Model%lsm == Model%lsm_ruc) then
         allocate(sfc_var3(nx,ny,Model%lsoil_lsm,nvar_s3))
@@ -844,13 +854,17 @@ module FV3GFS_io_mod
       sfc_name2(42) = 'albdifvis_lnd'
       sfc_name2(43) = 'albdifnir_lnd'
       sfc_name2(44) = 'emis_lnd'
+      sfc_name2(45) = 'emis_ice'
+      sfc_name2(46) = 'sncovr_ice'
+      sfc_name2(47) = 'snodi' ! snowd on ice portion of a cell
+      sfc_name2(48) = 'weasdi'! weasd on ice portion of a cell
 
       if (Model%use_cice_alb .or. Model%lsm == Model%lsm_ruc) then
-        sfc_name2(45) = 'albdirvis_ice'
-        sfc_name2(46) = 'albdifvis_ice'
-        sfc_name2(47) = 'albdirnir_ice'
-        sfc_name2(48) = 'albdifnir_ice'
-!       sfc_name2(49) = 'sfalb_ice'
+        sfc_name2(49) = 'albdirvis_ice'
+        sfc_name2(50) = 'albdifvis_ice'
+        sfc_name2(51) = 'albdirnir_ice'
+        sfc_name2(52) = 'albdifnir_ice'
+!       sfc_name2(53) = 'sfalb_ice'
       endif
 
       if(Model%cplwav) then
@@ -919,17 +933,11 @@ module FV3GFS_io_mod
         sfc_name2(nvar_s2m+25) = 'tsnow_ice'
         sfc_name2(nvar_s2m+26) = 'snowfall_acc_land'
         sfc_name2(nvar_s2m+27) = 'snowfall_acc_ice'
-        sfc_name2(nvar_s2m+28) = 'sncovr_ice'
-        sfc_name2(nvar_s2m+29) = 'sfalb_lnd'
-        sfc_name2(nvar_s2m+30) = 'sfalb_lnd_bck'
-!       sfc_name2(nvar_s2m+31) = 'albdirvis_ice'
-!       sfc_name2(nvar_s2m+32) = 'albdirnir_ice'
-!       sfc_name2(nvar_s2m+33) = 'albdifvis_ice'
-!       sfc_name2(nvar_s2m+34) = 'albdifnir_ice'
-        sfc_name2(nvar_s2m+31) = 'sfalb_ice'
-        sfc_name2(nvar_s2m+32) = 'emis_ice'
+        sfc_name2(nvar_s2m+28) = 'sfalb_lnd'
+        sfc_name2(nvar_s2m+29) = 'sfalb_lnd_bck'
+        sfc_name2(nvar_s2m+30) = 'sfalb_ice'
         if (Model%rdlai) then
-          sfc_name2(nvar_s2m+33) = 'lai'
+          sfc_name2(nvar_s2m+31) = 'lai'
         endif
       else if (Model%lsm == Model%lsm_ruc .and. Model%rdlai) then
         sfc_name2(nvar_s2m+19) = 'lai'
@@ -953,7 +961,7 @@ module FV3GFS_io_mod
         call register_axis(Sfc_restart, 'yaxis_1', 'Y')
         call register_axis(Sfc_restart, 'zaxis_1', dimension_length=Model%kice)
         
-        if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp .or. Model%lsm == Model%lsm_noah_wrfv4) then
+        if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp) then
           call register_axis(Sfc_restart, 'zaxis_2', dimension_length=Model%lsoil)
         else if(Model%lsm == Model%lsm_ruc) then
           call register_axis(Sfc_restart, 'zaxis_2', dimension_length=Model%lsoil_lsm)
@@ -971,12 +979,14 @@ module FV3GFS_io_mod
         if (trim(sfc_name2(num)) == 'sncovr'.or. trim(sfc_name2(num)) == 'tsfcl' .or. trim(sfc_name2(num)) == 'zorll'   &
                                             .or. trim(sfc_name2(num)) == 'zorli' .or. trim(sfc_name2(num)) == 'zorlwav' &
                                             .or. trim(sfc_name2(num)) == 'snodl' .or. trim(sfc_name2(num)) == 'weasdl'  &
+                                            .or. trim(sfc_name2(num)) == 'snodi' .or. trim(sfc_name2(num)) == 'weasdi'  &
                                             .or. trim(sfc_name2(num)) == 'tsfc'  .or. trim(sfc_name2(num)) ==  'zorlw'  &
                                             .or. trim(sfc_name2(num)) == 'albdirvis_lnd' .or. trim(sfc_name2(num)) == 'albdirnir_lnd' &
                                             .or. trim(sfc_name2(num)) == 'albdifvis_lnd' .or. trim(sfc_name2(num)) == 'albdifnir_lnd' &
                                             .or. trim(sfc_name2(num)) == 'albdirvis_ice' .or. trim(sfc_name2(num)) == 'albdirnir_ice' &
                                             .or. trim(sfc_name2(num)) == 'albdifvis_ice' .or. trim(sfc_name2(num)) == 'albdifnir_ice' &
-                                            .or. trim(sfc_name2(num)) == 'emis_lnd' ) then
+                                            .or. trim(sfc_name2(num)) == 'emis_lnd'      .or. trim(sfc_name2(num)) == 'emis_ice'      &
+                                            .or. trim(sfc_name2(num)) == 'sncovr_ice') then
            if(is_lsoil) then
               call register_restart_field(Sfc_restart, sfc_name2(num), var2_p, dimensions=(/'lat','lon'/), is_optional=.true.)
            else
@@ -1035,7 +1045,7 @@ module FV3GFS_io_mod
    endif  ! if not allocated
 
 
-    if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp .or. Model%lsm == Model%lsm_noah_wrfv4 .or. (.not.warm_start)) then
+    if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp .or. (.not.warm_start)) then
       !--- names of the 3D variables to save
       sfc_name3(1) = 'stc'
       sfc_name3(2) = 'smc'
@@ -1169,13 +1179,17 @@ module FV3GFS_io_mod
         Sfcprop(nb)%albdirnir_lnd(ix) = sfc_var2(i,j,41)
         Sfcprop(nb)%albdifvis_lnd(ix) = sfc_var2(i,j,42)
         Sfcprop(nb)%albdifnir_lnd(ix) = sfc_var2(i,j,43)
-        Sfcprop(nb)%emis_lnd(ix)   = sfc_var2(i,j,44)
+        Sfcprop(nb)%emis_lnd(ix)      = sfc_var2(i,j,44)
+        Sfcprop(nb)%emis_ice(ix)      = sfc_var2(i,j,45)
+        Sfcprop(nb)%sncovr_ice(ix)    = sfc_var2(i,j,46)
+        Sfcprop(nb)%snodi(ix)         = sfc_var2(i,j,47)   !--- snodi (snowd on ice  portion of a cell)
+        Sfcprop(nb)%weasdi(ix)        = sfc_var2(i,j,48)   !--- weasdi (weasd on ice  portion of a cell)
         if (Model%use_cice_alb .or. Model%lsm == Model%lsm_ruc) then
-          Sfcprop(nb)%albdirvis_ice(ix) = sfc_var2(i,j,45)
-          Sfcprop(nb)%albdifvis_ice(ix) = sfc_var2(i,j,46)
-          Sfcprop(nb)%albdirnir_ice(ix) = sfc_var2(i,j,47)
-          Sfcprop(nb)%albdifnir_ice(ix) = sfc_var2(i,j,48)
-!         Sfcprop(nb)%sfalb_ice(ix)     = sfc_var2(i,j,49)
+          Sfcprop(nb)%albdirvis_ice(ix) = sfc_var2(i,j,49)
+          Sfcprop(nb)%albdifvis_ice(ix) = sfc_var2(i,j,50)
+          Sfcprop(nb)%albdirnir_ice(ix) = sfc_var2(i,j,51)
+          Sfcprop(nb)%albdifnir_ice(ix) = sfc_var2(i,j,52)
+!         Sfcprop(nb)%sfalb_ice(ix)     = sfc_var2(i,j,53)
         endif
         if(Model%cplwav) then
           Sfcprop(nb)%zorlwav(ix)  = sfc_var2(i,j,nvar_s2m) !--- (zorl from wave model)
@@ -1280,7 +1294,7 @@ module FV3GFS_io_mod
           endif
         endif
 
-        if (warm_start) then
+        if (warm_start .and. Model%kdt > 1) then
           Sfcprop(nb)%slmsk(ix)  = sfc_var2(i,j,1)    !--- slmsk
         endif
 
@@ -1340,17 +1354,11 @@ module FV3GFS_io_mod
           Sfcprop(nb)%tsnow_ice(ix)       = sfc_var2(i,j,nvar_s2m+25)
           Sfcprop(nb)%snowfallac_land(ix) = sfc_var2(i,j,nvar_s2m+26)
           Sfcprop(nb)%snowfallac_ice(ix)  = sfc_var2(i,j,nvar_s2m+27)
-          Sfcprop(nb)%sncovr_ice(ix)      = sfc_var2(i,j,nvar_s2m+28)
-          Sfcprop(nb)%sfalb_lnd(ix)       = sfc_var2(i,j,nvar_s2m+29)
-          Sfcprop(nb)%sfalb_lnd_bck(ix)   = sfc_var2(i,j,nvar_s2m+30)
-!         Sfcprop(nb)%albdirvis_ice(ix)   = sfc_var2(i,j,nvar_s2m+31)
-!         Sfcprop(nb)%albdirnir_ice(ix)   = sfc_var2(i,j,nvar_s2m+32)
-!         Sfcprop(nb)%albdifvis_ice(ix)   = sfc_var2(i,j,nvar_s2m+33)
-!         Sfcprop(nb)%albdifnir_ice(ix)   = sfc_var2(i,j,nvar_s2m+34)
-          Sfcprop(nb)%sfalb_ice(ix)       = sfc_var2(i,j,nvar_s2m+31)
-          Sfcprop(nb)%emis_ice(ix)        = sfc_var2(i,j,nvar_s2m+32)
+          Sfcprop(nb)%sfalb_lnd(ix)       = sfc_var2(i,j,nvar_s2m+28)
+          Sfcprop(nb)%sfalb_lnd_bck(ix)   = sfc_var2(i,j,nvar_s2m+29)
+          Sfcprop(nb)%sfalb_ice(ix)       = sfc_var2(i,j,nvar_s2m+30)
           if (Model%rdlai) then
-            Sfcprop(nb)%xlaixy(ix)        = sfc_var2(i,j,nvar_s2m+33)
+            Sfcprop(nb)%xlaixy(ix)        = sfc_var2(i,j,nvar_s2m+31)
           endif
         else if (Model%lsm == Model%lsm_ruc) then
           ! Initialize RUC snow cover on ice from snow cover
@@ -1391,7 +1399,7 @@ module FV3GFS_io_mod
           Sfcprop(nb)%rechxy(ix)     = sfc_var2(i,j,nvar_s2m+47)
         endif
 
-        if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp .or. Model%lsm == Model%lsm_noah_wrfv4 .or. (.not.warm_start)) then
+        if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp .or. (.not.warm_start)) then
           !--- 3D variables
           do lsoil = 1,Model%lsoil
             Sfcprop(nb)%stc(ix,lsoil) = sfc_var3(i,j,lsoil,1)   !--- stc
@@ -1454,7 +1462,7 @@ module FV3GFS_io_mod
       do nb = 1, Atm_block%nblks
         do ix = 1, Atm_block%blksz(nb)
           if (Sfcprop(nb)%landfrac(ix) > zero) then
-            tem = one / Sfcprop(nb)%landfrac(ix)
+            tem = one / (Sfcprop(nb)%fice(ix)*(one-Sfcprop(nb)%landfrac(ix))+Sfcprop(nb)%landfrac(ix))
             Sfcprop(nb)%snodl(ix)  = Sfcprop(nb)%snowd(ix) * tem
           else
             Sfcprop(nb)%snodl(ix)  = zero
@@ -1469,7 +1477,7 @@ module FV3GFS_io_mod
       do nb = 1, Atm_block%nblks
         do ix = 1, Atm_block%blksz(nb)
           if (Sfcprop(nb)%landfrac(ix) > zero) then
-            tem = one / Sfcprop(nb)%landfrac(ix)
+            tem = one / (Sfcprop(nb)%fice(ix)*(one-Sfcprop(nb)%landfrac(ix))+Sfcprop(nb)%landfrac(ix))
             Sfcprop(nb)%weasdl(ix) = Sfcprop(nb)%weasd(ix) * tem
           else
             Sfcprop(nb)%weasdl(ix) = zero
@@ -1493,7 +1501,9 @@ module FV3GFS_io_mod
 !$omp parallel do default(shared) private(nb, ix)
       do nb = 1, Atm_block%nblks
         do ix = 1, Atm_block%blksz(nb)
-          Sfcprop(nb)%zorlw(ix) = Sfcprop(nb)%zorl(ix) !--- compute zorlw from existing variables
+          if (Sfcprop(nb)%landfrac(ix) < one .and. Sfcprop(nb)%fice(ix) < one) then
+          Sfcprop(nb)%zorlw(ix) = min(Sfcprop(nb)%zorl(ix), 0.317)
+          endif
         enddo
       enddo
     endif
@@ -1513,13 +1523,66 @@ module FV3GFS_io_mod
 !$omp parallel do default(shared) private(nb, ix)
       do nb = 1, Atm_block%nblks
         do ix = 1, Atm_block%blksz(nb)
-          Sfcprop(nb)%zorli(ix) = Sfcprop(nb)%zorl(ix) !--- compute zorli from existing variables
+          if (Sfcprop(nb)%fice(ix)*(one-Sfcprop(nb)%landfrac(ix)) > zero) then
+            Sfcprop(nb)%zorli(ix) = one
+          endif
+        enddo
+      enddo
+    endif
+
+    if (sfc_var2(i,j,45) < -9990.0_r8) then
+      if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing emis_ice')
+!$omp parallel do default(shared) private(nb, ix)
+      do nb = 1, Atm_block%nblks
+        do ix = 1, Atm_block%blksz(nb)
+          Sfcprop(nb)%emis_ice(ix) = 0.96
+        enddo
+      enddo
+    endif
+
+    if (sfc_var2(i,j,46) < -9990.0_r8 .and. Model%lsm /= Model%lsm_ruc) then
+      if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing sncovr_ice')
+!$omp parallel do default(shared) private(nb, ix)
+      do nb = 1, Atm_block%nblks
+        do ix = 1, Atm_block%blksz(nb)
+!         Sfcprop(nb)%sncovr_ice(ix) = Sfcprop(nb)%sncovr(ix)
+          Sfcprop(nb)%sncovr_ice(ix) = zero
+        enddo
+      enddo
+    endif
+
+    if (sfc_var2(i,j,47) < -9990.0_r8) then
+      if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing snodi')
+!$omp parallel do default(shared) private(nb, ix, tem)
+      do nb = 1, Atm_block%nblks
+        do ix = 1, Atm_block%blksz(nb)
+          if (Sfcprop(nb)%fice(ix) > zero) then
+            tem = one / (Sfcprop(nb)%fice(ix)*(one-Sfcprop(nb)%landfrac(ix))+Sfcprop(nb)%landfrac(ix))
+            Sfcprop(nb)%snodi(ix)  = min(Sfcprop(nb)%snowd(ix) * tem, 3.0)
+          else
+            Sfcprop(nb)%snodi(ix)  = zero
+          endif
+        enddo
+      enddo
+    endif
+
+    if (sfc_var2(i,j,48) < -9990.0_r8) then
+      if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing weasdi')
+!$omp parallel do default(shared) private(nb, ix, tem)
+      do nb = 1, Atm_block%nblks
+        do ix = 1, Atm_block%blksz(nb)
+          if (Sfcprop(nb)%fice(ix) > zero) then
+            tem = one / (Sfcprop(nb)%fice(ix)*(one-Sfcprop(nb)%landfrac(ix))+Sfcprop(nb)%landfrac(ix))
+            Sfcprop(nb)%weasdi(ix)  = Sfcprop(nb)%weasd(ix)*tem
+          else
+            Sfcprop(nb)%weasdi(ix)  = zero
+          endif
         enddo
       enddo
     endif
 
     if (Model%use_cice_alb) then
-      if (sfc_var2(i,j,45) < -9990.0_r8) then
+      if (sfc_var2(i,j,49) < -9990.0_r8) then
 !$omp parallel do default(shared) private(nb, ix)
         do nb = 1, Atm_block%nblks
           do ix = 1, Atm_block%blksz(nb)
@@ -1629,7 +1692,7 @@ module FV3GFS_io_mod
     integer :: is, ie
     integer, allocatable, dimension(:) :: buffer
 
-    nvar2m = 44
+    nvar2m = 48
     if (Model%use_cice_alb .or. Model%lsm == Model%lsm_ruc) then
       nvar2m = nvar2m + 4
 !     nvar2m = nvar2m + 5
@@ -1638,9 +1701,9 @@ module FV3GFS_io_mod
     nvar2o = 18
     if (Model%lsm == Model%lsm_ruc) then
       if (Model%rdlai) then
-        nvar2r = 15
+        nvar2r = 13
       else
-        nvar2r = 14
+        nvar2r = 12
       endif
       nvar3  = 5
     else
@@ -1708,7 +1771,7 @@ module FV3GFS_io_mod
       call write_data(Sfc_restart, 'zaxis_1', buffer)
       deallocate(buffer)
 
-      if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp .or. Model%lsm == Model%lsm_noah_wrfv4) then
+      if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp) then
         call register_axis(Sfc_restart, 'zaxis_2', dimension_length=Model%lsoil)
         call register_field(Sfc_restart, 'zaxis_2', 'double', (/'zaxis_2'/))
         call register_variable_attribute(Sfc_restart, 'zaxis_2', 'cartesian_axis', 'Z', str_len=1)
@@ -1755,7 +1818,7 @@ module FV3GFS_io_mod
       allocate(sfc_name2(nvar2m+nvar2o+nvar2mp+nvar2r))
       allocate(sfc_name3(0:nvar3+nvar3mp))
       allocate(sfc_var2(nx,ny,nvar2m+nvar2o+nvar2mp+nvar2r))
-      if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp .or. Model%lsm == Model%lsm_noah_wrfv4) then
+      if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp) then
         allocate(sfc_var3(nx,ny,Model%lsoil,nvar3))
       elseif (Model%lsm == Model%lsm_ruc) then
         allocate(sfc_var3(nx,ny,Model%lsoil_lsm,nvar3))
@@ -1819,13 +1882,17 @@ module FV3GFS_io_mod
       sfc_name2(42) = 'albdifvis_lnd'
       sfc_name2(43) = 'albdifnir_lnd'
       sfc_name2(44) = 'emis_lnd'
+      sfc_name2(45) = 'emis_ice'
+      sfc_name2(46) = 'sncovr_ice'
+      sfc_name2(47) = 'snodi' !snowd on ice portion of a cell
+      sfc_name2(48) = 'weasdi'!weasd on ice portion of a cell
 
       if (Model%use_cice_alb .or. Model%lsm == Model%lsm_ruc) then
-        sfc_name2(45) = 'albdirvis_ice'
-        sfc_name2(46) = 'albdifvis_ice'
-        sfc_name2(47) = 'albdirnir_ice'
-        sfc_name2(48) = 'albdifnir_ice'
-!       sfc_name2(49) = 'sfalb_ice'
+        sfc_name2(49) = 'albdirvis_ice'
+        sfc_name2(50) = 'albdifvis_ice'
+        sfc_name2(51) = 'albdirnir_ice'
+        sfc_name2(52) = 'albdifnir_ice'
+!       sfc_name2(53) = 'sfalb_ice'
       endif
 
       if (Model%cplwav) then
@@ -1860,17 +1927,11 @@ module FV3GFS_io_mod
         sfc_name2(nvar2m+25) = 'tsnow_ice'
         sfc_name2(nvar2m+26) = 'snowfall_acc_land'
         sfc_name2(nvar2m+27) = 'snowfall_acc_ice'
-        sfc_name2(nvar2m+28) = 'sncovr_ice'
-        sfc_name2(nvar2m+29) = 'sfalb_lnd'
-        sfc_name2(nvar2m+30) = 'sfalb_lnd_bck'
-!       sfc_name2(nvar2m+31) = 'albdirvis_ice'
-!       sfc_name2(nvar2m+32) = 'albdirnir_ice'
-!       sfc_name2(nvar2m+33) = 'albdifvis_ice'
-!       sfc_name2(nvar2m+34) = 'albdifnir_ice'
-        sfc_name2(nvar2m+31) = 'sfalb_ice'
-        sfc_name2(nvar2m+32) = 'emis_ice'
+        sfc_name2(nvar2m+28) = 'sfalb_lnd'
+        sfc_name2(nvar2m+29) = 'sfalb_lnd_bck'
+        sfc_name2(nvar2m+30) = 'sfalb_ice'
         if (Model%rdlai) then
-          sfc_name2(nvar2m+33) = 'lai'
+          sfc_name2(nvar2m+31) = 'lai'
         endif
       else if(Model%lsm == Model%lsm_noahmp) then
         ! Only needed when Noah MP LSM is used - 29 2D
@@ -1912,12 +1973,14 @@ module FV3GFS_io_mod
       if (trim(sfc_name2(num)) == 'sncovr' .or. trim(sfc_name2(num)) == 'tsfcl' .or.trim(sfc_name2(num))  == 'zorll'   &
            .or. trim(sfc_name2(num)) == 'zorli' .or.trim(sfc_name2(num))  == 'zorlwav' &
            .or. trim(sfc_name2(num)) == 'snodl' .or. trim(sfc_name2(num)) == 'weasdl'  &
+           .or. trim(sfc_name2(num)) == 'snodi' .or. trim(sfc_name2(num)) == 'weasdi'  &
            .or. trim(sfc_name2(num)) == 'tsfc'  .or. trim(sfc_name2(num)) ==  'zorlw'  &
            .or. trim(sfc_name2(num)) == 'albdirvis_lnd' .or. trim(sfc_name2(num)) == 'albdirnir_lnd' &
            .or. trim(sfc_name2(num)) == 'albdifvis_lnd' .or. trim(sfc_name2(num)) == 'albdifnir_lnd' &
            .or. trim(sfc_name2(num)) == 'albdirvis_ice' .or. trim(sfc_name2(num)) == 'albdirnir_ice' &
            .or. trim(sfc_name2(num)) == 'albdifvis_ice' .or. trim(sfc_name2(num)) == 'albdifnir_ice' &
-           .or. trim(sfc_name2(num)) == 'emis_lnd' ) then
+           .or. trim(sfc_name2(num)) == 'emis_lnd'      .or. trim(sfc_name2(num)) == 'emis_ice'      &
+           .or. trim(sfc_name2(num)) == 'sncovr_ice' ) then
          call register_restart_field(Sfc_restart, sfc_name2(num), var2_p, dimensions=(/'xaxis_1','yaxis_1','Time   '/), is_optional=.true.)
       else
          call register_restart_field(Sfc_restart, sfc_name2(num), var2_p, dimensions=(/'xaxis_1', 'yaxis_1', 'Time   '/) )
@@ -1948,7 +2011,7 @@ module FV3GFS_io_mod
    endif
    nullify(var2_p)
 
-   if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp .or. Model%lsm == Model%lsm_noah_wrfv4) then
+   if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp) then
       !--- names of the 3D variables to save
       sfc_name3(1) = 'stc'
       sfc_name3(2) = 'smc'
@@ -2062,12 +2125,16 @@ module FV3GFS_io_mod
         sfc_var2(i,j,42) = Sfcprop(nb)%albdifvis_lnd(ix)
         sfc_var2(i,j,43) = Sfcprop(nb)%albdifnir_lnd(ix)
         sfc_var2(i,j,44) = Sfcprop(nb)%emis_lnd(ix)
+        sfc_var2(i,j,45) = Sfcprop(nb)%emis_ice(ix)
+        sfc_var2(i,j,46) = Sfcprop(nb)%sncovr_ice(ix)
+        sfc_var2(i,j,47) = Sfcprop(nb)%snodi(ix)  !--- snodi (snowd on ice)
+        sfc_var2(i,j,48) = Sfcprop(nb)%weasdi(ix) !--- weasdi (weasd on ice)
         if (Model%use_cice_alb .or. Model%lsm == Model%lsm_ruc) then
-          sfc_var2(i,j,45) = Sfcprop(nb)%albdirvis_ice(ix)
-          sfc_var2(i,j,46) = Sfcprop(nb)%albdifvis_ice(ix)
-          sfc_var2(i,j,47) = Sfcprop(nb)%albdirnir_ice(ix)
-          sfc_var2(i,j,48) = Sfcprop(nb)%albdifnir_ice(ix)
-!         sfc_var2(i,j,49) = Sfcprop(nb)%sfalb_ice(ix)
+          sfc_var2(i,j,49) = Sfcprop(nb)%albdirvis_ice(ix)
+          sfc_var2(i,j,50) = Sfcprop(nb)%albdifvis_ice(ix)
+          sfc_var2(i,j,51) = Sfcprop(nb)%albdirnir_ice(ix)
+          sfc_var2(i,j,52) = Sfcprop(nb)%albdifnir_ice(ix)
+!         sfc_var2(i,j,53) = Sfcprop(nb)%sfalb_ice(ix)
         endif
         if (Model%cplwav) then
           sfc_var2(i,j,nvar2m) = Sfcprop(nb)%zorlwav(ix) !--- zorlwav (zorl from wav)
@@ -2105,17 +2172,11 @@ module FV3GFS_io_mod
           sfc_var2(i,j,nvar2m+25) = Sfcprop(nb)%tsnow_ice(ix)
           sfc_var2(i,j,nvar2m+26) = Sfcprop(nb)%snowfallac_land(ix)
           sfc_var2(i,j,nvar2m+27) = Sfcprop(nb)%snowfallac_ice(ix)
-          sfc_var2(i,j,nvar2m+28) = Sfcprop(nb)%sncovr_ice(ix)
-          sfc_var2(i,j,nvar2m+29) = Sfcprop(nb)%sfalb_lnd(ix)
-          sfc_var2(i,j,nvar2m+30) = Sfcprop(nb)%sfalb_lnd_bck(ix)
-!         sfc_var2(i,j,nvar2m+31) = Sfcprop(nb)%albdirvis_ice(ix)
-!         sfc_var2(i,j,nvar2m+32) = Sfcprop(nb)%albdirnir_ice(ix)
-!         sfc_var2(i,j,nvar2m+33) = Sfcprop(nb)%albdifvis_ice(ix)
-!         sfc_var2(i,j,nvar2m+34) = Sfcprop(nb)%albdifnir_ice(ix)
-          sfc_var2(i,j,nvar2m+31) = Sfcprop(nb)%sfalb_ice(ix)
-          sfc_var2(i,j,nvar2m+32) = Sfcprop(nb)%emis_ice(ix)
+          sfc_var2(i,j,nvar2m+28) = Sfcprop(nb)%sfalb_lnd(ix)
+          sfc_var2(i,j,nvar2m+29) = Sfcprop(nb)%sfalb_lnd_bck(ix)
+          sfc_var2(i,j,nvar2m+30) = Sfcprop(nb)%sfalb_ice(ix)
           if (Model%rdlai) then
-            sfc_var2(i,j,nvar2m+33) = Sfcprop(nb)%xlaixy(ix)
+            sfc_var2(i,j,nvar2m+31) = Sfcprop(nb)%xlaixy(ix)
           endif
         else if (Model%lsm == Model%lsm_noahmp) then
           !--- Extra Noah MP variables
@@ -2152,9 +2213,10 @@ module FV3GFS_io_mod
 
         do k = 1,Model%kice
           sfc_var3ice(i,j,k) = Sfcprop(nb)%tiice(ix,k) !--- internal ice temperature
+          if (sfc_var3ice(i,j,k) < one) sfc_var3ice(i,j,k) = zero
         enddo
 
-        if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp .or. Model%lsm == Model%lsm_noah_wrfv4) then
+        if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp) then
           !--- 3D variables
           do lsoil = 1,Model%lsoil
             sfc_var3(i,j,lsoil,1) = Sfcprop(nb)%stc(ix,lsoil) !--- stc
@@ -2763,8 +2825,8 @@ module FV3GFS_io_mod
          !---
          !--- skipping other 3D variables with the following else statement
          !---
-         if(mpp_pe()==mpp_root_pe())print *,'in,fv3gfs_io. 3D fields, idx=',idx,'varname=',trim(diag(idx)%name), &
-             'lcnvfac=',lcnvfac, 'levo=',levo,'nx=',nx,'ny=',ny
+!         if(mpp_pe()==mpp_root_pe())print *,'in,fv3gfs_io. 3D fields, idx=',idx,'varname=',trim(diag(idx)%name), &
+!             'lcnvfac=',lcnvfac, 'levo=',levo,'nx=',nx,'ny=',ny
            do k=1, levo
              do j = 1, ny
                jj = j + jsc -1
@@ -2817,7 +2879,11 @@ module FV3GFS_io_mod
              used=send_data(Diag(idx)%id, var3, Time, is_in=is_in, js_in=js_in, ks_in=1)
            endif
            !--- ozone mixing ration tendency
+#ifdef MULTI_GASES
+           if (trim(Diag(idx)%name) == 'dspo3_dt') then
+#else
            if (trim(Diag(idx)%name) == 'do3mr_dt') then
+#endif
              var3(1:nx,1:ny,1:levs) =  RESHAPE(Statein%qgrs(1:ngptc,levs:1:-1,ntoz:ntoz), (/nx,ny,levs/))
              var3(1:nx,1:ny,1:levs) = (RESHAPE(Stateout%gq0(1:ngptc,levs:1:-1,ntoz:ntoz), (/nx,ny,levs/))  &
                                         - var3(1:nx,1:ny,1:levs))*rdt
@@ -3026,7 +3092,7 @@ module FV3GFS_io_mod
 !
    implicit none
 !
-   type(GFS_externaldiag_type),intent(in)              :: Diag(:)
+   type(GFS_externaldiag_type),intent(in)      :: Diag(:)
    integer, intent(in)                         :: axes(:)
    type(ESMF_FieldBundle),intent(inout)        :: phys_bundle(:)
    type(ESMF_Grid),intent(inout)               :: fcst_grid
@@ -3067,7 +3133,7 @@ module FV3GFS_io_mod
 !------------------------------------------------------------
 !
    allocate(bdl_intplmethod(nbdlphys), outputfile(nbdlphys))
-   if(mpp_pe()==mpp_root_pe())print *,'in fv_phys bundle,nbdl=',nbdlphys
+   if(mpp_pe()==mpp_root_pe()) print *,'in fv_phys bundle,nbdl=',nbdlphys
    do ibdl = 1, nbdlphys
      loutputfile = .false.
      call ESMF_FieldBundleGet(phys_bundle(ibdl), name=physbdl_name,rc=rc)
@@ -3146,14 +3212,14 @@ module FV3GFS_io_mod
        allocate(udimList(udimCount))
        call ESMF_AttributeGet(fcst_grid, convention="NetCDF", purpose="FV3", &
                               name="vertical_dim_labels", valueList=udimList, rc=rc)
-!       if(mpp_pe()==mpp_root_pe())print *,'in fv3gfsio, vertical
+!       if(mpp_pe()==mpp_root_pe()) print *,'in fv3gfsio, vertical
 !       list=',udimList(1:udimCount),'rc=',rc
 
        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
      else
 
-       if(mpp_pe()==mpp_root_pe())print *,'in fv_dyn bundle,axis_name_vert=',axis_name_vert
+       if(mpp_pe()==mpp_root_pe()) print *,'in fv_dyn bundle,axis_name_vert=',axis_name_vert
        call ESMF_AttributeAdd(fcst_grid, convention="NetCDF", purpose="FV3",  &
                               attrList=(/"vertical_dim_labels"/), rc=rc)
        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
@@ -3175,13 +3241,13 @@ module FV3GFS_io_mod
                          direction, edges, Domain, DomainU, axis_data,           &
                          num_attributes=num_attributes, attributes=attributes)
 !
-       edgesS=''
+       edgesS = ''
        do i = 1,num_axes_phys
          if(axes(i) == edges) edgesS=axis_name(i)
        enddo
 ! Add vertical dimension Attributes to Grid
        if( id>2 ) then
-!      if(mpp_pe()==mpp_root_pe())print *,' in dyn add grid, axis_name=',     &
+!      if(mpp_pe()==mpp_root_pe()) print *,' in dyn add grid, axis_name=',     &
 !         trim(axis_name(id)),'axis_data=',axis_data
          if(trim(edgesS)/='') then
            call ESMF_AttributeAdd(fcst_grid, convention="NetCDF", purpose="FV3",  &
@@ -3383,62 +3449,62 @@ module FV3GFS_io_mod
 !
 !*** add field attributes
    call ESMF_AttributeAdd(field, convention="NetCDF", purpose="FV3", &
-        attrList=(/"long_name"/), rc=rc)
+                          attrList=(/"long_name"/), rc=rc)
    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,    &
      line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
    call ESMF_AttributeSet(field, convention="NetCDF", purpose="FV3", &
-        name='long_name',value=trim(long_name),rc=rc)
+                          name='long_name',value=trim(long_name),rc=rc)
    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,    &
      line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
    call ESMF_AttributeAdd(field, convention="NetCDF", purpose="FV3", &
-        attrList=(/"units"/), rc=rc)
+                          attrList=(/"units"/), rc=rc)
    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,    &
      line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
    call ESMF_AttributeSet(field, convention="NetCDF", purpose="FV3", &
-        name='units',value=trim(units),rc=rc)
+                          name='units',value=trim(units),rc=rc)
    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,    &
      line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
    call ESMF_AttributeAdd(field, convention="NetCDF", purpose="FV3", &
-        attrList=(/"missing_value"/), rc=rc)
+                          attrList=(/"missing_value"/), rc=rc)
    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,    &
      line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
    call ESMF_AttributeSet(field, convention="NetCDF", purpose="FV3", &
-        name='missing_value',value=missing_value,rc=rc)
+                          name='missing_value',value=missing_value,rc=rc)
    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,    &
      line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
    call ESMF_AttributeAdd(field, convention="NetCDF", purpose="FV3", &
-        attrList=(/"_FillValue"/), rc=rc)
+                          attrList=(/"_FillValue"/), rc=rc)
    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,    &
      line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
    call ESMF_AttributeSet(field, convention="NetCDF", purpose="FV3", &
-        name='_FillValue',value=missing_value,rc=rc)
+                          name='_FillValue',value=missing_value,rc=rc)
    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,    &
      line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
    call ESMF_AttributeAdd(field, convention="NetCDF", purpose="FV3", &
-        attrList=(/"cell_methods"/), rc=rc)
+                          attrList=(/"cell_methods"/), rc=rc)
    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,    &
      line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
    call ESMF_AttributeSet(field, convention="NetCDF", purpose="FV3", &
-        name='cell_methods',value=trim(cell_methods),rc=rc)
+                          name='cell_methods',value=trim(cell_methods),rc=rc)
    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,    &
      line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
 !
    call ESMF_AttributeAdd(field, convention="NetCDF", purpose="FV3", &
-        attrList=(/"output_file"/), rc=rc)
+                          attrList=(/"output_file"/), rc=rc)
    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,    &
      line=__LINE__, file=__FILE__))  call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
    call ESMF_AttributeSet(field, convention="NetCDF", purpose="FV3", &
-        name='output_file',value=trim(output_file),rc=rc)
+                          name='output_file',value=trim(output_file),rc=rc)
    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,    &
      line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
 

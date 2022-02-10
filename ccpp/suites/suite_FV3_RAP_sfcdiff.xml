@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<suite name="FV3_GSD_noah" version="1">
+<suite name="FV3_RAP_sfcdiff" version="1">
   <!-- <init></init> -->
   <group name="time_vary">
     <subcycle loop="1">
@@ -45,8 +45,7 @@
       <scheme>sfc_nst_pre</scheme>
       <scheme>sfc_nst</scheme>
       <scheme>sfc_nst_post</scheme>
-      <scheme>lsm_noah</scheme>
-      <scheme>sfc_sice</scheme>
+      <scheme>lsm_ruc</scheme>
       <scheme>GFS_surface_loop_control_part2</scheme>
     </subcycle>
     <!-- End of surface iteration loop -->
@@ -57,8 +56,7 @@
       <scheme>GFS_surface_generic_post</scheme>
       <scheme>mynnedmf_wrapper</scheme>
       <scheme>GFS_GWD_generic_pre</scheme>
-      <scheme>cires_ugwp</scheme>
-      <scheme>cires_ugwp_post</scheme>
+      <scheme>drag_suite</scheme>
       <scheme>GFS_GWD_generic_post</scheme>
       <scheme>GFS_suite_stateout_update</scheme>
       <scheme>ozphys_2015</scheme>
@@ -75,11 +73,7 @@
       <scheme>cnvc90</scheme>
       <scheme>GFS_MP_generic_pre</scheme>
       <scheme>mp_thompson_pre</scheme>
-    </subcycle>
-    <subcycle loop="4">
       <scheme>mp_thompson</scheme>
-    </subcycle>
-    <subcycle loop="1">
       <scheme>mp_thompson_post</scheme>
       <scheme>GFS_MP_generic_post</scheme>
       <scheme>cu_gf_driver_post</scheme>
