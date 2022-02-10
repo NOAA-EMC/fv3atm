@@ -554,10 +554,16 @@
         wrt_int_state%lon_end   = ubound(lonPtr,1)
         allocate( wrt_int_state%lat_start_wrtgrp(wrt_int_state%petcount))
         allocate( wrt_int_state%lat_end_wrtgrp  (wrt_int_state%petcount))
+        allocate( wrt_int_state%lon_start_wrtgrp(wrt_int_state%petcount))
+        allocate( wrt_int_state%lon_end_wrtgrp  (wrt_int_state%petcount))
         call mpi_allgather(wrt_int_state%lat_start,1,MPI_INTEGER,    &
                            wrt_int_state%lat_start_wrtgrp, 1, MPI_INTEGER, wrt_mpi_comm, rc)
         call mpi_allgather(wrt_int_state%lat_end,  1,MPI_INTEGER,    &
                            wrt_int_state%lat_end_wrtgrp,   1, MPI_INTEGER, wrt_mpi_comm, rc)
+        call mpi_allgather(wrt_int_state%lon_start,1,MPI_INTEGER,    &
+                           wrt_int_state%lon_start_wrtgrp, 1, MPI_INTEGER, wrt_mpi_comm, rc)
+        call mpi_allgather(wrt_int_state%lon_end,  1,MPI_INTEGER,    &
+                           wrt_int_state%lon_end_wrtgrp,   1, MPI_INTEGER, wrt_mpi_comm, rc)
         if( lprnt ) print *,'aft wrtgrd, Gaussian, dimj_start=',wrt_int_state%lat_start_wrtgrp, &
           'dimj_end=',wrt_int_state%lat_end_wrtgrp, 'wrt_group=',n_group, &
           'lon_start,end=',wrt_int_state%lon_start,wrt_int_state%lon_end, &
@@ -647,10 +653,16 @@
         dlat(n) = delat
         allocate( wrt_int_state%lat_start_wrtgrp(wrt_int_state%petcount))
         allocate( wrt_int_state%lat_end_wrtgrp  (wrt_int_state%petcount))
+        allocate( wrt_int_state%lon_start_wrtgrp(wrt_int_state%petcount))
+        allocate( wrt_int_state%lon_end_wrtgrp  (wrt_int_state%petcount))
         call mpi_allgather(wrt_int_state%lat_start,1,MPI_INTEGER,    &
                            wrt_int_state%lat_start_wrtgrp, 1, MPI_INTEGER, wrt_mpi_comm, rc)
         call mpi_allgather(wrt_int_state%lat_end,  1,MPI_INTEGER,    &
                            wrt_int_state%lat_end_wrtgrp,   1, MPI_INTEGER, wrt_mpi_comm, rc)
+        call mpi_allgather(wrt_int_state%lon_start,1,MPI_INTEGER,    &
+                           wrt_int_state%lon_start_wrtgrp, 1, MPI_INTEGER, wrt_mpi_comm, rc)
+        call mpi_allgather(wrt_int_state%lon_end,  1,MPI_INTEGER,    &
+                           wrt_int_state%lon_end_wrtgrp,   1, MPI_INTEGER, wrt_mpi_comm, rc)
         if( lprnt ) print *,'aft wrtgrd, latlon, dimj_start=',wrt_int_state%lat_start_wrtgrp, &
           'dimj_end=',wrt_int_state%lat_end_wrtgrp, 'wrt_group=',n_group
         allocate( wrt_int_state%latPtr(wrt_int_state%lon_start:wrt_int_state%lon_end, &
@@ -736,10 +748,16 @@
         wrt_int_state%lon_end   = ubound(lonPtr,1)
         allocate( wrt_int_state%lat_start_wrtgrp(wrt_int_state%petcount))
         allocate( wrt_int_state%lat_end_wrtgrp  (wrt_int_state%petcount))
+        allocate( wrt_int_state%lon_start_wrtgrp(wrt_int_state%petcount))
+        allocate( wrt_int_state%lon_end_wrtgrp  (wrt_int_state%petcount))
         call mpi_allgather(wrt_int_state%lat_start,1,MPI_INTEGER,    &
-                       wrt_int_state%lat_start_wrtgrp, 1, MPI_INTEGER, wrt_mpi_comm, rc)
+                           wrt_int_state%lat_start_wrtgrp, 1, MPI_INTEGER, wrt_mpi_comm, rc)
         call mpi_allgather(wrt_int_state%lat_end,  1,MPI_INTEGER,    &
                            wrt_int_state%lat_end_wrtgrp,   1, MPI_INTEGER, wrt_mpi_comm, rc)
+        call mpi_allgather(wrt_int_state%lon_start,1,MPI_INTEGER,    &
+                           wrt_int_state%lon_start_wrtgrp, 1, MPI_INTEGER, wrt_mpi_comm, rc)
+        call mpi_allgather(wrt_int_state%lon_end,  1,MPI_INTEGER,    &
+                           wrt_int_state%lon_end_wrtgrp,   1, MPI_INTEGER, wrt_mpi_comm, rc)
         allocate( wrt_int_state%latPtr(wrt_int_state%lon_start:wrt_int_state%lon_end, &
                   wrt_int_state%lat_start:wrt_int_state%lat_end))
         allocate( wrt_int_state%lonPtr(wrt_int_state%lon_start:wrt_int_state%lon_end, &

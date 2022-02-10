@@ -49,8 +49,8 @@
       integer :: lat_start, lon_start
       integer :: lat_end, lon_end
       real    :: latstart, latlast, lonstart, lonlast
-      integer,dimension(:),allocatable :: lat_start_wrtgrp
-      integer,dimension(:),allocatable :: lat_end_wrtgrp
+      integer,dimension(:),allocatable :: lat_start_wrtgrp, lon_start_wrtgrp
+      integer,dimension(:),allocatable :: lat_end_wrtgrp, lon_end_wrtgrp
       real,dimension(:,:),allocatable  :: lonPtr, latPtr
 !
 !--------------------------
