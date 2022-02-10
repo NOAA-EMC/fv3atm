@@ -347,6 +347,8 @@
 
         if (allocated(wrt_int_state%lat_start_wrtgrp)) deallocate (wrt_int_state%lat_start_wrtgrp)
         if (allocated(wrt_int_state%lat_end_wrtgrp  )) deallocate (wrt_int_state%lat_end_wrtgrp  )
+        if (allocated(wrt_int_state%lon_start_wrtgrp)) deallocate (wrt_int_state%lon_start_wrtgrp)
+        if (allocated(wrt_int_state%lon_end_wrtgrp  )) deallocate (wrt_int_state%lon_end_wrtgrp  )
         if (allocated(wrt_int_state%latPtr) ) deallocate (wrt_int_state%latPtr)
         if (allocated(wrt_int_state%lonPtr) ) deallocate (wrt_int_state%lonPtr)
 
