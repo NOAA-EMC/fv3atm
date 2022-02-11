@@ -1308,6 +1308,7 @@ module GFS_typedefs
     integer              :: kdt             !< current forecast iteration
     logical              :: first_time_step !< flag signaling first time step for time integration routine
     logical              :: restart         !< flag whether this is a coldstart (.false.) or a warmstart/restart (.true.)
+    logical              :: lsm_cold_start
     logical              :: hydrostatic     !< flag whether this is a hydrostatic or non-hydrostatic run
     integer              :: jdat(1:8)       !< current forecast date and time
                                             !< (yr, mon, day, t-zone, hr, min, sec, mil-sec)
@@ -3967,7 +3968,7 @@ module GFS_typedefs
     if (levr < 0) then
       Model%levr           = levs
     else if (levr > levs) then
-      write(0,*) "Logic error, number of radiatiton levels (levr) cannot exceed number of model levels (levs)"
+      write(0,*) "Logic error, number of radiation levels (levr) cannot exceed number of model levels (levs)"
       stop
     else
       Model%levr           = levr
@@ -4867,6 +4868,7 @@ module GFS_typedefs
     Model%kdt              = nint(Model%fhour*con_hr/Model%dtp)
     Model%first_time_step  = .true.
     Model%restart          = restart
+    Model%lsm_cold_start   = .not. restart
     Model%hydrostatic      = hydrostatic
     Model%jdat(1:8)        = jdat(1:8)
     allocate(Model%si(Model%levs+1))
@@ -6013,6 +6015,7 @@ module GFS_typedefs
       print *, ' sec               : ', Model%sec
       print *, ' first_time_step   : ', Model%first_time_step
       print *, ' restart           : ', Model%restart
+      print *, ' lsm_cold_start    : ', Model%lsm_cold_start
       print *, ' hydrostatic       : ', Model%hydrostatic
     endif
 
