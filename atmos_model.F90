@@ -63,6 +63,7 @@ use atmosphere_mod,     only: atmosphere_init
 use atmosphere_mod,     only: atmosphere_restart
 use atmosphere_mod,     only: atmosphere_end
 use atmosphere_mod,     only: atmosphere_state_update
+use atmosphere_mod,     only: atmosphere_fill_nest_cpl
 use atmosphere_mod,     only: atmos_phys_driver_statein
 use atmosphere_mod,     only: atmosphere_control_data
 use atmosphere_mod,     only: atmosphere_resolution, atmosphere_domain
@@ -129,7 +130,7 @@ public setup_exportdata
      integer                       :: layout(2)          ! computer task laytout
      logical                       :: regional           ! true if domain is regional
      logical                       :: nested             ! true if there is a nest
-     logical                       :: is_moving_nest     ! true if there is a moving nest
+     logical                       :: moving_nesting     ! true if it is a moving nest or a parent for a moving nest
      integer                       :: ngrids             !
      integer                       :: mygrid             !
      integer                       :: mlon, mlat
@@ -277,6 +278,17 @@ subroutine update_atmos_radiation_physics (Atmos)
 !--- if coupled, assign coupled fields
       call assign_importdata(jdat(:),rc)
       if (rc/=0)  call mpp_error(FATAL, 'Call to assign_importdata failed')
+
+      ! Currently for FV3ATM, it is only enabled for parent domain coupling
+      ! with other model components. In this case, only the parent domain
+      ! receives coupled fields through the above assign_importdata step. Thus,
+      ! an extra step is needed to fill the coupling variables in the nest,
+      ! by downscaling the coupling variables from its parent.
+      if (Atmos%ngrids > 1) then
+        if (GFS_control%cplocn2atm .or. GFS_control%cplwav2atm) then
+          call atmosphere_fill_nest_cpl(Atm_block, GFS_control, GFS_data)
+        endif
+      endif
 
       ! Calculate total non-physics tendencies by substracting old GFS Stateout
       ! variables from new/updated GFS Statein variables (gives the tendencies
@@ -533,7 +545,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    call atmosphere_resolution (nlon, nlat, global=.false.)
    call atmosphere_resolution (mlon, mlat, global=.true.)
    call alloc_atmos_data_type (nlon, nlat, Atmos)
-   call atmosphere_domain (Atmos%domain, Atmos%layout, Atmos%regional, Atmos%nested, Atmos%is_moving_nest, Atmos%ngrids, Atmos%mygrid, Atmos%pelist)
+   call atmosphere_domain (Atmos%domain, Atmos%layout, Atmos%regional, Atmos%nested, Atmos%moving_nesting, Atmos%ngrids, Atmos%mygrid, Atmos%pelist)
    call atmosphere_diag_axes (Atmos%axes)
    call atmosphere_etalvls (Atmos%ak, Atmos%bk, flip=flip_vc)
    call atmosphere_grid_bdry (Atmos%lon_bnd, Atmos%lat_bnd, global=.false.)
@@ -769,14 +781,14 @@ subroutine update_atmos_model_dynamics (Atmos)
 #ifdef MOVING_NEST
     ! W. Ramstrom, AOML/HRD -- May 28, 2021
     ! Evaluates whether to move nest, then performs move if needed
-    if (Atmos%is_moving_nest) call update_moving_nest (Atm_block, GFS_control, GFS_data, Atmos%Time)
+    if (Atmos%moving_nesting) call update_moving_nest (Atm_block, GFS_control, GFS_data, Atmos%Time)
 #endif MOVING_NEST
     call mpp_clock_begin(fv3Clock)
     call atmosphere_dynamics (Atmos%Time)
 #ifdef MOVING_NEST
     ! W. Ramstrom, AOML/HRD -- June 9, 2021
     ! Debugging output of moving nest code.  Called from this level to access needed input variables.
-    if (Atmos%is_moving_nest) call dump_moving_nest (Atm_block, GFS_control, GFS_data, Atmos%Time)
+    if (Atmos%moving_nesting) call dump_moving_nest (Atm_block, GFS_control, GFS_data, Atmos%Time)
 #endif MOVING_NEST
 
     call mpp_clock_end(fv3Clock)
