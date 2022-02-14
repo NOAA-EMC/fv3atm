@@ -1,7 +1,7 @@
 [submodule "atmos_cubed_sphere"]
   path = atmos_cubed_sphere
-	url = https://github.com/LarissaReames-NOAA/GFDL_atmos_cubed_sphere.git
-  branch = feauture/ideal-new
+  url = https://github.com/LarissaReames-NOAA/GFDL_atmos_cubed_sphere.git
+  branch = feature/ideal-new
 [submodule "ccpp/framework"]
   path = ccpp/framework
   url = https://github.com/NCAR/ccpp-framework
@@ -13,4 +13,4 @@
 [submodule "upp"]
   path = upp
   url = https://github.com/NOAA-EMC/UPP
-  commit = 0dc3c0c
+  branch = develop
