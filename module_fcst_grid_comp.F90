@@ -180,6 +180,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
         decompflagPTile(:,tl) = (/ESMF_DECOMP_SYMMEDGEMAX,ESMF_DECOMP_SYMMEDGEMAX/)
       enddo
       grid = ESMF_GridCreateCubedSphere(tileSize=tilesize, &
+                                        coordSys=ESMF_COORDSYS_SPH_RAD, &
                                         regDecompPTile=decomptile, &
                                         decompflagPTile=decompflagPTile, &
                                         name="fcst_grid", rc=rc)
@@ -194,6 +195,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
                                       minIndex=(/1,1/), &
                                       maxIndex=(/nx,ny/), &
                                       gridAlign=(/-1,-1/), &
+                                      coordSys=ESMF_COORDSYS_SPH_RAD, &
                                       decompflag=(/ESMF_DECOMP_SYMMEDGEMAX,ESMF_DECOMP_SYMMEDGEMAX/), &
                                       name="fcst_grid", &
                                       indexflag=ESMF_INDEX_DELOCAL, &
@@ -347,7 +349,6 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     type(ESMF_DELayout) :: delayout
     type(ESMF_DistGrid) :: distgrid
     real(ESMF_KIND_R8),dimension(:,:), pointer :: glatPtr, glonPtr
-    real(ESMF_KIND_R8),parameter :: dtor = 180.0_ESMF_KIND_R8 / 3.1415926535897931_ESMF_KIND_R8
     integer :: jsc, jec, isc, iec, nlev
     type(domain2D)  :: domain
     integer :: n, fcstNpes, tmpvar, k
@@ -703,23 +704,23 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
           call ESMF_GridGetCoord(fcstGrid(n), coordDim=1, staggerLoc=ESMF_STAGGERLOC_CENTER, &
                                  totalLBound=tlb, totalUBound=tub, &
                                  farrayPtr=glonPtr, rc=rc); ESMF_ERR_ABORT(rc)
-          glonPtr(tlb(1):tub(1),tlb(2):tub(2)) = Atmos%lon(tlb(1):tub(1),tlb(2):tub(2)) * dtor
+          glonPtr(tlb(1):tub(1),tlb(2):tub(2)) = Atmos%lon(tlb(1):tub(1),tlb(2):tub(2))
 
           call ESMF_GridGetCoord(fcstGrid(n), coordDim=2, staggerLoc=ESMF_STAGGERLOC_CENTER, &
                                  totalLBound=tlb, totalUBound=tub, &
                                  farrayPtr=glatPtr, rc=rc); ESMF_ERR_ABORT(rc)
-          glatPtr(tlb(1):tub(1),tlb(2):tub(2)) = Atmos%lat(tlb(1):tub(1),tlb(2):tub(2)) * dtor
+          glatPtr(tlb(1):tub(1),tlb(2):tub(2)) = Atmos%lat(tlb(1):tub(1),tlb(2):tub(2))
 
           ! define "corner" coordinate values
           call ESMF_GridGetCoord(fcstGrid(n), coordDim=1, staggerLoc=ESMF_STAGGERLOC_CORNER, &
                                  totalLBound=tlb, totalUBound=tub, &
                                  farrayPtr=glonPtr, rc=rc); ESMF_ERR_ABORT(rc)
-          glonPtr(tlb(1):tub(1),tlb(2):tub(2)) = Atmos%lon_bnd(tlb(1):tub(1),tlb(2):tub(2)) * dtor
+          glonPtr(tlb(1):tub(1),tlb(2):tub(2)) = Atmos%lon_bnd(tlb(1):tub(1),tlb(2):tub(2))
 
           call ESMF_GridGetCoord(fcstGrid(n), coordDim=2, staggerLoc=ESMF_STAGGERLOC_CORNER, &
                                  totalLBound=tlb, totalUBound=tub, &
                                  farrayPtr=glatPtr, rc=rc); ESMF_ERR_ABORT(rc)
-          glatPtr(tlb(1):tub(1),tlb(2):tub(2)) = Atmos%lat_bnd(tlb(1):tub(1),tlb(2):tub(2)) * dtor
+          glatPtr(tlb(1):tub(1),tlb(2):tub(2)) = Atmos%lat_bnd(tlb(1):tub(1),tlb(2):tub(2))
         end if ! IsPetLocal
 
       end do
