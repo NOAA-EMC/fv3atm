@@ -61,6 +61,7 @@
       integer,save      :: lead_write_task                                !<-- Rank of the first write task in the write group
       integer,save      :: last_write_task                                !<-- Rank of the last write task in the write group
       integer,save      :: ntasks                                         !<-- # of write tasks in the current group
+      integer,save      :: itasks, jtasks                                 !<-- # of write tasks in i/j direction in the current group
 
       integer,save      :: mytile                                         !<-- the tile number in write task
       integer,save      :: wrt_mpi_comm                                   !<-- the mpi communicator in the write comp
@@ -294,11 +295,19 @@
         print *,'output_grid=',trim(output_grid)
       end if
 
+      call ESMF_ConfigGetAttribute(config=CF, value=itasks,default=1,label ='itasks:',rc=rc)
+      jtasks = ntasks
+      if(itasks > 0 ) jtasks = ntasks/itasks
+      if( itasks*jtasks /= ntasks ) then
+        itasks = 1
+        jtasks = ntasks
+      endif
+
       if(trim(output_grid) == 'gaussian_grid' .or. trim(output_grid) == 'global_latlon') then
         call ESMF_ConfigGetAttribute(config=CF, value=imo, label ='imo:',rc=rc)
         call ESMF_ConfigGetAttribute(config=CF, value=jmo, label ='jmo:',rc=rc)
         if (lprnt) then
-          print *,'imo=',imo,'jmo=',jmo
+          print *,'imo=',imo,'jmo=',jmo,'itasks=',itasks,'jtasks=',jtasks
         end if
       else if(trim(output_grid) == 'regional_latlon') then
         call ESMF_ConfigGetAttribute(config=CF, value=lon1, label ='lon1:',rc=rc)
@@ -422,7 +431,7 @@
       else if ( trim(output_grid) == 'gaussian_grid') then
 
         wrtgrid = ESMF_GridCreate1PeriDim(minIndex=(/1,1/),                             &
-                                          maxIndex=(/imo,jmo/), regDecomp=(/1,ntasks/), &
+                                          maxIndex=(/imo,jmo/), regDecomp=(/itasks,jtasks/), &
                                           indexflag=ESMF_INDEX_GLOBAL,                  &
                                           name='wrt_grid',rc=rc)
 !                                         indexflag=ESMF_INDEX_GLOBAL, coordSys=ESMF_COORDSYS_SPH_DEG
@@ -462,8 +471,9 @@
             latPtr(i,j) = lat(j)
           enddo
         enddo
-!        print *,'aft wrtgrd, Gaussian, dimi,i=',lbound(lonPtr,1),ubound(lonPtr,1), &
-!         ' j=',lbound(lonPtr,2),ubound(lonPtr,2),'imo=',imo,'jmo=',jmo
+       if(lprnt) print *,'aft wrtgrd, Gaussian, dimi,i=',lbound(lonPtr,1),ubound(lonPtr,1), &
+         lbound(lonPtr,2),ubound(lonPtr,2),'j(i)=',lbound(latPtr,1),ubound(latPtr,1),&
+         ' j(j)=',lbound(latPtr,2),ubound(latPtr,2),'imo=',imo,'jmo=',jmo
 !       if(wrt_int_state%mype==0) print *,'aft wrtgrd, lon=',lonPtr(1:5,1), &
 !        'lat=',latPtr(1,1:5),'imo,jmo=',imo,jmo
 !        lonPtr(lbound(lonPtr,1),ubound(lonPtr,2)),'lat=',latPtr(lbound(lonPtr,1),lbound(lonPtr,2)), &
@@ -474,12 +484,20 @@
         wrt_int_state%lon_end   = ubound(lonPtr,1)
         allocate( wrt_int_state%lat_start_wrtgrp(wrt_int_state%petcount))
         allocate( wrt_int_state%lat_end_wrtgrp  (wrt_int_state%petcount))
+        allocate( wrt_int_state%lon_start_wrtgrp(wrt_int_state%petcount))
+        allocate( wrt_int_state%lon_end_wrtgrp  (wrt_int_state%petcount))
         call mpi_allgather(wrt_int_state%lat_start,1,MPI_INTEGER,    &
                            wrt_int_state%lat_start_wrtgrp, 1, MPI_INTEGER, wrt_mpi_comm, rc)
         call mpi_allgather(wrt_int_state%lat_end,  1,MPI_INTEGER,    &
                            wrt_int_state%lat_end_wrtgrp,   1, MPI_INTEGER, wrt_mpi_comm, rc)
+        call mpi_allgather(wrt_int_state%lon_start,1,MPI_INTEGER,    &
+                           wrt_int_state%lon_start_wrtgrp, 1, MPI_INTEGER, wrt_mpi_comm, rc)
+        call mpi_allgather(wrt_int_state%lon_end,  1,MPI_INTEGER,    &
+                           wrt_int_state%lon_end_wrtgrp,   1, MPI_INTEGER, wrt_mpi_comm, rc)
         if( lprnt ) print *,'aft wrtgrd, Gaussian, dimj_start=',wrt_int_state%lat_start_wrtgrp, &
-          'dimj_end=',wrt_int_state%lat_end_wrtgrp, 'wrt_group=',n_group
+          'dimj_end=',wrt_int_state%lat_end_wrtgrp, 'wrt_group=',n_group, &
+          'lon_start,end=',wrt_int_state%lon_start,wrt_int_state%lon_end, &
+          'lat_start,end=',wrt_int_state%lat_start, wrt_int_state%lat_end
         allocate( wrt_int_state%latPtr(wrt_int_state%lon_start:wrt_int_state%lon_end, &
                   wrt_int_state%lat_start:wrt_int_state%lat_end))
         allocate( wrt_int_state%lonPtr(wrt_int_state%lon_start:wrt_int_state%lon_end, &
@@ -497,7 +515,7 @@
         deallocate(slat)
       else if ( trim(output_grid) == 'global_latlon') then
         wrtgrid = ESMF_GridCreate1PeriDim(minIndex=(/1,1/),                             &
-                                          maxIndex=(/imo,jmo/), regDecomp=(/1,ntasks/), &
+                                          maxIndex=(/imo,jmo/), regDecomp=(/itasks,jtasks/), &
                                           indexflag=ESMF_INDEX_GLOBAL, name='wrt_grid',rc=rc)
 
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
@@ -556,10 +574,16 @@
         wrt_int_state%lon_end   = ubound(lonPtr,1)
         allocate( wrt_int_state%lat_start_wrtgrp(wrt_int_state%petcount))
         allocate( wrt_int_state%lat_end_wrtgrp  (wrt_int_state%petcount))
+        allocate( wrt_int_state%lon_start_wrtgrp(wrt_int_state%petcount))
+        allocate( wrt_int_state%lon_end_wrtgrp  (wrt_int_state%petcount))
         call mpi_allgather(wrt_int_state%lat_start,1,MPI_INTEGER,    &
                            wrt_int_state%lat_start_wrtgrp, 1, MPI_INTEGER, wrt_mpi_comm, rc)
         call mpi_allgather(wrt_int_state%lat_end,  1,MPI_INTEGER,    &
                            wrt_int_state%lat_end_wrtgrp,   1, MPI_INTEGER, wrt_mpi_comm, rc)
+        call mpi_allgather(wrt_int_state%lon_start,1,MPI_INTEGER,    &
+                           wrt_int_state%lon_start_wrtgrp, 1, MPI_INTEGER, wrt_mpi_comm, rc)
+        call mpi_allgather(wrt_int_state%lon_end,  1,MPI_INTEGER,    &
+                           wrt_int_state%lon_end_wrtgrp,   1, MPI_INTEGER, wrt_mpi_comm, rc)
         if( lprnt ) print *,'aft wrtgrd, latlon, dimj_start=',wrt_int_state%lat_start_wrtgrp, &
           'dimj_end=',wrt_int_state%lat_end_wrtgrp, 'wrt_group=',n_group
         allocate( wrt_int_state%latPtr(wrt_int_state%lon_start:wrt_int_state%lon_end, &
@@ -581,7 +605,7 @@
                 trim(output_grid) == 'lambert_conformal' ) then
 
         wrtgrid = ESMF_GridCreate1PeriDim(minIndex=(/1,1/),                             &
-                                          maxIndex=(/imo,jmo/), regDecomp=(/1,ntasks/), &
+                                          maxIndex=(/imo,jmo/), regDecomp=(/itasks,jtasks/), &
                                           indexflag=ESMF_INDEX_GLOBAL,                  &
                                           name='wrt_grid',rc=rc)
 
@@ -643,10 +667,16 @@
         wrt_int_state%lon_end   = ubound(lonPtr,1)
         allocate( wrt_int_state%lat_start_wrtgrp(wrt_int_state%petcount))
         allocate( wrt_int_state%lat_end_wrtgrp  (wrt_int_state%petcount))
+        allocate( wrt_int_state%lon_start_wrtgrp(wrt_int_state%petcount))
+        allocate( wrt_int_state%lon_end_wrtgrp  (wrt_int_state%petcount))
         call mpi_allgather(wrt_int_state%lat_start,1,MPI_INTEGER,    &
-                       wrt_int_state%lat_start_wrtgrp, 1, MPI_INTEGER, wrt_mpi_comm, rc)
+                           wrt_int_state%lat_start_wrtgrp, 1, MPI_INTEGER, wrt_mpi_comm, rc)
         call mpi_allgather(wrt_int_state%lat_end,  1,MPI_INTEGER,    &
                            wrt_int_state%lat_end_wrtgrp,   1, MPI_INTEGER, wrt_mpi_comm, rc)
+        call mpi_allgather(wrt_int_state%lon_start,1,MPI_INTEGER,    &
+                           wrt_int_state%lon_start_wrtgrp, 1, MPI_INTEGER, wrt_mpi_comm, rc)
+        call mpi_allgather(wrt_int_state%lon_end,  1,MPI_INTEGER,    &
+                           wrt_int_state%lon_end_wrtgrp,   1, MPI_INTEGER, wrt_mpi_comm, rc)
         allocate( wrt_int_state%latPtr(wrt_int_state%lon_start:wrt_int_state%lon_end, &
                   wrt_int_state%lat_start:wrt_int_state%lat_end))
         allocate( wrt_int_state%lonPtr(wrt_int_state%lon_start:wrt_int_state%lon_end, &
