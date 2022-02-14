@@ -43,7 +43,6 @@
       use module_write_netcdf, only : write_netcdf
       use physcons,            only : pi => con_pi
       use inline_post,         only : inline_post_run, inline_post_getattr
-      use module_write_netcdf_parallel, only : write_netcdf_parallel
 !
 !-----------------------------------------------------------------------
 !
@@ -278,6 +277,9 @@
     if (ideflate < 0) ideflate=0
 
     call ESMF_ConfigGetAttribute(config=CF,value=nbits,default=0,label ='nbits:',rc=rc)
+    if (lprnt) then
+        print *,'ideflate=',ideflate,' nbits=',nbits
+    end if
     ! nbits quantization level for lossy compression (must be between 1 and 31)
     ! 1 is most compression, 31 is least. If outside this range, set to zero
     ! which means use lossless compression.
@@ -537,15 +539,37 @@
         endif
         wrt_int_state%latstart = lat(1)
         wrt_int_state%latlast  = lat(jmo)
-        do j=1,imo
-          lon(j) = 360.d0/real(imo,8) *real(j-1,8)
+        do i=1,imo
+          lon(i) = 360.d0/real(imo,8) *real(i-1,8)
         enddo
         wrt_int_state%lonstart = lon(1)
         wrt_int_state%lonlast  = lon(imo)
         do j=lbound(latPtr,2),ubound(latPtr,2)
           do i=lbound(lonPtr,1),ubound(lonPtr,1)
-            lonPtr(i,j) = 360.d0/real(imo,8) * real(i-1,8)
+            lonPtr(i,j) = lon(i)
             latPtr(i,j) = lat(j)
+          enddo
+        enddo
+        wrt_int_state%lat_start = lbound(latPtr,2)
+        wrt_int_state%lat_end   = ubound(latPtr,2)
+        wrt_int_state%lon_start = lbound(lonPtr,1)
+        wrt_int_state%lon_end   = ubound(lonPtr,1)
+        allocate( wrt_int_state%lat_start_wrtgrp(wrt_int_state%petcount))
+        allocate( wrt_int_state%lat_end_wrtgrp  (wrt_int_state%petcount))
+        call mpi_allgather(wrt_int_state%lat_start,1,MPI_INTEGER,    &
+                           wrt_int_state%lat_start_wrtgrp, 1, MPI_INTEGER, wrt_mpi_comm, rc)
+        call mpi_allgather(wrt_int_state%lat_end,  1,MPI_INTEGER,    &
+                           wrt_int_state%lat_end_wrtgrp,   1, MPI_INTEGER, wrt_mpi_comm, rc)
+        if( lprnt ) print *,'aft wrtgrd, latlon, dimj_start=',wrt_int_state%lat_start_wrtgrp, &
+          'dimj_end=',wrt_int_state%lat_end_wrtgrp, 'wrt_group=',n_group
+        allocate( wrt_int_state%latPtr(wrt_int_state%lon_start:wrt_int_state%lon_end, &
+                  wrt_int_state%lat_start:wrt_int_state%lat_end))
+        allocate( wrt_int_state%lonPtr(wrt_int_state%lon_start:wrt_int_state%lon_end, &
+                  wrt_int_state%lat_start:wrt_int_state%lat_end))
+        do j=wrt_int_state%lat_start,wrt_int_state%lat_end
+          do i=wrt_int_state%lon_start,wrt_int_state%lon_end
+            wrt_int_state%latPtr(i,j) = latPtr(i,j)
+            wrt_int_state%lonPtr(i,j) = lonPtr(i,j)
           enddo
         enddo
         wrt_int_state%im = imo
@@ -1554,6 +1578,11 @@
           if (trim(output_grid) == 'cubed_sphere_grid') then
 
             wbeg = MPI_Wtime()
+            if (trim(output_file(nbdl)) == 'netcdf_parallel') then
+              call write_netcdf(wrt_int_state%wrtFB(nbdl),trim(filename), &
+                               .true., wrt_mpi_comm,wrt_int_state%mype, &
+                               ichunk2d,jchunk2d,ichunk3d,jchunk3d,kchunk3d,rc)
+            else
             call ESMFproto_FieldBundleWrite(gridFB, filename=trim(filename),      &
                                             convention="NetCDF", purpose="FV3",   &
                                             status=ESMF_FILESTATUS_REPLACE,       &
@@ -1569,6 +1598,7 @@
 
             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
+            end if
             wend = MPI_Wtime()
             if (lprnt) then
               write(*,'(A,F10.5,A,I4.2,A,I2.2)')' actual    netcdf Write Time is ',wend-wbeg &
@@ -1580,8 +1610,8 @@
             if (trim(output_file(nbdl)) == 'netcdf') then
 
               wbeg = MPI_Wtime()
-              call write_netcdf(file_bundle,wrt_int_state%wrtFB(nbdl),trim(filename), &
-                               wrt_mpi_comm,wrt_int_state%mype,imo,jmo,&
+              call write_netcdf(wrt_int_state%wrtFB(nbdl),trim(filename), &
+                               .false., wrt_mpi_comm,wrt_int_state%mype, &
                                ichunk2d,jchunk2d,ichunk3d,jchunk3d,kchunk3d,rc)
               wend = MPI_Wtime()
               if (lprnt) then
@@ -1598,9 +1628,9 @@
               line=__LINE__, file=__FILE__)) return
 #endif
               wbeg = MPI_Wtime()
-              call write_netcdf_parallel(file_bundle,wrt_int_state%wrtFB(nbdl),   &
-                                         trim(filename), wrt_mpi_comm,wrt_int_state%mype,imo,jmo,&
-                                         ichunk2d,jchunk2d,ichunk3d,jchunk3d,kchunk3d,rc)
+              call write_netcdf(wrt_int_state%wrtFB(nbdl),trim(filename), &
+                               .true., wrt_mpi_comm,wrt_int_state%mype, &
+                               ichunk2d,jchunk2d,ichunk3d,jchunk3d,kchunk3d,rc)
               wend = MPI_Wtime()
               if (lprnt) then
                 write(*,'(A,F10.5,A,I4.2,A,I2.2)')' parallel netcdf      Write Time is ',wend-wbeg  &
@@ -1636,8 +1666,8 @@
             if (trim(output_file(nbdl)) == 'netcdf') then
 
               wbeg = MPI_Wtime()
-              call write_netcdf(file_bundle,wrt_int_state%wrtFB(nbdl),trim(filename), &
-                               wrt_mpi_comm,wrt_int_state%mype,imo,jmo,&
+              call write_netcdf(wrt_int_state%wrtFB(nbdl),trim(filename), &
+                               .false., wrt_mpi_comm,wrt_int_state%mype, &
                                ichunk2d,jchunk2d,ichunk3d,jchunk3d,kchunk3d,rc)
               wend = MPI_Wtime()
               if (lprnt) then
@@ -1654,9 +1684,9 @@
               line=__LINE__, file=__FILE__)) return
 #endif
               wbeg = MPI_Wtime()
-              call write_netcdf_parallel(file_bundle,wrt_int_state%wrtFB(nbdl), &
-                                         trim(filename), wrt_mpi_comm,wrt_int_state%mype,imo,jmo,&
-                                         ichunk2d,jchunk2d,ichunk3d,jchunk3d,kchunk3d,rc)
+              call write_netcdf(wrt_int_state%wrtFB(nbdl),trim(filename), &
+                               .true., wrt_mpi_comm,wrt_int_state%mype, &
+                               ichunk2d,jchunk2d,ichunk3d,jchunk3d,kchunk3d,rc)
               wend = MPI_Wtime()
               if (lprnt) then
                 write(*,'(A,F10.5,A,I4.2,A,I2.2)')' parallel netcdf      Write Time is ',wend-wbeg  &
@@ -1692,8 +1722,8 @@
             if (trim(output_file(nbdl)) == 'netcdf' .and. nbits==0) then
 
               wbeg = MPI_Wtime()
-              call write_netcdf(file_bundle,wrt_int_state%wrtFB(nbdl),trim(filename), &
-                                wrt_mpi_comm,wrt_int_state%mype,imo,jmo,&
+              call write_netcdf(wrt_int_state%wrtFB(nbdl),trim(filename), &
+                                .false., wrt_mpi_comm,wrt_int_state%mype, &
                                 ichunk2d,jchunk2d,ichunk3d,jchunk3d,kchunk3d,rc)
               wend = MPI_Wtime()
               if (mype == lead_write_task) then
@@ -1710,9 +1740,9 @@
               line=__LINE__, file=__FILE__)) return
 #endif
               wbeg = MPI_Wtime()
-              call write_netcdf_parallel(file_bundle,wrt_int_state%wrtFB(nbdl), &
-                                         trim(filename), wrt_mpi_comm,wrt_int_state%mype,imo,jmo,&
-                                         ichunk2d,jchunk2d,ichunk3d,jchunk3d,kchunk3d,rc)
+              call write_netcdf(wrt_int_state%wrtFB(nbdl),trim(filename), &
+                                .true., wrt_mpi_comm,wrt_int_state%mype, &
+                                ichunk2d,jchunk2d,ichunk3d,jchunk3d,kchunk3d,rc)
               wend = MPI_Wtime()
               if (lprnt) then
                 write(*,'(A,F10.5,A,I4.2,A,I2.2)')' parallel netcdf      Write Time is ',wend-wbeg  &

@@ -10,3 +10,7 @@
   path = ccpp/physics
   url = https://github.com/MicroTed/ccpp-physics.git
   branch = feature/nsslmicro
+[submodule "upp"]
+  path = upp
+  url = https://github.com/NOAA-EMC/UPP
+  commit = 0dc3c0c

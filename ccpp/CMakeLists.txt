@@ -20,7 +20,10 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/framework/cmake")
 #------------------------------------------------------------------------------
 # Call to CCPP code generator
 if(DEBUG)
+  # Enable debugging features in auto-generated physics caps
   set(_ccpp_debug_arg "--debug")
+  # Enable verbose output from ccpp_prebuild.py
+  set(_ccpp_verbose_arg "--verbose")
 endif()
 if(DEFINED CCPP_SUITES)
   set(_ccpp_suites_arg "--suites=${CCPP_SUITES}")
@@ -31,7 +34,7 @@ endif()
 execute_process(COMMAND ${Python_EXECUTABLE}
                         "framework/scripts/ccpp_prebuild.py"
                         "--config=config/ccpp_prebuild_config.py"
-                        "--builddir=${CMAKE_CURRENT_BINARY_DIR}" ${_ccpp_suites_arg} ${_ccpp_debug_arg}
+                        "--builddir=${CMAKE_CURRENT_BINARY_DIR}" ${_ccpp_suites_arg} ${_ccpp_debug_arg} ${_ccpp_verbose_arg}
                 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
                 OUTPUT_FILE ${CMAKE_CURRENT_BINARY_DIR}/ccpp_prebuild.out
                 ERROR_FILE  ${CMAKE_CURRENT_BINARY_DIR}/ccpp_prebuild.err
@@ -62,19 +65,20 @@ endif()
 #------------------------------------------------------------------------------
 # Set flag for 32bit dynamics build
 if(32BIT)
-  set(DYN32 ON CACHE BOOL "Enable support for 32bit fast physics in CCPP")
-  message(STATUS "Dynamics compiled with 32-bit option, adjust fv_sat_adj types")
+  message(STATUS "Compile CCPP slow physics with 64-bit precision, fast physics with 32-bit precision")
   add_definitions(-DOVERLOAD_R4)
-  message ("Force 64 bits in ccpp")
   if(CMAKE_Fortran_COMPILER_ID MATCHES "Intel")
-    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -real-size 64")
+    set(CMAKE_Fortran_FLAGS_PHYSICS  "-real-size 64 -no-prec-div -no-prec-sqrt")
   elseif(CMAKE_Fortran_COMPILER_ID MATCHES "GNU")
-    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fdefault-real-8")
+    set(CMAKE_Fortran_FLAGS_PHYSICS  "-fdefault-real-8 -fdefault-double-8")
   endif()
+  set(CMAKE_Fortran_FLAGS_DYNAMICS "")
 else()
-  set(DYN32 OFF CACHE BOOL "Disable support for 32bit fast physics in CCPP")
+  message(STATUS "Compile CCPP physics with 64-bit precision")
   remove_definitions(-DOVERLOAD_R8)
   remove_definitions(-DOVERLOAD_R4)
+  set(CMAKE_Fortran_FLAGS_PHYSICS  "")
+  set(CMAKE_Fortran_FLAGS_DYNAMICS "")
 endif()
 
 #------------------------------------------------------------------------------
@@ -86,6 +90,9 @@ if(MULTI_GASES)
   add_definitions(-DMULTI_GASES)
 endif()
 
+if(IDEA_PHYS)
+  add_definitions(-DIDEA_PHYS)
+endif()
 #------------------------------------------------------------------------------
 # Build CCPP framework and physics
 
@@ -98,10 +105,6 @@ add_subdirectory(physics)
 # Can we move data/*.F90 and driver/*.F90 to this directory ???
 add_library(
     fv3ccpp
-
-    data/CCPP_typedefs.F90
-    data/GFS_typedefs.F90
-    data/CCPP_data.F90
 
     driver/GFS_diagnostics.F90
     driver/GFS_restart.F90

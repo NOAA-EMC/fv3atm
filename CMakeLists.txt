@@ -20,6 +20,8 @@ add_subdirectory(atmos_cubed_sphere)
 ### fv3atm
 ###############################################################################
 if(INLINE_POST)
+  set(BUILD_POSTEXEC OFF)
+  add_subdirectory(upp)
   set(POST_SRC io/inline_post.F90 io/post_nems_routines.F90 io/post_gfs.F90 io/post_regional.F90)
 else()
   set(POST_SRC io/inline_post_stub.F90)
@@ -41,7 +43,6 @@ add_library(fv3atm
   cpl/module_cap_cpl.F90
   io/FV3GFS_io.F90
   io/module_write_netcdf.F90
-  io/module_write_netcdf_parallel.F90
   io/module_fv3_io_def.F90
   io/module_write_internal_state.F90
   io/module_wrt_grid_comp.F90
@@ -59,6 +60,10 @@ target_compile_definitions(fv3atm PRIVATE "${_fv3atm_defs_private}")
 set_target_properties(fv3atm PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mod)
 target_include_directories(fv3atm INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/mod>
                                             $<INSTALL_INTERFACE:mod>)
+
+if(MULTI_GASES)
+  list(APPEND _fv3atm_defs_private MULTI_GASES)
+endif()
 
 target_link_libraries(fv3atm PUBLIC fv3
                                     fv3ccpp
