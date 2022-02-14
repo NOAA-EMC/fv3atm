@@ -783,6 +783,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
       allocate (fcstGrid(ngrids),fcstGridComp(ngrids))
       do n=1,ngrids
 
+        pelist => null()
         call atmos_model_get_nth_domain_info(n, layout, nx, ny, pelist)
         call ESMF_VMBroadcast(vm, bcstData=layout, count=2, rootPet=pelist(1), rc=rc); ESMF_ERR_ABORT(rc)
 

@@ -1134,9 +1134,6 @@ module fv3gfs_cap_mod
       enddo
     endif
 
-    call ESMF_VMBarrier(vm=vm, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc,  msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
     call ESMF_GridCompFinalize(fcstComp, exportState=fcststate,userRc=urc, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc,  msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
     if (ESMF_LogFoundError(rcToCheck=urc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
