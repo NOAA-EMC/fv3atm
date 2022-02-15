@@ -130,7 +130,8 @@ public setup_exportdata
      integer                       :: layout(2)          ! computer task laytout
      logical                       :: regional           ! true if domain is regional
      logical                       :: nested             ! true if there is a nest
-     logical                       :: moving_nesting     ! true if it is a moving nest or a parent for a moving nest
+     logical                       :: moving_nest_parent ! true if this grid has a moving nest child
+     logical                       :: is_moving_nest     ! true if this is a moving nest grid
      integer                       :: ngrids             !
      integer                       :: mygrid             !
      integer                       :: mlon, mlat
@@ -545,7 +546,9 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    call atmosphere_resolution (nlon, nlat, global=.false.)
    call atmosphere_resolution (mlon, mlat, global=.true.)
    call alloc_atmos_data_type (nlon, nlat, Atmos)
-   call atmosphere_domain (Atmos%domain, Atmos%layout, Atmos%regional, Atmos%nested, Atmos%moving_nesting, Atmos%ngrids, Atmos%mygrid, Atmos%pelist)
+   call atmosphere_domain (Atmos%domain, Atmos%layout, Atmos%regional, Atmos%nested, &
+                           Atmos%moving_nest_parent, Atmos%is_moving_nest, &
+                           Atmos%ngrids, Atmos%mygrid, Atmos%pelist)
    call atmosphere_diag_axes (Atmos%axes)
    call atmosphere_etalvls (Atmos%ak, Atmos%bk, flip=flip_vc)
    call atmosphere_grid_bdry (Atmos%lon_bnd, Atmos%lat_bnd, global=.false.)
@@ -781,14 +784,18 @@ subroutine update_atmos_model_dynamics (Atmos)
 #ifdef MOVING_NEST
     ! W. Ramstrom, AOML/HRD -- May 28, 2021
     ! Evaluates whether to move nest, then performs move if needed
-    if (Atmos%moving_nesting) call update_moving_nest (Atm_block, GFS_control, GFS_data, Atmos%Time)
+    if (Atmos%moving_nest_parent .or. Atmos%is_moving_nest ) then
+      call update_moving_nest (Atm_block, GFS_control, GFS_data, Atmos%Time)
+    endif
 #endif MOVING_NEST
     call mpp_clock_begin(fv3Clock)
     call atmosphere_dynamics (Atmos%Time)
 #ifdef MOVING_NEST
     ! W. Ramstrom, AOML/HRD -- June 9, 2021
     ! Debugging output of moving nest code.  Called from this level to access needed input variables.
-    if (Atmos%moving_nesting) call dump_moving_nest (Atm_block, GFS_control, GFS_data, Atmos%Time)
+    if (Atmos%moving_nest_parent .or. Atmos%is_moving_nest ) then
+      call dump_moving_nest (Atm_block, GFS_control, GFS_data, Atmos%Time)
+    endif
 #endif MOVING_NEST
 
     call mpp_clock_end(fv3Clock)
