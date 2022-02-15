@@ -158,7 +158,6 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     type(ESMF_GridComp)   :: nest
     integer, intent(out)  :: rc
 
-    real(ESMF_KIND_R8),parameter :: dtor = 180.0_ESMF_KIND_R8 / 3.1415926535897931_ESMF_KIND_R8
     character(len=80)     :: name
     type(ESMF_Grid)       :: grid
     type(ESMF_Info)       :: info
@@ -205,6 +204,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
         decompflagPTile(:,tl) = (/ESMF_DECOMP_SYMMEDGEMAX,ESMF_DECOMP_SYMMEDGEMAX/)
       enddo
       grid = ESMF_GridCreateCubedSphere(tileSize=tilesize, &
+                                        coordSys=ESMF_COORDSYS_SPH_RAD, &
                                         regDecompPTile=decomptile, &
                                         decompflagPTile=decompflagPTile, &
                                         name="fcst_grid", rc=rc)
@@ -219,6 +219,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
                                       minIndex=(/1,1/), &
                                       maxIndex=(/nx,ny/), &
                                       gridAlign=(/-1,-1/), &
+                                      coordSys=ESMF_COORDSYS_SPH_RAD, &
                                       decompflag=(/ESMF_DECOMP_SYMMEDGEMAX,ESMF_DECOMP_SYMMEDGEMAX/), &
                                       name="fcst_grid", &
                                       indexflag=ESMF_INDEX_DELOCAL, &
@@ -226,31 +227,37 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
     endif
 
-    call ESMF_GridAddCoord(grid, staggerLoc=ESMF_STAGGERLOC_CENTER, rc=rc); ESMF_ERR_ABORT(rc)
-    call ESMF_GridAddCoord(grid, staggerLoc=ESMF_STAGGERLOC_CORNER, rc=rc); ESMF_ERR_ABORT(rc)
+    call ESMF_GridAddCoord(grid, staggerLoc=ESMF_STAGGERLOC_CENTER, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+    call ESMF_GridAddCoord(grid, staggerLoc=ESMF_STAGGERLOC_CORNER, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
     ! define "center" coordinate values
     call ESMF_GridGetCoord(grid, coordDim=1, staggerLoc=ESMF_STAGGERLOC_CENTER, &
                            totalLBound=tlb, totalUBound=tub, &
-                           farrayPtr=glonPtr, rc=rc); ESMF_ERR_ABORT(rc)
-    glonPtr(tlb(1):tub(1),tlb(2):tub(2)) = Atmos%lon(tlb(1):tub(1),tlb(2):tub(2)) * dtor
+                           farrayPtr=glonPtr, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+    glonPtr(tlb(1):tub(1),tlb(2):tub(2)) = Atmos%lon(tlb(1):tub(1),tlb(2):tub(2))
 
     call ESMF_GridGetCoord(grid, coordDim=2, staggerLoc=ESMF_STAGGERLOC_CENTER, &
                            totalLBound=tlb, totalUBound=tub, &
-                           farrayPtr=glatPtr, rc=rc); ESMF_ERR_ABORT(rc)
-    glatPtr(tlb(1):tub(1),tlb(2):tub(2)) = Atmos%lat(tlb(1):tub(1),tlb(2):tub(2)) * dtor
+                           farrayPtr=glatPtr, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+    glatPtr(tlb(1):tub(1),tlb(2):tub(2)) = Atmos%lat(tlb(1):tub(1),tlb(2):tub(2))
 
     ! define "corner" coordinate values
     call ESMF_GridGetCoord(grid, coordDim=1, staggerLoc=ESMF_STAGGERLOC_CORNER, &
                            totalLBound=tlb, totalUBound=tub, &
-                           farrayPtr=glonPtr, rc=rc); ESMF_ERR_ABORT(rc)
-    glonPtr(tlb(1):tub(1),tlb(2):tub(2)) = Atmos%lon_bnd(tlb(1):tub(1),tlb(2):tub(2)) * dtor
+                           farrayPtr=glonPtr, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+    glonPtr(tlb(1):tub(1),tlb(2):tub(2)) = Atmos%lon_bnd(tlb(1):tub(1),tlb(2):tub(2))
 
     call ESMF_GridGetCoord(grid, coordDim=2, staggerLoc=ESMF_STAGGERLOC_CORNER, &
                            totalLBound=tlb, totalUBound=tub, &
-                           farrayPtr=glatPtr, rc=rc); ESMF_ERR_ABORT(rc)
-    glatPtr(tlb(1):tub(1),tlb(2):tub(2)) = Atmos%lat_bnd(tlb(1):tub(1),tlb(2):tub(2)) * dtor
-!
+                           farrayPtr=glatPtr, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+    glatPtr(tlb(1):tub(1),tlb(2):tub(2)) = Atmos%lat_bnd(tlb(1):tub(1),tlb(2):tub(2))
+
     call addLsmask2grid(grid, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
