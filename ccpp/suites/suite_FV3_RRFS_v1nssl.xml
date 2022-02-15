@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<suite name="FV3_RRFS_v1nssl" lib="ccppphys" ver="5">
+<suite name="FV3_RRFS_v1nssl"  version="1">
   <!-- <init></init> -->
   <group name="time_vary">
     <subcycle loop="1">
@@ -40,7 +40,7 @@
     </subcycle>
     <!-- Surface iteration loop -->
     <subcycle loop="2">
-      <scheme>sfc_diff</scheme>
+      <scheme>mynnsfc_wrapper</scheme>
       <scheme>GFS_surface_loop_control_part1</scheme>
       <scheme>sfc_nst_pre</scheme>
       <scheme>sfc_nst</scheme>
@@ -64,8 +64,8 @@
       <scheme>ozphys_2015</scheme>
       <scheme>h2ophys</scheme>
       <scheme>get_phi_fv3</scheme>
-      <!-- <scheme>GFS_suite_interstitial_3</scheme> -->
-      <!-- <scheme>GFS_suite_interstitial_4</scheme> -->
+      <scheme>GFS_suite_interstitial_3</scheme>
+      <scheme>GFS_suite_interstitial_4</scheme>
       <scheme>GFS_MP_generic_pre</scheme>
       <scheme>mp_nssl</scheme>
       <scheme>GFS_MP_generic_post</scheme>
