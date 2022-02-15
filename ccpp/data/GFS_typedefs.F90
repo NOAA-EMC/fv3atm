@@ -1014,19 +1014,18 @@ module GFS_typedefs
     logical              :: do_mynnedmf
     logical              :: do_mynnsfclay
     ! DH* TODO - move this to MYNN namelist section
-    integer              :: grav_settling      !< flag for initalizing fist time step
-    integer              :: bl_mynn_tkebudget  !< flag for activating TKE budget
+    logical              :: bl_mynn_tkebudget  !< flag for activating TKE budget
     logical              :: bl_mynn_tkeadvect  !< activate computation of TKE advection (not yet in use for FV3)
     integer              :: bl_mynn_cloudpdf   !< flag to determine which cloud PDF to use
     integer              :: bl_mynn_mixlength  !< flag for different version of mixing length formulation
     integer              :: bl_mynn_edmf       !< flag to activate the mass-flux scheme
     integer              :: bl_mynn_edmf_mom   !< flag to activate the transport of momentum
     integer              :: bl_mynn_edmf_tke   !< flag to activate the transport of TKE
-    integer              :: bl_mynn_edmf_part  !< flag to partitioning og the MF and ED areas
     integer              :: bl_mynn_cloudmix   !< flag to activate mixing of cloud species
     integer              :: bl_mynn_mixqt      !< flag to mix total water or individual species
     integer              :: bl_mynn_output     !< flag to initialize and write out extra 3D arrays
     integer              :: icloud_bl          !< flag for coupling sgs clouds to radiation
+    real(kind=kind_phys) :: bl_mynn_closure    !< flag to determine closure level of MYNN
     real(kind=kind_phys) :: var_ric
     real(kind=kind_phys) :: coef_ric_l
     real(kind=kind_phys) :: coef_ric_s
@@ -1616,6 +1615,11 @@ module GFS_typedefs
     integer, pointer               :: ktop_plume  (:)    => null()  !
     real (kind=kind_phys), pointer :: exch_h     (:,:)   => null()  !
     real (kind=kind_phys), pointer :: exch_m     (:,:)   => null()  !
+    real (kind=kind_phys), pointer :: dqke       (:,:)   => null()  !< timestep change of tke
+    real (kind=kind_phys), pointer :: qwt        (:,:)   => null()  !< vertical transport of tke
+    real (kind=kind_phys), pointer :: qshear     (:,:)   => null()  !< shear production of tke
+    real (kind=kind_phys), pointer :: qbuoy      (:,:)   => null()  !< buoyancy production of tke
+    real (kind=kind_phys), pointer :: qdiss      (:,:)   => null()  !< dissipation of tke
 
 ! Output - only in physics
     real (kind=kind_phys), pointer :: u10m   (:)     => null()   !< 10 meter u/v wind speed
@@ -3352,19 +3356,20 @@ module GFS_typedefs
     logical              :: do_mynnedmf       = .false.               !< flag for MYNN-EDMF
     logical              :: do_mynnsfclay     = .false.               !< flag for MYNN Surface Layer Scheme
     ! DH* TODO - move to MYNN namelist section
-    integer              :: grav_settling     = 0
-    integer              :: bl_mynn_tkebudget = 0
+    logical              :: bl_mynn_tkebudget = .false.
     logical              :: bl_mynn_tkeadvect = .false.
     integer              :: bl_mynn_cloudpdf  = 2
-    integer              :: bl_mynn_mixlength = 2
-    integer              :: bl_mynn_edmf      = 0
+    integer              :: bl_mynn_mixlength = 1
+    integer              :: bl_mynn_edmf      = 1
     integer              :: bl_mynn_edmf_mom  = 1
     integer              :: bl_mynn_edmf_tke  = 0
-    integer              :: bl_mynn_edmf_part = 0
     integer              :: bl_mynn_cloudmix  = 1
     integer              :: bl_mynn_mixqt     = 0
     integer              :: bl_mynn_output    = 0
     integer              :: icloud_bl         = 1
+    real(kind=kind_phys) :: bl_mynn_closure   = 2.6                   !<   <= 2.5  only prognose tke
+                                                                      !<   2.5 < and < 3.0, prognose tke and q'2
+                                                                      !<   >= 3.0, prognose tke, q'2, T'2, and T'q'
     real(kind=kind_phys) :: var_ric           = 1.0
     real(kind=kind_phys) :: coef_ric_l        = 0.16
     real(kind=kind_phys) :: coef_ric_s        = 0.25
@@ -3608,8 +3613,9 @@ module GFS_typedefs
                                do_mynnedmf, do_mynnsfclay,                                  &
                                ! DH* TODO - move to MYNN namelist section
                                bl_mynn_cloudpdf, bl_mynn_edmf, bl_mynn_edmf_mom,            &
-                               bl_mynn_edmf_tke, bl_mynn_edmf_part, bl_mynn_cloudmix,       &
+                               bl_mynn_edmf_tke, bl_mynn_mixlength, bl_mynn_cloudmix,       &
                                bl_mynn_mixqt, bl_mynn_output, icloud_bl, bl_mynn_tkeadvect, &
+                               bl_mynn_closure, bl_mynn_tkebudget,                          &
                                ! *DH
                                gwd_opt, do_ugwp_v0, do_ugwp_v0_orog_only,                   &
                                do_ugwp_v0_nst_only,                                         &
@@ -4286,9 +4292,9 @@ module GFS_typedefs
     Model%bl_mynn_cloudmix  = bl_mynn_cloudmix
     Model%bl_mynn_mixqt     = bl_mynn_mixqt
     Model%bl_mynn_output    = bl_mynn_output
-    Model%bl_mynn_edmf_part = bl_mynn_edmf_part
     Model%bl_mynn_tkeadvect = bl_mynn_tkeadvect
-    Model%grav_settling     = grav_settling
+    Model%bl_mynn_closure   = bl_mynn_closure
+    Model%bl_mynn_tkebudget = bl_mynn_tkebudget
     Model%icloud_bl         = icloud_bl
     Model%var_ric           = var_ric
     Model%coef_ric_l        = coef_ric_l
@@ -6643,6 +6649,13 @@ module GFS_typedefs
         allocate (Diag%det_thl   (IM,Model%levs))
         allocate (Diag%det_sqv   (IM,Model%levs))
       endif
+      if (Model%bl_mynn_tkebudget) then
+        allocate (Diag%dqke      (IM,Model%levs))
+        allocate (Diag%qwt       (IM,Model%levs))
+        allocate (Diag%qshear    (IM,Model%levs))
+        allocate (Diag%qbuoy     (IM,Model%levs))
+        allocate (Diag%qdiss     (IM,Model%levs))
+      endif
       allocate (Diag%nupdraft  (IM))
       allocate (Diag%maxmf     (IM))
       allocate (Diag%ktop_plume(IM))
@@ -6659,6 +6672,13 @@ module GFS_typedefs
         Diag%sub_sqv       = clear_val
         Diag%det_thl       = clear_val
         Diag%det_sqv       = clear_val
+      endif
+      if (Model%bl_mynn_tkebudget) then
+        Diag%dqke          = clear_val
+        Diag%qwt           = clear_val
+        Diag%qshear        = clear_val
+        Diag%qbuoy         = clear_val
+        Diag%qdiss         = clear_val
       endif
       Diag%nupdraft      = 0
       Diag%maxmf         = clear_val

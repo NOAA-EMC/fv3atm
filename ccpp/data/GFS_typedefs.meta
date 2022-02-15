@@ -5302,18 +5302,12 @@
   units = flag
   dimensions = ()
   type = logical
-[grav_settling]
-  standard_name = control_for_gravitational_settling_of_cloud_droplets
-  long_name = flag to activate gravitational setting of fog
-  units = flag
-  dimensions = ()
-  type = integer
 [bl_mynn_tkebudget]
   standard_name = control_for_tke_budget_output
   long_name = flag for activating TKE budget
   units = flag
   dimensions = ()
-  type = integer
+  type = logical
 [bl_mynn_tkeadvect]
   standard_name = flag_for_tke_advection
   long_name = flag for activating TKE advection
@@ -5350,12 +5344,6 @@
   units = flag
   dimensions = ()
   type = integer
-[bl_mynn_edmf_part]
-  standard_name = control_for_edmf_partitioning_in_mellor_yamada_nakanishi_niino_pbl_scheme
-  long_name = flag to partitioning og the MF and ED areas
-  units = flag
-  dimensions = ()
-  type = integer
 [bl_mynn_cloudmix]
   standard_name = control_for_cloud_species_mixing_in_mellor_yamada_nakanishi_niino_pbl_scheme
   long_name = flag to activate mixing of cloud species
@@ -5374,6 +5362,12 @@
   units = flag
   dimensions = ()
   type = integer
+[bl_mynn_closure]
+  standard_name = control_for_closure_level_in_mellor_yamada_nakanishi_niino_pbl_scheme
+  long_name = flag to determine the closure level for the mynn
+  units = flag
+  dimensions = ()
+  type = real
 [icloud_bl]
   standard_name = control_for_sgs_cloud_radiation_coupling_in_mellor_yamamda_nakanishi_niino_pbl_scheme
   long_name = flag for coupling sgs clouds to radiation
@@ -7232,6 +7226,46 @@
   type = real
   kind = kind_phys
   active = (flag_for_mellor_yamada_nakanishi_niino_pbl_scheme .and. (control_for_additional_diagnostics_in_mellor_yamada_nakanishi_niino_pbl_scheme .ne. 0))
+[dqke]
+  standard_name = total_time_rate_of_change_of_tke
+  long_name = total tke tendency
+  units = m2 s-3
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = (flag_for_mellor_yamada_nakanishi_niino_pbl_scheme .and. control_for_tke_budget_output)
+[qwt]
+  standard_name = tke_tendency_due_to_vertical_transport
+  long_name = tke tendency due to vertical transport and diffusion
+  units = m2 s-3
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = (flag_for_mellor_yamada_nakanishi_niino_pbl_scheme .and. control_for_tke_budget_output)
+[qshear]
+  standard_name = tke_tendency_due_to_shear
+  long_name = tke tendency due to shear
+  units = m2 s-3
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = (flag_for_mellor_yamada_nakanishi_niino_pbl_scheme .and. control_for_tke_budget_output)
+[qbuoy]
+  standard_name = tke_tendency_due_to_buoyancy
+  long_name = tke tendency due to buoyancy production or consumption
+  units = m2 s-3
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = (flag_for_mellor_yamada_nakanishi_niino_pbl_scheme .and. control_for_tke_budget_output)
+[qdiss]
+  standard_name = tke_tendency_due_to_dissipation
+  long_name = tke tendency due to the dissipation of tke
+  units = m2 s-3
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = (flag_for_mellor_yamada_nakanishi_niino_pbl_scheme .and. control_for_tke_budget_output)
 [nupdraft]
   standard_name = number_of_plumes
   long_name = number of plumes per grid column
@@ -9369,6 +9403,13 @@
 [save_q(:,:,index_of_cloud_ice_mixing_ratio_in_tracer_concentration_array)]
   standard_name = ice_water_mixing_ratio_save
   long_name = cloud ice water mixing ratio before entering a physics scheme
+  units = kg kg-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+[save_q(:,:,index_of_snow_mixing_ratio_in_tracer_concentration_array)]
+  standard_name = snow_mixing_ratio_save
+  long_name = cloud snow mixing ratio before entering a physics scheme
   units = kg kg-1
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
