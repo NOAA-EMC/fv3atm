@@ -64,8 +64,6 @@
       <scheme>ozphys_2015</scheme>
       <scheme>h2ophys</scheme>
       <scheme>get_phi_fv3</scheme>
-      <scheme>GFS_suite_interstitial_3</scheme>
-      <scheme>GFS_suite_interstitial_4</scheme>
       <scheme>GFS_MP_generic_pre</scheme>
       <scheme>mp_nssl</scheme>
       <scheme>GFS_MP_generic_post</scheme>
