@@ -4651,7 +4651,7 @@
   dimensions = ()
   type = logical
 [do_spp]
-  standard_name = flag_for_stochastic_spp_option
+  standard_name = do_stochastically_perturbed_parameterizations
   long_name = flag for stochastic spp option
   units = flag
   dimensions = ()
