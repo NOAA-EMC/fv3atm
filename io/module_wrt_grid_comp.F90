@@ -1431,7 +1431,7 @@
 !
       character(esmf_maxstr)                :: filename,compname
       character(40)                         :: cfhour, cform
-      character(20)                         :: valid_time_iso
+      character(20)                         :: time_iso
       real(ESMF_KIND_R8)                    :: time
 !
       real(kind=8)  :: MPI_Wtime
@@ -1484,7 +1484,7 @@
 
       wrt_int_state%fdate(7) = 1
       wrt_int_state%fdate(1:6) = date(1:6)
-      write(valid_time_iso,'(I4,"-",I2.2,"-",I2.2,"T",I2.2,":",I2.2,":",I2.2,"Z")') date(1:6)
+      write(time_iso,'(I4,"-",I2.2,"-",I2.2,"T",I2.2,":",I2.2,":",I2.2,"Z")') date(1:6)
 
       call ESMF_TimeGet(time=wrt_int_state%IO_BASETIME,yy=date(1),mm=date(2),dd=date(3),h=date(4), &
                         m=date(5),s=date(6),rc=rc)
@@ -1652,7 +1652,7 @@
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
           call ESMF_AttributeSet(fbgrid, convention="NetCDF", purpose="FV3", &
-                               name="valid_time", value=trim(valid_time_iso), rc=rc)
+                               name="time_iso", value=trim(time_iso), rc=rc)
 
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 

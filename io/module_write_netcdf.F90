@@ -81,7 +81,7 @@ module module_write_netcdf
     integer :: ncid
     integer :: oldMode
     integer :: im_dimid, jm_dimid, tile_dimid, pfull_dimid, phalf_dimid, time_dimid, ch_dimid
-    integer :: im_varid, jm_varid, tile_varid, lon_varid, lat_varid, validtime_varid
+    integer :: im_varid, jm_varid, tile_varid, lon_varid, lat_varid, timeiso_varid
     integer, dimension(:), allocatable :: dimids_2d, dimids_3d
     integer, dimension(:), allocatable :: varids
     logical shuffle
@@ -233,9 +233,9 @@ module module_write_netcdf
           ncerr = nf90_put_att(ncid, tile_varid, "long_name", "cubed-sphere face"); NC_ERR_STOP(ncerr)
        end if
 
-       ncerr = nf90_def_var(ncid, "valid_time", NF90_CHAR, [ch_dimid,time_dimid], validtime_varid); NC_ERR_STOP(ncerr)
-       ncerr = nf90_put_att(ncid, validtime_varid, "long_name", "valid time"); NC_ERR_STOP(ncerr)
-       ncerr = nf90_put_att(ncid, validtime_varid, "units", "ISO 8601 datetime string"); NC_ERR_STOP(ncerr)
+       ncerr = nf90_def_var(ncid, "time_iso", NF90_CHAR, [ch_dimid,time_dimid], timeiso_varid); NC_ERR_STOP(ncerr)
+       ncerr = nf90_put_att(ncid, timeiso_varid, "long_name", "valid time"); NC_ERR_STOP(ncerr)
+       ncerr = nf90_put_att(ncid, timeiso_varid, "description", "ISO 8601 datetime string"); NC_ERR_STOP(ncerr)
 
        ! coordinate variable attributes based on output_grid type
        if (trim(output_grid(grid_id)) == 'gaussian_grid' .or. &
@@ -280,7 +280,7 @@ module module_write_netcdf
           ncerr = nf90_var_par_access(ncid, lon_varid, NF90_INDEPENDENT); NC_ERR_STOP(ncerr)
           ncerr = nf90_var_par_access(ncid, jm_varid, NF90_INDEPENDENT); NC_ERR_STOP(ncerr)
           ncerr = nf90_var_par_access(ncid, lat_varid, NF90_INDEPENDENT); NC_ERR_STOP(ncerr)
-          ncerr = nf90_var_par_access(ncid, validtime_varid, NF90_INDEPENDENT); NC_ERR_STOP(ncerr)
+          ncerr = nf90_var_par_access(ncid, timeiso_varid, NF90_INDEPENDENT); NC_ERR_STOP(ncerr)
           if (is_cubed_sphere) then
              ncerr = nf90_var_par_access(ncid, tile_varid, NF90_INDEPENDENT); NC_ERR_STOP(ncerr)
           end if
@@ -566,11 +566,11 @@ module module_write_netcdf
        ncerr = nf90_put_var(ncid, tile_varid, values=[1,2,3,4,5,6]); NC_ERR_STOP(ncerr)
     end if
 
-    ! write valid_time (validtime_varid)
+    ! write time_iso (timeiso_varid)
     if (do_io) then
        call ESMF_AttributeGet(wrtgrid, convention="NetCDF", purpose="FV3", &
-                              name="valid_time", value=varcval, rc=rc); ESMF_ERR_RETURN(rc)
-       ncerr = nf90_put_var(ncid, validtime_varid, values=[trim(varcval)]); NC_ERR_STOP(ncerr)
+                              name="time_iso", value=varcval, rc=rc); ESMF_ERR_RETURN(rc)
+       ncerr = nf90_put_var(ncid, timeiso_varid, values=[trim(varcval)]); NC_ERR_STOP(ncerr)
     end if
 
     ! write variables (fields)
