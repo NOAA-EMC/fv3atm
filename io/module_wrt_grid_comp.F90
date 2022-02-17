@@ -1431,6 +1431,7 @@
 !
       character(esmf_maxstr)                :: filename,compname
       character(40)                         :: cfhour, cform
+      character(20)                         :: valid_time_iso
       real(ESMF_KIND_R8)                    :: time
 !
       real(kind=8)  :: MPI_Wtime
@@ -1475,25 +1476,22 @@
 !*** get current time and elapsed forecast time
 
       call ESMF_ClockGet(clock=CLOCK, currTime=CURRTIME, rc=rc)
-
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
       call ESMF_TimeGet(time=currTime,yy=date(1),mm=date(2),dd=date(3),h=date(4), &
                         m=date(5),s=date(6),rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
       wrt_int_state%fdate(7) = 1
       wrt_int_state%fdate(1:6) = date(1:6)
+      write(valid_time_iso,'(I4,"-",I2.2,"-",I2.2,"T",I2.2,":",I2.2,":",I2.2,"Z")') date(1:6)
 
-       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-!    if(mype == lead_write_task) print *,'in wrt run, curr time=',date
-!
       call ESMF_TimeGet(time=wrt_int_state%IO_BASETIME,yy=date(1),mm=date(2),dd=date(3),h=date(4), &
                         m=date(5),s=date(6),rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-!    print *,'in wrt run, io_baseline time=',date
-!
       wrt_int_state%IO_CURRTIMEDIFF = CURRTIME-wrt_int_state%IO_BASETIME
-!
+
       call ESMF_TimeIntervalGet(timeinterval=wrt_int_state%IO_CURRTIMEDIFF &
                                    ,h           =nf_hours               &  !<-- Hours of elapsed time
                                    ,m           =nf_minutes             &  !<-- Minutes of elapsed time
@@ -1650,6 +1648,11 @@
 
           call ESMF_AttributeSet(fbgrid, convention="NetCDF", purpose="FV3", &
                                name="time", value=real(wrt_int_state%nfhour,ESMF_KIND_R8), rc=rc)
+
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+          call ESMF_AttributeSet(fbgrid, convention="NetCDF", purpose="FV3", &
+                               name="valid_time", value=trim(valid_time_iso), rc=rc)
 
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 

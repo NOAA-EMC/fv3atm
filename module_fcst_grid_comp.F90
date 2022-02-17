@@ -832,7 +832,26 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
       call ESMF_AttributeSet(exportState, convention="NetCDF", purpose="FV3", &
                                name="time:calendar", value=uppercase(trim(calendar)), rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-!
+
+! Add valid_time Attribute to the exportState
+      call ESMF_AttributeAdd(exportState, convention="NetCDF", purpose="FV3", &
+        attrList=(/ "valid_time               ", &
+                    "valid_time:long_name     ", &
+                    "valid_time:units         " /), rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+      call ESMF_AttributeSet(exportState, convention="NetCDF", purpose="FV3", &
+                               name="valid_time", value="yyyy-mm-ddThh:mm:ssZ", rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+      call ESMF_AttributeSet(exportState, convention="NetCDF", purpose="FV3", &
+                               name="valid_time:units", value="ISO 8601 Date String", rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+      call ESMF_AttributeSet(exportState, convention="NetCDF", purpose="FV3", &
+                               name="valid_time:long_name", value="valid time", rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
 ! Create FieldBundle for Fields that need to be regridded bilinear
       if( quilting ) then
 
