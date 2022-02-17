@@ -2251,7 +2251,7 @@
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
   kind = kind_phys
-  active = (flag_for_stochastic_spp_option)
+  active = (do_stochastically_perturbed_parameterizations)
 [spp_wts_sfc]
   standard_name = spp_weights_for_surface_layer_scheme 
   long_name = spp weights for surface layer scheme
@@ -2259,7 +2259,7 @@
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
   kind = kind_phys
-  active = (flag_for_stochastic_spp_option)
+  active = (do_stochastically_perturbed_parameterizations)
 [spp_wts_mp]
   standard_name = spp_weights_for_microphysics_scheme
   long_name = spp weights for microphysics scheme 
@@ -2267,7 +2267,7 @@
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
   kind = kind_phys
-  active = (flag_for_stochastic_spp_option)
+  active = (do_stochastically_perturbed_parameterizations)
 [spp_wts_gwd]
   standard_name = spp_weights_for_gravity_wave_drag_scheme
   long_name = spp weights for gravity wave drag scheme 
@@ -2275,7 +2275,7 @@
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
   kind = kind_phys
-  active = (flag_for_stochastic_spp_option)
+  active = (do_stochastically_perturbed_parameterizations)
 [spp_wts_rad]
   standard_name = spp_weights_for_radiation_scheme
   long_name = spp weights for radiation scheme 
@@ -2283,7 +2283,7 @@
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
   kind = kind_phys
-  active = (flag_for_stochastic_spp_option)
+  active = (do_stochastically_perturbed_parameterizations)
 [sfc_wts]
   standard_name = surface_stochastic_weights_from_coupled_process
   long_name = weights for stochastic surface physics perturbation
