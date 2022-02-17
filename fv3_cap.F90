@@ -40,19 +40,14 @@ module fv3gfs_cap_mod
                                     nsout_io, iau_offset, lflname_fulltime
 !
   use module_fcst_grid_comp,  only: fcstSS => SetServices,                   &
-                                    fcstGrid, numLevels, numSoilLayers,      &
+                                    numLevels, numSoilLayers,                &
                                     numTracers, mygrid, grid_number_on_all_pets
 
   use module_wrt_grid_comp,   only: wrtSS => SetServices
 !
-  use module_cplfields,       only: nExportFields, exportFields, exportFieldsInfo, &
-                                    nImportFields, importFields, importFieldsInfo, &
-                                    importFieldsValid, queryImportFields
+  use module_cplfields,       only: importFieldsValid, queryImportFields
 
-  use module_cplfields,       only: realizeConnectedCplFields
   use module_cap_cpl,         only: diagnose_cplFields
-
-  use atmos_model_mod,        only: setup_exportdata
 
   implicit none
   private
@@ -485,7 +480,7 @@ module fv3gfs_cap_mod
         call ESMF_StateRemove(wrtState(i), fcstItemNameList, rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-! reconcile the wrtComp(i)'s export state
+! reconcile the wrtComp(i)'s import state
         call ESMF_StateReconcile(wrtState(i), rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
@@ -742,7 +737,6 @@ module fv3gfs_cap_mod
     character(len=*),parameter :: subname='(fv3gfs_cap:InitializeRealize)'
     type(ESMF_Clock)           :: clock
     type(ESMF_State)           :: importState, exportState
-    logical                    :: isPetLocal
     integer                    :: urc
 
     rc = ESMF_SUCCESS

@@ -70,10 +70,8 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 
   use get_stochy_pattern_mod, only: write_stoch_restart_atm
   use module_cplfields,       only: nExportFields, exportFields, exportFieldsInfo, &
-                                    nImportFields, importFields, importFieldsInfo, &
-                                    importFieldsValid, queryImportFields
+                                    nImportFields, importFields, importFieldsInfo
   use module_cplfields,       only: realizeConnectedCplFields
-  use module_cap_cpl,         only: diagnose_cplFields
 
   use atmos_model_mod,        only: setup_exportdata
   use CCPP_data,              only: GFS_control
@@ -91,7 +89,6 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
   type(atmos_data_type), save :: Atmos
 
   type(ESMF_GridComp),dimension(:),allocatable    :: fcstGridComp
-  type(ESMF_Grid),    dimension(:),allocatable    :: fcstGrid
   integer                                         :: ngrids, mygrid
   integer,dimension(:),allocatable                :: grid_number_on_all_pets(:)
 
@@ -109,7 +106,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !
 !-----------------------------------------------------------------------
 !
-  public SetServices, fcstGrid, ngrids, mygrid, grid_number_on_all_pets
+  public SetServices, ngrids, mygrid, grid_number_on_all_pets
   public numLevels, numSoilLayers, numTracers
 !
   contains
@@ -227,6 +224,14 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
     endif
 
+    call ESMF_AttributeAdd(grid, convention="NetCDF", purpose="FV3", &
+                          attrList=(/"ESMF:gridded_dim_labels"/), rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+    call ESMF_AttributeSet(grid, convention="NetCDF", purpose="FV3", &
+                         name="ESMF:gridded_dim_labels", valueList=(/"grid_xt", "grid_yt"/), rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
     call ESMF_GridAddCoord(grid, staggerLoc=ESMF_STAGGERLOC_CENTER, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
     call ESMF_GridAddCoord(grid, staggerLoc=ESMF_STAGGERLOC_CORNER, rc=rc)
@@ -263,7 +268,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 
 !test to write out vtk file:
 !    if( cplprint_flag ) then
-!      call ESMF_GridWriteVTK(fcstGrid, staggerloc=ESMF_STAGGERLOC_CENTER,  &
+!      call ESMF_GridWriteVTK(grid, staggerloc=ESMF_STAGGERLOC_CENTER,  &
 !                             filename='fv3cap_fv3Grid', rc=rc)
 !      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 !    endif
@@ -389,19 +394,15 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !
 !***  local variables
 !
-    type(ESMF_VM) :: vm
     integer       :: i
 
     rc     = ESMF_SUCCESS
 !
-    call ESMF_VMGetCurrent(vm=vm,rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
     ! importable fields:
     do i = 1, size(importFieldsInfo)
       call NUOPC_Advertise(importState, &
                            StandardName=trim(importFieldsInfo(i)%name), &
-                           SharePolicyField='share', vm=vm, rc=rc)
+                           SharePolicyField='share', rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
     end do
 
@@ -409,7 +410,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     do i = 1, size(exportFieldsInfo)
       call NUOPC_Advertise(exportState, &
                            StandardName=trim(exportFieldsInfo(i)%name), &
-                           SharePolicyField='share', vm=vm, rc=rc)
+                           SharePolicyField='share', rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
     end do
 
@@ -431,10 +432,16 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !
 !***  local variables
 !
+    type(ESMF_Grid)     :: grid
+
     rc     = ESMF_SUCCESS
 !
+    ! access this domain grid
+    call ESMF_GridCompGet(nest, grid=grid, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__,  file=__FILE__)) return
+
     ! -- realize connected fields in exportState
-    call realizeConnectedCplFields(exportState, fcstGrid(GFS_control%cpl_grid_id), &
+    call realizeConnectedCplFields(exportState, grid, &
                                    numLevels, numSoilLayers, numTracers,           &
                                    exportFieldsInfo, 'FV3 Export', exportFields, 0.0_ESMF_KIND_R8, rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__,  file=__FILE__)) return
@@ -444,7 +451,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__,  file=__FILE__)) return
 
     ! -- realize connected fields in importState
-    call realizeConnectedCplFields(importState, fcstGrid(GFS_control%cpl_grid_id), &
+    call realizeConnectedCplFields(importState, grid, &
                                    numLevels, numSoilLayers, numTracers,           &
                                    importFieldsInfo, 'FV3 Import', importFields, 9.99e20_ESMF_KIND_R8, rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__,  file=__FILE__)) return
@@ -787,7 +794,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
                          grid_number_on_all_pets, 1, MPI_INTEGER, &
                          fcst_mpi_comm, rc)
 
-      allocate (fcstGrid(ngrids),fcstGridComp(ngrids))
+      allocate (fcstGridComp(ngrids))
       do n=1,ngrids
 
         pelist => null()
@@ -868,24 +875,6 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
       call ESMF_AttributeSet(exportState, convention="NetCDF", purpose="FV3", &
                                name="top_parent_is_global", value=top_parent_is_global, rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-! Add dimension Attributes to Grid
-      do n=1,ngrids
-        if (ESMF_GridCompIsPetLocal(fcstGridComp(n), rc=rc)) then
-
-          call ESMF_GridCompGet(fcstGridComp(n), grid=fcstGrid(n), rc=rc)
-          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-          call ESMF_AttributeAdd(fcstGrid(n), convention="NetCDF", purpose="FV3",  &
-                               attrList=(/"ESMF:gridded_dim_labels"/), rc=rc)
-          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-          call ESMF_AttributeSet(fcstGrid(n), convention="NetCDF", purpose="FV3", &
-                               name="ESMF:gridded_dim_labels", valueList=(/"grid_xt", "grid_yt"/), rc=rc)
-          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-        endif
-      end do
 
 ! Add time Attribute to the exportState
       call ESMF_AttributeAdd(exportState, convention="NetCDF", purpose="FV3", &
