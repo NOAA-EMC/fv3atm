@@ -7589,9 +7589,7 @@ module GFS_typedefs
     endif
 
     if (Model%cplchm) then
-      ! Only Zhao/Carr/Sundqvist and GFDL microphysics schemes are supported
-      ! when coupling with chemistry. PBL diffusion of aerosols is only supported
-      ! for GFDL microphysics and MG microphysics.
+      ! Only the following microphysics schemes are supported with coupled chemistry
       if (Model%imp_physics == Model%imp_physics_zhao_carr) then
         Interstitial%nvdiff = 3
       elseif (Model%imp_physics == Model%imp_physics_mg) then
@@ -7602,8 +7600,14 @@ module GFS_typedefs
         endif
       elseif (Model%imp_physics == Model%imp_physics_gfdl) then
         Interstitial%nvdiff = 7
+      elseif (Model%imp_physics == Model%imp_physics_thompson) then
+        if (Model%ltaerosol) then
+          Interstitial%nvdiff = 12
+        else
+          Interstitial%nvdiff = 9
+        endif
       else
-        write(0,*) "Only Zhao/Carr/Sundqvist and GFDL microphysics schemes are supported when coupling with chemistry"
+        write(0,*) "Selected microphysics scheme is not supported when coupling with chemistry"
         stop
       endif
       if (Interstitial%trans_aero) Interstitial%nvdiff = Interstitial%nvdiff + Model%ntchm
