@@ -220,7 +220,7 @@ module post_regional
 !
 !-----------------------------------------------------------------------
 !
-    subroutine post_getattr_regional(wrt_int_state)
+    subroutine post_getattr_regional(wrt_int_state,grid_id)
 !
       use esmf
       use ctlblk_mod,           only: im, jm, mpi_comm_comp,gdsdegr,spval
@@ -236,6 +236,7 @@ module post_regional
       implicit none
 !
       type(wrt_internal_state),intent(inout)    :: wrt_int_state
+      integer, intent(in) :: grid_id
 !
 ! local variable
       integer i,j,k,n,kz, attcount, nfb
@@ -254,92 +255,92 @@ module post_regional
         fldbundle = wrt_int_state%wrtFB(nfb)
 
 ! set grid spec:
-!      if(mype==0) print*,'in post_getattr_lam,output_grid=',trim(output_grid),'nfb=',nfb
+!      if(mype==0) print*,'in post_getattr_lam,output_grid=',trim(output_grid(grid_id)),'nfb=',nfb
 !      if(mype==0) print*,'in post_getattr_lam, lon1=',lon1,lon2,lat1,lat2,dlon,dlat
       gdsdegr = 1000000.
 
-      if(trim(output_grid) == 'regional_latlon') then
+      if(trim(output_grid(grid_id)) == 'regional_latlon') then
         MAPTYPE=0
         gridtype='A'
 
-        if( lon1<0 ) then
-          lonstart = nint((lon1+360.)*gdsdegr)
+        if( lon1(grid_id)<0 ) then
+          lonstart = nint((lon1(grid_id)+360.)*gdsdegr)
         else
-          lonstart = nint(lon1*gdsdegr)
+          lonstart = nint(lon1(grid_id)*gdsdegr)
         endif
-        if( lon2<0 ) then
-          lonlast = nint((lon2+360.)*gdsdegr)
+        if( lon2(grid_id)<0 ) then
+          lonlast = nint((lon2(grid_id)+360.)*gdsdegr)
         else
-          lonlast = nint(lon2*gdsdegr)
+          lonlast = nint(lon2(grid_id)*gdsdegr)
         endif
-        latstart = nint(lat1*gdsdegr)
-        latlast  = nint(lat2*gdsdegr)
+        latstart = nint(lat1(grid_id)*gdsdegr)
+        latlast  = nint(lat2(grid_id)*gdsdegr)
 
-        dxval = dlon*gdsdegr
-        dyval = dlat*gdsdegr
+        dxval = dlon(grid_id)*gdsdegr
+        dyval = dlat(grid_id)*gdsdegr
 
 !        if(mype==0) print*,'lonstart,latstart,dyval,dxval', &
 !        lonstart,lonlast,latstart,latlast,dyval,dxval
 
-      else if(trim(output_grid) == 'lambert_conformal') then
+      else if(trim(output_grid(grid_id)) == 'lambert_conformal') then
         MAPTYPE=1
         GRIDTYPE='A'
 
-        if( cen_lon<0 ) then
-          cenlon = nint((cen_lon+360.)*gdsdegr)
+        if( cen_lon(grid_id)<0 ) then
+          cenlon = nint((cen_lon(grid_id)+360.)*gdsdegr)
         else
-          cenlon = nint(cen_lon*gdsdegr)
+          cenlon = nint(cen_lon(grid_id)*gdsdegr)
         endif
-        cenlat = cen_lat*gdsdegr
-        if( lon1<0 ) then
-          lonstart = nint((lon1+360.)*gdsdegr)
+        cenlat = cen_lat(grid_id)*gdsdegr
+        if( lon1(grid_id)<0 ) then
+          lonstart = nint((lon1(grid_id)+360.)*gdsdegr)
         else
-          lonstart = nint(lon1*gdsdegr)
+          lonstart = nint(lon1(grid_id)*gdsdegr)
         endif
-        latstart = nint(lat1*gdsdegr)
+        latstart = nint(lat1(grid_id)*gdsdegr)
 
-        truelat1 = nint(stdlat1*gdsdegr)
-        truelat2 = nint(stdlat2*gdsdegr)
+        truelat1 = nint(stdlat1(grid_id)*gdsdegr)
+        truelat2 = nint(stdlat2(grid_id)*gdsdegr)
 
-        if(dxin<spval) then
-          dxval = dxin*1.0e3
-          dyval = dyin*1.0e3
+        if(dxin(grid_id)<spval) then
+          dxval = dxin(grid_id)*1.0e3
+          dyval = dyin(grid_id)*1.0e3
         else
           dxval = spval
           dyval = spval
         endif
 
         STANDLON = cenlon
-      else if(trim(output_grid) == 'rotated_latlon') then
+      else if(trim(output_grid(grid_id)) == 'rotated_latlon') then
         MAPTYPE=207
         GRIDTYPE='A'
 
-        if( cen_lon<0 ) then
-          cenlon = nint((cen_lon+360.)*gdsdegr)
+        if( cen_lon(grid_id)<0 ) then
+          cenlon = nint((cen_lon(grid_id)+360.)*gdsdegr)
         else
-          cenlon = nint(cen_lon*gdsdegr)
+          cenlon = nint(cen_lon(grid_id)*gdsdegr)
         endif
-        cenlat = cen_lat*gdsdegr
-        if( lon1<0 ) then
-          lonstart = nint((lon1+360.)*gdsdegr)
+        cenlat = cen_lat(grid_id)*gdsdegr
+        if( lon1(grid_id)<0 ) then
+          lonstart = nint((lon1(grid_id)+360.)*gdsdegr)
         else
-          lonstart = nint(lon1*gdsdegr)
+          lonstart = nint(lon1(grid_id)*gdsdegr)
         endif
-        if( lon2<0 ) then
-          lonlast = nint((lon2+360.)*gdsdegr)
+        if( lon2(grid_id)<0 ) then
+          lonlast = nint((lon2(grid_id)+360.)*gdsdegr)
         else
-          lonlast = nint(lon2*gdsdegr)
+          lonlast = nint(lon2(grid_id)*gdsdegr)
         endif
-        latstart = nint(lat1*gdsdegr)
-        latlast  = nint(lat2*gdsdegr)
+        latstart = nint(lat1(grid_id)*gdsdegr)
+        latlast  = nint(lat2(grid_id)*gdsdegr)
         latstart_r = latstart
         lonstart_r = lonstart
         latlast_r = latlast
         lonlast_r = lonlast
 
-        if(dlon<spval) then
-          dxval = dlon*gdsdegr
-          dyval = dlat*gdsdegr
+        if(dlon(grid_id)<spval) then
+          dxval = dlon(grid_id)*gdsdegr
+          dyval = dlat(grid_id)*gdsdegr
         else
           dxval = spval
           dyval = spval
