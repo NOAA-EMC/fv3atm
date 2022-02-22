@@ -3,7 +3,8 @@
 !-----------------------------------------------------------------------
 !
     subroutine post_alctvars(imi,jmi,lmi,mype,nwtlpes,lead_write, mpicomp,  &
-                             jts,jte,jtsgrp,jtegrp)
+                             jts,jte,jtsgrp,jtegrp,its,ite,itsgrp,itegrp)
+!                             jts,jte,jtsgrp,jtegrp)
 !
 !
 !   revision history:
@@ -23,6 +24,14 @@
                             ioform, jsta, jend, jsta_m, jsta_m2, &
                             jend_m, jend_m2, jvend_2u, jsta_2l, jend_2u, iup, idn, &
                             icnt, idsp, mpi_comm_comp, num_servers,     &
+                            numx, ista, iend, ista_m, ista_m2, &
+                            iend_m, iend_m2, ista_2l, iend_2u, idsp2, icnt2, &
+                            ileft,iright,ileftb,irightb, &
+                            ibsize,ibsum,                                             &
+                            isxa,iexa,jsxa,jexa,  &
+                            icoords,ibcoords,bufs,ibufs, &   ! GWV TMP
+                            rbufs                      , &   ! GWV TMP
+                            rcoords,rbcoords, &   ! GWV TMP
                             num_procs
 !
 !-----------------------------------------------------------------------
@@ -37,6 +46,8 @@
       integer,intent(in)            :: lead_write
       integer,intent(in)            :: jts,jte
       integer,intent(in)            :: jtsgrp(nwtlpes),jtegrp(nwtlpes)
+      integer,intent(in)            :: its,ite
+      integer,intent(in)            :: itsgrp(nwtlpes),itegrp(nwtlpes)
 !
 !-----------------------------------------------------------------------
 !***  LOCAL VARIABLES
@@ -44,11 +55,21 @@
 !
       integer i,j,l
       integer last_write_task
+
+      integer                          :: ierr,jsx,jex,isx,iex
+      integer ii,jj,isum,isumm,isumm2
+      integer , allocatable            :: ibuff(:)
+      real    , allocatable            :: rbuff(:)
+      integer,  allocatable            :: ipole(:),ipoles(:,:)
+      real   ,  allocatable            :: rpole(:),rpoles(:,:)
 !
 !-----------------------------------------------------------------------
 !*** get dims from int_state
 !-----------------------------------------------------------------------
 !
+      isumm=0
+      isumm2=0
+
       im = imi
       jm = jmi
       lm = lmi
@@ -78,14 +99,32 @@
       jsta_m2 = jsta
       jend_m  = jend
       jend_m2 = jend
-      if ( mype == lead_write ) then
+!      if ( mype == lead_write ) then
+      if ( mype<numx ) then
          jsta_m  = 2
          jsta_m2 = 3
       end if
-      if ( mype == last_write_task ) then
+!      if ( mype == last_write_task ) then
+      if ( mype>=(num_procs-numx) ) then
          jend_m  = jm - 1
          jend_m2 = jm - 2
       end if
+      ista = its
+      iend = ite
+      ista_m  = ista
+      ista_m2 = ista
+      iend_m  = iend
+      iend_m2 = iend
+      if(mod(mype,numx)==0)then
+        ista_m=2
+        ista_m2=3
+      end if
+      if(mod(mype+1,numx)==0)then
+        iend_m=im-1
+        iend_m2=im-2
+      end if
+
+
 !** neighbors
       iup = mype + 1 - lead_write
       idn = mype - 1 - lead_write
@@ -112,10 +151,35 @@
 !
       jsta_2l = max(jsta - 2,  1 )
       jend_2u = min(jend + 2, jm )
+!      if(modelname=='GFS') then
+        ista_2l=max(ista-2,0)
+        iend_2u=min(iend+2,im+1)
+!      else
+!        ista_2l = max(ista - 2,  1 )
+!        iend_2u = min(iend + 2, im )
+!      endif
 ! special for c-grid v
       jvend_2u = min(jend + 2, jm+1 )
       if(mype==0)print *,'im=',im,'jsta_2l=',jsta_2l,'jend_2u=',jend_2u,'lm=',lm
-!
+      print *,'GWVX mype/me=',mype,me,'im=',im,'jsta   =',jsta   ,'jend   =',jend   ,'lm=',lm
+      print *,'GWVX mype/me=',mype,me,'im=',im,'jsta_2l=',jsta_2l,'jend_2u=',jend_2u,'lm=',lm
+      print *,'GWVX mype/me=',mype,me,'im=',im,'ista   =',ista   ,'iend   =',iend   ,'lm=',lm
+      print *,'GWVX mype/me=',mype,me,'im=',im,'ista_2l=',ista_2l,'iend_2u=',iend_2u,'lm=',lm
+!       NEW neighbors
+      ileft = mype - 1
+      iright = mype + 1
+       iup=MPI_PROC_NULL
+       idn=MPI_PROC_NULL
+    if(mod(mype,numx) .eq. 0) print *,' LEFT POINT',mype,me
+    if(mod(mype+1,numx) .eq. 0) print *,' RIGHT  POINT',mype,me
+    if(mod(mype,numx) .eq. 0) ileft=MPI_PROC_NULL
+    if(mod(mype,numx) .eq. 0) ileftb=mype+numx-1
+    if(mod(mype,numx) .eq. 0) print *,' GWVX ILEFTB ',ileftb,mype,me,numx
+    if(mod(mype+1,numx) .eq. 0 .or. mype .eq. num_procs-1)  iright=MPI_PROC_NULL
+    if(mod(mype+1,numx) .eq. 0 .or. mype .eq. num_procs-1)  irightb=mype-numx+1
+    if(mod(mype+1,numx) .eq. 0 .or. mype .eq. num_procs-1)  print *,' GWVX IRIGHTB',irightb,mype,me,numx
+    if(mype .ge. numx) idn=mype-numx
+    if(mype+1  .le. num_procs-numx) iup=mype+numx
 !
 ! SETS UP MESSAGE PASSING INFO
 
@@ -126,7 +190,7 @@
 ! LMV always = LM for sigma-type vert coord
 
        do j = jsta_2l, jend_2u
-        do i = 1, im
+        do i = ista_2l, iend_2u
             lmv ( i, j ) = lm
             lmh ( i, j ) = lm
         end do
@@ -136,7 +200,7 @@
 
       do l = 1, lm
        do j = jsta_2l, jend_2u
-        do i = 1, im
+        do i = ista_2l, iend_2u
             htm ( i, j, l ) = 1.0
             vtm ( i, j, l ) = 1.0
         end do
