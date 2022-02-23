@@ -541,6 +541,11 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: skebu_wts (:,:) => null()  !
     real (kind=kind_phys), pointer :: skebv_wts (:,:) => null()  !
     real (kind=kind_phys), pointer :: sfc_wts   (:,:) => null()  ! mg, sfc-perts
+    real (kind=kind_phys), pointer :: spp_wts_pbl   (:,:) => null()  ! spp-pbl-perts
+    real (kind=kind_phys), pointer :: spp_wts_sfc   (:,:) => null()  ! spp-sfc-perts
+    real (kind=kind_phys), pointer :: spp_wts_mp    (:,:) => null()  ! spp-mp-perts
+    real (kind=kind_phys), pointer :: spp_wts_gwd   (:,:) => null()  ! spp-gwd-perts
+    real (kind=kind_phys), pointer :: spp_wts_rad   (:,:) => null()  ! spp-rad-perts
 
     !--- aerosol surface emissions for Thompson microphysics
     real (kind=kind_phys), pointer :: nwfa2d  (:)     => null()  !< instantaneous water-friendly sfc aerosol source
@@ -1174,6 +1179,16 @@ module GFS_typedefs
                                               ! multiple patterns. It wasn't fully coded (and wouldn't have worked
                                               ! with nlndp>1, so I just dropped it). If we want to code it properly,
                                               ! we'd need to make this dim(6,5).
+    logical              :: do_spp            ! Overall flag to turn on SPP or not
+    integer              :: spp_pbl
+    integer              :: spp_sfc
+    integer              :: spp_mp
+    integer              :: spp_rad
+    integer              :: spp_gwd
+    integer              :: n_var_spp
+    character(len=3)    , pointer :: spp_var_list(:)  ! dimension here must match n_var_spp in stochy_nml_def
+    real(kind=kind_phys), pointer :: spp_prt_list(:)  ! dimension here must match n_var_spp in stochy_nml_def 
+
 !--- tracer handling
     character(len=32), pointer :: tracer_names(:) !< array of initialized tracers from dynamic core
     integer              :: ntrac                 !< number of tracers
@@ -2990,11 +3005,25 @@ module GFS_typedefs
       Coupling%skebu_wts = clear_val
       Coupling%skebv_wts = clear_val
     endif
-
+    
     !--- stochastic land perturbation option
     if (Model%lndp_type /= 0) then
       allocate (Coupling%sfc_wts  (IM,Model%n_var_lndp))
       Coupling%sfc_wts = clear_val
+    endif
+    
+    !--- stochastic spp perturbation option
+    if (Model%do_spp) then
+      allocate (Coupling%spp_wts_pbl  (IM,Model%levs))
+      Coupling%spp_wts_pbl = clear_val
+      allocate (Coupling%spp_wts_sfc  (IM,Model%levs))
+      Coupling%spp_wts_sfc = clear_val
+      allocate (Coupling%spp_wts_mp   (IM,Model%levs))
+      Coupling%spp_wts_mp = clear_val
+      allocate (Coupling%spp_wts_gwd   (IM,Model%levs))
+      Coupling%spp_wts_gwd = clear_val
+      allocate (Coupling%spp_wts_rad   (IM,Model%levs))
+      Coupling%spp_wts_rad = clear_val
     endif
 
     !--- needed for Thompson's aerosol option
@@ -3558,6 +3587,13 @@ module GFS_typedefs
     integer :: lndp_type      = 0
     integer :: n_var_lndp     = 0
     logical :: lndp_each_step = .false.
+    integer :: n_var_spp    =  0
+    integer :: spp_pbl      =  0
+    integer :: spp_sfc      =  0
+    integer :: spp_mp       =  0
+    integer :: spp_rad      =  0
+    integer :: spp_gwd      =  0
+    logical :: do_spp       = .false.
 
 !--- aerosol scavenging factors
     integer, parameter :: max_scav_factors = 25
@@ -3647,6 +3683,7 @@ module GFS_typedefs
                                cs_parm, flgmin, cgwf, ccwf, cdmbgwd, sup, ctei_rm, crtrh,   &
                                dlqf, rbcr, shoc_parm, psauras, prauras, wminras,            &
                                do_sppt, do_shum, do_skeb,                                   &
+                               do_spp, n_var_spp,                                           &
                                lndp_type,  n_var_lndp, lndp_each_step,                      &
                                pert_mp,pert_clds,pert_radtend,                              &
                           !--- Rayleigh friction
@@ -4438,12 +4475,23 @@ module GFS_typedefs
     Model%lndp_type        = lndp_type
     Model%n_var_lndp       = n_var_lndp
     Model%lndp_each_step   = lndp_each_step
+    Model%do_spp           = do_spp
+    Model%n_var_spp        = n_var_spp
+
     if (Model%lndp_type/=0) then
       allocate(Model%lndp_var_list(Model%n_var_lndp))
       allocate(Model%lndp_prt_list(Model%n_var_lndp))
       Model%lndp_var_list(:) = ''
       Model%lndp_prt_list(:) = clear_val
     end if
+    
+    if (Model%do_spp) then
+      allocate(Model%spp_var_list(Model%n_var_spp))
+      allocate(Model%spp_prt_list(Model%n_var_spp))
+      Model%spp_var_list(:) = ''
+      Model%spp_prt_list(:) = clear_val
+    end if
+
     !--- cellular automata options
     ! force namelist constsitency
     allocate(Model%vfact_ca(levs))
@@ -5873,6 +5921,8 @@ module GFS_typedefs
       print *, ' lndp_type         : ', Model%lndp_type
       print *, ' n_var_lndp        : ', Model%n_var_lndp
       print *, ' lndp_each_step    : ', Model%lndp_each_step
+      print *, ' do_spp            : ', Model%do_spp
+      print *, ' n_var_spp         : ', Model%n_var_spp
       print *, ' '
       print *, 'cellular automata'
       print *, ' nca               : ', Model%nca
