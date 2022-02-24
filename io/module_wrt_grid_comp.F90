@@ -23,6 +23,7 @@
 !     Jul 2017:  J. Wang/G. Theurich  - initial code for fv3 write grid component
 !     Mar 2018:  S  Moorthi           - changing cfhour to accommodate up to 99999 hours
 !     Aug 2019:  J. Wang              - add inline post
+!     Feb 2022:  J. Meng/B. Cui       - create interface to run inline post with upp_2d_decomp
 !
 !---------------------------------------------------------------------------------
 !

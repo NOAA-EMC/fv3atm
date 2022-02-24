@@ -9,7 +9,7 @@
 !
 !   revision history:
 !    Jul 2019 Jun Wang: allocate arrays for post processing
-!
+!    Feb 2022 J. Meng/B. Cui: create interface to run inline post with upp_2d_decomp
 !
 !-----------------------------------------------------------------------
 !*** allocate post variables
@@ -25,13 +25,8 @@
                             jend_m, jend_m2, jvend_2u, jsta_2l, jend_2u, iup, idn, &
                             icnt, idsp, mpi_comm_comp, num_servers,     &
                             numx, ista, iend, ista_m, ista_m2, &
-                            iend_m, iend_m2, ista_2l, iend_2u, idsp2, icnt2, &
+                            iend_m, iend_m2, ista_2l, iend_2u, &
                             ileft,iright,ileftb,irightb, &
-                            ibsize,ibsum,                                             &
-                            isxa,iexa,jsxa,jexa,  &
-                            icoords,ibcoords,bufs,ibufs, &   ! GWV TMP
-                            rbufs                      , &   ! GWV TMP
-                            rcoords,rbcoords, &   ! GWV TMP
                             num_procs
 !
 !-----------------------------------------------------------------------
@@ -55,21 +50,11 @@
 !
       integer i,j,l
       integer last_write_task
-
-      integer                          :: ierr,jsx,jex,isx,iex
-      integer ii,jj,isum,isumm,isumm2
-      integer , allocatable            :: ibuff(:)
-      real    , allocatable            :: rbuff(:)
-      integer,  allocatable            :: ipole(:),ipoles(:,:)
-      real   ,  allocatable            :: rpole(:),rpoles(:,:)
 !
 !-----------------------------------------------------------------------
 !*** get dims from int_state
 !-----------------------------------------------------------------------
 !
-      isumm=0
-      isumm2=0
-
       im = imi
       jm = jmi
       lm = lmi
@@ -100,12 +85,12 @@
       jend_m  = jend
       jend_m2 = jend
 !      if ( mype == lead_write ) then
-      if ( mype<numx ) then
+      if ( mype<(lead_write+numx) ) then
          jsta_m  = 2
          jsta_m2 = 3
       end if
 !      if ( mype == last_write_task ) then
-      if ( mype>=(num_procs-numx) ) then
+      if ( mype>=(last_write_task-numx) ) then
          jend_m  = jm - 1
          jend_m2 = jm - 2
       end if

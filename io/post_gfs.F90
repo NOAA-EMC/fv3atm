@@ -23,6 +23,7 @@ module post_gfs
 !  revision history:
 !     Jul 2019    J. Wang      create interface to run inline post for FV3
 !     Apr 2021    R. Sun       Added variables for Thomspon MP
+!     Feb 2022    J. Meng/B. Cui create interface to run inline post with upp_2d_decomp
 !
 !-----------------------------------------------------------------------
 !*** run post on write grid comp
