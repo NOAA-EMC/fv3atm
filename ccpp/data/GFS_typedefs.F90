@@ -1418,6 +1418,7 @@ module GFS_typedefs
 
 !--- Diagnostic that needs to be carried over to the next time step (removed from diag_type)
     real (kind=kind_phys), pointer :: hpbl     (:)     => null()  !< Planetary boundary layer height
+    real (kind=kind_phys), pointer :: ud_mf  (:,:)     => null()  !< updraft mass flux
 
     !--- dynamical forcing variables for Grell-Freitas convection
     real (kind=kind_phys), pointer :: forcet (:,:)     => null()  !<
@@ -2072,7 +2073,6 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: tsurf_ice(:)       => null()  !<
     real (kind=kind_phys), pointer      :: tsurf_land(:)      => null()  !<
     real (kind=kind_phys), pointer      :: tsurf_water(:)     => null()  !<
-    real (kind=kind_phys), pointer      :: ud_mf(:,:)         => null()  !<
     real (kind=kind_phys), pointer      :: uustar_ice(:)      => null()  !<
     real (kind=kind_phys), pointer      :: uustar_land(:)     => null()  !<
     real (kind=kind_phys), pointer      :: uustar_water(:)    => null()  !<
@@ -6045,6 +6045,11 @@ module GFS_typedefs
     allocate (Tbd%hpbl (IM))
     Tbd%hpbl     = clear_val
 
+    if (Model%imfdeepcnv .ge. 0 .or. Model%imfshalcnv .ge. 0) then
+       allocate(Tbd%ud_mf(IM, Model%levs))
+       Tbd%ud_mf = zero
+    endif
+
     if (Model%imfdeepcnv == Model%imfdeepcnv_gf .or. Model%imfdeepcnv == Model%imfdeepcnv_ntiedtke) then
        allocate(Tbd%forcet(IM, Model%levs))
        allocate(Tbd%forceq(IM, Model%levs))
@@ -7175,7 +7180,6 @@ module GFS_typedefs
     allocate (Interstitial%tsurf_ice       (IM))
     allocate (Interstitial%tsurf_land      (IM))
     allocate (Interstitial%tsurf_water     (IM))
-    allocate (Interstitial%ud_mf           (IM,Model%levs))
     allocate (Interstitial%uustar_ice      (IM))
     allocate (Interstitial%uustar_land     (IM))
     allocate (Interstitial%uustar_water    (IM))
@@ -7860,7 +7864,6 @@ module GFS_typedefs
     Interstitial%tsurf_ice       = Model%huge
     Interstitial%tsurf_land      = Model%huge
     Interstitial%tsurf_water     = Model%huge
-    Interstitial%ud_mf           = clear_val
     Interstitial%uustar_ice      = Model%huge
     Interstitial%uustar_land     = Model%huge
     Interstitial%uustar_water    = Model%huge

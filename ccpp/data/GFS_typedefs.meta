@@ -5777,6 +5777,14 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
+[ud_mf]
+  standard_name = instantaneous_atmosphere_updraft_convective_mass_flux
+  long_name = (updraft mass flux) * delt
+  units = kg m-2
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = ( control_for_deep_convection_scheme .ge. 0 .or. control_for_shallow_convection_scheme .ge. 0 )
 [in_nm]
   standard_name = ice_nucleation_number_from_climatology
   long_name = ice nucleation number in MG MP
@@ -9739,13 +9747,6 @@
   units = count
   dimensions = ()
   type = integer
-[ud_mf]
-  standard_name = instantaneous_atmosphere_updraft_convective_mass_flux
-  long_name = (updraft mass flux) * delt
-  units = kg m-2
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
-  type = real
-  kind = kind_phys
 [uustar_water]
   standard_name = surface_friction_velocity_over_water
   long_name = surface friction velocity over water
