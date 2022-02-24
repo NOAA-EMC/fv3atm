@@ -196,7 +196,7 @@ module FV3GFS_io_mod
      nsfcprop2d = nsfcprop2d + 16
    endif
 
-   allocate (temp2d(isc:iec,jsc:jec,nsfcprop2d+Model%ntot3d+Model%nctp))
+   allocate (temp2d(isc:iec,jsc:jec,nsfcprop2d+Model%ntot2d+Model%nctp))
    allocate (temp3d(isc:iec,jsc:jec,1:lev,14+Model%ntot3d+2*ntr))
    allocate (temp3dlevsp1(isc:iec,jsc:jec,1:lev+1,3))
 
@@ -1462,7 +1462,7 @@ module FV3GFS_io_mod
       do nb = 1, Atm_block%nblks
         do ix = 1, Atm_block%blksz(nb)
           if (Sfcprop(nb)%landfrac(ix) > zero) then
-            tem = one / Sfcprop(nb)%landfrac(ix)
+            tem = one / (Sfcprop(nb)%fice(ix)*(one-Sfcprop(nb)%landfrac(ix))+Sfcprop(nb)%landfrac(ix))
             Sfcprop(nb)%snodl(ix)  = Sfcprop(nb)%snowd(ix) * tem
           else
             Sfcprop(nb)%snodl(ix)  = zero
@@ -1477,7 +1477,7 @@ module FV3GFS_io_mod
       do nb = 1, Atm_block%nblks
         do ix = 1, Atm_block%blksz(nb)
           if (Sfcprop(nb)%landfrac(ix) > zero) then
-            tem = one / Sfcprop(nb)%landfrac(ix)
+            tem = one / (Sfcprop(nb)%fice(ix)*(one-Sfcprop(nb)%landfrac(ix))+Sfcprop(nb)%landfrac(ix))
             Sfcprop(nb)%weasdl(ix) = Sfcprop(nb)%weasd(ix) * tem
           else
             Sfcprop(nb)%weasdl(ix) = zero
@@ -1501,7 +1501,9 @@ module FV3GFS_io_mod
 !$omp parallel do default(shared) private(nb, ix)
       do nb = 1, Atm_block%nblks
         do ix = 1, Atm_block%blksz(nb)
-          Sfcprop(nb)%zorlw(ix) = Sfcprop(nb)%zorl(ix) !--- compute zorlw from existing variables
+          if (Sfcprop(nb)%landfrac(ix) < one .and. Sfcprop(nb)%fice(ix) < one) then
+          Sfcprop(nb)%zorlw(ix) = min(Sfcprop(nb)%zorl(ix), 0.317)
+          endif
         enddo
       enddo
     endif
@@ -1521,7 +1523,9 @@ module FV3GFS_io_mod
 !$omp parallel do default(shared) private(nb, ix)
       do nb = 1, Atm_block%nblks
         do ix = 1, Atm_block%blksz(nb)
-          Sfcprop(nb)%zorli(ix) = Sfcprop(nb)%zorl(ix) !--- compute zorli from existing variables
+          if (Sfcprop(nb)%fice(ix)*(one-Sfcprop(nb)%landfrac(ix)) > zero) then
+            Sfcprop(nb)%zorli(ix) = one
+          endif
         enddo
       enddo
     endif
@@ -1543,6 +1547,36 @@ module FV3GFS_io_mod
         do ix = 1, Atm_block%blksz(nb)
 !         Sfcprop(nb)%sncovr_ice(ix) = Sfcprop(nb)%sncovr(ix)
           Sfcprop(nb)%sncovr_ice(ix) = zero
+        enddo
+      enddo
+    endif
+
+    if (sfc_var2(i,j,47) < -9990.0_r8) then
+      if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing snodi')
+!$omp parallel do default(shared) private(nb, ix, tem)
+      do nb = 1, Atm_block%nblks
+        do ix = 1, Atm_block%blksz(nb)
+          if (Sfcprop(nb)%fice(ix) > zero) then
+            tem = one / (Sfcprop(nb)%fice(ix)*(one-Sfcprop(nb)%landfrac(ix))+Sfcprop(nb)%landfrac(ix))
+            Sfcprop(nb)%snodi(ix)  = min(Sfcprop(nb)%snowd(ix) * tem, 3.0)
+          else
+            Sfcprop(nb)%snodi(ix)  = zero
+          endif
+        enddo
+      enddo
+    endif
+
+    if (sfc_var2(i,j,48) < -9990.0_r8) then
+      if (Model%me == Model%master ) call mpp_error(NOTE, 'gfs_driver::surface_props_input - computing weasdi')
+!$omp parallel do default(shared) private(nb, ix, tem)
+      do nb = 1, Atm_block%nblks
+        do ix = 1, Atm_block%blksz(nb)
+          if (Sfcprop(nb)%fice(ix) > zero) then
+            tem = one / (Sfcprop(nb)%fice(ix)*(one-Sfcprop(nb)%landfrac(ix))+Sfcprop(nb)%landfrac(ix))
+            Sfcprop(nb)%weasdi(ix)  = Sfcprop(nb)%weasd(ix)*tem
+          else
+            Sfcprop(nb)%weasdi(ix)  = zero
+          endif
         enddo
       enddo
     endif
@@ -3047,7 +3081,7 @@ module FV3GFS_io_mod
 !
 #ifdef use_WRTCOMP
 
- subroutine fv_phys_bundle_setup(Diag, axes, phys_bundle, fcst_grid, quilting, nbdlphys)
+ subroutine fv_phys_bundle_setup(Diag, axes, phys_bundle, fcst_grid, quilting, nbdlphys, rc)
 !
 !-------------------------------------------------------------
 !*** set esmf bundle for phys output fields
@@ -3058,15 +3092,17 @@ module FV3GFS_io_mod
 !
    implicit none
 !
-   type(GFS_externaldiag_type),intent(in)              :: Diag(:)
+   type(GFS_externaldiag_type),intent(in)      :: Diag(:)
    integer, intent(in)                         :: axes(:)
    type(ESMF_FieldBundle),intent(inout)        :: phys_bundle(:)
    type(ESMF_Grid),intent(inout)               :: fcst_grid
    logical,intent(in)                          :: quilting
    integer, intent(in)                         :: nbdlphys
+   integer,intent(out)                         :: rc
+
 !
 !*** local variables
-   integer i, j, k, n, rc, idx, ibdl, nbdl
+   integer i, j, k, n, idx, ibdl, nbdl
    integer id, axis_length, direction, edges, axis_typ
    integer num_attributes, num_field_dyn
    integer currdate(6)
@@ -3099,7 +3135,7 @@ module FV3GFS_io_mod
 !------------------------------------------------------------
 !
    allocate(bdl_intplmethod(nbdlphys), outputfile(nbdlphys))
-   if(mpp_pe()==mpp_root_pe())print *,'in fv_phys bundle,nbdl=',nbdlphys
+   if(mpp_pe()==mpp_root_pe()) print *,'in fv_phys bundle,nbdl=',nbdlphys
    do ibdl = 1, nbdlphys
      loutputfile = .false.
      call ESMF_FieldBundleGet(phys_bundle(ibdl), name=physbdl_name,rc=rc)
@@ -3178,14 +3214,14 @@ module FV3GFS_io_mod
        allocate(udimList(udimCount))
        call ESMF_AttributeGet(fcst_grid, convention="NetCDF", purpose="FV3", &
                               name="vertical_dim_labels", valueList=udimList, rc=rc)
-!       if(mpp_pe()==mpp_root_pe())print *,'in fv3gfsio, vertical
+!       if(mpp_pe()==mpp_root_pe()) print *,'in fv3gfsio, vertical
 !       list=',udimList(1:udimCount),'rc=',rc
 
        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
      else
 
-       if(mpp_pe()==mpp_root_pe())print *,'in fv_dyn bundle,axis_name_vert=',axis_name_vert
+       if(mpp_pe()==mpp_root_pe()) print *,'in fv_dyn bundle,axis_name_vert=',axis_name_vert
        call ESMF_AttributeAdd(fcst_grid, convention="NetCDF", purpose="FV3",  &
                               attrList=(/"vertical_dim_labels"/), rc=rc)
        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
@@ -3193,6 +3229,7 @@ module FV3GFS_io_mod
                               name="vertical_dim_labels", valueList=axis_name_vert, rc=rc)
        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
      endif
+     deallocate(axis_name_vert)
    endif
 
 !*** add attributes
@@ -3207,13 +3244,13 @@ module FV3GFS_io_mod
                          direction, edges, Domain, DomainU, axis_data,           &
                          num_attributes=num_attributes, attributes=attributes)
 !
-       edgesS=''
+       edgesS = ''
        do i = 1,num_axes_phys
          if(axes(i) == edges) edgesS=axis_name(i)
        enddo
 ! Add vertical dimension Attributes to Grid
        if( id>2 ) then
-!      if(mpp_pe()==mpp_root_pe())print *,' in dyn add grid, axis_name=',     &
+!      if(mpp_pe()==mpp_root_pe()) print *,' in dyn add grid, axis_name=',     &
 !         trim(axis_name(id)),'axis_data=',axis_data
          if(trim(edgesS)/='') then
            call ESMF_AttributeAdd(fcst_grid, convention="NetCDF", purpose="FV3",  &
@@ -3307,6 +3344,8 @@ module FV3GFS_io_mod
      endif
 
    enddo
+   deallocate(axis_name)
+   deallocate(all_axes)
 
  end subroutine fv_phys_bundle_setup
 !
@@ -3415,62 +3454,62 @@ module FV3GFS_io_mod
 !
 !*** add field attributes
    call ESMF_AttributeAdd(field, convention="NetCDF", purpose="FV3", &
-        attrList=(/"long_name"/), rc=rc)
+                          attrList=(/"long_name"/), rc=rc)
    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,    &
      line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
    call ESMF_AttributeSet(field, convention="NetCDF", purpose="FV3", &
-        name='long_name',value=trim(long_name),rc=rc)
+                          name='long_name',value=trim(long_name),rc=rc)
    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,    &
      line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
    call ESMF_AttributeAdd(field, convention="NetCDF", purpose="FV3", &
-        attrList=(/"units"/), rc=rc)
+                          attrList=(/"units"/), rc=rc)
    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,    &
      line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
    call ESMF_AttributeSet(field, convention="NetCDF", purpose="FV3", &
-        name='units',value=trim(units),rc=rc)
+                          name='units',value=trim(units),rc=rc)
    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,    &
      line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
    call ESMF_AttributeAdd(field, convention="NetCDF", purpose="FV3", &
-        attrList=(/"missing_value"/), rc=rc)
+                          attrList=(/"missing_value"/), rc=rc)
    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,    &
      line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
    call ESMF_AttributeSet(field, convention="NetCDF", purpose="FV3", &
-        name='missing_value',value=missing_value,rc=rc)
+                          name='missing_value',value=missing_value,rc=rc)
    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,    &
      line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
    call ESMF_AttributeAdd(field, convention="NetCDF", purpose="FV3", &
-        attrList=(/"_FillValue"/), rc=rc)
+                          attrList=(/"_FillValue"/), rc=rc)
    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,    &
      line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
    call ESMF_AttributeSet(field, convention="NetCDF", purpose="FV3", &
-        name='_FillValue',value=missing_value,rc=rc)
+                          name='_FillValue',value=missing_value,rc=rc)
    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,    &
      line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
    call ESMF_AttributeAdd(field, convention="NetCDF", purpose="FV3", &
-        attrList=(/"cell_methods"/), rc=rc)
+                          attrList=(/"cell_methods"/), rc=rc)
    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,    &
      line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
    call ESMF_AttributeSet(field, convention="NetCDF", purpose="FV3", &
-        name='cell_methods',value=trim(cell_methods),rc=rc)
+                          name='cell_methods',value=trim(cell_methods),rc=rc)
    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,    &
      line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
 !
    call ESMF_AttributeAdd(field, convention="NetCDF", purpose="FV3", &
-        attrList=(/"output_file"/), rc=rc)
+                          attrList=(/"output_file"/), rc=rc)
    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,    &
      line=__LINE__, file=__FILE__))  call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
    call ESMF_AttributeSet(field, convention="NetCDF", purpose="FV3", &
-        name='output_file',value=trim(output_file),rc=rc)
+                          name='output_file',value=trim(output_file),rc=rc)
    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU,    &
      line=__LINE__, file=__FILE__)) call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
