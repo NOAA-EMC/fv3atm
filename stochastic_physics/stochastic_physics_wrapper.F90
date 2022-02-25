@@ -12,6 +12,7 @@ module stochastic_physics_wrapper_mod
   real(kind=kind_phys), dimension(:,:,:), allocatable, save :: skebu_wts
   real(kind=kind_phys), dimension(:,:,:), allocatable, save :: skebv_wts
   real(kind=kind_phys), dimension(:,:,:), allocatable, save :: sfc_wts
+  real(kind=kind_phys), dimension(:,:,:,:), allocatable, save :: spp_wts
 
   logical, save :: is_initialized = .false.
   integer, save :: lsoil = -999
@@ -78,7 +79,7 @@ module stochastic_physics_wrapper_mod
     type(block_control_type), intent(inout) :: Atm_block
     integer,                  intent(out)   :: ierr
 
-    integer :: nthreads, nb, levs, maxblk, nblks
+    integer :: nthreads, nb, levs, maxblk, nblks, n
     logical :: param_update_flag
 
 #ifdef _OPENMP
@@ -96,7 +97,7 @@ module stochastic_physics_wrapper_mod
 
     initalize_stochastic_physics: if (.not. is_initialized) then
 
-      if (GFS_Control%do_sppt .OR. GFS_Control%do_shum .OR. GFS_Control%do_skeb .OR. (GFS_Control%lndp_type > 0) ) then
+      if (GFS_Control%do_sppt .OR. GFS_Control%do_shum .OR. GFS_Control%do_skeb .OR. (GFS_Control%lndp_type > 0) .OR. GFS_Control%do_spp) then
          allocate(xlat(1:nblks,maxblk))
          allocate(xlon(1:nblks,maxblk))
          do nb=1,nblks
@@ -108,6 +109,7 @@ module stochastic_physics_wrapper_mod
             GFS_Control%input_nml_file, GFS_Control%fn_nml, GFS_Control%nlunit, xlon, xlat, GFS_Control%do_sppt, GFS_Control%do_shum, &
             GFS_Control%do_skeb, GFS_Control%lndp_type, GFS_Control%n_var_lndp, GFS_Control%use_zmtnblck, GFS_Control%skeb_npass,     &
             GFS_Control%lndp_var_list, GFS_Control%lndp_prt_list,    &
+            GFS_Control%n_var_spp, GFS_Control%spp_var_list, GFS_Control%spp_prt_list, GFS_Control%do_spp,                            &
             GFS_Control%ak, GFS_Control%bk, nthreads, GFS_Control%master, GFS_Control%communicator, ierr)
             if (ierr/=0)  then
                     write(6,*) 'call to init_stochastic_physics failed'
@@ -123,6 +125,23 @@ module stochastic_physics_wrapper_mod
       if (GFS_Control%do_skeb) then
          allocate(skebu_wts(1:nblks,maxblk,1:levs))
          allocate(skebv_wts(1:nblks,maxblk,1:levs))
+      end if
+      if ( GFS_Control%do_spp ) then
+         allocate(spp_wts(1:nblks,maxblk,1:levs,1:GFS_Control%n_var_spp))
+         do n=1,GFS_Control%n_var_spp
+           select case (trim(GFS_Control%spp_var_list(n)))
+           case('pbl')
+             GFS_Control%spp_pbl = 1
+           case('sfc')
+             GFS_Control%spp_sfc = 1
+           case('mp')
+             GFS_Control%spp_mp = 7
+           case('rad')
+             GFS_Control%spp_rad = 1
+           case('gwd')
+             GFS_Control%spp_gwd = 1
+           end select
+         end do
       end if
       if ( GFS_Control%lndp_type == 2 ) then ! this scheme updates through forecast
          allocate(sfc_wts(1:nblks,maxblk,1:GFS_Control%n_var_lndp))
@@ -154,7 +173,8 @@ module stochastic_physics_wrapper_mod
          allocate(sfc_wts(1:nblks, maxblk, GFS_Control%n_var_lndp))
          call run_stochastic_physics(levs, GFS_Control%kdt, GFS_Control%fhour, GFS_Control%blksz,       &
                                      sppt_wts=sppt_wts, shum_wts=shum_wts, skebu_wts=skebu_wts,         &
-                                     skebv_wts=skebv_wts, sfc_wts=sfc_wts, nthreads=nthreads)
+                                     skebv_wts=skebv_wts, sfc_wts=sfc_wts,                              &
+                                     spp_wts=spp_wts, nthreads=nthreads)
          ! Copy contiguous data back
          do nb=1,nblks
             GFS_Data(nb)%Coupling%sfc_wts(:,:) = sfc_wts(nb,1:GFS_Control%blksz(nb),:)
@@ -188,10 +208,10 @@ module stochastic_physics_wrapper_mod
       is_initialized = .true.
 
     else initalize_stochastic_physics
-      if (GFS_Control%do_sppt .OR. GFS_Control%do_shum .OR. GFS_Control%do_skeb .OR. (GFS_Control%lndp_type == 2) ) then
+      if (GFS_Control%do_sppt .OR. GFS_Control%do_shum .OR. GFS_Control%do_skeb .OR. (GFS_Control%lndp_type == 2) .OR. GFS_Control%do_spp) then
          call run_stochastic_physics(levs, GFS_Control%kdt, GFS_Control%fhour, GFS_Control%blksz, &
                                  sppt_wts=sppt_wts, shum_wts=shum_wts, skebu_wts=skebu_wts, skebv_wts=skebv_wts, sfc_wts=sfc_wts, &
-                                 nthreads=nthreads)
+                                 spp_wts=spp_wts, nthreads=nthreads)
          ! Copy contiguous data back
          if (GFS_Control%do_sppt) then
             do nb=1,nblks
@@ -207,6 +227,32 @@ module stochastic_physics_wrapper_mod
             do nb=1,nblks
                 GFS_Data(nb)%Coupling%skebu_wts(:,:) = skebu_wts(nb,1:GFS_Control%blksz(nb),:)
                 GFS_Data(nb)%Coupling%skebv_wts(:,:) = skebv_wts(nb,1:GFS_Control%blksz(nb),:)
+            end do
+         end if
+         if (GFS_Control%do_spp) then
+            do n=1,GFS_Control%n_var_spp
+               select case (trim(GFS_Control%spp_var_list(n)))
+               case('pbl')
+                 do nb=1,Atm_block%nblks
+                     GFS_Data(nb)%Coupling%spp_wts_pbl(:,:) = spp_wts(nb,1:GFS_Control%blksz(nb),:,n)
+                 end do
+               case('sfc')
+                 do nb=1,Atm_block%nblks
+                     GFS_Data(nb)%Coupling%spp_wts_sfc(:,:) = spp_wts(nb,1:GFS_Control%blksz(nb),:,n)
+                 end do
+               case('mp')
+                 do nb=1,Atm_block%nblks
+                     GFS_Data(nb)%Coupling%spp_wts_mp(:,:) = spp_wts(nb,1:GFS_Control%blksz(nb),:,n)
+                 end do
+               case('gwd')
+                 do nb=1,Atm_block%nblks
+                     GFS_Data(nb)%Coupling%spp_wts_gwd(:,:) = spp_wts(nb,1:GFS_Control%blksz(nb),:,n)
+                 end do
+               case('rad')
+                 do nb=1,Atm_block%nblks
+                     GFS_Data(nb)%Coupling%spp_wts_rad(:,:) = spp_wts(nb,1:GFS_Control%blksz(nb),:,n)
+                 end do
+               end select
             end do
          end if
          if (GFS_Control%lndp_type == 2) then ! save wts, and apply lndp scheme
@@ -347,7 +393,7 @@ module stochastic_physics_wrapper_mod
 
   type(GFS_control_type),   intent(inout) :: GFS_Control
 
-  if (GFS_Control%do_sppt .OR. GFS_Control%do_shum .OR. GFS_Control%do_skeb .OR. (GFS_Control%lndp_type > 0) ) then
+  if (GFS_Control%do_sppt .OR. GFS_Control%do_shum .OR. GFS_Control%do_skeb .OR. (GFS_Control%lndp_type > 0) .OR. GFS_Control%do_spp) then
       if (allocated(xlat)) deallocate(xlat)
       if (allocated(xlon)) deallocate(xlon)
       if (GFS_Control%do_sppt) then
@@ -359,6 +405,9 @@ module stochastic_physics_wrapper_mod
       if (GFS_Control%do_skeb) then
          if (allocated(skebu_wts)) deallocate(skebu_wts)
          if (allocated(skebv_wts)) deallocate(skebv_wts)
+      end if
+      if (GFS_Control%do_spp) then
+         if (allocated(spp_wts)) deallocate(spp_wts)
       end if
       if ( GFS_Control%lndp_type == 2 ) then ! this scheme updates through forecast
          lsoil = -999
