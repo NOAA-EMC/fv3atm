@@ -205,7 +205,7 @@ SCHEME_FILES = [
     'physics/physics/rrtmgp_sw_cloud_sampling.F90',
     'physics/physics/GFS_cloud_diagnostics.F90',
     'physics/physics/GFS_rrtmgp_cloud_mp.F90',
-    'physics/physics/GFS_rrtmgp_cloud_overlap_pre.F90',
+    'physics/physics/GFS_rrtmgp_cloud_overlap.F90',
     'physics/physics/GFS_rrtmgp_sw_post.F90'
     ]
 

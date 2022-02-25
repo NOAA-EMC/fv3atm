@@ -744,6 +744,8 @@ module GFS_typedefs
     logical              :: doG_cldoptics           !< Use legacy RRTMG cloud-optics?
     logical              :: doGP_cldoptics_PADE     !< Use RRTMGP cloud-optics: PADE approximation?
     logical              :: doGP_cldoptics_LUT      !< Use RRTMGP cloud-optics: LUTs?
+    logical              :: doGP_convcld            !< Include radiatively active convective clouds?
+    integer              :: iovr_convcld            !< Cloud-overlap assumption for convective-cloud
     integer              :: rrtmgp_nrghice          !< Number of ice-roughness categories
     integer              :: rrtmgp_nGauss_ang       !< Number of angles used in Gaussian quadrature
     logical              :: do_GPsw_Glw             !< If set to true use rrtmgp for SW calculation, rrtmg for LW.
@@ -2199,6 +2201,8 @@ module GFS_typedefs
     type(ty_optical_props_2str)         :: lw_optical_props_clouds              !< RRTMGP DDT
     type(ty_optical_props_2str)         :: lw_optical_props_precipByBand        !< RRTMGP DDT
     type(ty_optical_props_2str)         :: lw_optical_props_precip              !< RRTMGP DDT
+    type(ty_optical_props_2str)         :: lw_optical_props_cnvcloudsByBand     !< RRTMGP DDT
+    type(ty_optical_props_2str)         :: lw_optical_props_cnvclouds           !< RRTMGP DDT
     type(ty_optical_props_1scl)         :: lw_optical_props_clrsky              !< RRTMGP DDT
     type(ty_optical_props_1scl)         :: lw_optical_props_aerosol             !< RRTMGP DDT
     type(ty_optical_props_2str)         :: sw_optical_props_cloudsByBand        !< RRTMGP DDT
@@ -2207,6 +2211,8 @@ module GFS_typedefs
     type(ty_optical_props_2str)         :: sw_optical_props_precip              !< RRTMGP DDT
     type(ty_optical_props_2str)         :: sw_optical_props_clrsky              !< RRTMGP DDT
     type(ty_optical_props_2str)         :: sw_optical_props_aerosol             !< RRTMGP DDT
+    type(ty_optical_props_2str)         :: sw_optical_props_cnvcloudsByBand     !< RRTMGP DDT 
+    type(ty_optical_props_2str)         :: sw_optical_props_cnvclouds           !< RRTMGP DDT 
     type(ty_gas_concs)                  :: gas_concentrations                   !< RRTMGP DDT
     type(ty_source_func_lw)             :: sources                              !< RRTMGP DDT
 
@@ -3206,6 +3212,8 @@ module GFS_typedefs
     logical              :: doG_cldoptics       = .false.    !< Use legacy RRTMG cloud-optics?
     logical              :: doGP_cldoptics_PADE = .false.    !< Use RRTMGP cloud-optics: PADE approximation?
     logical              :: doGP_cldoptics_LUT  = .false.    !< Use RRTMGP cloud-optics: LUTs?
+    logical              :: doGP_convcld        = .false.    !< Include radiatively active convective clouds?
+    integer              :: iovr_convcld        = 1          !< Cloud-overlap assumption for convective-cloud (defaults to iovr if not set)
     integer              :: rrtmgp_nrghice      = 3          !< Number of ice-roughness categories
     integer              :: rrtmgp_nGauss_ang   = 1          !< Number of angles used in Gaussian quadrature
     logical              :: do_GPsw_Glw         = .false.
@@ -3637,7 +3645,7 @@ module GFS_typedefs
                                doG_cldoptics, doGP_cldoptics_PADE, doGP_cldoptics_LUT,      &
                                rrtmgp_nrghice, rrtmgp_nGauss_ang, do_GPsw_Glw,              &
                                use_LW_jacobian, doGP_lwscat, damp_LW_fluxadj, lfnc_k,       &
-                               lfnc_p0,                                                     &
+                               lfnc_p0, doGP_convcld, iovr_convcld,                         &
                           ! IN CCN forcing
                                iccn,                                                        &
                           !--- microphysical parameterizations
@@ -4040,6 +4048,8 @@ module GFS_typedefs
     Model%doG_cldoptics       = doG_cldoptics
     Model%doGP_cldoptics_PADE = doGP_cldoptics_PADE
     Model%doGP_cldoptics_LUT  = doGP_cldoptics_LUT
+    Model%doGP_convcld        = doGP_convcld
+    Model%iovr_convcld        = iovr_convcld
     Model%use_LW_jacobian     = use_LW_jacobian
     Model%damp_LW_fluxadj     = damp_LW_fluxadj
     Model%lfnc_k              = lfnc_k
@@ -5675,6 +5685,8 @@ module GFS_typedefs
         print *, ' lfnc_k             : ', Model%lfnc_k
         print *, ' lfnc_p0            : ', Model%lfnc_p0
         print *, ' doGP_lwscat        : ', Model%doGP_lwscat
+        print *, ' doGP_convcld       : ', Model%doGP_convcld
+        print *, ' iovr_convcld       : ', Model%iovr_convcld
       endif
       print *, ' '
       print *, 'microphysical switch'
@@ -7427,6 +7439,15 @@ module GFS_typedefs
        allocate(Interstitial%lw_optical_props_cloudsByBand%band_lims_wvn(2,    Model%rrtmgp_nBandsLW ))
        allocate(Interstitial%lw_optical_props_cloudsByBand%gpt2band(           Model%rrtmgp_nBandsLW ))
        !
+       ! lw_optical_props_cnvcloudsByBand (ty_optical_props_2str)
+       !
+       allocate(Interstitial%lw_optical_props_cnvcloudsByBand%tau(IM, Model%levs, Model%rrtmgp_nBandsLW ))
+       allocate(Interstitial%lw_optical_props_cnvcloudsByBand%ssa(IM, Model%levs, Model%rrtmgp_nBandsLW ))
+       allocate(Interstitial%lw_optical_props_cnvcloudsByBand%g(  IM, Model%levs, Model%rrtmgp_nBandsLW ))
+       allocate(Interstitial%lw_optical_props_cnvcloudsByBand%band2gpt     (2,    Model%rrtmgp_nBandsLW ))
+       allocate(Interstitial%lw_optical_props_cnvcloudsByBand%band_lims_wvn(2,    Model%rrtmgp_nBandsLW ))
+       allocate(Interstitial%lw_optical_props_cnvcloudsByBand%gpt2band(           Model%rrtmgp_nBandsLW ))
+       !
        ! lw_optical_props_precipByBand (ty_optical_props_2str)
        !
        allocate(Interstitial%lw_optical_props_precipByBand%tau(IM, Model%levs, Model%rrtmgp_nBandsLW ))
@@ -7445,6 +7466,15 @@ module GFS_typedefs
        allocate(Interstitial%lw_optical_props_clouds%band_lims_wvn(2,          Model%rrtmgp_nBandsLW ))
        allocate(Interstitial%lw_optical_props_clouds%gpt2band(                 Model%rrtmgp_nGptsLW  ))
        !
+       ! lw_optical_props_cnvclouds (ty_optical_props_2str) 
+       !
+       allocate(Interstitial%lw_optical_props_cnvclouds%tau(      IM, Model%levs, Model%rrtmgp_nGptsLW  ))
+       allocate(Interstitial%lw_optical_props_cnvclouds%ssa(      IM, Model%levs, Model%rrtmgp_nGptsLW  ))
+       allocate(Interstitial%lw_optical_props_cnvclouds%g(        IM, Model%levs, Model%rrtmgp_nGptsLW  ))
+       allocate(Interstitial%lw_optical_props_cnvclouds%band2gpt     (2,          Model%rrtmgp_nBandsLW ))
+       allocate(Interstitial%lw_optical_props_cnvclouds%band_lims_wvn(2,          Model%rrtmgp_nBandsLW ))
+       allocate(Interstitial%lw_optical_props_cnvclouds%gpt2band(                 Model%rrtmgp_nGptsLW  ))
+       ! 
        ! lw_optical_props_precip (ty_optical_props_2str)
        !
        allocate(Interstitial%lw_optical_props_precip%tau(      IM, Model%levs, Model%rrtmgp_nGptsLW  ))
@@ -7835,6 +7865,12 @@ module GFS_typedefs
       Interstitial%lw_optical_props_precipByBand%tau = clear_val
       Interstitial%lw_optical_props_precipByBand%ssa = clear_val
       Interstitial%lw_optical_props_precipByBand%g   = clear_val
+      Interstitial%lw_optical_props_cnvcloudsByBand%tau = clear_val
+      Interstitial%lw_optical_props_cnvcloudsByBand%ssa = clear_val
+      Interstitial%lw_optical_props_cnvcloudsByBand%g   = clear_val
+      Interstitial%lw_optical_props_cnvclouds%tau       = clear_val
+      Interstitial%lw_optical_props_cnvclouds%ssa       = clear_val
+      Interstitial%lw_optical_props_cnvclouds%g         = clear_val
       Interstitial%sources%sfc_source                = clear_val
       Interstitial%sources%lay_source                = clear_val
       Interstitial%sources%lev_source_inc            = clear_val
