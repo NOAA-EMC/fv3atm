@@ -16,7 +16,7 @@
       <scheme>sgscloud_radpre</scheme>
       <scheme>GFS_rrtmgp_pre</scheme>
       <scheme>GFS_radiation_surface</scheme>
-      <scheme>GFS_rrtmgp_thompsonmp_pre</scheme>
+      <scheme>GFS_rrtmgp_cloud_mp</scheme>
       <scheme>GFS_rrtmgp_cloud_overlap_pre</scheme>
       <scheme>GFS_cloud_diagnostics</scheme>
       <scheme>GFS_rrtmgp_sw_pre</scheme>

@@ -2158,6 +2158,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: q_lay(:,:)                => null()  !<
     real (kind=kind_phys), pointer      :: deltaZ(:,:)               => null()  !<
     real (kind=kind_phys), pointer      :: cloud_overlap_param(:,:)  => null()  !< Cloud overlap parameter
+    real (kind=kind_phys), pointer      :: cnv_cloud_overlap_param(:,:) => null()  !< Convective cloud overlap parameter
     real (kind=kind_phys), pointer      :: precip_overlap_param(:,:) => null()  !< Precipitation overlap parameter
     real (kind=kind_phys), pointer      :: tracer(:,:,:)             => null()  !<
     real (kind=kind_phys), pointer      :: aerosolslw(:,:,:,:)       => null()  !< Aerosol radiative properties in each LW band.
@@ -2172,6 +2173,10 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: cld_rwp(:,:)              => null()  !< Cloud rain water path
     real (kind=kind_phys), pointer      :: cld_rerain(:,:)           => null()  !< Cloud rain effective radius
     real (kind=kind_phys), pointer      :: precip_frac(:,:)          => null()  !< Precipitation fraction
+    real (kind=kind_phys), pointer      :: cnv_cld_lwp(:,:)          => null()  !< Convective cloud liquid water path
+    real (kind=kind_phys), pointer      :: cnv_cld_reliq(:,:)        => null()  !< Convective cloud liquid effective radius
+    real (kind=kind_phys), pointer      :: cnv_cld_iwp(:,:)          => null()  !< Convective cloud ice water path
+    real (kind=kind_phys), pointer      :: cnv_cld_reice(:,:)        => null()  !< Convective cloud ice effecive radius
     real (kind=kind_phys), pointer      :: fluxlwUP_allsky(:,:)      => null()  !< RRTMGP upward   longwave  all-sky flux profile
     real (kind=kind_phys), pointer      :: fluxlwDOWN_allsky(:,:)    => null()  !< RRTMGP downward longwave  all-sky flux profile
     real (kind=kind_phys), pointer      :: fluxlwUP_clrsky(:,:)      => null()  !< RRTMGP upward   longwave  clr-sky flux profile
@@ -7373,6 +7378,11 @@ module GFS_typedefs
        allocate (Interstitial%cld_rwp              (IM, Model%levs))
        allocate (Interstitial%cld_rerain           (IM, Model%levs))
        allocate (Interstitial%precip_frac          (IM, Model%levs))
+       allocate (Interstitial%cnv_cloud_overlap_param(IM, Model%levs))
+       allocate (Interstitial%cnv_cld_lwp          (IM, Model%levs))
+       allocate (Interstitial%cnv_cld_reliq        (IM, Model%levs))
+       allocate (Interstitial%cnv_cld_iwp          (IM, Model%levs))
+       allocate (Interstitial%cnv_cld_reice        (IM, Model%levs))
        allocate (Interstitial%flxprf_lw            (IM, Model%levs+1))
        allocate (Interstitial%flxprf_sw            (IM, Model%levs+1))
        allocate (Interstitial%sfc_emiss_byband     (Model%rrtmgp_nBandsLW,IM))
@@ -7795,6 +7805,11 @@ module GFS_typedefs
       Interstitial%cld_rwp              = clear_val
       Interstitial%cld_rerain           = clear_val
       Interstitial%precip_frac          = clear_val
+      Interstitial%cnv_cloud_overlap_param  = clear_val
+      Interstitial%cnv_cld_lwp          = clear_val
+      Interstitial%cnv_cld_reliq        = clear_val
+      Interstitial%cnv_cld_iwp          = clear_val
+      Interstitial%cnv_cld_reice        = clear_val
       Interstitial%sfc_emiss_byband     = clear_val
       Interstitial%sec_diff_byband      = clear_val
       Interstitial%sfc_alb_nir_dir      = clear_val
