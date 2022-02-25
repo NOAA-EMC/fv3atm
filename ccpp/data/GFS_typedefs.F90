@@ -2175,6 +2175,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: cld_rwp(:,:)              => null()  !< Cloud rain water path
     real (kind=kind_phys), pointer      :: cld_rerain(:,:)           => null()  !< Cloud rain effective radius
     real (kind=kind_phys), pointer      :: precip_frac(:,:)          => null()  !< Precipitation fraction
+    real (kind=kind_phys), pointer      :: cnv_cldfrac(:,:)          => null()  !< Convective cloud fraction 
     real (kind=kind_phys), pointer      :: cnv_cld_lwp(:,:)          => null()  !< Convective cloud liquid water path
     real (kind=kind_phys), pointer      :: cnv_cld_reliq(:,:)        => null()  !< Convective cloud liquid effective radius
     real (kind=kind_phys), pointer      :: cnv_cld_iwp(:,:)          => null()  !< Convective cloud ice water path
@@ -7390,6 +7391,7 @@ module GFS_typedefs
        allocate (Interstitial%cld_rwp              (IM, Model%levs))
        allocate (Interstitial%cld_rerain           (IM, Model%levs))
        allocate (Interstitial%precip_frac          (IM, Model%levs))
+       allocate (Interstitial%cnv_cldfrac          (IM, Model%levs))
        allocate (Interstitial%cnv_cloud_overlap_param(IM, Model%levs))
        allocate (Interstitial%cnv_cld_lwp          (IM, Model%levs))
        allocate (Interstitial%cnv_cld_reliq        (IM, Model%levs))
@@ -7835,6 +7837,7 @@ module GFS_typedefs
       Interstitial%cld_rwp              = clear_val
       Interstitial%cld_rerain           = clear_val
       Interstitial%precip_frac          = clear_val
+      Interstitial%cnv_cldfrac          = clear_val
       Interstitial%cnv_cloud_overlap_param  = clear_val
       Interstitial%cnv_cld_lwp          = clear_val
       Interstitial%cnv_cld_reliq        = clear_val

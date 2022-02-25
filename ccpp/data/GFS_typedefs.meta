@@ -10383,6 +10383,14 @@
   type = real
   kind = kind_phys
   active = (flag_for_rrtmgp_radiation_scheme)
+[cnv_cldfrac]
+  standard_name = convective_cloud_fraction_for_RRTMGP
+  long_name = layer convective cloud fraction
+  units = frac
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = (flag_for_rrtmgp_radiation_scheme)
 [cnv_cld_lwp]
   standard_name = convective_cloud_liquid_water_path
   long_name = layer convective cloud liquid water path
