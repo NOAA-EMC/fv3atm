@@ -1105,18 +1105,21 @@ module fv3gfs_cap_mod
 
     ! local variables
     character(len=*),parameter :: subname='(fv3gfs_cap:TimestampExport_phase1)'
-    type(ESMF_Clock)           :: driverClock, modelClock
+    type(ESMF_Clock)           :: modelClock
     type(ESMF_State)           :: exportState
 
     rc = ESMF_SUCCESS
 
     ! get driver and model clock
-    call NUOPC_ModelGet(gcomp, driverClock=driverClock, &
-                        modelClock=modelClock, exportState=exportState, rc=rc)
+    call NUOPC_ModelGet(gcomp, modelClock=modelClock, exportState=exportState, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-    ! reset model clock to initial time
-    call NUOPC_CheckSetClock(modelClock, driverClock, forceCurrTime=.true., rc=rc)
+    ! rewind clock by one time step
+    call ESMF_ClockSet(modelClock, direction=ESMF_DIRECTION_REVERSE, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+    call ESMF_ClockAdvance(modelClock, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+    call ESMF_ClockSet(modelClock, direction=ESMF_DIRECTION_FORWARD, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
     ! update timestamp on export Fields
