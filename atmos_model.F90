@@ -138,8 +138,8 @@ public setup_exportdata
      integer                       :: iau_offset         ! iau running window length
      logical                       :: pe                 ! current pe.
      real(kind=8),             pointer, dimension(:)     :: ak, bk
-     real,                     pointer, dimension(:,:)   :: lon_bnd  => null() ! local longitude axis grid box corners in radians.
-     real,                     pointer, dimension(:,:)   :: lat_bnd  => null() ! local latitude axis grid box corners in radians.
+     real(kind=GFS_kind_phys), pointer, dimension(:,:)   :: lon_bnd  => null() ! local longitude axis grid box corners in radians.
+     real(kind=GFS_kind_phys), pointer, dimension(:,:)   :: lat_bnd  => null() ! local latitude axis grid box corners in radians.
      real(kind=GFS_kind_phys), pointer, dimension(:,:)   :: lon      => null() ! local longitude axis grid box centers in radians.
      real(kind=GFS_kind_phys), pointer, dimension(:,:)   :: lat      => null() ! local latitude axis grid box centers in radians.
      real(kind=GFS_kind_phys), pointer, dimension(:,:)   :: dx, dy
@@ -953,6 +953,12 @@ subroutine update_atmos_model_state (Atmos, rc)
     call setup_exportdata(rc=localrc)
     if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+
+    !--- conditionally update the coordinate arrays for moving domains
+    if (Atmos%is_moving_nest) then
+      call atmosphere_grid_bdry (Atmos%lon_bnd, Atmos%lat_bnd, global=.false.)
+      call atmosphere_grid_ctr (Atmos%lon, Atmos%lat)
+    endif
 
  end subroutine update_atmos_model_state
 ! </SUBROUTINE>

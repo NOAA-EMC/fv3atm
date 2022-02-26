@@ -90,7 +90,6 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 
   type(ESMF_GridComp),dimension(:),allocatable    :: fcstGridComp
   integer                                         :: ngrids, mygrid
-  integer,dimension(:),allocatable                :: grid_number_on_all_pets(:)
 
   integer                     :: num_atmos_calls, intrm_rst
 
@@ -106,8 +105,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !
 !-----------------------------------------------------------------------
 !
-  public SetServices, ngrids, mygrid, grid_number_on_all_pets
-  public numLevels, numSoilLayers, numTracers
+  public SetServices
 !
   contains
 !
@@ -163,9 +161,9 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     integer,dimension(2,6):: decomptile                  !define delayout for the 6 cubed-sphere tiles
     integer,dimension(2)  :: regdecomp                   !define delayout for the nest grid
     type(ESMF_Decomp_Flag):: decompflagPTile(2,6)
-    integer :: tlb(2), tub(2)
-    real(ESMF_KIND_R8),dimension(:,:), pointer :: glatPtr, glonPtr
     character(3)          :: myGridStr
+    type(ESMF_DistGrid)   :: distgrid
+    type(ESMF_Array)      :: array
 
     rc = ESMF_SUCCESS
 
@@ -224,46 +222,50 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
     endif
 
+    ! - Create coordinate arrays around allocations held within Atmos data structure and set in Grid
+
+    call ESMF_GridGet(grid, staggerloc=ESMF_STAGGERLOC_CENTER, distgrid=distgrid, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+    
+    array = ESMF_ArrayCreate(distgrid, farray=Atmos%lon, indexflag=ESMF_INDEX_DELOCAL, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+    call ESMF_GridSetCoord(grid, coordDim=1, staggerLoc=ESMF_STAGGERLOC_CENTER, array=array, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+    array = ESMF_ArrayCreate(distgrid, farray=Atmos%lat, indexflag=ESMF_INDEX_DELOCAL, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+    call ESMF_GridSetCoord(grid, coordDim=2, staggerLoc=ESMF_STAGGERLOC_CENTER, array=array, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+    call ESMF_GridGet(grid, staggerloc=ESMF_STAGGERLOC_CORNER, distgrid=distgrid, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+    
+    array = ESMF_ArrayCreate(distgrid, farray=Atmos%lon_bnd, indexflag=ESMF_INDEX_DELOCAL, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+    call ESMF_GridSetCoord(grid, coordDim=1, staggerLoc=ESMF_STAGGERLOC_CORNER, array=array, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+    array = ESMF_ArrayCreate(distgrid, farray=Atmos%lat_bnd, indexflag=ESMF_INDEX_DELOCAL, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+    call ESMF_GridSetCoord(grid, coordDim=2, staggerLoc=ESMF_STAGGERLOC_CORNER, array=array, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+    !TODO: Consider aligning mask treatment with coordinates... especially if it requires updates for moving
+    call addLsmask2grid(grid, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+    ! - Add Attributes used by output
+
     call ESMF_AttributeAdd(grid, convention="NetCDF", purpose="FV3", &
                           attrList=(/"ESMF:gridded_dim_labels"/), rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
     call ESMF_AttributeSet(grid, convention="NetCDF", purpose="FV3", &
                          name="ESMF:gridded_dim_labels", valueList=(/"grid_xt", "grid_yt"/), rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-    call ESMF_GridAddCoord(grid, staggerLoc=ESMF_STAGGERLOC_CENTER, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-    call ESMF_GridAddCoord(grid, staggerLoc=ESMF_STAGGERLOC_CORNER, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-    ! define "center" coordinate values
-    call ESMF_GridGetCoord(grid, coordDim=1, staggerLoc=ESMF_STAGGERLOC_CENTER, &
-                           totalLBound=tlb, totalUBound=tub, &
-                           farrayPtr=glonPtr, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-    glonPtr(tlb(1):tub(1),tlb(2):tub(2)) = Atmos%lon(tlb(1):tub(1),tlb(2):tub(2))
-
-    call ESMF_GridGetCoord(grid, coordDim=2, staggerLoc=ESMF_STAGGERLOC_CENTER, &
-                           totalLBound=tlb, totalUBound=tub, &
-                           farrayPtr=glatPtr, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-    glatPtr(tlb(1):tub(1),tlb(2):tub(2)) = Atmos%lat(tlb(1):tub(1),tlb(2):tub(2))
-
-    ! define "corner" coordinate values
-    call ESMF_GridGetCoord(grid, coordDim=1, staggerLoc=ESMF_STAGGERLOC_CORNER, &
-                           totalLBound=tlb, totalUBound=tub, &
-                           farrayPtr=glonPtr, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-    glonPtr(tlb(1):tub(1),tlb(2):tub(2)) = Atmos%lon_bnd(tlb(1):tub(1),tlb(2):tub(2))
-
-    call ESMF_GridGetCoord(grid, coordDim=2, staggerLoc=ESMF_STAGGERLOC_CORNER, &
-                           totalLBound=tlb, totalUBound=tub, &
-                           farrayPtr=glatPtr, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-    glatPtr(tlb(1):tub(1),tlb(2):tub(2)) = Atmos%lat_bnd(tlb(1):tub(1),tlb(2):tub(2))
-
-    call addLsmask2grid(grid, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
 !test to write out vtk file:
@@ -280,6 +282,8 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
                          regridArea=.TRUE., rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
     endif
+    
+    ! - Hold on to the grid by GridComp
 
     call ESMF_GridCompSet(nest, grid=grid, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
@@ -532,6 +536,8 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     type(time_type)               :: iautime
     integer                       :: io_unit, calendar_type_res, date_res(6), date_init_res(6)
 
+    integer,allocatable           :: grid_number_on_all_pets(:)
+    logical,allocatable           :: is_moving_on_all_pets(:), is_moving(:)
 !
 !-----------------------------------------------------------------------
 !***********************************************************************
@@ -789,10 +795,22 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 
       ngrids = Atmos%ngrids
       mygrid = Atmos%mygrid
-      allocate(grid_number_on_all_pets(fcst_ntasks))
+      allocate(grid_number_on_all_pets(fcst_ntasks), is_moving_on_all_pets(fcst_ntasks))
       call mpi_allgather(mygrid, 1, MPI_INTEGER, &
                          grid_number_on_all_pets, 1, MPI_INTEGER, &
                          fcst_mpi_comm, rc)
+      call mpi_allgather(Atmos%is_moving_nest, 1, MPI_LOGICAL, &
+                         is_moving_on_all_pets, 1, MPI_LOGICAL, &
+                         fcst_mpi_comm, rc)
+      allocate(is_moving(ngrids))
+      do n=1, fcst_ntasks
+        is_moving(grid_number_on_all_pets(n)) = is_moving_on_all_pets(n)
+      enddo
+      deallocate(grid_number_on_all_pets, is_moving_on_all_pets)
+      
+      call ESMF_InfoGetFromHost(exportState, info=info, rc=rc); ESMF_ERR_ABORT(rc)
+      call ESMF_InfoSet(info, key="is_moving", values=is_moving, rc=rc); ESMF_ERR_ABORT(rc)
+      deallocate(is_moving)
 
       allocate (fcstGridComp(ngrids))
       do n=1,ngrids

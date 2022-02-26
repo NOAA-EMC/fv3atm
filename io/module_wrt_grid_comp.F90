@@ -8,7 +8,7 @@
 !***  At initialization step, write grid is defined. The forecast field
 !***  bundle is mirrored and output field information inside the field
 !***  bundle is used to create ESMF field on the write grid and added in
-!***  the mirror field bundle on write grid component. Also the IO_BaseTime
+!***  the output field bundle on write grid component. Also the IO_BaseTime
 !***  is set to the initial clock time.
 !***  At the run step, output time is set from the write grid comp clock
 !***  the ESMF field bundles that contains the data on write grid are
@@ -101,8 +101,16 @@
 
         rc = ESMF_SUCCESS
 
-        call ESMF_GridCompSetEntryPoint(wrt_comp, ESMF_METHOD_INITIALIZE, &
-                                        userRoutine=wrt_initialize, rc=rc)
+        call ESMF_GridCompSetEntryPoint(wrt_comp, ESMF_METHOD_INITIALIZE, phase=1, &
+                                        userRoutine=wrt_initialize_p1, rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+        call ESMF_GridCompSetEntryPoint(wrt_comp, ESMF_METHOD_INITIALIZE, phase=2, &
+                                        userRoutine=wrt_initialize_p2, rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+        call ESMF_GridCompSetEntryPoint(wrt_comp, ESMF_METHOD_INITIALIZE, phase=3, &
+                                        userRoutine=wrt_initialize_p3, rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
         call ESMF_GridCompSetEntryPoint(wrt_comp, ESMF_METHOD_RUN, &
@@ -119,7 +127,7 @@
 !#######################################################################
 !-----------------------------------------------------------------------
 !
-      subroutine wrt_initialize(wrt_comp, imp_state_write, exp_state_write, clock, rc)
+      subroutine wrt_initialize_p1(wrt_comp, imp_state_write, exp_state_write, clock, rc)
 !
 !-----------------------------------------------------------------------
 !***  INITIALIZE THE WRITE GRIDDED COMPONENT.
@@ -143,6 +151,7 @@
       integer                                 :: vm_mpi_comm
       character(40)                           :: fieldName
       type(ESMF_Config)                       :: cf, cf_output_grid
+      type(ESMF_Info)                         :: info
       type(ESMF_DELayout)                     :: delayout
       type(ESMF_Grid)                         :: fcstGrid
       type(ESMF_Grid), allocatable            :: wrtGrid(:)
@@ -151,11 +160,11 @@
       type(ESMF_Decomp_Flag)                  :: decompflagPTile(2,6)
 
       type(ESMF_StateItem_Flag), allocatable  :: fcstItemTypeList(:)
-      type(ESMF_FieldBundle)                  :: fcstFB, fieldbundle
+      type(ESMF_FieldBundle)                  :: fcstFB, fieldbundle, mirrorFB
       type(ESMF_Field),          allocatable  :: fcstField(:)
       type(ESMF_TypeKind_Flag)                :: typekind
       character(len=80),         allocatable  :: fieldnamelist(:)
-      integer                                 :: fieldDimCount, gridDimCount
+      integer                                 :: fieldDimCount, gridDimCount, tk
       integer,                   allocatable  :: petMap(:)
       integer,                   allocatable  :: gridToFieldMap(:)
       integer,                   allocatable  :: ungriddedLBound(:)
@@ -167,6 +176,7 @@
       integer                                 :: valueI4
       real(ESMF_KIND_R4)                      :: valueR4
       real(ESMF_KIND_R8)                      :: valueR8
+      logical, allocatable                    :: is_moving(:)
 
       integer :: attCount, jidx, idx, noutfile
       character(19)  :: newdate
@@ -235,7 +245,7 @@
 !*** get configuration variables
 !-----------------------------------------------------------------------
 !
-      call esmf_GridCompGet(gridcomp=wrt_comp,config=CF,rc=RC)
+      call ESMF_GridCompGet(gridcomp=wrt_comp,config=CF,rc=RC)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
         line=__LINE__, file=__FILE__)) return  ! bail out
 ! variables for post
@@ -294,6 +304,11 @@
           print *,'num_file=',i,'filename_base= ',trim(filename_base(i)),' output_file= ',trim(output_file(i))
         enddo
       endif
+      
+      call ESMF_InfoGetFromHost(imp_state_write, info=info, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+      call ESMF_InfoGetAlloc(info, key="is_moving", values=is_moving, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
       call ESMF_AttributeGet(imp_state_write, convention="NetCDF", purpose="FV3", &
                              name="ngrids", value=ngrids, rc=rc)
@@ -773,8 +788,8 @@
 
       else
 
-        write(0,*)"wrt_initialize: Unknown output_grid ", trim(output_grid(n))
-        call ESMF_LogWrite("wrt_initialize: Unknown output_grid "//trim(output_grid(n)),ESMF_LOGMSG_ERROR,rc=RC)
+        write(0,*)"wrt_initialize_p1: Unknown output_grid ", trim(output_grid(n))
+        call ESMF_LogWrite("wrt_initialize_p1: Unknown output_grid "//trim(output_grid(n)),ESMF_LOGMSG_ERROR,rc=RC)
         call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
       endif
@@ -806,7 +821,7 @@
         if (lprnt) print *,'in wrt initial, with iau, io_baseline time=',idate,'rc=',rc
       endif
 !
-!--- Look at the incoming FieldBundles in the imp_state_write, and mirror them
+!--- Look at the incoming FieldBundles in the imp_state_write, and mirror them as 'output_' bundles
 !
       call ESMF_StateGet(imp_state_write, itemCount=FBCount, rc=rc)
 
@@ -845,27 +860,39 @@
                              name="grid_id", value=grid_id, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-!---  check grid dim count first
+!---  get grid dim count
           call ESMF_GridGet(wrtGrid(grid_id), dimCount=gridDimCount, rc=rc)
-
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-! create a mirror FieldBundle and add it to importState
-          fieldbundle = ESMF_FieldBundleCreate(name="mirror_"//trim(fcstItemNameList(i)), rc=rc)
-
+! create a mirrored 'output_' FieldBundle and add it to importState
+          fieldbundle = ESMF_FieldBundleCreate(name="output_"//trim(fcstItemNameList(i)), rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
           call ESMF_StateAdd(imp_state_write, (/fieldbundle/), rc=rc)
-
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-! copy the fcstFB Attributes to the mirror FieldBundle
+! copy the fcstFB Attributes to the 'output_' FieldBundle
           call ESMF_AttributeCopy(fcstFB, fieldbundle, attcopy=ESMF_ATTCOPY_REFERENCE, rc=rc)
-
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-!
-          call ESMF_FieldBundleGet(fcstFB, fieldCount=fieldCount, rc=rc)
 
+! grids in fcstFB for which 'is_moving' is .true. must provide a first level mirror for the Redist() target
+          if (is_moving(grid_id)) then
+
+! create a mirrored 'mirror_' FieldBundle and add it to importState
+            mirrorFB = ESMF_FieldBundleCreate(name="mirror_"//trim(fcstItemNameList(i)), rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+            call ESMF_StateAdd(imp_state_write, (/mirrorFB/), rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+! copy the fcstFB Attributes to the 'mirror_' FieldBundle
+            call ESMF_AttributeCopy(fcstFB, mirrorFB, attcopy=ESMF_ATTCOPY_REFERENCE, rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+          
+          endif
+
+! deal with all of the Fields inside this fcstFB
+          call ESMF_FieldBundleGet(fcstFB, fieldCount=fieldCount, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
           if (fieldCount > 0) then
@@ -901,7 +928,7 @@
 
               if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-! create the mirror field
+! create the output field
 
               call ESMF_LogWrite("call field create on wrt comp",ESMF_LOGMSG_INFO,rc=RC)
               field_work = ESMF_FieldCreate(wrtGrid(grid_id), typekind, name=fieldName, &
@@ -931,10 +958,34 @@
 
 !             if (lprnt) print *,' i=',i,' j=',j,' outfilename=',trim(outfilename(j,i))
 
-! add the mirror field to the mirror FieldBundle
+! add the output field to the 'output_' FieldBundle
               call ESMF_FieldBundleAdd(fieldbundle, (/field_work/), rc=rc)
-
               if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+! deal with grids for which 'is_moving' is .true.
+              if (is_moving(grid_id)) then
+                ! create an empty field that will serve as acceptor for GridTransfer of fcstGrid
+                field_work = ESMF_FieldEmptyCreate(name=fieldName, rc=rc)
+                if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+                
+                ! use attributes to carry information for later FieldEmptyComplete()
+                call ESMF_InfoGetFromHost(field_work, info=info, rc=rc)
+                if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+                tk = typekind ! convert TypeKind_Flag to integer
+                call ESMF_InfoSet(info, key="typekind", value=tk, rc=rc)
+                if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+                call ESMF_InfoSet(info, key="gridToFieldMap", values=gridToFieldMap, rc=rc)
+                if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+                call ESMF_InfoSet(info, key="ungriddedLBound", values=ungriddedLBound, rc=rc)
+                if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+                call ESMF_InfoSet(info, key="ungriddedUBound", values=ungriddedUBound, rc=rc)
+                if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+                ! add to 'mirror_' FieldBundle
+                call ESMF_FieldBundleAdd(mirrorFB, (/field_work/), rc=rc)
+                if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+              endif
 
 ! local garbage collection
               deallocate(gridToFieldMap, ungriddedLBound, ungriddedUBound)
@@ -975,12 +1026,12 @@
 
         do n=1, FBcount
 
-          call ESMF_StateGet(imp_state_write, itemName="mirror_"//trim(fcstItemNameList(n)), &
+          call ESMF_StateGet(imp_state_write, itemName="output_"//trim(fcstItemNameList(n)), &
                              fieldbundle=fcstFB, rc=rc)
 
           if( index(trim(fcstItemNameList(n)),trim(FBlist_outfilename(i))) == 1 ) then
 !
-! copy the mirror fcstfield bundle Attributes to the output field bundle
+! copy the fcstfield bundle Attributes to the output field bundle
             call ESMF_AttributeCopy(fcstFB,  wrt_int_state%wrtFB(i), &
                                     attcopy=ESMF_ATTCOPY_REFERENCE, rc=rc)
 
@@ -1387,7 +1438,198 @@
 !
 !-----------------------------------------------------------------------
 !
-      end subroutine wrt_initialize
+      end subroutine wrt_initialize_p1
+!
+!-----------------------------------------------------------------------
+!#######################################################################
+!-----------------------------------------------------------------------
+!
+      subroutine wrt_initialize_p2(wrt_comp, imp_state_write, exp_state_write, clock, rc)
+!
+!-----------------------------------------------------------------------
+!***  INITIALIZE THE WRITE GRIDDED COMPONENT.
+!-----------------------------------------------------------------------
+!
+      type(esmf_GridComp)               :: wrt_comp
+      type(ESMF_State)                  :: imp_state_write, exp_state_write
+      type(esmf_Clock)                  :: clock
+      integer,intent(out)               :: rc
+!
+!***  LOCAL VARIABLES
+      type(ESMF_Info)                         :: info
+      logical, allocatable                    :: is_moving(:)
+      type(ESMF_StateItem_Flag), allocatable  :: itemTypeList(:)
+      character(len=ESMF_MAXSTR),allocatable  :: itemNameList(:)
+      integer                                 :: i, j, bundleCount, fieldCount
+      type(ESMF_FieldBundle)                  :: mirrorFB
+      type(ESMF_Field), allocatable           :: fieldList(:)
+      type(ESMF_Grid)                         :: grid
+      type(ESMF_DistGrid)                     :: acceptorDG, newAcceptorDG
+!
+!
+!-----------------------------------------------------------------------
+!***********************************************************************
+!-----------------------------------------------------------------------
+!
+      rc = ESMF_SUCCESS
+!
+      call ESMF_InfoGetFromHost(imp_state_write, info=info, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+      call ESMF_InfoGetAlloc(info, key="is_moving", values=is_moving, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+      call ESMF_StateGet(imp_state_write, itemCount=bundleCount, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+      allocate(itemNameList(bundleCount), itemTypeList(bundleCount))
+
+      call ESMF_StateGet(imp_state_write, itemNameList=itemNameList, &
+                         itemTypeList=itemTypeList,                  &
+                        !itemorderflag=ESMF_ITEMORDER_ADDORDER,          &
+                         rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+      do i=1, bundleCount
+        
+        if (itemTypeList(i) == ESMF_STATEITEM_FIELDBUNDLE) then
+
+          if (index(trim(itemNameList(i)), "mirror_")==1) then
+            ! this is a 'mirror_' FieldBundle -> GridTransfer acceptor side
+            call ESMF_StateGet(imp_state_write, itemName=trim(itemNameList(i)), fieldbundle=mirrorFB, rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+            ! access the grid that is passed in from the provider side
+            call ESMF_FieldBundleGet(mirrorFB, grid=grid, fieldCount=fieldCount, rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+            ! access the acceptor DistGrid
+            call ESMF_GridGet(grid, distgrid=acceptorDG, rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+            ! rebalance the acceptor DistGrid across the local PETs
+            newAcceptorDG = ESMF_DistGridCreate(acceptorDG, balanceflag=.true., rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+            ! create a new Grid on the rebalanced DistGrid
+            grid = ESMF_GridCreate(newAcceptorDG, rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+            ! point all of the acceptor fields to the new acceptor Grid
+            allocate(fieldList(fieldCount))
+            call ESMF_FieldBundleGet(mirrorFB, fieldList=fieldList, rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+            do j=1, fieldCount
+              call ESMF_FieldEmptySet(fieldList(j), grid=grid, rc=rc)
+              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+            enddo
+            ! clean-up
+            deallocate(fieldList)
+          endif
+
+        else  ! anything but a FieldBundle in the state is unexpected here
+          call ESMF_LogSetError(ESMF_RC_ARG_BAD, msg="Only FieldBundles supported in fcstState.", line=__LINE__, file=__FILE__)
+          return
+        endif
+
+      enddo
+
+!-----------------------------------------------------------------------
+!
+      end subroutine wrt_initialize_p2
+!
+!-----------------------------------------------------------------------
+!#######################################################################
+!-----------------------------------------------------------------------
+!
+      subroutine wrt_initialize_p3(wrt_comp, imp_state_write, exp_state_write, clock, rc)
+!
+!-----------------------------------------------------------------------
+!***  INITIALIZE THE WRITE GRIDDED COMPONENT.
+!-----------------------------------------------------------------------
+!
+      type(esmf_GridComp)               :: wrt_comp
+      type(ESMF_State)                  :: imp_state_write, exp_state_write
+      type(esmf_Clock)                  :: clock
+      integer,intent(out)               :: rc
+!***  LOCAL VARIABLES
+      type(ESMF_Info)                         :: info
+      logical, allocatable                    :: is_moving(:)
+      type(ESMF_StateItem_Flag), allocatable  :: itemTypeList(:)
+      character(len=ESMF_MAXSTR),allocatable  :: itemNameList(:)
+      integer                                 :: i, j, bundleCount, fieldCount
+      type(ESMF_FieldBundle)                  :: mirrorFB
+      type(ESMF_Field), allocatable           :: fieldList(:)
+      type(ESMF_TypeKind_Flag)                :: typekind
+      integer                                 :: tk
+      integer,                   allocatable  :: gridToFieldMap(:)
+      integer,                   allocatable  :: ungriddedLBound(:)
+      integer,                   allocatable  :: ungriddedUBound(:)
+
+!
+!
+!-----------------------------------------------------------------------
+!***********************************************************************
+!-----------------------------------------------------------------------
+!
+      rc = ESMF_SUCCESS
+!
+      call ESMF_InfoGetFromHost(imp_state_write, info=info, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+      call ESMF_InfoGetAlloc(info, key="is_moving", values=is_moving, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+      call ESMF_StateGet(imp_state_write, itemCount=bundleCount, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+      allocate(itemNameList(bundleCount), itemTypeList(bundleCount))
+
+      call ESMF_StateGet(imp_state_write, itemNameList=itemNameList, &
+                         itemTypeList=itemTypeList,                  &
+                        !itemorderflag=ESMF_ITEMORDER_ADDORDER,          &
+                         rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+      do i=1, bundleCount
+        
+        if (itemTypeList(i) == ESMF_STATEITEM_FIELDBUNDLE) then
+
+          if (index(trim(itemNameList(i)), "mirror_")==1) then
+            ! this is a 'mirror_' FieldBundle -> GridTransfer acceptor side
+            call ESMF_StateGet(imp_state_write, itemName=trim(itemNameList(i)), fieldbundle=mirrorFB, rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+            ! finish creating all the mirror Fields
+            call ESMF_FieldBundleGet(mirrorFB, fieldCount=fieldCount, rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+            allocate(fieldList(fieldCount))
+            call ESMF_FieldBundleGet(mirrorFB, fieldList=fieldList, rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+            do j=1, fieldCount
+              ! first access information stored on the field needed for completion
+              call ESMF_InfoGetFromHost(fieldList(j), info=info, rc=rc)
+              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+              call ESMF_InfoGet(info, key="typekind", value=tk, rc=rc)
+              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+              typekind = tk  ! convert integer into TypeKind_Flag
+              call ESMF_InfoGetAlloc(info, key="gridToFieldMap", values=gridToFieldMap, rc=rc)
+              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+              call ESMF_InfoGetAlloc(info, key="ungriddedLBound", values=ungriddedLBound, rc=rc)
+              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+              call ESMF_InfoGetAlloc(info, key="ungriddedUBound", values=ungriddedUBound, rc=rc)
+              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+              ! now complete the field creation
+              call ESMF_FieldEmptyComplete(fieldList(j), typekind=typekind, gridToFieldMap=gridToFieldMap, &
+                ungriddedLBound=ungriddedLBound, ungriddedUBound=ungriddedUBound, rc=rc)
+              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+            enddo
+            ! clean-up
+            deallocate(fieldList)
+          endif
+
+        else  ! anything but a FieldBundle in the state is unexpected here
+          call ESMF_LogSetError(ESMF_RC_ARG_BAD, msg="Only FieldBundles supported in fcstState.", line=__LINE__, file=__FILE__)
+          return
+        endif
+
+      enddo
+
+!-----------------------------------------------------------------------
+!
+      end subroutine wrt_initialize_p3
 !
 !-----------------------------------------------------------------------
 !#######################################################################
@@ -1408,12 +1650,16 @@
 !***  local variables
 !
       TYPE(ESMF_VM)                         :: VM
-      type(ESMF_FieldBundle)                :: file_bundle
+      type(ESMF_FieldBundle)                :: file_bundle, mirror_bundle
+      type(ESMF_StateItem_Flag)             :: itemType
       type(ESMF_Time)                       :: currtime
       type(ESMF_Grid)                       :: fbgrid, wrtGrid
       type(ESMF_State),save                 :: stateGridFB
       type(optimizeT), save                 :: optimize(4)
       type(ESMF_GridComp), save, allocatable   :: compsGridFB(:)
+      type(ESMF_RouteHandle)                :: rh
+      type(ESMF_RegridMethod_Flag)          :: regridmethod
+      integer                               :: srcTermProcessing
 !
       type(write_wrap)                      :: wrap
       type(wrt_internal_state),pointer      :: wrt_int_state
@@ -1538,13 +1784,65 @@
 
 !
 !-----------------------------------------------------------------------
-!*** loop on the files that need to write out
+!*** loop on the "output_" FieldBundles, i.e. files that need to write out
 !-----------------------------------------------------------------------
 
       do i=1, FBCount
-        call ESMF_StateGet(imp_state_write, itemName="mirror_"//trim(fcstItemNameList(i)), &
+        call ESMF_StateGet(imp_state_write, itemName="output_"//trim(fcstItemNameList(i)), &
                            fieldbundle=file_bundle, rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+        
+        ! see whether a "mirror_" FieldBundle exists, i.e. dealing with moving domain that needs updated Regrid() here.
+        call ESMF_StateGet(imp_state_write, itemName="mirror_"//trim(fcstItemNameList(i)), &
+                           itemType=itemType, rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+        if (itemType == ESMF_STATEITEM_FIELDBUNDLE) then
+          ! Regrid() for a moving domain
+          call ESMF_LogWrite("Regrid() for moving domain: mirror_"//trim(fcstItemNameList(i)), ESMF_LOGMSG_INFO, rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+          call ESMF_StateGet(imp_state_write, itemName="mirror_"//trim(fcstItemNameList(i)), &
+                             fieldbundle=mirror_bundle, rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+          ! determine regridmethod
+          if (index(fcstItemNameList(i),"_bilinear") >0 )  then
+            regridmethod = ESMF_REGRIDMETHOD_BILINEAR
+          else if (index(fcstItemNameList(i),"_patch") >0)  then
+            regridmethod = ESMF_REGRIDMETHOD_PATCH
+          else if (index(fcstItemNameList(i),"_nearest_stod") >0) then
+            regridmethod = ESMF_REGRIDMETHOD_NEAREST_STOD
+          else if (index(fcstItemNameList(i),"_nearest_dtos") >0) then
+            regridmethod = ESMF_REGRIDMETHOD_NEAREST_DTOS
+          else if (index(fcstItemNameList(i),"_conserve") >0) then
+            regridmethod = ESMF_REGRIDMETHOD_CONSERVE
+          else
+            call ESMF_LogSetError(ESMF_RC_ARG_BAD,                          &
+                                  msg="Unable to determine regrid method.", &
+                                  line=__LINE__, file=__FILE__, rcToReturn=rc)
+            return
+          endif
+          srcTermProcessing = 1 ! have this fixed for bit-for-bit reproducibility
+          ! RegridStore()
+call ESMF_TraceRegionEnter("ESMF_FieldBundleRegridStore()", rc=rc)
+          call ESMF_FieldBundleRegridStore(mirror_bundle, file_bundle,                &
+                                           regridMethod=regridmethod, routehandle=rh, &
+                                           unmappedaction=ESMF_UNMAPPEDACTION_IGNORE, &
+                                           srcTermProcessing=srcTermProcessing, rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+call ESMF_TraceRegionExit("ESMF_FieldBundleRegridStore()", rc=rc)
+          ! Regrid()
+call ESMF_TraceRegionEnter("ESMF_FieldBundleRegrid()", rc=rc)
+          call ESMF_FieldBundleRegrid(mirror_bundle, file_bundle,       &
+                                      routehandle=rh, termorderflag=(/ESMF_TERMORDER_SRCSEQ/), rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+call ESMF_TraceRegionExit("ESMF_FieldBundleRegrid()", rc=rc)
+          ! RegridRelease()
+          call ESMF_FieldBundleRegridRelease(routehandle=rh, noGarbage=.true., rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+          ! done
+          call ESMF_LogWrite("Done Regrid() for moving domain: mirror_"//trim(fcstItemNameList(i)), ESMF_LOGMSG_INFO, rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+        endif
 
 !recover fields from cartesian vector and sfc pressure
         call recover_fields(file_bundle,rc)
