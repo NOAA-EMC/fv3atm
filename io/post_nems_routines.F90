@@ -90,7 +90,7 @@
          jsta_m2 = 3
       end if
 !      if ( mype == last_write_task ) then
-      if ( mype>=(last_write_task-numx) ) then
+      if ( mype>(last_write_task-numx) ) then
          jend_m  = jm - 1
          jend_m2 = jm - 2
       end if
