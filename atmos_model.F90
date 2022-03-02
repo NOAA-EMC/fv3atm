@@ -270,7 +270,7 @@ subroutine update_atmos_radiation_physics (Atmos)
       if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP timestep_init step failed')
 
       if (GFS_Control%do_sppt .or. GFS_Control%do_shum .or. GFS_Control%do_skeb .or. &
-          GFS_Control%lndp_type > 0  .or. GFS_Control%do_ca ) then
+          GFS_Control%lndp_type > 0  .or. GFS_Control%do_ca .or. GFS_Control%do_spp) then
 !--- call stochastic physics pattern generation / cellular automata
         call stochastic_physics_wrapper(GFS_control, GFS_data, Atm_block, ierr)
         if (ierr/=0)  call mpp_error(FATAL, 'Call to stochastic_physics_wrapper failed')
@@ -717,7 +717,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP physics_init step failed')
 
    if (GFS_Control%do_sppt .or. GFS_Control%do_shum .or. GFS_Control%do_skeb .or. &
-       GFS_Control%lndp_type > 0  .or. GFS_Control%do_ca) then
+       GFS_Control%lndp_type > 0  .or. GFS_Control%do_ca .or. GFS_Control%do_spp) then
 
 !--- Initialize stochastic physics pattern generation / cellular automata for first time step
      call stochastic_physics_wrapper(GFS_control, GFS_data, Atm_block, ierr)
@@ -998,7 +998,7 @@ subroutine atmos_model_end (Atmos)
 !     call write_stoch_restart_atm('RESTART/atm_stoch.res.nc')
     endif
     if (GFS_Control%do_sppt .or. GFS_Control%do_shum .or. GFS_Control%do_skeb .or. &
-        GFS_Control%lndp_type > 0  .or. GFS_Control%do_ca ) then
+        GFS_Control%lndp_type > 0  .or. GFS_Control%do_ca .or. GFS_Control%do_spp) then
       if(restart_endfcst) then
         call write_stoch_restart_atm('RESTART/atm_stoch.res.nc')
         if (GFS_control%do_ca)then
