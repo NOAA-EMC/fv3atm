@@ -585,6 +585,9 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
         enddo
       endif
     endif
+! if to write out restart at the end of forecast
+    restart_endfcst = .false.
+    if ( ANY(frestart(:) == total_inttime) ) restart_endfcst = .true.
 ! frestart only contains intermediate restart
     do i=1,size(frestart)
       if(frestart(i) == total_inttime) then 
@@ -592,9 +595,6 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
         exit
       endif
     enddo
-! if to write out restart at the end of forecast
-    restart_endfcst = .false.
-    if ( ANY(frestart(:) == total_inttime) ) restart_endfcst = .true.
     if (mype == 0) print *,'frestart=',frestart(1:10)/3600, 'restart_endfcst=',restart_endfcst, &
       'total_inttime=',total_inttime
 ! if there is restart writing during integration
@@ -1036,29 +1036,30 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 
       !--- intermediate restart
       if (intrm_rst>0) then
-          if (ANY(frestart(:) == seconds)) then
-            if (mype == 0) write(*,*)'write out restart at na=',na,' seconds=',seconds,  &
-                                     'integration lenght=',na*dt_atmos/3600.
+        call get_time(Atmos%Time - Atmos%Time_init, seconds)
+        if (ANY(frestart(:) == seconds)) then
+          if (mype == 0) write(*,*)'write out restart at na=',na,' seconds=',seconds,  &
+                                   'integration lenght=',na*dt_atmos/3600.
 
-            timestamp = date_to_string (Atmos%Time)
-            call atmos_model_restart(Atmos, timestamp)
-            call write_stoch_restart_atm('RESTART/'//trim(timestamp)//'.atm_stoch.res.nc')
+          timestamp = date_to_string (Atmos%Time)
+          call atmos_model_restart(Atmos, timestamp)
+          call write_stoch_restart_atm('RESTART/'//trim(timestamp)//'.atm_stoch.res.nc')
 
-            !----- write restart file ------
-            if (mpp_pe() == mpp_root_pe())then
-                call get_date (Atmos%Time, date(1), date(2), date(3),  &
-                                                       date(4), date(5), date(6))
-                call mpp_open( unit, 'RESTART/'//trim(timestamp)//'.coupler.res', nohdrs=.TRUE. )
-                write( unit, '(i6,8x,a)' )calendar_type, &
-                     '(Calendar: no_calendar=0, thirty_day_months=1, julian=2, gregorian=3, noleap=4)'
+          !----- write restart file ------
+          if (mpp_pe() == mpp_root_pe())then
+              call get_date (Atmos%Time, date(1), date(2), date(3),  &
+                                                     date(4), date(5), date(6))
+              call mpp_open( unit, 'RESTART/'//trim(timestamp)//'.coupler.res', nohdrs=.TRUE. )
+              write( unit, '(i6,8x,a)' )calendar_type, &
+                   '(Calendar: no_calendar=0, thirty_day_months=1, julian=2, gregorian=3, noleap=4)'
 
-                write( unit, '(6i6,8x,a)' )date_init, &
-                     'Model start time:   year, month, day, hour, minute, second'
-                write( unit, '(6i6,8x,a)' )date, &
-                     'Current model time: year, month, day, hour, minute, second'
-                call mpp_close(unit)
-            endif
+              write( unit, '(6i6,8x,a)' )date_init, &
+                   'Model start time:   year, month, day, hour, minute, second'
+              write( unit, '(6i6,8x,a)' )date, &
+                   'Current model time: year, month, day, hour, minute, second'
+              call mpp_close(unit)
           endif
+        endif
       endif
 
       if (mype == 0) write(*,*)"PASS: fcstRUN phase 2, na = ",na, ' time is ', mpi_wtime()-tbeg1
