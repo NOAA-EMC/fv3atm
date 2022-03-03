@@ -9,7 +9,7 @@
 !
 !   revision history:
 !    Jul 2019 Jun Wang: allocate arrays for post processing
-!    Feb 2022 J. Meng/B. Cui: create interface to run inline post with upp_2d_decomp
+!    Feb 2022 J. Meng/B. Cui: create interface to run inline post with post_2d_decomp
 !
 !-----------------------------------------------------------------------
 !*** allocate post variables
