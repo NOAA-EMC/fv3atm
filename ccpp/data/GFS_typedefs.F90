@@ -2159,6 +2159,8 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: qs_lay(:,:)               => null()  !<
     real (kind=kind_phys), pointer      :: q_lay(:,:)                => null()  !<
     real (kind=kind_phys), pointer      :: deltaZ(:,:)               => null()  !<
+    real (kind=kind_phys), pointer      :: deltaZc(:,:)              => null()  !< 
+    real (kind=kind_phys), pointer      :: deltaP(:,:)               => null()  !< 
     real (kind=kind_phys), pointer      :: cloud_overlap_param(:,:)  => null()  !< Cloud overlap parameter
     real (kind=kind_phys), pointer      :: cnv_cloud_overlap_param(:,:) => null()  !< Convective cloud overlap parameter
     real (kind=kind_phys), pointer      :: precip_overlap_param(:,:) => null()  !< Precipitation overlap parameter
@@ -7365,6 +7367,8 @@ module GFS_typedefs
        allocate (Interstitial%qs_lay               (IM, Model%levs))
        allocate (Interstitial%q_lay                (IM, Model%levs))
        allocate (Interstitial%deltaZ               (IM, Model%levs))
+       allocate (Interstitial%deltaZc              (IM, Model%levs))
+       allocate (Interstitial%deltaP               (IM, Model%levs))
        allocate (Interstitial%p_lev                (IM, Model%levs+1))
        allocate (Interstitial%p_lay                (IM, Model%levs))
        allocate (Interstitial%t_lev                (IM, Model%levs+1))
@@ -7811,6 +7815,8 @@ module GFS_typedefs
       Interstitial%qs_lay               = clear_val
       Interstitial%q_lay                = clear_val
       Interstitial%deltaZ               = clear_val
+      Interstitial%deltaZc              = clear_val
+      Interstitial%deltaP               = clear_val
       Interstitial%p_lev                = clear_val
       Interstitial%p_lay                = clear_val
       Interstitial%t_lev                = clear_val

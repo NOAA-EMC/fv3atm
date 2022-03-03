@@ -10207,6 +10207,22 @@
   type = real
   kind = kind_phys
   active = (flag_for_rrtmgp_radiation_scheme)
+[deltaZc]
+  standard_name = layer_thickness_from_layer_center
+  long_name = layer_thickness
+  units = m
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = (flag_for_rrtmgp_radiation_scheme)
+[deltaP]
+  standard_name = layer_thickness_in_Pa
+  long_name = layer_thickness_in_Pa
+  units = Pa
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = (flag_for_rrtmgp_radiation_scheme)
 [tracer]
   standard_name = chemical_tracers
   long_name = chemical tracers
