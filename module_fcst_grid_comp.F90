@@ -1037,6 +1037,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
       !--- intermediate restart
       if (intrm_rst>0) then
         call get_time(Atmos%Time - Atmos%Time_init, seconds)
+        na = seconds/dt_atmos - 1
         if (ANY(frestart(:) == seconds)) then
           if (mype == 0) write(*,*)'write out restart at na=',na,' seconds=',seconds,  &
                                    'integration lenght=',na*dt_atmos/3600.
