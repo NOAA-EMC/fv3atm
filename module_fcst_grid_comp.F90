@@ -585,6 +585,13 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
         enddo
       endif
     endif
+! frestart only contains intermediate restart
+    do i=1,size(frestart)
+      if(frestart(i) == total_inttime) then 
+        frestart(i) = 0
+        exit
+      endif
+    enddo
 ! if to write out restart at the end of forecast
     restart_endfcst = .false.
     if ( ANY(frestart(:) == total_inttime) ) restart_endfcst = .true.
@@ -1017,11 +1024,6 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !
       call ESMF_GridCompGet(fcst_comp, localpet=mype, rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-      call ESMF_ClockGet(clock, advanceCount=NTIMESTEP_ESMF, rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-      na = NTIMESTEP_ESMF
 !
 !-----------------------------------------------------------------------
 ! *** call fcst integration subroutines
@@ -1034,8 +1036,6 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 
       !--- intermediate restart
       if (intrm_rst>0) then
-        if (na /= num_atmos_calls-1) then
-          call get_time(Atmos%Time - Atmos%Time_init, seconds)
           if (ANY(frestart(:) == seconds)) then
             if (mype == 0) write(*,*)'write out restart at na=',na,' seconds=',seconds,  &
                                      'integration lenght=',na*dt_atmos/3600.
@@ -1059,7 +1059,6 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
                 call mpp_close(unit)
             endif
           endif
-        endif
       endif
 
       if (mype == 0) write(*,*)"PASS: fcstRUN phase 2, na = ",na, ' time is ', mpi_wtime()-tbeg1
