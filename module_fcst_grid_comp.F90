@@ -86,7 +86,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
   integer                                         :: ngrids, mygrid
   integer,dimension(:),allocatable                :: grid_number_on_all_pets(:)
 
-  integer                     :: intrm_rst
+  integer                     :: intrm_rst, na
 
 !----- coupled model data -----
 
@@ -943,7 +943,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !
 !***  local variables
 !
-      integer                    :: mype, na, seconds
+      integer                    :: mype, seconds
       real(kind=8)               :: mpi_wtime, tbeg1
 !
 !-----------------------------------------------------------------------
@@ -994,7 +994,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !
 !***  local variables
 !
-      integer                    :: mype, na, date(6), seconds
+      integer                    :: mype, date(6), seconds
       character(len=64)          :: timestamp
       integer                    :: unit
       real(kind=8)               :: mpi_wtime, tbeg1
@@ -1022,8 +1022,6 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 
       !--- intermediate restart
       if (intrm_rst>0) then
-        call get_time(Atmos%Time - Atmos%Time_init, seconds)
-        na = seconds/dt_atmos - 1
         if (ANY(frestart(:) == seconds)) then
           if (mype == 0) write(*,*)'write out restart at na=',na,' seconds=',seconds,  &
                                    'integration length=',na*dt_atmos/3600.
