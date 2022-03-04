@@ -86,7 +86,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
   integer                                         :: ngrids, mygrid
   integer,dimension(:),allocatable                :: grid_number_on_all_pets(:)
 
-  integer                     :: num_atmos_calls, intrm_rst
+  integer                     :: intrm_rst
 
 !----- coupled model data -----
 
@@ -324,10 +324,8 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !
     type(ESMF_VM)                          :: VM
     type(ESMF_Time)                        :: CurrTime, StartTime, StopTime
-    type(ESMF_TimeInterval)                :: RunDuration
     type(ESMF_Config)                      :: cf
 
-    integer                                :: Run_length
     integer,dimension(6)                   :: date, date_end
 !
     character(len=9) :: month
@@ -523,19 +521,11 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
       endif ! fexist
     endif ! mype == 0
 
-    RunDuration = StopTime - CurrTime
-
-    CALL ESMF_TimeIntervalGet(RunDuration, S=Run_length, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-!
     call diag_manager_init (TIME_INIT=date)
     call diag_manager_set_time_end(Time_end)
 !
     Time_step = set_time (dt_atmos,0)
-    num_atmos_calls = Run_length / dt_atmos
-    if (mype == 0) write(*,*)'num_atmos_calls=',num_atmos_calls,'time_init=', &
-                    date_init,'time=',date,'time_end=',date_end,'dt_atmos=',dt_atmos, &
-                    'Run_length=',Run_length
+    if (mype == 0) write(*,*)'time_init=', date_init,'time=',date,'time_end=',date_end,'dt_atmos=',dt_atmos
 
 ! set up forecast time array that controls when to write out restart files
     frestart = 0
@@ -953,8 +943,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !
 !***  local variables
 !
-      integer                    :: mype, na
-      integer(kind=ESMF_KIND_I8) :: ntimestep_esmf
+      integer                    :: mype, na, seconds
       real(kind=8)               :: mpi_wtime, tbeg1
 !
 !-----------------------------------------------------------------------
@@ -968,11 +957,9 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !
       call ESMF_GridCompGet(fcst_comp, localpet=mype, rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-!
-      call ESMF_ClockGet(clock, advanceCount=NTIMESTEP_ESMF, rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-      na = NTIMESTEP_ESMF
+      call get_time(Atmos%Time - Atmos%Time_init, seconds)
+      na = seconds/dt_atmos
 !
 !-----------------------------------------------------------------------
 ! *** call fcst integration subroutines
@@ -1008,7 +995,6 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !***  local variables
 !
       integer                    :: mype, na, date(6), seconds
-      integer(kind=ESMF_KIND_I8) :: ntimestep_esmf
       character(len=64)          :: timestamp
       integer                    :: unit
       real(kind=8)               :: mpi_wtime, tbeg1
@@ -1040,7 +1026,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
         na = seconds/dt_atmos - 1
         if (ANY(frestart(:) == seconds)) then
           if (mype == 0) write(*,*)'write out restart at na=',na,' seconds=',seconds,  &
-                                   'integration lenght=',na*dt_atmos/3600.
+                                   'integration length=',na*dt_atmos/3600.
 
           timestamp = date_to_string (Atmos%Time)
           call atmos_model_restart(Atmos, timestamp)
