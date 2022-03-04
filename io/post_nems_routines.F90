@@ -24,7 +24,7 @@
                             ioform, jsta, jend, jsta_m, jsta_m2, &
                             jend_m, jend_m2, jvend_2u, jsta_2l, jend_2u, iup, idn, &
                             icnt, idsp, mpi_comm_comp, num_servers,     &
-                            numx, ista, iend, ista_m, ista_m2, &
+                            modelname, numx, ista, iend, ista_m, ista_m2, &
                             iend_m, iend_m2, ista_2l, iend_2u, &
                             ileft,iright,ileftb,irightb, &
                             num_procs
@@ -136,13 +136,13 @@
 !
       jsta_2l = max(jsta - 2,  1 )
       jend_2u = min(jend + 2, jm )
-!      if(modelname=='GFS') then
+      if(modelname=='GFS') then
         ista_2l=max(ista-2,0)
         iend_2u=min(iend+2,im+1)
-!      else
-!        ista_2l = max(ista - 2,  1 )
-!        iend_2u = min(iend + 2, im )
-!      endif
+      else
+        ista_2l = max(ista - 2,  1 )
+        iend_2u = min(iend + 2, im )
+      endif
 ! special for c-grid v
       jvend_2u = min(jend + 2, jm+1 )
       if(mype==0)print *,'im=',im,'jsta_2l=',jsta_2l,'jend_2u=',jend_2u,'lm=',lm
