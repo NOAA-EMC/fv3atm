@@ -86,7 +86,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
   integer                                         :: ngrids, mygrid
   integer,dimension(:),allocatable                :: grid_number_on_all_pets(:)
 
-  integer                     :: intrm_rst, na
+  integer                     :: intrm_rst, n_atmsteps
 
 !----- coupled model data -----
 
@@ -959,7 +959,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
       call get_time(Atmos%Time - Atmos%Time_init, seconds)
-      na = seconds/dt_atmos
+      n_atmsteps = seconds/dt_atmos
 !
 !-----------------------------------------------------------------------
 ! *** call fcst integration subroutines
@@ -971,7 +971,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
       call atmos_model_exchange_phase_1 (Atmos, rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-      if (mype == 0) write(*,*)"PASS: fcstRUN phase 1, na = ",na, ' time is ', mpi_wtime()-tbeg1
+      if (mype == 0) write(*,*)"PASS: fcstRUN phase 1, n_atmsteps = ",n_atmsteps, ' time is ', mpi_wtime()-tbeg1
 !
 !-----------------------------------------------------------------------
 !
@@ -1024,8 +1024,8 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
       if (intrm_rst>0) then
         call get_time(Atmos%Time - Atmos%Time_init, seconds)
         if (ANY(frestart(:) == seconds)) then
-          if (mype == 0) write(*,*)'write out restart at na=',na,' seconds=',seconds,  &
-                                   'integration length=',na*dt_atmos/3600.
+          if (mype == 0) write(*,*)'write out restart at n_atmsteps=',n_atmsteps,' seconds=',seconds,  &
+                                   'integration length=',n_atmsteps*dt_atmos/3600.
 
           timestamp = date_to_string (Atmos%Time)
           call atmos_model_restart(Atmos, timestamp)
@@ -1048,7 +1048,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
         endif
       endif
 
-      if (mype == 0) write(*,*)"PASS: fcstRUN phase 2, na = ",na, ' time is ', mpi_wtime()-tbeg1
+      if (mype == 0) write(*,*)"PASS: fcstRUN phase 2, n_atmsteps = ",n_atmsteps, ' time is ', mpi_wtime()-tbeg1
 !
 !-----------------------------------------------------------------------
 !
