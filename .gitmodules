@@ -9,7 +9,7 @@
 [submodule "ccpp/physics"]
   path = ccpp/physics
   url = https://github.com/dustinswales/ccpp-physics
-  branch = enhanced_GP2cld_coupling
+  branch = enhanced_GP2cld_coupling_tight
 [submodule "upp"]
   path = upp
   url = https://github.com/NOAA-EMC/UPP
