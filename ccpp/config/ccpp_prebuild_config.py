@@ -162,6 +162,7 @@ SCHEME_FILES = [
     'physics/physics/mp_thompson_pre.F90',
     'physics/physics/mp_thompson.F90',
     'physics/physics/mp_thompson_post.F90',
+    'physics/physics/mp_nssl.F90'                      ,
     'physics/physics/ozphys.f',
     'physics/physics/ozphys_2015.f',
     'physics/physics/precpd.f',

@@ -195,6 +195,14 @@
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
   kind = kind_phys
+[qgrs(:,:,index_of_hail_mixing_ratio_in_tracer_concentration_array)]
+  standard_name = hail_mixing_ratio
+  long_name = ratio of mass of hail to mass of dry air plus vapor (without condensates)
+  units = kg kg-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = (index_of_hail_mixing_ratio_in_tracer_concentration_array > 0)
 [qgrs(:,:,index_of_ozone_mixing_ratio_in_tracer_concentration_array)]
   standard_name = ozone_mixing_ratio
   long_name = ozone mixing ratio
@@ -254,6 +262,46 @@
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
   kind = kind_phys
+[qgrs(:,:,index_of_mass_number_concentration_of_hail_in_tracer_concentration_array)]
+  standard_name = mass_number_concentration_of_hail_in_air
+  long_name = number concentration of hail
+  units = kg-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = (index_of_mass_number_concentration_of_hail_in_tracer_concentration_array > 0)
+[qgrs(:,:,index_of_cloud_condensation_nuclei_number_concentration_in_tracer_concentration_array)]
+  standard_name = cloud_condensation_nuclei_number_concentration
+  long_name = number concentration of cloud condensation nuclei
+  units = kg-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = ( index_of_cloud_condensation_nuclei_number_concentration_in_tracer_concentration_array > 0 )
+[qgrs(:,:,index_of_activated_cloud_condensation_nuclei_number_concentration_in_tracer_concentration_array)]
+  standard_name = activated_cloud_condensation_nuclei_number_concentration
+  long_name = number concentration of activated cloud condensation nuclei
+  units = kg-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = ( index_of_activated_cloud_condensation_nuclei_number_concentration_in_tracer_concentration_array > 0 )
+[qgrs(:,:,index_of_graupel_volume_in_tracer_concentration_array)]
+  standard_name = graupel_volume
+  long_name = graupel particle volume
+  units = m3 kg-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = ( index_of_graupel_volume_in_tracer_concentration_array > 0 )
+[qgrs(:,:,index_of_hail_volume_in_tracer_concentration_array)]
+  standard_name = hail_volume
+  long_name = hail particle volume
+  units = m3 kg-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = ( index_of_hail_volume_in_tracer_concentration_array > 0 )
 [qgrs(:,:,index_of_turbulent_kinetic_energy_in_tracer_concentration_array)]
   standard_name = turbulent_kinetic_energy
   long_name = turbulent kinetic energy
@@ -383,6 +431,14 @@
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
   kind = kind_phys
+[gq0(:,:,index_of_hail_mixing_ratio_in_tracer_concentration_array)]
+  standard_name = hail_mixing_ratio_of_new_state
+  long_name = ratio of mass of hail to mass of dry air plus vapor (without condensates) updated by physics
+  units = kg kg-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = ( index_of_hail_mixing_ratio_in_tracer_concentration_array > 0 )
 [gq0(:,:,index_of_mass_weighted_rime_factor_in_tracer_concentration_array)]
   standard_name = mass_weighted_rime_factor_of_new_state
   long_name = mass weighted rime factor updated by physics
@@ -442,6 +498,46 @@
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
   kind = kind_phys
+[gq0(:,:,index_of_mass_number_concentration_of_hail_in_tracer_concentration_array)]
+  standard_name = mass_number_concentration_of_hail_of_new_state
+  long_name = number concentration of hail updated by physics
+  units = kg-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = ( index_of_mass_number_concentration_of_hail_in_tracer_concentration_array > 0 )
+[gq0(:,:,index_of_cloud_condensation_nuclei_number_concentration_in_tracer_concentration_array)]
+  standard_name = cloud_condensation_nuclei_number_concentration_of_new_state
+  long_name = number concentration of cloud condensation nuclei updated by physics
+  units = kg-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = ( index_of_cloud_condensation_nuclei_number_concentration_in_tracer_concentration_array > 0 )
+[gq0(:,:,index_of_activated_cloud_condensation_nuclei_number_concentration_in_tracer_concentration_array)]
+  standard_name = activated_cloud_condensation_nuclei_number_concentration_of_new_state
+  long_name = number concentration of cloud condensation nuclei updated by physics
+  units = kg-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = ( index_of_activated_cloud_condensation_nuclei_number_concentration_in_tracer_concentration_array > 0 )
+[gq0(:,:,index_of_graupel_volume_in_tracer_concentration_array)]
+  standard_name = graupel_volume_of_new_state
+  long_name = graupel volume updated by physics
+  units = m3 kg-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = ( index_of_graupel_volume_in_tracer_concentration_array > 0 )
+[gq0(:,:,index_of_hail_volume_in_tracer_concentration_array)]
+  standard_name = hail_volume_of_new_state
+  long_name = hail volume updated by physics
+  units = m3 kg-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = ( index_of_hail_volume_in_tracer_concentration_array > 0 )
 [gq0(:,:,index_of_cloud_area_fraction_in_atmosphere_layer_in_tracer_concentration_array)]
   standard_name = cloud_area_fraction_in_atmosphere_layer_of_new_state
   long_name = cloud fraction updated by physics
@@ -3168,6 +3264,18 @@
   units = flag
   dimensions = ()
   type = integer
+[imp_physics_nssl]
+  standard_name = identifier_for_nssl_microphysics_scheme
+  long_name = choice of NSSL 2-moment microphysics scheme
+  units = flag
+  dimensions = ()
+  type = integer
+[imp_physics_nssl2mccn]
+  standard_name = identifier_for_nssl2mccn_microphysics_scheme
+  long_name = choice of NSSL 2-moment microphysics scheme with CCN
+  units = flag
+  dimensions = ()
+  type = integer
 [iovr_exp]
   standard_name = flag_for_exponential_cloud_overlap_method
   long_name = choice of exponential cloud overlap method
@@ -3400,6 +3508,45 @@
   dimensions = ()
   type = character
   kind = len=16
+[nssl_cccn]
+  standard_name = nssl_ccn_concentration
+  long_name = CCN concentration
+  units = m-3
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[nssl_alphah]
+  standard_name = nssl_alpha_graupel
+  long_name = graupel PSD shape parameter in NSSL micro
+  units = none
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[nssl_alphahl]
+  standard_name = nssl_alpha_hail
+  long_name = hail PSD shape parameter in NSSL micro
+  units = none
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[nssl_ccn_on]
+  standard_name = nssl_ccn_on
+  long_name = CCN activation flag in NSSL micro
+  units = flag
+  dimensions = ()
+  type = logical
+[nssl_hail_on]
+  standard_name = nssl_hail_on
+  long_name = hail activation flag in NSSL micro
+  units = flag
+  dimensions = ()
+  type = logical
+[nssl_invertccn]
+  standard_name = nssl_invertccn
+  long_name = flag to invert CCN in NSSL micro
+  units = flag
+  dimensions = ()
+  type = logical
 [tf]
   standard_name = all_ice_cloud_threshold_temperature
   long_name = threshold temperature below which all cloud is ice
@@ -4950,6 +5097,12 @@
   units = index
   dimensions = ()
   type = integer
+[nthl]
+  standard_name = index_of_hail_mixing_ratio_in_tracer_concentration_array
+  long_name = tracer index for hail
+  units = index
+  dimensions = ()
+  type = integer
 [ntclamt]
   standard_name = index_of_cloud_area_fraction_in_atmosphere_layer_in_tracer_concentration_array
   long_name = tracer index for cloud amount integer
@@ -4983,6 +5136,36 @@
 [ntgnc]
   standard_name = index_of_mass_number_concentration_of_graupel_in_tracer_concentration_array
   long_name = tracer index for graupel number concentration
+  units = index
+  dimensions = ()
+  type = integer
+[nthnc]
+  standard_name = index_of_mass_number_concentration_of_hail_in_tracer_concentration_array
+  long_name = tracer index for hail number concentration
+  units = index
+  dimensions = ()
+  type = integer
+[ntccn]
+  standard_name = index_of_cloud_condensation_nuclei_number_concentration_in_tracer_concentration_array
+  long_name = tracer index for cloud condensation nuclei number concentration
+  units = index
+  dimensions = ()
+  type = integer
+[ntccna]
+  standard_name = index_of_activated_cloud_condensation_nuclei_number_concentration_in_tracer_concentration_array
+  long_name = tracer index for activated cloud condensation nuclei number concentration
+  units = index
+  dimensions = ()
+  type = integer
+[ntgv]
+  standard_name = index_of_graupel_volume_in_tracer_concentration_array
+  long_name = tracer index for graupel particle volume
+  units = index
+  dimensions = ()
+  type = integer
+[nthv]
+  standard_name = index_of_hail_volume_in_tracer_concentration_array
+  long_name = tracer index for hail particle volume
   units = index
   dimensions = ()
   type = integer
@@ -8273,6 +8456,14 @@
   type = real
   kind = kind_phys
   active = (index_of_mass_number_concentration_of_nonhygroscopic_ice_nucleating_aerosols_in_tracer_concentration_array > 0)
+[dqdt(:,:,index_of_cloud_condensation_nuclei_number_concentration_in_tracer_concentration_array)]
+  standard_name = tendency_of_cloud_condensation_nuclei_number_concentration_due_to_model_physics
+  long_name = number concentration of cloud condensation nuclei tendency due to model physics
+  units = kg-1 s-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = ( index_of_cloud_condensation_nuclei_number_concentration_in_tracer_concentration_array > 0 )
 [dqdt(:,:,index_of_rain_mixing_ratio_in_tracer_concentration_array)]
   standard_name = process_split_cumulative_tendency_of_rain_mixing_ratio
   long_name = ratio of mass of rain water tendency to mass of dry air plus vapor (without condensates) due to model physics
@@ -8851,7 +9042,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (control_for_microphysics_scheme == identifier_for_gfdl_microphysics_scheme .or. control_for_microphysics_scheme == identifier_for_thompson_microphysics_scheme)
+  active = (control_for_microphysics_scheme == identifier_for_gfdl_microphysics_scheme .or. control_for_microphysics_scheme == identifier_for_thompson_microphysics_scheme .or. control_for_microphysics_scheme == identifier_for_nssl_microphysics_scheme)
 [gwdcu]
   standard_name = tendency_of_x_wind_due_to_convective_gravity_wave_drag
   long_name = zonal wind tendency due to convective gravity wave drag
@@ -8943,7 +9134,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (control_for_microphysics_scheme == identifier_for_gfdl_microphysics_scheme .or. control_for_microphysics_scheme == identifier_for_thompson_microphysics_scheme)
+  active = (control_for_microphysics_scheme == identifier_for_gfdl_microphysics_scheme .or. control_for_microphysics_scheme == identifier_for_thompson_microphysics_scheme .or. control_for_microphysics_scheme == identifier_for_nssl_microphysics_scheme)
 [dry]
   standard_name = flag_nonzero_land_surface_fraction
   long_name = flag indicating presence of some land surface area fraction
@@ -9287,6 +9478,12 @@
   units = flag
   dimensions = (number_of_tracers_plus_one,2)
   type = logical
+[otsptflag]
+  standard_name = flag_convective_tracer_transport_interstitial
+  long_name = flag for interstitial tracer transport
+  units = flag
+  dimensions = (number_of_tracers)
+  type = logical
 [oz_coeffp5]
   standard_name = number_of_coefficients_in_ozone_forcing_data_plus_five
   long_name = number of coefficients in ozone forcing data plus five
@@ -9444,7 +9641,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (control_for_microphysics_scheme == identifier_for_gfdl_microphysics_scheme .or. control_for_microphysics_scheme == identifier_for_thompson_microphysics_scheme)
+  active = (control_for_microphysics_scheme == identifier_for_gfdl_microphysics_scheme .or. control_for_microphysics_scheme == identifier_for_thompson_microphysics_scheme .or. control_for_microphysics_scheme == identifier_for_nssl_microphysics_scheme)
 [rainp]
   standard_name = tendency_of_rain_water_mixing_ratio_due_to_microphysics
   long_name = tendency of rain water mixing ratio due to microphysics
@@ -9700,7 +9897,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (control_for_microphysics_scheme == identifier_for_gfdl_microphysics_scheme .or. control_for_microphysics_scheme == identifier_for_thompson_microphysics_scheme)
+  active = (control_for_microphysics_scheme == identifier_for_gfdl_microphysics_scheme .or. control_for_microphysics_scheme == identifier_for_thompson_microphysics_scheme .or. control_for_microphysics_scheme == identifier_for_nssl_microphysics_scheme)
 [snowmt]
   standard_name = surface_snow_melt
   long_name = snow melt during timestep
