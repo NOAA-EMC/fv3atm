@@ -3600,7 +3600,7 @@
       rho0 = de/(tan((45+0.5*c_lat)*dtor)**en)                         ! (15-1a)
 
       if (inv == 1) then          ! FORWARD TRANSFORMATION
-         rho = de*(tan((45-0.5*glat)*dtor)**en)                        ! (15-1)
+         rho = de/(tan((45+0.5*glat)*dtor)**en)                        ! (15-1)
          dlon = modulo(glon-c_lon+180.0+3600.0,360.0)-180.0
          theta = en*dlon*dtor                                          ! (14-4)
          x = rho*sin(theta)                                            ! (14-1)
