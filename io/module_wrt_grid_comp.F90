@@ -3568,45 +3568,55 @@
      subroutine lambert(stlat1,stlat2,c_lat,c_lon,glon,glat,x,y,inv)
 
 !-------------------------------------------------------------------------------
-      real(ESMF_KIND_R8),      intent(in)  :: stlat1,stlat2,c_lat,c_lon
-      real(ESMF_KIND_R8),      intent(inout)  :: glon, glat
+      real(ESMF_KIND_R8),      intent(in)    :: stlat1,stlat2,c_lat,c_lon
+      real(ESMF_KIND_R8),      intent(inout) :: glon, glat
       real(ESMF_KIND_R8),      intent(inout) :: x, y
-      integer,                 intent(in)  :: inv
+      integer,                 intent(in)    :: inv
 !-------------------------------------------------------------------------------
-!     real(ESMF_KIND_R8), parameter :: pi=3.14159265358979323846
-      real(ESMF_KIND_R8), parameter :: dtor=pi/180.0
-      real(ESMF_KIND_R8), parameter :: rtod=180.0/pi
+!     real(ESMF_KIND_R8), parameter :: pi = 3.14159265358979323846
+      real(ESMF_KIND_R8), parameter :: dtor = pi/180.0
+      real(ESMF_KIND_R8), parameter :: rtod = 180.0/pi
       real(ESMF_KIND_R8), parameter :: a = 6371200.0
 !-------------------------------------------------------------------------------
-! inv == 1     (glon,glat) ---> (x,y)    lat/lon to grid
-! inv == -1    (x,y) ---> (glon,glat)    grid to lat/lon
+! inv ==  1    (glon,glat) ---> (x,y)
+! inv == -1    (x,y) ---> (glon,glat)
 
-      real(ESMF_KIND_R8) :: en,f,rho,rho0, dlon, theta
+      real(ESMF_KIND_R8) :: xp, yp, en, de, rho, rho0, rho2, dlon, theta, dr2
+      real(ESMF_KIND_R8) :: h = 1.0
 
-      IF (stlat1 == stlat2) THEN
-         en=sin(stlat1*dtor)
-      ELSE
-         en=log(cos(stlat1*dtor)/cos(stlat2*dtor))/ &
-            log(tan((45+0.5*stlat2)*dtor)/tan((45+0.5*stlat1)*dtor))
-      ENDIF
+      ! For reference see:
+      ! John P. Snyder (1987), Map projections: A working manual (pp. 104-110)
+      ! https://doi.org/10.3133/pp1395
 
-      f=(cos(stlat1*dtor)*tan((45+0.5*stlat1)*dtor)**en)/en
-      rho0=a*f/(tan((45+0.5*c_lat)*dtor)**en)
+      if (stlat1 == stlat2) then
+         en = sin(stlat1*dtor)
+      else
+         en = log(cos(stlat1*dtor)/cos(stlat2*dtor)) / &
+              log(tan((45+0.5*stlat2)*dtor)/tan((45+0.5*stlat1)*dtor)) ! (15-3)
+      endif
+      h = sign(1.0,en)
+
+      de = a*(cos(stlat1*dtor)*tan((45+0.5*stlat1)*dtor)**en)/en       ! (15-2)
+      rho0 = de/(tan((45+0.5*c_lat)*dtor)**en)                         ! (15-1a)
 
       if (inv == 1) then          ! FORWARD TRANSFORMATION
-            rho=a*f/(tan((45+0.5*glat)*dtor)**en)
-            dlon=modulo(glon-c_lon+180+3600,360.)-180.D0
-            theta=en*dlon*dtor
-            x=rho*sin(theta)
-            y=rho0-rho*cos(theta)
+         rho = de*(tan((45-0.5*glat)*dtor)**en)                        ! (15-1)
+         dlon = modulo(glon-c_lon+180.0+3600.0,360.0)-180.0
+         theta = en*dlon*dtor                                          ! (14-4)
+         x = rho*sin(theta)                                            ! (14-1)
+         y = rho0-rho*cos(theta)                                       ! (14-2)
       else if (inv == -1) then    ! INVERSE TRANSFORMATION
-            y=rho0-y
-            rho = sqrt(x*x+y*y)
-            theta=atan2(x,y)
-            glon=c_lon+(theta/en)*rtod
-            glon=modulo(glon+180+3600,360.)-180.D0
-!            glat=(2.0*atan((a*f/rho)**(1.0/en))-0.5*pi)*rtod
-            glat=(0.5*pi-2.0*atan((rho/(a*f))**(1.0/en)))*rtod
+         xp = h*x;
+         yp = h*(rho0-y)
+         theta = atan2(xp,yp)                                          ! (14-11)
+         glon = c_lon+(theta/en)*rtod                                  ! (14-9)
+         glon = modulo(glon+180.0+3600.0,360.0)-180.0
+         rho2 = xp*xp+yp*yp                                            ! (14-10)
+         if (rho2 == 0.0) then
+            glat = h*90.0
+         else
+            glat = 2.0*atan((de*de/rho2)**(1.0/(2.0*en)))*rtod-90.0    ! (15-5)
+         endif
       else
         write (unit=*,fmt=*) " lambert: unknown inv argument"
         return
