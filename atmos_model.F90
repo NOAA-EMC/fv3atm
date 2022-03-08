@@ -74,7 +74,7 @@ use atmosphere_mod,     only: atmosphere_diss_est, atmosphere_nggps_diag
 use atmosphere_mod,     only: atmosphere_scalar_field_halo
 use atmosphere_mod,     only: atmosphere_get_bottom_layer
 use atmosphere_mod,     only: set_atmosphere_pelist
-use atmosphere_mod,     only: Atm, mygrid
+use atmosphere_mod,     only: Atm, mygrid, get_nth_domain_info
 use block_control_mod,  only: block_control_type, define_blocks_packed
 use DYCORE_typedefs,    only: DYCORE_data_type, DYCORE_diag_type
 
@@ -113,6 +113,7 @@ public atmos_model_init, atmos_model_end, atmos_data_type
 public atmos_model_exchange_phase_1, atmos_model_exchange_phase_2
 public atmos_model_restart
 public get_atmos_model_ungridded_dim
+public atmos_model_get_nth_domain_info
 public addLsmask2grid
 public setup_exportdata
 !-----------------------------------------------------------------------
@@ -125,6 +126,8 @@ public setup_exportdata
      integer                       :: layout(2)          ! computer task laytout
      logical                       :: regional           ! true if domain is regional
      logical                       :: nested             ! true if there is a nest
+     integer                       :: ngrids             !
+     integer                       :: mygrid             !
      integer                       :: mlon, mlat
      integer                       :: iau_offset         ! iau running window length
      logical                       :: pe                 ! current pe.
@@ -261,7 +264,7 @@ subroutine update_atmos_radiation_physics (Atmos)
       if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP timestep_init step failed')
 
       if (GFS_Control%do_sppt .or. GFS_Control%do_shum .or. GFS_Control%do_skeb .or. &
-          GFS_Control%lndp_type > 0  .or. GFS_Control%do_ca ) then
+          GFS_Control%lndp_type > 0  .or. GFS_Control%do_ca .or. GFS_Control%do_spp) then
 !--- call stochastic physics pattern generation / cellular automata
         call stochastic_physics_wrapper(GFS_control, GFS_data, Atm_block, ierr)
         if (ierr/=0)  call mpp_error(FATAL, 'Call to stochastic_physics_wrapper failed')
@@ -526,7 +529,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    call atmosphere_resolution (nlon, nlat, global=.false.)
    call atmosphere_resolution (mlon, mlat, global=.true.)
    call alloc_atmos_data_type (nlon, nlat, Atmos)
-   call atmosphere_domain (Atmos%domain, Atmos%layout, Atmos%regional, Atmos%nested, Atmos%pelist)
+   call atmosphere_domain (Atmos%domain, Atmos%layout, Atmos%regional, Atmos%nested, Atmos%ngrids, Atmos%mygrid, Atmos%pelist)
    call atmosphere_diag_axes (Atmos%axes)
    call atmosphere_etalvls (Atmos%ak, Atmos%bk, flip=flip_vc)
    call atmosphere_grid_bdry (Atmos%lon_bnd, Atmos%lat_bnd, global=.false.)
@@ -695,7 +698,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP physics_init step failed')
 
    if (GFS_Control%do_sppt .or. GFS_Control%do_shum .or. GFS_Control%do_skeb .or. &
-       GFS_Control%lndp_type > 0  .or. GFS_Control%do_ca) then
+       GFS_Control%lndp_type > 0  .or. GFS_Control%do_ca .or. GFS_Control%do_spp) then
 
 !--- Initialize stochastic physics pattern generation / cellular automata for first time step
      call stochastic_physics_wrapper(GFS_control, GFS_data, Atm_block, ierr)
@@ -961,7 +964,7 @@ subroutine atmos_model_end (Atmos)
 !     call write_stoch_restart_atm('RESTART/atm_stoch.res.nc')
     endif
     if (GFS_Control%do_sppt .or. GFS_Control%do_shum .or. GFS_Control%do_skeb .or. &
-        GFS_Control%lndp_type > 0  .or. GFS_Control%do_ca ) then
+        GFS_Control%lndp_type > 0  .or. GFS_Control%do_ca .or. GFS_Control%do_spp) then
       if(restart_endfcst) then
         call write_stoch_restart_atm('RESTART/atm_stoch.res.nc')
         if (GFS_control%do_ca)then
@@ -2626,7 +2629,6 @@ end subroutine update_atmos_chemistry
 
     rc=0
 !
-    if (mpp_pe() == mpp_root_pe()) print *,'end of assign_importdata'
   end subroutine assign_importdata
 
 !
@@ -3025,5 +3027,14 @@ end subroutine update_atmos_chemistry
 
   end subroutine addLsmask2grid
 !------------------------------------------------------------------------------
+  subroutine atmos_model_get_nth_domain_info(n, layout, nx, ny, pelist)
+   integer, intent(in)  :: n
+   integer, intent(out) :: layout(2)
+   integer, intent(out) :: nx, ny
+   integer, pointer, intent(out) :: pelist(:)
+
+   call get_nth_domain_info(n, layout, nx, ny, pelist)
+ 
+  end subroutine atmos_model_get_nth_domain_info
 
 end module atmos_model_mod
