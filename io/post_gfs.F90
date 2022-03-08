@@ -116,7 +116,6 @@ module post_gfs
 !
         call read_postnmlt(kpo,kth,kpv,po,th,pv,wrt_int_state%post_nlunit, &
                            wrt_int_state%post_namelist)
-        print*,'BOCUI in post_gfs numx= ',numx
 !
 !-----------------------------------------------------------------------
 !*** allocate post variables

@@ -34,9 +34,8 @@ module post_regional
 !
       use ctlblk_mod, only : komax,ifhr,ifmin,modelname,datapd,fld_info, &
                              npset,grib,gocart_on,icount_calmict, jsta,  &
-                             jend,im, nsoil, filenameflat, ista, iend
-      use gridspec_mod, only : maptype, gridtype,latstart,latlast,       &
-                               lonstart,lonlast
+                             jend,ista,iend, im, nsoil, filenameflat,numx
+      use gridspec_mod, only : maptype, gridtype
       use grib2_module, only : gribit2,num_pset,nrecout,first_grbtbl
       use xml_perl_data,only : paramset
 !
