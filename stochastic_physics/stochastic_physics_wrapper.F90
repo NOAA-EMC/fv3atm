@@ -143,11 +143,9 @@ module stochastic_physics_wrapper_mod
            end select
          end do
       end if
-      if ( GFS_Control%lndp_type == 2 ) then ! this scheme updates through forecast
-         allocate(sfc_wts(1:nblks,maxblk,1:GFS_Control%n_var_lndp))
-      end if
-      if (GFS_Control%lndp_type == 2) then ! save wts, and apply lndp scheme
-          if (GFS_Control%lsm == GFS_Control%lsm_noah) then
+      if ( GFS_Control%lndp_type == 2 ) then
+          allocate(sfc_wts(1:nblks,maxblk,1:GFS_Control%n_var_lndp))
+          if ( (GFS_Control%lsm == GFS_Control%lsm_noah) .or. (GFS_Control%lsm == GFS_Control%lsm_noahmp)) then
             lsoil = GFS_Control%lsoil
           elseif (GFS_Control%lsm == GFS_Control%lsm_ruc) then
             lsoil = GFS_Control%lsoil_lsm
@@ -274,7 +272,7 @@ module stochastic_physics_wrapper_mod
                 zorll(nb,1:GFS_Control%blksz(nb))  = GFS_Data(nb)%Sfcprop%zorll(:)
              end do
 
-             if (GFS_Control%lsm == GFS_Control%lsm_noah) then
+             if ((GFS_Control%lsm == GFS_Control%lsm_noah) .or. (GFS_Control%lsm == GFS_Control%lsm_noahmp)) then
                do nb=1,nblks
                  smc(nb,1:GFS_Control%blksz(nb),:) = GFS_Data(nb)%Sfcprop%smc(:,:)
                  slc(nb,1:GFS_Control%blksz(nb),:) = GFS_Data(nb)%Sfcprop%slc(:,:)
@@ -291,14 +289,21 @@ module stochastic_physics_wrapper_mod
              ! determine whether land paramaters have been over-written to
              ! trigger applying perturbations (logic copied from GFS_driver),
              ! or if perturbations should be applied at every time step
-             if (mod(GFS_Control%kdt,GFS_Control%nscyc) == 1 ) then
-               param_update_flag = .true.
+             if (GFS_Control%nscyc >  0) then
+                 if (mod(GFS_Control%kdt,GFS_Control%nscyc) == 1 ) then
+                   param_update_flag = .true.
+                 else
+                   param_update_flag = .false.
+                 endif
+             elseif ( GFS_Control%nscyc ==  0 .and. GFS_Control%first_time_step ) then
+             ! call once at start of the forecast.
+                    param_update_flag = .true.
              else
-               param_update_flag = .false.
+                    param_update_flag = .false.
              endif
 
-             call lndp_apply_perts(GFS_Control%blksz, GFS_Control%lsm, GFS_Control%lsm_noah, GFS_Control%lsm_ruc, lsoil,      &
-                               GFS_Control%dtp, GFS_Control%kdt, GFS_Control%lndp_each_step,                                  &
+             call lndp_apply_perts(GFS_Control%blksz, GFS_Control%lsm, GFS_Control%lsm_noah, GFS_Control%lsm_ruc,             &
+                               GFS_Control%lsm_noahmp, lsoil, GFS_Control%dtp, GFS_Control%kdt,                               &
                                GFS_Control%n_var_lndp, GFS_Control%lndp_var_list, GFS_Control%lndp_prt_list,                  &
                                sfc_wts, xlon, xlat, stype, GFS_Control%pores, GFS_Control%resid,param_update_flag,            &
                                smc, slc, stc, vfrac, alvsf, alnsf, alvwf, alnwf, facsf, facwf, snoalb, semis, zorll, ierr)
@@ -321,7 +326,7 @@ module stochastic_physics_wrapper_mod
                GFS_Data(nb)%Sfcprop%zorll(:)  = zorll(nb,1:GFS_Control%blksz(nb))
              enddo
 
-             if (GFS_Control%lsm == GFS_Control%lsm_noah) then
+             if ((GFS_Control%lsm == GFS_Control%lsm_noah) .or. (GFS_Control%lsm == GFS_Control%lsm_noahmp)) then
                do nb=1,nblks
                    GFS_Data(nb)%Sfcprop%smc(:,:) = smc(nb,1:GFS_Control%blksz(nb),:)
                    GFS_Data(nb)%Sfcprop%slc(:,:) = slc(nb,1:GFS_Control%blksz(nb),:)
