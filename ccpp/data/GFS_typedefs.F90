@@ -48,6 +48,10 @@ module GFS_typedefs
       integer, parameter :: naux2dmax = 20 !< maximum number of auxiliary 2d arrays in output (for debugging)
       integer, parameter :: naux3dmax = 20 !< maximum number of auxiliary 3d arrays in output (for debugging)
 
+      integer, parameter :: dfi_radar_max_intervals = 4 !< Number of radar-derived temperature tendency and/or convection suppression intervals. Do not change.
+
+      real(kind=kind_phys), parameter :: limit_unspecified = 1e12 !< special constant for "namelist value was not provided" in radar-derived temperature tendency limit range
+
 !> \section arg_table_GFS_typedefs
 !! \htmlinclude GFS_typedefs.html
 !!
@@ -537,6 +541,11 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: skebu_wts (:,:) => null()  !
     real (kind=kind_phys), pointer :: skebv_wts (:,:) => null()  !
     real (kind=kind_phys), pointer :: sfc_wts   (:,:) => null()  ! mg, sfc-perts
+    real (kind=kind_phys), pointer :: spp_wts_pbl   (:,:) => null()  ! spp-pbl-perts
+    real (kind=kind_phys), pointer :: spp_wts_sfc   (:,:) => null()  ! spp-sfc-perts
+    real (kind=kind_phys), pointer :: spp_wts_mp    (:,:) => null()  ! spp-mp-perts
+    real (kind=kind_phys), pointer :: spp_wts_gwd   (:,:) => null()  ! spp-gwd-perts
+    real (kind=kind_phys), pointer :: spp_wts_rad   (:,:) => null()  ! spp-rad-perts
 
     !--- aerosol surface emissions for Thompson microphysics
     real (kind=kind_phys), pointer :: nwfa2d  (:)     => null()  !< instantaneous water-friendly sfc aerosol source
@@ -802,6 +811,15 @@ module GFS_typedefs
     real(kind=kind_phys) :: tcr
     real(kind=kind_phys) :: tcrf
 !
+    integer              :: num_dfi_radar      !< number of timespans with radar-prescribed temperature tendencies
+    real (kind=kind_phys) :: fh_dfi_radar(1+dfi_radar_max_intervals)   !< begin+end of timespans to receive radar-prescribed temperature tendencies
+    logical              :: do_cap_suppress    !< enable convection suppression in GF scheme if fh_dfi_radar is specified
+    real (kind=kind_phys) :: radar_tten_limits(2) !< radar_tten values outside this range (min,max) are discarded
+    integer              :: ix_dfi_radar(dfi_radar_max_intervals) = -1 !< Index within dfi_radar_tten of each timespan (-1 means "none")
+    integer              :: dfi_radar_max_intervals
+    integer              :: dfi_radar_max_intervals_plus_one
+
+    !
     logical              :: effr_in            !< eg to turn on ffective radii for MG
     logical              :: microp_uniform
     logical              :: do_cldliq
@@ -1160,6 +1178,16 @@ module GFS_typedefs
                                               ! multiple patterns. It wasn't fully coded (and wouldn't have worked
                                               ! with nlndp>1, so I just dropped it). If we want to code it properly,
                                               ! we'd need to make this dim(6,5).
+    logical              :: do_spp            ! Overall flag to turn on SPP or not
+    integer              :: spp_pbl
+    integer              :: spp_sfc
+    integer              :: spp_mp
+    integer              :: spp_rad
+    integer              :: spp_gwd
+    integer              :: n_var_spp
+    character(len=3)    , pointer :: spp_var_list(:)  ! dimension here must match n_var_spp in stochy_nml_def
+    real(kind=kind_phys), pointer :: spp_prt_list(:)  ! dimension here must match n_var_spp in stochy_nml_def 
+
 !--- tracer handling
     character(len=32), pointer :: tracer_names(:) !< array of initialized tracers from dynamic core
     integer              :: ntrac                 !< number of tracers
@@ -1196,6 +1224,7 @@ module GFS_typedefs
     integer :: index_of_process_conv_trans       !< tracer changes caused by convective transport
     integer :: index_of_process_physics          !< tracer changes caused by physics schemes
     integer :: index_of_process_non_physics      !< tracer changes caused by everything except physics schemes
+    integer :: index_of_process_dfi_radar        !< tracer changes caused by radar mp temperature tendency forcing
     integer :: index_of_process_photochem        !< all changes to ozone
     logical, pointer :: is_photochem(:) => null()!< flags for which processes should be summed as photochemical
 
@@ -1278,6 +1307,7 @@ module GFS_typedefs
     integer              :: kdt             !< current forecast iteration
     logical              :: first_time_step !< flag signaling first time step for time integration routine
     logical              :: restart         !< flag whether this is a coldstart (.false.) or a warmstart/restart (.true.)
+    logical              :: lsm_cold_start
     logical              :: hydrostatic     !< flag whether this is a hydrostatic or non-hydrostatic run
     integer              :: jdat(1:8)       !< current forecast date and time
                                             !< (yr, mon, day, t-zone, hr, min, sec, mil-sec)
@@ -1453,6 +1483,10 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: phy_myj_a1u(:)     => null()  !
     real (kind=kind_phys), pointer :: phy_myj_a1t(:)     => null()  !
     real (kind=kind_phys), pointer :: phy_myj_a1q(:)     => null()  !
+
+    !--- DFI Radar
+    real (kind=kind_phys), pointer :: dfi_radar_tten(:,:,:) => null() !
+    real (kind=kind_phys), pointer :: cap_suppress(:,:) => null() !
 
     contains
       procedure :: create  => tbd_create  !<   allocate array data
@@ -1655,8 +1689,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: tdomzr (:)     => null()   !< dominant accumulated freezing rain type
     real (kind=kind_phys), pointer :: tdomip (:)     => null()   !< dominant accumulated sleet type
     real (kind=kind_phys), pointer :: tdoms  (:)     => null()   !< dominant accumulated snow type
-
-    real (kind=kind_phys), pointer :: zmtnblck(:)    => null()   !<mountain blocking evel
+    real (kind=kind_phys), pointer :: zmtnblck(:)    => null()   !<mountain blocking level
 
     ! dtend/dtidxt: Multitudinous 3d tendencies in a 4D array: (i,k,1:100+ntrac,nprocess)
     ! Sparse in outermost two dimensions. dtidx(1:100+ntrac,nprocess) maps to dtend 
@@ -2976,11 +3009,25 @@ module GFS_typedefs
       Coupling%skebu_wts = clear_val
       Coupling%skebv_wts = clear_val
     endif
-
+    
     !--- stochastic land perturbation option
     if (Model%lndp_type /= 0) then
       allocate (Coupling%sfc_wts  (IM,Model%n_var_lndp))
       Coupling%sfc_wts = clear_val
+    endif
+    
+    !--- stochastic spp perturbation option
+    if (Model%do_spp) then
+      allocate (Coupling%spp_wts_pbl  (IM,Model%levs))
+      Coupling%spp_wts_pbl = clear_val
+      allocate (Coupling%spp_wts_sfc  (IM,Model%levs))
+      Coupling%spp_wts_sfc = clear_val
+      allocate (Coupling%spp_wts_mp   (IM,Model%levs))
+      Coupling%spp_wts_mp = clear_val
+      allocate (Coupling%spp_wts_gwd   (IM,Model%levs))
+      Coupling%spp_wts_gwd = clear_val
+      allocate (Coupling%spp_wts_rad   (IM,Model%levs))
+      Coupling%spp_wts_rad = clear_val
     endif
 
     !--- needed for Thompson's aerosol option
@@ -3211,7 +3258,8 @@ module GFS_typedefs
     logical              :: mg_do_hail      = .false.           !< set .true. to turn on prognostic hail (with fprcp=2)
     logical              :: mg_do_ice_gmao  = .false.           !< set .true. to turn on gmao ice formulation
     logical              :: mg_do_liq_liu   = .true.            !< set .true. to turn on liu liquid treatment
-
+    real(kind=kind_phys) :: fh_dfi_radar(1+dfi_radar_max_intervals) = -2e10             !< begin&end of four timespans over which radar_tten is applied
+    logical              :: do_cap_suppress = .true.            !< set .true. to turn on convection suppression in GF scheme during limited intervals when fh_dfi_radar is enabled
 
     !--- Thompson microphysical parameters
     logical              :: ltaerosol      = .false.            !< flag for aerosol version
@@ -3544,11 +3592,21 @@ module GFS_typedefs
     integer :: lndp_type      = 0
     integer :: n_var_lndp     = 0
     logical :: lndp_each_step = .false.
+    integer :: n_var_spp    =  0
+    integer :: spp_pbl      =  0
+    integer :: spp_sfc      =  0
+    integer :: spp_mp       =  0
+    integer :: spp_rad      =  0
+    integer :: spp_gwd      =  0
+    logical :: do_spp       = .false.
 
 !--- aerosol scavenging factors
     integer, parameter :: max_scav_factors = 25
     character(len=40)  :: fscav_aero(max_scav_factors)
 
+    real(kind=kind_phys) :: radar_tten_limits(2) = (/ limit_unspecified, limit_unspecified /)
+    integer :: itime
+    
 !--- END NAMELIST VARIABLES
 
     NAMELIST /gfs_physics_nml/                                                              &
@@ -3631,6 +3689,7 @@ module GFS_typedefs
                                cs_parm, flgmin, cgwf, ccwf, cdmbgwd, sup, ctei_rm, crtrh,   &
                                dlqf, rbcr, shoc_parm, psauras, prauras, wminras,            &
                                do_sppt, do_shum, do_skeb,                                   &
+                               do_spp, n_var_spp,                                           &
                                lndp_type,  n_var_lndp, lndp_each_step,                      &
                                pert_mp,pert_clds,pert_radtend,                              &
                           !--- Rayleigh friction
@@ -3670,7 +3729,10 @@ module GFS_typedefs
                                max_lon, max_lat, min_lon, min_lat, rhcmax, huge,            &
                                phys_version,                                                &
                           !--- aerosol scavenging factors ('name:value' string array)
-                               fscav_aero
+                               fscav_aero,                                                  &
+                          !--- (DFI) time ranges with radar-prescribed microphysics tendencies
+                          !          and (maybe) convection suppression
+                               fh_dfi_radar, radar_tten_limits, do_cap_suppress
 
 !--- other parameters
     integer :: nctp    =  0                !< number of cloud types in CS scheme
@@ -3744,48 +3806,56 @@ module GFS_typedefs
     Model%flag_for_scnv_generic_tend = .true.
     Model%flag_for_dcnv_generic_tend = .true.
 
+    Model%fh_dfi_radar     = fh_dfi_radar
+    Model%num_dfi_radar    = 0
+    Model%dfi_radar_max_intervals = dfi_radar_max_intervals ! module-level parameter, top of file
+    Model%dfi_radar_max_intervals_plus_one = dfi_radar_max_intervals + 1
+    Model%do_cap_suppress = do_cap_suppress
+
+    call control_initialize_radar_tten(Model, radar_tten_limits)
+
     if(gwd_opt==1) then
       if(me==master) &
-           write(0,*) 'FLAG: gwd_opt==1 so gwd not generic'
+           write(*,*) 'FLAG: gwd_opt==1 so gwd not generic'
       Model%flag_for_gwd_generic_tend=.false.
     elseif(me==master) then
-      write(0,*) 'NO FLAG: gwd is generic'
+      write(*,*) 'NO FLAG: gwd is generic'
     endif
 
     if(satmedmf .and. isatmedmf==0) then
       if(me==master) &
-           write(0,*) 'FLAG: satmedmf and isatedmf=0 so pbl not generic'
+           write(*,*) 'FLAG: satmedmf and isatedmf=0 so pbl not generic'
       Model%flag_for_pbl_generic_tend=.false.
     elseif(satmedmf .and. isatmedmf==1) then
       if(me==master) &
-           write(0,*) 'FLAG: satmedmf and isatedmf=1 so pbl not generic'
+           write(*,*) 'FLAG: satmedmf and isatedmf=1 so pbl not generic'
       Model%flag_for_pbl_generic_tend=.false.
     else if(hybedmf) then
       if(me==master) &
-           write(0,*) 'FLAG: hybedmf so pbl not generic'
+           write(*,*) 'FLAG: hybedmf so pbl not generic'
       Model%flag_for_pbl_generic_tend=.false.
     else if(do_mynnedmf) then
       if(me==master) &
-           write(0,*) 'FLAG: do_mynnedmf so pbl not generic'
+           write(*,*) 'FLAG: do_mynnedmf so pbl not generic'
       Model%flag_for_pbl_generic_tend=.false.
     elseif(me==master) then
-      write(0,*) 'NO FLAG: pbl is generic'
+      write(*,*) 'NO FLAG: pbl is generic'
     endif
 
     if(imfshalcnv == Model%imfshalcnv_gf) then
       if(me==master) &
-           write(0,*) 'FLAG: imfshalcnv_gf so scnv not generic'
+           write(*,*) 'FLAG: imfshalcnv_gf so scnv not generic'
       Model%flag_for_scnv_generic_tend=.false.
     elseif(me==master) then
-      write(0,*) 'NO FLAG: scnv is generic'
+      write(*,*) 'NO FLAG: scnv is generic'
     endif
 
     if(imfdeepcnv == Model%imfdeepcnv_gf) then
       if(me==master) &
-           write(0,*) 'FLAG: imfdeepcnv_gf so dcnv not generic'
+           write(*,*) 'FLAG: imfdeepcnv_gf so dcnv not generic'
       Model%flag_for_dcnv_generic_tend=.false.
     elseif(me==master) then
-      write(0,*) 'NO FLAG: dcnv is generic'
+      write(*,*) 'NO FLAG: dcnv is generic'
     endif
 
 !
@@ -3903,6 +3973,9 @@ module GFS_typedefs
 
     if (levr < 0) then
       Model%levr           = levs
+    else if (levr > levs) then
+      write(0,*) "Logic error, number of radiation levels (levr) cannot exceed number of model levels (levs)"
+      stop
     else
       Model%levr           = levr
     endif
@@ -4408,12 +4481,23 @@ module GFS_typedefs
     Model%lndp_type        = lndp_type
     Model%n_var_lndp       = n_var_lndp
     Model%lndp_each_step   = lndp_each_step
+    Model%do_spp           = do_spp
+    Model%n_var_spp        = n_var_spp
+
     if (Model%lndp_type/=0) then
       allocate(Model%lndp_var_list(Model%n_var_lndp))
       allocate(Model%lndp_prt_list(Model%n_var_lndp))
       Model%lndp_var_list(:) = ''
       Model%lndp_prt_list(:) = clear_val
     end if
+    
+    if (Model%do_spp) then
+      allocate(Model%spp_var_list(Model%n_var_spp))
+      allocate(Model%spp_prt_list(Model%n_var_spp))
+      Model%spp_var_list(:) = ''
+      Model%spp_prt_list(:) = clear_val
+    end if
+
     !--- cellular automata options
     ! force namelist constsitency
     allocate(Model%vfact_ca(levs))
@@ -4512,17 +4596,18 @@ module GFS_typedefs
     Model%index_of_process_rayleigh_damping = 12
     Model%index_of_process_nonorographic_gwd = 13
     Model%index_of_process_conv_trans = 14
+    Model%index_of_process_dfi_radar = 15
 
     ! Number of processes to sum (last index of prior set)
-    Model%nprocess_summed = 14
+    Model%nprocess_summed = Model%index_of_process_dfi_radar
 
     ! Sums of other processes, which must be after nprocess_summed:
-    Model%index_of_process_physics = 15
-    Model%index_of_process_non_physics = 16
-    Model%index_of_process_photochem = 17
+    Model%index_of_process_physics = Model%nprocess_summed+1
+    Model%index_of_process_non_physics = Model%nprocess_summed+2
+    Model%index_of_process_photochem = Model%nprocess_summed+3
 
     ! Total number of processes (last index of prior set)
-    Model%nprocess = 17
+    Model%nprocess = Model%index_of_process_photochem
 
     ! List which processes should be summed as photochemical:
     allocate(Model%is_photochem(Model%nprocess))
@@ -4637,6 +4722,7 @@ module GFS_typedefs
         call label_dtend_cause(Model,Model%index_of_process_ozmix,'o3mix','tendency due to ozone mixing ratio')
         call label_dtend_cause(Model,Model%index_of_process_temp,'temp','tendency due to temperature')
         call label_dtend_cause(Model,Model%index_of_process_overhead_ozone,'o3column','tendency due to overhead ozone column')
+        call label_dtend_cause(Model,Model%index_of_process_dfi_radar,'dfi_radar','tendency due to dfi radar mp temperature forcing')
         call label_dtend_cause(Model,Model%index_of_process_photochem,'photochem','tendency due to photochemical processes')
         call label_dtend_cause(Model,Model%index_of_process_physics,'phys','tendency due to physics')
         call label_dtend_cause(Model,Model%index_of_process_non_physics,'nophys','tendency due to non-physics processes', &
@@ -4654,6 +4740,7 @@ module GFS_typedefs
        call fill_dtidx(Model,dtend_select,Model%index_of_temperature,Model%index_of_process_dcnv,have_dcnv)
        call fill_dtidx(Model,dtend_select,Model%index_of_temperature,Model%index_of_process_scnv,have_scnv)
        call fill_dtidx(Model,dtend_select,Model%index_of_temperature,Model%index_of_process_mp,have_mp)
+       call fill_dtidx(Model,dtend_select,Model%index_of_temperature,Model%index_of_process_dfi_radar,have_mp .and. Model%num_dfi_radar>0)
        call fill_dtidx(Model,dtend_select,Model%index_of_temperature,Model%index_of_process_orographic_gwd)
        call fill_dtidx(Model,dtend_select,Model%index_of_temperature,Model%index_of_process_rayleigh_damping,have_rdamp)
        call fill_dtidx(Model,dtend_select,Model%index_of_temperature,Model%index_of_process_nonorographic_gwd)
@@ -4787,14 +4874,15 @@ module GFS_typedefs
     Model%kdt              = nint(Model%fhour*con_hr/Model%dtp)
     Model%first_time_step  = .true.
     Model%restart          = restart
+    Model%lsm_cold_start   = .not. restart
     Model%hydrostatic      = hydrostatic
     Model%jdat(1:8)        = jdat(1:8)
-    allocate(Model%si(Model%levr+1))
+    allocate(Model%si(Model%levs+1))
     !--- Define sigma level for radiation initialization
     !--- The formula converting hybrid sigma pressure coefficients to sigma coefficients follows Eckermann (2009, MWR)
     !--- ps is replaced with p0. The value of p0 uses that in http://www.emc.ncep.noaa.gov/officenotes/newernotes/on461.pdf
     !--- ak/bk have been flipped from their original FV3 orientation and are defined sfc -> toa
-    Model%si = (ak + bk * con_p0 - ak(Model%levr+1)) / (con_p0 - ak(Model%levr+1))
+    Model%si(1:Model%levs+1) = (ak(1:Model%levs+1) + bk(1:Model%levs+1) * con_p0 - ak(Model%levs+1)) / (con_p0 - ak(Model%levs+1))
     Model%sec              = 0
     Model%yearlen          = 365
     Model%julian           = -9999.
@@ -5069,7 +5157,6 @@ module GFS_typedefs
       Model%num_p3d  = 4
       Model%num_p2d  = 3
       Model%shcnvcw  = .false.
-!     Model%ncnd     = 1                   ! ncnd is the number of cloud condensate types
       Model%nT2delt  = 1
       Model%nqv2delt = 2
       Model%nTdelt   = 3
@@ -5086,7 +5173,6 @@ module GFS_typedefs
       Model%npdf3d  = 3
       Model%num_p3d = 4
       Model%num_p2d = 3
-!     Model%ncnd    = 1
       if (Model%me == Model%master) print *,'Using Zhao/Carr/Sundqvist Microphysics with PDF Cloud'
 
     else if (Model%imp_physics == Model%imp_physics_fer_hires) then     ! Ferrier-Aligo scheme
@@ -5095,8 +5181,6 @@ module GFS_typedefs
       Model%num_p2d = 1
       Model%pdfcld  = .false.
       Model%shcnvcw = .false.
-      ! DH* REALLY ?
-!     Model%ncnd    = 3                      !???????? need to clarify this - Moorthi
       Model%nleffr  = 1
       Model%nieffr  = 2
       Model%nseffr  = 3
@@ -5116,7 +5200,6 @@ module GFS_typedefs
       !Model%num_p2d = 1
       !Model%pdfcld  = .false.
       !Model%shcnvcw = .false.
-!     !Model%ncnd    = 5
       !Model%nleffr  = 1
       !Model%nieffr  = 2
       !Model%nseffr  = 3
@@ -5128,7 +5211,6 @@ module GFS_typedefs
       Model%num_p2d = 1
       Model%pdfcld  = .false.
       Model%shcnvcw = .false.
-!     Model%ncnd    = 5
       Model%nleffr  = 1
       Model%nieffr  = 2
       Model%nseffr  = 3
@@ -5159,7 +5241,6 @@ module GFS_typedefs
       Model%num_p2d = 1
       Model%pdfcld  = .false.
       Model%shcnvcw = .false.
-!     Model%ncnd    = 2
       Model%nleffr  = 2
       Model%nieffr  = 3
       Model%nreffr  = 4
@@ -5172,16 +5253,6 @@ module GFS_typedefs
         print *,' Morrison-Gettelman MP requires nwat to be set to 6 - job aborted'
         stop
       end if
-!     if (abs(Model%fprcp) == 1) then
-!       Model%ncnd  = 4
-!     elseif (Model%fprcp >= 2) then
-!       Model%ncnd  = 4
-!       if (Model%mg_do_graupel .or. Model%mg_do_hail) then
-!         Model%ncnd = 5
-!       endif
-!       Model%num_p3d = 6
-!       Model%ngeffr  = 6
-!     endif
       if (Model%me == Model%master)                                                                 &
          print *,' Using Morrison-Gettelman double moment microphysics',                            &
                  ' iaerclm=',         Model%iaerclm,         ' iccn=',          Model%iccn,         &
@@ -5218,7 +5289,6 @@ module GFS_typedefs
       Model%num_p2d = 1
       Model%pdfcld  = .false.
       Model%shcnvcw = .false.
-!     Model%ncnd    = 5
       if (nwat /= 6) then
         print *,' GFDL MP requires nwat to be set to 6 - job aborted'
         stop
@@ -5232,7 +5302,7 @@ module GFS_typedefs
     endif
 
     if(Model%ras     .or. Model%cscnv)  Model%cnvcld = .false.
-    if(Model%do_shoc .or. Model%pdfcld .or. Model%do_mynnedmf) Model%cnvcld = .false.
+    if(Model%do_shoc .or. Model%pdfcld .or. Model%do_mynnedmf .or. Model%imfdeepcnv == Model%imfdeepcnv_gf) Model%cnvcld = .false.
     if(Model%cnvcld) Model%ncnvcld3d = 1
 
 !--- get cnvwind index in phy_f2d; last entry in phy_f2d array
@@ -5274,7 +5344,7 @@ module GFS_typedefs
     endif
 
     if (me == Model%master)                                                     &
-      write(0,*) ' num_p3d=',   Model%num_p3d,   ' num_p2d=',  Model%num_p2d,   &
+      write(*,*) ' num_p3d=',   Model%num_p3d,   ' num_p2d=',  Model%num_p2d,   &
                  ' crtrh=',     Model%crtrh,     ' npdf3d=',   Model%npdf3d,    &
                  ' pdfcld=',    Model%pdfcld,    ' shcnvcw=',  Model%shcnvcw,   &
                  ' cnvcld=',    Model%cnvcld,    ' ncnvcld3d=',Model%ncnvcld3d, &
@@ -5318,6 +5388,68 @@ module GFS_typedefs
 
   end subroutine control_initialize
 
+  subroutine control_initialize_radar_tten(Model, radar_tten_limits)
+    implicit none
+
+    ! Helper subroutine for initializing variables for radar-derived
+    ! temperature tendency or convection suppression.
+    
+    class(GFS_control_type) :: Model
+    real(kind_phys) :: radar_tten_limits(2)
+    integer :: i
+
+    Model%num_dfi_radar    = 0
+    do i=1,dfi_radar_max_intervals
+       if(Model%fh_dfi_radar(i)>-1e10 .and. Model%fh_dfi_radar(i+1)>-1e10) then
+          Model%num_dfi_radar = Model%num_dfi_radar+1
+          Model%ix_dfi_radar(i) = Model%num_dfi_radar
+       else
+          Model%ix_dfi_radar(i) = -1
+       endif
+    enddo
+
+    if(Model%num_dfi_radar>0) then
+       if(radar_tten_limits(1)==limit_unspecified) then
+          if(radar_tten_limits(2)==limit_unspecified) then
+             radar_tten_limits(1) = -19
+             radar_tten_limits(2) = 19
+             if(Model%me==Model%master) then
+                write(0,*) 'Warning: using internal defaults for radar_tten_limits. If the oceans boil, try different values.'
+                write(0,'(A,F12.4,A)') 'radar_tten_limits(1) = ',radar_tten_limits(1),' <-- lower limit'
+                write(0,'(A,F12.4,A)') 'radar_tten_limits(2) = ',radar_tten_limits(2),' <-- upper limit'
+             endif
+          else
+             radar_tten_limits(1) = -abs(radar_tten_limits(2))
+             radar_tten_limits(2) = abs(radar_tten_limits(2))
+          endif
+       else if(radar_tten_limits(2)==limit_unspecified) then
+           radar_tten_limits(1) = -abs(radar_tten_limits(1))
+           radar_tten_limits(2) = abs(radar_tten_limits(1))
+       else if(radar_tten_limits(1)>radar_tten_limits(2)) then
+          if(Model%me==Model%master) then
+             write(0,*) 'Error: radar_tten_limits lower limit is higher than upper!'
+             write(0,'(A,F12.4,A)') 'radar_tten_limits(1) = ',radar_tten_limits(1),' <-- lower limit'
+             write(0,'(A,F12.4,A)') 'radar_tten_limits(2) = ',radar_tten_limits(2),' <-- upper limit'
+             write(0,*) "If you do not want me to apply the prescribed tendencies, just say so! Remove fh_dfi_radar from your namelist."
+             stop
+          endif
+       else
+          !o! Rejoice !o! Radar_tten_limits had lower and upper bounds.
+       endif
+       Model%radar_tten_limits = radar_tten_limits
+
+       if(Model%do_cap_suppress) then
+         if(Model%me==Model%master .and. Model%imfdeepcnv>=0) then
+           if(Model%imfdeepcnv/=3) then
+             write(0,*) 'Warning: untested configuration in use! Radar-derived convection suppression is only supported for the GF deep scheme. That feature will be inactive, but microphysics tendencies will still be enabled. This combination is untested. Beware!'
+           else
+             write(0,*) 'Warning: experimental configuration in use! Radar-derived convection suppression is experimental (GF deep scheme with fh_dfi_radar).'
+           endif
+         endif
+       endif
+    endif
+
+  end subroutine control_initialize_radar_tten
 
 !---------------------------
 ! GFS_control%init_chemistry
@@ -5426,6 +5558,9 @@ module GFS_typedefs
 !--- interface variables
     class(GFS_control_type) :: Model
 
+!--- local variables
+    integer :: i
+    
     if (Model%me == Model%master) then
       print *, ' '
       print *, 'basic control parameters'
@@ -5592,6 +5727,18 @@ module GFS_typedefs
         print *, ' rhgrd             : ', Model%rhgrd
         print *, ' icloud            : ', Model%icloud
         print *, ' '
+      endif
+      if (Model%num_dfi_radar>0) then
+        print *, ' num_dfi_radar     : ', Model%num_dfi_radar
+        print *, ' do_cap_suppress   : ', Model%do_cap_suppress
+        do i = 1, dfi_radar_max_intervals+1
+8888       format('  fh_dfi_radar(',I0,')   :',F12.4)
+           if(Model%fh_dfi_radar(i)>-1e10) then
+              print 8888,i,Model%fh_dfi_radar(i)
+           endif
+        enddo
+9999    format('  radar_tten_limits: ', F12.4, ' ... ',F12.4)
+        print 9999,Model%radar_tten_limits(1),Model%radar_tten_limits(2)
       endif
       print *, 'land/surface model parameters'
       print *, ' lsm               : ', Model%lsm
@@ -5780,6 +5927,8 @@ module GFS_typedefs
       print *, ' lndp_type         : ', Model%lndp_type
       print *, ' n_var_lndp        : ', Model%n_var_lndp
       print *, ' lndp_each_step    : ', Model%lndp_each_step
+      print *, ' do_spp            : ', Model%do_spp
+      print *, ' n_var_spp         : ', Model%n_var_spp
       print *, ' '
       print *, 'cellular automata'
       print *, ' nca               : ', Model%nca
@@ -5872,6 +6021,7 @@ module GFS_typedefs
       print *, ' sec               : ', Model%sec
       print *, ' first_time_step   : ', Model%first_time_step
       print *, ' restart           : ', Model%restart
+      print *, ' lsm_cold_start    : ', Model%lsm_cold_start
       print *, ' hydrostatic       : ', Model%hydrostatic
     endif
 
@@ -5970,6 +6120,19 @@ module GFS_typedefs
       allocate (Tbd%icsdlw (IM))
       Tbd%icsdsw = zero
       Tbd%icsdlw = zero
+    endif
+
+!--- DFI radar forcing
+    nullify(Tbd%dfi_radar_tten)
+    nullify(Tbd%cap_suppress)
+    if(Model%num_dfi_radar>0) then
+       allocate(Tbd%dfi_radar_tten(IM,Model%levs,Model%num_dfi_radar))
+       Tbd%dfi_radar_tten = -20.0
+       Tbd%dfi_radar_tten(:,1,:) = zero
+       if(Model%do_cap_suppress) then
+         allocate(Tbd%cap_suppress(IM,Model%num_dfi_radar))
+         Tbd%cap_suppress(:,:) = zero
+       endif
     endif
 
 !--- ozone and stratosphere h2o needs
@@ -6819,6 +6982,7 @@ module GFS_typedefs
     Diag%tdomzr     = zero
     Diag%tdomip     = zero
     Diag%tdoms      = zero
+    Diag%zmtnblck   = zero
 
     if(Model%lsm == Model%lsm_noahmp)then
       Diag%paha       = zero
@@ -7499,9 +7663,7 @@ module GFS_typedefs
     endif
 
     if (Model%cplchm) then
-      ! Only Zhao/Carr/Sundqvist and GFDL microphysics schemes are supported
-      ! when coupling with chemistry. PBL diffusion of aerosols is only supported
-      ! for GFDL microphysics and MG microphysics.
+      ! Only the following microphysics schemes are supported with coupled chemistry
       if (Model%imp_physics == Model%imp_physics_zhao_carr) then
         Interstitial%nvdiff = 3
       elseif (Model%imp_physics == Model%imp_physics_mg) then
@@ -7512,8 +7674,14 @@ module GFS_typedefs
         endif
       elseif (Model%imp_physics == Model%imp_physics_gfdl) then
         Interstitial%nvdiff = 7
+      elseif (Model%imp_physics == Model%imp_physics_thompson) then
+        if (Model%ltaerosol) then
+          Interstitial%nvdiff = 12
+        else
+          Interstitial%nvdiff = 9
+        endif
       else
-        write(0,*) "Only Zhao/Carr/Sundqvist and GFDL microphysics schemes are supported when coupling with chemistry"
+        write(0,*) "Selected microphysics scheme is not supported when coupling with chemistry"
         stop
       endif
       if (Interstitial%trans_aero) Interstitial%nvdiff = Interstitial%nvdiff + Model%ntchm

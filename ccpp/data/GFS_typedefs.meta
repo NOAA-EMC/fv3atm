@@ -2244,10 +2244,50 @@
   type = real
   kind = kind_phys
   active = (flag_for_stochastic_skeb_option)
+[spp_wts_pbl]
+  standard_name = spp_weights_for_pbl_scheme
+  long_name = spp weights for pbl scheme
+  units = 1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = (do_stochastically_perturbed_parameterizations)
+[spp_wts_sfc]
+  standard_name = spp_weights_for_surface_layer_scheme 
+  long_name = spp weights for surface layer scheme
+  units = 1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = (do_stochastically_perturbed_parameterizations)
+[spp_wts_mp]
+  standard_name = spp_weights_for_microphysics_scheme
+  long_name = spp weights for microphysics scheme 
+  units = 1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = (do_stochastically_perturbed_parameterizations)
+[spp_wts_gwd]
+  standard_name = spp_weights_for_gravity_wave_drag_scheme
+  long_name = spp weights for gravity wave drag scheme 
+  units = 1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = (do_stochastically_perturbed_parameterizations)
+[spp_wts_rad]
+  standard_name = spp_weights_for_radiation_scheme
+  long_name = spp weights for radiation scheme 
+  units = 1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = (do_stochastically_perturbed_parameterizations)
 [sfc_wts]
   standard_name = surface_stochastic_weights_from_coupled_process
   long_name = weights for stochastic surface physics perturbation
-  units = none
+  units = 1
   dimensions = (horizontal_loop_extent,number_of_perturbed_land_surface_variables)
   type = real
   kind = kind_phys
@@ -2519,13 +2559,13 @@
   standard_name = sigma_pressure_hybrid_coordinate_a_coefficient
   long_name = a parameter for sigma pressure level calculations
   units = Pa
-  dimensions = (vertical_interface_dimension_for_radiation)
+  dimensions = (vertical_interface_dimension)
   type = real
 [bk]
   standard_name = sigma_pressure_hybrid_coordinate_b_coefficient
   long_name = b parameter for sigma pressure level calculations
   units = none
-  dimensions = (vertical_interface_dimension_for_radiation)
+  dimensions = (vertical_interface_dimension)
   type = real
 [levsp1]
   standard_name = vertical_interface_dimension
@@ -3381,6 +3421,24 @@
   dimensions = ()
   type = real
   kind = kind_phys
+[num_dfi_radar]
+  standard_name = number_of_radar_derived_temperature_or_convection_suppression_intervals
+  long_name = number of time ranges with radar-derived microphysics temperature tendencies or radar-derived convection suppression
+  units = count
+  dimensions = ()
+  type = integer
+[dfi_radar_max_intervals]
+  standard_name = maximum_number_of_radar_derived_temperature_or_convection_suppression_intervals
+  long_name = maximum allowed number of time ranges with radar-derived microphysics temperature tendencies or radar-derived convection suppression
+  units = count
+  dimensions = ()
+  type = integer
+[dfi_radar_max_intervals_plus_one]
+  standard_name = maximum_number_of_radar_derived_temperature_or_convection_suppression_intervals_plus_one
+  long_name = one more than the maximum allowed number of time ranges with radar-derived microphysics temperature tendencies or radar-derived convection suppression
+  units = count
+  dimensions = ()
+  type = integer
 [effr_in]
   standard_name = flag_for_cloud_effective_radii
   long_name = flag for cloud effective radii calculations in GFDL microphysics
@@ -3459,6 +3517,32 @@
   units = flag
   dimensions = ()
   type = logical
+[radar_tten_limits]
+  standard_name = allowed_bounds_of_radar_prescribed_tendencies
+  long_name = allowed bounds of prescribed microphysics temperature tendencies
+  units = K s-1
+  dimensions = (2)
+  type = real
+  kind = kind_phys
+[do_cap_suppress]
+  standard_name = flag_for_radar_derived_convection_suppression
+  long_name = flag for radar-derived convection suppression
+  units = flag
+  dimensions = ()
+  type = logical
+[fh_dfi_radar]
+  standard_name = forecast_lead_times_bounding_radar_derived_temperature_or_convection_suppression_intervals
+  long_name = forecast lead times bounding radar derived temperature or convection suppression intervals
+  units = h
+  dimensions = (maximum_number_of_radar_derived_temperature_or_convection_suppression_intervals_plus_one)
+  type = real
+  kind = kind_phys
+[ix_dfi_radar]
+  standard_name = indices_with_radar_derived_temperature_or_convection_suppression_data
+  long_name = indices with radar derived temperature or convection suppression data
+  units = index
+  dimensions = (maximum_number_of_radar_derived_temperature_or_convection_suppression_intervals)
+  type = integer
 [shoc_parm(1)]
   standard_name = pressure_threshold_for_increased_tke_dissipation
   long_name = pressure below which extra TKE diss. is applied in SHOC
@@ -4566,6 +4650,12 @@
   units = flag
   dimensions = ()
   type = logical
+[do_spp]
+  standard_name = do_stochastically_perturbed_parameterizations
+  long_name = flag for stochastic spp option
+  units = flag
+  dimensions = ()
+  type = logical
 [lndp_type]
   standard_name = control_for_stochastic_land_surface_perturbation
   long_name = index for stochastic land surface perturbations type
@@ -4594,6 +4684,56 @@
   type = character
   kind = len=3
   active = (control_for_stochastic_land_surface_perturbation /= 0)
+[n_var_spp]
+  standard_name = number_of_perturbed_spp_schemes
+  long_name = number of perturbed spp schemes
+  units = count
+  dimensions = ()
+  type = integer
+[spp_prt_list]
+  standard_name =magnitude_of_spp_perturbations
+  long_name = magnitude of spp perturbations
+  units = 1
+  dimensions = (number_of_spp_schemes_perturbed)
+  type = real
+  kind = kind_phys
+[spp_var_list]
+  standard_name = perturbed_spp_schemes
+  long_name = perturbed spp schemes
+  units = none
+  dimensions =  (number_of_spp_schemes_perturbed)
+  type = character
+  kind = len=3
+[spp_pbl]
+  standard_name = control_for_pbl_spp_perturbations
+  long_name = control for pbl spp perturbations
+  units = count
+  dimensions = ()
+  type = integer
+[spp_sfc]
+  standard_name = control_for_surface_layer_spp_perturbations
+  long_name = control for surface layer spp perturbations
+  units = count
+  dimensions = ()
+  type = integer
+[spp_mp]
+  standard_name = control_for_microphysics_spp_perturbations
+  long_name = control for microphysics spp perturbations
+  units = count
+  dimensions = ()
+  type = integer
+[spp_rad]
+  standard_name = control_for_radiation_spp_perturbations
+  long_name = control for radiation spp perturbations
+  units = count
+  dimensions = ()
+  type = integer
+[spp_gwd]
+  standard_name = control_for_gravity_wave_drag_spp_perturbations
+  long_name = control for gravity wave drag spp perturbations
+  units = count
+  dimensions = ()
+  type = integer
 [ntrac]
   standard_name = number_of_tracers
   long_name = number of tracers
@@ -4717,6 +4857,12 @@
 [index_of_process_conv_trans]
   standard_name = index_of_convective_transport_process_in_cumulative_change_index
   long_name = index of convective transport process in second dimension of array cumulative change index
+  units = index
+  dimensions = ()
+  type = integer
+[index_of_process_dfi_radar]
+  standard_name = index_of_radar_derived_microphysics_temperature_forcing_in_cumulative_change_index
+  long_name = index of radar-derived microphysics temperature forcing in second dimension of array cumulative change index
   units = index
   dimensions = ()
   type = integer
@@ -5058,7 +5204,7 @@
   dimensions = ()
   type = integer
 [ncnvwind]
-  standard_name = index_of_enhancement_to_wind_speed_at_surface_adjacent_layer_due_to_convectionin_in_xy_dimensioned_restart_array
+  standard_name = index_of_enhancement_to_wind_speed_at_surface_adjacent_layer_due_to_convection_in_xy_dimensioned_restart_array
   long_name = the index of surface wind enhancement due to convection in phy f2d
   units =
   dimensions = ()
@@ -5180,6 +5326,12 @@
   units = flag
   dimensions = ()
   type = logical
+[lsm_cold_start]
+  standard_name = do_lsm_cold_start
+  long_name = flag to signify LSM is cold-started
+  units = flag
+  dimensions = ()
+  type = logical
 [hydrostatic]
   standard_name = flag_for_hydrostatic_solver
   long_name = flag for hydrostatic solver from dynamics
@@ -5228,7 +5380,7 @@
   standard_name = sigma_pressure_hybrid_vertical_coordinate
   long_name = vertical sigma coordinate for radiation initialization
   units = none
-  dimensions = (vertical_interface_dimension_for_radiation)
+  dimensions = (vertical_interface_dimension)
   type = real
   kind = kind_phys
 [dxinv]
@@ -5902,14 +6054,14 @@
   type = real
   kind = kind_phys
   active = (index_of_surface_air_pressure_on_previous_timestep_in_xyz_dimensioned_restart_array > 0)
-[phy_f2d(:,index_of_enhancement_to_wind_speed_at_surface_adjacent_layer_due_to_convectionin_in_xy_dimensioned_restart_array)]
+[phy_f2d(:,index_of_enhancement_to_wind_speed_at_surface_adjacent_layer_due_to_convection_in_xy_dimensioned_restart_array)]
   standard_name = enhancement_to_wind_speed_at_surface_adjacent_layer_due_to_convection
   long_name = surface wind enhancement due to convection
   units = m s-1
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (index_of_enhancement_to_wind_speed_at_surface_adjacent_layer_due_to_convectionin_in_xy_dimensioned_restart_array > 0)
+  active = (index_of_enhancement_to_wind_speed_at_surface_adjacent_layer_due_to_convection_in_xy_dimensioned_restart_array > 0)
 [phy_f3d(:,:,index_of_air_temperature_two_timesteps_back_in_xyz_dimensioned_restart_array)]
   standard_name = air_temperature_two_timesteps_back
   long_name = air temperature two timesteps back
@@ -6244,6 +6396,22 @@
   type = real
   kind = kind_phys
   active = (flag_for_mellor_yamada_janjic_surface_layer_scheme .or. flag_for_mellor_yamada_janjic_pbl_scheme)
+[dfi_radar_tten]
+  standard_name = radar_derived_microphysics_temperature_tendency
+  long_name = radar-derived microphysics temperature tendency
+  units = K s-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension,number_of_radar_derived_temperature_or_convection_suppression_intervals)
+  type = real
+  kind = kind_phys
+  active = (number_of_radar_derived_temperature_or_convection_suppression_intervals>0)
+[cap_suppress]
+  standard_name = radar_derived_convection_suppression
+  long_name = radar-derived convection suppression
+  units = unitless
+  dimensions = (horizontal_loop_extent,number_of_radar_derived_temperature_or_convection_suppression_intervals)
+  type = real
+  kind = kind_phys
+  active = (number_of_radar_derived_temperature_or_convection_suppression_intervals>0 .and. flag_for_radar_derived_convection_suppression)
 
 ########################################################################
 [ccpp-table-properties]

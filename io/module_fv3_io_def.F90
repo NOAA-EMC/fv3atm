@@ -1,4 +1,4 @@
-  module module_fv3_io_def
+module module_fv3_io_def
 !
 !*** fv3 io related configration variables
 !
@@ -9,24 +9,26 @@
 !
   use esmf, only     : esmf_maxstr
   implicit none
-!
+
   integer           :: num_pes_fcst
   integer           :: wrttasks_per_group, write_groups
   integer           :: n_group
   integer           :: num_files
-  character(len=esmf_maxstr)    :: app_domain
-  character(len=esmf_maxstr)    :: output_grid
-  integer           :: imo,jmo
-  integer           :: ichunk2d,jchunk2d,ichunk3d,jchunk3d,kchunk3d
   integer           :: nbdlphys
-  integer           :: nsout_io, iau_offset, ideflate, nbits
+  integer           :: nsout_io, iau_offset
   logical           :: lflname_fulltime
-  real              :: cen_lon, cen_lat, lon1, lat1, lon2, lat2, dlon, dlat
-  real              :: stdlat1, stdlat2, dx, dy
+
   character(len=esmf_maxstr),dimension(:),allocatable :: filename_base
   character(len=esmf_maxstr),dimension(:),allocatable :: output_file
-!
-  integer,dimension(:),allocatable     :: lead_wrttask, last_wrttask
-!
-  end module module_fv3_io_def
 
+  integer,dimension(:),allocatable     :: lead_wrttask, last_wrttask
+
+  character(len=esmf_maxstr),dimension(:),allocatable :: output_grid
+  integer,dimension(:),allocatable  :: imo,jmo
+  real,dimension(:),allocatable     :: cen_lon, cen_lat
+  real,dimension(:),allocatable     :: lon1, lat1, lon2, lat2, dlon, dlat
+  real,dimension(:),allocatable     :: stdlat1, stdlat2, dx, dy
+  integer,dimension(:),allocatable  :: ideflate, nbits
+  integer,dimension(:),allocatable  :: ichunk2d, jchunk2d, ichunk3d, jchunk3d, kchunk3d
+
+end module module_fv3_io_def

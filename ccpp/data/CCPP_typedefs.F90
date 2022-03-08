@@ -141,8 +141,8 @@ contains
     ! For multi-gases physics
     integer,        intent(in)           :: nwat
     integer,        intent(in), optional :: ngas
-    real(kind_dyn), intent(in), optional :: rilist(:)
-    real(kind_dyn), intent(in), optional :: cpilist(:)
+    real(kind_dyn), intent(in), optional :: rilist(0:)
+    real(kind_dyn), intent(in), optional :: cpilist(0:)
     integer,        intent(in)           :: mpirank
     integer,        intent(in)           :: mpiroot
     !
