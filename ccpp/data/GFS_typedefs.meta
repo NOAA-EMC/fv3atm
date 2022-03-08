@@ -3044,9 +3044,15 @@
   units = flag
   dimensions = ()
   type = logical
-[doGP_convcld]
-  standard_name = flag_to_include_convective_cloud_in_RRTMGP
-  long_name = logical flag to control convective cloud in RRTMGP
+[doGP_sgs_cnv]
+  standard_name = flag_to_include_sgs_convective_cloud_in_RRTMGP
+  long_name = logical flag to control sgs convective cloud in RRTMGP
+  units = flag
+  dimensions = ()
+  type = logical
+[doGP_sgs_mynn]
+  standard_name = flag_to_include_sgs_MYNN_EDMF_cloud_in_RRTMGP
+  long_name = logical flag to control MYNN-EDMF PBL cloud in RRTMGP
   units = flag
   dimensions = ()
   type = logical
