@@ -2981,6 +2981,23 @@ module GFS_typedefs
       Coupling%pfl_lsan  = clear_val
     endif
 
+    ! -- additional coupling options for air quality
+    if (Model%cplaqm .and. .not.Model%cplflx) then
+      !--- outgoing instantaneous quantities
+      allocate (Coupling%dtsfci_cpl  (IM))
+      allocate (Coupling%dqsfci_cpl  (IM))
+      allocate (Coupling%nswsfci_cpl (IM))
+      allocate (Coupling%t2mi_cpl    (IM))
+      allocate (Coupling%q2mi_cpl    (IM))
+      allocate (Coupling%psurfi_cpl  (IM))
+      Coupling%dtsfci_cpl  = clear_val
+      Coupling%dqsfci_cpl  = clear_val
+      Coupling%nswsfci_cpl = clear_val
+      Coupling%t2mi_cpl    = clear_val
+      Coupling%q2mi_cpl    = clear_val
+      Coupling%psurfi_cpl  = clear_val
+    endif
+
     !--- stochastic physics option
     if (Model%do_sppt .or. Model%ca_global) then
       allocate (Coupling%sppt_wts  (IM,Model%levs))
