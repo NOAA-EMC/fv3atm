@@ -2178,15 +2178,15 @@ module GFS_typedefs
     real (kind=kind_phys), pointer      :: cld_rwp(:,:)              => null()  !< Cloud rain water path
     real (kind=kind_phys), pointer      :: cld_rerain(:,:)           => null()  !< Cloud rain effective radius
     real (kind=kind_phys), pointer      :: precip_frac(:,:)          => null()  !< Precipitation fraction
-    real (kind=kind_phys), pointer      :: cld_cnv_frac(:,:)         => null()  !< Convective cloud fraction 
-    real (kind=kind_phys), pointer      :: cld_cnv_lwp(:,:)          => null()  !< Convective cloud liquid water path
-    real (kind=kind_phys), pointer      :: cld_cnv_reliq(:,:)        => null()  !< Convective cloud liquid effective radius
-    real (kind=kind_phys), pointer      :: cld_cnv_iwp(:,:)          => null()  !< Convective cloud ice water path
-    real (kind=kind_phys), pointer      :: cld_cnv_reice(:,:)        => null()  !< Convective cloud ice effecive radius
-    real (kind=kind_phys), pointer      :: cld_mynn_lwp(:,:)         => null()  !< MYNN-SGS cloud liquid water path 
-    real (kind=kind_phys), pointer      :: cld_mynn_reliq(:,:)       => null()  !< MYNN-SGS cloud liquid effective radius
-    real (kind=kind_phys), pointer      :: cld_mynn_iwp(:,:)         => null()  !< MYNN-SGS cloud ice water path
-    real (kind=kind_phys), pointer      :: cld_mynn_reice(:,:)       => null()  !< MYNN-SGS cloud ice effecive radius
+    real (kind=kind_phys), pointer      :: cld_cnv_frac(:,:)         => null()  !< SGS convective cloud fraction 
+    real (kind=kind_phys), pointer      :: cld_cnv_lwp(:,:)          => null()  !< SGS convective cloud liquid water path
+    real (kind=kind_phys), pointer      :: cld_cnv_reliq(:,:)        => null()  !< SGS convective cloud liquid effective radius
+    real (kind=kind_phys), pointer      :: cld_cnv_iwp(:,:)          => null()  !< SGS convective cloud ice water path
+    real (kind=kind_phys), pointer      :: cld_cnv_reice(:,:)        => null()  !< SGS convective cloud ice effecive radius
+    real (kind=kind_phys), pointer      :: cld_pbl_lwp(:,:)          => null()  !< SGS PBL        cloud liquid water path 
+    real (kind=kind_phys), pointer      :: cld_pbl_reliq(:,:)        => null()  !< SGS PBL        cloud liquid effective radius
+    real (kind=kind_phys), pointer      :: cld_pbl_iwp(:,:)          => null()  !< SGS PBL        cloud ice water path
+    real (kind=kind_phys), pointer      :: cld_pbl_reice(:,:)        => null()  !< SGS PBL        cloud ice effecive radius
     real (kind=kind_phys), pointer      :: fluxlwUP_allsky(:,:)      => null()  !< RRTMGP upward   longwave  all-sky flux profile
     real (kind=kind_phys), pointer      :: fluxlwDOWN_allsky(:,:)    => null()  !< RRTMGP downward longwave  all-sky flux profile
     real (kind=kind_phys), pointer      :: fluxlwUP_clrsky(:,:)      => null()  !< RRTMGP upward   longwave  clr-sky flux profile
@@ -7415,10 +7415,10 @@ module GFS_typedefs
        allocate (Interstitial%cld_cnv_reliq        (IM, Model%levs))
        allocate (Interstitial%cld_cnv_iwp          (IM, Model%levs))
        allocate (Interstitial%cld_cnv_reice        (IM, Model%levs))
-       allocate (Interstitial%cld_mynn_lwp         (IM, Model%levs))
-       allocate (Interstitial%cld_mynn_reliq       (IM, Model%levs))
-       allocate (Interstitial%cld_mynn_iwp         (IM, Model%levs))
-       allocate (Interstitial%cld_mynn_reice       (IM, Model%levs))
+       allocate (Interstitial%cld_pbl_lwp          (IM, Model%levs))
+       allocate (Interstitial%cld_pbl_reliq        (IM, Model%levs))
+       allocate (Interstitial%cld_pbl_iwp          (IM, Model%levs))
+       allocate (Interstitial%cld_pbl_reice        (IM, Model%levs))
        allocate (Interstitial%flxprf_lw            (IM, Model%levs+1))
        allocate (Interstitial%flxprf_sw            (IM, Model%levs+1))
        allocate (Interstitial%sfc_emiss_byband     (Model%rrtmgp_nBandsLW,IM))
@@ -7876,10 +7876,10 @@ module GFS_typedefs
       Interstitial%cld_cnv_reliq        = clear_val
       Interstitial%cld_cnv_iwp          = clear_val
       Interstitial%cld_cnv_reice        = clear_val
-      Interstitial%cld_mynn_lwp         = clear_val
-      Interstitial%cld_mynn_reliq       = clear_val
-      Interstitial%cld_mynn_iwp         = clear_val
-      Interstitial%cld_mynn_reice       = clear_val
+      Interstitial%cld_pbl_lwp          = clear_val
+      Interstitial%cld_pbl_reliq        = clear_val
+      Interstitial%cld_pbl_iwp          = clear_val
+      Interstitial%cld_pbl_reice        = clear_val
       Interstitial%sfc_emiss_byband     = clear_val
       Interstitial%sec_diff_byband      = clear_val
       Interstitial%sfc_alb_nir_dir      = clear_val
