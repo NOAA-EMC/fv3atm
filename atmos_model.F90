@@ -104,7 +104,7 @@ use module_block_data,  only: block_atmos_copy, block_data_copy,         &
 
 #ifdef MOVING_NEST
 use fv_moving_nest_main_mod, only: update_moving_nest, dump_moving_nest
-#endif MOVING_NEST
+#endif
 !-----------------------------------------------------------------------
 
 implicit none
@@ -787,7 +787,7 @@ subroutine update_atmos_model_dynamics (Atmos)
     if (Atmos%moving_nest_parent .or. Atmos%is_moving_nest ) then
       call update_moving_nest (Atm_block, GFS_control, GFS_data, Atmos%Time)
     endif
-#endif MOVING_NEST
+#endif
     call mpp_clock_begin(fv3Clock)
     call atmosphere_dynamics (Atmos%Time)
 #ifdef MOVING_NEST
@@ -796,7 +796,7 @@ subroutine update_atmos_model_dynamics (Atmos)
     if (Atmos%moving_nest_parent .or. Atmos%is_moving_nest ) then
       call dump_moving_nest (Atm_block, GFS_control, GFS_data, Atmos%Time)
     endif
-#endif MOVING_NEST
+#endif
 
     call mpp_clock_end(fv3Clock)
 
