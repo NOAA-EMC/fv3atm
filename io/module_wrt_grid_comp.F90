@@ -1675,7 +1675,7 @@
       logical                               :: opened
       logical                               :: lmask_fields
 !
-      character(esmf_maxstr)                :: filename,compname
+      character(esmf_maxstr)                :: filename,compname, traceString
       character(40)                         :: cfhour, cform
       real(ESMF_KIND_R8)                    :: time
 !
@@ -1806,14 +1806,19 @@
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
           ! determine regridmethod
           if (index(fcstItemNameList(i),"_bilinear") >0 )  then
+            traceString = "-bilinear"
             regridmethod = ESMF_REGRIDMETHOD_BILINEAR
           else if (index(fcstItemNameList(i),"_patch") >0)  then
+            traceString = "-patch"
             regridmethod = ESMF_REGRIDMETHOD_PATCH
           else if (index(fcstItemNameList(i),"_nearest_stod") >0) then
+            traceString = "-nearest_stod"
             regridmethod = ESMF_REGRIDMETHOD_NEAREST_STOD
           else if (index(fcstItemNameList(i),"_nearest_dtos") >0) then
+            traceString = "-nearest_dtos"
             regridmethod = ESMF_REGRIDMETHOD_NEAREST_DTOS
           else if (index(fcstItemNameList(i),"_conserve") >0) then
+            traceString = "-conserve"
             regridmethod = ESMF_REGRIDMETHOD_CONSERVE
           else
             call ESMF_LogSetError(ESMF_RC_ARG_BAD,                          &
@@ -1823,19 +1828,19 @@
           endif
           srcTermProcessing = 1 ! have this fixed for bit-for-bit reproducibility
           ! RegridStore()
-call ESMF_TraceRegionEnter("ESMF_FieldBundleRegridStore()", rc=rc)
+call ESMF_TraceRegionEnter("ESMF_FieldBundleRegridStore()"//trim(traceString), rc=rc)
           call ESMF_FieldBundleRegridStore(mirror_bundle, file_bundle,                &
                                            regridMethod=regridmethod, routehandle=rh, &
                                            unmappedaction=ESMF_UNMAPPEDACTION_IGNORE, &
                                            srcTermProcessing=srcTermProcessing, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-call ESMF_TraceRegionExit("ESMF_FieldBundleRegridStore()", rc=rc)
+call ESMF_TraceRegionExit("ESMF_FieldBundleRegridStore()"//trim(traceString), rc=rc)
           ! Regrid()
-call ESMF_TraceRegionEnter("ESMF_FieldBundleRegrid()", rc=rc)
+call ESMF_TraceRegionEnter("ESMF_FieldBundleRegrid()"//trim(traceString), rc=rc)
           call ESMF_FieldBundleRegrid(mirror_bundle, file_bundle,       &
                                       routehandle=rh, termorderflag=(/ESMF_TERMORDER_SRCSEQ/), rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-call ESMF_TraceRegionExit("ESMF_FieldBundleRegrid()", rc=rc)
+call ESMF_TraceRegionExit("ESMF_FieldBundleRegrid()"//trim(traceString), rc=rc)
           ! RegridRelease()
           call ESMF_FieldBundleRegridRelease(routehandle=rh, noGarbage=.true., rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
