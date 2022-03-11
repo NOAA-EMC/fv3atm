@@ -1664,7 +1664,7 @@
       type(write_wrap)                      :: wrap
       type(wrt_internal_state),pointer      :: wrt_int_state
 !
-      integer                               :: i,j,n,mype,nolog, grid_id
+      integer                               :: i,j,n,mype,nolog, grid_id, localPet
 !
       integer                               :: nf_hours,nf_seconds, nf_minutes,     &
                                                nseconds,nseconds_num,nseconds_den
@@ -1683,6 +1683,20 @@
       real(kind=8)  :: tbeg
       real(kind=8)  :: wbeg,wend
 
+      type(ESMF_Grid)                   :: grid
+      type(ESMF_Info)                   :: info
+      real(ESMF_KIND_R8), allocatable   :: values(:)
+      character(160)                    :: msgString
+      type(ESMF_Field), allocatable     :: fieldList(:)
+      type(ESMF_Array)                  :: coordArray(2)
+      type(ESMF_DistGrid)               :: coordDG
+      type(ESMF_DELayout)               :: coordDL
+      integer                           :: fieldCount, deCount, rootPet
+      integer                           :: minIndexPTile(2,1), maxIndexPTile(2,1), centerIndex(2)
+      integer, allocatable              :: minIndexPDe(:,:), maxIndexPDe(:,:), petMap(:)
+      real(ESMF_KIND_R8), pointer       :: farrayPtr(:,:)
+      real(ESMF_KIND_R8)                :: centerCoord(2)
+
       logical :: use_parallel_netcdf
       logical :: lprnt
 !
@@ -1696,7 +1710,7 @@
 !-----------------------------------------------------------------------
 !***  get the current write grid comp name, and internal state
 !
-      call ESMF_GridCompGet(wrt_comp, name=compname, rc=rc)
+      call ESMF_GridCompGet(wrt_comp, name=compname, localPet=localPet, rc=rc)
 
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 ! Provide log message indicating which wrtComp is active
@@ -1804,6 +1818,70 @@
           call ESMF_StateGet(imp_state_write, itemName="mirror_"//trim(fcstItemNameList(i)), &
                              fieldbundle=mirror_bundle, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+          ! Find the centerCoord of the moving domain
+
+          call ESMF_FieldBundleGet(mirror_bundle, fieldCount=fieldCount, rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+          allocate(fieldList(fieldCount))
+          call ESMF_FieldBundleGet(mirror_bundle, fieldList=fieldList, rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+          call ESMF_FieldGet(fieldList(1), grid=grid, rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+          deallocate(fieldList)
+
+          call ESMF_GridGetCoord(grid, coordDim=1, array=coordArray(1), rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+          call ESMF_GridGetCoord(grid, coordDim=2, array=coordArray(2), rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+          call ESMF_ArrayGet(coordArray(1), distgrid=coordDG, rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+          call ESMF_DistGridGet(coordDG, deCount=deCount, minIndexPTile=minIndexPTile, maxIndexPTile=maxIndexPTile, &
+            delayout=coordDL, rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+          allocate(petMap(deCount),minIndexPDe(2,deCount), maxIndexPDe(2,deCount))
+          call ESMF_DELayoutGet(coordDL, petMap=petMap, rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+          call ESMF_DistGridGet(coordDG, minIndexPDe=minIndexPDe, maxIndexPDe=maxIndexPDe, rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+          centerIndex(1) = (maxIndexPTile(1,1)-minIndexPTile(1,1)+1)/2
+          centerIndex(2) = (maxIndexPTile(2,1)-minIndexPTile(2,1)+1)/2
+
+!          write(msgString,*) "Determined centerIndex: ", centerIndex
+!          call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_DEBUG, rc=rc)
+!          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+          do n=1, deCount
+            if (minIndexPDe(1,n)<=centerIndex(1) .and. centerIndex(1)<=maxIndexPDe(1,n) .and. &
+                minIndexPDe(2,n)<=centerIndex(2) .and. centerIndex(2)<=maxIndexPDe(2,n)) then
+              ! found the DE that holds the center coordinate
+              rootPet = petMap(n)
+              if (localPet == rootPet) then
+                ! center DE is on local PET -> fill centerCoord locally
+                call ESMF_ArrayGet(coordArray(1), farrayPtr=farrayPtr, rc=rc)
+                if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+                centerCoord(1) = farrayPtr(centerIndex(1)-minIndexPDe(1,n)+1,centerIndex(2)-minIndexPDe(2,n)+1)
+                call ESMF_ArrayGet(coordArray(2), farrayPtr=farrayPtr, rc=rc)
+                if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+                centerCoord(2) = farrayPtr(centerIndex(1)-minIndexPDe(1,n)+1,centerIndex(2)-minIndexPDe(2,n)+1)
+!                write(msgString,*) "Found centerCoord: ", centerCoord
+!                call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_DEBUG, rc=rc)
+!                if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+              endif
+              exit
+            endif
+          enddo
+
+          deallocate(petMap,minIndexPDe,maxIndexPDe)
+          
+          call ESMF_VMBroadcast(vm, centerCoord, count=2, rootPet=rootPet, rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+          write(msgString,*) "All PETs know centerCoord in radians: ", centerCoord
+          call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_DEBUG, rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
           ! determine regridmethod
           if (index(fcstItemNameList(i),"_bilinear") >0 )  then
             traceString = "-bilinear"
