@@ -975,7 +975,10 @@ subroutine atmos_model_end (Atmos)
     endif
 
 !   Fast physics (from dynamics) are finalized in atmosphere_end above;
-!   standard/slow physics (from CCPP) are finalized in CCPP_step 'finalize'.
+!   standard/slow physics (from CCPP) are finalized in CCPP_step 'physics_finalize'.
+    call CCPP_step (step="physics_finalize", nblks=Atm_block%nblks, ierr=ierr)
+    if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP physics_finalize step failed')
+
 !   The CCPP framework for all cdata structures is finalized in CCPP_step 'finalize'.
     call CCPP_step (step="finalize", nblks=Atm_block%nblks, ierr=ierr)
     if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP finalize step failed')
