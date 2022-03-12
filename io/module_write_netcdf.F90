@@ -240,7 +240,8 @@ module module_write_netcdf
           ncerr = nf90_put_att(ncid, im_varid, "units", "degrees_E"); NC_ERR_STOP(ncerr)
           ncerr = nf90_put_att(ncid, jm_varid, "long_name", "T-cell latiitude"); NC_ERR_STOP(ncerr)
           ncerr = nf90_put_att(ncid, jm_varid, "units", "degrees_N"); NC_ERR_STOP(ncerr)
-       else if (trim(output_grid(grid_id)) == 'rotated_latlon') then
+       else if (trim(output_grid(grid_id)) == 'rotated_latlon' .or. &
+                trim(output_grid(grid_id)) == 'rotated_latlon_moving') then
           ncerr = nf90_put_att(ncid, im_varid, "long_name", "rotated T-cell longiitude"); NC_ERR_STOP(ncerr)
           ncerr = nf90_put_att(ncid, im_varid, "units", "degrees"); NC_ERR_STOP(ncerr)
           ncerr = nf90_put_att(ncid, jm_varid, "long_name", "rotated T-cell latiitude"); NC_ERR_STOP(ncerr)
@@ -485,7 +486,8 @@ module module_write_netcdf
            trim(output_grid(grid_id)) == 'global_latlon' .or. &
            trim(output_grid(grid_id)) == 'regional_latlon') then
           ncerr = nf90_put_var(ncid, im_varid, values=array_r8(:,jstart), start=[istart], count=[iend-istart+1]); NC_ERR_STOP(ncerr)
-       else if (trim(output_grid(grid_id)) == 'rotated_latlon') then
+       else if (trim(output_grid(grid_id)) == 'rotated_latlon' .or. &
+                trim(output_grid(grid_id)) == 'rotated_latlon_moving') then
           do i=1,im
              x(i) = lon1(grid_id) + (lon2(grid_id)-lon1(grid_id))/(im-1) * (i-1)
           end do
@@ -534,7 +536,8 @@ module module_write_netcdf
            trim(output_grid(grid_id)) == 'global_latlon' .or. &
            trim(output_grid(grid_id)) == 'regional_latlon') then
           ncerr = nf90_put_var(ncid, jm_varid, values=array_r8(istart,:), start=[jstart], count=[jend-jstart+1]); NC_ERR_STOP(ncerr)
-       else if (trim(output_grid(grid_id)) == 'rotated_latlon') then
+       else if (trim(output_grid(grid_id)) == 'rotated_latlon' .or. &
+                trim(output_grid(grid_id)) == 'rotated_latlon_moving') then
           do j=1,jm
              y(j) = lat1(grid_id) + (lat2(grid_id)-lat1(grid_id))/(jm-1) * (j-1)
           end do
