@@ -235,7 +235,8 @@ module module_write_netcdf
        ! coordinate variable attributes based on output_grid type
        if (trim(output_grid(grid_id)) == 'gaussian_grid' .or. &
            trim(output_grid(grid_id)) == 'global_latlon' .or. &
-           trim(output_grid(grid_id)) == 'regional_latlon') then
+           trim(output_grid(grid_id)) == 'regional_latlon' .or. &
+           trim(output_grid(grid_id)) == 'regional_latlon_moving') then
           ncerr = nf90_put_att(ncid, im_varid, "long_name", "T-cell longitude"); NC_ERR_STOP(ncerr)
           ncerr = nf90_put_att(ncid, im_varid, "units", "degrees_E"); NC_ERR_STOP(ncerr)
           ncerr = nf90_put_att(ncid, jm_varid, "long_name", "T-cell latiitude"); NC_ERR_STOP(ncerr)
@@ -484,7 +485,8 @@ module module_write_netcdf
        allocate (x(im))
        if (trim(output_grid(grid_id)) == 'gaussian_grid' .or. &
            trim(output_grid(grid_id)) == 'global_latlon' .or. &
-           trim(output_grid(grid_id)) == 'regional_latlon') then
+           trim(output_grid(grid_id)) == 'regional_latlon' .or. &
+           trim(output_grid(grid_id)) == 'regional_latlon_moving') then
           ncerr = nf90_put_var(ncid, im_varid, values=array_r8(:,jstart), start=[istart], count=[iend-istart+1]); NC_ERR_STOP(ncerr)
        else if (trim(output_grid(grid_id)) == 'rotated_latlon' .or. &
                 trim(output_grid(grid_id)) == 'rotated_latlon_moving') then
@@ -534,7 +536,8 @@ module module_write_netcdf
        allocate (y(jm))
        if (trim(output_grid(grid_id)) == 'gaussian_grid' .or. &
            trim(output_grid(grid_id)) == 'global_latlon' .or. &
-           trim(output_grid(grid_id)) == 'regional_latlon') then
+           trim(output_grid(grid_id)) == 'regional_latlon' .or. &
+           trim(output_grid(grid_id)) == 'regional_latlon_moving') then
           ncerr = nf90_put_var(ncid, jm_varid, values=array_r8(istart,:), start=[jstart], count=[jend-jstart+1]); NC_ERR_STOP(ncerr)
        else if (trim(output_grid(grid_id)) == 'rotated_latlon' .or. &
                 trim(output_grid(grid_id)) == 'rotated_latlon_moving') then

@@ -386,7 +386,8 @@
         if (lprnt) then
           print *,'imo=',imo(n),'jmo=',jmo(n)
         end if
-      else if(trim(output_grid(n)) == 'regional_latlon') then
+      else if(trim(output_grid(n)) == 'regional_latlon' .or. &
+              trim(output_grid(n)) == 'regional_latlon_moving') then
         call ESMF_ConfigGetAttribute(config=cf_output_grid, value=lon1(n), label ='lon1:',rc=rc)
         call ESMF_ConfigGetAttribute(config=cf_output_grid, value=lat1(n), label ='lat1:',rc=rc)
         call ESMF_ConfigGetAttribute(config=cf_output_grid, value=lon2(n), label ='lon2:',rc=rc)
@@ -714,9 +715,10 @@
 
         deallocate(lat, lon)
 
-      else if ( trim(output_grid(n)) == 'regional_latlon' .or. &
-                trim(output_grid(n)) == 'rotated_latlon'  .or. &
-                trim(output_grid(n)) == 'rotated_latlon_moving'  .or. &
+      else if ( trim(output_grid(n)) == 'regional_latlon' .or.        &
+                trim(output_grid(n)) == 'regional_latlon_moving' .or. &
+                trim(output_grid(n)) == 'rotated_latlon' .or.         &
+                trim(output_grid(n)) == 'rotated_latlon_moving' .or.  &
                 trim(output_grid(n)) == 'lambert_conformal' ) then
 
         wrtGrid(n) = ESMF_GridCreateNoPeriDim(minIndex=(/1,1/),                                        &
@@ -744,6 +746,9 @@
               latPtr(i,j) = lat1(n) + (lat2(n)-lat1(n))/(jmo(n)-1) * (j-1)
             enddo
             enddo
+            wrt_int_state%post_maptype = 0
+        else if ( trim(output_grid(n)) == 'regional_latlon_moving' ) then
+            ! Do not compute lonPtr, latPtr here. Will be done in the run phase
             wrt_int_state%post_maptype = 0
         else if ( trim(output_grid(n)) == 'rotated_latlon' ) then
             do j=lbound(lonPtr,2),ubound(lonPtr,2)
@@ -1116,9 +1121,11 @@
               call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
                                      name="jm", value=jmo(grid_id), rc=rc)
 
-            else if (trim(output_grid(grid_id)) == 'regional_latlon' &
+            else if (trim(output_grid(grid_id)) == 'regional_latlon'        &
+                .or. trim(output_grid(grid_id)) == 'regional_latlon_moving' &
                 .or. trim(output_grid(grid_id)) == 'global_latlon') then
 
+              ! for 'regional_latlon_moving' lon1/2 and lat1/2 will be overwritten in run phase
               call ESMF_AttributeSet(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
                                      name="grid", value="latlon", rc=rc)
               call ESMF_AttributeAdd(wrt_int_state%wrtFB(i), convention="NetCDF", purpose="FV3", &
@@ -1946,13 +1953,30 @@
                                  name="grid_id", value=grid_id, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-          if (trim(output_grid(grid_id)) == 'rotated_latlon_moving') then
+          if (trim(output_grid(grid_id)) == 'regional_latlon_moving') then
             n = grid_id
             cen_lon(n) = centerCoord(1)*rtod
             cen_lat(n) = centerCoord(2)*rtod
             if (cen_lon(n) > 180.0) cen_lon(n) = cen_lon(n) - 360.0
-            cen_lon(n) = NINT(cen_lon(n)*100.0)/100.0
-            cen_lat(n) = NINT(cen_lat(n)*100.0)/100.0
+            cen_lon(n) = NINT(cen_lon(n)*1000.0)/1000.0
+            cen_lat(n) = NINT(cen_lat(n)*1000.0)/1000.0
+            lon1(n) = cen_lon(n) + (1 - (imo(n)-1)/2.0) * dlon(n)
+            lat1(n) = cen_lat(n) + (1 - (jmo(n)-1)/2.0) * dlat(n)
+            lon2(n) = cen_lon(n) + (imo(n) - (imo(n)-1)/2.0) * dlon(n)
+            lat2(n) = cen_lat(n) + (jmo(n) - (jmo(n)-1)/2.0) * dlat(n)
+            do jj=lbound(lonPtr,2),ubound(lonPtr,2)
+            do ii=lbound(lonPtr,1),ubound(lonPtr,1)
+              lonPtr(ii,jj) = lon1(n) + (lon2(n)-lon1(n))/(imo(n)-1) * (ii-1)
+              latPtr(ii,jj) = lat1(n) + (lat2(n)-lat1(n))/(jmo(n)-1) * (jj-1)
+            enddo
+            enddo
+          else if (trim(output_grid(grid_id)) == 'rotated_latlon_moving') then
+            n = grid_id
+            cen_lon(n) = centerCoord(1)*rtod
+            cen_lat(n) = centerCoord(2)*rtod
+            if (cen_lon(n) > 180.0) cen_lon(n) = cen_lon(n) - 360.0
+            cen_lon(n) = NINT(cen_lon(n)*1000.0)/1000.0
+            cen_lat(n) = NINT(cen_lat(n)*1000.0)/1000.0
             do jj=lbound(lonPtr,2),ubound(lonPtr,2)
             do ii=lbound(lonPtr,1),ubound(lonPtr,1)
               rot_lon = lon1(n) + (lon2(n)-lon1(n))/(imo(n)-1) * (ii-1)
@@ -1965,19 +1989,19 @@
             enddo
           endif
 
-call ESMF_TraceRegionEnter("ESMF_FieldBundleRegridStore()"//trim(traceString), rc=rc)
+          call ESMF_TraceRegionEnter("ESMF_FieldBundleRegridStore()"//trim(traceString), rc=rc)
           call ESMF_FieldBundleRegridStore(mirror_bundle, file_bundle,                &
                                            regridMethod=regridmethod, routehandle=rh, &
                                            unmappedaction=ESMF_UNMAPPEDACTION_IGNORE, &
                                            srcTermProcessing=srcTermProcessing, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-call ESMF_TraceRegionExit("ESMF_FieldBundleRegridStore()"//trim(traceString), rc=rc)
+          call ESMF_TraceRegionExit("ESMF_FieldBundleRegridStore()"//trim(traceString), rc=rc)
           ! Regrid()
-call ESMF_TraceRegionEnter("ESMF_FieldBundleRegrid()"//trim(traceString), rc=rc)
+          call ESMF_TraceRegionEnter("ESMF_FieldBundleRegrid()"//trim(traceString), rc=rc)
           call ESMF_FieldBundleRegrid(mirror_bundle, file_bundle,       &
                                       routehandle=rh, termorderflag=(/ESMF_TERMORDER_SRCSEQ/), rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-call ESMF_TraceRegionExit("ESMF_FieldBundleRegrid()"//trim(traceString), rc=rc)
+          call ESMF_TraceRegionExit("ESMF_FieldBundleRegrid()"//trim(traceString), rc=rc)
           ! RegridRelease()
           call ESMF_FieldBundleRegridRelease(routehandle=rh, noGarbage=.true., rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
@@ -2031,6 +2055,18 @@ call ESMF_TraceRegionExit("ESMF_FieldBundleRegrid()"//trim(traceString), rc=rc)
           call ESMF_AttributeGet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
                                  name="grid_id", value=grid_id, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+          ! update lon1/2 and lat1/2 for regional_latlon_moving
+          if (trim(output_grid(grid_id)) == 'regional_latlon_moving') then
+              call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
+                                     name="lon1", value=lon1(grid_id), rc=rc)
+              call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
+                                     name="lat1", value=lat1(grid_id), rc=rc)
+              call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
+                                     name="lon2", value=lon2(grid_id), rc=rc)
+              call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
+                                     name="lat2", value=lat2(grid_id), rc=rc)
+          endif
 
           ! update cen_lon/cen_lat for rotated_latlon_moving
           if (trim(output_grid(grid_id)) == 'rotated_latlon_moving') then
@@ -2162,6 +2198,7 @@ call ESMF_TraceRegionExit("ESMF_FieldBundleRegrid()"//trim(traceString), rc=rc)
             endif
 
           else if (trim(output_grid(grid_id)) == 'regional_latlon' .or. &
+                   trim(output_grid(grid_id)) == 'regional_latlon_moving'  .or. &
                    trim(output_grid(grid_id)) == 'rotated_latlon'  .or. &
                    trim(output_grid(grid_id)) == 'rotated_latlon_moving'  .or. &
                    trim(output_grid(grid_id)) == 'lambert_conformal') then
