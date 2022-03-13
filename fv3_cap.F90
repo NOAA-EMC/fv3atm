@@ -589,10 +589,10 @@ module fv3gfs_cap_mod
                 call ESMF_GridGet(grid, distgrid=acceptorDG, rc=rc)
                 if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
                 ! construct a complete balanced mirror Grid with redistributed coordinates
-call ESMF_TraceRegionEnter("ESMF_GridCreate(fromGrid,newDistGrid)", rc=rc)
+                call ESMF_TraceRegionEnter("ESMF_GridCreate(fromGrid,newDistGrid)", rc=rc)
                 grid = ESMF_GridCreate(providerGrid, acceptorDG, routehandle=gridRedistRH(j,i), rc=rc)
                 if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-call ESMF_TraceRegionExit("ESMF_GridCreate(fromGrid,newDistGrid)", rc=rc)
+                call ESMF_TraceRegionExit("ESMF_GridCreate(fromGrid,newDistGrid)", rc=rc)
                 ! keep src and dst Grids for run-loop
                 srcGrid(j,i) = providerGrid
                 dstGrid(j,i) = grid
@@ -624,34 +624,34 @@ call ESMF_TraceRegionExit("ESMF_GridCreate(fromGrid,newDistGrid)", rc=rc)
           if (is_moving_fb(j)) then
             ! this is a moving domain -> use a static Redist() to move data to wrtComp(:)
             ! access the mirror FieldBundle in the wrtState(i)
-            call ESMF_StateGet(wrtState(i),                                   &
-                             itemName="mirror_"//trim(fcstItemNameList(j)), &
-                             fieldbundle=wrtFB(j,i), rc=rc)
+            call ESMF_StateGet(wrtState(i), &
+                               itemName="mirror_"//trim(fcstItemNameList(j)), &
+                               fieldbundle=wrtFB(j,i), rc=rc)
             if (i==1) then
               ! this is a Store() for the first wrtComp -> must do the Store()
-call ESMF_TraceRegionEnter("ESMF_FieldBundleRedistStore()", rc=rc)
-              call ESMF_FieldBundleRedistStore(fcstFB(j), wrtFB(j,1),                                    &
-                                             routehandle=routehandle(j,1), rc=rc)
+              call ESMF_TraceRegionEnter("ESMF_FieldBundleRedistStore()", rc=rc)
+              call ESMF_FieldBundleRedistStore(fcstFB(j), wrtFB(j,1), &
+                                               routehandle=routehandle(j,1), rc=rc)
               if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-call ESMF_TraceRegionExit("ESMF_FieldBundleRedistStore()", rc=rc)
+              call ESMF_TraceRegionExit("ESMF_FieldBundleRedistStore()", rc=rc)
               originPetList(1:num_pes_fcst)  = fcstPetList(:)
               originPetList(num_pes_fcst+1:) = petList(:)
             else
               targetPetList(1:num_pes_fcst)  = fcstPetList(:)
               targetPetList(num_pes_fcst+1:) = petList(:)
-call ESMF_TraceRegionEnter("ESMF_RouteHandleCreate() in lieu of ESMF_FieldBundleRedistStore()", rc=rc)
-              routehandle(j,i) = ESMF_RouteHandleCreate(routehandle(j,1),            &
-                                                      originPetList=originPetList, &
-                                                      targetPetList=targetPetList, rc=rc)
+              call ESMF_TraceRegionEnter("ESMF_RouteHandleCreate() in lieu of ESMF_FieldBundleRedistStore()", rc=rc)
+              routehandle(j,i) = ESMF_RouteHandleCreate(routehandle(j,1), &
+                                                        originPetList=originPetList, &
+                                                        targetPetList=targetPetList, rc=rc)
               if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-call ESMF_TraceRegionExit("ESMF_RouteHandleCreate() in lieu of ESMF_FieldBundleRedistStore()", rc=rc)
+              call ESMF_TraceRegionExit("ESMF_RouteHandleCreate() in lieu of ESMF_FieldBundleRedistStore()", rc=rc)
             endif
           else
             ! this is a static domain -> do Regrid() "on the fly" when sending data to wrtComp(:)
             ! access the output FieldBundle in the wrtState(i)
-            call ESMF_StateGet(wrtState(i),                                   &
-                             itemName="output_"//trim(fcstItemNameList(j)), &
-                             fieldbundle=wrtFB(j,i), rc=rc)
+            call ESMF_StateGet(wrtState(i), &
+                               itemName="output_"//trim(fcstItemNameList(j)), &
+                               fieldbundle=wrtFB(j,i), rc=rc)
             if(mype == 0) print *,'af get wrtfb=',"output_"//trim(fcstItemNameList(j)),' rc=',rc
             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
@@ -667,9 +667,9 @@ call ESMF_TraceRegionExit("ESMF_RouteHandleCreate() in lieu of ESMF_FieldBundleR
             else if (index(fcstItemNameList(j),"_conserve") >0) then
               regridmethod = ESMF_REGRIDMETHOD_CONSERVE
             else
-              call ESMF_LogSetError(ESMF_RC_ARG_BAD,                          &
-                                  msg="Unable to determine regrid method.", &
-                                  line=__LINE__, file=__FILE__, rcToReturn=rc)
+              call ESMF_LogSetError(ESMF_RC_ARG_BAD, &
+                                    msg="Unable to determine regrid method.", &
+                                    line=__LINE__, file=__FILE__, rcToReturn=rc)
               return
             endif
 
@@ -680,10 +680,10 @@ call ESMF_TraceRegionExit("ESMF_RouteHandleCreate() in lieu of ESMF_FieldBundleR
             if (i==1) then
               ! this is a Store() for the first wrtComp -> must do the Store()
 call ESMF_TraceRegionEnter("ESMF_FieldBundleRegridStore()", rc=rc)
-              call ESMF_FieldBundleRegridStore(fcstFB(j), wrtFB(j,1),                                    &
-                                             regridMethod=regridmethod, routehandle=routehandle(j,1),  &
-                                             unmappedaction=ESMF_UNMAPPEDACTION_IGNORE,                &
-                                             srcTermProcessing=isrcTermProcessing, rc=rc)
+              call ESMF_FieldBundleRegridStore(fcstFB(j), wrtFB(j,1), &
+                                               regridMethod=regridmethod, routehandle=routehandle(j,1), &
+                                               unmappedaction=ESMF_UNMAPPEDACTION_IGNORE, &
+                                               srcTermProcessing=isrcTermProcessing, rc=rc)
 
 !             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
               if (rc /= ESMF_SUCCESS) then
@@ -701,12 +701,12 @@ call ESMF_TraceRegionExit("ESMF_FieldBundleRegridStore()", rc=rc)
             else
               targetPetList(1:num_pes_fcst)  = fcstPetList(:)
               targetPetList(num_pes_fcst+1:) = petList(:)
-call ESMF_TraceRegionEnter("ESMF_RouteHandleCreate() in lieu of ESMF_FieldBundleRegridStore()", rc=rc)
-              routehandle(j,i) = ESMF_RouteHandleCreate(routehandle(j,1),            &
-                                                      originPetList=originPetList, &
-                                                      targetPetList=targetPetList, rc=rc)
+              call ESMF_TraceRegionEnter("ESMF_RouteHandleCreate() in lieu of ESMF_FieldBundleRegridStore()", rc=rc)
+              routehandle(j,i) = ESMF_RouteHandleCreate(routehandle(j,1), &
+                                                        originPetList=originPetList, &
+                                                        targetPetList=targetPetList, rc=rc)
               if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-call ESMF_TraceRegionExit("ESMF_RouteHandleCreate() in lieu of ESMF_FieldBundleRegridStore()", rc=rc)
+              call ESMF_TraceRegionExit("ESMF_RouteHandleCreate() in lieu of ESMF_FieldBundleRegridStore()", rc=rc)
 
             endif
             write(msgString,"(A,I2.2,',',I2.2,A)") "... returned from wrtFB(",j,i, ") FieldBundleRegridStore()."
@@ -907,7 +907,7 @@ call ESMF_TraceRegionExit("ESMF_RouteHandleCreate() in lieu of ESMF_FieldBundleR
 
     ! --- conditionally realize or remove Fields in importState and exportState -------------------
 
-! call fcst Initialize (realize phase)
+    ! call fcst Initialize (realize phase)
     call ESMF_GridCompInitialize(fcstComp, importState=importState, exportState=exportState, &
                                  clock=clock, phase=3, userRc=urc, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
@@ -1042,10 +1042,10 @@ call ESMF_TraceRegionExit("ESMF_RouteHandleCreate() in lieu of ESMF_FieldBundleR
 
       output: if (ANY(nint(output_fh(:)*3600.0) == nfseconds)) then
 !
-       if (mype == 0 .or. mype == lead_wrttask(1)) print *,' aft fcst run output time=',nfseconds, &
-       'FBcount=',FBcount,'na=',na
+        if (mype == 0 .or. mype == lead_wrttask(1)) print *,' aft fcst run output time=',nfseconds, &
+          'FBcount=',FBcount,'na=',na
 
-call ESMF_TraceRegionEnter("ESMF_VMEpoch:fcstFB->wrtFB", rc=rc)
+        call ESMF_TraceRegionEnter("ESMF_VMEpoch:fcstFB->wrtFB", rc=rc)
 
         call ESMF_VMEpochEnter(epoch=ESMF_VMEpoch_Buffer, rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
@@ -1069,7 +1069,7 @@ call ESMF_TraceRegionEnter("ESMF_VMEpoch:fcstFB->wrtFB", rc=rc)
         call ESMF_VMEpochExit(rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-call ESMF_TraceRegionExit("ESMF_VMEpoch:fcstFB->wrtFB", rc=rc)
+        call ESMF_TraceRegionExit("ESMF_VMEpoch:fcstFB->wrtFB", rc=rc)
 
         call ESMF_LogWrite('Model Advance: before wrtcomp run ', ESMF_LOGMSG_INFO, rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return

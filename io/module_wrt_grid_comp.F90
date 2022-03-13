@@ -1514,7 +1514,7 @@
 
       call ESMF_StateGet(imp_state_write, itemNameList=itemNameList, &
                          itemTypeList=itemTypeList,                  &
-                        !itemorderflag=ESMF_ITEMORDER_ADDORDER,          &
+                        !itemorderflag=ESMF_ITEMORDER_ADDORDER,      &
                          rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
@@ -1609,7 +1609,7 @@
 
       call ESMF_StateGet(imp_state_write, itemNameList=itemNameList, &
                          itemTypeList=itemTypeList,                  &
-                        !itemorderflag=ESMF_ITEMORDER_ADDORDER,          &
+                        !itemorderflag=ESMF_ITEMORDER_ADDORDER,      &
                          rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
@@ -1708,32 +1708,32 @@
       character(40)                         :: cfhour, cform
       real(ESMF_KIND_R8)                    :: time
 !
+      type(ESMF_Grid)                       :: grid
+      type(ESMF_Info)                       :: info
+      real(ESMF_KIND_R8), allocatable       :: values(:)
+      character(160)                        :: msgString
+      type(ESMF_Field), allocatable         :: fieldList(:)
+      type(ESMF_Array)                      :: coordArray(2)
+      type(ESMF_DistGrid)                   :: coordDG
+      type(ESMF_DELayout)                   :: coordDL
+      integer                               :: fieldCount, deCount, rootPet
+      integer                               :: minIndexPTile(2,1), maxIndexPTile(2,1), centerIndex(2)
+      integer, allocatable                  :: minIndexPDe(:,:), maxIndexPDe(:,:), petMap(:)
+      real(ESMF_KIND_R8), pointer           :: farrayPtr(:,:)
+      real(ESMF_KIND_R8)                    :: centerCoord(2)
+
+      integer                               :: ii, jj
+      real(ESMF_KIND_R8), dimension(:,:), pointer   :: lonPtr, latPtr
+      real(ESMF_KIND_R8)                    :: rot_lon, rot_lat
+      real(ESMF_KIND_R8)                    :: geo_lon, geo_lat
+      real(ESMF_KIND_R8), parameter         :: rtod=180.0/pi
+
       real(kind=8)  :: MPI_Wtime
       real(kind=8)  :: tbeg
       real(kind=8)  :: wbeg,wend
 
-      type(ESMF_Grid)                   :: grid
-      type(ESMF_Info)                   :: info
-      real(ESMF_KIND_R8), allocatable   :: values(:)
-      character(160)                    :: msgString
-      type(ESMF_Field), allocatable     :: fieldList(:)
-      type(ESMF_Array)                  :: coordArray(2)
-      type(ESMF_DistGrid)               :: coordDG
-      type(ESMF_DELayout)               :: coordDL
-      integer                           :: fieldCount, deCount, rootPet
-      integer                           :: minIndexPTile(2,1), maxIndexPTile(2,1), centerIndex(2)
-      integer, allocatable              :: minIndexPDe(:,:), maxIndexPDe(:,:), petMap(:)
-      real(ESMF_KIND_R8), pointer       :: farrayPtr(:,:)
-      real(ESMF_KIND_R8)                :: centerCoord(2)
-
       logical :: use_parallel_netcdf
       logical :: lprnt
-
-      integer                                       :: ii, jj
-      real(ESMF_KIND_R8), dimension(:,:), pointer   :: lonPtr, latPtr
-      real(ESMF_KIND_R8)                            :: rot_lon, rot_lat
-      real(ESMF_KIND_R8)                            :: geo_lon, geo_lat
-      real(ESMF_KIND_R8), parameter                 :: rtod=180.0/pi
 !
 !-----------------------------------------------------------------------
 !***********************************************************************
@@ -1996,7 +1996,7 @@
           call ESMF_TraceRegionExit("ESMF_FieldBundleRegridStore()"//trim(traceString), rc=rc)
           ! Regrid()
           call ESMF_TraceRegionEnter("ESMF_FieldBundleRegrid()"//trim(traceString), rc=rc)
-          call ESMF_FieldBundleRegrid(mirror_bundle, file_bundle,       &
+          call ESMF_FieldBundleRegrid(mirror_bundle, file_bundle, &
                                       routehandle=rh, termorderflag=(/ESMF_TERMORDER_SRCSEQ/), rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
           call ESMF_TraceRegionExit("ESMF_FieldBundleRegrid()"//trim(traceString), rc=rc)
@@ -2195,10 +2195,10 @@
                       ,' at Fcst ',NF_HOURS,':',NF_MINUTES
             endif
 
-          else if (trim(output_grid(grid_id)) == 'regional_latlon' .or. &
-                   trim(output_grid(grid_id)) == 'regional_latlon_moving'  .or. &
-                   trim(output_grid(grid_id)) == 'rotated_latlon'  .or. &
-                   trim(output_grid(grid_id)) == 'rotated_latlon_moving'  .or. &
+          else if (trim(output_grid(grid_id)) == 'regional_latlon' .or.        &
+                   trim(output_grid(grid_id)) == 'regional_latlon_moving' .or. &
+                   trim(output_grid(grid_id)) == 'rotated_latlon'  .or.        &
+                   trim(output_grid(grid_id)) == 'rotated_latlon_moving' .or.  &
                    trim(output_grid(grid_id)) == 'lambert_conformal') then
 
             !mask fields according to sfc pressure
