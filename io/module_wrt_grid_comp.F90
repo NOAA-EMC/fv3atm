@@ -1953,17 +1953,21 @@
                                  name="grid_id", value=grid_id, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-          if (trim(output_grid(grid_id)) == 'regional_latlon_moving') then
+          if (trim(output_grid(grid_id)) == 'regional_latlon_moving' .or. &
+              trim(output_grid(grid_id)) == 'rotated_latlon_moving') then
             n = grid_id
             cen_lon(n) = centerCoord(1)*rtod
             cen_lat(n) = centerCoord(2)*rtod
             if (cen_lon(n) > 180.0) cen_lon(n) = cen_lon(n) - 360.0
             cen_lon(n) = NINT(cen_lon(n)*1000.0)/1000.0
             cen_lat(n) = NINT(cen_lat(n)*1000.0)/1000.0
-            lon1(n) = cen_lon(n) + (1 - (imo(n)-1)/2.0) * dlon(n)
-            lat1(n) = cen_lat(n) + (1 - (jmo(n)-1)/2.0) * dlat(n)
-            lon2(n) = cen_lon(n) + (imo(n) - (imo(n)-1)/2.0) * dlon(n)
-            lat2(n) = cen_lat(n) + (jmo(n) - (jmo(n)-1)/2.0) * dlat(n)
+          endif
+
+          if (trim(output_grid(grid_id)) == 'regional_latlon_moving') then
+            lon1(n) = cen_lon(n) - 0.5 * (imo(n)-1) * dlon(n)
+            lat1(n) = cen_lat(n) - 0.5 * (jmo(n)-1) * dlat(n)
+            lon2(n) = cen_lon(n) + 0.5 * (imo(n)-1) * dlon(n)
+            lat2(n) = cen_lat(n) + 0.5 * (jmo(n)-1) * dlat(n)
             do jj=lbound(lonPtr,2),ubound(lonPtr,2)
             do ii=lbound(lonPtr,1),ubound(lonPtr,1)
               lonPtr(ii,jj) = lon1(n) + (lon2(n)-lon1(n))/(imo(n)-1) * (ii-1)
@@ -1971,12 +1975,6 @@
             enddo
             enddo
           else if (trim(output_grid(grid_id)) == 'rotated_latlon_moving') then
-            n = grid_id
-            cen_lon(n) = centerCoord(1)*rtod
-            cen_lat(n) = centerCoord(2)*rtod
-            if (cen_lon(n) > 180.0) cen_lon(n) = cen_lon(n) - 360.0
-            cen_lon(n) = NINT(cen_lon(n)*1000.0)/1000.0
-            cen_lat(n) = NINT(cen_lat(n)*1000.0)/1000.0
             do jj=lbound(lonPtr,2),ubound(lonPtr,2)
             do ii=lbound(lonPtr,1),ubound(lonPtr,1)
               rot_lon = lon1(n) + (lon2(n)-lon1(n))/(imo(n)-1) * (ii-1)
