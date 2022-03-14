@@ -1427,7 +1427,6 @@
       character(esmf_maxstr)                :: filename,compname
       character(40)                         :: cfhour, cform
       character(20)                         :: time_iso
-      real(ESMF_KIND_R8)                    :: time
 !
       real(kind=8)  :: MPI_Wtime
       real(kind=8)  :: tbeg
@@ -1503,14 +1502,7 @@
         write(cfhour, cform) nf_hours
       endif
 !
-       if(lprnt) print *,'in wrt run, nf_hours=',nf_hours,nf_minutes,nf_seconds, &
-                ' FBCount=',FBCount,' cfhour=',trim(cfhour)
-
-! access the time Attribute which is updated by the driver each time
-      call ESMF_AttributeGet(imp_state_write, convention="NetCDF", purpose="FV3", &
-                              name="time", value=time, rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
+       if(lprnt) print *,'in wrt run, nfhour=',nfhour,' cfhour=',trim(cfhour)
 !
 !-----------------------------------------------------------------------
 !*** loop on the files that need to write out
