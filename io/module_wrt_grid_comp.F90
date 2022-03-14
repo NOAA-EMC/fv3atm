@@ -380,14 +380,13 @@
         jtasks = ntasks
       endif
 
-      if(trim(output_grid(n)) == 'gaussian_grid' .or. trim(output_grid(n)) == 'global_latlon') then
+      if (trim(output_grid(n)) == 'gaussian_grid' .or. trim(output_grid(n)) == 'global_latlon') then
         call ESMF_ConfigGetAttribute(config=cf_output_grid, value=imo(n), label ='imo:',rc=rc)
         call ESMF_ConfigGetAttribute(config=cf_output_grid, value=jmo(n), label ='jmo:',rc=rc)
         if (lprnt) then
           print *,'imo=',imo(n),'jmo=',jmo(n)
         end if
-      else if(trim(output_grid(n)) == 'regional_latlon' .or. &
-              trim(output_grid(n)) == 'regional_latlon_moving') then
+      else if (trim(output_grid(n)) == 'regional_latlon') then
         call ESMF_ConfigGetAttribute(config=cf_output_grid, value=lon1(n), label ='lon1:',rc=rc)
         call ESMF_ConfigGetAttribute(config=cf_output_grid, value=lat1(n), label ='lat1:',rc=rc)
         call ESMF_ConfigGetAttribute(config=cf_output_grid, value=lon2(n), label ='lon2:',rc=rc)
@@ -420,20 +419,15 @@
           print *,'dlon   =',dlon(n),   ' dlat   =',dlat(n)
           print *,'imo    =',imo(n),    ' jmo    =',jmo(n)
         end if
-      else if (trim(output_grid(n)) == 'rotated_latlon_moving') then
-        call ESMF_ConfigGetAttribute(config=cf_output_grid, value=lon1(n),    label ='lon1:',   rc=rc)
-        call ESMF_ConfigGetAttribute(config=cf_output_grid, value=lat1(n),    label ='lat1:',   rc=rc)
-        call ESMF_ConfigGetAttribute(config=cf_output_grid, value=lon2(n),    label ='lon2:',   rc=rc)
-        call ESMF_ConfigGetAttribute(config=cf_output_grid, value=lat2(n),    label ='lat2:',   rc=rc)
-        call ESMF_ConfigGetAttribute(config=cf_output_grid, value=dlon(n),    label ='dlon:',   rc=rc)
-        call ESMF_ConfigGetAttribute(config=cf_output_grid, value=dlat(n),    label ='dlat:',   rc=rc)
-        imo(n) = (lon2(n)-lon1(n))/dlon(n) + 1
-        jmo(n) = (lat2(n)-lat1(n))/dlat(n) + 1
+      else if (trim(output_grid(n)) == 'rotated_latlon_moving' .or. &
+               trim(output_grid(n)) == 'regional_latlon_moving') then
+        call ESMF_ConfigGetAttribute(config=cf_output_grid, value=imo(n),  label ='imo:', rc=rc)
+        call ESMF_ConfigGetAttribute(config=cf_output_grid, value=jmo(n),  label ='jmo:', rc=rc)
+        call ESMF_ConfigGetAttribute(config=cf_output_grid, value=dlon(n), label ='dlon:',rc=rc)
+        call ESMF_ConfigGetAttribute(config=cf_output_grid, value=dlat(n), label ='dlat:',rc=rc)
         if (lprnt) then
-          print *,'lon1=',lon1(n),' lat1=',lat1(n)
-          print *,'lon2=',lon2(n),' lat2=',lat2(n)
-          print *,'dlon=',dlon(n),' dlat=',dlat(n)
           print *,'imo =',imo(n), ' jmo =',jmo(n)
+          print *,'dlon=',dlon(n),' dlat=',dlat(n)
         end if
       else if (trim(output_grid(n)) == 'lambert_conformal') then
         call ESMF_ConfigGetAttribute(config=cf_output_grid, value=cen_lon(n), label ='cen_lon:',rc=rc)
@@ -1975,6 +1969,10 @@
             enddo
             enddo
           else if (trim(output_grid(grid_id)) == 'rotated_latlon_moving') then
+            lon1(n) = - 0.5 * (imo(n)-1) * dlon(n)
+            lat1(n) = - 0.5 * (jmo(n)-1) * dlat(n)
+            lon2(n) =   0.5 * (imo(n)-1) * dlon(n)
+            lat2(n) =   0.5 * (jmo(n)-1) * dlat(n)
             do jj=lbound(lonPtr,2),ubound(lonPtr,2)
             do ii=lbound(lonPtr,1),ubound(lonPtr,1)
               rot_lon = lon1(n) + (lon2(n)-lon1(n))/(imo(n)-1) * (ii-1)
@@ -2056,23 +2054,39 @@
 
           ! update lon1/2 and lat1/2 for regional_latlon_moving
           if (trim(output_grid(grid_id)) == 'regional_latlon_moving') then
-              call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
-                                     name="lon1", value=lon1(grid_id), rc=rc)
-              call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
-                                     name="lat1", value=lat1(grid_id), rc=rc)
-              call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
-                                     name="lon2", value=lon2(grid_id), rc=rc)
-              call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
-                                     name="lat2", value=lat2(grid_id), rc=rc)
+            call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
+                                   name="lon1", value=lon1(grid_id), rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+            call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
+                                   name="lat1", value=lat1(grid_id), rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+            call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
+                                   name="lon2", value=lon2(grid_id), rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+            call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
+                                   name="lat2", value=lat2(grid_id), rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
           endif
 
-          ! update cen_lon/cen_lat for rotated_latlon_moving
+          ! update cen_lon/cen_lat, lon1/2 and lat1/2  for rotated_latlon_moving
           if (trim(output_grid(grid_id)) == 'rotated_latlon_moving') then
             call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
                                    name="cen_lon", value=cen_lon(grid_id), rc=rc)
             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
             call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
                                    name="cen_lat", value=cen_lat(grid_id), rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+            call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
+                                   name="lon1", value=lon1(grid_id), rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+            call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
+                                   name="lat1", value=lat1(grid_id), rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+            call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
+                                   name="lon2", value=lon2(grid_id), rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+            call ESMF_AttributeSet(wrt_int_state%wrtFB(nbdl), convention="NetCDF", purpose="FV3", &
+                                   name="lat2", value=lat2(grid_id), rc=rc)
             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
           endif
 
