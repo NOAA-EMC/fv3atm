@@ -1368,12 +1368,6 @@
       deallocate(attNameList, attNameList2, typekindList)
 !
 !-----------------------------------------------------------------------
-!***  SET THE FIRST HISTORY FILE'S TIME INDEX.
-!-----------------------------------------------------------------------
-!
-      wrt_int_state%NFHOUR = 0
-!
-!-----------------------------------------------------------------------
 !***  Initialize for POST
 !-----------------------------------------------------------------------
 !
@@ -1410,6 +1404,7 @@
       TYPE(ESMF_VM)                         :: VM
       type(ESMF_FieldBundle)                :: file_bundle
       type(ESMF_Time)                       :: currtime
+      type(ESMF_TimeInterval)               :: io_currtimediff
       type(ESMF_Grid)                       :: fbgrid, wrtGrid
       type(ESMF_State),save                 :: stateGridFB
       type(optimizeT), save                 :: optimize(4)
@@ -1420,8 +1415,8 @@
 !
       integer                               :: i,j,n,mype,nolog, grid_id
 !
-      integer                               :: nf_hours,nf_seconds, nf_minutes,     &
-                                               nseconds,nseconds_num,nseconds_den
+      integer                               :: nf_hours,nf_seconds,nf_minutes
+      real(ESMF_KIND_R8)                    :: nfhour
 !
       integer                               :: nbdl, date(6), ndig, nnnn
       integer                               :: step=1
@@ -1490,44 +1485,26 @@
                         m=date(5),s=date(6),rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-      wrt_int_state%IO_CURRTIMEDIFF = CURRTIME-wrt_int_state%IO_BASETIME
+      io_currtimediff = currtime - wrt_int_state%IO_BASETIME
 
-      call ESMF_TimeIntervalGet(timeinterval=wrt_int_state%IO_CURRTIMEDIFF &
-                                   ,h           =nf_hours               &  !<-- Hours of elapsed time
-                                   ,m           =nf_minutes             &  !<-- Minutes of elapsed time
-                                   ,s           =nseconds               &  !<-- Seconds of elapsed time
-                                   ,sN          =nseconds_num           &  !<-- Numerator of fractional elapsed seconds
-                                   ,sD          =nseconds_den           &  !<-- denominator of fractional elapsed seconds
-                                   ,rc          =RC)
-       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-!       if (lprnt) print *,'in wrt run, nf_hours=',nf_hours,nf_minutes,nseconds, &
-!         'nseconds_num=',nseconds_num,nseconds_den,'mype=',mype
-!
-      nf_seconds = nf_hours*3600+nf_minuteS*60+nseconds+real(nseconds_num)/real(nseconds_den)
-      wrt_int_state%nfhour = nf_seconds/3600.
-      nf_hours   = int(nf_seconds/3600.)
-      if(lprnt) print *,'in write grid comp, nf_hours=',nf_hours
-      ! if iau_offset > nf_hours, don't write out anything
+      call ESMF_TimeIntervalGet(timeinterval=io_currtimediff &
+                               ,h_r8=nfhour,h=nf_hours,m=nf_minutes,s=nf_seconds,rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
       if (nf_hours < 0) return
 
-      nf_minutes = int((nf_seconds-nf_hours*3600.)/60.)
-      nseconds   = int(nf_seconds-nf_hours*3600.-nf_minutes*60.)
       if (nsout > 0 .or. lflname_fulltime) then
         ndig = max(log10(nf_hours+0.5)+1., 3.)
         write(cform, '("(I",I1,".",I1,",A1,I2.2,A1,I2.2)")') ndig, ndig
-        write(cfhour, cform) nf_hours,'-',nf_minutes,'-',nseconds
+        write(cfhour, cform) nf_hours,'-',nf_minutes,'-',nf_seconds
       else
         ndig = max(log10(nf_hours+0.5)+1., 3.)
         write(cform, '("(I",I1,".",I1,")")') ndig, ndig
         write(cfhour, cform) nf_hours
       endif
 !
-       if(lprnt) print *,'in wrt run, nf_hours=',nf_hours,nf_minutes,nseconds, &
-                'nseconds_num=',nseconds_num,nseconds_den,' FBCount=',FBCount,' cfhour=',trim(cfhour)
-
-!    if(lprnt) print *,'in wrt run, cfhour=',cfhour, &
-!     print *,'in wrt run, cfhour=',cfhour, &
-!        ' nf_seconds=',nf_seconds,wrt_int_state%nfhour
+       if(lprnt) print *,'in wrt run, nf_hours=',nf_hours,nf_minutes,nf_seconds, &
+                ' FBCount=',FBCount,' cfhour=',trim(cfhour)
 
 ! access the time Attribute which is updated by the driver each time
       call ESMF_AttributeGet(imp_state_write, convention="NetCDF", purpose="FV3", &
@@ -1568,7 +1545,7 @@
         endif
 
         call inline_post_run(wrt_int_state, 1, mype, wrt_mpi_comm, lead_write_task, &
-                          nf_hours, nf_minutes,nseconds)
+                          nf_hours, nf_minutes, nf_seconds)
         wend = MPI_Wtime()
         if (lprnt) then
           write(*,'(A,F10.5,A,I4.2,A,I2.2)')' actual    inline post Time is ',wend-wbeg &
@@ -1647,7 +1624,7 @@
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
           call ESMF_AttributeSet(fbgrid, convention="NetCDF", purpose="FV3", &
-                               name="time", value=real(wrt_int_state%nfhour,ESMF_KIND_R8), rc=rc)
+                               name="time", value=nfhour, rc=rc)
 
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
@@ -1768,7 +1745,7 @@
       enddo
 !
       open(nolog,file='logf'//trim(cfhour),form='FORMATTED')
-        write(nolog,100)wrt_int_state%nfhour,idate(1:6)
+        write(nolog,100)nfhour,idate(1:6)
 100     format(' completed fv3gfs fhour=',f10.3,2x,6(i4,2x))
       close(nolog)
     endif
