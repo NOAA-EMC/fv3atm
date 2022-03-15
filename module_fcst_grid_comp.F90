@@ -328,7 +328,6 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 
     integer,dimension(6)                   :: date, date_end
 !
-    character(len=9) :: month
     integer :: initClock, unit, total_inttime
     integer :: mype
     character(4) dateSY
@@ -590,17 +589,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 ! if there is restart writing during integration
     intrm_rst         = 0
     if (frestart(1)>0) intrm_rst = 1
-!
-!----- write time stamps (for start time and end time) ------
 
-     call mpp_open( unit, 'time_stamp.out', nohdrs=.TRUE. )
-     month = month_name(date(2))
-     if ( mpp_pe() == mpp_root_pe() ) write (unit,20) date, month(1:3)
-     month = month_name(date_end(2))
-     if ( mpp_pe() == mpp_root_pe() ) write (unit,20) date_end, month(1:3)
-     call mpp_close (unit)
- 20  format (6i4,2x,a3)
-!
 !------ initialize component models ------
 
      call  atmos_model_init (Atmos, Time_init, Time, Time_step)
