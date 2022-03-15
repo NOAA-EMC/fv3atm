@@ -1717,7 +1717,7 @@
       real(ESMF_KIND_R8)                    :: centerCoord(2)
 
       integer                               :: ii, jj
-      real(ESMF_KIND_R8), dimension(:,:), pointer   :: lonPtr, latPtr
+      real(ESMF_KIND_R8), pointer           :: lonPtr(:,:), latPtr(:,:)
       real(ESMF_KIND_R8)                    :: rot_lon, rot_lat
       real(ESMF_KIND_R8)                    :: geo_lon, geo_lat
       real(ESMF_KIND_R8), parameter         :: rtod=180.0/pi
