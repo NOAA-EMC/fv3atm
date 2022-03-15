@@ -22,8 +22,8 @@ module GFS_typedefs
 
        implicit none
 
-      ! To ensure that these values match what's in the physics,
-      ! array sizes are compared during model init in GFS_rrtmg_setup_init()
+      ! To ensure that these values match what's in the physics, array
+      ! sizes are compared in the auto-generated physics caps in debug mode
       private :: NF_AESW, NF_AELW, NSPC, NSPC1, NF_CLDS, NF_VGAS, NF_ALBD, ntrcaerm
       ! from module_radiation_aerosols
       integer, parameter :: NF_AESW = 3
