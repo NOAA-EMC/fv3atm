@@ -2296,6 +2296,71 @@ module GFS_diagnostics
       enddo
     endif
 
+    if (Model%do_spp) then
+      idx = idx + 1
+      ExtDiag(idx)%axes = 3
+      ExtDiag(idx)%name = 'spp_wts_pbl'
+      ExtDiag(idx)%desc = 'spp pbl perturbation wts'
+      ExtDiag(idx)%unit = 'm/s'
+      ExtDiag(idx)%mod_name = 'gfs_phys'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var3 => Coupling(nb)%spp_wts_pbl(:,:)
+      enddo
+    endif
+    
+    if (Model%do_spp) then
+      idx = idx + 1
+      ExtDiag(idx)%axes = 3
+      ExtDiag(idx)%name = 'spp_wts_sfc'
+      ExtDiag(idx)%desc = 'spp sfc perturbation wts'
+      ExtDiag(idx)%unit = 'm/s'
+      ExtDiag(idx)%mod_name = 'gfs_phys'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var3 => Coupling(nb)%spp_wts_sfc(:,:)
+      enddo
+    endif
+    
+    if (Model%do_spp) then
+      idx = idx + 1
+      ExtDiag(idx)%axes = 3
+      ExtDiag(idx)%name = 'spp_wts_mp'
+      ExtDiag(idx)%desc = 'spp mp perturbation wts'
+      ExtDiag(idx)%unit = 'm/s'
+      ExtDiag(idx)%mod_name = 'gfs_phys'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var3 => Coupling(nb)%spp_wts_mp(:,:)
+      enddo
+    endif
+    
+    if (Model%do_spp) then
+      idx = idx + 1
+      ExtDiag(idx)%axes = 3
+      ExtDiag(idx)%name = 'spp_wts_gwd'
+      ExtDiag(idx)%desc = 'spp gwd perturbation wts'
+      ExtDiag(idx)%unit = 'm/s'
+      ExtDiag(idx)%mod_name = 'gfs_phys'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var3 => Coupling(nb)%spp_wts_gwd(:,:)
+      enddo
+    endif
+    
+    if (Model%do_spp) then
+      idx = idx + 1
+      ExtDiag(idx)%axes = 3
+      ExtDiag(idx)%name = 'spp_wts_rad'
+      ExtDiag(idx)%desc = 'spp rad perturbation wts'
+      ExtDiag(idx)%unit = 'm/s'
+      ExtDiag(idx)%mod_name = 'gfs_phys'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var3 => Coupling(nb)%spp_wts_rad(:,:)
+      enddo
+    endif
+
     if (Model%lndp_type /= 0) then
       idx = idx + 1
       ExtDiag(idx)%axes = 2
@@ -3522,7 +3587,8 @@ module GFS_diagnostics
     enddo
 
     ! Cloud effective radii from Microphysics
-    if (Model%imp_physics == Model%imp_physics_thompson .or. Model%imp_physics == Model%imp_physics_fer_hires) then
+    if (Model%imp_physics == Model%imp_physics_thompson .or. Model%imp_physics == Model%imp_physics_fer_hires .or. &
+        Model%imp_physics == Model%imp_physics_nssl  ) then
       idx = idx + 1
       ExtDiag(idx)%axes = 3
       ExtDiag(idx)%name = 'cleffr'
