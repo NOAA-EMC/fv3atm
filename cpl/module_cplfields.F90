@@ -26,7 +26,7 @@ module module_cplfields
   !  l : model levels (3D)
   !  s : surface (2D)
   !  t : tracers (4D)
-  integer,          public, parameter :: NexportFields = 105
+  integer,          public, parameter :: NexportFields = 111
   type(ESMF_Field), target, public    :: exportFields(NexportFields)
 
   type(FieldInfo), dimension(NexportFields), public, parameter :: exportFieldsInfo = [ &
@@ -110,6 +110,12 @@ module module_cplfields
     FieldInfo("lake_fraction                            ", "s"), &
     FieldInfo("ocean_fraction                           ", "s"), &
     FieldInfo("surface_snow_area_fraction               ", "s"), &
+    FieldInfo("canopy_moisture_storage                  ", "s"), &
+    FieldInfo("inst_aerodynamic_conductance             ", "s"), &
+    FieldInfo("inst_canopy_resistance                   ", "s"), &
+    FieldInfo("leaf_area_index                          ", "s"), &
+    FieldInfo("temperature_of_soil_layer                ", "g"), &
+    FieldInfo("height                                   ", "s"), &
 
 
     !  For JEDI
@@ -142,7 +148,7 @@ module module_cplfields
     FieldInfo("t2m                                      ", "s") ]
 
 ! Import Fields ----------------------------------------
-  integer,          public, parameter :: NimportFields = 42
+  integer,          public, parameter :: NimportFields = 43
   logical,          public            :: importFieldsValid(NimportFields)
   type(ESMF_Field), target, public    :: importFields(NimportFields)
 
@@ -164,6 +170,7 @@ module module_cplfields
     FieldInfo("inst_ice_vis_dif_albedo                  ", "s"), &
     FieldInfo("inst_ice_vis_dir_albedo                  ", "s"), &
     FieldInfo("wave_z0_roughness_length                 ", "s"), &
+    FieldInfo("inst_tracer_diag_aod                     ", "s"), &
 
     !  For JEDI
     ! dynamics
@@ -205,6 +212,7 @@ module module_cplfields
     "inst_merid_wind_levels          ", &
     "inst_tracer_mass_frac           ", &
     "inst_pbl_height                 ", &
+    "inst_pres_height_surface        ", &
     "surface_cell_area               ", &
     "inst_convective_rainfall_amount ", &
     "inst_friction_velocity          ", &
@@ -219,7 +227,15 @@ module module_cplfields
     "ice_fraction_in_atm             ", &
     "lake_fraction                   ", &
     "ocean_fraction                  ", &
-    "surface_snow_area_fraction      "  &
+    "surface_snow_area_fraction      ", &
+    "inst_vegetation_area_frac       ", &
+    "canopy_moisture_storage         ", &
+    "inst_aerodynamic_conductance    ", &
+    "inst_canopy_resistance          ", &
+    "leaf_area_index                 ", &
+    "soil_type                       ", &
+    "temperature_of_soil_layer       ", &
+    "height                          "  &
     ]
 
   ! Methods
