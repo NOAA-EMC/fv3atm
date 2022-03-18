@@ -257,10 +257,14 @@ module stochastic_physics_wrapper_mod
              do nb=1,nblks
                 GFS_Data(nb)%Coupling%sfc_wts(:,:) = sfc_wts(nb,1:GFS_Control%blksz(nb),:)
              end do
-
+ 
              do nb=1,nblks
                 stype(nb,1:GFS_Control%blksz(nb))  = GFS_Data(nb)%Sfcprop%stype(:)
-                vfrac(nb,1:GFS_Control%blksz(nb))  = GFS_Data(nb)%Sfcprop%vfrac(:)
+                if ( (GFS_Control%lsm == GFS_Control%lsm_noah) ) then 
+                        vfrac(nb,1:GFS_Control%blksz(nb))  = GFS_Data(nb)%Sfcprop%shdmax(:)
+                else
+                        vfrac(nb,1:GFS_Control%blksz(nb))  = GFS_Data(nb)%Sfcprop%vfrac(:)
+                endif
                 snoalb(nb,1:GFS_Control%blksz(nb)) = GFS_Data(nb)%Sfcprop%snoalb(:)
                 alvsf(nb,1:GFS_Control%blksz(nb))  = GFS_Data(nb)%Sfcprop%alvsf(:)
                 alnsf(nb,1:GFS_Control%blksz(nb))  = GFS_Data(nb)%Sfcprop%alnsf(:)
@@ -301,7 +305,7 @@ module stochastic_physics_wrapper_mod
              else
                     param_update_flag = .false.
              endif
-
+              
              call lndp_apply_perts(GFS_Control%blksz, GFS_Control%lsm, GFS_Control%lsm_noah, GFS_Control%lsm_ruc,             &
                                GFS_Control%lsm_noahmp, lsoil, GFS_Control%dtp, GFS_Control%kdt,                               &
                                GFS_Control%n_var_lndp, GFS_Control%lndp_var_list, GFS_Control%lndp_prt_list,                  &
@@ -314,7 +318,11 @@ module stochastic_physics_wrapper_mod
              endif
 
              do nb=1,nblks
-               GFS_Data(nb)%Sfcprop%vfrac(:)  = vfrac(nb,1:GFS_Control%blksz(nb))
+               if ( (GFS_Control%lsm == GFS_Control%lsm_noah) ) then 
+                        GFS_Data(nb)%Sfcprop%shdmax(:)  = vfrac(nb,1:GFS_Control%blksz(nb))
+               else 
+                        GFS_Data(nb)%Sfcprop%vfrac(:)  = vfrac(nb,1:GFS_Control%blksz(nb))
+               endif
                GFS_Data(nb)%Sfcprop%snoalb(:) = snoalb(nb,1:GFS_Control%blksz(nb))
                GFS_Data(nb)%Sfcprop%alvsf(:)  = alvsf(nb,1:GFS_Control%blksz(nb))
                GFS_Data(nb)%Sfcprop%alnsf(:)  = alnsf(nb,1:GFS_Control%blksz(nb))
@@ -436,20 +444,22 @@ module stochastic_physics_wrapper_mod
       endif
       call finalize_stochastic_physics()
    endif
-   if(GFS_Control%ca_sgs)then
-       deallocate(sst         )
-       deallocate(lmsk        )
-       deallocate(lake        )
-       deallocate(condition   )
-       deallocate(ca_deep_cpl )
-       deallocate(ca_turb_cpl )
-       deallocate(ca_shal_cpl )
-    endif
-    if(GFS_Control%ca_global)then
-        deallocate(ca1_cpl )
-        deallocate(ca2_cpl )
-        deallocate(ca3_cpl )
-    endif
+   if(GFS_Control%do_ca)then
+        if(GFS_Control%ca_sgs)then
+           deallocate(sst         )
+           deallocate(lmsk        )
+           deallocate(lake        )
+           deallocate(condition   )
+           deallocate(ca_deep_cpl )
+           deallocate(ca_turb_cpl )
+           deallocate(ca_shal_cpl )
+        endif
+        if(GFS_Control%ca_global)then
+            deallocate(ca1_cpl )
+            deallocate(ca2_cpl )
+            deallocate(ca3_cpl )
+        endif
+   endif
   end subroutine stochastic_physics_wrapper_end
 
 end module stochastic_physics_wrapper_mod
