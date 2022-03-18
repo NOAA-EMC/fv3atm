@@ -3566,7 +3566,7 @@
          en = log(cos(stlat1*dtor)/cos(stlat2*dtor)) / &
               log(tan((45+0.5*stlat2)*dtor)/tan((45+0.5*stlat1)*dtor)) ! (15-3)
       endif
-      h = sign(1.0,en)
+      h = sign(1.0_ESMF_KIND_R8,en)
 
       de = a*(cos(stlat1*dtor)*tan((45+0.5*stlat1)*dtor)**en)/en       ! (15-2)
       rho0 = de/(tan((45+0.5*c_lat)*dtor)**en)                         ! (15-1a)
