@@ -5,10 +5,10 @@ module CCPP_data
 !!
 
     use ccpp_types,    only: ccpp_t
-    use CCPP_typedefs, only: CCPP_interstitial_type
+    use CCPP_typedefs, only: GFS_interstitial_type,  &
+                             GFDL_interstitial_type
     use GFS_typedefs,  only: GFS_control_type,       &
-                             GFS_data_type,          &
-                             GFS_interstitial_type
+                             GFS_data_type
 
     implicit none
 
@@ -18,7 +18,7 @@ module CCPP_data
            cdata_domain,           &
            cdata_block,            &
            ccpp_suite,             &
-           CCPP_interstitial,      &
+           GFDL_interstitial,      &
            GFS_control,            &
            GFS_data,               &
            GFS_interstitial
@@ -34,7 +34,7 @@ module CCPP_data
     !------------------------------------------------------!
     !  CCPP data containers for dynamics (fast physics)    !
     !------------------------------------------------------!
-    type(CCPP_interstitial_type),                              save, target :: CCPP_interstitial
+    type(GFDL_interstitial_type),                              save, target :: GFDL_interstitial
 
     !------------------------------------------------------!
     !  CCPP containers for the six tiles used in dynamics, !
