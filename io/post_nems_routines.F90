@@ -27,6 +27,7 @@
                             modelname, numx, ista, iend, ista_m, ista_m2, &
                             iend_m, iend_m2, ista_2l, iend_2u, &
                             ileft,iright,ileftb,irightb, &
+                            icnt2, idsp2, &
                             num_procs
 !
 !-----------------------------------------------------------------------
@@ -50,6 +51,7 @@
 !
       integer i,j,l
       integer last_write_task
+      integer isumm,isumm2
 !
 !-----------------------------------------------------------------------
 !*** get dims from int_state
@@ -100,11 +102,11 @@
       ista_m2 = ista
       iend_m  = iend
       iend_m2 = iend
-      if(mod(mype,numx)==0)then
+      if(mod(me,numx)==0)then
         ista_m=2
         ista_m2=3
       end if
-      if(mod(mype+1,numx)==0)then
+      if(mod(me+1,numx)==0)then
         iend_m=im-1
         iend_m2=im-2
       end if
@@ -124,13 +126,27 @@
 !
 !     counts, disps for gatherv and scatterv
 !
+      isumm=0
+      isumm2=0
       do i = 1, num_procs
-       icnt(i-1) = (jtegrp(i)-jtsgrp(i)+1)*im
-       idsp(i-1) = (jtsgrp(i)-1)*im
+!       icnt(i-1) = (jtegrp(i)-jtsgrp(i)+1)*im
+!       idsp(i-1) = (jtsgrp(i)-1)*im
 !       if ( mype .eq. lead_write ) then
 !           print *, ' i, icnt(i),idsp(i) = ',i-1,icnt(i-1),idsp(i-1)
 !       end if
+       icnt(i-1) = (jtegrp(i)-jtsgrp(i)+1)*(itegrp(i)-itsgrp(i)+1)
+       idsp(i-1) = isumm
+       isumm=isumm+icnt(i-1)
+       if(jtsgrp(i)==1 .or. jtegrp(i)==jm) then
+          icnt2(i-1) = (itegrp(i)-itsgrp(i)+1)
+       else
+          icnt2(i-1) = 0
+       endif
+       idsp2(i-1)=isumm2
+       if(jtsgrp(i)==1 .or. jtegrp(i)==jm) isumm2=isumm2+(itegrp(i)-itsgrp(i)+1)
+
       enddo
+      write(6,'(a25,i4,16i8)') 'JESSE,me,icnt2,idsp2=',me,icnt2(0:num_procs-1),idsp2(0:num_procs-1)
 !
 !     extraction limits -- set to two rows
 !
@@ -151,20 +167,21 @@
       print *,'GWVX mype/me=',mype,me,'im=',im,'ista   =',ista   ,'iend   =',iend   ,'lm=',lm
       print *,'GWVX mype/me=',mype,me,'im=',im,'ista_2l=',ista_2l,'iend_2u=',iend_2u,'lm=',lm
 !       NEW neighbors
-      ileft = mype - 1
-      iright = mype + 1
+      ileft = me - 1
+      iright = me + 1
        iup=MPI_PROC_NULL
        idn=MPI_PROC_NULL
-    if(mod(mype,numx) .eq. 0) print *,' LEFT POINT',mype,me
-    if(mod(mype+1,numx) .eq. 0) print *,' RIGHT  POINT',mype,me
-    if(mod(mype,numx) .eq. 0) ileft=MPI_PROC_NULL
-    if(mod(mype,numx) .eq. 0) ileftb=mype+numx-1
-    if(mod(mype,numx) .eq. 0) print *,' GWVX ILEFTB ',ileftb,mype,me,numx
-    if(mod(mype+1,numx) .eq. 0 .or. mype .eq. num_procs-1)  iright=MPI_PROC_NULL
-    if(mod(mype+1,numx) .eq. 0 .or. mype .eq. num_procs-1)  irightb=mype-numx+1
-    if(mod(mype+1,numx) .eq. 0 .or. mype .eq. num_procs-1)  print *,' GWVX IRIGHTB',irightb,mype,me,numx
-    if(mype .ge. numx) idn=mype-numx
-    if(mype+1  .le. num_procs-numx) iup=mype+numx
+    if(mod(me,numx) .eq. 0) print *,' LEFT POINT',mype,me
+    if(mod(me+1,numx) .eq. 0) print *,' RIGHT  POINT',mype,me
+    if(mod(me,numx) .eq. 0) ileft=MPI_PROC_NULL
+    if(mod(me,numx) .eq. 0) ileftb=me+numx-1
+    if(mod(me,numx) .eq. 0) print *,' GWVX ILEFTB ',ileftb,mype,me,numx
+    if(mod(me+1,numx) .eq. 0 .or. me .eq. num_procs-1)  iright=MPI_PROC_NULL
+    if(mod(me+1,numx) .eq. 0 .or. me .eq. num_procs-1)  irightb=me-numx+1
+    if(mod(me+1,numx) .eq. 0 .or. me .eq. num_procs-1)  print *,' GWVX IRIGHTB',irightb,mype,me,numx
+    if(me .ge. numx) idn=me-numx
+    if(me+1  .le. num_procs-numx) iup=me+numx
+    write(6,'(a12,6i10)') 'GWVX BOUNDS ',me,ileft,iright,iup,idn,num_procs
 !
 ! SETS UP MESSAGE PASSING INFO
 
