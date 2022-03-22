@@ -30,7 +30,8 @@ module stochastic_physics_wrapper_mod
   !roughness length for land
   real(kind=kind_phys), dimension(:,:),   allocatable, save :: zorll
 
-  real(kind=kind_phys), dimension(:,:),   allocatable, save :: stype
+  !real(kind=kind_phys), dimension(:,:),   allocatable, save :: stype
+  integer, dimension(:,:),   allocatable, save :: stype
 
   ! For cellular automata
   real(kind=kind_phys), dimension(:,:),   allocatable, save :: sst
@@ -147,15 +148,26 @@ module stochastic_physics_wrapper_mod
             lsoil = GFS_Control%lsoil_lsm
           endif
           allocate(smc   (1:nblks, maxblk, lsoil))
-          allocate(slc   (1:nblks, maxblk, lsoil))
-          allocate(stc   (1:nblks, maxblk, lsoil))
-          allocate(stype (1:nblks, maxblk))
-          allocate(vfrac (1:nblks, maxblk))
-          allocate(snoalb(1:nblks, maxblk))
-          allocate(alnsf (1:nblks, maxblk))
-          allocate(alnwf (1:nblks, maxblk))
-          allocate(semis (1:nblks, maxblk))
-          allocate(zorll (1:nblks, maxblk))
+          do v = 1,GFS_Control%n_var_lndp
+            select case (trim(GFS_Control%lndp_var_list(v)))
+            case('smc')
+              allocate(slc   (1:nblks, maxblk, lsoil))
+              allocate(stype (1:nblks, maxblk))
+            case('stc')
+              allocate(stc   (1:nblks, maxblk, lsoil))
+            case('vgf') 
+              allocate(vfrac (1:nblks, maxblk))
+            case('alb') 
+              allocate(alnsf (1:nblks, maxblk))
+              allocate(alnwf (1:nblks, maxblk))
+            case('sal') 
+              allocate(snoalb(1:nblks, maxblk))
+            case('emi') 
+              allocate(semis (1:nblks, maxblk))
+            case('zol') 
+              allocate(zorll (1:nblks, maxblk))
+            endselect 
+          enddo 
       endif
 
 
@@ -255,42 +267,42 @@ module stochastic_physics_wrapper_mod
                 do v = 1,GFS_Control%n_var_lndp
                   ! used to identify locations with land model (=soil) 
                   if ((GFS_Control%lsm == GFS_Control%lsm_ruc) ) then 
-                     smc(nb,1:GFS_Control%blksz(nb),:) = GFS_Data(nb)%Sfcprop%smois(:,:)
+                     smc(nb,1:GFS_Control%blksz(nb),1:lsoil) = GFS_Data(nb)%Sfcprop%smois(1:GFS_Control%blksz(nb),1:lsoil)
                   else  ! noah or noah-MP
-                     smc(nb,1:GFS_Control%blksz(nb),:) = GFS_Data(nb)%Sfcprop%smc(:,:)
+                     smc(nb,1:GFS_Control%blksz(nb),1:lsoil) = GFS_Data(nb)%Sfcprop%smc(1:GFS_Control%blksz(nb),1:lsoil)
                   endif
 
                   select case (trim(GFS_Control%lndp_var_list(v)))
                   case('smc')
                       ! stype used to fetch soil params
-                      stype(nb,1:GFS_Control%blksz(nb))  = GFS_Data(nb)%Sfcprop%stype(:)
+                      stype(nb,1:GFS_Control%blksz(nb))  = GFS_Data(nb)%Sfcprop%stype(1:GFS_Control%blksz(nb))
                       if ((GFS_Control%lsm == GFS_Control%lsm_ruc) ) then 
-                         slc(nb,1:GFS_Control%blksz(nb),:) = GFS_Data(nb)%Sfcprop%sh2o(:,:)
+                         slc(nb,1:GFS_Control%blksz(nb),1:lsoil) = GFS_Data(nb)%Sfcprop%sh2o(1:GFS_Control%blksz(nb),1:lsoil)
                       else  ! noah or noah-MP
-                         slc(nb,1:GFS_Control%blksz(nb),:) = GFS_Data(nb)%Sfcprop%slc(:,:)
+                         slc(nb,1:GFS_Control%blksz(nb),1:lsoil) = GFS_Data(nb)%Sfcprop%slc(1:GFS_Control%blksz(nb),1:lsoil)
                       endif
                   case('stc')
                       if ((GFS_Control%lsm == GFS_Control%lsm_ruc) ) then 
-                         stc(nb,1:GFS_Control%blksz(nb),:) = GFS_Data(nb)%Sfcprop%tslb(:,:)
+                         stc(nb,1:GFS_Control%blksz(nb),1:lsoil) = GFS_Data(nb)%Sfcprop%tslb(1:GFS_Control%blksz(nb),1:lsoil)
                       else ! noah or noah-MP 
-                         stc(nb,1:GFS_Control%blksz(nb),:) = GFS_Data(nb)%Sfcprop%stc(:,:)
+                         stc(nb,1:GFS_Control%blksz(nb),1:lsoil) = GFS_Data(nb)%Sfcprop%stc(1:GFS_Control%blksz(nb),1:lsoil)
                       endif 
                   case('vgf')
                       if ( (GFS_Control%lsm == GFS_Control%lsm_noahmp) ) then 
                          ! assumes iopt_dveg = 4 (will be checked later)
-                         vfrac(nb,1:GFS_Control%blksz(nb))  = GFS_Data(nb)%Sfcprop%shdmax(:)
+                         vfrac(nb,1:GFS_Control%blksz(nb))  = GFS_Data(nb)%Sfcprop%shdmax(1:GFS_Control%blksz(nb))
                       else ! ruc or noah-MP
-                         vfrac(nb,1:GFS_Control%blksz(nb))  = GFS_Data(nb)%Sfcprop%vfrac(:)
+                         vfrac(nb,1:GFS_Control%blksz(nb))  = GFS_Data(nb)%Sfcprop%vfrac(1:GFS_Control%blksz(nb))
                       endif
                   case('alb')
-                      alnsf(nb,1:GFS_Control%blksz(nb))  = GFS_Data(nb)%Sfcprop%alnsf(:)
-                      alnwf(nb,1:GFS_Control%blksz(nb))  = GFS_Data(nb)%Sfcprop%alnwf(:)
+                      alnsf(nb,1:GFS_Control%blksz(nb))  = GFS_Data(nb)%Sfcprop%alnsf(1:GFS_Control%blksz(nb))
+                      alnwf(nb,1:GFS_Control%blksz(nb))  = GFS_Data(nb)%Sfcprop%alnwf(1:GFS_Control%blksz(nb))
                   case('sal')
-                      snoalb(nb,1:GFS_Control%blksz(nb)) = GFS_Data(nb)%Sfcprop%snoalb(:)
+                      snoalb(nb,1:GFS_Control%blksz(nb)) = GFS_Data(nb)%Sfcprop%snoalb(1:GFS_Control%blksz(nb))
                   case('emi')
-                      semis(nb,1:GFS_Control%blksz(nb))  = GFS_Data(nb)%Radtend%semis(:)
+                      semis(nb,1:GFS_Control%blksz(nb))  = GFS_Data(nb)%Radtend%semis(1:GFS_Control%blksz(nb))
                   case('zol')
-                      zorll(nb,1:GFS_Control%blksz(nb))  = GFS_Data(nb)%Sfcprop%zorll(:)
+                      zorll(nb,1:GFS_Control%blksz(nb))  = GFS_Data(nb)%Sfcprop%zorll(1:GFS_Control%blksz(nb))
                   endselect
               enddo
              enddo
@@ -329,33 +341,33 @@ module stochastic_physics_wrapper_mod
                   select case (trim(GFS_Control%lndp_var_list(v)))
                   case('smc')
                       if ((GFS_Control%lsm == GFS_Control%lsm_ruc) ) then 
-                           GFS_Data(nb)%Sfcprop%smois(:,:) = smc(nb,1:GFS_Control%blksz(nb),:)
-                           GFS_Data(nb)%Sfcprop%sh2o(:,:)  = slc(nb,1:GFS_Control%blksz(nb),:)
+                           GFS_Data(nb)%Sfcprop%smois(1:GFS_Control%blksz(nb),1:lsoil) = smc(nb,1:GFS_Control%blksz(nb),1:lsoil)
+                           GFS_Data(nb)%Sfcprop%sh2o(1:GFS_Control%blksz(nb),1:lsoil)  = slc(nb,1:GFS_Control%blksz(nb),1:lsoil)
                       else  ! noah or noah-MP
-                           GFS_Data(nb)%Sfcprop%smc(:,:) = smc(nb,1:GFS_Control%blksz(nb),:)
-                           GFS_Data(nb)%Sfcprop%slc(:,:) = slc(nb,1:GFS_Control%blksz(nb),:)
+                           GFS_Data(nb)%Sfcprop%smc(1:GFS_Control%blksz(nb),1:lsoil) = smc(nb,1:GFS_Control%blksz(nb),1:lsoil)
+                           GFS_Data(nb)%Sfcprop%slc(1:GFS_Control%blksz(nb),1:lsoil) = slc(nb,1:GFS_Control%blksz(nb),1:lsoil)
                       endif
                   case('stc')
                       if ((GFS_Control%lsm == GFS_Control%lsm_ruc) ) then 
-                           GFS_Data(nb)%Sfcprop%tslb(:,:)  = stc(nb,1:GFS_Control%blksz(nb),:)
+                           GFS_Data(nb)%Sfcprop%tslb(1:GFS_Control%blksz(nb),1:lsoil)  = stc(nb,1:GFS_Control%blksz(nb),1:lsoil)
                       else ! noah or noah-MP 
-                           GFS_Data(nb)%Sfcprop%stc(:,:) = stc(nb,1:GFS_Control%blksz(nb),:)
+                           GFS_Data(nb)%Sfcprop%stc(1:GFS_Control%blksz(nb),1:lsoil) = stc(nb,1:GFS_Control%blksz(nb),1:lsoil)
                       endif 
                   case('vgf')
                       if ( (GFS_Control%lsm == GFS_Control%lsm_noahmp) ) then 
-                        GFS_Data(nb)%Sfcprop%shdmax(:)  = vfrac(nb,1:GFS_Control%blksz(nb))
+                        GFS_Data(nb)%Sfcprop%shdmax(1:GFS_Control%blksz(nb))  = vfrac(nb,1:GFS_Control%blksz(nb))
                       else 
-                        GFS_Data(nb)%Sfcprop%vfrac(:)  = vfrac(nb,1:GFS_Control%blksz(nb))
+                        GFS_Data(nb)%Sfcprop%vfrac(1:GFS_Control%blksz(nb))  = vfrac(nb,1:GFS_Control%blksz(nb))
                       endif
                   case('alb')
-                       GFS_Data(nb)%Sfcprop%alnsf(:)  = alnsf(nb,1:GFS_Control%blksz(nb))
-                       GFS_Data(nb)%Sfcprop%alnwf(:)  = alnwf(nb,1:GFS_Control%blksz(nb))
+                       GFS_Data(nb)%Sfcprop%alnsf(1:GFS_Control%blksz(nb))  = alnsf(nb,1:GFS_Control%blksz(nb))
+                       GFS_Data(nb)%Sfcprop%alnwf(1:GFS_Control%blksz(nb))  = alnwf(nb,1:GFS_Control%blksz(nb))
                   case('sal')
-                        GFS_Data(nb)%Sfcprop%snoalb(:) = snoalb(nb,1:GFS_Control%blksz(nb))
+                        GFS_Data(nb)%Sfcprop%snoalb(1:GFS_Control%blksz(nb)) = snoalb(nb,1:GFS_Control%blksz(nb))
                   case('emi')
-                        GFS_Data(nb)%Radtend%semis(:)  = semis(nb,1:GFS_Control%blksz(nb))
+                        GFS_Data(nb)%Radtend%semis(1:GFS_Control%blksz(nb))  = semis(nb,1:GFS_Control%blksz(nb))
                   case('zol')
-                        GFS_Data(nb)%Sfcprop%zorll(:)  = zorll(nb,1:GFS_Control%blksz(nb))
+                        GFS_Data(nb)%Sfcprop%zorll(1:GFS_Control%blksz(nb))  = zorll(nb,1:GFS_Control%blksz(nb))
                   end select   
                 enddo 
             enddo
