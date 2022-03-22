@@ -446,7 +446,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 
     ! -- realize connected fields in exportState
     call realizeConnectedCplFields(exportState, grid, &
-                                   numLevels, numSoilLayers, numTracers,           &
+                                   numLevels, numSoilLayers, numTracers, &
                                    exportFieldsInfo, 'FV3 Export', exportFields, 0.0_ESMF_KIND_R8, rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__,  file=__FILE__)) return
 
@@ -456,7 +456,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 
     ! -- realize connected fields in importState
     call realizeConnectedCplFields(importState, grid, &
-                                   numLevels, numSoilLayers, numTracers,           &
+                                   numLevels, numSoilLayers, numTracers, &
                                    importFieldsInfo, 'FV3 Import', importFields, 9.99e20_ESMF_KIND_R8, rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__,  file=__FILE__)) return
 !
@@ -1069,7 +1069,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     if (mype == 0) write(*,*)'fcst_advertise, cpl_grid_id=',GFS_control%cpl_grid_id
 
     call ESMF_GridCompInitialize(fcstGridComp(GFS_control%cpl_grid_id), importState=importState, &
-      exportState=exportState, phase=3, userrc=urc, rc=rc)
+                                 exportState=exportState, phase=3, userrc=urc, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
     if (ESMF_LogFoundError(rcToCheck=urc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 !
@@ -1111,7 +1111,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     if (mype == 0) write(*,*)'fcst_realize, cpl_grid_id=',GFS_control%cpl_grid_id
 
     call ESMF_GridCompInitialize(fcstGridComp(GFS_control%cpl_grid_id), importState=importState, &
-      exportState=exportState, phase=4, userrc=urc, rc=rc)
+                                 exportState=exportState, phase=4, userrc=urc, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
     if (ESMF_LogFoundError(rcToCheck=urc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 !
