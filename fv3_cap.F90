@@ -29,7 +29,7 @@ module fv3gfs_cap_mod
 !
   use module_fv3_config,      only: quilting, output_fh,                     &
                                     nfhout, nfhout_hf, nsout, dt_atmos,      &
-                                    calendar,                                &
+                                    calendar, cpl_grid_id,                   &
                                     cplprint_flag,output_1st_tstep_rst,      &
                                     first_kdt
 
@@ -217,6 +217,12 @@ module fv3gfs_cap_mod
 
     ! query for importState and exportState
     call NUOPC_ModelGet(gcomp, driverClock=clock, importState=importState, exportState=exportState, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+    call ESMF_AttributeGet(gcomp, name="cpl_grid_id", value=value, defaultValue="1", &
+                           convention="NUOPC", purpose="Instance", rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+    cpl_grid_id = ESMF_UtilString2Int(value, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
     call ESMF_AttributeGet(gcomp, name="ProfileMemory", value=value, defaultValue="false", &
