@@ -2657,12 +2657,6 @@
   units = flag
   dimensions = ()
   type = logical
-[cpl_grid_id]
-  standard_name = id_for_coupling_grid
-  long_name = namelist option for setting cpl_grid_id (default 1)
-  units = none
-  dimensions = ()
-  type = integer
 [cpl_imp_mrg]
   standard_name = flag_for_merging_imported_data
   long_name = flag controlling cpl_imp_mrg for imported data (default off)
