@@ -212,7 +212,6 @@ module module_cplfields
     "inst_merid_wind_levels          ", &
     "inst_tracer_mass_frac           ", &
     "inst_pbl_height                 ", &
-    "inst_pres_height_surface        ", &
     "surface_cell_area               ", &
     "inst_convective_rainfall_amount ", &
     "inst_friction_velocity          ", &
