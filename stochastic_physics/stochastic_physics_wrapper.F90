@@ -308,20 +308,18 @@ module stochastic_physics_wrapper_mod
              enddo
 
 
+             param_update_flag = .false.
+             ! noah and noah-MP treated differently, as global cycle doesn't overwrite shdmax for Noah-MP 
              ! determine whether land paramaters have been over-written to
              ! trigger applying perturbations (logic copied from GFS_driver),
-             ! or if perturbations should be applied at every time step
-             if (GFS_Control%nscyc >  0) then
+             if ( (GFS_Control%lsm == GFS_Control%lsm_noah) .and. GFS_Control%nscyc >  0) then
                  if (mod(GFS_Control%kdt,GFS_Control%nscyc) == 1 ) then
                    param_update_flag = .true.
-                 else
-                   param_update_flag = .false.
                  endif
-             elseif ( GFS_Control%nscyc ==  0 .and. GFS_Control%first_time_step ) then
+             endif
+             if ( ( GFS_Control%nscyc ==  0 .or. GFS_Control%lsm == GFS_Control%lsm_noahmp) .and. GFS_Control%first_time_step ) then
              ! call once at start of the forecast.
                     param_update_flag = .true.
-             else
-                    param_update_flag = .false.
              endif
               
              call lndp_apply_perts(GFS_Control%blksz, GFS_Control%lsm, GFS_Control%lsm_noah, GFS_Control%lsm_ruc,             &
