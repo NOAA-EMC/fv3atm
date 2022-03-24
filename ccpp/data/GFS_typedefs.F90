@@ -649,7 +649,6 @@ module GFS_typedefs
     logical              :: cplwav2atm      !< default no wav->atm coupling
     logical              :: cplchm          !< default no cplchm collection
     logical              :: use_cice_alb    !< default .false. - i.e. don't use albedo imported from the ice model
-    integer              :: cpl_grid_id     !< default grid 1 (parent)
     logical              :: cpl_imp_mrg     !< default no merge import with internal forcings
     logical              :: cpl_imp_dbg     !< default no write import data to file post merge
 
@@ -3131,7 +3130,6 @@ module GFS_typedefs
     logical              :: cplwav2atm     = .false.         !< default no cplwav2atm coupling
     logical              :: cplchm         = .false.         !< default no cplchm collection
     logical              :: use_cice_alb   = .false.         !< default no cice albedo
-    integer              :: cpl_grid_id    = 1
     logical              :: cpl_imp_mrg    = .false.         !< default no merge import with internal forcings
     logical              :: cpl_imp_dbg    = .false.         !< default no write import data to file post merge
 
@@ -3613,7 +3611,7 @@ module GFS_typedefs
                                thermodyn_id, sfcpress_id,                                   &
                           !--- coupling parameters
                                cplflx, cplice, cplocn2atm, cplwav, cplwav2atm, cplchm,      &
-                               cpl_grid_id, cpl_imp_mrg, cpl_imp_dbg,                       &
+                               cpl_imp_mrg, cpl_imp_dbg,                                    &
                                use_cice_alb,                                                &
 #ifdef IDEA_PHYS
                                lsidea, weimer_model, f107_kp_size, f107_kp_interval,        &
@@ -3925,7 +3923,6 @@ module GFS_typedefs
     Model%cplwav2atm       = cplwav2atm
     Model%cplchm           = cplchm
     Model%use_cice_alb     = use_cice_alb
-    Model%cpl_grid_id      = cpl_grid_id
     Model%cpl_imp_mrg      = cpl_imp_mrg
     Model%cpl_imp_dbg      = cpl_imp_dbg
 
@@ -5605,7 +5602,6 @@ module GFS_typedefs
       print *, ' cplwav2atm        : ', Model%cplwav2atm
       print *, ' cplchm            : ', Model%cplchm
       print *, ' use_cice_alb      : ', Model%use_cice_alb
-      print *, ' cpl_grid_id       : ', Model%cpl_grid_id
       print *, ' cpl_imp_mrg       : ', Model%cpl_imp_mrg
       print *, ' cpl_imp_dbg       : ', Model%cpl_imp_dbg
       print *, ' '

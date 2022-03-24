@@ -65,7 +65,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
   use module_fv3_io_def,  only: num_pes_fcst, num_files, filename_base,    &
                                 nbdlphys, iau_offset
   use module_fv3_config,  only: dt_atmos, fcst_mpi_comm, fcst_ntasks,      &
-                                quilting, calendar,                        &
+                                quilting, calendar, cpl_grid_id,           &
                                 cplprint_flag, restart_endfcst
 
   use get_stochy_pattern_mod, only: write_stoch_restart_atm
@@ -1066,9 +1066,9 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 
     call ESMF_VMGet(vm=vm, localPet=mype, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-    if (mype == 0) write(*,*)'fcst_advertise, cpl_grid_id=',GFS_control%cpl_grid_id
+    if (mype == 0) write(*,*)'fcst_advertise, cpl_grid_id=',cpl_grid_id
 
-    call ESMF_GridCompInitialize(fcstGridComp(GFS_control%cpl_grid_id), importState=importState, &
+    call ESMF_GridCompInitialize(fcstGridComp(cpl_grid_id), importState=importState, &
                                  exportState=exportState, phase=3, userrc=urc, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
     if (ESMF_LogFoundError(rcToCheck=urc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
@@ -1108,9 +1108,9 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 
     call ESMF_VMGet(vm=vm, localPet=mype, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-    if (mype == 0) write(*,*)'fcst_realize, cpl_grid_id=',GFS_control%cpl_grid_id
+    if (mype == 0) write(*,*)'fcst_realize, cpl_grid_id=',cpl_grid_id
 
-    call ESMF_GridCompInitialize(fcstGridComp(GFS_control%cpl_grid_id), importState=importState, &
+    call ESMF_GridCompInitialize(fcstGridComp(cpl_grid_id), importState=importState, &
                                  exportState=exportState, phase=4, userrc=urc, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
     if (ESMF_LogFoundError(rcToCheck=urc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
