@@ -4,6 +4,7 @@
 !
 module inline_post
 
+  use mpi_f08
   use module_fv3_io_def,    only : wrttasks_per_group,filename_base,      &
                                    output_grid
   use write_internal_state, only : wrt_internal_state
@@ -32,7 +33,7 @@ module inline_post
       type(wrt_internal_state),intent(in)       :: wrt_int_state
       integer,intent(in)                        :: grid_id
       integer,intent(in)                        :: mypei
-      integer,intent(in)                        :: mpicomp
+      type(MPI_Comm),intent(in)                 :: mpicomp
       integer,intent(in)                        :: lead_write
       integer,intent(in)                        :: mynfhr
       integer,intent(in)                        :: mynfmin

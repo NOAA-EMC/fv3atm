@@ -9,13 +9,15 @@
 !
 !------------------------------------------------------------------------
 !
+  use mpi_f08
   use esmf
 
   implicit none
 !
   integer                  :: nfhout, nfhout_hf, nsout, dt_atmos
   integer                  :: first_kdt
-  integer                  :: fcst_mpi_comm, fcst_ntasks
+  integer                  :: fcst_ntasks
+  type(MPI_Comm)           :: fcst_mpi_comm
 !
   logical                  :: cplprint_flag
   logical                  :: quilting, output_1st_tstep_rst

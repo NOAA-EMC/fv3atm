@@ -12,8 +12,6 @@ module module_write_netcdf
   use module_fv3_io_def,only : ideflate, nbits, &
                                ichunk2d,jchunk2d,ichunk3d,jchunk3d,kchunk3d, &
                                output_grid,dx,dy,lon1,lat1,lon2,lat2
-  use mpi
-
   implicit none
   private
   public write_netcdf
@@ -29,13 +27,15 @@ module module_write_netcdf
 
 !----------------------------------------------------------------------------------------
   subroutine write_netcdf(wrtfb, filename, &
-                          use_parallel_netcdf, mpi_comm, mype, &
+                          use_parallel_netcdf, comm, mype, &
                           grid_id, rc)
 !
+    use mpi_f08
+
     type(ESMF_FieldBundle), intent(in) :: wrtfb
     character(*), intent(in)           :: filename
     logical, intent(in)                :: use_parallel_netcdf
-    integer, intent(in)                :: mpi_comm
+    type(MPI_Comm), intent(in)         :: comm
     integer, intent(in)                :: mype
     integer, intent(in)                :: grid_id
     integer, optional,intent(out)      :: rc
@@ -200,7 +200,7 @@ module module_write_netcdf
        if (par) then
           ncerr = nf90_create(trim(filename),&
                   cmode=IOR(IOR(NF90_CLOBBER,NF90_NETCDF4),NF90_CLASSIC_MODEL),&
-                  comm=mpi_comm, info = MPI_INFO_NULL, ncid=ncid); NC_ERR_STOP(ncerr)
+                  comm=comm%mpi_val, info = MPI_INFO_NULL%mpi_val, ncid=ncid); NC_ERR_STOP(ncerr)
        else
           ncerr = nf90_create(trim(filename),&
                   cmode=IOR(IOR(NF90_CLOBBER,NF90_NETCDF4),NF90_CLASSIC_MODEL),&
@@ -648,10 +648,10 @@ module module_write_netcdf
                if (ideflate(grid_id) > 0 .and. nbits(grid_id) > 0) then
                   dataMax = maxval(array_r4_3d)
                   dataMin = minval(array_r4_3d)
-                  call mpi_allreduce(mpi_in_place,dataMax,1,mpi_real4,mpi_max,mpi_comm,ierr)
-                  call mpi_allreduce(mpi_in_place,dataMin,1,mpi_real4,mpi_min,mpi_comm,ierr)
+                  call mpi_allreduce(mpi_in_place,dataMax,1,mpi_real4,mpi_max,comm,ierr)
+                  call mpi_allreduce(mpi_in_place,dataMin,1,mpi_real4,mpi_min,comm,ierr)
                   call quantize_array(array_r4_3d, dataMin, dataMax, nbits(grid_id), compress_err(i))
-                  call mpi_allreduce(mpi_in_place,compress_err(i),1,mpi_real4,mpi_max,mpi_comm,ierr)
+                  call mpi_allreduce(mpi_in_place,compress_err(i),1,mpi_real4,mpi_max,comm,ierr)
                end if
                ncerr = nf90_put_var(ncid, varids(i), values=array_r4_3d, start=start_idx); NC_ERR_STOP(ncerr)
             else

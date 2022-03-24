@@ -4,12 +4,11 @@
 !
 module post_gfs
 
+  use mpi_f08
   use module_fv3_io_def,    only : wrttasks_per_group,filename_base
   use write_internal_state, only : wrt_internal_state
 
   implicit none
-
-  include 'mpif.h'
 
   integer mype, nbdl
   logical setvar_atmfile, setvar_sfcfile, read_postcntrl
@@ -43,7 +42,7 @@ module post_gfs
 !
       type(wrt_internal_state),intent(in)       :: wrt_int_state
       integer,intent(in)                        :: mypei
-      integer,intent(in)                        :: mpicomp
+      type(MPI_Comm),intent(in)                 :: mpicomp
       integer,intent(in)                        :: lead_write
       integer,intent(in)                        :: mynfhr
       integer,intent(in)                        :: mynfmin
@@ -391,12 +390,10 @@ module post_gfs
 !
       implicit none
 !
-      include 'mpif.h'
-!
 !-----------------------------------------------------------------------
 !
       type(wrt_internal_state),intent(in) :: wrt_int_state
-      integer,intent(in)                  :: mpicomp
+      type(MPI_Comm),intent(in)           :: mpicomp
       logical,intent(inout)               :: setvar_atmfile,setvar_sfcfile
 !
 !-----------------------------------------------------------------------

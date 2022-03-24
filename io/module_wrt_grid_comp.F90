@@ -26,7 +26,7 @@
 !
 !---------------------------------------------------------------------------------
 !
-      use mpi
+      use mpi_f08
       use esmf
 
       use write_internal_state
@@ -60,7 +60,7 @@
       integer,save      :: ntasks                                         !<-- # of write tasks in the current group
       integer,save      :: itasks, jtasks                                 !<-- # of write tasks in i/j direction in the current group
 
-      integer,save      :: wrt_mpi_comm                                   !<-- the mpi communicator in the write comp
+      type(MPI_Comm),save :: wrt_mpi_comm                                 !<-- the mpi communicator in the write comp
       integer,save      :: idate(7)
       logical,save      :: write_nsflip
       logical,save      :: change_wrtidate=.false.
@@ -140,7 +140,7 @@
       integer,dimension(2,6)                  :: decomptile
       integer,dimension(2)                    :: regDecomp !define delayout for the nest grid
       integer                                 :: fieldCount
-      integer                                 :: vm_mpi_comm
+      type(MPI_Comm)                          :: vm_mpi_comm
       character(40)                           :: fieldName
       type(ESMF_Config)                       :: cf, cf_output_grid
       type(ESMF_DELayout)                     :: delayout
@@ -215,7 +215,7 @@
 !
       call ESMF_VMGetCurrent(vm=VM,rc=RC)
       call ESMF_VMGet(vm=VM, localPet=wrt_int_state%mype,               &
-                      petCount=wrt_int_state%petcount,mpiCommunicator=vm_mpi_comm,rc=rc)
+                      petCount=wrt_int_state%petcount,mpiCommunicator=vm_mpi_comm%mpi_val,rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
       call mpi_comm_dup(vm_mpi_comm, wrt_mpi_comm, rc)

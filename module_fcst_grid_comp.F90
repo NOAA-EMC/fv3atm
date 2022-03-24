@@ -15,7 +15,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !
 !---------------------------------------------------------------------------------
 !
-  use mpi
+  use mpi_f08
   use esmf
 
   use time_manager_mod,   only: time_type, set_calendar_type, set_time,    &
@@ -385,7 +385,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     call ESMF_VMGetCurrent(vm=vm,rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-    call ESMF_VMGet(vm=vm, localPet=mype, mpiCommunicator=fcst_mpi_comm, &
+    call ESMF_VMGet(vm=vm, localPet=mype, mpiCommunicator=fcst_mpi_comm%mpi_val, &
                     petCount=fcst_ntasks, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
     if (mype == 0) write(*,*)'in fcst comp init, fcst_ntasks=',fcst_ntasks
@@ -407,7 +407,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
     if (mype == 0) print *,'af nems config,restart_interval=',restart_interval
 !
-    call fms_init(fcst_mpi_comm)
+    call fms_init(fcst_mpi_comm%mpi_val)
     call mpp_init()
     initClock = mpp_clock_id( 'Initialization' )
     call mpp_clock_begin (initClock) !nesting problem

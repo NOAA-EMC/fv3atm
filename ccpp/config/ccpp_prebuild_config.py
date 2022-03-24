@@ -35,6 +35,7 @@ VARIABLE_DEFINITION_FILES = [
 TYPEDEFS_NEW_METADATA = {
     'ccpp_types' : {
         'ccpp_t' : 'cdata',
+        'MPI_Comm' : '',
         'ccpp_types' : '',
         },
     'machine' : {

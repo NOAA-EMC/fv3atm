@@ -4,6 +4,7 @@
 !
 module inline_post
 
+  use mpi_f08
   use module_fv3_io_def,    only : wrttasks_per_group,filename_base
   use write_internal_state, only : wrt_internal_state
 
@@ -13,7 +14,7 @@ module inline_post
 
   contains
 
-  subroutine inline_post_run(wrt_int_state,grid_id,mypei,mpicomp,lead_write,      &
+  subroutine inline_post_run(wrt_int_state,grid_id,mypei,mpicomm,lead_write,      &
              mynfhr,mynfmin,mynfsec)
 !
 !  revision history:
@@ -29,7 +30,7 @@ module inline_post
       type(wrt_internal_state),intent(in)       :: wrt_int_state
       integer,intent(in)                        :: mypei
       integer,intent(in)                        :: grid_id
-      integer,intent(in)                        :: mpicomp
+      type(MPI_Comm),intent(in)                 :: mpicomm
       integer,intent(in)                        :: lead_write
       integer,intent(in)                        :: mynfhr
       integer,intent(in)                        :: mynfmin

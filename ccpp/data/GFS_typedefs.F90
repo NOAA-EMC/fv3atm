@@ -1,6 +1,7 @@
 
 module GFS_typedefs
 
+       use mpi_f08
        use machine,                  only: kind_phys,kind_dbl_prec
        use physcons,                 only: con_cp, con_fvirt, con_g,                       &
                                            con_hvap, con_hfus, con_pi, con_rd, con_rv,     &
@@ -111,7 +112,7 @@ module GFS_typedefs
   type GFS_init_type
     integer :: me                                !< my MPI-rank
     integer :: master                            !< master MPI-rank
-    integer :: fcst_mpi_comm                     !< forecast tasks mpi communicator
+    type(MPI_Comm) :: fcst_mpi_comm              !< forecast tasks mpi communicator
     integer :: fcst_ntasks                       !< total number of forecast tasks
     integer :: tile_num                          !< tile number for this MPI rank
     integer :: isc                               !< starting i-index for this MPI-domain
@@ -594,7 +595,7 @@ module GFS_typedefs
 
     integer              :: me              !< MPI rank designator
     integer              :: master          !< MPI rank of master atmosphere processor
-    integer              :: communicator    !< MPI communicator
+    type(MPI_Comm)       :: communicator    !< MPI communicator
     integer              :: ntasks          !< MPI size in communicator
     integer              :: nthreads        !< OpenMP threads available for physics
     integer              :: nlunit          !< unit for namelist
@@ -3109,7 +3110,7 @@ module GFS_typedefs
     real(kind=kind_phys), dimension(:), intent(in) :: bk
     logical,                intent(in) :: restart
     logical,                intent(in) :: hydrostatic
-    integer,                intent(in) :: communicator
+    type(MPI_Comm),         intent(in) :: communicator
     integer,                intent(in) :: ntasks
     integer,                intent(in) :: nthreads
 
@@ -5737,7 +5738,7 @@ module GFS_typedefs
       print *, 'basic control parameters'
       print *, ' me                : ', Model%me
       print *, ' master            : ', Model%master
-      print *, ' communicator      : ', Model%communicator
+      print *, ' communicator      : ', Model%communicator%mpi_val
       print *, ' nlunit            : ', Model%nlunit
       print *, ' fn_nml            : ', trim(Model%fn_nml)
       print *, ' fhzero            : ', Model%fhzero

@@ -4,6 +4,7 @@
 !
 module post_regional
 
+  use mpi_f08
   use module_fv3_io_def,    only : wrttasks_per_group,filename_base,    &
                                    lon1, lat1, lon2, lat2, dlon, dlat,  &
                                    cen_lon, cen_lat, dxin=>dx, dyin=>dy, &
@@ -11,8 +12,6 @@ module post_regional
   use write_internal_state, only : wrt_internal_state
 
   implicit none
-
-  include 'mpif.h'
 
   integer mype, nbdl
   logical setvar_atmfile, setvar_sfcfile, read_postcntrl
@@ -47,7 +46,7 @@ module post_regional
 !
       type(wrt_internal_state),intent(in)       :: wrt_int_state
       integer,intent(in)                        :: mypei
-      integer,intent(in)                        :: mpicomp
+      type(MPI_Comm),intent(in)                 :: mpicomp
       integer,intent(in)                        :: lead_write
       integer,intent(in)                        :: mynfhr
       integer,intent(in)                        :: mynfmin
@@ -504,12 +503,10 @@ module post_regional
 !
       implicit none
 !
-      include 'mpif.h'
-!
 !-----------------------------------------------------------------------
 !
       type(wrt_internal_state),intent(in) :: wrt_int_state
-      integer,intent(in)                  :: mpicomp
+      type(MPI_Comm),intent(in)           :: mpicomp
       logical,intent(inout)               :: setvar_atmfile,setvar_sfcfile
 !
 !-----------------------------------------------------------------------
