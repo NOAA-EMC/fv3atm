@@ -1465,6 +1465,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: QI_BL      (:,:)   => null()  !
     real (kind=kind_phys), pointer :: el_pbl     (:,:)   => null()  !
     real (kind=kind_phys), pointer :: Sh3D       (:,:)   => null()  !
+    real (kind=kind_phys), pointer :: Sm3D       (:,:)   => null()  !
     real (kind=kind_phys), pointer :: qke        (:,:)   => null()  !
     real (kind=kind_phys), pointer :: tsq        (:,:)   => null()  !
     real (kind=kind_phys), pointer :: qsq        (:,:)   => null()  !
@@ -6241,6 +6242,7 @@ module GFS_typedefs
        allocate (Tbd%qi_bl     (IM,Model%levs))
        allocate (Tbd%el_pbl    (IM,Model%levs))
        allocate (Tbd%sh3d      (IM,Model%levs))
+       allocate (Tbd%sm3d      (IM,Model%levs))
        allocate (Tbd%qke       (IM,Model%levs))
        allocate (Tbd%tsq       (IM,Model%levs))
        allocate (Tbd%qsq       (IM,Model%levs))
@@ -6251,6 +6253,7 @@ module GFS_typedefs
        Tbd%qi_bl         = clear_val
        Tbd%el_pbl        = clear_val
        Tbd%sh3d          = clear_val
+       Tbd%sm3d          = clear_val
        Tbd%qke           = zero
        Tbd%tsq           = clear_val
        Tbd%qsq           = clear_val

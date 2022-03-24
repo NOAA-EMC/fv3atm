@@ -6268,6 +6268,14 @@
   type = real
   kind = kind_phys
   active = (flag_for_mellor_yamada_nakanishi_niino_pbl_scheme)
+[Sm3D]
+  standard_name = stability_function_for_momentum
+  long_name = stability function for momentum
+  units = none
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = (flag_for_mellor_yamada_nakanishi_niino_pbl_scheme)
 [qke]
   standard_name = nonadvected_turbulent_kinetic_energy_multiplied_by_2
   long_name = 2 x tke at mass points
