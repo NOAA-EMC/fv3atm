@@ -226,7 +226,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 
     call ESMF_GridGet(grid, staggerloc=ESMF_STAGGERLOC_CENTER, distgrid=distgrid, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-    
+
     array = ESMF_ArrayCreate(distgrid, farray=Atmos%lon, indexflag=ESMF_INDEX_DELOCAL, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
@@ -241,7 +241,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 
     call ESMF_GridGet(grid, staggerloc=ESMF_STAGGERLOC_CORNER, distgrid=distgrid, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-    
+
     array = ESMF_ArrayCreate(distgrid, farray=Atmos%lon_bnd, indexflag=ESMF_INDEX_DELOCAL, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
@@ -282,7 +282,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
                          regridArea=.TRUE., rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
     endif
-    
+
     ! - Hold on to the grid by GridComp
 
     call ESMF_GridCompSet(nest, grid=grid, rc=rc)
@@ -740,7 +740,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     if ( ANY(frestart(:) == total_inttime) ) restart_endfcst = .true.
 ! frestart only contains intermediate restart
     do i=1,size(frestart)
-      if(frestart(i) == total_inttime) then 
+      if(frestart(i) == total_inttime) then
         frestart(i) = 0
         exit
       endif
@@ -793,7 +793,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
         is_moving(grid_number_on_all_pets(n)) = is_moving_on_all_pets(n)
       enddo
       deallocate(grid_number_on_all_pets, is_moving_on_all_pets)
-      
+
       call ESMF_InfoGetFromHost(exportState, info=info, rc=rc); ESMF_ERR_ABORT(rc)
       call ESMF_InfoSet(info, key="is_moving", values=is_moving, rc=rc); ESMF_ERR_ABORT(rc)
       deallocate(is_moving)
