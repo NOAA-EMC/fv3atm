@@ -5526,6 +5526,30 @@
   units = flag
   dimensions = ()
   type = integer
+[isftcflx]
+  standard_name = flag_for_thermal_roughness_lengths_over_water_in_mynnsfclay
+  long_name = flag for thermal roughness lengths over water in mynnsfclay
+  units = flag
+  dimensions = ()
+  type = integer
+[iz0tlnd]
+  standard_name = flag_for_thermal_roughness_lengths_over_land_in_mynnsfclay
+  long_name = flag for thermal roughness lengths over land in mynnsfclay
+  units = flag
+  dimensions = ()
+  type = integer
+[sfclay_compute_flux]
+  standard_name = flag_for_computing_surface_scalar_fluxes_in_mynnsfclay
+  long_name = flag for computing surface scalar fluxes in mynnsfclay
+  units = flag
+  dimensions = ()
+  type = logical
+[sfclay_compute_diag]
+  standard_name = flag_for_computing_surface_diagnostics_in_mynnsfclay
+  long_name = flag for computing surface diagnostics in mynnsfclay
+  units = flag
+  dimensions = ()
+  type = logical
 [var_ric]
   standard_name = control_for_variable_bulk_richardson_number
   long_name = flag for calculating variable bulk richardson number for hurricane PBL
