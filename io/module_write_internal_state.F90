@@ -79,8 +79,6 @@
 !-------------------------------------
 !
       type(ESMF_Time)         :: io_basetime
-      type(ESMF_TimeInterval) :: io_currtimediff
-      real                    :: nfhour
       integer                 :: idate(7)
       integer                 :: fdate(7)
 !
@@ -89,7 +87,6 @@
 !-----------------------------------------
 !
       logical :: output_history
-      logical :: write_netcdfflag
 !
 !-----------------------------------------
 !***  POST flags and required variables
