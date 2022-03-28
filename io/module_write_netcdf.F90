@@ -10,6 +10,7 @@ module module_write_netcdf
   use esmf
   use netcdf
   use module_fv3_io_def,only : ideflate, nbits, &
+                               ichunk2d,jchunk2d,ichunk3d,jchunk3d,kchunk3d, &
                                output_grid,dx,dy,lon1,lat1,lon2,lat2
   use mpi
 
@@ -29,14 +30,14 @@ module module_write_netcdf
 !----------------------------------------------------------------------------------------
   subroutine write_netcdf(wrtfb, filename, &
                           use_parallel_netcdf, mpi_comm, mype, &
-                          ichunk2d, jchunk2d, ichunk3d, jchunk3d, kchunk3d, rc)
+                          grid_id, rc)
 !
     type(ESMF_FieldBundle), intent(in) :: wrtfb
     character(*), intent(in)           :: filename
     logical, intent(in)                :: use_parallel_netcdf
     integer, intent(in)                :: mpi_comm
     integer, intent(in)                :: mype
-    integer, intent(in)                :: ichunk2d,jchunk2d,ichunk3d,jchunk3d,kchunk3d
+    integer, intent(in)                :: grid_id
     integer, optional,intent(out)      :: rc
 !
 !** local vars
@@ -71,7 +72,7 @@ module module_write_netcdf
     character(len=ESMF_MAXSTR) :: attName, fldName
 
     integer :: varival
-    real(4) :: varr4val, scale_fact, offset, dataMin, dataMax
+    real(4) :: varr4val, dataMin, dataMax
     real(4), allocatable, dimension(:) :: compress_err
     real(8) :: varr8val
     character(len=ESMF_MAXSTR) :: varcval
@@ -79,8 +80,8 @@ module module_write_netcdf
     integer :: ncerr,ierr
     integer :: ncid
     integer :: oldMode
-    integer :: im_dimid, jm_dimid, tile_dimid, pfull_dimid, phalf_dimid, time_dimid
-    integer :: im_varid, jm_varid, tile_varid, lon_varid, lat_varid
+    integer :: im_dimid, jm_dimid, tile_dimid, pfull_dimid, phalf_dimid, time_dimid, ch_dimid
+    integer :: im_varid, jm_varid, tile_varid, lon_varid, lat_varid, timeiso_varid
     integer, dimension(:), allocatable :: dimids_2d, dimids_3d
     integer, dimension(:), allocatable :: varids
     logical shuffle
@@ -212,6 +213,7 @@ module module_write_netcdf
        ! define dimensions [grid_xt, grid_yta ,(pfull/phalf), (tile), time]
        ncerr = nf90_def_dim(ncid, "grid_xt", im, im_dimid); NC_ERR_STOP(ncerr)
        ncerr = nf90_def_dim(ncid, "grid_yt", jm, jm_dimid); NC_ERR_STOP(ncerr)
+       ncerr = nf90_def_dim(ncid, "nchars", 20, ch_dimid); NC_ERR_STOP(ncerr)
        if (lm > 1) then
          call add_dim(ncid, "pfull", pfull_dimid, wrtgrid, rc)
          call add_dim(ncid, "phalf", phalf_dimid, wrtgrid, rc)
@@ -228,23 +230,27 @@ module module_write_netcdf
        ncerr = nf90_put_att(ncid, jm_varid, "cartesian_axis", "Y"); NC_ERR_STOP(ncerr)
        if (is_cubed_sphere) then
           ncerr = nf90_def_var(ncid, "tile", NF90_INT, tile_dimid, tile_varid); NC_ERR_STOP(ncerr)
-          ncerr = nf90_put_att(ncid, tile_varid, "long_name", "cubed-spehere face"); NC_ERR_STOP(ncerr)
+          ncerr = nf90_put_att(ncid, tile_varid, "long_name", "cubed-sphere face"); NC_ERR_STOP(ncerr)
        end if
 
+       ncerr = nf90_def_var(ncid, "time_iso", NF90_CHAR, [ch_dimid,time_dimid], timeiso_varid); NC_ERR_STOP(ncerr)
+       ncerr = nf90_put_att(ncid, timeiso_varid, "long_name", "valid time"); NC_ERR_STOP(ncerr)
+       ncerr = nf90_put_att(ncid, timeiso_varid, "description", "ISO 8601 datetime string"); NC_ERR_STOP(ncerr)
+
        ! coordinate variable attributes based on output_grid type
-       if (trim(output_grid) == 'gaussian_grid' .or. &
-           trim(output_grid) == 'global_latlon' .or. &
-           trim(output_grid) == 'regional_latlon') then
+       if (trim(output_grid(grid_id)) == 'gaussian_grid' .or. &
+           trim(output_grid(grid_id)) == 'global_latlon' .or. &
+           trim(output_grid(grid_id)) == 'regional_latlon') then
           ncerr = nf90_put_att(ncid, im_varid, "long_name", "T-cell longitude"); NC_ERR_STOP(ncerr)
           ncerr = nf90_put_att(ncid, im_varid, "units", "degrees_E"); NC_ERR_STOP(ncerr)
           ncerr = nf90_put_att(ncid, jm_varid, "long_name", "T-cell latiitude"); NC_ERR_STOP(ncerr)
           ncerr = nf90_put_att(ncid, jm_varid, "units", "degrees_N"); NC_ERR_STOP(ncerr)
-       else if (trim(output_grid) == 'rotated_latlon') then
+       else if (trim(output_grid(grid_id)) == 'rotated_latlon') then
           ncerr = nf90_put_att(ncid, im_varid, "long_name", "rotated T-cell longiitude"); NC_ERR_STOP(ncerr)
           ncerr = nf90_put_att(ncid, im_varid, "units", "degrees"); NC_ERR_STOP(ncerr)
           ncerr = nf90_put_att(ncid, jm_varid, "long_name", "rotated T-cell latiitude"); NC_ERR_STOP(ncerr)
           ncerr = nf90_put_att(ncid, jm_varid, "units", "degrees"); NC_ERR_STOP(ncerr)
-       else if (trim(output_grid) == 'lambert_conformal') then
+       else if (trim(output_grid(grid_id)) == 'lambert_conformal') then
           ncerr = nf90_put_att(ncid, im_varid, "long_name", "x-coordinate of projection"); NC_ERR_STOP(ncerr)
           ncerr = nf90_put_att(ncid, im_varid, "units", "meters"); NC_ERR_STOP(ncerr)
           ncerr = nf90_put_att(ncid, jm_varid, "long_name", "y-coordinate of projection"); NC_ERR_STOP(ncerr)
@@ -274,6 +280,7 @@ module module_write_netcdf
           ncerr = nf90_var_par_access(ncid, lon_varid, NF90_INDEPENDENT); NC_ERR_STOP(ncerr)
           ncerr = nf90_var_par_access(ncid, jm_varid, NF90_INDEPENDENT); NC_ERR_STOP(ncerr)
           ncerr = nf90_var_par_access(ncid, lat_varid, NF90_INDEPENDENT); NC_ERR_STOP(ncerr)
+          ncerr = nf90_var_par_access(ncid, timeiso_varid, NF90_INDEPENDENT); NC_ERR_STOP(ncerr)
           if (is_cubed_sphere) then
              ncerr = nf90_var_par_access(ncid, tile_varid, NF90_INDEPENDENT); NC_ERR_STOP(ncerr)
           end if
@@ -303,24 +310,24 @@ module module_write_netcdf
          ! define variables
          if (rank == 2) then
            if (typekind == ESMF_TYPEKIND_R4) then
-             if (ideflate > 0) then
-               if (ichunk2d < 0 .or. jchunk2d < 0) then
+             if (ideflate(grid_id) > 0) then
+               if (ichunk2d(grid_id) < 0 .or. jchunk2d(grid_id) < 0) then
                   ! let netcdf lib choose chunksize
                   ! shuffle filter on for 2d fields (lossless compression)
                   ncerr = nf90_def_var(ncid, trim(fldName), NF90_FLOAT, &
                           dimids_2d, varids(i), &
-                          shuffle=.true.,deflate_level=ideflate); NC_ERR_STOP(ncerr)
+                          shuffle=.true.,deflate_level=ideflate(grid_id)); NC_ERR_STOP(ncerr)
                else
                   if (is_cubed_sphere) then
                   ncerr = nf90_def_var(ncid, trim(fldName), NF90_FLOAT, &
                                        dimids_2d, varids(i), &
-                                       shuffle=.true.,deflate_level=ideflate,&
-                                       chunksizes=[ichunk2d,jchunk2d,tileCount,1]); NC_ERR_STOP(ncerr)
+                                       shuffle=.true.,deflate_level=ideflate(grid_id),&
+                                       chunksizes=[ichunk2d(grid_id),jchunk2d(grid_id),tileCount,1]); NC_ERR_STOP(ncerr)
                   else
                   ncerr = nf90_def_var(ncid, trim(fldName), NF90_FLOAT, &
                                        dimids_2d, varids(i), &
-                                       shuffle=.true.,deflate_level=ideflate,&
-                                       chunksizes=[ichunk2d,jchunk2d,          1]); NC_ERR_STOP(ncerr)
+                                       shuffle=.true.,deflate_level=ideflate(grid_id),&
+                                       chunksizes=[ichunk2d(grid_id),jchunk2d(grid_id),          1]); NC_ERR_STOP(ncerr)
                   end if
                end if
                ! compression filters require collective access.
@@ -338,29 +345,29 @@ module module_write_netcdf
            end if
          else if (rank == 3) then
            if (typekind == ESMF_TYPEKIND_R4) then
-             if (ideflate > 0) then
+             if (ideflate(grid_id) > 0) then
                ! shuffle filter off for 3d fields using lossy compression
-               if (nbits > 0) then
+               if (nbits(grid_id) > 0) then
                    shuffle=.false.
                else
                    shuffle=.true.
                end if
-               if (ichunk3d < 0 .or. jchunk3d < 0 .or. kchunk3d < 0) then
+               if (ichunk3d(grid_id) < 0 .or. jchunk3d(grid_id) < 0 .or. kchunk3d(grid_id) < 0) then
                   ! let netcdf lib choose chunksize
                   ncerr = nf90_def_var(ncid, trim(fldName), NF90_FLOAT, &
                                        dimids_3d, varids(i), &
-                                       shuffle=shuffle,deflate_level=ideflate); NC_ERR_STOP(ncerr)
+                                       shuffle=shuffle,deflate_level=ideflate(grid_id)); NC_ERR_STOP(ncerr)
                else
                   if (is_cubed_sphere) then
                   ncerr = nf90_def_var(ncid, trim(fldName), NF90_FLOAT, &
                                        dimids_3d, varids(i), &
-                                       shuffle=shuffle,deflate_level=ideflate,&
-                                       chunksizes=[ichunk3d,jchunk3d,kchunk3d,tileCount,1]); NC_ERR_STOP(ncerr)
+                                       shuffle=shuffle,deflate_level=ideflate(grid_id),&
+                                       chunksizes=[ichunk3d(grid_id),jchunk3d(grid_id),kchunk3d(grid_id),tileCount,1]); NC_ERR_STOP(ncerr)
                   else
                   ncerr = nf90_def_var(ncid, trim(fldName), NF90_FLOAT, &
                                        dimids_3d, varids(i), &
-                                       shuffle=shuffle,deflate_level=ideflate,&
-                                       chunksizes=[ichunk3d,jchunk3d,kchunk3d,          1]); NC_ERR_STOP(ncerr)
+                                       shuffle=shuffle,deflate_level=ideflate(grid_id),&
+                                       chunksizes=[ichunk3d(grid_id),jchunk3d(grid_id),kchunk3d(grid_id),          1]); NC_ERR_STOP(ncerr)
                   end if
                end if
                ! compression filters require collective access.
@@ -480,27 +487,27 @@ module module_write_netcdf
     ! write grid_xt (im_varid)
     if (do_io) then
        allocate (x(im))
-       if (trim(output_grid) == 'gaussian_grid' .or. &
-           trim(output_grid) == 'global_latlon' .or. &
-           trim(output_grid) == 'regional_latlon') then
+       if (trim(output_grid(grid_id)) == 'gaussian_grid' .or. &
+           trim(output_grid(grid_id)) == 'global_latlon' .or. &
+           trim(output_grid(grid_id)) == 'regional_latlon') then
           ncerr = nf90_put_var(ncid, im_varid, values=array_r8(:,jstart), start=[istart], count=[iend-istart+1]); NC_ERR_STOP(ncerr)
-       else if (trim(output_grid) == 'rotated_latlon') then
+       else if (trim(output_grid(grid_id)) == 'rotated_latlon') then
           do i=1,im
-             x(i) = lon1 + (lon2-lon1)/(im-1) * (i-1)
+             x(i) = lon1(grid_id) + (lon2(grid_id)-lon1(grid_id))/(im-1) * (i-1)
           end do
           ncerr = nf90_put_var(ncid, im_varid, values=x); NC_ERR_STOP(ncerr)
-       else if (trim(output_grid) == 'lambert_conformal') then
+       else if (trim(output_grid(grid_id)) == 'lambert_conformal') then
           do i=1,im
-             x(i) = dx * (i-1)
+             x(i) = dx(grid_id) * (i-1)
           end do
           ncerr = nf90_put_var(ncid, im_varid, values=x); NC_ERR_STOP(ncerr)
-       else if (trim(output_grid) == 'cubed_sphere_grid') then
+       else if (trim(output_grid(grid_id)) == 'cubed_sphere_grid') then
           do i=1,im
              x(i) = i
           end do
           ncerr = nf90_put_var(ncid, im_varid, values=x); NC_ERR_STOP(ncerr)
        else
-          write(0,*)'unknown output_grid ', trim(output_grid)
+          write(0,*)'unknown output_grid ', trim(output_grid(grid_id))
           call ESMF_Finalize(endflag=ESMF_END_ABORT)
        end if
     end if
@@ -529,27 +536,27 @@ module module_write_netcdf
     ! write grid_yt (jm_varid)
     if (do_io) then
        allocate (y(jm))
-       if (trim(output_grid) == 'gaussian_grid' .or. &
-           trim(output_grid) == 'global_latlon' .or. &
-           trim(output_grid) == 'regional_latlon') then
+       if (trim(output_grid(grid_id)) == 'gaussian_grid' .or. &
+           trim(output_grid(grid_id)) == 'global_latlon' .or. &
+           trim(output_grid(grid_id)) == 'regional_latlon') then
           ncerr = nf90_put_var(ncid, jm_varid, values=array_r8(istart,:), start=[jstart], count=[jend-jstart+1]); NC_ERR_STOP(ncerr)
-       else if (trim(output_grid) == 'rotated_latlon') then
+       else if (trim(output_grid(grid_id)) == 'rotated_latlon') then
           do j=1,jm
-             y(j) = lat1 + (lat2-lat1)/(jm-1) * (j-1)
+             y(j) = lat1(grid_id) + (lat2(grid_id)-lat1(grid_id))/(jm-1) * (j-1)
           end do
           ncerr = nf90_put_var(ncid, jm_varid, values=y); NC_ERR_STOP(ncerr)
-       else if (trim(output_grid) == 'lambert_conformal') then
+       else if (trim(output_grid(grid_id)) == 'lambert_conformal') then
           do j=1,jm
-             y(j) = dy * (j-1)
+             y(j) = dy(grid_id) * (j-1)
           end do
           ncerr = nf90_put_var(ncid, jm_varid, values=y); NC_ERR_STOP(ncerr)
-       else if (trim(output_grid) == 'cubed_sphere_grid') then
+       else if (trim(output_grid(grid_id)) == 'cubed_sphere_grid') then
           do j=1,jm
              y(j) = j
           end do
           ncerr = nf90_put_var(ncid, jm_varid, values=y); NC_ERR_STOP(ncerr)
        else
-          write(0,*)'unknown output_grid ', trim(output_grid)
+          write(0,*)'unknown output_grid ', trim(output_grid(grid_id))
           call ESMF_Finalize(endflag=ESMF_END_ABORT)
        end if
     end if
@@ -557,6 +564,13 @@ module module_write_netcdf
     ! write tile (tile_varid)
     if (do_io .and. is_cubed_sphere) then
        ncerr = nf90_put_var(ncid, tile_varid, values=[1,2,3,4,5,6]); NC_ERR_STOP(ncerr)
+    end if
+
+    ! write time_iso (timeiso_varid)
+    if (do_io) then
+       call ESMF_AttributeGet(wrtgrid, convention="NetCDF", purpose="FV3", &
+                              name="time_iso", value=varcval, rc=rc); ESMF_ERR_RETURN(rc)
+       ncerr = nf90_put_var(ncid, timeiso_varid, values=[trim(varcval)]); NC_ERR_STOP(ncerr)
     end if
 
     ! write variables (fields)
@@ -631,12 +645,12 @@ module module_write_netcdf
          if (typekind == ESMF_TYPEKIND_R4) then
             if (par) then
                call ESMF_FieldGet(fcstField(i), localDe=0, farrayPtr=array_r4_3d, rc=rc); ESMF_ERR_RETURN(rc)
-               if (ideflate > 0 .and. nbits > 0) then
+               if (ideflate(grid_id) > 0 .and. nbits(grid_id) > 0) then
                   dataMax = maxval(array_r4_3d)
                   dataMin = minval(array_r4_3d)
                   call mpi_allreduce(mpi_in_place,dataMax,1,mpi_real4,mpi_max,mpi_comm,ierr)
                   call mpi_allreduce(mpi_in_place,dataMin,1,mpi_real4,mpi_min,mpi_comm,ierr)
-                  call quantize_array(array_r4_3d, dataMin, dataMax, nbits, compress_err(i))
+                  call quantize_array(array_r4_3d, dataMin, dataMax, nbits(grid_id), compress_err(i))
                   call mpi_allreduce(mpi_in_place,compress_err(i),1,mpi_real4,mpi_max,mpi_comm,ierr)
                end if
                ncerr = nf90_put_var(ncid, varids(i), values=array_r4_3d, start=start_idx); NC_ERR_STOP(ncerr)
@@ -647,16 +661,16 @@ module module_write_netcdf
                      call ESMF_ArrayGather(array, array_r4_3d_cube(:,:,:,t), rootPet=0, tile=t, rc=rc); ESMF_ERR_RETURN(rc)
                   end do
                   if (mype==0) then
-                     if (ideflate > 0 .and. nbits > 0) then
-                        call quantize_array(array_r4_3d_cube, minval(array_r4_3d_cube), maxval(array_r4_3d_cube), nbits, compress_err(i))
+                     if (ideflate(grid_id) > 0 .and. nbits(grid_id) > 0) then
+                        call quantize_array(array_r4_3d_cube, minval(array_r4_3d_cube), maxval(array_r4_3d_cube), nbits(grid_id), compress_err(i))
                      end if
                      ncerr = nf90_put_var(ncid, varids(i), values=array_r4_3d_cube, start=start_idx); NC_ERR_STOP(ncerr)
                   end if
                else
                   call ESMF_FieldGather(fcstField(i), array_r4_3d, rootPet=0, rc=rc); ESMF_ERR_RETURN(rc)
                   if (mype==0) then
-                     if (ideflate > 0 .and. nbits > 0) then
-                        call quantize_array(array_r4_3d, minval(array_r4_3d), maxval(array_r4_3d), nbits, compress_err(i))
+                     if (ideflate(grid_id) > 0 .and. nbits(grid_id) > 0) then
+                        call quantize_array(array_r4_3d, minval(array_r4_3d), maxval(array_r4_3d), nbits(grid_id), compress_err(i))
                      end if
                      ncerr = nf90_put_var(ncid, varids(i), values=array_r4_3d, start=start_idx); NC_ERR_STOP(ncerr)
                   end if
@@ -693,12 +707,12 @@ module module_write_netcdf
 
     end do ! end fieldCount
 
-    if (ideflate > 0 .and. nbits > 0 .and. do_io) then
+    if (ideflate(grid_id) > 0 .and. nbits(grid_id) > 0 .and. do_io) then
        ncerr = nf90_redef(ncid=ncid); NC_ERR_STOP(ncerr)
        do i=1, fieldCount
           if (compress_err(i) > 0) then
              ncerr = nf90_put_att(ncid, varids(i), 'max_abs_compression_error', compress_err(i)); NC_ERR_STOP(ncerr)
-             ncerr = nf90_put_att(ncid, varids(i), 'nbits', nbits); NC_ERR_STOP(ncerr)
+             ncerr = nf90_put_att(ncid, varids(i), 'nbits', nbits(grid_id)); NC_ERR_STOP(ncerr)
           end if
        end do
        ncerr = nf90_enddef(ncid=ncid); NC_ERR_STOP(ncerr)

@@ -49,8 +49,8 @@
       integer :: lat_start, lon_start
       integer :: lat_end, lon_end
       real    :: latstart, latlast, lonstart, lonlast
-      integer,dimension(:),allocatable :: lat_start_wrtgrp
-      integer,dimension(:),allocatable :: lat_end_wrtgrp
+      integer,dimension(:),allocatable :: lat_start_wrtgrp, lon_start_wrtgrp
+      integer,dimension(:),allocatable :: lat_end_wrtgrp, lon_end_wrtgrp
       real,dimension(:,:),allocatable  :: lonPtr, latPtr
 !
 !--------------------------
@@ -79,8 +79,6 @@
 !-------------------------------------
 !
       type(ESMF_Time)         :: io_basetime
-      type(ESMF_TimeInterval) :: io_currtimediff
-      real                    :: nfhour
       integer                 :: idate(7)
       integer                 :: fdate(7)
 !
@@ -89,7 +87,6 @@
 !-----------------------------------------
 !
       logical :: output_history
-      logical :: write_netcdfflag
 !
 !-----------------------------------------
 !***  POST flags and required variables
