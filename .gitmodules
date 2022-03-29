@@ -8,8 +8,8 @@
   branch = main
 [submodule "ccpp/physics"]
   path = ccpp/physics
-  url = https://github.com/HelinWei-NOAA/ccpp-physics
-  branch = lsm_upgrades_for_p8c
+  url = https://github.com/NCAR/ccpp-physics
+  branch = main
 [submodule "upp"]
   path = upp
   url = https://github.com/NOAA-EMC/UPP
