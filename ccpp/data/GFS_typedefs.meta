@@ -4027,6 +4027,12 @@
   units = index
   dimensions = ()
   type = integer
+[iopt_trs]
+  standard_name = control_for_land_surface_scheme_surface_thermal_roughness
+  long_name = choice for surface thermal roughness option (see noahmp module for definition)
+  units = index
+  dimensions = ()
+  type = integer
 [use_ufo]
   standard_name = flag_for_gcycle_surface_option
   long_name = flag for gcycle surface option
