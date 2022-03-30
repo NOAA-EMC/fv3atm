@@ -27,7 +27,7 @@
                             modelname, numx, ista, iend, ista_m, ista_m2, &
                             iend_m, iend_m2, ista_2l, iend_2u, &
                             ileft,iright,ileftb,irightb, &
-                            icnt2, idsp2, &
+                            icnt2, idsp2,isxa,iexa,jsxa,jexa, &
                             num_procs
 !
 !-----------------------------------------------------------------------
@@ -128,6 +128,11 @@
 !
       isumm=0
       isumm2=0
+      allocate(isxa(0:num_procs-1) )
+      allocate(jsxa(0:num_procs-1) )
+      allocate(iexa(0:num_procs-1) )
+      allocate(jexa(0:num_procs-1) )
+
       do i = 1, num_procs
 !       icnt(i-1) = (jtegrp(i)-jtsgrp(i)+1)*im
 !       idsp(i-1) = (jtsgrp(i)-1)*im
@@ -135,6 +140,10 @@
 !           print *, ' i, icnt(i),idsp(i) = ',i-1,icnt(i-1),idsp(i-1)
 !       end if
        icnt(i-1) = (jtegrp(i)-jtsgrp(i)+1)*(itegrp(i)-itsgrp(i)+1)
+       isxa(i-1) = itsgrp(i)
+       iexa(i-1) = itegrp(i)
+       jsxa(i-1) = jtsgrp(i)
+       jexa(i-1) = jtegrp(i)
        idsp(i-1) = isumm
        isumm=isumm+icnt(i-1)
        if(jtsgrp(i)==1 .or. jtegrp(i)==jm) then
@@ -162,10 +171,13 @@
 ! special for c-grid v
       jvend_2u = min(jend + 2, jm+1 )
       if(mype==0)print *,'im=',im,'jsta_2l=',jsta_2l,'jend_2u=',jend_2u,'lm=',lm
-      print *,'GWVX mype/me=',mype,me,'im=',im,'jsta   =',jsta   ,'jend   =',jend   ,'lm=',lm
-      print *,'GWVX mype/me=',mype,me,'im=',im,'jsta_2l=',jsta_2l,'jend_2u=',jend_2u,'lm=',lm
-      print *,'GWVX mype/me=',mype,me,'im=',im,'ista   =',ista   ,'iend   =',iend   ,'lm=',lm
-      print *,'GWVX mype/me=',mype,me,'im=',im,'ista_2l=',ista_2l,'iend_2u=',iend_2u,'lm=',lm
+      print 901,'GWVX mype/me=',mype,me,'im=',im,'jsta   =',jsta   ,'jend   =',jend   ,'lm=',lm
+      print 901,'GWVX mype/me=',mype,me,'im=',im,'jsta_m =',jsta_m ,'jend_m =',jend_m ,'lm=',lm
+      print 901,'GWVX mype/me=',mype,me,'im=',im,'jsta_2l=',jsta_2l,'jend_2u=',jend_2u,'lm=',lm
+      print 901,'GWVX mype/me=',mype,me,'im=',im,'ista   =',ista   ,'iend   =',iend   ,'lm=',lm
+      print 901,'GWVX mype/me=',mype,me,'im=',im,'ista_m =',ista_m ,'iend_m =',iend_m ,'lm=',lm
+      print 901,'GWVX mype/me=',mype,me,'im=',im,'ista_2l=',ista_2l,'iend_2u=',iend_2u,'lm=',lm
+  901 format(15a,2i4,4(1x,a8,i4))
 !       NEW neighbors
       ileft = me - 1
       iright = me + 1
