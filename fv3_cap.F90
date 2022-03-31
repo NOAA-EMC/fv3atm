@@ -393,7 +393,7 @@ module fv3gfs_cap_mod
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
     call ESMF_InfoGetAlloc(info, key="is_moving", values=is_moving, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-    
+
     needGridTransfer = any(is_moving)
 
     allocate(is_moving_fb(FBcount))
@@ -406,7 +406,7 @@ module fv3gfs_cap_mod
     write(msgString,'(A,8L4)') trim(subname)//" is_moving = ", is_moving
     call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_INFO, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-    
+
 !
 !-----------------------------------------------------------------------
 !***  create and initialize Write component(s).
@@ -529,7 +529,7 @@ module fv3gfs_cap_mod
           ! obtain wrtComp VM needed for acceptor DistGrid
           call ESMF_GridCompGet(wrtComp(i), vm=wrtVM, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-        
+
           ! loop over all FieldBundle in the states, for moving nests initiate GridTransfer
           do j=1, FBcount
             if (is_moving_fb(j)) then
@@ -612,12 +612,12 @@ module fv3gfs_cap_mod
               endif
             endif
           enddo
-          
+
           ! Call into wrtComp(i) Initialize() phase=3 to finish up creating the mirror Fields
           call ESMF_GridCompInitialize(wrtComp(i), importState=wrtState(i), clock=clock, phase=3, userRc=urc, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
           if (ESMF_LogFoundError(rcToCheck=urc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
-          
+
           ! Reconcile any changes (finished mirror Fields) across the wrtState(i)
           call ESMF_StateReconcile(wrtState(i), rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return

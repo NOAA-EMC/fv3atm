@@ -13,7 +13,7 @@ module inline_post
 
   contains
 
-  subroutine inline_post_run(wrt_int_state,mypei,mpicomp,lead_write,      &
+  subroutine inline_post_run(wrt_int_state,grid_id,mypei,mpicomp,lead_write,      &
              mynfhr,mynfmin,mynfsec)
 !
 !  revision history:
@@ -28,6 +28,7 @@ module inline_post
 !
       type(wrt_internal_state),intent(in)       :: wrt_int_state
       integer,intent(in)                        :: mypei
+      integer,intent(in)                        :: grid_id
       integer,intent(in)                        :: mpicomp
       integer,intent(in)                        :: lead_write
       integer,intent(in)                        :: mynfhr
@@ -40,11 +41,12 @@ module inline_post
 !
 !-----------------------------------------------------------------------
 !
-    subroutine inline_post_getattr(wrt_int_state)
+    subroutine inline_post_getattr(wrt_int_state,grid_id)
 !
       implicit none
 !
       type(wrt_internal_state),intent(inout)    :: wrt_int_state
+      integer,intent(in)                        :: grid_id
 !
 !
       print *,'in stub inline_post_getattr - not supported on this machine, return'

@@ -1442,12 +1442,6 @@
       deallocate(attNameList, attNameList2, typekindList)
 !
 !-----------------------------------------------------------------------
-!***  SET THE FIRST HISTORY FILE'S TIME INDEX.
-!-----------------------------------------------------------------------
-!
-      wrt_int_state%NFHOUR = 0
-!
-!-----------------------------------------------------------------------
 !***  Initialize for POST
 !-----------------------------------------------------------------------
 !
@@ -1676,6 +1670,7 @@
       type(ESMF_FieldBundle)                :: file_bundle, mirror_bundle
       type(ESMF_StateItem_Flag)             :: itemType
       type(ESMF_Time)                       :: currtime
+      type(ESMF_TimeInterval)               :: io_currtimediff
       type(ESMF_Grid)                       :: fbgrid, wrtGrid
       type(ESMF_State),save                 :: stateGridFB
       type(optimizeT), save                 :: optimize(4)
@@ -1689,8 +1684,8 @@
 !
       integer                               :: i,j,n,mype,nolog, grid_id, localPet
 !
-      integer                               :: nf_hours,nf_seconds, nf_minutes,     &
-                                               nseconds,nseconds_num,nseconds_den
+      integer                               :: nf_hours,nf_seconds,nf_minutes
+      real(ESMF_KIND_R8)                    :: nfhour
 !
       integer                               :: nbdl, date(6), ndig, nnnn
       integer                               :: step=1
@@ -1700,7 +1695,7 @@
 !
       character(esmf_maxstr)                :: filename,compname, traceString
       character(40)                         :: cfhour, cform
-      real(ESMF_KIND_R8)                    :: time
+      character(20)                         :: time_iso
 !
       type(ESMF_Grid)                       :: grid
       type(ESMF_Info)                       :: info
@@ -1764,67 +1759,39 @@
 !*** get current time and elapsed forecast time
 
       call ESMF_ClockGet(clock=CLOCK, currTime=CURRTIME, rc=rc)
-
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
       call ESMF_TimeGet(time=currTime,yy=date(1),mm=date(2),dd=date(3),h=date(4), &
                         m=date(5),s=date(6),rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
       wrt_int_state%fdate(7) = 1
       wrt_int_state%fdate(1:6) = date(1:6)
+      write(time_iso,'(I4,"-",I2.2,"-",I2.2,"T",I2.2,":",I2.2,":",I2.2,"Z")') date(1:6)
 
-       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-!    if(mype == lead_write_task) print *,'in wrt run, curr time=',date
-!
       call ESMF_TimeGet(time=wrt_int_state%IO_BASETIME,yy=date(1),mm=date(2),dd=date(3),h=date(4), &
                         m=date(5),s=date(6),rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-!    print *,'in wrt run, io_baseline time=',date
-!
-      wrt_int_state%IO_CURRTIMEDIFF = CURRTIME-wrt_int_state%IO_BASETIME
-!
-      call ESMF_TimeIntervalGet(timeinterval=wrt_int_state%IO_CURRTIMEDIFF &
-                                   ,h           =nf_hours               &  !<-- Hours of elapsed time
-                                   ,m           =nf_minutes             &  !<-- Minutes of elapsed time
-                                   ,s           =nseconds               &  !<-- Seconds of elapsed time
-                                   ,sN          =nseconds_num           &  !<-- Numerator of fractional elapsed seconds
-                                   ,sD          =nseconds_den           &  !<-- denominator of fractional elapsed seconds
-                                   ,rc          =RC)
-       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-!       if (lprnt) print *,'in wrt run, nf_hours=',nf_hours,nf_minutes,nseconds, &
-!         'nseconds_num=',nseconds_num,nseconds_den,'mype=',mype
-!
-      nf_seconds = nf_hours*3600+nf_minuteS*60+nseconds+real(nseconds_num)/real(nseconds_den)
-      wrt_int_state%nfhour = nf_seconds/3600.
-      nf_hours   = int(nf_seconds/3600.)
-      if(lprnt) print *,'in write grid comp, nf_hours=',nf_hours
-      ! if iau_offset > nf_hours, don't write out anything
+      io_currtimediff = currtime - wrt_int_state%IO_BASETIME
+
+      call ESMF_TimeIntervalGet(timeinterval=io_currtimediff &
+                               ,h_r8=nfhour,h=nf_hours,m=nf_minutes,s=nf_seconds,rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
       if (nf_hours < 0) return
 
-      nf_minutes = int((nf_seconds-nf_hours*3600.)/60.)
-      nseconds   = int(nf_seconds-nf_hours*3600.-nf_minutes*60.)
       if (nsout > 0 .or. lflname_fulltime) then
         ndig = max(log10(nf_hours+0.5)+1., 3.)
         write(cform, '("(I",I1,".",I1,",A1,I2.2,A1,I2.2)")') ndig, ndig
-        write(cfhour, cform) nf_hours,'-',nf_minutes,'-',nseconds
+        write(cfhour, cform) nf_hours,'-',nf_minutes,'-',nf_seconds
       else
         ndig = max(log10(nf_hours+0.5)+1., 3.)
         write(cform, '("(I",I1,".",I1,")")') ndig, ndig
         write(cfhour, cform) nf_hours
       endif
 !
-       if(lprnt) print *,'in wrt run, nf_hours=',nf_hours,nf_minutes,nseconds, &
-                'nseconds_num=',nseconds_num,nseconds_den,' FBCount=',FBCount,' cfhour=',trim(cfhour)
-
-!    if(lprnt) print *,'in wrt run, cfhour=',cfhour, &
-!     print *,'in wrt run, cfhour=',cfhour, &
-!        ' nf_seconds=',nf_seconds,wrt_int_state%nfhour
-
-! access the time Attribute which is updated by the driver each time
-      call ESMF_AttributeGet(imp_state_write, convention="NetCDF", purpose="FV3", &
-                              name="time", value=time, rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
+       if(lprnt) print *,'in wrt run, nfhour=',nfhour,' cfhour=',trim(cfhour)
 !
 !-----------------------------------------------------------------------
 !*** loop on the "output_" FieldBundles, i.e. files that need to write out
@@ -2030,7 +1997,7 @@
         endif
 
         call inline_post_run(wrt_int_state, 1, mype, wrt_mpi_comm, lead_write_task, &
-                          nf_hours, nf_minutes,nseconds)
+                          nf_hours, nf_minutes, nf_seconds)
         wend = MPI_Wtime()
         if (lprnt) then
           write(*,'(A,F10.5,A,I4.2,A,I2.2)')' actual    inline post Time is ',wend-wbeg &
@@ -2147,7 +2114,12 @@
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
           call ESMF_AttributeSet(fbgrid, convention="NetCDF", purpose="FV3", &
-                               name="time", value=real(wrt_int_state%nfhour,ESMF_KIND_R8), rc=rc)
+                               name="time", value=nfhour, rc=rc)
+
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+          call ESMF_AttributeSet(fbgrid, convention="NetCDF", purpose="FV3", &
+                               name="time_iso", value=trim(time_iso), rc=rc)
 
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
@@ -2265,7 +2237,7 @@
       enddo
 !
       open(nolog,file='logf'//trim(cfhour),form='FORMATTED')
-        write(nolog,100)wrt_int_state%nfhour,idate(1:6)
+        write(nolog,100)nfhour,idate(1:6)
 100     format(' completed fv3gfs fhour=',f10.3,2x,6(i4,2x))
       close(nolog)
     endif
@@ -4068,45 +4040,55 @@
      subroutine lambert(stlat1,stlat2,c_lat,c_lon,glon,glat,x,y,inv)
 
 !-------------------------------------------------------------------------------
-      real(ESMF_KIND_R8),      intent(in)  :: stlat1,stlat2,c_lat,c_lon
-      real(ESMF_KIND_R8),      intent(inout)  :: glon, glat
+      real(ESMF_KIND_R8),      intent(in)    :: stlat1,stlat2,c_lat,c_lon
+      real(ESMF_KIND_R8),      intent(inout) :: glon, glat
       real(ESMF_KIND_R8),      intent(inout) :: x, y
-      integer,                 intent(in)  :: inv
+      integer,                 intent(in)    :: inv
 !-------------------------------------------------------------------------------
-!     real(ESMF_KIND_R8), parameter :: pi=3.14159265358979323846
-      real(ESMF_KIND_R8), parameter :: dtor=pi/180.0
-      real(ESMF_KIND_R8), parameter :: rtod=180.0/pi
+!     real(ESMF_KIND_R8), parameter :: pi = 3.14159265358979323846
+      real(ESMF_KIND_R8), parameter :: dtor = pi/180.0
+      real(ESMF_KIND_R8), parameter :: rtod = 180.0/pi
       real(ESMF_KIND_R8), parameter :: a = 6371200.0
 !-------------------------------------------------------------------------------
-! inv == 1     (glon,glat) ---> (x,y)    lat/lon to grid
-! inv == -1    (x,y) ---> (glon,glat)    grid to lat/lon
+! inv ==  1    (glon,glat) ---> (x,y)
+! inv == -1    (x,y) ---> (glon,glat)
 
-      real(ESMF_KIND_R8) :: en,f,rho,rho0, dlon, theta
+      real(ESMF_KIND_R8) :: xp, yp, en, de, rho, rho0, rho2, dlon, theta, dr2
+      real(ESMF_KIND_R8) :: h = 1.0
 
-      IF (stlat1 == stlat2) THEN
-         en=sin(stlat1*dtor)
-      ELSE
-         en=log(cos(stlat1*dtor)/cos(stlat2*dtor))/ &
-            log(tan((45+0.5*stlat2)*dtor)/tan((45+0.5*stlat1)*dtor))
-      ENDIF
+      ! For reference see:
+      ! John P. Snyder (1987), Map projections: A working manual (pp. 104-110)
+      ! https://doi.org/10.3133/pp1395
 
-      f=(cos(stlat1*dtor)*tan((45+0.5*stlat1)*dtor)**en)/en
-      rho0=a*f/(tan((45+0.5*c_lat)*dtor)**en)
+      if (stlat1 == stlat2) then
+         en = sin(stlat1*dtor)
+      else
+         en = log(cos(stlat1*dtor)/cos(stlat2*dtor)) / &
+              log(tan((45+0.5*stlat2)*dtor)/tan((45+0.5*stlat1)*dtor)) ! (15-3)
+      endif
+      h = sign(1.0_ESMF_KIND_R8,en)
+
+      de = a*(cos(stlat1*dtor)*tan((45+0.5*stlat1)*dtor)**en)/en       ! (15-2)
+      rho0 = de/(tan((45+0.5*c_lat)*dtor)**en)                         ! (15-1a)
 
       if (inv == 1) then          ! FORWARD TRANSFORMATION
-            rho=a*f/(tan((45+0.5*glat)*dtor)**en)
-            dlon=modulo(glon-c_lon+180+3600,360.)-180.D0
-            theta=en*dlon*dtor
-            x=rho*sin(theta)
-            y=rho0-rho*cos(theta)
+         rho = de/(tan((45+0.5*glat)*dtor)**en)                        ! (15-1)
+         dlon = modulo(glon-c_lon+180.0+3600.0,360.0)-180.0
+         theta = en*dlon*dtor                                          ! (14-4)
+         x = rho*sin(theta)                                            ! (14-1)
+         y = rho0-rho*cos(theta)                                       ! (14-2)
       else if (inv == -1) then    ! INVERSE TRANSFORMATION
-            y=rho0-y
-            rho = sqrt(x*x+y*y)
-            theta=atan2(x,y)
-            glon=c_lon+(theta/en)*rtod
-            glon=modulo(glon+180+3600,360.)-180.D0
-!            glat=(2.0*atan((a*f/rho)**(1.0/en))-0.5*pi)*rtod
-            glat=(0.5*pi-2.0*atan((rho/(a*f))**(1.0/en)))*rtod
+         xp = h*x;
+         yp = h*(rho0-y)
+         theta = atan2(xp,yp)                                          ! (14-11)
+         glon = c_lon+(theta/en)*rtod                                  ! (14-9)
+         glon = modulo(glon+180.0+3600.0,360.0)-180.0
+         rho2 = xp*xp+yp*yp                                            ! (14-10)
+         if (rho2 == 0.0) then
+            glat = h*90.0
+         else
+            glat = 2.0*atan((de*de/rho2)**(1.0/(2.0*en)))*rtod-90.0    ! (15-5)
+         endif
       else
         write (unit=*,fmt=*) " lambert: unknown inv argument"
         return
