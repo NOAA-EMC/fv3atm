@@ -177,7 +177,7 @@
       print 901,'GWVX mype/me=',mype,me,'im=',im,'ista   =',ista   ,'iend   =',iend   ,'lm=',lm
       print 901,'GWVX mype/me=',mype,me,'im=',im,'ista_m =',ista_m ,'iend_m =',iend_m ,'lm=',lm
       print 901,'GWVX mype/me=',mype,me,'im=',im,'ista_2l=',ista_2l,'iend_2u=',iend_2u,'lm=',lm
-  901 format(15a,2i4,4(1x,a8,i4))
+  901 format(a15,2i4,4(1x,a8,i4))
 !       NEW neighbors
       ileft = me - 1
       iright = me + 1

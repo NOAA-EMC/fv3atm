@@ -580,6 +580,9 @@ module post_regional
         enddo
       enddo
 
+      call exch(gdlat)
+      call exch(gdlon)
+
 !$omp parallel do default(none),private(i,j,ip1), &
 !$omp&  shared(jsta,jend_m,im,dx,gdlat,gdlon,dy,ista,iend_m)
       do j = jsta, jend_m
