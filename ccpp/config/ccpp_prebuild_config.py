@@ -174,7 +174,7 @@ SCHEME_FILES = [
     'physics/physics/rrtmg_lw_post.F90',
     'physics/physics/rrtmg_lw_pre.F90',
     'physics/physics/rrtmg_sw_post.F90',
-    'physics/physics/rrtmg_sw_pre.F90',
+    'physics/physics/rad_sw_pre.F90',
     'physics/physics/sfc_diag.f',
     'physics/physics/sfc_diag_post.F90',
     'physics/physics/sfc_drv_ruc.F90',
@@ -200,15 +200,12 @@ SCHEME_FILES = [
     'physics/physics/GFS_rrtmgp_setup.F90',
     'physics/physics/GFS_rrtmgp_pre.F90',
     'physics/physics/rrtmgp_lw_pre.F90',
-    'physics/physics/GFS_rrtmgp_sw_pre.F90',
     'physics/physics/GFS_rrtmgp_lw_post.F90',
     'physics/physics/rrtmgp_lw_cloud_sampling.F90',
     'physics/physics/rrtmgp_sw_cloud_sampling.F90',
     'physics/physics/GFS_cloud_diagnostics.F90',
-    'physics/physics/GFS_rrtmgp_thompsonmp_pre.F90',
-    'physics/physics/GFS_rrtmgp_gfdlmp_pre.F90',
-    'physics/physics/GFS_rrtmgp_zhaocarr_pre.F90',
-    'physics/physics/GFS_rrtmgp_cloud_overlap_pre.F90',
+    'physics/physics/GFS_rrtmgp_cloud_mp.F90',
+    'physics/physics/GFS_rrtmgp_cloud_overlap.F90',
     'physics/physics/GFS_rrtmgp_sw_post.F90'
     ]
 
