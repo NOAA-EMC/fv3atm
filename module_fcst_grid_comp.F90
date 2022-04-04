@@ -86,7 +86,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
   integer                                         :: ngrids, mygrid
   integer,dimension(:),allocatable                :: grid_number_on_all_pets(:)
 
-  integer                     :: num_atmos_calls, intrm_rst
+  integer                     :: intrm_rst, n_atmsteps
 
 !----- coupled model data -----
 
@@ -324,13 +324,10 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !
     type(ESMF_VM)                          :: VM
     type(ESMF_Time)                        :: CurrTime, StartTime, StopTime
-    type(ESMF_TimeInterval)                :: RunDuration
     type(ESMF_Config)                      :: cf
 
-    integer                                :: Run_length
     integer,dimension(6)                   :: date, date_end
 !
-    character(len=9) :: month
     integer :: initClock, unit, total_inttime
     integer :: mype
     character(4) dateSY
@@ -523,19 +520,11 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
       endif ! fexist
     endif ! mype == 0
 
-    RunDuration = StopTime - CurrTime
-
-    CALL ESMF_TimeIntervalGet(RunDuration, S=Run_length, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-!
     call diag_manager_init (TIME_INIT=date)
     call diag_manager_set_time_end(Time_end)
 !
     Time_step = set_time (dt_atmos,0)
-    num_atmos_calls = Run_length / dt_atmos
-    if (mype == 0) write(*,*)'num_atmos_calls=',num_atmos_calls,'time_init=', &
-                    date_init,'time=',date,'time_end=',date_end,'dt_atmos=',dt_atmos, &
-                    'Run_length=',Run_length
+    if (mype == 0) write(*,*)'time_init=', date_init,'time=',date,'time_end=',date_end,'dt_atmos=',dt_atmos
 
 ! set up forecast time array that controls when to write out restart files
     frestart = 0
@@ -588,22 +577,19 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 ! if to write out restart at the end of forecast
     restart_endfcst = .false.
     if ( ANY(frestart(:) == total_inttime) ) restart_endfcst = .true.
+! frestart only contains intermediate restart
+    do i=1,size(frestart)
+      if(frestart(i) == total_inttime) then 
+        frestart(i) = 0
+        exit
+      endif
+    enddo
     if (mype == 0) print *,'frestart=',frestart(1:10)/3600, 'restart_endfcst=',restart_endfcst, &
       'total_inttime=',total_inttime
 ! if there is restart writing during integration
     intrm_rst         = 0
     if (frestart(1)>0) intrm_rst = 1
-!
-!----- write time stamps (for start time and end time) ------
 
-     call mpp_open( unit, 'time_stamp.out', nohdrs=.TRUE. )
-     month = month_name(date(2))
-     if ( mpp_pe() == mpp_root_pe() ) write (unit,20) date, month(1:3)
-     month = month_name(date_end(2))
-     if ( mpp_pe() == mpp_root_pe() ) write (unit,20) date_end, month(1:3)
-     call mpp_close (unit)
- 20  format (6i4,2x,a3)
-!
 !------ initialize component models ------
 
      call  atmos_model_init (Atmos, Time_init, Time, Time_step)
@@ -832,7 +818,26 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
       call ESMF_AttributeSet(exportState, convention="NetCDF", purpose="FV3", &
                                name="time:calendar", value=uppercase(trim(calendar)), rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-!
+
+! Add time_iso Attribute to the exportState
+      call ESMF_AttributeAdd(exportState, convention="NetCDF", purpose="FV3", &
+        attrList=(/ "time_iso               ", &
+                    "time_iso:long_name     ", &
+                    "time_iso:description   " /), rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+      call ESMF_AttributeSet(exportState, convention="NetCDF", purpose="FV3", &
+                               name="time_iso", value="yyyy-mm-ddThh:mm:ssZ", rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+      call ESMF_AttributeSet(exportState, convention="NetCDF", purpose="FV3", &
+                               name="time_iso:description", value="ISO 8601 Date String", rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+      call ESMF_AttributeSet(exportState, convention="NetCDF", purpose="FV3", &
+                               name="time_iso:long_name", value="valid time", rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
 ! Create FieldBundle for Fields that need to be regridded bilinear
       if( quilting ) then
 
@@ -946,8 +951,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !
 !***  local variables
 !
-      integer                    :: mype, na
-      integer(kind=ESMF_KIND_I8) :: ntimestep_esmf
+      integer                    :: mype, seconds
       real(kind=8)               :: mpi_wtime, tbeg1
 !
 !-----------------------------------------------------------------------
@@ -961,11 +965,9 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !
       call ESMF_GridCompGet(fcst_comp, localpet=mype, rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-!
-      call ESMF_ClockGet(clock, advanceCount=NTIMESTEP_ESMF, rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-      na = NTIMESTEP_ESMF
+      call get_time(Atmos%Time - Atmos%Time_init, seconds)
+      n_atmsteps = seconds/dt_atmos
 !
 !-----------------------------------------------------------------------
 ! *** call fcst integration subroutines
@@ -977,7 +979,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
       call atmos_model_exchange_phase_1 (Atmos, rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-      if (mype == 0) write(*,*)"PASS: fcstRUN phase 1, na = ",na, ' time is ', mpi_wtime()-tbeg1
+      if (mype == 0) write(*,*)"PASS: fcstRUN phase 1, n_atmsteps = ",n_atmsteps, ' time is ', mpi_wtime()-tbeg1
 !
 !-----------------------------------------------------------------------
 !
@@ -1000,8 +1002,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !
 !***  local variables
 !
-      integer                    :: mype, na, date(6), seconds
-      integer(kind=ESMF_KIND_I8) :: ntimestep_esmf
+      integer                    :: mype, date(6), seconds
       character(len=64)          :: timestamp
       integer                    :: unit
       real(kind=8)               :: mpi_wtime, tbeg1
@@ -1017,11 +1018,6 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !
       call ESMF_GridCompGet(fcst_comp, localpet=mype, rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-      call ESMF_ClockGet(clock, advanceCount=NTIMESTEP_ESMF, rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-      na = NTIMESTEP_ESMF
 !
 !-----------------------------------------------------------------------
 ! *** call fcst integration subroutines
@@ -1034,35 +1030,33 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 
       !--- intermediate restart
       if (intrm_rst>0) then
-        if (na /= num_atmos_calls-1) then
-          call get_time(Atmos%Time - Atmos%Time_init, seconds)
-          if (ANY(frestart(:) == seconds)) then
-            if (mype == 0) write(*,*)'write out restart at na=',na,' seconds=',seconds,  &
-                                     'integration lenght=',na*dt_atmos/3600.
+        call get_time(Atmos%Time - Atmos%Time_init, seconds)
+        if (ANY(frestart(:) == seconds)) then
+          if (mype == 0) write(*,*)'write out restart at n_atmsteps=',n_atmsteps,' seconds=',seconds,  &
+                                   'integration length=',n_atmsteps*dt_atmos/3600.
 
-            timestamp = date_to_string (Atmos%Time)
-            call atmos_model_restart(Atmos, timestamp)
-            call write_stoch_restart_atm('RESTART/'//trim(timestamp)//'.atm_stoch.res.nc')
+          timestamp = date_to_string (Atmos%Time)
+          call atmos_model_restart(Atmos, timestamp)
+          call write_stoch_restart_atm('RESTART/'//trim(timestamp)//'.atm_stoch.res.nc')
 
-            !----- write restart file ------
-            if (mpp_pe() == mpp_root_pe())then
-                call get_date (Atmos%Time, date(1), date(2), date(3),  &
-                                                       date(4), date(5), date(6))
-                call mpp_open( unit, 'RESTART/'//trim(timestamp)//'.coupler.res', nohdrs=.TRUE. )
-                write( unit, '(i6,8x,a)' )calendar_type, &
-                     '(Calendar: no_calendar=0, thirty_day_months=1, julian=2, gregorian=3, noleap=4)'
+          !----- write restart file ------
+          if (mpp_pe() == mpp_root_pe())then
+              call get_date (Atmos%Time, date(1), date(2), date(3),  &
+                                                     date(4), date(5), date(6))
+              call mpp_open( unit, 'RESTART/'//trim(timestamp)//'.coupler.res', nohdrs=.TRUE. )
+              write( unit, '(i6,8x,a)' )calendar_type, &
+                   '(Calendar: no_calendar=0, thirty_day_months=1, julian=2, gregorian=3, noleap=4)'
 
-                write( unit, '(6i6,8x,a)' )date_init, &
-                     'Model start time:   year, month, day, hour, minute, second'
-                write( unit, '(6i6,8x,a)' )date, &
-                     'Current model time: year, month, day, hour, minute, second'
-                call mpp_close(unit)
-            endif
+              write( unit, '(6i6,8x,a)' )date_init, &
+                   'Model start time:   year, month, day, hour, minute, second'
+              write( unit, '(6i6,8x,a)' )date, &
+                   'Current model time: year, month, day, hour, minute, second'
+              call mpp_close(unit)
           endif
         endif
       endif
 
-      if (mype == 0) write(*,*)"PASS: fcstRUN phase 2, na = ",na, ' time is ', mpi_wtime()-tbeg1
+      if (mype == 0) write(*,*)"PASS: fcstRUN phase 2, n_atmsteps = ",n_atmsteps, ' time is ', mpi_wtime()-tbeg1
 !
 !-----------------------------------------------------------------------
 !

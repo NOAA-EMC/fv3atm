@@ -162,6 +162,7 @@ SCHEME_FILES = [
     'physics/physics/mp_thompson_pre.F90',
     'physics/physics/mp_thompson.F90',
     'physics/physics/mp_thompson_post.F90',
+    'physics/physics/mp_nssl.F90'                      ,
     'physics/physics/ozphys.f',
     'physics/physics/ozphys_2015.f',
     'physics/physics/precpd.f',
@@ -213,7 +214,7 @@ SCHEME_FILES = [
 
 # Default build dir, relative to current working directory,
 # if not specified as command-line argument
-DEFAULT_BUILD_DIR = 'FV3'
+DEFAULT_BUILD_DIR = 'build'
 
 # Auto-generated makefile/cmakefile snippets that contain all type definitions
 TYPEDEFS_MAKEFILE   = '{build_dir}/physics/CCPP_TYPEDEFS.mk'
@@ -242,6 +243,7 @@ STATIC_API_CMAKEFILE = '{build_dir}/physics/CCPP_STATIC_API.cmake'
 STATIC_API_SOURCEFILE = '{build_dir}/physics/CCPP_STATIC_API.sh'
 
 # Directory for writing HTML pages generated from metadata files
+# used by metadata2html.py for generating scientific documentation
 METADATA_HTML_OUTPUT_DIR = '{build_dir}/physics/physics/docs'
 
 # HTML document containing the model-defined CCPP variables
