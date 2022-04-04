@@ -918,6 +918,7 @@ module GFS_typedefs
     integer              :: iopt_snf  !rainfall & snowfall (1-jordan91; 2->bats; 3->noah)
     integer              :: iopt_tbot !lower boundary of soil temperature (1->zero-flux; 2->noah)
     integer              :: iopt_stc  !snow/soil temperature time scheme (only layer 1)
+    integer              :: iopt_trs  !thermal roughness scheme (1-z0h=z0m; 2-czil; 3-ec;4-kb inversed)
 
     logical              :: use_ufo         !< flag for gcycle surface option
 
@@ -3357,6 +3358,7 @@ module GFS_typedefs
     integer              :: iopt_snf       =  1  !rainfall & snowfall (1-jordan91; 2->bats; 3->noah)
     integer              :: iopt_tbot      =  2  !lower boundary of soil temperature (1->zero-flux; 2->noah)
     integer              :: iopt_stc       =  1  !snow/soil temperature time scheme (only layer 1)
+    integer              :: iopt_trs       =  2  !thermal roughness scheme (1-z0h=z0m; 2-czil; 3-ec;4-kb reversed)
 
     logical              :: use_ufo        = .false.                  !< flag for gcycle surface option
 
@@ -3500,12 +3502,11 @@ module GFS_typedefs
     real(kind=kind_phys) :: ral_ts         = 0.0d0           !< time scale for Rayleigh damping in days
 
 !--- mass flux deep convection
-!   real(kind=kind_phys) :: clam_deep      = 0.1             !< c_e for deep convection (Han and Pan, 2011, eq(6))
-    real(kind=kind_phys) :: clam_deep      = 0.07            !< c_e for deep convection (Han and Pan, 2011, eq(6))
+    real(kind=kind_phys) :: clam_deep      = 0.1             !< c_e for deep convection (Han and Pan, 2011, eq(6))
     real(kind=kind_phys) :: c0s_deep       = 0.002           !< convective rain conversion parameter
     real(kind=kind_phys) :: c1_deep        = 0.002           !< conversion parameter of detrainment from liquid water into grid-scale cloud water
-    real(kind=kind_phys) :: betal_deep     = 0.01            !< fraction factor of downdraft air mass reaching ground surface over land
-    real(kind=kind_phys) :: betas_deep     = 0.01            !< fraction factor of downdraft air mass reaching ground surface over sea
+    real(kind=kind_phys) :: betal_deep     = 0.05            !< fraction factor of downdraft air mass reaching ground surface over land
+    real(kind=kind_phys) :: betas_deep     = 0.05            !< fraction factor of downdraft air mass reaching ground surface over sea
     real(kind=kind_phys) :: evef           = 0.09            !< evaporation factor from convective rain
     real(kind=kind_phys) :: evfact_deep    = 0.3             !< evaporation factor from convective rain
     real(kind=kind_phys) :: evfactl_deep   = 0.3             !< evaporation factor from convective rain over land
@@ -3706,6 +3707,7 @@ module GFS_typedefs
                           !    Noah MP options
                                iopt_dveg,iopt_crs,iopt_btr,iopt_run,iopt_sfc, iopt_frz,     &
                                iopt_inf, iopt_rad,iopt_alb,iopt_snf,iopt_tbot,iopt_stc,     &
+                               iopt_trs,                                                    &
                           !    GFDL surface layer options
                                lcurr_sf, pert_cd, ntsflg, sfenth,                           &
                           !--- lake model control
@@ -4329,6 +4331,7 @@ module GFS_typedefs
     Model%iopt_snf         = iopt_snf
     Model%iopt_tbot        = iopt_tbot
     Model%iopt_stc         = iopt_stc
+    Model%iopt_trs         = iopt_trs
 
 !--- tuning parameters for physical parameterizations
     Model%ras              = ras
@@ -5165,6 +5168,7 @@ module GFS_typedefs
         print *,'iopt_snf   =  ', Model%iopt_snf
         print *,'iopt_tbot   =  ',Model%iopt_tbot
         print *,'iopt_stc   =  ', Model%iopt_stc
+        print *,'iopt_trs   =  ', Model%iopt_trs
       elseif (Model%lsm == Model%lsm_ruc) then
         print *,' RUC Land Surface Model used'
       else
@@ -5992,6 +5996,7 @@ module GFS_typedefs
         print *, ' iopt_snf          : ', Model%iopt_snf
         print *, ' iopt_tbot         : ', Model%iopt_tbot
         print *, ' iopt_stc          : ', Model%iopt_stc
+        print *, ' iopt_trs          : ', Model%iopt_trs
       endif
       print *, ' use_ufo           : ', Model%use_ufo
       print *, ' lcurr_sf          : ', Model%lcurr_sf
