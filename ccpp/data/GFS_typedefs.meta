@@ -2549,6 +2549,7 @@
   dimensions = (number_of_lines_in_internal_namelist)
   type = character
   kind = len=256
+  active = (number_of_lines_in_internal_namelist > 0)
 [logunit]
   standard_name = iounit_of_log
   long_name = fortran unit number for logfile
