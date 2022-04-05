@@ -206,6 +206,31 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
                                         decompflagPTile=decompflagPTile, &
                                         name="fcst_grid", rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+      call ESMF_GridAddCoord(grid, staggerLoc=ESMF_STAGGERLOC_CENTER, rc=rc); ESMF_ERR_ABORT(rc)
+      call ESMF_GridAddCoord(grid, staggerLoc=ESMF_STAGGERLOC_CORNER, rc=rc); ESMF_ERR_ABORT(rc)
+
+      ! define "center" coordinate values
+      call ESMF_GridGetCoord(grid, coordDim=1, staggerLoc=ESMF_STAGGERLOC_CENTER, &
+                             totalLBound=tlb, totalUBound=tub, &
+                             farrayPtr=lonPtr, rc=rc); ESMF_ERR_ABORT(rc)
+      lonPtr(tlb(1):tub(1),tlb(2):tub(2)) = Atmos%lon(tlb(1):tub(1),tlb(2):tub(2))
+
+      call ESMF_GridGetCoord(grid, coordDim=2, staggerLoc=ESMF_STAGGERLOC_CENTER, &
+                             totalLBound=tlb, totalUBound=tub, &
+                             farrayPtr=latPtr, rc=rc); ESMF_ERR_ABORT(rc)
+      latPtr(tlb(1):tub(1),tlb(2):tub(2)) = Atmos%lat(tlb(1):tub(1),tlb(2):tub(2))
+
+      ! define "corner" coordinate values
+      call ESMF_GridGetCoord(grid, coordDim=1, staggerLoc=ESMF_STAGGERLOC_CORNER, &
+                             totalLBound=tlb, totalUBound=tub, &
+                             farrayPtr=lonPtr, rc=rc); ESMF_ERR_ABORT(rc)
+      lonPtr(tlb(1):tub(1),tlb(2):tub(2)) = Atmos%lon_bnd(tlb(1):tub(1),tlb(2):tub(2))
+
+      call ESMF_GridGetCoord(grid, coordDim=2, staggerLoc=ESMF_STAGGERLOC_CORNER, &
+                             totalLBound=tlb, totalUBound=tub, &
+                             farrayPtr=latPtr, rc=rc); ESMF_ERR_ABORT(rc)
+      latPtr(tlb(1):tub(1),tlb(2):tub(2)) = Atmos%lat_bnd(tlb(1):tub(1),tlb(2):tub(2))
     else
       ! nest domain
       call ESMF_InfoGet(info, key="nx", value=nx, rc=rc)
@@ -222,64 +247,39 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
                                       indexflag=ESMF_INDEX_DELOCAL, &
                                       rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+      ! - Create coordinate arrays around allocations held within Atmos data structure and set in Grid
+
+      call ESMF_GridGet(grid, staggerloc=ESMF_STAGGERLOC_CENTER, distgrid=distgrid, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+      array = ESMF_ArrayCreate(distgrid, farray=Atmos%lon, indexflag=ESMF_INDEX_DELOCAL, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+      call ESMF_GridSetCoord(grid, coordDim=1, staggerLoc=ESMF_STAGGERLOC_CENTER, array=array, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+      array = ESMF_ArrayCreate(distgrid, farray=Atmos%lat, indexflag=ESMF_INDEX_DELOCAL, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+      call ESMF_GridSetCoord(grid, coordDim=2, staggerLoc=ESMF_STAGGERLOC_CENTER, array=array, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+      call ESMF_GridGet(grid, staggerloc=ESMF_STAGGERLOC_CORNER, distgrid=distgrid, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+      array = ESMF_ArrayCreate(distgrid, farray=Atmos%lon_bnd, indexflag=ESMF_INDEX_DELOCAL, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+      call ESMF_GridSetCoord(grid, coordDim=1, staggerLoc=ESMF_STAGGERLOC_CORNER, array=array, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+      array = ESMF_ArrayCreate(distgrid, farray=Atmos%lat_bnd, indexflag=ESMF_INDEX_DELOCAL, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+      call ESMF_GridSetCoord(grid, coordDim=2, staggerLoc=ESMF_STAGGERLOC_CORNER, array=array, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
     endif
-
-    ! - Create coordinate arrays around allocations held within Atmos data structure and set in Grid
-
-  ! call ESMF_GridGet(grid, staggerloc=ESMF_STAGGERLOC_CENTER, distgrid=distgrid, rc=rc)
-  ! if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-  ! array = ESMF_ArrayCreate(distgrid, farray=Atmos%lon, indexflag=ESMF_INDEX_DELOCAL, rc=rc)
-  ! if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-  ! call ESMF_GridSetCoord(grid, coordDim=1, staggerLoc=ESMF_STAGGERLOC_CENTER, array=array, rc=rc)
-  ! if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-  ! array = ESMF_ArrayCreate(distgrid, farray=Atmos%lat, indexflag=ESMF_INDEX_DELOCAL, rc=rc)
-  ! if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-  ! call ESMF_GridSetCoord(grid, coordDim=2, staggerLoc=ESMF_STAGGERLOC_CENTER, array=array, rc=rc)
-  ! if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-  ! call ESMF_GridGet(grid, staggerloc=ESMF_STAGGERLOC_CORNER, distgrid=distgrid, rc=rc)
-  ! if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-  ! array = ESMF_ArrayCreate(distgrid, farray=Atmos%lon_bnd, indexflag=ESMF_INDEX_DELOCAL, rc=rc)
-  ! if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-  ! call ESMF_GridSetCoord(grid, coordDim=1, staggerLoc=ESMF_STAGGERLOC_CORNER, array=array, rc=rc)
-  ! if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-  ! array = ESMF_ArrayCreate(distgrid, farray=Atmos%lat_bnd, indexflag=ESMF_INDEX_DELOCAL, rc=rc)
-  ! if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-  ! call ESMF_GridSetCoord(grid, coordDim=2, staggerLoc=ESMF_STAGGERLOC_CORNER, array=array, rc=rc)
-  ! if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-    call ESMF_GridAddCoord(grid, staggerLoc=ESMF_STAGGERLOC_CENTER, rc=rc); ESMF_ERR_ABORT(rc)
-    call ESMF_GridAddCoord(grid, staggerLoc=ESMF_STAGGERLOC_CORNER, rc=rc); ESMF_ERR_ABORT(rc)
-
-    ! define "center" coordinate values
-    call ESMF_GridGetCoord(grid, coordDim=1, staggerLoc=ESMF_STAGGERLOC_CENTER, &
-                           totalLBound=tlb, totalUBound=tub, &
-                           farrayPtr=lonPtr, rc=rc); ESMF_ERR_ABORT(rc)
-    lonPtr(tlb(1):tub(1),tlb(2):tub(2)) = Atmos%lon(tlb(1):tub(1),tlb(2):tub(2))
-
-    call ESMF_GridGetCoord(grid, coordDim=2, staggerLoc=ESMF_STAGGERLOC_CENTER, &
-                           totalLBound=tlb, totalUBound=tub, &
-                           farrayPtr=latPtr, rc=rc); ESMF_ERR_ABORT(rc)
-    latPtr(tlb(1):tub(1),tlb(2):tub(2)) = Atmos%lat(tlb(1):tub(1),tlb(2):tub(2))
-
-    ! define "corner" coordinate values
-    call ESMF_GridGetCoord(grid, coordDim=1, staggerLoc=ESMF_STAGGERLOC_CORNER, &
-                           totalLBound=tlb, totalUBound=tub, &
-                           farrayPtr=lonPtr, rc=rc); ESMF_ERR_ABORT(rc)
-    lonPtr(tlb(1):tub(1),tlb(2):tub(2)) = Atmos%lon_bnd(tlb(1):tub(1),tlb(2):tub(2))
-
-    call ESMF_GridGetCoord(grid, coordDim=2, staggerLoc=ESMF_STAGGERLOC_CORNER, &
-                           totalLBound=tlb, totalUBound=tub, &
-                           farrayPtr=latPtr, rc=rc); ESMF_ERR_ABORT(rc)
-    latPtr(tlb(1):tub(1),tlb(2):tub(2)) = Atmos%lat_bnd(tlb(1):tub(1),tlb(2):tub(2))
 
     !TODO: Consider aligning mask treatment with coordinates... especially if it requires updates for moving
     call addLsmask2grid(grid, rc=rc)
