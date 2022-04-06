@@ -155,6 +155,14 @@ public setup_exportdata
                                                          ! to calculate gradient on cubic sphere grid.
 !</PUBLICTYPE >
 
+! these two arrays, lon_bnd_work and lat_bnd_work are 'working' arrays, always allocated
+! as (nlon+1, nlat+1) and are used to get the corner lat lons values from the dycore.
+! these values are then copied to Atmos%lon_bnd, Atmos%lat_bnd which are allocated with
+! sizes that correspond to the corner coordinates distgrid in fcstGrid
+real(kind=GFS_kind_phys), pointer, dimension(:,:), save :: lon_bnd_work  => null()
+real(kind=GFS_kind_phys), pointer, dimension(:,:), save :: lat_bnd_work  => null()
+integer, save :: i_bnd_size, j_bnd_size
+
 integer :: fv3Clock, getClock, updClock, setupClock, radClock, physClock
 
 !-----------------------------------------------------------------------
@@ -545,14 +553,35 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
 !-----------------------------------------------------------------------
    call atmosphere_resolution (nlon, nlat, global=.false.)
    call atmosphere_resolution (mlon, mlat, global=.true.)
-   call alloc_atmos_data_type (nlon, nlat, Atmos)
    call atmosphere_domain (Atmos%domain, Atmos%layout, Atmos%regional, Atmos%nested, &
                            Atmos%moving_nest_parent, Atmos%is_moving_nest, &
                            Atmos%ngrids, Atmos%mygrid, Atmos%pelist)
    call atmosphere_diag_axes (Atmos%axes)
    call atmosphere_etalvls (Atmos%ak, Atmos%bk, flip=flip_vc)
-   call atmosphere_grid_bdry (Atmos%lon_bnd, Atmos%lat_bnd, global=.false.)
+
+   call atmosphere_control_data (isc, iec, jsc, jec, nlev, p_hydro, hydro, tile_num)
+
+   allocate (Atmos%lon(nlon,nlat), Atmos%lat(nlon,nlat))
    call atmosphere_grid_ctr (Atmos%lon, Atmos%lat)
+
+   i_bnd_size = nlon
+   j_bnd_size = nlat
+   if (iec == mlon) then
+      ! we are on task at the 'east' edge of the cubed sphere face or reginal domain
+      ! corner arrays should have one extra exllement in 'i' direction
+      i_bnd_size = nlon + 1
+   end if
+   if (jec == mlat) then
+      ! we are on task at the 'north' edge of the cubed sphere face or reginal domain
+      ! corner arrays should have one extra exllement in 'j' direction
+      j_bnd_size = nlat + 1
+   end if
+   allocate (Atmos%lon_bnd(i_bnd_size,j_bnd_size), Atmos%lat_bnd(i_bnd_size,j_bnd_size))
+   allocate (lon_bnd_work(nlon+1,nlat+1), lat_bnd_work(nlon+1,nlat+1))
+   call atmosphere_grid_bdry (lon_bnd_work, lat_bnd_work)
+   Atmos%lon_bnd(1:i_bnd_size,1:j_bnd_size) = lon_bnd_work(1:i_bnd_size,1:j_bnd_size)
+   Atmos%lat_bnd(1:i_bnd_size,1:j_bnd_size) = lat_bnd_work(1:i_bnd_size,1:j_bnd_size)
+
    call atmosphere_hgt (Atmos%layer_hgt, 'layer', relative=.false., flip=flip_vc)
    call atmosphere_hgt (Atmos%level_hgt, 'level', relative=.false., flip=flip_vc)
 
@@ -570,7 +599,6 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
 !-----------------------------------------------------------------------
 !--- before going any further check definitions for 'blocks'
 !-----------------------------------------------------------------------
-   call atmosphere_control_data (isc, iec, jsc, jec, nlev, p_hydro, hydro, tile_num)
    call define_blocks_packed ('atmos_model', Atm_block, isc, iec, jsc, jec, nlev, &
                               blocksize, block_message)
 
@@ -956,8 +984,10 @@ subroutine update_atmos_model_state (Atmos, rc)
 
     !--- conditionally update the coordinate arrays for moving domains
     if (Atmos%is_moving_nest) then
-      call atmosphere_grid_bdry (Atmos%lon_bnd, Atmos%lat_bnd, global=.false.)
       call atmosphere_grid_ctr (Atmos%lon, Atmos%lat)
+      call atmosphere_grid_bdry (lon_bnd_work, lat_bnd_work, global=.false.)
+      Atmos%lon_bnd(1:i_bnd_size,1:j_bnd_size) = lon_bnd_work(1:i_bnd_size,1:j_bnd_size)
+      Atmos%lat_bnd(1:i_bnd_size,1:j_bnd_size) = lat_bnd_work(1:i_bnd_size,1:j_bnd_size)
     endif
 
  end subroutine update_atmos_model_state
@@ -1023,7 +1053,9 @@ subroutine atmos_model_end (Atmos)
     call CCPP_step (step="finalize", nblks=Atm_block%nblks, ierr=ierr)
     if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP finalize step failed')
 
-    call dealloc_atmos_data_type (Atmos)
+    deallocate (Atmos%lon, Atmos%lat)
+    deallocate (Atmos%lon_bnd, Atmos%lat_bnd)
+    deallocate (lon_bnd_work, lat_bnd_work)
 
 end subroutine atmos_model_end
 
@@ -1720,24 +1752,6 @@ subroutine update_atmos_chemistry(state, rc)
 
 end subroutine update_atmos_chemistry
 ! </SUBROUTINE>
-
-  subroutine alloc_atmos_data_type (nlon, nlat, Atmos)
-   integer, intent(in) :: nlon, nlat
-   type(atmos_data_type), intent(inout) :: Atmos
-    allocate ( Atmos % lon_bnd  (nlon+1,nlat+1), &
-               Atmos % lat_bnd  (nlon+1,nlat+1), &
-               Atmos % lon      (nlon,nlat),     &
-               Atmos % lat      (nlon,nlat)      )
-
-  end subroutine alloc_atmos_data_type
-
-  subroutine dealloc_atmos_data_type (Atmos)
-   type(atmos_data_type), intent(inout) :: Atmos
-    deallocate (Atmos%lon_bnd, &
-                Atmos%lat_bnd, &
-                Atmos%lon,     &
-                Atmos%lat      )
-  end subroutine dealloc_atmos_data_type
 
   subroutine assign_importdata(jdat, rc)
 
