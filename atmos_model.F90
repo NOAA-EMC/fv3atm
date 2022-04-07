@@ -156,7 +156,7 @@ public setup_exportdata
 !</PUBLICTYPE >
 
 ! these two arrays, lon_bnd_work and lat_bnd_work are 'working' arrays, always allocated
-! as (nlon+1, nlat+1) and are used to get the corner lat lons values from the dycore.
+! as (nlon+1, nlat+1) and are used to get the corner lat/lon values from the dycore.
 ! these values are then copied to Atmos%lon_bnd, Atmos%lat_bnd which are allocated with
 ! sizes that correspond to the corner coordinates distgrid in fcstGrid
 real(kind=GFS_kind_phys), pointer, dimension(:,:), save :: lon_bnd_work  => null()
@@ -567,13 +567,13 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    i_bnd_size = nlon
    j_bnd_size = nlat
    if (iec == mlon) then
-      ! we are on task at the 'east' edge of the cubed sphere face or reginal domain
-      ! corner arrays should have one extra exllement in 'i' direction
+      ! we are on task at the 'east' edge of the cubed sphere face or regional domain
+      ! corner arrays should have one extra element in 'i' direction
       i_bnd_size = nlon + 1
    end if
    if (jec == mlat) then
-      ! we are on task at the 'north' edge of the cubed sphere face or reginal domain
-      ! corner arrays should have one extra exllement in 'j' direction
+      ! we are on task at the 'north' edge of the cubed sphere face or regional domain
+      ! corner arrays should have one extra element in 'j' direction
       j_bnd_size = nlat + 1
    end if
    allocate (Atmos%lon_bnd(i_bnd_size,j_bnd_size), Atmos%lat_bnd(i_bnd_size,j_bnd_size))
