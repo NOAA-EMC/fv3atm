@@ -16,19 +16,18 @@
       <scheme>sgscloud_radpre</scheme>
       <scheme>GFS_rrtmgp_pre</scheme>
       <scheme>GFS_radiation_surface</scheme>
-      <scheme>GFS_rrtmgp_thompsonmp_pre</scheme>
-      <scheme>GFS_rrtmgp_cloud_overlap_pre</scheme>
+      <scheme>GFS_rrtmgp_cloud_mp</scheme>
+      <scheme>GFS_rrtmgp_cloud_overlap</scheme>
       <scheme>GFS_cloud_diagnostics</scheme>
-      <scheme>GFS_rrtmgp_sw_pre</scheme>
+      <scheme>rad_sw_pre</scheme>
+      <scheme>rrtmgp_aerosol_optics</scheme>
       <scheme>rrtmgp_sw_gas_optics</scheme>
-      <scheme>rrtmgp_sw_aerosol_optics</scheme>
       <scheme>rrtmgp_sw_cloud_optics</scheme>
       <scheme>rrtmgp_sw_cloud_sampling</scheme>
       <scheme>rrtmgp_sw_rte</scheme>
       <scheme>GFS_rrtmgp_sw_post</scheme>
       <scheme>rrtmgp_lw_pre</scheme>
       <scheme>rrtmgp_lw_gas_optics</scheme>
-      <scheme>rrtmgp_lw_aerosol_optics</scheme>
       <scheme>rrtmgp_lw_cloud_optics</scheme>
       <scheme>rrtmgp_lw_cloud_sampling</scheme>
       <scheme>rrtmgp_lw_rte</scheme>
