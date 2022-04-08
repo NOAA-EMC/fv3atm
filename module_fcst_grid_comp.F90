@@ -1170,7 +1170,8 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
       call atmos_model_exchange_phase_1 (Atmos, rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-      if (mype == 0) write(*,'(A,I,A,F)') 'PASS: fcstRUN phase 1, n_atmsteps = ', n_atmsteps, ' time is ', mpi_wtime()-tbeg1
+      if (mype == 0) write(*,'(A,I16,A,F16.6)')'PASS: fcstRUN phase 1, n_atmsteps = ', &
+                                               n_atmsteps,' time is ',mpi_wtime()-tbeg1
 !
 !-----------------------------------------------------------------------
 !
@@ -1247,7 +1248,8 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
         endif
       endif
 
-      if (mype == 0) write(*,'(A,I,A,F)') 'PASS: fcstRUN phase 2, n_atmsteps = ', n_atmsteps, ' time is ', mpi_wtime()-tbeg1
+      if (mype == 0) write(*,'(A,I16,A,F16.6)')'PASS: fcstRUN phase 2, n_atmsteps = ', &
+                                               n_atmsteps,' time is ',mpi_wtime()-tbeg1
 !
 !-----------------------------------------------------------------------
 !
