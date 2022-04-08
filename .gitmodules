@@ -4,7 +4,7 @@
   branch = dev/emc
 [submodule "ccpp/framework"]
   path = ccpp/framework
-  url = https://github.com/uturuncoglu/ccpp-framework.git
+  url = https://github.com/uturuncoglu/ccpp-framework
   branch = feature/xgrid_dev_host
 [submodule "ccpp/physics"]
   path = ccpp/physics
