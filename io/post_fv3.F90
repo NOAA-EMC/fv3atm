@@ -594,7 +594,7 @@ module post_fv3
         enddo
       enddo
 
-      call exch(1,gdlat(1,jsta_2l)
+      call exch(1,gdlat(1,jsta_2l))
 
 !$omp parallel do default(none),private(i,j,ip1), &
 !$omp&  shared(jsta,jend_m,im,dx,gdlat,gdlon,dy)
