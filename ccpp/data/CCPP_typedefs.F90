@@ -364,7 +364,10 @@ module CCPP_typedefs
     real (kind=kind_phys), pointer      :: qs_lay(:,:)               => null()  !<
     real (kind=kind_phys), pointer      :: q_lay(:,:)                => null()  !<
     real (kind=kind_phys), pointer      :: deltaZ(:,:)               => null()  !<
+    real (kind=kind_phys), pointer      :: deltaZc(:,:)              => null()  !< 
+    real (kind=kind_phys), pointer      :: deltaP(:,:)               => null()  !< 
     real (kind=kind_phys), pointer      :: cloud_overlap_param(:,:)  => null()  !< Cloud overlap parameter
+    real (kind=kind_phys), pointer      :: cnv_cloud_overlap_param(:,:) => null()  !< Convective cloud overlap parameter
     real (kind=kind_phys), pointer      :: precip_overlap_param(:,:) => null()  !< Precipitation overlap parameter
     real (kind=kind_phys), pointer      :: tracer(:,:,:)             => null()  !<
     real (kind=kind_phys), pointer      :: aerosolslw(:,:,:,:)       => null()  !< Aerosol radiative properties in each LW band.
@@ -379,6 +382,15 @@ module CCPP_typedefs
     real (kind=kind_phys), pointer      :: cld_rwp(:,:)              => null()  !< Cloud rain water path
     real (kind=kind_phys), pointer      :: cld_rerain(:,:)           => null()  !< Cloud rain effective radius
     real (kind=kind_phys), pointer      :: precip_frac(:,:)          => null()  !< Precipitation fraction
+    real (kind=kind_phys), pointer      :: cld_cnv_frac(:,:)         => null()  !< SGS convective cloud fraction 
+    real (kind=kind_phys), pointer      :: cld_cnv_lwp(:,:)          => null()  !< SGS convective cloud liquid water path
+    real (kind=kind_phys), pointer      :: cld_cnv_reliq(:,:)        => null()  !< SGS convective cloud liquid effective radius
+    real (kind=kind_phys), pointer      :: cld_cnv_iwp(:,:)          => null()  !< SGS convective cloud ice water path
+    real (kind=kind_phys), pointer      :: cld_cnv_reice(:,:)        => null()  !< SGS convective cloud ice effecive radius
+    real (kind=kind_phys), pointer      :: cld_pbl_lwp(:,:)          => null()  !< SGS PBL        cloud liquid water path 
+    real (kind=kind_phys), pointer      :: cld_pbl_reliq(:,:)        => null()  !< SGS PBL        cloud liquid effective radius
+    real (kind=kind_phys), pointer      :: cld_pbl_iwp(:,:)          => null()  !< SGS PBL        cloud ice water path
+    real (kind=kind_phys), pointer      :: cld_pbl_reice(:,:)        => null()  !< SGS PBL        cloud ice effecive radius
     real (kind=kind_phys), pointer      :: fluxlwUP_allsky(:,:)      => null()  !< RRTMGP upward   longwave  all-sky flux profile
     real (kind=kind_phys), pointer      :: fluxlwDOWN_allsky(:,:)    => null()  !< RRTMGP downward longwave  all-sky flux profile
     real (kind=kind_phys), pointer      :: fluxlwUP_clrsky(:,:)      => null()  !< RRTMGP upward   longwave  clr-sky flux profile
@@ -401,6 +413,9 @@ module CCPP_typedefs
     type(ty_optical_props_2str)         :: lw_optical_props_clouds              !< RRTMGP DDT
     type(ty_optical_props_2str)         :: lw_optical_props_precipByBand        !< RRTMGP DDT
     type(ty_optical_props_2str)         :: lw_optical_props_precip              !< RRTMGP DDT
+    type(ty_optical_props_2str)         :: lw_optical_props_cnvcloudsByBand     !< RRTMGP DDT
+    type(ty_optical_props_2str)         :: lw_optical_props_cnvclouds           !< RRTMGP DDT
+    type(ty_optical_props_2str)         :: lw_optical_props_MYNNcloudsByBand    !< RRTMGP DDT
     type(ty_optical_props_1scl)         :: lw_optical_props_clrsky              !< RRTMGP DDT
     type(ty_optical_props_1scl)         :: lw_optical_props_aerosol             !< RRTMGP DDT
     type(ty_optical_props_2str)         :: sw_optical_props_cloudsByBand        !< RRTMGP DDT
@@ -409,6 +424,9 @@ module CCPP_typedefs
     type(ty_optical_props_2str)         :: sw_optical_props_precip              !< RRTMGP DDT
     type(ty_optical_props_2str)         :: sw_optical_props_clrsky              !< RRTMGP DDT
     type(ty_optical_props_2str)         :: sw_optical_props_aerosol             !< RRTMGP DDT
+    type(ty_optical_props_2str)         :: sw_optical_props_cnvcloudsByBand     !< RRTMGP DDT 
+    type(ty_optical_props_2str)         :: sw_optical_props_cnvclouds           !< RRTMGP DDT
+    type(ty_optical_props_2str)         :: sw_optical_props_MYNNcloudsByBand    !< RRTMGP DDT  
     type(ty_gas_concs)                  :: gas_concentrations                   !< RRTMGP DDT
     type(ty_source_func_lw)             :: sources                              !< RRTMGP DDT
 
@@ -741,6 +759,8 @@ contains
        allocate (Interstitial%qs_lay               (IM, Model%levs))
        allocate (Interstitial%q_lay                (IM, Model%levs))
        allocate (Interstitial%deltaZ               (IM, Model%levs))
+       allocate (Interstitial%deltaZc              (IM, Model%levs))
+       allocate (Interstitial%deltaP               (IM, Model%levs))
        allocate (Interstitial%p_lev                (IM, Model%levs+1))
        allocate (Interstitial%p_lay                (IM, Model%levs))
        allocate (Interstitial%t_lev                (IM, Model%levs+1))
@@ -767,6 +787,16 @@ contains
        allocate (Interstitial%cld_rwp              (IM, Model%levs))
        allocate (Interstitial%cld_rerain           (IM, Model%levs))
        allocate (Interstitial%precip_frac          (IM, Model%levs))
+       allocate (Interstitial%cld_cnv_frac         (IM, Model%levs))
+       allocate (Interstitial%cnv_cloud_overlap_param(IM, Model%levs))
+       allocate (Interstitial%cld_cnv_lwp          (IM, Model%levs))
+       allocate (Interstitial%cld_cnv_reliq        (IM, Model%levs))
+       allocate (Interstitial%cld_cnv_iwp          (IM, Model%levs))
+       allocate (Interstitial%cld_cnv_reice        (IM, Model%levs))
+       allocate (Interstitial%cld_pbl_lwp          (IM, Model%levs))
+       allocate (Interstitial%cld_pbl_reliq        (IM, Model%levs))
+       allocate (Interstitial%cld_pbl_iwp          (IM, Model%levs))
+       allocate (Interstitial%cld_pbl_reice        (IM, Model%levs))
        allocate (Interstitial%flxprf_lw            (IM, Model%levs+1))
        allocate (Interstitial%flxprf_sw            (IM, Model%levs+1))
        allocate (Interstitial%sfc_emiss_byband     (Model%rrtmgp_nBandsLW,IM))
@@ -811,6 +841,24 @@ contains
        allocate(Interstitial%lw_optical_props_cloudsByBand%band_lims_wvn(2,    Model%rrtmgp_nBandsLW ))
        allocate(Interstitial%lw_optical_props_cloudsByBand%gpt2band(           Model%rrtmgp_nBandsLW ))
        !
+       ! lw_optical_props_cnvcloudsByBand (ty_optical_props_2str)
+       !
+       allocate(Interstitial%lw_optical_props_cnvcloudsByBand%tau(IM, Model%levs, Model%rrtmgp_nBandsLW ))
+       allocate(Interstitial%lw_optical_props_cnvcloudsByBand%ssa(IM, Model%levs, Model%rrtmgp_nBandsLW ))
+       allocate(Interstitial%lw_optical_props_cnvcloudsByBand%g(  IM, Model%levs, Model%rrtmgp_nBandsLW ))
+       allocate(Interstitial%lw_optical_props_cnvcloudsByBand%band2gpt     (2,    Model%rrtmgp_nBandsLW ))
+       allocate(Interstitial%lw_optical_props_cnvcloudsByBand%band_lims_wvn(2,    Model%rrtmgp_nBandsLW ))
+       allocate(Interstitial%lw_optical_props_cnvcloudsByBand%gpt2band(           Model%rrtmgp_nBandsLW ))
+       !
+       ! lw_optical_props_MYNNcloudsByBand (ty_optical_props_2str)
+       !
+       allocate(Interstitial%lw_optical_props_MYNNcloudsByBand%tau(IM, Model%levs, Model%rrtmgp_nBandsLW ))
+       allocate(Interstitial%lw_optical_props_MYNNcloudsByBand%ssa(IM, Model%levs, Model%rrtmgp_nBandsLW ))
+       allocate(Interstitial%lw_optical_props_MYNNcloudsByBand%g(  IM, Model%levs, Model%rrtmgp_nBandsLW ))
+       allocate(Interstitial%lw_optical_props_MYNNcloudsByBand%band2gpt     (2,    Model%rrtmgp_nBandsLW ))
+       allocate(Interstitial%lw_optical_props_MYNNcloudsByBand%band_lims_wvn(2,    Model%rrtmgp_nBandsLW ))
+       allocate(Interstitial%lw_optical_props_MYNNcloudsByBand%gpt2band(           Model%rrtmgp_nBandsLW ))
+       !
        ! lw_optical_props_precipByBand (ty_optical_props_2str)
        !
        allocate(Interstitial%lw_optical_props_precipByBand%tau(IM, Model%levs, Model%rrtmgp_nBandsLW ))
@@ -829,6 +877,15 @@ contains
        allocate(Interstitial%lw_optical_props_clouds%band_lims_wvn(2,          Model%rrtmgp_nBandsLW ))
        allocate(Interstitial%lw_optical_props_clouds%gpt2band(                 Model%rrtmgp_nGptsLW  ))
        !
+       ! lw_optical_props_cnvclouds (ty_optical_props_2str) 
+       !
+       allocate(Interstitial%lw_optical_props_cnvclouds%tau(      IM, Model%levs, Model%rrtmgp_nGptsLW  ))
+       allocate(Interstitial%lw_optical_props_cnvclouds%ssa(      IM, Model%levs, Model%rrtmgp_nGptsLW  ))
+       allocate(Interstitial%lw_optical_props_cnvclouds%g(        IM, Model%levs, Model%rrtmgp_nGptsLW  ))
+       allocate(Interstitial%lw_optical_props_cnvclouds%band2gpt     (2,          Model%rrtmgp_nBandsLW ))
+       allocate(Interstitial%lw_optical_props_cnvclouds%band_lims_wvn(2,          Model%rrtmgp_nBandsLW ))
+       allocate(Interstitial%lw_optical_props_cnvclouds%gpt2band(                 Model%rrtmgp_nGptsLW  ))
+       ! 
        ! lw_optical_props_precip (ty_optical_props_2str)
        !
        allocate(Interstitial%lw_optical_props_precip%tau(      IM, Model%levs, Model%rrtmgp_nGptsLW  ))
@@ -1191,6 +1248,8 @@ contains
       Interstitial%qs_lay               = clear_val
       Interstitial%q_lay                = clear_val
       Interstitial%deltaZ               = clear_val
+      Interstitial%deltaZc              = clear_val
+      Interstitial%deltaP               = clear_val
       Interstitial%p_lev                = clear_val
       Interstitial%p_lay                = clear_val
       Interstitial%t_lev                = clear_val
@@ -1217,6 +1276,16 @@ contains
       Interstitial%cld_rwp              = clear_val
       Interstitial%cld_rerain           = clear_val
       Interstitial%precip_frac          = clear_val
+      Interstitial%cld_cnv_frac         = clear_val
+      Interstitial%cnv_cloud_overlap_param  = clear_val
+      Interstitial%cld_cnv_lwp          = clear_val
+      Interstitial%cld_cnv_reliq        = clear_val
+      Interstitial%cld_cnv_iwp          = clear_val
+      Interstitial%cld_cnv_reice        = clear_val
+      Interstitial%cld_pbl_lwp          = clear_val
+      Interstitial%cld_pbl_reliq        = clear_val
+      Interstitial%cld_pbl_iwp          = clear_val
+      Interstitial%cld_pbl_reice        = clear_val
       Interstitial%sfc_emiss_byband     = clear_val
       Interstitial%sec_diff_byband      = clear_val
       Interstitial%sfc_alb_nir_dir      = clear_val
@@ -1242,6 +1311,15 @@ contains
       Interstitial%lw_optical_props_precipByBand%tau = clear_val
       Interstitial%lw_optical_props_precipByBand%ssa = clear_val
       Interstitial%lw_optical_props_precipByBand%g   = clear_val
+      Interstitial%lw_optical_props_cnvcloudsByBand%tau = clear_val
+      Interstitial%lw_optical_props_cnvcloudsByBand%ssa = clear_val
+      Interstitial%lw_optical_props_cnvcloudsByBand%g   = clear_val
+      Interstitial%lw_optical_props_MYNNcloudsByBand%tau = clear_val
+      Interstitial%lw_optical_props_MYNNcloudsByBand%ssa = clear_val
+      Interstitial%lw_optical_props_MYNNcloudsByBand%g   = clear_val
+      Interstitial%lw_optical_props_cnvclouds%tau       = clear_val
+      Interstitial%lw_optical_props_cnvclouds%ssa       = clear_val
+      Interstitial%lw_optical_props_cnvclouds%g         = clear_val
       Interstitial%sources%sfc_source                = clear_val
       Interstitial%sources%lay_source                = clear_val
       Interstitial%sources%lev_source_inc            = clear_val
