@@ -17,6 +17,7 @@ module GFS_init
 ! Public entities
 !----------------
   public  GFS_initialize              !< GFS initialization routine
+  public  GFS_grid_populate           !< Lat/lon/area setting -- exposed for moving nest
 
   CONTAINS
 !*******************************************************************************************
