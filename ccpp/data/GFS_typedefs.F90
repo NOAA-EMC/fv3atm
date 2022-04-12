@@ -3045,7 +3045,7 @@ module GFS_typedefs
     endif
 
     !--- needed for Thompson's aerosol option
-    if(Model%imp_physics == Model%imp_physics_thompson .and. Model%ltaerosol) then
+    if(Model%imp_physics == Model%imp_physics_thompson .and. (Model%ltaerosol .or. Model%mraerosol)) then
       allocate (Coupling%nwfa2d (IM))
       allocate (Coupling%nifa2d (IM))
       Coupling%nwfa2d   = clear_val
@@ -7840,13 +7840,7 @@ module GFS_typedefs
         Interstitial%ntcwx = 2
         Interstitial%ntiwx = 3
       elseif (Model%imp_physics == Model%imp_physics_thompson) then
-        if(Model%ltaerosol) then
-          Interstitial%ntiwx = 3
-        else if(Model%mraerosol) then
-          Interstitial%ntiwx = 1
-        else
-          Interstitial%ntiwx = 3
-        endif
+        Interstitial%ntiwx = 3
         Interstitial%ntcwx = 2
         Interstitial%ntrwx = 4
       elseif (Model%imp_physics == Model%imp_physics_nssl) then
@@ -7886,6 +7880,8 @@ module GFS_typedefs
       elseif (Model%imp_physics == Model%imp_physics_thompson) then
         if (Model%ltaerosol) then
           Interstitial%nvdiff = 12
+        else if (Model%mraerosol) then
+          Interstitial%nvdiff = 10
         else
           Interstitial%nvdiff = 9
         endif
