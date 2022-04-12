@@ -1,6 +1,6 @@
 module CCPP_driver
 
-  use ccpp_api,           only: ccpp_t
+  use ccpp_types,         only: ccpp_t
 
   use ccpp_static_api,    only: ccpp_physics_init,                   &
                                 ccpp_physics_timestep_init,          &
