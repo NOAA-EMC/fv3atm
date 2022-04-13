@@ -27,8 +27,10 @@ module post_fv3
 !     Jul 2019    J. Wang             create interface to run inline post for FV3
 !     Sep 2020    J. Dong/J. Wang     create interface to run inline post for FV3-LAM
 !     Apr 2021    R. Sun              Added variables for Thomspon MP
-!     Apr 2022    W. Meng             ruUnify global and regional inline post
-!                                     add bug fix for dx/dy computation
+!     Apr 2022    W. Meng             1)unify global and regional inline post
+!                                     2)add bug fix for dx/dy computation
+!                                     3)add reading pwat from model
+!                                     4)remove some variable initializations
 !
 !-----------------------------------------------------------------------
 !*** run post on write grid comp
@@ -500,7 +502,7 @@ module post_fv3
                              rel_vort_max, rel_vort_maxhy1, refd_max,          &
                              refdm10c_max, u10max, v10max, wspd10max, sfcuxi,  &
                              sfcvxi, t10m, t10avg, psfcavg, akhsavg, akmsavg,  &
-                             albedo, tg, prate_max
+                             albedo, tg, prate_max, pwat
       use soil,        only: sldpth, sh2o, smc, stc
       use masks,       only: lmv, lmh, htm, vtm, gdlat, gdlon, dx, dy, hbm2, sm, sice
       use ctlblk_mod,  only: im, jm, lm, lp1, jsta, jend, jsta_2l, jend_2u, jsta_m,jend_m, &
@@ -562,7 +564,6 @@ module post_fv3
       type(ESMF_TypeKind_Flag)       :: typekind
       type(ESMF_TypeKind_Flag)       :: attTypeKind
 
-!wm      real, parameter :: small=1.e-6
 !
 !-----------------------------------------------------------------------
 !***  INTEGER SCALAR/1D HISTORY VARIABLES
@@ -622,21 +623,6 @@ module post_fv3
 !
       pt    = ak5(1)
 
-! GFS may not have model derived radar ref.
-!                        TKE
-!                        cloud amount
-!$omp parallel do default(none),private(i,j,l), &
-!$omp& shared(lm,jsta,jend,im,spval,ref_10cm,q2,cfr)
-      do l=1,lm
-        do j=jsta,jend
-          do i=1,im
-            ref_10cm(i,j,l) = SPVAL
-            q2(i,j,l) = SPVAL
-            cfr(i,j,l) = SPVAL
-          enddo
-        enddo
-      enddo
-
 ! GFS does not have surface specific humidity
 !                   inst sensible heat flux
 !                   inst latent heat flux
@@ -646,7 +632,6 @@ module post_fv3
           qs(i,j) = SPVAL
           twbs(i,j) = SPVAL
           qwbs(i,j) = SPVAL
-          ths(i,j) = SPVAL
         enddo
       enddo
 
@@ -691,7 +676,6 @@ module post_fv3
         do i=1,im
           czen(i,j)   = SPVAL
           czmean(i,j) = SPVAL
-          radot(i,j)  = SPVAL
           cfrach(i,j) = SPVAL
           cfracl(i,j) = SPVAL
           cfracm(i,j) = SPVAL
@@ -726,11 +710,7 @@ module post_fv3
           ncfrst(i,j) = 1.0
           bgroff(i,j) = spval
           rlwtoa(i,j) = spval
-          rswin(i,j)  = spval
           rswinc(i,j) = spval
-          rswout(i,j) = spval
-          snopcx(i,j) = spval
-          sfcuvx(i,j) = spval
         enddo
       enddo
 
@@ -787,8 +767,6 @@ module post_fv3
           qz0(i,j)    = spval
           uz0(i,j)    = spval
           vz0(i,j)    = spval
-          maxrhshltr(i,j) = SPVAL
-          minrhshltr(i,j) = SPVAL
         enddo
       enddo
 
@@ -840,20 +818,6 @@ module post_fv3
 !      if(mype==0)print*,' in INITPOST ifhr ifmin =',ifhr,ifmin
 !
       tstart = 0.
-!
-!** initialize cloud water and ice mixing ratio
-!wm!$omp parallel do default(none),private(i,j,l),shared(lm,jsta,jend,im), &
-!wm!$omp& shared(qqw,qqr,qqs,qqi)
-!wm      do l = 1,lm
-!wm        do j = jsta, jend
-!wm          do i = 1,im
-!wm            qqw(i,j,l) = 0.
-!wm            qqr(i,j,l) = 0.
-!wm            qqs(i,j,l) = 0.
-!wm            qqi(i,j,l) = 0.
-!wm          enddo
-!wm        enddo
-!wm      enddo
 !
 !-----------------------------------------------------------------------------
 ! get post fields
@@ -2536,6 +2500,18 @@ module post_fv3
                   snopcx(i,j) = arrayr42d(i,j)
                   if( abs(arrayr42d(i,j)-fillValue) < small) snopcx(i,j) = spval
                   if (sm(i,j) /= 0.0) snopcx(i,j) = spval
+                enddo
+              enddo
+            endif
+ 
+
+            ! snow phase change heat flux
+            if(trim(fieldname)=='pwat') then
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,pwat,arrayr42d,fillValue)
+              do j=jsta,jend
+                do i=ista, iend
+                  pwat(i,j) = arrayr42d(i,j)
+                  if( abs(arrayr42d(i,j)-fillValue) < small) pwat(i,j) = spval
                 enddo
               enddo
             endif
