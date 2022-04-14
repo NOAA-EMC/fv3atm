@@ -4872,6 +4872,7 @@
   dimensions = (number_of_perturbed_spp_schemes)
   type = real
   kind = kind_phys
+  active = (do_stochastically_perturbed_parameterizations)
 [spp_var_list]
   standard_name = perturbed_spp_schemes
   long_name = perturbed spp schemes
