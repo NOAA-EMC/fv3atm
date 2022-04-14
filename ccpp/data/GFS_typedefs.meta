@@ -4880,6 +4880,7 @@
   dimensions =  (number_of_perturbed_spp_schemes)
   type = character
   kind = len=3
+  active = (do_stochastically_perturbed_parameterizations)
 [spp_pbl]
   standard_name = control_for_pbl_spp_perturbations
   long_name = control for pbl spp perturbations
