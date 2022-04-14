@@ -4864,6 +4864,7 @@
   dimensions = (number_of_perturbed_spp_schemes)
   type = real
   kind = kind_phys
+  active = (do_stochastically_perturbed_parameterizations)
 [spp_stddev_cutoff]
   standard_name = magnitude_of_spp_standard_deviation_cutoff
   long_name = magnitude of spp standard deviation cutoff
