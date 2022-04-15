@@ -27,10 +27,15 @@ module post_fv3
 !     Jul 2019    J. Wang             create interface to run inline post for FV3
 !     Sep 2020    J. Dong/J. Wang     create interface to run inline post for FV3-LAM
 !     Apr 2021    R. Sun              Added variables for Thomspon MP
-!     Apr 2022    W. Meng             1)unify global and regional inline post
+!     Apr 2022    W. Meng             1)unify global and regional inline post interfaces
 !                                     2)add bug fix for dx/dy computation
-!                                     3)add reading pwat from model
+!                                     3)add reading pwat from FV3
 !                                     4)remove some variable initializations
+!                                     5)read max/min 2m T from tmax_max2m/tmin_min2m 
+!                                       for GFS, and from t02max/min for RRFS
+!                                       and  HAFS. 
+!                                     6)read 3D cloud fraction from cld_amt for GFDL MP,
+!                                       and from cldfra for other MPs.
 !
 !-----------------------------------------------------------------------
 !*** run post on write grid comp
@@ -2175,7 +2180,8 @@ module post_fv3
             endif
 
             ! shelter max temperature
-            if(trim(fieldname)=='t02max' .or. trim(fieldname)=='tmax_max2m') then
+            if(modelname=='GFS') then
+            if(trim(fieldname)=='tmax_max2m') then
               !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,maxtshltr,arrayr42d,fillValue,spval)
               do j=jsta,jend
                 do i=ista, iend
@@ -2183,6 +2189,17 @@ module post_fv3
                   if( abs(arrayr42d(i,j)-fillValue) < small)  maxtshltr(i,j) = spval
                 enddo
               enddo
+            endif
+            else
+            if(trim(fieldname)=='t02max') then
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,maxtshltr,arrayr42d,fillValue,spval)
+              do j=jsta,jend
+                do i=ista, iend
+                  maxtshltr(i,j) = arrayr42d(i,j)
+                  if( abs(arrayr42d(i,j)-fillValue) < small)  maxtshltr(i,j) = spval
+                enddo
+              enddo
+            endif
             endif
 
             ! shelter min temperature
