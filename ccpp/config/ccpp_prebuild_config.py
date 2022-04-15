@@ -47,7 +47,8 @@ TYPEDEFS_NEW_METADATA = {
         'module_radlw_parameters' : '',
         },
     'CCPP_typedefs' : {
-        'CCPP_interstitial_type' : 'CCPP_interstitial',
+        'GFS_interstitial_type' : 'GFS_Interstitial(cdata%thrd_no)',
+        'GFDL_interstitial_type' : 'GFDL_interstitial',
         'CCPP_typedefs' : '',
         },
     'CCPP_data' : {
@@ -55,7 +56,6 @@ TYPEDEFS_NEW_METADATA = {
         },
     'GFS_typedefs' : {
         'GFS_control_type'      : 'GFS_Control',
-        'GFS_interstitial_type' : 'GFS_Interstitial(cdata%thrd_no)',
         'GFS_data_type'         : 'GFS_Data(cdata%blk_no)',
         'GFS_diag_type'         : 'GFS_Data(cdata%blk_no)%Intdiag',
         'GFS_tbd_type'          : 'GFS_Data(cdata%blk_no)%Tbd',
