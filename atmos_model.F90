@@ -63,6 +63,7 @@ use atmosphere_mod,     only: atmosphere_init
 use atmosphere_mod,     only: atmosphere_restart
 use atmosphere_mod,     only: atmosphere_end
 use atmosphere_mod,     only: atmosphere_state_update
+use atmosphere_mod,     only: atmosphere_fill_nest_cpl
 use atmosphere_mod,     only: atmos_phys_driver_statein
 use atmosphere_mod,     only: atmosphere_control_data
 use atmosphere_mod,     only: atmosphere_resolution, atmosphere_domain
@@ -101,6 +102,9 @@ use module_block_data,  only: block_atmos_copy, block_data_copy,         &
                               block_data_copy_or_fill,                   &
                               block_data_combine_fractions
 
+#ifdef MOVING_NEST
+use fv_moving_nest_main_mod, only: update_moving_nest, dump_moving_nest
+#endif
 !-----------------------------------------------------------------------
 
 implicit none
@@ -126,14 +130,16 @@ public setup_exportdata
      integer                       :: layout(2)          ! computer task laytout
      logical                       :: regional           ! true if domain is regional
      logical                       :: nested             ! true if there is a nest
+     logical                       :: moving_nest_parent ! true if this grid has a moving nest child
+     logical                       :: is_moving_nest     ! true if this is a moving nest grid
      integer                       :: ngrids             !
      integer                       :: mygrid             !
      integer                       :: mlon, mlat
      integer                       :: iau_offset         ! iau running window length
      logical                       :: pe                 ! current pe.
      real(kind=8),             pointer, dimension(:)     :: ak, bk
-     real,                     pointer, dimension(:,:)   :: lon_bnd  => null() ! local longitude axis grid box corners in radians.
-     real,                     pointer, dimension(:,:)   :: lat_bnd  => null() ! local latitude axis grid box corners in radians.
+     real(kind=GFS_kind_phys), pointer, dimension(:,:)   :: lon_bnd  => null() ! local longitude axis grid box corners in radians.
+     real(kind=GFS_kind_phys), pointer, dimension(:,:)   :: lat_bnd  => null() ! local latitude axis grid box corners in radians.
      real(kind=GFS_kind_phys), pointer, dimension(:,:)   :: lon      => null() ! local longitude axis grid box centers in radians.
      real(kind=GFS_kind_phys), pointer, dimension(:,:)   :: lat      => null() ! local latitude axis grid box centers in radians.
      real(kind=GFS_kind_phys), pointer, dimension(:,:)   :: dx, dy
@@ -148,6 +154,14 @@ public setup_exportdata
  end type atmos_data_type
                                                          ! to calculate gradient on cubic sphere grid.
 !</PUBLICTYPE >
+
+! these two arrays, lon_bnd_work and lat_bnd_work are 'working' arrays, always allocated
+! as (nlon+1, nlat+1) and are used to get the corner lat/lon values from the dycore.
+! these values are then copied to Atmos%lon_bnd, Atmos%lat_bnd which are allocated with
+! sizes that correspond to the corner coordinates distgrid in fcstGrid
+real(kind=GFS_kind_phys), pointer, dimension(:,:), save :: lon_bnd_work  => null()
+real(kind=GFS_kind_phys), pointer, dimension(:,:), save :: lat_bnd_work  => null()
+integer, save :: i_bnd_size, j_bnd_size
 
 integer :: fv3Clock, getClock, updClock, setupClock, radClock, physClock
 
@@ -273,6 +287,17 @@ subroutine update_atmos_radiation_physics (Atmos)
 !--- if coupled, assign coupled fields
       call assign_importdata(jdat(:),rc)
       if (rc/=0)  call mpp_error(FATAL, 'Call to assign_importdata failed')
+
+      ! Currently for FV3ATM, it is only enabled for parent domain coupling
+      ! with other model components. In this case, only the parent domain
+      ! receives coupled fields through the above assign_importdata step. Thus,
+      ! an extra step is needed to fill the coupling variables in the nest,
+      ! by downscaling the coupling variables from its parent.
+      if (Atmos%ngrids > 1) then
+        if (GFS_control%cplocn2atm .or. GFS_control%cplwav2atm) then
+          call atmosphere_fill_nest_cpl(Atm_block, GFS_control, GFS_data)
+        endif
+      endif
 
       ! Calculate total non-physics tendencies by substracting old GFS Stateout
       ! variables from new/updated GFS Statein variables (gives the tendencies
@@ -528,12 +553,35 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
 !-----------------------------------------------------------------------
    call atmosphere_resolution (nlon, nlat, global=.false.)
    call atmosphere_resolution (mlon, mlat, global=.true.)
-   call alloc_atmos_data_type (nlon, nlat, Atmos)
-   call atmosphere_domain (Atmos%domain, Atmos%layout, Atmos%regional, Atmos%nested, Atmos%ngrids, Atmos%mygrid, Atmos%pelist)
+   call atmosphere_domain (Atmos%domain, Atmos%layout, Atmos%regional, Atmos%nested, &
+                           Atmos%moving_nest_parent, Atmos%is_moving_nest, &
+                           Atmos%ngrids, Atmos%mygrid, Atmos%pelist)
    call atmosphere_diag_axes (Atmos%axes)
    call atmosphere_etalvls (Atmos%ak, Atmos%bk, flip=flip_vc)
-   call atmosphere_grid_bdry (Atmos%lon_bnd, Atmos%lat_bnd, global=.false.)
+
+   call atmosphere_control_data (isc, iec, jsc, jec, nlev, p_hydro, hydro, tile_num)
+
+   allocate (Atmos%lon(nlon,nlat), Atmos%lat(nlon,nlat))
    call atmosphere_grid_ctr (Atmos%lon, Atmos%lat)
+
+   i_bnd_size = nlon
+   j_bnd_size = nlat
+   if (iec == mlon) then
+      ! we are on task at the 'east' edge of the cubed sphere face or regional domain
+      ! corner arrays should have one extra element in 'i' direction
+      i_bnd_size = nlon + 1
+   end if
+   if (jec == mlat) then
+      ! we are on task at the 'north' edge of the cubed sphere face or regional domain
+      ! corner arrays should have one extra element in 'j' direction
+      j_bnd_size = nlat + 1
+   end if
+   allocate (Atmos%lon_bnd(i_bnd_size,j_bnd_size), Atmos%lat_bnd(i_bnd_size,j_bnd_size))
+   allocate (lon_bnd_work(nlon+1,nlat+1), lat_bnd_work(nlon+1,nlat+1))
+   call atmosphere_grid_bdry (lon_bnd_work, lat_bnd_work)
+   Atmos%lon_bnd(1:i_bnd_size,1:j_bnd_size) = lon_bnd_work(1:i_bnd_size,1:j_bnd_size)
+   Atmos%lat_bnd(1:i_bnd_size,1:j_bnd_size) = lat_bnd_work(1:i_bnd_size,1:j_bnd_size)
+
    call atmosphere_hgt (Atmos%layer_hgt, 'layer', relative=.false., flip=flip_vc)
    call atmosphere_hgt (Atmos%level_hgt, 'level', relative=.false., flip=flip_vc)
 
@@ -551,7 +599,6 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
 !-----------------------------------------------------------------------
 !--- before going any further check definitions for 'blocks'
 !-----------------------------------------------------------------------
-   call atmosphere_control_data (isc, iec, jsc, jec, nlev, p_hydro, hydro, tile_num)
    call define_blocks_packed ('atmos_model', Atm_block, isc, iec, jsc, jec, nlev, &
                               blocksize, block_message)
 
@@ -762,8 +809,23 @@ subroutine update_atmos_model_dynamics (Atmos)
   type (atmos_data_type), intent(in) :: Atmos
 
     call set_atmosphere_pelist()
+#ifdef MOVING_NEST
+    ! W. Ramstrom, AOML/HRD -- May 28, 2021
+    ! Evaluates whether to move nest, then performs move if needed
+    if (Atmos%moving_nest_parent .or. Atmos%is_moving_nest ) then
+      call update_moving_nest (Atm_block, GFS_control, GFS_data, Atmos%Time)
+    endif
+#endif
     call mpp_clock_begin(fv3Clock)
     call atmosphere_dynamics (Atmos%Time)
+#ifdef MOVING_NEST
+    ! W. Ramstrom, AOML/HRD -- June 9, 2021
+    ! Debugging output of moving nest code.  Called from this level to access needed input variables.
+    if (Atmos%moving_nest_parent .or. Atmos%is_moving_nest ) then
+      call dump_moving_nest (Atm_block, GFS_control, GFS_data, Atmos%Time)
+    endif
+#endif
+
     call mpp_clock_end(fv3Clock)
 
 end subroutine update_atmos_model_dynamics
@@ -920,6 +982,14 @@ subroutine update_atmos_model_state (Atmos, rc)
     if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
+    !--- conditionally update the coordinate arrays for moving domains
+    if (Atmos%is_moving_nest) then
+      call atmosphere_grid_ctr (Atmos%lon, Atmos%lat)
+      call atmosphere_grid_bdry (lon_bnd_work, lat_bnd_work, global=.false.)
+      Atmos%lon_bnd(1:i_bnd_size,1:j_bnd_size) = lon_bnd_work(1:i_bnd_size,1:j_bnd_size)
+      Atmos%lat_bnd(1:i_bnd_size,1:j_bnd_size) = lat_bnd_work(1:i_bnd_size,1:j_bnd_size)
+    endif
+
  end subroutine update_atmos_model_state
 ! </SUBROUTINE>
 
@@ -983,7 +1053,9 @@ subroutine atmos_model_end (Atmos)
     call CCPP_step (step="finalize", nblks=Atm_block%nblks, ierr=ierr)
     if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP finalize step failed')
 
-    call dealloc_atmos_data_type (Atmos)
+    deallocate (Atmos%lon, Atmos%lat)
+    deallocate (Atmos%lon_bnd, Atmos%lat_bnd)
+    deallocate (lon_bnd_work, lat_bnd_work)
 
 end subroutine atmos_model_end
 
@@ -1680,24 +1752,6 @@ subroutine update_atmos_chemistry(state, rc)
 
 end subroutine update_atmos_chemistry
 ! </SUBROUTINE>
-
-  subroutine alloc_atmos_data_type (nlon, nlat, Atmos)
-   integer, intent(in) :: nlon, nlat
-   type(atmos_data_type), intent(inout) :: Atmos
-    allocate ( Atmos % lon_bnd  (nlon+1,nlat+1), &
-               Atmos % lat_bnd  (nlon+1,nlat+1), &
-               Atmos % lon      (nlon,nlat),     &
-               Atmos % lat      (nlon,nlat)      )
-
-  end subroutine alloc_atmos_data_type
-
-  subroutine dealloc_atmos_data_type (Atmos)
-   type(atmos_data_type), intent(inout) :: Atmos
-    deallocate (Atmos%lon_bnd, &
-                Atmos%lat_bnd, &
-                Atmos%lon,     &
-                Atmos%lat      )
-  end subroutine dealloc_atmos_data_type
 
   subroutine assign_importdata(jdat, rc)
 

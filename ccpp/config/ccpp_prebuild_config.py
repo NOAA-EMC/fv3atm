@@ -47,7 +47,8 @@ TYPEDEFS_NEW_METADATA = {
         'module_radlw_parameters' : '',
         },
     'CCPP_typedefs' : {
-        'CCPP_interstitial_type' : 'CCPP_interstitial',
+        'GFS_interstitial_type' : 'GFS_Interstitial(cdata%thrd_no)',
+        'GFDL_interstitial_type' : 'GFDL_interstitial',
         'CCPP_typedefs' : '',
         },
     'CCPP_data' : {
@@ -55,7 +56,6 @@ TYPEDEFS_NEW_METADATA = {
         },
     'GFS_typedefs' : {
         'GFS_control_type'      : 'GFS_Control',
-        'GFS_interstitial_type' : 'GFS_Interstitial(cdata%thrd_no)',
         'GFS_data_type'         : 'GFS_Data(cdata%blk_no)',
         'GFS_diag_type'         : 'GFS_Data(cdata%blk_no)%Intdiag',
         'GFS_tbd_type'          : 'GFS_Data(cdata%blk_no)%Tbd',
@@ -174,7 +174,7 @@ SCHEME_FILES = [
     'physics/physics/rrtmg_lw_post.F90',
     'physics/physics/rrtmg_lw_pre.F90',
     'physics/physics/rrtmg_sw_post.F90',
-    'physics/physics/rrtmg_sw_pre.F90',
+    'physics/physics/rad_sw_pre.F90',
     'physics/physics/sfc_diag.f',
     'physics/physics/sfc_diag_post.F90',
     'physics/physics/sfc_drv_ruc.F90',
@@ -193,22 +193,18 @@ SCHEME_FILES = [
     'physics/physics/rrtmgp_lw_cloud_optics.F90',
     'physics/physics/rrtmgp_sw_gas_optics.F90',
     'physics/physics/rrtmgp_sw_cloud_optics.F90',
-    'physics/physics/rrtmgp_sw_aerosol_optics.F90',
+    'physics/physics/rrtmgp_aerosol_optics.F90',
     'physics/physics/rrtmgp_lw_rte.F90',
     'physics/physics/rrtmgp_sw_rte.F90',
-    'physics/physics/rrtmgp_lw_aerosol_optics.F90',
     'physics/physics/GFS_rrtmgp_setup.F90',
     'physics/physics/GFS_rrtmgp_pre.F90',
     'physics/physics/rrtmgp_lw_pre.F90',
-    'physics/physics/GFS_rrtmgp_sw_pre.F90',
     'physics/physics/GFS_rrtmgp_lw_post.F90',
     'physics/physics/rrtmgp_lw_cloud_sampling.F90',
     'physics/physics/rrtmgp_sw_cloud_sampling.F90',
     'physics/physics/GFS_cloud_diagnostics.F90',
-    'physics/physics/GFS_rrtmgp_thompsonmp_pre.F90',
-    'physics/physics/GFS_rrtmgp_gfdlmp_pre.F90',
-    'physics/physics/GFS_rrtmgp_zhaocarr_pre.F90',
-    'physics/physics/GFS_rrtmgp_cloud_overlap_pre.F90',
+    'physics/physics/GFS_rrtmgp_cloud_mp.F90',
+    'physics/physics/GFS_rrtmgp_cloud_overlap.F90',
     'physics/physics/GFS_rrtmgp_sw_post.F90'
     ]
 

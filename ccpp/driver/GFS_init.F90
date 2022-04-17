@@ -6,8 +6,8 @@ module GFS_init
                                       GFS_sfcprop_type, GFS_coupling_type, &
                                       GFS_control_type, GFS_grid_type,     &
                                       GFS_tbd_type,     GFS_cldprop_type,  &
-                                      GFS_radtend_type, GFS_diag_type,     &
-                                      GFS_interstitial_type
+                                      GFS_radtend_type, GFS_diag_type
+  use CCPP_typedefs,            only: GFS_interstitial_type
 
   implicit none
 
@@ -17,6 +17,7 @@ module GFS_init
 ! Public entities
 !----------------
   public  GFS_initialize              !< GFS initialization routine
+  public  GFS_grid_populate           !< Lat/lon/area setting -- exposed for moving nest
 
   CONTAINS
 !*******************************************************************************************

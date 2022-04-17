@@ -186,7 +186,7 @@ module module_cap_cpl
     type(ESMF_StateItem_Flag)   :: itemType
     real(ESMF_KIND_R8), pointer :: dataPtr2d(:,:)
     real(ESMF_KIND_R8), pointer :: dataPtr3d(:,:,:)
-    integer                     :: lrc, dimCount
+    integer                     :: lrc, localDeCount, dimCount
     character(len=*),parameter  :: subname='(FV3: state_diagnose)'
 
     lstring = ''
@@ -211,23 +211,25 @@ module module_cap_cpl
        call ESMF_StateGet(State, itemName=trim(itemNameList(n)), field=lfield, rc=lrc)
        if (ESMF_LogFoundError(rcToCheck=lrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-       call ESMF_FieldGet(lfield, dimCount=dimcount, rc=lrc)
+       call ESMF_FieldGet(lfield, localDeCount=localDeCount, dimCount=dimcount, rc=lrc)
        if (ESMF_LogFoundError(rcToCheck=lrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-       if(dimcount == 2)then
-         call ESMF_FieldGet(lfield, farrayPtr=dataPtr2d, rc=lrc)
-         if (ESMF_LogFoundError(rcToCheck=lrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+       if(localDeCount.gt.0) then
+         if(dimcount == 2)then
+           call ESMF_FieldGet(lfield, farrayPtr=dataPtr2d, rc=lrc)
+           if (ESMF_LogFoundError(rcToCheck=lrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-         write(tmpstr,'(A,3g14.7)') trim(subname)//' '//trim(lstring)//':'//trim(itemNameList(n))//'  ', &
-           minval(dataPtr2d),maxval(dataPtr2d),sum(dataPtr2d)
-         call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=lrc)
-       else
-         call ESMF_FieldGet(lfield, farrayPtr=dataPtr3d, rc=lrc)
-         if (ESMF_LogFoundError(rcToCheck=lrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+           write(tmpstr,'(A,3g14.7)') trim(subname)//' '//trim(lstring)//':'//trim(itemNameList(n))//'  ', &
+             minval(dataPtr2d),maxval(dataPtr2d),sum(dataPtr2d)
+           call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=lrc)
+         else
+           call ESMF_FieldGet(lfield, farrayPtr=dataPtr3d, rc=lrc)
+           if (ESMF_LogFoundError(rcToCheck=lrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-         write(tmpstr,'(A,3g14.7)') trim(subname)//' '//trim(lstring)//':'//trim(itemNameList(n))//'  ', &
-           minval(dataPtr3d),maxval(dataPtr3d),sum(dataPtr3d)
-         call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=lrc)
+           write(tmpstr,'(A,3g14.7)') trim(subname)//' '//trim(lstring)//':'//trim(itemNameList(n))//'  ', &
+             minval(dataPtr3d),maxval(dataPtr3d),sum(dataPtr3d)
+           call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=lrc)
+         end if
        end if
      end if
     enddo
