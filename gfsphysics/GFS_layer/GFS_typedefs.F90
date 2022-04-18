@@ -2308,6 +2308,10 @@ module GFS_typedefs
     Sfcprop%smoiseq    = clear_val
     Sfcprop%zsnsoxy    = clear_val
     
+   endif
+
+    if (Model%lsm == Model%lsm_noahmp .or. Model%lsm == Model%lsm_noah) then
+
     allocate(Sfcprop%draincprv  (IM))
     allocate(Sfcprop%drainncprv (IM))
     allocate(Sfcprop%diceprv    (IM))

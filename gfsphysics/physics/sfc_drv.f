@@ -145,6 +145,7 @@
      &       shdmin, shdmax, snoalb, sfalb, flag_iter, flag_guess,      &
      &       lheatstrg, isot, ivegsrc,                                  &
      &       bexppert, xlaipert, vegfpert,pertvegf,                     &  ! sfc perts, mgehne
+     &       graupel_mp, ice_mp,                                        &
 !  ---  in/outs:
      &       weasd, snwdph, tskin, tprcp, srflag, smc, stc, slc,        &
      &       canopy, trans, tsurf, zorl,                                &
@@ -190,6 +191,9 @@
      &       snoalb, sfalb, zf,
      &       bexppert, xlaipert, vegfpert
 
+      real (kind=kind_phys), dimension(im), intent(in) ::               &
+     &       graupel_mp, ice_mp                                         &
+
       real (kind=kind_phys),  intent(in) :: delt
 
       logical, dimension(im), intent(in) :: flag_iter, flag_guess, land
@@ -230,6 +234,8 @@
      &       snomlt, sncovr, soilw, soilm, ssoil, tsea, th2, tbot,      &
      &       xlai, zlvl, swdn, tem, z0, bexpp, xlaip, vegfp,            &
      &       mv,sv,alphav,betav,vegftmp
+
+      real (kind=kind_phys) :: graupel_prcp, ice_prcp
 
       integer :: couple, ice, nsoil, nroot, slope, stype, vtype
       integer :: i, k, iflag
@@ -320,6 +326,10 @@
 !            ffrozp = 0.0
 !          endif
           ffrozp = srflag(i)
+
+          graupel_prcp  = graupel_mp(i)   ! grpl part of MP precip [mm/s]
+          ice_prcp      = ice_mp(i)       ! ice part of MP precip [mm/s]
+
           ice = 0
 
           zlvl = zf(i)
@@ -451,6 +461,7 @@
      &       vtype, stype, slope, shdmin1d, alb, snoalb1d,              &
      &       bexpp, xlaip,                                              & ! sfc-perts, mgehne
      &       lheatstrg,                                                 &
+     &       graupel_prcp, ice_prcp,                                    &
 !  ---  input/outputs:
      &       tbot, cmc, tsea, stsoil, smsoil, slsoil, sneqv, chx, cmx,  &
      &       z0,                                                        &

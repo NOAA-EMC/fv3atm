@@ -8,6 +8,7 @@
      &       vegtyp, soiltyp, slopetyp, shdmin, alb, snoalb,            &
      &       bexpp, xlaip,                                              & !  sfc-perts, mgehne
      &       lheatstrg,                                                 &
+     &       graupel_prcp, ice_prcp,                                    &
 !  ---  input/outputs:
      &       tbot, cmc, t1, stc, smc, sh2o, sneqv, ch, cm,z0,           &
 !  ---  outputs:
@@ -205,6 +206,8 @@
      &       bexpp, xlaip                                               & !sfc-perts, mgehne
 
       logical, intent(in) :: lheatstrg
+
+      real (kind=kind_phys), intent(in) :: ice_prcp, graupel_prcp
 
 !  ---  input/outputs:
       real (kind=kind_phys), intent(inout) :: tbot, cmc, t1, sneqv,     &
@@ -2707,6 +2710,7 @@
 
 !  ---  locals:
       real(kind=kind_phys) :: dsnew, snowhc, hnewc, newsnc, tempc
+      real(kind=kind_phys) :: dgnew, dinew, dfnew
 
 !
 !===> ...  begin here
@@ -2726,6 +2730,22 @@
         dsnew = 0.05
       else
         dsnew = 0.05 + 0.0017*(tempc + 15.0)**1.5
+      endif
+
+        dgnew = 1000.0 / max(2.,(3.5*tanh((274.15-sfctmp)*0.3333)))
+        dgnew = min(500.0, dgnew) ! kg/m3 (from RUC model)
+        dgnew = dgnew / 1000.0    ! convert units to [m-liq/m-snow]
+!       dinew = 250.0 / 1000.0    ! assume cloud ice is 250 kg/m3
+        dfnew = 500.0 / 1000.0    ! assume freezing rain is 500 kg/m3
+
+      if (snowng) then
+        dsnew = (dsnew*(prcp * ffrozp - graupel_prcp ) +
+     &    dgnew*graupel_prcp)/(prcp * ffrozp) 
+!       dsnew = (dsnew*(prcp * ffrozp - graupel_prcp - ice_prcp) +
+!    &    dgnew*graupel_prcp + dinew*ice_prcp)/(prcp * ffrozp) 
+      endif
+      if (frzgra) then
+        dsnew = dfnew
       endif
 
 !  --- ...  adjustment of snow density depending on new snowfall
