@@ -309,6 +309,13 @@
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
   kind = kind_phys
+[qgrs(:,:,index_of_sigma)]
+  standard_name = updraft_area_fraction
+  long_name = convective updraft area fraction
+  units = frac
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
 [diss_est]
   standard_name = dissipation_estimate_of_air_temperature_at_model_layers
   long_name = dissipation estimate model layer mean temperature
@@ -545,7 +552,13 @@
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
   kind = kind_phys
-
+[gq0(:,:,index_of_sigma)]
+  standard_name = updraft_area_fraction_updated_by_physics
+  long_name = convective updraft area fraction updated by physics
+  units = frac
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
 ########################################################################
 [ccpp-table-properties]
   name = GFS_sfcprop_type
@@ -2292,6 +2305,27 @@
   type = real
   kind = kind_phys
   active = (flag_for_surface_flux_coupling)
+[qgrs_dsave]
+  standard_name = tracer_concentration_dsave
+  long_name = model layer mean tracer concentration dsave
+  units = kg kg-1
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+[tmf]
+  standard_name = turbulence_moisture_flux
+  long_name = turbulence_moisture_flux
+  units = kg kg-1 s-1
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+[dqdt_qmicro]
+  standard_name = instantanious_moisture_tendency_due_to_microphysics
+  long_name = moisture tendency due to microphysics
+  units = kg kg-1 s-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
 [ca_deep]
   standard_name = cellular_automata_area_fraction_for_deep_convection_from_coupled_process
   long_name = fraction of cellular automata for deep convection
@@ -2312,6 +2346,13 @@
   standard_name = physics_field_for_coupling
   long_name = physics_field_for_coupling
   units = m2 s-2
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[ca_micro]
+  standard_name = output_prognostic_sigma_two
+  long_name = output of prognostic area fraction two
+  units = frac
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
@@ -4331,6 +4372,18 @@
   units = flag
   dimensions = ()
   type = logical
+[wclosureflg]
+  standard_name = flag_for_wclosure
+  long_name = flag for vertical velocity closure
+  units = flag
+  dimensions = ()
+  type = logical
+[progsigma]
+  standard_name = flag_for_prognostic_sigma
+  long_name = flag for prognostic sigma
+  units = flag
+  dimensions = ()
+  type = logical
 [isatmedmf]
   standard_name = choice_of_scale_aware_TKE_moist_EDMF_PBL
   long_name = choice of scale-aware TKE moist EDMF PBL scheme
@@ -5192,6 +5245,12 @@
 [ntke]
   standard_name = index_of_turbulent_kinetic_energy_in_tracer_concentration_array
   long_name = tracer index for turbulent kinetic energy
+  units = index
+  dimensions = ()
+  type = integer
+[ntsigma]
+  standard_name = index_of_sigma
+  long_name = tracer index of sigma
   units = index
   dimensions = ()
   type = integer

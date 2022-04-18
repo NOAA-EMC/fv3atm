@@ -538,6 +538,11 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: pfi_lsan(:,:)   => null()  !< instantaneous 3D flux of ice    nonconvective precipitation (kg m-2 s-1)
     real (kind=kind_phys), pointer :: pfl_lsan(:,:)   => null()  !< instantaneous 3D flux of liquid nonconvective precipitation (kg m-2 s-1)
 
+    !-- prognostic updraft area fraction coupling in convection
+    real (kind=kind_phys), pointer :: qgrs_dsave (:,:) => null()  !
+    real (kind=kind_phys), pointer :: tmf (:,:) => null()         !< tmf to be passed from turublence scheme to convection
+    real (kind=kind_phys), pointer :: dqdt_qmicro(:,:) => null()  !< instantanious microphysics tendency to be passed from MP to convection
+
     contains
       procedure :: create  => coupling_create  !<   allocate array data
   end type GFS_coupling_type
@@ -978,6 +983,8 @@ module GFS_typedefs
     integer              :: imfshalcnv_gf       = 3 !< flag for scale- & aerosol-aware Grell-Freitas scheme (GSD)
     integer              :: imfshalcnv_ntiedtke = 4 !< flag for new Tiedtke scheme (CAPS)
     logical              :: hwrf_samfdeep           !< flag for HWRF SAMF deepcnv scheme (HWRF)
+    logical              :: wclosureflg             !< flag for w-closure in samf deepcnv scheme (GFS)                                                                                         
+    logical              :: progsigma               !< flag for prognostic area fraction in samf ddepcnv scheme (GFS)   
     integer              :: imfdeepcnv      !< flag for mass-flux deep convection scheme
                                             !<     1: July 2010 version of SAS conv scheme
                                             !<           current operational version as of 2016
@@ -1242,6 +1249,7 @@ module GFS_typedefs
     integer              :: ntgv            !< tracer index for graupel particle volume
     integer              :: nthv            !< tracer index for hail particle volume
     integer              :: ntke            !< tracer index for kinetic energy
+    integer              :: ntsigma         !< tracer index for updraft area fraction  
     integer              :: nto             !< tracer index for oxygen ion
     integer              :: nto2            !< tracer index for oxygen
     integer              :: ntwa            !< tracer index for water friendly aerosol
@@ -1580,6 +1588,7 @@ module GFS_typedefs
                                                !        %upfx0    - clear sky upward lw flux at toa (w/m**2)
 
 ! Input/output - used by physics
+    real (kind=kind_phys), pointer :: ca_micro (:)   => null()   !< cellular automata fraction 
     real (kind=kind_phys), pointer :: srunoff(:)     => null()   !< surface water runoff (from lsm)
     real (kind=kind_phys), pointer :: evbsa  (:)     => null()   !< noah lsm diagnostics
     real (kind=kind_phys), pointer :: evcwa  (:)     => null()   !< noah lsm diagnostics
@@ -3044,6 +3053,8 @@ module GFS_typedefs
 
     logical              :: hwrf_samfdeep     = .false.               !< flag for HWRF SAMF deepcnv scheme
     logical              :: hwrf_samfshal     = .false.               !< flag for HWRF SAMF shalcnv scheme
+    logical              :: wclosureflg       = .false.               !< flag for activating updraft velocity closure in saSAS
+    logical              :: progsigma         = .false.               !< flag for prognostic updraft area fraction closure in saSAS
     logical              :: do_mynnedmf       = .false.               !< flag for MYNN-EDMF
     logical              :: do_mynnsfclay     = .false.               !< flag for MYNN Surface Layer Scheme
     ! DH* TODO - move to MYNN namelist section
@@ -3324,7 +3335,7 @@ module GFS_typedefs
                                do_ugwp_v1, do_ugwp_v1_orog_only,  do_ugwp_v1_w_gsldrag,     &
                                var_ric, coef_ric_l, coef_ric_s, hurr_pbl,                   &
                                do_myjsfc, do_myjpbl,                                        &
-                               hwrf_samfdeep, hwrf_samfshal,                                &
+                               hwrf_samfdeep, hwrf_samfshal, wclosureflg,progsigma,         &
                                h2o_phys, pdfcld, shcnvcw, redrag, hybedmf, satmedmf,        &
                                shinhong, do_ysu, dspheat, lheatstrg, lseaspray, cnvcld,     &
                                random_clds, shal_cnv, imfshalcnv, imfdeepcnv, isatmedmf,    &
@@ -3955,6 +3966,17 @@ module GFS_typedefs
     Model%hwrf_samfdeep = hwrf_samfdeep
     Model%hwrf_samfshal = hwrf_samfshal
 
+    if (wclosureflg .and. imfdeepcnv/=2) then
+       write(*,*) 'Logic error: wclosureflg requires imfdeepcnv=2'
+       stop
+    end if
+    if (progsigma .and. imfdeepcnv/=2) then
+       write(*,*) 'Logic error: progsigma requires imfdeepcnv=2'
+       stop
+    end if
+    Model%wclosureflg = wclosureflg
+    Model%progsigma = progsigma
+
     if (oz_phys .and. oz_phys_2015) then
        write(*,*) 'Logic error: can only use one ozone physics option (oz_phys or oz_phys_2015), not both. Exiting.'
        stop
@@ -4230,6 +4252,7 @@ module GFS_typedefs
     Model%ntgv             = get_tracer_index(Model%tracer_names, 'graupel_vol',Model%me, Model%master, Model%debug)
     Model%nthv             = get_tracer_index(Model%tracer_names, 'hail_vol',   Model%me, Model%master, Model%debug)
     Model%ntke             = get_tracer_index(Model%tracer_names, 'sgs_tke',    Model%me, Model%master, Model%debug)
+    Model%ntsigma          = get_tracer_index(Model%tracer_names, 'sigmab',     Model%me, Model%master, Model%debug)
     Model%nqrimef          = get_tracer_index(Model%tracer_names, 'q_rimef',    Model%me, Model%master, Model%debug)
     Model%ntwa             = get_tracer_index(Model%tracer_names, 'liq_aero',   Model%me, Model%master, Model%debug)
     Model%ntia             = get_tracer_index(Model%tracer_names, 'ice_aero',   Model%me, Model%master, Model%debug)
@@ -5790,6 +5813,7 @@ module GFS_typedefs
       print *, ' ntgv              : ', Model%ntgv
       print *, ' nthv              : ', Model%nthv
       print *, ' ntke              : ', Model%ntke
+      print *, ' ntsigma           : ', Model%ntsigma
       print *, ' nto               : ', Model%nto
       print *, ' nto2              : ', Model%nto2
       print *, ' ntwa              : ', Model%ntwa
@@ -6529,6 +6553,10 @@ module GFS_typedefs
     allocate (Diag%lwp_fc (IM))
     allocate (Diag%iwp_fc (IM))
 
+    !Lisa temp:
+    allocate (Diag%ca_micro  (IM))
+
+
     !--- 3D diagnostics
     if (Model%ldiag3d) then
       allocate(Diag%dtend(IM,Model%levs,Model%ndtend))
@@ -6684,6 +6712,8 @@ module GFS_typedefs
     call Diag%phys_zero (Model, linit=linit)
 !    if(Model%me==0) print *,'in diag_create, call phys_zero'
     linit = .false.
+
+    Diag%ca_micro = zero
 
   end subroutine diag_create
 
