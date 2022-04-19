@@ -2628,6 +2628,16 @@ module GFS_typedefs
       Coupling%psurfi_cpl  = clear_val
     endif
 
+    !--prognostic closure - moisture coupling
+    if(Model%progsigma)then
+       allocate(Coupling%tmf (IM,Model%levs))
+       allocate(Coupling%dqdt_qmicro (IM,Model%levs))
+       allocate(Coupling%qgrs_dsave (IM,Model%levs))
+       Coupling%tmf = clear_val
+       Coupling%dqdt_qmicro = clear_val
+       Coupling%qgrs_dsave = clear_val
+    endif
+
     !--- stochastic physics option
     if (Model%do_sppt .or. Model%ca_global) then
       allocate (Coupling%sppt_wts  (IM,Model%levs))
