@@ -2491,17 +2491,20 @@ module GFS_typedefs
 !     Coupling%sfc_alb_vis_dir_cpl   = clear_val
 !     Coupling%sfc_alb_vis_dif_cpl   = clear_val
 
-      allocate (Coupling%dusfcino_cpl      (IM))
-      allocate (Coupling%dvsfcino_cpl      (IM))
-      allocate (Coupling%dtsfcino_cpl      (IM))
-      allocate (Coupling%dqsfcino_cpl      (IM))
-      allocate (Coupling%ulwsfcino_cpl     (IM))
+      ! -- Coupling options to retrive atmosphere-ocean fluxes from mediator
+      if (Model%use_med_flux) then
+        allocate (Coupling%dusfcino_cpl    (IM))
+        allocate (Coupling%dvsfcino_cpl    (IM))
+        allocate (Coupling%dtsfcino_cpl    (IM))
+        allocate (Coupling%dqsfcino_cpl    (IM))
+        allocate (Coupling%ulwsfcino_cpl   (IM))
 
-      Coupling%dusfcino_cpl        = clear_val
-      Coupling%dvsfcino_cpl        = clear_val
-      Coupling%dtsfcino_cpl        = clear_val
-      Coupling%dqsfcino_cpl        = clear_val
-      Coupling%ulwsfcino_cpl       = clear_val
+        Coupling%dusfcino_cpl      = clear_val
+        Coupling%dvsfcino_cpl      = clear_val
+        Coupling%dtsfcino_cpl      = clear_val
+        Coupling%dqsfcino_cpl      = clear_val
+        Coupling%ulwsfcino_cpl     = clear_val
+      end if
 
       !--- accumulated quantities
       allocate (Coupling%dusfc_cpl  (IM))
