@@ -109,7 +109,7 @@ module stochastic_physics_wrapper_mod
             GFS_Control%input_nml_file, GFS_Control%fn_nml, GFS_Control%nlunit, xlon, xlat, GFS_Control%do_sppt, GFS_Control%do_shum, &
             GFS_Control%do_skeb, GFS_Control%lndp_type, GFS_Control%n_var_lndp, GFS_Control%use_zmtnblck, GFS_Control%skeb_npass,     &
             GFS_Control%lndp_var_list, GFS_Control%lndp_prt_list,    &
-            GFS_Control%n_var_spp, GFS_Control%spp_var_list, GFS_Control%spp_prt_list, GFS_Control%do_spp,                            &
+            GFS_Control%n_var_spp, GFS_Control%spp_var_list, GFS_Control%spp_prt_list, GFS_Control%spp_stddev_cutoff, GFS_Control%do_spp,                            &
             GFS_Control%ak, GFS_Control%bk, nthreads, GFS_Control%master, GFS_Control%communicator, ierr)
             if (ierr/=0)  then
                     write(6,*) 'call to init_stochastic_physics failed'
