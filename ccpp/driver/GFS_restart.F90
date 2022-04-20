@@ -142,7 +142,7 @@ module GFS_restart
     endif
     !Prognostic area fraction
     if (Model%progsigma) then
-       Restart%num3d = Restart%num3d + 12
+       Restart%num3d = Restart%num3d + 2
     endif
 
     allocate (Restart%name2d(Restart%num2d))

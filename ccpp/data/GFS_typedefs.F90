@@ -1588,7 +1588,6 @@ module GFS_typedefs
                                                !        %upfx0    - clear sky upward lw flux at toa (w/m**2)
 
 ! Input/output - used by physics
-    real (kind=kind_phys), pointer :: ca_micro (:)   => null()   !< cellular automata fraction 
     real (kind=kind_phys), pointer :: srunoff(:)     => null()   !< surface water runoff (from lsm)
     real (kind=kind_phys), pointer :: evbsa  (:)     => null()   !< noah lsm diagnostics
     real (kind=kind_phys), pointer :: evcwa  (:)     => null()   !< noah lsm diagnostics
@@ -6563,10 +6562,6 @@ module GFS_typedefs
     allocate (Diag%lwp_fc (IM))
     allocate (Diag%iwp_fc (IM))
 
-    !Lisa temp:
-    allocate (Diag%ca_micro  (IM))
-
-
     !--- 3D diagnostics
     if (Model%ldiag3d) then
       allocate(Diag%dtend(IM,Model%levs,Model%ndtend))
@@ -6722,8 +6717,6 @@ module GFS_typedefs
     call Diag%phys_zero (Model, linit=linit)
 !    if(Model%me==0) print *,'in diag_create, call phys_zero'
     linit = .false.
-
-    Diag%ca_micro = zero
 
   end subroutine diag_create
 
