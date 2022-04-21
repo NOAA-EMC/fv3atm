@@ -1177,9 +1177,9 @@ module GFS_typedefs
     integer              :: spp_rad
     integer              :: spp_gwd
     integer              :: n_var_spp
-    character(len=3)    , pointer :: spp_var_list(:)  ! dimension here must match n_var_spp in stochy_nml_def
-    real(kind=kind_phys), pointer :: spp_prt_list(:)  ! dimension here must match n_var_spp in stochy_nml_def 
-    real(kind=kind_phys), pointer :: spp_stddev_cutoff(:)  ! dimension here must match n_var_spp in stochy_nml_def 
+    character(len=3)    , pointer :: spp_var_list(:) 
+    real(kind=kind_phys), pointer :: spp_prt_list(:)
+    real(kind=kind_phys), pointer :: spp_stddev_cutoff(:)
 
 !--- tracer handling
     character(len=32), pointer :: tracer_names(:) !< array of initialized tracers from dynamic core
