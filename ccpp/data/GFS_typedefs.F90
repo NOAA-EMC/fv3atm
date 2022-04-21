@@ -1181,6 +1181,7 @@ module GFS_typedefs
     integer              :: n_var_spp
     character(len=3)    , pointer :: spp_var_list(:)  ! dimension here must match n_var_spp in stochy_nml_def
     real(kind=kind_phys), pointer :: spp_prt_list(:)  ! dimension here must match n_var_spp in stochy_nml_def 
+    real(kind=kind_phys), pointer :: spp_stddev_cutoff(:)  ! dimension here must match n_var_spp in stochy_nml_def 
 
 !--- tracer handling
     character(len=32), pointer :: tracer_names(:) !< array of initialized tracers from dynamic core
@@ -4150,8 +4151,10 @@ module GFS_typedefs
     if (Model%do_spp) then
       allocate(Model%spp_var_list(Model%n_var_spp))
       allocate(Model%spp_prt_list(Model%n_var_spp))
+      allocate(Model%spp_stddev_cutoff(Model%n_var_spp))
       Model%spp_var_list(:) = ''
       Model%spp_prt_list(:) = clear_val
+      Model%spp_stddev_cutoff(:) = clear_val
     end if
 
     !--- cellular automata options
