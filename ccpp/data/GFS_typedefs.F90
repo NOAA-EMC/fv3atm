@@ -247,6 +247,9 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: snodi  (:)   => null()  !< snow depth over ice
     real (kind=kind_phys), pointer :: weasdi (:)   => null()  !< weasd over ice
     real (kind=kind_phys), pointer :: hprime (:,:) => null()  !< orographic metrics
+    real (kind=kind_phys), pointer :: dust12m_in  (:,:,:) => null()  !< fengsha dust input
+    real (kind=kind_phys), pointer :: emi_in (:,:) => null()  !< anthropogenic background input
+    real (kind=kind_phys), pointer :: smoke_GBBEPx(:,:,:) => null()  !< GBBEPx fire input
     real (kind=kind_phys), pointer :: z0base (:)   => null()  !< background or baseline surface roughness length in m
     real (kind=kind_phys), pointer :: semisbase(:) => null()  !< background surface emissivity
     real (kind=kind_phys), pointer :: sfalb_lnd (:) => null() !< surface albedo over land for LSM
@@ -551,11 +554,41 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: nwfa2d  (:)     => null()  !< instantaneous water-friendly sfc aerosol source
     real (kind=kind_phys), pointer :: nifa2d  (:)     => null()  !< instantaneous ice-friendly sfc aerosol source
 
+    !--- aerosol surface emissions for Thompson microphysics & smoke
+    real (kind=kind_phys), pointer :: emdust  (:)     => null()  !< instantaneous dust emission
+    real (kind=kind_phys), pointer :: emseas  (:)     => null()  !< instantaneous sea salt emission
+    real (kind=kind_phys), pointer :: emanoc  (:)     => null()  !< instantaneous anthro. oc emission
+
+    !--- These 3 arrays are hourly, so their dimension is imx24 (output is hourly)
+    real (kind=kind_phys), pointer :: ebb_smoke_hr(:)    => null()  !< hourly smoke emission
+    real (kind=kind_phys), pointer :: frp_hr      (:)    => null()  !< hourly FRP
+    real (kind=kind_phys), pointer :: frp_std_hr  (:)    => null()  !< hourly std. FRP
+
+    !--- For fire diurnal cycle
+    real (kind=kind_phys), pointer :: fhist       (:)   => null()  !< instantaneous fire coef_bb
+    real (kind=kind_phys), pointer :: coef_bb_dc  (:)   => null()  !< instantaneous fire coef_bb
+    real (kind=kind_phys), pointer :: ebu_smoke (:,:)   => null()  !< 3D ebu array
+
+    !--- For smoke and dust optical extinction
+    real (kind=kind_phys), pointer :: smoke_ext (:,:)   => null()  !< 3D aod array
+    real (kind=kind_phys), pointer :: dust_ext  (:,:)   => null()  !< 3D aod array
+    !--- For MYNN PBL transport of  smoke and dust
+    real (kind=kind_phys), pointer :: chem3d  (:,:,:)   => null()  !< 3D aod array
+
+    !--- Fire plume rise diagnostics
+    real (kind=kind_phys), pointer :: min_fplume (:)   => null()  !< minimum plume rise level
+    real (kind=kind_phys), pointer :: max_fplume (:)   => null()  !< maximum plume rise level
+    !--- hourly fire potential index
+    real (kind=kind_phys), pointer :: rrfs_hwp   (:)   => null()  !< hourly fire potential index
+
     !--- instantaneous quantities for chemistry coupling
     real (kind=kind_phys), pointer :: ushfsfci(:)     => null()  !< instantaneous upward sensible heat flux (w/m**2)
     real (kind=kind_phys), pointer :: qci_conv(:,:)   => null()  !< convective cloud condesate after rainout
     real (kind=kind_phys), pointer :: pfi_lsan(:,:)   => null()  !< instantaneous 3D flux of ice    nonconvective precipitation (kg m-2 s-1)
     real (kind=kind_phys), pointer :: pfl_lsan(:,:)   => null()  !< instantaneous 3D flux of liquid nonconvective precipitation (kg m-2 s-1)
+
+    !--- instantaneous total moisture tendency for smoke coupling:
+    real (kind=kind_phys), pointer :: dqdti   (:,:)   => null()  !< rrfs_smoke=true only; instantaneous total moisture tendency (kg/kg/s)
 
     contains
       procedure :: create  => coupling_create  !<   allocate array data
@@ -648,6 +681,7 @@ module GFS_typedefs
     logical              :: cplwav          !< default no cplwav collection
     logical              :: cplwav2atm      !< default no wav->atm coupling
     logical              :: cplchm          !< default no cplchm collection
+    logical              :: rrfs_smoke      !< default no rrfs_smoke collection
     logical              :: use_cice_alb    !< default .false. - i.e. don't use albedo imported from the ice model
     logical              :: cpl_imp_mrg     !< default no merge import with internal forcings
     logical              :: cpl_imp_dbg     !< default no write import data to file post merge
@@ -1246,6 +1280,10 @@ module GFS_typedefs
     integer              :: nto2            !< tracer index for oxygen
     integer              :: ntwa            !< tracer index for water friendly aerosol
     integer              :: ntia            !< tracer index for ice friendly aerosol
+    integer              :: ntsmoke         !< tracer index for smoke
+    integer              :: ntdust          !< tracer index for dust
+    integer              :: nchem           !< number of prognostic chemical species (vertically mixied)
+    integer              :: ndvel           !< number of prognostic chemical species (which are deposited, usually =nchem)
     integer              :: ntchm           !< number of prognostic chemical tracers (advected)
     integer              :: ntchs           !< tracer index for first prognostic chemical tracer
     integer              :: ntche           !< tracer index for last prognostic chemical tracer
@@ -1283,6 +1321,22 @@ module GFS_typedefs
     integer              :: nps2delt        !< the index of surface air pressure 2 timesteps back for Z-C MP in phy_f2d
     integer              :: npsdelt         !< the index of surface air pressure at the previous timestep for Z-C MP in phy_f2d
     integer              :: ncnvwind        !< the index of surface wind enhancement due to convection for MYNN SFC and RAS CNV in phy f2d
+
+!-- chem nml variables for RRFS-Smoke
+    integer              :: seas_opt
+    integer              :: dust_opt
+    integer              :: biomass_burn_opt
+    integer              :: drydep_opt
+    integer              :: wetdep_ls_opt
+    logical              :: do_plumerise
+    integer              :: addsmoke_flag
+    integer              :: plumerisefire_frq
+    logical              :: smoke_forecast
+    logical              :: aero_ind_fdb  ! WFA/IFA indirect
+    logical              :: aero_dir_fdb  ! smoke/dust direct
+    logical              :: rrfs_smoke_debug
+    logical              :: mix_chem
+    logical              :: fire_turb
 
 !--- debug flags
     logical              :: debug
@@ -2379,6 +2433,9 @@ module GFS_typedefs
     allocate (Sfcprop%snodi    (IM))
     allocate (Sfcprop%weasdi   (IM))
     allocate (Sfcprop%hprime   (IM,Model%nmtvr))
+    allocate (Sfcprop%dust12m_in  (IM,12,5))
+    allocate (Sfcprop%smoke_GBBEPx(IM,24,3))
+    allocate (Sfcprop%emi_in   (IM,1))
     allocate(Sfcprop%albdirvis_lnd (IM))
     allocate(Sfcprop%albdirnir_lnd (IM))
     allocate(Sfcprop%albdifvis_lnd (IM))
@@ -2409,6 +2466,9 @@ module GFS_typedefs
     Sfcprop%snodi     = clear_val
     Sfcprop%weasdi    = clear_val
     Sfcprop%hprime    = clear_val
+    Sfcprop%dust12m_in= clear_val
+    Sfcprop%emi_in    = clear_val
+    Sfcprop%smoke_GBBEPx = clear_val
     Sfcprop%albdirvis_lnd = clear_val
     Sfcprop%albdirnir_lnd = clear_val
     Sfcprop%albdifvis_lnd = clear_val
@@ -2976,7 +3036,7 @@ module GFS_typedefs
     endif
 
     ! -- Aerosols coupling options
-    if (Model%cplchm) then
+    if (Model%cplchm .or. Model%rrfs_smoke) then
       !--- outgoing instantaneous quantities
       allocate (Coupling%ushfsfci  (IM))
       !--- accumulated convective rainfall
@@ -3037,6 +3097,42 @@ module GFS_typedefs
       allocate (Coupling%nifa2d (IM))
       Coupling%nwfa2d   = clear_val
       Coupling%nifa2d   = clear_val
+    endif
+
+   if(Model%rrfs_smoke) then
+    !--- needed for smoke aerosol option
+      allocate (Coupling%emdust    (IM))
+      allocate (Coupling%emseas    (IM))
+      allocate (Coupling%emanoc    (IM))
+      allocate (Coupling%ebb_smoke_hr (IM))
+      allocate (Coupling%frp_hr    (IM))
+      allocate (Coupling%frp_std_hr(IM))
+      allocate (Coupling%fhist     (IM))
+      allocate (Coupling%coef_bb_dc(IM))
+      allocate (Coupling%ebu_smoke (IM,Model%levs))
+      allocate (Coupling%smoke_ext (IM,Model%levs))
+      allocate (Coupling%dust_ext  (IM,Model%levs))
+      allocate (Coupling%chem3d    (IM,Model%levs,2))
+      allocate (Coupling%min_fplume(IM))
+      allocate (Coupling%max_fplume(IM))
+      allocate (Coupling%rrfs_hwp  (IM))
+      allocate (Coupling%dqdti        (IM,Model%levs))
+      Coupling%emdust     = clear_val
+      Coupling%emseas     = clear_val
+      Coupling%emanoc     = clear_val
+      Coupling%ebb_smoke_hr  = clear_val
+      Coupling%frp_hr     = clear_val
+      Coupling%frp_std_hr = clear_val
+      Coupling%fhist      = 1.
+      Coupling%coef_bb_dc = clear_val
+      Coupling%ebu_smoke  = clear_val
+      Coupling%smoke_ext  = clear_val
+      Coupling%dust_ext   = clear_val
+      Coupling%chem3d     = clear_val
+      Coupling%min_fplume = clear_val
+      Coupling%max_fplume = clear_val
+      Coupling%rrfs_hwp   = clear_val
+      Coupling%dqdti      = clear_val
     endif
 
     if (Model%imfdeepcnv == Model%imfdeepcnv_gf) then
@@ -3134,6 +3230,7 @@ module GFS_typedefs
     logical              :: cplwav         = .false.         !< default no cplwav collection
     logical              :: cplwav2atm     = .false.         !< default no cplwav2atm coupling
     logical              :: cplchm         = .false.         !< default no cplchm collection
+    logical              :: rrfs_smoke     = .false.         !< default no rrfs_smoke collection
     logical              :: use_cice_alb   = .false.         !< default no cice albedo
     logical              :: cpl_imp_mrg    = .false.         !< default no merge import with internal forcings
     logical              :: cpl_imp_dbg    = .false.         !< default no write import data to file post merge
@@ -3601,6 +3698,22 @@ module GFS_typedefs
     integer :: spp_gwd      =  0
     logical :: do_spp       = .false.
 
+!-- chem nml variables for RRFS-Smoke
+    integer :: seas_opt = 2
+    integer :: dust_opt = 5
+    integer :: biomass_burn_opt = 1
+    integer :: drydep_opt  = 1
+    integer :: wetdep_ls_opt  = 1
+    logical :: do_plumerise   = .false.
+    integer :: addsmoke_flag  = 1
+    integer :: plumerisefire_frq = 60
+    logical :: smoke_forecast = .false.   ! RRFS-smoke diurnal 
+    logical :: aero_ind_fdb = .false.     ! RRFS-smoke wfa/ifa emission
+    logical :: aero_dir_fdb = .false.     ! RRFS-smoke smoke/dust radiation feedback
+    logical :: rrfs_smoke_debug = .false. ! RRFS-smoke plumerise debug
+    logical :: mix_chem = .false.         ! tracer mixing option by MYNN PBL
+    logical :: fire_turb = .false.        ! enh vertmix option by MYNN PBL
+
 !--- aerosol scavenging factors
     integer, parameter :: max_scav_factors = 25
     character(len=40)  :: fscav_aero(max_scav_factors)
@@ -3617,7 +3730,7 @@ module GFS_typedefs
                                thermodyn_id, sfcpress_id,                                   &
                           !--- coupling parameters
                                cplflx, cplice, cplocn2atm, cplwav, cplwav2atm, cplchm,      &
-                               cpl_imp_mrg, cpl_imp_dbg,                                    &
+                               cpl_imp_mrg, cpl_imp_dbg, rrfs_smoke,                        &
                                use_cice_alb,                                                &
 #ifdef IDEA_PHYS
                                lsidea, weimer_model, f107_kp_size, f107_kp_interval,        &
@@ -3731,6 +3844,11 @@ module GFS_typedefs
                                phys_version,                                                &
                           !--- aerosol scavenging factors ('name:value' string array)
                                fscav_aero,                                                  &
+                          !--- RRFS smoke namelist
+                               seas_opt, dust_opt, biomass_burn_opt, drydep_opt,            &
+                               wetdep_ls_opt, smoke_forecast, aero_ind_fdb, aero_dir_fdb,   &
+                               rrfs_smoke_debug, do_plumerise, plumerisefire_frq,           &
+                               addsmoke_flag, fire_turb, mix_chem,                          &
                           !--- (DFI) time ranges with radar-prescribed microphysics tendencies
                           !          and (maybe) convection suppression
                                fh_dfi_radar, radar_tten_limits, do_cap_suppress
@@ -3932,6 +4050,23 @@ module GFS_typedefs
     Model%use_cice_alb     = use_cice_alb
     Model%cpl_imp_mrg      = cpl_imp_mrg
     Model%cpl_imp_dbg      = cpl_imp_dbg
+
+!--- RRFS Smoke
+    Model%rrfs_smoke        = rrfs_smoke
+    Model%seas_opt          = seas_opt
+    Model%dust_opt          = dust_opt
+    Model%biomass_burn_opt  = biomass_burn_opt
+    Model%drydep_opt        = drydep_opt
+    Model%wetdep_ls_opt     = wetdep_ls_opt
+    Model%do_plumerise      = do_plumerise
+    Model%plumerisefire_frq = plumerisefire_frq
+    Model%addsmoke_flag     = addsmoke_flag
+    Model%smoke_forecast    = smoke_forecast
+    Model%aero_ind_fdb      = aero_ind_fdb
+    Model%aero_dir_fdb      = aero_dir_fdb
+    Model%rrfs_smoke_debug  = rrfs_smoke_debug
+    Model%mix_chem          = mix_chem
+    Model%fire_turb         = fire_turb
 
 !--- integrated dynamics through earth's atmosphere
     Model%lsidea           = lsidea
@@ -4572,6 +4707,8 @@ module GFS_typedefs
     Model%nqrimef          = get_tracer_index(Model%tracer_names, 'q_rimef',    Model%me, Model%master, Model%debug)
     Model%ntwa             = get_tracer_index(Model%tracer_names, 'liq_aero',   Model%me, Model%master, Model%debug)
     Model%ntia             = get_tracer_index(Model%tracer_names, 'ice_aero',   Model%me, Model%master, Model%debug)
+    Model%ntsmoke          = get_tracer_index(Model%tracer_names, 'smoke',      Model%me, Model%master, Model%debug)
+    Model%ntdust           = get_tracer_index(Model%tracer_names, 'dust',       Model%me, Model%master, Model%debug)
 
 !--- initialize parameters for atmospheric chemistry tracers
     call Model%init_chemistry(tracer_types)
@@ -5471,12 +5608,19 @@ module GFS_typedefs
     integer :: n
 
     !--- begin
+    Model%nchem = 0
+    Model%ndvel = 0
     Model%ntchm = 0
     Model%ntchs = NO_TRACER
     Model%ntche = NO_TRACER
     Model%ndchm = 0
     Model%ndchs = NO_TRACER
     Model%ndche = NO_TRACER
+
+    if (Model%rrfs_smoke) then
+      Model%nchem = 2
+      Model%ndvel = 2
+    endif
 
     do n = 1, size(tracer_types)
       select case (tracer_types(n))
@@ -5608,6 +5752,7 @@ module GFS_typedefs
       print *, ' cplwav            : ', Model%cplwav
       print *, ' cplwav2atm        : ', Model%cplwav2atm
       print *, ' cplchm            : ', Model%cplchm
+      print *, ' rrfs_smoke        : ', Model%rrfs_smoke
       print *, ' use_cice_alb      : ', Model%use_cice_alb
       print *, ' cpl_imp_mrg       : ', Model%cpl_imp_mrg
       print *, ' cpl_imp_dbg       : ', Model%cpl_imp_dbg
@@ -5976,6 +6121,10 @@ module GFS_typedefs
       print *, ' nto2              : ', Model%nto2
       print *, ' ntwa              : ', Model%ntwa
       print *, ' ntia              : ', Model%ntia
+      print *, ' ntsmoke           : ', Model%ntsmoke
+      print *, ' ntdust            : ', Model%ntdust
+      print *, ' nchem             : ', Model%nchem
+      print *, ' ndvel             : ', Model%ndvel
       print *, ' ntchm             : ', Model%ntchm
       print *, ' ntchs             : ', Model%ntchs
       print *, ' ntche             : ', Model%ntche
