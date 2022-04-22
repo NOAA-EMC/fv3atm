@@ -80,8 +80,8 @@ module module_write_netcdf
     integer :: ncerr,ierr
     integer :: ncid
     integer :: oldMode
-    integer :: im_dimid, jm_dimid, tile_dimid, pfull_dimid, phalf_dimid, time_dimid
-    integer :: im_varid, jm_varid, tile_varid, lon_varid, lat_varid
+    integer :: im_dimid, jm_dimid, tile_dimid, pfull_dimid, phalf_dimid, time_dimid, ch_dimid
+    integer :: im_varid, jm_varid, tile_varid, lon_varid, lat_varid, timeiso_varid
     integer, dimension(:), allocatable :: dimids_2d, dimids_3d
     integer, dimension(:), allocatable :: varids
     logical shuffle
@@ -213,6 +213,7 @@ module module_write_netcdf
        ! define dimensions [grid_xt, grid_yta ,(pfull/phalf), (tile), time]
        ncerr = nf90_def_dim(ncid, "grid_xt", im, im_dimid); NC_ERR_STOP(ncerr)
        ncerr = nf90_def_dim(ncid, "grid_yt", jm, jm_dimid); NC_ERR_STOP(ncerr)
+       ncerr = nf90_def_dim(ncid, "nchars", 20, ch_dimid); NC_ERR_STOP(ncerr)
        if (lm > 1) then
          call add_dim(ncid, "pfull", pfull_dimid, wrtgrid, rc)
          call add_dim(ncid, "phalf", phalf_dimid, wrtgrid, rc)
@@ -229,18 +230,24 @@ module module_write_netcdf
        ncerr = nf90_put_att(ncid, jm_varid, "cartesian_axis", "Y"); NC_ERR_STOP(ncerr)
        if (is_cubed_sphere) then
           ncerr = nf90_def_var(ncid, "tile", NF90_INT, tile_dimid, tile_varid); NC_ERR_STOP(ncerr)
-          ncerr = nf90_put_att(ncid, tile_varid, "long_name", "cubed-spehere face"); NC_ERR_STOP(ncerr)
+          ncerr = nf90_put_att(ncid, tile_varid, "long_name", "cubed-sphere face"); NC_ERR_STOP(ncerr)
        end if
+
+       ncerr = nf90_def_var(ncid, "time_iso", NF90_CHAR, [ch_dimid,time_dimid], timeiso_varid); NC_ERR_STOP(ncerr)
+       ncerr = nf90_put_att(ncid, timeiso_varid, "long_name", "valid time"); NC_ERR_STOP(ncerr)
+       ncerr = nf90_put_att(ncid, timeiso_varid, "description", "ISO 8601 datetime string"); NC_ERR_STOP(ncerr)
 
        ! coordinate variable attributes based on output_grid type
        if (trim(output_grid(grid_id)) == 'gaussian_grid' .or. &
            trim(output_grid(grid_id)) == 'global_latlon' .or. &
-           trim(output_grid(grid_id)) == 'regional_latlon') then
+           trim(output_grid(grid_id)) == 'regional_latlon' .or. &
+           trim(output_grid(grid_id)) == 'regional_latlon_moving') then
           ncerr = nf90_put_att(ncid, im_varid, "long_name", "T-cell longitude"); NC_ERR_STOP(ncerr)
           ncerr = nf90_put_att(ncid, im_varid, "units", "degrees_E"); NC_ERR_STOP(ncerr)
           ncerr = nf90_put_att(ncid, jm_varid, "long_name", "T-cell latiitude"); NC_ERR_STOP(ncerr)
           ncerr = nf90_put_att(ncid, jm_varid, "units", "degrees_N"); NC_ERR_STOP(ncerr)
-       else if (trim(output_grid(grid_id)) == 'rotated_latlon') then
+       else if (trim(output_grid(grid_id)) == 'rotated_latlon' .or. &
+                trim(output_grid(grid_id)) == 'rotated_latlon_moving') then
           ncerr = nf90_put_att(ncid, im_varid, "long_name", "rotated T-cell longiitude"); NC_ERR_STOP(ncerr)
           ncerr = nf90_put_att(ncid, im_varid, "units", "degrees"); NC_ERR_STOP(ncerr)
           ncerr = nf90_put_att(ncid, jm_varid, "long_name", "rotated T-cell latiitude"); NC_ERR_STOP(ncerr)
@@ -275,6 +282,7 @@ module module_write_netcdf
           ncerr = nf90_var_par_access(ncid, lon_varid, NF90_INDEPENDENT); NC_ERR_STOP(ncerr)
           ncerr = nf90_var_par_access(ncid, jm_varid, NF90_INDEPENDENT); NC_ERR_STOP(ncerr)
           ncerr = nf90_var_par_access(ncid, lat_varid, NF90_INDEPENDENT); NC_ERR_STOP(ncerr)
+          ncerr = nf90_var_par_access(ncid, timeiso_varid, NF90_INDEPENDENT); NC_ERR_STOP(ncerr)
           if (is_cubed_sphere) then
              ncerr = nf90_var_par_access(ncid, tile_varid, NF90_INDEPENDENT); NC_ERR_STOP(ncerr)
           end if
@@ -483,9 +491,11 @@ module module_write_netcdf
        allocate (x(im))
        if (trim(output_grid(grid_id)) == 'gaussian_grid' .or. &
            trim(output_grid(grid_id)) == 'global_latlon' .or. &
-           trim(output_grid(grid_id)) == 'regional_latlon') then
+           trim(output_grid(grid_id)) == 'regional_latlon' .or. &
+           trim(output_grid(grid_id)) == 'regional_latlon_moving') then
           ncerr = nf90_put_var(ncid, im_varid, values=array_r8(:,jstart), start=[istart], count=[iend-istart+1]); NC_ERR_STOP(ncerr)
-       else if (trim(output_grid(grid_id)) == 'rotated_latlon') then
+       else if (trim(output_grid(grid_id)) == 'rotated_latlon' .or. &
+                trim(output_grid(grid_id)) == 'rotated_latlon_moving') then
           do i=1,im
              x(i) = lon1(grid_id) + (lon2(grid_id)-lon1(grid_id))/(im-1) * (i-1)
           end do
@@ -532,9 +542,11 @@ module module_write_netcdf
        allocate (y(jm))
        if (trim(output_grid(grid_id)) == 'gaussian_grid' .or. &
            trim(output_grid(grid_id)) == 'global_latlon' .or. &
-           trim(output_grid(grid_id)) == 'regional_latlon') then
+           trim(output_grid(grid_id)) == 'regional_latlon' .or. &
+           trim(output_grid(grid_id)) == 'regional_latlon_moving') then
           ncerr = nf90_put_var(ncid, jm_varid, values=array_r8(istart,:), start=[jstart], count=[jend-jstart+1]); NC_ERR_STOP(ncerr)
-       else if (trim(output_grid(grid_id)) == 'rotated_latlon') then
+       else if (trim(output_grid(grid_id)) == 'rotated_latlon' .or. &
+                trim(output_grid(grid_id)) == 'rotated_latlon_moving') then
           do j=1,jm
              y(j) = lat1(grid_id) + (lat2(grid_id)-lat1(grid_id))/(jm-1) * (j-1)
           end do
@@ -558,6 +570,13 @@ module module_write_netcdf
     ! write tile (tile_varid)
     if (do_io .and. is_cubed_sphere) then
        ncerr = nf90_put_var(ncid, tile_varid, values=[1,2,3,4,5,6]); NC_ERR_STOP(ncerr)
+    end if
+
+    ! write time_iso (timeiso_varid)
+    if (do_io) then
+       call ESMF_AttributeGet(wrtgrid, convention="NetCDF", purpose="FV3", &
+                              name="time_iso", value=varcval, rc=rc); ESMF_ERR_RETURN(rc)
+       ncerr = nf90_put_var(ncid, timeiso_varid, values=[trim(varcval)]); NC_ERR_STOP(ncerr)
     end if
 
     ! write variables (fields)

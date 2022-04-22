@@ -14,10 +14,6 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
 endif()
 
 #------------------------------------------------------------------------------
-# CMake Modules
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/framework/cmake")
-
-#------------------------------------------------------------------------------
 # Call to CCPP code generator
 if(DEBUG)
   # Enable debugging features in auto-generated physics caps
@@ -52,14 +48,6 @@ add_definitions(-DFV3)
 # Set MPI flags for C/C++/Fortran preprocessor
 if(MPI)
   add_definitions(-DMPI)
-endif()
-
-#------------------------------------------------------------------------------
-# Set additional flags for debug build
-if(DEBUG)
-  if(CMAKE_Fortran_COMPILER_ID MATCHES "Intel")
-    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -init=snan,arrays")
-  endif()
 endif()
 
 #------------------------------------------------------------------------------
@@ -116,7 +104,6 @@ add_library(
 
 # Compile GFS_diagnostics.F90 without optimization, this leads to out of memory errors on wcoss_dell_p3
 set_property(SOURCE driver/GFS_diagnostics.F90 APPEND_STRING PROPERTY COMPILE_FLAGS "-O0")
-
 
 target_link_libraries(fv3ccpp PUBLIC ccpp_framework)
 target_link_libraries(fv3ccpp PUBLIC ccpp_physics)

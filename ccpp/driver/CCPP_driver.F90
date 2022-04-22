@@ -1,6 +1,6 @@
 module CCPP_driver
 
-  use ccpp_api,           only: ccpp_t
+  use ccpp_types,         only: ccpp_t
 
   use ccpp_static_api,    only: ccpp_physics_init,                   &
                                 ccpp_physics_timestep_init,          &
@@ -101,8 +101,8 @@ module CCPP_driver
     else if (trim(step)=="physics_init") then
 
       ! Since the physics init step is independent of the blocking structure,
-      ! we can use cdata_domain here. Since we don't use threading on the outside,
-      ! we can allow threading inside the physics init routines.
+      ! we can use cdata_domain. And since we don't use threading on the host
+      ! model side, we can allow threading inside the physics init routines.
       GFS_control%nthreads = nthrds
 
       call ccpp_physics_init(cdata_domain, suite_name=trim(ccpp_suite), ierr=ierr)
@@ -116,8 +116,8 @@ module CCPP_driver
     else if (trim(step)=="timestep_init") then
 
       ! Since the physics timestep init step is independent of the blocking structure,
-      ! we can use cdata_domain here. Since we don't use threading on the outside,
-      ! we can allow threading inside the timestep init (time_vary) routines.
+      ! we can use cdata_domain. And since we don't use threading on the host
+      ! model side, we can allow threading inside the timestep init (time_vary) routines.
       GFS_control%nthreads = nthrds
 
       call ccpp_physics_timestep_init(cdata_domain, suite_name=trim(ccpp_suite), group_name="time_vary", ierr=ierr)
@@ -159,11 +159,11 @@ module CCPP_driver
       ! *DH 20210104                                                                 !
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    ! Radiation and stochastic physics
+    ! Radiation, physics and and stochastic physics - threaded regions using blocked data structures
     else if (trim(step)=="radiation" .or. trim(step)=="physics" .or. trim(step)=="stochastics") then
 
       ! Set number of threads available to physics schemes to one,
-      ! because threads are used on the outside for blocking
+      ! because threads are used on the host model side for blocking
       GFS_control%nthreads = 1
 
 !$OMP parallel num_threads (nthrds)      &
@@ -188,8 +188,8 @@ module CCPP_driver
         call ccpp_physics_run(cdata_block(nb,ntX), suite_name=trim(ccpp_suite), group_name=trim(step), ierr=ierr2)
         if (ierr2/=0) then
            write(0,'(2a,3(a,i4),a)') "An error occurred in ccpp_physics_run for group ", trim(step), &
-                                     ", block ", nb, " and thread ", nt, " (ntX=", ntX, ")"
-           write(0,'(a)') trim(cdata_block(nb,nt)%errmsg)
+                                     ", block ", nb, " and thread ", nt, " (ntX=", ntX, "):"
+           write(0,'(a)') trim(cdata_block(nb,ntX)%errmsg)
            ierr = ierr + ierr2
         end if
       end do
@@ -202,7 +202,7 @@ module CCPP_driver
     else if (trim(step)=="timestep_finalize") then
 
       ! Since the physics timestep finalize step is independent of the blocking structure,
-      ! we can use cdata_domain here. Since we don't use threading on the outside,
+      ! we can use cdata_domain. And since we don't use threading on the host model side,
       ! we can allow threading inside the timestep finalize (time_vary) routines.
       GFS_control%nthreads = nthrds
 
@@ -213,27 +213,23 @@ module CCPP_driver
         return
       end if
 
-    ! Finalize
-    else if (trim(step)=="finalize") then
+    ! Physics finalize
+    else if (trim(step)=="physics_finalize") then
 
-      ! Loop over blocks, don't use threading on the outside but allowing threading
-      ! inside the finalization, similar to what is done for the initialization
+      ! Since the physics finalize step is independent of the blocking structure,
+      ! we can use cdata_domain. And since we don't use threading on the host
+      ! model side, we can allow threading inside the physics finalize routines.
       GFS_control%nthreads = nthrds
 
-      ! Fast physics are finalized in atmosphere_end, loop over
-      ! all blocks and threads to finalize all other physics
-      do nt=1,nthrdsX
-        do nb=1,nblks
-          !--- Finalize CCPP physics
-          call ccpp_physics_finalize(cdata_block(nb,nt), suite_name=trim(ccpp_suite), ierr=ierr)
-          if (ierr/=0) then
-            write(0,'(a,i4,a,i4)') "An error occurred in ccpp_physics_finalize for block ", nb, " and thread ", nt
-            write(0,'(a)') trim(cdata_block(nb,nt)%errmsg)
-            return
-          end if
-        end do
-      end do
+      call ccpp_physics_finalize(cdata_domain, suite_name=trim(ccpp_suite), ierr=ierr)
+      if (ierr/=0) then
+        write(0,'(a)') "An error occurred in ccpp_physics_finalize"
+        write(0,'(a)') trim(cdata_domain%errmsg)
+        return
+      end if
 
+    ! Finalize
+    else if (trim(step)=="finalize") then
       ! Deallocate cdata structure for blocks and threads
       if (allocated(cdata_block)) deallocate(cdata_block)
 

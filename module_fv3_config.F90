@@ -17,6 +17,7 @@
   integer                  :: first_kdt
   integer                  :: fcst_mpi_comm, fcst_ntasks
 !
+  integer                  :: cpl_grid_id
   logical                  :: cplprint_flag
   logical                  :: quilting, output_1st_tstep_rst
   logical                  :: restart_endfcst
