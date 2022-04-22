@@ -539,7 +539,6 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: pfl_lsan(:,:)   => null()  !< instantaneous 3D flux of liquid nonconvective precipitation (kg m-2 s-1)
 
     !-- prognostic updraft area fraction coupling in convection
-    real (kind=kind_phys), pointer :: qgrs_dsave (:,:) => null()  !
     real (kind=kind_phys), pointer :: tmf (:,:) => null()         !< tmf to be passed from turublence scheme to convection
     real (kind=kind_phys), pointer :: dqdt_qmicro(:,:) => null()  !< instantanious microphysics tendency to be passed from MP to convection
 
@@ -2632,10 +2631,8 @@ module GFS_typedefs
     if(Model%progsigma)then
        allocate(Coupling%tmf (IM,Model%levs))
        allocate(Coupling%dqdt_qmicro (IM,Model%levs))
-       allocate(Coupling%qgrs_dsave (IM,Model%levs))
        Coupling%tmf = clear_val
        Coupling%dqdt_qmicro = clear_val
-       Coupling%qgrs_dsave = clear_val
     endif
 
     !--- stochastic physics option
@@ -6063,7 +6060,7 @@ module GFS_typedefs
     allocate (Tbd%hpbl (IM))
     Tbd%hpbl     = clear_val
 
-    if (Model%imfdeepcnv == Model%imfdeepcnv_gf .or. Model%imfdeepcnv == Model%imfdeepcnv_ntiedtke) then
+    if (Model%imfdeepcnv == Model%imfdeepcnv_gf .or. Model%imfdeepcnv == Model%imfdeepcnv_ntiedtke .or. Model%imfdeepcnv == Model%imfdeepcnv_samf .or. Model%imfshalcnv == 2) then
        allocate(Tbd%forcet(IM, Model%levs))
        allocate(Tbd%forceq(IM, Model%levs))
        allocate(Tbd%prevst(IM, Model%levs))

@@ -435,7 +435,7 @@ module GFS_restart
        num = num + 1
        Restart%name3d(num) = 'sas_3d_qgrs_dsave'
       do nb = 1,nblks
-        Restart%data(nb,num)%var3p => Coupling(nb)%qgrs_dsave(:,:)
+        Restart%data(nb,num)%var3p => Tbd(nb)%prevsq(:,:)
       enddo
       num = num + 1
       Restart%name3d(num) = 'sas_3d_dqdt_qmicro'
