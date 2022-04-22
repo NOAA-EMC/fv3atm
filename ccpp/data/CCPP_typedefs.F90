@@ -1141,9 +1141,9 @@ contains
     if (Model%ntke > 0) Interstitial%ntkev = Interstitial%nvdiff
 
     if (Model%ntiw > 0) then
-      if (Model%ntclamt > 0 .and. Model%ntsigma == 0) then
+      if (Model%ntclamt > 0 .and. Model%ntsigma <= 0) then
         Interstitial%nn = Model%ntrac - 2
-      elseif (Model%ntclamt == 0 .and. Model%ntsigma > 0) then
+      elseif (Model%ntclamt <= 0 .and. Model%ntsigma > 0) then
         Interstitial%nn = Model%ntrac - 2
       elseif  (Model%ntclamt > 0 .and. Model%ntsigma > 0) then
         Interstitial%nn = Model%ntrac - 3
