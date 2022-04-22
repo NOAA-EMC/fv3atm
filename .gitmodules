@@ -9,7 +9,7 @@
 [submodule "ccpp/physics"]
   path = ccpp/physics
   url = https://github.com/NOAA-GSL/ccpp-physics
-  branch = gsl/merge-develop
+  branch = gsl/merge-develop-to-community
 [submodule "upp"]
   path = upp
   url = https://github.com/NOAA-EMC/UPP
