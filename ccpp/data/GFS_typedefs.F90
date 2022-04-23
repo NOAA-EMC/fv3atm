@@ -33,9 +33,6 @@ module GFS_typedefs
 
    real(kind=kind_phys), parameter :: limit_unspecified = 1e12 !< special constant for "namelist value was not provided" in radar-derived temperature tendency limit range
 
-      integer, parameter :: dfi_radar_max_intervals = 4 !< Number of radar-derived temperature tendency and/or convection suppression intervals. Do not change.
-
-      real(kind=kind_phys), parameter :: limit_unspecified = 1e12 !< special constant for "namelist value was not provided" in radar-derived temperature tendency limit range
 
 !> \section arg_table_GFS_typedefs
 !! \htmlinclude GFS_typedefs.html
