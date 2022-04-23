@@ -1072,6 +1072,10 @@ module GFS_typedefs
     integer              :: bl_mynn_output     !< flag to initialize and write out extra 3D arrays
     integer              :: icloud_bl          !< flag for coupling sgs clouds to radiation
     real(kind=kind_phys) :: bl_mynn_closure    !< flag to determine closure level of MYNN
+    logical              :: sfclay_compute_flux!< flag for thermal roughness lengths over water in mynnsfclay
+    logical              :: sfclay_compute_diag!< flag for computing surface diagnostics in mynnsfclay
+    integer              :: isftcflx           !< flag for thermal roughness lengths over water in mynnsfclay 
+    integer              :: iz0tlnd            !< flag for thermal roughness lengths over land in mynnsfclay
     real(kind=kind_phys) :: var_ric
     real(kind=kind_phys) :: coef_ric_l
     real(kind=kind_phys) :: coef_ric_s
@@ -3166,6 +3170,10 @@ module GFS_typedefs
     real(kind=kind_phys) :: bl_mynn_closure   = 2.6                   !<   <= 2.5  only prognose tke
                                                                       !<   2.5 < and < 3.0, prognose tke and q'2
                                                                       !<   >= 3.0, prognose tke, q'2, T'2, and T'q'
+    logical              :: sfclay_compute_diag = .false.
+    logical              :: sfclay_compute_flux = .false.
+    integer              :: isftcflx          = 0
+    integer              :: iz0tlnd           = 0
     real(kind=kind_phys) :: var_ric           = 1.0
     real(kind=kind_phys) :: coef_ric_l        = 0.16
     real(kind=kind_phys) :: coef_ric_s        = 0.25
@@ -3440,6 +3448,7 @@ module GFS_typedefs
                                bl_mynn_edmf_tke, bl_mynn_mixlength, bl_mynn_cloudmix,       &
                                bl_mynn_mixqt, bl_mynn_output, icloud_bl, bl_mynn_tkeadvect, &
                                bl_mynn_closure, bl_mynn_tkebudget,                          &
+                               isftcflx, iz0tlnd, sfclay_compute_flux, sfclay_compute_diag, &
                                ! *DH
                                gwd_opt, do_ugwp_v0, do_ugwp_v0_orog_only,                   &
                                do_ugwp_v0_nst_only,                                         &
@@ -4170,6 +4179,10 @@ module GFS_typedefs
     Model%bl_mynn_closure   = bl_mynn_closure
     Model%bl_mynn_tkebudget = bl_mynn_tkebudget
     Model%icloud_bl         = icloud_bl
+    Model%isftcflx          = isftcflx
+    Model%iz0tlnd           = iz0tlnd
+    Model%sfclay_compute_flux = sfclay_compute_flux
+    Model%sfclay_compute_diag = sfclay_compute_diag
     Model%var_ric           = var_ric
     Model%coef_ric_l        = coef_ric_l
     Model%coef_ric_s        = coef_ric_s
@@ -4866,8 +4879,18 @@ module GFS_typedefs
                                             ' bl_mynn_cloudpdf=',Model%bl_mynn_cloudpdf,         &
                                             ' bl_mynn_mixlength=',Model%bl_mynn_mixlength,       &
                                             ' bl_mynn_edmf=',Model%bl_mynn_edmf,                 &
-                                            ' bl_mynn_output=',Model%bl_mynn_output
+                                            ' bl_mynn_output=',Model%bl_mynn_output,             &
+                                            ' bl_mynn_closure=',Model%bl_mynn_closure
     endif
+
+    !--- mynn surface layer scheme
+    if (Model%do_mynnsfclay) then
+      if (Model%me == Model%master) print *,' MYNN surface layer scheme is used:',               &
+                                            ' isftcflx=',Model%isftcflx,                         &
+                                            ' iz0tlnd=',Model%iz0tlnd,                           &
+                                            ' sfclay_compute_diag=',Model%sfclay_compute_diag,   &
+                                            ' sfclay_compute_flux=',Model%sfclay_compute_flux
+    end if
 
 !--- set number of cloud types
     if (Model%cscnv) then
