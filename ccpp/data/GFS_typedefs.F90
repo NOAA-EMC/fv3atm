@@ -982,7 +982,6 @@ module GFS_typedefs
     integer              :: imfshalcnv_gf       = 3 !< flag for scale- & aerosol-aware Grell-Freitas scheme (GSD)
     integer              :: imfshalcnv_ntiedtke = 4 !< flag for new Tiedtke scheme (CAPS)
     logical              :: hwrf_samfdeep           !< flag for HWRF SAMF deepcnv scheme (HWRF)
-    logical              :: wclosureflg             !< flag for w-closure in samf deepcnv scheme (GFS)                                                                                         
     logical              :: progsigma               !< flag for prognostic area fraction in samf ddepcnv scheme (GFS)   
     integer              :: imfdeepcnv      !< flag for mass-flux deep convection scheme
                                             !<     1: July 2010 version of SAS conv scheme
@@ -3060,7 +3059,6 @@ module GFS_typedefs
 
     logical              :: hwrf_samfdeep     = .false.               !< flag for HWRF SAMF deepcnv scheme
     logical              :: hwrf_samfshal     = .false.               !< flag for HWRF SAMF shalcnv scheme
-    logical              :: wclosureflg       = .false.               !< flag for activating updraft velocity closure in saSAS
     logical              :: progsigma         = .false.               !< flag for prognostic updraft area fraction closure in saSAS
     logical              :: do_mynnedmf       = .false.               !< flag for MYNN-EDMF
     logical              :: do_mynnsfclay     = .false.               !< flag for MYNN Surface Layer Scheme
@@ -3342,7 +3340,7 @@ module GFS_typedefs
                                do_ugwp_v1, do_ugwp_v1_orog_only,  do_ugwp_v1_w_gsldrag,     &
                                var_ric, coef_ric_l, coef_ric_s, hurr_pbl,                   &
                                do_myjsfc, do_myjpbl,                                        &
-                               hwrf_samfdeep, hwrf_samfshal, wclosureflg,progsigma,         &
+                               hwrf_samfdeep, hwrf_samfshal,progsigma,                      &
                                h2o_phys, pdfcld, shcnvcw, redrag, hybedmf, satmedmf,        &
                                shinhong, do_ysu, dspheat, lheatstrg, lseaspray, cnvcld,     &
                                random_clds, shal_cnv, imfshalcnv, imfdeepcnv, isatmedmf,    &
@@ -3973,15 +3971,10 @@ module GFS_typedefs
     Model%hwrf_samfdeep = hwrf_samfdeep
     Model%hwrf_samfshal = hwrf_samfshal
 
-    if (wclosureflg .and. imfdeepcnv/=2) then
-       write(*,*) 'Logic error: wclosureflg requires imfdeepcnv=2'
-       stop
-    end if
     if (progsigma .and. imfdeepcnv/=2) then
        write(*,*) 'Logic error: progsigma requires imfdeepcnv=2'
        stop
     end if
-    Model%wclosureflg = wclosureflg
     Model%progsigma = progsigma
 
     if (oz_phys .and. oz_phys_2015) then
