@@ -2313,8 +2313,8 @@
   type = real
   kind = kind_phys
 [dqdt_qmicro]
-  standard_name = instantaneous_moisture_tendency_due_to_microphysics
-  long_name = moisture tendency due to microphysics
+  standard_name = instantaneous_tendency_of_specific_humidity_due_to_microphysics
+  long_name = instantaneous_tendency_of_specific_humidity_due_to_microphysics
   units = kg kg-1 s-1
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real

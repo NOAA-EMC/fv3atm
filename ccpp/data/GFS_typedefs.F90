@@ -2629,8 +2629,8 @@ module GFS_typedefs
 
     !--prognostic closure - moisture coupling
     if(Model%progsigma)then
-       allocate(Coupling%tmf (IM,Model%levs))
        allocate(Coupling%dqdt_qmicro (IM,Model%levs))
+       allocate(Coupling%tmf (IM,Model%levs))
        Coupling%tmf = clear_val
        Coupling%dqdt_qmicro = clear_val
     endif
