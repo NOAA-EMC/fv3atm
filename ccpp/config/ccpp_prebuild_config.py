@@ -176,7 +176,7 @@ SCHEME_FILES = [
     'physics/physics/satmedmfvdifq.F',
     'physics/physics/shinhongvdif.F90',
     'physics/physics/ysuvdif.F90',
-    'physics/physics/mynnpbl_wrapper.F90',
+    'physics/physics/mynnedmf_wrapper.F90',
     'physics/physics/mynnsfc_wrapper.F90',
     'physics/physics/sgscloud_radpre.F90',
     'physics/physics/sgscloud_radpost.F90',

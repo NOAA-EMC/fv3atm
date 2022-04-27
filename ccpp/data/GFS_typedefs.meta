@@ -8010,7 +8010,7 @@
   type = integer
   active = (flag_for_mellor_yamada_nakanishi_niino_pbl_scheme)
 [exch_h]
-  standard_name = atmosphere_heat_diffusivity_for_mynnpbl
+  standard_name = atmosphere_heat_diffusivity_for_mynnedmf
   long_name = diffusivity for heat for MYNN PBL (defined for all mass levels)
   units = m2 s-1
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
@@ -8018,7 +8018,7 @@
   kind = kind_phys
   active = (flag_for_mellor_yamada_nakanishi_niino_pbl_scheme)
 [exch_m]
-  standard_name = atmosphere_momentum_diffusivity_for_mynnpbl
+  standard_name = atmosphere_momentum_diffusivity_for_mynnedmf
   long_name = diffusivity for momentum for MYNN PBL (defined for all mass levels)
   units = m2 s-1
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
