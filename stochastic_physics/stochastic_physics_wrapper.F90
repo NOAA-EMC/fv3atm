@@ -185,9 +185,9 @@ module stochastic_physics_wrapper_mod
       if(GFS_Control%do_ca)then
         ! DH* The current implementation of cellular_automata assumes that all blocksizes are the
         ! same - abort if this is not the case, otherwise proceed with Atm_block%blksz(1) below
-        if (.not. minval(Atm_block%blksz) == maxblk) then
-           call mpp_error(FATAL, 'Logic errror: cellular_automata not compatible with non-uniform blocksizes')
-        end if
+        !if (.not. minval(Atm_block%blksz) == maxblk) then
+        !   call mpp_error(FATAL, 'Logic errror: cellular_automata not compatible with non-uniform blocksizes')
+        !end if
         if(GFS_Control%ca_sgs)then
            allocate(sst         (1:nblks, maxblk))
            allocate(lmsk        (1:nblks, maxblk))

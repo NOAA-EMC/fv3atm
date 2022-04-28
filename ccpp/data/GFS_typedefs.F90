@@ -2574,7 +2574,7 @@ module GFS_typedefs
 
    !-- cellular automata
     allocate (Coupling%condition(IM))
-    if (Model%do_ca) then
+    !if (Model%do_ca) then
       allocate (Coupling%ca1      (IM))
       allocate (Coupling%ca2      (IM))
       allocate (Coupling%ca3      (IM))
@@ -2592,7 +2592,7 @@ module GFS_typedefs
       Coupling%ca_rad    = clear_val
       Coupling%ca_micro  = clear_val
       Coupling%condition = clear_val
-    endif
+    !endif
 
     ! -- Aerosols coupling options
     if (Model%cplchm) then
