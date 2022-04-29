@@ -12,4 +12,4 @@
   branch = develop
 [submodule "atmos_cubed_sphere"]
 	path = atmos_cubed_sphere
-	url = https://github.com/NOAA-EMC/GFDL_atmos_cubed_sphere
+	url = https://github.com/NOAA-GFDL/GFDL_atmos_cubed_sphere
