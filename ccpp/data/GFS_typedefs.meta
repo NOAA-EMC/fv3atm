@@ -4904,19 +4904,29 @@
   dimensions = ()
   type = integer
 [spp_prt_list]
-  standard_name =magnitude_of_spp_perturbations
+  standard_name = magnitude_of_spp_perturbations
   long_name = magnitude of spp perturbations
   units = 1
-  dimensions = (number_of_spp_schemes_perturbed)
+  dimensions = (number_of_perturbed_spp_schemes)
   type = real
   kind = kind_phys
+  active = (do_stochastically_perturbed_parameterizations)
+[spp_stddev_cutoff]
+  standard_name = magnitude_of_spp_standard_deviation_cutoff
+  long_name = magnitude of spp standard deviation cutoff
+  units = 1
+  dimensions = (number_of_perturbed_spp_schemes)
+  type = real
+  kind = kind_phys
+  active = (do_stochastically_perturbed_parameterizations)
 [spp_var_list]
   standard_name = perturbed_spp_schemes
   long_name = perturbed spp schemes
   units = none
-  dimensions =  (number_of_spp_schemes_perturbed)
+  dimensions =  (number_of_perturbed_spp_schemes)
   type = character
   kind = len=3
+  active = (do_stochastically_perturbed_parameterizations)
 [spp_pbl]
   standard_name = control_for_pbl_spp_perturbations
   long_name = control for pbl spp perturbations
