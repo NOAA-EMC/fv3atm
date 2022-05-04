@@ -31,6 +31,12 @@ else()
   list(APPEND _fv3atm_defs_private NO_INLINE_POST)
 endif()
 
+if(CCPP_32BIT)
+  add_definitions(-DCCPP_32BIT)
+else()
+  remove_definitions(-DCCPP_32BIT)
+endif()
+
 if(NOT PARALLEL_NETCDF)
   list(APPEND _fv3atm_defs_private NO_PARALLEL_NETCDF)
 endif()
