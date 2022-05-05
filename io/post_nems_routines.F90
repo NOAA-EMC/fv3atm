@@ -153,7 +153,7 @@
       use ctlblk_mod, only : komax,fileNameD3D,lsm,lsmp1,spl,spldef,  &
                              lsmdef,ALSL,me,d3d_on,gocart_on,hyb_sigp,&
                              pthresh,novegtype,ivegsrc,icu_physics,   &
-                             isf_surface_physics
+                             isf_surface_physics,modelname,submodelname
 !
 !    revision history:
 !    Jul 2019 Jun Wang: read post namelist
@@ -167,6 +167,7 @@
       real,dimension(komax) :: po,th,pv
       namelist/nampgb/kpo,po,kth,th,kpv,pv,popascal,d3d_on,gocart_on,  &
                       hyb_sigp
+      namelist/model_inputs/modelname,submodelname
       integer l,k,iret
 !---------------------------------------------------------------------
 !
@@ -195,6 +196,7 @@
 !        read(nlunit) !skip outform
 !        read(nlunit,'(a19)') DateStr
 !        read(nlunit) !skil full modelname
+        read(nlunit,model_inputs,iostat=iret,end=119)
         read(nlunit,nampgb,iostat=iret,end=119)
       endif
  119  continue
