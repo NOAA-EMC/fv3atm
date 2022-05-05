@@ -10,7 +10,7 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     message(STATUS "Setting build type to 'Release' as none was specified.")
     set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)
     # Set the possible values of build type for cmake-gui
-    set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "Coverage")
+    set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release")
 endif()
 
 #------------------------------------------------------------------------------
@@ -56,7 +56,7 @@ if(32BIT)
   message(STATUS "Compile CCPP slow physics with 64-bit precision, fast physics with 32-bit precision")
   add_definitions(-DOVERLOAD_R4)
   if(CMAKE_Fortran_COMPILER_ID MATCHES "Intel")
-    set(CMAKE_Fortran_FLAGS_PHYSICS  "-real-size 64 -no-prec-div -no-prec-sqrt")
+    set(CMAKE_Fortran_FLAGS_PHYSICS  "-real-size 64")
   elseif(CMAKE_Fortran_COMPILER_ID MATCHES "GNU")
     set(CMAKE_Fortran_FLAGS_PHYSICS  "-fdefault-real-8 -fdefault-double-8")
   endif()
