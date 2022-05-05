@@ -2,7 +2,7 @@
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !-----------------------------------------------------------------------
 !
-module post_regional
+module post_fv3
 
   use module_fv3_io_def,    only : wrttasks_per_group,filename_base,    &
                                    lon1, lat1, lon2, lat2, dlon, dlat,  &
@@ -16,16 +16,26 @@ module post_regional
 
   integer mype, nbdl
   logical setvar_atmfile, setvar_sfcfile, read_postcntrl
-  public  post_run_regional, post_getattr_regional
+  public  post_run_fv3, post_getattr_fv3
 
   contains
 
-  subroutine post_run_regional(wrt_int_state,mypei,mpicomp,lead_write,      &
+  subroutine post_run_fv3(wrt_int_state,mypei,mpicomp,lead_write,      &
              mynfhr,mynfmin,mynfsec)
 !
 !  revision history:
 !     Jul 2019    J. Wang             create interface to run inline post for FV3
 !     Sep 2020    J. Dong/J. Wang     create interface to run inline post for FV3-LAM
+!     Apr 2021    R. Sun              Added variables for Thomspon MP
+!     Apr 2022    W. Meng             1)unify global and regional inline post interfaces
+!                                     2)add bug fix for dx/dy computation
+!                                     3)add reading pwat from FV3
+!                                     4)remove some variable initializations
+!                                     5)read max/min 2m T from tmax_max2m/tmin_min2m 
+!                                       for GFS, and from t02max/min for RRFS
+!                                       and  HAFS. 
+!                                     6)read 3D cloud fraction from cld_amt for GFDL MP,
+!                                       and from cldfra for other MPs.
 !
 !-----------------------------------------------------------------------
 !*** run post on write grid comp
@@ -69,13 +79,13 @@ module post_regional
 !
       real(kind=8)   :: btim0, btim1, btim2, btim3,btim4,btim5,btim6,btim7
 !
+!     print *,'in post_run start'
 !-----------------------------------------------------------------------
 !*** set up dimensions
 !-----------------------------------------------------------------------
 !
       btim0 = MPI_Wtime()
 
-      modelname = "FV3R"
       grib      = "grib2"
       gridtype  = "A"
       nsoil     = 4
@@ -143,7 +153,7 @@ module post_regional
       if(mype==0) print *,'bf set_postvars,ifmin=',ifmin,'ifhr=',ifhr
       setvar_atmfile=.false.
       setvar_sfcfile=.false.
-      call set_postvars_regional(wrt_int_state,mpicomp,setvar_atmfile,   &
+      call set_postvars_fv3(wrt_int_state,mpicomp,setvar_atmfile,   &
            setvar_sfcfile)
 
 !       print *,'af set_postvars,setvar_atmfile=',setvar_atmfile,  &
@@ -216,11 +226,11 @@ module post_regional
 !
       endif
 
-    end subroutine post_run_regional
+    end subroutine post_run_fv3
 !
 !-----------------------------------------------------------------------
 !
-    subroutine post_getattr_regional(wrt_int_state,grid_id)
+    subroutine post_getattr_fv3(wrt_int_state,grid_id)
 !
       use esmf
       use ctlblk_mod,           only: im, jm, mpi_comm_comp,gdsdegr,spval
@@ -251,6 +261,7 @@ module post_regional
       type(ESMF_FieldBundle)             :: fldbundle
 !
       spval = 9.99e20
+! field bundle
       do nfb=1, wrt_int_state%FBcount
         fldbundle = wrt_int_state%wrtFB(nfb)
 
@@ -348,6 +359,22 @@ module post_regional
 
 !        if(mype==0) print*,'rotated latlon,lonstart,latstart,cenlon,cenlat,dyval,dxval', &
 !          lonstart_r,lonlast_r,latstart_r,latlast_r,cenlon,cenlat,dyval,dxval
+      else if(trim(output_grid(grid_id)) == 'gaussian_grid') then
+        MAPTYPE=4
+        gridtype='A'
+
+        lonstart = nint(wrt_int_state%lonstart*gdsdegr)
+        lonlast  = nint(wrt_int_state%lonlast*gdsdegr)
+        latstart = nint(wrt_int_state%latstart*gdsdegr)
+        latlast  = nint(wrt_int_state%latlast*gdsdegr)
+      else if(trim(output_grid(grid_id)) == 'global_latlon') then
+        MAPTYPE=0
+        gridtype='A'
+
+        lonstart = nint(wrt_int_state%lonstart*gdsdegr)
+        lonlast  = nint(wrt_int_state%lonlast*gdsdegr)
+        latstart = nint(wrt_int_state%latstart*gdsdegr)
+        latlast  = nint(wrt_int_state%latlast*gdsdegr)
       endif
 
 ! look at the field bundle attributes
@@ -428,16 +455,18 @@ module post_regional
 !
       enddo !end nfb
 !
-    end subroutine post_getattr_regional
+    end subroutine post_getattr_fv3
 !-----------------------------------------------------------------------
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !-----------------------------------------------------------------------
 !
-    subroutine set_postvars_regional(wrt_int_state,mpicomp,setvar_atmfile,   &
+    subroutine set_postvars_fv3(wrt_int_state,mpicomp,setvar_atmfile,   &
                                 setvar_sfcfile)
 !
 !  revision history:
 !     Jul 2019    J. Wang      Initial code
+!     Apr 2022    W. Meng      Unify set_postvars_gfs and 
+!                               set_postvars_regional to set_postvars_fv3
 !
 !-----------------------------------------------------------------------
 !*** set up post fields from nmint_state
@@ -447,15 +476,15 @@ module post_regional
       use vrbls3d,     only: t, q, uh, vh, wh, alpint, dpres, zint, zmid, o3,  &
                              qqr, qqs, cwm, qqi, qqw, qqg, omga, cfr, pmid,    &
                              q2, rlwtt, rswtt, tcucn, tcucns, train, el_pbl,   &
-                             pint, exch_h, ref_10cm, extcof55, aextc55, u, v
+                             pint, exch_h, ref_10cm, qqni, qqnr, qqnwfa, qqnifa
       use vrbls2d,     only: f, pd, sigt4, fis, pblh, ustar, z0, ths, qs, twbs,&
                              qwbs, avgcprate, cprate, avgprec, prec, lspa, sno,&
                              cldefi, th10, q10, tshltr, pshltr, tshltr, albase,&
-                             avgalbedo, avgtcdc, czen, czmean, mxsnal, radot,  &
-                             cfrach, cfracl, cfracm, avgcfrach, qshltr,        &
+                             avgalbedo, avgtcdc, czen, czmean, mxsnal,landfrac,&
+                             radot, cfrach, cfracl, cfracm, avgcfrach, qshltr, &
                              avgcfracl, avgcfracm, cnvcfr, islope, cmc, grnflx,&
                              vegfrc, acfrcv, ncfrcv, acfrst, ncfrst, ssroff,   &
-                             bgroff, rlwin,      &
+                             bgroff, rlwin,                                    &
                              rlwtoa, cldwork, alwin, alwout, alwtoa, rswin,    &
                              rswinc, rswout, aswin, auvbin, auvbinc, aswout,   &
                              aswtoa, sfcshx, sfclhx, subshx, snopcx, sfcux,    &
@@ -464,20 +493,21 @@ module post_regional
                              acsnow, acsnom, sst, thz0, qz0, uz0, vz0, ptop,   &
                              htop, pbot, hbot, ptopl, pbotl, ttopl, ptopm,     &
                              pbotm, ttopm, ptoph, pboth, pblcfr, ttoph, runoff,&
+                             tecan, tetran, tedir, twa,                        &
                              maxtshltr, mintshltr, maxrhshltr, minrhshltr,     &
                              dzice, smcwlt, suntime, fieldcapa, htopd, hbotd,  &
                              htops, hbots, aswintoa, maxqshltr, minqshltr,     &
-                             acond, sr, u10h, v10h, avgedir, avgecan,          &
+                             acond, sr, u10h, v10h, avgedir, avgecan,paha,pahi,&
                              avgetrans, avgesnow, avgprec_cont, avgcprate_cont,&
                              avisbeamswin, avisdiffswin, airbeamswin, airdiffswin, &
                              alwoutc, alwtoac, aswoutc, aswtoac, alwinc, aswinc,& 
-                             avgpotevp, snoavg, ti, si, cuppt,                 &
+                             avgpotevp, snoavg, ti, si, cuppt, fdnsst,         &
                              w_up_max, w_dn_max, up_heli_max,up_heli_min,      &
                              up_heli_max03,up_heli_min03,rel_vort_max01,       &
                              rel_vort_max, rel_vort_maxhy1, refd_max,          &
                              refdm10c_max, u10max, v10max, wspd10max, sfcuxi,  &
                              sfcvxi, t10m, t10avg, psfcavg, akhsavg, akmsavg,  &
-                             albedo, tg, prate_max
+                             albedo, tg, prate_max, pwat
       use soil,        only: sldpth, sh2o, smc, stc
       use masks,       only: lmv, lmh, htm, vtm, gdlat, gdlon, dx, dy, hbm2, sm, sice
       use ctlblk_mod,  only: im, jm, lm, lp1, jsta, jend, jsta_2l, jend_2u, jsta_m,jend_m, &
@@ -485,8 +515,8 @@ module post_regional
                              tprec, tclod, trdlw, trdsw, tsrfc, tmaxmin, theat, &
                              ardlw, ardsw, asrfc, avrain, avcnvc, iSF_SURFACE_PHYSICS,&
                              td3d, idat, sdat, ifhr, ifmin, dt, nphs, dtq2, pt_tbl, &
-                             alsl, spl, ihrst 
-      use params_mod,  only: erad, dtr, capa, p1000
+                             alsl, spl, ihrst, modelname 
+      use params_mod,  only: erad, dtr, capa, p1000, small
       use gridspec_mod,only: latstart, latlast, lonstart, lonlast, cenlon, cenlat, &
                              dxval, dyval, truelat2, truelat1, psmapf, cenlat,     &
                              lonstartv, lonlastv, cenlonv, latstartv, latlastv,    &
@@ -539,7 +569,6 @@ module post_regional
       type(ESMF_TypeKind_Flag)       :: typekind
       type(ESMF_TypeKind_Flag)       :: attTypeKind
 
-      real, parameter :: small=1.e-6
 !
 !-----------------------------------------------------------------------
 !***  INTEGER SCALAR/1D HISTORY VARIABLES
@@ -548,6 +577,7 @@ module post_regional
       imp_physics = wrt_int_state%imp_physics       !set GFS mp physics to 99 for Zhao scheme
       dtp         = wrt_int_state%dtp
       iSF_SURFACE_PHYSICS = 2
+      spval = 9.99e20
 !
 ! nems gfs has zhour defined
       tprec   = float(wrt_int_state%fhzero)
@@ -560,6 +590,7 @@ module post_regional
 !      if(mype==0)print*,'MP_PHYSICS= ',imp_physics,'nbdl=',nbdl, 'tprec=',tprec,'tclod=',tclod, &
 !       'dtp=',dtp,'tmaxmin=',tmaxmin,'jsta=',jsta,jend,im,jm
 
+!      write(6,*) 'maptype and gridtype is ', maptype,gridtype
 !
 !$omp parallel do default(shared),private(i,j)
       do j=jsta,jend
@@ -569,12 +600,14 @@ module post_regional
         enddo
       enddo
 
+      call exch(gdlat(1,jsta_2l))
+
 !$omp parallel do default(none),private(i,j,ip1), &
 !$omp&  shared(jsta,jend_m,im,dx,gdlat,gdlon,dy)
       do j = jsta, jend_m
-        do i = 1, im
+        do i = 1, im-1
           ip1 = i + 1
-          if (ip1 > im) ip1 = ip1 - im
+          !if (ip1 > im) ip1 = ip1 - im
           dx(i,j) = erad*cos(gdlat(i,j)*dtr)*(gdlon(ip1,j)-gdlon(i,j))*dtr
           dy(i,j) = erad*(gdlat(i,j+1)-gdlat(i,j))*dtr  ! like A*DPH
         end do
@@ -595,21 +628,6 @@ module post_regional
 !
       pt    = ak5(1)
 
-! GFS may not have model derived radar ref.
-!                        TKE
-!                        cloud amount
-!$omp parallel do default(none),private(i,j,l), &
-!$omp& shared(lm,jsta,jend,im,spval,ref_10cm,q2,cfr)
-      do l=1,lm
-        do j=jsta,jend
-          do i=1,im
-            ref_10cm(i,j,l) = SPVAL
-            q2(i,j,l) = SPVAL
-            cfr(i,j,l) = SPVAL
-          enddo
-        enddo
-      enddo
-
 ! GFS does not have surface specific humidity
 !                   inst sensible heat flux
 !                   inst latent heat flux
@@ -619,7 +637,6 @@ module post_regional
           qs(i,j) = SPVAL
           twbs(i,j) = SPVAL
           qwbs(i,j) = SPVAL
-          ths(i,j) = SPVAL
         enddo
       enddo
 
@@ -641,7 +658,7 @@ module post_regional
           lspa(i,j) = SPVAL
           th10(i,j) = SPVAL
           q10(i,j) = SPVAL
-          albase(i,j) = 0.
+          albase(i,j) = SPVAL
         enddo
       enddo
 
@@ -664,7 +681,6 @@ module post_regional
         do i=1,im
           czen(i,j)   = SPVAL
           czmean(i,j) = SPVAL
-          radot(i,j)  = SPVAL
           cfrach(i,j) = SPVAL
           cfracl(i,j) = SPVAL
           cfracm(i,j) = SPVAL
@@ -682,7 +698,7 @@ module post_regional
 ! cfrcv to 1
 !                     time averaged cloud fraction, set acfrst to spval, ncfrst to 1
 !                     UNDERGROUND RUNOFF, bgroff
-!                     inst incoming sfc longwave, rlwin
+!                     inst incoming sfc longwave
 !                     inst model top outgoing longwave,rlwtoa
 !                     inst incoming sfc shortwave, rswin
 !                     inst incoming clear sky sfc shortwave, rswinc
@@ -690,7 +706,7 @@ module post_regional
 !                     snow phase change heat flux, snopcx
 ! GFS does not use total momentum flux,sfcuvx
 !$omp parallel do default(none),private(i,j),shared(jsta,jend,im,spval), &
-!$omp& shared(acfrcv,ncfrcv,acfrst,ncfrst,bgroff,rlwin,rlwtoa,rswin,rswinc,rswout,snopcx,sfcuvx)
+!$omp& shared(acfrcv,ncfrcv,acfrst,ncfrst,bgroff,rlwtoa,rswin,rswinc,rswout,snopcx,sfcuvx)
       do j=jsta,jend
         do i=1,im
           acfrcv(i,j) = spval
@@ -698,13 +714,8 @@ module post_regional
           acfrst(i,j) = spval
           ncfrst(i,j) = 1.0
           bgroff(i,j) = spval
-          rlwin(i,j)  = spval
           rlwtoa(i,j) = spval
-          rswin(i,j)  = spval
           rswinc(i,j) = spval
-          rswout(i,j) = spval
-          snopcx(i,j) = spval
-          sfcuvx(i,j) = spval
         enddo
       enddo
 
@@ -761,8 +772,6 @@ module post_regional
           qz0(i,j)    = spval
           uz0(i,j)    = spval
           vz0(i,j)    = spval
-          maxrhshltr(i,j) = SPVAL
-          minrhshltr(i,j) = SPVAL
         enddo
       enddo
 
@@ -814,48 +823,6 @@ module post_regional
 !      if(mype==0)print*,' in INITPOST ifhr ifmin =',ifhr,ifmin
 !
       tstart = 0.
-!
-!** initialize cloud water and ice mixing ratio
-!$omp parallel do default(none),private(i,j,l),shared(lm,jsta,jend,im), &
-!$omp& shared(qqw,qqr,qqs,qqi)
-      do l = 1,lm
-        do j = jsta, jend
-          do i = 1,im
-            qqw(i,j,l) = 0.
-            qqr(i,j,l) = 0.
-            qqs(i,j,l) = 0.
-            qqi(i,j,l) = 0.
-          enddo
-        enddo
-      enddo
-!
-!** temporary fix: initialize t10m, t10avg, psfcavg, akhsavg, akmsavg,
-!** albedo, tg
-!$omp parallel do default(none),private(i,j),shared(jsta_2l,jend_2u,im), &
-!$omp& shared(t10m,t10avg,psfcavg,akhsavg,akmsavg,albedo,tg)
-      do j=jsta_2l,jend_2u
-        do i=1,im
-          t10m(i,j) = 0.
-          t10avg(i,j) = 0.
-          psfcavg(i,j) = 0.
-          akhsavg(i,j) = 0.
-          akmsavg(i,j) = 0.
-          albedo(i,j) = 0.
-          tg(i,j) = 0.
-        enddo
-      enddo
-!$omp parallel do default(none),private(i,j,k),shared(jsta_2l,jend_2u,im,lm), &
-!$omp& shared(extcof55,aextc55,u,v)
-      do k=1,lm
-        do j=jsta_2l,jend_2u
-        do i=1,im
-          extcof55(i,j,k) = 0.
-          aextc55(i,j,k) = 0.
-          u(i,j,k) = 0.
-          v(i,j,k) = 0.
-        enddo
-        enddo
-      enddo
 !
 !-----------------------------------------------------------------------------
 ! get post fields
@@ -1093,6 +1060,18 @@ module post_regional
               enddo
             endif
 
+            ! foundation temperature
+            if(trim(fieldname)=='tref') then
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,arrayr42d,fdnsst)
+              do j=jsta,jend
+                do i=ista, iend
+                  if (arrayr42d(i,j) /= spval) then
+                    fdnsst(i,j) = arrayr42d(i,j)
+                  endif
+                enddo
+              enddo
+            endif
+
             ! convective precip in m per physics time step
             if(trim(fieldname)=='cpratb_ave') then
               !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,dtq2,arrayr42d,avgcprate,fillValue,spval)
@@ -1171,7 +1150,7 @@ module post_regional
                   if (arrayr42d(i,j) /= spval .and.  abs(arrayr42d(i,j)-fillValue) > small) then
                     cprate(i,j) = max(0.,arrayr42d(i,j)) * (dtq2*0.001) * 1000./dtp
                   else
-                    cprate(i,j) = spval
+                    cprate(i,j) = 0.
                   endif
                 enddo
               enddo
@@ -1338,6 +1317,17 @@ module post_regional
                 do i=ista, iend
                   mxsnal(i,j) = arrayr42d(i,j)
                   if (abs(arrayr42d(i,j)-fillValue) < small) mxsnal(i,j) = spval
+                enddo
+              enddo
+            endif
+
+            !  land fraction
+            if(trim(fieldname)=='lfrac') then
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,landfrac,arrayr42d,sm)
+              do j=jsta,jend
+                do i=ista, iend
+                  landfrac(i,j) = arrayr42d(i,j)
+                  if (sm(i,j) /= 0.0) landfrac(i,j) = spval
                 enddo
               enddo
             endif
@@ -2002,8 +1992,106 @@ module post_regional
               do j=jsta,jend
                 do i=ista, iend
                   pbot(i,j) = arrayr42d(i,j)
-                  if( abs(arrayr42d(i,j)-fillValue) < small)  pbot(i,j) = spval
+                  if( abs(arrayr42d(i,j)-fillValue) < small) pbot(i,j) = spval
                   if(pbot(i,j) <= 0.0) pbot(i,j) = spval
+                enddo
+              enddo
+            endif
+
+            ! time averaged low cloud top pressure
+            if(trim(fieldname)=='pres_avelct') then
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,ptopl,arrayr42d,fillValue)
+              do j=jsta,jend
+                do i=ista, iend
+                  ptopl(i,j) = arrayr42d(i,j)
+                  if( abs(arrayr42d(i,j)-fillValue) < small) ptopl(i,j) = spval
+                enddo
+              enddo
+            endif
+
+            ! time averaged low cloud bottom pressure
+            if(trim(fieldname)=='pres_avelcb') then
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,pbotl,arrayr42d,fillValue)
+              do j=jsta,jend
+                do i=ista, iend
+                  pbotl(i,j) = arrayr42d(i,j)
+                  if( abs(arrayr42d(i,j)-fillValue) < small) pbotl(i,j) = spval
+                enddo
+              enddo
+            endif
+
+            ! time averaged low cloud top temperature
+            if(trim(fieldname)=='tmp_avelct') then
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,ttopl,arrayr42d,fillValue)
+              do j=jsta,jend
+                do i=ista, iend
+                  ttopl(i,j) = arrayr42d(i,j)
+                  if( abs(arrayr42d(i,j)-fillValue) < small) ttopl(i,j) = spval
+                enddo
+              enddo
+            endif
+
+            ! time averaged middle cloud top pressure
+            if(trim(fieldname)=='pres_avemct') then
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,ptopm,arrayr42d,fillValue)
+              do j=jsta,jend
+                do i=ista, iend
+                  ptopm(i,j) = arrayr42d(i,j)
+                  if( abs(arrayr42d(i,j)-fillValue) < small) ptopm(i,j) = spval
+                enddo
+              enddo
+            endif
+            ! time averaged middle cloud bottom pressure
+            if(trim(fieldname)=='pres_avemcb') then
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,pbotm,arrayr42d,fillValue)
+              do j=jsta,jend
+                do i=ista, iend
+                  pbotm(i,j) = arrayr42d(i,j)
+                  if( abs(arrayr42d(i,j)-fillValue) < small) pbotm(i,j) = spval
+                enddo
+              enddo
+            endif
+
+            ! time averaged middle cloud top temperature
+            if(trim(fieldname)=='tmp_avemct') then
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,ttopm,arrayr42d,fillValue)
+              do j=jsta,jend
+                do i=ista, iend
+                  ttopm(i,j) = arrayr42d(i,j)
+                  if( abs(arrayr42d(i,j)-fillValue) < small) ttopm(i,j) = spval
+                enddo
+              enddo
+            endif
+
+            ! time averaged high cloud top pressure
+            if(trim(fieldname)=='pres_avehct') then
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,ptoph,arrayr42d,fillValue)
+              do j=jsta,jend
+                do i=ista, iend
+                  ptoph(i,j) = arrayr42d(i,j)
+                  if( abs(arrayr42d(i,j)-fillValue) < small) ptoph(i,j) = spval
+                enddo
+              enddo
+            endif
+
+            ! time averaged high cloud bottom pressure
+            if(trim(fieldname)=='pres_avehcb') then
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,pboth,arrayr42d,fillValue)
+              do j=jsta,jend
+                do i=ista, iend
+                  pboth(i,j) = arrayr42d(i,j)
+                  if( abs(arrayr42d(i,j)-fillValue) < small) pboth(i,j) = spval
+                enddo
+              enddo
+            endif
+
+            ! time averaged high cloud top temperature
+            if(trim(fieldname)=='tmp_avehct') then
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,ttoph,arrayr42d,fillValue)
+              do j=jsta,jend
+                do i=ista, iend
+                  ttoph(i,j) = arrayr42d(i,j)
+                  if( abs(arrayr42d(i,j)-fillValue) < small) ttoph(i,j) = spval
                 enddo
               enddo
             endif
@@ -2043,7 +2131,66 @@ module post_regional
               enddo
             endif
 
+            ! accumulated evaporation of intercepted water
+            if(trim(fieldname)=='ecan_acc') then
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,tecan,arrayr42d,sm,fillValue)
+              do j=jsta,jend
+                do i=ista, iend
+                  tecan(i,j) = arrayr42d(i,j)
+                  if( abs(arrayr42d(i,j)-fillValue) < small) tecan(i,j) = spval
+                  if (sm(i,j) /= 0.0) tecan(i,j) = spval
+                enddo
+              enddo
+            endif
+
+            ! accumulated plant transpiration
+            if(trim(fieldname)=='etran_acc') then
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,tetran,arrayr42d,sm,fillValue)
+              do j=jsta,jend
+                do i=ista, iend
+                  tetran(i,j) = arrayr42d(i,j)
+                  if( abs(arrayr42d(i,j)-fillValue) < small) tetran(i,j) = spval
+                  if (sm(i,j) /= 0.0) tetran(i,j) = spval
+                enddo
+              enddo
+            endif
+
+            ! accumulated soil surface evaporation
+            if(trim(fieldname)=='edir_acc') then
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,tedir,arrayr42d,sm,fillValue)
+              do j=jsta,jend
+                do i=ista, iend
+                  tedir(i,j) = arrayr42d(i,j)
+                  if( abs(arrayr42d(i,j)-fillValue) < small) tedir(i,j) = spval
+                  if (sm(i,j) /= 0.0) tedir(i,j) = spval
+                enddo
+              enddo
+            endif
+
+            ! total water storage in aquifer
+            if(trim(fieldname)=='wa_acc') then
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,twa,arrayr42d,sm,fillValue)
+              do j=jsta,jend
+                do i=ista, iend
+                  twa(i,j) = arrayr42d(i,j)
+                  if( abs(arrayr42d(i,j)-fillValue) < small) twa(i,j) = spval
+                  if (sm(i,j) /= 0.0) twa(i,j) = spval
+                enddo
+              enddo
+            endif
+
             ! shelter max temperature
+            if(modelname=='GFS') then
+            if(trim(fieldname)=='tmax_max2m') then
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,maxtshltr,arrayr42d,fillValue,spval)
+              do j=jsta,jend
+                do i=ista, iend
+                  maxtshltr(i,j) = arrayr42d(i,j)
+                  if( abs(arrayr42d(i,j)-fillValue) < small)  maxtshltr(i,j) = spval
+                enddo
+              enddo
+            endif
+            else
             if(trim(fieldname)=='t02max') then
               !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,maxtshltr,arrayr42d,fillValue,spval)
               do j=jsta,jend
@@ -2053,9 +2200,10 @@ module post_regional
                 enddo
               enddo
             endif
+            endif
 
             ! shelter min temperature
-            if(trim(fieldname)=='t02min') then
+            if(trim(fieldname)=='t02min' .or. trim(fieldname)=='tmin_min2m') then
               !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,mintshltr,arrayr42d,fillValue,spval)
               do j=jsta,jend
                 do i=ista, iend
@@ -2083,6 +2231,28 @@ module post_regional
                 do i=ista, iend
                   minrhshltr(i,j) = arrayr42d(i,j)
                   if( abs(arrayr42d(i,j)-fillValue) < small)  minrhshltr(i,j) = spval
+                enddo
+              enddo
+            endif
+
+            ! shelter max specific humidity
+            if(trim(fieldname)=='spfhmax_max2m') then
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,maxqshltr,arrayr42d,fillValue)
+              do j=jsta,jend
+                do i=ista, iend
+                  maxqshltr(i,j) = arrayr42d(i,j)
+                  if( abs(arrayr42d(i,j)-fillValue) < small) maxqshltr(i,j) = spval
+                enddo
+              enddo
+            endif
+
+            ! shelter min temperature
+            if(trim(fieldname)=='spfhmin_min2m') then
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,minqshltr,arrayr42d,fillValue)
+              do j=jsta,jend
+                do i=ista, iend
+                  minqshltr(i,j) = arrayr42d(i,j)
+                  if( abs(arrayr42d(i,j)-fillValue) < small) minqshltr(i,j) = spval
                 enddo
               enddo
             endif
@@ -2279,6 +2449,30 @@ module post_regional
               enddo
             endif
 
+            ! AVERAGED PRECIP ADVECTED HEAT FLUX
+            if(trim(fieldname)=='pah_ave') then
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,paha,arrayr42d,sm,fillValue)
+              do j=jsta,jend
+                do i=ista, iend
+                  paha(i,j) = arrayr42d(i,j)
+                  if( abs(arrayr42d(i,j)-fillValue) < small) paha(i,j) = spval
+                  if (sm(i,j) /= 0.0) paha(i,j) = spval
+                enddo
+              enddo
+            endif
+
+            ! instantaneous PRECIP ADVECTED HEAT FLUX
+            if(trim(fieldname)=='pahi') then
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,pahi,arrayr42d,sm,fillValue)
+              do j=jsta,jend
+                do i=ista, iend
+                  pahi(i,j) = arrayr42d(i,j)
+                  if( abs(arrayr42d(i,j)-fillValue) < small) pahi(i,j) = spval
+                  if (sm(i,j) /= 0.0) pahi(i,j) = spval
+                enddo
+              enddo
+            endif
+
             ! plant transpiration
             if(trim(fieldname)=='trans_ave') then
               !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,avgetrans,arrayr42d,sm,fillValue)
@@ -2326,10 +2520,22 @@ module post_regional
                 enddo
               enddo
             endif
+ 
+
+            ! snow phase change heat flux
+            if(trim(fieldname)=='pwat') then
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,pwat,arrayr42d,fillValue)
+              do j=jsta,jend
+                do i=ista, iend
+                  pwat(i,j) = arrayr42d(i,j)
+                  if( abs(arrayr42d(i,j)-fillValue) < small) pwat(i,j) = spval
+                enddo
+              enddo
+            endif
 
             ! model level upvvelmax
             if(trim(fieldname)=='upvvelmax') then
-              !$omp parallel do default(none) private(i,j,l) shared(jsta,jend,ista,iend,spval,w_up_max,arrayr42d,fillvalue)
+              !$omp parallel do default(none) private(i,j,l) shared(jsta,jend,ista,iend,spval,w_up_max,arrayr42d,fillValue)
               do j=jsta,jend
                 do i=ista, iend
                   w_up_max(i,j) = arrayr42d(i,j)
@@ -2340,7 +2546,7 @@ module post_regional
 
             ! model level dnvvelmax
             if(trim(fieldname)=='dnvvelmax') then
-              !$omp parallel do default(none) private(i,j,l) shared(jsta,jend,ista,iend,spval,w_dn_max,arrayr42d,fillvalue)
+              !$omp parallel do default(none) private(i,j,l) shared(jsta,jend,ista,iend,spval,w_dn_max,arrayr42d,fillValue)
               do j=jsta,jend
                 do i=ista, iend
                   w_dn_max(i,j) = arrayr42d(i,j)
@@ -2588,7 +2794,11 @@ module post_regional
             endif
 
             ! model level ozone mixing ratio
+#ifdef MULTI_GASES
+            if(trim(fieldname)=='spo3') then
+#else
             if(trim(fieldname)=='o3mr') then
+#endif
               !$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,o3,arrayr43d,fillvalue,spval)
               do l=1,lm
                 do j=jsta,jend
@@ -2600,8 +2810,8 @@ module post_regional
               enddo
             endif
 
-! for GFDL MP
-!            if (imp_physics == 11) then
+! for GFDL MP or Thompson MP
+            if (imp_physics == 11 .or. imp_physics == 8) then
               ! model level cloud water mixing ratio
               if(trim(fieldname)=='clwmr') then
                 !$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,qqw,arrayr43d,fillvalue,spval)
@@ -2672,10 +2882,79 @@ module post_regional
                   enddo
                 enddo
               endif
-!gfdlmp
-!            endif
+
+              if(imp_physics == 8) then
+              ! model level rain number
+              if(trim(fieldname)=='ncrain') then
+                !$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,qqnr,arrayr43d,spval,fillvalue)
+                do l=1,lm
+                  do j=jsta,jend
+                    do i=ista, iend
+                      qqnr(i,j,l)=arrayr43d(i,j,l)
+                      if(abs(arrayr43d(i,j,l)-fillvalue)<small) qqnr(i,j,l) = spval
+                    enddo
+                  enddo
+                enddo
+              endif
+
+              ! model level rain number
+              if(trim(fieldname)=='ncice') then
+                !$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,qqni,arrayr43d,spval,fillvalue)
+                do l=1,lm
+                  do j=jsta,jend
+                    do i=ista, iend
+                      qqni(i,j,l)=arrayr43d(i,j,l)
+                      if(abs(arrayr43d(i,j,l)-fillvalue)<small) qqni(i,j,l) = spval
+                    enddo
+                  enddo
+                enddo
+              endif
+
+              ! model level rain number
+              if(trim(fieldname)=='nwfa') then
+                !$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,qqnwfa,arrayr43d,spval,fillvalue)
+                do l=1,lm
+                  do j=jsta,jend
+                    do i=ista, iend
+                      qqnwfa(i,j,l)=arrayr43d(i,j,l)
+                      if(abs(arrayr43d(i,j,l)-fillvalue)<small) qqnwfa(i,j,l) = spval
+                    enddo
+                  enddo
+                enddo
+              endif
+
+              ! model level rain number
+              if(trim(fieldname)=='nifa') then
+                !$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,qqnifa,arrayr43d,spval,fillvalue)
+                do l=1,lm
+                  do j=jsta,jend
+                    do i=ista, iend
+                      qqnifa(i,j,l)=arrayr43d(i,j,l)
+                      if(abs(arrayr43d(i,j,l)-fillvalue)<small) qqnifa(i,j,l) = spval
+                    enddo
+                  enddo
+                enddo
+              endif
+
+              endif !if(imp_physics == 8) then
+
+            endif !if(imp_physics == 11 .or. imp_physics == 8) then
 
             ! model level ref3d
+            if(modelname == 'GFS') then
+            if(trim(fieldname)=='ref3D') then
+              !$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,ref_10cm,arrayr43d,fillvalue,spval)
+              do l=1,lm
+                do j=jsta,jend
+                  do i=ista, iend
+                    ref_10cm(i,j,l) = arrayr43d(i,j,l)
+                    if(abs(arrayr43d(i,j,l)-fillvalue)<small) ref_10cm(i,j,l) = spval
+                  enddo
+                enddo
+              enddo
+            endif
+              if(mype==0) print *,'in gfs_post, get ref_10cm=',maxval(ref_10cm), minval(ref_10cm)
+            else
             if(trim(fieldname)=='refl_10cm') then
               !$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,ref_10cm,arrayr43d,fillvalue,spval)
               do l=1,lm
@@ -2687,6 +2966,7 @@ module post_regional
                 enddo
               enddo
 !              if(mype==0) print *,'in gfs_post, get ref_10cm=',maxval(ref_10cm), minval(ref_10cm),'ibdl=',ibdl
+            endif
             endif
 
             ! model level tke
@@ -2704,6 +2984,19 @@ module post_regional
             endif
 
             ! model level cloud fraction
+            if(imp_physics == 11) then !GFDL MP
+            if(trim(fieldname)=='cld_amt') then
+              !$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,cfr,arrayr43d,fillvalue,spval)
+              do l=1,lm
+                do j=jsta,jend
+                  do i=ista, iend
+                    cfr(i,j,l) = arrayr43d(i,j,l)
+                    if(abs(arrayr43d(i,j,l)-fillvalue)<small) cfr(i,j,l) = spval
+                  enddo
+                enddo
+              enddo
+            endif
+            else !Other MP
             if(trim(fieldname)=='cldfra') then
               !$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,cfr,arrayr43d,fillvalue,spval)
               do l=1,lm
@@ -2714,6 +3007,7 @@ module post_regional
                   enddo
                 enddo
               enddo
+            endif
             endif
           
 !3d fields
@@ -2960,7 +3254,7 @@ module post_regional
 !
 !more fields need to be computed
 !
-    end subroutine set_postvars_regional
+    end subroutine set_postvars_fv3
 
 
-    end module post_regional
+    end module post_fv3
