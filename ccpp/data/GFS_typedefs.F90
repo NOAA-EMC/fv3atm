@@ -665,6 +665,7 @@ module GFS_typedefs
     logical              :: cplaqm          !< default no cplaqm collection
     logical              :: cplchm          !< default no cplchm collection
     logical              :: rrfs_smoke      !< default no rrfs_smoke collection
+    integer              :: dust_smoke_rrtmg_band_number !< band number to affect in rrtmg_pre from smoke and dust
     logical              :: use_cice_alb    !< default .false. - i.e. don't use albedo imported from the ice model
     logical              :: cpl_imp_mrg     !< default no merge import with internal forcings
     logical              :: cpl_imp_dbg     !< default no write import data to file post merge
@@ -2871,6 +2872,7 @@ module GFS_typedefs
     logical              :: cplaqm         = .false.         !< default no cplaqm collection
     logical              :: cplchm         = .false.         !< default no cplchm collection
     logical              :: rrfs_smoke     = .false.         !< default no rrfs_smoke collection
+    integer              :: dust_smoke_rrtmg_band_number = 10!< band number to affect in rrtmg_pre from smoke and dust
     logical              :: use_cice_alb   = .false.         !< default no cice albedo
     logical              :: cpl_imp_mrg    = .false.         !< default no merge import with internal forcings
     logical              :: cpl_imp_dbg    = .false.         !< default no write import data to file post merge
@@ -3385,7 +3387,7 @@ module GFS_typedefs
                           !--- coupling parameters
                                cplflx, cplice, cplocn2atm, cplwav, cplwav2atm, cplaqm,      &
                                cplchm, cpl_imp_mrg, cpl_imp_dbg, rrfs_smoke,                &
-                               use_cice_alb,                                                &
+                               use_cice_alb, dust_smoke_rrtmg_band_number,                  &
 #ifdef IDEA_PHYS
                                lsidea, weimer_model, f107_kp_size, f107_kp_interval,        &
                                f107_kp_skip_size, f107_kp_data_size, f107_kp_read_in_start, &
@@ -3712,6 +3714,7 @@ module GFS_typedefs
 
 !--- RRFS Smoke
     Model%rrfs_smoke        = rrfs_smoke
+    Model%dust_smoke_rrtmg_band_number = dust_smoke_rrtmg_band_number
     Model%seas_opt          = seas_opt
     Model%dust_opt          = dust_opt
     Model%biomass_burn_opt  = biomass_burn_opt
@@ -5586,6 +5589,25 @@ module GFS_typedefs
       print *, ' use_cice_alb      : ', Model%use_cice_alb
       print *, ' cpl_imp_mrg       : ', Model%cpl_imp_mrg
       print *, ' cpl_imp_dbg       : ', Model%cpl_imp_dbg
+      if(model%rrfs_smoke) then
+        print *, ' '
+        print *, 'smoke parameters'
+        print *, 'dust_smoke_rrtmg_band_number : ',Model%dust_smoke_rrtmg_band_number
+        print *, 'seas_opt         : ',Model%seas_opt
+        print *, 'dust_opt         : ',Model%dust_opt
+        print *, 'biomass_burn_opt : ',Model%biomass_burn_opt
+        print *, 'drydep_opt       : ',Model%drydep_opt
+        print *, 'wetdep_ls_opt    : ',Model%wetdep_ls_opt
+        print *, 'do_plumerise     : ',Model%do_plumerise
+        print *, 'plumerisefire_frq: ',Model%plumerisefire_frq
+        print *, 'addsmoke_flag    : ',Model%addsmoke_flag
+        print *, 'smoke_forecast   : ',Model%smoke_forecast
+        print *, 'aero_ind_fdb     : ',Model%aero_ind_fdb
+        print *, 'aero_dir_fdb     : ',Model%aero_dir_fdb
+        print *, 'rrfs_smoke_debug : ',Model%rrfs_smoke_debug
+        print *, 'mix_chem         : ',Model%mix_chem
+        print *, 'fire_turb        : ',Model%fire_turb
+      endif
       print *, ' '
       print *, ' lsidea            : ', Model%lsidea
       print *, ' '

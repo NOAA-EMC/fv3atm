@@ -2939,6 +2939,12 @@
   units = flag
   dimensions = ()
   type = logical
+[dust_smoke_rrtmg_band_number]
+  standard_name = rrtmg_band_number_that_smoke_and_dust_should_affect
+  long_name = rrtmg band number that smoke and dust should affect
+  units = count
+  dimensions = ()
+  type = integer
 [cpl_imp_mrg]
   standard_name = flag_for_merging_imported_data
   long_name = flag controlling cpl_imp_mrg for imported data (default off)
