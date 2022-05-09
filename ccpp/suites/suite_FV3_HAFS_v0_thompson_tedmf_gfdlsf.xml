@@ -15,7 +15,7 @@
       <scheme>GFS_suite_interstitial_rad_reset</scheme>
       <scheme>GFS_rrtmg_pre</scheme>
       <scheme>GFS_radiation_surface</scheme>
-      <scheme>rrtmg_sw_pre</scheme>
+      <scheme>rad_sw_pre</scheme>
       <scheme>rrtmg_sw</scheme>
       <scheme>rrtmg_sw_post</scheme>
       <scheme>rrtmg_lw_pre</scheme>
@@ -75,11 +75,7 @@
       <scheme>cnvc90</scheme>
       <scheme>GFS_MP_generic_pre</scheme>
       <scheme>mp_thompson_pre</scheme>
-    </subcycle>
-    <subcycle loop="2">
       <scheme>mp_thompson</scheme>
-    </subcycle>
-    <subcycle loop="1">
       <scheme>mp_thompson_post</scheme>
       <scheme>GFS_MP_generic_post</scheme>
       <scheme>maximum_hourly_diagnostics</scheme>

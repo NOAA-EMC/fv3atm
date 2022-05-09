@@ -2363,26 +2363,16 @@ module GFS_diagnostics
 
     if (Model%lndp_type /= 0) then
       idx = idx + 1
-      ExtDiag(idx)%axes = 2
-      ExtDiag(idx)%name = 'sfc_wts1'
+      ExtDiag(idx)%axes = 3
+      ExtDiag(idx)%name = 'sfc_wts'
       ExtDiag(idx)%desc = 'perturbation amplitude'
       ExtDiag(idx)%unit = 'none'
       ExtDiag(idx)%mod_name = 'gfs_phys'
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
-        ExtDiag(idx)%data(nb)%var2 => Coupling(nb)%sfc_wts(:,1)
+        ExtDiag(idx)%data(nb)%var3 => Coupling(nb)%sfc_wts(:,:)
       enddo
 
-      idx = idx + 1
-      ExtDiag(idx)%axes = 2
-      ExtDiag(idx)%name = 'sfc_wts2'
-      ExtDiag(idx)%desc = 'perturbation amplitude'
-      ExtDiag(idx)%unit = 'none'
-      ExtDiag(idx)%mod_name = 'gfs_phys'
-      allocate (ExtDiag(idx)%data(nblks))
-      do nb = 1,nblks
-        ExtDiag(idx)%data(nb)%var2 => Coupling(nb)%sfc_wts(:,2)
-      enddo
     endif
 
     if (Model%do_ca) then
