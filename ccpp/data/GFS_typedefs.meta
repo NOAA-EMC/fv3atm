@@ -5586,7 +5586,7 @@
   type = integer
   active = (do_smoke_coupling)
 [addsmoke_flag]
-  standard_name = rrfs_smoke_addsmoke_flag
+  standard_name = control_for_smoke_biomass_burning_emissions
   long_name = rrfs smoke add smoke option
   units = index
   dimensions = ()
@@ -6030,7 +6030,7 @@
 [bl_mynn_closure]
   standard_name = control_for_closure_level_in_mellor_yamada_nakanishi_niino_pbl_scheme
   long_name = flag to determine the closure level for the mynn
-  units = flag
+  units = 1
   dimensions = ()
   type = real
 [icloud_bl]
@@ -6040,25 +6040,25 @@
   dimensions = ()
   type = integer
 [isftcflx]
-  standard_name = flag_for_thermal_roughness_lengths_over_water_in_mynnsfclay
+  standard_name = control_for_thermal_roughness_lengths_over_water
   long_name = flag for thermal roughness lengths over water in mynnsfclay
-  units = flag
+  units = 1
   dimensions = ()
   type = integer
 [iz0tlnd]
-  standard_name = flag_for_thermal_roughness_lengths_over_land_in_mynnsfclay
+  standard_name = control_for_thermal_roughness_lengths_over_land
   long_name = flag for thermal roughness lengths over land in mynnsfclay
-  units = flag
+  units = 1
   dimensions = ()
   type = integer
 [sfclay_compute_flux]
-  standard_name = flag_for_computing_surface_scalar_fluxes_in_mynnsfclay
+  standard_name = do_compute_surface_scalar_fluxes
   long_name = flag for computing surface scalar fluxes in mynnsfclay
   units = flag
   dimensions = ()
   type = logical
 [sfclay_compute_diag]
-  standard_name = flag_for_computing_surface_diagnostics_in_mynnsfclay
+  standard_name = do_compute_surface_diagnostics
   long_name = flag for computing surface diagnostics in mynnsfclay
   units = flag
   dimensions = ()
