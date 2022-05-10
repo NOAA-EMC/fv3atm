@@ -2277,40 +2277,40 @@
   type = real
   kind = kind_phys
   active = (flag_for_surface_flux_coupling)
-[ulwsfcino_cpl]
-  standard_name = surface_upwelling_longwave_flux_over_ocean_from_coupled_process
+[ulwsfcin_med]
+  standard_name = surface_upwelling_longwave_flux_over_ocean_from_mediator
   long_name = surface upwelling LW flux over ocean for coupling
   units = W m-2
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
   active = (flag_for_surface_flux_coupling .and. flag_for_mediator_atmosphere_ocean_fluxes)
-[dusfcino_cpl]
-  standard_name = surface_x_momentum_flux_over_ocean_from_coupled_process
+[dusfcin_med]
+  standard_name = surface_x_momentum_flux_over_ocean_from_mediator
   long_name = sfc x momentum flux over ocean for coupling
   units = Pa
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
   active = (flag_for_surface_flux_coupling .and. flag_for_mediator_atmosphere_ocean_fluxes)
-[dvsfcino_cpl]
-  standard_name = surface_y_momentum_flux_over_ocean_from_coupled_process
+[dvsfcin_med]
+  standard_name = surface_y_momentum_flux_over_ocean_from_mediator
   long_name = sfc y momentum flux over ocean for coupling
   units = Pa
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
   active = (flag_for_surface_flux_coupling .and. flag_for_mediator_atmosphere_ocean_fluxes)
-[dtsfcino_cpl]
-  standard_name = surface_upward_sensible_heat_flux_over_ocean_from_coupled_process
+[dtsfcin_med]
+  standard_name = surface_upward_sensible_heat_flux_over_ocean_from_mediator
   long_name = sfc sensible heat flux input over ocean for coupling
   units = W m-2
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
   active = (flag_for_surface_flux_coupling .and. flag_for_mediator_atmosphere_ocean_fluxes)
-[dqsfcino_cpl]
-  standard_name = surface_upward_latent_heat_flux_over_ocean_from_coupled_process
+[dqsfcin_med]
+  standard_name = surface_upward_latent_heat_flux_over_ocean_from_mediator
   long_name = sfc latent heat flux input over ocean for coupling
   units = W m-2
   dimensions = (horizontal_loop_extent)

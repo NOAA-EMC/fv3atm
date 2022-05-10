@@ -2223,7 +2223,7 @@ end subroutine update_atmos_chemistry
                   nb = Atm_block%blkno(i,j)
                   ix = Atm_block%ixp(i,j)
                   if (GFS_data(nb)%Sfcprop%oceanfrac(ix) > zero) then
-                    GFS_data(nb)%Coupling%ulwsfcino_cpl(ix) = -datar8(i,j)
+                    GFS_data(nb)%Coupling%ulwsfcin_med(ix) = -datar8(i,j)
                   endif
                 enddo
               enddo
@@ -2243,7 +2243,7 @@ end subroutine update_atmos_chemistry
                   nb = Atm_block%blkno(i,j)
                   ix = Atm_block%ixp(i,j)
                   if (GFS_data(nb)%Sfcprop%oceanfrac(ix) > zero) then
-                    GFS_data(nb)%Coupling%dqsfcino_cpl(ix) = -datar8(i,j)
+                    GFS_data(nb)%Coupling%dqsfcin_med(ix) = -datar8(i,j)
                   endif
                 enddo
               enddo
@@ -2263,7 +2263,7 @@ end subroutine update_atmos_chemistry
                   nb = Atm_block%blkno(i,j)
                   ix = Atm_block%ixp(i,j)
                   if (GFS_data(nb)%Sfcprop%oceanfrac(ix) > zero) then
-                    GFS_data(nb)%Coupling%dtsfcino_cpl(ix) = -datar8(i,j)
+                    GFS_data(nb)%Coupling%dtsfcin_med(ix) = -datar8(i,j)
                   endif
                 enddo
               enddo
@@ -2283,7 +2283,7 @@ end subroutine update_atmos_chemistry
                   nb = Atm_block%blkno(i,j)
                   ix = Atm_block%ixp(i,j)
                   if (GFS_data(nb)%Sfcprop%oceanfrac(ix) > zero) then
-                    GFS_data(nb)%Coupling%dusfcino_cpl(ix) = -datar8(i,j)
+                    GFS_data(nb)%Coupling%dusfcin_med(ix) = -datar8(i,j)
                   endif
                 enddo
               enddo
@@ -2303,7 +2303,7 @@ end subroutine update_atmos_chemistry
                   nb = Atm_block%blkno(i,j)
                   ix = Atm_block%ixp(i,j)
                   if (GFS_data(nb)%Sfcprop%oceanfrac(ix) > zero) then
-                    GFS_data(nb)%Coupling%dvsfcino_cpl(ix) = -datar8(i,j)
+                    GFS_data(nb)%Coupling%dvsfcin_med(ix) = -datar8(i,j)
                   endif
                 enddo
               enddo

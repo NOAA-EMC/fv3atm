@@ -457,11 +457,11 @@ module GFS_typedefs
     !--- also needed for ice/ocn coupling 
     real (kind=kind_phys), pointer :: slimskin_cpl(:)=> null()   !< aoi_fld%slimskin(item,lan)
     !--- variables needed for use_med_flux =.TRUE.
-    real (kind=kind_phys), pointer :: dusfcino_cpl(:)         => null()   !< sfc u momentum flux over ocean
-    real (kind=kind_phys), pointer :: dvsfcino_cpl(:)         => null()   !< sfc v momentum flux over ocean
-    real (kind=kind_phys), pointer :: dtsfcino_cpl(:)         => null()   !< sfc latent heat flux over ocean
-    real (kind=kind_phys), pointer :: dqsfcino_cpl(:)         => null()   !< sfc sensible heat flux over ocean
-    real (kind=kind_phys), pointer :: ulwsfcino_cpl(:)        => null()   !< sfc upward lw flux over ocean
+    real (kind=kind_phys), pointer :: dusfcin_med(:)         => null()   !< sfc u momentum flux over ocean
+    real (kind=kind_phys), pointer :: dvsfcin_med(:)         => null()   !< sfc v momentum flux over ocean
+    real (kind=kind_phys), pointer :: dtsfcin_med(:)         => null()   !< sfc latent heat flux over ocean
+    real (kind=kind_phys), pointer :: dqsfcin_med(:)         => null()   !< sfc sensible heat flux over ocean
+    real (kind=kind_phys), pointer :: ulwsfcin_med(:)        => null()   !< sfc upward lw flux over ocean
 
 !--- outgoing accumulated quantities
     real (kind=kind_phys), pointer :: rain_cpl  (:)  => null()   !< total rain precipitation
@@ -2492,17 +2492,17 @@ module GFS_typedefs
 
       ! -- Coupling options to retrive atmosphere-ocean fluxes from mediator
       if (Model%use_med_flux) then
-        allocate (Coupling%dusfcino_cpl    (IM))
-        allocate (Coupling%dvsfcino_cpl    (IM))
-        allocate (Coupling%dtsfcino_cpl    (IM))
-        allocate (Coupling%dqsfcino_cpl    (IM))
-        allocate (Coupling%ulwsfcino_cpl   (IM))
+        allocate (Coupling%dusfcin_med (IM))
+        allocate (Coupling%dvsfcin_med (IM))
+        allocate (Coupling%dtsfcin_med (IM))
+        allocate (Coupling%dqsfcin_med (IM))
+        allocate (Coupling%ulwsfcin_med(IM))
 
-        Coupling%dusfcino_cpl      = clear_val
-        Coupling%dvsfcino_cpl      = clear_val
-        Coupling%dtsfcino_cpl      = clear_val
-        Coupling%dqsfcino_cpl      = clear_val
-        Coupling%ulwsfcino_cpl     = clear_val
+        Coupling%dusfcin_med  = clear_val
+        Coupling%dvsfcin_med  = clear_val
+        Coupling%dtsfcin_med  = clear_val
+        Coupling%dqsfcin_med  = clear_val
+        Coupling%ulwsfcin_med = clear_val
       end if
 
       !--- accumulated quantities
