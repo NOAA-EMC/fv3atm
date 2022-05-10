@@ -75,11 +75,7 @@
       <scheme>cnvc90</scheme>
       <scheme>GFS_MP_generic_pre</scheme>
       <scheme>mp_thompson_pre</scheme>
-    </subcycle>
-    <subcycle loop="2">
       <scheme>mp_thompson</scheme>
-    </subcycle>
-    <subcycle loop="1">
       <scheme>mp_thompson_post</scheme>
       <scheme>GFS_MP_generic_post</scheme>
       <scheme>maximum_hourly_diagnostics</scheme>
