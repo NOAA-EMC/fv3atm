@@ -145,6 +145,14 @@ module GFS_restart
       Restart%num3d = Restart%num3d + 9
     endif
 
+    if (Model%num_dfi_radar > 0) then
+      do itime=1,Model%dfi_radar_max_intervals
+        if(Model%ix_dfi_radar(itime)>0) then
+          Restart%num3d = Restart%num3d + 1
+        endif
+      enddo
+    endif
+
     allocate (Restart%name2d(Restart%num2d))
     allocate (Restart%name3d(Restart%num3d))
     allocate (Restart%data(nblks,max(Restart%num2d,Restart%num3d)))
