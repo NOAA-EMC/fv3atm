@@ -19,6 +19,7 @@
   integer                  :: fcst_ntasks
   type(MPI_Comm)           :: fcst_mpi_comm
 !
+  integer                  :: cpl_grid_id
   logical                  :: cplprint_flag
   logical                  :: quilting, output_1st_tstep_rst
   logical                  :: restart_endfcst
