@@ -1161,17 +1161,15 @@ module GFS_typedefs
     logical              :: do_shum
     logical              :: do_skeb
     integer              :: skeb_npass
-    integer              :: lndp_type
+    integer              :: lndp_type         ! integer indicating land perturbation scheme type:
+                                              ! 0 - none
+                                              ! 1 - scheme from Gehne et al, MWR, 2019.  (Noah only, not maintained?)
+                                              ! 2 - scheme from Draper, JHM, 2021.
     real(kind=kind_phys) :: sppt_amp          ! pjp cloud perturbations
     integer              :: n_var_lndp
-    logical              :: lndp_each_step    ! flag to indicate that land perturbations are applied at every time step,
-                                              ! otherwise they are applied only after gcycle is run
-    character(len=3)    , pointer :: lndp_var_list(:)  ! dimension here must match  n_var_max_lndp in  stochy_nml_def
-    real(kind=kind_phys), pointer :: lndp_prt_list(:)  ! dimension here must match  n_var_max_lndp in  stochy_nml_def
-                                              ! also previous code had dimension 5 for each pert, to allow
-                                              ! multiple patterns. It wasn't fully coded (and wouldn't have worked
-                                              ! with nlndp>1, so I just dropped it). If we want to code it properly,
-                                              ! we'd need to make this dim(6,5).
+    ! next two are duplicated here to support lndp_type=1. If delete that scheme, could remove from GFS defs?
+    character(len=3)    , pointer :: lndp_var_list(:)
+    real(kind=kind_phys), pointer :: lndp_prt_list(:)
     logical              :: do_spp            ! Overall flag to turn on SPP or not
     integer              :: spp_pbl
     integer              :: spp_sfc
@@ -1179,8 +1177,9 @@ module GFS_typedefs
     integer              :: spp_rad
     integer              :: spp_gwd
     integer              :: n_var_spp
-    character(len=3)    , pointer :: spp_var_list(:)  ! dimension here must match n_var_spp in stochy_nml_def
-    real(kind=kind_phys), pointer :: spp_prt_list(:)  ! dimension here must match n_var_spp in stochy_nml_def 
+    character(len=3)    , pointer :: spp_var_list(:) 
+    real(kind=kind_phys), pointer :: spp_prt_list(:)
+    real(kind=kind_phys), pointer :: spp_stddev_cutoff(:)
 
 !--- tracer handling
     character(len=32), pointer :: tracer_names(:) !< array of initialized tracers from dynamic core
@@ -3232,7 +3231,6 @@ module GFS_typedefs
     integer :: skeb_npass   = 11
     integer :: lndp_type      = 0
     integer :: n_var_lndp     = 0
-    logical :: lndp_each_step = .false.
     integer :: n_var_spp    =  0
     integer :: spp_pbl      =  0
     integer :: spp_sfc      =  0
@@ -3333,7 +3331,7 @@ module GFS_typedefs
                                dlqf, rbcr, shoc_parm, psauras, prauras, wminras,            &
                                do_sppt, do_shum, do_skeb,                                   &
                                do_spp, n_var_spp,                                           &
-                               lndp_type,  n_var_lndp, lndp_each_step,                      &
+                               lndp_type,  n_var_lndp,                                      &
                                pert_mp,pert_clds,pert_radtend,                              &
                           !--- Rayleigh friction
                                prslrd0, ral_ts,  ldiag_ugwp, do_ugwp, do_tofd,              &
@@ -4136,7 +4134,6 @@ module GFS_typedefs
     !--- stochastic surface perturbation options
     Model%lndp_type        = lndp_type
     Model%n_var_lndp       = n_var_lndp
-    Model%lndp_each_step   = lndp_each_step
     Model%do_spp           = do_spp
     Model%n_var_spp        = n_var_spp
 
@@ -4150,8 +4147,10 @@ module GFS_typedefs
     if (Model%do_spp) then
       allocate(Model%spp_var_list(Model%n_var_spp))
       allocate(Model%spp_prt_list(Model%n_var_spp))
+      allocate(Model%spp_stddev_cutoff(Model%n_var_spp))
       Model%spp_var_list(:) = ''
       Model%spp_prt_list(:) = clear_val
+      Model%spp_stddev_cutoff(:) = clear_val
     end if
 
     !--- cellular automata options
@@ -5739,7 +5738,6 @@ module GFS_typedefs
       print *, ' do_skeb           : ', Model%do_skeb
       print *, ' lndp_type         : ', Model%lndp_type
       print *, ' n_var_lndp        : ', Model%n_var_lndp
-      print *, ' lndp_each_step    : ', Model%lndp_each_step
       print *, ' do_spp            : ', Model%do_spp
       print *, ' n_var_spp         : ', Model%n_var_spp
       print *, ' '
