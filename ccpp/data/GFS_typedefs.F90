@@ -6048,15 +6048,18 @@ module GFS_typedefs
     allocate (Tbd%hpbl (IM))
     Tbd%hpbl     = clear_val
 
-    if (Model%imfdeepcnv == Model%imfdeepcnv_gf .or. Model%imfdeepcnv == Model%imfdeepcnv_ntiedtke .or. Model%imfdeepcnv == Model%imfdeepcnv_samf .or. Model%imfshalcnv == 2) then
-       allocate(Tbd%forcet(IM, Model%levs))
-       allocate(Tbd%forceq(IM, Model%levs))
-       allocate(Tbd%prevst(IM, Model%levs))
+    if (Model%imfdeepcnv == Model%imfdeepcnv_gf .or. Model%imfdeepcnv == Model%imfdeepcnv_ntiedtke .or. Model%imfdeepcnv == Model%imfdeepcnv_samf .or. Model%imfshalcnv == Model%imfshalcnv_samf) then
        allocate(Tbd%prevsq(IM, Model%levs))
+       Tbd%prevsq = clear_val
+    endif
+
+    if (Model%imfdeepcnv == Model%imfdeepcnv_gf .or. Model%imfdeepcnv == Model%imfdeepcnv_ntiedtke)then
+       allocate(Tbd%forceq(IM, Model%levs))
+       allocate(Tbd%forcet(IM, Model%levs))
+       allocate(Tbd%prevst(IM, Model%levs))
        Tbd%forcet = clear_val
        Tbd%forceq = clear_val
        Tbd%prevst = clear_val
-       Tbd%prevsq = clear_val
     end if
 
     if (Model%imfdeepcnv == Model%imfdeepcnv_gf) then

@@ -2327,25 +2327,10 @@
   type = real
   kind = kind_phys
   active = (flag_for_cellular_automata)
-[ca1]
-  standard_name = cellular_automata_global_pattern_from_coupled_process
-  long_name = cellular automata global pattern
-  units = flag
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-  active = (flag_for_cellular_automata)
 [condition]
   standard_name = physics_field_for_coupling
   long_name = physics_field_for_coupling
   units = m2 s-2
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-[ca_micro]
-  standard_name = output_prognostic_sigma_two
-  long_name = output of prognostic area fraction two
-  units = frac
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
@@ -6470,7 +6455,7 @@
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
   kind = kind_phys
-  active = (control_for_deep_convection_scheme == identifier_for_grell_freitas_deep_convection .or. control_for_deep_convection_scheme == identifier_for_new_tiedtke_deep_convection .or. control_for_deep_convection_scheme == identifier_for_simplified_arakawa_schubert_shallow_convection .or. control_for_shallow_convection_scheme == identifier_for_scale_aware_mass_flux_shallow_convection)
+  active = (control_for_deep_convection_scheme == identifier_for_grell_freitas_deep_convection .or. control_for_deep_convection_scheme == identifier_for_new_tiedtke_deep_convection .or. control_for_deep_convection_scheme == identifer_for_scale_aware_mass_flux_deep_convection .or. control_for_shallow_convection_scheme == identifier_for_scale_aware_mass_flux_shallow_convection)
 [cactiv]
   standard_name = counter_for_grell_freitas_convection
   long_name = convective activity memory
