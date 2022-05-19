@@ -2327,6 +2327,14 @@
   type = real
   kind = kind_phys
   active = (flag_for_cellular_automata)
+[ca1]
+  standard_name = cellular_automata_global_pattern_from_coupled_process
+  long_name = cellular automata global pattern
+  units = flag
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (flag_for_cellular_automata)
 [condition]
   standard_name = physics_field_for_coupling
   long_name = physics_field_for_coupling
