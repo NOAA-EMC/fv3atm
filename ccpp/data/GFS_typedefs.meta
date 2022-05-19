@@ -327,7 +327,6 @@
   standard_name = dust_tracer_concentration
   long_name = concentration of dust
   units = kg kg-1
->>>>>>> 1e9c3da5e0cc9efcc434cb3a2ea08a9f521939d2
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
   kind = kind_phys
