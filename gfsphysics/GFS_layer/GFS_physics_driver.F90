@@ -608,7 +608,7 @@ module module_physics_driver
       real(kind=kind_phys), allocatable ::                              &
            clw(:,:,:), qrn(:,:),  qsnw(:,:), ncpl(:,:), ncpi(:,:),      &
            ncpr(:,:),  ncps(:,:), cnvc(:,:), cnvw(:,:),                 &
-           qgl(:,:),   ncgl(:,:)
+           qgl(:,:),   ncgl(:,:), wet_deep(:,:),wet_shallow(:,:)
 !--- for 2 M microphysics
 !     real(kind=kind_phys), allocatable, dimension(:) ::                &
 !            cn_prc, cn_snr
@@ -881,6 +881,8 @@ module module_physics_driver
         nn = ntrac + 1
       endif
       allocate (clw(ix,levs,nn))
+      allocate (wet_deep(ix,Model%ntchm))
+      allocate (wet_shallow(ix,Model%ntchm))
 
       if (Model%imfdeepcnv >= 0 .or.  Model%imfshalcnv > 0  .or. &
          (Model%npdf3d == 3     .and. Model%num_p3d   == 4) .or. &
@@ -3207,7 +3209,7 @@ module module_physics_driver
       endif   ! end if_ldiag3d/lgocart/cplchm
 
       if (Model%lgocart .or. Model%cplchm) then
-        Coupling%dqdti(1:im,:) = 0._kind_phys
+        Coupling%dqdti(1:im,:) = zero
       endif   ! end if_lgocart/cplchm
 
 #ifdef GFS_HYDRO
@@ -3590,7 +3592,7 @@ module module_physics_driver
                              Model%clam_deep,   Model%c0s_deep,                    &
                              Model%c1_deep,  Model%betal_deep, Model%betas_deep,   &
                              Model%evfact_deep, Model%evfactl_deep,                &
-                             Model%pgcon_deep,  Model%asolfac_deep)
+                             Model%pgcon_deep,  Model%asolfac_deep, wet_deep) !lzhang
 !           if (lprnt) print *,' rain1=',rain1(ipr)
           !elseif (Model%imfdeepcnv == 3) then
           !  if (Model%me==0) then
@@ -4190,8 +4192,23 @@ module module_physics_driver
                               Statein%vvl, ncld, Diag%hpbl, ud_mf,                 &
                               dt_mf, cnvw, cnvc,                                   &
                               Model%clam_shal,  Model%c0s_shal, Model%c1_shal,     &
-                              Model%pgcon_shal, Model%asolfac_shal)
+                              Model%pgcon_shal,Model%asolfac_shal, wet_shallow)!lzhang
 
+! Sum convective wet depositoin from deep and shallow !lzhang
+          if (trans_aero) then
+            if (associated(Model%ntdiag)) then
+            ic = 0
+            do n = 1, Model%ntchm
+             if (Model%ntdiag(n)) then
+              ic = ic + 1
+              do i=1,im
+              !convert unit: kg/m2/s
+              Diag%wetdpc(i,ic) = 1.e-9*(max(0.,wet_deep(i,n)) +max(0., wet_shallow(i,n))) !lzhang
+              enddo
+             endif
+            enddo
+            endif
+          endif
 ! DH* this block is in samfshalcnv_post
             do i=1,im
               Diag%rainc(i) = Diag%rainc(i) + frain * rain1(i)
