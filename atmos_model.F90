@@ -146,6 +146,7 @@ public setup_exportdata
      real(kind=8),             pointer, dimension(:,:)   :: area
      real(kind=8),             pointer, dimension(:,:,:) :: layer_hgt, level_hgt
      type(domain2d)                :: domain             ! domain decomposition
+     type(domain2d)                :: domain_for_read    ! domain decomposition
      type(time_type)               :: Time               ! current time
      type(time_type)               :: Time_step          ! atmospheric time step.
      type(time_type)               :: Time_init          ! reference time.
@@ -173,7 +174,9 @@ logical :: debug        = .false.
 !logical :: debug        = .true.
 logical :: sync         = .false.
 real    :: avg_max_length=3600.
-namelist /atmos_model_nml/ blocksize, chksum_debug, dycore_only, debug, sync, ccpp_suite, avg_max_length
+logical :: ignore_rst_cksum = .false.
+namelist /atmos_model_nml/ blocksize, chksum_debug, dycore_only, debug, sync, ccpp_suite, avg_max_length, &
+                           ignore_rst_cksum
 
 type (time_type) :: diag_time, diag_time_fhzero
 
@@ -553,7 +556,8 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
 !-----------------------------------------------------------------------
    call atmosphere_resolution (nlon, nlat, global=.false.)
    call atmosphere_resolution (mlon, mlat, global=.true.)
-   call atmosphere_domain (Atmos%domain, Atmos%layout, Atmos%regional, Atmos%nested, &
+   call atmosphere_domain (Atmos%domain, Atmos%domain_for_read, Atmos%layout, &
+                           Atmos%regional, Atmos%nested, &
                            Atmos%moving_nest_parent, Atmos%is_moving_nest, &
                            Atmos%ngrids, Atmos%mygrid, Atmos%pelist)
    call atmosphere_diag_axes (Atmos%axes)
@@ -718,7 +722,8 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    call GFS_restart_populate (GFS_restart_var, GFS_control, GFS_data%Statein, GFS_data%Stateout, GFS_data%Sfcprop, &
                               GFS_data%Coupling, GFS_data%Grid, GFS_data%Tbd, GFS_data%Cldprop,  GFS_data%Radtend, &
                               GFS_data%IntDiag, Init_parm, GFS_Diag)
-   call FV3GFS_restart_read (GFS_data, GFS_restart_var, Atm_block, GFS_control, Atmos%domain, Atm(mygrid)%flagstruct%warm_start)
+   call FV3GFS_restart_read (GFS_data, GFS_restart_var, Atm_block, GFS_control, Atmos%domain_for_read, &
+                             Atm(mygrid)%flagstruct%warm_start, ignore_rst_cksum)
    if(GFS_control%do_ca .and. Atm(mygrid)%flagstruct%warm_start)then
       call read_ca_restart (Atmos%domain,GFS_control%ncells,GFS_control%nca,GFS_control%ncells_g,GFS_control%nca_g)
    endif
@@ -3091,7 +3096,7 @@ end subroutine update_atmos_chemistry
    integer, pointer, intent(out) :: pelist(:)
 
    call get_nth_domain_info(n, layout, nx, ny, pelist)
- 
+
   end subroutine atmos_model_get_nth_domain_info
 
 end module atmos_model_mod
