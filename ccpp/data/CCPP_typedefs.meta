@@ -1824,6 +1824,13 @@
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
   kind = kind_phys
+[save_q(:,:,index_of_snow_mixing_ratio_in_tracer_concentration_array)]
+  standard_name = snow_mixing_ratio_save
+  long_name = ratio of mass of snow water to mass of dry air plus vapor (without condensates) before entering a physics scheme
+  units = kg kg-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
 [save_q(:,:,index_of_cloud_ice_mixing_ratio_in_tracer_concentration_array)]
   standard_name = ice_water_mixing_ratio_save
   long_name = cloud ice water mixing ratio before entering a physics scheme
@@ -2156,13 +2163,6 @@
   units = count
   dimensions = ()
   type = integer
-[ud_mf]
-  standard_name = instantaneous_atmosphere_updraft_convective_mass_flux
-  long_name = (updraft mass flux) * delt
-  units = kg m-2
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
-  type = real
-  kind = kind_phys
 [uustar_water]
   standard_name = surface_friction_velocity_over_water
   long_name = surface friction velocity over water

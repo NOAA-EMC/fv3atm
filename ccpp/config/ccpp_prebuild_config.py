@@ -176,7 +176,7 @@ SCHEME_FILES = [
     'physics/physics/satmedmfvdifq.F',
     'physics/physics/shinhongvdif.F90',
     'physics/physics/ysuvdif.F90',
-    'physics/physics/mynnpbl_wrapper.F90',
+    'physics/physics/mynnedmf_wrapper.F90',
     'physics/physics/mynnsfc_wrapper.F90',
     'physics/physics/sgscloud_radpre.F90',
     'physics/physics/sgscloud_radpost.F90',
@@ -213,6 +213,10 @@ SCHEME_FILES = [
     'physics/physics/sfc_sice.f',
     # HAFS FER_HIRES
     'physics/physics/mp_fer_hires.F90',
+    # SMOKE
+    'physics/smoke/rrfs_smoke_wrapper.F90',
+    'physics/smoke/rrfs_smoke_postpbl.F90',
+    'physics/smoke/rrfs_smoke_lsdep_wrapper.F90',
     # RRTMGP
     'physics/physics/rrtmgp_lw_gas_optics.F90',
     'physics/physics/rrtmgp_lw_cloud_optics.F90',
