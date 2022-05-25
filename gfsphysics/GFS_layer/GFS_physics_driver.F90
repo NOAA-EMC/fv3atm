@@ -3209,7 +3209,7 @@ module module_physics_driver
       endif   ! end if_ldiag3d/lgocart/cplchm
 
       if (Model%lgocart .or. Model%cplchm) then
-        Coupling%dqdti(1:im,:) = zero
+        Coupling%dqdti(1:im,:) = 0._kind_phys
       endif   ! end if_lgocart/cplchm
 
 #ifdef GFS_HYDRO
@@ -3592,7 +3592,7 @@ module module_physics_driver
                              Model%clam_deep,   Model%c0s_deep,                    &
                              Model%c1_deep,  Model%betal_deep, Model%betas_deep,   &
                              Model%evfact_deep, Model%evfactl_deep,                &
-                             Model%pgcon_deep,  Model%asolfac_deep, wet_deep) !lzhang
+                             Model%pgcon_deep,  Model%asolfac_deep, wet_deep)
 !           if (lprnt) print *,' rain1=',rain1(ipr)
           !elseif (Model%imfdeepcnv == 3) then
           !  if (Model%me==0) then
@@ -4192,9 +4192,9 @@ module module_physics_driver
                               Statein%vvl, ncld, Diag%hpbl, ud_mf,                 &
                               dt_mf, cnvw, cnvc,                                   &
                               Model%clam_shal,  Model%c0s_shal, Model%c1_shal,     &
-                              Model%pgcon_shal,Model%asolfac_shal, wet_shallow)!lzhang
+                              Model%pgcon_shal,Model%asolfac_shal, wet_shallow)
 
-! Sum convective wet depositoin from deep and shallow !lzhang
+! Sum convective wet depositoin from deep and shallow
           if (trans_aero) then
             if (associated(Model%ntdiag)) then
             ic = 0
@@ -4203,7 +4203,7 @@ module module_physics_driver
               ic = ic + 1
               do i=1,im
               !convert unit: kg/m2/s
-              Diag%wetdpc(i,ic) = 1.e-9*(max(0.,wet_deep(i,n)) +max(0., wet_shallow(i,n))) !lzhang
+              Diag%wetdpc(i,ic) = 1.e-9*(max(0.,wet_deep(i,n)) +max(0., wet_shallow(i,n)))
               enddo
              endif
             enddo

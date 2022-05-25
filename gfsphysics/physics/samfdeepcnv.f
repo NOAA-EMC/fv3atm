@@ -87,7 +87,7 @@
 !    &     QLCN, QICN, w_upi, cf_upi, CNV_MFD, CNV_PRC3,
      &     CNV_DQLDT,CLCN,CNV_FICE,CNV_NDROP,CNV_NICE,mp_phys,
      &     clam,c0s,c1,betal,betas,evfact,evfactl,pgcon,asolfac,
-     &     wet_deep) !lzhang
+     &     wet_deep)
 !
       use machine , only : kind_phys
       use funcphys , only : fpvs
@@ -226,7 +226,7 @@ c  physical parameters
      &                     ctr(im,km,ntr), ctro(im,km,ntr)
 !  for aerosol transport
       real(kind=kind_phys) qaero(im,km,ntc)
-      real(kind=kind_phys) wet_deep(im,ntc) !lzhang
+      real(kind=kind_phys) wet_deep(im,ntc)
 !  for updraft velocity calculation
       real(kind=kind_phys) wu2(im,km),     buo(im,km),    drag(im,km)
       real(kind=kind_phys) wc(im),         scaldfunc(im), sigmagfm(im)
@@ -323,7 +323,7 @@ c
         xpwev(i)= 0.
         vshear(i) = 0.
         gdx(i) = sqrt(garea(i))
-        wet_deep(i,:)=0. !lzhang
+        wet_deep(i,:)=0.
       enddo
 !
 !>  - determine aerosol-aware rain conversion parameter over land
@@ -2707,9 +2707,8 @@ c
           do k = 1, km
             do i = 1, im
               if(cnvflg(i) .and. rn(i) > 0.) then
-                !if (k <= kmax(i)) qtr(i,k,kk) = qaero(i,k,n)
-                if (k <= kmax(i)) then !lzhang
-                !convert wetdeposition into ug/m2/s !lzhang
+                if (k <= kmax(i)) then
+                !convert wetdeposition into ug/m2/s
                 wet_deep(i,n) = wet_deep(i,n)
      &   + ((qtr(i,k,kk)-qaero(i,k,n))*delp(i,k)/(g*delt))
                 qtr(i,k,kk) = qaero(i,k,n)
