@@ -4,16 +4,12 @@
   branch = dev/emc
 [submodule "ccpp/framework"]
   path = ccpp/framework
-  url = https://github.com/mkavulich/ccpp-framework
-  branch = feature/improve_track_variables
-  #url = https://github.com/NCAR/ccpp-framework
-  #branch = main
+  url = https://github.com/NCAR/ccpp-framework
+  branch = main
 [submodule "ccpp/physics"]
   path = ccpp/physics
-  url = https://github.com/dustinswales/ccpp-physics
-  branch = update_rte_for_CCPP_v6
-  #url = https://github.com/NCAR/ccpp-physics
-  #branch = main
+  url = https://github.com/NCAR/ccpp-physics
+  branch = main
 [submodule "upp"]
   path = upp
   url = https://github.com/NOAA-EMC/UPP
