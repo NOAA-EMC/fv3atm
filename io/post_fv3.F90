@@ -36,6 +36,7 @@ module post_fv3
 !                                       and  HAFS. 
 !                                     6)read 3D cloud fraction from cld_amt for GFDL MP,
 !                                       and from cldfra for other MPs.
+!     Jun 2022    J. Meng             2D decomposition
 !
 !-----------------------------------------------------------------------
 !*** run post on write grid comp
@@ -862,9 +863,6 @@ module post_fv3
                 line=__LINE__, file=__FILE__)) return  ! bail out
 !           print *,'in post_lam, get land field value,fillvalue=',fillvalue
 
-!JESSE 20220222 keep consistent ista/iend but keep the footprint of lbound/ubound setting
-!          ista = lbound(arrayr42d,1)
-!          iend = ubound(arrayr42d,1)
           !$omp parallel do default(none),private(i,j),shared(jsta,jend,ista,iend,spval,arrayr42d,sm,fillValue)
           do j=jsta, jend
             do i=ista, iend
@@ -897,9 +895,6 @@ module post_fv3
                 line=__LINE__, file=__FILE__)) return  ! bail out
 !           if(mype==0) print *,'in post_lam, get icec  field value,fillvalue=',fillvalue
 
-!JESSE 20220222 keep consistent ista/iend but keep the footprint of lbound/ubound setting
-!          ista = lbound(arrayr42d,1)
-!          iend = ubound(arrayr42d,1)
           !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,sice,arrayr42d,sm,fillValue)
           do j=jsta, jend
             do i=ista, iend
