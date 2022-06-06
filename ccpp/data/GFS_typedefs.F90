@@ -575,6 +575,10 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: pfi_lsan(:,:)   => null()  !< instantaneous 3D flux of ice    nonconvective precipitation (kg m-2 s-1)
     real (kind=kind_phys), pointer :: pfl_lsan(:,:)   => null()  !< instantaneous 3D flux of liquid nonconvective precipitation (kg m-2 s-1)
 
+    !-- prognostic updraft area fraction coupling in convection
+    real (kind=kind_phys), pointer :: tmf (:,:) => null()         !< tmf to be passed from turublence scheme to convection
+    real (kind=kind_phys), pointer :: dqdt_qmicro(:,:) => null()  !< instantanious microphysics tendency to be passed from MP to convection
+
     !--- instantaneous total moisture tendency for smoke coupling:
     real (kind=kind_phys), pointer :: dqdti   (:,:)   => null()  !< rrfs_smoke=true only; instantaneous total moisture tendency (kg/kg/s)
 
@@ -1021,6 +1025,7 @@ module GFS_typedefs
     integer              :: imfshalcnv_gf       = 3 !< flag for scale- & aerosol-aware Grell-Freitas scheme (GSD)
     integer              :: imfshalcnv_ntiedtke = 4 !< flag for new Tiedtke scheme (CAPS)
     logical              :: hwrf_samfdeep           !< flag for HWRF SAMF deepcnv scheme (HWRF)
+    logical              :: progsigma               !< flag for prognostic area fraction in samf ddepcnv scheme (GFS)   
     integer              :: imfdeepcnv      !< flag for mass-flux deep convection scheme
                                             !<     1: July 2010 version of SAS conv scheme
                                             !<           current operational version as of 2016
@@ -1287,6 +1292,7 @@ module GFS_typedefs
     integer              :: ntgv            !< tracer index for graupel particle volume
     integer              :: nthv            !< tracer index for hail particle volume
     integer              :: ntke            !< tracer index for kinetic energy
+    integer              :: ntsigma         !< tracer index for updraft area fraction  
     integer              :: nto             !< tracer index for oxygen ion
     integer              :: nto2            !< tracer index for oxygen
     integer              :: ntwa            !< tracer index for water friendly aerosol
@@ -2712,6 +2718,14 @@ module GFS_typedefs
       Coupling%psurfi_cpl  = clear_val
     endif
 
+    !--prognostic closure - moisture coupling
+    if(Model%progsigma)then
+       allocate(Coupling%dqdt_qmicro (IM,Model%levs))
+       allocate(Coupling%tmf (IM,Model%levs))
+       Coupling%tmf = clear_val
+       Coupling%dqdt_qmicro = clear_val
+    endif
+
     !--- stochastic physics option
     if (Model%do_sppt .or. Model%ca_global) then
       allocate (Coupling%sppt_wts  (IM,Model%levs))
@@ -3176,6 +3190,7 @@ module GFS_typedefs
 
     logical              :: hwrf_samfdeep     = .false.               !< flag for HWRF SAMF deepcnv scheme
     logical              :: hwrf_samfshal     = .false.               !< flag for HWRF SAMF shalcnv scheme
+    logical              :: progsigma         = .false.               !< flag for prognostic updraft area fraction closure in saSAS
     logical              :: do_mynnedmf       = .false.               !< flag for MYNN-EDMF
     logical              :: do_mynnsfclay     = .false.               !< flag for MYNN Surface Layer Scheme
     ! DH* TODO - move to MYNN namelist section
@@ -3478,7 +3493,7 @@ module GFS_typedefs
                                do_ugwp_v1, do_ugwp_v1_orog_only,  do_ugwp_v1_w_gsldrag,     &
                                var_ric, coef_ric_l, coef_ric_s, hurr_pbl,                   &
                                do_myjsfc, do_myjpbl,                                        &
-                               hwrf_samfdeep, hwrf_samfshal,                                &
+                               hwrf_samfdeep, hwrf_samfshal,progsigma,                      &
                                h2o_phys, pdfcld, shcnvcw, redrag, hybedmf, satmedmf,        &
                                shinhong, do_ysu, dspheat, lheatstrg, lseaspray, cnvcld,     &
                                random_clds, shal_cnv, imfshalcnv, imfdeepcnv, isatmedmf,    &
@@ -4133,6 +4148,12 @@ module GFS_typedefs
     Model%hwrf_samfdeep = hwrf_samfdeep
     Model%hwrf_samfshal = hwrf_samfshal
 
+    if (progsigma .and. imfdeepcnv/=2) then
+       write(*,*) 'Logic error: progsigma requires imfdeepcnv=2'
+       stop
+    end if
+    Model%progsigma = progsigma
+
     if (oz_phys .and. oz_phys_2015) then
        write(*,*) 'Logic error: can only use one ozone physics option (oz_phys or oz_phys_2015), not both. Exiting.'
        stop
@@ -4413,6 +4434,7 @@ module GFS_typedefs
     Model%ntgv             = get_tracer_index(Model%tracer_names, 'graupel_vol',Model%me, Model%master, Model%debug)
     Model%nthv             = get_tracer_index(Model%tracer_names, 'hail_vol',   Model%me, Model%master, Model%debug)
     Model%ntke             = get_tracer_index(Model%tracer_names, 'sgs_tke',    Model%me, Model%master, Model%debug)
+    Model%ntsigma          = get_tracer_index(Model%tracer_names, 'sigmab',     Model%me, Model%master, Model%debug)
     Model%nqrimef          = get_tracer_index(Model%tracer_names, 'q_rimef',    Model%me, Model%master, Model%debug)
     Model%ntwa             = get_tracer_index(Model%tracer_names, 'liq_aero',   Model%me, Model%master, Model%debug)
     Model%ntia             = get_tracer_index(Model%tracer_names, 'ice_aero',   Model%me, Model%master, Model%debug)
@@ -6012,6 +6034,7 @@ module GFS_typedefs
       print *, ' ntgv              : ', Model%ntgv
       print *, ' nthv              : ', Model%nthv
       print *, ' ntke              : ', Model%ntke
+      print *, ' ntsigma           : ', Model%ntsigma
       print *, ' nto               : ', Model%nto
       print *, ' nto2              : ', Model%nto2
       print *, ' ntwa              : ', Model%ntwa
@@ -6253,6 +6276,11 @@ module GFS_typedefs
     allocate (Tbd%hpbl (IM))
     Tbd%hpbl     = clear_val
 
+    if (Model%imfdeepcnv == Model%imfdeepcnv_gf .or. Model%imfdeepcnv == Model%imfdeepcnv_ntiedtke .or. Model%imfdeepcnv == Model%imfdeepcnv_samf .or. Model%imfshalcnv == Model%imfshalcnv_samf) then
+       allocate(Tbd%prevsq(IM, Model%levs))
+       Tbd%prevsq = clear_val
+    endif
+
     if (Model%imfdeepcnv .ge. 0 .or. Model%imfshalcnv .ge. 0) then
        allocate(Tbd%ud_mf(IM, Model%levs))
        Tbd%ud_mf = zero
@@ -6261,12 +6289,11 @@ module GFS_typedefs
     if (Model%imfdeepcnv == Model%imfdeepcnv_gf .or. Model%imfdeepcnv == Model%imfdeepcnv_ntiedtke) then
        allocate(Tbd%forcet(IM, Model%levs))
        allocate(Tbd%forceq(IM, Model%levs))
+       allocate(Tbd%forcet(IM, Model%levs))
        allocate(Tbd%prevst(IM, Model%levs))
-       allocate(Tbd%prevsq(IM, Model%levs))
        Tbd%forcet = clear_val
        Tbd%forceq = clear_val
        Tbd%prevst = clear_val
-       Tbd%prevsq = clear_val
     end if
 
     if (Model%imfdeepcnv == Model%imfdeepcnv_gf) then
