@@ -12,5 +12,5 @@
   branch = main
 [submodule "upp"]
   path = upp
-  url = https://github.com/WenMeng-NOAA/UPP
-  branch = post_2d_decomp
+  url = https://github.com/NOAA-EMC/UPP.git
+  branch = develop
