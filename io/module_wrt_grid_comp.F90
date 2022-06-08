@@ -3296,6 +3296,8 @@
           if (ESMF_LogFoundNetCDFError(ncerr, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
           ncerr = nf90_put_att(ncid, timeiso_varid, "description", "ISO 8601 datetime string")
           if (ESMF_LogFoundNetCDFError(ncerr, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+          ncerr = nf90_put_att(ncid, timeiso_varid, "_Encoding", "UTF-8")
+          if (ESMF_LogFoundNetCDFError(ncerr, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
           ncerr = nf90_enddef(ncid=ncid)
 
