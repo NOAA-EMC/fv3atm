@@ -4709,17 +4709,17 @@ module GFS_typedefs
     allocate(Model%fscav(Model%ntchm))
     if (Model%ntchm > 0) then
       ! -- initialize to default
-      Model%fscav = 0.6_kind_phys
+      Model%fscav = 0.5_kind_phys
       n = get_tracer_index(Model%tracer_names, 'seas1', Model%me, Model%master, Model%debug) - Model%ntchs + 1
-      if (n > 0) Model%fscav(n) = 1.0_kind_phys
+      if (n > 0) Model%fscav(n) = 0.4_kind_phys
       n = get_tracer_index(Model%tracer_names, 'seas2', Model%me, Model%master, Model%debug) - Model%ntchs + 1
-      if (n > 0) Model%fscav(n) = 1.0_kind_phys
+      if (n > 0) Model%fscav(n) = 0.4_kind_phys
       n = get_tracer_index(Model%tracer_names, 'seas3', Model%me, Model%master, Model%debug) - Model%ntchs + 1
-      if (n > 0) Model%fscav(n) = 1.0_kind_phys
+      if (n > 0) Model%fscav(n) = 0.4_kind_phys
       n = get_tracer_index(Model%tracer_names, 'seas4', Model%me, Model%master, Model%debug) - Model%ntchs + 1
-      if (n > 0) Model%fscav(n) = 1.0_kind_phys
+      if (n > 0) Model%fscav(n) = 0.4_kind_phys
       n = get_tracer_index(Model%tracer_names, 'seas5', Model%me, Model%master, Model%debug) - Model%ntchs + 1
-      if (n > 0) Model%fscav(n) = 1.0_kind_phys
+      if (n > 0) Model%fscav(n) = 0.4_kind_phys
       ! -- read factors from namelist
       do i = 1, size(fscav_aero)
         j = index(fscav_aero(i),":")
