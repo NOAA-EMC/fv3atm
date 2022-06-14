@@ -132,6 +132,10 @@ module GFS_restart
     if(Model%lrefres) then
        Restart%num3d = Model%ntot3d+1
     endif
+    ! General Convection
+    if (Model%imfdeepcnv == Model%imfdeepcnv_gf) then
+      Restart%num3d = Restart%num3d + 1
+    endif
     ! GF
     if (Model%imfdeepcnv == 3) then
       Restart%num3d = Restart%num3d + 3
@@ -139,6 +143,18 @@ module GFS_restart
     ! MYNN PBL
     if (Model%do_mynnedmf) then
       Restart%num3d = Restart%num3d + 9
+    endif
+    !Prognostic area fraction
+    if (Model%progsigma) then
+       Restart%num3d = Restart%num3d + 2
+    endif
+
+    if (Model%num_dfi_radar > 0) then
+      do itime=1,Model%dfi_radar_max_intervals
+        if(Model%ix_dfi_radar(itime)>0) then
+          Restart%num3d = Restart%num3d + 1
+        endif
+      enddo
     endif
 
     allocate (Restart%name2d(Restart%num2d))
@@ -419,12 +435,36 @@ module GFS_restart
         Restart%data(nb,num)%var3p => IntDiag(nb)%refl_10cm(:,:)
       enddo
     endif
-
     if (Model%lrefres) then
        num = Model%ntot3d+1
     else
        num = Model%ntot3d
     endif
+
+    !Prognostic closure
+    if(Model%progsigma)then
+       num = num + 1
+       Restart%name3d(num) = 'sas_3d_qgrs_dsave'
+      do nb = 1,nblks
+        Restart%data(nb,num)%var3p => Tbd(nb)%prevsq(:,:)
+      enddo
+      num = num + 1
+      Restart%name3d(num) = 'sas_3d_dqdt_qmicro'
+      do nb = 1,nblks
+        Restart%data(nb,num)%var3p => Coupling(nb)%dqdt_qmicro(:,:)
+      enddo
+    endif
+
+    !--Convection variable used in CB cloud fraction. Presently this
+    !--is only needed in sgscloud_radpre for imfdeepcnv == imfdeepcnv_gf.
+    if (Model%imfdeepcnv == Model%imfdeepcnv_gf) then
+      num = num + 1
+      Restart%name3d(num) = 'cnv_3d_ud_mf'
+      do nb = 1,nblks
+        Restart%data(nb,num)%var3p => Tbd(nb)%ud_mf(:,:)
+      enddo
+    endif
+
     !--- RAP/HRRR-specific variables, 3D
     ! GF
     if (Model%imfdeepcnv == Model%imfdeepcnv_gf) then

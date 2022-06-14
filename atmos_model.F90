@@ -2211,6 +2211,105 @@ end subroutine update_atmos_chemistry
             endif
           endif
 
+! get upward LW flux:  for open ocean
+!----------------------------------------------
+          fldname = 'mean_up_lw_flx_ocn'
+          if (trim(impfield_name) == trim(fldname) .and. GFS_control%use_med_flux) then
+            findex  = queryImportFields(fldname)
+            if (importFieldsValid(findex)) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
+              do j=jsc,jec
+                do i=isc,iec
+                  nb = Atm_block%blkno(i,j)
+                  ix = Atm_block%ixp(i,j)
+                  if (GFS_data(nb)%Sfcprop%oceanfrac(ix) > zero) then
+                    GFS_data(nb)%Coupling%ulwsfcin_med(ix) = -datar8(i,j)
+                  endif
+                enddo
+              enddo
+              if (mpp_pe() == mpp_root_pe() .and. debug)  print *,'fv3 assign_import: get lwflx for open ocean from mediator'
+            endif
+          endif
+
+! get latent heat flux:  for open ocean
+!------------------------------------------------
+          fldname = 'mean_laten_heat_flx_atm_into_ocn'
+          if (trim(impfield_name) == trim(fldname) .and. GFS_control%use_med_flux) then
+            findex  = queryImportFields(fldname)
+            if (importFieldsValid(findex)) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
+              do j=jsc,jec
+                do i=isc,iec
+                  nb = Atm_block%blkno(i,j)
+                  ix = Atm_block%ixp(i,j)
+                  if (GFS_data(nb)%Sfcprop%oceanfrac(ix) > zero) then
+                    GFS_data(nb)%Coupling%dqsfcin_med(ix) = -datar8(i,j)
+                  endif
+                enddo
+              enddo
+              if (mpp_pe() == mpp_root_pe() .and. debug)  print *,'fv3 assign_import: get laten_heat for open ocean from mediator'
+            endif
+          endif
+
+! get sensible heat flux:  for open ocean
+!--------------------------------------------------
+          fldname = 'mean_sensi_heat_flx_atm_into_ocn'
+          if (trim(impfield_name) == trim(fldname) .and. GFS_control%use_med_flux) then
+            findex  = queryImportFields(fldname)
+            if (importFieldsValid(findex)) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
+              do j=jsc,jec
+                do i=isc,iec
+                  nb = Atm_block%blkno(i,j)
+                  ix = Atm_block%ixp(i,j)
+                  if (GFS_data(nb)%Sfcprop%oceanfrac(ix) > zero) then
+                    GFS_data(nb)%Coupling%dtsfcin_med(ix) = -datar8(i,j)
+                  endif
+                enddo
+              enddo
+              if (mpp_pe() == mpp_root_pe() .and. debug)  print *,'fv3 assign_import: get sensi_heat for open ocean from mediator'
+            endif
+          endif
+
+! get zonal compt of momentum flux:  for open ocean
+!------------------------------------------------------------
+          fldname = 'stress_on_air_ocn_zonal'
+          if (trim(impfield_name) == trim(fldname) .and. GFS_control%use_med_flux) then
+            findex  = queryImportFields(fldname)
+            if (importFieldsValid(findex)) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
+              do j=jsc,jec
+                do i=isc,iec
+                  nb = Atm_block%blkno(i,j)
+                  ix = Atm_block%ixp(i,j)
+                  if (GFS_data(nb)%Sfcprop%oceanfrac(ix) > zero) then
+                    GFS_data(nb)%Coupling%dusfcin_med(ix) = -datar8(i,j)
+                  endif
+                enddo
+              enddo
+              if (mpp_pe() == mpp_root_pe() .and. debug)  print *,'fv3 assign_import: get zonal_moment_flx for open ocean from mediator'
+            endif
+          endif
+
+! get meridional compt of momentum flux:  for open ocean
+!-----------------------------------------------------------------
+          fldname = 'stress_on_air_ocn_merid'
+          if (trim(impfield_name) == trim(fldname) .and. GFS_control%use_med_flux) then
+            findex  = queryImportFields(fldname)
+            if (importFieldsValid(findex)) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
+              do j=jsc,jec
+                do i=isc,iec
+                  nb = Atm_block%blkno(i,j)
+                  ix = Atm_block%ixp(i,j)
+                  if (GFS_data(nb)%Sfcprop%oceanfrac(ix) > zero) then
+                    GFS_data(nb)%Coupling%dvsfcin_med(ix) = -datar8(i,j)
+                  endif
+                enddo
+              enddo
+              if (mpp_pe() == mpp_root_pe() .and. debug)  print *,'fv3 assign_import: get merid_moment_flx for open ocean from mediator'
+            endif
+          endif
 
         endif ! if (datar8(isc,jsc) > -99999.0) then
 

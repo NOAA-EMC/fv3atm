@@ -1141,8 +1141,12 @@ contains
     if (Model%ntke > 0) Interstitial%ntkev = Interstitial%nvdiff
 
     if (Model%ntiw > 0) then
-      if (Model%ntclamt > 0) then
+      if (Model%ntclamt > 0 .and. Model%ntsigma <= 0) then
         Interstitial%nn = Model%ntrac - 2
+      elseif (Model%ntclamt <= 0 .and. Model%ntsigma > 0) then
+        Interstitial%nn = Model%ntrac - 2
+      elseif  (Model%ntclamt > 0 .and. Model%ntsigma > 0) then
+        Interstitial%nn = Model%ntrac - 3
       else
         Interstitial%nn = Model%ntrac - 1
       endif
@@ -1162,7 +1166,8 @@ contains
              n /= Model%ntrw  .and. n /= Model%ntsw  .and. n /= Model%ntrnc   .and. &
              n /= Model%ntsnc .and. n /= Model%ntgl  .and. n /= Model%ntgnc   .and. &
              n /= Model%nthl  .and. n /= Model%nthnc .and. n /= Model%ntgv    .and. &
-             n /= Model%nthv  .and. n /= Model%ntccn .and. n /= Model%ntccna )
+             n /= Model%nthv  .and. n /= Model%ntccn .and. n /= Model%ntccna .and.  &
+             n /= Model%ntsigma)
         Interstitial%otsptflag(n) = ltest
         if ( ltest ) then
           tracers = tracers + 1
