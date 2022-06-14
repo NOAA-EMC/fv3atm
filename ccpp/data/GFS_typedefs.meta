@@ -309,6 +309,14 @@
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
   kind = kind_phys
+[qgrs(:,:,index_of_updraft_area_fraction_in_tracer_concentration_array)]
+  standard_name = prognostic_updraft_area_fraction_in_convection
+  long_name = convective updraft area fraction
+  units = frac
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = (index_of_updraft_area_fraction_in_tracer_concentration_array > 0 )
 [qgrs(:,:,index_for_smoke_in_tracer_concentration_array)]
   standard_name = smoke_tracer_concentration
   long_name = concentration of smoke
@@ -559,7 +567,14 @@
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
   kind = kind_phys
-
+[gq0(:,:,index_of_updraft_area_fraction_in_tracer_concentration_array)]
+  standard_name = updraft_area_fraction_updated_by_physics
+  long_name = convective updraft area fraction updated by physics
+  units = frac
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = ( index_of_updraft_area_fraction_in_tracer_concentration_array > 0 )
 ########################################################################
 [ccpp-table-properties]
   name = GFS_sfcprop_type
@@ -2315,6 +2330,46 @@
   type = real
   kind = kind_phys
   active = (flag_for_surface_flux_coupling)
+[ulwsfcin_med]
+  standard_name = surface_upwelling_longwave_flux_over_ocean_from_mediator
+  long_name = surface upwelling LW flux over ocean for coupling
+  units = W m-2
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (flag_for_surface_flux_coupling .and. do_mediator_atmosphere_ocean_fluxes)
+[dusfcin_med]
+  standard_name = surface_x_momentum_flux_over_ocean_from_mediator
+  long_name = sfc x momentum flux over ocean for coupling
+  units = Pa
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (flag_for_surface_flux_coupling .and. do_mediator_atmosphere_ocean_fluxes)
+[dvsfcin_med]
+  standard_name = surface_y_momentum_flux_over_ocean_from_mediator
+  long_name = sfc y momentum flux over ocean for coupling
+  units = Pa
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (flag_for_surface_flux_coupling .and. do_mediator_atmosphere_ocean_fluxes)
+[dtsfcin_med]
+  standard_name = surface_upward_sensible_heat_flux_over_ocean_from_mediator
+  long_name = sfc sensible heat flux input over ocean for coupling
+  units = W m-2
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (flag_for_surface_flux_coupling .and. do_mediator_atmosphere_ocean_fluxes)
+[dqsfcin_med]
+  standard_name = surface_upward_latent_heat_flux_over_ocean_from_mediator
+  long_name = sfc latent heat flux input over ocean for coupling
+  units = W m-2
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (flag_for_surface_flux_coupling .and. do_mediator_atmosphere_ocean_fluxes)
 [hsnoin_cpl]
   standard_name = lwe_surface_snow_from_coupled_process
   long_name = sfc snow depth in meters over sea ice for coupling
@@ -2330,6 +2385,22 @@
   type = real
   kind = kind_phys
   active = (flag_for_surface_flux_coupling)
+[tmf]
+  standard_name = instantaneous_tendency_of_specific_humidity_due_to_PBL
+  long_name = instantaneous_tendency_of_specific_humidity_due_to_PBL
+  units = kg kg-1 s-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = (do_prognostic_updraft_area_fraction)
+[dqdt_qmicro]
+  standard_name = instantaneous_tendency_of_specific_humidity_due_to_microphysics
+  long_name = instantaneous_tendency_of_specific_humidity_due_to_microphysics
+  units = kg kg-1 s-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = (do_prognostic_updraft_area_fraction)
 [ca_deep]
   standard_name = cellular_automata_area_fraction_for_deep_convection_from_coupled_process
   long_name = fraction of cellular automata for deep convection
@@ -2966,6 +3037,12 @@
 [lsidea]
   standard_name = flag_for_integrated_dynamics_through_earths_atmosphere
   long_name = flag for idealized physics
+  units = flag
+  dimensions = ()
+  type = logical
+[use_med_flux]
+  standard_name = do_mediator_atmosphere_ocean_fluxes
+  long_name = flag for using atmosphere-ocean fluxes form mediator (default false)
   units = flag
   dimensions = ()
   type = logical
@@ -4509,6 +4586,12 @@
   units = flag
   dimensions = ()
   type = logical
+[progsigma]
+  standard_name = do_prognostic_updraft_area_fraction
+  long_name = do_prognostic_updraft_area_fraction
+  units = flag
+  dimensions = ()
+  type = logical
 [isatmedmf]
   standard_name = choice_of_scale_aware_TKE_moist_EDMF_PBL
   long_name = choice of scale-aware TKE moist EDMF PBL scheme
@@ -5380,6 +5463,12 @@
 [ntke]
   standard_name = index_of_turbulent_kinetic_energy_in_tracer_concentration_array
   long_name = tracer index for turbulent kinetic energy
+  units = index
+  dimensions = ()
+  type = integer
+[ntsigma]
+  standard_name = index_of_updraft_area_fraction_in_tracer_concentration_array
+  long_name = tracer index of updraft_area_fraction
   units = index
   dimensions = ()
   type = integer
@@ -6750,7 +6839,7 @@
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
   kind = kind_phys
-  active = (control_for_deep_convection_scheme == identifier_for_grell_freitas_deep_convection .or. control_for_deep_convection_scheme == identifier_for_new_tiedtke_deep_convection)
+  active = (control_for_deep_convection_scheme == identifier_for_grell_freitas_deep_convection .or. control_for_deep_convection_scheme == identifier_for_new_tiedtke_deep_convection .or. control_for_deep_convection_scheme == identifer_for_scale_aware_mass_flux_deep_convection .or. control_for_shallow_convection_scheme == identifier_for_scale_aware_mass_flux_shallow_convection)
 [cactiv]
   standard_name = counter_for_grell_freitas_convection
   long_name = convective activity memory
