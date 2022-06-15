@@ -8,8 +8,6 @@
   branch = main
 [submodule "ccpp/physics"]
   path = ccpp/physics
-  #url = https://github.com/NCAR/ccpp-physics
-  #branch = main
   url = https://github.com/SamuelTrahanNOAA/ccpp-physics
   branch = bugfix/gf_decomp_b4b
 [submodule "upp"]
