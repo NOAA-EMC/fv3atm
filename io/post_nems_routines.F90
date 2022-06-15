@@ -3,12 +3,13 @@
 !-----------------------------------------------------------------------
 !
     subroutine post_alctvars(imi,jmi,lmi,mype,nwtlpes,lead_write, mpicomp,  &
-                             jts,jte,jtsgrp,jtegrp)
+                             jts,jte,jtsgrp,jtegrp,its,ite,itsgrp,itegrp)
+!                             jts,jte,jtsgrp,jtegrp)
 !
 !
 !   revision history:
 !    Jul 2019 Jun Wang: allocate arrays for post processing
-!
+!    Feb 2022 J. Meng/B. Cui: create interface to run inline post with post_2d_decomp
 !
 !-----------------------------------------------------------------------
 !*** allocate post variables
@@ -23,6 +24,10 @@
                             ioform, jsta, jend, jsta_m, jsta_m2, &
                             jend_m, jend_m2, jvend_2u, jsta_2l, jend_2u, iup, idn, &
                             icnt, idsp, mpi_comm_comp, num_servers,     &
+                            modelname, numx, ista, iend, ista_m, ista_m2, &
+                            iend_m, iend_m2, ista_2l, iend_2u, &
+                            ileft,iright,ileftb,irightb, &
+                            icnt2, idsp2,isxa,iexa,jsxa,jexa, &
                             num_procs
 !
 !-----------------------------------------------------------------------
@@ -37,6 +42,8 @@
       integer,intent(in)            :: lead_write
       integer,intent(in)            :: jts,jte
       integer,intent(in)            :: jtsgrp(nwtlpes),jtegrp(nwtlpes)
+      integer,intent(in)            :: its,ite
+      integer,intent(in)            :: itsgrp(nwtlpes),itegrp(nwtlpes)
 !
 !-----------------------------------------------------------------------
 !***  LOCAL VARIABLES
@@ -44,6 +51,7 @@
 !
       integer i,j,l
       integer last_write_task
+      integer isumm,isumm2
 !
 !-----------------------------------------------------------------------
 !*** get dims from int_state
@@ -78,13 +86,27 @@
       jsta_m2 = jsta
       jend_m  = jend
       jend_m2 = jend
-      if ( mype == lead_write ) then
+      if ( mype<(lead_write+numx) ) then
          jsta_m  = 2
          jsta_m2 = 3
       end if
-      if ( mype == last_write_task ) then
+      if ( mype>(last_write_task-numx) ) then
          jend_m  = jm - 1
          jend_m2 = jm - 2
+      end if
+      ista = its
+      iend = ite
+      ista_m  = ista
+      ista_m2 = ista
+      iend_m  = iend
+      iend_m2 = iend
+      if(mod(me,numx)==0)then
+        ista_m=2
+        ista_m2=3
+      end if
+      if(mod(me+1,numx)==0)then
+        iend_m=im-1
+        iend_m2=im-2
       end if
 !** neighbors
       iup = mype + 1 - lead_write
@@ -100,22 +122,69 @@
 !
 !     counts, disps for gatherv and scatterv
 !
+      isumm=0
+      isumm2=0
+      allocate(isxa(0:num_procs-1) )
+      allocate(jsxa(0:num_procs-1) )
+      allocate(iexa(0:num_procs-1) )
+      allocate(jexa(0:num_procs-1) )
+
       do i = 1, num_procs
-       icnt(i-1) = (jtegrp(i)-jtsgrp(i)+1)*im
-       idsp(i-1) = (jtsgrp(i)-1)*im
-!       if ( mype .eq. lead_write ) then
-!           print *, ' i, icnt(i),idsp(i) = ',i-1,icnt(i-1),idsp(i-1)
-!       end if
+       icnt(i-1) = (jtegrp(i)-jtsgrp(i)+1)*(itegrp(i)-itsgrp(i)+1)
+       isxa(i-1) = itsgrp(i)
+       iexa(i-1) = itegrp(i)
+       jsxa(i-1) = jtsgrp(i)
+       jexa(i-1) = jtegrp(i)
+       idsp(i-1) = isumm
+       isumm=isumm+icnt(i-1)
+       if(jtsgrp(i)==1 .or. jtegrp(i)==jm) then
+          icnt2(i-1) = (itegrp(i)-itsgrp(i)+1)
+       else
+          icnt2(i-1) = 0
+       endif
+       idsp2(i-1)=isumm2
+       if(jtsgrp(i)==1 .or. jtegrp(i)==jm) isumm2=isumm2+(itegrp(i)-itsgrp(i)+1)
+
       enddo
+!      write(6,'(a25,i4,16i8)') 'JESSE,me,icnt2,idsp2=',me,icnt2(0:num_procs-1),idsp2(0:num_procs-1)
 !
 !     extraction limits -- set to two rows
 !
       jsta_2l = max(jsta - 2,  1 )
       jend_2u = min(jend + 2, jm )
+      if(modelname=='GFS') then
+        ista_2l=max(ista-2,0)
+        iend_2u=min(iend+2,im+1)
+      else
+        ista_2l = max(ista - 2,  1 )
+        iend_2u = min(iend + 2, im )
+      endif
 ! special for c-grid v
       jvend_2u = min(jend + 2, jm+1 )
-      if(mype==0)print *,'im=',im,'jsta_2l=',jsta_2l,'jend_2u=',jend_2u,'lm=',lm
-!
+!      if(mype==0)print *,'im=',im,'jsta_2l=',jsta_2l,'jend_2u=',jend_2u,'lm=',lm
+!      print 901,'GWVX mype/me=',mype,me,'im=',im,'jsta   =',jsta   ,'jend   =',jend   ,'lm=',lm
+!      print 901,'GWVX mype/me=',mype,me,'im=',im,'jsta_m =',jsta_m ,'jend_m =',jend_m ,'lm=',lm
+!      print 901,'GWVX mype/me=',mype,me,'im=',im,'jsta_2l=',jsta_2l,'jend_2u=',jend_2u,'lm=',lm
+!      print 901,'GWVX mype/me=',mype,me,'im=',im,'ista   =',ista   ,'iend   =',iend   ,'lm=',lm
+!      print 901,'GWVX mype/me=',mype,me,'im=',im,'ista_m =',ista_m ,'iend_m =',iend_m ,'lm=',lm
+!      print 901,'GWVX mype/me=',mype,me,'im=',im,'ista_2l=',ista_2l,'iend_2u=',iend_2u,'lm=',lm
+!  901 format(a15,2i4,4(1x,a8,i4))
+!       NEW neighbors
+      ileft = me - 1
+      iright = me + 1
+       iup=MPI_PROC_NULL
+       idn=MPI_PROC_NULL
+!    if(mod(me,numx) .eq. 0) print *,' LEFT POINT',mype,me
+!    if(mod(me+1,numx) .eq. 0) print *,' RIGHT  POINT',mype,me
+    if(mod(me,numx) .eq. 0) ileft=MPI_PROC_NULL
+    if(mod(me,numx) .eq. 0) ileftb=me+numx-1
+!    if(mod(me,numx) .eq. 0) print *,' GWVX ILEFTB ',ileftb,mype,me,numx
+    if(mod(me+1,numx) .eq. 0 .or. me .eq. num_procs-1)  iright=MPI_PROC_NULL
+    if(mod(me+1,numx) .eq. 0 .or. me .eq. num_procs-1)  irightb=me-numx+1
+!    if(mod(me+1,numx) .eq. 0 .or. me .eq. num_procs-1)  print *,' GWVX IRIGHTB',irightb,mype,me,numx
+    if(me .ge. numx) idn=me-numx
+    if(me+1  .le. num_procs-numx) iup=me+numx
+!    write(6,'(a12,6i10)') 'GWVX BOUNDS ',me,ileft,iright,iup,idn,num_procs
 !
 ! SETS UP MESSAGE PASSING INFO
 
@@ -126,7 +195,7 @@
 ! LMV always = LM for sigma-type vert coord
 
        do j = jsta_2l, jend_2u
-        do i = 1, im
+        do i = ista_2l, iend_2u
             lmv ( i, j ) = lm
             lmh ( i, j ) = lm
         end do
@@ -136,7 +205,7 @@
 
       do l = 1, lm
        do j = jsta_2l, jend_2u
-        do i = 1, im
+        do i = ista_2l, iend_2u
             htm ( i, j, l ) = 1.0
             vtm ( i, j, l ) = 1.0
         end do

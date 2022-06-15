@@ -149,7 +149,7 @@ module CCPP_driver
       endif
 
       !--- determine if physics diagnostics buckets need to be cleared
-      if (mod(GFS_control%kdt,GFS_control%nszero) == 1) then
+      if ((mod(GFS_control%kdt-1,GFS_control%nszero)) == 0) then
         do nb = 1,nblks
           call GFS_data(nb)%Intdiag%phys_zero(GFS_control)
         end do
