@@ -132,6 +132,7 @@ public setup_exportdata
      logical                       :: nested             ! true if there is a nest
      logical                       :: moving_nest_parent ! true if this grid has a moving nest child
      logical                       :: is_moving_nest     ! true if this is a moving nest grid
+     logical                       :: isAtCapTime        ! true if currTime is at the cap driverClock's currTime
      integer                       :: ngrids             !
      integer                       :: mygrid             !
      integer                       :: mlon, mlat
@@ -296,7 +297,7 @@ subroutine update_atmos_radiation_physics (Atmos)
       ! receives coupled fields through the above assign_importdata step. Thus,
       ! an extra step is needed to fill the coupling variables in the nest,
       ! by downscaling the coupling variables from its parent.
-      if (Atmos%ngrids > 1) then
+      if (Atmos%isAtCapTime .and. Atmos%ngrids > 1) then
         if (GFS_control%cplocn2atm .or. GFS_control%cplwav2atm) then
           call atmosphere_fill_nest_cpl(Atm_block, GFS_control, GFS_data)
         endif
@@ -540,6 +541,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
 
 !---- set the atmospheric model time ------
 
+   Atmos % isAtCapTime = .false.
    Atmos % Time_init = Time_init
    Atmos % Time      = Time
    Atmos % Time_step = Time_step
