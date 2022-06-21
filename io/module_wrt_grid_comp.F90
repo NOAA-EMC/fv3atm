@@ -133,6 +133,7 @@
 !***  INITIALIZE THE WRITE GRIDDED COMPONENT.
 !-----------------------------------------------------------------------
 !
+      use ctlblk_mod, only: numx
       type(esmf_GridComp)               :: wrt_comp
       type(ESMF_State)                  :: imp_state_write, exp_state_write
       type(esmf_Clock)                  :: clock
@@ -379,6 +380,8 @@
         itasks = 1
         jtasks = ntasks
       endif
+      numx = itasks
+      if (lprnt) print *,'jtasks=',jtasks,' itasks=',itasks,' numx=',numx
 
       if (trim(output_grid(n)) == 'gaussian_grid' .or. trim(output_grid(n)) == 'global_latlon') then
         call ESMF_ConfigGetAttribute(config=cf_output_grid, value=imo(n), label ='imo:',rc=rc)
