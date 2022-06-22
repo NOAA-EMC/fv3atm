@@ -460,6 +460,12 @@ module GFS_typedefs
 !   real (kind=kind_phys), pointer :: zorlwav_cpl(:)          => null()   !< roughness length from wave model
     !--- also needed for ice/ocn coupling 
     real (kind=kind_phys), pointer :: slimskin_cpl(:)=> null()   !< aoi_fld%slimskin(item,lan)
+    !--- variables needed for use_med_flux =.TRUE.
+    real (kind=kind_phys), pointer :: dusfcin_med(:)         => null()   !< sfc u momentum flux over ocean
+    real (kind=kind_phys), pointer :: dvsfcin_med(:)         => null()   !< sfc v momentum flux over ocean
+    real (kind=kind_phys), pointer :: dtsfcin_med(:)         => null()   !< sfc latent heat flux over ocean
+    real (kind=kind_phys), pointer :: dqsfcin_med(:)         => null()   !< sfc sensible heat flux over ocean
+    real (kind=kind_phys), pointer :: ulwsfcin_med(:)        => null()   !< sfc upward lw flux over ocean
 
 !--- outgoing accumulated quantities
     real (kind=kind_phys), pointer :: rain_cpl  (:)  => null()   !< total rain precipitation
@@ -673,6 +679,7 @@ module GFS_typedefs
     logical              :: use_cice_alb    !< default .false. - i.e. don't use albedo imported from the ice model
     logical              :: cpl_imp_mrg     !< default no merge import with internal forcings
     logical              :: cpl_imp_dbg     !< default no write import data to file post merge
+    logical              :: use_med_flux    !< default .false. - i.e. don't use atmosphere-ocean fluxes imported from mediator
 
 !--- integrated dynamics through earth's atmosphere
     logical              :: lsidea
@@ -2561,6 +2568,21 @@ module GFS_typedefs
 !     Coupling%sfc_alb_vis_dir_cpl   = clear_val
 !     Coupling%sfc_alb_vis_dif_cpl   = clear_val
 
+      ! -- Coupling options to retrive atmosphere-ocean fluxes from mediator
+      if (Model%use_med_flux) then
+        allocate (Coupling%dusfcin_med (IM))
+        allocate (Coupling%dvsfcin_med (IM))
+        allocate (Coupling%dtsfcin_med (IM))
+        allocate (Coupling%dqsfcin_med (IM))
+        allocate (Coupling%ulwsfcin_med(IM))
+
+        Coupling%dusfcin_med  = clear_val
+        Coupling%dvsfcin_med  = clear_val
+        Coupling%dtsfcin_med  = clear_val
+        Coupling%dqsfcin_med  = clear_val
+        Coupling%ulwsfcin_med = clear_val
+      end if
+
       !--- accumulated quantities
       allocate (Coupling%dusfc_cpl  (IM))
       allocate (Coupling%dvsfc_cpl  (IM))
@@ -2892,6 +2914,7 @@ module GFS_typedefs
     logical              :: use_cice_alb   = .false.         !< default no cice albedo
     logical              :: cpl_imp_mrg    = .false.         !< default no merge import with internal forcings
     logical              :: cpl_imp_dbg    = .false.         !< default no write import data to file post merge
+    logical              :: use_med_flux   = .false.         !< default no atmosphere-ocean fluxes from mediator
 
 !--- integrated dynamics through earth's atmosphere
     logical              :: lsidea         = .false.
@@ -3415,7 +3438,7 @@ module GFS_typedefs
                                f107_kp_skip_size, f107_kp_data_size, f107_kp_read_in_start, &
                                ipe_to_wam_coupling,                                         &
 #else
-                                lsidea,                                                     &
+                               lsidea, use_med_flux,                                        &
 #endif
                           !--- radiation parameters
                                fhswr, fhlwr, levr, nfxr, iaerclm, iflip, isol, ico2, ialb,  &
@@ -3733,6 +3756,7 @@ module GFS_typedefs
     Model%use_cice_alb     = use_cice_alb
     Model%cpl_imp_mrg      = cpl_imp_mrg
     Model%cpl_imp_dbg      = cpl_imp_dbg
+    Model%use_med_flux     = use_med_flux
 
 !--- RRFS Smoke
     Model%rrfs_smoke        = rrfs_smoke
@@ -5630,6 +5654,7 @@ module GFS_typedefs
       print *, ' use_cice_alb      : ', Model%use_cice_alb
       print *, ' cpl_imp_mrg       : ', Model%cpl_imp_mrg
       print *, ' cpl_imp_dbg       : ', Model%cpl_imp_dbg
+      print *, ' use_med_flux      : ', Model%use_med_flux
       if(model%rrfs_smoke) then
         print *, ' '
         print *, 'smoke parameters'
