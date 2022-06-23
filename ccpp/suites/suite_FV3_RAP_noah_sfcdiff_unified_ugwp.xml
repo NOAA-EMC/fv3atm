@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<suite name="FV3_GFS_v15_thompson_mynn_RRTMGP" version="1">
+<suite name="FV3_RAP_noah_sfcdiff_unified_ugwp" version="1">
   <!-- <init></init> -->
   <group name="time_vary">
     <subcycle loop="1">
       <scheme>GFS_time_vary_pre</scheme>
-      <scheme>GFS_rrtmgp_setup</scheme>
+      <scheme>GFS_rrtmg_setup</scheme>
       <scheme>GFS_rad_time_vary</scheme>
       <scheme>GFS_phys_time_vary</scheme>
     </subcycle>
@@ -14,25 +14,16 @@
     <subcycle loop="1">
       <scheme>GFS_suite_interstitial_rad_reset</scheme>
       <scheme>sgscloud_radpre</scheme>
-      <scheme>GFS_rrtmgp_pre</scheme>
+      <scheme>GFS_rrtmg_pre</scheme>
       <scheme>GFS_radiation_surface</scheme>
-      <scheme>GFS_rrtmgp_cloud_mp</scheme>
-      <scheme>GFS_rrtmgp_cloud_overlap</scheme>
-      <scheme>GFS_cloud_diagnostics</scheme>
       <scheme>rad_sw_pre</scheme>
-      <scheme>rrtmgp_aerosol_optics</scheme>
-      <scheme>rrtmgp_sw_gas_optics</scheme>
-      <scheme>rrtmgp_sw_cloud_optics</scheme>
-      <scheme>rrtmgp_sw_cloud_sampling</scheme>
-      <scheme>rrtmgp_sw_rte</scheme>
-      <scheme>GFS_rrtmgp_sw_post</scheme>
-      <scheme>rrtmgp_lw_pre</scheme>
-      <scheme>rrtmgp_lw_gas_optics</scheme>
-      <scheme>rrtmgp_lw_cloud_optics</scheme>
-      <scheme>rrtmgp_lw_cloud_sampling</scheme>
-      <scheme>rrtmgp_lw_rte</scheme>
+      <scheme>rrtmg_sw</scheme>
+      <scheme>rrtmg_sw_post</scheme>
+      <scheme>rrtmg_lw_pre</scheme>
+      <scheme>rrtmg_lw</scheme>
       <scheme>sgscloud_radpost</scheme>
-      <scheme>GFS_rrtmgp_lw_post</scheme>
+      <scheme>rrtmg_lw_post</scheme>
+      <scheme>GFS_rrtmg_post</scheme>
     </subcycle>
   </group>
   <group name="physics">
@@ -66,8 +57,8 @@
       <scheme>GFS_surface_generic_post</scheme>
       <scheme>mynnedmf_wrapper</scheme>
       <scheme>GFS_GWD_generic_pre</scheme>
-      <scheme>cires_ugwp</scheme>
-      <scheme>cires_ugwp_post</scheme>
+      <scheme>unified_ugwp</scheme>
+      <scheme>unified_ugwp_post</scheme>
       <scheme>GFS_GWD_generic_post</scheme>
       <scheme>GFS_suite_stateout_update</scheme>
       <scheme>ozphys_2015</scheme>
@@ -75,11 +66,9 @@
       <scheme>get_phi_fv3</scheme>
       <scheme>GFS_suite_interstitial_3</scheme>
       <scheme>GFS_DCNV_generic_pre</scheme>
-      <scheme>samfdeepcnv</scheme>
+      <scheme>cu_gf_driver_pre</scheme>
+      <scheme>cu_gf_driver</scheme>
       <scheme>GFS_DCNV_generic_post</scheme>
-      <scheme>GFS_SCNV_generic_pre</scheme>
-      <scheme>samfshalcnv</scheme>
-      <scheme>GFS_SCNV_generic_post</scheme>
       <scheme>GFS_suite_interstitial_4</scheme>
       <scheme>cnvc90</scheme>
       <scheme>GFS_MP_generic_pre</scheme>
@@ -87,6 +76,7 @@
       <scheme>mp_thompson</scheme>
       <scheme>mp_thompson_post</scheme>
       <scheme>GFS_MP_generic_post</scheme>
+      <scheme>cu_gf_driver_post</scheme>
       <scheme>maximum_hourly_diagnostics</scheme>
       <scheme>phys_tend</scheme>
     </subcycle>
