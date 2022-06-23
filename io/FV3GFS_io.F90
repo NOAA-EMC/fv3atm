@@ -2819,10 +2819,17 @@ module FV3GFS_io_mod
     integer :: i, j, k, idx, nblks, nb, ix, ii, jj
     integer :: is_in, js_in, isc, jsc
     character(len=2) :: xtra
+#ifdef CCPP_32BIT
+    real, dimension(nx*ny)      :: var2p
+    real, dimension(nx*ny,levs) :: var3p
+    real, dimension(nx,ny)      :: var2
+    real, dimension(nx,ny,levs) :: var3
+#else
     real(kind=kind_phys), dimension(nx*ny)      :: var2p
     real(kind=kind_phys), dimension(nx*ny,levs) :: var3p
     real(kind=kind_phys), dimension(nx,ny)      :: var2
     real(kind=kind_phys), dimension(nx,ny,levs) :: var3
+#endif
     real(kind=kind_phys) :: rdt, rtime_int, rtime_intfull, lcnvfac
     real(kind=kind_phys) :: rtime_radsw, rtime_radlw
     logical :: used
@@ -3062,7 +3069,11 @@ module FV3GFS_io_mod
   subroutine store_data(id, work, Time, idx, intpl_method, fldname)
     integer, intent(in)                 :: id
     integer, intent(in)                 :: idx
+#ifdef CCPP_32BIT
+    real, intent(in)                    :: work(:,:)
+#else
     real(kind=kind_phys), intent(in)    :: work(ieco-isco+1,jeco-jsco+1)
+#endif
     type(time_type), intent(in)         :: Time
     character(*), intent(in)            :: intpl_method
     character(*), intent(in)            :: fldname
@@ -3142,7 +3153,11 @@ module FV3GFS_io_mod
   subroutine store_data3D(id, work, Time, idx, intpl_method, fldname)
     integer, intent(in)                 :: id
     integer, intent(in)                 :: idx
+#ifdef CCPP_32BIT
+    real, intent(in)                    :: work(:,:,:)
+#else
     real(kind=kind_phys), intent(in)    :: work(ieco-isco+1,jeco-jsco+1,levo)
+#endif
     type(time_type), intent(in)         :: Time
     character(*), intent(in)            :: intpl_method
     character(*), intent(in)            :: fldname
