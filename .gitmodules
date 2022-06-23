@@ -9,7 +9,7 @@
 [submodule "ccpp/physics"]
   path = ccpp/physics
   url = https://github.com/SamuelTrahanNOAA/ccpp-physics
-  branch = sing_prec_from_main
+  branch = working_32bit
 [submodule "upp"]
   path = upp
   url = https://github.com/NOAA-EMC/UPP
