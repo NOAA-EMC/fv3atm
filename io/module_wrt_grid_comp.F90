@@ -3130,6 +3130,8 @@
     real(ESMF_KIND_R4)               :: valueR4
     real(ESMF_KIND_R8)               :: valueR8
     logical                          :: thereAreVerticals
+    integer                          :: ch_dimid, timeiso_varid
+    character(len=ESMF_MAXSTR)       :: time_iso
 
     rc = ESMF_SUCCESS
 
@@ -3271,6 +3273,10 @@
                                  name="time", value=time, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
+          call ESMF_AttributeGet(grid, convention="NetCDF", purpose="FV3", &
+                                 name="time_iso", value=time_iso, rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
           ncerr = nf90_redef(ncid=ncid)
           if (ESMF_LogFoundNetCDFError(ncerr, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
@@ -3285,11 +3291,26 @@
                                dimids=(/dimid/), varid=varid)
           if (ESMF_LogFoundNetCDFError(ncerr, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
+          ncerr = nf90_def_dim(ncid, "nchars", 20, ch_dimid)
+          if (ESMF_LogFoundNetCDFError(ncerr, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+          ncerr = nf90_def_var(ncid, "time_iso", NF90_CHAR, [ch_dimid,dimid], timeiso_varid)
+          if (ESMF_LogFoundNetCDFError(ncerr, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+          ncerr = nf90_put_att(ncid, timeiso_varid, "long_name", "valid time")
+          if (ESMF_LogFoundNetCDFError(ncerr, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+          ncerr = nf90_put_att(ncid, timeiso_varid, "description", "ISO 8601 datetime string")
+          if (ESMF_LogFoundNetCDFError(ncerr, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+          ncerr = nf90_put_att(ncid, timeiso_varid, "_Encoding", "UTF-8")
+          if (ESMF_LogFoundNetCDFError(ncerr, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+
           ncerr = nf90_enddef(ncid=ncid)
 
           if (ESMF_LogFoundNetCDFError(ncerr, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
           ncerr = nf90_put_var(ncid, varid, values=time)
+
+          if (ESMF_LogFoundNetCDFError(ncerr, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+
+          ncerr = nf90_put_var(ncid, timeiso_varid, values=[trim(time_iso)])
 
           if (ESMF_LogFoundNetCDFError(ncerr, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
 
