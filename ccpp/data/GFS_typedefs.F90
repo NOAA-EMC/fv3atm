@@ -2432,15 +2432,18 @@ module GFS_typedefs
        end if
 
     end if
+       allocate (Sfcprop%rmol   (IM ))
+       allocate (Sfcprop%flhc   (IM ))
+       allocate (Sfcprop%flqc   (IM ))
+       Sfcprop%rmol        = clear_val
+       Sfcprop%flhc        = clear_val
+       Sfcprop%flqc        = clear_val
     if (Model%do_mynnsfclay) then
     ! For MYNN surface layer scheme
        !print*,"Allocating all MYNN-sfclay variables"
        allocate (Sfcprop%ustm   (IM ))
        allocate (Sfcprop%zol    (IM ))
        allocate (Sfcprop%mol    (IM ))
-       allocate (Sfcprop%rmol   (IM ))
-       allocate (Sfcprop%flhc   (IM ))
-       allocate (Sfcprop%flqc   (IM ))
        allocate (Sfcprop%chs2   (IM ))
        allocate (Sfcprop%cqs2   (IM ))
        allocate (Sfcprop%lh     (IM ))
@@ -2449,9 +2452,6 @@ module GFS_typedefs
        Sfcprop%ustm        = clear_val
        Sfcprop%zol         = clear_val
        Sfcprop%mol         = clear_val
-       Sfcprop%rmol        = clear_val
-       Sfcprop%flhc        = clear_val
-       Sfcprop%flqc        = clear_val
        Sfcprop%chs2        = clear_val
        Sfcprop%cqs2        = clear_val
        Sfcprop%lh          = clear_val
