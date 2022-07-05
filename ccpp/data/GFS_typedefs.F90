@@ -1305,6 +1305,21 @@ module GFS_typedefs
     integer              :: ntchm           !< number of prognostic chemical tracers (advected)
     integer              :: ntchs           !< tracer index for first prognostic chemical tracer
     integer              :: ntche           !< tracer index for last prognostic chemical tracer
+    integer              :: ntdu1           !< tracer index for dust bin1
+    integer              :: ntdu2           !< tracer index for dust bin2
+    integer              :: ntdu3           !< tracer index for dust bin3
+    integer              :: ntdu4           !< tracer index for dust bin4
+    integer              :: ntdu5           !< tracer index for dust bin5
+    integer              :: ntss1           !< tracer index for sea salt bin1
+    integer              :: ntss2           !< tracer index for sea salt bin2
+    integer              :: ntss3           !< tracer index for sea salt bin3
+    integer              :: ntss4           !< tracer index for sea salt bin4
+    integer              :: ntss5           !< tracer index for sea salt bin5
+    integer              :: ntsu            !< tracer index for sulfate
+    integer              :: ntbcl           !< tracer index for BCPHILIC
+    integer              :: ntbcb           !< tracer index for BCPHOBIC
+    integer              :: ntocl           !< tracer index for OCPHILIC
+    integer              :: ntocb           !< tracer index for OCPHOBIC
     integer              :: ndchm           !< number of diagnostic chemical tracers (not advected)
     integer              :: ndchs           !< tracer index for first diagnostic chemical tracer
     integer              :: ndche           !< tracer index for last diagnostic chemical tracer
@@ -2418,15 +2433,18 @@ module GFS_typedefs
        end if
 
     end if
+       allocate (Sfcprop%rmol   (IM ))
+       allocate (Sfcprop%flhc   (IM ))
+       allocate (Sfcprop%flqc   (IM ))
+       Sfcprop%rmol        = clear_val
+       Sfcprop%flhc        = clear_val
+       Sfcprop%flqc        = clear_val
     if (Model%do_mynnsfclay) then
     ! For MYNN surface layer scheme
        !print*,"Allocating all MYNN-sfclay variables"
        allocate (Sfcprop%ustm   (IM ))
        allocate (Sfcprop%zol    (IM ))
        allocate (Sfcprop%mol    (IM ))
-       allocate (Sfcprop%rmol   (IM ))
-       allocate (Sfcprop%flhc   (IM ))
-       allocate (Sfcprop%flqc   (IM ))
        allocate (Sfcprop%chs2   (IM ))
        allocate (Sfcprop%cqs2   (IM ))
        allocate (Sfcprop%lh     (IM ))
@@ -2435,9 +2453,6 @@ module GFS_typedefs
        Sfcprop%ustm        = clear_val
        Sfcprop%zol         = clear_val
        Sfcprop%mol         = clear_val
-       Sfcprop%rmol        = clear_val
-       Sfcprop%flhc        = clear_val
-       Sfcprop%flqc        = clear_val
        Sfcprop%chs2        = clear_val
        Sfcprop%cqs2        = clear_val
        Sfcprop%lh          = clear_val
@@ -3834,6 +3849,8 @@ module GFS_typedefs
     if (iaer/1000 == 1 .or. Model%iccn == 2) then
       Model%iaerclm = .true.
       ntrcaer = ntrcaerm
+    else if (iaer/1000 == 2) then
+      ntrcaer = ntrcaerm
     else
       ntrcaer = 1
     endif
@@ -4496,6 +4513,24 @@ module GFS_typedefs
     Model%ndtend = 0
     allocate(Model%dtidx(Model%ntracp100,Model%nprocess))
     Model%dtidx = -99
+
+    if(Model%ntchm>0) then
+      Model%ntdu1 = get_tracer_index(Model%tracer_names, 'dust1', Model%me, Model%master, Model%debug)
+      Model%ntdu2 = get_tracer_index(Model%tracer_names, 'dust2', Model%me, Model%master, Model%debug)
+      Model%ntdu3 = get_tracer_index(Model%tracer_names, 'dust3', Model%me, Model%master, Model%debug)
+      Model%ntdu4 = get_tracer_index(Model%tracer_names, 'dust4', Model%me, Model%master, Model%debug)
+      Model%ntdu5 = get_tracer_index(Model%tracer_names, 'dust5', Model%me, Model%master, Model%debug)
+      Model%ntss1 = get_tracer_index(Model%tracer_names, 'seas1', Model%me, Model%master, Model%debug)
+      Model%ntss2 = get_tracer_index(Model%tracer_names, 'seas2', Model%me, Model%master, Model%debug)
+      Model%ntss3 = get_tracer_index(Model%tracer_names, 'seas3', Model%me, Model%master, Model%debug)
+      Model%ntss4 = get_tracer_index(Model%tracer_names, 'seas4', Model%me, Model%master, Model%debug)
+      Model%ntss5 = get_tracer_index(Model%tracer_names, 'seas5', Model%me, Model%master, Model%debug)
+      Model%ntsu  = get_tracer_index(Model%tracer_names, 'so4',   Model%me, Model%master, Model%debug)
+      Model%ntbcb = get_tracer_index(Model%tracer_names, 'bc1',   Model%me, Model%master, Model%debug)
+      Model%ntbcl = get_tracer_index(Model%tracer_names, 'bc2',   Model%me, Model%master, Model%debug)
+      Model%ntocb = get_tracer_index(Model%tracer_names, 'oc1',   Model%me, Model%master, Model%debug)
+      Model%ntocl = get_tracer_index(Model%tracer_names, 'oc2',   Model%me, Model%master, Model%debug)
+    end if
 
     if(ldiag3d) then
        ! Flags used to turn on or off tracer "causes"

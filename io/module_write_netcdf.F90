@@ -236,6 +236,7 @@ module module_write_netcdf
        ncerr = nf90_def_var(ncid, "time_iso", NF90_CHAR, [ch_dimid,time_dimid], timeiso_varid); NC_ERR_STOP(ncerr)
        ncerr = nf90_put_att(ncid, timeiso_varid, "long_name", "valid time"); NC_ERR_STOP(ncerr)
        ncerr = nf90_put_att(ncid, timeiso_varid, "description", "ISO 8601 datetime string"); NC_ERR_STOP(ncerr)
+       ncerr = nf90_put_att(ncid, timeiso_varid, "_Encoding", "UTF-8"); NC_ERR_STOP(ncerr)
 
        ! coordinate variable attributes based on output_grid type
        if (trim(output_grid(grid_id)) == 'gaussian_grid' .or. &
