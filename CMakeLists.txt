@@ -77,7 +77,7 @@ target_link_libraries(fv3atm PUBLIC fv3
                                     stochastic_physics
                                     fms)
 
-target_link_libraries(fv3atm PUBLIC w3nco::w3nco_d
+target_link_libraries(fv3atm PUBLIC w3emc::w3emc_d
                                     sp::sp_d
                                     bacio::bacio_4
                                     esmf)
