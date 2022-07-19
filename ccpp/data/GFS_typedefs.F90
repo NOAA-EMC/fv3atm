@@ -1,7 +1,7 @@
 module GFS_typedefs
 
    use mpi_f08
-   use machine,                  only: kind_phys, kind_dbl_prec
+   use machine,                  only: kind_phys, kind_dbl_prec, kind_sngl_prec
    use physcons,                 only: con_cp, con_fvirt, con_g,                       &
                                        con_hvap, con_hfus, con_pi, con_rd, con_rv,     &
                                        con_t0c, con_cvap, con_cliq, con_eps, con_epsq, &
@@ -2896,6 +2896,8 @@ module GFS_typedefs
     logical :: exists
     real(kind=kind_phys) :: tem
     real(kind=kind_phys) :: rinc(5)
+    real(kind=kind_sngl_prec) :: rinc4(5)
+    real(kind=kind_dbl_prec) :: rinc8(5)
     real(kind=kind_phys) :: wrk(1)
     real(kind=kind_phys), parameter :: con_hr = 3600.
 
@@ -3386,7 +3388,11 @@ module GFS_typedefs
 !  max and min lon and lat for critical relative humidity
     integer :: max_lon=5000, max_lat=2000, min_lon=192, min_lat=94
     real(kind=kind_phys) :: rhcmax = 0.9999999               !< max critical rel. hum.
+#ifdef SINGLE_PREC
+    real(kind=kind_phys) :: huge   = 9.9692099683868690E30  !  NetCDF float FillValue
+#else
     real(kind=kind_phys) :: huge   = 9.9692099683868690E36  !  NetCDF float FillValue
+#endif
 
 
 !--- stochastic physics control parameters
@@ -3430,6 +3436,7 @@ module GFS_typedefs
 
     real(kind=kind_phys) :: radar_tten_limits(2) = (/ limit_unspecified, limit_unspecified /)
     integer :: itime
+    integer :: w3kindreal,w3kindint
     
 !--- END NAMELIST VARIABLES
 
@@ -4875,7 +4882,19 @@ module GFS_typedefs
     Model%cdec             = -9999.
     Model%clstp            = -9999
     rinc(1:5)              = 0
-    call w3difdat(jdat,idat,4,rinc)
+    call w3kind(w3kindreal,w3kindint)
+    if (w3kindreal == 8) then
+       rinc8(1:5) = 0
+       call w3difdat(jdat,idat,4,rinc8)
+       rinc = rinc8
+    else if (w3kindreal == 4) then
+       rinc4(1:5) = 0
+       call w3difdat(jdat,idat,4,rinc4)
+       rinc = rinc4
+    else
+       write(0,*)' FATAL ERROR: Invalid w3kindreal'
+       call abort
+    endif
     Model%phour            = rinc(4)/con_hr
     Model%fhour            = (rinc(4) + Model%dtp)/con_hr
     Model%zhour            = mod(Model%phour,Model%fhzero)

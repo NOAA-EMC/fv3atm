@@ -611,13 +611,18 @@ module post_fv3
       call exch(gdlon)
 
 !$omp parallel do default(none),private(i,j,ip1), &
-!$omp&  shared(jsta,jend_m,im,dx,gdlat,gdlon,dy,ista,iend_m)
+!$omp&  shared(jsta,jend_m,im,dx,gdlat,gdlon,dy,ista,iend_m,maptype,dxval,dyval,gdsdegr)
       do j = jsta, jend_m
         do i = ista, iend_m
           ip1 = i + 1
           !if (ip1 > im) ip1 = ip1 - im
-          dx(i,j) = erad*cos(gdlat(i,j)*dtr)*(gdlon(ip1,j)-gdlon(i,j))*dtr
-          dy(i,j) = erad*(gdlat(i,j+1)-gdlat(i,j))*dtr  ! like A*DPH
+          if(maptype==207)then
+            dx(i,j)=erad*dxval*dtr/gdsdegr
+            dy(i,j)=erad*dyval*dtr/gdsdegr
+          else
+            dx(i,j) = erad*cos(gdlat(i,j)*dtr)*(gdlon(ip1,j)-gdlon(i,j))*dtr
+            dy(i,j) = erad*(gdlat(i,j+1)-gdlat(i,j))*dtr  ! like A*DPH
+          endif
         end do
       end do
 !
