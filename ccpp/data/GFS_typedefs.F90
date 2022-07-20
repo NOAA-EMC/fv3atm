@@ -2895,9 +2895,7 @@ module GFS_typedefs
     integer :: seed0
     logical :: exists
     real(kind=kind_phys) :: tem
-    real(kind=kind_phys) :: rinc(5)
-    real(kind=kind_sngl_prec) :: rinc4(5)
-    real(kind=kind_dbl_prec) :: rinc8(5)
+    real(kind=kind_dbl_prec) :: rinc(5)
     real(kind=kind_phys) :: wrk(1)
     real(kind=kind_phys), parameter :: con_hr = 3600.
 
@@ -3436,7 +3434,6 @@ module GFS_typedefs
 
     real(kind=kind_phys) :: radar_tten_limits(2) = (/ limit_unspecified, limit_unspecified /)
     integer :: itime
-    integer :: w3kindreal,w3kindint
     
 !--- END NAMELIST VARIABLES
 
@@ -4882,19 +4879,7 @@ module GFS_typedefs
     Model%cdec             = -9999.
     Model%clstp            = -9999
     rinc(1:5)              = 0
-    call w3kind(w3kindreal,w3kindint)
-    if (w3kindreal == 8) then
-       rinc8(1:5) = 0
-       call w3difdat(jdat,idat,4,rinc8)
-       rinc = rinc8
-    else if (w3kindreal == 4) then
-       rinc4(1:5) = 0
-       call w3difdat(jdat,idat,4,rinc4)
-       rinc = rinc4
-    else
-       write(0,*)' FATAL ERROR: Invalid w3kindreal'
-       call abort
-    endif
+    call w3difdat(jdat,idat,4,rinc)
     Model%phour            = rinc(4)/con_hr
     Model%fhour            = (rinc(4) + Model%dtp)/con_hr
     Model%zhour            = mod(Model%phour,Model%fhzero)
