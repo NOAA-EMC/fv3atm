@@ -42,7 +42,9 @@
                                       ideflate, lflname_fulltime
       use module_write_netcdf, only : write_netcdf
       use physcons,            only : pi => con_pi
-      use inline_post,         only : inline_post_run, inline_post_getattr
+#ifdef INLINE_POST
+      use post_fv3,            only : post_run_fv3, post_getattr_fv3
+#endif
 !
 !-----------------------------------------------------------------------
 !
@@ -134,7 +136,9 @@
 !***  INITIALIZE THE WRITE GRIDDED COMPONENT.
 !-----------------------------------------------------------------------
 !
+#ifdef INLINE_POST
       use ctlblk_mod, only: numx
+#endif
       type(esmf_GridComp)               :: wrt_comp
       type(ESMF_State)                  :: imp_state_write, exp_state_write
       type(esmf_Clock)                  :: clock
@@ -266,12 +270,7 @@
         line=__LINE__, file=__FILE__)) return
 
       if( wrt_int_state%write_dopost ) then
-#ifdef NO_INLINE_POST
-        rc = ESMF_RC_NOT_IMPL
-        print *,'inline post not available on this machine'
-        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-          line=__LINE__, file=__FILE__)) return
-#endif
+#ifdef INLINE_POST
         call esmf_configgetattribute(cf,wrt_int_state%post_nlunit,default=777,label='nlunit:',rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
           line=__LINE__, file=__FILE__)) return
@@ -279,6 +278,12 @@
                                      label ='post_namelist:',rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
           line=__LINE__, file=__FILE__)) return
+#else
+        rc = ESMF_RC_NOT_IMPL
+        print *,'inline post not available on this machine'
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, file=__FILE__)) return
+#endif
       endif
 
       allocate(output_file(num_files))
@@ -376,8 +381,10 @@
           itasks = 1
           jtasks = ntasks
         endif
+#ifdef INLINE_POST
         numx = itasks
         if (lprnt) print *,'jtasks=',jtasks,' itasks=',itasks,' numx=',numx
+#endif
 
         if (trim(output_grid(n)) == 'gaussian_grid' .or. trim(output_grid(n)) == 'global_latlon') then
           call ESMF_ConfigGetAttribute(config=cf_output_grid, value=imo(n), label ='imo:',rc=rc)
@@ -1898,7 +1905,7 @@
 !-----------------------------------------------------------------------
       lmask_fields = .false.
       if( wrt_int_state%write_dopost ) then
-!
+#ifdef INLINE_POST
         wbeg = MPI_Wtime()
         do n=1,ngrids
           if (trim(output_grid(n)) == 'regional_latlon' .or. &
@@ -1915,8 +1922,8 @@
               lmask_fields = .true.
           endif
 
-          call inline_post_getattr(wrt_int_state, n)
-          call inline_post_run(wrt_int_state, n, mype, wrt_mpi_comm, lead_write_task, &
+          call post_getattr_fv3(wrt_int_state, n)
+          call post_run_fv3(wrt_int_state, n, mype, wrt_mpi_comm, lead_write_task, &
                                nf_hours, nf_minutes, nf_seconds)
         enddo
         wend = MPI_Wtime()
@@ -1924,7 +1931,12 @@
           write(*,'(A,F10.5,A,I4.2,A,I2.2)')' actual    inline post Time is ',wend-wbeg &
                      ,' at Fcst ',nf_hours,':',nf_minutes
         endif
-
+#else
+        rc = ESMF_RC_NOT_IMPL
+        print *,'inline post not available on this machine'
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, file=__FILE__)) return
+#endif
       endif
 !
 !-----------------------------------------------------------------------

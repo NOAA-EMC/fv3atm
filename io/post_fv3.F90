@@ -4,6 +4,8 @@
 !
 module post_fv3
 
+  use mpi
+
   use module_fv3_io_def,    only : wrttasks_per_group,filename_base,    &
                                    lon1, lat1, lon2, lat2, dlon, dlat,  &
                                    cen_lon, cen_lat, dxin=>dx, dyin=>dy, &
@@ -11,8 +13,6 @@ module post_fv3
   use write_internal_state, only : wrt_internal_state
 
   implicit none
-
-  include 'mpif.h'
 
   integer mype, nbdl
   logical setvar_atmfile, setvar_sfcfile, read_postcntrl
@@ -582,8 +582,6 @@ module post_fv3
 !-----------------------------------------------------------------------
 !
       implicit none
-!
-      include 'mpif.h'
 !
 !-----------------------------------------------------------------------
 !
