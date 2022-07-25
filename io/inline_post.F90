@@ -40,14 +40,14 @@ module inline_post
 !
       if(mypei == 0) print *,'inline_post_run, output_grid=',trim(output_grid(grid_id)), &
                              ', call post_run_fv3'
-      if(trim(output_grid(grid_id)) == 'gaussian_grid'                &
-        .or. trim(output_grid(grid_id)) == 'global_latlon'            &
-        .or. trim(output_grid(grid_id)) == 'regional_latlon'          &
-        .or.  trim(output_grid(grid_id)) == 'rotated_latlon'          &
-        .or.  trim(output_grid(grid_id)) == 'lambert_conformal') then
-          call post_run_fv3(wrt_int_state, mypei, mpicomp, lead_write, &
+      ! if(trim(output_grid(grid_id)) == 'gaussian_grid'                &
+        ! .or. trim(output_grid(grid_id)) == 'global_latlon'            &
+        ! .or. trim(output_grid(grid_id)) == 'regional_latlon'          &
+        ! .or.  trim(output_grid(grid_id)) == 'rotated_latlon'          &
+        ! .or.  trim(output_grid(grid_id)) == 'lambert_conformal') then
+          call post_run_fv3(wrt_int_state, grid_id, mypei, mpicomp, lead_write, &
                             mynfhr, mynfmin,mynfsec)
-      endif
+      ! endif
 
 !
     end subroutine inline_post_run
@@ -63,13 +63,13 @@ module inline_post
       type(wrt_internal_state),intent(inout)    :: wrt_int_state
       integer, intent(in) :: grid_id
 !
-        if(trim(output_grid(grid_id)) == 'gaussian_grid'                &
-          .or. trim(output_grid(grid_id)) == 'global_latlon'            &
-          .or. trim(output_grid(grid_id)) == 'regional_latlon'          &
-          .or.  trim(output_grid(grid_id)) == 'rotated_latlon'            &
-          .or.  trim(output_grid(grid_id)) == 'lambert_conformal') then
+        ! if(trim(output_grid(grid_id)) == 'gaussian_grid'                &
+          ! .or. trim(output_grid(grid_id)) == 'global_latlon'            &
+          ! .or. trim(output_grid(grid_id)) == 'regional_latlon'          &
+          ! .or.  trim(output_grid(grid_id)) == 'rotated_latlon'            &
+          ! .or.  trim(output_grid(grid_id)) == 'lambert_conformal') then
             call post_getattr_fv3(wrt_int_state,grid_id)
-        endif
+        ! endif
 !
     end subroutine inline_post_getattr
 

@@ -20,7 +20,7 @@ module post_fv3
 
   contains
 
-  subroutine post_run_fv3(wrt_int_state,mypei,mpicomp,lead_write,      &
+  subroutine post_run_fv3(wrt_int_state,grid_id,mypei,mpicomp,lead_write,      &
              mynfhr,mynfmin,mynfsec)
 !
 !  revision history:
@@ -31,9 +31,9 @@ module post_fv3
 !                                     2)add bug fix for dx/dy computation
 !                                     3)add reading pwat from FV3
 !                                     4)remove some variable initializations
-!                                     5)read max/min 2m T from tmax_max2m/tmin_min2m 
+!                                     5)read max/min 2m T from tmax_max2m/tmin_min2m
 !                                       for GFS, and from t02max/min for RRFS
-!                                       and  HAFS. 
+!                                       and  HAFS.
 !                                     6)read 3D cloud fraction from cld_amt for GFDL MP,
 !                                       and from cldfra for other MPs.
 !     Jun 2022    J. Meng             2D decomposition
@@ -57,6 +57,7 @@ module post_fv3
 !-----------------------------------------------------------------------
 !
       type(wrt_internal_state),intent(in)       :: wrt_int_state
+      integer,intent(in)                        :: grid_id
       integer,intent(in)                        :: mypei
       integer,intent(in)                        :: mpicomp
       integer,intent(in)                        :: lead_write
@@ -74,6 +75,7 @@ module post_fv3
       integer,allocatable  :: istagrp(:),iendgrp(:)
       integer,save         :: kpo,kth,kpv
       logical,save         :: log_postalct=.false.
+      logical,save         :: first_run=.true.
       real,dimension(komax),save :: po, th, pv
       logical        :: Log_runpost
       character(255) :: post_fname*255
@@ -94,11 +96,10 @@ module post_fv3
       nsoil     = 4
       mype      = mypei
       nwtpg     = wrt_int_state%petcount
-      jts       = wrt_int_state%lat_start              !<-- Starting J of this write task's subsection
-      jte       = wrt_int_state%lat_end                !<-- Ending J of this write task's subsection
-      its       = wrt_int_state%lon_start              !<-- Starting I of this write task's subsection
-      ite       = wrt_int_state%lon_end                !<-- Ending I of this write task's subsection
-      maptype   = wrt_int_state%post_maptype
+      jts       = wrt_int_state%out_grid_info(grid_id)%j_start     !<-- Starting J of this write task's subsection
+      jte       = wrt_int_state%out_grid_info(grid_id)%j_end       !<-- Ending J of this write task's subsection
+      its       = wrt_int_state%out_grid_info(grid_id)%i_start     !<-- Starting I of this write task's subsection
+      ite       = wrt_int_state%out_grid_info(grid_id)%i_end       !<-- Ending I of this write task's subsection
       nbdl      = wrt_int_state%FBCount
 
       if(mype==0) print *,'in post_run,jts=',jts,'jte=',jte,'nwtpg=',nwtpg,'nwtpg=',nwtpg, &
@@ -111,14 +112,18 @@ module post_fv3
 !
       if (.not.log_postalct) then
 !
+        if (allocated(jstagrp)) deallocate(jstagrp)
+        if (allocated(jendgrp)) deallocate(jendgrp)
+        if (allocated(istagrp)) deallocate(istagrp)
+        if (allocated(iendgrp)) deallocate(iendgrp)
         allocate(jstagrp(nwtpg),jendgrp(nwtpg))
         allocate(istagrp(nwtpg),iendgrp(nwtpg))
 !
         do n=0,nwtpg-1
-          jstagrp(n+1) = wrt_int_state%lat_start_wrtgrp(n+1)
-          jendgrp(n+1) = wrt_int_state%lat_end_wrtgrp  (n+1)
-          istagrp(n+1) = wrt_int_state%lon_start_wrtgrp(n+1)
-          iendgrp(n+1) = wrt_int_state%lon_end_wrtgrp  (n+1)
+          jstagrp(n+1) = wrt_int_state%out_grid_info(grid_id)%j_start_wrtgrp(n+1)
+          jendgrp(n+1) = wrt_int_state%out_grid_info(grid_id)%j_end_wrtgrp  (n+1)
+          istagrp(n+1) = wrt_int_state%out_grid_info(grid_id)%i_start_wrtgrp(n+1)
+          iendgrp(n+1) = wrt_int_state%out_grid_info(grid_id)%i_end_wrtgrp  (n+1)
         enddo
         if(mype==0) print *,'in post_run,jstagrp=',jstagrp,'jendgrp=',jendgrp
         if(mype==0) print *,'in post_run,istagrp=',istagrp,'iendgrp=',iendgrp
@@ -134,20 +139,20 @@ module post_fv3
 !*** allocate post variables
 !-----------------------------------------------------------------------
 !
-     if(mype==0) print *,'in post_run,be post_alctvars, dim=',wrt_int_state%im, &
-       wrt_int_state%jm, wrt_int_state%lm,'mype=',mype,'wrttasks_per_group=', &
+     if(mype==0) print *,'in post_run,be post_alctvars, dim=',wrt_int_state%out_grid_info(grid_id)%im, &
+       wrt_int_state%out_grid_info(grid_id)%jm, wrt_int_state%out_grid_info(grid_id)%lm,'mype=',mype,'wrttasks_per_group=', &
        wrttasks_per_group,'lead_write=',lead_write,'jts=',jts,'jte=',jte,   &
        'jstagrp=',jstagrp,'jendgrp=',jendgrp
-        call post_alctvars(wrt_int_state%im,wrt_int_state%jm,        &
-          wrt_int_state%lm,mype,wrttasks_per_group,lead_write,    &
+        call post_alctvars(wrt_int_state%out_grid_info(grid_id)%im,wrt_int_state%out_grid_info(grid_id)%jm,        &
+          wrt_int_state%out_grid_info(grid_id)%lm,mype,wrttasks_per_group,lead_write,    &
           mpicomp,jts,jte,jstagrp,jendgrp,its,ite,istagrp,iendgrp)
 !
 !-----------------------------------------------------------------------
 !*** read namelist for pv,th,po
 !-----------------------------------------------------------------------
 !
-        log_postalct = .true.
-        first_grbtbl = .true.
+        ! log_postalct = .true.
+        first_grbtbl = first_run
         read_postcntrl = .true.
 !
       ENDIF
@@ -162,7 +167,7 @@ module post_fv3
       if(mype==0) print *,'bf set_postvars,ifmin=',ifmin,'ifhr=',ifhr
       setvar_atmfile=.false.
       setvar_sfcfile=.false.
-      call set_postvars_fv3(wrt_int_state,mpicomp,setvar_atmfile,   &
+      call set_postvars_fv3(wrt_int_state,grid_id,mpicomp,setvar_atmfile,   &
            setvar_sfcfile)
 
 !       print *,'af set_postvars,setvar_atmfile=',setvar_atmfile,  &
@@ -175,10 +180,12 @@ module post_fv3
         if(grib=="grib2" .and. read_postcntrl) then
           if (ifhr == 0) then
             filenameflat = 'postxconfig-NT_FH00.txt'
+            if(grid_id > 1) write(filenameflat,'(A,I2.2)') 'postxconfig-NT_FH00.txt_', grid_id
             call read_xml()
             if(mype==0) print *,'af read_xml at fh00,name=',trim(filenameflat)
           else if(ifhr > 0) then
             filenameflat = 'postxconfig-NT.txt'
+            if(grid_id > 1) write(filenameflat,'(A,I2.2)') 'postxconfig-NT.txt_', grid_id
             if(associated(paramset)) then
               if(size(paramset)>0) then
                 do i=1,size(paramset)
@@ -235,6 +242,12 @@ module post_fv3
 !
       endif
 
+      if( first_run ) then
+         first_run = .false.
+      endif
+      call post_finalize('grib2')
+
+
     end subroutine post_run_fv3
 !
 !-----------------------------------------------------------------------
@@ -243,7 +256,6 @@ module post_fv3
 !
       use esmf
       use ctlblk_mod,           only: im, jm, mpi_comm_comp,gdsdegr,spval
-      use masks,                only: gdlat, gdlon, dx, dy
       use gridspec_mod,         only: latstart, latlast, lonstart,    &
                                       lonlast, cenlon, cenlat, dxval, &
                                       dyval, truelat2, truelat1,psmapf, &
@@ -279,7 +291,8 @@ module post_fv3
 !      if(mype==0) print*,'in post_getattr_lam, lon1=',lon1,lon2,lat1,lat2,dlon,dlat
       gdsdegr = 1000000.
 
-      if(trim(output_grid(grid_id)) == 'regional_latlon') then
+      if(trim(output_grid(grid_id)) == 'regional_latlon' .or. &
+         trim(output_grid(grid_id)) == 'regional_latlon_moving') then
         MAPTYPE=0
         gridtype='A'
 
@@ -331,7 +344,8 @@ module post_fv3
         endif
 
         STANDLON = cenlon
-      else if(trim(output_grid(grid_id)) == 'rotated_latlon') then
+      else if(trim(output_grid(grid_id)) == 'rotated_latlon' .or. &
+              trim(output_grid(grid_id)) == 'rotated_latlon_moving') then
         MAPTYPE=207
         GRIDTYPE='A'
 
@@ -372,18 +386,43 @@ module post_fv3
         MAPTYPE=4
         gridtype='A'
 
-        lonstart = nint(wrt_int_state%lonstart*gdsdegr)
-        lonlast  = nint(wrt_int_state%lonlast*gdsdegr)
-        latstart = nint(wrt_int_state%latstart*gdsdegr)
-        latlast  = nint(wrt_int_state%latlast*gdsdegr)
+        if( lon1(grid_id)<0 ) then
+          lonstart = nint((lon1(grid_id)+360.)*gdsdegr)
+        else
+          lonstart = nint(lon1(grid_id)*gdsdegr)
+        endif
+        if( lon2(grid_id)<0 ) then
+          lonlast = nint((lon2(grid_id)+360.)*gdsdegr)
+        else
+          lonlast = nint(lon2(grid_id)*gdsdegr)
+        endif
+        latstart = nint(lat1(grid_id)*gdsdegr)
+        latlast  = nint(lat2(grid_id)*gdsdegr)
+
+
+        dxval = dlon(grid_id)*gdsdegr
+        dyval = dlat(grid_id)*gdsdegr
+
       else if(trim(output_grid(grid_id)) == 'global_latlon') then
         MAPTYPE=0
         gridtype='A'
 
-        lonstart = nint(wrt_int_state%lonstart*gdsdegr)
-        lonlast  = nint(wrt_int_state%lonlast*gdsdegr)
-        latstart = nint(wrt_int_state%latstart*gdsdegr)
-        latlast  = nint(wrt_int_state%latlast*gdsdegr)
+        if( lon1(grid_id)<0 ) then
+          lonstart = nint((lon1(grid_id)+360.)*gdsdegr)
+        else
+          lonstart = nint(lon1(grid_id)*gdsdegr)
+        endif
+        if( lon2(grid_id)<0 ) then
+          lonlast = nint((lon2(grid_id)+360.)*gdsdegr)
+        else
+          lonlast = nint(lon2(grid_id)*gdsdegr)
+        endif
+        latstart = nint(lat1(grid_id)*gdsdegr)
+        latlast  = nint(lat2(grid_id)*gdsdegr)
+
+        dxval = dlon(grid_id)*gdsdegr
+        dyval = dlat(grid_id)*gdsdegr
+
       endif
 
 ! look at the field bundle attributes
@@ -426,7 +465,7 @@ module post_fv3
               allocate(wrt_int_state%ak(n))
               call ESMF_AttributeGet(fldbundle, convention="NetCDF", purpose="FV3", &
                 name=trim(attName), valueList=wrt_int_state%ak, rc=rc)
-              wrt_int_state%lm = n-1
+              wrt_int_state%out_grid_info(grid_id)%lm = n-1
             else if(trim(attName) =="bk") then
               if(allocated(wrt_int_state%bk)) deallocate(wrt_int_state%bk)
               allocate(wrt_int_state%bk(n))
@@ -449,14 +488,14 @@ module post_fv3
               allocate(wrt_int_state%ak(n))
               call ESMF_AttributeGet(fldbundle, convention="NetCDF", purpose="FV3", &
               name=trim(attName), valueList=wrt_int_state%ak, rc=rc)
-              wrt_int_state%lm = n-1
+              wrt_int_state%out_grid_info(grid_id)%lm = n-1
             else if(trim(attName) =="bk") then
               if(allocated(wrt_int_state%bk)) deallocate(wrt_int_state%bk)
               allocate(wrt_int_state%bk(n))
               call ESMF_AttributeGet(fldbundle, convention="NetCDF", purpose="FV3", &
               name=trim(attName), valueList=wrt_int_state%bk, rc=rc)
             endif
-            wrt_int_state%lm = size(wrt_int_state%ak) - 1
+            wrt_int_state%out_grid_info(grid_id)%lm = size(wrt_int_state%ak) - 1
           endif
         endif
 !
@@ -469,12 +508,12 @@ module post_fv3
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !-----------------------------------------------------------------------
 !
-    subroutine set_postvars_fv3(wrt_int_state,mpicomp,setvar_atmfile,   &
+    subroutine set_postvars_fv3(wrt_int_state,grid_id,mpicomp,setvar_atmfile,   &
                                 setvar_sfcfile)
 !
 !  revision history:
 !     Jul 2019    J. Wang      Initial code
-!     Apr 2022    W. Meng      Unify set_postvars_gfs and 
+!     Apr 2022    W. Meng      Unify set_postvars_gfs and
 !                               set_postvars_regional to set_postvars_fv3
 !
 !-----------------------------------------------------------------------
@@ -488,7 +527,7 @@ module post_fv3
                              pint, exch_h, ref_10cm, qqni, qqnr, qqnwfa, qqnifa
       use vrbls2d,     only: f, pd, sigt4, fis, pblh, ustar, z0, ths, qs, twbs,&
                              qwbs, avgcprate, cprate, avgprec, prec, lspa, sno,&
-                             cldefi, th10, q10, tshltr, pshltr, tshltr, albase,&
+                             cldefi, th10, q10, tshltr, pshltr, albase,        &
                              avgalbedo, avgtcdc, czen, czmean, mxsnal,landfrac,&
                              radot, cfrach, cfracl, cfracm, avgcfrach, qshltr, &
                              avgcfracl, avgcfracm, cnvcfr, islope, cmc, grnflx,&
@@ -509,7 +548,7 @@ module post_fv3
                              acond, sr, u10h, v10h, avgedir, avgecan,paha,pahi,&
                              avgetrans, avgesnow, avgprec_cont, avgcprate_cont,&
                              avisbeamswin, avisdiffswin, airbeamswin, airdiffswin, &
-                             alwoutc, alwtoac, aswoutc, aswtoac, alwinc, aswinc,& 
+                             alwoutc, alwtoac, aswoutc, aswtoac, alwinc, aswinc,&
                              avgpotevp, snoavg, ti, si, cuppt, fdnsst,         &
                              w_up_max, w_dn_max, up_heli_max,up_heli_min,      &
                              up_heli_max03,up_heli_min03,rel_vort_max01,       &
@@ -525,7 +564,7 @@ module post_fv3
                              tprec, tclod, trdlw, trdsw, tsrfc, tmaxmin, theat, &
                              ardlw, ardsw, asrfc, avrain, avcnvc, iSF_SURFACE_PHYSICS,&
                              td3d, idat, sdat, ifhr, ifmin, dt, nphs, dtq2, pt_tbl, &
-                             alsl, spl, ihrst, modelname 
+                             alsl, spl, ihrst, modelname
       use params_mod,  only: erad, dtr, capa, p1000, small
       use gridspec_mod,only: latstart, latlast, lonstart, lonlast, cenlon, cenlat, &
                              dxval, dyval, truelat2, truelat1, psmapf, cenlat,     &
@@ -549,6 +588,7 @@ module post_fv3
 !-----------------------------------------------------------------------
 !
       type(wrt_internal_state),intent(in) :: wrt_int_state
+      integer,intent(in)                  :: grid_id
       integer,intent(in)                  :: mpicomp
       logical,intent(inout)               :: setvar_atmfile,setvar_sfcfile
 !
@@ -556,7 +596,7 @@ module post_fv3
 !
       integer i, ip1, j, l, k, n, iret, ibdl, rc, kstart, kend
       integer i1,i2,j1,j2,k1,k2
-      integer fieldDimCount,gridDimCount,ncount_field
+      integer fieldDimCount,gridDimCount,ncount_field,bundle_grid_id
       integer jdate(8)
       logical foundland, foundice, found, mvispresent
       integer totalLBound3d(3), totalUBound3d(3)
@@ -605,8 +645,8 @@ module post_fv3
 !$omp parallel do default(shared),private(i,j)
       do j=jsta,jend
         do  i=ista,iend
-          gdlat(i,j) = wrt_int_state%latPtr(i,j)
-          gdlon(i,j) = wrt_int_state%lonPtr(i,j)
+          gdlat(i,j) = wrt_int_state%out_grid_info(grid_id)%latPtr(i,j)
+          gdlon(i,j) = wrt_int_state%out_grid_info(grid_id)%lonPtr(i,j)
         enddo
       enddo
 
@@ -844,6 +884,13 @@ module post_fv3
 
      get_lsmsk: do ibdl=1, wrt_int_state%FBCount
 
+       call ESMF_AttributeGet(wrt_int_state%wrtFB(ibdl), convention="NetCDF", purpose="FV3", &
+                              name="grid_id", value=bundle_grid_id, rc=rc)
+       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, file=__FILE__)) return  ! bail out
+
+       if (grid_id /= bundle_grid_id) cycle
+
 ! find lans sea mask
         found = .false.
         call ESMF_FieldBundleGet(wrt_int_state%wrtFB(ibdl),fieldName='land',isPresent=found, rc=rc)
@@ -919,6 +966,14 @@ module post_fv3
 ! get grid dimension count
 !       if(mype==0) print *,'in setvar, read field, ibdl=',ibdl,'idim=',   &
 !         ista,iend,'jdim=',jsta,jend
+
+       call ESMF_AttributeGet(wrt_int_state%wrtFB(ibdl), convention="NetCDF", purpose="FV3", &
+                              name="grid_id", value=bundle_grid_id, rc=rc)
+       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, file=__FILE__)) return  ! bail out
+
+       if (grid_id /= bundle_grid_id) cycle
+
        call ESMF_FieldBundleGet(wrt_int_state%wrtFB(ibdl), grid=wrtGrid,  &
          fieldCount=ncount_field, name=wrtFBName,rc=rc)
        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
@@ -2527,7 +2582,7 @@ module post_fv3
                 enddo
               enddo
             endif
- 
+
 
             ! snow phase change heat flux
             if(trim(fieldname)=='pwat') then
@@ -3016,14 +3071,14 @@ module post_fv3
               enddo
             endif
             endif
-          
+
 !3d fields
           endif
 
 ! end loop ncount_field
         enddo
 
-        if ( index(trim(wrt_int_state%wrtFB_names(ibdl)),trim(filename_base(1))) > 0)  then 
+        if ( index(trim(wrt_int_state%wrtFB_names(ibdl)),trim(filename_base(1))) > 0)  then
           setvar_atmfile = .true.
         endif
         if ( index(trim(wrt_int_state%wrtFB_names(ibdl)),trim(filename_base(2))) > 0)   then
@@ -3124,7 +3179,7 @@ module post_fv3
         end do
       end do
 
-! compute zmid  
+! compute zmid
       do l=lm,1,-1
 !$omp parallel do default(none) private(i,j) shared(l,jsta,jend,im,zmid,zint,pmid,alpint,spval,ista,iend)
         do j=jsta,jend
