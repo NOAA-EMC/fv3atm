@@ -38,6 +38,8 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
                                 atmos_model_exchange_phase_2,              &
                                 addLsmask2grid, atmos_model_get_nth_domain_info
 
+  use GFS_typedefs,       only: kind_phys, kind_sngl_prec
+
   use constants_mod,      only: constants_init
   use fms_mod,            only: error_mesg, fms_init, fms_end,             &
                                 write_version_number, uppercase
@@ -158,6 +160,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     integer,dimension(2,6):: decomptile                  !define delayout for the 6 cubed-sphere tiles
     integer,dimension(2)  :: regdecomp                   !define delayout for the nest grid
     type(ESMF_Decomp_Flag):: decompflagPTile(2,6)
+    type(ESMF_TypeKind_Flag) :: grid_typekind
     character(3)          :: myGridStr
     type(ESMF_DistGrid)   :: distgrid
     type(ESMF_Array)      :: array
@@ -185,6 +188,12 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     call ESMF_InfoGet(info, key="layout", values=layout, rc=rc); ESMF_ERR_ABORT(rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
+    if (kind_phys == kind_sngl_prec) then
+      grid_typekind = ESMF_TYPEKIND_R4
+    else
+      grid_typekind = ESMF_TYPEKIND_R8
+    endif
+
     if (trim(name)=="global") then
       ! global domain
       call ESMF_InfoGet(info, key="tilesize", value=tilesize, rc=rc); ESMF_ERR_ABORT(rc)
@@ -197,6 +206,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
       enddo
       grid = ESMF_GridCreateCubedSphere(tileSize=tilesize, &
                                         coordSys=ESMF_COORDSYS_SPH_RAD, &
+                                        coordTypeKind=grid_typekind, &
                                         regDecompPTile=decomptile, &
                                         decompflagPTile=decompflagPTile, &
                                         name="fcst_grid", rc=rc)
@@ -212,6 +222,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
                                       maxIndex=(/nx,ny/), &
                                       gridAlign=(/-1,-1/), &
                                       coordSys=ESMF_COORDSYS_SPH_RAD, &
+                                      coordTypeKind=grid_typekind, &
                                       decompflag=(/ESMF_DECOMP_SYMMEDGEMAX,ESMF_DECOMP_SYMMEDGEMAX/), &
                                       name="fcst_grid", &
                                       indexflag=ESMF_INDEX_DELOCAL, &
