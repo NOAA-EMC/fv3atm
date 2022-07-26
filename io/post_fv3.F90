@@ -56,7 +56,7 @@ module post_fv3
 !
 !-----------------------------------------------------------------------
 !
-      type(wrt_internal_state),intent(in)       :: wrt_int_state
+      type(wrt_internal_state),intent(inout)    :: wrt_int_state
       integer,intent(in)                        :: grid_id
       integer,intent(in)                        :: mypei
       integer,intent(in)                        :: mpicomp
@@ -90,6 +90,8 @@ module post_fv3
 !-----------------------------------------------------------------------
 !
       btim0 = MPI_Wtime()
+
+      call post_getattr_fv3(wrt_int_state, grid_id)
 
       grib      = "grib2"
       gridtype  = "A"

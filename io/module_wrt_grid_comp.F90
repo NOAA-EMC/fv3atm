@@ -43,7 +43,7 @@
       use module_write_netcdf, only : write_netcdf
       use physcons,            only : pi => con_pi
 #ifdef INLINE_POST
-      use post_fv3,            only : post_run_fv3, post_getattr_fv3
+      use post_fv3,            only : post_run_fv3
 #endif
 !
 !-----------------------------------------------------------------------
@@ -1924,7 +1924,6 @@
               lmask_fields = .true.
           endif
 
-          call post_getattr_fv3(wrt_int_state, n)
           call post_run_fv3(wrt_int_state, n, mype, wrt_mpi_comm, lead_write_task, &
                                nf_hours, nf_minutes, nf_seconds)
         enddo
