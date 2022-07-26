@@ -533,219 +533,221 @@
               'gridfile=',trim(gridfile)
             deallocate(petMap)
           endif
-        else if ( trim(output_grid(n)) == 'gaussian_grid') then
+        else  ! non 'cubed_sphere_grid'
+          if ( trim(output_grid(n)) == 'gaussian_grid') then
 
-          wrtGrid(n) = ESMF_GridCreate1PeriDim(minIndex=(/1,1/),                                        &
-                                               maxIndex=(/imo(n),jmo(n)/), regDecomp=(/itasks,jtasks/), &
-                                               indexflag=ESMF_INDEX_GLOBAL,                             &
-                                               name='wrt_grid',rc=rc)
+            wrtGrid(n) = ESMF_GridCreate1PeriDim(minIndex=(/1,1/),                                        &
+                                                 maxIndex=(/imo(n),jmo(n)/), regDecomp=(/itasks,jtasks/), &
+                                                 indexflag=ESMF_INDEX_GLOBAL,                             &
+                                                 name='wrt_grid',rc=rc)
 
-          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-          call ESMF_GridAddCoord(wrtGrid(n), staggerLoc=ESMF_STAGGERLOC_CENTER, rc=rc)
-          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+            call ESMF_GridAddCoord(wrtGrid(n), staggerLoc=ESMF_STAGGERLOC_CENTER, rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-          call ESMF_GridGetCoord(wrtGrid(n), coordDim=1, farrayPtr=lonPtr, rc=rc)
-          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+            call ESMF_GridGetCoord(wrtGrid(n), coordDim=1, farrayPtr=lonPtr, rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-          call ESMF_GridGetCoord(wrtGrid(n), coordDim=2, farrayPtr=latPtr, rc=rc)
-          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+            call ESMF_GridGetCoord(wrtGrid(n), coordDim=2, farrayPtr=latPtr, rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
-          allocate(slat(jmo(n)), lat(jmo(n)), lon(imo(n)))
-          call splat(4, jmo(n), slat)
-          if(write_nsflip) then
-            do j=1,jmo(n)
-              lat(j) = asin(slat(j)) * radi
-            enddo
-          else
-            do j=1,jmo(n)
-              lat(jmo(n)-j+1) = asin(slat(j)) * radi
-            enddo
-          endif
-          do j=1,imo(n)
-            lon(j) = 360.d0/real(imo(n),8) *real(j-1,8)
-          enddo
-          do j=lbound(latPtr,2),ubound(latPtr,2)
-            do i=lbound(lonPtr,1),ubound(lonPtr,1)
-              lonPtr(i,j) = 360.d0/real(imo(n),8) * real(i-1,8)
-              latPtr(i,j) = lat(j)
-            enddo
-          enddo
-          lon1(n) = lon(1)
-          lon2(n) = lon(imo(n))
-          lat1(n) = lat(1)
-          lat2(n) = lat(jmo(n))
-          dlon(n) =  360.d0/real(imo(n),8)
-          dlat(n) =  180.d0/real(jmo(n),8)
-
-          deallocate(slat, lat, lon)
-
-        else if ( trim(output_grid(n)) == 'global_latlon') then
-          wrtGrid(n) = ESMF_GridCreate1PeriDim(minIndex=(/1,1/),                                        &
-                                               maxIndex=(/imo(n),jmo(n)/), regDecomp=(/itasks,jtasks/), &
-                                               indexflag=ESMF_INDEX_GLOBAL,                             &
-                                               name='wrt_grid',rc=rc)
-
-          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-          call ESMF_GridAddCoord(wrtGrid(n), staggerLoc=ESMF_STAGGERLOC_CENTER, rc=rc)
-          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-          call ESMF_GridGetCoord(wrtGrid(n), coordDim=1, farrayPtr=lonPtr, rc=rc)
-          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-          call ESMF_GridGetCoord(wrtGrid(n), coordDim=2, farrayPtr=latPtr, rc=rc)
-          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-          allocate(lat(jmo(n)), lon(imo(n)))
-          if (mod(jmo(n),2) == 0) then
-            ! if jmo even, lats do not include poles and equator
-            delat = 180.d0/real(jmo(n),8)
+            allocate(slat(jmo(n)), lat(jmo(n)), lon(imo(n)))
+            call splat(4, jmo(n), slat)
             if(write_nsflip) then
               do j=1,jmo(n)
-                lat(j) = 90.d0 - 0.5*delat - real(j-1,8)*delat
+                lat(j) = asin(slat(j)) * radi
               enddo
             else
               do j=1,jmo(n)
-                lat(j) = -90.d0 + 0.5*delat + real(j-1,8)*delat
+                lat(jmo(n)-j+1) = asin(slat(j)) * radi
               enddo
             endif
-          else
-            ! if jmo odd, lats include poles and equator
-            delat = 180.d0/real(jmo(n)-1,8)
-            if(write_nsflip) then
-              do j=1,jmo(n)
-                lat(j) = 90.d0 - real(j-1,8)*delat
-              enddo
-            else
-              do j=1,jmo(n)
-                lat(j) = -90.d0 + real(j-1,8)*delat
-              enddo
-            endif
-          endif
-          delon = 360.d0/real(imo(n),8)
-          do i=1,imo(n)
-            lon(i) = real(i-1,8)*delon
-          enddo
-          do j=lbound(latPtr,2),ubound(latPtr,2)
-            do i=lbound(lonPtr,1),ubound(lonPtr,1)
-              lonPtr(i,j) = lon(i)
-              latPtr(i,j) = lat(j)
+            do j=1,imo(n)
+              lon(j) = 360.d0/real(imo(n),8) *real(j-1,8)
             enddo
-          enddo
-          lon1(n) = lon(1)
-          lon2(n) = lon(imo(n))
-          lat1(n) = lat(1)
-          lat2(n) = lat(jmo(n))
-          dlon(n) = delon
-          dlat(n) = delat
-
-          deallocate(lat, lon)
-
-        else if ( trim(output_grid(n)) == 'regional_latlon' .or.        &
-                  trim(output_grid(n)) == 'regional_latlon_moving' .or. &
-                  trim(output_grid(n)) == 'rotated_latlon' .or.         &
-                  trim(output_grid(n)) == 'rotated_latlon_moving' .or.  &
-                  trim(output_grid(n)) == 'lambert_conformal' ) then
-
-          wrtGrid(n) = ESMF_GridCreateNoPeriDim(minIndex=(/1,1/),                                        &
-                                                maxIndex=(/imo(n),jmo(n)/), regDecomp=(/itasks,jtasks/), &
-                                                indexflag=ESMF_INDEX_GLOBAL,                             &
-                                                name='wrt_grid',rc=rc)
-
-          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-          call ESMF_GridAddCoord(wrtGrid(n), staggerLoc=ESMF_STAGGERLOC_CENTER, rc=rc)
-          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-          call ESMF_GridGetCoord(wrtGrid(n), coordDim=1, farrayPtr=lonPtr, rc=rc)
-          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-          call ESMF_GridGetCoord(wrtGrid(n), coordDim=2, farrayPtr=latPtr, rc=rc)
-          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-          if ( trim(output_grid(n)) == 'regional_latlon' ) then
-              do j=lbound(lonPtr,2),ubound(lonPtr,2)
+            do j=lbound(latPtr,2),ubound(latPtr,2)
               do i=lbound(lonPtr,1),ubound(lonPtr,1)
-                lonPtr(i,j) = lon1(n) + (lon2(n)-lon1(n))/(imo(n)-1) * (i-1)
-                latPtr(i,j) = lat1(n) + (lat2(n)-lat1(n))/(jmo(n)-1) * (j-1)
+                lonPtr(i,j) = 360.d0/real(imo(n),8) * real(i-1,8)
+                latPtr(i,j) = lat(j)
               enddo
-              enddo
-          else if ( trim(output_grid(n)) == 'regional_latlon_moving' ) then
-              ! Do not compute lonPtr, latPtr here. Will be done in the run phase
-          else if ( trim(output_grid(n)) == 'rotated_latlon' ) then
-              do j=lbound(lonPtr,2),ubound(lonPtr,2)
+            enddo
+            lon1(n) = lon(1)
+            lon2(n) = lon(imo(n))
+            lat1(n) = lat(1)
+            lat2(n) = lat(jmo(n))
+            dlon(n) =  360.d0/real(imo(n),8)
+            dlat(n) =  180.d0/real(jmo(n),8)
+
+            deallocate(slat, lat, lon)
+
+          else if ( trim(output_grid(n)) == 'global_latlon') then
+            wrtGrid(n) = ESMF_GridCreate1PeriDim(minIndex=(/1,1/),                                        &
+                                                 maxIndex=(/imo(n),jmo(n)/), regDecomp=(/itasks,jtasks/), &
+                                                 indexflag=ESMF_INDEX_GLOBAL,                             &
+                                                 name='wrt_grid',rc=rc)
+
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+            call ESMF_GridAddCoord(wrtGrid(n), staggerLoc=ESMF_STAGGERLOC_CENTER, rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+            call ESMF_GridGetCoord(wrtGrid(n), coordDim=1, farrayPtr=lonPtr, rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+            call ESMF_GridGetCoord(wrtGrid(n), coordDim=2, farrayPtr=latPtr, rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+            allocate(lat(jmo(n)), lon(imo(n)))
+            if (mod(jmo(n),2) == 0) then
+              ! if jmo even, lats do not include poles and equator
+              delat = 180.d0/real(jmo(n),8)
+              if(write_nsflip) then
+                do j=1,jmo(n)
+                  lat(j) = 90.d0 - 0.5*delat - real(j-1,8)*delat
+                enddo
+              else
+                do j=1,jmo(n)
+                  lat(j) = -90.d0 + 0.5*delat + real(j-1,8)*delat
+                enddo
+              endif
+            else
+              ! if jmo odd, lats include poles and equator
+              delat = 180.d0/real(jmo(n)-1,8)
+              if(write_nsflip) then
+                do j=1,jmo(n)
+                  lat(j) = 90.d0 - real(j-1,8)*delat
+                enddo
+              else
+                do j=1,jmo(n)
+                  lat(j) = -90.d0 + real(j-1,8)*delat
+                enddo
+              endif
+            endif
+            delon = 360.d0/real(imo(n),8)
+            do i=1,imo(n)
+              lon(i) = real(i-1,8)*delon
+            enddo
+            do j=lbound(latPtr,2),ubound(latPtr,2)
               do i=lbound(lonPtr,1),ubound(lonPtr,1)
-                rot_lon = lon1(n) + (lon2(n)-lon1(n))/(imo(n)-1) * (i-1)
-                rot_lat = lat1(n) + (lat2(n)-lat1(n))/(jmo(n)-1) * (j-1)
-                call rtll(rot_lon, rot_lat, geo_lon, geo_lat, dble(cen_lon(n)), dble(cen_lat(n)))
-                if (geo_lon < 0.0) geo_lon = geo_lon + 360.0
-                lonPtr(i,j) = geo_lon
-                latPtr(i,j) = geo_lat
+                lonPtr(i,j) = lon(i)
+                latPtr(i,j) = lat(j)
               enddo
-              enddo
-          else if ( trim(output_grid(n)) == 'rotated_latlon_moving' ) then
-              ! Do not compute lonPtr, latPtr here. Will be done in the run phase
-          else if ( trim(output_grid(n)) == 'lambert_conformal' ) then
-              lon1_r8 = dble(lon1(n))
-              lat1_r8 = dble(lat1(n))
-              call lambert(dble(stdlat1(n)),dble(stdlat2(n)),dble(cen_lat(n)),dble(cen_lon(n)), &
-                           lon1_r8,lat1_r8,x1,y1, 1)
-              do j=lbound(lonPtr,2),ubound(lonPtr,2)
-              do i=lbound(lonPtr,1),ubound(lonPtr,1)
-                x = x1 + dx(n) * (i-1)
-                y = y1 + dy(n) * (j-1)
+            enddo
+            lon1(n) = lon(1)
+            lon2(n) = lon(imo(n))
+            lat1(n) = lat(1)
+            lat2(n) = lat(jmo(n))
+            dlon(n) = delon
+            dlat(n) = delat
+
+            deallocate(lat, lon)
+
+          else if ( trim(output_grid(n)) == 'regional_latlon' .or.        &
+                    trim(output_grid(n)) == 'regional_latlon_moving' .or. &
+                    trim(output_grid(n)) == 'rotated_latlon' .or.         &
+                    trim(output_grid(n)) == 'rotated_latlon_moving' .or.  &
+                    trim(output_grid(n)) == 'lambert_conformal' ) then
+
+            wrtGrid(n) = ESMF_GridCreateNoPeriDim(minIndex=(/1,1/),                                        &
+                                                  maxIndex=(/imo(n),jmo(n)/), regDecomp=(/itasks,jtasks/), &
+                                                  indexflag=ESMF_INDEX_GLOBAL,                             &
+                                                  name='wrt_grid',rc=rc)
+
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+            call ESMF_GridAddCoord(wrtGrid(n), staggerLoc=ESMF_STAGGERLOC_CENTER, rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+            call ESMF_GridGetCoord(wrtGrid(n), coordDim=1, farrayPtr=lonPtr, rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+            call ESMF_GridGetCoord(wrtGrid(n), coordDim=2, farrayPtr=latPtr, rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+            if ( trim(output_grid(n)) == 'regional_latlon' ) then
+                do j=lbound(lonPtr,2),ubound(lonPtr,2)
+                do i=lbound(lonPtr,1),ubound(lonPtr,1)
+                  lonPtr(i,j) = lon1(n) + (lon2(n)-lon1(n))/(imo(n)-1) * (i-1)
+                  latPtr(i,j) = lat1(n) + (lat2(n)-lat1(n))/(jmo(n)-1) * (j-1)
+                enddo
+                enddo
+            else if ( trim(output_grid(n)) == 'regional_latlon_moving' ) then
+                ! Do not compute lonPtr, latPtr here. Will be done in the run phase
+            else if ( trim(output_grid(n)) == 'rotated_latlon' ) then
+                do j=lbound(lonPtr,2),ubound(lonPtr,2)
+                do i=lbound(lonPtr,1),ubound(lonPtr,1)
+                  rot_lon = lon1(n) + (lon2(n)-lon1(n))/(imo(n)-1) * (i-1)
+                  rot_lat = lat1(n) + (lat2(n)-lat1(n))/(jmo(n)-1) * (j-1)
+                  call rtll(rot_lon, rot_lat, geo_lon, geo_lat, dble(cen_lon(n)), dble(cen_lat(n)))
+                  if (geo_lon < 0.0) geo_lon = geo_lon + 360.0
+                  lonPtr(i,j) = geo_lon
+                  latPtr(i,j) = geo_lat
+                enddo
+                enddo
+            else if ( trim(output_grid(n)) == 'rotated_latlon_moving' ) then
+                ! Do not compute lonPtr, latPtr here. Will be done in the run phase
+            else if ( trim(output_grid(n)) == 'lambert_conformal' ) then
+                lon1_r8 = dble(lon1(n))
+                lat1_r8 = dble(lat1(n))
                 call lambert(dble(stdlat1(n)),dble(stdlat2(n)),dble(cen_lat(n)),dble(cen_lon(n)), &
-                             geo_lon,geo_lat,x,y,-1)
-                if (geo_lon <0.0) geo_lon = geo_lon + 360.0
-                lonPtr(i,j) = geo_lon
-                latPtr(i,j) = geo_lat
-              enddo
-              enddo
+                             lon1_r8,lat1_r8,x1,y1, 1)
+                do j=lbound(lonPtr,2),ubound(lonPtr,2)
+                do i=lbound(lonPtr,1),ubound(lonPtr,1)
+                  x = x1 + dx(n) * (i-1)
+                  y = y1 + dy(n) * (j-1)
+                  call lambert(dble(stdlat1(n)),dble(stdlat2(n)),dble(cen_lat(n)),dble(cen_lon(n)), &
+                               geo_lon,geo_lat,x,y,-1)
+                  if (geo_lon <0.0) geo_lon = geo_lon + 360.0
+                  lonPtr(i,j) = geo_lon
+                  latPtr(i,j) = geo_lat
+                enddo
+                enddo
+            endif
+
+          else
+
+            write(0,*)"wrt_initialize_p1: Unknown output_grid ", trim(output_grid(n))
+            call ESMF_LogWrite("wrt_initialize_p1: Unknown output_grid "//trim(output_grid(n)),ESMF_LOGMSG_ERROR,rc=RC)
+            call ESMF_Finalize(endflag=ESMF_END_ABORT)
+
           endif
 
-        else
+          wrt_int_state%out_grid_info(n)%i_start = lbound(lonPtr,1)
+          wrt_int_state%out_grid_info(n)%i_end   = ubound(lonPtr,1)
+          wrt_int_state%out_grid_info(n)%j_start = lbound(latPtr,2)
+          wrt_int_state%out_grid_info(n)%j_end   = ubound(latPtr,2)
 
-          write(0,*)"wrt_initialize_p1: Unknown output_grid ", trim(output_grid(n))
-          call ESMF_LogWrite("wrt_initialize_p1: Unknown output_grid "//trim(output_grid(n)),ESMF_LOGMSG_ERROR,rc=RC)
-          call ESMF_Finalize(endflag=ESMF_END_ABORT)
+          allocate( wrt_int_state%out_grid_info(n)%i_start_wrtgrp(wrt_int_state%petcount) )
+          allocate( wrt_int_state%out_grid_info(n)%i_end_wrtgrp  (wrt_int_state%petcount) )
+          allocate( wrt_int_state%out_grid_info(n)%j_start_wrtgrp(wrt_int_state%petcount) )
+          allocate( wrt_int_state%out_grid_info(n)%j_end_wrtgrp  (wrt_int_state%petcount) )
 
-        endif
+          call mpi_allgather(wrt_int_state%out_grid_info(n)%i_start,        1, MPI_INTEGER,    &
+                             wrt_int_state%out_grid_info(n)%i_start_wrtgrp, 1, MPI_INTEGER, wrt_mpi_comm, rc)
+          call mpi_allgather(wrt_int_state%out_grid_info(n)%i_end,          1, MPI_INTEGER,    &
+                             wrt_int_state%out_grid_info(n)%i_end_wrtgrp,   1, MPI_INTEGER, wrt_mpi_comm, rc)
+          call mpi_allgather(wrt_int_state%out_grid_info(n)%j_start,        1, MPI_INTEGER,    &
+                             wrt_int_state%out_grid_info(n)%j_start_wrtgrp, 1, MPI_INTEGER, wrt_mpi_comm, rc)
+          call mpi_allgather(wrt_int_state%out_grid_info(n)%j_end,          1, MPI_INTEGER,    &
+                             wrt_int_state%out_grid_info(n)%j_end_wrtgrp,   1, MPI_INTEGER, wrt_mpi_comm, rc)
 
-        wrt_int_state%out_grid_info(n)%i_start = lbound(lonPtr,1)
-        wrt_int_state%out_grid_info(n)%i_end   = ubound(lonPtr,1)
-        wrt_int_state%out_grid_info(n)%j_start = lbound(latPtr,2)
-        wrt_int_state%out_grid_info(n)%j_end   = ubound(latPtr,2)
+          allocate( wrt_int_state%out_grid_info(n)%lonPtr(wrt_int_state%out_grid_info(n)%i_start:wrt_int_state%out_grid_info(n)%i_end, &
+                                                          wrt_int_state%out_grid_info(n)%j_start:wrt_int_state%out_grid_info(n)%j_end) )
+          allocate( wrt_int_state%out_grid_info(n)%latPtr(wrt_int_state%out_grid_info(n)%i_start:wrt_int_state%out_grid_info(n)%i_end, &
+                                                          wrt_int_state%out_grid_info(n)%j_start:wrt_int_state%out_grid_info(n)%j_end) )
 
-        allocate( wrt_int_state%out_grid_info(n)%i_start_wrtgrp(wrt_int_state%petcount) )
-        allocate( wrt_int_state%out_grid_info(n)%i_end_wrtgrp  (wrt_int_state%petcount) )
-        allocate( wrt_int_state%out_grid_info(n)%j_start_wrtgrp(wrt_int_state%petcount) )
-        allocate( wrt_int_state%out_grid_info(n)%j_end_wrtgrp  (wrt_int_state%petcount) )
+          do j=wrt_int_state%out_grid_info(n)%j_start, wrt_int_state%out_grid_info(n)%j_end
+          do i=wrt_int_state%out_grid_info(n)%i_start, wrt_int_state%out_grid_info(n)%i_end
+              wrt_int_state%out_grid_info(n)%latPtr(i,j) = latPtr(i,j)
+              wrt_int_state%out_grid_info(n)%lonPtr(i,j) = lonPtr(i,j)
+          enddo
+          enddo
 
-        call mpi_allgather(wrt_int_state%out_grid_info(n)%i_start,        1, MPI_INTEGER,    &
-                           wrt_int_state%out_grid_info(n)%i_start_wrtgrp, 1, MPI_INTEGER, wrt_mpi_comm, rc)
-        call mpi_allgather(wrt_int_state%out_grid_info(n)%i_end,          1, MPI_INTEGER,    &
-                           wrt_int_state%out_grid_info(n)%i_end_wrtgrp,   1, MPI_INTEGER, wrt_mpi_comm, rc)
-        call mpi_allgather(wrt_int_state%out_grid_info(n)%j_start,        1, MPI_INTEGER,    &
-                           wrt_int_state%out_grid_info(n)%j_start_wrtgrp, 1, MPI_INTEGER, wrt_mpi_comm, rc)
-        call mpi_allgather(wrt_int_state%out_grid_info(n)%j_end,          1, MPI_INTEGER,    &
-                           wrt_int_state%out_grid_info(n)%j_end_wrtgrp,   1, MPI_INTEGER, wrt_mpi_comm, rc)
+          wrt_int_state%out_grid_info(n)%im = imo(n)
+          wrt_int_state%out_grid_info(n)%jm = jmo(n)
 
-        allocate( wrt_int_state%out_grid_info(n)%lonPtr(wrt_int_state%out_grid_info(n)%i_start:wrt_int_state%out_grid_info(n)%i_end, &
-                                                        wrt_int_state%out_grid_info(n)%j_start:wrt_int_state%out_grid_info(n)%j_end) )
-        allocate( wrt_int_state%out_grid_info(n)%latPtr(wrt_int_state%out_grid_info(n)%i_start:wrt_int_state%out_grid_info(n)%i_end, &
-                                                        wrt_int_state%out_grid_info(n)%j_start:wrt_int_state%out_grid_info(n)%j_end) )
-
-        do j=wrt_int_state%out_grid_info(n)%j_start, wrt_int_state%out_grid_info(n)%j_end
-        do i=wrt_int_state%out_grid_info(n)%i_start, wrt_int_state%out_grid_info(n)%i_end
-            wrt_int_state%out_grid_info(n)%latPtr(i,j) = latPtr(i,j)
-            wrt_int_state%out_grid_info(n)%lonPtr(i,j) = lonPtr(i,j)
-        enddo
-        enddo
-
-        wrt_int_state%out_grid_info(n)%im = imo(n)
-        wrt_int_state%out_grid_info(n)%jm = jmo(n)
-
+        end if ! non 'cubed_sphere_grid'
       end do !  n = 1, ngrids
 !
 !-----------------------------------------------------------------------

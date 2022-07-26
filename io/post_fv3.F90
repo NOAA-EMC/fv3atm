@@ -399,7 +399,6 @@ module post_fv3
         latstart = nint(lat1(grid_id)*gdsdegr)
         latlast  = nint(lat2(grid_id)*gdsdegr)
 
-
         dxval = dlon(grid_id)*gdsdegr
         dyval = dlat(grid_id)*gdsdegr
 
