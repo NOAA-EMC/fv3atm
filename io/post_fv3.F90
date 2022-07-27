@@ -43,7 +43,7 @@ module post_fv3
 !-----------------------------------------------------------------------
 !
       use ctlblk_mod, only : komax,ifhr,ifmin,modelname,datapd,fld_info, &
-                             npset,grib,gocart_on,icount_calmict, jsta,  &
+                             npset,grib,gocart_on,jsta,  &
                              jend,ista,iend, im, nsoil, filenameflat,numx
       use gridspec_mod, only : maptype, gridtype,latstart,latlast,       &
                                lonstart,lonlast
@@ -69,7 +69,7 @@ module post_fv3
 !***  LOCAL VARIABLES
 !-----------------------------------------------------------------------
 !
-      integer n,nwtpg,ieof,lcntrl,ierr,i,j,k,jts,jte,mynsoil
+      integer n,nwtpg,lcntrl,ierr,i,j,k,jts,jte,mynsoil
       integer,allocatable  :: jstagrp(:),jendgrp(:)
       integer its,ite
       integer,allocatable  :: istagrp(:),iendgrp(:)
@@ -77,8 +77,7 @@ module post_fv3
       logical,save         :: log_postalct=.false.
       logical,save         :: first_run=.true.
       real,dimension(komax),save :: po, th, pv
-      logical        :: Log_runpost
-      character(255) :: post_fname*255
+      character(255)       :: post_fname
 
       integer,save :: iostatusD3D=-1
 !
@@ -182,12 +181,9 @@ module post_fv3
         if(grib=="grib2" .and. read_postcntrl) then
           if (ifhr == 0) then
             filenameflat = 'postxconfig-NT_FH00.txt'
-            if(grid_id > 1) write(filenameflat,'(A,I2.2)') 'postxconfig-NT_FH00.txt_', grid_id
             call read_xml()
-            if(mype==0) print *,'af read_xml at fh00,name=',trim(filenameflat)
           else if(ifhr > 0) then
             filenameflat = 'postxconfig-NT.txt'
-            if(grid_id > 1) write(filenameflat,'(A,I2.2)') 'postxconfig-NT.txt_', grid_id
             if(associated(paramset)) then
               if(size(paramset)>0) then
                 do i=1,size(paramset)
@@ -204,51 +200,43 @@ module post_fv3
             endif
             num_pset = 0
             call read_xml()
-            if(mype==0) print *,'af read_xml,name=',trim(filenameflat),'ifhr=',ifhr
             read_postcntrl = .false.
           endif
+          if(mype==0) print *,'af read_xml,name=',trim(filenameflat),' ifhr=',ifhr,' num_pset=',num_pset
         endif
 !
-        IEOF  = 0
-        npset = 0
-        icount_calmict = 0
-        do while( IEOF == 0)
-!
-          if(grib == "grib2") then
-            npset = npset + 1
-            call set_outflds(kth,th,kpv,pv)
-            if(allocated(datapd))deallocate(datapd)
-            allocate(datapd(ite-its+1,jte-jts+1,nrecout+100))
+        do npset = 1, num_pset
+          call set_outflds(kth,th,kpv,pv)
+          if(allocated(datapd))deallocate(datapd)
+          allocate(datapd(ite-its+1,jte-jts+1,nrecout+100))
 !$omp parallel do default(none),private(i,j,k),shared(nrecout,jend,jsta,im,datapd,ista,iend)
-            do k=1,nrecout+100
-              do j=1,jend+1-jsta
-                do i=1,iend+1-ista
-                  datapd(i,j,k) = 0.
-                enddo
+          do k=1,nrecout+100
+            do j=1,jend+1-jsta
+              do i=1,iend+1-ista
+                datapd(i,j,k) = 0.
               enddo
             enddo
-            call get_postfilename(post_fname)
-            if (mype==0) write(0,*)'post_fname=',trim(post_fname)
-!
-            if ( ieof == 0) call process(kth,kpv,th(1:kth),pv(1:kpv),iostatusD3D)
-!
-            call mpi_barrier(mpicomp,ierr)
-            call gribit2(post_fname)
-            if(allocated(datapd))deallocate(datapd)
-            if(allocated(fld_info))deallocate(fld_info)
-            if(npset >= num_pset) exit
-
+          enddo
+          call get_postfilename(post_fname)
+          if (grid_id > 1) then
+            write(post_fname, '(A,I2.2)') trim(post_fname)//".nest", grid_id
           endif
-!
+          if (mype==0) print *,'post_fname=',trim(post_fname)
+
+          call process(kth,kpv,th(1:kth),pv(1:kpv),iostatusD3D)
+
+          call mpi_barrier(mpicomp,ierr)
+          call gribit2(post_fname)
+          if(allocated(datapd))deallocate(datapd)
+          if(allocated(fld_info))deallocate(fld_info)
         enddo
-!
+
       endif
 
       if( first_run ) then
          first_run = .false.
       endif
       call post_finalize('grib2')
-
 
     end subroutine post_run_fv3
 !
