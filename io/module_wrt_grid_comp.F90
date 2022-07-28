@@ -136,9 +136,6 @@
 !***  INITIALIZE THE WRITE GRIDDED COMPONENT.
 !-----------------------------------------------------------------------
 !
-#ifdef INLINE_POST
-      use ctlblk_mod, only: numx
-#endif
       type(esmf_GridComp)               :: wrt_comp
       type(ESMF_State)                  :: imp_state_write, exp_state_write
       type(esmf_Clock)                  :: clock
@@ -381,10 +378,6 @@
           itasks = 1
           jtasks = ntasks
         endif
-#ifdef INLINE_POST
-        numx = itasks
-        if (lprnt) print *,'jtasks=',jtasks,' itasks=',itasks,' numx=',numx
-#endif
 
         if (trim(output_grid(n)) == 'gaussian_grid' .or. trim(output_grid(n)) == 'global_latlon') then
           call ESMF_ConfigGetAttribute(config=cf_output_grid, value=imo(n), label ='imo:',rc=rc)
@@ -1925,7 +1918,7 @@
           endif
 
           call post_run_fv3(wrt_int_state, n, mype, wrt_mpi_comm, lead_write_task, &
-                               nf_hours, nf_minutes, nf_seconds)
+                            itasks, jtasks, nf_hours, nf_minutes, nf_seconds)
         enddo
         wend = MPI_Wtime()
         if (lprnt) then

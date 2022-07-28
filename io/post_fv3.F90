@@ -21,7 +21,7 @@ module post_fv3
   contains
 
   subroutine post_run_fv3(wrt_int_state,grid_id,mypei,mpicomp,lead_write,      &
-             mynfhr,mynfmin,mynfsec)
+                          itasks,jtasks,mynfhr,mynfmin,mynfsec)
 !
 !  revision history:
 !     Jul 2019    J. Wang             create interface to run inline post for FV3
@@ -61,6 +61,7 @@ module post_fv3
       integer,intent(in)                        :: mypei
       integer,intent(in)                        :: mpicomp
       integer,intent(in)                        :: lead_write
+      integer,intent(in)                        :: itasks, jtasks
       integer,intent(in)                        :: mynfhr
       integer,intent(in)                        :: mynfmin
       integer,intent(in)                        :: mynfsec
@@ -81,14 +82,11 @@ module post_fv3
 
       integer,save :: iostatusD3D=-1
 !
-      real(kind=8)   :: btim0, btim1, btim2, btim3,btim4,btim5,btim6,btim7
-!
-!     print *,'in post_run start'
 !-----------------------------------------------------------------------
 !*** set up dimensions
 !-----------------------------------------------------------------------
 !
-      btim0 = MPI_Wtime()
+      numx = itasks
 
       call post_getattr_fv3(wrt_int_state, grid_id)
 
