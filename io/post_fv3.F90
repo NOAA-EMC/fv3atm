@@ -1,27 +1,21 @@
-!-----------------------------------------------------------------------
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-!-----------------------------------------------------------------------
-!
 module post_fv3
 
   use mpi
 
-  use module_fv3_io_def,    only : wrttasks_per_group,filename_base,    &
-                                   lon1, lat1, lon2, lat2, dlon, dlat,  &
+  use module_fv3_io_def,    only : wrttasks_per_group, filename_base,    &
+                                   lon1, lat1, lon2, lat2, dlon, dlat,   &
                                    cen_lon, cen_lat, dxin=>dx, dyin=>dy, &
                                    stdlat1, stdlat2, output_grid
   use write_internal_state, only : wrt_internal_state
 
   implicit none
 
-  integer mype, nbdl
-  logical setvar_atmfile, setvar_sfcfile, read_postcntrl
-  public  post_run_fv3, post_getattr_fv3
+  public post_run_fv3
 
   contains
 
-  subroutine post_run_fv3(wrt_int_state,grid_id,mypei,mpicomp,lead_write,      &
-                          itasks,jtasks,mynfhr,mynfmin,mynfsec)
+    subroutine post_run_fv3(wrt_int_state,grid_id,mype,mpicomp,lead_write, &
+                            itasks,jtasks,mynfhr,mynfmin,mynfsec)
 !
 !  revision history:
 !     Jul 2019    J. Wang             create interface to run inline post for FV3
@@ -58,7 +52,7 @@ module post_fv3
 !
       type(wrt_internal_state),intent(inout)    :: wrt_int_state
       integer,intent(in)                        :: grid_id
-      integer,intent(in)                        :: mypei
+      integer,intent(in)                        :: mype
       integer,intent(in)                        :: mpicomp
       integer,intent(in)                        :: lead_write
       integer,intent(in)                        :: itasks, jtasks
@@ -70,17 +64,14 @@ module post_fv3
 !***  LOCAL VARIABLES
 !-----------------------------------------------------------------------
 !
-      integer n,nwtpg,lcntrl,ierr,i,j,k,jts,jte,mynsoil
-      integer,allocatable  :: jstagrp(:),jendgrp(:)
-      integer its,ite
-      integer,allocatable  :: istagrp(:),iendgrp(:)
+      integer              :: n,nwtpg,ierr,i,j,k,its,ite,jts,jte
+      integer,allocatable  :: istagrp(:),iendgrp(:),jstagrp(:),jendgrp(:)
       integer,save         :: kpo,kth,kpv
-      logical,save         :: log_postalct=.false.
       logical,save         :: first_run=.true.
+      logical,save         :: read_postcntrl=.false.
       real,dimension(komax),save :: po, th, pv
       character(255)       :: post_fname
-
-      integer,save :: iostatusD3D=-1
+      integer,save         :: iostatusD3D=-1
 !
 !-----------------------------------------------------------------------
 !*** set up dimensions
@@ -93,67 +84,63 @@ module post_fv3
       grib      = "grib2"
       gridtype  = "A"
       nsoil     = 4
-      mype      = mypei
       nwtpg     = wrt_int_state%petcount
       jts       = wrt_int_state%out_grid_info(grid_id)%j_start     !<-- Starting J of this write task's subsection
       jte       = wrt_int_state%out_grid_info(grid_id)%j_end       !<-- Ending J of this write task's subsection
       its       = wrt_int_state%out_grid_info(grid_id)%i_start     !<-- Starting I of this write task's subsection
       ite       = wrt_int_state%out_grid_info(grid_id)%i_end       !<-- Ending I of this write task's subsection
-      nbdl      = wrt_int_state%FBCount
 
-      if(mype==0) print *,'in post_run,jts=',jts,'jte=',jte,'nwtpg=',nwtpg,'nwtpg=',nwtpg, &
-        'jts=',jts,'jte=',jte,'maptype=',maptype,'nbdl=',nbdl,'log_postalct=',log_postalct
+      if(mype==0) print *,'in post_run,jts=',jts,'jte=',jte,'nwtpg=',nwtpg, &
+        'jts=',jts,'jte=',jte,'maptype=',maptype,'wrt_int_state%FBCount=',wrt_int_state%FBCount
 
 !
 !-----------------------------------------------------------------------
 !*** set up fields to run post
 !-----------------------------------------------------------------------
 !
-      if (.not.log_postalct) then
+      if (allocated(jstagrp)) deallocate(jstagrp)
+      if (allocated(jendgrp)) deallocate(jendgrp)
+      if (allocated(istagrp)) deallocate(istagrp)
+      if (allocated(iendgrp)) deallocate(iendgrp)
+      allocate(jstagrp(nwtpg),jendgrp(nwtpg))
+      allocate(istagrp(nwtpg),iendgrp(nwtpg))
 !
-        if (allocated(jstagrp)) deallocate(jstagrp)
-        if (allocated(jendgrp)) deallocate(jendgrp)
-        if (allocated(istagrp)) deallocate(istagrp)
-        if (allocated(iendgrp)) deallocate(iendgrp)
-        allocate(jstagrp(nwtpg),jendgrp(nwtpg))
-        allocate(istagrp(nwtpg),iendgrp(nwtpg))
-!
-        do n=0,nwtpg-1
-          jstagrp(n+1) = wrt_int_state%out_grid_info(grid_id)%j_start_wrtgrp(n+1)
-          jendgrp(n+1) = wrt_int_state%out_grid_info(grid_id)%j_end_wrtgrp  (n+1)
-          istagrp(n+1) = wrt_int_state%out_grid_info(grid_id)%i_start_wrtgrp(n+1)
-          iendgrp(n+1) = wrt_int_state%out_grid_info(grid_id)%i_end_wrtgrp  (n+1)
-        enddo
-        if(mype==0) print *,'in post_run,jstagrp=',jstagrp,'jendgrp=',jendgrp
-        if(mype==0) print *,'in post_run,istagrp=',istagrp,'iendgrp=',iendgrp
+      do n=0,nwtpg-1
+        jstagrp(n+1) = wrt_int_state%out_grid_info(grid_id)%j_start_wrtgrp(n+1)
+        jendgrp(n+1) = wrt_int_state%out_grid_info(grid_id)%j_end_wrtgrp  (n+1)
+        istagrp(n+1) = wrt_int_state%out_grid_info(grid_id)%i_start_wrtgrp(n+1)
+        iendgrp(n+1) = wrt_int_state%out_grid_info(grid_id)%i_end_wrtgrp  (n+1)
+      enddo
+      if(mype==0) print *,'in post_run,jstagrp=',jstagrp,'jendgrp=',jendgrp
+      if(mype==0) print *,'in post_run,istagrp=',istagrp,'iendgrp=',iendgrp
 
 !-----------------------------------------------------------------------
 !*** read namelist for pv,th,po
 !-----------------------------------------------------------------------
 !
-        call read_postnmlt(kpo,kth,kpv,po,th,pv,wrt_int_state%post_namelist)
+      call read_postnmlt(kpo,kth,kpv,po,th,pv,wrt_int_state%post_namelist)
 !
 !-----------------------------------------------------------------------
 !*** allocate post variables
 !-----------------------------------------------------------------------
 !
-     if(mype==0) print *,'in post_run,be post_alctvars, dim=',wrt_int_state%out_grid_info(grid_id)%im, &
-       wrt_int_state%out_grid_info(grid_id)%jm, wrt_int_state%out_grid_info(grid_id)%lm,'mype=',mype,'wrttasks_per_group=', &
-       wrttasks_per_group,'lead_write=',lead_write,'jts=',jts,'jte=',jte,   &
-       'jstagrp=',jstagrp,'jendgrp=',jendgrp
-        call post_alctvars(wrt_int_state%out_grid_info(grid_id)%im,wrt_int_state%out_grid_info(grid_id)%jm,        &
-          wrt_int_state%out_grid_info(grid_id)%lm,mype,wrttasks_per_group,lead_write,    &
-          mpicomp,jts,jte,jstagrp,jendgrp,its,ite,istagrp,iendgrp)
+      if(mype==0) print *,'in post_run,be post_alctvars, dim=',wrt_int_state%out_grid_info(grid_id)%im, &
+        wrt_int_state%out_grid_info(grid_id)%jm, wrt_int_state%out_grid_info(grid_id)%lm,'mype=',mype,'wrttasks_per_group=', &
+        wrttasks_per_group,'lead_write=',lead_write,'jts=',jts,'jte=',jte,   &
+        'jstagrp=',jstagrp,'jendgrp=',jendgrp
+
+      call post_alctvars(wrt_int_state%out_grid_info(grid_id)%im, &
+                         wrt_int_state%out_grid_info(grid_id)%jm, &
+                         wrt_int_state%out_grid_info(grid_id)%lm, &
+                         mype,wrttasks_per_group,lead_write, &
+                         mpicomp,jts,jte,jstagrp,jendgrp,its,ite,istagrp,iendgrp)
 !
 !-----------------------------------------------------------------------
 !*** read namelist for pv,th,po
 !-----------------------------------------------------------------------
 !
-        ! log_postalct = .true.
-        first_grbtbl = first_run
-        read_postcntrl = .true.
-!
-      ENDIF
+      first_grbtbl = first_run
+      read_postcntrl = .true.
 !
 !-----------------------------------------------------------------------
 !*** fill post variables with values from forecast results
@@ -161,74 +148,63 @@ module post_fv3
 !
       ifhr  = mynfhr
       ifmin = mynfmin
-      if (ifhr == 0 ) ifmin = 0
-      if(mype==0) print *,'bf set_postvars,ifmin=',ifmin,'ifhr=',ifhr
-      setvar_atmfile=.false.
-      setvar_sfcfile=.false.
-      call set_postvars_fv3(wrt_int_state,grid_id,mpicomp,setvar_atmfile,   &
-           setvar_sfcfile)
+      if (ifhr == 0) ifmin = 0
+      if (mype == 0) print *,'bf set_postvars,ifmin=',ifmin,'ifhr=',ifhr
 
-!       print *,'af set_postvars,setvar_atmfile=',setvar_atmfile,  &
-!        'setvar_sfcfile=',setvar_sfcfile
-!
-      if (setvar_atmfile.and.setvar_sfcfile) then
-! 20190807 no need to call microinit for GFDLMP
-!        call MICROINIT
-!
-        if(grib=="grib2" .and. read_postcntrl) then
-          if (ifhr == 0) then
-            filenameflat = 'postxconfig-NT_FH00.txt'
-            call read_xml()
-          else if(ifhr > 0) then
-            filenameflat = 'postxconfig-NT.txt'
-            if(associated(paramset)) then
-              if(size(paramset)>0) then
-                do i=1,size(paramset)
-                  if (associated(paramset(i)%param)) then
-                    if (size(paramset(i)%param)>0) then
-                      deallocate(paramset(i)%param)
-                      nullify(paramset(i)%param)
-                    endif
+      call set_postvars_fv3(wrt_int_state,grid_id,mype,mpicomp)
+
+      if (read_postcntrl) then
+        if (ifhr == 0) then
+          filenameflat = 'postxconfig-NT_FH00.txt'
+          call read_xml()
+        else if(ifhr > 0) then
+          filenameflat = 'postxconfig-NT.txt'
+          if(associated(paramset)) then
+            if(size(paramset)>0) then
+              do i=1,size(paramset)
+                if (associated(paramset(i)%param)) then
+                  if (size(paramset(i)%param)>0) then
+                    deallocate(paramset(i)%param)
+                    nullify(paramset(i)%param)
                   endif
-                enddo
-              endif
-              deallocate(paramset)
-              nullify(paramset)
-            endif
-            num_pset = 0
-            call read_xml()
-            read_postcntrl = .false.
-          endif
-          if(mype==0) print *,'af read_xml,name=',trim(filenameflat),' ifhr=',ifhr,' num_pset=',num_pset
-        endif
-!
-        do npset = 1, num_pset
-          call set_outflds(kth,th,kpv,pv)
-          if(allocated(datapd))deallocate(datapd)
-          allocate(datapd(ite-its+1,jte-jts+1,nrecout+100))
-!$omp parallel do default(none),private(i,j,k),shared(nrecout,jend,jsta,im,datapd,ista,iend)
-          do k=1,nrecout+100
-            do j=1,jend+1-jsta
-              do i=1,iend+1-ista
-                datapd(i,j,k) = 0.
+                endif
               enddo
+            endif
+            deallocate(paramset)
+            nullify(paramset)
+          endif
+          num_pset = 0
+          call read_xml()
+          read_postcntrl = .false.
+        endif
+        if(mype==0) print *,'af read_xml,name=',trim(filenameflat),' ifhr=',ifhr,' num_pset=',num_pset
+      endif
+!
+      do npset = 1, num_pset
+        call set_outflds(kth,th,kpv,pv)
+        if(allocated(datapd))deallocate(datapd)
+        allocate(datapd(ite-its+1,jte-jts+1,nrecout+100))
+!$omp parallel do default(none),private(i,j,k),shared(nrecout,jend,jsta,im,datapd,ista,iend)
+        do k=1,nrecout+100
+          do j=1,jend+1-jsta
+            do i=1,iend+1-ista
+              datapd(i,j,k) = 0.
             enddo
           enddo
-          call get_postfilename(post_fname)
-          if (grid_id > 1) then
-            write(post_fname, '(A,I2.2)') trim(post_fname)//".nest", grid_id
-          endif
-          if (mype==0) print *,'post_fname=',trim(post_fname)
-
-          call process(kth,kpv,th(1:kth),pv(1:kpv),iostatusD3D)
-
-          call mpi_barrier(mpicomp,ierr)
-          call gribit2(post_fname)
-          if(allocated(datapd))deallocate(datapd)
-          if(allocated(fld_info))deallocate(fld_info)
         enddo
+        call get_postfilename(post_fname)
+        if (grid_id > 1) then
+          write(post_fname, '(A,I2.2)') trim(post_fname)//".nest", grid_id
+        endif
+        if (mype==0) print *,'post_fname=',trim(post_fname)
 
-      endif
+        call process(kth,kpv,th(1:kth),pv(1:kpv),iostatusD3D)
+
+        call mpi_barrier(mpicomp,ierr)
+        call gribit2(post_fname)
+        if(allocated(datapd))deallocate(datapd)
+        if(allocated(fld_info))deallocate(fld_info)
+      enddo
 
       if( first_run ) then
          first_run = .false.
@@ -490,12 +466,10 @@ module post_fv3
       enddo !end nfb
 !
     end subroutine post_getattr_fv3
-!-----------------------------------------------------------------------
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!
 !-----------------------------------------------------------------------
 !
-    subroutine set_postvars_fv3(wrt_int_state,grid_id,mpicomp,setvar_atmfile,   &
-                                setvar_sfcfile)
+    subroutine set_postvars_fv3(wrt_int_state,grid_id,mype,mpicomp)
 !
 !  revision history:
 !     Jul 2019    J. Wang      Initial code
@@ -573,8 +547,8 @@ module post_fv3
 !
       type(wrt_internal_state),intent(in) :: wrt_int_state
       integer,intent(in)                  :: grid_id
+      integer,intent(in)                  :: mype
       integer,intent(in)                  :: mpicomp
-      logical,intent(inout)               :: setvar_atmfile,setvar_sfcfile
 !
 !-----------------------------------------------------------------------
 !
@@ -621,7 +595,7 @@ module post_fv3
       tsrfc   = tprec
       tmaxmin = tprec
       td3d    = tprec
-!      if(mype==0)print*,'MP_PHYSICS= ',imp_physics,'nbdl=',nbdl, 'tprec=',tprec,'tclod=',tclod, &
+!      if(mype==0)print*,'MP_PHYSICS= ',imp_physics,'tprec=',tprec,'tclod=',tclod, &
 !       'dtp=',dtp,'tmaxmin=',tmaxmin,'jsta=',jsta,jend,im,jm
 
 !      write(6,*) 'maptype and gridtype is ', maptype,gridtype
@@ -948,7 +922,7 @@ module post_fv3
        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
          line=__LINE__, file=__FILE__)) return  ! bail out
      endif
-!     if(mype==0) print *,'after find sm and sice,imp_physics=',imp_physics,'nbdl=',wrt_int_state%FBCount
+!     if(mype==0) print *,'after find sm and sice,imp_physics=',imp_physics,'wrt_int_state%FBCount=',wrt_int_state%FBCount
 !
      file_loop_all: do ibdl=1, wrt_int_state%FBCount
 !
@@ -3067,13 +3041,6 @@ module post_fv3
 ! end loop ncount_field
         enddo
 
-        if ( index(trim(wrt_int_state%wrtFB_names(ibdl)),trim(filename_base(1))) > 0)  then
-          setvar_atmfile = .true.
-        endif
-        if ( index(trim(wrt_int_state%wrtFB_names(ibdl)),trim(filename_base(2))) > 0)   then
-          setvar_sfcfile = .true.
-        endif
-        if(mype==0) print *,'setvar_atmfile=',setvar_atmfile,'setvar_sfcfile=',setvar_sfcfile,'ibdl=',ibdl
         deallocate(fcstField)
 
 ! end file_loop_all
@@ -3306,6 +3273,7 @@ module post_fv3
 !more fields need to be computed
 !
     end subroutine set_postvars_fv3
-
-
-    end module post_fv3
+!
+!-----------------------------------------------------------------------
+!
+end module post_fv3
