@@ -82,7 +82,6 @@
 !-----------------------------------------
 !
       logical                  :: write_dopost
-      integer                  :: post_nlunit
       character(80)            :: post_namelist
 !
       integer                  :: fhzero

@@ -268,9 +268,6 @@
 
       if( wrt_int_state%write_dopost ) then
 #ifdef INLINE_POST
-        call esmf_configgetattribute(cf,wrt_int_state%post_nlunit,default=777,label='nlunit:',rc=rc)
-        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-          line=__LINE__, file=__FILE__)) return
         call ESMF_ConfigGetAttribute(config=CF,value=wrt_int_state%post_namelist,default='itag', &
                                      label ='post_namelist:',rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
