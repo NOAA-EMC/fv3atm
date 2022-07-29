@@ -127,8 +127,7 @@ module post_fv3
 !*** read namelist for pv,th,po
 !-----------------------------------------------------------------------
 !
-        call read_postnmlt(kpo,kth,kpv,po,th,pv,wrt_int_state%post_nlunit, &
-                           wrt_int_state%post_namelist)
+        call read_postnmlt(kpo,kth,kpv,po,th,pv,wrt_int_state%post_namelist)
 !
 !-----------------------------------------------------------------------
 !*** allocate post variables
