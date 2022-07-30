@@ -1689,7 +1689,7 @@ module post_fv3
             endif
 
             ! outgoing model top logwave
-            if(trim(fieldname)=='ulwrf_avetoa') then
+            if(trim(fieldname)=='ulwrf_toa') then
               !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,rlwtoa,arrayr42d,fillValue,spval)
               do j=jsta,jend
                 do i=ista, iend
