@@ -186,6 +186,7 @@ module module_cap_cpl
     type(ESMF_StateItem_Flag)   :: itemType
     real(ESMF_KIND_R8), pointer :: dataPtr2d(:,:)
     real(ESMF_KIND_R8), pointer :: dataPtr3d(:,:,:)
+    real(ESMF_KIND_R8), pointer :: dataPtr4d(:,:,:,:)
     integer                     :: lrc, localDeCount, dimCount
     character(len=*),parameter  :: subname='(FV3: state_diagnose)'
 
@@ -222,13 +223,22 @@ module module_cap_cpl
            write(tmpstr,'(A,3g14.7)') trim(subname)//' '//trim(lstring)//':'//trim(itemNameList(n))//'  ', &
              minval(dataPtr2d),maxval(dataPtr2d),sum(dataPtr2d)
            call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=lrc)
-         else
+         else if(dimcount == 3) then
            call ESMF_FieldGet(lfield, farrayPtr=dataPtr3d, rc=lrc)
            if (ESMF_LogFoundError(rcToCheck=lrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
            write(tmpstr,'(A,3g14.7)') trim(subname)//' '//trim(lstring)//':'//trim(itemNameList(n))//'  ', &
              minval(dataPtr3d),maxval(dataPtr3d),sum(dataPtr3d)
            call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=lrc)
+         else if(dimcount == 4) then
+           call ESMF_FieldGet(lfield, farrayPtr=dataPtr4d, rc=lrc)
+           if (ESMF_LogFoundError(rcToCheck=lrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+           write(tmpstr,'(A,3g14.7)') trim(subname)//' '//trim(lstring)//':'//trim(itemNameList(n))//'  ', &
+             minval(dataPtr4d),maxval(dataPtr4d),sum(dataPtr4d)
+           call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=lrc)
+         else
+           call ESMF_LogWrite('dimcount of >4 currently unsupported', ESMF_LOGMSG_INFO, rc=lrc)
          end if
        end if
      end if
