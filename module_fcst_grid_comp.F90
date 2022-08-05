@@ -38,6 +38,8 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
                                 atmos_model_exchange_phase_2,              &
                                 addLsmask2grid, atmos_model_get_nth_domain_info
 
+  use GFS_typedefs,       only: kind_phys, kind_sngl_prec
+
   use constants_mod,      only: constants_init
   use fms_mod,            only: error_mesg, fms_init, fms_end,             &
                                 write_version_number, uppercase
@@ -45,9 +47,6 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
   use mpp_mod,            only: mpp_init, mpp_pe, mpp_npes, mpp_root_pe, mpp_set_current_pelist,  &
                                 mpp_error, FATAL, WARNING, NOTE
   use mpp_mod,            only: mpp_clock_id, mpp_clock_begin
-
-  use mpp_io_mod,         only: mpp_open, mpp_close, MPP_DELETE
-
   use mpp_domains_mod,    only: mpp_get_compute_domains, domain2D
   use sat_vapor_pres_mod, only: sat_vapor_pres_init
 
@@ -58,7 +57,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
   use fv_nggps_diags_mod, only: fv_dyn_bundle_setup
   use fv3gfs_io_mod,      only: fv_phys_bundle_setup
 
-  use fms_io_mod,         only: field_exist, read_data
+  use fms2_io_mod,        only: FmsNetcdfFile_t, open_file, close_file, variable_exists, read_data
 
   use atmosphere_mod,     only: atmosphere_control_data
 
@@ -161,6 +160,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     integer,dimension(2,6):: decomptile                  !define delayout for the 6 cubed-sphere tiles
     integer,dimension(2)  :: regdecomp                   !define delayout for the nest grid
     type(ESMF_Decomp_Flag):: decompflagPTile(2,6)
+    type(ESMF_TypeKind_Flag) :: grid_typekind
     character(3)          :: myGridStr
     type(ESMF_DistGrid)   :: distgrid
     type(ESMF_Array)      :: array
@@ -188,6 +188,12 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
     call ESMF_InfoGet(info, key="layout", values=layout, rc=rc); ESMF_ERR_ABORT(rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
+    if (kind_phys == kind_sngl_prec) then
+      grid_typekind = ESMF_TYPEKIND_R4
+    else
+      grid_typekind = ESMF_TYPEKIND_R8
+    endif
+
     if (trim(name)=="global") then
       ! global domain
       call ESMF_InfoGet(info, key="tilesize", value=tilesize, rc=rc); ESMF_ERR_ABORT(rc)
@@ -200,6 +206,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
       enddo
       grid = ESMF_GridCreateCubedSphere(tileSize=tilesize, &
                                         coordSys=ESMF_COORDSYS_SPH_RAD, &
+                                        coordTypeKind=grid_typekind, &
                                         regDecompPTile=decomptile, &
                                         decompflagPTile=decompflagPTile, &
                                         name="fcst_grid", rc=rc)
@@ -215,6 +222,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
                                       maxIndex=(/nx,ny/), &
                                       gridAlign=(/-1,-1/), &
                                       coordSys=ESMF_COORDSYS_SPH_RAD, &
+                                      coordTypeKind=grid_typekind, &
                                       decompflag=(/ESMF_DECOMP_SYMMEDGEMAX,ESMF_DECOMP_SYMMEDGEMAX/), &
                                       name="fcst_grid", &
                                       indexflag=ESMF_INDEX_DELOCAL, &
@@ -491,6 +499,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !
     integer :: initClock, unit, total_inttime
     integer :: mype
+    integer :: stat
     character(4) dateSY
     character(2) dateSM,dateSD,dateSH,dateSN,dateSS
     character(len=esmf_maxstr) name_FB, name_FB1
@@ -535,6 +544,8 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 
     integer,allocatable           :: grid_number_on_all_pets(:)
     logical,allocatable           :: is_moving_on_all_pets(:), is_moving(:)
+
+    type(FmsNetcdfFile_t)         :: fileobj
 !
 !-----------------------------------------------------------------------
 !***********************************************************************
@@ -640,10 +651,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
       inquire(FILE='INPUT/coupler.res', EXIST=fexist)
       if (fexist) then  ! file exists, this is a restart run
 
-        call ESMF_UtilIOUnitGet(unit=io_unit, rc=rc)
-        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-
-        open(unit=io_unit, file='INPUT/coupler.res', status='old', action='read', err=998)
+        open(newunit=io_unit, file='INPUT/coupler.res', status='old', action='read', err=998)
         read (io_unit,*,err=999) calendar_type_res
         read (io_unit,*) date_init_res
         read (io_unit,*) date_res
@@ -763,8 +771,12 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !---- open and close dummy file in restart dir to check if dir exists --
 
       if (mpp_pe() == 0 ) then
-         call mpp_open( unit, 'RESTART/file' )
-         call mpp_close(unit, MPP_DELETE)
+         open( newunit=unit, file='RESTART/file', iostat=stat )
+         if (stat == 0) then
+            close(unit, status='delete')
+         else
+            call mpp_error ( FATAL, 'fcst_initialize: RESTART subdirectory does not exist in the run directory' )
+         endif
       endif
 !
 !-----------------------------------------------------------------------
@@ -775,8 +787,11 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 
       gridfile = "grid_spec.nc" ! default
 
-      if (field_exist("INPUT/grid_spec.nc", "atm_mosaic_file")) then
-        call read_data("INPUT/grid_spec.nc", "atm_mosaic_file", gridfile)
+      if (open_file(fileobj, "INPUT/grid_spec.nc", "read")) then
+        if (variable_exists(fileobj, "atm_mosaic_file")) then
+          call read_data(fileobj, "atm_mosaic_file", gridfile)
+        endif
+        call close_file(fileobj)
       endif
 
       ngrids = Atmos%ngrids
@@ -1235,7 +1250,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
           if (mpp_pe() == mpp_root_pe())then
               call get_date (Atmos%Time, date(1), date(2), date(3),  &
                                                      date(4), date(5), date(6))
-              call mpp_open( unit, 'RESTART/'//trim(timestamp)//'.coupler.res', nohdrs=.TRUE. )
+              open( newunit=unit, file='RESTART/'//trim(timestamp)//'.coupler.res' )
               write( unit, '(i6,8x,a)' )calendar_type, &
                    '(Calendar: no_calendar=0, thirty_day_months=1, julian=2, gregorian=3, noleap=4)'
 
@@ -1243,7 +1258,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
                    'Model start time:   year, month, day, hour, minute, second'
               write( unit, '(6i6,8x,a)' )date, &
                    'Current model time: year, month, day, hour, minute, second'
-              call mpp_close(unit)
+              close( unit )
           endif
         endif
       endif
@@ -1295,7 +1310,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
                                date(4), date(5), date(6))
         call mpp_set_current_pelist()
         if (mpp_pe() == mpp_root_pe())then
-          call mpp_open( unit, 'RESTART/coupler.res', nohdrs=.TRUE. )
+          open( newunit=unit, file='RESTART/coupler.res' )
           write( unit, '(i6,8x,a)' )calendar_type, &
               '(Calendar: no_calendar=0, thirty_day_months=1, julian=2, gregorian=3, noleap=4)'
 
@@ -1303,7 +1318,7 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
               'Model start time:   year, month, day, hour, minute, second'
           write( unit, '(6i6,8x,a)' )date, &
               'Current model time: year, month, day, hour, minute, second'
-          call mpp_close(unit)
+          close( unit )
         endif
       endif
 
