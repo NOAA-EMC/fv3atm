@@ -73,7 +73,7 @@ module post_fv3
       integer,allocatable  :: istagrp(:),iendgrp(:)
       integer,save         :: kpo,kth,kpv
       logical,save         :: log_postalct=.false.
-      real,dimension(komax),save :: po, th, pv
+      real(4),dimension(komax),save :: po, th, pv
       logical        :: Log_runpost
       character(255) :: post_fname*255
 
@@ -126,8 +126,7 @@ module post_fv3
 !*** read namelist for pv,th,po
 !-----------------------------------------------------------------------
 !
-        call read_postnmlt(kpo,kth,kpv,po,th,pv,wrt_int_state%post_nlunit, &
-                           wrt_int_state%post_namelist)
+        call read_postnmlt(kpo,kth,kpv,po,th,pv,wrt_int_state%post_namelist)
 !
 !-----------------------------------------------------------------------
 !*** allocate post variables
@@ -2994,29 +2993,29 @@ module post_fv3
 
             ! model level cloud fraction
             if(imp_physics == 11) then !GFDL MP
-            if(trim(fieldname)=='cld_amt') then
-              !$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,cfr,arrayr43d,fillvalue,spval)
-              do l=1,lm
-                do j=jsta,jend
-                  do i=ista, iend
-                    cfr(i,j,l) = arrayr43d(i,j,l)
-                    if(abs(arrayr43d(i,j,l)-fillvalue)<small) cfr(i,j,l) = spval
+              if(trim(fieldname)=='cld_amt') then
+                !$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,cfr,arrayr43d,fillvalue,spval)
+                do l=1,lm
+                  do j=jsta,jend
+                    do i=ista, iend
+                      cfr(i,j,l) = arrayr43d(i,j,l)
+                      if(abs(arrayr43d(i,j,l)-fillvalue)<small) cfr(i,j,l) = spval
+                    enddo
                   enddo
                 enddo
-              enddo
-            endif
+              endif
             else !Other MP
-            if(trim(fieldname)=='cldfra') then
-              !$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,cfr,arrayr43d,fillvalue,spval)
-              do l=1,lm
-                do j=jsta,jend
-                  do i=ista, iend
-                    cfr(i,j,l) = arrayr43d(i,j,l)
-                    if(abs(arrayr43d(i,j,l)-fillvalue)<small) cfr(i,j,l) = spval
+              if(trim(fieldname)=='cldfra') then
+                !$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,cfr,arrayr43d,fillvalue,spval)
+                do l=1,lm
+                  do j=jsta,jend
+                    do i=ista, iend
+                      cfr(i,j,l) = arrayr43d(i,j,l)
+                      if(abs(arrayr43d(i,j,l)-fillvalue)<small) cfr(i,j,l) = spval
+                    enddo
                   enddo
                 enddo
-              enddo
-            endif
+              endif
             endif
           
 !3d fields
