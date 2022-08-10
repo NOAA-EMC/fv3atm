@@ -234,7 +234,7 @@
 !---
       character (len=*), intent(in) :: post_namelist
       integer,intent(out) :: kpo,kth,kpv
-      real,dimension(komax),intent(out) :: po,th,pv
+      real(4),dimension(komax),intent(out) :: po,th,pv
       integer :: nlunit
       real :: untcnvt
       logical :: popascal

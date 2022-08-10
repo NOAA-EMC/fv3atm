@@ -69,7 +69,7 @@ module post_fv3
       integer,save         :: kpo,kth,kpv
       logical,save         :: first_run=.true.
       logical,save         :: read_postcntrl=.false.
-      real,dimension(komax),save :: po, th, pv
+      real(4),dimension(komax),save :: po, th, pv
       character(255)       :: post_fname
       integer,save         :: iostatusD3D=-1
 !
@@ -3010,29 +3010,29 @@ module post_fv3
 
             ! model level cloud fraction
             if(imp_physics == 11) then !GFDL MP
-            if(trim(fieldname)=='cld_amt') then
-              !$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,cfr,arrayr43d,fillvalue,spval)
-              do l=1,lm
-                do j=jsta,jend
-                  do i=ista, iend
-                    cfr(i,j,l) = arrayr43d(i,j,l)
-                    if(abs(arrayr43d(i,j,l)-fillvalue)<small) cfr(i,j,l) = spval
+              if(trim(fieldname)=='cld_amt') then
+                !$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,cfr,arrayr43d,fillvalue,spval)
+                do l=1,lm
+                  do j=jsta,jend
+                    do i=ista, iend
+                      cfr(i,j,l) = arrayr43d(i,j,l)
+                      if(abs(arrayr43d(i,j,l)-fillvalue)<small) cfr(i,j,l) = spval
+                    enddo
                   enddo
                 enddo
-              enddo
-            endif
+              endif
             else !Other MP
-            if(trim(fieldname)=='cldfra') then
-              !$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,cfr,arrayr43d,fillvalue,spval)
-              do l=1,lm
-                do j=jsta,jend
-                  do i=ista, iend
-                    cfr(i,j,l) = arrayr43d(i,j,l)
-                    if(abs(arrayr43d(i,j,l)-fillvalue)<small) cfr(i,j,l) = spval
+              if(trim(fieldname)=='cldfra') then
+                !$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,cfr,arrayr43d,fillvalue,spval)
+                do l=1,lm
+                  do j=jsta,jend
+                    do i=ista, iend
+                      cfr(i,j,l) = arrayr43d(i,j,l)
+                      if(abs(arrayr43d(i,j,l)-fillvalue)<small) cfr(i,j,l) = spval
+                    enddo
                   enddo
                 enddo
-              enddo
-            endif
+              endif
             endif
 
 !3d fields
