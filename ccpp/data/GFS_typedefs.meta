@@ -619,6 +619,75 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
+[use_flake]
+  standard_name = flag_for_using_flake
+  long_name = flag indicating lake points using flake model
+  units = flag
+  dimensions = (horizontal_loop_extent)
+  type = integer
+[h_ML]
+  standard_name = mixed_layer_depth_of_lakes
+  long_name = depth of lake mixing layer
+  units = m
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[t_ML]
+  standard_name = lake_mixed_layer_temperature
+  long_name = temperature of lake mixing layer
+  units = K
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[t_mnw]
+  standard_name = mean_temperature_of_the_water_column
+  long_name = thee  mean temperature of the water column
+  units = K
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[h_talb]
+  standard_name = the_thermally_active_layer_depth_of_the_bottom_sediment
+  long_name = the depth of the thermally active layer of the bottom sediment
+  units = m
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[t_talb]
+  standard_name = temperature_at_the_bottom_of_the_sediment_upper_layer
+  long_name = the temperature at the bottom of the sediment upper layer
+  units = K
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[t_bot1]
+  standard_name = lake_bottom_temperature
+  long_name = the temperature at the water-bottom sediment interface
+  units = K
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[t_bot2]
+  standard_name = temperature_for_bottom_layer_of_water
+  long_name = the temperature at the lake bottom layer water
+  units = K
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[c_t]
+  standard_name = shape_factor_of_water_temperature_vertical_profile
+  long_name = the shape factor of water temperature vertical profile
+  units = none
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[T_snow]
+  standard_name = temperature_of_snow_on_lake
+  long_name = temperature of snow on a lake
+  units = K
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
 [tsfc]
   standard_name = surface_skin_temperature
   long_name = surface skin temperature

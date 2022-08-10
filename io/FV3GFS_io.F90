@@ -204,6 +204,11 @@ module FV3GFS_io_mod
      nsfcprop2d = nsfcprop2d + 16
    endif
 
+! Flake
+   if(Model%lkm > 0 ) then
+     nsfcprop2d = nsfcprop2d + 10
+   endif
+
    allocate (temp2d(isc:iec,jsc:jec,nsfcprop2d+Model%ntot2d+Model%nctp))
    allocate (temp3d(isc:iec,jsc:jec,1:lev,14+Model%ntot3d+2*ntr))
    allocate (temp3dlevsp1(isc:iec,jsc:jec,1:lev+1,3))
@@ -432,7 +437,23 @@ module FV3GFS_io_mod
          temp2d(i,j,idx_opt+13) = GFS_Data(nb)%Sfcprop%ifd(ix)
          temp2d(i,j,idx_opt+14) = GFS_Data(nb)%Sfcprop%dt_cool(ix)
          temp2d(i,j,idx_opt+15) = GFS_Data(nb)%Sfcprop%qrain(ix)
+         idx_opt = idx_opt + 15
        endif
+
+! Flake
+       if (Model%lkm > 0 ) then
+           temp2d(i,j,idx_opt+ 1) = GFS_Data(nb)%Sfcprop%h_ML(ix)
+           temp2d(i,j,idx_opt+ 2) = GFS_Data(nb)%Sfcprop%t_ML(ix)
+           temp2d(i,j,idx_opt+ 3) = GFS_Data(nb)%Sfcprop%t_mnw(ix)
+           temp2d(i,j,idx_opt+ 4) = GFS_Data(nb)%Sfcprop%h_talb(ix)
+           temp2d(i,j,idx_opt+ 5) = GFS_Data(nb)%Sfcprop%t_talb(ix)
+           temp2d(i,j,idx_opt+ 6) = GFS_Data(nb)%Sfcprop%t_bot1(ix)
+           temp2d(i,j,idx_opt+ 7) = GFS_Data(nb)%Sfcprop%t_bot2(ix)
+           temp2d(i,j,idx_opt+ 8) = GFS_Data(nb)%Sfcprop%c_t(ix)
+           temp2d(i,j,idx_opt+ 9) = GFS_Data(nb)%Sfcprop%T_snow(ix)
+           temp2d(i,j,idx_opt+ 10) = GFS_Data(nb)%Sfcprop%T_ice(ix)
+       endif
+
 
        do l = 1,Model%ntot2d
          temp2d(i,j,nsfcprop2d+l) = GFS_Data(nb)%Tbd%phy_f2d(ix,l)
@@ -522,6 +543,7 @@ module FV3GFS_io_mod
     integer :: isc, iec, jsc, jec, npz, nx, ny
     integer :: id_restart
     integer :: nvar_o2, nvar_s2m, nvar_s2o, nvar_s3
+    integer :: nvar_s2me, nvar_s2l
     integer :: nvar_oro_ls_ss
     integer :: nvar_s2r, nvar_s2mp, nvar_s3mp, isnow
     integer :: nvar_emi, nvar_dust12m, nvar_gbbepx
@@ -673,11 +695,15 @@ module FV3GFS_io_mod
 
         Sfcprop(nb)%landfrac(ix)  = -9999.0
         Sfcprop(nb)%lakefrac(ix)  = -9999.0
+        Sfcprop(nb)%lakedepth(ix) = -9999.0
 
         Sfcprop(nb)%landfrac(ix)  = oro_var2(i,j,17) !land frac [0:1]
-        Sfcprop(nb)%lakefrac(ix)  = oro_var2(i,j,18) !lake frac [0:1]
 
-        Sfcprop(nb)%lakedepth(ix) = oro_var2(i,j,19) !lake depth [m]    !YWu
+        if (Model%lkm > 0 ) then
+           Sfcprop(nb)%lakefrac(ix)  = oro_var2(i,j,18) !lake frac [0:1]
+           Sfcprop(nb)%lakedepth(ix) = oro_var2(i,j,19) !lake depth [m]    !YWu
+        endif
+
 
       enddo
     enddo
@@ -689,6 +715,12 @@ module FV3GFS_io_mod
     endif
     if (Model%cplwav) then
       nvar_s2m = nvar_s2m + 1
+    endif
+! Flake
+    if (Model%lkm > 0 ) then  
+       nvar_s2l = 10
+    else
+       nvar_s2l = 0
     endif
 
     !--- deallocate containers and free restart container
@@ -944,9 +976,9 @@ module FV3GFS_io_mod
 
     if (.not. allocated(sfc_name2)) then
       !--- allocate the various containers needed for restarts
-      allocate(sfc_name2(nvar_s2m+nvar_s2o+nvar_s2mp+nvar_s2r))
+      allocate(sfc_name2(nvar_s2m+nvar_s2o+nvar_s2mp+nvar_s2r+nvar_s2l))
       allocate(sfc_name3(0:nvar_s3+nvar_s3mp))
-      allocate(sfc_var2(nx,ny,nvar_s2m+nvar_s2o+nvar_s2mp+nvar_s2r))
+      allocate(sfc_var2(nx,ny,nvar_s2m+nvar_s2o+nvar_s2mp+nvar_s2r+nvar_s2l))
       ! Note that this may cause problems with RUC LSM for coldstart runs from GFS data
       ! if the initial conditions do contain this variable, because Model%kice is 9 for
       ! RUC LSM, but tiice in the initial conditions will only have two vertical layers
@@ -1053,6 +1085,7 @@ module FV3GFS_io_mod
       sfc_name2(nvar_s2m+16) = 'ifd'
       sfc_name2(nvar_s2m+17) = 'dt_cool'
       sfc_name2(nvar_s2m+18) = 'qrain'
+      nvar_s2me = nvar_s2m+18
 !
 ! Only needed when Noah MP LSM is used - 29 2D
 !
@@ -1086,6 +1119,7 @@ module FV3GFS_io_mod
         sfc_name2(nvar_s2m+45) = 'smcwtdxy'
         sfc_name2(nvar_s2m+46) = 'deeprechxy'
         sfc_name2(nvar_s2m+47) = 'rechxy'
+        nvar_s2me = nvar_s2m+47
       else if (Model%lsm == Model%lsm_ruc .and. warm_start) then
         sfc_name2(nvar_s2m+19) = 'wetness'
         sfc_name2(nvar_s2m+20) = 'clw_surf_land'
@@ -1099,12 +1133,28 @@ module FV3GFS_io_mod
         sfc_name2(nvar_s2m+28) = 'sfalb_lnd'
         sfc_name2(nvar_s2m+29) = 'sfalb_lnd_bck'
         sfc_name2(nvar_s2m+30) = 'sfalb_ice'
+        nvar_s2me = nvar_s2m+30
         if (Model%rdlai) then
           sfc_name2(nvar_s2m+31) = 'lai'
+          nvar_s2me = nvar_s2m+31
         endif
       else if (Model%lsm == Model%lsm_ruc .and. Model%rdlai) then
         sfc_name2(nvar_s2m+19) = 'lai'
+        nvar_s2me = nvar_s2m+19
       endif
+!Flake
+      if (Model%lkm > 0  ) then
+         sfc_name2(nvar_s2me+1) = 'h_ML'
+         sfc_name2(nvar_s2me+2) = 't_ML'
+         sfc_name2(nvar_s2me+3) = 't_mnw'
+         sfc_name2(nvar_s2me+4) = 'h_talb'
+         sfc_name2(nvar_s2me+5) = 't_talb'
+         sfc_name2(nvar_s2me+6) = 't_bot1'
+         sfc_name2(nvar_s2me+7) = 't_bot2'
+         sfc_name2(nvar_s2me+8) = 'c_t'
+         sfc_name2(nvar_s2me+9) = 'T_snow'
+         sfc_name2(nvar_s2me+10) = 'T_ice'
+       endif
 
       is_lsoil=.false.
       if ( .not. warm_start ) then
@@ -1204,6 +1254,19 @@ module FV3GFS_io_mod
             end if
          enddo
       endif ! noahmp
+! Flake
+      if (Model%lkm > 0 ) then
+         mand = .false.
+         do num = nvar_s2me+1,nvar_s2me+nvar_s2l
+            var2_p => sfc_var2(:,:,num)
+            if(is_lsoil) then
+               call register_restart_field(Sfc_restart, sfc_name2(num),var2_p,dimensions=(/'lat','lon'/), is_optional=.not.mand) 
+            else
+               call register_restart_field(Sfc_restart, sfc_name2(num),var2_p,dimensions=(/'Time   ','yaxis_1','xaxis_1'/), is_optional=.not.mand)
+            endif
+         enddo
+      endif
+
       nullify(var2_p)
    endif  ! if not allocated
 
@@ -1360,21 +1423,27 @@ module FV3GFS_io_mod
           Sfcprop(nb)%zorlwav(ix)  = Sfcprop(nb)%zorlw(ix)
         endif
 
+        if(Sfcprop(nb)%lakefrac(ix) < zero) Sfcprop(nb)%lakefrac(ix) =zero
+        if(Sfcprop(nb)%landfrac(ix) < zero) Sfcprop(nb)%landfrac(ix) =zero
+        if(Sfcprop(nb)%fice(ix)     < zero) Sfcprop(nb)%fice(ix)     =zero
+!        Sfcprop(nb)%oceanfrac(ix)=one-Sfcprop(nb)%landfrac(ix)-Sfcprop(nb)%lakefrac(ix)-Sfcprop(nb)%fice(ix)
+        Sfcprop(nb)%oceanfrac(ix)=one-Sfcprop(nb)%landfrac(ix)-Sfcprop(nb)%lakefrac(ix)
+        if(Sfcprop(nb)%oceanfrac(ix) < zero) Sfcprop(nb)%oceanfrac(ix)=zero
+!           write(35,75) ix, Sfcprop(nb)%fice(ix), Sfcprop(nb)%oceanfrac(ix), &
+!     &                  Sfcprop(nb)%landfrac(ix), Sfcprop(nb)%lakefrac(ix)
+
         if (Sfcprop(nb)%stype(ix) == 14 .or. Sfcprop(nb)%stype(ix) <= 0) then
           Sfcprop(nb)%landfrac(ix) = zero
           Sfcprop(nb)%stype(ix) = 0
-          if (Sfcprop(nb)%lakefrac(ix) > zero) then
-            Sfcprop(nb)%lakefrac(ix) = one
-          endif
         endif
 
+
         if (Model%frac_grid) then
-          if (Sfcprop(nb)%landfrac(ix) > -999.0_r8) then
+          if (Sfcprop(nb)%landfrac(ix) > zero) then
             Sfcprop(nb)%slmsk(ix) = ceiling(Sfcprop(nb)%landfrac(ix)-1.0e-6)
-            if (Sfcprop(nb)%slmsk(ix) == 1 .and. Sfcprop(nb)%stype(ix) == 14) &
-              Sfcprop(nb)%slmsk(ix) = 0
+            if (Sfcprop(nb)%slmsk(ix) == 1 .and. Sfcprop(nb)%stype(ix) == 14) Sfcprop(nb)%slmsk(ix) = 0  
             if (Sfcprop(nb)%lakefrac(ix) > zero) then
-              Sfcprop(nb)%oceanfrac(ix) = zero ! lake & ocean don't coexist in a cell
+!              Sfcprop(nb)%oceanfrac(ix) = zero ! lake & ocean don't coexist in a cell
               if (nint(Sfcprop(nb)%slmsk(ix)) /= 1) then
                 if(Sfcprop(nb)%fice(ix) >= Model%min_lakeice) then
                   Sfcprop(nb)%slmsk(ix) = 2
@@ -1384,7 +1453,7 @@ module FV3GFS_io_mod
               endif
             else
               Sfcprop(nb)%lakefrac(ix)  = zero
-              Sfcprop(nb)%oceanfrac(ix) = one - Sfcprop(nb)%landfrac(ix)
+!              Sfcprop(nb)%oceanfrac(ix) = one - Sfcprop(nb)%landfrac(ix)
               if (nint(Sfcprop(nb)%slmsk(ix)) /= 1) then
                 if (Sfcprop(nb)%fice(ix) >= Model%min_seaice) then
                   Sfcprop(nb)%slmsk(ix) = 2
@@ -1398,26 +1467,26 @@ module FV3GFS_io_mod
             if (nint(Sfcprop(nb)%slmsk(ix)) == 1) then
               Sfcprop(nb)%landfrac(ix)  = one
               Sfcprop(nb)%lakefrac(ix)  = zero
-              Sfcprop(nb)%oceanfrac(ix) = zero
+!              Sfcprop(nb)%oceanfrac(ix) = zero
             else
               if (Sfcprop(nb)%slmsk(ix) < 0.1_r8 .or. Sfcprop(nb)%slmsk(ix) > 1.9_r8) then
                 Sfcprop(nb)%landfrac(ix) = zero
                 if (Sfcprop(nb)%oro_uf(ix) > min_lake_orog) then   ! lakes
                   Sfcprop(nb)%lakefrac(ix)  = one
-                  Sfcprop(nb)%oceanfrac(ix) = zero
+!                  Sfcprop(nb)%oceanfrac(ix) = zero
                 else                                               ! ocean
                   Sfcprop(nb)%lakefrac(ix)  = zero
-                  Sfcprop(nb)%oceanfrac(ix) = one
+!                  Sfcprop(nb)%oceanfrac(ix) = one
                 endif
               endif
             endif
           endif
         else                                             ! not a fractional grid
-          if (Sfcprop(nb)%landfrac(ix) > -999.0_r8) then
+          if (Sfcprop(nb)%landfrac(ix) > zero) then
             if (Sfcprop(nb)%lakefrac(ix) > zero) then
-              Sfcprop(nb)%oceanfrac(ix) = zero
+!              Sfcprop(nb)%oceanfrac(ix) = zero
               Sfcprop(nb)%landfrac(ix)  = zero
-              Sfcprop(nb)%lakefrac(ix)  = one
+!              Sfcprop(nb)%lakefrac(ix)  = one
               Sfcprop(nb)%slmsk(ix)     = zero
               if (Sfcprop(nb)%fice(ix) >= Model%min_lakeice) Sfcprop(nb)%slmsk(ix) = 2.0
             else
@@ -1425,32 +1494,32 @@ module FV3GFS_io_mod
               if (Sfcprop(nb)%stype(ix) <= 0 .or. Sfcprop(nb)%stype(ix) == 14) &
                 Sfcprop(nb)%slmsk(ix) = zero
               if (nint(Sfcprop(nb)%slmsk(ix)) == 0) then
-                Sfcprop(nb)%oceanfrac(ix) = one
+!                Sfcprop(nb)%oceanfrac(ix) = one
                 Sfcprop(nb)%landfrac(ix)  = zero
-                Sfcprop(nb)%lakefrac(ix)  = zero
+!                Sfcprop(nb)%lakefrac(ix)  = zero
                 if (Sfcprop(nb)%fice(ix) >= Model%min_seaice) Sfcprop(nb)%slmsk(ix) = 2.0
               else
                 Sfcprop(nb)%landfrac(ix)  = one
-                Sfcprop(nb)%lakefrac(ix)  = zero
-                Sfcprop(nb)%oceanfrac(ix) = zero
+!                Sfcprop(nb)%lakefrac(ix)  = zero
+!                Sfcprop(nb)%oceanfrac(ix) = zero
               endif
             endif
           else
             if (nint(Sfcprop(nb)%slmsk(ix)) == 1 .and. Sfcprop(nb)%stype(ix) > 0      &
                                                  .and. Sfcprop(nb)%stype(ix) /= 14) then
               Sfcprop(nb)%landfrac(ix)  = one
-              Sfcprop(nb)%lakefrac(ix)  = zero
-              Sfcprop(nb)%oceanfrac(ix) = zero
+!              Sfcprop(nb)%lakefrac(ix)  = zero
+!              Sfcprop(nb)%oceanfrac(ix) = zero
             else
               Sfcprop(nb)%slmsk(ix)    = zero
               Sfcprop(nb)%landfrac(ix) = zero
               if (Sfcprop(nb)%oro_uf(ix) > min_lake_orog) then   ! lakes
-                Sfcprop(nb)%lakefrac(ix) = one
+!                Sfcprop(nb)%lakefrac(ix) = one
                 Sfcprop(nb)%oceanfrac(ix) = zero
                 if (Sfcprop(nb)%fice(ix) > Model%min_lakeice) Sfcprop(nb)%slmsk(ix) = 2.0
               else                                       ! ocean
-                Sfcprop(nb)%lakefrac(ix)  = zero
-                Sfcprop(nb)%oceanfrac(ix) = one
+!                Sfcprop(nb)%lakefrac(ix)  = zero
+!                Sfcprop(nb)%oceanfrac(ix) = one
                 if (Sfcprop(nb)%fice(ix) > Model%min_seaice) Sfcprop(nb)%slmsk(ix) = 2.0
               endif
             endif
@@ -1503,6 +1572,7 @@ module FV3GFS_io_mod
             Sfcprop(nb)%ifd(ix)     = sfc_var2(i,j,nvar_s2m+16) !--- nsstm ifd
             Sfcprop(nb)%dt_cool(ix) = sfc_var2(i,j,nvar_s2m+17) !--- nsstm dt_cool
             Sfcprop(nb)%qrain(ix)   = sfc_var2(i,j,nvar_s2m+18) !--- nsstm qrain
+            nvar_s2me = nvar_s2m+18
           endif
         endif
 
@@ -1520,14 +1590,17 @@ module FV3GFS_io_mod
           Sfcprop(nb)%sfalb_lnd(ix)       = sfc_var2(i,j,nvar_s2m+28)
           Sfcprop(nb)%sfalb_lnd_bck(ix)   = sfc_var2(i,j,nvar_s2m+29)
           Sfcprop(nb)%sfalb_ice(ix)       = sfc_var2(i,j,nvar_s2m+30)
+          nvar_s2me = nvar_s2m+30
           if (Model%rdlai) then
             Sfcprop(nb)%xlaixy(ix)        = sfc_var2(i,j,nvar_s2m+31)
+            nvar_s2me = nvar_s2m+31
           endif
         else if (Model%lsm == Model%lsm_ruc) then
           ! Initialize RUC snow cover on ice from snow cover
           Sfcprop(nb)%sncovr_ice(ix)      = Sfcprop(nb)%sncovr(ix)
           if (Model%rdlai) then
             Sfcprop(nb)%xlaixy(ix) = sfc_var2(i,j,nvar_s2m+19)
+            nvar_s2me = nvar_s2m+19
           end if
         elseif (Model%lsm == Model%lsm_noahmp) then
           !--- Extra Noah MP variables
@@ -1560,6 +1633,20 @@ module FV3GFS_io_mod
           Sfcprop(nb)%smcwtdxy(ix)   = sfc_var2(i,j,nvar_s2m+45)
           Sfcprop(nb)%deeprechxy(ix) = sfc_var2(i,j,nvar_s2m+46)
           Sfcprop(nb)%rechxy(ix)     = sfc_var2(i,j,nvar_s2m+47)
+          nvar_s2me = nvar_s2m+47
+        endif
+!Flake
+        if (Model%lkm > 0 ) then
+            Sfcprop(nb)%h_ML(ix)       = sfc_var2(i,j,nvar_s2me+1)
+            Sfcprop(nb)%t_ML(ix)       = sfc_var2(i,j,nvar_s2me+2)
+            Sfcprop(nb)%t_mnw(ix)      = sfc_var2(i,j,nvar_s2me+3)
+            Sfcprop(nb)%h_talb(ix)     = sfc_var2(i,j,nvar_s2me+4)
+            Sfcprop(nb)%t_talb(ix)     = sfc_var2(i,j,nvar_s2me+5)
+            Sfcprop(nb)%t_bot1(ix)     = sfc_var2(i,j,nvar_s2me+6)
+            Sfcprop(nb)%t_bot2(ix)     = sfc_var2(i,j,nvar_s2me+7)
+            Sfcprop(nb)%c_t(ix)        = sfc_var2(i,j,nvar_s2me+8)
+            Sfcprop(nb)%T_snow(ix)     = sfc_var2(i,j,nvar_s2me+9)
+            Sfcprop(nb)%T_ice(ix)      = sfc_var2(i,j,nvar_s2me+10)
         endif
 
         if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp .or. (.not.warm_start)) then
@@ -1839,6 +1926,7 @@ module FV3GFS_io_mod
     integer :: id_restart
     integer :: nvar2m, nvar2o, nvar3
     integer :: nvar2r, nvar2mp, nvar3mp
+    integer :: nvar2me, nvar2l          !for flake
     logical :: mand
     character(len=32) :: fn_srf = 'sfc_data.nc'
     real(kind=kind_phys), pointer, dimension(:,:)   :: var2_p  => NULL()
@@ -1878,6 +1966,14 @@ module FV3GFS_io_mod
     if (Model%lsm == Model%lsm_noahmp) then
       nvar2mp = 29
       nvar3mp = 5
+    endif
+!Flake
+    if (Model%lkm > 0 ) then
+         nvar2l = 10
+         nvar2me = nvar2m
+    else
+         nvar2l = 0
+         nvar2me = 0
     endif
 
     isc = Atm_block%isc
@@ -1978,9 +2074,9 @@ module FV3GFS_io_mod
 
     if (.not. allocated(sfc_name2)) then
       !--- allocate the various containers needed for restarts
-      allocate(sfc_name2(nvar2m+nvar2o+nvar2mp+nvar2r))
+      allocate(sfc_name2(nvar2m+nvar2o+nvar2mp+nvar2r+nvar2l))
       allocate(sfc_name3(0:nvar3+nvar3mp))
-      allocate(sfc_var2(nx,ny,nvar2m+nvar2o+nvar2mp+nvar2r))
+      allocate(sfc_var2(nx,ny,nvar2m+nvar2o+nvar2mp+nvar2r+nvar2l))
       if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp) then
         allocate(sfc_var3(nx,ny,Model%lsoil,nvar3))
       elseif (Model%lsm == Model%lsm_ruc) then
@@ -2128,6 +2224,19 @@ module FV3GFS_io_mod
         sfc_name2(nvar2m+46) = 'deeprechxy'
         sfc_name2(nvar2m+47) = 'rechxy'
       endif
+!Flake
+      if(Model%lkm > 0 ) then
+         sfc_name2(nvar2me+1)  = 'h_ML'
+         sfc_name2(nvar2me+2)  = 't_ML'
+         sfc_name2(nvar2me+3)  = 't_mnw'
+         sfc_name2(nvar2me+4)  = 'h_talb'
+         sfc_name2(nvar2me+5)  = 't_talb'
+         sfc_name2(nvar2me+6)  = 't_bot1'
+         sfc_name2(nvar2me+7)  = 't_bot2'
+         sfc_name2(nvar2me+8)  = 'c_t'
+         sfc_name2(nvar2me+9)  = 'T_snow'
+         sfc_name2(nvar2me+10) = 'T_ice'
+      endif
    end if
 
    !--- register the 2D fields
@@ -2172,6 +2281,19 @@ module FV3GFS_io_mod
                                     &is_optional=.not.mand)
       enddo
    endif
+!Flake
+    nvar2me=nvar2m+nvar2o+nvar2r+nvar2mp
+    if(Model%lkm > 0) then
+       mand = .false.
+       do num = nvar2me+1,nvar2me+nvar2l
+!       do num =
+!       nvar2m+nvar2o+nvar2r+nvar2mp+1,nvar2m+nvar2o+nvar2r+nvar2mp+nvar2l 
+          var2_p => sfc_var2(:,:,num)
+          call register_restart_field(Sfc_restart, sfc_name2(num),var2_p,dimensions=(/'xaxis_1', 'yaxis_1', 'Time   '/),&  
+                                     &is_optional=.not.mand)
+       enddo
+    endif
+
    nullify(var2_p)
 
    if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp) then
@@ -2322,6 +2444,7 @@ module FV3GFS_io_mod
           sfc_var2(i,j,nvar2m+16) = Sfcprop(nb)%ifd(ix)    !--- nsstm ifd
           sfc_var2(i,j,nvar2m+17) = Sfcprop(nb)%dt_cool(ix)!--- nsstm dt_cool
           sfc_var2(i,j,nvar2m+18) = Sfcprop(nb)%qrain(ix)  !--- nsstm qrain
+          nvar2me = nvar2m + 18
         endif
 
         if (Model%lsm == Model%lsm_ruc) then
@@ -2338,8 +2461,10 @@ module FV3GFS_io_mod
           sfc_var2(i,j,nvar2m+28) = Sfcprop(nb)%sfalb_lnd(ix)
           sfc_var2(i,j,nvar2m+29) = Sfcprop(nb)%sfalb_lnd_bck(ix)
           sfc_var2(i,j,nvar2m+30) = Sfcprop(nb)%sfalb_ice(ix)
+          nvar2me = nvar2m + 30
           if (Model%rdlai) then
             sfc_var2(i,j,nvar2m+31) = Sfcprop(nb)%xlaixy(ix)
+            nvar2me = nvar2m + 31
           endif
         else if (Model%lsm == Model%lsm_noahmp) then
           !--- Extra Noah MP variables
@@ -2372,6 +2497,21 @@ module FV3GFS_io_mod
           sfc_var2(i,j,nvar2m+45) = Sfcprop(nb)%smcwtdxy(ix)
           sfc_var2(i,j,nvar2m+46) = Sfcprop(nb)%deeprechxy(ix)
           sfc_var2(i,j,nvar2m+47) = Sfcprop(nb)%rechxy(ix)
+          nvar2me = nvar2m + 47
+        endif
+!Flake
+        if(Model%lkm > 0 ) then
+           sfc_var2(i,j,nvar2me+1) = Sfcprop(nb)%h_ML(ix)
+           sfc_var2(i,j,nvar2me+2) = Sfcprop(nb)%t_ML(ix)
+           sfc_var2(i,j,nvar2me+3) = Sfcprop(nb)%t_mnw(ix)
+           sfc_var2(i,j,nvar2me+4) = Sfcprop(nb)%h_talb(ix)
+           sfc_var2(i,j,nvar2me+5) = Sfcprop(nb)%t_talb(ix)
+           sfc_var2(i,j,nvar2me+6) = Sfcprop(nb)%t_bot1(ix)
+           sfc_var2(i,j,nvar2me+7) = Sfcprop(nb)%t_bot2(ix)
+           sfc_var2(i,j,nvar2me+8) = Sfcprop(nb)%c_t(ix)
+           sfc_var2(i,j,nvar2me+9) = Sfcprop(nb)%T_snow(ix)
+           sfc_var2(i,j,nvar2me+10) = Sfcprop(nb)%T_ice(ix)
+           nvar2me = nvar2m + 10
         endif
 
         do k = 1,Model%kice
