@@ -8,8 +8,8 @@
   branch = main
 [submodule "ccpp/physics"]
   path = ccpp/physics
-  url = https://github.com/YihuaWu-NOAA/ccpp-physics
-  branch = flake.v9
+  url = https://github.com/HelinWei-NOAA/ccpp-physics
+  branch = flake
 [submodule "upp"]
   path = upp
   url = https://github.com/NOAA-EMC/UPP
