@@ -99,7 +99,7 @@ module FV3GFS_io_mod
   real(kind=kind_phys),dimension(:,:,:),allocatable:: uwork3d
   logical                    :: uwork_set = .false.
   character(128)             :: uwindname
-  integer, parameter, public :: DIAG_SIZE = 500
+  integer, parameter, public :: DIAG_SIZE = 800
   real, parameter :: missing_value = 9.99e20_r8
   real, parameter:: stndrd_atmos_ps = 101325.0_r8
   real, parameter:: stndrd_atmos_lapse = 0.0065_r8

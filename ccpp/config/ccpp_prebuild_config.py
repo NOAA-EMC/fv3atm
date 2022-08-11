@@ -1,3 +1,4 @@
+
 #!/usr/bin/env python
 
 # CCPP prebuild config for GFDL Finite-Volume Cubed-Sphere Model (FV3)
@@ -206,6 +207,7 @@ SCHEME_FILES = [
     'physics/physics/lsm_noah.f',
     'physics/physics/noahmpdrv.F90',
     'physics/physics/flake_driver.F90',
+    'physics/physics/clm_lake.f90',
     'physics/physics/sfc_nst_pre.f',
     'physics/physics/sfc_nst.f',
     'physics/physics/sfc_nst_post.f',
