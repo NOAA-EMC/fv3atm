@@ -3105,9 +3105,6 @@ end subroutine update_atmos_chemistry
           GFS_data(nb)%coupling%dvsfc_cpl(ix)  = zero
           GFS_data(nb)%coupling%dtsfc_cpl(ix)  = zero
           GFS_data(nb)%coupling%dqsfc_cpl(ix)  = zero
-          GFS_data(nb)%coupling%dlwsfc_cpl(ix) = zero
-          GFS_data(nb)%coupling%dswsfc_cpl(ix) = zero
-          GFS_data(nb)%coupling%rain_cpl(ix)   = zero
           GFS_data(nb)%coupling%nlwsfc_cpl(ix) = zero
           GFS_data(nb)%coupling%nswsfc_cpl(ix) = zero
           GFS_data(nb)%coupling%dnirbm_cpl(ix) = zero
@@ -3123,6 +3120,21 @@ end subroutine update_atmos_chemistry
       enddo
       if (mpp_pe() == mpp_root_pe()) print *,'zeroing coupling accumulated fields at kdt= ',GFS_control%kdt
     endif !cplflx
+!---
+    if (GFS_control%cplflx .or. GFS_control%cpllnd) then
+! zero out accumulated fields
+!$omp parallel do default(shared) private(i,j,nb,ix)
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          GFS_data(nb)%coupling%dlwsfc_cpl(ix) = zero
+          GFS_data(nb)%coupling%dswsfc_cpl(ix) = zero
+          GFS_data(nb)%coupling%rain_cpl(ix)   = zero
+        enddo
+      enddo
+      if (mpp_pe() == mpp_root_pe()) print *,'zeroing coupling accumulated fields at kdt= ',GFS_control%kdt
+    endif !cplflx or cpllnd
 
   end subroutine setup_exportdata
 
