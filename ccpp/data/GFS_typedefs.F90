@@ -1,7 +1,7 @@
 module GFS_typedefs
 
    use machine,                  only: kind_phys, kind_dbl_prec, kind_sngl_prec
-   use physcons,                 only: con_cp, con_fvirt, con_g,                       &
+   use physcons,                 only: con_cp, con_fvirt, con_g, rhoice,               &
                                        con_hvap, con_hfus, con_pi, con_rd, con_rv,     &
                                        con_t0c, con_cvap, con_cliq, con_eps, con_epsq, &
                                        con_epsm1, con_ttp, rlapse, con_jcal, con_rhw0, &
@@ -1629,7 +1629,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: lake_ht(:)=> null()
     real (kind=kind_phys), pointer :: lake_clay3d(:,:) => null()
     real (kind=kind_phys), pointer :: lake_sand3d(:,:) => null()
-    integer,               pointer :: clm_lake_initialized(:) => null() !< lakeini was called
+    real (kind=kind_phys), pointer :: clm_lake_initialized(:) => null() !< lakeini was called
 
     !--- DFI Radar
     real (kind=kind_phys), pointer :: dfi_radar_tten(:,:,:) => null() !

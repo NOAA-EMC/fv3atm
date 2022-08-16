@@ -7473,10 +7473,11 @@
   active = (control_for_lake_model_selection == 3)
 [clm_lake_initialized]
   standard_name = flag_for_clm_lake_initialization
-  long_name = set to true in clm_lake_run after likeini is called, as a workaround for ccpp limitation
+  long_name = set to true in clm_lake_run after likeini is called for that gridpoint
   units = flag
   dimensions = (horizontal_loop_extent)
-  type = integer
+  type = real
+  kind = kind_phys
   active = (control_for_lake_model_selection == 3)
 [lake_clay3d]
   standard_name = clm_lake_percent_clay
@@ -9196,6 +9197,13 @@
 [rhowater]
   standard_name = fresh_liquid_water_density_at_0c
   long_name = density of liquid water
+  units = kg m-3
+  dimensions = ()
+  type = real
+  kind = kind_phys
+[rhoice]
+  standard_name = density_of_ice_on_lake
+  long_name = density of ice on a lake
   units = kg m-3
   dimensions = ()
   type = real

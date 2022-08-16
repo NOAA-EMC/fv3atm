@@ -3266,6 +3266,28 @@ module GFS_diagnostics
 
     idx = idx + 1
     ExtDiag(idx)%axes = 2
+    ExtDiag(idx)%name = 'weasdi'
+    ExtDiag(idx)%desc = 'surface snow water equivalent over ice'
+    ExtDiag(idx)%unit = 'kg/m**2'
+    ExtDiag(idx)%mod_name = 'gfs_sfc'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var2 => sfcprop(nb)%weasdi(:)
+    enddo
+
+    idx = idx + 1
+    ExtDiag(idx)%axes = 2
+    ExtDiag(idx)%name = 'snodi'
+    ExtDiag(idx)%desc = 'water equivalent snow depth over ice'
+    ExtDiag(idx)%unit = 'mm'
+    ExtDiag(idx)%mod_name = 'gfs_sfc'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var2 => sfcprop(nb)%weasdi(:)
+    enddo
+
+    idx = idx + 1
+    ExtDiag(idx)%axes = 2
     ExtDiag(idx)%name = 'hgtsfc'
     ExtDiag(idx)%desc = 'surface geopotential height'
     ExtDiag(idx)%unit = 'gpm'

@@ -97,6 +97,13 @@ module GFS_restart
     Restart%ldiag = 3 + Model%ntot2d + Model%nctp + ndiag_rst
     Restart%num2d = 3 + Model%ntot2d + Model%nctp + ndiag_rst
 
+    ! CLM Lake
+    if(Model%iopt_lake == Model%iopt_lake_clm) then
+      print *,'num2d was ',Restart%num2d
+      call clm_lake_define_restart(Restart%num2d,.true.)
+      print *,'num2d became ',Restart%num2d
+    endif
+
     ! GF
     if (Model%imfdeepcnv == Model%imfdeepcnv_gf) then
       Restart%num2d = Restart%num2d + 3
@@ -419,6 +426,11 @@ module GFS_restart
       enddo
     endif
 
+    ! CLM Lake
+    if(Model%iopt_lake == Model%iopt_lake_clm) then
+      call clm_lake_define_restart(num,.false.)
+    endif
+
     !--- phy_f3d variables
     do num = 1,Model%ntot3d
        !--- set the variable name
@@ -550,6 +562,122 @@ module GFS_restart
         endif
       enddo
     endif
+
+  contains
+
+    subroutine clm_lake_define_restart(ix,count)
+      implicit none
+      logical, intent(in) :: count ! true = increment num; false = link vars
+      integer, intent(inout) :: ix ! Restart%num2d when count=true, or num when count=false
+      integer :: lb ! last block to process (1 if count, else nblks)
+      integer :: ih ! value of ix before processing current variable
+      integer :: nb ! block being processed
+      logical :: c ! alias for count, to shorten macro
+      c=count
+
+      if(count) then
+        ! We're just counting variables, so there's no need to process multiple blocks
+        lb=1
+      else
+        ! We're linking data, so we must process all blocks
+        lb=nblks
+      endif
+
+      ! Macro to call lvar3d. This simplifies the code tremendously.
+      ! container = Sfcprop or Tbd
+      ! varname = lake_z3d, lake_t_lake3d, etc.
+      ! The varname is converted to a string using the cpp magic #varname
+      ! due to limitations of the C and Fortran standards
+#define call_lvar3d(container,varname) \
+ih=ix;\
+do nb=1,lb;\
+ix=ih;\
+call lvar3d(c,nb,ix,container(nb)%varname,#varname);\
+enddo;
+
+      ! Macro to call lvar2d. This simplifies the code tremendously.
+      ! container = Sfcprop or Tbd
+      ! varname = lake_snl2d, clm_lake_initialized, etc.
+      ! The varname is converted to a string using the cpp magic #varname
+      ! Total size of the expanded macro must be less than 132 chars
+      ! due to limitations of the C and Fortran standards
+#define call_lvar2d(container,varname) \
+ih=ix;\
+do nb=1,lb;\
+ix=ih;\
+call lvar2d(c,nb,ix,container(nb)%varname,#varname);\
+enddo;
+
+      ! 2D vars
+      call_lvar2d(Tbd,lake_snl2d)
+      call_lvar2d(Tbd,lake_h2osno2d)
+      call_lvar2d(Tbd,lake_t_grnd2d)
+      call_lvar2d(Tbd,lake_savedtke12d)
+      call_lvar2d(Tbd,lake_dp2dsno)
+      call_lvar2d(Tbd,clm_lake_initialized)
+      
+      ! 3D vars
+      call_lvar3d(Tbd,lake_z3d)
+      call_lvar3d(Tbd,lake_dz3d)
+      call_lvar3d(Tbd,lake_watsat3d)
+      call_lvar3d(Tbd,lake_csol3d)
+      call_lvar3d(Tbd,lake_tkmg3d)
+      call_lvar3d(Tbd,lake_tkdry3d)
+      call_lvar3d(Tbd,lake_tksatu3d)
+      call_lvar3d(Tbd,lake_snow_z3d)
+      call_lvar3d(Tbd,lake_snow_dz3d)
+      call_lvar3d(Tbd,lake_snow_zi3d)
+      call_lvar3d(Tbd,lake_t_h2osoi_vol3d)
+      call_lvar3d(Tbd,lake_t_h2osoi_liq3d)
+      call_lvar3d(Tbd,lake_t_h2osoi_ice3d)
+      call_lvar3d(Tbd,lake_t_soisno3d)
+      call_lvar3d(Tbd,lake_t_lake3d)
+      call_lvar3d(Tbd,lake_icefrac3d)
+      call_lvar3d(Tbd,lake_clay3d)
+      call_lvar3d(Tbd,lake_sand3d)
+    end subroutine clm_lake_define_restart
+
+    subroutine lvar3d(count, nb, ix, var3d, varname)
+      implicit none
+      logical, intent(in) :: count
+      real(kind=kind_phys), target :: var3d(:,:) ! 3d ij-k variable
+      character(len=*), intent(in) :: varname ! variable name without level number
+      integer, intent(in) :: nb ! current block being processed
+      integer, intent(inout) :: ix ! num or Restart%num2d
+      character(400) :: fullname ! full variable name with level appended
+      integer :: k ! vertical level number
+      if(count) then
+        ix=ix+size(var3d,2)
+        return
+      endif
+      do k=1,size(var3d,2)
+        ix=ix+1
+        if(nb==1) then
+          write(fullname,"(A,'_',I0)") trim(varname),k
+          print '(A,A,A)', 'Fullname="',trim(fullname),'"'
+          Restart%name2d(ix) = trim(fullname)
+        endif
+        Restart%data(nb,ix)%var2p => var3d(:,k)
+      enddo
+    end subroutine lvar3d
+
+    subroutine lvar2d(count, nb, ix, var2d, varname)
+      implicit none
+      logical, intent(in) :: count
+      real(kind=kind_phys), target :: var2d(:) ! 2d ij variable
+      character(len=*), intent(in) :: varname ! variable name
+      integer, intent(in) :: nb ! current block being processed
+      integer, intent(inout) :: ix ! num or Restart%num2d
+      ix=ix+1
+      if(count) then
+        return
+      endif
+      if(nb==1) then
+        print '(A,A,A)', 'Fullname="',trim(varname),'"'
+        Restart%name2d(ix) = trim(varname)
+      endif
+      Restart%data(nb,ix)%var2p => var2d
+    end subroutine lvar2d
 
   end subroutine GFS_restart_populate
 
