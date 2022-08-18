@@ -2555,6 +2555,8 @@ module GFS_typedefs
       Coupling%dlwsfc_cpl = clear_val
       allocate (Coupling%dswsfc_cpl (IM))
       Coupling%dswsfc_cpl = clear_val
+      allocate (Coupling%psurfi_cpl (IM))
+      Coupling%psurfi_cpl = clear_val
     end if
 
     if (Model%cplflx) then
@@ -2656,7 +2658,6 @@ module GFS_typedefs
       allocate (Coupling%nvisdfi_cpl (IM))
       allocate (Coupling%t2mi_cpl    (IM))
       allocate (Coupling%q2mi_cpl    (IM))
-      allocate (Coupling%psurfi_cpl  (IM))
       allocate (Coupling%oro_cpl     (IM))
       allocate (Coupling%slmsk_cpl   (IM))
 
@@ -2678,7 +2679,6 @@ module GFS_typedefs
       Coupling%nvisdfi_cpl = clear_val
       Coupling%t2mi_cpl    = clear_val
       Coupling%q2mi_cpl    = clear_val
-      Coupling%psurfi_cpl  = clear_val
       Coupling%oro_cpl     = clear_val  !< pointer to sfcprop%oro
       Coupling%slmsk_cpl   = clear_val  !< pointer to sfcprop%slmsk
     endif
