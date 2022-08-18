@@ -586,55 +586,82 @@ module GFS_restart
       ! Macro to call lvar3d. This simplifies the code tremendously.
       ! container = Sfcprop or Tbd
       ! varname = lake_z3d, lake_t_lake3d, etc.
-      ! The varname is converted to a string using the cpp magic #varname
+      ! varstr = varname in quotes (gfortran does not like #varname magic)
+      ! Total size of the expanded macro must be less than 132 chars
       ! due to limitations of the C and Fortran standards
-#define call_lvar3d(container,varname) \
+#define run_lvar3d(container,varname,varstr) \
 ih=ix;\
 do nb=1,lb;\
 ix=ih;\
-call lvar3d(c,nb,ix,container(nb)%varname,#varname);\
-enddo;
+call lvar3d(c,nb,ix,container(nb)%varname,varstr);\
+enddo
 
       ! Macro to call lvar2d. This simplifies the code tremendously.
       ! container = Sfcprop or Tbd
       ! varname = lake_snl2d, clm_lake_initialized, etc.
-      ! The varname is converted to a string using the cpp magic #varname
+      ! varstr = varname in quotes (gfortran does not like #varname magic)
       ! Total size of the expanded macro must be less than 132 chars
       ! due to limitations of the C and Fortran standards
-#define call_lvar2d(container,varname) \
+#define run_lvar2d(container,varname,varstr) \
 ih=ix;\
 do nb=1,lb;\
 ix=ih;\
-call lvar2d(c,nb,ix,container(nb)%varname,#varname);\
-enddo;
+call lvar2d(c,nb,ix,container(nb)%varname,varstr);\
+enddo
 
       ! 2D vars
-      call_lvar2d(Tbd,lake_snl2d)
-      call_lvar2d(Tbd,lake_h2osno2d)
-      call_lvar2d(Tbd,lake_t_grnd2d)
-      call_lvar2d(Tbd,lake_savedtke12d)
-      call_lvar2d(Tbd,lake_dp2dsno)
-      call_lvar2d(Tbd,clm_lake_initialized)
+      run_lvar2d(Tbd,lake_snl2d,"lake_snl2d")
+
+      run_lvar2d(Tbd,lake_h2osno2d,"lake_h2osno2d")
+
+      run_lvar2d(Tbd,lake_t_grnd2d,"lake_t_grnd2d")
+
+      run_lvar2d(Tbd,lake_savedtke12d,"lake_savedtke12d")
+
+      run_lvar2d(Tbd,lake_dp2dsno,"lake_dp2dsno")
+
+      run_lvar2d(Tbd,clm_lake_initialized,"clm_lake_initialized")
       
       ! 3D vars
-      call_lvar3d(Tbd,lake_z3d)
-      call_lvar3d(Tbd,lake_dz3d)
-      call_lvar3d(Tbd,lake_watsat3d)
-      call_lvar3d(Tbd,lake_csol3d)
-      call_lvar3d(Tbd,lake_tkmg3d)
-      call_lvar3d(Tbd,lake_tkdry3d)
-      call_lvar3d(Tbd,lake_tksatu3d)
-      call_lvar3d(Tbd,lake_snow_z3d)
-      call_lvar3d(Tbd,lake_snow_dz3d)
-      call_lvar3d(Tbd,lake_snow_zi3d)
-      call_lvar3d(Tbd,lake_t_h2osoi_vol3d)
-      call_lvar3d(Tbd,lake_t_h2osoi_liq3d)
-      call_lvar3d(Tbd,lake_t_h2osoi_ice3d)
-      call_lvar3d(Tbd,lake_t_soisno3d)
-      call_lvar3d(Tbd,lake_t_lake3d)
-      call_lvar3d(Tbd,lake_icefrac3d)
-      call_lvar3d(Tbd,lake_clay3d)
-      call_lvar3d(Tbd,lake_sand3d)
+      run_lvar3d(Tbd,lake_z3d,"lake_z3d")
+
+      run_lvar3d(Tbd,lake_dz3d,"lake_dz3d")
+
+      run_lvar3d(Tbd,lake_watsat3d,"lake_watsat3d")
+
+      run_lvar3d(Tbd,lake_csol3d,"lake_csol3d")
+
+      run_lvar3d(Tbd,lake_tkmg3d,"lake_tkmg3d")
+
+      run_lvar3d(Tbd,lake_tkdry3d,"lake_tkdry3d")
+
+      run_lvar3d(Tbd,lake_tksatu3d,"lake_tksatu3d")
+
+      run_lvar3d(Tbd,lake_snow_z3d,"lake_snow_z3d")
+
+      run_lvar3d(Tbd,lake_snow_dz3d,"lake_snow_dz3d")
+
+      run_lvar3d(Tbd,lake_snow_zi3d,"lake_snow_zi3d")
+
+      run_lvar3d(Tbd,lake_t_h2osoi_vol3d,"lake_t_h2osoi_vol3d")
+
+      run_lvar3d(Tbd,lake_t_h2osoi_liq3d,"lake_t_h2osoi_liq3d")
+
+      run_lvar3d(Tbd,lake_t_h2osoi_ice3d,"lake_t_h2osoi_ice3d")
+
+      run_lvar3d(Tbd,lake_t_soisno3d,"lake_t_soisno3d")
+
+      run_lvar3d(Tbd,lake_t_lake3d,"lake_t_lake3d")
+
+      run_lvar3d(Tbd,lake_icefrac3d,"lake_icefrac3d")
+
+      run_lvar3d(Tbd,lake_clay3d,"lake_clay3d")
+
+      run_lvar3d(Tbd,lake_sand3d,"lake_sand3d")
+
+#undef run_lvar3d
+#undef run_lvar2d
+
     end subroutine clm_lake_define_restart
 
     subroutine lvar3d(count, nb, ix, var3d, varname)
