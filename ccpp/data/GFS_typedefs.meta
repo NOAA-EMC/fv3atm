@@ -3291,6 +3291,12 @@
   units = count
   dimensions = ()
   type = integer
+[lextop]
+  standard_name = do_extra_top_layer_for_radiation
+  long_name = use an extra top layer for radiation
+  units = flag
+  dimensions = ()
+  type = logical
 [active_gases]
   standard_name = active_gases_used_by_RRTMGP
   long_name = active gases used by RRTMGP
@@ -8650,7 +8656,7 @@
 [LTP]
   standard_name = extra_top_layer
   long_name = extra top layer for radiation
-  units = none
+  units = count
   dimensions = ()
   type = integer
 [con_cliq]

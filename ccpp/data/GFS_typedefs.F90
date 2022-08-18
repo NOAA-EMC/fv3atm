@@ -758,6 +758,7 @@ module GFS_typedefs
     logical              :: swhtr           !< flag to output sw heating rate (Radtend%swhc)
     logical              :: lrseeds         !< flag to use host-provided random seeds
     integer              :: nrstreams       !< number of random number streams in host-provided random seed array
+    logical              :: lextop          !< flag for using an extra top layer for radiation
 
     ! RRTMGP
     logical              :: do_RRTMGP               !< Use RRTMGP
@@ -2988,6 +2989,7 @@ module GFS_typedefs
     logical              :: swhtr             = .true.       !< flag to output sw heating rate (Radtend%swhc)
     logical              :: lrseeds           = .false.      !< flag to use host-provided random seeds
     integer              :: nrstreams         = 2            !< number of random number streams in host-provided random seed array
+    logical              :: lextop            = .false.      !< flag for using an extra top layer for radiation
     ! RRTMGP
     logical              :: do_RRTMGP           = .false.    !< Use RRTMGP?
     character(len=128)   :: active_gases        = ''         !< Character list of active gases used in RRTMGP
@@ -3882,6 +3884,7 @@ module GFS_typedefs
     Model%swhtr            = swhtr
     Model%lrseeds          = lrseeds
     Model%nrstreams        = nrstreams
+    Model%lextop           = (ltp > 0)
 
     ! RRTMGP
     Model%do_RRTMGP           = do_RRTMGP
@@ -5762,6 +5765,7 @@ module GFS_typedefs
       print *, ' swhtr             : ', Model%swhtr
       print *, ' lrseeds           : ', Model%lrseeds
       print *, ' nrstreams         : ', Model%nrstreams
+      print *, ' lextop            : ', Model%lextop
       if (Model%do_RRTMGP) then
         print *, ' rrtmgp_nrghice     : ', Model%rrtmgp_nrghice
         print *, ' do_GPsw_Glw        : ', Model%do_GPsw_Glw
