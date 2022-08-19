@@ -8,8 +8,8 @@
   branch = main
 [submodule "ccpp/physics"]
   path = ccpp/physics
-  url = https://github.com/NCAR/ccpp-physics
-  branch = main
+  url = https://github.com/hafs-community/ccpp-physics
+  branch = feature/hafsv0.3_final
 [submodule "upp"]
   path = upp
   url = https://github.com/hafs-community/UPP
