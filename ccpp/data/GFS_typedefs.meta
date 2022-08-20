@@ -4882,6 +4882,12 @@
   units = none
   dimensions = ()
   type = integer
+[tc_pbl]
+  standard_name = option_of_tc_application_in_boundary_layer_mass_flux_scheme
+  long_name = option of tc application in boundary layer mass flux scheme
+  units = none
+  dimensions = ()
+  type = integer
 [h0facu]
   standard_name = multiplicative_tuning_parameter_for_reduced_surface_heat_fluxes_due_to_canopy_heat_storage
   long_name = canopy heat storage factor for sensible heat flux in unstable surface layer
