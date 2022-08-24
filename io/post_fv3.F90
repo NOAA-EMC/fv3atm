@@ -36,6 +36,10 @@ module post_fv3
 !                                       and  HAFS. 
 !                                     6)read 3D cloud fraction from cld_amt for GFDL MP,
 !                                       and from cldfra for other MPs.
+!     Jun 2022    J. Meng             2D decomposition
+!     Jul 2022    W. Meng             1)output lat/lon of four corner point for rotated
+!                                       lat-lon grid.
+!                                     2)read instant model top logwave
 !
 !-----------------------------------------------------------------------
 !*** run post on write grid comp
@@ -43,7 +47,7 @@ module post_fv3
 !
       use ctlblk_mod, only : komax,ifhr,ifmin,modelname,datapd,fld_info, &
                              npset,grib,gocart_on,icount_calmict, jsta,  &
-                             jend,im, nsoil, filenameflat
+                             jend,ista,iend, im, nsoil, filenameflat,numx
       use gridspec_mod, only : maptype, gridtype,latstart,latlast,       &
                                lonstart,lonlast
       use grib2_module, only : gribit2,num_pset,nrecout,first_grbtbl
@@ -69,9 +73,11 @@ module post_fv3
 !
       integer n,nwtpg,ieof,lcntrl,ierr,i,j,k,jts,jte,mynsoil
       integer,allocatable  :: jstagrp(:),jendgrp(:)
+      integer its,ite
+      integer,allocatable  :: istagrp(:),iendgrp(:)
       integer,save         :: kpo,kth,kpv
       logical,save         :: log_postalct=.false.
-      real,dimension(komax),save :: po, th, pv
+      real(4),dimension(komax),save :: po, th, pv
       logical        :: Log_runpost
       character(255) :: post_fname*255
 
@@ -93,6 +99,8 @@ module post_fv3
       nwtpg     = wrt_int_state%petcount
       jts       = wrt_int_state%lat_start              !<-- Starting J of this write task's subsection
       jte       = wrt_int_state%lat_end                !<-- Ending J of this write task's subsection
+      its       = wrt_int_state%lon_start              !<-- Starting I of this write task's subsection
+      ite       = wrt_int_state%lon_end                !<-- Ending I of this write task's subsection
       maptype   = wrt_int_state%post_maptype
       nbdl      = wrt_int_state%FBCount
 
@@ -107,19 +115,22 @@ module post_fv3
       if (.not.log_postalct) then
 !
         allocate(jstagrp(nwtpg),jendgrp(nwtpg))
+        allocate(istagrp(nwtpg),iendgrp(nwtpg))
 !
         do n=0,nwtpg-1
           jstagrp(n+1) = wrt_int_state%lat_start_wrtgrp(n+1)
           jendgrp(n+1) = wrt_int_state%lat_end_wrtgrp  (n+1)
+          istagrp(n+1) = wrt_int_state%lon_start_wrtgrp(n+1)
+          iendgrp(n+1) = wrt_int_state%lon_end_wrtgrp  (n+1)
         enddo
         if(mype==0) print *,'in post_run,jstagrp=',jstagrp,'jendgrp=',jendgrp
+        if(mype==0) print *,'in post_run,istagrp=',istagrp,'iendgrp=',iendgrp
 
 !-----------------------------------------------------------------------
 !*** read namelist for pv,th,po
 !-----------------------------------------------------------------------
 !
-        call read_postnmlt(kpo,kth,kpv,po,th,pv,wrt_int_state%post_nlunit, &
-                           wrt_int_state%post_namelist)
+        call read_postnmlt(kpo,kth,kpv,po,th,pv,wrt_int_state%post_namelist)
 !
 !-----------------------------------------------------------------------
 !*** allocate post variables
@@ -131,7 +142,7 @@ module post_fv3
        'jstagrp=',jstagrp,'jendgrp=',jendgrp
         call post_alctvars(wrt_int_state%im,wrt_int_state%jm,        &
           wrt_int_state%lm,mype,wrttasks_per_group,lead_write,    &
-          mpicomp,jts,jte,jstagrp,jendgrp)
+          mpicomp,jts,jte,jstagrp,jendgrp,its,ite,istagrp,iendgrp)
 !
 !-----------------------------------------------------------------------
 !*** read namelist for pv,th,po
@@ -200,11 +211,11 @@ module post_fv3
             npset = npset + 1
             call set_outflds(kth,th,kpv,pv)
             if(allocated(datapd))deallocate(datapd)
-            allocate(datapd(wrt_int_state%im,jte-jts+1,nrecout+100))
-!$omp parallel do default(none),private(i,j,k),shared(nrecout,jend,jsta,im,datapd)
+            allocate(datapd(ite-its+1,jte-jts+1,nrecout+100))
+!$omp parallel do default(none),private(i,j,k),shared(nrecout,jend,jsta,im,datapd,ista,iend)
             do k=1,nrecout+100
               do j=1,jend+1-jsta
-                do i=1,im
+                do i=1,iend+1-ista
                   datapd(i,j,k) = 0.
                 enddo
               enddo
@@ -241,7 +252,8 @@ module post_fv3
                                       lonstartv, lonlastv, cenlonv,     &
                                       latstartv, latlastv, cenlatv,     &
                                       latstart_r,latlast_r,lonstart_r,  &
-                                      lonlast_r, STANDLON, maptype, gridtype
+                                      lonlast_r, STANDLON, maptype, gridtype, &
+                                      latse,lonse,latnw,lonnw
 !
       implicit none
 !
@@ -348,6 +360,14 @@ module post_fv3
         lonstart_r = lonstart
         latlast_r = latlast
         lonlast_r = lonlast
+        lonstart = nint(wrt_int_state%lonstart*gdsdegr)
+        latstart = nint(wrt_int_state%latstart*gdsdegr)
+        lonse = nint(wrt_int_state%lonse*gdsdegr)
+        latse = nint(wrt_int_state%latse*gdsdegr)
+        lonnw = nint(wrt_int_state%lonnw*gdsdegr)
+        latnw = nint(wrt_int_state%latnw*gdsdegr)
+        lonlast = nint(wrt_int_state%lonlast*gdsdegr)
+        latlast = nint(wrt_int_state%latlast*gdsdegr)
 
         if(dlon(grid_id)<spval) then
           dxval = dlon(grid_id)*gdsdegr
@@ -511,6 +531,7 @@ module post_fv3
       use soil,        only: sldpth, sh2o, smc, stc
       use masks,       only: lmv, lmh, htm, vtm, gdlat, gdlon, dx, dy, hbm2, sm, sice
       use ctlblk_mod,  only: im, jm, lm, lp1, jsta, jend, jsta_2l, jend_2u, jsta_m,jend_m, &
+                             ista, iend, ista_2l, iend_2u, ista_m,iend_m, &
                              lsm, pt, imp_physics, spval, mpi_comm_comp, gdsdegr,  &
                              tprec, tclod, trdlw, trdsw, tsrfc, tmaxmin, theat, &
                              ardlw, ardsw, asrfc, avrain, avcnvc, iSF_SURFACE_PHYSICS,&
@@ -521,7 +542,7 @@ module post_fv3
                              dxval, dyval, truelat2, truelat1, psmapf, cenlat,     &
                              lonstartv, lonlastv, cenlonv, latstartv, latlastv,    &
                              cenlatv,latstart_r,latlast_r,lonstart_r,lonlast_r,    &
-                             maptype, gridtype, STANDLON
+                             maptype, gridtype, STANDLON,latse,lonse,latnw,lonnw
       use lookup_mod,  only: thl, plq, ptbl, ttbl, rdq, rdth, rdp, rdthe, pl,   &
                              qs0, sqs, sthe, ttblq, rdpq, rdtheq, stheq, the0q, the0
       use physcons,    only: grav => con_g, fv => con_fvirt, rgas => con_rd,    &
@@ -546,7 +567,7 @@ module post_fv3
 !
       integer i, ip1, j, l, k, n, iret, ibdl, rc, kstart, kend
       integer i1,i2,j1,j2,k1,k2
-      integer ista,iend,fieldDimCount,gridDimCount,ncount_field
+      integer fieldDimCount,gridDimCount,ncount_field
       integer jdate(8)
       logical foundland, foundice, found, mvispresent
       integer totalLBound3d(3), totalUBound3d(3)
@@ -562,7 +583,7 @@ module post_fv3
       real,external::FPVSNEW
       real,dimension(:,:),allocatable :: dummy, p2d, t2d, q2d,  qs2d,  &
                              cw2d, cfr2d
-      character(len=80)              :: fieldname, wrtFBName
+      character(len=80)              :: fieldname, wrtFBName, flatlon
       type(ESMF_Grid)                :: wrtGrid
       type(ESMF_Field)               :: theField
       type(ESMF_Field), allocatable  :: fcstField(:)
@@ -594,22 +615,28 @@ module post_fv3
 !
 !$omp parallel do default(shared),private(i,j)
       do j=jsta,jend
-        do  i=1,im
+        do  i=ista,iend
           gdlat(i,j) = wrt_int_state%latPtr(i,j)
           gdlon(i,j) = wrt_int_state%lonPtr(i,j)
         enddo
       enddo
 
-      call exch(gdlat(1,jsta_2l))
+      call exch(gdlat)
+      call exch(gdlon)
 
 !$omp parallel do default(none),private(i,j,ip1), &
-!$omp&  shared(jsta,jend_m,im,dx,gdlat,gdlon,dy)
+!$omp&  shared(jsta,jend_m,im,dx,gdlat,gdlon,dy,ista,iend_m,maptype,dxval,dyval,gdsdegr)
       do j = jsta, jend_m
-        do i = 1, im-1
+        do i = ista, iend_m
           ip1 = i + 1
           !if (ip1 > im) ip1 = ip1 - im
-          dx(i,j) = erad*cos(gdlat(i,j)*dtr)*(gdlon(ip1,j)-gdlon(i,j))*dtr
-          dy(i,j) = erad*(gdlat(i,j+1)-gdlat(i,j))*dtr  ! like A*DPH
+          if(maptype==207)then
+            dx(i,j)=erad*dxval*dtr/gdsdegr
+            dy(i,j)=erad*dyval*dtr/gdsdegr
+          else
+            dx(i,j) = erad*cos(gdlat(i,j)*dtr)*(gdlon(ip1,j)-gdlon(i,j))*dtr
+            dy(i,j) = erad*(gdlat(i,j+1)-gdlat(i,j))*dtr  ! like A*DPH
+          endif
         end do
       end do
 !
@@ -619,9 +646,9 @@ module post_fv3
         bk5(i) = wrt_int_state%bk(i)
       enddo
 
-!$omp parallel do default(none) private(i,j) shared(jsta,jend,im,f,gdlat)
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,im,f,gdlat,ista,iend)
       do j=jsta,jend
-        do i=1,im
+        do i=ista,iend
           f(I,J) = 1.454441e-4*sin(gdlat(i,j)*dtr)   ! 2*omeg*sin(phi)
         end do
       end do
@@ -631,9 +658,9 @@ module post_fv3
 ! GFS does not have surface specific humidity
 !                   inst sensible heat flux
 !                   inst latent heat flux
-!$omp parallel do default(none),private(i,j),shared(jsta,jend,im,spval,qs,twbs,qwbs,ths)
+!$omp parallel do default(none),private(i,j),shared(jsta,jend,im,spval,qs,twbs,qwbs,ths,ista,iend)
       do j=jsta,jend
-        do i=1,im
+        do i=ista,iend
           qs(i,j) = SPVAL
           twbs(i,j) = SPVAL
           qwbs(i,j) = SPVAL
@@ -650,10 +677,10 @@ module post_fv3
 !                   10 m theta
 !                   10 m humidity
 !                   snow free albedo
-!$omp parallel do default(none), private(i,j), shared(jsta,jend,im,spval), &
+!$omp parallel do default(none), private(i,j), shared(jsta,jend,im,spval,ista,iend), &
 !$omp& shared(cldefi,lspa,th10,q10,albase)
       do j=jsta,jend
-        do i=1,im
+        do i=ista,iend
           cldefi(i,j) = SPVAL
           lspa(i,j) = SPVAL
           th10(i,j) = SPVAL
@@ -663,9 +690,9 @@ module post_fv3
       enddo
 
 ! GFS does not have convective precip
-!$omp parallel do default(none) private(i,j) shared(jsta,jend,im,cprate)
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,im,cprate,ista,iend)
       do j=jsta,jend
-        do i=1,im
+        do i=ista,iend
           cprate(i,j) = 0.
         enddo
       enddo
@@ -675,10 +702,10 @@ module post_fv3
 !                       inst cloud fraction for high, middle, and low cloud,
 !                            cfrach
 !                       inst ground heat flux, grnflx
-!$omp parallel do default(none) private(i,j) shared(jsta,jend,im,spval), &
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,im,spval,ista,iend), &
 !$omp& shared(czen,czmean,radot,cfrach,cfracl,cfracm,grnflx)
       do j=jsta,jend
-        do i=1,im
+        do i=ista,iend
           czen(i,j)   = SPVAL
           czmean(i,j) = SPVAL
           cfrach(i,j) = SPVAL
@@ -699,22 +726,20 @@ module post_fv3
 !                     time averaged cloud fraction, set acfrst to spval, ncfrst to 1
 !                     UNDERGROUND RUNOFF, bgroff
 !                     inst incoming sfc longwave
-!                     inst model top outgoing longwave,rlwtoa
 !                     inst incoming sfc shortwave, rswin
 !                     inst incoming clear sky sfc shortwave, rswinc
 !                     inst outgoing sfc shortwave, rswout
 !                     snow phase change heat flux, snopcx
 ! GFS does not use total momentum flux,sfcuvx
-!$omp parallel do default(none),private(i,j),shared(jsta,jend,im,spval), &
-!$omp& shared(acfrcv,ncfrcv,acfrst,ncfrst,bgroff,rlwtoa,rswin,rswinc,rswout,snopcx,sfcuvx)
+!$omp parallel do default(none),private(i,j),shared(jsta,jend,im,spval,ista,iend), &
+!$omp& shared(acfrcv,ncfrcv,acfrst,ncfrst,bgroff,rswin,rswinc,rswout,snopcx,sfcuvx)
       do j=jsta,jend
-        do i=1,im
+        do i=ista,iend
           acfrcv(i,j) = spval
           ncfrcv(i,j) = 1.0
           acfrst(i,j) = spval
           ncfrst(i,j) = 1.0
           bgroff(i,j) = spval
-          rlwtoa(i,j) = spval
           rswinc(i,j) = spval
         enddo
       enddo
@@ -731,10 +756,10 @@ module post_fv3
 !                   temperature tendency due to latent heating from convection
 !                   temperature tendency due to latent heating from grid scale
       do l=1,lm
-!$omp parallel do default(none),private(i,j),shared(jsta_2l,jend_2u,im,spval,l), &
+!$omp parallel do default(none),private(i,j),shared(jsta_2l,jend_2u,im,spval,l,ista_2l,iend_2u), &
 !$omp& shared(rlwtt,rswtt,tcucn,tcucns,train)
         do j=jsta_2l,jend_2u
-          do i=1,im
+          do i=ista_2l,iend_2u
             rlwtt(i,j,l) = spval
             rswtt(i,j,l)  = spval
             tcucn(i,j,l)  = spval
@@ -761,10 +786,10 @@ module post_fv3
 !                   v at roughness length, vz0
 !                   shelter rh max, maxrhshltr
 !                   shelter rh min, minrhshltr
-!$omp parallel do default(none),private(i,j),shared(jsta_2l,jend_2u,im,spval), &
+!$omp parallel do default(none),private(i,j),shared(jsta_2l,jend_2u,im,spval,ista_2l,iend_2u), &
 !$omp& shared(smstav,sfcevp,acsnow,acsnom,qz0,uz0,vz0,maxrhshltr,minrhshltr)
       do j=jsta_2l,jend_2u
-        do i=1,im
+        do i=ista_2l,iend_2u
           smstav(i,j) = spval
           sfcevp(i,j) = spval
           acsnow(i,j) = spval
@@ -778,9 +803,9 @@ module post_fv3
 ! GFS does not have mixing length,el_pbl
 !                   exchange coefficient, exch_h
       do l=1,lm
-!$omp parallel do default(none),private(i,j),shared(jsta_2l,jend_2u,im,l,spval,el_pbl,exch_h)
+!$omp parallel do default(none),private(i,j),shared(jsta_2l,jend_2u,im,l,spval,el_pbl,exch_h,ista_2l,iend_2u)
         do j=jsta_2l,jend_2u
-          do i=1,im
+          do i=ista_2l,iend_2u
             el_pbl(i,j,l) = spval
             exch_h(i,j,l) = spval
           enddo
@@ -788,10 +813,10 @@ module post_fv3
       enddo
 
 ! GFS does not have deep convective cloud top and bottom fields
-!$omp parallel do default(none),private(i,j),shared(jsta_2l,jend_2u,im,spval), &
+!$omp parallel do default(none),private(i,j),shared(jsta_2l,jend_2u,im,spval,ista_2l,iend_2u), &
 !$omp& shared(htopd,hbotd,htops,hbots,cuppt)
       do j=jsta_2l,jend_2u
-        do i=1,im
+        do i=ista_2l,iend_2u
           htopd(i,j) = SPVAL
           hbotd(i,j) = SPVAL
           htops(i,j) = SPVAL
@@ -852,8 +877,6 @@ module post_fv3
                 line=__LINE__, file=__FILE__)) return  ! bail out
 !           print *,'in post_lam, get land field value,fillvalue=',fillvalue
 
-          ista = lbound(arrayr42d,1)
-          iend = ubound(arrayr42d,1)
           !$omp parallel do default(none),private(i,j),shared(jsta,jend,ista,iend,spval,arrayr42d,sm,fillValue)
           do j=jsta, jend
             do i=ista, iend
@@ -886,8 +909,6 @@ module post_fv3
                 line=__LINE__, file=__FILE__)) return  ! bail out
 !           if(mype==0) print *,'in post_lam, get icec  field value,fillvalue=',fillvalue
 
-          ista = lbound(arrayr42d,1)
-          iend = ubound(arrayr42d,1)
           !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,sice,arrayr42d,sm,fillValue)
           do j=jsta, jend
             do i=ista, iend
@@ -1663,6 +1684,17 @@ module post_fv3
                 do i=ista, iend
                   alwtoa(i,j) = arrayr42d(i,j)
                   if( abs(arrayr42d(i,j)-fillValue) < small) alwtoa(i,j) = spval
+                enddo
+              enddo
+            endif
+
+            ! outgoing model top logwave
+            if(trim(fieldname)=='ulwrf_toa') then
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,rlwtoa,arrayr42d,fillValue,spval)
+              do j=jsta,jend
+                do i=ista, iend
+                  rlwtoa(i,j) = arrayr42d(i,j)
+                  if( abs(arrayr42d(i,j)-fillValue)<  small) rlwtoa(i,j) = spval
                 enddo
               enddo
             endif
@@ -2985,29 +3017,29 @@ module post_fv3
 
             ! model level cloud fraction
             if(imp_physics == 11) then !GFDL MP
-            if(trim(fieldname)=='cld_amt') then
-              !$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,cfr,arrayr43d,fillvalue,spval)
-              do l=1,lm
-                do j=jsta,jend
-                  do i=ista, iend
-                    cfr(i,j,l) = arrayr43d(i,j,l)
-                    if(abs(arrayr43d(i,j,l)-fillvalue)<small) cfr(i,j,l) = spval
+              if(trim(fieldname)=='cld_amt') then
+                !$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,cfr,arrayr43d,fillvalue,spval)
+                do l=1,lm
+                  do j=jsta,jend
+                    do i=ista, iend
+                      cfr(i,j,l) = arrayr43d(i,j,l)
+                      if(abs(arrayr43d(i,j,l)-fillvalue)<small) cfr(i,j,l) = spval
+                    enddo
                   enddo
                 enddo
-              enddo
-            endif
+              endif
             else !Other MP
-            if(trim(fieldname)=='cldfra') then
-              !$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,cfr,arrayr43d,fillvalue,spval)
-              do l=1,lm
-                do j=jsta,jend
-                  do i=ista, iend
-                    cfr(i,j,l) = arrayr43d(i,j,l)
-                    if(abs(arrayr43d(i,j,l)-fillvalue)<small) cfr(i,j,l) = spval
+              if(trim(fieldname)=='cldfra') then
+                !$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,cfr,arrayr43d,fillvalue,spval)
+                do l=1,lm
+                  do j=jsta,jend
+                    do i=ista, iend
+                      cfr(i,j,l) = arrayr43d(i,j,l)
+                      if(abs(arrayr43d(i,j,l)-fillvalue)<small) cfr(i,j,l) = spval
+                    enddo
                   enddo
                 enddo
-              enddo
-            endif
+              endif
             endif
           
 !3d fields
@@ -3029,9 +3061,9 @@ module post_fv3
       enddo file_loop_all
 
 ! recompute full layer of zint
-!$omp parallel do default(none) private(i,j) shared(jsta,jend,im,lp1,spval,zint,fis)
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,im,lp1,spval,zint,fis,ista,iend)
       do j=jsta,jend
-        do i=1,im
+        do i=ista,iend
           if (fis(i,j) /= spval) then
             zint(i,j,lp1) = fis(i,j)
             fis(i,j)      = fis(i,j) * grav
@@ -3043,9 +3075,9 @@ module post_fv3
       enddo
 
       do l=lm,1,-1
-!$omp parallel do default(none) private(i,j) shared(l,jsta,jend,im,omga,wh,dpres,zint,spval)
+!$omp parallel do default(none) private(i,j) shared(l,jsta,jend,im,omga,wh,dpres,zint,spval,ista,iend)
         do j=jsta,jend
-          do i=1,im
+          do i=ista,iend
             if(wh(i,j,l) /= spval) then
               omga(i,j,l) = (-1.) * wh(i,j,l) * dpres(i,j,l)/zint(i,j,l)
               zint(i,j,l) = zint(i,j,l) + zint(i,j,l+1)
@@ -3060,17 +3092,17 @@ module post_fv3
 !           'lm=',maxval(omga(ista:iend,jsta:jend,lm)),minval(omga(ista:iend,jsta:jend,lm))
 
 ! compute pint from top down
-!$omp parallel do default(none) private(i,j) shared(jsta,jend,im,ak5,pint)
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,im,ak5,pint,ista,iend)
       do j=jsta,jend
-        do i=1,im
+        do i=ista,iend
           pint(i,j,1) = ak5(1)
         end do
       end do
 
       do l=2,lp1
-!$omp parallel do default(none) private(i,j) shared(l,jsta,jend,im,pint,dpres,spval)
+!$omp parallel do default(none) private(i,j) shared(l,jsta,jend,im,pint,dpres,spval,ista,iend)
         do j=jsta,jend
-          do i=1,im
+          do i=ista,iend
             if(dpres(i,j,l-1) /= spval) then
               pint(i,j,l) = pint(i,j,l-1) + dpres(i,j,l-1)
             else
@@ -3082,9 +3114,9 @@ module post_fv3
 
 !compute pmid from averaged two layer pint
       do l=lm,1,-1
-!$omp parallel do default(none) private(i,j) shared(l,jsta,jend,im,pmid,pint,spval)
+!$omp parallel do default(none) private(i,j) shared(l,jsta,jend,im,pmid,pint,spval,ista,iend)
         do j=jsta,jend
-          do i=1,im
+          do i=ista,iend
             if(pint(i,j,l+1) /= spval) then
               pmid(i,j,l) = 0.5*(pint(i,j,l)+pint(i,j,l+1))
             else
@@ -3094,9 +3126,9 @@ module post_fv3
         enddo
       enddo
 
-!$omp parallel do default(none) private(i,j) shared(jsta,jend,im,spval,pt,pd,pint)
+!$omp parallel do default(none) private(i,j) shared(jsta,jend,im,spval,pt,pd,pint,ista,iend)
       do j=jsta,jend
-        do i=1,im
+        do i=ista,iend
           pd(i,j)     = spval
           pint(i,j,1) = pt
         end do
@@ -3105,9 +3137,9 @@ module post_fv3
 
 ! compute alpint
       do l=lp1,1,-1
-!$omp parallel do default(none) private(i,j) shared(l,jsta,jend,im,alpint,pint,spval)
+!$omp parallel do default(none) private(i,j) shared(l,jsta,jend,im,alpint,pint,spval,ista,iend)
         do j=jsta,jend
-          do i=1,im
+          do i=ista,iend
             if(pint(i,j,l) /= spval) then
               alpint(i,j,l) = log(pint(i,j,l))
             else
@@ -3119,9 +3151,9 @@ module post_fv3
 
 ! compute zmid  
       do l=lm,1,-1
-!$omp parallel do default(none) private(i,j) shared(l,jsta,jend,im,zmid,zint,pmid,alpint,spval)
+!$omp parallel do default(none) private(i,j) shared(l,jsta,jend,im,zmid,zint,pmid,alpint,spval,ista,iend)
         do j=jsta,jend
-          do i=1,im
+          do i=ista,iend
             if( zint(i,j,l+1)/=spval .and. zint(i,j,l)/=spval .and. pmid(i,j,l) /= spval) then
               zmid(i,j,l)=zint(i,j,l+1)+(zint(i,j,l)-zint(i,j,l+1))* &
                     (log(pmid(i,j,l))-alpint(i,j,l+1))/ &
@@ -3199,7 +3231,7 @@ module post_fv3
 
 !htop
       do j=jsta,jend
-        do i=1,im
+        do i=ista,iend
           htop(i,j) = spval
           if(ptop(i,j) < spval)then
             do l=1,lm
@@ -3214,7 +3246,7 @@ module post_fv3
 
 ! hbot
       do j=jsta,jend
-        do i=1,im
+        do i=ista,iend
           hbot(i,j) = spval
           if(pbot(i,j) < spval)then
             do l=lm,1,-1
@@ -3254,6 +3286,18 @@ module post_fv3
 !
 !more fields need to be computed
 !
+
+! write lat/lon of the four corner point for rotated lat-lon grid
+      if(mype == 0 .and. maptype == 207)then
+        write(flatlon,1001)ifhr
+        open(112,file=trim(flatlon),form='formatted',status='unknown')
+        write(112,1002)latstart/1000,lonstart/1000,&
+        latse/1000,lonse/1000,latnw/1000,lonnw/1000, &
+        latlast/1000,lonlast/1000
+ 1001   format('latlons_corners.txt.f',I3.3)
+ 1002   format(4(I6,I7,X))
+        close(112)
+      endif
     end subroutine set_postvars_fv3
 
 

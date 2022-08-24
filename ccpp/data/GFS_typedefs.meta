@@ -309,6 +309,28 @@
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
   kind = kind_phys
+[qgrs(:,:,index_of_updraft_area_fraction_in_tracer_concentration_array)]
+  standard_name = prognostic_updraft_area_fraction_in_convection
+  long_name = convective updraft area fraction
+  units = frac
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = (index_of_updraft_area_fraction_in_tracer_concentration_array > 0 )
+[qgrs(:,:,index_for_smoke_in_tracer_concentration_array)]
+  standard_name = smoke_tracer_concentration
+  long_name = concentration of smoke
+  units = kg kg-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+[qgrs(:,:,index_for_dust_in_tracer_concentration_array)]
+  standard_name = dust_tracer_concentration
+  long_name = concentration of dust
+  units = kg kg-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
 [diss_est]
   standard_name = dissipation_estimate_of_air_temperature_at_model_layers
   long_name = dissipation estimate model layer mean temperature
@@ -545,7 +567,14 @@
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
   kind = kind_phys
-
+[gq0(:,:,index_of_updraft_area_fraction_in_tracer_concentration_array)]
+  standard_name = updraft_area_fraction_updated_by_physics
+  long_name = convective updraft area fraction updated by physics
+  units = frac
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = ( index_of_updraft_area_fraction_in_tracer_concentration_array > 0 )
 ########################################################################
 [ccpp-table-properties]
   name = GFS_sfcprop_type
@@ -716,6 +745,30 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
+[dust12m_in]
+  standard_name = fengsha_dust12m_input
+  long_name = fengsha dust input
+  units = various
+  dimensions = (horizontal_dimension,12,5)
+  type = real
+  kind = kind_phys
+  active = (do_smoke_coupling)
+[emi_in]
+  standard_name = anthropogenic_background_input
+  long_name = anthropogenic background input
+  units = various
+  dimensions = (horizontal_dimension,1)
+  type = real
+  kind = kind_phys
+  active = (do_smoke_coupling)
+[smoke_GBBEPx]
+  standard_name = emission_smoke_GBBEPx
+  long_name = emission fire GBBEPx
+  units = various
+  dimensions = (horizontal_dimension,24,3)
+  type = real
+  kind = kind_phys
+  active = (do_smoke_coupling)
 [z0base]
   standard_name = baseline_surface_roughness_length
   long_name = baseline surface roughness length for momentum in meter
@@ -2277,6 +2330,46 @@
   type = real
   kind = kind_phys
   active = (flag_for_surface_flux_coupling)
+[ulwsfcin_med]
+  standard_name = surface_upwelling_longwave_flux_over_ocean_from_mediator
+  long_name = surface upwelling LW flux over ocean for coupling
+  units = W m-2
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (flag_for_surface_flux_coupling .and. do_mediator_atmosphere_ocean_fluxes)
+[dusfcin_med]
+  standard_name = surface_x_momentum_flux_over_ocean_from_mediator
+  long_name = sfc x momentum flux over ocean for coupling
+  units = Pa
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (flag_for_surface_flux_coupling .and. do_mediator_atmosphere_ocean_fluxes)
+[dvsfcin_med]
+  standard_name = surface_y_momentum_flux_over_ocean_from_mediator
+  long_name = sfc y momentum flux over ocean for coupling
+  units = Pa
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (flag_for_surface_flux_coupling .and. do_mediator_atmosphere_ocean_fluxes)
+[dtsfcin_med]
+  standard_name = surface_upward_sensible_heat_flux_over_ocean_from_mediator
+  long_name = sfc sensible heat flux input over ocean for coupling
+  units = W m-2
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (flag_for_surface_flux_coupling .and. do_mediator_atmosphere_ocean_fluxes)
+[dqsfcin_med]
+  standard_name = surface_upward_latent_heat_flux_over_ocean_from_mediator
+  long_name = sfc latent heat flux input over ocean for coupling
+  units = W m-2
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (flag_for_surface_flux_coupling .and. do_mediator_atmosphere_ocean_fluxes)
 [hsnoin_cpl]
   standard_name = lwe_surface_snow_from_coupled_process
   long_name = sfc snow depth in meters over sea ice for coupling
@@ -2292,6 +2385,22 @@
   type = real
   kind = kind_phys
   active = (flag_for_surface_flux_coupling)
+[tmf]
+  standard_name = instantaneous_tendency_of_specific_humidity_due_to_PBL
+  long_name = instantaneous_tendency_of_specific_humidity_due_to_PBL
+  units = kg kg-1 s-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = (do_prognostic_updraft_area_fraction)
+[dqdt_qmicro]
+  standard_name = instantaneous_tendency_of_specific_humidity_due_to_microphysics
+  long_name = instantaneous_tendency_of_specific_humidity_due_to_microphysics
+  units = kg kg-1 s-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = (do_prognostic_updraft_area_fraction)
 [ca_deep]
   standard_name = cellular_automata_area_fraction_for_deep_convection_from_coupled_process
   long_name = fraction of cellular automata for deep convection
@@ -2395,6 +2504,14 @@
   type = real
   kind = kind_phys
   active = (control_for_stochastic_land_surface_perturbation /= 0)
+[dqdti]
+  standard_name = instantaneous_water_vapor_specific_humidity_tendency_due_to_convection
+  long_name = instantaneous moisture tendency due to convection
+  units = kg kg-1 s-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = (do_smoke_coupling)
 [nwfa2d]
   standard_name = tendency_of_hygroscopic_aerosols_at_surface_adjacent_layer
   long_name = instantaneous water-friendly sfc aerosol source
@@ -2411,6 +2528,126 @@
   type = real
   kind = kind_phys
   active = (control_for_microphysics_scheme == identifier_for_thompson_microphysics_scheme .and. flag_for_aerosol_physics)
+[emdust]
+  standard_name = emission_of_dust_for_smoke
+  long_name = emission of dust for smoke
+  units = ug m-2 s-1
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (do_smoke_coupling)
+[emseas]
+  standard_name = emission_of_seas_for_smoke
+  long_name = emission of seas for smoke
+  units = ug m-2 s-1
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (do_smoke_coupling)
+[emanoc]
+  standard_name = emission_of_anoc_for_thompson_mp
+  long_name = emission of anoc for thompson mp
+  units = ug m-2 s-1
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (do_smoke_coupling)
+[ebb_smoke_hr]
+  standard_name = surface_smoke_emission
+  long_name = emission of surface smoke
+  units = ug m-2 s-1
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (do_smoke_coupling)
+[frp_hr]
+  standard_name = frp_hourly
+  long_name = hourly fire radiative power
+  units = MW
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (do_smoke_coupling)
+[frp_std_hr]
+  standard_name = frp_std_hourly
+  long_name = hourly stdandard deviation of fire radiative power
+  units = MW
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (do_smoke_coupling)
+[fhist]
+  standard_name = fire_hist
+  long_name = coefficient to scale the fire activity depending on the fire duration
+  units = none
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (do_smoke_coupling)
+[coef_bb_dc]
+  standard_name = coef_bb_dc
+  long_name = coef to estimate the fire emission
+  units = none
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (do_smoke_coupling)
+[ebu_smoke]
+  standard_name = ebu_smoke
+  long_name = buffer of vertical fire emission
+  units = various
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = (do_smoke_coupling)
+[smoke_ext]
+  standard_name = extinction_coefficient_in_air_due_to_smoke
+  long_name = extinction coefficient in air due to smoke
+  units = various
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = (do_smoke_coupling)
+[dust_ext]
+  standard_name = extinction_coefficient_in_air_due_to_dust
+  long_name = extinction coefficient in air due to dust
+  units = various
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = (do_smoke_coupling)
+[chem3d]
+  standard_name = chem3d_mynn_pbl_transport
+  long_name = mynn pbl transport of smoke and dust
+  units = various
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension,2)
+  type = real
+  kind = kind_phys
+  active = (do_smoke_coupling)
+[min_fplume]
+  standard_name = minimum_fire_plume_sigma_pressure_level
+  long_name = minimum model level of fire plumerise
+  units = none
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (do_smoke_coupling)
+[max_fplume]
+  standard_name = maximum_fire_plume_sigma_pressure_level
+  long_name = maximum model level of fire plumerise
+  units = none
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (do_smoke_coupling)
+[rrfs_hwp]
+  standard_name = hourly_wildfire_potential
+  long_name = rrfs hourly fire weather potential
+  units = none
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (do_smoke_coupling)
 [ushfsfci]
   standard_name = surface_upward_sensible_heat_flux_for_chemistry_coupling
   long_name = instantaneous upward sensible heat flux for chemistry coupling
@@ -2767,6 +3004,18 @@
   units = flag
   dimensions = ()
   type = logical
+[rrfs_smoke]
+  standard_name = do_smoke_coupling
+  long_name = flag controlling rrfs_smoke collection (default off)
+  units = flag
+  dimensions = ()
+  type = logical
+[dust_smoke_rrtmg_band_number]
+  standard_name = index_of_shortwave_band_affected_by_smoke
+  long_name = rrtmg band number that smoke and dust should affect
+  units = count
+  dimensions = ()
+  type = integer
 [cpl_imp_mrg]
   standard_name = flag_for_merging_imported_data
   long_name = flag controlling cpl_imp_mrg for imported data (default off)
@@ -2788,6 +3037,12 @@
 [lsidea]
   standard_name = flag_for_integrated_dynamics_through_earths_atmosphere
   long_name = flag for idealized physics
+  units = flag
+  dimensions = ()
+  type = logical
+[use_med_flux]
+  standard_name = do_mediator_atmosphere_ocean_fluxes
+  long_name = flag for using atmosphere-ocean fluxes form mediator (default false)
   units = flag
   dimensions = ()
   type = logical
@@ -4337,6 +4592,12 @@
   units = flag
   dimensions = ()
   type = logical
+[progsigma]
+  standard_name = do_prognostic_updraft_area_fraction
+  long_name = do_prognostic_updraft_area_fraction
+  units = flag
+  dimensions = ()
+  type = logical
 [isatmedmf]
   standard_name = choice_of_scale_aware_TKE_moist_EDMF_PBL
   long_name = choice of scale-aware TKE moist EDMF PBL scheme
@@ -5211,6 +5472,12 @@
   units = index
   dimensions = ()
   type = integer
+[ntsigma]
+  standard_name = index_of_updraft_area_fraction_in_tracer_concentration_array
+  long_name = tracer index of updraft_area_fraction
+  units = index
+  dimensions = ()
+  type = integer
 [nqrimef]
   standard_name = index_of_mass_weighted_rime_factor_in_tracer_concentration_array
   long_name = tracer index for mass weighted rime factor
@@ -5229,6 +5496,30 @@
   units = index
   dimensions = ()
   type = integer
+[ntsmoke]
+  standard_name = index_for_smoke_in_tracer_concentration_array
+  long_name = tracer index for smoke
+  units = index
+  dimensions = ()
+  type = integer
+[ntdust]
+  standard_name = index_for_dust_in_tracer_concentration_array
+  long_name = tracer index for dust
+  units = index
+  dimensions = ()
+  type = integer
+[nchem]
+  standard_name = number_of_chemical_species_vertically_mixed
+  long_name = number of chemical vertically mixed
+  units = count
+  dimensions = ()
+  type = integer
+[ndvel]
+  standard_name = number_of_chemical_species_deposited
+  long_name = number of chemical pbl deposited
+  units = count
+  dimensions = ()
+  type = integer
 [ntchm]
   standard_name = number_of_chemical_tracers
   long_name = number of chemical tracers
@@ -5244,6 +5535,96 @@
 [ntche]
   standard_name = index_for_last_chemical_tracer
   long_name = tracer index for last chemical tracer
+  units = index
+  dimensions = ()
+  type = integer
+[ntdu1]
+  standard_name = index_for_dust_bin1
+  long_name = index for dust bin1
+  units = index
+  dimensions = ()
+  type = integer
+[ntdu2]
+  standard_name = index_for_dust_bin2
+  long_name = index for dust bin2
+  units = index
+  dimensions = ()
+  type = integer
+[ntdu3]
+  standard_name = index_for_dust_bin3
+  long_name = index for dust bin3
+  units = index
+  dimensions = ()
+  type = integer
+[ntdu4]
+  standard_name = index_for_dust_bin4
+  long_name = index for dust bin4
+  units = index
+  dimensions = ()
+  type = integer
+[ntdu5]
+  standard_name = index_for_dust_bin5
+  long_name = index for dust bin5
+  units = index
+  dimensions = ()
+  type = integer
+[ntss1]
+  standard_name = index_for_seasalt_bin1
+  long_name = index for seasalt bin1
+  units = index
+  dimensions = ()
+  type = integer
+[ntss2]
+  standard_name = index_for_seasalt_bin2
+  long_name = index for seasalt bin2
+  units = index
+  dimensions = ()
+  type = integer
+[ntss3]
+  standard_name = index_for_seasalt_bin3
+  long_name = index for seasalt bin3
+  units = index
+  dimensions = ()
+  type = integer
+[ntss4]
+  standard_name = index_for_seasalt_bin4
+  long_name = index for seasalt bin4
+  units = index
+  dimensions = ()
+  type = integer
+[ntss5]
+  standard_name = index_for_seasalt_bin5
+  long_name = index for seasalt bin5
+  units = index
+  dimensions = ()
+  type = integer
+[ntsu]
+  standard_name = index_for_sulfate
+  long_name = index for sulfate
+  units = index
+  dimensions = ()
+  type = integer
+[ntbcb]
+  standard_name = index_for_bcphobic
+  long_name = index for bcphobic
+  units = index
+  dimensions = ()
+  type = integer
+[ntbcl]
+  standard_name = index_for_bcphilic
+  long_name = index for bcphilic 
+  units = index
+  dimensions = ()
+  type = integer
+[ntocb]
+  standard_name = index_for_ocphobic
+  long_name = index for ocphobic
+  units = index
+  dimensions = ()
+  type = integer
+[ntocl]
+  standard_name = index_for_ocphilic
+  long_name = index for ocphilic 
   units = index
   dimensions = ()
   type = integer
@@ -5326,6 +5707,104 @@
   units = index
   dimensions = ()
   type = integer
+[mix_chem]
+  standard_name = do_planetary_boundary_layer_smoke_mixing
+  long_name = flag for rrfs smoke mynn tracer mixing
+  units = flag
+  dimensions = ()
+  type = logical
+  active = (do_smoke_coupling)
+[fire_turb]
+  standard_name = do_planetary_boundary_layer_fire_enhancement
+  long_name = flag for rrfs smoke mynn enh vermix
+  units = flag
+  dimensions = ()
+  type = logical
+  active = (do_smoke_coupling)
+[seas_opt]
+  standard_name = control_for_smoke_sea_salt
+  long_name = rrfs smoke sea salt emission option
+  units = index
+  dimensions = ()
+  type = integer
+  active = (do_smoke_coupling)
+[dust_opt]
+  standard_name = control_for_smoke_dust
+  long_name = rrfs smoke dust chem option
+  units = index
+  dimensions = ()
+  type = integer
+  active = (do_smoke_coupling)
+[biomass_burn_opt]
+  standard_name = control_for_smoke_biomass_burn
+  long_name = rrfs smoke biomass burning option
+  units = index
+  dimensions = ()
+  type = integer
+  active = (do_smoke_coupling)
+[drydep_opt]
+  standard_name = control_for_smoke_dry_deposition
+  long_name = rrfs smoke dry deposition option
+  units = index
+  dimensions = ()
+  type = integer
+  active = (do_smoke_coupling)
+[wetdep_ls_opt]
+  standard_name = control_for_smoke_wet_deposition
+  long_name = rrfs smoke large scale wet deposition option
+  units = index
+  dimensions = ()
+  type = integer
+  active = (do_smoke_coupling)
+[do_plumerise]
+  standard_name = do_smoke_plumerise
+  long_name = rrfs smoke plumerise option
+  units = index
+  dimensions = ()
+  type = logical
+  active = (do_smoke_coupling)
+[plumerisefire_frq]
+  standard_name = smoke_plumerise_frequency
+  long_name = rrfs smoke add smoke option
+  units = min
+  dimensions = ()
+  type = integer
+  active = (do_smoke_coupling)
+[addsmoke_flag]
+  standard_name = control_for_smoke_biomass_burning_emissions
+  long_name = rrfs smoke add smoke option
+  units = index
+  dimensions = ()
+  type = integer
+  active = (do_smoke_coupling)
+[smoke_forecast]
+  standard_name = do_smoke_forecast
+  long_name = flag for rrfs smoke forecast
+  units = flag
+  dimensions = ()
+  type = logical
+  active = (do_smoke_coupling)
+[aero_ind_fdb]
+  standard_name = do_smoke_aerosol_indirect_feedback
+  long_name = flag for wfa ifa emission indirect feedback
+  units = flag
+  dimensions = ()
+  type = logical
+  active = (do_smoke_coupling)
+[aero_dir_fdb]
+  standard_name = do_smoke_aerosol_direct_feedback
+  long_name = flag for smoke and dust radiation feedback
+  units = flag
+  dimensions = ()
+  type = logical
+  active = (do_smoke_coupling)
+[rrfs_smoke_debug]
+  standard_name = do_smoke_debug
+  long_name = flag for rrfs smoke plumerise debug
+  units = flag
+  dimensions = ()
+  type = logical
+  active = (do_smoke_coupling)
 [ncnvcld3d]
   standard_name = number_of_convective_cloud_variables_in_xyz_dimensioned_restart_array
   long_name = number of convective 3d clouds fields
@@ -5673,18 +6152,12 @@
   units = flag
   dimensions = ()
   type = logical
-[grav_settling]
-  standard_name = control_for_gravitational_settling_of_cloud_droplets
-  long_name = flag to activate gravitational setting of fog
-  units = flag
-  dimensions = ()
-  type = integer
 [bl_mynn_tkebudget]
   standard_name = control_for_tke_budget_output
   long_name = flag for activating TKE budget
   units = flag
   dimensions = ()
-  type = integer
+  type = logical
 [bl_mynn_tkeadvect]
   standard_name = flag_for_tke_advection
   long_name = flag for activating TKE advection
@@ -5721,12 +6194,6 @@
   units = flag
   dimensions = ()
   type = integer
-[bl_mynn_edmf_part]
-  standard_name = control_for_edmf_partitioning_in_mellor_yamada_nakanishi_niino_pbl_scheme
-  long_name = flag to partitioning og the MF and ED areas
-  units = flag
-  dimensions = ()
-  type = integer
 [bl_mynn_cloudmix]
   standard_name = control_for_cloud_species_mixing_in_mellor_yamada_nakanishi_niino_pbl_scheme
   long_name = flag to activate mixing of cloud species
@@ -5745,12 +6212,42 @@
   units = flag
   dimensions = ()
   type = integer
+[bl_mynn_closure]
+  standard_name = control_for_closure_level_in_mellor_yamada_nakanishi_niino_pbl_scheme
+  long_name = flag to determine the closure level for the mynn
+  units = 1
+  dimensions = ()
+  type = real
 [icloud_bl]
   standard_name = control_for_sgs_cloud_radiation_coupling_in_mellor_yamamda_nakanishi_niino_pbl_scheme
   long_name = flag for coupling sgs clouds to radiation
   units = flag
   dimensions = ()
   type = integer
+[isftcflx]
+  standard_name = control_for_thermal_roughness_lengths_over_water
+  long_name = flag for thermal roughness lengths over water in mynnsfclay
+  units = 1
+  dimensions = ()
+  type = integer
+[iz0tlnd]
+  standard_name = control_for_thermal_roughness_lengths_over_land
+  long_name = flag for thermal roughness lengths over land in mynnsfclay
+  units = 1
+  dimensions = ()
+  type = integer
+[sfclay_compute_flux]
+  standard_name = do_compute_surface_scalar_fluxes
+  long_name = flag for computing surface scalar fluxes in mynnsfclay
+  units = flag
+  dimensions = ()
+  type = logical
+[sfclay_compute_diag]
+  standard_name = do_compute_surface_diagnostics
+  long_name = flag for computing surface diagnostics in mynnsfclay
+  units = flag
+  dimensions = ()
+  type = logical
 [var_ric]
   standard_name = control_for_variable_bulk_richardson_number
   long_name = flag for calculating variable bulk richardson number for hurricane PBL
@@ -6154,6 +6651,14 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
+[ud_mf]
+  standard_name = instantaneous_atmosphere_updraft_convective_mass_flux
+  long_name = (updraft mass flux) * delt
+  units = kg m-2
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = ( control_for_deep_convection_scheme .ge. 0 .or. control_for_shallow_convection_scheme .ge. 0 )
 [in_nm]
   standard_name = ice_nucleation_number_from_climatology
   long_name = ice nucleation number in MG MP
@@ -6169,9 +6674,9 @@
   type = real
   kind = kind_phys
 [aer_nm]
-  standard_name = mass_number_concentration_of_aerosol_from_gocart_climatology
-  long_name = GOCART aerosol climatology number concentration
-  units = kg-1
+  standard_name = mass_mixing_ratio_of_aerosol_from_gocart_or_merra2
+  long_name = mass mixing ratio of aerosol from gocart or merra2
+  units = kg kg-1
   dimensions = (horizontal_loop_extent,vertical_layer_dimension,number_of_aerosol_tracers_MG)
   type = real
   kind = kind_phys
@@ -6430,7 +6935,7 @@
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
   kind = kind_phys
-  active = (control_for_deep_convection_scheme == identifier_for_grell_freitas_deep_convection .or. control_for_deep_convection_scheme == identifier_for_new_tiedtke_deep_convection)
+  active = (control_for_deep_convection_scheme == identifier_for_grell_freitas_deep_convection .or. control_for_deep_convection_scheme == identifier_for_new_tiedtke_deep_convection .or. control_for_deep_convection_scheme == identifer_for_scale_aware_mass_flux_deep_convection .or. control_for_shallow_convection_scheme == identifier_for_scale_aware_mass_flux_shallow_convection)
 [cactiv]
   standard_name = counter_for_grell_freitas_convection
   long_name = convective activity memory
@@ -6480,6 +6985,14 @@
 [Sh3D]
   standard_name = stability_function_for_heat
   long_name = stability function for heat
+  units = none
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = (flag_for_mellor_yamada_nakanishi_niino_pbl_scheme)
+[Sm3D]
+  standard_name = stability_function_for_momentum
+  long_name = stability function for momentum
   units = none
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
@@ -7619,6 +8132,46 @@
   type = real
   kind = kind_phys
   active = (flag_for_mellor_yamada_nakanishi_niino_pbl_scheme .and. (control_for_additional_diagnostics_in_mellor_yamada_nakanishi_niino_pbl_scheme .ne. 0))
+[dqke]
+  standard_name = total_time_rate_of_change_of_tke
+  long_name = total tke tendency
+  units = m2 s-3
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = (flag_for_mellor_yamada_nakanishi_niino_pbl_scheme .and. control_for_tke_budget_output)
+[qwt]
+  standard_name = tke_tendency_due_to_vertical_transport
+  long_name = tke tendency due to vertical transport and diffusion
+  units = m2 s-3
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = (flag_for_mellor_yamada_nakanishi_niino_pbl_scheme .and. control_for_tke_budget_output)
+[qshear]
+  standard_name = tke_tendency_due_to_shear
+  long_name = tke tendency due to shear
+  units = m2 s-3
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = (flag_for_mellor_yamada_nakanishi_niino_pbl_scheme .and. control_for_tke_budget_output)
+[qbuoy]
+  standard_name = tke_tendency_due_to_buoyancy
+  long_name = tke tendency due to buoyancy production or consumption
+  units = m2 s-3
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = (flag_for_mellor_yamada_nakanishi_niino_pbl_scheme .and. control_for_tke_budget_output)
+[qdiss]
+  standard_name = tke_tendency_due_to_dissipation
+  long_name = tke tendency due to the dissipation of tke
+  units = m2 s-3
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = (flag_for_mellor_yamada_nakanishi_niino_pbl_scheme .and. control_for_tke_budget_output)
 [nupdraft]
   standard_name = number_of_plumes
   long_name = number of plumes per grid column
@@ -7648,7 +8201,7 @@
   type = integer
   active = (flag_for_mellor_yamada_nakanishi_niino_pbl_scheme)
 [exch_h]
-  standard_name = atmosphere_heat_diffusivity_for_mynnpbl
+  standard_name = atmosphere_heat_diffusivity_for_mynnedmf
   long_name = diffusivity for heat for MYNN PBL (defined for all mass levels)
   units = m2 s-1
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
@@ -7656,7 +8209,7 @@
   kind = kind_phys
   active = (flag_for_mellor_yamada_nakanishi_niino_pbl_scheme)
 [exch_m]
-  standard_name = atmosphere_momentum_diffusivity_for_mynnpbl
+  standard_name = atmosphere_momentum_diffusivity_for_mynnedmf
   long_name = diffusivity for momentum for MYNN PBL (defined for all mass levels)
   units = m2 s-1
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
