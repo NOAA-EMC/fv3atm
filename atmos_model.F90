@@ -2684,6 +2684,7 @@ end subroutine update_atmos_chemistry
 
         fldname = 't2m'
         if (trim(impfield_name) == trim(fldname)) then
+          print *,'overwrite t2m with imported data'
           findex  = queryImportFields(fldname)
           if (importFieldsValid(findex)) then
 !$omp parallel do default(shared) private(i,j,nb,ix)

@@ -2168,7 +2168,7 @@ module GFS_typedefs
     Sfcprop%lakefrac  = clear_val
     Sfcprop%lakedepth = clear_val
 
-    Sfcprop%use_lake_model = clear_val
+    Sfcprop%use_lake_model = zero
     Sfcprop%h_ML      = clear_val
     Sfcprop%t_ML      = clear_val
     Sfcprop%t_mnw     = clear_val

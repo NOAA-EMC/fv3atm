@@ -2482,7 +2482,30 @@ module GFS_diagnostics
       do nb = 1,nblks
         ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%lakedepth(:)
       enddo
-    
+
+      idx = idx + 1
+      ExtDiag(idx)%axes = 2
+      ExtDiag(idx)%name = 'T_snow'
+      ExtDiag(idx)%desc = 'Temperature of snow on a lake'
+      ExtDiag(idx)%unit = 'K'
+      ExtDiag(idx)%mod_name = 'gfs_sfc'
+      ExtDiag(idx)%intpl_method = 'nearest_stod'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%T_snow(:)
+      enddo
+
+      idx = idx + 1
+      ExtDiag(idx)%axes = 2
+      ExtDiag(idx)%name = 'T_ice'
+      ExtDiag(idx)%desc = 'Temperature of ice on a lake'
+      ExtDiag(idx)%unit = 'K'
+      ExtDiag(idx)%mod_name = 'gfs_sfc'
+      ExtDiag(idx)%intpl_method = 'nearest_stod'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%T_ice(:)
+      enddo
 
       idx = idx + 1
       ExtDiag(idx)%axes = 2
