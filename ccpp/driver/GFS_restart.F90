@@ -99,9 +99,7 @@ module GFS_restart
 
     ! CLM Lake
     if(Model%iopt_lake == Model%iopt_lake_clm) then
-      print *,'num2d was ',Restart%num2d
       call clm_lake_define_restart(Restart%num2d,.true.)
-      print *,'num2d became ',Restart%num2d
     endif
 
     ! GF
@@ -681,7 +679,6 @@ enddo
         ix=ix+1
         if(nb==1) then
           write(fullname,"(A,'_',I0)") trim(varname),k
-          print '(A,A,A)', 'Fullname="',trim(fullname),'"'
           Restart%name2d(ix) = trim(fullname)
         endif
         Restart%data(nb,ix)%var2p => var3d(:,k)
@@ -700,7 +697,6 @@ enddo
         return
       endif
       if(nb==1) then
-        print '(A,A,A)', 'Fullname="',trim(varname),'"'
         Restart%name2d(ix) = trim(varname)
       endif
       Restart%data(nb,ix)%var2p => var2d

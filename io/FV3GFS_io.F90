@@ -2777,13 +2777,11 @@ module FV3GFS_io_mod
 
     do num = 1,nvar2d
        var2_p => phy_var2(:,:,num)
-       print '(A,A,A)', 'Register 2d restart field "',trim(GFS_Restart%name2d(num)),'"'
        call register_restart_field(Phy_restart, trim(GFS_Restart%name2d(num)), var2_p, dimensions=(/'xaxis_1','yaxis_1','Time   '/),&
                                   &is_optional=.true.)
     enddo
     do num = 1,nvar3d
        var3_p => phy_var3(:,:,:,num)
-       print '(A,A,A)', 'Register 2d restart field "',trim(GFS_Restart%name3d(num)),'"'
        call register_restart_field(Phy_restart, trim(GFS_Restart%name3d(num)), var3_p, dimensions=(/'xaxis_1','yaxis_1','zaxis_1','Time   '/),&
                                   &is_optional=.true.)
     enddo

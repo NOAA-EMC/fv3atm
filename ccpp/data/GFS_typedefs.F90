@@ -987,6 +987,7 @@ module GFS_typedefs
     integer              :: nlevsnowsoil1_clm_lake !< -nlevsnow+1:nlevsoil dimensioned variables
     real(kind_phys)      :: clm_lake_depth_default !< minimum lake elevation in clm lake model
     logical              :: clm_lake_use_lakedepth !< initialize lake from lakedepth
+    logical              :: clm_lake_debug !< verbose debugging in clm_lake
 
 !--- tuning parameters for physical parameterizations
     logical              :: ras             !< flag for ras convection scheme
@@ -3184,6 +3185,7 @@ module GFS_typedefs
     !--- CLM Lake configurables
     real(kind_phys)      :: clm_lake_depth_default = 50         !< default lake depth in clm lake model
     logical              :: clm_lake_use_lakedepth = .true.     !< initialize depth from lakedepth
+    logical              :: clm_lake_debug = .false.            !< verbose debugging in clm_lake
 
     !--- land/surface model parameters
     integer              :: lsm            =  1              !< flag for land surface model to use =0  for osu lsm; =1  for noah lsm; =2  for noah mp lsm; =3  for RUC lsm
@@ -3604,6 +3606,7 @@ module GFS_typedefs
                           !--- lake model control
                                lkm, iopt_lake, lakedepth_threshold, lakefrac_threshold,     &
                                clm_lake_depth_default, clm_lake_use_lakedepth,              &
+                               clm_lake_debug,                                              &
                           !--- physical parameterizations
                                ras, trans_trac, old_monin, cnvgwd, mstrat, moist_adj,       &
                                cscnv, cal_pre, do_aw, do_shoc, shocaftcnv, shoc_cld,        &
@@ -4245,6 +4248,7 @@ module GFS_typedefs
     Model%nlevsnowsoil1_clm_lake = nlevsnowsoil1_clm_lake
     Model%clm_lake_depth_default = clm_lake_depth_default
     Model%clm_lake_use_lakedepth = clm_lake_use_lakedepth
+    Model%clm_lake_debug = clm_lake_debug
 
 ! Noah MP options from namelist
 !

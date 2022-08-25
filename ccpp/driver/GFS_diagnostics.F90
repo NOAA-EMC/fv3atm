@@ -2576,7 +2576,7 @@ module GFS_diagnostics
         ExtDiag(idx)%axes = 2
         ExtDiag(idx)%name = 'lake_dp2dsno'
         ExtDiag(idx)%desc = 'actual acc snow depth over lake in clm lake model'
-        ExtDiag(idx)%unit = 'mm'
+        ExtDiag(idx)%unit = 'm'
         ExtDiag(idx)%mod_name = 'gfs_sfc'
         ExtDiag(idx)%intpl_method = 'nearest_stod'
         allocate (ExtDiag(idx)%data(nblks))
