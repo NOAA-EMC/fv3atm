@@ -7498,6 +7498,12 @@
   units = percent
   dimensions = (horizontal_loop_extent,soil_vertical_dimension_for_clm_lake_model)
   type = integer
+[lake_is_salty]
+  standard_name = clm_lake_is_salty
+  long_name = lake at this point is salty (1) or not (0)
+  units = 1
+  dimensions = (horizontal_loop_extent)
+  type = integer
 [dfi_radar_tten]
   standard_name = radar_derived_microphysics_temperature_tendency
   long_name = radar-derived microphysics temperature tendency

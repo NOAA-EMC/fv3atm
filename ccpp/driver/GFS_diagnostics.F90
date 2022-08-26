@@ -2523,6 +2523,17 @@ module GFS_diagnostics
 
         ! Populate the 3D arrays separately since the code is complicated:
         call clm_lake_externaldiag_populate(ExtDiag, Model, Tbd, idx, cn_one, nblks)
+
+        idx = idx + 1
+        ExtDiag(idx)%axes = 2
+        ExtDiag(idx)%name = 'lake_is_salty'
+        ExtDiag(idx)%desc = 'lake point is considered salty by clm lake model'
+        ExtDiag(idx)%unit = '1'
+        ExtDiag(idx)%mod_name = 'gfs_sfc'
+        allocate (ExtDiag(idx)%data(nblks))
+        do nb = 1,nblks
+           ExtDiag(idx)%data(nb)%int2 => Tbd(nb)%lake_is_salty(:)
+        enddo
         
         idx = idx + 1
         ExtDiag(idx)%axes = 2

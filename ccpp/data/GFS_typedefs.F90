@@ -1630,6 +1630,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: lake_ht(:)=> null()
     real (kind=kind_phys), pointer :: lake_clay3d(:,:) => null()
     real (kind=kind_phys), pointer :: lake_sand3d(:,:) => null()
+    integer, pointer :: lake_is_salty(:) => null()
     real (kind=kind_phys), pointer :: clm_lake_initialized(:) => null() !< lakeini was called
 
     !--- DFI Radar
@@ -6577,6 +6578,7 @@ module GFS_typedefs
        allocate(Tbd%lake_ht(IM))
        allocate(Tbd%lake_clay3d(IM,Model%nlevsoil_clm_lake))
        allocate(Tbd%lake_sand3d(IM,Model%nlevsoil_clm_lake))
+       allocate(Tbd%lake_is_salty(IM))
        allocate(Tbd%clm_lake_initialized(IM))
 
        Tbd%lake_albedo = clear_val
@@ -6605,6 +6607,7 @@ module GFS_typedefs
        Tbd%lake_ht = -111
        Tbd%lake_clay3d = clear_val
        Tbd%lake_sand3d = clear_val
+       Tbd%lake_is_salty = 0
        Tbd%clm_lake_initialized = 0
     endif
 
