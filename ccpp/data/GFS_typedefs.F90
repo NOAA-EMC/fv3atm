@@ -6607,8 +6607,8 @@ module GFS_typedefs
        Tbd%lake_ht = -111
        Tbd%lake_clay3d = clear_val
        Tbd%lake_sand3d = clear_val
-       Tbd%lake_is_salty = 0
-       Tbd%clm_lake_initialized = 0
+       Tbd%lake_is_salty = zero
+       Tbd%clm_lake_initialized = zero
     endif
 
   end subroutine tbd_create
