@@ -64,6 +64,7 @@ module CCPP_typedefs
     real (kind=kind_phys), pointer      :: aerodp(:,:)        => null()  !<
     real (kind=kind_phys), pointer      :: alb1d(:)           => null()  !<
     real (kind=kind_phys), pointer      :: alpha(:,:)         => null()  !<
+    real (kind=kind_phys), pointer      :: beta(:,:)          => null()  !<
     real (kind=kind_phys), pointer      :: bexp1d(:)          => null()  !<
     real (kind=kind_phys), pointer      :: cd(:)              => null()  !<
     real (kind=kind_phys), pointer      :: cd_ice(:)          => null()  !<
@@ -551,6 +552,7 @@ contains
     if (.not. Model%do_RRTMGP) then
       ! RRTMGP uses its own cloud_overlap_param
       allocate (Interstitial%alpha         (IM,Model%levr+LTP))
+      allocate (Interstitial%beta          (IM,Model%levr+LTP))
     end if
     allocate (Interstitial%bexp1d          (IM))
     allocate (Interstitial%cd              (IM))
@@ -1206,6 +1208,7 @@ contains
     Interstitial%alb1d        = clear_val
     if (.not. Model%do_RRTMGP) then
       Interstitial%alpha      = clear_val
+      Interstitial%beta       = clear_val
     end if
     Interstitial%cldsa        = clear_val
     Interstitial%cldtaulw     = clear_val
