@@ -675,6 +675,33 @@
                   latPtr(i,j) = geo_lat
                 enddo
                 enddo
+                rot_lon = lon1(n)
+                rot_lat = lat1(n)
+                call rtll(rot_lon, rot_lat, geo_lon, geo_lat, dble(cen_lon(n)), dble(cen_lat(n)))
+                if (geo_lon < 0.0) geo_lon = geo_lon + 360.0
+                wrt_int_state%out_grid_info(n)%lonstart = geo_lon
+                wrt_int_state%out_grid_info(n)%latstart = geo_lat
+
+                rot_lon = lon2(n)
+                rot_lat = lat1(n)
+                call rtll(rot_lon, rot_lat, geo_lon, geo_lat, dble(cen_lon(n)), dble(cen_lat(n)))
+                if (geo_lon < 0.0) geo_lon = geo_lon + 360.0
+                wrt_int_state%out_grid_info(n)%lonse = geo_lon
+                wrt_int_state%out_grid_info(n)%latse = geo_lat
+
+                rot_lon = lon1(n)
+                rot_lat = lat2(n)
+                call rtll(rot_lon, rot_lat, geo_lon, geo_lat, dble(cen_lon(n)), dble(cen_lat(n)))
+                if (geo_lon < 0.0) geo_lon = geo_lon + 360.0
+                wrt_int_state%out_grid_info(n)%lonnw = geo_lon
+                wrt_int_state%out_grid_info(n)%latnw = geo_lat
+
+                rot_lon = lon2(n)
+                rot_lat = lat2(n)
+                call rtll(rot_lon, rot_lat, geo_lon, geo_lat, dble(cen_lon(n)), dble(cen_lat(n)))
+                if (geo_lon < 0.0) geo_lon = geo_lon + 360.0
+                wrt_int_state%out_grid_info(n)%lonlast = geo_lon
+                wrt_int_state%out_grid_info(n)%latlast = geo_lat
             else if ( trim(output_grid(n)) == 'rotated_latlon_moving' ) then
                 ! Do not compute lonPtr, latPtr here. Will be done in the run phase
             else if ( trim(output_grid(n)) == 'lambert_conformal' ) then

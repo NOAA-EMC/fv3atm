@@ -31,6 +31,9 @@ module post_fv3
 !                                     6)read 3D cloud fraction from cld_amt for GFDL MP,
 !                                       and from cldfra for other MPs.
 !     Jun 2022    J. Meng             2D decomposition
+!     Jul 2022    W. Meng             1)output lat/lon of four corner point for rotated
+!                                       lat-lon grid.
+!                                     2)read instant model top logwave
 !
 !-----------------------------------------------------------------------
 !*** run post on write grid comp
@@ -225,7 +228,8 @@ module post_fv3
                                       lonstartv, lonlastv, cenlonv,     &
                                       latstartv, latlastv, cenlatv,     &
                                       latstart_r,latlast_r,lonstart_r,  &
-                                      lonlast_r, STANDLON, maptype, gridtype
+                                      lonlast_r, STANDLON, maptype, gridtype, &
+                                      latse,lonse,latnw,lonnw
 !
       implicit none
 !
@@ -334,6 +338,14 @@ module post_fv3
         lonstart_r = lonstart
         latlast_r = latlast
         lonlast_r = lonlast
+        lonstart = nint(wrt_int_state%out_grid_info(grid_id)%lonstart*gdsdegr)
+        latstart = nint(wrt_int_state%out_grid_info(grid_id)%latstart*gdsdegr)
+        lonse    = nint(wrt_int_state%out_grid_info(grid_id)%lonse*gdsdegr)
+        latse    = nint(wrt_int_state%out_grid_info(grid_id)%latse*gdsdegr)
+        lonnw    = nint(wrt_int_state%out_grid_info(grid_id)%lonnw*gdsdegr)
+        latnw    = nint(wrt_int_state%out_grid_info(grid_id)%latnw*gdsdegr)
+        lonlast  = nint(wrt_int_state%out_grid_info(grid_id)%lonlast*gdsdegr)
+        latlast  = nint(wrt_int_state%out_grid_info(grid_id)%latlast*gdsdegr)
 
         if(dlon(grid_id)<spval) then
           dxval = dlon(grid_id)*gdsdegr
@@ -530,7 +542,7 @@ module post_fv3
                              dxval, dyval, truelat2, truelat1, psmapf, cenlat,     &
                              lonstartv, lonlastv, cenlonv, latstartv, latlastv,    &
                              cenlatv,latstart_r,latlast_r,lonstart_r,lonlast_r,    &
-                             maptype, gridtype, STANDLON
+                             maptype, gridtype, STANDLON,latse,lonse,latnw,lonnw
       use lookup_mod,  only: thl, plq, ptbl, ttbl, rdq, rdth, rdp, rdthe, pl,   &
                              qs0, sqs, sthe, ttblq, rdpq, rdtheq, stheq, the0q, the0
       use physcons,    only: grav => con_g, fv => con_fvirt, rgas => con_rd,    &
@@ -570,7 +582,7 @@ module post_fv3
       real,external::FPVSNEW
       real,dimension(:,:),allocatable :: dummy, p2d, t2d, q2d,  qs2d,  &
                              cw2d, cfr2d
-      character(len=80)              :: fieldname, wrtFBName
+      character(len=80)              :: fieldname, wrtFBName, flatlon
       type(ESMF_Grid)                :: wrtGrid
       type(ESMF_Field)               :: theField
       type(ESMF_Field), allocatable  :: fcstField(:)
@@ -713,14 +725,13 @@ module post_fv3
 !                     time averaged cloud fraction, set acfrst to spval, ncfrst to 1
 !                     UNDERGROUND RUNOFF, bgroff
 !                     inst incoming sfc longwave
-!                     inst model top outgoing longwave,rlwtoa
 !                     inst incoming sfc shortwave, rswin
 !                     inst incoming clear sky sfc shortwave, rswinc
 !                     inst outgoing sfc shortwave, rswout
 !                     snow phase change heat flux, snopcx
 ! GFS does not use total momentum flux,sfcuvx
 !$omp parallel do default(none),private(i,j),shared(jsta,jend,im,spval,ista,iend), &
-!$omp& shared(acfrcv,ncfrcv,acfrst,ncfrst,bgroff,rlwtoa,rswin,rswinc,rswout,snopcx,sfcuvx)
+!$omp& shared(acfrcv,ncfrcv,acfrst,ncfrst,bgroff,rswin,rswinc,rswout,snopcx,sfcuvx)
       do j=jsta,jend
         do i=ista,iend
           acfrcv(i,j) = spval
@@ -728,7 +739,6 @@ module post_fv3
           acfrst(i,j) = spval
           ncfrst(i,j) = 1.0
           bgroff(i,j) = spval
-          rlwtoa(i,j) = spval
           rswinc(i,j) = spval
         enddo
       enddo
@@ -1688,6 +1698,17 @@ module post_fv3
                 do i=ista, iend
                   alwtoa(i,j) = arrayr42d(i,j)
                   if( abs(arrayr42d(i,j)-fillValue) < small) alwtoa(i,j) = spval
+                enddo
+              enddo
+            endif
+
+            ! outgoing model top logwave
+            if(trim(fieldname)=='ulwrf_toa') then
+              !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,rlwtoa,arrayr42d,fillValue,spval)
+              do j=jsta,jend
+                do i=ista, iend
+                  rlwtoa(i,j) = arrayr42d(i,j)
+                  if( abs(arrayr42d(i,j)-fillValue)<  small) rlwtoa(i,j) = spval
                 enddo
               enddo
             endif
@@ -3272,6 +3293,18 @@ module post_fv3
 !
 !more fields need to be computed
 !
+
+! write lat/lon of the four corner point for rotated lat-lon grid
+      if(mype == 0 .and. maptype == 207)then
+        write(flatlon,1001)ifhr
+        open(112,file=trim(flatlon),form='formatted',status='unknown')
+        write(112,1002)latstart/1000,lonstart/1000,&
+        latse/1000,lonse/1000,latnw/1000,lonnw/1000, &
+        latlast/1000,lonlast/1000
+ 1001   format('latlons_corners.txt.f',I3.3)
+ 1002   format(4(I6,I7,X))
+        close(112)
+      endif
     end subroutine set_postvars_fv3
 !
 !-----------------------------------------------------------------------

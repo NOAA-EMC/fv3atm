@@ -24,6 +24,8 @@
         integer :: i_start,i_end, j_start,j_end
         real,dimension(:,:),allocatable  :: lonPtr, latPtr
         integer,dimension(:),allocatable :: i_start_wrtgrp, i_end_wrtgrp, j_start_wrtgrp, j_end_wrtgrp
+        real    :: latse, latnw, lonse, lonnw
+        real    :: latstart, latlast, lonstart, lonlast
       end type output_grid_info
 
       type wrt_internal_state
