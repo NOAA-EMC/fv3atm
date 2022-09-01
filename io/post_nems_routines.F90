@@ -4,7 +4,6 @@
 !
     subroutine post_alctvars(imi,jmi,lmi,mype,nwtlpes,lead_write, mpicomp,  &
                              jts,jte,jtsgrp,jtegrp,its,ite,itsgrp,itegrp)
-!                             jts,jte,jtsgrp,jtegrp)
 !
 !
 !   revision history:
@@ -124,6 +123,10 @@
 !
       isumm=0
       isumm2=0
+      if(allocated(isxa)) deallocate(isxa)
+      if(allocated(jsxa)) deallocate(jsxa)
+      if(allocated(iexa)) deallocate(iexa)
+      if(allocated(jexa)) deallocate(jexa)
       allocate(isxa(0:num_procs-1) )
       allocate(jsxa(0:num_procs-1) )
       allocate(iexa(0:num_procs-1) )
@@ -339,7 +342,7 @@
       character(*),intent(in) :: post_gribversion
 !
       IF(trim(post_gribversion)=='grib2') then
-         call  grib_info_finalize()
+         ! call  grib_info_finalize()
       ENDIF
 !
       call de_allocate
