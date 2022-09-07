@@ -839,24 +839,24 @@ module GFS_typedefs
                                                            !< and if yes, perform them; hardcoded to .true. for now
     !--- new microphysical switch
     integer              :: imp_physics                    !< choice of microphysics scheme
-    integer              :: imp_physics_gfdl = 11          !< choice of GFDL     microphysics scheme
-    integer              :: imp_physics_thompson = 8       !< choice of Thompson microphysics scheme
-    integer              :: imp_physics_wsm6 = 6           !< choice of WSMG     microphysics scheme
-    integer              :: imp_physics_zhao_carr = 99     !< choice of Zhao-Carr microphysics scheme
+    integer              :: imp_physics_gfdl          = 11 !< choice of GFDL     microphysics scheme
+    integer              :: imp_physics_thompson      = 8  !< choice of Thompson microphysics scheme
+    integer              :: imp_physics_wsm6          = 6  !< choice of WSMG     microphysics scheme
+    integer              :: imp_physics_zhao_carr     = 99 !< choice of Zhao-Carr microphysics scheme
     integer              :: imp_physics_zhao_carr_pdf = 98 !< choice of Zhao-Carr microphysics scheme with PDF clouds
-    integer              :: imp_physics_mg = 10            !< choice of Morrison-Gettelman microphysics scheme
-    integer              :: imp_physics_fer_hires = 15     !< choice of Ferrier-Aligo microphysics scheme
-    integer :: iovr_rand        = 0 !< choice of cloud-overlap: random
-    integer :: iovr_maxrand     = 1 !< choice of cloud-overlap: maximum random
-    integer :: iovr_max         = 2 !< choice of cloud-overlap: maximum
-    integer :: iovr_dcorr       = 3 !< choice of cloud-overlap: decorrelation length
-    integer :: iovr_exp         = 4 !< choice of cloud-overlap: exponential
-    integer :: iovr_exprand     = 5 !< choice of cloud-overlap: exponential random
-    integer :: idcor_con        = 0 !< choice for decorrelation-length: Use constant value
-    integer :: idcor_hogan      = 1 !< choice for decorrelation-length: (https://rmets.onlinelibrary.wiley.com/doi/full/10.1002/qj.647)
-    integer :: idcor_oreopoulos = 2 !< choice for decorrelation-length: (10.5194/acp-12-9097-2012)
-    integer              :: imp_physics_nssl      = 17       !< choice of NSSL microphysics scheme with background CCN
-    integer              :: imp_physics_nssl2mccn = 18       !< choice of NSSL microphysics scheme with predicted CCN (compatibility)
+    integer              :: imp_physics_mg            = 10 !< choice of Morrison-Gettelman microphysics scheme
+    integer              :: imp_physics_fer_hires     = 15 !< choice of Ferrier-Aligo microphysics scheme
+    integer              :: imp_physics_nssl          = 17 !< choice of NSSL microphysics scheme with background CCN
+    integer              :: imp_physics_nssl2mccn     = 18 !< choice of NSSL microphysics scheme with predicted CCN (compatibility)
+    integer              :: iovr_rand                 = 0  !< choice of cloud-overlap: random
+    integer              :: iovr_maxrand              = 1  !< choice of cloud-overlap: maximum random
+    integer              :: iovr_max                  = 2  !< choice of cloud-overlap: maximum
+    integer              :: iovr_dcorr                = 3  !< choice of cloud-overlap: decorrelation length
+    integer              :: iovr_exp                  = 4  !< choice of cloud-overlap: exponential
+    integer              :: iovr_exprand              = 5  !< choice of cloud-overlap: exponential random
+    integer              :: idcor_con                 = 0  !< choice for decorrelation-length: Use constant value
+    integer              :: idcor_hogan               = 1  !< choice for decorrelation-length: (https://rmets.onlinelibrary.wiley.com/doi/full/10.1002/qj.647)
+    integer              :: idcor_oreopoulos          = 2  !< choice for decorrelation-length: (10.5194/acp-12-9097-2012)
     !--- Z-C microphysical parameters
     real(kind=kind_phys) :: psautco(2)         !< [in] auto conversion coeff from ice to snow
     real(kind=kind_phys) :: prautco(2)         !< [in] auto conversion coeff from cloud to rain
@@ -3925,7 +3925,10 @@ module GFS_typedefs
        stop
     endif
 
-    if ( iovr < 0 .or. iovr > 5 ) then
+
+    if ((iovr .ne. Model%iovr_rand) .and. (iovr .ne. Model%iovr_maxrand) .and.       &
+        (iovr .ne. Model%iovr_max)  .and. (iovr .ne. Model%iovr_dcorr)   .and.       &
+        (iovr .ne. Model%iovr_exp)  .and. (iovr .ne. Model%iovr_exprand)) then
        write(0,'(a,i0)') 'ERROR: cloud-overlap (iovr) scheme selected not valid: ',iovr
        stop
     endif
