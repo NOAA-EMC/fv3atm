@@ -3279,6 +3279,24 @@
   units = flag
   dimensions = ()
   type = logical
+[lrseeds]
+  standard_name = do_host_provided_random_seeds
+  long_name = flag to use host-provided random seeds
+  units = flag
+  dimensions = ()
+  type = logical
+[nrstreams]
+  standard_name = number_of_host_provided_random_number_streams
+  long_name = number of host-provided random number streams
+  units = count
+  dimensions = ()
+  type = integer
+[lextop]
+  standard_name = do_extra_top_layer_for_radiation
+  long_name = use an extra top layer for radiation
+  units = flag
+  dimensions = ()
+  type = logical
 [active_gases]
   standard_name = active_gases_used_by_RRTMGP
   long_name = active gases used by RRTMGP
@@ -6617,6 +6635,13 @@
   dimensions = (horizontal_loop_extent)
   type = integer
   active = (flag_for_lw_clouds_sub_grid_approximation == 2 .or. flag_for_sw_clouds_grid_approximation == 2)
+[rseeds]
+  standard_name = random_number_seeds_from_host
+  long_name = random number seeds from host
+  units = none
+  dimensions = (horizontal_loop_extent, number_of_host_provided_random_number_streams)
+  type = integer
+  active = ((flag_for_lw_clouds_sub_grid_approximation == 2 .or. flag_for_sw_clouds_grid_approximation == 2) .and. do_host_provided_random_seeds)
 [tau_amf]
   standard_name = absolute_momentum_flux_due_to_nonorographic_gravity_wave_drag
   long_name = ngw_absolute_momentum_flux
@@ -8631,7 +8656,7 @@
 [LTP]
   standard_name = extra_top_layer
   long_name = extra top layer for radiation
-  units = none
+  units = count
   dimensions = ()
   type = integer
 [con_cliq]
