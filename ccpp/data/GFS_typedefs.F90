@@ -781,16 +781,6 @@ module GFS_typedefs
     integer              :: rad_hr_units    !< flag to control units of lw/sw heating rate
                                             !< 1: K day-1 - 2: K s-1
     logical              :: inc_minor_gas   !< Include minor trace gases in RRTMG radiation calculation?
-    integer              :: ilwcliq         !< Longwave optics scheme for liquid clouds
-    integer              :: iswcliq         !< Shortwave optics scheme for liquid clouds
-    integer              :: ilwcice         !< Longwave optics scheme for ice clouds
-                                            !< =1 => optical property scheme based on Ebert and Curry (1992)
-                                            !< =2 => optical property scheme based on Streamer v3
-                                            !< =3 => optical property scheme use Fu's method (1998)
-    integer              :: iswcice         !< Shortwave optics scheme for ice clouds
-                                            !< =1 => optical property scheme based on Ebert and Curry (1992)
-                                            !< =2 => optical property scheme based on Streamer v3
-                                            !< =3 => optical property scheme use Fu's method (1998)
     integer              :: ipsd0           !< initial permutaion seed for mcica radiation
     integer              :: ipsdlim         !< limit initial permutaion seed for mcica radiation 
 
@@ -3053,10 +3043,6 @@ module GFS_typedefs
     logical              :: swhtr             = .true.       !< flag to output sw heating rate (Radtend%swhc)
     integer              :: rad_hr_units      = 2            !< heating rate units are K s-1
     logical              :: inc_minor_gas     = .true.       !< Include minor trace gases in RRTMG radiation calculation
-    integer              :: ilwcliq           = 1            !< Longwave optics scheme for liquid clouds
-    integer              :: iswcliq           = 1            !< Shortwave optics scheme for liquid clouds
-    integer              :: ilwcice           = 3            !< Longwave optics scheme for ice clouds
-    integer              :: iswcice           = 3            !< Shortwave optics scheme for ice clouds 
     integer              :: ipsd0             = 0            !< initial permutaion seed for mcica radiation 
     integer              :: ipsdlim           = 1e8          !< limit initial permutaion seed for mcica radiation
     ! RRTMGP
@@ -3989,10 +3975,6 @@ module GFS_typedefs
     Model%swhtr            = swhtr
     Model%rad_hr_units     = rad_hr_units
     Model%inc_minor_gas    = inc_minor_gas
-    Model%ilwcliq          = ilwcliq
-    Model%iswcliq          = iswcliq
-    Model%ilwcice          = ilwcice
-    Model%iswcice          = iswcice
     Model%ipsd0            = ipsd0
     Model%ipsdlim          = ipsdlim
 
@@ -5882,10 +5864,6 @@ module GFS_typedefs
       print *, ' swhtr             : ', Model%swhtr
       print *, ' rad_hr_units      : ', Model%rad_hr_units
       print *, ' inc_minor_gas     : ', Model%inc_minor_gas
-      print *, ' iswcliq           : ', Model%iswcliq
-      print *, ' ilwcliq           : ', Model%ilwcliq
-      print *, ' ilwcice           : ', Model%ilwcice
-      print *, ' iswcice           : ', Model%iswcice
       print *, ' ipsd0             : ', Model%ipsd0
       print *, ' ipsdlim           : ', Model%ipsdlim
       if (Model%do_RRTMGP) then
