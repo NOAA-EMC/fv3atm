@@ -2537,7 +2537,7 @@ module GFS_typedefs
       Coupling%v10mi_cpl = clear_val
     endif
 
-    if (Model%cplflx .or. Model%cplchm) then
+    if (Model%cplflx .or. Model%cplchm .or. Model%cpllnd) then
       !--- instantaneous quantities
       allocate (Coupling%tsfci_cpl (IM))
       Coupling%tsfci_cpl = clear_val
@@ -2557,6 +2557,26 @@ module GFS_typedefs
       Coupling%dswsfc_cpl = clear_val
       allocate (Coupling%psurfi_cpl (IM))
       Coupling%psurfi_cpl = clear_val
+      allocate (Coupling%nswsfc_cpl (IM))
+      Coupling%nswsfc_cpl = clear_val
+      allocate (Coupling%nswsfci_cpl (IM))
+      Coupling%nswsfci_cpl = clear_val
+      allocate (Coupling%nnirbmi_cpl (IM))
+      Coupling%nnirbmi_cpl = clear_val
+      allocate (Coupling%nnirdfi_cpl (IM))
+      Coupling%nnirdfi_cpl = clear_val
+      allocate (Coupling%nvisbmi_cpl (IM))
+      Coupling%nvisbmi_cpl = clear_val
+      allocate (Coupling%nvisdfi_cpl (IM))
+      Coupling%nvisdfi_cpl = clear_val
+      allocate (Coupling%nnirbm_cpl (IM))
+      Coupling%nnirbm_cpl = clear_val
+      allocate (Coupling%nnirdf_cpl (IM))
+      Coupling%nnirdf_cpl = clear_val
+      allocate (Coupling%nvisbm_cpl (IM))
+      Coupling%nvisbm_cpl = clear_val
+      allocate (Coupling%nvisdf_cpl (IM))
+      Coupling%nvisdf_cpl = clear_val
     end if
 
     if (Model%cplflx) then
@@ -2618,11 +2638,6 @@ module GFS_typedefs
       allocate (Coupling%dvisbm_cpl (IM))
       allocate (Coupling%dvisdf_cpl (IM))
       allocate (Coupling%nlwsfc_cpl (IM))
-      allocate (Coupling%nswsfc_cpl (IM))
-      allocate (Coupling%nnirbm_cpl (IM))
-      allocate (Coupling%nnirdf_cpl (IM))
-      allocate (Coupling%nvisbm_cpl (IM))
-      allocate (Coupling%nvisdf_cpl (IM))
 
       Coupling%dusfc_cpl  = clear_val
       Coupling%dvsfc_cpl  = clear_val
@@ -2633,11 +2648,6 @@ module GFS_typedefs
       Coupling%dvisbm_cpl = clear_val
       Coupling%dvisdf_cpl = clear_val
       Coupling%nlwsfc_cpl = clear_val
-      Coupling%nswsfc_cpl = clear_val
-      Coupling%nnirbm_cpl = clear_val
-      Coupling%nnirdf_cpl = clear_val
-      Coupling%nvisbm_cpl = clear_val
-      Coupling%nvisdf_cpl = clear_val
 
       !--- instantaneous quantities
       allocate (Coupling%dusfci_cpl  (IM))
@@ -2651,11 +2661,6 @@ module GFS_typedefs
       allocate (Coupling%dvisbmi_cpl (IM))
       allocate (Coupling%dvisdfi_cpl (IM))
       allocate (Coupling%nlwsfci_cpl (IM))
-      allocate (Coupling%nswsfci_cpl (IM))
-      allocate (Coupling%nnirbmi_cpl (IM))
-      allocate (Coupling%nnirdfi_cpl (IM))
-      allocate (Coupling%nvisbmi_cpl (IM))
-      allocate (Coupling%nvisdfi_cpl (IM))
       allocate (Coupling%t2mi_cpl    (IM))
       allocate (Coupling%q2mi_cpl    (IM))
       allocate (Coupling%oro_cpl     (IM))
@@ -2672,11 +2677,6 @@ module GFS_typedefs
       Coupling%dvisbmi_cpl = clear_val
       Coupling%dvisdfi_cpl = clear_val
       Coupling%nlwsfci_cpl = clear_val
-      Coupling%nswsfci_cpl = clear_val
-      Coupling%nnirbmi_cpl = clear_val
-      Coupling%nnirdfi_cpl = clear_val
-      Coupling%nvisbmi_cpl = clear_val
-      Coupling%nvisdfi_cpl = clear_val
       Coupling%t2mi_cpl    = clear_val
       Coupling%q2mi_cpl    = clear_val
       Coupling%oro_cpl     = clear_val  !< pointer to sfcprop%oro
@@ -2709,16 +2709,19 @@ module GFS_typedefs
     if (Model%cplchm .or. Model%rrfs_smoke) then
       !--- outgoing instantaneous quantities
       allocate (Coupling%ushfsfci  (IM))
-      !--- accumulated convective rainfall
-      allocate (Coupling%rainc_cpl (IM))
       ! -- instantaneous 3d fluxes of nonconvective ice and liquid precipitations
       allocate (Coupling%pfi_lsan  (IM,Model%levs))
       allocate (Coupling%pfl_lsan  (IM,Model%levs))
-      Coupling%rainc_cpl = clear_val
       Coupling%ushfsfci  = clear_val
       Coupling%pfi_lsan  = clear_val
       Coupling%pfl_lsan  = clear_val
     endif
+
+    if (Model%cplchm .or. Model%rrfs_smoke .or. Model%cplflx .or. Model%cpllnd) then
+      !--- accumulated convective rainfall
+      allocate (Coupling%rainc_cpl (IM))
+      Coupling%rainc_cpl = clear_val
+    end if
 
     ! -- additional coupling options for air quality
     if (Model%cplaqm .and. .not.Model%cplflx) then
