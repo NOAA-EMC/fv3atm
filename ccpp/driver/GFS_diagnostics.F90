@@ -2522,7 +2522,7 @@ module GFS_diagnostics
       if(Model%iopt_lake==Model%iopt_lake_clm) then
 
         ! Populate the 3D arrays separately since the code is complicated:
-        call clm_lake_externaldiag_populate(ExtDiag, Model, Tbd, idx, cn_one, nblks)
+        call clm_lake_externaldiag_populate(ExtDiag, Model, Sfcprop, idx, cn_one, nblks)
 
         idx = idx + 1
         ExtDiag(idx)%axes = 2
@@ -2532,7 +2532,7 @@ module GFS_diagnostics
         ExtDiag(idx)%mod_name = 'gfs_sfc'
         allocate (ExtDiag(idx)%data(nblks))
         do nb = 1,nblks
-           ExtDiag(idx)%data(nb)%int2 => Tbd(nb)%lake_is_salty(:)
+           ExtDiag(idx)%data(nb)%int2 => Sfcprop(nb)%lake_is_salty(:)
         enddo
         
         idx = idx + 1
@@ -2568,7 +2568,7 @@ module GFS_diagnostics
         ExtDiag(idx)%intpl_method = 'nearest_stod'
         allocate (ExtDiag(idx)%data(nblks))
         do nb = 1,nblks
-          ExtDiag(idx)%data(nb)%var2 => Tbd(nb)%lake_albedo(:)
+          ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%lake_albedo(:)
         enddo
 
         idx = idx + 1
@@ -2580,7 +2580,7 @@ module GFS_diagnostics
         ExtDiag(idx)%intpl_method = 'nearest_stod'
         allocate (ExtDiag(idx)%data(nblks))
         do nb = 1,nblks
-          ExtDiag(idx)%data(nb)%var2 => Tbd(nb)%lake_h2osno2d(:)
+          ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%lake_h2osno2d(:)
         enddo
 
         idx = idx + 1
@@ -2592,7 +2592,7 @@ module GFS_diagnostics
         ExtDiag(idx)%intpl_method = 'nearest_stod'
         allocate (ExtDiag(idx)%data(nblks))
         do nb = 1,nblks
-          ExtDiag(idx)%data(nb)%var2 => Tbd(nb)%lake_dp2dsno(:)
+          ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%lake_dp2dsno(:)
         enddo
 
         idx = idx + 1
@@ -2604,7 +2604,7 @@ module GFS_diagnostics
         ExtDiag(idx)%intpl_method = 'nearest_stod'
         allocate (ExtDiag(idx)%data(nblks))
         do nb = 1,nblks
-          ExtDiag(idx)%data(nb)%var2 => Tbd(nb)%lake_snl2d(:)
+          ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%lake_snl2d(:)
         enddo
 
         idx = idx + 1
@@ -2616,7 +2616,7 @@ module GFS_diagnostics
         ExtDiag(idx)%intpl_method = 'nearest_stod'
         allocate (ExtDiag(idx)%data(nblks))
         do nb = 1,nblks
-          ExtDiag(idx)%data(nb)%var2 => Tbd(nb)%lake_t_grnd2d(:)
+          ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%lake_t_grnd2d(:)
         enddo
 
         idx = idx + 1
@@ -2628,7 +2628,7 @@ module GFS_diagnostics
         ExtDiag(idx)%intpl_method = 'nearest_stod'
         allocate (ExtDiag(idx)%data(nblks))
         do nb = 1,nblks
-          ExtDiag(idx)%data(nb)%var2 => Tbd(nb)%lake_savedtke12d(:)
+          ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%lake_savedtke12d(:)
         enddo
 
         idx = idx + 1
@@ -2640,7 +2640,7 @@ module GFS_diagnostics
         ExtDiag(idx)%intpl_method = 'nearest_stod'
         allocate (ExtDiag(idx)%data(nblks))
         do nb = 1,nblks
-          ExtDiag(idx)%data(nb)%var2 => Tbd(nb)%lake_ht(:)
+          ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%lake_ht(:)
         enddo
         
       endif
@@ -4270,11 +4270,11 @@ module GFS_diagnostics
 
   end subroutine GFS_externaldiag_populate
 
-  subroutine clm_lake_externaldiag_populate(ExtDiag, Model, Tbd, idx, cn_one, nblks)
+  subroutine clm_lake_externaldiag_populate(ExtDiag, Model, Sfcprop, idx, cn_one, nblks)
     implicit none
     type(GFS_externaldiag_type),  intent(inout) :: ExtDiag(:)
     type(GFS_control_type),       intent(in)    :: Model
-    type(GFS_tbd_type),           intent(in)    :: Tbd(:)
+    type(GFS_sfcprop_type),           intent(in)    :: Sfcprop(:)
     integer,                      intent(inout) :: idx
     integer,                      intent(in)    :: nblks
     real(kind=kind_phys),         intent(in)    :: cn_one
@@ -4283,75 +4283,75 @@ module GFS_diagnostics
     integer :: nk, idx0, iblk
     
     do iblk=1,nblks
-      call link_all_levels(Tbd(iblk)%lake_z3d, 'lake_z3d', 'lake_depth_on_interface_levels', 'm')
+      call link_all_levels(Sfcprop(iblk)%lake_z3d, 'lake_z3d', 'lake_depth_on_interface_levels', 'm')
     enddo
     
     do iblk=1,nblks
-      call link_all_levels(Tbd(iblk)%lake_clay3d, 'lake_clay3d', 'percent clay on soil levels in clm lake model', '%')
+      call link_all_levels(Sfcprop(iblk)%lake_clay3d, 'lake_clay3d', 'percent clay on soil levels in clm lake model', '%')
     enddo
 
     do iblk=1,nblks
-      call link_all_levels(Tbd(iblk)%lake_sand3d, 'lake_sand3d', 'percent sand on soil levels in clm lake model', '%')
+      call link_all_levels(Sfcprop(iblk)%lake_sand3d, 'lake_sand3d', 'percent sand on soil levels in clm lake model', '%')
     enddo
     
     do iblk=1,nblks
-      call link_all_levels(Tbd(iblk)%lake_dz3d, 'lake_dz3d', 'lake level thickness', 'm')
+      call link_all_levels(Sfcprop(iblk)%lake_dz3d, 'lake_dz3d', 'lake level thickness', 'm')
     enddo
 
     do iblk=1,nblks
-      call link_all_levels(Tbd(iblk)%lake_watsat3d, 'lake_watsat3d', 'saturated volumetric soil water', 'm3 m-3')
+      call link_all_levels(Sfcprop(iblk)%lake_watsat3d, 'lake_watsat3d', 'saturated volumetric soil water', 'm3 m-3')
     enddo
 
     do iblk=1,nblks
-      call link_all_levels(Tbd(iblk)%lake_csol3d, 'lake_csol3d', 'soil heat capacity', 'J m-3 K-1')
+      call link_all_levels(Sfcprop(iblk)%lake_csol3d, 'lake_csol3d', 'soil heat capacity', 'J m-3 K-1')
     enddo
 
     do iblk=1,nblks
-      call link_all_levels(Tbd(iblk)%lake_tkmg3d, 'lake_tkmg3d', 'soil thermal conductivity, minerals', 'W m-1 K-1')
+      call link_all_levels(Sfcprop(iblk)%lake_tkmg3d, 'lake_tkmg3d', 'soil thermal conductivity, minerals', 'W m-1 K-1')
     enddo
 
     do iblk=1,nblks
-      call link_all_levels(Tbd(iblk)%lake_tkdry3d, 'lake_tkdry3d', 'soil thermal conductivity, dry soil', 'W m-1 K-1')
+      call link_all_levels(Sfcprop(iblk)%lake_tkdry3d, 'lake_tkdry3d', 'soil thermal conductivity, dry soil', 'W m-1 K-1')
     enddo
 
     do iblk=1,nblks
-      call link_all_levels(Tbd(iblk)%lake_tksatu3d, 'lake_tksatu3d', 'soil thermal conductivity, saturated soil', 'W m-1 K-1')
+      call link_all_levels(Sfcprop(iblk)%lake_tksatu3d, 'lake_tksatu3d', 'soil thermal conductivity, saturated soil', 'W m-1 K-1')
     enddo
 
     do iblk=1,nblks
-      call link_all_levels(Tbd(iblk)%lake_snow_z3d, 'lake_snow_z3d', 'lake snow level depth', 'm')
+      call link_all_levels(Sfcprop(iblk)%lake_snow_z3d, 'lake_snow_z3d', 'lake snow level depth', 'm')
     enddo
 
     do iblk=1,nblks
-      call link_all_levels(Tbd(iblk)%lake_snow_dz3d, 'lake_snow_dz3d', 'lake snow level thickness', 'm')
+      call link_all_levels(Sfcprop(iblk)%lake_snow_dz3d, 'lake_snow_dz3d', 'lake snow level thickness', 'm')
     enddo
 
     do iblk=1,nblks
-      call link_all_levels(Tbd(iblk)%lake_snow_zi3d, 'lake_snow_zi3d', 'lake snow interface depth', 'm')
+      call link_all_levels(Sfcprop(iblk)%lake_snow_zi3d, 'lake_snow_zi3d', 'lake snow interface depth', 'm')
     enddo
 
     do iblk=1,nblks
-      call link_all_levels(Tbd(iblk)%lake_t_h2osoi_vol3d, 'lake_t_h2osoi_vol3d', 'volumetric soil water', 'm3 m-3')
+      call link_all_levels(Sfcprop(iblk)%lake_t_h2osoi_vol3d, 'lake_t_h2osoi_vol3d', 'volumetric soil water', 'm3 m-3')
     enddo
 
     do iblk=1,nblks
-      call link_all_levels(Tbd(iblk)%lake_t_h2osoi_liq3d, 'lake_t_h2osoi_liq3d', 'soil liquid water content', 'kg m-2')
+      call link_all_levels(Sfcprop(iblk)%lake_t_h2osoi_liq3d, 'lake_t_h2osoi_liq3d', 'soil liquid water content', 'kg m-2')
     enddo
 
     do iblk=1,nblks
-      call link_all_levels(Tbd(iblk)%lake_t_h2osoi_ice3d, 'lake_t_h2osoi_ice3d', 'soil ice water content', 'kg m-2')
+      call link_all_levels(Sfcprop(iblk)%lake_t_h2osoi_ice3d, 'lake_t_h2osoi_ice3d', 'soil ice water content', 'kg m-2')
     enddo
 
     do iblk=1,nblks
-      call link_all_levels(Tbd(iblk)%lake_t_soisno3d, 'lake_t_soisno3d', 'snow or soil level temperature', 'K')
+      call link_all_levels(Sfcprop(iblk)%lake_t_soisno3d, 'lake_t_soisno3d', 'snow or soil level temperature', 'K')
     enddo
 
     do iblk=1,nblks
-      call link_all_levels(Tbd(iblk)%lake_t_lake3d, 'lake_t_lake3d', 'lake layer temperature', 'K')
+      call link_all_levels(Sfcprop(iblk)%lake_t_lake3d, 'lake_t_lake3d', 'lake layer temperature', 'K')
     enddo
 
     do iblk=1,nblks
-      call link_all_levels(Tbd(iblk)%lake_icefrac3d, 'lake_icefrac3d', 'lake fractional ice cover', 'fraction')
+      call link_all_levels(Sfcprop(iblk)%lake_icefrac3d, 'lake_icefrac3d', 'lake fractional ice cover', 'fraction')
     enddo
 
   contains

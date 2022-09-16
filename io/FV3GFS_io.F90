@@ -111,6 +111,65 @@ module FV3GFS_io_mod
   logical :: use_wrtgridcomp_output = .FALSE.
   logical :: module_is_initialized  = .FALSE.
 
+  type clm_lake_data_type
+    ! The clm_lake_data_type derived type is a class that stores
+    ! temporary arrays used to read or write CLM Lake model restart
+    ! and axis variables. It can safely be declared and unused, but
+    ! you should only call these routines if the CLM Lake Model was
+    ! (or will be) used by this execution of the FV3. It is the
+    ! responsibility of the caller to ensure the necessary data is in
+    ! Sfc_restart, Sfcprop, and Model.
+
+    ! All 2D variables needed for a restart
+    real(kind_phys), pointer, private, dimension(:,:) :: &
+         lake_snl2d=>null(), lake_h2osno2d=>null(), lake_t_grnd2d=>null(), &
+         lake_savedtke12d=>null(), lake_dp2dsno=>null(), clm_lake_initialized=>null()
+
+    ! All 3D variables needed for a restart
+    real(kind_phys), pointer, private, dimension(:,:,:) :: &
+         lake_z3d=>null(), lake_dz3d=>null(), lake_watsat3d=>null(), &
+         lake_csol3d=>null(), lake_tkmg3d=>null(), lake_tkdry3d=>null(), &
+         lake_tksatu3d=>null(), lake_snow_z3d=>null(), lake_snow_dz3d=>null(), &
+         lake_snow_zi3d=>null(), lake_t_h2osoi_vol3d=>null(), lake_t_h2osoi_liq3d=>null(), &
+         lake_t_h2osoi_ice3d=>null(), lake_t_soisno3d=>null(), lake_t_lake3d=>null(), &
+         lake_icefrac3d=>null(),  lake_clay3d=>null(), lake_sand3d=>null()
+
+  contains
+
+    ! register_axes calls registers_axis on Sfc_restart for all required axes
+    procedure, public :: register_axes => clm_lake_register_axes
+
+    ! allocate_data allocates all of the pointers in this object
+    procedure, public :: allocate_data => clm_lake_allocate_data
+
+    ! fill_with_zero allocates fills the temporary arrays with 0
+    procedure, public :: fill_with_zero => clm_lake_fill_with_zero
+
+    ! register_fields calls register_field on Sfc_restart for all CLM Lake model restart variables
+    procedure, public :: register_fields => clm_lake_register_fields
+
+    ! deallocate_data deallocates all pointers, allowing this object to be used repeatedly.
+    ! It is safe to call deallocate_data if no data has been allocated.
+    procedure, public :: deallocate_data => clm_lake_deallocate_data
+
+    ! write_axes writes variables to Sfc_restart, with the name of
+    ! each axis, containing the appropriate information
+    procedure, public :: write_axes => clm_lake_write_axes
+
+    ! copy_to_temporaries copies from Sfcprop to internal pointers (declared above)
+    procedure, public :: copy_to_temporaries => clm_lake_copy_to_temporaries
+
+    ! copy_to_temporaries copies from internal pointers (declared above) to Sfcprop
+    procedure, public :: copy_from_temporaries => clm_lake_copy_from_temporaries
+
+    ! A fortran 2003 compliant compiler will call clm_lake_final
+    ! automatically when an object of this type goes out of
+    ! scope. This will deallocate any arrays via a call to
+    ! deallocate_data. It is safe to call this routine if no data has
+    ! been allocated.
+    final :: clm_lake_final
+  end type clm_lake_data_type
+
   CONTAINS
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -204,9 +263,12 @@ module FV3GFS_io_mod
      nsfcprop2d = nsfcprop2d + 16
    endif
 
-! Flake
-   if(Model%lkm > 0 ) then
-     nsfcprop2d = nsfcprop2d + 10
+! CLM Lake and Flake
+   if(Model%lkm > 0) then
+     nsfcprop2d = nsfcprop2d + 2
+     if(Model%iopt_lake==Model%iopt_lake_flake ) then
+       nsfcprop2d = nsfcprop2d + 8
+     endif
    endif
 
    allocate (temp2d(isc:iec,jsc:jec,nsfcprop2d+Model%ntot2d+Model%nctp))
@@ -440,21 +502,22 @@ module FV3GFS_io_mod
          idx_opt = idx_opt + 15
        endif
 
-! Flake
-       if (Model%lkm > 0 ) then
-           temp2d(i,j,idx_opt+ 1) = GFS_Data(nb)%Sfcprop%h_ML(ix)
-           temp2d(i,j,idx_opt+ 2) = GFS_Data(nb)%Sfcprop%t_ML(ix)
-           temp2d(i,j,idx_opt+ 3) = GFS_Data(nb)%Sfcprop%t_mnw(ix)
-           temp2d(i,j,idx_opt+ 4) = GFS_Data(nb)%Sfcprop%h_talb(ix)
-           temp2d(i,j,idx_opt+ 5) = GFS_Data(nb)%Sfcprop%t_talb(ix)
-           temp2d(i,j,idx_opt+ 6) = GFS_Data(nb)%Sfcprop%t_bot1(ix)
-           temp2d(i,j,idx_opt+ 7) = GFS_Data(nb)%Sfcprop%t_bot2(ix)
-           temp2d(i,j,idx_opt+ 8) = GFS_Data(nb)%Sfcprop%c_t(ix)
-           temp2d(i,j,idx_opt+ 9) = GFS_Data(nb)%Sfcprop%T_snow(ix)
-           temp2d(i,j,idx_opt+ 10) = GFS_Data(nb)%Sfcprop%T_ice(ix)
+! CLM Lake / Flake
+       if (Model%lkm > 0) then
+         temp2d(i,j,idx_opt+ 1) = GFS_Data(nb)%Sfcprop%T_snow(ix)
+         temp2d(i,j,idx_opt+ 2) = GFS_Data(nb)%Sfcprop%T_ice(ix)
+         if(Model%iopt_lake==Model%iopt_lake_flake  ) then
+           temp2d(i,j,idx_opt+ 3) = GFS_Data(nb)%Sfcprop%h_ML(ix)
+           temp2d(i,j,idx_opt+ 4) = GFS_Data(nb)%Sfcprop%t_ML(ix)
+           temp2d(i,j,idx_opt+ 5) = GFS_Data(nb)%Sfcprop%t_mnw(ix)
+           temp2d(i,j,idx_opt+ 6) = GFS_Data(nb)%Sfcprop%h_talb(ix)
+           temp2d(i,j,idx_opt+ 7) = GFS_Data(nb)%Sfcprop%t_talb(ix)
+           temp2d(i,j,idx_opt+ 8) = GFS_Data(nb)%Sfcprop%t_bot1(ix)
+           temp2d(i,j,idx_opt+ 9) = GFS_Data(nb)%Sfcprop%t_bot2(ix)
+           temp2d(i,j,idx_opt+ 10) = GFS_Data(nb)%Sfcprop%c_t(ix)
+         endif
        endif
-
-
+       
        do l = 1,Model%ntot2d
          temp2d(i,j,nsfcprop2d+l) = GFS_Data(nb)%Tbd%phy_f2d(ix,l)
        enddo
@@ -563,6 +626,8 @@ module FV3GFS_io_mod
     logical :: amiopen
     logical :: is_lsoil
 
+    type(clm_lake_data_type) :: clm_lake
+
     nvar_o2  = 19
     nvar_oro_ls_ss = 10
     nvar_s2o = 18
@@ -638,7 +703,7 @@ module FV3GFS_io_mod
       oro_name2(15) = 'orog_filt'  ! oro
       oro_name2(16) = 'orog_raw'   ! oro_uf
       oro_name2(17) = 'land_frac'  ! land fraction [0:1]
-      !--- variables below here are optional
+      !--- variables below here are optional if lkm==0
       oro_name2(18) = 'lake_frac'  ! lake fraction [0:1]
       oro_name2(19) = 'lake_depth' ! lake depth(m)
 
@@ -648,7 +713,8 @@ module FV3GFS_io_mod
       !--- register the 2D fields
       do num = 1,nvar_o2
          var2_p => oro_var2(:,:,num)
-         if (trim(oro_name2(num)) == 'lake_frac' .or. trim(oro_name2(num)) == 'lake_depth') then
+         if ((trim(oro_name2(num)) == 'lake_frac' .or. trim(oro_name2(num)) == 'lake_depth') &
+               .and. Model%lkm==0) then
             call register_restart_field(Oro_restart, oro_name2(num), var2_p, dimensions=(/'lat','lon'/), is_optional=.true.)
          else
             call register_restart_field(Oro_restart, oro_name2(num), var2_p, dimensions=(/'lat','lon'/))
@@ -699,11 +765,15 @@ module FV3GFS_io_mod
 
         Sfcprop(nb)%landfrac(ix)  = oro_var2(i,j,17) !land frac [0:1]
 
-        if (Model%lkm > 0 ) then
+        if (Model%lkm > 0  ) then
+          if(oro_var2(i,j,18)>Model%lakefrac_threshold .and. &
+             oro_var2(i,j,19)>Model%lakedepth_threshold) then
            Sfcprop(nb)%lakefrac(ix)  = oro_var2(i,j,18) !lake frac [0:1]
            Sfcprop(nb)%lakedepth(ix) = oro_var2(i,j,19) !lake depth [m]    !YWu
+          else
+           Sfcprop(nb)%lakefrac(ix)  = 0
+          endif
         endif
-
 
       enddo
     enddo
@@ -716,12 +786,20 @@ module FV3GFS_io_mod
     if (Model%cplwav) then
       nvar_s2m = nvar_s2m + 1
     endif
-! Flake
-    if (Model%lkm > 0 ) then  
-       nvar_s2l = 10
+! CLM Lake and Flake
+    if (Model%lkm > 0) then
+      if(Model%iopt_lake==Model%iopt_lake_flake  ) then  
+        write(0,*) 'flake iopt_lake=',Model%iopt_lake
+        nvar_s2l = 10
+      else
+        write(0,*) 'clm_lake iopt_lake=',Model%iopt_lake
+        nvar_s2l = 2
+      endif
     else
+       write(0,*) 'no lake lkm=',Model%lkm
        nvar_s2l = 0
     endif
+    write(0,*) 'nvar_s2l=',nvar_s2l
 
     !--- deallocate containers and free restart container
     deallocate(oro_name2, oro_var2)
@@ -1142,19 +1220,22 @@ module FV3GFS_io_mod
         sfc_name2(nvar_s2m+19) = 'lai'
         nvar_s2me = nvar_s2m+19
       endif
-!Flake
-      if (Model%lkm > 0  ) then
-         sfc_name2(nvar_s2me+1) = 'h_ML'
-         sfc_name2(nvar_s2me+2) = 't_ML'
-         sfc_name2(nvar_s2me+3) = 't_mnw'
-         sfc_name2(nvar_s2me+4) = 'h_talb'
-         sfc_name2(nvar_s2me+5) = 't_talb'
-         sfc_name2(nvar_s2me+6) = 't_bot1'
-         sfc_name2(nvar_s2me+7) = 't_bot2'
-         sfc_name2(nvar_s2me+8) = 'c_t'
-         sfc_name2(nvar_s2me+9) = 'T_snow'
-         sfc_name2(nvar_s2me+10) = 'T_ice'
+!CLM Lake and Flake
+      if (Model%lkm > 0) then
+        sfc_name2(nvar_s2me+1) = 'T_snow'
+        sfc_name2(nvar_s2me+2) = 'T_ice'
+        if( Model%iopt_lake==Model%iopt_lake_flake   ) then
+         sfc_name2(nvar_s2me+3) = 'h_ML'
+         sfc_name2(nvar_s2me+4) = 't_ML'
+         sfc_name2(nvar_s2me+5) = 't_mnw'
+         sfc_name2(nvar_s2me+6) = 'h_talb'
+         sfc_name2(nvar_s2me+7) = 't_talb'
+         sfc_name2(nvar_s2me+8) = 't_bot1'
+         sfc_name2(nvar_s2me+9) = 't_bot2'
+         sfc_name2(nvar_s2me+10) = 'c_t'
+         write(0,*) 'ten sfc_name2'
        endif
+     endif
 
       is_lsoil=.false.
       if ( .not. warm_start ) then
@@ -1185,6 +1266,14 @@ module FV3GFS_io_mod
         end if
         call register_axis(Sfc_restart, 'Time', unlimited)
       end if
+
+      ! Tell CLM Lake to allocate data, and register its axes and fields
+      if(Model%lkm>0 .and. Model%iopt_lake==Model%iopt_lake_clm) then
+        call clm_lake%allocate_data(Model)
+        call clm_lake%fill_with_zero(Model, Sfcprop, Atm_block)
+        call clm_lake%register_axes(Model)
+        call clm_lake%register_fields
+      endif
 
       !--- register the 2D fields
       do num = 1,nvar_s2m
@@ -1254,8 +1343,8 @@ module FV3GFS_io_mod
             end if
          enddo
       endif ! noahmp
-! Flake
-      if (Model%lkm > 0 ) then
+! CLM Lake and Flake
+      if (Model%lkm > 0) then
          mand = .false.
          do num = nvar_s2me+1,nvar_s2me+nvar_s2l
             var2_p => sfc_var2(:,:,num)
@@ -1269,7 +1358,6 @@ module FV3GFS_io_mod
 
       nullify(var2_p)
    endif  ! if not allocated
-
 
     if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp .or. (.not.warm_start)) then
       !--- names of the 3D variables to save
@@ -1347,6 +1435,11 @@ module FV3GFS_io_mod
     call mpp_error(NOTE,'reading surface properties data from INPUT/sfc_data.tile*.nc')
     call read_restart(Sfc_restart, ignore_checksum=ignore_rst_cksum)
     call close_file(Sfc_restart)
+
+    ! Tell clm_lake to copy data to temporary arrays
+    if(Model%lkm>0 .and. Model%iopt_lake==Model%iopt_lake_clm) then
+      call clm_lake%copy_from_temporaries(Model,Sfcprop,Atm_block)
+    endif
 
 !   write(0,*)' stype read in min,max=',minval(sfc_var2(:,:,35)),maxval(sfc_var2(:,:,35)),' sfc_name2=',sfc_name2(35)
 !   write(0,*)' stype read in min,max=',minval(sfc_var2(:,:,18)),maxval(sfc_var2(:,:,18))
@@ -1635,18 +1728,21 @@ module FV3GFS_io_mod
           Sfcprop(nb)%rechxy(ix)     = sfc_var2(i,j,nvar_s2m+47)
           nvar_s2me = nvar_s2m+47
         endif
-!Flake
-        if (Model%lkm > 0 ) then
-            Sfcprop(nb)%h_ML(ix)       = sfc_var2(i,j,nvar_s2me+1)
-            Sfcprop(nb)%t_ML(ix)       = sfc_var2(i,j,nvar_s2me+2)
-            Sfcprop(nb)%t_mnw(ix)      = sfc_var2(i,j,nvar_s2me+3)
-            Sfcprop(nb)%h_talb(ix)     = sfc_var2(i,j,nvar_s2me+4)
-            Sfcprop(nb)%t_talb(ix)     = sfc_var2(i,j,nvar_s2me+5)
-            Sfcprop(nb)%t_bot1(ix)     = sfc_var2(i,j,nvar_s2me+6)
-            Sfcprop(nb)%t_bot2(ix)     = sfc_var2(i,j,nvar_s2me+7)
-            Sfcprop(nb)%c_t(ix)        = sfc_var2(i,j,nvar_s2me+8)
-            Sfcprop(nb)%T_snow(ix)     = sfc_var2(i,j,nvar_s2me+9)
-            Sfcprop(nb)%T_ice(ix)      = sfc_var2(i,j,nvar_s2me+10)
+!CLM Lake and Flake
+        if (Model%lkm > 0) then
+          Sfcprop(nb)%T_snow(ix)     = sfc_var2(i,j,nvar_s2me+1)
+          Sfcprop(nb)%T_ice(ix)      = sfc_var2(i,j,nvar_s2me+2)
+          if(Model%iopt_lake==Model%iopt_lake_flake  ) then
+            Sfcprop(nb)%h_ML(ix)       = sfc_var2(i,j,nvar_s2me+3)
+            Sfcprop(nb)%t_ML(ix)       = sfc_var2(i,j,nvar_s2me+4)
+            Sfcprop(nb)%t_mnw(ix)      = sfc_var2(i,j,nvar_s2me+5)
+            Sfcprop(nb)%h_talb(ix)     = sfc_var2(i,j,nvar_s2me+6)
+            Sfcprop(nb)%t_talb(ix)     = sfc_var2(i,j,nvar_s2me+7)
+            Sfcprop(nb)%t_bot1(ix)     = sfc_var2(i,j,nvar_s2me+8)
+            Sfcprop(nb)%t_bot2(ix)     = sfc_var2(i,j,nvar_s2me+9)
+            Sfcprop(nb)%c_t(ix)        = sfc_var2(i,j,nvar_s2me+10)
+            write(0,*) 'copy ten sfc_name2'
+          endif
         endif
 
         if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp .or. (.not.warm_start)) then
@@ -1900,6 +1996,8 @@ module FV3GFS_io_mod
       enddo
     endif
 
+    ! A fortran 2003 compliant compiler will call clm_lake_final automatically here
+
   end subroutine sfc_prop_restart_read
 
 
@@ -1929,6 +2027,7 @@ module FV3GFS_io_mod
     integer :: nvar2me, nvar2l          !for flake
     logical :: mand
     character(len=32) :: fn_srf = 'sfc_data.nc'
+    logical :: must_reallocate ! reallocate module variables if they're the wrong size
     real(kind=kind_phys), pointer, dimension(:,:)   :: var2_p  => NULL()
     real(kind=kind_phys), pointer, dimension(:,:,:) :: var3_p  => NULL()
     real(kind=kind_phys), pointer, dimension(:,:,:) :: var3_p1 => NULL()
@@ -1942,6 +2041,7 @@ module FV3GFS_io_mod
     !--- variables used for fms2_io register axis
     integer :: is, ie
     integer, allocatable, dimension(:) :: buffer
+    type(clm_lake_data_type), target :: clm_lake
 
     nvar2m = 48
     if (Model%use_cice_alb .or. Model%lsm == Model%lsm_ruc) then
@@ -1967,13 +2067,15 @@ module FV3GFS_io_mod
       nvar2mp = 29
       nvar3mp = 5
     endif
-!Flake
-    if (Model%lkm > 0 ) then
+!CLM Lake and Flake
+    if (Model%lkm > 0) then
+      if( Model%iopt_lake==Model%iopt_lake_flake  ) then
          nvar2l = 10
-         nvar2me = nvar2m
+       else
+         nvar2l = 2
+       endif
     else
-         nvar2l = 0
-         nvar2me = 0
+       nvar2l = 0
     endif
 
     isc = Atm_block%isc
@@ -1983,21 +2085,6 @@ module FV3GFS_io_mod
     npz = Atm_block%npz
     nx  = (iec - isc + 1)
     ny  = (jec - jsc + 1)
-
-    if (Model%lsm == Model%lsm_ruc) then
-      if (allocated(sfc_name2)) then
-        ! Re-allocate if one or more of the dimensions don't match
-        if (size(sfc_name2).ne.nvar2m+nvar2o+nvar2mp+nvar2r .or. &
-            size(sfc_name3).ne.nvar3+nvar3mp .or.                &
-            size(sfc_var3,dim=3).ne.Model%lsoil_lsm) then
-          !--- deallocate containers and free restart container
-          deallocate(sfc_name2)
-          deallocate(sfc_name3)
-          deallocate(sfc_var2)
-          deallocate(sfc_var3)
-       end if
-      end if
-    end if
 
     !--- set filename
     infile=trim(indir)//'/'//trim(fn_srf)
@@ -2071,9 +2158,50 @@ module FV3GFS_io_mod
       call mpp_error(FATAL, 'Error in opening file'//trim(infile) )
     end if
 
+    ! Tell clm_lake to allocate data, register its axes, and call write_data for each axis's variable
+    if(Model%lkm>0 .and. Model%iopt_lake==Model%iopt_lake_clm) then
+      call clm_lake%allocate_data(Model)
+      call clm_lake%register_axes(Model)
+      call clm_lake%write_axes(Model)
+    endif
 
-    if (.not. allocated(sfc_name2)) then
-      !--- allocate the various containers needed for restarts
+    check_containers: if(allocated(sfc_name2)) then
+      !--- Check if the containers are the right size.
+      !--- This must match the allocate block, below.
+      must_reallocate = .false.
+      if(size(sfc_name2) /= nvar2m+nvar2o+nvar2mp+nvar2r+nvar2l .or. &
+         size(sfc_name3) /= nvar3+nvar3mp .or. &
+         size(sfc_var2,1) /= nx .or. &
+         size(sfc_var2,2) /= ny .or. &
+         size(sfc_var2,3) /= nvar2m+nvar2o+nvar2mp+nvar2r+nvar2l) then
+        must_reallocate = .true.
+      else
+        if(Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp) then
+          if(size(sfc_var3,1) /= nx .or. size(sfc_var3,2) /= ny .or. &
+             size(sfc_var3,3) /= Model%lsoil .or. size(sfc_var3,4) /= nvar3) then
+            must_reallocate = .true.
+          endif
+        else if(model%lsm == Model%lsm_ruc) then
+          if(size(sfc_var3,1) /= nx .or. size(sfc_var3,2) /= ny .or. &
+             size(sfc_var3,3) /= Model%lsoil_lsm .or. size(sfc_var3,4) /= nvar3) then
+            must_reallocate = .true.
+          endif
+        endif
+      endif
+      if(must_reallocate) then
+        if(allocated(sfc_name2)) deallocate(sfc_name2)
+        if(allocated(sfc_name3)) deallocate(sfc_name3)
+        if(allocated(sfc_var2)) deallocate(sfc_var2)
+        if(allocated(sfc_var3)) deallocate(sfc_var3)
+        if(allocated(sfc_var3sn)) deallocate(sfc_var3sn)
+        if(allocated(sfc_var3eq)) deallocate(sfc_var3eq)
+        if(allocated(sfc_var3zn)) deallocate(sfc_var3zn)
+      endif
+    endif check_containers
+
+    allocate_containers: if (.not. allocated(sfc_name2)) then
+      !--- Allocate the various containers needed for restarts
+      !--- which must match the reallocate block, above.
       allocate(sfc_name2(nvar2m+nvar2o+nvar2mp+nvar2r+nvar2l))
       allocate(sfc_name3(0:nvar3+nvar3mp))
       allocate(sfc_var2(nx,ny,nvar2m+nvar2o+nvar2mp+nvar2r+nvar2l))
@@ -2145,13 +2273,15 @@ module FV3GFS_io_mod
       sfc_name2(46) = 'sncovr_ice'
       sfc_name2(47) = 'snodi' !snowd on ice portion of a cell
       sfc_name2(48) = 'weasdi'!weasd on ice portion of a cell
-
+      nvar2me = 48
       if (Model%use_cice_alb .or. Model%lsm == Model%lsm_ruc) then
         sfc_name2(49) = 'albdirvis_ice'
         sfc_name2(50) = 'albdifvis_ice'
         sfc_name2(51) = 'albdirnir_ice'
         sfc_name2(52) = 'albdifnir_ice'
+        nvar2me = 52
 !       sfc_name2(53) = 'sfalb_ice'
+!       nvar2me = 53
       endif
 
       if (Model%cplwav) then
@@ -2176,6 +2306,7 @@ module FV3GFS_io_mod
       sfc_name2(nvar2m+16) = 'ifd'
       sfc_name2(nvar2m+17) = 'dt_cool'
       sfc_name2(nvar2m+18) = 'qrain'
+      nvar2me = nvar2m+18
       if (Model%lsm == Model%lsm_ruc) then
         sfc_name2(nvar2m+19) = 'wetness'
         sfc_name2(nvar2m+20) = 'clw_surf_land'
@@ -2189,8 +2320,10 @@ module FV3GFS_io_mod
         sfc_name2(nvar2m+28) = 'sfalb_lnd'
         sfc_name2(nvar2m+29) = 'sfalb_lnd_bck'
         sfc_name2(nvar2m+30) = 'sfalb_ice'
+        nvar2me = nvar2m+30
         if (Model%rdlai) then
           sfc_name2(nvar2m+31) = 'lai'
+          nvar2me = nvar2m+31
         endif
       else if(Model%lsm == Model%lsm_noahmp) then
         ! Only needed when Noah MP LSM is used - 29 2D
@@ -2223,22 +2356,40 @@ module FV3GFS_io_mod
         sfc_name2(nvar2m+45) = 'smcwtdxy'
         sfc_name2(nvar2m+46) = 'deeprechxy'
         sfc_name2(nvar2m+47) = 'rechxy'
+        nvar2me = nvar2m+47
       endif
-!Flake
-      if(Model%lkm > 0 ) then
-         sfc_name2(nvar2me+1)  = 'h_ML'
-         sfc_name2(nvar2me+2)  = 't_ML'
-         sfc_name2(nvar2me+3)  = 't_mnw'
-         sfc_name2(nvar2me+4)  = 'h_talb'
-         sfc_name2(nvar2me+5)  = 't_talb'
-         sfc_name2(nvar2me+6)  = 't_bot1'
-         sfc_name2(nvar2me+7)  = 't_bot2'
-         sfc_name2(nvar2me+8)  = 'c_t'
-         sfc_name2(nvar2me+9)  = 'T_snow'
-         sfc_name2(nvar2me+10) = 'T_ice'
-      endif
-   end if
+!CLM Lake Flake
+      if(Model%lkm > 0) then
+        sfc_name2(nvar2me+1) = 'T_snow'
+        sfc_name2(nvar2me+2) = 'T_ice'
+        if(Model%iopt_lake==Model%iopt_lake_flake  ) then
+         sfc_name2(nvar2me+3)  = 'h_ML'
+         sfc_name2(nvar2me+4)  = 't_ML'
+         sfc_name2(nvar2me+5)  = 't_mnw'
+         sfc_name2(nvar2me+6)  = 'h_talb'
+         sfc_name2(nvar2me+7)  = 't_talb'
+         sfc_name2(nvar2me+8)  = 't_bot1'
+         sfc_name2(nvar2me+9)  = 't_bot2'
+         sfc_name2(nvar2me+10)  = 'c_t'
+         if(Model%me==0) then
+           do i=1,nvar2me+10
+             print 1048,i,sfc_name2(i)
+1048         format("sfc_name2(",I0,') = "',A,'"')
+           enddo
+           if(size(sfc_name2)/=nvar2me+10) then
+3814         format("ERROR: size mismatch size(sfc_name2)=",I0," /= nvar2me+10=",I0)
+             write(0,3814) size(sfc_name2),nvar2me+10
+           endif
+         endif
+       endif
+     endif
+   end if allocate_containers
 
+    ! Tell clm_lake to register all of its fields
+    if(Model%lkm>0 .and. Model%iopt_lake==Model%iopt_lake_clm) then
+      call clm_lake%register_fields
+    endif
+   
    !--- register the 2D fields
    do num = 1,nvar2m
       var2_p => sfc_var2(:,:,num)
@@ -2281,13 +2432,10 @@ module FV3GFS_io_mod
                                     &is_optional=.not.mand)
       enddo
    endif
-!Flake
-    nvar2me=nvar2m+nvar2o+nvar2r+nvar2mp
+!CLM Lake and Flake
     if(Model%lkm > 0) then
        mand = .false.
        do num = nvar2me+1,nvar2me+nvar2l
-!       do num =
-!       nvar2m+nvar2o+nvar2r+nvar2mp+1,nvar2m+nvar2o+nvar2r+nvar2mp+nvar2l 
           var2_p => sfc_var2(:,:,num)
           call register_restart_field(Sfc_restart, sfc_name2(num),var2_p,dimensions=(/'xaxis_1', 'yaxis_1', 'Time   '/),&  
                                      &is_optional=.not.mand)
@@ -2359,6 +2507,10 @@ module FV3GFS_io_mod
       nullify(var3_p3)
    endif ! lsm = lsm_noahmp
 
+    ! Tell clm_lake to copy Sfcprop data to its internal temporary arrays.
+    if(Model%lkm>0 .and. Model%iopt_lake==Model%iopt_lake_clm) then
+      call clm_lake%copy_to_temporaries(Model,Sfcprop,Atm_block)
+    endif
 
 !$omp parallel do default(shared) private(i, j, nb, ix, lsoil)
     do nb = 1, Atm_block%nblks
@@ -2423,6 +2575,7 @@ module FV3GFS_io_mod
         endif
         if (Model%cplwav) then
           sfc_var2(i,j,nvar2m) = Sfcprop(nb)%zorlwav(ix) !--- zorlwav (zorl from wav)
+          nvar2me = nvar2m
         endif
         !--- NSSTM variables
         if (Model%nstf_name(1) > 0) then
@@ -2499,20 +2652,21 @@ module FV3GFS_io_mod
           sfc_var2(i,j,nvar2m+47) = Sfcprop(nb)%rechxy(ix)
           nvar2me = nvar2m + 47
         endif
-!Flake
-        if(Model%lkm > 0 ) then
-           sfc_var2(i,j,nvar2me+1) = Sfcprop(nb)%h_ML(ix)
-           sfc_var2(i,j,nvar2me+2) = Sfcprop(nb)%t_ML(ix)
-           sfc_var2(i,j,nvar2me+3) = Sfcprop(nb)%t_mnw(ix)
-           sfc_var2(i,j,nvar2me+4) = Sfcprop(nb)%h_talb(ix)
-           sfc_var2(i,j,nvar2me+5) = Sfcprop(nb)%t_talb(ix)
-           sfc_var2(i,j,nvar2me+6) = Sfcprop(nb)%t_bot1(ix)
-           sfc_var2(i,j,nvar2me+7) = Sfcprop(nb)%t_bot2(ix)
-           sfc_var2(i,j,nvar2me+8) = Sfcprop(nb)%c_t(ix)
-           sfc_var2(i,j,nvar2me+9) = Sfcprop(nb)%T_snow(ix)
-           sfc_var2(i,j,nvar2me+10) = Sfcprop(nb)%T_ice(ix) ! this is never used
-           nvar2me = nvar2m + 10
-        endif
+!CLM Lake and Flake
+        if(Model%lkm > 0) then
+           sfc_var2(i,j,nvar2me+1) = Sfcprop(nb)%T_snow(ix)
+           sfc_var2(i,j,nvar2me+2) = Sfcprop(nb)%T_ice(ix) ! this is never used
+           if(Model%iopt_lake==Model%iopt_lake_flake  ) then
+             sfc_var2(i,j,nvar2me+3) = Sfcprop(nb)%h_ML(ix)
+             sfc_var2(i,j,nvar2me+4) = Sfcprop(nb)%t_ML(ix)
+             sfc_var2(i,j,nvar2me+5) = Sfcprop(nb)%t_mnw(ix)
+             sfc_var2(i,j,nvar2me+6) = Sfcprop(nb)%h_talb(ix)
+             sfc_var2(i,j,nvar2me+7) = Sfcprop(nb)%t_talb(ix)
+             sfc_var2(i,j,nvar2me+8) = Sfcprop(nb)%t_bot1(ix)
+             sfc_var2(i,j,nvar2me+9) = Sfcprop(nb)%t_bot2(ix)
+             sfc_var2(i,j,nvar2me+10) = Sfcprop(nb)%c_t(ix)
+           endif
+         endif
 
         do k = 1,Model%kice
           sfc_var3ice(i,j,k) = Sfcprop(nb)%tiice(ix,k) !--- internal ice temperature
@@ -2561,8 +2715,386 @@ module FV3GFS_io_mod
     call write_restart(Sfc_restart)
     call close_file(Sfc_restart)
 
+    ! A fortran 2003 compliant compiler will call clm_lake_final automatically here
+
   end subroutine sfc_prop_restart_write
 
+  subroutine clm_lake_allocate_data(data,Model)
+    ! Deallocate all data, and reallocate to the size specified in Model
+    implicit none
+    class(clm_lake_data_type) :: data
+    type(GFS_control_type),   intent(in) :: Model
+
+    integer :: nx, ny
+    print *,'clm_lake_allocate_data'
+    call data%deallocate_data
+
+    nx=Model%nx
+    ny=Model%ny
+
+    allocate(data%lake_snl2d(nx,ny))
+    allocate(data%lake_h2osno2d(nx,ny))
+    allocate(data%lake_t_grnd2d(nx,ny))
+    allocate(data%lake_savedtke12d(nx,ny))
+    allocate(data%lake_dp2dsno(nx,ny))
+    allocate(data%clm_lake_initialized(nx,ny))
+    
+    allocate(data%lake_z3d(nx,ny,Model%nlevlake_clm_lake))
+    allocate(data%lake_dz3d(nx,ny,Model%nlevlake_clm_lake))
+    allocate(data%lake_watsat3d(nx,ny,Model%nlevlake_clm_lake))
+    allocate(data%lake_csol3d(nx,ny,Model%nlevlake_clm_lake))
+    allocate(data%lake_tkmg3d(nx,ny,Model%nlevlake_clm_lake))
+    allocate(data%lake_tkdry3d(nx,ny,Model%nlevlake_clm_lake))
+    allocate(data%lake_tksatu3d(nx,ny,Model%nlevlake_clm_lake))
+    allocate(data%lake_snow_z3d(nx,ny,Model%nlevsnowsoil1_clm_lake))
+    allocate(data%lake_snow_dz3d(nx,ny,Model%nlevsnowsoil1_clm_lake))
+    allocate(data%lake_snow_zi3d(nx,ny,Model%nlevsnowsoil_clm_lake))
+    allocate(data%lake_t_h2osoi_vol3d(nx,ny,Model%nlevsnowsoil1_clm_lake))
+    allocate(data%lake_t_h2osoi_liq3d(nx,ny,Model%nlevsnowsoil1_clm_lake))
+    allocate(data%lake_t_h2osoi_ice3d(nx,ny,Model%nlevsnowsoil1_clm_lake))
+    allocate(data%lake_t_soisno3d(nx,ny,Model%nlevsnowsoil1_clm_lake))
+    allocate(data%lake_t_lake3d(nx,ny,Model%nlevlake_clm_lake))
+    allocate(data%lake_icefrac3d(nx,ny,Model%nlevlake_clm_lake))
+    allocate(data%lake_clay3d(nx,ny,Model%nlevsoil_clm_lake))
+    allocate(data%lake_sand3d(nx,ny,Model%nlevsoil_clm_lake))
+  end subroutine clm_lake_allocate_data
+
+  subroutine clm_lake_register_axes(data,Model)
+    ! Register all five axes needed by CLM Lake restart data
+    implicit none
+    class(clm_lake_data_type) :: data
+    type(GFS_control_type),      intent(in) :: Model
+    print *,'clm_lake_register_axes'
+    call register_axis(Sfc_restart, 'levlake_clm_lake', dimension_length=Model%nlevlake_clm_lake)
+
+    call register_axis(Sfc_restart, 'levsoil_clm_lake', dimension_length=Model%nlevsoil_clm_lake)
+
+    call register_axis(Sfc_restart, 'levsnow_clm_lake', dimension_length=Model%nlevsnow_clm_lake)
+
+    call register_axis(Sfc_restart, 'levsnowsoil_clm_lake', dimension_length=Model%nlevsnowsoil_clm_lake)
+
+    call register_axis(Sfc_restart, 'levsnowsoil1_clm_lake', dimension_length=Model%nlevsnowsoil1_clm_lake)
+  end subroutine clm_lake_register_axes
+
+  subroutine clm_lake_write_axes(data, Model)
+    ! Create variables with the name name as each clm_lake axis, and
+    ! fill the variable with the appropriate indices
+    implicit none
+    class(clm_lake_data_type) :: data
+    type(GFS_control_type),      intent(in) :: Model
+    real(kind_phys) :: levlake_clm_lake(Model%nlevlake_clm_lake)
+    real(kind_phys) :: levsoil_clm_lake(Model%nlevsoil_clm_lake)
+    real(kind_phys) :: levsnow_clm_lake(Model%nlevsnow_clm_lake)
+    real(kind_phys) :: levsnowsoil_clm_lake(Model%nlevsnowsoil_clm_lake)
+    real(kind_phys) :: levsnowsoil1_clm_lake(Model%nlevsnowsoil1_clm_lake)
+    integer :: i
+    print *,'clm_lake_write_axes'
+    call register_field(Sfc_restart, 'levlake_clm_lake', 'double', (/'levlake_clm_lake'/))
+    call register_variable_attribute(Sfc_restart, 'levlake_clm_lake', 'cartesian_axis' ,'Z', str_len=1)
+
+    call register_field(Sfc_restart, 'levsoil_clm_lake', 'double', (/'levsoil_clm_lake'/))
+    call register_variable_attribute(Sfc_restart, 'levsoil_clm_lake', 'cartesian_axis' ,'Z', str_len=1)
+
+    call register_field(Sfc_restart, 'levsnow_clm_lake', 'double', (/'levsnow_clm_lake'/))
+    call register_variable_attribute(Sfc_restart, 'levsnow_clm_lake', 'cartesian_axis' ,'Z', str_len=1)
+
+    call register_field(Sfc_restart, 'levsnowsoil_clm_lake', 'double', (/'levsnowsoil_clm_lake'/))
+    call register_variable_attribute(Sfc_restart, 'levsnowsoil_clm_lake', 'cartesian_axis' ,'Z', str_len=1)
+
+    call register_field(Sfc_restart, 'levsnowsoil1_clm_lake', 'double', (/'levsnowsoil1_clm_lake'/))
+    call register_variable_attribute(Sfc_restart, 'levsnowsoil1_clm_lake', 'cartesian_axis' ,'Z', str_len=1)
+
+    do i=1,Model%nlevlake_clm_lake
+      levlake_clm_lake(i) = i
+    enddo
+    do i=1,Model%nlevsoil_clm_lake
+      levsoil_clm_lake(i) = i
+    enddo
+    do i=1,Model%nlevsnow_clm_lake
+      levsnow_clm_lake(i) = i
+    enddo
+    do i=-Model%nlevsnow_clm_lake,Model%nlevsoil_clm_lake
+      levsnowsoil_clm_lake(i+Model%nlevsnow_clm_lake+1) = i
+    enddo
+    do i=-Model%nlevsnow_clm_lake+1,Model%nlevsoil_clm_lake
+      levsnowsoil1_clm_lake(i+Model%nlevsnow_clm_lake) = i
+    enddo
+
+    call write_data(Sfc_restart, 'levlake_clm_lake', levlake_clm_lake)
+    call write_data(Sfc_restart, 'levsoil_clm_lake', levsoil_clm_lake)
+    call write_data(Sfc_restart, 'levsnow_clm_lake', levsnow_clm_lake)
+    call write_data(Sfc_restart, 'levsnowsoil_clm_lake', levsnowsoil_clm_lake)
+    call write_data(Sfc_restart, 'levsnowsoil1_clm_lake', levsnowsoil1_clm_lake)
+  end subroutine clm_lake_write_axes
+
+  subroutine clm_lake_copy_to_temporaries(data, Model, Sfcprop, Atm_block)
+    ! Copies from Sfcprop variables to the corresponding data temporary variables.
+    ! Terrible things will happen if you don't call data%allocate_data first.
+    implicit none
+    class(clm_lake_data_type) :: data
+    type(GFS_sfcprop_type),   intent(in) :: Sfcprop(:)
+    type(GFS_control_type),   intent(in) :: Model
+    type(block_control_type), intent(in) :: Atm_block
+
+    integer :: nb, ix, isc, jsc, i, j
+    print *,'clm_lake_copy_to_temporaries'
+    isc = Model%isc
+    jsc = Model%jsc
+
+    ! Copy data to temporary arrays
+
+!$omp parallel do default(shared) private(i, j, nb, ix)
+    do nb = 1, Atm_block%nblks
+      do ix = 1, Atm_block%blksz(nb)
+        i = Atm_block%index(nb)%ii(ix) - isc + 1
+        j = Atm_block%index(nb)%jj(ix) - jsc + 1
+
+        data%lake_snl2d(i,j) = Sfcprop(nb)%lake_snl2d(ix)
+        data%lake_h2osno2d(i,j) = Sfcprop(nb)%lake_h2osno2d(ix)
+        data%lake_t_grnd2d(i,j) = Sfcprop(nb)%lake_t_grnd2d(ix)
+        data%lake_savedtke12d(i,j) = Sfcprop(nb)%lake_savedtke12d(ix)
+        data%lake_dp2dsno(i,j) = Sfcprop(nb)%lake_dp2dsno(ix)
+        data%clm_lake_initialized(i,j) = Sfcprop(nb)%clm_lake_initialized(ix)
+
+        data%lake_z3d(i,j,:) = Sfcprop(nb)%lake_z3d(ix,:)
+        data%lake_dz3d(i,j,:) = Sfcprop(nb)%lake_dz3d(ix,:)
+        data%lake_watsat3d(i,j,:) = Sfcprop(nb)%lake_watsat3d(ix,:)
+        data%lake_csol3d(i,j,:) = Sfcprop(nb)%lake_csol3d(ix,:)
+        data%lake_tkmg3d(i,j,:) = Sfcprop(nb)%lake_tkmg3d(ix,:)
+        data%lake_tkdry3d(i,j,:) = Sfcprop(nb)%lake_tkdry3d(ix,:)
+        data%lake_tksatu3d(i,j,:) = Sfcprop(nb)%lake_tksatu3d(ix,:)
+        data%lake_snow_z3d(i,j,:) = Sfcprop(nb)%lake_snow_z3d(ix,:)
+        data%lake_snow_dz3d(i,j,:) = Sfcprop(nb)%lake_snow_dz3d(ix,:)
+        data%lake_snow_zi3d(i,j,:) = Sfcprop(nb)%lake_snow_zi3d(ix,:)
+        data%lake_t_h2osoi_vol3d(i,j,:) = Sfcprop(nb)%lake_t_h2osoi_vol3d(ix,:)
+        data%lake_t_h2osoi_liq3d(i,j,:) = Sfcprop(nb)%lake_t_h2osoi_liq3d(ix,:)
+        data%lake_t_h2osoi_ice3d(i,j,:) = Sfcprop(nb)%lake_t_h2osoi_ice3d(ix,:)
+        data%lake_t_soisno3d(i,j,:) = Sfcprop(nb)%lake_t_soisno3d(ix,:)
+        data%lake_t_lake3d(i,j,:) = Sfcprop(nb)%lake_t_lake3d(ix,:)
+        data%lake_icefrac3d(i,j,:) = Sfcprop(nb)%lake_icefrac3d(ix,:)
+        data%lake_clay3d(i,j,:) = Sfcprop(nb)%lake_clay3d(ix,:)
+        data%lake_sand3d(i,j,:) = Sfcprop(nb)%lake_sand3d(ix,:)
+      enddo
+    enddo
+  end subroutine clm_lake_copy_to_temporaries
+
+  subroutine clm_lake_fill_with_zero(data, Model, Sfcprop, Atm_block)
+    ! Fills all temporary variables with 0.
+    ! Terrible things will happen if you don't call data%allocate_data first.
+    implicit none
+    class(clm_lake_data_type) :: data
+    type(GFS_sfcprop_type),   intent(in) :: Sfcprop(:)
+    type(GFS_control_type),   intent(in) :: Model
+    type(block_control_type), intent(in) :: Atm_block
+
+    integer :: nb, ix, isc, jsc, i, j
+    print *,'clm_lake_copy_to_temporaries'
+    isc = Model%isc
+    jsc = Model%jsc
+
+    ! Copy data to temporary arrays
+
+!$omp parallel do default(shared) private(i, j, nb, ix)
+    do nb = 1, Atm_block%nblks
+      do ix = 1, Atm_block%blksz(nb)
+        i = Atm_block%index(nb)%ii(ix) - isc + 1
+        j = Atm_block%index(nb)%jj(ix) - jsc + 1
+
+        data%lake_snl2d(i,j) = 0
+        data%lake_h2osno2d(i,j) = 0
+        data%lake_t_grnd2d(i,j) = 0
+        data%lake_savedtke12d(i,j) = 0
+        data%lake_dp2dsno(i,j) = 0
+        data%clm_lake_initialized(i,j) = 0
+
+        data%lake_z3d(i,j,:) = 0
+        data%lake_dz3d(i,j,:) = 0
+        data%lake_watsat3d(i,j,:) = 0
+        data%lake_csol3d(i,j,:) = 0
+        data%lake_tkmg3d(i,j,:) = 0
+        data%lake_tkdry3d(i,j,:) = 0
+        data%lake_tksatu3d(i,j,:) = 0
+        data%lake_snow_z3d(i,j,:) = 0
+        data%lake_snow_dz3d(i,j,:) = 0
+        data%lake_snow_zi3d(i,j,:) = 0
+        data%lake_t_h2osoi_vol3d(i,j,:) = 0
+        data%lake_t_h2osoi_liq3d(i,j,:) = 0
+        data%lake_t_h2osoi_ice3d(i,j,:) = 0
+        data%lake_t_soisno3d(i,j,:) = 0
+        data%lake_t_lake3d(i,j,:) = 0
+        data%lake_icefrac3d(i,j,:) = 0
+        data%lake_clay3d(i,j,:) = 0
+        data%lake_sand3d(i,j,:) = 0
+      enddo
+    enddo
+  end subroutine clm_lake_fill_with_zero
+
+  subroutine clm_lake_copy_from_temporaries(data, Model, Sfcprop, Atm_block)
+    ! Copies from data temporary variables to the corresponding Sfcprop variables.
+    ! Terrible things will happen if you don't call data%allocate_data first.
+    implicit none
+    class(clm_lake_data_type) :: data
+    type(GFS_sfcprop_type),   intent(in) :: Sfcprop(:)
+    type(GFS_control_type),   intent(in) :: Model
+    type(block_control_type), intent(in) :: Atm_block
+
+    integer :: nb, ix, isc, jsc, i, j
+    print *,'clm_lake_copy_from_temporaries'
+    isc = Model%isc
+    jsc = Model%jsc
+
+    ! Copy data to temporary arrays
+
+!$omp parallel do default(shared) private(i, j, nb, ix)
+    do nb = 1, Atm_block%nblks
+      do ix = 1, Atm_block%blksz(nb)
+        i = Atm_block%index(nb)%ii(ix) - isc + 1
+        j = Atm_block%index(nb)%jj(ix) - jsc + 1
+
+        Sfcprop(nb)%lake_snl2d(ix) = data%lake_snl2d(i,j)
+        Sfcprop(nb)%lake_h2osno2d(ix) = data%lake_h2osno2d(i,j)
+        Sfcprop(nb)%lake_t_grnd2d(ix) = data%lake_t_grnd2d(i,j)
+        Sfcprop(nb)%lake_savedtke12d(ix) = data%lake_savedtke12d(i,j)
+        Sfcprop(nb)%lake_dp2dsno(ix) = data%lake_dp2dsno(i,j)
+        Sfcprop(nb)%clm_lake_initialized(ix) = data%clm_lake_initialized(i,j)
+
+        Sfcprop(nb)%lake_z3d(ix,:) = data%lake_z3d(i,j,:)
+        Sfcprop(nb)%lake_dz3d(ix,:) = data%lake_dz3d(i,j,:)
+        Sfcprop(nb)%lake_watsat3d(ix,:) = data%lake_watsat3d(i,j,:)
+        Sfcprop(nb)%lake_csol3d(ix,:) = data%lake_csol3d(i,j,:)
+        Sfcprop(nb)%lake_tkmg3d(ix,:) = data%lake_tkmg3d(i,j,:)
+        Sfcprop(nb)%lake_tkdry3d(ix,:) = data%lake_tkdry3d(i,j,:)
+        Sfcprop(nb)%lake_tksatu3d(ix,:) = data%lake_tksatu3d(i,j,:)
+        Sfcprop(nb)%lake_snow_z3d(ix,:) = data%lake_snow_z3d(i,j,:)
+        Sfcprop(nb)%lake_snow_dz3d(ix,:) = data%lake_snow_dz3d(i,j,:)
+        Sfcprop(nb)%lake_snow_zi3d(ix,:) = data%lake_snow_zi3d(i,j,:)
+        Sfcprop(nb)%lake_t_h2osoi_vol3d(ix,:) = data%lake_t_h2osoi_vol3d(i,j,:)
+        Sfcprop(nb)%lake_t_h2osoi_liq3d(ix,:) = data%lake_t_h2osoi_liq3d(i,j,:)
+        Sfcprop(nb)%lake_t_h2osoi_ice3d(ix,:) = data%lake_t_h2osoi_ice3d(i,j,:)
+        Sfcprop(nb)%lake_t_soisno3d(ix,:) = data%lake_t_soisno3d(i,j,:)
+        Sfcprop(nb)%lake_t_lake3d(ix,:) = data%lake_t_lake3d(i,j,:)
+        Sfcprop(nb)%lake_icefrac3d(ix,:) = data%lake_icefrac3d(i,j,:)
+        Sfcprop(nb)%lake_clay3d(ix,:) = data%lake_clay3d(i,j,:)
+        Sfcprop(nb)%lake_sand3d(ix,:) = data%lake_sand3d(i,j,:)
+      enddo
+    enddo
+  end subroutine clm_lake_copy_from_temporaries
+
+  subroutine clm_lake_register_fields(data)
+    ! Registers all restart fields needed by the CLM Lake Model.
+    ! Terrible things will happen if you don't call data%allocate_data
+    ! and data%register_axes first.
+    implicit none
+    class(clm_lake_data_type) :: data
+
+    print *,'clm_lake_register_fields'
+
+    ! Register 2D fields
+    call register_restart_field(Sfc_restart, 'lake_snl2d', data%lake_snl2d, &
+         dimensions=(/'xaxis_1', 'yaxis_1', 'Time   '/), is_optional=.true.)
+    call register_restart_field(Sfc_restart, 'lake_h2osno2d', data%lake_h2osno2d, &
+         dimensions=(/'xaxis_1', 'yaxis_1', 'Time   '/), is_optional=.true.)
+    call register_restart_field(Sfc_restart, 'lake_t_grnd2d', data%lake_t_grnd2d, &
+         dimensions=(/'xaxis_1', 'yaxis_1', 'Time   '/), is_optional=.true.)
+    call register_restart_field(Sfc_restart, 'lake_savedtke12d', data%lake_savedtke12d, &
+         dimensions=(/'xaxis_1', 'yaxis_1', 'Time   '/), is_optional=.true.)
+    call register_restart_field(Sfc_restart, 'lake_dp2dsno', data%lake_dp2dsno, &
+         dimensions=(/'xaxis_1', 'yaxis_1', 'Time   '/), is_optional=.true.)
+    call register_restart_field(Sfc_restart, 'clm_lake_initialized', data%clm_lake_initialized, &
+         dimensions=(/'xaxis_1', 'yaxis_1', 'Time   '/), is_optional=.true.)
+
+    ! Register 3D fields
+    call register_restart_field(Sfc_restart, 'lake_z3d', data%lake_z3d, &
+         dimensions=(/'xaxis_1', 'yaxis_1', 'levlake_clm_lake', 'Time   '/), is_optional=.true.)
+    call register_restart_field(Sfc_restart, 'lake_dz3d', data%lake_dz3d, &
+         dimensions=(/'xaxis_1', 'yaxis_1', 'levlake_clm_lake', 'Time   '/), is_optional=.true.)
+    call register_restart_field(Sfc_restart,'lake_watsat3d', data%lake_watsat3d, &
+         dimensions=(/'xaxis_1', 'yaxis_1', 'levlake_clm_lake', 'Time   '/), is_optional=.true.)
+    call register_restart_field(Sfc_restart,'lake_csol3d', data%lake_csol3d, &
+         dimensions=(/'xaxis_1', 'yaxis_1', 'levlake_clm_lake', 'Time   '/), is_optional=.true.)
+    call register_restart_field(Sfc_restart,'lake_tkmg3d', data%lake_tkmg3d, &
+         dimensions=(/'xaxis_1', 'yaxis_1', 'levlake_clm_lake', 'Time   '/), is_optional=.true.)
+    call register_restart_field(Sfc_restart,'lake_tkdry3d', data%lake_tkdry3d, &
+         dimensions=(/'xaxis_1', 'yaxis_1', 'levlake_clm_lake', 'Time   '/), is_optional=.true.)
+    call register_restart_field(Sfc_restart,'lake_tksatu3d', data%lake_tksatu3d, &
+         dimensions=(/'xaxis_1', 'yaxis_1', 'levlake_clm_lake', 'Time   '/), is_optional=.true.)
+    call register_restart_field(Sfc_restart,'lake_snow_z3d', data%lake_snow_z3d, &
+         dimensions=(/'xaxis_1', 'yaxis_1', 'levsnowsoil1_clm_lake', 'Time   '/), is_optional=.true.)
+    call register_restart_field(Sfc_restart,'lake_snow_dz3d', data%lake_snow_dz3d, &
+         dimensions=(/'xaxis_1', 'yaxis_1', 'levsnowsoil1_clm_lake', 'Time   '/), is_optional=.true.)
+    call register_restart_field(Sfc_restart,'lake_snow_zi3d', data%lake_snow_zi3d, &
+         dimensions=(/'xaxis_1', 'yaxis_1', 'levsnowsoil_clm_lake', 'Time   '/), is_optional=.true.)
+    call register_restart_field(Sfc_restart,'lake_t_h2osoi_vol3d', data%lake_t_h2osoi_vol3d, &
+         dimensions=(/'xaxis_1', 'yaxis_1', 'levsnowsoil1_clm_lake', 'Time   '/), is_optional=.true.)
+    call register_restart_field(Sfc_restart,'lake_t_h2osoi_liq3d', data%lake_t_h2osoi_liq3d, &
+         dimensions=(/'xaxis_1', 'yaxis_1', 'levsnowsoil1_clm_lake', 'Time   '/), is_optional=.true.)
+    call register_restart_field(Sfc_restart,'lake_t_h2osoi_ice3d', data%lake_t_h2osoi_ice3d, &
+         dimensions=(/'xaxis_1', 'yaxis_1', 'levsnowsoil1_clm_lake', 'Time   '/), is_optional=.true.)
+    call register_restart_field(Sfc_restart,'lake_t_soisno3d', data%lake_t_soisno3d, &
+         dimensions=(/'xaxis_1', 'yaxis_1', 'levsnowsoil1_clm_lake', 'Time   '/), is_optional=.true.)
+    call register_restart_field(Sfc_restart,'lake_t_lake3d', data%lake_t_lake3d, &
+         dimensions=(/'xaxis_1', 'yaxis_1', 'levlake_clm_lake', 'Time   '/), is_optional=.true.)
+    call register_restart_field(Sfc_restart,'lake_icefrac3d', data%lake_icefrac3d, &
+         dimensions=(/'xaxis_1', 'yaxis_1', 'levlake_clm_lake', 'Time   '/), is_optional=.true.)
+    call register_restart_field(Sfc_restart,'lake_clay3d', data%lake_clay3d, &
+         dimensions=(/'xaxis_1', 'yaxis_1', 'levsoil_clm_lake', 'Time   '/), is_optional=.true.)
+    call register_restart_field(Sfc_restart,'lake_sand3d', data%lake_sand3d, &
+         dimensions=(/'xaxis_1', 'yaxis_1', 'levsoil_clm_lake', 'Time   '/), is_optional=.true.)
+  end subroutine clm_lake_register_fields
+
+  subroutine clm_lake_final(data)
+    ! Final routine for clm_lake_data_type, called automatically when
+    ! an object of that type goes out of scope.  This is simply a
+    ! wrapper around data%deallocate_data().
+    implicit none
+    type(clm_lake_data_type) :: data
+    call clm_lake_deallocate_data(data)
+  end subroutine clm_lake_final
+
+  subroutine clm_lake_deallocate_data(data)
+    ! Deallocates all data used, and nullifies the pointers. The data
+    ! object can safely be used again after this call. This is also
+    ! the implementation of the clm_lake_data_type final routine.
+    implicit none
+    class(clm_lake_data_type) :: data
+
+    ! Deallocate and nullify any associated pointers
+
+    ! This #define reduces code length by a lot
+#define IF_ASSOC_DEALLOC_NULL(var) \
+    if(associated(data%var)) then ; \
+      deallocate(data%var) ; \
+      nullify(data%var) ; \
+    endif
+    
+    IF_ASSOC_DEALLOC_NULL(lake_snl2d)
+    IF_ASSOC_DEALLOC_NULL(lake_h2osno2d)
+    IF_ASSOC_DEALLOC_NULL(lake_t_grnd2d)
+    IF_ASSOC_DEALLOC_NULL(lake_savedtke12d)
+    IF_ASSOC_DEALLOC_NULL(lake_dp2dsno)
+    IF_ASSOC_DEALLOC_NULL(clm_lake_initialized)
+
+    IF_ASSOC_DEALLOC_NULL(lake_z3d)
+    IF_ASSOC_DEALLOC_NULL(lake_dz3d)
+    IF_ASSOC_DEALLOC_NULL(lake_watsat3d)
+    IF_ASSOC_DEALLOC_NULL(lake_csol3d)
+    IF_ASSOC_DEALLOC_NULL(lake_tkmg3d)
+    IF_ASSOC_DEALLOC_NULL(lake_tkdry3d)
+    IF_ASSOC_DEALLOC_NULL(lake_tksatu3d)
+    IF_ASSOC_DEALLOC_NULL(lake_snow_z3d)
+    IF_ASSOC_DEALLOC_NULL(lake_snow_dz3d)
+    IF_ASSOC_DEALLOC_NULL(lake_snow_zi3d)
+    IF_ASSOC_DEALLOC_NULL(lake_t_h2osoi_vol3d)
+    IF_ASSOC_DEALLOC_NULL(lake_t_h2osoi_liq3d)
+    IF_ASSOC_DEALLOC_NULL(lake_t_h2osoi_ice3d)
+    IF_ASSOC_DEALLOC_NULL(lake_t_soisno3d)
+    IF_ASSOC_DEALLOC_NULL(lake_t_lake3d)
+    IF_ASSOC_DEALLOC_NULL(lake_icefrac3d)
+    IF_ASSOC_DEALLOC_NULL(lake_clay3d)
+    IF_ASSOC_DEALLOC_NULL(lake_sand3d)
+    
+#undef IF_ASSOC_DEALLOC_NULL
+  end subroutine clm_lake_deallocate_data
 
 !----------------------------------------------------------------------
 ! phys_restart_read
