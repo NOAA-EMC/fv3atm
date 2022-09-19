@@ -124,6 +124,9 @@ module GFS_restart
     if (Model%do_cap_suppress .and. Model%num_dfi_radar>0) then
       Restart%num2d = Restart%num2d + Model%num_dfi_radar
     endif
+    if (Model%rrfs_smoke) then
+      Restart%num2d = Restart%num2d + 13
+    endif
 
     Restart%num3d = Model%ntot3d
     if (Model%num_dfi_radar>0) then
@@ -147,6 +150,9 @@ module GFS_restart
     !Prognostic area fraction
     if (Model%progsigma) then
        Restart%num3d = Restart%num3d + 2
+    endif
+    if (Model%rrfs_smoke) then
+      Restart%num3d = Restart%num3d + 8
     endif
 
     if (Model%num_dfi_radar > 0) then
@@ -419,6 +425,74 @@ module GFS_restart
       enddo
     endif
 
+    if (Model%rrfs_smoke) then
+      num = num+1
+      Restart%name2d(num) = 'emdust'
+      do nb=1,nblks
+        Restart%data(nb,num)%var2p => Coupling(nb)%emdust(:)
+      enddo
+      num = num+1
+      Restart%name2d(num) = 'emseas'
+      do nb=1,nblks
+        Restart%data(nb,num)%var2p => Coupling(nb)%emseas(:)
+      enddo
+      num = num+1
+      Restart%name2d(num) = 'emanoc'
+      do nb=1,nblks
+        Restart%data(nb,num)%var2p => Coupling(nb)%emanoc(:)
+      enddo
+      num = num+1
+      Restart%name2d(num) = 'ebb_smoke_hr'
+      do nb=1,nblks
+        Restart%data(nb,num)%var2p => Coupling(nb)%ebb_smoke_hr(:)
+      enddo
+      num = num+1
+      Restart%name2d(num) = 'frp_hr'
+      do nb=1,nblks
+        Restart%data(nb,num)%var2p => Coupling(nb)%frp_hr(:)
+      enddo
+      num = num+1
+      Restart%name2d(num) = 'frp_std_hr'
+      do nb=1,nblks
+        Restart%data(nb,num)%var2p => Coupling(nb)%frp_std_hr(:)
+      enddo
+      num = num+1
+      Restart%name2d(num) = 'fhist'
+      do nb=1,nblks
+        Restart%data(nb,num)%var2p => Coupling(nb)%fhist(:)
+      enddo
+      num = num+1
+      Restart%name2d(num) = 'coef_bb_dc'
+      do nb=1,nblks
+        Restart%data(nb,num)%var2p => Coupling(nb)%coef_bb_dc(:)
+      enddo
+      num = num+1
+      Restart%name2d(num) = 'min_fplume'
+      do nb=1,nblks
+        Restart%data(nb,num)%var2p => Coupling(nb)%min_fplume(:)
+      enddo
+      num = num+1
+      Restart%name2d(num) = 'max_fplume'
+      do nb=1,nblks
+        Restart%data(nb,num)%var2p => Coupling(nb)%max_fplume(:)
+      enddo
+      num = num+1
+      Restart%name2d(num) = 'rrfs_hwp'
+      do nb=1,nblks
+        Restart%data(nb,num)%var2p => Coupling(nb)%rrfs_hwp(:)
+      enddo
+      num = num+1
+      Restart%name2d(num) = 'ushfsfci'
+      do nb=1,nblks
+        Restart%data(nb,num)%var2p => Coupling(nb)%ushfsfci(:)
+      enddo
+      num = num+1
+      Restart%name2d(num) = 'rainc_cpl'
+      do nb=1,nblks
+        Restart%data(nb,num)%var2p => Coupling(nb)%rainc_cpl(:)
+      enddo
+    endif
+
     !--- phy_f3d variables
     do num = 1,Model%ntot3d
        !--- set the variable name
@@ -548,6 +622,49 @@ module GFS_restart
               :,:,Model%ix_dfi_radar(itime))
           enddo
         endif
+      enddo
+    endif
+
+    if (Model%rrfs_smoke) then
+      num = num+1
+      Restart%name3d(num) = 'ebu_smoke'
+      do nb=1,nblks
+        Restart%data(nb,num)%var3p => Coupling(nb)%ebu_smoke(:,:)
+      enddo
+      num = num+1
+      Restart%name3d(num) = 'smoke_ext'
+      do nb=1,nblks
+        Restart%data(nb,num)%var3p => Coupling(nb)%smoke_ext(:,:)
+      enddo
+      num = num+1
+      Restart%name3d(num) = 'dust_ext'
+      do nb=1,nblks
+        Restart%data(nb,num)%var3p => Coupling(nb)%dust_ext(:,:)
+      enddo
+      num = num+1
+      Restart%name3d(num) = 'dqdti'
+      do nb=1,nblks
+        Restart%data(nb,num)%var3p => Coupling(nb)%dqdti(:,:)
+      enddo
+      num = num+1
+      Restart%name3d(num) = 'chem3d1'
+      do nb=1,nblks
+        Restart%data(nb,num)%var3p => Coupling(nb)%chem3d(:,:,1)
+      enddo
+      num = num+1
+      Restart%name3d(num) = 'chem3d2'
+      do nb=1,nblks
+        Restart%data(nb,num)%var3p => Coupling(nb)%chem3d(:,:,2)
+      enddo
+      num = num+1
+      Restart%name3d(num) = 'pfi_lsan'
+      do nb=1,nblks
+        Restart%data(nb,num)%var3p => Coupling(nb)%pfi_lsan(:,:)
+      enddo
+      num = num+1
+      Restart%name3d(num) = 'pfl_lsan'
+      do nb=1,nblks
+        Restart%data(nb,num)%var3p => Coupling(nb)%pfl_lsan(:,:)
       enddo
     endif
 
