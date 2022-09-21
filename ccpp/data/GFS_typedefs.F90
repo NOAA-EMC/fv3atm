@@ -783,6 +783,9 @@ module GFS_typedefs
     logical              :: inc_minor_gas   !< Include minor trace gases in RRTMG radiation calculation?
     integer              :: ipsd0           !< initial permutaion seed for mcica radiation
     integer              :: ipsdlim         !< limit initial permutaion seed for mcica radiation 
+    logical              :: lrseeds         !< flag to use host-provided random seeds
+    integer              :: nrstreams       !< number of random number streams in host-provided random seed array
+    logical              :: lextop          !< flag for using an extra top layer for radiation
 
     ! RRTMGP
     logical              :: do_RRTMGP               !< Use RRTMGP
@@ -1527,6 +1530,7 @@ module GFS_typedefs
     integer,               pointer :: icsdlw   (:)     => null()  !< (rad. only) radiations. if isubcsw/isubclw (input to init)
                                                                   !< (rad. only) are set to 2, the arrays contains provided
                                                                   !< (rad. only) random seeds for sub-column clouds generators
+    integer,               pointer :: rseeds   (:,:)   => null()  !< (rad. only) random seeds provided by host
 
 !--- In
     real (kind=kind_phys), pointer :: ozpl     (:,:,:) => null()  !< ozone forcing data
@@ -3045,6 +3049,9 @@ module GFS_typedefs
     logical              :: inc_minor_gas     = .true.       !< Include minor trace gases in RRTMG radiation calculation
     integer              :: ipsd0             = 0            !< initial permutaion seed for mcica radiation 
     integer              :: ipsdlim           = 1e8          !< limit initial permutaion seed for mcica radiation
+    logical              :: lrseeds           = .false.      !< flag to use host-provided random seeds
+    integer              :: nrstreams         = 2            !< number of random number streams in host-provided random seed array
+    logical              :: lextop            = .false.      !< flag for using an extra top layer for radiation
     ! RRTMGP
     logical              :: do_RRTMGP           = .false.    !< Use RRTMGP?
     character(len=128)   :: active_gases        = ''         !< Character list of active gases used in RRTMGP
@@ -3977,6 +3984,9 @@ module GFS_typedefs
     Model%inc_minor_gas    = inc_minor_gas
     Model%ipsd0            = ipsd0
     Model%ipsdlim          = ipsdlim
+    Model%lrseeds          = lrseeds
+    Model%nrstreams        = nrstreams
+    Model%lextop           = (ltp > 0)
 
     ! RRTMGP
     Model%do_RRTMGP           = do_RRTMGP
@@ -5877,6 +5887,9 @@ module GFS_typedefs
       print *, ' inc_minor_gas     : ', Model%inc_minor_gas
       print *, ' ipsd0             : ', Model%ipsd0
       print *, ' ipsdlim           : ', Model%ipsdlim
+      print *, ' lrseeds           : ', Model%lrseeds
+      print *, ' nrstreams         : ', Model%nrstreams
+      print *, ' lextop            : ', Model%lextop
       if (Model%do_RRTMGP) then
         print *, ' rrtmgp_nrghice     : ', Model%rrtmgp_nrghice
         print *, ' do_GPsw_Glw        : ', Model%do_GPsw_Glw
@@ -6366,6 +6379,10 @@ module GFS_typedefs
       allocate (Tbd%icsdlw (IM))
       Tbd%icsdsw = zero
       Tbd%icsdlw = zero
+      if (Model%lrseeds) then
+        allocate (Tbd%rseeds(IM,Model%nrstreams))
+        Tbd%rseeds = zero
+      endif
     endif
 
 !--- DFI radar forcing
