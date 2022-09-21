@@ -5014,6 +5014,17 @@ module GFS_typedefs
     Model%sec              = 0
     Model%yearlen          = 365
     Model%julian           = -9999.
+    !--- Set vertical flag used by radiation schemes
+    Model%top_at_1         = .false.
+    if (Model%do_RRTMGP) then
+       if (Model%top_at_1) then
+          Model%iSFC = Model%levs
+          Model%iTOA = 1
+       else
+          Model%iSFC = 1
+          Model%iTOA = Model%levs
+       endif
+    endif
 
 !--- BEGIN CODE FROM GFS_PHYSICS_INITIALIZE
 !--- define physcons module variables
