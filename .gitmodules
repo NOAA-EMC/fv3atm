@@ -1,7 +1,7 @@
 [submodule "atmos_cubed_sphere"]
   path = atmos_cubed_sphere
   url = https://github.com/SamuelTrahanNOAA/GFDL_atmos_cubed_sphere
-  branch = dev/emc
+  branch = bugfix/rrfs-debug-mode
 [submodule "ccpp/framework"]
   path = ccpp/framework
   url = https://github.com/NCAR/ccpp-framework
@@ -9,7 +9,7 @@
 [submodule "ccpp/physics"]
   path = ccpp/physics
   url = https://github.com/SamuelTrahanNOAA/ccpp-physics
-  branch = main
+  branch = bugfix/rrfs-debug-mode-no-smoke
 [submodule "upp"]
   path = upp
   url = https://github.com/NOAA-EMC/UPP
