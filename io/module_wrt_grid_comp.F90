@@ -1875,6 +1875,8 @@
             do ii=lbound(lonPtr,1),ubound(lonPtr,1)
               lonPtr(ii,jj) = lon1(n) + (lon2(n)-lon1(n))/(imo(n)-1) * (ii-1)
               latPtr(ii,jj) = lat1(n) + (lat2(n)-lat1(n))/(jmo(n)-1) * (jj-1)
+              wrt_int_state%out_grid_info(n)%latPtr(ii,jj) = latPtr(ii,jj)
+              wrt_int_state%out_grid_info(n)%lonPtr(ii,jj) = lonPtr(ii,jj)
             enddo
             enddo
           else if (trim(output_grid(grid_id)) == 'rotated_latlon_moving') then
@@ -1890,6 +1892,8 @@
               if (geo_lon < 0.0) geo_lon = geo_lon + 360.0
               lonPtr(ii,jj) = geo_lon
               latPtr(ii,jj) = geo_lat
+              wrt_int_state%out_grid_info(n)%latPtr(ii,jj) = latPtr(ii,jj)
+              wrt_int_state%out_grid_info(n)%lonPtr(ii,jj) = lonPtr(ii,jj)
             enddo
             enddo
           endif
