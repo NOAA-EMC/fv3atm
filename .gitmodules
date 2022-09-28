@@ -10,8 +10,8 @@
   branch = no_arg_mismatch
 [submodule "ccpp/physics"]
   path = ccpp/physics
-  #url = https://github.com/NCAR/ccpp-physics
-  #branch = main
+  #url = https://github.com/ufs-community/ccpp-physics
+  #branch = ufs/dev
   url = https://github.com/DusanJovic-NOAA/ccpp-physics
   branch = no_arg_mismatch
 [submodule "upp"]

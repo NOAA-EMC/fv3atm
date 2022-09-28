@@ -757,6 +757,9 @@ module GFS_typedefs
     logical              :: norad_precip    !< radiation precip flag for Ferrier/Moorthi
     logical              :: lwhtr           !< flag to output lw heating rate (Radtend%lwhc)
     logical              :: swhtr           !< flag to output sw heating rate (Radtend%swhc)
+    logical              :: lrseeds         !< flag to use host-provided random seeds
+    integer              :: nrstreams       !< number of random number streams in host-provided random seed array
+    logical              :: lextop          !< flag for using an extra top layer for radiation
 
     ! RRTMGP
     logical              :: do_RRTMGP               !< Use RRTMGP
@@ -1501,6 +1504,7 @@ module GFS_typedefs
     integer,               pointer :: icsdlw   (:)     => null()  !< (rad. only) radiations. if isubcsw/isubclw (input to init)
                                                                   !< (rad. only) are set to 2, the arrays contains provided
                                                                   !< (rad. only) random seeds for sub-column clouds generators
+    integer,               pointer :: rseeds   (:,:)   => null()  !< (rad. only) random seeds provided by host
 
 !--- In
     real (kind=kind_phys), pointer :: ozpl     (:,:,:) => null()  !< ozone forcing data
@@ -2982,6 +2986,9 @@ module GFS_typedefs
     logical              :: norad_precip      = .false.      !< radiation precip flag for Ferrier/Moorthi
     logical              :: lwhtr             = .true.       !< flag to output lw heating rate (Radtend%lwhc)
     logical              :: swhtr             = .true.       !< flag to output sw heating rate (Radtend%swhc)
+    logical              :: lrseeds           = .false.      !< flag to use host-provided random seeds
+    integer              :: nrstreams         = 2            !< number of random number streams in host-provided random seed array
+    logical              :: lextop            = .false.      !< flag for using an extra top layer for radiation
     ! RRTMGP
     logical              :: do_RRTMGP           = .false.    !< Use RRTMGP?
     character(len=128)   :: active_gases        = ''         !< Character list of active gases used in RRTMGP
@@ -3873,6 +3880,9 @@ module GFS_typedefs
     Model%ccnorm           = ccnorm
     Model%lwhtr            = lwhtr
     Model%swhtr            = swhtr
+    Model%lrseeds          = lrseeds
+    Model%nrstreams        = nrstreams
+    Model%lextop           = (ltp > 0)
 
     ! RRTMGP
     Model%do_RRTMGP           = do_RRTMGP
@@ -5739,6 +5749,9 @@ module GFS_typedefs
       print *, ' norad_precip      : ', Model%norad_precip
       print *, ' lwhtr             : ', Model%lwhtr
       print *, ' swhtr             : ', Model%swhtr
+      print *, ' lrseeds           : ', Model%lrseeds
+      print *, ' nrstreams         : ', Model%nrstreams
+      print *, ' lextop            : ', Model%lextop
       if (Model%do_RRTMGP) then
         print *, ' rrtmgp_nrghice     : ', Model%rrtmgp_nrghice
         print *, ' do_GPsw_Glw        : ', Model%do_GPsw_Glw
@@ -6228,6 +6241,10 @@ module GFS_typedefs
       allocate (Tbd%icsdlw (IM))
       Tbd%icsdsw = zero
       Tbd%icsdlw = zero
+      if (Model%lrseeds) then
+        allocate (Tbd%rseeds(IM,Model%nrstreams))
+        Tbd%rseeds = zero
+      endif
     endif
 
 !--- DFI radar forcing
