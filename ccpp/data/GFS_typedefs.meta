@@ -3421,9 +3421,15 @@
   units = flag
   dimensions = ()
   type = logical
-[rrtmgp_phys_blksz]
-  standard_name = number_of_columns_per_RRTMGP_block
-  long_name = number of columns to process ata time by RRTMGP
+[rrtmgp_lw_phys_blksz]
+  standard_name = number_of_columns_per_RRTMGP_LW_block
+  long_name = number of columns to process at a time by RRTMGP LW scheme
+  units = count
+  dimensions =  ()
+  type = integer
+[rrtmgp_sw_phys_blksz]
+  standard_name = number_of_columns_per_RRTMGP_SW_block
+  long_name = number of columns to process at a time by RRTMGP SW scheme
   units = count
   dimensions =  ()
   type = integer
