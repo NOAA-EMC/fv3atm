@@ -23,7 +23,8 @@ module FV3GFS_io_mod
                                 register_axis, register_restart_field, &
                                 register_variable_attribute, register_field, &
                                 read_restart, write_restart, write_data,     &
-                                get_global_io_domain_indices, variable_exists
+                                get_global_io_domain_indices, variable_exists, &
+                                get_dimension_size
   use mpp_domains_mod,    only: domain1d, domain2d, domainUG
   use time_manager_mod,   only: time_type
   use diag_manager_mod,   only: register_diag_field, send_data
@@ -1854,6 +1855,7 @@ module FV3GFS_io_mod
     !--- variables used for fms2_io register axis
     integer :: is, ie
     integer, allocatable, dimension(:) :: buffer
+    integer :: xaxis_1_chunk, yaxis_1_chunk, zaxis_1_chunk, zaxis_2_chunk, zaxis_3_chunk, zaxis_4_chunk, time_chunk
 
     nvar2m = 48
     if (Model%use_cice_alb .or. Model%lsm == Model%lsm_ruc) then
@@ -1908,7 +1910,7 @@ module FV3GFS_io_mod
     if( present(timestamp) ) infile=trim(indir)//'/'//trim(timestamp)//'.'//trim(fn_srf)
 
     !--- register axis
-    amiopen=open_file(Sfc_restart, trim(infile), 'overwrite', domain=fv_domain, is_restart=.true., dont_add_res_to_filename=.true.)
+    amiopen=open_file(Sfc_restart, trim(infile), 'overwrite', domain=fv_domain, nc_format="netcdf4", is_restart=.true., dont_add_res_to_filename=.true.)
     if( amiopen ) then
       call register_axis(Sfc_restart, 'xaxis_1', 'X')
       call register_field(Sfc_restart, 'xaxis_1', 'double', (/'xaxis_1'/))
@@ -1916,6 +1918,7 @@ module FV3GFS_io_mod
       call get_global_io_domain_indices(Sfc_restart, 'xaxis_1', is, ie, indices=buffer)
       call write_data(Sfc_restart, "xaxis_1", buffer)
       deallocate(buffer)
+      call get_dimension_size(Sfc_restart, 'xaxis_1', xaxis_1_chunk)
 
       call register_axis(Sfc_restart, 'yaxis_1', 'Y')
       call register_field(Sfc_restart, 'yaxis_1', 'double', (/'yaxis_1'/))
@@ -1923,6 +1926,7 @@ module FV3GFS_io_mod
       call get_global_io_domain_indices(Sfc_restart, 'yaxis_1', is, ie, indices=buffer)
       call write_data(Sfc_restart, "yaxis_1", buffer)
       deallocate(buffer)
+      call get_dimension_size(Sfc_restart, 'yaxis_1', yaxis_1_chunk)
 
       call register_axis(Sfc_restart, 'zaxis_1', dimension_length=Model%kice)
       call register_field(Sfc_restart, 'zaxis_1', 'double', (/'zaxis_1'/))
@@ -1933,6 +1937,7 @@ module FV3GFS_io_mod
       end do
       call write_data(Sfc_restart, 'zaxis_1', buffer)
       deallocate(buffer)
+      call get_dimension_size(Sfc_restart, 'zaxis_1', zaxis_1_chunk)
 
       if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp) then
         call register_axis(Sfc_restart, 'zaxis_2', dimension_length=Model%lsoil)
@@ -1944,6 +1949,7 @@ module FV3GFS_io_mod
         end do
         call write_data(Sfc_restart, 'zaxis_2', buffer)
         deallocate(buffer)
+        call get_dimension_size(Sfc_restart, 'zaxis_2', zaxis_2_chunk)
       endif
 
       if(Model%lsm == Model%lsm_noahmp) then
@@ -1956,6 +1962,7 @@ module FV3GFS_io_mod
         end do
         call write_data(Sfc_restart, 'zaxis_3', buffer)
         deallocate(buffer)
+        call get_dimension_size(Sfc_restart, 'zaxis_3', zaxis_3_chunk)
 
         call register_axis(Sfc_restart, 'zaxis_4', dimension_length=7)
         call register_field(Sfc_restart, 'zaxis_4', 'double', (/'zaxis_4'/))
@@ -1966,11 +1973,13 @@ module FV3GFS_io_mod
         end do
         call write_data(Sfc_restart, 'zaxis_4', buffer)
         deallocate(buffer)
+        call get_dimension_size(Sfc_restart, 'zaxis_4', zaxis_4_chunk)
       end if
       call register_axis(Sfc_restart, 'Time', unlimited)
       call register_field(Sfc_restart, 'Time', 'double', (/'Time'/))
       call register_variable_attribute(Sfc_restart, 'Time', 'cartesian_axis', 'T', str_len=1)
       call write_data( Sfc_restart, 'Time', 1)
+      call get_dimension_size(Sfc_restart, 'Time', time_chunk)
     else
       call mpp_error(FATAL, 'Error in opening file'//trim(infile) )
     end if
@@ -2144,9 +2153,11 @@ module FV3GFS_io_mod
            .or. trim(sfc_name2(num)) == 'albdifvis_ice' .or. trim(sfc_name2(num)) == 'albdifnir_ice' &
            .or. trim(sfc_name2(num)) == 'emis_lnd'      .or. trim(sfc_name2(num)) == 'emis_ice'      &
            .or. trim(sfc_name2(num)) == 'sncovr_ice' ) then
-         call register_restart_field(Sfc_restart, sfc_name2(num), var2_p, dimensions=(/'xaxis_1','yaxis_1','Time   '/), is_optional=.true.)
+         call register_restart_field(Sfc_restart, sfc_name2(num), var2_p, dimensions=(/'xaxis_1','yaxis_1','Time   '/),&
+                                    & chunksizes=(/xaxis_1_chunk,yaxis_1_chunk,time_chunk/), is_optional=.true.)
       else
-         call register_restart_field(Sfc_restart, sfc_name2(num), var2_p, dimensions=(/'xaxis_1', 'yaxis_1', 'Time   '/) )
+         call register_restart_field(Sfc_restart, sfc_name2(num), var2_p, dimensions=(/'xaxis_1','yaxis_1','Time   '/),&
+                                    & chunksizes=(/xaxis_1_chunk,yaxis_1_chunk,time_chunk/))
       endif
    enddo
    if (Model%nstf_name(1) > 0) then
@@ -2154,22 +2165,23 @@ module FV3GFS_io_mod
       if (Model%nstf_name(2) ==0) mand = .true.
       do num = nvar2m+1,nvar2m+nvar2o
          var2_p => sfc_var2(:,:,num)
-         call register_restart_field(Sfc_restart, sfc_name2(num), var2_p, dimensions=(/'xaxis_1', 'yaxis_1', 'Time   '/),&
-                                    &is_optional=.not.mand)
+         call register_restart_field(Sfc_restart, sfc_name2(num), var2_p, dimensions=(/'xaxis_1','yaxis_1','Time   '/),&
+                                    & chunksizes=(/xaxis_1_chunk,yaxis_1_chunk,time_chunk/), is_optional=.not.mand)
       enddo
    endif
 
    if (Model%lsm == Model%lsm_ruc) then ! nvar2mp =0
       do num = nvar2m+nvar2o+1, nvar2m+nvar2o+nvar2r
          var2_p => sfc_var2(:,:,num)
-         call register_restart_field(Sfc_restart, sfc_name2(num), var2_p, dimensions=(/'xaxis_1', 'yaxis_1', 'Time   '/))
+         call register_restart_field(Sfc_restart, sfc_name2(num), var2_p, dimensions=(/'xaxis_1','yaxis_1','Time   '/),&
+                                    & chunksizes=(/xaxis_1_chunk,yaxis_1_chunk,time_chunk/))
       enddo
    else if (Model%lsm == Model%lsm_noahmp) then ! nvar2r =0
       mand = .true.                  ! actually should be true since it is after cold start
       do num = nvar2m+nvar2o+1,nvar2m+nvar2o+nvar2mp
          var2_p => sfc_var2(:,:,num)
-         call register_restart_field(Sfc_restart, sfc_name2(num), var2_p, dimensions=(/'xaxis_1', 'yaxis_1', 'Time   '/),&
-                                    &is_optional=.not.mand)
+         call register_restart_field(Sfc_restart, sfc_name2(num), var2_p, dimensions=(/'xaxis_1','yaxis_1','Time   '/),&
+                                    & chunksizes=(/xaxis_1_chunk,yaxis_1_chunk,time_chunk/), is_optional=.not.mand)
       enddo
    endif
    nullify(var2_p)
@@ -2199,19 +2211,22 @@ module FV3GFS_io_mod
    !     if (Model%frac_grid) then
    sfc_name3(0) = 'tiice'
    var3_p => sfc_var3ice(:,:,:)
-   call register_restart_field(Sfc_restart, sfc_name3(0), var3_p, dimensions=(/'xaxis_1', 'yaxis_1', 'zaxis_1', 'Time   '/))
+   call register_restart_field(Sfc_restart, sfc_name3(0), var3_p, dimensions=(/'xaxis_1', 'yaxis_1', 'zaxis_1', 'Time   '/),&
+                              & chunksizes=(/xaxis_1_chunk,yaxis_1_chunk,zaxis_1_chunk,time_chunk/))
    !     endif
 
    if(Model%lsm == Model%lsm_ruc) then
       do num = 1,nvar3
          var3_p => sfc_var3(:,:,:,num)
-         call register_restart_field(Sfc_restart, sfc_name3(num), var3_p, dimensions=(/'xaxis_1', 'yaxis_1', 'zaxis_1', 'Time   '/))
+         call register_restart_field(Sfc_restart, sfc_name3(num), var3_p, dimensions=(/'xaxis_1', 'yaxis_1', 'zaxis_1', 'Time   '/),&
+                                    & chunksizes=(/xaxis_1_chunk,yaxis_1_chunk,zaxis_1_chunk,time_chunk/))
       enddo
       nullify(var3_p)
    else
       do num = 1,nvar3
          var3_p => sfc_var3(:,:,:,num)
-         call register_restart_field(Sfc_restart, sfc_name3(num), var3_p, dimensions=(/'xaxis_1', 'yaxis_1', 'zaxis_2', 'Time   '/))
+         call register_restart_field(Sfc_restart, sfc_name3(num), var3_p, dimensions=(/'xaxis_1', 'yaxis_1', 'zaxis_2', 'Time   '/),&
+                                    & chunksizes=(/xaxis_1_chunk,yaxis_1_chunk,zaxis_2_chunk,time_chunk/))
       enddo
       nullify(var3_p)
    endif
@@ -2221,16 +2236,16 @@ module FV3GFS_io_mod
       do num = nvar3+1,nvar3+3
          var3_p1 => sfc_var3sn(:,:,:,num)
          call register_restart_field(Sfc_restart, sfc_name3(num), var3_p1, dimensions=(/'xaxis_1', 'yaxis_1', 'zaxis_3', 'Time   '/),&
-                                    &is_optional=.not.mand)
+                                    & chunksizes=(/xaxis_1_chunk,yaxis_1_chunk,zaxis_3_chunk,time_chunk/), is_optional=.not.mand)
       enddo
 
       var3_p2 => sfc_var3eq(:,:,:,7)
       call register_restart_field(Sfc_restart, sfc_name3(7), var3_p2, dimensions=(/'xaxis_1', 'yaxis_1', 'zaxis_2', 'Time   '/),&
-                                    &is_optional=.not.mand)
+                                 & chunksizes=(/xaxis_1_chunk,yaxis_1_chunk,zaxis_2_chunk,time_chunk/), is_optional=.not.mand)
 
       var3_p3 => sfc_var3zn(:,:,:,8)
       call register_restart_field(Sfc_restart, sfc_name3(8), var3_p3, dimensions=(/'xaxis_1', 'yaxis_1', 'zaxis_4', 'Time   '/),&
-                                 &is_optional=.not.mand)
+                                 & chunksizes=(/xaxis_1_chunk,yaxis_1_chunk,zaxis_4_chunk,time_chunk/), is_optional=.not.mand)
 
       nullify(var3_p1)
       nullify(var3_p2)
@@ -2578,6 +2593,7 @@ module FV3GFS_io_mod
     character(7) :: indir='RESTART'
     character(72) :: infile
     logical :: amiopen
+    integer :: xaxis_1_chunk, yaxis_1_chunk, zaxis_1_chunk, time_chunk
 
     isc = Atm_block%isc
     iec = Atm_block%iec
@@ -2593,7 +2609,7 @@ module FV3GFS_io_mod
     infile=trim(indir)//'/'//trim(fn_phy)
     if( present(timestamp) ) infile=trim(indir)//'/'//trim(timestamp)//'.'//trim(fn_phy)
     !--- register axis
-    amiopen=open_file(Phy_restart, trim(infile), 'overwrite', domain=fv_domain, is_restart=.true., dont_add_res_to_filename=.true.)
+    amiopen=open_file(Phy_restart, trim(infile), 'overwrite', domain=fv_domain, nc_format="netcdf4", is_restart=.true., dont_add_res_to_filename=.true.)
     if( amiopen ) then
       call register_axis(Phy_restart, 'xaxis_1', 'X')
       call register_field(Phy_restart, 'xaxis_1', 'double', (/'xaxis_1'/))
@@ -2601,6 +2617,7 @@ module FV3GFS_io_mod
       call get_global_io_domain_indices(Phy_restart, 'xaxis_1', is, ie, indices=buffer)
       call write_data(Phy_restart, "xaxis_1", buffer)
       deallocate(buffer)
+      call get_dimension_size(Phy_restart, 'xaxis_1', xaxis_1_chunk)
 
       call register_axis(Phy_restart, 'yaxis_1', 'Y')
       call register_field(Phy_restart, 'yaxis_1', 'double', (/'yaxis_1'/))
@@ -2608,6 +2625,7 @@ module FV3GFS_io_mod
       call get_global_io_domain_indices(Phy_restart, 'yaxis_1', is, ie, indices=buffer)
       call write_data(Phy_restart, "yaxis_1", buffer)
       deallocate(buffer)
+      call get_dimension_size(Phy_restart, 'yaxis_1', yaxis_1_chunk)
 
       call register_axis(Phy_restart, 'zaxis_1', npz)
       call register_field(Phy_restart, 'zaxis_1', 'double', (/'zaxis_1'/))
@@ -2618,11 +2636,13 @@ module FV3GFS_io_mod
       end do
       call write_data(Phy_restart, "zaxis_1", buffer)
       deallocate(buffer)
+      call get_dimension_size(Phy_restart, 'zaxis_1', zaxis_1_chunk)
 
       call register_axis(Phy_restart, 'Time', unlimited)
       call register_field(Phy_restart, 'Time', 'double', (/'Time'/))
       call register_variable_attribute(Phy_restart, 'Time', 'cartesian_axis', 'T', str_len=1)
       call write_data(Phy_restart, "Time", 1)
+      call get_dimension_size(Phy_restart, 'Time', time_chunk)
     else
       call mpp_error(FATAL, 'Error opening file '//trim(infile))
     end if
@@ -2638,12 +2658,12 @@ module FV3GFS_io_mod
     do num = 1,nvar2d
        var2_p => phy_var2(:,:,num)
        call register_restart_field(Phy_restart, trim(GFS_Restart%name2d(num)), var2_p, dimensions=(/'xaxis_1','yaxis_1','Time   '/),&
-                                  &is_optional=.true.)
+                                  & chunksizes=(/xaxis_1_chunk,yaxis_1_chunk,time_chunk/), is_optional=.true.)
     enddo
     do num = 1,nvar3d
        var3_p => phy_var3(:,:,:,num)
        call register_restart_field(Phy_restart, trim(GFS_Restart%name3d(num)), var3_p, dimensions=(/'xaxis_1','yaxis_1','zaxis_1','Time   '/),&
-                                  &is_optional=.true.)
+                                  & chunksizes=(/xaxis_1_chunk,yaxis_1_chunk,zaxis_1_chunk,time_chunk/), is_optional=.true.)
     enddo
     nullify(var2_p)
     nullify(var3_p)
