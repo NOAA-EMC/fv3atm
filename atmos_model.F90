@@ -138,14 +138,14 @@ public setup_exportdata
      integer                       :: mlon, mlat
      integer                       :: iau_offset         ! iau running window length
      logical                       :: pe                 ! current pe.
-     real(kind=8),             pointer, dimension(:)     :: ak, bk
+     real(kind=GFS_kind_phys), pointer, dimension(:)     :: ak, bk
      real(kind=GFS_kind_phys), pointer, dimension(:,:)   :: lon_bnd  => null() ! local longitude axis grid box corners in radians.
      real(kind=GFS_kind_phys), pointer, dimension(:,:)   :: lat_bnd  => null() ! local latitude axis grid box corners in radians.
      real(kind=GFS_kind_phys), pointer, dimension(:,:)   :: lon      => null() ! local longitude axis grid box centers in radians.
      real(kind=GFS_kind_phys), pointer, dimension(:,:)   :: lat      => null() ! local latitude axis grid box centers in radians.
      real(kind=GFS_kind_phys), pointer, dimension(:,:)   :: dx, dy
-     real(kind=8),             pointer, dimension(:,:)   :: area
-     real(kind=8),             pointer, dimension(:,:,:) :: layer_hgt, level_hgt
+     real(kind=GFS_kind_phys), pointer, dimension(:,:)   :: area
+     real(kind=GFS_kind_phys), pointer, dimension(:,:,:) :: layer_hgt, level_hgt
      type(domain2d)                :: domain             ! domain decomposition
      type(domain2d)                :: domain_for_read    ! domain decomposition
      type(time_type)               :: Time               ! current time
@@ -468,9 +468,9 @@ subroutine atmos_timestep_diagnostics(Atmos)
             psum  = psum + adiff
             if(adiff>=maxabs) then
               maxabs=adiff
-              pmaxloc(2:3) = (/ ATM_block%index(nb)%ii(i), ATM_block%index(nb)%jj(i) /)
-              pmaxloc(4:7) = (/ pdiff, GFS_data(nb)%Statein%pgr(i), &
-                   GFS_data(nb)%Grid%xlat(i), GFS_data(nb)%Grid%xlon(i) /)
+              pmaxloc(2:3) = (/ dble(ATM_block%index(nb)%ii(i)), dble(ATM_block%index(nb)%jj(i)) /)
+              pmaxloc(4:7) = (/ dble(pdiff), dble(GFS_data(nb)%Statein%pgr(i)), &
+                   dble(GFS_data(nb)%Grid%xlat(i)), dble(GFS_data(nb)%Grid%xlon(i)) /)
             endif
           enddo
           pcount = pcount+count
@@ -2218,6 +2218,105 @@ end subroutine update_atmos_chemistry
             endif
           endif
 
+! get upward LW flux:  for open ocean
+!----------------------------------------------
+          fldname = 'mean_up_lw_flx_ocn'
+          if (trim(impfield_name) == trim(fldname) .and. GFS_control%use_med_flux) then
+            findex  = queryImportFields(fldname)
+            if (importFieldsValid(findex)) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
+              do j=jsc,jec
+                do i=isc,iec
+                  nb = Atm_block%blkno(i,j)
+                  ix = Atm_block%ixp(i,j)
+                  if (GFS_data(nb)%Sfcprop%oceanfrac(ix) > zero) then
+                    GFS_data(nb)%Coupling%ulwsfcin_med(ix) = -datar8(i,j)
+                  endif
+                enddo
+              enddo
+              if (mpp_pe() == mpp_root_pe() .and. debug)  print *,'fv3 assign_import: get lwflx for open ocean from mediator'
+            endif
+          endif
+
+! get latent heat flux:  for open ocean
+!------------------------------------------------
+          fldname = 'mean_laten_heat_flx_atm_into_ocn'
+          if (trim(impfield_name) == trim(fldname) .and. GFS_control%use_med_flux) then
+            findex  = queryImportFields(fldname)
+            if (importFieldsValid(findex)) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
+              do j=jsc,jec
+                do i=isc,iec
+                  nb = Atm_block%blkno(i,j)
+                  ix = Atm_block%ixp(i,j)
+                  if (GFS_data(nb)%Sfcprop%oceanfrac(ix) > zero) then
+                    GFS_data(nb)%Coupling%dqsfcin_med(ix) = -datar8(i,j)
+                  endif
+                enddo
+              enddo
+              if (mpp_pe() == mpp_root_pe() .and. debug)  print *,'fv3 assign_import: get laten_heat for open ocean from mediator'
+            endif
+          endif
+
+! get sensible heat flux:  for open ocean
+!--------------------------------------------------
+          fldname = 'mean_sensi_heat_flx_atm_into_ocn'
+          if (trim(impfield_name) == trim(fldname) .and. GFS_control%use_med_flux) then
+            findex  = queryImportFields(fldname)
+            if (importFieldsValid(findex)) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
+              do j=jsc,jec
+                do i=isc,iec
+                  nb = Atm_block%blkno(i,j)
+                  ix = Atm_block%ixp(i,j)
+                  if (GFS_data(nb)%Sfcprop%oceanfrac(ix) > zero) then
+                    GFS_data(nb)%Coupling%dtsfcin_med(ix) = -datar8(i,j)
+                  endif
+                enddo
+              enddo
+              if (mpp_pe() == mpp_root_pe() .and. debug)  print *,'fv3 assign_import: get sensi_heat for open ocean from mediator'
+            endif
+          endif
+
+! get zonal compt of momentum flux:  for open ocean
+!------------------------------------------------------------
+          fldname = 'stress_on_air_ocn_zonal'
+          if (trim(impfield_name) == trim(fldname) .and. GFS_control%use_med_flux) then
+            findex  = queryImportFields(fldname)
+            if (importFieldsValid(findex)) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
+              do j=jsc,jec
+                do i=isc,iec
+                  nb = Atm_block%blkno(i,j)
+                  ix = Atm_block%ixp(i,j)
+                  if (GFS_data(nb)%Sfcprop%oceanfrac(ix) > zero) then
+                    GFS_data(nb)%Coupling%dusfcin_med(ix) = -datar8(i,j)
+                  endif
+                enddo
+              enddo
+              if (mpp_pe() == mpp_root_pe() .and. debug)  print *,'fv3 assign_import: get zonal_moment_flx for open ocean from mediator'
+            endif
+          endif
+
+! get meridional compt of momentum flux:  for open ocean
+!-----------------------------------------------------------------
+          fldname = 'stress_on_air_ocn_merid'
+          if (trim(impfield_name) == trim(fldname) .and. GFS_control%use_med_flux) then
+            findex  = queryImportFields(fldname)
+            if (importFieldsValid(findex)) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
+              do j=jsc,jec
+                do i=isc,iec
+                  nb = Atm_block%blkno(i,j)
+                  ix = Atm_block%ixp(i,j)
+                  if (GFS_data(nb)%Sfcprop%oceanfrac(ix) > zero) then
+                    GFS_data(nb)%Coupling%dvsfcin_med(ix) = -datar8(i,j)
+                  endif
+                enddo
+              enddo
+              if (mpp_pe() == mpp_root_pe() .and. debug)  print *,'fv3 assign_import: get merid_moment_flx for open ocean from mediator'
+            endif
+          endif
 
         endif ! if (datar8(isc,jsc) > -99999.0) then
 
@@ -2786,6 +2885,7 @@ end subroutine update_atmos_chemistry
             ! Instantaneous u wind (m/s) 10 m above ground
             case ('inst_zonal_wind_height10m')
               call block_data_copy(datar82d, GFS_data(nb)%coupling%u10mi_cpl, Atm_block, nb, rc=localrc)
+              !call block_data_copy(datar82d, GFS_data(nb)%coupling%u10mi_cpl, Atm_block, nb, rc=localrc)
             ! Instantaneous v wind (m/s) 10 m above ground
             case ('inst_merid_wind_height10m')
               call block_data_copy(datar82d, GFS_data(nb)%coupling%v10mi_cpl, Atm_block, nb, rc=localrc)
