@@ -619,6 +619,13 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
+[clm_lakedepth]
+  standard_name = clm_lake_depth
+  long_name = clm internal copy of lake depth with 10.0 replaced by default lake depth
+  units = m
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
 [use_lake_model]
   standard_name = flag_for_using_lake_model
   long_name = flag indicating lake points using a lake model
@@ -5253,6 +5260,12 @@
 [frac_grid]
   standard_name = flag_for_fractional_landmask
   long_name = flag for fractional grid
+  units = flag
+  dimensions = ()
+  type = logical
+[frac_ice]
+  standard_name = flag_for_fractional_ice_when_fractional_landmask_is_disabled
+  long_name = flag for fractional ice when fractional landmask is disabled
   units = flag
   dimensions = ()
   type = logical

@@ -212,6 +212,7 @@ module GFS_typedefs
 !--- In (lakes)
     real (kind=kind_phys), pointer :: lakefrac(:)  => null()  !< lake  fraction [0:1]
     real (kind=kind_phys), pointer :: lakedepth(:) => null()  !< lake  depth [ m ]
+    real (kind=kind_phys), pointer :: clm_lakedepth(:) => null()  !< clm internal lake depth [ m ]
     integer,               pointer :: use_lake_model(:) => null()!1=run lake, 2=run lake&nsst, 0=no lake
     real (kind=kind_phys), pointer :: lake_t2m (:)   => null()  !< 2 meter temperature from CLM Lake model 
     real (kind=kind_phys), pointer :: lake_q2m (:)   => null()  !< 2 meter humidity from CLM Lake model
@@ -1209,6 +1210,7 @@ module GFS_typedefs
                                             !< nstf_name(5) : zsea2 in mm
 !--- fractional grid
     logical              :: frac_grid       !< flag for fractional grid
+    logical              :: frac_ice        !< flag for fractional ice when fractional grid is not in use
     logical              :: ignore_lake     !< flag for ignoring lakes
     real(kind=kind_phys) :: min_lakeice     !< minimum lake ice value
     real(kind=kind_phys) :: min_seaice      !< minimum sea  ice value
@@ -2136,6 +2138,8 @@ module GFS_typedefs
         allocate (Sfcprop%t_bot1   (IM))
         allocate (Sfcprop%t_bot2   (IM))
         allocate (Sfcprop%c_t      (IM))
+      else
+        allocate (Sfcprop%clm_lakedepth(IM))
       endif
       allocate (Sfcprop%T_snow   (IM))
       allocate (Sfcprop%T_ice    (IM))
@@ -2186,6 +2190,8 @@ module GFS_typedefs
         Sfcprop%t_bot1    = clear_val
         Sfcprop%t_bot2    = clear_val
         Sfcprop%c_t       = clear_val
+      else
+        Sfcprop%clm_lakedepth = clear_val
       endif
       Sfcprop%T_snow    = clear_val
       Sfcprop%T_ice     = clear_val
@@ -3487,6 +3493,7 @@ module GFS_typedefs
                                                              !< nstf_name(5) : zsea2 in mm
 !--- fractional grid
     logical              :: frac_grid       = .false.         !< flag for fractional grid
+    logical              :: frac_ice        = .false.         !< flag for fractional ice when fractional grid is not in use
     logical              :: ignore_lake     = .true.          !< flag for ignoring lakes
     real(kind=kind_phys) :: min_lakeice     = 0.15d0          !< minimum lake ice value
     real(kind=kind_phys) :: min_seaice      = 1.0d-11         !< minimum sea  ice value
@@ -3717,7 +3724,7 @@ module GFS_typedefs
                           !--- near surface sea temperature model
                                nst_anl, lsea, nstf_name,                                    &
                                frac_grid, min_lakeice, min_seaice, min_lake_height,         &
-                               ignore_lake,                                                 &
+                               ignore_lake, frac_ice,                                       &
                           !--- surface layer
                                sfc_z0_type,                                                 &
                           !--- switch beteeen local and standard potential temperature
@@ -4510,6 +4517,7 @@ module GFS_typedefs
 
 !--- fractional grid
     Model%frac_grid        = frac_grid
+    Model%frac_ice         = frac_ice
     Model%ignore_lake      = ignore_lake
     Model%min_lakeice      = min_lakeice
     Model%min_seaice       = min_seaice
@@ -4728,6 +4736,18 @@ module GFS_typedefs
       Model%ntocb = get_tracer_index(Model%tracer_names, 'oc1',   Model%me, Model%master, Model%debug)
       Model%ntocl = get_tracer_index(Model%tracer_names, 'oc2',   Model%me, Model%master, Model%debug)
     end if
+
+    ! Lake & fractional grid safety checks
+    if(Model%me==Model%master) then
+      if(Model%lkm>0 .and. Model%frac_grid) then
+        write(0,*) 'WARNING: Lake fractional grid support is experimental. Use at your own risk!'
+      else if(Model%lkm>0 .and. Model%iopt_lake==Model%iopt_lake_clm .and. .not. Model%frac_ice) then
+        write(0,*) 'WARNING: CLM Lake Model will not work without frac_ice=.true.'
+      endif
+      if(Model%lkm==2) then
+        write(0,*) 'WARNING: Running both lake and nsst on lake points is experimental. Use at your own risk!'
+      endif
+    endif
 
     if(ldiag3d) then
        ! Flags used to turn on or off tracer "causes"
@@ -5236,7 +5256,7 @@ module GFS_typedefs
 !      endif
 
       print *,' nst_anl=',Model%nst_anl,' use_ufo=',Model%use_ufo,' frac_grid=',Model%frac_grid,&
-              ' ignore_lake=',ignore_lake
+              ' ignore_lake=',ignore_lake,' frac_ice=',Model%frac_ice
       print *,' min_lakeice=',Model%min_lakeice,' min_seaice=',Model%min_seaice,                &
               'min_lake_height=',Model%min_lake_height
 

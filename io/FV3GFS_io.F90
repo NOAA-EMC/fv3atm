@@ -122,7 +122,7 @@ module FV3GFS_io_mod
 
     ! All 2D variables needed for a restart
     real(kind_phys), pointer, private, dimension(:,:) :: &
-         lake_snl2d=>null(), lake_h2osno2d=>null(), lake_t_grnd2d=>null(), &
+         lake_snl2d=>null(), lake_h2osno2d=>null(), lake_t_grnd2d=>null(), clm_lakedepth=>null(), &
          lake_savedtke12d=>null(), lake_dp2dsno=>null(), clm_lake_initialized=>null()
 
     ! All 3D variables needed for a restart
@@ -2737,6 +2737,7 @@ module FV3GFS_io_mod
     allocate(data%lake_t_grnd2d(nx,ny))
     allocate(data%lake_savedtke12d(nx,ny))
     allocate(data%lake_dp2dsno(nx,ny))
+    allocate(data%clm_lakedepth(nx,ny))
     allocate(data%clm_lake_initialized(nx,ny))
     
     allocate(data%lake_z3d(nx,ny,Model%nlevlake_clm_lake))
@@ -2854,6 +2855,7 @@ module FV3GFS_io_mod
         data%lake_t_grnd2d(i,j) = Sfcprop(nb)%lake_t_grnd2d(ix)
         data%lake_savedtke12d(i,j) = Sfcprop(nb)%lake_savedtke12d(ix)
         data%lake_dp2dsno(i,j) = Sfcprop(nb)%lake_dp2dsno(ix)
+        data%clm_lakedepth(i,j) = Sfcprop(nb)%clm_lakedepth(ix)
         data%clm_lake_initialized(i,j) = Sfcprop(nb)%clm_lake_initialized(ix)
 
         data%lake_z3d(i,j,:) = Sfcprop(nb)%lake_z3d(ix,:)
@@ -2905,6 +2907,7 @@ module FV3GFS_io_mod
         data%lake_t_grnd2d(i,j) = 0
         data%lake_savedtke12d(i,j) = 0
         data%lake_dp2dsno(i,j) = 0
+        data%clm_lakedepth(i,j) = 0
         data%clm_lake_initialized(i,j) = 0
 
         data%lake_z3d(i,j,:) = 0
@@ -2956,6 +2959,7 @@ module FV3GFS_io_mod
         Sfcprop(nb)%lake_t_grnd2d(ix) = data%lake_t_grnd2d(i,j)
         Sfcprop(nb)%lake_savedtke12d(ix) = data%lake_savedtke12d(i,j)
         Sfcprop(nb)%lake_dp2dsno(ix) = data%lake_dp2dsno(i,j)
+        Sfcprop(nb)%clm_lakedepth(ix) = data%clm_lakedepth(i,j)
         Sfcprop(nb)%clm_lake_initialized(ix) = data%clm_lake_initialized(i,j)
 
         Sfcprop(nb)%lake_z3d(ix,:) = data%lake_z3d(i,j,:)
@@ -2999,6 +3003,8 @@ module FV3GFS_io_mod
     call register_restart_field(Sfc_restart, 'lake_savedtke12d', data%lake_savedtke12d, &
          dimensions=(/'xaxis_1', 'yaxis_1', 'Time   '/), is_optional=.true.)
     call register_restart_field(Sfc_restart, 'lake_dp2dsno', data%lake_dp2dsno, &
+         dimensions=(/'xaxis_1', 'yaxis_1', 'Time   '/), is_optional=.true.)
+    call register_restart_field(Sfc_restart, 'clm_lakedepth', data%clm_lakedepth, &
          dimensions=(/'xaxis_1', 'yaxis_1', 'Time   '/), is_optional=.true.)
     call register_restart_field(Sfc_restart, 'clm_lake_initialized', data%clm_lake_initialized, &
          dimensions=(/'xaxis_1', 'yaxis_1', 'Time   '/), is_optional=.true.)
@@ -3072,6 +3078,7 @@ module FV3GFS_io_mod
     IF_ASSOC_DEALLOC_NULL(lake_t_grnd2d)
     IF_ASSOC_DEALLOC_NULL(lake_savedtke12d)
     IF_ASSOC_DEALLOC_NULL(lake_dp2dsno)
+    IF_ASSOC_DEALLOC_NULL(clm_lakedepth)
     IF_ASSOC_DEALLOC_NULL(clm_lake_initialized)
 
     IF_ASSOC_DEALLOC_NULL(lake_z3d)
