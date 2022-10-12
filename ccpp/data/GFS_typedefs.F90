@@ -2556,32 +2556,33 @@ module GFS_typedefs
 !   endif
 
     if (Model%cplflx .or. Model%cpllnd) then
-      allocate (Coupling%dlwsfc_cpl (IM))
-      Coupling%dlwsfc_cpl = clear_val
-      allocate (Coupling%dswsfc_cpl (IM))
-      Coupling%dswsfc_cpl = clear_val
-      allocate (Coupling%psurfi_cpl (IM))
-      Coupling%psurfi_cpl = clear_val
-      allocate (Coupling%nswsfc_cpl (IM))
-      Coupling%nswsfc_cpl = clear_val
+      allocate (Coupling%dlwsfc_cpl  (IM))
+      allocate (Coupling%dswsfc_cpl  (IM))
+      allocate (Coupling%psurfi_cpl  (IM))
+      allocate (Coupling%nswsfc_cpl  (IM))
       allocate (Coupling%nswsfci_cpl (IM))
-      Coupling%nswsfci_cpl = clear_val
       allocate (Coupling%nnirbmi_cpl (IM))
-      Coupling%nnirbmi_cpl = clear_val
       allocate (Coupling%nnirdfi_cpl (IM))
-      Coupling%nnirdfi_cpl = clear_val
       allocate (Coupling%nvisbmi_cpl (IM))
-      Coupling%nvisbmi_cpl = clear_val
       allocate (Coupling%nvisdfi_cpl (IM))
+      allocate (Coupling%nnirbm_cpl  (IM))
+      allocate (Coupling%nnirdf_cpl  (IM))
+      allocate (Coupling%nvisbm_cpl  (IM))
+      allocate (Coupling%nvisdf_cpl  (IM))
+
+      Coupling%dlwsfc_cpl  = clear_val
+      Coupling%dswsfc_cpl  = clear_val
+      Coupling%psurfi_cpl  = clear_val
+      Coupling%nswsfc_cpl  = clear_val
+      Coupling%nswsfci_cpl = clear_val
+      Coupling%nnirbmi_cpl = clear_val
+      Coupling%nnirdfi_cpl = clear_val
+      Coupling%nvisbmi_cpl = clear_val
       Coupling%nvisdfi_cpl = clear_val
-      allocate (Coupling%nnirbm_cpl (IM))
-      Coupling%nnirbm_cpl = clear_val
-      allocate (Coupling%nnirdf_cpl (IM))
-      Coupling%nnirdf_cpl = clear_val
-      allocate (Coupling%nvisbm_cpl (IM))
-      Coupling%nvisbm_cpl = clear_val
-      allocate (Coupling%nvisdf_cpl (IM))
-      Coupling%nvisdf_cpl = clear_val
+      Coupling%nnirbm_cpl  = clear_val
+      Coupling%nnirdf_cpl  = clear_val
+      Coupling%nvisbm_cpl  = clear_val
+      Coupling%nvisdf_cpl  = clear_val
     end if
 
     if (Model%cplflx) then
