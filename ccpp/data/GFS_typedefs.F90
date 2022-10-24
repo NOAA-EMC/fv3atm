@@ -2385,18 +2385,20 @@ module GFS_typedefs
       Sfcprop%xlaixy     = clear_val
       Sfcprop%rca        = clear_val
     end if
-    if (Model%lsm == Model%lsm_ruc .or. Model%lsm == Model%lsm_noahmp) then
-      allocate(Sfcprop%raincprv  (IM))
-      allocate(Sfcprop%rainncprv (IM))
+    if (Model%lsm == Model%lsm_ruc .or. Model%lsm == Model%lsm_noahmp .or. &
+         (Model%lkm>0 .and. Model%iopt_lake==Model%iopt_lake_clm)) then
+     allocate(Sfcprop%raincprv  (IM))
+     allocate(Sfcprop%rainncprv (IM))
+     Sfcprop%raincprv   = clear_val
+     Sfcprop%rainncprv  = clear_val
+     if (Model%lsm == Model%lsm_ruc .or. Model%lsm == Model%lsm_noahmp) then
       allocate(Sfcprop%iceprv    (IM))
       allocate(Sfcprop%snowprv   (IM))
       allocate(Sfcprop%graupelprv(IM))
-
-      Sfcprop%raincprv   = clear_val
-      Sfcprop%rainncprv  = clear_val
       Sfcprop%iceprv     = clear_val
       Sfcprop%snowprv    = clear_val
       Sfcprop%graupelprv = clear_val
+     end if
     end if
 ! Noah MP allocate and init when used
 !
