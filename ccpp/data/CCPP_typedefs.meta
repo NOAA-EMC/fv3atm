@@ -1460,6 +1460,12 @@
   units = count
   dimensions = ()
   type = integer
+[nf_albd]
+  standard_name = number_of_components_for_surface_albedo
+  long_name = number of IR/VIS/UV compinents for surface albedo
+  units = count
+  dimensions = ()
+  type = integer
 [nn]
   standard_name = number_of_tracers_for_convective_transport
   long_name = number of tracers for convective transport
