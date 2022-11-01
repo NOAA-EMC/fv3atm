@@ -1685,22 +1685,22 @@ subroutine update_atmos_chemistry(state, rc)
       enddo
 
       ! -- zero out accumulated fields
+      if (.not. GFS_control%cplflx .and. .not. GFS_control%cpllnd) then
 !$OMP parallel do default (none) &
 !$OMP             shared  (nj, ni, Atm_block, GFS_control, GFS_data) &
 !$OMP             private (j, jb, i, ib, nb, ix)
-      do j = 1, nj
-        jb = j + Atm_block%jsc - 1
-        do i = 1, ni
-          ib = i + Atm_block%isc - 1
-          nb = Atm_block%blkno(ib,jb)
-          ix = Atm_block%ixp(ib,jb)
-          GFS_data(nb)%coupling%rainc_cpl(ix)  = zero
-          if (.not.GFS_control%cplflx) then
+        do j = 1, nj
+          jb = j + Atm_block%jsc - 1
+          do i = 1, ni
+            ib = i + Atm_block%isc - 1
+            nb = Atm_block%blkno(ib,jb)
+            ix = Atm_block%ixp(ib,jb)
+            GFS_data(nb)%coupling%rainc_cpl(ix)  = zero
             GFS_data(nb)%coupling%rain_cpl(ix) = zero
             GFS_data(nb)%coupling%snow_cpl(ix) = zero
-          end if
+          enddo
         enddo
-      enddo
+      end if
 
       if (GFS_control%debug) then
         ! -- diagnostics
@@ -2883,7 +2883,6 @@ end subroutine update_atmos_chemistry
             ! Instantaneous u wind (m/s) 10 m above ground
             case ('inst_zonal_wind_height10m')
               call block_data_copy(datar82d, GFS_data(nb)%coupling%u10mi_cpl, Atm_block, nb, rc=localrc)
-              !call block_data_copy(datar82d, GFS_data(nb)%coupling%u10mi_cpl, Atm_block, nb, rc=localrc)
             ! Instantaneous v wind (m/s) 10 m above ground
             case ('inst_merid_wind_height10m')
               call block_data_copy(datar82d, GFS_data(nb)%coupling%v10mi_cpl, Atm_block, nb, rc=localrc)
@@ -3005,6 +3004,9 @@ end subroutine update_atmos_chemistry
             ! MEAN precipitation rate (kg/m2/s)
             case ('mean_prec_rate')
               call block_data_copy(datar82d, GFS_data(nb)%coupling%rain_cpl, Atm_block, nb, scale_factor=rtimek, rc=localrc)
+            ! MEAN convective precipitation rate (kg/m2/s)
+            case ('mean_prec_rate_conv')
+              call block_data_copy(datar82d, GFS_Data(nb)%Coupling%rainc_cpl, Atm_block, nb, scale_factor=rtimek, rc=localrc)
             ! MEAN snow precipitation rate (kg/m2/s)
             case ('mean_fprec_rate')
               call block_data_copy(datar82d, GFS_data(nb)%coupling%snow_cpl, Atm_block, nb, scale_factor=rtimek, rc=localrc)
@@ -3015,19 +3017,38 @@ end subroutine update_atmos_chemistry
             ! bottom layer temperature (t)
             case('inst_temp_height_lowest')
               call block_data_copy_or_fill(datar82d, DYCORE_data(nb)%coupling%t_bot, zeror8, Atm_block, nb, rc=localrc)
+            case('inst_temp_height_lowest_from_phys')
+              call block_data_copy_or_fill(datar82d, GFS_data(nb)%Statein%tgrs, 1, zeror8, Atm_block, nb, rc=localrc)
             ! bottom layer specific humidity (q)
             !    !    ! CHECK if tracer 1 is for specific humidity     !    !    !
             case('inst_spec_humid_height_lowest')
               call block_data_copy_or_fill(datar82d, DYCORE_data(nb)%coupling%tr_bot, 1, zeror8, Atm_block, nb, rc=localrc)
+            case('inst_spec_humid_height_lowest_from_phys')
+              call block_data_copy_or_fill(datar82d, GFS_data(nb)%Statein%qgrs, 1, GFS_Control%ntqv, zeror8, Atm_block, nb, rc=localrc)
             ! bottom layer zonal wind (u)
             case('inst_zonal_wind_height_lowest')
               call block_data_copy_or_fill(datar82d, DYCORE_data(nb)%coupling%u_bot, zeror8, Atm_block, nb, rc=localrc)
-            ! bottom layer meridionalw wind (v)
+            ! bottom layer meridional wind (v)
             case('inst_merid_wind_height_lowest')
               call block_data_copy_or_fill(datar82d, DYCORE_data(nb)%coupling%v_bot, zeror8, Atm_block, nb, rc=localrc)
+            ! bottom layer zonal wind (u) from physics
+            case('inst_zonal_wind_height_lowest_from_phys')
+              call block_data_copy_or_fill(datar82d, GFS_data(nb)%Statein%ugrs, 1, zeror8, Atm_block, nb, rc=localrc)
+            ! bottom layer meridional wind (v) from physics
+            case('inst_merid_wind_height_lowest_from_phys')
+              call block_data_copy_or_fill(datar82d, GFS_data(nb)%Statein%vgrs, 1, zeror8, Atm_block, nb, rc=localrc)
+            ! surface friction velocity
+            case('surface_friction_velocity')
+              call block_data_copy_or_fill(datar82d, GFS_data(nb)%Sfcprop%uustar, zeror8, Atm_block, nb, rc=localrc)
             ! bottom layer pressure (p)
             case('inst_pres_height_lowest')
               call block_data_copy_or_fill(datar82d, DYCORE_data(nb)%coupling%p_bot, zeror8, Atm_block, nb, rc=localrc)
+            ! bottom layer pressure (p) from physics
+            case('inst_pres_height_lowest_from_phys')
+              call block_data_copy_or_fill(datar82d, GFS_data(nb)%Statein%prsl, 1, zeror8, Atm_block, nb, rc=localrc)
+            ! dimensionless exner function at surface adjacent layer
+            case('inst_exner_function_height_lowest')
+              call block_data_copy_or_fill(datar82d, GFS_data(nb)%Statein%prslk, 1, zeror8, Atm_block, nb, rc=localrc)
             ! bottom layer height (z)
             case('inst_height_lowest')
               call block_data_copy_or_fill(datar82d, DYCORE_data(nb)%coupling%z_bot, zeror8, Atm_block, nb, rc=localrc)
@@ -3105,24 +3126,37 @@ end subroutine update_atmos_chemistry
           GFS_data(nb)%coupling%dvsfc_cpl(ix)  = zero
           GFS_data(nb)%coupling%dtsfc_cpl(ix)  = zero
           GFS_data(nb)%coupling%dqsfc_cpl(ix)  = zero
-          GFS_data(nb)%coupling%dlwsfc_cpl(ix) = zero
-          GFS_data(nb)%coupling%dswsfc_cpl(ix) = zero
-          GFS_data(nb)%coupling%rain_cpl(ix)   = zero
           GFS_data(nb)%coupling%nlwsfc_cpl(ix) = zero
-          GFS_data(nb)%coupling%nswsfc_cpl(ix) = zero
           GFS_data(nb)%coupling%dnirbm_cpl(ix) = zero
           GFS_data(nb)%coupling%dnirdf_cpl(ix) = zero
           GFS_data(nb)%coupling%dvisbm_cpl(ix) = zero
           GFS_data(nb)%coupling%dvisdf_cpl(ix) = zero
-          GFS_data(nb)%coupling%nnirbm_cpl(ix) = zero
-          GFS_data(nb)%coupling%nnirdf_cpl(ix) = zero
-          GFS_data(nb)%coupling%nvisbm_cpl(ix) = zero
-          GFS_data(nb)%coupling%nvisdf_cpl(ix) = zero
-          GFS_data(nb)%coupling%snow_cpl(ix)   = zero
         enddo
       enddo
       if (mpp_pe() == mpp_root_pe()) print *,'zeroing coupling accumulated fields at kdt= ',GFS_control%kdt
     endif !cplflx
+!---
+    if (GFS_control%cplflx .or. GFS_control%cpllnd) then
+! zero out accumulated fields
+!$omp parallel do default(shared) private(i,j,nb,ix)
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          GFS_data(nb)%coupling%dlwsfc_cpl(ix) = zero
+          GFS_data(nb)%coupling%dswsfc_cpl(ix) = zero
+          GFS_data(nb)%coupling%rain_cpl(ix)   = zero
+          GFS_data(nb)%coupling%rainc_cpl(ix)  = zero
+          GFS_data(nb)%coupling%snow_cpl(ix)   = zero
+          GFS_data(nb)%coupling%nswsfc_cpl(ix) = zero
+          GFS_data(nb)%coupling%nnirbm_cpl(ix) = zero
+          GFS_data(nb)%coupling%nnirdf_cpl(ix) = zero
+          GFS_data(nb)%coupling%nvisbm_cpl(ix) = zero
+          GFS_data(nb)%coupling%nvisdf_cpl(ix) = zero
+        enddo
+      enddo
+      if (mpp_pe() == mpp_root_pe()) print *,'zeroing coupling accumulated fields at kdt= ',GFS_control%kdt
+    endif !cplflx or cpllnd
 
   end subroutine setup_exportdata
 

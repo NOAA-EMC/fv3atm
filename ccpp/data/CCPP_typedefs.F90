@@ -222,6 +222,7 @@ module CCPP_typedefs
     integer                             :: nday                          !<
     integer                             :: nf_aelw                       !<
     integer                             :: nf_aesw                       !<
+    integer                             :: nf_albd                       !<
     integer                             :: nn                            !<
     integer                             :: nsamftrac                     !<
     integer                             :: nscav                         !<
@@ -988,6 +989,7 @@ contains
     Interstitial%nbdsw            = NBDSW
     Interstitial%nf_aelw          = NF_AELW
     Interstitial%nf_aesw          = NF_AESW
+    Interstitial%nf_albd          = NF_ALBD
     Interstitial%nspc1            = NSPC1
     if (Model%oz_phys .or. Model%oz_phys_2015) then
       Interstitial%oz_coeffp5     = oz_coeff+5
