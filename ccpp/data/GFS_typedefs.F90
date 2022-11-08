@@ -688,6 +688,7 @@ module GFS_typedefs
 !vay 2018  GW physics switches
 
     logical              :: ldiag_ugwp
+    logical              :: ugwp_seq_update ! flag to update winds between UGWP steps
     logical              :: do_ugwp         ! do mesoscale UGWP + TOFD + RF
     logical              :: do_tofd         ! tofd flag in gwdps.f
     logical              :: do_gwd          ! logical for gravity wave drag (gwd)
@@ -977,7 +978,7 @@ module GFS_typedefs
     logical              :: do_ugwp_v0           !< flag for version 0 ugwp GWD
     logical              :: do_ugwp_v0_orog_only !< flag for version 0 ugwp GWD (orographic drag only)
     logical              :: do_ugwp_v0_nst_only  !< flag for version 0 ugwp GWD (non-stationary GWD only)
-    logical              :: do_gsl_drag_ls_bl    !< flag for GSL drag (large-scale GWD and blocking only)
+    logical              :: do_gsl_drag_ls_bl    !< flag for GSL drag (mesoscale GWD and blocking only)
     logical              :: do_gsl_drag_ss       !< flag for GSL drag (small-scale GWD only)
     logical              :: do_gsl_drag_tofd     !< flag for GSL drag (turbulent orog form drag only)
     logical              :: do_ugwp_v1           !< flag for version 1 ugwp GWD
@@ -1834,14 +1835,22 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: dudt_ofd(:,:)  => null()  !<
     real (kind=kind_phys), pointer :: dvdt_ofd(:,:)  => null()  !<
 
-    real (kind=kind_phys), pointer :: du_ogwcol(:)   => null()  !<
-    real (kind=kind_phys), pointer :: dv_ogwcol(:)   => null()  !<
-    real (kind=kind_phys), pointer :: du_oblcol(:)   => null()  !<
-    real (kind=kind_phys), pointer :: dv_oblcol(:)   => null()  !<
-    real (kind=kind_phys), pointer :: du_osscol(:)   => null()  !<
-    real (kind=kind_phys), pointer :: dv_osscol(:)   => null()  !<
-    real (kind=kind_phys), pointer :: du_ofdcol(:)   => null()  !<
-    real (kind=kind_phys), pointer :: dv_ofdcol(:)   => null()  !<
+    real (kind=kind_phys), pointer :: du_ogwcol(:)   => null()  !< instantaneous sfc u-momentum flux from OGW
+    real (kind=kind_phys), pointer :: dv_ogwcol(:)   => null()  !< instantaneous sfc v-momentum flux from OGW
+    real (kind=kind_phys), pointer :: du_oblcol(:)   => null()  !< instantaneous sfc u-momentum flux from blocking
+    real (kind=kind_phys), pointer :: dv_oblcol(:)   => null()  !< instantaneous sfc v-momentum flux from blocking
+    real (kind=kind_phys), pointer :: du_osscol(:)   => null()  !< instantaneous sfc u-momentum flux from SSGWD
+    real (kind=kind_phys), pointer :: dv_osscol(:)   => null()  !< instantaneous sfc v-momentum flux from SSGWD
+    real (kind=kind_phys), pointer :: du_ofdcol(:)   => null()  !< instantaneous sfc u-momentum flux from TOFD
+    real (kind=kind_phys), pointer :: dv_ofdcol(:)   => null()  !< instantaneous sfc v-momentum flux from TOFD
+    real (kind=kind_phys), pointer :: du3_ogwcol(:)  => null()  !< time-averaged sfc u-momentum flux from OGW
+    real (kind=kind_phys), pointer :: dv3_ogwcol(:)  => null()  !< time-averaged sfc v-momentum flux from OGW
+    real (kind=kind_phys), pointer :: du3_oblcol(:)  => null()  !< time-averaged sfc u-momentum flux from blocking
+    real (kind=kind_phys), pointer :: dv3_oblcol(:)  => null()  !< time-averaged sfc v-momentum flux from blocking
+    real (kind=kind_phys), pointer :: du3_osscol(:)  => null()  !< time-averaged sfc u-momentum flux from SSGWD
+    real (kind=kind_phys), pointer :: dv3_osscol(:)  => null()  !< time-averaged sfc v-momentum flux from SSGWD
+    real (kind=kind_phys), pointer :: du3_ofdcol(:)  => null()  !< time-averaged sfc u-momentum flux from TOFD
+    real (kind=kind_phys), pointer :: dv3_ofdcol(:)  => null()  !< time-averaged sfc v-momentum flux from TOFD
 !
 !---vay-2018 UGWP-diagnostics daily mean
 !
@@ -1856,6 +1865,11 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: du3dt_ogw(:,:) => null()  !< daily aver GFS_phys tend for WE-U OGW
     real (kind=kind_phys), pointer :: dv3dt_ogw(:,:) => null()  !< daily aver GFS_phys tend for SN-V OGW
     real (kind=kind_phys), pointer :: dt3dt_ogw(:,:) => null()  !< daily aver GFS_phys tend for Temp OGW
+!
+    real (kind=kind_phys), pointer :: ldu3dt_ogw(:,:) => null()  !< time aver GFS_phys tend for WE-U OGW
+    real (kind=kind_phys), pointer :: ldu3dt_obl(:,:) => null()  !< time aver GFS_phys tend for WE-U OBL
+    real (kind=kind_phys), pointer :: ldu3dt_oss(:,:) => null()  !< time aver GFS_phys tend for WE-U OSS
+    real (kind=kind_phys), pointer :: ldu3dt_ofd(:,:) => null()  !< time aver GFS_phys tend for WE-U OFD
 !
     real (kind=kind_phys), pointer :: du3dt_mtb(:,:) => null()  !< daily aver GFS_phys tend for WE-U MTB
     real (kind=kind_phys), pointer :: dv3dt_mtb(:,:) => null()  !< daily aver GFS_phys tend for SN-V MTB
@@ -1876,6 +1890,15 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: du3dt_moist(:,:) => null()  !< daily aver GFS_phys tend for WE-U MOIST
     real (kind=kind_phys), pointer :: dv3dt_moist(:,:) => null()  !< daily aver GFS_phys tend for SN-V MOIST
     real (kind=kind_phys), pointer :: dt3dt_moist(:,:) => null()  !< daily aver GFS_phys tend for Temp MOIST
+!
+    real (kind=kind_phys), pointer :: dws3dt_ogw(:,:) => null()  !< time aver GFS_phys tend for windspeed OGW
+    real (kind=kind_phys), pointer :: dws3dt_obl(:,:) => null()  !< time aver GFS_phys tend for windspeed OBL
+    real (kind=kind_phys), pointer :: dws3dt_oss(:,:) => null()  !< time aver GFS_phys tend for windspeed OSS
+    real (kind=kind_phys), pointer :: dws3dt_ofd(:,:) => null()  !< time aver GFS_phys tend for windspeed OFD
+!
+    real (kind=kind_phys), pointer :: ldu3dt_ngw(:,:) => null()  !< time aver GFS_phys tend for u wind NGW
+    real (kind=kind_phys), pointer :: ldv3dt_ngw(:,:) => null()  !< time aver GFS_phys tend for v wind NGW
+    real (kind=kind_phys), pointer :: ldt3dt_ngw(:,:) => null()  !< time aver GFS_phys tend for temperature NGW
 !
 !--- Instantaneous UGWP-diagnostics  16-variables
 !       Diag%gwp_ax, Diag%gwp_axo, Diag%gwp_axc, Diag%gwp_axf,       &
@@ -3162,16 +3185,17 @@ module GFS_typedefs
     logical              :: do_ugwp_v0           = .true.       !< flag for version 0 ugwp GWD
     logical              :: do_ugwp_v0_orog_only = .false.      !< flag for version 0 ugwp GWD (orographic drag only)
     logical              :: do_ugwp_v0_nst_only  = .false.      !< flag for version 0 ugwp GWD (non-stationary GWD only)
-    logical              :: do_gsl_drag_ls_bl    = .false.      !< flag for GSL drag (large-scale GWD and blocking only)
+    logical              :: do_gsl_drag_ls_bl    = .false.      !< flag for GSL drag (mesoscale GWD and blocking only)
     logical              :: do_gsl_drag_ss       = .false.      !< flag for GSL drag (small-scale GWD only)
     logical              :: do_gsl_drag_tofd     = .false.      !< flag for GSL drag (turbulent orog form drag only)
     logical              :: do_ugwp_v1           = .false.      !< flag for version 1 ugwp GWD
     logical              :: do_ugwp_v1_orog_only = .false.      !< flag for version 1 ugwp GWD (orographic drag only)
     logical              :: do_ugwp_v1_w_gsldrag = .false.      !< flag for version 1 ugwp GWD (orographic drag only)
 !--- vay-2018
-    logical              :: ldiag_ugwp     = .false.                  !< flag for UGWP diag fields
-    logical              :: do_ugwp        = .false.                  !< flag do UGWP+RF
-    logical              :: do_tofd        = .false.                  !< flag do Turb oro Form Drag
+    logical              :: ldiag_ugwp      = .false.                 !< flag for UGWP diag fields
+    logical              :: ugwp_seq_update = .false.                 !< flag for updating winds between UGWP steps
+    logical              :: do_ugwp         = .false.                 !< flag do UGWP+RF
+    logical              :: do_tofd         = .false.                 !< flag do Turb oro Form Drag
 
     logical              :: do_gwd         = .false.                  !< flag for running gravity wave drag
     logical              :: do_cnvgwd      = .false.                  !< flag for running conv gravity wave drag
@@ -3719,6 +3743,7 @@ module GFS_typedefs
 !VAY-ugwp  --- set some GW-related switches
 !
     Model%ldiag_ugwp       = ldiag_ugwp
+    Model%ugwp_seq_update  = ugwp_seq_update
     Model%do_ugwp          = do_ugwp
     Model%do_tofd          = do_tofd
 
@@ -6929,9 +6954,20 @@ module GFS_typedefs
       allocate (Diag%dtdt_tot  (IM,Model%levs) )
       allocate (Diag%uav_ugwp  (IM,Model%levs) )
       allocate (Diag%tav_ugwp  (IM,Model%levs) )
+      allocate (Diag%dws3dt_ogw (IM,Model%levs) )
+      allocate (Diag%dws3dt_obl (IM,Model%levs) )
+      allocate (Diag%dws3dt_oss (IM,Model%levs) )
+      allocate (Diag%dws3dt_ofd (IM,Model%levs) )
+      allocate (Diag%ldu3dt_ogw  (IM,Model%levs) )
+      allocate (Diag%ldu3dt_obl  (IM,Model%levs) )
+      allocate (Diag%ldu3dt_oss  (IM,Model%levs) )
+      allocate (Diag%ldu3dt_ofd  (IM,Model%levs) )
+      allocate (Diag%ldu3dt_ngw (IM,Model%levs) )
+      allocate (Diag%ldv3dt_ngw (IM,Model%levs) )
+      allocate (Diag%ldt3dt_ngw (IM,Model%levs) )
     endif
 
-    if (Model%do_ugwp_v1 .or. Model%gwd_opt==33 .or. Model%gwd_opt==22) then
+    if (Model%do_ugwp_v1 .or. Model%ldiag_ugwp) then
       allocate (Diag%dudt_ogw  (IM,Model%levs))
       allocate (Diag%dvdt_ogw  (IM,Model%levs))
       allocate (Diag%dudt_obl  (IM,Model%levs))
@@ -6948,6 +6984,14 @@ module GFS_typedefs
       allocate (Diag%dv_osscol (IM)           )
       allocate (Diag%du_ofdcol (IM)           )
       allocate (Diag%dv_ofdcol (IM)           )
+      allocate (Diag%du3_ogwcol (IM)          )
+      allocate (Diag%dv3_ogwcol (IM)          )
+      allocate (Diag%du3_oblcol (IM)          )
+      allocate (Diag%dv3_oblcol (IM)          )
+      allocate (Diag%du3_osscol (IM)          )
+      allocate (Diag%dv3_osscol (IM)          )
+      allocate (Diag%du3_ofdcol (IM)          )
+      allocate (Diag%dv3_ofdcol (IM)          )
     else
       allocate (Diag%dudt_ogw  (IM,Model%levs))
     endif
@@ -7225,7 +7269,7 @@ module GFS_typedefs
     Diag%dtdt_gw     = zero
     Diag%kdis_gw     = zero
 
-    if (Model%do_ugwp_v1 .or. Model%gwd_opt==33 .or. Model%gwd_opt==22) then
+    if (Model%do_ugwp_v1 .or. Model%ldiag_ugwp) then
       Diag%dudt_ogw    = zero
       Diag%dvdt_ogw    = zero
       Diag%dudt_obl    = zero
@@ -7242,6 +7286,14 @@ module GFS_typedefs
       Diag%dv_osscol   = zero
       Diag%du_ofdcol   = zero
       Diag%dv_ofdcol   = zero
+      Diag%du3_ogwcol  = zero
+      Diag%dv3_ogwcol  = zero
+      Diag%du3_oblcol  = zero
+      Diag%dv3_oblcol  = zero
+      Diag%du3_osscol  = zero
+      Diag%dv3_osscol  = zero
+      Diag%du3_ofdcol  = zero
+      Diag%dv3_ofdcol  = zero
     else
       Diag%dudt_ogw    = zero
     end if
@@ -7270,6 +7322,17 @@ module GFS_typedefs
       Diag%dtdt_tot    = zero
       Diag%uav_ugwp    = zero
       Diag%tav_ugwp    = zero
+      Diag%dws3dt_ogw  = zero
+      Diag%dws3dt_obl  = zero
+      Diag%dws3dt_oss  = zero
+      Diag%dws3dt_ofd  = zero
+      Diag%ldu3dt_ogw  = zero
+      Diag%ldu3dt_obl  = zero
+      Diag%ldu3dt_oss  = zero
+      Diag%ldu3dt_ofd  = zero
+      Diag%ldu3dt_ngw  = zero
+      Diag%ldv3dt_ngw  = zero
+      Diag%ldt3dt_ngw  = zero
 !COORDE
       Diag%du3dt_dyn   = zero
     endif
