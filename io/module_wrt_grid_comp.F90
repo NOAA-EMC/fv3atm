@@ -368,6 +368,12 @@
           print *,'grid_id= ', n, ' output_grid= ', trim(output_grid(n))
         end if
 
+        if (trim(output_grid(n)) == 'cubed_sphere_grid' .and. wrt_int_state%write_dopost) then
+          write(0,*) 'wrt_initialize_p1: Inline post is not supported with cubed_sphere_grid outputs'
+          call ESMF_LogWrite("wrt_initialize_p1: Inline post is not supported with cubed_sphere_grid output",ESMF_LOGMSG_ERROR,rc=RC)
+          call ESMF_Finalize(endflag=ESMF_END_ABORT)
+        end if
+
         call ESMF_ConfigGetAttribute(config=CF, value=itasks,default=1,label ='itasks:',rc=rc)
         jtasks = ntasks
         if(itasks > 0 ) jtasks = ntasks/itasks
