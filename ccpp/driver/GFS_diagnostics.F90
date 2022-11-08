@@ -929,6 +929,22 @@ module GFS_diagnostics
       ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%fluxr(:,39)
     enddo
 
+!--- air quality diagnostics ---
+  if (Model%cplaqm) then
+    if (associated(IntDiag(1)%aod)) then
+      idx = idx + 1
+      ExtDiag(idx)%axes = 2
+      ExtDiag(idx)%name = 'aod'
+      ExtDiag(idx)%desc = 'total aerosol optical depth at 550 nm'
+      ExtDiag(idx)%unit = 'numerical'
+      ExtDiag(idx)%mod_name = 'gfs_phys'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%aod
+      enddo
+    endif
+  endif
+
 !
 !
 !--- accumulated diagnostics ---
