@@ -929,6 +929,18 @@
   units = index
   dimensions = (horizontal_loop_extent)
   type = integer
+[scolor]
+  standard_name = soil_color_classification
+  long_name = soil color for lsm
+  units = index
+  dimensions = (horizontal_loop_extent)
+  type = integer
+[scolor_save]
+  standard_name = soil_color_classification_save
+  long_name = soil color for lsm save
+  units = index
+  dimensions = (horizontal_loop_extent)
+  type = integer
 [uustar]
   standard_name = surface_friction_velocity
   long_name = boundary layer parameter

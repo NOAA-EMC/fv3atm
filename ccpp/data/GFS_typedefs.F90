@@ -260,8 +260,10 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: vfrac  (:)   => null()  !< vegetation fraction
     integer,               pointer :: vtype  (:)   => null()  !< vegetation type
     integer,               pointer :: stype  (:)   => null()  !< soil type
+    integer,               pointer :: scolor  (:)   => null()  !< soil color
     integer,               pointer :: vtype_save (:) => null()!< vegetation type save
     integer,               pointer :: stype_save (:) => null()!< soil type save
+    integer,               pointer :: scolor_save (:) => null()!< soil color save
     real (kind=kind_phys), pointer :: uustar (:)   => null()  !< boundary layer parameter
     real (kind=kind_phys), pointer :: oro    (:)   => null()  !< orography
     real (kind=kind_phys), pointer :: oro_uf (:)   => null()  !< unfiltered orography
@@ -2158,6 +2160,8 @@ module GFS_typedefs
     allocate (Sfcprop%vtype_save (IM))
     allocate (Sfcprop%stype      (IM))
     allocate (Sfcprop%stype_save (IM))
+    allocate (Sfcprop%scolor     (IM))
+    allocate (Sfcprop%scolor_save(IM))
     allocate (Sfcprop%uustar     (IM))
     allocate (Sfcprop%oro        (IM))
     allocate (Sfcprop%oro_uf     (IM))
@@ -2176,6 +2180,8 @@ module GFS_typedefs
     Sfcprop%vtype_save = zero
     Sfcprop%stype      = zero
     Sfcprop%stype_save = zero
+    Sfcprop%scolor      = zero
+    Sfcprop%scolor_save = zero
     Sfcprop%uustar     = clear_val
     Sfcprop%oro        = clear_val
     Sfcprop%oro_uf     = clear_val
