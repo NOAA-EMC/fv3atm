@@ -104,6 +104,9 @@ use module_block_data,  only: block_atmos_copy, block_data_copy,         &
 
 #ifdef MOVING_NEST
 use fv_moving_nest_main_mod, only: update_moving_nest, dump_moving_nest
+use fv_moving_nest_main_mod, only: nest_tracker_init
+use fv_moving_nest_main_mod, only: moving_nest_end, nest_tracker_end
+use fv_tracker_mod,          only: check_is_moving_nest, execute_tracker
 #endif
 !-----------------------------------------------------------------------
 
@@ -554,14 +557,20 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
 !---------- (need name of CCPP suite definition file from input.nml) ---------
    call atmosphere_init (Atmos%Time_init, Atmos%Time, Atmos%Time_step,&
                          Atmos%grid, Atmos%area)
-
+#ifdef MOVING_NEST
+   call nest_tracker_init()
+#endif
 !-----------------------------------------------------------------------
    call atmosphere_resolution (nlon, nlat, global=.false.)
    call atmosphere_resolution (mlon, mlat, global=.true.)
    call atmosphere_domain (Atmos%domain, Atmos%domain_for_read, Atmos%layout, &
                            Atmos%regional, Atmos%nested, &
-                           Atmos%moving_nest_parent, Atmos%is_moving_nest, &
                            Atmos%ngrids, Atmos%mygrid, Atmos%pelist)
+   Atmos%moving_nest_parent = .false.
+   Atmos%is_moving_nest = .false.
+#ifdef MOVING_NEST
+   call check_is_moving_nest(Atm, Atmos%mygrid, Atmos%ngrids, Atmos%is_moving_nest, Atmos%moving_nest_parent)
+#endif
    call atmosphere_diag_axes (Atmos%axes)
    call atmosphere_etalvls (Atmos%ak, Atmos%bk, flip=flip_vc)
 
@@ -931,6 +940,9 @@ subroutine update_atmos_model_state (Atmos, rc)
     call mpp_clock_begin(fv3Clock)
     call mpp_clock_begin(updClock)
     call atmosphere_state_update (Atmos%Time, GFS_data, IAU_Data, Atm_block, flip_vc)
+#ifdef MOVING_NEST
+    call execute_tracker(Atm, mygrid, Atmos%Time, Atmos%Time_step)
+#endif
     call mpp_clock_end(updClock)
     call mpp_clock_end(fv3Clock)
 
@@ -1032,6 +1044,14 @@ subroutine atmos_model_end (Atmos)
 
 !-----------------------------------------------------------------------
 !---- termination routine for atmospheric model ----
+
+#ifdef MOVING_NEST
+    !  Call this before atmosphere_end(), because that deallocates Atm
+    if (Atmos%is_moving_nest) then
+      call moving_nest_end()
+      call nest_tracker_end()
+    endif
+#endif
 
     call atmosphere_end (Atmos % Time, Atmos%grid, restart_endfcst)
 
