@@ -929,6 +929,22 @@ module GFS_diagnostics
       ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%fluxr(:,39)
     enddo
 
+!--- air quality diagnostics ---
+  if (Model%cplaqm) then
+    if (associated(IntDiag(1)%aod)) then
+      idx = idx + 1
+      ExtDiag(idx)%axes = 2
+      ExtDiag(idx)%name = 'aod'
+      ExtDiag(idx)%desc = 'total aerosol optical depth at 550 nm'
+      ExtDiag(idx)%unit = 'numerical'
+      ExtDiag(idx)%mod_name = 'gfs_phys'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%aod
+      enddo
+    endif
+  endif
+
 !
 !
 !--- accumulated diagnostics ---
@@ -3472,51 +3488,77 @@ module GFS_diagnostics
 
 !--------------------------aerosols
     if (Model%ntwa>0) then
-      idx = idx + 1
-      ExtDiag(idx)%axes = 3
-      ExtDiag(idx)%name = 'nwfa'
-      ExtDiag(idx)%desc = 'number concentration of water-friendly aerosols'
-      ExtDiag(idx)%unit = 'kg-1'
-      ExtDiag(idx)%mod_name = 'gfs_phys'
-      allocate (ExtDiag(idx)%data(nblks))
-      do nb = 1,nblks
-        ExtDiag(idx)%data(nb)%var3 => Statein(nb)%qgrs(:,:,Model%ntwa)
-      enddo
+      if (Model%ltaerosol) then
+        idx = idx + 1
+        ExtDiag(idx)%axes = 3
+        ExtDiag(idx)%name = 'nwfa'
+        ExtDiag(idx)%desc = 'number concentration of water-friendly aerosols'
+        ExtDiag(idx)%unit = 'kg-1'
+        ExtDiag(idx)%mod_name = 'gfs_phys'
+        allocate (ExtDiag(idx)%data(nblks))
+        do nb = 1,nblks
+          ExtDiag(idx)%data(nb)%var3 => Statein(nb)%qgrs(:,:,Model%ntwa)
+        enddo
 
-      idx = idx + 1
-      ExtDiag(idx)%axes = 2
-      ExtDiag(idx)%name = 'nwfa2d'
-      ExtDiag(idx)%desc = 'water-friendly surface aerosol source'
-      ExtDiag(idx)%unit = 'kg-1 s-1'
-      ExtDiag(idx)%mod_name = 'gfs_sfc'
-      allocate (ExtDiag(idx)%data(nblks))
-      do nb = 1,nblks
-        ExtDiag(idx)%data(nb)%var2 => Coupling(nb)%nwfa2d
-      enddo
+        idx = idx + 1
+        ExtDiag(idx)%axes = 2
+        ExtDiag(idx)%name = 'nwfa2d'
+        ExtDiag(idx)%desc = 'water-friendly surface aerosol source'
+        ExtDiag(idx)%unit = 'kg-1 s-1'
+        ExtDiag(idx)%mod_name = 'gfs_sfc'
+        allocate (ExtDiag(idx)%data(nblks))
+        do nb = 1,nblks
+          ExtDiag(idx)%data(nb)%var2 => Coupling(nb)%nwfa2d
+        enddo
+      elseif (Model%mraerosol) then
+        idx = idx + 1
+        ExtDiag(idx)%axes = 3
+        ExtDiag(idx)%name = 'nwfa'
+        ExtDiag(idx)%desc = 'number concentration of water-friendly aerosols'
+        ExtDiag(idx)%unit = 'kg-1'
+        ExtDiag(idx)%mod_name = 'gfs_phys'
+        allocate (ExtDiag(idx)%data(nblks))
+        do nb = 1,nblks
+          ExtDiag(idx)%data(nb)%var3 => Stateout(nb)%gq0(:,:,Model%ntwa)
+        enddo
+      endif
     endif
 
     if (Model%ntia>0) then
-      idx = idx + 1
-      ExtDiag(idx)%axes = 3
-      ExtDiag(idx)%name = 'nifa'
-      ExtDiag(idx)%desc = 'number concentration of ice-friendly aerosols'
-      ExtDiag(idx)%unit = 'kg-1'
-      ExtDiag(idx)%mod_name = 'gfs_phys'
-      allocate (ExtDiag(idx)%data(nblks))
-      do nb = 1,nblks
-        ExtDiag(idx)%data(nb)%var3 => Statein(nb)%qgrs(:,:,Model%ntia)
-      enddo
+      if (Model%ltaerosol) then
+        idx = idx + 1
+        ExtDiag(idx)%axes = 3
+        ExtDiag(idx)%name = 'nifa'
+        ExtDiag(idx)%desc = 'number concentration of ice-friendly aerosols'
+        ExtDiag(idx)%unit = 'kg-1'
+        ExtDiag(idx)%mod_name = 'gfs_phys'
+        allocate (ExtDiag(idx)%data(nblks))
+        do nb = 1,nblks
+          ExtDiag(idx)%data(nb)%var3 => Statein(nb)%qgrs(:,:,Model%ntia)
+        enddo
 
-      idx = idx + 1
-      ExtDiag(idx)%axes = 2
-      ExtDiag(idx)%name = 'nifa2d'
-      ExtDiag(idx)%desc = 'ice-friendly surface aerosol source'
-      ExtDiag(idx)%unit = 'kg-1 s-1'
-      ExtDiag(idx)%mod_name = 'gfs_sfc'
-      allocate (ExtDiag(idx)%data(nblks))
-      do nb = 1,nblks
-        ExtDiag(idx)%data(nb)%var2 => Coupling(nb)%nifa2d
-      enddo
+        idx = idx + 1
+        ExtDiag(idx)%axes = 2
+        ExtDiag(idx)%name = 'nifa2d'
+        ExtDiag(idx)%desc = 'ice-friendly surface aerosol source'
+        ExtDiag(idx)%unit = 'kg-1 s-1'
+        ExtDiag(idx)%mod_name = 'gfs_sfc'
+        allocate (ExtDiag(idx)%data(nblks))
+        do nb = 1,nblks
+          ExtDiag(idx)%data(nb)%var2 => Coupling(nb)%nifa2d
+        enddo
+      else if (Model%mraerosol) then
+        idx = idx + 1
+        ExtDiag(idx)%axes = 3
+        ExtDiag(idx)%name = 'nifa'
+        ExtDiag(idx)%desc = 'number concentration of ice-friendly aerosols'
+        ExtDiag(idx)%unit = 'kg-1'
+        ExtDiag(idx)%mod_name = 'gfs_phys'
+        allocate (ExtDiag(idx)%data(nblks))
+        do nb = 1,nblks
+          ExtDiag(idx)%data(nb)%var3 => Stateout(nb)%gq0(:,:,Model%ntia)
+        enddo
+      end if
     endif
 
     ! Extended diagnostics from Thompson MP
