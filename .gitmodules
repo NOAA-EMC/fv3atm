@@ -9,7 +9,7 @@
 [submodule "ccpp/physics"]
   path = ccpp/physics
   url = https://github.com/dustinswales/ccpp-physics
-  branch = ufs/dev
+  branch = add_cnvcldcnd_mp2rad_cplng
 [submodule "upp"]
   path = upp
   url = https://github.com/NOAA-EMC/UPP
