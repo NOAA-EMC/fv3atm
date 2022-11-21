@@ -25,10 +25,8 @@ add_subdirectory(atmos_cubed_sphere)
 if(INLINE_POST)
   set(BUILD_POSTEXEC OFF)
   add_subdirectory(upp)
-  set(POST_SRC io/inline_post.F90 io/post_nems_routines.F90 io/post_fv3.F90)
-else()
-  set(POST_SRC io/inline_post_stub.F90)
-  list(APPEND _fv3atm_defs_private NO_INLINE_POST)
+  set(POST_SRC io/post_nems_routines.F90 io/post_fv3.F90)
+  list(APPEND _fv3atm_defs_private INLINE_POST)
 endif()
 
 if(CCPP_32BIT)
@@ -83,7 +81,7 @@ target_link_libraries(fv3atm PUBLIC fv3
                                     stochastic_physics
                                     fms)
 
-target_link_libraries(fv3atm PUBLIC w3nco::w3nco_d
+target_link_libraries(fv3atm PUBLIC w3emc::w3emc_d
                                     sp::sp_d
                                     bacio::bacio_4
                                     esmf)
