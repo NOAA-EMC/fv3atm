@@ -703,7 +703,7 @@ module FV3GFS_io_mod
       oro_name2(15) = 'orog_filt'  ! oro
       oro_name2(16) = 'orog_raw'   ! oro_uf
       oro_name2(17) = 'land_frac'  ! land fraction [0:1]
-      !--- variables below here are optional if lkm==0
+      !--- variables below here are optional
       oro_name2(18) = 'lake_frac'  ! lake fraction [0:1]
       oro_name2(19) = 'lake_depth' ! lake depth(m)
 
@@ -713,8 +713,7 @@ module FV3GFS_io_mod
       !--- register the 2D fields
       do num = 1,nvar_o2
          var2_p => oro_var2(:,:,num)
-         if ((trim(oro_name2(num)) == 'lake_frac' .or. trim(oro_name2(num)) == 'lake_depth') &
-               .and. Model%lkm==0) then
+         if (trim(oro_name2(num)) == 'lake_frac' .or. trim(oro_name2(num)) == 'lake_depth') then
             call register_restart_field(Oro_restart, oro_name2(num), var2_p, dimensions=(/'lat','lon'/), is_optional=.true.)
          else
             call register_restart_field(Oro_restart, oro_name2(num), var2_p, dimensions=(/'lat','lon'/))
@@ -773,6 +772,9 @@ module FV3GFS_io_mod
           else
            Sfcprop(nb)%lakefrac(ix)  = 0
           endif
+        else
+          Sfcprop(nb)%lakefrac(ix)  = oro_var2(i,j,18) !lake frac [0:1]
+          Sfcprop(nb)%lakedepth(ix) = oro_var2(i,j,19) !lake depth [m]    !YWu
         endif
 
       enddo
@@ -1516,27 +1518,23 @@ module FV3GFS_io_mod
           Sfcprop(nb)%zorlwav(ix)  = Sfcprop(nb)%zorlw(ix)
         endif
 
-        if(Sfcprop(nb)%lakefrac(ix) < zero) Sfcprop(nb)%lakefrac(ix) =zero
-        if(Sfcprop(nb)%landfrac(ix) < zero) Sfcprop(nb)%landfrac(ix) =zero
-        if(Sfcprop(nb)%fice(ix)     < zero) Sfcprop(nb)%fice(ix)     =zero
-!        Sfcprop(nb)%oceanfrac(ix)=one-Sfcprop(nb)%landfrac(ix)-Sfcprop(nb)%lakefrac(ix)-Sfcprop(nb)%fice(ix)
-        Sfcprop(nb)%oceanfrac(ix)=one-Sfcprop(nb)%landfrac(ix)-Sfcprop(nb)%lakefrac(ix)
-        if(Sfcprop(nb)%oceanfrac(ix) < zero) Sfcprop(nb)%oceanfrac(ix)=zero
-!           write(35,75) ix, Sfcprop(nb)%fice(ix), Sfcprop(nb)%oceanfrac(ix), &
-!     &                  Sfcprop(nb)%landfrac(ix), Sfcprop(nb)%lakefrac(ix)
 
         if (Sfcprop(nb)%stype(ix) == 14 .or. Sfcprop(nb)%stype(ix) <= 0) then
           Sfcprop(nb)%landfrac(ix) = zero
           Sfcprop(nb)%stype(ix) = 0
+          if (Sfcprop(nb)%lakefrac(ix) > zero) then
+            Sfcprop(nb)%lakefrac(ix) = one
+          endif
         endif
 
 
         if (Model%frac_grid) then
-          if (Sfcprop(nb)%landfrac(ix) > zero) then
+          if (Sfcprop(nb)%landfrac(ix) > -999.0_r8) then
             Sfcprop(nb)%slmsk(ix) = ceiling(Sfcprop(nb)%landfrac(ix)-1.0e-6)
-            if (Sfcprop(nb)%slmsk(ix) == 1 .and. Sfcprop(nb)%stype(ix) == 14) Sfcprop(nb)%slmsk(ix) = 0  
+            if (Sfcprop(nb)%slmsk(ix) == 1 .and. Sfcprop(nb)%stype(ix) == 14) &
+              Sfcprop(nb)%slmsk(ix) = 0
             if (Sfcprop(nb)%lakefrac(ix) > zero) then
-!              Sfcprop(nb)%oceanfrac(ix) = zero ! lake & ocean don't coexist in a cell
+              Sfcprop(nb)%oceanfrac(ix) = zero ! lake & ocean don't coexist in a cell
               if (nint(Sfcprop(nb)%slmsk(ix)) /= 1) then
                 if(Sfcprop(nb)%fice(ix) >= Model%min_lakeice) then
                   Sfcprop(nb)%slmsk(ix) = 2
@@ -1546,7 +1544,7 @@ module FV3GFS_io_mod
               endif
             else
               Sfcprop(nb)%lakefrac(ix)  = zero
-!              Sfcprop(nb)%oceanfrac(ix) = one - Sfcprop(nb)%landfrac(ix)
+              Sfcprop(nb)%oceanfrac(ix) = one - Sfcprop(nb)%landfrac(ix)
               if (nint(Sfcprop(nb)%slmsk(ix)) /= 1) then
                 if (Sfcprop(nb)%fice(ix) >= Model%min_seaice) then
                   Sfcprop(nb)%slmsk(ix) = 2
@@ -1560,16 +1558,16 @@ module FV3GFS_io_mod
             if (nint(Sfcprop(nb)%slmsk(ix)) == 1) then
               Sfcprop(nb)%landfrac(ix)  = one
               Sfcprop(nb)%lakefrac(ix)  = zero
-!              Sfcprop(nb)%oceanfrac(ix) = zero
+              Sfcprop(nb)%oceanfrac(ix) = zero
             else
               if (Sfcprop(nb)%slmsk(ix) < 0.1_r8 .or. Sfcprop(nb)%slmsk(ix) > 1.9_r8) then
                 Sfcprop(nb)%landfrac(ix) = zero
                 if (Sfcprop(nb)%oro_uf(ix) > min_lake_orog) then   ! lakes
                   Sfcprop(nb)%lakefrac(ix)  = one
-!                  Sfcprop(nb)%oceanfrac(ix) = zero
+                  Sfcprop(nb)%oceanfrac(ix) = zero
                 else                                               ! ocean
                   Sfcprop(nb)%lakefrac(ix)  = zero
-!                  Sfcprop(nb)%oceanfrac(ix) = one
+                  Sfcprop(nb)%oceanfrac(ix) = one
                 endif
               endif
             endif
@@ -1577,9 +1575,9 @@ module FV3GFS_io_mod
         else                                             ! not a fractional grid
           if (Sfcprop(nb)%landfrac(ix) > zero) then
             if (Sfcprop(nb)%lakefrac(ix) > zero) then
-!              Sfcprop(nb)%oceanfrac(ix) = zero
+              Sfcprop(nb)%oceanfrac(ix) = zero
               Sfcprop(nb)%landfrac(ix)  = zero
-!              Sfcprop(nb)%lakefrac(ix)  = one
+              Sfcprop(nb)%lakefrac(ix)  = one
               Sfcprop(nb)%slmsk(ix)     = zero
               if (Sfcprop(nb)%fice(ix) >= Model%min_lakeice) Sfcprop(nb)%slmsk(ix) = 2.0
             else
@@ -1587,32 +1585,32 @@ module FV3GFS_io_mod
               if (Sfcprop(nb)%stype(ix) <= 0 .or. Sfcprop(nb)%stype(ix) == 14) &
                 Sfcprop(nb)%slmsk(ix) = zero
               if (nint(Sfcprop(nb)%slmsk(ix)) == 0) then
-!                Sfcprop(nb)%oceanfrac(ix) = one
+                Sfcprop(nb)%oceanfrac(ix) = one
                 Sfcprop(nb)%landfrac(ix)  = zero
-!                Sfcprop(nb)%lakefrac(ix)  = zero
+                Sfcprop(nb)%lakefrac(ix)  = zero
                 if (Sfcprop(nb)%fice(ix) >= Model%min_seaice) Sfcprop(nb)%slmsk(ix) = 2.0
               else
                 Sfcprop(nb)%landfrac(ix)  = one
-!                Sfcprop(nb)%lakefrac(ix)  = zero
-!                Sfcprop(nb)%oceanfrac(ix) = zero
+                Sfcprop(nb)%lakefrac(ix)  = zero
+                Sfcprop(nb)%oceanfrac(ix) = zero
               endif
             endif
           else
             if (nint(Sfcprop(nb)%slmsk(ix)) == 1 .and. Sfcprop(nb)%stype(ix) > 0      &
                                                  .and. Sfcprop(nb)%stype(ix) /= 14) then
               Sfcprop(nb)%landfrac(ix)  = one
-!              Sfcprop(nb)%lakefrac(ix)  = zero
-!              Sfcprop(nb)%oceanfrac(ix) = zero
+              Sfcprop(nb)%lakefrac(ix)  = zero
+              Sfcprop(nb)%oceanfrac(ix) = zero
             else
               Sfcprop(nb)%slmsk(ix)    = zero
               Sfcprop(nb)%landfrac(ix) = zero
               if (Sfcprop(nb)%oro_uf(ix) > min_lake_orog) then   ! lakes
-!                Sfcprop(nb)%lakefrac(ix) = one
+                Sfcprop(nb)%lakefrac(ix) = one
                 Sfcprop(nb)%oceanfrac(ix) = zero
                 if (Sfcprop(nb)%fice(ix) > Model%min_lakeice) Sfcprop(nb)%slmsk(ix) = 2.0
               else                                       ! ocean
-!                Sfcprop(nb)%lakefrac(ix)  = zero
-!                Sfcprop(nb)%oceanfrac(ix) = one
+                Sfcprop(nb)%lakefrac(ix)  = zero
+                Sfcprop(nb)%oceanfrac(ix) = one
                 if (Sfcprop(nb)%fice(ix) > Model%min_seaice) Sfcprop(nb)%slmsk(ix) = 2.0
               endif
             endif
@@ -3011,41 +3009,59 @@ module FV3GFS_io_mod
 
     ! Register 3D fields
     call register_restart_field(Sfc_restart, 'lake_z3d', data%lake_z3d, &
-         dimensions=(/'xaxis_1', 'yaxis_1', 'levlake_clm_lake', 'Time   '/), is_optional=.true.)
+         dimensions=(/'xaxis_1              ', 'yaxis_1              ', &
+                      'levlake_clm_lake     ', 'Time                 '/), is_optional=.true.)
     call register_restart_field(Sfc_restart, 'lake_dz3d', data%lake_dz3d, &
-         dimensions=(/'xaxis_1', 'yaxis_1', 'levlake_clm_lake', 'Time   '/), is_optional=.true.)
+         dimensions=(/'xaxis_1              ', 'yaxis_1              ', &
+                      'levlake_clm_lake     ', 'Time                 '/), is_optional=.true.)
     call register_restart_field(Sfc_restart,'lake_watsat3d', data%lake_watsat3d, &
-         dimensions=(/'xaxis_1', 'yaxis_1', 'levlake_clm_lake', 'Time   '/), is_optional=.true.)
+         dimensions=(/'xaxis_1              ', 'yaxis_1              ', &
+                      'levlake_clm_lake     ', 'Time                 '/), is_optional=.true.)
     call register_restart_field(Sfc_restart,'lake_csol3d', data%lake_csol3d, &
-         dimensions=(/'xaxis_1', 'yaxis_1', 'levlake_clm_lake', 'Time   '/), is_optional=.true.)
+         dimensions=(/'xaxis_1              ', 'yaxis_1              ', &
+                      'levlake_clm_lake     ', 'Time                 '/), is_optional=.true.)
     call register_restart_field(Sfc_restart,'lake_tkmg3d', data%lake_tkmg3d, &
-         dimensions=(/'xaxis_1', 'yaxis_1', 'levlake_clm_lake', 'Time   '/), is_optional=.true.)
+         dimensions=(/'xaxis_1              ', 'yaxis_1              ', &
+                      'levlake_clm_lake     ', 'Time                 '/), is_optional=.true.)
     call register_restart_field(Sfc_restart,'lake_tkdry3d', data%lake_tkdry3d, &
-         dimensions=(/'xaxis_1', 'yaxis_1', 'levlake_clm_lake', 'Time   '/), is_optional=.true.)
+         dimensions=(/'xaxis_1              ', 'yaxis_1              ', &
+                      'levlake_clm_lake     ', 'Time                 '/), is_optional=.true.)
     call register_restart_field(Sfc_restart,'lake_tksatu3d', data%lake_tksatu3d, &
-         dimensions=(/'xaxis_1', 'yaxis_1', 'levlake_clm_lake', 'Time   '/), is_optional=.true.)
+         dimensions=(/'xaxis_1              ', 'yaxis_1              ', &
+                      'levlake_clm_lake     ', 'Time                 '/), is_optional=.true.)
     call register_restart_field(Sfc_restart,'lake_snow_z3d', data%lake_snow_z3d, &
-         dimensions=(/'xaxis_1', 'yaxis_1', 'levsnowsoil1_clm_lake', 'Time   '/), is_optional=.true.)
+         dimensions=(/'xaxis_1              ', 'yaxis_1              ', &
+                      'levsnowsoil1_clm_lake', 'Time                 '/), is_optional=.true.)
     call register_restart_field(Sfc_restart,'lake_snow_dz3d', data%lake_snow_dz3d, &
-         dimensions=(/'xaxis_1', 'yaxis_1', 'levsnowsoil1_clm_lake', 'Time   '/), is_optional=.true.)
+         dimensions=(/'xaxis_1              ', 'yaxis_1              ', &
+                      'levsnowsoil1_clm_lake', 'Time                 '/), is_optional=.true.)
     call register_restart_field(Sfc_restart,'lake_snow_zi3d', data%lake_snow_zi3d, &
-         dimensions=(/'xaxis_1', 'yaxis_1', 'levsnowsoil_clm_lake', 'Time   '/), is_optional=.true.)
+         dimensions=(/'xaxis_1              ', 'yaxis_1              ', &
+                      'levsnowsoil_clm_lake ', 'Time                 '/), is_optional=.true.)
     call register_restart_field(Sfc_restart,'lake_t_h2osoi_vol3d', data%lake_t_h2osoi_vol3d, &
-         dimensions=(/'xaxis_1', 'yaxis_1', 'levsnowsoil1_clm_lake', 'Time   '/), is_optional=.true.)
+         dimensions=(/'xaxis_1              ', 'yaxis_1              ', &
+                      'levsnowsoil1_clm_lake', 'Time                 '/), is_optional=.true.)
     call register_restart_field(Sfc_restart,'lake_t_h2osoi_liq3d', data%lake_t_h2osoi_liq3d, &
-         dimensions=(/'xaxis_1', 'yaxis_1', 'levsnowsoil1_clm_lake', 'Time   '/), is_optional=.true.)
+         dimensions=(/'xaxis_1              ', 'yaxis_1              ', &
+                      'levsnowsoil1_clm_lake', 'Time                 '/), is_optional=.true.)
     call register_restart_field(Sfc_restart,'lake_t_h2osoi_ice3d', data%lake_t_h2osoi_ice3d, &
-         dimensions=(/'xaxis_1', 'yaxis_1', 'levsnowsoil1_clm_lake', 'Time   '/), is_optional=.true.)
+         dimensions=(/'xaxis_1              ', 'yaxis_1              ', &
+                      'levsnowsoil1_clm_lake', 'Time                 '/), is_optional=.true.)
     call register_restart_field(Sfc_restart,'lake_t_soisno3d', data%lake_t_soisno3d, &
-         dimensions=(/'xaxis_1', 'yaxis_1', 'levsnowsoil1_clm_lake', 'Time   '/), is_optional=.true.)
+         dimensions=(/'xaxis_1              ', 'yaxis_1              ', &
+                      'levsnowsoil1_clm_lake', 'Time                 '/), is_optional=.true.)
     call register_restart_field(Sfc_restart,'lake_t_lake3d', data%lake_t_lake3d, &
-         dimensions=(/'xaxis_1', 'yaxis_1', 'levlake_clm_lake', 'Time   '/), is_optional=.true.)
+         dimensions=(/'xaxis_1              ', 'yaxis_1              ', &
+                      'levlake_clm_lake     ', 'Time                 '/), is_optional=.true.)
     call register_restart_field(Sfc_restart,'lake_icefrac3d', data%lake_icefrac3d, &
-         dimensions=(/'xaxis_1', 'yaxis_1', 'levlake_clm_lake', 'Time   '/), is_optional=.true.)
+         dimensions=(/'xaxis_1              ', 'yaxis_1              ', &
+                      'levlake_clm_lake     ', 'Time                 '/), is_optional=.true.)
     call register_restart_field(Sfc_restart,'lake_clay3d', data%lake_clay3d, &
-         dimensions=(/'xaxis_1', 'yaxis_1', 'levsoil_clm_lake', 'Time   '/), is_optional=.true.)
+         dimensions=(/'xaxis_1              ', 'yaxis_1              ', &
+                      'levsoil_clm_lake     ', 'Time                 '/), is_optional=.true.)
     call register_restart_field(Sfc_restart,'lake_sand3d', data%lake_sand3d, &
-         dimensions=(/'xaxis_1', 'yaxis_1', 'levsoil_clm_lake', 'Time   '/), is_optional=.true.)
+         dimensions=(/'xaxis_1              ', 'yaxis_1              ', &
+                      'levsoil_clm_lake     ', 'Time                 '/), is_optional=.true.)
   end subroutine clm_lake_register_fields
 
   subroutine clm_lake_final(data)
