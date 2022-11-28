@@ -580,48 +580,6 @@ module GFS_restart
       enddo
     endif
 
-  contains
-
-    subroutine lvar3d(count, nb, ix, var3d, varname)
-      implicit none
-      logical, intent(in) :: count
-      real(kind=kind_phys), target :: var3d(:,:) ! 3d ij-k variable
-      character(len=*), intent(in) :: varname ! variable name without level number
-      integer, intent(in) :: nb ! current block being processed
-      integer, intent(inout) :: ix ! num or Restart%num2d
-      character(400) :: fullname ! full variable name with level appended
-      integer :: k ! vertical level number
-      if(count) then
-        ix=ix+size(var3d,2)
-        return
-      endif
-      do k=1,size(var3d,2)
-        ix=ix+1
-        if(nb==1) then
-          write(fullname,"(A,'_',I0)") trim(varname),k
-          Restart%name2d(ix) = trim(fullname)
-        endif
-        Restart%data(nb,ix)%var2p => var3d(:,k)
-      enddo
-    end subroutine lvar3d
-
-    subroutine lvar2d(count, nb, ix, var2d, varname)
-      implicit none
-      logical, intent(in) :: count
-      real(kind=kind_phys), target :: var2d(:) ! 2d ij variable
-      character(len=*), intent(in) :: varname ! variable name
-      integer, intent(in) :: nb ! current block being processed
-      integer, intent(inout) :: ix ! num or Restart%num2d
-      ix=ix+1
-      if(count) then
-        return
-      endif
-      if(nb==1) then
-        Restart%name2d(ix) = trim(varname)
-      endif
-      Restart%data(nb,ix)%var2p => var2d
-    end subroutine lvar2d
-
   end subroutine GFS_restart_populate
 
 end module GFS_restart
