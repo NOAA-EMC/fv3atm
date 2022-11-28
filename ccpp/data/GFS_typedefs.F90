@@ -217,14 +217,6 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: lake_t2m (:)   => null()  !< 2 meter temperature from CLM Lake model 
     real (kind=kind_phys), pointer :: lake_q2m (:)   => null()  !< 2 meter humidity from CLM Lake model
 
-    real (kind=kind_phys), pointer :: h_ML(:)      => null()  !Mixed Layer depth of lakes [m]  
-    real (kind=kind_phys), pointer :: t_ML(:)      => null()  !Mixing layer temperature in K 
-    real (kind=kind_phys), pointer :: t_mnw(:)     => null()  !Mean temperature of the water column [K] 
-    real (kind=kind_phys), pointer :: h_talb(:)    => null()  !the thermally active layer depth of the bottom sediments [m] 
-    real (kind=kind_phys), pointer :: t_talb(:)    => null()  !Temperature at the bottom of the sediment upper layer [K]  
-    real (kind=kind_phys), pointer :: t_bot1(:)    => null()  !Temperature at the water-bottom sediment interface [K] 
-    real (kind=kind_phys), pointer :: t_bot2(:)    => null()  !Temperature for bottom layer of water [K]
-    real (kind=kind_phys), pointer :: c_t(:)       => null()  !Shape factor of water temperature vertical profile 
     real (kind=kind_phys), pointer :: T_snow(:)    => null()  !temperature of snow on a lake [K] 
     real (kind=kind_phys), pointer :: T_ice(:)     => null()  !temperature of ice on a lake [K] 
 
@@ -2135,16 +2127,7 @@ module GFS_typedefs
     allocate (Sfcprop%use_lake_model(IM))
 
     if(Model%lkm > 0) then
-      if(Model%iopt_lake==Model%iopt_lake_flake  ) then
-        allocate (Sfcprop%h_ML     (IM))
-        allocate (Sfcprop%t_ML     (IM))
-        allocate (Sfcprop%t_mnw    (IM))
-        allocate (Sfcprop%h_talb   (IM))
-        allocate (Sfcprop%t_talb   (IM))
-        allocate (Sfcprop%t_bot1   (IM))
-        allocate (Sfcprop%t_bot2   (IM))
-        allocate (Sfcprop%c_t      (IM))
-      else
+      if(Model%iopt_lake==Model%iopt_lake_clm  ) then
         allocate (Sfcprop%clm_lakedepth(IM))
       endif
       allocate (Sfcprop%T_snow   (IM))
@@ -2187,16 +2170,7 @@ module GFS_typedefs
 
     Sfcprop%use_lake_model = zero
     if(Model%lkm > 0) then
-      if(Model%iopt_lake==Model%iopt_lake_flake  ) then
-        Sfcprop%h_ML      = clear_val
-        Sfcprop%t_ML      = clear_val
-        Sfcprop%t_mnw     = clear_val
-        Sfcprop%h_talb    = clear_val
-        Sfcprop%t_talb    = clear_val
-        Sfcprop%t_bot1    = clear_val
-        Sfcprop%t_bot2    = clear_val
-        Sfcprop%c_t       = clear_val
-      else
+      if(Model%iopt_lake==Model%iopt_lake_clm  ) then
         Sfcprop%clm_lakedepth = clear_val
       endif
       Sfcprop%T_snow    = clear_val
