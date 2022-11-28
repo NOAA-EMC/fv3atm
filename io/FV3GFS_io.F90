@@ -87,7 +87,7 @@ module FV3GFS_io_mod
   integer :: tot_diag_idx = 0
   integer :: total_outputlevel = 0
   integer :: isco,ieco,jsco,jeco,levo,num_axes_phys
-  integer :: fhzero, ncld, nsoil, imp_physics, landsfcmdl, k
+  integer :: fhzero, ncld, nsoil, imp_physics, landsfcmdl, nvar_s2me
   real(4) :: dtp
   logical :: lprecip_accu
   character(len=64)  :: Sprecip_accu
@@ -606,7 +606,7 @@ module FV3GFS_io_mod
     integer :: isc, iec, jsc, jec, npz, nx, ny
     integer :: id_restart
     integer :: nvar_o2, nvar_s2m, nvar_s2o, nvar_s3
-    integer :: nvar_s2me, nvar_s2l
+    integer :: nvar_s2l
     integer :: nvar_oro_ls_ss
     integer :: nvar_s2r, nvar_s2mp, nvar_s3mp, isnow
     integer :: nvar_emi, nvar_dust12m, nvar_gbbepx
