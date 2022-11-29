@@ -4679,6 +4679,12 @@
   units = 1
   dimensions = ()
   type = integer
+[use_lake2m]
+  standard_name = use_2m_diagnostics_calculated_by_lake_model
+  long_name = model 2m diagnostics use the temperature and humidity calculated by the lake model
+  units = flag
+  dimensions = ()
+  type = integer
 [lkm]
   standard_name = control_for_lake_model_execution_method
   long_name = control for lake model execution: 0=no lake, 1=lake, 2=lake+nsst

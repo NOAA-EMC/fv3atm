@@ -1006,6 +1006,7 @@ module GFS_typedefs
     integer              :: iopt_lake_clm = 2
     real(kind_phys)      :: lakedepth_threshold !< lakedepth must be GREATER than this value to enable a lake model
     real(kind_phys)      :: lakefrac_threshold  !< lakefrac must be GREATER than this value to enable a lake model
+    logical              :: use_lake2m      !< use 2m T & Q calculated by the lake model
 
 !--- clm lake model parameters
     integer              :: nlevlake_clm_lake !< Number of lake levels for clm lake model
@@ -3304,6 +3305,7 @@ module GFS_typedefs
     integer              :: iopt_lake      =  1                       !< =1 flake, =2 clm lake
     real(kind_phys)      :: lakedepth_threshold = 1.0                 !< lakedepth must be GREATER than this value to enable a lake model
     real(kind_phys)      :: lakefrac_threshold  = 0.0                 !< lakefrac must be GREATER than this value to enable a lake model
+    logical              :: use_lake2m     = .false.                  !< use 2m T & Q from clm lake model
 
 !--- tuning parameters for physical parameterizations
     logical              :: ras            = .false.                  !< flag for ras convection scheme
@@ -3675,7 +3677,7 @@ module GFS_typedefs
                           !--- lake model control
                                lkm, iopt_lake, lakedepth_threshold, lakefrac_threshold,     &
                                clm_lake_depth_default, clm_lake_use_lakedepth,              &
-                               clm_lake_debug,                                              &
+                               clm_lake_debug, use_lake2m,                                  &
                           !--- physical parameterizations
                                ras, trans_trac, old_monin, cnvgwd, mstrat, moist_adj,       &
                                cscnv, cal_pre, do_aw, do_shoc, shocaftcnv, shoc_cld,        &
@@ -4315,6 +4317,7 @@ module GFS_typedefs
 !--- lake  model parameters
     Model%lkm              = lkm
     Model%iopt_lake        = iopt_lake
+    Model%use_lake2m       = use_lake2m
     Model%lakedepth_threshold = lakedepth_threshold
     Model%lakefrac_threshold = lakefrac_threshold
 
@@ -5269,6 +5272,10 @@ module GFS_typedefs
         print *, ' lake model selection   : ', Model%iopt_lake
         if(Model%iopt_lake==Model%iopt_lake_clm) then
           print *,'  CLM Lake model configuration'
+          print *,'   use_lake2m             = ',Model%use_lake2m
+          print *,'   clm_lake_use_lakedepth = ',Model%clm_lake_use_lakedepth
+          print *,'   clm_lake_depth_default = ',Model%clm_lake_depth_default
+          print *,'   clm_lake_debug         = ',Model%clm_lake_debug
           print *,'   nlevlake_clm_lake      = ',Model%nlevlake_clm_lake
           print *,'   nlevsoil_clm_lake      = ',Model%nlevsoil_clm_lake
           print *,'   nlevsnow_clm_lake      = ',Model%nlevsnow_clm_lake

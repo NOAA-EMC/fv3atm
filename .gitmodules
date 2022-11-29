@@ -9,7 +9,7 @@
 [submodule "ccpp/physics"]
   path = ccpp/physics
   url = https://github.com/SamuelTrahanNOAA/ccpp-physics
-  branch = flake
+  branch = clm_lake_revert.v9
 [submodule "upp"]
   path = upp
   url = https://github.com/NOAA-EMC/UPP
