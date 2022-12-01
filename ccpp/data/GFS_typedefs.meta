@@ -639,7 +639,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (control_for_lake_model_execution_method > 0)
+  active = (control_for_lake_model_execution_method > 0 .and. control_for_lake_model_selection == 2)
 [lake_q2m]
   standard_name =  specific_humidity_at_2m_from_clm_lake
   long_name = specific humidity at 2m from clm lake
@@ -647,7 +647,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  active = (control_for_lake_model_execution_method > 0)
+  active = (control_for_lake_model_execution_method > 0 .and. control_for_lake_model_selection == 2)
 [h_ML]
   standard_name = mixed_layer_depth_of_lakes
   long_name = depth of lake mixing layer
@@ -1992,7 +1992,7 @@
   type = real
   kind = kind_phys
   active = (control_for_lake_model_selection == 2)
-[lake_watsat3d]
+[lake_soil_watsat3d]
   standard_name = saturated_volumetric_soil_water_in_lake_model
   long_name = saturated volumetric soil water in lake model
   units = m
@@ -2008,7 +2008,7 @@
   type = real
   kind = kind_phys
   active = (control_for_lake_model_selection == 2)
-[lake_tkmg3d]
+[lake_soil_tkmg3d]
   standard_name = soil_mineral_thermal_conductivity_in_lake_model
   long_name = soil mineral thermal conductivity in lake model
   units = m
@@ -2016,7 +2016,7 @@
   type = real
   kind = kind_phys
   active = (control_for_lake_model_selection == 2)
-[lake_tkdry3d]
+[lake_soil_tkdry3d]
   standard_name = dry_soil_thermal_conductivity_in_lake_model
   long_name = dry soil thermal conductivity in lake model
   units = m
@@ -2024,7 +2024,7 @@
   type = real
   kind = kind_phys
   active = (control_for_lake_model_selection == 2)
-[lake_tksatu3d]
+[lake_soil_tksatu3d]
   standard_name = saturated_soil_thermal_conductivity_in_lake_model
   long_name = saturated soil thermal conductivity in lake model
   units = m
@@ -2040,7 +2040,7 @@
   type = real
   kind = kind_phys
   active = (control_for_lake_model_selection == 2)
-[lake_dp2dsno]
+[lake_sndpth2d]
   standard_name = actual_snow_depth_in_clm_lake_model
   long_name = actual acc snow depth over lake in clm lake model
   units = m
@@ -2080,7 +2080,7 @@
   type = real
   kind = kind_phys
   active = (control_for_lake_model_selection == 2)
-[lake_t_h2osoi_vol3d]
+[lake_h2osoi_vol3d]
   standard_name = volumetric_soil_water_in_clm_lake_model
   long_name = volumetric soil water in clm lake model
   units = m3 m-3
@@ -2088,7 +2088,7 @@
   type = real
   kind = kind_phys
   active = (control_for_lake_model_selection == 2)
-[lake_t_h2osoi_liq3d]
+[lake_h2osoi_liq3d]
   standard_name = soil_liquid_water_content_in_clm_lake_model
   long_name = soil liquid water content in clm lake model
   units = kg m-3
@@ -2096,7 +2096,7 @@
   type = real
   kind = kind_phys
   active = (control_for_lake_model_selection == 2)
-[lake_t_h2osoi_ice3d]
+[lake_h2osoi_ice3d]
   standard_name = soil_ice_water_content_in_clm_lake_model
   long_name = soil ice water content in clm lake model
   units = kg m-3
@@ -2104,9 +2104,9 @@
   type = real
   kind = kind_phys
   active = (control_for_lake_model_selection == 2)
-[lake_t_grnd2d]
-  standard_name = skin_temperature_from_clm_lake_model
-  long_name = skin temperature from clm lake model
+[lake_tsfc]
+  standard_name = skin_temperature_from_lake_model
+  long_name = skin temperature from lake model
   units = K
   dimensions = (horizontal_loop_extent)
   type = real

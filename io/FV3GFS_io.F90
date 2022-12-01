@@ -2001,8 +2001,8 @@ module FV3GFS_io_mod
     if (Model%lsm == Model%lsm_ruc) then
       if (allocated(sfc_name2)) then
         ! Re-allocate if one or more of the dimensions don't match
-        if (size(sfc_name2).ne.nvar2m+nvar2o+nvar2mp+nvar2r .or. &
-            size(sfc_name3).ne.nvar3+nvar3mp .or.                &
+        if (size(sfc_name2).ne.nvar2m+nvar2o+nvar2mp+nvar2r+nvar2l .or. &
+            size(sfc_name3).ne.nvar3+nvar3mp .or.                       &
             size(sfc_var3,dim=3).ne.Model%lsoil_lsm) then
           !--- deallocate containers and free restart container
           deallocate(sfc_name2)
@@ -2094,9 +2094,9 @@ module FV3GFS_io_mod
 
     if (.not. allocated(sfc_name2)) then
       !--- allocate the various containers needed for restarts
-      allocate(sfc_name2(nvar2m+nvar2o+nvar2mp+nvar2r))
+      allocate(sfc_name2(nvar2m+nvar2o+nvar2mp+nvar2r+nvar2l))
       allocate(sfc_name3(0:nvar3+nvar3mp))
-      allocate(sfc_var2(nx,ny,nvar2m+nvar2o+nvar2mp+nvar2r))
+      allocate(sfc_var2(nx,ny,nvar2m+nvar2o+nvar2mp+nvar2r+nvar2l))
       if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp) then
         allocate(sfc_var3(nx,ny,Model%lsoil,nvar3))
       elseif (Model%lsm == Model%lsm_ruc) then
@@ -2255,6 +2255,12 @@ module FV3GFS_io_mod
 
    if(Model%lkm>0) then
      if(Model%iopt_lake==Model%iopt_lake_flake  ) then
+       if(Model%me==0) then
+         if(size(sfc_name2)/=nvar2me+10) then
+3814       format("ERROR: size mismatch size(sfc_name2)=",I0," /= nvar2me+10=",I0)
+           write(0,3814) size(sfc_name2),nvar2me+10
+         endif
+       endif
        sfc_name2(nvar2me+1) = 'T_snow'
        sfc_name2(nvar2me+2) = 'T_ice'
        sfc_name2(nvar2me+3)  = 'h_ML'
@@ -2265,16 +2271,6 @@ module FV3GFS_io_mod
        sfc_name2(nvar2me+8)  = 't_bot1'
        sfc_name2(nvar2me+9)  = 't_bot2'
        sfc_name2(nvar2me+10)  = 'c_t'
-       if(Model%me==0) then
-         do i=1,nvar2me+10
-           print 1048,i,sfc_name2(i)
-1048       format("sfc_name2(",I0,') = "',A,'"')
-         enddo
-         if(size(sfc_name2)/=nvar2me+10) then
-3814       format("ERROR: size mismatch size(sfc_name2)=",I0," /= nvar2me+10=",I0)
-           write(0,3814) size(sfc_name2),nvar2me+10
-         endif
-       endif
      else if(Model%iopt_lake==Model%iopt_lake_clm) then
        ! Tell clm_lake to register all of its fields
        call clm_lake%register_fields(Sfc_restart)

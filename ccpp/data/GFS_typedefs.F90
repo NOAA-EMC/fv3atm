@@ -423,21 +423,21 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: lake_albedo(:)     => null()  !
     real (kind=kind_phys), pointer :: lake_z3d(:,:)     => null()  !
     real (kind=kind_phys), pointer :: lake_dz3d(:,:)    => null()  !
-    real (kind=kind_phys), pointer :: lake_watsat3d(:,:) => null()  !
+    real (kind=kind_phys), pointer :: lake_soil_watsat3d(:,:) => null()  !
     real (kind=kind_phys), pointer :: lake_csol3d(:,:)   => null()  !
-    real (kind=kind_phys), pointer :: lake_tkmg3d(:,:)   => null()  !
-    real (kind=kind_phys), pointer :: lake_tkdry3d(:,:)  => null()  !
-    real (kind=kind_phys), pointer :: lake_tksatu3d(:,:) => null()  !
+    real (kind=kind_phys), pointer :: lake_soil_tkmg3d(:,:)   => null()  !
+    real (kind=kind_phys), pointer :: lake_soil_tkdry3d(:,:)  => null()  !
+    real (kind=kind_phys), pointer :: lake_soil_tksatu3d(:,:) => null()  !
     real (kind=kind_phys), pointer :: lake_h2osno2d(:)   => null()  !
-    real (kind=kind_phys), pointer :: lake_dp2dsno(:)   => null()  !
+    real (kind=kind_phys), pointer :: lake_sndpth2d(:)   => null()  !
     real (kind=kind_phys), pointer :: lake_snl2d(:)      => null()  !
     real (kind=kind_phys), pointer :: lake_snow_z3d(:,:)      => null()  !
     real (kind=kind_phys), pointer :: lake_snow_dz3d(:,:)     => null()  !
     real (kind=kind_phys), pointer :: lake_snow_zi3d(:,:)     => null()  !
-    real (kind=kind_phys), pointer :: lake_t_h2osoi_vol3d(:,:)  => null()  !
-    real (kind=kind_phys), pointer :: lake_t_h2osoi_liq3d(:,:)   => null()  !
-    real (kind=kind_phys), pointer :: lake_t_h2osoi_ice3d(:,:)   => null()  !
-    real (kind=kind_phys), pointer :: lake_t_grnd2d(:)   => null()  !
+    real (kind=kind_phys), pointer :: lake_h2osoi_vol3d(:,:)  => null()  !
+    real (kind=kind_phys), pointer :: lake_h2osoi_liq3d(:,:)   => null()  !
+    real (kind=kind_phys), pointer :: lake_h2osoi_ice3d(:,:)   => null()  !
+    real (kind=kind_phys), pointer :: lake_tsfc(:)   => null()  !
     real (kind=kind_phys), pointer :: lake_t_soisno3d(:,:) => null()  !
     real (kind=kind_phys), pointer :: lake_t_lake3d(:,:) => null()  !
     real (kind=kind_phys), pointer :: lake_savedtke12d(:)=> null()  !
@@ -2582,21 +2582,21 @@ module GFS_typedefs
        allocate(Sfcprop%lake_albedo(IM))
        allocate(Sfcprop%lake_z3d(IM,Model%nlevlake_clm_lake))
        allocate(Sfcprop%lake_dz3d(IM,Model%nlevlake_clm_lake))
-       allocate(Sfcprop%lake_watsat3d(IM,Model%nlevlake_clm_lake))
+       allocate(Sfcprop%lake_soil_watsat3d(IM,Model%nlevlake_clm_lake))
        allocate(Sfcprop%lake_csol3d(IM,Model%nlevlake_clm_lake))
-       allocate(Sfcprop%lake_tkmg3d(IM,Model%nlevlake_clm_lake))
-       allocate(Sfcprop%lake_tkdry3d(IM,Model%nlevlake_clm_lake))
-       allocate(Sfcprop%lake_tksatu3d(IM,Model%nlevlake_clm_lake))
+       allocate(Sfcprop%lake_soil_tkmg3d(IM,Model%nlevlake_clm_lake))
+       allocate(Sfcprop%lake_soil_tkdry3d(IM,Model%nlevlake_clm_lake))
+       allocate(Sfcprop%lake_soil_tksatu3d(IM,Model%nlevlake_clm_lake))
        allocate(Sfcprop%lake_h2osno2d(IM))
-       allocate(Sfcprop%lake_dp2dsno(IM))
+       allocate(Sfcprop%lake_sndpth2d(IM))
        allocate(Sfcprop%lake_snl2d(IM))
        allocate(Sfcprop%lake_snow_z3d(IM,Model%nlevsnowsoil1_clm_lake))
        allocate(Sfcprop%lake_snow_dz3d(IM,Model%nlevsnowsoil1_clm_lake))
        allocate(Sfcprop%lake_snow_zi3d(IM,Model%nlevsnowsoil_clm_lake))
-       allocate(Sfcprop%lake_t_h2osoi_vol3d(IM,Model%nlevsnowsoil1_clm_lake))
-       allocate(Sfcprop%lake_t_h2osoi_liq3d(IM,Model%nlevsnowsoil1_clm_lake))
-       allocate(Sfcprop%lake_t_h2osoi_ice3d(IM,Model%nlevsnowsoil1_clm_lake))
-       allocate(Sfcprop%lake_t_grnd2d(IM))
+       allocate(Sfcprop%lake_h2osoi_vol3d(IM,Model%nlevsnowsoil1_clm_lake))
+       allocate(Sfcprop%lake_h2osoi_liq3d(IM,Model%nlevsnowsoil1_clm_lake))
+       allocate(Sfcprop%lake_h2osoi_ice3d(IM,Model%nlevsnowsoil1_clm_lake))
+       allocate(Sfcprop%lake_tsfc(IM))
        allocate(Sfcprop%lake_t_soisno3d(IM,Model%nlevsnowsoil1_clm_lake))
        allocate(Sfcprop%lake_t_lake3d(IM,Model%nlevlake_clm_lake))
        allocate(Sfcprop%lake_savedtke12d(IM))
@@ -2613,21 +2613,21 @@ module GFS_typedefs
        Sfcprop%lake_albedo = clear_val
        Sfcprop%lake_z3d = clear_val
        Sfcprop%lake_dz3d = clear_val
-       Sfcprop%lake_watsat3d = clear_val
+       Sfcprop%lake_soil_watsat3d = clear_val
        Sfcprop%lake_csol3d = clear_val
-       Sfcprop%lake_tkmg3d = clear_val
-       Sfcprop%lake_tkdry3d = clear_val
-       Sfcprop%lake_tksatu3d = clear_val
+       Sfcprop%lake_soil_tkmg3d = clear_val
+       Sfcprop%lake_soil_tkdry3d = clear_val
+       Sfcprop%lake_soil_tksatu3d = clear_val
        Sfcprop%lake_h2osno2d = clear_val
-       Sfcprop%lake_dp2dsno = clear_val
+       Sfcprop%lake_sndpth2d = clear_val
        Sfcprop%lake_snl2d = clear_val
        Sfcprop%lake_snow_z3d = clear_val
        Sfcprop%lake_snow_dz3d = clear_val
        Sfcprop%lake_snow_zi3d = clear_val
-       Sfcprop%lake_t_h2osoi_vol3d = clear_val
-       Sfcprop%lake_t_h2osoi_liq3d = clear_val
-       Sfcprop%lake_t_h2osoi_ice3d = clear_val
-       Sfcprop%lake_t_grnd2d = clear_val
+       Sfcprop%lake_h2osoi_vol3d = clear_val
+       Sfcprop%lake_h2osoi_liq3d = clear_val
+       Sfcprop%lake_h2osoi_ice3d = clear_val
+       Sfcprop%lake_tsfc = clear_val
        Sfcprop%lake_t_soisno3d = clear_val
        Sfcprop%lake_t_lake3d = clear_val
        Sfcprop%lake_savedtke12d = clear_val
