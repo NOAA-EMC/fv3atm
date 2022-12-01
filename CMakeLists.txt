@@ -5,6 +5,13 @@
 
 add_subdirectory(ccpp)
 
+
+###############################################################################
+### Moving Nest
+###############################################################################
+
+add_subdirectory(moving_nest)
+
 ###############################################################################
 ### fv3 dynamical core
 ###############################################################################
@@ -60,7 +67,7 @@ add_library(fv3atm
   ${POST_SRC}
 )
 
-add_dependencies(fv3atm fv3 fv3ccpp stochastic_physics)
+add_dependencies(fv3atm fv3 fv3ccpp stochastic_physics moving_nest)
 
 list(APPEND _fv3atm_defs_private GFS_PHYS
                                  INTERNAL_FILE_NML
@@ -79,6 +86,7 @@ endif()
 target_link_libraries(fv3atm PUBLIC fv3
                                     fv3ccpp
                                     stochastic_physics
+				    moving_nest
                                     fms)
 
 target_link_libraries(fv3atm PUBLIC w3emc::w3emc_d

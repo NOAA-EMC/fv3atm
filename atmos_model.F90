@@ -103,10 +103,11 @@ use module_block_data,  only: block_atmos_copy, block_data_copy,         &
                               block_data_combine_fractions
 
 #ifdef MOVING_NEST
-use fv_moving_nest_main_mod, only: update_moving_nest, dump_moving_nest
-use fv_moving_nest_main_mod, only: nest_tracker_init
-use fv_moving_nest_main_mod, only: moving_nest_end, nest_tracker_end
-use fv_tracker_mod,          only: check_is_moving_nest, execute_tracker
+use fv_moving_nest_main_mod,  only: update_moving_nest, dump_moving_nest
+use fv_moving_nest_main_mod,  only: nest_tracker_init
+use fv_moving_nest_main_mod,  only: moving_nest_end, nest_tracker_end
+use fv_moving_nest_types_mod, only: fv_moving_nest_init
+use fv_tracker_mod,           only: check_is_moving_nest, execute_tracker
 #endif
 !-----------------------------------------------------------------------
 
@@ -558,6 +559,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    call atmosphere_init (Atmos%Time_init, Atmos%Time, Atmos%Time_step,&
                          Atmos%grid, Atmos%area)
 #ifdef MOVING_NEST
+   call fv_moving_nest_init(Atm, mygrid)
    call nest_tracker_init()
 #endif
 !-----------------------------------------------------------------------
