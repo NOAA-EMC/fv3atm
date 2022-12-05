@@ -787,8 +787,9 @@ module GFS_typedefs
     real(kind_phys)      :: lfnc_k                  !<          Logistic function transition depth (Pa)
     real(kind_phys)      :: lfnc_p0                 !<          Logistic function transition level (Pa)
     logical              :: doGP_lwscat             !< If true, include scattering in longwave cloud-optics, only compatible w/ GP cloud-optics
-    logical              :: doGP_sgs_cnv            !< If true, include SubGridScale convective cloud in RRTMGP
-    logical              :: doGP_sgs_mynn           !< If true, include SubGridScale MYNN-EDMF cloud in RRTMGP 
+    logical              :: doGP_sgs_cnv            !< If true, include explicit SubGridScale convective cloud in RRTMGP
+    logical              :: doGP_sgs_mynn           !< If true, include explicit SubGridScale MYNN-EDMF cloud in RRTMGP 
+    logical              :: doGP_smearclds          !< If true, include implicit SubGridScale clouds in RRTMGP
     real(kind_phys)      :: minGPpres               !< Minimum pressure allowed in RRTMGP.
     real(kind_phys)      :: maxGPpres               !< Maximum pressure allowed in RRTMGP.
     real(kind_phys)      :: minGPtemp               !< Minimum temperature allowed in RRTMGP.
@@ -3027,6 +3028,7 @@ module GFS_typedefs
     logical              :: doGP_lwscat         = .false.    !< If true, include scattering in longwave cloud-optics, only compatible w/ GP cloud-optics
     logical              :: doGP_sgs_cnv        = .false.    !< If true, include SubGridScale convective cloud in RRTMGP
     logical              :: doGP_sgs_mynn       = .false.    !< If true, include SubGridScale MYNN-EDMF cloud in RRTMGP
+    logical              :: doGP_smearclds      = .true.     !< If true, include implicit SubGridScale clouds in RRTMGP 
 !--- Z-C microphysical parameters
     integer              :: imp_physics       =  99                !< choice of cloud scheme
     real(kind=kind_phys) :: psautco(2)        = (/6.0d-4,3.0d-4/)  !< [in] auto conversion coeff from ice to snow
@@ -3947,6 +3949,13 @@ module GFS_typedefs
           write(0,*) "Logic error, RRTMGP flag doGP_sgs_mynn only works with do_mynnedmf=.true."
           stop
        endif
+       if (Model%doGP_sgs_cnv .or. Model%doGP_sgs_mynn) then
+          write(0,*) "RRTMGP explicit cloud scheme being used."
+          Model%doGP_smearclds = .false.
+       else
+           write(0,*) "RRTMGP implicit cloud scheme being used."
+       endif
+
        if (Model%doGP_cldoptics_PADE .and. Model%doGP_cldoptics_LUT) then
           write(0,*) "Logic error, Both RRTMGP cloud-optics options cannot be selected. "
           stop
@@ -5809,6 +5818,7 @@ module GFS_typedefs
         print *, ' doGP_lwscat        : ', Model%doGP_lwscat
         print *, ' doGP_sgs_cnv       : ', Model%doGP_sgs_cnv
         print *, ' doGP_sgs_mynn      : ', Model%doGP_sgs_cnv
+        print *, ' doGP_smearclds     : ', Model%doGP_smearclds
         print *, ' iovr_convcld       : ', Model%iovr_convcld
       endif
       print *, ' '
