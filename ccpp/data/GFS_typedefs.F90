@@ -3557,7 +3557,7 @@ module GFS_typedefs
                                do_ugwp_v0_nst_only,                                         &
                                do_gsl_drag_ls_bl, do_gsl_drag_ss, do_gsl_drag_tofd,         &
                                do_ugwp_v1, do_ugwp_v1_orog_only,  do_ugwp_v1_w_gsldrag,     &
-                               var_ric, coef_ric_l, coef_ric_s, hurr_pbl,                   &
+                               ugwp_seq_update, var_ric, coef_ric_l, coef_ric_s, hurr_pbl,  &
                                do_myjsfc, do_myjpbl,                                        &
                                hwrf_samfdeep, hwrf_samfshal,progsigma,                      &
                                h2o_phys, pdfcld, shcnvcw, redrag, hybedmf, satmedmf,        &
