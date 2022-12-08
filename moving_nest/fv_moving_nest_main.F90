@@ -161,7 +161,6 @@ module fv_moving_nest_main_mod
   integer :: id_movnest5_1, id_movnest5_2, id_movnest5_3, id_movnest5_4
   integer :: id_movnest6, id_movnest7_0, id_movnest7_1, id_movnest7_2, id_movnest7_3, id_movnest8, id_movnest9
   integer :: id_movnestTot
-  logical :: use_timers = .True. ! Set this to true for detailed performance profiling.  False only profiles total moving nest time.
   integer, save :: output_step = 0
 
 contains
@@ -280,7 +279,8 @@ contains
   !>@brief The subroutine 'fv_moving_nest_init_clocks' intializes performance profiling timers of sections of the moving nest code.
   !>@details Starts timers for subcomponents of moving nest code to determine performance.  mpp routines group them into separate
   !! sections for parent and nest PEs.
-  subroutine fv_moving_nest_init_clocks()
+  subroutine fv_moving_nest_init_clocks(use_timers)
+    logical, intent(in) :: use_timers
 
     !  --- initialize clocks for moving_nest
     if (use_timers) then
@@ -565,11 +565,14 @@ contains
     integer             :: year, month, day, hour, minute, second
     real(kind=R_GRID)   :: pi = 4 * atan(1.0d0)
     real                :: rad2deg
+    logical             :: use_timers
 
     rad2deg = 180.0 / pi
 
     gid = mpp_pe()
     this_pe = mpp_pe()
+
+    use_timers = Atm(n)%flagstruct%fv_timers
 
     allocate(pelist(mpp_npes()))
     call mpp_get_current_pelist(pelist)
@@ -605,7 +608,8 @@ contains
 
 
     if (first_nest_move) then
-      call fv_moving_nest_init_clocks()
+      
+      call fv_moving_nest_init_clocks(Atm(n)%flagstruct%fv_timers)
 
       ! If NSST is turned off, do not move the NSST variables.
       !  Namelist switches are confusing; this should be the correct way to distinguish, not using nst_anl

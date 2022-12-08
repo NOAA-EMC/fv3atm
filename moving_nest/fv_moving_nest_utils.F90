@@ -30,12 +30,9 @@
 module fv_moving_nest_utils_mod
 
 #ifdef MOVING_NEST
-  use fms_mod,           only : mpp_clock_id, mpp_clock_begin, mpp_clock_end, CLOCK_ROUTINE, clock_flag_default
   use mpp_mod,           only: FATAL, WARNING, MPP_DEBUG, NOTE, MPP_CLOCK_SYNC,MPP_CLOCK_DETAILED
   use mpp_mod,           only: mpp_pe, mpp_npes, mpp_root_pe, mpp_error, mpp_set_warn_level
   use mpp_mod,           only: mpp_declare_pelist, mpp_set_current_pelist, mpp_sync, mpp_sync_self
-  use mpp_mod,           only: mpp_clock_begin, mpp_clock_end, mpp_clock_id
-  use mpp_mod,           only: mpp_init, mpp_exit, mpp_chksum, stdout, stderr
   use mpp_mod,           only: input_nml_file
   use mpp_mod,           only: mpp_get_current_pelist, mpp_broadcast
   use mpp_domains_mod,   only: GLOBAL_DATA_DOMAIN, BITWISE_EXACT_SUM, BGRID_NE, CGRID_NE, DGRID_NE, AGRID

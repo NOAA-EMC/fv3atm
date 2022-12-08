@@ -568,18 +568,21 @@ contains
 
     logical, save :: first_time = .True.
     integer, save :: id_load1, id_load2, id_load3, id_load4, id_load5
-    logical       :: use_timers = .True.
+    logical       :: use_timers
+
+    use_timers = Atm(n)%flagstruct%fv_timers
 
     this_pe = mpp_pe()
 
     if (first_time) then
-       id_load1     = mpp_clock_id ('MN LatLon Part 1 File',  flags = clock_flag_default, grain=CLOCK_SUBCOMPONENT )
-       id_load2     = mpp_clock_id ('MN LatLon Part 2 File',  flags = clock_flag_default, grain=CLOCK_SUBCOMPONENT )
-       id_load3     = mpp_clock_id ('MN LatLon Part 3 File',  flags = clock_flag_default, grain=CLOCK_SUBCOMPONENT )
-       id_load4     = mpp_clock_id ('MN LatLon Part 4 File',  flags = clock_flag_default, grain=CLOCK_SUBCOMPONENT )
-       id_load5     = mpp_clock_id ('MN LatLon Part 5 File',  flags = clock_flag_default, grain=CLOCK_SUBCOMPONENT )
-
-       first_time = .False.
+      if (use_timers) then
+        id_load1     = mpp_clock_id ('MN LatLon Part 1 File',  flags = clock_flag_default, grain=CLOCK_SUBCOMPONENT )
+        id_load2     = mpp_clock_id ('MN LatLon Part 2 File',  flags = clock_flag_default, grain=CLOCK_SUBCOMPONENT )
+        id_load3     = mpp_clock_id ('MN LatLon Part 3 File',  flags = clock_flag_default, grain=CLOCK_SUBCOMPONENT )
+        id_load4     = mpp_clock_id ('MN LatLon Part 4 File',  flags = clock_flag_default, grain=CLOCK_SUBCOMPONENT )
+        id_load5     = mpp_clock_id ('MN LatLon Part 5 File',  flags = clock_flag_default, grain=CLOCK_SUBCOMPONENT )
+      endif
+      first_time = .False.
     endif
 
     position = CENTER
@@ -1519,7 +1522,9 @@ contains
     logical, save       :: first_time = .true.
     integer, save       :: id_reset1, id_reset2, id_reset3, id_reset4, id_reset5, id_reset6, id_reset7
 
-    logical             :: use_timers = .True. !  Set this to true to generate performance profiling information in out.* file
+    logical             :: use_timers   !  Set this to true to generate performance profiling information in out.* file
+
+    use_timers = Atm(n)%flagstruct%fv_timers
 
     if (first_time .and. use_timers) then
       id_reset1     = mpp_clock_id ('MN 7 Reset 1',  flags = clock_flag_default, grain=CLOCK_ROUTINE )
