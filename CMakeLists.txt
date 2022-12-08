@@ -7,12 +7,6 @@ add_subdirectory(ccpp)
 
 
 ###############################################################################
-### Moving Nest
-###############################################################################
-
-add_subdirectory(moving_nest)
-
-###############################################################################
 ### fv3 dynamical core
 ###############################################################################
 
@@ -46,9 +40,45 @@ if(NOT PARALLEL_NETCDF)
   list(APPEND _fv3atm_defs_private NO_PARALLEL_NETCDF)
 endif()
 
+
+
 if(MOVING_NEST)
-  list(APPEND _fv3atm_defs_private MOVING_NEST)
+  list(APPEND _fv3atm_defs_private MOVING_NEST MOIST_CAPPA USE_COND)
+  if(DEBUG)
+    list(APPEND _fv3atm_defs_private DEBUG)
+  endif()
+  if(GFS_PHYS)
+    list(APPEND _fv3atm_defs_private GFS_PHYS)
+  endif()
+  if(GFS_TYPES)
+    list(APPEND _fv3atm_defs_private GFS_TYPES)
+  endif()
+  if(USE_GFSL63)
+    list(APPEND _fv3atm_defs_private USE_GFSL63)
+  endif()
+  if(INTERNAL_FILE_NML)
+    list(APPEND _fv3atm_defs_private INTERNAL_FILE_NML)
+  endif()
+  if(ENABLE_QUAD_PRECISION)
+    list(APPEND _fv3atm_defs_private ENABLE_QUAD_PRECISION)
+  endif()
+  if(32BIT)
+    list(APPEND _fv3atm_defs_private OVERLOAD_R4 OVERLOAD_R8)
+  endif()
+
+  list(APPEND moving_nest_srcs
+    moving_nest/bounding_box.F90
+    moving_nest/fv_tracker.F90
+    moving_nest/fv_moving_nest.F90
+    moving_nest/fv_moving_nest_main.F90
+    moving_nest/fv_moving_nest_physics.F90
+    moving_nest/fv_moving_nest_types.F90
+    moving_nest/fv_moving_nest_utils.F90
+  )
+else()
+   list(APPEND moving_nest_srcs "")
 endif()
+
 
 add_library(fv3atm
   atmos_model.F90
@@ -64,10 +94,13 @@ add_library(fv3atm
   io/module_fv3_io_def.F90
   io/module_write_internal_state.F90
   io/module_wrt_grid_comp.F90
+  ${moving_nest_srcs}
   ${POST_SRC}
 )
 
-add_dependencies(fv3atm fv3 fv3ccpp stochastic_physics moving_nest)
+
+
+add_dependencies(fv3atm fv3 fv3ccpp stochastic_physics)
 
 list(APPEND _fv3atm_defs_private GFS_PHYS
                                  INTERNAL_FILE_NML
@@ -86,7 +119,6 @@ endif()
 target_link_libraries(fv3atm PUBLIC fv3
                                     fv3ccpp
                                     stochastic_physics
-				    moving_nest
                                     fms)
 
 target_link_libraries(fv3atm PUBLIC w3emc::w3emc_d
