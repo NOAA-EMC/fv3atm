@@ -890,7 +890,7 @@ module GFS_typedefs
     logical              :: ltaerosol       !< flag for aerosol version
     logical              :: mraerosol       !< flag for merra2_aerosol_aware
     logical              :: lradar          !< flag for radar reflectivity
-    real(kind=kind_phys) :: nsradar_reset   !< seconds between resetting radar reflectivity calculation
+    real(kind=kind_phys) :: nsfullradar_diag!< seconds between resetting radar reflectivity calculation
     real(kind=kind_phys) :: ttendlim        !< temperature tendency limiter per time step in K/s
     logical              :: ext_diag_thompson !< flag for extended diagnostic output from Thompson
     integer              :: thompson_ext_ndiag3d=37 !< number of 3d arrays for extended diagnostic output from Thompson
@@ -924,6 +924,7 @@ module GFS_typedefs
     integer              :: lsnow_lsm       !< maximum number of snow layers internal to land surface model
     integer              :: lsnow_lsm_lbound!< lower bound for snow arrays, depending on lsnow_lsm
     integer              :: lsnow_lsm_ubound!< upper bound for snow arrays, depending on lsnow_lsm
+    logical              :: vrbliceden_noah !< flag for variable precip ice density for NOAH LSM
     real(kind=kind_phys), pointer :: zs(:)    => null() !< depth of soil levels for land surface model
     real(kind=kind_phys), pointer :: dzs(:)   => null() !< thickness of soil levels for land surface model
     real(kind=kind_phys), pointer :: pores(:) => null() !< max soil moisture for a given soil type for land surface model
@@ -1727,6 +1728,13 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: toticeb(:)     => null()   !< accumulated ice precipitation in bucket (kg/m2)
     real (kind=kind_phys), pointer :: totsnwb(:)     => null()   !< accumulated snow precipitation in bucket (kg/m2)
     real (kind=kind_phys), pointer :: totgrpb(:)     => null()   !< accumulated graupel precipitation in bucket (kg/m2)
+    real (kind=kind_phys), pointer :: acfrzrn(:)     => null()   !< accumulated surface freezing rain (m)
+    real (kind=kind_phys), pointer :: acfrzrnb(:)    => null()   !< accumulated surface freezing rain in bucket (m)
+    real (kind=kind_phys), pointer :: acgraup(:)     => null()   !< accumulated surface graupel (m)
+    real (kind=kind_phys), pointer :: acgraupb(:)    => null()   !< accumulated surface graupel in bucket (m)
+    real (kind=kind_phys), pointer :: acsnow(:)      => null()   !< accumulated surface snowfall (m)
+    real (kind=kind_phys), pointer :: acsnowb(:)     => null()   !< accumulated surface snowfall in bucket (m)
+    real (kind=kind_phys), pointer :: rhonewsn1(:)   => null()   !< precipitation ice density (kg/m3)
 
     !--- MYNN variables
     real (kind=kind_phys), pointer :: edmf_a     (:,:)   => null()  !
@@ -3089,7 +3097,7 @@ module GFS_typedefs
     logical              :: ltaerosol      = .false.            !< flag for aerosol version
     logical              :: mraerosol      = .false.            !< flag for merra2_aerosol_aware
     logical              :: lradar         = .false.            !< flag for radar reflectivity
-    real(kind=kind_phys) :: nsradar_reset  = -999.0             !< seconds between resetting radar reflectivity calculation, set to <0 for every time step
+    real(kind=kind_phys) :: nsfullradar_diag  = -999.0          !< seconds between resetting radar reflectivity calculation, set to <0 for every time step
     real(kind=kind_phys) :: ttendlim       = -999.0             !< temperature tendency limiter, set to <0 to deactivate
     logical              :: ext_diag_thompson = .false.         !< flag for extended diagnostic output from Thompson
     real(kind=kind_phys) :: dt_inner       = -999.0             !< time step for the inner loop 
@@ -3107,6 +3115,7 @@ module GFS_typedefs
     integer              :: lsoil          =  4              !< number of soil layers
     integer              :: lsoil_lsm      =  -1             !< number of soil layers internal to land surface model; -1 use lsoil
     integer              :: lsnow_lsm      =  3              !< maximum number of snow layers internal to land surface model
+    logical              :: vrbliceden_noah = .false.        !< Use variable precip ice density for NOAH LSM if true or original formulation
     logical              :: rdlai          = .false.         !< read LAI from input file (for RUC LSM or NOAH LSM WRFv4)
     logical              :: ua_phys        = .false.         !< flag for using University of Arizona? extension to NOAH LSM WRFv4
     logical              :: usemonalb      = .true.          !< flag to read surface diffused shortwave albedo from input file for NOAH LSM WRFv4
@@ -3498,7 +3507,7 @@ module GFS_typedefs
                                mg_do_graupel, mg_do_hail, mg_nccons, mg_nicons, mg_ngcons,  &
                                mg_ncnst, mg_ninst, mg_ngnst, sed_supersat, do_sb_physics,   &
                                mg_alf,   mg_qcmin, mg_do_ice_gmao, mg_do_liq_liu,           &
-                               ltaerosol, lradar, nsradar_reset, lrefres, ttendlim,         &
+                               ltaerosol, lradar, nsfullradar_diag, lrefres, ttendlim,      &
                                ext_diag_thompson, dt_inner, lgfdlmprad,                     &
                                sedi_semi, decfl,                                            &
                                nssl_cccn, nssl_alphah, nssl_alphahl,                        &
@@ -3508,7 +3517,7 @@ module GFS_typedefs
                           !--- land/surface model control
                                lsm, lsoil, lsoil_lsm, lsnow_lsm, kice, rdlai,               &
                                nmtvr, ivegsrc, use_ufo, iopt_thcnd, ua_phys, usemonalb,     &
-                               aoasis, fasdas,                                              &
+                               aoasis, fasdas,vrbliceden_noah,                              &
                           !    Noah MP options
                                iopt_dveg,iopt_crs,iopt_btr,iopt_run,iopt_sfc, iopt_frz,     &
                                iopt_inf, iopt_rad,iopt_alb,iopt_snf,iopt_tbot,iopt_stc,     &
@@ -4045,7 +4054,7 @@ module GFS_typedefs
       stop
     end if
     Model%lradar           = lradar
-    Model%nsradar_reset    = nsradar_reset
+    Model%nsfullradar_diag = nsfullradar_diag 
     Model%ttendlim         = ttendlim
     Model%ext_diag_thompson= ext_diag_thompson
     if (dt_inner>0) then
@@ -4153,6 +4162,7 @@ module GFS_typedefs
     Model%ivegsrc          = ivegsrc
     Model%isot             = isot
     Model%use_ufo          = use_ufo
+    Model%vrbliceden_noah  = vrbliceden_noah
 
 ! GFDL surface layer options
     Model%lcurr_sf         = lcurr_sf
@@ -5042,6 +5052,8 @@ module GFS_typedefs
     if (Model%me == Model%master) then
       if (Model%lsm == 1) then
         print *,' NOAH Land Surface Model used'
+        print *,'vrbliceden_noah = ', Model%vrbliceden_noah
+
       elseif (Model%lsm == 0) then
         print *,' OSU no longer supported - job aborted'
         stop
@@ -5338,7 +5350,7 @@ module GFS_typedefs
                                           ' decfl=',decfl, &
                                           ' effr_in =',Model%effr_in, &
                                           ' lradar =',Model%lradar, &
-                                          ' nsradar_reset =',Model%nsradar_reset, &
+                                          ' nsfullradar_diag =',Model%nsfullradar_diag, &
                                           ' num_p3d =',Model%num_p3d, &
                                           ' num_p2d =',Model%num_p2d
 
@@ -5839,7 +5851,7 @@ module GFS_typedefs
         print *, ' ltaerosol         : ', Model%ltaerosol
         print *, ' mraerosol         : ', Model%mraerosol
         print *, ' lradar            : ', Model%lradar
-        print *, ' nsradar_reset     : ', Model%nsradar_reset
+        print *, ' nsfullradar_diag  : ', Model%nsfullradar_diag
         print *, ' lrefres           : ', Model%lrefres
         print *, ' ttendlim          : ', Model%ttendlim
         print *, ' ext_diag_thompson : ', Model%ext_diag_thompson
@@ -5899,6 +5911,7 @@ module GFS_typedefs
       print *, ' lsoil             : ', Model%lsoil
       print *, ' rdlai             : ', Model%rdlai
       print *, ' lsoil_lsm         : ', Model%lsoil_lsm
+      print *, ' vrbliceden_noah   : ', Model%vrbliceden_noah
       if (Model%lsm==Model%lsm_noahmp) then
         print *, ' lsnow_lsm         : ', Model%lsnow_lsm
         print *, ' lsnow_lsm_lbound  : ', Model%lsnow_lsm_lbound
@@ -6862,6 +6875,13 @@ module GFS_typedefs
     allocate (Diag%epi     (IM))
     allocate (Diag%smcwlt2 (IM))
     allocate (Diag%smcref2 (IM))
+    allocate (Diag%rhonewsn1 (IM))
+    allocate (Diag%acfrzrn  (IM))
+    allocate (Diag%acfrzrnb (IM))
+    allocate (Diag%acgraup  (IM))
+    allocate (Diag%acgraupb (IM))
+    allocate (Diag%acsnow   (IM))
+    allocate (Diag%acsnowb  (IM))
     if (.not. Model%lsm == Model%lsm_ruc) then
       allocate (Diag%wet1    (IM))
     end if
@@ -7188,6 +7208,9 @@ module GFS_typedefs
     Diag%toticeb    = zero
     Diag%totsnwb    = zero
     Diag%totgrpb    = zero
+    Diag%acfrzrnb   = zero
+    Diag%acgraupb   = zero
+    Diag%acsnowb    = zero
 
     !--- MYNN variables:
     if (Model%do_mynnedmf) then
@@ -7300,6 +7323,7 @@ module GFS_typedefs
     Diag%rh02max     = -999.
     Diag%rh02min     = 999.
     Diag%pratemax     = 0.
+    Diag%rhonewsn1 = 200.
     set_totprcp      = .false.
     if (present(linit) ) set_totprcp = linit
     if (present(iauwindow_center) ) set_totprcp = iauwindow_center
@@ -7309,6 +7333,9 @@ module GFS_typedefs
       Diag%totice  = zero
       Diag%totsnw  = zero
       Diag%totgrp  = zero
+      Diag%acfrzrn = zero
+      Diag%acgraup = zero
+      Diag%acsnow  = zero
     endif
 
   end subroutine diag_phys_zero
