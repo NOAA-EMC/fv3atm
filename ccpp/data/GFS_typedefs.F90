@@ -1864,8 +1864,6 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: dt3dt_pbl(:,:) => null()  !< daily aver GFS_phys tend for Temp pbl
 !
     real (kind=kind_phys), pointer :: du3dt_ogw(:,:) => null()  !< daily aver GFS_phys tend for WE-U OGW
-    real (kind=kind_phys), pointer :: dv3dt_ogw(:,:) => null()  !< daily aver GFS_phys tend for SN-V OGW
-    real (kind=kind_phys), pointer :: dt3dt_ogw(:,:) => null()  !< daily aver GFS_phys tend for Temp OGW
 !
     real (kind=kind_phys), pointer :: ldu3dt_ogw(:,:) => null()  !< time aver GFS_phys tend for WE-U OGW
     real (kind=kind_phys), pointer :: ldu3dt_obl(:,:) => null()  !< time aver GFS_phys tend for WE-U OBL
@@ -1873,24 +1871,11 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: ldu3dt_ofd(:,:) => null()  !< time aver GFS_phys tend for WE-U OFD
 !
     real (kind=kind_phys), pointer :: du3dt_mtb(:,:) => null()  !< daily aver GFS_phys tend for WE-U MTB
-    real (kind=kind_phys), pointer :: dv3dt_mtb(:,:) => null()  !< daily aver GFS_phys tend for SN-V MTB
-    real (kind=kind_phys), pointer :: dt3dt_mtb(:,:) => null()  !< daily aver GFS_phys tend for Temp MTB
 !
     real (kind=kind_phys), pointer :: du3dt_tms(:,:) => null()  !< daily aver GFS_phys tend for WE-U TMS
-    real (kind=kind_phys), pointer :: dv3dt_tms(:,:) => null()  !< daily aver GFS_phys tend for SN-V TMS
-    real (kind=kind_phys), pointer :: dt3dt_tms(:,:) => null()  !< daily aver GFS_phys tend for Temp TMS
 !
     real (kind=kind_phys), pointer :: du3dt_ngw(:,:) => null()  !< daily aver GFS_phys tend for WE-U NGW
     real (kind=kind_phys), pointer :: dv3dt_ngw(:,:) => null()  !< daily aver GFS_phys tend for SN-V NGW
-    real (kind=kind_phys), pointer :: dt3dt_ngw(:,:) => null()  !< daily aver GFS_phys tend for Temp NGW
-!
-    real (kind=kind_phys), pointer :: du3dt_cgw(:,:) => null()  !< daily aver GFS_phys tend for WE-U NGW
-    real (kind=kind_phys), pointer :: dv3dt_cgw(:,:) => null()  !< daily aver GFS_phys tend for SN-V NGW
-    real (kind=kind_phys), pointer :: dt3dt_cgw(:,:) => null()  !< daily aver GFS_phys tend for Temp NGW
-!
-    real (kind=kind_phys), pointer :: du3dt_moist(:,:) => null()  !< daily aver GFS_phys tend for WE-U MOIST
-    real (kind=kind_phys), pointer :: dv3dt_moist(:,:) => null()  !< daily aver GFS_phys tend for SN-V MOIST
-    real (kind=kind_phys), pointer :: dt3dt_moist(:,:) => null()  !< daily aver GFS_phys tend for Temp MOIST
 !
     real (kind=kind_phys), pointer :: dws3dt_ogw(:,:) => null()  !< time aver GFS_phys tend for windspeed OGW
     real (kind=kind_phys), pointer :: dws3dt_obl(:,:) => null()  !< time aver GFS_phys tend for windspeed OBL
@@ -6945,20 +6930,10 @@ module GFS_typedefs
       allocate (Diag%dv3dt_pbl  (IM,Model%levs) )
       allocate (Diag%dt3dt_pbl  (IM,Model%levs) )
       allocate (Diag%du3dt_ogw  (IM,Model%levs) )
-      allocate (Diag%dv3dt_ogw  (IM,Model%levs) )
-      allocate (Diag%dt3dt_ogw  (IM,Model%levs) )
       allocate (Diag%du3dt_mtb  (IM,Model%levs) )
-      allocate (Diag%dv3dt_mtb  (IM,Model%levs) )
-      allocate (Diag%dt3dt_mtb  (IM,Model%levs) )
       allocate (Diag%du3dt_tms  (IM,Model%levs) )
-      allocate (Diag%dv3dt_tms  (IM,Model%levs) )
-      allocate (Diag%dt3dt_tms  (IM,Model%levs) )
       allocate (Diag%du3dt_ngw  (IM,Model%levs) )
       allocate (Diag%dv3dt_ngw  (IM,Model%levs) )
-      allocate (Diag%dt3dt_ngw  (IM,Model%levs) )
-      allocate (Diag%du3dt_cgw  (IM,Model%levs) )
-      allocate (Diag%dv3dt_cgw  (IM,Model%levs) )
-      allocate (Diag%dt3dt_moist (IM,Model%levs))
       allocate (Diag%dudt_tot  (IM,Model%levs) )
       allocate (Diag%dvdt_tot  (IM,Model%levs) )
       allocate (Diag%dtdt_tot  (IM,Model%levs) )
@@ -7313,20 +7288,10 @@ module GFS_typedefs
       Diag%dv3dt_pbl   = zero
       Diag%dt3dt_pbl   = zero
       Diag%du3dt_ogw   = zero
-      Diag%dv3dt_ogw   = zero
-      Diag%dt3dt_ogw   = zero
       Diag%du3dt_mtb   = zero
-      Diag%dv3dt_mtb   = zero
-      Diag%dt3dt_mtb   = zero
       Diag%du3dt_tms   = zero
-      Diag%dv3dt_tms   = zero
-      Diag%dt3dt_tms   = zero
       Diag%du3dt_ngw   = zero
       Diag%dv3dt_ngw   = zero
-      Diag%dt3dt_ngw   = zero
-      Diag%du3dt_moist = zero
-      Diag%dv3dt_moist = zero
-      Diag%dt3dt_moist = zero
       Diag%dudt_tot    = zero
       Diag%dvdt_tot    = zero
       Diag%dtdt_tot    = zero
