@@ -51,7 +51,6 @@
 ! =======================================================================!
 
 module fv_moving_nest_physics_mod
-#ifdef MOVING_NEST
 
   use block_control_mod,      only: block_control_type
   use mpp_mod,                only: mpp_pe, mpp_sync, mpp_sync_self, mpp_send, mpp_error, NOTE, FATAL
@@ -1435,7 +1434,5 @@ contains
     if (move_nsst) deallocate(tref_pr_local, c_0_pr_local, xt_pr_local,  xu_pr_local,  xv_pr_local, ifd_pr_local)
 
   end subroutine mn_phys_dump_to_netcdf
-
-#endif MOVING_NEST
 
 end module fv_moving_nest_physics_mod

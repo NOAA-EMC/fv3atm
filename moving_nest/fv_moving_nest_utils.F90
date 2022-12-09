@@ -29,7 +29,6 @@
 
 module fv_moving_nest_utils_mod
 
-#ifdef MOVING_NEST
   use mpp_mod,           only: FATAL, WARNING, MPP_DEBUG, NOTE, MPP_CLOCK_SYNC,MPP_CLOCK_DETAILED
   use mpp_mod,           only: mpp_pe, mpp_npes, mpp_root_pe, mpp_error, mpp_set_warn_level
   use mpp_mod,           only: mpp_declare_pelist, mpp_set_current_pelist, mpp_sync, mpp_sync_self
@@ -2158,8 +2157,5 @@ contains
     enddo
 
   end subroutine fill_weight_grid
-
-
-#endif ! MOVING_NEST
 
 end module fv_moving_nest_utils_mod

@@ -28,7 +28,6 @@
 
 module fv_moving_nest_types_mod
 
-#ifdef MOVING_NEST
 #include <fms_platform.h>
 
 #ifdef GFS_TYPES
@@ -625,5 +624,4 @@ contains
 
   end subroutine deallocate_fv_moving_nest_physics_type
 
-#endif
 end module fv_moving_nest_types_mod

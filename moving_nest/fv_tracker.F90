@@ -25,7 +25,6 @@
 
 module fv_tracker_mod
 
-#ifdef MOVING_NEST
 #include <fms_platform.h>
 
   use constants_mod,       only: pi=>pi_8, rad_to_deg, deg_to_rad, RVGAS, RDGAS
@@ -1903,7 +1902,5 @@ contains
   end subroutine check_validity
 
 #endif !< DEBUG
-
-#endif !< MOVING_NEST
 
 end module fv_tracker_mod

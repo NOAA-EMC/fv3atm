@@ -53,7 +53,6 @@
 #define REMAP 1
 
 module fv_moving_nest_mod
-#ifdef MOVING_NEST
 
   use block_control_mod,      only : block_control_type
   use fms_mod,                only : mpp_clock_id, mpp_clock_begin, mpp_clock_end, CLOCK_ROUTINE, clock_flag_default, CLOCK_SUBCOMPONENT
@@ -2513,8 +2512,6 @@ contains
     endif
 
   end subroutine calc_nest_halo_weights
-
-#endif ! MOVING_NEST
 
 end module fv_moving_nest_mod
 

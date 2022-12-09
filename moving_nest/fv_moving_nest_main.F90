@@ -27,7 +27,6 @@
 ! =======================================================================!
 
 module fv_moving_nest_main_mod
-#ifdef MOVING_NEST
 
 #include <fms_platform.h>
 
@@ -1144,8 +1143,6 @@ contains
       enddo
     enddo
   end subroutine mn_replace_low_values
-
-#endif ! MOVING_NEST
 
 end module fv_moving_nest_main_mod
 
