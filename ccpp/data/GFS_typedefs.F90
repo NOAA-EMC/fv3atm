@@ -1180,7 +1180,7 @@ module GFS_typedefs
     real(kind=kind_phys) :: rlmx            !< maximum allowed mixing length in boundary layer mass flux scheme
     real(kind=kind_phys) :: elmx            !< maximum allowed dissipation mixing length in boundary layer mass flux scheme
     integer              :: sfc_rlm         !< choice of near surface mixing length in boundary layer mass flux scheme
-    integer              :: tc_pbl          !< option of tc application in boundary layer mass flux scheme
+    integer              :: tc_pbl          !< control for TC applications in the PBL scheme
 
 !--- parameters for canopy heat storage (CHS) parameterization
     real(kind=kind_phys) :: h0facu          !< CHS factor for sensible heat flux in unstable surface layer
@@ -3364,7 +3364,7 @@ module GFS_typedefs
     real(kind=kind_phys) :: rlmx           = 300.            !< maximum allowed mixing length in boundary layer mass flux scheme
     real(kind=kind_phys) :: elmx           = 300.            !< maximum allowed dissipation mixing length in boundary layer mass flux scheme
     integer              :: sfc_rlm        = 0               !< choice of near surface mixing length in boundary layer mass flux scheme
-    integer              :: tc_pbl         = 0               !< option of tc application in boundary layer mass flux scheme
+    integer              :: tc_pbl         = 0               !< control for TC applications in the PBL scheme
 
 !--- parameters for canopy heat storage (CHS) parameterization
     real(kind=kind_phys) :: h0facu         = 0.25
