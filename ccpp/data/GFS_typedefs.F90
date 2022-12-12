@@ -1728,12 +1728,12 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: toticeb(:)     => null()   !< accumulated ice precipitation in bucket (kg/m2)
     real (kind=kind_phys), pointer :: totsnwb(:)     => null()   !< accumulated snow precipitation in bucket (kg/m2)
     real (kind=kind_phys), pointer :: totgrpb(:)     => null()   !< accumulated graupel precipitation in bucket (kg/m2)
-    real (kind=kind_phys), pointer :: acfrzrn(:)     => null()   !< accumulated surface freezing rain (m)
-    real (kind=kind_phys), pointer :: acfrzrnb(:)    => null()   !< accumulated surface freezing rain in bucket (m)
-    real (kind=kind_phys), pointer :: acgraup(:)     => null()   !< accumulated surface graupel (m)
-    real (kind=kind_phys), pointer :: acgraupb(:)    => null()   !< accumulated surface graupel in bucket (m)
-    real (kind=kind_phys), pointer :: acsnow(:)      => null()   !< accumulated surface snowfall (m)
-    real (kind=kind_phys), pointer :: acsnowb(:)     => null()   !< accumulated surface snowfall in bucket (m)
+    real (kind=kind_phys), pointer :: frzr(:)     => null()   !< accumulated surface freezing rain (m)
+    real (kind=kind_phys), pointer :: frzrb(:)    => null()   !< accumulated surface freezing rain in bucket (m)
+    real (kind=kind_phys), pointer :: frozr(:)     => null()   !< accumulated surface graupel (m)
+    real (kind=kind_phys), pointer :: frozrb(:)    => null()   !< accumulated surface graupel in bucket (m)
+    real (kind=kind_phys), pointer :: tsnowp(:)      => null()   !< accumulated surface snowfall (m)
+    real (kind=kind_phys), pointer :: tsnowpb(:)     => null()   !< accumulated surface snowfall in bucket (m)
     real (kind=kind_phys), pointer :: rhonewsn1(:)   => null()   !< precipitation ice density (kg/m3)
 
     !--- MYNN variables
@@ -6876,12 +6876,12 @@ module GFS_typedefs
     allocate (Diag%smcwlt2 (IM))
     allocate (Diag%smcref2 (IM))
     allocate (Diag%rhonewsn1 (IM))
-    allocate (Diag%acfrzrn  (IM))
-    allocate (Diag%acfrzrnb (IM))
-    allocate (Diag%acgraup  (IM))
-    allocate (Diag%acgraupb (IM))
-    allocate (Diag%acsnow   (IM))
-    allocate (Diag%acsnowb  (IM))
+    allocate (Diag%frzr  (IM))
+    allocate (Diag%frzrb (IM))
+    allocate (Diag%frozr  (IM))
+    allocate (Diag%frozrb (IM))
+    allocate (Diag%tsnowp   (IM))
+    allocate (Diag%tsnowpb  (IM))
     if (.not. Model%lsm == Model%lsm_ruc) then
       allocate (Diag%wet1    (IM))
     end if
@@ -7208,9 +7208,9 @@ module GFS_typedefs
     Diag%toticeb    = zero
     Diag%totsnwb    = zero
     Diag%totgrpb    = zero
-    Diag%acfrzrnb   = zero
-    Diag%acgraupb   = zero
-    Diag%acsnowb    = zero
+    Diag%frzrb   = zero
+    Diag%frozrb   = zero
+    Diag%tsnowpb    = zero
 
     !--- MYNN variables:
     if (Model%do_mynnedmf) then
@@ -7333,9 +7333,9 @@ module GFS_typedefs
       Diag%totice  = zero
       Diag%totsnw  = zero
       Diag%totgrp  = zero
-      Diag%acfrzrn = zero
-      Diag%acgraup = zero
-      Diag%acsnow  = zero
+      Diag%frzr = zero
+      Diag%frozr = zero
+      Diag%tsnowp  = zero
     endif
 
   end subroutine diag_phys_zero

@@ -1193,7 +1193,7 @@ module post_fv3
             endif
 
             !Accumulated snowfall 
-            if(trim(fieldname)=='acsnow') then
+            if(trim(fieldname)=='tsnowp') then
               !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,snow_acm,arrayr42d,sm,fillValue)
               do j=jsta,jend
                 do i=ista, iend
@@ -1204,7 +1204,7 @@ module post_fv3
             endif
 
             !Snowfall bucket 
-            if(trim(fieldname)=='acsnowb') then
+            if(trim(fieldname)=='tsnowpb') then
               !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,snow_bkt,arrayr42d,sm,fillValue)
               do j=jsta,jend
                 do i=ista, iend
@@ -1215,7 +1215,7 @@ module post_fv3
             endif
 
             !Accumulated graupel 
-            if(trim(fieldname)=='acgraup') then
+            if(trim(fieldname)=='frozr') then
               !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,acgraup,arrayr42d,sm,fillValue)
               do j=jsta,jend
                 do i=ista, iend
@@ -1226,7 +1226,7 @@ module post_fv3
             endif
 
             !Graupel bucket 
-            if(trim(fieldname)=='acgraupb') then
+            if(trim(fieldname)=='frozrb') then
               !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,graup_bucket,arrayr42d,sm,fillValue)
               do j=jsta,jend
                 do i=ista, iend
@@ -1237,7 +1237,7 @@ module post_fv3
             endif
 
             !Accumulated freezing rain 
-            if(trim(fieldname)=='acfrzrn') then
+            if(trim(fieldname)=='frzr') then
               !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,acfrain,arrayr42d,sm,fillValue)
               do j=jsta,jend
                 do i=ista, iend
@@ -1248,7 +1248,7 @@ module post_fv3
             endif
 
             !Freezing rain bucket
-            if(trim(fieldname)=='acfrzrnb') then
+            if(trim(fieldname)=='frzrb') then
               !$omp parallel do default(none) private(i,j) shared(jsta,jend,ista,iend,spval,frzrn_bucket,arrayr42d,sm,fillValue)
               do j=jsta,jend
                 do i=ista, iend
