@@ -5,7 +5,6 @@
 
 add_subdirectory(ccpp)
 
-
 ###############################################################################
 ### fv3 dynamical core
 ###############################################################################
@@ -39,8 +38,6 @@ endif()
 if(NOT PARALLEL_NETCDF)
   list(APPEND _fv3atm_defs_private NO_PARALLEL_NETCDF)
 endif()
-
-
 
 if(MOVING_NEST)
   list(APPEND _fv3atm_defs_private MOVING_NEST MOIST_CAPPA USE_COND)
@@ -79,7 +76,6 @@ else()
    list(APPEND moving_nest_srcs "")
 endif()
 
-
 add_library(fv3atm
   atmos_model.F90
   fv3_cap.F90
@@ -97,8 +93,6 @@ add_library(fv3atm
   ${moving_nest_srcs}
   ${POST_SRC}
 )
-
-
 
 add_dependencies(fv3atm fv3 fv3ccpp stochastic_physics)
 
