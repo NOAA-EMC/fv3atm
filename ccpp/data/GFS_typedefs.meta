@@ -5001,6 +5001,12 @@
   units = none
   dimensions = ()
   type = integer
+[tc_pbl]
+  standard_name = control_for_TC_applications_in_the_PBL_scheme
+  long_name = control for TC applications in the PBL scheme
+  units = none
+  dimensions = ()
+  type = integer
 [h0facu]
   standard_name = multiplicative_tuning_parameter_for_reduced_surface_heat_fluxes_due_to_canopy_heat_storage
   long_name = canopy heat storage factor for sensible heat flux in unstable surface layer
