@@ -87,7 +87,7 @@ module FV3GFS_io_mod
   integer :: tot_diag_idx = 0
   integer :: total_outputlevel = 0
   integer :: isco,ieco,jsco,jeco,levo,num_axes_phys
-  integer :: fhzero, ncld, nsoil, imp_physics, landsfcmdl, k
+  integer :: fhzero, ncld, nsoil, imp_physics, landsfcmdl
   real(4) :: dtp
   logical :: lprecip_accu
   character(len=64)  :: Sprecip_accu
@@ -110,6 +110,22 @@ module FV3GFS_io_mod
 !--- miscellaneous other variables
   logical :: use_wrtgridcomp_output = .FALSE.
   logical :: module_is_initialized  = .FALSE.
+
+  interface copy_from_GFS_Data
+    module procedure copy_from_GFS_Data_2d_phys2phys, &
+         copy_from_GFS_Data_3d_phys2phys, &
+         copy_from_GFS_Data_2d_int2phys, &
+         copy_from_GFS_Data_3d_int2phys, &
+         copy_from_GFS_Data_2d_stack_phys2phys
+  end interface
+
+  interface copy_to_GFS_Data
+    module procedure copy_to_GFS_Data_2d_phys2phys, &
+         copy_to_GFS_Data_3d_phys2phys, &
+         copy_to_GFS_Data_2d_int2phys, &
+         copy_to_GFS_Data_3d_int2phys, &
+         copy_to_GFS_Data_3d_slice_phys2phys
+  end interface copy_to_GFS_Data
 
   CONTAINS
 
@@ -168,11 +184,12 @@ module FV3GFS_io_mod
    type(GFS_data_type),       intent(in) :: GFS_Data(:)
    type (block_control_type), intent(in) :: Atm_block
    !--- local variables
-   integer :: outunit, j, i, ix, nb, isc, iec, jsc, jec, lev, ct, l, ntr
-   integer :: nsfcprop2d, idx_opt
+   integer :: outunit, j, i, ix, nb, isc, iec, jsc, jec, lev, ct, l, ntr, k
+   integer :: nsfcprop2d, idx_opt, nt
    real(kind=kind_phys), allocatable :: temp2d(:,:,:)
    real(kind=kind_phys), allocatable :: temp3d(:,:,:,:)
    real(kind=kind_phys), allocatable :: temp3dlevsp1(:,:,:,:)
+   integer, allocatable :: ii1(:), jj1(:)
    character(len=32) :: name
 
    isc = Model%isc
@@ -212,263 +229,271 @@ module FV3GFS_io_mod
    temp3d = zero
    temp3dlevsp1 = zero
 
-   do j=jsc,jec
-     do i=isc,iec
-       nb = Atm_block%blkno(i,j)
-       ix = Atm_block%ixp(i,j)
-       !--- statein pressure
-       temp2d(i,j, 1) = GFS_Data(nb)%Statein%pgr(ix)
-       temp2d(i,j, 2) = GFS_Data(nb)%Sfcprop%slmsk(ix)
-       temp2d(i,j, 3) = GFS_Data(nb)%Sfcprop%tsfc(ix)
-       temp2d(i,j, 4) = GFS_Data(nb)%Sfcprop%tisfc(ix)
-       temp2d(i,j, 5) = GFS_Data(nb)%Sfcprop%snowd(ix)
-       temp2d(i,j, 6) = GFS_Data(nb)%Sfcprop%zorl(ix)
-       temp2d(i,j, 7) = GFS_Data(nb)%Sfcprop%fice(ix)
-       temp2d(i,j, 8) = GFS_Data(nb)%Sfcprop%hprime(ix,1)
-       temp2d(i,j, 9) = GFS_Data(nb)%Sfcprop%sncovr(ix)
-       temp2d(i,j,10) = GFS_Data(nb)%Sfcprop%snoalb(ix)
-       temp2d(i,j,11) = GFS_Data(nb)%Sfcprop%alvsf(ix)
-       temp2d(i,j,12) = GFS_Data(nb)%Sfcprop%alnsf(ix)
-       temp2d(i,j,13) = GFS_Data(nb)%Sfcprop%alvwf(ix)
-       temp2d(i,j,14) = GFS_Data(nb)%Sfcprop%alnwf(ix)
-       temp2d(i,j,15) = GFS_Data(nb)%Sfcprop%facsf(ix)
-       temp2d(i,j,16) = GFS_Data(nb)%Sfcprop%facwf(ix)
-       temp2d(i,j,17) = real(GFS_Data(nb)%Sfcprop%slope(ix), kind=kind_phys)
-       temp2d(i,j,18) = GFS_Data(nb)%Sfcprop%shdmin(ix)
-       temp2d(i,j,19) = GFS_Data(nb)%Sfcprop%shdmax(ix)
-       temp2d(i,j,20) = GFS_Data(nb)%Sfcprop%tg3(ix)
-       temp2d(i,j,21) = GFS_Data(nb)%Sfcprop%vfrac(ix)
-       temp2d(i,j,22) = real(GFS_Data(nb)%Sfcprop%vtype(ix), kind=kind_phys)
-       temp2d(i,j,23) = real(GFS_Data(nb)%Sfcprop%stype(ix), kind=kind_phys)
-       temp2d(i,j,24) = GFS_Data(nb)%Sfcprop%uustar(ix)
-       temp2d(i,j,25) = GFS_Data(nb)%Sfcprop%oro(ix)
-       temp2d(i,j,26) = GFS_Data(nb)%Sfcprop%oro_uf(ix)
-       temp2d(i,j,27) = GFS_Data(nb)%Sfcprop%hice(ix)
-       temp2d(i,j,28) = GFS_Data(nb)%Sfcprop%weasd(ix)
-       temp2d(i,j,29) = GFS_Data(nb)%Sfcprop%canopy(ix)
-       temp2d(i,j,30) = GFS_Data(nb)%Sfcprop%ffmm(ix)
-       temp2d(i,j,31) = GFS_Data(nb)%Sfcprop%ffhh(ix)
-       temp2d(i,j,32) = GFS_Data(nb)%Sfcprop%f10m(ix)
-       temp2d(i,j,33) = GFS_Data(nb)%Sfcprop%tprcp(ix)
-       temp2d(i,j,34) = GFS_Data(nb)%Sfcprop%srflag(ix)
-       if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp) then
-         temp2d(i,j,35) = GFS_Data(nb)%Sfcprop%slc(ix,1)
-         temp2d(i,j,36) = GFS_Data(nb)%Sfcprop%slc(ix,2)
-         temp2d(i,j,37) = GFS_Data(nb)%Sfcprop%slc(ix,3)
-         temp2d(i,j,38) = GFS_Data(nb)%Sfcprop%slc(ix,4)
-         temp2d(i,j,39) = GFS_Data(nb)%Sfcprop%smc(ix,1)
-         temp2d(i,j,40) = GFS_Data(nb)%Sfcprop%smc(ix,2)
-         temp2d(i,j,41) = GFS_Data(nb)%Sfcprop%smc(ix,3)
-         temp2d(i,j,42) = GFS_Data(nb)%Sfcprop%smc(ix,4)
-         temp2d(i,j,43) = GFS_Data(nb)%Sfcprop%stc(ix,1)
-         temp2d(i,j,44) = GFS_Data(nb)%Sfcprop%stc(ix,2)
-         temp2d(i,j,45) = GFS_Data(nb)%Sfcprop%stc(ix,3)
-         temp2d(i,j,46) = GFS_Data(nb)%Sfcprop%stc(ix,4)
-       elseif (Model%lsm == Model%lsm_ruc) then
-         temp2d(i,j,35) = GFS_Data(nb)%Sfcprop%sh2o(ix,1)
-         temp2d(i,j,36) = GFS_Data(nb)%Sfcprop%sh2o(ix,2)
-         temp2d(i,j,37) = GFS_Data(nb)%Sfcprop%sh2o(ix,3)
-         ! Combine levels 4 to lsoil_lsm (9 for RUC) into one
-         temp2d(i,j,38) = sum(GFS_Data(nb)%Sfcprop%sh2o(ix,4:Model%lsoil_lsm))
-         temp2d(i,j,39) = GFS_Data(nb)%Sfcprop%smois(ix,1)
-         temp2d(i,j,40) = GFS_Data(nb)%Sfcprop%smois(ix,2)
-         temp2d(i,j,41) = GFS_Data(nb)%Sfcprop%smois(ix,3)
-         ! Combine levels 4 to lsoil_lsm (9 for RUC) into one
-         temp2d(i,j,42) = sum(GFS_Data(nb)%Sfcprop%smois(ix,4:Model%lsoil_lsm))
-         temp2d(i,j,43) = GFS_Data(nb)%Sfcprop%tslb(ix,1)
-         temp2d(i,j,44) = GFS_Data(nb)%Sfcprop%tslb(ix,2)
-         temp2d(i,j,45) = GFS_Data(nb)%Sfcprop%tslb(ix,3)
-         ! Combine levels 4 to lsoil_lsm (9 for RUC) into one
-         temp2d(i,j,46) = sum(GFS_Data(nb)%Sfcprop%tslb(ix,4:Model%lsoil_lsm))
-       endif ! LSM choice
+!$omp parallel do default(shared) private(i, j, k, nb, ix, nt, ii1, jj1)
+    block_loop: do nb = 1, Atm_block%nblks
+       allocate(ii1(Atm_block%blksz(nb)))
+       allocate(jj1(Atm_block%blksz(nb)))
+       ii1=Atm_block%index(nb)%ii - isc + 1
+       jj1=Atm_block%index(nb)%jj - jsc + 1
 
-       temp2d(i,j,47) = GFS_Data(nb)%Sfcprop%t2m(ix)
-       temp2d(i,j,48) = GFS_Data(nb)%Sfcprop%q2m(ix)
-       temp2d(i,j,49) = GFS_Data(nb)%Coupling%nirbmdi(ix)
-       temp2d(i,j,50) = GFS_Data(nb)%Coupling%nirdfdi(ix)
-       temp2d(i,j,51) = GFS_Data(nb)%Coupling%visbmdi(ix)
-       temp2d(i,j,52) = GFS_Data(nb)%Coupling%visdfdi(ix)
-       temp2d(i,j,53) = GFS_Data(nb)%Coupling%nirbmui(ix)
-       temp2d(i,j,54) = GFS_Data(nb)%Coupling%nirdfui(ix)
-       temp2d(i,j,55) = GFS_Data(nb)%Coupling%visbmui(ix)
-       temp2d(i,j,56) = GFS_Data(nb)%Coupling%visdfui(ix)
-       temp2d(i,j,57) = GFS_Data(nb)%Coupling%sfcdsw(ix)
-       temp2d(i,j,58) = GFS_Data(nb)%Coupling%sfcnsw(ix)
-       temp2d(i,j,59) = GFS_Data(nb)%Coupling%sfcdlw(ix)
-       temp2d(i,j,60) = GFS_Data(nb)%Grid%xlon(ix)
-       temp2d(i,j,61) = GFS_Data(nb)%Grid%xlat(ix)
-       temp2d(i,j,62) = GFS_Data(nb)%Grid%xlat_d(ix)
-       temp2d(i,j,63) = GFS_Data(nb)%Grid%sinlat(ix)
-       temp2d(i,j,64) = GFS_Data(nb)%Grid%coslat(ix)
-       temp2d(i,j,65) = GFS_Data(nb)%Grid%area(ix)
-       temp2d(i,j,66) = GFS_Data(nb)%Grid%dx(ix)
+       ! Copy into temp2d
+       nt=0
+
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Statein%pgr)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%slmsk)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%tsfc)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%tisfc)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%snowd)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%zorl)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%fice)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%hprime(:,1))
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%sncovr)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%snoalb)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%alvsf)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%alnsf)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%alvwf)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%alnwf)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%facsf)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%facwf)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%slope)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%shdmin)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%shdmax)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%tg3)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%vfrac)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%vtype)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%stype)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%uustar)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%oro)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%oro_uf)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%hice)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%weasd)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%canopy)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%ffmm)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%ffhh)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%f10m)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%tprcp)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%srflag)
+       lsm_choice: if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp) then
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%slc)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%smc)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%stc)
+       elseif (Model%lsm == Model%lsm_ruc) then
+         do k=1,3
+           call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%sh2o(:,k))
+         enddo
+         ! Combine levels 4 to lsoil_lsm (9 for RUC) into one
+         nt=nt+1
+         do ix=1,Atm_block%blksz(nb)
+           temp2d(ii1(ix),jj1(ix),nt) = sum(GFS_Data(nb)%Sfcprop%sh2o(ix,4:Model%lsoil_lsm))
+         enddo
+         do k=1,3
+           call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%smois(:,k))
+         enddo
+         ! Combine levels 4 to lsoil_lsm (9 for RUC) into one
+         nt=nt+1
+         do ix=1,Atm_block%blksz(nb)
+           temp2d(ii1(ix),jj1(ix),nt) = sum(GFS_Data(nb)%Sfcprop%smois(ix,4:Model%lsoil_lsm))
+         enddo
+         do k=1,3
+           call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%tslb(:,k))
+         enddo
+         ! Combine levels 4 to lsoil_lsm (9 for RUC) into one
+         nt=nt+1
+         do ix=1,Atm_block%blksz(nb)
+           temp2d(ii1(ix),jj1(ix),nt) = sum(GFS_Data(nb)%Sfcprop%tslb(ix,4:Model%lsoil_lsm))
+         enddo
+       endif lsm_choice
+
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%t2m)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%q2m)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Coupling%nirbmdi)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Coupling%nirdfdi)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Coupling%visbmdi)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Coupling%visdfdi)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Coupling%nirbmui)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Coupling%nirdfui)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Coupling%visbmui)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Coupling%visdfui)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Coupling%sfcdsw)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Coupling%sfcnsw)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Coupling%sfcdlw)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Grid%xlon)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Grid%xlat)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Grid%xlat_d)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Grid%sinlat)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Grid%coslat)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Grid%area)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Grid%dx)
        if (Model%ntoz > 0) then
-         temp2d(i,j,67) = GFS_Data(nb)%Grid%ddy_o3(ix)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Grid%ddy_o3)
        endif
        if (Model%h2o_phys) then
-         temp2d(i,j,68) = GFS_Data(nb)%Grid%ddy_h(ix)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Grid%ddy_h)
        endif
-       temp2d(i,j,69) = GFS_Data(nb)%Cldprop%cv(ix)
-       temp2d(i,j,70) = GFS_Data(nb)%Cldprop%cvt(ix)
-       temp2d(i,j,71) = GFS_Data(nb)%Cldprop%cvb(ix)
-       temp2d(i,j,72) = GFS_Data(nb)%Radtend%sfalb(ix)
-       temp2d(i,j,73) = GFS_Data(nb)%Radtend%coszen(ix)
-       temp2d(i,j,74) = GFS_Data(nb)%Radtend%tsflw(ix)
-       temp2d(i,j,75) = GFS_Data(nb)%Radtend%semis(ix)
-       temp2d(i,j,76) = GFS_Data(nb)%Radtend%coszdg(ix)
-       temp2d(i,j,77) = GFS_Data(nb)%Radtend%sfcfsw(ix)%upfxc
-       temp2d(i,j,78) = GFS_Data(nb)%Radtend%sfcfsw(ix)%upfx0
-       temp2d(i,j,79) = GFS_Data(nb)%Radtend%sfcfsw(ix)%dnfxc
-       temp2d(i,j,80) = GFS_Data(nb)%Radtend%sfcfsw(ix)%dnfx0
-       temp2d(i,j,81) = GFS_Data(nb)%Radtend%sfcflw(ix)%upfxc
-       temp2d(i,j,82) = GFS_Data(nb)%Radtend%sfcflw(ix)%upfx0
-       temp2d(i,j,83) = GFS_Data(nb)%Radtend%sfcflw(ix)%dnfxc
-       temp2d(i,j,84) = GFS_Data(nb)%Radtend%sfcflw(ix)%dnfx0
-       temp2d(i,j,85) = GFS_Data(nb)%Sfcprop%tiice(ix,1)
-       temp2d(i,j,86) = GFS_Data(nb)%Sfcprop%tiice(ix,2)
-       temp2d(i,j,87) = GFS_Data(nb)%Sfcprop%albdirvis_lnd(ix)
-       temp2d(i,j,88) = GFS_Data(nb)%Sfcprop%albdirnir_lnd(ix)
-       temp2d(i,j,89) = GFS_Data(nb)%Sfcprop%albdifvis_lnd(ix)
-       temp2d(i,j,90) = GFS_Data(nb)%Sfcprop%albdifnir_lnd(ix)
-       temp2d(i,j,91) = GFS_Data(nb)%Sfcprop%emis_lnd(ix)
-       temp2d(i,j,92) = GFS_Data(nb)%Sfcprop%emis_ice(ix)
-       temp2d(i,j,93) = GFS_Data(nb)%Sfcprop%sncovr_ice(ix)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Cldprop%cv)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Cldprop%cvt)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Cldprop%cvb)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Radtend%sfalb)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Radtend%coszen)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Radtend%tsflw)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Radtend%semis)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Radtend%coszdg)
 
-       idx_opt = 94
+       ! Radtend%sfcfsw is an array of derived type, so we copy all
+       ! eight elements of the type in one loop
+       do ix=1,Atm_block%blksz(nb)
+         temp2d(ii1(ix),jj1(ix),nt+1) = GFS_Data(nb)%Radtend%sfcfsw(ix)%upfxc
+         temp2d(ii1(ix),jj1(ix),nt+2) = GFS_Data(nb)%Radtend%sfcfsw(ix)%upfx0
+         temp2d(ii1(ix),jj1(ix),nt+3) = GFS_Data(nb)%Radtend%sfcfsw(ix)%dnfxc
+         temp2d(ii1(ix),jj1(ix),nt+4) = GFS_Data(nb)%Radtend%sfcfsw(ix)%dnfx0
+         temp2d(ii1(ix),jj1(ix),nt+5) = GFS_Data(nb)%Radtend%sfcflw(ix)%upfxc
+         temp2d(ii1(ix),jj1(ix),nt+6) = GFS_Data(nb)%Radtend%sfcflw(ix)%upfx0
+         temp2d(ii1(ix),jj1(ix),nt+7) = GFS_Data(nb)%Radtend%sfcflw(ix)%dnfxc
+         temp2d(ii1(ix),jj1(ix),nt+8) = GFS_Data(nb)%Radtend%sfcflw(ix)%dnfx0
+       enddo
+       nt = nt + 8
+
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%tiice(:,1))
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%tiice(:,2))
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%albdirvis_lnd)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%albdirnir_lnd)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%albdifvis_lnd)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%albdifnir_lnd)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%emis_lnd)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%emis_ice)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%sncovr_ice)
+
        if (Model%use_cice_alb .or. Model%lsm == Model%lsm_ruc) then
-         temp2d(i,j,idx_opt) = GFS_Data(nb)%Sfcprop%albdirvis_ice(ix)
-         temp2d(i,j,idx_opt+1) = GFS_Data(nb)%Sfcprop%albdirnir_ice(ix)
-         temp2d(i,j,idx_opt+2) = GFS_Data(nb)%Sfcprop%albdifvis_ice(ix)
-         temp2d(i,j,idx_opt+3) = GFS_Data(nb)%Sfcprop%albdifnir_ice(ix)
-       idx_opt = idx_opt + 4
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%albdirvis_ice)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%albdirnir_ice)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%albdifvis_ice)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%albdifnir_ice)
        endif
 
-       if (Model%lsm == Model%lsm_noahmp) then
-        temp2d(i,j,idx_opt)    = GFS_Data(nb)%Sfcprop%snowxy(ix)
-        temp2d(i,j,idx_opt+1)  = GFS_Data(nb)%Sfcprop%tvxy(ix)
-        temp2d(i,j,idx_opt+2)  = GFS_Data(nb)%Sfcprop%tgxy(ix)
-        temp2d(i,j,idx_opt+3)  = GFS_Data(nb)%Sfcprop%canicexy(ix)
-        temp2d(i,j,idx_opt+4)  = GFS_Data(nb)%Sfcprop%canliqxy(ix)
-        temp2d(i,j,idx_opt+5)  = GFS_Data(nb)%Sfcprop%eahxy(ix)
-        temp2d(i,j,idx_opt+6)  = GFS_Data(nb)%Sfcprop%tahxy(ix)
-        temp2d(i,j,idx_opt+7)  = GFS_Data(nb)%Sfcprop%cmxy(ix)
-        temp2d(i,j,idx_opt+8)  = GFS_Data(nb)%Sfcprop%chxy(ix)
-        temp2d(i,j,idx_opt+9)  = GFS_Data(nb)%Sfcprop%fwetxy(ix)
-        temp2d(i,j,idx_opt+10) = GFS_Data(nb)%Sfcprop%sneqvoxy(ix)
-        temp2d(i,j,idx_opt+11) = GFS_Data(nb)%Sfcprop%alboldxy(ix)
-        temp2d(i,j,idx_opt+12) = GFS_Data(nb)%Sfcprop%qsnowxy(ix)
-        temp2d(i,j,idx_opt+13) = GFS_Data(nb)%Sfcprop%wslakexy(ix)
-        temp2d(i,j,idx_opt+14) = GFS_Data(nb)%Sfcprop%zwtxy(ix)
-        temp2d(i,j,idx_opt+15) = GFS_Data(nb)%Sfcprop%waxy(ix)
-        temp2d(i,j,idx_opt+16) = GFS_Data(nb)%Sfcprop%wtxy(ix)
-        temp2d(i,j,idx_opt+17) = GFS_Data(nb)%Sfcprop%lfmassxy(ix)
-        temp2d(i,j,idx_opt+18) = GFS_Data(nb)%Sfcprop%rtmassxy(ix)
-        temp2d(i,j,idx_opt+19) = GFS_Data(nb)%Sfcprop%stmassxy(ix)
-        temp2d(i,j,idx_opt+20) = GFS_Data(nb)%Sfcprop%woodxy(ix)
-        temp2d(i,j,idx_opt+21) = GFS_Data(nb)%Sfcprop%stblcpxy(ix)
-        temp2d(i,j,idx_opt+22) = GFS_Data(nb)%Sfcprop%fastcpxy(ix)
-        temp2d(i,j,idx_opt+23) = GFS_Data(nb)%Sfcprop%xsaixy(ix)
-        temp2d(i,j,idx_opt+24) = GFS_Data(nb)%Sfcprop%xlaixy(ix)
-        temp2d(i,j,idx_opt+25) = GFS_Data(nb)%Sfcprop%taussxy(ix)
-        temp2d(i,j,idx_opt+26) = GFS_Data(nb)%Sfcprop%smcwtdxy(ix)
-        temp2d(i,j,idx_opt+27) = GFS_Data(nb)%Sfcprop%deeprechxy(ix)
-        temp2d(i,j,idx_opt+28) = GFS_Data(nb)%Sfcprop%rechxy(ix)
+       lsm_choice_2: if (Model%lsm == Model%lsm_noahmp) then
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%snowxy)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%tvxy)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%tgxy)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%canicexy)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%canliqxy)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%eahxy)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%tahxy)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%cmxy)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%chxy)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%fwetxy)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%sneqvoxy)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%alboldxy)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%qsnowxy)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%wslakexy)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%zwtxy)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%waxy)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%wtxy)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%lfmassxy)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%rtmassxy)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%stmassxy)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%woodxy)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%stblcpxy)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%fastcpxy)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%xsaixy)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%xlaixy)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%taussxy)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%smcwtdxy)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%deeprechxy)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%rechxy)
 
-        temp2d(i,j,idx_opt+29) = GFS_Data(nb)%Sfcprop%snicexy(ix,-2)
-        temp2d(i,j,idx_opt+30) = GFS_Data(nb)%Sfcprop%snicexy(ix,-1)
-        temp2d(i,j,idx_opt+31) = GFS_Data(nb)%Sfcprop%snicexy(ix,0)
-        temp2d(i,j,idx_opt+32) = GFS_Data(nb)%Sfcprop%snliqxy(ix,-2)
-        temp2d(i,j,idx_opt+33) = GFS_Data(nb)%Sfcprop%snliqxy(ix,-1)
-        temp2d(i,j,idx_opt+34) = GFS_Data(nb)%Sfcprop%snliqxy(ix,0)
-        temp2d(i,j,idx_opt+35) = GFS_Data(nb)%Sfcprop%tsnoxy(ix,-2)
-        temp2d(i,j,idx_opt+36) = GFS_Data(nb)%Sfcprop%tsnoxy(ix,-1)
-        temp2d(i,j,idx_opt+37) = GFS_Data(nb)%Sfcprop%tsnoxy(ix,0)
-        temp2d(i,j,idx_opt+38) = GFS_Data(nb)%Sfcprop%smoiseq(ix,1)
-        temp2d(i,j,idx_opt+39) = GFS_Data(nb)%Sfcprop%smoiseq(ix,2)
-        temp2d(i,j,idx_opt+40) = GFS_Data(nb)%Sfcprop%smoiseq(ix,3)
-        temp2d(i,j,idx_opt+41) = GFS_Data(nb)%Sfcprop%smoiseq(ix,4)
-        temp2d(i,j,idx_opt+42) = GFS_Data(nb)%Sfcprop%zsnsoxy(ix,-2)
-        temp2d(i,j,idx_opt+43) = GFS_Data(nb)%Sfcprop%zsnsoxy(ix,-1)
-        temp2d(i,j,idx_opt+44) = GFS_Data(nb)%Sfcprop%zsnsoxy(ix,0)
-        temp2d(i,j,idx_opt+45) = GFS_Data(nb)%Sfcprop%zsnsoxy(ix,1)
-        temp2d(i,j,idx_opt+46) = GFS_Data(nb)%Sfcprop%zsnsoxy(ix,2)
-        temp2d(i,j,idx_opt+47) = GFS_Data(nb)%Sfcprop%zsnsoxy(ix,3)
-        temp2d(i,j,idx_opt+48) = GFS_Data(nb)%Sfcprop%zsnsoxy(ix,4)
-        idx_opt = idx_opt + 49
+         ! These five arrays use bizarre indexing, so we use loops:
+         do k=-2,0
+           call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%snicexy(:,k))
+         enddo
+
+         do k=-2,0
+           call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%snliqxy(:,k))
+         enddo
+
+         do k=-2,0
+           call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%tsnoxy(:,k))
+         enddo
+
+         do k=1,4
+           call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%smoiseq(:,k))
+         enddo
+
+         do k=-2,4
+           call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%zsnsoxy(:,k))
+         enddo
        elseif (Model%lsm == Model%lsm_ruc) then
-        temp2d(i,j,idx_opt)    = GFS_Data(nb)%Sfcprop%wetness(ix)
-        temp2d(i,j,idx_opt+1)  = GFS_Data(nb)%Sfcprop%clw_surf_land(ix)
-        temp2d(i,j,idx_opt+2)  = GFS_Data(nb)%Sfcprop%clw_surf_ice(ix)
-        temp2d(i,j,idx_opt+3)  = GFS_Data(nb)%Sfcprop%qwv_surf_land(ix)
-        temp2d(i,j,idx_opt+4)  = GFS_Data(nb)%Sfcprop%qwv_surf_ice(ix)
-        temp2d(i,j,idx_opt+5)  = GFS_Data(nb)%Sfcprop%tsnow_land(ix)
-        temp2d(i,j,idx_opt+6)  = GFS_Data(nb)%Sfcprop%tsnow_ice(ix)
-        temp2d(i,j,idx_opt+7)  = GFS_Data(nb)%Sfcprop%snowfallac_land(ix)
-        temp2d(i,j,idx_opt+8)  = GFS_Data(nb)%Sfcprop%snowfallac_ice(ix)
-        temp2d(i,j,idx_opt+9)  = GFS_Data(nb)%Sfcprop%sfalb_lnd(ix)
-        temp2d(i,j,idx_opt+10) = GFS_Data(nb)%Sfcprop%sfalb_lnd_bck(ix)
-        temp2d(i,j,idx_opt+11) = GFS_Data(nb)%Sfcprop%sfalb_ice(ix)
-        idx_opt = idx_opt + 12
-        if (Model%rdlai) then
-          temp2d(i,j,idx_opt+1) = GFS_Data(nb)%Sfcprop%xlaixy(ix)
-          idx_opt = idx_opt + 1
-        endif
-       endif
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%wetness)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%clw_surf_land)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%clw_surf_ice)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%qwv_surf_land)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%qwv_surf_ice)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%tsnow_land)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%tsnow_ice)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%snowfallac_land)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%snowfallac_ice)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%sfalb_lnd)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%sfalb_lnd_bck)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%sfalb_ice)
+         if (Model%rdlai) then
+           call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%xlaixy)
+         endif
+       endif lsm_choice_2
 
-       if (Model%nstf_name(1) > 0) then
-         temp2d(i,j,idx_opt   ) = GFS_Data(nb)%Sfcprop%tref(ix)
-         temp2d(i,j,idx_opt+ 1) = GFS_Data(nb)%Sfcprop%z_c(ix)
-         temp2d(i,j,idx_opt+ 2) = GFS_Data(nb)%Sfcprop%c_0(ix)
-         temp2d(i,j,idx_opt+ 3) = GFS_Data(nb)%Sfcprop%c_d(ix)
-         temp2d(i,j,idx_opt+ 4) = GFS_Data(nb)%Sfcprop%w_0(ix)
-         temp2d(i,j,idx_opt+ 5) = GFS_Data(nb)%Sfcprop%w_d(ix)
-         temp2d(i,j,idx_opt+ 6) = GFS_Data(nb)%Sfcprop%xt(ix)
-         temp2d(i,j,idx_opt+ 7) = GFS_Data(nb)%Sfcprop%xs(ix)
-         temp2d(i,j,idx_opt+ 8) = GFS_Data(nb)%Sfcprop%xu(ix)
-         temp2d(i,j,idx_opt+ 9) = GFS_Data(nb)%Sfcprop%xz(ix)
-         temp2d(i,j,idx_opt+10) = GFS_Data(nb)%Sfcprop%zm(ix)
-         temp2d(i,j,idx_opt+11) = GFS_Data(nb)%Sfcprop%xtts(ix)
-         temp2d(i,j,idx_opt+12) = GFS_Data(nb)%Sfcprop%xzts(ix)
-         temp2d(i,j,idx_opt+13) = GFS_Data(nb)%Sfcprop%ifd(ix)
-         temp2d(i,j,idx_opt+14) = GFS_Data(nb)%Sfcprop%dt_cool(ix)
-         temp2d(i,j,idx_opt+15) = GFS_Data(nb)%Sfcprop%qrain(ix)
-       endif
+       nstf_name_choice: if (Model%nstf_name(1) > 0) then
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%tref)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%z_c)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%c_0)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%c_d)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%w_0)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%w_d)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%xt)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%xs)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%xu)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%xz)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%zm)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%xtts)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%xzts)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%ifd)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%dt_cool)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Sfcprop%qrain)
+       endif nstf_name_choice
 
-       do l = 1,Model%ntot2d
-         temp2d(i,j,nsfcprop2d+l) = GFS_Data(nb)%Tbd%phy_f2d(ix,l)
-       enddo
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Tbd%phy_f2d)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp2d,GFS_Data(nb)%Tbd%phy_fctd)
 
-       do l = 1,Model%nctp
-         temp2d(i,j,nsfcprop2d+Model%ntot2d+l) = GFS_Data(nb)%Tbd%phy_fctd(ix,l)
-       enddo
+       ! Copy to temp3dlevsp1
+       nt=0
 
-       temp3dlevsp1(i,j,:, 1) = GFS_Data(nb)%Statein%phii(ix,:)
-       temp3dlevsp1(i,j,:, 2) = GFS_Data(nb)%Statein%prsi(ix,:)
-       temp3dlevsp1(i,j,:, 3) = GFS_Data(nb)%Statein%prsik(ix,:)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp3dlevsp1, GFS_Data(nb)%Statein%phii)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp3dlevsp1, GFS_Data(nb)%Statein%prsi)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp3dlevsp1, GFS_Data(nb)%Statein%prsik)
 
-       temp3d(i,j,:, 1) = GFS_Data(nb)%Statein%phil(ix,:)
-       temp3d(i,j,:, 2) = GFS_Data(nb)%Statein%prsl(ix,:)
-       temp3d(i,j,:, 3) = GFS_Data(nb)%Statein%prslk(ix,:)
-       temp3d(i,j,:, 4) = GFS_Data(nb)%Statein%ugrs(ix,:)
-       temp3d(i,j,:, 5) = GFS_Data(nb)%Statein%vgrs(ix,:)
-       temp3d(i,j,:, 6) = GFS_Data(nb)%Statein%vvl(ix,:)
-       temp3d(i,j,:, 7) = GFS_Data(nb)%Statein%tgrs(ix,:)
-       temp3d(i,j,:, 8) = GFS_Data(nb)%Stateout%gu0(ix,:)
-       temp3d(i,j,:, 9) = GFS_Data(nb)%Stateout%gv0(ix,:)
-       temp3d(i,j,:,10) = GFS_Data(nb)%Stateout%gt0(ix,:)
-       temp3d(i,j,:,11) = GFS_Data(nb)%Radtend%htrsw(ix,:)
-       temp3d(i,j,:,12) = GFS_Data(nb)%Radtend%htrlw(ix,:)
-       temp3d(i,j,:,13) = GFS_Data(nb)%Radtend%swhc(ix,:)
-       temp3d(i,j,:,14) = GFS_Data(nb)%Radtend%lwhc(ix,:)
+       ! Copy to temp3d
+       nt=0
+
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp3d,GFS_Data(nb)%Statein%phil)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp3d,GFS_Data(nb)%Statein%prsl)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp3d,GFS_Data(nb)%Statein%prslk)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp3d,GFS_Data(nb)%Statein%ugrs)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp3d,GFS_Data(nb)%Statein%vgrs)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp3d,GFS_Data(nb)%Statein%vvl)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp3d,GFS_Data(nb)%Statein%tgrs)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp3d,GFS_Data(nb)%Stateout%gu0)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp3d,GFS_Data(nb)%Stateout%gv0)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp3d,GFS_Data(nb)%Stateout%gt0)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp3d,GFS_Data(nb)%Radtend%htrsw)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp3d,GFS_Data(nb)%Radtend%htrlw)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp3d,GFS_Data(nb)%Radtend%swhc)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp3d,GFS_Data(nb)%Radtend%lwhc)
        do l = 1,Model%ntot3d
-         temp3d(i,j,:,14+l) = GFS_Data(nb)%Tbd%phy_f3d(ix,:,l)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp3d,GFS_Data(nb)%Tbd%phy_f3d(:,:,l))
        enddo
        do l = 1,ntr
-         temp3d(i,j,:,14+Model%ntot3d+l)     = GFS_Data(nb)%Statein%qgrs(ix,:,l)
-         temp3d(i,j,:,14+Model%ntot3d+ntr+l) = GFS_Data(nb)%Stateout%gq0(ix,:,l)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp3d,GFS_Data(nb)%Statein%qgrs(:,:,l))
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,temp3d,GFS_Data(nb)%Stateout%gq0(:,:,l))
        enddo
-     enddo
-   enddo
+   enddo block_loop
+
 
    outunit = stdout()
    do i = 1,nsfcprop2d+Model%ntot2d+Model%nctp
@@ -496,6 +521,303 @@ module FV3GFS_io_mod
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+   pure subroutine copy_from_GFS_Data_2d_phys2phys(ii1,jj1,isc,jsc,nt,var2d,var_block)
+     implicit none
+     integer, intent(in) :: ii1(:), jj1(:), isc, jsc
+     integer, intent(inout) :: nt
+     real(kind=kind_phys), intent(in) :: var_block(:)
+     real(kind=kind_phys), intent(out) :: var2d(:,:,:)
+     integer ix
+
+     nt=nt+1
+     do ix=1,size(var_block)
+       var2d(ii1(ix),jj1(ix),nt) = var_block(ix)
+     enddo
+   end subroutine copy_from_GFS_Data_2d_phys2phys
+
+   pure subroutine copy_from_GFS_Data_3d_phys2phys(ii1,jj1,isc,jsc,nt,var3d,var_block)
+     implicit none
+     integer, intent(in) :: ii1(:), jj1(:), isc, jsc
+     integer, intent(inout) :: nt
+     real(kind=kind_phys), intent(in) :: var_block(:,:)
+     real(kind=kind_phys), intent(out) :: var3d(:,:,:,:)
+     integer ix, k
+
+     nt=nt+1
+     do k=lbound(var_block,2),ubound(var_block,2)
+       do ix=1,size(var_block,1)
+         var3d(ii1(ix),jj1(ix),k,nt) = var_block(ix,k)
+       enddo
+     enddo
+   end subroutine copy_from_GFS_Data_3d_phys2phys
+
+   pure subroutine copy_from_GFS_Data_2d_int2phys(ii1,jj1,isc,jsc,nt,var2d,var_block)
+     implicit none
+     integer, intent(in) :: ii1(:), jj1(:), isc, jsc, var_block(:)
+     integer, intent(inout) :: nt
+     real(kind=kind_phys), intent(out) :: var2d(:,:,:)
+     integer ix
+
+     nt=nt+1
+     do ix=1,size(var_block)
+       var2d(ii1(ix),jj1(ix),nt) = var_block(ix)
+     enddo
+   end subroutine copy_from_GFS_Data_2d_int2phys
+
+   pure subroutine copy_from_GFS_Data_2d_stack_phys2phys(ii1,jj1,isc,jsc,nt,var3d,var_block)
+     ! For copying phy_f2d and phy_fctd
+     implicit none
+     integer, intent(in) :: ii1(:), jj1(:), isc, jsc
+     integer, intent(inout) :: nt
+     real(kind=kind_phys), intent(in) :: var_block(:,:)
+     real(kind=kind_phys), intent(out) :: var3d(:,:,:)
+     integer ix, k
+
+     nt=nt+1
+     do k=lbound(var_block,2),ubound(var_block,2)
+       do ix=1,size(var_block,1)
+         var3d(ii1(ix),jj1(ix),nt) = var_block(ix,k)
+       enddo
+     enddo
+   end subroutine copy_from_GFS_Data_2d_stack_phys2phys
+
+   pure subroutine copy_from_GFS_Data_3d_int2phys(ii1,jj1,isc,jsc,nt,var3d,var_block)
+     implicit none
+     integer, intent(in) :: ii1(:), jj1(:), var_block(:,:), isc, jsc
+     integer, intent(inout) :: nt
+     real(kind=kind_phys), intent(out) :: var3d(:,:,:,:)
+     integer ix, k
+
+     nt=nt+1
+     do k=lbound(var_block,2),ubound(var_block,2)
+       do ix=1,size(var_block,1)
+         var3d(ii1(ix),jj1(ix),k,nt) = real(var_block(ix,k),kind_phys)
+       enddo
+     enddo
+   end subroutine copy_from_GFS_Data_3d_int2phys
+
+   pure subroutine copy_to_GFS_Data_2d_phys2phys(ii1,jj1,isc,jsc,nt,var2d,var_block)
+     implicit none
+     integer, intent(in) :: ii1(:), jj1(:), isc, jsc
+     integer, intent(inout) :: nt
+     real(kind=kind_phys), intent(out) :: var_block(:)
+     real(kind=kind_phys), intent(in) :: var2d(:,:,:)
+     integer ix
+
+     nt=nt+1
+     do ix=1,size(var_block)
+       var_block(ix) = var2d(ii1(ix),jj1(ix),nt)
+     enddo
+   end subroutine copy_to_GFS_Data_2d_phys2phys
+
+   pure subroutine copy_to_GFS_Data_3d_phys2phys(ii1,jj1,isc,jsc,nt,var3d,var_block)
+     implicit none
+     integer, intent(in) :: ii1(:), jj1(:), isc, jsc
+     integer, intent(inout) :: nt
+     real(kind=kind_phys), intent(out) :: var_block(:,:)
+     real(kind=kind_phys), intent(in) :: var3d(:,:,:,:)
+     integer ix, k
+
+     nt=nt+1
+     do k=lbound(var_block,2),ubound(var_block,2)
+       do ix=1,size(var_block,1)
+         var_block(ix,k) = var3d(ii1(ix),jj1(ix),k,nt)
+       enddo
+     enddo
+   end subroutine copy_to_GFS_Data_3d_phys2phys
+
+   pure subroutine copy_to_GFS_Data_3d_slice_phys2phys(ii1,jj1,isc,jsc,nt,k1,k2,var3d,var_block)
+     implicit none
+     integer, intent(in) :: ii1(:), jj1(:), isc, jsc, k1, k2
+     integer, intent(inout) :: nt
+     real(kind=kind_phys), intent(out) :: var_block(:,:)
+     real(kind=kind_phys), intent(in) :: var3d(:,:,:,:)
+     integer ix, k
+
+     nt=nt+1
+     do k=k1,k2
+       do ix=1,size(var_block,1)
+         var_block(ix,k) = var3d(ii1(ix),jj1(ix),k,nt)
+       enddo
+     enddo
+   end subroutine copy_to_GFS_Data_3d_slice_phys2phys
+
+   pure subroutine copy_to_GFS_Data_2d_int2phys(ii1,jj1,isc,jsc,nt,var2d,var_block)
+     implicit none
+     integer, intent(in) :: ii1(:), jj1(:), isc, jsc
+     integer, intent(inout) :: nt
+     integer, intent(out) :: var_block(:)
+     real(kind=kind_phys), intent(in) :: var2d(:,:,:)
+     integer ix
+
+     nt=nt+1
+     do ix=1,size(var_block)
+       var_block(ix) = int(var2d(ii1(ix),jj1(ix),nt))
+     enddo
+   end subroutine copy_to_GFS_Data_2d_int2phys
+
+   pure subroutine copy_to_GFS_Data_3d_int2phys(ii1,jj1,isc,jsc,nt,var3d,var_block)
+     implicit none
+     integer, intent(in) :: ii1(:), jj1(:), isc, jsc
+     integer, intent(inout) :: nt
+     integer, intent(out) :: var_block(:,:)
+     real(kind=kind_phys), intent(in) :: var3d(:,:,:,:)
+     integer ix
+
+     nt=nt+1
+     do ix=1,size(var_block,1)
+       var_block(ix,:) = int(var3d(ii1(ix),jj1(ix),:,nt))
+     enddo
+   end subroutine copy_to_GFS_Data_3d_int2phys
+
+
+   pure subroutine fill_Sfcprop_names(Model,sfc_name2,sfc_name3,nvar_s2m,warm_start)
+     implicit none
+     type(GFS_control_type),    intent(in) :: Model
+     integer, intent(in) :: nvar_s2m
+     character(len=32),intent(out) :: sfc_name2(:), sfc_name3(:)
+     logical, intent(in) :: warm_start
+     integer :: nt
+
+      !--- names of the 2D variables to save
+      nt=0
+      nt=nt+1 ; sfc_name2(nt) = 'slmsk'
+      nt=nt+1 ; sfc_name2(nt) = 'tsea'    !tsfc
+      nt=nt+1 ; sfc_name2(nt) = 'sheleg'  !weasd
+      nt=nt+1 ; sfc_name2(nt) = 'tg3'
+      nt=nt+1 ; sfc_name2(nt) = 'zorl'
+      nt=nt+1 ; sfc_name2(nt) = 'alvsf'
+      nt=nt+1 ; sfc_name2(nt) = 'alvwf'
+      nt=nt+1 ; sfc_name2(nt) = 'alnsf'
+      nt=nt+1 ; sfc_name2(nt) = 'alnwf'
+      nt=nt+1 ; sfc_name2(nt) = 'facsf'
+      nt=nt+1 ; sfc_name2(nt) = 'facwf'
+      nt=nt+1 ; sfc_name2(nt) = 'vfrac'
+      nt=nt+1 ; sfc_name2(nt) = 'canopy'
+      nt=nt+1 ; sfc_name2(nt) = 'f10m'
+      nt=nt+1 ; sfc_name2(nt) = 't2m'
+      nt=nt+1 ; sfc_name2(nt) = 'q2m'
+      nt=nt+1 ; sfc_name2(nt) = 'vtype'
+      nt=nt+1 ; sfc_name2(nt) = 'stype'
+      nt=nt+1 ; sfc_name2(nt) = 'uustar'
+      nt=nt+1 ; sfc_name2(nt) = 'ffmm'
+      nt=nt+1 ; sfc_name2(nt) = 'ffhh'
+      nt=nt+1 ; sfc_name2(nt) = 'hice'
+      nt=nt+1 ; sfc_name2(nt) = 'fice'
+      nt=nt+1 ; sfc_name2(nt) = 'tisfc'
+      nt=nt+1 ; sfc_name2(nt) = 'tprcp'
+      nt=nt+1 ; sfc_name2(nt) = 'srflag'
+      nt=nt+1 ; sfc_name2(nt) = 'snwdph'  !snowd
+      nt=nt+1 ; sfc_name2(nt) = 'shdmin'
+      nt=nt+1 ; sfc_name2(nt) = 'shdmax'
+      nt=nt+1 ; sfc_name2(nt) = 'slope'
+      nt=nt+1 ; sfc_name2(nt) = 'snoalb'
+      !--- variables below here are optional
+      nt=nt+1 ; sfc_name2(nt) = 'sncovr'
+      nt=nt+1 ; sfc_name2(nt) = 'snodl' !snowd on land portion of a cell
+      nt=nt+1 ; sfc_name2(nt) = 'weasdl'!weasd on land portion of a cell
+      nt=nt+1 ; sfc_name2(nt) = 'tsfc'  !tsfc composite
+      nt=nt+1 ; sfc_name2(nt) = 'tsfcl' !temp on land portion of a cell
+      nt=nt+1 ; sfc_name2(nt) = 'zorlw' !zorl on water portion of a cell
+      nt=nt+1 ; sfc_name2(nt) = 'zorll' !zorl on land portion of a cell
+      nt=nt+1 ; sfc_name2(nt) = 'zorli' !zorl on ice portion of a cell
+      nt=nt+1 ; sfc_name2(nt) = 'albdirvis_lnd'
+      nt=nt+1 ; sfc_name2(nt) = 'albdirnir_lnd'
+      nt=nt+1 ; sfc_name2(nt) = 'albdifvis_lnd'
+      nt=nt+1 ; sfc_name2(nt) = 'albdifnir_lnd'
+      nt=nt+1 ; sfc_name2(nt) = 'emis_lnd'
+      nt=nt+1 ; sfc_name2(nt) = 'emis_ice'
+      nt=nt+1 ; sfc_name2(nt) = 'sncovr_ice'
+      nt=nt+1 ; sfc_name2(nt) = 'snodi' ! snowd on ice portion of a cell
+      nt=nt+1 ; sfc_name2(nt) = 'weasdi'! weasd on ice portion of a cell
+
+      if (Model%use_cice_alb .or. Model%lsm == Model%lsm_ruc) then
+        nt=nt+1 ; sfc_name2(nt) = 'albdirvis_ice'
+        nt=nt+1 ; sfc_name2(nt) = 'albdifvis_ice'
+        nt=nt+1 ; sfc_name2(nt) = 'albdirnir_ice'
+        nt=nt+1 ; sfc_name2(nt) = 'albdifnir_ice'
+!        nt=nt+1 ; sfc_name2(nt) = 'sfalb_ice'
+      endif
+
+      if(Model%cplwav) then
+        sfc_name2(nvar_s2m) = 'zorlwav' !zorl from wave component
+      endif
+
+      nt = nvar_s2m ! next variable will be at nvar_s2m
+
+      !--- NSSTM inputs only needed when (nstf_name(1) > 0) .and. (nstf_name(2)) == 0)
+      nt=nt+1 ; sfc_name2(nt) = 'tref'
+      nt=nt+1 ; sfc_name2(nt) = 'z_c'
+      nt=nt+1 ; sfc_name2(nt) = 'c_0'
+      nt=nt+1 ; sfc_name2(nt) = 'c_d'
+      nt=nt+1 ; sfc_name2(nt) = 'w_0'
+      nt=nt+1 ; sfc_name2(nt) = 'w_d'
+      nt=nt+1 ; sfc_name2(nt) = 'xt'
+      nt=nt+1 ; sfc_name2(nt) = 'xs'
+      nt=nt+1 ; sfc_name2(nt) = 'xu'
+      nt=nt+1 ; sfc_name2(nt) = 'xv'
+      nt=nt+1 ; sfc_name2(nt) = 'xz'
+      nt=nt+1 ; sfc_name2(nt) = 'zm'
+      nt=nt+1 ; sfc_name2(nt) = 'xtts'
+      nt=nt+1 ; sfc_name2(nt) = 'xzts'
+      nt=nt+1 ; sfc_name2(nt) = 'd_conv'
+      nt=nt+1 ; sfc_name2(nt) = 'ifd'
+      nt=nt+1 ; sfc_name2(nt) = 'dt_cool'
+      nt=nt+1 ; sfc_name2(nt) = 'qrain'
+!
+! Only needed when Noah MP LSM is used - 29 2D
+!
+      if (Model%lsm == Model%lsm_noahmp) then
+        nt=nt+1 ; sfc_name2(nt) = 'snowxy'
+        nt=nt+1 ; sfc_name2(nt) = 'tvxy'
+        nt=nt+1 ; sfc_name2(nt) = 'tgxy'
+        nt=nt+1 ; sfc_name2(nt) = 'canicexy'
+        nt=nt+1 ; sfc_name2(nt) = 'canliqxy'
+        nt=nt+1 ; sfc_name2(nt) = 'eahxy'
+        nt=nt+1 ; sfc_name2(nt) = 'tahxy'
+        nt=nt+1 ; sfc_name2(nt) = 'cmxy'
+        nt=nt+1 ; sfc_name2(nt) = 'chxy'
+        nt=nt+1 ; sfc_name2(nt) = 'fwetxy'
+        nt=nt+1 ; sfc_name2(nt) = 'sneqvoxy'
+        nt=nt+1 ; sfc_name2(nt) = 'alboldxy'
+        nt=nt+1 ; sfc_name2(nt) = 'qsnowxy'
+        nt=nt+1 ; sfc_name2(nt) = 'wslakexy'
+        nt=nt+1 ; sfc_name2(nt) = 'zwtxy'
+        nt=nt+1 ; sfc_name2(nt) = 'waxy'
+        nt=nt+1 ; sfc_name2(nt) = 'wtxy'
+        nt=nt+1 ; sfc_name2(nt) = 'lfmassxy'
+        nt=nt+1 ; sfc_name2(nt) = 'rtmassxy'
+        nt=nt+1 ; sfc_name2(nt) = 'stmassxy'
+        nt=nt+1 ; sfc_name2(nt) = 'woodxy'
+        nt=nt+1 ; sfc_name2(nt) = 'stblcpxy'
+        nt=nt+1 ; sfc_name2(nt) = 'fastcpxy'
+        nt=nt+1 ; sfc_name2(nt) = 'xsaixy'
+        nt=nt+1 ; sfc_name2(nt) = 'xlaixy'
+        nt=nt+1 ; sfc_name2(nt) = 'taussxy'
+        nt=nt+1 ; sfc_name2(nt) = 'smcwtdxy'
+        nt=nt+1 ; sfc_name2(nt) = 'deeprechxy'
+        nt=nt+1 ; sfc_name2(nt) = 'rechxy'
+      else if (Model%lsm == Model%lsm_ruc .and. warm_start) then
+        nt=nt+1 ; sfc_name2(nt) = 'wetness'
+        nt=nt+1 ; sfc_name2(nt) = 'clw_surf_land'
+        nt=nt+1 ; sfc_name2(nt) = 'clw_surf_ice'
+        nt=nt+1 ; sfc_name2(nt) = 'qwv_surf_land'
+        nt=nt+1 ; sfc_name2(nt) = 'qwv_surf_ice'
+        nt=nt+1 ; sfc_name2(nt) = 'tsnow_land'
+        nt=nt+1 ; sfc_name2(nt) = 'tsnow_ice'
+        nt=nt+1 ; sfc_name2(nt) = 'snowfall_acc_land'
+        nt=nt+1 ; sfc_name2(nt) = 'snowfall_acc_ice'
+        nt=nt+1 ; sfc_name2(nt) = 'sfalb_lnd'
+        nt=nt+1 ; sfc_name2(nt) = 'sfalb_lnd_bck'
+        nt=nt+1 ; sfc_name2(nt) = 'sfalb_ice'
+        if (Model%rdlai) then
+          nt=nt+1 ; sfc_name2(nt) = 'lai'
+        endif
+      else if (Model%lsm == Model%lsm_ruc .and. Model%rdlai) then
+        nt=nt+1 ; sfc_name2(nt) = 'lai'
+      endif
+   end subroutine fill_sfcprop_names
+
 !----------------------------------------------------------------------
 ! sfc_prop_restart_read
 !----------------------------------------------------------------------
@@ -518,13 +840,14 @@ module FV3GFS_io_mod
     logical,                   intent(in)    :: warm_start
     logical,                   intent(in)    :: ignore_rst_cksum
     !--- local variables
-    integer :: i, j, k, ix, lsoil, num, nb, i_start, j_start, i_end, j_end
+    integer :: i, j, k, ix, lsoil, num, nb, i_start, j_start, i_end, j_end, nt
     integer :: isc, iec, jsc, jec, npz, nx, ny
     integer :: id_restart
     integer :: nvar_o2, nvar_s2m, nvar_s2o, nvar_s3
     integer :: nvar_oro_ls_ss
     integer :: nvar_s2r, nvar_s2mp, nvar_s3mp, isnow
     integer :: nvar_emi, nvar_dust12m, nvar_gbbepx
+    integer, allocatable :: ii1(:), jj1(:)
     real(kind=kind_phys), pointer, dimension(:,:)   :: var2_p  => NULL()
     real(kind=kind_phys), pointer, dimension(:,:,:) :: var3_p  => NULL()
     real(kind=kind_phys), pointer, dimension(:,:,:) :: var3_p1 => NULL()
@@ -971,140 +1294,7 @@ module FV3GFS_io_mod
         sfc_var3zn = -9999.0_r8
       end if
 
-      !--- names of the 2D variables to save
-      sfc_name2(1)  = 'slmsk'
-      sfc_name2(2)  = 'tsea'    !tsfc
-      sfc_name2(3)  = 'sheleg'  !weasd
-      sfc_name2(4)  = 'tg3'
-      sfc_name2(5)  = 'zorl'
-      sfc_name2(6)  = 'alvsf'
-      sfc_name2(7)  = 'alvwf'
-      sfc_name2(8)  = 'alnsf'
-      sfc_name2(9)  = 'alnwf'
-      sfc_name2(10) = 'facsf'
-      sfc_name2(11) = 'facwf'
-      sfc_name2(12) = 'vfrac'
-      sfc_name2(13) = 'canopy'
-      sfc_name2(14) = 'f10m'
-      sfc_name2(15) = 't2m'
-      sfc_name2(16) = 'q2m'
-      sfc_name2(17) = 'vtype'
-      sfc_name2(18) = 'stype'
-      sfc_name2(19) = 'uustar'
-      sfc_name2(20) = 'ffmm'
-      sfc_name2(21) = 'ffhh'
-      sfc_name2(22) = 'hice'
-      sfc_name2(23) = 'fice'
-      sfc_name2(24) = 'tisfc'
-      sfc_name2(25) = 'tprcp'
-      sfc_name2(26) = 'srflag'
-      sfc_name2(27) = 'snwdph'  !snowd
-      sfc_name2(28) = 'shdmin'
-      sfc_name2(29) = 'shdmax'
-      sfc_name2(30) = 'slope'
-      sfc_name2(31) = 'snoalb'
-      !--- variables below here are optional
-      sfc_name2(32) = 'sncovr'
-      sfc_name2(33) = 'snodl' !snowd on land portion of a cell
-      sfc_name2(34) = 'weasdl'!weasd on land portion of a cell
-      sfc_name2(35) = 'tsfc'  !tsfc composite
-      sfc_name2(36) = 'tsfcl' !temp on land portion of a cell
-      sfc_name2(37) = 'zorlw' !zorl on water portion of a cell
-      sfc_name2(38) = 'zorll' !zorl on land portion of a cell
-      sfc_name2(39) = 'zorli' !zorl on ice portion of a cell
-      sfc_name2(40) = 'albdirvis_lnd'
-      sfc_name2(41) = 'albdirnir_lnd'
-      sfc_name2(42) = 'albdifvis_lnd'
-      sfc_name2(43) = 'albdifnir_lnd'
-      sfc_name2(44) = 'emis_lnd'
-      sfc_name2(45) = 'emis_ice'
-      sfc_name2(46) = 'sncovr_ice'
-      sfc_name2(47) = 'snodi' ! snowd on ice portion of a cell
-      sfc_name2(48) = 'weasdi'! weasd on ice portion of a cell
-
-      if (Model%use_cice_alb .or. Model%lsm == Model%lsm_ruc) then
-        sfc_name2(49) = 'albdirvis_ice'
-        sfc_name2(50) = 'albdifvis_ice'
-        sfc_name2(51) = 'albdirnir_ice'
-        sfc_name2(52) = 'albdifnir_ice'
-!       sfc_name2(53) = 'sfalb_ice'
-      endif
-
-      if(Model%cplwav) then
-        sfc_name2(nvar_s2m) = 'zorlwav' !zorl from wave component
-      endif
-
-      !--- NSSTM inputs only needed when (nstf_name(1) > 0) .and. (nstf_name(2)) == 0)
-      sfc_name2(nvar_s2m+1)  = 'tref'
-      sfc_name2(nvar_s2m+2)  = 'z_c'
-      sfc_name2(nvar_s2m+3)  = 'c_0'
-      sfc_name2(nvar_s2m+4)  = 'c_d'
-      sfc_name2(nvar_s2m+5)  = 'w_0'
-      sfc_name2(nvar_s2m+6)  = 'w_d'
-      sfc_name2(nvar_s2m+7)  = 'xt'
-      sfc_name2(nvar_s2m+8)  = 'xs'
-      sfc_name2(nvar_s2m+9)  = 'xu'
-      sfc_name2(nvar_s2m+10) = 'xv'
-      sfc_name2(nvar_s2m+11) = 'xz'
-      sfc_name2(nvar_s2m+12) = 'zm'
-      sfc_name2(nvar_s2m+13) = 'xtts'
-      sfc_name2(nvar_s2m+14) = 'xzts'
-      sfc_name2(nvar_s2m+15) = 'd_conv'
-      sfc_name2(nvar_s2m+16) = 'ifd'
-      sfc_name2(nvar_s2m+17) = 'dt_cool'
-      sfc_name2(nvar_s2m+18) = 'qrain'
-!
-! Only needed when Noah MP LSM is used - 29 2D
-!
-      if (Model%lsm == Model%lsm_noahmp) then
-        sfc_name2(nvar_s2m+19) = 'snowxy'
-        sfc_name2(nvar_s2m+20) = 'tvxy'
-        sfc_name2(nvar_s2m+21) = 'tgxy'
-        sfc_name2(nvar_s2m+22) = 'canicexy'
-        sfc_name2(nvar_s2m+23) = 'canliqxy'
-        sfc_name2(nvar_s2m+24) = 'eahxy'
-        sfc_name2(nvar_s2m+25) = 'tahxy'
-        sfc_name2(nvar_s2m+26) = 'cmxy'
-        sfc_name2(nvar_s2m+27) = 'chxy'
-        sfc_name2(nvar_s2m+28) = 'fwetxy'
-        sfc_name2(nvar_s2m+29) = 'sneqvoxy'
-        sfc_name2(nvar_s2m+30) = 'alboldxy'
-        sfc_name2(nvar_s2m+31) = 'qsnowxy'
-        sfc_name2(nvar_s2m+32) = 'wslakexy'
-        sfc_name2(nvar_s2m+33) = 'zwtxy'
-        sfc_name2(nvar_s2m+34) = 'waxy'
-        sfc_name2(nvar_s2m+35) = 'wtxy'
-        sfc_name2(nvar_s2m+36) = 'lfmassxy'
-        sfc_name2(nvar_s2m+37) = 'rtmassxy'
-        sfc_name2(nvar_s2m+38) = 'stmassxy'
-        sfc_name2(nvar_s2m+39) = 'woodxy'
-        sfc_name2(nvar_s2m+40) = 'stblcpxy'
-        sfc_name2(nvar_s2m+41) = 'fastcpxy'
-        sfc_name2(nvar_s2m+42) = 'xsaixy'
-        sfc_name2(nvar_s2m+43) = 'xlaixy'
-        sfc_name2(nvar_s2m+44) = 'taussxy'
-        sfc_name2(nvar_s2m+45) = 'smcwtdxy'
-        sfc_name2(nvar_s2m+46) = 'deeprechxy'
-        sfc_name2(nvar_s2m+47) = 'rechxy'
-      else if (Model%lsm == Model%lsm_ruc .and. warm_start) then
-        sfc_name2(nvar_s2m+19) = 'wetness'
-        sfc_name2(nvar_s2m+20) = 'clw_surf_land'
-        sfc_name2(nvar_s2m+21) = 'clw_surf_ice'
-        sfc_name2(nvar_s2m+22) = 'qwv_surf_land'
-        sfc_name2(nvar_s2m+23) = 'qwv_surf_ice'
-        sfc_name2(nvar_s2m+24) = 'tsnow_land'
-        sfc_name2(nvar_s2m+25) = 'tsnow_ice'
-        sfc_name2(nvar_s2m+26) = 'snowfall_acc_land'
-        sfc_name2(nvar_s2m+27) = 'snowfall_acc_ice'
-        sfc_name2(nvar_s2m+28) = 'sfalb_lnd'
-        sfc_name2(nvar_s2m+29) = 'sfalb_lnd_bck'
-        sfc_name2(nvar_s2m+30) = 'sfalb_ice'
-        if (Model%rdlai) then
-          sfc_name2(nvar_s2m+31) = 'lai'
-        endif
-      else if (Model%lsm == Model%lsm_ruc .and. Model%rdlai) then
-        sfc_name2(nvar_s2m+19) = 'lai'
-      endif
+      call fill_Sfcprop_names(Model,sfc_name2,sfc_name3,nvar_s2m,warm_start)
 
       is_lsoil=.false.
       if ( .not. warm_start ) then
@@ -1291,84 +1481,89 @@ module FV3GFS_io_mod
 
     !--- place the data into the block GFS containers
 
-!$omp parallel do default(shared) private(i, j, nb, ix, lsoil)
-    do nb = 1, Atm_block%nblks
-      do ix = 1, Atm_block%blksz(nb)
-        i = Atm_block%index(nb)%ii(ix) - isc + 1
-        j = Atm_block%index(nb)%jj(ix) - jsc + 1
+!$omp parallel do default(shared) private(i, j, nb, ix, nt, ii1, jj1, lsoil)
+    block_loop: do nb = 1, Atm_block%nblks
+       allocate(ii1(Atm_block%blksz(nb)))
+       allocate(jj1(Atm_block%blksz(nb)))
+       ii1=Atm_block%index(nb)%ii - isc + 1
+       jj1=Atm_block%index(nb)%jj - jsc + 1
+
+       nt=0
 
 !--- 2D variables
 !    ------------
-        Sfcprop(nb)%slmsk(ix)  = sfc_var2(i,j,1)    !--- slmsk
-        Sfcprop(nb)%tsfco(ix)  = sfc_var2(i,j,2)    !--- tsfc (tsea in sfc file)
-        Sfcprop(nb)%weasd(ix)  = sfc_var2(i,j,3)    !--- weasd (sheleg in sfc file)
-        Sfcprop(nb)%tg3(ix)    = sfc_var2(i,j,4)    !--- tg3
-        Sfcprop(nb)%zorl(ix)   = sfc_var2(i,j,5)    !--- zorl composite
-        Sfcprop(nb)%alvsf(ix)  = sfc_var2(i,j,6)    !--- alvsf
-        Sfcprop(nb)%alvwf(ix)  = sfc_var2(i,j,7)    !--- alvwf
-        Sfcprop(nb)%alnsf(ix)  = sfc_var2(i,j,8)    !--- alnsf
-        Sfcprop(nb)%alnwf(ix)  = sfc_var2(i,j,9)    !--- alnwf
-        Sfcprop(nb)%facsf(ix)  = sfc_var2(i,j,10)   !--- facsf
-        Sfcprop(nb)%facwf(ix)  = sfc_var2(i,j,11)   !--- facwf
-        Sfcprop(nb)%vfrac(ix)  = sfc_var2(i,j,12)   !--- vfrac
-        Sfcprop(nb)%canopy(ix) = sfc_var2(i,j,13)   !--- canopy
-        Sfcprop(nb)%f10m(ix)   = sfc_var2(i,j,14)   !--- f10m
-        Sfcprop(nb)%t2m(ix)    = sfc_var2(i,j,15)   !--- t2m
-        Sfcprop(nb)%q2m(ix)    = sfc_var2(i,j,16)   !--- q2m
-        Sfcprop(nb)%vtype(ix)  = int(sfc_var2(i,j,17))   !--- vtype
-        Sfcprop(nb)%stype(ix)  = int(sfc_var2(i,j,18))   !--- stype
-        Sfcprop(nb)%uustar(ix) = sfc_var2(i,j,19)   !--- uustar
-        Sfcprop(nb)%ffmm(ix)   = sfc_var2(i,j,20)   !--- ffmm
-        Sfcprop(nb)%ffhh(ix)   = sfc_var2(i,j,21)   !--- ffhh
-        Sfcprop(nb)%hice(ix)   = sfc_var2(i,j,22)   !--- hice
-        Sfcprop(nb)%fice(ix)   = sfc_var2(i,j,23)   !--- fice
-        Sfcprop(nb)%tisfc(ix)  = sfc_var2(i,j,24)   !--- tisfc
-        Sfcprop(nb)%tprcp(ix)  = sfc_var2(i,j,25)   !--- tprcp
-        Sfcprop(nb)%srflag(ix) = sfc_var2(i,j,26)   !--- srflag
-        Sfcprop(nb)%snowd(ix)  = sfc_var2(i,j,27)   !--- snowd (snwdph in the file)
-        Sfcprop(nb)%shdmin(ix) = sfc_var2(i,j,28)   !--- shdmin
-        Sfcprop(nb)%shdmax(ix) = sfc_var2(i,j,29)   !--- shdmax
-        Sfcprop(nb)%slope(ix)  = int(sfc_var2(i,j,30))   !--- slope
-        Sfcprop(nb)%snoalb(ix) = sfc_var2(i,j,31)   !--- snoalb
-        Sfcprop(nb)%sncovr(ix) = sfc_var2(i,j,32)   !--- sncovr
-        Sfcprop(nb)%snodl(ix)  = sfc_var2(i,j,33)   !--- snodl (snowd on land  portion of a cell)
-        Sfcprop(nb)%weasdl(ix) = sfc_var2(i,j,34)   !--- weasdl (weasd on land  portion of a cell)
-        Sfcprop(nb)%tsfc(ix)   = sfc_var2(i,j,35)   !--- tsfc composite
-        Sfcprop(nb)%tsfcl(ix)  = sfc_var2(i,j,36)   !--- tsfcl  (temp on land portion of a cell)
-        Sfcprop(nb)%zorlw(ix)  = sfc_var2(i,j,37)   !--- zorlw (zorl on water portion of a cell)
-        Sfcprop(nb)%zorll(ix)  = sfc_var2(i,j,38)   !--- zorll (zorl on land portion of a cell)
-        Sfcprop(nb)%zorli(ix)  = sfc_var2(i,j,39)   !--- zorli (zorl on ice  portion of a cell)
-        Sfcprop(nb)%albdirvis_lnd(ix) = sfc_var2(i,j,40)
-        Sfcprop(nb)%albdirnir_lnd(ix) = sfc_var2(i,j,41)
-        Sfcprop(nb)%albdifvis_lnd(ix) = sfc_var2(i,j,42)
-        Sfcprop(nb)%albdifnir_lnd(ix) = sfc_var2(i,j,43)
-        Sfcprop(nb)%emis_lnd(ix)      = sfc_var2(i,j,44)
-        Sfcprop(nb)%emis_ice(ix)      = sfc_var2(i,j,45)
-        Sfcprop(nb)%sncovr_ice(ix)    = sfc_var2(i,j,46)
-        Sfcprop(nb)%snodi(ix)         = sfc_var2(i,j,47)   !--- snodi (snowd on ice  portion of a cell)
-        Sfcprop(nb)%weasdi(ix)        = sfc_var2(i,j,48)   !--- weasdi (weasd on ice  portion of a cell)
+        call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%slmsk)   !--- slmsk
+        call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%tsfco)   !--- tsfc (tsea in sfc file)
+        call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%weasd)   !--- weasd (sheleg in sfc file)
+        call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%tg3)     !--- tg3
+        call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%zorl)    !--- zorl composite
+        call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%alvsf)   !--- alvsf
+        call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%alvwf)   !--- alvwf
+        call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%alnsf)   !--- alnsf
+        call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%alnwf)   !--- alnwf
+        call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%facsf)   !--- facsf
+        call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%facwf)   !--- facwf
+        call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%vfrac)   !--- vfrac
+        call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%canopy)  !--- canopy
+        call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%f10m)    !--- f10m
+        call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%t2m)     !--- t2m
+        call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%q2m)     !--- q2m
+        call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%vtype)   !--- vtype
+        call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%stype)   !--- stype
+        call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%uustar)  !--- uustar
+        call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%ffmm)    !--- ffmm
+        call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%ffhh)    !--- ffhh
+        call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%hice)    !--- hice
+        call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%fice)    !--- fice
+        call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%tisfc)   !--- tisfc
+        call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%tprcp)   !--- tprcp
+        call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%srflag)  !--- srflag
+        call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%snowd)   !--- snowd (snwdph in the file)
+        call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%shdmin)  !--- shdmin
+        call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%shdmax)  !--- shdmax
+        call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%slope)   !--- slope
+        call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%snoalb)  !--- snoalb
+        call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%sncovr)  !--- sncovr
+        call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%snodl)   !--- snodl (snowd on land  portion of a cell)
+        call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%weasdl)  !--- weasdl (weasd on land  portion of a cell)
+        call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%tsfc)    !--- tsfc composite
+        call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%tsfcl)   !--- tsfcl  (temp on land portion of a cell)
+        call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%zorlw)   !--- zorlw (zorl on water portion of a cell)
+        call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%zorll)   !--- zorll (zorl on land portion of a cell)
+        call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%zorli)   !--- zorli (zorl on ice  portion of a cell)
+        call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%albdirvis_lnd)
+        call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%albdirnir_lnd)
+        call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%albdifvis_lnd)
+        call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%albdifnir_lnd)
+        call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%emis_lnd)
+        call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%emis_ice)
+        call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%sncovr_ice)
+        call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%snodi)   !--- snodi (snowd on ice  portion of a cell)
+        call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%weasdi)  !--- weasdi (weasd on ice  portion of a cell)
         if (Model%use_cice_alb .or. Model%lsm == Model%lsm_ruc) then
-          Sfcprop(nb)%albdirvis_ice(ix) = sfc_var2(i,j,49)
-          Sfcprop(nb)%albdifvis_ice(ix) = sfc_var2(i,j,50)
-          Sfcprop(nb)%albdirnir_ice(ix) = sfc_var2(i,j,51)
-          Sfcprop(nb)%albdifnir_ice(ix) = sfc_var2(i,j,52)
-!         Sfcprop(nb)%sfalb_ice(ix)     = sfc_var2(i,j,53)
+          call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%albdirvis_ice)
+          call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%albdifvis_ice)
+          call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%albdirnir_ice)
+          call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%albdifnir_ice)
+!         call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%sfalb_ice)
         endif
         if(Model%cplwav) then
-          Sfcprop(nb)%zorlwav(ix)  = sfc_var2(i,j,nvar_s2m) !--- (zorl from wave model)
+          nt = nvar_s2m-1 ! Next item will be at nvar_s2m
+          call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%zorlwav) !--- (zorl from wave model)
         else
-          Sfcprop(nb)%zorlwav(ix)  = Sfcprop(nb)%zorlw(ix)
+          Sfcprop(nb)%zorlwav  = Sfcprop(nb)%zorlw
         endif
 
-        if (Sfcprop(nb)%stype(ix) == 14 .or. Sfcprop(nb)%stype(ix) <= 0) then
+        do_lsi_fractions: do ix = 1, Atm_block%blksz(nb)
+         if (Sfcprop(nb)%stype(ix) == 14 .or. Sfcprop(nb)%stype(ix) <= 0) then
           Sfcprop(nb)%landfrac(ix) = zero
           Sfcprop(nb)%stype(ix) = 0
           if (Sfcprop(nb)%lakefrac(ix) > zero) then
             Sfcprop(nb)%lakefrac(ix) = one
           endif
-        endif
+         endif
 
-        if (Model%frac_grid) then
+         if_frac_grid: if (Model%frac_grid) then
           if (Sfcprop(nb)%landfrac(ix) > -999.0_r8) then
             Sfcprop(nb)%slmsk(ix) = ceiling(Sfcprop(nb)%landfrac(ix)-1.0e-6)
             if (Sfcprop(nb)%slmsk(ix) == 1 .and. Sfcprop(nb)%stype(ix) == 14) &
@@ -1412,7 +1607,7 @@ module FV3GFS_io_mod
               endif
             endif
           endif
-        else                                             ! not a fractional grid
+         else                                             ! not a fractional grid
           if (Sfcprop(nb)%landfrac(ix) > -999.0_r8) then
             if (Sfcprop(nb)%lakefrac(ix) > zero) then
               Sfcprop(nb)%oceanfrac(ix) = zero
@@ -1455,154 +1650,184 @@ module FV3GFS_io_mod
               endif
             endif
           endif
-        endif
+         endif if_frac_grid
+        enddo do_lsi_fractions
 
         if (warm_start .and. Model%kdt > 1) then
-          Sfcprop(nb)%slmsk(ix)  = sfc_var2(i,j,1)    !--- slmsk
+          do ix = 1, Atm_block%blksz(nb)
+            Sfcprop(nb)%slmsk(ix)  = sfc_var2(ii1(ix),jj1(ix),1)    !--- slmsk
+          enddo
         endif
 
         !
         !--- NSSTM variables
+        nt = nvar_s2m
         if (Model%nstf_name(1) > 0) then
           if (Model%nstf_name(2) == 1) then             ! nsst spinup
           !--- nsstm tref
-            Sfcprop(nb)%tref(ix)    = Sfcprop(nb)%tsfco(ix)
-            Sfcprop(nb)%z_c(ix)     = zero
-            Sfcprop(nb)%c_0(ix)     = zero
-            Sfcprop(nb)%c_d(ix)     = zero
-            Sfcprop(nb)%w_0(ix)     = zero
-            Sfcprop(nb)%w_d(ix)     = zero
-            Sfcprop(nb)%xt(ix)      = zero
-            Sfcprop(nb)%xs(ix)      = zero
-            Sfcprop(nb)%xu(ix)      = zero
-            Sfcprop(nb)%xv(ix)      = zero
-            Sfcprop(nb)%xz(ix)      = 20.0_r8
-            Sfcprop(nb)%zm(ix)      = zero
-            Sfcprop(nb)%xtts(ix)    = zero
-            Sfcprop(nb)%xzts(ix)    = zero
-            Sfcprop(nb)%d_conv(ix)  = zero
-            Sfcprop(nb)%ifd(ix)     = zero
-            Sfcprop(nb)%dt_cool(ix) = zero
-            Sfcprop(nb)%qrain(ix)   = zero
+            nt = nt + 18
+            Sfcprop(nb)%tref    = Sfcprop(nb)%tsfco
+            Sfcprop(nb)%z_c     = zero
+            Sfcprop(nb)%c_0     = zero
+            Sfcprop(nb)%c_d     = zero
+            Sfcprop(nb)%w_0     = zero
+            Sfcprop(nb)%w_d     = zero
+            Sfcprop(nb)%xt      = zero
+            Sfcprop(nb)%xs      = zero
+            Sfcprop(nb)%xu      = zero
+            Sfcprop(nb)%xv      = zero
+            Sfcprop(nb)%xz      = 20.0_r8
+            Sfcprop(nb)%zm      = zero
+            Sfcprop(nb)%xtts    = zero
+            Sfcprop(nb)%xzts    = zero
+            Sfcprop(nb)%d_conv  = zero
+            Sfcprop(nb)%ifd     = zero
+            Sfcprop(nb)%dt_cool = zero
+            Sfcprop(nb)%qrain   = zero
           elseif (Model%nstf_name(2) == 0) then         ! nsst restart
-            Sfcprop(nb)%tref(ix)    = sfc_var2(i,j,nvar_s2m+1)  !--- nsstm tref
-            Sfcprop(nb)%z_c(ix)     = sfc_var2(i,j,nvar_s2m+2)  !--- nsstm z_c
-            Sfcprop(nb)%c_0(ix)     = sfc_var2(i,j,nvar_s2m+3)  !--- nsstm c_0
-            Sfcprop(nb)%c_d(ix)     = sfc_var2(i,j,nvar_s2m+4)  !--- nsstm c_d
-            Sfcprop(nb)%w_0(ix)     = sfc_var2(i,j,nvar_s2m+5)  !--- nsstm w_0
-            Sfcprop(nb)%w_d(ix)     = sfc_var2(i,j,nvar_s2m+6)  !--- nsstm w_d
-            Sfcprop(nb)%xt(ix)      = sfc_var2(i,j,nvar_s2m+7)  !--- nsstm xt
-            Sfcprop(nb)%xs(ix)      = sfc_var2(i,j,nvar_s2m+8)  !--- nsstm xs
-            Sfcprop(nb)%xu(ix)      = sfc_var2(i,j,nvar_s2m+9)  !--- nsstm xu
-            Sfcprop(nb)%xv(ix)      = sfc_var2(i,j,nvar_s2m+10) !--- nsstm xv
-            Sfcprop(nb)%xz(ix)      = sfc_var2(i,j,nvar_s2m+11) !--- nsstm xz
-            Sfcprop(nb)%zm(ix)      = sfc_var2(i,j,nvar_s2m+12) !--- nsstm zm
-            Sfcprop(nb)%xtts(ix)    = sfc_var2(i,j,nvar_s2m+13) !--- nsstm xtts
-            Sfcprop(nb)%xzts(ix)    = sfc_var2(i,j,nvar_s2m+14) !--- nsstm xzts
-            Sfcprop(nb)%d_conv(ix)  = sfc_var2(i,j,nvar_s2m+15) !--- nsstm d_conv
-            Sfcprop(nb)%ifd(ix)     = sfc_var2(i,j,nvar_s2m+16) !--- nsstm ifd
-            Sfcprop(nb)%dt_cool(ix) = sfc_var2(i,j,nvar_s2m+17) !--- nsstm dt_cool
-            Sfcprop(nb)%qrain(ix)   = sfc_var2(i,j,nvar_s2m+18) !--- nsstm qrain
+            call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%tref)  !--- nsstm tref
+            call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%z_c)  !--- nsstm z_c
+            call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%c_0)  !--- nsstm c_0
+            call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%c_d)  !--- nsstm c_d
+            call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%w_0)  !--- nsstm w_0
+            call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%w_d)  !--- nsstm w_d
+            call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%xt)  !--- nsstm xt
+            call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%xs)  !--- nsstm xs
+            call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%xu)  !--- nsstm xu
+            call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%xv) !--- nsstm xv
+            call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%xz) !--- nsstm xz
+            call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%zm) !--- nsstm zm
+            call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%xtts) !--- nsstm xtts
+            call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%xzts) !--- nsstm xzts
+            call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%d_conv) !--- nsstm d_conv
+            call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%ifd) !--- nsstm ifd
+            call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%dt_cool) !--- nsstm dt_cool
+            call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%qrain) !--- nsstm qrain
           endif
+        else
+          nt = nt + 18
         endif
 
         if (Model%lsm == Model%lsm_ruc .and. warm_start) then
           !--- Extra RUC variables
-          Sfcprop(nb)%wetness(ix)         = sfc_var2(i,j,nvar_s2m+19)
-          Sfcprop(nb)%clw_surf_land(ix)   = sfc_var2(i,j,nvar_s2m+20)
-          Sfcprop(nb)%clw_surf_ice(ix)    = sfc_var2(i,j,nvar_s2m+21)
-          Sfcprop(nb)%qwv_surf_land(ix)   = sfc_var2(i,j,nvar_s2m+22)
-          Sfcprop(nb)%qwv_surf_ice(ix)    = sfc_var2(i,j,nvar_s2m+23)
-          Sfcprop(nb)%tsnow_land(ix)      = sfc_var2(i,j,nvar_s2m+24)
-          Sfcprop(nb)%tsnow_ice(ix)       = sfc_var2(i,j,nvar_s2m+25)
-          Sfcprop(nb)%snowfallac_land(ix) = sfc_var2(i,j,nvar_s2m+26)
-          Sfcprop(nb)%snowfallac_ice(ix)  = sfc_var2(i,j,nvar_s2m+27)
-          Sfcprop(nb)%sfalb_lnd(ix)       = sfc_var2(i,j,nvar_s2m+28)
-          Sfcprop(nb)%sfalb_lnd_bck(ix)   = sfc_var2(i,j,nvar_s2m+29)
-          Sfcprop(nb)%sfalb_ice(ix)       = sfc_var2(i,j,nvar_s2m+30)
+          call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%wetness)
+          call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%clw_surf_land)
+          call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%clw_surf_ice)
+          call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%qwv_surf_land)
+          call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%qwv_surf_ice)
+          call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%tsnow_land)
+          call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%tsnow_ice)
+          call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%snowfallac_land)
+          call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%snowfallac_ice)
+          call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%sfalb_lnd)
+          call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%sfalb_lnd_bck)
+          call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%sfalb_ice)
           if (Model%rdlai) then
-            Sfcprop(nb)%xlaixy(ix)        = sfc_var2(i,j,nvar_s2m+31)
+            call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%xlaixy)
           endif
         else if (Model%lsm == Model%lsm_ruc) then
           ! Initialize RUC snow cover on ice from snow cover
-          Sfcprop(nb)%sncovr_ice(ix)      = Sfcprop(nb)%sncovr(ix)
+          Sfcprop(nb)%sncovr_ice = Sfcprop(nb)%sncovr
           if (Model%rdlai) then
-            Sfcprop(nb)%xlaixy(ix) = sfc_var2(i,j,nvar_s2m+19)
+            call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%xlaixy)
           end if
         elseif (Model%lsm == Model%lsm_noahmp) then
           !--- Extra Noah MP variables
-          Sfcprop(nb)%snowxy(ix)     = sfc_var2(i,j,nvar_s2m+19)
-          Sfcprop(nb)%tvxy(ix)       = sfc_var2(i,j,nvar_s2m+20)
-          Sfcprop(nb)%tgxy(ix)       = sfc_var2(i,j,nvar_s2m+21)
-          Sfcprop(nb)%canicexy(ix)   = sfc_var2(i,j,nvar_s2m+22)
-          Sfcprop(nb)%canliqxy(ix)   = sfc_var2(i,j,nvar_s2m+23)
-          Sfcprop(nb)%eahxy(ix)      = sfc_var2(i,j,nvar_s2m+24)
-          Sfcprop(nb)%tahxy(ix)      = sfc_var2(i,j,nvar_s2m+25)
-          Sfcprop(nb)%cmxy(ix)       = sfc_var2(i,j,nvar_s2m+26)
-          Sfcprop(nb)%chxy(ix)       = sfc_var2(i,j,nvar_s2m+27)
-          Sfcprop(nb)%fwetxy(ix)     = sfc_var2(i,j,nvar_s2m+28)
-          Sfcprop(nb)%sneqvoxy(ix)   = sfc_var2(i,j,nvar_s2m+29)
-          Sfcprop(nb)%alboldxy(ix)   = sfc_var2(i,j,nvar_s2m+30)
-          Sfcprop(nb)%qsnowxy(ix)    = sfc_var2(i,j,nvar_s2m+31)
-          Sfcprop(nb)%wslakexy(ix)   = sfc_var2(i,j,nvar_s2m+32)
-          Sfcprop(nb)%zwtxy(ix)      = sfc_var2(i,j,nvar_s2m+33)
-          Sfcprop(nb)%waxy(ix)       = sfc_var2(i,j,nvar_s2m+34)
-          Sfcprop(nb)%wtxy(ix)       = sfc_var2(i,j,nvar_s2m+35)
-          Sfcprop(nb)%lfmassxy(ix)   = sfc_var2(i,j,nvar_s2m+36)
-          Sfcprop(nb)%rtmassxy(ix)   = sfc_var2(i,j,nvar_s2m+37)
-          Sfcprop(nb)%stmassxy(ix)   = sfc_var2(i,j,nvar_s2m+38)
-          Sfcprop(nb)%woodxy(ix)     = sfc_var2(i,j,nvar_s2m+39)
-          Sfcprop(nb)%stblcpxy(ix)   = sfc_var2(i,j,nvar_s2m+40)
-          Sfcprop(nb)%fastcpxy(ix)   = sfc_var2(i,j,nvar_s2m+41)
-          Sfcprop(nb)%xsaixy(ix)     = sfc_var2(i,j,nvar_s2m+42)
-          Sfcprop(nb)%xlaixy(ix)     = sfc_var2(i,j,nvar_s2m+43)
-          Sfcprop(nb)%taussxy(ix)    = sfc_var2(i,j,nvar_s2m+44)
-          Sfcprop(nb)%smcwtdxy(ix)   = sfc_var2(i,j,nvar_s2m+45)
-          Sfcprop(nb)%deeprechxy(ix) = sfc_var2(i,j,nvar_s2m+46)
-          Sfcprop(nb)%rechxy(ix)     = sfc_var2(i,j,nvar_s2m+47)
+          call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%snowxy)
+          call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%tvxy)
+          call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%tgxy)
+          call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%canicexy)
+          call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%canliqxy)
+          call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%eahxy)
+          call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%tahxy)
+          call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%cmxy)
+          call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%chxy)
+          call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%fwetxy)
+          call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%sneqvoxy)
+          call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%alboldxy)
+          call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%qsnowxy)
+          call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%wslakexy)
+          call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%zwtxy)
+          call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%waxy)
+          call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%wtxy)
+          call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%lfmassxy)
+          call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%rtmassxy)
+          call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%stmassxy)
+          call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%woodxy)
+          call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%stblcpxy)
+          call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%fastcpxy)
+          call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%xsaixy)
+          call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%xlaixy)
+          call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%taussxy)
+          call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%smcwtdxy)
+          call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%deeprechxy)
+          call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%rechxy)
         endif
 
         if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp .or. (.not.warm_start)) then
           !--- 3D variables
-          do lsoil = 1,Model%lsoil
-            Sfcprop(nb)%stc(ix,lsoil) = sfc_var3(i,j,lsoil,1)   !--- stc
-            Sfcprop(nb)%smc(ix,lsoil) = sfc_var3(i,j,lsoil,2)   !--- smc
-            Sfcprop(nb)%slc(ix,lsoil) = sfc_var3(i,j,lsoil,3)   !--- slc
-          enddo
+          nt=0
+          call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,1,Model%lsoil,sfc_var3,Sfcprop(nb)%stc)
+          call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,1,Model%lsoil,sfc_var3,Sfcprop(nb)%smc)
+          call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,1,Model%lsoil,sfc_var3,Sfcprop(nb)%slc)
 
           if (Model%lsm == Model%lsm_noahmp) then
+            ! These use weird indexing which is lost during a Fortran subroutine call, so we use loops instead:
+            nt=nt+1
             do lsoil = -2, 0
-              Sfcprop(nb)%snicexy(ix,lsoil) = sfc_var3sn(i,j,lsoil,4)
-              Sfcprop(nb)%snliqxy(ix,lsoil) = sfc_var3sn(i,j,lsoil,5)
-              Sfcprop(nb)%tsnoxy(ix,lsoil)  = sfc_var3sn(i,j,lsoil,6)
+              do ix = 1, Atm_block%blksz(nb)
+                Sfcprop(nb)%snicexy(ix,lsoil) = sfc_var3sn(ii1(ix),jj1(ix),lsoil,nt)
+              enddo
+            enddo
+            
+            nt=nt+1
+            do lsoil = -2, 0
+              do ix = 1, Atm_block%blksz(nb)
+                Sfcprop(nb)%snliqxy(ix,lsoil) = sfc_var3sn(ii1(ix),jj1(ix),lsoil,nt)
+              enddo
             enddo
 
+            nt=nt+1
+            do lsoil = -2, 0
+              do ix = 1, Atm_block%blksz(nb)
+                Sfcprop(nb)%tsnoxy(ix,lsoil)  = sfc_var3sn(ii1(ix),jj1(ix),lsoil,nt)
+              enddo
+            enddo
+
+            nt=nt+1
             do lsoil = 1, 4
-              Sfcprop(nb)%smoiseq(ix,lsoil)  = sfc_var3eq(i,j,lsoil,7)
+              do ix = 1, Atm_block%blksz(nb)
+                Sfcprop(nb)%smoiseq(ix,lsoil)  = sfc_var3eq(ii1(ix),jj1(ix),lsoil,nt)
+              enddo
             enddo
 
+            nt=nt+1
             do lsoil = -2, 4
-              Sfcprop(nb)%zsnsoxy(ix,lsoil)  = sfc_var3zn(i,j,lsoil,8)
+              do ix = 1, Atm_block%blksz(nb)
+                Sfcprop(nb)%zsnsoxy(ix,lsoil)  = sfc_var3zn(ii1(ix),jj1(ix),lsoil,nt)
+              enddo
             enddo
           endif
 
         else if (Model%lsm == Model%lsm_ruc) then
           !--- 3D variables
-          do lsoil = 1,Model%lsoil_lsm
-            Sfcprop(nb)%tslb(ix,lsoil)        = sfc_var3(i,j,lsoil,1) !--- tslb
-            Sfcprop(nb)%smois(ix,lsoil)       = sfc_var3(i,j,lsoil,2) !--- smois
-            Sfcprop(nb)%sh2o(ix,lsoil)        = sfc_var3(i,j,lsoil,3) !--- sh2o
-            Sfcprop(nb)%keepsmfr(ix,lsoil)    = sfc_var3(i,j,lsoil,4) !--- keepsmfr
-            Sfcprop(nb)%flag_frsoil(ix,lsoil) = sfc_var3(i,j,lsoil,5) !--- flag_frsoil
-          enddo
+          nt=0
+          call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,1,Model%lsoil_lsm,sfc_var3,Sfcprop(nb)%tslb)
+          call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,1,Model%lsoil_lsm,sfc_var3,Sfcprop(nb)%smois)
+          call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,1,Model%lsoil_lsm,sfc_var3,Sfcprop(nb)%sh2o)
+          call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,1,Model%lsoil_lsm,sfc_var3,Sfcprop(nb)%keepsmfr)
+          call copy_to_GFS_Data(ii1,jj1,isc,jsc,nt,1,Model%lsoil_lsm,sfc_var3,Sfcprop(nb)%flag_frsoil)
         endif
 
         do k = 1,Model%kice
-          Sfcprop(nb)%tiice(ix,k) = sfc_var3ice(i,j,k)   !--- internal ice temp
+         do ix = 1, Atm_block%blksz(nb)
+          Sfcprop(nb)%tiice(ix,k) = sfc_var3ice(ii1(ix),jj1(ix),k)   !--- internal ice temp
+         enddo
         enddo
 
-      enddo   !ix
-    enddo    !nb
+        deallocate(ii1,jj1)
+
+      end do block_loop
     call mpp_error(NOTE, 'gfs_driver:: - after put to container ')
 
 ! so far: At cold start everything is 9999.0, warm start snowxy has values
@@ -1834,18 +2059,20 @@ module FV3GFS_io_mod
     type(domain2d),              intent(in) :: fv_domain
     character(len=32), optional, intent(in) :: timestamp
     !--- local variables
-    integer :: i, j, k, nb, ix, lsoil, num
+    integer :: i, j, k, nb, ix, lsoil, num, nt
     integer :: isc, iec, jsc, jec, npz, nx, ny
     integer :: id_restart
     integer :: nvar2m, nvar2o, nvar3
     integer :: nvar2r, nvar2mp, nvar3mp
     logical :: mand
+    integer, allocatable :: ii1(:), jj1(:)
     character(len=32) :: fn_srf = 'sfc_data.nc'
     real(kind=kind_phys), pointer, dimension(:,:)   :: var2_p  => NULL()
     real(kind=kind_phys), pointer, dimension(:,:,:) :: var3_p  => NULL()
     real(kind=kind_phys), pointer, dimension(:,:,:) :: var3_p1 => NULL()
     real(kind=kind_phys), pointer, dimension(:,:,:) :: var3_p2 => NULL()
     real(kind=kind_phys), pointer, dimension(:,:,:) :: var3_p3 => NULL()
+    real(kind_phys) :: ice
     !--- directory of the input files
     character(7)  :: indir='RESTART'
     character(72) :: infile
@@ -1909,7 +2136,7 @@ module FV3GFS_io_mod
 
     !--- register axis
     amiopen=open_file(Sfc_restart, trim(infile), 'overwrite', domain=fv_domain, is_restart=.true., dont_add_res_to_filename=.true.)
-    if( amiopen ) then
+    if_amiopen: if( amiopen ) then
       call register_axis(Sfc_restart, 'xaxis_1', 'X')
       call register_field(Sfc_restart, 'xaxis_1', 'double', (/'xaxis_1'/))
       call register_variable_attribute(Sfc_restart, 'xaxis_1', 'cartesian_axis', 'X', str_len=1)
@@ -1973,7 +2200,7 @@ module FV3GFS_io_mod
       call write_data( Sfc_restart, 'Time', 1)
     else
       call mpp_error(FATAL, 'Error in opening file'//trim(infile) )
-    end if
+    end if if_amiopen
 
 
     if (.not. allocated(sfc_name2)) then
@@ -1997,137 +2224,7 @@ module FV3GFS_io_mod
         sfc_var3eq = -9999.0_r8
         sfc_var3zn = -9999.0_r8
       endif
-
-
-    !--- names of the 2D variables to save
-      sfc_name2(1)  = 'slmsk'
-      sfc_name2(2)  = 'tsea'    !tsfc
-      sfc_name2(3)  = 'sheleg'  !weasd
-      sfc_name2(4)  = 'tg3'
-      sfc_name2(5)  = 'zorl'
-      sfc_name2(6)  = 'alvsf'
-      sfc_name2(7)  = 'alvwf'
-      sfc_name2(8)  = 'alnsf'
-      sfc_name2(9)  = 'alnwf'
-      sfc_name2(10) = 'facsf'
-      sfc_name2(11) = 'facwf'
-      sfc_name2(12) = 'vfrac'
-      sfc_name2(13) = 'canopy'
-      sfc_name2(14) = 'f10m'
-      sfc_name2(15) = 't2m'
-      sfc_name2(16) = 'q2m'
-      sfc_name2(17) = 'vtype'
-      sfc_name2(18) = 'stype'
-      sfc_name2(19) = 'uustar'
-      sfc_name2(20) = 'ffmm'
-      sfc_name2(21) = 'ffhh'
-      sfc_name2(22) = 'hice'
-      sfc_name2(23) = 'fice'
-      sfc_name2(24) = 'tisfc'
-      sfc_name2(25) = 'tprcp'
-      sfc_name2(26) = 'srflag'
-      sfc_name2(27) = 'snwdph'  !snowd
-      sfc_name2(28) = 'shdmin'
-      sfc_name2(29) = 'shdmax'
-      sfc_name2(30) = 'slope'
-      sfc_name2(31) = 'snoalb'
-      !--- variables below here are optional
-      sfc_name2(32) = 'sncovr'
-      sfc_name2(33) = 'snodl' !snowd on land portion of a cell
-      sfc_name2(34) = 'weasdl'!weasd on land portion of a cell
-      sfc_name2(35) = 'tsfc'  !tsfc composite
-      sfc_name2(36) = 'tsfcl' !temp on land portion of a cell
-      sfc_name2(37) = 'zorlw' !zorl on water portion of a cell
-      sfc_name2(38) = 'zorll' !zorl on land portion of a cell
-      sfc_name2(39) = 'zorli' !zorl on ice portion of a cell
-      sfc_name2(40) = 'albdirvis_lnd'
-      sfc_name2(41) = 'albdirnir_lnd'
-      sfc_name2(42) = 'albdifvis_lnd'
-      sfc_name2(43) = 'albdifnir_lnd'
-      sfc_name2(44) = 'emis_lnd'
-      sfc_name2(45) = 'emis_ice'
-      sfc_name2(46) = 'sncovr_ice'
-      sfc_name2(47) = 'snodi' !snowd on ice portion of a cell
-      sfc_name2(48) = 'weasdi'!weasd on ice portion of a cell
-
-      if (Model%use_cice_alb .or. Model%lsm == Model%lsm_ruc) then
-        sfc_name2(49) = 'albdirvis_ice'
-        sfc_name2(50) = 'albdifvis_ice'
-        sfc_name2(51) = 'albdirnir_ice'
-        sfc_name2(52) = 'albdifnir_ice'
-!       sfc_name2(53) = 'sfalb_ice'
-      endif
-
-      if (Model%cplwav) then
-        sfc_name2(nvar2m) = 'zorlwav'   !zorl from wave component
-      endif
-      !--- NSSTM inputs only needed when (nstf_name(1) > 0) .and. (nstf_name(2)) == 0)
-      sfc_name2(nvar2m+1)  = 'tref'
-      sfc_name2(nvar2m+2)  = 'z_c'
-      sfc_name2(nvar2m+3)  = 'c_0'
-      sfc_name2(nvar2m+4)  = 'c_d'
-      sfc_name2(nvar2m+5)  = 'w_0'
-      sfc_name2(nvar2m+6)  = 'w_d'
-      sfc_name2(nvar2m+7)  = 'xt'
-      sfc_name2(nvar2m+8)  = 'xs'
-      sfc_name2(nvar2m+9)  = 'xu'
-      sfc_name2(nvar2m+10) = 'xv'
-      sfc_name2(nvar2m+11) = 'xz'
-      sfc_name2(nvar2m+12) = 'zm'
-      sfc_name2(nvar2m+13) = 'xtts'
-      sfc_name2(nvar2m+14) = 'xzts'
-      sfc_name2(nvar2m+15) = 'd_conv'
-      sfc_name2(nvar2m+16) = 'ifd'
-      sfc_name2(nvar2m+17) = 'dt_cool'
-      sfc_name2(nvar2m+18) = 'qrain'
-      if (Model%lsm == Model%lsm_ruc) then
-        sfc_name2(nvar2m+19) = 'wetness'
-        sfc_name2(nvar2m+20) = 'clw_surf_land'
-        sfc_name2(nvar2m+21) = 'clw_surf_ice'
-        sfc_name2(nvar2m+22) = 'qwv_surf_land'
-        sfc_name2(nvar2m+23) = 'qwv_surf_ice'
-        sfc_name2(nvar2m+24) = 'tsnow_land'
-        sfc_name2(nvar2m+25) = 'tsnow_ice'
-        sfc_name2(nvar2m+26) = 'snowfall_acc_land'
-        sfc_name2(nvar2m+27) = 'snowfall_acc_ice'
-        sfc_name2(nvar2m+28) = 'sfalb_lnd'
-        sfc_name2(nvar2m+29) = 'sfalb_lnd_bck'
-        sfc_name2(nvar2m+30) = 'sfalb_ice'
-        if (Model%rdlai) then
-          sfc_name2(nvar2m+31) = 'lai'
-        endif
-      else if(Model%lsm == Model%lsm_noahmp) then
-        ! Only needed when Noah MP LSM is used - 29 2D
-        sfc_name2(nvar2m+19) = 'snowxy'
-        sfc_name2(nvar2m+20) = 'tvxy'
-        sfc_name2(nvar2m+21) = 'tgxy'
-        sfc_name2(nvar2m+22) = 'canicexy'
-        sfc_name2(nvar2m+23) = 'canliqxy'
-        sfc_name2(nvar2m+24) = 'eahxy'
-        sfc_name2(nvar2m+25) = 'tahxy'
-        sfc_name2(nvar2m+26) = 'cmxy'
-        sfc_name2(nvar2m+27) = 'chxy'
-        sfc_name2(nvar2m+28) = 'fwetxy'
-        sfc_name2(nvar2m+29) = 'sneqvoxy'
-        sfc_name2(nvar2m+30) = 'alboldxy'
-        sfc_name2(nvar2m+31) = 'qsnowxy'
-        sfc_name2(nvar2m+32) = 'wslakexy'
-        sfc_name2(nvar2m+33) = 'zwtxy'
-        sfc_name2(nvar2m+34) = 'waxy'
-        sfc_name2(nvar2m+35) = 'wtxy'
-        sfc_name2(nvar2m+36) = 'lfmassxy'
-        sfc_name2(nvar2m+37) = 'rtmassxy'
-        sfc_name2(nvar2m+38) = 'stmassxy'
-        sfc_name2(nvar2m+39) = 'woodxy'
-        sfc_name2(nvar2m+40) = 'stblcpxy'
-        sfc_name2(nvar2m+41) = 'fastcpxy'
-        sfc_name2(nvar2m+42) = 'xsaixy'
-        sfc_name2(nvar2m+43) = 'xlaixy'
-        sfc_name2(nvar2m+44) = 'taussxy'
-        sfc_name2(nvar2m+45) = 'smcwtdxy'
-        sfc_name2(nvar2m+46) = 'deeprechxy'
-        sfc_name2(nvar2m+47) = 'rechxy'
-      endif
+      call fill_Sfcprop_names(Model,sfc_name2,sfc_name3,nvar2m,.true.)
    end if
 
    !--- register the 2D fields
@@ -2237,186 +2334,215 @@ module FV3GFS_io_mod
       nullify(var3_p3)
    endif ! lsm = lsm_noahmp
 
+!$omp parallel do default(shared) private(i, j, nb, ix, nt, ii1, jj1, lsoil, k, ice)
+    block_loop: do nb = 1, Atm_block%nblks
+       allocate(ii1(Atm_block%blksz(nb)))
+       allocate(jj1(Atm_block%blksz(nb)))
+       ii1=Atm_block%index(nb)%ii - isc + 1
+       jj1=Atm_block%index(nb)%jj - jsc + 1
 
-!$omp parallel do default(shared) private(i, j, nb, ix, lsoil)
-    do nb = 1, Atm_block%nblks
-      do ix = 1, Atm_block%blksz(nb)
-        !--- 2D variables
-        i = Atm_block%index(nb)%ii(ix) - isc + 1
-        j = Atm_block%index(nb)%jj(ix) - jsc + 1
-        sfc_var2(i,j,1)  = Sfcprop(nb)%slmsk(ix) !--- slmsk
-        sfc_var2(i,j,2)  = Sfcprop(nb)%tsfco(ix) !--- tsfc (tsea in sfc file)
-        sfc_var2(i,j,3)  = Sfcprop(nb)%weasd(ix) !--- weasd (sheleg in sfc file)
-        sfc_var2(i,j,4)  = Sfcprop(nb)%tg3(ix)   !--- tg3
-        sfc_var2(i,j,5)  = Sfcprop(nb)%zorl(ix)  !--- zorl
-        sfc_var2(i,j,6)  = Sfcprop(nb)%alvsf(ix) !--- alvsf
-        sfc_var2(i,j,7)  = Sfcprop(nb)%alvwf(ix) !--- alvwf
-        sfc_var2(i,j,8)  = Sfcprop(nb)%alnsf(ix) !--- alnsf
-        sfc_var2(i,j,9)  = Sfcprop(nb)%alnwf(ix) !--- alnwf
-        sfc_var2(i,j,10) = Sfcprop(nb)%facsf(ix) !--- facsf
-        sfc_var2(i,j,11) = Sfcprop(nb)%facwf(ix) !--- facwf
-        sfc_var2(i,j,12) = Sfcprop(nb)%vfrac(ix) !--- vfrac
-        sfc_var2(i,j,13) = Sfcprop(nb)%canopy(ix)!--- canopy
-        sfc_var2(i,j,14) = Sfcprop(nb)%f10m(ix)  !--- f10m
-        sfc_var2(i,j,15) = Sfcprop(nb)%t2m(ix)   !--- t2m
-        sfc_var2(i,j,16) = Sfcprop(nb)%q2m(ix)   !--- q2m
-        sfc_var2(i,j,17) = real(Sfcprop(nb)%vtype(ix), kind=kind_phys) !--- vtype
-        sfc_var2(i,j,18) = real(Sfcprop(nb)%stype(ix), kind=kind_phys) !--- stype
-        sfc_var2(i,j,19) = Sfcprop(nb)%uustar(ix)!--- uustar
-        sfc_var2(i,j,20) = Sfcprop(nb)%ffmm(ix)  !--- ffmm
-        sfc_var2(i,j,21) = Sfcprop(nb)%ffhh(ix)  !--- ffhh
-        sfc_var2(i,j,22) = Sfcprop(nb)%hice(ix)  !--- hice
-        sfc_var2(i,j,23) = Sfcprop(nb)%fice(ix)  !--- fice
-        sfc_var2(i,j,24) = Sfcprop(nb)%tisfc(ix) !--- tisfc
-        sfc_var2(i,j,25) = Sfcprop(nb)%tprcp(ix) !--- tprcp
-        sfc_var2(i,j,26) = Sfcprop(nb)%srflag(ix)!--- srflag
-        sfc_var2(i,j,27) = Sfcprop(nb)%snowd(ix) !--- snowd (snwdph in the file)
-        sfc_var2(i,j,28) = Sfcprop(nb)%shdmin(ix)!--- shdmin
-        sfc_var2(i,j,29) = Sfcprop(nb)%shdmax(ix)!--- shdmax
-        sfc_var2(i,j,30) = real(Sfcprop(nb)%slope(ix), kind=kind_phys) !--- slope
-        sfc_var2(i,j,31) = Sfcprop(nb)%snoalb(ix)!--- snoalb
-        sfc_var2(i,j,32) = Sfcprop(nb)%sncovr(ix) !--- sncovr
-        sfc_var2(i,j,33) = Sfcprop(nb)%snodl(ix)  !--- snodl (snowd on land)
-        sfc_var2(i,j,34) = Sfcprop(nb)%weasdl(ix) !--- weasdl (weasd on land)
-        sfc_var2(i,j,35) = Sfcprop(nb)%tsfc(ix)   !--- tsfc composite
-        sfc_var2(i,j,36) = Sfcprop(nb)%tsfcl(ix)  !--- tsfcl (temp on land)
-        sfc_var2(i,j,37) = Sfcprop(nb)%zorlw(ix)  !--- zorl (zorl on water)
-        sfc_var2(i,j,38) = Sfcprop(nb)%zorll(ix)  !--- zorll (zorl on land)
-        sfc_var2(i,j,39) = Sfcprop(nb)%zorli(ix)  !--- zorli (zorl on ice)
-        sfc_var2(i,j,40) = Sfcprop(nb)%albdirvis_lnd(ix)
-        sfc_var2(i,j,41) = Sfcprop(nb)%albdirnir_lnd(ix)
-        sfc_var2(i,j,42) = Sfcprop(nb)%albdifvis_lnd(ix)
-        sfc_var2(i,j,43) = Sfcprop(nb)%albdifnir_lnd(ix)
-        sfc_var2(i,j,44) = Sfcprop(nb)%emis_lnd(ix)
-        sfc_var2(i,j,45) = Sfcprop(nb)%emis_ice(ix)
-        sfc_var2(i,j,46) = Sfcprop(nb)%sncovr_ice(ix)
-        sfc_var2(i,j,47) = Sfcprop(nb)%snodi(ix)  !--- snodi (snowd on ice)
-        sfc_var2(i,j,48) = Sfcprop(nb)%weasdi(ix) !--- weasdi (weasd on ice)
-        if (Model%use_cice_alb .or. Model%lsm == Model%lsm_ruc) then
-          sfc_var2(i,j,49) = Sfcprop(nb)%albdirvis_ice(ix)
-          sfc_var2(i,j,50) = Sfcprop(nb)%albdifvis_ice(ix)
-          sfc_var2(i,j,51) = Sfcprop(nb)%albdirnir_ice(ix)
-          sfc_var2(i,j,52) = Sfcprop(nb)%albdifnir_ice(ix)
-!         sfc_var2(i,j,53) = Sfcprop(nb)%sfalb_ice(ix)
-        endif
-        if (Model%cplwav) then
-          sfc_var2(i,j,nvar2m) = Sfcprop(nb)%zorlwav(ix) !--- zorlwav (zorl from wav)
-        endif
-        !--- NSSTM variables
-        if (Model%nstf_name(1) > 0) then
-          sfc_var2(i,j,nvar2m+1)  = Sfcprop(nb)%tref(ix)   !--- nsstm tref
-          sfc_var2(i,j,nvar2m+2)  = Sfcprop(nb)%z_c(ix)    !--- nsstm z_c
-          sfc_var2(i,j,nvar2m+3)  = Sfcprop(nb)%c_0(ix)    !--- nsstm c_0
-          sfc_var2(i,j,nvar2m+4)  = Sfcprop(nb)%c_d(ix)    !--- nsstm c_d
-          sfc_var2(i,j,nvar2m+5)  = Sfcprop(nb)%w_0(ix)    !--- nsstm w_0
-          sfc_var2(i,j,nvar2m+6)  = Sfcprop(nb)%w_d(ix)    !--- nsstm w_d
-          sfc_var2(i,j,nvar2m+7)  = Sfcprop(nb)%xt(ix)     !--- nsstm xt
-          sfc_var2(i,j,nvar2m+8)  = Sfcprop(nb)%xs(ix)     !--- nsstm xs
-          sfc_var2(i,j,nvar2m+9)  = Sfcprop(nb)%xu(ix)     !--- nsstm xu
-          sfc_var2(i,j,nvar2m+10) = Sfcprop(nb)%xv(ix)     !--- nsstm xv
-          sfc_var2(i,j,nvar2m+11) = Sfcprop(nb)%xz(ix)     !--- nsstm xz
-          sfc_var2(i,j,nvar2m+12) = Sfcprop(nb)%zm(ix)     !--- nsstm zm
-          sfc_var2(i,j,nvar2m+13) = Sfcprop(nb)%xtts(ix)   !--- nsstm xtts
-          sfc_var2(i,j,nvar2m+14) = Sfcprop(nb)%xzts(ix)   !--- nsstm xzts
-          sfc_var2(i,j,nvar2m+15) = Sfcprop(nb)%d_conv(ix) !--- nsstm d_conv
-          sfc_var2(i,j,nvar2m+16) = Sfcprop(nb)%ifd(ix)    !--- nsstm ifd
-          sfc_var2(i,j,nvar2m+17) = Sfcprop(nb)%dt_cool(ix)!--- nsstm dt_cool
-          sfc_var2(i,j,nvar2m+18) = Sfcprop(nb)%qrain(ix)  !--- nsstm qrain
-        endif
+       nt=0
 
-        if (Model%lsm == Model%lsm_ruc) then
-          !--- Extra RUC variables
-          sfc_var2(i,j,nvar2m+19) = Sfcprop(nb)%wetness(ix)
-          sfc_var2(i,j,nvar2m+20) = Sfcprop(nb)%clw_surf_land(ix)
-          sfc_var2(i,j,nvar2m+21) = Sfcprop(nb)%clw_surf_ice(ix)
-          sfc_var2(i,j,nvar2m+22) = Sfcprop(nb)%qwv_surf_land(ix)
-          sfc_var2(i,j,nvar2m+23) = Sfcprop(nb)%qwv_surf_ice(ix)
-          sfc_var2(i,j,nvar2m+24) = Sfcprop(nb)%tsnow_land(ix)
-          sfc_var2(i,j,nvar2m+25) = Sfcprop(nb)%tsnow_ice(ix)
-          sfc_var2(i,j,nvar2m+26) = Sfcprop(nb)%snowfallac_land(ix)
-          sfc_var2(i,j,nvar2m+27) = Sfcprop(nb)%snowfallac_ice(ix)
-          sfc_var2(i,j,nvar2m+28) = Sfcprop(nb)%sfalb_lnd(ix)
-          sfc_var2(i,j,nvar2m+29) = Sfcprop(nb)%sfalb_lnd_bck(ix)
-          sfc_var2(i,j,nvar2m+30) = Sfcprop(nb)%sfalb_ice(ix)
-          if (Model%rdlai) then
-            sfc_var2(i,j,nvar2m+31) = Sfcprop(nb)%xlaixy(ix)
-          endif
-        else if (Model%lsm == Model%lsm_noahmp) then
-          !--- Extra Noah MP variables
-          sfc_var2(i,j,nvar2m+19) = Sfcprop(nb)%snowxy(ix)
-          sfc_var2(i,j,nvar2m+20) = Sfcprop(nb)%tvxy(ix)
-          sfc_var2(i,j,nvar2m+21) = Sfcprop(nb)%tgxy(ix)
-          sfc_var2(i,j,nvar2m+22) = Sfcprop(nb)%canicexy(ix)
-          sfc_var2(i,j,nvar2m+23) = Sfcprop(nb)%canliqxy(ix)
-          sfc_var2(i,j,nvar2m+24) = Sfcprop(nb)%eahxy(ix)
-          sfc_var2(i,j,nvar2m+25) = Sfcprop(nb)%tahxy(ix)
-          sfc_var2(i,j,nvar2m+26) = Sfcprop(nb)%cmxy(ix)
-          sfc_var2(i,j,nvar2m+27) = Sfcprop(nb)%chxy(ix)
-          sfc_var2(i,j,nvar2m+28) = Sfcprop(nb)%fwetxy(ix)
-          sfc_var2(i,j,nvar2m+29) = Sfcprop(nb)%sneqvoxy(ix)
-          sfc_var2(i,j,nvar2m+30) = Sfcprop(nb)%alboldxy(ix)
-          sfc_var2(i,j,nvar2m+31) = Sfcprop(nb)%qsnowxy(ix)
-          sfc_var2(i,j,nvar2m+32) = Sfcprop(nb)%wslakexy(ix)
-          sfc_var2(i,j,nvar2m+33) = Sfcprop(nb)%zwtxy(ix)
-          sfc_var2(i,j,nvar2m+34) = Sfcprop(nb)%waxy(ix)
-          sfc_var2(i,j,nvar2m+35) = Sfcprop(nb)%wtxy(ix)
-          sfc_var2(i,j,nvar2m+36) = Sfcprop(nb)%lfmassxy(ix)
-          sfc_var2(i,j,nvar2m+37) = Sfcprop(nb)%rtmassxy(ix)
-          sfc_var2(i,j,nvar2m+38) = Sfcprop(nb)%stmassxy(ix)
-          sfc_var2(i,j,nvar2m+39) = Sfcprop(nb)%woodxy(ix)
-          sfc_var2(i,j,nvar2m+40) = Sfcprop(nb)%stblcpxy(ix)
-          sfc_var2(i,j,nvar2m+41) = Sfcprop(nb)%fastcpxy(ix)
-          sfc_var2(i,j,nvar2m+42) = Sfcprop(nb)%xsaixy(ix)
-          sfc_var2(i,j,nvar2m+43) = Sfcprop(nb)%xlaixy(ix)
-          sfc_var2(i,j,nvar2m+44) = Sfcprop(nb)%taussxy(ix)
-          sfc_var2(i,j,nvar2m+45) = Sfcprop(nb)%smcwtdxy(ix)
-          sfc_var2(i,j,nvar2m+46) = Sfcprop(nb)%deeprechxy(ix)
-          sfc_var2(i,j,nvar2m+47) = Sfcprop(nb)%rechxy(ix)
-        endif
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%slmsk) !--- slmsk
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%tsfco) !--- tsfc (tsea in sfc file)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%weasd) !--- weasd (sheleg in sfc file)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%tg3)   !--- tg3
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%zorl)  !--- zorl
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%alvsf) !--- alvsf
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%alvwf) !--- alvwf
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%alnsf) !--- alnsf
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%alnwf) !--- alnwf
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%facsf) !--- facsf
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%facwf) !--- facwf
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%vfrac) !--- vfrac
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%canopy)!--- canopy
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%f10m)  !--- f10m
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%t2m)   !--- t2m
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%q2m)   !--- q2m
 
-        do k = 1,Model%kice
-          sfc_var3ice(i,j,k) = Sfcprop(nb)%tiice(ix,k) !--- internal ice temperature
-          if (sfc_var3ice(i,j,k) < one) sfc_var3ice(i,j,k) = zero
-        enddo
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%vtype) !--- vtype
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%stype) !--- stype
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%uustar)!--- uustar
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%ffmm)  !--- ffmm
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%ffhh)  !--- ffhh
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%hice)  !--- hice
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%fice)  !--- fice
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%tisfc) !--- tisfc
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%tprcp) !--- tprcp
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%srflag)!--- srflag
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%snowd) !--- snowd (snwdph in the file)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%shdmin)!--- shdmin
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%shdmax)!--- shdmax
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%slope) !--- slope
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%snoalb)!--- snoalb
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%sncovr) !--- sncovr
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%snodl)  !--- snodl (snowd on land)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%weasdl) !--- weasdl (weasd on land)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%tsfc)   !--- tsfc composite
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%tsfcl)  !--- tsfcl (temp on land)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%zorlw)  !--- zorl (zorl on water)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%zorll)  !--- zorll (zorl on land)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%zorli)  !--- zorli (zorl on ice)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%albdirvis_lnd)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%albdirnir_lnd)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%albdifvis_lnd)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%albdifnir_lnd)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%emis_lnd)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%emis_ice)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%sncovr_ice)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%snodi)  !--- snodi (snowd on ice)
+       call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%weasdi) !--- weasdi (weasd on ice)
+       if (Model%use_cice_alb .or. Model%lsm == Model%lsm_ruc) then
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%albdirvis_ice)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%albdifvis_ice)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%albdirnir_ice)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%albdifnir_ice)
+!        sfc_var2(i,j,53) = Sfcprop(nb)%sfalb_ice(ix)
+       endif
+       if (Model%cplwav) then
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%zorlwav) !--- zorlwav (zorl from wav)
+       endif
+       !--- NSSTM variables
+       if (Model%nstf_name(1) > 0) then
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%tref)   !--- nsstm tref
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%z_c)    !--- nsstm z_c
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%c_0)    !--- nsstm c_0
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%c_d)    !--- nsstm c_d
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%w_0)    !--- nsstm w_0
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%w_d)    !--- nsstm w_d
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%xt)     !--- nsstm xt
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%xs)     !--- nsstm xs
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%xu)     !--- nsstm xu
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%xv)     !--- nsstm xv
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%xz)     !--- nsstm xz
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%zm)     !--- nsstm zm
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%xtts)   !--- nsstm xtts
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%xzts)   !--- nsstm xzts
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%d_conv) !--- nsstm d_conv
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%ifd)    !--- nsstm ifd
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%dt_cool)!--- nsstm dt_cool
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%qrain)  !--- nsstm qrain
+       endif
 
+       if (Model%lsm == Model%lsm_ruc) then
+         !--- Extra RUC variables
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%wetness)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%clw_surf_land)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%clw_surf_ice)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%qwv_surf_land)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%qwv_surf_ice)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%tsnow_land)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%tsnow_ice)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%snowfallac_land)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%snowfallac_ice)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%sfalb_lnd)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%sfalb_lnd_bck)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%sfalb_ice)
+         if (Model%rdlai) then
+           call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%xlaixy)
+         endif
+       else if (Model%lsm == Model%lsm_noahmp) then
+         !--- Extra Noah MP variables
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%snowxy)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%tvxy)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%tgxy)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%canicexy)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%canliqxy)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%eahxy)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%tahxy)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%cmxy)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%chxy)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%fwetxy)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%sneqvoxy)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%alboldxy)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%qsnowxy)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%wslakexy)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%zwtxy)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%waxy)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%wtxy)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%lfmassxy)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%rtmassxy)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%stmassxy)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%woodxy)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%stblcpxy)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%fastcpxy)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%xsaixy)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%xlaixy)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%taussxy)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%smcwtdxy)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%deeprechxy)
+         call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var2,Sfcprop(nb)%rechxy)
+       endif
+       do k = 1,Model%kice
+         do ix = 1, Atm_block%blksz(nb)
+           ice=Sfcprop(nb)%tiice(ix,k)
+           if(ice<one) then
+             sfc_var3ice(ii1(ix),jj1(ix),k) = zero
+           else
+             sfc_var3ice(ii1(ix),jj1(ix),k) = ice
+           endif
+         enddo
+       enddo
         if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp) then
           !--- 3D variables
-          do lsoil = 1,Model%lsoil
-            sfc_var3(i,j,lsoil,1) = Sfcprop(nb)%stc(ix,lsoil) !--- stc
-            sfc_var3(i,j,lsoil,2) = Sfcprop(nb)%smc(ix,lsoil) !--- smc
-            sfc_var3(i,j,lsoil,3) = Sfcprop(nb)%slc(ix,lsoil) !--- slc
-          enddo
+          nt=0
+          call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var3,Sfcprop(nb)%stc)
+          call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var3,Sfcprop(nb)%smc)
+          call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var3,Sfcprop(nb)%slc)
 ! 5 Noah MP 3D
           if (Model%lsm == Model%lsm_noahmp) then
 
-             do lsoil = -2,0
-              sfc_var3sn(i,j,lsoil,4) = Sfcprop(nb)%snicexy(ix,lsoil)
-              sfc_var3sn(i,j,lsoil,5) = Sfcprop(nb)%snliqxy(ix,lsoil)
-              sfc_var3sn(i,j,lsoil,6) = Sfcprop(nb)%tsnoxy(ix,lsoil)
+            ! These arrays use bizarre indexing, which does not pass
+            ! through function calls in Fortran, so we use loops here:
+
+            nt=nt+1
+            do lsoil = -2,0
+              do ix = 1, Atm_block%blksz(nb)
+                sfc_var3sn(ii1(ix),jj1(ix),lsoil,nt) = Sfcprop(nb)%snicexy(ix,lsoil)
+              enddo
             enddo
 
+            nt=nt+1
+            do lsoil = -2,0
+              do ix = 1, Atm_block%blksz(nb)
+                sfc_var3sn(ii1(ix),jj1(ix),lsoil,nt) = Sfcprop(nb)%snliqxy(ix,lsoil)
+              enddo
+            enddo
+
+            nt=nt+1
+            do lsoil = -2,0
+              do ix = 1, Atm_block%blksz(nb)
+                sfc_var3sn(ii1(ix),jj1(ix),lsoil,nt) = Sfcprop(nb)%tsnoxy(ix,lsoil)
+              enddo
+            enddo
+
+            nt=nt+1
             do lsoil = 1,Model%lsoil
-              sfc_var3eq(i,j,lsoil,7)  = Sfcprop(nb)%smoiseq(ix,lsoil)
+              do ix = 1, Atm_block%blksz(nb)
+                sfc_var3eq(ii1(ix),jj1(ix),lsoil,nt)  = Sfcprop(nb)%smoiseq(ix,lsoil)
+              enddo
             enddo
 
+            nt=nt+1
             do lsoil = -2,4
-              sfc_var3zn(i,j,lsoil,8)  = Sfcprop(nb)%zsnsoxy(ix,lsoil)
+              do ix = 1, Atm_block%blksz(nb)
+                sfc_var3zn(ii1(ix),jj1(ix),lsoil,nt)  = Sfcprop(nb)%zsnsoxy(ix,lsoil)
+              enddo
             enddo
 
           endif  ! Noah MP
         else if (Model%lsm == Model%lsm_ruc) then
           !--- 3D variables
-          do lsoil = 1,Model%lsoil_lsm
-            sfc_var3(i,j,lsoil,1) = Sfcprop(nb)%tslb(ix,lsoil)         !--- tslb  = stc
-            sfc_var3(i,j,lsoil,2) = Sfcprop(nb)%smois(ix,lsoil)        !--- smois = smc
-            sfc_var3(i,j,lsoil,3) = Sfcprop(nb)%sh2o(ix,lsoil)         !--- sh2o  = slc
-            sfc_var3(i,j,lsoil,4) = Sfcprop(nb)%keepsmfr(ix,lsoil)     !--- keepsmfr
-            sfc_var3(i,j,lsoil,5) = Sfcprop(nb)%flag_frsoil(ix,lsoil)  !--- flag_frsoil
-          enddo
+          nt=0
+          call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var3,Sfcprop(nb)%tslb)
+          call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var3,Sfcprop(nb)%smois)
+          call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var3,Sfcprop(nb)%sh2o)
+          call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var3,Sfcprop(nb)%keepsmfr)
+          call copy_from_GFS_Data(ii1,jj1,isc,jsc,nt,sfc_var3,Sfcprop(nb)%flag_frsoil)
         end if
 
-      enddo
-    enddo
+       deallocate(ii1,jj1)
+    enddo block_loop
 
     call write_restart(Sfc_restart)
     call close_file(Sfc_restart)
