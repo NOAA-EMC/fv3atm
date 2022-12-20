@@ -3445,6 +3445,12 @@
   units = flag
   dimensions = ()
   type = logical
+[doGP_smearclds]
+  standard_name = flag_for_implicit_sgs_cloud_in_RRTMGP
+  long_name = logical flag to impicit SGS cloud in RRTMGP
+  units = flag
+  dimensions = ()
+  type = logical
 [iovr_convcld]
   standard_name = flag_for_convective_cloud_overlap_method_for_radiation
   long_name = flag for convective cloud overlap method
@@ -4996,8 +5002,8 @@
   dimensions = ()
   type = integer
 [tc_pbl]
-  standard_name = option_of_tc_application_in_boundary_layer_mass_flux_scheme
-  long_name = option of tc application in boundary layer mass flux scheme
+  standard_name = control_for_TC_applications_in_the_PBL_scheme
+  long_name = control for TC applications in the PBL scheme
   units = none
   dimensions = ()
   type = integer
