@@ -986,6 +986,7 @@ contains
         ! 0 -- all high-resolution data, 1 - static nest smoothing algorithm, 5 - 5 point smoother, 9 - 9 point smoother
         ! Defaults to 1 - static nest smoothing algorithm; this seems to produce the most stable solutions
 
+        print '("[INFO] WDR fv_moving_nest_main.F90 SMOOTH terrain_smoother=",I0)', Moving_nest(n)%mn_flag%terrain_smoother
         select case(Moving_nest(n)%mn_flag%terrain_smoother)
         case (0)
           ! High-resolution terrain for entire nest
@@ -996,6 +997,8 @@ contains
         case (2)
           ! Static nest smoothing algorithm - interpolation of coarse terrain in halo zone and 5 point blending zone of coarse and fine data
           call set_blended_terrain(Atm(n), mn_static%parent_orog_grid, mn_static%orog_grid, x_refine, Atm(n)%bd%ng, 10, a_step)
+        case (4)  ! Use coarse terrain;  no-op here.
+          ;
         case (5)
           ! 5 pt smoother.  blend zone of 5 to match static nest
           call set_smooth_nest_terrain(Atm(n), mn_static%orog_grid, x_refine, 5, Atm(n)%bd%ng, 5)
