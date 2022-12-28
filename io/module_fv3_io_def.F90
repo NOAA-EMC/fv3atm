@@ -17,6 +17,7 @@ module module_fv3_io_def
   integer           :: nbdlphys
   integer           :: nsout_io, iau_offset
   logical           :: lflname_fulltime
+  logical           :: time_unlimited
 
   character(len=esmf_maxstr),dimension(:),allocatable :: filename_base
   character(len=esmf_maxstr),dimension(:),allocatable :: output_file
