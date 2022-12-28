@@ -37,7 +37,8 @@ module fv3gfs_cap_mod
                                     num_files, filename_base,                &
                                     wrttasks_per_group, n_group,             &
                                     lead_wrttask, last_wrttask,              &
-                                    nsout_io, iau_offset, lflname_fulltime
+                                    nsout_io, iau_offset, lflname_fulltime,  &
+                                    time_unlimited
 !
   use module_fcst_grid_comp,  only: fcstSS => SetServices
 
@@ -203,6 +204,11 @@ module fv3gfs_cap_mod
 
     character(len=*),parameter             :: subname='(fv3_cap:InitializeAdvertise)'
     real(kind=8)                           :: MPI_Wtime, timeis, timerhs
+
+    integer                                :: wrttasks_per_group_from_parent, wrtLocalPet
+    character(len=64)                      :: rh_filename
+    logical                                :: use_saved_routehandles, rh_file_exist
+
 !
 !------------------------------------------------------------------------
 !
@@ -277,11 +283,16 @@ module fv3gfs_cap_mod
 !
     nfhout = 0 ; nfhmax_hf = 0 ; nfhout_hf = 0 ; nsout = 0
     if ( quilting ) then
+      call ESMF_ConfigGetAttribute(config=CF,value=use_saved_routehandles, &
+                                   label ='use_saved_routehandles:', &
+                                   default=.false., rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
       call ESMF_ConfigGetAttribute(config=CF,value=write_groups, &
                                    label ='write_groups:',rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 !
-      call ESMF_ConfigGetAttribute(config=CF,value=wrttasks_per_group, &
+      call ESMF_ConfigGetAttribute(config=CF,value=wrttasks_per_group_from_parent, &
                                    label ='write_tasks_per_group:',rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
@@ -290,7 +301,7 @@ module fv3gfs_cap_mod
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
       if(mype == 0) print *,'af nems config,quilting=',quilting,' write_groups=', &
-        write_groups,wrttasks_per_group,' isrcTermProcessing=', isrcTermProcessing
+        write_groups,wrttasks_per_group_from_parent,' isrcTermProcessing=', isrcTermProcessing
 !
       call ESMF_ConfigGetAttribute(config=CF,value=num_files, &
                                    label ='num_files:',rc=rc)
@@ -311,6 +322,8 @@ module fv3gfs_cap_mod
       nsout_io = nsout
 !
       if(mype==0) print *,'af nems config,nfhout,nsout=',nfhout,nfhmax_hf,nfhout_hf, nsout,noutput_fh
+
+      call ESMF_ConfigGetAttribute(config=CF, value=time_unlimited, label ='time_unlimited:', default=.false., rc=rc)
 
     endif ! quilting
 !
@@ -338,7 +351,7 @@ module fv3gfs_cap_mod
 ! create fcst grid component
 
     if( quilting ) then
-      num_pes_fcst = petcount - write_groups * wrttasks_per_group
+      num_pes_fcst = petcount - write_groups * wrttasks_per_group_from_parent
     else
       num_pes_fcst = petcount
     endif
@@ -419,9 +432,9 @@ module fv3gfs_cap_mod
       allocate(wrtFB(FBCount,write_groups), routehandle(FBCount,write_groups))
       allocate(srcGrid(FBCount,write_groups), dstGrid(FBCount,write_groups), gridRedistRH(FBCount,write_groups))
       allocate(lead_wrttask(write_groups), last_wrttask(write_groups))
-      allocate(petList(wrttasks_per_group))
-      allocate(originPetList(num_pes_fcst+wrttasks_per_group))
-      allocate(targetPetList(num_pes_fcst+wrttasks_per_group))
+      allocate(petList(wrttasks_per_group_from_parent))
+      allocate(originPetList(num_pes_fcst+wrttasks_per_group_from_parent))
+      allocate(targetPetList(num_pes_fcst+wrttasks_per_group_from_parent))
       if(mype == 0) print *,'af allco wrtComp,write_groups=',write_groups
 
 ! pull out the item names and item types from fcstState
@@ -457,10 +470,10 @@ module fv3gfs_cap_mod
 
 ! prepare petList for wrtComp(i)
         lead_wrttask(i) = k
-        do j=1, wrttasks_per_group
+        do j=1, wrttasks_per_group_from_parent
           petList(j) = k + j-1
         enddo
-        k = k + wrttasks_per_group
+        k = k + wrttasks_per_group_from_parent
         last_wrttask(i) = k - 1
 !        if(mype==0)print *,'af wrtComp(i)=',i,'k=',k
 
@@ -486,6 +499,15 @@ module fv3gfs_cap_mod
         call ESMF_GridCompSetServices(wrtComp(i), wrtSS, userRc=urc, rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
         if (ESMF_LogFoundError(rcToCheck=urc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+
+! get the actual number of PETs executing wrtComp, considering threading
+        call ESMF_GridCompGet(gridcomp=wrtComp(i),localPet=wrtLocalPet,rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+        if (wrtLocalPet/=-1) then
+          ! This PET does execute inside of wrtComp(i)
+          call ESMF_GridCompGet(gridcomp=wrtComp(i),petCount=wrttasks_per_group,rc=rc)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+        endif
 
 ! add configuration file
         call ESMF_GridCompSet(gridcomp=wrtComp(i),config=CF,rc=rc)
@@ -684,22 +706,39 @@ module fv3gfs_cap_mod
             call ESMF_LogWrite(msgString, ESMF_LOGMSG_INFO, rc=rc)
 
             if (i==1) then
-              ! this is a Store() for the first wrtComp -> must do the Store()
-              call ESMF_TraceRegionEnter("ESMF_FieldBundleRegridStore()", rc=rc)
-              call ESMF_FieldBundleRegridStore(fcstFB(j), wrtFB(j,1), &
-                                               regridMethod=regridmethod, routehandle=routehandle(j,1), &
-                                               unmappedaction=ESMF_UNMAPPEDACTION_IGNORE, &
-                                               srcTermProcessing=isrcTermProcessing, rc=rc)
+              write(rh_filename,'(A,I2.2)') 'routehandle_fb', j
 
-!             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
-              if (rc /= ESMF_SUCCESS) then
-                write(0,*)'fv3_cap.F90:InitializeAdvertise error in ESMF_FieldBundleRegridStore'
-                call ESMF_LogWrite('fv3_cap.F90:InitializeAdvertise error in ESMF_FieldBundleRegridStore', ESMF_LOGMSG_ERROR, rc=rc)
-                call ESMF_Finalize(endflag=ESMF_END_ABORT)
+              inquire(FILE=trim(rh_filename), EXIST=rh_file_exist)
+
+              if (rh_file_exist .and. use_saved_routehandles) then
+                if(mype==0) print *,'in fv3cap init, routehandle file ',trim(rh_filename), ' exists'
+                routehandle(j,1) = ESMF_RouteHandleCreate(fileName=trim(rh_filename), rc=rc)
+                if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+              else
+                ! this is a Store() for the first wrtComp -> must do the Store()
+                call ESMF_TraceRegionEnter("ESMF_FieldBundleRegridStore()", rc=rc)
+                call ESMF_FieldBundleRegridStore(fcstFB(j), wrtFB(j,1), &
+                                                 regridMethod=regridmethod, routehandle=routehandle(j,1), &
+                                                 unmappedaction=ESMF_UNMAPPEDACTION_IGNORE, &
+                                                 srcTermProcessing=isrcTermProcessing, rc=rc)
+
+  !             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+                if (rc /= ESMF_SUCCESS) then
+                  write(0,*)'fv3_cap.F90:InitializeAdvertise error in ESMF_FieldBundleRegridStore'
+                  call ESMF_LogWrite('fv3_cap.F90:InitializeAdvertise error in ESMF_FieldBundleRegridStore', ESMF_LOGMSG_ERROR, rc=rc)
+                  call ESMF_Finalize(endflag=ESMF_END_ABORT)
+                endif
+                call ESMF_TraceRegionExit("ESMF_FieldBundleRegridStore()", rc=rc)
+                call ESMF_LogWrite('af FieldBundleRegridStore', ESMF_LOGMSG_INFO, rc=rc)
+                if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+                if (use_saved_routehandles) then
+                  call ESMF_RouteHandleWrite(routehandle(j,1), fileName=trim(rh_filename), rc=rc)
+                  if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+                  if(mype==0) print *,'in fv3cap init, saved routehandle file ',trim(rh_filename)
+                endif
+
               endif
-              call ESMF_TraceRegionExit("ESMF_FieldBundleRegridStore()", rc=rc)
-              call ESMF_LogWrite('af FieldBundleRegridStore', ESMF_LOGMSG_INFO, rc=rc)
-              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
               originPetList(1:num_pes_fcst)  = fcstPetList(:)
               originPetList(num_pes_fcst+1:) = petList(:)

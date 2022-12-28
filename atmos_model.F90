@@ -103,7 +103,11 @@ use module_block_data,  only: block_atmos_copy, block_data_copy,         &
                               block_data_combine_fractions
 
 #ifdef MOVING_NEST
-use fv_moving_nest_main_mod, only: update_moving_nest, dump_moving_nest
+use fv_moving_nest_main_mod,  only: update_moving_nest, dump_moving_nest
+use fv_moving_nest_main_mod,  only: nest_tracker_init
+use fv_moving_nest_main_mod,  only: moving_nest_end, nest_tracker_end
+use fv_moving_nest_types_mod, only: fv_moving_nest_init
+use fv_tracker_mod,           only: check_is_moving_nest, execute_tracker
 #endif
 !-----------------------------------------------------------------------
 
@@ -132,6 +136,7 @@ public setup_exportdata
      logical                       :: nested             ! true if there is a nest
      logical                       :: moving_nest_parent ! true if this grid has a moving nest child
      logical                       :: is_moving_nest     ! true if this is a moving nest grid
+     logical                       :: isAtCapTime        ! true if currTime is at the cap driverClock's currTime
      integer                       :: ngrids             !
      integer                       :: mygrid             !
      integer                       :: mlon, mlat
@@ -296,7 +301,7 @@ subroutine update_atmos_radiation_physics (Atmos)
       ! receives coupled fields through the above assign_importdata step. Thus,
       ! an extra step is needed to fill the coupling variables in the nest,
       ! by downscaling the coupling variables from its parent.
-      if (Atmos%ngrids > 1) then
+      if (Atmos%isAtCapTime .and. Atmos%ngrids > 1) then
         if (GFS_control%cplocn2atm .or. GFS_control%cplwav2atm) then
           call atmosphere_fill_nest_cpl(Atm_block, GFS_control, GFS_data)
         endif
@@ -540,6 +545,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
 
 !---- set the atmospheric model time ------
 
+   Atmos % isAtCapTime = .false.
    Atmos % Time_init = Time_init
    Atmos % Time      = Time
    Atmos % Time_step = Time_step
@@ -552,14 +558,21 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
 !---------- (need name of CCPP suite definition file from input.nml) ---------
    call atmosphere_init (Atmos%Time_init, Atmos%Time, Atmos%Time_step,&
                          Atmos%grid, Atmos%area)
-
+#ifdef MOVING_NEST
+   call fv_moving_nest_init(Atm, mygrid)
+   call nest_tracker_init()
+#endif
 !-----------------------------------------------------------------------
    call atmosphere_resolution (nlon, nlat, global=.false.)
    call atmosphere_resolution (mlon, mlat, global=.true.)
    call atmosphere_domain (Atmos%domain, Atmos%domain_for_read, Atmos%layout, &
                            Atmos%regional, Atmos%nested, &
-                           Atmos%moving_nest_parent, Atmos%is_moving_nest, &
                            Atmos%ngrids, Atmos%mygrid, Atmos%pelist)
+   Atmos%moving_nest_parent = .false.
+   Atmos%is_moving_nest = .false.
+#ifdef MOVING_NEST
+   call check_is_moving_nest(Atm, Atmos%mygrid, Atmos%ngrids, Atmos%is_moving_nest, Atmos%moving_nest_parent)
+#endif
    call atmosphere_diag_axes (Atmos%axes)
    call atmosphere_etalvls (Atmos%ak, Atmos%bk, flip=flip_vc)
 
@@ -929,6 +942,9 @@ subroutine update_atmos_model_state (Atmos, rc)
     call mpp_clock_begin(fv3Clock)
     call mpp_clock_begin(updClock)
     call atmosphere_state_update (Atmos%Time, GFS_data, IAU_Data, Atm_block, flip_vc)
+#ifdef MOVING_NEST
+    call execute_tracker(Atm, mygrid, Atmos%Time, Atmos%Time_step)
+#endif
     call mpp_clock_end(updClock)
     call mpp_clock_end(fv3Clock)
 
@@ -1030,6 +1046,14 @@ subroutine atmos_model_end (Atmos)
 
 !-----------------------------------------------------------------------
 !---- termination routine for atmospheric model ----
+
+#ifdef MOVING_NEST
+    !  Call this before atmosphere_end(), because that deallocates Atm
+    if (Atmos%is_moving_nest) then
+      call moving_nest_end()
+      call nest_tracker_end()
+    endif
+#endif
 
     call atmosphere_end (Atmos % Time, Atmos%grid, restart_endfcst)
 
@@ -1685,22 +1709,22 @@ subroutine update_atmos_chemistry(state, rc)
       enddo
 
       ! -- zero out accumulated fields
+      if (.not. GFS_control%cplflx .and. .not. GFS_control%cpllnd) then
 !$OMP parallel do default (none) &
 !$OMP             shared  (nj, ni, Atm_block, GFS_control, GFS_data) &
 !$OMP             private (j, jb, i, ib, nb, ix)
-      do j = 1, nj
-        jb = j + Atm_block%jsc - 1
-        do i = 1, ni
-          ib = i + Atm_block%isc - 1
-          nb = Atm_block%blkno(ib,jb)
-          ix = Atm_block%ixp(ib,jb)
-          GFS_data(nb)%coupling%rainc_cpl(ix)  = zero
-          if (.not.GFS_control%cplflx) then
+        do j = 1, nj
+          jb = j + Atm_block%jsc - 1
+          do i = 1, ni
+            ib = i + Atm_block%isc - 1
+            nb = Atm_block%blkno(ib,jb)
+            ix = Atm_block%ixp(ib,jb)
+            GFS_data(nb)%coupling%rainc_cpl(ix)  = zero
             GFS_data(nb)%coupling%rain_cpl(ix) = zero
             GFS_data(nb)%coupling%snow_cpl(ix) = zero
-          end if
+          enddo
         enddo
-      enddo
+      end if
 
       if (GFS_control%debug) then
         ! -- diagnostics
@@ -2883,7 +2907,6 @@ end subroutine update_atmos_chemistry
             ! Instantaneous u wind (m/s) 10 m above ground
             case ('inst_zonal_wind_height10m')
               call block_data_copy(datar82d, GFS_data(nb)%coupling%u10mi_cpl, Atm_block, nb, rc=localrc)
-              !call block_data_copy(datar82d, GFS_data(nb)%coupling%u10mi_cpl, Atm_block, nb, rc=localrc)
             ! Instantaneous v wind (m/s) 10 m above ground
             case ('inst_merid_wind_height10m')
               call block_data_copy(datar82d, GFS_data(nb)%coupling%v10mi_cpl, Atm_block, nb, rc=localrc)
@@ -3005,6 +3028,9 @@ end subroutine update_atmos_chemistry
             ! MEAN precipitation rate (kg/m2/s)
             case ('mean_prec_rate')
               call block_data_copy(datar82d, GFS_data(nb)%coupling%rain_cpl, Atm_block, nb, scale_factor=rtimek, rc=localrc)
+            ! MEAN convective precipitation rate (kg/m2/s)
+            case ('mean_prec_rate_conv')
+              call block_data_copy(datar82d, GFS_Data(nb)%Coupling%rainc_cpl, Atm_block, nb, scale_factor=rtimek, rc=localrc)
             ! MEAN snow precipitation rate (kg/m2/s)
             case ('mean_fprec_rate')
               call block_data_copy(datar82d, GFS_data(nb)%coupling%snow_cpl, Atm_block, nb, scale_factor=rtimek, rc=localrc)
@@ -3015,19 +3041,38 @@ end subroutine update_atmos_chemistry
             ! bottom layer temperature (t)
             case('inst_temp_height_lowest')
               call block_data_copy_or_fill(datar82d, DYCORE_data(nb)%coupling%t_bot, zeror8, Atm_block, nb, rc=localrc)
+            case('inst_temp_height_lowest_from_phys')
+              call block_data_copy_or_fill(datar82d, GFS_data(nb)%Statein%tgrs, 1, zeror8, Atm_block, nb, rc=localrc)
             ! bottom layer specific humidity (q)
             !    !    ! CHECK if tracer 1 is for specific humidity     !    !    !
             case('inst_spec_humid_height_lowest')
               call block_data_copy_or_fill(datar82d, DYCORE_data(nb)%coupling%tr_bot, 1, zeror8, Atm_block, nb, rc=localrc)
+            case('inst_spec_humid_height_lowest_from_phys')
+              call block_data_copy_or_fill(datar82d, GFS_data(nb)%Statein%qgrs, 1, GFS_Control%ntqv, zeror8, Atm_block, nb, rc=localrc)
             ! bottom layer zonal wind (u)
             case('inst_zonal_wind_height_lowest')
               call block_data_copy_or_fill(datar82d, DYCORE_data(nb)%coupling%u_bot, zeror8, Atm_block, nb, rc=localrc)
-            ! bottom layer meridionalw wind (v)
+            ! bottom layer meridional wind (v)
             case('inst_merid_wind_height_lowest')
               call block_data_copy_or_fill(datar82d, DYCORE_data(nb)%coupling%v_bot, zeror8, Atm_block, nb, rc=localrc)
+            ! bottom layer zonal wind (u) from physics
+            case('inst_zonal_wind_height_lowest_from_phys')
+              call block_data_copy_or_fill(datar82d, GFS_data(nb)%Statein%ugrs, 1, zeror8, Atm_block, nb, rc=localrc)
+            ! bottom layer meridional wind (v) from physics
+            case('inst_merid_wind_height_lowest_from_phys')
+              call block_data_copy_or_fill(datar82d, GFS_data(nb)%Statein%vgrs, 1, zeror8, Atm_block, nb, rc=localrc)
+            ! surface friction velocity
+            case('surface_friction_velocity')
+              call block_data_copy_or_fill(datar82d, GFS_data(nb)%Sfcprop%uustar, zeror8, Atm_block, nb, rc=localrc)
             ! bottom layer pressure (p)
             case('inst_pres_height_lowest')
               call block_data_copy_or_fill(datar82d, DYCORE_data(nb)%coupling%p_bot, zeror8, Atm_block, nb, rc=localrc)
+            ! bottom layer pressure (p) from physics
+            case('inst_pres_height_lowest_from_phys')
+              call block_data_copy_or_fill(datar82d, GFS_data(nb)%Statein%prsl, 1, zeror8, Atm_block, nb, rc=localrc)
+            ! dimensionless exner function at surface adjacent layer
+            case('inst_exner_function_height_lowest')
+              call block_data_copy_or_fill(datar82d, GFS_data(nb)%Statein%prslk, 1, zeror8, Atm_block, nb, rc=localrc)
             ! bottom layer height (z)
             case('inst_height_lowest')
               call block_data_copy_or_fill(datar82d, DYCORE_data(nb)%coupling%z_bot, zeror8, Atm_block, nb, rc=localrc)
@@ -3105,24 +3150,37 @@ end subroutine update_atmos_chemistry
           GFS_data(nb)%coupling%dvsfc_cpl(ix)  = zero
           GFS_data(nb)%coupling%dtsfc_cpl(ix)  = zero
           GFS_data(nb)%coupling%dqsfc_cpl(ix)  = zero
-          GFS_data(nb)%coupling%dlwsfc_cpl(ix) = zero
-          GFS_data(nb)%coupling%dswsfc_cpl(ix) = zero
-          GFS_data(nb)%coupling%rain_cpl(ix)   = zero
           GFS_data(nb)%coupling%nlwsfc_cpl(ix) = zero
-          GFS_data(nb)%coupling%nswsfc_cpl(ix) = zero
           GFS_data(nb)%coupling%dnirbm_cpl(ix) = zero
           GFS_data(nb)%coupling%dnirdf_cpl(ix) = zero
           GFS_data(nb)%coupling%dvisbm_cpl(ix) = zero
           GFS_data(nb)%coupling%dvisdf_cpl(ix) = zero
-          GFS_data(nb)%coupling%nnirbm_cpl(ix) = zero
-          GFS_data(nb)%coupling%nnirdf_cpl(ix) = zero
-          GFS_data(nb)%coupling%nvisbm_cpl(ix) = zero
-          GFS_data(nb)%coupling%nvisdf_cpl(ix) = zero
-          GFS_data(nb)%coupling%snow_cpl(ix)   = zero
         enddo
       enddo
       if (mpp_pe() == mpp_root_pe()) print *,'zeroing coupling accumulated fields at kdt= ',GFS_control%kdt
     endif !cplflx
+!---
+    if (GFS_control%cplflx .or. GFS_control%cpllnd) then
+! zero out accumulated fields
+!$omp parallel do default(shared) private(i,j,nb,ix)
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          GFS_data(nb)%coupling%dlwsfc_cpl(ix) = zero
+          GFS_data(nb)%coupling%dswsfc_cpl(ix) = zero
+          GFS_data(nb)%coupling%rain_cpl(ix)   = zero
+          GFS_data(nb)%coupling%rainc_cpl(ix)  = zero
+          GFS_data(nb)%coupling%snow_cpl(ix)   = zero
+          GFS_data(nb)%coupling%nswsfc_cpl(ix) = zero
+          GFS_data(nb)%coupling%nnirbm_cpl(ix) = zero
+          GFS_data(nb)%coupling%nnirdf_cpl(ix) = zero
+          GFS_data(nb)%coupling%nvisbm_cpl(ix) = zero
+          GFS_data(nb)%coupling%nvisdf_cpl(ix) = zero
+        enddo
+      enddo
+      if (mpp_pe() == mpp_root_pe()) print *,'zeroing coupling accumulated fields at kdt= ',GFS_control%kdt
+    endif !cplflx or cpllnd
 
   end subroutine setup_exportdata
 

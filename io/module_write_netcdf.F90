@@ -11,7 +11,8 @@ module module_write_netcdf
   use netcdf
   use module_fv3_io_def,only : ideflate, nbits, &
                                ichunk2d,jchunk2d,ichunk3d,jchunk3d,kchunk3d, &
-                               output_grid,dx,dy,lon1,lat1,lon2,lat2
+                               output_grid,dx,dy,lon1,lat1,lon2,lat2, &
+                               time_unlimited
   use mpi
 
   implicit none
@@ -896,12 +897,15 @@ module module_write_netcdf
                            typekind=typekind, itemCount=n, rc=rc); ESMF_ERR_RETURN(rc)
 
     if (trim(dim_name) == "time") then
-    ! using an unlimited dim requires collective mode (NF90_COLLECTIVE)
-    ! for parallel writes, which seems to slow things down on hera.
-    !ncerr = nf90_def_dim(ncid, trim(dim_name), NF90_UNLIMITED, dimid); NC_ERR_STOP(ncerr)
-    ncerr = nf90_def_dim(ncid, trim(dim_name), 1, dimid); NC_ERR_STOP(ncerr)
+      ! using an unlimited dim requires collective mode (NF90_COLLECTIVE)
+      ! for parallel writes, which seems to slow things down on hera.
+      if (time_unlimited) then
+        ncerr = nf90_def_dim(ncid, trim(dim_name), NF90_UNLIMITED, dimid); NC_ERR_STOP(ncerr)
+      else
+        ncerr = nf90_def_dim(ncid, trim(dim_name), 1, dimid); NC_ERR_STOP(ncerr)
+      end if
     else
-    ncerr = nf90_def_dim(ncid, trim(dim_name), n, dimid); NC_ERR_STOP(ncerr)
+      ncerr = nf90_def_dim(ncid, trim(dim_name), n, dimid); NC_ERR_STOP(ncerr)
     end if
 
     if (typekind==ESMF_TYPEKIND_R8) then
