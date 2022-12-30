@@ -60,8 +60,8 @@
       <scheme>satmedmfvdifq</scheme>
       <scheme>GFS_PBL_generic_post</scheme>
       <scheme>GFS_GWD_generic_pre</scheme>
-      <scheme>cires_ugwp</scheme>
-      <scheme>cires_ugwp_post</scheme>
+      <scheme>unified_ugwp</scheme>
+      <scheme>unified_ugwp_post</scheme>
       <scheme>GFS_GWD_generic_post</scheme>
       <scheme>GFS_suite_stateout_update</scheme>
       <scheme>ozphys_2015</scheme>
