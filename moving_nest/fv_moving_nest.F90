@@ -263,7 +263,6 @@ contains
 
     ! Interpolate terrain from coarse grid
     if (Moving_nest(n)%mn_flag%terrain_smoother .eq. 4) then
-      print '("[INFO] WDR fv_moving_nest.F90 SMOOTH fill_nest_halos_from_parent terrain_smoother=",I0)', Moving_nest(n)%mn_flag%terrain_smoother
       call fill_nest_halos_from_parent("phis", Atm(n)%phis, interp_type, Atm(child_grid_num)%neststruct%wt_h, &
           Atm(child_grid_num)%neststruct%ind_h, x_refine, y_refine, is_fine_pe, nest_domain, position)
     endif
@@ -370,7 +369,6 @@ contains
     call mn_var_fill_intern_nest_halos(mn_prog%delz, domain_fine, is_fine_pe)
 
     if (Moving_nest(child_grid_num)%mn_flag%terrain_smoother .eq. 4) then
-      print '("[INFO] WDR fv_moving_nest.F90 SMOOTH fill_intern_nest_halos terrain_smoother=",I0)', Moving_nest(child_grid_num)%mn_flag%terrain_smoother
       call mn_var_fill_intern_nest_halos(Atm%phis, domain_fine, is_fine_pe)
     endif
 
@@ -1049,7 +1047,6 @@ contains
         delta_i_c, delta_j_c, x_refine, y_refine, is_fine_pe, nest_domain, position, nz)
 
     if (Moving_nest(n)%mn_flag%terrain_smoother .eq. 4) then
-      print '("[INFO] WDR fv_moving_nest.F90 SMOOTH var_shift_data terrain_smoother=",I0)', Moving_nest(n)%mn_flag%terrain_smoother
       call mn_var_shift_data(Atm(n)%phis, interp_type, wt_h, Atm(child_grid_num)%neststruct%ind_h, &
           delta_i_c, delta_j_c, x_refine, y_refine, is_fine_pe, nest_domain, position)
     endif

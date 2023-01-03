@@ -269,7 +269,6 @@ contains
         Moving_nest(n)%mn_flag%is_moving_nest         = is_moving_nest(n)
         Moving_nest(n)%mn_flag%surface_dir            = trim(surface_dir)
         Moving_nest(n)%mn_flag%terrain_smoother       = terrain_smoother(n)
-        print '("[INFO] WDR SMOOTH npe=",I0," terrain_smoother=",I0)', mpp_pe(), Moving_nest(n)%mn_flag%terrain_smoother
         Moving_nest(n)%mn_flag%vortex_tracker         = vortex_tracker(n)
         Moving_nest(n)%mn_flag%ntrack                 = ntrack(n)
         Moving_nest(n)%mn_flag%move_cd_x              = move_cd_x(n)

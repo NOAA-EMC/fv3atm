@@ -986,7 +986,6 @@ contains
         ! 0 -- all high-resolution data, 1 - static nest smoothing algorithm, 5 - 5 point smoother, 9 - 9 point smoother
         ! Defaults to 1 - static nest smoothing algorithm; this seems to produce the most stable solutions
 
-        print '("[INFO] WDR fv_moving_nest_main.F90 SMOOTH terrain_smoother=",I0)', Moving_nest(n)%mn_flag%terrain_smoother
         select case(Moving_nest(n)%mn_flag%terrain_smoother)
         case (0)
           ! High-resolution terrain for entire nest
