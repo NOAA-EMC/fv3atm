@@ -261,6 +261,12 @@ contains
     call fill_nest_halos_from_parent("q", Atm(n)%q, interp_type, Atm(child_grid_num)%neststruct%wt_h, &
         Atm(child_grid_num)%neststruct%ind_h, x_refine, y_refine, is_fine_pe, nest_domain, position, nz)
 
+    ! Interpolate terrain from coarse grid
+    if (Moving_nest(n)%mn_flag%terrain_smoother .eq. 4) then
+      call fill_nest_halos_from_parent("phis", Atm(n)%phis, interp_type, Atm(child_grid_num)%neststruct%wt_h, &
+          Atm(child_grid_num)%neststruct%ind_h, x_refine, y_refine, is_fine_pe, nest_domain, position)
+    endif
+
     !  Move the A-grid winds.  TODO consider recomputing them from D grid instead
     call fill_nest_halos_from_parent("ua", Atm(n)%ua, interp_type, Atm(child_grid_num)%neststruct%wt_h, &
         Atm(child_grid_num)%neststruct%ind_h, x_refine, y_refine, is_fine_pe, nest_domain, position, nz)
@@ -350,6 +356,8 @@ contains
     integer :: this_pe
     type(fv_moving_nest_prog_type), pointer :: mn_prog
 
+    integer :: child_grid_num = 2
+
     mn_prog => Moving_nest(2)%mn_prog  ! TODO allow nest number to vary
     this_pe = mpp_pe()
 
@@ -359,6 +367,10 @@ contains
     !call mn_var_fill_intern_nest_halos(Atm%omga, domain_fine, is_fine_pe)
     call mn_var_fill_intern_nest_halos(Atm%delp, domain_fine, is_fine_pe)
     call mn_var_fill_intern_nest_halos(mn_prog%delz, domain_fine, is_fine_pe)
+
+    if (Moving_nest(child_grid_num)%mn_flag%terrain_smoother .eq. 4) then
+      call mn_var_fill_intern_nest_halos(Atm%phis, domain_fine, is_fine_pe)
+    endif
 
     call mn_var_fill_intern_nest_halos(Atm%ua, domain_fine, is_fine_pe)
     call mn_var_fill_intern_nest_halos(Atm%va, domain_fine, is_fine_pe)
@@ -1033,6 +1045,11 @@ contains
 
     call mn_var_shift_data(mn_prog%delz, interp_type, wt_h, Atm(child_grid_num)%neststruct%ind_h, &
         delta_i_c, delta_j_c, x_refine, y_refine, is_fine_pe, nest_domain, position, nz)
+
+    if (Moving_nest(n)%mn_flag%terrain_smoother .eq. 4) then
+      call mn_var_shift_data(Atm(n)%phis, interp_type, wt_h, Atm(child_grid_num)%neststruct%ind_h, &
+          delta_i_c, delta_j_c, x_refine, y_refine, is_fine_pe, nest_domain, position)
+    endif
 
     call mn_var_shift_data(Atm(n)%ua, interp_type, wt_h, Atm(child_grid_num)%neststruct%ind_h, &
         delta_i_c, delta_j_c, x_refine, y_refine, is_fine_pe, nest_domain, position, nz)

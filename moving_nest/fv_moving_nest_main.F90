@@ -996,6 +996,8 @@ contains
         case (2)
           ! Static nest smoothing algorithm - interpolation of coarse terrain in halo zone and 5 point blending zone of coarse and fine data
           call set_blended_terrain(Atm(n), mn_static%parent_orog_grid, mn_static%orog_grid, x_refine, Atm(n)%bd%ng, 10, a_step)
+        case (4)  ! Use coarse terrain;  no-op here.
+          ;
         case (5)
           ! 5 pt smoother.  blend zone of 5 to match static nest
           call set_smooth_nest_terrain(Atm(n), mn_static%orog_grid, x_refine, 5, Atm(n)%bd%ng, 5)
