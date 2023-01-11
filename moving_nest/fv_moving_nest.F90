@@ -54,7 +54,7 @@ module fv_moving_nest_mod
 
   use block_control_mod,      only : block_control_type
   use fms_mod,                only : mpp_clock_id, mpp_clock_begin, mpp_clock_end, CLOCK_ROUTINE, clock_flag_default, CLOCK_SUBCOMPONENT
-  use mpp_mod,                only : mpp_pe, mpp_sync, mpp_sync_self, mpp_send, mpp_error, NOTE, FATAL
+  use mpp_mod,                only : mpp_pe, mpp_sync, mpp_sync_self, mpp_send, mpp_error, NOTE, FATAL, WARNING
   use mpp_domains_mod,        only : mpp_update_domains, mpp_get_data_domain, mpp_get_global_domain
   use mpp_domains_mod,        only : mpp_define_nest_domains, mpp_shift_nest_domains, nest_domain_type, domain2d
   use mpp_domains_mod,        only : mpp_get_C2F_index, mpp_update_nest_fine
@@ -608,14 +608,27 @@ contains
     if (first_nest_move) then
       if (use_timers) call mpp_clock_begin (id_load1)
 
+      parent_geo%nxp = Atm(1)%npx
+      parent_geo%nyp = Atm(1)%npy
+      
+      parent_geo%nx = parent_geo%nxp - 1
+      parent_geo%ny = parent_geo%nyp - 1
+      
       call mn_static_filename(surface_dir, parent_tile, 'grid', 1, grid_filename)
-      call load_nest_latlons_from_nc(grid_filename, Atm(1)%npx, Atm(1)%npy, 1, pelist, &
+      call load_nest_latlons_from_nc(grid_filename, parent_geo%nxp, parent_geo%nyp, 1, pelist, &
           parent_geo, p_istart_fine, p_iend_fine, p_jstart_fine, p_jend_fine)
 
+
       ! These are saved between timesteps in fv_moving_nest_main.F90
-      allocate(p_grid(1:parent_geo%nxp, 1:parent_geo%nyp,2))
-      allocate(p_grid_u(1:parent_geo%nxp, 1:parent_geo%nyp+1,2))
-      allocate(p_grid_v(1:parent_geo%nxp+1, 1:parent_geo%nyp,2))
+      allocate(p_grid(Atm(1)%npx, Atm(1)%npy,2))
+      allocate(p_grid_u(Atm(1)%npx, Atm(1)%npy+1,2))
+      allocate(p_grid_v(Atm(1)%npx+1, Atm(1)%npy,2))
+
+      p_grid = 0.0
+      p_grid_u = 0.0
+      p_grid_v = 0.0
+
+
 
       ! These are big (parent grid size), and do not change during the model integration.
       call assign_p_grids(parent_geo, p_grid, position)
@@ -628,11 +641,6 @@ contains
 
     if (use_timers) call mpp_clock_begin (id_load2)
 
-    parent_geo%nxp = Atm(1)%npx
-    parent_geo%nyp = Atm(1)%npy
-
-    parent_geo%nx = Atm(1)%npx - 1
-    parent_geo%ny = Atm(1)%npy - 1
 
     !===========================================================
     !  Begin tile_geo per PE.
@@ -783,6 +791,8 @@ contains
 
     integer                            :: fp_super_istart_fine, fp_super_jstart_fine,fp_super_iend_fine, fp_super_jend_fine
     character(len=256)                 :: grid_filename
+
+    integer :: i, j
 
     call mn_static_filename(surface_dir, parent_tile, 'grid',  refine, grid_filename)
 
@@ -935,6 +945,7 @@ contains
     integer, intent(in)                           :: istart_coarse, jstart_coarse             !< Initian nest offsets
 
     type(bbox) :: wt_fine, wt_coarse
+    integer    :: istag, jstag
     integer    :: this_pe
 
     this_pe = mpp_pe()
@@ -948,17 +959,29 @@ contains
       !!
       !!===========================================================
 
+      if (position .eq. CENTER) then
+        istag = 0
+        jstag = 0
+      elseif (position .eq. NORTH) then
+        istag = 1
+        jstag = 0
+      elseif (position .eq. EAST) then
+        istag = 0
+        jstag = 1
+      endif
+
+
       call bbox_get_C2F_index(nest_domain, wt_fine, wt_coarse, EAST,  position)
-      call calc_nest_halo_weights(wt_fine, wt_coarse, p_grid, n_grid, wt, istart_coarse, jstart_coarse, x_refine, y_refine)
+      call calc_nest_halo_weights(wt_fine, wt_coarse, p_grid, n_grid, wt, istart_coarse, jstart_coarse, x_refine, y_refine, istag, jstag)
 
       call bbox_get_C2F_index(nest_domain, wt_fine, wt_coarse, WEST,  position)
-      call calc_nest_halo_weights(wt_fine, wt_coarse, p_grid, n_grid, wt, istart_coarse, jstart_coarse, x_refine, y_refine)
+      call calc_nest_halo_weights(wt_fine, wt_coarse, p_grid, n_grid, wt, istart_coarse, jstart_coarse, x_refine, y_refine, istag, jstag)
 
       call bbox_get_C2F_index(nest_domain, wt_fine, wt_coarse, NORTH,  position)
-      call calc_nest_halo_weights(wt_fine, wt_coarse, p_grid, n_grid, wt, istart_coarse, jstart_coarse, x_refine, y_refine)
+      call calc_nest_halo_weights(wt_fine, wt_coarse, p_grid, n_grid, wt, istart_coarse, jstart_coarse, x_refine, y_refine, istag, jstag)
 
       call bbox_get_C2F_index(nest_domain, wt_fine, wt_coarse, SOUTH,  position)
-      call calc_nest_halo_weights(wt_fine, wt_coarse, p_grid, n_grid, wt, istart_coarse, jstart_coarse, x_refine, y_refine)
+      call calc_nest_halo_weights(wt_fine, wt_coarse, p_grid, n_grid, wt, istart_coarse, jstart_coarse, x_refine, y_refine, istag, jstag)
 
     endif
 
@@ -2388,34 +2411,96 @@ contains
 
     integer :: i,j
 
+    integer :: num_zeros, num_vals, full_zeros
+
+    num_zeros = 0
+    full_zeros = 0
+    num_vals = 0
+
     if (position == CENTER) then
-      do j = 1, parent_geo%ny
-        do i = 1, parent_geo%nx
+      do j = 1, ubound(p_grid,2)
+        do i = 1, ubound(p_grid,1)
           ! centered grid version
-          p_grid(i, j, 1) = parent_geo%lons(2*i, 2*j)
-          p_grid(i, j, 2) = parent_geo%lats(2*i, 2*j)
+          p_grid(i, j, 1) = parent_geo%lons(2*i-1, 2*j-1)
+          p_grid(i, j, 2) = parent_geo%lats(2*i-1, 2*j-1)
         enddo
       enddo
 
+
+!    do i = 1, ubound(p_grid,1)
+!      do j = 1, ubound(p_grid,2)
+!
+!        if (p_grid(i,j,1) .eq. 0.0) then
+!          num_zeros = num_zeros + 1
+!          if (p_grid(i,j,2) .eq. 0.0) then
+!            full_zeros = full_zeros + 1
+!            print '("[INFO] WDR set p_grid FULL_ZERO npe=",I0," i=",I0," j=",I0)', mpp_pe(), i, j
+!          endif
+!        endif
+!        if (p_grid(i,j,1) .ne. 0.0) num_vals = num_vals + 1
+!      enddo
+!    enddo
+    
+    !print '("[INFO] WDR set p_grid npe=",I0," num_zeros=",I0," full_zeros=",I0," num_vals=",I0" nxp=",I0," nyp=",I0," parent_geo%lats(",I0,",",I0,")"," p_grid(",I0,",",I0,",2)")', mpp_pe(), num_zeros, full_zeros, num_vals, parent_geo%nxp, parent_geo%nyp, ubound(parent_geo%lats,1), ubound(parent_geo%lats,2), ubound(p_grid,1), ubound(p_grid,2)
+
+
       ! u(npx, npy+1)
     elseif (position == NORTH) then  ! u wind on D-stagger
-      do j = 1, parent_geo%ny
-        do i = 1, parent_geo%nx
+      do j = 1, ubound(p_grid,2)
+        do i = 1, ubound(p_grid,1)
           ! centered grid version
           p_grid(i, j, 1) = parent_geo%lons(2*i, 2*j-1)
           p_grid(i, j, 2) = parent_geo%lats(2*i, 2*j-1)
         enddo
       enddo
 
+
+!    do i = 1, ubound(p_grid,1)
+!      do j = 1, ubound(p_grid,2)
+!
+!        if (p_grid(i,j,1) .eq. 0.0) then
+!          num_zeros = num_zeros + 1
+!          if (p_grid(i,j,2) .eq. 0.0) then
+!            full_zeros = full_zeros + 1
+!            print '("[INFO] WDR set p_grid_u FULL_ZERO npe=",I0," i=",I0," j=",I0)', mpp_pe(), i, j
+!          endif
+!        endif
+!        if (p_grid(i,j,1) .ne. 0.0) num_vals = num_vals + 1
+!      enddo
+!    enddo
+
+    !print '("[INFO] WDR set p_grid_u npe=",I0," num_zeros=",I0," full_zeros=",I0," num_vals=",I0" nxp=",I0," nyp=",I0," parent_geo%lats(",I0,",",I0,")"," p_grid(",I0,",",I0,",2)")', mpp_pe(), num_zeros, full_zeros, num_vals, parent_geo%nxp, parent_geo%nyp, ubound(parent_geo%lats,1), ubound(parent_geo%lats,2), ubound(p_grid,1), ubound(p_grid,2)
+
+
       ! v(npx+1, npy)
     elseif (position == EAST) then  ! v wind on D-stagger
-      do j = 1, parent_geo%ny
-        do i = 1, parent_geo%nx
+      do j = 1, ubound(p_grid,2)
+        do i = 1, ubound(p_grid,1)
           ! centered grid version
           p_grid(i, j, 1) = parent_geo%lons(2*i-1, 2*j)
           p_grid(i, j, 2) = parent_geo%lats(2*i-1, 2*j)
         enddo
       enddo
+
+
+!    do i = 1, ubound(p_grid,1)
+!      do j = 1, ubound(p_grid,2)
+!
+!        if (p_grid(i,j,1) .eq. 0.0) then
+!          num_zeros = num_zeros + 1
+!          if (p_grid(i,j,2) .eq. 0.0) then
+!            full_zeros = full_zeros + 1
+!            print '("[INFO] WDR set p_grid_v FULL_ZERO npe=",I0," i=",I0," j=",I0)', mpp_pe(), i, j
+!          endif
+!        endif
+!        if (p_grid(i,j,1) .ne. 0.0) num_vals = num_vals + 1
+!      enddo
+!    enddo
+
+    !print '("[INFO] WDR set p_grid_v npe=",I0," num_zeros=",I0," full_zeros=",I0," num_vals=",I0" nxp=",I0," nyp=",I0," parent_geo%lats(",I0,",",I0,")"," p_grid(",I0,",",I0,",2)")', mpp_pe(), num_zeros, full_zeros, num_vals, parent_geo%nxp, parent_geo%nyp, ubound(parent_geo%lats,1), ubound(parent_geo%lats,2), ubound(p_grid,1), ubound(p_grid,2)
+
+
+
     endif
 
   end subroutine assign_p_grids
@@ -2464,23 +2549,55 @@ contains
   end subroutine assign_n_grids
 
 
+  subroutine calc_inside(p_grid, ic, jc, n_grid1, n_grid2, istag, jstag, is_inside)
+    real(kind=R_GRID), allocatable, intent(in)   :: p_grid(:,:,:)
+    real(kind=R_GRID), intent(in)                :: n_grid1, n_grid2
+    integer, intent(in)                          :: ic, jc, istag, jstag
+    logical, intent(out)                         :: is_inside
 
+    
+    real(kind=R_GRID) :: max1, max2, min1, min2, eps
+
+    max1 = max(p_grid(ic,jc,1), p_grid(ic,jc+1,1), p_grid(ic,jc+1,1), p_grid(ic+1,jc+1,1),  p_grid(ic+1,jc+1,1), p_grid(ic+1,jc,1))
+    max2 = max(p_grid(ic,jc,2), p_grid(ic,jc+1,2), p_grid(ic,jc+1,2), p_grid(ic+1,jc+1,2),  p_grid(ic+1,jc+1,2), p_grid(ic+1,jc,2))
+
+    min1 = min(p_grid(ic,jc,1), p_grid(ic,jc+1,1), p_grid(ic,jc+1,1), p_grid(ic+1,jc+1,1),  p_grid(ic+1,jc+1,1), p_grid(ic+1,jc,1))
+    min2 = min(p_grid(ic,jc,2), p_grid(ic,jc+1,2), p_grid(ic,jc+1,2), p_grid(ic+1,jc+1,2),  p_grid(ic+1,jc+1,2), p_grid(ic+1,jc,2))
+    
+    is_inside = .False.
+    
+    eps = 0.00001
+
+    if (n_grid1 .le. max1+eps .and. n_grid1 .ge. min1-eps) then
+      if (n_grid2 .le. max2+eps .and. n_grid2 .ge. min2-eps) then
+        is_inside = .True.
+        !print '("[INFO] WDR is_inside TRUE npe=",I0," ic=",I0," jc=",I0," n_grid1=",F12.8," min1=",F12.8," max1=",F12.8," n_grid2=",F12.8," min2=",F12.8," max2=", F12.8," p_grid(",I0,",",I0,",2) istag=",I0," jstag=",I0)', mpp_pe(), ic, jc, n_grid1, min1, max1, n_grid2, min2, max2, ubound(p_grid,1), ubound(p_grid,2), istag, jstag
+      endif
+    endif
+
+    if (.not. is_inside) then
+      print '("[INFO] WDR is_inside FALSE npe=",I0," ic=",I0," jc=",I0," n_grid1=",F12.8," min1=",F12.8," max1=",F12.8," n_grid2=",F12.8," min2=",F12.8," max2=", F10.4," p_grid(",I0,",",I0,",2) istag=",I0," jstag=",I0)', mpp_pe(), ic, jc, n_grid1, min1, max1, n_grid2, min2, max2, ubound(p_grid,1), ubound(p_grid,2), istag, jstag
+    endif
+
+
+  end subroutine calc_inside
 
   !>@brief The subroutine 'calc_nest_halo_weights' calculates the interpolation weights
   !>@details Computationally demanding; target for optimization after nest moves
-  subroutine calc_nest_halo_weights(bbox_fine, bbox_coarse, p_grid, n_grid, wt, istart_coarse, jstart_coarse, x_refine, y_refine)
+  subroutine calc_nest_halo_weights(bbox_fine, bbox_coarse, p_grid, n_grid, wt, istart_coarse, jstart_coarse, x_refine, y_refine, istag, jstag)
     implicit none
 
     type(bbox), intent(in)                       :: bbox_coarse, bbox_fine                            !< Bounding boxes of parent and nest
     real(kind=R_GRID), allocatable, intent(in)   :: p_grid(:,:,:), n_grid(:,:,:)                      !< Latlon rids of parent and nest in radians
     real, allocatable, intent(inout)             :: wt(:,:,:)                                         !< Interpolation weight array
     integer, intent(in)                          :: istart_coarse, jstart_coarse, x_refine, y_refine  !< Offsets and nest refinements
+    integer, intent(in)                          :: istag, jstag                                      !< Staggers
 
     integer       :: i,j, ic, jc
     real          :: dist1, dist2, dist3, dist4, sum
     logical       :: verbose = .false.
     !logical       :: verbose = .true.
-
+    logical       :: is_inside
     integer       :: this_pe
 
     real(kind=R_GRID)  :: pi = 4 * atan(1.0d0)
@@ -2504,9 +2621,13 @@ contains
 
       do j = bbox_fine%js, bbox_fine%je
         ! F90 integer division truncates
-        jc = jstart_coarse  + (j + y_refine/2 + 1) / y_refine
+        !jc = jstart_coarse  + (j + y_refine/2 + 1) / y_refine
+        jc = jstart_coarse  + floor( real(j - jstag - 1) / real(y_refine) )
+
+
         do i = bbox_fine%is, bbox_fine%ie
-          ic = istart_coarse  + (i + x_refine/2 + 1) / x_refine
+          !ic = istart_coarse  + (i + x_refine/2 + 1) / x_refine
+          ic = istart_coarse  + floor( real(i - istag - 1) / real(x_refine) )
 
           ! dist2side_latlon takes points in longitude-latitude coordinates.
           dist1 = dist2side_latlon(p_grid(ic,jc,:),     p_grid(ic,jc+1,:),   n_grid(i,j,:))
@@ -2514,13 +2635,46 @@ contains
           dist3 = dist2side_latlon(p_grid(ic+1,jc+1,:), p_grid(ic+1,jc,:),   n_grid(i,j,:))
           dist4 = dist2side_latlon(p_grid(ic,jc,:),     p_grid(ic+1,jc,:),   n_grid(i,j,:))
 
+          !call calc_inside(p_grid, ic, jc, n_grid(i,j,1), n_grid(i,j,2), istag, jstag, is_inside)
+
           wt(i,j,1)=dist2*dist3      ! ic,   jc    weight
           wt(i,j,2)=dist3*dist4      ! ic,   jc+1  weight
           wt(i,j,3)=dist4*dist1      ! ic+1, jc+1  weight
           wt(i,j,4)=dist1*dist2      ! ic+1, jc    weight
 
+          ! If sum is zero, this is a problem
+
           sum=wt(i,j,1)+wt(i,j,2)+wt(i,j,3)+wt(i,j,4)
-          wt(i,j,:)=wt(i,j,:)/sum
+
+          if (sum .eq. 0.0) then
+
+            call mpp_error(WARNING, "WARNING: calc_nest_halo_weights sum of weights is zero.")
+            wt(i,j,:) = 0.25
+
+            !print '("[INFO] WDR WT npe=",I0," i=",I0," ic=",I0," istart_coarse=",I0," x_refine=",I0)', &
+            !    mpp_pe(), i, ic, istart_coarse, x_refine
+
+            !print '("[INFO] WDR WT npe=",I0," j=",I0," jc=",I0," jstart_coarse=",I0," y_refine=",I0)', &
+            !    mpp_pe(), j, jc, jstart_coarse, y_refine
+
+            !print '("[INFO] WDR WT npe=",I0," i=",I0," j=",I0," wt1=",F10.4," wt2=",F10.4," wt3=",F10.4," wt4=",F10.4)', mpp_pe(), i, j, wt(i,j,1), wt(i,j,2), wt(i,j,3), wt(i,j,4)
+
+
+            !print '("[INFO] WDR WT npe=",I0," i=",I0," j=",I0," dist1=",F10.4," dist2=",F10.4," dist3=",F10.4," dist4=",F10.4)', mpp_pe(), i, j, dist1, dist2, dist3, dist4
+
+            !print '("[INFO] WDR WT npe=",I0," i=",I0," j=",I0," n_grid(i,j,1)=",F10.4," n_grid(i,j,2)=",F10.4)', mpp_pe(), i, j, n_grid(i,j,1), n_grid(i,j,2)
+
+
+            !print '("[INFO] WDR WT npe=",I0," ic=",I0," jc=",I0," p_grid(ic,jc)=",F10.4," ",F10.4" p_grid(ic,jc+1)=",F10.4," ",F10.4," p_grid(ic+1,jc+1)=",F10.4," ", F10.4," p_grid(ic+1,jc=",F10.4," ",F10.4)', mpp_pe(), ic, jc, &
+             !   p_grid(ic,jc,1),      p_grid(ic,jc,2), &
+             !   p_grid(ic,jc+1,1),    p_grid(ic,jc+1,2), & 
+             !   p_grid(ic+1,jc+1,1),  p_grid(ic+1,jc+1,2), &
+             !   p_grid(ic+1,jc,1),    p_grid(ic+1,jc,2)
+            
+          else
+            wt(i,j,:)=wt(i,j,:)/sum            
+          endif
+
 
         enddo
       enddo
