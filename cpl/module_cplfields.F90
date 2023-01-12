@@ -156,7 +156,7 @@ module module_cplfields
     FieldInfo("t2m                                      ", "s") ]
 
 ! Import Fields ----------------------------------------
-  integer,          public, parameter :: NimportFields = 48
+  integer,          public, parameter :: NimportFields = 56
   logical,          public            :: importFieldsValid(NimportFields)
   type(ESMF_Field), target, public    :: importFields(NimportFields)
 
@@ -186,6 +186,16 @@ module module_cplfields
     FieldInfo("mean_laten_heat_flx_atm_into_ocn         ", "s"), &
     FieldInfo("mean_sensi_heat_flx_atm_into_ocn         ", "s"), &
     FieldInfo("mean_up_lw_flx_ocn                       ", "s"), &
+
+    ! For receiving fluxes from external land component
+    FieldInfo("land_fraction                            ", "s"), &
+    FieldInfo("mean_snow_area_fraction_lnd              ", "s"), &
+    FieldInfo("inst_spec_humid_lnd                      ", "s"), &      
+    FieldInfo("mean_laten_heat_flx_lnd                  ", "s"), &
+    FieldInfo("mean_sensi_heat_flx_lnd                  ", "s"), &
+    FieldInfo("mean_potential_laten_heat_flx_lnd        ", "s"), &
+    FieldInfo("inst_temp_height2m_lnd                   ", "s"), &
+    FieldInfo("inst_spec_humid_height2m_lnd             ", "s"), &
 
     !  For JEDI
     ! dynamics

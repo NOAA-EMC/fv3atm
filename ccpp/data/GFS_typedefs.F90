@@ -466,6 +466,14 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: dtsfcin_med(:)         => null()   !< sfc latent heat flux over ocean
     real (kind=kind_phys), pointer :: dqsfcin_med(:)         => null()   !< sfc sensible heat flux over ocean
     real (kind=kind_phys), pointer :: ulwsfcin_med(:)        => null()   !< sfc upward lw flux over ocean
+    !--- variables needed for cpllnd = .TRUE. and cpllnd2atm=.TRUE.
+    real (kind=kind_phys), pointer :: sncovr1_lnd(:)         => null()   !< sfc snow area fraction over land
+    real (kind=kind_phys), pointer :: qsurf_lnd(:)           => null()   !< sfc specific humidity
+    real (kind=kind_phys), pointer :: evap_lnd(:)            => null()   !< sfc latent heat flux over land
+    real (kind=kind_phys), pointer :: hflx_lnd(:)            => null()   !< sfc sensible heat flux over land
+    real (kind=kind_phys), pointer :: ep_lnd(:)              => null()   !< sfc up pot latent heat flux over land
+    real (kind=kind_phys), pointer :: t2mmp_lnd(:)           => null()   !< 2 meter temperature over land 
+    real (kind=kind_phys), pointer :: q2mp_lnd(:)            => null()   !< 2 meter spec humidity over land
 
 !--- outgoing accumulated quantities
     real (kind=kind_phys), pointer :: rain_cpl  (:)  => null()   !< total rain precipitation
@@ -675,6 +683,7 @@ module GFS_typedefs
     logical              :: cplaqm          !< default no cplaqm collection
     logical              :: cplchm          !< default no cplchm collection
     logical              :: cpllnd          !< default no cpllnd collection
+    logical              :: cpllnd2atm      !< default no lnd->atm coupling 
     logical              :: rrfs_smoke      !< default no rrfs_smoke collection
     integer              :: dust_smoke_rrtmg_band_number !< band number to affect in rrtmg_pre from smoke and dust
     logical              :: use_cice_alb    !< default .false. - i.e. don't use albedo imported from the ice model
@@ -2691,7 +2700,26 @@ module GFS_typedefs
       Coupling%slmsk_cpl   = clear_val  !< pointer to sfcprop%slmsk
     endif
 
-   !-- cellular automata
+    ! -- Coupling options to retrive land fluxes from external land component 
+    if (Model%cpllnd .and. Model%cpllnd2atm) then
+      allocate (Coupling%sncovr1_lnd (IM))
+      allocate (Coupling%qsurf_lnd   (IM))
+      allocate (Coupling%evap_lnd    (IM))
+      allocate (Coupling%hflx_lnd    (IM))
+      allocate (Coupling%ep_lnd      (IM))
+      allocate (Coupling%t2mmp_lnd   (IM))
+      allocate (Coupling%q2mp_lnd    (IM))
+
+      Coupling%sncovr1_lnd = clear_val
+      Coupling%qsurf_lnd   = clear_val
+      Coupling%evap_lnd    = clear_val
+      Coupling%hflx_lnd    = clear_val
+      Coupling%ep_lnd      = clear_val
+      Coupling%t2mmp_lnd   = clear_val
+      Coupling%q2mp_lnd    = clear_val
+    end if
+
+    !-- cellular automata
     allocate (Coupling%condition(IM))
     if (Model%do_ca) then
       allocate (Coupling%ca1      (IM))
@@ -2940,6 +2968,7 @@ module GFS_typedefs
     logical              :: cplaqm         = .false.         !< default no cplaqm collection
     logical              :: cplchm         = .false.         !< default no cplchm collection
     logical              :: cpllnd         = .false.         !< default no cpllnd collection
+    logical              :: cpllnd2atm     = .false.         !< default no cpllnd2atm coupling
     logical              :: rrfs_smoke     = .false.         !< default no rrfs_smoke collection
     integer              :: dust_smoke_rrtmg_band_number = 10!< band number to affect in rrtmg_pre from smoke and dust
     logical              :: use_cice_alb   = .false.         !< default no cice albedo
@@ -3468,8 +3497,8 @@ module GFS_typedefs
                                thermodyn_id, sfcpress_id,                                   &
                           !--- coupling parameters
                                cplflx, cplice, cplocn2atm, cplwav, cplwav2atm, cplaqm,      &
-                               cplchm, cpllnd, cpl_imp_mrg, cpl_imp_dbg, rrfs_smoke,        &
-                               use_cice_alb, dust_smoke_rrtmg_band_number,                  &
+                               cplchm, cpllnd, cpllnd2atm, cpl_imp_mrg, cpl_imp_dbg,        &
+                               rrfs_smoke, use_cice_alb, dust_smoke_rrtmg_band_number,      &
 #ifdef IDEA_PHYS
                                lsidea, weimer_model, f107_kp_size, f107_kp_interval,        &
                                f107_kp_skip_size, f107_kp_data_size, f107_kp_read_in_start, &
@@ -3791,6 +3820,7 @@ module GFS_typedefs
     Model%cplaqm           = cplaqm
     Model%cplchm           = cplchm .or. cplaqm
     Model%cpllnd           = cpllnd
+    Model%cpllnd2atm       = cpllnd2atm
     Model%use_cice_alb     = use_cice_alb
     Model%cpl_imp_mrg      = cpl_imp_mrg
     Model%cpl_imp_dbg      = cpl_imp_dbg
@@ -5726,6 +5756,7 @@ module GFS_typedefs
       print *, ' cplaqm            : ', Model%cplaqm
       print *, ' cplchm            : ', Model%cplchm
       print *, ' cpllnd            : ', Model%cpllnd
+      print *, ' cpllnd2atm        : ', Model%cpllnd2atm
       print *, ' rrfs_smoke        : ', Model%rrfs_smoke
       print *, ' use_cice_alb      : ', Model%use_cice_alb
       print *, ' cpl_imp_mrg       : ', Model%cpl_imp_mrg

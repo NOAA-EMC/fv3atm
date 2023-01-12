@@ -175,8 +175,8 @@ integer :: fv3Clock, getClock, updClock, setupClock, radClock, physClock
 integer :: blocksize    = 1
 logical :: chksum_debug = .false.
 logical :: dycore_only  = .false.
-logical :: debug        = .false.
-!logical :: debug        = .true.
+!logical :: debug        = .false.
+logical :: debug        = .true.
 logical :: sync         = .false.
 real    :: avg_max_length=3600.
 logical :: ignore_rst_cksum = .false.
@@ -2337,6 +2337,146 @@ end subroutine update_atmos_chemistry
                 enddo
               enddo
               if (mpp_pe() == mpp_root_pe() .and. debug)  print *,'fv3 assign_import: get merid_moment_flx for open ocean from mediator'
+            endif
+          endif
+
+! get surface snow area fraction: over land (if cpllnd=true and cpllnd2atm=true)
+!------------------------------------------------
+          fldname = 'mean_snow_area_fraction_lnd'
+          if (trim(impfield_name) == trim(fldname)) then
+            findex  = queryImportFields(fldname)
+            if (importFieldsValid(findex) .and. GFS_control%cpllnd .and. GFS_control%cpllnd2atm) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
+              do j=jsc,jec
+                do i=isc,iec
+                  nb = Atm_block%blkno(i,j)
+                  ix = Atm_block%ixp(i,j)
+                  if (GFS_data(nb)%Sfcprop%landfrac(ix) > zero) then
+                    GFS_data(nb)%Coupling%sncovr1_lnd(ix) = datar8(i,j)
+                  endif
+                enddo
+              enddo
+              if (mpp_pe() == mpp_root_pe() .and. debug)  print *,'fv3 assign_import: get snow_area_fraction for land'
+            endif
+          endif
+
+! get latent heat flux: over land (if cpllnd=true and cpllnd2atm=true)
+!------------------------------------------------
+          fldname = 'mean_laten_heat_flx_lnd'
+          if (trim(impfield_name) == trim(fldname)) then
+            findex  = queryImportFields(fldname)
+            if (importFieldsValid(findex) .and. GFS_control%cpllnd .and. GFS_control%cpllnd2atm) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
+              do j=jsc,jec
+                do i=isc,iec
+                  nb = Atm_block%blkno(i,j)
+                  ix = Atm_block%ixp(i,j)
+                  if (GFS_data(nb)%Sfcprop%landfrac(ix) > zero) then
+                    GFS_data(nb)%Coupling%evap_lnd(ix) = datar8(i,j)
+                  endif
+                enddo
+              enddo
+              if (mpp_pe() == mpp_root_pe() .and. debug)  print *,'fv3 assign_import: get laten_heat for land'
+            endif
+          endif
+
+! get sensible heat flux: over land (if cpllnd=true and cpllnd2atm=true)
+!--------------------------------------------------
+          fldname = 'mean_sensi_heat_flx_lnd'
+          if (trim(impfield_name) == trim(fldname)) then
+            findex  = queryImportFields(fldname)
+            if (importFieldsValid(findex) .and. GFS_control%cpllnd .and. GFS_control%cpllnd2atm) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
+              do j=jsc,jec
+                do i=isc,iec
+                  nb = Atm_block%blkno(i,j)
+                  ix = Atm_block%ixp(i,j)
+                  if (GFS_data(nb)%Sfcprop%landfrac(ix) > zero) then
+                    GFS_data(nb)%Coupling%hflx_lnd(ix) = datar8(i,j)
+                  endif
+                enddo
+              enddo
+              if (mpp_pe() == mpp_root_pe() .and. debug)  print *,'fv3 assign_import: get sensi_heat for land'
+            endif
+          endif
+
+! get surface upward potential latent heat flux: over land (if cpllnd=true and cpllnd2atm=true)
+!------------------------------------------------
+          fldname = 'mean_potential_laten_heat_flx_lnd'
+          if (trim(impfield_name) == trim(fldname)) then
+            findex  = queryImportFields(fldname)
+            if (importFieldsValid(findex) .and. GFS_control%cpllnd .and. GFS_control%cpllnd2atm) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
+              do j=jsc,jec
+                do i=isc,iec
+                  nb = Atm_block%blkno(i,j)
+                  ix = Atm_block%ixp(i,j)
+                  if (GFS_data(nb)%Sfcprop%landfrac(ix) > zero) then
+                    GFS_data(nb)%Coupling%ep_lnd(ix) = datar8(i,j)
+                  endif
+                enddo
+              enddo
+              if (mpp_pe() == mpp_root_pe() .and. debug)  print *,'fv3 assign_import: get potential_laten_heat_flx for land'
+            endif
+          endif
+
+! get 2m air temperature: over land (if cpllnd=true and cpllnd2atm=true)
+!------------------------------------------------
+          fldname = 'inst_temp_height2m_lnd'
+          if (trim(impfield_name) == trim(fldname)) then
+            findex  = queryImportFields(fldname)
+            if (importFieldsValid(findex) .and. GFS_control%cpllnd .and. GFS_control%cpllnd2atm) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
+              do j=jsc,jec
+                do i=isc,iec
+                  nb = Atm_block%blkno(i,j)
+                  ix = Atm_block%ixp(i,j)
+                  if (GFS_data(nb)%Sfcprop%landfrac(ix) > zero) then
+                    GFS_data(nb)%Coupling%t2mmp_lnd(ix) = datar8(i,j)
+                  endif
+                enddo
+              enddo
+              if (mpp_pe() == mpp_root_pe() .and. debug)  print *,'fv3 assign_import: get temp_height2m for land'
+            endif
+          endif
+
+! get 2m specific humidity: over land (if cpllnd=true and cpllnd2atm=true)
+!------------------------------------------------
+          fldname = 'inst_spec_humid_height2m_lnd'
+          if (trim(impfield_name) == trim(fldname)) then
+            findex  = queryImportFields(fldname)
+            if (importFieldsValid(findex) .and. GFS_control%cpllnd .and. GFS_control%cpllnd2atm) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
+              do j=jsc,jec
+                do i=isc,iec
+                  nb = Atm_block%blkno(i,j)
+                  ix = Atm_block%ixp(i,j)
+                  if (GFS_data(nb)%Sfcprop%landfrac(ix) > zero) then
+                    GFS_data(nb)%Coupling%q2mp_lnd(ix) = datar8(i,j)
+                  endif
+                enddo
+              enddo
+              if (mpp_pe() == mpp_root_pe() .and. debug)  print *,'fv3 assign_import: get spec_humid_height2m for land'
+            endif
+          endif
+
+! get specific humidity: over land (if cpllnd=true and cpllnd2atm=true)
+!------------------------------------------------
+          fldname = 'inst_spec_humid_lnd'
+          if (trim(impfield_name) == trim(fldname)) then
+            findex  = queryImportFields(fldname)
+            if (importFieldsValid(findex) .and. GFS_control%cpllnd .and. GFS_control%cpllnd2atm) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
+              do j=jsc,jec
+                do i=isc,iec
+                  nb = Atm_block%blkno(i,j)
+                  ix = Atm_block%ixp(i,j)
+                  if (GFS_data(nb)%Sfcprop%landfrac(ix) > zero) then
+                    GFS_data(nb)%Coupling%qsurf_lnd(ix) = datar8(i,j)
+                  endif
+                enddo
+              enddo
+              if (mpp_pe() == mpp_root_pe() .and. debug)  print *,'fv3 assign_import: get spec_humid for land'
             endif
           endif
 

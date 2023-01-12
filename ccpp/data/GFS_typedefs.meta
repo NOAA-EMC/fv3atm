@@ -2370,6 +2370,62 @@
   type = real
   kind = kind_phys
   active = (flag_for_surface_flux_coupling .and. do_mediator_atmosphere_ocean_fluxes)
+[sncovr1_lnd]
+  standard_name = surface_snow_area_fraction_over_land_from_land
+  long_name = surface snow area fraction over land for coupling 
+  units = frac
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (flag_for_land_coupling .and. flag_for_one_way_land_coupling_to_atmosphere)
+[qsurf_lnd]
+  standard_name = surface_specific_humidity_over_land_from_land
+  long_name = surface air saturation specific humidity over land
+  units = kg kg-1
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (flag_for_land_coupling .and. flag_for_one_way_land_coupling_to_atmosphere)
+[hflx_lnd]
+  standard_name = surface_upward_sensible_heat_flux_over_land_from_land
+  long_name = sfc sensible heat flux input over land for coupling
+  units = K m s-1
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (flag_for_land_coupling .and. flag_for_one_way_land_coupling_to_atmosphere)
+[evap_lnd]
+  standard_name = surface_upward_latent_heat_flux_over_land_from_land
+  long_name = sfc latent heat flux input over land for coupling
+  units = kg kg-1 m s-1
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (flag_for_land_coupling .and. flag_for_one_way_land_coupling_to_atmosphere)
+[ep_lnd]
+  standard_name = surface_upward_potential_latent_heat_flux_over_land_from_land
+  long_name = surface upward potential latent heat flux over land for coupling
+  units = W m-2
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (flag_for_land_coupling .and. flag_for_one_way_land_coupling_to_atmosphere)
+[t2mmp_lnd]
+  standard_name = temperature_at_2m_over_land_from_land
+  long_name = 2 meter temperature over land for coupling
+  units = K
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (flag_for_land_coupling .and. flag_for_one_way_land_coupling_to_atmosphere)
+[q2mp_lnd]
+  standard_name = specific_humidity_at_2m_over_land_from_land
+  long_name = 2 meter specific humidity over land for coupling
+  units = kg kg-1
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (flag_for_land_coupling .and. flag_for_one_way_land_coupling_to_atmosphere)
 [hsnoin_cpl]
   standard_name = lwe_surface_snow_from_coupled_process
   long_name = sfc snow depth in meters over sea ice for coupling
@@ -3007,6 +3063,12 @@
 [cpllnd]
   standard_name = flag_for_land_coupling
   long_name = flag controlling cpllnd collection (default off)
+  units = flag
+  dimensions = ()
+  type = logical
+[cpllnd2atm]
+  standard_name = flag_for_one_way_land_coupling_to_atmosphere
+  long_name = flag controlling land coupling to the atmosphere (default off)
   units = flag
   dimensions = ()
   type = logical

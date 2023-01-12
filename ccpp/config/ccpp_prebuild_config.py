@@ -202,6 +202,7 @@ SCHEME_FILES = [
     'physics/physics/sfc_diag_post.F90',
     'physics/physics/lsm_ruc.F90',
     'physics/physics/sfc_cice.f',
+    'physics/physics/sfc_land.f',
     'physics/physics/sfc_diff.f',
     'physics/physics/lsm_noah.f',
     'physics/physics/noahmpdrv.F90',
