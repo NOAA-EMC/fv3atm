@@ -2663,16 +2663,9 @@ contains
       !
 
       do j = bbox_fine%js, bbox_fine%je
-
-        jc = ind(i,j,2)        
-        
         do i = bbox_fine%is, bbox_fine%ie
-
           jc = ind(i,j,2)         ! reset this if the UPDATE code altered it
-
           ic = ind(i,j,1)
-
-
           if (ic+1 .gt. ubound(p_grid, 1)) print '("[ERROR] WDR CALCWT off end of p_grid i npe=",I0," ic+1=",I0," bound=",I0)', mpp_pe(), ic+1, ubound(p_grid,1)
           if (jc+1 .gt. ubound(p_grid, 2)) print '("[ERROR] WDR CALCWT off end of p_grid j npe=",I0," jc+1=",I0," bound=",I0)', mpp_pe(), jc+1, ubound(p_grid,2)
           
