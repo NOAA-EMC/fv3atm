@@ -932,7 +932,7 @@ contains
 
   !>@brief The subroutine 'mn_meta_recalc' recalculates nest halo weights
   subroutine mn_meta_recalc( delta_i_c, delta_j_c, x_refine, y_refine, tile_geo, parent_geo, fp_super_tile_geo, &
-      is_fine_pe, nest_domain, position, p_grid, n_grid, wt, istart_coarse, jstart_coarse)
+      is_fine_pe, nest_domain, position, p_grid, n_grid, wt, istart_coarse, jstart_coarse, ind)
     integer, intent(in)                           :: delta_i_c, delta_j_c                     !< Nest motion in delta i,j
     integer, intent(in)                           :: x_refine, y_refine                       !< Nest refinement
     type(grid_geometry), intent(inout)            :: tile_geo, parent_geo, fp_super_tile_geo  !< tile geometries
@@ -943,6 +943,7 @@ contains
     real, allocatable, intent(inout)              :: wt(:,:,:)                                !< Interpolation weights
     integer, intent(inout)                        :: position                                 !< Stagger
     integer, intent(in)                           :: istart_coarse, jstart_coarse             !< Initian nest offsets
+    integer, allocatable, intent(in)              :: ind(:,:,:)
 
     type(bbox) :: wt_fine, wt_coarse
     integer    :: istag, jstag
@@ -963,25 +964,37 @@ contains
         istag = 0
         jstag = 0
       elseif (position .eq. NORTH) then
+        ! for p_grid_u
         istag = 1
         jstag = 0
+
+        !! This aligns with boundary.F90 settings
+        !!istag = 0
+        !!jstag = 1
+
       elseif (position .eq. EAST) then
+        ! for p_grid_v
         istag = 0
         jstag = 1
+
+        !! This aligns with boundary.F90 settings
+        !istag = 1
+        !jstag = 0
+
       endif
 
 
       call bbox_get_C2F_index(nest_domain, wt_fine, wt_coarse, EAST,  position)
-      call calc_nest_halo_weights(wt_fine, wt_coarse, p_grid, n_grid, wt, istart_coarse, jstart_coarse, x_refine, y_refine, istag, jstag)
+      call calc_nest_halo_weights(wt_fine, wt_coarse, p_grid, n_grid, wt, istart_coarse, jstart_coarse, x_refine, y_refine, istag, jstag, ind)
 
       call bbox_get_C2F_index(nest_domain, wt_fine, wt_coarse, WEST,  position)
-      call calc_nest_halo_weights(wt_fine, wt_coarse, p_grid, n_grid, wt, istart_coarse, jstart_coarse, x_refine, y_refine, istag, jstag)
+      call calc_nest_halo_weights(wt_fine, wt_coarse, p_grid, n_grid, wt, istart_coarse, jstart_coarse, x_refine, y_refine, istag, jstag, ind)
 
       call bbox_get_C2F_index(nest_domain, wt_fine, wt_coarse, NORTH,  position)
-      call calc_nest_halo_weights(wt_fine, wt_coarse, p_grid, n_grid, wt, istart_coarse, jstart_coarse, x_refine, y_refine, istag, jstag)
+      call calc_nest_halo_weights(wt_fine, wt_coarse, p_grid, n_grid, wt, istart_coarse, jstart_coarse, x_refine, y_refine, istag, jstag, ind)
 
       call bbox_get_C2F_index(nest_domain, wt_fine, wt_coarse, SOUTH,  position)
-      call calc_nest_halo_weights(wt_fine, wt_coarse, p_grid, n_grid, wt, istart_coarse, jstart_coarse, x_refine, y_refine, istag, jstag)
+      call calc_nest_halo_weights(wt_fine, wt_coarse, p_grid, n_grid, wt, istart_coarse, jstart_coarse, x_refine, y_refine, istag, jstag, ind)
 
     endif
 
@@ -2611,7 +2624,7 @@ contains
 
   !>@brief The subroutine 'calc_nest_halo_weights' calculates the interpolation weights
   !>@details Computationally demanding; target for optimization after nest moves
-  subroutine calc_nest_halo_weights(bbox_fine, bbox_coarse, p_grid, n_grid, wt, istart_coarse, jstart_coarse, x_refine, y_refine, istag, jstag)
+  subroutine calc_nest_halo_weights(bbox_fine, bbox_coarse, p_grid, n_grid, wt, istart_coarse, jstart_coarse, x_refine, y_refine, istag, jstag, ind)
     implicit none
 
     type(bbox), intent(in)                       :: bbox_coarse, bbox_fine                            !< Bounding boxes of parent and nest
@@ -2619,6 +2632,7 @@ contains
     real, allocatable, intent(inout)             :: wt(:,:,:)                                         !< Interpolation weight array
     integer, intent(in)                          :: istart_coarse, jstart_coarse, x_refine, y_refine  !< Offsets and nest refinements
     integer, intent(in)                          :: istag, jstag                                      !< Staggers
+    integer, allocatable, intent(in)             :: ind(:,:,:)
 
     integer       :: i, j, k, ic, jc
     real          :: dist1, dist2, dist3, dist4, sum
@@ -2631,7 +2645,7 @@ contains
     real               :: pi180
     real               :: rad2deg, deg2rad
     real               :: old_weight(4), diff_weight(4)
-    integer            :: del_ic, del_jc, di, dj
+    integer            :: di, dj
 
     pi180 = pi / 180.0
     deg2rad = pi / 180.0
@@ -2649,48 +2663,27 @@ contains
       !
 
       do j = bbox_fine%js, bbox_fine%je
-        ! F90 integer division truncates
-        !jc = jstart_coarse  + (j + y_refine/2 + 1) / y_refine
 
-	! Subtracting 1 from the nest index makes the higher edge go to the next parent cell
-	! Subtracting 2 from the nest index makes the higher edge stay with the lower parent cell
-	!   But row/column 1 would have gone to -1 instead of 0. 
-
-
-	! Consider subtracting 2 from j instead of 1
-	!        jc = jstart_coarse  + floor( real(j - jstag - 1) / real(y_refine) )
-        !del_jc =  floor( real(j - jstag - 1) / real(y_refine) )
-        del_jc =  floor( real(j - jstag - 2) / real(y_refine) )
-        ! Initial row is handled differently than other rows
-        !if (del_jc .lt. 0) del_jc = 0
-        jc = jstart_coarse  + del_jc
-        
+        jc = ind(i,j,2)        
         
         do i = bbox_fine%is, bbox_fine%ie
-          jc = jstart_coarse  + del_jc  ! Repeat this incase the update code alters the value
 
+          jc = ind(i,j,2)         ! reset this if the UPDATE code altered it
 
-          !ic = istart_coarse  + (i + x_refine/2 + 1) / x_refine
-          ! Consider subtracting 2 from i instead of 1
-          !          ic = istart_coarse  + floor( real(i - istag - 1) / real(x_refine) )
-          !del_ic =  floor( real(i - istag - 1) / real(x_refine) )
-          del_ic =  floor( real(i - istag - 2) / real(x_refine) )
-          !if (del_ic .lt. 0) del_ic = 0    ! Initial row is handled differently than other rows
-          ic = istart_coarse  + del_ic
+          ic = ind(i,j,1)
+
 
           if (ic+1 .gt. ubound(p_grid, 1)) print '("[ERROR] WDR CALCWT off end of p_grid i npe=",I0," ic+1=",I0," bound=",I0)', mpp_pe(), ic+1, ubound(p_grid,1)
-          if (jc+1 .gt. ubound(p_grid, 2)) print '("[ERROR] WDR CALCWT off end of p_grid j npe=",I0," jc+1=",I0," bound=",I0)', &
-              mpp_pe(), jc+1, ubound(p_grid,2)
+          if (jc+1 .gt. ubound(p_grid, 2)) print '("[ERROR] WDR CALCWT off end of p_grid j npe=",I0," jc+1=",I0," bound=",I0)', mpp_pe(), jc+1, ubound(p_grid,2)
           
-
           ! dist2side_latlon takes points in longitude-latitude coordinates.
           dist1 = dist2side_latlon(p_grid(ic,jc,:),     p_grid(ic,jc+1,:),   n_grid(i,j,:))
           dist2 = dist2side_latlon(p_grid(ic,jc+1,:),   p_grid(ic+1,jc+1,:), n_grid(i,j,:))
           dist3 = dist2side_latlon(p_grid(ic+1,jc+1,:), p_grid(ic+1,jc,:),   n_grid(i,j,:))
           dist4 = dist2side_latlon(p_grid(ic,jc,:),     p_grid(ic+1,jc,:),   n_grid(i,j,:))
 
-!          call calc_inside(p_grid, ic, jc, n_grid(i,j,1), n_grid(i,j,2), istag, jstag, is_inside, .True.)
-!
+          call calc_inside(p_grid, ic, jc, n_grid(i,j,1), n_grid(i,j,2), istag, jstag, is_inside, .True.)
+
 !          if (.not. is_inside) then
 !            adjusted = .False.
 !
@@ -2701,27 +2694,23 @@ contains
 !                  if (is_inside) then
 !                    ic = ic + di
 !                    jc = jc + dj
-                    
-                    
+!                                        
 !                    print '("[INFO] WDR is_inside UPDATED npe=",I0," ic=",I0," jc=",I0," istart_coarse=",I0," jstart_coarse=",I0," i=",I0," j=",I0," di=",I0," dj=",I0," n_grid1=",F12.8," n_grid2=",F12.8," istag=",I0," jstag=",I0)', mpp_pe(), ic, jc, istart_coarse, jstart_coarse, i, j,  di, dj, n_grid(i,j,1), n_grid(i,j,2), istag, jstag
-                    
                     
 !                    dist1 = dist2side_latlon(p_grid(ic,jc,:),     p_grid(ic,jc+1,:),   n_grid(i,j,:))
 !                    dist2 = dist2side_latlon(p_grid(ic,jc+1,:),   p_grid(ic+1,jc+1,:), n_grid(i,j,:))
 !                    dist3 = dist2side_latlon(p_grid(ic+1,jc+1,:), p_grid(ic+1,jc,:),   n_grid(i,j,:))
 !                    dist4 = dist2side_latlon(p_grid(ic,jc,:),     p_grid(ic+1,jc,:),   n_grid(i,j,:))
-                    
+!                    
 !                    adjusted = .True.
 !                  endif
 !                endif
 !              enddo
 !            enddo
 !            if (.not. adjusted) print '("[ERROR] WDR is_inside UPDATE FAILED npe=",I0," i=",I0," j=",I0," ic=",I0," jc=",I0," n_grid1=",F12.8," n_grid2=",F12.8," istag=",I0," jstag=",I0)', mpp_pe(), i, j, ic, jc, n_grid(i,j,1), n_grid(i,j,2), istag, jstag
-
+!
 !          endif
           
-
-
           old_weight = wt(i,j,:)
 
           wt(i,j,1)=dist2*dist3      ! ic,   jc    weight
@@ -2737,39 +2726,19 @@ contains
 
             call mpp_error(WARNING, "WARNING: calc_nest_halo_weights sum of weights is zero.")
             wt(i,j,:) = 0.25
-
-            !print '("[INFO] WDR WT npe=",I0," i=",I0," ic=",I0," istart_coarse=",I0," x_refine=",I0)', &
-            !    mpp_pe(), i, ic, istart_coarse, x_refine
-
-            !print '("[INFO] WDR WT npe=",I0," j=",I0," jc=",I0," jstart_coarse=",I0," y_refine=",I0)', &
-            !    mpp_pe(), j, jc, jstart_coarse, y_refine
-
-            !print '("[INFO] WDR WT npe=",I0," i=",I0," j=",I0," wt1=",F10.4," wt2=",F10.4," wt3=",F10.4," wt4=",F10.4)', mpp_pe(), i, j, wt(i,j,1), wt(i,j,2), wt(i,j,3), wt(i,j,4)
-
-
-            !print '("[INFO] WDR WT npe=",I0," i=",I0," j=",I0," dist1=",F10.4," dist2=",F10.4," dist3=",F10.4," dist4=",F10.4)', mpp_pe(), i, j, dist1, dist2, dist3, dist4
-
-            !print '("[INFO] WDR WT npe=",I0," i=",I0," j=",I0," n_grid(i,j,1)=",F10.4," n_grid(i,j,2)=",F10.4)', mpp_pe(), i, j, n_grid(i,j,1), n_grid(i,j,2)
-
-
-            !print '("[INFO] WDR WT npe=",I0," ic=",I0," jc=",I0," p_grid(ic,jc)=",F10.4," ",F10.4" p_grid(ic,jc+1)=",F10.4," ",F10.4," p_grid(ic+1,jc+1)=",F10.4," ", F10.4," p_grid(ic+1,jc=",F10.4," ",F10.4)', mpp_pe(), ic, jc, &
-             !   p_grid(ic,jc,1),      p_grid(ic,jc,2), &
-             !   p_grid(ic,jc+1,1),    p_grid(ic,jc+1,2), & 
-             !   p_grid(ic+1,jc+1,1),  p_grid(ic+1,jc+1,2), &
-             !   p_grid(ic+1,jc,1),    p_grid(ic+1,jc,2)
             
           else
             wt(i,j,:)=wt(i,j,:)/sum            
           endif
 
-          !diff_weight = old_weight - wt(i,j,:)
-          !do k=1,4
-          !  if (abs(diff_weight(k)) .ge. 0.01) then
-          !    print '("[WARN] WDR DIFFWT npe=",I0," old_wt=",F10.6," wt(",I0,",",I0,",",I0,")=",F10.6," diff=",F10.6," istag=",I0," jstag=",I0)', &
-          !        mpp_pe(), old_weight(k), i, j, k, wt(i,j,k), diff_weight(k), istag, jstag
-          !  endif
-          !enddo
-          
+          diff_weight = old_weight - wt(i,j,:)
+          do k=1,4
+            if (abs(diff_weight(k)) .ge. 0.01) then
+              print '("[WARN] WDR DIFFWT npe=",I0," old_wt=",F10.6," wt(",I0,",",I0,",",I0,")=",F10.6," diff=",F10.6," istag=",I0," jstag=",I0)', &
+                  mpp_pe(), old_weight(k), i, j, k, wt(i,j,k), diff_weight(k), istag, jstag
+              
+            endif
+          enddo
         enddo
       enddo
     endif
