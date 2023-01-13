@@ -1157,6 +1157,9 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 !
 !***  local variables
 !
+      logical,save               :: first=.true.
+      integer,save               :: dt_cap=0
+      type(ESMF_Time)            :: currTime,stopTime
       integer                    :: mype, seconds
       real(kind=8)               :: mpi_wtime, tbeg1
 !
@@ -1174,6 +1177,22 @@ if (rc /= ESMF_SUCCESS) write(0,*) 'rc=',rc,__FILE__,__LINE__; if(ESMF_LogFoundE
 
       call get_time(Atmos%Time - Atmos%Time_init, seconds)
       n_atmsteps = seconds/dt_atmos
+
+      if (first) then
+        call ESMF_ClockGet(clock, currTime=currTime, stopTime=stopTime, rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+        call ESMF_TimeIntervalGet(stopTime-currTime, s=dt_cap, rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+
+        first=.false.
+      endif
+
+      if ( dt_cap > 0 .and. mod(seconds, dt_cap) == 0 ) then
+        Atmos%isAtCapTime = .true.
+      else
+        Atmos%isAtCapTime = .false.
+      endif
 !
 !-----------------------------------------------------------------------
 ! *** call fcst integration subroutines
